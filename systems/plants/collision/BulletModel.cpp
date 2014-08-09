@@ -147,14 +147,14 @@ namespace DrakeCollision
     //END_DEBUG
     btVector3 pointOnAinWorld;
     btVector3 pointOnBinWorld;
-    if (elemA.getShape() == MESH) {
+    if (elemA.getShape() == MESH || elemA.getShape() == BOX) {
       pointOnAinWorld = gjkOutput.m_pointInWorld +
         gjkOutput.m_normalOnBInWorld*(gjkOutput.m_distance+shapeA->getMargin());
     } else {
       pointOnAinWorld = gjkOutput.m_pointInWorld +
         gjkOutput.m_normalOnBInWorld*gjkOutput.m_distance;
     }
-    if (elemB.getShape() == MESH) {
+    if (elemB.getShape() == MESH || elemB.getShape() == BOX) {
       pointOnBinWorld = gjkOutput.m_pointInWorld - gjkOutput.m_normalOnBInWorld*shapeB->getMargin();
     } else {
       pointOnBinWorld = gjkOutput.m_pointInWorld;
@@ -436,10 +436,10 @@ namespace DrakeCollision
       Shape shapeB = element_dataB->shape;
       double marginA = 0;
       double marginB = 0;
-      if (shapeA == MESH) { 
+      if (shapeA == MESH || shapeA == BOX) { 
         marginA = obA->getCollisionShape()->getMargin();
       }
-      if (shapeB == MESH) { 
+      if (shapeB == MESH || shapeB == BOX) { 
         marginB = obB->getCollisionShape()->getMargin();
       }
       int numContacts = contactManifold->getNumContacts();

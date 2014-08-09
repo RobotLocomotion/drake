@@ -78,7 +78,7 @@ BOOST_AUTO_TEST_CASE(filter_by_body)
   model->closestPointsAllBodies(bodyA_idx,bodyB_idx,ptsA,ptsB, 
                                   normal,distance,active_bodies_idx);
   BOOST_CHECK_EQUAL(distance.size(), 1);
-  BOOST_CHECK_EQUAL(distance(0), 1.6213203435596428);
+  BOOST_CHECK_CLOSE(distance(0), 1.6213203435596428,1e-8);
   BOOST_CHECK_EQUAL(bodyA_idx.at(0), 3);
   BOOST_CHECK_EQUAL(bodyB_idx.at(0), 1);
   
@@ -110,7 +110,7 @@ BOOST_AUTO_TEST_CASE(filter_by_body)
   BOOST_CHECK_EQUAL(distance.size(), 3);
   BOOST_CHECK_EQUAL(distance(0), 1.0);
   BOOST_CHECK_EQUAL(distance(1), 1.0);
-  BOOST_CHECK_EQUAL(distance(2), 1.6213203435596428);
+  BOOST_CHECK_CLOSE(distance(2), 1.6213203435596428,1e-8);
   BOOST_CHECK_EQUAL(bodyA_idx.at(0), 2);
   BOOST_CHECK_EQUAL(bodyA_idx.at(1), 2);
   BOOST_CHECK_EQUAL(bodyA_idx.at(2), 1);
@@ -193,7 +193,7 @@ BOOST_AUTO_TEST_CASE(filter_by_group)
   model->closestPointsAllBodies(bodyA_idx,bodyB_idx,ptsA,ptsB, 
                                   normal,distance,active_group_names);
   BOOST_CHECK_EQUAL(distance.size(), 1);
-  BOOST_CHECK_EQUAL(distance(0), 1.6213203435596428);
+  BOOST_CHECK_CLOSE(distance(0), 1.6213203435596428,1e-8);
   BOOST_CHECK_EQUAL(bodyA_idx.at(0), 1);
   BOOST_CHECK_EQUAL(bodyB_idx.at(0), 2);
   
@@ -209,7 +209,7 @@ BOOST_AUTO_TEST_CASE(filter_by_group)
                                   normal,distance,active_bodies_idx);
   BOOST_CHECK_EQUAL(distance.size(), 2);
   BOOST_CHECK_EQUAL(distance(0), 1.0);
-  BOOST_CHECK_EQUAL(distance(1), 1.6213203435596428);
+  BOOST_CHECK_CLOSE(distance(1), 1.6213203435596428,1e-8);
   BOOST_CHECK_EQUAL(bodyA_idx.at(0), 2);
   BOOST_CHECK_EQUAL(bodyA_idx.at(1), 2);
   BOOST_CHECK_EQUAL(bodyB_idx.at(0), 1);
