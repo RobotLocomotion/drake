@@ -37,36 +37,39 @@ classdef DrakeSystem < DynamicalSystem
   % 
   methods
     function x0 = getInitialState(obj)
-      % Return a (potentially random) state double (column) vector of initial conditions
+      % Return a (potentially random) state double (column) 
+      % vector of initial conditions
       %
-      % This method is intended to be overloaded, but by default attempts to
-      % return the result of resolveConstraints using the zero vector as an
-      % initial seed.
-      x0 = zeros(obj.num_xd+obj.num_xc,1);
-      attempts=0;
-      success=false;
-      tries = 0;
-      while (~success)
-        try
-          [x0,success] = resolveConstraints(obj,x0);
-        catch ex
-          if strcmp(ex.identifier,'Drake:DrakeSystem:FailedToResolveConstraints');
-            attempts = attempts+1;
-            if (attempts>=10)
-              error('Drake:Manipulator:FailedToResolveConstraints','Failed to resolve state constraints on initial conditions after 10 tries');
+      % Attempts to return the result of resolveConstraints using a 
+      % small random vector as an initial seed.
+      
+      x0 = .01*randn(obj.num_xd+obj.num_xc,1);
+      if getNumStateConstraints(obj)>0
+        attempts=0;
+        success=false;
+        tries = 0;
+        while (~success)
+          try
+            [x0,success] = resolveConstraints(obj,x0);
+          catch ex
+            if strcmp(ex.identifier,'Drake:DrakeSystem:FailedToResolveConstraints');
+              attempts = attempts+1;
+              if (attempts>=10)
+                error('Drake:Manipulator:FailedToResolveConstraints','Failed to resolve state constraints on initial conditions after 10 tries');
+              else
+                x0 = randn(obj.num_xd+obj.num_xc,1);
+                continue;
+              end
             else
-              x0 = randn(obj.num_xd+obj.num_xc,1);
-              continue;
+              rethrow(ex);
             end
-          else
-            rethrow(ex);
           end
-        end
-        if (~success)
-          x0 = randn(obj.num_xd+obj.num_xc,1);
-          tries = tries+1;
-          if (tries>=10)
+          if (~success)
+            x0 = randn(obj.num_xd+obj.num_xc,1);
+            tries = tries+1;
+            if (tries>=10)
               error('failed to resolve constraints after %d attempts',tries);
+            end
           end
         end
       end
