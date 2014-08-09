@@ -1,4 +1,4 @@
-classdef RigidBodyLidar < RigidBodyDepthCamera
+classdef RigidBodyLidar < RigidBodyDepthSensor
   
   methods
     
@@ -12,7 +12,7 @@ classdef RigidBodyLidar < RigidBodyDepthCamera
       % @param num_pixels number of pixels that the sensor reads
       % @param range maximum range of the laser (in meters).  can be inf.
       
-      obj = obj@RigidBodyDepthCamera(lidar_name,frame_id,0,0,1,min_yaw,max_yaw,num_pixels,range);
+      obj = obj@RigidBodyDepthSensor(lidar_name,frame_id,0,0,1,min_yaw,max_yaw,num_pixels,range);
     end
     
   end
