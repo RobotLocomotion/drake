@@ -14,11 +14,7 @@ for i=1:num_tests
     [xdn1,df1] = geval(1,@update,p,0,x(:,i),u(:,i),struct('grad_method','numerical'));
     [xdn2,df2] = geval(1,@update,p,0,x(:,i),u(:,i),struct('grad_method','user'));
 
-    if (any(abs(xdn1-xdn2)>1e-5))
-        error('Next states when computing gradients don''t match!');
-    end
-    if (any(any(abs(df1-df2)>1e-5)))
-        error('Gradients don''t match!');
-    end
-
+    valuecheck(xdn2,xdn1,1e-5);
+    valuecheck(df2,df1,1e-5);
+    
 end
