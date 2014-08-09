@@ -294,7 +294,7 @@ classdef DynamicalSystem
       newsys.simulink_params = sys.simulink_params;  
     end
     
-    function [x,success] = resolveConstraints(obj,x0,v)
+    function [x,success,prog] = resolveConstraints(obj,x0,v)
       % attempts to find a x which satisfies the constraints,
       % using x0 as the initial guess.
       %

@@ -207,7 +207,9 @@ classdef Visualizer < DrakeSystem
       if (nargin<6), model = []; end
 
       x0(state_dims) = max(min(x0(state_dims),maxrange),minrange);
-      if ~isempty(visualized_system), x0 = resolveConstraints(visualized_system,x0); end
+      if ~isempty(visualized_system), 
+        [x0,~,prog] = resolveConstraints(visualized_system,x0);
+      end
 
       rows = ceil(length(state_dims)/2);
       f = sfigure(99); clf;
@@ -217,7 +219,7 @@ classdef Visualizer < DrakeSystem
         label{i} = uicontrol('Style','text','String',getCoordinateName(fr,state_dims(i)), ...
           'BackgroundColor',[.8 .8 .8],'HorizontalAlignment','right');
         slider{i} = uicontrol('Style', 'slider', 'Min', minrange(i), 'Max', maxrange(i), ...
-          'Value', x0(i), 'Callback',{@update_display});
+          'Value', x0(i), 'Callback',{@update_display},'UserData',state_dims(i));
         value{i} = uicontrol('Style','text','String',num2str(x0(i)), ...
           'BackgroundColor',[.8 .8 .8],'HorizontalAlignment','left');
 
@@ -227,7 +229,7 @@ classdef Visualizer < DrakeSystem
       
       set(f, 'Position', [560 400 560 20 + 30*rows]);
       resize_gui();
-      update_display();
+      update_display(slider{1});
       
       function resize_gui(source, eventdata)
         p = get(gcf,'Position');
@@ -248,9 +250,8 @@ classdef Visualizer < DrakeSystem
           set(value{i},'String',num2str(x(state_dims(i)),'%4.3f'));
         end
         if (~isempty(visualized_system) && getNumStateConstraints(visualized_system)>0)
-          % todo: pass in additional constriants to keep it inside the
-          % slider values
-          x = resolveConstraints(visualized_system,x);
+          current_slider_statedim = get(source,'UserData');
+          x = solve(addConstraint(prog,ConstantConstraint(get(source,'Value')),current_slider_statedim),x);
           for i=state_dims(:)'
             set(slider{i},'Value',x(state_dims(i)));
           end
