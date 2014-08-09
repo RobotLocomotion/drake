@@ -3,7 +3,7 @@ function contactImplicitBrick(visualize,position_tol,velocity_tol)
 % simulation of the falling brick
 
 if nargin < 1, visualize = false; end
-if nargin < 2, position_tol = 1e-2; end
+if nargin < 2, position_tol = 1.5e-2; end
 if nargin < 3, velocity_tol = 1e-1; end
 
 options.terrain = RigidBodyFlatTerrain();
