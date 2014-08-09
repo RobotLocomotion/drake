@@ -206,7 +206,8 @@ void testDHomogTransInv(int ntests, bool check) {
   Isometry3d T;
   std::default_random_engine generator;
   for (int testnr = 0; testnr < ntests; testnr++) {
-    T = uniformlyRandomQuat(generator) * Translation3d(Vector3d::Random());
+    Vector4d q = uniformlyRandomQuat(generator);
+    T = Quaterniond(q(0), q(1), q(2), q(3)) * Translation3d(Vector3d::Random());
 
     const int nv = 6;
     const int nq = 7;
@@ -268,7 +269,8 @@ void testDTransformAdjoint(int ntests, bool debug) {
   }
   else {
     for (int testnr = 0; testnr < ntests; testnr++) {
-      T = uniformlyRandomQuat(generator) * Translation3d(Vector3d::Random());
+      Vector4d q = uniformlyRandomQuat(generator);
+      T = Quaterniond(q(0), q(1), q(2), q(3)) * Translation3d(Vector3d::Random());
       auto S = Matrix<double, 6, nv>::Random().eval();
       auto qdot_to_v = Matrix<double, nv, nq>::Random().eval();
       auto dT = dHomogTrans(T, S, qdot_to_v).eval();
@@ -316,7 +318,8 @@ void testDTransformAdjointTranspose(int ntests, bool debug) {
   }
   else {
     for (int testnr = 0; testnr < ntests; testnr++) {
-      T = uniformlyRandomQuat(generator) * Translation3d(Vector3d::Random());
+      Vector4d q = uniformlyRandomQuat(generator);
+      T = Quaterniond(q(0), q(1), q(2), q(3)) * Translation3d(Vector3d::Random());
       auto S = Matrix<double, 6, nv>::Random().eval();
       auto qdot_to_v = Matrix<double, nv, nq>::Random().eval();
       auto dT = dHomogTrans(T, S, qdot_to_v).eval();
