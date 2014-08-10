@@ -182,6 +182,8 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
           group_name = "default";
         }
 
+        // Get element-to-link transform from MATLAB object
+        memcpy(T.data(), mxGetPr(mxGetProperty(pShape,0,"T")), sizeof(double)*4*4);
         auto shape = (DrakeCollision::Shape)mxGetScalar(mxGetProperty(pShape,0,"bullet_shape_id"));
         vector<double> params_vec;
         switch (shape) {
@@ -213,6 +215,9 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
             for (int k=0; k<n_params; k++)
               params_vec.push_back(params[k]);
             mxDestroyArray(pPoints);
+            // The element-to-link transform is applied in
+            // RigidBodyMesh/getPoints - don't apply it again!
+            T = Matrix4d::Identity();
           }
             break;
           case DrakeCollision::CAPSULE:
@@ -225,7 +230,6 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
             // intentionally do nothing..
             break;
         }
-        memcpy(T.data(), mxGetPr(mxGetProperty(pShape,0,"T")), sizeof(double)*4*4);
         model->addCollisionElement(i,T,shape,params_vec,group_name);
         if (model->bodies[i].parent<0) {
           model->updateCollisionElements(i);  // update static objects only once - right here on load
