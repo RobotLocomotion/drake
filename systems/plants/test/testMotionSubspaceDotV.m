@@ -25,7 +25,7 @@ SDot = ...
   diff(S, yaw) * yawd;
 SdotVCheck = SDot * vBody;
 
-SdotV = motionSubspaceDotV(body, qBody, vBody);
+SdotV = motionSubspaceDotTimesV(body, qBody, vBody);
 
 valuecheck(simplify(SdotV - SdotVCheck), zeros(6, 1), 0);
 end
@@ -61,7 +61,7 @@ for i = 1 : 100
   qBodyTest = [randn(3, 1); quat];
   vBodyTest = [randn(3, 1); quatd];
 
-  SdotV = motionSubspaceDotV(body, qBodyTest, vBodyTest);
+  SdotV = motionSubspaceDotTimesV(body, qBodyTest, vBodyTest);
   SdotVCheck = double(subs(SdotVSym, num2cell([qBody; vBody]'), num2cell([qBodyTest; vBodyTest]')));
   valuecheck(SdotV, SdotVCheck, 1e-8);
 end
