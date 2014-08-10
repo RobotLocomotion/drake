@@ -7,7 +7,7 @@ if strcmp(ex.identifier,'Simulink:SFunctions:SFcnErrorStatus')
   if ~isempty(ids), err_id = ids{1}; end
 end
 
-if isempty(err_id)
+if ~isempty(err_id)
   switch err_id
     case 'PathLCP:FailedToSolve'
       if any(strcmp(testname,{'systems/plants/test/fallingBrickLCP', ...
@@ -43,6 +43,13 @@ if isempty(err_id)
           'examples/Atlas/runAtlasSagittalDynamics',...
           'examples/Atlas/test/runDoubleAtlas'}))
         github(146); return;
+      end
+  end
+else
+  switch testname
+    case 'solvers/test/testNLPWConstraint'
+      if strcmp(ex.message,'fmincon failed') && ~verLessThan('matlab','8.3.0')
+        github(255); return;
       end
   end
 end
