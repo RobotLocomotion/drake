@@ -1,4 +1,5 @@
 function q = getRandomConfiguration(obj)
+%NOTEST
 % Generates a random configuration vector
 %
 % @ retval q random configuration vector that satisfies the state
