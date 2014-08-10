@@ -339,15 +339,19 @@ classdef DynamicalSystem
       
       % add state constraints
       nc = getNumStateConstraints(obj);
-      con = FunctionHandleConstraint(zeros(nc,1),zeros(nc,1),nx,@obj.stateConstraints);
-      con.grad_method = 'user_then_taylorvar';
-      prog = addConstraint(prog,con,indices);
+      if nc>0
+        con = FunctionHandleConstraint(zeros(nc,1),zeros(nc,1),nx,@obj.stateConstraints);
+        con.grad_method = 'user_then_taylorvar';
+        prog = addConstraint(prog,con,indices);
+      end
       
       % add unilateral constraints
       nc = getNumUnilateralConstraints(obj);
-      con = FunctionHandleConstraint(zeros(nc,1),inf(nc,1),nx,@obj.unilateralConstraints);
-      con.grad_method = 'user_then_taylorvar';
-      prog = addConstraint(prog,con,indices);
+      if nc>0
+        con = FunctionHandleConstraint(zeros(nc,1),inf(nc,1),nx,@obj.unilateralConstraints);
+        con.grad_method = 'user_then_taylorvar';
+        prog = addConstraint(prog,con,indices);
+      end
     end
     
   end
