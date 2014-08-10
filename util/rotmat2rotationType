@@ -1,4 +1,4 @@
-function [qrot, dqrot] = rotmat2Representation(rotation_type, R, dR)
+function [qrot, dqrot] = rotmat2rotationType(rotation_type, R, dR)
 % Convert from rotation matrix representation to a differen representation
 % of orientation, as specified by the argument \p rotation_type
 % Front-end for the various rotmat2* functions
