@@ -19,15 +19,15 @@ classdef RigidBodyInertialMeasurementUnit < RigidBodySensor
       if is_planar, zero_vec = zeros(2,1);
       else zero_vec = zeros(3,1); end
 
-      [x,J] = forwardKin(manip,kinsol,obj.frame_id,zero_vec,1);
-      Jdot = forwardJacDot(manip,kinsol,obj.frame_id,zero_vec,0,0);
-
       % x = f(q)
       % xdot = dfdq*dqdt = J*qd
       % xddot = dJdq*qd + J*qdd = Jdot*qd + J*qdd
 
       % note: x,J above have angles, but Jdot does not
       if is_planar
+        [x,J] = forwardKin(manip,kinsol,obj.frame_id,zero_vec,1);
+        Jdot = forwardJacDot(manip,kinsol,obj.frame_id,zero_vec,0,0);
+
         angle = x(3);
         omega_body = J(3,:)*qd;
 
@@ -39,12 +39,14 @@ classdef RigidBodyInertialMeasurementUnit < RigidBodySensor
           omega_body; ...
           accel_body ];
       else  % 3D version
-        quat_body_to_world = rpy2quat(x(4:6));
+        [x,J] = forwardKin(manip,kinsol,obj.frame_id,zero_vec,2);
+        Jdot = forwardJacDot(manip,kinsol,obj.frame_id,zero_vec,0,0);
+
+        quat_body_to_world = x(4:7);
         quat_world_to_body = quatConjugate(quat_body_to_world);
 
-        rpy = x(4:6);
-        rpydot = J(4:6,:)*qd;
-        omega_base = rpydot2angularvel(rpy, rpydot); % TODO: replace with computation based on kinsol.twists
+        quatdot = J(4:7,:)*qd;
+        omega_base = quatdot2angularvel(quat_body_to_world, quatdot); % TODO: replace with computation based on kinsol.twists
         omega_body = quatRotateVec(quat_world_to_body, omega_base);
 
         accel_base = Jdot*qd + J(1:3,:)*qdd; % TODO: possibly replace with computation based on spatial accelerations

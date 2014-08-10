@@ -13,6 +13,7 @@ if (n==2)
 
   if (rotation_type>0)
     rotation_type = 1;
+    error('need to update this like I updated forwardKin');
     T_3D_to_2D = [T_3D_to_2D, zeros(2,3); zeros(1,3), obj.view_axis'];
   end
 end
