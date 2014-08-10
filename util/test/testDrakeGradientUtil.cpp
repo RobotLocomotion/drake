@@ -187,12 +187,12 @@ void testDHomogTrans(int ntests) {
     const int nv = 6;
     const int nq = 7;
 
-    auto S = Matrix<double, 6, nv>::Random().eval();
+    auto S = Matrix<double, 6, Dynamic>::Random(6, nv).eval();
 //    setLinearIndices(S);
 //    S.setIdentity();
 //    std::cout << S << "\n\n";
 
-    auto qdot_to_v = Matrix<double, nv, nq>::Random().eval();
+    auto qdot_to_v = MatrixXd::Random(nv, nq).eval();
 //    setLinearIndices(qdot_to_v);
 //    std::cout << qdot_to_v << "\n\n";
 
@@ -207,13 +207,14 @@ void testDHomogTransInv(int ntests, bool check) {
   std::default_random_engine generator;
   for (int testnr = 0; testnr < ntests; testnr++) {
     Vector4d q = uniformlyRandomQuat(generator);
-    T = Quaterniond(q(0), q(1), q(2), q(3)) * Translation3d(Vector3d::Random());
+//    T = Quaterniond(q(0), q(1), q(2), q(3)) * Translation3d(Vector3d::Random());
+    T = Quaterniond(q(0), q(1), q(2), q(3));
 
     const int nv = 6;
     const int nq = 7;
 
-    auto S = Matrix<double, 6, nv>::Random().eval();
-    auto qdot_to_v = Matrix<double, nv, nq>::Random().eval();
+    auto S = Matrix<double, 6, Dynamic>::Random(6, nv).eval();
+    auto qdot_to_v = MatrixXd::Random(nv, nq).eval();
 
     auto dT = dHomogTrans(T, S, qdot_to_v).eval();
     auto dTInv = dHomogTransInv(T, dT);
@@ -234,7 +235,7 @@ void testDHomogTransInv(int ntests, bool check) {
   }
 }
 
-void testDTransformAdjoint(int ntests, bool debug) {
+void testDTransformAdjoint(int ntests) {
   const int nv = 6;
   const int nq = 34;
   const int cols_X = 3;
@@ -242,48 +243,21 @@ void testDTransformAdjoint(int ntests, bool debug) {
   Isometry3d T;
   std::default_random_engine generator;
 
-  if (debug) {
-    //    T.setIdentity();
-    T = Translation3d(Vector3d(1.0, 2.0, 3.0)) * AngleAxisd(M_PI_2, Vector3d(1.0, 0.0, 0.0));
-    std::cout << "T:\n" << T.matrix() << "\n\n";
-
-    auto S = Matrix<double, 6, nv>::Random().eval();
-    setLinearIndices(S);
-
-    auto qdot_to_v = Matrix<double, nv, nq>::Random().eval();
-    setLinearIndices(qdot_to_v);
-
+  for (int testnr = 0; testnr < ntests; testnr++) {
+    Vector4d q = uniformlyRandomQuat(generator);
+    T = Quaterniond(q(0), q(1), q(2), q(3)) * Translation3d(Vector3d::Random());
+    auto S = Matrix<double, 6, Dynamic>::Random(6, nv).eval();
+    auto qdot_to_v = MatrixXd::Random(nv, nq).eval();
     auto dT = dHomogTrans(T, S, qdot_to_v).eval();
-    std::cout << "dT:\n" << dT << "\n\n";
-
-    auto X = Matrix<double, 6, cols_X>::Random().eval();
-    setLinearIndices(X);
-    std::cout << "X:\n" << X << "\n\n";
-
+    auto X = Matrix<double, 6, Dynamic>::Random(6, cols_X).eval();
     auto dX = MatrixXd::Random(X.size(), nq).eval();
-    setLinearIndices(dX);
-    std::cout << "dX:\n" << dX << "\n\n";
-
-    auto dAdT_times_X = dTransformAdjoint(T, X, dT, dX).eval();
-    std::cout << "dAdT_times_X:\n" << dAdT_times_X << "\n\n";
-  }
-  else {
-    for (int testnr = 0; testnr < ntests; testnr++) {
-      Vector4d q = uniformlyRandomQuat(generator);
-      T = Quaterniond(q(0), q(1), q(2), q(3)) * Translation3d(Vector3d::Random());
-      auto S = Matrix<double, 6, nv>::Random().eval();
-      auto qdot_to_v = Matrix<double, nv, nq>::Random().eval();
-      auto dT = dHomogTrans(T, S, qdot_to_v).eval();
-      auto X = Matrix<double, 6, cols_X>::Random().eval();
-      auto dX = MatrixXd::Random(X.size(), nq).eval();
 //      auto dX = Matrix<double, X.SizeAtCompileTime, nq>::Random().eval();
-      auto dAdT_times_X = dTransformAdjoint(T, X, dT, dX).eval();
-      volatile auto vol = dAdT_times_X;
-    }
+    auto dAdT_times_X = dTransformAdjoint(T, X, dT, dX).eval();
+    volatile auto vol = dAdT_times_X;
   }
 }
 
-void testDTransformAdjointTranspose(int ntests, bool debug) {
+void testDTransformAdjointTranspose(int ntests) {
   const int nv = 6;
   const int nq = 34;
   const int cols_X = 3;
@@ -291,44 +265,17 @@ void testDTransformAdjointTranspose(int ntests, bool debug) {
   Isometry3d T;
   std::default_random_engine generator;
 
-  if (debug) {
-    //    T.setIdentity();
-    T = Translation3d(Vector3d(1.0, 2.0, 3.0)) * AngleAxisd(M_PI_2, Vector3d(1.0, 0.0, 0.0));
-    std::cout << "T:\n" << T.matrix() << "\n\n";
-
-    auto S = Matrix<double, 6, nv>::Random().eval();
-    setLinearIndices(S);
-
-    auto qdot_to_v = Matrix<double, nv, nq>::Random().eval();
-    setLinearIndices(qdot_to_v);
-
+  for (int testnr = 0; testnr < ntests; testnr++) {
+    Vector4d q = uniformlyRandomQuat(generator);
+    T = Quaterniond(q(0), q(1), q(2), q(3)) * Translation3d(Vector3d::Random());
+    auto S = Matrix<double, 6, Dynamic>::Random(6, nv).eval();
+    auto qdot_to_v = MatrixXd::Random(nv, nq).eval();
     auto dT = dHomogTrans(T, S, qdot_to_v).eval();
-    std::cout << "dT:\n" << dT << "\n\n";
-
-    auto X = Matrix<double, 6, cols_X>::Random().eval();
-    setLinearIndices(X);
-    std::cout << "X:\n" << X << "\n\n";
-
+    auto X = Matrix<double, 6, Dynamic>::Random(6, cols_X).eval();
     auto dX = MatrixXd::Random(X.size(), nq).eval();
-    setLinearIndices(dX);
-    std::cout << "dX:\n" << dX << "\n\n";
-
-    auto dAdTtranspose_times_X = dTransformAdjointTranspose(T, X, dT, dX).eval();
-    std::cout << "dAdTtranspose_times_X:\n" << dAdTtranspose_times_X << "\n\n";
-  }
-  else {
-    for (int testnr = 0; testnr < ntests; testnr++) {
-      Vector4d q = uniformlyRandomQuat(generator);
-      T = Quaterniond(q(0), q(1), q(2), q(3)) * Translation3d(Vector3d::Random());
-      auto S = Matrix<double, 6, nv>::Random().eval();
-      auto qdot_to_v = Matrix<double, nv, nq>::Random().eval();
-      auto dT = dHomogTrans(T, S, qdot_to_v).eval();
-      auto X = Matrix<double, 6, cols_X>::Random().eval();
-      auto dX = MatrixXd::Random(X.size(), nq).eval();
 //      auto dX = Matrix<double, X.SizeAtCompileTime, nq>::Random().eval();
-      auto dAdTtranspose_times_X = dTransformAdjointTranspose(T, X, dT, dX).eval();
-      volatile auto vol = dAdTtranspose_times_X;
-    }
+    auto dAdTtranspose_times_X = dTransformAdjointTranspose(T, X, dT, dX).eval();
+    volatile auto vol = dAdTtranspose_times_X;
   }
 }
 
@@ -355,29 +302,29 @@ void testNormalizeVec(int ntests) {
 
 int main(int argc, char **argv) {
   int ntests = 100000;
-  std::cout << "testTransposeGrad elapsed time: " << measure<>::execution(testTransposeGrad, ntests) << std::endl;
+//  std::cout << "testTransposeGrad elapsed time: " << measure<>::execution(testTransposeGrad, ntests) << std::endl;
+//
+//  std::cout << "testMatGradMultMat elapsed time: " << measure<>::execution(testMatGradMultMat, ntests, false) << std::endl;
+//  testMatGradMultMat(1000, true);
+//
+//  std::cout << "testMatGradMult elapsed time: " << measure<>::execution(testMatGradMult, ntests, false) << std::endl;
+//  testMatGradMult(1000, true);
+//
+//  std::cout << "testGetSubMatrixGradient elapsed time: " << measure<>::execution(testGetSubMatrixGradient, ntests) << std::endl;
+//
+//  std::cout << "testSetSubMatrixGradient elapsed time: " << measure<>::execution(testSetSubMatrixGradient, ntests, false) << std::endl;
+//  testSetSubMatrixGradient(1000, true);
+//
+//  std::cout << "testDHomogTrans elapsed time: " << measure<>::execution(testDHomogTrans, ntests) << std::endl;
 
-  std::cout << "testMatGradMultMat elapsed time: " << measure<>::execution(testMatGradMultMat, ntests, false) << std::endl;
-  testMatGradMultMat(1000, true);
-
-  std::cout << "testMatGradMult elapsed time: " << measure<>::execution(testMatGradMult, ntests, false) << std::endl;
-  testMatGradMult(1000, true);
-
-  std::cout << "testGetSubMatrixGradient elapsed time: " << measure<>::execution(testGetSubMatrixGradient, ntests) << std::endl;
-
-  std::cout << "testSetSubMatrixGradient elapsed time: " << measure<>::execution(testSetSubMatrixGradient, ntests, false) << std::endl;
-  testSetSubMatrixGradient(1000, true);
-
-  std::cout << "testDHomogTrans elapsed time: " << measure<>::execution(testDHomogTrans, ntests) << std::endl;
-
-  std::cout << "testDHomogTransInv elapsed time: " << measure<>::execution(testDHomogTransInv, ntests, false) << std::endl;
+//  std::cout << "testDHomogTransInv elapsed time: " << measure<>::execution(testDHomogTransInv, ntests, false) << std::endl;
   testDHomogTransInv(1000, true);
 
-  std::cout << "testDTransformAdjoint elapsed time: " << measure<>::execution(testDTransformAdjoint, ntests, false) << std::endl;
-
-  std::cout << "testDTransformAdjointTranspose elapsed time: " << measure<>::execution(testDTransformAdjointTranspose, ntests, false) << std::endl;
-
-  std::cout << "testNormalizeVec elapsed time: " << measure<>::execution(testNormalizeVec, ntests) << std::endl;
+//  std::cout << "testDTransformAdjoint elapsed time: " << measure<>::execution(testDTransformAdjoint, ntests) << std::endl;
+//
+//  std::cout << "testDTransformAdjointTranspose elapsed time: " << measure<>::execution(testDTransformAdjointTranspose, ntests) << std::endl;
+//
+//  std::cout << "testNormalizeVec elapsed time: " << measure<>::execution(testNormalizeVec, ntests) << std::endl;
 
 
   return 0;
