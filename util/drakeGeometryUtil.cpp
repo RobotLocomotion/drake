@@ -475,10 +475,10 @@ typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime, 1>::type dTransformAdj
     const auto dXomega_col = getSubMatrixGradient(dX, Xomega_rows, col_array, X.rows());
     const auto dXv_col = getSubMatrixGradient(dX, Xv_rows, col_array, X.rows());
 
-    const auto dRXomega_col = R * dXomega_col + matGradMult(dR, Xomega_col);
-    const auto dRXv_col = R * dXv_col + matGradMult(dR, Xv_col);
+    const auto dRXomega_col = (R * dXomega_col + matGradMult(dR, Xomega_col)).eval();
+    const auto dRXv_col = (R * dXv_col + matGradMult(dR, Xv_col)).eval();
 
-    const auto dp_hatRXomega_col = (dp.colwise().cross(RXomega_col) - dRXomega_col.colwise().cross(p)).eval();
+    const auto dp_hatRXomega_col = ((dp.colwise().cross(RXomega_col) - dRXomega_col.colwise().cross(p)).eval()).eval();
 
     setSubMatrixGradient(ret, dRXomega_col, Xomega_rows, col_array, X.rows());
     setSubMatrixGradient(ret, dp_hatRXomega_col + dRXv_col, Xv_rows, col_array, X.rows());
@@ -520,8 +520,8 @@ typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime>::type dTransformAdjoin
     const auto dXv_col = getSubMatrixGradient(dX, Xv_rows, col_array, X.rows());
 
     const auto dp_hatXv_col = (dp.colwise().cross(Xv_col) - dXv_col.colwise().cross(p)).eval();
-    const auto dXomega_transformed_col = Rtranspose * (dXomega_col - dp_hatXv_col) + matGradMult(dRtranspose, Xomega_col - p.cross(Xv_col));
-    const auto dRtransposeXv_col = Rtranspose * dXv_col + matGradMult(dRtranspose, Xv_col);
+    const auto dXomega_transformed_col = (Rtranspose * (dXomega_col - dp_hatXv_col) + matGradMult(dRtranspose, Xomega_col - p.cross(Xv_col))).eval();
+    const auto dRtransposeXv_col = (Rtranspose * dXv_col + matGradMult(dRtranspose, Xv_col)).eval();
 
     setSubMatrixGradient(ret, dXomega_transformed_col, Xomega_rows, col_array, X.rows());
     setSubMatrixGradient(ret, dRtransposeXv_col, Xv_rows, col_array, X.rows());
