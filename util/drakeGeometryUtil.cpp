@@ -427,7 +427,7 @@ Eigen::Matrix<Scalar, HomogeneousTransformSize, DerivedDT::ColsAtCompileTime> dH
   const auto dp = getSubMatrixGradient(dT, rows, p_cols, T.Rows);
 
   auto dinvT_R = transposeGrad(dR, R.rows());
-  auto dinvT_p = -R.transpose() * dp - matGradMult(dinvT_R, p);
+  auto dinvT_p = (-R.transpose() * dp - matGradMult(dinvT_R, p)).eval();
 
   const int numel = HomogeneousTransformSize;
   Eigen::Matrix<Scalar, numel, nq_at_compile_time> ret(numel, nq);
