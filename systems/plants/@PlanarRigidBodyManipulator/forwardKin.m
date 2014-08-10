@@ -65,7 +65,7 @@ if (n==2)
   else
     angle=[]; Jangle=[]; dJangle=[];
   end
-  x = [T_3D_to_2D * x(1:3); angle];
+  x = [T_3D_to_2D * x(1:3,:); angle];
   if (nargout>1)
     nq = size(J,2);
     J = [reshape(T_3D_to_2D * reshape(J(1:3,:),3,m*nq),2*m,nq); Jangle];
