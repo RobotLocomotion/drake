@@ -5,6 +5,7 @@ function [M, dM] = angularvel2quatdotMatrix(q)
 % From Schwab, Arend L. "Quaternions, finite rotation and euler
 % parameters." (self-published)
 % http://bicycle.tudelft.nl/schwab/Publications/quaternion.pdf
+% @param q is a quaternion
 
 compute_gradient = nargout > 1;
 % NOTE: enabling normalization causes testForwardKinV to fail.

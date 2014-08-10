@@ -1,4 +1,15 @@
 function [VqInvJoint, dVqInvJoint] = jointVToqdot(body, q_body)
+% Computes the matrix that maps from the velocity vector of a joint
+% associated with a RigidBody object to the derivative of its configuration
+% vector.
+%
+% @param body a RigidBody object
+% @param q_body joint configuration vector for body
+% @retval VqInvJoint matrix such that qd = Vq * v, where v is the velocity
+% vector for body and qd is the derivative of the configuration vector for
+% body.
+% @retval dVqInvJoint gradient output
+
 compute_gradient = nargout > 1;
 
 if body.floating == 1
