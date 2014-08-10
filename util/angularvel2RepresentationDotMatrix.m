@@ -1,9 +1,9 @@
-function [Phi, dPhidqrot, dPhidq, ddPhidqrotdq] = angularvelX2RepresentationDotMatrix(rotation_type, qrot, dqrotdq)
+function [Phi, dPhidqrot, dPhidq, ddPhidqrotdq] = angularvel2RepresentationDotMatrix(rotation_type, qrot, dqrotdq)
 % Computes the matrix \p Phi that maps an angular velocity vector in world
 % frame to the time derivative of a given representation of orientation, as
 % specified by \p rotation_type. A useful helper function in functions that
 % allow you to specify desired orientation output in various
-% representations. Front-end for the various angularvelX2* functions.
+% representations. Front-end for the various angularvel2* functions.
 %
 % @param rotation_type 0: no rotation, just return zeros \n
 %                      1: rpy representation \n
