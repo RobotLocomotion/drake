@@ -32,7 +32,7 @@ end
 end
 
 function compareToUsingMotionSubspaceGradientForBody(body, q, v)
-qd = jointVToqdot(body, q) * v;
+qd = jointV2qdot(body, q) * v;
 [S, dSdq] = motionSubspace(body, q);
 Sdot = reshape(dSdq * qd, size(S));
 Sdot_times_v_check = Sdot * v;
