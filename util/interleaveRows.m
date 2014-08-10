@@ -1,4 +1,15 @@
 function ret = interleaveRows(block_sizes, matrices)
+% interleaves the rows of a matrix, in the sense that if
+% M1 = [A1; A2; A3], M2 = [B1; B2; B3], M3 = [C1; C2; C3] where the
+% submatrices of Mj have block_sizes(j) rows, then the output of
+% interleaveRows(block_sizes, {M1, M2, M3}) will be
+% [A1; B1; C1; A2; B2; C2; A3; B3; C3]
+%
+% @param block_sizes vector such that block_sizes(j) is the number of
+% rows submatrix rows of matrices{j}
+% @param matrices cell array of matrices with equal numbers of columns
+% @retval ret row-interleaved matrix.
+
 n = length(matrices);
 if length(block_sizes) ~= n
   error('number of block sizes must equal number of matrices passed in')
