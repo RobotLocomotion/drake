@@ -5,6 +5,7 @@
 #include <Eigen/Core>
 #include <iostream>
 #include <stdexcept>
+#include "mex.h"
 
 
 template<typename TimeT = std::chrono::milliseconds>
@@ -42,6 +43,24 @@ void valuecheck(double a, double b, double tolerance = 1e-8)
     stream << "Expected:\n" << a << "\nbut got:" << b << "\n";
     throw std::runtime_error(stream.str());
   }
+}
+
+template<int RowsAtCompileTime = Eigen::Dynamic, int ColsAtCompileTime = Eigen::Dynamic>
+Eigen::Matrix<double, RowsAtCompileTime, ColsAtCompileTime> matlabToEigen(const mxArray* matlab_array)
+{
+  const mwSize* size_array = mxGetDimensions(matlab_array);
+  Eigen::Matrix<double, RowsAtCompileTime, ColsAtCompileTime> ret(size_array[0], size_array[1]);
+  memcpy(ret.data(), mxGetPr(matlab_array), sizeof(double) * ret.size());
+  return ret;
+}
+
+template<int RowsAtCompileTime, int ColsAtCompileTime>
+mxArray* eigenToMatlab(Eigen::Matrix<double, RowsAtCompileTime, ColsAtCompileTime> &m)
+{
+  mxArray* pm = mxCreateDoubleMatrix(m.rows(), m.cols(), mxREAL);
+  if (m.rows() * m.cols() > 0)
+    memcpy(mxGetPr(pm), m.data(), sizeof(double) * m.rows() * m.cols());
+  return pm;
 }
 
 #endif /* TESTUTIL_H_ */

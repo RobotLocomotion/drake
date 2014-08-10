@@ -8,13 +8,6 @@
 #include <cassert>
 #include <vector>
 #include <array>
-//#include <Eigen/KroneckerProduct> // unsupported...
-
-
-/*
- * Methods are templated, which is why declaration and implementation are in the same file
- * (otherwise you'd have to include the .cpp anyway).
- */
 
 template<typename Derived, int Nq, int DerivativeOrder = 1>
 struct Gradient {

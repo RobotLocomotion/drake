@@ -20,8 +20,13 @@ endif(NOT WIN32)
 
 if (eigen3_FOUND)
   add_library(drakeGeometryUtil SHARED drakeGeometryUtil.cpp)
-  add_mex(test/testQuatmex test/testQuatmex.cpp) 
+  
+  add_mex(test/testQuatmex test/testQuatmex.cpp)
   target_link_libraries(test/testQuatmex drakeGeometryUtil)
+  
+  add_mex(test/testGeometryGradientsmex test/testGeometryGradientsmex.cpp) 
+  target_link_libraries(test/testGeometryGradientsmex drakeGeometryUtil)
+  
   pods_install_libraries(drakeGeometryUtil)
   
   pods_install_headers(drakeGradientUtil.h DESTINATION drake)
