@@ -32,7 +32,7 @@ classdef RigidBodyInertialMeasurementUnit < RigidBodySensor
         omega_body = J(3,:)*qd;
 
         accel_base = Jdot*qd + J(1:2,:)*qdd;
-        R_base_to_body = rotmat(-angle);
+        R_base_to_body = rotmat(angle);
         accel_body = R_base_to_body * accel_base;
 
         y = [ angle; ...
