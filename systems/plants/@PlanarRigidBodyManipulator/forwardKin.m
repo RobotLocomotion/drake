@@ -54,8 +54,9 @@ if (n==2)
     if nargout>1
       Jangle = quatdot2angularvelMatrix(quat)*J(4:7,:);
       % since i only support view_axis-aligned rotations, the angular
-      % velocity vector must be aligned with teh view_axis, so I can pull
-      % off a single element.
+      % velocity vector must be aligned with the view_axis, so I can pull
+      % off a single element.  (Note: i can't actually test that omega is
+      % aligned with the view_axis without knowing qdot.)
       Jangle = signFlip*obj.view_axis'*Jangle;
       if nargout>2
         error('still need to handle this case');

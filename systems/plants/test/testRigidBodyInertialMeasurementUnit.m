@@ -114,7 +114,7 @@ for i = 1 : 100
   axis = quat2axis(quat);
   if dot(axis(1:3),r2d.view_axis)<0
     axis = -axis;
-    omega = -omega;
+    omega = -omega;  % note: doing this if dot(omega,r2d.view_axis)<0 gives a different result
   end
   valuecheck(axis(1:3),r2d.view_axis);
   valuecheck(0, angleDiff(axis(4), angle));
