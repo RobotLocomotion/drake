@@ -1,30 +1,11 @@
 #include <Eigen/Core>
 #include "drakeGeometryUtil.h"
-#include <stdexcept>
+#include "testUtil.h"
 #include <iostream>
 #include <cmath>
 
 using namespace Eigen;
 using namespace std;
-
-template<typename DerivedA, typename DerivedB>
-void valuecheck(const DenseBase<DerivedA>& a, const DenseBase<DerivedB>& b, typename DerivedA::Scalar tolerance = 1e-8)
-{
-  if (!a.isApprox(b)) {
-    ostringstream stream;
-    stream << "Expected:\n" << a << "\nbut got:" << b << "\n";
-    throw runtime_error(stream.str());
-  }
-}
-
-void valuecheck(double a, double b, double tolerance = 1e-8)
-{
-  if (abs(a - b) > tolerance) {
-    ostringstream stream;
-    stream << "Expected:\n" << a << "\nbut got:" << b << "\n";
-    throw runtime_error(stream.str());
-  }
-}
 
 int main(int argc, char **argv)
 {
