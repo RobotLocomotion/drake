@@ -19,7 +19,7 @@ double angleDiff(double phi1, double phi2)
   return d;
 }
 
-Eigen::Vector4d quatConjugate(const Eigen::Vector4d& q)
+Vector4d quatConjugate(const Eigen::Vector4d& q)
 {
   Vector4d q_conj;
   q_conj << q(0), -q(1), -q(2), -q(3);
@@ -374,6 +374,197 @@ Eigen::Matrix<typename Derived::Scalar, 3, 3> rpy2rotmat(const Eigen::MatrixBase
   return R;
 }
 
+template<typename Scalar, typename DerivedS, typename DerivedQdotToV>
+Eigen::Matrix<Scalar, HomogeneousTransformSize, DerivedQdotToV::ColsAtCompileTime> dHomogTrans(
+    const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T,
+    const Eigen::MatrixBase<DerivedS>& S,
+    const Eigen::MatrixBase<DerivedQdotToV>& qdot_to_v) {
+  const int nq_at_compile_time = DerivedQdotToV::ColsAtCompileTime;
+  int nq = qdot_to_v.cols();
+  auto qdot_to_twist = S * qdot_to_v;
+
+  const int numel = HomogeneousTransformSize;
+  Eigen::Matrix<Scalar, numel, nq_at_compile_time> ret(numel, nq);
+
+  const auto& Rx = T.linear().col(0);
+  const auto& Ry = T.linear().col(1);
+  const auto& Rz = T.linear().col(2);
+
+  const auto& qdot_to_omega_x = qdot_to_twist.row(0);
+  const auto& qdot_to_omega_y = qdot_to_twist.row(1);
+  const auto& qdot_to_omega_z = qdot_to_twist.row(2);
+
+  ret.template middleRows<3>(0) = -Rz * qdot_to_omega_y + Ry * qdot_to_omega_z;
+  ret.row(3).setZero();
+
+  ret.template middleRows<3>(4) = Rz * qdot_to_omega_x - Rx * qdot_to_omega_z;
+  ret.row(7).setZero();
+
+  ret.template middleRows<3>(8) = -Ry * qdot_to_omega_x + Rx * qdot_to_omega_y;
+  ret.row(11).setZero();
+
+  ret.template middleRows<3>(12) = T.linear() * qdot_to_twist.bottomRows(3);
+  ret.row(15).setZero();
+
+  return ret;
+}
+
+template<typename Scalar, typename DerivedDT>
+Eigen::Matrix<Scalar, HomogeneousTransformSize, DerivedDT::ColsAtCompileTime> dHomogTransInv(
+    const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T,
+    const Eigen::MatrixBase<DerivedDT>& dT) {
+  const int nq_at_compile_time = DerivedDT::ColsAtCompileTime;
+  const int nq = dT.cols();
+
+  const auto& R = T.linear();
+  const auto& p = T.translation();
+
+  std::array<int, 3> rows {0, 1, 2};
+  std::array<int, 3> R_cols {0, 1, 2};
+  std::array<int, 1> p_cols {3};
+
+  const auto dR = getSubMatrixGradient(dT, rows, R_cols, T.Rows);
+  const auto dp = getSubMatrixGradient(dT, rows, p_cols, T.Rows);
+
+  auto dinvT_R = transposeGrad(dR, R.rows());
+  auto dinvT_p = -R.transpose() * dp - matGradMult(dinvT_R, p);
+
+  const int numel = HomogeneousTransformSize;
+  Eigen::Matrix<Scalar, numel, nq_at_compile_time> ret(numel, nq);
+  setSubMatrixGradient(ret, dinvT_R, rows, R_cols, T.Rows);
+  setSubMatrixGradient(ret, dinvT_p, rows, p_cols, T.Rows);
+
+  // zero out gradient of elements in last row:
+  const int last_row = 3;
+  for (int col = 0; col < T.HDim; col++) {
+    ret.row(last_row + col * T.Rows).setZero();
+  }
+
+  return ret;
+}
+
+template <typename Scalar, typename DerivedX, typename DerivedDT, typename DerivedDX>
+typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime, 1>::type dTransformAdjoint(
+    const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T,
+    const Eigen::MatrixBase<DerivedX>& X,
+    const Eigen::MatrixBase<DerivedDT>& dT,
+    const Eigen::MatrixBase<DerivedDX>& dX) {
+  assert(dT.cols() == dX.cols());
+  const int nq = dT.cols();
+
+  const auto& R = T.linear();
+  const auto& p = T.translation();
+
+  const std::array<int, 3> rows {0, 1, 2};
+  const std::array<int, 3> R_cols {0, 1, 2};
+  const std::array<int, 1> p_cols {3};
+
+  const auto dR = getSubMatrixGradient(dT, rows, R_cols, T.Rows);
+  const auto dp = getSubMatrixGradient(dT, rows, p_cols, T.Rows);
+
+  typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime, 1>::type ret(X.size(), nq);
+  std::array<int, 3> Xomega_rows {0, 1, 2};
+  std::array<int, 3> Xv_rows {3, 4, 5};
+  for (int col = 0; col < X.cols(); col++) {
+    const auto Xomega_col = X.template block<3, 1>(0, col);
+    const auto Xv_col = X.template block<3, 1>(3, col);
+
+    const auto RXomega_col = R * Xomega_col;
+
+    std::array<int, 1> col_array {col};
+    const auto dXomega_col = getSubMatrixGradient(dX, Xomega_rows, col_array, X.rows());
+    const auto dXv_col = getSubMatrixGradient(dX, Xv_rows, col_array, X.rows());
+
+    const auto dRXomega_col = R * dXomega_col + matGradMult(dR, Xomega_col);
+    const auto dRXv_col = R * dXv_col + matGradMult(dR, Xv_col);
+
+    const auto dp_hatRXomega_col = (dp.colwise().cross(RXomega_col) - dRXomega_col.colwise().cross(p)).eval();
+
+    setSubMatrixGradient(ret, dRXomega_col, Xomega_rows, col_array, X.rows());
+    setSubMatrixGradient(ret, dp_hatRXomega_col + dRXv_col, Xv_rows, col_array, X.rows());
+  }
+  return ret;
+}
+
+template <typename Scalar, typename DerivedX, typename DerivedDT, typename DerivedDX>
+typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime>::type dTransformAdjointTranspose(
+    const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T,
+    const Eigen::MatrixBase<DerivedX>& X,
+    const Eigen::MatrixBase<DerivedDT>& dT,
+    const Eigen::MatrixBase<DerivedDX>& dX) {
+  assert(dT.cols() == dX.cols());
+  const int nq = dT.cols();
+
+  const auto& R = T.linear();
+  const auto& p = T.translation();
+
+  const std::array<int, 3> rows {0, 1, 2};
+  const std::array<int, 3> R_cols {0, 1, 2};
+  const std::array<int, 1> p_cols {3};
+
+  const auto dR = getSubMatrixGradient(dT, rows, R_cols, T.Rows);
+  const auto dp = getSubMatrixGradient(dT, rows, p_cols, T.Rows);
+
+  const auto Rtranspose = R.transpose();
+  const auto dRtranspose = transposeGrad(dR, R.rows());
+
+  typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime>::type ret(X.size(), nq);
+  std::array<int, 3> Xomega_rows {0, 1, 2};
+  std::array<int, 3> Xv_rows {3, 4, 5};
+  for (int col = 0; col < X.cols(); col++) {
+    const auto Xomega_col = X.template block<3, 1>(0, col);
+    const auto Xv_col = X.template block<3, 1>(3, col);
+
+    std::array<int, 1> col_array {col};
+    const auto dXomega_col = getSubMatrixGradient(dX, Xomega_rows, col_array, X.rows());
+    const auto dXv_col = getSubMatrixGradient(dX, Xv_rows, col_array, X.rows());
+
+    const auto dp_hatXv_col = (dp.colwise().cross(Xv_col) - dXv_col.colwise().cross(p)).eval();
+    const auto dXomega_transformed_col = Rtranspose * (dXomega_col - dp_hatXv_col) + matGradMult(dRtranspose, Xomega_col - p.cross(Xv_col));
+    const auto dRtransposeXv_col = Rtranspose * dXv_col + matGradMult(dRtranspose, Xv_col);
+
+    setSubMatrixGradient(ret, dXomega_transformed_col, Xomega_rows, col_array, X.rows());
+    setSubMatrixGradient(ret, dRtransposeXv_col, Xv_rows, col_array, X.rows());
+  }
+  return ret;
+}
+
+// NOTE: not reshaping second derivative to Matlab geval output format!
+template <typename Derived>
+void normalizeVec(
+    const Eigen::MatrixBase<Derived>& x,
+    typename Derived::PlainObject& x_norm,
+    typename Gradient<Derived, Derived::RowsAtCompileTime, 1>::type* dx_norm,
+    typename Gradient<Derived, Derived::RowsAtCompileTime, 2>::type* ddx_norm) {
+
+  typename Derived::Scalar xdotx = x.squaredNorm();
+  typename Derived::Scalar norm_x = std::sqrt(xdotx);
+  x_norm = x / norm_x;
+
+  if (dx_norm) {
+    dx_norm->setIdentity(x.rows(), x.rows());
+    (*dx_norm) -= x * x.transpose() / xdotx;
+    (*dx_norm) /= norm_x;
+
+    if (ddx_norm) {
+      auto dx_norm_transpose = transposeGrad(*dx_norm, x.rows());
+      auto ddx_norm_times_norm = -matGradMultMat(x_norm, x_norm.transpose(), (*dx_norm), dx_norm_transpose);
+      auto dnorm_inv = -x.transpose() / (xdotx * norm_x);
+      (*ddx_norm) = ddx_norm_times_norm / norm_x;
+      auto temp = (*dx_norm) * norm_x;
+      int n = x.rows();
+      for (int col = 0; col < n; col++) {
+        auto column_as_matrix = (dnorm_inv(0, col) * temp);
+        for (int row_block = 0; row_block < n; row_block++) {
+          ddx_norm->block(row_block * n, col, n, 1) += column_as_matrix.col(row_block);
+        }
+      }
+    }
+  }
+}
+
+
+
 // explicit instantiations
 template Vector4d quat2axis(const MatrixBase<Vector4d>&);
 template Matrix3d quat2rotmat(const MatrixBase<Vector4d>& q);
@@ -390,4 +581,37 @@ template Vector3d rotmat2rpy(const MatrixBase<Matrix3d>&);
 template Vector4d rpy2axis(const Eigen::MatrixBase<Vector3d>&);
 template Vector4d rpy2quat(const Eigen::MatrixBase<Vector3d>&);
 template Matrix3d rpy2rotmat(const Eigen::MatrixBase<Vector3d>&);
+
+template Matrix<double, HomogeneousTransformSize, Dynamic> dHomogTrans(
+    const Isometry3d&,
+    const MatrixBase< Matrix<double, TwistSize, Dynamic> >&,
+    const MatrixBase< MatrixXd >&);
+
+template Matrix<double, HomogeneousTransformSize, Dynamic> dHomogTransInv(
+    const Isometry3d&,
+    const MatrixBase< Matrix<double, HomogeneousTransformSize, Dynamic> >&);
+
+template typename Gradient< Matrix<double, TwistSize, Dynamic>, Dynamic, 1>::type dTransformAdjoint(
+    const Isometry3d&,
+    const MatrixBase< Matrix<double, TwistSize, Dynamic> >&,
+    const MatrixBase< Matrix<double, HomogeneousTransformSize, Dynamic> >&,
+    const MatrixBase<MatrixXd>&);
+
+template typename Gradient< Matrix<double, TwistSize, Dynamic>, Dynamic, 1>::type dTransformAdjointTranspose(
+    const Isometry3d&,
+    const MatrixBase< Matrix<double, TwistSize, Dynamic> >&,
+    const MatrixBase< Matrix<double, HomogeneousTransformSize, Dynamic> >&,
+    const MatrixBase<MatrixXd>&);
+
+template void normalizeVec(
+    const MatrixBase< Vector3d >& x,
+    Vector3d& x_norm,
+    typename Gradient<Vector3d, 3, 1>::type* dx_norm = nullptr,
+    typename Gradient<Vector3d, 3, 2>::type* ddx_norm = nullptr);
+
+template void normalizeVec(
+    const MatrixBase< Vector4d >& x,
+    Vector4d& x_norm,
+    typename Gradient<Vector4d, 4, 1>::type* dx_norm = nullptr,
+    typename Gradient<Vector4d, 4, 2>::type* ddx_norm = nullptr);
 

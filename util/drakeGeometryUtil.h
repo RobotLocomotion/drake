@@ -5,6 +5,14 @@
 #include <cstring>
 #include <cmath>
 #include <random>
+#include "drakeGradientUtil.h"
+
+const int TwistSize = 6;
+const int QuatSize = 4;
+const int HomogeneousTransformSize = 16;
+const int AxisAngleSize = 4;
+const int SpaceDim = 3;
+const int RPYSize = 3;
 
 double angleDiff(double phi1, double phi2);
 
@@ -75,5 +83,38 @@ Eigen::Matrix<typename Derived::Scalar, 4, 1> rpy2quat(const Eigen::MatrixBase<D
 template<typename Derived>
 Eigen::Matrix<typename Derived::Scalar, 3, 3> rpy2rotmat(const Eigen::MatrixBase<Derived>& rpy);
 
+/*
+ * Gradient methods
+ */
+template<typename Scalar, typename DerivedS, typename DerivedQdotToV>
+Eigen::Matrix<Scalar, HomogeneousTransformSize, DerivedQdotToV::ColsAtCompileTime> dHomogTrans(
+    const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T,
+    const Eigen::MatrixBase<DerivedS>& S,
+    const Eigen::MatrixBase<DerivedQdotToV>& qdot_to_v);
 
+template<typename Scalar, typename DerivedDT>
+Eigen::Matrix<Scalar, HomogeneousTransformSize, DerivedDT::ColsAtCompileTime> dHomogTransInv(
+    const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T,
+    const Eigen::MatrixBase<DerivedDT>& dT);
+
+template <typename Scalar, typename DerivedX, typename DerivedDT, typename DerivedDX>
+typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime, 1>::type dTransformAdjoint(
+    const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T,
+    const Eigen::MatrixBase<DerivedX>& X,
+    const Eigen::MatrixBase<DerivedDT>& dT,
+    const Eigen::MatrixBase<DerivedDX>& dX);
+
+template <typename Scalar, typename DerivedX, typename DerivedDT, typename DerivedDX>
+typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime>::type dTransformAdjointTranspose(
+    const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T,
+    const Eigen::MatrixBase<DerivedX>& X,
+    const Eigen::MatrixBase<DerivedDT>& dT,
+    const Eigen::MatrixBase<DerivedDX>& dX);
+
+template <typename Derived>
+void normalizeVec(
+    const Eigen::MatrixBase<Derived>& x,
+    typename Derived::PlainObject& x_norm,
+    typename Gradient<Derived, Derived::RowsAtCompileTime, 1>::type* dx_norm = nullptr,
+    typename Gradient<Derived, Derived::RowsAtCompileTime, 2>::type* ddx_norm = nullptr);
 #endif
