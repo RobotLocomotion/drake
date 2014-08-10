@@ -4,20 +4,6 @@
 using namespace Eigen;
 
 
-double angleDiff(double phi1, double phi2)
-{
-  double d = phi2-phi1;
-  if(d>0.0)
-  {
-    d = fmod(d+M_PI,2*M_PI)-M_PI;
-  }
-  else
-  {
-    d = fmod(d-M_PI,2*M_PI)+M_PI;
-  }
-  return d;
-}
-
 void drakePrintMatrix(const MatrixXd &mat)
 {
   for(int i = 0;i<mat.rows();i++)
