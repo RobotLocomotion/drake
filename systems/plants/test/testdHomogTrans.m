@@ -11,7 +11,7 @@ nq = m.getNumPositions();
 q = getRandomConfiguration(m);
 kinsol = doKinematics(m, q, false, false);
 S = motionSubspace(m.body(2), q);
-dHdqVec = dHomogTrans(kinsol.T{2}, S, jointQdotTov(m.getBody(2), q)); % special case where qdotToV for joint is qdotToV for whole robot...
+dHdqVec = dHomogTrans(kinsol.T{2}, S, jointQdot2v(m.getBody(2), q)); % special case where qdotToV for joint is qdotToV for whole robot...
 
 delta = 1e-7;
 for i = 1 : nq

@@ -13,7 +13,7 @@ kinsol = doKinematics(m, q, false, false);
 
 H = kinsol.T{2};
 S = motionSubspace(m.body(2), q);
-qdotToV = jointQdotTov(m.getBody(2), q);
+qdotToV = jointQdot2v(m.getBody(2), q);
 dHdqVec = dHomogTrans(H, S, qdotToV);
 X = randn(6, 4);
 dXdq = zeros(numel(X), nq);

@@ -1,4 +1,4 @@
-function [VqJoint, dVqJoint] = jointQdotTov(body, q_body)
+function [VqJoint, dVqJoint] = jointQdot2v(body, q_body)
 % Computes the matrix that maps from the derivative of the position vector
 % of a joint associated with a RigidBody object to its velocity vector.
 %
