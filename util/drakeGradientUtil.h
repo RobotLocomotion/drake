@@ -8,14 +8,14 @@
 #include <vector>
 #include <array>
 
+constexpr int gradientNumRows(int A_size, int nq, int derivativeOrder) {
+  return (A_size == Eigen::Dynamic || nq == Eigen::Dynamic)
+    ? Eigen::Dynamic
+    : (derivativeOrder == 1 ? A_size : nq * gradientNumRows(A_size, nq, derivativeOrder - 1));
+}
+
 template<typename Derived, int Nq, int DerivativeOrder = 1>
 struct Gradient {
-  static constexpr const int gradientNumRows(int A_size, int nq, int derivativeOrder) {
-    return (A_size == Eigen::Dynamic || nq == Eigen::Dynamic)
-        ? Eigen::Dynamic
-        : (derivativeOrder == 1 ? A_size : nq * gradientNumRows(A_size, nq, derivativeOrder - 1));
-  }
-
   typedef Eigen::Matrix<typename Derived::Scalar, gradientNumRows(Derived::SizeAtCompileTime, Nq, DerivativeOrder), Nq> type;
 };
 
