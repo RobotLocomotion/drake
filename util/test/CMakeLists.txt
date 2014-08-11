@@ -9,5 +9,6 @@ if (eigen3_FOUND)
 
   add_executable(testDrakeGradientUtil testDrakeGradientUtil.cpp)
   target_link_libraries(testDrakeGradientUtil drakeGeometryUtil)
-  include_directories( .. ../../../eigen/eigen-eigen-6b38706d90a9/unsupported ) # TODO: get rid of unsupported
+  include_directories( .. ../../../eigen/eigen-eigen-6b38706d90a9/unsupported )
+  add_test(NAME testDrakeGradientUtil COMMAND testDrakeGradientUtil)
 endif(eigen3_FOUND)
