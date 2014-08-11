@@ -5,8 +5,8 @@ using namespace Eigen;
 
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
-  if (nrhs != 2 || nlhs != 8) {
-    mexErrMsgIdAndTxt("Drake:testGeometryGradientsmex:BadInputs","Usage [a2q, da2q, a2r, da2r, dda2r, r2a, q2a, dq2a] = testGeometryGradientsmex(q, rpy)");
+  if (nrhs != 2 || nlhs != 9) {
+    mexErrMsgIdAndTxt("Drake:testGeometryGradientsmex:BadInputs","Usage [a2q, da2q, a2r, da2r, dda2r, r2a, q2a, dq2a, dq2R] = testGeometryGradientsmex(q, rpy)");
   }
 
   int argnum = 0;
@@ -28,6 +28,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   angularvel2rpydotMatrix(rpy, a2r, &da2r, &dda2r);
   auto r2a = rpydot2angularvelMatrix(rpy);
   quatdot2angularvelMatrix(q, q2a, &dq2a);
+  auto dq2R = dquat2rotmat(q);
 
   int outnum = 0;
   plhs[outnum++] = eigenToMatlab(a2q);
@@ -38,4 +39,5 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   plhs[outnum++] = eigenToMatlab(r2a);
   plhs[outnum++] = eigenToMatlab(q2a);
   plhs[outnum++] = eigenToMatlab(dq2a);
+  plhs[outnum++] = eigenToMatlab(dq2R);
 }

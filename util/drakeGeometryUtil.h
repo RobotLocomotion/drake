@@ -12,6 +12,7 @@ const int QUAT_SIZE = 4;
 const int HOMOGENEOUS_TRANSFORM_SIZE = 16;
 const int AXIS_ANGLE_SIZE = 4;
 const int SPACE_DIMENSION = 3;
+const int RotmatSize = SPACE_DIMENSION * SPACE_DIMENSION;
 const int RPY_SIZE = 3;
 
 double angleDiff(double phi1, double phi2);
@@ -95,6 +96,12 @@ template <typename Derived>
 Eigen::Matrix<typename Derived::Scalar, 3, 3> vectorToSkewSymmetric(const Eigen::MatrixBase<Derived>& p);
 
 /*
+ * rotation conversion gradient functions
+ */
+template <typename Derived>
+typename Gradient<Eigen::Matrix<typename Derived::Scalar, 3, 3>, QuatSize>::type dquat2rotmat(const Eigen::MatrixBase<Derived>& q);
+
+/*
  * angular velocity conversion functions
  */
 template <typename DerivedQ, typename DerivedM>
@@ -117,7 +124,7 @@ void quatdot2angularvelMatrix(const Eigen::MatrixBase<DerivedQ>& q,
     typename Gradient<DerivedM, QUAT_SIZE, 1>::type* dM = nullptr);
 
 /*
- * Gradient methods
+ * transform gradient methods
  */
 template<typename Scalar, typename DerivedS, typename DerivedQdotToV>
 Eigen::Matrix<Scalar, HOMOGENEOUS_TRANSFORM_SIZE, DerivedQdotToV::ColsAtCompileTime> dHomogTrans(

@@ -408,6 +408,28 @@ Eigen::Matrix<typename Derived::Scalar, 3, 3> rpy2rotmat(const Eigen::MatrixBase
   return R;
 }
 
+template <typename Derived>
+typename Gradient<Matrix<typename Derived::Scalar, 3, 3>, QuatSize>::type dquat2rotmat(const Eigen::MatrixBase<Derived>& q)
+{
+  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, QuatSize);
+
+  typename Gradient<Matrix<typename Derived::Scalar, 3, 3>, QuatSize>::type ret;
+  typename Eigen::MatrixBase<Derived>::PlainObject qtilde;
+  typename Gradient<Derived, QuatSize>::type dqtilde;
+  normalizeVec(q, qtilde, &dqtilde);
+
+  typedef typename Derived::Scalar Scalar;
+  Scalar w=qtilde(0);
+  Scalar x=qtilde(1);
+  Scalar y=qtilde(2);
+  Scalar z=qtilde(3);
+
+  ret << w, x, -y, -z, z, y, x, w, -y, z, -w, x, -z, y, x, -w, w, -x, y, -z, x, w, z, y, y, z, w, x, -x, -w, z, y, w, -x, -y, z;
+  ret *= 2.0;
+  ret *= dqtilde;
+  return ret;
+}
+
 template<typename Derived>
 Eigen::Matrix<typename Derived::Scalar, 3, 3> vectorToSkewSymmetric(const Eigen::MatrixBase<Derived>& p)
 {
@@ -688,6 +710,8 @@ template Vector3d rotmat2rpy(const MatrixBase<Matrix3d>&);
 template Vector4d rpy2axis(const Eigen::MatrixBase<Vector3d>&);
 template Vector4d rpy2quat(const Eigen::MatrixBase<Vector3d>&);
 template Matrix3d rpy2rotmat(const Eigen::MatrixBase<Vector3d>&);
+
+template typename Gradient<Matrix<double, 3, 3>, QuatSize>::type dquat2rotmat(const Eigen::MatrixBase<Vector4d>&);
 
 template Matrix<double, HOMOGENEOUS_TRANSFORM_SIZE, Dynamic> dHomogTrans(
     const Isometry3d&,
