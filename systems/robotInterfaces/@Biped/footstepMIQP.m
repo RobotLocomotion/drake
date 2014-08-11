@@ -48,7 +48,8 @@ for j = 1:nsteps
     end
   else
     p0 = seed_steps(:,mod(j-1, 2)+1);
-    x0(x_ndx(:,j)) = p0([1,2,3,6]);
+    x0(x_ndx(1:3,j)) = p0(1:3);
+    x0(x_ndx(4,j)) = seed_steps(6,2);
     R{j} = [rotmat(-p0(6)), zeros(2,2);
      zeros(2,2), eye(2)];
   end
@@ -206,8 +207,8 @@ step2 = seed_plan.footsteps(2).pos;
 lb(x_ndx(:,1)) = step1([1,2,3,6]);
 lb(x_ndx(:,2)) = step2([1,2,3,6]);
 ub(x_ndx(:,1:2)) = lb(x_ndx(:,1:2));
-lb(x_ndx(4,:)) = x0(x_ndx(4,:)) - 0.05;
-ub(x_ndx(4,:)) = x0(x_ndx(4,:)) + 0.05;
+lb(x_ndx(4,3:end)) = x0(x_ndx(4,3:end)) - 0.01;
+ub(x_ndx(4,3:end)) = x0(x_ndx(4,3:end)) + 0.01;
 lb(s_ndx(:,1:2)) = [1, 1; zeros(nr-1, 2)];
 ub(s_ndx(:,1:2)) = lb(s_ndx(:,1:2));
 ub(t_ndx(1:2)) = 0;
