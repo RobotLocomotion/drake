@@ -99,7 +99,17 @@ Eigen::Matrix<typename Derived::Scalar, 3, 3> vectorToSkewSymmetric(const Eigen:
  * rotation conversion gradient functions
  */
 template <typename Derived>
-typename Gradient<Eigen::Matrix<typename Derived::Scalar, 3, 3>, QuatSize>::type dquat2rotmat(const Eigen::MatrixBase<Derived>& q);
+typename Gradient<Eigen::Matrix<typename Derived::Scalar, 3, 3>, QUAT_SIZE>::type dquat2rotmat(const Eigen::MatrixBase<Derived>& q);
+
+template <typename DerivedR, typename DerivedDR>
+typename Gradient<Eigen::Matrix<typename DerivedR::Scalar, RPY_SIZE, 1>, DerivedDR::ColsAtCompileTime>::type drotmat2rpy(
+    const Eigen::MatrixBase<DerivedR>& R,
+    const Eigen::MatrixBase<DerivedDR>& dR);
+
+template <typename DerivedR, typename DerivedDR>
+typename Gradient<Eigen::Matrix<typename DerivedR::Scalar, QUAT_SIZE, 1>, DerivedDR::ColsAtCompileTime>::type drotmat2quat(
+    const Eigen::MatrixBase<DerivedR>& R,
+    const Eigen::MatrixBase<DerivedDR>& dR);
 
 /*
  * angular velocity conversion functions

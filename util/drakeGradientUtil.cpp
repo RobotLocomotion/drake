@@ -198,6 +198,12 @@ MAKE_GETSUBMATRIXGRADIENT_ARRAY_EXPLICIT_INSTANTIATION(double, 16, Eigen::Dynami
 MAKE_GETSUBMATRIXGRADIENT_ARRAY_EXPLICIT_INSTANTIATION(double, 3, Eigen::Dynamic, 3, 1, Eigen::Dynamic)
 #undef MAKE_GETSUBMATRIXGRADIENT_ARRAY_EXPLICIT_INSTANTIATION
 
+#define MAKE_GETSUBMATRIXGRADIENT_SINGLE_ELEMENT_EXPLICIT_INSTANTIATION(Type, DMRows, DMCols) \
+		template Eigen::Matrix<Type, 1, DMCols> \
+		getSubMatrixGradient(const Eigen::MatrixBase< Eigen::Matrix<Type, DMRows, DMCols> >&, int, int, int);
+MAKE_GETSUBMATRIXGRADIENT_SINGLE_ELEMENT_EXPLICIT_INSTANTIATION(double, 9, Eigen::Dynamic)
+#undef MAKE_GETSUBMATRIXGRADIENT_SINGLE_ELEMENT_EXPLICIT_INSTANTIATION
+
 #define MAKE_TRANSPOSEGRAD_EXPLICIT_INSTANTIATION(Type, Rows, Cols) \
         template Eigen::Matrix<Type, Rows, Cols>::PlainObject transposeGrad(const Eigen::MatrixBase<Eigen::Matrix<Type, Rows, Cols>>&, int);
 //MAKE_TRANSPOSEGRAD_EXPLICIT_INSTANTIATION(double, Eigen::Dynamic, Eigen::Dynamic)

@@ -409,13 +409,13 @@ Eigen::Matrix<typename Derived::Scalar, 3, 3> rpy2rotmat(const Eigen::MatrixBase
 }
 
 template <typename Derived>
-typename Gradient<Matrix<typename Derived::Scalar, 3, 3>, QuatSize>::type dquat2rotmat(const Eigen::MatrixBase<Derived>& q)
+typename Gradient<Matrix<typename Derived::Scalar, 3, 3>, QUAT_SIZE>::type dquat2rotmat(const Eigen::MatrixBase<Derived>& q)
 {
-  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, QuatSize);
+  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, QUAT_SIZE);
 
-  typename Gradient<Matrix<typename Derived::Scalar, 3, 3>, QuatSize>::type ret;
+  typename Gradient<Matrix<typename Derived::Scalar, 3, 3>, QUAT_SIZE>::type ret;
   typename Eigen::MatrixBase<Derived>::PlainObject qtilde;
-  typename Gradient<Derived, QuatSize>::type dqtilde;
+  typename Gradient<Derived, QUAT_SIZE>::type dqtilde;
   normalizeVec(q, qtilde, &dqtilde);
 
   typedef typename Derived::Scalar Scalar;
@@ -428,6 +428,127 @@ typename Gradient<Matrix<typename Derived::Scalar, 3, 3>, QuatSize>::type dquat2
   ret *= 2.0;
   ret *= dqtilde;
   return ret;
+}
+
+template <typename DerivedR, typename DerivedDR>
+typename Gradient<Eigen::Matrix<typename DerivedR::Scalar, RPY_SIZE, 1>, DerivedDR::ColsAtCompileTime>::type drotmat2rpy(
+    const Eigen::MatrixBase<DerivedR>& R,
+    const Eigen::MatrixBase<DerivedDR>& dR)
+{
+  EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedR>, SPACE_DIMENSION, SPACE_DIMENSION);
+  EIGEN_STATIC_ASSERT(Eigen::MatrixBase<DerivedDR>::RowsAtCompileTime == RotmatSize, THIS_METHOD_IS_ONLY_FOR_MATRICES_OF_A_SPECIFIC_SIZE);
+
+  const int nq = dR.cols();
+  typedef typename DerivedR::Scalar Scalar;
+  typedef typename Gradient<Eigen::Matrix<Scalar, RPY_SIZE, 1>, DerivedDR::ColsAtCompileTime>::type ReturnType;
+  ReturnType drpy(RPY_SIZE, nq);
+
+  auto dR11_dq = getSubMatrixGradient(dR, 0, 0, R.rows());
+  auto dR21_dq = getSubMatrixGradient(dR, 1, 0, R.rows());
+  auto dR31_dq = getSubMatrixGradient(dR, 2, 0, R.rows());
+  auto dR32_dq = getSubMatrixGradient(dR, 2, 1, R.rows());
+  auto dR33_dq = getSubMatrixGradient(dR, 2, 2, R.rows());
+
+  Scalar sqterm = R(2,1) * R(2,1) + R(2,2) * R(2,2);
+
+  using namespace std;
+  // droll_dq
+  drpy.row(0) = (R(2, 2) * dR32_dq - R(2, 1) * dR33_dq) / sqterm;
+
+  // dpitch_dq
+  Scalar sqrt_sqterm = sqrt(sqterm);
+  drpy.row(1) = (-sqrt_sqterm * dR31_dq + R(2, 0) / sqrt_sqterm * (R(2, 1) * dR32_dq + R(2, 2) * dR33_dq)) / (R(2, 0) * R(2, 0) + R(2, 1) * R(2, 1) + R(2, 2) * R(2, 2));
+
+  // dyaw_dq
+  sqterm = R(0, 0) * R(0, 0) + R(1, 0) * R(1, 0);
+  drpy.row(2) = (R(0, 0) * dR21_dq - R(1, 0) * dR11_dq) / sqterm;
+  return drpy;
+}
+
+template <typename DerivedR, typename DerivedDR>
+typename Gradient<Eigen::Matrix<typename DerivedR::Scalar, QUAT_SIZE, 1>, DerivedDR::ColsAtCompileTime>::type drotmat2quat(
+    const Eigen::MatrixBase<DerivedR>& R,
+    const Eigen::MatrixBase<DerivedDR>& dR)
+{
+  EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedR>, SPACE_DIMENSION, SPACE_DIMENSION);
+  EIGEN_STATIC_ASSERT(Eigen::MatrixBase<DerivedDR>::RowsAtCompileTime == RotmatSize, THIS_METHOD_IS_ONLY_FOR_MATRICES_OF_A_SPECIFIC_SIZE);
+
+  typedef typename DerivedR::Scalar Scalar;
+  typedef typename Gradient<Eigen::Matrix<Scalar, QUAT_SIZE, 1>, DerivedDR::ColsAtCompileTime>::type ReturnType;
+  const int nq = dR.cols();
+
+  auto dR11_dq = getSubMatrixGradient(dR, 0, 0, R.rows());
+  auto dR12_dq = getSubMatrixGradient(dR, 0, 1, R.rows());
+  auto dR13_dq = getSubMatrixGradient(dR, 0, 2, R.rows());
+  auto dR21_dq = getSubMatrixGradient(dR, 1, 0, R.rows());
+  auto dR22_dq = getSubMatrixGradient(dR, 1, 1, R.rows());
+  auto dR23_dq = getSubMatrixGradient(dR, 1, 2, R.rows());
+  auto dR31_dq = getSubMatrixGradient(dR, 2, 0, R.rows());
+  auto dR32_dq = getSubMatrixGradient(dR, 2, 1, R.rows());
+  auto dR33_dq = getSubMatrixGradient(dR, 2, 2, R.rows());
+
+  Matrix<Scalar, 4, 3> A;
+  A.row(0) << 1.0, 1.0, 1.0;
+  A.row(1.0) << 1.0, -1.0, -1.0;
+  A.row(2) << -1.0, 1.0, -1.0;
+  A.row(3) << -1.0, -1.0, 1.0;
+  Matrix<Scalar, 4, 1> B = A * R.diagonal();
+  typename Matrix<Scalar, 4, 1>::Index ind, max_col;
+  Scalar val = B.maxCoeff(&ind, &max_col);
+
+  ReturnType dq(QUAT_SIZE, nq);
+  using namespace std;
+  switch (ind) {
+  case 0: {
+    // val = trace(M)
+    auto dvaldq = dR11_dq + dR22_dq + dR33_dq;
+    auto dwdq = dvaldq / (4.0 * sqrt(1.0 + val));
+    auto w = sqrt(1.0 + val) / 2.0;
+    auto wsquare4 = 4.0 * w * w;
+    dq.row(0) = dwdq;
+    dq.row(1) = ((dR32_dq - dR23_dq) * w - (R(2, 1) - R(1, 2)) * dwdq) / wsquare4;
+    dq.row(2) = ((dR13_dq - dR31_dq) * w - (R(0, 2) - R(2, 0)) * dwdq) / wsquare4;
+    dq.row(3) = ((dR21_dq - dR12_dq) * w - (R(1, 0) - R(0, 1)) * dwdq) / wsquare4;
+    break;
+  }
+  case 1: {
+    // val = M(1,1) - M(2,2) - M(3,3)
+    auto dvaldq = dR11_dq - dR22_dq - dR33_dq;
+    auto s = 2.0 * sqrt(1.0 + val);
+    auto ssquare = s * s;
+    auto dsdq = dvaldq / sqrt(1.0 + val);
+    dq.row(0) = ((dR32_dq - dR23_dq) * s - (R(2, 1) - R(1, 2)) * dsdq) / ssquare;
+    dq.row(1) = .25 * dsdq;
+    dq.row(2) = ((dR12_dq + dR21_dq) * s - (R(0, 1) + R(1, 0)) * dsdq) / ssquare;
+    dq.row(3) = ((dR13_dq + dR31_dq) * s - (R(0, 2) + R(2, 0)) * dsdq) / ssquare;
+    break;
+  }
+  case 2: {
+    // val = M(2,2) - M(1,1) - M(3,3)
+    auto dvaldq = -dR11_dq + dR22_dq - dR33_dq;
+    auto s = 2.0 * (sqrt(1.0 + val));
+    auto ssquare = s * s;
+    auto dsdq = dvaldq / sqrt(1.0 + val);
+    dq.row(0) = ((dR13_dq - dR31_dq) * s - (R(0, 2) - R(2, 0)) * dsdq) / ssquare;
+    dq.row(1) = ((dR12_dq + dR21_dq) * s - (R(0, 1) + R(1, 0)) * dsdq) / ssquare;
+    dq.row(2) = .25 * dsdq;
+    dq.row(3) = ((dR23_dq + dR32_dq) * s - (R(1, 2) + R(2, 1)) * dsdq) / ssquare;
+    break;
+  }
+  default: {
+    // val = M(3,3) - M(2,2) - M(1,1)
+    auto dvaldq = -dR11_dq - dR22_dq + dR33_dq;
+    auto s = 2.0 * (sqrt(1.0 + val));
+    auto ssquare = s * s;
+    auto dsdq = dvaldq / sqrt(1.0 + val);
+    dq.row(0) = ((dR21_dq - dR12_dq) * s - (R(1, 0) - R(0, 1)) * dsdq) / ssquare;
+    dq.row(1) = ((dR13_dq + dR31_dq) * s - (R(0, 2) + R(2, 0)) * dsdq) / ssquare;
+    dq.row(2) = ((dR23_dq + dR32_dq) * s - (R(1, 2) + R(2, 1)) * dsdq) / ssquare;
+    dq.row(3) = .25 * dsdq;
+    break;
+  }
+  }
+  return dq;
 }
 
 template<typename Derived>
@@ -711,7 +832,15 @@ template Vector4d rpy2axis(const Eigen::MatrixBase<Vector3d>&);
 template Vector4d rpy2quat(const Eigen::MatrixBase<Vector3d>&);
 template Matrix3d rpy2rotmat(const Eigen::MatrixBase<Vector3d>&);
 
-template typename Gradient<Matrix<double, 3, 3>, QuatSize>::type dquat2rotmat(const Eigen::MatrixBase<Vector4d>&);
+template typename Gradient<Matrix3d, QUAT_SIZE>::type dquat2rotmat(const Eigen::MatrixBase<Vector4d>&);
+
+template typename Gradient<Vector3d, Dynamic>::type drotmat2rpy(
+    const Eigen::MatrixBase<Matrix3d>&,
+    const Eigen::MatrixBase< Matrix<double, RotmatSize, Dynamic> >&);
+
+template typename Gradient<Vector4d, Dynamic>::type drotmat2quat(
+    const Eigen::MatrixBase<Matrix3d>&,
+    const Eigen::MatrixBase< Matrix<double, RotmatSize, Dynamic> >&);
 
 template Matrix<double, HOMOGENEOUS_TRANSFORM_SIZE, Dynamic> dHomogTrans(
     const Isometry3d&,
