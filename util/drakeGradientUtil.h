@@ -4,7 +4,6 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <cmath>
-#include <iostream> // TODO: get rid of this one
 #include <cassert>
 #include <vector>
 #include <array>
@@ -38,7 +37,6 @@ typename Derived::PlainObject transposeGrad(
       index = (index % numel) + 1;
     }
   }
-//  std::cout << "dX_transpose in transposeGrad: " << dX_transpose << std::endl << std::endl;
   return dX_transpose;
 }
 
@@ -75,7 +73,6 @@ matGradMultMat(
   return ret;
 
   // much slower and requires eigen/unsupported:
-//  std::cout << "B:\n" << B << "\n\n";
 //  return Eigen::kroneckerProduct(Eigen::MatrixXd::Identity(B.cols(), B.cols()), A) * dB + Eigen::kroneckerProduct(B.transpose(), Eigen::MatrixXd::Identity(A.rows(), A.rows())) * dA;
 }
 
