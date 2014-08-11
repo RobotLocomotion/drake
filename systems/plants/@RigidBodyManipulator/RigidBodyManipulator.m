@@ -1203,8 +1203,12 @@ classdef RigidBodyManipulator < Manipulator
     
     function index = getActuatedJoints(model)
       % @ingroup Kinematic Tree
-      joint = [model.actuator.joint];
-      index = [model.body(joint).dofnum]';
+      if isempty(model.actuator)
+        index=[];
+      else
+        joint = [model.actuator.joint];
+        index = [model.body(joint).dofnum]';
+      end
     end        
     
     function varargout = pdcontrol(sys,Kp,Kd,index)
