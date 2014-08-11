@@ -28,21 +28,21 @@ end
 ancestors1 = [start_body; findAncestorBodies(obj, start_body)];
 ancestors2 = [end_body; findAncestorBodies(obj, end_body)];
 
-commonSize = min(size(ancestors1, 1), size(ancestors2, 1));
+common_size = min(size(ancestors1, 1), size(ancestors2, 1));
 
-reducedAncestors1 = ancestors1(end - commonSize + 1: end);
-reducedAncestors2 = ancestors2(end - commonSize + 1: end);
+reduced_ancestors1 = ancestors1(end - common_size + 1: end);
+reduced_ancestors2 = ancestors2(end - common_size + 1: end);
 
-commonIndices = reducedAncestors1 == reducedAncestors2;
-lca_index = find(commonIndices, 1);
+common_indices = reduced_ancestors1 == reduced_ancestors2;
+lca_index = find(common_indices, 1);
 if isempty(lca_index)
   error(['there is no path between ' start_body ' and ' end_body]);
 end
 
-least_common_ancestor = reducedAncestors1(lca_index);
+least_common_ancestor = reduced_ancestors1(lca_index);
 
-path_start = ancestors1(1 : size(ancestors1, 1) - commonSize + lca_index - 1);
-path_end = flipud(ancestors2(1 : size(ancestors2, 1) - commonSize + lca_index - 1));
+path_start = ancestors1(1 : size(ancestors1, 1) - common_size + lca_index - 1);
+path_end = flipud(ancestors2(1 : size(ancestors2, 1) - common_size + lca_index - 1));
 
 body_path = [path_start; least_common_ancestor; path_end];
 joint_path = [path_start; path_end];
