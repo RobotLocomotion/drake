@@ -158,6 +158,26 @@ void testSetSubMatrixGradient(int ntests, bool check) {
   }
 }
 
+void testNormalizeVec(int ntests) {
+  const int x_rows = 4;
+
+  for (int testnr = 0; testnr < ntests; testnr++) {
+    auto x = Matrix<double, x_rows, 1>::Random().eval();
+    Matrix<double, x_rows, 1> x_norm;
+    Matrix<double, x_rows, x_rows> dx_norm;
+    Matrix<double, x_rows * x_rows, x_rows> ddx_norm;
+    normalizeVec(x, x_norm, &dx_norm, &ddx_norm);
+//    std::cout << "gradientNumRows: " << gradientNumRows(x_rows, x_rows, 1) << std::endl;
+
+    volatile auto volx_norm = x_norm;
+    volatile auto voldx_norm = dx_norm;
+    volatile auto volddx_norm = ddx_norm;
+
+//    std::cout << "x_norm:\n" << x_norm << std::endl << std::endl;
+//    std::cout << "dx_norm:\n" << dx_norm << std::endl << std::endl;
+//    std::cout << "ddx_norm:\n" << ddx_norm << std::endl << std::endl;
+  }
+}
 
 
 int main(int argc, char **argv) {

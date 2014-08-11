@@ -100,21 +100,21 @@ Eigen::Matrix<typename Derived::Scalar, 3, 3> vectorToSkewSymmetric(const Eigen:
 template <typename DerivedQ, typename DerivedM>
 void angularvel2quatdotMatrix(const Eigen::MatrixBase<DerivedQ>& q,
     Eigen::MatrixBase<DerivedM>& M,
-    typename Gradient<DerivedM, QuatSize, 1>::type* dM = nullptr);
+    typename Gradient<DerivedM, QUAT_SIZE, 1>::type* dM = nullptr);
 
 template<typename DerivedRPY, typename DerivedPhi>
 void angularvel2rpydotMatrix(const Eigen::MatrixBase<DerivedRPY>& rpy,
     typename Eigen::MatrixBase<DerivedPhi>& phi,
-    typename Gradient<DerivedPhi, RPYSize, 1>::type* dphi = nullptr,
-    typename Gradient<DerivedPhi, RPYSize, 2>::type* ddphi = nullptr);
+    typename Gradient<DerivedPhi, RPY_SIZE, 1>::type* dphi = nullptr,
+    typename Gradient<DerivedPhi, RPY_SIZE, 2>::type* ddphi = nullptr);
 
 template<typename Derived>
-Eigen::Matrix<typename Derived::Scalar, SpaceDim, RPYSize> rpydot2angularvelMatrix(const Eigen::MatrixBase<Derived>& rpy);
+Eigen::Matrix<typename Derived::Scalar, SPACE_DIMENSION, RPY_SIZE> rpydot2angularvelMatrix(const Eigen::MatrixBase<Derived>& rpy);
 
 template <typename DerivedQ, typename DerivedM>
 void quatdot2angularvelMatrix(const Eigen::MatrixBase<DerivedQ>& q,
     Eigen::MatrixBase<DerivedM>& M,
-    typename Gradient<DerivedM, QuatSize, 1>::type* dM = nullptr);
+    typename Gradient<DerivedM, QUAT_SIZE, 1>::type* dM = nullptr);
 
 /*
  * Gradient methods
