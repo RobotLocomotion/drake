@@ -832,7 +832,24 @@ template Vector4d rpy2axis(const Eigen::MatrixBase<Vector3d>&);
 template Vector4d rpy2quat(const Eigen::MatrixBase<Vector3d>&);
 template Matrix3d rpy2rotmat(const Eigen::MatrixBase<Vector3d>&);
 
+template Vector4d quat2axis(const MatrixBase< Map<Vector4d> >&);
+template Matrix3d quat2rotmat(const MatrixBase< Map<Vector4d> >& q);
+template Vector3d quat2rpy(const MatrixBase< Map<Vector4d> >&);
+
+template Vector4d axis2quat(const MatrixBase< Map<Vector4d> >&);
+template Matrix3d axis2rotmat(const MatrixBase< Map<Vector4d> >&);
+template Vector3d axis2rpy(const MatrixBase< Map<Vector4d> >&);
+
+template Vector4d rotmat2axis(const MatrixBase< Map<Matrix3d> >&);
+template Vector4d rotmat2quat(const MatrixBase< Map<Matrix3d> >&);
+template Vector3d rotmat2rpy(const MatrixBase< Map<Matrix3d> >&);
+
+template Vector4d rpy2axis(const Eigen::MatrixBase< Map<Vector3d> >&);
+template Vector4d rpy2quat(const Eigen::MatrixBase< Map<Vector3d> >&);
+template Matrix3d rpy2rotmat(const Eigen::MatrixBase< Map<Vector3d> >&);
+
 template typename Gradient<Matrix3d, QUAT_SIZE>::type dquat2rotmat(const Eigen::MatrixBase<Vector4d>&);
+template typename Gradient<Matrix3d, QUAT_SIZE>::type dquat2rotmat(const Eigen::MatrixBase< Map<Vector4d> >&);
 
 template typename Gradient<Vector3d, Dynamic>::type drotmat2rpy(
     const Eigen::MatrixBase<Matrix3d>&,
@@ -875,6 +892,9 @@ template void angularvel2rpydotMatrix(const Eigen::MatrixBase<Vector3d>& rpy,
 template Eigen::Matrix<double, SPACE_DIMENSION, RPY_SIZE> rpydot2angularvelMatrix(const Eigen::MatrixBase<Vector3d>& rpy);
 
 template void quatdot2angularvelMatrix(const Eigen::MatrixBase<Vector4d>& q,
+    Eigen::MatrixBase< Matrix<double, SPACE_DIMENSION, QUAT_SIZE> >& M,
+    typename Gradient<Matrix<double, SPACE_DIMENSION, QUAT_SIZE>, QUAT_SIZE, 1>::type* dM);
+template void quatdot2angularvelMatrix(const Eigen::MatrixBase<Map<Vector4d>>& q,
     Eigen::MatrixBase< Matrix<double, SPACE_DIMENSION, QUAT_SIZE> >& M,
     typename Gradient<Matrix<double, SPACE_DIMENSION, QUAT_SIZE>, QUAT_SIZE, 1>::type* dM);
 
