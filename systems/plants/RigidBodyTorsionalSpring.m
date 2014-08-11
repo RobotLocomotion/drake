@@ -26,10 +26,14 @@ classdef RigidBodyTorsionalSpring < RigidBodyForceElement
       % z-axis, the below is actually equivalent to
       % f_ext(:,obj.child_body) = manip.body(obj.child_body).X_joint_to_body'*[zeros(3,1);torque*manip.body(obj.child_body).joint_axis];
       f_ext(:,obj.child_body) = [zeros(2,1);torque;zeros(3,1)]; 
-      f_ext(:,obj.parent_body) = -[zeros(2,1);torque;zeros(3,1)]; 
+      if obj.parent_body ~= 0 % don't apply force to world body
+        f_ext(:,obj.parent_body) = -[zeros(2,1);torque;zeros(3,1)]; 
+      end
       if (nargout>1)
          df_ext((obj.child_body-1)*6+1:obj.child_body*6,1:size(q,1)) = [zeros(2,size(q,1));dtorquedq;zeros(3,size(q,1))];
-         df_ext((obj.parent_body-1)*6+1:obj.parent_body*6,1:size(q,1)) = -[zeros(2,size(q,1));dtorquedq;zeros(3,size(q,1))];
+         if obj.parent_body ~= 0
+           df_ext((obj.parent_body-1)*6+1:obj.parent_body*6,1:size(q,1)) = -[zeros(2,size(q,1));dtorquedq;zeros(3,size(q,1))];
+         end
          df_ext = reshape(df_ext,6,[]);
       end
     end
