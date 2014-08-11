@@ -201,7 +201,7 @@ classdef Visualizer < DrakeSystem
 
       fr = obj.getInputFrame();
       if (nargin<2 || isempty(x0)), x0 = zeros(fr.dim,1); end
-      if (nargin<3), state_dims = (1:fr.dim)'; end
+      if (nargin<3 || isempty(state_dims)), state_dims = (1:fr.dim)'; end
       if (nargin<4), minrange = repmat(-5,size(state_dims)); end
       if (nargin<5), maxrange = -minrange; end
       if (nargin<6), model = []; end
@@ -258,10 +258,12 @@ classdef Visualizer < DrakeSystem
           % solution on the other sliders.
           % objective = sum_over_remaining_state_dims .5*(x_i-x0_i)^2
           remaining_state_dims = state_dims(state_dims~=current_slider_statedim);
-          Q = eye(numel(remaining_state_dims));
-          b = -x0(remaining_state_dims);
-          objective = QuadraticConstraint(0,inf,Q,b);
-          this_prog = addCost(this_prog,objective,remaining_state_dims);
+          if ~isempty(remaining_state_dims)
+            Q = eye(numel(remaining_state_dims));
+            b = -x0(remaining_state_dims);
+            objective = QuadraticConstraint(0,inf,Q,b);
+            this_prog = addCost(this_prog,objective,remaining_state_dims);
+          end
           x = solve(this_prog,x);
 %          .5*(x0(remaining_state_dims) - x(remaining_state_dims))^2
 %          fval = objective.eval(x(remaining_state_dims))
