@@ -24,7 +24,7 @@ nq = getNumPositions(r);
 nu = getNumInputs(r);
 
 v = r.constructVisualizer;
-v.display_dt = 0.001;
+v.display_dt = 0.01;
 
 data_dir = fullfile(getDrakePath,'examples','SpringFlamingo','data');
 traj_file = strcat(data_dir,'/traj-08-08-14_newcost.mat');
