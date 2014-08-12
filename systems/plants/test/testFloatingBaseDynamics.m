@@ -28,8 +28,9 @@ nq=getNumDOF(m_rpy);
 ind = [1;2;3;6;5;4;(7:nq)'];
 xind = [ind;nq+ind];
 
-x0 = resolveConstraints(m_rpy,Point(getStateFrame(m_rpy)));
-x02 = resolveConstraints(m_ypr_rel,Point(getStateFrame(m_ypr_rel)));
+x02 = .001*randn(getNumStates(m_rpy),1);
+x0 = resolveConstraints(m_rpy,x02(xind));
+x02 = resolveConstraints(m_ypr_rel,x02);
 valuecheck(x0,x02(xind),1e-4);
 
 w = warning('off','Drake:RigidBodyManipulator:collisionDetect:doKinematicsMex');
