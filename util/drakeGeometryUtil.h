@@ -7,12 +7,12 @@
 #include <random>
 #include "drakeGradientUtil.h"
 
-const int TwistSize = 6;
-const int QuatSize = 4;
-const int HomogeneousTransformSize = 16;
-const int AxisAngleSize = 4;
-const int SpaceDim = 3;
-const int RPYSize = 3;
+const int TWIST_SIZE = 6;
+const int QUAT_SIZE = 4;
+const int HOMOGENEOUS_TRANSFORM_SIZE = 16;
+const int AXIS_ANGLE_SIZE = 4;
+const int SPACE_DIMENSION = 3;
+const int RPY_SIZE = 3;
 
 double angleDiff(double phi1, double phi2);
 
@@ -87,13 +87,13 @@ Eigen::Matrix<typename Derived::Scalar, 3, 3> rpy2rotmat(const Eigen::MatrixBase
  * Gradient methods
  */
 template<typename Scalar, typename DerivedS, typename DerivedQdotToV>
-Eigen::Matrix<Scalar, HomogeneousTransformSize, DerivedQdotToV::ColsAtCompileTime> dHomogTrans(
+Eigen::Matrix<Scalar, HOMOGENEOUS_TRANSFORM_SIZE, DerivedQdotToV::ColsAtCompileTime> dHomogTrans(
     const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T,
     const Eigen::MatrixBase<DerivedS>& S,
     const Eigen::MatrixBase<DerivedQdotToV>& qdot_to_v);
 
 template<typename Scalar, typename DerivedDT>
-Eigen::Matrix<Scalar, HomogeneousTransformSize, DerivedDT::ColsAtCompileTime> dHomogTransInv(
+Eigen::Matrix<Scalar, HOMOGENEOUS_TRANSFORM_SIZE, DerivedDT::ColsAtCompileTime> dHomogTransInv(
     const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T,
     const Eigen::MatrixBase<DerivedDT>& dT);
 
