@@ -144,23 +144,35 @@ classdef Manipulator < SecondOrderSystem
       error('manipulators with velocity constraints must overload this function'); 
     end
     
-    function con = stateConstraints(obj,x)
+    function [con,dcon] = stateConstraints(obj,x)
       % wraps up the position and velocity constraints into the general constriant
       % method.  note that each position constraint (phi=0) also imposes an implicit
       % velocity constraint on the system (phidot=0).
 
       q=x(1:obj.num_q); qd=x(obj.num_q+1:end);
       if (obj.num_position_constraints>0)
-        [phi,J] = geval(@obj.positionConstraints,q);
+        if (nargout>1)
+          [phi,J,dJ] = geval(@obj.positionConstraints,q);
+        else
+          [phi,J] = geval(@obj.positionConstraints,q);
+        end
       else
-        phi=[]; J=zeros(0,obj.num_q);
+        phi=[]; J=zeros(0,obj.num_q); dJ=zeros(0,obj.num_q^2);
       end
       if (obj.num_velocity_constraints>0)
-        psi = obj.velocityConstraints(q,qd);
+        if (nargout>1)
+          [psi,dpsi] = obj.velocityConstraints(q,qd);
+        else
+          psi = obj.velocityConstraints(q,qd);
+        end
       else
-        psi=[];
+        psi=[]; dpsi=zeros(0,obj.num_x);
       end
+        
       con = [phi; J*qd; psi];  % phi=0, phidot=0, psi=0
+      if (nargout>1)
+        dcon = [J,0*J; matGradMult(reshape(dJ,size(dJ,1)*obj.num_q,obj.num_q),qd), J; dpsi];
+      end
     end
     
     function n = getNumJointLimitConstraints(obj)
@@ -187,51 +199,20 @@ classdef Manipulator < SecondOrderSystem
       error('getNumContacts is no longer supported, in anticipation of alowing multiple contacts per body pair. Use getNumContactPairs for cases where the number of contacts is fixed');
     end
     
-    function [x,success] = resolveConstraints(obj,x0,v)
-      % attempts to find a x which satisfies the constraints,
-      % using x0 as the initial guess.
-      %
-      % @param x0 initial guess for state satisfying constraints
-      % @param v (optional) a visualizer that should be called while the
-      % solver is doing it's thing
+    function prog = addStateConstraintsToProgram(obj,prog,indices)
+      % adds state constraints and unilateral constriants to the 
+      %   program on the specified indices.  derived classes can overload 
+      %   this method to add additional constraints.
+      % 
+      % @param prog a NonlinearProgramWConstraintObjects class
+      % @param indices the indices of the state variables in the program
+      %        @default 1:nX
 
-      if isa(x0,'Point')
-        x0 = double(x0.inFrame(obj.getStateFrame));
-      end
+      if nargin<3, indices=1:obj.num_x; end
+      prog = addStateConstraintsToProgram@SecondOrderSystem(obj,prog,indices);
       
-      if (all(obj.joint_limit_min==-inf) && all(obj.joint_limit_max==inf) && obj.getNumUnilateralConstraints==0)
-        if (nargin<3) v=[]; end
-        [x,success] = resolveConstraints@SecondOrderSystem(obj,x0,v);
-        return;
-      end
-      
-      problem.objective = @(x) 0;  % feasibility problem.   empty objective
-      problem.x0 = x0;
-      
-      function [c,ceq] = mycon(x)
-        q = x(1:obj.num_q); qd = x(obj.num_q + (1:obj.num_q));
-        phi = obj.unilateralConstraints(x);
-        c = -[jointLimitConstraints(obj,q); phi];
-        ceq = stateConstraints(obj,x);
-      end
-      problem.nonlcon = @mycon;
-      problem.solver = 'fmincon';
-
-      function stop=drawme(x,optimValues,state)
-        stop=false;
-        v.draw(0,x);
-      end
-      if (nargin>2 && ~isempty(v))  % useful for debugging (only but only works for URDF manipulators)
-        problem.options=optimset('Algorithm','active-set','Display','iter','OutputFcn',@drawme,'TolX',1e-9);
-      else
-        problem.options=optimset('Algorithm','active-set','Display','off');
-      end
-      [x,~,exitflag] = fmincon(problem);
-      success=(exitflag==1);
-      if (nargout<2 && ~success)
-        error('Drake:Manipulator:ResolveConstraintsFailed','failed to resolve constraints');
-      end
-      x = Point(obj.getStateFrame,x);
+      % add joint limit constraints
+      prog = addConstraint(prog,BoundingBoxConstraint(obj.joint_limit_min,obj.joint_limit_max),1:obj.num_q);
     end
     
     function sys = feedback(sys1,sys2)
