@@ -8,6 +8,16 @@
 #include <vector>
 #include <array>
 
+template<unsigned int Size>
+std::array<int, Size> intRange(int start)
+{
+  std::array<int, Size> ret;
+  for (unsigned int i = 0; i < Size; i++) {
+    ret[i] = i + start;
+  }
+  return ret;
+}
+
 constexpr int gradientNumRows(int A_size, int nq, int derivativeOrder) {
   return (A_size == Eigen::Dynamic || nq == Eigen::Dynamic)
     ? Eigen::Dynamic
@@ -128,6 +138,12 @@ getSubMatrixGradient(const Eigen::MatrixBase<Derived>& dM, const std::array<int,
   return dM_submatrix;
 }
 
+template<typename Derived>
+Eigen::Matrix<typename Derived::Scalar, 1, Derived::ColsAtCompileTime>
+getSubMatrixGradient(const Eigen::MatrixBase<Derived>& dM, int row, int col, int M_rows) {
+  return dM.row(row + col * M_rows);
+}
+
 constexpr int getRowBlockGradientNumRows(unsigned long M_cols, unsigned long block_rows) {
   return M_cols == Eigen::Dynamic ? Eigen::Dynamic : M_cols * block_rows;
 }
@@ -146,16 +162,18 @@ void setSubMatrixGradient(Eigen::MatrixBase<DerivedA>& dM, const Eigen::MatrixBa
   }
 }
 
-template<typename DerivedA, typename DerivedB, unsigned long NRows, unsigned long NCols>
+template<int QSubvectorSize = -1, typename DerivedA, typename DerivedB, unsigned long NRows, unsigned long NCols>
 void setSubMatrixGradient(Eigen::MatrixBase<DerivedA>& dM, const Eigen::MatrixBase<DerivedB>& dM_submatrix,
-    const std::array<int, NRows>& rows, const std::array<int, NCols>& cols, int M_rows) {
+    const std::array<int, NRows>& rows, const std::array<int, NCols>& cols, int M_rows, int q_start = 0, int q_subvector_size = QSubvectorSize) {
+  if (q_subvector_size == -1) {
+    q_subvector_size = dM.cols() - q_start;
+  }
   int index = 0;
   for (int col : cols) {
     for (int row : rows) {
-      dM.row(row + col * M_rows) = dM_submatrix.row(index++);
+      dM.template block<1, QSubvectorSize> (row + col * M_rows, q_start, 1, q_subvector_size) = dM_submatrix.row(index++);
     }
   }
 }
-
 
 #endif /* DRAKEGRADIENTUTIL_H_ */
