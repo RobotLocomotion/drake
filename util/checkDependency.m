@@ -12,14 +12,6 @@ persistent conf;
 ldep = lower(dep);
 conf_var = [ldep,'_enabled'];
 
-if (isempty(conf))
-  try
-    load drake_config;
-  catch
-    error('You must run addpath_drake once in the main Drake directory');
-  end
-end
-
 ok = isfield(conf,conf_var) && ~isempty(conf.(conf_var)) && conf.(conf_var);
 if ~ok
   % then try to evaluate the dependency now...
@@ -38,7 +30,7 @@ if ~ok
     case 'lcm'
       conf.lcm_enabled = logical(exist('lcm.lcm.LCM','class'));
       if (~conf.lcm_enabled)
-        lcm_java_classpath = getCMakeParam('lcm_java_classpath',conf);
+        lcm_java_classpath = getCMakeParam('lcm_java_classpath');
         if ~isempty(lcm_java_classpath)
           javaaddpathProtectGlobals(lcm_java_classpath);
           disp(' Added the lcm jar to your javaclasspath (found via cmake)');
@@ -60,7 +52,7 @@ if ~ok
           [retval,info] = system('util/check_multicast_is_loopback.sh');
           if (retval)
             info = strrep(info,'ERROR: ','');
-            info = strrep(info,'./',[conf.root,'/util/']);
+            info = strrep(info,'./',[getDrakePath,'/util/']);
             warning('Drake:BroadcastingLCM','Currently all of your LCM traffic will be broadcast to the network, because:\n%s',info);
           end
         elseif nargout<1
@@ -77,7 +69,7 @@ if ~ok
 
       if (~conf.lcmgl_enabled)
         try % try to add bot2-lcmgl.jar
-          lcm_java_classpath = getCMakeParam('LCMGL_JAR_FILE',conf);
+          lcm_java_classpath = getCMakeParam('LCMGL_JAR_FILE');
           javaaddpathProtectGlobals(lcm_java_classpath);
           disp(' Added the lcmgl jar to your javaclasspath (found via cmake)');
         catch err
@@ -264,7 +256,7 @@ if ~ok
       end
 
     case 'bullet'
-      conf.bullet_enabled = ~isempty(getCMakeParam('bullet',conf));
+      conf.bullet_enabled = ~isempty(getCMakeParam('bullet'));
       if ~conf.bullet_enabled && nargout<1
         disp(' ');
         disp(' Bullet not found.  To resolve this you will have to rerun make (from the shell)');
@@ -273,7 +265,7 @@ if ~ok
 
     case 'avl'
       if ~isfield(conf,'avl') || isempty(conf.avl)
-        path_to_avl = getCMakeParam('avl',conf);
+        path_to_avl = getCMakeParam('avl');
         if isempty(path_to_avl) || strcmp(path_to_avl,'avl-NOTFOUND')
           if nargout<1
             disp(' ');
@@ -289,7 +281,7 @@ if ~ok
 
     case 'xfoil'
       if ~isfield(conf,'xfoil') || isempty(conf.xfoil)
-        path_to_xfoil = getCMakeParam('xfoil',conf);
+        path_to_xfoil = getCMakeParam('xfoil');
         if isempty(path_to_xfoil) || strcmp(path_to_xfoil,'xfoil-NOTFOUND')
           if nargout<1
             disp(' ');
@@ -303,6 +295,18 @@ if ~ok
       end
       conf.xfoil_enabled = ~isempty(conf.xfoil);
 
+    case 'pathlcp'
+      setenv('PATH_LICENSE_STRING', '1926793586&Courtesy&&&USR&54782&7_1_2014&1000&PATH&GEN&31_12_2015&0_0_0&5000&0_0');
+
+      try
+        x = pathlcp(speye(500),-ones(500,1));
+        valuecheck(x,ones(500,1));
+        conf.pathlcp_enabled = true;
+      catch
+        disp('The cached PATH license is out of date, and PATH will fail to solve larger problems. Please report this bug.');
+        conf.pathlcp_enabled = false;
+      end
+      
     otherwise
 
       % todo: call ver(dep) here?
@@ -335,21 +339,6 @@ function success=pod_pkg_config(podname)
   if ~success && nargout<1
     error(['Cannot find required pod ',podname]);
   end
-end
-
-
-function val = getCMakeParam(param,conf)
-% note: takes precedence over the function by the same name in util, since
-% that one requires getDrakePath to be set first.
-
-[status,val] = system(['cmake -L -N ', ...
-      fullfile(conf.root,'pod-build'),' | grep ', param,' | cut -d "=" -f2']);
-if (status)
-  val=[];
-else
-  val = strtrim(val);
-end
-
 end
 
 function tf = verStringLessThan(a,b)
