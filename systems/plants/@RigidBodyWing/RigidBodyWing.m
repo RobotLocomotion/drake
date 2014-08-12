@@ -1,7 +1,7 @@
 classdef RigidBodyWing < RigidBodyForceElement
 
   properties
-    kinframe;  % index to RigidBodyFrame 
+    kinframe;  % index to RigidBodyFrame
     fCl  % PPTrajectories (splines) representing the *dimensional* coefficients
     fCd  % with fCl = 1/2 rho*S*Cl, etc. (S=area)
     fCm
@@ -12,7 +12,7 @@ classdef RigidBodyWing < RigidBodyForceElement
     %Air density for 20 degC dry air, at sea level
     rho = 1.204;
   end
-  
+
   methods
     function obj = RigidBodyWing(frame_id, profile, chord, span, stallAngle, velocity)
       %calls AVL and XFOIL over different angles of attack at the
@@ -50,7 +50,7 @@ classdef RigidBodyWing < RigidBodyForceElement
       %     at the half chord.
       % use variables for path to xfoil and AVL
       %
-      
+
       typecheck(frame_id,'numeric');
       obj.kinframe = frame_id;
       linux = isunix();
@@ -71,11 +71,9 @@ classdef RigidBodyWing < RigidBodyForceElement
       else % not flat plate.  I.e. its either a NACA or .dat file
         checkDependency('avl');
         checkDependency('xfoil');
-        conf = struct;
-        load drake_config;
-        avlpath = deblank(conf.avl);
-        xfoilpath = deblank(conf.xfoil);
-        
+        avlpath = deblank(getCMakeParam('xfoil'));
+        xfoilpath = deblank(getCMakeParam('xfoil'));
+
         if strcmp(profile(1:4),'NACA')
           profile = strtrim(profile(5:end));
           avlprofile = strcat('NACA', '\n', profile);
@@ -84,7 +82,7 @@ classdef RigidBodyWing < RigidBodyForceElement
           if ~exist(profile)
               error('Cannot find wing input .dat file.  Please check file path')
           end
-          % xfoil cannot handle long filenames (see bug 1734), so 
+          % xfoil cannot handle long filenames (see bug 1734), so
           % copy the profile to the tmp directory and call that instead.
           % yuck.
           [~,filename,fileext] = fileparts(profile);
@@ -172,7 +170,7 @@ classdef RigidBodyWing < RigidBodyForceElement
 
               commandstring = sprintf('%s %s %s < %s > %s', avlpath, avlfilepath, runfilepath, commandfilepath, fullfile(tempdir,'avlScreenOutput.txt'));
               result = systemWCMakeEnv(commandstring);
-              
+
             catch E
               disp('Error running AVL.  Switching to Flat Plate.  Results likely inaccurate')
               flatplate()
@@ -229,11 +227,11 @@ classdef RigidBodyWing < RigidBodyForceElement
 %                disp('Clearing old Xfoil results');
                 delete(fullfile(tempdir,'xfoilPolar.txt'));
               end
-              
+
               %system(sprintf('LD_LIBRARY_PATH=/usr/lib/gcc/x86_64-linux-gnu/4.6 %s < xfoilcommands.txt > xfoilCMDoutput.txt', xfoilpath));
               commandstring = sprintf('%s < %s > %s', xfoilpath, fullfile(tempdir,'xfoilcommands.txt'), fullfile(tempdir,'xfoilCMDoutput.txt'));
               result = systemWCMakeEnv(commandstring);
-              
+
 %              disp('Processing Xfoil output')
               xfoilresult = fopen(fullfile(tempdir,'xfoilPolar.txt'));
               xfoillines = textscan(xfoilresult, '%[^\r\n]');
@@ -282,8 +280,8 @@ classdef RigidBodyWing < RigidBodyForceElement
             [~,pivot] = max(diff(alphas));
             %Xfoil on my lab machine would have two zero data points, which would
             %break spline generation.  If there are two zeros, then skip the
-            %second one. I'm not sure why this happens.  Something in the 
-            %Xfoil install? --Tim  
+            %second one. I'm not sure why this happens.  Something in the
+            %Xfoil install? --Tim
             if length(find(alphas==0))==2
                 inc = 2;
             else
@@ -342,16 +340,16 @@ classdef RigidBodyWing < RigidBodyForceElement
       %entirely sure what the underlying problem is, but this was the
       %workaround from mathworks.com.
       function setEnvVars()
-          setenv('GFORTRAN_STDIN_UNIT', '5') 
-          setenv('GFORTRAN_STDOUT_UNIT', '6') 
+          setenv('GFORTRAN_STDIN_UNIT', '5')
+          setenv('GFORTRAN_STDOUT_UNIT', '6')
           setenv('GFORTRAN_STDERR_UNIT', '0')
       end %setEnvVars()
       function revertEnvVars()
-          setenv('GFORTRAN_STDIN_UNIT', '-1') 
-          setenv('GFORTRAN_STDOUT_UNIT', '-1') 
+          setenv('GFORTRAN_STDIN_UNIT', '-1')
+          setenv('GFORTRAN_STDOUT_UNIT', '-1')
           setenv('GFORTRAN_STDERR_UNIT', '-1')
       end %revertEnvVars()
-      
+
       % convert the splines to PPTrajectory, allowing
       % for fasteval improving performance a lot
       obj.fCm = PPTrajectory(obj.fCm);
@@ -360,13 +358,13 @@ classdef RigidBodyWing < RigidBodyForceElement
       obj.dfCm = obj.fCm.fnder(1);
       obj.dfCl = obj.fCl.fnder(1);
       obj.dfCd = obj.fCd.fnder(1);
-      
+
     end %constructor
 
-    function [force, dforce] = computeSpatialForce(obj,manip,q,qd) 
+    function [force, dforce] = computeSpatialForce(obj,manip,q,qd)
       nq = size(q,1);
       frame = getFrame(manip,obj.kinframe);
-      
+
       if (nargout>1)
         kinsol = doKinematics(manip,q,true,true,qd);
         [~,J] = forwardKin(manip,kinsol,obj.kinframe,zeros(3,1));
@@ -379,20 +377,20 @@ classdef RigidBodyWing < RigidBodyForceElement
         [~,J] = forwardKin(manip,kinsol,obj.kinframe,zeros(3,1));
         wingvel_world = J*qd; % assume still air. Air flow over the wing
       end
-      
-      % Implementation note: for homogenous transforms, I could do the following 
-      % vector transforms more efficiently.  forwardKin is adding a 1 on 
-      % the end of every pt for the homogenous coordinates.  it would be 
+
+      % Implementation note: for homogenous transforms, I could do the following
+      % vector transforms more efficiently.  forwardKin is adding a 1 on
+      % the end of every pt for the homogenous coordinates.  it would be
       % equivalent, cleaner, and more efficient, to just add a zero on the
-      % end instead of the 1...  because for homogeneous transform matrix 
+      % end instead of the 1...  because for homogeneous transform matrix
       % T we have:
       %   T * [x;1] - T * [0;1] = T * [x;0]
       % but I made this change everywhere and decided it was more important
       % to keep the interface to the forwardKin method clean instead of
       % polluting it (and bodyKin, and the mex files, ...) with an extra
       % input/option for "vectors_not_points".
-      
-      %project this onto the XZ plane of the wing (ignores sideslip)      
+
+      %project this onto the XZ plane of the wing (ignores sideslip)
       if (nargout>1)
         [wingYunit,dwingYunitdq] = forwardKin(manip,kinsol,obj.kinframe,[0 0; 1 0; 0 0]);
         wingYunit = wingYunit(:,1)-wingYunit(:,2);
@@ -402,20 +400,20 @@ classdef RigidBodyWing < RigidBodyForceElement
         wingYunit = forwardKin(manip,kinsol,obj.kinframe,[0 0; 1 0; 0 0]);
         wingYunit = wingYunit(:,1)-wingYunit(:,2);
       end
-      
+
       sideslip = wingvel_world'*wingYunit;
       if (nargout>1)
         dsideslipdq = wingYunit'*dwingvel_worlddq + wingvel_world'*dwingYunitdq;
         dsideslipdqd = wingYunit'*dwingvel_worlddqd + wingvel_world'*dwingYunitdqd;
       end
-      
+
       wingvel_world = wingvel_world - sideslip*wingYunit;
       if (nargout>1)
         dwingvel_worlddq = dwingvel_worlddq - sideslip*dwingYunitdq - wingYunit*dsideslipdq;
         dwingvel_worlddqd = dwingvel_worlddqd - sideslip*dwingYunitdqd - wingYunit*dsideslipdqd;
       end
-      
-      if (nargout>1) 
+
+      if (nargout>1)
         [wingvel_rel,wingvel_relJ,wingvel_relP] = bodyKin(manip,kinsol,obj.kinframe,[wingvel_world,zeros(3,1)]);
         wingvel_rel = wingvel_rel(:,1)-wingvel_rel(:,2);
         wingvel_relJ = wingvel_relJ(1:3,:)-wingvel_relJ(4:6,:);
@@ -426,19 +424,19 @@ classdef RigidBodyWing < RigidBodyForceElement
         wingvel_rel = bodyKin(manip,kinsol,obj.kinframe,[wingvel_world,zeros(3,1)]);
         wingvel_rel = wingvel_rel(:,1)-wingvel_rel(:,2);
       end
-              
+
       airspeed = norm(wingvel_world);
       if (nargout>1)
         dairspeeddq = (wingvel_world'*dwingvel_worlddq)/norm(wingvel_world);
         dairspeeddqd = (wingvel_world'*dwingvel_worlddqd)/norm(wingvel_world);
       end
-      
+
       aoa = -(180/pi)*atan2(wingvel_rel(3),wingvel_rel(1));
       if (nargout>1)
         daoadq = -(180/pi)*(wingvel_rel(1)*dwingvel_reldq(3,:)-wingvel_rel(3)*dwingvel_reldq(1,:))/(wingvel_rel(1)^2+wingvel_rel(3)^2);
         daoadqd = -(180/pi)*(wingvel_rel(1)*dwingvel_reldqd(3,:)-wingvel_rel(3)*dwingvel_reldqd(1,:))/(wingvel_rel(1)^2+wingvel_rel(3)^2);
       end
-      
+
       %lift and drag are the forces on the body in the world frame.
       %cross(wingXZvelocity, wingYunit) rotates it by 90 degrees
       if (nargout>1)
@@ -448,11 +446,11 @@ classdef RigidBodyWing < RigidBodyForceElement
         dCMdq = dCM*daoadq;
         dCLdqd = dCL*daoadqd;
         dCDdqd = dCD*daoadqd;
-        dCMdqd = dCM*daoadqd;      
+        dCMdqd = dCM*daoadqd;
       else
         [CL, CD, CM] = obj.coeffs(aoa);
       end
-      
+
       x_wingvel_world_wingYunit = cross(wingvel_world, wingYunit);
       if (nargout>1)
         dx_wingvel_world_wingYunitdq = cross(dwingvel_worlddq, repmat(wingYunit,1,nq), 1) + cross(repmat(wingvel_world,1,nq), dwingYunitdq, 1);
@@ -471,7 +469,7 @@ classdef RigidBodyWing < RigidBodyForceElement
       end
 
       % convert torque to joint frame (featherstone dynamics algorithm never reasons in body coordinates)
-      if (nargout>1)  
+      if (nargout>1)
         [torque_body, torque_bodyJ, torque_bodyP] = bodyKin(manip,kinsol,frame.body_ind,[torque_world,zeros(3,1)]);
         torque_body = torque_body(:,1)-torque_body(:,2);
         torque_bodyJ = torque_bodyJ(1:3,:)-torque_bodyJ(4:6,:);
@@ -482,13 +480,13 @@ classdef RigidBodyWing < RigidBodyForceElement
         torque_body = bodyKin(manip,kinsol,frame.body_ind,[torque_world,zeros(3,1)]);
         torque_body = torque_body(:,1)-torque_body(:,2);
       end
-      
+
       torque_joint = manip.body(frame.body_ind).X_joint_to_body'*[torque_body;0;0;0];
       if (nargout>1)
         dtorque_jointdq = manip.body(frame.body_ind).X_joint_to_body'*[dtorque_bodydq;zeros(3,nq)];
         dtorque_jointdqd = manip.body(frame.body_ind).X_joint_to_body'*[dtorque_bodydqd;zeros(3,nq)];
-      end  
-      
+      end
+
       %inputs of point (body coordinates), and force (world coordinates)
       %returns [torque; xforce; yforce] in the body coordinates
       %obj.body.dofnum should have 6 elements for
@@ -500,23 +498,23 @@ classdef RigidBodyWing < RigidBodyForceElement
       else
         f = cartesianForceToSpatialForce(manip, kinsol, frame.body_ind, frame.T(1:3,4),lift_world+drag_world);
       end
-      
+
       body_force = torque_joint + f;
       if (nargout>1)
         dbody_forcedq = dtorque_jointdq + dfdq;
         dbody_forcedqd = dtorque_jointdqd + dfdqd;
       end
-        
+
       force = sparse(6,getNumBodies(manip))*q(1); % q(1) is for taylorvar
-      force(:,frame.body_ind) = body_force;  
+      force(:,frame.body_ind) = body_force;
       if (nargout>1)
         dforce = sparse(numel(force),2*nq);
         dforce((frame.body_ind-1)*6+1:frame.body_ind*6,:) = [dbody_forcedq,dbody_forcedqd];
         dforce = reshape(dforce,6,[]);
       end
-      
+
     end
-        
+
     function [CL, CD, CM, dCL, dCD, dCM] = coeffs(obj, aoa)
       %returns dimensionalized coefficient of lift, drag, and pitch moment for a
       %given angle of attack
@@ -529,17 +527,17 @@ classdef RigidBodyWing < RigidBodyForceElement
         dCM = obj.dfCm.eval(aoa);
       end
     end
-    
+
   end
-  
+
   methods (Static)
     function [model,obj] = parseURDFNode(model,robotnum,node,options)
       name = char(node.getAttribute('name'));
       name = regexprep(name, '\.', '_', 'preservecase');
-      
+
       elNode = node.getElementsByTagName('parent').item(0);
       parent = findLinkInd(model,char(elNode.getAttribute('link')),robotnum);
-      
+
       xyz=zeros(3,1); rpy=zeros(3,1);
       elnode = node.getElementsByTagName('origin').item(0);
       if ~isempty(elnode)
@@ -552,17 +550,17 @@ classdef RigidBodyWing < RigidBodyForceElement
         end
       end
       [model,frame_id] = addFrame(model,RigidBodyFrame(parent,xyz,rpy,[name,'_frame']));
-      
+
       profile = char(node.getAttribute('profile'));
       chord = parseParamString(model,robotnum,char(node.getAttribute('chord')));
       span = parseParamString(model,robotnum,char(node.getAttribute('span')));
       stall_angle = parseParamString(model,robotnum,char(node.getAttribute('stall_angle')));
       nominal_speed = parseParamString(model,robotnum,char(node.getAttribute('nominal_speed')));
-      
+
       obj = RigidBodyWing(frame_id, profile, chord, span, stall_angle, nominal_speed);
-      
+
       obj.name = name;
     end
   end
-  
+
 end
