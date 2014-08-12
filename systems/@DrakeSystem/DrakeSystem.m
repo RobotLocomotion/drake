@@ -37,36 +37,32 @@ classdef DrakeSystem < DynamicalSystem
   % 
   methods
     function x0 = getInitialState(obj)
-      % Return a (potentially random) state double (column) vector of initial conditions
+      % Return a (potentially random) state double (column) 
+      % vector of initial conditions
       %
-      % This method is intended to be overloaded, but by default attempts to
-      % return the result of resolveConstraints using the zero vector as an
-      % initial seed.
-      x0 = zeros(obj.num_xd+obj.num_xc,1);
-      attempts=0;
-      success=false;
-      tries = 0;
-      while (~success)
-        try
-          [x0,success] = resolveConstraints(obj,x0);
-        catch ex
-          if strcmp(ex.identifier,'Drake:DrakeSystem:FailedToResolveConstraints');
-            attempts = attempts+1;
+      % Attempts to return the result of resolveConstraints using a 
+      % small random vector as an initial seed.
+      
+      x0 = .01*randn(obj.num_xd+obj.num_xc,1);
+      if getNumStateConstraints(obj)>0
+        attempts=0;
+        success=false;
+        while (~success)
+          attempts=attempts+1;
+          try
+            [x0,success] = resolveConstraints(obj,x0);
+          catch ex
+            if strcmp(ex.identifier,'Drake:DrakeSystem:FailedToResolveConstraints');
+              success=false;
+            else
+              rethrow(ex);
+            end
+          end
+          if (~success)
+            x0 = randn(obj.num_xd+obj.num_xc,1);
             if (attempts>=10)
               error('Drake:Manipulator:FailedToResolveConstraints','Failed to resolve state constraints on initial conditions after 10 tries');
-            else
-              x0 = randn(obj.num_xd+obj.num_xc,1);
-              continue;
             end
-          else
-            rethrow(ex);
-          end
-        end
-        if (~success)
-          x0 = randn(obj.num_xd+obj.num_xc,1);
-          tries = tries+1;
-          if (tries>=10)
-              error('failed to resolve constraints after %d attempts',tries);
           end
         end
       end
@@ -254,42 +250,6 @@ classdef DrakeSystem < DynamicalSystem
       if (obj.num_xcon>0)
         warning('Drake:DrakeSystem:ConstraintsNotEnforced','system has constraints, but they aren''t enforced in the simulink model yet.');
       end
-    end
-    
-    function [x,success] = resolveConstraints(obj,x0,v)
-      % Attempts to find a x which satisfies the constraints,
-      % using x0 as the initial guess.
-      %
-      % @param x0 initial guess for state satisfying constraints
-      % @param v (optional) a visualizer that should be called while the
-      % solver is doing it's thing
-
-      if isa(x0,'Point')
-        x0 = double(x0.inFrame(obj.getStateFrame));
-      end
-      
-      if (obj.num_xcon < 1)
-        x=Point(obj.getStateFrame,x0);
-        success=true;
-        return;
-      end
-      
-      function stop=drawme(x,optimValues,state)
-        stop=false;
-        v.draw(0,x);
-      end
-        
-      if (nargin>2 && ~isempty(v))  % useful for debugging (only but only works for URDF manipulators)
-        options=optimset('Display','iter','Algorithm','levenberg-marquardt','OutputFcn',@drawme,'TolX',1e-9);
-      else
-        options=optimset('Display','off','Algorithm','levenberg-marquardt');
-      end
-      [x,~,exitflag] = fsolve(@(x)stateConstraints(obj,x),x0,options);      
-      success=(exitflag==1);
-      if (nargout<2 && ~success)
-        error('Drake:DrakeSystem:ResolveConstraintsFailed','failed to resolve constraints');
-      end
-      x = Point(obj.getStateFrame,x);
     end
     
     function [xstar,ustar,info] = findFixedPoint(obj,x0,u0)
