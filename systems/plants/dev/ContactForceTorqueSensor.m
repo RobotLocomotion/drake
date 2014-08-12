@@ -47,30 +47,6 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensorWithState %& Visu
       if isempty(body.getContactShapes)
         error('Drake:ContactForceTorqueSensor:NoContactShapes','There are no contact shapes associated with body %s',body.linkname);
       end
-      
-      %      obj = setInputFrame(obj,MultiCoordinateFrame({getStateFrame(tsmanip),constructFrame(obj,}));
-%       
-%       phi = manip.collisionDetect(randn(manip.getNumPositions,1),false,struct('body_idx',obj.kinframe.body_ind));
-%       
-%       nL = manip.getNumJointLimitConstraints;
-%       nC = manip.getNumContactPairs;
-%       nP = 2*manip.num_position_constraints;  % number of position constraints
-% %       nV = manip.num_velocity_constraints;
-%       
-%       num_body_contacts = length(phi);
-%       contact_ind_offset = size([manip.body(1:obj.kinframe.body_ind-1).contact_pts],2);
-%       
-%       % z(nL+nP+(1:nC)) = cN
-%       obj.normal_ind = nL+nP+contact_ind_offset+(1:num_body_contacts);
-%       
-%       mC = 2*length(manip.surfaceTangents(manip.gravity)); % get number of tangent vectors
-%       
-%       % z(nL+nP+nC+(1:mC*nC)) = [beta_1;...;beta_mC]
-%       for i=1:mC
-%         obj.tangent_ind{i} = nL+nP+(mC*nC)+contact_ind_offset+(1:num_body_contacts);
-%       end
-%       
-      %     obj.manip = manip;
     end
     
     %    function draw(obj,t,xft)
@@ -103,6 +79,11 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensorWithState %& Visu
           'Gradients not yet supported for ContactForceTorqueSensor/update');
       end
       
+      if tsmanip.getNumContactPairs == 0
+        xdn = obj.getInitialState(tsmanip);
+        return
+      end
+      
       nq = tsmanip.getNumPositions;
       
       [tsmanip,z] = tsmanip.solveLCP(t,x,u);
@@ -120,10 +101,18 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensorWithState %& Visu
       kinsol = doKinematics(manip,x(1:nq));
       
       % find contact indices that relate to this body
-      contact_idxA = find(tsmanip.LCP_cache.contact_data.idxA == obj.kinframe.body_ind);
-      contact_idxB = find(tsmanip.LCP_cache.contact_data.idxB == obj.kinframe.body_ind);
-      N = length(contact_idxA) + length(contact_idxB);
+      contact_idxA = find(tsmanip.LCP_cache.contact_data.idxA == obj.kinframe.body_ind)';
+      contact_idxB = find(tsmanip.LCP_cache.contact_data.idxB == obj.kinframe.body_ind)';
       
+      if isempty(contact_idxA)
+        contact_idxA = zeros(1,0);
+      end
+      if isempty(contact_idxB)
+        contact_idxB = zeros(1,0);
+      end
+      nA = length(contact_idxA); 
+      nB = length(contact_idxB); 
+      N = nA + nB;
       % extract relevant contact information
       % contact positions on the body
       contact_pos_body = [tsmanip.LCP_cache.contact_data.xA(:,contact_idxA) ...
@@ -131,32 +120,42 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensorWithState %& Visu
       
       % contact normal and tangential directions in world coordinates
       nD = length(tsmanip.LCP_cache.contact_data.d);
-      nC = size(tsmanip.LCP_cache.contact_data.normal,2);
+      nC_body = nA + nB;
+      nC = manip.getNumContactPairs;
+      nL = manip.getNumJointLimitConstraints;
+      nP = 2*manip.num_position_constraints;  % number of position constraints
       
       normal_world = [tsmanip.LCP_cache.contact_data.normal(:,contact_idxA)...
         -tsmanip.LCP_cache.contact_data.normal(:,contact_idxB)];
 
-      d_mat = cell2mat(tsmanip.LCP_cache.contact_data.d');
-      tangent_world = [d_mat(:,kron(0:nD-1,[nC nC]) + repmat(contact_idxA,1,nD)) ...
-        -d_mat(:,kron(0:nD-1,[nC nC]) + repmat(contact_idxB,1,nD))];
+      d_mat = cell2mat(tsmanip.LCP_cache.contact_data.d);
+      tangent_world = [d_mat(:,kron(0:nD-1,nC*ones(1,nA)) + repmat(contact_idxA,1,nD)) ...
+        -d_mat(:,kron(0:nD-1,nC*ones(1,nB)) + repmat(contact_idxB,1,nD))];
       
-
       sensor_pos = forwardKin(manip,kinsol,findFrameId(manip,obj.kinframe.name),zeros(3,1));
       normal = bodyKin(manip,kinsol,findFrameId(manip,obj.kinframe.name),repmat(sensor_pos,1,N)+normal_world);
-      tangent = bodyKin(manip,kinsol,findFrameId(manip,obj.kinframe.name),repmat(sensor_pos,1,N)+tangent_world);
-%       tangent = manip.surfaceTangents(normal);
-
-
-      % GET CONTACT COORDS FROM CACHE
+      tangent = bodyKin(manip,kinsol,findFrameId(manip,obj.kinframe.name),repmat(sensor_pos,1,N*nD)+tangent_world);
+      tangent = [tangent -tangent];
+      
+      normal_ind = nL+nP+[contact_idxA;contact_idxB];
+      tangent_ind = [kron(0:nD-1,nC*ones(1,nA)) + repmat(contact_idxA,1,nD) ...
+        kron(0:nD-1,nC*ones(1,nB)) + repmat(contact_idxB,1,nD)];
+      
+      tangent_ind = nL+nP+nC + [tangent_ind (tangent_ind + nD*nC)];
       
       % compute all individual contact forces in sensor coordinates
-      force = repmat(z(obj.normal_ind)',d,1).*normal;
-      mC=length(tangent);
-      for i=1:mC
-        force = force + repmat(z(obj.tangent_ind{i})',d,1).*tangent{i} ...
-          - repmat(z(obj.tangent_ind{i+mC})',d,1).*tangent{i};
+      
+      force = normal*z(normal_ind) + tangent*z(tangent_ind);
+      
+      torque = zeros(3,1);
+      for i=1:N,
+        torque = torque + cross(contact_pos_body(:,i),normal(:,i)*z(normal_ind(i)));
+        for j=1:2*nD,
+          torque = torque + cross(contact_pos_body(:,i),tangent(:,i*(nD-1) + j)*z(tangent_ind(i*(nD-1) + j)));
+        end
       end
-      xdn = [ sum(force,2); sum(cross(contact_pos_body,force),2) ];
+      
+      xdn = [force;torque];
       
       if tsmanip.twoD
         % y(1) = dot(force,x_axis)
