@@ -1536,10 +1536,10 @@ classdef RigidBodyManipulator < Manipulator
     function [phi,dphi] = unilateralConstraints(obj,x)
       q = x(1:obj.getNumPositions);
       if nargout<2 
-	phi = contactConstraints(obj,q);
+        phi = contactConstraints(obj,q);
       else
-	[phi,~,~,~,~,~,~,~,dphi] = contactConstraints(obj,q);
-	dphi = [dphi,zeros(size(phi,1),obj.getNumVelocities)];
+        [phi,~,~,~,~,~,~,~,dphi] = contactConstraints(obj,q);
+        dphi = [dphi,zeros(size(phi,1),obj.getNumVelocities)];
       end
     end
     
