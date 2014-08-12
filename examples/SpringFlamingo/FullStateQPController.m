@@ -37,6 +37,15 @@ classdef FullStateQPController < MIMODrakeSystem
     end
     obj = setSampleTime(obj,[dt;0]); % sets controller update rate
    
+    % weight for the desired qddot objective term
+    if isfield(options,'w_qdd')
+      typecheck(options.w_qdd,'double');
+      sizecheck(options.w_qdd,[obj.numq 1]); % assume diagonal cost
+      obj.w_qdd = options.w_qdd;
+    else
+      obj.w_qdd = 0.1*ones(obj.numq,1);
+    end    
+
     % weight for grf coefficients
     if isfield(options,'w_grf')
       typecheck(options.w_grf,'double');
@@ -118,8 +127,14 @@ classdef FullStateQPController < MIMODrakeSystem
     q = x(1:nq); 
     qd = x(nq+(1:nq)); 
             
+    supp_idx = find(ctrl_data.support_times<=t,1,'last');
+
     if ctrl_data.B_is_time_varying
-      B_ls = fasteval(ctrl_data.B,t); 
+      if isa(ctrl_data.B,'Trajectory')
+        B_ls = fasteval(ctrl_data.B,t);
+      else
+        B_ls = fasteval(ctrl_data.B{supp_idx},t);
+      end
     else
       B_ls = ctrl_data.B; 
     end
@@ -128,7 +143,7 @@ classdef FullStateQPController < MIMODrakeSystem
       if isa(ctrl_data.S,'Trajectory')
         S = fasteval(ctrl_data.S,t);
       else
-        S = ctrl_data.S;
+        S = fasteval(ctrl_data.S{supp_idx},t);
       end
       x0 = fasteval(ctrl_data.x0,t);
       u0 = fasteval(ctrl_data.u0,t);
@@ -138,14 +153,12 @@ classdef FullStateQPController < MIMODrakeSystem
       u0 = ctrl_data.u0;
     end
     
-    % TODO: generalize this again to arbitrary body contacts
     support_bodies = [];
     contact_pts = {};
     contact_groups = {};
     n_contact_pts = [];
     ind = 1;
     
-    supp_idx = find(ctrl_data.support_times<=t,1,'last');
     plan_supp = ctrl_data.supports(supp_idx);
 
     lfoot_plan_supp_ind = plan_supp.bodies==obj.lfoot_idx;
@@ -260,11 +273,15 @@ classdef FullStateQPController < MIMODrakeSystem
     if nc > 0
       xbar = x-x0; 
       Hqp = Iu'*R*Iu;
-%       Hqp(nu+(1:nq),nu+(1:nq)) = 0.01*eye(nq);
-  
+      
       fqp = xbar'*S*B_ls*Iu;
+%       Kp = 1; Kd = 1.0*sqrt(Kp);
+%       qdd_des = Kp*(x0(1:nq)-x(1:nq)) + Kd*(x0(nq+(1:nq))-x(nq+(1:nq)))
+%       fqp = -qdd_des'*Q*Iqdd;
       fqp = fqp - u0'*R*Iu;
+%       fqp = -u0'*R*Iu;
 
+      Hqp(nu+(1:nq),nu+(1:nq)) = diag(obj.w_qdd);
       Hqp(nu+nq+(1:nf),nu+nq+(1:nf)) = obj.w_grf*eye(nf); 
       Hqp(nparams-neps+1:end,nparams-neps+1:end) = obj.w_slack*eye(neps); 
     else
@@ -322,8 +339,13 @@ classdef FullStateQPController < MIMODrakeSystem
     end
     qdd=Iqdd*alpha
     beta=Ibeta*alpha
-    y = Iu*alpha;     
+    y = Iu*alpha     
     
+%     figure(1);
+%     imagesc(S);
+%     figure(2);
+%     imagesc(xbar);
+%     
   end
   end
 
@@ -332,6 +354,7 @@ classdef FullStateQPController < MIMODrakeSystem
     numq;
     controller_data; % shared data handle that holds S, h, foot trajectories, etc.
     w_grf; % scalar ground reaction force weight
+    w_qdd; % qdd objective function weight vector
     w_slack; % scalar slack var weight
     slack_limit; % maximum absolute magnitude of acceleration slack variable values
     Kp_accel; % gain for support acceleration constraint: accel=-Kp_accel*vel

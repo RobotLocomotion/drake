@@ -41,12 +41,12 @@ classdef FullStateQPControllerData < ControllerData
       if data.lqr_is_time_varying
         assert(isa(data.x0,'Trajectory'));
         assert(isa(data.u0,'Trajectory'));
-        assert(isa(data.S,'Trajectory') || isnumeric(data.S)); % handle constant case
+        assert(isa(data.S,'Trajectory') || isa(data.S,'cell')); 
         if isfield(data,'s1')
-          assert(isa(data.s1,'Trajectory'));
+          assert(isa(data.s1,'Trajectory') || isa(data.s1,'cell'));
         end
         if isfield(data,'s2')
-          assert(isa(data.s2,'Trajectory'));
+          assert(isa(data.s2,'Trajectory') || isa(data.s2,'cell'));
         end
       else
         assert(isnumeric(data.x0));
@@ -56,10 +56,10 @@ classdef FullStateQPControllerData < ControllerData
       assert(isnumeric(data.support_times));
       assert(isnumeric(data.R));
       if isfield(data,'A')
-        assert(isnumeric(data.A) || isa(data.A,'Trajectory'));
+        assert(isnumeric(data.A) || isa(data.A,'Trajectory') || isa(data.A,'cell'));
       end
       if isfield(data,'B')
-        assert(isnumeric(data.B) || isa(data.B,'Trajectory'));
+        assert(isnumeric(data.B) || isa(data.B,'Trajectory') || isa(data.B,'cell'));
       end
     end
         
@@ -94,14 +94,14 @@ classdef FullStateQPControllerData < ControllerData
       if isfield(data,'R')
         obj.R = data.R;
       end
-      if isfield(data,'A')
-        if isa(data.A,'Trajectory')
+      if isfield(data,'A') 
+        if isa(data.A,'Trajectory') || isa(data.A,'cell')
           obj.A_is_time_varying = true;
         end
         obj.A = data.A;
       end
       if isfield(data,'B')
-        if isa(data.B,'Trajectory')
+        if isa(data.B,'Trajectory') || isa(data.B,'cell')
           obj.B_is_time_varying = true;
         end
         obj.B = data.B;
