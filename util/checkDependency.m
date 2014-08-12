@@ -44,34 +44,33 @@ if ~ok
           disp(' Added the lcm jar to your javaclasspath (found via cmake)');
           conf.lcm_enabled = logical(exist('lcm.lcm.LCM','class'));
         end
-      end
 
-      if (~conf.lcm_enabled)
-        [retval,cp] = system('pkg-config --variable=classpath lcm-java');
-        if (retval==0 && ~isempty(cp))
-          disp(' Added the lcm jar to your javaclasspath (found via pkg-config)');
-          javaaddpathProtectGlobals(strtrim(cp));
+        if (~conf.lcm_enabled)
+          [retval,cp] = system('pkg-config --variable=classpath lcm-java');
+          if (retval==0 && ~isempty(cp))
+            disp(' Added the lcm jar to your javaclasspath (found via pkg-config)');
+            javaaddpathProtectGlobals(strtrim(cp));
+          end
+
+          conf.lcm_enabled = logical(exist('lcm.lcm.LCM','class'));
         end
 
-        conf.lcm_enabled = logical(exist('lcm.lcm.LCM','class'));
-      end
-
-      if (conf.lcm_enabled)
-        javaaddpathProtectGlobals(fullfile(pods_get_base_path,'share','java','lcmtypes_drake.jar'));
-        [retval,info] = system('util/check_multicast_is_loopback.sh');
-        if (retval)
-          info = strrep(info,'ERROR: ','');
-          info = strrep(info,'./',[conf.root,'/util/']);
-          warning('Drake:BroadcastingLCM','Currently all of your LCM traffic will be broadcast to the network, because:\n%s',info);
+        if (conf.lcm_enabled)
+          javaaddpathProtectGlobals(fullfile(pods_get_base_path,'share','java','lcmtypes_drake.jar'));
+          [retval,info] = system('util/check_multicast_is_loopback.sh');
+          if (retval)
+            info = strrep(info,'ERROR: ','');
+            info = strrep(info,'./',[conf.root,'/util/']);
+            warning('Drake:BroadcastingLCM','Currently all of your LCM traffic will be broadcast to the network, because:\n%s',info);
+          end
+        elseif nargout<1
+          disp(' ');
+          disp(' LCM not found.  LCM support will be disabled.');
+          disp(' To re-enable, add lcm-###.jar to your matlab classpath');
+          disp(' (e.g., by putting javaaddpath(''/usr/local/share/java/lcm-0.9.2.jar'') into your startup.m .');
+          disp(' ');
         end
-      elseif nargout<1
-        disp(' ');
-        disp(' LCM not found.  LCM support will be disabled.');
-        disp(' To re-enable, add lcm-###.jar to your matlab classpath');
-        disp(' (e.g., by putting javaaddpath(''/usr/local/share/java/lcm-0.9.2.jar'') into your startup.m .');
-        disp(' ');
       end
-
     case 'lcmgl'
       checkDependency('lcm');
       conf.lcmgl_enabled = logical(exist('bot_lcmgl.data_t','class'));
@@ -366,4 +365,3 @@ function tf = verStringLessThan(a,b)
     end
   end
 end
-
