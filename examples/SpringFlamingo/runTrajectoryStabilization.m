@@ -1,8 +1,12 @@
-function runTrajectoryStabilization
+function runTrajectoryStabilization(segment_number)
 
 if ~checkDependency('gurobi')
   warning('Must have gurobi installed to run this example');
   return;
+end
+
+if nargin < 1
+  segment_number = -1; % do full traj
 end
 
 options.twoD = true;
@@ -20,22 +24,21 @@ nq = getNumPositions(r);
 nu = getNumInputs(r);
 
 v = r.constructVisualizer;
-v.display_dt = 0.01;
+v.display_dt = 0.001;
 
 data_dir = fullfile(getDrakePath,'examples','SpringFlamingo','data');
-traj_file = strcat(data_dir,'/traj.mat');
-if exist(traj_file, 'file') ~= 2
-  !wget "http://www.dropbox.com/s/i2g6fz45hl97si4/traj.mat" --no-check-certificate 
-  system(['mv traj.mat ',data_dir]);
-end
+traj_file = strcat(data_dir,'/traj-08-08-14_newcost.mat');
+% if exist(traj_file, 'file') ~= 2
+%   !wget "http://www.dropbox.com/s/i2g6fz45hl97si4/traj.mat" --no-check-certificate 
+%   system(['mv traj.mat ',data_dir]);
+% end
 load(traj_file);
 xtraj = xtraj.setOutputFrame(getStateFrame(r));
 % v.playback(xtraj,struct('slider',true));
 
-% build support trajectory
-support_times = zeros(1,length(S_full));
-for i=1:length(S_full)
-  support_times(i) = S_full{i}.tspan(1);
+support_times = zeros(1,length(Straj_full));
+for i=1:length(Straj_full)
+  support_times(i) = Straj_full{i}.tspan(1);
 end
 
 lfoot_ind = findLinkInd(r,'left_foot');
@@ -47,21 +50,23 @@ supports = [RigidBodySupportState(r,lfoot_ind); ...
   RigidBodySupportState(r,[lfoot_ind,rfoot_ind]); ...
   RigidBodySupportState(r,[lfoot_ind,rfoot_ind],{{'toe'},{'heel','toe'}}); ...
   RigidBodySupportState(r,rfoot_ind)];
- 
-% heel_toe_group = {'heel','toe'};
-% for i=1:length(support_times)
-%   x = xtraj.eval(support_times(i));
-%   q = x(1:nq);
-%   kinsol = doKinematics(r,q);
-%   phi = contactConstraints(r,kinsol,false,struct('terrain_only',true,...
-%     'body_idx',[1,lfoot_ind,rfoot_ind],'collision_groups',{{heel_toe_group,heel_toe_group}}));
-%   phi
-% end
+
+if segment_number<1
+  B=Btraj;
+  S=Straj_full;
+  t0 = xtraj.tspan(1);
+  tf = xtraj.tspan(2);
+else
+  B=Btraj{segment_number};
+  S=Straj_full{segment_number};
+  t0 = Btraj{segment_number}.tspan(1)+0.1;
+  tf = Btraj{segment_number}.tspan(2); 
+end
 
 ctrl_data = FullStateQPControllerData(true,struct(...
-  'B',B,...
-  'S',S,...
-  'R',1.25*eye(nu),... % note: TVLQR problem used R=eye(nu)
+  'B',{B},...
+  'S',{S},...
+  'R',R,... 
   'x0',xtraj,...
   'u0',utraj,...
   'support_times',support_times,...
@@ -69,10 +74,11 @@ ctrl_data = FullStateQPControllerData(true,struct(...
 
 % instantiate QP controller
 options.slack_limit = inf;
-options.w_grf = 0.01;
-options.w_slack = 0.2;
+options.w_qdd = 0.001*ones(nq,1);
+options.w_grf = 0.0;
+options.w_slack = 0.0;
 options.Kp_accel = 0.0;
-options.contact_threshold = 1e-4;
+options.contact_threshold = 1e-2;
 qp = FullStateQPController(r,ctrl_data,options);
 
 % feedback QP controller with spring flamingo
@@ -83,7 +89,7 @@ outs(1).output = 1;
 sys = mimoFeedback(qp,r,[],[],ins,outs);
 
 % feedback foot contact detector 
-options.use_contact_logic_OR = false;
+options.use_contact_logic_OR = true;
 fc = FootContactBlock(r,ctrl_data,options);
 sys = mimoFeedback(fc,sys,[],[],[],outs);
   
@@ -94,7 +100,7 @@ sys = mimoCascade(sys,v,[],[],output_select);
 warning(S);
 
 tspan = xtraj.tspan();
-traj = simulate(sys,[0 tspan(2)],xtraj.eval(tspan(1)));
+traj = simulate(sys,[t0 tf],xtraj.eval(t0));
 playback(v,traj,struct('slider',true));
 
 end
