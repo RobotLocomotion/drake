@@ -381,7 +381,7 @@ Eigen::Matrix<Scalar, HomogeneousTransformSize, DerivedQdotToV::ColsAtCompileTim
     const Eigen::MatrixBase<DerivedQdotToV>& qdot_to_v) {
   const int nq_at_compile_time = DerivedQdotToV::ColsAtCompileTime;
   int nq = qdot_to_v.cols();
-  auto qdot_to_twist = S * qdot_to_v;
+  auto qdot_to_twist = (S * qdot_to_v).eval();
 
   const int numel = HomogeneousTransformSize;
   Eigen::Matrix<Scalar, numel, nq_at_compile_time> ret(numel, nq);
@@ -469,7 +469,7 @@ typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime, 1>::type dTransformAdj
     const auto Xomega_col = X.template block<3, 1>(0, col);
     const auto Xv_col = X.template block<3, 1>(3, col);
 
-    const auto RXomega_col = R * Xomega_col;
+    const auto RXomega_col = (R * Xomega_col).eval();
 
     std::array<int, 1> col_array {col};
     const auto dXomega_col = getSubMatrixGradient(dX, Xomega_rows, col_array, X.rows());
