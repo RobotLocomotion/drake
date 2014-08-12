@@ -34,7 +34,7 @@ if isfield(options,'alpha_1')
   typecheck(options.alpha_1,'double');
   alpha_1 = options.alpha_1;
 else
-  alpha_1 = 5000; % was 5000
+  alpha_1 = 200; % was 5000
 end
 
 if isfield(options,'alpha_2')
@@ -42,6 +42,10 @@ if isfield(options,'alpha_2')
   alpha_2 = options.alpha_2;
 else
   alpha_2 = 1;
+end
+
+if ~isfield(options,'sqrtmethod')
+  options.sqrtmethod = true;
 end
 
 x0 = xtraj.eval(tspan(1));
@@ -85,11 +89,21 @@ nQC = length(constraint_ind);          %number of constrained positions
 Ptraj = PPTrajectory(foh(tout,reshape(yout',2*nQ,2*nQ-2*nQC,[])));
 Pf = Ptraj.eval(tspan(2));
 
-Sfun = @(t,S) Sdynamics(t,S,obj,dynamicsFun,xtraj,utraj,Ptraj,Q,R,constraint_ind,alpha_1,alpha_2);
 Sf = Pf'*Qf*Pf;
+if ~options.sqrtmethod
+  Sfun = @(t,S) Sdynamics(t,S,obj,dynamicsFun,xtraj,utraj,Ptraj,Q,R,constraint_ind,alpha_1,alpha_2);
+else
+  Sf = Sf^(1/2);
+  Sfun = @(t,S) sqrtSdynamics(t,S,obj,dynamicsFun,xtraj,utraj,Ptraj,Q,R,constraint_ind,alpha_1,alpha_2);
+end
 [tout,yout] = ode45(Sfun,tspan(end:-1:1),Sf);
+
 S_data = reshape(yout',2*nQ - 2*nQC,2*nQ - 2*nQC,[]);
 Straj = PPTrajectory(foh(tout(end:-1:1),S_data(:,:,end:-1:1)));
+
+if options.sqrtmethod
+  Straj = Straj*Straj';
+end
 
 Btraj = getBTrajectory(obj,Straj.getBreaks(),xtraj,utraj,constraint_ind);
 
@@ -216,6 +230,10 @@ if cond(A) > 1e3  %results from F*P != 0
 end
 t
 Pdot = reshape(pinv(A)*b,n,n-d);
+
+if any(abs(Pdot) > 1e2)
+  f = 1;
+end
 end
 
 function Pdot = Pdynamics(obj,t,xtraj,utraj,P,constraint_ind,alpha_1,alpha_2)
@@ -247,6 +265,29 @@ S = reshape(S,size(A_t,1),[]);
 Sdot = -A_t'*S - S*A_t + S*B_t*inv(R)*B_t'*S - P_t'*Q*P_t;
 
 Sdot = Sdot(:);
+% t
+end
+
+function sqrtSdot = sqrtSdynamics(t,sqrtS,p,dynamicsfn,xtraj,utraj,Ptraj,Q,R,constraint_ind,alpha_1,alpha_2)
+% S_dot = -A'S - SA + SBinv(R)B'S - Q
+x_t = xtraj.eval(t);
+u_t = utraj.eval(t);
+P_t = Ptraj.eval(t);
+Pdot_t = getPdot(p,t,x_t,u_t,P_t,constraint_ind,alpha_1,alpha_2);
+
+[xd,dxd] = geval(dynamicsfn,t,x_t,u_t,struct('grad_method','numerical'));
+A = dxd(:,2:2*p.num_q+1);
+B = dxd(:,2+2*p.num_q:end);
+  
+% A_t = P_t'*A*P_t + P_t'*Pdot_t;  %was this
+A_t = P_t'*A*P_t + Pdot_t'*P_t;
+B_t = P_t'*B;
+  
+sqrtS = reshape(sqrtS,size(A_t,1),[]);
+
+sqrtSdot = -A_t'*sqrtS + .5*sqrtS*sqrtS'*B_t*inv(R)*B_t'*sqrtS - .5*P_t'*Q*P_t*inv(sqrtS)';
+
+sqrtSdot = sqrtSdot(:);
 % t
 end
 
@@ -287,7 +328,7 @@ if (size(constraint_ind) > 0)
 else
   constraint_force = 0;
 end
-
+% constraint_force = 0;
 if isempty(u)
   qdd = Hinv*(constraint_force - C);
 else

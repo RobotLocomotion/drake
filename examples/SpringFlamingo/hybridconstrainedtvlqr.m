@@ -153,6 +153,7 @@ else
     if i~=1
       Qfi = mode_data{i-1}.F'*Qfi*mode_data{i-1}.F;
     end
+    Qfi = Qfi + 1e-6*eye(size(Qfi,1));
   end
 end
 end

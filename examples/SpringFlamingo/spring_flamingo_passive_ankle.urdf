@@ -406,7 +406,7 @@
     <dynamics damping=".1" />
   </joint>
   <force_element name="spring">
-    <torsional_spring stiffness="1" rest_angle="0">
+    <torsional_spring stiffness=".1" rest_angle="0">
       <joint name="right_ankle" />
     </torsional_spring>
   </force_element>
@@ -587,7 +587,7 @@
     <dynamics damping=".1" />
   </joint>
   <force_element name="spring">
-    <torsional_spring stiffness="1" rest_angle="0">
+    <torsional_spring stiffness=".1" rest_angle="0">
       <joint name="left_ankle" />
     </torsional_spring>
   </force_element>
