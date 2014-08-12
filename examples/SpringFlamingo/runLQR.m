@@ -22,11 +22,11 @@ nq = getNumPositions(r);
 nu = getNumInputs(r);
 
 data_dir = fullfile(getDrakePath,'examples','SpringFlamingo','data');
-traj_file = strcat(data_dir,'/traj.mat');
-if exist(traj_file, 'file') ~= 2
-  !wget "http://www.dropbox.com/s/i2g6fz45hl97si4/traj.mat" --no-check-certificate 
-  system(['mv traj.mat ',data_dir]);
-end
+traj_file = strcat(data_dir,'/traj-08-08-14.mat');
+% if exist(traj_file, 'file') ~= 2
+%   !wget "http://www.dropbox.com/s/i2g6fz45hl97si4/traj.mat" --no-check-certificate 
+%   system(['mv traj.mat ',data_dir]);
+% end
 load(traj_file);
 xtraj = xtraj.setOutputFrame(getStateFrame(r));
 % v.playback(xtraj,struct('slider',true));
@@ -38,7 +38,7 @@ ts = Btraj{segment_number}.getBreaks;
 Kbreaks = zeros(nu,nx,length(ts));
 for i=1:length(ts)
   Bi = Btraj{segment_number}.eval(ts(i));
-  Kbreaks(:,:,i) = -Rinv*Bi'*S_full{segment_number}.eval(ts(i));
+  Kbreaks(:,:,i) = -Rinv*Bi'*Straj_full{segment_number}.eval(ts(i));
 end
 K = PPTrajectory(foh(ts,Kbreaks));
 
