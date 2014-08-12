@@ -75,6 +75,7 @@ elseif verLessThan('simulink','7.3')
 end
 
 clear util/checkDependency;  % makes sure that the persistent variable in the dependency checker gets cleared
+clear util/getDrakePath; 
 
 checkDependency('spotless'); % require spotless
 tf = checkDependency('lcm'); % optional dependency on lcm, but load it now
