@@ -42,6 +42,20 @@ classdef RigidBodyWRLVisualizer < RigidBodyVisualizer
       delete(obj.wrl);
     end
     
+    function viewpoint_struct = getViewpoint(obj)
+      fig = get(obj.wrl,'Figures'); 
+      viewpoint_struct.Viewpoint = get(fig,'Viewpoint');
+      viewpoint_struct.CameraDirection = get(fig,'CameraDirection');
+      viewpoint_struct.CameraPosition = get(fig,'CameraPosition');
+      viewpoint_struct.CameraUpVector = get(fig,'CameraUpVector');
+      viewpoint_struct.ZoomFactor = get(fig,'ZoomFactor');
+    end
+    
+    function setViewpoint(obj,viewpoint_struct)
+      fig = get(obj.wrl,'Figures'); 
+      set(fig,viewpoint_struct);
+    end
+        
     function drawWrapper(obj,t,x)
       draw(obj,t,x);
     end

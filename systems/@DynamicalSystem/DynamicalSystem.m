@@ -293,6 +293,67 @@ classdef DynamicalSystem
       newsys.time_invariant_flag = sys.time_invariant_flag;
       newsys.simulink_params = sys.simulink_params;  
     end
+    
+    function [x,success,prog] = resolveConstraints(obj,x0,v)
+      % attempts to find a x which satisfies the constraints,
+      % using x0 as the initial guess.
+      %
+      % @param x0 initial guess for state satisfying constraints
+      % @param v (optional) a visualizer that should be called while the
+      % solver is doing it's thing
+
+      if nargin<3, v=[]; end
+      if isa(x0,'Point')
+        x0 = double(x0.inFrame(obj.getStateFrame));
+      end
+            
+      nx = getNumStates(obj);
+      prog = NonlinearProgramWConstraintObjects(nx,getCoordinateNames(getStateFrame(obj)));
+
+      prog = addStateConstraintsToProgram(obj,prog,1:nx);
+      
+      if ~isempty(v)
+        prog = addDisplayFunction(prog,@(x)v.draw(0,x));
+      end
+      
+      [x,~,exitflag] = solve(prog,x0);
+      success=(exitflag==1);
+      if (nargout<2 && ~success)
+        error('Drake:DynamicalSystem:ResolveConstraintsFailed','failed to resolve constraints');
+      end
+      x = Point(obj.getStateFrame,x);
+    end
+    
+    function prog = addStateConstraintsToProgram(obj,prog,indices)
+      % adds state constraints and unilateral constriants to the 
+      %   program on the specified indices.  derived classes can overload 
+      %   this method to add additional constraints.
+      % 
+      % @param prog a NonlinearProgramWConstraintObjects class
+      % @param indices the indices of the state variables in the program
+      %        @default 1:nX
+
+      typecheck(prog,'NonlinearProgramWConstraintObjects');
+      nx = getNumStates(obj);
+      if nargin<3, indices=1:nx; end
+      
+      % add state constraints
+      nc = getNumStateConstraints(obj);
+      if nc>0
+        con = FunctionHandleConstraint(zeros(nc,1),zeros(nc,1),nx,@obj.stateConstraints);
+        con.grad_method = 'user_then_taylorvar';
+        prog = addConstraint(prog,con,indices);
+      end
+      
+      % add unilateral constraints
+      nc = getNumUnilateralConstraints(obj);
+      if nc>0
+        con = FunctionHandleConstraint(zeros(nc,1),inf(nc,1),nx,@obj.unilateralConstraints);
+        con.grad_method = 'user_then_taylorvar';
+        prog = addConstraint(prog,con,indices);
+      end
+    end
+    
   end
   
   % utility methods
