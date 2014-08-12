@@ -1203,8 +1203,12 @@ classdef RigidBodyManipulator < Manipulator
     
     function index = getActuatedJoints(model)
       % @ingroup Kinematic Tree
-      joint = [model.actuator.joint];
-      index = [model.body(joint).dofnum];
+      if isempty(model.actuator)
+        index=[];
+      else
+        joint = [model.actuator.joint];
+        index = [model.body(joint).dofnum]';
+      end
     end        
     
     function varargout = pdcontrol(sys,Kp,Kd,index)
@@ -1531,7 +1535,8 @@ classdef RigidBodyManipulator < Manipulator
     
     function [phi,dphi] = unilateralConstraints(obj,x)
       q = x(1:obj.getNumPositions);
-      [phi,~,~,~,~,~,~,dphi] = obj.contactConstraints(q);
+      [phi,~,~,~,~,~,~,~,dphi] = obj.contactConstraints(q);
+      dphi = [dphi,zeros(size(phi,1),obj.getNumVelocities)];
     end
     
     function n = getNumUnilateralConstraints(obj)

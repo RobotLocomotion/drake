@@ -200,48 +200,78 @@ classdef Visualizer < DrakeSystem
       % coordinates.
 
       fr = obj.getInputFrame();
-      if (nargin<2), x0 = zeros(fr.dim,1); end
-      if (nargin<3), state_dims = (1:fr.dim)'; end
+      if (nargin<2 || isempty(x0)), x0 = zeros(fr.dim,1); end
+      if (nargin<3 || isempty(state_dims)), state_dims = (1:fr.dim)'; end
       if (nargin<4), minrange = repmat(-5,size(state_dims)); end
       if (nargin<5), maxrange = -minrange; end
       if (nargin<6), model = []; end
 
       x0(state_dims) = max(min(x0(state_dims),maxrange),minrange);
-      if ~isempty(visualized_system), x0 = resolveConstraints(visualized_system,x0); end
-
-      obj.drawWrapper(0,x0);
+      if ~isempty(visualized_system), 
+        [x0,~,prog] = resolveConstraints(visualized_system,x0);
+      end
 
       rows = ceil(length(state_dims)/2);
       f = sfigure(99); clf;
-      set(f, 'Position', [560 400 560 20 + 30*rows]);
+      set(f,'ResizeFcn',@resize_gui);
 
-      y=30*rows-10;
-      for i=reshape(state_dims,1,[])
+      for i=1:numel(state_dims)
         label{i} = uicontrol('Style','text','String',getCoordinateName(fr,state_dims(i)), ...
-          'Position',[10+280*(i>rows), y+30*rows*(i>rows), 90, 20],'BackgroundColor',[.8 .8 .8]);
+          'BackgroundColor',[.8 .8 .8],'HorizontalAlignment','right');
         slider{i} = uicontrol('Style', 'slider', 'Min', minrange(i), 'Max', maxrange(i), ...
-          'Value', x0(i), 'Position', [100+280*(i>rows), y+30*rows*(i>rows), 170, 20],...
-          'Callback',{@update_display});
+          'Value', x0(i), 'Callback',{@update_display},'UserData',state_dims(i));
+        value{i} = uicontrol('Style','text','String',num2str(x0(i)), ...
+          'BackgroundColor',[.8 .8 .8],'HorizontalAlignment','left');
 
         % use a little undocumented matlab to get continuous slider feedback:
         slider_listener{i} = handle.listener(slider{i},'ActionEvent',@update_display);
-        y = y - 30;
+      end
+      
+      set(f, 'Position', [560 400 560 20 + 30*rows]);
+      resize_gui();
+      update_display(slider{1});
+      
+      function resize_gui(source, eventdata)
+        p = get(gcf,'Position');
+        width = p(3); 
+        y=30*rows-10;
+        for i=1:numel(state_dims)
+          set(label{i},'Position',[20+width/2*(i>rows), y+30*rows*(i>rows), width/2-220, 20]);
+          set(slider{i},'Position', [width/2-190+width/2*(i>rows), y+30*rows*(i>rows), 140, 20]);
+          set(value{i},'Position', [width/2-45+width/2*(i>rows), y+30*rows*(i>rows), 45, 20]);
+          y = y - 30;
+        end
       end
 
       function update_display(source, eventdata)
         t = 0; x = x0;
-        for i=state_dims(:)'
+        for i=1:numel(state_dims)
           x(state_dims(i)) = get(slider{i}, 'Value');
+          set(value{i},'String',num2str(x(state_dims(i)),'%4.3f'));
         end
-        x
         if (~isempty(visualized_system) && getNumStateConstraints(visualized_system)>0)
-          % todo: pass in additional constriants to keep it inside the
-          % slider values
-          x = resolveConstraints(visualized_system,x)
-          for i=state_dims(:)'
+          % constrain the current slider to be exact the specified value
+          current_slider_statedim = get(source,'UserData');
+          this_prog = addConstraint(prog,ConstantConstraint(get(source,'Value')),current_slider_statedim);
+          
+          % and add an objective to be as close as possible to the previous
+          % solution on the other sliders.
+          % objective = sum_over_remaining_state_dims .5*(x_i-x0_i)^2
+          remaining_state_dims = state_dims(state_dims~=current_slider_statedim);
+          if ~isempty(remaining_state_dims)
+            Q = eye(numel(remaining_state_dims));
+            b = -x0(remaining_state_dims);
+            objective = QuadraticConstraint(0,inf,Q,b);
+            this_prog = addCost(this_prog,objective,remaining_state_dims);
+          end
+          x = solve(this_prog,x);
+%          .5*(x0(remaining_state_dims) - x(remaining_state_dims))^2
+%          fval = objective.eval(x(remaining_state_dims))
+          for i=1:numel(state_dims)
             set(slider{i},'Value',x(state_dims(i)));
           end
         end
+        x0 = x;
         obj.drawWrapper(t,x);
       end
     end
