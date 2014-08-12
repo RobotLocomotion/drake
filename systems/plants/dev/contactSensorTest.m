@@ -2,7 +2,8 @@ function contactSensorTest
 S = warning('OFF','Drake:RigidBodyManipulator:WeldedLinkInd');
 options.floating = true;
 options.twoD = true;
-p = TimeSteppingRigidBodyManipulator('FallingBrick.urdf',.01,options);
+options.terrain = RigidBodyFlatTerrain;
+p = TimeSteppingRigidBodyManipulator('FallingBrickContactPoints.urdf',.01,options);
 
 p = addSensor(p,FullStateFeedbackSensor());
 body = findLinkInd(p,'brick');
@@ -24,7 +25,7 @@ valuecheck(yf.torque,0);
 %v.playback(ytraj);
 
 options.twoD = false;
-p = TimeSteppingRigidBodyManipulator('FallingBrick.urdf',.01,options);
+p = TimeSteppingRigidBodyManipulator('FallingBrickContactPoints.urdf',.01,options);
 
 p = addSensor(p,FullStateFeedbackSensor);
 body = findLinkInd(p,'brick');
