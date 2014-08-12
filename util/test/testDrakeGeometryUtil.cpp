@@ -185,12 +185,12 @@ int main(int argc, char **argv)
 {
   testRotationConversionFunctions();
 
-//  int ntests = 100000;
-//  std::cout << "testDHomogTrans elapsed time: " << measure<>::execution(testDHomogTrans, ntests) << std::endl;
-//  std::cout << "testDHomogTransInv elapsed time: " << measure<>::execution(testDHomogTransInv, ntests, false) << std::endl;
-//  std::cout << "testDTransformAdjoint elapsed time: " << measure<>::execution(testDTransformAdjoint, ntests) << std::endl;
-//  std::cout << "testDTransformAdjointTranspose elapsed time: " << measure<>::execution(testDTransformAdjointTranspose, ntests) << std::endl;
-//  std::cout << "testNormalizeVec elapsed time: " << measure<>::execution(testNormalizeVec, ntests) << std::endl;
+  int ntests = 100000;
+  std::cout << "testDHomogTrans elapsed time: " << measure<>::execution(testDHomogTrans, ntests) << std::endl;
+  std::cout << "testDHomogTransInv elapsed time: " << measure<>::execution(testDHomogTransInv, ntests, false) << std::endl;
+  std::cout << "testDTransformAdjoint elapsed time: " << measure<>::execution(testDTransformAdjoint, ntests) << std::endl;
+  std::cout << "testDTransformAdjointTranspose elapsed time: " << measure<>::execution(testDTransformAdjointTranspose, ntests) << std::endl;
+  std::cout << "testNormalizeVec elapsed time: " << measure<>::execution(testNormalizeVec, ntests) << std::endl;
 
   testDHomogTransInv(1000, true);
 

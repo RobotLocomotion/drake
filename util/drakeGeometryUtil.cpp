@@ -375,7 +375,7 @@ Eigen::Matrix<typename Derived::Scalar, 3, 3> rpy2rotmat(const Eigen::MatrixBase
 }
 
 template<typename Scalar, typename DerivedS, typename DerivedQdotToV>
-Eigen::Matrix<Scalar, HomogeneousTransformSize, DerivedQdotToV::ColsAtCompileTime> dHomogTrans(
+Eigen::Matrix<Scalar, HOMOGENEOUS_TRANSFORM_SIZE, DerivedQdotToV::ColsAtCompileTime> dHomogTrans(
     const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T,
     const Eigen::MatrixBase<DerivedS>& S,
     const Eigen::MatrixBase<DerivedQdotToV>& qdot_to_v) {
@@ -383,7 +383,7 @@ Eigen::Matrix<Scalar, HomogeneousTransformSize, DerivedQdotToV::ColsAtCompileTim
   int nq = qdot_to_v.cols();
   auto qdot_to_twist = (S * qdot_to_v).eval();
 
-  const int numel = HomogeneousTransformSize;
+  const int numel = HOMOGENEOUS_TRANSFORM_SIZE;
   Eigen::Matrix<Scalar, numel, nq_at_compile_time> ret(numel, nq);
 
   const auto& Rx = T.linear().col(0);
@@ -410,7 +410,7 @@ Eigen::Matrix<Scalar, HomogeneousTransformSize, DerivedQdotToV::ColsAtCompileTim
 }
 
 template<typename Scalar, typename DerivedDT>
-Eigen::Matrix<Scalar, HomogeneousTransformSize, DerivedDT::ColsAtCompileTime> dHomogTransInv(
+Eigen::Matrix<Scalar, HOMOGENEOUS_TRANSFORM_SIZE, DerivedDT::ColsAtCompileTime> dHomogTransInv(
     const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T,
     const Eigen::MatrixBase<DerivedDT>& dT) {
   const int nq_at_compile_time = DerivedDT::ColsAtCompileTime;
@@ -429,7 +429,7 @@ Eigen::Matrix<Scalar, HomogeneousTransformSize, DerivedDT::ColsAtCompileTime> dH
   auto dinvT_R = transposeGrad(dR, R.rows());
   auto dinvT_p = (-R.transpose() * dp - matGradMult(dinvT_R, p)).eval();
 
-  const int numel = HomogeneousTransformSize;
+  const int numel = HOMOGENEOUS_TRANSFORM_SIZE;
   Eigen::Matrix<Scalar, numel, nq_at_compile_time> ret(numel, nq);
   setSubMatrixGradient(ret, dinvT_R, rows, R_cols, T.Rows);
   setSubMatrixGradient(ret, dinvT_p, rows, p_cols, T.Rows);
@@ -582,25 +582,25 @@ template Vector4d rpy2axis(const Eigen::MatrixBase<Vector3d>&);
 template Vector4d rpy2quat(const Eigen::MatrixBase<Vector3d>&);
 template Matrix3d rpy2rotmat(const Eigen::MatrixBase<Vector3d>&);
 
-template Matrix<double, HomogeneousTransformSize, Dynamic> dHomogTrans(
+template Matrix<double, HOMOGENEOUS_TRANSFORM_SIZE, Dynamic> dHomogTrans(
     const Isometry3d&,
-    const MatrixBase< Matrix<double, TwistSize, Dynamic> >&,
+    const MatrixBase< Matrix<double, TWIST_SIZE, Dynamic> >&,
     const MatrixBase< MatrixXd >&);
 
-template Matrix<double, HomogeneousTransformSize, Dynamic> dHomogTransInv(
+template Matrix<double, HOMOGENEOUS_TRANSFORM_SIZE, Dynamic> dHomogTransInv(
     const Isometry3d&,
-    const MatrixBase< Matrix<double, HomogeneousTransformSize, Dynamic> >&);
+    const MatrixBase< Matrix<double, HOMOGENEOUS_TRANSFORM_SIZE, Dynamic> >&);
 
-template typename Gradient< Matrix<double, TwistSize, Dynamic>, Dynamic, 1>::type dTransformAdjoint(
+template typename Gradient< Matrix<double, TWIST_SIZE, Dynamic>, Dynamic, 1>::type dTransformAdjoint(
     const Isometry3d&,
-    const MatrixBase< Matrix<double, TwistSize, Dynamic> >&,
-    const MatrixBase< Matrix<double, HomogeneousTransformSize, Dynamic> >&,
+    const MatrixBase< Matrix<double, TWIST_SIZE, Dynamic> >&,
+    const MatrixBase< Matrix<double, HOMOGENEOUS_TRANSFORM_SIZE, Dynamic> >&,
     const MatrixBase<MatrixXd>&);
 
-template typename Gradient< Matrix<double, TwistSize, Dynamic>, Dynamic, 1>::type dTransformAdjointTranspose(
+template typename Gradient< Matrix<double, TWIST_SIZE, Dynamic>, Dynamic, 1>::type dTransformAdjointTranspose(
     const Isometry3d&,
-    const MatrixBase< Matrix<double, TwistSize, Dynamic> >&,
-    const MatrixBase< Matrix<double, HomogeneousTransformSize, Dynamic> >&,
+    const MatrixBase< Matrix<double, TWIST_SIZE, Dynamic> >&,
+    const MatrixBase< Matrix<double, HOMOGENEOUS_TRANSFORM_SIZE, Dynamic> >&,
     const MatrixBase<MatrixXd>&);
 
 template void normalizeVec(
