@@ -65,6 +65,7 @@ classdef Container < drakeFunction.Root
           'Drake:DrakeFunction:InputFramesDoNotMatch', ...
           ['If ''same_input'' is set to true, all functions must ' ...
            'have the same input frame']);
+        input_frame_to_fcn_map = repmat({1:input_frame.getNumFrames()},numel(fcns),1);
       else
         input_frame_to_fcn_map = cell(1,numel(fcns));
         input_frame_to_fcn_map{1} = 1:fcn_input_frames{1}.getNumFrames();
