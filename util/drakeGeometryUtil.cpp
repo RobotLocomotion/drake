@@ -414,7 +414,7 @@ Eigen::Matrix<Scalar, HOMOGENEOUS_TRANSFORM_SIZE, DerivedDT::ColsAtCompileTime> 
     const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T,
     const Eigen::MatrixBase<DerivedDT>& dT) {
   const int nq_at_compile_time = DerivedDT::ColsAtCompileTime;
-  const int nq = dT.cols();
+  int nq = dT.cols();
 
   const auto& R = T.linear();
   const auto& p = T.translation();
@@ -423,8 +423,8 @@ Eigen::Matrix<Scalar, HOMOGENEOUS_TRANSFORM_SIZE, DerivedDT::ColsAtCompileTime> 
   std::array<int, 3> R_cols {0, 1, 2};
   std::array<int, 1> p_cols {3};
 
-  const auto dR = getSubMatrixGradient(dT, rows, R_cols, T.Rows);
-  const auto dp = getSubMatrixGradient(dT, rows, p_cols, T.Rows);
+  auto dR = getSubMatrixGradient(dT, rows, R_cols, T.Rows);
+  auto dp = getSubMatrixGradient(dT, rows, p_cols, T.Rows);
 
   auto dinvT_R = transposeGrad(dR, R.rows());
   auto dinvT_p = (-R.transpose() * dp - matGradMult(dinvT_R, p)).eval();
@@ -450,38 +450,39 @@ typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime, 1>::type dTransformAdj
     const Eigen::MatrixBase<DerivedDT>& dT,
     const Eigen::MatrixBase<DerivedDX>& dX) {
   assert(dT.cols() == dX.cols());
-  const int nq = dT.cols();
+  int nq = dT.cols();
 
   const auto& R = T.linear();
   const auto& p = T.translation();
 
-  const std::array<int, 3> rows {0, 1, 2};
-  const std::array<int, 3> R_cols {0, 1, 2};
-  const std::array<int, 1> p_cols {3};
+  std::array<int, 3> rows {0, 1, 2};
+  std::array<int, 3> R_cols {0, 1, 2};
+  std::array<int, 1> p_cols {3};
 
-  const auto dR = getSubMatrixGradient(dT, rows, R_cols, T.Rows);
-  const auto dp = getSubMatrixGradient(dT, rows, p_cols, T.Rows);
+  auto dR = getSubMatrixGradient(dT, rows, R_cols, T.Rows);
+  auto dp = getSubMatrixGradient(dT, rows, p_cols, T.Rows);
 
   typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime, 1>::type ret(X.size(), nq);
   std::array<int, 3> Xomega_rows {0, 1, 2};
   std::array<int, 3> Xv_rows {3, 4, 5};
   for (int col = 0; col < X.cols(); col++) {
-    const auto Xomega_col = X.template block<3, 1>(0, col);
-    const auto Xv_col = X.template block<3, 1>(3, col);
+    auto Xomega_col = X.template block<3, 1>(0, col);
+    auto Xv_col = X.template block<3, 1>(3, col);
 
-    const auto RXomega_col = (R * Xomega_col).eval();
+    auto RXomega_col = (R * Xomega_col).eval();
 
     std::array<int, 1> col_array {col};
-    const auto dXomega_col = getSubMatrixGradient(dX, Xomega_rows, col_array, X.rows());
-    const auto dXv_col = getSubMatrixGradient(dX, Xv_rows, col_array, X.rows());
+    auto dXomega_col = getSubMatrixGradient(dX, Xomega_rows, col_array, X.rows());
+    auto dXv_col = getSubMatrixGradient(dX, Xv_rows, col_array, X.rows());
 
-    const auto dRXomega_col = (R * dXomega_col + matGradMult(dR, Xomega_col)).eval();
-    const auto dRXv_col = (R * dXv_col + matGradMult(dR, Xv_col)).eval();
+    auto dRXomega_col = (R * dXomega_col + matGradMult(dR, Xomega_col)).eval();
+    auto dRXv_col = (R * dXv_col + matGradMult(dR, Xv_col)).eval();
 
-    const auto dp_hatRXomega_col = ((dp.colwise().cross(RXomega_col) - dRXomega_col.colwise().cross(p)).eval()).eval();
+    auto dp_hatRXomega_col = ((dp.colwise().cross(RXomega_col) - dRXomega_col.colwise().cross(p)).eval()).eval();
+    auto Xv_part = (dp_hatRXomega_col + dRXv_col).eval();
 
     setSubMatrixGradient(ret, dRXomega_col, Xomega_rows, col_array, X.rows());
-    setSubMatrixGradient(ret, dp_hatRXomega_col + dRXv_col, Xv_rows, col_array, X.rows());
+    setSubMatrixGradient(ret, Xv_part, Xv_rows, col_array, X.rows());
   }
   return ret;
 }
@@ -493,35 +494,36 @@ typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime>::type dTransformAdjoin
     const Eigen::MatrixBase<DerivedDT>& dT,
     const Eigen::MatrixBase<DerivedDX>& dX) {
   assert(dT.cols() == dX.cols());
-  const int nq = dT.cols();
+  int nq = dT.cols();
 
   const auto& R = T.linear();
   const auto& p = T.translation();
 
-  const std::array<int, 3> rows {0, 1, 2};
-  const std::array<int, 3> R_cols {0, 1, 2};
-  const std::array<int, 1> p_cols {3};
+  std::array<int, 3> rows {0, 1, 2};
+  std::array<int, 3> R_cols {0, 1, 2};
+  std::array<int, 1> p_cols {3};
 
-  const auto dR = getSubMatrixGradient(dT, rows, R_cols, T.Rows);
-  const auto dp = getSubMatrixGradient(dT, rows, p_cols, T.Rows);
+  auto dR = getSubMatrixGradient(dT, rows, R_cols, T.Rows);
+  auto dp = getSubMatrixGradient(dT, rows, p_cols, T.Rows);
 
-  const auto Rtranspose = R.transpose();
-  const auto dRtranspose = transposeGrad(dR, R.rows());
+  auto Rtranspose = R.transpose();
+  auto dRtranspose = transposeGrad(dR, R.rows());
 
   typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime>::type ret(X.size(), nq);
   std::array<int, 3> Xomega_rows {0, 1, 2};
   std::array<int, 3> Xv_rows {3, 4, 5};
   for (int col = 0; col < X.cols(); col++) {
-    const auto Xomega_col = X.template block<3, 1>(0, col);
-    const auto Xv_col = X.template block<3, 1>(3, col);
+    auto Xomega_col = X.template block<3, 1>(0, col);
+    auto Xv_col = X.template block<3, 1>(3, col);
 
     std::array<int, 1> col_array {col};
-    const auto dXomega_col = getSubMatrixGradient(dX, Xomega_rows, col_array, X.rows());
-    const auto dXv_col = getSubMatrixGradient(dX, Xv_rows, col_array, X.rows());
+    auto dXomega_col = getSubMatrixGradient(dX, Xomega_rows, col_array, X.rows());
+    auto dXv_col = getSubMatrixGradient(dX, Xv_rows, col_array, X.rows());
 
-    const auto dp_hatXv_col = (dp.colwise().cross(Xv_col) - dXv_col.colwise().cross(p)).eval();
-    const auto dXomega_transformed_col = (Rtranspose * (dXomega_col - dp_hatXv_col) + matGradMult(dRtranspose, Xomega_col - p.cross(Xv_col))).eval();
-    const auto dRtransposeXv_col = (Rtranspose * dXv_col + matGradMult(dRtranspose, Xv_col)).eval();
+    auto dp_hatXv_col = (dp.colwise().cross(Xv_col) - dXv_col.colwise().cross(p)).eval();
+    auto Xomega_col_minus_p_cross_Xv_col = (Xomega_col - p.cross(Xv_col)).eval();
+    auto dXomega_transformed_col = (Rtranspose * (dXomega_col - dp_hatXv_col) + matGradMult(dRtranspose, Xomega_col_minus_p_cross_Xv_col)).eval();
+    auto dRtransposeXv_col = (Rtranspose * dXv_col + matGradMult(dRtranspose, Xv_col)).eval();
 
     setSubMatrixGradient(ret, dXomega_transformed_col, Xomega_rows, col_array, X.rows());
     setSubMatrixGradient(ret, dRtransposeXv_col, Xv_rows, col_array, X.rows());

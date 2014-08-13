@@ -132,7 +132,7 @@ void testDTransformAdjoint(int ntests) {
     auto dT = dHomogTrans(T, S, qdot_to_v).eval();
     auto X = Matrix<double, 6, Dynamic>::Random(6, cols_X).eval();
     auto dX = MatrixXd::Random(X.size(), nq).eval();
-//      auto dX = Matrix<double, X.SizeAtCompileTime, nq>::Random().eval();
+//    auto dX = Matrix<double, X.SizeAtCompileTime, nq>::Random().eval();
     auto dAdT_times_X = dTransformAdjoint(T, X, dT, dX).eval();
     volatile auto vol = dAdT_times_X;
   }
@@ -154,7 +154,7 @@ void testDTransformAdjointTranspose(int ntests) {
     auto dT = dHomogTrans(T, S, qdot_to_v).eval();
     auto X = Matrix<double, 6, Dynamic>::Random(6, cols_X).eval();
     auto dX = MatrixXd::Random(X.size(), nq).eval();
-//      auto dX = Matrix<double, X.SizeAtCompileTime, nq>::Random().eval();
+//    auto dX = Matrix<double, X.SizeAtCompileTime, nq>::Random().eval();
     auto dAdTtranspose_times_X = dTransformAdjointTranspose(T, X, dT, dX).eval();
     volatile auto vol = dAdTtranspose_times_X;
   }
