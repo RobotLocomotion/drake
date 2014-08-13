@@ -69,11 +69,6 @@ classdef RigidBodyWing < RigidBodyForceElement
       elseif strcmpi(profile, 'flat plate')
         flatplate()
       else % not flat plate.  I.e. its either a NACA or .dat file
-        checkDependency('avl');
-        checkDependency('xfoil');
-        avlpath = deblank(getCMakeParam('xfoil'));
-        xfoilpath = deblank(getCMakeParam('xfoil'));
-
         if strcmp(profile(1:4),'NACA')
           profile = strtrim(profile(5:end));
           avlprofile = strcat('NACA', '\n', profile);
@@ -106,7 +101,6 @@ classdef RigidBodyWing < RigidBodyForceElement
         CLs = [];
         CDs = [];
         CMs = [];
-        prepAvlFile();
         runAvl();
         runXfoil();
         %at this point the laminar regime is done.  Now a flat
@@ -117,157 +111,155 @@ classdef RigidBodyWing < RigidBodyForceElement
         makeSplines();
         revertEnvVars();
       end % if not a flat plate
-      function prepAvlFile()
-          avlfile = fileread(which('avlblank.avl'));
-          avlfile = regexprep(avlfile, '\$airfoil', avlprofile);
-          avlfile = regexprep(avlfile, '\$span', sprintf('%.1f',span));
-          avlfile = regexprep(avlfile, '\$chord', sprintf('%.1f',chord));
-          avlfile = regexprep(avlfile, '\$area', sprintf('%.1f',obj.area));
-          avlfile = regexprep(avlfile, '\$mach', sprintf('%.4f',mach));
-          avlfile = regexprep(avlfile, '\$yle', sprintf('%.2f',span/2));
-          avlfile = regexprep(avlfile, '\$Xorig', sprintf('%.2f',0));
-          avlfile = regexprep(avlfile, '\$Yorig', sprintf('%.2f',0));
-          avlfile = regexprep(avlfile, '\$Zorig', sprintf('%.2f',0));
-          avlid = fopen(fullfile(tempdir,'URDF.avl'), 'w');
-          fprintf(avlid, avlfile);
-    end %prepAvlFile()
       function runAvl()
-            %writes the case-specific files avl requires to run
-            runid = fopen(fullfile(tempdir,'URDF.run'), 'w');
-            avlcommandfile = fopen(fullfile(tempdir,'avlcommands.txt'), 'w');
-            avlresultsloc = fullfile(tempdir,'avlresults.txt');
-            if ~linux %because windows file paths use backslashes.
-                avlresultsloc = regexprep(avlresultsloc, '\\', '\\\\');
-            end
-            avlcommandstring = sprintf('OPER\nX\nW\n%s\n', avlresultsloc);
-            runfiletemplate = fileread(which('avlblank.run'));
-            for x = 1:length(angles)
-              runfile = regexprep(runfiletemplate, '\$casenum', sprintf('%d',x));
-              runfile = regexprep(runfile, '\$alpha', sprintf('%.2f',angles(x)));
-              runfile = regexprep(runfile, '\$mach', sprintf('%.1f',mach));
-              runfile = regexprep(runfile, '\$vel', sprintf('%.1f',velocity));
-              runfile = regexprep(runfile, '\$span', sprintf('%.1f',span));
-              fprintf(runid, runfile);
-              if x ~=1 % case 1 is already taken care of above.  Need to do this way to get the output filename correct
-                avlcommandstring = [avlcommandstring, sprintf('%d\nX\nW\n\n', x)];
-              end
-            end
-            avlcommandstring = [avlcommandstring, sprintf('\nquit')];
-            fprintf(avlcommandfile, avlcommandstring);
-            fclose(avlcommandfile);
-            fclose(runid);
-            if exist(fullfile(tempdir,'avlresults.txt'), 'file');
-%                disp('clearing old AVL results file');
-                delete(fullfile(tempdir,'avlresults.txt'));
-            end
-            disp('Running AVL...');
-            % runs AVL.  This generates results.txt, which CL, Cm, and part of CD is
-            % extracted from.
-            try
-              commandfilepath = fullfile(tempdir,'avlcommands.txt');
-              avlfilepath = fullfile(tempdir, 'URDF.avl');
-              runfilepath = fullfile(tempdir, 'URDF.run');
+        checkDependency('avl');
+        avlpath = deblank(getCMakeParam('avl'));
 
-              commandstring = sprintf('%s %s %s < %s > %s', avlpath, avlfilepath, runfilepath, commandfilepath, fullfile(tempdir,'avlScreenOutput.txt'));
-              result = systemWCMakeEnv(commandstring);
-
-            catch E
-              disp('Error running AVL.  Switching to Flat Plate.  Results likely inaccurate')
-              flatplate()
-              return
-            end
-            if result ~= 0 || ~ exist(fullfile(tempdir,'avlresults.txt'), 'file');%if AVL didn't execute properly
-              warning('Error running AVL. The system() call did not execute properly.  Switching to Flat Plate.  Results likely inaccurate')
-              flatplate()
-              return
-            end
-%            disp('Processing AVL output...')
-            avlresult = fileread(fullfile(tempdir,'avlresults.txt'));
-            AoAindices = strfind(avlresult, 'Alpha =');
-            AoAindices = AoAindices + 8;
-            for x = 1:length(AoAindices)
-              AoAs = [AoAs str2double(avlresult(AoAindices(x):AoAindices(x)+6))];
-            end
-            CLindices = strfind(avlresult, 'CLtot =');
-            CLindices = CLindices + 8;
-            for x = 1:length(CLindices)
-              CLs = [CLs str2double(avlresult(CLindices(x):CLindices(x)+6))];
-            end
-            CDindices = strfind(avlresult, 'CDtot =');
-            CDindices = CDindices + 8;
-            for x = 1:length(CDindices)
-              CDs = [CDs str2double(avlresult(CDindices(x):CDindices(x)+6))];
-            end
-            Cmindices = strfind(avlresult, 'Cmtot =');
-            Cmindices = Cmindices + 8;
-            for x = 1:length(Cmindices)
-              CMs = [CMs str2double(avlresult(Cmindices(x):Cmindices(x)+6))];
-            end
-        end %runAvl()
+        avlfile = fileread(which('avlblank.avl'));
+        avlfile = regexprep(avlfile, '\$airfoil', avlprofile);
+        avlfile = regexprep(avlfile, '\$span', sprintf('%.1f',span));
+        avlfile = regexprep(avlfile, '\$chord', sprintf('%.1f',chord));
+        avlfile = regexprep(avlfile, '\$area', sprintf('%.1f',obj.area));
+        avlfile = regexprep(avlfile, '\$mach', sprintf('%.4f',mach));
+        avlfile = regexprep(avlfile, '\$yle', sprintf('%.2f',span/2));
+        avlfile = regexprep(avlfile, '\$Xorig', sprintf('%.2f',0));
+        avlfile = regexprep(avlfile, '\$Yorig', sprintf('%.2f',0));
+        avlfile = regexprep(avlfile, '\$Zorig', sprintf('%.2f',0));
+        filename = tempname;
+        avlfilepath = [filename,'.avl'];
+        avlid = fopen(avlfilepath, 'w');
+        fprintf(avlid, avlfile);
+        fclose(avlid);
+        
+        %writes the case-specific files avl requires to run
+        runfilepath = [filename,'.run'];
+        runid = fopen(runfilepath, 'w');
+        commandfilepath = [filename,'_command.txt'];
+        avlcommandfile = fopen(commandfilepath, 'w');
+        avlresultsloc = [filename,'_results.txt'];
+        if ~linux %because windows file paths use backslashes.
+          avlresultsloc = regexprep(avlresultsloc, '\\', '\\\\');
+        end
+        avlcommandstring = sprintf('OPER\nX\nW\n%s\n', avlresultsloc);
+        runfiletemplate = fileread(which('avlblank.run'));
+        for x = 1:length(angles)
+          runfile = regexprep(runfiletemplate, '\$casenum', sprintf('%d',x));
+          runfile = regexprep(runfile, '\$alpha', sprintf('%.2f',angles(x)));
+          runfile = regexprep(runfile, '\$mach', sprintf('%.1f',mach));
+          runfile = regexprep(runfile, '\$vel', sprintf('%.1f',velocity));
+          runfile = regexprep(runfile, '\$span', sprintf('%.1f',span));
+          fprintf(runid, runfile);
+          if x ~=1 % case 1 is already taken care of above.  Need to do this way to get the output filename correct
+            avlcommandstring = [avlcommandstring, sprintf('%d\nX\nW\n\n', x)];
+          end
+        end
+        avlcommandstring = [avlcommandstring, sprintf('\nquit')];
+        fprintf(avlcommandfile, avlcommandstring);
+        fclose(avlcommandfile);
+        fclose(runid);
+        
+        disp('Running AVL...');
+        % runs AVL.  This generates results.txt, which CL, Cm, and part of CD is
+        % extracted from.
+        try
+          commandstring = sprintf('%s %s %s < %s > %s', avlpath, avlfilepath, runfilepath, commandfilepath, [filename,'_screen_output.txt']);
+          result = systemWCMakeEnv(commandstring);
+        catch E
+          disp('Error running AVL.  Switching to Flat Plate.  Results likely inaccurate')
+          flatplate()
+          return
+        end
+        if result ~= 0 || ~ exist(avlresultsloc, 'file');%if AVL didn't execute properly
+          warning('Error running AVL. The system() call did not execute properly.  Switching to Flat Plate.  Results likely inaccurate')
+          flatplate()
+          return
+        end
+        %            disp('Processing AVL output...')
+        avlresult = fileread(avlresultsloc);
+        AoAindices = strfind(avlresult, 'Alpha =');
+        AoAindices = AoAindices + 8;
+        for x = 1:length(AoAindices)
+          AoAs = [AoAs str2double(avlresult(AoAindices(x):AoAindices(x)+6))];
+        end
+        CLindices = strfind(avlresult, 'CLtot =');
+        CLindices = CLindices + 8;
+        for x = 1:length(CLindices)
+          CLs = [CLs str2double(avlresult(CLindices(x):CLindices(x)+6))];
+        end
+        CDindices = strfind(avlresult, 'CDtot =');
+        CDindices = CDindices + 8;
+        for x = 1:length(CDindices)
+          CDs = [CDs str2double(avlresult(CDindices(x):CDindices(x)+6))];
+        end
+        Cmindices = strfind(avlresult, 'Cmtot =');
+        Cmindices = Cmindices + 8;
+        for x = 1:length(Cmindices)
+          CMs = [CMs str2double(avlresult(Cmindices(x):Cmindices(x)+6))];
+        end
+      end %runAvl()
       function runXfoil()
-            % Reads template Xfoil commands file and fills in appropriate values
-            xfoilfile = fileread(which('xfoilblank.txt'));
-            polarLoc = fullfile(tempdir,'xfoilPolar.txt');
-            if ~linux %because Windows.
-                polarLoc = regexprep(polarLoc, '\\', '\\\\\\\\');
-            end
-            xfoilfile = regexprep(xfoilfile, '\$airfoil', xfoilprofile);
-            xfoilfile = regexprep(xfoilfile, '\$re', sprintf('%.2f',Re));
-            xfoilfile = regexprep(xfoilfile, '\$mach', sprintf('%.4f',mach));
-            xfoilfile = regexprep(xfoilfile, '\$negStallAngle', sprintf('%.1f',-stallAngle));
-            xfoilfile = regexprep(xfoilfile, '\$stallAngle', sprintf('%.1f',stallAngle));
-            xfoilfile = regexprep(xfoilfile, '\$polarLocation', polarLoc);
-            xfoilid = fopen(fullfile(tempdir,'xfoilcommands.txt'), 'w');
-            fprintf(xfoilid, xfoilfile);
-            fclose(xfoilid);
-            %runs Xfoil.
-            disp('Running XFOIL...')
-            try
-              if exist(fullfile(tempdir,'xfoilPolar.txt'), 'file');
-%                disp('Clearing old Xfoil results');
-                delete(fullfile(tempdir,'xfoilPolar.txt'));
-              end
-
-              %system(sprintf('LD_LIBRARY_PATH=/usr/lib/gcc/x86_64-linux-gnu/4.6 %s < xfoilcommands.txt > xfoilCMDoutput.txt', xfoilpath));
-              commandstring = sprintf('%s < %s > %s', xfoilpath, fullfile(tempdir,'xfoilcommands.txt'), fullfile(tempdir,'xfoilCMDoutput.txt'));
-              result = systemWCMakeEnv(commandstring);
-
-%              disp('Processing Xfoil output')
-              xfoilresult = fopen(fullfile(tempdir,'xfoilPolar.txt'));
-              xfoillines = textscan(xfoilresult, '%[^\r\n]');
-              fclose(xfoilresult);
-              %Strips down the output so its just a list of the alpha,
-              %CL, CD, CDp, CM numbers from xfoil.  The while loop should run
-              %~6 times
-              xfoillines = xfoillines{1}(1:end);
-              while ~strcmp(xfoillines{1}(1:5), '-----')
-                xfoillines = xfoillines(2:end);
-              end
-              xfoillines = xfoillines(2:end);
-            catch E
-              disp('Warning: Error in running XFOIL. Drag forces pre-stall are likely underestimated. Check the location of your wing data file?')
-              addPostStallPoints()
-              makeSplines()
-              return
-            end
-            if result ~= 0 %if XFOIL didn't execute properly
-              disp('Warning: Error in running XFOIL. Drag forces pre-stall are likely underestimated')
-              addPostStallPoints()
-              makeSplines()
-              return
-            end
-
-            Cds = [];
-            Cls = [];
-            alphas = [];
-            for x = 1:length(xfoillines)
-              currline = textscan(xfoillines{x}, '%f');
-              currline = currline{1};
-              alphas = [alphas currline(1)];
-              Cls = [Cls currline(2)];
-              Cds = [Cds currline(3)];
-            end
-            %{
+        checkDependency('xfoil');
+        xfoilpath = deblank(getCMakeParam('xfoil'));
+        
+        % Reads template Xfoil commands file and fills in appropriate values
+        xfoilfile = fileread(which('xfoilblank.txt'));
+        filename = tempname;
+        polarLoc = [tempname,'_polar.txt'];
+        if ~linux %because Windows.
+          polarLoc = regexprep(polarLoc, '\\', '\\\\\\\\');
+        end
+        xfoilfile = regexprep(xfoilfile, '\$airfoil', xfoilprofile);
+        xfoilfile = regexprep(xfoilfile, '\$re', sprintf('%.2f',Re));
+        xfoilfile = regexprep(xfoilfile, '\$mach', sprintf('%.4f',mach));
+        xfoilfile = regexprep(xfoilfile, '\$negStallAngle', sprintf('%.1f',-stallAngle));
+        xfoilfile = regexprep(xfoilfile, '\$stallAngle', sprintf('%.1f',stallAngle));
+        xfoilfile = regexprep(xfoilfile, '\$polarLocation', polarLoc);
+        commandfile = [filename,'_commands.txt'];
+        xfoilid = fopen(commandfile, 'w');
+        fprintf(xfoilid, xfoilfile);
+        fclose(xfoilid);
+        %runs Xfoil.
+        disp('Running XFOIL...')
+        try
+          commandstring = sprintf('%s < %s > %s', xfoilpath, commandfile, [filename,'_screen_output.txt']);
+          result = systemWCMakeEnv(commandstring);
+          
+          %              disp('Processing Xfoil output')
+          xfoilresult = fopen(polarLoc);
+          xfoillines = textscan(xfoilresult, '%[^\r\n]');
+          fclose(xfoilresult);
+          %Strips down the output so its just a list of the alpha,
+          %CL, CD, CDp, CM numbers from xfoil.  The while loop should run
+          %~6 times
+          xfoillines = xfoillines{1}(1:end);
+          while ~strcmp(xfoillines{1}(1:5), '-----')
+            xfoillines = xfoillines(2:end);
+          end
+          xfoillines = xfoillines(2:end);
+        catch E
+          disp('Warning: Error in running XFOIL. Drag forces pre-stall are likely underestimated. Check the location of your wing data file?')
+          addPostStallPoints()
+          makeSplines()
+          return
+        end
+        if result ~= 0 %if XFOIL didn't execute properly
+          disp('Warning: Error in running XFOIL. Drag forces pre-stall are likely underestimated')
+          addPostStallPoints()
+          makeSplines()
+          return
+        end
+        
+        Cds = [];
+        Cls = [];
+        alphas = [];
+        for x = 1:length(xfoillines)
+          currline = textscan(xfoillines{x}, '%f');
+          currline = currline{1};
+          alphas = [alphas currline(1)];
+          Cls = [Cls currline(2)];
+          Cds = [Cds currline(3)];
+        end
+        %{
                     xfoil runs from 0 to negstallangle, then resets and runs
                     from 0 to stallangle to promote convergence of solutions.
                     (If it started at negstallangle, it may not converge if
@@ -275,38 +267,38 @@ classdef RigidBodyWing < RigidBodyForceElement
                     outwards.)  This creates improper ordering of the output
                     file, which these next four lines take care of.
                     reorders the matricies from -stallangle to stallangle
-            %}
-
-            [~,pivot] = max(diff(alphas));
-            %Xfoil on my lab machine would have two zero data points, which would
-            %break spline generation.  If there are two zeros, then skip the
-            %second one. I'm not sure why this happens.  Something in the
-            %Xfoil install? --Tim
-            if length(find(alphas==0))==2
-                inc = 2;
-            else
-                inc = 1;
-            end
-            alphas = [fliplr(alphas(1:pivot)) alphas(pivot+inc:end)];
-            Cls = [fliplr(Cls(1:pivot)) Cls(pivot+inc:end)];
-            Cds = [fliplr(Cds(1:pivot)) Cds(pivot+inc:end)];
-            [~, maxloc] = max(Cls);
-            if alphas(maxloc)+1 < stallAngle
-              disp('Warning: Wing stall detected earlier than the user-specified stall')
-            end
-            xfoilspline = spline(alphas, Cds);
-            %Add the xfoil Cd to the AVL Cd
-            try
-              for x = 1:length(AoAs)
-                CDs(x) = CDs(x) + ppval(xfoilspline, AoAs(x));
-              end
-            catch E
-              disp('Warning: Error in matching up XFOIL Cds. Drag forces are likely underestimated')
-            end
-            %output piped to a file to avoid cluttering
-            %Matlab's screen output
-            delete(fullfile(tempdir,'xfoilCMDoutput.txt'));
-        end %runXfoil()
+        %}
+        
+        [~,pivot] = max(diff(alphas));
+        %Xfoil on my lab machine would have two zero data points, which would
+        %break spline generation.  If there are two zeros, then skip the
+        %second one. I'm not sure why this happens.  Something in the
+        %Xfoil install? --Tim
+        if length(find(alphas==0))==2
+          inc = 2;
+        else
+          inc = 1;
+        end
+        alphas = [fliplr(alphas(1:pivot)) alphas(pivot+inc:end)];
+        Cls = [fliplr(Cls(1:pivot)) Cls(pivot+inc:end)];
+        Cds = [fliplr(Cds(1:pivot)) Cds(pivot+inc:end)];
+        [~, maxloc] = max(Cls);
+        if alphas(maxloc)+1 < stallAngle
+          disp('Warning: Wing stall detected earlier than the user-specified stall')
+        end
+        xfoilspline = spline(alphas, Cds);
+        %Add the xfoil Cd to the AVL Cd
+        try
+          for x = 1:length(AoAs)
+            CDs(x) = CDs(x) + ppval(xfoilspline, AoAs(x));
+          end
+        catch E
+          disp('Warning: Error in matching up XFOIL Cds. Drag forces are likely underestimated')
+        end
+        %output piped to a file to avoid cluttering
+        %Matlab's screen output
+        delete(fullfile(tempdir,'xfoilCMDoutput.txt'));
+      end %runXfoil()
       function addPostStallPoints()
         postStallAngles = stallAngle+2:2:180;
         postStallCLs = 2*sind(postStallAngles).*cosd(postStallAngles);
