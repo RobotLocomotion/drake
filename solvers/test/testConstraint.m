@@ -50,6 +50,23 @@ display('Check BoundingBoxConstraint')
 cnstr6 = BoundingBoxConstraint([0;1;2;3],[1;2;2;3]);
 valuecheck(cnstr6.lb,[0;1;2;3]);
 valuecheck(cnstr6.ub,[1;2;2;3]);
+
+
+display('Check setBounds')
+cnstr4 = cnstr4.setBounds([1;2],[3;2]);
+valuecheck(cnstr4.lb,[1;2]);
+valuecheck(cnstr4.ub,[3;2]);
+valuecheck(cnstr4.cin_idx,1);
+valuecheck(cnstr4.ceq_idx,2);
+try
+  cnstr4 = cnstr4.setBounds([2;2],[1;2]);
+catch err
+end
+try
+  cnstr4 = cnstr4.setBounds([1;2;3],[3;4;5]);
+catch err
+end
+
 end
 
 function [c,dc] = cnstr_userfun2(x)
