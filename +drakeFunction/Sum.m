@@ -1,18 +1,15 @@
-classdef Sum < drakeFunction.Container
+classdef Sum < drakeFunction.Root
   methods
-    function obj = Sum(terms,same_input)
-      % obj = SumFunction(terms,same_input) constructs a SumFunction
-      % object.
-      if nargin < 2, same_input = false; end
-      obj = obj@drakeFunction.Container(terms,same_input,true);
+    function obj = Sum(frame,N)
+      % obj = Sum(input_frame) constructs a drakeFunction.Sum object
+      input_frame = MultiCoordinateFrame(repmat({frame},1,N));
+      output_frame = frame;
+      obj = obj@drakeFunction.Root(input_frame,output_frame);
     end
-    function [f,df] = combineOutputs(obj,f_cell,df_cell)
-      f = sum(horzcat(f_cell{:}),2);
-      if obj.same_input
-        df = sum(cat(3,df_cell{:}),3);
-      else
-        df = horzcat(df_cell{:});
-      end
+    function [f,df] = eval(obj,x)
+      x_cell = splitCoordinates(obj.input_frame,x);
+      f = sum(horzcat(x_cell{:}),2);
+      df = repmat(eye(numel(f)),1,numel(x_cell));
     end
   end
 end
