@@ -3,7 +3,7 @@
 #include "testUtil.h"
 #include <Eigen/Core>
 #include <Eigen/Geometry>
-#include <Eigen/KroneckerProduct> // unsupported...
+#include <unsupported/Eigen/KroneckerProduct> // unsupported...
 #include <iostream>
 #include <stdexcept>
 #include <vector>
