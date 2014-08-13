@@ -21,6 +21,7 @@ classdef BotVisualizer < RigidBodyVisualizer
       if g_disable_visualizers % evaluates to false if empty
         error('Drake:MissingDependency:BotVisualizerDisabled','botvis is disabled with g_disable_visualizers');
       end
+      g_disable_visualizers  % adding this to debug parallel build error on the servers
       
       checkDependency('lcm');
       
