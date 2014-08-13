@@ -18,7 +18,7 @@ QuaternionFloatingJoint::~QuaternionFloatingJoint()
 
 Isometry3d QuaternionFloatingJoint::jointTransform(double* const q) const
 {
-  return Isometry3d(Quaterniond(q[3], q[4], q[5], q[6]) * Translation3d(q[0], q[1], q[2]));
+  return Quaterniond(q[3], q[4], q[5], q[6]) * Translation3d(q[0], q[1], q[2]);
 }
 
 void QuaternionFloatingJoint::motionSubspace(double* const q, MotionSubspaceType& motion_subspace, MatrixXd* dmotion_subspace) const
@@ -62,7 +62,7 @@ void QuaternionFloatingJoint::randomConfiguration(double* q, default_random_engi
 
 void QuaternionFloatingJoint::qdot2v(double* q, Eigen::MatrixXd& qdot_to_v, Eigen::MatrixXd* dqdot_to_v) const
 {
-  qdot_to_v.setZero(getNumVelocities(), getNumPositions());
+  qdot_to_v.resize(getNumVelocities(), getNumPositions());
 
   Map<Vector4d> quat(&q[3]);
   Matrix3d R = quat2rotmat(quat);
@@ -99,4 +99,29 @@ void QuaternionFloatingJoint::qdot2v(double* q, Eigen::MatrixXd& qdot_to_v, Eige
 
 void QuaternionFloatingJoint::v2qdot(double* q, Eigen::MatrixXd& v_to_qdot, Eigen::MatrixXd* dv_to_qdot) const
 {
+  v_to_qdot.resize(getNumPositions(), getNumVelocities());
+
+  Map<Vector4d> quat(&q[3]);
+  Matrix3d R = quat2rotmat(quat);
+
+  Matrix<double, QUAT_SIZE, SPACE_DIMENSION> M;
+  if (dv_to_qdot) {
+    auto dR = dquat2rotmat(quat);
+    typename Gradient<decltype(M), QUAT_SIZE, 1>::type dM;
+    angularvel2quatdotMatrix(quat, M, &dM);
+
+    dv_to_qdot->setZero(v_to_qdot.size(), getNumPositions());
+
+    setSubMatrixGradient<4>(*dv_to_qdot, dR, intRange<3>(0), intRange<3>(3), v_to_qdot.rows(), 3);
+    auto dMR = matGradMultMat(M, R, dM, dR);
+    setSubMatrixGradient<4>(*dv_to_qdot, dR, intRange<4>(3), intRange<3>(0), v_to_qdot.rows(), 3);
+  }
+  else {
+    angularvel2quatdotMatrix(quat, M);
+  }
+
+  v_to_qdot.block<3, 3>(0, 0).setZero();
+  v_to_qdot.block<3, 3>(0, 3) = R;
+  v_to_qdot.block<4, 3>(3, 0).noalias() = M * R;
+  v_to_qdot.block<4, 3>(3, 3).setZero();
 }
