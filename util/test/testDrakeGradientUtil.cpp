@@ -36,7 +36,7 @@ void testTransposeGrad(int ntests)
 //  Matrix<double, numel_X, nq> dX_transpose;
 
   for (int testnr = 0; testnr < ntests; testnr++) {
-    Matrix<double, numel_X, nq> dX = Matrix<double, numel_X, nq>::Random();
+    Matrix<double, numel_X, Dynamic> dX = Matrix<double, numel_X, nq>::Random();
 //    std::cout << "dX:\n" << dX << std::endl << std::endl;
     auto dX_transpose = transposeGrad(dX, rows_X);
     volatile auto vol = dX_transpose; // volatile to make sure that the result doesn't get discarded in compiler optimization
@@ -91,13 +91,13 @@ void testMatGradMult(int ntests, bool check) {
   const int A_cols = 6;
   for (int testnr = 0; testnr < ntests; testnr++) {
 //    MatrixXd dA = MatrixXd::Random(A_rows * A_cols, nq).eval();
-    auto dA = Matrix<double, A_rows * A_cols, nq>::Random().eval();
+    auto dA = MatrixXd::Random(A_rows * A_cols, nq).eval();
     auto b = Matrix<double, A_cols, 1>::Random().eval();
     auto dAb = matGradMult(dA, b).eval();
 
     if (check) {
       auto A = Matrix<double, A_rows, A_cols>::Random().eval();
-      auto db = Matrix<double, b.RowsAtCompileTime, nq>::Zero(b.rows(), nq).eval();
+      auto db = MatrixXd::Zero(b.rows(), nq).eval();
       auto dAb_check = matGradMultMat(A, b, dA, db);
 //      std::cout << dAb << std::endl << std::endl;
 //      std::cout << dAb_check << std::endl << std::endl;
@@ -114,14 +114,14 @@ void testGetSubMatrixGradient(int ntests) {
   const int A_cols = 4;
   const int nq = 34;
 
-  std::vector<int> rows {0, 1, 2};
-  std::vector<int> cols {0, 1, 2};
+  std::array<int, 3> rows {0, 1, 2};
+  std::array<int, 3> cols {0, 1, 2};
 
 //  std::array<int, 3> rows {0, 1, 2};
 //  std::array<int, 3> cols {0, 1, 2};
 
   for (int testnr = 0; testnr < ntests; testnr++) {
-    Matrix<double, A_rows * A_cols, nq> dA = Matrix<double, A_rows * A_cols, nq>::Random().eval();
+    auto dA = Matrix<double, A_rows * A_cols, Dynamic>::Random(A_rows * A_cols, nq).eval();
 //    Matrix<double, A_rows * A_cols, Dynamic> dA = Matrix<double, A_rows * A_cols, Dynamic>::Random(A_rows * A_cols, nq);
 
     auto dA_submatrix = getSubMatrixGradient(dA, rows, cols, A_rows, 1, 2);
@@ -136,15 +136,15 @@ void testSetSubMatrixGradient(int ntests, bool check) {
   const int A_cols = 4;
   const int nq = 34;
 
-  std::vector<int> rows {0, 1, 2};
-  std::vector<int> cols {0, 1, 2};
+  std::array<int, 3> rows {0, 1, 2};
+  std::array<int, 3> cols {0, 1, 2};
 
   int q_start = 2;
-  int q_subvector_size = 6;
-  MatrixXd dA_submatrix = MatrixXd::Random(rows.size(), cols.size());
+  const int q_subvector_size = 3;
+  MatrixXd dA_submatrix = MatrixXd::Random(rows.size() * cols.size(), q_subvector_size);
 
   for (int testnr = 0; testnr < ntests; testnr++) {
-    Matrix<double, A_rows * A_cols, nq> dA = Matrix<double, A_rows * A_cols, nq>::Random().eval();
+    auto dA = Matrix<double, A_rows * A_cols, Eigen::Dynamic>::Random(A_rows * A_cols, nq).eval();
     setSubMatrixGradient(dA, dA_submatrix, rows, cols, A_rows, q_start, q_subvector_size);
 
     if (check) {
@@ -165,16 +165,16 @@ int main(int argc, char **argv) {
   testMatGradMult(1000, true);
   testSetSubMatrixGradient(1000, true);
 
-//  int ntests = 100000;
-//  std::cout << "testTransposeGrad elapsed time: " << measure<>::execution(testTransposeGrad, ntests) << std::endl;
-//
-//  std::cout << "testMatGradMultMat elapsed time: " << measure<>::execution(testMatGradMultMat, ntests, false) << std::endl;
-//
-//  std::cout << "testMatGradMult elapsed time: " << measure<>::execution(testMatGradMult, ntests, false) << std::endl;
-//
-//  std::cout << "testGetSubMatrixGradient elapsed time: " << measure<>::execution(testGetSubMatrixGradient, ntests) << std::endl;
-//
-//  std::cout << "testSetSubMatrixGradient elapsed time: " << measure<>::execution(testSetSubMatrixGradient, ntests, false) << std::endl;
+  int ntests = 100000;
+  std::cout << "testTransposeGrad elapsed time: " << measure<>::execution(testTransposeGrad, ntests) << std::endl;
+
+  std::cout << "testMatGradMultMat elapsed time: " << measure<>::execution(testMatGradMultMat, ntests, false) << std::endl;
+
+  std::cout << "testMatGradMult elapsed time: " << measure<>::execution(testMatGradMult, ntests, false) << std::endl;
+
+  std::cout << "testGetSubMatrixGradient elapsed time: " << measure<>::execution(testGetSubMatrixGradient, ntests) << std::endl;
+
+  std::cout << "testSetSubMatrixGradient elapsed time: " << measure<>::execution(testSetSubMatrixGradient, ntests, false) << std::endl;
 
   return 0;
 }
