@@ -50,7 +50,7 @@ public:
       typename Gradient<Vector6d, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdq = nullptr,
       typename Gradient<Vector6d, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdv = nullptr) const = 0;
 
-  virtual void randomConfiguration(double* q, std::default_random_engine& generator) const = 0;
+  virtual void randomConfiguration(double* const q, std::default_random_engine& generator) const = 0;
 
   virtual void qdot2v(double* q, Eigen::MatrixXd& qdot_to_v, Eigen::MatrixXd* dqdot_to_v) const = 0;
 
