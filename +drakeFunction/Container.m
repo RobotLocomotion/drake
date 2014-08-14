@@ -1,4 +1,4 @@
-classdef Container < drakeFunction.Root
+classdef Container < drakeFunction.DrakeFunction
   % Abstract parent class for functions that pass their 
   properties (SetAccess = immutable)
     contained_functions %Cell array of DrakeFunction objects
@@ -17,12 +17,12 @@ classdef Container < drakeFunction.Root
       if nargin < 2, same_input = false; end
       if nargin < 3, same_output = false; end
       typecheck(fcns,'cell');
-      assert(all(cellfun(@(arg)isa(arg,'drakeFunction.Root'), fcns)));
+      assert(all(cellfun(@(arg)isa(arg,'drakeFunction.DrakeFunction'), fcns)));
 
       [input_frame,input_map] = drakeFunction.Container.constructInputFrame(fcns,same_input);
       output_frame = drakeFunction.Container.constructOutputFrame(fcns,same_output);
 
-      obj = obj@drakeFunction.Root(input_frame, output_frame);
+      obj = obj@drakeFunction.DrakeFunction(input_frame, output_frame);
 
       obj.contained_functions = fcns;
       obj.n_contained_functions = numel(fcns);

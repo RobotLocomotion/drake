@@ -1,4 +1,4 @@
-classdef ConstantPower < drakeFunction.Root
+classdef ConstantPower < drakeFunction.DrakeFunction
   properties (SetAccess = immutable)
     power
   end
@@ -8,7 +8,7 @@ classdef ConstantPower < drakeFunction.Root
       if ~isscalar(power)
         sizecheck(power,[input_frame.dim,1]);
       end
-      obj = obj@drakeFunction.Root(input_frame,output_frame);
+      obj = obj@drakeFunction.DrakeFunction(input_frame,output_frame);
       obj.power = power;
     end
 

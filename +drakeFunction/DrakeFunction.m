@@ -1,4 +1,4 @@
-classdef Root
+classdef DrakeFunction
   properties (SetAccess = immutable)
     input_frame;
     output_frame;
@@ -7,7 +7,7 @@ classdef Root
     [f,df] = eval(obj,x);
   end
   methods
-    function obj = Root(input_frame,output_frame)
+    function obj = DrakeFunction(input_frame,output_frame)
       obj.input_frame = input_frame;
       obj.output_frame = output_frame;
     end
