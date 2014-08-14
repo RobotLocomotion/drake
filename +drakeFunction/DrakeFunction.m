@@ -31,6 +31,34 @@ classdef DrakeFunction
       obj.output_frame = output_frame;
     end
 
+    function fcn = plus(obj,other)
+      import drakeFunction.*
+      if isa(other,'drakeFunction.DrakeFunction')
+        fcn = compose(Sum(obj.output_frame,2),Concatenated({obj,other}));
+      else
+        error('Drake:drakeFunction:NotSupported', ...
+          'Addition of DrakeFunctions with other classes is not supported');
+      end
+    end
+
+    function fcn = minus(obj,other)
+      fcn = obj + (-other);
+    end
+
+    function fcn = uminus(obj)
+      import drakeFunction.*
+      fcn = compose(ConstantMultiple(obj.getOutputFrame, ...
+                                      obj.getOutputFrame,-1),obj);
+    end
+
+    function fcn = vertcat(varargin)
+      fcn = drakeFunction.Concatenated(varargin);
+    end
+
+    function fcn3 = compose(fcn1, fcn2)
+      fcn3 = drakeFunction.Composed(fcn1,fcn2);
+    end
+
     function input_frame = getInputFrame(obj)
       input_frame = obj.input_frame;
     end
