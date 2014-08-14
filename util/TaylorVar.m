@@ -350,7 +350,7 @@ classdef TaylorVar
       elseif (k==1)
         tv = a;
       else
-        tv=elementwise(a,@(x)power(x,k),@(x) k*x.^(k-1));
+        tv=elementwise(a,@(x)power(x,k),@(x) k.*x.^(k-1));
       end
     end   
     function a=mpower(a,k)
