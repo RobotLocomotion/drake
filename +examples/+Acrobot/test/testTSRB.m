@@ -5,8 +5,8 @@ function testTSRB
 
 w = warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
 dt = .001;
-r = TimeSteppingRigidBodyManipulator('../Acrobot.urdf',dt);
-r_orig = PlanarRigidBodyManipulator('../Acrobot.urdf');
+r = TimeSteppingRigidBodyManipulator(fullfile(getDrakePath, '+examples', '+Acrobot', 'Acrobot.urdf'),dt);
+r_orig = PlanarRigidBodyManipulator(fullfile(getDrakePath, '+examples', '+Acrobot', 'Acrobot.urdf'));
 r_orig = setSimulinkParam(r_orig,'FixedStep',num2str(dt),'Solver','ode1');
 warning(w);
 

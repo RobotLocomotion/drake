@@ -1,5 +1,5 @@
 function [p,xtraj,utraj,z,F,info,traj_opt] = testTrajOpt(xtraj,utraj)
-p = PlanarRigidBodyManipulator('../Acrobot.urdf');
+p = PlanarRigidBodyManipulator(fullfile(getDrakePath, '+examples', '+Acrobot', 'Acrobot.urdf'));
 p = p.setInputLimits(-10,10);
 % p = AcrobotPlant();
 

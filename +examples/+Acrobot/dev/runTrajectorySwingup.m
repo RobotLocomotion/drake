@@ -1,9 +1,9 @@
 function runTrajectorySwingup
-
-addpath([getDrakePath,'/examples/Acrobot'])
+import examples.Acrobot.*;
+import examples.Acrobot.dev.TrajectorySwingup;
 
 d = AcrobotPlant;
-v = AcrobotVisualizer;
+v = AcrobotVisualizer(d);
 c = TrajectorySwingup(d);
 
 for i=1:5

@@ -2,7 +2,7 @@ function testKinematics
 
 w = warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
-m = PlanarRigidBodyManipulator('../Acrobot.urdf');
+m = PlanarRigidBodyManipulator(fullfile(getDrakePath, '+examples', '+Acrobot', 'Acrobot.urdf'));
 warning(w);
 options.grad_method = {'user','taylorvar'};
 

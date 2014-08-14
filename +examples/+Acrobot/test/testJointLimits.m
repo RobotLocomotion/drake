@@ -3,7 +3,7 @@ function testJointLimits()
 
 %r = PlanarRigidBodyManipulator('../Acrobot.urdf');
 %r = HybridPlanarRigidBodyManipulator('../Acrobot.urdf');
-m = PlanarRigidBodyManipulator('../Acrobot.urdf');
+m = PlanarRigidBodyManipulator(fullfile(getDrakePath, '+examples', '+Acrobot', 'Acrobot.urdf'));
 b = getBody(m,3);
 b.joint_limit_min=-1.5;
 b.joint_limit_max=1.5;

@@ -1,5 +1,5 @@
 function dHtest
-p = RigidBodyManipulator('../Acrobot.urdf',struct('floating',true));
+p = RigidBodyManipulator(fullfile(getDrakePath,'+examples', '+Acrobot', 'Acrobot.urdf'),struct('floating',true));
 q = randn(p.getNumPositions,1);
 v = randn(p.getNumPositions,1);
 

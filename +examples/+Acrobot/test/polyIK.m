@@ -1,7 +1,7 @@
 function polyIK
 
 w = warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
-r = PlanarRigidBodyManipulator('../Acrobot.urdf');
+r = PlanarRigidBodyManipulator(fullfile(getDrakePath, '+examples', '+Acrobot', 'Acrobot.urdf'));
 warning(w);
 hand = findFrameId(r,'hand');
 

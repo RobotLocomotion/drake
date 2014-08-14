@@ -6,7 +6,7 @@ function [xtraj,utraj,info]=runRTRL(xInit,xDes)
 
 if (nargin<2) xDes=[pi;0;0;0]; end
 if (nargin<1) xInit=xDes + 0.1*randn(4,1); end
-  
+import examples.Acrobot.*;  
 
 tf=4;
 acrobot=AcrobotPlant;

@@ -4,7 +4,7 @@ function [df, d2f, d3f] = dynamicsGradients(a1, a2, a3, a4, order)
 % See <a href="matlab: help generateGradients">generateGradients</a>. 
 
 % Check inputs:
-typecheck(a1,'AcrobotPlant');
+typecheck(a1,'examples.Acrobot.AcrobotPlant');
 if (nargin<4) order=1; end
 if (order<1) error(' order must be >= 1'); end
 sizecheck(a1,[1  1]);

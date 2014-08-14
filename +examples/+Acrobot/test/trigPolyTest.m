@@ -1,14 +1,15 @@
 function trigPolyTest
 
+import examples.Acrobot.*;
+
 options.replace_output_w_new_state = true;
 
 w = warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
-p1 = PlanarRigidBodyManipulator('../Acrobot.urdf');
+p1 = PlanarRigidBodyManipulator(fullfile(getDrakePath, '+examples', '+Acrobot', 'Acrobot.urdf'));
 warning(w);
 tp1 = extractTrigPolySystem(p1,options);
 
-oldpath=addpath(fullfile(pwd,'..'));
 p2 = AcrobotPlant();
 
 tp2 = extractTrigPolySystem(p2,options);
@@ -38,7 +39,6 @@ for i=1:25
 end
 
 warning(w);
-path(oldpath);
 
 
 function xnp = euler(dt)

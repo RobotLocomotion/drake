@@ -6,8 +6,8 @@ classdef AcrobotVisualizer < Visualizer
       % Construct visualizer
       %   AcrobotVisualizer(AcrobotPlant) will take the necessary
       %   parameters from the plant class
-      
-      typecheck(plant,'AcrobotPlant');
+
+      typecheck(plant,'examples.Acrobot.AcrobotPlant');
       obj = obj@Visualizer(plant.getOutputFrame);
       obj.l1 = plant.l1;
       obj.l2 = plant.l2;

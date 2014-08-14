@@ -2,7 +2,7 @@ function testMass
 
 % tests getMass() method of RigidBodyManipulator
 
-r = PlanarRigidBodyManipulator('../Acrobot.urdf');
+r = PlanarRigidBodyManipulator(fullfile(getDrakePath, '+examples', '+Acrobot', 'Acrobot.urdf'));
 
 valuecheck(r.getMass(),2);
 

@@ -386,7 +386,7 @@ function pnode = crawlDir(pdir,pnode,only_test_dirs,options)
     
     if (files(i).isdir)
       % then recurse into the directory
-      if (files(i).name(1)~='.' && ~any(strcmpi(files(i).name,{'dev','slprj','autogen-matlab','autogen-posters'})))  % skip . and dev directories
+      if (files(i).name(1)~='.' && ~any(strcmpi(files(i).name,{'dev','+dev','slprj','autogen-matlab','autogen-posters'})))  % skip . and dev directories
         crawlDir(files(i).name,node,only_test_dirs && ~strcmpi(files(i).name,'test'),options);
       end
       continue;
@@ -599,7 +599,21 @@ end
 
 function [pass,elapsed_time] = runTest(runpath,test,options)
 p=pwd;
-cd(runpath);
+
+% pathParts = strsplit(runpath, filesep);
+% packageMembers = cellfun(@(x) ~isempty(regexp(x, '^\+')), pathParts);
+% if any(packageMembers)
+%   % This test is inside a package, so we have to 'import' that package
+%   % first
+%   packageStart = find(packageMembers, 1, 'first');
+%   pathParts = cellfun(@(x) regexprep(x,'^\+', ''), pathParts, 'UniformOutput', false);
+%   packageName = strjoin(pathParts(packageStart:end), '.');
+%   import([packageName, '.', test]);
+% else
+%   % It's not a package, so we can just cd to the directory containing the
+%   % test.
+  cd(runpath);
+% end
 %  disp(['running ',path,'/',test,'...']);
 
 if nargin<3, error('needs three arguments now'); end

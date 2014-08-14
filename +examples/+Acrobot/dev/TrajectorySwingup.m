@@ -84,6 +84,7 @@ classdef TrajectorySwingup < HybridDrakeSystem
   
   methods (Static)
     function run()
+      import examples.Acrobot.*;
       pd = AcrobotPlant;
       pv = AcrobotVisualizer;
       c = TrajectorySwingup(pd);

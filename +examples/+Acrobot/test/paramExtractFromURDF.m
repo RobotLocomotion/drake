@@ -1,8 +1,8 @@
 function paramExtractFromURDF
 
-oldpath = addpath(fullfile(pwd,'..'));
+import examples.Acrobot.*;
 
-r1 = RigidBodyManipulator('AcrobotWParams.urdf');
+r1 = RigidBodyManipulator(fullfile(getDrakePath(), '+examples', '+Acrobot', '+test', 'AcrobotWParams.urdf'));
 r2 = AcrobotPlant;
 addProjectionTransformByCoordinateNames(getParamFrame(r1),getParamFrame(r2));
 
@@ -29,7 +29,4 @@ for i=1:20
   u = randn;
   valuecheck(dynamics(r1,t,x,u),dynamics(r2,t,x,u));
 end
-
-
-path(oldpath);
 

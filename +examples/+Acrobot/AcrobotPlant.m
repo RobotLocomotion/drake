@@ -63,7 +63,7 @@ classdef AcrobotPlant < Manipulator
     function [f,df,d2f,d3f] = dynamics(obj,t,x,u)
       f = dynamics@Manipulator(obj,t,x,u);
       if (nargout>1)
-        [df,d2f,d3f]= dynamicsGradients(obj,t,x,u,nargout-1);
+        [df,d2f,d3f]= examples.Acrobot.dynamicsGradients(obj,t,x,u,nargout-1);
       end
     end
     

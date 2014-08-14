@@ -1,6 +1,5 @@
 function paramEstSyntheticData
-
-oldpath = addpath(fullfile(pwd,'..'));
+import examples.Acrobot.*;
 
 r = AcrobotPlant;
 v = AcrobotVisualizer(r);
@@ -22,5 +21,3 @@ estimated_parameters = parameterEstimation(r,data);
 
 % Try parameter estimation with noise and known delay
 
-
-path(oldpath);

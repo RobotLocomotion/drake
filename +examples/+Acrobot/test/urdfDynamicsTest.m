@@ -1,9 +1,9 @@
 function urdfDynamicsTest(xtest,utest)
 
-oldpath=addpath(fullfile(pwd,'..'));
+import examples.Acrobot.*;
 p_orig = AcrobotPlant;
-p_urdf_2D = PlanarRigidBodyManipulator('../Acrobot.urdf');
-p_urdf_3D = RigidBodyManipulator('../Acrobot.urdf');
+p_urdf_2D = PlanarRigidBodyManipulator(fullfile(getDrakePath, '+examples', '+Acrobot', 'Acrobot.urdf'));
+p_urdf_3D = RigidBodyManipulator(fullfile(getDrakePath, '+examples', '+Acrobot', 'Acrobot.urdf'));
 
 for i=1:25
   t = rand;
@@ -23,4 +23,3 @@ for i=1:25
 
 end
 
-path(oldpath);
