@@ -11,7 +11,7 @@ public:
   RollPitchYawFloatingJoint& operator=(const RollPitchYawFloatingJoint&) = delete;
 
 public:
-  RollPitchYawFloatingJoint(const std::string& name, const RigidBody& parent_body, const Eigen::Isometry3d& transform_to_parent_body);
+  RollPitchYawFloatingJoint(const std::string& name, const Eigen::Isometry3d& transform_to_parent_body);
 
   virtual ~RollPitchYawFloatingJoint();
 

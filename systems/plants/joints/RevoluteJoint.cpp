@@ -3,8 +3,8 @@
 
 using namespace Eigen;
 
-RevoluteJoint::RevoluteJoint(const std::string& name, const RigidBody& parent_body, const Isometry3d& transform_to_parent_body, const Vector3d& rotation_axis) :
-    FixedAxisOneDoFJoint(name, parent_body, transform_to_parent_body, spatialJointAxis(rotation_axis)), rotation_axis(rotation_axis)
+RevoluteJoint::RevoluteJoint(const std::string& name, const Isometry3d& transform_to_parent_body, const Vector3d& rotation_axis) :
+    FixedAxisOneDoFJoint(name, transform_to_parent_body, spatialJointAxis(rotation_axis)), rotation_axis(rotation_axis)
 {
 }
 

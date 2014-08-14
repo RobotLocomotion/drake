@@ -807,14 +807,20 @@ typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime>::type dTransformAdjoin
 template void normalizeVec(
     const MatrixBase< Vector3d >& x,
     Vector3d& x_norm,
-    typename Gradient<Vector3d, 3, 1>::type* dx_norm = nullptr,
-    typename Gradient<Vector3d, 3, 2>::type* ddx_norm = nullptr);
+    typename Gradient<Vector3d, 3, 1>::type*,
+    typename Gradient<Vector3d, 3, 2>::type*);
 
 template void normalizeVec(
     const MatrixBase< Vector4d >& x,
     Vector4d& x_norm,
-    typename Gradient<Vector4d, 4, 1>::type* dx_norm = nullptr,
-    typename Gradient<Vector4d, 4, 2>::type* ddx_norm = nullptr);
+    typename Gradient<Vector4d, 4, 1>::type*,
+    typename Gradient<Vector4d, 4, 2>::type*);
+
+template void normalizeVec(
+    const MatrixBase< Map<Vector4d> >& x,
+    Vector4d& x_norm,
+    typename Gradient<Vector4d, 4, 1>::type*,
+    typename Gradient<Vector4d, 4, 2>::type*);
 
 template Vector4d quat2axis(const MatrixBase<Vector4d>&);
 template Matrix3d quat2rotmat(const MatrixBase<Vector4d>& q);
@@ -883,6 +889,9 @@ template typename Gradient< Matrix<double, TWIST_SIZE, Dynamic>, Dynamic, 1>::ty
 template void angularvel2quatdotMatrix(const Eigen::MatrixBase<Vector4d>& q,
     Eigen::MatrixBase< Matrix<double, QUAT_SIZE, SPACE_DIMENSION> >& M,
     typename Gradient<Matrix<double, QUAT_SIZE, SPACE_DIMENSION>, QUAT_SIZE, 1>::type* dM);
+template void angularvel2quatdotMatrix(const Eigen::MatrixBase<Map<Vector4d>>& q,
+    Eigen::MatrixBase< Matrix<double, QUAT_SIZE, SPACE_DIMENSION> >& M,
+    typename Gradient<Matrix<double, QUAT_SIZE, SPACE_DIMENSION>, QUAT_SIZE, 1>::type* dM);
 
 template void angularvel2rpydotMatrix(const Eigen::MatrixBase<Vector3d>& rpy,
     typename Eigen::MatrixBase< Matrix<double, RPY_SIZE, SPACE_DIMENSION> >& phi,
@@ -890,6 +899,8 @@ template void angularvel2rpydotMatrix(const Eigen::MatrixBase<Vector3d>& rpy,
     typename Gradient<Matrix<double, RPY_SIZE, SPACE_DIMENSION>, RPY_SIZE, 2>::type* ddphi);
 
 template Eigen::Matrix<double, SPACE_DIMENSION, RPY_SIZE> rpydot2angularvelMatrix(const Eigen::MatrixBase<Vector3d>& rpy);
+template Eigen::Matrix<double, SPACE_DIMENSION, RPY_SIZE> rpydot2angularvelMatrix(const Eigen::MatrixBase<Map<Vector3d>>& rpy);
+
 
 template void quatdot2angularvelMatrix(const Eigen::MatrixBase<Vector4d>& q,
     Eigen::MatrixBase< Matrix<double, SPACE_DIMENSION, QUAT_SIZE> >& M,

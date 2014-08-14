@@ -3,7 +3,7 @@
 
 #include "DrakeJoint.h"
 
-class FixedAxisOneDoFJoint: public DrakeJoint
+class FixedAxisOneDoFJoint : public DrakeJoint
 {
   // disable copy construction and assignment
   FixedAxisOneDoFJoint(const DrakeJoint&) = delete;
@@ -15,7 +15,7 @@ private:
   double joint_limit_max;
 
 protected:
-  FixedAxisOneDoFJoint(const std::string& name, const RigidBody& parent_body, const Eigen::Isometry3d& transform_to_parent_body, const Eigen::Matrix<double, TWIST_SIZE, 1>& joint_axis);
+  FixedAxisOneDoFJoint(const std::string& name, const Eigen::Isometry3d& transform_to_parent_body, const Eigen::Matrix<double, TWIST_SIZE, 1>& joint_axis);
 
 public:
   virtual ~FixedAxisOneDoFJoint();

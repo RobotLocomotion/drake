@@ -12,7 +12,7 @@ class PrismaticJoint: public FixedAxisOneDoFJoint
 private:
   Eigen::Vector3d translation_axis;
 public:
-  PrismaticJoint(const std::string& name, const RigidBody& parent_body, const Eigen::Isometry3d& transform_to_parent_body, const Eigen::Vector3d& translation_axis);
+  PrismaticJoint(const std::string& name, const Eigen::Isometry3d& transform_to_parent_body, const Eigen::Vector3d& translation_axis);
 
   virtual ~PrismaticJoint();
 

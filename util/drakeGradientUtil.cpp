@@ -165,8 +165,18 @@ MAKE_MATGRADMULT_BLOCK_B_EXPLICIT_INSTANTIATION(double, 9, Eigen::Dynamic, 4, 4,
 		    const Eigen::MatrixBase< Eigen::Matrix<Type, DBRows, NQ> >&);
 MAKE_MATGRADMULTMAT_EXPLICIT_INSTANTIATION(double, 8, 6, 1, Eigen::Dynamic, Eigen::Dynamic, Eigen::Dynamic)
 MAKE_MATGRADMULTMAT_EXPLICIT_INSTANTIATION(double, 8, 6, 9, Eigen::Dynamic, Eigen::Dynamic, Eigen::Dynamic)
-//MAKE_MATGRADMULTMAT_EXPLICIT_INSTANTIATION(double, 4, 1, 4, 4, 4, 4)
+MAKE_MATGRADMULTMAT_EXPLICIT_INSTANTIATION(double, 3, 4, 4, 12, 16, 4)
+MAKE_MATGRADMULTMAT_EXPLICIT_INSTANTIATION(double, 4, 3, 3, 12, 9, 4)
 #undef MAKE_MATGRADMULTMAT_EXPLICIT_INSTANTIATION
+
+#define MAKE_MATGRADMULTMAT_TRANSPOSE_A_EXPLICIT_INSTANTIATION(Type, ARows, ACols, BCols, DARows, DBRows, NQ) \
+    template Eigen::Matrix<Type, matGradMultMatNumRows(ARows, BCols), NQ> matGradMultMat(\
+        const Eigen::MatrixBase< Eigen::Transpose<Eigen::Matrix<Type, ACols, ARows>> >&,\
+        const Eigen::MatrixBase< Eigen::Matrix<Type, ACols, BCols> >&,\
+        const Eigen::MatrixBase< Eigen::Matrix<Type, DARows, NQ> >&,\
+        const Eigen::MatrixBase< Eigen::Matrix<Type, DBRows, NQ> >&);
+MAKE_MATGRADMULTMAT_TRANSPOSE_A_EXPLICIT_INSTANTIATION(double, 3, 3, 4, 9, 12, 4)
+#undef MAKE_MATGRADMULTMAT_TRANSPOSE_A_EXPLICIT_INSTANTIATION
 
 #define MAKE_MATGRADMULTMAT_TRANSPOSE_B_EXPLICIT_INSTANTIATION(Type, ARows, ACols, BCols, DARows, DBRows, NQ) \
     template Eigen::Matrix<Type, matGradMultMatNumRows(ARows, BCols), NQ> matGradMultMat(\
@@ -185,6 +195,9 @@ MAKE_SETSUBMATRIXGRADIENT_EXPLICIT_INSTANTIATION(double, Eigen::Dynamic, Eigen::
 MAKE_SETSUBMATRIXGRADIENT_EXPLICIT_INSTANTIATION(double, Eigen::Dynamic, 16, Eigen::Dynamic, Eigen::Dynamic, Eigen::Dynamic, 3, 3)
 MAKE_SETSUBMATRIXGRADIENT_EXPLICIT_INSTANTIATION(double, Eigen::Dynamic, 16, Eigen::Dynamic, 9, Eigen::Dynamic, 3, 3)
 MAKE_SETSUBMATRIXGRADIENT_EXPLICIT_INSTANTIATION(double, Eigen::Dynamic, 16, Eigen::Dynamic, 3, Eigen::Dynamic, 3, 1)
+MAKE_SETSUBMATRIXGRADIENT_EXPLICIT_INSTANTIATION(double, 4, Eigen::Dynamic, Eigen::Dynamic, 12, 4, 3, 4)
+MAKE_SETSUBMATRIXGRADIENT_EXPLICIT_INSTANTIATION(double, 4, Eigen::Dynamic, Eigen::Dynamic, 9, 4, 3, 3)
+MAKE_SETSUBMATRIXGRADIENT_EXPLICIT_INSTANTIATION(double, 4, Eigen::Dynamic, Eigen::Dynamic, 9, 4, 4, 3)
 #undef MAKE_SETSUBMATRIXGRADIENT_EXPLICIT_INSTANTIATION
 
 
@@ -211,4 +224,5 @@ MAKE_TRANSPOSEGRAD_EXPLICIT_INSTANTIATION(double, 3, 3)
 MAKE_TRANSPOSEGRAD_EXPLICIT_INSTANTIATION(double, 4, 4)
 MAKE_TRANSPOSEGRAD_EXPLICIT_INSTANTIATION(double, 9, Eigen::Dynamic)
 MAKE_TRANSPOSEGRAD_EXPLICIT_INSTANTIATION(double, 48, Eigen::Dynamic)
+MAKE_TRANSPOSEGRAD_EXPLICIT_INSTANTIATION(double, 9, 4)
 #undef MAKE_TRANSPOSEGRAD_EXPLICIT_INSTANTIATION

@@ -4,8 +4,8 @@
 using namespace Eigen;
 
 
-RollPitchYawFloatingJoint::RollPitchYawFloatingJoint(const std::string& name, const RigidBody& parent_body, const Isometry3d& transform_to_parent_body) :
-  DrakeJoint(name, parent_body, transform_to_parent_body, 6, 6)
+RollPitchYawFloatingJoint::RollPitchYawFloatingJoint(const std::string& name, const Isometry3d& transform_to_parent_body) :
+  DrakeJoint(name, transform_to_parent_body, 6, 6)
 {
   // empty
 }

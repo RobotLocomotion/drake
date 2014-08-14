@@ -5,8 +5,8 @@
 using namespace Eigen;
 using namespace std;
 
-QuaternionFloatingJoint::QuaternionFloatingJoint(const string& name, const RigidBody& parent_body, const Isometry3d& transform_to_parent_body) :
-  DrakeJoint(name, parent_body, transform_to_parent_body, 7, 6)
+QuaternionFloatingJoint::QuaternionFloatingJoint(const string& name, const Isometry3d& transform_to_parent_body) :
+  DrakeJoint(name, transform_to_parent_body, 7, 6)
 {
   // empty
 }
@@ -43,7 +43,7 @@ void QuaternionFloatingJoint::motionSubspaceDotTimesV(double* const q, double* c
   }
 }
 
-void QuaternionFloatingJoint::randomConfiguration(double* q, default_random_engine& generator) const
+void QuaternionFloatingJoint::randomConfiguration(double* const q, std::default_random_engine& generator) const
 {
   normal_distribution<double> normal;
 

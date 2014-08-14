@@ -2,8 +2,8 @@
 
 using namespace Eigen;
 
-HelicalJoint::HelicalJoint(const std::string& name, const RigidBody& parent_body, const Isometry3d& transform_to_parent_body, const Vector3d& axis, double pitch) :
-    FixedAxisOneDoFJoint(name, parent_body, transform_to_parent_body, spatialJointAxis(axis, pitch)), axis(axis), pitch(pitch)
+HelicalJoint::HelicalJoint(const std::string& name, const Isometry3d& transform_to_parent_body, const Vector3d& axis, double pitch) :
+    FixedAxisOneDoFJoint(name, transform_to_parent_body, spatialJointAxis(axis, pitch)), axis(axis), pitch(pitch)
 {
 }
 

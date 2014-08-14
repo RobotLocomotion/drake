@@ -14,7 +14,7 @@ private:
   const double pitch;
 
 public:
-  HelicalJoint(const std::string& name, const RigidBody& parent_body, const Eigen::Isometry3d& transform_to_parent_body, const Eigen::Vector3d& axis, double pitch);
+  HelicalJoint(const std::string& name, const Eigen::Isometry3d& transform_to_parent_body, const Eigen::Vector3d& axis, double pitch);
 
   virtual ~HelicalJoint();
 
