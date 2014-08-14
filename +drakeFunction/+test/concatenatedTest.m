@@ -1,8 +1,8 @@
 function concatenatedTest()
-  import drakeFunction.*
+  import drakeFunction.*;
   frame1 = CoordinateFrame('x',5);
   frame2 = CoordinateFrame('y',2);
-  fun1 = Sum({Identity(frame1),Identity(frame1)});
+  fun1 = Sum(frame1,2);
   fun2 = Identity(frame2);
   concatenated_fun = Concatenated({fun1,fun2});
   x = rand(frame1.dim,1);
