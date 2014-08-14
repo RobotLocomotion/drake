@@ -76,7 +76,7 @@ matGradMult(const Eigen::MatrixBase<DerivedDA>& dA, const Eigen::MatrixBase<Deri
 template<typename Derived>
 Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, Eigen::Dynamic> getSubMatrixGradient(
     const Eigen::MatrixBase<Derived>& dM, const std::vector<int>& rows, const std::vector<int>& cols,
-    int M_rows, int q_start = 0, int q_subvector_size = -1) {
+    int M_rows, int q_start, int q_subvector_size) {
   if (q_subvector_size < 0) {
     q_subvector_size = dM.cols() - q_start;
   }
@@ -91,10 +91,10 @@ Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, Eigen::Dynamic> getSubMa
   return dM_submatrix;
 }
 
-template<int QSubvectorSize = -1, typename Derived, unsigned long NRows, unsigned long NCols>
+template<int QSubvectorSize, typename Derived, unsigned long NRows, unsigned long NCols>
 Eigen::Matrix<typename Derived::Scalar, NRows * NCols, QSubvectorSize == Eigen::Dynamic ? Derived::ColsAtCompileTime : QSubvectorSize>
 getSubMatrixGradient(const Eigen::MatrixBase<Derived>& dM,
-    const std::array<int, NRows>& rows, const std::array<int, NCols>& cols, int M_rows, int q_start = 0, int q_subvector_size = QSubvectorSize) {
+    const std::array<int, NRows>& rows, const std::array<int, NCols>& cols, int M_rows, int q_start, int q_subvector_size) {
   if (q_subvector_size == Eigen::Dynamic) {
     q_subvector_size = dM.cols() - q_start;
   }
@@ -116,7 +116,7 @@ getSubMatrixGradient(const Eigen::MatrixBase<Derived>& dM, int row, int col, int
 
 template<typename DerivedA, typename DerivedB>
 void setSubMatrixGradient(Eigen::MatrixBase<DerivedA>& dM, const Eigen::MatrixBase<DerivedB>& dM_submatrix,
-    const std::vector<int>& rows, const std::vector<int>& cols, int M_rows, int q_start = 0, int q_subvector_size = -1) {
+    const std::vector<int>& rows, const std::vector<int>& cols, int M_rows, int q_start, int q_subvector_size) {
   if (q_subvector_size < 0) {
     q_subvector_size = dM.cols() - q_start;
   }
@@ -128,9 +128,9 @@ void setSubMatrixGradient(Eigen::MatrixBase<DerivedA>& dM, const Eigen::MatrixBa
   }
 }
 
-template<int QSubvectorSize = -1, typename DerivedA, typename DerivedB, unsigned long NRows, unsigned long NCols>
+template<int QSubvectorSize, typename DerivedA, typename DerivedB, unsigned long NRows, unsigned long NCols>
 void setSubMatrixGradient(Eigen::MatrixBase<DerivedA>& dM, const Eigen::MatrixBase<DerivedB>& dM_submatrix,
-    const std::array<int, NRows>& rows, const std::array<int, NCols>& cols, int M_rows, int q_start = 0, int q_subvector_size = QSubvectorSize) {
+    const std::array<int, NRows>& rows, const std::array<int, NCols>& cols, int M_rows, int q_start, int q_subvector_size) {
   if (q_subvector_size == Eigen::Dynamic) {
     q_subvector_size = dM.cols() - q_start;
   }
