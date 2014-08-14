@@ -1,10 +1,21 @@
 classdef Composed < drakeFunction.DrakeFunction
+  % Composed    DrakeFunction representing the composition of two functions
+  % Implements
+  %   f = fcn_outer(fcn_inner(x))
   properties (SetAccess = immutable)
-    fcn_outer
-    fcn_inner
+    fcn_outer   % DrakeFunction representing the outer function 
+    fcn_inner   % DrakeFunction representing the inner function 
   end
   methods 
     function obj = Composed(fcn_outer,fcn_inner)
+      % obj = drakeFunction.Composed(fcn_outer,fcn_inner) returns a
+      % Composed object representing the composition of the given
+      % functions
+      %
+      % @param fcn_outer    -- Any DrakeFunction
+      % @param fcn_inner    -- Any DrakeFunction
+      %
+      % @retval obj         -- Composed function
       typecheck(fcn_outer,'drakeFunction.DrakeFunction');
       typecheck(fcn_inner,'drakeFunction.DrakeFunction');
       assert(isequal_modulo_transforms(fcn_outer.input_frame,fcn_inner.output_frame));
