@@ -1,14 +1,14 @@
 function [x,F,info] = normSquaredTest(N)
-  import expression.*
+  import drakeFunction.*
   if nargin < 1, N = 3; end
   lcmgl = LCMGLClient('normSquaredTest');
   r_inds = reshape(1:3*N,3,N);
-  R3 = expression.frames.R(3);
+  R3 = drakeFunction.frames.R(3);
   radius = 0.2;
-  distance_from_origin_expr = expression.euclidean.NormSquared(R3);
+  distance_from_origin_expr = drakeFunction.euclidean.NormSquared(R3);
   squared_dist_between_pts_expr = ...
-    compose(expression.euclidean.NormSquared(R3), ...
-            expression.Identity(R3)-expression.Identity(R3));
+    compose(drakeFunction.euclidean.NormSquared(R3), ...
+            drakeFunction.Identity(R3)-drakeFunction.Identity(R3));
   distance_cost = DrakeFunctionConstraint(0,1,distance_from_origin_expr);
   distance_constraint = DrakeFunctionConstraint((2*radius)^2,inf,squared_dist_between_pts_expr);
 
