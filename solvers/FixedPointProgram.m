@@ -1,4 +1,4 @@
-classdef FixedPointProgram < NonlinearProgramWConstraintObjects
+classdef FixedPointProgram < NonlinearProgram
 
   properties
     sys % the drake system
@@ -17,7 +17,7 @@ classdef FixedPointProgram < NonlinearProgramWConstraintObjects
       
       num_x = getNumStates(sys);
       num_u = getNumInputs(sys);
-      obj = obj@NonlinearProgramWConstraintObjects(num_x+num_u,vertcat(getCoordinateNames(sys.getStateFrame), getCoordinateNames(sys.getInputFrame)));
+      obj = obj@NonlinearProgram(num_x+num_u,vertcat(getCoordinateNames(sys.getStateFrame), getCoordinateNames(sys.getInputFrame)));
       obj.sys = sys;
       obj = addDynamicConstraints(obj,x_dimensions_to_ignore);
       

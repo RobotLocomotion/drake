@@ -1,4 +1,4 @@
-classdef InverseKinematics < NonlinearProgramWConstraintObjects
+classdef InverseKinematics < NonlinearProgram
   % solve the inverse kinematics problem
   % min_q 0.5*(q-qnom)'Q(q-qnom)+cost1(q)+cost2(q)+...
   % s.t    lb<= kc(q) <=ub
@@ -35,7 +35,7 @@ classdef InverseKinematics < NonlinearProgramWConstraintObjects
         error('Drake:InverseKinematics:robot should be a RigidBodyManipulator or a TimeSteppingRigidBodyManipulator');
       end
       nq_tmp = robot.getNumPositions();
-      obj = obj@NonlinearProgramWConstraintObjects(nq_tmp);
+      obj = obj@NonlinearProgram(nq_tmp);
       obj.nq = nq_tmp;
       obj.robot = robot;
       obj.x_name = cell(obj.nq,1);
@@ -119,7 +119,7 @@ classdef InverseKinematics < NonlinearProgramWConstraintObjects
       if(~isempty(obj.qsc_weight_idx))
         x0(obj.qsc_weight_idx) = 1/length(obj.qsc_weight_idx);
       end
-      [x,F,info] = solve@NonlinearProgramWConstraintObjects(obj,x0);
+      [x,F,info] = solve@NonlinearProgram(obj,x0);
       q = x(obj.q_idx);
       q = max([obj.x_lb(obj.q_idx) q],[],2);
       q = min([obj.x_ub(obj.q_idx) q],[],2);
