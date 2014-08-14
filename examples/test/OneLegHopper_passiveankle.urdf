@@ -49,13 +49,13 @@
         <color rgba=".8 .8 .8 1"/>
       </material>
     </visual>
-    <collision>
+    <collision group="toe">
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
         <sphere radius="0"/>
       </geometry>
     </collision>
-    <collision>
+    <collision group="heel">
       <origin rpy="0 0 0" xyz="0 0 -.2"/>
       <geometry>
         <sphere radius="0"/>

@@ -18,7 +18,7 @@ options.view = 'right';
 options.terrain = RigidBodyFlatTerrain();
 options.floating = true;
 options.ignore_self_collisions = true;
-s = 'OneLegHopper.urdf';
+s = 'OneLegHopper_passiveankle.urdf';
 dt = 0.001;
 r = TimeSteppingRigidBodyManipulator(s,dt,options);
 
@@ -29,7 +29,8 @@ nu = getNumInputs(r);
 v = r.constructVisualizer;
 v.display_dt = 0.01;
 
-load('hopper_traj_lqr_081414.mat');
+% load('hopper_traj_lqr_081414.mat');
+load('hopper_passiveankle_traj_lqr_081414.mat');
 xtraj = xtraj.setOutputFrame(getStateFrame(r));
 v.playback(xtraj,struct('slider',true));
 
@@ -45,7 +46,10 @@ foot_ind = findLinkInd(r,'foot');
 
 support_times(2) = support_times(2);
 % manually specifiy modes for now
-supports = [RigidBodySupportState(r,[]); RigidBodySupportState(r,foot_ind)];
+supports = [RigidBodySupportState(r,[]); ...
+  RigidBodySupportState(r,foot_ind); ...
+  RigidBodySupportState(r,foot_ind,{{'heel'}}); ...
+  RigidBodySupportState(r,foot_ind)];
 
 if segment_number<1
   B=Btraj;
