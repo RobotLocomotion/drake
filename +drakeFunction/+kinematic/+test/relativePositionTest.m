@@ -15,7 +15,7 @@ function relativePositionTest(visualize)
     v = rbm.constructVisualizer();
   end
 
-  hand_pt_expr = RelativePosition(rbm,'l_hand','world',rbm.getBody(rbm.findLinkInd('r_hand')).getTerrainContactPoints());
+  hand_pt_expr = RelativePosition(rbm,'l_hand','world',rbm.getBody(rbm.findLinkInd('l_hand')).getTerrainContactPoints());
 
   q0 = zeros(rbm.getNumPositions(),1);
   S = load(fullfile(getDrakePath(),'examples','Atlas','data','atlas_fp.mat'));
@@ -26,7 +26,9 @@ function relativePositionTest(visualize)
 
   if visualize
     lcmgl.glColor3f(1,0,0);
-    lcmgl.sphere(pos,0.05,20,20);
+    for pt = reshape(pos,3,[])
+      lcmgl.sphere(pt,0.05,20,20);
+    end
     rbm.drawLCMGLAxes(lcmgl,q0,rbm.findLinkInd('l_hand'));
     lcmgl.switchBuffers();
     v.draw(0,q0);
