@@ -1,28 +1,40 @@
 function relativePositionTest(visualize)
   import drakeFunction.*
-  %import drakeFunction.euclidean.*
+  import drakeFunction.euclidean.*
   import drakeFunction.kinematic.*
 
   if nargin < 1, visualize = false; end
 
+  %% Initial Setup
+  % Create the robot
   w = warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
   options.floating = true;
   urdf = fullfile(getDrakePath(),'examples','Atlas','urdf','atlas_minimal_contact.urdf');
   rbm = RigidBodyManipulator(urdf,options);
   warning(w);
+  nq = rbm.getNumPositions();
+
+  % Initialize visualization (if needed)
   if visualize
     lcmgl = LCMGLClient('relativePositionTest');
     v = rbm.constructVisualizer();
   end
 
-  hand_pt_expr = RelativePosition(rbm,'l_hand','world',rbm.getBody(rbm.findLinkInd('l_hand')).getTerrainContactPoints());
+  % Create short name for R^3
+  R3 = drakeFunction.frames.R(3);
 
-  q0 = zeros(rbm.getNumPositions(),1);
+  % Load nominal posture
   S = load(fullfile(getDrakePath(),'examples','Atlas','data','atlas_fp.mat'));
-  q_nom = S.xstar(1:numel(q0));
+  q_nom = S.xstar(1:nq);
   q0 = q_nom;
 
-  [pos,J] = hand_pt_expr.eval(q0);
+  %% Test a basic RelativePosition object
+  % Create a DrakeFunction that computes the world position of the hand points
+  hand_pts_in_body = rbm.getBody(rbm.findLinkInd('l_hand')).getTerrainContactPoints();
+  hand_pts_fcn = RelativePosition(rbm,'l_hand','world',hand_pts_in_body);
+
+  % Evaluate that DrakeFunction
+  [pos,J] = hand_pts_fcn(q0);
 
   if visualize
     lcmgl.glColor3f(1,0,0);
@@ -34,61 +46,107 @@ function relativePositionTest(visualize)
     v.draw(0,q0);
   end
 
-  [pos,J_taylorvar] = geval(@hand_pt_expr.eval,q0,struct('grad_method','taylorvar'));
-  [f,df] = geval(@hand_pt_expr.eval,q0,struct('grad_method',{{'user','taylorvar'}},'tol',1e-6));
+  % Check the gradients of the DrakeFunction
+  [f,df] = geval(@hand_pts_fcn.eval,q0,struct('grad_method',{{'user','taylorvar'}},'tol',1e-6));
 
-  %foot_pts_expr = RelativePosition(rbm,'l_foot','world',rbm.getBody(rbm.findLinkInd('l_foot')).getTerrainContactPoints());
-  %R3 = drakeFunction.frames.R(3);
-  %dist_to_ground_expr = duplicate(SignedDistanceToHyperplane(Point(R3,0),Point(R3,[0;0;1])),foot_pts_expr.n_pts);
-  %lb = zeros(foot_pts_expr.n_pts,1);
-  %ub = lb;
-  %foot_on_ground_cnstr = ExpressionConstraint(lb,ub,compose(dist_to_ground_expr,foot_pts_expr));
 
-  %lb = zeros(hand_pt_expr.n_pts,1);
-  %ub = lb;
-  %dist_to_ground_expr = duplicate(SignedDistanceToHyperplane(Point(R3,0),Point(R3,[0;0;1])),hand_pt_expr.n_pts);
-  %hand_on_ground_cnstr = ExpressionConstraint(lb,ub,compose(dist_to_ground_expr,hand_pt_expr));
+  %% Solve an inverse kinematics problem
+  
+  %% Constraints on body points
+  % Create a DrakeFunction that computes the signed distance from a point to
+  % the xy-plane
+  single_pt_dist_to_ground = SignedDistanceToHyperplane(Point(R3,0),Point(R3,[0;0;1]));
 
-  %com_expr = RelativePosition(rbm,0,'world',[0;0;0]);
-  %weights_frame = frames.R(foot_pts_expr.n_pts);
-  %support_polygon{1} = LinearCombination(foot_pts_expr.n_pts,R3);
-  %support_polygon{1} = compose(support_polygon{1},[Identity(weights_frame);foot_pts_expr]);
-  %support_polygon{1} = compose(Difference(R3),VertCat(Zeros(weights_frame,R3)+com_expr,support_polygon{1},true));
-  %support_polygon{2} = Identity(weights_frame);
-  %support_polygon{3} = Affine(weights_frame,frames.R(1),ones(1,foot_pts_expr.n_pts),0);
-  %qsc_cnstr{1} = ExpressionConstraint([0;0;-Inf],[0;0;Inf],support_polygon{1});
-  %qsc_cnstr{2} = ExpressionConstraint(zeros(foot_pts_expr.n_pts,1),ones(foot_pts_expr.n_pts,1),support_polygon{2});
-  %qsc_cnstr{3} = ExpressionConstraint(1,1,support_polygon{3});
+  %% Enforce that the corners of the left foot be on the ground
+  % Create a DrakeFunction that computes the world positions of foot points
+  foot_pts_in_body = rbm.getBody(rbm.findLinkInd('l_foot')).getTerrainContactPoints();
+  foot_pts_fcn = RelativePosition(rbm,'l_foot','world',foot_pts_in_body);
 
-  %foot_z_expr = RelativeVector(rbm,'l_foot','world',[0;0;1]);
-  %foot_vertical_cnstr = ExpressionConstraint([0;0;1],[0;0;1],foot_z_expr);
+  % Create a DrakeFunction that computes the signed distances from m points to
+  % the xy-plane, where m = foot_pts_fcn.n_pts
+  dist_to_ground_fcn = duplicate(single_pt_dist_to_ground,foot_pts_fcn.n_pts);
 
-  %Q = eye(numel(q_nom));
-  %prog = InverseKinematics(rbm,q_nom);
-  %prog = prog.setQ(Q);
-  %q_inds = prog.q_idx;
-  %w_inds = reshape(prog.num_vars+(1:foot_pts_expr.n_pts),[],1);
-  %prog = prog.addDecisionVariable(numel(w_inds));
+  % Create an constraint mandating that the signed distances between the foot
+  % points and the ground be zero
+  lb = zeros(foot_pts_fcn.n_pts,1);
+  ub = lb;
+  foot_on_ground_cnstr = DrakeFunctionConstraint(lb,ub,dist_to_ground_fcn(foot_pts_fcn));
 
-  %prog = prog.addConstraint(foot_on_ground_cnstr,q_inds);
-  %prog = prog.addConstraint(foot_vertical_cnstr,q_inds);
+  %% Enforce that the hand points be on the ground
+  % Create a DrakeFunction that computes the signed distances from m points to
+  % the xy-plane, where m = hand_pts_fcn.n_pts
+  dist_to_ground_fcn = duplicate(single_pt_dist_to_ground,hand_pts_fcn.n_pts);
 
-  %prog = prog.addConstraint(hand_on_ground_cnstr,q_inds);
+  % Create an constraint mandating that the signed distances between the foot
+  % points and the ground be zero
+  lb = zeros(hand_pts_fcn.n_pts,1);
+  ub = lb;
+  hand_on_ground_cnstr = DrakeFunctionConstraint(lb,ub,dist_to_ground_fcn(hand_pts_fcn));
 
-  %prog = prog.addConstraint(qsc_cnstr{1},[w_inds;q_inds]);
-  %prog = prog.addConstraint(qsc_cnstr{2},w_inds);
-  %prog = prog.addConstraint(qsc_cnstr{3},w_inds);
+  %% Enforce that the projection of the COM onto the xy-plane be within the
+  %% convex hull of the foot points
+  % Create a frame for the convex weights on the foot points
+  weights_frame = frames.R(foot_pts_fcn.n_pts);
 
-  %time_prog = tic;
-  %[q,F,info] = solve(prog,q0);
-  %toc(time_prog);
+  % Create a DrakeFunction that computes the COM position
+  com_fcn = RelativePosition(rbm,0,'world');
+  % Add unused inputs for the weights
+  com_fcn = addInputFrame(com_fcn,weights_frame);
 
-  %if visualize
-    %kinsol = doKinematics(rbm,q);
-    %com = getCOM(rbm,kinsol);
-    %lcmgl.glColor3f(1,0,0);
-    %lcmgl.sphere([com(1:2);0],0.02,20,20);
-    %lcmgl.switchBuffers();
-    %v.draw(0,q);
-  %end
+  % Create a DrakeFunction that computes a linear combination of points in R3
+  % given the points and the weights as inputs
+  lin_comb_of_pts = LinearCombination(foot_pts_fcn.n_pts,R3);
+  % Create a DrakeFUnction that computes a linear combination of the foot
+  % points given joint-angles and weights as inputs
+  lin_comb_of_foot_pts = lin_comb_of_pts([foot_pts_fcn;Identity(weights_frame)]);
+
+  % Create a DrakeFunction that computes the difference between the COM
+  % position computed from the joint-angles and the linear combination of the
+  % foot points.
+  support_polygon{1} = minus(com_fcn,lin_comb_of_foot_pts,true);
+  support_polygon{2} = Identity(weights_frame);
+
+  % Create a DrakeFunction that computes the sum of the weights
+  support_polygon{3} = Linear(weights_frame,frames.R(1),ones(1,foot_pts_fcn.n_pts));
+
+  % Create quasi-static constraints
+  % xy-coordinates of COM must match a linear combination of the foot points
+  % for some set of weights 
+  qsc_cnstr{1} = DrakeFunctionConstraint([0;0;-Inf],[0;0;Inf],support_polygon{1});
+
+  % The weights must be between 0 and 1
+  lb = zeros(foot_pts_fcn.n_pts,1);
+  ub = ones(foot_pts_fcn.n_pts,1);
+  qsc_cnstr{2} = DrakeFunctionConstraint(lb,ub,support_polygon{2});
+
+  % The weights must sum to 1
+  qsc_cnstr{3} = DrakeFunctionConstraint(1,1,support_polygon{3});
+
+  Q = eye(numel(q_nom));
+  prog = InverseKinematics(rbm,q_nom);
+  prog = prog.setQ(Q);
+  q_inds = prog.q_idx;
+  w_inds = reshape(prog.num_vars+(1:foot_pts_fcn.n_pts),[],1);
+  prog = prog.addDecisionVariable(numel(w_inds));
+
+  prog = prog.addConstraint(foot_on_ground_cnstr,q_inds);
+  prog = prog.addConstraint(hand_on_ground_cnstr,q_inds);
+
+  prog = prog.addConstraint(qsc_cnstr{1},[q_inds;w_inds]);
+  prog = prog.addConstraint(qsc_cnstr{2},w_inds);
+  prog = prog.addConstraint(qsc_cnstr{3},w_inds);
+
+  time_prog = tic;
+  [q,F,info] = solve(prog,q0);
+  display(snoptInfo(info))
+  toc(time_prog);
+
+  if visualize
+    kinsol = doKinematics(rbm,q);
+    com = getCOM(rbm,kinsol);
+    lcmgl.glColor3f(1,0,0);
+    lcmgl.sphere([com(1:2);0],0.02,20,20);
+    lcmgl.switchBuffers();
+    v.draw(0,q);
+  end
 end
