@@ -3,7 +3,15 @@ classdef ConstantPower < drakeFunction.DrakeFunction
     power
   end
   methods
-    function obj = ConstantPower(input_frame,output_frame,power)
+    function obj = ConstantPower(varargin)
+      input_frame = varargin{1};
+      if nargin > 2
+        output_frame = varargin{2};
+        power = varargin{3};
+      else
+        output_frame = input_frame;
+        power = varargin{2};
+      end
       valuecheck(input_frame.dim,output_frame.dim);
       if ~isscalar(power)
         sizecheck(power,[input_frame.dim,1]);

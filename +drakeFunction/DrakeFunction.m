@@ -59,6 +59,35 @@ classdef DrakeFunction
       fcn3 = drakeFunction.Composed(fcn1,fcn2);
     end
 
+    function varargout = subsref(obj,s)
+      varargout = cell(1,max(nargout,1));
+      switch s(1).type
+        case '()'
+          if numel(s) < 2
+            if isa(s.subs{1},'drakeFunction.DrakeFunction')
+              [varargout{:}] = compose(obj,s.subs{1});
+            else
+              if isa(s.subs{1},'Point')
+                assert(isequal_modulo_transforms(s.subs{1}.frame,obj.input_frame));
+                x = double(s.subs{1});
+              elseif isnumeric(s.subs{1})
+                sizecheck(s.subs{1},[obj.input_frame.dim,1]);
+                x = s.subs{1};
+              else
+                error('Drake:drakeFunction:DrakeFunction:UnsupportedType', ...
+                  'fcn(x) does not support x of class %s',class(s.subs{1}));
+              end
+              [varargout{:}] = obj.eval(x);
+            end
+          else
+            error('Drake:drakeFunction:DrakeFunction:TooManySubscripts', ...
+                  'fcn(x) only supports one argument');
+          end
+        otherwise
+          [varargout{:}] = builtin('subsref',obj,s);
+      end
+    end
+
     function input_frame = getInputFrame(obj)
       input_frame = obj.input_frame;
     end
