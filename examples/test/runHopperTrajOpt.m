@@ -28,7 +28,7 @@ if nargin < 2
   traj_init.x = PPTrajectory(foh(t_init,linspacevec([q0;zeros(5,1)],[qf;zeros(5,1)],N)));
   traj_init.x = traj_init.x.setOutputFrame(p.getStateFrame);
  
-  traj_init.u = PPTrajectory(foh(t_init,randn(2,N)));
+  traj_init.u = PPTrajectory(foh(t_init,randn(getNumInputs(p),N)));
   
   lp = [1;0;0;0];
   ln = zeros(4,1);
@@ -95,7 +95,7 @@ traj_opt = traj_opt.setSolverOptions('snopt','MajorOptimalityTolerance',1e-5);
 
   function [f,df] = running_cost_fun(h,x,u)
     K = 10;
-    R = eye(2);
+    R = eye(getNumInputs(p));
     f = K*u'*R*u;
     df = [0 zeros(1,10) 2*K*u'*R];
   end
