@@ -1,0 +1,92 @@
+<?xml version="1.0" ?>
+<robot name="hopper" xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <link name="thigh">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 -.15"/>
+      <mass value="1"/>
+      <inertia ixx=".0075" ixy="0" ixz="0" iyy=".0075" iyz="0" izz=".0075"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <cylinder radius=".03" length=".3"/>
+      </geometry>
+      <origin rpy="0 0 0" xyz="0 0 -.15"/>
+      <material name="grey">
+        <color rgba=".8 .8 .8 1"/>
+      </material>
+    </visual>
+  </link>
+
+  <link name="shin">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 -.15"/>
+      <mass value="1"/>
+      <inertia ixx=".0075" ixy="0" ixz="0" iyy=".0075" iyz="0" izz=".0075"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <cylinder radius=".03" length=".3"/>
+      </geometry>
+      <origin rpy="0 0 0" xyz="0 0 -.15"/>
+      <material name="grey">
+        <color rgba=".8 .8 .8 1"/>
+      </material>
+    </visual>
+  </link>
+
+  <link name="foot">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 -.1"/>
+      <mass value="1"/>
+      <inertia ixx=".0033" ixy="0" ixz="0" iyy=".0033" iyz="0" izz=".0033"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <cylinder radius=".02" length=".2"/>
+      </geometry>
+      <origin rpy="0 0 0" xyz="0 0 -.1"/>
+      <material name="grey">
+        <color rgba=".8 .8 .8 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 -.2"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="knee" type="continuous">
+    <parent link="thigh"/>
+    <child link="shin"/>
+    <origin rpy="0 0 0" xyz="0 0 -.3"/>
+    <axis xyz="0 1 0"/>
+  </joint>
+
+  <joint name="ankle" type="continuous">
+    <parent link="shin"/>
+    <child link="foot"/>
+    <origin rpy="0 0 0" xyz="0 0 -.3"/>
+    <axis xyz="0 1 0"/>
+  </joint>
+
+  <transmission name="knee_motor" type="SimpleTransmission">
+    <actuator name="knee_motor"/>
+    <joint name="knee"/>
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+  <transmission name="ankle_motor" type="SimpleTransmission">
+    <actuator name="ankle_motor"/>
+    <joint name="ankle"/>
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+
+</robot>
+
