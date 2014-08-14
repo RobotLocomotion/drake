@@ -43,7 +43,7 @@ classdef Concatenated < drakeFunction.DrakeFunction
     end
 
     function [f_cell,df_cell] = evalContainedFunctions(obj,x)
-      x_cell = cell(1,obj.n_contained_functions);
+      x_cell = cell(1,obj.input_frame.getNumFrames);
       f_cell = cell(size(x_cell));
       df_cell = cell(size(x_cell));
       if obj.same_input
