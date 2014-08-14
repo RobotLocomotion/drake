@@ -58,15 +58,22 @@ valuecheck(cnstr4.lb,[1;2]);
 valuecheck(cnstr4.ub,[3;2]);
 valuecheck(cnstr4.cin_idx,1);
 valuecheck(cnstr4.ceq_idx,2);
+err = struct('identifier',[]);
 try
   cnstr4 = cnstr4.setBounds([2;2],[1;2]);
 catch err
 end
+if(isempty(err.identifier))
+  error('The setBounds method cannot catch the error when lb is larger than ub');
+end
+err = struct('identifier',[]);
 try
   cnstr4 = cnstr4.setBounds([1;2;3],[3;4;5]);
 catch err
 end
-
+if(isempty(err.identifier))
+  error('The setBounds method cannot catch the error when the constraint changes the row size');
+end
 end
 
 function [c,dc] = cnstr_userfun2(x)

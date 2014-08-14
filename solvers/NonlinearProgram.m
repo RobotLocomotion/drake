@@ -6,34 +6,59 @@ classdef NonlinearProgram
   %            Ain*x <= bin
   %            Aeq*x = beq
   %            x_lb <= x <= x_ub
-  % @param num_vars     An integer. The number of decision variables
-  % @param num_cin      An integer. The number of nonlinear inequality constraints
-  % @param num_ceq      An integer. The number of nonlinear equality constraints
-  % @param Ain          A double matrix. 
-  % @param bin          A double vector. The upper bound for the linear equality
-  % constraint
-  % @param Aeq          A double matrix
-  % @param beq          A double vector
-  % @param cin_lb       A double vector, the lower bounds on the nonlinear inequality
-  % constraints. The default value is 0
-  % @param cin_ub       A double vector, the upper bounds on the nonlinear inequality
-  % constraints. The default value is -inf
-  % @param check_grad   A boolean. True if the user gradient will be checked against
-  % numerical gradient at the begining and end of the nonlinear optimization
   properties (SetAccess=protected)
-    num_vars
-    num_cin
-    num_ceq
-    Ain,bin
-    Aeq,beq
-    cin_lb,cin_ub
-    x_lb,x_ub
-    solver
-    solver_options
+    num_vars % An integer. The number of decision variables
+    num_cin % An integer. The number of nonlinear inequality constraints
+    num_ceq % An integer. The number of nonlinear equality constraints
+    Ain % A double matrix with num_vars columns
+    bin % A double vector, with same number of rows as Ain
+    Ain_name % A cell of strings. Ain_name{i} is the name of the i'th inequality linear constraint
+    Aeq % A double matrix with num_vars columns
+    beq % A double vector with the same number of rows as Aeq
+    Aeq_name % A cell of strings. Aeq_name{i} is the name of the i'th equality constraint
+    cin_lb % A num_cin x 1 double vector. The lower bound of the nonlinear inequality constraint
+    cin_ub % A num_cin x 1 double vector. The upper bound of the nonlinear inequality constraint
+    cin_name % A cell of num_cin x 1 strings. cin_name{i} is the name of the i'th nonlinear inequality constraint
+    ceq_name % A cell of num_ceq x 1 strings. ceq_name{i} is the name of the i'th nonlinear equality constraint
+    x_lb % A num_vars x 1 double vector. The lower bound of the decision variables
+    x_ub % A num_vars x 1 double vector. The upper bound of the decision variables
+    x_name % A cell of num_vars x 1 strings. x_name{i} is the name of the i'th decision variable
+    solver % The name of the solver
+    solver_options 
     display_funs
     display_fun_indices
-    grad_method
-    check_grad
+    check_grad % A boolean, True if the user gradient will be checked against
+               % numerical gradient at the begining and end of the nonlinear optimization
+               
+    nlcon % A cell array of NonlinearConstraint
+    lcon % A cell array of LinearConstraint
+    bbcon % A cell array of BoundingBoxConstraint
+    cost % A cell array of NonlinearConstraint or LinearConstraint.
+    num_nlcon % number of nonlinear constraints
+    num_lcon % number of linear constraints
+    
+    nlcon_xind % A cell array, nlcon_xind{i} is a cell array of int vectors recording the indices of x that is used in evaluation the i'th NonlinearConstraint
+               % nlcon{i}.eval(x(nlcon_xind{i}{1},x(nlcon_xind{i}{2},...)
+    nlcon_xind_stacked % a cell array of vectors, the stacked values of nlcon_xind{i}
+    cost_xind_cell % A cell array, cost_xind{i} is a cell array of int vectors recording the indices of x that is used in evaluating obj.cost{i}
+    cost_xind_stacked % A cell array, cost_xind{i} is an int vector recording the indices of x that is used in evaluating obj.cost{i}
+    bbcon_xind % A cell array, bbcon_xind{i} is an int vector recording the indices of x used in i'th BoundingBoxConstraint
+    nlcon_ineq_idx % row index of nonlinear inequality constraint
+    nlcon_eq_idx % row index of nonlinear equality constraint
+    
+    % a cell array like nlcon_xind, where shared_data_xind_cell{i} is a
+    % cell array of int vectors recording indices used in evaluating the 
+    % shared_data_function
+    shared_data_xind_cell  
+    
+    % a cell array of function handles, each of which returns a data object
+    % so that shared_data{i} = shared_data_functions(x(shared_data_xind_cell{i}{1}),x(shared_data_xind_cell{i}{2}),...)
+    shared_data_functions 
+    
+    % cell arrays of vectors where nlcon_dataind{i} are indices into the
+    % shared_data used by nonlinear constraints and cost functions
+    nlcon_dataind 
+    cost_dataind
   end
   
   properties (Access=private)
@@ -47,109 +72,24 @@ classdef NonlinearProgram
     iCeqfun,jCeqvar  % sparsity pattern in the nonlinear equality constraints
   end
   
-  methods % A subset of these MUST be overloaded
-    
-    % PLEASE READ THIS
-    %  some solvers take the objective and constraints as
-    %  separate callbacks.  others (e.g. snopt) takes 
-    %  a single callback which computes both.  i want to 
-    %  support the "computes both" functionality, because
-    %  it can be more efficient for expensive function
-    %  evaluations (e.g. often there is computation that
-    %  is shared between computing the objective value
-    %  and the constraint value).  
-    %  so, i've implemented the simple logic below so 
-    %  that derived classes can implement the objective
-    %  and constraints methods independently, or all 
-    %  in one method.  BUT ALL DERIVED CLASSES MUST
-    %  OVERLOAD ONE OR THE OTHER VERSIONS.
-    
-    function [f,df] = objective(obj,x)
-      if (obj.objcon_logic) % then i'm getting called from objectiveAndNonlinearConstraints
-        error('Drake:NonlinearProgram:AbstractMethod','all derived classes must implement objective or objectiveAndNonlinearConstraints');
-      end
-      
-      % todo: cache the input/output pairs so I only call
-      % this once (in objective OR nonlinearConstraints)
-      obj.objcon_logic = true;
-      if nargout>1
-        [fgh,dfgh] = objectiveAndNonlinearConstraints(obj,x);
-        df = dfgh(1,:);
-      else
-        fgh = objectiveAndNonlinearConstraints(obj,x);
-      end
-      f = fgh(1);
-    end
-    
-    function [g,h,dg,dh] = nonlinearConstraints(obj,x)
-      if (obj.objcon_logic) % then i'm getting called from objectiveAndNonlinearConstraints
-        error('Drake:NonlinearProgram:AbstractMethod','all derived classes must implement objective or objectiveAndNonlinearConstraints');
-      end
-      
-      % todo: cache the input/output pairs so I only call
-      % this once (in objective OR nonlinearConstraints)
-      obj.objcon_logic = true;
-      if nargout>2
-        [fgh,dfgh] = objectiveAndNonlinearConstraints(obj,x);
-        dg = dfgh(1+(1:obj.num_cin),:);
-        dh = dfgh(1+obj.num_cin+(1:obj.num_ceq),:);
-      else
-        fgh = objectiveAndNonlinearConstraints(obj,x);
-      end
-      g = fgh(1+(1:obj.num_cin));
-      h = fgh(1+obj.num_cin+(1:obj.num_ceq));
-    end
-    
-    function [fgh,dfgh] = objectiveAndNonlinearConstraints(obj,x)
-      % @param x = current value of decision variables
-      % @retval fgh = [ objective(x);
-      %               nonlinear_inequality_constraints(x);
-      %               nonlinear_equality_constraints(x)]
-      
-      if (obj.objcon_logic) % then i'm getting called from objective or nonlinearConstraints
-        error('Drake:NonlinearProgram:AbstractMethod','all derived classes must implement objective or objectiveAndNonlinearConstraints');
-      end
-
-      for i=1:length(obj.display_funs)
-        obj.display_funs{i}(x(obj.display_fun_indices{i}));
-      end
-      
-      obj.objcon_logic = true;
-      if nargout>1
-        [f,df] = objective(obj,x);
-        if (obj.num_cin + obj.num_ceq>0)
-          [g,h,dg,dh] = nonlinearConstraints(obj,x);
-          fgh = [f;g;h];
-          dfgh = [df;dg;dh];
-        else
-          fgh = f;
-          dfgh = df;
-        end
-      else
-        f = objective(obj,x);
-        if (obj.num_cin + obj.num_ceq)
-          [g,h] = nonlinearConstraints(obj,x);
-          fgh = [f;g;h];
-        else
-          fgh = f;
-        end
-      end
-    end
-  end
-  
   methods
-    function obj = NonlinearProgram(num_vars,num_nonlinear_inequality_constraints,num_nonlinear_equality_constraints)
+    function obj = NonlinearProgram(num_vars,x_name)
       % @param num_vars          -- Number of decision variables
-      % @param num_nonlinear_inequality_constraints   -- An int scalar. The number of nonlinear inequality
-      % constraints
-      % @param num_nonlinear_equality_constraints     -- An int scalar. The number of nonlinear equality
-      % constraints
+      % @param x_name       -- An optional argument. A cell of strings containing the name
+      % of each decision variable
+      if(nargin<2)
+        x_name = cellfun(@(i) sprintf('x%d',i),num2cell((1:obj.num_vars)'),'UniformOutput',false);
+      else
+        if(~iscellstr(x_name) || numel(x_name) ~= obj.num_vars)
+          error('Drake:NonlinearProgra:InvalidArgument','Argument x_name should be a cell containing %d strings',obj.num_vars);
+        end
+        x_name = x_name(:);
+      end
       sizecheck(num_vars,[1,1]);
-      sizecheck(num_nonlinear_inequality_constraints,[1,1]);
-      sizecheck(num_nonlinear_equality_constraints,[1,1]);
       obj.num_vars = num_vars;
-      obj.num_cin = num_nonlinear_inequality_constraints;
-      obj.num_ceq = num_nonlinear_equality_constraints;
+      obj.num_cin = 0;
+      obj.num_ceq = 0;
+      obj.x_name = x_name;
       obj.x_lb = -inf(num_vars,1);
       obj.x_ub = inf(num_vars,1);
       obj.cin_ub = zeros(obj.num_cin,1);
@@ -160,6 +100,28 @@ classdef NonlinearProgram
       obj.jCinvar = reshape(bsxfun(@times,ones(obj.num_cin,1),(1:obj.num_vars)),[],1);
       obj.iCeqfun = reshape(bsxfun(@times,(1:obj.num_ceq)',ones(1,obj.num_vars)),[],1);
       obj.jCeqvar = reshape(bsxfun(@times,ones(obj.num_ceq,1),(1:obj.num_vars)),[],1);
+      
+      obj.nlcon = {};
+      obj.lcon = {};
+      obj.bbcon = {};
+      obj.num_nlcon = 0;
+      obj.num_lcon = 0;
+      obj.nlcon_xind = {};
+      obj.nlcon_xind_stacked = {};
+      obj.nlcon_ineq_idx = [];
+      obj.nlcon_eq_idx = [];
+      obj.cost = {};
+      obj.cost_xind_cell = {};
+      obj.cost_xind_stacked = {};
+      obj.cin_name = {};
+      obj.ceq_name = {};
+      obj.Ain_name = {};
+      obj.Aeq_name = {};
+      
+      obj.shared_data_xind_cell = {};
+      obj.shared_data_functions = {};
+      obj.nlcon_dataind = {};
+      obj.cost_dataind = {};
       
       if checkDependency('snopt')
         obj.solver = 'snopt';
@@ -186,25 +148,457 @@ classdef NonlinearProgram
       obj.check_grad = false;
     end
     
-    function obj = addLinearInequalityConstraints(obj,Ain,bin)
-      % add linear inequality constraint Ain*x<=bin
-      [m,n] = size(Ain);
-      assert(n == obj.num_vars);
-      sizecheck(bin,[m,1]);
-      obj.Ain = vertcat(obj.Ain,Ain);
-      obj.bin = vertcat(obj.bin,bin);
+    function obj = addCompositeConstraints(obj,cnstr,xind,data_ind)
+      % add a CompositeConstraint to the object, change the constraint evalation of the
+      % program.
+      % @param mgr     -- A CompositeConstraint object
+      % @param xind      -- Optional argument. The x(xind) is the decision variables used
+      % in evaluating the cnstr. Default value is (1:obj.num_vars)
+      % @param data_ind  -- Optional argument. shared_data{data_ind} are the data objects used
+      if(~isa(cnstr,'CompositeConstraint'))
+        error('Drake:NonlinearProgram:UnsupportedConstraint','addCompositeConstraints expects a CompositeConstraint object');
+      end
+      if(nargin<3)
+        xind = {(1:obj.num_vars)'};
+      end
+      if ~iscell(xind)
+        xind = {xind(:)};
+      end
+      if size(xind,1) < size(xind,2)
+        xind = xind';
+      end
+      if size(xind,2) ~= 1
+        error('Drake:NonlinearProgram:InvalidArgument','xind must be a 1-D vector or 1-D cell array');
+      end
+
+      % add in slack variables to end, and adjust xind accordingly
+      n_slack = cnstr.n_slack;
+      for i=1:length(xind)
+        xind{i} = [xind{i};(obj.num_vars + 1 : obj.num_vars + n_slack)'];
+      end
+      obj = obj.addDecisionVariable(n_slack);
+      
+      if nargin < 4
+        args = {xind};
+      else
+        args = {xind,data_ind};
+      end
+      
+      % add constraints
+      for k=1:length(cnstr.constraints),
+        obj = obj.addConstraint(cnstr.constraints{k}, args{:});
+      end      
     end
     
-    function obj = addLinearEqualityConstraints(obj,Aeq,beq)
-      [m,n] = size(Aeq);
-      assert(n == obj.num_vars);
-      sizecheck(beq,[m,1]);
-      if numel(Aeq) > 0
-        obj.Aeq = vertcat(obj.Aeq,Aeq);
-        obj.beq = vertcat(obj.beq,beq);
+    function obj = addConstraint(obj,cnstr,varargin)
+      % obj = addConstraint(obj,cnstr,varargin)
+      % Queries the constraint type and calls the appropriate addConstraint
+      % method (e.g. addLinearConstraint, etc)
+      %
+      % @param cnstr a Constraint object.  if cnstr is a cell array, then
+      % each of the constraints are added individually.
+      % @param varargin the remaining arguments are passed directly through
+      % to the specialized methods. Note that if cnstr is a cell array,
+      % then the same varargin is passed to all of the specialized methods.
+      
+      if iscell(cnstr)
+        for i=1:numel(cnstr)
+          obj = addConstraint(obj,cnstr{i},varargin{:});
+        end
+      elseif isa(cnstr,'BoundingBoxConstraint')
+        obj = addBoundingBoxConstraint(obj,cnstr,varargin{:});
+      elseif isa(cnstr,'LinearConstraint')
+        obj = addLinearConstraint(obj,cnstr,varargin{:});
+      elseif isa(cnstr,'CompositeConstraint')
+        obj = addCompositeConstraints(obj,cnstr,varargin{:});
+      elseif isa(cnstr,'Constraint')
+        obj = addNonlinearConstraint(obj,cnstr,varargin{:});
+      else
+        error('Drake:NonlinearProgram:UnsupportedConstraint','Unsupported constraint type');
       end
     end
+    
+    function obj = addNonlinearConstraint(obj,cnstr,xind, data_ind)
+      % add a NonlinearConstraint to the object, change the constraint evalation of the
+      % program. 
+      % @param cnstr     -- A NonlinearConstraint object
+      % @param xind      -- Optional argument. The x(xind) is the decision variables used
+      % in evaluating the cnstr. Default value is (1:obj.num_vars)
+      % @param data_ind  -- Optional argument. shared_data{data_ind} are the data objects used
+      if(nargin<3)
+        xind = {(1:obj.num_vars)'};
+      end
+      if ~iscell(xind)
+        xind = {xind(:)};
+      end
+      if size(xind,1) < size(xind,2)
+        xind = xind';
+      end
+      if size(xind,2) ~= 1
+        error('Drake:NonlinearProgram:InvalidArgument','xind must be a 1-D vector or 1-D cell array');
+      end
+      
+      xind_vec = cell2mat(xind);
+      
+      if(nargin<4)
+        data_ind = [];
+      end
+      data_ind = data_ind(:);
+      
+      if(~isa(cnstr,'Constraint'))
+        error('Drake:NonlinearProgram:UnsupportedConstraint','addNonlinearConstraint expects a Constraint object');
+      end
+      if length(xind_vec) ~= cnstr.xdim
+        error('Drake:NonlinearProgram:InvalidArgument','the length of xind must match the x-dimension of the constraint');
+      end
+%       obj.nlcon = [obj.nlcon,{cnstr}];
+      obj.nlcon{end+1} = cnstr;
+      
+      obj.cin_ub = [obj.cin_ub;cnstr.ub(cnstr.cin_idx)];
+      obj.cin_lb = [obj.cin_lb;cnstr.lb(cnstr.cin_idx)];
+      obj.nlcon_ineq_idx = [obj.nlcon_ineq_idx;obj.num_nlcon+cnstr.cin_idx];
+      obj.nlcon_eq_idx = [obj.nlcon_eq_idx;obj.num_nlcon+cnstr.ceq_idx];
+      Geq_idx = cnstr.lb(cnstr.iCfun) == cnstr.ub(cnstr.iCfun);
+      Gin_idx = ~Geq_idx;
+      inv_ceq_idx = zeros(cnstr.num_cnstr,1);
+      inv_ceq_idx(cnstr.ceq_idx) = (1:length(cnstr.ceq_idx))';
+      inv_cin_idx = zeros(cnstr.num_cnstr,1);
+      inv_cin_idx(cnstr.cin_idx) = (1:length(cnstr.cin_idx))';
+      obj.iCinfun = [obj.iCinfun;obj.num_cin+inv_cin_idx(cnstr.iCfun(Gin_idx))];
+      obj.jCinvar = [obj.jCinvar;xind_vec(cnstr.jCvar(Gin_idx))];
+      obj.iCeqfun = [obj.iCeqfun;obj.num_ceq+inv_ceq_idx(cnstr.iCfun(Geq_idx))];
+      obj.jCeqvar = [obj.jCeqvar;xind_vec(cnstr.jCvar(Geq_idx))];
+      obj.cin_name = [obj.cin_name;cnstr.name(cnstr.cin_idx)];
+      obj.ceq_name = [obj.ceq_name;cnstr.name(cnstr.ceq_idx)];
+      obj.num_cin = obj.num_cin + length(cnstr.cin_idx);
+      obj.num_ceq = obj.num_ceq + length(cnstr.ceq_idx);
+      obj.num_nlcon = obj.num_nlcon + cnstr.num_cnstr;
+      obj.nlcon_xind{end+1} = xind;
+      obj.nlcon_xind_stacked{end+1} = xind_vec;
+      obj.nlcon_dataind{end+1} = data_ind;
+    end
+    
+    function obj = addLinearConstraint(obj,cnstr,xind)
+      % add a LinearConstraint to the program
+      % @param cnstr     -- A LinearConstraint object
+      % @param xind      -- Optional argument. x(xind) is the decision variables used in
+      % evaluating the constraint. Default value is (1:obj.num_vars)
+      % @param cnstr_name  -- An optional argument. A cell of strings. cnstr_name{i} is
+      % the name of the i'th constraint. If not given, the cnstr.name will be used instead
+      if cnstr.num_cnstr > 0
+        if(nargin<3)
+          xind = (1:obj.num_vars)';
+        end
+        if iscell(xind)
+          xind = cell2mat(xind);
+        end
+        xind = xind(:);
+        if(~isa(cnstr,'LinearConstraint'))
+          error('Drake:NonlinearProgram:UnsupportedConstraint','addLinearConstraint expects a LinearConstraint object');
+        end
+        if length(xind) ~= cnstr.xdim
+          error('Drake:NonlinearProgram:InvalidArgument','the length of xind must match the x-dimension of the constraint');
+        end
+        obj.lcon = [obj.lcon,{cnstr}];
 
+        cnstr_A = sparse(cnstr.iCfun,xind(cnstr.jCvar),cnstr.A_val,cnstr.num_cnstr,obj.num_vars,cnstr.nnz);
+        cnstr_beq = (cnstr.lb(cnstr.ceq_idx)+cnstr.ub(cnstr.ceq_idx))/2;
+        cnstr_Aeq = cnstr_A(cnstr.ceq_idx,:);
+        cnstr_Ain = cnstr_A(cnstr.cin_idx,:);
+        cnstr_bin_lb = cnstr.lb(cnstr.cin_idx);
+        cnstr_bin_ub = cnstr.ub(cnstr.cin_idx);
+        bin_ub_not_inf_idx = ~isinf(cnstr_bin_ub);
+        bin_lb_not_inf_idx = ~isinf(cnstr_bin_lb);
+        if(sum(bin_ub_not_inf_idx | bin_lb_not_inf_idx)>0)
+          obj.Ain = vertcat(obj.Ain,[cnstr_Ain(bin_ub_not_inf_idx,:);-cnstr_Ain(bin_lb_not_inf_idx,:)]);
+          obj.bin = vertcat(obj.bin,[cnstr_bin_ub(bin_ub_not_inf_idx);-cnstr_bin_lb(bin_lb_not_inf_idx)]);
+        end
+        obj.Ain_name = [obj.Ain_name;cnstr.name(cnstr.cin_idx)];
+        obj.Aeq_name = [obj.Aeq_name;cnstr.name(cnstr.ceq_idx)];
+        if(numel(cnstr_Aeq)>0)
+          obj.Aeq = vertcat(obj.Aeq,cnstr_Aeq);
+          obj.beq = vertcat(obj.beq,cnstr_beq);
+        end
+      end
+    end   
+
+    function obj = addBoundingBoxConstraint(obj,cnstr,xind)
+      % add a BoundingBoxConstraint to the program
+      % @param cnstr      -- A BoundingBoxConstraint
+      % @param xind       -- Optional argument. x(xind) is the decision variables to be
+      % set bounds
+      if(nargin < 3)
+        xind = (1:obj.num_vars)';
+      end
+      if iscell(xind)
+        xind = cell2mat(xind);
+      end
+      xind = xind(:);
+      if(~isa(cnstr,'BoundingBoxConstraint'))
+        error('Drake:NonlinearProgram:UnsupportedConstraint','addBoundingBoxConstraint expects a BoundingBoxConstraint object');
+      end
+      if length(xind) ~= cnstr.xdim
+        error('Drake:NonlinearProgram:InvalidArgument','the length of xind must match the x-dimension of the constraint');
+      end
+      obj.bbcon = [obj.bbcon,{cnstr}];
+      obj.x_lb(xind) = max([cnstr.lb obj.x_lb(xind)],[],2);
+      obj.x_ub(xind) = min([cnstr.ub obj.x_ub(xind)],[],2);
+    end
+    
+    function obj = addCost(obj,cnstr,xind,data_ind)
+      % Add a cost to the objective function
+      % @param cnstr   -- A NonlinearConstraint or a LinearConstraint
+      % @param xind      -- Optional argument. x(xind) is the decision variables used in
+      % evaluating the cost. Default value is (1:obj.num_vars)
+      % @param data_ind  -- Optional argument. shared_data{data_ind} are the data objects used
+      if(nargin<3)
+        xind = {(1:obj.num_vars)'};
+      end
+      if ~iscell(xind)
+        xind = {xind(:)};
+      end
+      xind_vec = cell2mat(xind);
+      if(nargin<4)
+        data_ind = [];
+      end
+      data_ind = data_ind(:);
+      if ~isa(cnstr,'Constraint')
+        error('Drake:NonlinearProgram:UnsupportedConstraint','addCost expects a Constraint object');
+      end
+      
+      if(isa(cnstr,'LinearConstraint'))
+        % Treat linear constraints differently
+        if(cnstr.num_cnstr ~= 1)
+          error('Drake:NonlinearProgram:WrongCost','addCost only accept scalar function');
+        end
+        obj.cost = [obj.cost,{cnstr}];
+        obj.cost_xind_cell{end+1} = {xind_vec(cnstr.jCvar);};
+        obj.cost_xind_stacked{end+1} = xind_vec(cnstr.jCvar);
+        obj.cost_dataind{end+1} = data_ind;
+        obj.jFvar = unique([obj.jFvar;xind_vec(cnstr.jCvar)]);
+        obj.iFfun = ones(length(obj.jFvar),1);
+      else
+        if(cnstr.num_cnstr ~= 1)
+          error('Drake:NonlinearProgram:WrongCost','addCost only accept scalar function');
+        end
+        obj.cost = [obj.cost,{cnstr}];
+        obj.cost_xind_cell{end+1} = xind;
+        obj.cost_xind_stacked{end+1} = xind_vec;
+        obj.cost_dataind{end+1} = data_ind;
+%         obj.cost_xind_cell = [obj.cost_xind_cell,{xind(cnstr.jCvar)}];
+        obj.jFvar = unique([obj.jFvar;xind_vec(cnstr.jCvar)]);
+        obj.iFfun = ones(length(obj.jFvar),1);
+      end
+    end
+    
+    function args = getArgumentArray(obj,x,xind)
+      % Retrieves the elements from the vector x related to xind and returns
+      % them as a cell array where:
+      % args{i} = x(xind{i})
+      narg = length(xind);
+      args = cell(narg,1);
+      for j=1:narg,
+        args{j} = x(xind{j});
+      end
+    end
+    
+    function [g,h,dg,dh] = nonlinearConstraints(obj,x)
+      % evaluate the nonlinear constraints
+      % @param x  A num_vars x 1 double vector. The decision variables
+      % @retval g  The value of the nonlinear inequality constraints
+      % @retval h  The value of the nonlinear equality constraints
+      % @retval dg  The gradient of g w.r.t x
+      % @retval dh  The gradient of h w.r.t x
+      shared_data = obj.evaluateSharedDataFunctions(x);
+      f = zeros(obj.num_nlcon,1);
+      G = zeros(obj.num_nlcon,obj.num_vars);
+      f_count = 0;
+      for i = 1:length(obj.nlcon)
+        args = [getArgumentArray(obj,x,obj.nlcon_xind{i});shared_data(obj.nlcon_dataind{i})];
+        [f(f_count+(1:obj.nlcon{i}.num_cnstr)),G(f_count+(1:obj.nlcon{i}.num_cnstr),obj.nlcon_xind_stacked{i})] = ...
+          obj.nlcon{i}.eval(args{:});
+        f(f_count+obj.nlcon{i}.ceq_idx) = f(f_count+obj.nlcon{i}.ceq_idx)-obj.nlcon{i}.ub(obj.nlcon{i}.ceq_idx);
+        f_count = f_count+obj.nlcon{i}.num_cnstr;
+      end
+      g = f(obj.nlcon_ineq_idx);
+      h = f(obj.nlcon_eq_idx);
+      dg = G(obj.nlcon_ineq_idx,:);
+      dh = G(obj.nlcon_eq_idx,:);
+    end
+     
+    function [f,df] = objective(obj,x)
+      % return the value of the objective
+      % @param x  A obj.num_vars x 1 double vector. The decision variables
+      % @retval f  A double scalar. The value of the objective function
+      % @retval df  The gradient of f w.r.t x
+      shared_data = obj.evaluateSharedDataFunctions(x);
+
+      for i=1:length(obj.display_funs)
+        obj.display_funs{i}(x(obj.display_fun_indices{i}));
+      end
+      
+      f = 0;
+      df = zeros(1,obj.num_vars);
+      for i = 1:length(obj.cost)
+        args = [getArgumentArray(obj,x,obj.cost_xind_cell{i});shared_data(obj.cost_dataind{i})];
+        [fi,dfi] = obj.cost{i}.eval(args{:});
+        f = f+fi;
+        df(obj.cost_xind_stacked{i}) = df(obj.cost_xind_stacked{i})+dfi;
+      end
+    end
+    
+    function [f,G] = objectiveAndNonlinearConstraints(obj,x)
+      % evaluate the objective and the nonlinear constraints altogher
+      % @param x   A obj.num_vars x 1 double vector. The decision variables
+      % @retval f   A 1+obj.num_cin+obj.num_ceq x 1 double vector. f =
+      % [objective;nonlinear_inequality_constraints;nonlinear_equality_constraints]
+      % @retval df  The gradient of f w.r.t x
+      shared_data = obj.evaluateSharedDataFunctions(x);
+      
+      for i=1:length(obj.display_funs)
+        obj.display_funs{i}(x(obj.display_fun_indices{i}));
+      end
+      
+      f = zeros(1+obj.num_nlcon,1);
+      G = zeros(1+obj.num_nlcon,obj.num_vars);
+      for i = 1:length(obj.cost)
+        args = [getArgumentArray(obj,x,obj.cost_xind_cell{i});shared_data(obj.cost_dataind{i})];
+        [fi,dfi] = obj.cost{i}.eval(args{:});
+        f(1) = f(1)+fi;
+        G(1,obj.cost_xind_stacked{i}) = G(1,obj.cost_xind_stacked{i})+dfi;
+      end
+      f_count = 1;
+      for i = 1:length(obj.nlcon)
+        args = [getArgumentArray(obj,x,obj.nlcon_xind{i});shared_data(obj.nlcon_dataind{i})];
+        [f(f_count+(1:obj.nlcon{i}.num_cnstr)),G(f_count+(1:obj.nlcon{i}.num_cnstr),obj.nlcon_xind_stacked{i})] = ...
+          obj.nlcon{i}.eval(args{:});
+        f(f_count+obj.nlcon{i}.ceq_idx) = f(f_count+obj.nlcon{i}.ceq_idx)-obj.nlcon{i}.ub(obj.nlcon{i}.ceq_idx);
+        f_count = f_count+obj.nlcon{i}.num_cnstr;
+      end
+      f = [f(1);f(1+obj.nlcon_ineq_idx);f(1+obj.nlcon_eq_idx)];
+      G = [G(1,:);G(1+obj.nlcon_ineq_idx,:);G(1+obj.nlcon_eq_idx,:)];
+    end
+    
+    function obj = addDecisionVariable(obj,num_new_vars,var_name)
+      % appending new decision variables to the end of the current decision variables
+      % @param num_new_vars      -- An integer. The newly added decision variable is an
+      % num_new_vars x 1 double vector.
+      % @param var_name       -- An optional argument. A cell of strings containing the
+      % name of the new decision variables
+      if(nargin<3)
+        var_name = cellfun(@(i) sprintf('x%d',i),num2cell(obj.num_vars+(1:num_new_vars)'),'UniformOutput',false);
+      else
+        if(~iscellstr(var_name) || numel(var_name) ~= num_new_vars)
+          error('Drake:NonlinearProgram:addDecisionVariable:InvalidArgument','Argument var_name should be a cell of %d strings',num_new_vars);
+        end
+        var_name = var_name(:);
+      end
+      obj.num_vars = obj.num_vars+num_new_vars;
+      obj.x_name = [obj.x_name;var_name];
+      obj.x_lb = [obj.x_lb;-inf(num_new_vars,1)];
+      obj.x_ub = [obj.x_ub;inf(num_new_vars,1)];
+      if(~isempty(obj.Aeq))
+        obj.Aeq = [obj.Aeq zeros(length(obj.beq),num_new_vars)];
+      end
+      if(~isempty(obj.Ain))
+        obj.Ain = [obj.Ain zeros(length(obj.bin),num_new_vars)];
+      end
+    end
+    
+    function obj = replaceCost(obj,cost,cost_idx,xind)
+      % replace the cost_idx'th cost in the original problem with a new cost
+      % @param cost     -- A Constraint object, currently accepts NonlinearConstraint and
+      % LinearConstraint
+      % @param cost_idx -- The index of the original cost to be replaced
+      % @param xind     -- Optional argument. x(xind) is the decision variables used in
+      % evaluating the cost. Default value is (1:obj.num_vars)
+      if(nargin<4)
+        xind = {(1:obj.num_vars)'};
+      end
+      if ~iscell(xind)
+        xind = {xind(:)};
+      end
+      obj.iFfun = [];
+      obj.jFvar = [];
+      num_cost = length(obj.cost);
+      sizecheck(cost_idx,[1,1]);
+      if(cost_idx>num_cost || cost_idx<1)
+        error('Drake:NonlinearProgram:replaceCost:cost_idx is out of range');
+      end
+      cost_tmp = obj.cost;
+      cost_tmp{cost_idx} = cost;
+      cost_xind_tmp = obj.cost_xind_cell;
+      cost_xind_tmp{cost_idx} = xind;
+      obj.cost = {};
+      obj.cost_xind_cell = {};
+      obj.cost_xind_stacked = {};
+      for i = 1:num_cost
+        obj = obj.addCost(cost_tmp{i},cost_xind_tmp{i});
+      end
+    end
+    
+    function obj = replaceBoundingBoxConstraint(obj,cnstr,cnstr_idx,xind)
+      % replace the cnstr_idx'th BoundingBoxConstraint in obj.bb_cnstr with the new cnstr.
+      % @param cnstr    -- A BoundingBoxConstraint object
+      % @param cnstr_idx  -- THe index of the replaced BoundingBoxConstraint in the
+      % obj.bb_cnstr cell
+      % @param xind      Optional argument. x(xind) is the decision variables used in
+      % evaluating the constraint. Default value is (1:obj.num_vars) 
+      if(nargin < 4)
+        xind = (1:obj.num_vars)';
+      end
+      xind = xind(:);
+      obj.x_lb = -inf(obj.num_vars,1);
+      obj.x_ub = inf(obj.num_vars,1);
+      num_bbcon = length(obj.bbcon);
+      sizecheck(cnstr_idx,[1,1]);
+      if(cnstr_idx>num_bbcon || cnstr_idx <1)
+        error('Drake:NonlinearProgram:replaceBoundingBoxConstraint:cnstr_idx is out of range');
+      end
+      bbcon_tmp = obj.bbcon;
+      bbcon_xind_tmp = obj.bbcon_xind;
+      bbcon_tmp{cnstr_idx} = cnstr;
+      bbcon_xind_tmp{cnstr_idx} = xind;
+      obj.bbcon = {};
+      obj.bbcon_xind = {};
+      for i = 1:length(obj.bbcon)
+        obj = obj.addBoundingBoxConstraint(bbcon_tmp{i},bbcon_xind_tmp{i});
+      end
+    end
+    
+    function [obj,ind] = addSharedDataFunction(obj,user_fun,xind)
+      % Adds the specified shared data function to be evaluated within each iteration of the program     
+      % @param user_fun -- The function to be evaluated, where
+      %   shared_data{ind} = user_fun(x(xind));
+      % @param xind      -- Optional argument. The x(xind) is the decision variables used
+      %   in evaluating the cnstr. Default value is (1:obj.num_vars)
+      % @return ind -- the shared data index
+      if(nargin<3)
+        xind = {(1:obj.num_vars)'};
+      end
+      if ~iscell(xind)
+        xind = {xind(:)};
+      end
+      obj.shared_data_functions{end+1} = FunctionWrapper(user_fun);
+      obj.shared_data_xind_cell{end+1} = xind;
+      ind = obj.getNumSharedDataFunctions();
+    end
+    
+    function n = getNumSharedDataFunctions(obj)
+      n = length(obj.shared_data_functions);
+    end
+    
+    function data = evaluateSharedDataFunctions(obj,x)
+      % Evaluate all shared data functions and return the data object
+      nData = length(obj.shared_data_functions);
+      data = cell(nData,1);
+      for i=1:nData
+        args = getArgumentArray(obj,x,obj.shared_data_xind_cell{i});
+%         data{i} = obj.shared_data_functions{i}.eval(args{:});
+        data{i} = obj.shared_data_functions{i}.eval(args{:});
+      end
+    end
+    
     function obj = addDisplayFunction(obj,display_fun,indices)
       % add a dispay function that gets called on every iteration of the
       % algorithm
@@ -217,51 +611,6 @@ classdef NonlinearProgram
 
       obj.display_funs = vertcat(obj.display_funs,{display_fun});
       obj.display_fun_indices = vertcat(obj.display_fun_indices,{indices});
-    end
-    
-    function obj = setVarBounds(obj,x_lb,x_ub)
-      % set the lower and upper bounds of the decision variables
-      sizecheck(x_lb,[obj.num_vars,1]);
-      sizecheck(x_ub,[obj.num_vars,1]);
-      obj.x_lb = x_lb;
-      obj.x_ub = x_ub;
-    end
-    
-    function obj = setObjectiveGradientSparsity(obj,jFvar)
-      % set the sparsity pattern in the objective function
-      % @param jFvar     -- A column integer vector. The indices of the non-zero entries
-      % in the objective gradient
-      if(any(jFvar>obj.num_vars) || any(jFvar<1))
-        error('Drake:NonlinearProgram:setObjectiveGradientSparsity:jGvar out of bounds');
-      end
-      obj.iFfun = ones(length(jFvar),1);
-      obj.jFvar = jFvar;
-    end
-    
-    function obj = setNonlinearInequalityConstraintsGradientSparsity(obj,iCinfun,jCinvar)
-      % set the sparsity patten in the nonlinear inequality constraints, so
-      % dg(iCinfun,jCinvar) are the nonzero entries in the gradient matrix dg.
-      nnz = numel(iCinfun);
-      sizecheck(iCinfun,[nnz,1]);
-      sizecheck(jCinvar,[nnz,1]);
-      if(any(iCinfun<1 | iCinfun>obj.num_cin) || any(jCinvar<1 | jCinvar>obj.num_vars))
-        error('Drake:NonlinearProgram:setNonlinearInequalityConstraintsGradientSparsity:iCinfun or jCinvar is out of bounds');
-      end
-      obj.iCinfun = iCinfun;
-      obj.jCinvar = jCinvar;
-    end
-    
-    function obj = setNonlinearEqualityConstraintsGradientSparsity(obj,iCeqfun,jCeqvar)
-      % set the sparsity patten in the nonlinear equality constraints, so
-      % dh(iCeqfun,jCeqvar) are the nonzero entries in the gradient matrix dh.
-      nnz = numel(iCeqfun);
-      sizecheck(iCeqfun,[nnz,1]);
-      sizecheck(jCeqvar,[nnz,1]);
-      if(any(iCeqfun<1 | iCeqfun>obj.num_cin) || any(jCeqvar<1 | jCeqvar>obj.num_vars))
-        error('Drake:NonlinearProgram:setNonlinearInequalityCOnstraintsGradientSparsity:iCinfun or jCinvar is out of bounds');
-      end
-      obj.iCeqfun = iCeqfun;
-      obj.jCeqvar = jCeqvar;
     end
     
     function obj = setCheckGrad(obj,check_grad)
@@ -382,33 +731,6 @@ classdef NonlinearProgram
         error('solver %s not supported yet',solver);
       end
     end
-    
-    function obj = setNonlinearInequalityBounds(obj,cin_lb,cin_ub,cin_idx)
-      % change the value of the nonlinear constraints lower and upper bounds
-      % @param cin_lb    -- A double column vector. The lower bound of the nonlinear
-      % inequality constraints
-      % @param cin_ub    -- A double column vector. The upper bound of the nonlinear
-      % inequality constraints
-      % @param cin_idx   -- A integer column vector. The indices of the nonlinear
-      % constraints whose upper and lower bounds are reset through the function. The
-      % default value is (1:obj.num_cin)'
-      if(nargin<4)
-        cin_idx = (1:obj.num_cin)';
-      end
-      if(any(cin_idx>obj.num_cin) || any(cin_idx<1))
-        error('Drake:NonlinearProgram:setNonlinearInequalityBounds:cin_idx is incorrect');
-      end
-      cin_idx = cin_idx(:);
-      num_cin_set = numel(cin_idx);
-      sizecheck(cin_ub,[num_cin_set,1]);
-      sizecheck(cin_lb,[num_cin_set,1]);
-      if(any(cin_ub<cin_lb))
-        error('Drake:NonlinearProgram:setNonlinearInequalityBounds:cin_ub cannot be smaller than cin_lb');
-      end
-      obj.cin_ub(cin_idx) = cin_ub;
-      obj.cin_lb(cin_idx) = cin_lb;
-    end
-    % function setGradMethod?
     
     function [iGfun,jGvar] = getNonlinearGradientSparsity(obj)
       % This function sets the nonlinear sparsity vector iGfun and jGvar based on the

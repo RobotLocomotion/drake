@@ -65,7 +65,7 @@ r_leg_hpx = robot.getBody(robot.findJointInd('r_leg_hpx')).dofnum;
 r_leg_aky = robot.getBody(robot.findJointInd('r_leg_aky')).dofnum;
 l_leg_aky = robot.getBody(robot.findJointInd('l_leg_aky')).dofnum;
 
-fixed_pt_search = NonlinearProgramWConstraintObjects(nq+nu+6);
+fixed_pt_search = NonlinearProgram(nq+nu+6);
 fixed_pt_search = fixed_pt_search.addSharedDataFunction(@(q) doKinematics(robot,q,true,true),(1:nq));
 [hand_coaxial_cnstr] = generateBarGraspConstraint(robot,l_hand,r_hand,l_hand_pt,r_hand_pt,l_hand_grasp_axis,r_hand_grasp_axis,0);
 hand_distance_cnstr = Point2PointDistanceConstraint(robot,l_hand,r_hand,l_hand_pt,r_hand_pt,1,2);
