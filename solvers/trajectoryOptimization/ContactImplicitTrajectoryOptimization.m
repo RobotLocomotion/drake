@@ -46,7 +46,7 @@ classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
         options.lambda_jl_mult = 1;
       end
       if ~isfield(options,'active_collision_options')
-        options.active_collision_options.terrain_only = false;
+        options.active_collision_options.terrain_only = true;
       end
       if ~isfield(options,'integration_method')
         options.integration_method = ContactImplicitTrajectoryOptimization.MIDPOINT;
@@ -204,7 +204,7 @@ classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
           dBuminusC1 = -dC1;
         end
         
-        [phi,~,~,~,~,~,~,~,n,D,dn,dD] = obj.plant.contactConstraints(q1,false,struct('terrain_only',false));
+        [phi,~,~,~,~,~,~,~,n,D,dn,dD] = obj.plant.contactConstraints(q1,false,obj.options.active_collision_options);
         % construct J and dJ from n,D,dn, and dD so they relate to the
         % lambda vector
         J = zeros(nl,nq);
