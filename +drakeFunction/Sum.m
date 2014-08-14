@@ -8,7 +8,7 @@ classdef Sum < drakeFunction.Linear
       %                  terms belong
       % @param N      -- Integer number of terms
 
-      integervaluedcheck(N)
+      integervaluedcheck(N);
 
       input_frame = MultiCoordinateFrame(repmat({frame},1,N));
       output_frame = frame;
