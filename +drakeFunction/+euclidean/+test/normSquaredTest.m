@@ -5,12 +5,10 @@ function [x,F,info] = normSquaredTest(N)
   r_inds = reshape(1:3*N,3,N);
   R3 = drakeFunction.frames.R(3);
   radius = 0.2;
-  distance_from_origin_expr = drakeFunction.euclidean.NormSquared(R3);
-  squared_dist_between_pts_expr = ...
-    compose(drakeFunction.euclidean.NormSquared(R3), ...
-            drakeFunction.Identity(R3)-drakeFunction.Identity(R3));
-  distance_cost = DrakeFunctionConstraint(0,1,distance_from_origin_expr);
-  distance_constraint = DrakeFunctionConstraint((2*radius)^2,inf,squared_dist_between_pts_expr);
+
+  norm_squared_fcn = drakeFunction.euclidean.NormSquared(R3);
+  squared_dist_between_pts_fcn = norm_squared_fcn(Difference(R3));
+  distance_constraint = DrakeFunctionConstraint((2*radius)^2,inf,squared_dist_between_pts_fcn);
 
   prog = NonlinearProgramWConstraintObjects(3*N);
   prog = prog.addDisplayFunction(@(r)displayCallback(lcmgl,radius,r),r_inds);
