@@ -1,14 +1,14 @@
-classdef Composed < drakeFunction.Root
+classdef Composed < drakeFunction.DrakeFunction
   properties (SetAccess = immutable)
     fcn_outer
     fcn_inner
   end
   methods 
     function obj = Composed(fcn_outer,fcn_inner)
-      typecheck(fcn_outer,'drakeFunction.Root');
-      typecheck(fcn_inner,'drakeFunction.Root');
+      typecheck(fcn_outer,'drakeFunction.DrakeFunction');
+      typecheck(fcn_inner,'drakeFunction.DrakeFunction');
       assert(isequal_modulo_transforms(fcn_outer.input_frame,fcn_inner.output_frame));
-      obj = obj@drakeFunction.Root(fcn_inner.getInputFrame(),...
+      obj = obj@drakeFunction.DrakeFunction(fcn_inner.getInputFrame(),...
                                    fcn_outer.getOutputFrame());
       obj.fcn_outer = fcn_outer;
       obj.fcn_inner = fcn_inner;

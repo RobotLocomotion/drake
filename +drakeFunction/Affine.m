@@ -1,4 +1,4 @@
-classdef Affine < drakeFunction.Root
+classdef Affine < drakeFunction.DrakeFunction
   properties (SetAccess = immutable)
     A
     b
@@ -7,7 +7,7 @@ classdef Affine < drakeFunction.Root
     function obj = Affine(input_frame,output_frame,A,b)
       sizecheck(A,[output_frame.dim,input_frame.dim]);
       sizecheck(b,[output_frame.dim,1]);
-      obj = obj@drakeFunction.Root(input_frame,output_frame);
+      obj = obj@drakeFunction.DrakeFunction(input_frame,output_frame);
       obj.A = A;
       obj.b = b;
     end
