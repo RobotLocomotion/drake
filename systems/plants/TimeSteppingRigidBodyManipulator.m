@@ -7,15 +7,15 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     manip  % the CT manipulator
     sensor % additional TimeSteppingRigidBodySensors (beyond the sensors attached to manip)
     dirty=true;
-    LCP_cache = struct('t',[],'x',[],'u',[],'nargout',[], ...
-                       'z',[],'Mqdn',[],'wqdn',[], ...
-                       'dz',[],'dMqdn',[],'dwqdn',[]);
   end
 
   properties (SetAccess=protected)
     timestep
     twoD=false
     position_control=false;
+    LCP_cache = struct('t',[],'x',[],'u',[],'nargout',[], ...
+      'z',[],'Mqdn',[],'wqdn',[], ...
+      'dz',[],'dMqdn',[],'dwqdn',[],'contact_data',[]);
   end
 
   methods
@@ -274,7 +274,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
 
         if (nContactPairs > 0)
           if (nargout>4)
-            [phiC,~,~,~,~,~,~,mu,n,D,dn,dD] = obj.manip.contactConstraints(q,true);
+            [phiC,normal,d,xA,xB,idxA,idxB,mu,n,D,dn,dD] = obj.manip.contactConstraints(q,true);
             nC = length(phiC);
             mC = length(D);
             dJ = zeros(nL+nP+(mC+2)*nC,num_q^2);  % was sparse, but reshape trick for the transpose below didn't work
@@ -283,7 +283,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
             dD = vertcat(dD{:});
             dJ(nL+nP+nC+(1:mC*nC),:) = dD;
           else
-            [phiC,~,~,~,~,~,~,mu,n,D] = obj.manip.contactConstraints(q,true);
+            [phiC,normal,d,xA,xB,idxA,idxB,mu,n,D] = obj.manip.contactConstraints(q,true);
             nC = length(phiC);
             mC = length(D);
           end
@@ -291,6 +291,13 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
           D = vertcat(D{:});
           J(nL+nP+(1:nC),:) = n;
           J(nL+nP+nC+(1:mC*nC),:) = D;
+          
+          contact_data.normal = normal;
+          contact_data.d = d;
+          contact_data.xA = xA;
+          contact_data.xB = xB;
+          contact_data.idxA = idxA;
+          contact_data.idxB = idxB;
         else
           mC=0;
           nC=0;
@@ -298,8 +305,9 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
           if (nargout>4)
             dJ = zeros(nL+nP,num_q^2);
           end
+          contact_data = struct();
         end
-
+        obj.LCP_cache.contact_data = contact_data;
         if (nL > 0)
           if (obj.position_control)
             phiL = q(pos_control_index) - u;
