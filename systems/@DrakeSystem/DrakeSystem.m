@@ -542,7 +542,7 @@ classdef DrakeSystem < DynamicalSystem
   
   % utility methods
   methods
-    function gradTest(obj,t,x,u,options)
+    function systemGradTest(obj,t,x,u,options)
       % Compare numerical and analytical derivatives of dynamics,update,and
       % output
       
