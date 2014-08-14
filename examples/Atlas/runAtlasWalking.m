@@ -357,3 +357,6 @@ if rms_com > length(footstep_plan.footsteps)*0.5
 end
 
 end
+
+% TIMEOUT 1500
+
