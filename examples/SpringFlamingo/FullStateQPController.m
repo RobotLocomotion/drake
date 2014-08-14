@@ -93,8 +93,17 @@ classdef FullStateQPController < MIMODrakeSystem
     end
     obj.solver = options.solver;
     
-    obj.rfoot_idx = findLinkInd(r,'right_foot');
-    obj.lfoot_idx = findLinkInd(r,'left_foot');
+    if isfield(options,'left_foot_name')
+      obj.lfoot_idx = findLinkInd(r,options.left_foot_name);
+    else
+      obj.lfoot_idx = findLinkInd(r,'left_foot');
+    end
+
+    if isfield(options,'right_foot_name')
+      obj.rfoot_idx = findLinkInd(r,options.right_foot_name);
+    else
+      obj.rfoot_idx = findLinkInd(r,'right_foot');
+    end
       
     obj.gurobi_options.outputflag = 0; % not verbose
     if options.solver==0

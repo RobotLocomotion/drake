@@ -1,24 +1,26 @@
-function runTrajectoryStabilization(segment_number)
+function runHopperTrajStab(segment_number)
 
 if ~checkDependency('gurobi')
   warning('Must have gurobi installed to run this example');
   return;
 end
+addpath(fullfile(getDrakePath,'examples','SpringFlamingo'));
 
 if nargin < 1
   segment_number = -1; % do full traj
 end
 
+warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
+warning('off','Drake:RigidBodyManipulator:WeldedLinkInd');
+warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
 options.twoD = true;
 options.view = 'right';
+options.terrain = RigidBodyFlatTerrain();
 options.floating = true;
 options.ignore_self_collisions = true;
-options.terrain = RigidBodyFlatTerrain();
-s = 'urdf/spring_flamingo_passive_ankle.urdf';
+s = 'OneLegHopper.urdf';
 dt = 0.001;
-w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
 r = TimeSteppingRigidBodyManipulator(s,dt,options);
-warning(w);
 
 nx = getNumStates(r);
 nq = getNumPositions(r);
@@ -27,30 +29,23 @@ nu = getNumInputs(r);
 v = r.constructVisualizer;
 v.display_dt = 0.01;
 
-data_dir = fullfile(getDrakePath,'examples','SpringFlamingo','data');
-traj_file = strcat(data_dir,'/traj-08-08-14_newcost.mat');
-% if exist(traj_file, 'file') ~= 2
-%   !wget "http://www.dropbox.com/s/i2g6fz45hl97si4/traj.mat" --no-check-certificate 
-%   system(['mv traj.mat ',data_dir]);
-% end
-load(traj_file);
+load('hopper_traj_lqr_081414.mat');
 xtraj = xtraj.setOutputFrame(getStateFrame(r));
-% v.playback(xtraj,struct('slider',true));
+v.playback(xtraj,struct('slider',true));
 
 support_times = zeros(1,length(Straj_full));
 for i=1:length(Straj_full)
   support_times(i) = Straj_full{i}.tspan(1);
 end
 
-lfoot_ind = findLinkInd(r,'left_foot');
-rfoot_ind = findLinkInd(r,'right_foot');  
+options.right_foot_name = 'foot';
+options.left_foot_name = 'thigh'; % junk for now
+
+foot_ind = findLinkInd(r,'foot');
 
 support_times(2) = support_times(2);
 % manually specifiy modes for now
-supports = [RigidBodySupportState(r,lfoot_ind); ...
-  RigidBodySupportState(r,[lfoot_ind,rfoot_ind]); ...
-  RigidBodySupportState(r,[lfoot_ind,rfoot_ind],{{'toe'},{'heel','toe'}}); ...
-  RigidBodySupportState(r,rfoot_ind)];
+supports = [RigidBodySupportState(r,[]); RigidBodySupportState(r,foot_ind)];
 
 if segment_number<1
   B=Btraj;
