@@ -31,18 +31,19 @@ classdef DrakeFunction
       obj.output_frame = output_frame;
     end
 
-    function fcn = plus(obj,other)
+    function fcn = plus(obj,other,same_input)
       import drakeFunction.*
+      if nargin < 3, same_input = false; end
       if isa(other,'drakeFunction.DrakeFunction')
-        fcn = compose(Sum(obj.output_frame,2),Concatenated({obj,other}));
+        fcn = compose(Sum(obj.output_frame,2),Concatenated({obj,other},same_input));
       else
         error('Drake:drakeFunction:NotSupported', ...
           'Addition of DrakeFunctions with other classes is not supported');
       end
     end
 
-    function fcn = minus(obj,other)
-      fcn = obj + (-other);
+    function fcn = minus(obj,other,varargin)
+      fcn = plus(obj,-other,varargin{:});
     end
 
     function fcn = uminus(obj)
