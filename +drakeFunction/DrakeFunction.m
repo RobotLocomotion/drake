@@ -59,6 +59,31 @@ classdef DrakeFunction
       fcn3 = drakeFunction.Composed(fcn1,fcn2);
     end
 
+    function fcn = duplicate(obj,n)
+      % fcn = duplicate(obj,n) returns a concatenated DrakeFunction containing
+      % n duplicates of obj
+      fcn = drakeFunction.Concatenated(repmat({obj},1,n));
+    end
+
+    function fcn = addInputFrame(obj,frame,append)
+      % fcn = appendInputFrame(obj,frame,append) returns a DrakeFunction that
+      % is the same as obj, but with unused inputs added. These inputs are
+      % appended or prepended based on the value of 'append'.
+      %
+      % @param obj
+      % @param frame
+      % @param append -- Logical indicating whether to add the inputs after (T)
+      %                  or before (F) the current inputs. 
+      %                  Optional. @default True 
+      if nargin < 3, append = true; end
+      dummy_fcn = drakeFunction.Zeros(frame,drakeFunction.frames.R(0));
+      if append
+        fcn = [obj;dummy_fcn];
+      else
+        fcn = [dummy_fcn;obj];
+      end
+    end
+
     function varargout = subsref(obj,s)
       varargout = cell(1,max(nargout,1));
       switch s(1).type

@@ -95,6 +95,7 @@ classdef Concatenated < drakeFunction.DrakeFunction
       if nargin < 2, same_output = false; end
       fcn_output_frames = cellfun(@(fcn) fcn.getOutputFrame(), ...
         fcns,'UniformOutput',false);
+      fcn_output_frames(cellfun(@(frame) frame.dim == 0, fcn_output_frames)) = [];
       if same_output
         % Check that all elements of fcns have the same output_frame
         output_frame = fcn_output_frames{1};
@@ -103,7 +104,7 @@ classdef Concatenated < drakeFunction.DrakeFunction
           ['If ''same_output'' is set to true, all functions must ' ...
            'have the same output frame']);
       else
-        output_frame = MultiCoordinateFrame(fcn_output_frames);
+        output_frame = MultiCoordinateFrame.constructFrame(fcn_output_frames);
       end
     end
 
