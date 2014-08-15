@@ -3,7 +3,6 @@
 #include <Eigen/Core>
 #include <limits>
 #include <exception>
-#include <iostream>
 
 using namespace Eigen;
 
@@ -57,9 +56,6 @@ void FixedAxisOneDoFJoint::motionSubspaceDotTimesV(double* const q, double* cons
 
 void FixedAxisOneDoFJoint::randomConfiguration(double* q, std::default_random_engine& generator) const
 {
-  std::cout << "joint_limit_min: " << joint_limit_min << std::endl;
-  std::cout << "joint_limit_max: " << joint_limit_max << std::endl;
-
   if (std::isfinite(joint_limit_min) && std::isfinite(joint_limit_max)) {
     std::uniform_real_distribution<double> distribution(joint_limit_min, joint_limit_max);
     q[0] = distribution(generator);
@@ -86,7 +82,6 @@ void FixedAxisOneDoFJoint::randomConfiguration(double* q, std::default_random_en
       q[0] = joint_limit_max;
     }
   }
-  std::cout << "q[0]: " << q[0] << std::endl;
 }
 
 void FixedAxisOneDoFJoint::qdot2v(double* q, Eigen::MatrixXd& qdot_to_v, Eigen::MatrixXd* dqdot_to_v) const
