@@ -52,6 +52,33 @@ classdef DrakeFunction
                                       obj.getOutputFrame,-1),obj);
     end
 
+    function fcn = mtimes(obj,other)
+      if isnumeric(obj) && isscalar(obj)
+        fcn = obj.*other;
+      elseif isnumeric(other) && isscalar(other)
+        fcn = obj.*other;
+      else
+        error('Drake:drakeFunction:DrakeFunction:NoMatrixProducts', ...
+          'Matrix products of expressions are not yet imiplemented');
+      end
+    end
+
+    function fcn = times(obj,other)
+      import drakeFunction.ConstantMultiple
+      if isnumeric(obj)
+        fcn_orig = other;
+        value = obj;
+      elseif isnumeric(other)
+        fcn_orig = obj;
+        value = other;
+      else
+        error('Drake:drakeFunction:DrakeFunction:NoDrakeFunctionProducts', ...
+          'Elementwise products of two DrakeFunctions are not yet imiplemented');
+      end
+      frame = fcn_orig.getOutputFrame();
+      fcn = compose(ConstantMultiple(frame,value),fcn_orig);
+    end
+
     function fcn = vertcat(varargin)
       fcn = drakeFunction.Concatenated(varargin);
     end
