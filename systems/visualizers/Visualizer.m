@@ -207,7 +207,7 @@ classdef Visualizer < DrakeSystem
       if (nargin<6), model = []; end
 
       x0(state_dims) = max(min(x0(state_dims),maxrange),minrange);
-      if ~isempty(visualized_system), 
+      if ~isempty(visualized_system),
         [x0,~,prog] = resolveConstraints(visualized_system,x0);
       end
 
@@ -226,14 +226,14 @@ classdef Visualizer < DrakeSystem
         % use a little undocumented matlab to get continuous slider feedback:
         slider_listener{i} = handle.listener(slider{i},'ActionEvent',@update_display);
       end
-      
+
       set(f, 'Position', [560 400 560 20 + 30*rows]);
       resize_gui();
       update_display(slider{1});
-      
+
       function resize_gui(source, eventdata)
         p = get(gcf,'Position');
-        width = p(3); 
+        width = p(3);
         y=30*rows-10;
         for i=1:numel(state_dims)
           set(label{i},'Position',[20+width/2*(i>rows), y+30*rows*(i>rows), width/2-220, 20]);
@@ -249,11 +249,11 @@ classdef Visualizer < DrakeSystem
           x(state_dims(i)) = get(slider{i}, 'Value');
           set(value{i},'String',num2str(x(state_dims(i)),'%4.3f'));
         end
-        if (~isempty(visualized_system) && getNumStateConstraints(visualized_system)>0)
+        if (~isempty(visualized_system) && getNumStateConstraints(visualized_system)+getNumUnilateralConstraints(visualized_system)>0)
           % constrain the current slider to be exactly the specified value
           current_slider_statedim = get(source,'UserData');
           this_prog = addConstraint(prog,ConstantConstraint(get(source,'Value')),current_slider_statedim);
-          
+
           % and add an objective to be as close as possible to the previous
           % solution on the other sliders.
           % objective = sum_over_remaining_state_dims .5*(x_i-x0_i)^2
