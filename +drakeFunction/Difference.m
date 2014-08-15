@@ -1,4 +1,5 @@
 function fcn = Difference(frame,n)
+  if nargin < 2, n = 2; end
   typecheck(frame,'CoordinateFrame');
   integervaluedcheck(n);
   assert(n>=2,'Drake:DrakeFunction:Difference:BadInput',...
