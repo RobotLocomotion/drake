@@ -1,6 +1,7 @@
 function runSwingUp()
 %% runs trajectory optimization and animates open-loop playback
 
+import examples.Acrobot.*;
 p = AcrobotPlant;
 v = AcrobotVisualizer(p);
 [utraj,xtraj] = swingUpTrajectory(p);

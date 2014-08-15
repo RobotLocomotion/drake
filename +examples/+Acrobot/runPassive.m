@@ -1,6 +1,7 @@
 function runPassive()
 % Simulate the passive acrobot
 
+import examples.Acrobot.*;
 d = AcrobotPlant;
 v = AcrobotVisualizer(d);
 

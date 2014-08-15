@@ -1,4 +1,6 @@
 function [utraj,xtraj,field]=runDircolWithObs(p)
+
+import examples.Airplane2D.*;
 %clear all
 if (nargin<1)
   p = PlanePlant();

@@ -1,5 +1,6 @@
 function runMaxROA
 
+import examples.Acrobot.*;
 p = AcrobotPlant;
 
 % Set input unbounded

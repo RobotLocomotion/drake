@@ -214,7 +214,7 @@ classdef DrakeSystem < DynamicalSystem
       end
       
       % make a simulink model from this block
-      mdl = [class(obj),'_',obj.uid];  % use the class name + uid as the model name
+      mdl = [regexprep(class(obj),'\.','_'),'_',obj.uid];  % use the class name + uid as the model name
       close_system(mdl,0);  % close it if there is an instance already open
       new_system(mdl,'Model');
       set_param(mdl,'SolverPrmCheckMsg','none');  % disables warning for automatic selection of default timestep

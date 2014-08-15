@@ -1,5 +1,6 @@
 function runPassive
 
+import examples.Airplane2D.*;
 pp = PlanePlant();
 pv = PlaneVisualizer(pp);
 

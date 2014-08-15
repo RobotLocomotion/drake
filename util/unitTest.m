@@ -608,7 +608,8 @@ if any(packageMembers)
   packageStart = find(packageMembers, 1, 'first');
   pathParts = cellfun(@(x) regexprep(x,'^\+', ''), pathParts, 'UniformOutput', false);
   packageName = strjoin(pathParts(packageStart:end), '.');
-  import([packageName, '.', test]);
+  test = [packageName, '.', test];
+%   import([packageName, '.', test]);
 else
   % It's not a package, so we can just cd to the directory containing the
   % test.

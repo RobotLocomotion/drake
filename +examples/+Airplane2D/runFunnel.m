@@ -1,5 +1,6 @@
 function [V, utraj,xtraj]=runFunnel(p)
 
+import examples.Airplane2D.*;
 if (nargin<1)
   p = PlanePlant();
 end

@@ -1,6 +1,7 @@
 function runLQR()
 %% run the lqr controller from a handful of initial conditions
 
+import examples.Acrobot.*;
 p = AcrobotPlant;
 v = AcrobotVisualizer(p);
 c = balanceLQR(p);

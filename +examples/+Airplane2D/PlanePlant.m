@@ -23,7 +23,7 @@ classdef PlanePlant < DrakeSystem
         xdot = [ -obj.v * sin(theta);  obj.v * cos(theta); x(4); u(1) ];
         
         if (nargout>1)
-            [df,d2f,d3f]= dynamicsGradients(obj,t,x,u,nargout-1);
+            [df,d2f,d3f]= examples.Airplane2D.dynamicsGradients(obj,t,x,u,nargout-1);
         end
     end
     

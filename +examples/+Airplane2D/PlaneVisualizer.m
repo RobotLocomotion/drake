@@ -7,7 +7,7 @@ classdef PlaneVisualizer < Visualizer
 
   methods
     function obj = PlaneVisualizer(plant,obstaclefield)
-      typecheck(plant,'PlanePlant');
+      typecheck(plant,'examples.Airplane2D.PlanePlant');
       obj = obj@Visualizer(plant.getOutputFrame);
       obj.playback_speed = .2;
       obj.display_dt = 0;
