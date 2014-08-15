@@ -1,5 +1,5 @@
 classdef DrakeSystem < DynamicalSystem
-% A DynamicalSystem with the functionality (dynamics, update, outputs, 
+% A DynamicalSystem with the functionality (dynamics, update, outputs,
 % etc) implemented in matlab, so that it is amenable to, for instance, symbolic
 % manipulations.  These functions are wrapped as an S-Function in
 % DCSFunction.cpp.
@@ -18,7 +18,7 @@ classdef DrakeSystem < DynamicalSystem
       % @param time_invariant_flag true means that the
       %   dynamics/update/output do not depend on time.  Set to true if
       %   possible.
-      
+
       obj.uid = sprintf('%018.0f', now * 24*60*60*1e6);
 
       if (nargin>0)
@@ -30,21 +30,21 @@ classdef DrakeSystem < DynamicalSystem
         if (nargin>=6), obj = setTIFlag(obj,time_invariant_flag); end
       end
       obj = setParamFrame(obj,CoordinateFrame([class(obj),'Params'],0,'p'));  % no parameters by default
-    end      
+    end
   end
-  
+
   % default methods - these should be implemented or overwritten
-  % 
+  %
   methods
     function x0 = getInitialState(obj)
-      % Return a (potentially random) state double (column) 
+      % Return a (potentially random) state double (column)
       % vector of initial conditions
       %
-      % Attempts to return the result of resolveConstraints using a 
+      % Attempts to return the result of resolveConstraints using a
       % small random vector as an initial seed.
-      
+
       x0 = .01*randn(obj.num_xd+obj.num_xc,1);
-      if getNumStateConstraints(obj)>0
+      if getNumStateConstraints(obj)+getNumUnilateralConstraints(obj)>0
         attempts=0;
         success=false;
         while (~success)
@@ -68,35 +68,35 @@ classdef DrakeSystem < DynamicalSystem
       end
       x0 = double(x0);
     end
-    
+
     function xcdot = dynamics(obj,t,x,u)
       % Placeholder for the dynamics method.  Systems with continuous state
       % must overload this method.
       error('Drake:DrakeSystem:AbstractMethod','systems with continuous states must implement Derivatives (ie overload dynamics function)');
     end
-    
+
     function xdn = update(obj,t,x,u)
       % Placeholder for the update method.  Systems with discrete state
       % must overload this method.
       error('Drake:DrakeSystem:AbstractMethod','systems with discrete states must implement Update (ie overload update function)');
     end
-    
+
     function y = output(obj,t,x,u)
       % Placeholder for the output method.  Systems must overload this method.
       error('Drake:DrakeSystem:AbstractMethod','default is intentionally not implemented');
     end
-    
+
     function zcs = zeroCrossings(obj,t,x,u)
-      % Placeholder for the zeroCrossings method: a method 
-      % phi = zeroCrossings(t,x,u) which triggers a zero crossing 
-      % event when phi transitions from positive to negative.  
+      % Placeholder for the zeroCrossings method: a method
+      % phi = zeroCrossings(t,x,u) which triggers a zero crossing
+      % event when phi transitions from positive to negative.
       %
       % Systems with zero crossings must overload this method.
-      error('Drake:DrakeSystem:AbstractMethod','systems with zero crossings must implement the zeroCrossings method'); 
+      error('Drake:DrakeSystem:AbstractMethod','systems with zero crossings must implement the zeroCrossings method');
     end
-    
+
   end
-  
+
   % access methods
   methods
     function n = getNumContStates(obj)
@@ -115,12 +115,12 @@ classdef DrakeSystem < DynamicalSystem
       % Returns the number of outputs from the system
       n = obj.num_y;
     end
-    function x0 = getInitialStateWInput(obj,t,x,u)  
-      % Hook in case a system needs to initial state based on current time and/or input.  
+    function x0 = getInitialStateWInput(obj,t,x,u)
+      % Hook in case a system needs to initial state based on current time and/or input.
       % This gets called after getInitialState(), and unfortunately will override inputs supplied by simset.
-      x0=x;  % by default, do nothing. 
+      x0=x;  % by default, do nothing.
     end
-    function ts = getSampleTime(obj)  
+    function ts = getSampleTime(obj)
       % As described at http://www.mathworks.com/help/toolbox/simulink/sfg/f6-58760.html
       % to set multiple sample times, specify one *column* for each sample
       % time/offset pair.
@@ -129,7 +129,7 @@ classdef DrakeSystem < DynamicalSystem
       % discrete states, and inherited for systems with no states.  For
       % systems with both discrete and continuous states, an error is
       % thrown saying that this function should be overloaded to set the
-      % desired behavior.  
+      % desired behavior.
 
       if ~isempty(obj.ts)
         ts = obj.ts;
@@ -143,9 +143,9 @@ classdef DrakeSystem < DynamicalSystem
         error('Drake:DrakeSystem:NotImplemented','systems with both discrete and continuous states must implement the getSampleTime method or call setSampleTime to specify the desired behavior');
       end
     end
-    
+
   end
-  
+
   methods (Sealed = true)
     function ts = getInputSampleTimes(obj)
       % Returns getSampleTime - a DrakeSystem can only have a single same
@@ -158,20 +158,20 @@ classdef DrakeSystem < DynamicalSystem
       ts = getSampleTime(obj);
     end
   end
-  
+
   methods
     function obj = setSampleTime(obj,ts)
       % robust method for setting default sample time
-      % 
+      %
       % @param ts a 2-by-n matrix with each column containing a sample time
-      %    redundant colums are eliminated automatically.  
+      %    redundant colums are eliminated automatically.
       % only a few possibilities are allowed/supported
       %   inherited, single continuous, single discrete, single continuous+single
       %   discrete (note: disabled single continuous + single discrete
       %   because it wasn't obviously the right thing... e.g. in the
       %   visualizer who asked for the output to be at fixed dt, but after
       %   combination, the output gets called continuously).
-      
+
       ts = unique(ts','rows')';
 
       if size(ts,2)>1  % if only one ts, then all is well
@@ -204,7 +204,7 @@ classdef DrakeSystem < DynamicalSystem
       % the simulink engine.
       %
       % @retval mdl string id for the simulink system
-      
+
       % First, make sure we have a compiled DCSFunction
       if(~exist('DCSFunction','file'))
         errorMsg={'Sorry, you have not run ''make'' yet in the drake root,'
@@ -212,15 +212,15 @@ classdef DrakeSystem < DynamicalSystem
           'Running configure and make in the drake root directory will fix this.'};
         error('%s\n',errorMsg{:})
       end
-      
+
       % make a simulink model from this block
       mdl = [class(obj),'_',obj.uid];  % use the class name + uid as the model name
       close_system(mdl,0);  % close it if there is an instance already open
       new_system(mdl,'Model');
       set_param(mdl,'SolverPrmCheckMsg','none');  % disables warning for automatic selection of default timestep
-      
+
       assignin('base',[mdl,'_obj'],obj);
-      
+
       load_system('simulink');
       load_system('simulink3');
       add_block('simulink/User-Defined Functions/S-Function',[mdl,'/DrakeSys'], ...
@@ -229,10 +229,10 @@ classdef DrakeSystem < DynamicalSystem
 
       m = Simulink.Mask.create([mdl,'/DrakeSys']);
       m.set('Display',['fprintf(''',class(obj),''')']);
-      
+
       if (getNumInputs(obj)>0)
         add_block('simulink3/Sources/In1',[mdl,'/in']);
-        
+
         if (any(~isinf([obj.umin,obj.umax]))) % then add saturation block
           add_block('simulink3/Nonlinear/Saturation',[mdl,'/sat'],...
             'UpperLimit',mat2str(obj.umax),'LowerLimit',mat2str(obj.umin));
@@ -246,28 +246,28 @@ classdef DrakeSystem < DynamicalSystem
         add_block('simulink3/Sinks/Out1',[mdl,'/out']);
         add_line(mdl,'DrakeSys/1','out/1');
       end
-      
+
       if (obj.num_xcon>0)
         warning('Drake:DrakeSystem:ConstraintsNotEnforced','system has constraints, but they aren''t enforced in the simulink model yet.');
       end
     end
-    
+
     function [xstar,ustar,info] = findFixedPoint(obj,x0,u0)
       % attempts to find a fixed point (xstar,ustar) which also satisfies the constraints,
-      % using (x0,u0) as the initial guess.  
+      % using (x0,u0) as the initial guess.
       %
       % @param x0 initial guess for the state
       % @param u0 initial guess for the input
-      % 
+      %
       % Note: consider manually constructing a FixedPointProgram
-      % for a much richer interface where you can set solver 
+      % for a much richer interface where you can set solver
       % parameters and/or add additional objectives/constraints.
-      
+
       prog = FixedPointProgram(obj);
       [xstar,ustar,info] = findFixedPoint(prog,x0,u0);
     end
   end
-  
+
   % access methods
   methods
     function u = getDefaultInput(obj)
@@ -299,7 +299,7 @@ classdef DrakeSystem < DynamicalSystem
       %  Also pads umin and umax for any new inputs with [-inf,inf].
 
       if (num_u<0), error('num_u must be >=0 or DYNAMICALLY_SIZED'); end
-      
+
        % cut umin and umax to the right size, and pad new inputs with
       % [-inf,inf]
       if (length(obj.umin)~=num_u)
@@ -308,7 +308,7 @@ classdef DrakeSystem < DynamicalSystem
       if (length(obj.umax)~=num_u)
         obj.umax = [obj.umax; inf*ones(max(num_u-length(obj.umax),0),1)];
       end
-      
+
       obj.num_u = num_u;
       if (isempty(obj.getInputFrame) || obj.num_u~=obj.getInputFrame.dim)
         obj=setInputFrame(obj,CoordinateFrame([class(obj),'Input'],num_u,'u'));
@@ -316,10 +316,10 @@ classdef DrakeSystem < DynamicalSystem
     end
     function obj = setInputLimits(obj,umin,umax)
       % Guards the input limits to make sure it stay consistent
-      
+
       if (isscalar(umin)), umin=repmat(umin,obj.num_u,1); end
       if (isscalar(umax)), umax=repmat(umax,obj.num_u,1); end
-      
+
       sizecheck(umin,[obj.num_u,1]);
       sizecheck(umax,[obj.num_u,1]);
       if (any(obj.umax<obj.umin)), error('umin must be less than umax'); end
@@ -358,19 +358,19 @@ classdef DrakeSystem < DynamicalSystem
   methods
     function [A,B,C,D,x0dot,y0] = linearize(obj,t0,x0,u0)
       % Uses the geval engine to linearize the model around the nominal
-      % point, at least for the simple case. 
-      
+      % point, at least for the simple case.
+
       if (~isCT(obj) || getNumDiscStates(obj)>0)  % boot if it's not the simple case
         [A,B,C,D,x0dot,y0] = linearize@DynamicalSystem(obj,t0,x0,u0);
         return;
       end
-      
+
       nX = getNumContStates(obj);
       nU = getNumInputs(obj);
       [~,df] = geval(@obj.dynamics,t0,x0,u0);
       A = df(:,1+(1:nX));
       B = df(:,nX+1+(1:nU));
-      
+
       if (nargout>2)
         [~,dy] = geval(@obj.output,t0,x0,u0);
         C = dy(:,1+(1:nX));
@@ -386,7 +386,7 @@ classdef DrakeSystem < DynamicalSystem
 
     function traj = simulateODE(obj,tspan,x0,options)
       % Simulates the system using the ODE45 suite of solvers
-      % instead of the simulink solvers.  
+      % instead of the simulink solvers.
       %
       % @param tspan a 1x2 vector of the form [t0 tf]
       % @param x0 a vector of length(getNumStates) which contains the initial
@@ -396,10 +396,10 @@ classdef DrakeSystem < DynamicalSystem
       % No options implemented yet
 
       if (nargin<3), x0=getInitialState(obj); end
-      
+
       if (obj.num_zcs>0), warning('Drake:DrakeSystem:UnsupportedZeroCrossings','system has zero-crossings, but i havne''t passed them to ode45 yet.  (should be trivial)'); end
       if (obj.num_xcon>0), warning('Drake:DrakeSystem:UnsupportedConstraints','system has constraints, but they are not explicitly satisfied during simulation (yet - it should be an easy fix in the ode suite)'); end
-      
+
       odeoptions = obj.simulink_params;
       odefun = @(t,x)obj.dynamics(t,x,zeros(obj.getNumInputs(),1));
       if (isfield(obj.simulink_params,'Solver'))
@@ -410,9 +410,9 @@ classdef DrakeSystem < DynamicalSystem
       xtraj = ODESolTrajectory(sol);
       traj = FunctionHandleTrajectory(@(t)obj.output(t,xtraj.eval(t),zeros(obj.getNumInputs(),1)),[obj.getNumOutputs,1],tspan);
     end
-    
+
     function sys=feedback(sys1,sys2)
-      % Constructs a feedback combination of sys1 and sys2.  
+      % Constructs a feedback combination of sys1 and sys2.
       %
       % @param sys1 first DynamicalSystem (on the forward path)
       % @param sys2 second DynamicalSystem (on the backward path)
@@ -422,7 +422,7 @@ classdef DrakeSystem < DynamicalSystem
       % model is the output of sys1.
 
       if isa(sys2,'DrakeSystem')
-        try 
+        try
           sys=FeedbackSystem(sys1,sys2);  % try to keep it a drakesystem
         catch ex
           if (strcmp(ex.identifier, 'Drake:DrakeSystem:UnsupportedSampleTime'))
@@ -438,14 +438,14 @@ classdef DrakeSystem < DynamicalSystem
         sys=feedback@DynamicalSystem(sys1,sys2);
       end
     end
-    
+
     function sys=cascade(sys1,sys2)
-      % Constructs a cascade combination of sys1 and sys2.  
+      % Constructs a cascade combination of sys1 and sys2.
       %
-      % @param sys1 first DynamicalSystem 
-      % @param sys2 second DynamicalSystem 
+      % @param sys1 first DynamicalSystem
+      % @param sys2 second DynamicalSystem
       %
-      % The input to the cascade system is the input to sys1.  
+      % The input to the cascade system is the input to sys1.
       % The output of sys1 is fed to the input of sys2.
       % The output of the cascade system is the output of sys2.
 
@@ -466,25 +466,25 @@ classdef DrakeSystem < DynamicalSystem
         sys=cascade@DynamicalSystem(sys1,sys2);
       end
     end
-    
+
     function polysys = extractPolynomialSystem(obj)
       % Attempts to symbolically extract the extra structure of a
       % polynomial system from the Drake system
       % Will throw an error if the system is not truly polynomial.
       %
       % See also extractTrigPolySystem, taylorApprox
-      
+
       t=msspoly('t',1);
       x=msspoly('x',sys.num_x);
       u=msspoly('u',sys.num_u);
-      
+
       p_dynamics_rhs=[];
       p_dynamics_lhs=[];
       p_update = [];
       p_output = [];
       p_state_constraints = [];
-      
-      try 
+
+      try
         if (obj.num_xc>0)
           p_dynamics_rhs = dynamics(obj,t,x,u);
         end
@@ -492,7 +492,7 @@ classdef DrakeSystem < DynamicalSystem
           p_update = update(obj,t,x,u);
         end
         p_output = output(obj,t,x,u);
-        
+
         if (obj.num_xcon>0)
           p_state_constraints = stateConstraints(obj,x);
         end
@@ -500,17 +500,17 @@ classdef DrakeSystem < DynamicalSystem
         error('DrakeSystem:ExtractPolynomialSystem:NotPolynomial','This system appears to not be polynomial');
       end
       polysys = SpotPolynomialSystem(getInputFrame(obj),getStateFrame(obj),getOutputFrame(obj),p_dynamics_rhs,p_dynamics_lhs,p_update,p_output,p_state_constraints);
-      
+
       polysys = setSampleTime(polysys,obj.getSampleTime);
     end
-    
+
     function sys = extractAffineSystem(obj)
       % Attempts to symbolically extract the extra structure of an
       % affine system from the Drake system
       % Will throw an error if the system is not truly affine.
       %
       % See also taylorApprox
-      
+
       sys = extractAffineSystem(extractPolynomialSystem(obj));
     end
 
@@ -523,7 +523,7 @@ classdef DrakeSystem < DynamicalSystem
 
       sys = extractLinearSystem(extractAffineSystem(obj));
     end
-    
+
     function [lb,ub] = getStateLimits(obj)
       % Get the lower and upper bounds on the state, currently implemented
       % to just return inf/-inf
@@ -531,7 +531,7 @@ classdef DrakeSystem < DynamicalSystem
       ub = inf(obj.num_x,1);
     end
   end
-  
+
   methods % deprecated (due to refactoring)
     function polysys = makeTrigPolySystem(obj,options)
       % deprecated method (due to refactoring): please use extractTrigPolySystem instead
@@ -539,13 +539,13 @@ classdef DrakeSystem < DynamicalSystem
       polysys = extractTrigPolySystem(obj,options);
     end
   end
-  
+
   % utility methods
   methods
     function systemGradTest(obj,t,x,u,options)
       % Compare numerical and analytical derivatives of dynamics,update,and
       % output
-      
+
       if nargin<2, t=0; end
       if nargin<3, x=getInitialState(obj); end
       if nargin<4, u=getDefaultInput(obj); end
@@ -553,7 +553,7 @@ classdef DrakeSystem < DynamicalSystem
       if ~isfield(options,'dynamics'), options.dynamics=true; end
       if ~isfield(options,'update'), options.update=true; end
       if ~isfield(options,'output'), options.output=true; end
-      
+
       if (options.dynamics && getNumContStates(obj))
         gradTest(@obj.dynamics,t,x,u,options)
       end
@@ -565,7 +565,7 @@ classdef DrakeSystem < DynamicalSystem
       end
     end
   end
-  
+
   properties (SetAccess=private, GetAccess=protected)
     num_xc=0; % number of continuous state variables
     num_xd=0; % number of dicrete(-time) state variables
@@ -584,5 +584,5 @@ classdef DrakeSystem < DynamicalSystem
     umin=[];   % constrains u>=umin (default umin=-inf)
     umax=[];    % constrains u<=uman (default umax=inf)
   end
-  
+
 end
