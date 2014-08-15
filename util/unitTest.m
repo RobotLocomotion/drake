@@ -603,13 +603,16 @@ p=pwd;
 pathParts = strsplit(runpath, filesep);
 packageMembers = cellfun(@(x) ~isempty(regexp(x, '^\+')), pathParts);
 if any(packageMembers)
-  % This test is inside a package, so we have to 'import' that package
-  % first
+  % We are passing around the name of the test to run as a string, not a 
+  % function handle. That means that even if we were to import the package
+  % containing that test file, when the name of the function is passed to 
+  % feval_in_contained_workspace, the import is lost and the test cannot 
+  % be found. Instead, we have to modify the name of the test to include 
+  % its full package name so that Matlab can find it. 
   packageStart = find(packageMembers, 1, 'first');
   pathParts = cellfun(@(x) regexprep(x,'^\+', ''), pathParts, 'UniformOutput', false);
   packageName = strjoin(pathParts(packageStart:end), '.');
   test = [packageName, '.', test];
-%   import([packageName, '.', test]);
 else
   % It's not a package, so we can just cd to the directory containing the
   % test.
