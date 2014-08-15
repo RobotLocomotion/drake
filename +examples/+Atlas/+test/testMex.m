@@ -43,7 +43,7 @@ for i=1:100
 end
 
 options.floating=true;
-p = RigidBodyManipulator('../urdf/atlas_minimal_contact.urdf',options);
+p = RigidBodyManipulator(fullfile(getDrakePath,'+examples', '+Atlas', 'urdf', 'atlas_minimal_contact.urdf'),options);
 nq = getNumDOF(p);
 
 for i=1:25
