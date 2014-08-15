@@ -18,8 +18,8 @@ function [sol,robot_vis,v,cdfkp] = testRunningPlanner(seed,stride_length,major_i
   warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
   options.floating = true;
   options.terrain = RigidBodyFlatTerrain;
-  atlas_urdf = [getDrakePath,'/examples/Atlas/urdf/atlas_convex_hull.urdf'];
-  atlas_vis_urdf = [getDrakePath,'/examples/Atlas/urdf/atlas_minimal_contact.urdf'];
+  atlas_urdf = fullfile(getDrakePath,'+examples', '+Atlas', 'urdf', 'atlas_convex_hull.urdf');
+  atlas_vis_urdf = fullfile(getDrakePath,'+examples', '+Atlas', 'urdf', 'atlas_minimal_contact.urdf');
   robot = RigidBodyManipulator(atlas_urdf,options);
   robot = robot.replaceContactShapesWithCHull(robot.findLinkInd('l_hand'),1);
   robot = robot.replaceContactShapesWithCHull(robot.findLinkInd('r_hand'),1);
@@ -59,7 +59,7 @@ function [sol,robot_vis,v,cdfkp] = testRunningPlanner(seed,stride_length,major_i
   v = constructVisualizer(robot_vis);
 
   % Load nominal data
-  nomdata = load([getDrakePath(), '/examples/Atlas/data/atlas_fp.mat']);
+  nomdata = load(fullfile(getDrakePath, '+examples', '+Atlas', 'data', 'atlas_fp.mat'));
   qstar = nomdata.xstar(1:nq);
   v.draw(0,qstar);
   q0 = qstar;
