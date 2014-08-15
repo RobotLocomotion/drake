@@ -46,6 +46,10 @@ if ~isempty(err_id)
           'examples/Atlas/test/runDoubleAtlas'}))
         github(146); return;
       end
+    case 'MATLAB:nonExistentCellElement'
+      if any(strcmp(testname,'systems/plants/constraint/test/RelativeQuatConstraintTest'))
+        github(286); return;
+      end
   end
 else
   switch testname
@@ -53,12 +57,15 @@ else
       if strcmp(ex.message,'fmincon failed') && ~verLessThan('matlab','8.3.0')
         github(255); return;
       end
+    case 'systems/plants/test/testRigidBodyInertialMeasurementUnit'
+      github(274); return;
   end
 end
 
-fprintf('\nThis issue is not listed as known.  Please seriously consider reporting it on <a href="http://groups.csail.mit.edu/locomotion/bugs/">bugzilla</a>.\n');
+fprintf('\nThis issue is not listed as known.  Please seriously consider reporting it on <a href="http://github.com/RobotLocomotion/drake/issues">GitHub</a>.\n');
 fprintf('testname: %s\n',testname);
 fprintf('error ID: %s\n\n',err_id);
+fprintf('error msg: %s\n\n',ex.message);
 
 end
 
