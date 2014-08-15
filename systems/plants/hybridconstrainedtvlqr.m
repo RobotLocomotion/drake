@@ -49,6 +49,10 @@ if ~isfield(options,'periodic_jump')
   options.periodic_jump = eye(xtraj.dim);
 end
 
+if ~isfield(options,'use_joint_limits')
+  options.use_joint_limits = false;
+end
+
 %extract hybrid sequence
 t_t = xtraj.pp.breaks;
 t_t = unique([tspan(1) t_t(t_t >= tspan(1) & t_t <= tspan(2)) tspan(2)]);
@@ -56,7 +60,12 @@ x = xtraj.eval(t_t);
 u = utraj.eval(t_t);
 l = ltraj.eval(t_t);
 
-nJL = obj.getNumJointLimitConstraints;
+if options.use_joint_limits
+  nJL = obj.getNumJointLimitConstraints;
+else
+  nJL = 0;
+end
+
 nC = obj.getNumContactPairs;
 
 
@@ -87,7 +96,7 @@ for i=1:size(mode,2)-1,
     for j=2:length(constraint_ind),
       J_sub = [J_sub;J(constraint_ind(j),:)];
 %       if rank(J_sub) ~= size(J_sub,1),
-      if cond(J_sub) > 1e4
+      if cond(J_sub) > 1e3
         J_sub = J_sub(1:end-1,:);
         constraint_bool(constraint_ind(j),i) = 0;
       end
@@ -108,7 +117,7 @@ for i=1:size(mode,2)-1,
     
     if i ~= size(mode,2) - 1
       next_constraint_ind = constraint_list(constraint_bool(:,i+1) == 1);
-      jumpfn = @(xm) jump(obj,xm,next_constraint_ind);
+      jumpfn = @(xm) jump(obj,xm,next_constraint_ind,options);
       [~,F] = geval(jumpfn,x(:,i+1),struct('grad_method','numerical'));
       mode_data{mode_ind}.F = full(F);
     end    
@@ -145,7 +154,9 @@ else
   Qfi = Qf;
   for i = length(mode_data):-1:1,
     ts = mode_data{i}.tspan;
-    [c{i},Ktraj{i},Straj{i},Ptraj{i},Btraj{i}] = constrainedtvlqr(obj,xtraj,utraj,Q,R,Qfi,mode_data{i}.constraint_ind,struct('tspan',ts));
+    sub_options = options;
+    sub_options.tspan = ts;
+    [c{i},Ktraj{i},Straj{i},Ptraj{i},Btraj{i}] = constrainedtvlqr(obj,xtraj,utraj,Q,R,Qfi,mode_data{i}.constraint_ind,sub_options);
     P0 = Ptraj{i}.eval(ts(1));
     S0 = Straj{i}.eval(ts(1));
     Qfi = pinv(P0*P0')*P0*S0*P0'*pinv(P0*P0')';  %extract least squares full rank solution
@@ -159,13 +170,18 @@ end
 end
 
 
-function xp = jump(obj,xm,constraint_ind)
+function xp = jump(obj,xm,constraint_ind,options)
 %Computes xp, the post impact state of jumping to this mode
 q=xm(1:obj.num_q); qd=xm((obj.num_q+1):end);
 H = manipulatorDynamics(obj,q,qd);
 Hinv = inv(H);
 if (size(constraint_ind) > 0)
-  [phi_limit,J_limit] = obj.jointLimitConstraints(q);
+  
+  if options.use_joint_limits
+    [~,J_limit] = obj.jointLimitConstraints(q);
+  else
+    J_limit = zeros(0,length(q));
+  end
   
  
   [phi_n,normal,d,xA,xB,idxA,idxB,mu,n,D] = contactConstraints(obj,q);

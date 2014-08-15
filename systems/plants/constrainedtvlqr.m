@@ -48,10 +48,14 @@ if ~isfield(options,'sqrtmethod')
   options.sqrtmethod = true;
 end
 
+if ~isfield(options,'use_joint_limits')
+  options.use_joint_limits = false;
+end
+
 x0 = xtraj.eval(tspan(1));
 u0 = utraj.eval(tspan(1));
 
-F0 = getFandFdot(obj,0,x0,u0,constraint_ind);
+F0 = getFandFdot(obj,0,x0,u0,constraint_ind,options);
 
 % if isfield(options,'P0')
 %   P0 = options.P0;
@@ -62,7 +66,7 @@ F0 = getFandFdot(obj,0,x0,u0,constraint_ind);
   P0 = null(F0);
 % end
 
-dynamicsFun = @(t,x,u) constrainedDynamics(obj,t,x,u,constraint_ind);
+dynamicsFun = @(t,x,u) constrainedDynamics(obj,t,x,u,constraint_ind,options);
 
 
 % % update utraj more finely
@@ -80,7 +84,7 @@ dynamicsFun = @(t,x,u) constrainedDynamics(obj,t,x,u,constraint_ind);
 % utraj = PPTrajectory(foh(t_vec,u_vec));
 
 
-Pfun = @(t,P) Pdynamics(obj,t,xtraj,utraj,P,constraint_ind,alpha_1,alpha_2);
+Pfun = @(t,P) Pdynamics(obj,t,xtraj,utraj,P,constraint_ind,alpha_1,alpha_2,options);
 [tout,yout] = ode45(Pfun,tspan,P0);
 
 nQ = obj.num_q;                         %unconstrained position state size
@@ -91,10 +95,10 @@ Pf = Ptraj.eval(tspan(2));
 
 Sf = Pf'*Qf*Pf;
 if ~options.sqrtmethod
-  Sfun = @(t,S) Sdynamics(t,S,obj,dynamicsFun,xtraj,utraj,Ptraj,Q,R,constraint_ind,alpha_1,alpha_2);
+  Sfun = @(t,S) Sdynamics(t,S,obj,dynamicsFun,xtraj,utraj,Ptraj,Q,R,constraint_ind,alpha_1,alpha_2,options);
 else
   Sf = Sf^(1/2);
-  Sfun = @(t,S) sqrtSdynamics(t,S,obj,dynamicsFun,xtraj,utraj,Ptraj,Q,R,constraint_ind,alpha_1,alpha_2);
+  Sfun = @(t,S) sqrtSdynamics(t,S,obj,dynamicsFun,xtraj,utraj,Ptraj,Q,R,constraint_ind,alpha_1,alpha_2,options);
 end
 [tout,yout] = ode45(Sfun,tspan(end:-1:1),Sf);
 
@@ -105,7 +109,7 @@ if options.sqrtmethod
   Straj = Straj*Straj';
 end
 
-Btraj = getBTrajectory(obj,Straj.getBreaks(),xtraj,utraj,constraint_ind);
+Btraj = getBTrajectory(obj,Straj.getBreaks(),xtraj,utraj,constraint_ind,options);
 
 Ktraj = inv(R)*(Ptraj'*Btraj)'*Straj*Ptraj';
 
@@ -114,10 +118,10 @@ c = c.setInputFrame(obj.getOutputFrame);
 c = c.setOutputFrame(obj.getInputFrame);
 end
 
-function B = getBTrajectory(p,ts,xtraj,utraj,constraint_ind)
+function B = getBTrajectory(p,ts,xtraj,utraj,constraint_ind,options)
   nX = length(xtraj); nU = length(utraj);
   B = zeros([nX,nU,length(ts)]);
-  dynamicsFun = @(t,x,u) constrainedDynamics(p,t,x,u,constraint_ind);
+  dynamicsFun = @(t,x,u) constrainedDynamics(p,t,x,u,constraint_ind,options);
   for i=1:length(ts)
     x0=xtraj.eval(ts(i)); u0 = utraj.eval(ts(i));    
     [xd,dxd] = geval(dynamicsFun,ts(i),x0,u0,struct('grad_method','numerical'));
@@ -127,12 +131,20 @@ function B = getBTrajectory(p,ts,xtraj,utraj,constraint_ind)
 end
 
 
-function [F,Fdot]=getFandFdot(obj,t,x,u,constraint_ind)
+function [F,Fdot]=getFandFdot(obj,t,x,u,constraint_ind,options)
 q = x(1:obj.num_q);
 qd = x(obj.num_q+1:end);
 
-[phi_limit,J_limit,dJ_limit] = obj.jointLimitConstraints(q);
-dJ_limit = reshape(dJ_limit,[],length(q));
+
+if options.use_joint_limits
+  [phi_limit,J_limit,dJ_limit] = obj.jointLimitConstraints(q);
+  dJ_limit = reshape(dJ_limit,[],length(q));
+else
+  phi_limit = [];
+  J_limit = zeros(0,length(q));
+  dJ_limit = zeros(0,length(q)^2);
+end
+
 
 [phi_n,normal,d,xA,xB,idxA,idxB,mu,n,D,dn,dD] = obj.contactConstraints(q);
 
@@ -166,7 +178,7 @@ F = full([J zeros(size(J));dJqd J]);
 
 if nargout > 1
   % Fdot = -F A
-  dynamicsFun = @(t,x,u) constrainedDynamics(obj,t,x,u,constraint_ind);
+  dynamicsFun = @(t,x,u) constrainedDynamics(obj,t,x,u,constraint_ind,options);
   [~,A] = geval(dynamicsFun,t,x,u,struct('grad_method','numerical'));
   
   Fdot = - F*A(:,2:1+length(x));
@@ -207,10 +219,10 @@ end
 %   end
 % end
 
-function Pdot = getPdot(obj,t,x,u,P,constraint_ind,alpha_1,alpha_2)
+function Pdot = getPdot(obj,t,x,u,P,constraint_ind,alpha_1,alpha_2,options)
 n = length(x);
 d = n - size(P,2);
-[F,Fdot] = getFandFdot(obj,t,x,u,constraint_ind);
+[F,Fdot] = getFandFdot(obj,t,x,u,constraint_ind,options);
 A = kron(eye(n-d),F);
 b = -reshape(Fdot*P + alpha_1*F*P,[],1);
 ortho_err = eye(n-d) - P'*P;
@@ -236,21 +248,21 @@ if any(abs(Pdot) > 1e2)
 end
 end
 
-function Pdot = Pdynamics(obj,t,xtraj,utraj,P,constraint_ind,alpha_1,alpha_2)
+function Pdot = Pdynamics(obj,t,xtraj,utraj,P,constraint_ind,alpha_1,alpha_2,options)
 x = xtraj.eval(t);
 u = utraj.eval(t);
 P = reshape(P,2*obj.num_q,[]);
-Pdot = getPdot(obj,t,x,u,P,constraint_ind,alpha_1,alpha_2);
+Pdot = getPdot(obj,t,x,u,P,constraint_ind,alpha_1,alpha_2,options);
 Pdot = Pdot(:);
 % t
 end
 
-function Sdot = Sdynamics(t,S,p,dynamicsfn,xtraj,utraj,Ptraj,Q,R,constraint_ind,alpha_1,alpha_2)
+function Sdot = Sdynamics(t,S,p,dynamicsfn,xtraj,utraj,Ptraj,Q,R,constraint_ind,alpha_1,alpha_2,options)
 % S_dot = -A'S - SA + SBinv(R)B'S - Q
 x_t = xtraj.eval(t);
 u_t = utraj.eval(t);
 P_t = Ptraj.eval(t);
-Pdot_t = getPdot(p,t,x_t,u_t,P_t,constraint_ind,alpha_1,alpha_2);
+Pdot_t = getPdot(p,t,x_t,u_t,P_t,constraint_ind,alpha_1,alpha_2,options);
 
 [xd,dxd] = geval(dynamicsfn,t,x_t,u_t,struct('grad_method','numerical'));
 A = dxd(:,2:2*p.num_q+1);
@@ -268,12 +280,12 @@ Sdot = Sdot(:);
 % t
 end
 
-function sqrtSdot = sqrtSdynamics(t,sqrtS,p,dynamicsfn,xtraj,utraj,Ptraj,Q,R,constraint_ind,alpha_1,alpha_2)
+function sqrtSdot = sqrtSdynamics(t,sqrtS,p,dynamicsfn,xtraj,utraj,Ptraj,Q,R,constraint_ind,alpha_1,alpha_2,options)
 % S_dot = -A'S - SA + SBinv(R)B'S - Q
 x_t = xtraj.eval(t);
 u_t = utraj.eval(t);
 P_t = Ptraj.eval(t);
-Pdot_t = getPdot(p,t,x_t,u_t,P_t,constraint_ind,alpha_1,alpha_2);
+Pdot_t = getPdot(p,t,x_t,u_t,P_t,constraint_ind,alpha_1,alpha_2,options);
 
 [xd,dxd] = geval(dynamicsfn,t,x_t,u_t,struct('grad_method','numerical'));
 A = dxd(:,2:2*p.num_q+1);
@@ -291,12 +303,17 @@ sqrtSdot = sqrtSdot(:);
 % t
 end
 
-function xdot = constrainedDynamics(obj,t,x,u,constraint_ind)
+function xdot = constrainedDynamics(obj,t,x,u,constraint_ind,options)
 q=x(1:obj.num_q); qd=x((obj.num_q+1):end);
 [H,C,B] = manipulatorDynamics(obj,q,qd);
 Hinv = inv(H);
 if (size(constraint_ind) > 0)  
-  [~,J_limit,dJ_limit] = obj.jointLimitConstraints(q);
+  if options.use_joint_limits
+    [~,J_limit,dJ_limit] = obj.jointLimitConstraints(q);
+  else
+    J_limit = zeros(0,length(q));
+    dJ_limit = zeros(0,length(q)^2);
+  end
 
   [phi_n,normal,d,xA,xB,idxA,idxB,mu,n,D,dn,dD] = obj.contactConstraints(q);
   

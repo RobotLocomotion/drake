@@ -52,6 +52,10 @@ classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
         options.integration_method = ContactImplicitTrajectoryOptimization.MIDPOINT;
       end
       
+      if ~isfield(options,'use_joint_limits')
+        options.use_joint_limits = false;
+      end
+      
       obj = obj@DirectTrajectoryOptimization(plant,N,duration,options);
 
     end
@@ -216,10 +220,7 @@ classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
           J(1+j:2+obj.nD:end,:) = D{j};
           dJ(1+j:2+obj.nD:end,:) = dD{j};
         end
-        
-        [~,J_jl] = jointLimitConstraints(obj.plant,q1);
-        
-        
+
         switch obj.options.integration_method
           case ContactImplicitTrajectoryOptimization.MIDPOINT
             % q1 = q0 + h*v1
@@ -308,15 +309,21 @@ classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
         obj.lfi_inds(:,i) = (2:1+obj.nD)' + (i-1)*(2+obj.nD)*ones(obj.nD,1);
       end            
       
-      obj.nJL = obj.plant.getNumJointLimitConstraints();
-      obj.ljl_inds = reshape(obj.num_vars + (1:N * obj.nJL),obj.nJL,N);
-      
-      % joint limit constraints
-      [jl_lb,jl_ub] = obj.plant.getJointLimits();
-      obj.jl_lb_ind = find(jl_lb ~= -inf);
-      obj.jl_ub_ind = find(jl_ub ~= inf);
-      
-      obj = obj.addDecisionVariable(N * obj.nJL);
+      if obj.options.use_joint_limits
+        obj.nJL = obj.plant.getNumJointLimitConstraints();
+        
+        obj.ljl_inds = reshape(obj.num_vars + (1:N * obj.nJL),obj.nJL,N);
+        
+        % joint limit constraints
+        [jl_lb,jl_ub] = obj.plant.getJointLimits();
+        obj.jl_lb_ind = find(jl_lb ~= -inf);
+        obj.jl_ub_ind = find(jl_ub ~= inf);
+        
+        obj = obj.addDecisionVariable(N * obj.nJL);
+      else
+        obj.nJL = 0;
+        obj.ljl_inds = reshape(obj.num_vars + (1:N * obj.nJL),obj.nJL,N);
+      end
     end
     
     % evaluates the initial trajectories at the sampled times and
