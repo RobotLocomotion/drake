@@ -16,10 +16,10 @@ class DrakeJoint
   DrakeJoint& operator=(const DrakeJoint&) = delete;
 
 private:
-  const std::string _name;
-  const Eigen::Isometry3d _transform_to_parent_body;
-  const int _num_positions;
-  const int _num_velocities;
+  const std::string name;
+  const Eigen::Isometry3d transform_to_parent_body;
+  const int num_positions;
+  const int num_velocities;
 
 protected:
   typedef Eigen::Matrix<double, 6, 1> Vector6d;

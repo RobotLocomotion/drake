@@ -27,13 +27,14 @@ Isometry3d RollPitchYawFloatingJoint::jointTransform(double* const q) const
 
 void RollPitchYawFloatingJoint::motionSubspace(double* const q, MotionSubspaceType& motion_subspace, MatrixXd* dmotion_subspace) const
 {
+  motion_subspace.resize(TWIST_SIZE, getNumVelocities());
   Map<Vector3d> rpy(&q[3]);
   auto E = rpydot2angularvelMatrix(rpy);
   auto R = rpy2rotmat(rpy);
   motion_subspace.block<3, 3>(0, 0).setZero();
   motion_subspace.block<3, 3>(0, 3) = R.transpose() * E;
   motion_subspace.block<3, 3>(3, 0) = R.transpose();
-  motion_subspace.block<3, 3>(0, 3).setZero();
+  motion_subspace.block<3, 3>(3, 3).setZero();
 
   if (dmotion_subspace) {
     dmotion_subspace->resize(motion_subspace.size(), getNumPositions());
@@ -50,7 +51,7 @@ void RollPitchYawFloatingJoint::motionSubspace(double* const q, MotionSubspaceTy
     double sp = sin(pitch);
     double cy = cos(yaw);
     double sy = sin(yaw);
-    *dmotion_subspace << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, sr
+    dmotion_subspace->transpose() << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, sr
         * sy + cr * cy * sp, cr * sy - cy * sp * sr, 0.0, 0.0, 0.0, 0.0, -cy * sr + cr * sp * sy, -cr * cy - sp * sr * sy, 0.0, 0.0, 0.0, 0.0, cp * cr, -cp * sr, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -sr, -cr, 0.0, 0.0, 0.0, 0.0, cp * cr, -cp * sr, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -cy * sp, cp * cy * sr, cp
         * cr * cy, 0.0, 0.0, 0.0, -sp * sy, cp * sr * sy, cp * cr * sy, 0.0, 0.0, 0.0, -cp, -sp * sr, -cr * sp, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -cp, -sp * sr, -cr * sp, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -cp * sy, -cr * cy - sp * sr * sy, cy * sr - cr * sp * sy, 0.0, 0.0, 0.0, cp
         * cy, -cr * sy + cy * sp * sr, sr * sy + cr*cy*sp, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
@@ -68,15 +69,15 @@ void RollPitchYawFloatingJoint::motionSubspaceDotTimesV(double* const q, double*
   double pitch = rpy(1);
   double yaw = rpy(2);
 
-  Map<Vector3d> pd(&q[0]);
+  Map<Vector3d> pd(&v[0]);
   double xd = pd(0);
   double yd = pd(1);
   double zd = pd(2);
 
-  Map<Vector3d> rpyd(&q[3]);
-  double rolld = rpy(0);
-  double pitchd = rpy(1);
-  double yawd = rpy(2);
+  Map<Vector3d> rpyd(&v[3]);
+  double rolld = rpyd(0);
+  double pitchd = rpyd(1);
+  double yawd = rpyd(2);
 
   using namespace std;
   double cr = cos(roll);
@@ -86,13 +87,13 @@ void RollPitchYawFloatingJoint::motionSubspaceDotTimesV(double* const q, double*
   double cy = cos(yaw);
   double sy = sin(yaw);
 
-  motion_subspace_dot_times_v << -pitchd * yawd * cp, rolld * yawd * cp * cr - pitchd * yawd * sp * sr - pitchd * rolld * sr, -pitchd * rolld * cr - pitchd * yawd * cr * sp - rolld * yawd * cp * sr, yd * (yawd * cp * cy - pitchd * sp * sy) - xd * (pitchd * cy * sp + yawd * cp * sy)
+  motion_subspace_dot_times_v.transpose() << -pitchd * yawd * cp, rolld * yawd * cp * cr - pitchd * yawd * sp * sr - pitchd * rolld * sr, -pitchd * rolld * cr - pitchd * yawd * cr * sp - rolld * yawd * cp * sr, yd * (yawd * cp * cy - pitchd * sp * sy) - xd * (pitchd * cy * sp + yawd * cp * sy)
       - pitchd * zd * cp, zd * (rolld * cp * cr - pitchd * sp * sr) + xd * (rolld * (sr * sy + cr * cy * sp) - yawd * (cr * cy + sp * sr * sy) + pitchd * cp * cy * sr) - yd * (rolld * (cy * sr - cr * sp * sy) + yawd * (cr * sy - cy * sp * sr) - pitchd * cp * sr * sy), xd
       * (rolld * (cr * sy - cy * sp * sr) + yawd * (cy * sr - cr * sp * sy) + pitchd * cp * cr * cy) - zd * (pitchd * cr * sp + rolld * cp * sr) + yd * (yawd * (sr * sy + cr * cy * sp) - rolld * (cr * cy + sp * sr * sy) + pitchd * cp * cr * sy);
 
   if (dmotion_subspace_dot_times_vdq) {
     dmotion_subspace_dot_times_vdq->resize(motion_subspace_dot_times_v.rows(), getNumPositions());
-    (*dmotion_subspace_dot_times_vdq) << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -pitchd * rolld * cr - pitchd * yawd * cr * sp - rolld * yawd * cp * sr, pitchd * rolld * sr + pitchd * yawd * sp * sr - rolld * yawd * cp * cr, 0.0, xd
+    dmotion_subspace_dot_times_vdq->transpose() << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -pitchd * rolld * cr - pitchd * yawd * cr * sp - rolld * yawd * cp * sr, pitchd * rolld * sr + pitchd * yawd * sp * sr - rolld * yawd * cp * cr, 0.0, xd
         * (rolld * (cr * sy - cy * sp * sr) + yawd * (cy * sr - cr * sp * sy) + pitchd * cp * cr * cy) - zd * (pitchd * cr * sp + rolld * cp * sr) + yd * (-rolld * (cr * cy + sp * sr * sy) + yawd * (sr * sy + cr * cy * sp) + pitchd * cp * cr * sy), -zd * (rolld * cp * cr - pitchd * sp * sr)
         - xd * (rolld * (sr * sy + cr * cy * sp) - yawd * (cr * cy + sp * sr * sy) + pitchd * cp * cy * sr) + yd * (rolld * (cy * sr - cr * sp * sy) + yawd * (cr * sy - cy * sp * sr) - pitchd * cp * sr * sy), pitchd * yawd * sp, -pitchd * yawd * cp * sr - rolld * yawd * cr * sp, rolld * yawd * sp
         * sr - pitchd * yawd * cp * cr, -xd * (pitchd * cp * cy - yawd * sp * sy) - yd * (pitchd * cp * sy + yawd * cy * sp) + pitchd * zd * sp, -zd * (pitchd * cp * sr + rolld * cr * sp) - xd * (-rolld * cp * cr * cy + pitchd * cy * sp * sr + yawd * cp * sr * sy)
@@ -103,7 +104,7 @@ void RollPitchYawFloatingJoint::motionSubspaceDotTimesV(double* const q, double*
 
   if (dmotion_subspace_dot_times_vdv) {
     dmotion_subspace_dot_times_vdv->resize(motion_subspace_dot_times_v.rows(), getNumVelocities());
-    (*dmotion_subspace_dot_times_vdv) << 0.0, 0.0, 0.0, -pitchd * cy * sp - yawd * cp * sy, rolld * (sr * sy + cr * cy * sp) - yawd * (cr * cy + sp * sr * sy) + pitchd * cp * cy * sr, rolld * (cr * sy - cy * sp * sr) + yawd * (cy * sr - cr * sp * sy) + pitchd * cp * cr * cy, 0.0, 0.0, 0.0, yawd * cp
+    dmotion_subspace_dot_times_vdv->transpose() << 0.0, 0.0, 0.0, -pitchd * cy * sp - yawd * cp * sy, rolld * (sr * sy + cr * cy * sp) - yawd * (cr * cy + sp * sr * sy) + pitchd * cp * cy * sr, rolld * (cr * sy - cy * sp * sr) + yawd * (cy * sr - cr * sp * sy) + pitchd * cp * cr * cy, 0.0, 0.0, 0.0, yawd * cp
         * cy - pitchd * sp * sy, -rolld * (cy * sr - cr * sp * sy) - yawd * (cr * sy - cy * sp * sr) + pitchd * cp * sr * sy, -rolld * (cr * cy + sp * sr * sy) + yawd * (sr * sy + cr * cy * sp) + pitchd * cp * cr * sy, 0.0, 0.0, 0.0, -pitchd * cp, rolld * cp * cr - pitchd * sp * sr, -pitchd * cr
         * sp - rolld * cp * sr, 0.0, -pitchd * sr + yawd * cp * cr, -pitchd * cr - yawd * cp * sr, 0.0, xd * (sr * sy + cr * cy * sp) - yd * (cy * sr - cr * sp * sy) + zd * cp * cr, xd * (cr * sy - cy * sp * sr) - yd * (cr * cy + sp * sr * sy) - zd * cp * sr, -yawd * cp, -sr * (rolld + yawd * sp), -cr
         * (rolld + yawd * sp), -zd * cp - xd * cy * sp - yd * sp * sy, sr * (-zd * sp + xd * cp * cy + yd * cp * sy), cr * (-zd * sp + xd * cp * cy + yd * cp * sy), -pitchd * cp, rolld * cp * cr - pitchd * sp * sr, -pitchd * cr * sp - rolld * cp * sr, cp * (yd * cy - xd * sy), -xd

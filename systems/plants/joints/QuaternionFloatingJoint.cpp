@@ -114,7 +114,7 @@ void QuaternionFloatingJoint::v2qdot(double* q, Eigen::MatrixXd& v_to_qdot, Eige
 
     setSubMatrixGradient<4>(*dv_to_qdot, dR, intRange<3>(0), intRange<3>(3), v_to_qdot.rows(), 3);
     auto dMR = matGradMultMat(M, R, dM, dR);
-    setSubMatrixGradient<4>(*dv_to_qdot, dR, intRange<4>(3), intRange<3>(0), v_to_qdot.rows(), 3);
+    setSubMatrixGradient<4>(*dv_to_qdot, dMR, intRange<4>(3), intRange<3>(0), v_to_qdot.rows(), 3);
   }
   else {
     angularvel2quatdotMatrix(quat, M);
