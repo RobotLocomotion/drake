@@ -55,7 +55,7 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
       if (getNumStateConstraints(mode_sys)>0)
         obj = setNumStateConstraints(obj,max(getNumStateConstraints(obj),getNumStateConstraints(mode_sys)));
       end
-      if getNumStateConstaints(mode_sys)>0
+      if getNumUnilateralConstraints(mode_sys)>0
         error('not implemented yet');
       end
 
