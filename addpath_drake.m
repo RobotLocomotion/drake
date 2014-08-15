@@ -41,6 +41,7 @@ end
 % simulate?
 
 % add package directories to the matlab path
+addpath(fullfile(root));
 addpath(fullfile(root,'systems'));
 addpath(fullfile(root,'systems','plants'));
 addpath(fullfile(root,'systems','plants','affordance'));
