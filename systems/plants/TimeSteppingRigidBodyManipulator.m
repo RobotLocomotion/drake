@@ -174,8 +174,6 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       xdn = [qn;qdn];
 
       if (nargout>1)  % compute gradients
-        warning('Drake:TimeSteppingRigidBodyManipulator:GradientWarning','timestepping gradients don''t work for all cases.. see bug 1155');
-
         if isempty(z)
           dqdn = dwqdn;
         else
@@ -384,7 +382,12 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
           active(1:nL) = (phiL + h*JL*qd) < active_tol;
           if (nargout>4)
             dJL = [zeros(prod(size(JL)),1),reshape(dJL,numel(JL),[]),zeros(numel(JL),num_q+obj.num_u)];
-            dw(1:nL,:) = [zeros(size(JL,1),1),JL,zeros(size(JL,1),num_q+obj.num_u)] + h*matGradMultMat(JL,wqdn,dJL,dwqdn);
+            if (obj.position_control)
+              dw(1:nL,:) = [zeros(size(JL,1),1),JL,zeros(size(JL,1),num_q),...
+                [-1*ones(length(pos_control_index),obj.num_u);1*ones(length(pos_control_index),obj.num_u)]] + h*matGradMultMat(JL,wqdn,dJL,dwqdn);
+            else
+              dw(1:nL,:) = [zeros(size(JL,1),1),JL,zeros(size(JL,1),num_q+obj.num_u)] + h*matGradMultMat(JL,wqdn,dJL,dwqdn);
+            end
             dM(1:nL,1:size(Mqdn,2),:) = reshape(h*matGradMultMat(JL,Mqdn,dJL,dMqdn),nL,size(Mqdn,2),[]);
           end
         end
