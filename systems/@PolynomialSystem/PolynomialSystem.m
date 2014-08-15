@@ -292,6 +292,9 @@ classdef PolynomialSystem < DrakeSystem
       if (sys2.getNumStateConstraints()>0)
         p_state_constraints=[p_state_constraints;subss(p2_state_constraints,sys2.getStateFrame.poly,p_x2)];
       end
+      if (sys1.getNumUnilateralConstraints()>0 || sys2.getNumUnilateralConstraints()>0)
+        error('not implemented yet')
+      end
 
       sys = SpotPolynomialSystem(input_frame,state_frame,output_frame,p_dynamics_rhs,p_dynamics_lhs,p_update,p_output,p_state_constraints);
 
