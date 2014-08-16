@@ -34,10 +34,8 @@ classdef FeedbackSystem < DrakeSystem
       obj = setSampleTime(obj,[sys1.getSampleTime(),sys2.getSampleTime()]);
       obj = setNumZeroCrossings(obj,sys1.getNumZeroCrossings()+sys2.getNumZeroCrossings()+sum(~isinf([sys1.umin;sys1.umax;sys2.umin;sys2.umax])));
       obj = setNumStateConstraints(obj,sys1.getNumStateConstraints()+sys2.getNumStateConstraints());
-      if getNumUnilateralConstraints(sys1)>0 || getNumUnilateralConstraints(sys2)>0
-        error('not implemented yet (but would be trivial)');
-      end
-
+      % unilateral constraints handled in get method below
+      
       obj = setInputFrame(obj,sys1.getInputFrame());
       obj = setOutputFrame(obj,sys1.getOutputFrame());
 
@@ -53,7 +51,10 @@ classdef FeedbackSystem < DrakeSystem
       obj.sys2=sys2;
     end
 
-
+    function n = getNumUnilateralConstraints(obj)
+       n = obj.sys1.getNumUnilateralConstraints()+obj.sys2.getNumUnilateralConstraints();
+    end
+    
     function xdn = update(obj,t,x,u)
       [x1,x2]=decodeX(obj,x);
       [y1,y2]=getOutputs(obj,t,x,u);
@@ -125,6 +126,18 @@ classdef FeedbackSystem < DrakeSystem
       end
       if (getNumStateConstraints(obj.sys2)>0)
         con=[con;stateConstraints(obj.sys2,x2)];
+      end
+    end
+    
+    function con = unilateralConstraints(obj,x)
+      [x1,x2]=decodeX(obj,x);
+      if (getNumUnilateralConstraints(obj.sys1)>0)
+        con=unilateralConstraints(obj.sys1,x1);
+      else
+        con=[];
+      end
+      if (getNumUnilateralConstraints(obj.sys2)>0)
+        con=[con;unilateralConstraints(obj.sys2,x2)];
       end
     end
   end
