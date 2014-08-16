@@ -30,8 +30,6 @@ if ~isempty(err_id)
         github(135); return;
       elseif any(strcmp(testname,{'solvers/test/testKinCnst'}))
         github(136); return;
-      elseif any(strcmp(testname,{'systems/plants/test/testPositionControlGradients'}))
-        github(82); return;
       end
     case {'Simulink:SFunctions:SFcnErrorStatus','Drake:Manipulator:ResolveConstraintsFailed'}
       if any(strcmp(testname,{'systems/plants/test/coordinateSystemTest', ...
