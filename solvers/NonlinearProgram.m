@@ -415,15 +415,21 @@ classdef NonlinearProgram
       f_count = 0;
       for i = 1:length(obj.nlcon)
         args = [getArgumentArray(obj,x,obj.nlcon_xind{i});shared_data(obj.nlcon_dataind{i})];
-        [f(f_count+(1:obj.nlcon{i}.num_cnstr)),G(f_count+(1:obj.nlcon{i}.num_cnstr),obj.nlcon_xind_stacked{i})] = ...
-          obj.nlcon{i}.eval(args{:});
+        if(nargout>2)
+          [f(f_count+(1:obj.nlcon{i}.num_cnstr)),G(f_count+(1:obj.nlcon{i}.num_cnstr),obj.nlcon_xind_stacked{i})] = ...
+            obj.nlcon{i}.eval(args{:});
+        else
+          f(f_count+(1:obj.nlcon{i}.num_cnstr)) = obj.nlcon{i}.eval(args{:});
+        end
         f(f_count+obj.nlcon{i}.ceq_idx) = f(f_count+obj.nlcon{i}.ceq_idx)-obj.nlcon{i}.ub(obj.nlcon{i}.ceq_idx);
         f_count = f_count+obj.nlcon{i}.num_cnstr;
       end
       g = f(obj.nlcon_ineq_idx);
       h = f(obj.nlcon_eq_idx);
-      dg = G(obj.nlcon_ineq_idx,:);
-      dh = G(obj.nlcon_eq_idx,:);
+      if(nargout>2)
+        dg = G(obj.nlcon_ineq_idx,:);
+        dh = G(obj.nlcon_eq_idx,:);
+      end
     end
      
     function [f,df] = objective(obj,x)
@@ -441,9 +447,15 @@ classdef NonlinearProgram
       df = zeros(1,obj.num_vars);
       for i = 1:length(obj.cost)
         args = [getArgumentArray(obj,x,obj.cost_xind_cell{i});shared_data(obj.cost_dataind{i})];
-        [fi,dfi] = obj.cost{i}.eval(args{:});
+        if(nargout>1)
+          [fi,dfi] = obj.cost{i}.eval(args{:});
+        else
+          fi = obj.cost{i}.eval(args{:});
+        end
         f = f+fi;
-        df(obj.cost_xind_stacked{i}) = df(obj.cost_xind_stacked{i})+dfi;
+        if(nargout>1)
+          df(obj.cost_xind_stacked{i}) = df(obj.cost_xind_stacked{i})+dfi;
+        end
       end
     end
     
@@ -463,20 +475,32 @@ classdef NonlinearProgram
       G = zeros(1+obj.num_nlcon,obj.num_vars);
       for i = 1:length(obj.cost)
         args = [getArgumentArray(obj,x,obj.cost_xind_cell{i});shared_data(obj.cost_dataind{i})];
-        [fi,dfi] = obj.cost{i}.eval(args{:});
+        if(nargout>1)
+          [fi,dfi] = obj.cost{i}.eval(args{:});
+        else
+          fi = obj.cost{i}.eval(args{:});
+        end
         f(1) = f(1)+fi;
-        G(1,obj.cost_xind_stacked{i}) = G(1,obj.cost_xind_stacked{i})+dfi;
+        if(nargout>1)
+          G(1,obj.cost_xind_stacked{i}) = G(1,obj.cost_xind_stacked{i})+dfi;
+        end
       end
       f_count = 1;
       for i = 1:length(obj.nlcon)
         args = [getArgumentArray(obj,x,obj.nlcon_xind{i});shared_data(obj.nlcon_dataind{i})];
+        if(nargout>1)
         [f(f_count+(1:obj.nlcon{i}.num_cnstr)),G(f_count+(1:obj.nlcon{i}.num_cnstr),obj.nlcon_xind_stacked{i})] = ...
           obj.nlcon{i}.eval(args{:});
+        else
+          f(f_count+(1:obj.nlcon{i}.num_cnstr)) = obj.nlcon{i}.eval(args{:});
+        end
         f(f_count+obj.nlcon{i}.ceq_idx) = f(f_count+obj.nlcon{i}.ceq_idx)-obj.nlcon{i}.ub(obj.nlcon{i}.ceq_idx);
         f_count = f_count+obj.nlcon{i}.num_cnstr;
       end
       f = [f(1);f(1+obj.nlcon_ineq_idx);f(1+obj.nlcon_eq_idx)];
-      G = [G(1,:);G(1+obj.nlcon_ineq_idx,:);G(1+obj.nlcon_eq_idx,:)];
+      if(nargout>1)
+        G = [G(1,:);G(1+obj.nlcon_ineq_idx,:);G(1+obj.nlcon_eq_idx,:)];
+      end
     end
     
     function obj = addDecisionVariable(obj,num_new_vars,var_name)

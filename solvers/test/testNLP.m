@@ -228,30 +228,42 @@ end
 
 function [c,dc] = cnstr1_userfun(x)
 c = [x(1)^2+4*x(2)^2;(x(1)-2)^2+x(2)^2];
+if(nargout>1)
 dc = [2*x(1) 8*x(2);2*(x(1)-2) 2*x(2)];
+end
 end
 
 function [c,dc] = cnstr3_userfun(x1,x2)
 c = [x1^2+4*x2^2;(x1-2)^2+x2^2];
+if(nargout>1)
 dc = [2*x1 8*x2;2*(x1-2) 2*x2];
+end
 end
 
 function [c,dc] = cost1_userfun(x)
 c = x^2;
+if(nargout>1)
 dc = 2*x;
+end
 end
 
 function [c,dc] = cost2_userfun(x)
 c = x(1)*x(2);
+if(nargout>1)
 dc = [x(2) x(1)];
+end
 end
 
 function [c,dc] = cost3_userfun(x1,x2)
 c = x1*x2;
+if(nargout>1)
 dc = [x2 x1];
+end
 end
 
 function [c,dc] = cnstr2_userfun(x)
 c = [x(1)*x(2)*x(3);x(2)^2+x(2)*x(3)+2*x(3)^2];
+if(nargout>1)
 dc = [x(2)*x(3) x(1)*x(3) x(1)*x(2); 0 2*x(2)+x(3) x(2)+4*x(3)];
+end
 end
