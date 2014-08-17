@@ -1,12 +1,12 @@
 classdef FeedbackSystem < DrakeSystem
-  
+
   properties
     sys1
     sys2
     sys1ind=[]
     sys2ind=[]
   end
-  
+
   methods
     function obj = FeedbackSystem(sys1,sys2)
       obj = obj@DrakeSystem(sys1.getNumContStates()+sys2.getNumContStates(),...
@@ -14,30 +14,31 @@ classdef FeedbackSystem < DrakeSystem
         sys1.getNumInputs(), sys1.getNumOutputs(), false, sys1.isTI() & sys2.isTI());
       typecheck(sys1,'DrakeSystem');
       typecheck(sys2,'DrakeSystem');
-      
+
       if (isa(sys1,'HybridDrakeSystem') || isa(sys2,'HybridDrakeSystem'))
         error('Drake:FeedbackSystem:NoHybridSupport','feedback combinations with hybrid systems should be created using the hybrid system feedback method.');
       end
       if (isa(sys1,'StochasticDrakeSystem') || isa(sys2,'StochasticDrakeSystem'))
         error('Drake:FeedbackSystem:NoStochasticSupport','feedback combinations with stochastic systems not implemented yet.');
       end
-      
+
       sys2 = sys2.inInputFrame(sys1.getOutputFrame);
       sys2 = sys2.inOutputFrame(sys1.getInputFrame);
 
       if (sys1.isDirectFeedthrough() && sys2.isDirectFeedthrough())
         error('Drake:FeedbackSystem:AlgebraicLoop','algebraic loop');
       end
-      
+
       [obj.sys1ind,obj.sys2ind] = stateIndicesForCombination(sys1,sys2);
-      
+
+      obj = setSampleTime(obj,[sys1.getSampleTime(),sys2.getSampleTime()]);
       obj = setNumZeroCrossings(obj,sys1.getNumZeroCrossings()+sys2.getNumZeroCrossings()+sum(~isinf([sys1.umin;sys1.umax;sys2.umin;sys2.umax])));
       obj = setNumStateConstraints(obj,sys1.getNumStateConstraints()+sys2.getNumStateConstraints());
-      obj = setSampleTime(obj,[sys1.getSampleTime(),sys2.getSampleTime()]);
-
+      % unilateral constraints handled in get method below
+      
       obj = setInputFrame(obj,sys1.getInputFrame());
       obj = setOutputFrame(obj,sys1.getOutputFrame());
-      
+
       obj = setStateFrame(obj,MultiCoordinateFrame.constructFrame( ...
         { getStateFrame(sys1),getStateFrame(sys2) }, ...
         [ ones(getNumContStates(sys1),1); ...
@@ -45,11 +46,14 @@ classdef FeedbackSystem < DrakeSystem
           ones(getNumDiscStates(sys1),1); ...
           2*ones(getNumDiscStates(sys2),1) ], ...
           true) );  % zap empty frames
-      
+
       obj.sys1=sys1;
       obj.sys2=sys2;
     end
-    
+
+    function n = getNumUnilateralConstraints(obj)
+       n = obj.sys1.getNumUnilateralConstraints()+obj.sys2.getNumUnilateralConstraints();
+    end
     
     function xdn = update(obj,t,x,u)
       [x1,x2]=decodeX(obj,x);
@@ -69,11 +73,11 @@ classdef FeedbackSystem < DrakeSystem
       [y1,y2] = getOutputs(obj,t,x,u);
       y=y1;
     end
-    
+
     function x0=getInitialState(obj)
       x0=encodeX(obj,getInitialState(obj.sys1),getInitialState(obj.sys2));
     end
-    
+
     function x0=getInitialStateWInput(obj,t,x,u)
       [x1,x2]=decodeX(obj,x);
       [y1,y2]=getOutputs(obj,t,x,u);
@@ -81,9 +85,9 @@ classdef FeedbackSystem < DrakeSystem
       x2=getInitialStateWInput(obj.sys2,t,x2,sat2(obj,y1));
       x0=encodeX(obj,x1,x2);
       % note: this is not perfect (y2 could change after updating x1).  how
-      % does simulink do it on the backend? 
+      % does simulink do it on the backend?
     end
-    
+
     function zcs = zeroCrossings(obj,t,x,u)
       [x1,x2]=decodeX(obj,x);
       [y1,y2]=getOutputs(obj,t,x,u);
@@ -95,24 +99,24 @@ classdef FeedbackSystem < DrakeSystem
       if (getNumZeroCrossings(obj.sys2)>0)
         zcs=[zcs;zeroCrossings(obj.sys2,t,x2,sat2(obj,y1))];
       end
-      
+
       % sys1 umin
       ind=find(~isinf(obj.sys1.umin));
       if (~isempty(ind)) zcs=[zcs;y2(ind)+u(ind) - obj.sys1.umin(ind)]; end
-      
+
       % sys1 umax
       ind=find(~isinf(obj.sys1.umax));
       if (~isempty(ind)) zcs=[zcs;obj.sys1.umax(ind) - y2(ind)-u(ind)]; end
-        
+
       % sys2 umin
       ind=find(~isinf(obj.sys2.umin));
       if (~isempty(ind)) zcs=[zcs;y1(ind) - obj.sys2.umin(ind)]; end
-      
+
       % sys2 umax
       ind=find(~isinf(obj.sys2.umax));
       if (~isempty(ind)) zcs=[zcs;obj.sys2.umax(ind) - y1(ind)]; end
     end
-    
+
     function con = stateConstraints(obj,x)
       [x1,x2]=decodeX(obj,x);
       if (getNumStateConstraints(obj.sys1)>0)
@@ -124,8 +128,20 @@ classdef FeedbackSystem < DrakeSystem
         con=[con;stateConstraints(obj.sys2,x2)];
       end
     end
+    
+    function con = unilateralConstraints(obj,x)
+      [x1,x2]=decodeX(obj,x);
+      if (getNumUnilateralConstraints(obj.sys1)>0)
+        con=unilateralConstraints(obj.sys1,x1);
+      else
+        con=[];
+      end
+      if (getNumUnilateralConstraints(obj.sys2)>0)
+        con=[con;unilateralConstraints(obj.sys2,x2)];
+      end
+    end
   end
-  
+
   methods (Access=private)
     function [x1,x2] = decodeX(obj,x)
       x1=x(obj.sys1ind);
@@ -146,7 +162,7 @@ classdef FeedbackSystem < DrakeSystem
       if (~obj.sys1.isDirectFeedthrough()) % do sys1 first
         % note: subsystems of sys1 could still be direct feedthrough.  but
         % their outputs will not effect the final y1.  I'll just put in
-        % something random that's the right size for u here. 
+        % something random that's the right size for u here.
         y1=output(obj.sys1,t,x1,u);  % output shouldn't depend on u
         y2=output(obj.sys2,t,x2,sat2(obj,y1));
       else % do sys2 first
@@ -155,6 +171,5 @@ classdef FeedbackSystem < DrakeSystem
       end
     end
   end
-  
+
 end
-    
