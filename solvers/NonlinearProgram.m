@@ -755,6 +755,8 @@ classdef NonlinearProgram
           [x,objval,exitflag] = snopt(obj,x0);
         case 'fmincon'
           [x,objval,exitflag] = fmincon(obj,x0);
+        case 'ipopt'
+          [x,objval,exitflag] = ipopt(obj,x0);
         otherwise
           error('Drake:NonlinearProgram:UnknownSolver',['The requested solver, ',obj.solver,' is not known, or not currently supported']);
       end
@@ -762,7 +764,7 @@ classdef NonlinearProgram
     
     function [x,objval,exitflag,execution_time] = compareSolvers(obj,x0,solvers)
       if nargin<3
-        solvers={'snopt','fmincon'};
+        solvers={'snopt','fmincon','ipopt'};
       end
        
       fprintf('    solver        objval        exitflag   execution time\n-------------------------------------------------------------\n')
@@ -961,6 +963,56 @@ classdef NonlinearProgram
         warning('Drake:NonlinearProgram:FMINCONExitFlag',' FMINCON %2d %s',exitflag,msg); 
       end
       
+    end
+    
+    function [x,objval,exitflag] = ipopt(obj,x0)
+      checkDependency('ipopt');
+      
+      iJfun = [obj.iCinfun;obj.iCeqfun+obj.num_cin];
+      jJvar = [obj.jCinvar;obj.jCeqvar];
+      A = [obj.Ain;obj.Aeq];
+      [iAfun,jAvar] = find(A);
+      iJfun = [iJfun;iAfun+obj.num_cin+obj.num_ceq];
+      jJvar = [jJvar;jAvar];
+      num_constraints = obj.num_cin+obj.num_ceq+length(obj.bin)+length(obj.beq);
+      
+      function f = objective(x)
+        f = obj.objective(x);
+      end
+      function df = gradient(x)
+        [~,df] = obj.objective(x);
+      end
+      function c = constraints(x)
+        [g,h] = obj.nonlinearConstraints(x);
+        c = [g;h;obj.Ain*x;obj.Aeq*x];
+      end
+      function J = jacobian(x)
+        [~,~,dg,dh] = obj.nonlinearConstraints(x);
+        J = [dg;dh;obj.Ain;obj.Aeq];
+        Jval = J(sub2ind([num_constraints,obj.num_vars],iJfun,jJvar));
+        J = sparse(iJfun,jJvar,Jval,num_constraints,obj.num_vars);
+      end
+      
+      function J = jacobianstructure()
+        J = sparse(iJfun,jJvar,ones(length(iJfun),1),num_constraints,obj.num_vars);
+      end
+      funcs.objective = @objective;
+      funcs.gradient = @gradient;
+      funcs.constraints = @constraints;
+      funcs.jacobian = @jacobian;
+      funcs.jacobianstructure = @jacobianstructure;
+      
+      options.lb = obj.x_lb;
+      options.ub = obj.x_ub;
+      options.cl = [obj.cin_lb;zeros(obj.num_ceq,1);-inf(length(obj.bin),1);obj.beq];
+      options.cu = [obj.cin_ub;zeros(obj.num_ceq,1);obj.bin;obj.beq];
+      options.ipopt.hessian_approximation = 'limited-memory';
+      options.ipopt.print_level = 0;
+      
+      
+      [x,info] = ipopt(x0,funcs,options);
+      exitflag = info.status;
+      objval = objective(x);
     end
   end
 end
