@@ -1,12 +1,12 @@
-classdef PolynomialSystem < DrakeSystem 
+classdef PolynomialSystem < DrakeSystem
   % A dynamical system described by rational polynomial dynamics, and
-  % polynomial outputs.  If the system is time-varying, then it 
-  % need not be polynomial in time (but for every time, it is polynomial in x and u). 
+  % polynomial outputs.  If the system is time-varying, then it
+  % need not be polynomial in time (but for every time, it is polynomial in x and u).
 
   properties (SetAccess=private,GetAccess=private)
     rational_flag=false;
   end
-  
+
   methods
     function obj = PolynomialSystem(num_xc,num_xd,num_u,num_y,direct_feedthrough_flag,time_invariant_flag,rational_flag)
       % initialize PolynomialSystem
@@ -14,7 +14,7 @@ classdef PolynomialSystem < DrakeSystem
       obj.rational_flag = rational_flag;
     end
   end
-  
+
   methods (Sealed=true)
     function [xcdot,dxcdot] = dynamics(obj,t,x,u)
       if (nargout<2)
@@ -29,10 +29,10 @@ classdef PolynomialSystem < DrakeSystem
             [xcdot,dxcdot] = dynamicsRHS(obj,t,x,u);
           catch
             if ~isTI(obj) error('not implemented yet'); end  % todo: geval equivalent for t, but poly computations for x,u?
-            
+
             p_x=obj.getStateFrame.poly;
             if (obj.num_u>0) p_u=obj.getInputFrame.poly; else p_u=[]; end
-            
+
             f = getPolyDynamics(obj,0);
             xcdot = double(subs(f,[p_x;p_u],[x;u]));
             dxcdot = double([0*xcdot,subs(diff(f,[p_x;p_u]),[p_x;p_u],[x;u])]);
@@ -42,11 +42,11 @@ classdef PolynomialSystem < DrakeSystem
 
           p_x=obj.getStateFrame.poly;
           if (obj.num_u>0) p_u=obj.getInputFrame.poly; else p_u=[]; end
-          
+
           [f,e] = getPolyDynamics(obj,0);
           xcdot = double(subs(e,p_x,x))\double(subs(f,[p_x;p_u],[x;u]));
           df = double([0*xcdot,subs(diff(f,[p_x;p_u]),[p_x;p_u],[x;u])]);
-          
+
           % e(x)xdot = f(x) => dexdotdx + e(x)*dxdotdx = dfdx
           %  where the columns of dexdotdx are dedxi*xdot
           nX = obj.num_xc;
@@ -57,10 +57,10 @@ classdef PolynomialSystem < DrakeSystem
         end
       end
     end
-  end    
+  end
 
-  
-  
+
+
   methods
     function [e,de] = dynamicsLHS(obj,t,x,u)
       error('rational polynomial systems with continuous state must implement this');
@@ -73,11 +73,11 @@ classdef PolynomialSystem < DrakeSystem
     function obj = setRationalFlag(obj,tf)
       obj.rational_flag = tf;
     end
-    
+
     function tf = isRational(obj)
       tf=obj.rational_flag;
     end
-    
+
     function [p_dynamics_rhs,p_dynamics_lhs] = getPolyDynamics(obj,t)
       p_dynamics_rhs = [];
       p_dynamics_lhs = [];
@@ -85,7 +85,7 @@ classdef PolynomialSystem < DrakeSystem
         if (nargin<2 && ~isTI(obj)) error('you must specify a time'); else t=0; end
         p_x=obj.getStateFrame.poly;
         if (obj.num_u>0) p_u=obj.getInputFrame.poly; else p_u=[]; end
-      
+
         p_dynamics_rhs=obj.dynamicsRHS(t,p_x,p_u);
         if (nargout>1 && obj.rational_flag)
           p_dynamics_lhs=obj.dynamicsLHS(t,p_x,p_u);
@@ -108,7 +108,7 @@ classdef PolynomialSystem < DrakeSystem
         if (nargin<2 && ~isTI(obj)) error('you must specify a time'); else t=0; end
         if (obj.num_x>0) p_x=obj.getStateFrame.poly; else p_x=[]; end
         if (obj.num_u>0) p_u=obj.getInputFrame.poly; else p_u=[]; end
-        
+
         p_output=obj.output(t,p_x,p_u);
       else
         p_output=[];
@@ -122,14 +122,14 @@ classdef PolynomialSystem < DrakeSystem
         p_state_constraints = [];
       end
     end
-    
+
     function obj = setNumZeroCrossings(obj,num_zcs)
       if (num_zcs)
         error('PolynomialSystems are not allowed to have zero crossings');
       end
     end
   end
-  
+
   methods  % for constructing and manipulating polynomial systems
     function polysys = timeReverse(obj)
       if (obj.num_xd>0) error('only for CT systems'); end
@@ -140,31 +140,31 @@ classdef PolynomialSystem < DrakeSystem
       polysys = SpotPolynomialSystem(obj.getInputFrame,obj.getStateFrame,obj.getOutputFrame,...
         -p_dynamics_rhs,p_dynamics_lhs,[],p_output,p_state_constraints);
     end
-    
+
     function obj = setInputFrame(obj,frame)
       if frame.dim>0
         if obj.getNumStates()>0 && any(match(obj.getStateFrame.poly,frame.poly)~=0)
           error('input frame poly clashes with current state frame poly.  this could lead to massive confusion');
         end
       end
-      
+
       obj = setInputFrame@DrakeSystem(obj,frame);
     end
-    
+
     function obj = setStateFrame(obj,frame)
       if frame.dim>0
         if obj.getNumInputs()>0 && any(match(obj.getInputFrame.poly,frame.poly)~=0)
           error('state frame poly clashes with current input frame poly.  this could lead to massive confusion');
         end
       end
-      
+
       obj = setStateFrame@DrakeSystem(obj,frame);
     end
-    
+
     function sys = inStateFrame(sys,frame)
       if (sys.getStateFrame == frame) return; end
-      
-      if (~isCT(sys) || isRational(sys) || getNumStateConstraints(sys)>0), error('not implemented yet'); end   % though some of them would be easy to implement
+
+      if (~isCT(sys) || isRational(sys) || getNumStateConstraints(sys)>0 || getNumUnilateralConstraints(sys)>0), error('not implemented yet'); end   % though some of them would be easy to implement
 
       ctf = findTransform(getStateFrame(sys),frame,struct('throw_error_if_fail',true));
       dtf = findTransform(frame,getStateFrame(sys),struct('throw_error_if_fail',true));
@@ -174,7 +174,7 @@ classdef PolynomialSystem < DrakeSystem
 
       % from xdot = f(t,x,u) to zdot = g(t,z,u) via z=c(t,x) and x=d(t,z)
       % zdot = dcdt(t,d(t,z)) + dcdx(t,d(t,z)*f(t,d(t,z),u)
-      
+
       x = sys.getStateFrame.poly; z=frame.poly;
       if isTI(sys) && isTI(ctf) && isTI(dtf)
         c = subs(ctf.getPolyOutput,ctf.getInputFrame.poly,x);
@@ -185,10 +185,10 @@ classdef PolynomialSystem < DrakeSystem
         sys = SpotPolynomialSystem(sys.getInputFrame,frame,sys.getOutputFrame,g,[],[],y);
       else % time-varying case
         y = @(t) subss(sys.getPolyOutput(t),x,subs(dtf.getPolyOutput(t),dtf.getInputFrame.poly,z));
-        % todo: note the breaks in the polynomialtrajectory systems below are a hack. need to handle that better.  
+        % todo: note the breaks in the polynomialtrajectory systems below are a hack. need to handle that better.
         sys = PolynomialTrajectorySystem(sys.getInputFrame,frame,sys.getOutputFrame,PolynomialTrajectory(@(t) newdyn(t,sys,frame,ctf,dtf),[0 inf]),[],PolynomialTrajectory(y,[0 inf]),sys.isDirectFeedthrough);
       end
-      
+
         function g = newdyn(t,sys,frame,ctf,dtf)
           x = sys.getStateFrame.poly; z=frame.poly;
           p_t = msspoly('t',1);
@@ -198,15 +198,15 @@ classdef PolynomialSystem < DrakeSystem
           g = dcdt + dcdx*sys.getPolyDynamics(t);
           g = subss(g,x,d);
         end
-      
-      
+
+
     end
-    
+
     function sys = feedback(sys1,sys2)
       % try to keep feedback between polynomial systems polynomial.  else,
       % kick out to DrakeSystem
       %
-      
+
       sys2 = sys2.inInputFrame(sys1.getOutputFrame);
       sys2 = sys2.inOutputFrame(sys1.getInputFrame);
 
@@ -214,18 +214,18 @@ classdef PolynomialSystem < DrakeSystem
         sys = feedback@DrakeSystem(sys1,sys2);
         return;
       end
-        
+
       if (sys1.isDirectFeedthrough() && sys2.isDirectFeedthrough())
         error('Drake:PolynomalSystem:AlgebraicLoop','algebraic loop');
       end
-      
+
       if (getNumZeroCrossings(sys1)>0 || getNumZeroCrossings(sys2)>0)
-        error('polynomialsystems aren''t supposed to have zero crossings'); 
+        error('polynomialsystems aren''t supposed to have zero crossings');
       end
-      
+
       input_frame = sys1.getInputFrame();
       output_frame = sys1.getOutputFrame();
-      if (sys1.getNumStates==0) 
+      if (sys1.getNumStates==0)
         state_frame = sys2.getStateFrame();
       elseif (sys2.getNumStates==0)
         state_frame = sys1.getStateFrame();
@@ -235,18 +235,18 @@ classdef PolynomialSystem < DrakeSystem
 
       p_x = state_frame.poly;
       p_u = input_frame.poly;
-      
+
       [sys1ind,sys2ind] = stateIndicesForCombination(sys1,sys2);
       p_x1 = p_x(sys1ind);
       p_x2 = p_x(sys2ind);
-      
+
       [p1_dynamics_rhs,p1_dynamics_lhs]=getPolyDynamics(sys1);
       p1_output=getPolyOutput(sys1);
       p1_state_constraints=getPolyStateConstraints(sys1);
       [p2_dynamics_rhs,p2_dynamics_lhs]=getPolyDynamics(sys2);
       p2_output=getPolyOutput(sys2);
       p2_state_constraints=getPolyStateConstraints(sys2);
-      
+
       if (~sys1.isDirectFeedthrough()) % do sys1 first
         p_y1 = subs(p1_output,sys1.getStateFrame.poly,p_x1); % doesn't need u
         p_y2 = subss(p2_output,[sys2.getStateFrame.poly;sys2.getInputFrame.poly],[p_x2;p_y1]);
@@ -254,7 +254,7 @@ classdef PolynomialSystem < DrakeSystem
         p_y2 = subs(p2_output,sys2.getStateFrame.poly,p_x2); % doesn't need u
         p_y1 = subss(p1_output,[sys1.getStateFrame.poly;sys1.getInputFrame.poly],[p_x1;p_y2+p_u]);
       end
-      
+
       p_dynamics_rhs=[]; p_dynamics_lhs=[]; p_update=[]; p_output=[]; p_state_constraints=[];
       if (sys1.getNumContStates()>0)
         p_dynamics_rhs=[p_dynamics_rhs;subss(p1_dynamics_rhs,[sys1.getStateFrame.poly;sys1.getInputFrame.poly],[p_x1;p_y2+p_u])];
@@ -284,7 +284,7 @@ classdef PolynomialSystem < DrakeSystem
       if (sys1.getNumOutputs()>0)
         p_output = p_y1;
       end
-      
+
       % handle state constraints
       if (sys1.getNumStateConstraints()>0)
         p_state_constraints=[p_state_constraints;subss(p1_state_constraints,sys1.getStateFrame.poly,p_x1)];
@@ -292,23 +292,26 @@ classdef PolynomialSystem < DrakeSystem
       if (sys2.getNumStateConstraints()>0)
         p_state_constraints=[p_state_constraints;subss(p2_state_constraints,sys2.getStateFrame.poly,p_x2)];
       end
-      
+      if (sys1.getNumUnilateralConstraints()>0 || sys2.getNumUnilateralConstraints()>0)
+        error('not implemented yet')
+      end
+
       sys = SpotPolynomialSystem(input_frame,state_frame,output_frame,p_dynamics_rhs,p_dynamics_lhs,p_update,p_output,p_state_constraints);
-      
+
       try
         sys = setSampleTime(sys,[sys1.getSampleTime(),sys2.getSampleTime()]);  % todo: if this errors, then kick out to drakesystem?
       catch ex
         if (strcmp(ex.identifier, 'Drake:DrakeSystem:UnsupportedSampleTime'))
-          warning('Drake:PolynomialSystem:UnsupportedSampleTime','Aborting polynomial feedback because of incompatible sample times'); 
+          warning('Drake:PolynomialSystem:UnsupportedSampleTime','Aborting polynomial feedback because of incompatible sample times');
           sys = feedback@DrakeSystem(sys1,sys2);
           return;
         else
           rethrow(ex)
         end
       end
-      
+
     end
-    
+
     function sys = cascade(sys1,sys2)
       % try to keep cascade between polynomial systems polynomial.  else,
       % kick out to DrakeSystem
@@ -320,28 +323,28 @@ classdef PolynomialSystem < DrakeSystem
         sys = cascade@DrakeSystem(sys1,sys2);
         return;
       end
-        
+
       if (getNumZeroCrossings(sys1)>0 || getNumZeroCrossings(sys2)>0)
-        error('polynomialsystems aren''t supposed to have zero crossings'); 
+        error('polynomialsystems aren''t supposed to have zero crossings');
       end
-      
+
       input_frame = sys1.getInputFrame();
       output_frame = sys2.getOutputFrame();
-      if (sys1.getNumStates==0) 
+      if (sys1.getNumStates==0)
         state_frame = sys2.getStateFrame();
       elseif (sys2.getNumStates==0)
         state_frame = sys1.getStateFrame();
       else
         state_frame = CoordinateFrame('FeedbackState',sys1.getNumState()+sys2.getNumStates(),'x');
       end
-      
+
       p_x = state_frame.poly;
       p_u = input_frame.poly;
-      
+
       [sys1ind,sys2ind] = stateIndicesForCombination(sys1,sys2);
       p_x1 = p_x(sys1ind);
       p_x2 = p_x(sys2ind);
-      
+
       [p1_dynamics_rhs,p1_dynamics_lhs]=getPolyDynamics(sys1);
       p1_output=getPolyOutput(sys1);
       p1_state_constraints=getPolyStateConstraints(sys1);
@@ -393,23 +396,23 @@ classdef PolynomialSystem < DrakeSystem
 
       sys = SpotPolynomialSystem(input_frame,state_frame,output_frame,p_dynamics_rhs,p_dynamics_lhs,p_update,p_output,p_state_constraints);
 
-      try 
+      try
         sys = setSampleTime(sys,[sys1.getSampleTime(),sys2.getSampleTime()]);  % todo: if this errors, then kick out to drakesystem?
       catch ex
         if (strcmp(ex.identifier, 'Drake:DrakeSystem:UnsupportedSampleTime'))
-          warning('Drake:PolynomialSystem:UnsupportedSampleTime','Aborting polynomial cascade because of incompatible sample times'); 
+          warning('Drake:PolynomialSystem:UnsupportedSampleTime','Aborting polynomial cascade because of incompatible sample times');
           sys = cascade@DrakeSystem(sys1,sys2);
         else
           rethrow(ex)
         end
       end
-      
+
     end
-    
+
     function sys = extractAffineSystem(obj)
       spsys = extractPolynomialSystem(obj);  % first get the spot version
       sys = extractAffineSystem(spsys);
     end
   end
-    
+
 end
