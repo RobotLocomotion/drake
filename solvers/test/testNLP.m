@@ -1,4 +1,4 @@
-function testNLPW
+function testNLP
 nlp1 = NonlinearProgram(3);
 nlp1 = nlp1.setCheckGrad(true);
 warning('Off','optimlib:fmincon:WillRunDiffAlg');
@@ -47,18 +47,31 @@ end
 if(x1(1)<-1e-5)
   error('Wrong transcription for SNOPT x_lb');
 end
-nlp2 = nlp1.setSolver('fmincon');
-[x1,F,info] = nlp2.solve(x0);
+nlp1 = nlp1.setSolver('fmincon');
+[x1,F,info] = nlp1.solve(x0);
 c1 = cnstr1_userfun(x1);
 if(c1(1)>4+1e-5 || c1(2)>5+1e-5)
-  error('Wrong transcription for SNOPT nonlinear constraint');
+  error('Wrong transcription for fmincon nonlinear constraint');
 end
 b1 = A*x1;
 if(b1(1)>1+1e-5 || b1(1)<0-1e-5 || abs(b1(2))>1e-5)
-  error('Wrong transcription for SNOPT linear constraint');
+  error('Wrong transcription for fmincon linear constraint');
 end
 if(x1(1)<-1e-5)
-  error('Wrong transcription for SNOPT x_lb');
+  error('Wrong transcription for fmincon x_lb');
+end
+nlp1 = nlp1.setSolver('ipopt');
+[x1,F,info] = nlp1.solve(x0);
+c1 = cnstr1_userfun(x1);
+if(c1(1)>4+1e-5 || c1(2)>5+1e-5)
+  error('Wrong transcription for ipopt nonlinear constraint');
+end
+b1 = A*x1;
+if(b1(1)>1+1e-5 || b1(1)<0-1e-5 || abs(b1(2))>1e-5)
+  error('Wrong transcription for ipopt linear constraint');
+end
+if(x1(1)<-1e-5)
+  error('Wrong transcription for ipopt x_lb');
 end
 %%%%%%%%%%%%%%%%
 % min x2^2+x1*x3+x3
@@ -87,10 +100,12 @@ if(x2(1)<-1e-5)
 end
 f2 = cost1_userfun(x2(2))+cost2_userfun(x2([1;3]))+x2(3);
 valuecheck(F,f2);
-nlp2 = nlp1.setSolver('fmincon');
-[x2_fmincon,F,info] = nlp2.solve(x0);
+nlp1 = nlp1.setSolver('fmincon');
+[x2_fmincon,F,info] = nlp1.solve(x0);
 valuecheck(x2,x2_fmincon,1e-4);
-
+nlp1 = nlp1.setSolver('ipopt');
+[x2_ipopt,F,info] = nlp1.solve(x0);
+valuecheck(x2,x2_ipopt,1e-4);
 %%%%%%%%%%%%%%%%%%%%%
 % min x2^2+x1*x3+x3
 % x1^2+4*x2^2<=4
@@ -110,12 +125,18 @@ valuecheck(c2(1),1/6,1e-5);
 if(info>10)
   error('SNOPT fails');
 end
-nlp2 = nlp1.setSolver('fmincon');
-[x_fmincon,F,info] = nlp2.solve(x0);
+nlp1 = nlp1.setSolver('fmincon');
+[x_fmincon,F,info] = nlp1.solve(x0);
 if info~=1
   error('fmincon failed');
 end
 valuecheck(x,x_fmincon,1e-4);
+nlp1 = nlp1.setSolver('ipopt');
+[x_ipopt,F,info] = nlp1.solve(x0);
+if info ~= 0
+  error('ipopt fails');
+end
+valuecheck(x,x_ipopt,1e-4);
 % min x2^2+x1*x3+x3
 % x1^2+4*x2^2<=4
 % (x1-2)^2+x2^2<=5
@@ -140,9 +161,12 @@ valuecheck(-x(2)+x(3),0.1,1e-5);
 if(x(2)+x(3)>10+1e-5)
   error('Linear constraint not correct');
 end
-nlp2 = nlp1.setSolver('fmincon');
-[x_fmincon,F,info] = nlp2.solve(x0);
+nlp1 = nlp1.setSolver('fmincon');
+[x_fmincon,F,info] = nlp1.solve(x0);
 valuecheck(x,x_fmincon,1e-4);
+nlp1 = nlp1.setSolver('ipopt');
+[x_ipopt,F,info] = nlp1.solve(x0);
+valuecheck(x,x_ipopt,1e-4);
 
 display('test addDecisionVar');
 nlp1 = nlp1.addDecisionVariable(2);
