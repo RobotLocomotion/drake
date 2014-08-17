@@ -48,7 +48,8 @@ if ~isempty(err_id)
       end
     case 'MATLAB:nonExistentCellElement'
       if any(strcmp(testname,{'systems/plants/constraint/test/RelativeQuatConstraintTest',...
-          'systems/plants/constraint/test/RelativeGazeTargetConstraintTest'}))
+          'systems/plants/constraint/test/RelativeGazeTargetConstraintTest',...
+          'systems/plants/constraint/test/WorldPositionInFrameConstraintTest'}))
         github(286); return;
       end
   end
