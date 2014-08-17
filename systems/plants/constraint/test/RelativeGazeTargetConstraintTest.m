@@ -2,6 +2,7 @@ function RelativeGazeTargetConstraintTest()
 % Andres would update the RelativeGazeTargetConstraint
   w = warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
   warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
+  warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
   warning('off','Drake:RigidBodyManipulator:BodyHasZeroInertia');
   warning('off','Drake:RigidBodyManipulator:ReplacedCylinder');
   r = RigidBodyManipulator(fullfile(getDrakePath(),'examples','PR2','pr2.urdf'));
