@@ -127,15 +127,9 @@ if(info>10)
 end
 nlp1 = nlp1.setSolver('fmincon');
 [x_fmincon,F,info] = nlp1.solve(x0);
-if info~=1
-  error('fmincon failed');
-end
 valuecheck(x,x_fmincon,1e-4);
 nlp1 = nlp1.setSolver('ipopt');
 [x_ipopt,F,info] = nlp1.solve(x0);
-if info ~= 0
-  error('ipopt fails');
-end
 valuecheck(x,x_ipopt,1e-4);
 % min x2^2+x1*x3+x3
 % x1^2+4*x2^2<=4
