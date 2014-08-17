@@ -13,7 +13,9 @@ classdef CompositeConstraint
   end
   
   methods
-    function obj = CompositeConstraint(constraints,n)
+    function obj = CompositeConstraint(constraints,n_slack)
+      % @param constraints  A cell of Constraint objects
+      % @param n_slack     The number of slack variables.
       if nargin > 0
         if ~iscell(constraints)
           if ~isa(constraints,'Constraint')
@@ -24,7 +26,7 @@ classdef CompositeConstraint
         obj.constraints = constraints;
       end
       if nargin > 1
-        obj.n_slack = n;
+        obj.n_slack = n_slack;
       end
     end
 
@@ -33,9 +35,6 @@ classdef CompositeConstraint
       obj.constraints = [obj.constraints;constraints];
     end
     
-    function obj = addSlackVariables(obj, n)
-      obj.n_slack = obj.n_slack + n;
-    end
   end
   
 end
