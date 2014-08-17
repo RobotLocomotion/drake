@@ -29,7 +29,8 @@ classdef NonlinearProgram
     display_fun_indices
     check_grad % A boolean, True if the user gradient will be checked against
                % numerical gradient at the begining and end of the nonlinear optimization
-               
+    constraint_err_tol % A small scaler. Check whether the constraint are satisfied within the tolerance
+    
     nlcon % A cell array of NonlinearConstraint
     lcon % A cell array of LinearConstraint
     bbcon % A cell array of BoundingBoxConstraint
@@ -145,6 +146,7 @@ classdef NonlinearProgram
       obj.solver_options.snopt.OldBasisFile = 0;
       obj.solver_options.snopt.BackupBasisFile = 0;
       obj.solver_options.snopt.LinesearchTolerance = 0.9;
+      obj.constraint_err_tol = 1e-4;
       obj.check_grad = false;
     end
     
@@ -642,6 +644,16 @@ classdef NonlinearProgram
       obj.check_grad = logical(check_grad);
     end
     
+    function obj = setConstraintErrTol(obj,tol)
+      if(~isnumeric(tol) || numel(tol) ~= 1)
+        error('Drake:NonlinearProgram:setConstraintErrTol:tol should be scaler');
+      end
+      if(tol<=0)
+        error('Drake:NonlinearProgram:setConstraintErrTol:tol should be positive');
+      end
+      obj.constraint_err_tol = tol;
+    end
+    
     function obj = setSolver(obj,solver)
       typecheck(solver,'char');
       obj.solver = solver;
@@ -773,14 +785,14 @@ classdef NonlinearProgram
       ub = [inf;obj.cin_ub;zeros(obj.num_ceq,1);obj.bin;obj.beq];
     end
     
-    function [x,objval,exitflag] = solve(obj,x0)
+    function [x,objval,exitflag,infeasible_constraint_name] = solve(obj,x0)
       switch lower(obj.solver)
         case 'snopt'
-          [x,objval,exitflag] = snopt(obj,x0);
+          [x,objval,exitflag,infeasible_constraint_name] = snopt(obj,x0);
         case 'fmincon'
-          [x,objval,exitflag] = fmincon(obj,x0);
+          [x,objval,exitflag,infeasible_constraint_name] = fmincon(obj,x0);
         case 'ipopt'
-          [x,objval,exitflag] = ipopt(obj,x0);
+          [x,objval,exitflag,infeasible_constraint_name] = ipopt(obj,x0);
         otherwise
           error('Drake:NonlinearProgram:UnknownSolver',['The requested solver, ',obj.solver,' is not known, or not currently supported']);
       end
@@ -815,7 +827,7 @@ classdef NonlinearProgram
       end
     end
     
-    function [x,objval,exitflag] = snopt(obj,x0)
+    function [x,objval,exitflag,infeasible_constraint_name] = snopt(obj,x0)
       checkDependency('snopt');
 
       global SNOPT_USERFUN;
@@ -942,10 +954,10 @@ classdef NonlinearProgram
       x(free_x_idx) = x_free;
       x(fix_x_idx) = x_fix;
       objval = objval(1);
-      if exitflag~=1, warning('Drake:NonlinearProgram:SNOPTExitFlag',' %3d %s\n',exitflag,snoptInfo(exitflag)); end
+      [exitflag,infeasible_constraint_name] = obj.mapSolverInfo(exitflag,x);
     end
     
-    function [x,objval,exitflag] = fmincon(obj,x0)
+    function [x,objval,exitflag,infeasible_constraint_name] = fmincon(obj,x0)
 %       if (obj.num_cin + obj.num_ceq)
 %         nonlinearConstraints = @obj.nonlinearConstraint;
 %       else
@@ -965,31 +977,11 @@ classdef NonlinearProgram
         obj.bin,obj.Aeq,obj.beq,obj.x_lb,obj.x_ub,@fmincon_userfun,obj.solver_options.fmincon);
       objval = full(objval);
       
-      if exitflag~=1, 
-        switch (exitflag)
-          case 0
-            msg='Number of iterations exceeded';
-          case -1
-            msg='Stopped by an output function or plot function';
-          case -2
-            msg='No feasible point was found';
-          case 2
-            msg='Change in x was less than options.TolX and maximum constraint violation was less than options.TolCon';
-          case 3
-            msg='Change in the objective function value was less than options.TolFun and maximum constraint violation was less than options.TolCon';
-          case 4
-            msg='Magnitude of the search direction was less than 2*options.TolX and maximum constraint violation was less than options.TolCon';
-          case 5
-            msg='Magnitude of directional derivative in search direction was less than 2*options.TolFun and maximum constraint violation was less than options.TolCon';
-          case -3
-            msg='Objective function at current iteration went below options.ObjectiveLimit and maximum constraint violation was less than options.TolCon';
-        end        
-        warning('Drake:NonlinearProgram:FMINCONExitFlag',' FMINCON %2d %s',exitflag,msg); 
-      end
       
+      [exitflag,infeasible_constraint_name] = obj.mapSolverInfo(exitflag,x);
     end
     
-    function [x,objval,exitflag] = ipopt(obj,x0)
+    function [x,objval,exitflag,infeasible_constraint_name] = ipopt(obj,x0)
       checkDependency('ipopt');
       
       iJfun = [obj.iCinfun;obj.iCeqfun+obj.num_cin];
@@ -1036,7 +1028,123 @@ classdef NonlinearProgram
       
       [x,info] = ipopt(x0,funcs,options);
       exitflag = info.status;
+      [exitflag,infeasible_constraint_name] = obj.mapSolverInfo(exitflag,x);
       objval = objective(x);
+    end
+  end
+  
+  methods(Access = protected)
+    function [exitflag,infeasible_constraint_name] = mapSolverInfo(obj,exitflag,x)
+      % Based on the solver information and solution, re-map the info
+      % @param exitflag  The info returned from the solver
+      % @param x     The solution
+      infeasible_constraint_name = {};
+      switch obj.solver
+        case 'snopt'
+          if exitflag~=1, warning('Drake:NonlinearProgram:SNOPTExitFlag',' %3d %s\n',exitflag,snoptInfo(exitflag)); end
+          if(exitflag>10)
+            infeasible_constraint_name = infeasibleConstraint(obj,x);
+            if(isempty(infeasible_constraint_name))              
+              if(exitflag == 13 || exitflag == 12)
+                exitflag = 4;
+              elseif(exitflag == 31)
+                exitflag = 5;
+              elseif(exitflag == 32)
+                exitflag = 6;
+              end
+            end
+          end
+          
+        case 'fmincon'
+          if(exitflag ~= 1)
+            infeasible_constraint_name = infeasibleConstraint(obj,x);
+            switch (exitflag)
+              case 0
+                msg='Number of iterations exceeded';
+              case -1
+                msg='Stopped by an output function or plot function';
+              case -2
+                msg='No feasible point was found';
+              case 2
+                msg='Change in x was less than options.TolX and maximum constraint violation was less than options.TolCon';
+              case 3
+                msg='Change in the objective function value was less than options.TolFun and maximum constraint violation was less than options.TolCon';
+              case 4
+                msg='Magnitude of the search direction was less than 2*options.TolX and maximum constraint violation was less than options.TolCon';
+              case 5
+                msg='Magnitude of directional derivative in search direction was less than 2*options.TolFun and maximum constraint violation was less than options.TolCon';
+              case -3
+                msg='Objective function at current iteration went below options.ObjectiveLimit and maximum constraint violation was less than options.TolCon';
+            end        
+            warning('Drake:NonlinearProgram:FMINCONExitFlag',' FMINCON %2d %s',exitflag,msg); 
+          end
+          exitflag = exitflag+200;
+          
+        case 'ipopt'
+          if(exitflag ~= 0 && exitflag ~= 1)
+            infeasible_constraint_name = infeasibleConstraint(obj,x);
+            switch (exitflag)
+              case 2
+                msg = 'infeasible problem detected';
+              case 3
+                msg = 'search direction becomes too small';
+              case 4
+                msg = 'diverging iterates';
+              case 5
+                msg = 'user requested stop';
+              case -1
+                msg = 'maximum number of iterations exceeded';
+              case -2
+                msg = 'restoration phase failed';
+              case -3
+                msg = 'error in step computation';
+              case -10
+                msg = 'not enough degrees of freedom';
+              case -11
+                msg = 'invalid problem definition';
+              case -12
+                msg = 'invalid option';
+              case -13
+                msg = 'invalid number detected';
+              case -100
+                msg = 'unrecoverable exception';
+              case -101
+                msg = 'non-IPOPT exception thrown';
+              case -102
+                msg = 'insufficient memory';
+              case -199
+                msg = 'internal error';
+            end
+            warning('Drake:NonlinearProgram:IPOPTExitFlag','Ipopt %4d %s',exitflag,msg);
+          end
+          exitflag = exitflag-100;
+      end
+    end 
+  end
+  
+  methods(Access = private)
+    function infeasible_constraint_name = infeasibleConstraint(obj,x)
+      fval = obj.nonlinearConstraints(x);
+      A = [obj.Ain;obj.Aeq];
+      if(~isempty(A))
+        fval = [fval;A*x];
+      end
+      lb = [obj.cin_lb;zeros(obj.num_ceq,1);-inf(length(obj.bin),1);obj.beq];
+      ub = [obj.cin_ub;zeros(obj.num_ceq,1);obj.bin;obj.beq];
+      ub_err = fval-ub;
+      max_ub_err = max(ub_err);
+      max_ub_err = max_ub_err*(max_ub_err>0);
+      lb_err = lb-fval;
+      max_lb_err = max(lb_err);
+      max_lb_err = max_lb_err*(max_lb_err>0);
+      if(max_ub_err+max_lb_err>2*obj.constraint_err_tol)
+        infeasible_constraint_idx = (ub_err>obj.constraint_err_tol) | (lb_err>obj.constraint_err_tol);
+        cnstr_name = [obj.cin_name;obj.ceq_name;obj.Ain_name;obj.Aeq_name];
+        infeasible_constraint_name = cnstr_name(infeasible_constraint_idx);
+      else
+        infeasible_constraint_name = {};
+      end
+        
     end
   end
 end
