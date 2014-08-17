@@ -116,7 +116,7 @@ classdef PelvisMotionControlBlock < DrakeSystem
         body_vdot = obj.Kp.*err - obj.Kd.*(J*qd);
         if obj.use_mex == 2
           % check that matlab/mex agree
-          body_vdot_mex = pelvisMotionControlmex(obj.mex_ptr.data,x);  
+          body_vdot_mex = pelvisMotionControlmex(obj.mex_ptr.data,x,lfoot_des(6),rfoot_des(6));  
           valuecheck(body_vdot_mex,body_vdot);
         end
       else
