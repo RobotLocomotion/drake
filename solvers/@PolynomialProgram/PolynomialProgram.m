@@ -60,7 +60,7 @@ classdef PolynomialProgram < NonlinearProgram
         end
       end
 
-      obj = obj@NonlinearProgram(length(decision_vars),length(equality_constraints),length(inequality_constraints));
+      obj = obj@NonlinearProgram(length(decision_vars));
       obj.decision_vars = decision_vars;
       obj.poly_objective = objective;
       obj.poly_inequality_constraints = inequality_constraints;
