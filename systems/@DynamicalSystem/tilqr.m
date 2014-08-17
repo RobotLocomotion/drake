@@ -52,14 +52,18 @@ else
   end
 end
 
-if isfield(options,'Qy') 
+if isfield(options,'Qy')
   % see 'doc lqry'
   Q = Q + C'*options.Qy*C;
   R = R + D'*options.Qy*D;
   options.N = options.N + C'*options.Qy*D;
 end
 
-if getNumStateConstraints(obj)>0  
+if getNumUnilateralConstraints(obj)>0,
+  error('no unilateral constraints allowed');
+end
+
+if getNumStateConstraints(obj)>0
   % if there are state constraints, the system will be uncontrollable
   % in the full coordinates, so project down to the unconstrained
   % coordinates:
@@ -68,16 +72,16 @@ if getNumStateConstraints(obj)>0
   %
   % P := null(F)   (so FP = 0)
   % F is d-by-n,  P is n-by-(n-d)
-  % z := P'x , P'P = I,  x = Pz 
+  % z := P'x , P'P = I,  x = Pz
   % x'Qx = z P' Q P z , x'Nu = z'P'Nu
   % zdot = P'xdot = P'Ax + P'Bu = P'APz + P'B u
-  % 
+  %
   % u = -Kz = -KP'x, J = z'Sz = x'PSP'x
-  % 
+  %
   % it also works (the same!) for discrete time
   % xn = Ax + Bu
   % zn = P'xn = P'Ax + P'B u = P'APz + P'B u
-  
+
   [phi,F] = geval(@obj.stateConstraints,x0);
   if ~valuecheck(phi,0,1e-6)
     phi
@@ -89,12 +93,12 @@ if getNumStateConstraints(obj)>0
   Q = P'*Q*P;
   options.N = P'*options.N;
 end
-  
+
 if (ts(1)==0) % then it's CT
   [K,S] = lqr(full(A),full(B),Q,R,options.N);
 else
   [K,S] = dlqr(A,B,Q,R,options.N);
-end  
+end
 
 if getNumStateConstraints(obj)>0
   % project the result back to the full state
@@ -113,8 +117,8 @@ end
 if any(options.angle_flag)
   ltisys = setInputFrame(ltisys,ltisys.getInputFrame().constructFrameWithAnglesWrapped(options.angle_flag));
   if (nargout>1)
-    warning('DynamicalSystem:TILQR:NonSmoothLyapunovFunction','Constructing a wrapped (around 2*pi) frame for the controller and Lyapunov function. This may interfere with smooth analysis using the Lyapunov function, in which case you may prefer to defer this construction til post-analysis by unsetting options.angle_flag'); 
-  end 
+    warning('DynamicalSystem:TILQR:NonSmoothLyapunovFunction','Constructing a wrapped (around 2*pi) frame for the controller and Lyapunov function. This may interfere with smooth analysis using the Lyapunov function, in which case you may prefer to defer this construction til post-analysis by unsetting options.angle_flag');
+  end
 end
 if (all(u0==0))
   ltisys = setOutputFrame(ltisys,obj.getInputFrame);
@@ -130,4 +134,3 @@ if (nargout>1)
 end
 
 end
-

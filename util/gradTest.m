@@ -77,7 +77,8 @@ if (~isfield(options,'output_name')) options.output_name = 'f'; end
 if (~isfield(options,'num_samples')) options.num_samples = 31; end
 if (~isfield(options,'tol')) options.tol = 0.01; end
 
-[f,df] = FUN(varargin{1:end});  
+[f,df] = FUN(varargin{1:end});
+f = reshape(f,[],1);
 if (~iscell(df)) a{1} = df; df=a; clear a; end
 
 for b=1:19, fprintf(1,' '); end
@@ -85,13 +86,15 @@ for b=1:19, fprintf(1,' '); end
 input_ind = 0;
 for v=1:length(varargin)
   x = varargin{v};
+  if ~isnumeric(x), continue; end
+  
   for i=1:length(x)
     for b=1:19, fprintf(1,'\b'); end
     fprintf(1,'grad %5d of %5d',i,length(x));
     samples = linspace(-options.scale{v}(i),options.scale{v}(i),options.num_samples);
     ind=ceil((options.num_samples-eps)/2);
     for s=1:options.num_samples
-      y(:,s) = FUN(varargin{1:v-1},varargin{v}+[zeros(i-1,1);samples(s);zeros(length(x)-i,1)],varargin{v+1:end});
+      y(:,s) = reshape(FUN(varargin{1:v-1},varargin{v}+[zeros(i-1,1);samples(s);zeros(length(x)-i,1)],varargin{v+1:end}),[],1);
     end
     for j=1:length(f)
       grad = df{1}(j,input_ind+i);
