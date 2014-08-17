@@ -1,10 +1,10 @@
-function polysys=taylorApprox(sys,varargin)  
+function polysys=taylorApprox(sys,varargin)
 % performs a taylorApproximation around a point or trajectory
 % usage:
 %    taylorApprox(sys,t0,x0,u0,order[,ignores])
 % or taylorApprox(sys,x0traj,u0traj,order[,ignores])
-% it returns a polynomial system (or polynomial trajectory system) 
-% 
+% it returns a polynomial system (or polynomial trajectory system)
+%
 % if u0 or u0traj is [], then the default input (all zeros in the
 % input frame) is used
 
@@ -14,7 +14,7 @@ num_xd=sys.getNumDiscStates();
 num_u=sys.getNumInputs();
 num_y=sys.getNumOutputs();
 
-if (sys.getNumStateConstraints()>0)
+if (sys.getNumStateConstraints()>0 || sys.getNumUnilateralConstraints()>0)
   error('cannot taylorApprox systems with state constraints');  % should I consider allowing it, but simply dropping the constraint?
 end
 
@@ -23,7 +23,7 @@ if (num_u), p_u = sys.getInputFrame.poly; else p_u=[]; end
 
 if (length(varargin)<1), error('usage: taylorApprox(sys,t0,x0,u0,order), or taylorApprox(sys,xtraj,utraj,order)'); end
 
-if (isa(varargin{1},'Trajectory'))  
+if (isa(varargin{1},'Trajectory'))
   if (length(varargin)<3), error('trajectory usage: taylorApprox(sys,xtraj,utraj,order)'); end
   x0traj = varargin{1};
   u0traj = varargin{2};
@@ -31,10 +31,10 @@ if (isa(varargin{1},'Trajectory'))
   if (length(varargin)<4), ignores=[]; else ignores=varargin{4}; end
 
   p_xu = [p_x; p_u];
-  
+
   typecheck(x0traj,'Trajectory');
   sizecheck(x0traj,num_x);
-  
+
   % note: i should probably search for the transform before kicking out an error
   if (x0traj.getOutputFrame ~= sys.getStateFrame), error('x0traj does not match state frame'); end
   if (isempty(u0traj))
@@ -48,19 +48,19 @@ if (isa(varargin{1},'Trajectory'))
     if (u0traj.getOutputFrame ~= sys.getInputFrame), error('u0traj does not match input frame'); end
     breaks = unique([x0traj.getBreaks(),u0traj.getBreaks()]);
   end
-  
+
   if (num_xc)
     xdothat = PolynomialTrajectory(@(t)build_poly(@sys.dynamics,t,x0traj.eval(t),u0traj.eval(t),order,p_xu,ignores),breaks);
   else
     xdothat=[];
   end
 
-  if (num_xd) 
+  if (num_xd)
     xnhat = PolynomialTrajectory(@(t)build_poly(@sys.update,t,x0traj.eval(t),u0traj.eval(t),order,p_xu,ignores),breaks);
   else
     xnhat=[];
   end
-  
+
   if (num_y)
     yhat = PolynomialTrajectory(@(t)build_poly(@sys.output,t,x0traj.eval(t),u0traj.eval(t),order,p_xu,ignores),breaks);
   else
@@ -69,12 +69,12 @@ if (isa(varargin{1},'Trajectory'))
 
   polysys = PolynomialTrajectorySystem(sys.getInputFrame,sys.getStateFrame,sys.getOutputFrame,xdothat,xnhat,yhat,sys.isDirectFeedthrough());
   polysys = setInputLimits(polysys,sys.umin,sys.umax);
-  
+
 %  if (num_xc==2 && num_xd==0)  % very useful for debugging.  consider making it an option
 %    comparePhasePlots(sys,polysys,x0traj,u0traj,linspace(breaks(1),breaks(end),15));
 %  end
 
-  
+
 else
   if (length(varargin)<4), error('this usage: taylorApprox(sys,t0,x0,u0,order)'); end
   if (length(varargin)>4), error('ignores not implemented yet'); end
@@ -108,19 +108,19 @@ else
   else
     xdothat=[];
   end
-  
+
   if (num_xd)
     xnhat = getmsspoly(sys.update(pt0,px0,pu0),txubar);
   else
     xnhat=[];
   end
-  
+
   if (num_y)
     yhat = getmsspoly(sys.output(pt0,px0,pu0),txubar);
   else
     yhat=[];
   end
-  
+
   polysys = SpotPolynomialSystem(sys.getInputFrame,sys.getStateFrame,sys.getOutputFrame,xdothat,[],xnhat,yhat);
   if (num_u)
     polysys = setInputLimits(polysys,sys.umin,sys.umax);
@@ -129,7 +129,7 @@ else
   polysys = setStateFrame(polysys,sys.getStateFrame);
   polysys = setOutputFrame(polysys,sys.getOutputFrame);
   polysys = setSampleTime(polysys,sys.getSampleTime);
-  
+
 %  if (num_xc==2 && num_xd==0)   % useful for debugging... consider making it an option
 %    x0traj = FunctionHandleTrajectory(@(t) x0, [num_x,1],[0 0]);
 %    xdot0traj = FunctionHandleTrajectory(@(t) zeros(num_x,1),[num_x,1],[0 0]);
@@ -143,7 +143,7 @@ else
 %  end
 
 end
-  
+
 end
 
   function p=build_poly(fun,t,x0,u0,order,p_xu,ignores)
@@ -154,19 +154,19 @@ end
     x0=xu(1:nX); u0=xu(nX+(1:nU));
     p=getmsspoly(feval(fun,t,x0,u0),p_xu-xu0);
   end
-  
-  
-  function comparePhasePlots(sys,psys,x0traj,u0traj,ts) %#ok<DEFNU> 
+
+
+  function comparePhasePlots(sys,psys,x0traj,u0traj,ts) %#ok<DEFNU>
 
   figure(1);
   xs=x0traj.eval(linspace(ts(1),ts(end),100));
-  
+
 %  if (getNumStates(sys)~=2) error('not implmented yet'); end
   num_xd=getNumDiscStates(sys);
   plotdims = [1 2];
   for t=ts
     clf; hold on;
-    x0=x0traj.eval(t); u0=u0traj.eval(t); 
+    x0=x0traj.eval(t); u0=u0traj.eval(t);
     [X1,X2] = ndgrid(linspace(-1,1,11),linspace(-1,1,11));
     X1dot=X1; X2dot=X1;
     pX1dot=X1; pX2dot=X1;

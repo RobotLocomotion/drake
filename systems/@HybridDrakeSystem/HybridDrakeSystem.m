@@ -1,26 +1,26 @@
 classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
 
   % some restrictions on the mode systems:
-  %  must be CT only 
-  
+  %  must be CT only
+
   properties (SetAccess=private,GetAccess=protected)
     % modes:
-    modes={};       % cell array of systems representing each state (or mode) 
+    modes={};       % cell array of systems representing each state (or mode)
     mode_names={};
-    
+
     % transitions:
-    target_mode={}; % target_mode{i}(j) describes the target for the jth transition out of the ith mode    
+    target_mode={}; % target_mode{i}(j) describes the target for the jth transition out of the ith mode
     guard={};       % guard{i}{j} is for the jth transition from the ith mode
     transition={};      % transition{i}{j} is for the jth transition from the ith mode
   end
-  
+
   % construction
   methods
     function obj = HybridDrakeSystem(num_u, num_y)
       obj = obj@DrakeSystem(0,1,num_u,num_y,false,true);
       obj = setSampleTime(obj,[-1;0]);  % use inherited sample time until modes are added
     end
-        
+
     function [obj,mode_num] = addMode(obj,mode_sys,name)
       typecheck(mode_sys,'DrakeSystem');
       if isa(mode_sys,'HybridDrakeSystem') error('hybrid modes are not supported (yet)'); end
@@ -29,44 +29,47 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
       obj.target_mode = {obj.target_mode{:},[]};
       obj.guard = {obj.guard{:},{}};
       obj.transition = {obj.transition{:},{}};
-      
+
       oldStateFrame=getStateFrame(obj);
       obj = setNumContStates(obj,max(getNumContStates(obj),getNumContStates(mode_sys)));
       obj = setNumDiscStates(obj,max(getNumDiscStates(obj),1+getNumDiscStates(mode_sys)));
-      
+
       if (obj.getNumInputs>0 && obj.getInputFrame ~= mode_sys.getInputFrame)
         tf = findTransform(obj.getInputFrame,mode_sys.getInputFrame);
         if (isempty(tf))
-          error(['Input frame ' mode_sys.getInputFrame().name, ' does not match input frame ', obj.getInputFrame().name, ' and I cannot find a CoordinateTransform to make the connection']); 
+          error(['Input frame ' mode_sys.getInputFrame().name, ' does not match input frame ', obj.getInputFrame().name, ' and I cannot find a CoordinateTransform to make the connection']);
         end
         mode_sys = cascade(tf,mode_sys);
       end
       if (obj.getNumOutputs>0 && obj.getOutputFrame ~= mode_sys.getOutputFrame)
         tf = findTransform(mode_sys.getOutputFrame,obj.getOutputFrame);
         if (isempty(tf))
-          error(['Output frame ' mode_sys.getOutputFrame().name, ' does not match output frame ', obj.getOutputFrame().name, ' and I cannot find a CoordinateTransform to make the connection']); 
+          error(['Output frame ' mode_sys.getOutputFrame().name, ' does not match output frame ', obj.getOutputFrame().name, ' and I cannot find a CoordinateTransform to make the connection']);
         end
         mode_sys = cascade(mode_sys,tf);
       end
-      
+
       if (getNumZeroCrossings(mode_sys)>0)
         obj = setNumZeroCrossings(obj,max(getNumZeroCrossings(obj),getNumZeroCrossings(mode_sys)));
       end
       if (getNumStateConstraints(mode_sys)>0)
         obj = setNumStateConstraints(obj,max(getNumStateConstraints(obj),getNumStateConstraints(mode_sys)));
       end
-      
+      if getNumUnilateralConstraints(mode_sys)>0
+        error('not implemented yet');
+      end
+
       obj = setSampleTime(obj,[getSampleTime(obj),getSampleTime(mode_sys)]);
       obj = setDirectFeedthrough(obj,isDirectFeedthrough(obj) || isDirectFeedthrough(mode_sys));
       obj = setTIFlag(obj,isTI(obj) && isTI(mode_sys));
-      
+
       obj.modes = {obj.modes{:},mode_sys};
       mode_num = length(obj.modes);
 
       if (getStateFrame(obj)~=oldStateFrame)
         % todo: remove old transforms (from mode states to oldStateFrame)
         % if I create those
-        
+
         for i=1:mode_num  % support multiple modes have the same state frame
           tf = obj.getStateFrame.findTransform(getStateFrame(obj.modes{i}));
           if isempty(tf)
@@ -84,7 +87,7 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
           obj.getStateFrame.updateTransform(tf.addModeNumber(mode_num));
         end
       end
-      
+
       if (nargin>2)
         typecheck(name,'char');
         obj.mode_names{mode_num}=name;
@@ -92,19 +95,19 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
         obj.mode_names{mode_num}=int2str(mode_num);
       end
     end
-    
+
     function obj = addTransition(obj,from_mode_num,guard,transition,directFeedthrough,timeInvariant,to_mode_num)
-      % guard is a function pointer with style:  
+      % guard is a function pointer with style:
       %    phi = guard(fsm_obj,t,mode_x,u)
       %    with phi a scalar, which indicates a transition when phi<=0.
       % transition is a function pointer with style:
       %    [to_mode_xn,to_mode_num,status] = transition(obj,from_mode_num,t,mode_x,u)
       % if to_mode_num is not supplied, or is 0, then it means that the to_mode is only given by the transition update.
-      
+
       if (from_mode_num<1 || from_mode_num>length(obj.modes)) error('invalid from mode'); end
       if (nargin<7) to_mode_num=0; end
       if (isnumeric(guard))
-        error('the syntax for the hybrid models has changed (sorry).  to_mode_num is now an output of the transition function instead of an argument to addTransition.  this was necessary for more complicated transitions.  type ''help @HybridDrakeSystem/addTransition'' for details.'); 
+        error('the syntax for the hybrid models has changed (sorry).  to_mode_num is now an output of the transition function instead of an argument to addTransition.  this was necessary for more complicated transitions.  type ''help @HybridDrakeSystem/addTransition'' for details.');
         % todo: zap trailing ~ from argument list when i zap this version change notification.
       end
       typecheck(guard,{'function_handle','inline'});
@@ -118,7 +121,7 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
       obj = setTIFlag(obj,obj.isTI() && timeInvariant);
       obj = setNumZeroCrossings(obj,max(getNumZeroCrossings(obj),tid+getNumZeroCrossings(obj.modes{from_mode_num})));
     end
-    
+
     function guard = andGuards(obj,varargin)
       % produces a single guard that is a logical 'and' of the variable
       % number of guards input.
@@ -128,7 +131,7 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
       end
       guard = @(obj,t,x,u)andGuardFun(obj,t,x,u,varargin{:});
       % todo: support different levels of derivatives
-      
+
       function varargout = andGuardFun(obj,t,x,u,varargin)
         varargout=cell(1,nargout);
         [varargout{:}] = varargin{1}(obj,t,x,u);
@@ -144,11 +147,11 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
         %  end
         %  phi = max(phi);
       end
-    end  
+    end
 
     function guard = notGuard(obj,orig_guard)
       guard = @(obj,t,x,u)notGuardFun(obj,t,x,u,orig_guard);
-      
+
       function varargout = notGuardFun(obj,t,x,u,guard)
         [varargout{1:nargout}]= guard(obj,t,x,u);
         for i=1:length(varargout)  % invert guard and all gradients
@@ -159,11 +162,11 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
         % phi = -phi;
       end
     end
-    
+
     function drawModeGraph(obj)
       % depends on having graphviz2mat installed (from matlabcentral)
       % todo: make that a dependency in configure?
-      
+
       A = zeros(length(obj.modes));
       for i=1:length(obj.modes)
         A(i,obj.target_mode{i}) = 1;
@@ -173,13 +176,13 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
   end
 
   % access methods
-  methods 
+  methods
     function mode_sys = getMode(obj,mode_num)
       if (mode_num<1 || mode_num>length(obj.modes)) error('bad mode num'); end
       mode_sys = obj.modes{mode_num};
     end
   end
-  
+
   % implementation
   methods
     function m = getInitialMode(obj)
@@ -200,10 +203,10 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
       % pad if necessary:
       x0 = [x0;repmat(0,getNumStates(obj)-length(x0),1)];
     end
-    
-          
+
+
     function [xcdot,df] = dynamics(obj,t,x,u)
-      m = x(1); 
+      m = x(1);
       if (getNumContStates(obj.modes{m}))
         nX = getNumStates(obj.modes{m});
         if (nX>0) xm = x(1+(1:nX)); else xm=[]; end
@@ -216,7 +219,7 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
     end
 
     function xdn = update(obj,t,x,u)
-      m = x(1); 
+      m = x(1);
       if (getNumDiscStates(obj.modes{m}))
         nX = getNumStates(obj.modes{m});
         if (nX>0) xm = x(1+(1:nX)); else xm=[]; end
@@ -227,13 +230,13 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
       % pad if necessary:
       xdn = [xdn;repmat(0,getNumDiscStates(obj)-length(xdn),1)];
     end
-    
+
     function y = output(obj,t,x,u)
       m = x(1); nX = getNumStates(obj.modes{m});
       if (nX>0) xm = x(1+(1:nX)); else xm=[]; end
       y = output(obj.modes{m},t,xm,u);
     end
-    
+
     function zcs = zeroCrossings(obj,t,x,u)
       m = x(1); nX = getNumStates(obj.modes{m});
       if (nX>0) xm = x(1+(1:nX)); else xm=[]; end
@@ -247,20 +250,20 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
         zcs(n+(1:n2))=zeroCrossings(obj.modes{m},t,xm,u);
       end
     end
-    
+
     function con = stateConstraints(obj,x)
-      m = x(1); 
+      m = x(1);
       % should I publish the constant mode constraint here?
-      
+
       nX = getNumStates(obj.modes{m});
       ncon = getNumStateConstraints(obj.modes{m});
       con = zeros(getNumStateConstraints(obj),1);
       if (nX>0 && ncon)
-        xm = x(1+(1:nX)); 
+        xm = x(1+(1:nX));
         con(1:ncon) = stateConstraints(obj.modes{m},xm);
       end
     end
-    
+
     function [x,success] = resolveConstraints(obj,x,v)
       m = x(1);
       nX = getNumStates(obj.modes{m});
@@ -268,7 +271,7 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
       if (nargin<3) v=[]; end
       [x(1+(1:nX)),success] = resolveConstraints(obj.modes{m},xm,v);
     end
-    
+
     function [xn,status] = transitionUpdate(obj,t,x,u)
       status = 0;
       m = x(1); nX = getNumStates(obj.modes{m});
@@ -278,7 +281,7 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
       for i=1:n  % just compute the guards (zeroCrossings also computes the mode zcs)
         zcs(i) = obj.guard{m}{i}(obj,t,xm,u);
       end
-%      disp(obj.mode_names{m}); zcs 
+%      disp(obj.mode_names{m}); zcs
       active_id = find(zcs<0);
       if (isempty(active_id)) % no transition (return the original state)
         xn = x;
@@ -289,11 +292,11 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
       if (nX>0) xm = x(1+(1:nX)); else xm=[]; end
       [mode_xn,to_mode_num,status] = obj.transition{m}{active_id}(obj,m,t,xm,u);
       if (obj.target_mode{m}(active_id)>0 && obj.target_mode{m}(active_id)~=to_mode_num)
-        error('transition to_mode_num differs from specified target mode'); 
+        error('transition to_mode_num differs from specified target mode');
       end
-      
+
 %      disp(obj.mode_names{to_mode_num});
-      
+
 %      to_mode_num
       xn = [to_mode_num;mode_xn];
       % pad if necessary:
@@ -312,7 +315,7 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
         end % useful for debugging successive zcs.
       end
     end
-    
+
     function obj = setOutputFrame(obj,frame)
       obj = setOutputFrame@DrakeSystem(obj,frame);
       for i=1:length(obj.modes)
@@ -326,7 +329,7 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
         obj.modes{i}=setInputFrame(obj.modes{i},frame);
       end
     end
-    
+
     function sys = feedback(sys1,sys2)
       warning('feedback combinations with hybrid systems not implemented yet.  kicking out to a simulink combination.');
       sys = feedback(SimulinkModel(sys1.getModel()),sys2);
@@ -336,5 +339,5 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
       sys = cascade(SimulinkModel(sys1.getModel()),sys2);
     end
   end
-  
+
 end

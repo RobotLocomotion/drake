@@ -92,7 +92,7 @@ classdef RigidBodyMesh < RigidBodyGeometry
     end
     
     function writeWRLShape(obj,fp,td)
-%      assert(all(obj.scale == 1)); % todo: handle this case
+      if isscalar(obj.scale) obj.scale = repmat(obj.scale,1,3); end
       assert(numel(obj.scale)==3);
       
       function tabprintf(fp,varargin), for i=1:td, fprintf(fp,'\t'); end, fprintf(fp,varargin{:}); end
@@ -140,7 +140,7 @@ classdef RigidBodyMesh < RigidBodyGeometry
   
   properties
     filename;
-    scale=1;
+    scale=[1 1 1];
   end
   
 end
