@@ -81,7 +81,7 @@ classdef NonlinearProgram
       if(nargin<2)
         x_name = cellfun(@(i) sprintf('x%d',i),num2cell((1:obj.num_vars)'),'UniformOutput',false);
       else
-        if(~iscellstr(x_name) || numel(x_name) ~= obj.num_vars)
+        if(~iscellstr(x_name) || numel(x_name) ~= num_vars)
           error('Drake:NonlinearProgra:InvalidArgument','Argument x_name should be a cell containing %d strings',obj.num_vars);
         end
         x_name = x_name(:);
@@ -1031,6 +1031,10 @@ classdef NonlinearProgram
       [exitflag,infeasible_constraint_name] = obj.mapSolverInfo(exitflag,x);
       objval = objective(x);
     end
+    
+    function obj = setVarBounds(obj,lb,ub)
+      error('Drake:NonlinearProgram:setVarBounds is deprecated, use addConstraint instead');
+    end
   end
   
   methods(Access = protected)
@@ -1124,7 +1128,8 @@ classdef NonlinearProgram
   
   methods(Access = private)
     function infeasible_constraint_name = infeasibleConstraint(obj,x)
-      fval = obj.nonlinearConstraints(x);
+      [g,h] = obj.nonlinearConstraints(x);
+      fval = [g;h];
       A = [obj.Ain;obj.Aeq];
       if(~isempty(A))
         fval = [fval;A*x];

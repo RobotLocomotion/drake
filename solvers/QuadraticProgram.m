@@ -37,7 +37,7 @@ methods
     if nargin<7, x_lb=-inf(n,1); end
     if nargin<8, x_ub=inf(n,1); end
 
-    obj = obj@NonlinearProgram(size(Q,1),0,0);
+    obj = obj@NonlinearProgram(size(Q,1));
     obj.Q = Q;
     obj.f = f;
     obj.Ain = Ain;
