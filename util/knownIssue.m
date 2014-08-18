@@ -32,6 +32,8 @@ if ~isempty(err_id)
         github(136); return;
       elseif any(strcmp(testname,'examples/RimlessWheel/test/testContactGradients'))
         github(303); return;
+      elseif any(strcmp(testname,'systems/plants/test/contactSensorTest'))
+        github(305); return;
       end
     case {'Simulink:SFunctions:SFcnErrorStatus','Drake:Manipulator:ResolveConstraintsFailed'}
       if any(strcmp(testname,{'systems/plants/test/coordinateSystemTest', ...
@@ -49,6 +51,7 @@ if ~isempty(err_id)
     case 'MATLAB:nonExistentCellElement'
       if any(strcmp(testname,{'systems/plants/constraint/test/RelativeQuatConstraintTest',...
           'systems/plants/constraint/test/RelativeGazeTargetConstraintTest',...
+          'systems/plants/constraint/test/RelativePositionConstraintTest',...
           'systems/plants/constraint/test/WorldPositionInFrameConstraintTest'}))
         github(286); return;
       end
