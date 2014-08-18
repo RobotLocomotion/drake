@@ -28,18 +28,6 @@
         <sphere radius="0.01"/>
       </geometry>
     </visual>
-    <collision group="heel">
-      <origin rpy="0 0 0" xyz="-0.082 -0.0624435 -0.081119"/>
-      <geometry>
-        <sphere radius="0"/>
-      </geometry>
-    </collision>
-    <visual>
-      <origin rpy="0 0 0" xyz="-0.082 -0.0624435 -0.081119"/>
-      <geometry>
-        <sphere radius="0.01"/>
-      </geometry>
-    </visual>
     <collision group="toe">
       <origin rpy="0 0 0" xyz="0.178 0.0624435 -0.081119"/>
       <geometry>
@@ -48,18 +36,6 @@
     </collision>
     <visual>
       <origin rpy="0 0 0" xyz="0.178 0.0624435 -0.081119"/>
-      <geometry>
-        <sphere radius="0.01"/>
-      </geometry>
-    </visual>
-    <collision group="toe">
-      <origin rpy="0 0 0" xyz="0.178 -0.0624435 -0.081119"/>
-      <geometry>
-        <sphere radius="0"/>
-      </geometry>
-    </collision>
-    <visual>
-      <origin rpy="0 0 0" xyz="0.178 -0.0624435 -0.081119"/>
       <geometry>
         <sphere radius="0.01"/>
       </geometry>
@@ -183,18 +159,6 @@
       </geometry>
     </visual>
     <collision group="heel">
-      <origin rpy="0 0 0" xyz="-0.082 0.0624435 -0.081119"/>
-      <geometry>
-        <sphere radius="0"/>
-      </geometry>
-    </collision>
-    <visual>
-      <origin rpy="0 0 0" xyz="-0.082 0.0624435 -0.081119"/>
-      <geometry>
-        <sphere radius="0.01"/>
-      </geometry>
-    </visual>
-    <collision group="heel">
       <origin rpy="0 0 0" xyz="-0.082 -0.0624435 -0.081119"/>
       <geometry>
         <sphere radius="0"/>
@@ -202,18 +166,6 @@
     </collision>
     <visual>
       <origin rpy="0 0 0" xyz="-0.082 -0.0624435 -0.081119"/>
-      <geometry>
-        <sphere radius="0.01"/>
-      </geometry>
-    </visual>
-    <collision group="toe">
-      <origin rpy="0 0 0" xyz="0.178 0.0624435 -0.081119"/>
-      <geometry>
-        <sphere radius="0"/>
-      </geometry>
-    </collision>
-    <visual>
-      <origin rpy="0 0 0" xyz="0.178 0.0624435 -0.081119"/>
       <geometry>
         <sphere radius="0.01"/>
       </geometry>
