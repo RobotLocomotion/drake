@@ -1,10 +1,25 @@
 classdef SmoothNorm < drakeFunction.DrakeFunction
+  % DrakeFunction representing the smooth norm of a vector:
+  %
+  % \f[
+  % f(r) = \sqrt{r^\prime r + \alpha^2}
+  % \f]
+  %
+  % where \f$\alpha\f$ is a smoothing factor.
   properties (SetAccess = immutable)
-    smoothing_factor
+    smoothing_factor  % Scalar smoothing factor
   end
 
   methods
     function obj = SmoothNorm(input_frame,smoothing_factor)
+      % obj = SmoothNorm(input_frame,smoothing_factor)
+      % 
+      % @param input_frame        -- CoordinateFrame to which the 
+      %                              input belongs
+      % @param smoothing_factor   -- Numerical scalar
+      %
+      % @retval obj               -- drakeFunction.euclidean.SmoothNorm
+      %                              object
       output_frame = drakeFunction.frames.R(1);
       obj = obj@drakeFunction.DrakeFunction(input_frame,output_frame);
       obj.smoothing_factor = smoothing_factor;

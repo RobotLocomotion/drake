@@ -1,10 +1,20 @@
 classdef NormSquared < drakeFunction.DrakeFunction
+  % DrakeFunction representing the square of the Euclidean norm (or weighted
+  % Euclidean norm) for points in a given frame.
   properties
-    Q
-    is_weighted
+    Q           % Weighting matrix
+    is_weighted % Logical scalar 
   end
+
   methods
     function obj = NormSquared(input_frame,Q)
+      % obj = NormSquared(input_frame,Q) returns a NormSquared object
+      %
+      % @param input_frame  -- CoordinateFrame to which the input belongs
+      % @param Q            -- Numerical weighting matrix. Optional
+      %                        @default eye(input_frame.dim)
+      %
+      % @retval obj         -- drakeFunction.euclidean.NormSquared object
       n = input_frame.dim;
       if nargin < 2, 
         Q = []; 

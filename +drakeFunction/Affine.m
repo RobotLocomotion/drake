@@ -1,7 +1,8 @@
 classdef Affine < drakeFunction.DrakeFunction
-  % drakeFunction.Affine    DrakeFunction representing an affine map
-  % Implements
-  %   f = A*x + b
+  % DrakeFunction representing an affine map:
+  % \f[
+  % f(x) = Ax + b
+  % \f]
   properties (SetAccess = immutable)
     A
     b

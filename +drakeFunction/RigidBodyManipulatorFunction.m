@@ -6,6 +6,11 @@ classdef RigidBodyManipulatorFunction < drakeFunction.DrakeFunction
   end
   methods
     function obj = RigidBodyManipulatorFunction(rbm,input_frame,output_frame)
+      % obj = drakeFunction.RigidBodyManipulatorFunction(rbm,input_frame,output_frame)
+      %
+      % @param rbm          -- RigidBodyManipulator object
+      % @param input_frame  -- CoordinateFrame object
+      % @param output_frame -- CoordinateFrame object
       typecheck(rbm,{'RigidBodyManipulator', ...
                      'TimeSteppingRigidBodyManipulator'});
       obj = obj@drakeFunction.DrakeFunction(input_frame,output_frame);

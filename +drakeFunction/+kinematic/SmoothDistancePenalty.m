@@ -1,11 +1,24 @@
 classdef SmoothDistancePenalty < drakeFunction.kinematic.Kinematic
+  % DrakeFunction penalizing all distances less than a given minimum between
+  % bodies of a RigidBodyManipulator. The output of this function is zero if
+  % and only if all pairs of bodies considered are separarated by at least the
+  % given minimum distance.
   properties (SetAccess = immutable)
-    min_distance
-    active_collision_options
+    min_distance              % Positive scalar representing the minimum
+                              % unpenalized distance
+    active_collision_options  % Options struct as described in
+                              % RigidBodyManipulator/collisionDetect
   end
 
   methods
     function obj = SmoothDistancePenalty(rbm,min_distance,active_collision_options)
+      % obj = SmoothDistancePenalty(rbm,min_distance,active_collision_options)
+      %
+      % @param rbm                      -- RigidBodyManipulator object
+      % @param min_distance             -- Positive scalar representing the
+      %                                    minimum unpenalized distance
+      % @param active_collision_options -- Options struct as described in
+      %                                    RigidBodyManipulator/collisionDetect
       if nargin < 3, active_collision_options = struct(); end
       sizecheck(min_distance,[1,1]);
       assert(min_distance>0);
