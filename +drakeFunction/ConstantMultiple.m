@@ -28,7 +28,7 @@ classdef ConstantMultiple < drakeFunction.Linear
       else
         A = diag(value);
       end
-      obj = drakeFunction.Linear(input_frame,output_frame,A);
+      obj = obj@drakeFunction.Linear(input_frame,output_frame,A);
     end
   end
 end
