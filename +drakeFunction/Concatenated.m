@@ -14,26 +14,23 @@ classdef Concatenated < drakeFunction.DrakeFunction
     contained_functions %Cell array of DrakeFunction objects
     n_contained_functions
     same_input
-    same_output
     input_map
   end
 
   methods
-    function obj = Concatenated(fcns,same_input,same_output)
+    function obj = Concatenated(fcns,same_input)
       if nargin < 2, same_input = false; end
-      if nargin < 3, same_output = false; end
       typecheck(fcns,'cell');
       assert(all(cellfun(@(arg)isa(arg,'drakeFunction.DrakeFunction'), fcns)));
 
       [input_frame,input_map] = drakeFunction.Concatenated.constructInputFrame(fcns,same_input);
-      output_frame = drakeFunction.Concatenated.constructOutputFrame(fcns,same_output);
+      output_frame = drakeFunction.Concatenated.constructOutputFrame(fcns);
 
       obj = obj@drakeFunction.DrakeFunction(input_frame, output_frame);
 
       obj.contained_functions = fcns;
       obj.n_contained_functions = numel(fcns);
       obj.same_input = same_input;
-      obj.same_output = same_output;
       obj.input_map = input_map;
     end
 
@@ -102,21 +99,11 @@ classdef Concatenated < drakeFunction.DrakeFunction
       end
     end
 
-    function output_frame = constructOutputFrame(fcns, same_output)
-      if nargin < 2, same_output = false; end
+    function output_frame = constructOutputFrame(fcns)
       fcn_output_frames = cellfun(@(fcn) fcn.getOutputFrame(), ...
         fcns,'UniformOutput',false);
       fcn_output_frames(cellfun(@(frame) frame.dim == 0, fcn_output_frames)) = [];
-      if same_output
-        % Check that all elements of fcns have the same output_frame
-        output_frame = fcn_output_frames{1};
-        assert(all(cellfun(@(frame) frame==output_frame,fcn_output_frames)), ...
-          'Drake:DrakeFunction:OutputFramesDoNotMatch', ...
-          ['If ''same_output'' is set to true, all functions must ' ...
-           'have the same output frame']);
-      else
-        output_frame = MultiCoordinateFrame.constructFrame(fcn_output_frames);
-      end
+      output_frame = MultiCoordinateFrame.constructFrame(fcn_output_frames);
     end
 
   end
