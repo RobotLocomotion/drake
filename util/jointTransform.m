@@ -11,6 +11,14 @@ if body.floating==1
 elseif body.floating==2
   TJ = [quat2rotmat(qi(4:7)),qi(1:3);zeros(1,3),1];
 else
-  TJ = Tjcalc(body.pitch,qi);
+  pitch = body.pitch;
+  joint_axis = body.joint_axis;
+  if pitch == 0				% revolute joint
+    TJ = [axis2rotmat([joint_axis; qi]),zeros(3,1);zeros(1,3),1];
+  elseif pitch == inf			% prismatic joint
+    TJ = [eye(3),q * joint_axis;[0 0 0 1]];
+  else					% helical joint
+    TJ = [axis2rotmat([joint_axis; qi]),q * pitch * joint_axis;zeros(1,3),1];
+  end
 end
 end
