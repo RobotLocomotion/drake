@@ -29,5 +29,9 @@ classdef Affine < drakeFunction.DrakeFunction
       f = obj.A*x + obj.b;
       df = obj.A;
     end
+
+    function [iCfun, jCvar] = getSparsityPattern(obj)
+      [iCfun, jCvar] = find(obj.A);
+    end
   end
 end
