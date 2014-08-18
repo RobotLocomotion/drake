@@ -15,7 +15,9 @@ RevoluteJoint::~RevoluteJoint()
 
 Isometry3d RevoluteJoint::jointTransform(double* const q) const
 {
-  return Isometry3d(AngleAxisd(q[0], rotation_axis));
+  Isometry3d ret(AngleAxisd(q[0], rotation_axis));
+  ret.makeAffine();
+  return ret;
 }
 
 Matrix<double, TWIST_SIZE, 1> RevoluteJoint::spatialJointAxis(const Vector3d& rotation_axis)

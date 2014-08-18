@@ -1,13 +1,16 @@
 function testDrakeJointsComparison()
 data_in.prismatic.joint_axis = randn(3, 1);
+data_in.prismatic.joint_axis = data_in.prismatic.joint_axis / norm(data_in.prismatic.joint_axis);
 data_in.prismatic.q = randn;
 data_in.prismatic.v = randn;
 
 data_in.revolute.joint_axis = randn(3, 1);
+data_in.revolute.joint_axis = data_in.revolute.joint_axis / norm(data_in.revolute.joint_axis);
 data_in.revolute.q = randn;
 data_in.revolute.v = randn;
 
 data_in.helical.joint_axis = randn(3, 1);
+data_in.helical.joint_axis = data_in.helical.joint_axis / norm(data_in.helical.joint_axis);
 data_in.helical.pitch = randn;
 data_in.helical.q = randn;
 data_in.helical.v = randn;

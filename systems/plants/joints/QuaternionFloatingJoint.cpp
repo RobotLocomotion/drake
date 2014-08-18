@@ -18,7 +18,10 @@ QuaternionFloatingJoint::~QuaternionFloatingJoint()
 
 Isometry3d QuaternionFloatingJoint::jointTransform(double* const q) const
 {
-  return Quaterniond(q[3], q[4], q[5], q[6]) * Translation3d(q[0], q[1], q[2]);
+  Isometry3d ret(Quaterniond(q[3], q[4], q[5], q[6]));
+  ret.translation() << q[0], q[1], q[2];
+  ret.makeAffine();
+  return ret;
 }
 
 void QuaternionFloatingJoint::motionSubspace(double* const q, MotionSubspaceType& motion_subspace, MatrixXd* dmotion_subspace) const

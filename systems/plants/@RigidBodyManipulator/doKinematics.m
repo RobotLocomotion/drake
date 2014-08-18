@@ -166,5 +166,153 @@ else
     end
   end
 end
+<<<<<<< HEAD
+=======
+end
+
+
+function T = computeTransforms(bodies, q)
+nb = length(bodies);
+T = cell(1, nb);
+for i=1:nb
+  body = bodies(i);
+  if body.parent<1
+    T{i} = body.Ttree;
+  else
+    qi = q(body.position_num); % qi is 6x1
+    T_body_to_parent = body.Ttree*jointTransform(body, qi);
+    T{i}=T{body.parent}*T_body_to_parent;
+  end
+end
+end
+
+function [S, dSdq] = computeMotionSubspaces(bodies, q)
+compute_gradients = nargout > 1;
+nb = length(bodies);
+S = cell(1, nb);
+if compute_gradients
+  dSdq = cell(1, nb);
+end
+
+for i = 2 : nb
+  body = bodies(i);
+  qBody = q(body.position_num);
+  if compute_gradients
+    [S{i}, dSdq{i}] = motionSubspace(body, qBody);
+  else
+    S{i} = motionSubspace(body, qBody);
+  end
+end
+end
+
+function ret = computeTransformGradients(bodies, T, S, qdotToV)
+% computes the gradients of T{i} with respect to q
+% makes use of the fact that the gradients of the joint transforms are
+% dT/dq = dTdot/dqdot, where Tdot depends on v through the joint motion
+% subspace S and qdot depends on v via the qdotToV mapping.
+
+nb = length(bodies);
+nq = size(qdotToV, 2);
+ret = cell(1, nb);
+ret{1} = zeros(16, nq);
+for i = 2 : nb
+  body = bodies(i);
+  T_body_to_parent = T{body.parent} \ T{i};
+  qdotToVi = qdotToV(body.velocity_num, body.position_num);
+  
+  dT_body_to_parentdqi = dHomogTrans(T_body_to_parent, S{i}, qdotToVi);
+  dT_body_to_parentdq = zeros(numel(T{i}), nq) * dT_body_to_parentdqi(1); % to make TaylorVar work better
+  dT_body_to_parentdq(:, body.position_num) = dT_body_to_parentdqi;
+  ret{i} = matGradMultMat(...
+    T{body.parent}, T_body_to_parent, ret{body.parent}, dT_body_to_parentdq);
+end
+end
+
+function J = computeJ(T, S)
+% Computes motion subspaces transformed to world frame, i.e.
+% transformAdjoint(T{i}) * S{i}
+
+nb = length(T);
+J = cell(1, nb);
+for i = 2 : nb
+  J{i} = transformAdjoint(T{i}) * S{i};
+end
+end
+
+function ret = computedJdq(bodies, T, S, dTdq, dSdq)
+% Computes the gradient of transformAdjoint(T{i}) * S{i} with respect to q
+% For uses, see e.g. geometricJacobianDotTimesV, gradients of mass matrix
+% and bias vector in manipulatorDynamics
+
+nb = length(T);
+ret = cell(1, nb);
+for i = 2 : nb
+  body = bodies(i);
+  nq = size(dTdq{i}, 2);
+  Si = S{i};
+  dSdqi = zeros(numel(Si), nq) * dTdq{i}(1); % to make TaylorVar work better
+  dSdqi(:, body.position_num) = dSdq{i};
+  ret{i} = dTransformAdjoint(T{i}, Si, dTdq{i}, dSdqi);
+end
+end
+
+function [twists, dtwistsdq] = computeTwistsInBaseFrame(bodies, J, v, dJdq)
+compute_gradient = nargout > 1;
+if compute_gradient
+  if nargin < 4
+    error('must provide dJdq to compute gradient');
+  end
+  nq = size(dJdq{end}, 2);
+end
+
+nb = length(bodies);
+twistSize = 6;
+
+twists = cell(1, nb);
+twists{1} = zeros(twistSize, 1);
+
+if compute_gradient
+  dtwistsdq = cell(1, nb);
+  dtwistsdq{1} = zeros(numel(twists{1}), nq);
+end
+
+for i = 2 : nb
+  body = bodies(i);
+  vBody = v(body.velocity_num);
+
+  parentTwist = twists{body.parent};
+  jointTwist = J{i} * vBody;
+  twists{i} = parentTwist + jointTwist;
+  
+  if compute_gradient
+    dparentTwist = dtwistsdq{body.parent};
+    dJointTwist = matGradMult(dJdq{i}, vBody);
+    dtwistsdq{i} = dparentTwist + dJointTwist;
+  end
+end
+end
+
+function [SdotV, dSdotVdq, dSdotVdv] = computeMotionSubspacesDotV(bodies, q, v)
+compute_gradients = nargout > 1;
+
+nb = length(bodies);
+SdotV = cell(1, nb);
+if compute_gradients
+  dSdotVdq = cell(1, nb);
+  dSdotVdv = cell(1, nb);
+end
+
+for i = 2 : nb
+  body = bodies(i);
+  qi = q(body.position_num);
+  vi = v(body.velocity_num);
+  if compute_gradients
+    [SdotV{i}, dSdotVdq{i}, dSdotVdv{i}] = motionSubspaceDotTimesV(body, qi, vi);
+  else
+    SdotV{i} = motionSubspaceDotTimesV(body, qi, vi);
+  end
+end
+end
+>>>>>>> 89b3f7f... Now doing joint transform properly (including rotations/translations about axes other than z) in jointTransform.m
 
 end

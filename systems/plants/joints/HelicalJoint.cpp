@@ -14,7 +14,10 @@ HelicalJoint::~HelicalJoint()
 
 Isometry3d HelicalJoint::jointTransform(double* const q) const
 {
-  return AngleAxisd(q[0], axis) * Translation3d(q[0] * pitch * axis);
+  Isometry3d ret;
+  ret = AngleAxisd(q[0], axis) * Translation3d(q[0] * pitch * axis);
+  ret.makeAffine();
+  return ret;
 }
 
 Matrix<double, TWIST_SIZE, 1> HelicalJoint::spatialJointAxis(const Vector3d& axis, double pitch)
