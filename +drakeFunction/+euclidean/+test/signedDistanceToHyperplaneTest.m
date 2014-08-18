@@ -1,15 +1,21 @@
 function [x,F,info] = signedDistanceToHyperplaneTest(N)
   import drakeFunction.*
   if nargin < 1, N = 3; end
+
+  % Setup visualization
   lcmgl = LCMGLClient('normSquaredTest');
-  r_inds = reshape(1:3*N,3,N);
+
+  % Convenient constants
   R3 = drakeFunction.frames.R(3);
+  r_inds = reshape(1:3*N,3,N);
   radius = 0.2;
   origin = [1;0;0];
-  distance_from_origin_expr = drakeFunction.euclidean.NormSquared(R3);
-  squared_dist_between_pts_expr = ...
-    compose(drakeFunction.euclidean.NormSquared(R3), ...
-            drakeFunction.Identity(R3)-drakeFunction.Identity(R3));
+
+  % Create functions for norm squared and squared distance
+  norm_squared_fcn = drakeFunction.euclidean.NormSquared(R3);
+  squared_dist_between_pts_fcn = norm_squared_fcn(Difference(R3));
+
+  % Create expressions for signed distances to two planes
   hyperplane_distance1 = ...
     drakeFunction.euclidean.SignedDistanceToHyperplane(Point(R3,origin), ...
                                                     Point(R3,[1;1;1]));
@@ -17,18 +23,21 @@ function [x,F,info] = signedDistanceToHyperplaneTest(N)
     drakeFunction.euclidean.SignedDistanceToHyperplane(Point(R3,origin), ...
                                                     Point(R3,[0;0;-1]));
 
-  tmp = repmat({hyperplane_distance1},1,N);
-  hyperplane_distance1_N = Concatenated(tmp);
-  tmp = repmat({hyperplane_distance2},1,N);
-  hyperplane_distance2_N = Concatenated(tmp);
-  %hyperplane_distance2_N = hyperplane_distance2_N.setInputFrame(hyperplane_distance1_N.getInputFrame());
+  % Duplicate these for N points and concatenate with shared inputs
+  hyperplane_distances = Concatenated({duplicate(hyperplane_distance1,N), ...
+                                       duplicate(hyperplane_distance2,N)}, ...
+                                      true);
 
-  distance_cost = DrakeFunctionConstraint(0,1,distance_from_origin_expr);
-  distance_constraint = DrakeFunctionConstraint((2*radius)^2,inf,squared_dist_between_pts_expr);
-  hyperplane_constraint = DrakeFunctionConstraint(zeros(2*N,1),Inf(2*N,1),Concatenated({hyperplane_distance1_N,hyperplane_distance2_N},true));
+  % Create constraints 
+  distance_cost = DrakeFunctionConstraint(0,1,norm_squared_fcn);
+  distance_constraint = DrakeFunctionConstraint((2*radius)^2,Inf,squared_dist_between_pts_fcn);
+  hyperplane_constraint = DrakeFunctionConstraint(zeros(2*N,1),Inf(2*N,1),hyperplane_distances);
 
+  % Create nonlinear program
   prog = NonlinearProgramWConstraintObjects(3*N);
   prog = prog.addDisplayFunction(@(r)displayCallback(lcmgl,radius,origin,r),r_inds);
+
+  % Add constraints
   prog = prog.addConstraint(hyperplane_constraint,r_inds);
   for i = 1:N
     for j = i+1:N
