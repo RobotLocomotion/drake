@@ -66,6 +66,17 @@ classdef Concatenated < drakeFunction.DrakeFunction
       end
     end
 
+    function [iCfun, jCvar] = getSparsityPattern(obj)
+      f_cell = cell(obj.n_contained_functions,1);
+      df_cell = cell(obj.n_contained_functions,1);
+      for i = 1:obj.n_contained_functions
+        f_cell{i} = NaN(obj.contained_functions{i}.getNumOutputs(),1);
+        df_cell{i} = ones(obj.contained_functions{i}.getNumOutputs(), ...
+                          obj.contained_functions{i}.getNumInputs());
+      end
+      [~,df] = combineOutputs(obj,f_cell,df_cell);
+      [iCfun, jCvar] = find(df);
+    end
   end
 
   methods (Static)

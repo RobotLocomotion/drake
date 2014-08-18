@@ -31,6 +31,13 @@ classdef DrakeFunction
       obj.output_frame = output_frame;
     end
 
+    function [iCfun, jCvar] = getSparsityPattern(obj)
+      n_input = obj.getInputFrame().dim;
+      n_output = obj.getOutputFrame().dim;
+      iCfun = reshape(bsxfun(@times,(1:n_output)',ones(1,n_input)),[],1);
+      jCvar = reshape(bsxfun(@times,1:n_input,ones(n_output,1)),[],1);
+    end
+
     function fcn = plus(obj,other,same_input)
       import drakeFunction.*
       if nargin < 3, same_input = false; end
@@ -147,6 +154,14 @@ classdef DrakeFunction
 
     function output_frame = getOutputFrame(obj)
       output_frame = obj.output_frame;
+    end
+
+    function n_inputs = getNumInputs(obj)
+      n_inputs = obj.input_frame.dim;
+    end
+
+    function n_outputs = getNumOutputs(obj)
+      n_outputs = obj.output_frame.dim;
     end
   end
 end
