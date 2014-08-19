@@ -10,7 +10,7 @@ p = PlanarRigidBodyManipulator('urdf/atlas_simple_spring_ankle_planar_contact.ur
 
 %todo: add joint limits, periodicity constraint
 
-N = 50;
+N = 40;
 
 % periodic constraint
 R_periodic = zeros(p.getNumStates,2*p.getNumStates);
@@ -46,7 +46,7 @@ if nargin < 2
   q1 = [.20;0;0;.3;0;-.3;0;-1;.5;0];
   phi_tmp = p.contactConstraints(q1);
   q1(2) = -phi_tmp(1);
-  q2 = [.5;0;0;.8;0;0;0;0;0;0];
+  q2 = [.5;0;0;.5;.4;0;0;0;0;0];
   phi_tmp = p.contactConstraints(q2);
   q2(2) = -phi_tmp(3);
   
@@ -80,8 +80,8 @@ end
 T_span = [1 2];
 
 
-x0_min = x0 - [0;0;0;1;1;1;1;1;1;1;5*ones(10,1)];
-x0_max = x0 + [0;0;0;1;1;1;1;1;1;1;5*ones(10,1)];
+x0_min = x0 - [0;0;0;1;1;1;1;.2;.2;1;5*ones(10,1)];
+x0_max = x0 + [0;0;0;1;1;1;1;.2;.2;1;5*ones(10,1)];
 
 xf_min = xf - [0;0;0;1;1;1;1;1;1;1;5*ones(10,1)];
 xf_max = xf + [0;0;0;1;1;1;1;1;1;1;5*ones(10,1)];
@@ -101,7 +101,7 @@ to_options.integration_method = ContactImplicitTrajectoryOptimization.MIXED;
 
 traj_opt = ContactImplicitTrajectoryOptimization(p,N,T_span,to_options);
 traj_opt = traj_opt.addRunningCost(@running_cost_fun);
-% traj_opt = traj_opt.addRunningCost(@foot_height_fun);
+traj_opt = traj_opt.addRunningCost(@foot_height_fun);
 traj_opt = traj_opt.addFinalCost(@final_cost_fun);
 traj_opt = traj_opt.addStateConstraint(BoundingBoxConstraint(x0_min,x0_max),1);
 traj_opt = traj_opt.addStateConstraint(BoundingBoxConstraint(xf_min,xf_max),N);
@@ -133,10 +133,11 @@ traj_opt = traj_opt.setSolverOptions('snopt','MinorIterationsLimit',200000);
 traj_opt = traj_opt.setSolverOptions('snopt','IterationsLimit',200000);
 traj_opt = traj_opt.setSolverOptions('snopt','SuperbasicsLimit',5000);
 traj_opt = traj_opt.setSolverOptions('snopt','MajorOptimalityTolerance',1e-5);
+% traj_opt = traj_opt.setCheckGrad(true);
 [xtraj,utraj,ltraj,ljltraj,z,F,info] = traj_opt.solveTraj(t_init,traj_init);
 
   function [f,df] = contact_delta_cost_fun(l)
-    K = 500;
+    K = 200;
     f = K*sum(diff(l).^2);
     n = length(l);
     R = sparse([1:n-1 2:n], [1:n-1 1:n-1], [ones(n-1,1);-ones(n-1,1)]);
@@ -144,21 +145,28 @@ traj_opt = traj_opt.setSolverOptions('snopt','MajorOptimalityTolerance',1e-5);
   end
 
   function [f,df] = running_cost_fun(h,x,u)
-    K = 10;
+    K = 1;
     R = eye(5);
     f = K*u'*R*u;
     df = [0 zeros(1,20) 2*K*u'*R];
   end
 
   function [f,df] = foot_height_fun(h,x,u)
-    q = x(1:9);
-    K = 50;
-    [phi,~,~,~,~,~,~,~,n] = p.contactConstraints(q,false,struct('terrain_only',false));
-    phi0 = [.1;.2;.1;.2];
-    f = K*(phi - phi0)'*(phi - phi0);
+    q = x(1:10);
+    
+    [phi,~,~,~,~,~,~,~,n] = p.contactConstraints(q,false,struct('terrain_only',true));
+    phi0 = [.2;.2;.2;.2];
+    K = 500;
+    I = find(phi < phi0);
+    f = K*(phi(I) - phi0(I))'*(phi(I) - phi0(I));
     % phi: 2x1
     % n: 2xnq
-    df = [0 2*K*(phi-phi0)'*n zeros(1,13)];
+    df = [0 2*K*(phi(I)-phi0(I))'*n(I,:) zeros(1,15)];
+
+%    K = 100;
+%    K_log = 100;
+%    f = sum(-K*log(K_log*phi + .2));
+%    df = [0 sum(-K*K_log*n./(K_log*repmat(phi,1,length(q)) + .2)) zeros(1,15)];
   end
 
   function [f,df] = final_cost_fun(T,x)
