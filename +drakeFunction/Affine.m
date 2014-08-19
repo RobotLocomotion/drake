@@ -34,5 +34,31 @@ classdef Affine < drakeFunction.DrakeFunction
     function [iCfun, jCvar] = getSparsityPattern(obj)
       [iCfun, jCvar] = find(obj.A);
     end
+
+    function fcn = concatenated(obj, varargin)
+      if islogical(varargin{end})
+        same_input = varargin{end};
+        fcns = [obj, varargin(1:end-1)];
+      else
+        same_input = false;
+        fcns = [obj, varargin];
+      end
+      typecheck(fcns,'cell');
+      if all(cellfun(@(arg)isa(arg,'drakeFunction.Affine'), fcns));
+        input_frame = drakeFunction.Concatenated.constructInputFrame(fcns, same_input);
+        output_frame = drakeFunction.Concatenated.constructOutputFrame(fcns);
+        if same_input
+          A_cat = cell2mat(reshape(cellfun(@(fcn) fcn.A, fcns, 'UniformOutput',false),[],1));
+        else
+          A_cell = reshape(cellfun(@(fcn) fcn.A, fcns, 'UniformOutput',false),1,[]);
+          A_cat = blkdiag(A_cell{:});
+        end
+        b_cat = cell2mat(reshape(cellfun(@(fcn) fcn.b, fcns, 'UniformOutput',false),[],1));
+        fcn = drakeFunction.Affine(input_frame,output_frame,A_cat,b_cat);
+      else
+        % punt to DrakeFunction
+        fcn = concatenated@drakeFunction.DrakeFunction(obj, varargin{:});
+      end
+    end
   end
 end
