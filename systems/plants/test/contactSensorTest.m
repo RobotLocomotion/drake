@@ -3,30 +3,30 @@ S = warning('OFF','Drake:RigidBodyManipulator:WeldedLinkInd');
 options.floating = true;
 options.twoD = true;
 options.terrain = RigidBodyFlatTerrain;
-p = TimeSteppingRigidBodyManipulator('../test/FallingBrickContactPoints.urdf',.01,options);
+p = TimeSteppingRigidBodyManipulator('FallingBrickContactPoints.urdf',.01,options);
 p = addSensor(p,FullStateFeedbackSensor());
 body = findLinkInd(p,'brick');
 frame = RigidBodyFrame(body,zeros(3,1),zeros(3,1),'FT_frame');
 p = addFrame(p,frame);
 p = addSensor(p,ContactForceTorqueSensor(p,frame));
-
 p = compile(p);
 
-x0 = [0;1;.1*randn;0;0;0;0;0;0];
-ytraj = simulate(p,[0 5],x0);
+T = 2;
+
+[ytraj,xtraj] = simulate(p,[0 T]);
 
 % should find initial conditions for the brick which are resting on the
 % ground. 
-yf = Point(p.getOutputFrame,eval(ytraj,5));
+yf = Point(p.getOutputFrame,eval(ytraj,T));
 valuecheck(yf.force_x,0,1e-6);
-valuecheck(yf.force_z,norm(getGravity(p)),1e-6);
+valuecheck(yf.force_z,getMass(p)*norm(getGravity(p)),1e-6);
 valuecheck(yf.torque,0,1e-6);
 
 %v = p.constructVisualizer();
 %v.playback(ytraj);
 
 options.twoD = false;
-p = TimeSteppingRigidBodyManipulator('../test/FallingBrickContactPoints.urdf',.01,options);
+p = TimeSteppingRigidBodyManipulator('FallingBrickContactPoints.urdf',.01,options);
 
 p = addSensor(p,FullStateFeedbackSensor);
 body = findLinkInd(p,'brick');
@@ -35,18 +35,17 @@ p = addFrame(p,frame);
 p = addSensor(p,ContactForceTorqueSensor(p,frame));
 p = compile(p);
 
-x0 = [0;0;1;.02*randn;.02*randn;.02*randn;zeros(6,1);zeros(6,1)];
-ytraj = simulate(p,[0 10],x0);
+[ytraj,xtraj] = simulate(p,[0 T]);
 
 % should find initial conditions for the brick which are resting on the
 % ground. 
-yf = Point(p.getOutputFrame,eval(ytraj,5));
-valuecheck(yf.force_x,0,1e-6);
-valuecheck(yf.force_y,0,1e-6);
-valuecheck(yf.force_z,norm(getGravity(p)),1e-6);
-valuecheck(yf.torque_x,0,1e-6);
-valuecheck(yf.torque_y,0,1e-6);
-valuecheck(yf.torque_z,0,1e-6);
+yf = Point(p.getOutputFrame,eval(ytraj,T));
+valuecheck(yf.force_x,0,1e-5);
+valuecheck(yf.force_y,0,1e-5);
+valuecheck(yf.force_z,getMass(p)*norm(getGravity(p)),1e-6);
+valuecheck(yf.torque_x,0,1e-5);
+valuecheck(yf.torque_y,0,1e-5);
+valuecheck(yf.torque_z,0,1e-5);
 warning(S);
 
 %v = p.constructVisualizer();

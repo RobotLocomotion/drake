@@ -568,7 +568,7 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
     if (b_compute_second_derivatives && !secondDerivativesCached)
       skip = false;
     for (i = 0; i < num_dof; i++) {
-      if (q[i] - cached_q[i] > 1e-8 || q[i] - cached_q[i] < -1e-8) {
+      if (q[i] != cached_q[i] || q[i] != cached_q[i]) {
         skip = false;
         break;
       }
