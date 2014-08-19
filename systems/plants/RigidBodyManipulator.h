@@ -138,7 +138,7 @@ public:
 
   // Rigid body objects
   int num_bodies;  // rigid body objects
-  std::vector<RigidBody,Eigen::aligned_allocator<RigidBody> > bodies;
+  std::vector<std::unique_ptr<RigidBody>> bodies;
 
   // Rigid body frames
   int num_frames;
