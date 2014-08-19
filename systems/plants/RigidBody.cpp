@@ -29,8 +29,8 @@ void RigidBody::computeAncestorDOFs(RigidBodyManipulator* model)
   if (dofnum>=0) {
     int i,j;
     if (parent>=0) {
-      ancestor_dofs = model->bodies[parent].ancestor_dofs;
-      ddTdqdq_nonzero_rows = model->bodies[parent].ddTdqdq_nonzero_rows;
+      ancestor_dofs = model->bodies[parent]->ancestor_dofs;
+      ddTdqdq_nonzero_rows = model->bodies[parent]->ddTdqdq_nonzero_rows;
     }
 
     if (floating==1) {
