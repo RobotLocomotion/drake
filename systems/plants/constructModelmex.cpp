@@ -1,8 +1,15 @@
 #include "mex.h"
 #include <iostream>
+#include <cmath>
 #include "drakeUtil.h"
+#include "makeUnique.h"
 #include "RigidBodyManipulator.h"
 #include <stdexcept>
+#include "joints/HelicalJoint.h"
+#include "joints/PrismaticJoint.h"
+#include "joints/RevoluteJoint.h"
+#include "joints/QuaternionFloatingJoint.h"
+#include "joints/RollPitchYawFloatingJoint.h"
 
 #define INF -2147483648
 
@@ -22,6 +29,37 @@ vector<string> get_strings(const mxArray *rhs) {
     mxFree(str);
   }
   return strings;
+}
+
+unique_ptr<DrakeJoint> createJoint(const string& joint_name, const Isometry3d& transform_to_parent_body, int floating, Vector3d joint_axis, double pitch) {
+  unique_ptr<DrakeJoint> joint;
+  switch (floating) {
+  case 0: {
+    if (pitch == 0.0) {
+      joint = make_unique<RevoluteJoint>(joint_name, transform_to_parent_body, joint_axis);
+    } else if (isinf(pitch)) {
+      joint = make_unique<PrismaticJoint>(joint_name, transform_to_parent_body, joint_axis);
+    } else {
+      joint = make_unique<HelicalJoint>(joint_name, transform_to_parent_body, joint_axis, pitch);
+    }
+    break;
+    }
+    case 1: {
+      joint = make_unique<RollPitchYawFloatingJoint>(joint_name, transform_to_parent_body);
+      break;
+    }
+    case 2: {
+      joint = make_unique<QuaternionFloatingJoint>(joint_name, transform_to_parent_body);
+      break;
+    }
+    default: {
+      ostringstream stream;
+      stream << "floating type " << floating << " not recognized.";
+      throw runtime_error(stream.str());
+      break;
+    }
+  }
+  return joint;
 }
 
 void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
@@ -139,11 +177,43 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     pm = mxGetProperty(pBodies,i,"position_num");
     model->bodies[i].dofnum = (int) mxGetScalar(pm) - 1;  //zero-indexed
 
-    pm = mxGetProperty(pBodies,i,"floating");
-    model->bodies[i]->floating = (int) mxGetScalar(pm);
 
-    pm = mxGetProperty(pBodies,i,"pitch");
-    model->bodies[i]->pitch = (int) mxGetScalar(pm);
+    {
+      mxGetString(mxGetProperty(pBodies, i, "jointname"), buf, 100);
+      string jointname;
+      jointname.assign(buf, strlen(buf));
+
+      pm = mxGetProperty(pBodies, i, "Ttree");
+      // todo: check that the size is 4x4
+      Isometry3d Ttree;
+      memcpy(Ttree.data(), mxGetPr(pm), sizeof(double) * 4 * 4);
+
+      int floating = (int) mxGetScalar(mxGetProperty(pBodies, i, "floating"));
+
+      Eigen::Vector3d joint_axis;
+      pm = mxGetProperty(pBodies, i, "joint_axis");
+      memcpy(joint_axis.data(), mxGetPr(pm), sizeof(double) * 3);
+
+      double pitch = mxGetScalar(mxGetProperty(pBodies, i, "pitch"));
+
+      model->bodies[i]->setJoint(createJoint(jointname, Ttree, floating, joint_axis, pitch));
+//      mexPrintf((model->bodies[i]->getJoint().getName() + "\n").c_str());
+    }
+    {
+      pm = mxGetProperty(pBodies,i,"jointname");
+      mxGetString(pm,buf,100);
+      model->bodies[i]->jointname.assign(buf,strlen(buf));
+
+      pm = mxGetProperty(pBodies,i,"Ttree");
+      // todo: check that the size is 4x4
+      memcpy(model->bodies[i]->Ttree.data(),mxGetPr(pm),sizeof(double)*4*4);
+
+      pm = mxGetProperty(pBodies,i,"floating");
+      model->bodies[i]->floating = (int) mxGetScalar(pm);
+
+      pm = mxGetProperty(pBodies,i,"pitch");
+      model->bodies[i]->pitch = (int) mxGetScalar(pm);
+    }
 
     pm = mxGetProperty(pBodies,i,"parent");
     if (!pm || mxIsEmpty(pm))
@@ -157,10 +227,6 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
        pm = mxGetProperty(pBodies,i,"joint_limit_max");
        model->joint_limit_max[model->bodies[i]->dofnum] = mxGetScalar(pm);
     }
-
-    pm = mxGetProperty(pBodies,i,"Ttree");
-    // todo: check that the size is 4x4
-    memcpy(model->bodies[i]->Ttree.data(),mxGetPr(pm),sizeof(double)*4*4);
 
     pm = mxGetProperty(pBodies,i,"T_body_to_joint");
     memcpy(model->bodies[i]->T_body_to_joint.data(),mxGetPr(pm),sizeof(double)*4*4);
