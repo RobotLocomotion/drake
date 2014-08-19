@@ -17,9 +17,9 @@ classdef BotVisualizer < RigidBodyVisualizer
     function obj = BotVisualizer(manip,use_contact_shapes)
       if nargin < 2, use_contact_shapes = false; end
       
-      global g_disable_botvis;
-      if g_disable_botvis % evaluates to false if empty
-        error('Drake:MissingDependency:BotVisualizerDisabled','botvis is disabled with g_disable_botvis');
+      global g_disable_visualizers;
+      if g_disable_visualizers % evaluates to false if empty
+        error('Drake:MissingDependency:BotVisualizerDisabled','botvis is disabled with g_disable_visualizers');
       end
       
       checkDependency('lcm');

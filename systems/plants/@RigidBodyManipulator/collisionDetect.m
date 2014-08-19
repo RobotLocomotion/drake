@@ -64,8 +64,8 @@ end
 
 force_collisionDetectTerrain = false;
 
-if (~active_collision_options.terrain_only && obj.mex_model_ptr ~= 0 ...
-    && (kinsol.mex || isa(kinsol.q,'TaylorVar')))
+
+if (~active_collision_options.terrain_only && obj.mex_model_ptr ~= 0 && kinsol.mex)
   [xA,xB,normal,distance,idxA,idxB] = collisionDetectmex(obj.mex_model_ptr,allow_multiple_contacts,active_collision_options);
   if isempty(idxA)
     idxA = [];
@@ -98,6 +98,9 @@ else
       ['This model has no mex pointer. Only checking collisions between ' ...
       'terrain contact points and terrain']);
   elseif ~kinsol.mex
+    if isa(kinsol.q,'TaylorVar')
+      error('Drake:RigidBodyManipulator:collisionDetect:unsupportedTaylorVar','The collision detection code runs through bullet, so TaylorVars do not work here');
+    end
     warnOnce(obj.warning_manager,'Drake:RigidBodyManipulator:collisionDetect:doKinematicsMex', ...
       ['kinsol was generated with use_mex = false. Only checking collisions ' ...
       'between terrain contact points and terrain']);

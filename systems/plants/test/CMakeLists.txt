@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 2.6)
 
-#pods_find_pkg_config(bullet)
+pods_find_pkg_config(bullet)
 
 if (eigen3_FOUND AND Boost_FOUND)
   add_executable(urdf_kin_test urdf_kin_test.cpp)
