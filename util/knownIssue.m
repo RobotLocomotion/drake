@@ -27,6 +27,10 @@ if ~isempty(err_id)
         github(303); return;
       elseif any(strcmp(testname,'systems/plants/test/contactSensorTest'))
         github(305); return;
+      elseif any(strcmp(testname,'systems/plants/test/testFloatingBaseDynamics'))
+        github(311); return;
+      elseif any(strcmp(testname,'solvers/trajectoryOptimization/test/contactImplicitBrick'))
+        github(312); return;
       end
     case 'MATLAB:nonExistentCellElement'
       if ~isempty(strfind(ex.stack(1).name,'RigidBodyMesh.loadFile'))
@@ -35,6 +39,10 @@ if ~isempty(err_id)
     case 'Simulink:SFunctions:SFcnErrorStatus'
       if strcmp('examples/Pendulum/test/testLCMPlant')
         github(310); return;
+      end
+    case 'Simulink:Engine:SolverConsecutiveZCNum'
+      if strcmp('examples/PlanarNLink/runLQR')
+        github(313); return;
       end
   end
 else
