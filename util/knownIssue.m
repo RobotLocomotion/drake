@@ -32,6 +32,10 @@ if ~isempty(err_id)
       if ~isempty(strfind(ex.stack(1).name,'RigidBodyMesh.loadFile'))
         github(286); return;
       end
+    case 'Simulink:SFunctions:SFcnErrorStatus'
+      if strcmp('examples/Pendulum/test/testLCMPlant')
+        github(310); return;
+      end
   end
 else
   switch testname
