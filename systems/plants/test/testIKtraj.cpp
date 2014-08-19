@@ -23,11 +23,11 @@ int main()
   //int r_foot;
   for(int i = 0;i<model->num_bodies;i++)
   {
-    if(model->bodies[i].linkname.compare(string("l_hand")))
+    if(model->bodies[i]->linkname.compare(string("l_hand")))
     {
       l_hand = i;
     }
-    else if(model->bodies[i].linkname.compare(string("r_hand")))
+    else if(model->bodies[i]->linkname.compare(string("r_hand")))
     {
       r_hand = i;
     }
