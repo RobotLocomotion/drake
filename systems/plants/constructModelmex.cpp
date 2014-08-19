@@ -2,14 +2,9 @@
 #include <iostream>
 #include <cmath>
 #include "drakeUtil.h"
-#include "makeUnique.h"
 #include "RigidBodyManipulator.h"
 #include <stdexcept>
-#include "joints/HelicalJoint.h"
-#include "joints/PrismaticJoint.h"
-#include "joints/RevoluteJoint.h"
-#include "joints/QuaternionFloatingJoint.h"
-#include "joints/RollPitchYawFloatingJoint.h"
+#include "joints/drakeJointUtil.h"
 
 #define INF -2147483648
 
@@ -29,37 +24,6 @@ vector<string> get_strings(const mxArray *rhs) {
     mxFree(str);
   }
   return strings;
-}
-
-unique_ptr<DrakeJoint> createJoint(const string& joint_name, const Isometry3d& transform_to_parent_body, int floating, Vector3d joint_axis, double pitch) {
-  unique_ptr<DrakeJoint> joint;
-  switch (floating) {
-  case 0: {
-    if (pitch == 0.0) {
-      joint = make_unique<RevoluteJoint>(joint_name, transform_to_parent_body, joint_axis);
-    } else if (isinf(pitch)) {
-      joint = make_unique<PrismaticJoint>(joint_name, transform_to_parent_body, joint_axis);
-    } else {
-      joint = make_unique<HelicalJoint>(joint_name, transform_to_parent_body, joint_axis, pitch);
-    }
-    break;
-    }
-    case 1: {
-      joint = make_unique<RollPitchYawFloatingJoint>(joint_name, transform_to_parent_body);
-      break;
-    }
-    case 2: {
-      joint = make_unique<QuaternionFloatingJoint>(joint_name, transform_to_parent_body);
-      break;
-    }
-    default: {
-      ostringstream stream;
-      stream << "floating type " << floating << " not recognized.";
-      throw runtime_error(stream.str());
-      break;
-    }
-  }
-  return joint;
 }
 
 void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
@@ -175,7 +139,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     if (!mxIsEmpty(pm)) memcpy(model->bodies[i]->com.data(),mxGetPr(pm),sizeof(double)*3);
 
     pm = mxGetProperty(pBodies,i,"position_num");
-    model->bodies[i].dofnum = (int) mxGetScalar(pm) - 1;  //zero-indexed
+    model->bodies[i]->dofnum = (int) mxGetScalar(pm) - 1;  //zero-indexed
 
 
     {
