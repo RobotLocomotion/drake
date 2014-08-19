@@ -21,7 +21,7 @@ if ~isempty(err_id)
         github(18); return;
       end
     case 'Drake:ValueCheck'
-      elseif any(strcmp(testname,{'systems/plants/constraint/test/testKinCnst'}))
+      if any(strcmp(testname,{'systems/plants/constraint/test/testKinCnst'}))
         github(136); return;
       elseif any(strcmp(testname,'examples/RimlessWheel/test/testContactGradients'))
         github(303); return;
