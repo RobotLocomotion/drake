@@ -71,6 +71,26 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       x0 = obj.x0;
     end
 
+    function weights = getFootstepOptimizationWeights(obj)
+      % Return a reasonable set of default weights for the footstep planner
+      % optimization. The weights describe the following quantities:
+      % 'relative': the contribution to the cost function of the 
+      %             displacement from one step to the next 
+      % 'relative_final': the cost contribution of the displacement of the
+      %                   displacement of the very last step (this can be 
+      %                   larger than the normal 'relative' cost in
+      %                   order to encourage the feet to be close together
+      %                   at the end of a plan)
+      % 'goal': the cost contribution on the distances from the last two
+      %         footsteps to their respective goal poses.
+      % Each weight is a 6 element vector, describing the weights on
+      % [x, y, z, roll, pitch, yaw]
+      
+      weights = struct('relative', [1;1;1;0;0;0.5],...
+                       'relative_final', [10;10;10;0;0;1],...
+                       'goal', [100;100;0;0;0;10]);
+    end
+
     function [xstar,ustar,zstar] = getFixedPoint(obj,options)
       if nargin < 2 || ~isfield(options,'visualize')
         options.visualize = false;
@@ -165,6 +185,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
                                     'step_height', 0.065,... % approximate clearance over terrain (m)
                                     'hold_frac', 0.4,... % fraction of the swing time spent in double support
                                     'drake_min_hold_time', 1.0,... % minimum time in double support (s)
+                                    'drake_instep_shift', 0.0275,... % Distance to shift ZMP trajectory inward toward the instep from the center of the foot (m)
                                     'mu', 1.0,... % friction coefficient
                                     'constrain_full_foot_pose', true); % whether to constrain the swing foot roll and pitch
   end
