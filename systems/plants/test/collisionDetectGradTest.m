@@ -1,4 +1,7 @@
 function collisionDetectGradTest(visualize,n_debris)
+  % Setting a fixed seed to avoid stochastic failures
+  rng(1);
+
   checkDependency('lcmgl');
   if nargin < 1
     visualize = false;
