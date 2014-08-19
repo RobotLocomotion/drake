@@ -109,7 +109,7 @@ while 1
   end
 
   if isempty(zmp_pts)
-    instep_shift = [0.0;0.035;0]; % TODO: make this a parameter
+    instep_shift = [0.0;0.0275;0]; % TODO: make this a parameter
     zmp1 = shift_step_inward(biped, st, instep_shift);
     zmp2 = feetCenter(sw1, st);
     zmp2 = zmp2(1:2);
