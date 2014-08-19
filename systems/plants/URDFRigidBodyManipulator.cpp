@@ -11,6 +11,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/regex.hpp>
+#include "joints/drakeJointUtil.h"
 
 using namespace std;
 
@@ -294,6 +295,17 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
                 2*qx*qy + 2*qw*qz,  qw*qw + qy*qy - qx*qx - qz*qz, 2*qy*qz - 2*qw*qx, 0,
                 2*qx*qz - 2*qw*qy, 2*qy*qz + 2*qw*qx, qw*qw + qz*qz - qx*qx - qy*qy, 0,
                 0, 0, 0, 1;
+      }
+      {
+        // set DrakeJoint
+        // FIXME creating joint based on bodies[index]->floating and bodies[index]->pitch to match the switch (j->type) above.
+        // This switch doesn't handle floating joints however...
+        // Best to not change functionality at this point however
+        Vector3d joint_axis;
+        joint_axis << j->axis.x, j->axis.y, j->axis.z;
+        Isometry3d transform_to_parent_body;
+        poseToTransform(j->parent_to_joint_origin_transform,transform_to_parent_body.matrix());
+        bodies[index]->setJoint(createJoint(j->name, transform_to_parent_body, bodies[index]->floating, joint_axis, bodies[index]->pitch));
       }
 
     } else { // no joint, this link is attached directly to the floating base
