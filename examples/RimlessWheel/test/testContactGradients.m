@@ -1,5 +1,8 @@
 function testContactGradients
 
+% Setting a fixed seed to avoid stochastic failures
+rng(3);
+
 options.floating = true;
 options.twoD = true;
 options.terrain = RigidBodyFlatTerrain();
