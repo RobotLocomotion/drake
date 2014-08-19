@@ -1,5 +1,11 @@
 function RelativePositionConstraintTest(varargin)
+  w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
+  warning('off','Drake:RigidBodyManipulator:ReplacedCylinder');
+  warning('off','Drake:RigidBodyManipulator:BodyHasZeroInertia');
+  warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
+  warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
   r = RigidBodyManipulator(strcat(getDrakePath(),'/examples/PR2/pr2.urdf'));
+  warning(w);
   q_nom = zeros(r.getNumDOF(),1);
   constraintTester('RelativePositionConstraintTest', r, @makeCon, @(r) q_nom, @(r) q_nom, 10, varargin{:});
 end
