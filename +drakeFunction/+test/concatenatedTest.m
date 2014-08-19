@@ -10,4 +10,12 @@ function concatenatedTest()
   [f,df] = concatenated_fun.eval([x;x;y]);
   valuecheck(f,[x+x;y]);
   valuecheck(df,blkdiag([eye(frame1.dim),eye(frame1.dim)],eye(frame2.dim)));
+
+  % Check [ ; ] syntax
+  concatenated_fun = [fun1;fun2];
+  x = rand(frame1.dim,1);
+  y = rand(frame2.dim,1);
+  [f,df] = concatenated_fun.eval([x;x;y]);
+  valuecheck(f,[x+x;y]);
+  valuecheck(df,blkdiag([eye(frame1.dim),eye(frame1.dim)],eye(frame2.dim)));
 end

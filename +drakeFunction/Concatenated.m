@@ -138,7 +138,7 @@ classdef Concatenated < drakeFunction.DrakeFunction
     end
   end
 
-  methods (Static, Access = private)
+  methods (Static)
     function [input_frame, input_frame_to_fcn_map] = constructInputFrame(fcns, same_input)
       if nargin < 2, same_input = false; end
       fcn_input_frames = cellfun(@(fcn) fcn.getInputFrame(), ...

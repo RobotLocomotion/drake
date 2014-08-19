@@ -86,8 +86,19 @@ classdef DrakeFunction
       fcn = compose(ConstantMultiple(frame,value),fcn_orig);
     end
 
-    function fcn = vertcat(varargin)
-      fcn = drakeFunction.Concatenated(varargin);
+    function fcn = vertcat(obj,varargin)
+      fcn = concatenate(obj,varargin{:});
+    end
+
+    function fcn = concatenate(obj,varargin)
+      if islogical(varargin{end})
+        same_input = varargin{end};
+        fcns = [{obj}, varargin(1:end-1)];
+      else
+        same_input = false;
+        fcns = [{obj}, varargin];
+      end
+      fcn = drakeFunction.Concatenated(fcns,same_input);
     end
 
     function fcn3 = compose(fcn1, fcn2)
@@ -97,7 +108,8 @@ classdef DrakeFunction
     function fcn = duplicate(obj,n)
       % fcn = duplicate(obj,n) returns a concatenated DrakeFunction containing
       % n duplicates of obj
-      fcn = drakeFunction.Concatenated(repmat({obj},1,n));
+      more_obj = repmat({obj},1,n-1);
+      fcn = concatenate(obj,more_obj{:});
     end
 
     function fcn = addInputFrame(obj,frame,append)
