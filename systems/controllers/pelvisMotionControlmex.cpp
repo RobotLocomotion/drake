@@ -75,11 +75,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   memcpy(&pdata,mxGetData(prhs[0]),sizeof(pdata));
 
   int nq = pdata->r->num_dof;
-
-  double *q = mxGetPr(prhs[1]);
+  int narg = 1;
+  double *q = mxGetPr(prhs[narg++]);
   double *qd = &q[nq];
   Map<VectorXd> qdvec(qd,nq);
-
+  double lfoot_yaw = mxGetScalar(prhs[narg++]);
+  double rfoot_yaw = mxGetScalar(prhs[narg++]);
+ 
   pdata->r->doKinematics(q,false,qd);
 
   // TODO: this must be updated to use quaternions/spatial velocity
@@ -97,7 +99,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   }
 
   double min_foot_z = std::min(lfoot_pose(2),rfoot_pose(2));
-  double mean_foot_yaw = angleAverage(lfoot_pose(5),rfoot_pose(5));
+  double mean_foot_yaw = angleAverage(lfoot_yaw,rfoot_yaw);
 
   double pelvis_height_desired = pdata->alpha*pdata->pelvis_height_previous + (1.0-pdata->alpha)*(min_foot_z + pdata->nominal_pelvis_height); 
   pdata->pelvis_height_previous = pelvis_height_desired;
