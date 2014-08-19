@@ -50,8 +50,8 @@ int main(int argc, char* argv[])
     for (int i=0; i<3; ++i) {
       cout << xB(i,j) << " ";
     }
-    cout << model->bodies[bodyA_idx.at(j)].linkname << " "; 
-    cout << model->bodies[bodyB_idx.at(j)].linkname << endl;
+    cout << model->bodies[bodyA_idx.at(j)]->linkname << " ";
+    cout << model->bodies[bodyB_idx.at(j)]->linkname << endl;
   }
   
   delete model;
