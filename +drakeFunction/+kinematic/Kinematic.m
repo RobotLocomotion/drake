@@ -10,11 +10,32 @@ classdef Kinematic < drakeFunction.RigidBodyManipulatorFunction
       %
       % @retval obj   -- drakeFunction.kinematic.Kinematic object
       typecheck(rbm,{'RigidBodyManipulator', ...
-                     'TimeSteppingRigidBodyManipulator'});
+        'TimeSteppingRigidBodyManipulator'});
       input_frame = CoordinateFrame('position_frame', ...
         rbm.getNumPositions(),'q');
       obj = obj@drakeFunction.RigidBodyManipulatorFunction(rbm, ...
         input_frame, output_frame);
+    end
+
+    function [iCfun,jCvar] = getSparseStructure(obj)
+      joint_idx = obj.kinematicsPathJoints();
+      iCfun = reshape(bsxfun(@times,(1:obj.getNumOutputs())',ones(1,length(joint_idx))),[],1);
+      jCvar = reshape(bsxfun(@times,ones(obj.getNumOutputs(),1),joint_idx),[],1);
+    end
+  end
+
+  methods (Access = protected)
+    function joint_idx = kinematicsPathJoints(obj)
+      % joint_idx = kinematicsPathJoints(obj) return the indices of the
+      % joints used to evaluate the constraint. Should be overloaded by
+      % child classes.
+      %
+      % @param obj          -- drakeFunction.kinematic.Kinematic object
+      %
+      % @retval joint_idx   -- Indices of the joints involved in this
+      %                        constraint. Optional
+      %                        @default (1:obj.robot.getNumPositions());
+      joint_idx = (1:obj.rbm.getNumPositions());
     end
   end
 end
