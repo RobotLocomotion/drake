@@ -19,8 +19,8 @@ classdef Gripper2D < PlanarRigidBodyManipulator
       phi_f = phi(1:2:end);
       phi_n = phi(2:2:end);
       
-      dn = reshape(dJ(2:2:end,:),obj.num_q*length(phi_n),obj.num_q);
-      dD{1} = reshape(dJ(1:2:end,:),obj.num_q*length(phi_n),obj.num_q);
+      dn = reshape(dJ(2:2:end,:),obj.num_positions*length(phi_n),obj.num_positions);
+      dD{1} = reshape(dJ(1:2:end,:),obj.num_positions*length(phi_n),obj.num_positions);
       dD{2} = -dD{1};
       
       %not sure if this is right
@@ -80,7 +80,7 @@ classdef Gripper2D < PlanarRigidBodyManipulator
             %calculating this manually to get a point on the sphere
             [vb,vvb] = obj.forwardKinVel(kinsol,4,pt_on_sphere,qd);
 %             vb = [qd(1);qd(2)]-qd(3)*[n(2)*r;-n(1)*r];
-%             vvb(:,obj.num_q+1:end) = vvb(:,obj.num_q+1:end) - qd(3)*r*dt;
+%             vvb(:,obj.num_positions+1:end) = vvb(:,obj.num_positions+1:end) - qd(3)*r*dt;
             
             
 %             %manually calculating ddn, the hard way
@@ -88,9 +88,9 @@ classdef Gripper2D < PlanarRigidBodyManipulator
 %             dR = (dPts - dPts_sphere);
 %             ddR = (ddPts - ddPts_sphere);
 %             ddn = (ddPts - ddPts_sphere)/(dist+r) - R*R'*ddR/(dist+r)^3;
-%             for k=1:obj.num_q,
-%               for j=1:obj.num_q,
-%                 ddn(:,(k-1)*obj.num_q + j) = ddn(:,(k-1)*obj.num_q + j) - dR(:,k)*R'*dR(:,j)/(dist+r)^3 - dR(:,j)*R'*dR(:,k)/(dist+r)^3 + ...
+%             for k=1:obj.num_positions,
+%               for j=1:obj.num_positions,
+%                 ddn(:,(k-1)*obj.num_positions + j) = ddn(:,(k-1)*obj.num_positions + j) - dR(:,k)*R'*dR(:,j)/(dist+r)^3 - dR(:,j)*R'*dR(:,k)/(dist+r)^3 + ...
 %                   -R*dR(:,j)'*dR(:,k)/(dist+r)^3 + 3*R*R'*dR(:,j)*R'*dR(:,k)/(dist+r)^5;
 %               end
 %             end
@@ -99,7 +99,7 @@ classdef Gripper2D < PlanarRigidBodyManipulator
 %             dsphere_surf = dPts_sphere + r*dn;
 %             ddsphere_surf = ddPts_sphere + r*ddn;
             [sphere_surf, dsphere_surf, ddsphere_surf] = obj.forwardKin(kinsol,4,pt_on_sphere*0);
-            ddsphere_surf(:,3:obj.num_q:end) = dt*r*0;
+            ddsphere_surf(:,3:obj.num_positions:end) = dt*r*0;
             
 %             sphere_surf = sphere_coords - r*n;
 %             dsphere_surf = dPts_sphere;
@@ -131,10 +131,10 @@ classdef Gripper2D < PlanarRigidBodyManipulator
             
             %add in contribution from dn, dt to dpsi
             tmp=(vp-vb)'*dn;
-            dvel_n(1:obj.num_q) = dvel_n(1:obj.num_q) + tmp(:)';
+            dvel_n(1:obj.num_positions) = dvel_n(1:obj.num_positions) + tmp(:)';
             
             tmp=(vp-vb)'*dt;
-            dvel_t(1:obj.num_q) = dvel_t(1:obj.num_q) + tmp(:)';
+            dvel_t(1:obj.num_positions) = dvel_t(1:obj.num_positions) + tmp(:)';
             
             %add in contribution from dn, dt to dphi
             dphi_t = t'*(dPts-dPts_sphere) + (c - sphere_coords)'*dt;
@@ -152,7 +152,7 @@ classdef Gripper2D < PlanarRigidBodyManipulator
       
       [vb,vvb] = obj.forwardKinVel(kinsol,4,[0;0],qd);
       vb(1) = vb(1) - r*qd(3);
-      vvb(1,obj.num_q + 3) = vvb(1,obj.num_q + 3) - r;
+      vvb(1,obj.num_positions + 3) = vvb(1,obj.num_positions + 3) - r;
 
       %Add an extra contact for the ball and the ground
       %scale up for traj. opt numerics

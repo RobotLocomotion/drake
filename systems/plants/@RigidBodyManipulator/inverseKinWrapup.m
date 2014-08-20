@@ -39,7 +39,7 @@ else
   options = struct();
 end
 if isfield(options,'q_nom') q_nom = options.q_nom; else q_nom = q0; end
-if isfield(options,'Q') Q = options.Q; else Q = eye(obj.num_q); end
+if isfield(options,'Q') Q = options.Q; else Q = eye(obj.num_positions); end
 if(~isfield(options,'jointLimitMin')) options.jointLimitMin = obj.joint_limit_min; end
 if(~isfield(options,'jointLimitMax')) options.jointLimitMax = obj.joint_limit_max; end
 if(isfield(options,'quasiStaticFlag'))
