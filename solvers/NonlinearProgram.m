@@ -162,9 +162,9 @@ classdef NonlinearProgram
       obj.jCeqvar = reshape(bsxfun(@times,ones(obj.num_ceq,1),(1:obj.num_vars)),[],1);
       
       if checkDependency('snopt')
-        obj.solver = 'snopt';
+        obj = obj.setSolver('snopt');
       else % todo: check for fmincon?
-        obj.solver = 'fmincon';
+        obj = obj.setSolver('fmincon');
       end
       obj.solver_options.fmincon = optimset('Display','off');
       obj.solver_options.snopt = struct();
@@ -271,14 +271,15 @@ classdef NonlinearProgram
     
     function obj = setSolver(obj,solver)
       typecheck(solver,'char');
-      obj.solver = solver;
+      if(strcmp(solver,'snopt'))
+        if(~checkDependency('snopt'))
+          error('Drake:NonlinearProgram:UnsupportedSolver','SNOPT is not installed');
+        end
+        obj.solver = solver;
+      elseif(strcmp(solver,'fmincon'))
+        obj.solver = solver;
+      end
     end
-    
-%     function obj = setSolverOptions(obj,solver,options)
-%       if(strcmp(lower(solver),'snopt'))
-%         
-%       end
-%     end
     
     function obj = setSolverOptions(obj,solver,optionname,optionval)
       % @param solver   - string name of the solver
@@ -466,9 +467,10 @@ classdef NonlinearProgram
         fprintf('%12s%12.3f%12d%17.4f\n',solvers{i},objval{i},exitflag{i},execution_time{i});
       end
     end
-    
+  end
+  
+  methods(Access=protected)
     function [x,objval,exitflag] = snopt(obj,x0)
-      checkDependency('snopt');
 
       global SNOPT_USERFUN;
       SNOPT_USERFUN = @snopt_userfun;
