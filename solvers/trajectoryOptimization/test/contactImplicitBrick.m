@@ -1,7 +1,7 @@
 function contactImplicitBrick(visualize,position_tol,velocity_tol)
 % tests that the contact implicit trajectory optimization can reproduce a
 % simulation of the falling brick
-
+rng(0)
 if nargin < 1, visualize = false; end
 if nargin < 2, position_tol = 1.5e-2; end
 if nargin < 3, velocity_tol = 1e-1; end
@@ -11,13 +11,14 @@ options.floating = true;
 w = warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
 plant = RigidBodyManipulator(fullfile(getDrakePath,'systems','plants','test','FallingBrickContactPoints.urdf'),options);
 warning(w);
-x0 = [0;0;.8;0.1*randn(3,1);zeros(6,1)];
+x0 = [0;0;.8;0.05*randn(3,1);zeros(6,1)];
 
-N=11; tf=1;
+N=5; tf=.5;
 
 plant_ts = TimeSteppingRigidBodyManipulator(plant,tf/(N-1));
 w = warning('off','Drake:TimeSteppingRigidBodyManipulator:ResolvingLCP');
-xtraj_ts = simulate(plant_ts,[0 1],x0);
+xtraj_ts = simulate(plant_ts,[0 tf],x0);
+x0 = xtraj_ts.eval(0);
 warning(w);
 if visualize
   v = constructVisualizer(plant_ts);
