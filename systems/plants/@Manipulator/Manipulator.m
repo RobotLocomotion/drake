@@ -270,10 +270,10 @@ classdef Manipulator < DrakeSystem
       %        @default 1:nX
 
       if nargin<3, indices=1:obj.num_x; end
-      prog = addStateConstraintsToProgram@SecondOrderSystem(obj,prog,indices);
+      prog = addStateConstraintsToProgram@DynamicalSystem(obj,prog,indices);
       
       % add joint limit constraints
-      prog = addConstraint(prog,BoundingBoxConstraint(obj.joint_limit_min,obj.joint_limit_max),1:obj.num_q);
+      prog = addConstraint(prog,BoundingBoxConstraint(obj.joint_limit_min,obj.joint_limit_max),1:obj.num_positions);
     end
     
     function sys = feedback(sys1,sys2)
