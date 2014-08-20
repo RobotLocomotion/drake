@@ -161,7 +161,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         [obj,z,Mqdn,wqdn] = solveLCP(obj,t,x,u);
       end
 
-      num_q = obj.manip.num_q;
+      num_q = obj.manip.num_positions;
       q=x(1:num_q); qd=x((num_q+1):end);
       h = obj.timestep;
 
@@ -222,7 +222,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         obj.LCP_cache.u = u;
         obj.LCP_cache.nargout = nargout;
 
-        num_q = obj.manip.num_q;
+        num_q = obj.manip.num_positions;
         q=x(1:num_q); qd=x(num_q+(1:num_q));
         h = obj.timestep;
 
@@ -309,7 +309,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         if (nL > 0)
           if (obj.position_control)
             phiL = q(pos_control_index) - u;
-            JL = sparse(1:obj.manip.num_u,pos_control_index,1,obj.manip.num_u,obj.manip.num_q);
+            JL = sparse(1:obj.manip.num_u,pos_control_index,1,obj.manip.num_u,obj.manip.num_positions);
             phiL = [phiL;-phiL]; JL = [JL;-JL];
             % dJ = 0 by default, which is correct here
             dJL = zeros(length(phiL),num_q^2);
@@ -616,7 +616,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     end
 
     function num_q = getNumPositions(obj)
-      num_q = obj.manip.num_q;
+      num_q = obj.manip.num_positions;
     end
 
     function num_v = getNumVelocities(obj)

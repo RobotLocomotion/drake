@@ -31,7 +31,7 @@ if (getOutputFrame(obj)~=getStateFrame(obj))
   error('Only full-state feedback is implemented so far');
 end
 
-nq = obj.num_q;
+nq = obj.num_positions;
 nu = obj.num_u;
 p_orig = double(getParams(obj));  % probably only for testing
 

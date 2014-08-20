@@ -108,11 +108,11 @@ classdef Manipulator < DrakeSystem
       qd = vToqdot(obj, q) * v;
       if (obj.num_position_constraints>0 && obj.num_velocity_constraints>0)
         [phi,J,dJ] = geval(@obj.positionConstraints,q);
-        Jdotqd = dJ*reshape(qd*qd',obj.num_q^2,1);
+        Jdotqd = dJ*reshape(qd*qd',obj.num_positions^2,1);
 
         [psi,dpsi] = geval(@obj.velocityConstraints,q,qd);
-        dpsidq = dpsi(:,1:obj.num_q);
-        dpsidqd = dpsi(:,obj.num_q+1:end);
+        dpsidq = dpsi(:,1:obj.num_positions);
+        dpsidqd = dpsi(:,obj.num_positions+1:end);
         
         term1=Hinv*[J;dpsidqd]';
         term2=Hinv*tau;
@@ -120,13 +120,13 @@ classdef Manipulator < DrakeSystem
         constraint_force = -[J;dpsidqd]'*pinv([J*term1;dpsidqd*term1])*[J*term2 + Jdotqd + alpha*J*qd; dpsidqd*term2 + dpsidq*qd + beta*psi];
       elseif (obj.num_position_constraints>0)  % note: it didn't work to just have dpsidq,etc=[], so it seems like the best solution is to handle each case...
         [phi,J,dJ] = geval(@obj.positionConstraints,q);
-        Jdotqd = dJ*reshape(qd*qd',obj.num_q^2,1);
+        Jdotqd = dJ*reshape(qd*qd',obj.num_positions^2,1);
 
         constraint_force = -J'*pinv(J*Hinv*J')*(J*Hinv*tau + Jdotqd + alpha*J*qd);
       elseif (obj.num_velocity_constraints>0)
         [psi,J] = geval(@obj.velocityConstraints,q,qd);
-        dpsidq = J(:,1:obj.num_q);
-        dpsidqd = J(:,obj.num_q+1:end);
+        dpsidq = J(:,1:obj.num_positions);
+        dpsidqd = J(:,obj.num_positions+1:end);
         
         constraint_force = -dpsidqd'*pinv(dpsidqd*Hinv*dpsidqd')*(dpsidq*qd + dpsidqd*Hinv*tau+beta*psi);
       else
@@ -209,7 +209,7 @@ classdef Manipulator < DrakeSystem
       % method.  note that each position constraint (phi=0) also imposes an implicit
       % velocity constraint on the system (phidot=0).
 
-      q=x(1:obj.num_q); v=x(obj.num_q+1:end);
+      q=x(1:obj.num_positions); v=x(obj.num_positions+1:end);
       qd = vToqdot(obj, q) * v;
       if (obj.num_position_constraints>0)
         if (nargout>1)
@@ -218,7 +218,7 @@ classdef Manipulator < DrakeSystem
           [phi,J] = geval(@obj.positionConstraints,q);
         end
       else
-        phi=[]; J=zeros(0,obj.num_q); dJ=zeros(0,obj.num_q^2);
+        phi=[]; J=zeros(0,obj.num_positions); dJ=zeros(0,obj.num_positions^2);
       end
       if (obj.num_velocity_constraints>0)
         if (nargout>1)
@@ -232,7 +232,7 @@ classdef Manipulator < DrakeSystem
         
       con = [phi; J*qd; psi];  % phi=0, phidot=0, psi=0
       if (nargout>1)
-        dcon = [J,0*J; matGradMult(reshape(dJ,size(dJ,1)*obj.num_q,obj.num_q),qd), J; dpsi];
+        dcon = [J,0*J; matGradMult(reshape(dJ,size(dJ,1)*obj.num_positions,obj.num_positions),qd), J; dpsi];
       end
     end
     
@@ -359,11 +359,11 @@ classdef Manipulator < DrakeSystem
 
       if nargin<4 || isempty(index)
         % try to extract the index from B
-        q=msspoly('q',sys.num_q);
-        s=msspoly('s',sys.num_q);
-        c=msspoly('c',sys.num_q);
+        q=msspoly('q',sys.num_positions);
+        s=msspoly('s',sys.num_positions);
+        c=msspoly('c',sys.num_positions);
         qt=TrigPoly(q,s,c);
-        qd=msspoly('v',sys.num_q);
+        qd=msspoly('v',sys.num_positions);
 
         try 
           [~,~,B] = manipulatorDynamics(sys,qt,qd);
@@ -391,7 +391,7 @@ classdef Manipulator < DrakeSystem
           end
             
         catch  % because trigpolys aren't guaranteed to work for all manipulators
-          warning('Drake:Manipulator:PDControlDefaultIndex','Couldn''t extract default index from the B matrix.  resorting to SecondOrderSystem default behavior.'); 
+          warning('Drake:Manipulator:PDControlDefaultIndex','Couldn''t extract default index from the B matrix.  resorting to default behavior.'); 
           warning(lasterr);
           index=[];
         end
