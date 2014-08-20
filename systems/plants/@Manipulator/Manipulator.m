@@ -164,10 +164,15 @@ classdef Manipulator < DrakeSystem
   
   methods
     function obj = setNumDOF(obj,num)
-      error('setNumDOF is deprecated.  Use setNumPositions and setNumVelocities instead.');
+      warnOnce(obj.warning_manager,'Drake:Manipulator:setNumDOFDeprecated','setNumDOF will soon be deprecated.  In order to fully support quaternion floating base dynamics, we had to change the interface to allow a different number position and velocity elements in the state vector.  Use setNumPositions() and setNumVelocities() instead.');
+      obj.setNumPositions(num);
+      obj.setNumVelocities(num);
+%       error('setNumDOF is deprecated.  Use setNumPositions and setNumVelocities instead.');
     end
     function n = getNumDOF(obj)
-      error('getNumDOF is deprecated.  In order to fully support quaternion floating base dynamics, we had to change the interface to allow a different number position and velocity elements in the state vector.  Use getNumPositions() and getNumVelocities() instead.');
+      warnOnce(obj.warning_manager,'Drake:Manipulator:getNumDOFDeprecated','getNumDOF will soon be deprecated.  In order to fully support quaternion floating base dynamics, we had to change the interface to allow a different number position and velocity elements in the state vector.  Use getNumPositions() and getNumVelocities() instead.');
+      n = obj.getNumPositions();
+%       error('getNumDOF is deprecated.  In order to fully support quaternion floating base dynamics, we had to change the interface to allow a different number position and velocity elements in the state vector.  Use getNumPositions() and getNumVelocities() instead.');
     end
     
     function obj = setNumPositions(obj,num_q)
