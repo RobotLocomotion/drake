@@ -20,7 +20,7 @@ if ~isempty(err_id)
           'examples/ZMP/CartTable.run'}))
         github(18); return;
       end
-    case 'Drake:ValueCheck'
+    case 'Drake:ValueCheck'  % note: it's dangerous to have such a general "known issue" test.
       if any(strcmp(testname,{'systems/plants/constraint/test/testKinCnst'}))
         github(136); return;
       elseif any(strcmp(testname,'examples/RimlessWheel/test/testContactGradients'))
@@ -31,6 +31,8 @@ if ~isempty(err_id)
         github(311); return;
       elseif any(strcmp(testname,'solvers/trajectoryOptimization/test/contactImplicitBrick'))
         github(312); return;
+      elseif strcmp(testname,'examples/SimpleFourBar/runPassiveLCP')
+        github(330); return;
       end
     case 'MATLAB:nonExistentCellElement'
       if ~isempty(strfind(ex.stack(1).name,'RigidBodyMesh.loadFile'))

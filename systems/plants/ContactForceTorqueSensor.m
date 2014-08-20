@@ -92,8 +92,6 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensorWithState %& Visu
       % todo: could do this more efficiently by only computing everything
       % below for indices where the normal forces are non-zero
       
-%       body = tsmanip.getBody(obj.kinframe.body_ind);
-      
       % todo: Remove this copy of the TimeSteppingRigidBodyManipulator's
       % internal RigidBodyManipulator
       manip = tsmanip.getManipulator();
@@ -137,7 +135,7 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensorWithState %& Visu
       tangent = bodyKin(manip,kinsol,findFrameId(manip,obj.kinframe.name),repmat(sensor_pos,1,N*nD)+tangent_world);
       tangent = [tangent -tangent];
       
-      normal_ind = nL+nP+[contact_idxA;contact_idxB];
+      normal_ind = nL+nP+[contact_idxA contact_idxB];
       tangent_ind = [kron(0:nD-1,nC*ones(1,nA)) + repmat(contact_idxA,1,nD) ...
         kron(0:nD-1,nC*ones(1,nB)) + repmat(contact_idxB,1,nD)];
       

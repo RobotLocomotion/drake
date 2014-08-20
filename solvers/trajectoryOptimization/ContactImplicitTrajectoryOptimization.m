@@ -208,19 +208,6 @@ classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
           dBuminusC1 = -dC1;
         end
         
-        [phi,~,~,~,~,~,~,~,n,D,dn,dD] = obj.plant.contactConstraints(q1,false,obj.options.active_collision_options);
-        % construct J and dJ from n,D,dn, and dD so they relate to the
-        % lambda vector
-        J = zeros(nl,nq);
-        J(1:2+obj.nD:end,:) = n;
-        dJ = zeros(nl*nq,nq);
-        dJ(1:2+obj.nD:end,:) = dn;
-        
-        for j=1:length(D),
-          J(1+j:2+obj.nD:end,:) = D{j};
-          dJ(1+j:2+obj.nD:end,:) = dD{j};
-        end
-
         switch obj.options.integration_method
           case ContactImplicitTrajectoryOptimization.MIDPOINT
             % q1 = q0 + h*v1
