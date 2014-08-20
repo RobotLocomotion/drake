@@ -43,7 +43,7 @@ for j=1:length(link_indices)
   body_knots{j} = zeros(6,length(ts));
 end
 
-nq = getNumDOF(r);
+nq = getNumPositions(r);
 for i=1:length(ts)
   qi = x_knots(1:nq,i);
   kinsol = doKinematics(r,qi);

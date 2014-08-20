@@ -13,7 +13,7 @@ classdef Point2PointDistanceConstraint < SingleTimeKinematicConstraint
   
   methods(Access = protected)
     function [c,dc] = evalValidTime(obj,kinsol)      
-      nq = obj.robot.getNumDOF();
+      nq = obj.robot.getNumPositions();
       if(obj.body_a.idx ~= 1)
         [posA,dposA] = forwardKin(obj.robot,kinsol,obj.body_a.idx,obj.ptA,0);
       else

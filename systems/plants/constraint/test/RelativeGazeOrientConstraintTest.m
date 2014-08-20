@@ -2,7 +2,7 @@ function RelativeGazeOrientConstraintTest(varargin)
 %NOTEST
 % Andres would update the GazeOrientConstraint
   r = RigidBodyManipulator(strcat(getDrakePath(),'/examples/PR2/pr2.urdf'));
-  q_nom = zeros(r.getNumDOF(),1);
+  q_nom = zeros(r.getNumPositions(),1);
   constraintTester('RelativeGazeOrientConstraintTest', r, @makeCon, @(r) q_nom, @(r) q_nom, varargin{:});
 end
 

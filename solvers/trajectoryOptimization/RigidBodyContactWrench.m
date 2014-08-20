@@ -122,7 +122,7 @@ classdef RigidBodyContactWrench
   
   methods(Access = private)
     function nlcon = generateWrenchNlcon(obj)
-      nlcon = FunctionHandleConstraint(obj.wrench_cnstr_lb,obj.wrench_cnstr_ub,obj.robot.getNumDOF+obj.num_pt_F*obj.num_pts+obj.num_slack,@(~,F,slack,kinsol) obj.evalWrenchConstraint(kinsol,reshape(F,obj.num_pt_F,obj.num_pts),slack));
+      nlcon = FunctionHandleConstraint(obj.wrench_cnstr_lb,obj.wrench_cnstr_ub,obj.robot.getNumPositions+obj.num_pt_F*obj.num_pts+obj.num_slack,@(~,F,slack,kinsol) obj.evalWrenchConstraint(kinsol,reshape(F,obj.num_pt_F,obj.num_pts),slack));
       nlcon = nlcon.setSparseStructure(obj.wrench_iCfun,obj.wrench_jCvar);  
       nlcon = nlcon.setName(obj.wrench_cnstr_name);
     end

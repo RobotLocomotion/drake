@@ -31,7 +31,7 @@ classdef MultipleTimeLinearPostureConstraint < RigidBodyConstraint
     function cnstr = generateConstraint(obj,t)
       [iAfun,jAvar,A] = obj.geval(t);
       num_cnstr = obj.getNumConstraint(t);
-      nq = obj.robot.getNumDOF();
+      nq = obj.robot.getNumPositions();
       [lb,ub] = obj.bounds(t);
       cnstr = {LinearConstraint(lb,ub,sparse(iAfun,jAvar,A,num_cnstr,length(t)*nq))};
       name_str = obj.name(t);

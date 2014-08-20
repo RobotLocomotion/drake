@@ -615,7 +615,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       g = getGravity(obj.manip);
     end
 
-    function num_q = getNumDOF(obj)
+    function num_q = getNumPositions(obj)
       num_q = obj.manip.num_q;
     end
 
