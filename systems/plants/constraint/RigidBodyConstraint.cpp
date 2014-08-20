@@ -1963,7 +1963,7 @@ void WorldFixedPositionConstraint::eval_valid(const double* valid_t, int num_val
     next_idx[i] = (i+1)%num_valid_t;
     prev_idx[i] = (i+num_valid_t-1)%num_valid_t;
   }
-  c.resize(n_pts,1);
+  c = VectorXd::Zero(n_pts);
   dc_valid = MatrixXd::Zero(n_pts,nq*num_valid_t);
   for(int i = 0;i<num_valid_t;i++)
   {
