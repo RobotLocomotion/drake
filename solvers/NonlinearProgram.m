@@ -377,7 +377,7 @@ classdef NonlinearProgram
           obj.solver_options.snopt.LinesearchTolerance = optionval;
         end
       elseif(strcmpi((solver),'fmincon'))
-        error('Not implemented yet');
+        obj.solver_options.fmincon = optimset(obj.solver_options.fmincon, optionname, optionval);
       else
         error('solver %s not supported yet',solver);
       end
