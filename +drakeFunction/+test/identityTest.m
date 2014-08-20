@@ -1,9 +1,9 @@
 function identityTest()
   import drakeFunction.*
   frame = CoordinateFrame('x',5);
-  expr = Identity(frame);
+  fcn = Identity(frame);
   x = rand(5,1);
-  [f,df] = expr.eval(x);
+  [f,df] = fcn(x);
   valuecheck(f,x);
-  valuecheck(df,eye(expr.input_frame.dim));
+  valuecheck(df,eye(fcn.input_frame.dim));
 end
