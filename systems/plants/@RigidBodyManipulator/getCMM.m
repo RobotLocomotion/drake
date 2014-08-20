@@ -25,7 +25,7 @@ if (kinsol.mex)
 	end
 else
   q = kinsol.q;
-  nq = getNumDOF(model);
+  nq = getNumPositions(model);
   m = model.featherstone;
 
   A = zeros(6,nq) + 0*q(1);

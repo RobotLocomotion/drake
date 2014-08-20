@@ -52,7 +52,7 @@ if(isfield(options,'shrinkFactor'))
 else
     shrinkFactor = 0.95;
 end
-nq = obj.getNumDOF();
+nq = obj.getNumPositions();
 ikoptions = IKoptions(obj);
 ikoptions = ikoptions.setQ(Q);
 qsc = [];

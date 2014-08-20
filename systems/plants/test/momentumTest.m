@@ -35,7 +35,7 @@ xtraj = r.simulate([0 T],x0);
 
 body = getBody(r,2); % get ball
 
-nq = getNumDOF(r);
+nq = getNumPositions(r);
 for t=0:0.05:T
   x = xtraj.eval(t);
   if display
@@ -140,7 +140,7 @@ xtraj = r.simulate([0 T],x0);
 
 body = getBody(r,2); % get brick
 
-nq = getNumDOF(r);
+nq = getNumPositions(r);
 for t=0:0.05:T
   x = xtraj.eval(t);
   if display

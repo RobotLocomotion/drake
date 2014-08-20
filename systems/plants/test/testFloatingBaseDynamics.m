@@ -24,7 +24,7 @@ warning(w);
 % the kinematics and dynamics should actually match, when the order of the indices is
 % flopped
 
-nq=getNumDOF(m_rpy);
+nq=getNumPositions(m_rpy);
 ind = [1;2;3;6;5;4;(7:nq)'];
 xind = [ind;nq+ind];
 

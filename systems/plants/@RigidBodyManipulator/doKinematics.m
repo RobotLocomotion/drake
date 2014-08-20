@@ -24,7 +24,7 @@ if (use_mex && model.mex_model_ptr~=0 && isnumeric(q))
 else
   kinsol.mex = false;
   
-  nq = getNumDOF(model);
+  nq = getNumPositions(model);
   nb = length(model.body);
   kinsol.T = cell(1,nb);
   kinsol.dTdq = cell(1,nb);

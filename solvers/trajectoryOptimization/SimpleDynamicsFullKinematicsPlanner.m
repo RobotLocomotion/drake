@@ -69,7 +69,7 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
       obj.Q_contact_force = Q_contact_force;
       obj.robot = robot;
       obj.nq = obj.robot.getNumPositions();
-      obj.nv = obj.robot.getNumDOF();
+      obj.nv = obj.robot.getNumVelocities();
       obj.q_inds = obj.x_inds(1:obj.nq,:);
       obj.v_inds = obj.x_inds(obj.nq+(1:obj.nv),:);
       obj.qsc_weight_inds = cell(1,obj.N);
