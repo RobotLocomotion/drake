@@ -216,11 +216,6 @@ dc = [x(2)*x(3) x(1)*x(3) x(1)*x(2); 0 2*x(2)+x(3) x(2)+4*x(3)];
 end
 
   function [x,F,info] = solveWDefaultSolver(nlp,x)
-    if(checkDependency('snopt'))
-      nlp = nlp.setSolver('snopt');
-    else
-      nlp = nlp.setSolver('fmincon');
-    end
     [x,F,info] = nlp.solve(x);
     if(strcmpi(nlp.solver,'snopt'))
       if(info>10)
