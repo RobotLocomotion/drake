@@ -91,7 +91,7 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
       warning(w);
       
       if ~isfield(options,'q_nominal') 
-        options.q_nominal = zeros(getNumDOF(model),1); 
+        options.q_nominal = zeros(getNumPositions(model),1); 
       else
         error('not quite implemented yet.  need removeFixedJoint logic to reason about the non-zero joint transform instead of just Ttree for propagating points to the parent'); 
       end
