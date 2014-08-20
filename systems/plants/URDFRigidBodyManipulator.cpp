@@ -300,7 +300,7 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
         // set DrakeJoint
         // FIXME creating joint based on bodies[index]->floating and bodies[index]->pitch to match the switch (j->type) above.
         // This switch doesn't handle floating joints however...
-        // Best to not change functionality at this point however
+        // Best not to change functionality at this point.
         Vector3d joint_axis;
         joint_axis << j->axis.x, j->axis.y, j->axis.z;
         Isometry3d transform_to_parent_body;
