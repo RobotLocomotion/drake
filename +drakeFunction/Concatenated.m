@@ -124,7 +124,7 @@ classdef Concatenated < drakeFunction.DrakeFunction
       end
       contained_functions_local = obj.contained_functions;
       for i = 1:obj.n_contained_functions
-        [f_cell{i},df_cell{i}] = contained_functions_local{i}.eval(reshape([x_cell{obj.input_map{i}}],[],1));
+        [f_cell{i},df_cell{i}] = eval(contained_functions_local{i},reshape([x_cell{obj.input_map{i}}],[],1));
       end
     end
 

@@ -149,7 +149,7 @@ classdef DrakeFunction
                 error('Drake:drakeFunction:DrakeFunction:UnsupportedType', ...
                   'fcn(x) does not support x of class %s',class(s.subs{1}));
               end
-              [varargout{:}] = obj.eval(x);
+              [varargout{:}] = eval(obj,x);
             end
           else
             error('Drake:drakeFunction:DrakeFunction:TooManySubscripts', ...

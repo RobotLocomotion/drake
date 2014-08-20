@@ -26,8 +26,8 @@ classdef Composed < drakeFunction.DrakeFunction
     end
 
     function [f,df] = eval(obj,x)
-      [f_inner, df_inner] = obj.fcn_inner.eval(x);
-      [f,df_df_inner] = obj.fcn_outer.eval(f_inner);
+      [f_inner, df_inner] = eval(obj.fcn_inner,x);
+      [f,df_df_inner] = eval(obj.fcn_outer,f_inner);
       df = df_df_inner*df_inner;
     end
 

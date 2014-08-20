@@ -47,7 +47,7 @@ function relativePositionTest(visualize)
   end
 
   % Check the gradients of the DrakeFunction
-  [f,df] = geval(@hand_pts_fcn.eval,q0,struct('grad_method',{{'user','taylorvar'}},'tol',1e-6));
+  [f,df] = geval(@(q) eval(hand_pts_fcn,q),q0,struct('grad_method',{{'user','taylorvar'}},'tol',1e-6));
 
 
   %% Solve an inverse kinematics problem
