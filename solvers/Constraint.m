@@ -121,10 +121,12 @@ classdef Constraint
         % special casing 'user' to avoid geval for speed reasons
         varargout=cell(1,nargout);
         if (isempty(obj.grad_method) && nargout<=obj.grad_level+1) ...
-            || strcmp(obj.grad_method,'user')
+            || all(strcmp('user',obj.grad_method))
           [varargout{:}] = obj.constraintEval(varargin{:});
         else
-          [varargout{:}] = geval(@obj.constraintEval,varargin{:},struct('grad_method',obj.grad_method,'grad_level',obj.grad_level));
+          gopt.grad_method = obj.grad_method;
+          gopt.grad_level = obj.grad_level;
+          [varargout{:}] = geval(@obj.constraintEval,varargin{:},gopt);
         end
       end
     end

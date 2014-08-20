@@ -6,13 +6,13 @@ function root = getDrakePath()
 % @retval root path to the root of Drake
 
 
-persistent conf;
+persistent myroot;
 
-if (isempty(conf))
-  try
-    load drake_config;
-  catch
-    error('You must run configure once in the main drake directory');
+if (isempty(myroot))
+  known_file = which('LinearSystem');
+  if isempty(known_file)
+    error('Can''t find drake root.  Did you call addpath_drake?');
   end
+  myroot = fileparts(fileparts(known_file));
 end
-root = conf.root;
+root = myroot;

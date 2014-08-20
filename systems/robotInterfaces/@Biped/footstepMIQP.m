@@ -48,7 +48,8 @@ for j = 1:nsteps
     end
   else
     p0 = seed_steps(:,mod(j-1, 2)+1);
-    x0(x_ndx(:,j)) = p0([1,2,3,6]);
+    x0(x_ndx(1:3,j)) = p0(1:3);
+    x0(x_ndx(4,j)) = seed_steps(6,2);
     R{j} = [rotmat(-p0(6)), zeros(2,2);
      zeros(2,2), eye(2)];
   end
@@ -65,12 +66,8 @@ end
 % Set the initial seed for the t_i, which indicate that step i is fixed to
 % take the same pose as the final step (and thus can be trimmed off later)
 for j = 1:nsteps-2
-  if mod(nsteps-j, 2)
-    last_step = nsteps-1;
-  else
-    last_step = nsteps;
-  end
-  if all(seed_steps(:,j) == seed_steps(:,last_step))
+
+  if all(seed_steps(:,j) == seed_steps(:,j+2))
     x0(t_ndx(j)) = true;
   else
     x0(t_ndx(j)) = false;
@@ -79,13 +76,13 @@ end
 x0(t_ndx(end-1:end)) = true;
 
 % nom_step = [seed_plan.params.nom_forward_step; seed_plan.params.nom_step_width; 0; 0]
-nom_step = [0; seed_plan.params.nom_step_width; 0; 0];
-w_trim = weights.relative(1) * seed_plan.params.nom_forward_step^2;
+nom_step = [seed_plan.params.nom_forward_step; seed_plan.params.nom_step_width; 0; 0];
 
 A = [];
 b = [];
 Aeq = [];
 beq = [];
+objcon = 0;
 Q = zeros(nvar, nvar);
 c = zeros(nvar, 1);
 lb = -inf(nvar, 1);
@@ -105,23 +102,20 @@ end
 
 % Require that t(j) <= t(j+1)
 At = zeros(nsteps-1, nvar);
-At(:,t_ndx(1:end-1)) = diag(ones(nsteps-1, 1));
-At(:,t_ndx(2:end)) = At(:,t_ndx(2:end)) + diag(-ones(nsteps-1, 1));
+At(:,t_ndx(1:end-1)) = eye(nsteps-1);
+At(:,t_ndx(2:end)) = At(:,t_ndx(2:end)) + -eye(nsteps-1);
 bt = zeros(size(At, 1), 1);
 A = [A; At];
 b = [b; bt];
 
-% If t(j) is true, then require that step(i) == step(end) or step(end-1) as
-% appropriate.
-M = 100;
+
+w_trim = 1.1 * weights.relative(1) * seed_plan.params.nom_forward_step^2;
+% If t(j) is true, then require that step(i) == step(i+2) 
+M = 10;
 for j = 3:nsteps-2
   Ati = zeros(3, nvar);
-  Ati(:,x_ndx(1:3,j)) = diag(ones(3, 1));
-  if mod(nsteps - j, 2)
-    Ati(:,x_ndx(1:3,end-1)) = diag(-ones(3,1));
-  else
-    Ati(:,x_ndx(1:3,end)) = diag(-ones(3,1));
-  end
+  Ati(:,x_ndx(1:3,j)) = eye(3);
+  Ati(:,x_ndx(1:3,j+2)) = -eye(3);
   Ati = [Ati; -Ati];
 
   Ati(:,t_ndx(j)) = M;
@@ -135,14 +129,15 @@ for j = 3:nsteps
 end
 
 w_goal = diag(weights.goal([1,2,3,6]));
-if seed_plan.footsteps(end).frame_id == biped.foot_frame_id.right
-  xg = reshape(goal_pos.right([1,2,3,6]), [], 1);
-else
-  xg = reshape(goal_pos.left([1,2,3,6]), [], 1);
-end
-for j = nsteps:nsteps
+for j = nsteps-1:nsteps
+  if seed_plan.footsteps(j).frame_id == biped.foot_frame_id.right
+    xg = reshape(goal_pos.right([1,2,3,6]), [], 1);
+  else
+    xg = reshape(goal_pos.left([1,2,3,6]), [], 1);
+  end
   Q(x_ndx(:,j), x_ndx(:,j)) = w_goal;
   c(x_ndx(:,j)) = -2 * xg' * w_goal;
+  objcon = objcon + xg' * w_goal * xg;
 end
 
 w_rel = diag(weights.relative([1,2,3,6]));
@@ -163,6 +158,7 @@ for j = 3:nsteps
   end
   c(x_ndx(:,j)) = c(x_ndx(:,j)) - (2 * nom' * w_rel * R{j})';
   c(x_ndx(:,j-1)) = c(x_ndx(:,j-1)) + (2 * nom' * w_rel * R{j})';
+  objcon = objcon + nom' * R{j} * w_rel * R{j} * nom;
 end
 
 for j = 3:nsteps
@@ -206,8 +202,8 @@ step2 = seed_plan.footsteps(2).pos;
 lb(x_ndx(:,1)) = step1([1,2,3,6]);
 lb(x_ndx(:,2)) = step2([1,2,3,6]);
 ub(x_ndx(:,1:2)) = lb(x_ndx(:,1:2));
-lb(x_ndx(4,:)) = x0(x_ndx(4,:)) - 0.05;
-ub(x_ndx(4,:)) = x0(x_ndx(4,:)) + 0.05;
+lb(x_ndx(4,3:end)) = x0(x_ndx(4,3:end)) - 0.01;
+ub(x_ndx(4,3:end)) = x0(x_ndx(4,3:end)) + 0.01;
 lb(s_ndx(:,1:2)) = [1, 1; zeros(nr-1, 2)];
 ub(s_ndx(:,1:2)) = lb(s_ndx(:,1:2));
 ub(t_ndx(1:2)) = 0;
@@ -225,9 +221,10 @@ model.ub = ub;
 model.vtype = [repmat('C', nx, 1); repmat('B', ns, 1); repmat('B', nt, 1)];
 model.Q = sparse(Q);
 model.start = x0;
+model.objcon = objcon;
 params = struct();
 params.timelimit = 5;
-params.mipgap = 1e-3;
+params.mipgap = 1e-4;
 if DEBUG
   params.outputflag = 1;
 else

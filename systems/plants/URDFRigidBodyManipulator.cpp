@@ -208,6 +208,7 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
   joint_map.push_back(jointname_to_jointnum);
   dof_map.push_back(dofname_to_dofnum);
   urdf_model.push_back(_urdf_model);
+  bool print_mesh_package_warning(true);
   
   int robotnum = static_cast<int>(this->robot_name.size())-1;
   for (map<string, boost::shared_ptr<urdf::Link> >::iterator l=_urdf_model->links_.begin(); l!=_urdf_model->links_.end(); l++) {
@@ -339,6 +340,7 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
         vector<boost::shared_ptr<urdf::Collision> > *collisions = c_grp_it->second.get();
         for (vector<boost::shared_ptr<urdf::Collision> >::iterator citer = collisions->begin(); citer!=collisions->end(); citer++)
         {
+          bool create_collision_element(true);
           urdf::Collision * cptr = citer->get();
           if (!cptr) continue;
 
@@ -377,8 +379,21 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
           	{
               boost::shared_ptr<urdf::Mesh> mesh(boost::dynamic_pointer_cast<urdf::Mesh>(cptr->geometry));
               boost::filesystem::path mesh_filename(root_dir);
-              mesh_filename /= mesh->filename;
-              readObjFile(mesh_filename,params);
+              boost::regex package(".*package://.*");
+              if (!boost::regex_match(mesh->filename, package)) {
+                mesh_filename /= mesh->filename;
+                readObjFile(mesh_filename,params);
+              } else {
+                create_collision_element = false;
+                if (print_mesh_package_warning) {
+                  cerr << "Warning: The robot '" << _urdf_model->getName()
+                       << "' contains collision geometries that specify mesh "
+                       << "files with the 'package://' syntax, which "
+                       << "URDFRigidBodyManipulator does not support. These "
+                       << "collision geometries will be ignored." << endl;
+                  print_mesh_package_warning = false;
+                }
+              }
               shape = DrakeCollision::Shape::MESH;
           	}
         		break;
@@ -386,7 +401,9 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
         		cerr << "Link " << l->first << " has a collision element with an unknown type " << type << endl;
         		break;
           }
-          addCollisionElement(index,T,shape,params);
+          if (create_collision_element){
+            addCollisionElement(index,T,shape,params);
+          }
         }
       }
       if (bodies[index].parent<0) {

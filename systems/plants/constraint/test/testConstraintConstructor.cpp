@@ -8,10 +8,11 @@ using namespace std;
 
 int main()
 {
-  URDFRigidBodyManipulator* model = loadURDFfromFile("../../examples/Atlas/urdf/atlas_minimal_contact.urdf");
+  URDFRigidBodyManipulator* model = loadURDFfromFile("../../../../examples/Atlas/urdf/atlas_minimal_contact.urdf");
   if(!model)
   {
     cerr << "ERROR: Failed to load model"<<endl;
+    return -1;
   }
   Vector2d tspan;
   tspan<< 0,1;

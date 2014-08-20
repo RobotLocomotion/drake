@@ -5,9 +5,12 @@
  *      Author: russt
  */
 
-#include <mex.h>
+#include "drakeUtil.h"
 #include <string.h>
 #include <string>
+#include <math.h>
+#include <limits>
+#include <Eigen/Dense>
 
 using namespace std;
 
@@ -19,7 +22,7 @@ bool isa(const mxArray* mxa, const char* class_str)
   prhs[0] = const_cast<mxArray*>(mxa);
   prhs[1] = mxCreateString(class_str);
   mexCallMATLAB(1,&plhs,2,prhs,"isa");
-  bool tf = (mxGetScalar(plhs)==0.0);
+  bool tf = *mxGetLogicals(plhs);
   mxDestroyArray(plhs);
   mxDestroyArray(prhs[1]);
   return tf;
@@ -56,26 +59,36 @@ bool mexCallMATLABsafe(int nlhs, mxArray* plhs[], int nrhs, mxArray* prhs[], con
 
 
 
-mxArray* createDrakeMexPointer(void* ptr, const char* deleteMethod, const char* name)
+mxArray* createDrakeMexPointer(void* ptr, const char* name, int num_additional_inputs, mxArray* delete_fcn_additional_inputs[])
 {
 	mxClassID cid;
 	if (sizeof(ptr)==4) cid = mxUINT32_CLASS;
 	else if (sizeof(ptr)==8) cid = mxUINT64_CLASS;
   else mexErrMsgIdAndTxt("Drake:constructDrakeMexPointer:PointerSize","Are you on a 32-bit machine or 64-bit machine??");
 
-	const int nrhs=3;
-	mxArray *prhs[nrhs], *plhs[1];
+	int nrhs=3+num_additional_inputs;
+	mxArray *plhs[1];
+  mxArray **prhs;  prhs = new mxArray*[nrhs];
 
 	prhs[0] = mxCreateNumericMatrix(1,1,cid,mxREAL);
   memcpy(mxGetData(prhs[0]),&ptr,sizeof(ptr));
 
-	prhs[1] = mxCreateString(deleteMethod);
+	prhs[1] = mxCreateString(mexFunctionName());
 
   prhs[2] = mxCreateString(name);
 
+  for (int i=0; i<num_additional_inputs; i++)
+    prhs[3+i] = delete_fcn_additional_inputs[i];
+
+//  mexPrintf("deleteMethod = %s\n name =%s\n", deleteMethod,name);
+
   // call matlab to construct mex pointer object
   mexCallMATLABsafe(1,plhs,nrhs,prhs,"DrakeMexPointer");
+  mexLock();
 
+//  mexPrintf("incrementing lock count\n");
+
+  delete[] prhs;
   return plhs[0];
 }
 
@@ -96,3 +109,47 @@ void* getDrakeMexPointer(const mxArray* mx)
   return ptr;
 }
 
+double angleAverage(double theta1, double theta2) {
+  // Computes the average between two angles by averaging points on the unit
+  // circle and taking the arctan of the result.
+  //   see: http://en.wikipedia.org/wiki/Mean_of_circular_quantities
+  // theta1 is a scalar or column vector of angles (rad)
+  // theta2 is a scalar or column vector of angles (rad)
+
+  double x_mean = 0.5*(cos(theta1)+cos(theta2));
+  double y_mean = 0.5*(sin(theta1)+sin(theta2));
+
+  double angle_mean = atan2(y_mean,x_mean);
+
+  return angle_mean;
+}
+
+std::pair<Eigen::Vector3d, double> resolveCenterOfPressure(Eigen::Vector3d torque, Eigen::Vector3d force, Eigen::Vector3d normal, Eigen::Vector3d point_on_contact_plane)
+{
+  // TODO: implement multi-column version
+  using namespace Eigen;
+
+  if (abs(normal.squaredNorm() - 1.0) > 1e-12) {
+    mexErrMsgIdAndTxt("Drake:resolveCenterOfPressure:BadInputs", "normal should be a unit vector");
+  }
+
+  Vector3d cop;
+  double normal_torque_at_cop;
+
+  double fz = normal.dot(force);
+  bool cop_exists = abs(fz) > 1e-12;
+
+  if (cop_exists) {
+    auto torque_at_point_on_contact_plane = torque - point_on_contact_plane.cross(force);
+    double normal_torque_at_point_on_contact_plane = normal.dot(torque_at_point_on_contact_plane);
+    auto tangential_torque = torque_at_point_on_contact_plane - normal * normal_torque_at_point_on_contact_plane;
+    cop = normal.cross(tangential_torque) / fz + point_on_contact_plane;
+    auto torque_at_cop = torque - cop.cross(force);
+    normal_torque_at_cop = normal.dot(torque_at_cop);
+  }
+  else {
+    cop.setConstant(std::numeric_limits<double>::quiet_NaN());
+    normal_torque_at_cop = std::numeric_limits<double>::quiet_NaN();
+  }
+  return std::pair<Vector3d, double>(cop, normal_torque_at_cop);
+}
