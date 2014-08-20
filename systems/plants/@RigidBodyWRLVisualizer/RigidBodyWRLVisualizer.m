@@ -8,6 +8,11 @@ classdef RigidBodyWRLVisualizer < RigidBodyVisualizer
       checkDependency('vrml');
       typecheck(manip,'RigidBodyManipulator');
 
+      global g_disable_visualizers;
+      if g_disable_visualizers % evaluates to false if empty
+        error('Drake:MissingDependency:WRLVisualizerDisabled','visualizer is disabled with g_disable_visualizers');
+      end
+
       if ~usejava('awt') % usejava('awt') returns 0 if i'm running without a display
         error('Drake:MissingDependency:awt','VRML visualizer will not work without a display');
       end
@@ -37,6 +42,20 @@ classdef RigidBodyWRLVisualizer < RigidBodyVisualizer
       delete(obj.wrl);
     end
     
+    function viewpoint_struct = getViewpoint(obj)
+      fig = get(obj.wrl,'Figures'); 
+      viewpoint_struct.Viewpoint = get(fig,'Viewpoint');
+      viewpoint_struct.CameraDirection = get(fig,'CameraDirection');
+      viewpoint_struct.CameraPosition = get(fig,'CameraPosition');
+      viewpoint_struct.CameraUpVector = get(fig,'CameraUpVector');
+      viewpoint_struct.ZoomFactor = get(fig,'ZoomFactor');
+    end
+    
+    function setViewpoint(obj,viewpoint_struct)
+      fig = get(obj.wrl,'Figures'); 
+      set(fig,viewpoint_struct);
+    end
+        
     function drawWrapper(obj,t,x)
       draw(obj,t,x);
     end

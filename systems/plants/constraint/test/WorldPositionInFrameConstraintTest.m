@@ -1,7 +1,11 @@
 function WorldPositionInFrameConstraintTest(varargin)
   w = warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
   warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
+  warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
   warning('off','Drake:RigidBodyManipulator:BodyHasZeroInertia');
+  warning('off','Drake:RigidBodyManipulator:ReplacedCylinder');
+  warning('off','Drake:RigidBodyManipulator:WeldedLinkInd');
+  warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
   r = RigidBodyManipulator(fullfile(getDrakePath(),'examples','PR2','pr2.urdf'));
   warning(w);
   q_nom = zeros(r.getNumDOF(),1);

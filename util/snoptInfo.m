@@ -40,6 +40,8 @@ switch (info)
     str='nonlinear infeasibilities minimized';
   case 14
     str='infeasibilities minimized';
+  case 15
+    str='infeasible linear constraints in QP';
   case 21
     str='unbounded objective';
   case 22
@@ -88,5 +90,7 @@ switch (info)
     str='wrong number of basic variables';
   case 142
     str='error in basis package';
+  otherwise
+    str='some other error';
 end
 

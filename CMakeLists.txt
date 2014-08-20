@@ -141,12 +141,16 @@ find_program(ffmpeg ffmpeg)
 
 
 # write some additional information to the CMake cache
-set(lcm_java_classpath "${lcm-java_CLASSPATH}" CACHE FILEPATH "${lcm-java_CLASSPATH}" )
+set(lcm_java_classpath "${lcm-java_CLASSPATH}" CACHE FILEPATH "${lcm-java_CLASSPATH}" FORCE)
 
 if (APPLE)
-  set(DYLD_LIBRARY_PATH "$ENV{DYLD_LIBRARY_PATH}" CACHE STRING "$ENV{DYLD_LIBRARY_PATH}" )
+  set(DYLD_LIBRARY_PATH "$ENV{DYLD_LIBRARY_PATH}" CACHE STRING "Environment variable used to launch processes from Matlab")
+  set(DYLD_FRAMEWORK_PATH "$ENV{DYLD_FRAMEWORK_PATH}" CACHE STRING "Environment variable used to launch processes from Matlab")
+  mark_as_advanced(DYLD_LIBRARY_PATH)
+  mark_as_advanced(DYLD_FRAMEWORK_PATH)
 else()
-  set(LD_LIBRARY_PATH "$ENV{LD_LIBRARY_PATH}" CACHE STRING "$ENV{LD_LIBRARY_PATH}" )
+  set(LD_LIBRARY_PATH "$ENV{LD_LIBRARY_PATH}" CACHE STRING "Environment variable used to launch processes from Matlab")
+  mark_as_advanced(LD_LIBRARY_PATH)
 endif()
 
 add_test(NAME "RigidBodyManipulatorMemoryTest"

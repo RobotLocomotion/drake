@@ -23,35 +23,35 @@ shouldBeEqual(diff(sin(x),x),diag(cos(x)))
 shouldBeEqual(diff(cos(x),x),diag(-sin(x)))
 shouldBeEqual(diff(sin(x).^2+cos(x).^2,x),msspoly(zeros(2)))
 
-load drake_config;
+root = getDrakePath();
 
-try 
-  oldpath = addpath([conf.root,'/examples/Pendulum']);
+try
+  oldpath = addpath([root,'/examples/Pendulum']);
 
   p = PendulumPlant();
   tp=extractTrigPolySystem(p,struct('replace_output_w_new_state',true));
   checkDynamics(p,tp);
-  
+
   path(oldpath);
-  oldpath = addpath([conf.root,'/examples/Acrobot']);
+  oldpath = addpath([root,'/examples/Acrobot']);
 
   p=AcrobotPlant();
   tp=extractTrigPolySystem(p,struct('replace_output_w_new_state',true));
   checkDynamics(p,tp);
-  
+
   path(oldpath);
-  oldpath = addpath([conf.root,'/examples']);
-  
+  oldpath = addpath([root,'/examples']);
+
   p=VanDerPol();
   pp=extractTrigPolySystem(p);
   [prhs,plhs]=getPolyDynamics(p);
   [pprhs,pplhs]=getPolyDynamics(pp);
   shouldBeEqual(prhs,pprhs);
   shouldBeEqual(plhs,pplhs);
-  
+
 %  p=SineSys();
 %  pp=p.stereographicProjection()
-  
+
 catch ex
   path(oldpath);
   rethrow(ex);
@@ -63,7 +63,7 @@ end
 
 function shouldFail(str)
 
-try 
+try
   eval(str)
 catch ex
   return
@@ -79,7 +79,7 @@ function shouldBeEqual(p1,p2)
     % that's ok, too
     return;
   end
-  
+
   if isempty(p1) || isempty(p2) || any(~isequal(clean(p1,1e-12),clean(p2,1e-12)))
     p1
     p2
@@ -90,7 +90,7 @@ end
 
 function checkDynamics(p,tp)
   for i=1:20
-    t=rand; 
+    t=rand;
     x=Point(p.getStateFrame,randn(p.getNumStates,1));
     u=randn;
     xdotp = p.dynamics(t,double(x),u);

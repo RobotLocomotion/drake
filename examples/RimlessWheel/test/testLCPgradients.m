@@ -25,7 +25,7 @@ options.input_name={'t','q1','q2','q3','qd1','qd2','qd3'};
 options.output_name={'qn1','qn2','qn3','qdn1','qdn2','qdn3'};
 options.output=false;
 options.scale = .001;
-gradTest(p,0,x0,[],options);
+systemGradTest(p,0,x0,[],options);
 
 
 end

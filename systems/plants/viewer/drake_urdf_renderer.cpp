@@ -55,19 +55,29 @@ public:
   double radius, length;
 
   virtual void draw(void) {
-    // transform to center of cylinder
-    glTranslatef(0.0,0.0,-length/2.0);
-    
     GLUquadricObj* quadric = gluNewQuadric();
     gluQuadricDrawStyle(quadric, GLU_FILL);
     gluQuadricNormals(quadric, GLU_SMOOTH);
     gluQuadricOrientation(quadric, GLU_OUTSIDE);
+
+    // transform from center of cylinder
+    glTranslatef(0.0,0.0,-length/2.0);
+    
+    // first end cap
+    gluDisk(quadric, 0.0, radius, 24, 1);
+
+    // draw the cylinder
     gluCylinder(quadric,
 		radius,
 		radius,
 		length,
 		36,
 		1);
+    
+    // second end cap
+    glTranslatef(0.0,0.0,length);
+    gluDisk(quadric, 0.0, radius, 24, 1);
+    
     gluDeleteQuadric(quadric);
   }
 
