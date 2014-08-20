@@ -2,8 +2,9 @@ classdef Manipulator < DrakeSystem
 % An abstract class that wraps H(q)vdot + C(q,v,f_ext) = B(q)u.
 
   methods
-    function obj = Manipulator(num_q, num_v, num_u)
-      % Constructor
+    function obj = Manipulator(num_q, num_u, num_v)
+      if nargin<3, num_v = num_q; end
+      
       obj = obj@DrakeSystem(num_q+num_v,0,num_u,num_q+num_v,false,true);
       obj.num_positions = num_q;
       obj.num_velocities = num_v;
@@ -17,14 +18,13 @@ classdef Manipulator < DrakeSystem
     [H,C,B] = manipulatorDynamics(obj,q,v);
   end
 
-  methods (Sealed = true)
-    % list this as Sealed to overcome the multiple inheritance diamond
-    % problem: http://www.mathworks.com/help/matlab/matlab_oop/subclassing-multiple-classes.html
-    [phat,estimated_delay] = parameterEstimation(obj,data,options)
-      
-    function [xdot,dxdot] = dynamics(obj,t,q,v,u)
+  methods 
+    function [xdot,dxdot] = dynamics(obj,t,x,u)
     % Provides the DrakeSystem interface to the manipulatorDynamics.
 
+      q = x(1:obj.num_positions);
+      v = x(obj.num_positions+1:end);
+    
       if (nargout>1)
         if (obj.num_xcon>0)
           % by naming this 'MATLAB:TooManyOutputs', geval will catch the
@@ -36,33 +36,62 @@ classdef Manipulator < DrakeSystem
         % If it fails, then it will raise the same exception that I would
         % want to raise for this method, stating that not all outputs were
         % assigned.  (since I can't write dxdot anymore)
-        [H,C,B,dH,dC,dB] = obj.manipulatorDynamics(q,qd);
+        [H,C,B,dH,dC,dB] = obj.manipulatorDynamics(q,v);
         Hinv = inv(H);
         
         if (obj.num_u>0) 
-          qdd = Hinv*(B*u-C); 
+          vdot = Hinv*(B*u-C); 
           dtau = matGradMult(dB,u) - dC;
-          dqdd = [zeros(obj.num_q,1),...
-            -Hinv*matGradMult(dH(:,1:obj.num_q),qdd) + Hinv*dtau(:,1:obj.num_q),...
-            +Hinv*dtau(:,1+obj.num_q:end), Hinv*B];
+          dvdot = [zeros(obj.num_positions,1),...
+            -Hinv*matGradMult(dH(:,1:obj.num_positions),vdot) + Hinv*dtau(:,1:obj.num_positions),...
+            +Hinv*dtau(:,1+obj.num_positions:end), Hinv*B];
         else
-          qdd = Hinv*(-C);
-          dqdd = [zeros(obj.num_q,1),...
-            -Hinv*matGradMult(dH(:,1:obj.num_q),qdd) - Hinv*dC(:,1:obj.num_q),...
-            -Hinv*dC(:,1+obj.num_q:end)];
+          vdot = -Hinv*C; 
+          dvdot = [zeros(obj.num_velocities,1),...
+            Hinv*(-matGradMult(dH(:,1:obj.num_positions),vdot) - dC(:,1:obj.num_positions)),...
+            Hinv*(-dC(:,obj.num_positions+1:end))];
         end
+        
+        [VqInv,dVqInv] = vToqdot(obj,q);
+        xdot = [VqInv*v;vdot];
+        dxdot = [...
+          zeros(obj.num_positions,1), matGradMult(dVqInv, v), VqInv, zeros(obj.num_positions,obj.num_u);
+          dvdot];
       else
-        [H,C,B] = manipulatorDynamics(obj,q,qd);
+        [H,C,B] = manipulatorDynamics(obj,q,v);
         Hinv = inv(H);
         if (obj.num_u>0) tau=B*u - C; else tau=-C; end
-        tau = tau + computeConstraintForce(obj,q,qd,H,tau,Hinv);
+        tau = tau + computeConstraintForce(obj,q,v,H,tau,Hinv);
       
-        qdd = Hinv*tau;
+        vdot = Hinv*tau;
         % note that I used to do this (instead of calling inv(H)):
-        %   qdd = H\tau
+        %   vdot = H\tau
         % but I already have and use Hinv, so use it again here
+        
+        xdot = [vToqdot(obj,q)*v; vdot];
       end      
       
+    end
+        
+    function [Vq,dVq] = qdotTov(obj, q)
+      % defines the linear map v = Vq * qdot
+      % default relationship is that v = qdot
+      assert(obj.num_positions==obj.num_velocities);
+      Vq = eye(length(q));
+      dVq = zeros(numel(Vq), obj.num_positions);
+    end
+    
+    function [VqInv,dVqInv] = vToqdot(obj, q)
+      % defines the linear map qdot = Vqinv * v
+      % default relationship is that v = qdot
+      assert(obj.num_positions==obj.num_velocities);
+      VqInv = eye(length(q));
+      dVqInv = zeros(numel(VqInv), obj.num_positions);
+    end
+    
+    function y = output(obj,t,x,u)
+      % default output is the full state
+      y = x;
     end
     
   end
@@ -76,6 +105,7 @@ classdef Manipulator < DrakeSystem
       beta = 0;    % 1/time constant of velocity constraint satisfaction
     
       phi=[]; psi=[];
+      qd = vToqdot(obj, q) * v;
       if (obj.num_position_constraints>0 && obj.num_velocity_constraints>0)
         [phi,J,dJ] = geval(@obj.positionConstraints,q);
         Jdotqd = dJ*reshape(qd*qd',obj.num_q^2,1);
@@ -179,7 +209,8 @@ classdef Manipulator < DrakeSystem
       % method.  note that each position constraint (phi=0) also imposes an implicit
       % velocity constraint on the system (phidot=0).
 
-      q=x(1:obj.num_q); qd=x(obj.num_q+1:end);
+      q=x(1:obj.num_q); v=x(obj.num_q+1:end);
+      qd = vToqdot(obj, q) * v;
       if (obj.num_position_constraints>0)
         if (nargout>1)
           [phi,J,dJ] = geval(@obj.positionConstraints,q);
@@ -214,10 +245,10 @@ classdef Manipulator < DrakeSystem
       % constraint function (with derivatives) to implement unilateral
       % constraints imposed by joint limits
       phi = [q-obj.joint_limit_min; obj.joint_limit_max-q]; phi=phi(~isinf(phi));
-      J = [eye(obj.num_q); -eye(obj.num_q)];  
+      J = [eye(obj.num_positions); -eye(obj.num_positions)];  
       J([obj.joint_limit_min==-inf;obj.joint_limit_max==inf],:)=[]; 
       if (nargout>2)
-        dJ = sparse(length(phi),obj.num_q^2);
+        dJ = sparse(length(phi),obj.num_positions^2);
       end
     end
     
@@ -272,21 +303,21 @@ classdef Manipulator < DrakeSystem
       if (obj.num_xcon>0) error('not implemented yet.  may not be possible.'); end
       
       function rhs = dynamics_rhs(obj,t,x,u)
-        q=x(1:obj.num_q); qd=x((obj.num_q+1):end);
-        [H,C,B] = manipulatorDynamics(obj,q,qd);
-        if (obj.num_u>0) tau=B*u; else tau=zeros(obj.num_q,1); end
-        rhs = [qd;tau - C];
+        q=x(1:obj.num_positions); v=x((obj.num_positions+1):end);
+        [~,C,B] = manipulatorDynamics(obj,q,v);
+        if (obj.num_u>0) tau=B*u; else tau=zeros(obj.num_u,1); end
+        rhs = [vToqdot(obj,q)*v;tau - C];
       end
       function lhs = dynamics_lhs(obj,x)
-        q=x(1:obj.num_q); qd=x((obj.num_q+1):end);
-        H = manipulatorDynamics(obj,q,qd);  % just get H
-        lhs = blkdiag(eye(obj.num_q),H);
+        q=x(1:obj.num_positions); v=x((obj.num_positions+1):end);
+        H = manipulatorDynamics(obj,q,v);  % just get H
+        lhs = blkdiag(eye(obj.num_positions),H);
       end        
       
       options.rational_dynamics_numerator=@(t,x,u)dynamics_rhs(obj,t,x,u);
       options.rational_dynamics_denominator=@(x)dynamics_lhs(obj,x);
       
-      polysys = extractTrigPolySystem@SecondOrderSystem(obj,options);
+      polysys = extractTrigPolySystem@DrakeSystem(obj,options);
     end
 
     function varargout = pdcontrol(sys,Kp,Kd,index)
