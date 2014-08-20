@@ -8,6 +8,7 @@ classdef RigidBodyWing < RigidBodyForceElement
   properties
     
     subwings;
+    control_surfaces;
     
   end
   
@@ -22,7 +23,7 @@ classdef RigidBodyWing < RigidBodyForceElement
       
         thisWing = RigidBodySubWing(frame_id, profile, chord, span, stallAngle, velocity);
       
-        obj.subwings(end) = thisWing;
+        obj.subwings = [ obj.subwings  thisWing ];
         
       else
         % with no arguments, this is probably the URDF constructor
@@ -84,24 +85,81 @@ classdef RigidBodyWing < RigidBodyForceElement
       % search for control surfaces
       control_surface_nodes = node.getElementsByTagName('control_surface');
       
+      obj = RigidBodyWing();
+      
+      profile = char(node.getAttribute('profile'));
+      chord = parseParamString(model,robotnum,char(node.getAttribute('chord')));
+      span = parseParamString(model,robotnum,char(node.getAttribute('span')));
+      stall_angle = parseParamString(model,robotnum,char(node.getAttribute('stall_angle')));
+      nominal_speed = parseParamString(model,robotnum,char(node.getAttribute('nominal_speed')));
+      
       if isempty(control_surface_nodes.item(0))
+        % no control surfaces
         
-        profile = char(node.getAttribute('profile'));
-        chord = parseParamString(model,robotnum,char(node.getAttribute('chord')));
-        span = parseParamString(model,robotnum,char(node.getAttribute('span')));
-        stall_angle = parseParamString(model,robotnum,char(node.getAttribute('stall_angle')));
-        nominal_speed = parseParamString(model,robotnum,char(node.getAttribute('nominal_speed')));
-
         this_subwing = RigidBodySubWing(frame_id, profile, chord, span, stall_angle, nominal_speed);
-        obj = RigidBodyWing();
+        
         obj.subwings = [obj.subwings this_subwing ];
         
       else
         % deal with control surfaces
         
-        % TODO
+        % load control surface data
+        count = 0;
+
+        this_surface = control_surface_nodes.item(count);
+        while ~isempty(this_surface)
         
-        obj = RigidBodyWing();
+          
+          surface_name = char(this_surface.getAttribute('name'));
+          surface_chord = parseParamString(model,robotnum,char(this_surface.getAttribute('chord')));
+          surface_span = parseParamString(model,robotnum,char(this_surface.getAttribute('span')));
+          surface_left_edge_position_along_wing = parseParamString(model,robotnum,char(this_surface.getAttribute('left_edge_position_along_wing')));
+          
+          assert(surface_span > 0, ['Span must be > 0 on control surface "' surface_name '"']);
+          assert(surface_chord > 0, ['Chord must be > 0 on control surface "' surface_name '"']);
+          assert(surface_left_edge_position_along_wing >= 0, ['Left edge position must be >= 0 on control surface "' surface_name '"']);
+          
+          assert(surface_span + surface_left_edge_position_along_wing <= span, ['Control surface runs off the right end of the wing on surface "' surface_name '"']);
+          
+          for other_surface = obj.control_surfaces
+            if strcmp(other_surface.name, surface_name)
+              error(['Duplicate control surface name "' surface_name '"']);
+            end
+          end
+          
+          obj.control_surfaces = [ obj.control_surfaces ControlSurface(surface_name, surface_chord, surface_span, surface_left_edge_position_along_wing) ];
+          
+          
+          
+          count = count + 1;
+          this_surface = control_surface_nodes.item(count);
+          
+        end
+        
+        % now we split the wing up into multiple segments that either
+        % contain one of the control surfaces or don't
+        
+        % do some sanity checks to make sure that the control surfaces do
+        % not overlap
+        for surface = obj.control_surfaces
+          for surface2 = obj.control_surfaces
+            
+            if ~strcmp(surface.name, surface2.name)
+              
+              left1 = surface.left_edge_position_along_wing;
+              right1 = left1 + surface.span;
+              
+              left2 = surface2.left_edge_position_along_wing;
+              
+              if (left1 < left2 && right1 > left2)
+                error(['Control surfaces "' surface.name '" and "' surface2.name '" overlap.']);
+              end
+              
+            end
+          end
+        end
+              
+        
         
       end
     end
