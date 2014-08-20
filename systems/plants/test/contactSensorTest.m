@@ -1,4 +1,5 @@
 function contactSensorTest
+rng(0)
 S = warning('OFF','Drake:RigidBodyManipulator:WeldedLinkInd');
 options.floating = true;
 options.twoD = true;
@@ -18,9 +19,9 @@ T = 2;
 % should find initial conditions for the brick which are resting on the
 % ground. 
 yf = Point(p.getOutputFrame,eval(ytraj,T));
-valuecheck(yf.force_x,0,1e-6);
-valuecheck(yf.force_z,getMass(p)*norm(getGravity(p)),1e-6);
-valuecheck(yf.torque,0,1e-6);
+valuecheck(yf.force_x,0,1e-5);
+valuecheck(yf.force_z,getMass(p)*norm(getGravity(p)),1e-5);
+valuecheck(yf.torque,0,1e-5);
 
 %v = p.constructVisualizer();
 %v.playback(ytraj);
