@@ -2265,6 +2265,11 @@ classdef RigidBodyManipulator < Manipulator
         [model,fe] = RigidBodyWing.parseURDFNode(model,robotnum,elnode,options);
       end
       
+      elnode = node.getElementsByTagName('control_surface').item(0);
+      if ~isempty(elnode)
+        [model,fe] = RigidBodyControlSurface.parseURDFNode(model,robotnum,elnode,options);
+      end
+      
       elnode = node.getElementsByTagName('thrust').item(0);
       if ~isempty(elnode)
         [model,fe] = RigidBodyThrust.parseURDFNode(model,robotnum,elnode,options);
