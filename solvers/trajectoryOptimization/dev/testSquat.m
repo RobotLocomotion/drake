@@ -59,7 +59,7 @@ FC_edge = FC_edge*robot.getMass*g;
 l_foot_contact_wrench = struct('active_knot',1:nT,'cw',LinearFrictionConeWrench(robot,l_foot,l_foot_bottom,FC_edge));
 r_foot_contact_wrench = struct('active_knot',1:nT,'cw',LinearFrictionConeWrench(robot,r_foot,r_foot_bottom,FC_edge));
 
-bky_idx = robot.getBody(robot.findJointInd('back_bky')).dofnum;
+bky_idx = robot.getBody(robot.findJointInd('back_bky')).position_num;
 
 tf_range = [1 1.5];
 q_nom = bsxfun(@times,qstar,ones(1,nT));

@@ -84,7 +84,7 @@ else
     
     
     for i = 1:m.NB
-      n = m.dofnum(i);
+      n = m.position_num(i);
       
       dvdq{i} = zeros(6,m.NB)*q(1);
       dvdqd{i} = zeros(6,m.NB)*q(1);
@@ -151,7 +151,7 @@ else
     dIC = cellfun(@(a) zeros(6), dIC,'UniformOutput',false);
     
     for i = m.NB:-1:1
-      n = m.dofnum(i);
+      n = m.position_num(i);
       C(n,1) = S{i}' * fvp{i};
       dC(n,:) = S{i}'*[dfvpdq{i} dfvpdqd{i}];
       if m.parent(i) ~= 0
@@ -176,9 +176,9 @@ else
     %Derivatives wrt q(k)
     dH = zeros(m.NB^2,2*m.NB)*q(1);
     for k = 1:m.NB
-      nk = m.dofnum(k);
+      nk = m.position_num(k);
       for i = 1:m.NB
-        n = m.dofnum(i);
+        n = m.position_num(i);
         fh = IC{i} * S{i};
         dfh = dIC{i,nk} * S{i};  %dfh/dqk
         H(n,n) = S{i}' * fh;
@@ -193,7 +193,7 @@ else
           fh = Xup{j}' * fh;
           
           j = m.parent(j);
-          np = m.dofnum(j);
+          np = m.position_num(j);
           
           H(n,np) = S{j}' * fh;
           H(np,n) = H(n,np);

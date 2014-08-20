@@ -23,7 +23,7 @@ classdef RigidBodyContactWrench
     slack_name % A cell of strings containing the name of slack variables
     slack_lb  % A num_slack x 1 vector. The lower bound of the slack variable;
     slack_ub  % A num_salck x 1 vector. The upper bound of the slack variable;
-    kinematics_chain_idx % An vector in integers. It contains the indices of the joints that are on the kinematics chain to compute the body posture
+    kinematics_chain_idx % A vector of integers. It contains the joint configuration vector (q) indices corresponding to the joints that are on the kinematics chain to compute the body posture
     complementarity_flag % A boolean flag. True if we implement the complementarity contact constraint. @default is false
   end
   
@@ -62,9 +62,9 @@ classdef RigidBodyContactWrench
       obj.slack_ub = [];
       [~,joint_path] = obj.robot.findKinematicPath(1,obj.body);
       if isa(obj.robot,'TimeSteppingRigidBodyManipulator')
-        obj.kinematics_chain_idx = vertcat(obj.robot.getManipulator().body(joint_path).dofnum)';
+        obj.kinematics_chain_idx = vertcat(obj.robot.getManipulator().body(joint_path).position_num)';
       else
-        obj.kinematics_chain_idx = vertcat(obj.robot.body(joint_path).dofnum)';
+        obj.kinematics_chain_idx = vertcat(obj.robot.body(joint_path).position_num)';
       end
       obj.complementarity_flag = false;
     end
