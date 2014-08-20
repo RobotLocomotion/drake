@@ -2,6 +2,7 @@
 #include <iostream>
 #include "drakeUtil.h"
 #include "RigidBodyManipulator.h"
+#include <stdexcept>
 
 #define INF -2147483648
 
@@ -69,9 +70,10 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.pitch.");
   double* pitch = mxGetPr(pm);
 
-  pm = mxGetField(featherstone,0,"dofnum");
-  if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.dofnum.");
+  pm = mxGetField(featherstone,0,"position_num");
+  if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.position_num.");
   double* dofnum = mxGetPr(pm);
+//  throw runtime_error("here");
 
   pm = mxGetField(featherstone,0,"damping");
   if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.damping.");
@@ -134,7 +136,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     pm = mxGetProperty(pBodies,i,"com");
     if (!mxIsEmpty(pm)) memcpy(model->bodies[i].com.data(),mxGetPr(pm),sizeof(double)*3);
 
-    pm = mxGetProperty(pBodies,i,"dofnum");
+    pm = mxGetProperty(pBodies,i,"position_num");
     model->bodies[i].dofnum = (int) mxGetScalar(pm) - 1;  //zero-indexed
 
     pm = mxGetProperty(pBodies,i,"floating");

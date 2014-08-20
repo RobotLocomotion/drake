@@ -573,7 +573,7 @@ classdef RigidBodyManipulator < Manipulator
       end
             
       %% extract featherstone model structure
-      [model,num_dof] = extractFeatherstone(model);
+      model = extractFeatherstone(model);
       % set position and velocity vector indices
       num_q=0;num_v=0;
       for i=1:length(model.body)
@@ -1705,7 +1705,7 @@ classdef RigidBodyManipulator < Manipulator
       fr = MultiCoordinateFrame.constructFrame(fr,frame_dims,true);
     end
         
-    function [model,dof] = extractFeatherstone(model)
+    function model = extractFeatherstone(model)
       % @ingroup Kinematic Tree
       
       %      m=struct('NB',{},'parent',{},'jcode',{},'Xtree',{},'I',{});
@@ -1713,20 +1713,20 @@ classdef RigidBodyManipulator < Manipulator
       for i=1:length(model.body)
         if model.body(i).parent>0
           if (model.body(i).floating==1)
-            model.body(i).dofnum=dof+(1:6)';
+            model.body(i).position_num=dof+(1:6)';
             dof=dof+6;
             inds = [inds,i];
           elseif (model.body(i).floating==2)
-            model.body(i).dofnum=dof+(1:7)';
+            model.body(i).position_num=dof+(1:7)';
             dof=dof+7;
             inds = [inds,i];
           else
             dof=dof+1;
-            model.body(i).dofnum=dof;
+            model.body(i).position_num=dof;
             inds = [inds,i];
           end
         else
-          model.body(i).dofnum=0;
+          model.body(i).position_num=0;
         end
       end
       m.NB= dof;  
@@ -1736,17 +1736,17 @@ classdef RigidBodyManipulator < Manipulator
 
       for i=1:length(inds) % number of links with parents
         b=model.body(inds(i));
-        if (b.floating==1)   % implement relative ypr, but with dofnums as rpy
+        if (b.floating==1)   % implement relative ypr, but with position_nums as rpy
           % todo:  remove this and handle the floating joint directly in
           % HandC.  this is really just a short term hack.
-          m.dofnum(n+(0:5)) = b.dofnum([1;2;3;6;5;4]);
+          m.position_num(n+(0:5)) = b.position_num([1;2;3;6;5;4]);
           m.pitch(n+(0:2)) = inf;  % prismatic
           m.pitch(n+(3:5)) = 0;    % revolute
           m.damping(n+(0:5)) = 0;
           m.coulomb_friction(n+(0:5)) = 0;
           m.static_friction(n+(0:5)) = 0;
           m.coulomb_window(n+(0:5)) = eps;
-          m.parent(n+(0:5)) = [model.body(b.parent).dofnum,n+(0:4)];  % rel ypr
+          m.parent(n+(0:5)) = [model.body(b.parent).position_num,n+(0:4)];  % rel ypr
           m.Xtree{n} = Xroty(pi/2);   % x
           m.Xtree{n+1} = Xrotx(-pi/2)*Xroty(-pi/2); % y (note these are relative changes, x was up, now I'm rotating so y will be up)
           m.Xtree{n+2} = Xrotx(pi/2); % z
@@ -1772,8 +1772,8 @@ classdef RigidBodyManipulator < Manipulator
         elseif (b.floating==2)
           error('dynamics for quaternion floating base not implemented yet');
         else
-          m.parent(n) = max(model.body(b.parent).dofnum);
-          m.dofnum(n) = b.dofnum;  % note: only need this for my floating hack above (remove it when gone)
+          m.parent(n) = max(model.body(b.parent).position_num);
+          m.position_num(n) = b.position_num;  % note: only need this for my floating hack above (remove it when gone)
           m.pitch(n) = b.pitch;
           m.Xtree{n} = inv(b.X_joint_to_body)*b.Xtree*model.body(b.parent).X_joint_to_body;
           m.I{n} = b.X_joint_to_body'*b.I*b.X_joint_to_body;
