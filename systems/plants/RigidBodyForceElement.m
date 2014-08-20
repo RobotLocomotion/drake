@@ -23,6 +23,9 @@ classdef RigidBodyForceElement < RigidBodyElement
   
   methods (Static=true)
     function f = cartesianForceToSpatialForce(varargin);
+      % This method is deprecated.  Use
+      % RigidBodyManipulator.cartesianForceToSpatialForce instead.
+      
       error('this method is deprecated.  use RigidBodyManipulator.cartesianForceToSpatialForce instead');
     end
   end
