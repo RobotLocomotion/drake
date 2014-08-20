@@ -32,10 +32,7 @@ valuecheck(nlp1.Aeq,[1 0 3]);
 valuecheck(nlp1.Ain,[A(1,:);-A(1,:)]);
 valuecheck(nlp1.bin,[10;0]);
 x0 = [1;2;4];
-[x1,F,info] = nlp1.solve(x0);
-if(info>10)
-  error('SNOPT fails');
-end
+[x1,F,info] = solveWDefaultSolver(nlp1,x0);
 c1 = cnstr1_userfun(x1);
 if(c1(1)>4+1e-5 || c1(2)>5+1e-5)
   error('Wrong transcription for SNOPT nonlinear constraint');
@@ -70,10 +67,7 @@ end
 nlp1 = nlp1.addCost(FunctionHandleObjective(1,@cost1_userfun),2);
 nlp1 = nlp1.addCost(FunctionHandleObjective(2,@cost2_userfun),[1;3]);
 nlp1 = nlp1.addCost(LinearConstraint(-inf,inf,1),3);
-[x2,F,info] = nlp1.solve(x0);
-if(info>10)
-  error('SNOPT fails');
-end
+[x2,F,info] = solveWDefaultSolver(nlp1,x0);
 c2 = cnstr1_userfun(x2);
 if(c2(1)>4+1e-5 || c2(2)>5+1e-5)
   error('Wrong transcription for SNOPT nonlinear constraint');
@@ -104,12 +98,7 @@ nc2 = FunctionHandleConstraint([1/6;-10],[1/6;30],3,@cnstr2_userfun);
 nc2 = nc2.setSparseStructure([1;1;1;2;2],[1;2;3;2;3]);
 nlp1 = nlp1.addConstraint(nc2);
 x0 = [1;2;3];
-[x,F,info] = nlp1.solve(x0);
-c2 = cnstr2_userfun(x);
-valuecheck(c2(1),1/6,1e-5);
-if(info>10)
-  error('SNOPT fails');
-end
+[x,F,info] = solveWDefaultSolver(nlp1,x0);
 nlp2 = nlp1.setSolver('fmincon');
 [x_fmincon,F,info] = nlp2.solve(x0);
 if info~=1
@@ -132,10 +121,7 @@ valuecheck(nlp1.bin,[10;0;10]);
 valuecheck(nlp1.beq,[0;0.1]);
 valuecheck(nlp1.Ain,[A(1,:);-A(1,:);0 1 1]);
 valuecheck(nlp1.Aeq,[1 0 3;0 -1 1]);
-[x,F,info] = nlp1.solve(x0);
-if(info>10)
-  error('SNOPT fails');
-end
+[x,F,info] = solveWDefaultSolver(nlp1,x0);
 valuecheck(-x(2)+x(3),0.1,1e-5);
 if(x(2)+x(3)>10+1e-5)
   error('Linear constraint not correct');
@@ -185,10 +171,7 @@ nlp3 = nlp3.addBoundingBoxConstraint(BoundingBoxConstraint(0,inf),1);
 A = [1 0 2;1 0 3];
 nlp3 = nlp3.addLinearConstraint(LinearConstraint([0;0],[10;0],[1 2;1 3]),[1;3]);
 x0 = [1;2;4];
-[x3,F,info] = nlp3.solve(x0);
-if(info>10)
-  error('SNOPT fails');
-end
+[x3,F,info] = solveWDefaultSolver(nlp3,x0);
 c3 = cnstr3_userfun(x3(1),x3(2));
 if(c3(1)>4+1e-5 || c3(2)>5+1e-5)
   error('Wrong transcription for SNOPT nonlinear constraint');
@@ -231,3 +214,21 @@ function [c,dc] = cnstr2_userfun(x)
 c = [x(1)*x(2)*x(3);x(2)^2+x(2)*x(3)+2*x(3)^2];
 dc = [x(2)*x(3) x(1)*x(3) x(1)*x(2); 0 2*x(2)+x(3) x(2)+4*x(3)];
 end
+
+  function [x,F,info] = solveWDefaultSolver(nlp,x)
+    if(checkDependency('snopt'))
+      nlp = nlp.setSolver('snopt');
+    else
+      nlp = nlp.setSolver('fmincon');
+    end
+    [x,F,info] = nlp.solve(x);
+    if(strcmpi(nlp.solver,'snopt'))
+      if(info>10)
+        error('snopt fails');
+      end
+    elseif(strcmpi(nlp.solver,'fmincon'))
+      if(info ~= 1)
+        error('fmincon fails');
+      end
+    end
+  end
