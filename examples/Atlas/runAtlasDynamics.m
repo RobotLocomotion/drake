@@ -5,8 +5,8 @@ function runAtlasDynamics
 options.floating = true;
 options.dt = 0.001;
 options.terrain = RigidBodyFlatTerrain;
-r = Atlas('urdf/atlas_minimal_contact.urdf',options);
-r = r.removeCollisionGroupsExcept({'heel','toe','back','front','knee','butt'});
+r = Atlas('urdf/atlas_convex_hull.urdf',options);
+%r = r.removeCollisionGroupsExcept({'heel','toe','back','front','knee','butt'});
 r = compile(r);
 
 % Initialize the viewer
