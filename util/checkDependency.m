@@ -38,7 +38,7 @@ if ~ok
         end
 
         if (~conf.lcm_enabled)
-          [retval,cp] = system('pkg-config --variable=classpath lcm-java');
+          [retval,cp] = system(['export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:',fullfile(getCMakeParam('CMAKE_INSTALL_PREFIX'),'lib','pkgconfig'),' && pkg-config --variable=classpath lcm-java']);
           if (retval==0 && ~isempty(cp))
             disp(' Added the lcm jar to your javaclasspath (found via pkg-config)');
             javaaddpathProtectGlobals(strtrim(cp));
@@ -49,7 +49,7 @@ if ~ok
 
         if (conf.lcm_enabled)
           javaaddpathProtectGlobals(fullfile(pods_get_base_path,'share','java','lcmtypes_drake.jar'));
-          [retval,info] = system('util/check_multicast_is_loopback.sh');
+          [retval,info] = systemWCMakeEnv('util/check_multicast_is_loopback.sh');
           if (retval)
             info = strrep(info,'ERROR: ','');
             info = strrep(info,'./',[getDrakePath,'/util/']);

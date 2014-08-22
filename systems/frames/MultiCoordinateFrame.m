@@ -44,16 +44,16 @@ classdef MultiCoordinateFrame < CoordinateFrame
       % (don't allow recursive multi-frames)
       cf = coordinate_frames;
       coordinate_frames={};
-      for i=1:length(cf)
+      for i=length(cf):-1:1
         if isa(cf{i},'MultiCoordinateFrame')
-          coordinate_frames=vertcat(coordinate_frames,cf{i}.frame);
+          coordinate_frames=vertcat(cf{i}.frame,coordinate_frames);
           if ~isempty(frame_id)
             % update frame ids accordingly (by wedging these frames in)
             frame_id(frame_id>i) = frame_id(frame_id>i)+length(cf{i}.frame)-1;
             frame_id(frame_id==i) = cf{i}.frame_id + i-1;
           end
         else
-          coordinate_frames=vertcat(coordinate_frames,{cf{i}});
+          coordinate_frames=vertcat({cf{i}},coordinate_frames);
         end
       end
       

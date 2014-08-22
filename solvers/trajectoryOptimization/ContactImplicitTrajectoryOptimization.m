@@ -46,7 +46,7 @@ classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
         options.lambda_jl_mult = 1;
       end
       if ~isfield(options,'active_collision_options')
-        options.active_collision_options.terrain_only = false;
+        options.active_collision_options.terrain_only = true;
       end
       if ~isfield(options,'integration_method')
         options.integration_method = ContactImplicitTrajectoryOptimization.MIDPOINT;
@@ -204,22 +204,6 @@ classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
           dBuminusC1 = -dC1;
         end
         
-        [phi,~,~,~,~,~,~,~,n,D,dn,dD] = obj.plant.contactConstraints(q1,false,struct('terrain_only',false));
-        % construct J and dJ from n,D,dn, and dD so they relate to the
-        % lambda vector
-        J = zeros(nl,nq);
-        J(1:2+obj.nD:end,:) = n;
-        dJ = zeros(nl*nq,nq);
-        dJ(1:2+obj.nD:end,:) = dn;
-        
-        for j=1:length(D),
-          J(1+j:2+obj.nD:end,:) = D{j};
-          dJ(1+j:2+obj.nD:end,:) = dD{j};
-        end
-        
-        [~,J_jl] = jointLimitConstraints(obj.plant,q1);
-        
-        
         switch obj.options.integration_method
           case ContactImplicitTrajectoryOptimization.MIDPOINT
             % q1 = q0 + h*v1
@@ -247,7 +231,7 @@ classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
           [zeros(nv,1) matGradMult(dH0,v1-v0)-h*dBuminusC0 matGradMult(dH1,v1-v0)-h*dBuminusC1 zeros(nv,nu+nl+njl)];
         
         if nl>0
-          [phi,~,~,~,~,~,~,~,n,D,dn,dD] = obj.plant.contactConstraints(q1,false,obj.options.active_collision_options);
+          [phi,normal,~,~,~,~,~,~,n,D,dn,dD] = obj.plant.contactConstraints(q1,false,obj.options.active_collision_options);
           % construct J and dJ from n,D,dn, and dD so they relate to the
           % lambda vector
           J = zeros(nl,nq);
