@@ -10,7 +10,7 @@ p = PlanarRigidBodyManipulator('urdf/atlas_simple_spring_ankle_planar_contact.ur
 
 %todo: add joint limits, periodicity constraint
 
-N = 40;
+N = 51;
 
 % periodic constraint
 R_periodic = zeros(p.getNumStates,2*p.getNumStates);
@@ -129,8 +129,8 @@ traj_opt = traj_opt.addBoundingBoxConstraint(lz_bound, lz_bound_inds(:));
 
 snprint('snopt.out');
 traj_opt = traj_opt.setSolverOptions('snopt','MajorIterationsLimit',100);
-traj_opt = traj_opt.setSolverOptions('snopt','MinorIterationsLimit',200000);
-traj_opt = traj_opt.setSolverOptions('snopt','IterationsLimit',200000);
+traj_opt = traj_opt.setSolverOptions('snopt','MinorIterationsLimit',500000);
+traj_opt = traj_opt.setSolverOptions('snopt','IterationsLimit',500000);
 traj_opt = traj_opt.setSolverOptions('snopt','SuperbasicsLimit',5000);
 traj_opt = traj_opt.setSolverOptions('snopt','MajorOptimalityTolerance',1e-5);
 % traj_opt = traj_opt.setCheckGrad(true);
