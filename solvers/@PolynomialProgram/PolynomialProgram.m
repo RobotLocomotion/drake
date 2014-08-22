@@ -118,7 +118,30 @@ classdef PolynomialProgram < NonlinearProgram
         end
       end
     end
+    
+    function obj = addDecisionVariable(obj,num_new_vars,var_name)
+      error('Not implemented');
+    end
 
+    function obj = addNonlinearConstraint(obj,cnstr,xind,data_ind)
+      error('Drake:PolynomialProgram:UnsupportedConstraint','PolynomialProgram does not accept NonlinearConstraint');
+    end
+    
+    function obj = addLinearConstraint(obj,cnstr,xind)
+      error('Drake:PolynomialProgram:UnsupportedConstraint','PolynomialProgram does not accept LinearConstraint');
+    end
+    
+    function obj = addBoundingBoxConstraint(obj,cnstr,xind)
+      error('Drake:PolynomialProgram:UnsupportedConstraint','PolynomialProgram does not accept BoundingBoxConstraint');
+    end
+    
+    function obj = replaceCost(obj,cost,cost_idx,xind)
+      error('Drake:PolynomialProgram:UnsupportedConstraint','PolynomialProgram does support replaceCost');
+    end
+    
+    function obj = replaceBoundingBoxConstraint(obj,cnstr,cnstr_idx,xind)
+      error('Drake:PolynomialProgram:UnsupportedConstraint','PolynomialProgram does support replaceBoundingBoxConstraint');
+    end
   end
   
 end
