@@ -23,7 +23,7 @@ classdef NonlinearProgram
     x_lb % A num_vars x 1 double vector. The lower bound of the decision variables
     x_ub % A num_vars x 1 double vector. The upper bound of the decision variables
     x_name % A cell of num_vars x 1 strings. x_name{i} is the name of the i'th decision variable
-    solver % The name of the solver
+    solver % The name of the solver. Currently accept snopt, ipopt and fmincon
     solver_options 
     display_funs
     display_fun_indices
@@ -307,6 +307,7 @@ classdef NonlinearProgram
         cnstr_beq = (cnstr.lb(cnstr.ceq_idx)+cnstr.ub(cnstr.ceq_idx))/2;
         cnstr_Aeq = cnstr_A(cnstr.ceq_idx,:);
         cnstr_Ain = cnstr_A(cnstr.cin_idx,:);
+        cnstr_ineq_name = cnstr.name(cnstr.cin_idx);
         cnstr_bin_lb = cnstr.lb(cnstr.cin_idx);
         cnstr_bin_ub = cnstr.ub(cnstr.cin_idx);
         bin_ub_not_inf_idx = ~isinf(cnstr_bin_ub);
@@ -314,8 +315,8 @@ classdef NonlinearProgram
         if(sum(bin_ub_not_inf_idx | bin_lb_not_inf_idx)>0)
           obj.Ain = vertcat(obj.Ain,[cnstr_Ain(bin_ub_not_inf_idx,:);-cnstr_Ain(bin_lb_not_inf_idx,:)]);
           obj.bin = vertcat(obj.bin,[cnstr_bin_ub(bin_ub_not_inf_idx);-cnstr_bin_lb(bin_lb_not_inf_idx)]);
+          obj.Ain_name = [obj.Ain_name;cnstr_ineq_name(bin_ub_not_inf_idx);cnstr_ineq_name(bin_lb_not_inf_idx)];
         end
-        obj.Ain_name = [obj.Ain_name;cnstr.name(cnstr.cin_idx)];
         obj.Aeq_name = [obj.Aeq_name;cnstr.name(cnstr.ceq_idx)];
         if(numel(cnstr_Aeq)>0)
           obj.Aeq = vertcat(obj.Aeq,cnstr_Aeq);
@@ -655,6 +656,7 @@ classdef NonlinearProgram
     end
     
     function obj = setSolver(obj,solver)
+      % @param solver  Can be 'snopt', 'ipopt', 'fmincon' and 'default'.
       typecheck(solver,'char');
       if(strcmp(solver,'snopt'))
         if(~checkDependency('snopt'))
@@ -663,6 +665,18 @@ classdef NonlinearProgram
         obj.solver = solver;
       elseif(strcmp(solver,'fmincon'))
         obj.solver = solver;
+      elseif(strcmp(solver,'ipopt'))
+        if(~checkDependency('ipopt'))
+          error('Drake:NonlinearProgram:UnsupportedSolver','Ipopt is not installed yet');
+        end
+        obj.solver = solver;
+      elseif(strcmp(solver,'default'))
+        if(checkDependency('snopt'))
+          obj = obj.setSolver('snopt');
+        else
+          obj = obj.setSolver('fmincon');
+        end
+        
       end
     end
     
