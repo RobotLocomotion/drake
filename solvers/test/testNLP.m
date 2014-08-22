@@ -57,6 +57,7 @@ end
 if(x1(1)<-1e-5)
   error('Wrong transcription for fmincon x_lb');
 end
+if(checkDependency('ipopt'))
 nlp1 = nlp1.setSolver('ipopt');
 [x1,F,info] = nlp1.solve(x0);
 c1 = cnstr1_userfun(x1);
@@ -69,6 +70,7 @@ if(b1(1)>1+1e-5 || b1(1)<0-1e-5 || abs(b1(2))>1e-5)
 end
 if(x1(1)<-1e-5)
   error('Wrong transcription for ipopt x_lb');
+end
 end
 %%%%%%%%%%%%%%%%
 % min x2^2+x1*x3+x3
@@ -97,9 +99,11 @@ valuecheck(F,f2);
 nlp1 = nlp1.setSolver('fmincon');
 [x2_fmincon,F,info] = nlp1.solve(x0);
 valuecheck(x2,x2_fmincon,1e-4);
+if(checkDependency('ipopt'))
 nlp1 = nlp1.setSolver('ipopt');
 [x2_ipopt,F,info] = nlp1.solve(x0);
 valuecheck(x2,x2_ipopt,1e-4);
+end
 %%%%%%%%%%%%%%%%%%%%%
 % min x2^2+x1*x3+x3
 % x1^2+4*x2^2<=4
@@ -119,9 +123,11 @@ valuecheck(c2(1),1/6,1e-5);
 nlp1 = nlp1.setSolver('fmincon');
 [x_fmincon,F,info] = nlp1.solve(x0);
 valuecheck(x,x_fmincon,1e-4);
+if(checkDependency('ipopt'))
 nlp1 = nlp1.setSolver('ipopt');
 [x_ipopt,F,info] = nlp1.solve(x0);
 valuecheck(x,x_ipopt,1e-4);
+end
 % min x2^2+x1*x3+x3
 % x1^2+4*x2^2<=4
 % (x1-2)^2+x2^2<=5
@@ -149,10 +155,11 @@ end
 nlp1 = nlp1.setSolver('fmincon');
 [x_fmincon,F,info] = nlp1.solve(x0);
 valuecheck(x,x_fmincon,1e-4);
+if(checkDependency('ipopt'))
 nlp1 = nlp1.setSolver('ipopt');
 [x_ipopt,F,info] = nlp1.solve(x0);
 valuecheck(x,x_ipopt,1e-4);
-
+end
 display('test addDecisionVar');
 nlp1 = nlp1.addDecisionVariable(2);
 [x,F,info] = nlp1.compareSolvers([x0;randn(2,1)]);
