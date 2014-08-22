@@ -7,9 +7,11 @@ classdef RigidBodyWing < RigidBodyForceElement
   
   properties
     
-    subwings;
-    subwing_left_edges;
-    control_surfaces;
+    subwings; % array of RigidBodySubWing's that make up this wing
+    
+    subwing_left_edges; % sorted array of points along the wing denoting the left edge of each subwing. Index is the same as obj.subwings.
+    
+    control_surfaces; % array of control surfaces on this wing, sorted by order appearing in the URDF
     
   end
   
@@ -27,7 +29,7 @@ classdef RigidBodyWing < RigidBodyForceElement
         obj.subwings = [ obj.subwings  thisWing ];
         
       else
-        % with no arguments, this is probably the URDF constructor
+        % with no arguments, we were probably called by the URDF constructor
         
         % no op
         
@@ -51,8 +53,8 @@ classdef RigidBodyWing < RigidBodyForceElement
           force = this_force;
           dforce = this_dforce;
         else
-          force = force + this_force;
-          dforce = dforce + this_dforce;
+          error('not yet implemented');
+          
         end
         
       end
