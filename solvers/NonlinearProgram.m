@@ -93,6 +93,8 @@ classdef NonlinearProgram
       obj.x_name = x_name;
       obj.x_lb = -inf(num_vars,1);
       obj.x_ub = inf(num_vars,1);
+      obj.Ain = zeros(0,num_vars);
+      obj.Aeq = zeros(0,num_vars);
       obj.cin_ub = zeros(obj.num_cin,1);
       obj.cin_lb = -inf(obj.num_cin,1);
       obj.iFfun = ones(obj.num_vars,1);
@@ -919,6 +921,7 @@ classdef NonlinearProgram
         
         G = G(sub2ind(size(G),iGfun,jGvar));
         G = G(jGvar_free_idx);
+        G = G(:);
       end      
 
       function checkGradient(x_free)
