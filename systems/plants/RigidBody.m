@@ -5,8 +5,9 @@ classdef RigidBody < RigidBodyElement
     
     % link properties
     linkname='';  % name of the associated link
-    position_num=0;     % the index in the state vector corresponding to this joint
-    velocity_num=0;
+    % NOTE: dofnum is deprecated, use position_num or velocity_num instead
+    position_num=0;     % the indices into the joint configuration (q) vector corresponding to this joint
+    velocity_num=0;     % the indices into the joint velocity (v) vector corresponding to this joint
     gravity_off=false;
     
     visual_shapes={}; % objects of type RigidBodyGeometry
