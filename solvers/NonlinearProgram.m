@@ -817,7 +817,13 @@ classdef NonlinearProgram
     
     function [x,objval,exitflag,execution_time] = compareSolvers(obj,x0,solvers)
       if nargin<3
-        solvers={'snopt','fmincon','ipopt'};
+        solvers = {'fmincon'};
+        if(checkDependency('snopt'))
+          solvers = [solvers,{'snopt'}];
+        end
+        if(checkDependency('ipopt'))
+          solvers = [solvers,{'ipopt'}];
+        end
       end
        
       fprintf('    solver        objval        exitflag   execution time\n-------------------------------------------------------------\n')
