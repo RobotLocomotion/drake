@@ -215,6 +215,14 @@ if ~ok
         disp(' ');
       end
 
+    case 'fastqp'
+      conf.fastqp_enabled = logical(exist(['fastqpmex.',mexext],'file'));
+      
+      if ~conf.fastqp_enabled && nargout<1
+        disp(' ');
+        disp(' fastqp not found. fastqp support will be disabled.');
+      end
+      
     case 'bertini'
       conf.bertini_enabled = logical(exist('bertini','file'));
       if (~conf.bertini_enabled)
