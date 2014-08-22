@@ -26,6 +26,6 @@ c = setOutputFrame(c,getInputFrame(r));
 sys = feedback(r,c);
 
 for i=1:5
-  xtraj = simulate(sys,[0 4],double(x0)+.5*randn(12,1));
+  xtraj = simulate(sys,[0 4],double(x0)+[.5*randn(6,1);zeros(6,1)]);
   v.playback(xtraj);
 end

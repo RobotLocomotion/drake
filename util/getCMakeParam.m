@@ -7,9 +7,10 @@ if isempty(txt)
 end
 tokens = regexp(txt,[param,':\w+=(.*)'],'tokens','dotexceptnewline');
 if isempty(tokens)
-  error('Couldn''t find the parameter %s in your cmake cache',param);
+  val = [];
+else
+  val = tokens{1}{1};
 end
-val = tokens{1}{1};
 
 % Note: This was the old way of doing it.  But we found it less robust,
 % because the matlab library path might not even allow one to run cmake.

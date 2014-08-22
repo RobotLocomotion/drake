@@ -413,8 +413,15 @@ function pnode = crawlDir(pdir,pnode,only_test_dirs,options)
         end
         
         if options.test_list_file>=0
-          [tf,timeout] = checkMethod(fname,m{j},'TIMEOUT');
-          fprintf(options.test_list_file,[testname,'.',m{j},'\t',pwd,'\t',timeout,'\n']);
+          test_properties = '';
+          
+          [tf,timeout] = checkFile(files(i).name,'TIMEOUT');
+          if (tf), test_properties = sprintf('%s TIMEOUT %s',test_properties,timeout); end
+          
+          [tf] = checkFile(files(i).name,'RUN_SERIAL');
+          if (tf), test_properties = sprintf('%s RUN_SERIAL',test_properties); end
+          
+          fprintf(options.test_list_file,[testname,'.',m{j},'\t',pwd,'\t',test_properties,'\n']);
         end
         
         if options.gui
@@ -435,8 +442,15 @@ function pnode = crawlDir(pdir,pnode,only_test_dirs,options)
       end
       
       if options.test_list_file>=0
+        test_properties = '';
+
         [tf,timeout] = checkFile(files(i).name,'TIMEOUT');
-        fprintf(options.test_list_file,[testname,'\t',pwd,'\t',timeout,'\n']);
+        if (tf), test_properties = sprintf('%s TIMEOUT %s',test_properties,timeout); end 
+        
+        [tf] = checkFile(files(i).name,'RUN_SERIAL');
+        if (tf), test_properties = sprintf('%s RUN_SERIAL',test_properties); end 
+
+        fprintf(options.test_list_file,[testname,'\t',pwd,'\t',test_properties,'\n']);
       end
       
       if (options.gui)

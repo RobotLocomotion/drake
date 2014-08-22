@@ -1,13 +1,21 @@
 function RelativeQuatConstraintTest(varargin)
 % Andres would update RelativeQuatConstraint
+  w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
+  warning('off','Drake:RigidBodyManipulator:ReplacedCylinder');
+  warning('off','Drake:RigidBodyManipulator:BodyHasZeroInertia');
+  warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
+  warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
   r = RigidBodyManipulator(strcat(getDrakePath(),'/examples/PR2/pr2.urdf'));
+  warning(w);
   q_nom = zeros(r.getNumDOF(),1);
   constraintTester('RelativeOrientConstraintTest', r, @makeCon, @(r) q_nom, @(r) q_nom, 10, varargin{:});
 end
 
 function con = makeCon(r)
+  w = warning('off','Drake:RigidBodyManipulator:WeldedLinkInd');
   bodyA_idx = findLinkInd(r,'r_gripper_palm_link');
   bodyB_idx = findLinkInd(r,'l_gripper_palm_link');
+  warning(w);
   rpy = 2*pi*rand(3,1) - pi;
   quat = rpy2quat(rpy);
   con = RelativeQuatConstraint(r,bodyA_idx,bodyB_idx,quat,0,[0,1]);

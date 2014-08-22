@@ -13,7 +13,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/l_clav_chull.wrl" scale="1 1 1"/>
+        <mesh filename="meshes/l_clav.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
     <collision>
@@ -32,7 +32,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/l_farm_chull.wrl" scale="1 1 1"/>
+        <mesh filename="meshes/l_farm.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
     <collision>
@@ -51,7 +51,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/l_foot_chull.wrl" scale="1 1 1"/>
+        <mesh filename="meshes/l_foot.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
     <collision>
@@ -133,6 +133,7 @@
     <!--    <xacro:collision_point group="inner" xyz="0.06 0.055 -0.081119" visualize="1"/>-->
     <!--    <xacro:collision_point group="inner" xyz="0.06 -0.055 -0.081119" visualize="1"/>-->
   </link>
+  <frame link="l_foot" name="l_foot_sole" rpy="0 0 0" xyz="0.0480 0 -0.081119"/>
   <link name="l_hand">
     <inertial>
       <mass value="2.509"/>
@@ -142,7 +143,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/l_hand_chull.wrl" scale="1 1 1"/>
+        <mesh filename="meshes/l_hand.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
     <collision>
@@ -154,7 +155,7 @@
     <visual group="l_hand_extra">
       <origin rpy="-1.57079 -1.57079 0" xyz="0 0.29016 0.0112"/>
       <geometry>
-        <mesh filename="meshes/GRIPPER_OPEN_chull.wrl" scale="1 1 1"/>
+        <mesh filename="meshes/GRIPPER_OPEN.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
     <collision group="l_hand_extra">
@@ -173,7 +174,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/l_elbow_rx_chull.wrl" scale="1 1 1"/>
+        <mesh filename="meshes/l_elbow_rx.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
     <collision>
@@ -192,7 +193,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/l_lglut_chull.wrl" scale="1 1 1"/>
+        <mesh filename="meshes/l_lglut.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
   </link>
@@ -205,7 +206,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/l_lleg_chull.wrl" scale="1 1 1"/>
+        <mesh filename="meshes/l_lleg.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
     <collision>
@@ -224,7 +225,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/l_sh_rx_chull.wrl" scale="1 1 1"/>
+        <mesh filename="meshes/l_sh_rx.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
     <collision>
@@ -243,7 +244,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/l_talus_chull.wrl" scale="1 1 1"/>
+        <mesh filename="meshes/l_talus.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
   </link>
@@ -256,7 +257,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/l_elbow_ry_chull.wrl" scale="1 1 1"/>
+        <mesh filename="meshes/l_elbow_ry.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
     <collision>
@@ -275,7 +276,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/l_uglut_chull.wrl" scale="1 1 1"/>
+        <mesh filename="meshes/l_uglut.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
   </link>
@@ -288,7 +289,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/l_uleg_chull.wrl" scale="1 1 1"/>
+        <mesh filename="meshes/l_uleg.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
     <collision>
@@ -307,7 +308,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/ltorso_chull.wrl" scale="1 1 1"/>
+        <mesh filename="meshes/ltorso.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
   </link>
@@ -320,7 +321,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/mtorso_chull.wrl" scale="1 1 1"/>
+        <mesh filename="meshes/mtorso.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
   </link>
@@ -333,7 +334,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/pelvis_chull.wrl" scale="1 1 1"/>
+        <mesh filename="meshes/pelvis.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
     <collision>
@@ -352,7 +353,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/r_clav_chull.wrl" scale="1 1 1"/>
+        <mesh filename="meshes/r_clav.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
     <collision>
@@ -371,7 +372,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/r_farm_chull.wrl" scale="1 1 1"/>
+        <mesh filename="meshes/r_farm.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
     <collision>
@@ -389,7 +390,7 @@
     </inertial>
     <visual>
       <geometry>
-        <mesh filename="meshes/r_foot_chull.wrl" scale="1 1 1"/>
+        <mesh filename="meshes/r_foot.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
     <collision>
@@ -472,6 +473,7 @@
     <!--    <xacro:collision_point group="inner" xyz="0.06 0.055 -0.081119" visualize="1"/>-->
     <!--    <xacro:collision_point group="inner" xyz="0.06 -0.055 -0.081119" visualize="1"/>-->
   </link>
+  <frame link="r_foot" name="r_foot_sole" rpy="0 0 0" xyz="0.0480 0 -0.081119"/>
   <link name="r_hand">
     <inertial>
       <mass value="2.509"/>
@@ -481,7 +483,7 @@
     <visual>
       <origin rpy="0 3.14159 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/r_hand_chull.wrl" scale="1 1 1"/>
+        <mesh filename="meshes/r_hand.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
     <collision>
@@ -494,7 +496,7 @@
     <visual group="r_hand_extra">
       <origin rpy="-1.57079 -1.57079 3.142" xyz="0 -0.29016 0.0112"/>
       <geometry>
-        <mesh filename="meshes/GRIPPER_OPEN_chull.wrl" scale="1 1 1"/>
+        <mesh filename="meshes/GRIPPER_OPEN.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
     <collision group="r_hand_extra">
@@ -514,7 +516,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/r_elbow_rx_chull.wrl" scale="1 1 1"/>
+        <mesh filename="meshes/r_elbow_rx.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
     <collision>
@@ -533,7 +535,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/r_lglut_chull.wrl" scale="1 1 1"/>
+        <mesh filename="meshes/r_lglut.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
   </link>
@@ -546,7 +548,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/r_lleg_chull.wrl" scale="1 1 1"/>
+        <mesh filename="meshes/r_lleg.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
     <collision>
@@ -565,7 +567,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/r_sh_rx_chull.wrl" scale="1 1 1"/>
+        <mesh filename="meshes/r_sh_rx.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
     <collision>
@@ -584,7 +586,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/r_talus_chull.wrl" scale="1 1 1"/>
+        <mesh filename="meshes/r_talus.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
   </link>
@@ -597,7 +599,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/r_elbow_ry_chull.wrl" scale="1 1 1"/>
+        <mesh filename="meshes/r_elbow_ry.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
     <collision>
@@ -616,7 +618,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/r_uglut_chull.wrl" scale="1 1 1"/>
+        <mesh filename="meshes/r_uglut.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
   </link>
@@ -629,7 +631,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/r_uleg_chull.wrl" scale="1 1 1"/>
+        <mesh filename="meshes/r_uleg.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
     <collision>
@@ -648,7 +650,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/utorso_chull.wrl" scale="1 1 1"/>
+        <mesh filename="meshes/utorso.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
     <collision>
@@ -660,7 +662,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/utorso_pack_chull.wrl" scale="1 1 1"/>
+        <mesh filename="meshes/utorso_pack.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
     <collision>

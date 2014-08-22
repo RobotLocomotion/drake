@@ -91,13 +91,13 @@ pods_install_pkg_config_file(drake-java
     REQUIRES ${drake_jar_requires}
     VERSION 0.0.1)
 
-pods_find_pkg_config(eigen3)
+pods_find_pkg_config(eigen3 3.2)
 
 if (eigen3_FOUND)
    pods_use_pkg_config_includes( eigen3 )
 else()
    # then use the traditional approach to finding Eigen3
-   find_package( Eigen3 )
+   find_package( Eigen3 3.2 )
    if (Eigen3_FOUND)
       set(eigen3_FOUND 1)
       include_directories( EIGEN3_INCLUDE_DIR )
@@ -141,12 +141,16 @@ find_program(ffmpeg ffmpeg)
 
 
 # write some additional information to the CMake cache
-set(lcm_java_classpath "${lcm-java_CLASSPATH}" CACHE FILEPATH "${lcm-java_CLASSPATH}" )
+set(lcm_java_classpath "${lcm-java_CLASSPATH}" CACHE FILEPATH "${lcm-java_CLASSPATH}" FORCE)
 
 if (APPLE)
-  set(DYLD_LIBRARY_PATH "$ENV{DYLD_LIBRARY_PATH}" CACHE STRING "$ENV{DYLD_LIBRARY_PATH}" )
+  set(DYLD_LIBRARY_PATH "$ENV{DYLD_LIBRARY_PATH}" CACHE STRING "Environment variable used to launch processes from Matlab")
+  set(DYLD_FRAMEWORK_PATH "$ENV{DYLD_FRAMEWORK_PATH}" CACHE STRING "Environment variable used to launch processes from Matlab")
+  mark_as_advanced(DYLD_LIBRARY_PATH)
+  mark_as_advanced(DYLD_FRAMEWORK_PATH)
 else()
-  set(LD_LIBRARY_PATH "$ENV{LD_LIBRARY_PATH}" CACHE STRING "$ENV{LD_LIBRARY_PATH}" )
+  set(LD_LIBRARY_PATH "$ENV{LD_LIBRARY_PATH}" CACHE STRING "Environment variable used to launch processes from Matlab")
+  mark_as_advanced(LD_LIBRARY_PATH)
 endif()
 
 add_test(NAME "RigidBodyManipulatorMemoryTest"
