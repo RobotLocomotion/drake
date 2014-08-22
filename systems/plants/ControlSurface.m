@@ -4,7 +4,7 @@ classdef ControlSurface
     name;
     chord;
     span;
-    left_edge;
+    left_edge_position_along_wing;
     
     
   end

@@ -8,6 +8,7 @@ classdef RigidBodyWing < RigidBodyForceElement
   properties
     
     subwings;
+    subwing_left_edges;
     control_surfaces;
     
   end
@@ -99,6 +100,7 @@ classdef RigidBodyWing < RigidBodyForceElement
         this_subwing = RigidBodySubWing(frame_id, profile, chord, span, stall_angle, nominal_speed);
         
         obj.subwings = [obj.subwings this_subwing ];
+        obj.subwing_left_edges = 0;
         
       else
         % deal with control surfaces
@@ -128,8 +130,7 @@ classdef RigidBodyWing < RigidBodyForceElement
           end
           
           obj.control_surfaces = [ obj.control_surfaces ControlSurface(surface_name, surface_chord, surface_span, surface_left_edge_position_along_wing) ];
-          
-          
+
           
           count = count + 1;
           this_surface = control_surface_nodes.item(count);
@@ -157,6 +158,60 @@ classdef RigidBodyWing < RigidBodyForceElement
               
             end
           end
+        end % end sanity checks
+        
+        % split the wing up starting from the left edge
+        
+        remaining_surfaces = obj.control_surfaces;
+        point_along_wing = 0;
+        
+        while (span - point_along_wing > 1e-6) % not always exactly less than
+        
+          % find the minimum value of the control surface left edges
+          min_left_edge_value = inf;
+          min_left_edge_index = -1;
+          
+          for i = 1 : length(remaining_surfaces)
+            % need a loop heree because min() doesn't support two matricies
+            % with two output arguments
+            if (remaining_surfaces(i).left_edge_position_along_wing < min_left_edge_value)
+              min_left_edge_value = remaining_surfaces(i).left_edge_position_along_wing;
+              min_left_edge_index = i;
+            end
+          end
+
+          if (min_left_edge_value == point_along_wing)
+            % control surface starts at the left edge
+
+            % span of this part of the wing is the span of the control
+            % surface
+
+            this_surface = obj.control_surfaces(min_left_edge_index);
+            this_span = this_surface.span;
+            this_subwing = RigidBodySubWing(frame_id, profile, chord, this_span, stall_angle, nominal_speed);
+            
+            % remove this surface from consideration
+            remaining_surfaces(min_left_edge_index) = [];
+
+          else
+            % make a non-control surfaced wing since the control surface
+            % does not start at the left edge
+
+            if (min_left_edge_value == inf)
+              this_span = span - point_along_wing;
+            else
+              this_span = min_left_edge_value - point_along_wing;
+            end
+
+            this_subwing = RigidBodySubWing(frame_id, profile, chord, this_span, stall_angle, nominal_speed);
+          end
+          
+          
+          obj.subwings = [ obj.subwings this_subwing ];
+          obj.subwing_left_edges = [ obj.subwing_left_edges point_along_wing ];
+          
+          point_along_wing = point_along_wing + this_span;
+          
         end
               
         
