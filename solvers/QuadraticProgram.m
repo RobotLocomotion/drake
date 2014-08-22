@@ -79,7 +79,6 @@ methods
         end
     
       case 'fastqp'
-        checkDependency('gurobi_mex');
         if isempty(obj.x_lb), obj.x_lb=-inf + 0*obj.f; end
         if isempty(obj.x_ub), obj.x_ub=inf + 0*obj.f; end
         Ain_b = [obj.Ain; -eye(length(obj.x_lb)); eye(length(obj.x_ub))];
@@ -158,7 +157,7 @@ methods
       end
       obj.solver = solver;
     elseif(strcmp(solver,'fastqp'))
-      if(~checkDependency('gurobi_mex'))
+      if(~checkDependency('fastqp'))
         error('Drake:UnsupportedSolver','fastqp is not installed');
       end
       obj.solver = solver;
