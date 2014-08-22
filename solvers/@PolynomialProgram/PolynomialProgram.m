@@ -131,10 +131,6 @@ classdef PolynomialProgram < NonlinearProgram
       error('Drake:PolynomialProgram:UnsupportedConstraint','PolynomialProgram does not accept LinearConstraint yet, but we will implement it as soon as possible');
     end
     
-    function obj = addBoundingBoxConstraint(obj,cnstr,xind)
-      error('Drake:PolynomialProgram:UnsupportedConstraint','PolynomialProgram does not accept BoundingBoxConstraint yet, but we will implement it as soon as possible');
-    end
-    
     function obj = replaceCost(obj,cost,cost_idx,xind)
       error('Drake:PolynomialProgram:UnsupportedConstraint','PolynomialProgram does support replaceCost yet, but we will implement it as soon as possible');
     end
