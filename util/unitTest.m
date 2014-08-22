@@ -421,7 +421,7 @@ function pnode = crawlDir(pdir,pnode,only_test_dirs,options)
           [tf] = checkFile(files(i).name,'RUN_SERIAL');
           if (tf), test_properties = sprintf('%s RUN_SERIAL',test_properties); end
           
-          fprintf(options.test_list_file,[testname,'\t',pwd,'\t',test_properties,'\n']);
+          fprintf(options.test_list_file,[testname,'.',m{j},'\t',pwd,'\t',test_properties,'\n']);
         end
         
         if options.gui
