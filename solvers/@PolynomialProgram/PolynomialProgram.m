@@ -124,23 +124,23 @@ classdef PolynomialProgram < NonlinearProgram
     end
 
     function obj = addNonlinearConstraint(obj,cnstr,xind,data_ind)
-      error('Drake:PolynomialProgram:UnsupportedConstraint','PolynomialProgram does not accept NonlinearConstraint');
+      error('Drake:PolynomialProgram:UnsupportedConstraint','PolynomialProgram does not accept NonlinearConstraint yet, but we will implement it as soon as possible');
     end
     
     function obj = addLinearConstraint(obj,cnstr,xind)
-      error('Drake:PolynomialProgram:UnsupportedConstraint','PolynomialProgram does not accept LinearConstraint');
+      error('Drake:PolynomialProgram:UnsupportedConstraint','PolynomialProgram does not accept LinearConstraint yet, but we will implement it as soon as possible');
     end
     
     function obj = addBoundingBoxConstraint(obj,cnstr,xind)
-      error('Drake:PolynomialProgram:UnsupportedConstraint','PolynomialProgram does not accept BoundingBoxConstraint');
+      error('Drake:PolynomialProgram:UnsupportedConstraint','PolynomialProgram does not accept BoundingBoxConstraint yet, but we will implement it as soon as possible');
     end
     
     function obj = replaceCost(obj,cost,cost_idx,xind)
-      error('Drake:PolynomialProgram:UnsupportedConstraint','PolynomialProgram does support replaceCost');
+      error('Drake:PolynomialProgram:UnsupportedConstraint','PolynomialProgram does support replaceCost yet, but we will implement it as soon as possible');
     end
     
     function obj = replaceBoundingBoxConstraint(obj,cnstr,cnstr_idx,xind)
-      error('Drake:PolynomialProgram:UnsupportedConstraint','PolynomialProgram does support replaceBoundingBoxConstraint');
+      error('Drake:PolynomialProgram:UnsupportedConstraint','PolynomialProgram does support replaceBoundingBoxConstraint yet, but we will implement it as soon as possible');
     end
   end
   
