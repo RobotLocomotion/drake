@@ -5,7 +5,7 @@ function [z,F,info,np]=testMPCC
   
   nvars = N + xdim;% + constraint.getNumSlackVariables();
 %   
-  np = NonlinearProgramWConstraintObjects(nvars);
+  np = NonlinearProgram(nvars);
   
   %   constraint = NonlinearComplementarityConstraint(@testfun,xdim,N,3);
   constraint = LinearComplementarityConstraint(zeros(N),zeros(N,1),eye(N),1);

@@ -308,7 +308,7 @@ classdef DynamicalSystem
       end
             
       nx = getNumStates(obj);
-      prog = NonlinearProgramWConstraintObjects(nx,getCoordinateNames(getStateFrame(obj)));
+      prog = NonlinearProgram(nx,getCoordinateNames(getStateFrame(obj)));
 
       prog = addStateConstraintsToProgram(obj,prog,1:nx);
       
@@ -329,11 +329,11 @@ classdef DynamicalSystem
       %   program on the specified indices.  derived classes can overload 
       %   this method to add additional constraints.
       % 
-      % @param prog a NonlinearProgramWConstraintObjects class
+      % @param prog a NonlinearProgram class
       % @param indices the indices of the state variables in the program
       %        @default 1:nX
 
-      typecheck(prog,'NonlinearProgramWConstraintObjects');
+      typecheck(prog,'NonlinearProgram');
       nx = getNumStates(obj);
       if nargin<3, indices=1:nx; end
       
