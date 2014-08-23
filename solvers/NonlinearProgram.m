@@ -1160,12 +1160,8 @@ classdef NonlinearProgram
       if(~isempty(A))
         fval = [fval;A*x];
       end
-      [lb,ub] = obj.bounds();
-      lb = lb(2:end);
-      ub = ub(2:end);
-      display(fval)
-      display(ub)
-      display(lb)
+      lb = [obj.cin_lb;zeros(obj.num_ceq,1);-inf(length(obj.bin),1);obj.beq];
+      ub = [obj.cin_ub;zeros(obj.num_ceq,1);obj.bin;obj.beq];
       ub_err = fval-ub;
       max_ub_err = max(ub_err);
       max_ub_err = max_ub_err*(max_ub_err>0);
@@ -1179,7 +1175,7 @@ classdef NonlinearProgram
       else
         infeasible_constraint_name = {};
       end
-        
+
     end
   end
 end
