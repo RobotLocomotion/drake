@@ -33,7 +33,6 @@ classdef FeedbackSystem < DrakeSystem
 
       obj = setSampleTime(obj,[sys1.getSampleTime(),sys2.getSampleTime()]);
       obj = setNumZeroCrossings(obj,sys1.getNumZeroCrossings()+sys2.getNumZeroCrossings()+sum(~isinf([sys1.umin;sys1.umax;sys2.umin;sys2.umax])));
-      obj = setNumStateConstraints(obj,sys1.getNumStateConstraints()+sys2.getNumStateConstraints());
       % unilateral constraints handled in get method below
       
       obj = setInputFrame(obj,sys1.getInputFrame());
@@ -47,6 +46,10 @@ classdef FeedbackSystem < DrakeSystem
           2*ones(getNumDiscStates(sys2),1) ], ...
           true) );  % zap empty frames
 
+      if ~isempty(sys1.state_constraints) || ~isempty(sys2.state_constraints)
+        obj.warning_manager.warnOnce('Drake:FeedbackSystem:Todo','todo: still need to add state constriants for the feedback system');
+      end
+      
       obj.sys1=sys1;
       obj.sys2=sys2;
     end
@@ -117,29 +120,6 @@ classdef FeedbackSystem < DrakeSystem
       if (~isempty(ind)) zcs=[zcs;obj.sys2.umax(ind) - y1(ind)]; end
     end
 
-    function con = stateConstraints(obj,x)
-      [x1,x2]=decodeX(obj,x);
-      if (getNumStateConstraints(obj.sys1)>0)
-        con=stateConstraints(obj.sys1,x1);
-      else
-        con=[];
-      end
-      if (getNumStateConstraints(obj.sys2)>0)
-        con=[con;stateConstraints(obj.sys2,x2)];
-      end
-    end
-    
-    function con = unilateralConstraints(obj,x)
-      [x1,x2]=decodeX(obj,x);
-      if (getNumUnilateralConstraints(obj.sys1)>0)
-        con=unilateralConstraints(obj.sys1,x1);
-      else
-        con=[];
-      end
-      if (getNumUnilateralConstraints(obj.sys2)>0)
-        con=[con;unilateralConstraints(obj.sys2,x2)];
-      end
-    end
   end
 
   methods (Access=private)

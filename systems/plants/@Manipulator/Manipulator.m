@@ -106,7 +106,7 @@ classdef Manipulator < DrakeSystem
 
       phi=[]; psi=[];
       qd = vToqdot(obj, q) * v;
-      if (obj.num_position_constraints>0 && obj.num_velocity_constraints>0)
+      if ~isempty(obj.position_constraints) && ~isempty(obj.velocity_constraints)
         [phi,J,dJ] = geval(@obj.positionConstraints,q);
         Jdotqd = dJ*reshape(qd*qd',obj.num_positions^2,1);
 
@@ -118,12 +118,12 @@ classdef Manipulator < DrakeSystem
         term2=Hinv*tau;
 
         constraint_force = -[J;dpsidqd]'*pinv([J*term1;dpsidqd*term1])*[J*term2 + Jdotqd + alpha*J*qd; dpsidqd*term2 + dpsidq*qd + beta*psi];
-      elseif (obj.num_position_constraints>0)  % note: it didn't work to just have dpsidq,etc=[], so it seems like the best solution is to handle each case...
+      elseif ~isempty(obj.position_constraints)  % note: it didn't work to just have dpsidq,etc=[], so it seems like the best solution is to handle each case...
         [phi,J,dJ] = geval(@obj.positionConstraints,q);
         Jdotqd = dJ*reshape(qd*qd',obj.num_positions^2,1);
 
         constraint_force = -J'*pinv(J*Hinv*J')*(J*Hinv*tau + Jdotqd + alpha*J*qd);
-      elseif (obj.num_velocity_constraints>0)
+      elseif ~isempty(obj.velocity_constraints)
         [psi,J] = geval(@obj.velocityConstraints,q,qd);
         dpsidq = J(:,1:obj.num_positions);
         dpsidqd = J(:,obj.num_positions+1:end);
@@ -136,18 +136,34 @@ classdef Manipulator < DrakeSystem
   end
 
   methods
-    function obj = addPositionConstraint(obj,con)
-      obj = 
+    function obj = addPositionEqualityConstraint(obj,con)
+      % Adds a position constraint of the form phi(q) = constant
+      % which can be enforced directly in the manipulator dynamics.
+      % This method will also register phi (and it's time derivative)
+      % as state constraints for the dynamical system.
+      
+      typecheck(con,'Constraint');
+      assert(con.xdim == obj.num_positions,'DrakeSystem:InvalidPositionConstraint','Position constraints must take a vector that is the same size as the number of positions of this system as an input');
+      assert(all(con.lb == con.ub));
+      obj.position_constraints{end+1} = con;
+
+      obj = addStateConstraint(obj,con);
+      
+      obj.warning_manager.warnOnce('Drake:Manipulator:Todo','still need to add time derivatives of position constraints');
     end
     
-    function obj = addVelocityConstraint(obj,con)
-    end
-  end
+    function obj = addVelocityEqualityConstraint(obj,con)
+      % Adds a velocity constraint of the form psi(q,v) = constant
+      % (with dpsidv~=0) which can be enforced directly in the manipulator dynamics.
+      % This method will also register psi as a state constraint
+      % for the dynamical system.
+      
+      typecheck(con,'Constraint');
+      assert(con.xdim == obj.num_velocities,'DrakeSystem:InvalidVelocityConstraint','Velocity constraints must take a vector that is the same size as the number of velocities of this system as an input');
+      assert(all(con.lb == con.ub));
+      obj.velocity_constraints{end+1} = con;
 
-  methods (Sealed = true)
-    function obj = addStateConstraint(obj,con)
-      % Not a valid method.  Enforce that it is not called directly.
-      error('you must set position constraints and velocity constraints explicitly.  cannot set general constraints for manipulator plants');
+      obj = addStateConstraint(obj,con);
     end
   end
 
@@ -186,47 +202,33 @@ classdef Manipulator < DrakeSystem
       n = obj.num_velocities;
     end
 
-    function phi = positionConstraints(obj,q)
+    function varargout = positionConstraints(obj,q)
       % Implements position constraints of the form phi(q) = 0
-      error('manipulators with position constraints must overload this function');
+      
+      varargout = cell(1,nargout);
+      for i=1:length(obj.position_constraints)
+        v = cell(1,nargout);
+        [v{:}] = obj.position_constraints{i}.eval(x);
+        v{1} = v{1} - obj.position_constraints{i}.lb;  % center it around 0
+        for j=1:length(nargout)
+          varargout{j} = vertcat(varargout{j},v{j});
+        end
+      end
     end
 
-    function psi = velocityConstraints(obj,q,v)
-      % Implements velocity constraints of the form psi(q,qdot) = 0
-      % Note: dphidqdot must not be zero. constraints which depend
+    function varargout = velocityConstraints(obj,q,v)
+      % Implements velocity constraints of the form psi(q,v) = 0
+      % Note: dphidv must not be zero. constraints which depend
       % only on q should be implemented instead as positionConstraints.
-      error('manipulators with velocity constraints must overload this function');
-    end
 
-    function [con,dcon] = stateConstraints(obj,x)
-      % wraps up the position and velocity constraints into the general constriant
-      % method.  note that each position constraint (phi=0) also imposes an implicit
-      % velocity constraint on the system (phidot=0).
-
-      q=x(1:obj.num_positions); v=x(obj.num_positions+1:end);
-      qd = vToqdot(obj, q) * v;
-      if (obj.num_position_constraints>0)
-        if (nargout>1)
-          [phi,J,dJ] = geval(@obj.positionConstraints,q);
-        else
-          [phi,J] = geval(@obj.positionConstraints,q);
+      varargout = cell(1,nargout);
+      for i=1:length(obj.velocity_constraints)
+        v = cell(1,nargout);
+        [v{:}] = obj.velocity_constraints{i}.eval(x);
+        v{1} = v{1} - obj.velocity_constraints{i}.lb;  % center it around 0
+        for j=1:length(nargout)
+          varargout{j} = vertcat(varargout{j},v{j});
         end
-      else
-        phi=[]; J=zeros(0,obj.num_positions); dJ=zeros(0,obj.num_positions^2);
-      end
-      if (obj.num_velocity_constraints>0)
-        if (nargout>1)
-          [psi,dpsi] = obj.velocityConstraints(q,qd);
-        else
-          psi = obj.velocityConstraints(q,qd);
-        end
-      else
-        psi=[]; dpsi=zeros(0,obj.num_x);
-      end
-
-      con = [phi; J*qd; psi];  % phi=0, phidot=0, psi=0
-      if (nargout>1)
-        dcon = [J,0*J; matGradMult(reshape(dJ,size(dJ,1)*obj.num_positions,obj.num_positions),qd), J; dpsi];
       end
     end
 
@@ -236,24 +238,6 @@ classdef Manipulator < DrakeSystem
 
     function n = getNumContacts(obj)
       error('getNumContacts is no longer supported, in anticipation of alowing multiple contacts per body pair. Use getNumContactPairs for cases where the number of contacts is fixed');
-    end
-
-    function prog = addStateConstraintsToProgram(obj,prog,indices)
-      % adds state constraints and unilateral constriants to the
-      %   program on the specified indices.  derived classes can overload
-      %   this method to add additional constraints.
-      %
-      % @param prog a NonlinearProgramWConstraintObjects class
-      % @param indices the indices of the state variables in the program
-      %        @default 1:nX
-
-      if nargin<3, indices=1:obj.num_x; end
-      prog = addStateConstraintsToProgram@DrakeSystem(obj,prog,indices);
-
-      % add joint limit constraints
-      con = BoundingBoxConstraint(obj.joint_limit_min,obj.joint_limit_max);
-      con = setName(con,'Joint Limits');
-      prog = addConstraint(prog,con,1:obj.num_positions);
     end
 
     function sys = feedback(sys1,sys2)
@@ -418,14 +402,30 @@ classdef Manipulator < DrakeSystem
       jl_max = obj.joint_limit_max;
     end
 
+    function obj = setJointLimits(obj,jl_min,jl_max)
+      sizecheck(jl_min,[obj.num_positions,1]);
+      sizecheck(jl_max,[obj.num_positions,1]);
+      assert(all(jl_max>=jl_min));
+      obj.joint_limit_min = jl_min;
+      obj.joint_limit_max = jl_max;
+      
+      if isempty(obj.joint_limit_constraint_index)
+        obj.joint_limit_constriant_index = numel(obj.state_constraints)+1;
+      end
+      con = BoundingBoxConstraint([jl_min;-inf(obj.num_velocities,1)],[jl_max;-inf(obj.num_velocities,1)]);
+      con = setName(con,'JointLimits');
+      obj.state_constraints{obj.joint_limit_constraint_index} = con;
+    end
+    
   end  
 
-  properties (SetAccess = protected, GetAccess = public)
+  properties (SetAccess = private, GetAccess = public)
     num_positions=0;
     num_velocities=0;
-    num_position_constraints = 0  % the number of position constraints of the form phi(q)=0
-    num_velocity_constraints = 0  % the number of velocity constraints of the form psi(q,qd)=0
+    position_constraints = {};  % position equality constraints of the form phi(q)=const
+    velocity_constraints = {};  % velocity equality constraints of the form psi(q,qd)=const
     joint_limit_min = -inf;       % vector of length num_q with lower limits
     joint_limit_max = inf;        % vector of length num_q with upper limits
+    joint_limit_constraint_index = [];
   end
 end
