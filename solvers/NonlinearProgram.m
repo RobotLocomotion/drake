@@ -1160,18 +1160,23 @@ classdef NonlinearProgram
       if(~isempty(A))
         fval = [fval;A*x];
       end
-      lb = [obj.cin_lb;zeros(obj.num_ceq,1);-inf(length(obj.bin),1);obj.beq];
-      ub = [obj.cin_ub;zeros(obj.num_ceq,1);obj.bin;obj.beq];
-      ub_err = fval-ub;
-      max_ub_err = max(ub_err);
-      max_ub_err = max_ub_err*(max_ub_err>0);
-      lb_err = lb-fval;
-      max_lb_err = max(lb_err);
-      max_lb_err = max_lb_err*(max_lb_err>0);
-      if(max_ub_err+max_lb_err>2*obj.constraint_err_tol)
-        infeasible_constraint_idx = (ub_err>obj.constraint_err_tol) | (lb_err>obj.constraint_err_tol);
-        cnstr_name = [obj.cin_name;obj.ceq_name;obj.Ain_name;obj.Aeq_name];
-        infeasible_constraint_name = cnstr_name(infeasible_constraint_idx);
+      if(~isempty(fval))
+        [lb,ub] = obj.bounds();
+        lb = lb(2:end);
+        ub = ub(2:end);
+        ub_err = fval-ub;
+        max_ub_err = max(ub_err);
+        max_ub_err = max_ub_err*(max_ub_err>0);
+        lb_err = lb-fval;
+        max_lb_err = max(lb_err);
+        max_lb_err = max_lb_err*(max_lb_err>0);
+        if(max_ub_err+max_lb_err>2*obj.constraint_err_tol)
+          infeasible_constraint_idx = (ub_err>obj.constraint_err_tol) | (lb_err>obj.constraint_err_tol);
+          cnstr_name = [obj.cin_name;obj.ceq_name;obj.Ain_name;obj.Aeq_name];
+          infeasible_constraint_name = cnstr_name(infeasible_constraint_idx);
+        else
+          infeasible_constraint_name = {};
+        end
       else
         infeasible_constraint_name = {};
       end

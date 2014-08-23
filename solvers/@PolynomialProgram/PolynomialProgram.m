@@ -83,14 +83,16 @@ classdef PolynomialProgram < NonlinearProgram
       end
     end
     
-    function [x,objval,exitflag] = solve(obj,x0)
+    function [x,objval,exitflag,infeasible_constraint_name] = solve(obj,x0)
       switch lower(obj.solver)
         case 'gloptipoly'
           [x,objval,exitflag] = gloptipoly(obj);
+          [exitflag,infeasible_constraint_name] = obj.mapSolverInfo(exitflag,x);
         case 'bertini'
           [x,objval,exitflag] = bertini(obj);
+          [exitflag,infeasible_constraint_name] = obj.mapSolverInfo(exitflag,x);
         otherwise 
-          [x,objval,exitflag] = solve@NonlinearProgram(obj,x0);
+          [x,objval,exitflag,infeasible_constraint_name] = solve@NonlinearProgram(obj,x0);
       end
     end
 
