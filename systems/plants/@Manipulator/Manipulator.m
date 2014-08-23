@@ -158,7 +158,7 @@ classdef Manipulator < DrakeSystem
       % which can be enforced directly in the manipulator dynamics.
       % This method will also register phi (and it's time derivative)
       % as state constraints for the dynamical system.
-      
+    
       typecheck(con,'Constraint');
       assert(con.xdim == obj.num_positions,'DrakeSystem:InvalidPositionConstraint','Position constraints must take a vector that is the same size as the number of positions of this system as an input');
       assert(all(con.lb == con.ub));
@@ -169,7 +169,7 @@ classdef Manipulator < DrakeSystem
       
       obj.warning_manager.warnOnce('Drake:Manipulator:Todo','still need to add time derivatives of position constraints');
     end
-    
+
     function obj = addVelocityEqualityConstraint(obj,con)
       % Adds a velocity constraint of the form psi(q,v) = constant
       % (with dpsidv~=0) which can be enforced directly in the manipulator dynamics.
@@ -220,7 +220,7 @@ classdef Manipulator < DrakeSystem
     function n = getNumVelocities(obj);
       n = obj.num_velocities;
     end
-    
+
     function varargout = positionConstraints(obj,q)
       % Implements position constraints of the form phi(q) = 0
       
@@ -231,7 +231,7 @@ classdef Manipulator < DrakeSystem
         v{1} = v{1} - obj.state_constraints{obj.position_constraint_ids(i)}.lb;  % center it around 0
         for j=1:nargout
           varargout{j} = vertcat(varargout{j},v{j});
-        end
+    end
       end
     end
 
@@ -249,7 +249,7 @@ classdef Manipulator < DrakeSystem
           varargout{j} = vertcat(varargout{j},v{j});
         end
       end
-    end
+        end
 
     function n = getNumJointLimitConstraints(obj)
       % returns number of constraints imposed by finite joint limits
@@ -451,9 +451,8 @@ classdef Manipulator < DrakeSystem
         [obj,obj.joint_limit_constraint_id] = addStateConstraint(obj,con);
       else
         obj = updateStateConstraint(obj,obj.joint_limit_constraint_id,con);
-      end
-    end
-    
+  end  
+
   end  
 
   properties (SetAccess = private, GetAccess = public)
