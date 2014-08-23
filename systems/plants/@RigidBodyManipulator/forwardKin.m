@@ -19,14 +19,14 @@ function [x,J,dJ] = forwardKin(obj,kinsol,body_or_frame_ind,pts,rotation_type)
 %                -- 2, output quaternion
 % if rotation_type = 0:
 % if pts is a 3xm matrix, then x will be a 3xm matrix
-%  and (following our gradient convention) J will be a ((3xm)x(q))
+%  and (following our gradient convention) J will be a ((3xm)x(nq))
 %  matrix, with [J1;J2;...;Jm] where Ji = dxidq
 % if rotation_type = 1:
 % x will be a 6xm matrix and (following our gradient convention) J will be 
-% a ((6xm)x(q)) matrix, with [J1;J2;...;Jm] where Ji = dxidq
+% a ((6xm)x(nq)) matrix, with [J1;J2;...;Jm] where Ji = dxidq
 % if rotation_type = 2:
 % x will be a 7xm matrix and (following out gradient convention) J will be
-% a ((7xm)*(q)) matrix with [J1;J2;....;Jm] where Ji = dxidq
+% a ((7xm)*(nq)) matrix with [J1;J2;....;Jm] where Ji = dxidq
 
 if nargin<5
   rotation_type = 0;

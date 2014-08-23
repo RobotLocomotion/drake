@@ -28,8 +28,7 @@ if (n==2)
   T_3D_to_2D = obj.T_2D_to_3D';
 
   if (rotation_type>0)
-    rotation_type = 1;
-    T_3D_to_2D = [T_3D_to_2D, zeros(2,3); zeros(1,3), obj.view_axis'];
+    rotation_type = 2;
   end
 end
 
@@ -42,12 +41,36 @@ else
 end  
 
 if (n==2)
-  x = T_3D_to_2D * x;
+  if rotation_type
+    if m>1, error('still need to handle this case'); end
+    quat = x(4:7);
+    axis = quat2axis(quat);
+    signFlip = 1;
+    if dot(axis(1:3),obj.view_axis)<0, axis=-axis; signFlip=-1; end
+    if abs(dot(axis(1:3),obj.view_axis)-1)>1e-6,
+      error('Drake:PlanarRigidBodyManipulator:OutOfPlaneRotations','The requested rotation is outside of the viewing axis.  Cannot return a meaningful scalar rotation');
+    end
+    angle=axis(4);
+    if nargout>1
+      Jangle = quatdot2angularvelMatrix(quat)*J(4:7,:);
+      % since i only support view_axis-aligned rotations, the angular
+      % velocity vector must be aligned with the view_axis, so I can pull
+      % off a single element.  (Note: i can't actually test that omega is
+      % aligned with the view_axis without knowing qdot.)
+      Jangle = signFlip*obj.view_axis'*Jangle;
+      if nargout>2
+        error('still need to handle this case');
+      end
+    end      
+  else
+    angle=[]; Jangle=[]; dJangle=[];
+  end
+  x = [T_3D_to_2D * x(1:3,:); angle];
   if (nargout>1)
     nq = size(J,2);
-    J = reshape(T_3D_to_2D * reshape(J,3,m*nq),2*m,nq);
+    J = [reshape(T_3D_to_2D * reshape(J(1:3,:),3,m*nq),2*m,nq); Jangle];
     if nargout>2
-      dJ = reshape(T_3D_to_2D * reshape(dJ,3,m*nq^2),2*m,nq^2);
+      dJ = [reshape(T_3D_to_2D * reshape(dJ(1:3,:),3,m*nq^2),2*m,nq^2); dJangle];
     end
   end
 end

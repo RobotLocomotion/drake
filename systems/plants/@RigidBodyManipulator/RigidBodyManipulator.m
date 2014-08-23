@@ -753,6 +753,12 @@ classdef RigidBodyManipulator < Manipulator
     
     function [model,frame_id] = addFrame(model,frame)
       % @ingroup Kinematic Tree
+      % adds a new frame to the rigid body manipulator, assigning it a
+      % unique id
+      % @param frame a RigidBodyFrame object
+      % @retval model the updated model (will need to be compiled)
+      % @retval frame_id the unique identifier by which this frame can be
+      %          referenced going forward
       typecheck(frame,'RigidBodyFrame');
       model.frame = vertcat(model.frame,frame);
       frame_id = -(numel(model.frame));

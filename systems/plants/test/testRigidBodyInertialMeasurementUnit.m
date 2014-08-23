@@ -1,19 +1,18 @@
 function testRigidBodyInertialMeasurementUnit()
 
-testAtlas('rpy');
+testVersusTwistMethod(createAtlas('rpy'));
 compare2dTo3d();
 
 end
 
-function testAtlas(floatingtype)
-r = createAtlas(floatingtype);
+function testVersusTwistMethod(r)
 
 nbodies = r.getNumBodies();
 body = randi([2 nbodies]);
 xyz = randn(3, 1);
-rpy = zeros(3, 1); % TODO: change once nonzero rpy is supported
-imu = RigidBodyInertialMeasurementUnit(r, body, xyz, rpy);
-r = r.addSensor(imu);
+rpy = randn(3, 1); 
+[r,imu_frame] = addFrame(r,RigidBodyFrame(body,xyz,rpy,'imu'));
+r = r.addSensor(RigidBodyInertialMeasurementUnit(r, imu_frame));
 r = compile(r);
 
 nq = r.getNumPositions();
@@ -49,6 +48,7 @@ for i = 1 : 100
 
   xdot = r.dynamics(t, x, u);
   vd = xdot(nq + 1 : end);
+
   spatial_accels = r.spatialAccelerations(kinsol.T, twists, q, v, vd);
   body_spatial_accel = transformSpatialAcceleration(spatial_accels{body}, kinsol.T, twists, world, body, body, world); % TODO: update once floatingBase branch is merged in: output of spatialAccelerations changed from body frame to world frame
   
@@ -65,21 +65,31 @@ end
 end
 
 function compare2dTo3d()
+rng(55, 'twister'); % angledot wrong on first test
+% rng(541, 'twister'); % angledot wrong on first test
+% rng(125, 'twister'); % angledot right on first couple of tests, but accels wrong due to rotation in wrong direction in RigidBodyInertialMeasurementUnit
 r2d = PlanarRigidBodyManipulator('DoublePendWBiceptSpring.urdf');
 r3d = RigidBodyManipulator('DoublePendWBiceptSpring.urdf');
 
-nbodies = r2d.getNumBodies();
-body = nbodies;
-rpy = zeros(3, 1); % TODO: change once nonzero rpy is supported
-xyz = randn(3, 1);
-xy = xyz(1:2);
+% works:
+% options.view = 'front';
+% r2d = PlanarRigidBodyManipulator('DoublePendWBiceptSpringFront.urdf', options);
+% r3d = RigidBodyManipulator('DoublePendWBiceptSpringFront.urdf');
+assert(getNumStates(r2d)==getNumStates(r3d));
 
-imu2d = RigidBodyInertialMeasurementUnit(r2d, body, xy, rpy);
-r2d = r2d.addSensor(imu2d);
+nbodies = r2d.getNumBodies();
+body2d = randi([2 nbodies]);
+b = getBody(r2d,body2d);
+body3d = findLinkInd(r3d,b.linkname);
+rpy = randn*r2d.view_axis; % randn(3, 1);
+xyz = randn(3, 1);
+
+[r2d,imu_frame] = addFrame(r2d,RigidBodyFrame(body2d,xyz,rpy,'imu'));
+r2d = r2d.addSensor(RigidBodyInertialMeasurementUnit(r2d, imu_frame));
 r2d = compile(r2d);
 
-imu3d = RigidBodyInertialMeasurementUnit(r3d, body, xyz, rpy);
-r3d = r3d.addSensor(imu3d);
+[r3d,imu_frame] = addFrame(r3d,RigidBodyFrame(body3d,xyz,rpy,'imu'));
+r3d = r3d.addSensor(RigidBodyInertialMeasurementUnit(r3d, imu_frame));
 r3d = compile(r3d);
 
 nq = r2d.getNumPositions();
@@ -102,9 +112,13 @@ for i = 1 : 100
   omega = y3d(5:7);
   accel = y3d(8:10);
   axis = quat2axis(quat);
-  
+  if dot(axis(1:3),r2d.view_axis)<0
+    axis = -axis;
+    omega = -omega;  % note: doing this if dot(omega,r2d.view_axis)<0 gives a different result
+  end
+  valuecheck(axis(1:3),r2d.view_axis);
   valuecheck(0, angleDiff(axis(4), angle));
-  valuecheck(omega(3), angledot);
-  valuecheck(accel(1:2), accel2d);
+  valuecheck(r2d.view_axis'*omega, angledot);
+  valuecheck(r2d.T_2D_to_3D' * accel, accel2d);
 end
 end
