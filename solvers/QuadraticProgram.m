@@ -149,7 +149,7 @@ methods
         error('Drake:QuadraticProgram:UnsupportedSolver','gurobi is not installed');
       end
       obj.solver = solver;
-    elseif(strcmp(solver,'quadprogram'))
+    elseif(strcmp(solver,'quadprog'))
       obj.solver = solver;
     elseif(strcmp(solver,'gurobi_mex'))
       if(~checkDependency('gurobi_mex'))
