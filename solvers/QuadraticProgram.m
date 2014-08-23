@@ -70,7 +70,7 @@ methods
         end
         
       case 'gurobi'
-        [x,objval,exitflag,active] = gurobi(obj,active);
+        [x,objval,exitflag,active] = gurobiQP(obj,active);
     
       case 'gurobi_mex'
         [x,exitflag,active] = gurobiQPmex(obj.Q,obj.f,obj.Ain,obj.bin,obj.Aeq,obj.beq,obj.x_lb,obj.x_ub,active);
@@ -168,7 +168,7 @@ methods
 end
 
 methods(Access=protected)
-  function [x,objval,info,active] = gurobi(obj,active)
+  function [x,objval,info,active] = gurobiQP(obj,active)
     
     params.outputflag = 0; % not verbose
     params.method = 2; % -1=automatic, 0=primal simplex, 1=dual simplex, 2=barrier
