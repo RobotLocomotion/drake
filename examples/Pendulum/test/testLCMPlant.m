@@ -18,4 +18,4 @@ path(p);
 
 % tell ctest to run this one serially (so it doesn't compete for
 % resources):
-% RUN_SERIAL
+% RUN_SERIAL TRUE
