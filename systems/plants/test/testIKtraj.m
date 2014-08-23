@@ -38,7 +38,7 @@ r_foot_pts = [0;0;0];
 l_foot_pts = [0;0;0];
 
 
-nq = r.getNumDOF();
+nq = r.getNumPositions();
 coords = r.getStateFrame.coordinates(1:nq);
 l_leg_kny = find(strcmp(coords,'l_leg_kny'));
 r_leg_kny = find(strcmp(coords,'r_leg_kny'));
@@ -267,7 +267,7 @@ if(info>10)
 end
 toc
 x_sol = xtraj.eval(t);
-q_sol = x_sol(1:r.getNumDOF,:);
+q_sol = x_sol(1:r.getNumPositions,:);
 testConstraint(r,t,q_sol,ikoptions.fixInitialState,varargin{1:end-1});
 tic
 x0 = [q_seed.eval(t(1));q_seed.deriv(t(1))];
@@ -281,7 +281,7 @@ if(info>10)
 end
 toc
 x_sol = xtraj.eval(t);
-q_sol = x_sol(1:r.getNumDOF,:);
+q_sol = x_sol(1:r.getNumPositions,:);
 testConstraint(r,t,q_sol,ikoptions.fixInitialState,varargin{1:end-1});
 % display('IK matlab start to solve the problem');
 % tic

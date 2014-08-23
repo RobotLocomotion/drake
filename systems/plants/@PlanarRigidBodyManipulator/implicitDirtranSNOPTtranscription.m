@@ -283,7 +283,7 @@ function [f,G] = dirtran_userfun(sys,w,costFun,finalCostFun,tOrig,nX,nU,nL,nC,nC
 %   
 %  figure(1); clf; plot(x(1,:),x(2,:)); drawnow;
 
-  num_q = sys.num_q;
+  num_q = sys.num_positions;
   %% todo: vectorize this when possible
 
   % preallocate vars

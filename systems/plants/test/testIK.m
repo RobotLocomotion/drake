@@ -9,7 +9,7 @@ urdf = [getDrakePath,'/examples/Atlas/urdf/atlas_minimal_contact.urdf'];
 urdf_collision = [getDrakePath,'/examples/Atlas/urdf/atlas_convex_hull.urdf'];
 options.floating = true;
 robot = RigidBodyManipulator(urdf,options);
-nq = robot.getNumDOF();
+nq = robot.getNumPositions();
 
 r_collision = RigidBodyManipulator(urdf_collision,options);
 ignored_bodies = {'ltorso','mtorso','r_talus','l_talus'};
@@ -35,7 +35,7 @@ end
 l_hand_pts = [0;0;0];
 r_hand_pts = [0;0;0];
 
-coords = robot.getStateFrame.coordinates(1:robot.getNumDOF);
+coords = robot.getStateFrame.coordinates(1:robot.getNumPositions);
 l_leg_kny = find(strcmp(coords,'l_leg_kny'));
 r_leg_kny = find(strcmp(coords,'r_leg_kny'));
 l_leg_hpy = find(strcmp(coords,'l_leg_hpy'));

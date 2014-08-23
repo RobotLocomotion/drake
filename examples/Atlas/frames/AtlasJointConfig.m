@@ -10,7 +10,7 @@ classdef AtlasJointConfig < SingletonCoordinateFrame
         floating = true;
       end
       
-      nq = r.getNumDOF();
+      nq = r.getNumPositions();
       if floating
         jrange = 7:nq; % ignore floating base dofs
       else

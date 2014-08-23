@@ -34,8 +34,6 @@ for i = 2 : obj.getNumBodies()
       error('floating joint type not recognized');
     end
   end
-  q(body.dofnum) = q_body;
-  % +++FLOATINGBASE FIXME use this instead:
-%   q(body.position_num) = qBody;
+  q(body.position_num) = q_body;
 end
 end

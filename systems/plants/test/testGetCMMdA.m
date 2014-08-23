@@ -14,7 +14,7 @@ function testGetCMMdA()
     warning('off','Drake:RigidBodyManipulator:ReplacedCylinder');
     r = RigidBodyManipulator(test_case.urdf,options);
     warning(w);
-    nq = r.getNumDOF();
+    nq = r.getNumPositions();
     q = rand(nq,1);
     [A,dA] = geval(@r.getCMMdA,q,struct('grad_method',{{'user','taylorvar'}}));
     [A,dA] = geval(@r.getCMMdA,q, ...

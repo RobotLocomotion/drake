@@ -1,6 +1,6 @@
 % Create plant from urdf
 p = RigidBodyManipulator('3LinkThing.urdf');
-N = p.num_q; 
+N = p.num_positions; 
 
 % Construct visualizer
 v = p.constructVisualizer;

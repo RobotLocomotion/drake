@@ -25,7 +25,7 @@ r = Atlas('urdf/atlas_minimal_contact.urdf',options);
 r = r.removeCollisionGroupsExcept({'heel','toe'});
 r = compile(r);
 
-nq = getNumDOF(r);
+nq = getNumPositions(r);
 
 % set initial state to fixed point
 load('data/atlas_fp.mat');

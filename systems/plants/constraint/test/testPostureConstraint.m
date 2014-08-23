@@ -5,7 +5,7 @@ checkDependency('rigidbodyconstraint_mex');
 urdf = [getDrakePath,'/examples/Atlas/urdf/atlas_minimal_contact.urdf'];
 options.floating = true;
 r = RigidBodyManipulator(urdf,options);
-nq = r.getNumDOF();
+nq = r.getNumPositions();
 
 l_leg_kny = find(strcmp(r.getStateFrame.coordinates,'l_leg_kny'));
 r_leg_kny = find(strcmp(r.getStateFrame.coordinates,'r_leg_kny'));

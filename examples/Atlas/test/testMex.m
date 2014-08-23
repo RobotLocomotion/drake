@@ -2,7 +2,7 @@ function testMex
 
 options.floating=true;
 p = PlanarRigidBodyManipulator('../urdf/atlas_minimal_contact.urdf',options);
-nq = getNumDOF(p);
+nq = getNumPositions(p);
 
 for i=1:100
   q = randn(nq,1);
@@ -44,7 +44,7 @@ end
 
 options.floating=true;
 p = RigidBodyManipulator('../urdf/atlas_minimal_contact.urdf',options);
-nq = getNumDOF(p);
+nq = getNumPositions(p);
 
 for i=1:25
   q = randn(nq,1);

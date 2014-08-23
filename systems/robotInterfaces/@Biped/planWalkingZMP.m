@@ -9,7 +9,7 @@ for j = 1:length(footstep_plan.footsteps)
     obj.default_walking_params);
 end
 
-nq = getNumDOF(obj);
+nq = getNumPositions(obj);
 q0 = x0(1:nq);
 
 [zmptraj,link_constraints, support_times, supports] = planZMPTraj(obj, q0, footstep_plan.footsteps);

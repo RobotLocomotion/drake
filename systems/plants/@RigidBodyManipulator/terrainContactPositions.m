@@ -68,7 +68,7 @@ function [x_in_world, J, dJ_or_Jdot] = terrainContactPositions(obj, ...
   end
 
   n_pts = arrayfun(@(x) size(x.pts,2),terrain_contact_point_struct);
-  nq = obj.getNumDOF();
+  nq = obj.getNumPositions();
   cumsum_n_pts = cumsum([0,n_pts]);
   x_in_world = zeros(3,cumsum_n_pts(end))*kinsol.q(1);
   if compute_first_derivative

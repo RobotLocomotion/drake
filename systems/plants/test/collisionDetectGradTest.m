@@ -52,7 +52,7 @@ end
 
 % Remove this when the RBM method is implemented
 function n_pos = getNumPositions(r)
-  n_pos = r.getNumDOF();
+  n_pos = r.getNumPositions();
 end
 
 function [ptsA_in_world, ptsB_in_world, ptsA, ptsB, idxA, idxB] = drawClosestPoints(r,q,v,lcmgl)

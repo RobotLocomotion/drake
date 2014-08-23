@@ -39,7 +39,7 @@ classdef QuasiStaticConstraint<RigidBodyConstraint
         error('Drake:QuasiStaticConstraint: robotnum is not accepted');
       end
       obj.robotnum = robotnum;
-      obj.nq = robot.getNumDOF;
+      obj.nq = robot.getNumPositions;
       obj.shrinkFactor = 0.9;
       obj.active = false;
       obj.num_bodies = 0;
@@ -209,7 +209,7 @@ classdef QuasiStaticConstraint<RigidBodyConstraint
     
     function obj = updateRobot(obj,robot)
       obj.robot = robot;
-      obj.nq = obj.robot.getNumDOF();
+      obj.nq = obj.robot.getNumPositions();
       obj.mex_ptr = updatePtrRigidBodyConstraintmex(obj.mex_ptr,'robot',obj.robot.getMexModelPtr);
     end
     

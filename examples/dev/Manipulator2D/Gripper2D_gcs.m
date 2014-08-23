@@ -19,8 +19,8 @@ classdef Gripper2D_gcs < Gripper2D
       phi_f = phi(1:2:end);
       phi_n = phi(2:2:end);
       
-      dn = reshape(dJ(2:2:end,:),obj.num_q*length(phi_n),obj.num_q);
-      dD{1} = reshape(dJ(1:2:end,:),obj.num_q*length(phi_n),obj.num_q);
+      dn = reshape(dJ(2:2:end,:),obj.num_positions*length(phi_n),obj.num_positions);
+      dD{1} = reshape(dJ(1:2:end,:),obj.num_positions*length(phi_n),obj.num_positions);
       dD{2} = -dD{1};
       
       psi = reshape(psi_full,2,[]);
@@ -53,9 +53,9 @@ classdef Gripper2D_gcs < Gripper2D
       n = [n;n2];
       D{1} = [D{1};D2{1}];
       D{2} = [D{2};D2{2}];
-      dn = reshape([reshape(dn,length(phi_n),obj.num_q^2); reshape(dn2,length(phi_n2),obj.num_q^2)],[],obj.num_q);
-      dD{1} = reshape([reshape(dD{1},length(phi_n),obj.num_q^2); reshape(dD2{1},length(phi_n2),obj.num_q^2)],[],obj.num_q);
-      dD{2} = reshape([reshape(dD{2},length(phi_n),obj.num_q^2); reshape(dD2{2},length(phi_n2),obj.num_q^2)],[],obj.num_q);
+      dn = reshape([reshape(dn,length(phi_n),obj.num_positions^2); reshape(dn2,length(phi_n2),obj.num_positions^2)],[],obj.num_positions);
+      dD{1} = reshape([reshape(dD{1},length(phi_n),obj.num_positions^2); reshape(dD2{1},length(phi_n2),obj.num_positions^2)],[],obj.num_positions);
+      dD{2} = reshape([reshape(dD{2},length(phi_n),obj.num_positions^2); reshape(dD2{2},length(phi_n2),obj.num_positions^2)],[],obj.num_positions);
 %       dD{1} = [dD{1};dD2{1}];
 %       dD{2} = [dD{2};dD2{2}];
       dPsi = [dPsi;dPsi2];
@@ -63,7 +63,7 @@ classdef Gripper2D_gcs < Gripper2D
       psi = [psi psi2];
       phi_n = [phi_n;phi_n2];
       
-      J2 = zeros(2*length(phi_n2), obj.num_q);
+      J2 = zeros(2*length(phi_n2), obj.num_positions);
       J2(1:2:end,:) = D2{1};
       J2(2:2:end,:) = n2;
       dPhi = [dPhi;J2];
@@ -83,14 +83,14 @@ classdef Gripper2D_gcs < Gripper2D
 
       if (nargout > 6)
         contact_vel = zeros(2,nObjContacts)*q(1);  % *q(1) to help TaylorVar  
-        dv = zeros(2*nObjContacts,2*obj.num_q)*q(1);
+        dv = zeros(2*nObjContacts,2*obj.num_positions)*q(1);
       else
       end
       kinsol = doKinematicsmex(obj.mex_model_ptr,q,1)
 
       contact_pos = zeros(2,nObjContacts)*q(1);  % *q(1) to help TaylorVar
       if (nargout>1) 
-        J = zeros(2*nObjContacts,obj.num_q)*q(1); 
+        J = zeros(2*nObjContacts,obj.num_positions)*q(1); 
       end
       
       count=0;
@@ -174,8 +174,8 @@ classdef Gripper2D_gcs < Gripper2D
           % normal velocities sum(contact_vel.*t)
           psi = [sum(rel_vel.*t);sum(rel_vel.*normal)];
           dPsi = zeros(size(dv));
-          dPsi(1:2:end,:) = reshape(sum(reshape(repmat(t(:),1,2*obj.num_q).*dv,2,[]),1),size(t,2),[]);
-          dPsi(2:2:end,:) = reshape(sum(reshape(repmat(normal(:),1,2*obj.num_q).*dv,2,[]),1),size(t,2),[]);
+          dPsi(1:2:end,:) = reshape(sum(reshape(repmat(t(:),1,2*obj.num_positions).*dv,2,[]),1),size(t,2),[]);
+          dPsi(2:2:end,:) = reshape(sum(reshape(repmat(normal(:),1,2*obj.num_positions).*dv,2,[]),1),size(t,2),[]);
         end
       end
     end

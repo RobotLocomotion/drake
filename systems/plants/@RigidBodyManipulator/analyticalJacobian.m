@@ -18,7 +18,7 @@ for i = 1 : nPoints
 end
 
 JX = -xHats * JOmega + repmat(JV, nPoints, 1);
-vSize = obj.num_q; % TODO: should be num_v once it exists
+vSize = obj.num_velocities;
 
 switch (rotationType)
   case 0 % no rotation included

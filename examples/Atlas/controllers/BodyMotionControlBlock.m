@@ -25,7 +25,7 @@ classdef BodyMotionControlBlock < DrakeSystem
       obj = setOutputFrame(obj,output_frame);
 
       obj.controller_data = controller_data;
-      obj.nq = getNumDOF(r);
+      obj.nq = getNumPositions(r);
 
       if nargin<4
         options = struct();

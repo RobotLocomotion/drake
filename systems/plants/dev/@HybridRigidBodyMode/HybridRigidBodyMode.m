@@ -17,7 +17,7 @@ classdef HybridRigidBodyMode < RigidBodyManipulator
       obj = obj@RigidBodyManipulator(urdf_filename,options);
       warning(S);
       
-      sizecheck(joint_limit_state,[obj.num_q,1]);
+      sizecheck(joint_limit_state,[obj.num_positions,1]);
       obj.joint_limit_state = joint_limit_state;
       
       sizecheck(contact_state,[obj.num_contacts,1]);
@@ -72,16 +72,16 @@ classdef HybridRigidBodyMode < RigidBodyManipulator
         
     function [phi_j,dphi_j,ddphi_j] = jointLimitConstraints(obj,q)
       % only the active joint limit
-      joint_ind = (1:obj.num_q)';
+      joint_ind = (1:obj.num_positions)';
       joint_ind1 = joint_ind(obj.joint_limit_state == 1);
       joint_ind2 = joint_ind(obj.joint_limit_state == 2);
       phi_j = [q(joint_ind1)-obj.joint_limit_min(joint_ind1);...
         obj.joint_limit_max(joint_ind2)-q(joint_ind2)];
       if(nargout>1)
-        dphi_j = [sparse((1:length(joint_ind1))',joint_ind1,ones(length(joint_ind1),1),length(joint_ind1),obj.num_q);...
-          sparse((1:length(joint_ind2))',joint_ind2,-ones(length(joint_ind2),1),length(joint_ind2),obj.num_q)];
+        dphi_j = [sparse((1:length(joint_ind1))',joint_ind1,ones(length(joint_ind1),1),length(joint_ind1),obj.num_positions);...
+          sparse((1:length(joint_ind2))',joint_ind2,-ones(length(joint_ind2),1),length(joint_ind2),obj.num_positions)];
         if(nargout>2)
-          ddphi_j = sparse((length(joint_ind1)+length(joint_ind2)),obj.num_q*obj.num_q);
+          ddphi_j = sparse((length(joint_ind1)+length(joint_ind2)),obj.num_positions*obj.num_positions);
         end
       end
     end
@@ -148,9 +148,9 @@ classdef HybridRigidBodyMode < RigidBodyManipulator
       kinsol = doKinematics(obj,q,nargout>2);
       contact_pos = zeros(3,length(contact_pts_ind1))*q(1);
       if nargout>1
-        J = zeros(3*length(contact_pts_ind1),obj.num_q)*q(1);
+        J = zeros(3*length(contact_pts_ind1),obj.num_positions)*q(1);
         if(nargout>2)
-          dJ = zeros(3*length(contact_pts_ind1),obj.num_q^2)*q(1);
+          dJ = zeros(3*length(contact_pts_ind1),obj.num_positions^2)*q(1);
         end
       end
       count = 0;
@@ -206,14 +206,14 @@ classdef HybridRigidBodyMode < RigidBodyManipulator
           dc_col = [];
           dc_val = [];
           dc_row = [dc_row;(1:contact_length1)'];
-          dc_col = [dc_col;obj.num_q+reshape((1:contact_length1)*(1+num_tan),[],1)];
+          dc_col = [dc_col;obj.num_positions+reshape((1:contact_length1)*(1+num_tan),[],1)];
           dc_val = [dc_val; reshape(2*lambda_normal.*mu.^2.*sum(normal.^2,1),[],1)];
           for k = 1:num_tan
             dc_row = [dc_row;(1:contact_length1)'];
-            dc_col = [dc_col;obj.num_q+reshape((0:(contact_length1-1))*(1+num_tan)+k,[],1)];
+            dc_col = [dc_col;obj.num_positions+reshape((0:(contact_length1-1))*(1+num_tan)+k,[],1)];
             dc_val = [dc_val;reshape(-2*sum(friction.*tan{k},1),[],1)];
           end
-          dc = sparse(dc_row,dc_col,dc_val,contact_length1,obj.num_q+numel(lambda_contact));
+          dc = sparse(dc_row,dc_col,dc_val,contact_length1,obj.num_positions+numel(lambda_contact));
         end
       end
       
