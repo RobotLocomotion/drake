@@ -3,7 +3,6 @@ classdef NormSquared < drakeFunction.DrakeFunction
   % Euclidean norm) for points in a given frame.
   properties
     Q           % Weighting matrix
-    is_weighted % Logical scalar 
   end
 
   methods
@@ -36,5 +35,9 @@ classdef NormSquared < drakeFunction.DrakeFunction
         da = 2*r';
       end
     end
+  end
+
+  properties (Access = private)
+    is_weighted % Logical scalar 
   end
 end
