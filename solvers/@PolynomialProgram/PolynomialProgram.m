@@ -65,6 +65,22 @@ classdef PolynomialProgram < NonlinearProgram
       obj.poly_objective = objective;
       obj.poly_inequality_constraints = inequality_constraints;
       obj.poly_equality_constraints = equality_constraints;
+      if(isempty(obj.poly_inequality_constraints))
+        obj.num_cin = 0;
+        obj.cin_ub = [];
+        obj.cin_lb = [];
+      else
+        dim = obj.poly_inequality_constraints.dim;
+        obj.num_cin = dim(1);
+        obj.cin_ub = zeros(obj.num_cin,1);
+        obj.cin_lb = -inf(obj.num_cin,1);
+      end
+      if(isempty(obj.poly_equality_constraints))
+        obj.num_ceq = 0;
+      else
+        dim = obj.poly_equality_constraints.dim;
+        obj.num_ceq = dim(1);
+      end
     end
     
     function [x,objval,exitflag] = solve(obj,x0)
@@ -127,9 +143,6 @@ classdef PolynomialProgram < NonlinearProgram
       error('Drake:PolynomialProgram:UnsupportedConstraint','PolynomialProgram does not accept NonlinearConstraint yet, but we will implement it as soon as possible');
     end
     
-    function obj = addLinearConstraint(obj,cnstr,xind)
-      error('Drake:PolynomialProgram:UnsupportedConstraint','PolynomialProgram does not accept LinearConstraint yet, but we will implement it as soon as possible');
-    end
     
     function obj = replaceCost(obj,cost,cost_idx,xind)
       error('Drake:PolynomialProgram:UnsupportedConstraint','PolynomialProgram does support replaceCost yet, but we will implement it as soon as possible');
