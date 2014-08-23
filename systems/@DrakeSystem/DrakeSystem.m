@@ -247,8 +247,8 @@ classdef DrakeSystem < DynamicalSystem
         add_line(mdl,'DrakeSys/1','out/1');
       end
 
-      if (obj.num_xcon>0)
-        warning('Drake:DrakeSystem:ConstraintsNotEnforced','system has constraints, but they aren''t enforced in the simulink model yet.');
+      if ~isempty(obj.state_constraints)
+        obj.warning_manager.warnOnce('Drake:DrakeSystem:ConstraintsNotEnforced','system has constraints, but they aren''t enforced in the simulink model yet.');
       end
     end
 
@@ -345,9 +345,12 @@ classdef DrakeSystem < DynamicalSystem
     end
     function n = getNumStateConstraints(obj)
       % @retval the total number state *equality* constraints in the program
-      n = obj.num_xcon;
+      n = obj.num_xcon_eq;
     end
-
+    function n = getNumUnilateralConstraints(obj)
+      n = obj.num_xcon_ineq;
+    end
+    
     function obj = addStateConstraint(obj,con)
       % @param con is a constraint object which takes the state of this
       % system as input
@@ -356,7 +359,8 @@ classdef DrakeSystem < DynamicalSystem
       assert(con.xdim == obj.num_x,'DrakeSystem:InvalidStateConstraint','State constraints must take a vector that is the same size as the state vector of this system as an input');
 
       obj.state_constraints{end+1} = con;
-      obj.num_xcon = obj.num_xcon + sum(con.lb == con.ub);
+      obj.num_xcon_eq = obj.num_xcon_eq + sum(con.lb == con.ub);
+      obj.num_xcon_ineq = obj.num_xcon_ineq + sum(con.lb ~= con.ub);
     end
   end
 
@@ -391,14 +395,13 @@ classdef DrakeSystem < DynamicalSystem
 
       varargout = cell(1,nargout);
       for i=1:length(obj.state_constraints)
-        equality_constraint_indices = find(obj.state_constraints{i}.lb == obj.state_constraints{i}.ub);
-        if ~isempty(equality_constraint_indices)
+        if ~isempty(obj.state_constraints{i}.ceq_idx)
           % then evaluate this constraint to the requested derivative level
           v = cell(1,nargout);
           [v{:}] = obj.state_constraints{i}.eval(x);
           v{1} = v{1} - obj.state_constraints{i}.lb;  % center it around 0
           for j=1:length(nargout)
-            varargout{j} = vertcat(varargout{j},v{j}(equality_constraint_indices,:));
+            varargout{j} = vertcat(varargout{j},v{j}(obj.state_constraints{i}.ceq_idx,:));
           end
         end
       end
@@ -622,7 +625,8 @@ classdef DrakeSystem < DynamicalSystem
     uid;    % unique identifier for simulink models of this block instance
     direct_feedthrough_flag=true;  % true/false: does the output depend on u?  set false if you can!
     ts=[];    % default sample times of the model
-    num_xcon = 0;  % number of state *equality* constraints
+    num_xcon_eq = 0;  % number of state *equality* constraints
+    num_xcon_ineq = 0; % number of state *inequality* constraints
     state_constraints={}; % a cell array of constraint objects which depend on the state vector x
   end
   properties (SetAccess=private, GetAccess=public)
