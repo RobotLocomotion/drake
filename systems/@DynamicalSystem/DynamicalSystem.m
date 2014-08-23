@@ -325,33 +325,27 @@ classdef DynamicalSystem
     end
     
     function prog = addStateConstraintsToProgram(obj,prog,indices)
-      % adds state constraints and unilateral constriants to the 
+      % adds state constraints and unilateral constraints to the 
       %   program on the specified indices.  derived classes can overload 
-      %   this method to add additional constraints.
+      %   this method to their additional constraints.
       % 
       % @param prog a NonlinearProgram class
       % @param indices the indices of the state variables in the program
       %        @default 1:nX
 
-      typecheck(prog,'NonlinearProgram');
-      nx = getNumStates(obj);
-      if nargin<3, indices=1:nx; end
+      return; % intentionally do nothing
+    end
+    
+    function prog = addInputConstraintsToProgram(obj,prog,indices)
+      % adds input constraints and unilateral constriants to the 
+      %   program on the specified indices.  derived classes can overload 
+      %   this method to add additional constraints.
+      % 
+      % @param prog a NonlinearProgram class
+      % @param indices the indices of the input variables in the program
+      %        @default 1:nX
       
-      % add state constraints
-      nc = getNumStateConstraints(obj);
-      if nc>0
-        con = FunctionHandleConstraint(zeros(nc,1),zeros(nc,1),nx,@obj.stateConstraints);
-        con.grad_method = 'user_then_taylorvar';
-        prog = addConstraint(prog,con,indices);
-      end
-      
-      % add unilateral constraints
-      nc = getNumUnilateralConstraints(obj);
-      if nc>0
-        con = FunctionHandleConstraint(zeros(nc,1),inf(nc,1),nx,@obj.unilateralConstraints);
-        con.grad_method = 'user_then_taylorvar';
-        prog = addConstraint(prog,con,indices);
-      end
+      return; % intentionally do nothing... no input constraints are registered at the DynamicalSystem class level
     end
     
   end
@@ -450,26 +444,6 @@ classdef DynamicalSystem
       typecheck(fr,'CoordinateFrame');
       if (fr.dim ~= obj.getNumOutputs()) error('frame dimension does not match number of outputs'); end
       obj.output_frame=fr;
-    end
-    
-    function n = getNumStateConstraints(obj);
-      % Returns the scalar number of state constraints (of the form phi(x)=0)
-      n = 0;  % default behavior is n=0
-    end
-    
-    function con = stateConstraints(obj,x)
-      % defines state equality constraints in the form phi(x)=0
-      error('Drake:DynamicalSystem:AbstractMethod','systems with state constraints must implement the constraints method');
-    end
-    
-    function con = unilateralConstraints(obj,x)
-      % defines state unilateral constraints in the form phi(x)>=0
-      error('Drake:DynamicalSystem:AbstractMethod','systems with unilateral constraints must implement the constraints method');
-    end
-    
-    function n = getNumUnilateralConstraints(obj)
-      % Returns the scalar number of state constraints (of the form phi(x)>=0)
-      n = 0;  % default behavior is n=0
     end
     
     function obj = setSimulinkParam(obj,varargin)
