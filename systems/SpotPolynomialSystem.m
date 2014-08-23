@@ -226,6 +226,7 @@ classdef SpotPolynomialSystem < PolynomialSystem
         end
       end
       obj.p_state_constraints = p_state_constraints;
+      error('todo: need to reset the drake.state_constraints with this new constraint');
     end
     
     function p_state_constraints = getPolyStateConstraints(obj)
