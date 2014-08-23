@@ -432,6 +432,7 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
         s.subs = {s.subs{:},':',':'};
         coefs = subsref(coefs,s);
         d=size(subsref(a.eval(a.tspan(1)),s));
+        if numel(d)==2 && d(2)==1, d = d(1); end  % column vectors are a special case that's handled differently by the spline class
         varargout{1} = PPTrajectory(mkpp(breaks,coefs,d));
       elseif nargout>0  % use builtin
         varargout=cell(1,nargout);
