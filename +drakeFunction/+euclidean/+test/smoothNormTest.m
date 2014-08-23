@@ -8,7 +8,7 @@ function [x,F,info] = smoothNormTest(N)
   smoothing_factor = 1e-4;
   smooth_norm_fcn = drakeFunction.euclidean.SmoothNorm(R3,smoothing_factor);
   smooth_dist_between_pts_fcn = smooth_norm_fcn(Difference(R3));
-  distance_constraint = DrakeFunctionConstraint((2*radius),inf,smooth_dist_between_pts_fcn);
+  distance_constraint = drakeFunction.Constraint((2*radius),inf,smooth_dist_between_pts_fcn);
 
   prog = NonlinearProgramWConstraintObjects(3*N);
   prog = prog.addDisplayFunction(@(r)displayCallback(lcmgl,radius,r),r_inds);

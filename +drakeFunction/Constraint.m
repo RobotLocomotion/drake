@@ -1,9 +1,9 @@
-classdef DrakeFunctionConstraint < Constraint
+classdef Constraint < Constraint
   properties (SetAccess = private)
     fcn
   end
   methods
-    function obj = DrakeFunctionConstraint(lb,ub,fcn)
+    function obj = Constraint(lb,ub,fcn)
       sizecheck(lb,[fcn.getOutputFrame().dim,1]);
       sizecheck(ub,[fcn.getOutputFrame().dim,1]);
       obj = obj@Constraint(lb,ub,fcn.getInputFrame().dim,1);
