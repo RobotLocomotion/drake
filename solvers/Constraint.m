@@ -10,7 +10,7 @@ classdef Constraint
   properties(SetAccess = protected)
     lb      % The lower bound of the constraint
     ub      % The upper bound of the constraint
-    xdim    % The name of the constraint. If not specified, it is an empty string
+    xdim    % The size of the input to the constraint
     num_cnstr % An int scalar. The number of constraints
     name    % cell array of constraint names
     ceq_idx   % The row index of the equality constraint

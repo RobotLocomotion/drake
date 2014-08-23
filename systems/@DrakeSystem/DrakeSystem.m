@@ -44,7 +44,7 @@ classdef DrakeSystem < DynamicalSystem
       % small random vector as an initial seed.
 
       x0 = .01*randn(obj.num_xd+obj.num_xc,1);
-      if getNumStateConstraints(obj)+getNumUnilateralConstraints(obj)>0
+      if ~isempty(obj.state_constraints)
         attempts=0;
         success=false;
         while (~success)
@@ -344,13 +344,64 @@ classdef DrakeSystem < DynamicalSystem
       obj.num_zcs = num_zcs;
     end
     function n = getNumStateConstraints(obj)
-      % Returns the number of zero crossings
+      % @retval the total number state *equality* constraints in the program
       n = obj.num_xcon;
     end
-    function obj = setNumStateConstraints(obj,num_xcon)
-      % Guards the number of zero crossings to make sure it's valid.
-      if (num_xcon<0), error('num_xcon must be >=0'); end
-      obj.num_xcon = num_xcon;
+
+    function obj = addStateConstraint(obj,con)
+      % @param con is a constraint object which takes the state of this
+      % system as input
+
+      typecheck(con,'Constraint');
+      assert(con.xdim == obj.num_x,'DrakeSystem:InvalidStateConstraint','State constraints must take a vector that is the same size as the state vector of this system as an input');
+
+      obj.state_constraints{end+1} = con;
+      obj.num_xcon = obj.num_xcon + sum(con.lb == con.ub);
+    end
+  end
+
+  methods (Sealed)
+    function prog = addStateConstraintsToProgram(obj,prog,indices)
+      % adds state constraints and unilateral constraints to the
+      %   program on the specified indices.
+
+      prog = prog.addConstraint(obj.state_constraints,indices);
+    end
+    function prog = addInputConstraintsToProgram(obj,prog,indices)
+      % add bounding box constraint
+      % todo: consider whether it makes sense to a list of constraints
+      % objects instead of just input limits.  for now, this is sealed just
+      % to keep things clean.
+
+      con = BoundingBoxConstraint(umin,umax);
+      con = setName(con,'Input Limits');
+
+      prog = prog.addBoundingBoxConstraint(prog,con,indices);
+    end
+    function varargout = stateConstraints(obj,x)
+      % Provides the old interface of a single constraint function which
+      % evaluates all of the *equality* constraints on the state
+      % (which should be == 0)
+      %
+      % @retval the evaluated *equality* constraints, and potentially their
+      % derivatives.
+
+      % Note: if you're tempted to overload this, you should be adding using the
+      % addStateConstraint method instead
+
+      varargout = cell(1,nargout);
+      for i=1:length(obj.state_constraints)
+        equality_constraint_indices = find(obj.state_constraints{i}.lb == obj.state_constraints{i}.ub);
+        if ~isempty(equality_constraint_indices)
+          % then evaluate this constraint to the requested derivative level
+          v = cell(1,nargout);
+          [v{:}] = obj.state_constraints{i}.eval(x);
+          v{1} = v{1} - obj.state_constraints{i}.lb;  % center it around 0
+          for j=1:length(nargout)
+            varargout{j} = vertcat(varargout{j},v{j}(equality_constraint_indices,:));
+          end
+        end
+      end
     end
   end
 
@@ -494,6 +545,7 @@ classdef DrakeSystem < DynamicalSystem
         p_output = output(obj,t,x,u);
 
         if (obj.num_xcon>0)
+          % todo: extract polynomial constraints
           p_state_constraints = stateConstraints(obj,x);
         end
       catch ex
@@ -524,12 +576,6 @@ classdef DrakeSystem < DynamicalSystem
       sys = extractLinearSystem(extractAffineSystem(obj));
     end
 
-    function [lb,ub] = getStateLimits(obj)
-      % Get the lower and upper bounds on the state, currently implemented
-      % to just return inf/-inf
-      lb = -inf(obj.num_x,1);
-      ub = inf(obj.num_x,1);
-    end
   end
 
   methods % deprecated (due to refactoring)
@@ -576,9 +622,8 @@ classdef DrakeSystem < DynamicalSystem
     uid;    % unique identifier for simulink models of this block instance
     direct_feedthrough_flag=true;  % true/false: does the output depend on u?  set false if you can!
     ts=[];    % default sample times of the model
-  end
-  properties (SetAccess=protected, GetAccess=protected)
-    num_xcon = 0; % number of state constraints. @default: 0
+    num_xcon = 0;  % number of state *equality* constraints
+    state_constraints={}; % a cell array of constraint objects which depend on the state vector x
   end
   properties (SetAccess=private, GetAccess=public)
     umin=[];   % constrains u>=umin (default umin=-inf)

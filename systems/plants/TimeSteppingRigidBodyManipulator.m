@@ -289,7 +289,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
           D = vertcat(D{:});
           J(nL+nP+(1:nC),:) = n;
           J(nL+nP+nC+(1:mC*nC),:) = D;
-          
+
           contact_data.normal = normal;
           contact_data.d = d;
           contact_data.xA = xA;
@@ -953,10 +953,6 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     function model = setParams(model,p)
       model.manip = setParams(model.manip,p);
     end
-    
-    function [lb,ub] = getStateLimits(obj)
-      [lb,ub] = obj.manip.getStateLimits();
-    end
 
     function terrain_contact_point_struct = getTerrainContactPoints(obj,varargin)
       terrain_contact_point_struct = getTerrainContactPoints(obj.manip,varargin{:});
@@ -976,4 +972,3 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
 
 
 end
-

@@ -28,7 +28,7 @@ classdef SpotPolynomialSystem < PolynomialSystem
       obj = setPolyDynamics(obj,p_dynamics_rhs,p_dynamics_lhs);
       obj = setPolyUpdate(obj,p_update);
       obj = setPolyOutput(obj,p_output);
-      if (nargin>7)
+      if (nargin>7 && ~isempty(p_state_constraints))
         obj = setPolyStateConstraints(obj,p_state_constraints);
       end
     end
@@ -73,14 +73,6 @@ classdef SpotPolynomialSystem < PolynomialSystem
         dy = double(subs(diff(obj.p_output,[p_t;p_x;p_u]),[p_t;p_x;p_u],[t;x;u]));
       end
     end    
-    
-    function [phi,dphi] = stateConstraints(obj,x)
-      p_x=obj.getStateFrame.poly;
-      phi = double(subs(obj.p_state_constraints,p_x,x));
-      if (nargout>1)
-        dphi = double(subs(diff(obj.p_state_constraints,p_x),p_x,x));
-      end
-    end
     
     function obj = setInputFrame(obj,frame)
       if frame.dim>0
@@ -224,6 +216,7 @@ classdef SpotPolynomialSystem < PolynomialSystem
       end
       obj = setNumStateConstraints(obj,length(p_state_constraints));
       obj.p_state_constraints = p_state_constraints;
+      error('todo: need to reset the drake.state_constraints with this new constraint');
     end
     
     function p_state_constraints = getPolyStateConstraints(obj)
