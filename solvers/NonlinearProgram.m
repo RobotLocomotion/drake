@@ -1163,6 +1163,9 @@ classdef NonlinearProgram
       [lb,ub] = obj.bounds();
       lb = lb(2:end);
       ub = ub(2:end);
+      display(fval)
+      display(ub)
+      display(lb)
       ub_err = fval-ub;
       max_ub_err = max(ub_err);
       max_ub_err = max_ub_err*(max_ub_err>0);
