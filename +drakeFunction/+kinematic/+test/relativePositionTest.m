@@ -70,7 +70,7 @@ function relativePositionTest(visualize)
   % points and the ground be zero
   lb = zeros(foot_pts_fcn.n_pts,1);
   ub = lb;
-  foot_on_ground_cnstr = drakeFunction.Constraint(lb,ub,dist_to_ground_fcn(foot_pts_fcn));
+  foot_on_ground_cnstr = DrakeFunctionConstraint(lb,ub,dist_to_ground_fcn(foot_pts_fcn));
 
   %% Enforce that the hand points be on the ground
   % Create a DrakeFunction that computes the signed distances from m points to
@@ -81,7 +81,7 @@ function relativePositionTest(visualize)
   % points and the ground be zero
   lb = zeros(hand_pts_fcn.n_pts,1);
   ub = lb;
-  hand_on_ground_cnstr = drakeFunction.Constraint(lb,ub,dist_to_ground_fcn(hand_pts_fcn));
+  hand_on_ground_cnstr = DrakeFunctionConstraint(lb,ub,dist_to_ground_fcn(hand_pts_fcn));
 
   %% Enforce that the projection of the COM onto the xy-plane be within the
   %% convex hull of the foot points
@@ -112,15 +112,15 @@ function relativePositionTest(visualize)
   % Create quasi-static constraints
   % xy-coordinates of COM must match a linear combination of the foot points
   % for some set of weights 
-  qsc_cnstr{1} = drakeFunction.Constraint([0;0;-Inf],[0;0;Inf],support_polygon{1});
+  qsc_cnstr{1} = DrakeFunctionConstraint([0;0;-Inf],[0;0;Inf],support_polygon{1});
 
   % The weights must be between 0 and 1
   lb = zeros(foot_pts_fcn.n_pts,1);
   ub = ones(foot_pts_fcn.n_pts,1);
-  qsc_cnstr{2} = drakeFunction.Constraint(lb,ub,support_polygon{2});
+  qsc_cnstr{2} = DrakeFunctionConstraint(lb,ub,support_polygon{2});
 
   % The weights must sum to 1
-  qsc_cnstr{3} = drakeFunction.Constraint(1,1,support_polygon{3});
+  qsc_cnstr{3} = DrakeFunctionConstraint(1,1,support_polygon{3});
 
   Q = eye(numel(q_nom));
   prog = InverseKinematics(rbm,q_nom);

@@ -29,9 +29,9 @@ function [x,F,info] = signedDistanceToHyperplaneTest(N)
                                       true);
 
   % Create constraints 
-  distance_cost = drakeFunction.Constraint(0,1,norm_squared_fcn);
-  distance_constraint = drakeFunction.Constraint((2*radius)^2,Inf,squared_dist_between_pts_fcn);
-  hyperplane_constraint = drakeFunction.Constraint(zeros(2*N,1),Inf(2*N,1),hyperplane_distances);
+  distance_cost = DrakeFunctionConstraint(0,1,norm_squared_fcn);
+  distance_constraint = DrakeFunctionConstraint((2*radius)^2,Inf,squared_dist_between_pts_fcn);
+  hyperplane_constraint = DrakeFunctionConstraint(zeros(2*N,1),Inf(2*N,1),hyperplane_distances);
 
   % Create nonlinear program
   prog = NonlinearProgramWConstraintObjects(3*N);
