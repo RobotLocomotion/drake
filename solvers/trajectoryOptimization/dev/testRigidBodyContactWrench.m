@@ -1,8 +1,8 @@
 function testRigidBodyContactWrench
 robot = RigidBodyManipulator([getDrakePath,'/examples/Atlas/urdf/atlas_minimal_contact.urdf'],struct('floating',true));
 nomdata = load([getDrakePath,'/examples/Atlas/data/atlas_fp.mat']);
-nq = robot.getNumDOF();
-qstar = nomdata.xstar(1:robot.getNumDOF());
+nq = robot.getNumPositions();
+qstar = nomdata.xstar(1:robot.getNumPositions());
 q = qstar+1e-2*randn(nq,1);
 kinsol = robot.doKinematics(qstar);
 
@@ -168,7 +168,7 @@ end
 
 function testRigidBodyContactWrench_userfun(rb_wrench,q,F,slack)
 % check constraint gradient
-nq = rb_wrench.robot.getNumDOF();
+nq = rb_wrench.robot.getNumPositions();
 kinsol = rb_wrench.robot.doKinematics(q);
 [lincon,nlcon,bcon] = rb_wrench.generateWrenchConstraint();
 valuecheck(rb_wrench.num_wrench_constraint,nlcon.num_cnstr);

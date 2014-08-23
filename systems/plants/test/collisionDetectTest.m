@@ -59,7 +59,7 @@ warning(S);
 
 if visualize, v = r.constructVisualizer(); end;
 
-q = zeros(getNumDOF(r),1);
+q = zeros(getNumPositions(r),1);
 q(1:6) = q(1:6) + 1e-1*tol*(rand(6,1)-0.5);
 
 kinsol = doKinematics(r,q);
@@ -90,7 +90,7 @@ for x=linspace(-2*(bnd.xmax-bnd.xmin),2*(bnd.xmax-bnd.xmin),50);
   end
 end
 
-q = zeros(getNumDOF(r),1);
+q = zeros(getNumPositions(r),1);
 q(1:6) = q(1:6) + 1e-1*tol*(rand(6,1)-0.5);
 for y=linspace(-2*(bnd.ymax-bnd.ymin),2*(bnd.ymax-bnd.ymin),50);
   q(2)=y;
@@ -109,7 +109,7 @@ for y=linspace(-2*(bnd.ymax-bnd.ymin),2*(bnd.ymax-bnd.ymin),50);
   end
 end
 
-q = zeros(getNumDOF(r),1);
+q = zeros(getNumPositions(r),1);
 q(1:6) = q(1:6) + 1e-1*tol*(rand(6,1)-0.5);
 for z=linspace(-2*(bnd.zmax-bnd.zmin),2*(bnd.zmax-bnd.zmin),50);
   q(3)=z;

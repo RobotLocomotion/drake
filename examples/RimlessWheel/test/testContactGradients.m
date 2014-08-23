@@ -16,10 +16,10 @@ warning('off','Drake:TaylorVar:DoubleConversion');
 options.grad_method = {'user','numerical'};
 options.diff_type = 'central';
 options.tol = 1e-4;
-[n,D,dn,dD] = geval(2,@contactConstraintsWrapper,p,x0(1:p.getNumDOF()),options);
+[n,D,dn,dD] = geval(2,@contactConstraintsWrapper,p,x0(1:p.getNumPositions()),options);
 
 for i=1:100
-  q = randn(p.getNumDOF,1); 
+  q = randn(p.getNumPositions,1); 
   [n,D,dn,dD] = geval(2,@contactConstraintsWrapper,p,q,options);
 end
 

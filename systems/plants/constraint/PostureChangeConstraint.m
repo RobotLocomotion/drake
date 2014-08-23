@@ -17,7 +17,7 @@ classdef PostureChangeConstraint < MultipleTimeLinearPostureConstraint
       if(any(~isnumeric(joint_ind)))
         error('The joint index must all be numeric');
       end
-      if(any(joint_ind<=0)||any(joint_ind>obj.robot.getNumDOF))
+      if(any(joint_ind<=0)||any(joint_ind>obj.robot.getNumPositions))
         error('The joint index must be within [1 nq]');
       end
       sizecheck(joint_ind,[nan,1]);
@@ -83,7 +83,7 @@ classdef PostureChangeConstraint < MultipleTimeLinearPostureConstraint
         num_joints = length(obj.joint_ind);
         t_ind = (1:length(t));
         valid_t_ind = t_ind(valid_flag);
-        nq = obj.robot.getNumDOF();
+        nq = obj.robot.getNumPositions();
         first_valid_idx = find(valid_flag,1);
         iAfun = [(1:num_joints*(num_valid_t-1))';(1:num_joints*(num_valid_t-1))'];
         jAvar = [reshape(bsxfun(@times,(first_valid_idx-1)*nq+obj.joint_ind,ones(1,num_valid_t-1)),[],1);...

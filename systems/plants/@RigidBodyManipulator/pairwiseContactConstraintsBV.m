@@ -43,7 +43,7 @@ mu=1.0;
 
 if isempty(ptsA)
   phi = 1;
-  n = zeros(1,getNumDOF(obj));
+  n = zeros(1,getNumPositions(obj));
 else
   relpos = ptsA-ptsB;
   s = sign(sum(relpos.*normal,1));
@@ -56,7 +56,7 @@ else
     B = cell(n_contact_pts,1);
     JB = cell(n_contact_pts,1);
     Bi = zeros(3,2*m);
-    Ji = zeros(2*m,obj.num_q);
+    Ji = zeros(2*m,obj.num_positions);
   
     norm = sqrt(1+mu^2);% because normal and d are orthogonal, the norm has a simple form
     for i=1:n_contact_pts

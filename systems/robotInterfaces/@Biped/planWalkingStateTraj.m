@@ -11,7 +11,7 @@ if nargin < 3
   xstar = obj.loadFixedPoint();
 end
 
-nq = obj.getNumDOF();
+nq = obj.getNumPositions();
 q0 = walking_plan_data.x0(1:nq);
 qstar = xstar(1:nq);
 
@@ -34,7 +34,7 @@ cost.back_bky = 100;
 cost.back_bkx = 100;
 cost = double(cost);
 ikoptions = IKoptions(obj);
-ikoptions = ikoptions.setQ(diag(cost(1:obj.getNumDOF)));
+ikoptions = ikoptions.setQ(diag(cost(1:obj.getNumPositions)));
 
 htraj = [];
 full_IK_calls = 0;
@@ -75,7 +75,7 @@ end
 % qtraj = PPTrajectory(spline(ts,q));
 htraj = PPTrajectory(spline(ts,htraj));
 x = zeros(getNumStates(obj),length(ts));
-x(1:getNumDOF(obj),:) = q;
+x(1:getNumPositions(obj),:) = q;
 xtraj = PPTrajectory(spline(ts, x));
 xtraj = xtraj.setOutputFrame(obj.getStateFrame());
 
