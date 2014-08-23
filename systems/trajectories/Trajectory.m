@@ -4,7 +4,7 @@ classdef Trajectory < DrakeSystem
     tspan
   end
   
-  properties (SetAccess=private,GetAccess=protected)
+  properties (SetAccess=protected,GetAccess=protected)
     dim  % with the possibility of singleton dimensions, this is too messy for public consumption
   end
   
