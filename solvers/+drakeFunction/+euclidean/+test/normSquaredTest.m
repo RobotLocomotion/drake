@@ -6,6 +6,13 @@ function [x,F,info] = normSquaredTest(N)
   R3 = drakeFunction.frames.R(3);
   radius = 0.2;
 
+  % Test Non-positive-defintite Q detection
+  try
+    drakeFunction.euclidean.NormSquared(R3,zeros(3));
+  catch ex
+    valuecheck(ex.identifier,'Drake:drakeFunction:euclidean:NormSquared:NonPositiveDefiniteQ');
+  end
+
   norm_squared_fcn = drakeFunction.euclidean.NormSquared(R3);
   squared_dist_between_pts_fcn = norm_squared_fcn(Difference(R3));
   distance_constraint = DrakeFunctionConstraint((2*radius)^2,inf,squared_dist_between_pts_fcn);

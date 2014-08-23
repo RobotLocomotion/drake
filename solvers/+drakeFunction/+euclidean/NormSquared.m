@@ -19,6 +19,10 @@ classdef NormSquared < drakeFunction.DrakeFunction
         Q = []; 
       else
         sizecheck(Q,[n,n]);
+        if any(eig(Q) <= 0)
+          error('Drake:drakeFunction:euclidean:NormSquared:NonPositiveDefiniteQ', ...
+            'The weighting matrix, Q, should be positive definite');
+        end
       end
       output_frame = drakeFunction.frames.R(1);
       obj = obj@drakeFunction.DrakeFunction(input_frame,output_frame);
