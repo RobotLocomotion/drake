@@ -1,8 +1,6 @@
 include_directories ( .. )
 
-file(GLOB drakeJoints_SRC_FILES *.cpp)
-file(GLOB drakeJoints_HEADER_FILES *.h)
-add_library(drakeJoints SHARED ${drakeJoints_SRC_FILES})
+add_library(drakeJoints SHARED DrakeJoint.cpp FixedAxisOneDoFJoint.cpp HelicalJoint.cpp PrismaticJoint.cpp QuaternionFloatingJoint.cpp RevoluteJoint.cpp RollPitchYawFloatingJoint.cpp)
 
 target_link_libraries(drakeJoints drakeGeometryUtil drakeGradientUtil)
 
