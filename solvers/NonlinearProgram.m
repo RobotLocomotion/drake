@@ -833,7 +833,7 @@ classdef NonlinearProgram
       exitflag = cell(1,length(solvers));
       execution_time = cell(1,length(solvers));
       for i=1:length(solvers)
-        obj.solver = solvers{i};
+        obj = obj.setSolver(solvers{i});
         try 
           tic;
           [x{i},objval{i},exitflag{i}] = solve(obj,x0);
