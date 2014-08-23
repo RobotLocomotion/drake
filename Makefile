@@ -68,7 +68,7 @@ mlint	:
 	matlab -nodisplay -r "addpath(fullfile(pwd,'thirdParty','runmlint')); runmlint('.mlintopts'); exit"
 
 test	:  configure
-	-@cd pod-build && ctest -D Experimental --output-on-failure --timeout 300
+	-@cd pod-build && ctest -D Experimental --output-on-failure --timeout 300 
 
 test_continuous : configure
 	while true; do $(MAKE) Continuous; sleep 300; done

@@ -117,6 +117,14 @@ if ~ok
         disp(' ');
       end
 
+    case 'ipopt'
+      conf.ipopt_enabled = logical(exist(['ipopt.',mexext],'file'));
+      
+      if ~conf.ipopt_enabled && nargout<1
+        disp(' ');
+        disp(' IPOPT not found. IPOPT support will be disabled.');
+      end
+      
     case 'vrml'
       unsupported = false;
       if(exist('vrinstall','file'))
@@ -207,6 +215,14 @@ if ~ok
         disp(' ');
       end
 
+    case 'fastqp'
+      conf.fastqp_enabled = logical(exist(['fastqpmex.',mexext],'file'));
+      
+      if ~conf.fastqp_enabled && nargout<1
+        disp(' ');
+        disp(' fastqp not found. fastqp support will be disabled.');
+      end
+      
     case 'bertini'
       conf.bertini_enabled = logical(exist('bertini','file'));
       if (~conf.bertini_enabled)
