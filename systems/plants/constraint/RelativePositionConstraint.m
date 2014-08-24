@@ -75,6 +75,9 @@ function obj = RelativePositionConstraint(robot,pts,lb,ub, ...
     % origin of body B to B'.
     % bTbp_quaternion is the quaternion
     % representation of rotation.
+      if(nargin < 7)
+        bTbp = [0;0;0;1;0;0;0];
+      end
       if(nargin < 8)
         tspan = [-inf,inf];
       end
