@@ -16,7 +16,6 @@ if (nargin<2); use_angular_momentum = false; end
 
 % silence some warnings
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints')
-warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits')
 warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits')
 
 options.floating = true;
@@ -40,7 +39,7 @@ kinsol = doKinematics(r,q0);
 
 com = getCOM(r,kinsol);
 
-% build TI-ZMP controller 
+% build TI-ZMP controller
 footidx = [findLinkInd(r,'r_foot'), findLinkInd(r,'l_foot')];
 foot_pos = terrainContactPositions(r,kinsol,footidx);
 comgoal = mean([mean(foot_pos(1:2,1:4)');mean(foot_pos(1:2,5:8)')])';
@@ -48,7 +47,7 @@ limp = LinearInvertedPendulum(com(3));
 [~,V] = lqr(limp,comgoal);
 
 foot_support = RigidBodySupportState(r,find(~cellfun(@isempty,strfind(r.getLinkNames(),'foot'))));
-    
+
 
 ctrl_data = QPControllerData(false,struct(...
   'acceleration_input_frame',AtlasCoordinates(r),...
@@ -79,7 +78,7 @@ if use_angular_momentum
   options.Kp_ang = 1.0; % angular momentum proportunal feedback gain
   options.W_kdot = 1e-5*eye(3); % angular momentum weight
 else
-  options.W_kdot = zeros(3); 
+  options.W_kdot = zeros(3);
 end
 
 qp = QPController(r,{},ctrl_data,options);
@@ -104,7 +103,7 @@ ins(1).input = 1;
 sys = mimoFeedback(fc,sys,[],[],ins,outs);
 clear ins;
 
-% feedback PD trajectory controller 
+% feedback PD trajectory controller
 options.use_ik = false;
 pd = IKPDBlock(r,ctrl_data,options);
 ins(1).system = 1;

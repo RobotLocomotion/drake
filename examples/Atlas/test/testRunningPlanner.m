@@ -4,17 +4,16 @@ function [sol,robot_vis,v,cdfkp] = testRunningPlanner(seed,stride_length,major_i
   if (nargin < 2 || isempty(stride_length)), stride_length = 2; end
   if (nargin < 3 || isempty(major_iteration_limit)), major_iteration_limit = 200; end
   if (nargin < 4 || isempty(suffix)), suffix = 'testRunning'; end
-  if (nargin < 5 || isempty(options)) 
-    options = defaultOptionsStruct(); 
+  if (nargin < 5 || isempty(options))
+    options = defaultOptionsStruct();
   else
-    options = parseOptionsStruct(options); 
+    options = parseOptionsStruct(options);
   end
 
   % Construct RigidBodyManipulator
   w = warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
   warning('off','Drake:RigidBody:NonPositiveInertiaMatrix');
   warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
-  warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
   warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
   options.floating = true;
   options.terrain = RigidBodyFlatTerrain;
@@ -64,7 +63,7 @@ function [sol,robot_vis,v,cdfkp] = testRunningPlanner(seed,stride_length,major_i
   v.draw(0,qstar);
   q0 = qstar;
   q0(neck_idx) = 0;
-  if options.start_from_standing 
+  if options.start_from_standing
     assert(~isempty(options.stride_filename));
     S = load(options.stride_filename);
     options.q_apex = S.sol.q(:,end);
@@ -243,7 +242,7 @@ function [sol,robot_vis,v,cdfkp] = testRunningPlanner(seed,stride_length,major_i
     fb_v_max = 5;
     cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(-fb_v_max*ones(3,N),fb_v_max*ones(3,N)),cdfkp.v_inds(1:3,:));
   end
-  
+
   % Add initial contition constraints
   if options.start_from_standing
     cdfkp = cdfkp.addConstraint(ConstantConstraint([0;0]), ...
@@ -393,7 +392,7 @@ function [sol,robot_vis,v,cdfkp] = testRunningPlanner(seed,stride_length,major_i
       end
     end
   end
-  
+
   % TODO: Set up seed
   if isempty(seed)
     x_seed = zeros(cdfkp.num_vars,1);
@@ -415,7 +414,7 @@ function [sol,robot_vis,v,cdfkp] = testRunningPlanner(seed,stride_length,major_i
   else
     x_seed = seed.x_sol;
   end
-  
+
   % Set up solver options
   cdfkp = cdfkp.setSolverOptions('snopt','iterationslimit',1e6);
   cdfkp = cdfkp.setSolverOptions('snopt','majoriterationslimit',major_iteration_limit);
@@ -424,14 +423,14 @@ function [sol,robot_vis,v,cdfkp] = testRunningPlanner(seed,stride_length,major_i
   cdfkp = cdfkp.setSolverOptions('snopt','superbasicslimit',2000);
   cdfkp = cdfkp.setSolverOptions('snopt','linesearchtolerance',0.9);
   cdfkp = cdfkp.setSolverOptions('snopt','print',sprintf('snopt_%s.out',suffix));
-  
+
   % Solve trajectory optimization
   tic
   %profile on;
   [x_sol,~,~] = cdfkp.solve(x_seed);
   %profile off;
   toc
-  
+
   % Parse trajectory optimization output
   sol.x_sol = x_sol;
   sol.q = reshape(x_sol(cdfkp.q_inds(:)),nq,N);
@@ -571,19 +570,19 @@ function displayCallback(in_stance,N,x)
   x_data = [zeros(2,numel(ts));q;0*q];
   utime = now() * 24 * 60 * 60;
   snopt_info_vector = ones(1, size(x_data,2));
-  sfigure(7); 
+  sfigure(7);
   subplot(2,1,1);
-  plot(ts,com_z,'bo-'); 
+  plot(ts,com_z,'bo-');
   hold on
-  plot(ts(in_stance),com_z(in_stance),'ro-'); 
+  plot(ts(in_stance),com_z(in_stance),'ro-');
   title('COM Height')
   xlabel('t (s)')
   ylabel('z (m)')
   hold off
   subplot(2,1,2);
-  plot(ts,comdot_x,'bo-'); 
+  plot(ts,comdot_x,'bo-');
   hold on
-  plot(ts(in_stance),comdot_x(in_stance),'ro-'); 
+  plot(ts(in_stance),comdot_x(in_stance),'ro-');
   title('COM velocity')
   xlabel('t (s)')
   ylabel('xdot (m/s)')
@@ -635,4 +634,3 @@ function options = parseOptionsStruct(options_in)
     end
   end
 end
-
