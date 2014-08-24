@@ -8,7 +8,7 @@ classdef MultiCoordinateFrame < CoordinateFrame
   % no contract guaranteeing that they will continue to match after 
   % subsequent coordinate renamings for the multi-frame or the sub-frames.
   
-  properties
+  properties (SetAccess=public,GetAccess=public)
     frame={};     % a list of CoordinateFrame objects
     frame_id=[];  % for each coordinate, an integer index into the frame 
                   % (from the list above) associated with that coordinate
@@ -223,6 +223,15 @@ classdef MultiCoordinateFrame < CoordinateFrame
       else
         fr = MultiCoordinateFrame({obj.frame{frame_ids}});
       end
+    end
+    
+    function id = findSubFrameEquivalentModuloTransforms(obj,fr)
+      for id=1:length(obj.frame)
+        if isequal_modulo_transforms(obj.frame{id},fr)
+          return;
+        end
+      end
+      id = [];
     end
     
     function varargout = splitCoordinates(obj,vector_vals)
