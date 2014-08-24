@@ -581,8 +581,8 @@ classdef NonlinearProgram
       obj.x_name = [obj.x_name;var_name];
       obj.x_lb = [obj.x_lb;-inf(num_new_vars,1)];
       obj.x_ub = [obj.x_ub;inf(num_new_vars,1)];
-      obj.Aeq = [obj.Aeq zeros(length(obj.beq),num_new_vars)];
-      obj.Ain = [obj.Ain zeros(length(obj.bin),num_new_vars)];
+        obj.Aeq = [obj.Aeq zeros(length(obj.beq),num_new_vars)];
+        obj.Ain = [obj.Ain zeros(length(obj.bin),num_new_vars)];
       if(~isempty(obj.bbcon))
         obj.bbcon_lb(end+(1:num_new_vars),:) = -inf(num_new_vars,size(obj.bbcon_lb,2));
         obj.bbcon_ub(end+(1:num_new_vars),:) = inf(num_new_vars,size(obj.bbcon_ub,2));
@@ -637,7 +637,7 @@ classdef NonlinearProgram
       if isa(user_fun,'FunctionWrapper')
         obj.shared_data_functions{end+1} = user_fun;
       else
-        obj.shared_data_functions{end+1} = FunctionWrapper(user_fun);
+      obj.shared_data_functions{end+1} = FunctionWrapper(user_fun);
       end
       obj.shared_data_xind_cell{end+1} = xind;
       ind = obj.getNumSharedDataFunctions();
@@ -931,7 +931,7 @@ classdef NonlinearProgram
         end
         if(isempty(solvers))
           error('Drake:NonlinearProgram:NoNLPSolver','Cannot find any nonlinear program solvers, please ensure that either fmincon, snopt or ipopt is installed');
-        end
+      end
       end
        
       fprintf('    solver        objval        exitflag   execution time\n-------------------------------------------------------------\n')
@@ -965,11 +965,11 @@ classdef NonlinearProgram
       % ID=cnstr_id. Otherwise, cnstr_idx = [];
       if(~(numel(cnstr_id) == 1 && isnumeric(cnstr_id)))
         error('Drake:NonlinearProgram:isNonlinearConstraintID:InvalidInput','cnstr_id should be a scalar');
-      end
+  end
       cnstr_idx = find(obj.nlcon_id==cnstr_id);
       flag = ~isempty(cnstr_idx);
     end
-    
+  
     function [flag,cnstr_idx] = isLinearConstraintID(obj,cnstr_id)
       % Given an ID, determine if any of the linear constraint obj.lcon has that ID
       % @retval flag   True if the cnstr_id is a valid ID of the linear constraint

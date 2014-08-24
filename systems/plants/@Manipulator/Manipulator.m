@@ -427,12 +427,13 @@ classdef Manipulator < DrakeSystem
       obj.joint_limit_min = jl_min;
       obj.joint_limit_max = jl_max;
       
-      if isempty(obj.joint_limit_constraint_index)
-        obj.joint_limit_constriant_index = numel(obj.state_constraints)+1;
+      con = BoundingBoxConstraint([jl_min;-inf(obj.num_velocities,1)],[jl_max;inf(obj.num_velocities,1)]);
+      con = setName(con,cellfun(@(a) [a,'Limit'],obj.getStateFrame.coordinates,'UniformOutput',false));
+      if isempty(obj.joint_limit_constraint_id)
+        [obj,obj.joint_limit_constraint_id] = addStateConstraint(obj,con);
+      else
+        obj = updateStateConstraint(obj,obj.joint_limit_constraint_id,con);
       end
-      con = BoundingBoxConstraint([jl_min;-inf(obj.num_velocities,1)],[jl_max;-inf(obj.num_velocities,1)]);
-      con = setName(con,'JointLimits');
-      obj.state_constraints{obj.joint_limit_constraint_index} = con;
     end
     
   end  
@@ -444,6 +445,6 @@ classdef Manipulator < DrakeSystem
     velocity_constraints = {};  % velocity equality constraints of the form psi(q,qd)=const
     joint_limit_min = -inf;       % vector of length num_q with lower limits
     joint_limit_max = inf;        % vector of length num_q with upper limits
-    joint_limit_constraint_index = [];
+    joint_limit_constraint_id = [];
   end
 end

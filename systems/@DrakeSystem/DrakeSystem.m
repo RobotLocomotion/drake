@@ -351,7 +351,7 @@ classdef DrakeSystem < DynamicalSystem
       n = obj.num_xcon_ineq;
     end
     
-    function obj = addStateConstraint(obj,con)
+    function [obj,id] = addStateConstraint(obj,con)
       % @param con is a constraint object which takes the state of this
       % system as input
 
@@ -359,6 +359,22 @@ classdef DrakeSystem < DynamicalSystem
       assert(con.xdim == obj.num_x,'DrakeSystem:InvalidStateConstraint','State constraints must take a vector that is the same size as the state vector of this system as an input');
 
       obj.state_constraints{end+1} = con;
+      obj.num_xcon_eq = obj.num_xcon_eq + sum(con.lb == con.ub);
+      obj.num_xcon_ineq = obj.num_xcon_ineq + sum(con.lb ~= con.ub);
+      id = numel(obj.state_constraints);
+    end
+    
+    function obj = updateStateConstraint(obj,id,con)
+      % @param id is the identifier returned from addStateConstraint
+      % @param con is a constraint object
+      
+      rangecheck(id,0,numel(obj.state_constraints));
+      typecheck(con,'Constraint');
+      assert(con.xdim == obj.num_x,'DrakeSystem:InvalidStateConstraint','State constraints must take a vector that is the same size as the state vector of this system as an input');
+
+      obj.num_xcon_eq = obj.num_xcon_eq - sum(obj.state_constraints{id}.lb == obj.state_constraints{id}.ub);
+      obj.num_xcon_ineq = obj.num_xcon_ineq - sum(obj.state_constraints{id}.lb ~= obj.state_constraints{id}.ub);
+      obj.state_constraints{id} = con;
       obj.num_xcon_eq = obj.num_xcon_eq + sum(con.lb == con.ub);
       obj.num_xcon_ineq = obj.num_xcon_ineq + sum(con.lb ~= con.ub);
     end

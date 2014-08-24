@@ -316,9 +316,12 @@ classdef DynamicalSystem
         prog = addDisplayFunction(prog,@(x)v.draw(0,x));
       end
       
-      [x,~,exitflag] = solve(prog,x0);
+      [x,~,exitflag,infeasible_constraint_name] = solve(prog,x0);
       success=(exitflag==1);
       if (nargout<2 && ~success)
+        if ~isempty(infeasible_constraint_name)
+          infeasible_constraint_name
+        end
         error('Drake:DynamicalSystem:ResolveConstraintsFailed','failed to resolve constraints');
       end
       x = Point(obj.getStateFrame,x);
