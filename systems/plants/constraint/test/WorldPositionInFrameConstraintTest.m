@@ -1,7 +1,6 @@
 function WorldPositionInFrameConstraintTest(varargin)
   w = warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
   warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
-  warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
   warning('off','Drake:RigidBodyManipulator:BodyHasZeroInertia');
   warning('off','Drake:RigidBodyManipulator:ReplacedCylinder');
   warning('off','Drake:RigidBodyManipulator:WeldedLinkInd');
