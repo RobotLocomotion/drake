@@ -6,7 +6,6 @@ options.floating = true;
 options.dt = 0.001;
 
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints')
-warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits')
 warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits')
 options.visual = false; % loads faster
 r = Atlas(fullfile(getDrakePath(), 'examples', 'Atlas', 'urdf', 'atlas_minimal_contact.urdf'),options);

@@ -190,7 +190,7 @@ classdef RigidBodyManipulator < Manipulator
             if ~any(cellfun(@(shape) isequal(geom{i},shape),obj.body(1).contact_shapes))
               obj = obj.addContactShapeToBody(1,geom{i},'terrain');
               obj.dirty = true;
-            end
+          end
           end
         end
         geom = obj.terrain.getRigidBodyShapeGeometry();
@@ -199,10 +199,10 @@ classdef RigidBodyManipulator < Manipulator
           for i=1:numel(geom)
             if ~any(cellfun(@(shape) isequal(geom{i},shape),obj.body(1).visual_shapes))
               obj.body(1).visual_shapes{end+1} = geom{i};
-              obj.dirty = true;
-            end
-          end
+          obj.dirty = true;
         end
+      end
+    end
       end
     end
 
@@ -661,7 +661,7 @@ classdef RigidBodyManipulator < Manipulator
 
       if getNumStates(model)>0
         model = constructStateFrame(model);
-      end
+        end
 
       if any([model.body.has_position_sensor])
         % add a rigid body joint sensor if necessary
@@ -672,7 +672,7 @@ classdef RigidBodyManipulator < Manipulator
             if isa(model.sensor{j},'RigidBodyJointSensor') && model.sensor{j}.robotnum==i
               already_has_sensor=true;
               break;
-            end
+      end
           end
           if ~already_has_sensor
             model = addSensor(model,RigidBodyJointSensor(model,i));
@@ -706,10 +706,6 @@ classdef RigidBodyManipulator < Manipulator
 
       model.joint_limit_min = [model.body.joint_limit_min]';
       model.joint_limit_max = [model.body.joint_limit_max]';
-
-      if (any(model.joint_limit_min~=-inf) || any(model.joint_limit_max~=inf))
-        warnOnce(model.warning_manager,'Drake:RigidBodyManipulator:UnsupportedJointLimits','Joint limits are not supported by the dynamics methods of this class.  Consider using HybridPlanarRigidBodyManipulator');
-      end
 
       model = model.setInputLimits(u_limit(:,1),u_limit(:,2));
 
@@ -1741,7 +1737,7 @@ classdef RigidBodyManipulator < Manipulator
     function fr = getPositionFrame(obj,robotnum)
       if nargin<2, robotnum=1; end
       fr = obj.robot_position_frames{robotnum};
-    end
+  end
 
     function fr = getVelocityFrame(obj,robotnum)
       if nargin<2, robotnum=1; end
@@ -1804,11 +1800,11 @@ classdef RigidBodyManipulator < Manipulator
         fr = CoordinateFrame([model.name{i},'Position'],length(positions),'q',positions);
         if numel(model.robot_position_frames)<i || ~isequal_modulo_transforms(fr,model.robot_position_frames{i}) % let the previous handle stay valid if possible
           model.robot_position_frames{i} = fr;
-        end
+      end
         fr = CoordinateFrame([model.name{i},'Velocity'],length(velocities),'v',velocities);
         if numel(model.robot_velocity_frames)<i || ~isequal_modulo_transforms(fr,model.robot_velocity_frames{i}) % let the previous handle stay valid if possible
           model.robot_velocity_frames{i} = fr;
-        end
+    end
         fr = MultiCoordinateFrame.constructFrame({model.robot_position_frames{i},model.robot_velocity_frames{i}},[],true);
         if numel(model.robot_state_frames)<i || ~isequal_modulo_transforms(fr,model.robot_state_frames{i}) % let the previous handle stay valid if possible
           model.robot_state_frames{i} = fr;

@@ -6,7 +6,6 @@ options.twoD = true;
 options.terrain = RigidBodyFlatTerrain();
 
 w = warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
-warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
 warning('off','Drake:RigidBodyManipulator:BodyHasZeroInertia');
 warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
 warning('off','Drake:RigidBodyGeometry:SimplifiedCollisionGeometry');
@@ -27,10 +26,9 @@ if (0)
   s = warning('off','Drake:DrakeSystem:UnsupportedSampleTime');  % we are knowingly breaking out to a simulink model with the cascade on the following line.
   sys = cascade(r,v);
   warning(s);
-  simulate(sys,[0 10],x0); 
+  simulate(sys,[0 10],x0);
 else
   % Run simulation, then play it back at realtime speed
   xtraj = simulate(r,[0 5],x0);
   v.playback(xtraj);
 end
-

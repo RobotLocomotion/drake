@@ -32,7 +32,6 @@ v.playback(traj)
 %   options.floating = true;
 %   S = warning('OFF','Drake:RigidBodyManipulator:UnsupportedContactPoints');
 %   warning('OFF','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
-%   warning('OFF','Drake:RigidBodyManipulator:UnsupportedJointLimits');
 %   r = RigidBodyManipulator('Cylinder.urdf',options);
 %   for i = 1:n_debris
 %     r = r.addRobotFromURDF('FallingBrick.urdf',3*(2*rand(3,1)-1),2*pi*rand(3,1));
@@ -41,11 +40,11 @@ v.playback(traj)
 %   end
 %   r = r.addRobotFromURDF('ground_plane.urdf');
 %   warning(S);
-%   
+%
 %   if visualize
 %     v = r.constructVisualizer();
 %   end
-%   
+%
 %   x0 = r.getInitialState;
 %   x0 = r.resolveConstraints(x0);
 % end
