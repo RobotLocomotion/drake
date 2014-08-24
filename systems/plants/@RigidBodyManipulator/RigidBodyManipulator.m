@@ -666,7 +666,7 @@ classdef RigidBodyManipulator < Manipulator
 
       if getNumStates(model)>0
         model = constructStateFrame(model);
-        end
+      end
 
       if any([model.body.has_position_sensor])
         % add a rigid body joint sensor if necessary
@@ -726,7 +726,7 @@ classdef RigidBodyManipulator < Manipulator
       % so it should go after createMexPointer
       phi = model.collisionDetect(zeros(model.getNumPositions,1));
       model.num_contact_pairs = length(phi);
-      
+
       for j=1:length(model.loop)
         model = updateConstraints(model.loop(j),model);
       end
@@ -1740,7 +1740,7 @@ classdef RigidBodyManipulator < Manipulator
     function fr = getPositionFrame(obj,robotnum)
       if nargin<2, robotnum=1; end
       fr = obj.robot_position_frames{robotnum};
-  end
+    end
 
     function fr = getVelocityFrame(obj,robotnum)
       if nargin<2, robotnum=1; end
@@ -1803,11 +1803,11 @@ classdef RigidBodyManipulator < Manipulator
         fr = CoordinateFrame([model.name{i},'Position'],length(positions),'q',positions);
         if numel(model.robot_position_frames)<i || ~isequal_modulo_transforms(fr,model.robot_position_frames{i}) % let the previous handle stay valid if possible
           model.robot_position_frames{i} = fr;
-      end
+        end
         fr = CoordinateFrame([model.name{i},'Velocity'],length(velocities),'v',velocities);
         if numel(model.robot_velocity_frames)<i || ~isequal_modulo_transforms(fr,model.robot_velocity_frames{i}) % let the previous handle stay valid if possible
           model.robot_velocity_frames{i} = fr;
-    end
+        end
         fr = MultiCoordinateFrame.constructFrame({model.robot_position_frames{i},model.robot_velocity_frames{i}},[],true);
         if numel(model.robot_state_frames)<i || ~isequal_modulo_transforms(fr,model.robot_state_frames{i}) % let the previous handle stay valid if possible
           model.robot_state_frames{i} = fr;
