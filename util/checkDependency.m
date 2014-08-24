@@ -23,7 +23,7 @@ else % then try to evaluate the dependency now...
         warning('Drake:SimulinkVersion','Most features of Drake require SIMULINK version 7.3 or above.');
         % haven't actually tested with lower versions
       end
-    
+
     case 'spotless'
       % require spotless
       conf.spotless_enabled = logical(exist('msspoly','class'));
@@ -124,17 +124,17 @@ else % then try to evaluate the dependency now...
         disp(' SNOPT can be obtained from <a href="https://tig.csail.mit.edu/software/">https://tig.csail.mit.edu/software/</a> .');
         disp(' studentSNOPT can be obtained from <a href="http://www.cam.ucsd.edu/~peg/Software.html">http://www.cam.ucsd.edu/~peg/Software.html</a> .');
         disp(' ');
-      end   
-      
+      end
+
     case 'ipopt'
       conf.ipopt_enabled = logical(exist(['ipopt.',mexext],'file'));
-
+      
       if ~conf.ipopt_enabled && nargout<1
         disp(' ');
         disp(' IPOPT not found. IPOPT support will be disabled.');
         disp(' ');
       end
-
+      
     case 'vrml'
       unsupported = false;
       if(exist('vrinstall','file'))
@@ -168,21 +168,21 @@ else % then try to evaluate the dependency now...
       end
 
       if (conf.sedumi_enabled)
-          %  sedumiA=[10,2,3,4;5,7,6,4];
-          %  sedumib=[4;6];
-          %  sedumic=[0;1;0;1];
-          %  sedumiT=sedumi(sedumiA,sedumib,sedumic);%,struct('f',4),struct('fid',0));
-          %  if(~sedumiT)
-          %    error('SeDuMi seems to have encountered a problem. Please verify that your SeDuMi install is working.');
-          %  end
+        %  sedumiA=[10,2,3,4;5,7,6,4];
+        %  sedumib=[4;6];
+        %  sedumic=[0;1;0;1];
+        %  sedumiT=sedumi(sedumiA,sedumib,sedumic);%,struct('f',4),struct('fid',0));
+        %  if(~sedumiT)
+        %    error('SeDuMi seems to have encountered a problem. Please verify that your SeDuMi install is working.');
+        %  end
       elseif nargout<1
-          disp(' ');
-          disp(' SeDuMi not found.  SeDuMi support will be disabled.');
-          disp(' To re-enable, add SeDuMi to your matlab path and rerun addpath_drake.');
-          disp(' SeDuMi can be downloaded for free from <a href="http://sedumi.ie.lehigh.edu/">http://sedumi.ie.lehigh.edu/</a> ');
-          disp(' ');
+        disp(' ');
+        disp(' SeDuMi not found.  SeDuMi support will be disabled.');
+        disp(' To re-enable, add SeDuMi to your matlab path and rerun addpath_drake.');
+        disp(' SeDuMi can be downloaded for free from <a href="http://sedumi.ie.lehigh.edu/">http://sedumi.ie.lehigh.edu/</a> ');
+        disp(' ');
       end
-      
+
       case 'mosek'
           conf.mosek_enabled = logical(exist('mosekopt','file'));
           if (~conf.mosek_enabled)
@@ -246,12 +246,12 @@ else % then try to evaluate the dependency now...
 
     case 'fastqp'
       conf.fastqp_enabled = logical(exist(['fastqpmex.',mexext],'file'));
-
+      
       if ~conf.fastqp_enabled && nargout<1
         disp(' ');
         disp(' fastqp not found. fastqp support will be disabled.');
       end
-
+      
     case 'bertini'
       conf.bertini_enabled = logical(exist('bertini','file'));
       if (~conf.bertini_enabled)
@@ -357,7 +357,7 @@ else % then try to evaluate the dependency now...
           disp(' ');
           disp(' quadprog support is disabled. To enable it, install MATLAB Optimization toolbox');
           disp(' ');
-        end
+      end
       end
       
     case 'lsqlin'

@@ -43,7 +43,7 @@ classdef Manipulator < DrakeSystem
       v = x(obj.num_positions+1:end);
 
       if (nargout>1)
-        if (obj.num_xcon>0)
+        if ~isempty(obj.position_constraints) || ~isempty(obj.velocity_constraints)
           % by naming this 'MATLAB:TooManyOutputs', geval will catch the
           % error and use TaylorVarInstead
           error('MATLAB:TooManyOutputs','User gradients for constrained dynamics not implemented yet.');
@@ -227,7 +227,7 @@ classdef Manipulator < DrakeSystem
         v = cell(1,nargout);
         [v{:}] = obj.position_constraints{i}.eval(x);
         v{1} = v{1} - obj.position_constraints{i}.lb;  % center it around 0
-        for j=1:length(nargout)
+        for j=1:nargout
           varargout{j} = vertcat(varargout{j},v{j});
         end
       end
@@ -243,7 +243,7 @@ classdef Manipulator < DrakeSystem
         v = cell(1,nargout);
         [v{:}] = obj.velocity_constraints{i}.eval(x);
         v{1} = v{1} - obj.velocity_constraints{i}.lb;  % center it around 0
-        for j=1:length(nargout)
+        for j=1:nargout
           varargout{j} = vertcat(varargout{j},v{j});
         end
       end
@@ -281,7 +281,7 @@ classdef Manipulator < DrakeSystem
       % Creates a (rational) polynomial system representation of the
       % dynamics
 
-      if (obj.num_xcon>0) error('not implemented yet.  may not be possible.'); end
+      if getNumStateConstraints(obj)>0 || getNumUnilateralConstraints(obj)>0, error('not implemented yet.  may not be possible.'); end
 
       function rhs = dynamics_rhs(obj,t,x,u)
         q=x(1:obj.num_positions); v=x((obj.num_positions+1):end);
@@ -428,7 +428,7 @@ classdef Manipulator < DrakeSystem
       obj.joint_limit_max = jl_max;
       
       con = BoundingBoxConstraint([jl_min;-inf(obj.num_velocities,1)],[jl_max;inf(obj.num_velocities,1)]);
-      con = setName(con,cellfun(@(a) [a,'Limit'],obj.getStateFrame.coordinates,'UniformOutput',false));
+      con = setName(con,cellfun(@(a) [a,'_limit'],obj.getStateFrame.coordinates,'UniformOutput',false));
       if isempty(obj.joint_limit_constraint_id)
         [obj,obj.joint_limit_constraint_id] = addStateConstraint(obj,con);
       else
