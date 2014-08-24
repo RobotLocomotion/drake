@@ -7,6 +7,7 @@ classdef SpotPolynomialSystem < PolynomialSystem
     p_output
     p_state_constraints
     p_t
+    p_state_constraint_id
   end
   
   methods
@@ -213,10 +214,18 @@ classdef SpotPolynomialSystem < PolynomialSystem
         if ~isempty(decomp(p_state_constraints)) && any(match(obj.getStateFrame.poly,decomp(p_state_constraints))==0)
           error('p_state_constraints depends on variables other than x (the current state frame)');
         end
+        con = SpotPolynomialConstraint(zeros(size(p_state_constraints)),zeros(size(p_state_constraints)),obj.getStateFrame.poly,p_state_constraints);
+        if isempty(obj.p_state_constraint_id)
+          [obj,obj.p_state_constraint_id] = addStateConstraint(obj,con);
+        else
+          obj = updateStateConstraint(obj,obj.p_constraint_id,con);
+        end
+      else
+        if ~isempty(obj.p_state_constraint_id)
+          obj = updateStateConstraint(obj,obj.p_constraint_id,[]);
+        end
       end
-      obj = setNumStateConstraints(obj,length(p_state_constraints));
       obj.p_state_constraints = p_state_constraints;
-      error('todo: need to reset the drake.state_constraints with this new constraint');
     end
     
     function p_state_constraints = getPolyStateConstraints(obj)
