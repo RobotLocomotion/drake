@@ -273,7 +273,7 @@ classdef RigidBodyManipulator < Manipulator
       obj = setJointLimits@Manipulator(obj,jl_min,jl_max);
       obj.dirty = true;
     end
-    
+
     function g = getGravity(obj,grav)
       g = obj.gravity;
     end
@@ -673,10 +673,6 @@ classdef RigidBodyManipulator < Manipulator
         model = setDirectFeedthrough(model,false);
       end
 
-      if (length(model.loop)>0)
-        error('todo: add loop joint state constraints');
-      end
-      
       model = model.setJointLimits([model.body.joint_limit_min]',[model.body.joint_limit_max]');
 
       model = model.setInputLimits(u_limit(:,1),u_limit(:,2));
@@ -700,6 +696,10 @@ classdef RigidBodyManipulator < Manipulator
       % so it should go after createMexPointer
       phi = model.collisionDetect(zeros(model.getNumPositions,1));
       model.num_contact_pairs = length(phi);
+      
+      for j=1:length(model.loop)
+        model = updateConstraints(model.loop(j),model);
+      end
       
       if (model.num_contact_pairs>0)
         warning('Drake:RigidBodyManipulator:UnsupportedContactPoints','Contact is not supported by the dynamics methods of this class.  Consider using TimeSteppingRigidBodyManipulator or HybridPlanarRigidBodyManipulator');
@@ -2298,46 +2298,6 @@ classdef RigidBodyManipulator < Manipulator
       end
     end
 
-
-    function model = parseLoopJoint(model,robotnum,node,options)
-      loop = RigidBodyLoop();
-      loop.name = char(node.getAttribute('name'));
-      loop.name = regexprep(loop.name, '\.', '_', 'preservecase');
-
-      link1Node = node.getElementsByTagName('link1').item(0);
-      link1 = findLinkInd(model,char(link1Node.getAttribute('link')),robotnum);
-      loop.body1 = link1;
-      if link1Node.hasAttribute('xyz')
-        loop.pt1 = reshape(str2num(char(link1Node.getAttribute('xyz'))),3,1);
-      end
-
-      link2Node = node.getElementsByTagName('link2').item(0);
-      link2 = findLinkInd(model,char(link2Node.getAttribute('link')),robotnum);
-      loop.body2 = link2;
-      if link2Node.hasAttribute('xyz')
-        loop.pt2 = reshape(str2num(char(link2Node.getAttribute('xyz'))),3,1);
-      end
-
-      axis=[1;0;0];  % default according to URDF documentation
-      axisnode = node.getElementsByTagName('axis').item(0);
-      if ~isempty(axisnode)
-        if axisnode.hasAttribute('xyz')
-          axis = reshape(parseParamString(model,robotnum,char(axisnode.getAttribute('xyz'))),3,1);
-          axis = axis/(norm(axis)+eps); % normalize
-        end
-      end
-      loop.axis = axis;
-
-      type = char(node.getAttribute('type'));
-      switch (lower(type))
-        case {'continuous'}
-          warning('Drake:RigidBodyManipulator:ThreeDLoopJoints','3D loop joints do not properly enforce the joint axis constraint.  (they perform more like a ball joint).  See bug 1389');
-        otherwise
-          error(['joint type ',type,' not supported (yet?)']);
-      end
-
-      model.loop=[model.loop,loop];
-    end
 
     function model = parseForceElement(model,robotnum,node,options)
       fe = [];
