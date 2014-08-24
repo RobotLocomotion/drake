@@ -222,7 +222,7 @@ classdef SpotPolynomialSystem < PolynomialSystem
         end
       else
         if ~isempty(obj.p_state_constraint_id)
-          obj = updateStateConstraint(obj,obj.p_constraint_id,[]);
+          obj = updateStateConstraint(obj,obj.p_constraint_id,NullConstraint(getNumStates(obj)));
         end
       end
       obj.p_state_constraints = p_state_constraints;
