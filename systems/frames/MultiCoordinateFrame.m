@@ -87,7 +87,7 @@ classdef MultiCoordinateFrame < CoordinateFrame
       end
     end
     
-    function tf = findTransform(obj,target,options)
+    function [tf,options] = findTransform(obj,target,options)
       % There are three ways to get a transform from this multiframe to
       % another frame.  One is if a transform exists directly from the
       % multi-frame.  Another is if the required transforms exist for ALL
@@ -99,9 +99,9 @@ classdef MultiCoordinateFrame < CoordinateFrame
       if (nargin<3) options=struct(); end
       if ~isfield(options,'throw_error_if_fail') options.throw_error_if_fail = false; end
 
-      opt2 = options;
-      opt2.throw_error_if_fail=false;
-      tf = findTransform@CoordinateFrame(obj,target,opt2);
+      throw_error_if_fail = options.throw_error_if_fail;
+      options.throw_error_if_fail=false;
+      [tf,options] = findTransform@CoordinateFrame(obj,target,options);
       
       if isempty(tf) && isa(target,'MultiCoordinateFrame')
         % see if there are transforms from all of the children to all of
@@ -114,11 +114,11 @@ classdef MultiCoordinateFrame < CoordinateFrame
         tf=[];
         if getNumFrames(obj)==getNumFrames(target)
           for i=1:length(obj.frame)
-            tfi = findTransform(obj.frame{i},getFrameByNum(target,i),opt2);
+            [tfi] = findTransform(obj.frame{i},getFrameByNum(target,i),options);
             if isempty(tfi)
               tf=[];
               fr2=getFrameByNum(target,i);
-              warning(['Could not find any transform between ',obj.frame{i}.name,' and ', fr2.name]);
+%              warning(['Could not find any transform between ',obj.frame{i}.name,' and ', fr2.name]);
               break;
             elseif isempty(tf)
               tf = tfi;
@@ -132,7 +132,7 @@ classdef MultiCoordinateFrame < CoordinateFrame
       if isempty(tf)
         % see if there is a transform from any ONE of the children to 
         % the entire target
-        [child_tf,fid]=findChildTransform(obj,target,opt2);
+        [child_tf,fid]=findChildTransform(obj,target,options);
         if fid>0
           d = obj.frame{fid}.dim;
           T = sparse(1:d,obj.coord_ids{fid},1,d,obj.dim);
@@ -143,9 +143,10 @@ classdef MultiCoordinateFrame < CoordinateFrame
         end
       end
         
-      if isempty(tf) && options.throw_error_if_fail
+      if isempty(tf) && throw_error_if_fail
         error(['Could not find any transform between ',obj.name,' and ', target.name]);
       end
+      options.throw_error_if_fail = throw_error_if_fail;
     end
     
     function [tf,fid] = findChildTransform(obj,target,options)
