@@ -394,7 +394,7 @@ classdef DrakeSystem < DynamicalSystem
       % to keep things clean.
 
       con = BoundingBoxConstraint(umin,umax);
-      con = setName(con,'Input Limits');
+      con = setName(con,cellfun(@(a) [a,'_limit'],obj.getInputFrame.coordinates,'UniformOutput',false));
 
       prog = prog.addBoundingBoxConstraint(prog,con,indices);
     end
@@ -416,7 +416,7 @@ classdef DrakeSystem < DynamicalSystem
           v = cell(1,nargout);
           [v{:}] = obj.state_constraints{i}.eval(x);
           v{1} = v{1} - obj.state_constraints{i}.lb;  % center it around 0
-          for j=1:length(nargout)
+          for j=1:nargout
             varargout{j} = vertcat(varargout{j},v{j}(obj.state_constraints{i}.ceq_idx,:));
           end
         end
