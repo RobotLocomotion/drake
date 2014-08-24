@@ -709,9 +709,17 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       [varargout{:}]=collisionDetectTerrain(obj.manip,varargin{:});
     end
 
-    function varargout = stateConstraints(obj,varargin)
-      varargout = cell(1,nargout);
-      [varargout{:}] = stateConstraints(obj.manip,varargin{:});
+    function [obj,id] = addStateConstraint(obj,con)
+      % keep two copies of the constraints around ... :(
+      % todo: re-evaluate whether that is really necessary
+      [obj,id] = addStateConstraint@DrakeSystem(obj,con);
+      [obj.manip,manip_id] = obj.manip.addStateConstraint(obj,con);
+      assert(id==manip_id);
+    end
+    
+    function obj = updateStateConstraint(obj,id,con)
+      obj = updateStateConstraint@DrakeSystem(obj,id,con);
+      obj.manip = updateStateConstraint(obj.manip,id,con);
     end
 
     function varargout = positionConstraints(obj,varargin)
