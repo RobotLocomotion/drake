@@ -220,7 +220,7 @@ classdef Manipulator < DrakeSystem
     function n = getNumVelocities(obj);
       n = obj.num_velocities;
     end
-
+    
     function varargout = positionConstraints(obj,q)
       % Implements position constraints of the form phi(q) = 0
       

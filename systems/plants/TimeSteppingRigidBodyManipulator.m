@@ -715,7 +715,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       [obj.manip,manip_id] = obj.manip.addStateConstraint(obj,con);
       assert(id==manip_id);
     end
-
+    
     function obj = updateStateConstraint(obj,id,con)
       obj = updateStateConstraint@DrakeSystem(obj,id,con);
       obj.manip = updateStateConstraint(obj.manip,id,con);
