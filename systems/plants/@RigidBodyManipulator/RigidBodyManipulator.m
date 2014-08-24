@@ -677,10 +677,6 @@ classdef RigidBodyManipulator < Manipulator
       model.joint_limit_min = [model.body.joint_limit_min]';
       model.joint_limit_max = [model.body.joint_limit_max]';
 
-      if (any(model.joint_limit_min~=-inf) || any(model.joint_limit_max~=inf))
-        warnOnce(model.warning_manager,'Drake:RigidBodyManipulator:UnsupportedJointLimits','Joint limits are not supported by the dynamics methods of this class.  Consider using HybridPlanarRigidBodyManipulator');
-      end
-
       model = model.setInputLimits(u_limit(:,1),u_limit(:,2));
 
       %% check basic assumption from kinematics:
@@ -702,6 +698,7 @@ classdef RigidBodyManipulator < Manipulator
       % so it should go after createMexPointer
       phi = model.collisionDetect(zeros(model.getNumPositions,1));
       model.num_contact_pairs = length(phi);
+      
       if (model.num_contact_pairs>0)
         warning('Drake:RigidBodyManipulator:UnsupportedContactPoints','Contact is not supported by the dynamics methods of this class.  Consider using TimeSteppingRigidBodyManipulator or HybridPlanarRigidBodyManipulator');
       end

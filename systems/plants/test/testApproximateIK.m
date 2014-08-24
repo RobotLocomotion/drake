@@ -4,7 +4,6 @@ options.dt = 0.001;
 urdf = fullfile(getDrakePath,'examples','Atlas','urdf','atlas_minimal_contact.urdf');
 w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
-warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
 r = RigidBodyManipulator(urdf,options);
 warning(w);
 v = r.constructVisualizer();

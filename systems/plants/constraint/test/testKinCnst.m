@@ -8,7 +8,6 @@ aff_urdf = [getDrakePath,'/systems/plants/constraint/test/valve_task_wall.urdf']
 
 options.floating = true;
 w = warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
-warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
 warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
 warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
 warning('off','Drake:RigidBodyManipulator:ReplacedCylinder');

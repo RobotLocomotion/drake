@@ -1,6 +1,6 @@
 function runAtlasWalking(use_mex,use_bullet,use_angular_momentum,navgoal)
 
-% see Kuindersma, Permenter, Tedrake, ICRA 2011 
+% see Kuindersma, Permenter, Tedrake, ICRA 2011
 
 if ~checkDependency('gurobi')
   warning('Must have gurobi installed to run this example');
@@ -21,7 +21,6 @@ end
 
 % silence some warnings
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints')
-warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits')
 warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits')
 
 % construct robot model
@@ -46,12 +45,12 @@ q0 = x0(1:nq);
 
 % Find the initial positions of the feet
 R=rotz(navgoal(6));
-                 
-rfoot_navgoal = navgoal;                 
+
+rfoot_navgoal = navgoal;
 lfoot_navgoal = navgoal;
 
-rfoot_navgoal(1:3) = rfoot_navgoal(1:3) + R*[0;-0.13;0];                 
-lfoot_navgoal(1:3) = lfoot_navgoal(1:3) + R*[0;0.13;0];                 
+rfoot_navgoal(1:3) = rfoot_navgoal(1:3) + R*[0;-0.13;0];
+lfoot_navgoal(1:3) = lfoot_navgoal(1:3) + R*[0;0.13;0];
 
 % Plan footsteps to the goal
 goal_pos = struct('right', rfoot_navgoal, 'left', lfoot_navgoal);
@@ -65,7 +64,7 @@ T = ts(end);
 % if plot_comtraj
 %   % plot walking traj in drake viewer
 %   lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'walking-plan');
-% 
+%
 %   for i=1:length(ts)
 %     lcmgl.glColor3f(0, 0, 1);
 %     lcmgl.sphere([walking_plan_data.comtraj.eval(ts(i));0], 0.01, 20, 20);
@@ -110,7 +109,7 @@ if use_angular_momentum
   options.Kp_ang = 1.0; % angular momentum proportunal feedback gain
   options.W_kdot = 1e-5*eye(3); % angular momentum weight
 else
-  options.W_kdot = zeros(3); 
+  options.W_kdot = zeros(3);
 end
 
 lfoot_motion = BodyMotionControlBlock(r,'l_foot',ctrl_data,options);
@@ -152,7 +151,7 @@ ins(4).input = 5;
 outs(1).system = 2;
 outs(1).output = 1;
 sys = mimoFeedback(fc,sys,[],[],ins,outs);
-clear ins outs;  
+clear ins outs;
 
 % feedback PD block
 options.use_ik = false;
@@ -359,4 +358,3 @@ end
 end
 
 % TIMEOUT 1500
-
