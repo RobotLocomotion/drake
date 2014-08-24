@@ -704,7 +704,7 @@ classdef RigidBodyManipulator < Manipulator
       end
 
       model = model.setJointLimits([model.body.joint_limit_min]',[model.body.joint_limit_max]');
-      
+
       model = model.setInputLimits(u_limit(:,1),u_limit(:,2));
 
       %% check basic assumption from kinematics:
