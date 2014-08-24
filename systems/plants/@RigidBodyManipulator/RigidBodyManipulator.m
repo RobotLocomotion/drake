@@ -1746,7 +1746,7 @@ classdef RigidBodyManipulator < Manipulator
       if nargin<2, robotnum=1; end
       fr = obj.robot_velocity_frames{robotnum};
     end
-
+    
     function fr = getStateFrame(obj,robotnum)
       if nargin<2,
         fr = getStateFrame@DrakeSystem(obj);
