@@ -282,6 +282,11 @@ classdef RigidBodyManipulator < Manipulator
       obj.dirty = true;
     end
 
+    function obj = setJointLimits(obj,jl_min,jl_max)
+      obj = setJointLimits@Manipulator(obj,jl_min,jl_max);
+      obj.dirty = true;
+    end
+    
     function g = getGravity(obj,grav)
       g = obj.gravity;
     end
@@ -699,13 +704,10 @@ classdef RigidBodyManipulator < Manipulator
       end
 
       if (length(model.loop)>0)
-        model = model.setNumPositionConstraints(3*length(model.loop));  % should be 5? for continous joints once they enforce the joint axis constraint.
-      else
-        model = model.setNumPositionConstraints(0);
+        error('todo: add loop joint state constraints');
       end
-
-      model.joint_limit_min = [model.body.joint_limit_min]';
-      model.joint_limit_max = [model.body.joint_limit_max]';
+      
+      model = model.setJointLimits([model.body.joint_limit_min]',[model.body.joint_limit_max]');
 
       model = model.setInputLimits(u_limit(:,1),u_limit(:,2));
 
