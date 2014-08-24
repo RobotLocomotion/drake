@@ -41,7 +41,7 @@ function V = regionOfAttraction(sys,varargin)
 
 if (~isCT(sys)) error('only handle CT case so far'); end
 
-if (sys.num_xcon>0) error('state constraints not implemented yet'); end
+if ~isempty(sys.state_constraints) error('state constraints not implemented yet'); end
 if (isRational(sys)) error('rational dynamics not supported yet'); end
 if (~isTI(sys)) error('only works for time-invariant systems (so far)'); end
   
