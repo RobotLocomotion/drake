@@ -704,7 +704,7 @@ classdef RigidBodyManipulator < Manipulator
       end
 
       model = model.setJointLimits([model.body.joint_limit_min]',[model.body.joint_limit_max]');
-
+      
       model = model.setInputLimits(u_limit(:,1),u_limit(:,2));
 
       %% check basic assumption from kinematics:
@@ -726,7 +726,7 @@ classdef RigidBodyManipulator < Manipulator
       % so it should go after createMexPointer
       phi = model.collisionDetect(zeros(model.getNumPositions,1));
       model.num_contact_pairs = length(phi);
-
+      
       for j=1:length(model.loop)
         model = updateConstraints(model.loop(j),model);
       end
