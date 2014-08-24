@@ -166,6 +166,8 @@ classdef Manipulator < DrakeSystem
 
       obj = addStateConstraint(obj,con);
       
+      obj.num_position_constraints = obj.num_position_constraints+con.num_cnstr;
+      
       obj.warning_manager.warnOnce('Drake:Manipulator:Todo','still need to add time derivatives of position constraints');
     end
     
@@ -179,6 +181,8 @@ classdef Manipulator < DrakeSystem
       assert(con.xdim == obj.num_velocities,'DrakeSystem:InvalidVelocityConstraint','Velocity constraints must take a vector that is the same size as the number of velocities of this system as an input');
       assert(all(con.lb == con.ub));
       obj.velocity_constraints{end+1} = con;
+
+      obj.num_velocity_constraints = obj.num_velocity_constraints+con.num_cnstr;
 
       obj = addStateConstraint(obj,con);
     end
@@ -218,7 +222,7 @@ classdef Manipulator < DrakeSystem
     function n = getNumVelocities(obj);
       n = obj.num_velocities;
     end
-
+    
     function varargout = positionConstraints(obj,q)
       % Implements position constraints of the form phi(q) = 0
       
@@ -249,6 +253,22 @@ classdef Manipulator < DrakeSystem
       end
     end
 
+    function n = getNumJointLimitConstraints(obj)
+      % returns number of constraints imposed by finite joint limits
+      n = sum(obj.joint_limit_min ~= -inf) + sum(obj.joint_limit_max ~= inf);
+    end
+    
+    function [phi,J,dJ] = jointLimitConstraints(obj,q)
+      % constraint function (with derivatives) to implement unilateral
+      % constraints imposed by joint limits
+      phi = [q-obj.joint_limit_min; obj.joint_limit_max-q]; phi=phi(~isinf(phi));
+      J = [eye(obj.num_positions); -eye(obj.num_positions)];  
+      J([obj.joint_limit_min==-inf;obj.joint_limit_max==inf],:)=[]; 
+      if (nargout>2)
+        dJ = sparse(length(phi),obj.num_positions^2);
+      end
+    end
+    
     function num_contacts(obj)
       error('num_contacts parameter is no longer supported, in anticipation of alowing multiple contacts per body pair. Use getNumContactPairs for cases where the number of contacts is fixed');
     end
@@ -441,6 +461,8 @@ classdef Manipulator < DrakeSystem
   properties (SetAccess = private, GetAccess = public)
     num_positions=0;
     num_velocities=0;
+    num_position_constraints=0;
+    num_velocity_constraints=0;
     position_constraints = {};  % position equality constraints of the form phi(q)=const
     velocity_constraints = {};  % velocity equality constraints of the form psi(q,qd)=const
     joint_limit_min = -inf;       % vector of length num_q with lower limits
