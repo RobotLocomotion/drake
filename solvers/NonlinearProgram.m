@@ -1107,8 +1107,8 @@ classdef NonlinearProgram
                 msg='Objective function at current iteration went below options.ObjectiveLimit and maximum constraint violation was less than options.TolCon';
             end        
             warning('Drake:NonlinearProgram:FMINCONExitFlag',' FMINCON %2d %s',exitflag,msg); 
+            exitflag = exitflag+200;
           end
-          exitflag = exitflag+200;
           
         case 'ipopt'
           if(exitflag ~= 0 && exitflag ~= 1)
@@ -1146,8 +1146,8 @@ classdef NonlinearProgram
                 msg = 'internal error';
             end
             warning('Drake:NonlinearProgram:IPOPTExitFlag','Ipopt %4d %s',exitflag,msg);
+            exitflag = exitflag-100;
           end
-          exitflag = exitflag-100;
       end
     end 
   end

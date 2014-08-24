@@ -127,11 +127,6 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
       model = addFloatingBase@RigidBodyManipulator(model,parent,rootlink,xyz,rpy,'RPY');
     end
     
-    function model = compile(model)
-      model = compile@RigidBodyManipulator(model);
-      model = model.setNumPositionConstraints(2*length(model.loop));
-    end
-    
     function v=constructVisualizer(obj,options)
       checkDirty(obj);
       if nargin<2, options=struct(); end

@@ -1,12 +1,7 @@
-function runPassiveURDF()
-% Simulate the passive acrobot
+function runPassiveWRL
 
-w = warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
-d = PlanarRigidBodyManipulator('Acrobot.urdf');
-warning(w);
-v = d.constructVisualizer();
+p = PlanarRigidBodyManipulator('Acrobot.urdf');
+v = p.constructVisualizer;
 
-traj = simulate(d,[0 5],.5*randn(4,1));
-playback(v,traj);
-
-end
+x = p.simulate([0 5],randn(4,1));
+v.playback(x);
