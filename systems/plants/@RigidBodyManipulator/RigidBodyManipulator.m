@@ -21,6 +21,9 @@ classdef RigidBodyManipulator < Manipulator
     num_contact_pairs;
     contact_options; % struct containing options for contact/collision handling
     frame = [];     % array of RigidBodyFrame objects
+
+    position_frames;
+    velocity_frames;
   end
   
   properties (Access=public)  % i think these should be private, but probably needed to access them from mex? - Russ
@@ -643,10 +646,7 @@ classdef RigidBodyManipulator < Manipulator
       end
 
       if getNumStates(model)>0
-        stateframe = constructStateFrame(model);
-        if ~isequal_modulo_transforms(stateframe,getStateFrame(model)) % let the previous handle stay valid if possible
-          model = setStateFrame(model,stateframe);
-        end
+        model = constructStateFrame(model);
       end
       
       if length(model.sensor)>0
@@ -701,7 +701,6 @@ classdef RigidBodyManipulator < Manipulator
       % so it should go after createMexPointer
       phi = model.collisionDetect(zeros(model.getNumPositions,1));
       model.num_contact_pairs = length(phi);
-      
       if (model.num_contact_pairs>0)
         warning('Drake:RigidBodyManipulator:UnsupportedContactPoints','Contact is not supported by the dynamics methods of this class.  Consider using TimeSteppingRigidBodyManipulator or HybridPlanarRigidBodyManipulator');
       end
@@ -1613,6 +1612,17 @@ classdef RigidBodyManipulator < Manipulator
       % contains the contact pairs
       n = obj.getNumContactPairs();
     end
+    
+    function fr = getPositionFrame(obj,robotnum)
+      if nargin<1, robotnum=1; end
+      fr = obj.position_frames{robotnum};
+    end
+
+    function fr = getVelocityFrame(obj,robotnum)
+      if nargin<1, robotnum=1; end
+      fr = obj.velocity_frames{robotnum};
+    end
+    
   end
     
   methods (Static)
@@ -1633,9 +1643,8 @@ classdef RigidBodyManipulator < Manipulator
         obj.mex_model_ptr = constructModelmex(obj);
       end
     end
-        
-    function fr = constructStateFrame(model)
-      frame_dims=[];
+    
+    function model = constructStateFrame(model)
       for i=1:length(model.name)
         positions={};
         velocities={};
@@ -1653,14 +1662,22 @@ classdef RigidBodyManipulator < Manipulator
               positions = vertcat(positions,{b.jointname});
               velocities = vertcat(velocities,{[b.jointname,'dot']});
             end
-            frame_dims(b.position_num)=i;
-            frame_dims(model.getNumPositions() + b.velocity_num)=i;
           end
         end
-        coordinates = [positions; velocities];
-        fr{i} = CoordinateFrame([model.name{i},'State'],length(coordinates),'x',coordinates);
+        
+        fr = CoordinateFrame([model.name{i},'Position'],length(positions),'q',positions);
+        if numel(model.position_frames)<i || ~isequal_modulo_transforms(fr,model.position_frames{i}) % let the previous handle stay valid if possible
+          model.position_frames{i} = fr;
+        end
+        fr = CoordinateFrame([model.name{i},'Velocity'],length(velocities),'v',velocities);
+        if numel(model.velocity_frames)<i || ~isequal_modulo_transforms(fr,model.velocity_frames{i}) % let the previous handle stay valid if possible
+          model.velocity_frames{i} = fr;
+        end
       end
-      fr = MultiCoordinateFrame.constructFrame(fr,frame_dims,true);
+      fr = MultiCoordinateFrame.constructFrame(horzcat(model.position_frames,model.velocity_frames),[],true);
+      if ~isequal_modulo_transforms(fr,getStateFrame(model)) % let the previous handle stay valid if possible
+        model = setStateFrame(model,fr);
+      end
     end
 
     function [model,fr,pval,pmin,pmax] = constructParamFrame(model)

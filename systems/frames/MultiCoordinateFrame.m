@@ -73,18 +73,6 @@ classdef MultiCoordinateFrame < CoordinateFrame
       obj.frame_id = frame_id;
       obj.coord_ids = coord_ids;
       
-      % add a transform from this multiframe to the child frame
-      % iff the subframes are unique
-      for i=1:length(coordinate_frames)
-        d = coordinate_frames{i}.dim;
-        
-        if ~any(cellfun(@(a) a==coordinate_frames{i},coordinate_frames([1:i-1,i+1:end])))
-          T = sparse(1:d,obj.coord_ids{i},1,d,dim);
-          tf = AffineTransform(obj,coordinate_frames{i},T,zeros(d,1));
-          addTransform(obj,tf);
-        end
-      end
-      
       % preallocate
       obj.cell_vals = cell(1,length(obj.frame));
       for i=1:length(obj.frame)
@@ -117,11 +105,13 @@ classdef MultiCoordinateFrame < CoordinateFrame
     end
     
     function tf = findTransform(obj,target,options)
-      % There are two ways to get a transform from this multiframe to
+      % There are three ways to get a transform from this multiframe to
       % another frame.  One is if a transform exists directly from the
-      % multi-frame.  The other is if the required transforms exist for ALL
-      % of the child frames.  see the mimoCascade and mimoFeedback methods
-      % for more complex combinations.
+      % multi-frame.  Another is if the required transforms exist for ALL
+      % of the child frames.  The third is if a transform exists from ONE
+      % of the child frames to the entire target frame (e.g. if the target
+      % is actually one of the child frames).  See the mimoCascade and 
+      % mimoFeedback methods for more complex combinations.
 
       if (nargin<3) options=struct(); end
       if ~isfield(options,'throw_error_if_fail') options.throw_error_if_fail = false; end
@@ -129,7 +119,11 @@ classdef MultiCoordinateFrame < CoordinateFrame
       opt2 = options;
       opt2.throw_error_if_fail=false;
       tf = findTransform@CoordinateFrame(obj,target,opt2);
+      
       if isempty(tf) && isa(target,'MultiCoordinateFrame')
+        % see if there are transforms from all of the children to all of
+        % the target children
+        
         % this could only happen if the target is also a multiframe
         
         % handle the simple case first, where the number of subframes is 
@@ -152,6 +146,20 @@ classdef MultiCoordinateFrame < CoordinateFrame
         end
       end
       
+      if isempty(tf)
+        % see if there is a transform from any ONE of the children to 
+        % the entire target
+        [child_tf,fid]=findChildTransform(obj,target,opt2);
+        if fid>0
+          d = obj.frame{fid}.dim;
+          T = sparse(1:d,obj.coord_ids{fid},1,d,obj.dim);
+          tf = AffineTransform(obj,obj.frame{fid},T,zeros(d,1));
+          if ~isempty(child_tf)
+            tf = cascade(tf,child_tf);
+          end
+        end
+      end
+        
       if isempty(tf) && options.throw_error_if_fail
         error(['Could not find any transform between ',obj.name,' and ', target.name]);
       end
