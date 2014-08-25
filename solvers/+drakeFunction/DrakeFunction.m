@@ -3,12 +3,10 @@ classdef DrakeFunction
   % A DrakeFunction represents a vector-valued function that maps a
   % point in one CoordinateFrame to a point in another CoordinateFrame
   
-  properties (SetAccess = immutable)
+  properties (SetAccess = protected)
     input_frame   % CoordinateFrame representing the domain
     output_frame  % CoordinateFrame representing the range
-  end
 
-  properties (SetAccess = protected)
     % gradient sparsity information
     iCfun   % An int vector. The row index of non-zero entries of the gradient matrix
     jCvar   % An int vector. The column index of the non-zero entries of the gradient matrix
