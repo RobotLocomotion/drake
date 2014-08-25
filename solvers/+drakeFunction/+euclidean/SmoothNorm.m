@@ -22,7 +22,7 @@ classdef SmoothNorm < drakeFunction.DrakeFunction
       %                              object
       sizecheck(smoothing_factor,[1,1]);
       typecheck(smoothing_factor,'numeric');
-      output_frame = drakeFunction.frames.R(1);
+      output_frame = drakeFunction.frames.realCoordinateSpace(1);
       obj = obj@drakeFunction.DrakeFunction(input_frame,output_frame);
       obj.smoothing_factor = smoothing_factor;
     end

@@ -123,7 +123,7 @@ classdef DrakeFunction
       %                  or before (F) the current inputs. 
       %                  Optional. @default True 
       if nargin < 3, append = true; end
-      dummy_fcn = drakeFunction.Zeros(frame,drakeFunction.frames.R(0));
+      dummy_fcn = drakeFunction.Zeros(frame,drakeFunction.frames.realCoordinateSpace(0));
       if append
         fcn = [obj;dummy_fcn];
       else
