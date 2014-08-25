@@ -24,6 +24,7 @@ classdef Affine < drakeFunction.DrakeFunction
       obj = obj@drakeFunction.DrakeFunction(input_frame,output_frame);
       obj.A = A;
       obj.b = b;
+      obj = obj.setSparsityPattern();
     end
 
     function [f,df] = eval(obj,x)
@@ -31,8 +32,8 @@ classdef Affine < drakeFunction.DrakeFunction
       df = obj.A;
     end
 
-    function [iCfun, jCvar] = getSparsityPattern(obj)
-      [iCfun, jCvar] = find(obj.A);
+    function obj = setSparsityPattern(obj)
+      [obj.iCfun, obj.jCvar] = find(obj.A);
     end
 
     function fcn = concatenated(obj, varargin)

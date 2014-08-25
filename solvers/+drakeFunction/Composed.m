@@ -23,6 +23,7 @@ classdef Composed < drakeFunction.DrakeFunction
                                    fcn_outer.getOutputFrame());
       obj.fcn_outer = fcn_outer;
       obj.fcn_inner = fcn_inner;
+      obj = obj.setSparsityPattern();
     end
 
     function [f,df] = eval(obj,x)
@@ -31,17 +32,21 @@ classdef Composed < drakeFunction.DrakeFunction
       df = df_df_inner*df_inner;
     end
 
-    function [iCfun, jCvar] = getSparsityPattern(obj)
-      [iCfun_inner, jCvar_inner] = getSparsityPattern(obj.fcn_inner);
-      m_inner = obj.fcn_inner.getNumOutputs();
-      n_inner = obj.fcn_inner.getNumInputs();
-      C_inner = sparse(iCfun_inner,jCvar_inner,1, m_inner, n_inner);
-      [iCfun_outer, jCvar_outer] = getSparsityPattern(obj.fcn_outer);
-      m_outer = obj.fcn_outer.getNumOutputs();
-      n_outer = obj.fcn_outer.getNumInputs();
-      C_outer = sparse(iCfun_outer,jCvar_outer,1, m_outer, n_outer);
-      C = C_outer*C_inner;
-      [iCfun,jCvar] = find(C);
+    function obj = setSparsityPattern(obj)
+      if isempty(obj.fcn_inner) || isempty(obj.fcn_outer)
+        obj = setSparsityPattern@drakeFunction.DrakeFunction(obj);
+      else
+        [iCfun_inner, jCvar_inner] = getSparsityPattern(obj.fcn_inner);
+        m_inner = obj.fcn_inner.getNumOutputs();
+        n_inner = obj.fcn_inner.getNumInputs();
+        C_inner = sparse(iCfun_inner,jCvar_inner,1, m_inner, n_inner);
+        [iCfun_outer, jCvar_outer] = getSparsityPattern(obj.fcn_outer);
+        m_outer = obj.fcn_outer.getNumOutputs();
+        n_outer = obj.fcn_outer.getNumInputs();
+        C_outer = sparse(iCfun_outer,jCvar_outer,1, m_outer, n_outer);
+        C = C_outer*C_inner;
+        [obj.iCfun,obj.jCvar] = find(C);
+      end
     end
   end
 end

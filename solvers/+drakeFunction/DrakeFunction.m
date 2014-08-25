@@ -8,6 +8,13 @@ classdef DrakeFunction
     output_frame  % CoordinateFrame representing the range
   end
 
+  properties (SetAccess = protected)
+    % gradient sparsity information
+    iCfun   % An int vector. The row index of non-zero entries of the gradient matrix
+    jCvar   % An int vector. The column index of the non-zero entries of the gradient matrix
+    nnz     % An int scalar. The maximal number of non-zero entries in the gradient matrix
+  end
+
   methods (Abstract)
     % All child classes must implement an 'eval' method that evaluates
     % the function and its derivative
@@ -29,13 +36,23 @@ classdef DrakeFunction
       typecheck(output_frame,'CoordinateFrame');
       obj.input_frame = input_frame;
       obj.output_frame = output_frame;
+      obj = obj.setSparsityPattern();
     end
 
     function [iCfun, jCvar] = getSparsityPattern(obj)
+      iCfun = obj.iCfun;
+      jCvar = obj.jCvar;
+    end
+
+    function obj = setSparsityPattern(obj)
+      % obj = setSparsityPattern(obj) sets the sparsity pattern properties
+      %   (iCfun and jGvar) in the returned object. Sub-classes that wish to
+      %   modify the default sparsity pattern (dense) should overload this
+      %   method
       n_input = obj.getInputFrame().dim;
       n_output = obj.getOutputFrame().dim;
-      iCfun = reshape(bsxfun(@times,(1:n_output)',ones(1,n_input)),[],1);
-      jCvar = reshape(bsxfun(@times,1:n_input,ones(n_output,1)),[],1);
+      obj.iCfun = reshape(bsxfun(@times,(1:n_output)',ones(1,n_input)),[],1);
+      obj.jCvar = reshape(bsxfun(@times,1:n_input,ones(n_output,1)),[],1);
     end
 
     function fcn = plus(obj,other,same_input)
