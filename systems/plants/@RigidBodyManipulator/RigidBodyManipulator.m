@@ -698,7 +698,8 @@ classdef RigidBodyManipulator < Manipulator
       model.num_contact_pairs = length(phi);
       
       for j=1:length(model.loop)
-        model = updateConstraints(model.loop(j),model);
+        [loop,model] = updateConstraints(model.loop(j),model);
+        model.loop(j) = loop;
       end
       
       if (model.num_contact_pairs>0)
