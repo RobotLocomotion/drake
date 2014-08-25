@@ -1,4 +1,4 @@
-function frame = R(n)
+function frame = realCoordinateSpace(n)
   % frame = drakeFunction.frames.R(n) returns a singleton frame
   %   representing R^n
   %
