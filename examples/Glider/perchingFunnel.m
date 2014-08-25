@@ -4,28 +4,30 @@ close all
 megaclear;
 
 p = GliderPlant;
-%p = p.setInputLimits(-inf,inf); 
+%p = p.setInputLimits(-inf,inf);
 
 %create mss state variables
-x=msspoly('x',7); 
+x=msspoly('x',7);
 
 % obtain nomial trajectories via RTRL with end constraints
-%[utraj,xtraj]=runDircol(p);
-% obtain nomial trajectories via RTRL with end constraints
-trajs=load('glider_trajs.mat');
+try
+  trajs=load('glider_trajs.mat');
 
-xtraj=trajs.xtraj;
-utraj=trajs.utraj;
+  xtraj=trajs.xtraj;
+  utraj=trajs.utraj;
 
-utraj = setOutputFrame(utraj,p.getInputFrame);
-xtraj = setOutputFrame(xtraj,p.getStateFrame);
+  utraj = setOutputFrame(utraj,p.getInputFrame);
+  xtraj = setOutputFrame(xtraj,p.getStateFrame);
+catch
+  [utraj,xtraj]=runDircol(p);
+end
 
 % plot the trajectory positions
-figure(1); 
+figure(1);
 fnplt(xtraj); drawnow;
 
 % plot the trajectory velocities
-figure(2); 
+figure(2);
 fnplt(xtraj,[5,6]); drawnow;
 
 %xG=[0 0 1.57 -0.5 1 -2 -1]';
@@ -33,7 +35,7 @@ xG=xtraj.eval(xtraj.tspan(end));
 % create the final time goal ellipse for the funnel
 Vf=(x-xG)'*diag([(1/0.05)^2 (1/0.05)^2 (1/3)^2 (1/3)^2 1 1 (1/3)^2])*(x-xG);
 Qf=diag([(1/0.05)^2 (1/0.05)^2 (1/3)^2 (1/3)^2 1 1 (1/3)^2]);
-p = p.setInputLimits(-inf,inf); 
+p = p.setInputLimits(-inf,inf);
 
 % stabilize the open loop trajectory with LQR
 disp('stabilizing swingup trajectory');
@@ -69,7 +71,7 @@ save('Funnel_Rho2','xtraj','V','Vf')
 optionsV.plotdims=[1,2];
 optionsV.x0=xtraj;
 
-figure(8); 
+figure(8);
 hold on
 plotFunnel(V,optionsV); drawnow;
 fnplt(xtraj); drawnow;
@@ -82,7 +84,7 @@ hold off
 optionsV.plotdims=[5,6];
 optionsV.x0=xtraj;
 
-figure(9); 
+figure(9);
 hold on
 plotFunnel(V,optionsV); drawnow;
 fnplt(xtraj,[5,6]); drawnow;
@@ -92,4 +94,3 @@ ylabel('z-velocity (m/s)','FontSize',20)
 hold off
 
 end
-  

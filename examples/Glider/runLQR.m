@@ -6,13 +6,18 @@ pv = GliderVisualizer(pd);
 %[utraj,xtraj]=runDircol(pd);
 pd = pd.setInputLimits(-inf,inf);
 
-trajs=load('glider_trajs.mat');
+% obtain nomial trajectories via RTRL with end constraints
+try
+  trajs=load('glider_trajs.mat');
 
-xtraj=trajs.xtraj;
-utraj=trajs.utraj;
+  xtraj=trajs.xtraj;
+  utraj=trajs.utraj;
 
-utraj = setOutputFrame(utraj,pd.getInputFrame);
-xtraj = setOutputFrame(xtraj,pd.getStateFrame);
+  utraj = setOutputFrame(utraj,p.getInputFrame);
+  xtraj = setOutputFrame(xtraj,p.getStateFrame);
+catch
+  [utraj,xtraj]=runDircol(p);
+end
 
 
 figure()
@@ -27,7 +32,3 @@ for i=1:1
 end
 
 end
-
-
-
-
