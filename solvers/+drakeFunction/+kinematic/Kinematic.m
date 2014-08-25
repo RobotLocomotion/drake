@@ -11,8 +11,7 @@ classdef Kinematic < drakeFunction.RigidBodyManipulatorFunction
       % @retval obj   -- drakeFunction.kinematic.Kinematic object
       typecheck(rbm,{'RigidBodyManipulator', ...
         'TimeSteppingRigidBodyManipulator'});
-      input_frame = CoordinateFrame('position_frame', ...
-        rbm.getNumPositions(),'q');
+      input_frame = rbm.getPositionFrame();
       obj = obj@drakeFunction.RigidBodyManipulatorFunction(rbm, ...
         input_frame, output_frame);
       obj = obj.setSparsityPattern();
@@ -26,6 +25,14 @@ classdef Kinematic < drakeFunction.RigidBodyManipulatorFunction
         obj.iCfun = reshape(bsxfun(@times,(1:obj.getNumOutputs())',ones(1,length(joint_idx))),[],1);
         obj.jCvar = reshape(bsxfun(@times,ones(obj.getNumOutputs(),1),joint_idx),[],1);
       end
+    end
+
+    function obj = setRigidBodyManipulator(obj, rbm)
+      obj = setRigidBodyManipulator@drakeFunction.RigidBodyManipulatorFunction(obj, rbm);
+      assert(isequal_modulo_transforms(obj.input_frame,rbm.getPositionFrame()),...
+        ['The input frame of this function is incompatible with the ', ...
+         'position frame of the RigidBodyManipulator, rbm.']);
+      obj.input_frame = rbm.getPositionFrame();
     end
   end
 

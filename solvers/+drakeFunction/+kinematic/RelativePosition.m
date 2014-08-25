@@ -68,7 +68,7 @@ classdef RelativePosition < drakeFunction.kinematic.Kinematic
       dxyz_world_to_B = -dxyz_world_to_B*[dquat_world_to_B;dT_B_to_world(1:3,:)];
 
       pts_in_B = zeros(3,obj.n_pts)*q(1);
-      J = zeros(3*obj.n_pts,obj.rbm.getNumDOF())*q(1);
+      J = zeros(3*obj.n_pts,obj.rbm.getNumPositions())*q(1);
       for i = 1:obj.n_pts
         [pts_in_B1,dpts_in_B1] = quatRotateVec(quat_world_to_B,pts_in_world(:,i));
         dpts_in_B1 = dpts_in_B1*[dquat_world_to_B;JA(3*(i-1)+(1:3),:)];
