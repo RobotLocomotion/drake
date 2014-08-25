@@ -1,5 +1,5 @@
 function frame = realCoordinateSpace(n)
-  % frame = drakeFunction.frames.R(n) returns a singleton frame
+  % frame = drakeFunction.frames.realCoordinateSpace(n) returns a singleton frame
   %   representing R^n
   %
   % @param n        -- Integer specifying the dimension of the frame.
