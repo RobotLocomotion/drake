@@ -19,7 +19,7 @@ classdef Kinematic < drakeFunction.RigidBodyManipulatorFunction
     end
 
     function obj = setSparsityPattern(obj)
-      if isempty(rbm)
+      if isempty(obj.rbm)
         obj = setSparsityPattern@drakeFunction.RigidBodyManipulatorFunction(obj);
       else
         joint_idx = obj.kinematicsPathJoints();
