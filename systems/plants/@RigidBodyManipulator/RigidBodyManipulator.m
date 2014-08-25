@@ -1615,12 +1615,12 @@ classdef RigidBodyManipulator < Manipulator
     end
 
     function fr = getPositionFrame(obj,robotnum)
-      if nargin<1, robotnum=1; end
+      if nargin<2, robotnum=1; end
       fr = obj.robot_position_frames{robotnum};
     end
 
     function fr = getVelocityFrame(obj,robotnum)
-      if nargin<1, robotnum=1; end
+      if nargin<2, robotnum=1; end
       fr = obj.robot_velocity_frames{robotnum};
     end
     
