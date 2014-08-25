@@ -18,4 +18,7 @@ function concatenatedTest()
   [f,df] = concatenated_fun([x;x;y]);
   valuecheck(f,[x+x;y]);
   valuecheck(df,blkdiag([eye(frame1.dim),eye(frame1.dim)],eye(frame2.dim)));
+
+  % Check concatenating concatenations
+  twice_concatenated_fun = [concatenated_fun;concatenated_fun];
 end
