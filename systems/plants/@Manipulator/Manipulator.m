@@ -43,7 +43,7 @@ classdef Manipulator < DrakeSystem
       v = x(obj.num_positions+1:end);
 
       if (nargout>1)
-        if ~isempty(obj.position_constraint_ids) || ~isempty(obj.velocity_constraint_ids)
+        if ~isempty(obj.position_constraints) || ~isempty(obj.velocity_constraints)
           % by naming this 'MATLAB:TooManyOutputs', geval will catch the
           % error and use TaylorVarInstead
           error('MATLAB:TooManyOutputs','User gradients for constrained dynamics not implemented yet.');
@@ -123,7 +123,7 @@ classdef Manipulator < DrakeSystem
 
       phi=[]; psi=[];
       qd = vToqdot(obj, q) * v;
-      if ~isempty(obj.position_constraint_ids) && ~isempty(obj.velocity_constraint_ids)
+      if ~isempty(obj.position_constraints) && ~isempty(obj.velocity_constraints)
         [phi,J,dJ] = geval(@obj.positionConstraints,q);
         Jdotqd = dJ*reshape(qd*qd',obj.num_positions^2,1);
 
@@ -135,12 +135,12 @@ classdef Manipulator < DrakeSystem
         term2=Hinv*tau;
 
         constraint_force = -[J;dpsidqd]'*pinv([J*term1;dpsidqd*term1])*[J*term2 + Jdotqd + alpha*J*qd; dpsidqd*term2 + dpsidq*qd + beta*psi];
-      elseif ~isempty(obj.position_constraint_ids)  % note: it didn't work to just have dpsidq,etc=[], so it seems like the best solution is to handle each case...
+      elseif ~isempty(obj.position_constraints)  % note: it didn't work to just have dpsidq,etc=[], so it seems like the best solution is to handle each case...
         [phi,J,dJ] = geval(@obj.positionConstraints,q);
         Jdotqd = dJ*reshape(qd*qd',obj.num_positions^2,1);
 
         constraint_force = -J'*pinv(J*Hinv*J')*(J*Hinv*tau + Jdotqd + alpha*J*qd);
-      elseif ~isempty(obj.velocity_constraint_ids)
+      elseif ~isempty(obj.velocity_constraints)
         [psi,J] = geval(@obj.velocityConstraints,q,qd);
         dpsidq = J(:,1:obj.num_positions);
         dpsidqd = J(:,obj.num_positions+1:end);
@@ -153,36 +153,67 @@ classdef Manipulator < DrakeSystem
   end
 
   methods
-    function obj = addPositionEqualityConstraint(obj,con)
+    function [obj,id] = addPositionEqualityConstraint(obj,con)
       % Adds a position constraint of the form phi(q) = constant
       % which can be enforced directly in the manipulator dynamics.
       % This method will also register phi (and it's time derivative)
       % as state constraints for the dynamical system.
       
-      typecheck(con,'Constraint');
+      id = numel(obj.position_constraints)+1;
+      obj = updatePositionEqualityConstraint(obj,id,con);
+      
+    end
+    
+    function obj = updatePositionEqualityConstraint(obj,id,con)
+      typecheck(con,'DrakeFunctionConstraint'); % for now
       assert(con.xdim == obj.num_positions,'DrakeSystem:InvalidPositionConstraint','Position constraints must take a vector that is the same size as the number of positions of this system as an input');
       assert(all(con.lb == con.ub));
+        
+      pos_fun = con.fcn;
+      state_fun = pos_fun.addInputFrame(obj.getVelocityFrame);
+      state_con = DrakeFunctionConstraint(con.lb,con.ub,state_fun);
 
-      [obj,id] = addStateConstraint(obj,con);
-      obj.position_constraint_ids(end+1) = id;
+      if id>=numel(obj.position_constraints) % then it's an existing constraint
+        [obj,obj.position_constraint_ids(1,id)] = addStateConstraint(obj,state_con);
+      else 
+        obj.num_position_constraints = obj.num_position_constraints-obj.position_constraints{id}.num_cnstr;
+        obj = updateStateConstraint(obj,obj.position_constraint_ids(1,id),state_con);
+      end
+      
       obj.num_position_constraints = obj.num_position_constraints+con.num_cnstr;
+      obj.position_constraints{id} = con;
       
       obj.warning_manager.warnOnce('Drake:Manipulator:Todo','still need to add time derivatives of position constraints');
     end
     
-    function obj = addVelocityEqualityConstraint(obj,con)
+    function [obj,id] = addVelocityEqualityConstraint(obj,con)
       % Adds a velocity constraint of the form psi(q,v) = constant
       % (with dpsidv~=0) which can be enforced directly in the manipulator dynamics.
       % This method will also register psi as a state constraint
       % for the dynamical system.
       
-      typecheck(con,'Constraint');
-      assert(con.xdim == obj.num_velocities,'DrakeSystem:InvalidVelocityConstraint','Velocity constraints must take a vector that is the same size as the number of velocities of this system as an input');
+      id = numel(obj.position_constraints)+1;
+      obj = updatePositionEqualityConstraint(obj,id,con);
+      
+    end
+    function obj = updateVelocityEqualityConstraint(obj,id,con)
+      typecheck(con,'DrakeFunctionConstraint'); % for now
+      assert(con.xdim == obj.num_velocities,'DrakeSystem:InvalidVelocityConstraint','Velocity constraints must take a vector that is the same size as the number of velocity s of this system as an input');
       assert(all(con.lb == con.ub));
+        
+      pos_fun = con.fcn;
+      state_fun = pos_fun.addInputFrame(obj.getPositionFrame,false);
+      state_con = DrakeFunctionConstraint(con.lb,con.ub,state_fun);
 
-      [obj,id] = addStateConstraint(obj,con);
-      obj.velocity_constraint_ids(end+1) = id;
+      if id>=numel(obj.velocity_constraints) % then it's an existing constraint
+        [obj,obj.velocity_constraint_ids(1,id)] = addStateConstraint(obj,state_con);
+      else 
+        obj.num_velocity_constraints = obj.num_velocity_constraints-obj.velocity_constraints{id}.num_cnstr;
+        obj = updateStateConstraint(obj,obj.velocity_constraint_ids(1,id),state_con);
+      end
+      
       obj.num_velocity_constraints = obj.num_velocity_constraints+con.num_cnstr;
+      obj.velocity_constraints{id} = con;
     end
   end
 
@@ -225,10 +256,10 @@ classdef Manipulator < DrakeSystem
       % Implements position constraints of the form phi(q) = 0
       
       varargout = cell(1,nargout);
-      for i=1:length(obj.position_constraint_ids)
+      for i=1:length(obj.position_constraints)
         v = cell(1,nargout);
-        [v{:}] = obj.state_constraints{obj.position_constraint_ids(i)}.eval(x);
-        v{1} = v{1} - obj.state_constraints{obj.position_constraint_ids(i)}.lb;  % center it around 0
+        [v{:}] = obj.position_constraints{i}.eval(x);
+        v{1} = v{1} - obj.position_constraints{i}.lb;  % center it around 0
         for j=1:nargout
           varargout{j} = vertcat(varargout{j},v{j});
         end
@@ -241,10 +272,10 @@ classdef Manipulator < DrakeSystem
       % only on q should be implemented instead as positionConstraints.
 
       varargout = cell(1,nargout);
-      for i=1:length(obj.velocity_constraint_ids)
+      for i=1:length(obj.velocity_constraints)
         v = cell(1,nargout);
-        [v{:}] = obj.state_constraints{obj.velocity_constraint_ids(i)}.eval(x);
-        v{1} = v{1} - obj.state_constraints{obj.velocity_constraint_ids(i)}.lb;  % center it around 0
+        [v{:}] = obj.velocity_constraints{i}.eval(x);
+        v{1} = v{1} - obj.velocity_constraints{i}.lb;  % center it around 0
         for j=1:nargout
           varargout{j} = vertcat(varargout{j},v{j});
         end
@@ -255,7 +286,7 @@ classdef Manipulator < DrakeSystem
       % returns number of constraints imposed by finite joint limits
       n = sum(obj.joint_limit_min ~= -inf) + sum(obj.joint_limit_max ~= inf);
     end
-
+    
     function [phi,J,dJ] = jointLimitConstraints(obj,q)
       % constraint function (with derivatives) to implement unilateral
       % constraints imposed by joint limits
@@ -452,6 +483,7 @@ classdef Manipulator < DrakeSystem
       else
         obj = updateStateConstraint(obj,obj.joint_limit_constraint_id,con);
       end
+    end
     
   end  
 
@@ -460,8 +492,10 @@ classdef Manipulator < DrakeSystem
     num_velocities=0;
     num_position_constraints=0;
     num_velocity_constraints=0;
-    position_constraint_ids = [];  % ids for the state_constriants of the form phi(q)=const enforced by the dynamics
-    velocity_constraint_ids = [];  % ids for the state constriants of the form psi(q,qd)=const enforced by the dynamics
+    position_constraints = {};  % position equality constraints of the form phi(q)=const
+    position_constraint_ids = []; % also have to keep associate state constraints
+    velocity_constraints = {};  % velocity equality constraints of the form psi(q,qd)=const
+    velocity_constraint_ids = []; % also keep associated state constraints
     joint_limit_min = -inf;       % vector of length num_q with lower limits
     joint_limit_max = inf;        % vector of length num_q with upper limits
     joint_limit_constraint_id = [];

@@ -11,17 +11,18 @@ classdef RigidBodyLoop < RigidBodyElement
   end
   
   methods   
-    function model = updateConstraints(obj,model)
-      con = RelativePositionConstraint(model,obj.pt1,obj.pt2,obj.pt2,obj.body1,obj.body2);
+    function [obj,model] = updateConstraints(obj,model)
+      relative_position_fun = drakeFunction.kinematic.RelativePosition(model,obj.body1,obj.body2,obj.pt1);
+%      relative_position_fun = relative_position_fun.addInputFrame(model.getVelocityFrame);
+      con = DrakeFunctionConstraint(obj.pt2,obj.pt2,relative_position_fun);
       % todo: naming logic should go into the constraint classes
       % todo: support 2D constraints for planar loops?
-      con = generateConstraint(con);
-      con = setName(con{1},{[obj.name,'_x'];[obj.name,'_y'];[obj.name,'_z']});
+      con = setName(con,{[obj.name,'_x'];[obj.name,'_y'];[obj.name,'_z']});
       
       if isempty(obj.constraint_id)
-        [model,obj.constraint_id] = addStateConstraint(model,con);
+        [model,obj.constraint_id] = addPositionEqualityConstraint(model,con);
       else
-        model = updateStateConstraint(model,obj.constraint_id,con);
+        model = updatePositionEqualityConstraint(model,obj.constraint_id,con);
       end
     end
     
