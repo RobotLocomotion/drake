@@ -18,6 +18,8 @@ classdef RigidBodyManipulatorFunction < drakeFunction.DrakeFunction
     end
 
     function obj = setRigidBodyManipulator(obj, rbm)
+      typecheck(rbm,{'RigidBodyManipulator', ...
+                     'TimeSteppingRigidBodyManipulator'});
       obj.rbm = rbm;
     end
   end
