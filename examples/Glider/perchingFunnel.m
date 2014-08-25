@@ -9,7 +9,7 @@ p = GliderPlant;
 %create mss state variables
 x=msspoly('x',7);
 
-% obtain nomial trajectories via RTRL with end constraints
+% obtain nomial trajectories via dircol with end constraints
 try
   trajs=load('glider_trajs.mat');
 
@@ -19,7 +19,7 @@ try
   utraj = setOutputFrame(utraj,p.getInputFrame);
   xtraj = setOutputFrame(xtraj,p.getStateFrame);
 catch
-  [utraj,xtraj]=runDircol(p);
+  [utraj,xtraj]=runDircolPerching(p);
 end
 
 % plot the trajectory positions
