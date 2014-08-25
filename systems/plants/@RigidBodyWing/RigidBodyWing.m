@@ -190,7 +190,7 @@ classdef RigidBodyWing < RigidBodyForceElement
 
             this_surface = obj.control_surfaces(min_left_edge_index);
             this_span = this_surface.span;
-            this_subwing = RigidBodySubWing(frame_id, profile, chord, this_span, stall_angle, nominal_speed);
+            this_subwing = RigidBodySubWingWithControlSurface(frame_id, profile, chord, this_span, stall_angle, nominal_speed, this_surface);
             
             % remove this surface from consideration
             remaining_surfaces(min_left_edge_index) = [];
