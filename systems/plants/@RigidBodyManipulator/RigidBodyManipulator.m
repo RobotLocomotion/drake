@@ -1653,11 +1653,7 @@ classdef RigidBodyManipulator < Manipulator
       end
     end
 
-<<<<<<< HEAD
     function model = constructStateFrame(model)
-=======
-    function fr = constructStateFrame(model)
->>>>>>> c09319da0e418e64d87db4324b858bc89926ed31
       frame_dims=[];
       for i=1:length(model.name)
         positions={};
