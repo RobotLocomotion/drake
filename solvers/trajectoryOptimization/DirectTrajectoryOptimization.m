@@ -1,4 +1,4 @@
-classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
+classdef DirectTrajectoryOptimization < NonlinearProgram
   %DIRECTTRAJECTORYOPTIMIZATION An abstract class for direct method approaches to
   % trajectory optimization.
   %
@@ -61,7 +61,7 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
       %todo: replace getVarInfo with setupVarInfo
       % initialize with 0 variables and then add them
 
-      obj = obj@NonlinearProgramWConstraintObjects(0);
+      obj = obj@NonlinearProgram(0);
       obj.options = options;
       obj.plant = plant;
 

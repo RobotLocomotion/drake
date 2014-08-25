@@ -1,4 +1,4 @@
-classdef InverseKinematics < NonlinearProgramWConstraintObjects
+classdef InverseKinematics < NonlinearProgram
   % solve the inverse kinematics problem
   % min_q 0.5*(q-qnom)'Q(q-qnom)+cost1(q)+cost2(q)+...
   % s.t    lb<= kc(q) <=ub
@@ -35,7 +35,7 @@ classdef InverseKinematics < NonlinearProgramWConstraintObjects
         error('Drake:InverseKinematics:robot should be a RigidBodyManipulator or a TimeSteppingRigidBodyManipulator');
       end
       nq_tmp = robot.getNumPositions();
-      obj = obj@NonlinearProgramWConstraintObjects(nq_tmp);
+      obj = obj@NonlinearProgram(nq_tmp);
       obj.nq = nq_tmp;
       obj.robot = robot;
       obj.x_name = cell(obj.nq,1);
@@ -119,50 +119,10 @@ classdef InverseKinematics < NonlinearProgramWConstraintObjects
       if(~isempty(obj.qsc_weight_idx))
         x0(obj.qsc_weight_idx) = 1/length(obj.qsc_weight_idx);
       end
-      [x,F,info] = solve@NonlinearProgramWConstraintObjects(obj,x0);
+      [x,F,info,infeasible_constraint] = solve@NonlinearProgram(obj,x0);
       q = x(obj.q_idx);
       q = max([obj.x_lb(obj.q_idx) q],[],2);
       q = min([obj.x_ub(obj.q_idx) q],[],2);
-      if nargout > 3
-        [info,infeasible_constraint] = infeasibleConstraintName(obj,x,info);
-      end
-    end
-
-    function [info,infeasible_constraint] = infeasibleConstraintName(obj,x,info)
-      % return the name of the infeasible nonlinear constraint
-      % @retval info     -- change the return info from nonlinear solver based on how much
-      % the solution violate the constraint
-      % @retval infeasible_constraint  -- A cell of strings.
-      infeasible_constraint = {};
-      if(strcmp(obj.solver,'snopt'))
-        if(info>10)
-          fval = obj.objectiveAndNonlinearConstraints(x);
-          A = [obj.Ain;obj.Aeq];
-          if(~isempty(A))
-            fval = [fval;A*x];
-          end
-          [lb,ub] = obj.bounds();
-          ub_err = fval(2:end)-ub(2:end);
-          max_ub_err = max(ub_err);
-          max_ub_err = max_ub_err*(max_ub_err>0);
-          lb_err = lb(2:end)-fval(2:end);
-          max_lb_err = max(lb_err);
-          max_lb_err = max_lb_err*(max_lb_err>0);
-          cnstr_name = [obj.cin_name;obj.ceq_name;obj.Ain_name;obj.Aeq_name];
-          if(max_ub_err+max_lb_err>1e-4)
-            infeasible_constraint_idx = (ub_err>5e-5) | (lb_err>5e-5);
-            infeasible_constraint = cnstr_name(infeasible_constraint_idx);
-          elseif(info == 13)
-            info = 4;
-          elseif(info == 31)
-            info = 5;
-          elseif(info == 32)
-            info = 6;
-          end
-        end
-      else
-        error('not implemented yet');
-      end
     end
   end
 end

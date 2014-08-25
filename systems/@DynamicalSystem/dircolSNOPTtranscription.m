@@ -267,7 +267,7 @@ function [f,G] = dircol_userfun(sys,w,costFun,finalCostFun,tOrig,nX,nU,con,optio
   dJ(xf_inds) = dJ(xf_inds) + dh(2:end); 
   
   if (isfield(options,'trajectory_cost_fun') && ~isempty(options.trajectory_cost_fun))
-    [Jtraj,dJtraj]=geval(options.trajectory_cost_fun,t,x,u,options);
+  [Jtraj,dJtraj]=geval(options.trajectory_cost_fun,t,x,u,options);
     J = J+Jtraj;
     dJ(1) = dJ(1)+dJtraj(1:nT)*dtdw1;
     dJ(2:end) = dJ(2:end)+dJtraj(nT+1:end);

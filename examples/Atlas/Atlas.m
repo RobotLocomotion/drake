@@ -41,8 +41,9 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
 
       atlas_state_frame = AtlasState(obj);
       tsmanip_state_frame = obj.getStateFrame();
-      if isa(tsmanip_state_frame,'MultiCoordinateFrame')
-        tsmanip_state_frame.frame{1} = atlas_state_frame;
+      if tsmanip_state_frame.dim>atlas_state_frame.dim
+        id = findSubFrameEquivalentModuloTransforms(tsmanip_state_frame,atlas_state_frame);
+        tsmanip_state_frame.frame{id} = atlas_state_frame;
         state_frame = tsmanip_state_frame;
       else
         state_frame = atlas_state_frame;
