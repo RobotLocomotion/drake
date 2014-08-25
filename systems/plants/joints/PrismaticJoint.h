@@ -16,7 +16,7 @@ public:
 
   virtual ~PrismaticJoint();
 
-  virtual Eigen::Isometry3d jointTransform(double* const q) const override;
+  virtual Eigen::Isometry3d jointTransform(double* const q) const; //override;
 
 private:
   static Eigen::Matrix<double, TWIST_SIZE, 1> spatialJointAxis(const Eigen::Vector3d& translation_axis);

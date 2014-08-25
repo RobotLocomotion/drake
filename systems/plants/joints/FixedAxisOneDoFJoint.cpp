@@ -3,6 +3,7 @@
 #include <Eigen/Core>
 #include <limits>
 #include <exception>
+#include <stdexcept>
 
 using namespace Eigen;
 
