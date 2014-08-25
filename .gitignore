@@ -96,3 +96,4 @@ solvers/test/startRegen_1
 .#*
 VALGRIND_OUTPUT.xml
 *.ppms.gz
+glider_trajs.mat
