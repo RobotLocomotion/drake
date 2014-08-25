@@ -43,6 +43,7 @@ xtraj = inOutputFrame(xtraj,getStateFrame(obj));
 typecheck(utraj,'Trajectory');
 utraj = inOutputFrame(utraj,getInputFrame(obj));
 
+
 nX = obj.getNumStates();
 nU = obj.getNumInputs();
 tspan=options.tspan;
@@ -265,7 +266,16 @@ function B = getBTrajectory(plant,ts,xtraj,utraj,options)
   B = zeros([nX,nU,length(ts)]);
   for i=1:length(ts)
     x0=xtraj.eval(ts(i)); u0 = utraj.eval(ts(i));
-    [~,df] = geval(@plant.dynamics,ts(i),x0,u0,options);
+   
+  if isa(plant,'StochasticDrakeSystem')
+   w0=zeros(1,plant.getNumDisturbances);
+  [~,df] = geval(@plant.dynamics,ts(i),x0,u0,w0,options);
+  else
+  [~,df] = geval(@plant.dynamics,ts(i),x0,u0,options);   
+  end
+    
+    
+    
     B(:,:,i) = df(:,nX+1+(1:nU));
   end
   B = PPTrajectory(spline(ts,B));
@@ -288,32 +298,39 @@ function [y0,C,D] = getOutputTrajectories(plant,ts,xtraj,utraj,options)
   D = PPTrajectory(spline(ts,D));
 end
 
-% function Sdot = Sdynamics(t,S,plant,Qtraj,Rtraj,xtraj,utraj,options)
-%   x0 = xtraj.eval(t); u0 = utraj.eval(t);
-%   Q = Qtraj.eval(t); Ri = inv(Rtraj.eval(t));
-%   nX = length(x0); nU = length(u0);
-%   [f,df] = geval(@plant.dynamics,t,x0,u0,options);
-%   A = df(:,1+(1:nX));
-%   B = df(:,nX+1+(1:nU));
-%   Sdot = -(Q - S*B*Ri*B'*S + S*A + A'*S);
-%   if (min(eig(S))<0) warning('S is not positive definite'); end
-% end
+function Sdot = Sdynamics(t,S,plant,Qtraj,Rtraj,xtraj,utraj,xdottraj,options)
+  x0 = xtraj.eval(t); u0 = utraj.eval(t);
+  Q = Qtraj.eval(t); Ri = inv(Rtraj.eval(t));
+  nX = length(x0); nU = length(u0);
+  [f,df] = geval(@plant.dynamics,t,x0,u0,options);
+  A = df(:,1+(1:nX));
+  B = df(:,nX+1+(1:nU));
+  Sdot = -(Q - S*B*Ri*B'*S + S*A + A'*S);
+  if (min(eig(S))<0) warning('S is not positive definite'); end
+end
 
-% function K = Ksoln(S,Ri,B)
-%   K = -Ri*B'*S;
-% end
+function K = Ksoln(S,Ri,B,N)
+  K = -Ri*B'*S;
+end
 
 function Sdot = affineSdynamics(t,S,plant,Qtraj,Rtraj,Ntraj,xtraj,utraj,xdottraj,options)
   % see doc/derivations/tvlqr-latexit.pdf 
 
   x0 = xtraj.eval(t); u0 = utraj.eval(t); xdot0 = xdottraj.eval(t);
+
   Q{1}=Qtraj{1}.eval(t); Q{2}=Qtraj{2}.eval(t); Q{3}=Qtraj{3}.eval(t); 
   R{1}=Rtraj{1}.eval(t); R{2}=Rtraj{2}.eval(t); R{3}=Rtraj{3}.eval(t);
   Ri = inv(R{1});
   N = Ntraj.eval(t);
   
   nX = length(x0); nU = length(u0);
-  [xdot,df] = geval(@plant.dynamics,t,x0,u0,options);
+
+  if isa(plant,'StochasticDrakeSystem')
+   w0=zeros(1,plant.getNumDisturbances);
+  [xdot,df] = geval(@plant.dynamics,t,x0,u0,w0,options);
+  else
+  [xdot,df] = geval(@plant.dynamics,t,x0,u0,options);    
+  end
   A = df(:,1+(1:nX));
   B = df(:,nX+1+(1:nU));
   c = xdot - xdot0;
