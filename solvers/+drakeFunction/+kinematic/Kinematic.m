@@ -15,12 +15,17 @@ classdef Kinematic < drakeFunction.RigidBodyManipulatorFunction
         rbm.getNumPositions(),'q');
       obj = obj@drakeFunction.RigidBodyManipulatorFunction(rbm, ...
         input_frame, output_frame);
+      obj = obj.setSparsityPattern();
     end
 
-    function [iCfun,jCvar] = getSparseStructure(obj)
-      joint_idx = obj.kinematicsPathJoints();
-      iCfun = reshape(bsxfun(@times,(1:obj.getNumOutputs())',ones(1,length(joint_idx))),[],1);
-      jCvar = reshape(bsxfun(@times,ones(obj.getNumOutputs(),1),joint_idx),[],1);
+    function obj = setSparsityPattern(obj)
+      if isempty(rbm)
+        obj = setSparsityPattern@drakeFunction.RigidBodyManipulatorFunction(obj);
+      else
+        joint_idx = obj.kinematicsPathJoints();
+        obj.iCfun = reshape(bsxfun(@times,(1:obj.getNumOutputs())',ones(1,length(joint_idx))),[],1);
+        obj.jCvar = reshape(bsxfun(@times,ones(obj.getNumOutputs(),1),joint_idx),[],1);
+      end
     end
   end
 
