@@ -43,9 +43,6 @@ classdef Concatenated < drakeFunction.DrakeFunction
     same_input              % Logical scalar indicating whether all of
                             % the contained function share the same input
   end
-  properties (Access = private)
-    input_map
-  end
 
   methods
     function obj = Concatenated(fcns,same_input)
@@ -64,7 +61,7 @@ classdef Concatenated < drakeFunction.DrakeFunction
       typecheck(fcns,'cell');
       assert(all(cellfun(@(arg)isa(arg,'drakeFunction.DrakeFunction'), fcns)));
 
-      [input_frame,input_map] = drakeFunction.Concatenated.constructInputFrame(fcns,same_input);
+      input_frame = drakeFunction.Concatenated.constructInputFrame(fcns,same_input);
       output_frame = drakeFunction.Concatenated.constructOutputFrame(fcns);
 
       obj = obj@drakeFunction.DrakeFunction(input_frame, output_frame);
@@ -72,7 +69,6 @@ classdef Concatenated < drakeFunction.DrakeFunction
       obj.contained_functions = fcns;
       obj.n_contained_functions = numel(fcns);
       obj.same_input = same_input;
-      obj.input_map = input_map;
       obj = obj.setSparsityPattern();
     end
 
@@ -125,7 +121,7 @@ classdef Concatenated < drakeFunction.DrakeFunction
       end
       contained_functions_local = obj.contained_functions;
       for i = 1:obj.n_contained_functions
-        [f_cell{i},df_cell{i}] = eval(contained_functions_local{i},reshape([x_cell{obj.input_map{i}}],[],1));
+        [f_cell{i},df_cell{i}] = eval(contained_functions_local{i},x_cell{i});
       end
     end
 
@@ -140,7 +136,7 @@ classdef Concatenated < drakeFunction.DrakeFunction
   end
 
   methods (Static)
-    function [input_frame, input_frame_to_fcn_map] = constructInputFrame(fcns, same_input)
+    function input_frame = constructInputFrame(fcns, same_input)
       if nargin < 2, same_input = false; end
       fcn_input_frames = cellfun(@(fcn) fcn.getInputFrame(), ...
         fcns,'UniformOutput',false);
@@ -151,13 +147,7 @@ classdef Concatenated < drakeFunction.DrakeFunction
           'Drake:DrakeFunction:InputFramesDoNotMatch', ...
           ['If ''same_input'' is set to true, all functions must ' ...
            'have the same input frame']);
-        input_frame_to_fcn_map = repmat({1:input_frame.getNumFrames()},numel(fcns),1);
       else
-        input_frame_to_fcn_map = cell(1,numel(fcns));
-        input_frame_to_fcn_map{1} = 1:fcn_input_frames{1}.getNumFrames();
-        for i = 2:numel(fcns)
-          input_frame_to_fcn_map{i} = input_frame_to_fcn_map{i-1}(end)+(1:fcn_input_frames{i}.getNumFrames()); 
-        end
         input_frame = MultiCoordinateFrame(fcn_input_frames);
       end
     end
