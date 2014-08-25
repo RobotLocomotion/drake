@@ -85,7 +85,6 @@ x=V0.getFrame.poly;
  
 % evaluate dynamics and Vtraj at every ts once (for efficiency/clarity)
 for i=1:N
-    tic
   V{i}=V0.getPoly(ts(i));
 
   f{i} = sys.getPolyDynamics(ts(i));
@@ -108,7 +107,6 @@ for i=1:N
   else
   end
   Vmin(i) = minimumV(x,V{i});
-  toc
 
 end
 

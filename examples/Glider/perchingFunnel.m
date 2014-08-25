@@ -94,3 +94,5 @@ ylabel('z-velocity (m/s)','FontSize',20)
 hold off
 
 end
+
+% NOTEST  - sadly, it takes too long to run to be used on the build server
