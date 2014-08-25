@@ -8,6 +8,8 @@ function relativePositionTest(visualize)
   %% Initial Setup
   % Create the robot
   w = warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
+  warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
+  warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
   options.floating = true;
   urdf = fullfile(getDrakePath(),'examples','Atlas','urdf','atlas_minimal_contact.urdf');
   rbm = RigidBodyManipulator(urdf,options);
