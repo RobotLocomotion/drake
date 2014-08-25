@@ -126,7 +126,6 @@ for i=1:N-1
   m(i)=sampleCheck(x,V{i},Vdot{i},rho(i),rhodot(i));
 end
 
-m
 
 if (max(m)>0)
   figure(4);clf;fnplt(foh(ts,rho')); 
@@ -148,7 +147,6 @@ for iter=1:options.max_iterations
       [rho,rhointegral]=optimizeRho(x,V,Vdot,L,dts,Vmin,rhof,options);       
       
       rhodot = diff(rho)./dts;
-      rhointegral
       % plot current rho
       if (options.plot_rho)
         rhopp=foh(ts,rho');
@@ -165,7 +163,6 @@ for iter=1:options.max_iterations
         
         [V, Vdot, Phi,f, rho, rhointegral]=optimize_V2(V_0,Vdot_0,dVdt,f,L,x,rho,rhodot,ts,dts,options);
         rhodot = diff(rho)./dts;
-        rhointegral
         % plot current rho
         if (options.plot_rho)
         rhopp=foh(ts,rho');
