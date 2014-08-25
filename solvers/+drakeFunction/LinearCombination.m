@@ -32,7 +32,7 @@ classdef LinearCombination < drakeFunction.DrakeFunction
       %   @param frame  -- CoordinateFrame to which the points belong
       %
       %   @retval obj   -- drakeFunction.LinearCombination object
-      weights_frame = drakeFunction.frames.R(n_pts);
+      weights_frame = drakeFunction.frames.realCoordinateSpace(n_pts);
       pts_frame = MultiCoordinateFrame.constructFrame(repmat({frame},1,n_pts));
       input_frame = MultiCoordinateFrame({pts_frame,weights_frame});
       output_frame = frame;

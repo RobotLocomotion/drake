@@ -22,7 +22,7 @@ classdef SmoothDistancePenalty < drakeFunction.kinematic.Kinematic
       if nargin < 3, active_collision_options = struct(); end
       sizecheck(min_distance,[1,1]);
       assert(min_distance>0);
-      output_frame = drakeFunction.frames.R(1);
+      output_frame = drakeFunction.frames.realCoordinateSpace(1);
       obj = obj@drakeFunction.kinematic.Kinematic(rbm,output_frame);
       obj.min_distance = min_distance;
       obj.active_collision_options = active_collision_options;

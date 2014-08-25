@@ -25,7 +25,7 @@ classdef NormSquared < drakeFunction.DrakeFunction
         end
         if all(all(Q == eye(size(Q)))), Q = []; end % Un-weighted case
       end
-      output_frame = drakeFunction.frames.R(1);
+      output_frame = drakeFunction.frames.realCoordinateSpace(1);
       obj = obj@drakeFunction.DrakeFunction(input_frame,output_frame);
       obj.Q = Q;
       obj.is_weighted = ~isempty(Q);

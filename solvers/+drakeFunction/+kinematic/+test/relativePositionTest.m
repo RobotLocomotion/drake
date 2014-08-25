@@ -21,7 +21,7 @@ function relativePositionTest(visualize)
   end
 
   % Create short name for R^3
-  R3 = drakeFunction.frames.R(3);
+  R3 = drakeFunction.frames.realCoordinateSpace(3);
 
   % Load nominal posture
   S = load(fullfile(getDrakePath(),'examples','Atlas','data','atlas_fp.mat'));
@@ -86,7 +86,7 @@ function relativePositionTest(visualize)
   %% Enforce that the projection of the COM onto the xy-plane be within the
   %% convex hull of the foot points
   % Create a frame for the convex weights on the foot points
-  weights_frame = frames.R(foot_pts_fcn.n_pts);
+  weights_frame = frames.realCoordinateSpace(foot_pts_fcn.n_pts);
 
   % Create a DrakeFunction that computes the COM position
   com_fcn = RelativePosition(rbm,0,'world');
@@ -107,7 +107,7 @@ function relativePositionTest(visualize)
   support_polygon{2} = Identity(weights_frame);
 
   % Create a DrakeFunction that computes the sum of the weights
-  support_polygon{3} = Linear(weights_frame,frames.R(1),ones(1,foot_pts_fcn.n_pts));
+  support_polygon{3} = Linear(weights_frame,frames.realCoordinateSpace(1),ones(1,foot_pts_fcn.n_pts));
 
   % Create quasi-static constraints
   % xy-coordinates of COM must match a linear combination of the foot points

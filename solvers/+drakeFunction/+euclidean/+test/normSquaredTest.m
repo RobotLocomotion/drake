@@ -3,7 +3,7 @@ function [x,F,info] = normSquaredTest(N)
   if nargin < 1, N = 3; end
   lcmgl = LCMGLClient('normSquaredTest');
   r_inds = reshape(1:3*N,3,N);
-  R3 = drakeFunction.frames.R(3);
+  R3 = drakeFunction.frames.realCoordinateSpace(3);
   radius = 0.2;
 
   % Test Non-positive-defintite Q detection

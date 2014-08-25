@@ -6,7 +6,7 @@ function [x,F,info] = signedDistanceToHyperplaneTest(N)
   lcmgl = LCMGLClient('normSquaredTest');
 
   % Convenient constants
-  R3 = drakeFunction.frames.R(3);
+  R3 = drakeFunction.frames.realCoordinateSpace(3);
   r_inds = reshape(1:3*N,3,N);
   radius = 0.2;
   origin = [1;0;0];
