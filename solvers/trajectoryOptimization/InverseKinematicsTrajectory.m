@@ -1,4 +1,4 @@
-classdef InverseKinematicsTrajectory < NonlinearProgramWConstraintObjects
+classdef InverseKinematicsTrajectory < NonlinearProgram
 % solve IK
 %   min_q sum_i
 %   qdd(:,i)'*Qa*qdd(:,i)+qd(:,i)'*Qv*qd(:,i)+(q(:,i)-q_nom(:,i))'*Q*(q(:,i)-q_nom(:,i))]+additional_cost1+additional_cost2+...
@@ -72,7 +72,7 @@ classdef InverseKinematicsTrajectory < NonlinearProgramWConstraintObjects
       t = unique(t(:)');
       nT = numel(t);
       nq = robot.getNumPositions();
-      obj = obj@NonlinearProgramWConstraintObjects(nq*nT);
+      obj = obj@NonlinearProgram(nq*nT);
       obj.robot = robot;
       obj.t_knot = t;
       obj.nT = nT;
@@ -245,14 +245,13 @@ classdef InverseKinematicsTrajectory < NonlinearProgramWConstraintObjects
           x0(obj.qsc_weight_idx{i}) = 1/length(obj.qsc_weight_idx{i});
         end
       end
-      [x,F,info] = solve@NonlinearProgramWConstraintObjects(obj,x0);
+      [x,F,info,infeasible_constraint] = solve@NonlinearProgram(obj,x0);
       [q,qdot,qddot] = obj.cpe.cubicSpline(x([obj.q_idx(:);obj.qd0_idx;obj.qdf_idx]));
       q = max([q(:) reshape(obj.x_lb(obj.q_idx),[],1)],[],2);
       q = min([q(:) reshape(obj.x_ub(obj.q_idx),[],1)],[],2);
       q = reshape(q,obj.robot.getNumPositions,[]);
       xtraj = PPTrajectory(pchipDeriv(obj.t_knot,[q;qdot],[qdot;qddot]));
       xtraj = xtraj.setOutputFrame(obj.robot.getStateFrame);
-      [info,infeasible_constraint] = infeasibleConstraintName(obj,x,info);
     end
 
     function obj = addKinematicConstraint(obj,constraint,time_index)
@@ -276,41 +275,5 @@ classdef InverseKinematicsTrajectory < NonlinearProgramWConstraintObjects
       end
     end
 
-    function [info,infeasible_constraint] = infeasibleConstraintName(obj,x,info)
-      % return the name of the infeasible nonlinear constraint
-      % @retval info     -- change the return info from nonlinear solver based on how much
-      % the solution violate the constraint
-      % @retval infeasible_constraint  -- A cell of strings.
-      infeasible_constraint = {};
-      if(strcmp(obj.solver,'snopt'))
-        if(info>10)
-          fval = obj.objectiveAndNonlinearConstraints(x);
-          A = [obj.Ain;obj.Aeq];
-          if(~isempty(A))
-            fval = [fval;A*x];
-          end
-          [lb,ub] = obj.bounds();
-          ub_err = fval(2:end)-ub(2:end);
-          max_ub_err = max(ub_err);
-          max_ub_err = max_ub_err*(max_ub_err>0);
-          lb_err = lb(2:end)-fval(2:end);
-          max_lb_err = max(lb_err);
-          max_lb_err = max_lb_err*(max_lb_err>0);
-          cnstr_name = [obj.cin_name;obj.ceq_name;obj.Ain_name;obj.Aeq_name];
-          if(max_ub_err+max_lb_err>1e-4)
-            infeasible_constraint_idx = (ub_err>5e-5) | (lb_err>5e-5);
-            infeasible_constraint = cnstr_name(infeasible_constraint_idx);
-          elseif(info == 13)
-            info = 4;
-          elseif(info == 31)
-            info = 5;
-          elseif(info == 32)
-            info = 6;
-          end
-        end
-      else
-        error('not implemented yet');
-      end
-    end
   end
 end
