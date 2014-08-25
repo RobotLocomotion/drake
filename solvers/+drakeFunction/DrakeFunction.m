@@ -56,6 +56,23 @@ classdef DrakeFunction
     end
 
     function fcn = plus(obj,other,same_input)
+      % fcn = plus(obj,other,same_input) returns a DrakeFunction whose output
+      %   is the sum of the outputs of obj and other. If same_input = true, the
+      %   input frame of the returned DrakeFunction is the same as the input
+      %   frames of obj and other. If same_input = false, the input frame of
+      %   the returned DrakeFunction is the concatenation of their input
+      %   frames.
+      %
+      % fcn = plus(obj,other,same_input) is equivalent to plus(obj,other,false)
+      %
+      % @param obj          -- DrakeFunction object
+      % @param other        -- DrakeFunction object
+      % @param same_input   -- Logical scalar indicating whether the functions
+      %                        to be summed should share the same input.
+      %                        Optional. @default false
+      %
+      % @retval fcn         -- DrakeFunction which evaluates the sum of obj and
+      %                        other
       import drakeFunction.*
       if nargin < 3, same_input = false; end
       if isa(other,'drakeFunction.DrakeFunction')
@@ -67,6 +84,16 @@ classdef DrakeFunction
     end
 
     function fcn = minus(obj,other,varargin)
+      % fcn = minus(obj,other,same_input) See documentation for 
+      %   drakeFunction.DrakeFunction.plus
+      %
+      % @param obj          -- DrakeFunction object
+      % @param other        -- DrakeFunction object
+      % @param same_input   -- Logical scalar indicating whether the functions
+      %
+      % @retval fcn         -- DrakeFunction which evaluates the 
+      %                        difference between obj and
+      %                        other
       fcn = plus(obj,-other,varargin{:});
     end
 
