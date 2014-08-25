@@ -20,6 +20,8 @@ classdef SmoothNorm < drakeFunction.DrakeFunction
       %
       % @retval obj               -- drakeFunction.euclidean.SmoothNorm
       %                              object
+      sizecheck(smoothing_factor,[1,1]);
+      typecheck(smoothing_factor,'numeric');
       output_frame = drakeFunction.frames.R(1);
       obj = obj@drakeFunction.DrakeFunction(input_frame,output_frame);
       obj.smoothing_factor = smoothing_factor;
