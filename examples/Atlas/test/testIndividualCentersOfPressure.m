@@ -1,5 +1,6 @@
 function testIndividualCentersOfPressure()
 oldpath = addpath(fullfile(getDrakePath,'examples','Atlas'));
+finishup = onCleanup(@() path(oldpath));
 
 options.floating = true;
 options.use_mex = true;
@@ -104,7 +105,5 @@ for testnr = 1 : ntests
   cops_mex = individualCentersOfPressuremex(r.getMexModelPtr, supp, normals, nd, B, beta);
   valuecheck(cops, cops_mex);
 end
-
-path(oldpath);
 
 end
