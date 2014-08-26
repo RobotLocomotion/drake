@@ -7,7 +7,7 @@ if ~checkDependency('gurobi')
   return;
 end
 
-addpath(fullfile(getDrakePath,'examples','ZMP'));
+oldpath = addpath(fullfile(getDrakePath,'examples','ZMP'));
 addpath(fullfile(getDrakePath,'examples','Atlas','controllers'));
 
 plot_comtraj = true;
@@ -355,6 +355,8 @@ if rms_com > length(footstep_plan.footsteps)*0.5
   error('runAtlasWalking unit test failed: error is too large');
   navgoal
 end
+
+path(oldpath);
 
 end
 

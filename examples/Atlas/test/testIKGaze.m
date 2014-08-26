@@ -1,6 +1,6 @@
 function testIKGaze
 
-addpath(fullfile(pwd,'..'));
+oldpath = addpath(fullfile(getDrakePath,'examples','Atlas'));
 options.floating = true;
 options.dt = 0.001;
 r = RigidBodyManipulator('../urdf/atlas_minimal_contact.urdf',options);
@@ -110,4 +110,5 @@ valuecheck(head_err,1,1e-4);
 rangecheck(qdiff(1),cos(head_con3.gaze_threshold/2) - 1e5, 1 + 1e5);
 v.draw(1,[q;0*q]); drawnow;
 
+path(oldpath);
 end
