@@ -172,6 +172,7 @@ classdef Manipulator < DrakeSystem
       pos_fun = con.fcn;
       state_fun = pos_fun.addInputFrame(obj.getVelocityFrame);
       state_con = DrakeFunctionConstraint(con.lb,con.ub,state_fun);
+      state_con = state_con.setName(con.name);
 
       if id>=numel(obj.position_constraints) % then it's an existing constraint
         [obj,obj.position_constraint_ids(1,id)] = addStateConstraint(obj,state_con);
@@ -204,6 +205,7 @@ classdef Manipulator < DrakeSystem
       pos_fun = con.fcn;
       state_fun = pos_fun.addInputFrame(obj.getPositionFrame,false);
       state_con = DrakeFunctionConstraint(con.lb,con.ub,state_fun);
+      state_con = state_con.setName(con.name);
 
       if id>=numel(obj.velocity_constraints) % then it's an existing constraint
         [obj,obj.velocity_constraint_ids(1,id)] = addStateConstraint(obj,state_con);
