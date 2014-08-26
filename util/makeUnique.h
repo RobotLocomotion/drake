@@ -1,6 +1,8 @@
 #ifndef MAKEUNIQUE_H_
 #define MAKEUNIQUE_H_
 
+#include <memory>
+
 // from http://stackoverflow.com/questions/17902405/how-to-implement-make-unique-function-in-c11
 // should get rid of this when we switch to C++14
 namespace std {
