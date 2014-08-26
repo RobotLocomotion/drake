@@ -272,7 +272,10 @@ classdef Visualizer < DrakeSystem
             objective = QuadraticConstraint(0,inf,Q,b);
             this_prog = addCost(this_prog,objective,remaining_state_dims);
           end
-          x = solve(this_prog,x);
+          [x,~,~,infeasible_constraint_name] = solve(this_prog,x);
+          if ~isempty(infeasible_constraint_name)
+            infeasible_constraint_name
+          end
 %          .5*(x0(remaining_state_dims) - x(remaining_state_dims))^2
 %          fval = objective.eval(x(remaining_state_dims))
           for i=1:numel(state_dims)
