@@ -18,8 +18,6 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
         options.terrain = RigidBodyFlatTerrain;
       end
 
-      addpath(fullfile(getDrakePath,'examples','Atlas','frames'));
-
       w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
       obj = obj@TimeSteppingRigidBodyManipulator(urdf,options.dt,options);
       obj = obj@Biped('r_foot_sole', 'l_foot_sole');
@@ -39,6 +37,8 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
     function obj = compile(obj)
       obj = compile@TimeSteppingRigidBodyManipulator(obj);
 
+      oldpath = addpath(fullfile(getDrakePath,'examples','Atlas','frames'));
+      
       atlas_state_frame = AtlasState(obj);
       tsmanip_state_frame = obj.getStateFrame();
       if tsmanip_state_frame.dim>atlas_state_frame.dim
@@ -56,6 +56,8 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       input_frame = AtlasInput(obj);
       obj = obj.setInputFrame(input_frame);
       obj.manip = obj.manip.setInputFrame(input_frame);
+      
+      path(oldpath);
     end
 
     function obj = setInitialState(obj,x0)
