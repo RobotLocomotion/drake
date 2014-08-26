@@ -8,7 +8,7 @@ function plan = runAtlasWalkingPlanning()
 
 
 checkDependency('lcmgl');
-addpath(fullfile(getDrakePath(), 'examples', 'ZMP'));
+oldpath = addpath(fullfile(getDrakePath(), 'examples', 'ZMP'));
 % Set up the model
 load('data/atlas_fp.mat', 'xstar');
 x0 = xstar;
@@ -40,7 +40,7 @@ end
 
 v.playback(xtraj, struct('slider', true));
 
-
+path(oldpath);
 
 end
 
