@@ -386,7 +386,7 @@ function pnode = crawlDir(pdir,pnode,only_test_dirs,options)
     
     if (files(i).isdir)
       % then recurse into the directory
-      if (files(i).name(1)~='.' && ~any(strcmpi(files(i).name,{'dev','+dev','slprj','autogen-matlab','autogen-posters'})))  % skip . and dev directories
+      if (files(i).name(1)~='.' && ~any(strcmpi(files(i).name,{'dev','slprj','autogen-matlab','autogen-posters'})))  % skip . and dev directories
         crawlDir(files(i).name,node,only_test_dirs && ~strcmpi(files(i).name,'test'),options);
       end
       continue;
