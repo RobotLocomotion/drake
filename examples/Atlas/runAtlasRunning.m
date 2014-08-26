@@ -9,6 +9,7 @@ if (nargin<1); use_mex = true; end
 if (nargin<2); use_angular_momentum = false; end
 
 oldpath = addpath(fullfile(getDrakePath,'examples','Atlas','controllers'));
+finishup = onCleanup(@() path(oldpath));
 addpath(fullfile(getDrakePath,'examples','Atlas','frames'));
 
 % silence some warnings
@@ -321,7 +322,5 @@ warning(S);
 
 traj = simulate(sys,[0 ts(end)],xtraj.eval(0));
 playback(v,traj,struct('slider',true));
-
-path(oldpath);
 
 end
