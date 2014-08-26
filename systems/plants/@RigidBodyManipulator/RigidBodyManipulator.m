@@ -1438,10 +1438,10 @@ classdef RigidBodyManipulator < Manipulator
           ceq = [C-B*u];
           GCeq = [dC(1:nq,1:nq),-B]';
         end
-        if (obj.num_xcon>0)
+        if getNumStateConstraints(obj)>0
           [phi,dphi] = geval(@obj.stateConstraints,[q;zeros(nv,1)]);
           ceq = [ceq; phi];
-          GCeq = [GCeq, [dphi(:,1:nq),zeros(obj.num_xcon,nu+nz)]'];
+          GCeq = [GCeq, [dphi(:,1:nq),zeros(numel(phi),nu+nz)]'];
         end
       end
     end

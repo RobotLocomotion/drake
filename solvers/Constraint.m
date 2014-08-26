@@ -97,6 +97,13 @@ classdef Constraint
       sizecheck(name,[obj.num_cnstr,1]);
       obj.name = name;
     end
+    
+    function disp(obj)
+      fprintf('%d constraints on %d variables:\n',obj.num_cnstr,obj.xdim);
+      for j=1:obj.num_cnstr
+        fprintf('  %f <= %s <= %f\n',obj.lb(j),obj.name{j},obj.ub(j));
+      end
+    end
 
     function varargout = eval(obj,varargin)
       if obj.grad_level==-2  % no gradients available

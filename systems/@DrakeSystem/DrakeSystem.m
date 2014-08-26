@@ -378,6 +378,12 @@ classdef DrakeSystem < DynamicalSystem
       obj.num_xcon_eq = obj.num_xcon_eq + sum(con.lb == con.ub);
       obj.num_xcon_ineq = obj.num_xcon_ineq + sum(con.lb ~= con.ub);
     end
+    
+    function displayStateConstraints(obj)
+      for i=1:length(obj.state_constraints)
+        disp(obj.state_constraints{i});
+      end
+    end
   end
 
   methods (Sealed)
