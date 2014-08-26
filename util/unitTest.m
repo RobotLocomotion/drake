@@ -600,6 +600,9 @@ end
 function [pass,elapsed_time] = runTest(runpath,test,options)
 p=pwd;
 
+% Detect if this is a MATLAB 'package', which requires special handling
+% to make sure we call the right function. More info can be found here:
+% http://www.mathworks.com/help/matlab/matlab_oop/scoping-classes-with-packages.html
 pathParts = strsplit(runpath, filesep);
 packageMembers = cellfun(@(x) ~isempty(regexp(x, '^\+')), pathParts);
 if any(packageMembers)
