@@ -41,10 +41,10 @@ tic
 toc
 if (nargout<1)
   v = CompassGaitVisualizer(p);
-  figure(3); clf;
+  figure(1); clf;
   fnplt(utraj);
   
-  figure(4); clf; hold on;
+  figure(2); clf; hold on;
   fnplt(xtraj,[2 4]);
   fnplt(xtraj,[3 5]);
   
