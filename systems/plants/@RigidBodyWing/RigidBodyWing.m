@@ -118,6 +118,8 @@ classdef RigidBodyWing < RigidBodyForceElement
           surface_chord = parseParamString(model,robotnum,char(this_surface.getAttribute('chord')));
           surface_span = parseParamString(model,robotnum,char(this_surface.getAttribute('span')));
           surface_left_edge_position_along_wing = parseParamString(model,robotnum,char(this_surface.getAttribute('left_edge_position_along_wing')));
+          surface_min_deflection = parseParamString(model,robotnum,char(this_surface.getAttribute('min_deflection')));
+          surface_max_deflection = parseParamString(model,robotnum,char(this_surface.getAttribute('max_deflection')));
           
           assert(surface_span > 0, ['Span must be > 0 on control surface "' surface_name '"']);
           assert(surface_chord > 0, ['Chord must be > 0 on control surface "' surface_name '"']);
@@ -131,7 +133,7 @@ classdef RigidBodyWing < RigidBodyForceElement
             end
           end
           
-          obj.control_surfaces = [ obj.control_surfaces ControlSurface(surface_name, surface_chord, surface_span, surface_left_edge_position_along_wing) ];
+          obj.control_surfaces = [ obj.control_surfaces ControlSurface(surface_name, surface_chord, surface_span, surface_left_edge_position_along_wing, surface_min_deflection, surface_max_deflection) ];
 
           
           count = count + 1;
