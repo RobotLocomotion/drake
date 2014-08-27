@@ -510,7 +510,11 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
       if ~iscell(xind)
         xind = {xind(:)};
       end
-      obj.shared_data_functions{end+1} = FunctionWrapper(user_fun);
+      if isa(user_fun,'FunctionWrapper')
+        obj.shared_data_functions{end+1} = user_fun;
+      else
+        obj.shared_data_functions{end+1} = FunctionWrapper(user_fun);
+      end
       obj.shared_data_xind_cell{end+1} = xind;
       ind = obj.getNumSharedDataFunctions();
     end
