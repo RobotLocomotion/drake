@@ -5,6 +5,7 @@ lcm
 libbot
 eigen
 bullet
+octomap
 snopt
 gurobi
 gloptipoly3

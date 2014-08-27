@@ -54,3 +54,6 @@
 	path = sedumi
 	url = https://github.com/RobotLocomotion/sedumi.git
 	branch = master
+[submodule "octomap"]
+	path = octomap
+	url = https://github.com/RobotLocomotion/octomap-pod
