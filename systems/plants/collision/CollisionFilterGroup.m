@@ -57,6 +57,22 @@ classdef CollisionFilterGroup
     function ignored_collision_fgs = getIgnoredCollisionFilterGroups(obj)
       ignored_collision_fgs = reshape(obj.ignored_collision_fgs,1,[]);
     end
+
+    function obj = updateForRemovedLink(obj,model,child_body_index,new_parent_linkname)
+      % Remove child link
+      linkname = model.getLinkName(child_body_index);
+      robotnum = model.getBody(child_body_index).robotnum;
+      obj = obj.removeMembers(linkname,robotnum);
+
+      % Update parent link name
+      parent_linkname = model.getLinkName(model.getBody(child_body_index).parent);
+      parent_robotnum = model.getBody(model.getBody(child_body_index).parent).robotnum;
+      [linknames,robotnums] = obj.getMembers();
+      if any(strcmp(linknames,parent_linkname) & cellfun(@(num) num == parent_robotnum,robotnums))
+        obj = obj.removeMembers(parent_linkname,parent_robotnum);
+        obj = obj.addMembers(new_parent_linkname,parent_robotnum);
+      end
+    end
   end
 
   methods (Static)
