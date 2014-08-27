@@ -11,6 +11,9 @@ classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
     jl_lb_ind  % joint indices where the lower bound is finite
     jl_ub_ind % joint indices where the lower bound is finite
     nJL % number of joint limits = length([jl_lb_ind;jl_ub_ind])
+    
+    nonlincompl_constraints
+    nonlincompl_slack_inds
   end
   
   properties (Constant)
@@ -64,7 +67,8 @@ classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
       
       constraints = cell(N-1,1);
       lincompl_constraints = cell(N-1,1);
-      nonlincompl_constraints = cell(N-1,1);
+      obj.nonlincompl_constraints = cell(N-1,1);
+      obj.nonlincompl_slack_inds = cell(N-1,1);
       jlcompl_constraints = cell(N-1,1);
       dyn_inds = cell(N-1,1);      
       
@@ -73,7 +77,7 @@ classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
       
       [~,~,~,~,~,~,~,mu] = obj.plant.contactConstraints(zeros(nq,1),false,obj.options.active_collision_options);
       
-      for i=1:obj.N-1,        
+      for i=1:obj.N-1,
 %         dyn_inds{i} = [obj.h_inds(i);obj.x_inds(:,i);obj.x_inds(:,i+1);obj.u_inds(:,i);obj.l_inds(:,i);obj.ljl_inds(:,i)];
         dyn_inds{i} = {obj.h_inds(i);obj.x_inds(:,i);obj.x_inds(:,i+1);obj.u_inds(:,i);obj.l_inds(:,i);obj.ljl_inds(:,i)};
         constraints{i} = cnstr;
@@ -87,9 +91,10 @@ classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
           % lambda_f
           lambda_inds = obj.l_inds(repmat((1:1+obj.nD)',obj.nC,1) + kron((0:obj.nC-1)',(2+obj.nD)*ones(obj.nD+1,1)),i);
           
-          nonlincompl_constraints{i} = NonlinearComplementarityConstraint(@nonlincompl_fun,nX + obj.nC,obj.nC*(1+obj.nD),obj.options.nlcc_mode,obj.options.compl_slack);
           
-          obj = obj.addConstraint(nonlincompl_constraints{i},[obj.x_inds(:,i+1);gamma_inds;lambda_inds]);
+          obj.nonlincompl_constraints{i} = NonlinearComplementarityConstraint(@nonlincompl_fun,nX + obj.nC,obj.nC*(1+obj.nD),obj.options.nlcc_mode,obj.options.compl_slack);
+          obj.nonlincompl_slack_inds{i} = obj.num_vars+1:obj.num_vars + obj.nonlincompl_constraints{i}.n_slack;          
+          obj = obj.addConstraint(obj.nonlincompl_constraints{i},[obj.x_inds(:,i+1);gamma_inds;lambda_inds]);
           
           % linear complementarity constraint
           %   gamma /perp mu*lambda_N - sum(lambda_fi)
@@ -123,7 +128,7 @@ classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
       % nonlinear complementarity constraints:
       %   lambda_N /perp phi(q)
       %   lambda_fi /perp gamma + Di*psi(q,v)
-      % y = [q;v;gamma]
+      % x = [q;v;gamma]
       % z = [lambda_N;lambda_F1;lambda_f2] (each contact sequentially)
       function [f,df] = nonlincompl_fun(y)
         nq = obj.plant.getNumPositions;
@@ -352,8 +357,16 @@ classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
           z0(obj.ljl_inds) = 0;
         end
       end
+            
+      if obj.nC > 0
+        for i=1:obj.N-1,
+          gamma_inds = obj.l_inds(obj.nD+2:obj.nD+2:end,i);
+          lambda_inds = obj.l_inds(repmat((1:1+obj.nD)',obj.nC,1) + kron((0:obj.nC-1)',(2+obj.nD)*ones(obj.nD+1,1)),i);          
+          z0(obj.nonlincompl_slack_inds{i}) = obj.nonlincompl_constraints{i}.slack_fun(z0([obj.x_inds(:,i+1);gamma_inds;lambda_inds]));
+        end
+      end
     end
-    
+      
     function obj = addRunningCost(obj,running_cost_function)
       nX = obj.plant.getNumStates();
       nU = obj.plant.getNumInputs();

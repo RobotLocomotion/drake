@@ -17,7 +17,7 @@ classdef CompassGaitStancePlant < Manipulator
         obj.m=m; obj.mh=mh; obj.a=a; obj.b=b; obj.l=l; obj.g=g;
       end
       
-      obj = obj.setInputLimits(-inf,inf);
+      obj = obj.setInputLimits(-50,50);
       obj = setOutputFrame(obj,getStateFrame(obj));
     end
     
@@ -39,6 +39,14 @@ classdef CompassGaitStancePlant < Manipulator
     
     function x0 = getInitialState(obj)
       x0 = [0; 0; 2.0; -0.4];
+    end
+    
+        
+    function n = getNumPositions(obj)
+      n = 2;
+    end
+    function n = getNumVelocities(obj)
+      n = 2;
     end
     
   end
