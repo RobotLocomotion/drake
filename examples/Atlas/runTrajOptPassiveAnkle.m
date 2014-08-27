@@ -30,7 +30,7 @@ R_periodic(2:end,p.getNumStates+2:end) = -eye(p.getNumStates-1);
 periodic_constraint = LinearConstraint(zeros(p.getNumStates,1),zeros(p.getNumStates,1),R_periodic);
 
 %red to blue
-q0 = [zeros(7,1);-1;2;0];
+q0 = [0;0;.2;-.4;.2;0;0;-1;2;0];
 phi_tmp = p.contactConstraints(q0);
 q0(2) = -phi_tmp(1);
 x0 = [q0;zeros(10,1)];
@@ -43,10 +43,10 @@ d = floor(N/8);
 tf0 = 2;
 if nargin < 2
   % guess an intermediary state
-  q1 = [.20;0;0;.3;0;-.3;0;-1;.5;0];
+  q1 = [.20;0;0;.1;.2;-.3;0;-1;.5;0];
   phi_tmp = p.contactConstraints(q1);
   q1(2) = -phi_tmp(1);
-  q2 = [.5;0;0;.5;.4;0;0;0;0;0];
+  q2 = [.5;0;.2;.5;.4;0;0;-.4;.2;0];
   phi_tmp = p.contactConstraints(q2);
   q2(2) = -phi_tmp(3);
   
@@ -75,7 +75,7 @@ else
   traj_init.l = ltraj;
   traj_init.ljl = ljltraj;
   
-  tf0 = t_init(end);
+%   tf0 = t_init(end);
 end
 T_span = [1 2];
 
@@ -122,10 +122,10 @@ lz_bound = BoundingBoxConstraint(.3*ones(2*(N - 2*d),1),inf(2*(N - 2*d),1));
 lz_bound_inds = [lz_inds(1:2,1:N1-d) lz_inds(3:4,N1+d+1:end)];
 traj_opt = traj_opt.addBoundingBoxConstraint(lz_bound, lz_bound_inds(:));
 
-% knee_inds = traj_opt.x_inds([5;8],:);
-% knee_inds = knee_inds(:);
-% knee_constraint = BoundingBoxConstraint(-inf(length(knee_inds),1),zeros(length(knee_inds),1));
-% traj_opt = traj_opt.addBoundingBoxConstraint(knee_constraint,knee_inds);
+knee_inds = traj_opt.x_inds([5;9],:);
+knee_inds = knee_inds(:);
+knee_constraint = BoundingBoxConstraint(.1*ones(length(knee_inds),1),inf(length(knee_inds),1));
+traj_opt = traj_opt.addBoundingBoxConstraint(knee_constraint,knee_inds);
 
 snprint('snopt.out');
 traj_opt = traj_opt.setSolverOptions('snopt','MajorIterationsLimit',100);
@@ -134,6 +134,8 @@ traj_opt = traj_opt.setSolverOptions('snopt','IterationsLimit',500000);
 traj_opt = traj_opt.setSolverOptions('snopt','SuperbasicsLimit',5000);
 traj_opt = traj_opt.setSolverOptions('snopt','MajorOptimalityTolerance',1e-5);
 % traj_opt = traj_opt.setCheckGrad(true);
+z0 = traj_opt.getInitialVars(t_init,traj_init);
+[f,G] = traj_opt.objectiveAndNonlinearConstraints(z0);
 [xtraj,utraj,ltraj,ljltraj,z,F,info] = traj_opt.solveTraj(t_init,traj_init);
 
   function [f,df] = contact_delta_cost_fun(l)
