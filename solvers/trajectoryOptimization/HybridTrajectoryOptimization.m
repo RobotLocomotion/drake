@@ -1,4 +1,19 @@
-classdef HybridTrajectoryOptimization < NonlinearProgramWConstraintObjects
+classdef HybridTrajectoryOptimization < NonlinearProgram
+  % HybridTrajectoryOptimization
+  % 
+  % Trajectory optimization class for hybrid models
+  %  Works by constructing a series of trajectory optimization programs for
+  %  each mode in the mode sequence. The trajectories of each mode are then
+  %  constrained so that (1) The transitions between them align
+  %  appropriately and (2) Guard functions are triggered at the transitions
+  %  and (3) Guard functions are never violated
+  %
+  %  After construction, constraints can be added to the hybrid
+  %  optimization program directly, or to the individual mode
+  %  optimizations. Before running, it is recommended to call the compile()
+  %  function, which extracts all constraints from the mode optimization
+  %  programs and adds them to the main program. compile() should only be
+  %  called ONCE!!
   properties %(SetAccess=protected)
     N
     M
@@ -33,8 +48,12 @@ classdef HybridTrajectoryOptimization < NonlinearProgramWConstraintObjects
       if ~isfield(options,'u_const_across_transitions')
         options.u_const_across_transitions = false;
       end
+      
+      if ~isa(plant,'HybridDrakeSystem')
+        error('The plant must be a HybridDrakeSystem');
+      end
 
-      obj=obj@NonlinearProgramWConstraintObjects(0);
+      obj=obj@NonlinearProgram(0);
       
       obj.N = N;
       obj.M = length(mode_sequence);
