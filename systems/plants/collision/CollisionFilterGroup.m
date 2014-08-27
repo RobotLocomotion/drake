@@ -65,31 +65,36 @@ classdef CollisionFilterGroup
       parent_index = model.getBody(child_index).parent;
       old_parent_linkname = model.getLinkName(parent_index);
       parent_robotnum = model.getBody(parent_index).robotnum;
+      add_parent = false;
 
-      % Remove child link
+      % Get group members
+      [linknames,robotnums] = obj.getMembers();
+
+      % Check if the child is in the group
       linkname = model.getLinkName(child_index);
       robotnum = model.getBody(child_index).robotnum;
-      obj = obj.removeMembers(linkname,robotnum);
+      if any(strcmp(linknames,linkname) & cellfun(@(num) num == parent_robotnum,robotnums))
+        % Remove child link
+        obj = obj.removeMembers(linkname,robotnum);
 
-      % Add the parent link if the parent has no contact shapes but the child
-      % does
-      add_parent = false;
-      if ~isempty(model.getBody(child_index).contact_shapes)
-        if isempty(model.getBody(parent_index).contact_shapes)
+        % Add the parent link if the parent has no contact shapes but the child
+        % does
+        if ~isempty(model.getBody(child_index).contact_shapes)
+          if isempty(model.getBody(parent_index).contact_shapes)
             add_parent = true;
-        else
-          warnOnce(obj.warning_manager, ...
-            'Drake:CollisionFilterGroup:DiscardingCollisionFilteringInfo', ...
-            ['The body ''%s'' belongs to the collision filter group ''%s'', but ' ...
-             'has been welded to its parent, ''%s'', which does not. ' ...
-             'The welded body, ''%s'', will not belong to ''%s.'''], ...
-            linkname, collision_fg_name, old_parent_linkname, ...
-            new_parent_linkname, collision_fg_name);
+          else
+            warnOnce(obj.warning_manager, ...
+              'Drake:CollisionFilterGroup:DiscardingCollisionFilteringInfo', ...
+              ['The body ''%s'' belongs to the collision filter group ''%s'', but ' ...
+              'has been welded to its parent, ''%s'', which does not. ' ...
+              'The welded body, ''%s'', will not belong to ''%s.'''], ...
+              linkname, collision_fg_name, old_parent_linkname, ...
+              new_parent_linkname, collision_fg_name);
+          end
         end
       end
 
       % Update parent link name if the parent is present in the group
-      [linknames,robotnums] = obj.getMembers();
       if any(strcmp(linknames,old_parent_linkname) & cellfun(@(num) num == parent_robotnum,robotnums))
         obj = obj.removeMembers(old_parent_linkname,parent_robotnum);
         add_parent = true;
