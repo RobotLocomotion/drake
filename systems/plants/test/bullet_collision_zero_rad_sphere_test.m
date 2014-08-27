@@ -16,6 +16,7 @@ else
   n_points = 3;
 end
 
+w = warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
 r = RigidBodyManipulator([],struct('terrain',[]));
 for i=1:n_points
   fprintf('Adding point no. %d ...\n',i);
@@ -27,6 +28,7 @@ r.collision_filter_groups('points')=CollisionFilterGroup();
 r = addLinksToCollisionFilterGroup(r,repmat({'point'},1,n_points),'points',1:n_points);
 r = addToIgnoredListOfCollisionFilterGroup(r,'points','points');
 r = r.compile();
+warning(w);
 v = r.constructVisualizer();
 
 dist_min = 0.0;
