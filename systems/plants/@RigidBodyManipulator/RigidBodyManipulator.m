@@ -1063,11 +1063,11 @@ classdef RigidBodyManipulator < Manipulator
         try
           body_idx_or_frame_id = findLinkInd(obj,body_or_frame,robotnum);
         catch ex
-          if strcmp(ex.id,'Drake:RigidBodyManipulator:UniqueLinkNotFound')
+          if strcmp(ex.identifier,'Drake:RigidBodyManipulator:UniqueLinkNotFound')
             try
-              body_idx_or_frame_id = findFrameID(obj,body_or_frame,robotnum);
+              body_idx_or_frame_id = findFrameId(obj,body_or_frame,robotnum);
             catch ex2
-              if strcmp(ex.id,'Drake:RigidBodyManipulator:UniqueLinkNotFound')
+              if strcmp(ex.identifier,'Drake:RigidBodyManipulator:UniqueLinkNotFound')
                 if robotnum == 0
                   error('Drake:RigidBodyManipulator:UniqueFrameOrLinkNotFound', ...
                     'Cannot find unique link or frame named %s',body_or_frame);

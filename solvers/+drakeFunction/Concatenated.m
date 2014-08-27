@@ -111,7 +111,7 @@ classdef Concatenated < drakeFunction.DrakeFunction
       %                      component function
       % @retval df_cell   -- Cell array of Jacobians for each component
       %                      function
-      x_cell = cell(1,obj.input_frame.getNumFrames);
+      x_cell = cell(size(obj.contained_functions));
       f_cell = cell(size(x_cell));
       df_cell = cell(size(x_cell));
       if obj.same_input

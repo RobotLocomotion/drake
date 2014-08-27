@@ -1,11 +1,11 @@
 classdef RelativeQuaternion < drakeFunction.kinematic.Kinematic
   % Quaternion from frame A to frame B
   properties (SetAccess = private)
-    frame_A    % Frame id or body index of frame A
-    frame_B    % Frame id or body index of frame B
+    frameA    % Frame id or body index of frame A
+    frameB    % Frame id or body index of frame B
   end
   methods
-    function obj = RelativeQuaternion(rbm,frame_A,frame_B)
+    function obj = RelativeQuaternion(rbm,frameA,frameB)
       % obj = drakeFunction.kinematic.RelativeQuaternion(rbm,frameA,frameB)
       %   returns a RelativeQuaternion object that computes the
       %   quaternion that transforms directions in frame A to directions
@@ -18,8 +18,8 @@ classdef RelativeQuaternion < drakeFunction.kinematic.Kinematic
       %
       % @retval obj       -- RelativeQuaternion object
       obj = obj@drakeFunction.kinematic.Kinematic(rbm,drakeFunction.frames.realCoordinateSpace(4));
-      obj.frame_A = obj.rbm.parseBodyOrFrameID(frame_A);
-      obj.frame_B = obj.rbm.parseBodyOrFrameID(frame_B);
+      obj.frameA = obj.rbm.parseBodyOrFrameID(frameA);
+      obj.frameB = obj.rbm.parseBodyOrFrameID(frameB);
     end
     function [quat,dquat] = eval(obj,q)
       % quat = eval(obj,q) returns the relative quaternion
@@ -30,8 +30,8 @@ classdef RelativeQuaternion < drakeFunction.kinematic.Kinematic
       % @param obj  -- drakeFunction.kinematic.RelativeQuaternion object
       % @param q    -- Column vector of joint positions
       kinsol = obj.rbm.doKinematics(q);
-      [pos_A,J_A] = forwardKin(obj.rbm,kinsol,obj.frame_A,[0;0;0],2);
-      [pos_B,J_B] = forwardKin(obj.rbm,kinsol,obj.frame_B,[0;0;0],2);
+      [pos_A,J_A] = forwardKin(obj.rbm,kinsol,obj.frameA,[0;0;0],2);
+      [pos_B,J_B] = forwardKin(obj.rbm,kinsol,obj.frameB,[0;0;0],2);
       quat_a2w = pos_A(4:7,1);
       dquat_a2w = J_A(4:7,:);
       quat_b2w = pos_B(4:7,1);
@@ -46,10 +46,14 @@ classdef RelativeQuaternion < drakeFunction.kinematic.Kinematic
 
   methods (Access = protected)
     function joint_idx = kinematicsPathJoints(obj)
-      [~,joint_path] = obj.rbm.findKinematicPath(obj.frameA,obj.frameB);
-      joint_idx = zeros(size(joint_path));
-      for i = 1:numel(joint_path)
-        joint_idx(i) = obj.rbm.getBody(joint_path(i)).dofnum;
+      if isempty(obj.frameA) || isempty(obj.frameB)
+        joint_idx = kinematicsPathJoints@drakeFunction.kinematic.Kinematic(obj);
+      else
+        [~,joint_path] = obj.rbm.findKinematicPath(obj.frameA,obj.frameB);
+        joint_idx = zeros(size(joint_path));
+        for i = 1:numel(joint_path)
+          joint_idx(i) = obj.rbm.getBody(joint_path(i)).dofnum;
+        end
       end
     end
   end

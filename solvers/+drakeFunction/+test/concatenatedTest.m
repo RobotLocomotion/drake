@@ -21,4 +21,6 @@ function concatenatedTest()
 
   % Check concatenating concatenations
   twice_concatenated_fun = [concatenated_fun;concatenated_fun];
+  f2 = twice_concatenated_fun([x;x;y;x;x;y]);
+  valuecheck(f2,[f;f]);
 end
