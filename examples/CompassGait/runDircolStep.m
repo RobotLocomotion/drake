@@ -4,6 +4,8 @@ function runDircolStep
 
 p = CompassGaitPlant();
 
+rng(0);  % snopt fails (albeit very rarely) if the trajectory is seeded randomly
+
 x0 = zeros(4,1); tf0 = 1; xf = zeros(4,1);
 utraj0 = {PPTrajectory(foh(linspace(0,tf0,15),randn(1,15))),PPTrajectory(foh(linspace(0,tf0,15),randn(1,15)))};
 
