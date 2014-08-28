@@ -15,7 +15,7 @@ options.view = 'right';
 options.floating = true;
 options.ignore_self_collisions = true;
 options.terrain = RigidBodyFlatTerrain();
-s = 'urdf/atlas_simple_spring_ankle.urdf';
+s = 'urdf/atlas_simple_planar_contact.urdf';
 dt = 0.001;
 w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
 r = TimeSteppingRigidBodyManipulator(s,dt,options);
@@ -29,7 +29,7 @@ v = r.constructVisualizer;
 v.display_dt = 0.01;
 
 data_dir = fullfile(getDrakePath,'examples','Atlas','data');
-traj_file = strcat(data_dir,'/atlas_passiveankle_traj_lqr_082914.mat');
+traj_file = strcat(data_dir,'/atlas_traj_lqr_082714.mat');
 load(traj_file);
 xtraj = xtraj.setOutputFrame(getStateFrame(r));
 % v.playback(xtraj,struct('slider',true));
@@ -51,17 +51,11 @@ support_times(2) = support_times(2);
 %   RigidBodySupportState(r,[lfoot_ind,rfoot_ind]); ...
 %   RigidBodySupportState(r,rfoot_ind); ...
 %   RigidBodySupportState(r,rfoot_ind)];
-% supports = [RigidBodySupportState(r,lfoot_ind); ...
-%   RigidBodySupportState(r,[lfoot_ind,rfoot_ind],{{'heel','toe'},{'heel'}}); ...
-%   RigidBodySupportState(r,[lfoot_ind,rfoot_ind]); ...
-%   RigidBodySupportState(r,[lfoot_ind,rfoot_ind],{{'toe'},{'toe','heel'}});...
-%   RigidBodySupportState(r,rfoot_ind)];
 supports = [RigidBodySupportState(r,lfoot_ind); ...
   RigidBodySupportState(r,[lfoot_ind,rfoot_ind],{{'heel','toe'},{'heel'}}); ...
-  RigidBodySupportState(r,[lfoot_ind,rfoot_ind],{{'toe'},{'heel','toe'}}); ...
+  RigidBodySupportState(r,[lfoot_ind,rfoot_ind]); ...
+  RigidBodySupportState(r,[lfoot_ind,rfoot_ind],{{'toe'},{'toe','heel'}});...
   RigidBodySupportState(r,rfoot_ind)];
-
-
 
 if segment_number<1
   B=Btraj;
@@ -78,7 +72,7 @@ end
 ctrl_data = FullStateQPControllerData(true,struct(...
   'B',{B},...
   'S',{S},...
-  'R',R,... 
+  'R',.1*R,... 
   'x0',xtraj,...
   'u0',utraj,...
   'support_times',support_times,...
@@ -89,7 +83,7 @@ options.slack_limit = 0;
 options.w_qdd = 0.0*ones(nq,1);
 options.w_grf = 0.0;
 options.w_slack = 0.0;
-options.Kp_accel = 0.0;
+options.Kp_accel = 1.0;
 options.contact_threshold = 0.001;
 qp = FullStateQPController(r,ctrl_data,options);
 
@@ -112,32 +106,7 @@ sys = mimoCascade(sys,v,[],[],output_select);
 warning(S);
 
 tspan = xtraj.tspan();
- x00 = xtraj.eval(t0);
-x0 = [    0*0.2787
-    0.9169
-    0.5230
-   -0.3310
-    0.0975
-   -0.2587
-   -0.2620
-   -1.0492
-    0.4058
-    0.1204
-    0.4830
-   -0.0126
-    0.3500
-   -1.7175
-    4.5903
-   -2.0720
-   -0.0007
-   -1.0841
-    2.4412
-   -1.7072];
- 
- x0(1) = x00(1);
- x0(11:end) = x00(11:end);
-
-traj = simulate(sys,[t0 tf],x0);
+traj = simulate(sys,[t0 tf],xtraj.eval(t0));
 playback(v,traj,struct('slider',true));
 
 end

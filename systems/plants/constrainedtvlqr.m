@@ -1,4 +1,4 @@
-function [c,Ktraj,Straj,Ptraj,Btraj,utraj] = constrainedtvlqr(obj,xtraj,utraj,Q,R,Qf,constraint_ind,options)
+function [c,Ktraj,Straj,Ptraj,Btraj,Ftraj,Straj_full] = constrainedtvlqr(obj,xtraj,utraj,Q,R,Qf,constraint_ind,options)
 %CONSTRAINEDTVLQR
 % TVLQR with constraints
 % @input obj The plant object
@@ -116,6 +116,15 @@ Ktraj = inv(R)*(Ptraj'*Btraj)'*Straj*Ptraj';
 c = AffineSystem([],[],[],[],[],[],[],-Ktraj,Ktraj*xtraj + utraj);
 c = c.setInputFrame(obj.getOutputFrame);
 c = c.setOutputFrame(obj.getInputFrame);
+
+Straj_full = Ptraj*Straj*Ptraj';
+
+tt = Straj.pp.breaks;
+F_data = zeros(size(F0,1),size(F0,2),length(tt));
+for i=1:length(tt),
+  F_data(:,:,i) = getFandFdot(obj,tt(i),xtraj.eval(tt(i)),utraj.eval(tt(i)),constraint_ind,options);
+end
+Ftraj = PPTrajectory(foh(tt,F_data));
 end
 
 function B = getBTrajectory(p,ts,xtraj,utraj,constraint_ind,options)

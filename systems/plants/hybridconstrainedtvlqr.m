@@ -1,4 +1,4 @@
-function [c,Ktraj,Straj,Ptraj,Btraj,tvec] = hybridconstrainedtvlqr(obj,xtraj,utraj,ltraj,Q,R,Qf,options)
+function [c,Ktraj,Straj,Ptraj,Btraj,tvec,Straj_full,Ftraj] = hybridconstrainedtvlqr(obj,xtraj,utraj,ltraj,Q,R,Qf,options)
 %HYBRIDCONSTRAINEDTVLQR
 % TVLQR for a hybrid model with constraints
 % @input obj The plant object
@@ -156,7 +156,7 @@ else
     ts = mode_data{i}.tspan;
     sub_options = options;
     sub_options.tspan = ts;
-    [c{i},Ktraj{i},Straj{i},Ptraj{i},Btraj{i}] = constrainedtvlqr(obj,xtraj,utraj,Q,R,Qfi,mode_data{i}.constraint_ind,sub_options);
+    [c{i},Ktraj{i},Straj{i},Ptraj{i},Btraj{i},Ftraj{i},Straj_full{i}] = constrainedtvlqr(obj,xtraj,utraj,Q,R,Qfi,mode_data{i}.constraint_ind,sub_options);
     P0 = Ptraj{i}.eval(ts(1));
     S0 = Straj{i}.eval(ts(1));
     Qfi = pinv(P0*P0')*P0*S0*P0'*pinv(P0*P0')';  %extract least squares full rank solution

@@ -487,12 +487,12 @@
 
 
   <force_element name="r_leg_aky_spring">
-    <torsional_spring stiffness="5" rest_angle="0.0">
+    <torsional_spring stiffness="20" rest_angle="0.0">
       <joint name="r_leg_aky" />
     </torsional_spring>
   </force_element>
   <force_element name="l_leg_aky_spring">
-    <torsional_spring stiffness="5" rest_angle="0.0">
+    <torsional_spring stiffness="20" rest_angle="0.0">
       <joint name="l_leg_aky" />
     </torsional_spring>
   </force_element>
