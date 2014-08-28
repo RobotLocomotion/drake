@@ -15,6 +15,7 @@ classdef RigidBodyFlatTerrain < RigidBodyTerrain
       geom = RigidBodyBox([box_width;box_width;box_depth]);
       geom.T(3,4) = -box_depth/2;
       geom.c = hex2dec({'ee','cb','ad'})'/256;  % something a little brighter (peach puff 2 from http://www.tayloredmktg.com/rgb/)
+      geom.name = 'terrain';
 %      geom.c = hex2dec({'cd','af','95'})'/256;
     end
   end
