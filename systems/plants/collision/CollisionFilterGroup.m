@@ -73,7 +73,7 @@ classdef CollisionFilterGroup
       % Check if the child is in the group
       linkname = model.getLinkName(child_index);
       robotnum = model.getBody(child_index).robotnum;
-      if any(strcmp(linknames,linkname) & cellfun(@(num) num == parent_robotnum,robotnums))
+      if any(strcmp(linknames,linkname) & cellfun(@(num) num == robotnum,robotnums))
         % Remove child link
         obj = obj.removeMembers(linkname,robotnum);
 
