@@ -14,6 +14,14 @@ classdef HybridTrajectoryOptimization < NonlinearProgram
   %  function, which extracts all constraints from the mode optimization
   %  programs and adds them to the main program. compile() should only be
   %  called ONCE!!
+  %
+  % Basic outline:
+  %  traj_opt = HybridTrajectoryOptimizatino(...);
+  %  traj_opt = traj_opt.addConstraint(...)
+  %  traj_opt = traj_opt.addModeConstraint(...)
+  %  ...
+  %  traj_opt = traj_opt.compile()
+  %  traj_opt.solveTraj()
   properties %(SetAccess=protected)
     N
     M
@@ -29,7 +37,8 @@ classdef HybridTrajectoryOptimization < NonlinearProgram
   methods
     function obj = HybridTrajectoryOptimization(traj_opt,plant,mode_sequence,N,duration,options)
       % @param traj_opt A reference to the appropriate
-      % DirectTrajectoryOptimization class
+      % DirectTrajectoryOptimization class (function handle to the
+      % constructor)
       % @param HybridDrakeSystem plant
       % @param mode_sequence a mx1 vector of mode indices
       % @param N a mx1 vector of timesteps per mode
@@ -76,12 +85,6 @@ classdef HybridTrajectoryOptimization < NonlinearProgram
         
         nvars = nvars + obj.mode_opt{i}.num_vars;
       end
-      % break this apart
-      % 1) add variables
-      % 2) everything else at runtime
-      % 3) ensure that nvars didn't change
-      % 4) add jump constraints can stay
-%       obj = obj.compile();
       
       obj = obj.addJumpConstraints();    
       
@@ -93,7 +96,7 @@ classdef HybridTrajectoryOptimization < NonlinearProgram
           error('For periodic option, the first mode must have the same number of states as the last mode')
         end
         if nU ~= plant.modes{mode_sequence(end)}.getNumInputs
-          error('For periodic option, the first mode must have the same number of control iputs as the last mode')
+          error('For periodic option, the first mode must have the same number of control inputs as the last mode')
         end
         
         R_periodic = [speye(nX+nU) -speye(nX+nU)];
@@ -120,26 +123,44 @@ classdef HybridTrajectoryOptimization < NonlinearProgram
     end
     
     function obj = addModeConstraint(obj,mode_ind,varargin)
+      if obj.is_compiled
+        error('Cannot add mode constraints after the program has been compiled');
+      end
       obj.mode_opt{mode_ind} = obj.mode_opt{mode_ind}.addConstraint(varargin{:});
     end
     
     function obj = addModeStateConstraint(obj,mode_ind,varargin)
+      if obj.is_compiled
+        error('Cannot add mode constraints after the program has been compiled');
+      end
       obj.mode_opt{mode_ind} = obj.mode_opt{mode_ind}.addStateConstraint(varargin{:});
     end
     
     function obj = addModeInputConstraint(obj,mode_ind,varargin)
+      if obj.is_compiled
+        error('Cannot add mode constraints after the program has been compiled');
+      end
       obj.mode_opt{mode_ind} = obj.mode_opt{mode_ind}.addInputConstraint(varargin{:});
     end
     
     function obj = addModeInitialCost(obj,mode_ind,initial_cost)
+      if obj.is_compiled
+        error('Cannot add mode constraints after the program has been compiled');
+      end
       obj.mode_opt{mode_ind} = obj.mode_opt{mode_ind}.addInitialCost(initial_cost);
     end
     
     function obj = addModeFinalCost(obj,mode_ind,final_cost_function)
+      if obj.is_compiled
+        error('Cannot add mode constraints after the program has been compiled');
+      end
       obj.mode_opt{mode_ind} = obj.mode_opt{mode_ind}.addFinalCost(final_cost_function);
     end
     
     function obj = addModeRunningCost(obj,mode_ind,running_cost_function)
+      if obj.is_compiled
+        error('Cannot add mode constraints after the program has been compiled');
+      end
       obj.mode_opt{mode_ind} = obj.mode_opt{mode_ind}.addRunningCost(running_cost_function);
     end
     
@@ -259,6 +280,14 @@ classdef HybridTrajectoryOptimization < NonlinearProgram
       end
     end
     
+    function z0 = getInitialVars(obj,t_init,traj_init)
+      z0 = cell(obj.M,1);
+      for i=1:obj.M,
+        z0{i} = obj.mode_opt{i}.getInitialVars(t_init{i},traj_init{i});
+      end
+      z0 = cell2mat(z0);
+    end
+    
     function [xtraj,utraj,z,F,info] = solveTraj(obj,t_init,traj_init)
       % Solve the nonlinear program and return resulting trajectory
       % @param t_init initial timespan for solution.  can be a vector of
@@ -270,16 +299,13 @@ classdef HybridTrajectoryOptimization < NonlinearProgram
       % @default small random numbers
       
       if ~obj.is_compiled
-        warning('HybridTrajectoryOptimization is not compiled, doing so now, but previous references will be stale');
+        warning('HybridTrajectoryOptimization is not compiled, doing so now, but previous references not reflect the compilation. Consider running compile() first.');
         obj = obj.compile();
       end
 
-      z0 = cell(obj.M,1);
-      for i=1:obj.M,
-        z0{i} = obj.mode_opt{i}.getInitialVars(t_init{i},traj_init{i});
-      end
+      z0 = obj.getInitialVars(t_init,traj_init);
       
-      [z,F,info] = obj.solve(cell2mat(z0));
+      [z,F,info] = obj.solve(z0);
       
       for i=1:obj.M,
         utraj{i} = obj.mode_opt{i}.reconstructInputTrajectory(z(obj.var_offset(i)+1:obj.var_offset(i)+obj.mode_opt{i}.num_vars));
