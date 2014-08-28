@@ -1901,6 +1901,9 @@ classdef RigidBodyManipulator < Manipulator
         for j=1:length(model.frame)
           model.frame(j) = updateForRemovedLink(model.frame(j),model,i);
         end
+        for key = model.collision_filter_groups.keys
+          model.collision_filter_groups(key{1}) = updateForRemovedLink(model.collision_filter_groups(key{1}),model,i,parent.linkname,key{1});
+        end
 
         % remove actuators
         if (~isempty(model.actuator) && any([model.actuator.joint] == i))
