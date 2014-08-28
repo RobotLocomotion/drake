@@ -23,7 +23,7 @@ classdef QTrajEvalBlock < MIMODrakeSystem
       if isfield(options,'use_error_integrator')
         typecheck(options.use_error_integrator,'logical');
         if options.use_error_integrator
-          sizecheck(controller_data.integral_gains,[getNumDOF(r) 1]);
+          sizecheck(controller_data.integral_gains,[getNumPositions(r) 1]);
           typecheck(controller_data,{'AtlasManipControllerData','AtlasQPControllerData'});
         end
       else
@@ -51,7 +51,7 @@ classdef QTrajEvalBlock < MIMODrakeSystem
       obj.controller_data = controller_data;
       obj.use_error_integrator = options.use_error_integrator;
       [obj.jlmin,obj.jlmax] = getJointLimits(obj.robot);
-      obj.nq = getNumDOF(r);
+      obj.nq = getNumPositions(r);
 
     end
        
