@@ -18,7 +18,7 @@ bool mexCallMATLABsafe(int nlhs, mxArray* plhs[], int nrhs, mxArray* prhs[], con
 
 
 // Mex pointers shared through matlab
-mxArray* createDrakeMexPointer(void* ptr, const char* name="", int num_additional_inputs=0, mxArray *delete_fcn_additional_inputs[] = NULL);  // increments lock count
+mxArray* createDrakeMexPointer(void* ptr, const char* name="", int num_additional_inputs=0, mxArray *delete_fcn_additional_inputs[] = NULL, const char* subclass_name=NULL);  // increments lock count
 // Note: the same mex function which calls this method will be called with the syntax mexFunction(drake_mex_ptr) as the destructor
 
 void* getDrakeMexPointer(const mxArray* mx);

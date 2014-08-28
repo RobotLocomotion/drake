@@ -14,6 +14,10 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
 {
   RigidBodyConstraint* constraint = (RigidBodyConstraint*) getDrakeMexPointer(prhs[0]);
   int constraint_type = constraint->getType();
+  if (nrhs<2) { // then it's just calling delete
+    destroyDrakeMexPointer<RigidBodyConstraint*>(prhs[0]);
+    return;
+  }
   mwSize strlen = mxGetNumberOfElements(prhs[1])+1;
   char* field = new char[strlen];
   mxGetString(prhs[1],field,strlen);
@@ -33,7 +37,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
           bool* flag = mxGetLogicals(prhs[2]);
           QuasiStaticConstraint* cnst_new = new QuasiStaticConstraint(*cnst);
           cnst_new->setActive(*flag);
-          plhs[0] = createDrakeConstraintMexPointer((void*) cnst_new,"deleteRigidBodyConstraintmex","QuasiStaticConstraint");
+          plhs[0] = createDrakeConstraintMexPointer((void*) cnst_new,"QuasiStaticConstraint");
         }
         else if(field_str=="factor")
         {// setShrinkFactor(qsc_ptr,factor)
@@ -48,7 +52,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
           }
           QuasiStaticConstraint* cnst_new = new QuasiStaticConstraint(*cnst);
           cnst_new->setShrinkFactor(factor);
-          plhs[0] = createDrakeConstraintMexPointer((void*) cnst_new,"deleteRigidBodyConstraintmex","QuasiStaticConstraint");
+          plhs[0] = createDrakeConstraintMexPointer((void*) cnst_new,"QuasiStaticConstraint");
         }
         else if(field_str=="contact")
         {
@@ -68,7 +72,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
           }
           QuasiStaticConstraint* cnst_new = new QuasiStaticConstraint(*cnst);
           cnst_new->addContact(num_new_bodies,new_bodies,new_body_pts);
-          plhs[0] = createDrakeConstraintMexPointer((void*) cnst_new,"deleteRigidBodyConstraintmex","QuasiStaticConstraint");
+          plhs[0] = createDrakeConstraintMexPointer((void*) cnst_new,"QuasiStaticConstraint");
           delete[] new_bodies;
           delete[] new_body_pts;
         }
@@ -77,7 +81,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
           RigidBodyManipulator* robot = (RigidBodyManipulator*) getDrakeMexPointer(prhs[2]);
           QuasiStaticConstraint* cnst_new = new QuasiStaticConstraint(*cnst);
           cnst_new->updateRobot(robot);
-          plhs[0] = createDrakeConstraintMexPointer((void*) cnst_new,"deleteRigidBodyConstraintmex","QuasiStaticConstraint");
+          plhs[0] = createDrakeConstraintMexPointer((void*) cnst_new,"QuasiStaticConstraint");
         }
         else if(field_str=="robotnum")
         {
@@ -92,7 +96,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
           set<int> robotnumset(robotnum,robotnum+num_robot);
           QuasiStaticConstraint* cnst_new = new QuasiStaticConstraint(*cnst);
           cnst_new->updateRobotnum(robotnumset);
-          plhs[0] = createDrakeConstraintMexPointer((void*) cnst_new,"deleteRigidBodyConstraintmex","QuasiStaticConstraint");
+          plhs[0] = createDrakeConstraintMexPointer((void*) cnst_new,"QuasiStaticConstraint");
           delete[] robotnum_tmp;
           delete[] robotnum;
         }
@@ -123,7 +127,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
           PostureConstraint* pc_new = new PostureConstraint(*pc);
           pc_new->setJointLimits(num_idx,joint_idx,lb,ub);
           delete[] joint_idx;
-          plhs[0] = createDrakeConstraintMexPointer((void*)pc_new,"deleteRigidBodyConstraintmex","PostureConstraint");
+          plhs[0] = createDrakeConstraintMexPointer((void*)pc_new,"PostureConstraint");
         }
         else
         {
@@ -139,7 +143,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
           RigidBodyManipulator* robot = (RigidBodyManipulator*) getDrakeMexPointer(prhs[2]);
           AllBodiesClosestDistanceConstraint* cnst_new = new AllBodiesClosestDistanceConstraint(*cnst);
           cnst_new->updateRobot(robot);
-          plhs[0] = createDrakeConstraintMexPointer((void*) cnst_new,"deleteRigidBodyConstraintmex","AllBodiesClosestDistanceConstraint");
+          plhs[0] = createDrakeConstraintMexPointer((void*) cnst_new,"AllBodiesClosestDistanceConstraint");
         }
         else
         {
@@ -155,7 +159,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
           RigidBodyManipulator* robot = (RigidBodyManipulator*) getDrakeMexPointer(prhs[2]);
           WorldEulerConstraint* cnst_new = new WorldEulerConstraint(*cnst);
           cnst_new->updateRobot(robot);
-          plhs[0] = createDrakeConstraintMexPointer((void*)cnst_new,"deleteRigidBodyConstraintmex","WorldEulerConstraint");
+          plhs[0] = createDrakeConstraintMexPointer((void*)cnst_new,"WorldEulerConstraint");
         }
         else
         {
@@ -171,7 +175,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
           RigidBodyManipulator* robot = (RigidBodyManipulator*) getDrakeMexPointer(prhs[2]);
           WorldGazeDirConstraint* cnst_new = new WorldGazeDirConstraint(*cnst);
           cnst_new->updateRobot(robot);
-          plhs[0] = createDrakeConstraintMexPointer((void*)cnst_new,"deleteRigidBodyConstraintmex","WorldGazeDirConstraint");
+          plhs[0] = createDrakeConstraintMexPointer((void*)cnst_new,"WorldGazeDirConstraint");
         }
         else
         {
@@ -187,7 +191,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
           RigidBodyManipulator* robot = (RigidBodyManipulator*) getDrakeMexPointer(prhs[2]);
           WorldGazeOrientConstraint* cnst_new = new WorldGazeOrientConstraint(*cnst);
           cnst_new->updateRobot(robot);
-          plhs[0] = createDrakeConstraintMexPointer((void*)cnst_new,"deleteRigidBodyConstraintmex","WorldGazeOrientConstraint");
+          plhs[0] = createDrakeConstraintMexPointer((void*)cnst_new,"WorldGazeOrientConstraint");
         }
         else
         {
@@ -203,7 +207,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
           RigidBodyManipulator* robot = (RigidBodyManipulator*) getDrakeMexPointer(prhs[2]);
           WorldGazeTargetConstraint* cnst_new = new WorldGazeTargetConstraint(*cnst);
           cnst_new->updateRobot(robot);
-          plhs[0] = createDrakeConstraintMexPointer((void*)cnst_new,"deleteRigidBodyConstraintmex","WorldGazeTargetConstraint");
+          plhs[0] = createDrakeConstraintMexPointer((void*)cnst_new,"WorldGazeTargetConstraint");
         }
         else
         {
@@ -219,7 +223,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
           RigidBodyManipulator* robot = (RigidBodyManipulator*) getDrakeMexPointer(prhs[2]);
           RelativeGazeTargetConstraint* cnst_new = new RelativeGazeTargetConstraint(*cnst);
           cnst_new->updateRobot(robot);
-          plhs[0] = createDrakeConstraintMexPointer((void*)cnst_new,"deleteRigidBodyConstraintmex","RelativeGazeTargetConstraint");
+          plhs[0] = createDrakeConstraintMexPointer((void*)cnst_new,"RelativeGazeTargetConstraint");
         }
         else
         {
@@ -235,7 +239,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
           RigidBodyManipulator* robot = (RigidBodyManipulator*) getDrakeMexPointer(prhs[2]);
           RelativeGazeDirConstraint* cnst_new = new RelativeGazeDirConstraint(*cnst);
           cnst_new->updateRobot(robot);
-          plhs[0] = createDrakeConstraintMexPointer((void*)cnst_new,"deleteRigidBodyConstraintmex","RelativeGazeDirConstraint");
+          plhs[0] = createDrakeConstraintMexPointer((void*)cnst_new,"RelativeGazeDirConstraint");
         }
         else
         {
@@ -251,7 +255,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
           RigidBodyManipulator* robot = (RigidBodyManipulator*) getDrakeMexPointer(prhs[2]);
           WorldCoMConstraint* cnst_new = new WorldCoMConstraint(*cnst);
           cnst_new->updateRobot(robot);
-          plhs[0] = createDrakeConstraintMexPointer((void*)cnst_new,"deleteRigidBodyConstraintmex","WorldCoMConstraint");
+          plhs[0] = createDrakeConstraintMexPointer((void*)cnst_new,"WorldCoMConstraint");
         }
         else if(field_str=="robotnum")
         {
@@ -266,7 +270,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
           set<int> robotnumset(robotnum,robotnum+num_robot);
           WorldCoMConstraint* cnst_new = new WorldCoMConstraint(*cnst);
           cnst_new->updateRobotnum(robotnumset);
-          plhs[0] = createDrakeConstraintMexPointer((void*)cnst_new,"deleteRigidBodyConstraintmex","WorldCoMConstraint");
+          plhs[0] = createDrakeConstraintMexPointer((void*)cnst_new,"WorldCoMConstraint");
           delete[] robotnum_tmp;
           delete[] robotnum;
         }
@@ -284,7 +288,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
           RigidBodyManipulator* robot = (RigidBodyManipulator*) getDrakeMexPointer(prhs[2]);
           WorldPositionConstraint* cnst_new = new WorldPositionConstraint(*cnst);
           cnst_new->updateRobot(robot);
-          plhs[0] = createDrakeConstraintMexPointer((void*) cnst_new,"deleteRigidBodyConstraintmex","WorldPositionConstraint");
+          plhs[0] = createDrakeConstraintMexPointer((void*) cnst_new,"WorldPositionConstraint");
         }
         else
         {
@@ -300,7 +304,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
           RigidBodyManipulator* robot = (RigidBodyManipulator*) getDrakeMexPointer(prhs[2]);
           WorldPositionInFrameConstraint* cnst_new = new WorldPositionInFrameConstraint(*cnst);
           cnst_new->updateRobot(robot);
-          plhs[0] = createDrakeConstraintMexPointer((void*) cnst_new,"deleteRigidBodyConstraintmex","WorldPositionInFrameConstraint");
+          plhs[0] = createDrakeConstraintMexPointer((void*) cnst_new,"WorldPositionInFrameConstraint");
         }
         else
         {
@@ -316,7 +320,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
           RigidBodyManipulator* robot = (RigidBodyManipulator*) getDrakeMexPointer(prhs[2]);
           WorldQuatConstraint* cnst_new = new WorldQuatConstraint(*cnst);
           cnst_new->updateRobot(robot);
-          plhs[0] = createDrakeConstraintMexPointer((void*)cnst_new,"deleteRigidBodyConstraintmex","WorldQuatConstraint");
+          plhs[0] = createDrakeConstraintMexPointer((void*)cnst_new,"WorldQuatConstraint");
         }
         else
         {
@@ -332,7 +336,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
           RigidBodyManipulator* robot = (RigidBodyManipulator*) getDrakeMexPointer(prhs[2]);
           Point2PointDistanceConstraint* cnst_new = new Point2PointDistanceConstraint(*cnst);
           cnst_new->updateRobot(robot);
-          plhs[0] = createDrakeConstraintMexPointer((void*)cnst_new,"deleteRigidBodyConstraintmex","Point2PointDistanceConstraint");
+          plhs[0] = createDrakeConstraintMexPointer((void*)cnst_new,"Point2PointDistanceConstraint");
         }
         else
         {
@@ -348,7 +352,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
           RigidBodyManipulator* robot = (RigidBodyManipulator*) getDrakeMexPointer(prhs[2]);
           Point2LineSegDistConstraint* cnst_new = new Point2LineSegDistConstraint(*cnst);
           cnst_new->updateRobot(robot);
-          plhs[0] = createDrakeConstraintMexPointer((void*)cnst_new,"deleteRigidBodyConstraintmex","Point2LineSegDistConstraint");
+          plhs[0] = createDrakeConstraintMexPointer((void*)cnst_new,"Point2LineSegDistConstraint");
         }
         else
         {
@@ -364,7 +368,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
           RigidBodyManipulator* robot = (RigidBodyManipulator*) getDrakeMexPointer(prhs[2]);
           WorldFixedPositionConstraint* cnst_new = new WorldFixedPositionConstraint(*cnst);
           cnst_new->updateRobot(robot);
-          plhs[0] = createDrakeConstraintMexPointer((void*)cnst_new,"deleteRigidBodyConstraintmex","WorldFixedPositionConstraint");
+          plhs[0] = createDrakeConstraintMexPointer((void*)cnst_new,"WorldFixedPositionConstraint");
         }
         else
         {
@@ -380,7 +384,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
           RigidBodyManipulator* robot = (RigidBodyManipulator*) getDrakeMexPointer(prhs[2]);
           WorldFixedOrientConstraint* cnst_new = new WorldFixedOrientConstraint(*cnst);
           cnst_new->updateRobot(robot);
-          plhs[0] = createDrakeConstraintMexPointer((void*)cnst_new,"deleteRigidBodyConstraintmex","WorldFixedOrientConstraint");
+          plhs[0] = createDrakeConstraintMexPointer((void*)cnst_new,"WorldFixedOrientConstraint");
         }
         else
         {
@@ -396,7 +400,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
           RigidBodyManipulator* robot = (RigidBodyManipulator*) getDrakeMexPointer(prhs[2]);
           WorldFixedBodyPoseConstraint* cnst_new = new WorldFixedBodyPoseConstraint(*cnst);
           cnst_new->updateRobot(robot);
-          plhs[0] = createDrakeConstraintMexPointer((void*)cnst_new,"deleteRigidBodyConstraintmex","WorldFixedBodyPoseConstraint");
+          plhs[0] = createDrakeConstraintMexPointer((void*)cnst_new,"WorldFixedBodyPoseConstraint");
         }
         else
         {
@@ -412,7 +416,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
             RigidBodyManipulator* robot = (RigidBodyManipulator*) getDrakeMexPointer(prhs[2]);
             RelativePositionConstraint* cnst_new = new RelativePositionConstraint(*cnst);
             cnst_new->updateRobot(robot);
-            plhs[0] = createDrakeConstraintMexPointer((void*)cnst_new,"deleteRigidBodyConstraintmex","RelativePositionConstraint");
+            plhs[0] = createDrakeConstraintMexPointer((void*)cnst_new,"RelativePositionConstraint");
         }
         else
         {
@@ -428,7 +432,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
             RigidBodyManipulator* robot = (RigidBodyManipulator*) getDrakeMexPointer(prhs[2]);
             RelativeQuatConstraint* cnst_new = new RelativeQuatConstraint(*cnst);
             cnst_new->updateRobot(robot);
-            plhs[0] = createDrakeConstraintMexPointer((void*)cnst_new,"deleteRigidBodyConstraintmex","RelativeQuatConstraint");
+            plhs[0] = createDrakeConstraintMexPointer((void*)cnst_new,"RelativeQuatConstraint");
         }
         else
         {
@@ -444,7 +448,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
           RigidBodyManipulator* robot = (RigidBodyManipulator*) getDrakeMexPointer(prhs[2]);
           MinDistanceConstraint* cnst_new = new MinDistanceConstraint(*cnst);
           cnst_new->updateRobot(robot);
-          plhs[0] = createDrakeConstraintMexPointer((void*) cnst_new,"deleteRigidBodyConstraintmex","MinDistanceConstraint");
+          plhs[0] = createDrakeConstraintMexPointer((void*) cnst_new,"MinDistanceConstraint");
         }
         else
         {
