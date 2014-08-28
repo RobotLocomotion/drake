@@ -123,6 +123,7 @@ if ~ok
       if ~conf.ipopt_enabled && nargout<1
         disp(' ');
         disp(' IPOPT not found. IPOPT support will be disabled.');
+        disp(' ');
       end
       
     case 'vrml'

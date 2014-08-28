@@ -662,14 +662,14 @@ classdef NonlinearProgram
       typecheck(solver,'char');
       if(strcmp(solver,'snopt'))
         if(~checkDependency('snopt'))
-          error('Drake:NonlinearProgram:UnsupportedSolver','SNOPT is not installed');
+          error('Drake:NonlinearProgram:UnsupportedSolver',' SNOPT not found.  SNOPT support will be disabled.');
         end
         obj.solver = solver;
       elseif(strcmp(solver,'fmincon'))
         obj.solver = solver;
       elseif(strcmp(solver,'ipopt'))
         if(~checkDependency('ipopt'))
-          error('Drake:NonlinearProgram:UnsupportedSolver','Ipopt is not installed yet');
+          error('Drake:NonlinearProgram:UnsupportedSolver',' IPOPT not found. IPOPT support will be disabled.');
         end
         obj.solver = solver;
       elseif(strcmp(solver,'default'))
@@ -878,10 +878,12 @@ classdef NonlinearProgram
     function [x,objval,exitflag,execution_time] = compareSolvers(obj,x0,solvers)
       if nargin<3
         solvers = {'fmincon'};
-        if(checkDependency('snopt'))
+        snopt_enabled = checkDependency('snopt');
+        if(snopt_enabled)
           solvers = [solvers,{'snopt'}];
         end
-        if(checkDependency('ipopt'))
+        ipopt_enabled = checkDependency('ipopt');
+        if(ipopt_enabled)
           solvers = [solvers,{'ipopt'}];
         end
       end
