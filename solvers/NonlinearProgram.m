@@ -803,6 +803,66 @@ classdef NonlinearProgram
     end
     
     function [x,objval,exitflag,infeasible_constraint_name] = solve(obj,x0)
+      % @param x0   A obj.num_vars x 1 double vector. The initial seed
+      % @retval x   A obj.num_vars x 1 double vector. The solution obtained after running the
+      % solver
+      % @retval objval  A double scaler. The value of the objective function after running the
+      % solver
+      % @retval exitflag   An integer scaler.
+      %                    *********************
+      %                    If the solver is SNOPT, then exitflag is the same as the INFO returned by
+      %                    the solver. Please refer to
+      %                    http://www.cam.ucsd.edu/~peg/papers/sndoc7.pdf for more information
+      %                    1  -- Successfully solved through SNOPT
+      %                    2  -- Solved with SNOPT, but the accuracy of the linear constraints
+      %                    cannot be achieved.
+      %                    3  -- Solved with SNOPT, but the accuracy of the nonlinear constraints
+      %                    cannot be achieved.
+      %                    4  -- SNOPT thinks it fails to solve the problem, but the solution
+      %                    satisfies the constraints within obj.constraint_err_tol
+      %                    5  -- SNOPT thinks it runs out of iterations limits, but the solution
+      %                    satisfies the constraints within obj.constraint_err_tol, try increase the
+      %                    iterations limits
+      %                    6  -- SNOPT thinks it runs out of major iterations limits, but the
+      %                    solution satisfies the constraints within obj.constraint_err_tol. try
+      %                    increase the major iterations limits
+      %                    12 -- SNOPT fails as the linear constraints are infeasible
+      %                    13 -- SNOPT fails as the nonlinear constraints are infeasible
+      %                    31 -- SNOPT fails by running out of iterations limit
+      %                    32 -- SNOPT fails by running out of major iterations limit
+      %                    33 -- SNOPT fails due to small super basics limit
+      %                    41 -- SNOPT fails due to numerical problems
+      %                    *********************
+      %                    If the solver is fmincon, then the exitflag is 200 + fmincon_exitflag
+      %                    200 -- In fmincon, number of iterations exceeds options.MaxIter
+      %                    201 -- In fmincon, the problem is solved successfully
+      %                    199 -- In fmincon, stopped by an output function or plot function
+      %                    198 -- In fmincon, no feasible point was found.
+      %                    202 -- In fmincon, change in x was less than options.TolX and maximum constraint violation was less than options.TolCon.
+      %                    203 -- In fmincon, change in the objective function value was less than options.TolFun and maximum constraint violation was less than options.TolCon.
+      %                    204 -- In fmincon, magnitude of the search direction was less than 2*options.TolX and maximum constraint violation was less than options.TolCon.
+      %                    205 -- In fmincon, magnitude of directional derivative in search
+      %                    direction was less than 2*options.TolFun and maximum constraint violation was less than options.TolCon.
+      %                    197 -- In fmincon, objective function at current iteration went below options.ObjectiveLimit and maximum constraint violation was less than options.TolCon.
+      %                    **********************
+      %                    If the solver is IPOPT, then the exitflag = -100 + ipopt_exitflag
+      %                    -100  -- solved by Ipopt
+      %                    -99   -- In ipopt, solved to acceptable level
+      %                    -98   -- In ipopt, infeasible problem detected
+      %                    -97   -- In ipopt, search direction becomes too small
+      %                    -96   -- In ipopt, diverging iterates
+      %                    -95   -- In ipopt, user requested stop
+      %                    -101  -- In ipopt, maximum number of iterations exceeded
+      %                    -102  -- In ipopt, restoration phase failed
+      %                    -103  -- In ipopt, error in step computation
+      %                    -110  -- In ipopt, not enough degrees of freedom
+      %                    -111  -- In ipopt, invalid problem definition
+      %                    -112  -- In ipopt, invalid option
+      %                    -113  -- In ipopt, invalid number detected
+      %                    -200  -- In ipopt, unrecoverable exception
+      %                    -201  -- In ipopt, non-IPOPT exception thrown
+      %                    -202  -- In ipopt, insufficient memory
+      %                    -299  -- In ipopt, internal error
       switch lower(obj.solver)
         case 'snopt'
           [x,objval,exitflag,infeasible_constraint_name] = snopt(obj,x0);
