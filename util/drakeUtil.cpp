@@ -88,8 +88,13 @@ mxArray* createDrakeMexPointer(void* ptr, const char* name, int num_additional_i
 //  mexPrintf("deleteMethod = %s\n name =%s\n", deleteMethod,name);
 
   // call matlab to construct mex pointer object
-  if (subclass_name)
+  if (subclass_name) {
     mexCallMATLABsafe(1,plhs,nrhs,prhs,subclass_name);
+    if (!isa(plhs[0],"DrakeMexPointer")) {
+      mxDestroyArray(plhs[0]);
+      mexErrMsgIdAndTxt("Drake:createDrakeMexPointer:InvalidSubclass","subclass_name is not a valid subclass of DrakeMexPointer");
+    }
+  }
   else
     mexCallMATLABsafe(1,plhs,nrhs,prhs,"DrakeMexPointer");
 
