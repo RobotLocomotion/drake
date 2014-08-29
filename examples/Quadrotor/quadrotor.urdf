@@ -1,15 +1,15 @@
 <?xml version="1.0" ?>
 
-<!-- adapted from https://github.com/ktossell/hector_quadrotor/tree/hydro-devel/hector_quadrotor_description/urdf -->
+<!-- adapted from Daniel Mellinger, Nathan Michael, Vijay Kumar, "Trajectory Generation and Control for Precise Aggressive Maneuvers with Quadrotors" -->
 
 <robot xmlns="http://drake.mit.edu"
  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
  xsi:schemaLocation="http://drake.mit.edu ../../../../pods/drake/doc/drakeURDF.xsd" name="quadrotor">
   <link name="base_link">
     <inertial>
-      <mass value="1.477"/>
+      <mass value="0.5"/>
       <origin xyz="0 0 0"/>
-      <inertia ixx="0.01152" ixy="0.0" ixz="0.0" iyy="0.01152" iyz="0.0" izz="0.0218"/>
+      <inertia ixx="0.0023" ixy="0.0" ixz="0.0" iyy="0.0023" iyz="0.0" izz="0.004"/>
     </inertial>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -27,35 +27,35 @@
   </link>
 
   <force_element name="prop1">
-    <thrust lower_limit="0" upper_limit="10">
+    <propellor lower_limit="0" upper_limit="10" scale_factor_thrust="1.0" scale_factor_moment="0.0245">
       <parent link="base_link"/>
-      <origin xyz="0 .2 0"/>
+      <origin xyz=".1750 0 0"/>
       <axis xyz="0 0 1"/>
-    </thrust>
+    </propellor>
   </force_element>
 
   <force_element name="prop2">
-    <thrust lower_limit="0" upper_limit="10">
+    <propellor lower_limit="0" upper_limit="10" scale_factor_thrust="1.0" scale_factor_moment="-0.0245">
       <parent link="base_link"/>
-      <origin xyz=".2 0 0"/>
+      <origin xyz="0 .1750 0 "/>
       <axis xyz="0 0 1"/>
-    </thrust>
+    </propellor>
   </force_element>
   
   <force_element name="prop3">
-    <thrust lower_limit="0" upper_limit="10">
+    <propellor lower_limit="0" upper_limit="10" scale_factor_thrust="1.0" scale_factor_moment="0.0245">
       <parent link="base_link"/>
-      <origin xyz="0 -.2 0"/>
+      <origin xyz="-.1750 0 0"/>
       <axis xyz="0 0 1"/>
-    </thrust>
+    </propellor>
   </force_element>
   
   <force_element name="prop4">
-    <thrust lower_limit="0" upper_limit="10">
+    <propellor lower_limit="0" upper_limit="10" scale_factor_thrust="1.0" scale_factor_moment="-0.0245">
       <parent link="base_link"/>
-      <origin xyz="-.2 0 0"/>
+      <origin xyz="0 -.1750 0"/>
       <axis xyz="0 0 1"/>
-    </thrust>
+    </propellor>
   </force_element>
   
 </robot>
