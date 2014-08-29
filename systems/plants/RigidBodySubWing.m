@@ -18,6 +18,7 @@ classdef RigidBodySubWing < RigidBodyForceElement
     area
     %Air density for 20 degC dry air, at sea level
     rho = 1.204;
+    has_control_surface = false;
   end
 
   methods
@@ -59,6 +60,12 @@ classdef RigidBodySubWing < RigidBodyForceElement
       %     at the half chord.
       % use variables for path to xfoil and AVL
       %
+      
+      % we need to be able to construct with no arguments per 
+      % http://www.mathworks.com/help/matlab/matlab_oop/class-constructor-methods.html#btn2kiy
+      if (nargin == 0)
+        return;
+      end
 
       typecheck(frame_id,'numeric');
       obj.kinframe = frame_id;

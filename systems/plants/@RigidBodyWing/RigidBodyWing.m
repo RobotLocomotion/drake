@@ -7,7 +7,7 @@ classdef RigidBodyWing < RigidBodyForceElement
   
   properties
     
-    subwings; % array of RigidBodySubWing's that make up this wing
+    subwings = {}; % array of RigidBodySubWing's that make up this wing
     
     subwing_left_edges; % sorted array of points along the wing denoting the left edge of each subwing. Index is the same as obj.subwings.
     
@@ -26,7 +26,7 @@ classdef RigidBodyWing < RigidBodyForceElement
       
         thisWing = RigidBodySubWing(frame_id, profile, chord, span, stallAngle, velocity);
       
-        obj.subwings = [ obj.subwings  thisWing ];
+        obj.subwings{length(obj.subwings) + 1} = this_subwing;
         
       else
         % with no arguments, we were probably called by the URDF constructor
@@ -37,7 +37,7 @@ classdef RigidBodyWing < RigidBodyForceElement
     end
     
     
-    function [force, dforce] = computeSpatialForce(obj,manip,q,qd)
+    function [force, B_force, dforce, dB_force ] = computeSpatialForce(obj,manip,q,qd)
       % Calls the appropriate RigidBodySubWing.computeSpatialForce
       % for all of the subwings, adds the results, and returns.
       
@@ -47,19 +47,51 @@ classdef RigidBodyWing < RigidBodyForceElement
       
       for i = 1 : length(obj.subwings)
         
-        [this_force, this_dforce] = obj.subwings(i).computeSpatialForce(manip, q, qd);
+        if (obj.subwings{i}.has_control_surface)
+          [force, B_force, dforce, dB_force ] = obj.subwings{i}.computeSpatialForce(manip,q,qd);
+          
+          if i ~= 1
+            error('uh oh');
+          end
+        else
         
-        if i == 1
+          [this_force, this_dforce] = obj.subwings{i}.computeSpatialForce(manip, q, qd);
+           if i == 1
           force = this_force;
           dforce = this_dforce;
         else
           error('not yet implemented');
           
         end
+        end
+        
+       
         
       end
       
     end
+    
+    function frame_id = kinframe(obj)
+      % Gets the frame_id for the wing and throws an error if any subwing
+      % has a different frame id.
+      %
+      % @retval frame_id the frame_id passed into the constructor of each
+      %   subwing.
+      
+      
+      if length(obj.subwings) < 1
+        error('called with no subwings.  Init wing before calling.');
+      end
+      
+      frame_id = obj.subwings{1}.kinframe;
+      
+      for i = 2 : length(obj.subwings)
+        if frame_id ~= obj.subwings{i}.kinframe
+          error('frame id mismatch.');
+        end
+      end
+    end
+        
     
 
   end
@@ -101,7 +133,7 @@ classdef RigidBodyWing < RigidBodyForceElement
         
         this_subwing = RigidBodySubWing(frame_id, profile, chord, span, stall_angle, nominal_speed);
         
-        obj.subwings = [obj.subwings this_subwing ];
+        obj.subwings{length(obj.subwings) + 1} = this_subwing;
         obj.subwing_left_edges = 0;
         
       else
@@ -186,6 +218,8 @@ classdef RigidBodyWing < RigidBodyForceElement
 
           if (min_left_edge_value == point_along_wing)
             % control surface starts at the left edge
+            
+            obj.direct_feedthrough_flag = true;
 
             % span of this part of the wing is the span of the control
             % surface
@@ -194,8 +228,12 @@ classdef RigidBodyWing < RigidBodyForceElement
             this_span = this_surface.span;
             this_subwing = RigidBodySubWingWithControlSurface(frame_id, profile, chord, this_span, stall_angle, nominal_speed, this_surface);
             
+            
+            obj.input_limits = [ obj.input_limits [ this_surface.min_deflection; this_surface.max_deflection] ];
+            
             % remove this surface from consideration
             remaining_surfaces(min_left_edge_index) = [];
+            
 
           else
             % make a non-control surfaced wing since the control surface
@@ -211,7 +249,7 @@ classdef RigidBodyWing < RigidBodyForceElement
           end
           
           
-          obj.subwings = [ obj.subwings this_subwing ];
+          obj.subwings{length(obj.subwings) + 1} = this_subwing;
           obj.subwing_left_edges = [ obj.subwing_left_edges point_along_wing ];
           
           point_along_wing = point_along_wing + this_span;
@@ -221,7 +259,9 @@ classdef RigidBodyWing < RigidBodyForceElement
         
         
       end
+      obj.name = name;
     end
+    
   end
 
 end

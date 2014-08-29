@@ -1634,7 +1634,12 @@ classdef RigidBodyManipulator < Manipulator
           frame = model.frame(-model.force{i}.kinframe);
           inputparents = [inputparents model.body(frame.body_ind)];
           inputnames{end+1} = model.force{i}.name;
+        elseif model.force{i}.direct_feedthrough_flag
+          frame = model.frame(-model.force{i}.kinframe);
+          inputparents = [inputparents model.body(frame.body_ind)];
+          inputnames{end+1} = model.force{i}.name;
         end
+        
       end
       for i=1:length(model.name)
         robot_inputs = [inputparents.robotnum]==i;
