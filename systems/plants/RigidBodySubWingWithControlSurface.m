@@ -7,9 +7,11 @@ classdef RigidBodySubWingWithControlSurface < RigidBodySubWing
     stall_angle;
     chord;
     control_surface % the control surface attached to this wing
-    fCl_control_surface;
+    fCl_control_surface; % Interpolant for the control surface, given aoa and u
     fCd_control_surface;
     fCm_control_surface; 
+    
+    control_surface_increment = 0.01; % resolution of control surface parameterization in radians
   end
   
   methods
@@ -20,6 +22,13 @@ classdef RigidBodySubWingWithControlSurface < RigidBodySubWing
       %
       % @param control_surface a ControlSurface attached to this wing.
       
+      
+      % we need to be able to construct with no arguments per 
+      % http://www.mathworks.com/help/matlab/matlab_oop/class-constructor-methods.html#btn2kiy
+      if (nargin == 0)
+        return;
+      end
+      
       obj = obj@RigidBodySubWing(frame_id, profile, chord, span, stall_angle, velocity);
 
       obj.chord = chord;
@@ -27,6 +36,8 @@ classdef RigidBodySubWingWithControlSurface < RigidBodySubWing
       obj.stall_angle = stall_angle;
       obj.control_surface = control_surface;
       obj.direct_feedthrough_flag = true;
+      
+      obj.has_control_surface = true;
       
       % compute the coefficients for the flat plate
       
@@ -60,23 +71,69 @@ classdef RigidBodySubWingWithControlSurface < RigidBodySubWing
       % first, call the parent class's  computeSpatialForce to get the
       % u-invariant parts
       
-      [force, dforce] = computeSpatialForce@RigidBodySubWing(manip, q, qd);
+      [force, dforce] = computeSpatialForce@RigidBodySubWing(obj, manip, q, qd);
       
       % now compute B and dB
       
+      
+      kinsol = doKinematics(manip,q,true,true,qd);
+      
       % get the coefficients for this point
       
-      [wingvel_world, dwingvel_worlddq, dwingvel_worlddqd] = obj.computeWingVelocity(manip, q, qd);
+      [ wingvel_world, wingYunit ] = obj.computeWingVelocity(manip, q, qd, kinsol);
+      wingvel_rel = obj.computeWingVelocityRelative(manip, kinsol, wingvel_world);
+      
+      
       
       airspeed = norm(wingvel_world);
       
       aoa = -(180/pi)*atan2(wingvel_rel(3),wingvel_rel(1));
       
-      Cl = obj.fCl_control_surface(aoa, control_surface_rad);
+      aoa = deg2rad(aoa);
+      
+      aoa = deg2rad(20);
+      
+      
+      % linearize about u = 0
+      
+      du = 0.01;
+      
+      Cl_linear = (obj.fCl_control_surface(aoa, du) - obj.fCl_control_surface(aoa, -du) ) / (2*du);
+      Cd_linear = (obj.fCd_control_surface(aoa, du) - obj.fCd_control_surface(aoa, -du) ) / (2*du);
+      Cm_linear = (obj.fCm_control_surface(aoa, du) - obj.fCm_control_surface(aoa, -du) ) / (2*du);
+      
+      
+      % debug data to create plots
+      control_surface_range = obj.getControlSurfaceRange();
+      aoa_range = repmat(aoa, 1, length(control_surface_range));
+      Cl = obj.fCl_control_surface(aoa_range, control_surface_range);
+      Cd = obj.fCd_control_surface(aoa_range, control_surface_range);
+      Cm = obj.fCm_control_surface(aoa_range, control_surface_range);
+      
+      figure(1)
+      clf
+      plot(rad2deg(control_surface_range), Cl)
+      hold on
+      plot(rad2deg(control_surface_range), Cl_linear * control_surface_range, 'r');
+      
+      figure(2)
+      clf
+      plot(rad2deg(control_surface_range), Cd)
+      hold on
+      plot(rad2deg(control_surface_range), Cd_linear * control_surface_range, 'g');
+      
+      figure(3)
+      clf
+      plot(rad2deg(control_surface_range), Cm);
+      hold on
+      plot(rad2deg(control_surface_range), Cm_linear * control_surface_range, 'k');
       
       
       
-    
+      keyboard
+      % 
+      
+         
     end
     
     
@@ -117,9 +174,9 @@ classdef RigidBodySubWingWithControlSurface < RigidBodySubWing
       aoa_range = [-180:2:-(obj.stall_angle+.0001) -obj.stall_angle:2*obj.stall_angle/laminarpts:(obj.stall_angle-.0001) obj.stall_angle:2:180];
       aoa_range = deg2rad(aoa_range);
       
-      control_surface_increment = 0.01; % in radians
       
-      control_surface_range = obj.control_surface.min_deflection : control_surface_increment : obj.control_surface.max_deflection;
+      
+      control_surface_range = obj.getControlSurfaceRange();
       
       [ fCl, fCd, fCm, aoa_mat, control_surface_mat] = obj.flatplateControlSurface(aoa_range, control_surface_range);
       
@@ -191,6 +248,16 @@ classdef RigidBodySubWingWithControlSurface < RigidBodySubWing
       fCm = obj.rho .* r .* sin(aoa_mat + control_surface_mat) .* cos(aoa_mat + control_surface_mat) .* control_surface_area;
       
       
+    end
+    
+    function control_surface_range = getControlSurfaceRange(obj)
+      % Returns a range of values between the minimum and maximum
+      % deflection of the control surface
+      %
+      %
+      % @retval control_surface_range the range as an array
+      
+      control_surface_range = obj.control_surface.min_deflection : obj.control_surface_increment : obj.control_surface.max_deflection;
     end
     
     
