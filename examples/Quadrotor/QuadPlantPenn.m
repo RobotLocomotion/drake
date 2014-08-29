@@ -1,24 +1,23 @@
-classdef QuadPlantPenn < DrakeSystem
-    % Modified from Daniel Mellinger, Nathan Michael, Vijay Kumar,
-    % "Trajectory Generation and Control for Precise Aggressive Maneuvers with Quadrotors"
-    
-    properties
-    end
+classdef QuadPlantPenn < SecondOrderSystem
+    % Modified from D. Mellinger, N. Michael, and V. Kumar, 
+    % "Trajectory generation and control for precise aggressive maneuvers with quadrotors",
+    %  In Proceedings of the 12th International Symposium on Experimental Robotics (ISER 2010), 2010. 
     
     methods
         function obj = QuadPlantPenn()
-            obj = obj@DrakeSystem(12,0,4,12,0,1);
+            obj = obj@SecondOrderSystem(6,4,1);
+            obj = setStateFrame(obj,CoordinateFrame('QuadState',12,'x',{'x','y','z','roll','pitch','yaw','xdot','ydot','zdot','rolldot','pitchdot','yawdot'}));
             obj = obj.setOutputFrame(obj.getStateFrame);
         end
         
-        function xdot = dynamics(obj,t,x,u)
+        function qdd = sodynamics(obj,t,q,qd,u)
             % States
             % x
             % y
             % z
-            % phi
-            % theta
-            % psi
+            % phi (roll)
+            % theta (pitch)
+            % psi (yaw)
             % xdot
             % ydot
             % zdot
@@ -32,6 +31,9 @@ classdef QuadPlantPenn < DrakeSystem
             invI = diag(1./[0.0023,0.0023,0.004]);
             g = 9.81;
             L = 0.1750;
+            
+            % states
+            x = [q;qd];
                         
             phi = x(4);
             theta = x(5);
@@ -87,8 +89,10 @@ classdef QuadPlantPenn < DrakeSystem
             rpy_ddot = Phi*R*pqr_dot + reshape((dPhi*[phidot;thetadot;psidot]),3,3)*R*pqr + ...
                        Phi*Rdot*pqr;
 
-            xdot = [x(7:12);xyz_ddot;rpy_ddot];
-           
+            % xdot = [x(7:12);xyz_ddot;rpy_ddot];
+            qdd = [xyz_ddot;rpy_ddot];
+            
+            
         end
         
         function y = output(obj,t,x,u)
