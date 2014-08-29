@@ -45,17 +45,22 @@ options.left_foot_name = 'l_foot';
 lfoot_ind = findLinkInd(r,options.left_foot_name);
 rfoot_ind = findLinkInd(r,options.right_foot_name);  
 
-support_times(2) = support_times(2);
+% support_times(5) = support_times(5)+0.2;
 % manually specifiy modes for now
 % supports = [RigidBodySupportState(r,lfoot_ind); ...
 %   RigidBodySupportState(r,[lfoot_ind,rfoot_ind]); ...
 %   RigidBodySupportState(r,rfoot_ind); ...
 %   RigidBodySupportState(r,rfoot_ind)];
-supports = [RigidBodySupportState(r,lfoot_ind); ...
-  RigidBodySupportState(r,[lfoot_ind,rfoot_ind],{{'heel','toe'},{'heel'}}); ...
+% supports = [RigidBodySupportState(r,lfoot_ind); ...
+%   RigidBodySupportState(r,[lfoot_ind,rfoot_ind],{{'heel','toe'},{'heel'}}); ...
+%   RigidBodySupportState(r,[lfoot_ind,rfoot_ind]); ...
+%   RigidBodySupportState(r,[lfoot_ind,rfoot_ind],{{'toe','heel'},{'toe','heel'}});...
+%   RigidBodySupportState(r,rfoot_ind)];
+supports = [RigidBodySupportState(r,[lfoot_ind,rfoot_ind]); ...
   RigidBodySupportState(r,[lfoot_ind,rfoot_ind]); ...
-  RigidBodySupportState(r,[lfoot_ind,rfoot_ind],{{'toe'},{'toe','heel'}});...
-  RigidBodySupportState(r,rfoot_ind)];
+  RigidBodySupportState(r,[lfoot_ind,rfoot_ind]); ...
+  RigidBodySupportState(r,[lfoot_ind,rfoot_ind]); ...
+  RigidBodySupportState(r,[lfoot_ind,rfoot_ind])];
 
 if segment_number<1
   B=Btraj;
@@ -79,11 +84,11 @@ ctrl_data = FullStateQPControllerData(true,struct(...
   'supports',supports));
 
 % instantiate QP controller
-options.slack_limit = 0;
+options.slack_limit = inf;
 options.w_qdd = 0.0*ones(nq,1);
 options.w_grf = 0.0;
 options.w_slack = 0.0;
-options.Kp_accel = 1.0;
+options.Kp_accel = 0.0;
 options.contact_threshold = 0.001;
 qp = FullStateQPController(r,ctrl_data,options);
 
@@ -105,7 +110,6 @@ output_select(1).output=1;
 sys = mimoCascade(sys,v,[],[],output_select);
 warning(S);
 
-tspan = xtraj.tspan();
 traj = simulate(sys,[t0 tf],xtraj.eval(t0));
 playback(v,traj,struct('slider',true));
 

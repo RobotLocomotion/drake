@@ -161,7 +161,7 @@ classdef FullStateQPController < MIMODrakeSystem
       x0 = ctrl_data.x0;
       u0 = ctrl_data.u0;
     end
-    
+
     support_bodies = [];
     contact_pts = {};
     contact_groups = {};
@@ -251,8 +251,8 @@ classdef FullStateQPController < MIMODrakeSystem
     %----------------------------------------------------------------------
     % Set up problem constraints ------------------------------------------
 
-    lb = [r.umin' -1e3*ones(1,nq) zeros(1,nf)   -obj.slack_limit*ones(1,neps)]'; % qddot/contact forces/slack vars
-    ub = [r.umax' 1e3*ones(1,nq) 1e3*ones(1,nf) obj.slack_limit*ones(1,neps)]';
+    lb = [r.umin' -inf*ones(1,nq) zeros(1,nf)   -obj.slack_limit*ones(1,neps)]'; % qddot/contact forces/slack vars
+    ub = [r.umax' inf*ones(1,nq) inf*ones(1,nf) obj.slack_limit*ones(1,neps)]';
 
     Aeq_ = cell(1,2);
     beq_ = cell(1,2);
@@ -301,7 +301,7 @@ classdef FullStateQPController < MIMODrakeSystem
     %----------------------------------------------------------------------
     % Solve QP ------------------------------------------------------------
 
-    REG = 1e-7;
+    REG = 1e-8;
 
     IR = eye(nparams);  
     lbind = lb>-999;  ubind = ub<999;  % 1e3 was used like inf above... right?
