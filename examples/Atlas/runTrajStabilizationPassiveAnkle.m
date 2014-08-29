@@ -29,8 +29,20 @@ v = r.constructVisualizer;
 v.display_dt = 0.01;
 
 data_dir = fullfile(getDrakePath,'examples','Atlas','data');
-traj_file = strcat(data_dir,'/atlas_passiveankle_traj_lqr_082914.mat');
+traj_file = strcat(data_dir,'/atlas_passiveankle_traj_lqr_082914_2.mat');
 load(traj_file);
+
+%%% this is converting the trajectory to a zoh
+if true
+  t_t = xtraj.pp.breaks;
+  x = xtraj.eval(t_t);
+  qtraj = PPTrajectory(foh(t_t,x(1:r.getNumPositions,:)));
+  qdtraj = PPTrajectory(zoh(t_t,[x(1+r.getNumPositions:end,2:end) zeros(r.getNumVelocities,1)]));
+  xtraj = [qtraj;qdtraj];
+end
+
+
+
 xtraj = xtraj.setOutputFrame(getStateFrame(r));
 % v.playback(xtraj,struct('slider',true));
 
@@ -57,6 +69,7 @@ rfoot_ind = findLinkInd(r,options.right_foot_name);
 %   RigidBodySupportState(r,rfoot_ind)];
 supports = [RigidBodySupportState(r,lfoot_ind); ...
   RigidBodySupportState(r,[lfoot_ind,rfoot_ind],{{'heel','toe'},{'heel'}}); ...
+  RigidBodySupportState(r,[lfoot_ind,rfoot_ind],{{'toe'},{'heel'}}); ...
   RigidBodySupportState(r,[lfoot_ind,rfoot_ind],{{'toe'},{'heel','toe'}}); ...
   RigidBodySupportState(r,rfoot_ind)];
 
@@ -109,6 +122,8 @@ output_select(1).system=1;
 output_select(1).output=1;
 sys = mimoCascade(sys,v,[],[],output_select);
 warning(S);
+
+x0 = xtraj.eval(t0);
 
 traj = simulate(sys,[t0 tf],xtraj.eval(t0));
 playback(v,traj,struct('slider',true));

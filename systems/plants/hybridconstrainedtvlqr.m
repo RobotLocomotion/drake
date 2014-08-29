@@ -53,12 +53,26 @@ if ~isfield(options,'use_joint_limits')
   options.use_joint_limits = false;
 end
 
+if ~isfield(options,'use_zoh_qd')
+  options.use_zoh_qd = false;
+end
+
+if ~isfield(options,'shift_times')
+  options.shift_times = false;
+end
+
 %extract hybrid sequence
 t_t = xtraj.pp.breaks;
 t_t = unique([tspan(1) t_t(t_t >= tspan(1) & t_t <= tspan(2)) tspan(2)]);
 x = xtraj.eval(t_t);
 u = utraj.eval(t_t);
 l = ltraj.eval(t_t);
+
+if options.use_zoh_qd
+  qtraj = PPTrajectory(foh(t_t,x(1:obj.getNumPositions,:)));
+  qdtraj = PPTrajectory(zoh(t_t,[x(1+obj.getNumPositions:end,2:end) zeros(obj.getNumVelocities,1)]));
+  xtraj = [qtraj;qdtraj];
+end
 
 if options.use_joint_limits
   nJL = obj.getNumJointLimitConstraints;
@@ -71,6 +85,11 @@ nC = obj.getNumContactPairs;
 
 jl_indices = l(1:nJL,:) > options.force_threshold;
 contact_indices = l([1:4:end],:) > options.force_threshold;
+
+if options.shift_times
+  mask = [ones(size(contact_indices,1),1) contact_indices(:,1:end-1)]
+  contact_indices = contact_indices.*mask;
+end
 
 mode = [jl_indices;contact_indices]; 
 

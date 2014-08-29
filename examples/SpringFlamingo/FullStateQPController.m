@@ -161,6 +161,7 @@ classdef FullStateQPController < MIMODrakeSystem
       x0 = ctrl_data.x0;
       u0 = ctrl_data.u0;
     end
+    q0 = x0(1:nq);
 
     support_bodies = [];
     contact_pts = {};
@@ -222,8 +223,15 @@ classdef FullStateQPController < MIMODrakeSystem
       terrain_pts = getTerrainContactPoints(r,active_supports,active_contact_groups);
       pts = [terrain_pts.pts];
       xz_pts = pts([1 3],:);
-      [~,Jp] = forwardKin(r,kinsol,active_supports,xz_pts,0);
+      [xp,Jp] = forwardKin(r,kinsol,active_supports,xz_pts,0);
       Jpdot = forwardJacDot(r,kinsol,active_supports,pts,0);
+     
+      % compute foor placement error
+      kinsol0 = r.doKinematics(q0);
+      xp0 = forwardKin(r,kinsol0,active_supports,xz_pts,0);
+      xoffset = mean(xp(1,:) - xp0(1,:))
+      x0(1) = x0(1) - xoffset;
+      
       % delete y rows
       yind = 2:3:nc*3;
       Jpdot(yind,:) = [];
