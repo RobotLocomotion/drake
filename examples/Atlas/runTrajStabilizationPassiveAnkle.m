@@ -45,7 +45,6 @@ options.left_foot_name = 'l_foot';
 lfoot_ind = findLinkInd(r,options.left_foot_name);
 rfoot_ind = findLinkInd(r,options.right_foot_name);  
 
-support_times(2) = support_times(2);
 % manually specifiy modes for now
 % supports = [RigidBodySupportState(r,lfoot_ind); ...
 %   RigidBodySupportState(r,[lfoot_ind,rfoot_ind]); ...
@@ -85,7 +84,7 @@ ctrl_data = FullStateQPControllerData(true,struct(...
   'supports',supports));
 
 % instantiate QP controller
-options.slack_limit = 0;
+options.slack_limit = inf;
 options.w_qdd = 0.0*ones(nq,1);
 options.w_grf = 0.0;
 options.w_slack = 0.0;
@@ -111,33 +110,7 @@ output_select(1).output=1;
 sys = mimoCascade(sys,v,[],[],output_select);
 warning(S);
 
-tspan = xtraj.tspan();
- x00 = xtraj.eval(t0);
-x0 = [    0*0.2787
-    0.9169
-    0.5230
-   -0.3310
-    0.0975
-   -0.2587
-   -0.2620
-   -1.0492
-    0.4058
-    0.1204
-    0.4830
-   -0.0126
-    0.3500
-   -1.7175
-    4.5903
-   -2.0720
-   -0.0007
-   -1.0841
-    2.4412
-   -1.7072];
- 
- x0(1) = x00(1);
- x0(11:end) = x00(11:end);
-
-traj = simulate(sys,[t0 tf],x0);
+traj = simulate(sys,[t0 tf],xtraj.eval(t0));
 playback(v,traj,struct('slider',true));
 
 end
