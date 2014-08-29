@@ -1,7 +1,9 @@
 function testJointOffsetCalibration
 options.floating = 'rpy';
-w = warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
-r = RigidBodyManipulator(fullfile('../../../../examples/Atlas/urdf/atlas_minimal_contact.urdf'),options);
+w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
+warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
+warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
+r = RigidBodyManipulator(fullfile('../../../examples/Atlas/urdf/atlas_minimal_contact.urdf'),options);
 warning(w);
 
 bodies{1} = r.findLinkInd('utorso');
