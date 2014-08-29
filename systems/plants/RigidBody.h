@@ -6,7 +6,7 @@
 #include <set>
 #include <Eigen/StdVector>
 #include <memory>
-#include "joints/DrakeJoint.h"
+#include "DrakeJoint.h"
 
 class IndexRange {
  public:
