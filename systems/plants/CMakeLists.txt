@@ -14,8 +14,8 @@ endif()
 
 if (eigen3_FOUND)
   # todo: check eigen version.  3.1.0 didn't work for clang.  3.2.0 did.
-
-  add_library(drakeRBM SHARED RigidBodyManipulator.cpp RigidBody.cpp)
+ include_directories( joints )
+ add_library(drakeRBM SHARED RigidBodyManipulator.cpp RigidBody.cpp)
  target_link_libraries(drakeRBM drakeCollision drakeJoints)
 
   pods_install_libraries(drakeRBM)
