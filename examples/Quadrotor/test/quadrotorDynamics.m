@@ -5,7 +5,7 @@ warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
 warning(w);
 
 % URDF model and hand-written model from Penn
-% addpath('../QuadPlantPenn');
+addpath(fullfile(pwd,'..'));
 p1 = RigidBodyManipulator('../quadrotor.urdf',struct('floating',true));
 p2 = QuadPlantPenn();
 
