@@ -654,7 +654,7 @@ classdef RigidBodyManipulator < Manipulator
         feedthrough = false;
         for i=1:length(model.sensor)
           model.sensor{i} = model.sensor{i}.compile(model);
-          outframe{i} = model.sensor{i}.constructFrame(model);
+          outframe{i} = model.sensor{i}.coordinate_frame;
           feedthrough = feedthrough || model.sensor{i}.isDirectFeedthrough;
         end
         fr = MultiCoordinateFrame.constructFrame(outframe);
