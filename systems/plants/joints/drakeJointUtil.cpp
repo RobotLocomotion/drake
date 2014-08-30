@@ -7,6 +7,7 @@
 #include "QuaternionFloatingJoint.h"
 #include "RollPitchYawFloatingJoint.h"
 #include <cmath>
+#include <stdexcept>
 
 using namespace Eigen;
 
