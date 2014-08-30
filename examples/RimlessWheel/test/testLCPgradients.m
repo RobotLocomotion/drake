@@ -8,7 +8,7 @@ m = PlanarRigidBodyManipulator('../RimlessWheel.urdf',options);
 warning(w);
 
 p = TimeSteppingRigidBodyManipulator(m,.01);
-x0 = double(p.resolveConstraints([0;0;randn;5*rand;randn;5*rand]));
+x0 = double(p.resolveConstraints([0;0;rand;5*rand;rand;5*rand]));
 v = p.constructVisualizer();
 v.draw(0,x0);
 
