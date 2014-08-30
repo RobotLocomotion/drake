@@ -83,6 +83,14 @@ produced by a propeller on an airplane, or thrusters on the hands and
 feet of an Atlas robot to make Iron Man.</xs:documentation>
                 </xs:annotation>
             </xs:element>
+<xs:element name="propellor" type="propellor">
+                <xs:annotation>
+                    <xs:documentation>Propellor elements produce both a thrust at a point on the parent body in a
+specified direction, along with a moment whose axis is the same as the thrust axis. This is useful for modelling propellors,
+which typically produce both a thrust and a moment due to aerodynamic drag. The magnitude of the force and torque are scaled 
+from an input to the system, with different scalings for each.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
             <xs:element name="added_mass" type="added_mass">
                 <xs:annotation>
                     <xs:documentation> Places added-mass coefficients on a point on the parent body. Added-mass forces act like a 'drag' that is proportional to the acceleration of the body, rather than the velocity. Important when the body is comparable in mass to the surrounding fluid, or if rapid motions are needed. 
