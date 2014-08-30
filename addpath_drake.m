@@ -79,6 +79,8 @@ clear util/getDrakePath;
 
 checkDependency('spotless'); % require spotless
 tf = checkDependency('lcm'); % optional dependency on lcm, but load it now
-tf = checkDependency('pathlcp'); % optional dependency, but load it now (since that's how it was being done before)
+
+% set up PATH LCP license
+setenv('PATH_LICENSE_STRING', '1926793586&Courtesy&&&USR&54782&7_1_2014&1000&PATH&GEN&31_12_2015&0_0_0&5000&0_0');
 
 end
