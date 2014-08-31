@@ -22,8 +22,8 @@ classdef RigidBodyJointSensor < RigidBodySensor
     end
     
     function obj = compile(obj,manip)
-      obj = compile@RigidBodySensor(obj,manip);
       obj.state_mask = [manip.body([manip.body.has_position_sensor] & [manip.body.robotnum]==obj.robotnum).position_num];
+      obj = compile@RigidBodySensor(obj,manip);
     end
         
   end
