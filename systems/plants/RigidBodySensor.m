@@ -16,7 +16,7 @@ classdef RigidBodySensor < RigidBodyElement
   
   methods 
     function obj = compile(obj,manip)
-      obj.frame = constructFrame(obj,manip);
+      obj.coordinate_frame = constructFrame(obj,manip);
     end
     
     function obj = updateBodyIndices(obj,map_from_old_to_new)
