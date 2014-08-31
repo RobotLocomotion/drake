@@ -650,22 +650,21 @@ classdef RigidBodyManipulator < Manipulator
         model = constructStateFrame(model);
       end
 
-      if length(model.sensor)>0
-        feedthrough = false;
-        for i=1:length(model.sensor)
-          model.sensor{i} = model.sensor{i}.compile(model);
-          outframe{i} = model.sensor{i}.coordinate_frame;
-          feedthrough = feedthrough || model.sensor{i}.isDirectFeedthrough;
-        end
-        fr = MultiCoordinateFrame.constructFrame(outframe);
-        if ~isequal_modulo_transforms(fr,getOutputFrame(model)) % let the previous handle stay valid if possible
-          model = setNumOutputs(model,fr.dim);
-          model = setOutputFrame(model,fr);
-        end
-        model = setDirectFeedthrough(model,feedthrough);
-      else
+      % create output frame using sensors
+      feedthrough = false;
+      for i=1:length(model.sensor)
+        model.sensor{i} = model.sensor{i}.compile(model);
+        outframe{i} = model.sensor{i}.coordinate_frame;
+        feedthrough = feedthrough || model.sensor{i}.isDirectFeedthrough;
+      end
+      fr = MultiCoordinateFrame.constructFrame(outframe);
+      if fr.dim==0 % there are no sensor outputs, so output the full state instead
         model = setOutputFrame(model,getStateFrame(model));  % output = state
         model = setDirectFeedthrough(model,false);
+      elseif ~isequal_modulo_transforms(fr,getOutputFrame(model)) % let the previous handle stay valid if possible
+        model = setNumOutputs(model,fr.dim);
+        model = setOutputFrame(model,fr);
+        model = setDirectFeedthrough(model,feedthrough);
       end
 
       if (length(model.loop)>0)
@@ -1623,7 +1622,7 @@ classdef RigidBodyManipulator < Manipulator
       if nargin<2, robotnum=1; end
       fr = obj.robot_velocity_frames{robotnum};
     end
-    
+
     function fr = getStateFrame(obj,robotnum)
       if nargin<2,
         fr = getStateFrame@DrakeSystem(obj);
@@ -2301,8 +2300,6 @@ classdef RigidBodyManipulator < Manipulator
 
       if node.hasAttribute('has_position_sensor')
         model.body(child).has_position_sensor = str2num(char(node.getAttribute('has_position_sensor')));
-      else
-        model.body(child).has_position_sensor = true;
       end
     end
 
@@ -2379,13 +2376,13 @@ classdef RigidBodyManipulator < Manipulator
       if ~isempty(elnode)
         [model,fe] = RigidBodyBuoyant.parseURDFNode(model,robotnum,elnode,options);
       end
-      
+
       elnode = node.getElementsByTagName('propellor').item(0);
       if ~isempty(elnode)
         [model,fe] = RigidBodyPropellor.parseURDFNode(model,robotnum,elnode,options);
       end
-      
-      
+
+
 
       if ~isempty(fe)
         model.force{end+1} = fe;
