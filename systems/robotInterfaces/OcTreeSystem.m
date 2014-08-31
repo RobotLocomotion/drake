@@ -6,7 +6,8 @@ classdef OcTreeSystem < DrakeSystem
   properties
     manip;
     tree;
-    sensors;
+    sensor;
+    range_percentage_threshold=.95; % we need to discard returns at the max range of the sensor (which are not real hits). this is the threshold percentage of total range above which to discard the points
   end
   
   methods
@@ -32,41 +33,54 @@ classdef OcTreeSystem < DrakeSystem
       end
       typecheck(octree,'OcTree');
       
-      sensors={};
+      sensor={};
       sensor_frame={};
       for i=1:length(rigid_body_manipulator.sensor)
         if isa(rigid_body_manipulator.sensor{i},'RigidBodyDepthSensor')
-          sensors = horzcat(sensors,rigid_body_manipulator.sensor{i});
-          sensor_frame = horzcat(sensor_frame,rigid_body_manipulator.sensor{i}.coordinate_frame);
+          sensor = horzcat(sensor,{rigid_body_manipulator.sensor{i}});
+          sensor_frame = horzcat(sensor_frame,{rigid_body_manipulator.sensor{i}.coordinate_frame});
         end
       end
-      input_frame = MultiCoordinateFrame.constructFrame(horzcat(rigid_body_manipulator.getPositionFrame,sensor_frame));
+      input_frame = MultiCoordinateFrame.constructFrame(horzcat({rigid_body_manipulator.getPositionFrame},sensor_frame));
 
       % note that this system has hidden state because of the octree handle
       % object
       obj = obj@DrakeSystem(0,0,input_frame.dim,0,true,true);
       obj.manip = rigid_body_manipulator;
       obj.tree = octree;
-      obj.sensors = sensors;
+      obj.sensor = sensor;
+      obj = setInputFrame(obj,input_frame);
     end
     
-    function obj = enableLCMGL(obj,lcmgl_channel)
-      obj.tree = enableLCMGL(obj.tree,lcmgl_channel);
+    function enableLCMGL(obj,lcmgl_channel)
+      enableLCMGL(obj.tree,lcmgl_channel);
+    end
+    
+    function ts = getSampleTime(obj)
+      ts = [-1;1];  % inherited sample time, fixed in minor offset
     end
 
-    function y = output(~,~,u)
-      inputs = splitCoordinates(obj,u); % {q,depth_sensor_1,depth_sensor_2,...}
+    function y = output(obj,~,~,u)
+      input = splitCoordinates(getInputFrame(obj),u); % {q,depth_sensor_1,depth_sensor_2,...}
       kinsol = doKinematics(obj.manip,input{1});
-      for i=1:length(obj.sensors)
-        points = reshape(inputs{i-1},3,[]);
+      for i=1:length(obj.sensor)
+        points = reshape(input{i+1},3,[]);
+
+        % don't add points that are at the sensor's max range
+        dist = sum(points.^2,1);
+        points = points(:,dist<obj.range_percentage_threshold*(obj.sensor{i}.range^2));
+        
+        % tranform to world coordinates
         points_in_world_frame = forwardKin(obj.manip,kinsol,obj.sensor{i}.frame_id,points);
         
+        % add to the tree
         % note that this call produces a persistent change in the tree (even
         % though the object is not returned, because the tree is a handle
         % object)
         insertPointCloud(obj.tree,points_in_world_frame,forwardKin(obj.manip,kinsol,obj.sensor{i}.frame_id,zeros(3,1)));
       end
       publishLCMGL(obj.tree);  % will do nothing unless we've called enableLCMGL
+      y=[];
     end
   end
     
