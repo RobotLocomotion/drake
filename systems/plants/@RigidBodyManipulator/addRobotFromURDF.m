@@ -145,11 +145,6 @@ for i=1:length(rootlink)
   end
 end
 
-if options.sensors
-  % add a rigid body joint sensor which gets used by any sensors which parse in the "has_position_sensor" tag
-  model = addSensor(model,RigidBodyJointSensor(model,robotnum));
-end
-
 % finish parameter parsing
 for i=1:length(model.body)
   model.body(i) = bindParams(model.body(i),model,pval);
