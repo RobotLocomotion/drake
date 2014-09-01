@@ -105,6 +105,7 @@ classdef RigidBodySubWingWithControlSurface < RigidBodySubWing
       
       
       % debug data to create plots
+      %{
       control_surface_range = obj.getControlSurfaceRange();
       aoa_range = repmat(aoa, 1, length(control_surface_range));
       Cl = obj.fCl_control_surface(aoa_range, control_surface_range);
@@ -128,7 +129,7 @@ classdef RigidBodySubWingWithControlSurface < RigidBodySubWing
       plot(rad2deg(control_surface_range), Cm);
       hold on
       plot(rad2deg(control_surface_range), Cm_linear * control_surface_range, 'k');
-      
+      %}
       f_lift = Cl_linear * airspeed*airspeed;
       f_drag = Cd_linear * airspeed*airspeed;
       torque_moment = Cm_linear * airspeed * airspeed;
