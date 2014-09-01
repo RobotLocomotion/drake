@@ -92,6 +92,17 @@ classdef RigidBodyWing < RigidBodyForceElement
       end
     end
         
+    function obj = setInputNum(obj, input_num)
+      % override RigidBodyForceElement.setInputNum to support subwings.
+      
+      obj.input_num = input_num;
+      
+      for i = 1 : length(obj.subwings)
+        if obj.subwings{i}.has_control_surface
+          obj.subwings{i} = obj.subwings{i}.setInputNum(input_num);
+        end
+      end
+    end
     
 
   end

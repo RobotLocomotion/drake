@@ -78,6 +78,7 @@ classdef RigidBodySubWingWithControlSurface < RigidBodySubWing
       
       kinsol = doKinematics(manip,q,true,true,qd);
       
+      
       % get the coefficients for this point
       
       [ wingvel_world, wingYunit ] = obj.computeWingVelocity(manip, q, qd, kinsol);
@@ -128,10 +129,52 @@ classdef RigidBodySubWingWithControlSurface < RigidBodySubWing
       hold on
       plot(rad2deg(control_surface_range), Cm_linear * control_surface_range, 'k');
       
+      f_lift = Cl_linear * airspeed*airspeed;
+      f_drag = Cd_linear * airspeed*airspeed;
+      torque_moment = Cm_linear * airspeed * airspeed;
+      
+      % initalize B
+      B_force = manip.B*0*q(1);
+      
+      lift_axis_in_body_frame = [0; 0; 1]; % z axis is up
+      drag_axis_in_body_frame = [0; 1; 0];
+      moment_axis_in_body_frame = [1; 0; 0];
+      
+      % position of origin
+      [origin_in_world_frame, J] = forwardKin(manip, kinsol, obj.kinframe, zeros(3,1));
+      
+      % TODO: check if this is redundant and is always [0 0 1]'
+      
+      lift_axis_in_world_frame = forwardKin(manip, kinsol, obj.kinframe, lift_axis_in_body_frame);
+      lift_axis_in_world_frame = lift_axis_in_world_frame - origin_in_world_frame;
+     
       
       
-      keyboard
-      % 
+      B_lift = f_lift * J' * lift_axis_in_world_frame;
+      
+      
+      drag_axis_in_world_frame = forwardKin(manip, kinsol, obj.kinframe, drag_axis_in_body_frame);
+      drag_axis_in_world_frame = drag_axis_in_world_frame - origin_in_world_frame;
+      
+      
+      B_drag = f_drag * J' * drag_axis_in_world_frame;
+      
+      
+      
+      moment_axis_in_world_frame = forwardKin(manip, kinsol, obj.kinframe, moment_axis_in_body_frame);
+      moment_axis_in_world_frame = moment_axis_in_world_frame - origin_in_world_frame;
+      
+      
+      B_moment = torque_moment * J' * moment_axis_in_world_frame;
+      
+      
+      
+      
+      B_force(:, obj.input_num) = B_lift + B_drag + B_moment; 
+      
+      dB_force = 0; %todo
+      
+       
       
          
     end

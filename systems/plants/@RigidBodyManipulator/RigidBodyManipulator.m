@@ -564,7 +564,7 @@ classdef RigidBodyManipulator < Manipulator
         if model.force{i}.direct_feedthrough_flag
           input_num = size(B,2)+1;
           B(1,size(B,2)+1) = 0; %Add another column to B
-          model.force{i}.input_num = input_num;
+          model.force{i} = model.force{i}.setInputNum(input_num);
           u_limit(size(u_limit,1)+1,:) = model.force{i}.input_limits;
         end
       end
