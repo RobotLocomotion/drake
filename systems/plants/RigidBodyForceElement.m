@@ -19,6 +19,10 @@ classdef RigidBodyForceElement < RigidBodyElement
     function obj = updateBodyCoordinates(obj,body_ind,T_old_body_to_new_body)
       error('probably need to implement this (see changeRootLink)');
     end
+    
+    function obj = setInputNum(obj, input_num)
+      obj.input_num = input_num;
+    end
   end
   
   methods (Static=true)
