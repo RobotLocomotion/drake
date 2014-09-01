@@ -45,24 +45,31 @@ classdef RigidBodyWing < RigidBodyForceElement
         error('computeSpatialForce called with no subwings.');
       end
       
+      control_surface_flag = false;
+      
       for i = 1 : length(obj.subwings)
         
         if (obj.subwings{i}.has_control_surface)
+          
+          if control_surface_flag
+            error('multiple control surfaces on one wing not supported.');
+          end
+          
+          control_surface_flag = true;
+          
           [force, B_force, dforce, dB_force ] = obj.subwings{i}.computeSpatialForce(manip,q,qd);
           
-          if i ~= 1
-            error('uh oh');
-          end
         else
         
           [this_force, this_dforce] = obj.subwings{i}.computeSpatialForce(manip, q, qd);
-           if i == 1
-          force = this_force;
-          dforce = this_dforce;
-        else
-          error('not yet implemented');
+          if i == 1
+            force = this_force;
+            dforce = this_dforce;
+          else
+            force = force + this_force;
+            dforce = dforce + this_dforce;
           
-        end
+          end
         end
         
        
