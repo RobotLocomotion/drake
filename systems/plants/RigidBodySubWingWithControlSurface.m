@@ -92,8 +92,6 @@ classdef RigidBodySubWingWithControlSurface < RigidBodySubWing
       
       aoa = deg2rad(aoa);
       
-      aoa = deg2rad(20);
-      
       
       % linearize about u = 0
       
