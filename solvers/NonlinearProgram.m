@@ -670,6 +670,9 @@ classdef NonlinearProgram
         end
         obj.solver = solver;
       elseif(strcmp(solver,'fmincon'))
+        if(~checkDependency('fmincon'))
+          error('Drake:NonlinearProgram:UnsupportedSolver',' fmincon support is disabled. To enable it, install MATLAB Optimization toolbox');
+        end
         obj.solver = solver;
       elseif(strcmp(solver,'ipopt'))
         if(~checkDependency('ipopt'))
@@ -679,10 +682,11 @@ classdef NonlinearProgram
       elseif(strcmp(solver,'default'))
         if(checkDependency('snopt'))
           obj = obj.setSolver('snopt');
-        else
+        elseif(checkDependency('fmincon'))
           obj = obj.setSolver('fmincon');
+        elseif(checkDependency('ipopt'))
+          obj = obj.setSolver('ipopt');
         end
-        
       end
     end
     
@@ -881,14 +885,18 @@ classdef NonlinearProgram
     
     function [x,objval,exitflag,execution_time] = compareSolvers(obj,x0,solvers)
       if nargin<3
-        solvers = {'fmincon'};
-        snopt_enabled = checkDependency('snopt');
-        if(snopt_enabled)
+        solvers = {};
+        if(checkDependency('fmincon'))
+          solvers = [solvers,{'fmincon'}];
+        end
+        if(checkDependency('snopt'))
           solvers = [solvers,{'snopt'}];
         end
-        ipopt_enabled = checkDependency('ipopt');
-        if(ipopt_enabled)
+        if(checkDependency('ipopt'))
           solvers = [solvers,{'ipopt'}];
+        end
+        if(isempty(solvers))
+          error('Drake:NonlinearProgram:NoNLPSolver','Cannot find any nonlinear program solvers, please ensure that either fmincon, snopt or ipopt is installed');
         end
       end
        
