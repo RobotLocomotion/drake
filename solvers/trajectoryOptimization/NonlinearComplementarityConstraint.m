@@ -20,6 +20,10 @@ classdef NonlinearComplementarityConstraint < CompositeConstraint
   %         z + f(x,z) - sqrt(z^2 + f(x,z)^2) (elementwise)
   % mode 4: (prox)
   %         z - max(0,z - r*f(x,z)) for some r
+  properties
+    slack_fun = [] % function to solve for slack variables,  where slack = slack_fun(x,z)
+  end
+  
   methods
     
     function obj = NonlinearComplementarityConstraint(fun,xdim,zdim,mode,slack)
@@ -97,6 +101,14 @@ classdef NonlinearComplementarityConstraint < CompositeConstraint
       end
       
       obj = obj@CompositeConstraint(constraints, n);
+      
+      switch mode
+        case 1
+        case 2
+          obj.slack_fun = fun;
+        case 3
+        case 4
+      end
     end
   end
 end

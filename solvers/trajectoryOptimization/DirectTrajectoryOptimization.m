@@ -206,7 +206,12 @@ classdef DirectTrajectoryOptimization < NonlinearProgram
 
         %simulate
         sys_ol = cascade(traj_init.u,obj.plant);
-        [~,x_sim] = sys_ol.simulate([t_init(1) t_init(end)]);
+        if ~isfield(traj_init,'x0')
+          [~,x_sim] = sys_ol.simulate([t_init(1) t_init(end)]);
+        else
+          [~,x_sim] = sys_ol.simulate([t_init(1) t_init(end)],traj_init.x0);
+        end
+        
         z0(obj.x_inds) = x_sim.eval(t_init);
       end
     end
