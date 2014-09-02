@@ -4,7 +4,6 @@ urdf = [getDrakePath,'/examples/Atlas/urdf/atlas_minimal_contact.urdf'];
 options.floating = true;
 w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
 %warning('off','Drake:RigidBodyManipulator:ReplacedCylinder');
-warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
 r = RigidBodyManipulator(urdf,options);
 warning(w);
 nq = r.getNumPositions();

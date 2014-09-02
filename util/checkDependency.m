@@ -106,7 +106,7 @@ if ~ok
     case 'snopt'
       conf.snopt_enabled = logical(exist('snset','file'));
       if (~conf.snopt_enabled)
-        conf.snopt_enabled = pod_pkg_config('snopt') && logical(exist('snopt','file'));
+        conf.snopt_enabled = pod_pkg_config('snopt') && logical(exist('snset','file'));
       end
 
       if ~conf.snopt_enabled && nargout<1

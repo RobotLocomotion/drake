@@ -1,7 +1,6 @@
 function [p,xtraj,utraj,ltraj,ljltraj,z,F,info,traj_opt] = testNewTrajOpt(xtraj,utraj,ltraj,ljltraj)
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
 warning('off','Drake:RigidBodyManipulator:WeldedLinkInd');
-warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
 options.terrain = RigidBodyFlatTerrain();
 options.floating = true;
 options.ignore_self_collisions = true;
@@ -16,7 +15,7 @@ T0 = 3;
 
 % periodic constraint
 R_periodic = zeros(p.getNumStates,2*p.getNumStates);
-R_periodic(2,2) = 1; %z 
+R_periodic(2,2) = 1; %z
 R_periodic(3,3) = 1; %pitch-hip w/symmetry
 R_periodic(3,5) = 1; %pitch-hip w/symmetry
 R_periodic(4,6) = 1; %knee w/symmetry
@@ -44,7 +43,7 @@ N2 = floor(N/2);
 
 if nargin < 2
   %Try to come up with a reasonable trajectory
-  x1 = [.3;1;pi/8-pi/16;pi/8;-pi/8;pi/8;zeros(6,1)];  
+  x1 = [.3;1;pi/8-pi/16;pi/8;-pi/8;pi/8;zeros(6,1)];
   t_init = linspace(0,T0,N);
 %   traj_init.x = PPTrajectory(foh(t_init,linspacevec(x0,xf,N)));
 traj_init.x = PPTrajectory(foh(t_init,[linspacevec(x0,x1,N2), linspacevec(x1,xf,N-N2)]));

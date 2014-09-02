@@ -3,7 +3,6 @@ checkDependency('lcmgl');
 w = warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
 warning('off','Drake:RigidBody:NonPositiveInertiaMatrix');
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
-warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
 warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
 robot = RigidBodyManipulator([getDrakePath,'/examples/Atlas/urdf/atlas_minimal_contact.urdf'],struct('floating',true));
 monkeybar_urdf = [getDrakePath,'/solvers/trajectoryOptimization/test/MonkeyBar.urdf'];
@@ -52,7 +51,7 @@ inactive_i = 8*ones(8,1);
 inactive_j = (1:8)';
 active_i = [];
 active_j = [];
-for i = 1:6 
+for i = 1:6
   active_idx_i = find(contact_pt_active(:,i));
   inactive_idx_i = find(~contact_pt_active(:,i));
   inactive_i = [inactive_i;(i+8)*ones(length(inactive_idx_i),1)];
@@ -75,7 +74,7 @@ inactive_i = 8*ones(8,1);
 inactive_j = (1:8)';
 active_i = [];
 active_j = [];
-for i = 1:6 
+for i = 1:6
   active_idx_i = find(contact_pt_active_complementarity(:,i));
   inactive_idx_i = find(~contact_pt_active_complementarity(:,i));
   inactive_i = [inactive_i;(i+8)*ones(length(inactive_idx_i),1)];
