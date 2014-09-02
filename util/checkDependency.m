@@ -324,6 +324,16 @@ if ~ok
         conf.pathlcp_enabled = false;
       end
       
+    case 'fmincon'
+      conf.fmincon_enabled = logical(exist('fmincon.m','file'));
+      if(~conf.fmincon_enabled)
+        if nargout<1
+          disp(' ');
+          disp(' fmincon support is disabled. To enable it, install MATLAB Optimization toolbox');
+          disp(' ');
+        end
+      end
+        
     otherwise
 
       % todo: call ver(dep) here?
