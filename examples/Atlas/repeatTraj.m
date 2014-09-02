@@ -17,6 +17,13 @@ upts_N = utraj.eval(ts_N);
 Btraj_N = Btraj;
 Straj_N = Straj;
 
+size_xpts = size(xpts_N);
+if length(size_xpts)==3
+  % due to PPTrajectory bug...
+  xpts_N = reshape(xpts_N, size_xpts(1), size_xpts(3));
+end
+
+
 parity = 1;
 for i=1:N
   if flip_lr

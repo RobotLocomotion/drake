@@ -29,19 +29,19 @@ v = r.constructVisualizer;
 v.display_dt = 0.01;
 
 data_dir = fullfile(getDrakePath,'examples','Atlas','data');
-traj_file = strcat(data_dir,'/atlas_passiveankle_traj_lqr_082914_2.mat');
+traj_file = strcat(data_dir,'/atlas_passiveankle_traj_lqr_zoh.mat');
 load(traj_file);
 
-%[xtraj,utraj,Btraj,Straj_full] = repeatTraj(r,xtraj,utraj,Btraj,Straj_full,1,true);
+[xtraj,utraj,Btraj,Straj_full] = repeatTraj(r,xtraj,utraj,Btraj,Straj_full,3,true);
 
 %%% this is converting the trajectory to a zoh
-if true
-  t_t = xtraj.pp.breaks;
-  x = xtraj.eval(t_t);
-  qtraj = PPTrajectory(foh(t_t,x(1:r.getNumPositions,:)));
-  qdtraj = PPTrajectory(zoh(t_t,[x(1+r.getNumPositions:end,2:end) zeros(r.getNumVelocities,1)]));
-  xtraj = [qtraj;qdtraj];
-end
+% if true
+%   t_t = xtraj.pp.breaks;
+%   x = xtraj.eval(t_t);
+%   qtraj = PPTrajectory(foh(t_t,x(1:r.getNumPositions,:)));
+%   qdtraj = PPTrajectory(zoh(t_t,[x(1+r.getNumPositions:end,2:end) zeros(r.getNumVelocities,1)]));
+%   xtraj = [qtraj;qdtraj];
+% end
 
 xtraj = xtraj.setOutputFrame(getStateFrame(r));
 % v.playback(xtraj,struct('slider',true));
@@ -79,7 +79,7 @@ supports_right = [RigidBodySupportState(r,rfoot_ind); ...
   RigidBodySupportState(r,[rfoot_ind,lfoot_ind],{{'toe'},{'heel','toe'}}); ...
   RigidBodySupportState(r,lfoot_ind)];
 
-supports = [supports_left; supports_right];
+supports = [supports_left; supports_right; supports_left; supports_right];
 
 
 if segment_number<1
