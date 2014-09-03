@@ -3,7 +3,6 @@ function runPassiveLCP
 options.floating = true;
 options.twoD = true;
 options.terrain = RigidBodyFlatTerrain();
-%options.sensors = true;  
 w = warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
 p = TimeSteppingRigidBodyManipulator('RimlessWheel.urdf',.01,options);
 warning(w);
