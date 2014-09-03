@@ -14,7 +14,7 @@ traj_file = strcat(data_dir,'/atlas_passiveankle_traj_lqr_082914_2.mat');
 load(traj_file);
 
 Q = diag([100*ones(p.getNumPositions,1);10*ones(p.getNumVelocities,1)]);
-R = 0.001*eye(getNumInputs(p));
+R = 0.01*eye(getNumInputs(p));
 Qf = Q;
 
 t_t = xtraj.pp.breaks;
@@ -23,6 +23,9 @@ qtraj = PPTrajectory(foh(t_t,x(1:p.getNumPositions,:)));
 qdtraj = PPTrajectory(zoh(t_t,[x(1+p.getNumPositions:end,2:end) zeros(p.getNumVelocities,1)]));
 xtraj = [qtraj;qdtraj];
 
+t_t = utraj.pp.breaks;
+u = utraj.eval(t_t);
+utraj = PPTrajectory(zoh(t_t,u));
 
 [c,Ktraj,Straj,Ptraj,Btraj,tvec,Straj_full,Ftraj] = hybridconstrainedtvlqr(p,xtraj,utraj,ltraj,Q,R,Qf);
 
