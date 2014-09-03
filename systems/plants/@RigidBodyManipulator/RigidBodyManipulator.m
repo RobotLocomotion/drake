@@ -649,12 +649,29 @@ classdef RigidBodyManipulator < Manipulator
       if getNumStates(model)>0
         model = constructStateFrame(model);
       end
+      
+      if any([model.body.has_position_sensor])
+        % add a rigid body joint sensor if necessary
+        robotnums = unique([model.body([model.body.has_position_sensor]).robotnum]);
+        for i=1:numel(robotnums)
+          already_has_sensor = false;
+          for j=1:length(model.sensor)
+            if isa(model.sensor{j},'RigidBodyJointSensor') && model.sensor{j}.robotnum==i
+              already_has_sensor=true;
+              break;
+            end
+          end
+          if ~already_has_sensor
+            model = addSensor(model,RigidBodyJointSensor(model,i));
+          end
+        end
+      end
 
       if length(model.sensor)>0
         feedthrough = false;
         for i=1:length(model.sensor)
           model.sensor{i} = model.sensor{i}.compile(model);
-          outframe{i} = model.sensor{i}.constructFrame(model);
+          outframe{i} = model.sensor{i}.coordinate_frame;
           feedthrough = feedthrough || model.sensor{i}.isDirectFeedthrough;
         end
         fr = MultiCoordinateFrame.constructFrame(outframe);
@@ -1727,6 +1744,10 @@ classdef RigidBodyManipulator < Manipulator
           frame = model.frame(-model.force{i}.kinframe);
           inputparents = [inputparents model.body(frame.body_ind)];
           inputnames{end+1} = model.force{i}.name;
+        elseif isa(model.force{i},'RigidBodyPropellor')
+          frame = model.frame(-model.force{i}.kinframe);
+          inputparents = [inputparents model.body(frame.body_ind)];
+          inputnames{end+1} = model.force{i}.name;
         end
       end
       for i=1:length(model.name)
@@ -1900,6 +1921,9 @@ classdef RigidBodyManipulator < Manipulator
         end
         for j=1:length(model.frame)
           model.frame(j) = updateForRemovedLink(model.frame(j),model,i);
+        end
+        for key = model.collision_filter_groups.keys
+          model.collision_filter_groups(key{1}) = updateForRemovedLink(model.collision_filter_groups(key{1}),model,i,parent.linkname,key{1});
         end
 
         % remove actuators
@@ -2294,8 +2318,6 @@ classdef RigidBodyManipulator < Manipulator
 
       if node.hasAttribute('has_position_sensor')
         model.body(child).has_position_sensor = str2num(char(node.getAttribute('has_position_sensor')));
-      else
-        model.body(child).has_position_sensor = true;
       end
     end
 
@@ -2372,6 +2394,13 @@ classdef RigidBodyManipulator < Manipulator
       if ~isempty(elnode)
         [model,fe] = RigidBodyBuoyant.parseURDFNode(model,robotnum,elnode,options);
       end
+      
+      elnode = node.getElementsByTagName('propellor').item(0);
+      if ~isempty(elnode)
+        [model,fe] = RigidBodyPropellor.parseURDFNode(model,robotnum,elnode,options);
+      end
+      
+      
 
       if ~isempty(fe)
         model.force{end+1} = fe;

@@ -15,9 +15,8 @@ classdef RigidBodySensor < RigidBodyElement
   end
   
   methods 
-    function obj = compile(obj,manip);
-      % intentionally do nothing here, but can be overloaded if this
-      % functionality is needed
+    function obj = compile(obj,manip)
+      obj.coordinate_frame = constructFrame(obj,manip);
     end
     
     function obj = updateBodyIndices(obj,map_from_old_to_new)
@@ -31,6 +30,7 @@ classdef RigidBodySensor < RigidBodyElement
   
   properties
     name;  % name of this sensor as a string
+    coordinate_frame;  % the output frame associated with this sensor
   end
 end
     

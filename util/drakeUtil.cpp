@@ -58,8 +58,13 @@ bool mexCallMATLABsafe(int nlhs, mxArray* plhs[], int nrhs, mxArray* prhs[], con
 }
 
 
-
-mxArray* createDrakeMexPointer(void* ptr, const char* name, int num_additional_inputs, mxArray* delete_fcn_additional_inputs[])
+/*
+ * @param subclass_name (optional) if you want to call a class that derives from
+ * DrakeMexPointer (e.g. so that you can refer to it as something more specific in
+ * your matlab code), then you can pass in the alternative name here.  The constructor
+ * for this class must take the same inputs as the DrakeMexPointer constructor.
+ */
+mxArray* createDrakeMexPointer(void* ptr, const char* name, int num_additional_inputs, mxArray* delete_fcn_additional_inputs[], const char* subclass_name)
 {
 	mxClassID cid;
 	if (sizeof(ptr)==4) cid = mxUINT32_CLASS;
@@ -83,7 +88,16 @@ mxArray* createDrakeMexPointer(void* ptr, const char* name, int num_additional_i
 //  mexPrintf("deleteMethod = %s\n name =%s\n", deleteMethod,name);
 
   // call matlab to construct mex pointer object
-  mexCallMATLABsafe(1,plhs,nrhs,prhs,"DrakeMexPointer");
+  if (subclass_name) {
+    mexCallMATLABsafe(1,plhs,nrhs,prhs,subclass_name);
+    if (!isa(plhs[0],"DrakeMexPointer")) {
+      mxDestroyArray(plhs[0]);
+      mexErrMsgIdAndTxt("Drake:createDrakeMexPointer:InvalidSubclass","subclass_name is not a valid subclass of DrakeMexPointer");
+    }
+  }
+  else
+    mexCallMATLABsafe(1,plhs,nrhs,prhs,"DrakeMexPointer");
+
   mexLock();
 
 //  mexPrintf("incrementing lock count\n");
