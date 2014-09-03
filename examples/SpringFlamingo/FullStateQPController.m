@@ -269,7 +269,7 @@ classdef FullStateQPController < MIMODrakeSystem
     if nc>0
       Aeq_{1} = H*Iqdd - B*Iu - Dbar*Ibeta;
     else
-      Aeq_{1} = H*Iqdd;
+      Aeq_{1} = H*Iqdd - B*Iu;
     end
     beq_{1} = -C;
 
@@ -287,23 +287,20 @@ classdef FullStateQPController < MIMODrakeSystem
     % QP cost function ----------------------------------------------------
     %
     % min: ubar*R*ubar + 2*xbar'*S*B*u + w_eps*quad(epsilon) + w_grf*quad(beta) 
-    if nc > 0
-      xbar = x-x0; 
-      Hqp = Iu'*R*Iu;
+    xbar = x-x0; 
+    Hqp = Iu'*R*Iu;
       
-      fqp = xbar'*S*B_ls*Iu;
+    fqp = xbar'*S*B_ls*Iu;
 %       Kp = 1; Kd = 1.0*sqrt(Kp);
 %       qdd_des = Kp*(x0(1:nq)-x(1:nq)) + Kd*(x0(nq+(1:nq))-x(nq+(1:nq)))
 %       fqp = -qdd_des'*Q*Iqdd;
-      fqp = fqp - u0'*R*Iu;
+    fqp = fqp - u0'*R*Iu;
 %       fqp = -u0'*R*Iu;
 
-      Hqp(nu+(1:nq),nu+(1:nq)) = diag(obj.w_qdd);
+    Hqp(nu+(1:nq),nu+(1:nq)) = diag(obj.w_qdd);
+    if nc > 0
       Hqp(nu+nq+(1:nf),nu+nq+(1:nf)) = obj.w_grf*eye(nf); 
       Hqp(nparams-neps+1:end,nparams-neps+1:end) = obj.w_slack*eye(neps); 
-    else
-      Hqp = zeros(nparams);
-      fqp = zeros(nparams,1);
     end
     
     %----------------------------------------------------------------------
@@ -354,15 +351,9 @@ classdef FullStateQPController < MIMODrakeSystem
       qp_active_set = find(abs(Ain_fqp*alpha - bin_fqp)<1e-6);
       obj.controller_data.qp_active_set = qp_active_set;
     end
-    qdd=Iqdd*alpha
     beta=Ibeta*alpha
     y = Iu*alpha     
     
-%     figure(1);
-%     imagesc(S);
-%     figure(2);
-%     imagesc(xbar);
-%     
   end
   end
 
