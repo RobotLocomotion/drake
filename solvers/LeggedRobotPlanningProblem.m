@@ -8,6 +8,8 @@ classdef LeggedRobotPlanningProblem
     quasistatic_shrink_factor = 0.2;
     n_interp_points = 0;
     fixed_initial_state = true;
+    Q
+    v_max = 30*pi/180;
   end
   methods
     function obj = LeggedRobotPlanningProblem(robot,options)
@@ -15,6 +17,11 @@ classdef LeggedRobotPlanningProblem
       if isfield(options,'n_interp_points')
         obj.n_interp_points = options.n_interp_points;
       end
+      obj.Q = 1e0*eye(obj.robot.getNumPositions());
+      obj.Q(1,1) = 0;
+      obj.Q(2,2) = 0;
+      obj.Q(3,3) = 0;
+      obj.Q(6,6) = 0;
     end
     function obj = addSupport(obj,body_id,pts,tspan,constraints)
       support.body = obj.robot.parseBodyOrFrameID(body_id);
@@ -98,17 +105,17 @@ classdef LeggedRobotPlanningProblem
       % Add RigidBodyConstraints
       prog = obj.addRigidBodyConstraintsToPlanner(prog);
 
+      % Add Velocity constraints
+      prog = prog.addConstraint(BoundingBoxConstraint(-obj.v_max*ones(obj.robot.getNumVelocities(),prog.N-2),obj.v_max*ones(obj.robot.getNumVelocities(),prog.N-2)),prog.v_inds(:,2:end-1));
+      prog = prog.addConstraint(BoundingBoxConstraint(zeros(obj.robot.getNumVelocities(),2),zeros(obj.robot.getNumVelocities(),2)),prog.v_inds(:,[1,end]));
+
       % Set up costs
       q_nom = eval(q_nom_traj,linspace(0,1,N));
-      Q = 1e-1*eye(obj.robot.getNumPositions());
-      Q(1,1) = 0;
-      Q(2,2) = 0;
-      Q(3,3) = 0;
-      Q(6,6) = 0;
-      Q = kron(eye(prog.N),Q);
-      R = 1e-2*eye(prog.plant.getNumInputs);
-      kT = 1e-2;
-      %prog = prog.addCost(QuadraticConstraint(-inf,inf,Q,Q*reshape(q_nom,[],1)),prog.q_inds(:));
+      %Q = kron(eye(prog.N),double(obj.Q>0));
+      Q = kron(eye(prog.N),obj.Q);
+      R = 1e0*eye(prog.plant.getNumInputs);
+      kT = 1e0;
+      prog = prog.addCost(QuadraticConstraint(-inf,inf,Q,Q*reshape(q_nom,[],1)),prog.q_inds(:));
       prog = prog.addRunningCost(@(h,x,u)squaredEffort(R,h,x,u));
       prog = prog.addFinalCost(@(h,xf) finalCost(kT,h,xf));
 
