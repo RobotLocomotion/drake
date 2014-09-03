@@ -73,20 +73,21 @@ bool inSupport(std::vector<SupportStateElement> supports, int body_idx) {
   return false;
 }
 
-void collisionDetect(void* map_ptr, Vector3d const & contact_pos, Vector3d &pos, Vector3d *normal, double terrain_height)
+void collisionDetect(void* map_ptr, Vector3d const &contact_pos, Vector3d &pos, Vector3d *normal, double terrain_height)
 {
   if (map_ptr) {
 #ifdef USE_MAPS    
-    Vector3f floatPos, floatNormal;
-    auto state = static_cast<mexmaps::MapHandle*>(map_ptr);
+    Vector3d oNormal;
+    double height;
+    auto state = static_cast<terrainmap::TerrainMap*>(map_ptr);
     if (state != NULL) {
-      auto view = state->getView();
-      if (view != NULL) {
-        if (view->getClosest(contact_pos.cast<float>(),floatPos,floatNormal)) {
-          pos = floatPos.cast<double>();
-          if (normal) *normal = floatNormal.cast<double>();
-          return;
-        }
+      state->getHeightAndNormal(contact_pos(0), contact_pos(1), height, oNormal);
+      pos << contact_pos.topRows(2), height;
+      // mexPrintf("height: %f\n", height);
+      if (normal) {
+        *normal = oNormal.cast<double>();
+        // mexPrintf("normal: %f %f %f\n", (*normal)(0), (*normal)(1), (*normal)(2));
+        return;
       }
     }
 #endif      
