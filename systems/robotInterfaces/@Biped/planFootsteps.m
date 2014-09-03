@@ -62,8 +62,12 @@ if options.step_params.leading_foot == 0 % lead left
 elseif options.step_params.leading_foot == 1 % lead right
   foot1 = 'right';
   foot2 = 'left';
+elseif options.step_params.leading_foot == -1 % lead auto
+  obj.warning_manager.warnOnce('Drake:planFootsteps:LeadAutoNotImplemented', 'AUTO leading foot selection is not implemented; will lead with RIGHT foot always');
+  foot1 = 'right';
+  foot2 = 'left';
 else
-  error('Invalid value of options.step_params.leading_foot: LEAD_AUTO mode is not currently supported');
+  error('Drake:planFootsteps:InvalidLeadingFoot', 'Invalid value of options.step_params.leading_foot');
 end
 plan = FootstepPlan.blank_plan(obj, options.step_params.max_num_steps + 2, [obj.foot_frame_id.(foot1), obj.foot_frame_id.(foot2)], options.step_params, safe_regions);
 plan.footsteps(1).pos = start_pos.(foot1);
