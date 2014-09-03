@@ -15,7 +15,7 @@ load(traj_file);
 
 Q = diag([100*ones(p.getNumPositions,1);10*ones(p.getNumVelocities,1)]);
 R = 0.01*eye(getNumInputs(p));
-Qf = Q;
+Qf = 2*Q;
 
 t_t = xtraj.pp.breaks;
 x = xtraj.eval(t_t);
