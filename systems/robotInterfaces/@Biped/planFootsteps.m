@@ -63,7 +63,7 @@ elseif options.step_params.leading_foot == 1 % lead right
   foot1 = 'right';
   foot2 = 'left';
 elseif options.step_params.leading_foot == -1 % lead auto
-  warning('Drake:planFootsteps:LeadAutoNotImplemented', 'AUTO leading foot selection is not implemented; will lead with RIGHT foot always');
+  obj.warning_manager.warnOnce('Drake:planFootsteps:LeadAutoNotImplemented', 'AUTO leading foot selection is not implemented; will lead with RIGHT foot always');
   foot1 = 'right';
   foot2 = 'left';
 else
