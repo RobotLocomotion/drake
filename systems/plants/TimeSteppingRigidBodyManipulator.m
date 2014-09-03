@@ -20,7 +20,6 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
 
   methods
     function obj=TimeSteppingRigidBodyManipulator(manipulator_or_urdf_filename,timestep,options)
-      checkDependency('pathlcp');
       if (nargin<3) options=struct(); end
       if ~isfield(options,'twoD') options.twoD = false; end
 
@@ -289,7 +288,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
           D = vertcat(D{:});
           J(nL+nP+(1:nC),:) = n;
           J(nL+nP+nC+(1:mC*nC),:) = D;
-          
+
           contact_data.normal = normal;
           contact_data.d = d;
           contact_data.xA = xA;
@@ -940,7 +939,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     function model = setParams(model,p)
       model.manip = setParams(model.manip,p);
     end
-    
+
     function [lb,ub] = getStateLimits(obj)
       [lb,ub] = obj.manip.getStateLimits();
     end
@@ -963,4 +962,3 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
 
 
 end
-
