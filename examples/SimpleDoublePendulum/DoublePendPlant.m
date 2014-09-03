@@ -2,8 +2,7 @@ classdef DoublePendPlant < Manipulator
   
   properties
     % parameters from Spong95 (except inertias are now relative to the
-    % joints)
-    % axis)
+    % joint axes)
     l1 = 1; l2 = 1;  
     m1 = 1; m2 = 1;  
     g = 9.81;

@@ -94,120 +94,122 @@ end
     
   end
 
-if (nargout>0)
-  if (getNumOutputs(obj)<1) error('this dynamical system doesn''t have any outputs'); end
+pstruct.SaveFormat = 'StructureWithTime';
+pstruct.SaveTime = 'on';
+pstruct.TimeSaveName = 'tout';
+if (nargout>1)
+  pstruct.SaveState = 'on';
+else
+  pstruct.SaveState = 'off';
+end
+pstruct.StateSaveName = 'xout';
+pstruct.SaveOutput = 'on';
+pstruct.OutputSaveName = 'yout';
+pstruct.LimitDataPoints = 'off';
+%pstruct.SaveOnModelUpdate = 'false';
+%pstruct.AutoSaveOptions.SaveModelOnUpdate = 'false';
+%pstruct.AutoSaveOptions.SaveBackupOnVersionUpgrade = 'false';
+
+ts = getSampleTime(obj);
+isdiscrete = all(ts(1,:)>0);  % isDT asks for more:  must have only a single sample time
+
+if (~isdiscrete)
+  pstruct.Refine = '3';  % shouldn't do anything for DT systems
+end
   
-  pstruct.SaveFormat = 'StructureWithTime';
-  pstruct.SaveTime = 'on';
-  pstruct.TimeSaveName = 'tout';
-  if (nargout>1)
-    pstruct.SaveState = 'on';
-  else
-    pstruct.SaveState = 'off';
+%If we are using variable-step solver, and want to specify the output time
+if(isfield(options,'OutputOption'))
+  %pstruct.OutputOption='SpecifiedOutputTimes';
+  pstruct.OutputOption=options.OutputOption;
+end
+if(isfield(options,'OutputTimes'))
+  pstruct.OutputTimes=['[',num2str(options.OutputTimes),']'];
+end
+
+simout = sim(mdl,pstruct);
+
+if nargout>2 && ~isempty(log_name)
+  lcmlog = evalin('base',log_name);
+  evalin('base',['clear ',log_name]);
+end
+
+t = simout.get('tout');
+if (nargout>1)
+  xout=simout.get('xout');
+  l = {xout.signals(:).label};
+  x = [];
+  if (obj.getNumDiscStates>0)
+    x = [x;xout.signals(find(strcmp(l,'DSTATE'))).values'];
   end
-  pstruct.StateSaveName = 'xout';
-  pstruct.SaveOutput = 'on';
-  pstruct.OutputSaveName = 'yout';
-  pstruct.LimitDataPoints = 'off';
-  %pstruct.SaveOnModelUpdate = 'false';
-  %pstruct.AutoSaveOptions.SaveModelOnUpdate = 'false';
-  %pstruct.AutoSaveOptions.SaveBackupOnVersionUpgrade = 'false';
-  
-  ts = getSampleTime(obj);
-  isdiscrete = all(ts(1,:)>0);  % isDT asks for more:  must have only a single sample time
-  
-  if (~isdiscrete)
-    pstruct.Refine = '3';  % shouldn't do anything for DT systems
+  if (obj.getNumContStates>0)
+    x = [x;xout.signals(find(strcmp(l,'CSTATE'))).values'];
   end
-  
-  %If we are using variable-step solver, and want to specify the output time
-  if(isfield(options,'OutputOption'))
-    %pstruct.OutputOption='SpecifiedOutputTimes';
-    pstruct.OutputOption=options.OutputOption;
-  end
-  if(isfield(options,'OutputTimes'))
-    pstruct.OutputTimes=['[',num2str(options.OutputTimes),']'];
-  end
-  
-  simout = sim(mdl,pstruct);
-  
-  t = simout.get('tout');
-  if (nargout>1) 
-    xout=simout.get('xout');
-    l = {xout.signals(:).label};
-    x = [];
-    if (obj.getNumDiscStates>0)
-      x = [x;xout.signals(find(strcmp(l,'DSTATE'))).values'];
-    end
-    if (obj.getNumContStates>0)
-      x = [x;xout.signals(find(strcmp(l,'CSTATE'))).values'];
-    end
-  end
+end
+if getNumOutputs(obj)>0
   y = simout.get('yout').signals.values';
+else
+  y = [];
+end
 
-  if (isdiscrete)
-    ytraj = DTTrajectory(t',y);
-    ytraj = setOutputFrame(ytraj,obj.getOutputFrame);
-    if (nargout>1)
-      xtraj = DTTrajectory(t',x);
-      xtraj = setOutputFrame(xtraj,obj.getStateFrame);
+if (isdiscrete)
+  ytraj = DTTrajectory(t',y);
+  ytraj = setOutputFrame(ytraj,obj.getOutputFrame);
+  if (nargout>1)
+    xtraj = DTTrajectory(t',x);
+    xtraj = setOutputFrame(xtraj,obj.getStateFrame);
+  end
+else
+  % note: could make this more exact.  see comments in bug# 623.
+  
+  % find any zero-crossing events (they won't have the extra refine steps)
+  zcs = find(diff(t)<1e-10);
+  if (length(zcs)>0) % then we have a hybrid trajectory
+    zcs = [0;zcs;length(t)];
+    ypptraj={}; xpptraj={};
+    
+    for i=1:length(zcs)-1
+      % compute indices of this segment
+      inds = (zcs(i)+1):zcs(i+1);
+      if (length(inds)<2) % successive zero crossings?
+        % commands like this are useful for debugging here:
+        %  plot(y(2,:),y(3,:),'.-',y(2,zcs(2:end)),y(3,zcs(2:end)),'r*')
+        %  keyboard;
+        warnOnce(obj.warning_manager,'Drake:DynamicalSystem:SuccessiveZeroCrossings','successive zero crossings');
+        i=i+1;
+        continue;
+      end
+      ypptraj = {ypptraj{:},makeSubTrajectory(t([max(inds(1)-1,1),inds(2:end)]),y(:,inds))};  % use time of zc instead of 1e-10 past it.
+      ypptraj{end} = setOutputFrame(ypptraj{end},obj.getOutputFrame);
+      if (nargout>1)
+        xpptraj = {xpptraj{:},makeSubTrajectory(t([max(inds(1)-1,1),inds(2:end)]),x(:,inds))};
+        xpptraj{end} = setOutputFrame(xpptraj{end},obj.getStateFrame);
+      end
+      i=i+1;
+    end
+    if (length(ypptraj)>1)
+      ytraj = HybridTrajectory(ypptraj);
+      if (nargout>1)
+        xtraj = HybridTrajectory(xpptraj);
+      end
+    else
+      ytraj = ypptraj{1};
+      if (nargout>1)
+        xtraj = xpptraj{1};
+      end
     end
   else
-    % note: could make this more exact.  see comments in bug# 623.
-
-    % find any zero-crossing events (they won't have the extra refine steps)
-    zcs = find(diff(t)<1e-10);
-    if (length(zcs)>0) % then we have a hybrid trajectory
-      zcs = [0;zcs;length(t)];
-      ypptraj={}; xpptraj={};
-      
-      for i=1:length(zcs)-1
-        % compute indices of this segment
-        inds = (zcs(i)+1):zcs(i+1);
-        if (length(inds)<2) % successive zero crossings?
-          % commands like this are useful for debugging here:
-          %  plot(y(2,:),y(3,:),'.-',y(2,zcs(2:end)),y(3,zcs(2:end)),'r*')
-          %  keyboard;
-          warnOnce(obj.warning_manager,'Drake:DynamicalSystem:SuccessiveZeroCrossings','successive zero crossings');
-          i=i+1;
-          continue;
-        end
-        ypptraj = {ypptraj{:},makeSubTrajectory(t([max(inds(1)-1,1),inds(2:end)]),y(:,inds))};  % use time of zc instead of 1e-10 past it.
-        ypptraj{end} = setOutputFrame(ypptraj{end},obj.getOutputFrame);
-        if (nargout>1)
-          xpptraj = {xpptraj{:},makeSubTrajectory(t([max(inds(1)-1,1),inds(2:end)]),x(:,inds))};
-          xpptraj{end} = setOutputFrame(xpptraj{end},obj.getStateFrame);
-        end
-        i=i+1;
-      end
-      if (length(ypptraj)>1)
-        ytraj = HybridTrajectory(ypptraj);
-        if (nargout>1)
-          xtraj = HybridTrajectory(xpptraj);
-        end
-      else
-        ytraj = ypptraj{1};
-        if (nargout>1)
-          xtraj = xpptraj{1};
-        end
-      end
+    if isempty(y)
+      ytraj=[];
     else
       ytraj = makeSubTrajectory(t,y);
       ytraj = setOutputFrame(ytraj,obj.getOutputFrame);
-      if (nargout>1)
-        xtraj = makeSubTrajectory(t,x);
-        xtraj = setOutputFrame(xtraj,obj.getStateFrame);
-      end
+    end
+    if (nargout>1)
+      xtraj = makeSubTrajectory(t,x);
+      xtraj = setOutputFrame(xtraj,obj.getStateFrame);
     end
   end
-  
-  if nargout>2 && ~isempty(log_name)
-    lcmlog = evalin('base',log_name);
-    evalin('base',['clear ',log_name]);
-  end
-    
-else
-  sim(mdl,pstruct);
 end
 
+    
 end
