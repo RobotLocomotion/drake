@@ -83,10 +83,8 @@ void collisionDetect(void* map_ptr, Vector3d const &contact_pos, Vector3d &pos, 
     if (state != NULL) {
       state->getHeightAndNormal(contact_pos(0), contact_pos(1), height, oNormal);
       pos << contact_pos.topRows(2), height;
-      // mexPrintf("height: %f\n", height);
       if (normal) {
         *normal = oNormal.cast<double>();
-        // mexPrintf("normal: %f %f %f\n", (*normal)(0), (*normal)(1), (*normal)(2));
         return;
       }
     }
