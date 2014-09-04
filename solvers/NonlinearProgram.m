@@ -666,23 +666,27 @@ classdef NonlinearProgram
       typecheck(solver,'char');
       if(strcmp(solver,'snopt'))
         if(~checkDependency('snopt'))
-          error('Drake:NonlinearProgram:UnsupportedSolver','SNOPT is not installed');
+          error('Drake:NonlinearProgram:UnsupportedSolver',' SNOPT not found.  SNOPT support will be disabled.');
         end
         obj.solver = solver;
       elseif(strcmp(solver,'fmincon'))
+        if(~checkDependency('fmincon'))
+          error('Drake:NonlinearProgram:UnsupportedSolver',' fmincon support is disabled. To enable it, install MATLAB Optimization toolbox');
+        end
         obj.solver = solver;
       elseif(strcmp(solver,'ipopt'))
         if(~checkDependency('ipopt'))
-          error('Drake:NonlinearProgram:UnsupportedSolver','Ipopt is not installed yet');
+          error('Drake:NonlinearProgram:UnsupportedSolver',' IPOPT not found. IPOPT support will be disabled.');
         end
         obj.solver = solver;
       elseif(strcmp(solver,'default'))
         if(checkDependency('snopt'))
           obj = obj.setSolver('snopt');
-        else
+        elseif(checkDependency('fmincon'))
           obj = obj.setSolver('fmincon');
+        elseif(checkDependency('ipopt'))
+          obj = obj.setSolver('ipopt');
         end
-        
       end
     end
     
@@ -881,12 +885,18 @@ classdef NonlinearProgram
     
     function [x,objval,exitflag,execution_time] = compareSolvers(obj,x0,solvers)
       if nargin<3
-        solvers = {'fmincon'};
+        solvers = {};
+        if(checkDependency('fmincon'))
+          solvers = [solvers,{'fmincon'}];
+        end
         if(checkDependency('snopt'))
           solvers = [solvers,{'snopt'}];
         end
         if(checkDependency('ipopt'))
           solvers = [solvers,{'ipopt'}];
+        end
+        if(isempty(solvers))
+          error('Drake:NonlinearProgram:NoNLPSolver','Cannot find any nonlinear program solvers, please ensure that either fmincon, snopt or ipopt is installed');
         end
       end
        
