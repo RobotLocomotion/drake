@@ -18,13 +18,15 @@ function [dq, body1_params, body2_params, floating_states, residuals, info, J, b
 % (body1_num_paramsx1) are unknown parameters
 % @param body1_num_params number of parameters describing the positions of
 % the markers on body1
-% @param body2_data (3xm1xN) position data from the body2 markers
+% @param body2_data (3xm1xN) position data from the body2 markers. NaNs
+% should be used to indicate occluded markers
 % @param body2
 % @param body2_marker_fun a function [x,dx]=f(p) where x (3xm2) is the position of
 % the markers in the body2 frame, p (body2_num_paramsx1) are unknown parameters
 % @param body2_num_params number of parameters describing the positions of
 % the markers on body2
-% @param body2_data (3xm2xN) position data from the body2 markers
+% @param body2_data (3xm2xN) position data from the body2 markers. NaNs
+% should be used to indicate occluded markers
 %
 % @return dq The joint offsets
 % @return body1_params parameters found for body1_marker_fun
