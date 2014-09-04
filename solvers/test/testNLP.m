@@ -268,5 +268,9 @@ end
       if(info ~= 201)
         error('fmincon fails');
       end
+    elseif(strcmpi(nlp.solver,'ipopt'))
+      if(info ~= -100)
+        error('ipopt fails');
+      end
     end
   end

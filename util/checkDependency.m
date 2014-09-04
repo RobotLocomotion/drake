@@ -123,6 +123,7 @@ if ~ok
       if ~conf.ipopt_enabled && nargout<1
         disp(' ');
         disp(' IPOPT not found. IPOPT support will be disabled.');
+        disp(' ');
       end
       
     case 'vrml'
@@ -311,6 +312,16 @@ if ~ok
       end
       conf.xfoil_enabled = ~isempty(conf.xfoil);
       
+    case 'fmincon'
+      conf.fmincon_enabled = logical(exist('fmincon.m','file'));
+      if(~conf.fmincon_enabled)
+        if nargout<1
+          disp(' ');
+          disp(' fmincon support is disabled. To enable it, install MATLAB Optimization toolbox');
+          disp(' ');
+        end
+      end
+        
     otherwise
 
       % todo: call ver(dep) here?
