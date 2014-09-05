@@ -34,6 +34,7 @@ classdef RelativePosition < drakeFunction.kinematic.Kinematic
       end
       sizecheck(pts_in_A,[3,NaN]);
       n_pts_tmp = size(pts_in_A,2);
+      assert(n_pts_tmp>=1);
       output_frame = MultiCoordinateFrame.constructFrame( ...
         repmat({drakeFunction.frames.realCoordinateSpace(3)},1,n_pts_tmp));
       obj = obj@drakeFunction.kinematic.Kinematic(rbm,output_frame);
@@ -46,15 +47,15 @@ classdef RelativePosition < drakeFunction.kinematic.Kinematic
       obj.n_pts = n_pts_tmp;
     end
 
-    function [pos,J] = eval(obj,q)
+    function [pos,J] = eval(obj,kinsol)
       % pos = eval(obj,q) returns the relative positions of the points
       %
       % [pos,J] = eval(obj,q) also returns the Jacobian of the relative
       %   positions
       %
-      % @param obj  -- drakeFunction.kinematic.RelativePosition object
-      % @param q    -- Column vector of joint positions
-      kinsol = obj.rbm.doKinematics(q);
+      % @param obj    -- drakeFunction.kinematic.RelativePosition object
+      % @param kinsol -- A kinsol struct, returned from RigidBodyManipulator.doKinematics function,
+      % that stores the kinematic tree information for a posture.
       if obj.frameA == 0
         [pts_in_world,JA] = getCOM(obj.rbm,kinsol);
       else
@@ -67,8 +68,8 @@ classdef RelativePosition < drakeFunction.kinematic.Kinematic
       xyz_world_to_B = -xyz_world_to_B;
       dxyz_world_to_B = -dxyz_world_to_B*[dquat_world_to_B;dT_B_to_world(1:3,:)];
 
-      pts_in_B = zeros(3,obj.n_pts)*q(1);
-      J = zeros(3*obj.n_pts,obj.rbm.getNumPositions())*q(1);
+      pts_in_B = zeros(3,obj.n_pts);
+      J = zeros(3*obj.n_pts,obj.rbm.getNumPositions());
       for i = 1:obj.n_pts
         [pts_in_B1,dpts_in_B1] = quatRotateVec(quat_world_to_B,pts_in_world(:,i));
         dpts_in_B1 = dpts_in_B1*[dquat_world_to_B;JA(3*(i-1)+(1:3),:)];

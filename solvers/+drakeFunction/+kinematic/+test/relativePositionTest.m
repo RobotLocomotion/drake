@@ -36,7 +36,8 @@ function relativePositionTest(visualize)
   hand_pts_fcn = RelativePosition(rbm,'l_hand','world',hand_pts_in_body);
 
   % Evaluate that DrakeFunction
-  [pos,J] = hand_pts_fcn(q0);
+  kinsol0 = rbm.doKinematics(q0,false,false);
+  [pos,J] = hand_pts_fcn.eval(kinsol0);
 
   if visualize
     lcmgl.glColor3f(1,0,0);
@@ -49,7 +50,7 @@ function relativePositionTest(visualize)
   end
 
   % Check the gradients of the DrakeFunction
-  [f,df] = geval(@(q) eval(hand_pts_fcn,q),q0,struct('grad_method',{{'user','taylorvar'}},'tol',1e-6));
+  [f,df] = geval(@(q) eval(hand_pts_fcn,rbm.doKinematics(q)),q0,struct('grad_method',{{'user','numerical'}},'tol',1e-4));
 
 
   %% Solve an inverse kinematics problem
@@ -91,7 +92,7 @@ function relativePositionTest(visualize)
   weights_frame = frames.realCoordinateSpace(foot_pts_fcn.n_pts);
 
   % Create a DrakeFunction that computes the COM position
-  com_fcn = RelativePosition(rbm,0,'world');
+  com_fcn = WorldPosition(rbm,0);
   % Add unused inputs for the weights
   com_fcn = addInputFrame(com_fcn,weights_frame);
 
@@ -130,11 +131,11 @@ function relativePositionTest(visualize)
   q_inds = prog.q_idx;
   w_inds = reshape(prog.num_vars+(1:foot_pts_fcn.n_pts),[],1);
   prog = prog.addDecisionVariable(numel(w_inds));
+  
+  prog = prog.addConstraint(foot_on_ground_cnstr,q_inds,prog.kinsol_dataind);
+  prog = prog.addConstraint(hand_on_ground_cnstr,q_inds,prog.kinsol_dataind);
 
-  prog = prog.addConstraint(foot_on_ground_cnstr,q_inds);
-  prog = prog.addConstraint(hand_on_ground_cnstr,q_inds);
-
-  prog = prog.addConstraint(qsc_cnstr{1},[q_inds;w_inds]);
+%   prog = prog.addConstraint(qsc_cnstr{1},[{q_inds};{w_inds}],{1});
   prog = prog.addConstraint(qsc_cnstr{2},w_inds);
   prog = prog.addConstraint(qsc_cnstr{3},w_inds);
 

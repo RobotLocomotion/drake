@@ -21,15 +21,15 @@ classdef RelativeQuaternion < drakeFunction.kinematic.Kinematic
       obj.frameA = obj.rbm.parseBodyOrFrameID(frameA);
       obj.frameB = obj.rbm.parseBodyOrFrameID(frameB);
     end
-    function [quat,dquat] = eval(obj,q)
+    function [quat,dquat] = eval(obj,kinsol)
       % quat = eval(obj,q) returns the relative quaternion
       %
       % [quat,dquat] = eval(obj,q) also returns the Jacobian of the relative
       %   quaternion
       %
-      % @param obj  -- drakeFunction.kinematic.RelativeQuaternion object
-      % @param q    -- Column vector of joint positions
-      kinsol = obj.rbm.doKinematics(q);
+      % @param obj    -- drakeFunction.kinematic.RelativeQuaternion object
+      % @param kinsol -- A Kinsol struct returned from RigidBodyManipulator.doKinematics function,
+      % stores the information about the kinematic tree
       [pos_A,J_A] = forwardKin(obj.rbm,kinsol,obj.frameA,[0;0;0],2);
       [pos_B,J_B] = forwardKin(obj.rbm,kinsol,obj.frameB,[0;0;0],2);
       quat_a2w = pos_A(4:7,1);
