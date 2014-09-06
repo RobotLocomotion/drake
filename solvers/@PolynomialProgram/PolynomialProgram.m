@@ -153,6 +153,32 @@ classdef PolynomialProgram < NonlinearProgram
     function obj = replaceBoundingBoxConstraint(obj,cnstr,cnstr_idx,xind)
       error('Drake:PolynomialProgram:UnsupportedConstraint','PolynomialProgram does support replaceBoundingBoxConstraint yet, but we will implement it as soon as possible');
     end
+    
+    function obj = setSolver(obj,solver)
+      % @param solver   -- 'gloptipoly' or 'bertini' or 'default' or the solvers in
+      % NonlinearProgram. The default solver is gloptipoly
+      typecheck(solver,'char');
+      switch(lower(solver))
+        case 'gloptipoly'
+          if(~checkDependency('gloptipoly3'))
+            error('Drake:PolynomialProgram:UnsupportedSolver',' Gloptipoly3 not found.');
+          end
+        case 'bertini'
+          if(~checkDependency('bertini'))
+            error('Drake:PolynomialProgram:UnsupportedSolver',' Bertini not found.');
+          end
+        case 'default'
+          if(checkDependency('gloptipoly3'))
+            obj = setSolver(obj,'gloptipoly');
+          elseif(checkDependency('bertini'))
+            obj = setSolver(obj,'bertini');
+          else
+            obj = setSolver@NonlinearProgram(obj,'default');
+          end
+        otherwise
+          obj = setSolver@NonlinearProgram(obj,solver);
+      end
+    end
   end
   
 end
