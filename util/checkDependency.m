@@ -321,7 +321,17 @@ if ~ok
           disp(' ');
         end
       end
-        
+      
+    case 'quadprog'
+      conf.quadprog_enabled = logical(exist('quadprog.m','file'));
+      if(~conf.quadprog_enabled)
+        if nargout<1
+          disp(' ');
+          disp(' quadprog support is disabled. To enable it, install MATLAB Optimization toolbox');
+          disp(' ');
+        end
+      end
+      
     otherwise
 
       % todo: call ver(dep) here?

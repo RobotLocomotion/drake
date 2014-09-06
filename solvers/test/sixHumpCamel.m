@@ -19,4 +19,17 @@ hold on;
 plot3(xstar(1),xstar(2),fval,'r*','MarkerSize',10,'LineWidth',3);
 hold off;
 
-compareSolvers(prog,randn(2,1))
+solvers = {};
+if(checkDependency('gloptipoly3'))
+  solvers = [solvers,{'gloptipoly'}];
+end
+if(checkDependency('bertini'))
+  solvers = [solvers,{'bertini'}];
+end
+if(checkDependency('snopt'))
+  solvers = [solvers,{'snopt'}];
+end
+if(checkDependency('fmincon'))
+  solvers = [solvers,{'fmincon'}];
+end
+compareSolvers(prog,randn(2,1),solvers)
