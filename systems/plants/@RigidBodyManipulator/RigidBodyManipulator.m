@@ -1447,7 +1447,13 @@ classdef RigidBodyManipulator < Manipulator
           % construct J such that J'*z is the contact force vector in joint
           J = [n;cell2mat(D')];
           % similarly, construct dJz
-          dJz = matGradMult([dn;cell2mat(dD')],z,true);
+          dJ = zeros(numel(J),nq);
+          J_idx = reshape(1:numel(J),size(J,1),size(J,2));
+          Jn_idx = J_idx(1:size(n,1),:);
+          JD_idx = J_idx(size(n,1)+1:end,:);
+          dJ(Jn_idx(:),:) = dn;
+          dJ(JD_idx(:),:) = cell2mat(dD');
+          dJz = matGradMult(dJ,z,true);
 
           ceq = [C-B*u-J'*z; phiC];
           GCeq = [[dC(1:nq,1:nq)-dJz,-B,-J']',[n'; zeros(nu+nz,length(phiC))]];
