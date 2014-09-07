@@ -52,6 +52,7 @@ addpath(fullfile(root,'systems','trajectories'));
 addpath(fullfile(root,'systems','frames'));
 addpath(fullfile(root,'systems','visualizers'));
 addpath(fullfile(root,'systems','robotInterfaces'));
+addpath(fullfile(root,'systems','robotInterfaces','calibration'));
 addpath(fullfile(root,'solvers'));
 addpath(fullfile(root,'solvers','trajectoryOptimization'));
 addpath(fullfile(root,'util'));
