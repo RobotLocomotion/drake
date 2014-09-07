@@ -306,29 +306,33 @@ classdef Visualizer < DrakeSystem
         q = x0(1:numel(x0)/2);
         qd = x0(numel(x0)/2+1:end);
         
-        force = sparse(6,size(visualized_system.body,2));
-        for i=1:length(visualized_system.force)
-          if ~visualized_system.force{i}.direct_feedthrough_flag
-            force = force + computeSpatialForce(visualized_system.force{i},visualized_system,q,qd);
-          end
-        end
+        lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton,'force');
+        lcmgl.glColor3f(1,0,0);
         
         gravity_force = getMass(visualized_system)*visualized_system.gravity;
         robot_com = getCOM(visualized_system,q);
-        
-        lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton,'force');
-        lcmgl.glColor3f(1,0,0);
-
         lcmgl.glPushMatrix();
         lcmgl.glTranslated(robot_com(1),robot_com(2),robot_com(3)-.125);
         lcmgl.glRotated(90, 0, 1, 0);
         lcmgl.drawArrow3d(.25,0.01,0.01,0.0025);
         lcmgl.glPopMatrix();
         
-        lcmgl.switchBuffers();
+        lcmgl.glColor3f(.5,.5,0);
+        for i=1:length(visualized_system.force)
+          if ~visualized_system.force{i}.direct_feedthrough_flag && isa(visualized_system.force{i},'RigidBodyWing')
+            wing_force = computeSpatialForce(visualized_system.force{i},visualized_system,q,qd);
+            frame = getFrame(visualized_system,visualized_system.force{i}.kinframe);
+            point = frame.T(1:3,4);
+            force_v = wing_force(4:6,frame.body_ind);
+            lcmgl.glPushMatrix();
+            lcmgl.glTranslated(point(1),point(2),point(3)-norm(force_v,2)/2);
+            lcmgl.glRotated(0,force_v(1),force_v(2),force_v(3));
+            lcmgl.drawArrow3d(norm(force_v,2),0.01,0.01,0.0025);
+            lcmgl.glPopMatrix();
+          end
+        end
         
-        display(full(force));
-        display(full(gravity_force));
+        lcmgl.switchBuffers();
         obj.drawWrapper(t,x0);
       end
       
