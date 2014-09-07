@@ -27,7 +27,7 @@ endif
 CMAKE_MAKE_PROGRAM="`cmake -LA -N | grep CMAKE_MAKE_PROGRAM | cut -d "=" -f2`"
 
 all: pod-build/Makefile
-	cd pod-build && $(CMAKE_MAKE_PROGRAM) all install
+	cd pod-build && $(CMAKE_MAKE_PROGRAM) install
 
 pod-build/Makefile:
 	$(MAKE) configure
