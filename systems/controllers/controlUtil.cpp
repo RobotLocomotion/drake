@@ -302,3 +302,4 @@ template void angleDiff(const MatrixBase<Vector3d> &, const MatrixBase<Vector3d>
 template mxArray* eigenToMatlab(Matrix<double,-1,-1> &);
 template mxArray* eigenToMatlab(Matrix<double,-1,1> &);
 template mxArray* eigenToMatlab(Matrix<double,6,1> &);
+template mxArray* eigenToMatlab(Matrix<double,3,1> &);
