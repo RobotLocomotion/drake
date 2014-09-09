@@ -305,7 +305,7 @@ classdef CoordinateFrame < handle
       % with strings
       %
       
-      if (iscell(cnames) && isvector(cnames) && length(cnames)==obj.dim && all(cellfun(@ischar,cnames)))
+      if (iscellstr(cnames) && isvector(cnames) && length(cnames)==obj.dim)
         obj.coordinates=cnames;
       else
         error('cnames must be a cell vector of length dim populated with strings'); 
