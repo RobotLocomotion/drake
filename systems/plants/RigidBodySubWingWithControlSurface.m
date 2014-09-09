@@ -12,6 +12,7 @@ classdef RigidBodySubWingWithControlSurface < RigidBodySubWing
     fCm_control_surface; 
     
     control_surface_increment = 0.01; % resolution of control surface parameterization in radians
+    lcmgl;
   end
   
   methods
@@ -46,6 +47,7 @@ classdef RigidBodySubWingWithControlSurface < RigidBodySubWing
       
       [obj.fCl_control_surface, obj.fCd_control_surface, obj.fCm_control_surface ] = obj.flateplateControlSurfaceInterp();
       
+      obj = obj.enableLCMGL();
       
       
       
@@ -103,31 +105,44 @@ classdef RigidBodySubWingWithControlSurface < RigidBodySubWing
       
       
       % debug data to create plots
+      
       %{
-      control_surface_range = obj.getControlSurfaceRange();
-      aoa_range = repmat(aoa, 1, length(control_surface_range));
-      Cl = obj.fCl_control_surface(aoa_range, control_surface_range);
-      Cd = obj.fCd_control_surface(aoa_range, control_surface_range);
-      Cm = obj.fCm_control_surface(aoa_range, control_surface_range);
-      
-      figure(1)
-      clf
-      plot(rad2deg(control_surface_range), Cl)
-      hold on
-      plot(rad2deg(control_surface_range), Cl_linear * control_surface_range, 'r');
-      
-      figure(2)
-      clf
-      plot(rad2deg(control_surface_range), Cd)
-      hold on
-      plot(rad2deg(control_surface_range), Cd_linear * control_surface_range, 'g');
-      
-      figure(3)
-      clf
-      plot(rad2deg(control_surface_range), Cm);
-      hold on
-      plot(rad2deg(control_surface_range), Cm_linear * control_surface_range, 'k');
+      % begin_debug
+        control_surface_range = obj.getControlSurfaceRange();
+        aoa_range = repmat(aoa, 1, length(control_surface_range));
+        Cl = obj.fCl_control_surface(aoa_range, control_surface_range);
+        Cd = obj.fCd_control_surface(aoa_range, control_surface_range);
+        Cm = obj.fCm_control_surface(aoa_range, control_surface_range);
+
+        figure(1)
+        clf
+        plot(rad2deg(control_surface_range), Cl)
+        hold on
+        plot(rad2deg(control_surface_range), Cl_linear * control_surface_range, 'r');
+        xlabel('Control surface deflection (deg)');
+        ylabel('Coefficient of lift');
+        title(['aoa = ' num2str(rad2deg(aoa))]);
+
+        figure(2)
+        clf
+        plot(rad2deg(control_surface_range), Cd)
+        hold on
+        plot(rad2deg(control_surface_range), Cd_linear * control_surface_range, 'g');
+        xlabel('Control surface deflection (deg)');
+        ylabel('Coefficient of drag');
+        title(['aoa = ' num2str(rad2deg(aoa))]);
+
+        figure(3)
+        clf
+        plot(rad2deg(control_surface_range), Cm);
+        hold on
+        plot(rad2deg(control_surface_range), Cm_linear * control_surface_range, 'k');
+        xlabel('Control surface deflection (deg)');
+        ylabel('Moment coefficient');
+        title(['aoa = ' num2str(rad2deg(aoa))]);
+      % end_debug
       %}
+      
       f_lift = Cl_linear * airspeed*airspeed;
       f_drag = Cd_linear * airspeed*airspeed;
       torque_moment = Cm_linear * airspeed * airspeed;
@@ -136,8 +151,8 @@ classdef RigidBodySubWingWithControlSurface < RigidBodySubWing
       B_force = manip.B*0*q(1);
       
       lift_axis_in_body_frame = [0; 0; 1]; % z axis is up
-      drag_axis_in_body_frame = [0; 1; 0];
-      moment_axis_in_body_frame = [1; 0; 0];
+      drag_axis_in_body_frame = [1; 0; 0];
+      
       
       % position of origin
       [origin_in_world_frame, J] = forwardKin(manip, kinsol, obj.kinframe, zeros(3,1));
@@ -146,7 +161,6 @@ classdef RigidBodySubWingWithControlSurface < RigidBodySubWing
       
       lift_axis_in_world_frame = forwardKin(manip, kinsol, obj.kinframe, lift_axis_in_body_frame);
       lift_axis_in_world_frame = lift_axis_in_world_frame - origin_in_world_frame;
-     
       
       
       B_lift = f_lift * J' * lift_axis_in_world_frame;
@@ -159,25 +173,54 @@ classdef RigidBodySubWingWithControlSurface < RigidBodySubWing
       B_drag = f_drag * J' * drag_axis_in_world_frame;
       
       
+      % use two forces in opposite directions one meter away to create a
+      % torque (a couple)
       
-      moment_axis_in_world_frame = forwardKin(manip, kinsol, obj.kinframe, moment_axis_in_body_frame);
-      moment_axis_in_world_frame = moment_axis_in_world_frame - origin_in_world_frame;
+      moment_location_in_body_frame1 = [1; 0; 0];
+      moment_location_in_body_frame2 = [-1; 0; 0];
       
+      moment_direction_in_body_frame1 = [0; 0; 1];
+      moment_direction_in_body_frame2 = [0; 0; -1];
       
-      B_moment = torque_moment * J' * moment_axis_in_world_frame;
+      [moment_location_in_world_frame1, J1] = forwardKin(manip, kinsol, obj.kinframe, moment_location_in_body_frame1);
+      moment_axis_in_world_frame1 = forwardKin(manip, kinsol, obj.kinframe, moment_direction_in_body_frame1);
+      moment_axis_in_world_frame1 = moment_axis_in_world_frame1 - moment_location_in_world_frame1;
       
+      [moment_location_in_world_frame2, J2] = forwardKin(manip, kinsol, obj.kinframe, moment_location_in_body_frame2);
+      moment_axis_in_world_frame2 = forwardKin(manip, kinsol, obj.kinframe, moment_direction_in_body_frame2);
+      moment_axis_in_world_frame2 = moment_axis_in_world_frame2 - moment_location_in_world_frame2;
       
-      
+      B_moment = torque_moment * 0.5 * J1' * moment_axis_in_world_frame1 ...
+       + torque_moment * 0.5 * J2' * moment_axis_in_world_frame2;
       
       B_force(:, obj.input_num) = B_lift + B_drag + B_moment; 
       
       dB_force = 0; %todo
       
+      
+      if ~isempty(obj.lcmgl)
+        
+        
+        obj.lcmgl.glColor3f(1, 0, 0);
+        obj.lcmgl.line3(0, 0, 0, 1, 1, 1);
+        obj.lcmgl.switchBuffers;
+        
+      end
        
       
          
     end
     
+    function drawSurface(obj, u)
+      % Draws the control surface in the given configuration
+      
+      
+    end
+    
+    function obj = enableLCMGL(obj)
+      checkDependency('lcmgl');
+      obj.lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(), 'subwing');
+    end
     
     function [fCl, fCd, fCm] = flatplate_old(obj)
       disp('Using a flat plate airfoil with control surfaces.')
