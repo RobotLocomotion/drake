@@ -19,7 +19,7 @@ classdef LCMCoordinateFrame < CoordinateFrame & LCMSubscriber & LCMPublisher
         if isnumeric(coordinate_names_or_dim)
           lcmcoder_or_lcmtype_or_dim = coordinate_names_or_dim;
         else
-          typecheck(coordinate_names_or_dim,'cell');
+          assert(iscellstr(coordinate_names_or_dim));
           lcmcoder_or_lcmtype_or_dim = numel(coordinate_names_or_dim);
         end
       end
@@ -50,7 +50,7 @@ classdef LCMCoordinateFrame < CoordinateFrame & LCMSubscriber & LCMPublisher
         setLCMCoder(obj,lcmcoder);
       end
       
-      if isempty(lc) && iscell('coordinate_names_or_dim')
+      if isempty(lc) && iscell(coordinate_names_or_dim)
         obj = obj.setCoordinateNames(coordinate_names_or_dim);
       end
     end
