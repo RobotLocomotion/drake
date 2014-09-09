@@ -14,10 +14,14 @@ classdef PendulumPlant < SecondOrderSystem
   end
   
   methods
-    function obj = PendulumPlant()
+    function obj = PendulumPlant(b)
       % Construct a new PendulumPlant
       obj = obj@SecondOrderSystem(1,1,true);
 
+      if nargin>0 && ~isempty(b) % accept damping as optional input
+        obj.b = b;
+      end
+      
       obj = setInputFrame(obj,PendulumInput);
       torque_limit = 3;
       obj = setInputLimits(obj,-torque_limit,torque_limit);
