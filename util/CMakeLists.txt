@@ -21,10 +21,12 @@ if (eigen3_FOUND)
 
   add_library(drakeGradientUtil SHARED drakeGradientUtil.cpp)
   pods_install_libraries(drakeGradientUtil)
+  pods_install_headers(drakeGradientUtil.h DESTINATION drake)
 
   add_library(drakeGeometryUtil SHARED drakeGeometryUtil.cpp)
   target_link_libraries(drakeGeometryUtil drakeGradientUtil)
   pods_install_libraries(drakeGeometryUtil)
+  pods_install_headers(drakeGeometryUtil.h DESTINATION drake)
 
   add_mex(test/testQuatmex test/testQuatmex.cpp)
   target_link_libraries(test/testQuatmex drakeGeometryUtil)

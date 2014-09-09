@@ -666,23 +666,27 @@ classdef NonlinearProgram
       typecheck(solver,'char');
       if(strcmp(solver,'snopt'))
         if(~checkDependency('snopt'))
-          error('Drake:NonlinearProgram:UnsupportedSolver','SNOPT is not installed');
+          error('Drake:NonlinearProgram:UnsupportedSolver',' SNOPT not found.  SNOPT support will be disabled.');
         end
         obj.solver = solver;
       elseif(strcmp(solver,'fmincon'))
+        if(~checkDependency('fmincon'))
+          error('Drake:NonlinearProgram:UnsupportedSolver',' fmincon support is disabled. To enable it, install MATLAB Optimization toolbox');
+        end
         obj.solver = solver;
       elseif(strcmp(solver,'ipopt'))
         if(~checkDependency('ipopt'))
-          error('Drake:NonlinearProgram:UnsupportedSolver','Ipopt is not installed yet');
+          error('Drake:NonlinearProgram:UnsupportedSolver',' IPOPT not found. IPOPT support will be disabled.');
         end
         obj.solver = solver;
       elseif(strcmp(solver,'default'))
         if(checkDependency('snopt'))
           obj = obj.setSolver('snopt');
-        else
+        elseif(checkDependency('fmincon'))
           obj = obj.setSolver('fmincon');
+        elseif(checkDependency('ipopt'))
+          obj = obj.setSolver('ipopt');
         end
-        
       end
     end
     
@@ -813,11 +817,11 @@ classdef NonlinearProgram
       % @retval objval  A double scaler. The value of the objective function after running the
       % solver
       % @retval exitflag   An integer scaler.
+      %                    1  -- Solved successful
       %                    *********************
       %                    If the solver is SNOPT, then exitflag is the same as the INFO returned by
       %                    the solver. Please refer to
       %                    http://www.cam.ucsd.edu/~peg/papers/sndoc7.pdf for more information
-      %                    1  -- Successfully solved through SNOPT
       %                    2  -- Solved with SNOPT, but the accuracy of the linear constraints
       %                    cannot be achieved.
       %                    3  -- Solved with SNOPT, but the accuracy of the nonlinear constraints
@@ -839,7 +843,6 @@ classdef NonlinearProgram
       %                    *********************
       %                    If the solver is fmincon, then the exitflag is 200 + fmincon_exitflag
       %                    200 -- In fmincon, number of iterations exceeds options.MaxIter
-      %                    201 -- In fmincon, the problem is solved successfully
       %                    199 -- In fmincon, stopped by an output function or plot function
       %                    198 -- In fmincon, no feasible point was found.
       %                    202 -- In fmincon, change in x was less than options.TolX and maximum constraint violation was less than options.TolCon.
@@ -850,7 +853,6 @@ classdef NonlinearProgram
       %                    197 -- In fmincon, objective function at current iteration went below options.ObjectiveLimit and maximum constraint violation was less than options.TolCon.
       %                    **********************
       %                    If the solver is IPOPT, then the exitflag = -100 + ipopt_exitflag
-      %                    -100  -- solved by Ipopt
       %                    -99   -- In ipopt, solved to acceptable level
       %                    -98   -- In ipopt, infeasible problem detected
       %                    -97   -- In ipopt, search direction becomes too small
@@ -881,12 +883,18 @@ classdef NonlinearProgram
     
     function [x,objval,exitflag,execution_time] = compareSolvers(obj,x0,solvers)
       if nargin<3
-        solvers = {'fmincon'};
+        solvers = {};
+        if(checkDependency('fmincon'))
+          solvers = [solvers,{'fmincon'}];
+        end
         if(checkDependency('snopt'))
           solvers = [solvers,{'snopt'}];
         end
         if(checkDependency('ipopt'))
           solvers = [solvers,{'ipopt'}];
+        end
+        if(isempty(solvers))
+          error('Drake:NonlinearProgram:NoNLPSolver','Cannot find any nonlinear program solvers, please ensure that either fmincon, snopt or ipopt is installed');
         end
       end
        
@@ -1171,11 +1179,12 @@ classdef NonlinearProgram
                 msg='Objective function at current iteration went below options.ObjectiveLimit and maximum constraint violation was less than options.TolCon';
             end        
             warning('Drake:NonlinearProgram:FMINCONExitFlag',' FMINCON %2d %s',exitflag,msg); 
+            exitflag = exitflag+200;
           end
-          exitflag = exitflag+200;
+          
           
         case 'ipopt'
-          if(exitflag ~= 0 && exitflag ~= 1)
+          if(exitflag ~= 0)
             infeasible_constraint_name = infeasibleConstraint(obj,x);
             switch (exitflag)
               case 2
@@ -1210,8 +1219,11 @@ classdef NonlinearProgram
                 msg = 'internal error';
             end
             warning('Drake:NonlinearProgram:IPOPTExitFlag','Ipopt %4d %s',exitflag,msg);
+            exitflag = exitflag-100;
+          else
+            exitflag = 1;
           end
-          exitflag = exitflag-100;
+         
       end
     end 
   end
