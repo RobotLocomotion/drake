@@ -127,7 +127,7 @@ classdef Point2LineSegDistConstraint < SingleTimeKinematicConstraint
     
     function joint_idx = kinematicsPathJoints(obj)
       [~,joint_path] = obj.robot.findKinematicPath(obj.pt_body,obj.line_body);
-      joint_idx = vertcat(obj.robot.body(joint_path).dofnum)';
+      joint_idx = vertcat(obj.robot.body(joint_path).position_num)';
     end
   end
 end

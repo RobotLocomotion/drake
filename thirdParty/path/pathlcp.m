@@ -159,6 +159,7 @@ nnzJ = nnz(M);
 
 if (status ~= 1) 
   status,
+  type logfile.tmp
   error('PathLCP:FailedToSolve','Path fails to solve problem');
 end
 

@@ -45,7 +45,7 @@ classdef QPController < MIMODrakeSystem
     obj = setOutputFrame(obj,output_frame);
 
     obj.robot = r;
-    obj.numq = getNumDOF(r);
+    obj.numq = getNumPositions(r);
     obj.controller_data = controller_data;
     obj.n_body_accel_inputs = length(body_accel_input_frames);
     

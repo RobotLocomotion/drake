@@ -5,6 +5,10 @@ classdef QTrajEvalBlock < MIMODrakeSystem
     robot;
     controller_data;
     dt;
+    use_error_integrator;
+    jlmin;
+    jlmax;
+    nq;
   end
   
   methods
@@ -16,6 +20,16 @@ classdef QTrajEvalBlock < MIMODrakeSystem
         options = struct();
       end
 
+      if isfield(options,'use_error_integrator')
+        typecheck(options.use_error_integrator,'logical');
+        if options.use_error_integrator
+          sizecheck(controller_data.integral_gains,[getNumPositions(r) 1]);
+          typecheck(controller_data,{'AtlasManipControllerData','AtlasQPControllerData'});
+        end
+      else
+        options.use_error_integrator = false;
+      end
+      
       atlas_state = getStateFrame(r);
       input_frame = atlas_state;
       output_frame = MultiCoordinateFrame({AtlasCoordinates(r),atlas_state});
@@ -35,6 +49,10 @@ classdef QTrajEvalBlock < MIMODrakeSystem
       
       obj.robot = r;
       obj.controller_data = controller_data;
+      obj.use_error_integrator = options.use_error_integrator;
+      [obj.jlmin,obj.jlmax] = getJointLimits(obj.robot);
+      obj.nq = getNumPositions(r);
+
     end
        
     function [qdes,x]=mimoOutput(obj,t,~,x)
@@ -47,6 +65,15 @@ classdef QTrajEvalBlock < MIMODrakeSystem
       else
         % pp trajectory
         qdes = fasteval(qtraj,t);
+      end
+      if obj.use_error_integrator
+        q = x(1:obj.nq);
+        i_clamp = obj.controller_data.integral_clamps;
+        newintg = obj.controller_data.integral + obj.controller_data.integral_gains.*(qdes-q)*obj.dt;
+        newintg = max(-i_clamp,min(i_clamp,newintg));
+        obj.controller_data.integral = newintg;
+        qdes = qdes + newintg;
+        qdes = max(obj.jlmin-i_clamp,min(obj.jlmax+i_clamp,qdes)); % allow it to go delta above and below jlims
       end
     end
   end

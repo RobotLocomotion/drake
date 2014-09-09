@@ -56,10 +56,22 @@ for j = 1:length(safe_regions)
   sizecheck(safe_regions(j).normal, [3,1]);
 end
 
-% Currently we always lead with the right foot, but this should change soon
-plan = FootstepPlan.blank_plan(obj, options.step_params.max_num_steps + 2, [obj.foot_frame_id.right, obj.foot_frame_id.left], options.step_params, safe_regions);
-plan.footsteps(1).pos = start_pos.right;
-plan.footsteps(2).pos = start_pos.left;
+if options.step_params.leading_foot == 0 % lead left
+  foot1 = 'left';
+  foot2 = 'right';
+elseif options.step_params.leading_foot == 1 % lead right
+  foot1 = 'right';
+  foot2 = 'left';
+elseif options.step_params.leading_foot == -1 % lead auto
+  obj.warning_manager.warnOnce('Drake:planFootsteps:LeadAutoNotImplemented', 'AUTO leading foot selection is not implemented; will lead with RIGHT foot always');
+  foot1 = 'right';
+  foot2 = 'left';
+else
+  error('Drake:planFootsteps:InvalidLeadingFoot', 'Invalid value of options.step_params.leading_foot');
+end
+plan = FootstepPlan.blank_plan(obj, options.step_params.max_num_steps + 2, [obj.foot_frame_id.(foot1), obj.foot_frame_id.(foot2)], options.step_params, safe_regions);
+plan.footsteps(1).pos = start_pos.(foot1);
+plan.footsteps(2).pos = start_pos.(foot2);
 
 
 start_pos.right(4:5) = 0;

@@ -4,8 +4,10 @@ classdef RigidBody < RigidBodyElement
     robotnum = 0;  % this body is associated with a particular robot/object number, named in model.name{objnum} 
     
     % link properties
-    linkname=''  % name of the associated link
-    dofnum=0     % the index in the state vector corresponding to this joint
+    linkname='';  % name of the associated link
+    % NOTE: dofnum is deprecated, use position_num or velocity_num instead
+    position_num=0;     % the indices into the joint configuration (q) vector corresponding to this joint
+    velocity_num=0;     % the indices into the joint velocity (v) vector corresponding to this joint
     gravity_off=false;
     
     visual_shapes={}; % objects of type RigidBodyGeometry

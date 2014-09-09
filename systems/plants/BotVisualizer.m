@@ -104,7 +104,7 @@ classdef BotVisualizer < RigidBodyVisualizer
         end
       end
       
-      nq = getNumDOF(manip);
+      nq = getNumPositions(manip);
       obj.draw_msg = drake.lcmt_viewer_draw();
       nb = getNumBodies(manip);
       obj.draw_msg.num_links = nb;
@@ -123,7 +123,7 @@ classdef BotVisualizer < RigidBodyVisualizer
     function draw(obj,t,y)
       obj.draw_msg.timestamp = int64(t*1000000);
       
-      kinsol = doKinematics(obj.model,y(1:getNumDOF(obj.model)));
+      kinsol = doKinematics(obj.model,y(1:getNumPositions(obj.model)));
       for i=1:getNumBodies(obj.model)
         pt = forwardKin(obj.model,kinsol,i,zeros(3,1),2);
         obj.draw_msg.position(i,:) = pt(1:3);

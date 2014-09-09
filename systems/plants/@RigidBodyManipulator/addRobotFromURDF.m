@@ -19,7 +19,7 @@ if (nargin<4 || isempty(rpy)), rpy = zeros(3,1); end
 
 if (nargin<5), options = struct(); end
 if (~isfield(options,'floating')), options.floating = ''; end  % no floating base
-if isnumeric(options.floating) || islogical(options.floating) 
+if isnumeric(options.floating) || islogical(options.floating)
   if (options.floating)
     options.floating = 'rpy';
   else
@@ -29,7 +29,7 @@ end
 if (~isfield(options,'inertial')), options.inertial = true; end
 if (~isfield(options,'visual')), options.visual = true; end
 if (~isfield(options,'collision')), options.collision = true; end
-if (~isfield(options,'sensors')), options.sensors = false; end
+if (~isfield(options,'sensors')), options.sensors = true; end
 if (~isfield(options,'visual_geometry')), options.visual_geometry = false; end
 if (~isfield(options,'namesuffix')), options.namesuffix = ''; end
 if (~isfield(options,'inertia_error')), options.inertia_error = 0.0; end
@@ -94,7 +94,7 @@ for i=0:(links.getLength()-1)
 end
 
 if isempty(model.collision_filter_groups)
-  model.collision_filter_groups=containers.Map('KeyType','char','ValueType','any');     
+  model.collision_filter_groups=containers.Map('KeyType','char','ValueType','any');
   model.collision_filter_groups('no_collision') = CollisionFilterGroup();
 end
 collision_filter_groups = node.getElementsByTagName('collision_filter_group');
@@ -145,15 +145,11 @@ for i=1:length(rootlink)
   end
 end
 
-if options.sensors
-  model = addSensor(model,RigidBodyJointSensor(model,robotnum));
-end
-
 % finish parameter parsing
 for i=1:length(model.body)
   model.body(i) = bindParams(model.body(i),model,pval);
 end
-  
+
 end
 
 function model = parseParameter(model,robotnum,node,options)
@@ -201,9 +197,9 @@ function model = parseFrame(model,robotnum,node,options)
   if node.hasAttribute('rpy')
     rpy = reshape(parseParamString(model,robotnum,char(node.getAttribute('rpy'))),3,1);
   end
-  
+
   % todo: make sure frame names are unique?
-  
+
   model.frame = vertcat(model.frame,RigidBodyFrame(link,xyz,rpy,name));
 end
 
@@ -238,5 +234,4 @@ end
 if (isempty(actuator.joint)), error('transmission elements must specify a joint name'); end
 
 model.actuator=[model.actuator,actuator];
-end    
-    
+end

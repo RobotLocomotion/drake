@@ -32,7 +32,7 @@ function varargout = inverseKinBackend(obj,mode,t,q_seed,q_nom,varargin)
 checkDependency('snopt');
 
 global SNOPT_USERFUN;
-nq = obj.getNumDOF();
+nq = obj.getNumPositions();
 if(isempty(t))
   nT = 1;
 else

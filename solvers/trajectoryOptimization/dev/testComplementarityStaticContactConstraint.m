@@ -1,8 +1,8 @@
 function testComplementarityStaticContactConstraint
 robot = RigidBodyManipulator([getDrakePath,'/examples/Atlas/urdf/atlas_minimal_contact.urdf'],struct('floating',true));
 nomdata = load([getDrakePath,'/examples/Atlas/data/atlas_fp.mat']);
-nq = robot.getNumDOF();
-qstar = nomdata.xstar(1:robot.getNumDOF());
+nq = robot.getNumPositions();
+qstar = nomdata.xstar(1:robot.getNumPositions());
 l_foot = robot.findLinkInd('l_foot');
 nLPts = length(robot.getBody(l_foot).getContactShapes);
 l_foot_pt = zeros(3,nLPts);

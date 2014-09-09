@@ -1,6 +1,6 @@
 % Create plant from urdf
 p = RigidBodyManipulator('AcrobotSymmetric1.urdf');
-N = p.num_q; 
+N = p.num_positions; 
 
 
 % Now, get new plant with root changed

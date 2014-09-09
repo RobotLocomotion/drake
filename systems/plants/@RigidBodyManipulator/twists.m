@@ -7,8 +7,8 @@ for i = 1 : nb
   body = bodies(i);
   if body.parent > 0 && ~isempty(v)
     parentTwist = ret{body.parent};
-    qBody = q(body.dofnum);
-    vBody = v(body.dofnum);
+    qBody = q(body.position_num);
+    vBody = v(body.velocity_num);
     jointTwist = motionSubspace(body, qBody) * vBody;
     ret{i} = transformTwists(transforms{i} \ transforms{body.parent}, parentTwist) + jointTwist;
   else

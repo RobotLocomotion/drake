@@ -17,7 +17,6 @@ if(eigen3_FOUND)
 
   add_mex(drakeConstructRigidBodyConstraint SHARED constructPtrRigidBodyConstraint.cpp)
   target_link_libraries(drakeConstructRigidBodyConstraint drakeRigidBodyConstraint drakeRBM drakeUtil drakeGeometryUtil)
-  add_constraint_mex(deleteRigidBodyConstraintmex)
   add_constraint_mex(testSingleTimeKinCnstmex)
   add_constraint_mex(testMultipleTimeKinCnstmex)
   add_constraint_mex(testQuasiStaticConstraintmex)

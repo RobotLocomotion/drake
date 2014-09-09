@@ -887,8 +887,8 @@ RelativePositionConstraint::RelativePositionConstraint(RigidBodyManipulator* rob
   this->bTbp = bTbp;
   this->bodyA_idx = bodyA_idx;
   this->bodyB_idx = bodyB_idx;
-  this->bodyA_name = this->robot->bodies[this->bodyA_idx].linkname;
-  this->bodyB_name = this->robot->bodies[this->bodyB_idx].linkname;
+  this->bodyA_name = this->robot->bodies[this->bodyA_idx]->linkname;
+  this->bodyB_name = this->robot->bodies[this->bodyB_idx]->linkname;
   Vector4d bpTb_quat = quatConjugate(bTbp.block(3,0,4,1));
   Vector3d bpTb_trans = quatRotateVec(bpTb_quat,-bTbp.block(0,0,3,1));
   this->bpTb << bpTb_trans, bpTb_quat; 
@@ -1067,8 +1067,8 @@ RelativeQuatConstraint::RelativeQuatConstraint(RigidBodyManipulator* robot, int 
 {
   this->bodyA_idx = bodyA_idx;
   this->bodyB_idx = bodyB_idx;
-  this->bodyA_name = this->robot->bodies[bodyA_idx].linkname;
-  this->bodyB_name = this->robot->bodies[bodyB_idx].linkname;
+  this->bodyA_name = this->robot->bodies[bodyA_idx]->linkname;
+  this->bodyB_name = this->robot->bodies[bodyB_idx]->linkname;
   double quat_norm = quat_des.norm();
   this->quat_des = quat_des/quat_norm;
   this->type = RigidBodyConstraint::RelativeQuatConstraintType;
@@ -1592,8 +1592,8 @@ RelativeGazeTargetConstraint::RelativeGazeTargetConstraint(RigidBodyManipulator 
 {
   this->bodyA_idx = bodyA_idx;
   this->bodyB_idx = bodyB_idx;
-  this->bodyA_name = this->robot->bodies[this->bodyA_idx].linkname;
-  this->bodyB_name = this->robot->bodies[this->bodyB_idx].linkname;
+  this->bodyA_name = this->robot->bodies[this->bodyA_idx]->linkname;
+  this->bodyB_name = this->robot->bodies[this->bodyB_idx]->linkname;
   this->type = RigidBodyConstraint::RelativeGazeTargetConstraintType;
 }
 
@@ -1661,8 +1661,8 @@ RelativeGazeDirConstraint(RigidBodyManipulator *robot, int bodyA_idx,
 : GazeDirConstraint(robot,axis,dir,conethreshold,tspan),
   bodyA_idx(bodyA_idx), bodyB_idx(bodyB_idx)
 {
-  this->bodyA_name = this->robot->bodies[this->bodyA_idx].linkname;
-  this->bodyB_name = this->robot->bodies[this->bodyB_idx].linkname;
+  this->bodyA_name = this->robot->bodies[this->bodyA_idx]->linkname;
+  this->bodyB_name = this->robot->bodies[this->bodyB_idx]->linkname;
   this->type = RigidBodyConstraint::RelativeGazeDirConstraintType;
 }
 
@@ -1793,7 +1793,7 @@ void Point2PointDistanceConstraint::name(const double* t, std::vector<std::strin
       std::string bodyA_name;
       if(this->bodyA != 0)
       {
-        bodyA_name = this->robot->bodies[bodyA].linkname;
+        bodyA_name = this->robot->bodies[bodyA]->linkname;
       }
       else
       {
@@ -1802,7 +1802,7 @@ void Point2PointDistanceConstraint::name(const double* t, std::vector<std::strin
       std::string bodyB_name;
       if(this->bodyB != 0)
       {
-        bodyB_name = this->robot->bodies[bodyB].linkname;
+        bodyB_name = this->robot->bodies[bodyB]->linkname;
       }
       else
       {
@@ -1906,7 +1906,7 @@ void Point2LineSegDistConstraint::name(const double* t, std::vector<std::string>
   if(this->isTimeValid(t))
   {
     char cnst_name_buffer1[2000];
-    sprintf(cnst_name_buffer1,"Distance from %s pt to a line on %s",this->robot->bodies[this->pt_body].linkname.c_str(),this->robot->bodies[this->line_body].linkname.c_str());
+    sprintf(cnst_name_buffer1,"Distance from %s pt to a line on %s",this->robot->bodies[this->pt_body]->linkname.c_str(),this->robot->bodies[this->line_body]->linkname.c_str());
     std::string cnst_name_str1(cnst_name_buffer1);
     name_str.push_back(cnst_name_str1);
     char cnst_name_buffer2[100];
@@ -1963,7 +1963,7 @@ void WorldFixedPositionConstraint::eval_valid(const double* valid_t, int num_val
     next_idx[i] = (i+1)%num_valid_t;
     prev_idx[i] = (i+num_valid_t-1)%num_valid_t;
   }
-  c.resize(n_pts,1);
+  c = VectorXd::Zero(n_pts);
   dc_valid = MatrixXd::Zero(n_pts,nq*num_valid_t);
   for(int i = 0;i<num_valid_t;i++)
   {

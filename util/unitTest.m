@@ -68,6 +68,7 @@ if ~isfield(options,'gui') options.gui = true; end
 if ~isfield(options,'autorun') options.autorun = ~options.gui; end
 if ~isfield(options,'logfile') options.logfile = ''; end
 if ~isfield(options,'test_dirs_only') options.test_dirs_only = false; end
+if ~isfield(options,'include_scripts_as_tests') options.include_scripts_as_tests = false; end
 if ~isfield(options,'warnings_are_errors') options.warnings_are_errors = false; end
 if ~isempty(options.logfile) options.logfileptr = fopen(options.logfile,'w');
 else options.logfileptr = -1; end
@@ -413,8 +414,15 @@ function pnode = crawlDir(pdir,pnode,only_test_dirs,options)
         end
         
         if options.test_list_file>=0
-          [tf,timeout] = checkMethod(fname,m{j},'TIMEOUT');
-          fprintf(options.test_list_file,[testname,'.',m{j},'\t',pwd,'\t',timeout,'\n']);
+          test_properties = '';
+          
+          [tf,timeout] = checkFile(files(i).name,'TIMEOUT');
+          if (tf), test_properties = sprintf('%s TIMEOUT %s',test_properties,timeout); end
+          
+          [tf] = checkFile(files(i).name,'RUN_SERIAL');
+          if (tf), test_properties = sprintf('%s RUN_SERIAL',test_properties); end
+          
+          fprintf(options.test_list_file,[testname,'.',m{j},'\t',pwd,'\t',test_properties,'\n']);
         end
         
         if options.gui
@@ -430,13 +438,20 @@ function pnode = crawlDir(pdir,pnode,only_test_dirs,options)
         continue;
       end
       % reject if it is a script
-      if (~checkFile(files(i).name,'function',false))
+      if ~options.include_scripts_as_tests && ~checkFile(files(i).name,'function',false)
         continue;
       end
       
       if options.test_list_file>=0
+        test_properties = '';
+
         [tf,timeout] = checkFile(files(i).name,'TIMEOUT');
-        fprintf(options.test_list_file,[testname,'\t',pwd,'\t',timeout,'\n']);
+        if (tf), test_properties = sprintf('%s TIMEOUT %s',test_properties,timeout); end 
+        
+        [tf] = checkFile(files(i).name,'RUN_SERIAL');
+        if (tf), test_properties = sprintf('%s RUN_SERIAL',test_properties); end 
+
+        fprintf(options.test_list_file,[testname,'\t',pwd,'\t',test_properties,'\n']);
       end
       
       if (options.gui)
@@ -599,7 +614,28 @@ end
 
 function [pass,elapsed_time] = runTest(runpath,test,options)
 p=pwd;
-cd(runpath);
+
+% Detect if this is a MATLAB 'package', which requires special handling
+% to make sure we call the right function. More info can be found here:
+% http://www.mathworks.com/help/matlab/matlab_oop/scoping-classes-with-packages.html
+pathParts = strsplit(runpath, filesep);
+packageMembers = cellfun(@(x) ~isempty(regexp(x, '^\+')), pathParts);
+if any(packageMembers)
+  % We are passing around the name of the test to run as a string, not a 
+  % function handle. That means that even if we were to import the package
+  % containing that test file, when the name of the function is passed to 
+  % feval_in_contained_workspace, the import is lost and the test cannot 
+  % be found. Instead, we have to modify the name of the test to include 
+  % its full package name so that Matlab can find it. 
+  packageStart = find(packageMembers, 1, 'first');
+  pathParts = cellfun(@(x) regexprep(x,'^\+', ''), pathParts, 'UniformOutput', false);
+  packageName = strjoin(pathParts(packageStart:end), '.');
+  test = [packageName, '.', test];
+else
+  % It's not a package, so we can just cd to the directory containing the
+  % test.
+  cd(runpath);
+end
 %  disp(['running ',path,'/',test,'...']);
 
 if nargin<3, error('needs three arguments now'); end
@@ -697,7 +733,6 @@ else
         sprintf('*******************************************************\n') ];
       
       fprintf(1,'\n\n%s',msg);
-      knownIssue(fullfile(regexprep(runpath,[getDrakePath,filesep],''),test),ex);
       
       % strip the html tags out of the logfile (which are irrelevant outside of matlab and make it difficult to read):
       msg = regexprep(msg,'''[^'']*''','');

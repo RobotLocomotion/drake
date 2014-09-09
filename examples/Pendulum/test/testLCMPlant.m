@@ -15,3 +15,7 @@ if (aggregator.numMessagesAvailable()<1)
 end
 
 path(p);
+
+% tell ctest to run this one serially (so it doesn't compete for
+% resources):
+% RUN_SERIAL TRUE

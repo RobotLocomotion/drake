@@ -6,27 +6,9 @@
 using namespace std;
 using namespace Eigen;
 
-mxArray* createDrakeConstraintMexPointer(void* ptr, const char* deleteMethod, const char* name)
+mxArray* createDrakeConstraintMexPointer(void* ptr, const char* name)
 {
-	mxClassID cid;
-	if (sizeof(ptr)==4) cid = mxUINT32_CLASS;
-	else if (sizeof(ptr)==8) cid = mxUINT64_CLASS;
-  else mexErrMsgIdAndTxt("Drake:createDrakeConstraintMexPointer:PointerSize","Are you on a 32-bit machine or 64-bit machine??");
-
-	int nrhs=3;
-	mxArray *prhs[nrhs], *plhs[1];
-
-	prhs[0] = mxCreateNumericMatrix(1,1,cid,mxREAL);
-  memcpy(mxGetData(prhs[0]),&ptr,sizeof(ptr));
-
-	prhs[1] = mxCreateString(deleteMethod);
-
-  prhs[2] = mxCreateString(name);
-
-  // call matlab to construct mex pointer object
-  mexCallMATLABsafe(1,plhs,nrhs,prhs,"DrakeConstraintMexPointer");
-
-  return plhs[0];
+  return createDrakeMexPointer(ptr,name,0,NULL,"DrakeConstraintMexPointer");
 }
 
 void rigidBodyConstraintParseTspan(const mxArray* pm,Eigen::Vector2d &tspan)

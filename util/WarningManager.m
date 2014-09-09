@@ -3,10 +3,13 @@ classdef WarningManager < handle
   % displaying a warning only once (per instance of that class)
   
   properties
-    disabled_msgids=containers.Map;
+    disabled_msgids;
   end
   
   methods
+    function obj = WarningManager()
+      obj.disabled_msgids=containers.Map;
+    end
     function warnOnce(obj,msgid,varargin)
       % call this instead of warning to print the warning 
       % only once.  after calling, the message is 'disabled'

@@ -24,7 +24,7 @@ classdef SingleTimeLinearPostureConstraint < RigidBodyConstraint
       end
       
       obj = obj@RigidBodyConstraint(RigidBodyConstraint.SingleTimeLinearPostureConstraintCategory,robot,tspan);
-      nq = obj.robot.getNumDOF;
+      nq = obj.robot.getNumPositions;
       if(~isnumeric(lb))
         error('Drake:SingleTimeLinearPostureConstraint:lb must be numeric');
       end

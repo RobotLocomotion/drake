@@ -16,6 +16,7 @@ else
   n_points = 3;
 end
 
+w = warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
 r = RigidBodyManipulator([],struct('terrain',[]));
 for i=1:n_points
   fprintf('Adding point no. %d ...\n',i);
@@ -27,12 +28,13 @@ r.collision_filter_groups('points')=CollisionFilterGroup();
 r = addLinksToCollisionFilterGroup(r,repmat({'point'},1,n_points),'points',1:n_points);
 r = addToIgnoredListOfCollisionFilterGroup(r,'points','points');
 r = r.compile();
+warning(w);
 v = r.constructVisualizer();
 
 dist_min = 0.0;
 dist_max = 0.0;
 
-%c = mycon(randn(r.getNumDOF(),1));  % call it once to make sure it doesn't crash
+%c = mycon(randn(r.getNumPositions(),1));  % call it once to make sure it doesn't crash
 
   function stop=drawme(q,optimValues,state)
     stop=false;
@@ -63,7 +65,7 @@ problem.options=optimset('GradObj','on','GradConstr','on','Algorithm','interior-
 
 tic;
 for i=1:10
-  q0 = 3*(rand(r.getNumDOF(),1)-0.5);
+  q0 = 3*(rand(r.getNumPositions(),1)-0.5);
   v.draw(0,[q0;0*q0]);
   problem.x0 = q0;
 
