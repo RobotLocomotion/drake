@@ -639,7 +639,7 @@ Library {
       SID		      "5"
       Ports		      [1, 1]
       Position		      [170, 45, 230, 75]
-      FunctionName	      "RLCSFunction"
+      FunctionName	      "DCSFunction"
       Parameters	      "sysobj"
       EnableBusSupport	      off
       MaskPromptString	      "class('DrakeSystem') object"
