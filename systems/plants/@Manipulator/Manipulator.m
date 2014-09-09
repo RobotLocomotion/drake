@@ -19,6 +19,22 @@ classdef Manipulator < DrakeSystem
   end
 
   methods 
+    function [H,C_times_v,G,B] = manipulatorEquations(obj,q,v)
+      % extract the alternative form of the manipulator equations:
+      %   H(q)vdot + C(q,v)v + G(q) = B(q)u
+      
+      if nargin<2,
+        q = TrigPoly('q','s','c',getNumPositions(obj));
+      end
+      if nargin<3,
+        v = msspoly('v',getNumVelocities(obj));
+      end
+      
+      [H,C,B] = manipulatorDynamics(obj,q,v);
+      [~,G] = manipulatorDynamics(obj,q,0*v);
+      C_times_v = C-G;
+    end
+    
     function [xdot,dxdot] = dynamics(obj,t,x,u)
     % Provides the DrakeSystem interface to the manipulatorDynamics.
 

@@ -9,8 +9,7 @@
 #include <Eigen/Dense>
 
 #ifdef USE_MAPS
-#include "mexmaps/MapLib.hpp"
-#include <maps/ViewBase.hpp>
+#include "terrain-map/TerrainMap.hpp"
 #endif
 
 #include "drake/RigidBodyManipulator.h"

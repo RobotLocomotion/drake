@@ -123,6 +123,7 @@ if ~ok
       if ~conf.ipopt_enabled && nargout<1
         disp(' ');
         disp(' IPOPT not found. IPOPT support will be disabled.');
+        disp(' ');
       end
       
     case 'vrml'
@@ -310,17 +311,25 @@ if ~ok
         end
       end
       conf.xfoil_enabled = ~isempty(conf.xfoil);
-
-    case 'pathlcp'
-      setenv('PATH_LICENSE_STRING', '1926793586&Courtesy&&&USR&54782&7_1_2014&1000&PATH&GEN&31_12_2015&0_0_0&5000&0_0');
-
-      try
-        x = pathlcp(speye(500),-ones(500,1));
-        valuecheck(x,ones(500,1));
-        conf.pathlcp_enabled = true;
-      catch
-        disp('The cached PATH license is out of date, and PATH will fail to solve larger problems. Please report this bug.');
-        conf.pathlcp_enabled = false;
+      
+    case 'fmincon'
+      conf.fmincon_enabled = logical(exist('fmincon.m','file'));
+      if(~conf.fmincon_enabled)
+        if nargout<1
+          disp(' ');
+          disp(' fmincon support is disabled. To enable it, install MATLAB Optimization toolbox');
+          disp(' ');
+        end
+      end
+      
+    case 'quadprog'
+      conf.quadprog_enabled = logical(exist('quadprog.m','file'));
+      if(~conf.quadprog_enabled)
+        if nargout<1
+          disp(' ');
+          disp(' quadprog support is disabled. To enable it, install MATLAB Optimization toolbox');
+          disp(' ');
+        end
       end
       
     otherwise

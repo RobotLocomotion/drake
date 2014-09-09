@@ -22,5 +22,5 @@ function contactNormalsTest()
 
   valuecheck(phi+(1-cos(1e-6))*0.5,phi2);
   valuecheck(normal,normal2);
-  valuecheck(xA-[0.5*sin(1e-6);0;0],xA2);
+  valuecheck(xA-[0.5*sin(1e-6);0;0],xA2,1e-6);
 end

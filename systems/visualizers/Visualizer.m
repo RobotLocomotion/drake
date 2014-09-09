@@ -204,7 +204,7 @@ classdef Visualizer < DrakeSystem
       if (nargin<3 || isempty(state_dims)), state_dims = (1:fr.dim)'; end
       if (nargin<4), minrange = repmat(-5,size(state_dims)); end
       if (nargin<5), maxrange = -minrange; end
-      if (nargin<6), model = []; end
+      if (nargin<6), visualized_system = []; end
 
       x0(state_dims) = max(min(x0(state_dims),maxrange),minrange);
       if ~isempty(visualized_system),

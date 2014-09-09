@@ -29,7 +29,20 @@ prog = QuadraticProgram(eye(2),[1;0],[],[],[],[],[],[]);
 prog = prog.addCost(QuadraticConstraint(-inf,inf,[0 1;1 0],zeros(2,1)));
 prog = prog.addBoundingBoxConstraint(BoundingBoxConstraint(5,10),1);
 prog = prog.addLinearConstraint(LinearConstraint(-20,10,[1 4]));
-testSolvers(prog,{'quadprog','gurobi','gurobi_mex','snopt'},1e-3);
+solvers = {};
+if(checkDependency('quadprog'))
+  solvers = [solvers,{'quadprog'}];
+end
+if(checkDependency('gurobi'))
+  solvers = [solvers,{'gurobi'}];
+end
+if(checkDependency('gurobi_mex'))
+  solvers = [solvers,{'gurobi_mex'}];
+end
+if(checkDependency('snopt'))
+  solvers = [solvers,{'snopt'}];
+end
+testSolvers(prog,solvers,1e-3);
 warning(w);
 
 end
@@ -38,10 +51,24 @@ end
 
 function testSolvers(prog,solvers,tol)
 if(nargin<2)
-  [x,objval,exitflag,execution_time]=compareSolvers(prog);
-else
-  [x,objval,exitflag,execution_time]=compareSolvers(prog,randn(prog.num_vars,1),solvers);
+  solvers = {};
+  if(checkDependency('quadprog'))
+    solvers = [solvers,{'quadprog'}];
+  end
+  if(checkDependency('gurobi'))
+    solvers = [solvers,{'gurobi'}];
+  end
+  if(checkDependency('gurobi_mex'))
+    solvers = [solvers,{'gurobi_mex'}];
+  end
+  if(checkDependency('fastqp'))
+    solvers = [solvers,{'fastqp'}];
+  end
+  if(checkDependency('snopt'))
+    solvers = [solvers,{'snopt'}];
+  end
 end
+[x,objval,exitflag,execution_time]=compareSolvers(prog,randn(prog.num_vars,1),solvers);
 if(nargin<3)
   tol = 1e-4;
 end

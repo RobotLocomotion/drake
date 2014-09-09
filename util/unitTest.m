@@ -68,6 +68,7 @@ if ~isfield(options,'gui') options.gui = true; end
 if ~isfield(options,'autorun') options.autorun = ~options.gui; end
 if ~isfield(options,'logfile') options.logfile = ''; end
 if ~isfield(options,'test_dirs_only') options.test_dirs_only = false; end
+if ~isfield(options,'include_scripts_as_tests') options.include_scripts_as_tests = false; end
 if ~isfield(options,'warnings_are_errors') options.warnings_are_errors = false; end
 if ~isempty(options.logfile) options.logfileptr = fopen(options.logfile,'w');
 else options.logfileptr = -1; end
@@ -437,7 +438,7 @@ function pnode = crawlDir(pdir,pnode,only_test_dirs,options)
         continue;
       end
       % reject if it is a script
-      if (~checkFile(files(i).name,'function',false))
+      if ~options.include_scripts_as_tests && ~checkFile(files(i).name,'function',false)
         continue;
       end
       

@@ -64,11 +64,13 @@ classdef RigidBodyDepthSensor < RigidBodySensor
       distance = collisionRaycast(manip, kinsol, origin, point_on_ray);
       distance( distance<0 ) = obj.range;
       
-      points = forwardKin(manip,kinsol,obj.frame_id,(repmat(distance',3,1)/obj.range).*obj.body_pts);
+      % return the points in the sensor frame
+      points = (repmat(distance',3,1)/obj.range).*obj.body_pts;
       
       if ~isempty(obj.lcmgl)
+        points_in_world_frame = forwardKin(manip,kinsol,obj.frame_id,points);
         obj.lcmgl.glColor3f(1, 0, 0);
-        obj.lcmgl.points(points(1,:),points(2,:),points(3,:));
+        obj.lcmgl.points(points_in_world_frame(1,:),points_in_world_frame(2,:),points_in_world_frame(3,:));
 %          obj.lcmgl.line3(origin(1), origin(2), origin(3), point(1,i), point(2,i), point(3,i));
         obj.lcmgl.switchBuffers;
       end

@@ -121,6 +121,8 @@ x0 = [1;2;3];
 c2 = cnstr2_userfun(x);
 valuecheck(c2(1),1/6,1e-5);
 nlp1 = nlp1.setSolver('fmincon');
+nlp1 = nlp1.setSolverOptions('fmincon','Algorithm','active-set');
+nlp1 = nlp1.setSolverOptions('fmincon','MaxIter',1000);
 [x_fmincon,F,info] = nlp1.solve(x0);
 valuecheck(x,x_fmincon,1e-4);
 if(checkDependency('ipopt'))
@@ -259,14 +261,12 @@ end
 
   function [x,F,info] = solveWDefaultSolver(nlp,x)
     nlp = nlp.setSolver('default');
+    if(strcmp(nlp.solver,'fmincon'))
+      nlp = nlp.setSolverOptions('fmincon','Algorithm','sqp');
+      nlp = nlp.setSolverOptions('fmincon','MaxIter',1000);
+    end
     [x,F,info] = nlp.solve(x);
-    if(strcmpi(nlp.solver,'snopt'))
-      if(info>10)
-        error('snopt fails');
-      end
-    elseif(strcmpi(nlp.solver,'fmincon'))
-      if(info ~= 201)
-        error('fmincon fails');
-      end
+    if(info ~= 1)
+      error('failed to solve the problem');
     end
   end
