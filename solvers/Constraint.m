@@ -41,18 +41,7 @@ classdef Constraint
       %                1 - first derivatives provided
       %                ...
       %              @default -1
-      if(~isnumeric(lb) || ~isnumeric(ub))
-        error('Drake:Constraint:BadInputs','lb and ub should be numeric')
-      end
-      if(obj.num_cnstr ~= numel(obj.ub))
-        error('Drake:Constraint:BadInputs','Constraint lb and ub should have same number of elements');
-      end
-      if(any(obj.lb>obj.ub))
-        error('Drake:Constraint:BadInputs','Constraint lb should be no larger than ub');
-      end
-      obj.lb = lb(:);
-      obj.ub = ub(:);
-
+      obj = obj.setBounds(lb,ub);
       if(~isnumeric(xdim) || numel(xdim) ~= 1 || xdim<0 || xdim ~= floor(xdim))
         error('Drake:Constraint:BadInputs','xdim should be a non-negative integer');
       end
@@ -61,12 +50,7 @@ classdef Constraint
       if (nargin<4), grad_level = -1; end
       obj.grad_level = grad_level;
 
-      obj.num_cnstr = numel(obj.lb);
       obj.name = repmat({''},obj.num_cnstr,1);
-
-      c_idx = (1:obj.num_cnstr)';
-      obj.ceq_idx = c_idx(obj.lb == obj.ub);
-      obj.cin_idx = c_idx(obj.lb ~= obj.ub);
 
       obj.grad_method = 'user';
 
@@ -121,17 +105,45 @@ classdef Constraint
         % special casing 'user' to avoid geval for speed reasons
         varargout=cell(1,nargout);
         if (isempty(obj.grad_method) && nargout<=obj.grad_level+1) ...
-            || all(strcmp('user',obj.grad_method))
+            || strcmp(obj.grad_method,'user')
           [varargout{:}] = obj.constraintEval(varargin{:});
         else
-          gopt.grad_method = obj.grad_method;
-          gopt.grad_level = obj.grad_level;
-          [varargout{:}] = geval(@obj.constraintEval,varargin{:},gopt);
+          [varargout{:}] = geval(@obj.constraintEval,varargin{:},struct('grad_method',obj.grad_method,'grad_level',obj.grad_level));
         end
       end
     end
+    
+    function obj = setBounds(obj,lb,ub)
+      % revise the bounds for the constraint
+      % @param lb   The lower bound of the constraint
+      % @param ub   The upper bound of the constraint
+      if(any(~isnumeric(lb)) || any(~isnumeric(ub)))
+        error('Drake:Constraint:setBounds:BadInputs','Argument lb and ub should be numeric');
+      end
+      lb = lb(:);
+      ub = ub(:);
+      if(numel(lb) ~= numel(ub))
+        error('Drake:Constraint:setBounds:BadInputs','lb and ub should have the same number of elements');
+      end
+      if(any(lb>ub))
+        error('Drake:Constraint:setBounds:BadInputs','lb should be no larger than ub');
+      end
+      num_cnstr_new = numel(lb);
+      if(isempty(obj.num_cnstr))
+        obj.num_cnstr = num_cnstr_new;
+      else
+        if(obj.num_cnstr ~= num_cnstr_new)
+          error('Drake:Constraint:setBounds:ChangeBoundSize','The size of the constraint bounds is changed');
+        end
+      end
+      obj.lb = lb;
+      obj.ub = ub;
+      c_idx = (1:obj.num_cnstr)';
+      obj.cin_idx = c_idx(obj.lb ~= obj.ub);
+      obj.ceq_idx = c_idx(obj.lb == obj.ub);
+    end
   end
-
+  
   methods(Abstract, Access = protected)
     varargout = constraintEval(obj, varargin);
   end

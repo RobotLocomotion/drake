@@ -5,6 +5,8 @@
 #include <iostream>
 #include <set>
 #include <Eigen/StdVector>
+#include <memory>
+#include "DrakeJoint.h"
 
 class IndexRange {
  public:
@@ -21,22 +23,27 @@ class RigidBodyManipulator;
 using namespace Eigen;
 
 class RigidBody {
+private:
+  std::unique_ptr<DrakeJoint> joint;
+
 public:
   RigidBody();
 
   void setN(int n);
   void computeAncestorDOFs(RigidBodyManipulator* model);
+  void setJoint(std::unique_ptr<DrakeJoint> joint);
+  const DrakeJoint& getJoint() const;
 
 public:
   std::string linkname;
-  std::string jointname;
+  std::string jointname; // FLOATINGBASE TODO: remove
   int robotnum; // uses 0-index. starts from 0
   static const std::set<int> defaultRobotNumSet;
 // note: it's very ugly, but parent,dofnum,and pitch also exist currently (independently) at the rigidbodymanipulator level to represent the featherstone structure.  this version is for the kinematics.
   int parent;
   int dofnum;
-  int floating;
-  int pitch;
+  int floating; // FLOATINGBASE TODO: remove
+  int pitch; // FLOATINGBASE TODO: remove
   MatrixXd contact_pts;
   Matrix4d Ttree;
   Matrix4d T_body_to_joint;

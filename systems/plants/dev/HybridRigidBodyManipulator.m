@@ -71,7 +71,7 @@ classdef HybridRigidBodyManipulator < HybridDrakeSystem
       nL = sum(joint_w_limits);
       nC = obj.num_contacts;
       
-      sizecheck(joint_limit_state,[obj.manip.num_q,1]);
+      sizecheck(joint_limit_state,[obj.manip.num_positions,1]);
       sizecheck(contact_state,[nC,1]);
       
       if (~all(joint_limit_state==0 | joint_limit_state ==1 | joint_limit_state==2))
@@ -103,10 +103,10 @@ classdef HybridRigidBodyManipulator < HybridDrakeSystem
 
     function [phi,J,dJ] = jointLimitActiveGuard(obj,q)
       phi = [q-obj.joint_limit_min; obj.joint_limit_max-q]; phi=phi(~isinf(phi));
-      J = [eye(obj.num_q); -eye(obj.num_q)];  
+      J = [eye(obj.num_positions); -eye(obj.num_positions)];  
       J([obj.joint_limit_min==-inf;obj.joint_limit_max==inf],:)=[]; 
       if (nargout>2)
-        dJ = sparse(length(phi),obj.num_q^2);
+        dJ = sparse(length(phi),obj.num_positions^2);
       end
     end
     

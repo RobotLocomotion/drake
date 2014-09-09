@@ -158,8 +158,6 @@ void testSetSubMatrixGradient(int ntests, bool check) {
   }
 }
 
-
-
 int main(int argc, char **argv) {
   testMatGradMultMat(1000, true);
   testMatGradMult(1000, true);

@@ -12,7 +12,7 @@ nomdata = load([getDrakePath,'/examples/Atlas/data/atlas_fp.mat']);
 nq = robot.getNumPositions();
 qstar = nomdata.xstar(1:nq);
 kinsol_star = robot.doKinematics(qstar,false,false);
-nv = robot.getNumDOF();
+nv = robot.getNumVelocities();
 vstar = zeros(nv,1);
 
 l_foot = robot.findLinkInd('l_foot');
@@ -59,7 +59,7 @@ FC_edge = FC_edge*robot.getMass*g;
 l_foot_contact_wrench = struct('active_knot',1:nT,'cw',LinearFrictionConeWrench(robot,l_foot,l_foot_bottom,FC_edge));
 r_foot_contact_wrench = struct('active_knot',1:nT,'cw',LinearFrictionConeWrench(robot,r_foot,r_foot_bottom,FC_edge));
 
-bky_idx = robot.getBody(robot.findJointInd('back_bky')).dofnum;
+bky_idx = robot.getBody(robot.findJointInd('back_bky')).position_num;
 
 tf_range = [1 1.5];
 q_nom = bsxfun(@times,qstar,ones(1,nT));

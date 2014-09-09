@@ -12,6 +12,7 @@ const int QUAT_SIZE = 4;
 const int HOMOGENEOUS_TRANSFORM_SIZE = 16;
 const int AXIS_ANGLE_SIZE = 4;
 const int SPACE_DIMENSION = 3;
+const int RotmatSize = SPACE_DIMENSION * SPACE_DIMENSION;
 const int RPY_SIZE = 3;
 
 double angleDiff(double phi1, double phi2);
@@ -34,6 +35,13 @@ Eigen::Vector4d uniformlyRandomAxisAngle(std::default_random_engine& generator);
 Eigen::Vector4d uniformlyRandomQuat(std::default_random_engine& generator);
 Eigen::Matrix3d uniformlyRandomRotmat(std::default_random_engine& generator);
 Eigen::Vector3d uniformlyRandomRPY(std::default_random_engine& generator);
+
+template <typename Derived>
+void normalizeVec(
+    const Eigen::MatrixBase<Derived>& x,
+    typename Derived::PlainObject& x_norm,
+    typename Gradient<Derived, Derived::RowsAtCompileTime, 1>::type* dx_norm = nullptr,
+    typename Gradient<Derived, Derived::RowsAtCompileTime, 2>::type* ddx_norm = nullptr);
 
 /*
  * quat2x
@@ -83,8 +91,50 @@ Eigen::Matrix<typename Derived::Scalar, 4, 1> rpy2quat(const Eigen::MatrixBase<D
 template<typename Derived>
 Eigen::Matrix<typename Derived::Scalar, 3, 3> rpy2rotmat(const Eigen::MatrixBase<Derived>& rpy);
 
+
+template <typename Derived>
+Eigen::Matrix<typename Derived::Scalar, 3, 3> vectorToSkewSymmetric(const Eigen::MatrixBase<Derived>& p);
+
 /*
- * Gradient methods
+ * rotation conversion gradient functions
+ */
+template <typename Derived>
+typename Gradient<Eigen::Matrix<typename Derived::Scalar, 3, 3>, QUAT_SIZE>::type dquat2rotmat(const Eigen::MatrixBase<Derived>& q);
+
+template <typename DerivedR, typename DerivedDR>
+typename Gradient<Eigen::Matrix<typename DerivedR::Scalar, RPY_SIZE, 1>, DerivedDR::ColsAtCompileTime>::type drotmat2rpy(
+    const Eigen::MatrixBase<DerivedR>& R,
+    const Eigen::MatrixBase<DerivedDR>& dR);
+
+template <typename DerivedR, typename DerivedDR>
+typename Gradient<Eigen::Matrix<typename DerivedR::Scalar, QUAT_SIZE, 1>, DerivedDR::ColsAtCompileTime>::type drotmat2quat(
+    const Eigen::MatrixBase<DerivedR>& R,
+    const Eigen::MatrixBase<DerivedDR>& dR);
+
+/*
+ * angular velocity conversion functions
+ */
+template <typename DerivedQ, typename DerivedM>
+void angularvel2quatdotMatrix(const Eigen::MatrixBase<DerivedQ>& q,
+    Eigen::MatrixBase<DerivedM>& M,
+    typename Gradient<DerivedM, QUAT_SIZE, 1>::type* dM = nullptr);
+
+template<typename DerivedRPY, typename DerivedPhi>
+void angularvel2rpydotMatrix(const Eigen::MatrixBase<DerivedRPY>& rpy,
+    typename Eigen::MatrixBase<DerivedPhi>& phi,
+    typename Gradient<DerivedPhi, RPY_SIZE, 1>::type* dphi = nullptr,
+    typename Gradient<DerivedPhi, RPY_SIZE, 2>::type* ddphi = nullptr);
+
+template<typename Derived>
+Eigen::Matrix<typename Derived::Scalar, SPACE_DIMENSION, RPY_SIZE> rpydot2angularvelMatrix(const Eigen::MatrixBase<Derived>& rpy);
+
+template <typename DerivedQ, typename DerivedM>
+void quatdot2angularvelMatrix(const Eigen::MatrixBase<DerivedQ>& q,
+    Eigen::MatrixBase<DerivedM>& M,
+    typename Gradient<DerivedM, QUAT_SIZE, 1>::type* dM = nullptr);
+
+/*
+ * transform gradient methods
  */
 template<typename Scalar, typename DerivedS, typename DerivedQdotToV>
 Eigen::Matrix<Scalar, HOMOGENEOUS_TRANSFORM_SIZE, DerivedQdotToV::ColsAtCompileTime> dHomogTrans(
@@ -111,10 +161,4 @@ typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime>::type dTransformAdjoin
     const Eigen::MatrixBase<DerivedDT>& dT,
     const Eigen::MatrixBase<DerivedDX>& dX);
 
-template <typename Derived>
-void normalizeVec(
-    const Eigen::MatrixBase<Derived>& x,
-    typename Derived::PlainObject& x_norm,
-    typename Gradient<Derived, Derived::RowsAtCompileTime, 1>::type* dx_norm = nullptr,
-    typename Gradient<Derived, Derived::RowsAtCompileTime, 2>::type* ddx_norm = nullptr);
 #endif

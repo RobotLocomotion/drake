@@ -45,7 +45,7 @@ function [sol,robot_vis,v,cdfkp] = testRunningPlanner(seed,stride_length,major_i
   l_uleg = robot.findLinkInd('l_uleg');
   r_uleg = robot.findLinkInd('r_uleg');
   head = robot.findLinkInd('head');
-  neck_idx = robot.getBody(robot.findJointInd('neck_ay')).dofnum;
+  neck_idx = robot.getBody(robot.findJointInd('neck_ay')).position_num;
   freeze_idx = neck_idx;
   r_foot_bottom = robot.getBody(r_foot).getTerrainContactPoints();
   l_foot_toe    = robot.getBody(l_foot).getTerrainContactPoints('toe');
@@ -484,52 +484,52 @@ function half_periodic_constraint = halfPeriodicConstraint(robot)
     eq_mat(row,[initial_indices(idx) final_indices(idx)]) = [1 1];
   end
 
-  l_arm_usy_idx = robot.getBody(robot.findJointInd('l_arm_usy')).dofnum;
-  r_arm_usy_idx = robot.getBody(robot.findJointInd('r_arm_usy')).dofnum;
+  l_arm_usy_idx = robot.getBody(robot.findJointInd('l_arm_usy')).position_num;
+  r_arm_usy_idx = robot.getBody(robot.findJointInd('r_arm_usy')).position_num;
   symmetric_matrix = addSymmetricPair(symmetric_matrix,1:2,l_arm_usy_idx,r_arm_usy_idx);
 
-  l_arm_shx_idx = robot.getBody(robot.findJointInd('l_arm_shx')).dofnum;
-  r_arm_shx_idx = robot.getBody(robot.findJointInd('r_arm_shx')).dofnum;
+  l_arm_shx_idx = robot.getBody(robot.findJointInd('l_arm_shx')).position_num;
+  r_arm_shx_idx = robot.getBody(robot.findJointInd('r_arm_shx')).position_num;
   symmetric_matrix = addAntiSymmetricPair(symmetric_matrix,3:4,l_arm_shx_idx,r_arm_shx_idx);
 
-  l_arm_ely_idx = robot.getBody(robot.findJointInd('l_arm_ely')).dofnum;
-  r_arm_ely_idx = robot.getBody(robot.findJointInd('r_arm_ely')).dofnum;
+  l_arm_ely_idx = robot.getBody(robot.findJointInd('l_arm_ely')).position_num;
+  r_arm_ely_idx = robot.getBody(robot.findJointInd('r_arm_ely')).position_num;
   symmetric_matrix = addSymmetricPair(symmetric_matrix,5:6,l_arm_ely_idx,r_arm_ely_idx);
 
-  l_arm_elx_idx = robot.getBody(robot.findJointInd('l_arm_elx')).dofnum;
-  r_arm_elx_idx = robot.getBody(robot.findJointInd('r_arm_elx')).dofnum;
+  l_arm_elx_idx = robot.getBody(robot.findJointInd('l_arm_elx')).position_num;
+  r_arm_elx_idx = robot.getBody(robot.findJointInd('r_arm_elx')).position_num;
   symmetric_matrix = addAntiSymmetricPair(symmetric_matrix,7:8,l_arm_elx_idx,r_arm_elx_idx);
 
-  l_arm_uwy_idx = robot.getBody(robot.findJointInd('l_arm_uwy')).dofnum;
-  r_arm_uwy_idx = robot.getBody(robot.findJointInd('r_arm_uwy')).dofnum;
+  l_arm_uwy_idx = robot.getBody(robot.findJointInd('l_arm_uwy')).position_num;
+  r_arm_uwy_idx = robot.getBody(robot.findJointInd('r_arm_uwy')).position_num;
   symmetric_matrix = addSymmetricPair(symmetric_matrix,9:10,l_arm_uwy_idx,r_arm_uwy_idx);
 
-  l_arm_mwx_idx = robot.getBody(robot.findJointInd('l_arm_mwx')).dofnum;
-  r_arm_mwx_idx = robot.getBody(robot.findJointInd('r_arm_mwx')).dofnum;
+  l_arm_mwx_idx = robot.getBody(robot.findJointInd('l_arm_mwx')).position_num;
+  r_arm_mwx_idx = robot.getBody(robot.findJointInd('r_arm_mwx')).position_num;
   symmetric_matrix = addAntiSymmetricPair(symmetric_matrix,11:12,l_arm_mwx_idx,r_arm_mwx_idx);
 
-  l_leg_hpz_idx = robot.getBody(robot.findJointInd('l_leg_hpz')).dofnum;
-  r_leg_hpz_idx = robot.getBody(robot.findJointInd('r_leg_hpz')).dofnum;
+  l_leg_hpz_idx = robot.getBody(robot.findJointInd('l_leg_hpz')).position_num;
+  r_leg_hpz_idx = robot.getBody(robot.findJointInd('r_leg_hpz')).position_num;
   symmetric_matrix = addAntiSymmetricPair(symmetric_matrix,13:14,l_leg_hpz_idx,r_leg_hpz_idx);
 
-  l_leg_hpx_idx = robot.getBody(robot.findJointInd('l_leg_hpx')).dofnum;
-  r_leg_hpx_idx = robot.getBody(robot.findJointInd('r_leg_hpx')).dofnum;
+  l_leg_hpx_idx = robot.getBody(robot.findJointInd('l_leg_hpx')).position_num;
+  r_leg_hpx_idx = robot.getBody(robot.findJointInd('r_leg_hpx')).position_num;
   symmetric_matrix = addAntiSymmetricPair(symmetric_matrix,15:16,l_leg_hpx_idx,r_leg_hpx_idx);
 
-  l_leg_hpy_idx = robot.getBody(robot.findJointInd('l_leg_hpy')).dofnum;
-  r_leg_hpy_idx = robot.getBody(robot.findJointInd('r_leg_hpy')).dofnum;
+  l_leg_hpy_idx = robot.getBody(robot.findJointInd('l_leg_hpy')).position_num;
+  r_leg_hpy_idx = robot.getBody(robot.findJointInd('r_leg_hpy')).position_num;
   symmetric_matrix = addSymmetricPair(symmetric_matrix,17:18,l_leg_hpy_idx,r_leg_hpy_idx);
 
-  l_leg_kny_idx = robot.getBody(robot.findJointInd('l_leg_kny')).dofnum;
-  r_leg_kny_idx = robot.getBody(robot.findJointInd('r_leg_kny')).dofnum;
+  l_leg_kny_idx = robot.getBody(robot.findJointInd('l_leg_kny')).position_num;
+  r_leg_kny_idx = robot.getBody(robot.findJointInd('r_leg_kny')).position_num;
   symmetric_matrix = addSymmetricPair(symmetric_matrix,19:20,l_leg_kny_idx,r_leg_kny_idx);
 
-  l_leg_akx_idx = robot.getBody(robot.findJointInd('l_leg_akx')).dofnum;
-  r_leg_akx_idx = robot.getBody(robot.findJointInd('r_leg_akx')).dofnum;
+  l_leg_akx_idx = robot.getBody(robot.findJointInd('l_leg_akx')).position_num;
+  r_leg_akx_idx = robot.getBody(robot.findJointInd('r_leg_akx')).position_num;
   symmetric_matrix = addAntiSymmetricPair(symmetric_matrix,21:22,l_leg_akx_idx,r_leg_akx_idx);
 
-  l_leg_aky_idx = robot.getBody(robot.findJointInd('l_leg_aky')).dofnum;
-  r_leg_aky_idx = robot.getBody(robot.findJointInd('r_leg_aky')).dofnum;
+  l_leg_aky_idx = robot.getBody(robot.findJointInd('l_leg_aky')).position_num;
+  r_leg_aky_idx = robot.getBody(robot.findJointInd('r_leg_aky')).position_num;
   symmetric_matrix = addSymmetricPair(symmetric_matrix,23:24,l_leg_aky_idx,r_leg_aky_idx);
 
   %base_y = findJointIndices(robot,'base_y'); base_y = base_y(1);
@@ -548,13 +548,13 @@ function half_periodic_constraint = halfPeriodicConstraint(robot)
   base_yaw = 6;
   equal_matrix = addOpposite(equal_matrix,5,base_yaw);
 
-  back_bkz = robot.getBody(robot.findJointInd('back_bkz')).dofnum;
+  back_bkz = robot.getBody(robot.findJointInd('back_bkz')).position_num;
   equal_matrix = addOpposite(equal_matrix,6,back_bkz);
 
-  back_bky = robot.getBody(robot.findJointInd('back_bky')).dofnum;
+  back_bky = robot.getBody(robot.findJointInd('back_bky')).position_num;
   equal_matrix = addEquality(equal_matrix,7,back_bky);
 
-  back_bkx = robot.getBody(robot.findJointInd('back_bkx')).dofnum;
+  back_bkx = robot.getBody(robot.findJointInd('back_bkx')).position_num;
   equal_matrix = addOpposite(equal_matrix,8,back_bkx);
 
   lb = zeros(2*num_symmetry+num_equal,1);

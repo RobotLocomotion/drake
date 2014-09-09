@@ -9,28 +9,33 @@ if (LCM_FOUND)
   pods_use_pkg_config_packages(publishLCMLog lcm)
 endif()
 
-# todo: use this again once I can assume everyone has CMAKE version >= 2.8.8
-#add_mex(drakeUtil OBJECT drakeUtil.cpp)
-#add_mex(deleteMexPointer deleteMexPointer.cpp $<TARGET_OBJECTS:drakeUtil>)
-
-if (NOT WIN32) # todo: fix this
-add_mex(drakeUtil SHARED drakeUtil.cpp)
-pods_install_libraries(drakeUtil)
-endif(NOT WIN32)
-
 if (eigen3_FOUND)
+  if (NOT WIN32) # todo: fix this
+    add_mex(drakeUtil SHARED drakeUtil.cpp)
+
+    # todo: use this again once I can assume everyone has CMAKE version >= 2.8.8
+    #add_mex(drakeUtil OBJECT drakeUtil.cpp)
+
+    pods_install_libraries(drakeUtil)
+  endif(NOT WIN32)
+
   add_library(drakeGradientUtil SHARED drakeGradientUtil.cpp)
+  pods_install_libraries(drakeGradientUtil)
+  pods_install_headers(drakeGradientUtil.h DESTINATION drake)
 
   add_library(drakeGeometryUtil SHARED drakeGeometryUtil.cpp)
   target_link_libraries(drakeGeometryUtil drakeGradientUtil)
-  
+  pods_install_libraries(drakeGeometryUtil)
+  pods_install_headers(drakeGeometryUtil.h DESTINATION drake)
+
   add_mex(test/testQuatmex test/testQuatmex.cpp)
   target_link_libraries(test/testQuatmex drakeGeometryUtil)
-  
-  add_mex(test/testGeometryGradientsmex test/testGeometryGradientsmex.cpp) 
+
+  add_mex(test/testGeometryGradientsmex test/testGeometryGradientsmex.cpp)
   target_link_libraries(test/testGeometryGradientsmex drakeGeometryUtil)
-  
-  pods_install_libraries(drakeGeometryUtil)  
+
+  add_mex(test/testGeometryConversionFunctionsmex test/testGeometryConversionFunctionsmex.cpp)
+  target_link_libraries(test/testGeometryConversionFunctionsmex drakeGeometryUtil)
 endif()
 
 add_subdirectory(test)
@@ -42,11 +47,11 @@ add_mex(debugMex SHARED debugMexLib.cpp)
 #set_property( SOURCE debugMexLib.cpp PROPERTY COMPILE_FLAGS -DMX_COMPAT_32 )
 add_mex(drake_debug_mex EXECUTABLE drakeDebugMex.cpp)
 
-message(STATUS "Writing drake_debug_mex.sh") 
+message(STATUS "Writing drake_debug_mex.sh")
 file(WRITE ${CMAKE_BINARY_DIR}/bin/drake_debug_mex.sh
 	   "#!/bin/bash\n"
      "\n"
-     "# Usage:\n" 
+     "# Usage:\n"
      "#   % drake_debug_mex.sh [args]\n"
      "# will set up the environment and then run:\n"
      "#   % args pod-build/bin/drake-debug-mex\n"

@@ -11,7 +11,7 @@ vIndices = velocityVectorIndices(obj.body, jointPath);
 motionSubspaces = cell(1, length(jointPath));
 for i = 1 : length(jointPath)
   body = obj.body(jointPath(i));
-  motionSubspaces{i} = motionSubspace(body, kinsol.q(body.dofnum));
+  motionSubspaces{i} = motionSubspace(body, kinsol.q(body.position_num));
 end
 
 transformedMotionSubspaces = cellfun(@transformMotionSubspace, ...
@@ -26,5 +26,5 @@ ret = sign * transformTwists(H, S);
 end
 
 function vIndices = velocityVectorIndices(bodies, jointIndices)
-vIndices = vertcat(bodies(jointIndices).dofnum);
+vIndices = vertcat(bodies(jointIndices).velocity_num);
 end

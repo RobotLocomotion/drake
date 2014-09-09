@@ -13,7 +13,7 @@ nomdata = load([getDrakePath,'/examples/Atlas/data/atlas_fp.mat']);
 nq = robot.getNumPositions();
 qstar = nomdata.xstar(1:nq);
 kinsol_star = robot.doKinematics(qstar,false,false);
-nv = robot.getNumDOF();
+nv = robot.getNumVelocities();
 vstar = zeros(nv,1);
 
 l_foot = robot.findLinkInd('l_foot');

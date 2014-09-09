@@ -26,8 +26,8 @@ for i = 1 : length(jointPath)
   successor = jointPath(i);
   successorBody = obj.body(successor);
   predecessor = successorBody.parent;
-  qBody = kinsol.q(successorBody.dofnum);
-  vBody = kinsol.qd(successorBody.dofnum);
+  qBody = kinsol.q(successorBody.position_num);
+  vBody = kinsol.qd(successorBody.velocity_num);
   zeroJointAccel = motionSubspaceDotTimesV(successorBody, qBody, vBody); % spatial acceleration across joint when vdot across the joint is zero
   jDotV = jDotV + signs(i) * transformSpatialAcceleration(zeroJointAccel, kinsol.T, twists, predecessor, successor, successor, expressedIn);
 end

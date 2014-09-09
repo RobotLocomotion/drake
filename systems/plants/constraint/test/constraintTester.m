@@ -45,7 +45,7 @@ function constraintTester(testName,r,makeCon,makeQnom,makeQseed,n,draw_pause,use
     % we aren't really trying for optimality.
     
     problem.nonlcon = @(q) mycon(r,q,con,lb,ub,use_mex_kinematics);
-    %c = problem.nonlcon(randn(r.getNumDOF(),1));  % call it once to make sure it doesn't crash
+    %c = problem.nonlcon(randn(r.getNumPositions(),1));  % call it once to make sure it doesn't crash
 
     problem.options = optimset(problem.options,'OutputFcn', ...
       @(q,optVal,state) drawme(v,q,con,lcmgl,draw_pause));

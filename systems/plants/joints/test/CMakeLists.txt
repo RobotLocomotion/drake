@@ -1,0 +1,5 @@
+if (eigen3_FOUND)
+  add_mex(testDrakeJointsmex testDrakeJointsmex.cpp)
+  include_directories( .. )
+  target_link_libraries(testDrakeJointsmex drakeJoints)
+endif(eigen3_FOUND)

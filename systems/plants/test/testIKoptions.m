@@ -8,7 +8,7 @@ warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
 robot = RigidBodyManipulator(urdf,struct('floating',true));
 warning(w);
 
-nq = robot.getNumDOF();
+nq = robot.getNumPositions();
 
 % Check if the default properties are the same.
 ikoptions = IKoptions(robot);

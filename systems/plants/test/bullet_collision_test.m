@@ -10,8 +10,8 @@ end
 %v = BotVisualizer('FallingBrick.urdf',struct('floating',true));
 % lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'contact_points');
 
-%q = randn(getNumDOF(r),1);
-q = zeros(getNumDOF(r),1);
+%q = randn(getNumPositions(r),1);
+q = zeros(getNumPositions(r),1);
 
 kinsol = doKinematics(r,q);
 pts = terrainContactPositions(r,kinsol);

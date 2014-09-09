@@ -75,7 +75,7 @@ class RigidBodyConstraint
 
 /**
  * @class QuasiStaticConstraint       -- Constrain the Center of Mass (CoM) is within the support polygon. The support polygon is a shrunk area of the contact polygon
- * @param robot     
+ * @param robot
  * @param tspan           -- The time span of this constraint being active
  * @param robotnumset     -- The set of the robots in the RigidBodyManipulator for which the CoM is computed
  * @param shrinkFactor    -- The factor to shrink the contact polygon. The shrunk area is the support polygon.
@@ -111,11 +111,11 @@ class QuasiStaticConstraint: public RigidBodyConstraint
     std::vector<Eigen::MatrixXd> body_pts;
     static const std::set<int> defaultRobotNumSet;
   public:
-    QuasiStaticConstraint(RigidBodyManipulator* robot, const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan,const std::set<int> &robotnumset = QuasiStaticConstraint::defaultRobotNumSet); 
+    QuasiStaticConstraint(RigidBodyManipulator* robot, const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan,const std::set<int> &robotnumset = QuasiStaticConstraint::defaultRobotNumSet);
     QuasiStaticConstraint(const QuasiStaticConstraint &rhs);
     bool isTimeValid(const double* t) const;
     int getNumConstraint(const double* t) const;
-    void eval(const double* t,const double* weights,Eigen::VectorXd &c, Eigen::MatrixXd &dc) const; 
+    void eval(const double* t,const double* weights,Eigen::VectorXd &c, Eigen::MatrixXd &dc) const;
     void bounds(const double* t,Eigen::VectorXd &lb, Eigen::VectorXd &ub) const;
     void name(const double* t,std::vector<std::string> &name_str) const;
     virtual ~QuasiStaticConstraint(void);
@@ -133,7 +133,7 @@ class QuasiStaticConstraint: public RigidBodyConstraint
  * @param tspan          -- The time span of the constraint being valid
  * @param lb             -- The lower bound of the joints
  * @param ub             -- The upper bound of the joints
- * 
+ *
  * @function setJointLimits   set the limit of some joints
  *   @param num_idx    The number of joints whose limits are going to be set
  *   @param joint_idx  joint_idx[i] is the index of the i'th joint whose limits are going to be set
@@ -279,7 +279,7 @@ class PositionConstraint : public SingleTimeKinematicConstraint
     Eigen::VectorXd lb;
     Eigen::VectorXd ub;
     std::vector<bool> null_constraint_rows;
-    Eigen::MatrixXd pts; 
+    Eigen::MatrixXd pts;
     int n_pts;
     virtual void evalPositions(Eigen::MatrixXd &pos,Eigen::MatrixXd &J) const = 0;
     virtual void evalNames(const double* t,std::vector<std::string> &cnst_names) const = 0;
@@ -316,7 +316,7 @@ class WorldCoMConstraint: public PositionConstraint
   public:
     WorldCoMConstraint(RigidBodyManipulator *model, Eigen::Vector3d lb, Eigen::Vector3d ub, const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan, const std::set<int> &robotnum = WorldCoMConstraint::defaultRobotNumSet);
     void updateRobotnum(const std::set<int> &robotnum);
-    virtual ~WorldCoMConstraint(); 
+    virtual ~WorldCoMConstraint();
 };
 
 class RelativePositionConstraint: public PositionConstraint
@@ -613,7 +613,7 @@ class AllBodiesClosestDistanceConstraint : public SingleTimeKinematicConstraint
     std::vector<int> active_bodies_idx;
     std::set<std::string> active_group_names;
   public:
-    AllBodiesClosestDistanceConstraint(RigidBodyManipulator* model, 
+    AllBodiesClosestDistanceConstraint(RigidBodyManipulator* model,
                                        double lb, double ub,
                                        std::vector<int> active_bodies_idx,
                                        std::set<std::string> active_group_names,
@@ -654,8 +654,8 @@ class WorldPositionInFrameConstraint: public WorldPositionConstraint
     virtual void evalPositions(Eigen::MatrixXd &pos, Eigen::MatrixXd &J) const;
     virtual void evalNames(const double* t,std::vector<std::string> &cnst_names) const;
   public:
-    WorldPositionInFrameConstraint(RigidBodyManipulator *model, int body, 
-        const Eigen::MatrixXd &pts, const Eigen::Matrix4d& T_world_to_frame, 
+    WorldPositionInFrameConstraint(RigidBodyManipulator *model, int body,
+        const Eigen::MatrixXd &pts, const Eigen::Matrix4d& T_world_to_frame,
         Eigen::MatrixXd lb, Eigen::MatrixXd ub, const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan);
     virtual ~WorldPositionInFrameConstraint();
 public:
@@ -679,4 +679,3 @@ class PostureChangeConstraint: public MultipleTimeLinearPostureConstraint
     virtual ~PostureChangeConstraint(){};
 };
 #endif
-

@@ -16,7 +16,7 @@ classdef HybridTrajectory < Trajectory
         % check that one trajectory follows the other sequentially in time
         te = trajectories{1}.tspan(2);  
         obj.tspan = trajectories{1}.tspan; 
-        obj.dim = trajectories{1}.dim;
+        obj.dim = size(trajectories{1});
         obj = setNumOutputs(obj,prod(obj.dim));
         obj = setOutputFrame(obj,trajectories{1}.getOutputFrame);
         te = te(end);
@@ -29,11 +29,16 @@ classdef HybridTrajectory < Trajectory
           if (trajectories{i}.getOutputFrame~=obj.getOutputFrame)
             error('trajectories must all be in the same frame'); 
           end
-          if (length(obj.dim)~=length(trajectories{i}.dim)  || any(obj.dim ~= trajectories{i}.dim))
+          if ~isequal(obj.dim,size(trajectories{i}))
             error('trajectories must all have the same dimension');
           end
           te = [te,t(end)];
           obj.tspan(2) = t(end);
+        end
+        if length(obj.dim)==2 && obj.dim(2)==1,
+          % column vectors are a special case (since the ppval handles
+          % them differently then everything else in matlab
+          obj.dim = obj.dim(1);
         end
         obj.te = te(1:(end-1));
       end

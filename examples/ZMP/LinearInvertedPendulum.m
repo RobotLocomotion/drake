@@ -150,7 +150,7 @@ classdef LinearInvertedPendulum < LinearSystem
           if ~isfield(options,'com0'), options.com0 = zeros(2,1); end
           if ~isfield(options,'comdot0'), options.comdot0 = zeros(2,1); end
           
-          comtraj = COMplanFromTracker(obj,options.com0,options.comdot0,dZMP.tspan,c);
+          comtraj = COMplanFromTracker(obj,options.com0,options.comdot0,dZMP.tspan,ct);
         end
       end
 

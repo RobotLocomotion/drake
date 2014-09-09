@@ -1,8 +1,8 @@
-classdef RigidBodyManipulator < Manipulator 
-  % This class wraps the spatial vector library (v1) 
-  % provided by Roy Featherstone on his website: 
+classdef RigidBodyManipulator < Manipulator
+  % This class wraps the spatial vector library (v1)
+  % provided by Roy Featherstone on his website:
   %   http://users.cecs.anu.edu.au/~roy/spatial/documentation.html
-    
+
   properties (SetAccess=protected)
     name={};        % names of the objects in the rigid body system
     urdf={};        % names of the urdf files loaded
@@ -11,7 +11,7 @@ classdef RigidBodyManipulator < Manipulator
     param_db = {};  % cell of structures (one per robot) containing parsed parameter info
     loop=[];        % array of RigidBodyLoop objects
     sensor={};      % cell array of RigidBodySensor objects
-    force={};       % cell array of RigidBodyForceElement objects 
+    force={};       % cell array of RigidBodyForceElement objects
       % note: need {} for arrays that will have multiple types (e.g.
       % a variety of derived classes), but can get away with [] for arrays
       % with elements that are all exactly the same type
@@ -21,25 +21,29 @@ classdef RigidBodyManipulator < Manipulator
     num_contact_pairs;
     contact_options; % struct containing options for contact/collision handling
     frame = [];     % array of RigidBodyFrame objects
+
+    robot_state_frames;
+    robot_position_frames;
+    robot_velocity_frames;
   end
-  
+
   properties (Access=public)  % i think these should be private, but probably needed to access them from mex? - Russ
-    featherstone = [];  
+    featherstone = [];
     B = [];
     mex_model_ptr = 0;
     dirty = true;
-    %collision_filter_groups=containers.Map('KeyType','char','ValueType','any');     
-    collision_filter_groups;     
+    %collision_filter_groups=containers.Map('KeyType','char','ValueType','any');
+    collision_filter_groups;
       % map of CollisionFilterGroup objects
   end
-    
+
   methods
     function obj = RigidBodyManipulator(urdf_filename,options)
       % Construct a new rigid body manipulator object with a single (empty)
       % RigidBody (called 'world'), and optionally load a first robot from
       % urdf (see documentation for addRobotFromURDF for details on the
       % inputs).
-      
+
       if (nargin<2), options = struct(); end
       if ~isfield(options,'terrain'), options.terrain = []; end;
 
@@ -48,13 +52,13 @@ classdef RigidBodyManipulator < Manipulator
       obj.body.linkname = 'world';
       obj = setTerrain(obj,options.terrain);
       obj.contact_options = obj.parseContactOptions(options);
-      
+
       if (nargin>0 && ~isempty(urdf_filename))
         obj = addRobotFromURDF(obj,urdf_filename,zeros(3,1),zeros(3,1),options);
       end
     end
   end
-  
+
   methods (Static)
     function obj = loadobj(obj)
       obj.mex_model_ptr = 0;
@@ -65,8 +69,8 @@ classdef RigidBodyManipulator < Manipulator
       % contact_options = parseContactOptions(options) returns a struct
       % containing settings for contact/collision detection. If no value
       % is given for a particular setting, a default value is used.
-      % 
-      % @param options - Structure that may have fields specifying 
+      %
+      % @param options - Structure that may have fields specifying
       %                  values for contact options.
       %
       % @retval contact_options - Struct with the following fields:
@@ -91,15 +95,65 @@ classdef RigidBodyManipulator < Manipulator
       % NOTEST
     end
   end
-  
+
   methods
+    function [Vq, dVq] = qdotToV(obj, q)
+      compute_gradient = nargout > 1;
+
+      bodies = obj.body;
+      nb = length(bodies);
+      nv = obj.num_velocities;
+      nq = obj.num_positions;
+      Vq = zeros(nv, nq) * q(1); % to make TaylorVar work better
+
+      if compute_gradient
+        dVq = zeros(numel(Vq), nq) * q(1);
+      end
+      for i = 2 : nb
+        bodyI = bodies(i);
+        q_body = q(bodyI.position_num);
+        if compute_gradient
+          [VqJoint, dVqJoint] = jointQdot2v(bodyI, q_body);
+          dVq = setSubMatrixGradient(dVq, dVqJoint, bodyI.velocity_num, bodyI.position_num, size(Vq), bodyI.position_num);
+        else
+          VqJoint = jointQdot2v(bodyI, q_body);
+        end
+        Vq(bodyI.velocity_num, bodyI.position_num) = VqJoint;
+      end
+    end
+
+    function [VqInv, dVqInv] = vToqdot(obj, q)
+      compute_gradient = nargout > 1;
+
+      bodies = obj.body;
+      nb = length(bodies);
+      nv = obj.num_velocities;
+      nq = obj.num_positions;
+      VqInv = zeros(nq, nv) * q(1); % to make TaylorVar work better
+
+      if compute_gradient
+        dVqInv = zeros(numel(VqInv), nq) * q(1);
+      end
+      for i = 2 : nb
+        bodyI = bodies(i);
+        q_body = q(bodyI.position_num);
+        if compute_gradient
+          [VqInvJoint, dVqInvJoint] = jointV2qdot(bodyI, q_body);
+          dVqInv = setSubMatrixGradient(dVqInv, dVqInvJoint, bodyI.position_num, bodyI.velocity_num, size(VqInv), bodyI.position_num);
+        else
+          VqInvJoint = jointV2qdot(bodyI, q_body);
+        end
+        VqInv(bodyI.position_num, bodyI.velocity_num) = VqInvJoint;
+      end
+    end
+
     function y = output(obj,t,x,u)
       % The outputs of this dynamical system are concatenated from each of
       % the sensors.  If no sensor has been added to the system, then the
       % output defaults to the full robot state.
-      
+
       checkDirty(obj);
-      
+
       if isempty(obj.sensor)
         y = x;
       else
@@ -112,13 +166,13 @@ classdef RigidBodyManipulator < Manipulator
         end
       end
     end
-    
+
     function obj = setTerrain(obj,terrain)
       % Set the ground height profile which the contact points on the robot
       % may not penetrate.
       %
       % @param terrain a RigidBodyTerrain object
-      
+
       if ~isempty(terrain)
         typecheck(terrain,'RigidBodyTerrain');
       end
@@ -162,15 +216,15 @@ classdef RigidBodyManipulator < Manipulator
       %
       % @retval z a 1xN list of terrain heights in world coordinates
       % @retval normal a 3xN list of surface normals in world cooridinates
-      
+
       [z,normal] = getHeight(obj.terrain,contact_pos(1:2,:));
     end
-  
+
     function B = getB(obj,q,qd)
       % Note:  getB(obj) is ok iff there are no direct feedthrough force
       % elements.
       checkDirty(obj);
-      
+
       B = obj.B;
       if length(obj.force)>0
         f_ext = sparse(6,m.NB);
@@ -181,26 +235,13 @@ classdef RigidBodyManipulator < Manipulator
           end
         end
       end
-      
+
     end
-    
-    function n = getNumPositions(obj)
-      n = obj.num_q; %placeholder waiting for Russ' changes
-    end
-    
-    function n = getNumVelocities(obj)
-      n = obj.num_q; %placeholder waiting for Russ' changes
-    end
-    
-    function n = getNumDOF(obj)
-      n = obj.num_q;
-    end
-    
     function n = getNumBodies(obj)
       % @ingroup Kinematic Tree
       n = length(obj.body);
     end
-    
+
     function str = getLinkName(obj,body_ind)
       % str = getLinkName(obj,body_ind) returns a string containing the
       % link name the specified body if body_ind is a scalar. If body
@@ -227,11 +268,11 @@ classdef RigidBodyManipulator < Manipulator
       obj.gravity = grav;
       obj.dirty = true;
     end
-    
+
     function g = getGravity(obj,grav)
       g = obj.gravity;
     end
-    
+
     function f_friction = computeFrictionForce(model,qd)
       m = model.featherstone;
       f_friction = m.damping'.*qd;
@@ -239,43 +280,43 @@ classdef RigidBodyManipulator < Manipulator
         f_friction = f_friction + min(1,max(-1,qd./m.coulomb_window')).*m.coulomb_friction';
       end
     end
-        
+
     function ptr = getMexModelPtr(obj)
       % Please do note use this.
       % This access should not be allowed (the method should be private or not exist).
       % But it is currently used by QPControlBlock to pass to QPControllermex in drc/software/control
       ptr = obj.mex_model_ptr;
     end
-    
-    function [f,dfdq,dfdforce] = cartesianForceToSpatialForce(obj,kinsol,body_ind,point,force)  
+
+    function [f,dfdq,dfdforce] = cartesianForceToSpatialForce(obj,kinsol,body_ind,point,force)
       % @param body_ind is an index of the body
       % @param point is a point on the rigid body (in body coords)
       % @param force is a cartesion force (in world coords)
-      
+
       % convert force to body coordinates
       if (nargout>1)
-        [ftmp,ftmpJ,ftmpP]=bodyKin(obj,kinsol,body_ind,[force,zeros(3,1)]);                                                                                                   
+        [ftmp,ftmpJ,ftmpP]=bodyKin(obj,kinsol,body_ind,[force,zeros(3,1)]);
       else
         ftmp=bodyKin(obj,kinsol,body_ind,[force,zeros(3,1)]);
       end
-      
+
       % try to do it the Xtree way
       force = ftmp(:,1)-ftmp(:,2);
       f_body = [ cross(point,force,1); force ];  % spatial force in body coordinates
-      
+
       % convert to joint frame (featherstone dynamics algorithm never reasons in body coordinates)
       f = obj.body(body_ind).X_joint_to_body'*f_body;
-      
+
       if (nargout>1)
-        dforcedq = ftmpJ(1:3,:)-ftmpJ(4:6,:);                                                                                                                                 
+        dforcedq = ftmpJ(1:3,:)-ftmpJ(4:6,:);
         dforcedforce = ftmpP(1:3,1:size(force,1))-ftmpP(4:6,1:size(force,1));
-        df_bodydq = [ cross(repmat(point,1,size(dforcedq,2)),dforcedq); dforcedq ];                                                                                           
+        df_bodydq = [ cross(repmat(point,1,size(dforcedq,2)),dforcedq); dforcedq ];
         df_bodydforce = [ cross(repmat(point,1,size(dforcedforce,2)),dforcedforce); dforcedforce];
-        dfdq = obj.body(body_ind).X_joint_to_body'*df_bodydq;                                                                                                                 
+        dfdq = obj.body(body_ind).X_joint_to_body'*df_bodydq;
         dfdforce = obj.body(body_ind).X_joint_to_body'*df_bodydforce;
       end
     end
-    
+
     function model=addJoint(model,name,type,parent_ind,child_ind,xyz,rpy,axis,damping,coulomb_friction,static_friction,coulomb_window,limits)
       % @ingroup Kinematic Tree
       typecheck(parent_ind,'double');
@@ -295,13 +336,13 @@ classdef RigidBodyManipulator < Manipulator
         limits.effort_max = Inf;
         limits.velocity_limit = Inf;
       end
-      
+
       child = model.body(child_ind);
-      
+
       if child.parent>0
         error(['there is already a joint connecting this child (' child.linkname ') to a parent (' model.body(parent_ind).linkname ') on joint ' name ]);
       end
-      
+
       jointname = regexprep(name, '\.', '_', 'preservecase');
       if ismember(lower(jointname),lower({model.body.jointname}))
         num = 2;
@@ -313,7 +354,7 @@ classdef RigidBodyManipulator < Manipulator
       child.jointname = jointname;
       rangecheck(parent_ind,1,getNumBodies(model));
       child.parent = parent_ind;
-      
+
 %      axis = quat2rotmat(rpy2quat(rpy))*axis;  % axis is specified in joint frame
 
       wrl_joint_origin='';
@@ -325,7 +366,7 @@ classdef RigidBodyManipulator < Manipulator
       end
       if ~isempty(wrl_joint_origin)
         child.wrljoint = wrl_joint_origin;
-      end      
+      end
 
       child.Xtree = Xrotx(rpy(1))*Xroty(rpy(2))*Xrotz(rpy(3))*Xtrans(xyz);
       child.Ttree = [rotz(rpy(3))*roty(rpy(2))*rotx(rpy(1)),xyz; 0,0,0,1];  % equivalent to rpy2rotmat
@@ -342,9 +383,9 @@ classdef RigidBodyManipulator < Manipulator
         % frames intact.  this happens in extractFeatherstone
         axis_angle = [cross(axis,[0;0;1]); acos(dot(axis,[0;0;1]))]; % both are already normalized
         if all(abs(axis_angle(1:3))<1e-4)
-          % then it's a scaling of the z axis.  
-          valuecheck(sin(axis_angle(4)),0,1e-4);  
-          axis_angle(1:3)=[0;1;0];  
+          % then it's a scaling of the z axis.
+          valuecheck(sin(axis_angle(4)),0,1e-4);
+          axis_angle(1:3)=[0;1;0];
         end
         jointrpy = quat2rpy(axis2quat(axis_angle));
         child.X_joint_to_body=Xrotx(jointrpy(1))*Xroty(jointrpy(2))*Xrotz(jointrpy(3));
@@ -361,17 +402,17 @@ classdef RigidBodyManipulator < Manipulator
           child.coulomb_friction = coulomb_friction;
           child.static_friction = static_friction;
           child.coulomb_window = coulomb_window;
-          
+
         case 'prismatic'
           child.pitch = inf;
           child.damping = damping;
           child.coulomb_friction = coulomb_friction;
           child.static_friction = static_friction;
           child.coulomb_window = coulomb_window;
-          
+
         case 'fixed'
           child.pitch = nan;
-          
+
         case 'floating_rpy'
           child.pitch = 0;
           child.floating = 1;
@@ -380,7 +421,7 @@ classdef RigidBodyManipulator < Manipulator
           limits.effort_min = repmat(limits.effort_min,1,6);
           limits.effort_max = repmat(limits.effort_max,1,6);
           limits.velocity_limit = repmat(limits.velocity_limit,1,6);
-          
+
         case 'floating_quat'
           child.pitch = 0;
           child.floating = 2;
@@ -389,7 +430,7 @@ classdef RigidBodyManipulator < Manipulator
           limits.effort_min = repmat(limits.effort_min,1,7);
           limits.effort_max = repmat(limits.effort_max,1,7);
           limits.velocity_limit = repmat(limits.velocity_limit,1,7);
-          
+
         otherwise
           error(['joint type ',type,' not supported (yet?)']);
       end
@@ -399,11 +440,11 @@ classdef RigidBodyManipulator < Manipulator
       child.effort_min = limits.effort_min;
       child.effort_max = limits.effort_max;
       child.velocity_limit = limits.velocity_limit;
-      
+
       model.body(child_ind) = child;
       model.dirty = true;
     end
-    
+
     function model = addFloatingBase(model,parent,rootlink,xyz,rpy,joint_type)
       % note that the case matters.
       % use lower case for extrinsic (absolute) rotations, and upper case
@@ -413,16 +454,16 @@ classdef RigidBodyManipulator < Manipulator
       typecheck(parent,'double');      % these should be body indices
       typecheck(rootlink,'double');
       robotnum = model.body(rootlink).robotnum;
-      
+
       if (nargin<6) joint_type = 'rpy'; end
 
       switch (joint_type)
-        case 'rpy'  % extrinsic coordinates 
+        case 'rpy'  % extrinsic coordinates
           model = addJoint(model,'base','floating_rpy',parent,rootlink,xyz,rpy);
 
         case 'quat'
           model = addJoint(model,'base','floating_quat',parent,rootlink,xyz,rpy);
-        
+
         case 'RPY'  % instrinsic coordinates
           body1 = newBody(model);
           body1.linkname = 'base_x';
@@ -430,81 +471,81 @@ classdef RigidBodyManipulator < Manipulator
           model.body = [model.body,body1];
           body1_ind = length(model.body);
           model = addJoint(model,body1.linkname,'prismatic',parent,body1_ind,xyz,rpy,[1;0;0],0);
-          
+
           body2=newBody(model);
           body2.linkname = 'base_y';
           body2.robotnum=robotnum;
           model.body = [model.body,body2];
           body2_ind = length(model.body);
           model = addJoint(model,body2.linkname,'prismatic',body1_ind,body2_ind,zeros(3,1),zeros(3,1),[0;1;0],0);
-          
+
           body3=newBody(model);
           body3.linkname = 'base_z';
           body3.robotnum=robotnum;
           model.body = [model.body,body3];
           body3_ind = length(model.body);
           model = addJoint(model,body3.linkname,'prismatic',body2_ind,body3_ind,zeros(3,1),zeros(3,1),[0;0;1],0);
-          
+
           body4=newBody(model);
           body4.linkname = 'base_relative_roll';
           body4.robotnum=robotnum;
           model.body = [model.body,body4];
           body4_ind = length(model.body);
           model = addJoint(model,body4.linkname,'revolute',body3_ind,body4_ind,zeros(3,1),zeros(3,1),[1;0;0],0);
-          
+
           body5=newBody(model);
           body5.linkname = 'base_relative_pitch';
           body5.robotnum=robotnum;
           model.body = [model.body,body5];
           body5_ind = length(model.body);
           model = addJoint(model,body5.linkname,'revolute',body4_ind,body5_ind,zeros(3,1),zeros(3,1),[0;1;0],0);
-          
+
           model = addJoint(model,'base_relative_yaw','revolute',body5_ind,rootlink,zeros(3,1),zeros(3,1),[0;0;1],0);
-          
+
         case 'YPR' % intrinsic
-        
+
           body1 = newBody(model);
           body1.linkname = 'base_x';
           body1.robotnum=robotnum;
           model.body = [model.body,body1];
           body1_ind = length(model.body);
           model = addJoint(model,body1.linkname,'prismatic',parent,body1_ind,xyz,rpy,[1;0;0],0);
-          
+
           body2=newBody(model);
           body2.linkname = 'base_y';
           body2.robotnum=robotnum;
           model.body = [model.body,body2];
           body2_ind = length(model.body);
           model = addJoint(model,body2.linkname,'prismatic',body1_ind,body2_ind,zeros(3,1),zeros(3,1),[0;1;0],0);
-          
+
           body3=newBody(model);
           body3.linkname = 'base_z';
           body3.robotnum=robotnum;
           model.body = [model.body,body3];
           body3_ind = length(model.body);
           model = addJoint(model,body3.linkname,'prismatic',body2_ind,body3_ind,zeros(3,1),zeros(3,1),[0;0;1],0);
-          
+
           body4=newBody(model);
           body4.linkname = ['base_relative_yaw'];
           body4.robotnum=robotnum;
           model.body = [model.body,body4];
           body4_ind = length(model.body);
           model = addJoint(model,body4.linkname,'revolute',body3_ind,body4_ind,zeros(3,1),zeros(3,1),[0;0;1],0);
-          
+
           body5=newBody(model);
           body5.linkname = 'base_relative_pitch';
           body5.robotnum=robotnum;
           model.body = [model.body,body5];
           body5_ind = length(model.body);
           model = addJoint(model,body5.linkname,'revolute',body4_ind,body5_ind,zeros(3,1),zeros(3,1),[0;1;0],0);
-          
+
           model = addJoint(model,'base_relative_roll','revolute',body5_ind,rootlink,zeros(3,1),zeros(3,1),[1;0;0],0);
 
         otherwise
           error('unknown floating base type');
       end
     end
-        
+
     function model = addSensor(model,sensor)
       % Adds a sensor to the RigidBodyManipulator.  This modifies the
       % model.sensor parameter and marks the model as dirty.
@@ -519,16 +560,16 @@ classdef RigidBodyManipulator < Manipulator
       model.sensor{end+1}=sensor;
       model.dirty = true;
     end
-    
+
     function model = compile(model)
       % After parsing, compute some relevant data structures that will be
       % accessed in the dynamics and visualization
-      if isempty(model.name) 
+      if isempty(model.name)
         return;  % nothing to compile
       end
 
       model = removeFixedJoints(model);
-      
+
       % reorder body list to make sure that parents before children in the
       % list (otherwise simple loops over bodies might not compute
       % kinematics/dynamics correctly)
@@ -543,23 +584,49 @@ classdef RigidBodyManipulator < Manipulator
         end
         i=i+1;
       end
-            
+
       %% extract featherstone model structure
-      [model,num_dof] = extractFeatherstone(model);
-      
-      if (num_dof<1) error('This model has no DOF!'); end
+      model = extractFeatherstone(model);
+      % set position and velocity vector indices
+      num_q=0;num_v=0;
+      for i=1:length(model.body)
+        if model.body(i).parent>0
+          if (model.body(i).floating==1)
+            model.body(i).position_num=num_q+(1:6)';
+            num_q=num_q+6;
+            model.body(i).velocity_num=num_v+(1:6)';
+            num_v=num_v+6;
+          elseif (model.body(i).floating==2)
+            model.body(i).position_num=num_q+(1:7)';
+            num_q=num_q+7;
+            model.body(i).velocity_num=num_v+(1:6)';
+            num_v=num_v+6;
+          else
+            num_q=num_q+1;
+            model.body(i).position_num=num_q;
+            num_v=num_v+1;
+            model.body(i).velocity_num=num_v;
+          end
+        else
+          model.body(i).position_num=0;
+          model.body(i).velocity_num=0;
+        end
+      end
+
+      if (num_q<1) error('This model has no DOF!'); end
 
       u_limit = repmat(inf,length(model.actuator),1);
       u_limit = [-u_limit u_limit]; % lower/upper limits
 
       %% extract B matrix
-      B = sparse(num_dof,0);
+      B = sparse(num_v,0);
       for i=1:length(model.actuator)
         joint = model.body(model.actuator(i).joint);
-        B(joint.dofnum,i) = model.actuator(i).reduction;
+        B(joint.velocity_num,i) = model.actuator(i).reduction;
         u_limit(i,1) = joint.effort_min;
         u_limit(i,2) = joint.effort_max;
       end
+
       for i=1:length(model.force)
         if model.force{i}.direct_feedthrough_flag
           input_num = size(B,2)+1;
@@ -570,13 +637,17 @@ classdef RigidBodyManipulator < Manipulator
       end
       model.B = full(B);
 
+      model = setNumInputs(model,size(model.B,2));
+      model = setNumPositions(model,num_q);
+      model = setNumVelocities(model,num_v);
+      model = setNumOutputs(model,num_q+num_v);
+
       [model,paramframe,~,pmin,pmax] = constructParamFrame(model);
       if ~isequal_modulo_transforms(paramframe,getParamFrame(model)) % let the previous handle stay valid if possible
         model = setParamFrame(model,paramframe);
       end
       model = setParamLimits(model,pmin,pmax);
-      
-      model = setNumInputs(model,size(model.B,2));
+
       if getNumInputs(model)>0
         inputframe = constructInputFrame(model);
         if ~isequal_modulo_transforms(inputframe,getInputFrame(model)) % let the previous handle stay valid if possible
@@ -584,19 +655,32 @@ classdef RigidBodyManipulator < Manipulator
         end
       end
 
-      model = setNumDOF(model,num_dof);
       if getNumStates(model)>0
-        stateframe = constructStateFrame(model);
-        if ~isequal_modulo_transforms(stateframe,getStateFrame(model)) % let the previous handle stay valid if possible
-          model = setStateFrame(model,stateframe);
-        end
+        model = constructStateFrame(model);
       end
       
+      if any([model.body.has_position_sensor])
+        % add a rigid body joint sensor if necessary
+        robotnums = unique([model.body([model.body.has_position_sensor]).robotnum]);
+        for i=1:numel(robotnums)
+          already_has_sensor = false;
+          for j=1:length(model.sensor)
+            if isa(model.sensor{j},'RigidBodyJointSensor') && model.sensor{j}.robotnum==i
+              already_has_sensor=true;
+              break;
+            end
+          end
+          if ~already_has_sensor
+            model = addSensor(model,RigidBodyJointSensor(model,i));
+          end
+        end
+      end
+
       if length(model.sensor)>0
         feedthrough = false;
         for i=1:length(model.sensor)
           model.sensor{i} = model.sensor{i}.compile(model);
-          outframe{i} = model.sensor{i}.constructFrame(model);
+          outframe{i} = model.sensor{i}.coordinate_frame;
           feedthrough = feedthrough || model.sensor{i}.isDirectFeedthrough;
         end
         fr = MultiCoordinateFrame.constructFrame(outframe);
@@ -606,26 +690,25 @@ classdef RigidBodyManipulator < Manipulator
         end
         model = setDirectFeedthrough(model,feedthrough);
       else
-        model = setNumOutputs(model,2*num_dof);
         model = setOutputFrame(model,getStateFrame(model));  % output = state
         model = setDirectFeedthrough(model,false);
       end
-      
+
       if (length(model.loop)>0)
         model = model.setNumPositionConstraints(3*length(model.loop));  % should be 5? for continous joints once they enforce the joint axis constraint.
-      else 
+      else
         model = model.setNumPositionConstraints(0);
       end
 
       model.joint_limit_min = [model.body.joint_limit_min]';
       model.joint_limit_max = [model.body.joint_limit_max]';
-     
+
       if (any(model.joint_limit_min~=-inf) || any(model.joint_limit_max~=inf))
         warnOnce(model.warning_manager,'Drake:RigidBodyManipulator:UnsupportedJointLimits','Joint limits are not supported by the dynamics methods of this class.  Consider using HybridPlanarRigidBodyManipulator');
       end
-      
+
       model = model.setInputLimits(u_limit(:,1),u_limit(:,2));
-      
+
       %% check basic assumption from kinematics:
       for i=1:length(model.body)
         valuecheck(model.body(i).Ttree(end,1:end-1),0);
@@ -635,27 +718,26 @@ classdef RigidBodyManipulator < Manipulator
       end
 
       model = adjustContactShapes(model);
-      model = setupCollisionFiltering(model);      
-            
+      model = setupCollisionFiltering(model);
+
       model.dirty = false;
-      
+
       model = createMexPointer(model);
 
       % collisionDetect may require the mex version of the manipulator,
       % so it should go after createMexPointer
       phi = model.collisionDetect(zeros(model.getNumPositions,1));
       model.num_contact_pairs = length(phi);
-      
       if (model.num_contact_pairs>0)
         warning('Drake:RigidBodyManipulator:UnsupportedContactPoints','Contact is not supported by the dynamics methods of this class.  Consider using TimeSteppingRigidBodyManipulator or HybridPlanarRigidBodyManipulator');
       end
-      
-%      H = manipulatorDynamics(model,zeros(model.num_q,1),zeros(model.num_q,1));
+
+%      H = manipulatorDynamics(model,zeros(model.num_positions,1),zeros(model.num_positions,1));
 %      if cond(H)>1e3
 %        warning('Drake:RigidBodyManipulator:SingularH','H appears to be singular (cond(H)=%f).  Are you sure you have a well-defined model?',cond(H));
 %      end
     end
-    
+
     function indices = findJointIndices(model, str)
       %findJointIndices Returns indices in the state vector for joints whose
       % name contains a specified string.
@@ -667,12 +749,12 @@ classdef RigidBodyManipulator < Manipulator
     function body_ind = findLinkInd(model,linkname,robot,error_level)
       % @param robot can be the robot number or the name of a robot
       % robot=0 means look at all robots
-      % @param error_level >0 for throw error, 0 for throw warning, <0 for do nothing. @default throw error 
+      % @param error_level >0 for throw error, 0 for throw warning, <0 for do nothing. @default throw error
       % @ingroup Kinematic Tree
       if nargin<3 || isempty(robot), robot=0; end
       linkname = lower(linkname);
       linkname=regexprep(linkname, '[\[\]\\\/\.]+', '_', 'preservecase');
-      
+
       if ischar(robot) robot = strmatch(lower(robot),lower({model.name})); end
       items = strfind(lower({model.body.linkname}),linkname);
       ind = find(~cellfun(@isempty,items));
@@ -704,7 +786,7 @@ classdef RigidBodyManipulator < Manipulator
               'couldn''t find unique link %s on robot number %d.', ...
               linkname,robot);
           end
-        else 
+        else
           body_ind=0;
           if (error_level==0)
             warning(['couldn''t find unique link ' ,linkname]);
@@ -719,10 +801,10 @@ classdef RigidBodyManipulator < Manipulator
       % @ingroup Deprecated
       error('the finkLink method has been deprecated.  if you really must get a *copy* of the body, then use finkLinkInd followed by getBody');
     end
-    
+
     function is_valid = isValidLinkIndex(obj,idx)
       % @ingroup Kinematic Tree
-      if ~isnumeric(idx) 
+      if ~isnumeric(idx)
         is_valid=false(size(idx));
       else
         is_valid = idx >= 1 & idx <= obj.getNumBodies() & mod(idx,1) == 0;
@@ -741,17 +823,17 @@ classdef RigidBodyManipulator < Manipulator
       else
         ind = [];
       end
-      if numel(ind)~=1 
-        error('Drake:RigidBodyManipulator:UniqueFrameNotFound',['Cannot find unique frame named ', name, ' on robot number ',num2str(robotnum)]); 
+      if numel(ind)~=1
+        error('Drake:RigidBodyManipulator:UniqueFrameNotFound',['Cannot find unique frame named ', name, ' on robot number ',num2str(robotnum)]);
       end
       frame_id = -ind;  % keep frame_ind distinct from body_ind
     end
-        
+
     function body = getBody(model,body_ind)
       % @ingroup Kinematic Tree
       body = model.body(body_ind);
     end
-    
+
     function model = setBody(model,body_ind,body)
       % @ingroup Kinematic Tree
       typecheck(body_ind,'numeric');
@@ -759,7 +841,7 @@ classdef RigidBodyManipulator < Manipulator
       model.body(body_ind) = body;
       model.dirty = true;
     end
-    
+
     function [model,frame_id] = addFrame(model,frame)
       % @ingroup Kinematic Tree
       typecheck(frame,'RigidBodyFrame');
@@ -767,12 +849,12 @@ classdef RigidBodyManipulator < Manipulator
       frame_id = -(numel(model.frame));
       model.dirty = true;
     end
-    
+
     function frame = getFrame(model,frame_id)
       % @ingroup Kinematic Tree
       frame = model.frame(-frame_id);
     end
-    
+
     function model = setFrame(model,frame_id,frame)
       % @ingroup Kinematic Tree
       typecheck(frame_id,'numeric');
@@ -780,8 +862,8 @@ classdef RigidBodyManipulator < Manipulator
       model.frame(-frame_id) = frame;
       model.dirty = true;
     end
-    
-    
+
+
     function str = getBodyOrFrameName(model,body_or_frame_id)
       if (body_or_frame_id>0)
         str = model.body(body_or_frame_id).linkname;
@@ -789,7 +871,7 @@ classdef RigidBodyManipulator < Manipulator
         str = model.frame(-body_or_frame_id).name;
       end
     end
-    
+
     function model = setParams(model,p)
       fr = getParamFrame(model);
       if isa(p,'Point')
@@ -805,14 +887,14 @@ classdef RigidBodyManipulator < Manipulator
           k=k+1;
         end
       end
-      
+
       for i=1:length(model.body)
         model.body(i) = updateParams(model.body(i),fr.poly,p);
       end
-      
+
       model = compile(model);
     end
-    
+
     function p = getParams(model)
       p = [];
       for i=1:min(numel(model.name),numel(model.param_db))
@@ -822,8 +904,8 @@ classdef RigidBodyManipulator < Manipulator
         end
       end
       p = Point(getParamFrame(model),p);
-    end    
-    
+    end
+
     function model = weldJoint(model,body_ind_or_joint_name,robot)
       % @ingroup Kinematic Tree
       if ischar(body_ind_or_joint_name)
@@ -833,12 +915,12 @@ classdef RigidBodyManipulator < Manipulator
           body_ind_or_joint_name = findJointInd(model,body_ind_or_joint_name);
         end
       end
-      
+
       typecheck(body_ind_or_joint_name,'numeric');
       model.body(body_ind_or_joint_name).pitch = nan;
       model.dirty = true;
     end
-        
+
     function body_ind = findJointInd(model,jointname,robot_num,error_level)
       % @param robot_num can be the robot number or the name of a robot
       % robot_num=0 means look at all robots
@@ -852,7 +934,7 @@ classdef RigidBodyManipulator < Manipulator
       if (length(ind)~=1)
         if (nargin<4 || error_level>0)
           error(['couldn''t find unique joint ' ,jointname]);
-        else 
+        else
           body_ind=0;
           if (error_level==0)
             warning(['couldn''t find unique joint ' ,jointname]);
@@ -862,34 +944,34 @@ classdef RigidBodyManipulator < Manipulator
         body_ind = ind;
       end
     end
-    
+
     function body = findJoint(model,jointname,robot)
       % @ingroup Deprecated
       error('the finkJoint method has been deprecated.  if you really must get a *copy* of the body associated with this joint, then use finkJointInd followed by getBody');
-    end      
-    
+    end
+
     function b=leastCommonAncestor(model,body1,body2)
       % recursively searches for the lowest body in the tree that is an
       % ancestor to both body1 and body2
       % @ingroup Kinematic Tree
-      
+
       typecheck(body1,'double');  % takes in body indices
       typecheck(body2,'double');
 
       b=body2;
       if (body1==body2) return; end
-      
+
       % check if body1 is an ancestor to body2
       while b.parent>0
         b=b.parent;
         if (body1==b) return; end
       end
-      
+
       % body1 is not an ancestor to body2.  check body1's parent (and
       % recurse)
       b = leastCommonAncestor(model,body1.parent,body2);
     end
-    
+
     function terrain_contact_point_struct = ...
         getTerrainContactPoints(obj,body_idx,contact_groups)
       % terrain_contact_point_struct = getTerrainContactPoints(obj)
@@ -900,7 +982,7 @@ classdef RigidBodyManipulator < Manipulator
       % returns a structure array containing the terrain contact points
       % on the bodies specified by body_idx.
       %
-      % For a general description of terrain contact points see 
+      % For a general description of terrain contact points see
       % <a href="matlab:help RigidBodyGeometry/getTerrainContactPoints">RigidBodyGeometry/getTerrainContactPoints</a>
       %
       % @param obj - RigidBodyManipulator object
@@ -938,7 +1020,7 @@ classdef RigidBodyManipulator < Manipulator
         end
       end
     end
-    
+
     function groups = getContactGroups(model)
       groups = {};
       for i=1:length(model.body)
@@ -946,7 +1028,7 @@ classdef RigidBodyManipulator < Manipulator
       end
       groups = unique(groups);
     end
-    
+
     function model = removeCollisionGroups(model,contact_groups,robotnum)
       % model = removeCollisionGroups(model,contact_groups,robotnum) returns
       % the model with the specified contact groups removed
@@ -966,7 +1048,7 @@ classdef RigidBodyManipulator < Manipulator
       end
       model.dirty = true;
     end
-    
+
     function model = removeCollisionGroupsExcept(model,contact_groups,robotnum)
       % model = removeCollisionGroups(model,contact_groups,robotnum) returns
       % the model with all contact groups removed except for those specified
@@ -986,12 +1068,12 @@ classdef RigidBodyManipulator < Manipulator
       end
       model.dirty = true;
     end
-    
+
     function body_idx_or_frame_id = parseBodyOrFrameID(obj,body_or_frame,robotnum)
       % body_idx = parseBodyOrFrameID(obj,body_or_frame) returns the body index or frame
       % id associated with the input.
       % @param obj            -- RigidBodyManipulator object
-      % @param body_or_frame  -- Can be either: 
+      % @param body_or_frame  -- Can be either:
       %                           * Numeric body index or frame id
       %                           * String containing body or frame name
       % @param robotnum       -- Scalar restricting the search to a particular
@@ -1007,18 +1089,18 @@ classdef RigidBodyManipulator < Manipulator
         try
           body_idx_or_frame_id = findLinkInd(obj,body_or_frame,robotnum);
         catch ex
-          if strcmp(ex.id,'Drake:RigidBodyManipulator:UniqueLinkNotFound')
+          if strcmp(ex.identifier,'Drake:RigidBodyManipulator:UniqueLinkNotFound')
             try
-              body_idx_or_frame_id = findFrameID(obj,body_or_frame,robotnum);
+              body_idx_or_frame_id = findFrameId(obj,body_or_frame,robotnum);
             catch ex2
-              if strcmp(ex.id,'Drake:RigidBodyManipulator:UniqueLinkNotFound')
+              if strcmp(ex.identifier,'Drake:RigidBodyManipulator:UniqueLinkNotFound')
                 if robotnum == 0
                   error('Drake:RigidBodyManipulator:UniqueFrameOrLinkNotFound', ...
-                    'Cannot find unique link or frame named %s',body_or_frame); 
+                    'Cannot find unique link or frame named %s',body_or_frame);
                 else
                   error('Drake:RigidBodyManipulator:UniqueFrameOrLinkNotFound', ...
                     'Cannot find unique link or frame named %s on robot %d', ...
-                    body_or_frame, robotnum); 
+                    body_or_frame, robotnum);
                 end
               else
                 rethrow(ex2);
@@ -1038,7 +1120,7 @@ classdef RigidBodyManipulator < Manipulator
       %
       % @param obj - RigidBodyManipulator object
       % @param body_id - Body index or body name
-      % @param shape - RigidBodyGeometry (or child class) object 
+      % @param shape - RigidBodyGeometry (or child class) object
       % @param group_name - String containing the name of the collision group
       %   (optional) @default 'default'
 
@@ -1052,7 +1134,7 @@ classdef RigidBodyManipulator < Manipulator
       %
       % @param obj - RigidBodyManipulator object
       % @param body_id - Body index or body name
-      % @param shape - RigidBodyGeometry (or child class) object 
+      % @param shape - RigidBodyGeometry (or child class) object
       body_idx = obj.parseBodyOrFrameID(body_id);
       obj.body(body_idx).visual_shapes{end+1} = shape;
     end
@@ -1062,7 +1144,7 @@ classdef RigidBodyManipulator < Manipulator
       %
       % @param obj - RigidBodyManipulator object
       % @param body_id - Body index or body name
-      % @param shape - RigidBodyGeometry (or child class) object 
+      % @param shape - RigidBodyGeometry (or child class) object
       % @param group_name - String containing the name of the collision group
       %   (optional) @default 'default'
       obj = obj.addVisualShapeToBody(body_id,shape);
@@ -1081,12 +1163,12 @@ classdef RigidBodyManipulator < Manipulator
       end
       model.dirty = true;
     end
-    
+
     function drawKinematicTree(model)
       % depends on having graphviz2mat installed (from matlabcentral)
       % todo: make that a dependency in configure?
       % @ingroup Kinematic Tree
-      
+
       A = cell(length(model.body));
       for i=1:length(model.body)
         if model.body(i).parent>0
@@ -1094,10 +1176,10 @@ classdef RigidBodyManipulator < Manipulator
         end
       end
       node_names = {model.body.linkname};
-%      node_names = regexprep({model.body.linkname},'+(.)*','');  
+%      node_names = regexprep({model.body.linkname},'+(.)*','');
       drawGraph(A,node_names);
     end
-    
+
     function drawLCMGLAxes(model,lcmgl,q,body_indices)
       if nargin < 4
         body_indices = 1:model.getNumBodies();
@@ -1138,7 +1220,7 @@ classdef RigidBodyManipulator < Manipulator
       end
       lcmgl.glColor3f(.7,.7,.7); % gray
     end
-        
+
     function m = getMass(model)
       % todo: write total_mass to class and simply return it instead of
       % looping every time (since the result is a constant between
@@ -1154,37 +1236,37 @@ classdef RigidBodyManipulator < Manipulator
       % @ingroup Kinematic Tree
       body = RigidBody();
     end
-    
+
     function fr = constructCOMFrame(model)
       fr = CoordinateFrame([model.name,'COM'],3,'m',{'com_x','com_y','com_z'});
-      
-      return; 
-      
+
+      return;
+
       % in order to re-enable this, I have to figure out how we should be
       % distinguishing between reference and actual frames.  e.g., if i
       % make this, then i create a controller that takes a desired COM +
       % the actual state x as input, then things will be confusing when I
       % feedbackControl combine them.
-      
+
       % construct a transform from the state vector to the COM
       checkDirty(model);
       tf = FunctionHandleCoordinateTransform(0,0,model.getStateFrame(),fr,true,true,[],[], ...
-        @(obj,~,~,x) getCOM(model,x(1:model.featherstone.NB))); 
-      
+        @(obj,~,~,x) getCOM(model,x(1:model.featherstone.NB)));
+
       model.getStateFrame().addTransform(tf);
     end
-    
+
     function v = constructVisualizer(obj,options)
       checkDirty(obj);
-      if nargin<2, options=struct(); end 
+      if nargin<2, options=struct(); end
       if ~isfield(options,'use_contact_shapes'), options.use_contact_shapes = false; end;
       if ~isfield(options,'viewer'), options.viewer = {'BotVisualizer','RigidBodyWRLVisualizer','NullVisualizer'};
       elseif ~iscell(options.viewer), options.viewer = {options.viewer}; end
-      
+
       v=[]; i=1;
       while isempty(v)
         type = options.viewer{i};
-        
+
         switch (type)
           case 'NullVisualizer'
             arg = {getOutputFrame(obj)};
@@ -1207,26 +1289,26 @@ classdef RigidBodyManipulator < Manipulator
         end
         i = i+1;
       end
-      
+
     end
-    
+
     function index = getActuatedJoints(model)
       % @ingroup Kinematic Tree
       if isempty(model.actuator)
         index=[];
       else
         joint = [model.actuator.joint];
-        index = [model.body(joint).dofnum]';
+        index = [model.body(joint).position_num]';
       end
-    end        
-    
+    end
+
     function varargout = pdcontrol(sys,Kp,Kd,index)
       % creates new blocks to implement a PD controller, roughly
       % illustrated by
       %   q_d --->[ Kp ]-->(+)----->[ sys ]----------> yout
       %                     | -                 |
-      %                     -------[ Kp,Kd ]<---- 
-      %                       
+      %                     -------[ Kp,Kd ]<----
+      %
       % when invoked with a single output argument:
       %   newsys = pdcontrol(sys,...)
       % then it returns a new system which contains the new closed loop
@@ -1243,14 +1325,14 @@ classdef RigidBodyManipulator < Manipulator
       % @param index a num_u dimensional vector specifying the mapping from q to u.
       % index(i) = j indicates that u(i) actuates q(j). @default: 1:num_u
       %
-      % For example, the a 2D floating base (with adds 3 passive joints in 
-      % positions 1:3)model with four actuated joints in a serial chain might have 
+      % For example, the a 2D floating base (with adds 3 passive joints in
+      % positions 1:3)model with four actuated joints in a serial chain might have
       %      Kp = diag([10,10,10,10])
       %      Kd = diag([1, 1, 1, 1])
       %      and the default index would automatically be index = 4:7
 
       checkDirty(sys);
-      
+
       if nargin<4 || isempty(index)  % this is too slow on the atlas model
         B = sys.B;  % note: unlike the general Manipulator version this exploits the fact that B is a constant
         [I,J] = find(B);
@@ -1258,7 +1340,7 @@ classdef RigidBodyManipulator < Manipulator
           error('Drake:RigidBodyManipulator:PDControlComplexB','The B matrix for this system is nontrivial, so you must manually specify the index for the PD controller');
         end
         index(J)=I;
-        
+
         % try to alert if it looks like there are any obvious sign errors
         if all(diag(diag(Kp))==Kp)
           d = diag(Kp);
@@ -1273,57 +1355,57 @@ classdef RigidBodyManipulator < Manipulator
           end
         end
       end
-      
+
       varargout=cell(1,nargout);
-      % note: intentionally jump straight to second order system (skipping manipulator)... even though it's bad form
-      [varargout{:}] = pdcontrol@SecondOrderSystem(sys,Kp,Kd,index);
-    end    
-    
+      [varargout{:}] = pdcontrol@Manipulator(sys,Kp,Kd,index);
+    end
+
     function [phi,dphi,ddphi] = positionConstraints(obj,q)
       checkDirty(obj);
       % so far, only loop constraints are implemented
       [phi,dphi,ddphi]=loopConstraints(obj,q);
     end
-    
+
     function [xstar,ustar,success] = findFixedPoint(obj,x0,u0,options)
-      if (nargin<2 || isempty(x0)) 
-        x0 = Point(obj.getStateFrame()); 
+      if (nargin<2 || isempty(x0))
+        x0 = Point(obj.getStateFrame());
       elseif ~isa(x0,'Point')
         x0 = Point(obj.getStateFrame(),x0);
       end
       x0 = x0.inFrame(obj.getStateFrame);
       x0 = resolveConstraints(obj,x0);
-      
+
       if (nargin<3 || isempty(u0))
         u0 = zeros(obj.getNumInputs(),1);
       elseif isa(u0,'Point')
         u0 = double(u0.inFrame(obj.getInputFrame));
       end
       if (nargin<4) options=struct(); end
-      
+
       if ~isfield(options,'visualize'), options.visualize=false; end
-      
-      nq = obj.getNumPositions();
-      nu = obj.getNumInputs();
-      
+
+      nq = getNumPositions(obj);
+      nv = getNumVelocities(obj);
+      nu = getNumInputs(obj);
+
       active_collision_options = struct();
-      if isfield(options,'active_collision_groups') 
+      if isfield(options,'active_collision_groups')
         active_collision_options.collision_groups = options.active_collision_groups;
       end
 
-      if isfield(options,'active_collision_bodies') 
+      if isfield(options,'active_collision_bodies')
         active_collision_options.body_idx = options.active_collision_bodies;
       end
-      
+
       % Compute number of contacts by evaluating at x0
       [phi0,~,~,~,~,~,~,~,~,D0] = obj.contactConstraints(x0(1:nq),false,active_collision_options);
-      
+
       % total number of contact forces (normal + frictional)
       nz = length(phi0) + size(cell2mat(D0'),1);
 
       z0 = zeros(nz,1);
       q0 = x0(1:nq);
-    
+
       problem.x0 = [q0;u0;z0];
       problem.objective = @(quz) 0; % feasibility problem
       problem.nonlcon = @(quz) mycon(quz);
@@ -1336,11 +1418,11 @@ classdef RigidBodyManipulator < Manipulator
       else
         problem.options=optimset('GradConstr','on','Algorithm','interior-point','TolX',1e-14,'TolCon',1e-8,'MaxFunEvals',5000);
       end
-      
+
       lb_z = -1e6*ones(nz,1);
       ub_z = 1e6*ones(nz,1);
       lb_z(1:length(phi0)) = 0; % normal forces must be positive
-    
+
       [jl_min,jl_max] = obj.getJointLimits();
       % force search to be close to starting position
       problem.lb = [jl_min; obj.umin; lb_z];
@@ -1357,7 +1439,7 @@ classdef RigidBodyManipulator < Manipulator
 
       function stop=drawme(quz,optimValues,state)
         stop=false;
-        v.draw(0,[quz(1:nq); zeros(nq,1)]);
+        v.draw(0,[quz(1:nq); zeros(nv,1)]);
       end
 
       function [c,ceq,GC,GCeq] = mycon(quz)
@@ -1366,16 +1448,16 @@ classdef RigidBodyManipulator < Manipulator
         z=quz(nq+nu+(1:nz));
         c = [];
         GC = [];
-        [~,C,B,~,dC,~] = obj.manipulatorDynamics(q,zeros(nq,1));
-        
+        [~,C,B,~,dC,~] = obj.manipulatorDynamics(q,zeros(nv,1));
+
         if obj.getNumContactPairs > 0,
           [phiC,normal,d,xA,xB,idxA,idxB,mu,n,D,dn,dD] = obj.contactConstraints(q,false,active_collision_options);
-          
+
           % construct J such that J'*z is the contact force vector in joint
           J = [n;cell2mat(D')];
           % similarly, construct dJz
           dJz = matGradMult([dn;cell2mat(dD')],z,true);
-          
+
           ceq = [C-B*u-J'*z; phiC];
           GCeq = [[dC(1:nq,1:nq)-dJz,-B,-J']',[n'; zeros(nu+nz,length(phiC))]];
         else
@@ -1383,11 +1465,11 @@ classdef RigidBodyManipulator < Manipulator
           GCeq = [dC(1:nq,1:nq),-B]';
         end
         if (obj.num_xcon>0)
-          [phi,dphi] = geval(@obj.stateConstraints,[q;0*q]);
+          [phi,dphi] = geval(@obj.stateConstraints,[q;zeros(nv,1)]);
           ceq = [ceq; phi];
           GCeq = [GCeq, [dphi(:,1:nq),zeros(obj.num_xcon,nu+nz)]'];
         end
-      end      
+      end
     end
 
     function model = addLinksToCollisionFilterGroup(model,linknames,collision_fg_name,robotnums)
@@ -1419,7 +1501,7 @@ classdef RigidBodyManipulator < Manipulator
       % @param robotnums           Robot number of the links to be removed from
       %   the collision filter group. Can be a vector or a 1-d cell-array. If
       %   non-scalar, it must have the same number of elements as linknames.
-      
+
       [linknames,robotnums] = model.processCFGroupArgs(linknames,robotnums);
       model.collision_filter_groups(collision_fg_name) = ...
         model.collision_filter_groups(collision_fg_name).removeMembers(linknames,robotnums);
@@ -1452,7 +1534,7 @@ classdef RigidBodyManipulator < Manipulator
       % @param collision_fg_name      String giving the name of the collision
       %   filter group that should no longer ignore the groups specified by
       %   ignored_collision_fgs
-      
+
       typecheck(ignored_collision_fgs,{'cell','char'});
       typecheck(collision_fg_name,'char');
 
@@ -1461,10 +1543,10 @@ classdef RigidBodyManipulator < Manipulator
       model.collision_filter_groups(collision_fg_name) = collision_fg;
       model.dirty = true;
     end
-    
+
     function val = parseParamString(model,robotnum,str)
       % @ingroup URDF Parsing
-      
+
       fr = getParamFrame(model); p=fr.poly;
       pstr = regexprep(str,'\$(\w+)','p(model.param_db{robotnum}.(''$1'').index)');
 %      if strcmp(pstr,str)  % then it didn't have any parameters in it
@@ -1473,7 +1555,7 @@ classdef RigidBodyManipulator < Manipulator
 %        val = RigidBodyParameterizedValue(['[',pstr,']'],model,robotnum);
 %      end
     end
-    
+
     function [linknames,robotnums] = processCFGroupArgs(model,linknames,robotnums)
       % @param linknames          Names of the links to be added to the
       %   collision filter group. Can be a string containing the name of a
@@ -1513,94 +1595,131 @@ classdef RigidBodyManipulator < Manipulator
         '''normal'' must be a non-empty array')
 
       t1=normal; % initialize size
-      
+
       % handle the normal = [0;0;1] case
       ind=(1-normal(3,:))<10e-8;  % since it's a unit normal, i can just check the z component
       t1(:,ind) = [ones(1,sum(ind)); zeros(2,sum(ind))];
-      
+
       % handle the normal = [0;0;-1] case
       indneg=(1+normal(3,:))<10e-8;  % since it's a unit normal, i can just check the z component
       t1(:,indneg) = [-ones(1,sum(indneg)); zeros(2,sum(indneg))];
-      
+
       ind=~(ind | indneg);
-      
+
       % now the general case
       t1(:,ind) = [normal(2,ind);-normal(1,ind);zeros(1,sum(ind))]; % cross(normal,[0;0;1]) normalized
       t1(:,ind) = bsxfun(@rdivide,t1(:,ind),sqrt(sum(t1(1:2,ind).^2,1))); % normalize
-      
+
       t2 = cross(t1,normal);
-      
+
       m = 2;  % half of the the number of direct vectors
       theta = (0:(m-1))*pi/m;
-      
+
       for k=1:m
         d{k}=cos(theta(k))*t1 + sin(theta(k))*t2;
-      end      
+      end
     end
-    
+
     function n=getNumContactPairs(obj)
       n = obj.num_contact_pairs;
     end
-    
+
     function [phi,dphi] = unilateralConstraints(obj,x)
       q = x(1:obj.getNumPositions);
-      if nargout<2 
+      if nargout<2
         phi = contactConstraints(obj,q);
       else
         [phi,~,~,~,~,~,~,~,dphi] = contactConstraints(obj,q);
         dphi = [dphi,zeros(size(phi,1),obj.getNumVelocities)];
       end
     end
-    
+
     function n = getNumUnilateralConstraints(obj)
       % Returns the number of unilateral constraints, currently only
       % contains the contact pairs
       n = obj.getNumContactPairs();
     end
-  end
+
+    function fr = getPositionFrame(obj,robotnum)
+      if nargin<2, robotnum=1; end
+      fr = obj.robot_position_frames{robotnum};
+    end
+
+    function fr = getVelocityFrame(obj,robotnum)
+      if nargin<2, robotnum=1; end
+      fr = obj.robot_velocity_frames{robotnum};
+    end
     
+    function fr = getStateFrame(obj,robotnum)
+      if nargin<2,
+        fr = getStateFrame@DrakeSystem(obj);
+      else
+        fr = obj.robot_state_frames{robotnum};
+      end
+    end
+
+  end
+
   methods (Static)
     [c,options] = parseMaterial(node,options);
   end
-  
+
   methods (Access=protected)
-    
+
     function checkDirty(obj)
       if (obj.dirty)
         error('You''ve changed something about this model and need to manually compile it.  Use obj=compile(obj).');
       end
     end
-    
+
     function obj = createMexPointer(obj)
       if (exist('constructModelmex')==3)
 %        obj.mex_model_ptr = debugMexEval('constructModelmex',obj);
         obj.mex_model_ptr = constructModelmex(obj);
       end
     end
-        
-    function fr = constructStateFrame(model)
+
+    function model = constructStateFrame(model)
       frame_dims=[];
       for i=1:length(model.name)
-        joints={};
+        positions={};
+        velocities={};
         for j=1:length(model.body)
           b = model.body(j);
           if b.parent>0 && b.robotnum==i
             if (b.floating==1)
-              joints = vertcat(joints,{[b.jointname,'_x'];[b.jointname,'_y'];[b.jointname,'_z'];[b.jointname,'_roll'];[b.jointname,'_pitch'];[b.jointname,'_yaw']});
+              newpos = {[b.jointname,'_x'];[b.jointname,'_y'];[b.jointname,'_z'];[b.jointname,'_roll'];[b.jointname,'_pitch'];[b.jointname,'_yaw']};
+              positions = vertcat(positions,newpos);
+              velocities = vertcat(velocities,cellfun(@(a) [a,'dot'],newpos,'UniformOutput',false));
             elseif (b.floating==2)
-              joints = vertcat(joints,{[b.jointname,'_x'];[b.jointname,'_y'];[b.jointname,'_z'];[b.jointname,'_qw'];[b.jointname,'_qx'];[b.jointname,'_qy'];[b.jointname,'_qz']});
+              positions = vertcat(positions,{[b.jointname,'_x'];[b.jointname,'_y'];[b.jointname,'_z'];[b.jointname,'_qw'];[b.jointname,'_qx'];[b.jointname,'_qy'];[b.jointname,'_qz']});
+              velocities = vertcat(velocities,{[b.jointname,'_xdot'];[b.jointname,'_ydot'];[b.jointname,'_zdot'];[b.jointname,'_wx'];[b.jointname,'_wy'];[b.jointname,'_wz']});
             else
-              joints = vertcat(joints,{b.jointname});
+              positions = vertcat(positions,{b.jointname});
+              velocities = vertcat(velocities,{[b.jointname,'dot']});
             end
-            frame_dims(b.dofnum)=i;
+            frame_dims(b.position_num)=i;
+            frame_dims(model.getNumPositions() + b.velocity_num)=i;
           end
         end
-        coordinates = vertcat(joints,cellfun(@(a) [a,'dot'],joints,'UniformOutput',false));
-        fr{i} = CoordinateFrame([model.name{i},'State'],length(coordinates),'x',coordinates);
+
+        fr = CoordinateFrame([model.name{i},'Position'],length(positions),'q',positions);
+        if numel(model.robot_position_frames)<i || ~isequal_modulo_transforms(fr,model.robot_position_frames{i}) % let the previous handle stay valid if possible
+          model.robot_position_frames{i} = fr;
+        end
+        fr = CoordinateFrame([model.name{i},'Velocity'],length(velocities),'v',velocities);
+        if numel(model.robot_velocity_frames)<i || ~isequal_modulo_transforms(fr,model.robot_velocity_frames{i}) % let the previous handle stay valid if possible
+          model.robot_velocity_frames{i} = fr;
+        end
+        fr = MultiCoordinateFrame.constructFrame({model.robot_position_frames{i},model.robot_velocity_frames{i}},[],true);
+        if numel(model.robot_state_frames)<i || ~isequal_modulo_transforms(fr,model.robot_state_frames{i}) % let the previous handle stay valid if possible
+          model.robot_state_frames{i} = fr;
+        end
       end
-%      frame_dims=[model.body(arrayfun(@(a) ~isempty(a.parent),model.body)).robotnum];
-      frame_dims=[frame_dims,frame_dims];
-      fr = MultiCoordinateFrame.constructFrame(fr,frame_dims,true);
+      fr = MultiCoordinateFrame.constructFrame(model.robot_state_frames,frame_dims,true);
+      if ~isequal_modulo_transforms(fr,getStateFrame(model)) % let the previous handle stay valid if possible
+        model = setStateFrame(model,fr);
+      end
     end
 
     function [model,fr,pval,pmin,pmax] = constructParamFrame(model)
@@ -1620,7 +1739,7 @@ classdef RigidBodyManipulator < Manipulator
       end
       fr = MultiCoordinateFrame.constructFrame(frames);
     end
-    
+
     function fr = constructInputFrame(model)
       %inputparents is an array of the parent RigidBodies of each joint.
       inputparents = [];
@@ -1630,7 +1749,7 @@ classdef RigidBodyManipulator < Manipulator
         inputnames = {model.actuator.name};
       end
       for i = 1:length(model.force)
-        if isa(model.force{i},'RigidBodyThrust')
+        if isa(model.force{i},'RigidBodyThrust') || isa(model.force{i}, 'RigidBodyPropellor')
           frame = model.frame(-model.force{i}.kinframe);
           inputparents = [inputparents model.body(frame.body_ind)];
           inputnames{end+1} = model.force{i}.name;
@@ -1649,49 +1768,49 @@ classdef RigidBodyManipulator < Manipulator
       frame_dims = [inputparents.robotnum];
       fr = MultiCoordinateFrame.constructFrame(fr,frame_dims,true);
     end
-        
-    function [model,dof] = extractFeatherstone(model)
+
+    function model = extractFeatherstone(model)
       % @ingroup Kinematic Tree
-      
+
       %      m=struct('NB',{},'parent',{},'jcode',{},'Xtree',{},'I',{});
       dof=0;inds=[];
       for i=1:length(model.body)
         if model.body(i).parent>0
           if (model.body(i).floating==1)
-            model.body(i).dofnum=dof+(1:6)';
+            model.body(i).position_num=dof+(1:6)';
             dof=dof+6;
             inds = [inds,i];
           elseif (model.body(i).floating==2)
-            model.body(i).dofnum=dof+(1:7)';
+            model.body(i).position_num=dof+(1:7)';
             dof=dof+7;
             inds = [inds,i];
           else
             dof=dof+1;
-            model.body(i).dofnum=dof;
+            model.body(i).position_num=dof;
             inds = [inds,i];
           end
         else
-          model.body(i).dofnum=0;
+          model.body(i).position_num=0;
         end
       end
-      m.NB= dof;  
+      m.NB= dof;
       n=1;
       m.f_ext_map_from = inds;  % size is length(model.body) output is index into NB, or zero
       m.f_ext_map_to = [];
 
       for i=1:length(inds) % number of links with parents
         b=model.body(inds(i));
-        if (b.floating==1)   % implement relative ypr, but with dofnums as rpy
+        if (b.floating==1)   % implement relative ypr, but with position_nums as rpy
           % todo:  remove this and handle the floating joint directly in
           % HandC.  this is really just a short term hack.
-          m.dofnum(n+(0:5)) = b.dofnum([1;2;3;6;5;4]);
+          m.position_num(n+(0:5)) = b.position_num([1;2;3;6;5;4]);
           m.pitch(n+(0:2)) = inf;  % prismatic
           m.pitch(n+(3:5)) = 0;    % revolute
           m.damping(n+(0:5)) = 0;
           m.coulomb_friction(n+(0:5)) = 0;
           m.static_friction(n+(0:5)) = 0;
           m.coulomb_window(n+(0:5)) = eps;
-          m.parent(n+(0:5)) = [model.body(b.parent).dofnum,n+(0:4)];  % rel ypr
+          m.parent(n+(0:5)) = [model.body(b.parent).position_num,n+(0:4)];  % rel ypr
           m.Xtree{n} = Xroty(pi/2);   % x
           m.Xtree{n+1} = Xrotx(-pi/2)*Xroty(-pi/2); % y (note these are relative changes, x was up, now I'm rotating so y will be up)
           m.Xtree{n+2} = Xrotx(pi/2); % z
@@ -1703,13 +1822,13 @@ classdef RigidBodyManipulator < Manipulator
           % but I can't leave the check in because it is also very ugly because this method gets run potentially
           % multiple times, and will update b each time! (so the test will
           % fail on the second pass)
-          
-          b.X_joint_to_body = Xroty(-pi/2); 
+
+          b.X_joint_to_body = Xroty(-pi/2);
           % note: this is a strange and ugly case where I have to let the
           % X_joint_to_body get out of sync with the T_body_to_joint, since
           % the kinematics believes one thing and the featherstone dynamics
           % believes another.
-          
+
           for j=0:4, m.I{n+j} = zeros(6); end
           m.I{n+5} = b.X_joint_to_body'*b.I*b.X_joint_to_body;
           m.f_ext_map_to = [m.f_ext_map_to,n+5];
@@ -1717,8 +1836,8 @@ classdef RigidBodyManipulator < Manipulator
         elseif (b.floating==2)
           error('dynamics for quaternion floating base not implemented yet');
         else
-          m.parent(n) = max(model.body(b.parent).dofnum);
-          m.dofnum(n) = b.dofnum;  % note: only need this for my floating hack above (remove it when gone)
+          m.parent(n) = max(model.body(b.parent).position_num);
+          m.position_num(n) = b.position_num;  % note: only need this for my floating hack above (remove it when gone)
           m.pitch(n) = b.pitch;
           m.Xtree{n} = inv(b.X_joint_to_body)*b.Xtree*model.body(b.parent).X_joint_to_body;
           m.I{n} = b.X_joint_to_body'*b.I*b.X_joint_to_body;
@@ -1733,7 +1852,7 @@ classdef RigidBodyManipulator < Manipulator
       end
       model.featherstone = m;
     end
-      
+
     function model=removeFixedJoints(model)
       % takes any fixed joints out of the tree, adding their visuals and
       % inertia to their parents, and connecting their children directly to
@@ -1742,7 +1861,7 @@ classdef RigidBodyManipulator < Manipulator
 
       fixedind = find(isnan([model.body.pitch]) | ... % actual fixed joint
         cellfun(@(a) (isnumeric(a) && ~any(any(a))),{model.body.I}));    % body has no inertia (yes, it happens in pr2.urdf)
-      
+
       for i=fixedind(end:-1:1)  % go backwards, since it is presumably more efficient to start from the bottom of the tree
         body = model.body(i);
         if body.parent<1
@@ -1750,7 +1869,7 @@ classdef RigidBodyManipulator < Manipulator
           continue;
         end
         parent = model.body(body.parent);
-          
+
         if ~isnan(body.pitch)
           if any([model.body.parent] == i) || any(any(body.I))
             % link has inertial importance from child links
@@ -1761,26 +1880,26 @@ classdef RigidBodyManipulator < Manipulator
             warning('Drake:RigidBodyManipulator:BodyHasZeroInertia',['Link ',body.linkname,' has zero inertia (even though gravity is on and it''s not a fixed joint) and will be removed']);
           end
         end
-        
+
         parent.linkname=[parent.linkname,'+',body.linkname];
-        
+
         % add inertia into parent
-        if (any(any(body.I))) 
+        if (any(any(body.I)))
             %Check before running setInertial() that the body doesn't have added-mass
             %coefficients (I haven't written up the welding support for that yet - JSI)
           if ~valuecheck(body.Iaddedmass,zeros(6,6));
               error('Adding inertia to parent with added-mass coefficients is not supported yet');
           end
-            
-          % same as the composite inertia calculation in HandC.m          
+
+          % same as the composite inertia calculation in HandC.m
           parent = setInertial(parent,parent.I + body.Xtree' * body.I * body.Xtree);
         end
-        
+
         for j=1:length(body.visual_shapes)
           body.visual_shapes{j}.T = body.Ttree*body.visual_shapes{j}.T;
         end
         parent.visual_shapes = horzcat(parent.visual_shapes,body.visual_shapes);
-        
+
         if (~isempty(body.contact_shapes))
           for j=1:length(body.contact_shapes)
             body.contact_shapes{j}.T = body.Ttree*body.contact_shapes{j}.T;
@@ -1800,7 +1919,7 @@ classdef RigidBodyManipulator < Manipulator
             end
           end
         end
-                
+
         for j=1:length(model.loop)
           model.loop(j) = updateForRemovedLink(model.loop(j),model,i);
         end
@@ -1813,7 +1932,10 @@ classdef RigidBodyManipulator < Manipulator
         for j=1:length(model.frame)
           model.frame(j) = updateForRemovedLink(model.frame(j),model,i);
         end
-          
+        for key = model.collision_filter_groups.keys
+          model.collision_filter_groups(key{1}) = updateForRemovedLink(model.collision_filter_groups(key{1}),model,i,parent.linkname,key{1});
+        end
+
         % remove actuators
         if (~isempty(model.actuator) && any([model.actuator.joint] == i))
           model.actuator(find([model.actuator.joint]==i))=[];
@@ -1821,7 +1943,7 @@ classdef RigidBodyManipulator < Manipulator
           % occasionally weld joints together (e.g. in planar processing of
           % a 3D robot)
         end
-        
+
         % connect children to parents
 %        children = find([model.body.parent] == body);
         for j=1:length(model.body),
@@ -1841,18 +1963,18 @@ classdef RigidBodyManipulator < Manipulator
         model = updateBodyIndices(model,[1:i-1,i+1:length(model.body)]);
       end
     end
-    
+
     function [phi,dphi,ddphi] = loopConstraints(obj,q)
       % handle kinematic loops
 
       phi=[];dphi=[];ddphi=[];
 
       kinsol = doKinematics(obj,q,nargout>2);
-      
+
       for i=1:length(obj.loop)
         % for each loop, add the constraints that the pt1 on body1 is in
         % the same location as pt2 on body2
-        
+
         if (nargout>2)
           [pt1,J1,dJ1] = obj.forwardKin(kinsol,obj.loop(i).body1,obj.loop(i).pt1);
           [pt2,J2,dJ2] = obj.forwardKin(kinsol,obj.loop(i).body2,obj.loop(i).pt2);
@@ -1868,25 +1990,25 @@ classdef RigidBodyManipulator < Manipulator
         end
         phi = [phi; pt1-pt2];
       end
-    end      
-    
+    end
+
     function model=parseLink(model,robotnum,node,options)
-      
+
       ignore = char(node.getAttribute('drakeIgnore'));
       if strcmp(lower(ignore),'true')
         return;
       end
-      
+
       body = newBody(model);
       body.robotnum = robotnum;
-      
+
       body.linkname=char(node.getAttribute('name'));
       body.linkname=regexprep(body.linkname, '[\[\]\\\/\.]+', '_', 'preservecase');
-      
+
       if (options.inertial && node.getElementsByTagName('inertial').getLength()>0)
         body = parseInertial(body,node.getElementsByTagName('inertial').item(0),model,options);
       end
-      
+
       if (options.visual && node.getElementsByTagName('visual').getLength()>0)
         visualItem = 0;
         while(~isempty(node.getElementsByTagName('visual').item(visualItem)))
@@ -1894,7 +2016,7 @@ classdef RigidBodyManipulator < Manipulator
           visualItem = visualItem+1;
         end
       end
-      
+
       if options.collision && node.getElementsByTagName('collision').getLength()>0
         collisionItem = 0;
         while(~isempty(node.getElementsByTagName('collision').item(collisionItem)))
@@ -1902,15 +2024,15 @@ classdef RigidBodyManipulator < Manipulator
           collisionItem = collisionItem+1;
         end
       end
-      
+
       if options.sensors && node.getElementsByTagName('sensor').getLength()>0
         sensorItem = 0;
         while(~isempty(node.getElementsByTagName('sensor').item(sensorItem)))
           model = parseSensor(model,robotnum,node.getElementsByTagName('sensor').item(sensorItem),numel(model.body)+1,options);
           sensorItem = sensorItem+1;
         end
-      end          
-      
+      end
+
       model.body=[model.body,body];
     end
 
@@ -1968,7 +2090,7 @@ classdef RigidBodyManipulator < Manipulator
         end
       end
     end
-    
+
     function model = parseCollisionFilterGroup(model,robotnum,node,options)
       ignore = char(node.getAttribute('drakeIgnore'));
       if strcmpi(ignore,'true')
@@ -1978,7 +2100,7 @@ classdef RigidBodyManipulator < Manipulator
       if isKey(model.collision_filter_groups,collision_fg_name)
         error('RigidBodyManipulator:parseCollisionFilterGroup:repeated_collision_fg_name', ...
               ['A collision filter group with the collision_fg_name %s already exists in this '...
-               'RigidBodyManipulator'], collision_fg_name); 
+               'RigidBodyManipulator'], collision_fg_name);
       end
 
       model.collision_filter_groups(collision_fg_name) = CollisionFilterGroup();
@@ -2009,15 +2131,15 @@ classdef RigidBodyManipulator < Manipulator
                 'Unable to find collision filter group, %s',collision_fg_name);
         end
     end
-    
+
     function model = setupCollisionFiltering(model)
       % Transfers collision filtering information from the collision_filter_groups map
       % to the links themselves. Must be run BEFORE createMexPointer.
 
       % In case no robots were loaded from urdf, initialize
       % collision_filter_groups here.
-      if isempty(model.collision_filter_groups) 
-        model.collision_filter_groups=containers.Map('KeyType','char','ValueType','any');     
+      if isempty(model.collision_filter_groups)
+        model.collision_filter_groups=containers.Map('KeyType','char','ValueType','any');
         model.collision_filter_groups('no_collision') = CollisionFilterGroup();
       end
       if model.contact_options.ignore_self_collisions
@@ -2085,21 +2207,21 @@ classdef RigidBodyManipulator < Manipulator
     end
 
     function model=parseJoint(model,robotnum,node,options)
-      
+
       ignore = char(node.getAttribute('drakeIgnore'));
       if strcmp(lower(ignore),'true')
         return;
       end
-      
+
       parentNode = node.getElementsByTagName('parent').item(0);
       if isempty(parentNode) % then it's not the main joint element.  for instance, the transmission element has a joint element, too
         return
       end
       parent = findLinkInd(model,char(parentNode.getAttribute('link')),robotnum);
-      
+
       childNode = node.getElementsByTagName('child').item(0);
       child = findLinkInd(model,char(childNode.getAttribute('link')),robotnum);
-      
+
       name = char(node.getAttribute('name'));
       type = char(node.getAttribute('type'));
       xyz=zeros(3,1); rpy=zeros(3,1);
@@ -2149,7 +2271,7 @@ classdef RigidBodyManipulator < Manipulator
           end
         end
       end
-      
+
       % add noise to damping
       if ~isnumeric(damping) && options.damping_error
         warning('damping error not supported for parameterized values (yet)');
@@ -2193,25 +2315,23 @@ classdef RigidBodyManipulator < Manipulator
           velocity_limit = parseParamString(model,robotnum,char(limits.getAttribute('velocity')));
         end
       end
-      
+
       limits = struct();
       limits.joint_limit_min = joint_limit_min;
       limits.joint_limit_max = joint_limit_max;
       limits.effort_min = effort_min;
       limits.effort_max = effort_max;
       limits.velocity_limit = velocity_limit;
-      
+
       name=regexprep(name, '\.', '_', 'preservecase');
       model = addJoint(model,name,type,parent,child,xyz,rpy,axis,damping,coulomb_friction,static_friction,coulomb_window,limits);
-      
+
       if node.hasAttribute('has_position_sensor')
         model.body(child).has_position_sensor = str2num(char(node.getAttribute('has_position_sensor')));
-      else
-        model.body(child).has_position_sensor = true;
-      end          
+      end
     end
-    
-    
+
+
     function model = parseLoopJoint(model,robotnum,node,options)
       loop = RigidBodyLoop();
       loop.name = char(node.getAttribute('name'));
@@ -2223,14 +2343,14 @@ classdef RigidBodyManipulator < Manipulator
       if link1Node.hasAttribute('xyz')
         loop.pt1 = reshape(str2num(char(link1Node.getAttribute('xyz'))),3,1);
       end
-      
+
       link2Node = node.getElementsByTagName('link2').item(0);
       link2 = findLinkInd(model,char(link2Node.getAttribute('link')),robotnum);
       loop.body2 = link2;
       if link2Node.hasAttribute('xyz')
         loop.pt2 = reshape(str2num(char(link2Node.getAttribute('xyz'))),3,1);
       end
-      
+
       axis=[1;0;0];  % default according to URDF documentation
       axisnode = node.getElementsByTagName('axis').item(0);
       if ~isempty(axisnode)
@@ -2240,7 +2360,7 @@ classdef RigidBodyManipulator < Manipulator
         end
       end
       loop.axis = axis;
-      
+
       type = char(node.getAttribute('type'));
       switch (lower(type))
         case {'continuous'}
@@ -2248,10 +2368,10 @@ classdef RigidBodyManipulator < Manipulator
         otherwise
           error(['joint type ',type,' not supported (yet?)']);
       end
-      
+
       model.loop=[model.loop,loop];
     end
-    
+
     function model = parseForceElement(model,robotnum,node,options)
       fe = [];
       childNodes = node.getChildNodes();
@@ -2259,50 +2379,57 @@ classdef RigidBodyManipulator < Manipulator
       if ~isempty(elnode)
         [model,fe] = RigidBodySpringDamper.parseURDFNode(model,robotnum,elnode,options);
       end
-      
+
       elnode = node.getElementsByTagName('torsional_spring').item(0);
       if ~isempty(elnode)
         [model,fe] = RigidBodyTorsionalSpring.parseURDFNode(model,robotnum,elnode,options);
       end
-      
+
       elnode = node.getElementsByTagName('wing').item(0);
       if ~isempty(elnode)
         [model,fe] = RigidBodyWing.parseURDFNode(model,robotnum,elnode,options);
       end
-      
+
       elnode = node.getElementsByTagName('thrust').item(0);
       if ~isempty(elnode)
         [model,fe] = RigidBodyThrust.parseURDFNode(model,robotnum,elnode,options);
       end
-      
+
       elnode = node.getElementsByTagName('added_mass').item(0);
       if ~isempty(elnode)
         [model,fe] = RigidBodyAddedMass.parseURDFNode(model,robotnum,elnode,options);
       end
-      
+
       elnode = node.getElementsByTagName('buoyancy').item(0);
       if ~isempty(elnode)
         [model,fe] = RigidBodyBuoyant.parseURDFNode(model,robotnum,elnode,options);
       end
       
+      elnode = node.getElementsByTagName('propellor').item(0);
+      if ~isempty(elnode)
+        [model,fe] = RigidBodyPropellor.parseURDFNode(model,robotnum,elnode,options);
+      end
+      
+      
+
       if ~isempty(fe)
         model.force{end+1} = fe;
       end
     end
-    
-    
+
+
     function model = updateBodyIndices(model,map_from_new_to_old)
       % @ingroup Kinematic Tree
       nold = length(model.body);
       model.body = model.body(map_from_new_to_old);
-      
+
       % build a simple function to map from old indices to new indices:
       map = zeros(1,nold);
       map(map_from_new_to_old) = 1:length(model.body);
       map = [0,map];
       mapfun = @(i) map(i+1);
-      
-      for i=1:length(model.body)  
+
+      for i=1:length(model.body)
         model.body(i) = updateBodyIndices(model.body(i),mapfun);
       end
       for i=1:length(model.actuator)
@@ -2321,8 +2448,7 @@ classdef RigidBodyManipulator < Manipulator
         model.frame(i) = updateBodyIndices(model.frame(i),mapfun);
       end
     end
-    
+
   end
 
 end
-
