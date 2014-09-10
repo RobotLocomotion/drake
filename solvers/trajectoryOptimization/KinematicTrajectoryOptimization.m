@@ -84,20 +84,26 @@ classdef KinematicTrajectoryOptimization
       %   and 3 and 4 together.
       typecheck(constraint,'RigidBodyConstraint');
       if ~iscell(time_index)
-        % then use { time_index(1), time_index(2), ... } ,
-        % aka independent constraints for each time
-        time_index = num2cell(time_index);
+        if isa(constraint,'MultipleTimeKinematicConstraint')
+          % then use { time_index(1), time_index(2), ... } ,
+          % aka independent constraints for each time
+          time_index = {reshape(time_index,1,[])};
+        else
+          % then use { time_index(1), time_index(2), ... } ,
+          % aka independent constraints for each time
+          time_index = num2cell(reshape(time_index,1,[]));
+        end
       end
       for j = 1:numel(time_index)
         if isa(constraint,'SingleTimeKinematicConstraint')
-          cnstr = constraint.generateConstraint(constraint.tspan(1));
+          cnstr = constraint.generateConstraint();
           obj = obj.addKinematicConstraint(cnstr{1},time_index(j));
         elseif isa(constraint, 'PostureConstraint')
-          cnstr = constraint.generateConstraint(constraint.tspan(1));
+          cnstr = constraint.generateConstraint();
           obj = obj.addConstraint(cnstr{1}, ...
             obj.q_inds(:,time_index{j}));
         elseif isa(constraint,'QuasiStaticConstraint')
-          cnstr = constraint.generateConstraint(constraint.tspan(1));
+          cnstr = constraint.generateConstraint();
           if(constraint.active)
             if(~isempty(obj.qsc_weight_inds{time_index{j}}))
               error('Drake:SimpleDynamicsFullKinematicsPlanner', ...
@@ -115,10 +121,10 @@ classdef KinematicTrajectoryOptimization
             obj = obj.addConstraint(cnstr{3},obj.qsc_weight_inds{time_index{j}});
           end
         elseif isa(constraint,'SingleTimeLinearPostureConstraint')
-          cnstr = constraint.generateConstraint(constraint.tspan(1));
+          cnstr = constraint.generateConstraint();
           obj = obj.addConstraint(cnstr{1},obj.q_inds(:,time_index{j}));
         elseif isa(constraint,'MultipleTimeKinematicConstraint')
-          cnstr = constraint.generateConstraint(numel(time_index{j}));
+          cnstr = constraint.generateConstraint([],numel(time_index{j}));
           if ~isempty(cnstr)
             obj = obj.addKinematicConstraint(cnstr{1},time_index(j));
           end
