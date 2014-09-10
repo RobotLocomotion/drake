@@ -7,7 +7,7 @@ classdef MinDistanceConstraint < SingleTimeKinematicConstraint
   %                   active
   properties
     min_distance
-    active_collision_options
+    active_collision_options = struct('body_idx',{},'collision_groups',{});
   end
 
   methods(Access=protected)
@@ -83,6 +83,21 @@ classdef MinDistanceConstraint < SingleTimeKinematicConstraint
       cost(idx_neg) = -dist(idx_neg).*exp_recip_dist;
       dcost_ddist(sub2ind(size(dcost_ddist),idx_neg,idx_neg)) = ...
         exp_recip_dist.*(dist(idx_neg).^(-1) - 1);
+    end
+
+    function obj = excludeCollisionGroups(obj, collision_group_names)
+      if ischar(collision_group_names)
+        collision_group_names = {collision_group_names};
+      else
+        typecheck(collision_group_names,'cell');
+        if ~isfield(obj.active_collision_options,'collision_groups') || ...
+            isempty(obj.active_collision_options.collision_groups)
+          obj.active_collision_options.collision_groups = unique([obj.robot.body.collision_group_name]);
+        end
+        obj.active_collision_options.collision_groups = setdiff(obj.active_collision_options.collision_groups,collision_group_names);
+      end
+      obj.mex_ptr.delete();
+      obj.mex_ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.MinDistanceConstraintType,obj.robot.getMexModelPtr,obj.min_distance,obj.active_collision_options,obj.tspan);
     end
 
     function num = getNumConstraint(obj,t)
