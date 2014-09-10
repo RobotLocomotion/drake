@@ -5,9 +5,9 @@ if ~checkDependency('gurobi')
   return;
 end
 
-oldpath = addpath(fullfile(getDrakePath,'examples','ZMP'));
-finishup = onCleanup(@() path(oldpath));
-addpath(fullfile(getDrakePath,'examples','Atlas','controllers'));
+path_handle = addpathTemporary({fullfile(getDrakePath,'examples','ZMP'),...
+                                fullfile(getDrakePath,'examples','Atlas','controllers'),...
+                                fullfile(getDrakePath,'examples','Atlas','frames')});
 
 % put robot in a random x,y,yaw position and balance for 2 seconds
 visualize = true;

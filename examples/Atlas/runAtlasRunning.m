@@ -8,9 +8,8 @@ end
 if (nargin<1); use_mex = true; end
 if (nargin<2); use_angular_momentum = false; end
 
-oldpath = addpath(fullfile(getDrakePath,'examples','Atlas','controllers'));
-finishup = onCleanup(@() path(oldpath));
-addpath(fullfile(getDrakePath,'examples','Atlas','frames'));
+path_handle = addpathTemporary({fullfile(getDrakePath,'examples','Atlas','controllers'),...
+                                fullfile(getDrakePath,'examples','Atlas','frames')});
 
 % silence some warnings
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints')

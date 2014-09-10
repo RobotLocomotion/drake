@@ -8,8 +8,9 @@ function plan = runAtlasWalkingPlanning()
 
 
 checkDependency('lcmgl');
-oldpath = addpath(fullfile(getDrakePath(), 'examples', 'ZMP'));
-finishup = onCleanup(@() path(oldpath));
+
+path_handle = addpathTemporary(fullfile(getDrakePath(), 'examples', 'ZMP'));
+
 % Set up the model
 load('data/atlas_fp.mat', 'xstar');
 x0 = xstar;
