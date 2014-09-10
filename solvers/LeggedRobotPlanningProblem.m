@@ -8,6 +8,8 @@ classdef LeggedRobotPlanningProblem
     quasistatic_shrink_factor = 0.2;
     n_interp_points = 0;
     fixed_initial_state = true;
+    start_from_rest = true;
+    end_at_rest = true;
     Q
     v_max = 30*pi/180;
     k_pts = 1e2;
@@ -89,6 +91,16 @@ classdef LeggedRobotPlanningProblem
       
       % Add collision avoidance constraints
       prog = obj.addCollisionConstraintsToPlanner(prog);
+
+      if obj.start_from_rest
+        % Note: Since we use backwards Euler for the integration constraints on
+        % q, we need to constrain v(:,2) as well.
+        prog = prog.addConstraint(ConstantConstraint(zeros(2*obj.robot.getNumVelocities(),1)),prog.v_inds(:,1:2));
+      end
+      
+      if obj.end_at_rest
+        prog = prog.addConstraint(ConstantConstraint(zeros(obj.robot.getNumVelocities(),1)),prog.v_inds(:,end));
+      end
     end
 
     function prog = generateQuasiStaticPlanner(obj,N,durations,q_nom_traj,q0,varargin)
@@ -109,7 +121,14 @@ classdef LeggedRobotPlanningProblem
 
       % Add Velocity constraints
       prog = prog.addConstraint(BoundingBoxConstraint(-obj.v_max*ones(obj.robot.getNumVelocities(),prog.N-2),obj.v_max*ones(obj.robot.getNumVelocities(),prog.N-2)),prog.v_inds(:,2:end-1));
-      prog = prog.addConstraint(BoundingBoxConstraint(zeros(obj.robot.getNumVelocities(),2),zeros(obj.robot.getNumVelocities(),2)),prog.v_inds(:,[1,end]));
+
+      if obj.start_from_rest
+        prog = prog.addConstraint(ConstantConstraint(zeros(obj.robot.getNumVelocities(),1)),prog.v_inds(:,1));
+      end
+      
+      if obj.end_at_rest
+        prog = prog.addConstraint(ConstantConstraint(zeros(obj.robot.getNumVelocities(),1)),prog.v_inds(:,end));
+      end
 
       % Set up costs
       q_frame = obj.robot.getPositionFrame();
