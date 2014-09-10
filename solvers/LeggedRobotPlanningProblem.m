@@ -60,9 +60,13 @@ classdef LeggedRobotPlanningProblem
       obj = addSupport(obj,body_id,pts,tspan,constraints);
     end
     
-    function prog = generateComDynamicsFullKinematicsPlanner(obj,N,durations,Q_comddot, Qv, Q, q_nom, ...
+    function prog = generateComDynamicsFullKinematicsPlanner(obj,N,durations,q_nom_traj,q0,Q_comddot, Qv, ...
         Q_contact_force,options)
       % @param N  -- Number of knot points
+      if nargin < 6, Q_comddot = []; end
+      if nargin < 7, Qv = []; end
+      if nargin < 9, Q_contact_force = []; end
+      if nargin < 10, options = struct(); end
       
       % Extract stance information
       in_stance = arrayfun(@(supp)activeKnots(supp,N), obj.supports, ...
@@ -86,9 +90,15 @@ classdef LeggedRobotPlanningProblem
           FC_edge);
       end
       
+      % Set up costs
+      q_nom = eval(q_nom_traj,linspace(0,1,N));
+      if isempty(Q_comddot), Q_comddot = eye(3); end
+      if isempty(Qv), Qv = eye(obj.robot.getNumVelocities()); end
+      if isempty(Q_contact_force), Q_contact_force = zeros(3); end
+
       % Construct planner
       prog = ComDynamicsFullKinematicsPlanner(obj.robot, N, durations, ...
-        Q_comddot, Qv, Q, q_nom, Q_contact_force,contact_wrench_struct, ...
+        Q_comddot, Qv, obj.Q, q_nom, Q_contact_force,contact_wrench_struct, ...
         options);
       
       % Add support constraints
@@ -105,6 +115,10 @@ classdef LeggedRobotPlanningProblem
       
       if obj.end_at_rest
         prog = prog.addConstraint(ConstantConstraint(zeros(obj.robot.getNumVelocities(),1)),prog.v_inds(:,end));
+      end
+
+      if obj.fixed_initial_state
+        prog = prog.addConstraint(ConstantConstraint(q0),prog.q_inds(:,1));
       end
     end
 
