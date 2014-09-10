@@ -12,7 +12,6 @@ classdef RigidBodySubWingWithControlSurface < RigidBodySubWing
     fCm_control_surface; 
     
     control_surface_increment = 0.01; % resolution of control surface parameterization in radians
-    lcmgl;
   end
   
   methods
@@ -46,8 +45,6 @@ classdef RigidBodySubWingWithControlSurface < RigidBodySubWing
       
       
       [obj.fCl_control_surface, obj.fCd_control_surface, obj.fCm_control_surface ] = obj.flateplateControlSurfaceInterp();
-      
-      obj = obj.enableLCMGL();
       
       
       
@@ -196,18 +193,7 @@ classdef RigidBodySubWingWithControlSurface < RigidBodySubWing
       B_force(:, obj.input_num) = B_lift + B_drag + B_moment; 
       
       dB_force = 0; %todo
-      
-      
-      if ~isempty(obj.lcmgl)
-        
-        
-        obj.lcmgl.glColor3f(1, 0, 0);
-        obj.lcmgl.line3(0, 0, 0, 1, 1, 1);
-        obj.lcmgl.switchBuffers;
-        
-      end
-       
-      
+
          
     end
     
@@ -216,11 +202,7 @@ classdef RigidBodySubWingWithControlSurface < RigidBodySubWing
       
       
     end
-    
-    function obj = enableLCMGL(obj)
-      checkDependency('lcmgl');
-      obj.lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(), 'subwing');
-    end
+a
     
     function [fCl, fCd, fCm] = flatplate_old(obj)
       disp('Using a flat plate airfoil with control surfaces.')
