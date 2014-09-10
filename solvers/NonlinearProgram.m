@@ -35,17 +35,12 @@ classdef NonlinearProgram
     lcon % A cell array of LinearConstraint
     bbcon % A cell array of BoundingBoxConstraint
     cost % A cell array of NonlinearConstraint or LinearConstraint.
-    num_nlcon % number of nonlinear constraints
-    num_lcon % number of linear constraints
     
     nlcon_xind % A cell array, nlcon_xind{i} is a cell array of int vectors recording the indices of x that is used in evaluation the i'th NonlinearConstraint
                % nlcon{i}.eval(x(nlcon_xind{i}{1},x(nlcon_xind{i}{2},...)
-    nlcon_xind_stacked % a cell array of vectors, the stacked values of nlcon_xind{i}
     cost_xind_cell % A cell array, cost_xind{i} is a cell array of int vectors recording the indices of x that is used in evaluating obj.cost{i}
-    cost_xind_stacked % A cell array, cost_xind{i} is an int vector recording the indices of x that is used in evaluating obj.cost{i}
     bbcon_xind % A cell array, bbcon_xind{i} is an int vector recording the indices of x used in i'th BoundingBoxConstraint
-    nlcon_ineq_idx % row index of nonlinear inequality constraint
-    nlcon_eq_idx % row index of nonlinear equality constraint
+    
     
     % a cell array like nlcon_xind, where shared_data_xind_cell{i} is a
     % cell array of int vectors recording indices used in evaluating the 
@@ -63,7 +58,15 @@ classdef NonlinearProgram
   end
   
   properties (Access=private)
-    objcon_logic = false;
+    nlcon_xind_stacked % a cell array of vectors, the stacked values of nlcon_xind{i}
+    cost_xind_stacked % A cell array, cost_xind{i} is an int vector recording the indices of x that is used in evaluating obj.cost{i}
+    nlcon_ineq_idx % row index of nonlinear inequality constraint in the value [obj.nlcon{i}.eval for i = 1:length(obj.nlcon)]
+    nlcon_eq_idx % row index of nonlinear equality constraint in the value [obj.nlcon{i}.eval for i = 1:length(obj.nlcon)]
+    c2nlcon_idx  % An integer vector. The j'th row of the the nonlinear constraints [obj.nlcon{i}.eval for i = 1:length(obj.nlcon)] comes from the Constraint object obj.nlcon{obj.c2nlcon_idx(j)}
+    cin2nlcon_idx % An integer vector. The j'th row of inequality constraint cin is from Constraint object obj.nlcon{obj.cin2nlcon_idx(j)}
+    ceq2nlcon_idx % An integer vector. The j'th row of equality constraint ceq is from the Constraint object obj.nlcon{obj.ceq2nlcon_idx(j)}
+    Ain_lincon_idx % An integer vector. The j'th row of the inequality linear constraint Ain*x<=bin is from the Constraint object obj.lincon{obj.Ain_lincon_idx(j)}
+    Aeq_lincon_idx % An integer vector. The j'th row of the inequality linear constraint Aeq*x=beq is from the Constraint object obj.lincon{obj.Aeq_lincon_idx(j)}
   end
 
   properties (Access = protected)
@@ -99,16 +102,14 @@ classdef NonlinearProgram
       obj.cin_lb = -inf(obj.num_cin,1);
       obj.iFfun = ones(obj.num_vars,1);
       obj.jFvar = (1:obj.num_vars)';
-      obj.iCinfun = reshape(bsxfun(@times,(1:obj.num_cin)',ones(1,obj.num_vars)),[],1);
-      obj.jCinvar = reshape(bsxfun(@times,ones(obj.num_cin,1),(1:obj.num_vars)),[],1);
-      obj.iCeqfun = reshape(bsxfun(@times,(1:obj.num_ceq)',ones(1,obj.num_vars)),[],1);
-      obj.jCeqvar = reshape(bsxfun(@times,ones(obj.num_ceq,1),(1:obj.num_vars)),[],1);
+      obj.iCinfun = [];
+      obj.jCinvar = [];
+      obj.iCeqfun = [];
+      obj.jCeqvar = [];
       
       obj.nlcon = {};
       obj.lcon = {};
       obj.bbcon = {};
-      obj.num_nlcon = 0;
-      obj.num_lcon = 0;
       obj.nlcon_xind = {};
       obj.nlcon_xind_stacked = {};
       obj.nlcon_ineq_idx = [];
@@ -125,6 +126,12 @@ classdef NonlinearProgram
       obj.shared_data_functions = {};
       obj.nlcon_dataind = {};
       obj.cost_dataind = {};
+      
+      obj.c2nlcon_idx = [];
+      obj.cin2nlcon_idx = [];
+      obj.ceq2nlcon_idx = [];
+      obj.Ain_lincon_idx = [];
+      obj.Aeq_lincon_idx = [];
       
       if checkDependency('snopt')
         obj = obj.setSolver('snopt');
@@ -260,8 +267,12 @@ classdef NonlinearProgram
       
       obj.cin_ub = [obj.cin_ub;cnstr.ub(cnstr.cin_idx)];
       obj.cin_lb = [obj.cin_lb;cnstr.lb(cnstr.cin_idx)];
-      obj.nlcon_ineq_idx = [obj.nlcon_ineq_idx;obj.num_nlcon+cnstr.cin_idx];
-      obj.nlcon_eq_idx = [obj.nlcon_eq_idx;obj.num_nlcon+cnstr.ceq_idx];
+      obj.nlcon_ineq_idx = [obj.nlcon_ineq_idx;obj.num_cin+obj.num_ceq+cnstr.cin_idx];
+      obj.nlcon_eq_idx = [obj.nlcon_eq_idx;obj.num_cin+obj.num_ceq+cnstr.ceq_idx];
+      obj.c2nlcon_idx = [obj.c2nlcon_idx;(length(obj.nlcon)+1)*ones(cnstr.num_cnstr,1)];
+      obj.cin2nlcon_idx = [obj.cin2nlcon_idx;(length(obj.nlcon)+1)*ones(length(cnstr.cin_idx),1)];
+      obj.ceq2nlcon_idx = [obj.ceq2nlcon_idx;(length(obj.nlcon)+1)*ones(length(cnstr.ceq_idx),1)];
+      
       Geq_idx = cnstr.lb(cnstr.iCfun) == cnstr.ub(cnstr.iCfun);
       Gin_idx = ~Geq_idx;
       inv_ceq_idx = zeros(cnstr.num_cnstr,1);
@@ -276,7 +287,6 @@ classdef NonlinearProgram
       obj.ceq_name = [obj.ceq_name;cnstr.name(cnstr.ceq_idx)];
       obj.num_cin = obj.num_cin + length(cnstr.cin_idx);
       obj.num_ceq = obj.num_ceq + length(cnstr.ceq_idx);
-      obj.num_nlcon = obj.num_nlcon + cnstr.num_cnstr;
       obj.nlcon_xind{end+1} = xind;
       obj.nlcon_xind_stacked{end+1} = xind_vec;
       obj.nlcon_dataind{end+1} = data_ind;
@@ -415,8 +425,8 @@ classdef NonlinearProgram
       % @retval dg  The gradient of g w.r.t x
       % @retval dh  The gradient of h w.r.t x
       shared_data = obj.evaluateSharedDataFunctions(x);
-      f = zeros(obj.num_nlcon,1);
-      G = zeros(obj.num_nlcon,obj.num_vars);
+      f = zeros(obj.num_cin+obj.num_ceq,1);
+      G = zeros(obj.num_cin+obj.num_ceq,obj.num_vars);
       f_count = 0;
       for i = 1:length(obj.nlcon)
         args = [getArgumentArray(obj,x,obj.nlcon_xind{i});shared_data(obj.nlcon_dataind{i})];
@@ -476,8 +486,8 @@ classdef NonlinearProgram
         obj.display_funs{i}(x(obj.display_fun_indices{i}));
       end
       
-      f = zeros(1+obj.num_nlcon,1);
-      G = zeros(1+obj.num_nlcon,obj.num_vars);
+      f = zeros(1+obj.num_cin+obj.num_ceq,1);
+      G = zeros(1+obj.num_cin+obj.num_ceq,obj.num_vars);
       for i = 1:length(obj.cost)
         args = [getArgumentArray(obj,x,obj.cost_xind_cell{i});shared_data(obj.cost_dataind{i})];
         if(nargout>1)
@@ -921,6 +931,61 @@ classdef NonlinearProgram
         fprintf('%12s%12.3f%12d%17.4f\n',solvers{i},objval{i},exitflag{i},execution_time{i});
       end
     end
+    
+    function obj = deleteNonlinearConstraint(obj,delete_idx)
+      % delete a nonlinear constraint from the program
+      % @param delete_idx   An integer. obj.nlcon{delete_idx} is the nonlinear constraint to be
+      % deleted
+      if(numel(delete_idx)~=1 || ~isinteger(delete_idx))
+        error('Drake:NonlinearProgram:deleteNonlinearConstraint:InvalidInput','delete_idx should be an integer');
+      end
+      if(delete_idx<=0 || delete_idx>length(obj.nlcon))
+        error('Drake:NonlinearProgram:deleteNonlinearConstraint:InvalidInput','delete_idx out of bound');
+      end
+      
+      cin_delete_flag = obj.cin2nlcon_idx == delete_idx;
+      ceq_delete_flag = obj.ceq2nlcon_idx == delete_idx;
+      cin_idx = (1:obj.num_cin)';
+      cin_delete_idx = cin_idx(cin_delete_flag);
+      ceq_idx = (1:obj.num_ceq)';
+      ceq_delete_idx = ceq_idx(ceq_delete_flag);
+      c_delete_idx = obj.c2nlcon_idx == delete_idx;
+      c_delta = cumsum(double(c_delete_idx)); 
+      num_delete_cin = length(obj.nlcon{delete_idx}.cin_idx);
+      num_delete_ceq = length(obj.nlcon{delete_idx}.ceq_idx);
+      remaining_nlcon_idx = [1:delete_idx-1 delete_idx+1:length(obj.nlcon)];
+      obj.cin_lb = obj.cin_lb(~cin_delete_flag);
+      obj.cin_ub = obj.cin_ub(~cin_delete_flag);
+      obj.cin_name = obj.cin_name(~cin_delete_flag);
+      obj.ceq_name = obj.ceq_name(~ceq_delete_flag);
+      obj.num_cin = obj.num_cin-num_delete_cin;
+      obj.num_ceq = obj.num_ceq-num_delete_ceq;
+      
+      
+      obj.nlcon = obj.nlcon(remaining_nlcon_idx);
+      obj.nlcon_xind = obj.nlcon_xind(remaining_nlcon_idx);
+      obj.nlcon_xind_stacked = obj.nlcon_xind_stacked(remaining_nlcon_idx);
+      obj.nlcon_dataind = obj.nlcon_dataind(remaining_nlcon_idx);
+      obj.nlcon_ineq_idx = obj.nlcon_ineq_idx(~c_delete_idx)-c_delta(obj.nlcon_ineq_idx(~c_delete_idx));
+      obj.nlcon_eq_idx = obj.nlcon_eq_idx(~c_delete_idx)-c_delta(obj.nlcon_eq_idx(~c_delete_idx));
+      obj.c2nlcon_idx = obj.c2nlcon_idx(~c_delete_idx);
+      obj.c2nlcon_idx(obj.c2nlcon_idx>delete_idx) = obj.c2nlcon_idx(obj.c2nlcon_idx>delete_idx)-1;
+      obj.cin2nlcon_idx = obj.cin2nlcon_idx(~cin_delete_flag);
+      obj.cin2nlcon_idx(obj.cin2nlcon_idx>delete_idx) = obj.cin2nlcon_idx(obj.cin2nlcon_idx>delete_idx)-1;
+      obj.ceq2nlcon_idx = obj.ceq2nlcon_idx(~ceq_delete_flag);
+      obj.ceq2nlcon_idx(obj.ceq2nlcon_idx>delete_idx) = obj.ceq2nlcon_idx(obj.ceq2nlcon_idx>delete_idx)-1;
+      
+      old_iCinfun = obj.iCinfun;
+      obj.iCinfun = obj.iCinfun-sum(bsxfun(@minus,obj.iCinfun,cin_delete_idx')>0,2);
+      obj.iCinfun = obj.iCinfun(~obj.cin_delete_flag(old_iCinfun));
+      obj.jCinvar = obj.jCinvar(~obj.cin_delete_flag(old_iCinfun));
+      
+      old_iCeqfun = obj.iCeqfun;
+      obj.iCeqfun = obj.iCeqfun-sum(bsxfun(@minus,obj.iCeqfun,ceq_delete_idx')>0,2);
+      obj.iCeqfun = obj.iCeqfun(~obj.ceq_delete_flag(old_iCeqfun));
+      obj.jCeqvar = obj.jCeqvar(~obj.ceq_delete_flag(old_iCeqfun));
+    end
+    
   end
   
   methods(Access=protected)
