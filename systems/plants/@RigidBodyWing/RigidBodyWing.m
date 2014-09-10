@@ -130,7 +130,6 @@ classdef RigidBodyWing < RigidBodyForceElement
         end
         if elnode.hasAttribute('rpy')
           rpy = reshape(parseParamString(model,robotnum,char(elnode.getAttribute('rpy'))),3,1);
-          if any(rpy), error('rpy not implemented yet for wings'); end
         end
       end
       [model,frame_id] = addFrame(model,RigidBodyFrame(parent,xyz,rpy,[name,'_frame']));
