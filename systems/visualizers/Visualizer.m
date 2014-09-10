@@ -195,7 +195,7 @@ classdef Visualizer < DrakeSystem
       end
     end
 
-    function inspector(obj,x0,state_dims,vel_dims,minrange,maxrange,visualized_system)
+    function inspector(obj,x0,state_dims,minrange,maxrange,visualized_system)
       % set up a little gui with sliders to manually adjust each of the
       % coordinates.
 
@@ -211,7 +211,7 @@ classdef Visualizer < DrakeSystem
         [x0,~,prog] = resolveConstraints(visualized_system,x0);
       end
 
-      rows = ceil((length(state_dims)+length(vel_dims))/2);
+      rows = ceil(length(state_dims)/2);
       f = sfigure(99); clf;
       set(f,'ResizeFcn',@resize_gui);
 
@@ -226,35 +226,16 @@ classdef Visualizer < DrakeSystem
         % use a little undocumented matlab to get continuous slider feedback:
         slider_listener{i} = handle.listener(slider{i},'ActionEvent',@update_display);
       end
-
-      for i=1:numel(vel_dims)
-        label{i+numel(state_dims)} = uicontrol('Style','text','String',getCoordinateName(fr,vel_dims(i)), ...
-          'BackgroundColor',[.8 .8 .8],'HorizontalAlignment','right');
-        slider{i+numel(state_dims)} = uicontrol('Style', 'slider', 'Min', -100, 'Max', 100, ...
-          'Value', x0(i), 'Callback',{@update_velocities},'UserData',vel_dims(i));
-        value{i+numel(state_dims)} = uicontrol('Style','text','String',num2str(x0(i)), ...
-          'BackgroundColor',[.8 .8 .8],'HorizontalAlignment','left');
-
-        % use a little undocumented matlab to get continuous slider feedback:
-        slider_listener{i+numel(state_dims)} = handle.listener(slider{i+numel(state_dims)},'ActionEvent',@update_velocities);
-      end
       
       set(f, 'Position', [560 400 560 20 + 30*rows]);
       resize_gui();
       update_display(slider{1});
-      update_velocities(slider{numel(state_dims)+1});
 
       function resize_gui(source, eventdata)
         p = get(gcf,'Position');
         width = p(3);
         y=30*rows-10;
         for i=1:numel(state_dims)
-          set(label{i},'Position',[20+width/2*(i>rows), y+30*rows*(i>rows), width/2-220, 20]);
-          set(slider{i},'Position', [width/2-190+width/2*(i>rows), y+30*rows*(i>rows), 140, 20]);
-          set(value{i},'Position', [width/2-45+width/2*(i>rows), y+30*rows*(i>rows), 45, 20]);
-          y = y - 30;
-        end
-        for i=numel(state_dims)+1:numel(state_dims)+numel(vel_dims)
           set(label{i},'Position',[20+width/2*(i>rows), y+30*rows*(i>rows), width/2-220, 20]);
           set(slider{i},'Position', [width/2-190+width/2*(i>rows), y+30*rows*(i>rows), 140, 20]);
           set(value{i},'Position', [width/2-45+width/2*(i>rows), y+30*rows*(i>rows), 45, 20]);
@@ -293,48 +274,62 @@ classdef Visualizer < DrakeSystem
         end
         x0 = x;
         obj.drawWrapper(t,x);
-        update_velocities(slider{numel(state_dims)+1});
-      end
-      
-      function update_velocities(source, eventdata)
-        t = 0;
-        for i=1:numel(vel_dims)
-          x0(vel_dims(i)) = get(slider{i+numel(state_dims)}, 'Value');
-          set(value{i+numel(state_dims)},'String',num2str(x0(vel_dims(i)),'%4.3f'));
-        end
         
-        q = x0(1:numel(x0)/2);
-        qd = x0(numel(x0)/2+1:end);
-        
-        unit_length = .25;
-        
-        lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton,'gravity');
-        gravity_force = getMass(visualized_system)*visualized_system.gravity;
-        normalized_gravity = (unit_length/norm(gravity_force,2))*gravity_force;
-        robot_com = getCOM(visualized_system,q);
-        lcmgl.glColor3f(.5,0,0);
-        lcmgl.drawVector3d(robot_com,normalized_gravity);
-        
-        lcmgl.glColor3f(.5,.5,.5);
-        kinsol = doKinematics(visualized_system,q,false,false);
-        for i=1:length(visualized_system.force)
-          if ~visualized_system.force{i}.direct_feedthrough_flag && isa(visualized_system.force{i},'RigidBodyWing')
-            f_ext = computeSpatialForce(visualized_system.force{i},visualized_system,q,qd);
-            frame = getFrame(visualized_system,visualized_system.force{i}.kinframe);
-            joint_wrench = f_ext(:,frame.body_ind);
-            body_wrench = inv(visualized_system.body(frame.body_ind).X_joint_to_body)'*joint_wrench;
-            T = kinsol.T{frame.body_ind};
-            point = T(1:3,4);
-            force = T(1:3,1:3)*body_wrench(4:6);
-            nforce = (unit_length/norm(gravity_force,2))*force;
-            lcmgl.drawVector3d(point,nforce);
+        if (max(state_dims)>getNumPositions(visualized_system))
+          % was asked to show velocties, draw forces and torques
+          q = x0(1:getNumPositions(visualized_system));
+          qd = x0(getNumPositions(visualized_system)+1:getNumPositions(visualized_system)+getNumVelocities(visualized_system));
+          unit_length = .25; % the length corresponding to gravity on the robot
+          
+          gravity_force = getMass(visualized_system)*visualized_system.gravity;
+          vector_scale = unit_length/norm(gravity_force,2);
+          lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton,'Gravity');
+          lcmgl.glColor3f(.5,0,0);
+          lcmgl.drawVector3d(getCOM(visualized_system,q),vector_scale*gravity_force);
+          lcmgl.switchBuffers();
+          
+          kinsol = doKinematics(visualized_system,q,false,false);
+          force_vectors = {};
+          for i=1:length(visualized_system.force)
+            if ~visualized_system.force{i}.direct_feedthrough_flag
+              force_element = visualized_system.force{i};
+              force_type = class(force_element);
+              if isprop(force_element,'child_body')
+                  body_ind = force_element.child_body;
+              else
+                  frame = getFrame(visualized_system,force_element.kinframe);
+                  body_ind = frame.body_ind;
+              end
+              f_ext = computeSpatialForce(force_element,visualized_system,q,qd);
+              joint_wrench = f_ext(:,body_ind);
+              body_wrench = inv(visualized_system.body(body_ind).X_joint_to_body)'*joint_wrench;
+              body_T = kinsol.T{body_ind};
+              point = body_T(1:3,4);
+              torque = body_T(1:3,1:3)*body_wrench(1:3);
+              force = body_T(1:3,1:3)*body_wrench(4:6);
+              if ~isfield(force_vectors,force_type), force_vectors.(force_type) = []; end
+              force_vectors.(force_type) = [force_vectors.(force_type),[point;torque;force]];              
+            end
+          end
+          force_types = fields(force_vectors);
+          for i=1:length(force_types);
+              force_type = force_types(i); force_type = force_type{1};
+              vectors = force_vectors.(force_type);
+              lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton,force_type);
+              for j=1:size(vectors,2)
+                  point = vectors(1:3,j);
+                  torque = vectors(4:6,j);
+                  force = vectors(7:9,j);
+                  lcmgl.glColor3f(.4,.2,.4);      
+                  lcmgl.drawVector3d(point,vector_scale*torque);
+                  lcmgl.glColor3f(.2,.4,.2);      
+                  lcmgl.drawVector3d(point,vector_scale*force);
+              end
+              lcmgl.switchBuffers();
           end
         end
         
-        lcmgl.switchBuffers();
-        obj.drawWrapper(t,x0);
       end
-      
     end
 
     function playbackMovie(obj,xtraj,filename)
