@@ -7,6 +7,7 @@ classdef LeggedRobotPlanningProblem
     min_distance = 0.03;
     quasistatic_shrink_factor = 0.2;
     n_interp_points = 0;
+    excluded_collision_groups = struct('name',{},'tspan',{});
     fixed_initial_state = true;
     start_from_rest = true;
     end_at_rest = true;
@@ -20,6 +21,9 @@ classdef LeggedRobotPlanningProblem
       obj.robot = robot;
       if isfield(options,'n_interp_points')
         obj.n_interp_points = options.n_interp_points;
+      end
+      if isfield(options,'excluded_collision_groups')
+        obj.excluded_collision_groups = options.excluded_collision_groups;
       end
       obj.Q = 1e0*eye(obj.robot.getNumPositions());
       obj.Q(1,1) = 0;
@@ -199,6 +203,8 @@ classdef LeggedRobotPlanningProblem
     function prog = addCollisionConstraintsToPlanner(obj,prog)
       in_stance = arrayfun(@(supp)activeKnots(supp,prog.N), obj.supports, ...
         'UniformOutput',false);
+      group_excluded = arrayfun(@(grp)activeKnots(grp,prog.N), obj.excluded_collision_groups, ...
+        'UniformOutput',false);
       ignored_bodies = {};
       interpolation_parameter = (1:obj.n_interp_points)/(obj.n_interp_points+1);
       for i = 1:prog.N
@@ -208,6 +214,12 @@ classdef LeggedRobotPlanningProblem
             ignored_bodies{i}(end+1) = obj.supports(j).body;
           end
         end
+        ignored_groups = {};
+        for j = 1:numel(obj.excluded_collision_groups)
+          if ismember(i,group_excluded{j})
+            ignored_groups{end+1} = obj.excluded_collision_groups(j).name;
+          end
+        end
         if 0%i > 1
           ignored_bodies_current = unique([ignored_bodies{[i-1,i]}]);
         else
@@ -215,6 +227,7 @@ classdef LeggedRobotPlanningProblem
         end
 
         active_collision_options.body_idx = setdiff(1:obj.robot.getNumBodies(),ignored_bodies_current);
+        active_collision_options.collision_groups = setdiff(unique([obj.robot.body.collision_group_name]),ignored_groups);
         min_distance_constraint(i) = MinDistanceConstraint(obj.robot,obj.min_distance,active_collision_options);  
         prog = prog.addRigidBodyConstraint(min_distance_constraint(i),i);
 
