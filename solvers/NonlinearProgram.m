@@ -172,6 +172,7 @@ classdef NonlinearProgram
       obj.solver_options.snopt.LinesearchTolerance = 0.9;
       obj.solver_options.fmincon.GradConstr = 'on';
       obj.solver_options.fmincon.GradObj = 'on';
+      obj.solver_options.snopt.sense = 'Minimize';
       obj.constraint_err_tol = 1e-4;
       obj.check_grad = false;
     end
@@ -833,6 +834,15 @@ classdef NonlinearProgram
             error('Drake:NonlinearProgram:setSolverOptions:OptionVal', 'LinesearchTolerance should be between 0 and 1');
           end
           obj.solver_options.snopt.LinesearchTolerance = optionval;
+        elseif(strcmpi(optionname(~isspace(optionname)),'sense'))
+          if(~ischar(optionval))
+            error('Drake:NonlinearProgram:setSolverOptions:OptionVal', 'sense should be a string');
+          end
+          if(~any(strcmp(optionval,{'Minimize','Maximize','Feasible point'})))
+            error('Drake:NonlinearProgram:setSolverOptions:Sense', ...
+              'sense must be one of the following: ''Minimize'', ''Maximize'', ''Feasible point''');
+          end
+          obj.solver_options.snopt.sense = optionval;
         end
       elseif(strcmpi((solver),'fmincon'))
         obj.solver_options.fmincon = optimset(obj.solver_options.fmincon, optionname, optionval);
@@ -1268,6 +1278,7 @@ classdef NonlinearProgram
       snseti('Old Basis File',obj.solver_options.snopt.OldBasisFile);
       snseti('Backup Basis File',obj.solver_options.snopt.BackupBasisFile);
       snsetr('Linesearch tolerance',obj.solver_options.snopt.LinesearchTolerance);
+      snset(obj.solver_options.snopt.sense)
 
       function [f,G] = snopt_userfun(x_free)
         x_all = zeros(obj.num_vars,1);
