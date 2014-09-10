@@ -60,7 +60,7 @@ classdef MinDistanceConstraint < SingleTimeKinematicConstraint
       recip_min_dist = 1/obj.min_distance;
       scaled_dist = recip_min_dist*dist - 1;
       %scaled_dist = recip_min_dist*dist - 2;
-      dscaled_dist_ddist = recip_min_dist*eye(size(dist,1));
+      dscaled_dist_ddist = recip_min_dist*speye(size(dist,1));
     end
 
     function [cost, dcost_ddist] = penalty(obj,dist)
