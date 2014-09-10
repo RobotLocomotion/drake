@@ -21,7 +21,7 @@ classdef MarkovDecisionProcess < DrakeSystem
       obj.C = C;
       if (nargin>4) obj.gamma = gamma; end
       if (nargin<5) ts = 1; end
-      obj = setSampleTime(obj,[ts,0]);
+      obj = setSampleTime(obj,[ts;0]);
     end
     
     function y = output(obj,t,s,u)
@@ -39,7 +39,7 @@ classdef MarkovDecisionProcess < DrakeSystem
       sn = find(cumsum(psn)>rand(),1);
     end
     
-    function [J,PI]=valueIteration(mdp,converged)
+    function [J,PI]=valueIteration(mdp,converged,drawfun)
       if (nargin<2) converged=.1; end
       nS = size(mdp.S,2); nA = size(mdp.A,2);
       J = zeros(nS,1);
@@ -47,12 +47,13 @@ classdef MarkovDecisionProcess < DrakeSystem
       
       % stack different a's on top of each other: 
       % e.g. Tstack = [T(s,a=1,sn);T(s,a=2,sn);...]
-      Tstack = vercat(obj.T{:});       
+      Tstack = vertcat(mdp.T{:});       
       
       while (err > converged)
         Jold = J;
-        [J,PI] = min(C+mdp.gamma*reshape(Tstack*J,nS,nA),[],2);
+        [J,PI] = min(mdp.C+mdp.gamma*reshape(Tstack*J,nS,nA),[],2);
         err = max(abs(Jold-J));
+        if nargin>2, drawfun(J); drawnow; end
       end
     end
     
@@ -62,11 +63,13 @@ classdef MarkovDecisionProcess < DrakeSystem
   end
   
   methods (Static)
-    function mdp = discretizeSystem(sys,xbins,ubins,options)
+    function mdp = discretizeSystem(sys,costfun,xbins,ubins,options)
       % @param sys the DynamicalSystem that should be discretized
+      % @param costfun is a function handle with costdot = costfun(sys,x,u)
       % @param xbins a cell array defining the (uniform) state distribution
       % @param ubins a cell array defining the (uniform) input
       % discretization
+      % @option gamma @default 1;
       % @option dt timestep.  @default 1
       % @option wrap_flag boolean vector the same size as x which causes the
       % resulting controller to wrap around for the dimensions where
@@ -106,103 +109,75 @@ classdef MarkovDecisionProcess < DrakeSystem
 
       % offsets for inline sub2ind
       nskip = [1,cumprod(cellfun(@length,xbins(1:end-1)))];
+      function ind = mysub2ind(subinds)
+        ind = 1+sum(nskip*(subinds-1)');
+      end
       
       % initialize transition matrix
-      T{1:na} = deal(sparse(ns,ns));
+      [T{1:na}] = deal(sparse(ns,ns));
       
-      fprintf('Computing one-step dynamics and transition matrix...');
+      % initialize cost
+      C = zeros(ns,na);
+      
+      waitbar_h = waitbar(0,'Computing one-step dynamics and transition matrix...');
+      waitbar_cleanup = onCleanup(@()close(waitbar_h));  % doesn't seem to catch ctrl-c, despite the documentation
+      waitbar_lastupdate = 0;
       for si=1:ns
         for ai=1:na
+          % todo: better than just forward euler here?
           xn = S(:,si) + options.dt*dynamics(sys,0,S(:,si),A(:,ai));
-
+          C(si,ai) = options.dt*costfun(sys,S(:,si),A(:,ai));
+          
           % wrap coordinates
           xn(options.wrap_flag) = mod(xn(options.wrap_flag)-xmin(options.wrap_flag),xmax(options.wrap_flag)-xmin(options.wrap_flag)) + xmin(options.wrap_flag);
           
-          % wrap coordinates
-          if any(options.wrap_flag)
-            for i=find(options.wrap_flag)  % almost certainly more efficient than repmat'ing xmin,xmax to call a vectorized mod
-              xn = mod(xn-xmin(i),xmax(i)-xmin(i))+xmin(i);
-            end
+          % truncate back onto the grid if it's off the edge
+          xn = min(max(xn,xmin),xmax);
+
+          % populate T using barycentric interpolation
+          % simple description in Scott Davies, "Multidimensional
+          % Triangulation... ", NIPS, 1996
+          
+          % Note: The most mature implmentation that I found quickly is in
+          %   https://svn.csail.mit.edu/locomotion/robotlib/tags/version2.1/tools/@approx
+          % which is called from dev/mdp.m
+          % also found old non-mex version here:
+          % https://svn.csail.mit.edu/locomotion/robotlib/tags/version1/approx/@barycentricGrid/state_index.m
+          % but they were pretty hard to use, so I basically started over
+          
+          for xi=1:num_x
+            % note: could do binary search here
+            bin(xi) = find(xn(xi)<=xbins{xi}(2:end),1);
           end
-
+          sidx_min = mysub2ind(bin);  % lower left
+          
+          bin = bin+1; % move pointer to upper right
+          sidx_max = mysub2ind(bin);    % upper right
+          
+          % compute relative locations
+          fracway = (xn-S(:,sidx_min))./(S(:,sidx_max)-S(:,sidx_min));
+          [fracway,p] = sort(fracway); % p from Davies96
+          fracway(end+1)=1;
+          
+          % crawl through the simplex
+          % start at the top-right corner
+          sidx = sidx_max;  
+          T{ai}(sidx,si) = fracway(1);
+          % now move down the box as prescribed by the permutation p
+          for xi=1:num_x
+            bin(p(xi))=bin(p(xi))-1;
+            sidx = mysub2ind(bin);
+            T{ai}(sidx,si) = fracway(xi+1)-fracway(xi);
+          end
         end
-      end
-     
-      
-      % generate all possible state and action pairs
-      Sall = repmat(S,1,na); % repeat s na times
-      Aall = reshape(repmat(A,ns,1),1,ns*na); % repeat a ns times
-
-      % compute the dynamics
-      fprintf('Computing one-step dynamics...');
-      % todo: vectorize this!
-      % and possibly support something more general that defaulting to than
-      % forward euler (won't work for hybrid, etc), but a call to simulate
-      % would be way too expensive.
-      xn = Sall;
-      for i=1:size(Sall,2)
-        xn(:,i) = Sall(:,i) + options.dt*dynamics(sys,0,Sall(:,i),Aall(:,i));
         
-        
-        
-      end
-      fprintf('done.\n');
-
-      
-      % Compute the transition matrix
-      % Note: The most mature implmentation that I found quickly is in
-      %   https://svn.csail.mit.edu/locomotion/robotlib/tags/version2.1/tools/@approx
-      % which is called from dev/mdp.m
-      % also found old non-mex version here:
-      % https://svn.csail.mit.edu/locomotion/robotlib/tags/version1/approx/@barycentricGrid/state_index.m
-
-      fprintf('Computing transition matrix...');
-
-      % wrap coordinates
-      if any(options.wrap_flag)
-        for i=find(options.wrap_flag)  % almost certainly more efficient than repmat'ing xmin,xmax to call a vectorized mod
-          xn(i,:) = mod(xn(i,:)-xmin(i),xmax(i)-xmin(i))+xmin(i);
+        if si/ns>waitbar_lastupdate+.025 % don't call the gui too much
+          waitbar(si/ns,waitbar_h);
+          waitbar_lastupdate = si/ns;
         end
       end
       
-      % project points off the grid back onto the edge
-      for i=1:num_x
-        xn(i,:) = max(xn(i,:),xmin(i));
-        xn(i,:) = min(xn(i,:),xmax(i));
-      end
-
-      % figure out which bin each point is in
-      
-      % this might make it faster (but leaving it out for now)
-%      bin=ones(num_x,size(xn,2));
-%      for i=1:num_x
-%        for j=2:(numel(xbins{i})-1)
-%          bin(i,:)=bin(i,:)+(xn(i,:)>=xbins{i}(j));
-%        end
-%      end
-      
-
-      % populate T using barycentric interpolation
-      % simple description in Scott Davies, "Multidimensional
-      % Triangulation... ", NIPS, 1996
-      
-      for j=1:size(xn,2)
-        sidx = 1;  % index into S (in bottom left corner of box)
-        for i=1:num_x
-          % note: could do binary search here
-          bin = find(xn(i,j)<=xbins{i}(2:end),1);
-          sidx = sidx + (bin-1)*nskip(i);
-        end
-        
-        % compute relative location
-        fracway = (xn(:,j)-S(:,sidx_min))./(S(:,s_idx_max)-S(:,s_idx_min));
-        [fracway,p] = sort(fracway); % p from Davies96
-        
-        
-      end
-      
-      fprintf('done.\n');
-
+      mdp = MarkovDecisionProcess(S,A,T,C,options.gamma,options.dt);
     end
   end
 end
