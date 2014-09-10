@@ -7,10 +7,9 @@ if ~checkDependency('gurobi')
   return;
 end
 
-oldpath = addpath(fullfile(getDrakePath,'examples','ZMP'));
-finishup = onCleanup(@() path(oldpath));
-addpath(fullfile(getDrakePath,'examples','Atlas','controllers'));
-
+path_handle = addpathTemporary({fullfile(getDrakePath,'examples','ZMP'),...
+                                fullfile(getDrakePath,'examples','Atlas','controllers'),...
+                                fullfile(getDrakePath,'examples','Atlas','frames')});
 
 plot_comtraj = true;
 
