@@ -7,7 +7,7 @@ classdef MarkovDecisionProcess < DrakeSystem
   properties
     S  % states; if vectors, then S(:,i) is state i
     A  % actions; if vectors, then A(:,i) is action i
-    T  % T(i,j,k) is Pr( s[n+1]=S(:,k) | s[n]=S(:,i),a[n]=A(:,j)).  probably a sparse matrix
+    T  % T{k}(i,j) is Pr( s[n+1]=S(:,j) | s[n]=S(:,i),a[n]=A(:,k)).  can be sparse matrices
     C  % C(i,j) is the cost of being in state S(:,i) and taking action A(:,j)
     gamma=1 % discount factor (default = 1)
   end
@@ -35,7 +35,7 @@ classdef MarkovDecisionProcess < DrakeSystem
       if (isempty(a) || length(a)>1)
         error('Error looking up discrete action');
       end
-      psn = T(s,a,:);
+      psn = T{a}(s,:);
       sn = find(cumsum(psn)>rand(),1);
     end
     
@@ -47,7 +47,7 @@ classdef MarkovDecisionProcess < DrakeSystem
       
       % stack different a's on top of each other: 
       % e.g. Tstack = [T(s,a=1,sn);T(s,a=2,sn);...]
-      Tstack = reshape(obj.T,nS*nA,nS);       
+      Tstack = vercat(obj.T{:});       
       
       while (err > converged)
         Jold = J;
@@ -86,7 +86,7 @@ classdef MarkovDecisionProcess < DrakeSystem
       if ~isfield(options,'wrap_flag') options.wrap_flag = false(num_x,1); end
       
       xmin = reshape(cellfun(@(a)a(1),xbins),[],1);
-      xmax = reshape(cellful(@(a)a(end),xbins),[],1);
+      xmax = reshape(cellfun(@(a)a(end),xbins),[],1);
       
       % construct the grids
       assert(iscell(xbins));
@@ -103,6 +103,31 @@ classdef MarkovDecisionProcess < DrakeSystem
       
       ns = size(S,2);
       na = size(A,2);
+
+      % offsets for inline sub2ind
+      nskip = [1,cumprod(cellfun(@length,xbins(1:end-1)))];
+      
+      % initialize transition matrix
+      T{1:na} = deal(sparse(ns,ns));
+      
+      fprintf('Computing one-step dynamics and transition matrix...');
+      for si=1:ns
+        for ai=1:na
+          xn = S(:,si) + options.dt*dynamics(sys,0,S(:,si),A(:,ai));
+
+          % wrap coordinates
+          xn(options.wrap_flag) = mod(xn(options.wrap_flag)-xmin(options.wrap_flag),xmax(options.wrap_flag)-xmin(options.wrap_flag)) + xmin(options.wrap_flag);
+          
+          % wrap coordinates
+          if any(options.wrap_flag)
+            for i=find(options.wrap_flag)  % almost certainly more efficient than repmat'ing xmin,xmax to call a vectorized mod
+              xn = mod(xn-xmin(i),xmax(i)-xmin(i))+xmin(i);
+            end
+          end
+
+        end
+      end
+     
       
       % generate all possible state and action pairs
       Sall = repmat(S,1,na); % repeat s na times
@@ -116,7 +141,10 @@ classdef MarkovDecisionProcess < DrakeSystem
       % would be way too expensive.
       xn = Sall;
       for i=1:size(Sall,2)
-        xn(:,i) = Sall(:,i) + dt*dynamics(sys,0,Sall(:,i),Aall(:,i));
+        xn(:,i) = Sall(:,i) + options.dt*dynamics(sys,0,Sall(:,i),Aall(:,i));
+        
+        
+        
       end
       fprintf('done.\n');
 
@@ -124,7 +152,10 @@ classdef MarkovDecisionProcess < DrakeSystem
       % Compute the transition matrix
       % Note: The most mature implmentation that I found quickly is in
       %   https://svn.csail.mit.edu/locomotion/robotlib/tags/version2.1/tools/@approx
-      % which is called from dev/mdp.m 
+      % which is called from dev/mdp.m
+      % also found old non-mex version here:
+      % https://svn.csail.mit.edu/locomotion/robotlib/tags/version1/approx/@barycentricGrid/state_index.m
+
       fprintf('Computing transition matrix...');
 
       % wrap coordinates
@@ -139,19 +170,35 @@ classdef MarkovDecisionProcess < DrakeSystem
         xn(i,:) = max(xn(i,:),xmin(i));
         xn(i,:) = min(xn(i,:),xmax(i));
       end
+
+      % figure out which bin each point is in
       
-      % barycentric interpolation 
-      % found old non-mex version here: 
-      % https://svn.csail.mit.edu/locomotion/robotlib/tags/version1/approx/@barycentricGrid/state_index.m
-      % todo: vectorize (or mex) this
-      for i=1:size(xn,2)
-        for ci = 1:num_x
-          cindy = find(xn(ci,i)<=xbins{ci}(2:end),1)-1; % find first guy it's above
-          if ci==1
-            sindi = cindy+1;
-          else
-            sindi = sindi + cindy*nskip(ci);
-          end
+      % this might make it faster (but leaving it out for now)
+%      bin=ones(num_x,size(xn,2));
+%      for i=1:num_x
+%        for j=2:(numel(xbins{i})-1)
+%          bin(i,:)=bin(i,:)+(xn(i,:)>=xbins{i}(j));
+%        end
+%      end
+      
+
+      % populate T using barycentric interpolation
+      % simple description in Scott Davies, "Multidimensional
+      % Triangulation... ", NIPS, 1996
+      
+      for j=1:size(xn,2)
+        sidx = 1;  % index into S (in bottom left corner of box)
+        for i=1:num_x
+          % note: could do binary search here
+          bin = find(xn(i,j)<=xbins{i}(2:end),1);
+          sidx = sidx + (bin-1)*nskip(i);
+        end
+        
+        % compute relative location
+        fracway = (xn(:,j)-S(:,sidx_min))./(S(:,s_idx_max)-S(:,s_idx_min));
+        [fracway,p] = sort(fracway); % p from Davies96
+        
+        
       end
       
       fprintf('done.\n');
