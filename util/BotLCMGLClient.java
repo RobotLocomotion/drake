@@ -1,6 +1,7 @@
 package drake.util;
 
 import java.io.*;
+import java.lang.Math;
 import lcm.lcm.LCM;
 
 /**
@@ -428,6 +429,42 @@ public class BotLCMGLClient {
     cylinder(xyz, head_width, 0, head_length, slices, stacks);
 
     glPopMatrix();
+  }
+
+  public synchronized void drawVector3d(double[] origin, double[] vector) {
+    double body_width = 0.0025;
+    double head_width = 0.01;
+    double head_length = 0.01;
+    int slices = 20;
+    int stacks = 20;
+
+    double vector_norm = Math.sqrt(vector[0]*vector[0]+vector[1]*vector[1]+vector[2]*vector[2]);
+
+    if (vector_norm>0) {
+      glPushMatrix();
+      
+      glTranslated(origin[0],origin[1],origin[2]);
+
+      // cross product with z axis to get rotation axis
+      double[] rot_axis = {vector[1],-vector[0],0};
+      if (rot_axis[0]==0&&rot_axis[1]==0) {
+        // the vector is along the z axis, rot_angle will be 0 or 180 so use either x or y
+        rot_axis[0] = 1;
+      }
+      double rot_angle = -Math.toDegrees(Math.acos(vector[2]/vector_norm));
+      glRotated(rot_angle,rot_axis[0],rot_axis[1],rot_axis[2]);
+
+      // make cylinder for body of vector
+      double[] xyz = {0,0,0};
+      cylinder(xyz,body_width,body_width,vector_norm-head_length,slices,stacks);
+      
+      // make cylinder for head of vector
+      glTranslated(0,0,vector_norm-head_length);
+      cylinder(xyz,head_width,0,head_length,slices,stacks);
+
+      glPopMatrix();
+    }
+
   }
 
   public synchronized void scaleToViewerAr() { add0(LCMGL_SCALE_TO_VIEWER_AR); }
