@@ -200,7 +200,8 @@ xind1 = {1;2};
 [nlp3,cnstr3_id] = nlp3.addConstraint(cnstr3,xind1);
 cnstr3_id_old = cnstr3_id;
 nlp3 = nlp3.addCost(cost3,xind1);
-nlp3 = nlp3.addBoundingBoxConstraint(BoundingBoxConstraint(0,inf),1);
+bbcon1 = BoundingBoxConstraint(0,inf);
+[nlp3,bbcon1_id] = nlp3.addBoundingBoxConstraint(bbcon1,1);
 
 A = [1 0 2;1 0 3];
 lincon1 = LinearConstraint([0;0],[10;0],[1 2;1 3]);
@@ -392,6 +393,54 @@ valuecheck(length(nlp4.lcon),1);
 if(any(lincon1.eval(x4([1;3]))>lincon1.ub+1e-5) || any(lincon1.eval(x4([1;3]))<lincon1.lb-1e-5))
   error('Linear constraint not satisfied');
 end
+
+%%%
+display('test deleteBoundingBoxConstraint');
+nlp4 = nlp4.deleteBoundingBoxConstraint(bbcon1_id);
+if(any(~isinf(nlp4.x_lb)) || any(~isinf(nlp4.x_ub)) || ~isempty(nlp4.bbcon) || ~isempty(nlp4.bbcon_xind))
+  error('The bounding box constraint should be empty');
+end
+if(nlp4.isBoundingBoxConstraintID(bbcon1_id))
+  error('The deleted constraint should not be contained in the program');
+end
+[x4,F,info] = solveWDefaultSolver(nlp4,x4);
+
+
+[nlp4,bbcon1_id] = nlp4.addBoundingBoxConstraint(bbcon1,1);
+valuecheck(nlp4.bbcon_xind{1},1);
+
+% min x1*x2
+% x1 >= 0
+% 0<=x1+2*x3 <=10
+% x1+3*x3 = 0
+% x1*x2+x3 = 0
+% 0<=x1+x3^2<=10
+% x1+2*x3*x4+x4^2 = 5
+% -1<= x2 <= 10
+%  x1 = 0;
+bbcon2 = BoundingBoxConstraint([0;-1],[0;10]);
+[nlp4,bbcon2_id] = nlp4.addBoundingBoxConstraint(bbcon2,[1;2]);
+valuecheck(nlp4.x_lb,[0;-1;-inf;-inf]);
+valuecheck(nlp4.x_ub,[0;10;inf;inf]);
+valuecheck(nlp4.bbcon_xind{2},[1;2]);
+[x4,F,info] = solveWDefaultSolver(nlp4,x4);
+
+nlp4 = nlp4.deleteBoundingBoxConstraint(bbcon2_id);
+valuecheck(nlp4.x_lb,[0;-inf;-inf;-inf]);
+valuecheck(nlp4.x_ub,inf(4,1));
+[nlp4,bbcon2_id] = nlp4.addBoundingBoxConstraint(bbcon2,[1;2]);
+nlp4 = nlp4.deleteBoundingBoxConstraint(bbcon1_id);
+valuecheck(nlp4.x_lb,[0;-1;-inf;-inf]);
+valuecheck(nlp4.x_ub,[0;10;inf;inf]);
+valuecheck(nlp4.bbcon_xind{1},[1;2]);
+sizecheck(nlp4.bbcon_xind,[1,1]);
+sizecheck(nlp4.bbcon,[1,1]);
+
+[nlp4,bbcon1_id] = nlp4.updateBoundingBoxConstraint(bbcon2_id,bbcon1,1);
+valuecheck(nlp4.x_lb,[0;-inf;-inf;-inf]);
+valuecheck(nlp4.x_ub,inf(4,1));
+sizecheck(nlp4.bbcon,[1,1]);
+sizecheck(nlp4.bbcon_xind,[1,1]);
 end
 
 function [c,dc] = cnstr1_userfun(x)
