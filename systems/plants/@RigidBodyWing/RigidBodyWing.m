@@ -108,8 +108,6 @@ classdef RigidBodyWing < RigidBodyForceElement
         fill_color = 1;
       end
       
-      disp('drawing');
-      
       for i = 1 : length(obj.subwings)
         obj.subwings{i}.drawWing(manip, q, qd, fill_color);
       end
