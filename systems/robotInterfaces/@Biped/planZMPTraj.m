@@ -138,7 +138,7 @@ for f = {'right', 'left'}
   a3 = zeros(6, n_segments);
   for j = 1:n_segments
     for k = 1:6
-      [a0(k,j), a1(k,j), a2(k,j), a3(k,j)] = cubicSplineCoefficients(ts(j), ts(j+1), foot_poses(k,j), foot_poses(k,j+1), foot_dposes(k,j), foot_dposes(k,j+1));
+      [a0(k,j), a1(k,j), a2(k,j), a3(k,j)] = cubicSplineCoefficients(ts(j+1) - ts(j), foot_poses(k,j), foot_poses(k,j+1), foot_dposes(k,j), foot_dposes(k,j+1));
     end
   end
   link_constraints(end+1) = struct('link_ndx', body_ind, 'pt', [0;0;0], 'ts', ts, 'poses', foot_poses, 'dposes', foot_dposes, 'contact_break_indices', find([foot_origin_knots.is_liftoff]), 'a0', a0, 'a1', a1, 'a2', a2, 'a3', a3);
