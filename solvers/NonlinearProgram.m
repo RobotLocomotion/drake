@@ -65,8 +65,8 @@ classdef NonlinearProgram
     c2nlcon_idx  % An integer vector. The j'th row of the the nonlinear constraints [obj.nlcon{i}.eval for i = 1:length(obj.nlcon)] comes from the Constraint object obj.nlcon{obj.c2nlcon_idx(j)}
     cin2nlcon_idx % An integer vector. The j'th row of inequality constraint cin is from Constraint object obj.nlcon{obj.cin2nlcon_idx(j)}
     ceq2nlcon_idx % An integer vector. The j'th row of equality constraint ceq is from the Constraint object obj.nlcon{obj.ceq2nlcon_idx(j)}
-    Ain_lincon_idx % An integer vector. The j'th row of the inequality linear constraint Ain*x<=bin is from the Constraint object obj.lincon{obj.Ain_lincon_idx(j)}
-    Aeq_lincon_idx % An integer vector. The j'th row of the inequality linear constraint Aeq*x=beq is from the Constraint object obj.lincon{obj.Aeq_lincon_idx(j)}
+    Ain2lcon_idx % An integer vector. The j'th row of the inequality linear constraint Ain*x<=bin is from the Constraint object obj.lincon{obj.Ain_lincon_idx(j)}
+    Aeq2lcon_idx % An integer vector. The j'th row of the inequality linear constraint Aeq*x=beq is from the Constraint object obj.lincon{obj.Aeq_lincon_idx(j)}
   end
 
   properties (Access = protected)
@@ -130,8 +130,8 @@ classdef NonlinearProgram
       obj.c2nlcon_idx = [];
       obj.cin2nlcon_idx = [];
       obj.ceq2nlcon_idx = [];
-      obj.Ain_lincon_idx = [];
-      obj.Aeq_lincon_idx = [];
+      obj.Ain2lcon_idx = [];
+      obj.Aeq2lcon_idx = [];
       
       if checkDependency('snopt')
         obj = obj.setSolver('snopt');
@@ -315,6 +315,7 @@ classdef NonlinearProgram
         end
         obj.lcon = [obj.lcon,{cnstr}];
 
+
         cnstr_A = sparse(cnstr.iCfun,xind(cnstr.jCvar),cnstr.A_val,cnstr.num_cnstr,obj.num_vars,cnstr.nnz);
         cnstr_beq = (cnstr.lb(cnstr.ceq_idx)+cnstr.ub(cnstr.ceq_idx))/2;
         cnstr_Aeq = cnstr_A(cnstr.ceq_idx,:);
@@ -328,11 +329,13 @@ classdef NonlinearProgram
           obj.Ain = vertcat(obj.Ain,[cnstr_Ain(bin_ub_not_inf_idx,:);-cnstr_Ain(bin_lb_not_inf_idx,:)]);
           obj.bin = vertcat(obj.bin,[cnstr_bin_ub(bin_ub_not_inf_idx);-cnstr_bin_lb(bin_lb_not_inf_idx)]);
           obj.Ain_name = [obj.Ain_name;cnstr_ineq_name(bin_ub_not_inf_idx);cnstr_ineq_name(bin_lb_not_inf_idx)];
+          obj.Ain2lcon_idx = [obj.Ain2lcon_idx;length(obj.lcon)*ones(sum(bin_ub_not_inf_idx)+sum(bin_lb_not_inf_idx),1)];
         end
         obj.Aeq_name = [obj.Aeq_name;cnstr.name(cnstr.ceq_idx)];
         if(numel(cnstr_Aeq)>0)
           obj.Aeq = vertcat(obj.Aeq,cnstr_Aeq);
           obj.beq = vertcat(obj.beq,cnstr_beq);
+          obj.Aeq2lcon_idx = [obj.Aeq2lcon_idx;length(obj.lcon)*ones(size(cnstr_Aeq,1),1)];
         end
       end
     end   
@@ -1002,6 +1005,33 @@ classdef NonlinearProgram
       obj = deleteNonlinearConstraint(obj,cnstr_idx);
       obj = addNonlinearConstraint(obj,cnstr);
       new_cnstr_idx = length(obj.nlcon);
+    end
+    
+    function obj = deleteLinearConstraint(obj,cnstr_idx)
+      % delete the LinearConstraint obj.lcon{cnstr_idx} from the program
+      % @param cnstr_idx  An integer. The LinearConstraint obj.lcon{cnstr_idx} is going to be
+      % deleted from the program
+      if(numel(cnstr_idx)~=1 || floor(cnstr_idx) ~= cnstr_idx)
+        error('Drake:NonlinearProgram:deleteLinearConstraint:InvalidInput','cnstr_idx should be an integer');
+      end
+      if(cnstr_idx<=0 || cnstr_idx> length(obj.lcon))
+        error('Drake:NonlinearProgram:deleteLinearConstraint:InvalidInput','cnstr_idx is out of bound');
+      end
+      
+      Ain_delete_flag = obj.Ain2lcon_idx == cnstr_idx;
+      Aeq_delete_flag = obj.Aeq2lcon_idx == cnstr_idx;
+      Ain_idx = (1:size(obj.Ain,1))';
+      Aeq_idx = (1:size(obj.Aeq,1))';
+      Ain_remaining_idx = Ain_idx(~Ain_delete_flag);
+      Aeq_remaining_idx = Aeq_idx(~Aeq_delete_flag);
+      obj.Ain = obj.Ain(Ain_remaining_idx,:);
+      obj.bin = obj.bin(Ain_remaining_idx);
+      obj.Ain_name = obj.Ain_name(Ain_remaining_idx);
+      obj.Aeq = obj.Aeq(Aeq_remaining_idx,:);
+      obj.beq = obj.beq(Aeq_remaining_idx,:);
+      obj.Aeq_name = obj.Aeq_name(Aeq_remaining_idx);
+      
+      obj.lcon = obj.lcon([1:cnstr_idx-1 cnstr_idx+1:end]);
     end
   end
   
