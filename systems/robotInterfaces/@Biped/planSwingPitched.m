@@ -139,7 +139,9 @@ function [pose, q0] = solve_for_pose(constraints, q0)
   end
   full_IK_calls = full_IK_calls + 1;
   [q0, info] = inverseKin(biped,q0,q0,constraint_ptrs{:},ikoptions);
-  info
+  if info >= 10
+    error('Drake:planSwingPitched', 'The foot pose IK problem could not be solved. This should not happen and likely indicates a bug in the constraints.');
+  end
   if DEBUG
     v.draw(0, q0);
   end
