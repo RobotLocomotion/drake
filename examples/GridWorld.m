@@ -67,12 +67,11 @@ classdef GridWorld < DrakeSystem
     end    
     
     function v = constructVisualizer(obj)
-      [X,Y] = meshgrid(1:obj.board(1),1:obj.board(2));
+      [X,Y] = ndgrid(1:obj.board(1),1:obj.board(2));
       X = [X(:)';Y(:)'];
       is_obstacle = obj.obstacle(X);
       
       function draw(t,y)
-        clf; hold on;
         plot(obj.goal(1),obj.goal(2),'g*',y(1),y(2),'bp','MarkerSize',10,'LineWidth',3);
         for i=1.5:1:obj.board(1)-0.5
           line(repmat(i,2,1),[0.5,obj.board(2)+0.5],'Color',[0 0 0]);
@@ -102,7 +101,9 @@ classdef GridWorld < DrakeSystem
     function runValueIteration
       p = GridWorld;
       options.gamma = 1;
-      mdp = MarkovDecisionProcess.discretizeSystem(p,@mintime_cost,{1:p.board(1),1:p.board(2)},{0:4},options);
+%      costfun = @mintime_cost;
+      costfun = @quadratic_cost;
+      mdp = MarkovDecisionProcess.discretizeSystem(p,costfun,{1:p.board(1),1:p.board(2)},{0:4},options);
 
       x = 1:p.board(1); y = 1:p.board(2);
       [X,Y] = ndgrid(x,y);
@@ -120,7 +121,7 @@ classdef GridWorld < DrakeSystem
         V = 1*(PI==2) -1*(PI==4);
         quiver(X(:),Y(:),U,V,'k');
         
-        pause;
+%        pause;
       end
     end
   end
