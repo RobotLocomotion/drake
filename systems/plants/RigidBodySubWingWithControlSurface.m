@@ -3,9 +3,6 @@ classdef RigidBodySubWingWithControlSurface < RigidBodySubWing
   % control surface attached to the wing.
       
   properties
-    span;
-    stall_angle;
-    chord;
     control_surface % the control surface attached to this wing
     fCl_control_surface; % Interpolant for the control surface, given aoa and u
     fCd_control_surface;
@@ -31,9 +28,6 @@ classdef RigidBodySubWingWithControlSurface < RigidBodySubWing
       
       obj = obj@RigidBodySubWing(frame_id, profile, chord, span, stall_angle, velocity);
 
-      obj.chord = chord;
-      obj.span = span;
-      obj.stall_angle = stall_angle;
       obj.control_surface = control_surface;
       obj.direct_feedthrough_flag = true;
       
@@ -321,6 +315,51 @@ classdef RigidBodySubWingWithControlSurface < RigidBodySubWing
       control_surface_range = obj.control_surface.min_deflection : obj.control_surface_increment : obj.control_surface.max_deflection;
     end
     
+    function drawWing(obj, manip, q, qd, fill_color)
+      % Draws the subwing with control surfaces.
+      %
+      % @param manip manipulator the wing is part of
+      % @param q state vector
+      % @param qd q-dot (state vector derivatives)
+      % @param fill_color @default 1
+      
+      color = fill_color - [.3 .3 .3];
+      color = max([0 0 0], color);
+      
+      % first draw the main part of the wing
+      drawWing@RigidBodySubWing(obj, manip, q, qd, color)
+      
+      
+      % now draw the control surface
+      
+      kinsol = doKinematics(manip,q,false, false, qd);
+      
+      % move the origin to the control surface's origin
+      origin = [-obj.chord/2 - obj.control_surface.chord/2; 0; 0];
+    
+      p1 = [origin(1) - obj.control_surface.chord/2, origin(2) - obj.control_surface.span/2, origin(3)];
+      
+      p2 = [origin(1) + obj.control_surface.chord/2, origin(2) - obj.control_surface.span/2, origin(3)];
+      
+      p3 = [origin(1) + obj.control_surface.chord/2, origin(2) + obj.control_surface.span/2, origin(3)];
+      
+      p4 = [origin(1) - obj.control_surface.chord/2, origin(2) + obj.control_surface.span/2, origin(3)];
+      
+      
+      pts = forwardKin(manip, kinsol, obj.kinframe, [p1; p2; p3; p4]');
+      
+      color = fill_color + [.3 .3 .3];
+      color = min([1 1 1], color);
+      
+      fill3(pts(1,:), pts(2,:), pts(3,:), color);
+      
+      xlabel('x');
+      ylabel('y');
+      zlabel('z');
+      
+      axis equal
+      
+    end
     
     
   end
