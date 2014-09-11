@@ -197,7 +197,8 @@ nlp3 = nlp3.setCheckGrad(true);
 cnstr3 = FunctionHandleConstraint([-10;-10],[4;5],2,@cnstr3_userfun);
 cost3 = FunctionHandleObjective(2,@cost3_userfun);
 xind1 = {1;2};
-nlp3 = nlp3.addConstraint(cnstr3,xind1);
+[nlp3,cnstr3_id] = nlp3.addConstraint(cnstr3,xind1);
+cnstr3_id_old = cnstr3_id;
 nlp3 = nlp3.addCost(cost3,xind1);
 nlp3 = nlp3.addBoundingBoxConstraint(BoundingBoxConstraint(0,inf),1);
 
@@ -220,7 +221,7 @@ end
 %%%%%%%%%%%%%%%%%%%
 display('test deleteNonlinearConstraint')
 display('first try to delete all nonlinear constraint');
-nlp4 = nlp3.deleteNonlinearConstraint(1);
+nlp4 = nlp3.deleteNonlinearConstraint(cnstr3_id);
 valuecheck(nlp4.num_cin,0);
 valuecheck(nlp4.num_ceq,0);
 if(~isempty(nlp4.cin_lb) || ~isempty(nlp4.cin_ub) )
@@ -246,13 +247,13 @@ end
 % x1*x2+x3 = 0
 % 0<=x1+x3^2<=10
 % x1+2*x3*x4+x4^2 = 5
-nlp4 = nlp4.addConstraint(cnstr3,xind1);
-nlp4 = nlp3.addDecisionVariable(1);
+[nlp4,cnstr3_id] = nlp4.addConstraint(cnstr3,xind1);
+nlp4 = nlp4.addDecisionVariable(1);
 cnstr4 = FunctionHandleConstraint([0;0;5],[0;10;5],4,@cnstr4_userfun,2);
-nlp4 = nlp4.addConstraint(cnstr4);
+[nlp4,cnstr4_id] = nlp4.addConstraint(cnstr4);
 [x4,F,info] = solveWDefaultSolver(nlp4,[x0;0]);
 
-nlp4 = nlp4.deleteNonlinearConstraint(1);
+nlp4 = nlp4.deleteNonlinearConstraint(cnstr3_id);
 valuecheck(nlp4.num_cin,1);
 valuecheck(nlp4.num_ceq,2);
 valuecheck(nlp4.cin_lb,0);
@@ -272,7 +273,7 @@ valuecheck(dg,dc4(2,:));
 valuecheck(dh,dc4([1;3],:));
 [x4,F,info] = solveWDefaultSolver(nlp4,[x4;1]);
 
-nlp4 = nlp4.deleteNonlinearConstraint(1);
+nlp4 = nlp4.deleteNonlinearConstraint(cnstr4_id);
 valuecheck(nlp4.num_cin,0);
 valuecheck(nlp4.num_ceq,0);
 if(~isempty(nlp4.cin_lb) || ~isempty(nlp4.cin_ub) )
@@ -292,7 +293,7 @@ end
 %%%%%%
 display('check updateNonlinearConstraint');
 nlp4 = nlp3.addDecisionVariable(1);
-[nlp4,new_cnstr_idx] = nlp4.updateNonlinearConstraint(1,cnstr4);
+[nlp4,new_cnstr_id] = nlp4.updateNonlinearConstraint(cnstr3_id_old,cnstr4);
 valuecheck(nlp4.num_cin,1);
 valuecheck(nlp4.num_ceq,2);
 valuecheck(nlp4.cin_lb,0);
@@ -311,6 +312,7 @@ valuecheck(h,c4([1;3])-[0;5]);
 valuecheck(dg,dc4(2,:));
 valuecheck(dh,dc4([1;3],:));
 [x4,F,info] = solveWDefaultSolver(nlp4,[x4;1]);
+[~,new_cnstr_idx] = nlp4.isNonlinearConstraintID(new_cnstr_id);
 valuecheck(nlp4.nlcon{new_cnstr_idx}.eval([x4;1]),cnstr4.eval([x4;1]));
 
 
