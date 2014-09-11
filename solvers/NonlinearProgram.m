@@ -583,12 +583,8 @@ classdef NonlinearProgram
       obj.x_name = [obj.x_name;var_name];
       obj.x_lb = [obj.x_lb;-inf(num_new_vars,1)];
       obj.x_ub = [obj.x_ub;inf(num_new_vars,1)];
-      if(~isempty(obj.Aeq))
-        obj.Aeq = [obj.Aeq zeros(length(obj.beq),num_new_vars)];
-      end
-      if(~isempty(obj.Ain))
-        obj.Ain = [obj.Ain zeros(length(obj.bin),num_new_vars)];
-      end
+      obj.Aeq = [obj.Aeq zeros(length(obj.beq),num_new_vars)];
+      obj.Ain = [obj.Ain zeros(length(obj.bin),num_new_vars)];
       if(~isempty(obj.bbcon))
         obj.bbcon_lb(end+(1:num_new_vars),:) = -inf(num_new_vars,size(obj.bbcon_lb,2));
         obj.bbcon_ub(end+(1:num_new_vars),:) = inf(num_new_vars,size(obj.bbcon_ub,2));
@@ -992,6 +988,29 @@ classdef NonlinearProgram
       end
       cnstr_idx = find(obj.bbcon_id==cnstr_id);
       flag = ~isempty(cnstr_idx);
+    end
+    
+    function obj = deleteConstraint(obj,delete_cnstr_id)
+      % delete a constraint from the program
+      % @param delete_cnstr_id   The Constraint object whose ID=delete_cnstr_id is going to be
+      % deleted from the program
+      if(isNonlinearConstraintID(obj,delete_cnstr_id))
+        obj = deleteNonlinearConstraint(obj,delete_cnstr_id);
+      elseif(isLinearConstraintID(obj,delete_cnstr_id))
+        obj = deleteLinearConstraint(obj,delete_cnstr_id);
+      elseif(isBoundingBoxConstraintID(obj,delete_cnstr_id))
+        obj = deleteBoundingBoxConstraintID(obj,delete_cnstr_id);
+      else
+        error('Drake:NonlinearProgram:deleteConstraint:InvalidInput','There is no Constraint in the program with the given ID');
+      end
+    end
+    
+    function [obj,new_cnstr_id] = updateConstraint(obj,varargin)
+      % update a Constraint of the program. Refer to obj.updateNonlinearConstraint,
+      % obj.updateLinearConstraint and obj.updateBoundingBoxConstraint for its use
+      cnstr_id = varargin{1};
+      obj = deleteConstraint(obj,cnstr_id);
+      [obj,new_cnstr_id] = addConstraint(obj,varargin{2:end});
     end
     
     function obj = deleteNonlinearConstraint(obj,delete_cnstr_id)
