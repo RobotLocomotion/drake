@@ -24,6 +24,11 @@ classdef MarkovDecisionProcess < DrakeSystem
       obj = setSampleTime(obj,[ts;0]);
     end
     
+    function x0 = getInitialState(obj)
+      % discrete state
+      x0 = randi(size(obj.S,2));
+    end
+    
     function y = output(obj,t,s,u)
       % x here is the integer discrete state
       y = obj.S(:,s);
@@ -77,8 +82,11 @@ classdef MarkovDecisionProcess < DrakeSystem
 
       typecheck(sys,'DynamicalSystem');
       
-      assert(isCT(sys),'Drake:MarkovDecisionProcess:discretizeSystem:OnlyCTsoFar','only continuous-time systems are implemented so far');
-      assert(isTI(sys),'Drake:MarkovDecisionProcess:discretizeSystem:OnlyTI','only support time-invariant systems');
+      is_ct = isCT(sys);
+      if ~is_ct && ~isDT(sys)
+        error('Drake:MarkovDecisionProcess:discretizeSystem:UnsupportedSystem','only systems that are purely CT or purely DT are implemented so far');
+      end      
+      assert(isTI(sys),'Drake:MarkovDecisionProcess:discretizeSystem:UnsupportedSystem','only support time-invariant systems');
       
       num_x = getNumStates(sys);
       num_u = getNumInputs(sys);
@@ -124,9 +132,14 @@ classdef MarkovDecisionProcess < DrakeSystem
       waitbar_lastupdate = 0;
       for si=1:ns
         for ai=1:na
-          % todo: better than just forward euler here?
-          xn = S(:,si) + options.dt*dynamics(sys,0,S(:,si),A(:,ai));
-          C(si,ai) = options.dt*costfun(sys,S(:,si),A(:,ai));
+          if is_ct
+            % todo: better than just forward euler here?
+            xn = S(:,si) + options.dt*dynamics(sys,0,S(:,si),A(:,ai));
+            C(si,ai) = options.dt*costfun(sys,S(:,si),A(:,ai));
+          else % is dt
+            xn = update(sys,0,S(:,si),A(:,ai));
+            C(si,ai) = costfun(sys,S(:,si),A(:,ai));
+          end
           
           % wrap coordinates
           xn(options.wrap_flag) = mod(xn(options.wrap_flag)-xmin(options.wrap_flag),xmax(options.wrap_flag)-xmin(options.wrap_flag)) + xmin(options.wrap_flag);
