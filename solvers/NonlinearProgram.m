@@ -77,6 +77,9 @@ classdef NonlinearProgram
     next_nlcon_id = 1 % The id of the next nonlinear constraint Constraint object to be added
     next_lcon_id = 2 % The id of the next linear constraint LinearConstraint object to be added
     next_bbcon_id = 3 % The id of the next BoundingBoxConstraint object to be added
+    
+    bbcon_lb % A obj.num_vars x length(obj.bbcon) matrix. bbcon_lb(:,i) is the lower bound of x coming from the BoundingBoxConstraint obj.bbcon{i}
+    bbcon_ub % A obj.num_vars x length(obj.bbcon) matrix. bbcon_lb(:,i) is the upper bound of x coming from the BoundingBoxConstraint obj.bbcon{i}
   end
 
   properties (Access = protected)
@@ -146,6 +149,9 @@ classdef NonlinearProgram
       obj.nlcon_id = [];
       obj.lcon_id = [];
       obj.bbcon_id = [];
+      
+      obj.bbcon_lb = [];
+      obj.bbcon_ub = [];
       if checkDependency('snopt')
         obj = obj.setSolver('snopt');
       else % todo: check for fmincon?
@@ -389,10 +395,16 @@ classdef NonlinearProgram
       obj.bbcon = [obj.bbcon,{cnstr}];
       obj.x_lb(xind) = max([cnstr.lb obj.x_lb(xind)],[],2);
       obj.x_ub(xind) = min([cnstr.ub obj.x_ub(xind)],[],2);
+      obj.bbcon_xind{end+1} = xind;
       
       cnstr_id = obj.next_bbcon_id;
       obj.next_bbcon_id = obj.next_bbcon_id+3;
       obj.bbcon_id = [obj.bbcon_id cnstr_id];
+      
+      obj.bbcon_lb(:,end+1) = -inf(obj.num_vars,1);
+      obj.bbcon_lb(xind,end) = cnstr.lb;
+      obj.bbcon_ub(:,end+1) = inf(obj.num_vars,1);
+      obj.bbcon_ub(xind,end) = cnstr.ub;
     end
     
     function obj = addCost(obj,cnstr,xind,data_ind)
@@ -577,6 +589,10 @@ classdef NonlinearProgram
       if(~isempty(obj.Ain))
         obj.Ain = [obj.Ain zeros(length(obj.bin),num_new_vars)];
       end
+      if(~isempty(obj.bbcon))
+        obj.bbcon_lb(end+(1:num_new_vars),:) = -inf(num_new_vars,size(obj.bbcon_lb,2));
+        obj.bbcon_ub(end+(1:num_new_vars),:) = inf(num_new_vars,size(obj.bbcon_ub,2));
+      end
     end
     
     function obj = replaceCost(obj,cost,cost_idx,xind)
@@ -608,35 +624,6 @@ classdef NonlinearProgram
       obj.cost_xind_stacked = {};
       for i = 1:num_cost
         obj = obj.addCost(cost_tmp{i},cost_xind_tmp{i});
-      end
-    end
-    
-    function obj = replaceBoundingBoxConstraint(obj,cnstr,cnstr_idx,xind)
-      % replace the cnstr_idx'th BoundingBoxConstraint in obj.bb_cnstr with the new cnstr.
-      % @param cnstr    -- A BoundingBoxConstraint object
-      % @param cnstr_idx  -- THe index of the replaced BoundingBoxConstraint in the
-      % obj.bb_cnstr cell
-      % @param xind      Optional argument. x(xind) is the decision variables used in
-      % evaluating the constraint. Default value is (1:obj.num_vars) 
-      if(nargin < 4)
-        xind = (1:obj.num_vars)';
-      end
-      xind = xind(:);
-      obj.x_lb = -inf(obj.num_vars,1);
-      obj.x_ub = inf(obj.num_vars,1);
-      num_bbcon = length(obj.bbcon);
-      sizecheck(cnstr_idx,[1,1]);
-      if(cnstr_idx>num_bbcon || cnstr_idx <1)
-        error('Drake:NonlinearProgram:replaceBoundingBoxConstraint:cnstr_idx is out of range');
-      end
-      bbcon_tmp = obj.bbcon;
-      bbcon_xind_tmp = obj.bbcon_xind;
-      bbcon_tmp{cnstr_idx} = cnstr;
-      bbcon_xind_tmp{cnstr_idx} = xind;
-      obj.bbcon = {};
-      obj.bbcon_xind = {};
-      for i = 1:length(obj.bbcon)
-        obj = obj.addBoundingBoxConstraint(bbcon_tmp{i},bbcon_xind_tmp{i});
       end
     end
     
@@ -1074,14 +1061,14 @@ classdef NonlinearProgram
     
     function [obj,new_cnstr_id] = updateNonlinearConstraint(obj,varargin)
       % updateNonlinearConstraint(obj,cnstr_id,cnstr,xind,data_ind)
-      % update the nonlinear constraint with id=cnstr_id with a new Constraint object cnstr, the newly added Constraint
+      % update the nonlinear constraint whose id=cnstr_id with a new Constraint object cnstr, the newly added Constraint
       % cnstr has the ID new_cnstr_id
-      % @param cnstr_id    The ID stored in obj.nlcon_id. The nonlinear constraint with ID=cnstr_idx
-      % is going to be updated.
+      % @param cnstr_id    The ID of the constraint to be replaced. This ID is returned from
+      % obj.addNonlinearConstraint
       % @param cnstr       A Constraint object. The constraint to be added
-      % @param new_cnstr_id  The ID of the newly updated constraint in the program
       % @param xind   Same as the xind in obj.addNonlinearConstraint
       % @param data_ind  Same as the data_ind in obj.addNonlinearConstraint
+      % @retval new_cnstr_id  The ID of the newly updated constraint in the program
       cnstr_id = varargin{1};
       obj = deleteNonlinearConstraint(obj,cnstr_id);
       [obj,new_cnstr_id] = addNonlinearConstraint(obj,varargin{2:end});
@@ -1128,19 +1115,47 @@ classdef NonlinearProgram
     
     function [obj,new_cnstr_id] = updateLinearConstraint(obj,varargin)
       % updateLinearConstraint(obj,cnstr_id,cnstr,xind)
-      % update the linear constraint with id=cnstr_idx with a new Constraint object cnstr, the newly added Constraint
+      % update the linear constraint whose id=cnstr_id with a new Constraint object cnstr, the newly added Constraint
       % cnstr has the ID new_cnstr_id
-      % @param cnstr_id    The ID stored in obj.lcon_id. The linear constraint with ID=cnstr_idx
-      % is going to be updated.
+      % @param cnstr_id    The ID of the constraint to be replaced. This ID is returned from
+      % obj.addLinearConstraint function
       % @param cnstr       A Constraint object. The constraint to be added
-      % @param new_cnstr_id  The ID of the newly updated constraint in the program
       % @param xind    Same as xind in addLinearConstraint
+      % @retval new_cnstr_id  The ID of the newly updated constraint in the program
       cnstr_id = varargin{1};
       obj = deleteLinearConstraint(obj,cnstr_id);
       [obj,new_cnstr_id] = addLinearConstraint(obj,varargin{2:end});
     end
     
     function obj = deleteBoundingBoxConstraint(obj,cnstr_id)
+      % delete the BoundingBoxConstraint in obj.bbcon with ID=cnstr_id from the program
+      % @param cnstr_id   The unique ID of the BoundingBoxConstraint in obj.bbcon that is going to
+      % be deleted
+      [is_id_valid,cnstr_idx] = isBoundingBoxConstraintID(obj,cnstr_id);
+      if(~is_id_valid)
+        error('Drake:NonlinearProgram:deleteBoundingBoxConstraint:InvalidInput','The program does not contain a BoundingBoxConstraint with such ID');
+      end
+      remaining_bbcon_id = [1:cnstr_idx-1 cnstr_idx+1:length(obj.bbcon)];
+      obj.bbcon = obj.bbcon(remaining_bbcon_id);
+      obj.bbcon_lb = obj.bbcon_lb(:,remaining_bbcon_id);
+      obj.bbcon_ub = obj.bbcon_ub(:,remaining_bbcon_id);
+      obj.x_lb = max([-inf(obj.num_vars,1) obj.bbcon_lb],[],2);
+      obj.x_ub = min([inf(obj.num_vars,1) obj.bbcon_ub],[],2);
+      obj.bbcon_id = obj.bbcon_id(remaining_bbcon_id);
+      obj.bbcon_xind = obj.bbcon_xind(remaining_bbcon_id);
+    end
+    
+    function [obj,new_cnstr_id] = updateBoundingBoxConstraint(obj,varargin)
+      % updateBoundingBoxConstraint(obj,cnstr_id,cnstr,xind)
+      % update the BoundingBoxConstraint whose id=cnstr_id with a new BoundingBoxConstraint cnstr
+      % @param cnstr_id   The ID of the constraint to be replaced. This ID is returned from
+      % obj.addBoundingBoxConstraint function
+      % @param cnstr       A Constraint object. The constraint to be added
+      % @param xind    Same as xind in obj.addBoundingBoxConstraint
+      % @retval new_cnstr_id  The ID of the newly updated constraint in the program
+      cnstr_id = varargin{1};
+      obj = deleteBoundingBoxConstraint(obj,cnstr_id);
+      [obj,new_cnstr_id] = addBoundingBoxConstraint(obj,varargin{2:end});
     end
   end
   
