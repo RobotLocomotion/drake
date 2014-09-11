@@ -13,10 +13,10 @@ DEBUG = false;
 TOE_OFF_ANGLE = pi/8;
 APEX_FRACTIONS = [0.15, 0.85];
 
-% pre_contact_height = 0.005; % height above the ground to aim for when foot is landing
-foot_yaw_rate = 0.75; % rad/s
+FOOT_YAW_RATE = 0.75; % rad/s
+FOOT_PITCH_RATE = 0.75; % rad/s
 
-lateral_tol = 1e-3; % Distance the sole can move to away from the line 
+LATERAL_TOL = 1e-3; % Distance the sole can move to away from the line 
                     % between step1 and step
 
 if stance.frame_id == biped.foot_frame_id.right
@@ -132,12 +132,30 @@ foot_origin_knots = struct('t', zmp_knots(end).t, ...
                            stance_foot_name, stance_origin_pose, ...
                            'is_liftoff', true);
 
+function [pose, q0] = solve_for_pose(constraints, q0)
+  constraint_ptrs = {};
+  for k = 1:length(constraints)
+    constraint_ptrs{end+1} = constraints{k}.mex_ptr;
+  end
+  full_IK_calls = full_IK_calls + 1;
+  [q0, info] = inverseKin(biped,q0,q0,constraint_ptrs{:},ikoptions);
+  info
+  if DEBUG
+    v.draw(0, q0);
+  end
+  kinsol = biped.doKinematics(q0);
+  pose = biped.forwardKin(kinsol, swing_body_index, [0;0;0], 1);
+end
+
 function add_foot_origin_knot(swing_pose)
   foot_origin_knots(end+1).(swing_foot_name) = swing_pose;
   foot_origin_knots(end).(stance_foot_name) = stance_origin_pose;
   cartesian_distance = norm(foot_origin_knots(end).(swing_foot_name)(1:3) - foot_origin_knots(end-1).(swing_foot_name)(1:3));
   yaw_distance = abs(foot_origin_knots(end).(swing_foot_name)(6) - foot_origin_knots(end-1).(swing_foot_name)(6));
-  dt = max(cartesian_distance / params.step_speed, yaw_distance / foot_yaw_rate);
+  pitch_distance = abs(foot_origin_knots(end).(swing_foot_name)(5) - foot_origin_knots(end-1).(swing_foot_name)(5));
+  dt = max([cartesian_distance / params.step_speed,...
+            yaw_distance / FOOT_YAW_RATE,...
+            pitch_distance / FOOT_PITCH_RATE]);
   foot_origin_knots(end).t = foot_origin_knots(end-1).t + dt;
   foot_origin_knots(end).is_liftoff = false;
 end
@@ -149,19 +167,8 @@ toe_pos_in_local = interp1([0, 1], [mean(swing1_toe_points_in_local, 2), mean(sw
 constraints = {posture_constraint,...
                WorldQuatConstraint(biped, swing_body_index, quat_toe_off, quat_tol),...
                WorldPositionInFrameConstraint(biped,swing_body_index,...
-                    mean(swing_toe_points_in_foot, 2), T_local_to_world, [toe_pos_in_local(1); -lateral_tol; toe_ht_in_local], [toe_pos_in_local(1); lateral_tol; toe_ht_in_local])};
-constraint_ptrs = {};
-for k = 1:length(constraints)
-  constraint_ptrs{end+1} = constraints{k}.mex_ptr;
-end
-full_IK_calls = full_IK_calls + 1;
-[q_latest, info] = inverseKin(biped,q_latest,q_latest,constraint_ptrs{:},ikoptions);
-info
-if DEBUG
-  v.draw(0, q_latest);
-end
-kinsol = biped.doKinematics(q_latest);
-pose = biped.forwardKin(kinsol, swing_body_index, [0;0;0], 1);
+                    mean(swing_toe_points_in_foot, 2), T_local_to_world, [toe_pos_in_local(1); -LATERAL_TOL; toe_ht_in_local], [toe_pos_in_local(1); LATERAL_TOL; toe_ht_in_local])};
+[pose, q_latest] = solve_for_pose(constraints, q_latest);
 add_foot_origin_knot(pose);
 
 % Apex knot 2
@@ -171,19 +178,8 @@ toe_pos_in_local = interp1([0, 1], [mean(swing1_toe_points_in_local, 2), mean(sw
 constraints = {posture_constraint,...
                WorldQuatConstraint(biped, swing_body_index, quat_swing2, quat_tol),...
                WorldPositionInFrameConstraint(biped,swing_body_index,...
-                    mean(swing_toe_points_in_foot, 2), T_local_to_world, [toe_pos_in_local(1); -lateral_tol; toe_ht_in_local], [toe_pos_in_local(1); lateral_tol; toe_ht_in_local])};
-constraint_ptrs = {};
-for k = 1:length(constraints)
-  constraint_ptrs{end+1} = constraints{k}.mex_ptr;
-end
-full_IK_calls = full_IK_calls + 1;
-[q_latest, info] = inverseKin(biped,q_latest,q_latest,constraint_ptrs{:},ikoptions);
-info
-if DEBUG
-  v.draw(0, q_latest);
-end
-kinsol = biped.doKinematics(q_latest);
-pose = biped.forwardKin(kinsol, swing_body_index, [0;0;0], 1);
+                    mean(swing_toe_points_in_foot, 2), T_local_to_world, [toe_pos_in_local(1); -LATERAL_TOL; toe_ht_in_local], [toe_pos_in_local(1); LATERAL_TOL; toe_ht_in_local])};
+[pose, q_latest] = solve_for_pose(constraints, q_latest);
 add_foot_origin_knot(pose);
 
 % Landing knot
@@ -195,8 +191,6 @@ zmp_knots(end).supp = RigidBodySupportState(biped, [stance_body_index, swing_bod
 % Final knot
 foot_origin_knots(end+1) = foot_origin_knots(end);
 foot_origin_knots(end).t = foot_origin_knots(end-1).t + hold_time / 2;
-
-full_IK_calls
 end
 
 function pos = shift_step_inward(biped, step, instep_shift)
@@ -208,3 +202,4 @@ function pos = shift_step_inward(biped, step, instep_shift)
   shift = R*instep_shift;
   pos = pos_center(1:2) + shift(1:2);
 end
+
