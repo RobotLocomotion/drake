@@ -19,6 +19,10 @@ classdef RigidBodySubWing < RigidBodyForceElement
     %Air density for 20 degC dry air, at sea level
     rho = 1.204;
     has_control_surface = false;
+    span;
+    stall_angle;
+    chord;
+    profile;
   end
 
   methods
@@ -71,6 +75,10 @@ classdef RigidBodySubWing < RigidBodyForceElement
       obj.kinframe = frame_id;
       linux = isunix();
       obj.area = chord*span;
+      obj.chord = chord;
+      obj.span = span;
+      obj.stall_angle = stallAngle;
+      obj.profile = profile;
       mach = velocity/341; % mach 1 at sea level is about 341 m/s
       %Reynolds number calculation for 10 deg C and sea level
       Re = velocity*chord/.0000144;
@@ -586,6 +594,49 @@ classdef RigidBodySubWing < RigidBodyForceElement
         dCD = obj.dfCd.eval(aoa);
         dCM = obj.dfCm.eval(aoa);
       end
+    end
+    
+    function drawWing(obj, manip, q, qd, fill_color)
+      % Draws the subwing onto the current figure
+      % @param manip manipulator the wing is part of
+      % @param q state vector
+      % @param qd q-dot (state vector derivatives)
+      % @param fill_color @default 1
+      
+      if ~strcmpi(obj.profile, 'flat plate')
+        error('Drawing not implemented for non-flat plate wings.');
+      end
+      
+      hold on
+      
+      kinsol = doKinematics(manip,q,false, false, qd);
+      
+      origin = forwardKin(manip, kinsol, obj.kinframe, zeros(3,1), 1);
+      
+      % draw a box around the origin in world frame
+      
+      height = 0.01;
+      
+      % get the corner points in 3d space
+      
+      p1 = [-obj.chord/2, -obj.span/2, 0];
+      
+      p2 = [ obj.chord/2, -obj.span/2, 0];
+      
+      p3 = [ obj.chord/2,  obj.span/2, 0];
+      
+      p4 = [-obj.chord/2,  obj.span/2, 0];
+      
+      pts = forwardKin(manip, kinsol, obj.kinframe, [p1; p2; p3; p4]');
+      
+      fill3(pts(1,:), pts(2,:), pts(3,:), fill_color);
+      
+      xlabel('x');
+      ylabel('y');
+      zlabel('z');
+      
+      axis equal
+      
     end
 
   end

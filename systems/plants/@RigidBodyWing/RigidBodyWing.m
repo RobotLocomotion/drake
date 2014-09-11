@@ -94,6 +94,27 @@ classdef RigidBodyWing < RigidBodyForceElement
       end
     end
     
+    
+    function drawWing(obj, manip, q, qd, fill_color)
+      % Draws the wing onto the current figure in the state
+      % given by q and qdot
+      %
+      % @param manip manipulator the wing is part of
+      % @param q state vector
+      % @param qd q-dot (state vector derivatives)
+      % @param fill_color @default 1
+      
+      if nargin < 5
+        fill_color = 1;
+      end
+      
+      disp('drawing');
+      
+      for i = 1 : length(obj.subwings)
+        obj.subwings{i}.drawWing(manip, q, qd, fill_color);
+      end
+    end
+    
 
   end
 
@@ -231,10 +252,12 @@ classdef RigidBodyWing < RigidBodyForceElement
             this_surface = obj.control_surfaces(min_left_edge_index);
             this_span = this_surface.span;
             
-            this_subwing_center_y = this_span / 2 + point_along_wing;
             
+            subwing_center_body_frame = [0; this_span / 2 + point_along_wing; 0];
+
             
-            subwing_frame_xyz = left_edge_of_wing + [0; this_subwing_center_y; 0];
+            subwing_frame_xyz = left_edge_of_wing + obj.getSubWingFrameXYZ(subwing_center_body_frame, rpy);
+
             [model,subwing_frame_id] = addFrame(model,RigidBodyFrame(parent,subwing_frame_xyz,rpy,[this_surface.name '_subwing' num2str(length(obj.subwings)) '_of_' name '_frame']));
             
             this_subwing = RigidBodySubWingWithControlSurface(subwing_frame_id, profile, chord, this_span, stall_angle, nominal_speed, this_surface);
@@ -256,9 +279,10 @@ classdef RigidBodyWing < RigidBodyForceElement
               this_span = min_left_edge_value - point_along_wing;
             end
             
-            this_subwing_center_y = this_span / 2 + point_along_wing;
+            subwing_center_body_frame = [0; this_span / 2 + point_along_wing; 0];
             
-            subwing_frame_xyz = left_edge_of_wing + [0; this_subwing_center_y; 0];
+            subwing_frame_xyz = left_edge_of_wing + obj.getSubWingFrameXYZ(subwing_center_body_frame, rpy);
+            
             [model,subwing_frame_id] = addFrame(model,RigidBodyFrame(parent,subwing_frame_xyz,rpy,['subwing' num2str(length(obj.subwings)) '_of_' name '_frame']));
 
             this_subwing = RigidBodySubWing(subwing_frame_id, profile, chord, this_span, stall_angle, nominal_speed);
@@ -276,6 +300,20 @@ classdef RigidBodyWing < RigidBodyForceElement
         
       end
       obj.name = name;
+    end
+    
+    function subwing_frame_xyz = getSubWingFrameXYZ(subwing_center_body_frame, rpy)
+      % figure out where the center of this subwing is, accounting
+      % for possible roll/pitch/yaw in the spec
+
+      rot_matrix = [ cos(rpy(3))*cos(rpy(2)), cos(rpy(3))*sin(rpy(2))*sin(rpy(1)) - sin(rpy(3))*cos(rpy(1)), cos(rpy(3))*sin(rpy(2))*cos(rpy(1)) + sin(rpy(3))*sin(rpy(1)); ...
+                     sin(rpy(3))*cos(rpy(2)), sin(rpy(3))*sin(rpy(2))*sin(rpy(1)) + cos(rpy(3))*cos(rpy(1)), sin(rpy(3))*sin(rpy(2))*cos(rpy(1)) - cos(rpy(3))*sin(rpy(1)); ...
+                     -sin(rpy(2)),    cos(rpy(2))*sin(rpy(1)),    cos(rpy(2))*cos(rpy(1))   ];
+
+
+
+      subwing_frame_xyz = rot_matrix * subwing_center_body_frame;
+      
     end
     
   end
