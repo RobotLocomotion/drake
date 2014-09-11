@@ -13,6 +13,8 @@ classdef RigidBodyWing < RigidBodyForceElement
     
     control_surfaces; % array of control surfaces on this wing, sorted by order appearing in the URDF
     
+    kinframe; % frame_id for the wing (note: there are different ones for the subwings based on their actual position)
+    
   end
   
 
@@ -27,6 +29,10 @@ classdef RigidBodyWing < RigidBodyForceElement
         thisWing = RigidBodySubWing(frame_id, profile, chord, span, stallAngle, velocity);
       
         obj.subwings{length(obj.subwings) + 1} = this_subwing;
+        
+        obj.subwing_left_edges = 0;
+        
+        obj.kinframe = frame_id;
         
       else
         % with no arguments, we were probably called by the URDF constructor
@@ -72,31 +78,8 @@ classdef RigidBodyWing < RigidBodyForceElement
           end
         end
         
-       
-        
       end
       
-    end
-    
-    function frame_id = kinframe(obj)
-      % Gets the frame_id for the wing and throws an error if any subwing
-      % has a different frame id.
-      %
-      % @retval frame_id the frame_id passed into the constructor of each
-      %   subwing.
-      
-      
-      if length(obj.subwings) < 1
-        error('called with no subwings.  Init wing before calling.');
-      end
-      
-      frame_id = obj.subwings{1}.kinframe;
-      
-      for i = 2 : length(obj.subwings)
-        if frame_id ~= obj.subwings{i}.kinframe
-          error('frame id mismatch.');
-        end
-      end
     end
         
     function obj = setInputNum(obj, input_num)
@@ -132,12 +115,14 @@ classdef RigidBodyWing < RigidBodyForceElement
           rpy = reshape(parseParamString(model,robotnum,char(elnode.getAttribute('rpy'))),3,1);
         end
       end
-      [model,frame_id] = addFrame(model,RigidBodyFrame(parent,xyz,rpy,[name,'_frame']));
-
+      [model,this_frame_id] = addFrame(model,RigidBodyFrame(parent,xyz,rpy,[name,'_frame']));
+      
       % search for control surfaces
       control_surface_nodes = node.getElementsByTagName('control_surface');
       
       obj = RigidBodyWing();
+      
+      obj.kinframe = this_frame_id;
       
       profile = char(node.getAttribute('profile'));
       chord = parseParamString(model,robotnum,char(node.getAttribute('chord')));
@@ -145,10 +130,12 @@ classdef RigidBodyWing < RigidBodyForceElement
       stall_angle = parseParamString(model,robotnum,char(node.getAttribute('stall_angle')));
       nominal_speed = parseParamString(model,robotnum,char(node.getAttribute('nominal_speed')));
       
+      left_edge_of_wing = xyz - [0; span/2; 0];
+      
       if isempty(control_surface_nodes.item(0))
         % no control surfaces
         
-        this_subwing = RigidBodySubWing(frame_id, profile, chord, span, stall_angle, nominal_speed);
+        this_subwing = RigidBodySubWing(obj.kinframe, profile, chord, span, stall_angle, nominal_speed);
         
         obj.subwings{length(obj.subwings) + 1} = this_subwing;
         obj.subwing_left_edges = 0;
@@ -243,7 +230,14 @@ classdef RigidBodyWing < RigidBodyForceElement
 
             this_surface = obj.control_surfaces(min_left_edge_index);
             this_span = this_surface.span;
-            this_subwing = RigidBodySubWingWithControlSurface(frame_id, profile, chord, this_span, stall_angle, nominal_speed, this_surface);
+            
+            this_subwing_center_y = this_span / 2 + point_along_wing;
+            
+            
+            subwing_frame_xyz = left_edge_of_wing + [0; this_subwing_center_y; 0];
+            [model,subwing_frame_id] = addFrame(model,RigidBodyFrame(parent,subwing_frame_xyz,rpy,[this_surface.name '_subwing' num2str(length(obj.subwings)) '_of_' name '_frame']));
+            
+            this_subwing = RigidBodySubWingWithControlSurface(subwing_frame_id, profile, chord, this_span, stall_angle, nominal_speed, this_surface);
             
             
             obj.input_limits = [ obj.input_limits [ this_surface.min_deflection; this_surface.max_deflection] ];
@@ -261,8 +255,13 @@ classdef RigidBodyWing < RigidBodyForceElement
             else
               this_span = min_left_edge_value - point_along_wing;
             end
+            
+            this_subwing_center_y = this_span / 2 + point_along_wing;
+            
+            subwing_frame_xyz = left_edge_of_wing + [0; this_subwing_center_y; 0];
+            [model,subwing_frame_id] = addFrame(model,RigidBodyFrame(parent,subwing_frame_xyz,rpy,['subwing' num2str(length(obj.subwings)) '_of_' name '_frame']));
 
-            this_subwing = RigidBodySubWing(frame_id, profile, chord, this_span, stall_angle, nominal_speed);
+            this_subwing = RigidBodySubWing(subwing_frame_id, profile, chord, this_span, stall_angle, nominal_speed);
           end
           
           

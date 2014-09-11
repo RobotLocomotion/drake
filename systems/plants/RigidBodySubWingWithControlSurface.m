@@ -197,12 +197,6 @@ classdef RigidBodySubWingWithControlSurface < RigidBodySubWing
          
     end
     
-    function drawSurface(obj, u)
-      % Draws the control surface in the given configuration
-      
-      
-    end
-a
     
     function [fCl, fCd, fCm] = flatplate_old(obj)
       disp('Using a flat plate airfoil with control surfaces.')
