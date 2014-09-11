@@ -96,7 +96,7 @@ Q = diag(cost(1:nq));
 ikoptions = ikoptions.setQ(Q);
 ikoptions = ikoptions.setQa(0.001*Q);
 ikoptions = ikoptions.setMajorIterationsLimit(10000);
-ikoptions = ikoptions.setIterationsLimit(500000);
+ikoptions = ikoptions.setIterationsLimit(5000000);
 ikoptions = ikoptions.setSuperbasicsLimit(1000);
 ikoptions = ikoptions.setDebug(true);
 ikmexoptions = ikoptions;
@@ -120,6 +120,7 @@ end
 if(any(any(isinf(x_sol))) || any(any(isnan(q_sol))))
   error('solution cannot be nan');
 end
+valuecheck(q_sol(:,1),q_seed_traj.eval(0),1e-3);
 v.playback(xtraj,struct('slider',true));
 display('Check IK traj with quasi static constraint');
 xtraj = test_IKtraj_userfun(r,t,q_seed_traj,q_nom_traj,kc1{:},qsc,kc2{:},kc3,kc4,kc5,pc_knee,ikoptions);
@@ -274,6 +275,7 @@ x0 = [q_seed.eval(t(1));q_seed.deriv(t(1))];
 ikproblem = InverseKinematicsTrajectory(r,t,q_nom,ikoptions.fixInitialState,x0,varargin{1:end-1});
 ikproblem = ikproblem.addBoundingBoxConstraint(BoundingBoxConstraint(ikoptions.qdf_lb,ikoptions.qdf_ub),ikproblem.qdf_idx);
 ikproblem = ikproblem.setSolverOptions('snopt','MajorIterationsLimit',ikoptions.SNOPT_MajorIterationsLimit);
+ikproblem = ikproblem.setSolverOptions('snopt','IterationsLimit',ikoptions.SNOPT_IterationsLimit);
 % ikproblem = ikproblem.setSolverOptions('snopt','print','iktraj.out');
 [xtraj,F,info,infeasible_constraint] = ikproblem.solve(q_seed);
 if(info>10)
