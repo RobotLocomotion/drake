@@ -82,7 +82,7 @@ classdef NonlinearProgram
       % @param x_name       -- An optional argument. A cell of strings containing the name
       % of each decision variable
       if(nargin<2)
-        x_name = cellfun(@(i) sprintf('x%d',i),num2cell((1:obj.num_vars)'),'UniformOutput',false);
+        x_name = cellfun(@(i) sprintf('x%d',i),num2cell((1:num_vars)'),'UniformOutput',false);
       else
         if(~iscellstr(x_name) || numel(x_name) ~= num_vars)
           error('Drake:NonlinearProgra:InvalidArgument','Argument x_name should be a cell containing %d strings',obj.num_vars);
@@ -269,9 +269,9 @@ classdef NonlinearProgram
       obj.cin_lb = [obj.cin_lb;cnstr.lb(cnstr.cin_idx)];
       obj.nlcon_ineq_idx = [obj.nlcon_ineq_idx;obj.num_cin+obj.num_ceq+cnstr.cin_idx];
       obj.nlcon_eq_idx = [obj.nlcon_eq_idx;obj.num_cin+obj.num_ceq+cnstr.ceq_idx];
-      obj.c2nlcon_idx = [obj.c2nlcon_idx;(length(obj.nlcon)+1)*ones(cnstr.num_cnstr,1)];
-      obj.cin2nlcon_idx = [obj.cin2nlcon_idx;(length(obj.nlcon)+1)*ones(length(cnstr.cin_idx),1)];
-      obj.ceq2nlcon_idx = [obj.ceq2nlcon_idx;(length(obj.nlcon)+1)*ones(length(cnstr.ceq_idx),1)];
+      obj.c2nlcon_idx = [obj.c2nlcon_idx;length(obj.nlcon)*ones(cnstr.num_cnstr,1)];
+      obj.cin2nlcon_idx = [obj.cin2nlcon_idx;length(obj.nlcon)*ones(length(cnstr.cin_idx),1)];
+      obj.ceq2nlcon_idx = [obj.ceq2nlcon_idx;length(obj.nlcon)*ones(length(cnstr.ceq_idx),1)];
       
       Geq_idx = cnstr.lb(cnstr.iCfun) == cnstr.ub(cnstr.iCfun);
       Gin_idx = ~Geq_idx;
@@ -936,7 +936,7 @@ classdef NonlinearProgram
       % delete a nonlinear constraint from the program
       % @param delete_idx   An integer. obj.nlcon{delete_idx} is the nonlinear constraint to be
       % deleted
-      if(numel(delete_idx)~=1 || ~isinteger(delete_idx))
+      if(numel(delete_idx)~=1 || delete_idx~=floor(delete_idx))
         error('Drake:NonlinearProgram:deleteNonlinearConstraint:InvalidInput','delete_idx should be an integer');
       end
       if(delete_idx<=0 || delete_idx>length(obj.nlcon))
@@ -949,8 +949,9 @@ classdef NonlinearProgram
       cin_delete_idx = cin_idx(cin_delete_flag);
       ceq_idx = (1:obj.num_ceq)';
       ceq_delete_idx = ceq_idx(ceq_delete_flag);
-      c_delete_idx = obj.c2nlcon_idx == delete_idx;
-      c_delta = cumsum(double(c_delete_idx)); 
+      c_delete_flag = obj.c2nlcon_idx == delete_idx;
+      c_idx = (1:obj.num_cin+obj.num_ceq)';
+      c_delete_idx = c_idx(c_delete_flag);
       num_delete_cin = length(obj.nlcon{delete_idx}.cin_idx);
       num_delete_ceq = length(obj.nlcon{delete_idx}.ceq_idx);
       remaining_nlcon_idx = [1:delete_idx-1 delete_idx+1:length(obj.nlcon)];
@@ -966,9 +967,15 @@ classdef NonlinearProgram
       obj.nlcon_xind = obj.nlcon_xind(remaining_nlcon_idx);
       obj.nlcon_xind_stacked = obj.nlcon_xind_stacked(remaining_nlcon_idx);
       obj.nlcon_dataind = obj.nlcon_dataind(remaining_nlcon_idx);
-      obj.nlcon_ineq_idx = obj.nlcon_ineq_idx(~c_delete_idx)-c_delta(obj.nlcon_ineq_idx(~c_delete_idx));
-      obj.nlcon_eq_idx = obj.nlcon_eq_idx(~c_delete_idx)-c_delta(obj.nlcon_eq_idx(~c_delete_idx));
-      obj.c2nlcon_idx = obj.c2nlcon_idx(~c_delete_idx);
+      old_nlcon_ineq_idx = obj.nlcon_ineq_idx;
+      obj.nlcon_ineq_idx = obj.nlcon_ineq_idx-sum(bsxfun(@minus,obj.nlcon_ineq_idx,c_delete_idx')>0,2);
+      obj.nlcon_ineq_idx = obj.nlcon_ineq_idx(~c_delete_flag(old_nlcon_ineq_idx));
+%       obj.nlcon_ineq_idx = obj.nlcon_ineq_idx(~c_delete_flag)-c_delta(obj.nlcon_ineq_idx(~c_delete_flag));
+      old_nlcon_eq_idx = obj.nlcon_eq_idx;
+      obj.nlcon_eq_idx = obj.nlcon_eq_idx-sum(bsxfun(@minus,obj.nlcon_eq_idx,c_delete_idx')>0,2);
+      obj.nlcon_eq_idx = obj.nlcon_eq_idx(~c_delete_flag(old_nlcon_eq_idx));
+%       obj.nlcon_eq_idx = obj.nlcon_eq_idx(~c_delete_flag)-c_delta(obj.nlcon_eq_idx(~c_delete_flag));
+      obj.c2nlcon_idx = obj.c2nlcon_idx(~c_delete_flag);
       obj.c2nlcon_idx(obj.c2nlcon_idx>delete_idx) = obj.c2nlcon_idx(obj.c2nlcon_idx>delete_idx)-1;
       obj.cin2nlcon_idx = obj.cin2nlcon_idx(~cin_delete_flag);
       obj.cin2nlcon_idx(obj.cin2nlcon_idx>delete_idx) = obj.cin2nlcon_idx(obj.cin2nlcon_idx>delete_idx)-1;
@@ -977,13 +984,13 @@ classdef NonlinearProgram
       
       old_iCinfun = obj.iCinfun;
       obj.iCinfun = obj.iCinfun-sum(bsxfun(@minus,obj.iCinfun,cin_delete_idx')>0,2);
-      obj.iCinfun = obj.iCinfun(~obj.cin_delete_flag(old_iCinfun));
-      obj.jCinvar = obj.jCinvar(~obj.cin_delete_flag(old_iCinfun));
+      obj.iCinfun = obj.iCinfun(~cin_delete_flag(old_iCinfun));
+      obj.jCinvar = obj.jCinvar(~cin_delete_flag(old_iCinfun));
       
       old_iCeqfun = obj.iCeqfun;
       obj.iCeqfun = obj.iCeqfun-sum(bsxfun(@minus,obj.iCeqfun,ceq_delete_idx')>0,2);
-      obj.iCeqfun = obj.iCeqfun(~obj.ceq_delete_flag(old_iCeqfun));
-      obj.jCeqvar = obj.jCeqvar(~obj.ceq_delete_flag(old_iCeqfun));
+      obj.iCeqfun = obj.iCeqfun(~ceq_delete_flag(old_iCeqfun));
+      obj.jCeqvar = obj.jCeqvar(~ceq_delete_flag(old_iCeqfun));
     end
     
   end
