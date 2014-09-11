@@ -231,16 +231,88 @@ valuecheck(lb,[-inf;-inf;-inf;0]);
 valuecheck(ub,[inf;10;0;0]);
 [iGfun,jGvar] = nlp4.getNonlinearGradientSparsity();
 valuecheck([1 1 1],full(sparse(iGfun,jGvar,ones(size(iGfun)),1+nlp4.num_cin+nlp4.num_ceq,nlp4.num_vars)));
-% x1^2+4*x2^2<=4
-% (x1-2)^2+x2^2<=5
+[g,h,dg,dh] = nlp4.nonlinearConstraints(x0);
+if(~isempty(g) || ~isempty(h) || ~isempty(dg) || ~isempty(dh))
+  error('The nonlinear constraint should be empty');
+end
+[x4,F,info] = solveWDefaultSolver(nlp4,x0);
+
+% min x1*x2
+% -10<=x1^2+4*x2^2<=4
+% -10<=(x1-2)^2+x2^2<=5
 % x1 >= 0
 % 0<=x1+2*x3 <=10
 % x1+3*x3 = 0
-% x1*x2+x3 = 3
-% 1<=x1+x3^2<=10
-% x1+2*x3*x4 = 5
-
+% x1*x2+x3 = 0
+% 0<=x1+x3^2<=10
+% x1+2*x3*x4+x4^2 = 5
+nlp4 = nlp4.addConstraint(cnstr3,xind1);
 nlp4 = nlp3.addDecisionVariable(1);
+cnstr4 = FunctionHandleConstraint([0;0;5],[0;10;5],4,@cnstr4_userfun,2);
+nlp4 = nlp4.addConstraint(cnstr4);
+[x4,F,info] = solveWDefaultSolver(nlp4,[x0;0]);
+
+nlp4 = nlp4.deleteNonlinearConstraint(1);
+valuecheck(nlp4.num_cin,1);
+valuecheck(nlp4.num_ceq,2);
+valuecheck(nlp4.cin_lb,0);
+valuecheck(nlp4.cin_ub,10);
+valuecheck(length(nlp4.nlcon),1);
+sizecheck(nlp4.cin_name,1);
+sizecheck(nlp4.ceq_name,2);
+sizecheck(nlp4.nlcon_xind,1);
+valuecheck(nlp4.nlcon_xind{1}{1},[1;2;3;4]);
+[iGfun,jGvar] = nlp4.getNonlinearGradientSparsity();
+valuecheck([1 1 1 0;ones(3,4)],full(sparse(iGfun,jGvar,ones(size(iGfun)),1+nlp4.num_cin+nlp4.num_ceq,nlp4.num_vars)));
+[g,h,dg,dh] = nlp4.nonlinearConstraints([x0;1]);
+[c4,dc4] = cnstr4_userfun([x0;1]);
+valuecheck(g,c4(2));
+valuecheck(h,c4([1;3])-[0;5]);
+valuecheck(dg,dc4(2,:));
+valuecheck(dh,dc4([1;3],:));
+[x4,F,info] = solveWDefaultSolver(nlp4,[x4;1]);
+
+nlp4 = nlp4.deleteNonlinearConstraint(1);
+valuecheck(nlp4.num_cin,0);
+valuecheck(nlp4.num_ceq,0);
+if(~isempty(nlp4.cin_lb) || ~isempty(nlp4.cin_ub) )
+  error('The lower and upper bound of cin should be empty');
+end
+[lb,ub] = nlp4.bounds();
+valuecheck(lb,[-inf;-inf;-inf;0]);
+valuecheck(ub,[inf;10;0;0]);
+[iGfun,jGvar] = nlp4.getNonlinearGradientSparsity();
+valuecheck([1 1 1 0],full(sparse(iGfun,jGvar,ones(size(iGfun)),1+nlp4.num_cin+nlp4.num_ceq,nlp4.num_vars)));
+[g,h,dg,dh] = nlp4.nonlinearConstraints(x0);
+if(~isempty(g) || ~isempty(h) || ~isempty(dg) || ~isempty(dh))
+  error('The nonlinear constraint should be empty');
+end
+[x4,F,info] = solveWDefaultSolver(nlp4,[x0;1]);
+
+%%%%%%
+display('check updateNonlinearConstraint');
+nlp4 = nlp3.addDecisionVariable(1);
+[nlp4,new_cnstr_idx] = nlp4.updateNonlinearConstraint(1,cnstr4);
+valuecheck(nlp4.num_cin,1);
+valuecheck(nlp4.num_ceq,2);
+valuecheck(nlp4.cin_lb,0);
+valuecheck(nlp4.cin_ub,10);
+valuecheck(length(nlp4.nlcon),1);
+sizecheck(nlp4.cin_name,1);
+sizecheck(nlp4.ceq_name,2);
+sizecheck(nlp4.nlcon_xind,1);
+valuecheck(nlp4.nlcon_xind{1}{1},[1;2;3;4]);
+[iGfun,jGvar] = nlp4.getNonlinearGradientSparsity();
+valuecheck([1 1 1 0;ones(3,4)],full(sparse(iGfun,jGvar,ones(size(iGfun)),1+nlp4.num_cin+nlp4.num_ceq,nlp4.num_vars)));
+[g,h,dg,dh] = nlp4.nonlinearConstraints([x0;1]);
+[c4,dc4] = cnstr4_userfun([x0;1]);
+valuecheck(g,c4(2));
+valuecheck(h,c4([1;3])-[0;5]);
+valuecheck(dg,dc4(2,:));
+valuecheck(dh,dc4([1;3],:));
+[x4,F,info] = solveWDefaultSolver(nlp4,[x4;1]);
+valuecheck(nlp4.nlcon{new_cnstr_idx}.eval([x4;1]),cnstr4.eval([x4;1]));
+
 
 end
 
@@ -287,9 +359,9 @@ end
 end
 
 function [c,dc] = cnstr4_userfun(x)
-c = [x(1)*x(2)+x(3);x(1)+x(3)^2;x(1)+2*x(3)*x(4)];
+c = [x(1)*x(2)+x(3);x(1)+x(3)^2;x(1)+2*x(3)*x(4)+x(4)^2];
 if(nargout>1)
-  dc = [x(2) x(1) 1 0;1 0 2*x(3) 0;1 0 2*x(4) 2*x(3)];
+  dc = [x(2) x(1) 1 0;1 0 2*x(3) 0;1 0 2*x(4) 2*x(3)+2*x(4)];
 end
 end
 
