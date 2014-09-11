@@ -604,7 +604,7 @@ classdef RigidBodySubWing < RigidBodyForceElement
       % @param fill_color @default 1
       
       if ~strcmpi(obj.profile, 'flat plate')
-        error('Drawing not implemented for non-flat plate wings.');
+        warning('Drawing may not be right for non-flat plate wings.');
       end
       
       hold on
