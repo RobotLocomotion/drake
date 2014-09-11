@@ -114,7 +114,7 @@ zmpf = mean([steps.right(end).pos(1:2), steps.left(end).pos(1:2)], 2);
 zmp_knots(end+1) =  struct('t', foot_origin_knots(end).t, 'zmp', zmpf, 'supp', RigidBodySupportState(biped, [rfoot_body_idx, lfoot_body_idx]));
 
 % Build trajectories
-link_constraints = struct('link_ndx',{}, 'pt', {}, 'traj', {}, 'dtraj', {}, 'ddtraj', {});
+link_constraints = struct('link_ndx',{}, 'pt', {}, 'poses', {}, 'dposes', {}, 'contact_break_indices', {}, 'a0', {}, 'a1', {}, 'a2', {}, 'a3', {});
 for f = {'right', 'left'}
   foot = f{1};
   foot_poses = [foot_origin_knots.(foot)];
@@ -124,14 +124,26 @@ for f = {'right', 'left'}
     % Unwrap rpy angles
     foot_poses(j,2:end) = foot_poses(j,1:end-1) + angleDiff(foot_poses(j,1:end-1), foot_poses(j,2:end));
   end
-  zpoints = foot_poses(3,:);
-  change_indices = [true, diff(diff(zpoints)) ~= 0, true];
   ts = [foot_origin_knots.t];
-%   change_indices = 1:length(ts);
-  foot_traj = PPTrajectory(pchip(ts(change_indices), foot_poses(:,change_indices)));
+  foot_traj = PPTrajectory(pchip(ts, foot_poses));
   dtraj = fnder(foot_traj);
-  ddtraj = fnder(foot_traj,2);
-  link_constraints(end+1) = struct('link_ndx', body_ind, 'pt', [0;0;0], 'traj', foot_traj, 'dtraj', dtraj, 'ddtraj', ddtraj);
+
+  foot_dposes = dtraj.eval(ts);
+  % Compute cubic polynomial coefficients to save work in the controller
+  % See Craig, J. Introduction to Robotics: Mechanics and Control, 2005, p207, eq 7.11
+  n_segments = length(ts) - 1;
+  a0 = foot_poses(:,1:n_segments);
+  a1 = foot_dposes(:,1:n_segments);
+  a2 = zeros(6, n_segments);
+  a3 = zeros(6, n_segments);
+  for j = 1:n_segments
+    for k = 1:6
+      tf = ts(j+1) - ts(j);
+      a2(k,j) = (3 / tf^2) * (foot_poses(k,j+1) - foot_poses(k,j)) - (2 / tf) * foot_dposes(k,j) - (1 / tf) * foot_dposes(k,j+1);
+      a3(k,j) = (-2 / tf^3) * (foot_poses(k,j+1) - foot_poses(k,j)) + (1 / tf^2) * (foot_dposes(k,j+1) + foot_dposes(k,j));
+    end
+  end
+  link_constraints(end+1) = struct('link_ndx', body_ind, 'pt', [0;0;0], 'poses', foot_poses, 'dposes', foot_dposes, 'contact_break_indices', find([foot_origin_knots.is_liftoff]), 'a0', a0, 'a1', a1, 'a2', a2, 'a3', a3);
 end
 zmptraj = PPTrajectory(foh([zmp_knots.t], [zmp_knots.zmp]));
 
