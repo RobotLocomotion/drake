@@ -993,6 +993,16 @@ classdef NonlinearProgram
       obj.jCeqvar = obj.jCeqvar(~ceq_delete_flag(old_iCeqfun));
     end
     
+    function [obj,new_cnstr_idx] = updateNonlinearConstraint(obj,cnstr_idx,cnstr)
+      % update obj.nlcon{cnstr_idx} with a new Constraint object cnstr, the newly added Constraint
+      % cnstr is inserted to obj.nlcon{new_cnstr_idx}
+      % @param cnstr_idx   An integer. obj.nlcon{cnstr_idx} is going to be deleted
+      % @param cnstr       A Constraint object. The constraint to be added
+      % @param new_cnstr_idx  An integer. cnstr is added to be obj.nlcon{new_cnstr_idx}
+      obj = deleteNonlinearConstraint(obj,cnstr_idx);
+      obj = addNonlinearConstraint(obj,cnstr);
+      new_cnstr_idx = length(obj.nlcon);
+    end
   end
   
   methods(Access=protected)
