@@ -203,7 +203,8 @@ nlp3 = nlp3.addCost(cost3,xind1);
 nlp3 = nlp3.addBoundingBoxConstraint(BoundingBoxConstraint(0,inf),1);
 
 A = [1 0 2;1 0 3];
-nlp3 = nlp3.addLinearConstraint(LinearConstraint([0;0],[10;0],[1 2;1 3]),[1;3]);
+lincon1 = LinearConstraint([0;0],[10;0],[1 2;1 3]);
+[nlp3,lincon1_id] = nlp3.addLinearConstraint(lincon1,[1;3]);
 x0 = [1;2;4];
 [x3,F,info] = solveWDefaultSolver(nlp3,x0);
 c3 = cnstr3_userfun(x3(1),x3(2));
@@ -222,6 +223,9 @@ end
 display('test deleteNonlinearConstraint')
 display('first try to delete all nonlinear constraint');
 nlp4 = nlp3.deleteNonlinearConstraint(cnstr3_id);
+if(nlp4.isNonlinearConstraintID(cnstr3_id))
+  error('The deleted ID should not be contained in the program any more');
+end
 valuecheck(nlp4.num_cin,0);
 valuecheck(nlp4.num_ceq,0);
 if(~isempty(nlp4.cin_lb) || ~isempty(nlp4.cin_ub) )
@@ -254,6 +258,9 @@ cnstr4 = FunctionHandleConstraint([0;0;5],[0;10;5],4,@cnstr4_userfun,2);
 [x4,F,info] = solveWDefaultSolver(nlp4,[x0;0]);
 
 nlp4 = nlp4.deleteNonlinearConstraint(cnstr3_id);
+if(nlp4.isNonlinearConstraintID(cnstr3_id))
+  error('The deleted ID should not be contained in the program any more');
+end
 valuecheck(nlp4.num_cin,1);
 valuecheck(nlp4.num_ceq,2);
 valuecheck(nlp4.cin_lb,0);
@@ -271,9 +278,12 @@ valuecheck(g,c4(2));
 valuecheck(h,c4([1;3])-[0;5]);
 valuecheck(dg,dc4(2,:));
 valuecheck(dh,dc4([1;3],:));
-[x4,F,info] = solveWDefaultSolver(nlp4,[x4;1]);
+[x4,F,info] = solveWDefaultSolver(nlp4,x4);
 
 nlp4 = nlp4.deleteNonlinearConstraint(cnstr4_id);
+if(nlp4.isNonlinearConstraintID(cnstr4_id))
+  error('The deleted ID should not be contained in the program any more');
+end
 valuecheck(nlp4.num_cin,0);
 valuecheck(nlp4.num_ceq,0);
 if(~isempty(nlp4.cin_lb) || ~isempty(nlp4.cin_ub) )
@@ -311,11 +321,77 @@ valuecheck(g,c4(2));
 valuecheck(h,c4([1;3])-[0;5]);
 valuecheck(dg,dc4(2,:));
 valuecheck(dh,dc4([1;3],:));
-[x4,F,info] = solveWDefaultSolver(nlp4,[x4;1]);
+[x4,F,info] = solveWDefaultSolver(nlp4,x4);
 [~,new_cnstr_idx] = nlp4.isNonlinearConstraintID(new_cnstr_id);
-valuecheck(nlp4.nlcon{new_cnstr_idx}.eval([x4;1]),cnstr4.eval([x4;1]));
+valuecheck(nlp4.nlcon{new_cnstr_idx}.eval(x4),cnstr4.eval(x4));
 
+%%%%%
+display('check deleteLinearConstraint')
+nlp4 = nlp4.deleteLinearConstraint(lincon1_id);
+if(~isempty(nlp4.Ain) || ~isempty(nlp4.bin) || ~isempty(nlp4.Aeq) || ~isempty(nlp4.beq) || ~isempty(nlp4.Ain_name) || ~isempty(nlp4.Aeq_name) || ~isempty(nlp4.lcon))
+  error('The linear constraint should be empty');
+end
+if(nlp4.isLinearConstraintID(lincon1_id))
+  error('The deleted ID should not be contained in the program any more');
+end
+[x4,F,info] = solveWDefaultSolver(nlp4,x4);
 
+[nlp4,lincon1_id] = nlp4.addLinearConstraint(lincon1,[1;3]);
+sizecheck(nlp4.Ain,[2,4]);
+sizecheck(nlp4.Aeq,[1,4]);
+sizecheck(nlp4.bin,[2,1]);
+sizecheck(nlp4.beq,[1,1]);
+[x4,F,info] = solveWDefaultSolver(nlp4,x4);
+if(x4(1)<0 || x4(1)+2*x4(3)>10+1e-6 || x4(1)+2*x4(3)<0-1e-6 || abs(x4(1)+3*x4(3))>1e-6)
+  error('linear constraint is not satisfied');
+end
+% min x1*x2
+% x1 >= 0
+% 0<=x1+2*x3 <=10
+% x1+3*x3 = 0
+% x1*x2+x3 = 0
+% 0<=x1+x3^2<=10
+% x1+2*x3*x4+x4^2 = 5
+% x1+x4<=5
+% x2+x3 = 2
+% -5<=x1+2*x3+4*x4<=10
+lincon2 = LinearConstraint([-inf;2;-5],[5;2;10],[1 0 0 1;0 1 1 0;1 0 2 4]);
+[nlp4,lincon2_id] = nlp4.addLinearConstraint(lincon2);
+[x4,F,info] = solveWDefaultSolver(nlp4,x4);
+
+nlp4 = nlp4.deleteLinearConstraint(lincon1_id);
+sizecheck(nlp4.Ain,[3,4]);
+sizecheck(nlp4.bin,[3,1]);
+sizecheck(nlp4.Aeq,[1,4]);
+sizecheck(nlp4.beq,[1,1]);
+if(nlp4.isLinearConstraintID(lincon1_id))
+  error('The deleted linear constraint should not be contained in the program');
+end
+[x4,F,info] = solveWDefaultSolver(nlp4,x4);
+if(any(lincon2.eval(x4)>lincon2.ub+1e-5) || any(lincon2.eval(x4)<lincon2.lb-1e-5))
+  error('Linear constraint is not satisfied');
+end
+
+nlp4 = nlp4.deleteLinearConstraint(lincon2_id);
+if(~isempty(nlp4.Ain) || ~isempty(nlp4.bin) || ~isempty(nlp4.Aeq) || ~isempty(nlp4.beq) || ~isempty(nlp4.Ain_name) || ~isempty(nlp4.Aeq_name) || ~isempty(nlp4.lcon))
+  error('The linear constraint should be empty');
+end
+if(nlp4.isLinearConstraintID(lincon2_id))
+  error('The deleted ID should not be contained in the program any more');
+end
+[x4,F,info] = solveWDefaultSolver(nlp4,[x4;1]);
+
+[nlp4,lincon2_id] = nlp4.addLinearConstraint(lincon2);
+nlp4 = nlp4.updateLinearConstraint(lincon2_id,lincon1,[1;3]);
+sizecheck(nlp4.Ain,[2,4]);
+sizecheck(nlp4.bin,[2,1]);
+sizecheck(nlp4.Aeq,[1,4]);
+sizecheck(nlp4.beq,[1,1]);
+valuecheck(length(nlp4.lcon),1);
+[x4,F,info] = solveWDefaultSolver(nlp4,x4);
+if(any(lincon1.eval(x4([1;3]))>lincon1.ub+1e-5) || any(lincon1.eval(x4([1;3]))<lincon1.lb-1e-5))
+  error('Linear constraint not satisfied');
+end
 end
 
 function [c,dc] = cnstr1_userfun(x)

@@ -56,10 +56,6 @@ classdef NonlinearProgram
     nlcon_dataind 
     cost_dataind
     
-    % Each Constraint object in the program is labeled with a unique ID
-    nlcon_id % nlcon_id(i) is the ID for obj.nlcon{i}
-    lcon_id % lcon_id(i) is the ID for obj.lcon{i}
-    bbcon_id % bbcon_id(i) is the ID for obj.bbcon{i}
   end
   
   properties (Access=private)
@@ -72,6 +68,11 @@ classdef NonlinearProgram
     ceq2nlcon_idx % An integer vector. The j'th row of equality constraint ceq is from the Constraint object obj.nlcon{obj.ceq2nlcon_idx(j)}
     Ain2lcon_idx % An integer vector. The j'th row of the inequality linear constraint Ain*x<=bin is from the Constraint object obj.lincon{obj.Ain_lincon_idx(j)}
     Aeq2lcon_idx % An integer vector. The j'th row of the inequality linear constraint Aeq*x=beq is from the Constraint object obj.lincon{obj.Aeq_lincon_idx(j)}
+    
+    % Each Constraint object in the program is labeled with a unique ID
+    nlcon_id % nlcon_id(i) is the ID for obj.nlcon{i}
+    lcon_id % lcon_id(i) is the ID for obj.lcon{i}
+    bbcon_id % bbcon_id(i) is the ID for obj.bbcon{i}
     
     next_nlcon_id = 1 % The id of the next nonlinear constraint Constraint object to be added
     next_lcon_id = 2 % The id of the next linear constraint LinearConstraint object to be added
@@ -1071,21 +1072,24 @@ classdef NonlinearProgram
       obj.jCeqvar = obj.jCeqvar(~ceq_delete_flag(old_iCeqfun));
     end
     
-    function [obj,new_cnstr_id] = updateNonlinearConstraint(obj,cnstr_idx,cnstr)
-      % update the nonlinear constraint with id=cnstr_idx with a new Constraint object cnstr, the newly added Constraint
+    function [obj,new_cnstr_id] = updateNonlinearConstraint(obj,varargin)
+      % updateNonlinearConstraint(obj,cnstr_id,cnstr,xind,data_ind)
+      % update the nonlinear constraint with id=cnstr_id with a new Constraint object cnstr, the newly added Constraint
       % cnstr has the ID new_cnstr_id
       % @param cnstr_id    The ID stored in obj.nlcon_id. The nonlinear constraint with ID=cnstr_idx
       % is going to be updated.
       % @param cnstr       A Constraint object. The constraint to be added
-      % @param new_cnstr_idx  An integer. cnstr is added to be obj.nlcon{new_cnstr_idx}
-      obj = deleteNonlinearConstraint(obj,cnstr_idx);
-      [obj,new_cnstr_id] = addNonlinearConstraint(obj,cnstr);
+      % @param new_cnstr_id  The ID of the newly updated constraint in the program
+      % @param xind   Same as the xind in obj.addNonlinearConstraint
+      % @param data_ind  Same as the data_ind in obj.addNonlinearConstraint
+      cnstr_id = varargin{1};
+      obj = deleteNonlinearConstraint(obj,cnstr_id);
+      [obj,new_cnstr_id] = addNonlinearConstraint(obj,varargin{2:end});
     end
     
     function obj = deleteLinearConstraint(obj,delete_cnstr_id)
       % delete the LinearConstraint obj.lcon{cnstr_idx} from the program
-      % @param cnstr_idx  An integer. The LinearConstraint obj.lcon{cnstr_idx} is going to be
-      % deleted from the program
+      % @param cnstr_id  The ID of the linear constraint to be deleted in the program
       [is_id_valid,cnstr_idx] = isLinearConstraintID(obj,delete_cnstr_id);
       if(~is_id_valid)
         error('Drake:NonlinearProgram:deleteNonlinearConstraint:InvalidInput','delete_cnstr_id is not a valid ID of the nonlinear constraints in the program');
@@ -1101,6 +1105,8 @@ classdef NonlinearProgram
       Aeq_delete_flag = obj.Aeq2lcon_idx == cnstr_idx;
       Ain_idx = (1:size(obj.Ain,1))';
       Aeq_idx = (1:size(obj.Aeq,1))';
+      Ain_delete_idx = Ain_idx(Ain_delete_flag);
+      Aeq_delete_idx = Aeq_idx(Aeq_delete_flag);
       Ain_remaining_idx = Ain_idx(~Ain_delete_flag);
       Aeq_remaining_idx = Aeq_idx(~Aeq_delete_flag);
       obj.Ain = obj.Ain(Ain_remaining_idx,:);
@@ -1113,6 +1119,28 @@ classdef NonlinearProgram
       remaining_lcon_id = [1:cnstr_idx-1 cnstr_idx+1:length(obj.lcon)];
       obj.lcon = obj.lcon(remaining_lcon_id);
       obj.lcon_id = obj.lcon_id(remaining_lcon_id);
+      
+      obj.Ain2lcon_idx = obj.Ain2lcon_idx-sum(bsxfun(@minus,obj.Ain2lcon_idx,Ain_delete_idx')>0,2);
+      obj.Ain2lcon_idx = obj.Ain2lcon_idx(Ain_remaining_idx);
+      obj.Aeq2lcon_idx = obj.Aeq2lcon_idx-sum(bsxfun(@minus,obj.Aeq2lcon_idx,Aeq_delete_idx')>0,2);
+      obj.Aeq2lcon_idx = obj.Aeq2lcon_idx(Aeq_remaining_idx);
+    end
+    
+    function [obj,new_cnstr_id] = updateLinearConstraint(obj,varargin)
+      % updateLinearConstraint(obj,cnstr_id,cnstr,xind)
+      % update the linear constraint with id=cnstr_idx with a new Constraint object cnstr, the newly added Constraint
+      % cnstr has the ID new_cnstr_id
+      % @param cnstr_id    The ID stored in obj.lcon_id. The linear constraint with ID=cnstr_idx
+      % is going to be updated.
+      % @param cnstr       A Constraint object. The constraint to be added
+      % @param new_cnstr_id  The ID of the newly updated constraint in the program
+      % @param xind    Same as xind in addLinearConstraint
+      cnstr_id = varargin{1};
+      obj = deleteLinearConstraint(obj,cnstr_id);
+      [obj,new_cnstr_id] = addLinearConstraint(obj,varargin{2:end});
+    end
+    
+    function obj = deleteBoundingBoxConstraint(obj,cnstr_id)
     end
   end
   
