@@ -1,0 +1,210 @@
+function [foot_origin_knots, zmp_knots] = planSwingPitched(biped, stance, swing1, swing2, initial_hold_time)
+% Compute a collision-free swing trajectory for a single foot.
+if nargin < 5
+  initial_hold_time = 0;
+end
+
+assert(swing1.frame_id == swing2.frame_id, 'planSwing expects to plan a swing trajectory between two positions of the /same/ foot body')
+
+params = struct(swing2.walking_params);
+params = applyDefaults(params, biped.default_walking_params);
+
+DEBUG = false;
+TOE_OFF_ANGLE = pi/8;
+APEX_FRACTIONS = [0.15, 0.85];
+
+% pre_contact_height = 0.005; % height above the ground to aim for when foot is landing
+foot_yaw_rate = 0.75; % rad/s
+
+lateral_tol = 1e-3; % Distance the sole can move to away from the line 
+                    % between step1 and step
+
+if stance.frame_id == biped.foot_frame_id.right
+  stance_foot_name = 'right';
+else
+  stance_foot_name = 'left';
+end
+if swing1.frame_id == biped.foot_frame_id.right
+  swing_foot_name = 'right';
+else
+  swing_foot_name = 'left';
+end
+
+swing2.pos(4:6) = swing1.pos(4:6) + angleDiff(swing1.pos(4:6), swing2.pos(4:6));
+
+% The terrain slice is a 2xN matrix, where the first row is distance along the straight line path from swing1 to swing2 and the second row is height above the z position of swing1.
+terrain_slice = double(swing2.terrain_pts);
+xy_dist = norm(swing2.pos(1:2) - swing1.pos(1:2));
+terrain_slice = [[0;0], terrain_slice, [xy_dist; 0]];
+terrain_pts_in_local = [terrain_slice(1,:); zeros(1, size(terrain_slice, 2)); 
+                        terrain_slice(2,:)];
+
+% Transform to world coordinates
+T_local_to_world = [[rotmat(atan2(swing2.pos(2) - swing1.pos(2), swing2.pos(1) - swing1.pos(1))), [0;0];
+                     0, 0, 1], swing1.pos(1:3); 
+                    0, 0, 0, 1];
+
+
+% Create posture constraint
+xstar = biped.loadFixedPoint();
+xstar([1:2,6]) = stance.pos([1:2,6]);
+
+joint_position_indices = (7:biped.getNumPositions())';
+posture_constraint = PostureConstraint(biped);
+q_joints = xstar(joint_position_indices);
+posture_constraint = posture_constraint.setJointLimits(joint_position_indices, q_joints, q_joints);
+
+swing_body_index = biped.getFrame(swing1.frame_id).body_ind;
+stance_body_index = biped.getFrame(stance.frame_id).body_ind;
+swing_toe_points_in_foot = biped.getBody(swing_body_index).getTerrainContactPoints('toe');
+swing_heel_points_in_foot = biped.getBody(swing_body_index).getTerrainContactPoints('heel');
+T_sole_to_foot = biped.getFrame(swing1.frame_id).T;
+
+T_swing1_sole_to_world = ...
+  [rpy2rotmat(swing1.pos(4:6)),swing1.pos(1:3); zeros(1, 3), 1];
+T_swing1_foot_to_world = T_swing1_sole_to_world/T_sole_to_foot;
+swing1_heel_points_in_world = T_swing1_foot_to_world(1:3,:) * ...
+  [swing_heel_points_in_foot; ones(1,size(swing_heel_points_in_foot,2))];
+swing1_toe_points_in_world = T_swing1_foot_to_world * ...
+  [swing_toe_points_in_foot; ones(1,size(swing_toe_points_in_foot,2))];
+swing1_toe_points_in_local = T_local_to_world \ swing1_toe_points_in_world;
+swing1_toe_points_in_world = swing1_toe_points_in_world(1:3,:);
+
+T_swing2_sole_to_world = ...
+  [rpy2rotmat(swing2.pos(4:6)),swing2.pos(1:3); zeros(1, 3), 1];
+T_swing2_foot_to_world = T_swing2_sole_to_world/T_sole_to_foot;
+swing2_toe_points_in_world = T_swing2_foot_to_world * ...
+  [swing_toe_points_in_foot; ones(1,size(swing_toe_points_in_foot,2))];
+swing2_toe_points_in_local = T_local_to_world \ swing2_toe_points_in_world;
+
+quat_swing1 = rpy2quat(swing1.pos(4:6));
+quat_toe_off = rotmat2quat(quat2rotmat(quat_swing1) * rpy2rotmat([0;TOE_OFF_ANGLE;0]));
+quat_swing2 = rpy2quat(swing2.pos(4:6));
+
+% assumes that the toe and heel points are all coplanar with the sole
+foot_length = norm(mean(swing1_toe_points_in_world, 2) - mean(swing1_heel_points_in_world, 2));
+terrain_slice1 = 1:find(terrain_pts_in_local(1,:) >= max(xy_dist/2, foot_length), 1, 'first');
+terrain_slice2 = find(terrain_pts_in_local(1,:) <= min(xy_dist/2, xy_dist - foot_length), 1, 'first'):size(terrain_pts_in_local,2);
+
+cost = Point(biped.getStateFrame(),1);
+cost.base_x = 0;
+cost.base_y = 0;
+cost.base_roll = 0;
+cost.base_pitch = 0;
+cost.base_yaw = 0;
+ikoptions = IKoptions(biped);
+ikoptions = ikoptions.setQ(diag(cost(1:biped.getNumPositions())));
+
+full_IK_calls = 0;
+q_latest = xstar(1:biped.getNumPositions());
+
+if DEBUG
+  v = biped.constructVisualizer();
+  v.draw(0, q_latest);
+end
+
+quat_tol = 1e-6;
+
+T = biped.getFrame(stance.frame_id).T;
+stance_sole = [rpy2rotmat(stance.pos(4:6)), stance.pos(1:3); 0 0 0 1];
+stance_origin = stance_sole / T;
+stance_origin_pose = [stance_origin(1:3,4); rotmat2rpy(stance_origin(1:3,1:3))];
+
+T = biped.getFrame(stance.frame_id).T;
+swing1_sole = [rpy2rotmat(swing1.pos(4:6)), swing1.pos(1:3); 0 0 0 1];
+swing1_origin = swing1_sole / T;
+swing1_origin_pose = [swing1_origin(1:3,4); rotmat2rpy(swing1_origin(1:3,1:3))];
+
+swing2_sole = [rpy2rotmat(swing2.pos(4:6)), swing2.pos(1:3); 0 0 0 1];
+swing2_origin = swing2_sole / T;
+swing2_origin_pose = [swing2_origin(1:3,4); rotmat2rpy(swing2_origin(1:3,1:3))];
+
+instep_shift = [0.0;stance.walking_params.drake_instep_shift;0];
+zmp1 = shift_step_inward(biped, stance, instep_shift);
+
+hold_time = params.drake_min_hold_time;
+zmp_knots = struct('t', initial_hold_time + (hold_time / 2),...
+ 'zmp', zmp1, ...
+ 'supp', RigidBodySupportState(biped, stance_body_index));
+
+foot_origin_knots = struct('t', zmp_knots(end).t, ...
+                           swing_foot_name, swing1_origin_pose, ...
+                           stance_foot_name, stance_origin_pose, ...
+                           'is_liftoff', true);
+
+function add_foot_origin_knot(swing_pose)
+  foot_origin_knots(end+1).(swing_foot_name) = swing_pose;
+  foot_origin_knots(end).(stance_foot_name) = stance_origin_pose;
+  cartesian_distance = norm(foot_origin_knots(end).(swing_foot_name)(1:3) - foot_origin_knots(end-1).(swing_foot_name)(1:3));
+  yaw_distance = abs(foot_origin_knots(end).(swing_foot_name)(6) - foot_origin_knots(end-1).(swing_foot_name)(6));
+  dt = max(cartesian_distance / params.step_speed, yaw_distance / foot_yaw_rate);
+  foot_origin_knots(end).t = foot_origin_knots(end-1).t + dt;
+  foot_origin_knots(end).is_liftoff = false;
+end
+
+% Apex knot 1
+max_terrain_ht = max(terrain_pts_in_local(3,terrain_slice1));
+toe_ht_in_local = max_terrain_ht + params.step_height;
+toe_pos_in_local = interp1([0, 1], [mean(swing1_toe_points_in_local, 2), mean(swing2_toe_points_in_local, 2)]', APEX_FRACTIONS(1))';
+constraints = {posture_constraint,...
+               WorldQuatConstraint(biped, swing_body_index, quat_toe_off, quat_tol),...
+               WorldPositionInFrameConstraint(biped,swing_body_index,...
+                    mean(swing_toe_points_in_foot, 2), T_local_to_world, [toe_pos_in_local(1); -lateral_tol; toe_ht_in_local], [toe_pos_in_local(1); lateral_tol; toe_ht_in_local])};
+constraint_ptrs = {};
+for k = 1:length(constraints)
+  constraint_ptrs{end+1} = constraints{k}.mex_ptr;
+end
+full_IK_calls = full_IK_calls + 1;
+[q_latest, info] = inverseKin(biped,q_latest,q_latest,constraint_ptrs{:},ikoptions);
+info
+if DEBUG
+  v.draw(0, q_latest);
+end
+kinsol = biped.doKinematics(q_latest);
+pose = biped.forwardKin(kinsol, swing_body_index, [0;0;0], 1);
+add_foot_origin_knot(pose);
+
+% Apex knot 2
+max_terrain_ht = max(terrain_pts_in_local(3,terrain_slice2));
+toe_ht_in_local = max_terrain_ht + params.step_height;
+toe_pos_in_local = interp1([0, 1], [mean(swing1_toe_points_in_local, 2), mean(swing2_toe_points_in_local, 2)]', APEX_FRACTIONS(2))';
+constraints = {posture_constraint,...
+               WorldQuatConstraint(biped, swing_body_index, quat_swing2, quat_tol),...
+               WorldPositionInFrameConstraint(biped,swing_body_index,...
+                    mean(swing_toe_points_in_foot, 2), T_local_to_world, [toe_pos_in_local(1); -lateral_tol; toe_ht_in_local], [toe_pos_in_local(1); lateral_tol; toe_ht_in_local])};
+constraint_ptrs = {};
+for k = 1:length(constraints)
+  constraint_ptrs{end+1} = constraints{k}.mex_ptr;
+end
+full_IK_calls = full_IK_calls + 1;
+[q_latest, info] = inverseKin(biped,q_latest,q_latest,constraint_ptrs{:},ikoptions);
+info
+if DEBUG
+  v.draw(0, q_latest);
+end
+kinsol = biped.doKinematics(q_latest);
+pose = biped.forwardKin(kinsol, swing_body_index, [0;0;0], 1);
+add_foot_origin_knot(pose);
+
+% Landing knot
+add_foot_origin_knot(swing2_origin_pose);
+zmp_knots(end+1).t = foot_origin_knots(end).t;
+zmp_knots(end).zmp = zmp1;
+zmp_knots(end).supp = RigidBodySupportState(biped, [stance_body_index, swing_body_index]);
+
+% Final knot
+foot_origin_knots(end+1) = foot_origin_knots(end);
+foot_origin_knots(end).t = foot_origin_knots(end-1).t + hold_time / 2;
+
+full_IK_calls
+end
+
+function pos = shift_step_inward(biped, step, instep_shift)
+  if step.frame_id == biped.foot_frame_id.left
+    instep_shift = [1;-1;1].*instep_shift;
+  end
+  pos_center = step.pos;
+  R = rpy2rotmat(pos_center(4:6));
+  shift = R*instep_shift;
+  pos = pos_center(1:2) + shift(1:2);
+end
