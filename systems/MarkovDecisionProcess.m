@@ -53,7 +53,7 @@ classdef MarkovDecisionProcess < DrakeSystem
         Jold = J;
         [J,PI] = min(mdp.C+mdp.gamma*reshape(Tstack*J,nS,nA),[],2);
         err = max(abs(Jold-J));
-        if nargin>2, drawfun(J); drawnow; end
+        if nargin>2, drawfun(J,PI); drawnow; end
       end
     end
     
