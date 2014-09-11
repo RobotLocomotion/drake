@@ -1,8 +1,8 @@
-function [a0, a1, a2, a3] = cubicSplineCoefficients(t0, tf, q0, qf, qdot0, qdotf)
+function [a0, a1, a2, a3] = cubicSplineCoefficients(tf, q0, qf, qdot0, qdotf)
 % cubicSplineCoefficients: compute the coefficients for a cubic polynomial spline
 % See Craig, J. Introduction to Robotics: Mechanics and Control, 2005, p207, eq 7.11
+% These coefficients assume that q0 and qdot0 occur at time = 0
 
-tf = tf - t0;
 a0 = q0;
 a1 = qdot0;
 a2 = (3 / tf^2) * (qf - q0) - (2 / tf) * qdot0 - (1 / tf) * qdotf;
