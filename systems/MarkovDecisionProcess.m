@@ -151,9 +151,10 @@ classdef MarkovDecisionProcess < DrakeSystem
           end
           sidx_min = mysub2ind(bin);  % lower left
           
-          bin = bin+1; % move pointer to upper right
-          sidx_max = mysub2ind(bin);    % upper right
-          
+%          bin = bin+1; % move pointer to upper right
+%          sidx_max = mysub2ind(bin);    % upper right
+          sidx_max = sidx_min+sum(nskip);
+
           % compute relative locations
           fracway = (xn-S(:,sidx_min))./(S(:,sidx_max)-S(:,sidx_min));
           [fracway,p] = sort(fracway); % p from Davies96
@@ -162,13 +163,17 @@ classdef MarkovDecisionProcess < DrakeSystem
           % crawl through the simplex
           % start at the top-right corner
           sidx = sidx_max;  
-          T{ai}(sidx,si) = fracway(1);
+          T{ai}(si,sidx) = fracway(1);
+%          xn_recon = T{ai}(si,sidx)*S(:,sidx);  % just a sanity check
           % now move down the box as prescribed by the permutation p
           for xi=1:num_x
-            bin(p(xi))=bin(p(xi))-1;
-            sidx = mysub2ind(bin);
-            T{ai}(sidx,si) = fracway(xi+1)-fracway(xi);
+%            bin(p(xi))=bin(p(xi))-1;
+%            sidx = mysub2ind(bin);
+            sidx = sidx - nskip(p(xi));
+            T{ai}(si,sidx) = fracway(xi+1)-fracway(xi);
+%            xn_recon = xn_recon+T{ai}(si,sidx)*S(:,sidx);  % just a sanity check
           end
+%          valuecheck(xn,xn_recon);  % just a sanity check
         end
         
         if si/ns>waitbar_lastupdate+.025 % don't call the gui too much

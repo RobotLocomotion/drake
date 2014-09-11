@@ -11,6 +11,8 @@ function drawfun(J)
   surf(xbins{1},xbins{2},reshape(J,length(xbins{1}),length(xbins{2}))');
   xlabel('theta');
   ylabel('thetadot');
+  view(0,90);
+  axis tight;
 end
 
 valueIteration(mdp,0.01,@drawfun);
