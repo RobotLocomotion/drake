@@ -96,6 +96,18 @@ classdef DirectTrajectoryOptimization < NonlinearProgram
       state_limit = BoundingBoxConstraint(repmat(state_lb,N,1),repmat(state_ub,N,1));
       obj = obj.addConstraint(state_limit,obj.x_inds(:));
     end
+    
+    function N = getN(obj)
+      N = obj.N;
+    end
+
+    function x_inds = getXinds(obj)
+      x_inds = obj.x_inds;
+    end
+
+    function h_inds = getHinds(obj)
+      h_inds = obj.h_inds;
+    end
 
     function obj = addInputConstraint(obj,constraint,time_index)
       % Add constraint (or composite constraint) that is a function of the
