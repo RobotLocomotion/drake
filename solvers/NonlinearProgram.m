@@ -29,7 +29,7 @@ classdef NonlinearProgram
     display_fun_indices
     check_grad % A boolean, True if the user gradient will be checked against
                % numerical gradient at the begining and end of the nonlinear optimization
-    constraint_err_tol % A small scaler. Check whether the constraint are satisfied within the tolerance
+    constraint_err_tol % A small scalar. Check whether the constraint are satisfied within the tolerance
     
     nlcon % A cell array of NonlinearConstraint
     lcon % A cell array of LinearConstraint
@@ -185,7 +185,7 @@ classdef NonlinearProgram
       % @param xind      -- Optional argument. The x(xind) is the decision variables used
       % in evaluating the cnstr. Default value is (1:obj.num_vars)
       % @param data_ind  -- Optional argument. shared_data{data_ind} are the data objects used
-      % @retval cnstr_id -- The unique ID of the newly added constraint in the program
+      % @retval cnstr_id -- A vector, cnstr_id(i) is the unique ID of the newly added constraint cnstr{i} in the program
       if(~isa(cnstr,'CompositeConstraint'))
         error('Drake:NonlinearProgram:UnsupportedConstraint','addCompositeConstraints expects a CompositeConstraint object');
       end
@@ -681,7 +681,7 @@ classdef NonlinearProgram
     
     function obj = setConstraintErrTol(obj,tol)
       if(~isnumeric(tol) || numel(tol) ~= 1)
-        error('Drake:NonlinearProgram:setConstraintErrTol:tol should be scaler');
+        error('Drake:NonlinearProgram:setConstraintErrTol:tol should be scalar');
       end
       if(tol<=0)
         error('Drake:NonlinearProgram:setConstraintErrTol:tol should be positive');
@@ -784,7 +784,7 @@ classdef NonlinearProgram
           obj.solver_options.snopt.print = optionval;
         elseif(strcmpi(optionname(~isspace(optionname)),'scaleoption'))
           if(~isnumeric(optionval) || numel(optionval) ~= 1)
-            error('Drake:NonlinearProgram:setSolverOptions:scaleoption should be a scaler');
+            error('Drake:NonlinearProgram:setSolverOptions:scaleoption should be a scalar');
           end
           if(optionval ~= 0 && optionval ~= 1 && optionval ~= 2)
             error('Drake:NonlinearProgram:setSolverOptions:scaleoption should be either 0,1 or 2');
@@ -792,22 +792,22 @@ classdef NonlinearProgram
           obj.solver_options.snopt.scaleoption = optionval;
         elseif(strcmpi(optionname(~isspace(optionname)),'oldbasisfile'))
           if(~isnumeric(optionval) || numel(optionval) ~= 1)
-            error('Drake:NonlinearProgram:setSolverOptions:OptionVal', 'OldBasisFile should be a scaler');
+            error('Drake:NonlinearProgram:setSolverOptions:OptionVal', 'OldBasisFile should be a scalar');
           end
           obj.solver_options.snopt.OldBasisFile = optionval;
         elseif(strcmpi(optionname(~isspace(optionname)),'newbasisfile'))
           if(~isnumeric(optionval) || numel(optionval) ~= 1)
-            error('Drake:NonlinearProgram:setSolverOptions:OptionVal', 'NewBasisFile should be a scaler');
+            error('Drake:NonlinearProgram:setSolverOptions:OptionVal', 'NewBasisFile should be a scalar');
           end
           obj.solver_options.snopt.NewBasisFile = optionval;
         elseif(strcmpi(optionname(~isspace(optionname)),'backupbasisfile'))
           if(~isnumeric(optionval) || numel(optionval) ~= 1)
-            error('Drake:NonlinearProgram:setSolverOptions:OptionVal', 'BackupBasisFile should be a scaler');
+            error('Drake:NonlinearProgram:setSolverOptions:OptionVal', 'BackupBasisFile should be a scalar');
           end
           obj.solver_options.snopt.BackupBasisFile = optionval;
         elseif(strcmpi(optionname(~isspace(optionname)),'linesearchtolerance'))
           if(~isnumeric(optionval) || numel(optionval) ~= 1)
-            error('Drake:NonlinearProgram:setSolverOptions:scaleoption should be a scaler');
+            error('Drake:NonlinearProgram:setSolverOptions:scaleoption should be a scalar');
           end
           if(optionval < 0 || optionval > 1)
             error('Drake:NonlinearProgram:setSolverOptions:OptionVal', 'LinesearchTolerance should be between 0 and 1');
@@ -842,9 +842,9 @@ classdef NonlinearProgram
       % @param x0   A obj.num_vars x 1 double vector. The initial seed
       % @retval x   A obj.num_vars x 1 double vector. The solution obtained after running the
       % solver
-      % @retval objval  A double scaler. The value of the objective function after running the
+      % @retval objval  A double scalar. The value of the objective function after running the
       % solver
-      % @retval exitflag   An integer scaler.
+      % @retval exitflag   An integer scalar.
       %                    1  -- Solved successful
       %                    *********************
       %                    If the solver is SNOPT, then exitflag is the same as the INFO returned by
@@ -955,9 +955,8 @@ classdef NonlinearProgram
       % @retval flag   True if the cnstr_id is a valid ID of the nonlinear constraint
       % @retval cnstr_idx  If flag = true, obj.nlcon{cnstr_idx} is the nonlinear constraint with
       % ID=cnstr_id. Otherwise, cnstr_idx = [];
-      flag = numel(cnstr_id) == 1 & isnumeric(cnstr_id);
-      if(~flag)
-        error('Drake:NonlinearProgram:isNonlinearConstraintID:InvalidInput','cnstr_id should be a scaler');
+      if(~(numel(cnstr_id) == 1 && isnumeric(cnstr_id)))
+        error('Drake:NonlinearProgram:isNonlinearConstraintID:InvalidInput','cnstr_id should be a scalar');
       end
       cnstr_idx = find(obj.nlcon_id==cnstr_id);
       flag = ~isempty(cnstr_idx);
@@ -968,9 +967,8 @@ classdef NonlinearProgram
       % @retval flag   True if the cnstr_id is a valid ID of the linear constraint
       % @retval cnstr_idx  If flag = true, obj.lcon{cnstr_idx} is the linear constraint with
       % ID=cnstr_id. Otherwise, cnstr_idx = [];
-      flag = numel(cnstr_id) == 1 & isnumeric(cnstr_id);
-      if(~flag)
-        error('Drake:NonlinearProgram:isLinearConstraintID:InvalidInput','cnstr_id should be a scaler');
+      if(~(numel(cnstr_id) == 1 && isnumeric(cnstr_id)))
+        error('Drake:NonlinearProgram:isLinearConstraintID:InvalidInput','cnstr_id should be a scalar');
       end
       cnstr_idx = find(obj.lcon_id==cnstr_id);
       flag = ~isempty(cnstr_idx);
@@ -982,9 +980,8 @@ classdef NonlinearProgram
       % program
       % @retval cnstr_idx  If flag = true, obj.bbcon{cnstr_idx} is the bounding box constraint with
       % ID=cnstr_id. Otherwise, cnstr_idx = [];
-      flag = numel(cnstr_id) == 1 & isnumeric(cnstr_id);
-      if(~flag)
-        error('Drake:NonlinearProgram:isBoundingBoxConstraintID:InvalidInput','cnstr_id should be a scaler');
+      if(~(numel(cnstr_id) == 1 && isnumeric(cnstr_id)))
+        error('Drake:NonlinearProgram:isBoundingBoxConstraintID:InvalidInput','cnstr_id should be a scalar');
       end
       cnstr_idx = find(obj.bbcon_id==cnstr_id);
       flag = ~isempty(cnstr_idx);
