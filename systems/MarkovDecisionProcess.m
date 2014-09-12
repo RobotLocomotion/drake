@@ -126,6 +126,8 @@ classdef MarkovDecisionProcess < DrakeSystem
       
       % initialize cost
       C = zeros(ns,na);
+
+      xn = zeros(num_x,ns*na);
       
       waitbar_h = waitbar(0,'Computing one-step dynamics and transition matrix...');
       waitbar_cleanup = onCleanup(@()close(waitbar_h));  % doesn't seem to catch ctrl-c, despite the documentation
@@ -137,57 +139,17 @@ classdef MarkovDecisionProcess < DrakeSystem
             xn = S(:,si) + options.dt*dynamics(sys,0,S(:,si),A(:,ai));
             C(si,ai) = options.dt*costfun(sys,S(:,si),A(:,ai));
           else % is dt
-            xn = update(sys,0,S(:,si),A(:,ai));
+            xn(:,idx) = update(sys,0,S(:,si),A(:,ai));
             C(si,ai) = costfun(sys,S(:,si),A(:,ai));
           end
           
           % wrap coordinates
           xn(options.wrap_flag) = mod(xn(options.wrap_flag)-xmin(options.wrap_flag),xmax(options.wrap_flag)-xmin(options.wrap_flag)) + xmin(options.wrap_flag);
           
-          % truncate back onto the grid if it's off the edge
-          xn = min(max(xn,xmin),xmax);
-
-          % populate T using barycentric interpolation
-          % simple description in Scott Davies, "Multidimensional
-          % Triangulation... ", NIPS, 1996
-          
-          % Note: The most mature implmentation that I found quickly is in
-          %   https://svn.csail.mit.edu/locomotion/robotlib/tags/version2.1/tools/@approx
-          % which is called from dev/mdp.m
-          % also found old non-mex version here:
-          % https://svn.csail.mit.edu/locomotion/robotlib/tags/version1/approx/@barycentricGrid/state_index.m
-          % but they were pretty hard to use, so I basically started over
-          
-          for xi=1:num_x
-            % note: could do binary search here
-            bin(xi) = find(xn(xi)<=xbins{xi}(2:end),1);
-          end
-          sidx_min = mysub2ind(bin);  % lower left
-          
-%          bin = bin+1; % move pointer to upper right
-%          sidx_max = mysub2ind(bin);    % upper right
-          sidx_max = sidx_min+sum(nskip);
-
-          % compute relative locations
-          fracway = (xn-S(:,sidx_min))./(S(:,sidx_max)-S(:,sidx_min));
-          [fracway,p] = sort(fracway); % p from Davies96
-          fracway(end+1)=1;
-          
-          % crawl through the simplex
-          % start at the top-right corner
-          sidx = sidx_max;  
-          T{ai}(si,sidx) = fracway(1);
-%          xn_recon = T{ai}(si,sidx)*S(:,sidx);  % just a sanity check
-          % now move down the box as prescribed by the permutation p
-          for xi=1:num_x
-%            bin(p(xi))=bin(p(xi))-1;
-%            sidx = mysub2ind(bin);
-            sidx = sidx - nskip(p(xi));
-            T{ai}(si,sidx) = fracway(xi+1)-fracway(xi);
-%            xn_recon = xn_recon+T{ai}(si,sidx)*S(:,sidx);  % just a sanity check
-          end
-%          valuecheck(xn,xn_recon);  % just a sanity check
+          [idx,coef] = barycentricInterpolation(xbins,xn);
+          T{ai}(si,idx) = coef;
         end
+
         
         if si/ns>waitbar_lastupdate+.025 % don't call the gui too much
           waitbar(si/ns,waitbar_h);
