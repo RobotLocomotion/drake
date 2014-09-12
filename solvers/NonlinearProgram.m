@@ -74,9 +74,9 @@ classdef NonlinearProgram
     lcon_id % lcon_id(i) is the ID for obj.lcon{i}
     bbcon_id % bbcon_id(i) is the ID for obj.bbcon{i}
     
-    next_nlcon_id = 1 % The id of the next nonlinear constraint Constraint object to be added
-    next_lcon_id = 2 % The id of the next linear constraint LinearConstraint object to be added
-    next_bbcon_id = 3 % The id of the next BoundingBoxConstraint object to be added
+    next_nlcon_id = -1 % The id of the next nonlinear constraint Constraint object to be added
+    next_lcon_id = -2 % The id of the next linear constraint LinearConstraint object to be added
+    next_bbcon_id = -3 % The id of the next BoundingBoxConstraint object to be added
     
     bbcon_lb % A obj.num_vars x length(obj.bbcon) matrix. bbcon_lb(:,i) is the lower bound of x coming from the BoundingBoxConstraint obj.bbcon{i}
     bbcon_ub % A obj.num_vars x length(obj.bbcon) matrix. bbcon_lb(:,i) is the upper bound of x coming from the BoundingBoxConstraint obj.bbcon{i}
@@ -315,7 +315,7 @@ classdef NonlinearProgram
       obj.nlcon_dataind{end+1} = data_ind;
       
       cnstr_id = obj.next_nlcon_id;
-      obj.next_nlcon_id = obj.next_nlcon_id+3;
+      obj.next_nlcon_id = obj.next_nlcon_id-3;
       obj.nlcon_id = [obj.nlcon_id cnstr_id];
     end
     
@@ -368,7 +368,7 @@ classdef NonlinearProgram
         end
       end
       cnstr_id = obj.next_lcon_id;
-      obj.next_lcon_id = obj.next_lcon_id+3;
+      obj.next_lcon_id = obj.next_lcon_id-3;
       obj.lcon_id = [obj.lcon_id cnstr_id];
     end   
 
@@ -398,7 +398,7 @@ classdef NonlinearProgram
       obj.bbcon_xind{end+1} = xind;
       
       cnstr_id = obj.next_bbcon_id;
-      obj.next_bbcon_id = obj.next_bbcon_id+3;
+      obj.next_bbcon_id = obj.next_bbcon_id-3;
       obj.bbcon_id = [obj.bbcon_id cnstr_id];
       
       obj.bbcon_lb(:,end+1) = -inf(obj.num_vars,1);
