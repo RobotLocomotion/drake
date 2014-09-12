@@ -25,6 +25,26 @@ classdef XCubed < PolynomialSystem
     function y=output(obj,t,x,u)
       y=x;
     end
+    
+    function v = constructVisualizer(obj)
+      function y=hill(x)
+        y = .5*x.^2 - .25*x.^4;
+      end
+      function draw(t,x)
+        xs=linspace(-1.75,1.75,50);
+        sfigure(25);
+        clf;
+        plot(xs,hill(xs),'LineWidth',2,'Color','k');
+        hold on;
+        r = .15;  % radius of the ball
+        th = linspace(-pi,pi,50);
+        patch(x+r*sin(th),hill(x)+r+r*cos(th),[.7 .7 1]);
+        axis([-1.75,1.75,-.5,.5]);
+        axis equal
+      end
+      
+      v = FunctionHandleVisualizer(obj.getOutputFrame,@draw);
+    end
   end
   
   methods (Static=true)
@@ -40,7 +60,7 @@ classdef XCubed < PolynomialSystem
     
     function animate()
       p=XCubed();
-      v=XCubedVisualizer(p);
+      v=p.constructVisualizer();
 
       x1=p.simulate([0 5],.8);
       x2=p.simulate([0 1.5],1.02);

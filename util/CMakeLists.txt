@@ -1,5 +1,6 @@
 
 add_mex(realtime realtime.cpp)
+add_mex(barycentricInterpolation barycentricInterpolation.cpp)
 
 if (LCM_FOUND)
   add_mex(lcmLogger lcmLogger.cpp)
