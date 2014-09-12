@@ -21,12 +21,10 @@ classdef MinDistanceConstraint < SingleTimeKinematicConstraint
     end
 
     function [c,dc] = evalLocal(obj,q_or_kinsol)
-      [dist,ddist_dq] = closestDistance(obj.robot,q_or_kinsol,obj.active_collision_options);
-      [scaled_dist,dscaled_dist_ddist] = scaleDistance(obj,dist);
-      [pairwise_costs,dpairwise_cost_dscaled_dist] = penalty(obj,scaled_dist);
-      c = sum(pairwise_costs);
-      dcost_dscaled_dist = sum(dpairwise_cost_dscaled_dist,1);
-      dc = dcost_dscaled_dist*dscaled_dist_ddist*ddist_dq;
+      if ~isstruct(q_or_kinsol)
+        kinsol = obj.robot.doKinematics(q_or_kinsol);
+      end
+      [c,dc] = smoothDistancePenaltymex(obj.robot.mex_model_ptr,obj.min_distance,false,obj.active_collision_options);
     end
   end
 
