@@ -90,25 +90,29 @@ if ~isempty(floating_states)
   q(1:6,:) = floating_states;
 end
 
-x_body1 = zeros(3,m1,N);
-x_body2 = zeros(3,m2,N);
+x_body1 = zeros(3, m1, N);
+x_body2 = zeros(3 ,m2, N);
 
-J_body1 = zeros(3*m1,n,N);
-J_body2 = zeros(3*m2,n,N);
-T_body1 = zeros(3,3,N);
-T_body2 = zeros(3,3,N);
+J_body1 = zeros(3 * m1, n, N);
+J_body2 = zeros(3 * m2, n, N);
+R_body1 = cell(N, 1);
+R_body2 = cell(N, 1);
 
 [pts_body1, dpts_body1] = body1_marker_fun(body1_params);
 [pts_body2, dpts_body2] = body2_marker_fun(body2_params);
 
 for i=1:N,
   kinsol=p.doKinematics(q(:,i));
-  [x_body1(:,:,i), J_body1(:,:,i)] = p.forwardKin(kinsol,body1,pts_body1);
-  [x_body2(:,:,i), J_body2(:,:,i)] = p.forwardKin(kinsol,body2,pts_body2);
-  
-  % awkward hack to get out the T term
-  T_body1(:,:,i) = p.forwardKin(kinsol,body1,eye(3)) - p.forwardKin(kinsol,body1,zeros(3));
-  T_body2(:,:,i) = p.forwardKin(kinsol,body2,eye(3)) - p.forwardKin(kinsol,body2,zeros(3));
+%   x_rows = 3 * (i - 1) + 1 : 3 * i;
+%   J_rows = 3 * m1 * (i - 1) + 1: 3 * m1 * i;
+%   [x_body1(x_rows, :), J_body1(J_rows, :)] = p.forwardKin(kinsol,body1,pts_body1);
+%   [x_body2(x_rows,:), J_body2(J_rows, :)] = p.forwardKin(kinsol,body2,pts_body2);
+  [x_body1(:, :, i), J_body1(:, :, i)] = p.forwardKin(kinsol,body1,pts_body1);
+  [x_body2(:, :, i), J_body2(:, :, i)] = p.forwardKin(kinsol,body2,pts_body2);  
+
+%   % awkward hack to get out the rotation matrix
+  R_body1{i} = p.forwardKin(kinsol,body1,eye(3)) - p.forwardKin(kinsol,body1,zeros(3));
+  R_body2{i} = p.forwardKin(kinsol,body2,eye(3)) - p.forwardKin(kinsol,body2,zeros(3));
 end
 
 % remove obscured markers from calculation (nan)
@@ -117,39 +121,47 @@ end
 body1_data(isnan(body1_data)) = x_body1(isnan(body1_data));
 body2_data(isnan(body2_data)) = x_body2(isnan(body2_data));
 
-body1_err = sum(sum(sum((x_body1 - body1_data).*(x_body1 - body1_data))));
-body2_err = sum(sum(sum((x_body2 - body2_data).*(x_body2 - body2_data))));
+body1_err = x_body1(:) - body1_data(:);
+body2_err = x_body2(:) - body2_data(:);
 
-f = body1_scale*body1_err + body2_scale*body2_err;
+f = body1_scale * (body1_err' * body1_err) + body2_scale * (body2_err' * body2_err);
 
-% variables: q_offset, body1_params, body2_params, floating_states
+% Gradient computation
+% dfq_offset
+dbody1_errdqoffset = reshape(permute(J_body1(:, joint_indices, :), [1 3 2]), [], length(joint_indices)); % Jacobians for each pose stacked on top of each other
+dbody2_errdqoffset = reshape(permute(J_body2(:, joint_indices, :), [1 3 2]), [], length(joint_indices));
 
-dfdqoffset = zeros(n_joints,1);
-dfdbody1_params = zeros(body1_num_params, 1);
-dfdbody2_params = zeros(body2_num_params, 1);
-dfdfloating_states = zeros(6,N);
+dfdqoffset = body1_scale * 2 * body1_err' * dbody1_errdqoffset + body2_scale * 2 * body2_err' * dbody2_errdqoffset;
 
-for i=1:N,
-  for j=1:m1,
-    dfdqoffset = dfdqoffset + 2*body1_scale*J_body1((1:3) + (j-1)*3,joint_indices,i)'*(x_body1(:,j,i) - body1_data(:,j,i));
-    dfdbody1_params = dfdbody1_params + 2*body1_scale*dpts_body1((1:3) + (j-1)*3,:)'*T_body1(:,:,i)'*(x_body1(:,j,i) - body1_data(:,j,i));
-    
-    dfdfloating_states(:,i) = dfdfloating_states(:,i) + 2*body1_scale*J_body1((1:3) + (j-1)*3,1:6,i)'*(x_body1(:,j,i) - body1_data(:,j,i));
-  end
-  
-  for j=1:m2,
-    dfdqoffset = dfdqoffset + 2*body2_scale*J_body2((1:3) + (j-1)*3,joint_indices,i)'*(x_body2(:,j,i) - body2_data(:,j,i));
-    dfdbody2_params = dfdbody2_params + 2*body2_scale*dpts_body2((1:3) + (j-1)*3,:)'*T_body2(:,:,i)'*(x_body2(:,j,i) - body2_data(:,j,i));
-    
-    dfdfloating_states(:,i) = dfdfloating_states(:,i) + 2*body2_scale*J_body2((1:3) + (j-1)*3,1:6,i)'*(x_body2(:,j,i) - body2_data(:,j,i));
-  end
-end
+% dfdbody1_params
+dbody1_err_dbody1_params = cellMatGradMultMat(R_body1, pts_body1, dpts_body1);
+dfdbody1_params = body1_scale * 2 * body1_err' * dbody1_err_dbody1_params;
+
+% dfdbody2_params
+dbody2_err_dbody2_params = cellMatGradMultMat(R_body2, pts_body2, dpts_body2);
+dfdbody2_params = body2_scale * 2 * body2_err' * dbody2_err_dbody2_params;
+
+% dfdfloating_states
+floating_indices = 1 : 6; % TODO: generalize
+
+dbody1_errdfloating_states_diag = mat2cell(J_body1(:, floating_indices, :), size(J_body1, 1), length(floating_indices), ones(1, N));
+dbody1_errdfloating_states = blkdiag(dbody1_errdfloating_states_diag{:});
+
+dbody2_errdfloating_states_diag = mat2cell(J_body2(:, floating_indices, :), size(J_body2, 1), length(floating_indices), ones(1, N));
+dbody2_errdfloating_states = blkdiag(dbody2_errdfloating_states_diag{:});
+
+dbody1_err_magdfloating_states = 2 * body1_err' * dbody1_errdfloating_states;
+dbody2_err_magdfloating_states = 2 * body2_err' * dbody2_errdfloating_states;
+
+dfdfloating_states = body1_scale * dbody1_err_magdfloating_states + body2_scale * dbody2_err_magdfloating_states;
+
 if ~isempty(floating_states)
-  g = [dfdqoffset;dfdbody1_params;dfdbody2_params;dfdfloating_states(:)]';
+  g = [dfdqoffset dfdbody1_params dfdbody2_params dfdfloating_states];
 else
-  g = [dfdqoffset;dfdbody1_params;dfdbody2_params]';
+  g = [dfdqoffset dfdbody1_params dfdbody2_params];
 end
 
+% Evaluation outputs
 if nargout > 2
   J_qoffset = zeros(n_joints,(m1+m2)*N*3);
   J_body1_params = zeros(body1_num_params,(m1+m2)*N*3);
@@ -159,13 +171,13 @@ if nargout > 2
   for i=1:N,
     for j=1:m1,
       J_qoffset(:,(i-1)*m1*3 + (j-1)*3 + (1:3)) = J_body1((1:3) + (j-1)*3,joint_indices,i)';
-      J_body1_params(:,(i-1)*m1*3 + (j-1)*3 + (1:3)) = dpts_body1((1:3) + (j-1)*3,:)'*T_body1(:,:,i)';
+      J_body1_params(:,(i-1)*m1*3 + (j-1)*3 + (1:3)) = dpts_body1((1:3) + (j-1)*3,:)'*R_body1{i}';
       J_floating_states(:,i,(i-1)*m1*3 + (j-1)*3 + (1:3)) = J_body1((1:3) + (j-1)*3,1:6,i)';
     end
     
     for j=1:m2,
       J_qoffset(:,N*m1*3 + (i-1)*m2*3 + (j-1)*3 + (1:3)) = J_body2((1:3) + (j-1)*3,joint_indices,i)';
-      J_body2_params(:,N*m1*3 + (i-1)*m2*3 + (j-1)*3 + (1:3)) = dpts_body2((1:3) + (j-1)*3,:)'*T_body2(:,:,i)';
+      J_body2_params(:,N*m1*3 + (i-1)*m2*3 + (j-1)*3 + (1:3)) = dpts_body2((1:3) + (j-1)*3,:)'*R_body2{i}';
       J_floating_states(:,i,N*m1*3 + (i-1)*m2*3 + (j-1)*3 + (1:3)) = J_body2((1:3) + (j-1)*3,1:6,i)';
     end
   end
