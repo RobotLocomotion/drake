@@ -29,8 +29,16 @@ for i=1:length(r_hand_shapes),
   r_hand_pts = [r_hand_pts r.getBody(r_hand).getContactShapes{i}.getPoints];
 end
 
-r_foot_contact_pts = r.getBody(r_foot).getContactShapes{1}.getPoints;
-l_foot_contact_pts = r.getBody(l_foot).getContactShapes{1}.getPoints;
+r_foot_shapes = r.getBody(r_foot).getContactShapes;
+l_foot_shapes = r.getBody(l_foot).getContactShapes;
+r_foot_contact_pts = [];
+l_foot_contact_pts = [];
+for i = 1:length(r_foot_shapes)
+  r_foot_contact_pts = [r_foot_contact_pts r.getBody(r_foot).getContactShapes{i}.getPoints];
+end
+for i = 1:length(l_foot_shapes)
+  l_foot_contact_pts = [l_foot_contact_pts r.getBody(l_foot).getContactShapes{i}.getPoints];
+end
 r_hand_pts = mean(r_hand_pts,2);
 l_hand_pts = mean(l_hand_pts,2);
 
