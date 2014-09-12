@@ -127,6 +127,9 @@ classdef MarkovDecisionProcess < DrakeSystem
       % initialize cost
       C = zeros(ns,na);
 
+      % note: this can be MUCH faster if we vectorize the calls to 
+      % dynamics and cost.  (that's what we used to do)
+      
       waitbar_h = waitbar(0,'Computing one-step dynamics and transition matrix...');
       waitbar_cleanup = onCleanup(@()close(waitbar_h));  % doesn't seem to catch ctrl-c, despite the documentation
       waitbar_lastupdate = 0;
