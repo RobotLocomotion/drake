@@ -47,7 +47,6 @@ T_local_to_world = [[rotmat(atan2(swing2.pos(2) - swing1.pos(2), swing2.pos(1) -
                      0, 0, 1], swing1.pos(1:3); 
                     0, 0, 0, 1];
 
-
 % Create posture constraint
 xstar = biped.loadFixedPoint();
 xstar([1:2,6]) = stance.pos([1:2,6]);
@@ -60,25 +59,29 @@ posture_constraint = posture_constraint.setJointLimits(joint_position_indices, q
 swing_body_index = biped.getFrame(swing1.frame_id).body_ind;
 stance_body_index = biped.getFrame(stance.frame_id).body_ind;
 swing_toe_points_in_foot = biped.getBody(swing_body_index).getTerrainContactPoints('toe');
-swing_heel_points_in_foot = biped.getBody(swing_body_index).getTerrainContactPoints('heel');
 T_sole_to_foot = biped.getFrame(swing1.frame_id).T;
 
 T_swing1_sole_to_world = ...
   [rpy2rotmat(swing1.pos(4:6)),swing1.pos(1:3); zeros(1, 3), 1];
 T_swing1_foot_to_world = T_swing1_sole_to_world/T_sole_to_foot;
-swing1_heel_points_in_world = T_swing1_foot_to_world(1:3,:) * ...
-  [swing_heel_points_in_foot; ones(1,size(swing_heel_points_in_foot,2))];
 swing1_toe_points_in_world = T_swing1_foot_to_world * ...
   [swing_toe_points_in_foot; ones(1,size(swing_toe_points_in_foot,2))];
-swing1_toe_points_in_local = T_local_to_world \ swing1_toe_points_in_world;
-swing1_toe_points_in_world = swing1_toe_points_in_world(1:3,:);
 
 T_swing2_sole_to_world = ...
   [rpy2rotmat(swing2.pos(4:6)),swing2.pos(1:3); zeros(1, 3), 1];
 T_swing2_foot_to_world = T_swing2_sole_to_world/T_sole_to_foot;
 swing2_toe_points_in_world = T_swing2_foot_to_world * ...
   [swing_toe_points_in_foot; ones(1,size(swing_toe_points_in_foot,2))];
-swing2_toe_points_in_local = T_local_to_world \ swing2_toe_points_in_world;
+
+toe1 = mean(swing1_toe_points_in_world(1:3,:), 2);
+toe2= mean(swing2_toe_points_in_world(1:3,:), 2);
+T_toe_local_to_world = [[rotmat(atan2(toe2(2) - toe1(2), toe2(1) - toe1(1))), [0;0];
+                     0, 0, 1], toe1(1:3); 
+                    0, 0, 0, 1];
+terrain_pts_in_toe_local = inv(T_toe_local_to_world) * T_local_to_world * [terrain_pts_in_local; ones(1, size(terrain_pts_in_local,2))];
+
+swing1_toe_points_in_toe_local = T_toe_local_to_world \ swing1_toe_points_in_world;
+swing2_toe_points_in_toe_local = T_toe_local_to_world \ swing2_toe_points_in_world;
 
 quat_swing1 = rpy2quat(swing1.pos(4:6));
 quat_toe_off = rotmat2quat(quat2rotmat(quat_swing1) * rpy2rotmat([0;toe_off_angle;0]));
@@ -161,25 +164,25 @@ function add_foot_origin_knot(swing_pose)
 end
 
 % Apex knot 1
-max_terrain_ht = max(terrain_pts_in_local(3,:));
+max_terrain_ht = max(terrain_pts_in_toe_local(3,:));
 toe_ht_in_local = max_terrain_ht + params.step_height;
-toe_pos_in_local = interp1([0, 1], [mean(swing1_toe_points_in_local, 2), mean(swing2_toe_points_in_local, 2)]', APEX_FRACTIONS(1))';
+toe_pos_in_local = interp1([0, 1], [mean(swing1_toe_points_in_toe_local, 2), mean(swing2_toe_points_in_toe_local, 2)]', APEX_FRACTIONS(1))';
 constraints = {posture_constraint,...
                WorldQuatConstraint(biped, swing_body_index, quat_toe_off, quat_tol),...
                WorldPositionInFrameConstraint(biped,swing_body_index,...
-                    mean(swing_toe_points_in_foot, 2), T_local_to_world, [toe_pos_in_local(1); -LATERAL_TOL; toe_ht_in_local], [toe_pos_in_local(1); LATERAL_TOL; toe_ht_in_local])};
+                    mean(swing_toe_points_in_foot, 2), T_toe_local_to_world, [toe_pos_in_local(1); -LATERAL_TOL; toe_ht_in_local], [toe_pos_in_local(1); LATERAL_TOL; toe_ht_in_local])};
 [pose, q_latest] = solve_for_pose(constraints, q_latest);
 add_foot_origin_knot(pose);
 
 % Apex knot 2
-max_terrain_ht = max(terrain_pts_in_local(3,:));
+max_terrain_ht = max(terrain_pts_in_toe_local(3,:));
 toe_ht_in_local = max_terrain_ht + params.step_height;
-toe_pos_in_local = interp1([0, 1], [mean(swing1_toe_points_in_local, 2), mean(swing2_toe_points_in_local, 2)]', APEX_FRACTIONS(2))';
+toe_pos_in_local = interp1([0, 1], [mean(swing1_toe_points_in_toe_local, 2), mean(swing2_toe_points_in_toe_local, 2)]', APEX_FRACTIONS(2))';
 constraints = {posture_constraint,...
                WorldQuatConstraint(biped, swing_body_index, quat_swing2, quat_tol),...
                WorldPositionInFrameConstraint(biped,swing_body_index,...
-                    mean(swing_toe_points_in_foot, 2), T_local_to_world, [toe_pos_in_local(1); -LATERAL_TOL; toe_ht_in_local], [toe_pos_in_local(1); LATERAL_TOL; toe_ht_in_local])};
-[pose, q_latest] = solve_for_pose(constraints, q_latest);
+                    mean(swing_toe_points_in_foot, 2), T_toe_local_to_world, [toe_pos_in_local(1); -LATERAL_TOL; toe_ht_in_local], [toe_pos_in_local(1); LATERAL_TOL; toe_ht_in_local])};
+[pose, ~] = solve_for_pose(constraints, q_latest);
 add_foot_origin_knot(pose);
 
 % Landing knot
