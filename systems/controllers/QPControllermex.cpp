@@ -211,6 +211,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   Map<VectorXd> x0(mxGetPr(prhs[narg]),mxGetM(prhs[narg])); narg++;
   Map<VectorXd> u0(mxGetPr(prhs[narg]),mxGetM(prhs[narg])); narg++;
   Map<VectorXd> y0(mxGetPr(prhs[narg]),mxGetM(prhs[narg])); narg++;
+  Map<VectorXd> qdd_lb(mxGetPr(prhs[narg]),mxGetM(prhs[narg])); narg++;
+  Map<VectorXd> qdd_ub(mxGetPr(prhs[narg]),mxGetM(prhs[narg])); narg++;
 
   double mu = mxGetScalar(prhs[narg++]);
   double terrain_height = mxGetScalar(prhs[narg++]); // nonzero if we're using DRCFlatTerrainMap
@@ -438,8 +440,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   
   // set obj,lb,up
   VectorXd lb(nparams), ub(nparams);
-  lb.head(nq) = -1e3*VectorXd::Ones(nq);
-  ub.head(nq) = 1e3*VectorXd::Ones(nq);
+  lb.head(nq) = qdd_lb;
+  ub.head(nq) = qdd_ub;
   lb.segment(nq,nf) = VectorXd::Zero(nf);
   ub.segment(nq,nf) = 1e3*VectorXd::Ones(nf);
   lb.tail(neps) = -pdata->slack_limit*VectorXd::Ones(neps);
