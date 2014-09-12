@@ -17,7 +17,7 @@ APEX_FRACTIONS = [0.15, 0.85]; % We plan only two poses of the foot during the a
                                % fraction of the distance from its initial location to its final location.
 
 FOOT_YAW_RATE = 0.75; % rad/s
-FOOT_PITCH_RATE = 0.75; % rad/s
+FOOT_PITCH_RATE = 2*pi; % rad/s
 
 LATERAL_TOL = 1e-3; % Distance the sole can move to away from the line 
                     % between step1 and step2
