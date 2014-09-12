@@ -27,6 +27,8 @@ MIN_DIST_FOR_TOE_OFF = 0.0; % minimum distance of *forward* progress for toe-off
                             % The distance is measured as the vector between the two swing poses
                             % dotted with the orientation of the stance foot
 
+MAX_LANDING_SPEED = 0.5;
+
 if stance.frame_id == biped.foot_frame_id.right
   stance_foot_name = 'right';
 else
@@ -167,18 +169,21 @@ function [pose, q0] = solve_for_pose(constraints, q0)
   pose = biped.forwardKin(kinsol, swing_body_index, [0;0;0], 1);
 end
 
-function add_foot_origin_knot(swing_pose)
+function add_foot_origin_knot(swing_pose, speed)
+  if nargin < 2
+    speed = params.step_speed;
+  end
   foot_origin_knots(end+1).(swing_foot_name) = swing_pose;
   foot_origin_knots(end).(stance_foot_name) = stance_origin_pose;
   cartesian_distance = norm(foot_origin_knots(end).(swing_foot_name)(1:3) - foot_origin_knots(end-1).(swing_foot_name)(1:3));
   yaw_distance = abs(foot_origin_knots(end).(swing_foot_name)(6) - foot_origin_knots(end-1).(swing_foot_name)(6));
   pitch_distance = abs(foot_origin_knots(end).(swing_foot_name)(5) - foot_origin_knots(end-1).(swing_foot_name)(5));
-  dt = max([cartesian_distance / params.step_speed,...
+  dt = max([cartesian_distance / speed,...
             yaw_distance / FOOT_YAW_RATE,...
             pitch_distance / FOOT_PITCH_RATE]);
   foot_origin_knots(end).t = foot_origin_knots(end-1).t + dt;
   foot_origin_knots(end).is_liftoff = false;
-  foot_origin_knots(end).toe_off_allowed = swing_distance_in_local >= MIN_DIST_FOR_TOE_OFF;
+  foot_origin_knots(end).toe_off_allowed = false;
 end
 
 % Apex knot 1
@@ -204,7 +209,7 @@ constraints = {posture_constraint,...
 add_foot_origin_knot(pose);
 
 % Landing knot
-add_foot_origin_knot(swing2_origin_pose);
+add_foot_origin_knot(swing2_origin_pose, min(params.step_speed, MAX_LANDING_SPEED));
 zmp_knots(end+1).t = foot_origin_knots(end).t;
 zmp_knots(end).zmp = zmp1;
 zmp_knots(end).supp = RigidBodySupportState(biped, [stance_body_index, swing_body_index]);
