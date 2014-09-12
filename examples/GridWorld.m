@@ -113,6 +113,7 @@ classdef GridWorld < DrakeSystem
       function drawfun(J,PI)
         figure(2); clf; hold on;
         imagesc(1:p.board(1),1:p.board(2),reshape(J,p.board(1),p.board(2))');
+        colorbar;
         axis equal; axis xy; axis tight;
         
         % draw the policy (note PI is in action index, not the numerical
@@ -121,7 +122,7 @@ classdef GridWorld < DrakeSystem
         V = 1*(PI==2) -1*(PI==4);
         quiver(X(:),Y(:),U,V,'k');
         
-%        pause;
+        % pause;  % useful for stepping through the value iteration updates
       end
     end
   end
