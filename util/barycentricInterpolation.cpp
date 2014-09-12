@@ -134,3 +134,54 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   delete[] b;
   if (nlhs<2) delete[] coefs;
 }
+
+
+/* for grins, here is a pure matlab implementation that used to live in
+ * the MarkovDecisionProcess class
+ *
+
+          % truncate back onto the grid if it's off the edge
+          xn = min(max(xn,xmin),xmax);
+
+          % populate T using barycentric interpolation
+          % simple description in Scott Davies, "Multidimensional
+          % Triangulation... ", NIPS, 1996
+          
+          % Note: The most mature implmentation that I found quickly is in
+          %   https://svn.csail.mit.edu/locomotion/robotlib/tags/version2.1/tools/@approx
+          % which is called from dev/mdp.m
+          % also found old non-mex version here:
+          % https://svn.csail.mit.edu/locomotion/robotlib/tags/version1/approx/@barycentricGrid/state_index.m
+          % but they were pretty hard to use, so I basically started over
+          
+          for xi=1:num_x
+            % note: could do binary search here
+            bin(xi) = find(xn(xi)<=xbins{xi}(2:end),1);
+          end
+          sidx_min = mysub2ind(bin);  % lower left
+          
+%          bin = bin+1; % move pointer to upper right
+%          sidx_max = mysub2ind(bin);    % upper right
+          sidx_max = sidx_min+sum(nskip);
+
+          % compute relative locations
+          fracway = (xn-S(:,sidx_min))./(S(:,sidx_max)-S(:,sidx_min));
+          [fracway,p] = sort(fracway); % p from Davies96
+          fracway(end+1)=1;
+          
+          % crawl through the simplex
+          % start at the top-right corner
+          sidx = sidx_max;  
+          T{ai}(si,sidx) = fracway(1);
+%          xn_recon = T{ai}(si,sidx)*S(:,sidx);  % just a sanity check
+          % now move down the box as prescribed by the permutation p
+          for xi=1:num_x
+%            bin(p(xi))=bin(p(xi))-1;
+%            sidx = mysub2ind(bin);
+            sidx = sidx - nskip(p(xi));
+            T{ai}(si,sidx) = fracway(xi+1)-fracway(xi);
+%            xn_recon = xn_recon+T{ai}(si,sidx)*S(:,sidx);  % just a sanity check
+          end
+%          valuecheck(xn,xn_recon);  % just a sanity check
+ 
+ */
