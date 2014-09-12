@@ -13,7 +13,6 @@ classdef LeggedRobotPlanningProblem
     end_at_rest = true;
     Q
     v_max = 30*pi/180;
-    k_pts = 1e2;
   end
 
   methods
@@ -21,6 +20,14 @@ classdef LeggedRobotPlanningProblem
       obj.robot = robot;
       if isfield(options,'n_interp_points')
         obj.n_interp_points = options.n_interp_points;
+      end
+      if isfield(options,'v_max')
+        obj.v_max = options.v_max;
+      end
+      if isscalar(obj.v_max)
+        obj.v_max = obj.v_max*ones(obj.robot.getNumVelocities(),1);
+      else
+        sizecheck(obj.v_max,[obj.robot.getNumVelocities(),1]);
       end
       if isfield(options,'excluded_collision_groups')
         obj.excluded_collision_groups = options.excluded_collision_groups;
@@ -139,7 +146,7 @@ classdef LeggedRobotPlanningProblem
       prog = obj.addRigidBodyConstraintsToPlanner(prog);
 
       % Add Velocity constraints
-      prog = prog.addConstraint(BoundingBoxConstraint(-obj.v_max*ones(obj.robot.getNumVelocities(),prog.N-2),obj.v_max*ones(obj.robot.getNumVelocities(),prog.N-2)),prog.v_inds(:,2:end-1));
+      prog = prog.addConstraint(BoundingBoxConstraint(-repmat(obj.v_max,1,prog.N-2),repmat(obj.v_max,1,prog.N-2)),prog.v_inds(:,2:end-1));
 
       if obj.start_from_rest
         prog = prog.addConstraint(ConstantConstraint(zeros(obj.robot.getNumVelocities(),1)),prog.v_inds(:,1));
@@ -150,27 +157,6 @@ classdef LeggedRobotPlanningProblem
       end
 
       % Set up costs
-      q_frame = obj.robot.getPositionFrame();
-      q_interp_all = drakeFunction.interpolation.Linear(q_frame,obj.n_interp_points,prog.N);
-      R1 = drakeFunction.frames.realCoordinateSpace(1);
-      R3 = drakeFunction.frames.realCoordinateSpace(3);
-      delta_r_all = drakeFunction.Difference(R3,(prog.N-1)*obj.n_interp_points);
-      smooth_norm = drakeFunction.euclidean.SmoothNorm(R3,1e-6);
-      smooth_norm = drakeFunction.euclidean.NormSquared(R3);
-      smooth_norm_all = compose(drakeFunction.Sum(R1,(prog.N-1)*obj.n_interp_points-1),duplicate(smooth_norm,(prog.N-1)*obj.n_interp_points-1));
-      l_hand_fcn = drakeFunction.kinematic.WorldPosition(obj.robot,'l_hand');
-      l_hand_fcn_all = duplicate(l_hand_fcn,(prog.N-1)*obj.n_interp_points);
-      l_hand_step_lengths = smooth_norm_all(delta_r_all(l_hand_fcn_all(q_interp_all)));
-      l_hand_arc_length_cost = DrakeFunctionConstraint(-Inf,Inf, ...
-        obj.k_pts*l_hand_step_lengths);
-      prog = prog.addCost(l_hand_arc_length_cost,prog.q_inds);
-      r_hand_fcn = drakeFunction.kinematic.WorldPosition(obj.robot,'r_hand');
-      r_hand_fcn_all = duplicate(r_hand_fcn,(prog.N-1)*obj.n_interp_points);
-      r_hand_step_lengths = smooth_norm_all(delta_r_all(r_hand_fcn_all(q_interp_all)));
-      r_hand_arc_length_cost = DrakeFunctionConstraint(-Inf,Inf, ...
-        obj.k_pts*r_hand_step_lengths);
-      prog = prog.addCost(r_hand_arc_length_cost,prog.q_inds);
-
       q_nom = eval(q_nom_traj,linspace(0,1,N));
       %Q = kron(eye(prog.N),double(obj.Q>0));
       Q = kron(eye(prog.N),obj.Q);
@@ -235,24 +221,15 @@ classdef LeggedRobotPlanningProblem
             ignored_groups{end+1} = obj.excluded_collision_groups(j).name;
           end
         end
-        if 0%i > 1
-          ignored_bodies_current = unique([ignored_bodies{[i-1,i]}]);
-        else
-          ignored_bodies_current = unique(ignored_bodies{i});
-        end
+        ignored_bodies_current = unique(ignored_bodies{i});
 
         active_collision_options.body_idx = setdiff(1:obj.robot.getNumBodies(),ignored_bodies_current);
         active_collision_options.collision_groups = setdiff(unique([obj.robot.body.collision_group_name]),ignored_groups);
-        min_distance_constraint(i) = MinDistanceConstraint(obj.robot,obj.min_distance,active_collision_options);  
-        prog = prog.addRigidBodyConstraint(min_distance_constraint(i),i);
+        min_distance_constraint = MinDistanceConstraint(obj.robot,obj.min_distance,active_collision_options);  
+        prog = prog.addRigidBodyConstraint(min_distance_constraint,i);
 
         if i > 1
-          %ignored_bodies_current = unique([ignored_bodies{[i-1,i]}]);
-          ignored_bodies_current = unique(ignored_bodies{i});
-          active_collision_options.body_idx = setdiff(1:obj.robot.getNumBodies(),ignored_bodies_current);
-          min_distance_constraint_for_interp = MinDistanceConstraint(obj.robot,obj.min_distance,active_collision_options);  
-
-          interpolated_constraint = generateInterpolatedMinDistanceConstraint(min_distance_constraint_for_interp,interpolation_parameter);
+          interpolated_constraint = generateInterpolatedMinDistanceConstraint(min_distance_constraint,interpolation_parameter);
           prog = prog.addConstraint(interpolated_constraint{1},{prog.q_inds(:,i-1), prog.q_inds(:,i)});
         end
       end
