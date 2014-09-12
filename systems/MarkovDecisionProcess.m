@@ -127,19 +127,17 @@ classdef MarkovDecisionProcess < DrakeSystem
       % initialize cost
       C = zeros(ns,na);
 
-      xn = zeros(num_x,ns*na);
-      
       waitbar_h = waitbar(0,'Computing one-step dynamics and transition matrix...');
       waitbar_cleanup = onCleanup(@()close(waitbar_h));  % doesn't seem to catch ctrl-c, despite the documentation
       waitbar_lastupdate = 0;
-      for si=1:ns
-        for ai=1:na
+      for ai=1:na
+        for si=1:ns
           if is_ct
             % todo: better than just forward euler here?
             xn = S(:,si) + options.dt*dynamics(sys,0,S(:,si),A(:,ai));
             C(si,ai) = options.dt*costfun(sys,S(:,si),A(:,ai));
           else % is dt
-            xn(:,idx) = update(sys,0,S(:,si),A(:,ai));
+            xn = update(sys,0,S(:,si),A(:,ai));
             C(si,ai) = costfun(sys,S(:,si),A(:,ai));
           end
           
@@ -149,11 +147,10 @@ classdef MarkovDecisionProcess < DrakeSystem
           [idx,coef] = barycentricInterpolation(xbins,xn);
           T{ai}(si,idx) = coef;
         end
-
         
-        if si/ns>waitbar_lastupdate+.025 % don't call the gui too much
-          waitbar(si/ns,waitbar_h);
-          waitbar_lastupdate = si/ns;
+        if ai/na>waitbar_lastupdate+.025 % don't call the gui too much
+          waitbar(ai/na,waitbar_h);
+          waitbar_lastupdate = ai/na;
         end
       end
       
