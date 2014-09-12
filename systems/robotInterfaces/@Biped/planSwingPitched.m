@@ -10,7 +10,7 @@ params = struct(swing2.walking_params);
 params = applyDefaults(params, biped.default_walking_params);
 
 DEBUG = false;
-TOE_OFF_ANGLE = pi/8;
+DEFAULT_FOOT_PITCH = pi/8;
 APEX_FRACTIONS = [0.15, 0.85];
 
 FOOT_YAW_RATE = 0.75; % rad/s
@@ -32,9 +32,12 @@ end
 
 swing2.pos(4:6) = swing1.pos(4:6) + angleDiff(swing1.pos(4:6), swing2.pos(4:6));
 
+toe_off_angle = DEFAULT_FOOT_PITCH;
+
+xy_dist = norm(swing2.pos(1:2) - swing1.pos(1:2));
+
 % The terrain slice is a 2xN matrix, where the first row is distance along the straight line path from swing1 to swing2 and the second row is height above the z position of swing1.
 terrain_slice = double(swing2.terrain_pts);
-xy_dist = norm(swing2.pos(1:2) - swing1.pos(1:2));
 terrain_slice = [[0;0], terrain_slice, [xy_dist; 0]];
 terrain_pts_in_local = [terrain_slice(1,:); zeros(1, size(terrain_slice, 2)); 
                         terrain_slice(2,:)];
@@ -78,13 +81,8 @@ swing2_toe_points_in_world = T_swing2_foot_to_world * ...
 swing2_toe_points_in_local = T_local_to_world \ swing2_toe_points_in_world;
 
 quat_swing1 = rpy2quat(swing1.pos(4:6));
-quat_toe_off = rotmat2quat(quat2rotmat(quat_swing1) * rpy2rotmat([0;TOE_OFF_ANGLE;0]));
+quat_toe_off = rotmat2quat(quat2rotmat(quat_swing1) * rpy2rotmat([0;toe_off_angle;0]));
 quat_swing2 = rpy2quat(swing2.pos(4:6));
-
-% assumes that the toe and heel points are all coplanar with the sole
-foot_length = norm(mean(swing1_toe_points_in_world, 2) - mean(swing1_heel_points_in_world, 2));
-terrain_slice1 = 1:find(terrain_pts_in_local(1,:) >= max(xy_dist/2, foot_length), 1, 'first');
-terrain_slice2 = find(terrain_pts_in_local(1,:) <= min(xy_dist/2, xy_dist - foot_length), 1, 'first'):size(terrain_pts_in_local,2);
 
 cost = Point(biped.getStateFrame(),1);
 cost.base_x = 0;
@@ -163,7 +161,7 @@ function add_foot_origin_knot(swing_pose)
 end
 
 % Apex knot 1
-max_terrain_ht = max(terrain_pts_in_local(3,terrain_slice1));
+max_terrain_ht = max(terrain_pts_in_local(3,:));
 toe_ht_in_local = max_terrain_ht + params.step_height;
 toe_pos_in_local = interp1([0, 1], [mean(swing1_toe_points_in_local, 2), mean(swing2_toe_points_in_local, 2)]', APEX_FRACTIONS(1))';
 constraints = {posture_constraint,...
@@ -174,7 +172,7 @@ constraints = {posture_constraint,...
 add_foot_origin_knot(pose);
 
 % Apex knot 2
-max_terrain_ht = max(terrain_pts_in_local(3,terrain_slice2));
+max_terrain_ht = max(terrain_pts_in_local(3,:));
 toe_ht_in_local = max_terrain_ht + params.step_height;
 toe_pos_in_local = interp1([0, 1], [mean(swing1_toe_points_in_local, 2), mean(swing2_toe_points_in_local, 2)]', APEX_FRACTIONS(2))';
 constraints = {posture_constraint,...
