@@ -4,10 +4,10 @@ plant = PendulumPlant;
 options.dt = 1e-2;
 options.gamma = .999;
 options.wrap_flag = [true;false];
-
+%cost = @mintime; ulimit = 1;
+cost = @lqrcost; ulimit = 5;
 xbins = {linspace(0,2*pi,51),linspace(-10,10,51)};
-%mdp = MarkovDecisionProcess.discretizeSystem(plant,@lqrcost,xbins,linspace(-1,1,9),options);
-mdp = MarkovDecisionProcess.discretizeSystem(plant,@mintime,xbins,linspace(-2,2,5),options);
+mdp = MarkovDecisionProcess.discretizeSystem(plant,cost,xbins,linspace(-ulimit,ulimit,9),options);
 
 function drawfun(J,PI)
   figure(2); clf;
