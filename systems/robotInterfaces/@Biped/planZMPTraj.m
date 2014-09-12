@@ -54,7 +54,8 @@ zmp_knots = struct('t', options.t0, 'zmp', zmp0, 'supp', supp0);
 foot_origin_knots = struct('t', options.t0, ...
   'right', zeros(6,1),...
   'left', zeros(6,1),...
-  'is_liftoff', false);
+  'is_liftoff', false,...
+  'toe_off_allowed', false);
 for f = {'right', 'left'}
   foot = f{1};
   frame_id = biped.foot_frame_id.(foot);
@@ -114,7 +115,7 @@ zmpf = mean([steps.right(end).pos(1:2), steps.left(end).pos(1:2)], 2);
 zmp_knots(end+1) =  struct('t', foot_origin_knots(end).t, 'zmp', zmpf, 'supp', RigidBodySupportState(biped, [rfoot_body_idx, lfoot_body_idx]));
 
 % Build trajectories
-link_constraints = struct('link_ndx',{}, 'pt', {}, 'ts', {}, 'poses', {}, 'dposes', {}, 'contact_break_indices', {}, 'a0', {}, 'a1', {}, 'a2', {}, 'a3', {});
+link_constraints = struct('link_ndx',{}, 'pt', {}, 'ts', {}, 'poses', {}, 'dposes', {}, 'contact_break_indices', {}, 'a0', {}, 'a1', {}, 'a2', {}, 'a3', {}, 'toe_off_allowed', {});
 for f = {'right', 'left'}
   foot = f{1};
   foot_poses = [foot_origin_knots.(foot)];
@@ -141,7 +142,7 @@ for f = {'right', 'left'}
       [a0(k,j), a1(k,j), a2(k,j), a3(k,j)] = cubicSplineCoefficients(ts(j+1) - ts(j), foot_poses(k,j), foot_poses(k,j+1), foot_dposes(k,j), foot_dposes(k,j+1));
     end
   end
-  link_constraints(end+1) = struct('link_ndx', body_ind, 'pt', [0;0;0], 'ts', ts, 'poses', foot_poses, 'dposes', foot_dposes, 'contact_break_indices', find([foot_origin_knots.is_liftoff]), 'a0', a0, 'a1', a1, 'a2', a2, 'a3', a3);
+  link_constraints(end+1) = struct('link_ndx', body_ind, 'pt', [0;0;0], 'ts', ts, 'poses', foot_poses, 'dposes', foot_dposes, 'contact_break_indices', find([foot_origin_knots.is_liftoff]), 'a0', a0, 'a1', a1, 'a2', a2, 'a3', a3, 'toe_off_allowed', [foot_origin_knots.toe_off_allowed]);
 end
 zmptraj = PPTrajectory(foh([zmp_knots.t], [zmp_knots.zmp]));
 

@@ -19,6 +19,11 @@ FOOT_PITCH_RATE = 0.75; % rad/s
 LATERAL_TOL = 1e-3; % Distance the sole can move to away from the line 
                     % between step1 and step
 
+MIN_DIST_FOR_TOE_OFF = 0.0; % minimum distance of *forward* progress for toe-off to be allowed.
+                            % This disallows toe-off during backward stepping. 
+                            % The distance is measured as the vector between the two swing poses
+                            % dotted with the orientation of the stance foot
+
 if stance.frame_id == biped.foot_frame_id.right
   stance_foot_name = 'right';
 else
@@ -32,7 +37,6 @@ end
 
 swing2.pos(4:6) = swing1.pos(4:6) + angleDiff(swing1.pos(4:6), swing2.pos(4:6));
 
-toe_off_angle = DEFAULT_FOOT_PITCH;
 
 xy_dist = norm(swing2.pos(1:2) - swing1.pos(1:2));
 
@@ -46,6 +50,15 @@ terrain_pts_in_local = [terrain_slice(1,:); zeros(1, size(terrain_slice, 2));
 T_local_to_world = [[rotmat(atan2(swing2.pos(2) - swing1.pos(2), swing2.pos(1) - swing1.pos(1))), [0;0];
                      0, 0, 1], swing1.pos(1:3); 
                     0, 0, 0, 1];
+
+% Determine how much of a forward step this is
+swing_distance_in_local = (swing2.pos(1:2) - swing1.pos(1:2))' * (rotmat(stance.pos(6)) * [1;0]);
+
+if swing_distance_in_local > 0
+  toe_off_angle = DEFAULT_FOOT_PITCH;
+else
+  toe_off_angle = 0;
+end
 
 % Create posture constraint
 xstar = biped.loadFixedPoint();
@@ -131,7 +144,8 @@ zmp_knots = struct('t', initial_hold_time + (hold_time / 2),...
 foot_origin_knots = struct('t', zmp_knots(end).t, ...
                            swing_foot_name, swing1_origin_pose, ...
                            stance_foot_name, stance_origin_pose, ...
-                           'is_liftoff', true);
+                           'is_liftoff', true,...
+                           'toe_off_allowed', swing_distance_in_local >= MIN_DIST_FOR_TOE_OFF);
 
 function [pose, q0] = solve_for_pose(constraints, q0)
   constraint_ptrs = {};
@@ -161,6 +175,7 @@ function add_foot_origin_knot(swing_pose)
             pitch_distance / FOOT_PITCH_RATE]);
   foot_origin_knots(end).t = foot_origin_knots(end-1).t + dt;
   foot_origin_knots(end).is_liftoff = false;
+  foot_origin_knots(end).toe_off_allowed = swing_distance_in_local >= MIN_DIST_FOR_TOE_OFF;
 end
 
 % Apex knot 1
