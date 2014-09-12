@@ -53,8 +53,7 @@ classdef PendulumEnergyControl < HybridDrakeSystem
       for i=1:5
         xtraj = simulate(sys,[0 6]);
         playback(pv,xtraj);
-        figure(2);
-        fnplt(xtraj);
+%        figure(2); fnplt(xtraj);
       end
     end
   end
