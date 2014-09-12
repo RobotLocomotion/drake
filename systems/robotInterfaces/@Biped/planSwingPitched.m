@@ -10,14 +10,17 @@ params = struct(swing2.walking_params);
 params = applyDefaults(params, biped.default_walking_params);
 
 DEBUG = false;
-DEFAULT_FOOT_PITCH = pi/8;
-APEX_FRACTIONS = [0.15, 0.85];
+DEFAULT_FOOT_PITCH = pi/8; % The amount by which the swing foot pitches forward during walking
+
+APEX_FRACTIONS = [0.15, 0.85]; % We plan only two poses of the foot during the aerial phase of the swing.
+                               % Those poses are planned for locations where the toe has traveled a given
+                               % fraction of the distance from its initial location to its final location.
 
 FOOT_YAW_RATE = 0.75; % rad/s
 FOOT_PITCH_RATE = 0.75; % rad/s
 
 LATERAL_TOL = 1e-3; % Distance the sole can move to away from the line 
-                    % between step1 and step
+                    % between step1 and step2
 
 MIN_DIST_FOR_TOE_OFF = 0.0; % minimum distance of *forward* progress for toe-off to be allowed.
                             % This disallows toe-off during backward stepping. 
