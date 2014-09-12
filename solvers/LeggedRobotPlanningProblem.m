@@ -21,6 +21,14 @@ classdef LeggedRobotPlanningProblem
       if isfield(options,'n_interp_points')
         obj.n_interp_points = options.n_interp_points;
       end
+      if isfield(options,'v_max')
+        obj.v_max = options.v_max;
+      end
+      if isscalar(obj.v_max)
+        obj.v_max = obj.v_max*ones(obj.robot.getNumVelocities(),1);
+      else
+        sizecheck(obj.v_max,[obj.robot.getNumVelocities(),1]);
+      end
       if isfield(options,'excluded_collision_groups')
         obj.excluded_collision_groups = options.excluded_collision_groups;
       end
@@ -138,7 +146,7 @@ classdef LeggedRobotPlanningProblem
       prog = obj.addRigidBodyConstraintsToPlanner(prog);
 
       % Add Velocity constraints
-      prog = prog.addConstraint(BoundingBoxConstraint(-obj.v_max*ones(obj.robot.getNumVelocities(),prog.N-2),obj.v_max*ones(obj.robot.getNumVelocities(),prog.N-2)),prog.v_inds(:,2:end-1));
+      prog = prog.addConstraint(BoundingBoxConstraint(-repmat(obj.v_max,1,prog.N-2),repmat(obj.v_max,1,prog.N-2)),prog.v_inds(:,2:end-1));
 
       if obj.start_from_rest
         prog = prog.addConstraint(ConstantConstraint(zeros(obj.robot.getNumVelocities(),1)),prog.v_inds(:,1));
