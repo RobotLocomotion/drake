@@ -8,13 +8,14 @@ function plan = runAtlasWalkingPlanning()
 
 
 checkDependency('lcmgl');
-addpath(fullfile(getDrakePath(), 'examples', 'ZMP'));
+
+path_handle = addpathTemporary(fullfile(getDrakePath(), 'examples', 'ZMP'));
+
 % Set up the model
 load('data/atlas_fp.mat', 'xstar');
 x0 = xstar;
 r = Atlas('urdf/atlas_minimal_contact.urdf');
 r = r.setInitialState(x0);
-
 
 % Plan footsteps to the goal
 q0 = x0(1:r.getNumPositions());
@@ -39,7 +40,6 @@ else
 end
 
 v.playback(xtraj, struct('slider', true));
-
 
 
 end
