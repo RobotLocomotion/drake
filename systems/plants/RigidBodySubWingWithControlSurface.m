@@ -68,7 +68,6 @@ classdef RigidBodySubWingWithControlSurface < RigidBodySubWing
       
       % now compute B and dB
       
-      
       kinsol = doKinematics(manip,q,true,true,qd);
       
       
@@ -323,8 +322,8 @@ classdef RigidBodySubWingWithControlSurface < RigidBodySubWing
       % @param qd q-dot (state vector derivatives)
       % @param fill_color @default 1
       
-      color = fill_color - [.3 .3 .3];
-      color = max([0 0 0], color);
+      color = fill_color + [.1 .1 .1];
+      color = min([1 1 1], color);
       
       % first draw the main part of the wing
       drawWing@RigidBodySubWing(obj, manip, q, qd, color)
@@ -348,7 +347,7 @@ classdef RigidBodySubWingWithControlSurface < RigidBodySubWing
       
       pts = forwardKin(manip, kinsol, obj.kinframe, [p1; p2; p3; p4]');
       
-      color = fill_color + [.3 .3 .3];
+      color = fill_color + [.2 .2 .2];
       color = min([1 1 1], color);
       
       fill3(pts(1,:), pts(2,:), pts(3,:), color);

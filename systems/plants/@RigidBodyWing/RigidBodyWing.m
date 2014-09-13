@@ -43,7 +43,7 @@ classdef RigidBodyWing < RigidBodyForceElement
     end
     
     
-    function [force, B_force, dforce, dB_force ] = computeSpatialForce(obj,manip,q,qd)
+    function [force, B_force, dforce ] = computeSpatialForce(obj,manip,q,qd)
       % Calls the appropriate RigidBodySubWing.computeSpatialForce
       % for all of the subwings, adds the results, and returns.
       
@@ -63,7 +63,17 @@ classdef RigidBodyWing < RigidBodyForceElement
           
           control_surface_flag = true;
           
-          [force, B_force, dforce, dB_force ] = obj.subwings{i}.computeSpatialForce(manip,q,qd);
+          [this_force, B_force, this_dforce, dB_force ] = obj.subwings{i}.computeSpatialForce(manip,q,qd);
+          
+          if i == 1
+            force = this_force;
+            dforce = this_dforce;
+          else
+            force = force + this_force;
+            dforce = dforce + this_dforce;
+          
+          end
+          
           
         else
         
