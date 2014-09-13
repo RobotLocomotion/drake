@@ -140,6 +140,7 @@ timespec *remaining_delay)
 
 #endif
 
+#include <math.h>
 
 #define MDL_INITIAL_SIZES
 static void mdlInitializeSizes(SimStruct *S)
@@ -196,10 +197,8 @@ struct timeval doubleToTimeval(double t)
 #define MDL_START
 static void mdlStart(SimStruct *S)
 {
-  struct timeval tv;
-  gettimeofday(&tv, NULL);
   double *wall_t0 = (double*) ssGetDWork(S,0);
-  *wall_t0 = timevalToDouble(tv);
+  *wall_t0 = NAN; 
 }
 
 #define MDL_UPDATE
@@ -208,8 +207,15 @@ static void mdlUpdate(SimStruct *S, int_T tid)
   UNUSED(tid);
   struct timeval tv,tv_diff;
   gettimeofday(&tv, NULL);
+  
+  double *wall_t0 = (double*) ssGetDWork(S,0);
+  if isnan(*wall_t0) {
+    // t0 not set yet, set it now.  (note: used to set this in mdlStart, but there can be a big pause between mdlStart and the full simulation start)
+    *wall_t0 = timevalToDouble(tv);
+    return;
+  }
+  
   double wall_t = timevalToDouble(tv),
-  			*wall_t0 = (double*) ssGetDWork(S,0),
   			simtime = ssGetT(S),
   			realtime_factor = mxGetScalar(ssGetSFcnParam(S, 1));
 
