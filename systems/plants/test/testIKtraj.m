@@ -29,8 +29,8 @@ for i=1:length(r_hand_shapes),
   r_hand_pts = [r_hand_pts r.getBody(r_hand).getContactShapes{i}.getPoints];
 end
 
-r_foot_contact_pts = r.getBody(r_foot).getContactShapes{1}.getPoints;
-l_foot_contact_pts = r.getBody(l_foot).getContactShapes{1}.getPoints;
+r_foot_contact_pts = r.getBody(r_foot).getTerrainContactPoints();
+l_foot_contact_pts = r.getBody(l_foot).getTerrainContactPoints();
 r_hand_pts = mean(r_hand_pts,2);
 l_hand_pts = mean(l_hand_pts,2);
 
@@ -74,7 +74,7 @@ qsc = QuasiStaticConstraint(r);
 qsc = qsc.addContact(r_foot,r_foot_contact_pts);
 qsc = qsc.addContact(l_foot,l_foot_contact_pts);
 qsc = qsc.setActive(true);
-qsc = qsc.setShrinkFactor(0.8);
+qsc = qsc.setShrinkFactor(0.9);
 
 iAfun = [1;1;2;2;3;3;4;4];
 jAvar = [l_leg_kny;r_leg_kny;l_leg_hpy;r_leg_hpy;l_leg_aky;r_leg_aky;l_leg_hpz;r_leg_hpz];
@@ -98,6 +98,7 @@ ikoptions = ikoptions.setQa(0.001*Q);
 ikoptions = ikoptions.setMajorIterationsLimit(10000);
 ikoptions = ikoptions.setIterationsLimit(500000);
 ikoptions = ikoptions.setSuperbasicsLimit(1000);
+ikoptions = ikoptions.setMajorOptimalityTolerance(2e-4);
 ikoptions = ikoptions.setDebug(true);
 ikmexoptions = ikoptions;
 ikmexoptions = ikmexoptions.setMex(true);
@@ -120,6 +121,7 @@ end
 if(any(any(isinf(x_sol))) || any(any(isnan(q_sol))))
   error('solution cannot be nan');
 end
+valuecheck(q_sol(:,1),q_seed_traj.eval(0),1e-3);
 v.playback(xtraj,struct('slider',true));
 display('Check IK traj with quasi static constraint');
 xtraj = test_IKtraj_userfun(r,t,q_seed_traj,q_nom_traj,kc1{:},qsc,kc2{:},kc3,kc4,kc5,pc_knee,ikoptions);
@@ -274,6 +276,8 @@ x0 = [q_seed.eval(t(1));q_seed.deriv(t(1))];
 ikproblem = InverseKinematicsTrajectory(r,t,q_nom,ikoptions.fixInitialState,x0,varargin{1:end-1});
 ikproblem = ikproblem.addBoundingBoxConstraint(BoundingBoxConstraint(ikoptions.qdf_lb,ikoptions.qdf_ub),ikproblem.qdf_idx);
 ikproblem = ikproblem.setSolverOptions('snopt','MajorIterationsLimit',ikoptions.SNOPT_MajorIterationsLimit);
+ikproblem = ikproblem.setSolverOptions('snopt','IterationsLimit',ikoptions.SNOPT_IterationsLimit);
+ikproblem = ikproblem.setSolverOptions('snopt','MajorOptimalityTolerance',ikoptions.SNOPT_MajorOptimalityTolerance);
 % ikproblem = ikproblem.setSolverOptions('snopt','print','iktraj.out');
 [xtraj,F,info,infeasible_constraint] = ikproblem.solve(q_seed);
 if(info>10)

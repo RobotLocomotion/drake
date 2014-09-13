@@ -105,7 +105,7 @@ methods
     df = x'*obj.Q + obj.f';
   end
   
-  function obj = addNonlinearConstraint(obj,cnstr,xind,data_ind)
+  function [obj,cnstr_id] = addNonlinearConstraint(obj,cnstr,xind,data_ind)
     error('Drake:QuadraticProgram:UnsupportedConstraint','QuadraticProgram does not accept NonlinearConstraint');
   end
 
