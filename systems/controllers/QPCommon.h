@@ -32,8 +32,12 @@ struct QPControllerData {
   double Kp_accel; // gain for support acceleration constraint: accel=-Kp_accel*vel
 
   int n_body_accel_inputs;
-  int n_body_accel_constraints;
+  int n_body_accel_eq_constraints;
   VectorXd body_accel_input_weights;
+  int n_body_accel_bounds;
+  std::vector<int> accel_bound_body_idx;
+  std::vector<Vector6d,aligned_allocator<Vector6d>> min_body_acceleration;
+  std::vector<Vector6d,aligned_allocator<Vector6d>> max_body_acceleration;
 
   // gurobi active set params
   int *vbasis;
