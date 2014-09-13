@@ -5,7 +5,6 @@ function [ytraj,xtraj,lcmlog] = simulate(obj,tspan,x0,options)
 % @param x0 a vector of length(getNumStates) which contains the initial
 % state (@default calls getInitialState())
 %
-% @option FixedStep   for fixed-step solver only, generate output at the FixedStep spaced time points
 % @option OutputOption 'RefineOutputTimes' | 'AdditionalOutputTimes' | 'SpecifiedOutputTimes' 
 %            For variable step solver only
 % @option OutputTimes to generate output in the time sequence options.OutputTimes
@@ -35,16 +34,15 @@ if isfield(options,'capture_lcm_channels') && ~isempty(options.capture_lcm_chann
 end
 
 pstruct = obj.simulink_params;
+if ~isfield(pstruct,'Solver')
+  % set the default solver if it's clear what to do (because someone might
+  % have manually changed their default simulink solver)
+  if isCT(obj)
+    pstruct.Solver='ode45';
+  end
+end
 pstruct.StartTime = num2str(tspan(1));
 pstruct.StopTime = num2str(tspan(end));
-if(isfield(options,'FixedStep'))%if using fixed-step solver and want to generate output at a dt spaced time line.
-    solver=get_param(mdl,'Solver');
-    if(strcmp(solver,'ode1')||strcmp(solver,'ode2')||strcmp(solver,'ode3')||strcmp(solver,'ode4')||strcmp(solver,'ode5'))
-        pstruct.FixedStep=num2str(options.FixedStep);
-    else
-        warning('FixedStep option can only be used for fixed-step solver');
-    end
-end
 if (nargin>2 && ~isempty(x0)) % handle initial conditions
   if (isa(x0,'Point'))
     x0 = double(x0.inFrame(obj.getStateFrame));
