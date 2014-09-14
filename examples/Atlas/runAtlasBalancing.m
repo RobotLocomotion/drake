@@ -5,8 +5,9 @@ if ~checkDependency('gurobi')
   return;
 end
 
-addpath(fullfile(getDrakePath,'examples','ZMP'));
-addpath(fullfile(getDrakePath,'examples','Atlas','controllers'));
+path_handle = addpathTemporary({fullfile(getDrakePath,'examples','ZMP'),...
+                                fullfile(getDrakePath,'examples','Atlas','controllers'),...
+                                fullfile(getDrakePath,'examples','Atlas','frames')});
 
 % put robot in a random x,y,yaw position and balance for 2 seconds
 visualize = true;
@@ -137,6 +138,5 @@ err = norm(xf(1:6)-xstar(1:6))
 if err > 0.02
   error('drakeBalancing unit test failed: error is too large');
 end
-
 
 end

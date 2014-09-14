@@ -5,7 +5,7 @@
 #   eval `mex_cygwin_env.pl`
 
 $MEXOPTS = `touch dummy.c && mex.bat -v dummy.c 2> /dev/null`; system("rm dummy.c");
-die "Can't find your mex options file. Make sure mex.bat is in your path (MEX = $MEX).  MATLAB >= R2014a is not supported by this script yet.\n" if ($MEXOPTS eq "");
+die "Can't find your mex options file. Make sure mex.bat is in your path (MEX = $MEX).\n" if ($MEXOPTS eq "");
 
 if ($MEXOPTS =~ m/Set PATH/) { # Then it's the new mex interface, MATLAB version >= 2014a 
 

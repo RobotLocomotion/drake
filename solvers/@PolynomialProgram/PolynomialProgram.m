@@ -141,17 +141,13 @@ classdef PolynomialProgram < NonlinearProgram
       error('Not implemented');
     end
 
-    function obj = addNonlinearConstraint(obj,cnstr,xind,data_ind)
+    function [obj,cnstr_id] = addNonlinearConstraint(obj,cnstr,xind,data_ind)
       error('Drake:PolynomialProgram:UnsupportedConstraint','PolynomialProgram does not accept NonlinearConstraint yet, but we will implement it as soon as possible');
     end
     
     
     function obj = replaceCost(obj,cost,cost_idx,xind)
       error('Drake:PolynomialProgram:UnsupportedConstraint','PolynomialProgram does support replaceCost yet, but we will implement it as soon as possible');
-    end
-    
-    function obj = replaceBoundingBoxConstraint(obj,cnstr,cnstr_idx,xind)
-      error('Drake:PolynomialProgram:UnsupportedConstraint','PolynomialProgram does support replaceBoundingBoxConstraint yet, but we will implement it as soon as possible');
     end
     
     function obj = setSolver(obj,solver)

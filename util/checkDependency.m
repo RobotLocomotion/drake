@@ -129,7 +129,7 @@ if ~ok
     case 'vrml'
       unsupported = false;
       if(exist('vrinstall','file'))
-        conf.vrml_enabled = logical(vrinstall('-check','-viewer'));% && usejava('awt');  % usejava('awt') return 0 if running with no display
+        conf.vrml_enabled = logical(vrinstall('-check','viewer'));% && usejava('awt');  % usejava('awt') return 0 if running with no display
         if ismac
           [~,osx] = system('sw_vers -productVersion');
           if ~verStringLessThan(osx,'10.9') && verLessThan('matlab','8.1')
