@@ -172,6 +172,10 @@ classdef RigidBodyWing < RigidBodyForceElement
       else
         % deal with control surfaces
         
+        if ~strcmpi(profile, 'flat plate')
+            error('wings with control surfaces that are not flat plates is unimplemneted at the current time.');
+        end
+        
         % load control surface data
         count = 0;
 
