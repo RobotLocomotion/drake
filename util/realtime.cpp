@@ -205,7 +205,7 @@ static void mdlStart(SimStruct *S)
 static void mdlUpdate(SimStruct *S, int_T tid)
 {
   UNUSED(tid);
-  struct timeval tv,tv_diff;
+  struct timeval tv;
   gettimeofday(&tv, NULL);
   
   double *wall_t0 = (double*) ssGetDWork(S,0);
@@ -220,13 +220,13 @@ static void mdlUpdate(SimStruct *S, int_T tid)
   			realtime_factor = mxGetScalar(ssGetSFcnParam(S, 1));
 
   double t_diff = (wall_t - *wall_t0)*realtime_factor - simtime;
-  tv_diff = doubleToTimeval(-t_diff);
-//  mexPrintf("wall time: %f, sim time: %f, (scaled) diff: %f\n", wall_t-*wall_t0, simtime, t_diff);
+// mexPrintf("wall time: %f, sim time: %f, (scaled) diff: %f\n", wall_t-*wall_t0, simtime, t_diff);
 
-  if (t_diff<0.0) {
+  if (t_diff<0.0) {  // then simtime > scaled wall_time
     timespec tosleep;
-    tosleep.tv_sec = tv_diff.tv_sec;
-    tosleep.tv_nsec = tv_diff.tv_usec * 1000;
+    tv = doubleToTimeval(-t_diff);
+    tosleep.tv_sec = tv.tv_sec;
+    tosleep.tv_nsec = tv.tv_usec * 1000;
 //    mexPrintf("sleeping...  %d sec, %d nsec\n", tosleep.tv_sec, tosleep.tv_nsec);
     nanosleep(&tosleep, NULL);
   } else if (t_diff>1.0) {  // then I'm behind by more than 1 second
