@@ -1,6 +1,5 @@
-function [dq, body1_params, body2_params, floating_states, residuals, info, J, body1_resids, body2_resids] = jointOffsetCalibration(p, q_data, joint_indices,...
-    body1, body1_marker_fun, body1_num_params, body1_data, ...
-    body2, body2_marker_fun, body2_num_params, body2_data, options)
+function [dq, marker_params, floating_states, objective_value, marker_residuals, info] = jointOffsetCalibration(p, q_data, joint_indices,...
+    bodies, marker_functions, num_marker_function_parameters, motion_capture_data, scales, options)
 % NOTEST
 % Perform joint offset calibration, given vicon and joint data.
 % Given (x,y,z) position data of some set of markers on two different
@@ -36,14 +35,13 @@ function [dq, body1_params, body2_params, floating_states, residuals, info, J, b
 % @return info As returned by fminunc
 % @return J A jacobian
 
-if nargin < 12
+if nargin < 9
   options = struct();
 end
 
-[dq, body1_params, body2_params, floating_states, residuals, info, J, body1_resids, body2_resids] = motionCaptureJointCalibration(...
+[dq, marker_params, floating_states, objective_value, marker_residuals, info] = motionCaptureJointCalibration(...
   p, @offsetCorrectionFun, q_data, joint_indices,...
-  body1, body1_marker_fun, body1_num_params, body1_data, ...
-  body2, body2_marker_fun, body2_num_params, body2_data, options);
+  bodies, marker_functions, num_marker_function_parameters, motion_capture_data, scales, options);
 
 end
 
