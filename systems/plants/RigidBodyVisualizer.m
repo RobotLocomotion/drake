@@ -7,16 +7,18 @@ classdef RigidBodyVisualizer < Visualizer
       obj = obj@Visualizer(getStateFrame(manip));
       obj.model = manip;
     end
-    function inspector(obj,x0,state_dims,minrange,maxrange)
+    function inspector(obj,x0, state_dims,minrange,maxrange)
       if (nargin<2), x0 = getInitialState(obj.model); end
       if (nargin<3), state_dims = 1:getNumPositions(obj.model); end
-      vel_dims = state_dims+getNumPositions(obj.model);
+      if any(state_dims)>getNumPositions(obj.model)
+        error('can''t draw velocities');
+      end
       [jlmin,jlmax] = getJointLimits(obj.model);
       jlmin(isinf(jlmin))=-2*pi; jlmax(isinf(jlmax))=2*pi;
       if (nargin<4), minrange = jlmin(state_dims); end
       if (nargin<5), maxrange = jlmax(state_dims); end
       
-      inspector@Visualizer(obj,x0,state_dims,vel_dims,minrange,maxrange,obj.model);
+      inspector@Visualizer(obj,x0,state_dims,minrange,maxrange,obj.model);
     end
     
     function kinematicInspector(obj,body_or_frame_id,pt,q0,minrange,maxrange)
