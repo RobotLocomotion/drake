@@ -1,11 +1,11 @@
 function runAtlasWalking(use_mex,use_bullet,use_angular_momentum,navgoal)
+% Example running walking QP controller from
+% Scott Kuindersma, Frank Permenter, and Russ Tedrake.
+% An efficiently solvable quadratic program for stabilizing dynamic
+% locomotion. In Proceedings of the International Conference on 
+% Robotics and Automation, Hong Kong, China, May 2014. IEEE.
 
-% see Kuindersma, Permenter, Tedrake, ICRA 2011 
-
-if ~checkDependency('gurobi')
-  warning('Must have gurobi installed to run this example');
-  return;
-end
+checkDependency('gurobi');
 
 addpath(fullfile(getDrakePath,'examples','ZMP'));
 addpath(fullfile(getDrakePath,'examples','Atlas','controllers'));
@@ -229,17 +229,22 @@ if plot_comtraj
   rms_foot = 0;
 
   for i=1:length(ts)
-    xt=traj.eval(ts(i));
+    % ts is from the walking plan, but traj is only defined at the dt
+    % intervals
+    t = round(ts(i)/dt)*dt;
+    t = min(max(t,0),T);
+    
+    xt=traj.eval(t);
     q=xt(1:nq);
     qd=xt(nq+(1:nq));
-    qdd=qddtraj.eval(ts(i));
+    qdd=qddtraj.eval(t);
 
     kinsol = doKinematics(r,q);
 
     [com(:,i),J]=getCOM(r,kinsol);
     Jdot = forwardJacDot(r,kinsol,0);
-    comdes(:,i)=walking_plan_data.comtraj.eval(ts(i));
-    zmpdes(:,i)=walking_plan_data.zmptraj.eval(ts(i));
+    comdes(:,i)=walking_plan_data.comtraj.eval(t);
+    zmpdes(:,i)=walking_plan_data.zmptraj.eval(t);
     zmpact(:,i)=com(1:2,i) - com(3,i)/9.81 * (J(1:2,:)*qdd + Jdot(1:2,:)*qd);
 
     lfoot_cpos = terrainContactPositions(r,kinsol,lfoot);
@@ -263,11 +268,11 @@ if plot_comtraj
     rfoottraj = walking_plan_data.link_constraints(1).traj;
     lfoottraj = walking_plan_data.link_constraints(2).traj;
 
-    lfoot_des = eval(lfoottraj,ts(i));
+    lfoot_des = eval(lfoottraj,t);
     lfoot_des(3) = max(lfoot_des(3), 0.0811);     % hack to fix footstep planner bug
     rms_foot = rms_foot+norm(lfoot_des([1:3])-lfoot_p([1:3]))^2;
 
-    rfoot_des = eval(rfoottraj,ts(i));
+    rfoot_des = eval(rfoottraj,t);
     rfoot_des(3) = max(rfoot_des(3), 0.0811);     % hack to fix footstep planner bug
     rms_foot = rms_foot+norm(rfoot_des([1:3])-rfoot_p([1:3]))^2;
 
