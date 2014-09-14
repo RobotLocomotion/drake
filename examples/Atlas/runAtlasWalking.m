@@ -227,6 +227,7 @@ if plot_comtraj
   rms_zmp = 0;
   rms_com = 0;
   rms_foot = 0;
+  T = floor(T/dt)*dt;
 
   for i=1:length(ts)
     % ts is from the walking plan, but traj is only defined at the dt
