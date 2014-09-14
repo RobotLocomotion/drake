@@ -1,6 +1,5 @@
-function [k, body1_params, body2_params, floating_states, residuals, info, J, body1_resids, body2_resids] = jointStiffnessCalibration(p, q_data, u_data, joint_indices,...
-    body1, body1_marker_fun, body1_num_params, body1_data, ...
-    body2, body2_marker_fun, body2_num_params, body2_data, k_initial, options)
+function [k, marker_params, floating_states, objective_value, marker_residuals, info] = jointStiffnessCalibration(p, q_data, u_data, joint_indices,...
+    bodies, marker_functions, num_marker_params, motion_capture_data, scales, k_initial, options)
 % Perform joint stiffness calibration, given vicon and joint data.
 % Given (x,y,z) position data of some set of markers on two different
 % bodies and nominal joint angles, attemps to fit three sets of parameters:
@@ -36,7 +35,7 @@ function [k, body1_params, body2_params, floating_states, residuals, info, J, bo
 % @return info As returned by fminunc
 % @return J A jacobian
 
-if nargin < 14
+if nargin < 11
   options = struct();
 end
 
@@ -55,10 +54,9 @@ tau_data = B(joint_indices, u_indices) * u_data(u_indices, :);
 k_inv_sqrt_initial = 1 ./ sqrt(k_initial);
 options.initial_guess = k_inv_sqrt_initial;
 
-[k_inv_sqrt, body1_params, body2_params, floating_states, residuals, info, J, body1_resids, body2_resids] = motionCaptureJointCalibration(...
+[k_inv_sqrt, marker_params, floating_states, objective_value, marker_residuals, info] = motionCaptureJointCalibration(...
   p, @(q_data, k_inv_sqrt) stiffnessCorrectionFun(q_data, k_inv_sqrt, tau_data), q_data, joint_indices,...
-  body1, body1_marker_fun, body1_num_params, body1_data, ...
-  body2, body2_marker_fun, body2_num_params, body2_data, options);
+  bodies, marker_functions, num_marker_params, motion_capture_data, scales, options);
 
 k = 1 ./ (k_inv_sqrt.^2);
 
