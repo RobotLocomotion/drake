@@ -306,28 +306,35 @@ classdef Visualizer < DrakeSystem
         q = x0(1:numel(x0)/2);
         qd = x0(numel(x0)/2+1:end);
         
-        unit_length = .25;
+        lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton,'aeroforces');
         
-        lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton,'gravity');
+        unit_length = .25;
         gravity_force = getMass(visualized_system)*visualized_system.gravity;
-        normalized_gravity = (unit_length/norm(gravity_force,2))*gravity_force;
         robot_com = getCOM(visualized_system,q);
         lcmgl.glColor3f(.5,0,0);
-        lcmgl.drawVector3d(robot_com,normalized_gravity);
+        lcmgl.glTranslated(robot_com(1),robot_com(2),robot_com(3)-.125);
+        lcmgl.glRotated(90, 0, 1, 0);
+        lcmgl.drawArrow3d(unit_length,0.01,0.01,0.0025);
         
         lcmgl.glColor3f(.5,.5,.5);
         kinsol = doKinematics(visualized_system,q,false,false);
         for i=1:length(visualized_system.force)
           if ~visualized_system.force{i}.direct_feedthrough_flag && isa(visualized_system.force{i},'RigidBodyWing')
-            f_ext = computeSpatialForce(visualized_system.force{i},visualized_system,q,qd);
+            
+            wing_force = computeSpatialForce(visualized_system.force{i},visualized_system,q,qd);
             frame = getFrame(visualized_system,visualized_system.force{i}.kinframe);
-            joint_wrench = f_ext(:,frame.body_ind);
+            joint_wrench = wing_force(:,frame.body_ind);
+            
             body_wrench = inv(visualized_system.body(frame.body_ind).X_joint_to_body)'*joint_wrench;
             T = kinsol.T{frame.body_ind};
-            point = T(1:3,4);
             force = T(1:3,1:3)*body_wrench(4:6);
             nforce = (unit_length/norm(gravity_force,2))*force;
-            lcmgl.drawVector3d(point,nforce);
+            point = T(1:3,4);
+            
+            lcmgl.glPushMatrix();
+            lcmgl.line3(point(1),point(2),point(3),point(1)+nforce(1),point(2)+nforce(2),point(3)+nforce(3));
+            lcmgl.glPopMatrix();
+            
           end
         end
         
