@@ -62,18 +62,35 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     pm= myGetProperty(pobj,"n_body_accel_bounds");
     pdata->n_body_accel_bounds = mxGetScalar(pm); 
 
+    std::cout << 1 << std::endl;
     mxArray* body_accel_bounds = myGetProperty(pobj,"body_accel_bounds");
-    Vector6d v6;
+    std::cout << 1.1 << std::endl;
+    Vector6d vecbound;
     for (int i=0; i<pdata->n_body_accel_bounds; i++) {
       pdata->accel_bound_body_idx.push_back((int) mxGetScalar(mxGetField(body_accel_bounds,i,"body_idx")));
-      pm = mxGetField(body_accel_bounds,i,"min_body_acceleration");
-      memcpy(v6.data(),mxGetPr(pm),sizeof(double)*6);
-      pdata->min_body_acceleration.push_back(v6);
-      pm = mxGetField(body_accel_bounds,i,"max_body_acceleration");
-      memcpy(v6.data(),mxGetPr(pm),sizeof(double)*6);
-      pdata->max_body_acceleration.push_back(v6);
+    std::cout << pdata->accel_bound_body_idx[0] << std::endl;
+    std::cout << 1.2 << std::endl;
+      pm = mxGetField(body_accel_bounds,i,"min_acceleration");
+    std::cout << 1.3 << std::endl;
+    std::cout << mxGetM(pm) << std::endl;
+    std::cout << mxGetN(pm) << std::endl;
+
+      assert(mxGetM(pm)==6); assert(mxGetN(pm)==1);
+    std::cout << 1.4 << std::endl;
+      memcpy(vecbound.data(),mxGetPr(pm),sizeof(double)*6);
+    std::cout << 1.5 << std::endl;
+      pdata->min_body_acceleration.push_back(vecbound);
+    std::cout << 1.6 << std::endl;
+      pm = mxGetField(body_accel_bounds,i,"max_acceleration");
+    std::cout << 1.7 << std::endl;
+      assert(mxGetM(pm)==6); assert(mxGetN(pm)==1);
+    std::cout << 1.8 << std::endl;
+      memcpy(vecbound.data(),mxGetPr(pm),sizeof(double)*6);
+    std::cout << 1.9 << std::endl;
+      pdata->max_body_acceleration.push_back(vecbound);
     }
 
+    std::cout << 2 << std::endl;
     pm = myGetProperty(pobj,"body_accel_input_weights");
     pdata->body_accel_input_weights.resize(pdata->n_body_accel_inputs);
     memcpy(pdata->body_accel_input_weights.data(),mxGetPr(pm),sizeof(double)*pdata->n_body_accel_inputs);
@@ -428,8 +445,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     }
   }  
   
-  MatrixXd Ain = MatrixXd::Zero(2*nu+2*pdata->n_body_accel_bounds,nparams);  // note: obvious sparsity here
-  VectorXd bin = VectorXd::Zero(2*nu+2*pdata->n_body_accel_bounds);
+  int n_ineq = 2*nu+2*pdata->n_body_accel_bounds;
+  MatrixXd Ain = MatrixXd::Zero(n_ineq,nparams);  // note: obvious sparsity here
+  VectorXd bin = VectorXd::Zero(n_ineq);
 
   // linear input saturation constraints
   // u=B_act'*(H_act*qdd + C_act - Jz_act'*z - Dbar_act*beta)
@@ -441,12 +459,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   Ain.block(nu,0,nu,nparams) = -1*Ain.block(0,0,nu,nparams);
   bin.segment(nu,nu) = pdata->B_act.transpose()*pdata->C_act - pdata->umin;
 
+  std::cout << 3 << std::endl;
   int body_index;
   int constraint_start_index = 2*nu;
   for (int i=0; i<pdata->n_body_accel_bounds; i++) {
     body_index = pdata->accel_bound_body_idx[i];
     pdata->r->forwardJac(body_index,orig,1,Jb);
     pdata->r->forwardJacDot(body_index,orig,1,Jbdot);
+    std:cout << 4 << " " << i << std::endl;
     Ain.block(constraint_start_index,0,6,pdata->r->num_dof) = Jb;
     bin.segment(constraint_start_index,6) = -Jbdot*qdvec + pdata->max_body_acceleration[i];
     constraint_start_index += 6;
@@ -454,14 +474,16 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     bin.segment(constraint_start_index,6) = Jbdot*qdvec - pdata->max_body_acceleration[i];
     constraint_start_index += 6;
   }
+  std::cout << 5 << std::endl;
        
-  for (int i=0; i<2*nu; i++) {
+  for (int i=0; i<n_ineq; i++) {
     // remove inf constraints---needed by gurobi
     if (std::isinf(double(bin(i)))) {
       Ain.row(i) = 0*Ain.row(i);
       bin(i)=0;
     }  
   }
+  std::cout << 6 << std::endl;
 
 
   GRBmodel * model = NULL;
@@ -480,6 +502,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   MatrixXd Qnfdiag(nf,1), Qneps(neps,1);
   vector<MatrixXd*> QBlkDiag( nc>0 ? 3 : 1 );  // nq, nf, neps   // this one is for gurobi
+  std::cout << 7 << std::endl;
 
   VectorXd w = (pdata->w_qdd.array() + REG).matrix();
   #ifdef USE_MATRIX_INVERSION_LEMMA
@@ -521,8 +544,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     	QBlkDiag[2] = &Qneps;     // quadratic slack var cost, Q(nparams-neps:end,nparams-neps:end)=eye(neps)
     }
 
-    MatrixXd Ain_lb_ub(2*nu+2*nparams,nparams);
-    VectorXd bin_lb_ub(2*nu+2*nparams);
+    MatrixXd Ain_lb_ub(n_ineq+2*nparams,nparams);
+    VectorXd bin_lb_ub(n_ineq+2*nparams);
     Ain_lb_ub << Ain, 			     // note: obvious sparsity here
     		-MatrixXd::Identity(nparams,nparams),
     		MatrixXd::Identity(nparams,nparams);
@@ -534,6 +557,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   }
   else {
   #endif
+      std::cout << 8 << std::endl;
+
     if (nc>0) {
       pdata->Hqp = Jcom.transpose()*R_DQyD_ls*Jcom;
       if (include_angular_momentum) {
@@ -577,12 +602,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     }
 
 
-    MatrixXd Ain_lb_ub(2*nu+2*nparams,nparams);
-    VectorXd bin_lb_ub(2*nu+2*nparams);
+      std::cout << 8.1 << std::endl;
+    MatrixXd Ain_lb_ub(n_ineq+2*nparams,nparams);
+    VectorXd bin_lb_ub(n_ineq+2*nparams);
     Ain_lb_ub << Ain,            // note: obvious sparsity here
         -MatrixXd::Identity(nparams,nparams),
         MatrixXd::Identity(nparams,nparams);
     bin_lb_ub << bin, -lb, ub;
+      std::cout << 8.2 << std::endl;
 
 
     if (use_fast_qp > 0)
@@ -608,6 +635,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   }
   #endif
 
+      std::cout << 9 << std::endl;
   //----------------------------------------------------------------------
   // Solve for inputs ----------------------------------------------------
   VectorXd y(nu);
@@ -618,14 +646,17 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   y = pdata->B_act.transpose()*(pdata->H_act*qdd + pdata->C_act - D_act*beta);
   //y = pdata->B_act.jacobiSvd(ComputeThinU|ComputeThinV).solve(pdata->H_act*qdd + pdata->C_act - Jz_act.transpose()*lambda - D_act*beta);
   
+      std::cout << 10 << std::endl;
 
   if (nlhs>0) {
     plhs[0] = eigenToMatlab(y);
   }
+      std::cout << 11 << std::endl;
   
   if (nlhs>1) {
     plhs[1] = eigenToMatlab(qdd);
   }
+      std::cout << 12 << std::endl;
 
   if (nlhs>2) {
     plhs[2] = mxCreateNumericMatrix(1,1,mxINT32_CLASS,mxREAL);
