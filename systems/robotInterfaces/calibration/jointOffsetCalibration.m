@@ -3,7 +3,7 @@ function [dq, marker_params, floating_states, objective_value, marker_residuals,
 % Perform joint offset calibration, given motion capture data and joint data.
 % Given (x,y,z) position data of some set of markers on various
 % bodies and nominal joint angles, attemps to fit three sets of parameters:
-%  (1) Joint offsets
+%  (1) The joint offsets, such that q(t) = q(t) + dq for all t
 %  (2) Parameters for the locations of the markers on each of the bodies
 %  (3) The floating base state of each sample in time
 % 
