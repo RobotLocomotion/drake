@@ -12,7 +12,7 @@ function [q_correction_params, marker_params, floating_states, objective_value, 
 % @param p Robot plant
 % @param q_correction_fun a function 
 % [q_data_mod, dq_data_mod] = f(q_data(joint_indices, :), params)
-% where q_mod is a modified version of q(joint_indices) and params
+% where q_mod is a modified version of q_data(joint_indices) and params
 % (length(joint_indices) x 1) are unknown parameters
 % @param q_data (nxN) joint data
 % @param joint_indices joint configuration vector indices corresponding to
@@ -32,6 +32,10 @@ function [q_correction_params, marker_params, floating_states, objective_value, 
 % positions. NaNs indicate occluded markers.
 % @param scales nb x 1 cell array of scalings used to weight errors in
 % marker positions per body
+% @param options option struct: 
+%   options.search_floating: logical indicating whether to find floating
+%   states given motion capture data
+%   options.initial_guess: initial guess for q_correction_params
 %
 % @retval q_correction_params parameters found for use with q_correction_fun
 % @retval marker_params nb x 1 cell array where marker_params{i} contains
