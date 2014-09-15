@@ -58,7 +58,10 @@ q_measured(q_indices, :) = q_measured(q_indices, :) - dq_actual;
 k_initial = abs(k_actual + k_initial_stddev * randn(nk, 1));
 scales = {100, 1};
 
-options.search_floating = false;
+options.search_floating = true;
+
+
+options.search_floating = true;
 [k_estimated, marker_params, floating_states, objective_value, marker_residuals, info] = jointStiffnessCalibration(r, q_measured, u_data, q_indices, ...
   bodies, marker_functions, cellfun(@(x) 3 * x, num_unmeasured_markers, 'UniformOutput', false), vicon_data, ...
   scales, k_initial, options);
@@ -66,7 +69,7 @@ options.search_floating = false;
 fprintf('k_error:\n');
 disp(k_estimated - k_actual);
 
-valuecheck(k_estimated, k_actual, k_nominal / 50);
+valuecheck(k_estimated, k_actual, k_nominal / 20);
 checkMarkerPositions(marker_positions_actual, marker_functions, marker_params);
 
 end
@@ -94,6 +97,13 @@ num_measured_markers = 3;
 % actual ('perfect') joint configurations
 nq = r.getNumPositions();
 q_actual = randn(nq, num_poses); % todo: use getRandomConfiguration
+% make sure pitch is not close to +/- pi / 2
+epsilon = 0.1;
+for i = 1 : num_poses
+  while abs(abs(q_actual(5, i)) - pi / 2) < epsilon
+    q_actual(5, i) = randn;
+  end
+end
 
 % marker positions
 marker_positions_actual = cell(length(bodies), 1);

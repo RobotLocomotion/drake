@@ -1,43 +1,46 @@
 function [q_correction_params, marker_params, floating_states, objective_value, marker_residuals, info] = motionCaptureJointCalibration(...
   p, q_correction_fun, q_data, joint_indices,...
   bodies, marker_functions, marker_function_num_params, motion_capture_data, scales, options)
-% Perform joint calibration, given vicon and joint data.
-% Given (x,y,z) position data of some set of markers on two different
+% Perform joint calibration, given motion capture data and joint data.
+% Given (x,y,z) position data of some set of markers on various
 % bodies and nominal joint angles, attemps to fit three sets of parameters:
 %  (1) Joint correction parameters that can be used in conjunction with a
 %  correction function to obtain a better estimate of the true joint angles
-%  (2) Parameters for the locations of the markers on both bodies
+%  (2) Parameters for the locations of the markers on each of the bodies
 %  (3) The floating base state of each sample in time
 % 
 % @param p Robot plant
-% @param q_correction_fun a function [q_data_mod, dq_data_mod] = f(q_data, params)
+% @param q_correction_fun a function 
+% [q_data_mod, dq_data_mod] = f(q_data(joint_indices, :), params)
 % where q_mod is a modified version of q(joint_indices) and params
 % (length(joint_indices) x 1) are unknown parameters
 % @param q_data (nxN) joint data
-% @param joint_indices indices of joints to calibrate
-% @param body1
-% @param body1_marker_fun a function [x,dx]=f(p) where x (3xm1) is the position of
-% the markers in the body1 frame, p (body1_num_paramsx1) are unknown parameters
-% (body1_num_paramsx1) are unknown parameters
-% @param body1_num_params number of parameters describing the positions of
-% the markers on body1
-% @param body2_data (3xm1xN) position data from the body2 markers. NaNs
-% should be used to indicate occluded markers
-% @param body2
-% @param body2_marker_fun a function [x,dx]=f(p) where x (3xm2) is the position of
-% the markers in the body2 frame, p (body2_num_paramsx1) are unknown parameters
-% @param body2_num_params number of parameters describing the positions of
-% the markers on body2
-% @param body2_data (3xm2xN) position data from the body2 markers. NaNs
-% should be used to indicate occluded markers
+% @param joint_indices joint configuration vector indices corresponding to
+% joints to calibrate
+% @param bodies nb x 1 cell array of body indices to which motion capture markers
+% were attached
+% @param marker_functions nb x 1 cell array of functions [x,dx]=f(p) where 
+% x (3 x m_i) is the position of the markers in the bodies{i} frame, 
+% p (marker_function_num_params{i} x 1) are unknown parameters
+% @param marker_function_num_params nb x 1 cell array where
+% marker_function_num_params{i} is the number of parameters describing the  
+% positions of the markers on bodies{i}
+% @param motion_capture_data nb x 1 cell array of motion capture position
+% data. motion_capture_data{i} is a 3 x m_i x N array containing the
+% measured positions of the markers attached to bodies{i}: the columns
+% of motion_capture_data{i}(:, :, j) are the individual measured marker
+% positions. NaNs indicate occluded markers.
+% @param scales nb x 1 cell array of scalings used to weight errors in
+% marker positions per body
 %
-% @return q_correction_params parameters found for use with q_correction_fun
-% @return body1_params parameters found for body1_marker_fun
-% @return body2_params parameters found for body2_marker_fun
-% @return floating_states (6xN) Floating base states found for the robot
-% @return residuals Residual cost
-% @return info As returned by fminunc
-% @return J A jacobian
+% @retval q_correction_params parameters found for use with q_correction_fun
+% @retval marker_params nb x 1 cell array where marker_params{i} contains
+% the optimized parameters found for marker_functions{i}
+% @retval floating_states (6 x N) floating base states found for the robot
+% @retval objective_value objective value at solution
+% @retval marker_residuals nb x 1 cell array where marker_residuals{i}
+% contains the measurement residuals of the markers attached to bodies{i}
+% @retval info info as returned by fminunc
 
 njoints = length(joint_indices);
 nposes = size(q_data,2);
@@ -53,27 +56,24 @@ if ~isfield(options,'initial_guess')
   options.initial_guess = zeros(njoints, 1);
 end
 
-% zero out all other joints
-% q_data(setdiff(1:n,joint_indices),:) = 0*q_data(setdiff(1:n,joint_indices),:);
-
 marker_function_num_params = cell2mat(marker_function_num_params);
 if options.search_floating
-  floating_joint_nq = 6; %TODO
+  floating_body = p.getBody(2);
+  if floating_body.floating ~= 1
+    error('Calling this function with options.search_floating = true currently requires the first joint in the kinematic chain to be an rpy-parameterized floating joint.');
+  end
+  floating_indices = floating_body.position_num;
 else
-  floating_joint_nq = 0;
+  floating_indices = zeros(0, 1);
 end
 
-f = @(params) markerResiduals(p, q_correction_fun, q_data, joint_indices, ...
+f = @(params) markerResiduals(p, q_correction_fun, q_data, joint_indices, floating_indices,...
   bodies, marker_functions, motion_capture_data, scales, ...
-  params(1:njoints), mat2cell(params(njoints + 1 : njoints + sum(marker_function_num_params)), marker_function_num_params), reshape(params(end - floating_joint_nq * nposes + 1 : end), [floating_joint_nq nposes]));
+  params(1:njoints), mat2cell(params(njoints + 1 : njoints + sum(marker_function_num_params)), marker_function_num_params), reshape(params(end - length(floating_indices) * nposes + 1 : end), [length(floating_indices) nposes]));
 
 fmin_options = optimset('Display','iter-detailed','GradObj','on'); %,'DerivativeCheck','on','FinDiffType','central');
 
-% p0 = randn(n_joints+6*N+body1_num_params + body2_num_params,1);
-% [x,dx] = f2(p0);
-% [x2,dx2] = fg(p0);
-% keyboard
-x0 = [options.initial_guess; zeros(sum(marker_function_num_params) + floating_joint_nq * nposes,1)];
+x0 = [options.initial_guess; zeros(sum(marker_function_num_params) + length(floating_indices) * nposes,1)];
 [X,FVAL,EXITFLAG] = fminunc(f,x0,fmin_options);
 
 q_correction_params = X(1:njoints);
@@ -84,20 +84,19 @@ for i = 1 : nbodies
   marker_param_start_row = marker_param_start_row + marker_function_num_params(i);
 end
 
-floating_states = reshape(X(end - floating_joint_nq * nposes + 1 : end), [floating_joint_nq nposes]);
+floating_states = reshape(X(end - length(floating_indices) * nposes + 1 : end), [length(floating_indices) nposes]);
 objective_value = FVAL;
 info = EXITFLAG;
 
 [~,~,marker_residuals] = f(X);
 end
 
-function [f, g, marker_residuals] = markerResiduals(p, q_correction_fun, q_data, joint_indices, ...
+function [f, g, marker_residuals] = markerResiduals(...
+  p, q_correction_fun, q_data, joint_indices, floating_indices,...
   bodies, marker_functions, motion_capture_data, scales, ...
   q_correction_params, marker_params, floating_states)
   
 [q_data(joint_indices, :), dqdq_correction_params] = q_correction_fun(q_data(joint_indices, :), q_correction_params);
-
-floating_indices = 1:6; % TODO: generalize
 
 if ~isempty(floating_states)
   q_data(floating_indices,:) = floating_states;
