@@ -4,14 +4,14 @@ function export2pdf(filename,h,options)
 % @param h optional handle.  default is gcf
 %
 % @option tight set to true to try to get a small bounding box @default
-% false
+% true
 
 if (nargin<2 || isempty(h)) 
   h = get(0,'CurrentFigure'); 
   if (isempty(h)) error('no figure to export'); end
 end
 if (nargin<3) options=struct(); end
-if (~isfield(options,'tight')) options.tight=false; end
+if (~isfield(options,'tight')) options.tight=true; end
 if (~isfield(options,'bbox')) options.bbox=[]; end
 
 if (options.tight || ~isempty(options.bbox))
