@@ -1,4 +1,4 @@
-function drawGraph(adj,node_labels,varargin)
+function image_filename = drawGraph(adj,node_labels,varargin)
 
 % Draws a graph using graphviz
 %
@@ -50,11 +50,13 @@ fclose(fptr);
 
 %drawDot(dotfile,gca,varargin{:});
 systemWCMakeEnv(['dot -Tpng -O ',dotfile]);
-disp = getenv('DISPLAY');
-if (strcmp(disp, ''))
+image_filename = [dotfile,'.png'];
+if nargout<1
+  disp = getenv('DISPLAY');
+  if (strcmp(disp, ''))
     warning('You do not appear to have a valid DISPLAY, so I am not going to attempt to show the image.')
-else
-    image(imread([dotfile,'.png']));
+  else
+    image(imread(image_filename));
     axis image; axis off
+  end
 end
-
