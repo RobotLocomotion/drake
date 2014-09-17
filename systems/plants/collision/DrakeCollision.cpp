@@ -50,9 +50,12 @@ namespace DrakeCollision
     : shape_str()
   {}
   badShapeException::badShapeException(Shape shape)
-    : shape_str(to_string(shape))
-  {}
-
+  { 
+    std::ostringstream ostr; 
+    ostr << shape; 
+    this->shape_str = ostr.str(); 
+  }
+ 
   const char* badShapeException::what() const throw()
   {
     return "Ignoring this collision element";

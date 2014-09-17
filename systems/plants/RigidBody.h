@@ -6,7 +6,10 @@
 #include <set>
 #include <Eigen/StdVector>
 #include <memory>
-#include "DrakeJoint.h"
+
+#if !defined(_WIN32) && !defined(_WIN64)
+  #include "DrakeJoint.h"
+#endif
 
 class IndexRange {
  public:
@@ -23,16 +26,21 @@ class RigidBodyManipulator;
 using namespace Eigen;
 
 class RigidBody {
+#if !defined(_WIN32) && !defined(_WIN64)
 private:
   std::unique_ptr<DrakeJoint> joint;
+#endif
 
 public:
   RigidBody();
 
   void setN(int n);
   void computeAncestorDOFs(RigidBodyManipulator* model);
+
+#if !defined(_WIN32) && !defined(_WIN64)
   void setJoint(std::unique_ptr<DrakeJoint> joint);
   const DrakeJoint& getJoint() const;
+#endif
 
 public:
   std::string linkname;

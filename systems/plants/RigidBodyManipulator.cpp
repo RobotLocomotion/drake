@@ -3,11 +3,12 @@
 
 //#include "mex.h"
 #include "RigidBodyManipulator.h"
-#include "makeUnique.h"
+
 #include <algorithm>
 #include <string>
 #include <regex>
 #include <stdexcept>
+#include <limits>
 
 //DEBUG
 //#include <stdexcept>
@@ -284,8 +285,8 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
   joint_limit_min.conservativeResize(num_dof);
   joint_limit_max.conservativeResize(num_dof);
   for (int i=last_num_dof; i<num_dof; i++) {
-    joint_limit_min[i] = -1.0/0.0;
-    joint_limit_max[i] = 1.0/0.0;
+    joint_limit_min[i] = -std::numeric_limits<double>::infinity(); 
+    joint_limit_max[i] = std::numeric_limits<double>::infinity(); 
   }
 
   if (num_featherstone_bodies<0)
@@ -328,7 +329,7 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
 
   bodies.reserve(num_bodies);
   for (int i = last_num_bodies; i < num_bodies; i++) {
-    bodies.push_back(make_unique<RigidBody>());
+    bodies.push_back(std::unique_ptr<RigidBody>(new RigidBody()));
     bodies[i]->dofnum = i - 1;
   } // setup default dofnums
 
