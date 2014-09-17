@@ -18,7 +18,6 @@ if (eigen3_FOUND)
     #add_mex(drakeUtil OBJECT drakeUtil.cpp)
 
     pods_install_libraries(drakeUtil)
-  endif(NOT WIN32)
 
   add_library(drakeGradientUtil SHARED drakeGradientUtil.cpp)
   pods_install_libraries(drakeGradientUtil)
@@ -37,6 +36,9 @@ if (eigen3_FOUND)
 
   add_mex(test/testGeometryConversionFunctionsmex test/testGeometryConversionFunctionsmex.cpp)
   target_link_libraries(test/testGeometryConversionFunctionsmex drakeGeometryUtil)
+
+  endif(NOT WIN32)
+  
 endif()
 
 add_subdirectory(test)

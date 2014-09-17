@@ -9,6 +9,8 @@
 #include <stdexcept>
 #include <bitset>
 
+#include <stdint.h>
+
 namespace DrakeCollision
 {
   enum Shape {
