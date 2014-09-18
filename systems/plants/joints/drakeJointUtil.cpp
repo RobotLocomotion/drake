@@ -1,5 +1,4 @@
 #include "drakeJointUtil.h"
-#include "makeUnique.h"
 #include "DrakeJoint.h"
 #include "HelicalJoint.h"
 #include "PrismaticJoint.h"
@@ -17,20 +16,20 @@ std::unique_ptr<DrakeJoint> createJoint(const std::string& joint_name, const Iso
   switch (floating) {
   case 0: {
     if (pitch == 0.0) {
-      joint = std::make_unique<RevoluteJoint>(joint_name, transform_to_parent_body, joint_axis);
+      joint = std::unique_ptr<RevoluteJoint>(new RevoluteJoint(joint_name, transform_to_parent_body, joint_axis));
     } else if (std::isinf(pitch)) {
-      joint = std::make_unique<PrismaticJoint>(joint_name, transform_to_parent_body, joint_axis);
+      joint = std::unique_ptr<PrismaticJoint>(new PrismaticJoint(joint_name, transform_to_parent_body, joint_axis));
     } else {
-      joint = std::make_unique<HelicalJoint>(joint_name, transform_to_parent_body, joint_axis, pitch);
+      joint = std::unique_ptr<HelicalJoint>(new HelicalJoint(joint_name, transform_to_parent_body, joint_axis, pitch));
     }
     break;
   }
   case 1: {
-    joint = std::make_unique<RollPitchYawFloatingJoint>(joint_name, transform_to_parent_body);
+    joint = std::unique_ptr<RollPitchYawFloatingJoint>(new RollPitchYawFloatingJoint(joint_name, transform_to_parent_body));
     break;
   }
   case 2: {
-    joint = std::make_unique<QuaternionFloatingJoint>(joint_name, transform_to_parent_body);
+    joint = std::unique_ptr<QuaternionFloatingJoint>(new QuaternionFloatingJoint(joint_name, transform_to_parent_body));
     break;
   }
   default: {
