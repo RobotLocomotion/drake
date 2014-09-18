@@ -28,7 +28,7 @@ namespace DrakeCollision
     BULLET
   };
 
-  class Model {
+  class __declspec(dllexport) Model {
   public:
     virtual void resize(int num_bodies) {};
     
