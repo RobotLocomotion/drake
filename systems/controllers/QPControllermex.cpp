@@ -57,16 +57,34 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     pdata->Kp_accel = mxGetScalar(pm);
 
     pm= myGetProperty(pobj,"n_body_accel_inputs");
-    pdata->n_body_accel_inputs = mxGetScalar(pm); 
+    pdata->n_body_accel_inputs = (int) mxGetScalar(pm); 
+
+    pm= myGetProperty(pobj,"n_body_accel_bounds");
+    pdata->n_body_accel_bounds = (int) mxGetScalar(pm); 
+
+    mxArray* body_accel_bounds = myGetProperty(pobj,"body_accel_bounds");
+    Vector6d vecbound;
+    for (int i=0; i<pdata->n_body_accel_bounds; i++) {
+      pdata->accel_bound_body_idx.push_back((int) mxGetScalar(mxGetField(body_accel_bounds,i,"body_idx"))-1);
+      pm = mxGetField(body_accel_bounds,i,"min_acceleration");
+
+      assert(mxGetM(pm)==6); assert(mxGetN(pm)==1);
+      memcpy(vecbound.data(),mxGetPr(pm),sizeof(double)*6);
+      pdata->min_body_acceleration.push_back(vecbound);
+      pm = mxGetField(body_accel_bounds,i,"max_acceleration");
+      assert(mxGetM(pm)==6); assert(mxGetN(pm)==1);
+      memcpy(vecbound.data(),mxGetPr(pm),sizeof(double)*6);
+      pdata->max_body_acceleration.push_back(vecbound);
+    }
 
     pm = myGetProperty(pobj,"body_accel_input_weights");
     pdata->body_accel_input_weights.resize(pdata->n_body_accel_inputs);
     memcpy(pdata->body_accel_input_weights.data(),mxGetPr(pm),sizeof(double)*pdata->n_body_accel_inputs);
 
-    pdata->n_body_accel_constraints = 0;
+    pdata->n_body_accel_eq_constraints = 0;
     for (int i=0; i<pdata->n_body_accel_inputs; i++) {
       if (pdata->body_accel_input_weights(i) < 0)
-        pdata->n_body_accel_constraints++;
+        pdata->n_body_accel_eq_constraints++;
     }
 
     // get robot mex model ptr
@@ -356,7 +374,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   }
   f.tail(nf+neps) = VectorXd::Zero(nf+neps);
   
-  int neq = 6+neps+6*pdata->n_body_accel_constraints+num_condof;
+  int neq = 6+neps+6*pdata->n_body_accel_eq_constraints+num_condof;
   MatrixXd Aeq = MatrixXd::Zero(neq,nparams);
   VectorXd beq = VectorXd::Zero(neq);
   
@@ -413,8 +431,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     }
   }  
   
-  MatrixXd Ain = MatrixXd::Zero(2*nu,nparams);  // note: obvious sparsity here
-  VectorXd bin = VectorXd::Zero(2*nu);
+  int n_ineq = 2*nu+2*6*pdata->n_body_accel_bounds;
+  MatrixXd Ain = MatrixXd::Zero(n_ineq,nparams);  // note: obvious sparsity here
+  VectorXd bin = VectorXd::Zero(n_ineq);
 
   // linear input saturation constraints
   // u=B_act'*(H_act*qdd + C_act - Jz_act'*z - Dbar_act*beta)
@@ -426,14 +445,27 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   Ain.block(nu,0,nu,nparams) = -1*Ain.block(0,0,nu,nparams);
   bin.segment(nu,nu) = pdata->B_act.transpose()*pdata->C_act - pdata->umin;
 
-  for (int i=0; i<2*nu; i++) {
+  int body_index;
+  int constraint_start_index = 2*nu;
+  for (int i=0; i<pdata->n_body_accel_bounds; i++) {
+    body_index = pdata->accel_bound_body_idx[i];
+    pdata->r->forwardJac(body_index,orig,1,Jb);
+    pdata->r->forwardJacDot(body_index,orig,1,Jbdot);
+    Ain.block(constraint_start_index,0,6,pdata->r->num_dof) = Jb;
+    bin.segment(constraint_start_index,6) = -Jbdot*qdvec + pdata->max_body_acceleration[i];
+    constraint_start_index += 6;
+    Ain.block(constraint_start_index,0,6,pdata->r->num_dof) = -Jb;
+    bin.segment(constraint_start_index,6) = Jbdot*qdvec - pdata->min_body_acceleration[i];
+    constraint_start_index += 6;
+  }
+       
+  for (int i=0; i<n_ineq; i++) {
     // remove inf constraints---needed by gurobi
     if (std::isinf(double(bin(i)))) {
       Ain.row(i) = 0*Ain.row(i);
       bin(i)=0;
     }  
   }
-
 
   GRBmodel * model = NULL;
   int info=-1;
@@ -451,7 +483,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   MatrixXd Qnfdiag(nf,1), Qneps(neps,1);
   vector<MatrixXd*> QBlkDiag( nc>0 ? 3 : 1 );  // nq, nf, neps   // this one is for gurobi
-
+  
   VectorXd w = (pdata->w_qdd.array() + REG).matrix();
   #ifdef USE_MATRIX_INVERSION_LEMMA
   bool include_body_accel_cost_terms = pdata->n_body_accel_inputs > 0 && pdata->body_accel_input_weights.array().maxCoeff() > 1e-10;
@@ -492,8 +524,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     	QBlkDiag[2] = &Qneps;     // quadratic slack var cost, Q(nparams-neps:end,nparams-neps:end)=eye(neps)
     }
 
-    MatrixXd Ain_lb_ub(2*nu+2*nparams,nparams);
-    VectorXd bin_lb_ub(2*nu+2*nparams);
+    MatrixXd Ain_lb_ub(n_ineq+2*nparams,nparams);
+    VectorXd bin_lb_ub(n_ineq+2*nparams);
     Ain_lb_ub << Ain, 			     // note: obvious sparsity here
     		-MatrixXd::Identity(nparams,nparams),
     		MatrixXd::Identity(nparams,nparams);
@@ -505,6 +537,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   }
   else {
   #endif
+
     if (nc>0) {
       pdata->Hqp = Jcom.transpose()*R_DQyD_ls*Jcom;
       if (include_angular_momentum) {
@@ -548,8 +581,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     }
 
 
-    MatrixXd Ain_lb_ub(2*nu+2*nparams,nparams);
-    VectorXd bin_lb_ub(2*nu+2*nparams);
+    MatrixXd Ain_lb_ub(n_ineq+2*nparams,nparams);
+    VectorXd bin_lb_ub(n_ineq+2*nparams);
     Ain_lb_ub << Ain,            // note: obvious sparsity here
         -MatrixXd::Identity(nparams,nparams),
         MatrixXd::Identity(nparams,nparams);
@@ -589,7 +622,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   y = pdata->B_act.transpose()*(pdata->H_act*qdd + pdata->C_act - D_act*beta);
   //y = pdata->B_act.jacobiSvd(ComputeThinU|ComputeThinV).solve(pdata->H_act*qdd + pdata->C_act - Jz_act.transpose()*lambda - D_act*beta);
   
-
   if (nlhs>0) {
     plhs[0] = eigenToMatlab(y);
   }
