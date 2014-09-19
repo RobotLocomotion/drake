@@ -24,6 +24,7 @@ classdef (InferiorClasses = {?msspoly}) TrigPoly
       % @param c simple msspoly or char to represent cos(q)
       % @param n the length of q  (optional if q is an msspoly, otherwise required)
       
+      checkDependency('spotless');
       if (nargin<4) n=-1; end
       
       function a=msspolyArg(a,varname)
