@@ -65,12 +65,8 @@ addpath(fullfile(root,'thirdParty','GetFullPath'));
 
 javaaddpath(fullfile(pods_get_base_path,'share','java','drake.jar'));
 
-% check for all dependencies
-
 clear util/checkDependency;  % makes sure that the persistent variable in the dependency checker gets cleared
 clear util/getDrakePath;
-
-checkDependency('spotless'); % require spotless
 
 % set up PATH LCP license
 % NOTE: This license was granted exclusively for the use of PATH from the Drake matlab package.
