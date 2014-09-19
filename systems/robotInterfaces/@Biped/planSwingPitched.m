@@ -151,7 +151,7 @@ foot_origin_knots = struct('t', zmp_knots(end).t, ...
                            stance_foot_name, stance_origin_pose, ...
                            'is_liftoff', true,...
                            'is_landing', false,...
-                           'toe_off_allowed', swing_distance_in_local >= MIN_DIST_FOR_TOE_OFF);
+                           'toe_off_allowed', struct(swing_foot_name, swing_distance_in_local >= MIN_DIST_FOR_TOE_OFF, stance_foot_name, false));
 
 function [pose, q0] = solve_for_pose(constraints, q0)
   constraint_ptrs = {};
@@ -185,7 +185,7 @@ function add_foot_origin_knot(swing_pose, speed)
   foot_origin_knots(end).t = foot_origin_knots(end-1).t + dt;
   foot_origin_knots(end).is_liftoff = false;
   foot_origin_knots(end).is_landing = false;
-  foot_origin_knots(end).toe_off_allowed = false;
+  foot_origin_knots(end).toe_off_allowed = struct(swing_foot_name, false, stance_foot_name, false);
 end
 
 % Apex knot 1
