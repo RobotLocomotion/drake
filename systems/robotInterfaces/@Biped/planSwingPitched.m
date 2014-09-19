@@ -150,6 +150,7 @@ foot_origin_knots = struct('t', zmp_knots(end).t, ...
                            swing_foot_name, swing1_origin_pose, ...
                            stance_foot_name, stance_origin_pose, ...
                            'is_liftoff', true,...
+                           'is_landing', false,...
                            'toe_off_allowed', swing_distance_in_local >= MIN_DIST_FOR_TOE_OFF);
 
 function [pose, q0] = solve_for_pose(constraints, q0)
@@ -183,6 +184,7 @@ function add_foot_origin_knot(swing_pose, speed)
             pitch_distance / FOOT_PITCH_RATE]);
   foot_origin_knots(end).t = foot_origin_knots(end-1).t + dt;
   foot_origin_knots(end).is_liftoff = false;
+  foot_origin_knots(end).is_landing = false;
   foot_origin_knots(end).toe_off_allowed = false;
 end
 
@@ -210,6 +212,7 @@ add_foot_origin_knot(pose);
 
 % Landing knot
 add_foot_origin_knot(swing2_origin_pose, min(params.step_speed, MAX_LANDING_SPEED));
+foot_origin_knots(end).is_landing = true;
 zmp_knots(end+1).t = foot_origin_knots(end).t;
 zmp_knots(end).zmp = zmp1;
 zmp_knots(end).supp = RigidBodySupportState(biped, [stance_body_index, swing_body_index]);
