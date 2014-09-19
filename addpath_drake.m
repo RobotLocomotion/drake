@@ -67,19 +67,10 @@ javaaddpath(fullfile(pods_get_base_path,'share','java','drake.jar'));
 
 % check for all dependencies
 
-v=ver('simulink');
-if (isempty(v))
-  error('Drake:SimulinkIsRequired','Drake requires simulink');
-elseif verLessThan('simulink','7.3')
-  warning('Drake:SimulinkVersion','Most features of Drake reguires SIMULINK version 7.3 or above.');
-  % haven't actually tested with lower versions
-end
-
 clear util/checkDependency;  % makes sure that the persistent variable in the dependency checker gets cleared
 clear util/getDrakePath;
 
 checkDependency('spotless'); % require spotless
-tf = checkDependency('lcm'); % optional dependency on lcm, but load it now
 
 % set up PATH LCP license
 % NOTE: This license was granted exclusively for the use of PATH from the Drake matlab package.

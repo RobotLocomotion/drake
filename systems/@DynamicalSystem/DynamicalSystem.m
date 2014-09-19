@@ -685,6 +685,7 @@ classdef DynamicalSystem
       end
       xv = xv';
     end    
+    
   end
 
   methods 
@@ -699,7 +700,6 @@ classdef DynamicalSystem
     
   properties (SetAccess=private,GetAccess=private)
     time_invariant_flag = false;  % set to true if you know the system is time invariant
-    simulink_params=struct();     % simulink model parameters
     structured_x;                 % simulink state structure (cached for efficiency)
 
     input_frame;  % CoordinateFrame for the system input
@@ -708,6 +708,10 @@ classdef DynamicalSystem
     param_frame;  % CoordinateFrame for the system parameters
     pmin;         % minimum values for system parameters
     pmax;         % maximum values for system parameters
+  end
+
+  properties (SetAccess=private,GetAccess=protected)
+    simulink_params=struct();     % simulink model parameters
   end
   
   properties (Access=public)
