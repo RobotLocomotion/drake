@@ -55,6 +55,7 @@ foot_origin_knots = struct('t', options.t0, ...
   'right', zeros(6,1),...
   'left', zeros(6,1),...
   'is_liftoff', false,...
+  'is_landing', false,...
   'toe_off_allowed', false);
 for f = {'right', 'left'}
   foot = f{1};
@@ -138,6 +139,9 @@ for f = {'right', 'left'}
   a2 = zeros(6, n_segments);
   a3 = zeros(6, n_segments);
   for j = 1:n_segments
+    if foot_origin_knots(j).is_landing
+      foot_dposes(:,j) = 0;
+    end
     for k = 1:6
       [a0(k,j), a1(k,j), a2(k,j), a3(k,j)] = cubicSplineCoefficients(ts(j+1) - ts(j), foot_poses(k,j), foot_poses(k,j+1), foot_dposes(k,j), foot_dposes(k,j+1));
     end
