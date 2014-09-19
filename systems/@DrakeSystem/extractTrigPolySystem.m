@@ -148,7 +148,7 @@ end
 % set up new coordinate frame
 tpframe = CoordinateFrame(['TP',sys.getStateFrame().name],length(xnew),'x');
 tpframe.setCoordinateNames(newname);
-p_xnew=tpframe.poly;
+p_xnew=tpframe.getPoly;
 
 % set up transformations between the frames
 sys.getStateFrame.addTransform(TrigToPolyTransform(sys.getStateFrame,tpframe,sin_ind,cos_ind,x_ind));

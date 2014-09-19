@@ -18,8 +18,8 @@ if (sys.getNumStateConstraints()>0 || sys.getNumUnilateralConstraints()>0)
   error('cannot taylorApprox systems with state constraints');  % should I consider allowing it, but simply dropping the constraint?
 end
 
-if (num_x), p_x = sys.getStateFrame.poly; else p_x=[]; end
-if (num_u), p_u = sys.getInputFrame.poly; else p_u=[]; end
+if (num_x), p_x = sys.getStateFrame.getPoly; else p_x=[]; end
+if (num_u), p_u = sys.getInputFrame.getPoly; else p_u=[]; end
 
 if (length(varargin)<1), error('usage: taylorApprox(sys,t0,x0,u0,order), or taylorApprox(sys,xtraj,utraj,order)'); end
 
