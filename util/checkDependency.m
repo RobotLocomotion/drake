@@ -17,6 +17,14 @@ if ~ok
   % then try to evaluate the dependency now...
 
   switch(ldep)
+    case 'simulink'
+      v=ver('simulink');
+      conf.simulink_enabled = ~isempty(v);
+      if verLessThan('simulink','7.3')
+        warning('Drake:SimulinkVersion','Most features of Drake require SIMULINK version 7.3 or above.');
+        % haven't actually tested with lower versions
+      end
+    
     case 'spotless'
       % require spotless
       conf.spotless_enabled = logical(exist('msspoly','class'));

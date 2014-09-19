@@ -384,7 +384,16 @@ classdef DrakeSystem < DynamicalSystem
       end
     end
 
-    function traj = simulateODE(obj,tspan,x0,options)
+    function varargout = simulate(obj,varargin)
+      varargout=cell(1,nargout);
+      if checkDependency('simulink')
+        [varargout{:}] = simulate@DynamicalSystem(obj,varargin{:});
+      else
+        [varargout{:}] = simulateODE(obj,tspan,x0,options);
+      end
+    end
+    
+    function [ytraj,xtraj] = simulateODE(obj,tspan,x0,options)
       % Simulates the system using the ODE45 suite of solvers
       % instead of the simulink solvers.
       %
@@ -408,7 +417,9 @@ classdef DrakeSystem < DynamicalSystem
         sol = ode45(odefun,tspan,x0,odeoptions);
       end
       xtraj = ODESolTrajectory(sol);
-      traj = FunctionHandleTrajectory(@(t)obj.output(t,xtraj.eval(t),zeros(obj.getNumInputs(),1)),[obj.getNumOutputs,1],tspan);
+      ytraj = FunctionHandleTrajectory(@(t)obj.output(t,xtraj.eval(t),zeros(obj.getNumInputs(),1)),[obj.getNumOutputs,1],tspan);
+      ytraj = setOutputFrame(ytraj,getOutputFrame(obj));
+      if nargout>1, xtraj=setOutputFrame(xtraj,getStateFrame(obj)); end
     end
 
     function sys=feedback(sys1,sys2)
