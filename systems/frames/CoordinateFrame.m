@@ -77,7 +77,7 @@ classdef CoordinateFrame < handle
         end
         obj.coordinates = {coordinates{:}}';
       end
-      if dim>0
+      if dim>0 && checkDependency('spotless')
         if (prefix=='t') error('oops.  destined for a collision with msspoly representing time'); end
         if all(prefix==prefix(1))
           obj.poly=msspoly(prefix(1),dim);

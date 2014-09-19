@@ -6,16 +6,15 @@ function ok = checkDependency(dep,minimum_version)
 % or
 %     if (~checkDependency('snopt')) error('my error'); end
 
-
 persistent conf;
 
 ldep = lower(dep);
 conf_var = [ldep,'_enabled'];
 
-ok = isfield(conf,conf_var) && ~isempty(conf.(conf_var)) && conf.(conf_var);
-if ~ok
-  % then try to evaluate the dependency now...
-
+already_checked = isfield(conf,conf_var) && ~isempty(conf.(conf_var));
+if already_checked
+  ok = conf.(conf_var);
+else % then try to evaluate the dependency now...
   switch(ldep)
     case 'simulink'
       v=ver('simulink');
