@@ -56,7 +56,7 @@ foot_origin_knots = struct('t', options.t0, ...
   'left', zeros(6,1),...
   'is_liftoff', false,...
   'is_landing', false,...
-  'toe_off_allowed', false);
+  'toe_off_allowed', struct('right', false, 'left', false));
 for f = {'right', 'left'}
   foot = f{1};
   frame_id = biped.foot_frame_id.(foot);
@@ -146,7 +146,8 @@ for f = {'right', 'left'}
       [a0(k,j), a1(k,j), a2(k,j), a3(k,j)] = cubicSplineCoefficients(ts(j+1) - ts(j), foot_poses(k,j), foot_poses(k,j+1), foot_dposes(k,j), foot_dposes(k,j+1));
     end
   end
-  link_constraints(end+1) = struct('link_ndx', body_ind, 'pt', [0;0;0], 'ts', ts, 'poses', foot_poses, 'dposes', foot_dposes, 'contact_break_indices', find([foot_origin_knots.is_liftoff]), 'a0', a0, 'a1', a1, 'a2', a2, 'a3', a3, 'toe_off_allowed', [foot_origin_knots.toe_off_allowed]);
+  toe_off_allowed = [foot_origin_knots.toe_off_allowed];
+  link_constraints(end+1) = struct('link_ndx', body_ind, 'pt', [0;0;0], 'ts', ts, 'poses', foot_poses, 'dposes', foot_dposes, 'contact_break_indices', find([foot_origin_knots.is_liftoff]), 'a0', a0, 'a1', a1, 'a2', a2, 'a3', a3, 'toe_off_allowed', [toe_off_allowed.(foot)]);
 end
 zmptraj = PPTrajectory(foh([zmp_knots.t], [zmp_knots.zmp]));
 
