@@ -58,7 +58,7 @@ options.rho0_tau_alpha=1.0;
 options.degL1=2; %order of the lagrange multiplier
 options.max_iterations=2;
 options.lyap_parameterization='rhoS';
-options.polysys_saved=0;
+options.getPolysys_saved=0;
 % begin finite time verification process
 V0=sampledFiniteTimeVerification(psys,xtraj.getBreaks(),Qf,Vtraj,options);
 

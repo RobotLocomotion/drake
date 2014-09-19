@@ -42,7 +42,7 @@ classdef (InferiorClasses = {?Trajectory,?FunctionHandleTrajectory,?PPTrajectory
           Mpoly(i(k),j(k))=obj.coefpoly(k);
         end
       
-        obj.poly = Mpoly*recomp(x,p);
+        obj.getPoly = Mpoly*recomp(x,p);
       else
         if (nargin<3) error('must supply 1 argument or 3 arguments'); end
         typecheck(coefpoly,'msspoly');
@@ -92,17 +92,17 @@ classdef (InferiorClasses = {?Trajectory,?FunctionHandleTrajectory,?PPTrajectory
         obj.coefpoly = PolynomialWTimeVaryingCoefficients.getUniquePoly(poly,coefpoly,[length(i) 1]);  % make potentially too many coefficients (can clean up later)
         [~,new_v] = isfree(obj.coefpoly); 
         obj.coeftraj = new_cs;
-        obj.poly=msspoly(m,n,[s(i,1:2),vs(i,:),new_v,ds(i,:),ones(length(i),2)]);
+        obj.getPoly=msspoly(m,n,[s(i,1:2),vs(i,:),new_v,ds(i,:),ones(length(i),2)]);
       end
       
     end
     
     function poly = getPoly(obj,t)
-      poly = subs(obj.poly,obj.coefpoly,obj.coeftraj.eval(t));
+      poly = subs(obj.getPoly,obj.coefpoly,obj.coeftraj.eval(t));
     end
     
     function a = ctranspose(a)
-      a.poly = ctranspose(a.poly);
+      a.getPoly = ctranspose(a.getPoly);
     end
     
     function c = plus(a,b)
@@ -110,7 +110,7 @@ classdef (InferiorClasses = {?Trajectory,?FunctionHandleTrajectory,?PPTrajectory
     end
     
     function s = size(varargin)
-      s = size(varargin{1}.poly,varargin{2:end});
+      s = size(varargin{1}.getPoly,varargin{2:end});
     end
     
     function c = mtimes(a,b)
@@ -120,19 +120,19 @@ classdef (InferiorClasses = {?Trajectory,?FunctionHandleTrajectory,?PPTrajectory
       if (bispoly)
         if (aistraj)
           acoefpoly=PolynomialWTimeVaryingCoefficients.getUniquePoly(b,size(a));
-          cpoly = acoefpoly*b.poly;
+          cpoly = acoefpoly*b.getPoly;
           c=PolynomialWTimeVaryingCoefficients(cpoly,[b.coefpoly;acoefpoly(:)],[b.coeftraj;a(:)]);
         elseif (aispoly)
           % change variables to make sure there are no symbol crashes
           acoefpoly=PolynomialWTimeVaryingCoefficients.getUniquePoly(b,size(a.coefpoly));
-          cpoly = subs(a.poly,a.coefpoly,acoefpoly)*b.poly;
+          cpoly = subs(a.getPoly,a.coefpoly,acoefpoly)*b.getPoly;
           c=PolynomialWTimeVaryingCoefficients(cpoly,[b.coefpoly;acoefpoly(:)],[b.coeftraj;a.coeftraj]);
         else
           error('not implemented yet');
         end
       elseif (bistraj && aispoly)
           bcoefpoly=PolynomialWTimeVaryingCoefficients.getUniquePoly(a,size(b));
-          cpoly = a.poly*bcoefpoly;
+          cpoly = a.getPoly*bcoefpoly;
           c=PolynomialWTimeVaryingCoefficients(cpoly,[bcoefpoly(:);a.coefpoly],[b(:);a.coeftraj]);
       else
         error('not implemented yet');
@@ -152,7 +152,7 @@ classdef (InferiorClasses = {?Trajectory,?FunctionHandleTrajectory,?PPTrajectory
           p=msspoly(char(c),prod(s));
           switch class(varargin{i})
             case 'PolynomialWTimeVaryingCoefficients'
-              if ~any(match(p,decomp(varargin{i}.poly))) && ~any(match(p,varargin{i}.coefpoly))
+              if ~any(match(p,decomp(varargin{i}.getPoly))) && ~any(match(p,varargin{i}.coefpoly))
                 safe=true;
                 continue;  % then this variable choice is safe
               end

@@ -12,8 +12,8 @@ function [ytraj,xtraj,lcmlog] = simulate(obj,tspan,x0,options)
 %           channels to subscribe to (e.g. '.*' for all).  
 %           @default '' -> don't record lcm
 
-if(exist('DCSFunction') ~=3)
-    error('Sorry, it looks like you have not run make yet. Please run configure and make, then rerun drake.')
+if ~exist('DCSFunction','file')
+  error('Sorry, it looks like you have not run make yet. Please run configure and make, then rerun drake.')
 end
 
 typecheck(tspan,'double');

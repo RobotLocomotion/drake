@@ -129,7 +129,6 @@ else
 end
 
 if (nargout>1)
-  x=ltisys.getInputFrame.poly; %msspoly('x',getNumStates(obj));
   Vcandidate=QuadraticLyapunovFunction(ltisys.getInputFrame,S);
 end
 
