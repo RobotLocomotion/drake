@@ -53,7 +53,7 @@ terrain_pts_in_local = [terrain_slice(1,:); zeros(1, size(terrain_slice, 2));
 
 % Transform to world coordinates
 T_local_to_world = [[rotmat(atan2(swing2.pos(2) - swing1.pos(2), swing2.pos(1) - swing1.pos(1))), [0;0];
-                     0, 0, 1], swing1.pos(1:3); 
+                     0, 0, 1], [swing1.pos(1:2); 0]; 
                     0, 0, 0, 1];
 
 % Determine how much of a forward step this is
