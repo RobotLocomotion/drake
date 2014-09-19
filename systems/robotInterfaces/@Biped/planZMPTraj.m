@@ -113,6 +113,7 @@ t0 = foot_origin_knots(end).t;
 foot_origin_knots(end+1) = foot_origin_knots(end);
 foot_origin_knots(end).t = t0 + 1.5;
 zmpf = mean([steps.right(end).pos(1:2), steps.left(end).pos(1:2)], 2);
+zmp_knots(end+1) =  struct('t', foot_origin_knots(end-1).t, 'zmp', zmpf, 'supp', RigidBodySupportState(biped, [rfoot_body_idx, lfoot_body_idx]));
 zmp_knots(end+1) =  struct('t', foot_origin_knots(end).t, 'zmp', zmpf, 'supp', RigidBodySupportState(biped, [rfoot_body_idx, lfoot_body_idx]));
 
 % Build trajectories
