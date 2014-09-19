@@ -45,8 +45,8 @@ try
 
   p=VanDerPol();
   pp=extractTrigPolySystem(p);
-  [prhs,plhs]=polyDynamics(p);
-  [pprhs,pplhs]=polyDynamics(pp);
+  [prhs,plhs]=getPolyDynamics(p);
+  [pprhs,pplhs]=getPolyDynamics(pp);
   shouldBeEqual(prhs,pprhs);
   shouldBeEqual(plhs,pplhs);
 
