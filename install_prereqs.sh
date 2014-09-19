@@ -9,7 +9,7 @@ case $1 in
   ("ubuntu")
     apt-get install cmake openjdk-6-jdk build-essential ;;
   ("cygwin")
-    cygwin-setup -q -P pkg-config ;;
+    cygwin-setup -q -P make pkg-config ;;
   (*)
     echo "Usage: ./install_prereqs.sh package_manager"
     echo "where package_manager is one of the following: "
