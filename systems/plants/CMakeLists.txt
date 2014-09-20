@@ -19,7 +19,7 @@ if (eigen3_FOUND)
 if (NOT WIN32) 
  include_directories( joints )
  target_link_libraries(drakeRBM drakeJoints)
-endif(WIN32)
+endif(NOT WIN32)
 
   pods_install_libraries(drakeRBM)
   pods_install_headers(RigidBodyManipulator.h RigidBody.h RigidBodyFrame.h DESTINATION drake)
@@ -30,7 +30,10 @@ endif(WIN32)
 
   add_subdirectory(collision)
   add_subdirectory(constraint)
+
+if (NOT WIN32)
   add_subdirectory(joints)
+endif(NOT WIN32)
 
   if (Boost_FOUND)
     add_library(drakeRBMurdf URDFRigidBodyManipulator.cpp)
