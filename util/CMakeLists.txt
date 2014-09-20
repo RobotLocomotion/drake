@@ -11,13 +11,14 @@ if (LCM_FOUND)
 endif()
 
 if (eigen3_FOUND)
+  add_mex(drakeUtil SHARED drakeUtil.cpp)
+
+  # todo: use this again once I can assume everyone has CMAKE version >= 2.8.8
+  #add_mex(drakeUtil OBJECT drakeUtil.cpp)
+
+  pods_install_libraries(drakeUtil)
+
   if (NOT WIN32) # todo: fix this
-    add_mex(drakeUtil SHARED drakeUtil.cpp)
-
-    # todo: use this again once I can assume everyone has CMAKE version >= 2.8.8
-    #add_mex(drakeUtil OBJECT drakeUtil.cpp)
-
-    pods_install_libraries(drakeUtil)
 
   add_library(drakeGradientUtil SHARED drakeGradientUtil.cpp)
   pods_install_libraries(drakeGradientUtil)

@@ -7,11 +7,18 @@
 #include <Eigen/StdVector>
 #include <memory>
 
-#if !defined(_WIN32) && !defined(_WIN64)
-  #include "DrakeJoint.h"
+#if defined(WIN32) || defined(WIN64)
+  #if defined(drakeRBM_EXPORTS)
+    #define DLLEXPORT __declspec( dllexport )
+  #else
+    #define DLLEXPORT __declspec( dllimport )
+  #endif
+#else
+  #define DLLEXPORT
+  #include "DrakeJoint.h"  // todo: move this out of here
 #endif
 
-class IndexRange {
+class DLLEXPORT IndexRange {
  public:
   int start;
   int length;
@@ -25,7 +32,7 @@ class RigidBodyManipulator;
 
 using namespace Eigen;
 
-class RigidBody {
+class DLLEXPORT RigidBody {
 #if !defined(_WIN32) && !defined(_WIN64)
 private:
   std::unique_ptr<DrakeJoint> joint;

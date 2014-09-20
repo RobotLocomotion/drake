@@ -1,6 +1,9 @@
 #include "RigidBodyConstraint.h"
 #include "../RigidBodyManipulator.h"
-#include "../../../util/drakeGeometryUtil.h"
+
+#if !defined(WIN32) && !defined(WIN64)
+  #include "../../../util/drakeGeometryUtil.h"
+#endif
 using namespace Eigen;
 
 

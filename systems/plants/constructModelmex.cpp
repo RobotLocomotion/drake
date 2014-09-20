@@ -4,7 +4,10 @@
 #include "drakeUtil.h"
 #include "RigidBodyManipulator.h"
 #include <stdexcept>
-#include "joints/drakeJointUtil.h"
+
+#if !defined(WIN32) && !defined(WIN64)
+  #include "joints/drakeJointUtil.h"
+#endif
 
 #define INF -2147483648
 
@@ -160,8 +163,10 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 
       double pitch = mxGetScalar(mxGetProperty(pBodies, i, "pitch"));
 
+#if !defined(WIN32) && !defined(WIN64)
       model->bodies[i]->setJoint(createJoint(jointname, Ttree, floating, joint_axis, pitch));
 //      mexPrintf((model->bodies[i]->getJoint().getName() + "\n").c_str());
+#endif
     }
     {
       pm = mxGetProperty(pBodies,i,"jointname");
@@ -216,7 +221,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 
         // Get element-to-link transform from MATLAB object
         memcpy(T.data(), mxGetPr(mxGetProperty(pShape,0,"T")), sizeof(double)*4*4);
-        auto shape = (DrakeCollision::Shape)mxGetScalar(mxGetProperty(pShape,0,"bullet_shape_id"));
+        auto shape = (DrakeCollision::Shape)static_cast<int>(mxGetScalar(mxGetProperty(pShape,0,"bullet_shape_id")));
         vector<double> params_vec;
         switch (shape) {
           case DrakeCollision::BOX:
