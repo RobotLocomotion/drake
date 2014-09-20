@@ -184,7 +184,7 @@ classdef PolynomialSystem < DrakeSystem
         y = subss(sys.getPolyOutput,x,d);
         sys = SpotPolynomialSystem(sys.getInputFrame,frame,sys.getOutputFrame,g,[],[],y);
       else % time-varying case
-        y = @(t) subss(sys.getPolyUpdate(t),x,subs(dtf.getPolyUpdate(t),dtf.getInputFrame.getPoly,z));
+        y = @(t) subss(sys.getPolyOutput(t),x,subs(dtf.getPolyOutput(t),dtf.getInputFrame.getPoly,z));
         % todo: note the breaks in the polynomialtrajectory systems below are a hack. need to handle that better.
         sys = PolynomialTrajectorySystem(sys.getInputFrame,frame,sys.getOutputFrame,PolynomialTrajectory(@(t) newdyn(t,sys,frame,ctf,dtf),[0 inf]),[],PolynomialTrajectory(y,[0 inf]),sys.isDirectFeedthrough);
       end

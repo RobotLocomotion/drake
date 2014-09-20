@@ -87,7 +87,7 @@ else
 end
 
 % Initialize u, Phi and rho
-uf = c0.getPolyUpdate();
+uf = c0.getPolyOutput();
 rho = options.rho0;
 
 rho_last = rho;
