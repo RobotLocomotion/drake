@@ -24,7 +24,11 @@ classdef (InferiorClasses = {?msspoly}) TrigPoly
       % @param c simple msspoly or char to represent cos(q)
       % @param n the length of q  (optional if q is an msspoly, otherwise required)
       
-      checkDependency('spotless');
+      if ~logical(exist('msspoly','class'))
+        error('you must have spotless in your path (e.g. via checkDependency(''spotless'')) before using TrigPoly');
+        % calling it here apparently doesn't work because the inferior to msspoly class logic
+        % will not be applied 
+      end
       if (nargin<4) n=-1; end
       
       function a=msspolyArg(a,varname)
