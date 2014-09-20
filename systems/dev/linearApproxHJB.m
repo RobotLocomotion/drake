@@ -16,6 +16,8 @@ function linearApproxHJB(sys,gxfun,R,xbins)
 % @param xbins defines the barycentric linear function approximator
 %        (note: this will be replaced by a more general linearFA input)
 
+% todo: move this into @DynamicalSystem
+
 assert(isCT(sys));
 assert(isTI(sys));
 % todo: assert that the system is control affine

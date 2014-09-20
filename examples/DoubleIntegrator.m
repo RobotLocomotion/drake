@@ -77,14 +77,6 @@ classdef DoubleIntegrator < LinearSystem
       subplot(2,1,2); colorbar;
     end
     
-    function hjbIdea
-      p = DoubleIntegrator;
-      gxfun = @(x) .5*x'*x;  % aka Q = eye(2)
-      R = 1;
-      xbins = {[-3:.2:3],[-4:.2:4]};
-      linearApproxHJB(p,gxfun,R,xbins);
-    end
-    
   end
   
 end
