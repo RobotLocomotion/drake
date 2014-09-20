@@ -24,11 +24,16 @@ if (eigen3_FOUND)
   pods_install_libraries(drakeGradientUtil)
   pods_install_headers(drakeGradientUtil.h DESTINATION drake)
 
+  endif(NOT WIN32)
+   
   add_library(drakeGeometryUtil SHARED drakeGeometryUtil.cpp)
+  if (NOT WIN32)
   target_link_libraries(drakeGeometryUtil drakeGradientUtil)
+  endif()
   pods_install_libraries(drakeGeometryUtil)
   pods_install_headers(drakeGeometryUtil.h DESTINATION drake)
 
+  if (NOT WIN32)
   add_mex(test/testQuatmex test/testQuatmex.cpp)
   target_link_libraries(test/testQuatmex drakeGeometryUtil)
 
@@ -37,9 +42,7 @@ if (eigen3_FOUND)
 
   add_mex(test/testGeometryConversionFunctionsmex test/testGeometryConversionFunctionsmex.cpp)
   target_link_libraries(test/testGeometryConversionFunctionsmex drakeGeometryUtil)
-
-  endif(NOT WIN32)
-  
+  endif()
 endif()
 
 add_subdirectory(test)
