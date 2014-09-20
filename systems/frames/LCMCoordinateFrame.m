@@ -51,7 +51,7 @@ classdef LCMCoordinateFrame < CoordinateFrame & LCMSubscriber & LCMPublisher
       end
       
       if isempty(lc) && iscell(coordinate_names_or_dim)
-        obj = obj.setCoordinateNames(coordinate_names_or_dim);
+        obj.setCoordinateNames(coordinate_names_or_dim);
       end
     end
   
