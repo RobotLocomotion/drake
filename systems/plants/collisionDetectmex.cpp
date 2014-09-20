@@ -7,23 +7,6 @@
 using namespace Eigen;
 using namespace std;
 
-// convert Matlab cell array of strings into a C++ vector of strings
-vector<string> get_strings(const mxArray *rhs) {
-  int num = mxGetNumberOfElements(rhs);
-  vector<string> strings(num);
-  for (int i=0; i<num; i++) {
-    const mxArray *ptr = mxGetCell(rhs,i);
-    int buflen = mxGetN(ptr)*sizeof(mxChar)+1;
-    char* str = (char*)mxMalloc(buflen);
-    mxGetString(ptr, str, buflen);
-    strings[i] = string(str);
-    mxFree(str);
-  }
-  return strings;
-}
-
-
-
 /*
  * mex interface for bullet collision detection
  * closest-distance for each body to all other bodies (~(NB^2-NB)/2 points)
@@ -70,8 +53,14 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   const mxArray* collision_groups = mxGetField(active_collision_options,0,
                                                "collision_groups");
   if (collision_groups != NULL) {
-    for (const string& str : get_strings(collision_groups)) {
+    int num = mxGetNumberOfElements(collision_groups);
+    for (int i=0; i<num; i++) {
+      const mxArray *ptr = mxGetCell(collision_groups,i);
+      int buflen = mxGetN(ptr)*sizeof(mxChar)+1;
+      char* str = (char*)mxMalloc(buflen);
+      mxGetString(ptr, str, buflen);
       active_group_names.insert(str);
+      mxFree(str);
     }
   }
 

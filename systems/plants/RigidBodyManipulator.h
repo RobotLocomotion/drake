@@ -16,7 +16,7 @@ using namespace Eigen;
 
 //extern std::set<int> emptyIntSet;  // was const std:set<int> emptyIntSet, but valgrind said I was leaking memory
 
-class RigidBodyManipulator 
+class DLLEXPORT RigidBodyManipulator 
 {
 public:
   RigidBodyManipulator(int num_dof, int num_featherstone_bodies=-1, int num_rigid_body_objects=-1, int num_rigid_body_frames=0);
@@ -214,6 +214,12 @@ private:
   
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+// The following was required for building w/ DLLEXPORT on windows (due to the unique_ptrs).  See
+// http://stackoverflow.com/questions/8716824/cannot-access-private-member-error-only-when-class-has-export-linkage
+private:
+  RigidBodyManipulator(const RigidBodyManipulator&) {}
+  RigidBodyManipulator& operator=(const RigidBodyManipulator&) { return *this; }
 };
 
 /*
