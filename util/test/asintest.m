@@ -1,6 +1,8 @@
 function asintest
 % tests my implementation of asin in TaylorVar.  
 
+checkDependency('spotless');
+
 order=7;
 x0=.5;
 tx=TaylorVar.init(x0,order);

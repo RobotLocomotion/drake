@@ -17,8 +17,8 @@ classdef StochasticPolynomialSystem < StochasticDrakeSystem & PolynomialSystem
       
       % these will error if the system is not polynomial (should I catch
       % and rethrow the error with more information?)
-      x = obj.getStateFrame.poly;
-      u = obj.getInputFrame.poly;
+      x = obj.getStateFrame.getPoly;
+      u = obj.getInputFrame.getPoly;
       if (num_xc>0)
         obj.p_stochastic_dynamics=obj.stochasticDynamics(obj.p_t,obj.p_x,obj.p_u,obj.p_w);
       end

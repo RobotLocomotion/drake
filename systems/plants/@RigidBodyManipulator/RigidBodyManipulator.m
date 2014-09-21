@@ -880,7 +880,7 @@ classdef RigidBodyManipulator < Manipulator
       end
 
       for i=1:length(model.body)
-        model.body(i) = updateParams(model.body(i),fr.poly,p);
+        model.body(i) = updateParams(model.body(i),fr.getPoly,p);
       end
 
       model = compile(model);
@@ -1544,7 +1544,7 @@ classdef RigidBodyManipulator < Manipulator
     function val = parseParamString(model,robotnum,str)
       % @ingroup URDF Parsing
 
-      fr = getParamFrame(model); p=fr.poly;
+      fr = getParamFrame(model); p=fr.getPoly;
       pstr = regexprep(str,'\$(\w+)','p(model.param_db{robotnum}.(''$1'').index)');
 %      if strcmp(pstr,str)  % then it didn't have any parameters in it
         val = eval(['[',pstr,']']);

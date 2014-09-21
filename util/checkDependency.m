@@ -6,17 +6,24 @@ function ok = checkDependency(dep,minimum_version)
 % or
 %     if (~checkDependency('snopt')) error('my error'); end
 
-
 persistent conf;
 
 ldep = lower(dep);
 conf_var = [ldep,'_enabled'];
 
-ok = isfield(conf,conf_var) && ~isempty(conf.(conf_var)) && conf.(conf_var);
-if ~ok
-  % then try to evaluate the dependency now...
-
+already_checked = isfield(conf,conf_var) && ~isempty(conf.(conf_var));
+if already_checked
+  ok = conf.(conf_var);
+else % then try to evaluate the dependency now...
   switch(ldep)
+    case 'simulink'
+      v=ver('simulink');
+      conf.simulink_enabled = ~isempty(v);
+      if verLessThan('simulink','7.3')
+        warning('Drake:SimulinkVersion','Most features of Drake require SIMULINK version 7.3 or above.');
+        % haven't actually tested with lower versions
+      end
+    
     case 'spotless'
       % require spotless
       conf.spotless_enabled = logical(exist('msspoly','class'));

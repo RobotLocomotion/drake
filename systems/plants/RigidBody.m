@@ -273,7 +273,7 @@ classdef RigidBody < RigidBodyElement
       for i=1:length(pn)
         if isa(body.(pn{i}),'msspoly')
           body.param_bindings.(pn{i}) = body.(pn{i});
-          body.(pn{i}) = double(subs(body.(pn{i}),fr.poly,pval));
+          body.(pn{i}) = double(subs(body.(pn{i}),fr.getPoly,pval));
         end
       end
     end
