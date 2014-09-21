@@ -18,8 +18,10 @@
  *             reconstructed using
  *         pt(:,j) = sum_i coefs(i,j) * gridpoint(:,indices(i,j));
  *           aka pt(:,j) = gridpoint(:,indices(:,j))*coefs(:,j)
+ * @retval dcoefs is a (d*n)-by-m matrix which is the gradient of coefs 
+ *              using the geval convention
  * Note that points off the grid are cropped to the closest point (in an
- * l1 sense) on the grid
+ * l0 sense) on the grid
  *
  * For a simple description of barycentric interpolation, see
  *  Scott Davies, "Multidimensional Triangulation... ", NIPS, 1996
@@ -29,6 +31,7 @@
 typedef struct {
   int dim;
   double fracway;
+  double dfracway;
 } bary;
 int barycomp(const void* b1, const void* b2){
   bary *bb1 = (bary*)b1, *bb2 = (bary*)b2;
@@ -69,10 +72,15 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   plhs[0] = mxCreateNumericMatrix(d,n,mxINT64_CLASS,mxREAL);
 
   int64_t* indices = (int64_t*) mxGetData(plhs[0]);
-  double* coefs;
+  double *coefs, *dcoefs=NULL;
   if (nlhs>1) {
     plhs[1] = mxCreateDoubleMatrix(d,n,mxREAL);
     coefs = mxGetPr(plhs[1]);
+    if (nlhs>2) {
+      // todo: use a sparse matrix here instead
+      plhs[2] = mxCreateDoubleMatrix(d*n,m,mxREAL);
+      dcoefs = mxGetPr(plhs[2]);
+    }
   } else {
     coefs = new double[d*n];
   }
@@ -101,17 +109,20 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       } else {
         sidx += nskip[i]*next_bin_index;  
         b[i].fracway = (pt - current_bin[next_bin_index-1])/(current_bin[next_bin_index]-current_bin[next_bin_index-1]);
+        b[i].dfracway = 1/(current_bin[next_bin_index]-current_bin[next_bin_index-1]);
       }
     }
 
     // sort dimensions based on fracway (lowest to highest)
     qsort(b,m,sizeof(bary),barycomp);
     b[m].fracway = 1.0;  // final element, to make the loop below cleaner
+    b[m].dfracway = 0;
     b[m].dim = m-1;
 
     // top right corner
     indices[0] = sidx;
     coefs[0] = b[0].fracway;
+    if (dcoefs) dcoefs[0 + (d*n)*b[0].dim] = b[0].dfracway;
 
     // move down the box.  sorted list of dimensions tells us which order to descend.
     for (i=0; i<m; i++) {
@@ -119,12 +130,17 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         sidx -= nskip[b[i].dim];
       indices[i+1] = sidx;
       coefs[i+1] = b[i+1].fracway - b[i].fracway;
+      if (dcoefs) {
+        dcoefs[i+1 + (d*n)*b[i+1].dim] = b[i+1].dfracway;
+        dcoefs[i+1 + (d*n)*b[i].dim] = -b[i].dfracway;
+      }
     }
 
     // move pointers ahead to the next point:
     pts += m;
     indices += d;
     coefs += d;
+    if (dcoefs) dcoefs += d;
   }
 
   // clean up
