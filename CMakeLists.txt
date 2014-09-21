@@ -35,6 +35,9 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 #    # http://stackoverflow.com/questions/13445742/apple-and-shared-ptr
    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
   endif()
+elseif (MSVC)
+#  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /arch:SSE2 /openmp")
+#  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:SSE2 /openmp")  
 endif()
 
 # set up matlab build

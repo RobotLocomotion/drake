@@ -1,6 +1,17 @@
 #include "RigidBodyConstraint.h"
 #include "../RigidBodyManipulator.h"
+
 #include "../../../util/drakeGeometryUtil.h"
+
+#if defined(WIN32) || defined(WIN64)
+  #include <math.h>
+  #define isnan(x) _isnan(x)
+  #define isinf(x) (!_finite(x))
+//  #define isinf(x) _isinf(x)
+#else
+  #define isnan(x) std::isnan(x)
+  #define isinf(x) std::isinf(x)
+#endif
 using namespace Eigen;
 
 
@@ -26,7 +37,7 @@ static void checkBodyInd(int body, int num_bodies, int min_body_ind = 0)
 namespace DrakeRigidBodyConstraint{
   Vector4d com_pts(0.0,0.0,0.0,1.0);
   const int WorldCoMDefaultRobotNum[1] = {0};
-  Vector2d default_tspan(-1.0/0.0,1.0/0.0);
+  Vector2d default_tspan(-std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());
 }
 RigidBodyConstraint::RigidBodyConstraint(int category, RigidBodyManipulator* robot, const Vector2d &tspan)
 {
@@ -683,19 +694,19 @@ PositionConstraint::PositionConstraint(RigidBodyManipulator *robot, const Matrix
     for(int i = 0;i<3;i++)
     {
       int idx = j*3+i;
-      if(std::isnan(lb(i,j)))
+      if(isnan(lb(i,j)))
       {
-        lb(i,j) = -1.0/0.0;
+        lb(i,j) = -std::numeric_limits<double>::infinity(); 
       }
-      if(std::isnan(ub(i,j)))
+      if(isnan(ub(i,j)))
       {
-        ub(i,j) = 1.0/0.0;
+        ub(i,j) = std::numeric_limits<double>::infinity();
       }
       if(ub(i,j)<lb(i,j))
       {
         std::cerr<<"Drake:PositionConstraint:BadInputs: lb must be no larger than ub"<<std::endl;
       }
-      if(std::isinf(lb(i,j))&&std::isinf(ub(i,j)))
+      if(isinf(lb(i,j))&&isinf(ub(i,j)))
       {
         this->null_constraint_rows[idx] = true;
       }
@@ -1135,19 +1146,19 @@ EulerConstraint::EulerConstraint(RigidBodyManipulator *robot, Vector3d lb, Vecto
   this->num_constraint = 0;
   for(int i = 0;i<3;i++)
   {
-    if(std::isnan(lb(i)))
+    if(isnan(lb(i)))
     {
-      lb(i) = -1.0/0.0;
+      lb(i) = -std::numeric_limits<double>::infinity();
     }
-    if(std::isnan(ub(i)))
+    if(isnan(ub(i)))
     {
-      ub(i) = 1.0/0.0;
+      ub(i) = std::numeric_limits<double>::infinity();
     }
     if(ub(i)<lb(i))
     {
       std::cerr<<"Drake:EulerConstraint:BadInputs:lb must be no larger than ub"<<std::endl;;
     }
-    if(std::isinf(lb(i))&&std::isinf(ub(i)))
+    if(isinf(lb(i))&&isinf(ub(i)))
     {
       null_constraint_rows[i] = true;
     }
@@ -1381,7 +1392,7 @@ void GazeOrientConstraint::bounds(const double* t, VectorXd &lb, VectorXd &ub) c
   if(this->isTimeValid(t))
   {
     lb << cos(this->conethreshold)-1.0,cos(this->threshold/2.0);
-    ub << 0, 1.0/0.0; 
+    ub << 0, std::numeric_limits<double>::infinity(); 
   }
 }
 
