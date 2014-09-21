@@ -6,8 +6,6 @@
 #include <stdexcept>
 #include "joints/drakeJointUtil.h"
 
-#define INF -2147483648
-
 using namespace Eigen;
 using namespace std;
 
