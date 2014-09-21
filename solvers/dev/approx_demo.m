@@ -21,16 +21,16 @@ plot(xdata,ydata,'r.');
 pause;
 
 % radial basis functions:
-%phi = inline('exp(-(x-m).^2)','x','m');
+phi = @(x,m) exp(-(x-m).^2);
 
 % "fourier" basis
-%phi = inline('sin(m*x/(2*pi))','x','m');
+%phi = @(x,m) sin(m*x/(2*pi));
 
 %% polynomial basis
-%%phi = inline('x.^m','x','m');
+%%phi = @(x,m) x.^m;
 
 % barycentric (linear) interpolation
-phi = inline('max(1-abs(m-x),0)','x','m');
+%phi = @(x,m) max(1-abs(m-x),0);
 
 % means of basis function
 m = 0:1:10;  
@@ -42,7 +42,7 @@ for i=1:length(m)
   plot(x,yf,'g','LineWidth',2);
 end
 
-w = pinv(P'*P)*P'*ydata;
+w = P\ydata;
 
 pause;
 

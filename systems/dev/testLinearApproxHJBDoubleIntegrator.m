@@ -1,4 +1,4 @@
-function test_linearApproxHJBDoubleIntegrator
+function testLinearApproxHJBDoubleIntegrator
 
 tmp = addpathTemporary(fullfile(getDrakePath(),'examples'));
 
