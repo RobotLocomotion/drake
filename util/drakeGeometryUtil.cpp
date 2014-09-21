@@ -5,6 +5,7 @@
 
 using namespace Eigen;
 
+
 double angleDiff(double phi1, double phi2)
 {
   double d = phi2-phi1;
@@ -19,39 +20,6 @@ double angleDiff(double phi1, double phi2)
   return d;
 }
 
-// NOTE: not reshaping second derivative to Matlab geval output format!
-template <typename Derived>
-void normalizeVec(
-    const Eigen::MatrixBase<Derived>& x,
-    typename Derived::PlainObject& x_norm,
-    typename Gradient<Derived, Derived::RowsAtCompileTime, 1>::type* dx_norm,
-    typename Gradient<Derived, Derived::RowsAtCompileTime, 2>::type* ddx_norm) {
-
-  typename Derived::Scalar xdotx = x.squaredNorm();
-  typename Derived::Scalar norm_x = std::sqrt(xdotx);
-  x_norm = x / norm_x;
-
-  if (dx_norm) {
-    dx_norm->setIdentity(x.rows(), x.rows());
-    (*dx_norm) -= x * x.transpose() / xdotx;
-    (*dx_norm) /= norm_x;
-
-    if (ddx_norm) {
-      auto dx_norm_transpose = transposeGrad(*dx_norm, x.rows());
-      auto ddx_norm_times_norm = -matGradMultMat(x_norm, x_norm.transpose(), (*dx_norm), dx_norm_transpose);
-      auto dnorm_inv = -x.transpose() / (xdotx * norm_x);
-      (*ddx_norm) = ddx_norm_times_norm / norm_x;
-      auto temp = (*dx_norm) * norm_x;
-      int n = x.rows();
-      for (int col = 0; col < n; col++) {
-        auto column_as_matrix = (dnorm_inv(0, col) * temp);
-        for (int row_block = 0; row_block < n; row_block++) {
-          ddx_norm->block(row_block * n, col, n, 1) += column_as_matrix.col(row_block);
-        }
-      }
-    }
-  }
-}
 
 Vector4d quatConjugate(const Eigen::Vector4d& q)
 {
@@ -407,6 +375,44 @@ Eigen::Matrix<typename Derived::Scalar, 3, 3> rpy2rotmat(const Eigen::MatrixBase
 
   return R;
 }
+
+#if !defined(WIN32) && !defined(WIN64)
+
+// NOTE: not reshaping second derivative to Matlab geval output format!
+template <typename Derived>
+void normalizeVec(
+    const Eigen::MatrixBase<Derived>& x,
+    typename Derived::PlainObject& x_norm,
+    typename Gradient<Derived, Derived::RowsAtCompileTime, 1>::type* dx_norm,
+    typename Gradient<Derived, Derived::RowsAtCompileTime, 2>::type* ddx_norm) {
+
+  typename Derived::Scalar xdotx = x.squaredNorm();
+  typename Derived::Scalar norm_x = std::sqrt(xdotx);
+  x_norm = x / norm_x;
+
+  if (dx_norm) {
+    dx_norm->setIdentity(x.rows(), x.rows());
+    (*dx_norm) -= x * x.transpose() / xdotx;
+    (*dx_norm) /= norm_x;
+
+    if (ddx_norm) {
+      auto dx_norm_transpose = transposeGrad(*dx_norm, x.rows());
+      auto ddx_norm_times_norm = -matGradMultMat(x_norm, x_norm.transpose(), (*dx_norm), dx_norm_transpose);
+      auto dnorm_inv = -x.transpose() / (xdotx * norm_x);
+      (*ddx_norm) = ddx_norm_times_norm / norm_x;
+      auto temp = (*dx_norm) * norm_x;
+      int n = x.rows();
+      for (int col = 0; col < n; col++) {
+        auto column_as_matrix = (dnorm_inv(0, col) * temp);
+        for (int row_block = 0; row_block < n; row_block++) {
+          ddx_norm->block(row_block * n, col, n, 1) += column_as_matrix.col(row_block);
+        }
+      }
+    }
+  }
+}
+
+
 
 template <typename Derived>
 typename Gradient<Matrix<typename Derived::Scalar, 3, 3>, QUAT_SIZE>::type dquat2rotmat(const Eigen::MatrixBase<Derived>& q)
@@ -822,37 +828,41 @@ template void normalizeVec(
     typename Gradient<Vector4d, 4, 1>::type*,
     typename Gradient<Vector4d, 4, 2>::type*);
 
-template Vector4d quat2axis(const MatrixBase<Vector4d>&);
-template Matrix3d quat2rotmat(const MatrixBase<Vector4d>& q);
-template Vector3d quat2rpy(const MatrixBase<Vector4d>&);
+#endif
 
-template Vector4d axis2quat(const MatrixBase<Vector4d>&);
-template Matrix3d axis2rotmat(const MatrixBase<Vector4d>&);
-template Vector3d axis2rpy(const MatrixBase<Vector4d>&);
+template DLLEXPORT Vector4d quat2axis(const MatrixBase<Vector4d>&);
+template DLLEXPORT Matrix3d quat2rotmat(const MatrixBase<Vector4d>& q);
+template DLLEXPORT Vector3d quat2rpy(const MatrixBase<Vector4d>&);
 
-template Vector4d rotmat2axis(const MatrixBase<Matrix3d>&);
-template Vector4d rotmat2quat(const MatrixBase<Matrix3d>&);
-template Vector3d rotmat2rpy(const MatrixBase<Matrix3d>&);
+template DLLEXPORT Vector4d axis2quat(const MatrixBase<Vector4d>&);
+template DLLEXPORT Matrix3d axis2rotmat(const MatrixBase<Vector4d>&);
+template DLLEXPORT Vector3d axis2rpy(const MatrixBase<Vector4d>&);
 
-template Vector4d rpy2axis(const Eigen::MatrixBase<Vector3d>&);
-template Vector4d rpy2quat(const Eigen::MatrixBase<Vector3d>&);
-template Matrix3d rpy2rotmat(const Eigen::MatrixBase<Vector3d>&);
+template DLLEXPORT Vector4d rotmat2axis(const MatrixBase<Matrix3d>&);
+template DLLEXPORT Vector4d rotmat2quat(const MatrixBase<Matrix3d>&);
+template DLLEXPORT Vector3d rotmat2rpy(const MatrixBase<Matrix3d>&);
 
-template Vector4d quat2axis(const MatrixBase< Map<Vector4d> >&);
-template Matrix3d quat2rotmat(const MatrixBase< Map<Vector4d> >& q);
-template Vector3d quat2rpy(const MatrixBase< Map<Vector4d> >&);
+template DLLEXPORT Vector4d rpy2axis(const Eigen::MatrixBase<Vector3d>&);
+template DLLEXPORT Vector4d rpy2quat(const Eigen::MatrixBase<Vector3d>&);
+template DLLEXPORT Matrix3d rpy2rotmat(const Eigen::MatrixBase<Vector3d>&);
 
-template Vector4d axis2quat(const MatrixBase< Map<Vector4d> >&);
-template Matrix3d axis2rotmat(const MatrixBase< Map<Vector4d> >&);
-template Vector3d axis2rpy(const MatrixBase< Map<Vector4d> >&);
+template DLLEXPORT Vector4d quat2axis(const MatrixBase< Map<Vector4d> >&);
+template DLLEXPORT Matrix3d quat2rotmat(const MatrixBase< Map<Vector4d> >& q);
+template DLLEXPORT Vector3d quat2rpy(const MatrixBase< Map<Vector4d> >&);
 
-template Vector4d rotmat2axis(const MatrixBase< Map<Matrix3d> >&);
-template Vector4d rotmat2quat(const MatrixBase< Map<Matrix3d> >&);
-template Vector3d rotmat2rpy(const MatrixBase< Map<Matrix3d> >&);
+template DLLEXPORT Vector4d axis2quat(const MatrixBase< Map<Vector4d> >&);
+template DLLEXPORT Matrix3d axis2rotmat(const MatrixBase< Map<Vector4d> >&);
+template DLLEXPORT Vector3d axis2rpy(const MatrixBase< Map<Vector4d> >&);
 
-template Vector4d rpy2axis(const Eigen::MatrixBase< Map<Vector3d> >&);
-template Vector4d rpy2quat(const Eigen::MatrixBase< Map<Vector3d> >&);
-template Matrix3d rpy2rotmat(const Eigen::MatrixBase< Map<Vector3d> >&);
+template DLLEXPORT Vector4d rotmat2axis(const MatrixBase< Map<Matrix3d> >&);
+template DLLEXPORT Vector4d rotmat2quat(const MatrixBase< Map<Matrix3d> >&);
+template DLLEXPORT Vector3d rotmat2rpy(const MatrixBase< Map<Matrix3d> >&);
+
+template DLLEXPORT Vector4d rpy2axis(const Eigen::MatrixBase< Map<Vector3d> >&);
+template DLLEXPORT Vector4d rpy2quat(const Eigen::MatrixBase< Map<Vector3d> >&);
+template DLLEXPORT Matrix3d rpy2rotmat(const Eigen::MatrixBase< Map<Vector3d> >&);
+
+#if !defined(WIN32) && !defined(WIN64)
 
 template typename Gradient<Matrix3d, QUAT_SIZE>::type dquat2rotmat(const Eigen::MatrixBase<Vector4d>&);
 template typename Gradient<Matrix3d, QUAT_SIZE>::type dquat2rotmat(const Eigen::MatrixBase< Map<Vector4d> >&);
@@ -909,4 +919,4 @@ template void quatdot2angularvelMatrix(const Eigen::MatrixBase<Map<Vector4d>>& q
     Eigen::MatrixBase< Matrix<double, SPACE_DIMENSION, QUAT_SIZE> >& M,
     typename Gradient<Matrix<double, SPACE_DIMENSION, QUAT_SIZE>, QUAT_SIZE, 1>::type* dM);
 
-
+#endif
