@@ -5,15 +5,16 @@ function [ytraj,xtraj,lcmlog] = simulate(obj,tspan,x0,options)
 % @param x0 a vector of length(getNumStates) which contains the initial
 % state (@default calls getInitialState())
 %
-% @option OutputOption 'RefineOutputTimes' | 'AdditionalOutputTimes' | 'SpecifiedOutputTimes' 
+% @option OutputOption 'RefineOutputTimes' | 'AdditionalOutputTimes' | 'SpecifiedOutputTimes'
 %            For variable step solver only
 % @option OutputTimes to generate output in the time sequence options.OutputTimes
 % @option capture_lcm_channels a string containing the regular expression of the
-%           channels to subscribe to (e.g. '.*' for all).  
+%           channels to subscribe to (e.g. '.*' for all).
 %           @default '' -> don't record lcm
 
-if(exist('DCSFunction') ~=3)
-    error('Sorry, it looks like you have not run make yet. Please run configure and make, then rerun drake.')
+checkDependency('simulink');
+if ~exist('DCSFunction','file')
+  error('Sorry, it looks like you have not run make yet. Please run make, then rerun addpath_drake.')
 end
 
 typecheck(tspan,'double');
@@ -82,7 +83,7 @@ isdiscrete = all(ts(1,:)>0 | ts(2,:)==1.0);  % isDT asks for more:  must have on
 if (~isdiscrete)
   pstruct.Refine = '3';  % shouldn't do anything for DT systems
 end
-  
+
 %If we are using variable-step solver, and want to specify the output time
 if(isfield(options,'OutputOption'))
   %pstruct.OutputOption='SpecifiedOutputTimes';
@@ -119,7 +120,7 @@ end
 
   function traj = makeSubTrajectory(t,y)
     if (length(t)<2) keyboard; end
-    
+
     %% attempt to identify DT outputs, and avoid interpolating them (badly) as smooth polynomials
     traj={}; idx={}; yidx=1:size(y,1);
     for i=1:size(ts,2)
@@ -127,7 +128,7 @@ end
         n = ceil((t-ts(2,i))/ts(1,i));  % counts 0 to N
         nidx=find([1;diff(n)]);
         ydiff = y(yidx,:)-y(yidx,nidx(n-n(1)+1));
-        dtidx = yidx(all(abs(ydiff)<eps,2));  
+        dtidx = yidx(all(abs(ydiff)<eps,2));
         if (~isempty(dtidx))
           n=unique(n);
           tt=(n(2:end)-1)*ts(1,i)+ts(2,i);
@@ -137,7 +138,7 @@ end
         end
       end
     end
-    
+
     if (isempty(traj)) % only CT outputs
       traj = PPTrajectory(spline(t,y));
     elseif (~isempty(yidx)) % add the CT outputs and make MixedTrajectory
@@ -145,7 +146,7 @@ end
       idx = {idx{:}, yidx};
       traj = MixedTrajectory(traj,idx);
     end
-    
+
   end
 
 
@@ -159,13 +160,13 @@ if (isdiscrete)
   end
 else
   % note: could make this more exact.  see comments in bug# 623.
-  
+
   % find any zero-crossing events (they won't have the extra refine steps)
   zcs = find(diff(t)<1e-10);
   if (length(zcs)>0) % then we have a hybrid trajectory
     zcs = [0;zcs;length(t)];
     ypptraj={}; xpptraj={};
-    
+
     for i=1:length(zcs)-1
       % compute indices of this segment
       inds = (zcs(i)+1):zcs(i+1);
@@ -210,5 +211,5 @@ else
   end
 end
 
-    
+
 end

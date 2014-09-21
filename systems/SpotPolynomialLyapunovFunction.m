@@ -13,13 +13,13 @@ classdef SpotPolynomialLyapunovFunction < PolynomialLyapunovFunction
       obj.Vpoly=Vpoly;
       if (deg(Vpoly,obj.p_t)>0) obj.time_invariant_flag = false; end
       
-      if any(match(frame.poly,decomp(getPoly(obj,0)))==0)
+      if any(match(frame.getPoly,decomp(getPoly(obj,0)))==0)
         error('polynomial depends on variables other than t and those defined in frame');
       end
     end
     
     function V = eval(obj,t,x)  
-      V = double(subs(obj.Vpoly,[obj.p_t;obj.getFrame.poly],[t;x]));
+      V = double(subs(obj.Vpoly,[obj.p_t;obj.getFrame.getPoly],[t;x]));
     end
     
     function Vpoly = getPoly(obj,t)
