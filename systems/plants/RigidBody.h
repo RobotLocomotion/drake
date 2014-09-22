@@ -6,9 +6,19 @@
 #include <set>
 #include <Eigen/StdVector>
 #include <memory>
-#include "DrakeJoint.h"
 
-class IndexRange {
+#if defined(WIN32) || defined(WIN64)
+  #if defined(drakeRBM_EXPORTS)
+    #define DLLEXPORT __declspec( dllexport )
+  #else
+    #define DLLEXPORT __declspec( dllimport )
+  #endif
+#else
+  #define DLLEXPORT
+  #include "DrakeJoint.h"  // todo: move this out of here
+#endif
+
+class DLLEXPORT IndexRange {
  public:
   int start;
   int length;
@@ -22,17 +32,22 @@ class RigidBodyManipulator;
 
 using namespace Eigen;
 
-class RigidBody {
+class DLLEXPORT RigidBody {
+#if !defined(_WIN32) && !defined(_WIN64)
 private:
   std::unique_ptr<DrakeJoint> joint;
+#endif
 
 public:
   RigidBody();
 
   void setN(int n);
   void computeAncestorDOFs(RigidBodyManipulator* model);
+
+#if !defined(_WIN32) && !defined(_WIN64)
   void setJoint(std::unique_ptr<DrakeJoint> joint);
   const DrakeJoint& getJoint() const;
+#endif
 
 public:
   std::string linkname;
