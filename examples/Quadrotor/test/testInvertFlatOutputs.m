@@ -9,6 +9,7 @@ ytraj = setOutputFrame(ytraj,DifferentiallyFlatOutputFrame);
 
 [xtraj_from_flat,utraj_from_flat] = invertFlatOutputs(plant,ytraj);
 
-% todo: test the remaining coordinates here
-% todo: improve tolerance (by finishing derivatives, etc)
+% todo: improve tolerance (by outputting polynomials, etc)
 valuecheck(xtraj_from_flat(1:6),xtraj(1:6),.1);
+% note: velocities are implemented, but do not pass a numeric test because 
+% ytraj is not defined to high enough order

@@ -27,6 +27,10 @@ classdef Quadrotor < RigidBodyManipulator
       obj = compile(obj);
     end
    
+    function I = getInertia(obj)
+      I = obj.body(2).inertia;
+    end
+    
     function u0 = nominalThrust(obj)
       % each propellor commands -mg/4
       u0 = Point(getInputFrame(obj),getMass(obj)*norm(getGravity(obj))*ones(4,1)/4);
