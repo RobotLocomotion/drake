@@ -12,4 +12,3 @@ ytraj = setOutputFrame(ytraj,DifferentiallyFlatOutputFrame);
 % todo: test the remaining coordinates here
 % todo: improve tolerance (by finishing derivatives, etc)
 valuecheck(xtraj_from_flat(1:6),xtraj(1:6),.1);
-

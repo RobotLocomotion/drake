@@ -30,12 +30,14 @@ g = [0;0;-9.81];
   end
 
 % todo: actually output a polynomial, not just a function handle
-warning('state velocities are set to zero for now (because i''m lazy).  coming soon.');
-xtraj = FunctionHandleTrajectory(@extractState,12,breaks)
+warning('state velocities are set to zero for now.  coming soon.');
+w = warning('off','Drake:FunctionHandleTrajectory');
+xtraj = FunctionHandleTrajectory(@extractState,12,breaks);
+warning(w);
 xtraj = setOutputFrame(xtraj,getStateFrame(plant));
 
 if nargout>1
-  warning('inputs are set to zero for now (because i''m lazy).  coming soon.');
+  warning('inputs are set to zero for now.  coming soon.');
   utraj = ConstantTrajectory(zeros(4,1));
   utraj = setOutputFrame(utraj,getInputFrame(plant));
 end
