@@ -6,10 +6,13 @@ function [xtraj,utraj] = invertFlatOutputs(plant,ytraj,options)
 % @option zero_acceleration_tol threshold on the magnitude of the 
 %                        acceleration vector below which the quad is
 %                        considered stationary. @default 1e-8
+%
+% implementation based on 
+% Minimum Snap Trajectory Generation and Control for Quadrotors
+% by Daniel Mellinger and Vijay Kumar
+% ICRA 2011
 
-% note: assumes g = [0;0;-9.81]
-
-typecheck(plant,'DrakeSystem');
+typecheck(plant,{'Quadrotor','QuadPlantPenn'});
 typecheck(ytraj,'PPTrajectory');
 assert(ytraj.getOutputFrame == DifferentiallyFlatOutputFrame);
 
@@ -19,10 +22,15 @@ if ~isfield(options,'zero_acceleration_tol'), options.zero_acceleration_tol = 1e
 breaks = getBreaks(ytraj);
 ydtraj = fnder(ytraj);
 yddtraj = fnder(ydtraj);
-g = [0;0;-9.81];
+ydddtraj = fnder(yddtraj);
+g = plant.getGravity;
+zW = g/norm(g);
+m = plant.getMass;
+I = plant.getInertia;
 
-  function x = extractState(t)
+  function x_or_u = extractStateOrInput(t,tf_output_state)
     y = ytraj.eval(t);
+    yd = ydtraj.eval(t);
     ydd = yddtraj.eval(t);
     zB = ydd(1:3)-g;
     zBmag = norm(zB);
@@ -32,19 +40,39 @@ g = [0;0;-9.81];
     yB = yB/norm(yB);
     xB = cross(yB,zB);
     R = [xB,yB,zB];
-    x = [y(1:3); rotmat2rpy(R); zeros(6,1)];
+    x = [y(1:3); rotmat2rpy(R); yd(1:3); zeros(3,1)];
+    
+    % compute velocities
+    yddd = ydddtraj.eval(t);
+    adot = yddd(1:3);
+    h_omega = m*(adot - (zB'*adot)*zB)/zBmag;
+
+    omegaBW = [ - h_omega'*yB; h_omega'*xB; yd(4)*zW'*zB ];
+    x(10:12) = angularvel2rpydot(x(4:6), omegaBW);
+
+    % now extract input
+    % note: my u vector = kf*omega.^2 from mellinger 
+%    omegadotBW = [ nan; nan; ydd(4)*zW'*zB ];
+%    mellinger_u = [zBmag; I*omegadotBW + omegaBW'*(I*omegaBW)]
+
+    if (tf_output_state)
+      x_or_u = x;
+    else
+      x_or_u = zeros(4,1);
+    end
   end
 
 % todo: actually output a polynomial, not just a function handle
-warning('state velocities are set to zero for now.  coming soon.');
 w = warning('off','Drake:FunctionHandleTrajectory');
-xtraj = FunctionHandleTrajectory(@extractState,12,breaks);
+xtraj = FunctionHandleTrajectory(@(t)extractStateOrInput(t,true),12,breaks);
 warning(w);
 xtraj = setOutputFrame(xtraj,getStateFrame(plant));
 
 if nargout>1
   warning('inputs are set to zero for now.  coming soon.');
-  utraj = ConstantTrajectory(zeros(4,1));
+  w = warning('off','Drake:FunctionHandleTrajectory');
+  utraj = FunctionHandleTrajectory(@(t)extractStateOrInput(t,false),4,breaks);
+  warning(w);
   utraj = setOutputFrame(utraj,getInputFrame(plant));
 end
 
