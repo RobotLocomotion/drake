@@ -65,8 +65,8 @@ seeds = [...
          [3, 0, 1];
          [2.5, .75, 1];
          [4, -1, 1.5];
-         % [0, 0, 2];
-         % [-2, 0, 1];
+         [0, 0, 2];
+         [-2, 0, 1];
          ]';
 safe_regions = struct('A', {}, 'b', {});
 for j = 1:size(seeds, 2)
@@ -85,11 +85,16 @@ for j = 1:size(seeds, 2)
 end
 drawnow();
 
-degree = 5;
-n_segments = 5;
-goal = [-1;0;.5];
-ytraj = SOSTrajectory([5;-1;1.5], goal, {safe_regions}, degree, n_segments);
-save('ytraj.mat', 'ytraj');
+degree = 3;
+n_segments = 7;
+% start = [5;-1;1.5];
+start = [-2;0;1];
+% goal = [0;0;.5];
+goal = [5;-1;1.5];
+% goal = [6;-1;1.5];
+
+ytraj = SOSTrajectory(start, goal, {safe_regions}, degree, n_segments);
+% save('ytraj.mat', 'ytraj');
 % load('ytraj.mat', 'ytraj');
 ytraj = ytraj.setOutputFrame(DifferentiallyFlatOutputFrame);
 xtraj_from_flat = invertFlatOutputs(r,ytraj);
