@@ -4,27 +4,13 @@
 #include "drakeUtil.h"
 #include "RigidBodyManipulator.h"
 #include <stdexcept>
-#include "joints/drakeJointUtil.h"
 
-#define INF -2147483648
+#if !defined(WIN32) && !defined(WIN64)
+  #include "joints/drakeJointUtil.h"
+#endif
 
 using namespace Eigen;
 using namespace std;
-
-// convert Matlab cell array of strings into a C++ vector of strings
-vector<string> get_strings(const mxArray *rhs) {
-  int num = mxGetNumberOfElements(rhs);
-  vector<string> strings(num);
-  for (int i=0; i<num; i++) {
-    const mxArray *ptr = mxGetCell(rhs,i);
-    int buflen = mxGetN(ptr)*sizeof(mxChar)+1;
-    char* str = (char*)mxMalloc(buflen);
-    mxGetString(ptr, str, buflen);
-    strings[i] = string(str);
-    mxFree(str);
-  }
-  return strings;
-}
 
 void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 {
@@ -160,8 +146,10 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 
       double pitch = mxGetScalar(mxGetProperty(pBodies, i, "pitch"));
 
+#if !defined(WIN32) && !defined(WIN64)
       model->bodies[i]->setJoint(createJoint(jointname, Ttree, floating, joint_axis, pitch));
 //      mexPrintf((model->bodies[i]->getJoint().getName() + "\n").c_str());
+#endif
     }
     {
       pm = mxGetProperty(pBodies,i,"jointname");
@@ -216,7 +204,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 
         // Get element-to-link transform from MATLAB object
         memcpy(T.data(), mxGetPr(mxGetProperty(pShape,0,"T")), sizeof(double)*4*4);
-        auto shape = (DrakeCollision::Shape)mxGetScalar(mxGetProperty(pShape,0,"bullet_shape_id"));
+        auto shape = (DrakeCollision::Shape)static_cast<int>(mxGetScalar(mxGetProperty(pShape,0,"bullet_shape_id")));
         vector<double> params_vec;
         switch (shape) {
           case DrakeCollision::BOX:

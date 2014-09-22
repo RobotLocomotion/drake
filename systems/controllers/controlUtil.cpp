@@ -42,8 +42,8 @@ void angleDiff(MatrixBase<DerivedPhi1> const &phi1, MatrixBase<DerivedPhi2> cons
   }
 }
 
-template <int Rows, int Cols>
-mxArray* eigenToMatlab(Matrix<double,Rows,Cols> &m)
+template <typename DerivedA>
+mxArray* eigenToMatlab(const DerivedA &m)
 {
  mxArray* pm = mxCreateDoubleMatrix(m.rows(),m.cols(),mxREAL);
  if (m.rows()*m.cols()>0)
@@ -269,10 +269,10 @@ MatrixXd individualSupportCOPs(RigidBodyManipulator* r, const std::vector<Suppor
       Vector3d force = Vector3d::Zero();
       Vector3d torque = Vector3d::Zero();
 
-      for (const auto& k : contact_pt_inds) {
-        const auto& Bblock = Bj.middleCols(k * n_basis_vectors_per_contact, n_basis_vectors_per_contact);
-        const auto& betablock = betaj.segment(k * n_basis_vectors_per_contact, n_basis_vectors_per_contact);
-        Vector3d contact_position = contact_positions.col(k);
+      for (auto k = contact_pt_inds.begin(); k!= contact_pt_inds.end(); k++) { 
+        const auto& Bblock = Bj.middleCols(*k * n_basis_vectors_per_contact, n_basis_vectors_per_contact);
+        const auto& betablock = betaj.segment(*k * n_basis_vectors_per_contact, n_basis_vectors_per_contact);
+        Vector3d contact_position = contact_positions.col(*k);
         Vector3d point_force = Bblock * betablock;
         force += point_force;
         auto torquejk = contact_position.cross(point_force);
@@ -294,11 +294,11 @@ MatrixXd individualSupportCOPs(RigidBodyManipulator* r, const std::vector<Suppor
   return individual_cops;
 }
 
-template void getRows(std::set<int> &, const MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > &);
-template void getCols(std::set<int> &, const MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > &);
-template void angleDiff(const MatrixBase<MatrixXd> &, const MatrixBase<MatrixXd> &, MatrixBase<MatrixXd> &);
-template void angleDiff(const MatrixBase<Vector3d> &, const MatrixBase<Vector3d> &, MatrixBase<Vector3d> &);
-template mxArray* eigenToMatlab(Matrix<double,-1,-1> &);
-template mxArray* eigenToMatlab(Matrix<double,-1,1> &);
-template mxArray* eigenToMatlab(Matrix<double,6,1> &);
-template mxArray* eigenToMatlab(Matrix<double,3,1> &);
+template drakeControlUtilEXPORT void getRows(std::set<int> &, const MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > &);
+template drakeControlUtilEXPORT void getCols(std::set<int> &, const MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > &);
+template drakeControlUtilEXPORT void angleDiff(const MatrixBase<MatrixXd> &, const MatrixBase<MatrixXd> &, MatrixBase<MatrixXd> &);
+template drakeControlUtilEXPORT void angleDiff(const MatrixBase<Vector3d> &, const MatrixBase<Vector3d> &, MatrixBase<Vector3d> &);
+template drakeControlUtilEXPORT mxArray* eigenToMatlab(const MatrixXd &);
+template drakeControlUtilEXPORT mxArray* eigenToMatlab(const VectorXd &);
+template drakeControlUtilEXPORT mxArray* eigenToMatlab(const Vector6d &);
+template drakeControlUtilEXPORT mxArray* eigenToMatlab(const Vector3d &);
