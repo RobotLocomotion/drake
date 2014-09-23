@@ -31,6 +31,7 @@ IKoptions::IKoptions(const IKoptions &rhs)
   this->qd0_ub = rhs.qd0_ub;
   this->qdf_lb = rhs.qdf_lb;
   this->qdf_ub = rhs.qdf_ub;
+  this->use_rbm_joint_bnd = rhs.use_rbm_joint_bnd;
 }
 IKoptions::~IKoptions()
 {
@@ -58,6 +59,7 @@ void IKoptions::setDefaultParams(RigidBodyManipulator* robot)
   this->qd0_lb = VectorXd::Zero(this->nq);
   this->qdf_ub = VectorXd::Zero(this->nq);
   this->qdf_lb = VectorXd::Zero(this->nq);
+  this->use_rbm_joint_bnd = true;
 }
 
 RigidBodyManipulator* IKoptions::getRobotPtr() const
@@ -337,4 +339,14 @@ void IKoptions::updateRobot(RigidBodyManipulator* new_robot)
   {
     this->setDefaultParams(new_robot);
   }
+}
+
+void IKoptions::setUseRBMJointBnd(bool flag)
+{
+  this->use_rbm_joint_bnd = flag;
+}
+
+bool IKoptions::getUseRBMJointBnd() const
+{
+  return this->use_rbm_joint_bnd;
 }
