@@ -270,10 +270,20 @@ void QuasiStaticConstraint::updateRobotnum(std::set<int> &robotnumset)
   this->m_robotnumset = robotnumset;
 }
 
-PostureConstraint::PostureConstraint(RigidBodyManipulator* robot, const Eigen::Vector2d &tspan):RigidBodyConstraint(RigidBodyConstraint::PostureConstraintCategory,robot,tspan)
+PostureConstraint::PostureConstraint(RigidBodyManipulator* robot, const Eigen::Vector2d &tspan, bool use_rbm_joint_bnd):RigidBodyConstraint(RigidBodyConstraint::PostureConstraintCategory,robot,tspan)
 {
-  this->lb = this->robot->joint_limit_min;
-  this->ub = this->robot->joint_limit_max;
+  this->use_rbm_joint_bnd = use_rbm_joint_bnd;
+  if(this->use_rbm_joint_bnd)
+  {
+    this->lb = this->robot->joint_limit_min;
+    this->ub = this->robot->joint_limit_max;
+  }
+  else
+  {
+    int nq = this->robot->num_dof;
+    this->lb = VectorXd::Constant(-std::numeric_limits<double>::infinity(),nq);
+    this->ub = VectorXd::Constant(std::numeric_limits<double>::infinity(),nq);
+  }
   this->type = RigidBodyConstraint::PostureConstraintType;
 }
 
@@ -282,6 +292,7 @@ PostureConstraint::PostureConstraint(const PostureConstraint& rhs):RigidBodyCons
   int nq = this->robot->num_dof;
   this->lb.resize(nq);
   this->ub.resize(nq);
+  this->use_rbm_joint_bnd = rhs.use_rbm_joint_bnd;
   for(int i = 0;i<nq;i++)
   {
     this->lb[i] = rhs.lb[i];
