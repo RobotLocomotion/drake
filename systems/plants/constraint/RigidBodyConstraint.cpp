@@ -976,7 +976,7 @@ RelativePositionConstraint::~RelativePositionConstraint()
 {
 }
 
-QuatConstraint::QuatConstraint(RigidBodyManipulator *robot, double tol, Vector2d tspan):SingleTimeKinematicConstraint(robot,tspan)
+QuatConstraint::QuatConstraint(RigidBodyManipulator *robot, double tol, const Vector2d &tspan):SingleTimeKinematicConstraint(robot,tspan)
 {
   if(tol<0.0 || tol>M_PI)
   {
@@ -1021,7 +1021,7 @@ QuatConstraint::~QuatConstraint(void)
 {
 }
 
-WorldQuatConstraint::WorldQuatConstraint(RigidBodyManipulator *robot, int body, Vector4d quat_des, double tol, Vector2d tspan):QuatConstraint(robot,tol,tspan)
+WorldQuatConstraint::WorldQuatConstraint(RigidBodyManipulator *robot, int body, const Vector4d &quat_des, double tol, const Vector2d &tspan):QuatConstraint(robot,tol,tspan)
 {
   this->body = body;
   this->body_name = robot->getBodyOrFrameName(body);
@@ -1029,8 +1029,7 @@ WorldQuatConstraint::WorldQuatConstraint(RigidBodyManipulator *robot, int body, 
   {
     std::cerr<<"quat_des must be non-zero"<<std::endl;
   }
-  quat_des = quat_des/quat_des.norm();
-  this->quat_des = quat_des;
+  this->quat_des = quat_des/quat_des.norm();
   this->type = RigidBodyConstraint::WorldQuatConstraintType;
 }
 
@@ -1074,7 +1073,7 @@ WorldQuatConstraint::~WorldQuatConstraint()
 {
 }
 
-RelativeQuatConstraint::RelativeQuatConstraint(RigidBodyManipulator* robot, int bodyA_idx, int bodyB_idx, Vector4d &quat_des, double tol, Vector2d tspan):QuatConstraint(robot,tol,tspan)
+RelativeQuatConstraint::RelativeQuatConstraint(RigidBodyManipulator* robot, int bodyA_idx, int bodyB_idx, const Vector4d &quat_des, double tol, const Vector2d &tspan):QuatConstraint(robot,tol,tspan)
 {
   this->bodyA_idx = bodyA_idx;
   this->bodyB_idx = bodyB_idx;
@@ -1141,18 +1140,19 @@ RelativeQuatConstraint::~RelativeQuatConstraint()
 {
 }
 
-EulerConstraint::EulerConstraint(RigidBodyManipulator *robot, Vector3d lb, Vector3d ub, Vector2d tspan):SingleTimeKinematicConstraint(robot,tspan)
+EulerConstraint::EulerConstraint(RigidBodyManipulator *robot, const Vector3d &lb, const Vector3d &ub, const Vector2d &tspan):SingleTimeKinematicConstraint(robot,tspan)
 {
   this->num_constraint = 0;
+  Vector3d my_lb = lb, my_ub = ub;
   for(int i = 0;i<3;i++)
   {
     if(isnan(lb(i)))
     {
-      lb(i) = -std::numeric_limits<double>::infinity();
+      my_lb(i) = -std::numeric_limits<double>::infinity();
     }
     if(isnan(ub(i)))
     {
-      ub(i) = std::numeric_limits<double>::infinity();
+      my_ub(i) = std::numeric_limits<double>::infinity();
     }
     if(ub(i)<lb(i))
     {
@@ -1176,8 +1176,8 @@ EulerConstraint::EulerConstraint(RigidBodyManipulator *robot, Vector3d lb, Vecto
   {
     if(!this->null_constraint_rows[valid_row_idx])
     {
-      this->lb[bnd_idx] = lb(valid_row_idx);
-      this->ub[bnd_idx] = ub(valid_row_idx);
+      this->lb[bnd_idx] = my_lb(valid_row_idx);
+      this->ub[bnd_idx] = my_ub(valid_row_idx);
       bnd_idx++;
       valid_row_idx++;
     }
@@ -1247,7 +1247,7 @@ void EulerConstraint::bounds(const double* t, VectorXd &lb, VectorXd &ub) const
   }
 }
 
-WorldEulerConstraint::WorldEulerConstraint(RigidBodyManipulator *robot, int body, Vector3d lb, Vector3d ub, Vector2d tspan): EulerConstraint(robot,lb,ub,tspan)
+WorldEulerConstraint::WorldEulerConstraint(RigidBodyManipulator *robot, int body, const Vector3d &lb, const Vector3d &ub, const Vector2d &tspan): EulerConstraint(robot,lb,ub,tspan)
 {
   this->body = body;
   this->body_name = robot->getBodyOrFrameName(body);
@@ -1322,7 +1322,7 @@ WorldEulerConstraint::~WorldEulerConstraint()
 {
 }
 
-GazeConstraint::GazeConstraint(RigidBodyManipulator* robot, Vector3d axis, double conethreshold, Vector2d tspan):SingleTimeKinematicConstraint(robot,tspan)
+GazeConstraint::GazeConstraint(RigidBodyManipulator* robot, const Vector3d &axis, double conethreshold, const Vector2d &tspan):SingleTimeKinematicConstraint(robot,tspan)
 {
   double len_axis = axis.norm();
   if(len_axis<=0)
@@ -1337,7 +1337,7 @@ GazeConstraint::GazeConstraint(RigidBodyManipulator* robot, Vector3d axis, doubl
   this->conethreshold = conethreshold;
 }
 
-GazeOrientConstraint::GazeOrientConstraint(RigidBodyManipulator* robot, Vector3d axis, Vector4d quat_des, double conethreshold, double threshold, Vector2d tspan): GazeConstraint(robot,axis,conethreshold,tspan)
+GazeOrientConstraint::GazeOrientConstraint(RigidBodyManipulator* robot, const Vector3d &axis, const Vector4d &quat_des, double conethreshold, double threshold, const Vector2d &tspan): GazeConstraint(robot,axis,conethreshold,tspan)
 {
   double len_quat_des = quat_des.norm();
   if(len_quat_des<=0)
@@ -1396,7 +1396,7 @@ void GazeOrientConstraint::bounds(const double* t, VectorXd &lb, VectorXd &ub) c
   }
 }
 
-WorldGazeOrientConstraint::WorldGazeOrientConstraint(RigidBodyManipulator* robot, int body, Vector3d axis, Vector4d quat_des,double conethreshold, double threshold, Vector2d tspan): GazeOrientConstraint(robot,axis,quat_des,conethreshold,threshold,tspan)
+WorldGazeOrientConstraint::WorldGazeOrientConstraint(RigidBodyManipulator* robot, int body, const Vector3d &axis, const Vector4d &quat_des,double conethreshold, double threshold, const Vector2d &tspan): GazeOrientConstraint(robot,axis,quat_des,conethreshold,threshold,tspan)
 {
   this->body = body;
   this->body_name = robot->getBodyOrFrameName(body);
@@ -1444,7 +1444,7 @@ void WorldGazeOrientConstraint::name(const double* t, std::vector<std::string> &
 }
 
 
-GazeDirConstraint::GazeDirConstraint(RigidBodyManipulator* robot, Vector3d axis, Vector3d dir, double conethreshold, Vector2d tspan):GazeConstraint(robot,axis,conethreshold,tspan)
+GazeDirConstraint::GazeDirConstraint(RigidBodyManipulator* robot, const Vector3d &axis, const Vector3d &dir, double conethreshold, const Vector2d &tspan):GazeConstraint(robot,axis,conethreshold,tspan)
 {
   double len_dir = dir.norm();
   if(len_dir<= 0)
@@ -1468,7 +1468,7 @@ void GazeDirConstraint::bounds(const double* t, VectorXd &lb, VectorXd &ub) cons
   }
 }
 
-WorldGazeDirConstraint::WorldGazeDirConstraint(RigidBodyManipulator *robot, int body, Vector3d axis, Vector3d dir, double conethreshold, Vector2d tspan): GazeDirConstraint(robot,axis,dir,conethreshold,tspan)
+WorldGazeDirConstraint::WorldGazeDirConstraint(RigidBodyManipulator *robot, int body, const Vector3d &axis, const Vector3d &dir, double conethreshold, const Vector2d &tspan): GazeDirConstraint(robot,axis,dir,conethreshold,tspan)
 {
   this->body = body;
   this->body_name = robot->getBodyOrFrameName(body);
@@ -1520,7 +1520,7 @@ void WorldGazeDirConstraint::name(const double* t, std::vector<std::string> &nam
 }
 
 
-GazeTargetConstraint::GazeTargetConstraint(RigidBodyManipulator* robot, Vector3d axis, Vector3d target, Vector4d gaze_origin, double conethreshold, Vector2d tspan):GazeConstraint(robot,axis,conethreshold,tspan)
+GazeTargetConstraint::GazeTargetConstraint(RigidBodyManipulator* robot, const Vector3d &axis, const Vector3d &target, const Vector4d &gaze_origin, double conethreshold, const Vector2d &tspan):GazeConstraint(robot,axis,conethreshold,tspan)
 {
   this->target = target;
   this->gaze_origin = gaze_origin;
@@ -1539,7 +1539,7 @@ void GazeTargetConstraint::bounds(const double* t, VectorXd &lb, VectorXd &ub) c
   }
 }
 
-WorldGazeTargetConstraint::WorldGazeTargetConstraint(RigidBodyManipulator* robot, int body, Vector3d axis, Vector3d target, Vector4d gaze_origin, double conethreshold, Vector2d tspan): GazeTargetConstraint(robot,axis,target,gaze_origin,conethreshold,tspan)
+WorldGazeTargetConstraint::WorldGazeTargetConstraint(RigidBodyManipulator* robot, int body, const Vector3d &axis, const Vector3d &target, const Vector4d &gaze_origin, double conethreshold, const Vector2d &tspan): GazeTargetConstraint(robot,axis,target,gaze_origin,conethreshold,tspan)
 {
   this->body = body;
   this->body_name = robot->getBodyOrFrameName(body);
@@ -1599,7 +1599,7 @@ void WorldGazeTargetConstraint::name(const double* t, std::vector<std::string> &
 }
 
 
-RelativeGazeTargetConstraint::RelativeGazeTargetConstraint(RigidBodyManipulator *robot, int bodyA_idx, int bodyB_idx, const Eigen::Vector3d &axis, const Vector3d &target, const Vector4d &gaze_origin, double conethreshold, Eigen::Vector2d &tspan):GazeTargetConstraint(robot,axis,target,gaze_origin,conethreshold,tspan)
+RelativeGazeTargetConstraint::RelativeGazeTargetConstraint(RigidBodyManipulator *robot, int bodyA_idx, int bodyB_idx, const Eigen::Vector3d &axis, const Vector3d &target, const Vector4d &gaze_origin, double conethreshold, const Eigen::Vector2d &tspan):GazeTargetConstraint(robot,axis,target,gaze_origin,conethreshold,tspan)
 {
   this->bodyA_idx = bodyA_idx;
   this->bodyB_idx = bodyB_idx;
@@ -1668,7 +1668,7 @@ void RelativeGazeTargetConstraint::name(const double* t, std::vector<std::string
 RelativeGazeDirConstraint::
 RelativeGazeDirConstraint(RigidBodyManipulator *robot, int bodyA_idx, 
     int bodyB_idx, const Vector3d &axis, const Vector3d &dir, 
-    double conethreshold, Eigen::Vector2d tspan) 
+    double conethreshold, const Eigen::Vector2d &tspan) 
 : GazeDirConstraint(robot,axis,dir,conethreshold,tspan),
   bodyA_idx(bodyA_idx), bodyB_idx(bodyB_idx)
 {
@@ -2225,8 +2225,8 @@ void WorldFixedBodyPoseConstraint::name(const double* t, int n_breaks, std::vect
 
 AllBodiesClosestDistanceConstraint::AllBodiesClosestDistanceConstraint(
     RigidBodyManipulator* robot, double lb, double ub, 
-    std::vector<int> active_bodies_idx, 
-    std::set<std::string> active_group_names, Vector2d tspan)
+    const std::vector<int> &active_bodies_idx, 
+    const std::set<std::string> &active_group_names, const Vector2d &tspan)
   : SingleTimeKinematicConstraint(robot, tspan), lb(lb), ub(ub),
     active_bodies_idx(active_bodies_idx), active_group_names(active_group_names)
 {
@@ -2342,8 +2342,8 @@ void AllBodiesClosestDistanceConstraint::name(const double* t, std::vector<std::
 }
 
 MinDistanceConstraint::MinDistanceConstraint( RigidBodyManipulator* robot, 
-    double min_distance, std::vector<int> active_bodies_idx, 
-    std::set<std::string> active_group_names, Vector2d tspan)
+    double min_distance, const std::vector<int> &active_bodies_idx, 
+    const std::set<std::string> &active_group_names, const Vector2d &tspan)
   : SingleTimeKinematicConstraint(robot, tspan), min_distance(min_distance),
     active_bodies_idx(active_bodies_idx), active_group_names(active_group_names)
 {
@@ -2507,7 +2507,7 @@ void MinDistanceConstraint::name(const double* t, std::vector<std::string> &name
 WorldPositionInFrameConstraint::WorldPositionInFrameConstraint(
     RigidBodyManipulator *robot, int body, const Eigen::MatrixXd &pts, 
     const Eigen::Matrix4d& T_frame_to_world, 
-    Eigen::MatrixXd lb, Eigen::MatrixXd ub, const Eigen::Vector2d &tspan)
+    const Eigen::MatrixXd &lb, const Eigen::MatrixXd &ub, const Eigen::Vector2d &tspan)
   : WorldPositionConstraint(robot,body,pts,lb,ub,tspan)
 {
   this->T_frame_to_world = T_frame_to_world;
