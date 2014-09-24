@@ -1211,6 +1211,84 @@ classdef RigidBodyManipulator < Manipulator
       end
       lcmgl.glColor3f(.7,.7,.7); % gray
     end
+    
+    function drawLCMGLGravity(model,q,gravity_visual_magnitude)
+        % draws a vector centered at the robot's center 
+        % of mass having the direction of the gravitational
+        % force on the robot.
+        %
+        % @param q the position of the robot
+        % @param gravity_visual_magnitude specifies the visual length of 
+        % the vector representing the gravitational force.
+        
+        if (nargin<3), gravity_visual_magnitude=0.25; end
+        gravity_force = getMass(model)*model.gravity;
+        vector_scale = gravity_visual_magnitude/norm(gravity_force,2);
+        lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton,'Gravity');
+        lcmgl.glColor3f(1,0,0);
+        lcmgl.drawVector3d(getCOM(model,q),vector_scale*gravity_force);
+        lcmgl.switchBuffers();
+    end
+    
+    function drawLCMGLForces(model,q,qd,gravity_visual_magnitude)
+        % draws the forces and torques on the robot. They are
+        % spatial vectors (wrenches) and are drawn at the body's
+        % origin on which they act. Forces are in green and torques
+        % in purple. The magnitude of each vector is scaled by
+        % the same amount that the vector corresponding to the 
+        % gravitational force on the robot would be scaled in order to
+        % make it have a norm equal to gravity_visual_magnitude. Use 
+        % drawLCMGLGravity to draw the gravity.
+        %
+        % @param q the position of the robot
+        % @param qd the velocities of the robot
+        % @param gravity_visual_magnitude specifies the (would-be) visual 
+        % length of the vector representing the gravitational force.
+        
+        if (nargin<4), gravity_visual_magnitude=0.25; end
+        gravity_force = getMass(model)*model.gravity;
+        vector_scale = gravity_visual_magnitude/norm(gravity_force,2);
+        
+        kinsol = doKinematics(model,q);
+        force_vectors = {};
+        for i=1:length(model.force)
+            if ~model.force{i}.direct_feedthrough_flag
+                force_element = model.force{i};
+                force_type = class(force_element);
+                if isprop(force_element,'child_body')
+                    body_ind = force_element.child_body;
+                else
+                    body_frame = getFrame(model,force_element.kinframe);
+                    body_ind = body_frame.body_ind;
+                end
+                f_ext = computeSpatialForce(force_element,model,q,qd);
+                joint_wrench = f_ext(:,body_ind);
+                body_wrench = inv(model.body(body_ind).X_joint_to_body)'*joint_wrench;
+                pos = forwardKin(model,kinsol,body_ind,[zeros(3,1),body_wrench(1:3),body_wrench(4:6)]);
+                point = pos(:,1);
+                torque_ext = pos(:,2)-point;
+                force_ext = pos(:,3)-point;
+                if ~isfield(force_vectors,force_type), force_vectors.(force_type) = []; end
+                force_vectors.(force_type) = [force_vectors.(force_type),[point;torque_ext;force_ext]];
+            end
+        end
+        force_types = fields(force_vectors);
+        for i=1:length(force_types);
+            force_type = force_types(i); force_type = force_type{1};
+            vectors = force_vectors.(force_type);
+            lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton,force_type);
+            for j=1:size(vectors,2)
+                point = vectors(1:3,j);
+                torque_ext = vectors(4:6,j);
+                force_ext = vectors(7:9,j);
+                lcmgl.glColor3f(.4,.2,.4);
+                lcmgl.drawVector3d(point,vector_scale*torque_ext);
+                lcmgl.glColor3f(.2,.4,.2);
+                lcmgl.drawVector3d(point,vector_scale*force_ext);
+            end
+            lcmgl.switchBuffers();
+        end
+    end
 
     function m = getMass(model)
       % todo: write total_mass to class and simply return it instead of
