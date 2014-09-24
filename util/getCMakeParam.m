@@ -12,7 +12,7 @@ tokens = regexp(txt,[param,':\w+=(.*)'],'tokens','dotexceptnewline');
 if isempty(tokens)
   val = [];
 else
-  val = tokens{1}{1};
+  val = strtrim(tokens{1}{1});
 end
 
 % Note: This was the old way of doing it.  But we found it less robust,

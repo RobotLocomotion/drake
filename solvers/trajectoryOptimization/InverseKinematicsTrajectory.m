@@ -56,6 +56,10 @@ classdef InverseKinematicsTrajectory < NonlinearProgram
     t_kinsol % A 1 x nT boolean array. t_kinsol(i) is true if doKinematics should be called at time t_knot(i)
   end
 
+  properties(Access = private)
+    bbcon_initial_state_id % The ID of the BoundingBoxConstraint on the initial state
+  end
+  
   methods
     function obj = InverseKinematicsTrajectory(robot,t,q_nom_traj,fix_initial_state,x0,varargin)
       % obj =
@@ -212,16 +216,16 @@ classdef InverseKinematicsTrajectory < NonlinearProgram
       if(isempty(obj.bbcon))
         obj.fix_initial_state = flag;
         if(obj.fix_initial_state)
-          obj = obj.addBoundingBoxConstraint(BoundingBoxConstraint(x0,x0),[obj.q_idx(:,1);obj.qd0_idx]);
+          [obj,obj.bbcon_initial_state_id] = obj.addBoundingBoxConstraint(BoundingBoxConstraint(x0,x0),[obj.q_idx(:,1);obj.qd0_idx]);
         else
-          obj = obj.addBoundingBoxConstraint(BoundingBoxConstraint(-inf(2*obj.nq,1),inf(2*obj.nq,1)),[obj.q_idx(:,1);obj.qd0_idx]);
+          [obj,obj.bbcon_initial_state_id] = obj.addBoundingBoxConstraint(BoundingBoxConstraint(-inf(2*obj.nq,1),inf(2*obj.nq,1)),[obj.q_idx(:,1);obj.qd0_idx]);
         end
       elseif(obj.fix_initial_state ~= flag)
         obj.fix_initial_state = flag;
         if(obj.fix_initial_state)
-          obj = obj.replaceBoundingBoxConstraint(BoundingBoxConstraint(x0,x0),1,[obj.q_idx(:,1);obj.qd0_idx]);
+          [obj,obj.bbcon_initial_state_id] = obj.updateBoundingBoxConstraint(obj.bbcon_initial_state_id,BoundingBoxConstraint(x0,x0),[obj.q_idx(:,1);obj.qd0_idx]);
         else
-          obj = obj.replaceBoundingBoxConstraint(BoundingBoxConstraint(-inf(2*obj.nq,1),inf(2*obj.nq,1)),1,[obj.q_idx(:,1);obj.qd0_idx]);
+          [obj,obj.bbcon_initial_state_id] = obj.updateBoundingBoxConstraint(obj.bbcon_initial_state_id,BoundingBoxConstraint(-inf(2*obj.nq,1),inf(2*obj.nq,1)),[obj.q_idx(:,1);obj.qd0_idx]);
         end
       end
     end
