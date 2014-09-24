@@ -389,8 +389,8 @@ display('Check without RigidBodyManipulator default joint limits');
 ikoptions = ikoptions.setUseRBMJointBnd(false);
 pc = PostureConstraint(robot,[-inf,inf],false);
 [joint_lb,joint_ub] =robot.getJointLimits();
-pc = pc.setJointLimits([l_leg_kny;r_leg_kny],joint_lb([l_leg_kny;r_leg_kny])+0.1*pi,joint_ub([l_leg_kny;r_leg_kny])+0.1*pi);
-valuecheck(pc.lb([l_leg_kny;r_leg_kny]),joint_lb([l_leg_kny;r_leg_kny])+0.1*pi);
+pc = pc.setJointLimits([l_leg_kny;r_leg_kny],joint_ub([l_leg_kny;r_leg_kny])+0.1*pi,joint_ub([l_leg_kny;r_leg_kny])+0.1*pi);
+valuecheck(pc.lb([l_leg_kny;r_leg_kny]),joint_ub([l_leg_kny;r_leg_kny])+0.1*pi);
 valuecheck(pc.ub([l_leg_kny;r_leg_kny]),joint_ub([l_leg_kny;r_leg_kny])+0.1*pi);
 q = test_IK_userfun(robot,q_seed,q_nom,pc,qsc,kc2l,kc2r,hand_line_dist_cnst,ikoptions);
 
@@ -457,6 +457,9 @@ ikmexoptions = ikmexoptions.setMex(true);
 tic
 ikproblem = InverseKinematics(r,q_nom,varargin{1:end-1});
 ikproblem = ikproblem.setQ(ikoptions.Q);
+if(~ikoptions.use_rbm_joint_bnd)
+  ikproblem = ikproblem.deleteBoundingBoxConstraint(ikproblem.rbm_joint_bnd_cnstr_id);
+end
 [qik,F,info,infeasible_cnstr_ik] = ikproblem.solve(q_seed);
 toc
 % valuecheck(qik,q,1e-6);
