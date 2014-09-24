@@ -28,6 +28,8 @@ classdef InverseKinematicsTrajectory < NonlinearProgram
 % @param qd0_idx  -- a nq x 1 matrix. qdot0 = x(qd0_idx);
 % @param qdf_idx  -- a nq x 1 matrix. qdotf = x(qdf_idx);
 % @param qsc_weight_idx  -- a cell of vectors. x(qsc_weight_idx{i}) are the weights of the QuasiStaticConstraint at time t(i)
+% @param rbm_joint_bnd_cnstr_id  The ID of the BoundingBoxConstraint that enforces the
+% posture to be within the joint limits of the RigidBodyManipulator
   properties(SetAccess = protected)
     t_knot
     Q
@@ -45,6 +47,7 @@ classdef InverseKinematicsTrajectory < NonlinearProgram
     % nT-element vector of indices into the shared_data, where
     % shared_data{kinsol_dataind(i)} is the kinsol for knot point i
     kinsol_dataind
+    rbm_joint_bnd_cnstr_id
   end
 
   properties(Access = protected)
@@ -108,7 +111,7 @@ classdef InverseKinematicsTrajectory < NonlinearProgram
       obj.qsc_weight_idx = cell(1,obj.nT);
       num_rbcnstr = nargin-5;
       [q_lb,q_ub] = obj.robot.getJointLimits();
-      obj = obj.addBoundingBoxConstraint(BoundingBoxConstraint(reshape(bsxfun(@times,q_lb,ones(1,obj.nT)),[],1),...
+      [obj,obj.rbm_joint_bnd_cnstr_id] = obj.addBoundingBoxConstraint(BoundingBoxConstraint(reshape(bsxfun(@times,q_lb,ones(1,obj.nT)),[],1),...
         reshape(bsxfun(@times,q_ub,ones(1,obj.nT)),[],1)),obj.q_idx(:));
       if(obj.fix_initial_state)
         t_start = 2;
