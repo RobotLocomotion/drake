@@ -332,7 +332,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     model->frames[i].body_ind = (int) mxGetScalar(pm)-1;
 
     pm = mxGetProperty(pFrames,i,"T");
-    memcpy(model->frames[i].T.data(),mxGetPr(pm),sizeof(double)*4*4);
+    memcpy(model->frames[i].Ttree.data(),mxGetPr(pm),sizeof(double)*4*4);
   }
 
 

@@ -25,7 +25,7 @@ endif
 
 
 all: pod-build/Makefile
-	cmake --build pod-build --target install
+	cmake --build pod-build --config $(BUILD_TYPE) --target install
 
 pod-build/Makefile:
 	$(MAKE) configure
@@ -82,7 +82,7 @@ clean:
 
 # other (custom) targets are passed through to the cmake-generated Makefile
 %::
-	cmake --build pod-build --target $@
+	cmake --build pod-build --config $(BUILD_TYPE) --target $@
 
 # Default to a less-verbose build.  If you want all the gory compiler output,
 # run "make VERBOSE=1"
