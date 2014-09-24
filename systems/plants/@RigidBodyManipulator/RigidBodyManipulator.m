@@ -1213,6 +1213,14 @@ classdef RigidBodyManipulator < Manipulator
     end
     
     function drawLCMGLGravity(model,q,gravity_visual_magnitude)
+        % draws a vector centered at the robot's center 
+        % of mass having the direction of the gravitational
+        % force on the robot.
+        %
+        % @param q the position of the robot
+        % @param gravity_visual_magnitude specifies the visual length of 
+        % the vector representing the gravitational force.
+        
         if (nargin<3), gravity_visual_magnitude=0.25; end
         gravity_force = getMass(model)*model.gravity;
         vector_scale = gravity_visual_magnitude/norm(gravity_force,2);
@@ -1223,7 +1231,21 @@ classdef RigidBodyManipulator < Manipulator
     end
     
     function drawLCMGLForces(model,q,qd,gravity_visual_magnitude)
-        if (nargin<4), gravity_visual_magnitude = 0.25; end
+        % draws the forces and torques on the robot. They are
+        % spatial vectors (wrenches) and are drawn at the body's
+        % origin on which they act. Forces are in green and torques
+        % in purple. The magnitude of each vector is scaled by
+        % the same amount that the vector corresponding to the 
+        % gravitational force on the robot would be scaled in order to
+        % make it have a norm equal to gravity_visual_magnitude. Use 
+        % drawLCMGLGravity to draw the gravity.
+        %
+        % @param q the position of the robot
+        % @param qd the velocities of the robot
+        % @param gravity_visual_magnitude specifies the (would-be) visual 
+        % length of the vector representing the gravitational force.
+        
+        if (nargin<4), gravity_visual_magnitude=0.25; end
         gravity_force = getMass(model)*model.gravity;
         vector_scale = gravity_visual_magnitude/norm(gravity_force,2);
         
