@@ -2,12 +2,28 @@ classdef RigidBodyVisualizer < Visualizer
   properties (Access=protected)
     model;
   end
+  properties
+    gravity_visual_magnitude=.25;      
+  end
   methods
     function obj = RigidBodyVisualizer(manip)
       obj = obj@Visualizer(getStateFrame(manip));
       obj.model = manip;
     end
-    function inspector(obj,x0,state_dims,minrange,maxrange,gravity_visual_magnitude)
+    function inspector(obj,x0,state_dims,minrange,maxrange,options)
+      % brings up a simple slider gui that displays the robot
+      % in the specified state when possible. It also shows resulting
+      % forces and torques if some of the specified states are velocities.
+      % 
+      % @param x0 the initial state to display the robot in
+      % @param state_dims are the indices of the states to show on the
+      % slider. Including velocity states will display the forces and torques.
+      % @param minrange is the lower bound for the sliders
+      % @param maxrange is the upper bound for the sliders
+      % @option gravity_visual_magnitude specifies the visual length of 
+      % the vector representing the gravitational force. Other force 
+      % visualizations are scaled accordingly. 
+        
       if (nargin<2), x0 = getInitialState(obj.model); end
       if (nargin<3), state_dims = 1:getNumPositions(obj.model); end
       [jlmin,jlmax] = getJointLimits(obj.model);
@@ -16,9 +32,12 @@ classdef RigidBodyVisualizer < Visualizer
       xmax = [jlmax;100*ones(getNumVelocities(obj.model),1)];
       if (nargin<4), minrange = xmin(state_dims); end
       if (nargin<5), maxrange = xmax(state_dims); end
-      if (nargin<6), gravity_visual_magnitude=0.25; end
+      if (nargin<6), options = struct(); end
+      if isfield(options,'gravity_visual_magnitude') 
+          obj.gravity_visual_magnitude = options.gravity_visual_magnitude; 
+      end
       
-      inspector@Visualizer(obj,x0,state_dims,minrange,maxrange,obj.model,gravity_visual_magnitude);
+      inspector@Visualizer(obj,x0,state_dims,minrange,maxrange,obj.model);
     end
       
     function kinematicInspector(obj,body_or_frame_id,pt,q0,minrange,maxrange)
