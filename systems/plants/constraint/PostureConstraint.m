@@ -38,7 +38,7 @@ classdef PostureConstraint<RigidBodyConstraint
       obj.ub = obj.joint_limit_max0;
       obj.type = RigidBodyConstraint.PostureConstraintType;
       if robot.getMexModelPtr~=0 && exist('constructPtrRigidBodyConstraintmex','file')
-        obj.mex_ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.PostureConstraintType,robot.getMexModelPtr,tspan);
+        obj.mex_ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.PostureConstraintType,robot.getMexModelPtr,tspan,use_rbm_joint_bnd);
       end
     end
     
