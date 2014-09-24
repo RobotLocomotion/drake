@@ -43,9 +43,22 @@ classdef RigidBodyWing < RigidBodyForceElement
     end
     
     
-    function [force, B_force, dforce ] = computeSpatialForce(obj,manip,q,qd)
+    function [force, B_force_or_dforce, dforce ] = computeSpatialForce(obj,manip,q,qd)
       % Calls the appropriate RigidBodySubWing.computeSpatialForce
       % for all of the subwings, adds the results, and returns.
+      %
+      % @param manip RigidBodyManipulator we are a part of
+      % @param q state vector
+      % @param qd time derivative of state vector
+      %
+      % @retval force forces produced by the wing
+      % @retval B_force_or_dforce if we have a control surface anywhere,
+      %   this is the B matrix that maps control input to force.
+      %   Otherwise, this is the gradient of the forces.
+      %
+      % @retval dforce gradient of forces if we do have a control surface
+      %   anywhere
+
       
       if length(obj.subwings) < 1
         error('computeSpatialForce called with no subwings.');
@@ -90,6 +103,13 @@ classdef RigidBodyWing < RigidBodyForceElement
         
       end
       
+      if control_surface_flag
+        % we have a control surface
+        B_force_or_dforce = B_force;
+      else
+        B_force_or_dforce = dforce;
+      end
+      
     end
         
     function obj = setInputNum(obj, input_num)
@@ -123,6 +143,36 @@ classdef RigidBodyWing < RigidBodyForceElement
       end
     end
     
+    
+    function [CL, CD, CM, dCL, dCD, dCM] = coeffs(obj, aoa)
+      % Returns dimensionalized coefficient of lift, drag, and pitch
+      % moment for a given angle of attack
+      %
+      % @param aoa angle of attack to get coefficients at
+      %
+      % @retval CL coefficient of lift
+      % @retval CD coefficient of drag
+      % @retval CM pitch moment
+      %
+      % @retval dCL derivative of coefficient of lift
+      % @retval dCL derivative of coefficient of drag
+      % @retval dCL derivative of pitch moment
+      
+      if length(obj.subwings) == 1
+        
+        if (nargout > 3)
+          [CL, CD, CM, dCL, dCD, dCM] = obj.subwings{1}.coeffs(aoa);
+        else
+          [CL, CD, CM] = obj.subwings{1}.coeffs(aoa);
+        end
+        
+      else
+        error('Not supported for wings with more than one subwing.');
+      end
+      
+      
+      
+    end
 
   end
 
