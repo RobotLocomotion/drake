@@ -1,5 +1,6 @@
 
 add_mex(realtime realtime.cpp)
+add_mex(barycentricInterpolation barycentricInterpolation.cpp)
 
 if (LCM_FOUND)
   add_mex(lcmLogger lcmLogger.cpp)
@@ -44,8 +45,10 @@ add_subdirectory(test)
 # Mex debugging tools:
 if (NOT WIN32)
 add_mex(debugMex SHARED debugMexLib.cpp)
+target_link_libraries(debugMex -ldl)
 #set_property( SOURCE debugMexLib.cpp PROPERTY COMPILE_FLAGS -DMX_COMPAT_32 )
 add_mex(drake_debug_mex EXECUTABLE drakeDebugMex.cpp)
+target_link_libraries(drake_debug_mex -ldl)
 
 message(STATUS "Writing drake_debug_mex.sh")
 file(WRITE ${CMAKE_BINARY_DIR}/bin/drake_debug_mex.sh

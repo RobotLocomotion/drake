@@ -1,5 +1,6 @@
 function testIndividualCentersOfPressure()
-addpath(fullfile(pwd,'..'));
+
+path_handle = addpathTemporary(fullfile(getDrakePath,'examples','Atlas'));
 
 options.floating = true;
 options.use_mex = true;

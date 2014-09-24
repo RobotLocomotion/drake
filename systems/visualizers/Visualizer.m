@@ -226,7 +226,7 @@ classdef Visualizer < DrakeSystem
         % use a little undocumented matlab to get continuous slider feedback:
         slider_listener{i} = handle.listener(slider{i},'ActionEvent',@update_display);
       end
-      
+
       set(f, 'Position', [560 400 560 20 + 30*rows]);
       resize_gui();
       update_display(slider{1});
@@ -249,7 +249,6 @@ classdef Visualizer < DrakeSystem
           x(state_dims(i)) = get(slider{i}, 'Value');
           set(value{i},'String',num2str(x(state_dims(i)),'%4.3f'));
         end
-        
         if (~isempty(visualized_system) && getNumStateConstraints(visualized_system)+getNumUnilateralConstraints(visualized_system)>0)
           % constrain the current slider to be exactly the specified value
           current_slider_statedim = get(source,'UserData');
@@ -274,61 +273,6 @@ classdef Visualizer < DrakeSystem
         end
         x0 = x;
         obj.drawWrapper(t,x);
-        
-        if (max(state_dims)>getNumPositions(visualized_system))
-          % was asked to show velocties, draw forces and torques
-          q = x0(1:getNumPositions(visualized_system));
-          qd = x0(getNumPositions(visualized_system)+1:getNumPositions(visualized_system)+getNumVelocities(visualized_system));
-          unit_length = .25; % the length corresponding to gravity on the robot
-          
-          gravity_force = getMass(visualized_system)*visualized_system.gravity;
-          vector_scale = unit_length/norm(gravity_force,2);
-          lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton,'Gravity');
-          lcmgl.glColor3f(.5,0,0);
-          lcmgl.drawVector3d(getCOM(visualized_system,q),vector_scale*gravity_force);
-          lcmgl.switchBuffers();
-          
-          kinsol = doKinematics(visualized_system,q,false,false);
-          force_vectors = {};
-          for i=1:length(visualized_system.force)
-            if ~visualized_system.force{i}.direct_feedthrough_flag
-              force_element = visualized_system.force{i};
-              force_type = class(force_element);
-              if isprop(force_element,'child_body')
-                  body_ind = force_element.child_body;
-              else
-                  frame = getFrame(visualized_system,force_element.kinframe);
-                  body_ind = frame.body_ind;
-              end
-              f_ext = computeSpatialForce(force_element,visualized_system,q,qd);
-              joint_wrench = f_ext(:,body_ind);
-              body_wrench = inv(visualized_system.body(body_ind).X_joint_to_body)'*joint_wrench;
-              body_T = kinsol.T{body_ind};
-              point = body_T(1:3,4);
-              torque = body_T(1:3,1:3)*body_wrench(1:3);
-              force = body_T(1:3,1:3)*body_wrench(4:6);
-              if ~isfield(force_vectors,force_type), force_vectors.(force_type) = []; end
-              force_vectors.(force_type) = [force_vectors.(force_type),[point;torque;force]];              
-            end
-          end
-          force_types = fields(force_vectors);
-          for i=1:length(force_types);
-              force_type = force_types(i); force_type = force_type{1};
-              vectors = force_vectors.(force_type);
-              lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton,force_type);
-              for j=1:size(vectors,2)
-                  point = vectors(1:3,j);
-                  torque = vectors(4:6,j);
-                  force = vectors(7:9,j);
-                  lcmgl.glColor3f(.4,.2,.4);      
-                  lcmgl.drawVector3d(point,vector_scale*torque);
-                  lcmgl.glColor3f(.2,.4,.2);      
-                  lcmgl.drawVector3d(point,vector_scale*force);
-              end
-              lcmgl.switchBuffers();
-          end
-        end
-        
       end
     end
 
