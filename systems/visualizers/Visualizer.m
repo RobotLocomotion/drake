@@ -197,8 +197,9 @@ classdef Visualizer < DrakeSystem
 
     function inspector(obj,x0,state_dims,minrange,maxrange,visualized_system,gravity_visual_magnitude)
       % set up a little gui with sliders to manually adjust each of the
-      % coordinates. @param unit_length specifies the scale of the vectors, that 
-      % length will correspond to the force produced by gravity on the robot
+      % coordinates. @param gravity_visual_magnitude specifies the visual length of 
+      % the vector representing the gravitational force. Other force visualizations 
+      % are scaled accordingly.
 
       fr = obj.getInputFrame();
       if (nargin<2 || isempty(x0)), x0 = zeros(fr.dim,1); end
