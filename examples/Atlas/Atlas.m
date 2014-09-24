@@ -27,7 +27,13 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
 
       if options.floating
         % could also do fixed point search here
-        obj = obj.setInitialState(obj.resolveConstraints(zeros(obj.getNumStates(),1)));
+        try
+          obj = obj.setInitialState(obj.resolveConstraints(zeros(obj.getNumStates(),1)));
+        catch ex
+          % Users with a student license of snopt may end up here. 
+          % Try again with fmincon
+          obj = obj.setInitialState(obj.resolveConstraints(zeros(obj.getNumStates(),1),[],'fmincon'));
+        end
       else
         % TEMP HACK to get by resolveConstraints
         for i=1:length(obj.manip.body), obj.manip.body(i).contact_pts=[]; end
