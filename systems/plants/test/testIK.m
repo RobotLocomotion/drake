@@ -468,17 +468,19 @@ if(ikoptions.use_rbm_joint_bnd)
 else
   testConstraintWoRBMJointBnd(r,[],qik,varargin{1:end-1});
 end
-tic
-[qmex,info_mex] = inverseKin(r,q_seed,q_nom,varargin{1:end-1},ikmexoptions);
-toc
-if(info_mex>10)
-  error('SNOPT info is %d, IK mex fails to solve the problem',info_mex);
-end
-% valuecheck(q,qmex,5e-2);
-if(ikoptions.use_rbm_joint_bnd)
-  testConstraint(r,[],qmex,varargin{1:end-1});
-else
-  testConstraintWoRBMJointBnd(r,[],qmex,varargin{1:end-1});
+if(checkDependency('snopt'))
+  tic
+  [qmex,info_mex] = inverseKin(r,q_seed,q_nom,varargin{1:end-1},ikmexoptions);
+  toc
+  if(info_mex>10)
+    error('SNOPT info is %d, IK mex fails to solve the problem',info_mex);
+  end
+  % valuecheck(q,qmex,5e-2);
+  if(ikoptions.use_rbm_joint_bnd)
+    testConstraint(r,[],qmex,varargin{1:end-1});
+  else
+    testConstraintWoRBMJointBnd(r,[],qmex,varargin{1:end-1});
+  end
 end
 end
 
