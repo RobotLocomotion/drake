@@ -43,7 +43,7 @@ RigidBodyConstraint::RigidBodyConstraint(int category, RigidBodyManipulator* rob
 {
   if(category>=0 || category <=-7)
   {
-    std::cerr<<"Drake:RigidBodyConstraint:Unsupported constraint category"<<std::endl; 
+    std::cerr<<"Drake:RigidBodyConstraint:Unsupported constraint category"<<std::endl;
   }
   this->category = category;
   this->type = 0;
@@ -179,7 +179,7 @@ void QuasiStaticConstraint::name(const double* t,std::vector<std::string> &name_
 {
   if(t == nullptr)
   {
-    char cnst_name_str_buffer[500]; 
+    char cnst_name_str_buffer[500];
     sprintf(cnst_name_str_buffer,"QuasiStaticConstraint x");
     std::string cnst_name_str1(cnst_name_str_buffer);
     name_str.push_back(cnst_name_str1);
@@ -189,7 +189,7 @@ void QuasiStaticConstraint::name(const double* t,std::vector<std::string> &name_
   }
   else
   {
-    char cnst_name_str_buffer[500]; 
+    char cnst_name_str_buffer[500];
     sprintf(cnst_name_str_buffer,"QuasiStaticConstraint x at time %10.4f",*t);
     std::string cnst_name_str1(cnst_name_str_buffer);
     name_str.push_back(cnst_name_str1);
@@ -560,7 +560,7 @@ void SingleTimeLinearPostureConstraint::name(const double* t, std::vector<std::s
     }
   }
 }
- 
+
 
 SingleTimeKinematicConstraint::SingleTimeKinematicConstraint(RigidBodyManipulator *robot, const Vector2d &tspan): RigidBodyConstraint(RigidBodyConstraint::SingleTimeKinematicConstraintCategory,robot,tspan)
 {
@@ -686,7 +686,7 @@ PositionConstraint::PositionConstraint(RigidBodyManipulator *robot, const Matrix
   {
     std::cerr<<"lb and ub must have 3 rows, the same number of columns as pts"<<std::endl;
   }
-  
+
   this->null_constraint_rows.resize(3*n_pts);
   this->num_constraint = 0;
   for(int j = 0;j<n_pts;j++)
@@ -696,7 +696,7 @@ PositionConstraint::PositionConstraint(RigidBodyManipulator *robot, const Matrix
       int idx = j*3+i;
       if(isnan(lb(i,j)))
       {
-        lb(i,j) = -std::numeric_limits<double>::infinity(); 
+        lb(i,j) = -std::numeric_limits<double>::infinity();
       }
       if(isnan(ub(i,j)))
       {
@@ -902,7 +902,7 @@ RelativePositionConstraint::RelativePositionConstraint(RigidBodyManipulator* rob
   this->bodyB_name = this->robot->bodies[this->bodyB_idx]->linkname;
   Vector4d bpTb_quat = quatConjugate(bTbp.block(3,0,4,1));
   Vector3d bpTb_trans = quatRotateVec(bpTb_quat,-bTbp.block(0,0,3,1));
-  this->bpTb << bpTb_trans, bpTb_quat; 
+  this->bpTb << bpTb_trans, bpTb_quat;
   this->type = RigidBodyConstraint::RelativePositionConstraintType;
 }
 
@@ -921,7 +921,7 @@ void RelativePositionConstraint::evalPositions(MatrixXd &pos, MatrixXd &J) const
   this->robot->forwardJac(this->bodyB_idx,origin_pt,2,dwTb);
   Vector4d bTw_quat = quatConjugate(wTb.block(3,0,4,1));
   Matrix4d dbTw_quat = dquatConjugate();
-  MatrixXd dbTw_quatdq = dbTw_quat*dwTb.block(3,0,4,nq); 
+  MatrixXd dbTw_quatdq = dbTw_quat*dwTb.block(3,0,4,nq);
   Vector3d bTw_trans = quatRotateVec(bTw_quat,-wTb.block(0,0,3,1));
   Matrix<double,3,7> dbTw_trans = dquatRotateVec(bTw_quat,-wTb.block(0,0,3,1));
 
@@ -931,7 +931,7 @@ void RelativePositionConstraint::evalPositions(MatrixXd &pos, MatrixXd &J) const
   Vector3d bpTw_trans1 = quatRotateVec(this->bpTb.block(3,0,4,1),bTw_trans);
   Matrix<double,3,7> dbpTw_trans1 = dquatRotateVec(this->bpTb.block(3,0,4,1),bTw_trans);
 
-  MatrixXd dbpTw_trans1dq = dbpTw_trans1.block(0,4,3,3)*dbTw_transdq; 
+  MatrixXd dbpTw_trans1dq = dbpTw_trans1.block(0,4,3,3)*dbTw_transdq;
   Vector3d bpTw_trans = bpTw_trans1+this->bpTb.block(0,0,3,1);
   MatrixXd dbpTw_transdq = dbpTw_trans1dq;
   Vector4d bpTw_quat = quatProduct(this->bpTb.block(3,0,4,1),bTw_quat);
@@ -1051,7 +1051,7 @@ void WorldQuatConstraint::name(const double* t, std::vector<std::string> &name_s
 {
   if(this->isTimeValid(t))
   {
-    char cnst_name_str_buffer[500]; 
+    char cnst_name_str_buffer[500];
     std::string time_str;
     char time_str_buffer[30];
     if(t != nullptr)
@@ -1104,7 +1104,7 @@ void RelativeQuatConstraint::evalOrientationProduct(double &prod, MatrixXd &dpro
   Vector4d quat_w2b = quatConjugate(quat_b2w);
   Matrix<double,4,4> dquat_w2b = dquatConjugate();
   MatrixXd dquat_w2bdq = dquat_w2b*dquat_b2w;
-  
+
   Vector4d quat_a2b = quatProduct(quat_w2b,quat_a2w);
   Matrix<double,4,8> dquat_a2b = dquatProduct(quat_w2b,quat_a2w);
 
@@ -1118,7 +1118,7 @@ void RelativeQuatConstraint::name(const double* t, std::vector<std::string> &nam
 {
   if(this->isTimeValid(t))
   {
-    char cnst_name_str_buffer[500]; 
+    char cnst_name_str_buffer[500];
     std::string time_str;
     char time_str_buffer[30];
     if(t != nullptr)
@@ -1146,19 +1146,19 @@ EulerConstraint::EulerConstraint(RigidBodyManipulator *robot, const Vector3d &lb
   Vector3d my_lb = lb, my_ub = ub;
   for(int i = 0;i<3;i++)
   {
-    if(isnan(lb(i)))
+    if(isnan(my_lb(i)))
     {
       my_lb(i) = -std::numeric_limits<double>::infinity();
     }
-    if(isnan(ub(i)))
+    if(isnan(my_ub(i)))
     {
       my_ub(i) = std::numeric_limits<double>::infinity();
     }
-    if(ub(i)<lb(i))
+    if(my_ub(i)<my_lb(i))
     {
       std::cerr<<"Drake:EulerConstraint:BadInputs:lb must be no larger than ub"<<std::endl;;
     }
-    if(isinf(lb(i))&&isinf(ub(i)))
+    if(isinf(my_lb(i))&&isinf(my_ub(i)))
     {
       null_constraint_rows[i] = true;
     }
@@ -1270,7 +1270,7 @@ void WorldEulerConstraint::name(const double* t, std::vector<std::string> &name_
 {
   if(this->isTimeValid(t))
   {
-    char cnst_name_str_buffer[500]; 
+    char cnst_name_str_buffer[500];
     int constraint_idx = 0;
     if(!this->null_constraint_rows[0])
     {
@@ -1392,7 +1392,7 @@ void GazeOrientConstraint::bounds(const double* t, VectorXd &lb, VectorXd &ub) c
   if(this->isTimeValid(t))
   {
     lb << cos(this->conethreshold)-1.0,cos(this->threshold/2.0);
-    ub << 0, std::numeric_limits<double>::infinity(); 
+    ub << 0, std::numeric_limits<double>::infinity();
   }
 }
 
@@ -1420,7 +1420,7 @@ void WorldGazeOrientConstraint::name(const double* t, std::vector<std::string> &
 {
   if(this->isTimeValid(t))
   {
-    char cnst_name_str_buffer[500]; 
+    char cnst_name_str_buffer[500];
     std::string cnst_name_str;
     if(t == nullptr)
     {
@@ -1505,7 +1505,7 @@ void WorldGazeDirConstraint::name(const double* t, std::vector<std::string> &nam
 {
   if(this->isTimeValid(t))
   {
-    char cnst_name_str_buffer[500]; 
+    char cnst_name_str_buffer[500];
     if(t == nullptr)
     {
       sprintf(cnst_name_str_buffer,"%s conic gaze direction constraint",this->body_name.c_str());
@@ -1525,7 +1525,7 @@ GazeTargetConstraint::GazeTargetConstraint(RigidBodyManipulator* robot, const Ve
   this->target = target;
   this->gaze_origin = gaze_origin;
   this->num_constraint = 1;
-} 
+}
 
 void GazeTargetConstraint::bounds(const double* t, VectorXd &lb, VectorXd &ub) const
 {
@@ -1584,7 +1584,7 @@ void WorldGazeTargetConstraint::name(const double* t, std::vector<std::string> &
 {
   if(this->isTimeValid(t))
   {
-    char cnst_name_str_buffer[500]; 
+    char cnst_name_str_buffer[500];
     if(t == nullptr)
     {
       sprintf(cnst_name_str_buffer,"%s conic gaze target constraint",this->body_name.c_str());
@@ -1666,9 +1666,9 @@ void RelativeGazeTargetConstraint::name(const double* t, std::vector<std::string
 
 
 RelativeGazeDirConstraint::
-RelativeGazeDirConstraint(RigidBodyManipulator *robot, int bodyA_idx, 
-    int bodyB_idx, const Vector3d &axis, const Vector3d &dir, 
-    double conethreshold, const Eigen::Vector2d &tspan) 
+RelativeGazeDirConstraint(RigidBodyManipulator *robot, int bodyA_idx,
+    int bodyB_idx, const Vector3d &axis, const Vector3d &dir,
+    double conethreshold, const Eigen::Vector2d &tspan)
 : GazeDirConstraint(robot,axis,dir,conethreshold,tspan),
   bodyA_idx(bodyA_idx), bodyB_idx(bodyB_idx)
 {
@@ -2224,8 +2224,8 @@ void WorldFixedBodyPoseConstraint::name(const double* t, int n_breaks, std::vect
 
 
 AllBodiesClosestDistanceConstraint::AllBodiesClosestDistanceConstraint(
-    RigidBodyManipulator* robot, double lb, double ub, 
-    const std::vector<int> &active_bodies_idx, 
+    RigidBodyManipulator* robot, double lb, double ub,
+    const std::vector<int> &active_bodies_idx,
     const std::set<std::string> &active_group_names, const Vector2d &tspan)
   : SingleTimeKinematicConstraint(robot, tspan), lb(lb), ub(ub),
     active_bodies_idx(active_bodies_idx), active_group_names(active_group_names)
@@ -2264,12 +2264,12 @@ void AllBodiesClosestDistanceConstraint::updateRobot(RigidBodyManipulator* robot
   this->num_constraint = c.size();
 }
 
-void 
+void
 AllBodiesClosestDistanceConstraint::eval(const double* t, VectorXd& c, MatrixXd& dc) const
 {
   if(this->isTimeValid(t)) {
     MatrixXd xA, xB, normal;
-    std::vector<int> idxA; 
+    std::vector<int> idxA;
     std::vector<int> idxB;
 
     if (active_bodies_idx.size() > 0) {
@@ -2287,11 +2287,11 @@ AllBodiesClosestDistanceConstraint::eval(const double* t, VectorXd& c, MatrixXd&
     }
     int num_pts = xA.cols();
     dc = MatrixXd::Zero(num_pts,robot->num_dof);
-    MatrixXd JA = MatrixXd::Zero(3,robot->num_dof);     
-    MatrixXd JB = MatrixXd::Zero(3,robot->num_dof);     
+    MatrixXd JA = MatrixXd::Zero(3,robot->num_dof);
+    MatrixXd JB = MatrixXd::Zero(3,robot->num_dof);
     for (int i = 0; i < num_pts; ++i) {
-      Vector4d xA_1; 
-      Vector4d xB_1; 
+      Vector4d xA_1;
+      Vector4d xB_1;
       xA_1 << xA.col(i), 1;
       xB_1 << xB.col(i), 1;
       robot->forwardJac(idxA.at(i),xA_1,0,JA);
@@ -2319,7 +2319,7 @@ void AllBodiesClosestDistanceConstraint::name(const double* t, std::vector<std::
 {
   if(this->isTimeValid(t))
   {
-    char cnst_name_buffer[100]; 
+    char cnst_name_buffer[100];
     if(t == nullptr)
     {
       sprintf(cnst_name_buffer,"All-to-all closest distance constraint");
@@ -2341,8 +2341,8 @@ void AllBodiesClosestDistanceConstraint::name(const double* t, std::vector<std::
   }
 }
 
-MinDistanceConstraint::MinDistanceConstraint( RigidBodyManipulator* robot, 
-    double min_distance, const std::vector<int> &active_bodies_idx, 
+MinDistanceConstraint::MinDistanceConstraint( RigidBodyManipulator* robot,
+    double min_distance, const std::vector<int> &active_bodies_idx,
     const std::set<std::string> &active_group_names, const Vector2d &tspan)
   : SingleTimeKinematicConstraint(robot, tspan), min_distance(min_distance),
     active_bodies_idx(active_bodies_idx), active_group_names(active_group_names)
@@ -2351,7 +2351,7 @@ MinDistanceConstraint::MinDistanceConstraint( RigidBodyManipulator* robot,
   this->type = RigidBodyConstraint::MinDistanceConstraintType;
 };
 
-void 
+void
 MinDistanceConstraint::eval(const double* t, VectorXd& c, MatrixXd& dc) const
 {
   //DEBUG
@@ -2359,7 +2359,7 @@ MinDistanceConstraint::eval(const double* t, VectorXd& c, MatrixXd& dc) const
   //END_DEBUG
   VectorXd dist, scaled_dist, pairwise_costs;
   MatrixXd xA, xB, normal, ddist_dq, dscaled_dist_ddist, dpairwise_costs_dscaled_dist;
-  std::vector<int> idxA; 
+  std::vector<int> idxA;
   std::vector<int> idxB;
 
   if (active_bodies_idx.size() > 0) {
@@ -2485,7 +2485,7 @@ void MinDistanceConstraint::name(const double* t, std::vector<std::string> &name
 {
   if(this->isTimeValid(t))
   {
-    char cnst_name_buffer[100]; 
+    char cnst_name_buffer[100];
     if(t == nullptr)
     {
       sprintf(cnst_name_buffer,"Minimum distance constraint");
@@ -2505,8 +2505,8 @@ void MinDistanceConstraint::name(const double* t, std::vector<std::string> &name
 }
 
 WorldPositionInFrameConstraint::WorldPositionInFrameConstraint(
-    RigidBodyManipulator *robot, int body, const Eigen::MatrixXd &pts, 
-    const Eigen::Matrix4d& T_frame_to_world, 
+    RigidBodyManipulator *robot, int body, const Eigen::MatrixXd &pts,
+    const Eigen::Matrix4d& T_frame_to_world,
     const Eigen::MatrixXd &lb, const Eigen::MatrixXd &ub, const Eigen::Vector2d &tspan)
   : WorldPositionConstraint(robot,body,pts,lb,ub,tspan)
 {
