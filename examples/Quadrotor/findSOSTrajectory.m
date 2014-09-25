@@ -64,8 +64,12 @@ constraints = [...
 
 region = {};
 for j = 1:length(safe_region_sets)
-  region{j} = binvar(length(safe_region_sets{j}), nt, 'full');
-  constraints = [constraints, sum(region{j}, 1) == 1];
+  if length(safe_region_sets{j}) > 1
+    region{j} = binvar(length(safe_region_sets{j}), nt, 'full');
+    constraints = [constraints, sum(region{j}, 1) == 1];
+  else
+    region{j} = true;
+  end
 end
 
 for j = 1:nt-1
@@ -169,32 +173,7 @@ for k = 1:length(breaks)-1
 end
 ytraj = PPTrajectory(mkpp(breaks, coeffs, dim+1));
 
-figure(1)
-hold on
 
-lc = lcm.lcm.LCM.getSingleton();
-lcmgl = drake.util.BotLCMGLClient(lc, 'quad_trajectory');
-lcmgl.glBegin(lcmgl.LCMGL_LINES);
-lcmgl.glColor3f(0.0,0.0,1.0);
-
-ts = linspace(0, dt*num_traj_segments);
-% ts = repmat(linspace(0, 1, 10), 1, num_traj_segments);
-Y = ytraj.eval(ts);
-Ybreaks = ytraj.eval(breaks);
-if size(Y, 1) == 2
-  plot(Y(1,:), Y(2,:), 'b-');
-  plot(Ybreaks(1,:), Ybreaks(2,:), 'bo')
-else
-  plot3(Y(1,:), Y(2,:), Y(3,:), 'b-');
-  plot3(Ybreaks(1,:), Ybreaks(2,:), Ybreaks(3,:), 'bo')
-  for i = 1:size(Y, 2)-1
-    lcmgl.glVertex3f(Y(1,i), Y(2,i), Y(3,i));
-    lcmgl.glVertex3f(Y(1,i+1), Y(2,i+1), Y(3,i+1));
-  end
-end
-
-lcmgl.glEnd();
-lcmgl.switchBuffers();
 % keyboard()
 
 axis equal
