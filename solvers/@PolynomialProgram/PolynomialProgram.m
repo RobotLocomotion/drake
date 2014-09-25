@@ -159,10 +159,12 @@ classdef PolynomialProgram < NonlinearProgram
           if(~checkDependency('gloptipoly3'))
             error('Drake:PolynomialProgram:UnsupportedSolver',' Gloptipoly3 not found.');
           end
+          obj.solver = 'gloptipoly';
         case 'bertini'
           if(~checkDependency('bertini'))
             error('Drake:PolynomialProgram:UnsupportedSolver',' Bertini not found.');
           end
+          obj.solver = 'bertini';
         case 'default'
           if(checkDependency('gloptipoly3'))
             obj = setSolver(obj,'gloptipoly');
