@@ -57,11 +57,11 @@ if nargin<2 || isa(varargin{1},'Point')
   end
   
   % check that x0 is a fixed point
-  x = sys.getStateFrame.poly;
+  x = sys.getStateFrame.getPoly;
   f = sys.getPolyDynamics;
   %% zero all inputs
   if (sys.getNumInputs>0)
-    f = subs(f,sys.getInputFrame.poly,zeros(sys.getNumInputs,1));
+    f = subs(f,sys.getInputFrame.getPoly,zeros(sys.getNumInputs,1));
   end
   
   if any(abs(double(subs(f,x,double(x0.inFrame(sys.getStateFrame)))))>1e-5)
@@ -84,7 +84,7 @@ sys = sys.inStateFrame(V.getFrame); % convert system to Lyapunov function coordi
 f = sys.getPolyDynamics;
 %% zero all inputs
 if (sys.getNumInputs>0)
-  f = subs(f,sys.getInputFrame.poly,zeros(sys.getNumInputs,1));
+  f = subs(f,sys.getInputFrame.getPoly,zeros(sys.getNumInputs,1));
 end
 f = f;
 
@@ -104,7 +104,7 @@ if (~isfield(options,'optimize')) options.optimize=true; end
 if (~isfield(options,'numSamples')) options.numSamples = 10^(num_x+1); end 
 
 if (~isfield(options,'degL1'))
-  options.degL1 = options.degV-1 + deg(f,V.getFrame.poly);  % just a guess
+  options.degL1 = options.degV-1 + deg(f,V.getFrame.getPoly);  % just a guess
 end
 if (~isfield(options,'degL2'))
   options.degL2 = options.degL1;
@@ -157,7 +157,7 @@ end
 %% for the bilinear search
 function V = bilinear(V0,f,options)
 
-  x = V0.getFrame.poly;
+  x = V0.getFrame.getPoly;
   num_x = length(x);
   V=V0;
   
@@ -280,7 +280,7 @@ end
 %% Pablo's method (jointly convex in rho and lagrange multipliers)
 function V = levelSetMethod(V0,f,options)
 
-  x = V0.getFrame.poly;
+  x = V0.getFrame.getPoly;
   [T,V,f] = balance(x,V0.getPoly,f);
 
   %% compute Vdot
@@ -322,7 +322,7 @@ end
 function V=levelSetMethodYalmip(V0,f,options)
   checkDependency('yalmip');
 
-  x = V0.getFrame.poly;
+  x = V0.getFrame.getPoly;
   [T,V,f] = balance(x,V0.getPoly,f);
 
   %% compute Vdot
@@ -358,7 +358,7 @@ end
 %% Line search
 
 function V = rhoLineSearch(V0,f,options)
-  x = V0.getFrame.poly;
+  x = V0.getFrame.getPoly;
   [T,V,f] = balance(x,V0.getPoly,f);
 
   %% compute Vdot
@@ -389,7 +389,7 @@ function V = rhoLineSearch(V0,f,options)
 end
 
 function [slack,info] = checkConstantRho(V0,f,options)
-  x = V0.getFrame.poly;
+  x = V0.getFrame.getPoly;
   [T,V,f] = balance(x,V0.getPoly,f);
 
   %% compute Vdot
@@ -461,7 +461,7 @@ function V = sampling(V0,f,options)
 %  No SOS here.  Just use lots and lots of samples to try to estimate level
 %  set of V candidate.
 
-  x = V0.getFrame.poly;
+  x = V0.getFrame.getPoly;
   [T,V,f] = balance(x,V0.getPoly,f);
 
   if (deg(V,x)>2) error('only checks quadratics'); end

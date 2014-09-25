@@ -218,7 +218,7 @@ classdef NonlinearProgram
       % add constraints
       cnstr_id = zeros(length(cnstr.constraints),1);
       for k=1:length(cnstr.constraints),
-        [obj,cnstr_id(i)] = obj.addConstraint(cnstr.constraints{k}, args{:});
+        [obj,cnstr_id(k)] = obj.addConstraint(cnstr.constraints{k}, args{:});
       end      
     end
     
@@ -909,7 +909,7 @@ classdef NonlinearProgram
       end
     end
     
-    function [x,objval,exitflag,execution_time] = compareSolvers(obj,x0,solvers)
+    function [x,objval,exitflag,execution_time,solvers] = compareSolvers(obj,x0,solvers)
       if nargin<3
         solvers = {};
         if(checkDependency('fmincon'))
@@ -1323,8 +1323,8 @@ classdef NonlinearProgram
         dceq = dh;
       end
       
-      [x,objval,exitflag] = fmincon(@obj.objective,x0,obj.Ain,...
-        obj.bin,obj.Aeq,obj.beq,obj.x_lb,obj.x_ub,@fmincon_userfun,obj.solver_options.fmincon);
+      [x,objval,exitflag] = fmincon(@obj.objective,x0,full(obj.Ain),...
+        obj.bin,full(obj.Aeq),obj.beq,obj.x_lb,obj.x_ub,@fmincon_userfun,obj.solver_options.fmincon);
       objval = full(objval);
       
       

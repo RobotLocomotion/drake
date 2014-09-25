@@ -3,6 +3,8 @@ function sixHumpCamel
 % example 1 from gloptipoly documentation
 % the function has six local minima
 
+checkDependency('spotless');
+
 x = msspoly('x',2);
 f = x(1)^2*(4-2.1*x(1)^2 + x(1)^4/3) + x(1)*x(2) + x(2)^2*(-4+4*x(2)^2);
 

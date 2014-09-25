@@ -31,15 +31,15 @@ int gettimeofday(struct timeval *tv, void* junk)  // second argument only here f
   FILETIME ft;
   unsigned __int64 tmpres = 0;
   static int tzflag;
-  
+
   if (NULL != tv)
  {
     GetSystemTimeAsFileTime(&ft);
-    
+
     tmpres |= ft.dwHighDateTime;
     tmpres <<= 32;
     tmpres |= ft.dwLowDateTime;
-    
+
     /*converting file time to unix epoch*/
     tmpres -= DELTA_EPOCH_IN_MICROSECS;
     tmpres /= 10;  /*convert into microseconds*/
@@ -57,26 +57,26 @@ timespec *remaining_delay)
   /* Number of performance counter increments per nanosecond,
    * or zero if it could not be determined.  */
   static double ticks_per_nanosecond;
-  
+
   if (requested_delay->tv_nsec < 0 || BILLION <= requested_delay->tv_nsec)
   {
     errno = 90;
     return -1;
   }
-  
+
   /* For requested delays of one second or more, 15ms resolution is
     sufficient.  */
-  if (requested_delay->tv_sec == 0) 
+  if (requested_delay->tv_sec == 0)
   {
-    if (!initialized) 
+    if (!initialized)
     {
       /* Initialize ticks_per_nanosecond.  */
       LARGE_INTEGER ticks_per_second;
-      
+
       if (QueryPerformanceFrequency(&ticks_per_second))
         ticks_per_nanosecond =
                 (double) ticks_per_second.QuadPart / 1000000000.0;
-      
+
       initialized = true;
     }
     if (ticks_per_nanosecond)
@@ -121,7 +121,7 @@ timespec *remaining_delay)
   }
   /* Implementation for long delays and as fallback.  */
   Sleep(requested_delay->tv_sec * 1000 + requested_delay->tv_nsec / 1000000);
-  
+
   done:
     /* Sleep is not interruptible.  So there is no remaining delay.  */
     if (remaining_delay != NULL)
@@ -140,6 +140,7 @@ timespec *remaining_delay)
 
 #endif
 
+const double TIME_NOT_YET_SET = -1.0;
 
 #define MDL_INITIAL_SIZES
 static void mdlInitializeSizes(SimStruct *S)
@@ -149,7 +150,7 @@ static void mdlInitializeSizes(SimStruct *S)
   ssSetNumDiscStates(S, 0);
   ssSetNumInputPorts(S, 0);
   ssSetNumOutputPorts(S, 0);
-  
+
   ssSetNumSampleTimes(S, 1);
   ssSetNumDWork(S, 1);  // wall t0
   ssSetDWorkWidth(S, 0, 1);
@@ -196,31 +197,37 @@ struct timeval doubleToTimeval(double t)
 #define MDL_START
 static void mdlStart(SimStruct *S)
 {
-  struct timeval tv;
-  gettimeofday(&tv, NULL);
   double *wall_t0 = (double*) ssGetDWork(S,0);
-  *wall_t0 = timevalToDouble(tv);
+  *wall_t0 = TIME_NOT_YET_SET;
+;
 }
 
 #define MDL_UPDATE
 static void mdlUpdate(SimStruct *S, int_T tid)
 {
   UNUSED(tid);
-  struct timeval tv,tv_diff;
+  struct timeval tv;
   gettimeofday(&tv, NULL);
+
+  double *wall_t0 = (double*) ssGetDWork(S,0);
+  if (*wall_t0 == TIME_NOT_YET_SET) {
+    // t0 not set yet, set it now.  (note: used to set this in mdlStart, but there can be a big pause between mdlStart and the full simulation start)
+    *wall_t0 = timevalToDouble(tv);
+    return;
+  }
+
   double wall_t = timevalToDouble(tv),
-  			*wall_t0 = (double*) ssGetDWork(S,0),
   			simtime = ssGetT(S),
   			realtime_factor = mxGetScalar(ssGetSFcnParam(S, 1));
 
   double t_diff = (wall_t - *wall_t0)*realtime_factor - simtime;
-  tv_diff = doubleToTimeval(-t_diff);
-//  mexPrintf("wall time: %f, sim time: %f, (scaled) diff: %f\n", wall_t-*wall_t0, simtime, t_diff);
+// mexPrintf("wall time: %f, sim time: %f, (scaled) diff: %f\n", wall_t-*wall_t0, simtime, t_diff);
 
-  if (t_diff<0.0) {
+  if (t_diff<0.0) {  // then simtime > scaled wall_time
     timespec tosleep;
-    tosleep.tv_sec = tv_diff.tv_sec;
-    tosleep.tv_nsec = tv_diff.tv_usec * 1000;
+    tv = doubleToTimeval(-t_diff);
+    tosleep.tv_sec = tv.tv_sec;
+    tosleep.tv_nsec = tv.tv_usec * 1000;
 //    mexPrintf("sleeping...  %d sec, %d nsec\n", tosleep.tv_sec, tosleep.tv_nsec);
     nanosleep(&tosleep, NULL);
   } else if (t_diff>1.0) {  // then I'm behind by more than 1 second
@@ -231,22 +238,22 @@ static void mdlUpdate(SimStruct *S, int_T tid)
 
 
 #define MDL_OUTPUTS
-static void mdlOutputs(SimStruct *S, int_T tid) 
+static void mdlOutputs(SimStruct *S, int_T tid)
 {
   UNUSED(S);
   UNUSED(tid);
 }
 
 
-static void mdlTerminate(SimStruct *S) 
+static void mdlTerminate(SimStruct *S)
 {
   UNUSED(S);
 }
 
-#ifdef MATLAB_MEX_FILE    /* Is this file being compiled as a 
+#ifdef MATLAB_MEX_FILE    /* Is this file being compiled as a
                              MEX-file? */
 #include "simulink.c"     /* MEX-file interface mechanism */
 #else
-#include "cg_sfun.h"      /* Code generation registration 
+#include "cg_sfun.h"      /* Code generation registration
                              function */
 #endif

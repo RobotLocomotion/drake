@@ -13,6 +13,8 @@ if (nargin<3)
 end
 % no options yet, but i'm sure they're coming!
 
+checkDependency('spotless');
+
 t=msspoly('t',1);
 theta=msspoly('h',sys.num_x);
 s=msspoly('s',sys.num_x);

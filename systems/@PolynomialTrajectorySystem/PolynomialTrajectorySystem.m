@@ -28,8 +28,8 @@ classdef PolynomialTrajectorySystem < PolynomialSystem
       obj = setStateFrame(obj,state_frame);
       obj = setOutputFrame(obj,output_frame);
 
-      p_u=obj.getInputFrame.poly;
-      p_x=obj.getStateFrame.poly;
+      p_u=obj.getInputFrame.getPoly;
+      p_x=obj.getStateFrame.getPoly;
 
       if (~isempty(p_dynamics_traj))
         typecheck(p_dynamics_traj,'PolynomialTrajectory');
