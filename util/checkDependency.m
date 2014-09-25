@@ -6,17 +6,24 @@ function ok = checkDependency(dep,minimum_version)
 % or
 %     if (~checkDependency('snopt')) error('my error'); end
 
-
 persistent conf;
 
 ldep = lower(dep);
 conf_var = [ldep,'_enabled'];
 
-ok = isfield(conf,conf_var) && ~isempty(conf.(conf_var)) && conf.(conf_var);
-if ~ok
-  % then try to evaluate the dependency now...
-
+already_checked = isfield(conf,conf_var) && ~isempty(conf.(conf_var));
+if already_checked
+  ok = conf.(conf_var);
+else % then try to evaluate the dependency now...
   switch(ldep)
+    case 'simulink'
+      v=ver('simulink');
+      conf.simulink_enabled = ~isempty(v);
+      if verLessThan('simulink','7.3')
+        warning('Drake:SimulinkVersion','Most features of Drake require SIMULINK version 7.3 or above.');
+        % haven't actually tested with lower versions
+      end
+    
     case 'spotless'
       % require spotless
       conf.spotless_enabled = logical(exist('msspoly','class'));
@@ -119,13 +126,13 @@ if ~ok
 
     case 'ipopt'
       conf.ipopt_enabled = logical(exist(['ipopt.',mexext],'file'));
-      
+
       if ~conf.ipopt_enabled && nargout<1
         disp(' ');
         disp(' IPOPT not found. IPOPT support will be disabled.');
         disp(' ');
       end
-      
+
     case 'vrml'
       unsupported = false;
       if(exist('vrinstall','file'))
@@ -198,7 +205,8 @@ if ~ok
       if ~conf.gurobi_enabled && nargout<1
         disp(' ');
         disp(' GUROBI not found or not working. GUROBI support will be disabled.');
-        disp('    To enable, install GUROBI and a free academic license from');
+        disp(' Note that GUROBI does provide free academic licenses')
+        disp('    To enable, install GUROBI and a license from');
         disp('    <a href="http://www.gurobi.com/download/licenses/free-academic">http://www.gurobi.com/download/licenses/free-academic</a> .');
         disp(' Then, you will need to set several environment variables.');
         disp(' Please see <a href="http://drake.mit.edu/quickstart">http://drake.mit.edu/quickstart</a> for more info.');
@@ -218,12 +226,12 @@ if ~ok
 
     case 'fastqp'
       conf.fastqp_enabled = logical(exist(['fastqpmex.',mexext],'file'));
-      
+
       if ~conf.fastqp_enabled && nargout<1
         disp(' ');
         disp(' fastqp not found. fastqp support will be disabled.');
       end
-      
+
     case 'bertini'
       conf.bertini_enabled = logical(exist('bertini','file'));
       if (~conf.bertini_enabled)
@@ -311,7 +319,7 @@ if ~ok
         end
       end
       conf.xfoil_enabled = ~isempty(conf.xfoil);
-      
+
     case 'fmincon'
       conf.fmincon_enabled = logical(exist('fmincon.m','file'));
       if(~conf.fmincon_enabled)
@@ -321,7 +329,7 @@ if ~ok
           disp(' ');
         end
       end
-      
+
     case 'quadprog'
       conf.quadprog_enabled = logical(exist('quadprog.m','file'));
       if(~conf.quadprog_enabled)
@@ -331,7 +339,7 @@ if ~ok
           disp(' ');
         end
       end
-      
+
     otherwise
 
       % todo: call ver(dep) here?

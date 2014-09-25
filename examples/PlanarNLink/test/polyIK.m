@@ -8,6 +8,8 @@ end
 
 r = PlanarNLink(N);
 
+checkDependency('spotless');
+
 q = TrigPoly('q','s','c',N);
 kinsol = doKinematics(r,q);
 hand = [0;-1.2];

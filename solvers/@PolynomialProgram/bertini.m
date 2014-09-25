@@ -49,7 +49,7 @@ sol = sol(1:length(obj.decision_vars),:);
 
 if ~isempty(obj.poly_inequality_constraints)
   sol = sol(:,all(sol(mu_indices,:)>=0)); % dual feasibility
-  
+
   nonlinear_constraint_vals = double(msubs(obj.poly_inequality_constraints,obj.decision_vars,sol));
   sol = sol(:,all(nonlinear_constraint_vals<=0)); % primal feasibility
 end
