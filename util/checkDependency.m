@@ -111,9 +111,16 @@ else % then try to evaluate the dependency now...
       end
 
     case 'snopt'
-      conf.snopt_enabled = logical(exist('snset','file'));
-      if (~conf.snopt_enabled)
-        conf.snopt_enabled = pod_pkg_config('snopt') && logical(exist('snopt','file'));
+      if(~isfield(conf,'snopt_enabled'))
+        snopt_val = snoptEnabled();
+        conf.snopt_enabled = snopt_val == 1;
+        conf.studentsnopt_enabled = snopt_val == 2;
+        if (~conf.snopt_enabled)
+          conf.snopt_enabled = pod_pkg_config('snopt');
+          snopt_val = snoptEnabled();
+          conf.snopt_enabled = snopt_val == 1;
+          conf.studentsnopt_enabled = snopt_val == 2;
+        end
       end
 
       if ~conf.snopt_enabled && nargout<1
@@ -124,6 +131,27 @@ else % then try to evaluate the dependency now...
         disp(' ');
       end
 
+    case 'studentsnopt'
+      if(~isfield(conf,'studentSnopt_enabled'))
+        snopt_val = snoptEnabled();
+        conf.snopt_enabled = snopt_val == 1;
+        conf.studentsnopt_enabled = snopt_val == 2;
+        if(~conf.snopt_enabled)
+          conf.studentsnopt_enabled = pod_pkg_config('snopt');
+          snopt_val = snoptEnabled();
+          conf.snopt_enabled = snopt_val == 1;
+          conf.studentsnopt_enabled = snopt_val == 2;
+        end
+      end
+      
+      if ~conf.studentsnopt_enabled && nargout<1
+        disp(' ');
+        disp(' SNOPT not found.  SNOPT support will be disabled.');
+        disp(' To re-enable, add the SNOPT matlab folder to your path and rerun addpath_drake.');
+        disp(' studentSNOPT can be obtained from <a href="http://www.cam.ucsd.edu/~peg/Software.html">http://www.cam.ucsd.edu/~peg/Software.html</a> .');
+        disp(' ');
+      end
+      
     case 'ipopt'
       conf.ipopt_enabled = logical(exist(['ipopt.',mexext],'file'));
 
@@ -386,4 +414,23 @@ function tf = verStringLessThan(a,b)
       parts(3) = 0; % zero-fills to 3 elements
     end
   end
+end
+
+function snopt_val = snoptEnabled()
+% check if snopt exists, if it does, check if it is student version
+% @retval snopt_val   -- 0 snopt does NOT exist
+%                     -- 1 snopt exists, NOT a student version
+%                     -- 2 snopt exists, student version
+snopt_val = logical(exist('snset','file'));
+if(snopt_val)
+  snopt_path = which('snopt.m');
+  snopt_readme=fileread([snopt_path(1:end-7),'README']);
+  if(isempty(regexp(snopt_readme,'studentVersions','match')))
+    snopt_val = 1;
+  else
+    snopt_val = 2;
+  end
+else
+  snopt_val = 0;
+end
 end
