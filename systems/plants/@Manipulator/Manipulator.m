@@ -24,6 +24,7 @@ classdef Manipulator < DrakeSystem
       %   H(q)vdot + C(q,v)v + G(q) = B(q)u
       
       if nargin<2,
+        checkDependency('spotless');
         q = TrigPoly('q','s','c',getNumPositions(obj));
       end
       if nargin<3,
@@ -380,6 +381,7 @@ classdef Manipulator < DrakeSystem
 
       if nargin<4 || isempty(index)
         % try to extract the index from B
+        checkDependency('spotless');
         q=msspoly('q',sys.num_positions);
         s=msspoly('s',sys.num_positions);
         c=msspoly('c',sys.num_positions);
