@@ -576,7 +576,7 @@ classdef RigidBodySubWing < RigidBodyForceElement
       force = sparse(6,getNumBodies(manip))*q(1); % q(1) is for taylorvar
       force(:,frame.body_ind) = body_force;
       if (nargout>1)
-        dforce = sparse(numel(force),2*nq);
+        dforce = sparse(numel(force),2*nq)*q(1); % q(1) is for taylorvar
         dforce((frame.body_ind-1)*6+1:frame.body_ind*6,:) = [dbody_forcedq,dbody_forcedqd];
         dforce = reshape(dforce,6,[]);
       end
