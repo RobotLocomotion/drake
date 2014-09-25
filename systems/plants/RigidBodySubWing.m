@@ -570,7 +570,7 @@ classdef RigidBodySubWing < RigidBodyForceElement
 
   methods (Static)
     
-    function [wingvel_world_xz, wingYunit, dwingvel_worlddq, dwingvel_worlddqd, dwingYunitdq, dwingYunitdqd ] = computeWingVelocity(kinframe, manip, q, qd, kinsol)
+    function [wingvel_world_xz, wingYunit, dwingvel_worlddq, dwingvel_worlddqd, dwingYunitdq, dwingYunitdqd, wingvel_world_xyz ] = computeWingVelocity(kinframe, manip, q, qd, kinsol)
       % Computes the velcity of the wing in word coordinates
       %
       % @param kinframe frame id of the kinematic frame
@@ -588,18 +588,19 @@ classdef RigidBodySubWing < RigidBodyForceElement
       %   to q
       % @retval dwingvel_worlddqd derivative of the wing velocity with
       %   respect to qdot
+      % @retval wingvel_world_xzy velocity of the wing in world coordinates
       
       if (nargout>2)
         
         [~,J] = forwardKin(manip,kinsol,kinframe,zeros(3,1));
         Jdot = forwardJacDot(manip,kinsol,kinframe,zeros(3,1));
-        wingvel_world_xz = J*qd; % assume still air. Air flow over the wing
+        wingvel_world_xyz = J*qd; % assume still air. Air flow over the wing
         dwingvel_worlddq = Jdot;
         dwingvel_worlddqd = J;
       else
         kinsol = doKinematics(manip,q);
         [~,J] = forwardKin(manip,kinsol,kinframe,zeros(3,1));
-        wingvel_world_xz = J*qd; % assume still air. Air flow over the wing
+        wingvel_world_xyz = J*qd; % assume still air. Air flow over the wing
       end
       
       % Implementation note: for homogenous transforms, I could do the following
@@ -625,13 +626,13 @@ classdef RigidBodySubWing < RigidBodyForceElement
         wingYunit = wingYunit(:,1)-wingYunit(:,2); % subtract out the origin
       end
       
-      sideslip = wingvel_world_xz'*wingYunit;
+      sideslip = wingvel_world_xyz'*wingYunit;
       if (nargout>2)
-        dsideslipdq = wingYunit'*dwingvel_worlddq + wingvel_world_xz'*dwingYunitdq;
-        dsideslipdqd = wingYunit'*dwingvel_worlddqd + wingvel_world_xz'*dwingYunitdqd;
+        dsideslipdq = wingYunit'*dwingvel_worlddq + wingvel_world_xyz'*dwingYunitdq;
+        dsideslipdqd = wingYunit'*dwingvel_worlddqd + wingvel_world_xyz'*dwingYunitdqd;
       end
 
-      wingvel_world_xz = wingvel_world_xz - sideslip*wingYunit;
+      wingvel_world_xz = wingvel_world_xyz - sideslip*wingYunit;
       if (nargout>2)
         dwingvel_worlddq = dwingvel_worlddq - sideslip*dwingYunitdq - wingYunit*dsideslipdq;
         dwingvel_worlddqd = dwingvel_worlddqd - sideslip*dwingYunitdqd - wingYunit*dsideslipdqd;
