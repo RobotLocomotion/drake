@@ -61,5 +61,23 @@ xtraj = invertFlatOutputs(r,ytraj);
 save([folder_name, '/results.mat'], 'ytraj', 'r', 'v', 'xtraj');
 v.playback(xtraj, struct('slider', true));
 
+lc = lcm.lcm.LCM.getSingleton();
+lcmgl = drake.util.BotLCMGLClient(lc, 'quad_trajectory');
+lcmgl.glBegin(lcmgl.LCMGL_LINES);
+lcmgl.glColor3f(0.0,0.0,1.0);
+
+breaks = ytraj.getBreaks();
+ts = linspace(breaks(1), breaks(end));
+Y = ytraj.eval(ts);
+Ybreaks = ytraj.eval(breaks);
+plot3(Y(1,:), Y(2,:), Y(3,:), 'b-');
+plot3(Ybreaks(1,:), Ybreaks(2,:), Ybreaks(3,:), 'bo')
+for i = 1:size(Y, 2)-1
+  lcmgl.glVertex3f(Y(1,i), Y(2,i), Y(3,i));
+  lcmgl.glVertex3f(Y(1,i+1), Y(2,i+1), Y(3,i+1));
+end
+
+lcmgl.glEnd();
+lcmgl.switchBuffers();
 end
 
