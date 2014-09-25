@@ -49,9 +49,9 @@ classdef RigidBodySubWingWithControlSurface < RigidBodySubWing
       % Returns the force from the wing along with the B matrix which the
       % matrix for a linearized input for the control surface.
       %
-      % @param manip
-      % @param q
-      % @param qd
+      % @param manip manipulator we are a part of
+      % @param q state vector
+      % @param qd q-dot, time derivative of the state vector
       %
       %
       % @retval force force from the wing that is independant of the
@@ -73,12 +73,12 @@ classdef RigidBodySubWingWithControlSurface < RigidBodySubWing
       
       % get the coefficients for this point
       
-      [ wingvel_world, wingYunit ] = RigidBodySubWing.computeWingVelocity(obj.kinframe, manip, q, qd, kinsol);
-      wingvel_rel = RigidBodySubWing.computeWingVelocityRelative(obj.kinframe, manip, kinsol, wingvel_world);
+      [ wingvel_world_xz, wingYunit ] = RigidBodySubWing.computeWingVelocity(obj.kinframe, manip, q, qd, kinsol);
+      wingvel_rel = RigidBodySubWing.computeWingVelocityRelative(obj.kinframe, manip, kinsol, wingvel_world_xz);
       
       
       
-      airspeed = norm(wingvel_world);
+      airspeed = norm(wingvel_world_xz);
       
       aoa = -(180/pi)*atan2(wingvel_rel(3),wingvel_rel(1));
       
@@ -140,8 +140,17 @@ classdef RigidBodySubWingWithControlSurface < RigidBodySubWing
       % initalize B
       B_force = manip.B*0*q(1);
       
-      lift_axis_in_body_frame = [0; 0; 1]; % z axis is up
-      drag_axis_in_body_frame = [1; 0; 0];
+      % lift is defined as the force perpendicular to the direction of
+      % airflow, so the lift axis in the body frame is the axis
+      % perpendicular to wingvel_world_xz
+      % We can get this vector by rotating wingvel_world_xz by 90 deg:
+      % cross(wingvel_world_xz, wingYunit)
+      
+      lift_axis_in_world_frame = cross(wingvel_world_xz, wingYunit);
+      lift_axis_in_world_frame = lift_axis_in_world_frame / norm(lift_axis_in_world_frame);
+      
+      % drag axis is the opposite of the x axis of the wing velocity
+      drag_axis_in_world_frame = -wingvel_world_xz / norm(wingvel_world_xz);
       
       
       % position of origin
@@ -149,15 +158,15 @@ classdef RigidBodySubWingWithControlSurface < RigidBodySubWing
       
       % TODO: check if this is redundant and is always [0 0 1]'
       
-      lift_axis_in_world_frame = forwardKin(manip, kinsol, obj.kinframe, lift_axis_in_body_frame);
-      lift_axis_in_world_frame = lift_axis_in_world_frame - origin_in_world_frame;
+      %lift_axis_in_world_frame = forwardKin(manip, kinsol, obj.kinframe, lift_axis_in_body_frame);
+      %lift_axis_in_world_frame = lift_axis_in_world_frame - origin_in_world_frame;
       
       
       B_lift = f_lift * J' * lift_axis_in_world_frame;
       
       
-      drag_axis_in_world_frame = forwardKin(manip, kinsol, obj.kinframe, drag_axis_in_body_frame);
-      drag_axis_in_world_frame = drag_axis_in_world_frame - origin_in_world_frame;
+      %drag_axis_in_world_frame = forwardKin(manip, kinsol, obj.kinframe, drag_axis_in_body_frame);
+      %drag_axis_in_world_frame = drag_axis_in_world_frame - origin_in_world_frame;
       
       
       B_drag = f_drag * J' * drag_axis_in_world_frame;

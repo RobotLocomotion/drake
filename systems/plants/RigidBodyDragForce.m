@@ -45,7 +45,38 @@ classdef RigidBodyDragForce < RigidBodyForceElement
       % @retval dforce gradient of force produced by the drag
       
       
+      frame = getFrame(manip,obj.kinframe);
+      kinsol = doKinematics(manip,q,true,true,qd);
+      
       % Compute airspeed over this point in xyz
+      
+      if (nargout > 1)
+        [wingvel_world, wingYunit, dwingvel_worlddq, dwingvel_worlddqd, dwingYunitdq, dwingYunitdqd ] = RigidBodySubWing.computeWingVelocity(obj.kinframe, manip, q, qd, kinsol);
+      else
+        [ wingvel_world, wingYunit ] = RigidBodySubWing.computeWingVelocity(obj.kinframe, manip, q, qd, kinsol);
+      end
+      
+      
+      if (nargout>1)
+        [wingvel_rel, dwingvel_reldq, dwingvel_reldqd] = RigidBodySubWing.computeWingVelocityRelative(obj.kinframe, manip, kinsol, wingvel_world, dwingvel_worlddq, dwingvel_worlddqd);
+      else
+        wingvel_rel = RigidBodySubWing.computeWingVelocityRelative(obj.kinframe, manip, kinsol, wingvel_world);
+      end
+      
+      airspeed = norm(wingvel_world);
+      if (nargout>1)
+        dairspeeddq = (wingvel_world'*dwingvel_worlddq)/norm(wingvel_world);
+        dairspeeddqd = (wingvel_world'*dwingvel_worlddqd)/norm(wingvel_world);
+      end
+
+      aoa = -(180/pi)*atan2(wingvel_rel(3),wingvel_rel(1));
+      if (nargout>1)
+        daoadq = -(180/pi)*(wingvel_rel(1)*dwingvel_reldq(3,:)-wingvel_rel(3)*dwingvel_reldq(1,:))/(wingvel_rel(1)^2+wingvel_rel(3)^2);
+        daoadqd = -(180/pi)*(wingvel_rel(1)*dwingvel_reldqd(3,:)-wingvel_rel(3)*dwingvel_reldqd(1,:))/(wingvel_rel(1)^2+wingvel_rel(3)^2);
+      end
+      
+      
+      
       
       
       
