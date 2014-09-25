@@ -154,21 +154,11 @@ classdef RigidBodySubWingWithControlSurface < RigidBodySubWing
       
       
       % position of origin
-      [origin_in_world_frame, J] = forwardKin(manip, kinsol, obj.kinframe, zeros(3,1));
-      
-      % TODO: check if this is redundant and is always [0 0 1]'
-      
-      %lift_axis_in_world_frame = forwardKin(manip, kinsol, obj.kinframe, lift_axis_in_body_frame);
-      %lift_axis_in_world_frame = lift_axis_in_world_frame - origin_in_world_frame;
-      
+      [~, J] = forwardKin(manip, kinsol, obj.kinframe, zeros(3,1));
+
       
       B_lift = f_lift * J' * lift_axis_in_world_frame;
-      
-      
-      %drag_axis_in_world_frame = forwardKin(manip, kinsol, obj.kinframe, drag_axis_in_body_frame);
-      %drag_axis_in_world_frame = drag_axis_in_world_frame - origin_in_world_frame;
-      
-      
+
       B_drag = f_drag * J' * drag_axis_in_world_frame;
       
       
