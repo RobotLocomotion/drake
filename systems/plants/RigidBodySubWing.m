@@ -391,82 +391,9 @@ classdef RigidBodySubWing < RigidBodyForceElement
 
     end %constructor
     
-    function [wingvel_world, wingYunit, dwingvel_worlddq, dwingvel_worlddqd, dwingYunitdq, dwingYunitdqd ] = computeWingVelocity(obj, manip, q, qd, kinsol)
-      % Computes the velcity of the wing in word coordinates
-      %
-      % @retval wingvel_world velocity in the word (vector in each
-      %   dimension)
-      % @retval dwingvel_worlddq
-      % @retval dwingvel_worlddqd derivative of the wing velocity
-      
-      if (nargout>2)
-        
-        [~,J] = forwardKin(manip,kinsol,obj.kinframe,zeros(3,1));
-        Jdot = forwardJacDot(manip,kinsol,obj.kinframe,zeros(3,1));
-        wingvel_world = J*qd; % assume still air. Air flow over the wing
-        dwingvel_worlddq = Jdot;
-        dwingvel_worlddqd = J;
-      else
-        kinsol = doKinematics(manip,q);
-        [~,J] = forwardKin(manip,kinsol,obj.kinframe,zeros(3,1));
-        wingvel_world = J*qd; % assume still air. Air flow over the wing
-      end
-      
-      % Implementation note: for homogenous transforms, I could do the following
-      % vector transforms more efficiently.  forwardKin is adding a 1 on
-      % the end of every pt for the homogenous coordinates.  it would be
-      % equivalent, cleaner, and more efficient, to just add a zero on the
-      % end instead of the 1...  because for homogeneous transform matrix
-      % T we have:
-      %   T * [x;1] - T * [0;1] = T * [x;0]
-      % but I made this change everywhere and decided it was more important
-      % to keep the interface to the forwardKin method clean instead of
-      % polluting it (and bodyKin, and the mex files, ...) with an extra
-      % input/option for "vectors_not_points".
 
-      %project this onto the XZ plane of the wing (ignores sideslip)
-      if (nargout>2)
-        [wingYunit,dwingYunitdq] = forwardKin(manip,kinsol,obj.kinframe,[0 0; 1 0; 0 0]);
-        wingYunit = wingYunit(:,1)-wingYunit(:,2);
-        dwingYunitdq = dwingYunitdq(1:3,:)-dwingYunitdq(4:6,:);
-        dwingYunitdqd = zeros(3, size(q,1));
-      else
-        wingYunit = forwardKin(manip,kinsol,obj.kinframe,[0 0; 1 0; 0 0]);
-        wingYunit = wingYunit(:,1)-wingYunit(:,2);
-      end
-      
-      sideslip = wingvel_world'*wingYunit;
-      if (nargout>2)
-        dsideslipdq = wingYunit'*dwingvel_worlddq + wingvel_world'*dwingYunitdq;
-        dsideslipdqd = wingYunit'*dwingvel_worlddqd + wingvel_world'*dwingYunitdqd;
-      end
-
-      wingvel_world = wingvel_world - sideslip*wingYunit;
-      if (nargout>2)
-        dwingvel_worlddq = dwingvel_worlddq - sideslip*dwingYunitdq - wingYunit*dsideslipdq;
-        dwingvel_worlddqd = dwingvel_worlddqd - sideslip*dwingYunitdqd - wingYunit*dsideslipdqd;
-      end
-      
-    end
     
-    function [wingvel_rel, dwingvel_reldq, dwingvel_reldqd] = computeWingVelocityRelative(obj, manip, kinsol, wingvel_world, dwingvel_worlddq, dwingvel_worlddqd)
-      % Computes the relative wing velocity
-      %
-      %
-      
-      if (nargout>1)
-        [wingvel_rel,wingvel_relJ,wingvel_relP] = bodyKin(manip,kinsol,obj.kinframe,[wingvel_world,zeros(3,1)]);
-        wingvel_rel = wingvel_rel(:,1)-wingvel_rel(:,2);
-        wingvel_relJ = wingvel_relJ(1:3,:)-wingvel_relJ(4:6,:);
-        wingvel_relP = wingvel_relP(1:3,:)-wingvel_relP(4:6,:);
-        dwingvel_reldq = wingvel_relJ+wingvel_relP(:,1:3)*dwingvel_worlddq;
-        dwingvel_reldqd = wingvel_relP(:,1:3)*dwingvel_worlddqd;
-      else
-        wingvel_rel = bodyKin(manip,kinsol,obj.kinframe,[wingvel_world,zeros(3,1)]);
-        wingvel_rel = wingvel_rel(:,1)-wingvel_rel(:,2);
-      end
-      
-    end
+    
 
     
     function [force, dforce] = computeSpatialForce(obj,manip,q,qd)
@@ -476,9 +403,9 @@ classdef RigidBodySubWing < RigidBodyForceElement
       kinsol = doKinematics(manip,q,true,true,qd);
 
       if (nargout > 1)
-        [wingvel_world, wingYunit, dwingvel_worlddq, dwingvel_worlddqd, dwingYunitdq, dwingYunitdqd ] = obj.computeWingVelocity(manip, q, qd, kinsol);
+        [wingvel_world, wingYunit, dwingvel_worlddq, dwingvel_worlddqd, dwingYunitdq, dwingYunitdqd ] = RigidBodySubWing.computeWingVelocity(obj.kinframe, manip, q, qd, kinsol);
       else
-        [ wingvel_world, wingYunit ] = obj.computeWingVelocity(manip, q, qd, kinsol);
+        [ wingvel_world, wingYunit ] = RigidBodySubWing.computeWingVelocity(obj.kinframe, manip, q, qd, kinsol);
       end
 
       
@@ -487,9 +414,9 @@ classdef RigidBodySubWing < RigidBodyForceElement
       
 
       if (nargout>1)
-        [wingvel_rel, dwingvel_reldq, dwingvel_reldqd] = obj.computeWingVelocityRelative(manip, kinsol, wingvel_world, dwingvel_worlddq, dwingvel_worlddqd);
+        [wingvel_rel, dwingvel_reldq, dwingvel_reldqd] = RigidBodySubWing.computeWingVelocityRelative(obj.kinframe, manip, kinsol, wingvel_world, dwingvel_worlddq, dwingvel_worlddqd);
       else
-        wingvel_rel = obj.computeWingVelocityRelative(manip, kinsol, wingvel_world);
+        wingvel_rel = RigidBodySubWing.computeWingVelocityRelative(obj.kinframe, manip, kinsol, wingvel_world);
       end
 
       
@@ -642,6 +569,101 @@ classdef RigidBodySubWing < RigidBodyForceElement
   end
 
   methods (Static)
+    
+    function [wingvel_world, wingYunit, dwingvel_worlddq, dwingvel_worlddqd, dwingYunitdq, dwingYunitdqd ] = computeWingVelocity(kinframe, manip, q, qd, kinsol)
+      % Computes the velcity of the wing in word coordinates
+      %
+      % @param kinframe frame id of the kinematic frame
+      % @param manip manipulator we are a part of
+      % @param q state vector
+      % @param qd q-dot (time derivative of state vector)
+      % @param kinsol solution from doKinematics
+      %
+      % @retval wingvel_world velocity in the word (vector in each
+      %   dimension)
+      % @retval dwingvel_worlddq
+      % @retval dwingvel_worlddqd derivative of the wing velocity
+      
+      if (nargout>2)
+        
+        [~,J] = forwardKin(manip,kinsol,kinframe,zeros(3,1));
+        Jdot = forwardJacDot(manip,kinsol,kinframe,zeros(3,1));
+        wingvel_world = J*qd; % assume still air. Air flow over the wing
+        dwingvel_worlddq = Jdot;
+        dwingvel_worlddqd = J;
+      else
+        kinsol = doKinematics(manip,q);
+        [~,J] = forwardKin(manip,kinsol,kinframe,zeros(3,1));
+        wingvel_world = J*qd; % assume still air. Air flow over the wing
+      end
+      
+      % Implementation note: for homogenous transforms, I could do the following
+      % vector transforms more efficiently.  forwardKin is adding a 1 on
+      % the end of every pt for the homogenous coordinates.  it would be
+      % equivalent, cleaner, and more efficient, to just add a zero on the
+      % end instead of the 1...  because for homogeneous transform matrix
+      % T we have:
+      %   T * [x;1] - T * [0;1] = T * [x;0]
+      % but I made this change everywhere and decided it was more important
+      % to keep the interface to the forwardKin method clean instead of
+      % polluting it (and bodyKin, and the mex files, ...) with an extra
+      % input/option for "vectors_not_points".
+
+      %project this onto the XZ plane of the wing (ignores sideslip)
+      if (nargout>2)
+        [wingYunit,dwingYunitdq] = forwardKin(manip,kinsol,kinframe,[0 0; 1 0; 0 0]);
+        wingYunit = wingYunit(:,1)-wingYunit(:,2);
+        dwingYunitdq = dwingYunitdq(1:3,:)-dwingYunitdq(4:6,:);
+        dwingYunitdqd = zeros(3, size(q,1));
+      else
+        wingYunit = forwardKin(manip,kinsol,kinframe,[0 0; 1 0; 0 0]);
+        wingYunit = wingYunit(:,1)-wingYunit(:,2);
+      end
+      
+      sideslip = wingvel_world'*wingYunit;
+      if (nargout>2)
+        dsideslipdq = wingYunit'*dwingvel_worlddq + wingvel_world'*dwingYunitdq;
+        dsideslipdqd = wingYunit'*dwingvel_worlddqd + wingvel_world'*dwingYunitdqd;
+      end
+
+      wingvel_world = wingvel_world - sideslip*wingYunit;
+      if (nargout>2)
+        dwingvel_worlddq = dwingvel_worlddq - sideslip*dwingYunitdq - wingYunit*dsideslipdq;
+        dwingvel_worlddqd = dwingvel_worlddqd - sideslip*dwingYunitdqd - wingYunit*dsideslipdqd;
+      end
+      
+    end
+    
+        
+    function [wingvel_rel, dwingvel_reldq, dwingvel_reldqd] = computeWingVelocityRelative(kinframe, manip, kinsol, wingvel_world, dwingvel_worlddq, dwingvel_worlddqd)
+      % Computes the relative wing velocity
+      %
+      % @param kinframe frame id (usually in obj.kinframe)
+      % @param manip manipulator we are a part of
+      % @param kinsol solution from doKinematics
+      % @param wingvel_world world velocity from computeWingVelocity
+      % @param dwingvel_worlddq from computeWingVelocity
+      % @param dwingvel_worlddqd from computeWingVelocity
+      %
+      % @retval wingvel_rel relative wing velocity
+      % @retval dwingvel_reldq derivative of relative wing velocity with
+      %   respect to q
+      % @retval dwingvel_reldqd derivative of relative wing velocity with
+      %   respect to q-dot
+      
+      if (nargout>1)
+        [wingvel_rel,wingvel_relJ,wingvel_relP] = bodyKin(manip,kinsol,kinframe,[wingvel_world,zeros(3,1)]);
+        wingvel_rel = wingvel_rel(:,1)-wingvel_rel(:,2);
+        wingvel_relJ = wingvel_relJ(1:3,:)-wingvel_relJ(4:6,:);
+        wingvel_relP = wingvel_relP(1:3,:)-wingvel_relP(4:6,:);
+        dwingvel_reldq = wingvel_relJ+wingvel_relP(:,1:3)*dwingvel_worlddq;
+        dwingvel_reldqd = wingvel_relP(:,1:3)*dwingvel_worlddqd;
+      else
+        wingvel_rel = bodyKin(manip,kinsol,kinframe,[wingvel_world,zeros(3,1)]);
+        wingvel_rel = wingvel_rel(:,1)-wingvel_rel(:,2);
+      end
+      
+    end
     
   end
 

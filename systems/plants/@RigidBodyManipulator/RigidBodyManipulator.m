@@ -2473,6 +2473,11 @@ classdef RigidBodyManipulator < Manipulator
       if ~isempty(elnode)
         [model,fe] = RigidBodyWing.parseURDFNode(model,robotnum,elnode,options);
       end
+      
+      elnode = node.getElementsByTagName('drag').item(0);
+      if ~isempty(elnode)
+        [model,fe] = RigidBodyDragForce.parseURDFNode(model,robotnum,elnode,options);
+      end
 
       elnode = node.getElementsByTagName('thrust').item(0);
       if ~isempty(elnode)

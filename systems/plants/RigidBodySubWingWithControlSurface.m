@@ -73,8 +73,8 @@ classdef RigidBodySubWingWithControlSurface < RigidBodySubWing
       
       % get the coefficients for this point
       
-      [ wingvel_world, wingYunit ] = obj.computeWingVelocity(manip, q, qd, kinsol);
-      wingvel_rel = obj.computeWingVelocityRelative(manip, kinsol, wingvel_world);
+      [ wingvel_world, wingYunit ] = RigidBodySubWing.computeWingVelocity(obj.kinframe, manip, q, qd, kinsol);
+      wingvel_rel = RigidBodySubWing.computeWingVelocityRelative(obj.kinframe, manip, kinsol, wingvel_world);
       
       
       
