@@ -110,47 +110,21 @@ else % then try to evaluate the dependency now...
         disp(' ');
       end
 
-    case 'snopt'
-      if(~isfield(conf,'snopt_enabled'))
-        snopt_val = snoptEnabled();
-        conf.snopt_enabled = snopt_val == 1;
-        conf.studentsnopt_enabled = snopt_val == 2;
-        if (~conf.snopt_enabled)
-          conf.snopt_enabled = pod_pkg_config('snopt');
-          snopt_val = snoptEnabled();
-          conf.snopt_enabled = snopt_val == 1;
-          conf.studentsnopt_enabled = snopt_val == 2;
-        end
+    case {'snopt','studentsnopt'}
+      [conf.snopt_enabled,conf.studentsnopt_enabled] = snoptEnabled();
+      if (~conf.snopt_enabled && ~conf.studentsnopt_enabled)
+        pod_pkg_config('snopt');
+        [conf.snopt_enabled,conf.studentsnopt_enabled] = snoptEnabled();
       end
 
-      if ~conf.snopt_enabled && nargout<1
+      if ~conf.snopt_enabled && ~conf.studentsnopt_enabled && nargout<1
         disp(' ');
         disp(' SNOPT not found.  SNOPT support will be disabled.');
         disp(' To re-enable, add the SNOPT matlab folder to your path and rerun addpath_drake.');
         disp(' SNOPT can be obtained from <a href="https://tig.csail.mit.edu/software/">https://tig.csail.mit.edu/software/</a> .');
-        disp(' ');
-      end
-
-    case 'studentsnopt'
-      if(~isfield(conf,'studentSnopt_enabled'))
-        snopt_val = snoptEnabled();
-        conf.snopt_enabled = snopt_val == 1;
-        conf.studentsnopt_enabled = snopt_val == 2;
-        if(~conf.snopt_enabled)
-          conf.studentsnopt_enabled = pod_pkg_config('snopt');
-          snopt_val = snoptEnabled();
-          conf.snopt_enabled = snopt_val == 1;
-          conf.studentsnopt_enabled = snopt_val == 2;
-        end
-      end
-      
-      if ~conf.studentsnopt_enabled && nargout<1
-        disp(' ');
-        disp(' SNOPT not found.  SNOPT support will be disabled.');
-        disp(' To re-enable, add the SNOPT matlab folder to your path and rerun addpath_drake.');
         disp(' studentSNOPT can be obtained from <a href="http://www.cam.ucsd.edu/~peg/Software.html">http://www.cam.ucsd.edu/~peg/Software.html</a> .');
         disp(' ');
-      end
+      end   
       
     case 'ipopt'
       conf.ipopt_enabled = logical(exist(['ipopt.',mexext],'file'));
@@ -367,6 +341,16 @@ else % then try to evaluate the dependency now...
           disp(' ');
         end
       end
+      
+    case 'lsqlin'
+      conf.lsqlin_enabled = logical(exist('lsqlin.m','file'));
+      if(~conf.lsqlin_enabled)
+        if nargout<1
+          disp(' ');
+          disp(' lsqlin support is disabled. To enable it, install MATLAB Optimization toolbox');
+          disp(' ');
+        end
+      end
 
     otherwise
 
@@ -416,11 +400,8 @@ function tf = verStringLessThan(a,b)
   end
 end
 
-function snopt_val = snoptEnabled()
+function [snopt_enabled,studentsnopt_enabled] = snoptEnabled()
 % check if snopt exists, if it does, check if it is student version
-% @retval snopt_val   -- 0 snopt does NOT exist
-%                     -- 1 snopt exists, NOT a student version
-%                     -- 2 snopt exists, student version
 snopt_val = logical(exist('snset','file'));
 if(snopt_val)
   snopt_path = which('snopt.m');
@@ -432,5 +413,12 @@ if(snopt_val)
   end
 else
   snopt_val = 0;
+end
+if(snopt_val == 0)
+  snopt_enabled = false;
+  studentsnopt_enabled = false;
+else
+  snopt_enabled = snopt_val == 1;
+  studentsnopt_enabled = snopt_val == 2;
 end
 end
