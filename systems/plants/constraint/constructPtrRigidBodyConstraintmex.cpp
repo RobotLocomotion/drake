@@ -75,12 +75,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     // PostureConstraint
     case RigidBodyConstraint::PostureConstraintType:
       {
-        if(nrhs != 2 && nrhs != 3)
+        if(nrhs != 2 && nrhs != 3 && nrhs != 4)
         {
-          mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","Usage ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint::PostureConstraintType,robot.mex_model_ptr,tspan)");
+          mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","Usage ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint::PostureConstraintType,robot.mex_model_ptr,tspan,use_rbm_joint_bnd)");
         }
         Vector2d tspan;
-        if(nrhs == 2)
+        if(nrhs < 3)
         {
           tspan<<-mxGetInf(),mxGetInf();
         }
@@ -88,8 +88,17 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         {
           rigidBodyConstraintParseTspan(prhs[2],tspan);
         }
+        bool use_rbm_joint_bnd;
+        if(nrhs < 4)
+        {
+          use_rbm_joint_bnd = true;
+        }
+        else
+        {
+          use_rbm_joint_bnd = *mxGetLogicals(prhs[3]);
+        }
         RigidBodyManipulator* robot = (RigidBodyManipulator*) getDrakeMexPointer(prhs[1]);
-        PostureConstraint* cnst = new PostureConstraint(robot,tspan);
+        PostureConstraint* cnst = new PostureConstraint(robot,tspan,use_rbm_joint_bnd);
         plhs[0] = createDrakeConstraintMexPointer((void*)cnst,"PostureConstraint");
       }
       break;

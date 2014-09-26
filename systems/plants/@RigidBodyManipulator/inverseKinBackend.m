@@ -45,9 +45,14 @@ ikoptions = varargin{end};
 %   qsc = QuasiStaticConstraint(obj);
 qsc = QuasiStaticConstraint(obj,[-inf,inf],1);
 qsc = qsc.setActive(false);
-[joint_min,joint_max] = obj.getJointLimits();
-joint_min = bsxfun(@times,joint_min,ones(1,nT));
-joint_max = bsxfun(@times,joint_max,ones(1,nT));
+if(ikoptions.use_rbm_joint_bnd)
+  [joint_min,joint_max] = obj.getJointLimits();
+  joint_min = bsxfun(@times,joint_min,ones(1,nT));
+  joint_max = bsxfun(@times,joint_max,ones(1,nT));
+else
+  joint_min = -inf(nq,nT);
+  joint_max = inf(nq,nT);
+end
 for i = 1:nT
   if(isempty(t))
     ti = [];
