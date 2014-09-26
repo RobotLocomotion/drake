@@ -87,14 +87,14 @@ classdef RigidBodyDragForce < RigidBodyForceElement
       force_y = -0.5 * obj.rho * velocity_y * velocity_y * obj.coefficient_drag_y * obj.area_y;
       force_z = -0.5 * obj.rho * velocity_z * velocity_z * obj.coefficient_drag_z * obj.area_z;
       
-      f = sparse(6, getNumBodies(manip)) * q(1); % q(1) for taylorvar
-      
-      f(:, frame.body_ind) = [force_x; force_y; force_z; 0; 0; 0];
-      
-      force = manip.cartesianForceToSpatialForce(kinsol, frame.body_ind, zeros(3,1), f);
       
       
-      full(force)
+      f = [force_x; force_y; force_z];
+      f = manip.cartesianForceToSpatialForce(kinsol, frame.body_ind, zeros(3,1), f);
+      
+      force = sparse(6, getNumBodies(manip)) * q(1); % q(1) for taylorvar
+      force(:, frame.body_ind) = f;
+      
       % TODO
       dforce = 0;
       
