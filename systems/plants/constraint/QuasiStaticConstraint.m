@@ -174,6 +174,7 @@ classdef QuasiStaticConstraint<RigidBodyConstraint
       problem.ub = ones(1,obj.num_pts);
       problem.solver = 'lsqlin';
       problem.options = optimset('LargeScale','off','Display','off');
+      checkDependency('lsqlin');
       [weights,resnorm,~,exitflag] = lsqlin(problem);
       flag = resnorm<1e-6;
     end
