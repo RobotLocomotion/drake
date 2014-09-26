@@ -7,25 +7,38 @@ classdef PostureConstraint<RigidBodyConstraint
   %                                      posture of the robot
   % @param joint_limit_max0           -- The default upper bound of the
   %                                      posture of the robot
+  % @param use_rbm_joint_bnd          -- A boolean, true if the posture limits will all be
+  % truncated to the RigidBodyManipulator's default joint limits. @default is true
   properties(SetAccess = protected)
     lb
     ub
     joint_limit_min0;
     joint_limit_max0;
+    use_rbm_joint_bnd;
   end
   
   methods
-    function obj = PostureConstraint(robot,tspan)
-      if(nargin == 1)
+    function obj = PostureConstraint(robot,tspan,use_rbm_joint_bnd)
+      if(nargin < 2)
         tspan = [-inf inf];
       end
+      if(nargin < 3)
+        use_rbm_joint_bnd = true;
+      end
       obj = obj@RigidBodyConstraint(RigidBodyConstraint.PostureConstraintCategory,robot,tspan);
-      [obj.joint_limit_min0,obj.joint_limit_max0] = robot.getJointLimits();
+      obj.use_rbm_joint_bnd = use_rbm_joint_bnd;
+      if(obj.use_rbm_joint_bnd)
+        [obj.joint_limit_min0,obj.joint_limit_max0] = robot.getJointLimits();
+      else
+        nq = robot.getNumPositions();
+        obj.joint_limit_min0 = -inf(nq,1);
+        obj.joint_limit_max0 = inf(nq,1);
+      end
       obj.lb = obj.joint_limit_min0;
       obj.ub = obj.joint_limit_max0;
       obj.type = RigidBodyConstraint.PostureConstraintType;
       if robot.getMexModelPtr~=0 && exist('constructPtrRigidBodyConstraintmex','file')
-        obj.mex_ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.PostureConstraintType,robot.getMexModelPtr,tspan);
+        obj.mex_ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.PostureConstraintType,robot.getMexModelPtr,tspan,use_rbm_joint_bnd);
       end
     end
     

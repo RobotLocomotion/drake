@@ -385,6 +385,14 @@ if(l_hand_pos(3)>1+1e-5 || l_hand_pos(3)<0-1e-5 || norm(l_hand_pos(1:2))>0.2+1e-
   error('point to line segment constraint is not satisfied')
 end
 
+display('Check without RigidBodyManipulator default joint limits');
+ikoptions = ikoptions.setUseRBMJointBnd(false);
+pc = PostureConstraint(robot,[-inf,inf],false);
+[joint_lb,joint_ub] =robot.getJointLimits();
+pc = pc.setJointLimits([l_leg_kny;r_leg_kny],joint_ub([l_leg_kny;r_leg_kny])+0.1*pi,joint_ub([l_leg_kny;r_leg_kny])+0.1*pi);
+valuecheck(pc.lb([l_leg_kny;r_leg_kny]),joint_ub([l_leg_kny;r_leg_kny])+0.1*pi);
+valuecheck(pc.ub([l_leg_kny;r_leg_kny]),joint_ub([l_leg_kny;r_leg_kny])+0.1*pi);
+q = test_IK_userfun(robot,q_seed,q_nom,pc,qsc,kc2l,kc2r,hand_line_dist_cnst,ikoptions);
 
 display('Check with addRobotFromURDF');
 xyz = 0.1*randn(3,1)+[1;1;1];
@@ -449,18 +457,31 @@ ikmexoptions = ikmexoptions.setMex(true);
 tic
 ikproblem = InverseKinematics(r,q_nom,varargin{1:end-1});
 ikproblem = ikproblem.setQ(ikoptions.Q);
+if(~ikoptions.use_rbm_joint_bnd)
+  ikproblem = ikproblem.deleteBoundingBoxConstraint(ikproblem.rbm_joint_bnd_cnstr_id);
+end
 [qik,F,info,infeasible_cnstr_ik] = ikproblem.solve(q_seed);
 toc
 % valuecheck(qik,q,1e-6);
-testConstraint(r,[],qik,varargin{1:end-1});
-tic
-[qmex,info_mex] = inverseKin(r,q_seed,q_nom,varargin{1:end-1},ikmexoptions);
-toc
-if(info_mex>10)
-  error('SNOPT info is %d, IK mex fails to solve the problem',info_mex);
+if(ikoptions.use_rbm_joint_bnd)
+  testConstraint(r,[],qik,varargin{1:end-1});
+else
+  testConstraintWoRBMJointBnd(r,[],qik,varargin{1:end-1});
 end
-% valuecheck(q,qmex,5e-2);
-testConstraint(r,[],qmex,varargin{1:end-1});
+if(checkDependency('snopt'))
+  tic
+  [qmex,info_mex] = inverseKin(r,q_seed,q_nom,varargin{1:end-1},ikmexoptions);
+  toc
+  if(info_mex>10)
+    error('SNOPT info is %d, IK mex fails to solve the problem',info_mex);
+  end
+  % valuecheck(q,qmex,5e-2);
+  if(ikoptions.use_rbm_joint_bnd)
+    testConstraint(r,[],qmex,varargin{1:end-1});
+  else
+    testConstraintWoRBMJointBnd(r,[],qmex,varargin{1:end-1});
+  end
+end
 end
 
 function qmex = test_IKpointwise_userfun(r,t,q_seed,q_nom,varargin)
@@ -490,12 +511,16 @@ end
 end
 
 function testConstraint(robot,t,q_sol,varargin)
-kinsol = robot.doKinematics(q_sol,false,true);
 [q_lb,q_ub] = robot.getJointLimits();
 if(any(q_sol>q_ub) || any(q_sol<q_lb))
   error('solution must be within the robot default joint limits');
 end
-for i = 1:nargin-3
+testConstraintWoRBMJointBnd(robot,t,q_sol,varargin{:});
+end
+
+function testConstraintWoRBMJointBnd(robot,t,q_sol,varargin)
+  kinsol = robot.doKinematics(q_sol,false,true);
+  for i = 1:nargin-3
   if(isa(varargin{i},'SingleTimeKinematicConstraint'))
     if(varargin{i}.isTimeValid(t))
       [lb,ub] = varargin{i}.bounds(t);
@@ -528,5 +553,5 @@ for i = 1:nargin-3
   else
     error('The constraint is not supported');
   end
-end
+  end  
 end
