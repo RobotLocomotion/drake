@@ -891,6 +891,19 @@ classdef RigidBodyManipulator < Manipulator
       for i=1:length(model.body)
         model.body(i) = updateParams(model.body(i),fr.getPoly,p);
       end
+      
+      for i=1:length(model.force)
+        model.force{i} = updateParams(model.force{i}, fr.getPoly.p);
+      end
+
+      for i=1:length(model.sensor)
+        model.sensor{i} = updateParams(model.sensor{i}, fr.getPoly.p);
+      end
+
+      for i=1:length(model.actuator)
+        model.actuator(i) = updateParams(model.actuator(i), fr.getPoly.p);
+      end
+      
 
       model = compile(model);
     end

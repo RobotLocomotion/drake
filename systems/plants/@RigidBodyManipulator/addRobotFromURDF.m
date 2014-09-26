@@ -150,6 +150,18 @@ for i=1:length(model.body)
   model.body(i) = bindParams(model.body(i),model,pval);
 end
 
+for i=1:length(model.force)
+  model.force{i} = bindParams(model.force{i}, model, pval);
+end
+
+for i=1:length(model.sensor)
+  model.sensor{i} = bindParams(model.sensor{i}, model, pval);
+end
+
+for i=1:length(model.actuator)
+  model.actuator(i) = bindParams(model.actuator(i), model, pval);
+end
+
 end
 
 function model = parseParameter(model,robotnum,node,options)
