@@ -152,11 +152,7 @@ classdef NonlinearProgram
       
       obj.bbcon_lb = [];
       obj.bbcon_ub = [];
-      if checkDependency('snopt')
-        obj = obj.setSolver('snopt');
-      else % todo: check for fmincon?
-        obj = obj.setSolver('fmincon');
-      end
+      obj = obj.setSolver('default');
       obj.solver_options.fmincon = optimset('Display','off');
       obj.solver_options.snopt = struct();
       obj.solver_options.snopt.MajorIterationsLimit = 1000;
@@ -697,6 +693,11 @@ classdef NonlinearProgram
           error('Drake:NonlinearProgram:UnsupportedSolver',' SNOPT not found.  SNOPT support will be disabled.');
         end
         obj.solver = solver;
+      elseif(strcmp(solver,'studentSnopt'))
+        if(~checkDependency('studentSnopt'))
+          error('Drake:NonlinearProgram:UnsupportedSOlver',' SNOPT not found.  SNOPT support will be disabled.');
+        end
+        obj.solver = 'snopt';
       elseif(strcmp(solver,'fmincon'))
         if(~checkDependency('fmincon'))
           error('Drake:NonlinearProgram:UnsupportedSolver',' fmincon support is disabled. To enable it, install MATLAB Optimization toolbox');
@@ -710,6 +711,8 @@ classdef NonlinearProgram
       elseif(strcmp(solver,'default'))
         if(checkDependency('snopt'))
           obj = obj.setSolver('snopt');
+        elseif(checkDependency('studentSnopt')&&obj.num_vars<=300 && obj.num_cin+obj.num_ceq+size(obj.Ain,1)+size(obj.Aeq,1)<=300)
+          obj = obj.setSolver('studentSnopt');
         elseif(checkDependency('fmincon'))
           obj = obj.setSolver('fmincon');
         elseif(checkDependency('ipopt'))
@@ -917,6 +920,9 @@ classdef NonlinearProgram
         end
         if(checkDependency('snopt'))
           solvers = [solvers,{'snopt'}];
+        end
+        if(checkDependency('studentSnopt'))
+          solvers = [solvers,{'studentSnopt'}];
         end
         if(checkDependency('ipopt'))
           solvers = [solvers,{'ipopt'}];
