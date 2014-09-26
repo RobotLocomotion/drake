@@ -389,6 +389,7 @@ display('Check without RigidBodyManipulator default joint limits');
 ikoptions = ikoptions.setUseRBMJointBnd(false);
 pc = PostureConstraint(robot,[-inf,inf],false);
 [joint_lb,joint_ub] =robot.getJointLimits();
+pc = pc.setJointLimits((1:nq)',joint_lb,joint_ub);
 pc = pc.setJointLimits([l_leg_kny;r_leg_kny],joint_ub([l_leg_kny;r_leg_kny])+0.1*pi,joint_ub([l_leg_kny;r_leg_kny])+0.1*pi);
 valuecheck(pc.lb([l_leg_kny;r_leg_kny]),joint_ub([l_leg_kny;r_leg_kny])+0.1*pi);
 valuecheck(pc.ub([l_leg_kny;r_leg_kny]),joint_ub([l_leg_kny;r_leg_kny])+0.1*pi);
@@ -498,16 +499,18 @@ ikmexoptions = ikmexoptions.setMex(true);
 %for i = 1:length(t)
   %testConstraint(r,t(i),q(:,i),varargin{1:end-1});
 %end
-tic
-[qmex,info] = inverseKinPointwise(r,t,q_seed,q_nom,varargin{1:end-1},ikmexoptions);
-toc
-if(info>10)
-  error('SNOPT info is %d, IK pointwise mex fails to solve the problem',info);
+if(checkDependency('snopt'))
+  tic
+  [qmex,info] = inverseKinPointwise(r,t,q_seed,q_nom,varargin{1:end-1},ikmexoptions);
+  toc
+  if(info>10)
+    error('SNOPT info is %d, IK pointwise mex fails to solve the problem',info);
+  end
+  for i = 1:length(t)
+    testConstraint(r,t(i),qmex(:,i),varargin{1:end-1});
+  end
+  % valuecheck(q,qmex,5e-2);
 end
-for i = 1:length(t)
-  testConstraint(r,t(i),qmex(:,i),varargin{1:end-1});
-end
-% valuecheck(q,qmex,5e-2);
 end
 
 function testConstraint(robot,t,q_sol,varargin)
