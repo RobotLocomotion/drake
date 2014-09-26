@@ -29,7 +29,9 @@ function varargout = inverseKinBackend(obj,mode,t,q_seed,q_nom,varargin)
 
 % note: keeping typecheck/sizecheck to a minimum because this might have to
 % run inside a dynamical system (so should be fast)
-checkDependency('snopt');
+if(~checkDependency('snopt'))
+  error('inverseKinBackend requires SNOPT. Either try install SNOPT, or try using InverseKinematics (capital case) or InverseKinematicsTrajectory (capital case) and set solver to fmincon or ipopt');
+end
 
 global SNOPT_USERFUN;
 nq = obj.getNumPositions();
