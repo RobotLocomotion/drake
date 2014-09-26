@@ -82,7 +82,6 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
             mexErrMsgIdAndTxt("Drake:updatePtrIKoptionsmex:BadInputs","debug must be a single boolean");
           }
           bool flag = *mxGetLogicals(prhs[3]);
-          ikoptions_new = new IKoptions(*ikoptions);
           ikoptions_new->setDebug(flag);
         }
         else if(field_str == "sequentialSeedFlag")
@@ -226,6 +225,15 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
         {
           RigidBodyManipulator* new_robot = (RigidBodyManipulator*) getDrakeMexPointer(prhs[3]);
           ikoptions_new->updateRobot(new_robot);
+        }
+        else if(field_str == "use_rbm_joint_bnd")
+        {
+          if(!mxIsLogicalScalar(prhs[3]))
+          {
+            mexErrMsgIdAndTxt("Drake:IKoptionsmex:BadInputs","use_rbm_joint_bnd should be a logical scalar");
+          }
+          bool flag = *mxGetLogicals(prhs[3]);
+          ikoptions_new->setUseRBMJointBnd(flag);
         }
         else
         {
