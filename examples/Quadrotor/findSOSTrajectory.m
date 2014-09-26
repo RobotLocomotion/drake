@@ -1,4 +1,4 @@
-function ytraj = findSOSTrajectory(start, goal, safe_region_sets, traj_degree, num_traj_segments, bot_radius)
+function [ytraj, diagnostics, objective] = findSOSTrajectory(start, goal, safe_region_sets, traj_degree, num_traj_segments, bot_radius)
 
 if nargin < 6
   bot_radius = 0;
@@ -156,7 +156,7 @@ if traj_degree > 3
   diagnostics = optimize(constraints, objective, sdpsettings('solver', 'bnb', 'bnb.maxiter', 5000, 'verbose', 3, 'debug', true))
 else
   % diagnostics = optimize(constraints, objective, sdpsettings('solver', 'gurobi', 'gurobi.MIPGap', 1e-2))
-  diagnostics = optimize(constraints, objective, sdpsettings('solver', 'mosek', 'mosek.MSK_DPAR_MIO_TOL_REL_GAP', 1e-2))
+  diagnostics = optimize(constraints, objective, sdpsettings('solver', 'mosek', 'mosek.MSK_DPAR_MIO_TOL_REL_GAP', 1e-2, 'mosek.MSK_DPAR_MIO_MAX_TIME', 1200))
 end
 toc(t0);
 
@@ -174,6 +174,7 @@ for k = 1:length(breaks)-1
 end
 ytraj = PPTrajectory(mkpp(breaks, coeffs, dim+1));
 
+objective = double(objective);
 
 % keyboard()
 
