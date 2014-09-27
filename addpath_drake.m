@@ -66,7 +66,7 @@ addpath(fullfile(root,'thirdParty','GetFullPath'));
 javaaddpath(fullfile(pods_get_base_path,'share','java','drake.jar'));
 
 if ispc 
-  setenv('PATH',[getenv('PATH'),';',GetFullPath(pods_get_lib_path),';',fullfile(root,'pod-build','lib','Release')]);
+  setenv('PATH',[getenv('PATH'),';',GetFullPath(pods_get_lib_path),';',fullfile(root,'pod-build','lib','Release'),';',fullfile(root,'pod-build','lib')]);
 end
 
 
