@@ -65,6 +65,11 @@ addpath(fullfile(root,'thirdParty','GetFullPath'));
 
 javaaddpath(fullfile(pods_get_base_path,'share','java','drake.jar'));
 
+if ispc 
+  setenv('PATH',[getenv('PATH'),';',GetFullPath(pods_get_lib_path),';',fullfile(root,'pod-build','lib','Release')]);
+end
+
+
 clear util/checkDependency;  % makes sure that the persistent variable in the dependency checker gets cleared
 clear util/getDrakePath;
 
