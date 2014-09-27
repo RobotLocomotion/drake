@@ -382,7 +382,7 @@ function success=pod_pkg_config(podname)
   end
 
   if ~success && nargout<1
-    error(['Cannot find required pod ',podname]);
+    disp(['Cannot find required pod ',podname]);
   end
 end
 
