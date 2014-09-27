@@ -156,7 +156,7 @@ if traj_degree > 3
   diagnostics = optimize(constraints, objective, sdpsettings('solver', 'bnb', 'bnb.maxiter', 5000, 'verbose', 3, 'debug', true))
 else
   % diagnostics = optimize(constraints, objective, sdpsettings('solver', 'gurobi', 'gurobi.MIPGap', 1e-2))
-  diagnostics = optimize(constraints, objective, sdpsettings('solver', 'mosek', 'mosek.MSK_DPAR_MIO_TOL_REL_GAP', 1e-2, 'mosek.MSK_DPAR_MIO_MAX_TIME', 1200))
+  diagnostics = optimize(constraints, objective, sdpsettings('solver', 'mosek', 'mosek.MSK_DPAR_MIO_TOL_REL_GAP', 1e-2, 'mosek.MSK_DPAR_MIO_MAX_TIME', 600, 'verbose', 0))
 end
 toc(t0);
 
