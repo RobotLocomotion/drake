@@ -168,20 +168,38 @@ else % then try to evaluate the dependency now...
       end
 
       if (conf.sedumi_enabled)
-        %  sedumiA=[10,2,3,4;5,7,6,4];
-        %  sedumib=[4;6];
-        %  sedumic=[0;1;0;1];
-        %  sedumiT=sedumi(sedumiA,sedumib,sedumic);%,struct('f',4),struct('fid',0));
-        %  if(~sedumiT)
-        %    error('SeDuMi seems to have encountered a problem. Please verify that your SeDuMi install is working.');
-        %  end
+          %  sedumiA=[10,2,3,4;5,7,6,4];
+          %  sedumib=[4;6];
+          %  sedumic=[0;1;0;1];
+          %  sedumiT=sedumi(sedumiA,sedumib,sedumic);%,struct('f',4),struct('fid',0));
+          %  if(~sedumiT)
+          %    error('SeDuMi seems to have encountered a problem. Please verify that your SeDuMi install is working.');
+          %  end
       elseif nargout<1
-        disp(' ');
-        disp(' SeDuMi not found.  SeDuMi support will be disabled.');
-        disp(' To re-enable, add SeDuMi to your matlab path and rerun addpath_drake.');
-        disp(' SeDuMi can be downloaded for free from <a href="http://sedumi.ie.lehigh.edu/">http://sedumi.ie.lehigh.edu/</a> ');
-        disp(' ');
+          disp(' ');
+          disp(' SeDuMi not found.  SeDuMi support will be disabled.');
+          disp(' To re-enable, add SeDuMi to your matlab path and rerun addpath_drake.');
+          disp(' SeDuMi can be downloaded for free from <a href="http://sedumi.ie.lehigh.edu/">http://sedumi.ie.lehigh.edu/</a> ');
+          disp(' ');
       end
+      
+      case 'mosek'
+          conf.mosek_enabled = logical(exist('mosekopt','file'));
+          if (~conf.mosek_enabled)
+              conf.mosek_enabled = pod_pkg_config('mosek') && logical(exist('mosekopt','file'));
+          end
+          
+          if (conf.mosek_enabled)
+              ok = mosekopt;
+              if (ok ~= 0)
+                  error('MOSEK seems to have encountered a problem. Please verify that your MOSEK install is working.');
+              end
+          elseif nargout<1
+              disp(' ');
+              disp(' MOSEK not found.  MOSEK support will be disabled.');
+              disp(' MOSEK can be downloaded with a free academic license from <a href="http://www.mosek.com/resources/academic-license">http://www.mosek.com/resources/academic-license</a> ');
+              disp(' ');
+          end
 
     case 'gurobi'
       conf.gurobi_enabled = logical(exist('gurobi','file')); %&& ~isempty(getenv('GUROBI_HOME')));
