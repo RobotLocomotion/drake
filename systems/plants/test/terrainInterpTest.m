@@ -1,17 +1,16 @@
 function terrainInterpTest
 
 
-[X,Y] = meshgrid(linspace(-9,9,31),linspace(-9,9,31));
 options.floating = true;
-options.terrain = RigidBodyHeightMapTerrain([0,1],[0,1],5*[0 0; 0 1]);
-options.terrain.writeOBJ('test.obj');
-options.viewer='RigidBodyWRLVisualizer';
+options.terrain = RigidBodyHeightMapTerrain([-7,7],[-3,3],5*[0 0; 0 1]);
+%options.viewer='RigidBodyWRLVisualizer';
 r = TimeSteppingRigidBodyManipulator('FallingBrick.urdf',.01,options);
 
 if (1)
   v = r.constructVisualizer(options);
   x0 = .1*rand(12,1)+[6*rand(2,1)-3;4;zeros(9,1)];
   v.draw(0,x0);
+  [X,Y] = meshgrid(linspace(-9,9,31),linspace(-9,9,31));
   [~,normal,pos]=collisionDetectTerrain(r,[X(:),Y(:),0*X(:)]');
   valuecheck(X,reshape(pos(1,:),size(X)));
   valuecheck(Y,reshape(pos(2,:),size(Y)));
@@ -23,7 +22,6 @@ if (1)
   axis equal;
 
   traj = simulate(r,[0 5],x0);
-  traj.eval(5)
   v.playback(traj);
 end
 

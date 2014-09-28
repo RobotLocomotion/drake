@@ -156,14 +156,17 @@ classdef RigidBodyHeightMapTerrain < RigidBodyTerrain
       % @param ax axis specification [xmin,xmax,ymin,ymax].  note that the
       % top left pixel of the image will be at xmin,ymax
       % @param terrain_to_world_transform a 4x4 transformation matrix
-      % for options, see the class constructor;
+      % @option z_scale grayscale 255 = z_scale meters.  @default 1
+      % for additional options, see the class constructor;
       
       if nargin<3, terrain_to_world_transform=eye(4); end
       if nargin<4, options=struct(); end
       
+      if ~isfield(options,'z_scale'), options.z_scale=1; end
+        
       a=imread(filename);
-      a=flipup(a); % flip the y axis to go from image coordinates to cartesian coordinates
-      terrain_height=double(rgb2gray(a))/255;
+      Z=options.z_scale*double(rgb2gray(a))/255;
+      Z=flipud(Z); % flip the y axis to go from image coordinates to cartesian coordinates
       x = linspace(ax(1),ax(2),size(a,1));
       y = linspace(ax(3),ax(4),size(a,2));
       obj = RigidBodyHeightMapTerrain(x,y,Z,terrain_to_world_transform,options);
