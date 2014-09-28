@@ -185,16 +185,22 @@ classdef RigidBodyManipulator < Manipulator
       if ~isempty(obj.terrain)
         geom = obj.terrain.getRigidBodyContactGeometry();
         if ~isempty(geom)
-          if ~any(cellfun(@(shape) isequal(geom,shape),obj.body(1).contact_shapes))
-            obj = obj.addContactShapeToBody(1,geom,'terrain');
-            obj.dirty = true;
+          if ~iscell(geom), geom={geom}; end
+          for i=1:numel(geom)
+            if ~any(cellfun(@(shape) isequal(geom{i},shape),obj.body(1).contact_shapes))
+              obj = obj.addContactShapeToBody(1,geom{i},'terrain');
+              obj.dirty = true;
+            end
           end
         end
         geom = obj.terrain.getRigidBodyShapeGeometry();
         if ~isempty(geom)
-          if ~any(cellfun(@(shape) isequal(geom,shape),obj.body(1).visual_shapes))
-            obj.body(1).visual_shapes{end+1} = geom;
-            obj.dirty = true;
+          if ~iscell(geom), geom={geom}; end
+          for i=1:numel(geom)
+            if ~any(cellfun(@(shape) isequal(geom{i},shape),obj.body(1).visual_shapes))
+              obj.body(1).visual_shapes{end+1} = geom{i};
+              obj.dirty = true;
+            end
           end
         end
       end

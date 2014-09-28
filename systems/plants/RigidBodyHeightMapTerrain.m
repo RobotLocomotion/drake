@@ -13,7 +13,7 @@ classdef RigidBodyHeightMapTerrain < RigidBodyTerrain
       assert(size(Z,1)==length(y));
       obj.x = x;
       obj.y = y;
-      obj.Z = Z;
+      obj.Z = Z';  % store it in ndgrid format, instead of meshgrid format
 
       obj.T_terrain_to_world = terrain_to_world_transform;
       obj.T_world_to_terrain = inv(terrain_to_world_transform);
@@ -32,7 +32,7 @@ classdef RigidBodyHeightMapTerrain < RigidBodyTerrain
     end
     
     function plotTerrain(obj)
-      [X,Y] = meshgrid(obj.x,obj.y);
+      [X,Y] = ndgrid(obj.x,obj.y);
       xyz = [X(:)';Y(:)';obj.Z(:)'];
       xyz = obj.T_terrain_to_world(1:3,:)*[xyz;1+0*xyz(1,:)];
       mesh(reshape(xyz(1,:),size(X)),reshape(xyz(2,:),size(X)),reshape(xyz(3,:),size(X)));
@@ -62,7 +62,7 @@ classdef RigidBodyHeightMapTerrain < RigidBodyTerrain
       % writes the mesh to an alias wavefront file (e.g. for the viewers to
       % parse)
       % adapted from http://www.aleph.se/Nada/Ray/saveobjmesh.m
-      [x,y] = meshgrid(obj.x,obj.y);
+      [x,y] = ndgrid(obj.x,obj.y);
       [~,normals]=getHeight(obj,[x(:)';y(:)']);
       nx = reshape(normals(1,:),size(x));
       ny = reshape(normals(2,:),size(x));
