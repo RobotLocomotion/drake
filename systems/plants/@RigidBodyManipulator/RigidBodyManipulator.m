@@ -183,26 +183,33 @@ classdef RigidBodyManipulator < Manipulator
 
     function obj = addTerrainGeometries(obj)
       if ~isempty(obj.terrain)
-        geom = obj.terrain.getRigidBodyGeometry();
+        geom = obj.terrain.getRigidBodyContactGeometry();
         if ~isempty(geom)
           if ~any(cellfun(@(shape) isequal(geom,shape),obj.body(1).contact_shapes))
             obj = obj.addContactShapeToBody(1,geom,'terrain');
+            obj.dirty = true;
           end
+        end
+        geom = obj.terrain.getRigidBodyShapeGeometry();
+        if ~isempty(geom)
           if ~any(cellfun(@(shape) isequal(geom,shape),obj.body(1).visual_shapes))
             obj.body(1).visual_shapes{end+1} = geom;
+            obj.dirty = true;
           end
-          obj.dirty = true;
         end
       end
     end
 
     function obj = removeTerrainGeometries(obj)
       if ~isempty(obj.terrain)
-        geom = obj.terrain.getRigidBodyGeometry();
+        geom = obj.terrain.getRigidBodyContactGeometry();
         geom_contact_idx = cellfun(@(shape) isequal(geom,shape),obj.body(1).contact_shapes);
         obj.body(1).contact_shapes(geom_contact_idx) = [];
+
+        geom = obj.terrain.getRigidBodyShapeGeometry();
         geom_visual_idx = cellfun(@(shape) isequal(geom,shape),obj.body(1).visual_shapes);
         obj.body(1).visual_shapes(geom_visual_idx) = [];
+        
         obj.dirty = true;
       end
     end
@@ -649,7 +656,7 @@ classdef RigidBodyManipulator < Manipulator
       if getNumStates(model)>0
         model = constructStateFrame(model);
       end
-      
+
       if any([model.body.has_position_sensor])
         % add a rigid body joint sensor if necessary
         robotnums = unique([model.body([model.body.has_position_sensor]).robotnum]);
@@ -1211,16 +1218,16 @@ classdef RigidBodyManipulator < Manipulator
       end
       lcmgl.glColor3f(.7,.7,.7); % gray
     end
-    
+
     function drawLCMGLGravity(model,q,gravity_visual_magnitude)
-        % draws a vector centered at the robot's center 
+        % draws a vector centered at the robot's center
         % of mass having the direction of the gravitational
         % force on the robot.
         %
         % @param q the position of the robot
-        % @param gravity_visual_magnitude specifies the visual length of 
+        % @param gravity_visual_magnitude specifies the visual length of
         % the vector representing the gravitational force.
-        
+
         if (nargin<3), gravity_visual_magnitude=0.25; end
         gravity_force = getMass(model)*model.gravity;
         vector_scale = gravity_visual_magnitude/norm(gravity_force,2);
@@ -1229,26 +1236,26 @@ classdef RigidBodyManipulator < Manipulator
         lcmgl.drawVector3d(getCOM(model,q),vector_scale*gravity_force);
         lcmgl.switchBuffers();
     end
-    
+
     function drawLCMGLForces(model,q,qd,gravity_visual_magnitude)
         % draws the forces and torques on the robot. They are
         % spatial vectors (wrenches) and are drawn at the body's
         % origin on which they act. Forces are in green and torques
         % in purple. The magnitude of each vector is scaled by
-        % the same amount that the vector corresponding to the 
+        % the same amount that the vector corresponding to the
         % gravitational force on the robot would be scaled in order to
-        % make it have a norm equal to gravity_visual_magnitude. Use 
+        % make it have a norm equal to gravity_visual_magnitude. Use
         % drawLCMGLGravity to draw the gravity.
         %
         % @param q the position of the robot
         % @param qd the velocities of the robot
-        % @param gravity_visual_magnitude specifies the (would-be) visual 
+        % @param gravity_visual_magnitude specifies the (would-be) visual
         % length of the vector representing the gravitational force.
-        
+
         if (nargin<4), gravity_visual_magnitude=0.25; end
         gravity_force = getMass(model)*model.gravity;
         vector_scale = gravity_visual_magnitude/norm(gravity_force,2);
-        
+
         kinsol = doKinematics(model,q);
         force_vectors = {};
         for i=1:length(model.force)
@@ -1724,7 +1731,7 @@ classdef RigidBodyManipulator < Manipulator
       if nargin<2, robotnum=1; end
       fr = obj.robot_velocity_frames{robotnum};
     end
-    
+
     function fr = getStateFrame(obj,robotnum)
       if nargin<2,
         fr = getStateFrame@DrakeSystem(obj);
@@ -2478,13 +2485,13 @@ classdef RigidBodyManipulator < Manipulator
       if ~isempty(elnode)
         [model,fe] = RigidBodyBuoyant.parseURDFNode(model,robotnum,elnode,options);
       end
-      
+
       elnode = node.getElementsByTagName('propellor').item(0);
       if ~isempty(elnode)
         [model,fe] = RigidBodyPropellor.parseURDFNode(model,robotnum,elnode,options);
       end
-      
-      
+
+
 
       if ~isempty(fe)
         model.force{end+1} = fe;

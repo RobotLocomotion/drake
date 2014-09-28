@@ -204,7 +204,8 @@ classdef BotVisualizer < RigidBodyVisualizer
       if isempty(terrain), is_supported_terrain = true; return; end;
 
       supported_classes = { 'RigidBodyFlatTerrain', ...
-                            'RigidBodyFlatTerrainNoGeometry'};
+                            'RigidBodyFlatTerrainNoGeometry', ...
+                            'RigidBodyHeightMapTerrain'};
       is_supported_terrain = any(cellfun(@(str)isa(terrain,str),supported_classes));
     end
   end

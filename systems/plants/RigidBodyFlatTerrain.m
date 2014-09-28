@@ -7,8 +7,17 @@ classdef RigidBodyFlatTerrain < RigidBodyTerrain
       [m n] = size(xy);
       z = repmat(0,1,n);
       normal = repmat([0;0;1],1,n);
+      obj.geom = constructRigidBodyGeometry(obj);
     end
 
+    function geom = getRigidBodyContactGeometry(obj)
+      geom = obj.geom;
+    end
+
+    function geom = getRigidBodyShapeGeometry(obj)
+      geom = obj.geom;
+    end
+    
     function geom = constructRigidBodyGeometry(obj)
       box_width = 1000;
       box_depth = 10;
@@ -18,5 +27,9 @@ classdef RigidBodyFlatTerrain < RigidBodyTerrain
       geom.name = 'terrain';
 %      geom.c = hex2dec({'cd','af','95'})'/256;
     end
+  end
+  
+  properties
+    geom;
   end
 end
