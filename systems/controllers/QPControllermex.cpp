@@ -606,7 +606,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     if (info<0) {
       model = gurobiQP(pdata->env,QBlkDiag,f,Aeq,beq,Ain,bin,lb,ub,pdata->active,alpha);
       int status; CGE(GRBgetintattr(model, "Status", &status), pdata->env);
-      if (status!=2) mexPrintf("Gurobi reports non-optimal status = %d\n", status);
+      //if (status!=2) mexPrintf("Gurobi reports non-optimal status = %d\n", status);
     }
   #ifdef USE_MATRIX_INVERSION_LEMMA
   }
