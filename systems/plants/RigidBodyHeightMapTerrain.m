@@ -17,6 +17,8 @@ classdef RigidBodyHeightMapTerrain < RigidBodyTerrain & RigidBodyGeometry
       obj.y = y;
       obj.Z = Z';  % store it in ndgrid format, instead of meshgrid format
       obj.T_world_to_terrain = inv(terrain_to_world_transform);
+
+      obj.c = hex2dec({'ee','cb','ad'})/256;  % something a little brighter (peach puff 2 from http://www.tayloredmktg.com/rgb/)
     end
 
     function pts = getPoints(obj)
@@ -116,11 +118,6 @@ classdef RigidBodyHeightMapTerrain < RigidBodyTerrain & RigidBodyGeometry
     
     function writeWRLShape(obj,fp,td)
       
-      fprintf(fp,'Shape { geometry Sphere { radius .05 }\n appearance Appearance { material Material { diffuseColor 1 0 0 } } }\n');
-      fprintf(fp,'Transform { translation %f %f %f  children [ Shape { geometry Sphere { radius .05 }\n appearance Appearance { material Material { diffuseColor 0 0 1 } } } ] }\n',obj.x(end),obj.Z(end),-obj.y(end));
-      fprintf(fp,'Transform { translation 1 0 0  children [ Shape { geometry Sphere { radius .05 }\n appearance Appearance { material Material { diffuseColor 0 1 0 } } } ] }\n');
-      fprintf(fp,'Transform { translation 0 0 -1  children [ Shape { geometry Sphere { radius .05 }\n appearance Appearance { material Material { diffuseColor 0 1 0 } } } ] }\n');
-
       function tabprintf(fp,varargin), for i=1:td, fprintf(fp,'\t'); end, fprintf(fp,varargin{:}); end
       tabprintf(fp,'Transform {\n'); td=td+1;
       tabprintf(fp,'translation %f %f %f\n',obj.T(1:3,4));
@@ -133,11 +130,6 @@ classdef RigidBodyHeightMapTerrain < RigidBodyTerrain & RigidBodyGeometry
         error('Drake:RigidBodyHeightMapTerrain:NonUniformGrid','vrml export currently only support uniform grids');
       end
       [m,n]=size(obj.Z);
-
-      % todo: use the color field
-      %  color1 = [204 102 0]/256;  % csail orange
-      color1 = hex2dec({'ee','cb','ad'})/256;  % something a little brighter (peach puff 2 from http://www.tayloredmktg.com/rgb/)
-      color2 = hex2dec({'cd','af','95'})/256;
 
       % vrml view axis is y up, and elevation grid is y=height(x,z)
       % so I need to treat y=z, and z=-y
@@ -157,21 +149,19 @@ classdef RigidBodyHeightMapTerrain < RigidBodyTerrain & RigidBodyGeometry
       fprintf(fp,'  colorPerVertex TRUE\n');
       % note: colorPerVertex FALSE seems to be unsupported (loads but renders incorrectly) in the default simulink 3D animation vrml viewer
       fprintf(fp,'   color Color { color [');
-      for i=1:m
-        for j=1:n
-          if rem(i+j,2)==0
-            fprintf(fp,' %.1f %.1f %.1f,', color1);
-          else
-            fprintf(fp,' %.1f %.1f %.1f,', color2);
-          end
-        end
-      end
+      fprintf(fp,' %.1f %.1f %.1f,',repmat(obj.c(:),1,m*n));
       fprintf(fp,'] }\n'); % end Color
-      %  [nx,ny,nz] = surfnorm(obj.terrain_height);
-%      fprintf(fp,'  normalPerVertex TRUE\n');
-%      fprintf(fp,'  normal Normal { vector [');
-%      fprintf(fp,' %.2f %.2f %.2f,', [0, -1, 0]); %[nx(:),-nz(:),ny(:)]');  % rotx(pi/2)*normal
-%      fprintf(fp,'] }\n'); % end normal
+      
+      if (0)
+        [x,y] = ndgrid(obj.x(1:end-1)+diff(obj.x)/2,obj.y(1:end-1)+diff(obj.y)/2);
+        [~,normals] = obj.getHeight([x(:)';y(:)']);
+        normals = [normals(1,:),normals(3,:),-normals(2,:)];
+        fprintf(fp,'  normalPerVertex FALSE\n');
+        fprintf(fp,'  normal Normal { vector [');
+        fprintf(fp,' %.2f %.2f %.2f,', normals);
+        fprintf(fp,'] }\n'); % end normal
+      end
+      
       fprintf(fp,'}\n}\n'); % end Shape
       fprintf(fp,']\n}\n'); % end Transform
       fprintf(fp,']\n}\n'); % end Transform
