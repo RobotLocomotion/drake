@@ -214,7 +214,7 @@ playback(v,traj,struct('slider',true));
 
 if plot_comtraj
   dt = 0.001;
-  tts = 0:dt:T;
+  tts = traj.getBreaks();
   xtraj_smooth=smoothts(traj.eval(tts),'e',150);
   dtraj = fnder(PPTrajectory(spline(tts,xtraj_smooth)));
   qddtraj = dtraj(nq+(1:nq));
