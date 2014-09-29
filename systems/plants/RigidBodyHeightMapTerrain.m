@@ -1,4 +1,4 @@
-classdef RigidBodyHeightMapTerrain < RigidBodyTerrain
+classdef RigidBodyHeightMapTerrain < RigidBodyTerrain & RigidBodyGeometry
   
   methods
     function obj = RigidBodyHeightMapTerrain(x,y,Z,terrain_to_world_transform,options)
@@ -7,6 +7,8 @@ classdef RigidBodyHeightMapTerrain < RigidBodyTerrain
       
       if nargin<4, terrain_to_world_transform=eye(4); end
       
+      obj@RigidBodyGeometry(4,terrain_to_world_transform);
+      
       % note: I hate that these two are switched, but it is the convention
       % for meshes in matlab
       assert(size(Z,2)==length(x));
@@ -14,27 +16,51 @@ classdef RigidBodyHeightMapTerrain < RigidBodyTerrain
       obj.x = x;
       obj.y = y;
       obj.Z = Z';  % store it in ndgrid format, instead of meshgrid format
-
-      obj.T_terrain_to_world = terrain_to_world_transform;
       obj.T_world_to_terrain = inv(terrain_to_world_transform);
+    end
 
-      fname = [tempname,'.obj'];
-      writeOBJ(obj,fname);
-      obj.geom = RigidBodyMesh(fname,obj.T_terrain_to_world);
+    function pts = getPoints(obj)
+      % returned in body coordinates
+      [X,Y] = ndgrid(obj.x,obj.y);
+      pts = obj.T(1:3,:)*[X(:)';Y(:)';obj.Z(:)';ones(1,numel(X))];
     end
     
+    function pts = getBoundingBoxPoints(obj)
+      % returned in body coordinates
+      min_vals = [min(obj.x); min(obj.y); min(min(obj.Z))];
+      max_vals = [max(obj.x); max(obj.y); max(max(obj.Z))];
+      min_idx = logical([ 0 1 1 0 0 1 1 0;
+                          1 1 1 1 0 0 0 0;
+                          1 1 0 0 0 0 1 1]);
+      pts = obj.T(1:3,:)*[repmat(min_vals,1,8).*min_idx + repmat(max_vals,1,8).*(~min_idx); ones(1,8)];
+    end
+    
+    function shape = serializeToLCM(obj)
+      fname = [tempname,'.obj'];
+      writeOBJ(obj,fname);
+      shape = drake.lcmt_viewer_geometry_data();
+      shape.type = shape.MESH;
+      shape.string_data = fname;
+      shape.num_float_data = 1;
+      shape.float_data = 1;  % scale
+
+      shape.position = obj.T(1:3,4);
+      shape.quaternion = rotmat2quat(obj.T(1:3,1:3));
+      shape.color = [obj.c(:);1.0];
+    end
+
     function geom = getRigidBodyContactGeometry(obj)
       geom = [];
     end
 
     function geom = getRigidBodyShapeGeometry(obj)
-      geom = obj.geom;
+      geom = obj;
     end
     
     function plotTerrain(obj)
       [X,Y] = ndgrid(obj.x,obj.y);
       xyz = [X(:)';Y(:)';obj.Z(:)'];
-      xyz = obj.T_terrain_to_world(1:3,:)*[xyz;1+0*xyz(1,:)];
+      xyz = obj.T(1:3,:)*[xyz;1+0*xyz(1,:)];
       mesh(reshape(xyz(1,:),size(X)),reshape(xyz(2,:),size(X)),reshape(xyz(3,:),size(X)));
       xlabel('x');
       ylabel('y');
@@ -88,33 +114,36 @@ classdef RigidBodyHeightMapTerrain < RigidBodyTerrain
       fclose(fid);
     end
     
-    function [xgv,ygv] = writeWRL(obj,fp) % for visualization
-      T = obj.T_terrain_to_world;
-      xyz_min = homogTransMult(T,[obj.x(1);obj.y(1);0]);
-      axisangle = rotmat2axis(T(1:3,1:3));
-      xspacing = mean(diff(obj.x));
-      yspacing = mean(diff(obj.y));
-      if any(abs(diff(obj.x)-xspacing)>1e-4) || any(abs(diff(obj.x)-xspacing)>1e-4),
-        error('Drake:RigidBodyHeightMapTerrain:NoUniformGrid','vrml export currently only support uniform grids');
-      end
-      [m,n]=size(obj.Z);
-      
-      error('need to update this');
+    function writeWRLShape(obj,fp,td)
       
       fprintf(fp,'Shape { geometry Sphere { radius .05 }\n appearance Appearance { material Material { diffuseColor 1 0 0 } } }\n');
       fprintf(fp,'Transform { translation %f %f %f  children [ Shape { geometry Sphere { radius .05 }\n appearance Appearance { material Material { diffuseColor 0 0 1 } } } ] }\n',obj.x(end),obj.Z(end),-obj.y(end));
       fprintf(fp,'Transform { translation 1 0 0  children [ Shape { geometry Sphere { radius .05 }\n appearance Appearance { material Material { diffuseColor 0 1 0 } } } ] }\n');
       fprintf(fp,'Transform { translation 0 0 -1  children [ Shape { geometry Sphere { radius .05 }\n appearance Appearance { material Material { diffuseColor 0 1 0 } } } ] }\n');
-      
+
+      function tabprintf(fp,varargin), for i=1:td, fprintf(fp,'\t'); end, fprintf(fp,varargin{:}); end
+      tabprintf(fp,'Transform {\n'); td=td+1;
+      tabprintf(fp,'translation %f %f %f\n',obj.T(1:3,4));
+      tabprintf(fp,'rotation %f %f %f %f\n',rotmat2axis(obj.T(1:3,1:3)));
+      tabprintf(fp,'children [\n'); td=td+1;
+
+      xspacing = mean(diff(obj.x));
+      yspacing = mean(diff(obj.y));
+      if any(abs(diff(obj.x)-xspacing)>1e-5) || any(abs(diff(obj.x)-xspacing)>1e-5),
+        error('Drake:RigidBodyHeightMapTerrain:NonUniformGrid','vrml export currently only support uniform grids');
+      end
+      [m,n]=size(obj.Z);
+
+      % todo: use the color field
       %  color1 = [204 102 0]/256;  % csail orange
       color1 = hex2dec({'ee','cb','ad'})/256;  % something a little brighter (peach puff 2 from http://www.tayloredmktg.com/rgb/)
       color2 = hex2dec({'cd','af','95'})/256;
 
       % vrml view axis is y up, and elevation grid is y=height(x,z)
       % so I need to treat y=z, and z=-y
-%      fprintf(fp,'Transform {\n  rotation  1 0 0 1.5708\n scale 1 1 1\n children [\n');
+      fprintf(fp,'Transform {\n  translation %f %f %f\n children [\n',obj.x(1),obj.y(1),0);
+      fprintf(fp,'Transform {\n  rotation  1 0 0 1.5708\n scale 1 1 1\n children [\n');
 
-      fprintf(fp,'Transform {\n  translation %f %f %f\n  rotation %f %f %f %f\n  children [\n',xyz_min(1),0,xyz_min(2),axisangle(1),axisangle(3),-axisangle(2),axisangle(4));
       fprintf(fp,'Shape { geometry ElevationGrid {\n');
       %        fprintf(fp,'  solid "false"\n');
       fprintf(fp,'  xSpacing %f\n',xspacing);
@@ -122,7 +151,7 @@ classdef RigidBodyHeightMapTerrain < RigidBodyTerrain
       fprintf(fp,'  xDimension %d\n',m);
       fprintf(fp,'  zDimension %d\n',n);
       fprintf(fp,'  height [');
-      fprintf(fp,' %d', obj.Z');
+      fprintf(fp,' %d', obj.Z);
       fprintf(fp,' ]\n');
       fprintf(fp,'  solid TRUE\n');
       fprintf(fp,'  colorPerVertex TRUE\n');
@@ -144,8 +173,12 @@ classdef RigidBodyHeightMapTerrain < RigidBodyTerrain
 %      fprintf(fp,' %.2f %.2f %.2f,', [0, -1, 0]); %[nx(:),-nz(:),ny(:)]');  % rotx(pi/2)*normal
 %      fprintf(fp,'] }\n'); % end normal
       fprintf(fp,'}\n}\n'); % end Shape
-%      fprintf(fp,']\n}\n'); % end Transform
       fprintf(fp,']\n}\n'); % end Transform
+      fprintf(fp,']\n}\n'); % end Transform
+      
+      td=td-1; tabprintf(fp,']\n'); % end children
+      td=td-1; tabprintf(fp,'}\n'); % end Transform {
+      
       fprintf(fp,'\n\n');
     end
   end
@@ -176,8 +209,6 @@ classdef RigidBodyHeightMapTerrain < RigidBodyTerrain
   
   properties (SetAccess=protected)
     x,y,Z;  % heightmap data
-    T_terrain_to_world = [1,0,0,-10;0,1,0,10;0,0,1,0;0,0,0,1];  % translation from terrain coordinates to world coordinates
     T_world_to_terrain;
-    geom;
   end
 end
