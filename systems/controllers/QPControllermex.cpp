@@ -533,7 +533,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
     info = fastQPThatTakesQinv(QBlkDiag, f, Aeq, beq, Ain_lb_ub, bin_lb_ub, pdata->active, alpha);
 
-    if (info<0)  	mexPrintf("fastQP info = %d.  Calling gurobi.\n", info);
+    //if (info<0)  	mexPrintf("fastQP info = %d.  Calling gurobi.\n", info);
   }
   else {
   #endif
@@ -592,7 +592,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     if (use_fast_qp > 0)
     { // set up and call fastqp
       info = fastQP(QBlkDiag, f, Aeq, beq, Ain_lb_ub, bin_lb_ub, pdata->active, alpha);
-      if (info<0)    mexPrintf("fastQP info=%d... calling Gurobi.\n", info);
+      //if (info<0)    mexPrintf("fastQP info=%d... calling Gurobi.\n", info);
     }
     else {
       // use gurobi active set 
@@ -606,7 +606,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     if (info<0) {
       model = gurobiQP(pdata->env,QBlkDiag,f,Aeq,beq,Ain,bin,lb,ub,pdata->active,alpha);
       int status; CGE(GRBgetintattr(model, "Status", &status), pdata->env);
-      if (status!=2) mexPrintf("Gurobi reports non-optimal status = %d\n", status);
+      //if (status!=2) mexPrintf("Gurobi reports non-optimal status = %d\n", status);
     }
   #ifdef USE_MATRIX_INVERSION_LEMMA
   }
