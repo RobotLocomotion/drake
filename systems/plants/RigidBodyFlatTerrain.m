@@ -3,11 +3,14 @@ classdef RigidBodyFlatTerrain < RigidBodyTerrain
 %  everywhere
   
   methods 
+    function obj = RigidBodyFlatTerrain()
+      obj.geom = constructRigidBodyGeometry(obj);
+    end
+    
     function [z,normal] = getHeight(obj,xy)
       [m n] = size(xy);
       z = repmat(0,1,n);
       normal = repmat([0;0;1],1,n);
-      obj.geom = constructRigidBodyGeometry(obj);
     end
 
     function geom = getRigidBodyContactGeometry(obj)
