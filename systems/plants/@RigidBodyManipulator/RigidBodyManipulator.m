@@ -1012,7 +1012,7 @@ classdef RigidBodyManipulator < Manipulator
       end
     end
 
-    function groups = getContactGroups(model)
+    function groups = getContactShapeGroupNames(model)
       groups = {};
       for i=1:length(model.body)
         groups = horzcat(groups,model.body(i).contact_shape_group_name);
