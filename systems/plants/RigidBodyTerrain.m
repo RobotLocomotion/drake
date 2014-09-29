@@ -15,9 +15,6 @@ classdef RigidBodyTerrain < RigidBodyElement
     function geom = getRigidBodyShapeGeometry(obj)
       geom = [];
     end
-    
-    function writeWRL(obj,fptr)
-    end
   end
 
 end
