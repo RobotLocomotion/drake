@@ -11,8 +11,8 @@
 %   T'*P*T = D^(-1)
 %
 function [T,D] = balanceQuadraticForm(S,P)
-    if norm(S - S',1) > 1e-10, error('S must be symmetric'); end
-    if norm(P - P',1) > 1e-10, error('P must be symmetric'); end
+    if norm(S - S',1) > 1e-8, error('S must be symmetric'); end
+    if norm(P - P',1) > 1e-8, error('P must be symmetric'); end
     if cond(P) > 1e10, error('P must be full rank'); end
     
     V = inv(chol(S)); % Tests if S positive def. for us.
