@@ -108,7 +108,9 @@ else
 end
 
 if ~isempty(obj.terrain) && ...
-    (force_collisionDetectTerrain || ~isa(obj.terrain,'RigidBodyFlatTerrain'))
+    (force_collisionDetectTerrain || ~isa(obj.terrain,'RigidBodyFlatTerrain')) && ...
+    (~isfield(active_collision_options,'collision_groups') || ...
+      ismember('terrain',active_collision_options.collision_groups))
   % For each point on the manipulator that can collide with terrain,
   % find the closest point on the terrain geometry
   if isfield(active_collision_options,'body_idx')
