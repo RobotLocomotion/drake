@@ -56,11 +56,15 @@ xf = goal;
 constraints = [...
                C{1}' * basis_t0 == x0,...
                Cd{1}{1}' * [1; zeros(traj_degree,1)] == zeros(dim, 1),...
-               Cd{1}{2}' * [1; zeros(traj_degree,1)] == zeros(dim, 1),...
                Cd{nt}{1}' * [1; ones(traj_degree,1)] == zeros(dim, 1),...
-               Cd{nt}{2}' * [1; ones(traj_degree,1)] == zeros(dim, 1),...
                C{nt}' * basis_t1 == xf,...
-               ];
+              ];
+if traj_degree > 1
+  constraints = [constraints,...
+   Cd{1}{2}' * [1; zeros(traj_degree,1)] == zeros(dim, 1),...
+   Cd{nt}{2}' * [1; ones(traj_degree,1)] == zeros(dim, 1),...
+   ];
+ end
 
 region = {};
 for j = 1:length(safe_region_sets)
@@ -153,7 +157,7 @@ end
 
 t0 = tic;
 if traj_degree > 3
-  diagnostics = optimize(constraints, objective, sdpsettings('solver', 'bnb', 'bnb.maxiter', 5000, 'verbose', 3, 'debug', true))
+  diagnostics = optimize(constraints, objective, sdpsettings('solver', 'bnb', 'bnb.maxiter', 5000, 'verbose', 0, 'debug', true))
 else
   % diagnostics = optimize(constraints, objective, sdpsettings('solver', 'gurobi', 'gurobi.MIPGap', 1e-2))
   diagnostics = optimize(constraints, objective, sdpsettings('solver', 'mosek', 'mosek.MSK_DPAR_MIO_TOL_REL_GAP', 1e-2, 'mosek.MSK_DPAR_MIO_MAX_TIME', 600, 'verbose', 0))
@@ -166,6 +170,9 @@ for k = 1:length(breaks)-1
   c = value(C{k});
   for i = 1:dim
     [ct, ~] = coefficients(c(:,i)' * basis, t, monolist(t, traj_degree));
+    if length(ct) < traj_degree + 1
+      ct = [ct; 1e-6]; % stupid yalmip bug
+    end
     lambda = t / dt;
     z = ct'* monolist(lambda, traj_degree);
     [cz, ~] = coefficients(z, t, monolist(t, traj_degree));
