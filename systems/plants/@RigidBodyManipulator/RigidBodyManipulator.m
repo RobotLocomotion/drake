@@ -996,6 +996,16 @@ classdef RigidBodyManipulator < Manipulator
         body_idx = 2:obj.getNumBodies(); % World-fixed objects can't collide
                                          % with the terrain
       end
+      if nargin >= 3
+        if all(cellfun(@ischar,contact_groups))
+          contact_groups = {contact_groups};
+        end
+        if numel(contact_groups) == 1
+          contact_groups = repmat(contact_groups,size(body_idx));
+        else
+          sizecheck(contact_groups,size(body_idx));
+        end
+      end
       terrain_contact_point_struct = struct('pts',{},'idx',{});
       for i = 1:length(body_idx)
         bi=body_idx(i);
