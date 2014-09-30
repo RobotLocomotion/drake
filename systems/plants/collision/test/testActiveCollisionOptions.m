@@ -14,18 +14,45 @@ function testActiveCollisionOptions()
 
   kinsol = doKinematics(r,x0(1:r.getNumPositions()));
 
-  phi = r.collisionDetect(kinsol,false);
-  valuecheck(phi,[1.5;0.5]);
+  if checkDependency('bullet')
+    phi = r.collisionDetect(kinsol,false);
+    valuecheck(phi,[1.5;0.5]);
+  end
+
+  active_collision_options.terrain_only = true;
+  phi = r.collisionDetect(kinsol,false,active_collision_options);
+  valuecheck(phi,[2.5;2.5;1.5;1.5;1.5;1.5;2.5;2.5]);
+  clear active_collision_options
 
   active_collision_options.collision_groups = {'default','terrain'};
+  if checkDependency('bullet')
+    phi = r.collisionDetect(kinsol,false,active_collision_options);
+    valuecheck(phi,1.5);
+  end
+
+  active_collision_options.terrain_only = true;
   phi = r.collisionDetect(kinsol,false,active_collision_options);
-  valuecheck(phi,1.5);
+  valuecheck(phi,[2.5;2.5;1.5;1.5;1.5;1.5;2.5;2.5]);
+  clear active_collision_options
 
   active_collision_options.collision_groups = {'default','groupA'};
+  if checkDependency('bullet')
+    phi = r.collisionDetect(kinsol,false,active_collision_options);
+    valuecheck(phi,0.5);
+  end
+
+  active_collision_options.terrain_only = true;
   phi = r.collisionDetect(kinsol,false,active_collision_options);
-  valuecheck(phi,0.5);
+  sizecheck(phi,0);
+  clear active_collision_options
 
   active_collision_options.collision_groups = {'terrain','groupA'};
+  if checkDependency('bullet')
+    phi = r.collisionDetect(kinsol,false,active_collision_options);
+    sizecheck(phi,0);
+  end
+
+  active_collision_options.terrain_only = true;
   phi = r.collisionDetect(kinsol,false,active_collision_options);
   sizecheck(phi,0);
 end
