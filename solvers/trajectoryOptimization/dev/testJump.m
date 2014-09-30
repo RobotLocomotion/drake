@@ -10,7 +10,7 @@ warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
 urdf = [getDrakePath,'/examples/Atlas/urdf/atlas_minimal_contact.urdf'];
 options.floating = true;
 robot = RigidBodyManipulator(urdf,options);
-stage_urdf = [getDrakePath,'/solvers/trajectoryOptimization/test/MonkeyBar_stage.urdf'];
+stage_urdf = [getDrakePath,'/solvers/trajectoryOptimization/dev/MonkeyBar_stage.urdf'];
 robot = robot.addRobotFromURDF(stage_urdf,[0;0;-0.05],[0;pi/2;0]);
 nomdata = load([getDrakePath,'/examples/Atlas/data/atlas_fp.mat']);
 nq = robot.getNumPositions();
@@ -59,7 +59,7 @@ heel_land_idx = 14;
 toe_land_idx = 12;
 nT = 17;
 mu = 1;
-num_edges = 3;
+num_edges = 4;
 FC_angles = linspace(0,2*pi,num_edges+1);FC_angles(end) = [];
 g = 9.81;
 FC_axis = [0;0;1];
@@ -82,7 +82,7 @@ r_foot_contact_wrench(4) = struct('active_knot',toe_land_idx:nT,'cw',LinearFrict
 
 bky_idx = robot.getBody(robot.findJointInd('back_bky')).position_num;
 
-tf_range = [1 2];
+tf_range = [0.5 2];
 q_nom = bsxfun(@times,qstar,ones(1,nT));
 Q_comddot = eye(3);
 Q = eye(nq);
@@ -146,27 +146,34 @@ cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(qstar,qstar),cdfkp.
 cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(vstar,vstar),cdfkp.v_inds(:,1));
 cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(vstar,vstar),cdfkp.v_inds(:,end));
 
-cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(0.04*ones(nT-1,1),0.1*ones(nT-1,1)),cdfkp.h_inds(:));
+cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(0.02*ones(nT-1,1),0.08*ones(nT-1,1)),cdfkp.h_inds(:));
 
-cdfkp = cdfkp.addCoMBounds(1:nT,bsxfun(@times,com_star-[0.5;0.5;0.5],ones(1,nT)),bsxfun(@times,com_star+[0.5;0.5;1],ones(1,nT)));
+% cdfkp = cdfkp.addCoMBounds(1:nT,bsxfun(@times,com_star-[0.5;0.5;0.5],ones(1,nT)),bsxfun(@times,com_star+[0.5;0.5;1],ones(1,nT)));
 
 cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(...
   reshape(bsxfun(@times,[-9.81/2;-9.81/2;-9.81],ones(1,nT)),[],1),...
   reshape(bsxfun(@times,[9.81/2;9.81/2;9.81],ones(1,nT)),[],1)),cdfkp.comddot_inds(:));
 
 x_seed = zeros(cdfkp.num_vars,1);
-x_seed(cdfkp.h_inds) = 0.1;
+x_seed(cdfkp.h_inds) = 0.06;
 x_seed(cdfkp.q_inds(:)) = reshape(bsxfun(@times,qstar,ones(1,nT)),[],1);
 x_seed(cdfkp.com_inds(:)) = reshape(bsxfun(@times,com_star,ones(1,nT)),[],1);
 x_seed(cdfkp.lambda_inds{1}(:)) = reshape(bsxfun(@times,1/num_edges*ones(num_edges,4,1),ones(1,1,nT)),[],1);
 x_seed(cdfkp.lambda_inds{2}(:)) = reshape(bsxfun(@times,1/num_edges*ones(num_edges,4,1),ones(1,1,nT)),[],1);
 
 % add a cost to maximize com apex_height
-cdfkp = cdfkp.addCost(FunctionHandleConstraint(-inf,inf,2,@comApexHeightCost),{cdfkp.com_inds(3,toe_takeoff_idx);cdfkp.comdot_inds(3,toe_takeoff_idx)});
+% cdfkp = cdfkp.addCost(FunctionHandleConstraint(-inf,inf,2,@comApexHeightCost),{cdfkp.com_inds(3,toe_takeoff_idx);cdfkp.comdot_inds(3,toe_takeoff_idx)});
 % add a constraint on the com apex height
 apex_height_cnstr = FunctionHandleConstraint(1.4,inf,2,@comApexHeight);
 apex_height_cnstr = apex_height_cnstr.setName({'com apex height'});
-cdfkp = cdfkp.addDifferentiableConstraint(apex_height_cnstr,{cdfkp.com_inds(3,toe_takeoff_idx);cdfkp.comdot_inds(3,toe_takeoff_idx)});
+% cdfkp = cdfkp.addNonlinearConstraint(apex_height_cnstr,{cdfkp.com_inds(3,toe_takeoff_idx);cdfkp.comdot_inds(3,toe_takeoff_idx)});
+
+% add a constraint that the toe must be above the ground by certain amount
+apex_idx = floor((toe_takeoff_idx+toe_land_idx)/2);
+l_toe_apex_height = WorldPositionConstraint(robot,l_foot,l_foot_toe,[nan(2,2);0.05*ones(1,2)],nan(3,2));
+cdfkp = cdfkp.addRigidBodyConstraint(l_toe_apex_height,{apex_idx});
+r_toe_apex_height = WorldPositionConstraint(robot,r_foot,r_foot_toe,[nan(2,2);0.05*ones(1,2)],nan(3,2));
+cdfkp = cdfkp.addRigidBodyConstraint(r_toe_apex_height,{apex_idx});
 
 % add a symmetric constraint
 symmetry_cnstr = symmetryConstraint(robot,2:nT-1);
@@ -187,7 +194,7 @@ cdfkp = cdfkp.setSolverOptions('snopt','majoroptimalitytolerance',2e-4);
 cdfkp = cdfkp.setSolverOptions('snopt','superbasicslimit',2000);
 cdfkp = cdfkp.setSolverOptions('snopt','print','test_jump.out');
 
-seed_sol = load('test_jump','-mat','x_sol');
+seed_sol = load('../test/test_jump.mat','x_sol');
 if(mode == 0)
   jump = load('test_jump','-mat','t_sol','v_sol','q_sol','wrench_sol','com_sol','comdot_sol','comddot_sol');
   v = ContactWrenchVisualizer(robot,jump.t_sol,jump.wrench_sol);
@@ -216,7 +223,7 @@ if(mode == 0)
 end
 if(mode == 1)
 tic
-[x_sol,F,info] = cdfkp.solve(seed_sol.x_sol);
+[x_sol,F,info] = cdfkp.solve(x_seed);
 toc
 [q_sol,v_sol,h_sol,t_sol,com_sol,comdot_sol,comddot_sol,H_sol,Hdot_sol,lambda_sol,wrench_sol] = parseSolution(cdfkp,x_sol);
 xtraj_sol = PPTrajectory(foh(cumsum([0 h_sol]),[q_sol;v_sol]));
