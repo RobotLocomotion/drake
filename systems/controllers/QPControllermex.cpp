@@ -499,7 +499,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
     info = fastQPThatTakesQinv(QBlkDiag, f, Aeq, beq, Ain_lb_ub, bin_lb_ub, pdata->active, alpha);
 
-    if (info<0)  	mexPrintf("fastQP info = %d.  Calling gurobi.\n", info);
+    //if (info<0)  	mexPrintf("fastQP info = %d.  Calling gurobi.\n", info);
   }
   else {
   #endif
@@ -557,7 +557,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     if (use_fast_qp > 0)
     { // set up and call fastqp
       info = fastQP(QBlkDiag, f, Aeq, beq, Ain_lb_ub, bin_lb_ub, pdata->active, alpha);
-      if (info<0)    mexPrintf("fastQP info=%d... calling Gurobi.\n", info);
+      //if (info<0)    mexPrintf("fastQP info=%d... calling Gurobi.\n", info);
     }
     else {
       // use gurobi active set 
