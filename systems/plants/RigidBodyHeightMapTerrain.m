@@ -90,30 +90,7 @@ classdef RigidBodyHeightMapTerrain < RigidBodyTerrain & RigidBodyGeometry
       % writes the mesh to an alias wavefront file (e.g. for the viewers to
       % parse)
       % adapted from http://www.aleph.se/Nada/Ray/saveobjmesh.m
-      [x,y] = ndgrid(obj.x,obj.y);
-      [~,normals]=getHeight(obj,[x(:)';y(:)']);
-      nx = reshape(normals(1,:),size(x));
-      ny = reshape(normals(2,:),size(x));
-      nz = reshape(normals(3,:),size(x));
-      
-      l=size(x,1); h=size(x,2);
-
-      n=zeros(l,h);
-
-      [path,name,ext] = fileparts(filename);
-      if isempty(ext), ext='.obj'; end
-      filename = fullfile(path,[name,ext]);
-      
-      fid=fopen(filename,'w');
-
-      n=reshape(1:(l*h),l,h);
-      [i,j]=ndgrid(linspace(0,1,l),linspace(0,1,h));
-      fprintf(fid,'v %f %f %f\n',[x(:)';y(:)';obj.Z(:)']);
-      fprintf(fid,'vt %f %f\n',[i(:)';j(:)']);
-      fprintf(fid,'g mesh\n');
-      fprintf(fid,'f %d/%d %d/%d %d/%d %d/%d\n',[reshape(n(1:end-1,1:end-1),1,[]);reshape(n(1:end-1,1:end-1),1,[]);reshape(n(2:end,1:end-1),1,[]);reshape(n(2:end,1:end-1),1,[]);reshape(n(2:end,2:end),1,[]);reshape(n(2:end,2:end),1,[]);reshape(n(1:end-1,2:end),1,[]);reshape(n(1:end-1,2:end),1,[])]);
-      fprintf(fid,'g\n\n');
-      fclose(fid);
+      writeMeshOBJ(filename,obj.x,obj.y,obj.Z');
     end
     
     function writeWRLShape(obj,fp,td)
