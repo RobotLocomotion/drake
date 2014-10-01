@@ -146,7 +146,7 @@ cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(qstar,qstar),cdfkp.
 cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(vstar,vstar),cdfkp.v_inds(:,1));
 cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(vstar,vstar),cdfkp.v_inds(:,end));
 
-cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(0.02*ones(nT-1,1),0.08*ones(nT-1,1)),cdfkp.h_inds(:));
+cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(0.02*ones(nT-1,1),0.06*ones(nT-1,1)),cdfkp.h_inds(:));
 
 % cdfkp = cdfkp.addCoMBounds(1:nT,bsxfun(@times,com_star-[0.5;0.5;0.5],ones(1,nT)),bsxfun(@times,com_star+[0.5;0.5;1],ones(1,nT)));
 
@@ -168,12 +168,13 @@ apex_height_cnstr = FunctionHandleConstraint(1.4,inf,2,@comApexHeight);
 apex_height_cnstr = apex_height_cnstr.setName({'com apex height'});
 % cdfkp = cdfkp.addNonlinearConstraint(apex_height_cnstr,{cdfkp.com_inds(3,toe_takeoff_idx);cdfkp.comdot_inds(3,toe_takeoff_idx)});
 
-% add a constraint that the toe must be above the ground by certain amount
+% add a constraint that the pelvis at apex must be above certain height
 apex_idx = floor((toe_takeoff_idx+toe_land_idx)/2);
-l_toe_apex_height = WorldPositionConstraint(robot,l_foot,l_foot_toe,[nan(2,2);0.05*ones(1,2)],nan(3,2));
-cdfkp = cdfkp.addRigidBodyConstraint(l_toe_apex_height,{apex_idx});
-r_toe_apex_height = WorldPositionConstraint(robot,r_foot,r_foot_toe,[nan(2,2);0.05*ones(1,2)],nan(3,2));
-cdfkp = cdfkp.addRigidBodyConstraint(r_toe_apex_height,{apex_idx});
+% l_foot_apex_height = WorldPositionConstraint(robot,l_foot,l_foot_toe,[nan(2,1);0.05]*ones(1,size(l_foot_bottom,2)),nan(3,size(l_foot_bottom,2)));
+% cdfkp = cdfkp.addRigidBodyConstraint(l_foot_apex_height,{apex_idx});
+% r_foot_apex_height = WorldPositionConstraint(robot,r_foot,r_foot_toe,[nan(2,1);0.05]*ones(1,size(r_foot_bottom,2)),nan(3,size(r_foot_bottom,2)));
+% cdfkp = cdfkp.addRigidBodyConstraint(r_foot_apex_height,{apex_idx});
+cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(qstar(3)+0.25,inf),cdfkp.q_inds(3,apex_idx));
 
 % add a symmetric constraint
 symmetry_cnstr = symmetryConstraint(robot,2:nT-1);
@@ -188,13 +189,13 @@ cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(zeros(nT-2,1),zeros
 cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint((qstar(5)-0.3)*ones(nT-2,1),(qstar(5)+0.4)*ones(nT-2,1)),cdfkp.q_inds(5,2:nT-1));
 
 cdfkp = cdfkp.setSolverOptions('snopt','iterationslimit',1e6);
-cdfkp = cdfkp.setSolverOptions('snopt','majoriterationslimit',2000);
+cdfkp = cdfkp.setSolverOptions('snopt','majoriterationslimit',300);
 cdfkp = cdfkp.setSolverOptions('snopt','majorfeasibilitytolerance',1e-6);
 cdfkp = cdfkp.setSolverOptions('snopt','majoroptimalitytolerance',2e-4);
 cdfkp = cdfkp.setSolverOptions('snopt','superbasicslimit',2000);
 cdfkp = cdfkp.setSolverOptions('snopt','print','test_jump.out');
 
-seed_sol = load('../test/test_jump.mat','x_sol');
+seed_sol = load('test_jump2','-mat','x_sol');
 if(mode == 0)
   jump = load('test_jump','-mat','t_sol','v_sol','q_sol','wrench_sol','com_sol','comdot_sol','comddot_sol');
   v = ContactWrenchVisualizer(robot,jump.t_sol,jump.wrench_sol);
@@ -223,7 +224,7 @@ if(mode == 0)
 end
 if(mode == 1)
 tic
-[x_sol,F,info] = cdfkp.solve(x_seed);
+[x_sol,F,info] = cdfkp.solve(seed_sol.x_sol);
 toc
 [q_sol,v_sol,h_sol,t_sol,com_sol,comdot_sol,comddot_sol,H_sol,Hdot_sol,lambda_sol,wrench_sol] = parseSolution(cdfkp,x_sol);
 xtraj_sol = PPTrajectory(foh(cumsum([0 h_sol]),[q_sol;v_sol]));
