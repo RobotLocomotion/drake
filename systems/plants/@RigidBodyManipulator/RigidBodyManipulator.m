@@ -1025,10 +1025,10 @@ classdef RigidBodyManipulator < Manipulator
       end
     end
 
-    function groups = getContactGroups(model)
+    function groups = getContactShapeGroupNames(model)
       groups = {};
       for i=1:length(model.body)
-        groups = horzcat(groups,model.body(i).collision_group_name);
+        groups = horzcat(groups,model.body(i).contact_shape_group_name);
       end
       groups = unique(groups);
     end
@@ -1994,12 +1994,12 @@ classdef RigidBodyManipulator < Manipulator
           nshapes = length(parent.contact_shapes);
           parent.contact_shapes = {parent.contact_shapes{:},body.contact_shapes{:}};
 
-          if ~isempty(body.collision_group_name)
-            ngroups=length(parent.collision_group_name);
-            [parent.collision_group_name,ia,ic]=unique(horzcat(parent.collision_group_name,body.collision_group_name),'stable');
+          if ~isempty(body.contact_shape_group_name)
+            ngroups=length(parent.contact_shape_group_name);
+            [parent.contact_shape_group_name,ia,ic]=unique(horzcat(parent.contact_shape_group_name,body.contact_shape_group_name),'stable');
             % note: passing 'stable' to unique (above) ensures that
-            if length(parent.contact_shape_group)<length(parent.collision_group_name)
-              parent.contact_shape_group{length(parent.collision_group_name)}=[];
+            if length(parent.contact_shape_group)<length(parent.contact_shape_group_name)
+              parent.contact_shape_group{length(parent.contact_shape_group_name)}=[];
             end
             for j=1:length(body.contact_shape_group)
               parent.contact_shape_group{ic(ngroups+j)} = [parent.contact_shape_group{ic(ngroups+j)},nshapes+body.contact_shape_group{j}];
