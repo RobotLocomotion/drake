@@ -33,10 +33,6 @@ classdef BotVisualizer < RigidBodyVisualizer
       end
       typecheck(manip,'RigidBodyManipulator');
       
-      if ~BotVisualizer.isSupportedTerrain(manip.terrain)
-        error('Drake:BotVisualizer:UnsupportedModel', ...
-          'This model has terrain that is not supported by BotVisualizer (yet)');
-      end
 %      if numel(manip.urdf)~=1
 %        error('Drake:BotVisualizer:UnsupportedModel','I don''t actually support robots with multiple urdfs yet, but it will be easy enough');
 %      end
@@ -197,16 +193,6 @@ classdef BotVisualizer < RigidBodyVisualizer
       delete(ppms_filename);
     end
     
-  end
-
-  methods (Static)
-    function is_supported_terrain = isSupportedTerrain(terrain)
-      if isempty(terrain), is_supported_terrain = true; return; end;
-
-      supported_classes = { 'RigidBodyFlatTerrain', ...
-                            'RigidBodyFlatTerrainNoGeometry'};
-      is_supported_terrain = any(cellfun(@(str)isa(terrain,str),supported_classes));
-    end
   end
   
   properties 
