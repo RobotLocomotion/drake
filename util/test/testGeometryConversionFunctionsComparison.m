@@ -1,5 +1,9 @@
 function testGeometryConversionFunctionsComparison()
 
+if exist('testGeometryConversionFunctionsmex','file')~=3
+  error('Drake:MissingDependency', 'Cannot find testGeometryConversionFunctionsmex. It may not have been compiled due to a missing dependency.');
+end
+
 nq = 15;
 
 for i = 1 : 100
