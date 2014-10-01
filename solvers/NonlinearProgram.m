@@ -170,6 +170,8 @@ classdef NonlinearProgram
       obj.solver_options.snopt.OldBasisFile = 0;
       obj.solver_options.snopt.BackupBasisFile = 0;
       obj.solver_options.snopt.LinesearchTolerance = 0.9;
+      obj.solver_options.fmincon.GradConstr = 'on';
+      obj.solver_options.fmincon.GradObj = 'on';
       obj.constraint_err_tol = 1e-4;
       obj.check_grad = false;
     end
@@ -1325,8 +1327,8 @@ classdef NonlinearProgram
         [g,h,dg,dh] = obj.nonlinearConstraints(x);
         ceq = h;
         c = [g(~ub_inf_idx)-obj.cin_ub(~ub_inf_idx);obj.cin_lb(~lb_inf_idx)-g(~lb_inf_idx)];
-        dc = [dg(~ub_inf_idx,:);-dg(~lb_inf_idx,:)];
-        dceq = dh;
+        dc = [dg(~ub_inf_idx,:);-dg(~lb_inf_idx,:)]';
+        dceq = dh';
       end
       
       [x,objval,exitflag] = fmincon(@obj.objective,x0,full(obj.Ain),...
