@@ -49,7 +49,7 @@ ok_sedumi = checkDependency('sedumi');
 ok_mosek = checkDependency('mosek');
 
 if ~ok_sedumi && ~ok_mosek
-        error('You need either MOSEK or SeDuMi installed to use this function.');
+  error('Drake:MissingDependency:SDPSolver','You need either MOSEK or SeDuMi installed to use this function.');
 end   
 
 %% get Lyapunov candidate
