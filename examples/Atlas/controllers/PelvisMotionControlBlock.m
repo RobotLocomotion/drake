@@ -74,7 +74,7 @@ classdef PelvisMotionControlBlock < DrakeSystem
       end
 
       obj.alpha = 0.95;
-      obj.nominal_pelvis_height = 0.75;
+      obj.nominal_pelvis_height = 0.76;
       obj.robot = r;
 
       if (obj.use_mex>0)
