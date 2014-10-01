@@ -211,7 +211,9 @@ classdef QuasiStaticConstraint<RigidBodyConstraint
     function obj = updateRobot(obj,robot)
       obj.robot = robot;
       obj.nq = obj.robot.getNumPositions();
-      obj.mex_ptr = updatePtrRigidBodyConstraintmex(obj.mex_ptr,'robot',obj.robot.getMexModelPtr);
+      if(robot.getMexModelPtr~=0 && exist('updatePtrRigidBodyConstraintmex','file'))
+        obj.mex_ptr = updatePtrRigidBodyConstraintmex(obj.mex_ptr,'robot',obj.robot.getMexModelPtr);
+      end
     end
     
     function cnstr = generateConstraint(obj,t)

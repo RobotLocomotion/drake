@@ -37,7 +37,9 @@ classdef SingleTimeKinematicConstraint < RigidBodyConstraint
     
     function obj = updateRobot(obj,robot)
       obj.robot = robot;
-      obj.mex_ptr = updatePtrRigidBodyConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
+      if(robot.getMexModelPtr~=0 && exist('updatePtrRigidBodyConstraintmex','file'))
+        obj.mex_ptr = updatePtrRigidBodyConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
+      end
     end
     
     function [c,dc] = eval(obj,t,kinsol)
