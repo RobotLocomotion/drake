@@ -21,6 +21,7 @@ vstar = zeros(nv,1);
 
 l_foot = robot.findLinkInd('l_foot');
 r_foot = robot.findLinkInd('r_foot');
+utorso = robot.findLinkInd('utorso');
 l_foot_shapes_heel = robot.getBody(l_foot).getContactShapes('heel');
 l_foot_shapes_toe = robot.getBody(l_foot).getContactShapes('toe');
 r_foot_shapes_heel = robot.getBody(r_foot).getContactShapes('heel');
@@ -182,22 +183,27 @@ cdfkp = cdfkp.addLinearConstraint(symmetry_cnstr,reshape(cdfkp.q_inds(:,2:nT-1),
 % no yawing on the back
 bkz_idx = robot.getBody(robot.findJointInd('back_bkz')).position_num;
 cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(zeros(nT-2,1),zeros(nT-2,1)),reshape(cdfkp.q_inds(bkz_idx,2:nT-1),[],1));
+% no roll on pelvis
+cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(zeros(nT-2,1),zeros(nT-2,1)),cdfkp.q_inds(4,2:nT-1)');
 % sdfkp = sdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(zeros(nT-2,1),zeros(nT-2,1)),reshape(sdfkp.q_inds(6,2:nT-1),[],1));
 % sdfkp = sdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(zeros(nT-2,1),zeros(nT-2,1)),reshape(sdfkp.q_inds(4,2:nT-1),[],1));
 
 % no large pelvis pitch
 cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint((qstar(5)-0.3)*ones(nT-2,1),(qstar(5)+0.4)*ones(nT-2,1)),cdfkp.q_inds(5,2:nT-1));
 
+% no large back_bky velocity
+cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(-pi/3*ones(nT,1),pi/3*ones(nT,1)),cdfkp.v_inds(8,:));
+
 cdfkp = cdfkp.setSolverOptions('snopt','iterationslimit',1e6);
-cdfkp = cdfkp.setSolverOptions('snopt','majoriterationslimit',300);
-cdfkp = cdfkp.setSolverOptions('snopt','majorfeasibilitytolerance',1e-6);
+cdfkp = cdfkp.setSolverOptions('snopt','majoriterationslimit',200);
+cdfkp = cdfkp.setSolverOptions('snopt','majorfeasibilitytolerance',3e-6);
 cdfkp = cdfkp.setSolverOptions('snopt','majoroptimalitytolerance',2e-4);
 cdfkp = cdfkp.setSolverOptions('snopt','superbasicslimit',2000);
 cdfkp = cdfkp.setSolverOptions('snopt','print','test_jump.out');
 
 seed_sol = load('test_jump2','-mat','x_sol');
 if(mode == 0)
-  jump = load('test_jump','-mat','t_sol','v_sol','q_sol','wrench_sol','com_sol','comdot_sol','comddot_sol');
+  jump = load('test_jump2','-mat','t_sol','v_sol','q_sol','wrench_sol','com_sol','comdot_sol','comddot_sol');
   v = ContactWrenchVisualizer(robot,jump.t_sol,jump.wrench_sol);
   xtraj = PPTrajectory(foh(jump.t_sol,[jump.q_sol;jump.v_sol]));
   xtraj = xtraj.setOutputFrame(robot.getStateFrame);

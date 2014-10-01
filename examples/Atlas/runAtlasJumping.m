@@ -6,7 +6,7 @@ if ~checkDependency('gurobi')
 end
 
 if (nargin<1); use_mex = true; end
-if (nargin<2); use_angular_momentum = false; end
+if (nargin<2); use_angular_momentum = true; end
 
 addpath(fullfile(getDrakePath,'examples','Atlas','controllers'));
 addpath(fullfile(getDrakePath,'examples','Atlas','frames'));
@@ -18,7 +18,7 @@ warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits')
 
 options.floating = true;
 options.dt = 0.001;
-options.ignore_effort_limits = true;
+options.ignore_effort_limits = false;
 r = Atlas('urdf/atlas_minimal_contact.urdf',options);
 r = r.removeCollisionGroupsExcept({'heel','toe'});
 r = compile(r);
@@ -153,8 +153,8 @@ rfoot_motion = BodyMotionControlBlock(r,'r_foot',ctrl_data,boptions_foot);
 pelvis_motion = BodyMotionControlBlock(r,'pelvis',ctrl_data,boptions);
 lhand_motion = BodyMotionControlBlock(r,'l_hand',ctrl_data,boptions);
 rhand_motion = BodyMotionControlBlock(r,'r_hand',ctrl_data,boptions);
-boptions.Kp(4:6) = NaN; % don't constrain orientation
-boptions.Kd(4:6) = NaN;
+% boptions.Kp(4:6) = NaN; % don't constrain orientation
+% boptions.Kd(4:6) = NaN;
 torso_motion = BodyMotionControlBlock(r,'utorso',ctrl_data,boptions);
 
 
