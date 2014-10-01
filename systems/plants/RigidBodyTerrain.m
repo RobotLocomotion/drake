@@ -6,23 +6,15 @@ classdef RigidBodyTerrain < RigidBodyElement
   end
   methods 
     function obj = RigidBodyTerrain()
-      obj.geom = constructRigidBodyGeometry(obj);
     end
     
-    function geom = getRigidBodyGeometry(obj)
-      geom = obj.geom;
-    end
-
-    function geom = constructRigidBodyGeometry(obj)
+    function geom = getRigidBodyContactGeometry(obj)
       geom = [];
     end
-    
-    function writeWRL(obj,fptr)
+
+    function geom = getRigidBodyShapeGeometry(obj)
+      geom = [];
     end
   end
 
-  properties (Access = protected)
-    geom % RigidBodyGeometry object
-  end
-  
 end
