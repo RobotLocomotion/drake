@@ -1,5 +1,5 @@
 function [xtraj,utraj] = invertFlatOutputs(plant,ytraj,options)
-
+% NOTEST
 % @param plant a quadrotor plant (either Quadrotor or QuadPlantPenn should
 % work)
 % @param ytraj a PPTrajectory in the DifferentiallyFlatOutputFrame
