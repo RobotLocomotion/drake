@@ -231,7 +231,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   Map<VectorXd> y0(mxGetPr(prhs[narg]),mxGetM(prhs[narg])); narg++;
   Map<VectorXd> qdd_lb(mxGetPr(prhs[narg]),mxGetM(prhs[narg])); narg++;
   Map<VectorXd> qdd_ub(mxGetPr(prhs[narg]),mxGetM(prhs[narg])); narg++;
-
+  memcpy(pdata->w_qdd.data(),mxGetPr(prhs[narg++]),sizeof(double)*nq); 
+  
   double mu = mxGetScalar(prhs[narg++]);
   double terrain_height = mxGetScalar(prhs[narg++]); // nonzero if we're using DRCFlatTerrainMap
 
