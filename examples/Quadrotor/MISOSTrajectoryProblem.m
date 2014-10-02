@@ -77,9 +77,10 @@ classdef MISOSTrajectoryProblem
     assign(t, 1);
     basis_t1 = value(basis);
 
-    % s = sdpvar(1);
-    % sbasis = monolist(s, obj.obj.traj_degree) .* flip(monolist(1+s, obj.obj.traj_degree));
 
+    % Set up our array of coefficients C and our array of derivative coefficients Cd
+    % Each element of C, C{j} is the vector of coefficients of polynomial piece j.
+    % Each element of Cd, Cd{j}{k} is the vector of coefficients of the kth derivative of the jth polynomial piece.
     C = {};
     for j = 1:obj.num_traj_segments
       C{j} = sdpvar(obj.traj_degree+1,dim,'full');
@@ -121,6 +122,8 @@ classdef MISOSTrajectoryProblem
       end
     end
 
+    % Region is a cell array. Each element region{l} is a matrix of binary variables denoting the assignment
+    % of each trajectory piece to a convex safe region. 
     region = {};
     for j = 1:length(safe_region_sets)
       if length(safe_region_sets{j}) > 1
@@ -131,6 +134,7 @@ classdef MISOSTrajectoryProblem
       end
     end
 
+    % Enforce continuity of the derivatives
     for j = 1:obj.num_traj_segments-1
       constraints = [constraints,...
                      C{j}' * basis_t1 == C{j+1}' * basis_t0,...
@@ -159,6 +163,7 @@ classdef MISOSTrajectoryProblem
         objective = objective + sum(sum(snap_coeffs' .* snap_coeffs', 1) ./ (1:obj.traj_degree+1));
       end
 
+      % Set up the SOS constraints to keep each polynomial in its assigned region
       for rs = 1:length(region)
         sigma{j}{rs} = {};
         nr = size(region{rs},1);
@@ -228,6 +233,7 @@ classdef MISOSTrajectoryProblem
     coeffs = zeros([dim, length(breaks)-1, obj.traj_degree+1]);
 
     if diagnostics.problem == 0
+      % Build the output trajectory
       for k = 1:length(breaks)-1
         c = value(C{k});
         for i = 1:dim
@@ -242,6 +248,7 @@ classdef MISOSTrajectoryProblem
         end
       end
     end
+    
     ytraj = PPTrajectory(mkpp(breaks, coeffs, dim));
 
     objective = double(objective);
