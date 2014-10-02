@@ -108,7 +108,7 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
           coefs(i,:) = coefs(i,:) .* bsxfun(@power, (1/scale), (size(coefs, 2)-1):-1:0);
         end
       else
-        % Even though they give us l, k, d in that order, coefs should actuall be an d-by-l-by-k array.
+        % Even though they give us l, k, d in that order, coefs should actually be a d-by-l-by-k array.
         coefs = reshape(flat_coefs, [d, l, k]);
         for j = 1:d
           for i = 1:size(coefs, 2)
