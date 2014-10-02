@@ -81,6 +81,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   Map<VectorXd> qdvec(qd,nq);
   double lfoot_yaw = mxGetScalar(prhs[narg++]);
   double rfoot_yaw = mxGetScalar(prhs[narg++]);
+  double eta = mxGetScalar(prhs[narg++]);
  
   pdata->r->doKinematics(q,false,qd);
 
@@ -98,10 +99,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     pdata->pelvis_height_previous = pelvis_pose(2);
   }
 
-  double min_foot_z = std::min(lfoot_pose(2),rfoot_pose(2));
+  double foot_z = (1-eta)*lfoot_pose(2) + eta*rfoot_pose(2);
   double mean_foot_yaw = angleAverage(lfoot_yaw,rfoot_yaw);
 
-  double pelvis_height_desired = pdata->alpha*pdata->pelvis_height_previous + (1.0-pdata->alpha)*(min_foot_z + pdata->nominal_pelvis_height); 
+  double pelvis_height_desired = pdata->alpha*pdata->pelvis_height_previous + (1.0-pdata->alpha)*(foot_z + pdata->nominal_pelvis_height); 
   pdata->pelvis_height_previous = pelvis_height_desired;
       
   Vector6d body_des;
