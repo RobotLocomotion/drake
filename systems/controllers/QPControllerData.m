@@ -51,6 +51,8 @@ classdef QPControllerData < ControllerData
     
     left_toe_off = false;
     right_toe_off = false;
+    pelvis_height_foot_reference = 0;
+    % dynamics related -----------------------------------------------------------
     mu % friction coefficient    
   end
   
