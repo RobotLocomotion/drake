@@ -8,27 +8,31 @@ V = x^2;
 Vdot = diff(V,x)*f;
 
 % construct a SOS program
-prog=mssprog;
-
-% construct the decision variables
-[prog,c] = new(prog,length(m),'free');
-[prog,slack] = new(prog,1,'free');
+prog=spotsosprog;
+prog = prog.withIndeterminate(x);
 
 % construct the langrange multiplier
 m=monomials(x,0:4);
+[prog,c] = prog.newFree(length(m));
 lambda = c'*m;
+prog = prog.withSOS(lambda);
+% note: this could all be done with a single line:
+% [prog,lambda] = prog.newSOSPoly(monomials(x,0:4));
+
+% construct the slack variables (which must be positive)
+[prog,slack] = prog.newPos(1);
 
 % add the SOS constraints
-prog.sos=-(Vdot+lambda*(1-V))-slack*x^2;
-prog.sos=lambda;
+prog = prog.withSOS(-(Vdot+lambda*(1-V))-slack*x^2);
 
 % solve the problem using -slack as the objective
-prog.sedumi=-slack;  
+options = spot_sdp_default_options();
+options.verbose = 0;
+sol = prog.minimize(-slack,@spot_mosek,options);
 
 % display the results
-slack=double(prog(slack))
-c = double(prog(c))
-
+slack = double(sol.eval(slack))
+c = double(sol.eval(c))
 
 
 % Everything after this is just plotting...
