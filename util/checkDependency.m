@@ -333,6 +333,42 @@ if ~ok
         end
       end
 
+    case 'iris'
+      conf.iris_enabled = logical(exist('+iris/inflate_region.m','file')); 
+      if (~conf.iris_enabled)
+        conf.iris_enabled = pod_pkg_config('iris');
+      end
+      if ~conf.iris_enabled && nargout<1
+        disp(' ');
+        disp(' iris (Iterative Regional Inflation by SDP) is disabled. To enable it, install the IRIS matlab package from here: https://github.com/rdeits/iris-distro and re-run addpath_drake.');
+        disp(' ');
+      end
+
+    case 'mosek'
+      conf.mosek_enabled = logical(exist('mosekopt', 'file'));
+      if (~conf.mosek_enabled)
+        conf.mosek_enabled = pod_pkg_config('mosek');
+      end
+
+      if (conf.mosek_enabled)
+        % Check for license issues
+        try
+          mosekopt();
+        catch ex;
+          conf.mosek_enabled = false;
+          disp(getReport(ex,'extended'));
+        end
+      end
+
+      if ~conf.mosek_enabled && nargout<1
+        disp(' ');
+        disp(' Mosek not found or not working. Mosek support will be disabled.');
+        disp(' Note that Mosek does provide free academic licenses')
+        disp('    To enable, install Mosek and a license from');
+        disp('    <a href="http://mosek.com/">http://mosek.com/</a> .');
+        disp(' ');
+      end
+
     otherwise
 
       % todo: call ver(dep) here?
