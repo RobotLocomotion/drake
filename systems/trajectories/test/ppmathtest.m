@@ -63,3 +63,16 @@ fr2.addTransform(AffineTransform(fr2,fr1,eye(2),x0));
 V = QuadraticLyapunovFunction(fr1,[4,0; 2,3],[1;1],.5);
 valuecheck(getLevelSetVolume(V),getLevelSetVolume(V.inFrame(fr2)));
 
+scale = rand(1) + 1;
+a = PPTrajectory(spline([0 1 2 3], randn(3,4)));
+b = a.scaleTime(scale);
+for t = .25:.25:2.75
+  valuecheck(a.eval(t), b.eval(scale*t));
+end
+
+scale = rand(1) + 1;
+a = PPTrajectory(spline([0 1 2,3], randn(1,4)));
+b = a.scaleTime(scale);
+for t= .25:.25:2.75
+  valuecheck(a.eval(t), b.eval(scale*t));
+end
