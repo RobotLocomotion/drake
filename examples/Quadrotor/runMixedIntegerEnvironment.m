@@ -118,6 +118,5 @@ for j = 1:5
   subplot(5, 1, j);
   fnplt(fnder(ytraj(1), j));
 end
-keyboard();
 end
 
