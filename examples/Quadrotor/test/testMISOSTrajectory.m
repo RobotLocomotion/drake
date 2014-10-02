@@ -1,4 +1,6 @@
 function testMISOSTrajectory()
+% Test the Mixed-integer trajectory planner described in MISOSTrajectoryProblem.m on a very simple environment.
+% Uses IRIS to find safe regions if it's available, or just computes them by hand if it's not available.
 
 path_handle = addpathTemporary(fullfile(getDrakePath,'examples','Quadrotor'));
 checkDependency('yalmip');
