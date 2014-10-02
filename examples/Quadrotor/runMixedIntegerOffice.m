@@ -1,6 +1,7 @@
 function [r, xtraj, utraj, prog] = runMixedIntegerOffice
+% NOTEST
+% Run the mixed-integer SOS trajectory planner in the office environment
 
-checkDependency('lcmgl');
 r = Quadrotor();
 
 degree = 3;
@@ -50,11 +51,6 @@ seeds = [...
          [2.5, .75, 1];
          [3, 0, 1];
          start';
-         % goal';
-         % [1, 0, .5];
-         % [2, 0, .5];
-         % [0, 0, 2];
-         % [-2, 0, 1];
          ]';
 n_regions = 7;
 
