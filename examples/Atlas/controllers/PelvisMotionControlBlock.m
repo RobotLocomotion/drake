@@ -84,10 +84,8 @@ classdef PelvisMotionControlBlock < DrakeSystem
    
     function y=output(obj,t,~,x)
       ctrl_data = obj.controller_data;
-      lfoot_link_con_ind = [ctrl_data.link_constraints.link_ndx]==obj.lfoot_ind;
-      rfoot_link_con_ind = [ctrl_data.link_constraints.link_ndx]==obj.rfoot_ind;
-%       lfoot_des = fasteval(ctrl_data.link_constraints(lfoot_link_con_ind).traj,t);
-%       rfoot_des = fasteval(ctrl_data.link_constraints(rfoot_link_con_ind).traj,t);
+      lfoot_link_con_ind = [ctrl_data.link_constraints.link_ndx]==obj.robot.foot_body_id.left;
+      rfoot_link_con_ind = [ctrl_data.link_constraints.link_ndx]==obj.robot.foot_body_id.right;
 
       foot_traj_ind = find(ctrl_data.link_constraints(lfoot_link_con_ind).ts<=t,1,'last');
       tt = t-ctrl_data.link_constraints(lfoot_link_con_ind).ts(foot_traj_ind);
@@ -96,13 +94,14 @@ classdef PelvisMotionControlBlock < DrakeSystem
       a1 = ctrl_data.link_constraints(lfoot_link_con_ind).a1(:,foot_traj_ind);
       a2 = ctrl_data.link_constraints(lfoot_link_con_ind).a2(:,foot_traj_ind);
       a3 = ctrl_data.link_constraints(lfoot_link_con_ind).a3(:,foot_traj_ind);
-      lfoot_des = evalSplineSegment(tt,a0,a1,a2,a3);
+      lfoot_des = evalCubicSplineSegment(tt,a0,a1,a2,a3);
 
       a0 = ctrl_data.link_constraints(rfoot_link_con_ind).a0(:,foot_traj_ind);
       a1 = ctrl_data.link_constraints(rfoot_link_con_ind).a1(:,foot_traj_ind);
       a2 = ctrl_data.link_constraints(rfoot_link_con_ind).a2(:,foot_traj_ind);
       a3 = ctrl_data.link_constraints(rfoot_link_con_ind).a3(:,foot_traj_ind);
-      rfoot_des = evalSplineSegment(tt,a0,a1,a2,a3);
+
+      rfoot_des = evalCubicSplineSegment(tt,a0,a1,a2,a3);
       
       if (obj.use_mex == 0 || obj.use_mex == 2)
         q = x(1:obj.nq);
@@ -112,8 +111,8 @@ classdef PelvisMotionControlBlock < DrakeSystem
         % TODO: this must be updated to use quaternions/spatial velocity
         [p,J] = forwardKin(obj.robot,kinsol,obj.body_ind,[0;0;0],1); 
 
-        lfoot = forwardKin(obj.robot,kinsol,obj.lfoot_ind,[0;0;0],0);
-        rfoot = forwardKin(obj.robot,kinsol,obj.rfoot_ind,[0;0;0],0);
+        lfoot = forwardKin(obj.robot,kinsol,obj.robot.foot_body_id.left,[0;0;0],0);
+        rfoot = forwardKin(obj.robot,kinsol,obj.robot.foot_body_id.right,[0;0;0],0);
 
         eta = ctrl_data.pelvis_height_foot_reference;
         

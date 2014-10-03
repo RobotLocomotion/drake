@@ -556,7 +556,7 @@ classdef QPController < MIMODrakeSystem
 
       if info_fqp<0
         % then call gurobi
-        %disp('QPController: failed over to gurobi');
+        % disp('QPController: failed over to gurobi');
         model.Q = sparse(Hqp + REG*eye(nparams));
         model.A = [Aeq; Ain];
         model.rhs = [beq; bin];
