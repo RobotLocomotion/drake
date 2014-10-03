@@ -115,7 +115,11 @@ classdef PelvisMotionControlBlock < DrakeSystem
 
         eta = ctrl_data.pelvis_height_foot_reference;
         
-        foot_z = (1-eta)*lfoot(3) + eta*rfoot(3);
+        if eta > 0
+          foot_z = (1-eta)*lfoot(3) + eta*rfoot(3);
+        else
+          foot_z = min(lfoot(3),rfoot(3));
+        end
         
         if isempty(obj.controller_data.pelvis_z_prev)
           obj.controller_data.pelvis_z_prev = p(3);
