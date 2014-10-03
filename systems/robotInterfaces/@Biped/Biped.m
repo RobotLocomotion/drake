@@ -11,6 +11,7 @@ classdef Biped < LeggedRobot
 % see examples/Atlas/Atlas.m for an example implementation
 
   properties
+    foot_body_id
     foot_frame_id
   end
 
@@ -20,25 +21,42 @@ classdef Biped < LeggedRobot
   end
 
   methods
-    function obj = Biped(r_foot_id_or_name, l_foot_id_or_name)
+    function obj = Biped(r_foot_body_id_or_name, l_foot_body_id_or_name, r_foot_frame_id_or_name, l_foot_frame_id_or_name)
       % Construct a biped by identifying the Drake frame's corresponding
       % to the soles of its feet.
-      if nargin == 0
-        l_foot_id_or_name = 'r_foot_sole';
-        r_foot_id_or_name = 'l_foot_sole';
+      if nargin < 1
+        % use atlas defaults
+        r_foot_body_id_or_name = 'r_foot';
+        l_foot_body_id_or_name = 'l_foot';
+        r_foot_frame_id_or_name = 'r_foot_sole';
+        l_foot_frame_id_or_name = 'l_foot_sole';
+      elseif nargin < 3
+        r_foot_frame_id_or_name = r_foot_body_id_or_name;
+        l_foot_frame_id_or_name = l_foot_body_id_or_name;
       end
 
       obj = obj@LeggedRobot();
-      if isstr(r_foot_id_or_name)
-        r_frame_id = findFrameId(obj, r_foot_id_or_name);
+      if ischar(r_foot_body_id_or_name)
+        r_body_id = findLinkInd(obj, r_foot_body_id_or_name);
       else
-        r_frame_id = r_foot_id_or_name;
+        r_body_id = r_foot_body_id_or_name;
       end
-      if isstr(l_foot_id_or_name)
-        l_frame_id = findFrameId(obj, l_foot_id_or_name);
+      if ischar(r_foot_frame_id_or_name)
+        r_frame_id = findFrameId(obj, r_foot_frame_id_or_name);
       else
-        l_frame_id = l_foot_id_or_name;
+        r_frame_id = r_foot_frame_id_or_name;
       end
+      if ischar(l_foot_body_id_or_name)
+        l_body_id = findLinkInd(obj, l_foot_body_id_or_name);
+      else
+        l_body_id = r_foot_body_id_or_name;
+      end
+      if ischar(l_foot_frame_id_or_name)
+        l_frame_id = findFrameId(obj, l_foot_frame_id_or_name);
+      else
+        l_frame_id = l_foot_frame_id_or_name;
+      end
+      obj.foot_body_id = struct('left', l_body_id, 'right', r_body_id);
       obj.foot_frame_id = struct('left', l_frame_id, 'right', r_frame_id);
     end
 
