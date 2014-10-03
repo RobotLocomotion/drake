@@ -49,7 +49,7 @@ ok_sedumi = checkDependency('sedumi');
 ok_mosek = checkDependency('mosek');
 
 if ~ok_sedumi && ~ok_mosek
-        error('You need either MOSEK or SeDuMi installed to use this function.');
+  error('Drake:MissingDependency:SDPSolver','You need either MOSEK or SeDuMi installed to use this function.');
 end   
 
 %% get Lyapunov candidate
@@ -402,13 +402,13 @@ function V = rhoLineSearch(V0,f,options)
     
   %% bracket the solution
   rhomin=0; rhomax=1;
-  while ( checkRho(rhomax, x,V,Vdot,prog,L1) > 0 )
+  while ( checkRho(rhomax, x,V,Vdot,prog,L1,options) > 0 )
     rhomin = rhomax;
     rhomax = 1.2*rhomax;
   end
   
   %% now do binary search (mark's version might be better here)
-  rho = fzero(@(rho) checkRho(rho, x,V,Vdot,prog,L1),[rhomin rhomax])
+  rho = fzero(@(rho) checkRho(rho, x,V,Vdot,prog,L1,options),[rhomin rhomax])
 
   V = V/rho;
 
@@ -463,18 +463,19 @@ function [slack,info] = checkConstantRho(V0,f,options)
   [prog,L1] = prog.newSOSPoly(Lmonom);
   
 
-  [slack,info] = checkRho(1, x, V, Vdot, prog, L1)
+  [slack,info] = checkRho(1, x, V, Vdot, prog, L1, options)
   
 end
   
 
-function [slack,info] = checkRho(rho,x,V,Vdot,prog,L)
+function [slack,info] = checkRho(rho,x,V,Vdot,prog,L,options)
   [prog,slack] = prog.newFree(1);
   
   prog = prog.withSOS(-Vdot + L*(V - rho) - slack*V);
   
+  solver = options.solver;
   options = spot_sdp_default_options();
-  sol = prog.minimize(-slack,@spot_sedumi,options);
+  sol = prog.minimize(-slack,solver,options);
   
    if ~sol.isPrimalFeasible
       error('Problem looks primal infeasible');
@@ -574,4 +575,3 @@ function y=doubleSafe(x)
   y=double(x);
   if (~isa(y,'double')) error('double failed'); end
 end
-
