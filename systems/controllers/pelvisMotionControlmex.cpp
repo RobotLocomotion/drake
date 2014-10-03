@@ -81,31 +81,22 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   Map<VectorXd> qdvec(qd,nq);
   double lfoot_yaw = mxGetScalar(prhs[narg++]);
   double rfoot_yaw = mxGetScalar(prhs[narg++]);
-  double eta = mxGetScalar(prhs[narg++]);
+  double foot_z = mxGetScalar(prhs[narg++]);
  
   pdata->r->doKinematics(q,false,qd);
 
   // TODO: this must be updated to use quaternions/spatial velocity
-  Vector6d pelvis_pose,rfoot_pose,lfoot_pose;
+  Vector6d pelvis_pose;
   MatrixXd Jpelvis = MatrixXd::Zero(6,pdata->r->num_dof);
   Vector4d zero = Vector4d::Zero();
   zero(3) = 1.0;
   pdata->r->forwardKin(pdata->pelvis_body_index,zero,1,pelvis_pose);
   pdata->r->forwardJac(pdata->pelvis_body_index,zero,1,Jpelvis);
-  pdata->r->forwardKin(pdata->rfoot_body_index,zero,1,rfoot_pose);
-  pdata->r->forwardKin(pdata->lfoot_body_index,zero,1,lfoot_pose);
 
   if (pdata->pelvis_height_previous<0) {
     pdata->pelvis_height_previous = pelvis_pose(2);
   }
 
-  double foot_z = 0;
-  if (eta > 0) {
-    foot_z = (1-eta)*lfoot_pose(2) + eta*rfoot_pose(2);
-  }
-  else {
-    foot_z = std::min(lfoot_pose(2),rfoot_pose(2));
-  }
   double mean_foot_yaw = angleAverage(lfoot_yaw,rfoot_yaw);
 
   double pelvis_height_desired = pdata->alpha*pdata->pelvis_height_previous + (1.0-pdata->alpha)*(foot_z + pdata->nominal_pelvis_height); 
