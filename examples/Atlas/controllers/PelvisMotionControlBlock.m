@@ -71,7 +71,7 @@ classdef PelvisMotionControlBlock < DrakeSystem
         obj.use_mex = 1;
       end
 
-      obj.alpha = 0.995;
+      obj.alpha = 0.95;
       obj.nominal_pelvis_height = 0.76;
       obj.robot = r;
 
@@ -87,20 +87,8 @@ classdef PelvisMotionControlBlock < DrakeSystem
       lfoot_link_con_ind = [ctrl_data.link_constraints.link_ndx]==obj.robot.foot_body_id.left;
       rfoot_link_con_ind = [ctrl_data.link_constraints.link_ndx]==obj.robot.foot_body_id.right;
 
-      foot_traj_ind = find(ctrl_data.link_constraints(lfoot_link_con_ind).ts<=t,1,'last');
-      tt = t-ctrl_data.link_constraints(lfoot_link_con_ind).ts(foot_traj_ind);
-      
-      a0 = ctrl_data.link_constraints(lfoot_link_con_ind).a0(:,foot_traj_ind);
-      a1 = ctrl_data.link_constraints(lfoot_link_con_ind).a1(:,foot_traj_ind);
-      a2 = ctrl_data.link_constraints(lfoot_link_con_ind).a2(:,foot_traj_ind);
-      a3 = ctrl_data.link_constraints(lfoot_link_con_ind).a3(:,foot_traj_ind);
-      lfoot_des = evalCubicSplineSegment(tt,a0,a1,a2,a3);
-
-      a0 = ctrl_data.link_constraints(rfoot_link_con_ind).a0(:,foot_traj_ind);
-      a1 = ctrl_data.link_constraints(rfoot_link_con_ind).a1(:,foot_traj_ind);
-      a2 = ctrl_data.link_constraints(rfoot_link_con_ind).a2(:,foot_traj_ind);
-      a3 = ctrl_data.link_constraints(rfoot_link_con_ind).a3(:,foot_traj_ind);
-      rfoot_des = evalCubicSplineSegment(tt,a0,a1,a2,a3);
+      lfoot_des = evaluateSplineInLinkConstraints(t,ctrl_data.link_constraints,lfoot_link_con_ind);
+      rfoot_des = evaluateSplineInLinkConstraints(t,ctrl_data.link_constraints,rfoot_link_con_ind);
       
       if (obj.use_mex == 0 || obj.use_mex == 2)
         q = x(1:obj.nq);
@@ -110,16 +98,7 @@ classdef PelvisMotionControlBlock < DrakeSystem
         % TODO: this must be updated to use quaternions/spatial velocity
         [p,J] = forwardKin(obj.robot,kinsol,obj.body_ind,[0;0;0],1); 
 
-        lfoot = forwardKin(obj.robot,kinsol,obj.robot.foot_body_id.left,[0;0;0],0);
-        rfoot = forwardKin(obj.robot,kinsol,obj.robot.foot_body_id.right,[0;0;0],0);
-
-        eta = ctrl_data.pelvis_height_foot_reference;
-        
-        if eta > 0
-          foot_z = (1-eta)*lfoot(3) + eta*rfoot(3);
-        else
-          foot_z = min(lfoot(3),rfoot(3));
-        end
+        foot_z = ctrl_data.pelvis_foot_height_reference;
         
         if isempty(obj.controller_data.pelvis_z_prev)
           obj.controller_data.pelvis_z_prev = p(3);
@@ -133,11 +112,11 @@ classdef PelvisMotionControlBlock < DrakeSystem
         body_vdot = obj.Kp.*err - obj.Kd.*(J*qd);
         if obj.use_mex == 2
           % check that matlab/mex agree
-          body_vdot_mex = pelvisMotionControlmex(obj.mex_ptr.data,x,lfoot_des(6),rfoot_des(6),ctrl_data.pelvis_height_foot_reference);  
+          body_vdot_mex = pelvisMotionControlmex(obj.mex_ptr.data,x,lfoot_des(6),rfoot_des(6),ctrl_data.pelvis_foot_height_reference);  
           valuecheck(body_vdot_mex,body_vdot);
         end
       else
-        body_vdot = pelvisMotionControlmex(obj.mex_ptr.data,x,lfoot_des(6),rfoot_des(6),ctrl_data.pelvis_height_foot_reference);  
+        body_vdot = pelvisMotionControlmex(obj.mex_ptr.data,x,lfoot_des(6),rfoot_des(6),ctrl_data.pelvis_foot_height_reference);  
       end
       y = [obj.body_ind;body_vdot];
     end
