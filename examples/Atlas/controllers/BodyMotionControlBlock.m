@@ -75,19 +75,32 @@ classdef BodyMotionControlBlock < DrakeSystem
     end
    
     function y=output(obj,t,~,x)
-      link_con = obj.controller_data.link_constraints;
-      ind = [link_con.link_ndx]==obj.body_ind;
-      body_des = fasteval(link_con(ind).traj,t);
-      if isfield(link_con(ind),'dtraj') && ~isempty(link_con(ind).dtraj)
-        body_v_des = fasteval(link_con(ind).dtraj,t);
+      ctrl_data = obj.controller_data;
+      
+      if isfield(ctrl_data.link_constraints,'traj')
+        ind = [ctrl_data.link_constraints.link_ndx]==obj.body_ind;
+        body_des = fasteval(ctrl_data.link_constraints(ind).traj,t);
+        if isfield(ctrl_data.link_constraints(ind),'dtraj') && ~isempty(ctrl_data.link_constraints(ind).dtraj)
+          body_v_des = fasteval(ctrl_data.link_constraints(ind).dtraj,t);
+        else
+          body_v_des = [0;0;0;0;0;0];
+        end
+        if isfield(ctrl_data.link_constraints(ind),'ddtraj') && ~isempty(ctrl_data.link_constraints(ind).ddtraj)
+          body_vdot_des = fasteval(ctrl_data.link_constraints(ind).ddtraj,t);
+        else
+          body_vdot_des = [0;0;0;0;0;0];
+        end         
       else
-        body_v_des = [0;0;0;0;0;0];
+        link_con_ind = [ctrl_data.link_constraints.link_ndx]==obj.body_ind;
+        body_traj_ind = find(ctrl_data.link_constraints(link_con_ind).ts<=t,1,'last');
+        tt = t-ctrl_data.link_constraints(link_con_ind).ts(body_traj_ind);
+        a0 = ctrl_data.link_constraints(link_con_ind).a0(:,body_traj_ind);
+        a1 = ctrl_data.link_constraints(link_con_ind).a1(:,body_traj_ind);
+        a2 = ctrl_data.link_constraints(link_con_ind).a2(:,body_traj_ind);
+        a3 = ctrl_data.link_constraints(link_con_ind).a3(:,body_traj_ind);
+        [body_des,body_v_des,body_vdot_des] = evalCubicSplineSegment(tt,a0,a1,a2,a3);
       end
-      if isfield(link_con(ind),'ddtraj') && ~isempty(link_con(ind).ddtraj)
-        body_vdot_des = fasteval(link_con(ind).ddtraj,t);
-      else
-        body_vdot_des = [0;0;0;0;0;0];
-      end 
+      
       if (obj.use_mex == 0 || obj.use_mex==2)
         q = x(1:obj.nq);
         qd = x(obj.nq+1:end);
