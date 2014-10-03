@@ -63,8 +63,8 @@ function done = drawRegion(r, seed)
     lcmgl.glColor3f(.8,.8,.2);
     lcmgl.sphere(seed, 0.06, 20, 20);
     lcmgl.switchBuffers();
-    done = false;
   end
+  done = false;
 end
 
 % Automatically generate IRIS regions as necessary
@@ -79,7 +79,13 @@ prob.bot_radius = bot_radius;
 
 start = [start, [0;0;0], [0;0;0]];
 goal = [goal, [0;0;0], [0;0;0]];
-ytraj = prob.solveTrajectory(start, goal, safe_regions);
+[ytraj, ~, ~, safe_region_assignments] = prob.solveTrajectory(start, goal, safe_regions);
+
+% Run the program again with the region assignments fixed, for a 5-th-degree polynomial
+prob.traj_degree = 5;
+[ytraj, diagnostics, ~, ~] = prob.solveTrajectory(start, goal, safe_regions, safe_region_assignments);
+diagnostics
+
 
 % Add an all-zeros yaw trajectory
 ytraj = ytraj.vertcat(ConstantTrajectory(0));
@@ -105,5 +111,13 @@ end
 
 lcmgl.glEnd();
 lcmgl.switchBuffers();
+
+
+figure(1)
+for j = 1:5
+  subplot(5, 1, j);
+  fnplt(fnder(ytraj(1), j));
+end
+keyboard();
 end
 

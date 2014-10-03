@@ -15,7 +15,7 @@ classdef MISOSTrajectoryProblem
   end
 
   methods
-    function [ytraj, diagnostics, objective] = solveTrajectory(obj, start, goal, safe_region_sets)
+    function [ytraj, diagnostics, objective, safe_region_assignments] = solveTrajectory(obj, start, goal, safe_region_sets, safe_region_assignments)
       % @param start [n x m1]: starting state. The first column of start is the initial position in n-dimensional space. 
       %              The remaining columns are (optional) constraints on the derivatives at the initial time. For example,
       %              to constrain only the initial position in 2D, set start = [0;0]. To constrain position and velocity, 
@@ -29,9 +29,15 @@ classdef MISOSTrajectoryProblem
       %                         If safe_region_sets is a cell array of struct arrays, then for every i there must be a j
       %                            such that:
       %                            safe_region_sets{i}(j).A P(t) <= safe_region_sets{i}(j).b for all 0 <= t <= 1
+      % @option safe_region_assignments logical array or cell array of logicals. If you would like to fix the assignment
+      %                                 of trajectories to safe regions from a previous run, then you can pass in the
+      %                                 safe_region_assignments directly from the prior output. 
       % @retval ytraj a PPTrajectory 
 
     checkDependency('yalmip');
+    if nargin < 5
+      safe_region_assignments = [];
+    end
 
     if size(start, 2) > obj.traj_degree + 1
       warning('For a degree d polynomial, we can only constrain at most the first d derivatives. Additional derivatives ignored.');
@@ -44,6 +50,9 @@ classdef MISOSTrajectoryProblem
 
     if ~iscell(safe_region_sets)
       safe_region_sets = {safe_region_sets};
+    end
+    if ~iscell(safe_region_assignments)
+      safe_region_assignments = {safe_region_assignments};
     end
 
     dim = size(start, 1);
@@ -127,8 +136,12 @@ classdef MISOSTrajectoryProblem
     region = {};
     for j = 1:length(safe_region_sets)
       if length(safe_region_sets{j}) > 1
-        region{j} = binvar(length(safe_region_sets{j}), obj.num_traj_segments, 'full');
-        constraints = [constraints, sum(region{j}, 1) == 1];
+        if isempty(safe_region_assignments)
+          region{j} = binvar(length(safe_region_sets{j}), obj.num_traj_segments, 'full');
+          constraints = [constraints, sum(region{j}, 1) == 1];
+        else
+          region{j} = safe_region_assignments{j};
+        end
       else
         region{j} = true;
       end
@@ -151,9 +164,11 @@ classdef MISOSTrajectoryProblem
     sigma = {};
     for j = 1:obj.num_traj_segments
       sigma{j} = {};
-      constraints = [constraints, ...
-                     -C_BOUND <= C{j} <= C_BOUND,...
-                     ];
+      if isempty(safe_region_assignments)
+        constraints = [constraints, ...
+                       -C_BOUND <= C{j} <= C_BOUND,...
+                       ];
+      end
       if obj.traj_degree <= 3
         for d = 1:dim
           objective = objective + Cd{j}{obj.traj_degree}(:,d)' * Cd{j}{obj.traj_degree}(:,d);
@@ -185,13 +200,13 @@ classdef MISOSTrajectoryProblem
             Q1 = sdpvar((obj.traj_degree-1)/2 + 1);
             Q2 = sdpvar((obj.traj_degree-1)/2 + 1);
             m = monolist(t, (obj.traj_degree-1)/2);
-            if nr > 1
+            if isa(region{rs}(r,j), 'sdpvar')
               constraints = [constraints,...
                              implies(region{rs}(r,j), coeff == coefficients((sigma1)*(t) + (sigma2)*(1-t), t)),...
                              -SIGMA_BOUND <= sigma{j}{rs}{r}{k}{1} <= SIGMA_BOUND,...
                              -SIGMA_BOUND <= sigma{j}{rs}{r}{k}{2} <= SIGMA_BOUND,...
                             ];
-            else
+            elseif region{rs}(r,j)
               constraints = [constraints,...
                              coeff == coefficients((sigma1)*(t) + (sigma2)*(1-t), t)];
             end
@@ -209,6 +224,7 @@ classdef MISOSTrajectoryProblem
                              Q1 >= 0,...
                              Q2 >= 0,...
                            ];
+              objective = objective + trace(Q1) + trace(Q2);
             end
           end
         end
@@ -216,13 +232,13 @@ classdef MISOSTrajectoryProblem
     end
 
     t0 = tic;
-    if obj.traj_degree > 3
+    if obj.traj_degree > 3 && isempty(safe_region_assignments)
       diagnostics = optimize(constraints, objective, sdpsettings('solver', 'bnb', 'bnb.maxiter', 5000, 'verbose', 0, 'debug', true));
     else
       if checkDependency('mosek');
-        warning('Mosek not found. Will fall back to gurobi');
-        diagnostics = optimize(constraints, objective, sdpsettings('solver', 'mosek', 'mosek.MSK_DPAR_MIO_TOL_REL_GAP', 1e-2, 'mosek.MSK_DPAR_MIO_MAX_TIME', 600, 'verbose', 0));
+        diagnostics = optimize(constraints, objective, sdpsettings('solver', 'mosek', 'mosek.MSK_DPAR_MIO_TOL_REL_GAP', 1e-2, 'mosek.MSK_DPAR_MIO_MAX_TIME', 600, 'verbose', 3));
       else
+        warning('Mosek not found. Will fall back to gurobi');
         checkDependency('gurobi');
         diagnostics = optimize(constraints, objective, sdpsettings('solver', 'gurobi', 'gurobi.MIPGap', 1e-2));
       end
@@ -252,6 +268,14 @@ classdef MISOSTrajectoryProblem
     ytraj = PPTrajectory(mkpp(breaks, coeffs, dim));
 
     objective = double(objective);
+
+    if isempty(safe_region_assignments)
+      safe_region_assignments = cell(1, length(region));
+      for j = 1:length(region)
+        safe_region_assignments{j} = logical(round(double(region{j})));
+      end
+    end
+
     end
   end
 end
