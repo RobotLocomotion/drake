@@ -215,7 +215,10 @@ classdef Visualizer < DrakeSystem
 
       x0(state_dims) = max(min(x0(state_dims),maxrange),minrange);
       if ~isempty(visualized_system),
-        [x0,~,prog] = resolveConstraints(visualized_system,x0);
+        bb_min = -inf(size(x0)); bb_min(state_dims) = minrange;
+        bb_max = inf(size(x0)); bb_max(state_dims) = maxrange;
+        bbcon = BoundingBoxConstraint(bb_min,bb_max);
+        [x0,~,prog] = resolveConstraints(visualized_system,x0,[],bbcon);
       end
 
       rows = ceil(length(state_dims)/2);
@@ -275,7 +278,7 @@ classdef Visualizer < DrakeSystem
             this_prog = addCost(this_prog,objective,remaining_state_dims);
           end
           [x,objval,exitflag,infeasible_constraint_name] = solve(this_prog,x);
-          if (exitflag ~= 1)
+          if ~isempty(infeasible_constraint_name)
               infeasible_constraint_name
           end
 %          .5*(x0(remaining_state_dims) - x(remaining_state_dims))^2
