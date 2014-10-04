@@ -107,8 +107,8 @@ classdef Visualizer < DrakeSystem
       time_display = uicontrol('Style', 'text', 'Position', [10, 10, 120, 20],...
         'String', sprintf(time_format, tspan(1)));
 
-      % use a little undocumented matlab to get continuous slider feedback:
-      time_slider_listener = handle.listener(time_slider,'ActionEvent',@update_time_display);
+      % set up continuous slider feedback:
+      time_slider_listener = addlistener(time_slider,'ContinuousValueChange',@update_time_display);
 
       function update_speed(source, eventdata)
         obj.playback_speed = 10 ^ (get(speed_slider, 'Value'));
