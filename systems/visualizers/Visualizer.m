@@ -227,11 +227,11 @@ classdef Visualizer < DrakeSystem
 
       for i=1:numel(state_dims)
         label{i} = uicontrol('Style','text','String',getCoordinateName(fr,state_dims(i)), ...
-          'BackgroundColor',[.8 .8 .8],'HorizontalAlignment','right');
+          'HorizontalAlignment','right');
         slider{i} = uicontrol('Style', 'slider', 'Min', minrange(i), 'Max', maxrange(i), ...
           'Value', x0(i), 'Callback',{@update_display},'UserData',state_dims(i));
         value{i} = uicontrol('Style','text','String',num2str(x0(i)), ...
-          'BackgroundColor',[.8 .8 .8],'HorizontalAlignment','left');
+          'HorizontalAlignment','left');
 
         % use a little undocumented matlab to get continuous slider feedback:
         slider_listener{i} = addlistener(slider{i},'ContinuousValueChange',@update_display);
