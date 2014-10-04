@@ -231,7 +231,7 @@ classdef Visualizer < DrakeSystem
           'BackgroundColor',[.8 .8 .8],'HorizontalAlignment','left');
 
         % use a little undocumented matlab to get continuous slider feedback:
-        slider_listener{i} = handle.listener(slider{i},'ActionEvent',@update_display);
+        slider_listener{i} = addlistener(slider{i},'ContinuousValueChange',@update_display);
       end
       
       set(f, 'Position', [560 400 560 20 + 30*rows]);
@@ -251,6 +251,8 @@ classdef Visualizer < DrakeSystem
       end
 
       function update_display(source, eventdata)
+        if nargin>1 && isempty(eventdata), return; end  % was running twice for most events
+        
         t = 0; x = x0;
         for i=1:numel(state_dims)
           x(state_dims(i)) = get(slider{i}, 'Value');
@@ -272,7 +274,10 @@ classdef Visualizer < DrakeSystem
             objective = QuadraticConstraint(0,inf,Q,b);
             this_prog = addCost(this_prog,objective,remaining_state_dims);
           end
-          x = solve(this_prog,x);
+          [x,objval,exitflag,infeasible_constraint_name] = solve(this_prog,x);
+          if (exitflag ~= 1)
+              infeasible_constraint_name
+          end
 %          .5*(x0(remaining_state_dims) - x(remaining_state_dims))^2
 %          fval = objective.eval(x(remaining_state_dims))
           for i=1:numel(state_dims)
