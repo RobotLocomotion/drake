@@ -57,3 +57,6 @@
 [submodule "octomap"]
 	path = octomap
 	url = https://github.com/RobotLocomotion/octomap-pod
+[submodule "director"]
+	path = director
+	url = https://github.com/RobotLocomotion/director

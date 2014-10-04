@@ -3,11 +3,13 @@
 
 lcm
 libbot
+#director
 eigen
 bullet
 octomap
 snopt
 gurobi
+mosek
 gloptipoly3
 bertini
 sedumi
@@ -15,5 +17,3 @@ avl
 xfoil
 spotless
 drake
-
-
