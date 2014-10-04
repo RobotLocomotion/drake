@@ -375,9 +375,7 @@ classdef RigidBody < RigidBodyElement
       end
       body.I = body.Imass+body.Iaddedmass;
       
-      try
-      valuecheck(body.I'-body.I,zeros(6)); %Check symmetry of matrix
-      catch
+      if isnumeric(body.I) && ~valuecheck(body.I'-body.I,zeros(6)); %Check symmetry of matrix
           warning('Spatial mass matrix is not symmetric, this is non-physical');
       end
     end    
