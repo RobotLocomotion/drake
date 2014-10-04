@@ -86,12 +86,13 @@ classdef RigidBodyVisualizer < Visualizer
           'Callback',{@update_display});
 
         % use a little undocumented matlab to get continuous slider feedback:
-        slider_listener{i} = handle.listener(slider{i},'ActionEvent',@update_display);
+        slider_listener{i} = addlistener(slider{i},'ContinuousValueChange',@update_display);
         y = y - 30;
       end
       
 
       function update_display(source, eventdata)
+        if nargin>1 && isempty(eventdata), return; end  % was running twice for most events
         x = x0;
 
         for i=1:rows
