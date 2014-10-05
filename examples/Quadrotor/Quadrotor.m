@@ -92,8 +92,9 @@ classdef Quadrotor < RigidBodyManipulator
       height = lwh(1,3);
       width_param = lwh(1,1:2);
       treeTrunk = RigidBodyBox([.2+.8*width_param height],...
-          [xy;height/2],[0;0;yaw]);
-      treeTrunk.c = [83,53,10]/255;  % brown
+          [xy;height/2+0.005],[0;0;yaw]);
+      % treeTrunk.c = [83,53,10]/255;  % brown
+      treeTrunk.c = [191,120,21]/255;  % brown
       obj = addShapeToBody(obj,'world',treeTrunk);
       obj = addContactShapeToBody(obj,'world',treeTrunk);
       obj = compile(obj);
