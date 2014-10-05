@@ -373,7 +373,7 @@ classdef MultiCoordinateFrame < CoordinateFrame
   methods (Static=true)
     function obj = constructFrame(frames,frame_ids,zap_empty_frames)
       % if frames has only a single element, then return it, otherwise
-      % construct the construct the mimo frame
+      % construct the multi-frame
       typecheck(frames,'cell');
       
       if (nargin<2) frame_ids =[]; end
