@@ -28,7 +28,7 @@ r = addBox(r, [.1,1.5,wall_height], [2.5;2.5],0);
 %room window
 r = addBox(r, [.1,4.0,wall_height], [4.0;1.5],0);
 r = addBox(r, [.1,1.75,wall_height], [4.0;-2.5],0);
-r = addFloatingBox(r, [.28,1.5,wall_height-2], [4.0,-.95,2.5], 0, [83,53,10]/255);
+r = addFloatingBox(r, [.28,1.5,wall_height-2], [4.0,-.95,2.5], 0, [191,120,21]/255);
 
 %roof
 %r = addBox(r, [10,8,2.0], [0;0],0);
@@ -44,7 +44,7 @@ r = addTable(r, [.2,.2,1.0], [-1,-1,.5],2);
 
 
 lb = [-5;-3.5;0.01];
-ub = [6;3.5;3];
+ub = [6;3.5;3.01];
 
 seeds = [...
          [4, -1, 1.5];
