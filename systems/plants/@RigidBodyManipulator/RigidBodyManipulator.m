@@ -20,6 +20,7 @@ classdef RigidBodyManipulator < Manipulator
     terrain;
     num_contact_pairs;
     contact_options; % struct containing options for contact/collision handling
+    contact_constraint_id=[];
     frame = [];     % array of RigidBodyFrame objects
 
     robot_state_frames;
@@ -724,8 +725,35 @@ classdef RigidBodyManipulator < Manipulator
 
       % collisionDetect may require the mex version of the manipulator,
       % so it should go after createMexPointer
-      phi = model.collisionDetect(zeros(model.getNumPositions,1));
+      [phi,~,~,~,idxA,idxB] = model.collisionDetect(zeros(model.getNumPositions,1));
       model.num_contact_pairs = length(phi);
+      
+      % can't really add the full complementarity constraints here,
+      % since the state constraints only take x as the input.  so 
+      % just adding the non-penetration constraints 
+      function [phi,dphi,ddphi] = nonpenetrationConstraint(q)
+        kinsol = doKinematics(model,q);
+        if nargout>2
+          [phi,~,~,~,~,~,~,~,dphi,~,ddphi] = contactConstraints(model,kinsol,false,model.contact_options);
+        elseif nargout>1
+          [phi,~,~,~,~,~,~,~,dphi] = contactConstraints(model,kinsol,false,model.contact_options);
+        else
+          phi = contactConstraints(model,kinsol,false,model.contact_options);
+        end
+      end
+      
+      if (model.num_contact_pairs>0)
+        nonpenetration_constraint = FunctionHandleConstraint(zeros(model.num_contact_pairs,1),inf(model.num_contact_pairs,1),model.getNumPositions,@nonpenetrationConstraint,2);
+        nonpenetration_constraint = nonpenetration_constraint.setName(cellstr(num2str([idxA;idxB]','non-penetration: body %d <-> body %d')));
+      else
+        nonpenetration_constraint = NullConstraint(model.getNumPositions);
+      end
+      if isempty(model.contact_constraint_id)
+        [model,id] = addStateConstraint(model,nonpenetration_constraint,1:model.getNumPositions);
+        model.contact_constraint_id = id;
+      else
+        model = updateStateConstraint(model,model.contact_constraint_id,nonpenetration_constraint,1:model.getNumPositions);
+      end
       
       for j=1:length(model.loop)
         [loop,model] = updateConstraints(model.loop(j),model);
