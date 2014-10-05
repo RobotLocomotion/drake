@@ -351,30 +351,40 @@ classdef DrakeSystem < DynamicalSystem
       n = obj.num_xcon_ineq;
     end
     
-    function [obj,id] = addStateConstraint(obj,con)
+    function [obj,id] = addStateConstraint(obj,con,xind)
       % @param con is a constraint object which takes the state of this
       % system as input
+      % @param xind (optional) subset of the state indices
 
       typecheck(con,'Constraint');
-      assert(con.xdim == obj.num_x,'DrakeSystem:InvalidStateConstraint','State constraints must take a vector that is the same size as the state vector of this system as an input');
+      if nargin<3, 
+        xind = 1:obj.num_x; 
+      else
+        assert(all(xind>=1) && all(xind<=obj.num_x));
+      end
+      assert(con.xdim == length(xind),'DrakeSystem:InvalidStateConstraint','xdim mismatch');
 
       obj.state_constraints{end+1} = con;
+      obj.state_constraint_xind{end+1} = xind;
       obj.num_xcon_eq = obj.num_xcon_eq + sum(con.lb == con.ub);
       obj.num_xcon_ineq = obj.num_xcon_ineq + sum(con.lb ~= con.ub);
       id = numel(obj.state_constraints);
     end
 
-    function obj = updateStateConstraint(obj,id,con)
+    function obj = updateStateConstraint(obj,id,con,xind)
       % @param id is the identifier returned from addStateConstraint
       % @param con is a constraint object
+      % @param xind (optional) subset of the state indices
       
       rangecheck(id,0,numel(obj.state_constraints));
       typecheck(con,'Constraint');
-      assert(con.xdim == obj.num_x,'DrakeSystem:InvalidStateConstraint','State constraints must take a vector that is the same size as the state vector of this system as an input');
+      if (nargin<4) xind = obj.state_constraint_xind{id}; end
+      assert(con.xdim == length(xind),'DrakeSystem:InvalidStateConstraint','xdim mismatch');
 
       obj.num_xcon_eq = obj.num_xcon_eq - sum(obj.state_constraints{id}.lb == obj.state_constraints{id}.ub);
       obj.num_xcon_ineq = obj.num_xcon_ineq - sum(obj.state_constraints{id}.lb ~= obj.state_constraints{id}.ub);
       obj.state_constraints{id} = con;
+      obj.state_constraint_xind{id} = xind;
       obj.num_xcon_eq = obj.num_xcon_eq + sum(con.lb == con.ub);
       obj.num_xcon_ineq = obj.num_xcon_ineq + sum(con.lb ~= con.ub);
     end
@@ -391,7 +401,9 @@ classdef DrakeSystem < DynamicalSystem
       % adds state constraints and unilateral constraints to the
       %   program on the specified indices.
 
-      prog = prog.addConstraint(obj.state_constraints,indices);
+      for i=1:numel(obj.state_constraints)
+        prog = prog.addConstraint(obj.state_constraints{i},indices(obj.state_constraint_xind{i}));
+      end
     end
     function prog = addInputConstraintsToProgram(obj,prog,indices)
       % add bounding box constraint
@@ -661,6 +673,7 @@ classdef DrakeSystem < DynamicalSystem
     num_xcon_eq = 0;  % number of state *equality* constraints
     num_xcon_ineq = 0; % number of state *inequality* constraints
     state_constraints={}; % a cell array of constraint objects which depend on the state vector x
+    state_constraint_xind={};  % cell array of xindices (one for each state constraint)
   end
   properties (SetAccess=private, GetAccess=public)
     umin=[];   % constrains u>=umin (default umin=-inf)
