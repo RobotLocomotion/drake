@@ -400,6 +400,9 @@ classdef DrakeSystem < DynamicalSystem
     function prog = addStateConstraintsToProgram(obj,prog,indices)
       % adds state constraints and unilateral constraints to the
       %   program on the specified indices.
+      % @param prog a NonlinearProgram object
+      % @indices index into N decision variables in the program upon which
+      % we are adding the constraints, where N is the number of state dimensions of this system
 
       for i=1:numel(obj.state_constraints)
         prog = prog.addConstraint(obj.state_constraints{i},indices(obj.state_constraint_xind{i}));
