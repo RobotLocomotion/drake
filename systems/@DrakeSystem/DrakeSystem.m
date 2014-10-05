@@ -389,7 +389,7 @@ classdef DrakeSystem < DynamicalSystem
       if checkDependency('simulink') && exist('DCSFunction','file')
         [varargout{:}] = simulate@DynamicalSystem(obj,varargin{:});
       else
-        [varargout{:}] = simulateODE(obj,tspan,x0,options);
+        [varargout{:}] = simulateODE(obj,varargin{:});
       end
     end
     
