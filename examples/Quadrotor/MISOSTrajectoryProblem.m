@@ -136,7 +136,7 @@ classdef MISOSTrajectoryProblem
     region = {};
     for j = 1:length(safe_region_sets)
       if length(safe_region_sets{j}) > 1
-        if isempty(safe_region_assignments)
+        if isempty(cell2mat(safe_region_assignments))
           region{j} = binvar(length(safe_region_sets{j}), obj.num_traj_segments, 'full');
           constraints = [constraints, sum(region{j}, 1) == 1];
         else
@@ -164,7 +164,7 @@ classdef MISOSTrajectoryProblem
     sigma = {};
     for j = 1:obj.num_traj_segments
       sigma{j} = {};
-      if isempty(safe_region_assignments)
+      if isempty(cell2mat(safe_region_assignments))
         constraints = [constraints, ...
                        -C_BOUND <= C{j} <= C_BOUND,...
                        ];
@@ -232,7 +232,7 @@ classdef MISOSTrajectoryProblem
     end
 
     t0 = tic;
-    if obj.traj_degree > 3 && isempty(safe_region_assignments)
+    if obj.traj_degree > 3 && isempty(cell2mat(safe_region_assignments))
       diagnostics = optimize(constraints, objective, sdpsettings('solver', 'bnb', 'bnb.maxiter', 5000, 'verbose', 0, 'debug', true));
     else
       if checkDependency('mosek');
@@ -269,7 +269,7 @@ classdef MISOSTrajectoryProblem
 
     objective = double(objective);
 
-    if isempty(safe_region_assignments)
+    if isempty(cell2mat(safe_region_assignments))
       safe_region_assignments = cell(1, length(region));
       for j = 1:length(region)
         safe_region_assignments{j} = logical(round(double(region{j})));
