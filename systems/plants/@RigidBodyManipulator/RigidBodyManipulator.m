@@ -745,14 +745,14 @@ classdef RigidBodyManipulator < Manipulator
       if (model.num_contact_pairs>0)
         nonpenetration_constraint = FunctionHandleConstraint(zeros(model.num_contact_pairs,1),inf(model.num_contact_pairs,1),model.getNumPositions,@nonpenetrationConstraint,2);
         nonpenetration_constraint = nonpenetration_constraint.setName(cellstr(num2str([idxA;idxB]','non-penetration: body %d <-> body %d')));
-      else
-        nonpenetration_constraint = NullConstraint(model.getNumPositions);
-      end
-      if isempty(model.contact_constraint_id)
-        [model,id] = addStateConstraint(model,nonpenetration_constraint,1:model.getNumPositions);
-        model.contact_constraint_id = id;
-      else
-        model = updateStateConstraint(model,model.contact_constraint_id,nonpenetration_constraint,1:model.getNumPositions);
+        if isempty(model.contact_constraint_id)
+          [model,id] = addStateConstraint(model,nonpenetration_constraint,1:model.getNumPositions);
+          model.contact_constraint_id = id;
+        else
+          model = updateStateConstraint(model,model.contact_constraint_id,nonpenetration_constraint,1:model.getNumPositions);
+        end
+      elseif ~isempty(model.contact_constraint_id)
+        model = updateStateConstraint(model,model.contact_constraint_id,NullConstraint(model.getNumPositions),1:model.getNumPositions);
       end
       
       for j=1:length(model.loop)
