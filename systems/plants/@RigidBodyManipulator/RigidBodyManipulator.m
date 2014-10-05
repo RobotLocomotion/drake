@@ -1767,16 +1767,28 @@ classdef RigidBodyManipulator < Manipulator
     end
 
     function fr = getPositionFrame(obj,robotnum)
-      if nargin<2, robotnum=1; end
-      fr = obj.robot_position_frames{robotnum};
+      % if robotnum is not specified, then it returns a position frame
+      % including all position variables (for all robots)
+      if nargin<2, 
+        fr = MultiCoordinateFrame.constructFrame(obj.robot_position_frames);
+      else
+        fr = obj.robot_position_frames{robotnum};
+      end
     end
 
     function fr = getVelocityFrame(obj,robotnum)
-      if nargin<2, robotnum=1; end
-      fr = obj.robot_velocity_frames{robotnum};
+      % if robotnum is not specified, then it returns a velocity frame
+      % including all velocity variables (for all robots)
+      if nargin<2, 
+        fr = MultiCoordinateFrame.constructFrame(obj.robot_velocity_frames);
+      else
+        fr = obj.robot_velocity_frames{robotnum};
+      end
     end
     
     function fr = getStateFrame(obj,robotnum)
+      % if robotnum is not specified, then it returns a state frame
+      % including all state variables (for all robots)
       if nargin<2,
         fr = getStateFrame@DrakeSystem(obj);
       else
