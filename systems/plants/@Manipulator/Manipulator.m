@@ -483,7 +483,8 @@ classdef Manipulator < DrakeSystem
       con = BoundingBoxConstraint(jl_min,jl_max);
       con = setName(con,cellfun(@(a) [a,'_limit'],obj.getPositionFrame.coordinates,'UniformOutput',false));
       if isempty(obj.joint_limit_constraint_id)
-        [obj,obj.joint_limit_constraint_id] = addStateConstraint(obj,con,1:obj.getNumPositions);
+        [obj,id] = addStateConstraint(obj,con,1:obj.getNumPositions);
+        obj.joint_limit_constraint_id = id;
       else
         obj = updateStateConstraint(obj,obj.joint_limit_constraint_id,con,1:obj.getNumPositions);
       end
