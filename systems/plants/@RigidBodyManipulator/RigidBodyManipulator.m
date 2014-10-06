@@ -20,6 +20,7 @@ classdef RigidBodyManipulator < Manipulator
     terrain;
     num_contact_pairs;
     contact_options; % struct containing options for contact/collision handling
+    contact_constraint_id=[];
     frame = [];     % array of RigidBodyFrame objects
 
     robot_state_frames;
@@ -190,7 +191,7 @@ classdef RigidBodyManipulator < Manipulator
             if ~any(cellfun(@(shape) isequal(geom{i},shape),obj.body(1).contact_shapes))
               obj = obj.addContactShapeToBody(1,geom{i},'terrain');
               obj.dirty = true;
-            end
+          end
           end
         end
         geom = obj.terrain.getRigidBodyShapeGeometry();
@@ -199,10 +200,10 @@ classdef RigidBodyManipulator < Manipulator
           for i=1:numel(geom)
             if ~any(cellfun(@(shape) isequal(geom{i},shape),obj.body(1).visual_shapes))
               obj.body(1).visual_shapes{end+1} = geom{i};
-              obj.dirty = true;
-            end
-          end
+          obj.dirty = true;
         end
+      end
+    end
       end
     end
 
@@ -279,6 +280,11 @@ classdef RigidBodyManipulator < Manipulator
     function obj = setGravity(obj,grav)
       sizecheck(grav,size(obj.gravity));
       obj.gravity = grav;
+      obj.dirty = true;
+    end
+
+    function obj = setJointLimits(obj,jl_min,jl_max)
+      obj = setJointLimits@Manipulator(obj,jl_min,jl_max);
       obj.dirty = true;
     end
 
@@ -672,7 +678,7 @@ classdef RigidBodyManipulator < Manipulator
             if isa(model.sensor{j},'RigidBodyJointSensor') && model.sensor{j}.robotnum==i
               already_has_sensor=true;
               break;
-            end
+      end
           end
           if ~already_has_sensor
             model = addSensor(model,RigidBodyJointSensor(model,i));
@@ -698,18 +704,7 @@ classdef RigidBodyManipulator < Manipulator
         model = setDirectFeedthrough(model,false);
       end
 
-      if (length(model.loop)>0)
-        model = model.setNumPositionConstraints(3*length(model.loop));  % should be 5? for continous joints once they enforce the joint axis constraint.
-      else
-        model = model.setNumPositionConstraints(0);
-      end
-
-      model.joint_limit_min = [model.body.joint_limit_min]';
-      model.joint_limit_max = [model.body.joint_limit_max]';
-
-      if (any(model.joint_limit_min~=-inf) || any(model.joint_limit_max~=inf))
-        warnOnce(model.warning_manager,'Drake:RigidBodyManipulator:UnsupportedJointLimits','Joint limits are not supported by the dynamics methods of this class.  Consider using HybridPlanarRigidBodyManipulator');
-      end
+      model = model.setJointLimits([model.body.joint_limit_min]',[model.body.joint_limit_max]');
 
       model = model.setInputLimits(u_limit(:,1),u_limit(:,2));
 
@@ -730,8 +725,41 @@ classdef RigidBodyManipulator < Manipulator
 
       % collisionDetect may require the mex version of the manipulator,
       % so it should go after createMexPointer
-      phi = model.collisionDetect(zeros(model.getNumPositions,1));
+      [phi,~,~,~,idxA,idxB] = model.collisionDetect(zeros(model.getNumPositions,1));
       model.num_contact_pairs = length(phi);
+      
+      % can't really add the full complementarity constraints here,
+      % since the state constraints only take x as the input.  so 
+      % just adding the non-penetration constraints 
+      function [phi,dphi,ddphi] = nonpenetrationConstraint(q)
+        kinsol = doKinematics(model,q);
+        if nargout>2
+          [phi,~,~,~,~,~,~,~,dphi,~,ddphi] = contactConstraints(model,kinsol,false,model.contact_options);
+        elseif nargout>1
+          [phi,~,~,~,~,~,~,~,dphi] = contactConstraints(model,kinsol,false,model.contact_options);
+        else
+          phi = contactConstraints(model,kinsol,false,model.contact_options);
+        end
+      end
+      
+      if (model.num_contact_pairs>0)
+        nonpenetration_constraint = FunctionHandleConstraint(zeros(model.num_contact_pairs,1),inf(model.num_contact_pairs,1),model.getNumPositions,@nonpenetrationConstraint,2);
+        nonpenetration_constraint = nonpenetration_constraint.setName(cellstr(num2str([idxA;idxB]','non-penetration: body %d <-> body %d')));
+        if isempty(model.contact_constraint_id)
+          [model,id] = addStateConstraint(model,nonpenetration_constraint,1:model.getNumPositions);
+          model.contact_constraint_id = id;
+        else
+          model = updateStateConstraint(model,model.contact_constraint_id,nonpenetration_constraint,1:model.getNumPositions);
+        end
+      elseif ~isempty(model.contact_constraint_id)
+        model = updateStateConstraint(model,model.contact_constraint_id,NullConstraint(model.getNumPositions),1:model.getNumPositions);
+      end
+      
+      for j=1:length(model.loop)
+        [loop,model] = updateConstraints(model.loop(j),model);
+        model.loop(j) = loop;
+      end
+
       if (model.num_contact_pairs>0)
         warning('Drake:RigidBodyManipulator:UnsupportedContactPoints','Contact is not supported by the dynamics methods of this class.  Consider using TimeSteppingRigidBodyManipulator or HybridPlanarRigidBodyManipulator');
       end
@@ -1452,12 +1480,6 @@ classdef RigidBodyManipulator < Manipulator
       [varargout{:}] = pdcontrol@Manipulator(sys,Kp,Kd,index);
     end
 
-    function [phi,dphi,ddphi] = positionConstraints(obj,q)
-      checkDirty(obj);
-      % so far, only loop constraints are implemented
-      [phi,dphi,ddphi]=loopConstraints(obj,q);
-    end
-
     function [xstar,ustar,success] = findFixedPoint(obj,x0,u0,options)
       if (nargin<2 || isempty(x0))
         x0 = Point(obj.getStateFrame());
@@ -1562,10 +1584,10 @@ classdef RigidBodyManipulator < Manipulator
           ceq = [C-B*u];
           GCeq = [dC(1:nq,1:nq),-B]';
         end
-        if (obj.num_xcon>0)
+        if getNumStateConstraints(obj)>0
           [phi,dphi] = geval(@obj.stateConstraints,[q;zeros(nv,1)]);
           ceq = [ceq; phi];
-          GCeq = [GCeq, [dphi(:,1:nq),zeros(obj.num_xcon,nu+nz)]'];
+          GCeq = [GCeq, [dphi(:,1:nq),zeros(numel(phi),nu+nz)]'];
         end
       end
     end
@@ -1739,16 +1761,28 @@ classdef RigidBodyManipulator < Manipulator
     end
 
     function fr = getPositionFrame(obj,robotnum)
-      if nargin<2, robotnum=1; end
-      fr = obj.robot_position_frames{robotnum};
+      % if robotnum is not specified, then it returns a position frame
+      % including all position variables (for all robots)
+      if nargin<2, 
+        fr = MultiCoordinateFrame.constructFrame(obj.robot_position_frames);
+      else
+        fr = obj.robot_position_frames{robotnum};
+      end
     end
 
     function fr = getVelocityFrame(obj,robotnum)
-      if nargin<2, robotnum=1; end
-      fr = obj.robot_velocity_frames{robotnum};
+      % if robotnum is not specified, then it returns a velocity frame
+      % including all velocity variables (for all robots)
+      if nargin<2, 
+        fr = MultiCoordinateFrame.constructFrame(obj.robot_velocity_frames);
+      else
+        fr = obj.robot_velocity_frames{robotnum};
+      end
     end
-
+    
     function fr = getStateFrame(obj,robotnum)
+      % if robotnum is not specified, then it returns a state frame
+      % including all state variables (for all robots)
       if nargin<2,
         fr = getStateFrame@DrakeSystem(obj);
       else
@@ -2058,34 +2092,6 @@ classdef RigidBodyManipulator < Manipulator
         end
         model.body(body.parent) = parent;
         model = updateBodyIndices(model,[1:i-1,i+1:length(model.body)]);
-      end
-    end
-
-    function [phi,dphi,ddphi] = loopConstraints(obj,q)
-      % handle kinematic loops
-
-      phi=[];dphi=[];ddphi=[];
-
-      kinsol = doKinematics(obj,q,nargout>2);
-
-      for i=1:length(obj.loop)
-        % for each loop, add the constraints that the pt1 on body1 is in
-        % the same location as pt2 on body2
-
-        if (nargout>2)
-          [pt1,J1,dJ1] = obj.forwardKin(kinsol,obj.loop(i).body1,obj.loop(i).pt1);
-          [pt2,J2,dJ2] = obj.forwardKin(kinsol,obj.loop(i).body2,obj.loop(i).pt2);
-          ddphi = [ddphi; dJ1-dJ2];
-          dphi = [dphi; J1-J2];
-        elseif nargout>1
-          [pt1,J1] = obj.forwardKin(kinsol,obj.loop(i).body1,obj.loop(i).pt1);
-          [pt2,J2] = obj.forwardKin(kinsol,obj.loop(i).body2,obj.loop(i).pt2);
-          dphi = [dphi; J1-J2];
-        else
-          pt1 = obj.forwardKin(kinsol,obj.loop(i).body1,obj.loop(i).pt1);
-          pt2 = obj.forwardKin(kinsol,obj.loop(i).body2,obj.loop(i).pt2);
-        end
-        phi = [phi; pt1-pt2];
       end
     end
 
@@ -2428,46 +2434,6 @@ classdef RigidBodyManipulator < Manipulator
       end
     end
 
-
-    function model = parseLoopJoint(model,robotnum,node,options)
-      loop = RigidBodyLoop();
-      loop.name = char(node.getAttribute('name'));
-      loop.name = regexprep(loop.name, '\.', '_', 'preservecase');
-
-      link1Node = node.getElementsByTagName('link1').item(0);
-      link1 = findLinkInd(model,char(link1Node.getAttribute('link')),robotnum);
-      loop.body1 = link1;
-      if link1Node.hasAttribute('xyz')
-        loop.pt1 = reshape(str2num(char(link1Node.getAttribute('xyz'))),3,1);
-      end
-
-      link2Node = node.getElementsByTagName('link2').item(0);
-      link2 = findLinkInd(model,char(link2Node.getAttribute('link')),robotnum);
-      loop.body2 = link2;
-      if link2Node.hasAttribute('xyz')
-        loop.pt2 = reshape(str2num(char(link2Node.getAttribute('xyz'))),3,1);
-      end
-
-      axis=[1;0;0];  % default according to URDF documentation
-      axisnode = node.getElementsByTagName('axis').item(0);
-      if ~isempty(axisnode)
-        if axisnode.hasAttribute('xyz')
-          axis = reshape(parseParamString(model,robotnum,char(axisnode.getAttribute('xyz'))),3,1);
-          axis = axis/(norm(axis)+eps); % normalize
-        end
-      end
-      loop.axis = axis;
-
-      type = char(node.getAttribute('type'));
-      switch (lower(type))
-        case {'continuous'}
-          warning('Drake:RigidBodyManipulator:ThreeDLoopJoints','3D loop joints do not properly enforce the joint axis constraint.  (they perform more like a ball joint).  See bug 1389');
-        otherwise
-          error(['joint type ',type,' not supported (yet?)']);
-      end
-
-      model.loop=[model.loop,loop];
-    end
 
     function model = parseForceElement(model,robotnum,node,options)
       fe = [];

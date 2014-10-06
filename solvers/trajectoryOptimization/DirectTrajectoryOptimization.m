@@ -91,10 +91,6 @@ classdef DirectTrajectoryOptimization < NonlinearProgram
         obj = obj.addConstraint(control_limit,obj.u_inds(:));
       end
 
-      % add state limits as bounding box constraints
-      [state_lb,state_ub] = plant.getStateLimits();
-      state_limit = BoundingBoxConstraint(repmat(state_lb,N,1),repmat(state_ub,N,1));
-      obj = obj.addConstraint(state_limit,obj.x_inds(:));
     end
 
     function obj = addInputConstraint(obj,constraint,time_index)

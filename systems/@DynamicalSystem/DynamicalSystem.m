@@ -322,8 +322,11 @@ classdef DynamicalSystem
         prog = addDisplayFunction(prog,@(x)v.draw(0,x));
       end
       
-      [x,~,exitflag] = solve(prog,x0);
+      [x,~,exitflag,infeasible_constraint_name] = solve(prog,x0);
       success=(exitflag==1);
+      if ~isempty(infeasible_constraint_name)
+        infeasible_constraint_name
+      end
       if (nargout<2 && ~success)
         error('Drake:DynamicalSystem:ResolveConstraintsFailed','failed to resolve constraints');
       end
@@ -349,8 +352,8 @@ classdef DynamicalSystem
         con = FunctionHandleConstraint(zeros(nc,1),zeros(nc,1),nx,@obj.stateConstraints);
         con.grad_method = 'user_then_taylorvar';
         prog = addConstraint(prog,con,indices);
-      end
-      
+    end
+    
       % add unilateral constraints
       nc = getNumUnilateralConstraints(obj);
       if nc>0
