@@ -12,6 +12,10 @@ classdef RigidBodyLoop < RigidBodyElement
   
   methods   
     function [obj,model] = updateConstraints(obj,model)
+
+      % todo: support planar kinematics here (should output only 2
+      % constraints instead of 3)
+      
       relative_position_fun = drakeFunction.kinematic.RelativePosition(model,obj.body1,obj.body2,obj.pt1);
 %      relative_position_fun = relative_position_fun.addInputFrame(model.getVelocityFrame);
       con = DrakeFunctionConstraint(obj.pt2,obj.pt2,relative_position_fun);

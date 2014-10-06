@@ -1480,12 +1480,6 @@ classdef RigidBodyManipulator < Manipulator
       [varargout{:}] = pdcontrol@Manipulator(sys,Kp,Kd,index);
     end
 
-    function [phi,dphi,ddphi] = positionConstraints(obj,q)
-      checkDirty(obj);
-      % so far, only loop constraints are implemented
-      [phi,dphi,ddphi]=loopConstraints(obj,q);
-    end
-
     function [xstar,ustar,success] = findFixedPoint(obj,x0,u0,options)
       if (nargin<2 || isempty(x0))
         x0 = Point(obj.getStateFrame());
@@ -2098,34 +2092,6 @@ classdef RigidBodyManipulator < Manipulator
         end
         model.body(body.parent) = parent;
         model = updateBodyIndices(model,[1:i-1,i+1:length(model.body)]);
-      end
-    end
-
-    function [phi,dphi,ddphi] = loopConstraints(obj,q)
-      % handle kinematic loops
-
-      phi=[];dphi=[];ddphi=[];
-
-      kinsol = doKinematics(obj,q,nargout>2);
-
-      for i=1:length(obj.loop)
-        % for each loop, add the constraints that the pt1 on body1 is in
-        % the same location as pt2 on body2
-
-        if (nargout>2)
-          [pt1,J1,dJ1] = obj.forwardKin(kinsol,obj.loop(i).body1,obj.loop(i).pt1);
-          [pt2,J2,dJ2] = obj.forwardKin(kinsol,obj.loop(i).body2,obj.loop(i).pt2);
-          ddphi = [ddphi; dJ1-dJ2];
-          dphi = [dphi; J1-J2];
-        elseif nargout>1
-          [pt1,J1] = obj.forwardKin(kinsol,obj.loop(i).body1,obj.loop(i).pt1);
-          [pt2,J2] = obj.forwardKin(kinsol,obj.loop(i).body2,obj.loop(i).pt2);
-          dphi = [dphi; J1-J2];
-        else
-          pt1 = obj.forwardKin(kinsol,obj.loop(i).body1,obj.loop(i).pt1);
-          pt2 = obj.forwardKin(kinsol,obj.loop(i).body2,obj.loop(i).pt2);
-        end
-        phi = [phi; pt1-pt2];
       end
     end
 
