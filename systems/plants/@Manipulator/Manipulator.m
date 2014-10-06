@@ -137,6 +137,8 @@ classdef Manipulator < DrakeSystem
         constraint_force = -[J;dpsidqd]'*pinv([J*term1;dpsidqd*term1])*[J*term2 + Jdotqd + alpha*J*qd; dpsidqd*term2 + dpsidq*qd + beta*psi];
       elseif (obj.num_position_constraints>0)  % note: it didn't work to just have dpsidq,etc=[], so it seems like the best solution is to handle each case...
         [phi,J,dJ] = geval(@obj.positionConstraints,q);
+        % todo: find a way to use Jdot*qd directly (ala Twan's code)
+        % instead of computing dJ
         Jdotqd = dJ*reshape(qd*qd',obj.num_positions^2,1);
 
         constraint_force = -J'*pinv(J*Hinv*J')*(J*Hinv*tau + Jdotqd + alpha*J*qd);
