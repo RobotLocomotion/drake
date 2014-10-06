@@ -294,13 +294,15 @@ classdef DynamicalSystem
       newsys.simulink_params = sys.simulink_params;  
     end
     
-    function [x,success,prog] = resolveConstraints(obj,x0,v)
+    function [x,success,prog] = resolveConstraints(obj,x0,v,constraints)
       % attempts to find a x which satisfies the constraints,
       % using x0 as the initial guess.
       %
       % @param x0 initial guess for state satisfying constraints
       % @param v (optional) a visualizer that should be called while the
       % solver is doing it's thing
+      % @param constraints (optional) additional constraints to pass to the
+      % solver
 
       if nargin<3, v=[]; end
       if isa(x0,'Point')
@@ -311,6 +313,10 @@ classdef DynamicalSystem
       prog = NonlinearProgram(nx,getCoordinateNames(getStateFrame(obj)));
 
       prog = addStateConstraintsToProgram(obj,prog,1:nx);
+      
+      if nargin>3,
+        prog = addConstraint(prog,constraints);
+      end
       
       if ~isempty(v)
         prog = addDisplayFunction(prog,@(x)v.draw(0,x));
