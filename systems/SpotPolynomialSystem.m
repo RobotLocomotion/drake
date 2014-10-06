@@ -7,6 +7,7 @@ classdef SpotPolynomialSystem < PolynomialSystem
     p_output
     p_state_constraints
     p_t
+    p_state_constraint_id
   end
   
   methods
@@ -28,7 +29,7 @@ classdef SpotPolynomialSystem < PolynomialSystem
       obj = setPolyDynamics(obj,p_dynamics_rhs,p_dynamics_lhs);
       obj = setPolyUpdate(obj,p_update);
       obj = setPolyOutput(obj,p_output);
-      if (nargin>7)
+      if (nargin>7 && ~isempty(p_state_constraints))
         obj = setPolyStateConstraints(obj,p_state_constraints);
       end
     end
@@ -73,14 +74,6 @@ classdef SpotPolynomialSystem < PolynomialSystem
         dy = double(subs(diff(obj.p_output,[p_t;p_x;p_u]),[p_t;p_x;p_u],[t;x;u]));
       end
     end    
-    
-    function [phi,dphi] = stateConstraints(obj,x)
-      p_x=obj.getStateFrame.getPoly;
-      phi = double(subs(obj.p_state_constraints,p_x,x));
-      if (nargout>1)
-        dphi = double(subs(diff(obj.p_state_constraints,p_x),p_x,x));
-      end
-    end
     
     function obj = setInputFrame(obj,frame)
       if frame.dim>0
@@ -221,8 +214,17 @@ classdef SpotPolynomialSystem < PolynomialSystem
         if ~isempty(decomp(p_state_constraints)) && any(match(obj.getStateFrame.getPoly,decomp(p_state_constraints))==0)
           error('p_state_constraints depends on variables other than x (the current state frame)');
         end
+        con = SpotPolynomialConstraint(zeros(size(p_state_constraints)),zeros(size(p_state_constraints)),obj.getStateFrame.getPoly,p_state_constraints);
+        if isempty(obj.p_state_constraint_id)
+          [obj,obj.p_state_constraint_id] = addStateConstraint(obj,con);
+        else
+          obj = updateStateConstraint(obj,obj.p_constraint_id,con);
+        end
+      else
+        if ~isempty(obj.p_state_constraint_id)
+          obj = updateStateConstraint(obj,obj.p_constraint_id,NullConstraint(getNumStates(obj)));
+        end
       end
-      obj = setNumStateConstraints(obj,length(p_state_constraints));
       obj.p_state_constraints = p_state_constraints;
     end
     

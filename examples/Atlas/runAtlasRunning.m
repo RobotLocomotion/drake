@@ -13,7 +13,6 @@ path_handle = addpathTemporary({fullfile(getDrakePath,'examples','Atlas','contro
 
 % silence some warnings
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints')
-warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits')
 warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits')
 
 options.floating = true;
@@ -67,13 +66,13 @@ comdot = sol.comdot;
 comddot = sol.comddot;
 ts = sol.t;
 for i=1:5 % three strides
-  comi = sol.com;  
+  comi = sol.com;
   comdoti = sol.comdot;
   comddoti = sol.comddot;
   if mod(i,2)
-    comi(2,:) = -comi(2,:);  
-    comdoti(2,:) = -comdoti(2,:);  
-    comddoti(2,:) = -comddoti(2,:);  
+    comi(2,:) = -comi(2,:);
+    comdoti(2,:) = -comdoti(2,:);
+    comddoti(2,:) = -comddoti(2,:);
   end
   comi(1,:) = comi(1,:) + com(1,end);
   com = [com,comi];
@@ -162,7 +161,7 @@ if use_angular_momentum
   options.Kp_ang = 1.0; % angular momentum proportunal feedback gain
   options.W_kdot = 1e-5*eye(3); % angular momentum weight
 else
-  options.W_kdot = zeros(3); 
+  options.W_kdot = zeros(3);
 end
 
 boptions.Kp =250*ones(6,1);
@@ -224,8 +223,8 @@ ins(6).input = 7;
 ins(7).system = 2;
 ins(7).input = 8;
 sys = mimoFeedback(fc,sys,[],[],ins,outs);
-clear ins;  
-  
+clear ins;
+
 % feedback PD block
 options.use_ik = false;
 pd = IKPDBlock(r,ctrl_data,options);

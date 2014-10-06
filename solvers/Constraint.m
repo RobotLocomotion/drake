@@ -10,7 +10,7 @@ classdef Constraint
   properties(SetAccess = protected)
     lb      % The lower bound of the constraint
     ub      % The upper bound of the constraint
-    xdim    % The name of the constraint. If not specified, it is an empty string
+    xdim    % The size of the input to the constraint
     num_cnstr % An int scalar. The number of constraints
     name    % cell array of constraint names
     ceq_idx   % The row index of the equality constraint
@@ -96,6 +96,13 @@ classdef Constraint
       end
       sizecheck(name,[obj.num_cnstr,1]);
       obj.name = name;
+    end
+    
+    function disp(obj)
+      fprintf('%d constraints on %d variables:\n',obj.num_cnstr,obj.xdim);
+      for j=1:obj.num_cnstr
+        fprintf('  %f <= %s <= %f\n',obj.lb(j),obj.name{j},obj.ub(j));
+      end
     end
 
     function varargout = eval(obj,varargin)

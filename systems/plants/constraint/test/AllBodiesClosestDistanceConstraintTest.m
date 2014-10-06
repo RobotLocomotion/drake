@@ -8,7 +8,6 @@ function AllBodiesClosestDistanceConstraintTest(n,draw_pause)
   options.floating = true;
   w = warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
   warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
-  warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');  
   warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
   r = RigidBodyManipulator([getDrakePath(), '/examples/Atlas/urdf/atlas_convex_hull.urdf'],options);
   warning(w);
