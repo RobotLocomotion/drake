@@ -40,7 +40,7 @@ for i=1:100
     q = randn(nq,1);
   end
   
-  qd = randn(nq,1); u = randn(getNumInputs(m_rpy),1);
+  qd = rand(nq,1)-.5; u = rand(getNumInputs(m_rpy),1)-.5;
 
   kinsol = doKinematics(m_rpy,q,true,false,qd);
   [pt,J,Jdot] = terrainContactPositions(m_rpy,kinsol,true);
