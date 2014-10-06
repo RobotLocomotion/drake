@@ -414,10 +414,10 @@ classdef DrakeSystem < DynamicalSystem
       % objects instead of just input limits.  for now, this is sealed just
       % to keep things clean.
 
-      con = BoundingBoxConstraint(umin,umax);
+      con = BoundingBoxConstraint(obj.umin,obj.umax);
       con = setName(con,cellfun(@(a) [a,'_limit'],obj.getInputFrame.coordinates,'UniformOutput',false));
 
-      prog = prog.addBoundingBoxConstraint(prog,con,indices);
+      prog = prog.addBoundingBoxConstraint(con,indices);
     end
     function varargout = stateConstraints(obj,x)
       % Provides the old interface of a single constraint function which

@@ -174,7 +174,7 @@ classdef Manipulator < DrakeSystem
       state_con = DrakeFunctionConstraint(con.lb,con.ub,state_fun);
       state_con = state_con.setName(con.name);
 
-      if id>=numel(obj.position_constraints) % then it's an existing constraint
+      if id>numel(obj.position_constraints) % then it's a new constraint
         [obj,obj.position_constraint_ids(1,id)] = addStateConstraint(obj,state_con);
       else 
         obj.num_position_constraints = obj.num_position_constraints-obj.position_constraints{id}.num_cnstr;
@@ -207,7 +207,7 @@ classdef Manipulator < DrakeSystem
       state_con = DrakeFunctionConstraint(con.lb,con.ub,state_fun);
       state_con = state_con.setName(con.name);
 
-      if id>=numel(obj.velocity_constraints) % then it's an existing constraint
+      if id>numel(obj.velocity_constraints) % then it's a new constraint
         [obj,obj.velocity_constraint_ids(1,id)] = addStateConstraint(obj,state_con);
       else 
         obj.num_velocity_constraints = obj.num_velocity_constraints-obj.velocity_constraints{id}.num_cnstr;
@@ -260,7 +260,7 @@ classdef Manipulator < DrakeSystem
       varargout = cell(1,nargout);
       for i=1:length(obj.position_constraints)
         v = cell(1,nargout);
-        [v{:}] = obj.position_constraints{i}.eval(x);
+        [v{:}] = obj.position_constraints{i}.eval(q);
         v{1} = v{1} - obj.position_constraints{i}.lb;  % center it around 0
         for j=1:nargout
           varargout{j} = vertcat(varargout{j},v{j});
