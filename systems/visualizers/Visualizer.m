@@ -215,7 +215,10 @@ classdef Visualizer < DrakeSystem
 
       x0(state_dims) = max(min(x0(state_dims),maxrange),minrange);
       if ~isempty(visualized_system),
-        [x0,~,prog] = resolveConstraints(visualized_system,x0);
+        bb_min = -inf(size(x0)); bb_min(state_dims) = minrange;
+        bb_max = inf(size(x0)); bb_max(state_dims) = maxrange;
+        bbcon = BoundingBoxConstraint(bb_min,bb_max);
+        [x0,~,prog] = resolveConstraints(visualized_system,x0,[],bbcon);
       end
 
       rows = ceil(length(state_dims)/2);
@@ -224,14 +227,14 @@ classdef Visualizer < DrakeSystem
 
       for i=1:numel(state_dims)
         label{i} = uicontrol('Style','text','String',getCoordinateName(fr,state_dims(i)), ...
-          'BackgroundColor',[.8 .8 .8],'HorizontalAlignment','right');
+          'HorizontalAlignment','right');
         slider{i} = uicontrol('Style', 'slider', 'Min', minrange(i), 'Max', maxrange(i), ...
           'Value', x0(i), 'Callback',{@update_display},'UserData',state_dims(i));
         value{i} = uicontrol('Style','text','String',num2str(x0(i)), ...
-          'BackgroundColor',[.8 .8 .8],'HorizontalAlignment','left');
+          'HorizontalAlignment','left');
 
         % use a little undocumented matlab to get continuous slider feedback:
-        slider_listener{i} = handle.listener(slider{i},'ActionEvent',@update_display);
+        slider_listener{i} = addlistener(slider{i},'ContinuousValueChange',@update_display);
       end
       
       set(f, 'Position', [560 400 560 20 + 30*rows]);
@@ -251,6 +254,8 @@ classdef Visualizer < DrakeSystem
       end
 
       function update_display(source, eventdata)
+        if nargin>1 && isempty(eventdata), return; end  % was running twice for most events
+        
         t = 0; x = x0;
         for i=1:numel(state_dims)
           x(state_dims(i)) = get(slider{i}, 'Value');
@@ -272,7 +277,10 @@ classdef Visualizer < DrakeSystem
             objective = QuadraticConstraint(0,inf,Q,b);
             this_prog = addCost(this_prog,objective,remaining_state_dims);
           end
-          x = solve(this_prog,x);
+          [x,objval,exitflag,infeasible_constraint_name] = solve(this_prog,x);
+          if ~isempty(infeasible_constraint_name)
+              infeasible_constraint_name
+          end
 %          .5*(x0(remaining_state_dims) - x(remaining_state_dims))^2
 %          fval = objective.eval(x(remaining_state_dims))
           for i=1:numel(state_dims)
