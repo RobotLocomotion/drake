@@ -27,24 +27,21 @@ static int snopt_userfun(snopt::integer *Status, snopt::integer *n, snopt::doubl
   mxArray* snopt_userfun_plhs[2];
   mxArray* snopt_userfun_prhs[1];
   snopt_userfun_prhs[0] = mxCreateDoubleMatrix(*n,1,mxREAL);
-  for(int i = 0;i<*n;i++)
+  for(snopt::integer i = 0;i<*n;i++)
   {
     *(mxGetPr(snopt_userfun_prhs[0])+i) = static_cast<double>(x[i]);
   }
-  snopt_userfun_plhs[0] = mxCreateDoubleMatrix(*neF,1,mxREAL);
-  snopt_userfun_plhs[1] = mxCreateDoubleMatrix(*neG,1,mxREAL);
   mexCallMATLAB(2,snopt_userfun_plhs,1,snopt_userfun_prhs,snopt_userfun_name);
-  for(int i = 0;i<*neF;i++)
+  for(snopt::integer i = 0;i<*neF;i++)
   {
-    f[i] = static_cast<snopt::doublereal>( *(mxGetPr(snopt_userfun_plhs[0])+i));
+    F[i] = static_cast<snopt::doublereal>( *(mxGetPr(snopt_userfun_plhs[0])+i));
   }
-  for(int i = 0;i<*neG;i++)
+  for(snopt::integer i = 0;i<*neG;i++)
   {
-    G[i] = static_cast<snopt::doublereal>( *(mxGetPr(snopt_userfun_prhs[0])+i));
+    G[i] = static_cast<snopt::doublereal>( *(mxGetPr(snopt_userfun_plhs[1])+i));
   }
-  mxDestroyArray(snopt_userfun_plhs[0]);
-  mxDestroyArray(snopt_userfun_plhs[1]);
   mxDestroyArray(snopt_userfun_prhs[0]);
+  return 0;
 }
 
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
@@ -53,12 +50,12 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   {
     mexErrMsgIdAndTxt("Drake:NonlinearProgramSnoptmex:InvalidInputs","The usage is [x,F,info,xmul,Fmul] = NonlinearProgramSnoptmex(x,xlow,xupp,Flow,Fupp,userfun,ObjAdd,ObjRow,A,iAfun,jAvar,iGfun,jGvar,options)");
   }
-  int nx = mxGetM(prhs[0]);
-  int nF = mxGetM(prhs[3]);
+  snopt::integer nx = static_cast<snopt::integer>(mxGetM(prhs[0]));
+  snopt::integer nF = static_cast<snopt::integer>(mxGetM(prhs[3]));
   snopt::doublereal* x    = new snopt::doublereal[nx];
   snopt::doublereal* xlow = new snopt::doublereal[nx];
   snopt::doublereal* xupp = new snopt::doublereal[nx];
-  for(int i = 0;i<nx;i++)
+  for(snopt::integer i = 0;i<nx;i++)
   {
     x[i] = static_cast<snopt::doublereal>(*(mxGetPr(prhs[0])+i));
     xlow[i] = static_cast<snopt::doublereal>(*(mxGetPr(prhs[1])+i));
@@ -66,32 +63,32 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   }
   snopt::doublereal* Flow = new snopt::doublereal[nF];
   snopt::doublereal* Fupp = new snopt::doublereal[nF];
-  for(int i = 0;i<nx;i++)
+  for(snopt::integer i = 0;i<nF;i++)
   {
     Flow[i] = static_cast<snopt::doublereal>(*(mxGetPr(prhs[3])+i));
     Fupp[i] = static_cast<snopt::doublereal>(*(mxGetPr(prhs[4])+i));
   }
   snopt_userfun_name_len = mxGetNumberOfElements(prhs[5])+1;
-  snopt_userfun_name = new char[userfun_name_len];
+  snopt_userfun_name = new char[snopt_userfun_name_len];
   int userfun_name_status = mxGetString(prhs[5],snopt_userfun_name,snopt_userfun_name_len);
   if(userfun_name_status != 0)
   {
     mexErrMsgIdAndTxt("Drake:NonlinearProgramSnoptmex:InvalidInputs","userfun should be a string for NonlinearProgramSnoptmex");
   }
-  int lenA = mxGetNumberOfElements(prhs[8]);
+  snopt::integer lenA = static_cast<snopt::integer>(mxGetNumberOfElements(prhs[8]));
   snopt::doublereal* A     = new snopt::doublereal[lenA];
   snopt::integer*    iAfun = new snopt::integer[lenA];
   snopt::integer*    jAvar = new snopt::integer[lenA];
-  for(int i = 0;i<lenA;i++)
+  for(snopt::integer i = 0;i<lenA;i++)
   {
     A[i] = static_cast<snopt::doublereal>(*(mxGetPr(prhs[8])+i));
     iAfun[i] = static_cast<snopt::integer>(*(mxGetPr(prhs[9])+i));
     jAvar[i] = static_cast<snopt::integer>(*(mxGetPr(prhs[10])+i));
   }
-  int lenG = mxGetNumberOfElements(prhs[11]);
+  snopt::integer lenG = static_cast<snopt::integer>(mxGetNumberOfElements(prhs[11]));
   snopt::integer* iGfun = new snopt::integer[lenG];
   snopt::integer* jGvar = new snopt::integer[lenG];
-  for(int i = 0;i<lenG;i++)
+  for(snopt::integer i = 0;i<lenG;i++)
   {
     iGfun[i] = static_cast<snopt::integer>(*(mxGetPr(prhs[11])+i));
     jGvar[i] = static_cast<snopt::integer>(*(mxGetPr(prhs[12])+i));
@@ -105,7 +102,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   snopt::integer Cold = 0;
   snopt::doublereal *xmul = new snopt::doublereal[nx];
   snopt::integer *xstate = new snopt::integer[nx];
-  for(int i = 0;i<nx;i++)
+  for(snopt::integer i = 0;i<nx;i++)
   {
     xstate[i] = 0;
   }
@@ -113,7 +110,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   snopt::doublereal *F      = new snopt::doublereal[nF];
   snopt::doublereal *Fmul   = new snopt::doublereal[nF];
   snopt::integer    *Fstate = new snopt::integer[nF];
-  for(int i = 0;i<nF;i++)
+  for(snopt::integer i = 0;i<nF;i++)
   {
     Fstate[i] = 0;
   }
@@ -121,23 +118,77 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   snopt::integer ObjRow = static_cast<snopt::integer>(mxGetScalar(prhs[7]));
   
   snopt::integer nxname = 1, nFname = 1, npname = 0;
-  char* xnames[nxname*8];
-  char* Fnames[nFname*8];
-  char Prog[200];
+  char xnames[nxname*8];
+  char Fnames[nFname*8];
+  char Prob[200];
   
   snopt::integer iSumm = -1;
-  snopt::integer iPrint = -1;
+  snopt::integer iPrint = 9;
 
   snopt::integer nS,nInf;
   snopt::doublereal sInf;
   snopt::integer INFO_snopt;
 
-  snopt::sninit_(&iPring,&iSumm,cw,&lencw,iw,&leniw,rw,&lenrw,8*500);
+  snopt::sninit_(&iPrint,&iSumm,cw,&lencw,iw,&leniw,rw,&lenrw,8*500);
+  char strOpt1[200] = "Derivative option";
+  snopt::integer derivative_option = static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"DerivativeOption")));
+  snopt::integer strOpt_len = strlen(strOpt1);
+  snopt::snseti_(strOpt1,&derivative_option,&iPrint,&iSumm,&INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500);
+
+  char strOpt2[200] = "Major iterations limit";
+  strOpt_len = strlen(strOpt2);
+  snopt::integer major_iterations_limit = static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"MajorIterationsLimit")));
+  snopt::snseti_(strOpt2,&major_iterations_limit,&iPrint,&iSumm,&INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500); 
+
+  char strOpt3[200] = "Minor iterations limit";
+  strOpt_len = strlen(strOpt3);
+  snopt::integer minor_iterations_limit = static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"MinorIterationsLimit")));
+  snopt::snseti_(strOpt3,&minor_iterations_limit,&iPrint,&iSumm,&INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500); 
+
+  char strOpt4[200] = "Major optimality tolerance";
+  strOpt_len = strlen(strOpt4);
+  snopt::doublereal major_optimality_tolerance= static_cast<snopt::doublereal>(*mxGetPr(mxGetField(prhs[13],0,"MajorOptimalityTolerance")));
+  snopt::snsetr_(strOpt4,&major_optimality_tolerance,&iPrint,&iSumm,&INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500); 
+
+  char strOpt5[200] = "Major feasibility tolerance";
+  strOpt_len = strlen(strOpt5);
+  snopt::doublereal major_feasibility_tolerance= static_cast<snopt::doublereal>(*mxGetPr(mxGetField(prhs[13],0,"MajorFeasibilityTolerance")));
+  snopt::snsetr_(strOpt5,&major_feasibility_tolerance,&iPrint,&iSumm,&INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500); 
+  
+  char strOpt6[200] = "Minor feasibility tolerance";
+  strOpt_len = strlen(strOpt6);
+  snopt::doublereal minor_feasibility_tolerance= static_cast<snopt::doublereal>(*mxGetPr(mxGetField(prhs[13],0,"MinorFeasibilityTolerance")));
+  snopt::snsetr_(strOpt6,&minor_feasibility_tolerance,&iPrint,&iSumm,&INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500); 
+  
+  char strOpt7[200] = "Superbasics limit";
+  strOpt_len = strlen(strOpt7);
+  snopt::integer superbasics_limit = static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"SuperbasicsLimit")));
+  snopt::snseti_(strOpt7,&superbasics_limit,&iPrint,&iSumm,&INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500); 
+
+  char strOpt8[200] = "Verify level";
+  strOpt_len = strlen(strOpt8);
+  snopt::integer verify_level = static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"VerifyLevel")));
+  snopt::snseti_(strOpt8,&verify_level,&iPrint,&iSumm,&INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500); 
+
+  char strOpt9[200] = "Iterations Limit";
+  strOpt_len = strlen(strOpt9);
+  snopt::integer iterations_limit = static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"IterationsLimit")));
+  snopt::snseti_(strOpt9,&iterations_limit,&iPrint,&iSumm,&INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500); 
+
+  mxArray* pprint_name = mxGetField(prhs[13],0,"print");
+  int print_file_name_len = mxGetNumberOfElements(pprint_name);
+  char* print_file_name = new char[print_file_name_len]; 
+  snopt::integer prnt_len;
+  if(print_file_name_len != 0)
+  {
+    mxGetString(pprint_name,print_file_name,print_file_name_len);
+    snopt::snopenappend_(&iPrint,print_file_name,&INFO_snopt,print_file_name_len);
+  }
   snopt::snopta_
     ( &Cold, &nF, &nx, &nxname, &nFname,
       &ObjAdd, &ObjRow, Prob, snopt_userfun,
       iAfun, jAvar, &lenA, &lenA, A,
-      iGfun, jGvar, &nG, &nG,
+      iGfun, jGvar, &lenG, &lenG,
       xlow, xupp, xnames, Flow, Fupp, Fnames,
       x, xstate, xmul, F, Fstate, Fmul,
       &INFO_snopt, &mincw, &miniw, &minrw,
@@ -149,14 +200,14 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
   plhs[0] = mxCreateDoubleMatrix(nx,1,mxREAL);
   plhs[3] = mxCreateDoubleMatrix(nx,1,mxREAL);
-  for(int i = 0;i<nx;i++)
+  for(snopt::integer i = 0;i<nx;i++)
   {
     *(mxGetPr(plhs[0])+i) = static_cast<double>(x[i]);
     *(mxGetPr(plhs[3])+i) = static_cast<double>(xmul[i]);
   }
   plhs[1] = mxCreateDoubleMatrix(nF,1,mxREAL);
   plhs[4] = mxCreateDoubleMatrix(nF,1,mxREAL);
-  for(int i = 0;i<nF;i++)
+  for(snopt::integer i = 0;i<nF;i++)
   {
     *(mxGetPr(plhs[1])+i) = static_cast<double>(F[i]);
     *(mxGetPr(prhs[4])+i) = static_cast<double>(Fmul[i]);
@@ -172,4 +223,10 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   delete[] iGfun,jGvar;
   delete[] xmul,xstate;
   delete[] F,Fmul,Fstate;
+  /*if(print_file_name_len!= 0)
+  {
+    snopt::snclose_(&iPrint);
+  }
+  delete[] print_file_name;*/
+
 }
