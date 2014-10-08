@@ -213,9 +213,14 @@ playback(v,traj,struct('slider',true));
 
 if plot_comtraj
   dt = 0.001;
+  nx = r.getNumStates();
   tts = traj.getBreaks();
-  xtraj_smooth=smoothts(traj.eval(tts),'e',150);
-  dtraj = fnder(PPTrajectory(spline(tts,xtraj_smooth)));
+  x_smooth=zeros(nx,length(tts));
+  x_breaks = traj.eval(tts);
+  for i=1:nx
+    x_smooth(i,:) = smooth(x_breaks(i,:),15,'lowess');
+  end
+  dtraj = fnder(PPTrajectory(spline(tts,x_smooth)));
   qddtraj = dtraj(nq+(1:nq));
 
   lfoot = findLinkInd(r,'l_foot');
