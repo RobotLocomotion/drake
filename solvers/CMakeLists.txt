@@ -26,10 +26,13 @@ endif()
 
 pods_find_pkg_config(snopt_cpp)
 
+
 if(snopt_cpp_FOUND)
+	set(GFORTRAN_LIBRARY ${MATLAB_ROOT}/sys/os/glnxa64/libgfortran.so.3)
   add_mex(NonlinearProgramSnoptmex NonlinearProgramSnoptmex.cpp)
   pods_use_pkg_config_packages(NonlinearProgramSnoptmex snopt_cpp)	
   set_target_properties(NonlinearProgramSnoptmex PROPERTIES COMPILE_FLAGS -fPIC)
+	target_link_libraries(NonlinearProgramSnoptmex ${GFORTRAN_LIBRARY})
 endif()
 
 
