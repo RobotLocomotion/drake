@@ -1,4 +1,5 @@
 function [xtraj,utraj] = invertFlatOutputs(plant,ytraj,options)
+% NOTEST
 % @param plant a quadrotor plant (either Quadrotor or QuadPlantPenn)
 % @param ytraj a PPTrajectory in the DifferentiallyFlatOutputFrame
 % @option zero_acceleration_tol threshold on the magnitude of the 
