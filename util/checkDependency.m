@@ -379,9 +379,10 @@ else % then try to evaluate the dependency now...
   end
 
   ok = conf.(conf_var);
-  if (nargout<1 && ~ok)
-    error(['Drake:MissingDependency:',dep],['Cannot find required dependency: ',dep]);
-  end
+end
+
+if (nargout<1 && ~ok)
+  error(['Drake:MissingDependency:',dep],['Cannot find required dependency: ',dep]);
 end
 
 end
