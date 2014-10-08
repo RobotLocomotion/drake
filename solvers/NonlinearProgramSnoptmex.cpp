@@ -120,19 +120,33 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   snopt::integer nxname = 1, nFname = 1, npname = 0;
   char xnames[nxname*8];
   char Fnames[nFname*8];
-  char Prob[200];
+  char Prob[200]="";
   
   snopt::integer iSumm = -1;
-  snopt::integer iPrint = 9;
+  snopt::integer iPrint = 0;
 
   snopt::integer nS,nInf;
   snopt::doublereal sInf;
   snopt::integer INFO_snopt;
+	snopt::integer strOpt_len;
+
+  mxArray* pprint_name = mxGetField(prhs[13],0,"print");
+  int print_file_name_len = mxGetNumberOfElements(pprint_name)+1;
+  char* print_file_name = new char[print_file_name_len]; 
+  if(print_file_name_len != 0)
+  {
+		char strOpt10[200] = "Major print level";
+		strOpt_len = strlen(strOpt10);
+		snopt::integer major_print_level = 11;
+		snopt::snseti_(strOpt10,&major_print_level,&iPrint,&iSumm,&INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500); 
+    mxGetString(pprint_name,print_file_name,print_file_name_len);
+    snopt::snopenappend_(&iPrint,print_file_name,&INFO_snopt,print_file_name_len);
+  }
 
   snopt::sninit_(&iPrint,&iSumm,cw,&lencw,iw,&leniw,rw,&lenrw,8*500);
   char strOpt1[200] = "Derivative option";
   snopt::integer derivative_option = static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"DerivativeOption")));
-  snopt::integer strOpt_len = strlen(strOpt1);
+  strOpt_len = strlen(strOpt1);
   snopt::snseti_(strOpt1,&derivative_option,&iPrint,&iSumm,&INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500);
 
   char strOpt2[200] = "Major iterations limit";
@@ -175,15 +189,6 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   snopt::integer iterations_limit = static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"IterationsLimit")));
   snopt::snseti_(strOpt9,&iterations_limit,&iPrint,&iSumm,&INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500); 
 
-  mxArray* pprint_name = mxGetField(prhs[13],0,"print");
-  int print_file_name_len = mxGetNumberOfElements(pprint_name);
-  char* print_file_name = new char[print_file_name_len]; 
-  snopt::integer prnt_len;
-  if(print_file_name_len != 0)
-  {
-    mxGetString(pprint_name,print_file_name,print_file_name_len);
-    snopt::snopenappend_(&iPrint,print_file_name,&INFO_snopt,print_file_name_len);
-  }
   snopt::snopta_
     ( &Cold, &nF, &nx, &nxname, &nFname,
       &ObjAdd, &ObjRow, Prob, snopt_userfun,
@@ -223,10 +228,10 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   delete[] iGfun,jGvar;
   delete[] xmul,xstate;
   delete[] F,Fmul,Fstate;
-  /*if(print_file_name_len!= 0)
+  if(print_file_name_len!= 0)
   {
     snopt::snclose_(&iPrint);
   }
-  delete[] print_file_name;*/
+  delete[] print_file_name;
 
 }
