@@ -22,7 +22,7 @@ can_draw_lcm_polytopes = logical(exist('drawLCMPolytope', 'file'));
 lc = lcm.lcm.LCM.getSingleton();
 lcmgl = LCMGLClient('quad_goal');
 lcmgl.glColor3f(.8,.2,.2);
-lcmgl.sphere(goal, .1, 20, 20);
+lcmgl.sphere(goal, .04, 20, 20);
 lcmgl.switchBuffers();
 
 v = constructVisualizer(r);
@@ -40,7 +40,7 @@ if can_draw_lcm_polytopes
   lcmgl = LCMGLClient('iris_seeds');
   % Clear the displayed polytopes
   drawLCMPolytope(0, 0, 0, 0, lc);
-  % pause
+  pause
 end
 
 dim = length(lb);
@@ -50,10 +50,11 @@ b_bounds = [ub; -lb];
 if can_draw_lcm_polytopes
   % Draw the bounding box
   drawLCMPolytope(A_bounds, b_bounds, 100, true, lc);
-  % pause
+  pause
 
   % Clear the displayed polytopes
   drawLCMPolytope(0, 0, 0, 0, lc);
+  pause
 end
 
 region_idx = 1;
@@ -61,9 +62,10 @@ function done = drawRegion(r, seed)
   if can_draw_lcm_polytopes
     drawLCMPolytope(r.A, r.b, region_idx, false, lc);
     region_idx = region_idx + 1;
-    lcmgl.glColor3f(.8,.8,.2);
-    lcmgl.sphere(seed, 0.06, 20, 20);
-    lcmgl.switchBuffers();
+    % lcmgl.glColor3f(.8,.8,.2);
+    % lcmgl.sphere(seed, 0.06, 20, 20);
+    % lcmgl.switchBuffers();
+    % pause
   end
   done = false;
 end
@@ -78,17 +80,59 @@ prob.num_traj_segments = num_traj_segments;
 prob.traj_degree = traj_degree;
 prob.bot_radius = bot_radius;
 
-start = [start, [0;0;0], [0;0;0]];
-goal = [goal, [0;0;0], [0;0;0]];
-[ytraj, ~, ~, safe_region_assignments] = prob.solveTrajectory(start, goal, safe_regions);
+if 1
+  load('../data/2014-10-07_14.15.47/results.mat', 'xtraj_sim', 'ytraj');
+  % xtraj_sim = xtraj_sim.setOutputFrame(r.getStateFrame());
 
-% Add an all-zeros yaw trajectory
-ytraj = ytraj.vertcat(ConstantTrajectory(0));
+  ytraj = ytraj.scaleTime(0.75);
+  ytraj = ytraj.setOutputFrame(DifferentiallyFlatOutputFrame);
+  [xtraj, utraj] = invertFlatOutputs(r,ytraj);
+  % v.playback(xtraj, struct('slider', true));
+  % keyboard()
 
-% Invert differentially flat outputs to find the state traj
-ytraj = ytraj.setOutputFrame(DifferentiallyFlatOutputFrame);
-xtraj = invertFlatOutputs(r,ytraj);
-v.playback(xtraj, struct('slider', true));
+  % Simulate the result
+  x0 = xtraj.eval(0);
+  tf = utraj.tspan(2);
+  Q = 10*eye(12);
+  R = eye(4);
+  Qf = 10*eye(12);
+  c = tvlqr(r,xtraj,utraj,Q,R,Qf);
+  sys = feedback(r,c);
+  xtraj_sim = simulate(sys,[0 tf],x0);
+else
+  start = [start, [0;0;0], [0;0;0]];
+  goal = [goal, [0;0;0], [0;0;0]];
+  [ytraj, ~, ~, safe_region_assignments] = prob.solveTrajectory(start, goal, safe_regions);
+
+  % Run the program again with the region assignments fixed, for a 5-th-degree polynomial
+  prob.traj_degree = 5;
+  [ytraj, diagnostics, ~, ~] = prob.solveTrajectory(start, goal, safe_regions, safe_region_assignments);
+  diagnostics
+
+
+  % Add an all-zeros yaw trajectory
+  ytraj = ytraj.vertcat(ConstantTrajectory(0));
+
+  % Invert differentially flat outputs to find the state traj
+  ytraj = ytraj.setOutputFrame(DifferentiallyFlatOutputFrame);
+  [xtraj, utraj] = invertFlatOutputs(r,ytraj);
+  % v.playback(xtraj, struct('slider', true));
+
+  % Simulate the result
+  x0 = xtraj.eval(0);
+  tf = utraj.tspan(2);
+  Q = 10*eye(12);
+  R = eye(4);
+  Qf = 10*eye(12);
+  c = tvlqr(r,xtraj,utraj,Q,R,Qf);
+  sys = feedback(r,c);
+  xtraj_sim = simulate(sys,[0 tf],x0);
+  folder = fullfile('~/locomotion/papers/icra-2015-uav-miqp/data', datestr(now,'yyyy-mm-dd_HH.MM.SS'));
+  system(sprintf('mkdir -p %s', folder));
+  save(fullfile(folder, 'results.mat'), 'xtraj', 'ytraj', 'utraj', 'r', 'v', 'safe_region_assignments', 'prob', 'safe_regions', 'xtraj_sim', 'start', 'goal');
+
+end
+v.playback(xtraj_sim, struct('slider', true));
 
 % Draw the result
 lc = lcm.lcm.LCM.getSingleton();
@@ -108,10 +152,12 @@ lcmgl.glEnd();
 lcmgl.switchBuffers();
 
 
-figure(1)
-for j = 1:5
-  subplot(5, 1, j);
-  fnplt(fnder(ytraj(1), j));
-end
+% figure(1)
+% for j = 1:5
+%   subplot(5, 1, j);
+%   fnplt(fnder(ytraj(1), j));
+% end
+
+
 end
 
