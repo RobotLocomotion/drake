@@ -123,7 +123,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   char Prob[200]="";
   
   snopt::integer iSumm = -1;
-  snopt::integer iPrint = 0;
+  snopt::integer iPrint = 9;
 
   snopt::integer nS,nInf;
   snopt::doublereal sInf;
