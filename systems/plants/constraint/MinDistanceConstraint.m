@@ -38,6 +38,7 @@ classdef MinDistanceConstraint < SingleTimeKinematicConstraint
       if nargin < 3, active_collision_options = struct(); end;
       sizecheck(min_distance,[1,1]);
       assert(min_distance>0);
+      checkDependency('bullet');
       obj = obj@SingleTimeKinematicConstraint(robot,tspan);
       obj.type = RigidBodyConstraint.MinDistanceConstraintType;
       obj.min_distance = min_distance;
