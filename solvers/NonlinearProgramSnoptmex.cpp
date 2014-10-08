@@ -93,11 +93,26 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     iGfun[i] = static_cast<snopt::integer>(*(mxGetPr(prhs[11])+i));
     jGvar[i] = static_cast<snopt::integer>(*(mxGetPr(prhs[12])+i));
   }
+  snopt::integer INFO_snopt;
+  snopt::integer nxname = 1, nFname = 1, npname = 0;
+  char xnames[nxname*8];
+  char Fnames[nFname*8];
+  char Prob[200]="";
+
   snopt::integer minrw,miniw,mincw;
   snopt::integer lenrw = 10000000, leniw = 500000, lencw = 500; 
   snopt::doublereal* rw = (snopt::doublereal*) std::calloc(lenrw,sizeof(snopt::doublereal));
   snopt::integer* iw = (snopt::integer*) std::calloc(leniw,sizeof(snopt::integer));
   char cw[8*lencw];
+	snopt::snmema_(&INFO_snopt,&nF,&nx,&nxname,&nFname,&lenA,&lenG,&mincw,&miniw,&minrw,cw,&lencw,iw,&leniw,rw,&lenrw,8*500);
+	if(mincw>lencw | miniw>leniw | minrw>lenrw)
+	{
+		lenrw = minrw;
+		leniw = miniw;
+		lencw = mincw;
+		rw = (snopt::doublereal*) std::calloc(lenrw,sizeof(snopt::doublereal));
+		iw = (snopt::integer*) std::calloc(leniw,sizeof(snopt::integer));
+	}
 
   snopt::integer Cold = 0;
   snopt::doublereal *xmul = new snopt::doublereal[nx];
@@ -117,17 +132,12 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   snopt::doublereal ObjAdd = static_cast<snopt::doublereal>(mxGetScalar(prhs[6]));
   snopt::integer ObjRow = static_cast<snopt::integer>(mxGetScalar(prhs[7]));
   
-  snopt::integer nxname = 1, nFname = 1, npname = 0;
-  char xnames[nxname*8];
-  char Fnames[nFname*8];
-  char Prob[200]="";
   
   snopt::integer iSumm = -1;
   snopt::integer iPrint = 15;
 
   snopt::integer nS,nInf;
   snopt::doublereal sInf;
-  snopt::integer INFO_snopt;
 	snopt::integer strOpt_len;
 
   mxArray* pprint_name = mxGetField(prhs[13],0,"print");
