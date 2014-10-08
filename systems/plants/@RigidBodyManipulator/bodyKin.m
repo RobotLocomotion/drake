@@ -1,4 +1,4 @@
-function [x,J,P] = bodyKin(obj,kinsol,body_or_frame_ind,pts)
+function [x,J,P,dJ] = bodyKin(obj,kinsol,body_or_frame_ind,pts)
 % computes the position of pts (given in the global frame) in the body frame
 %
 % @param kinsol solution structure obtained from doKinematics
@@ -7,7 +7,7 @@ function [x,J,P] = bodyKin(obj,kinsol,body_or_frame_ind,pts)
 % @retval x the position of pts (given in the global frame) in the body frame
 % @retval J the Jacobian, dxdq
 % @retval P the gradient, dxdpts - useful when computing forces
-%% @retval dJ the gradients of the Jacobian, dJdq
+% @retval dJ the gradients of the Jacobian, dJdq
 %
 % if pts is a 3xm matrix, then x will be a 3xm matrix
 %  and (following our gradient convention) J will be a ((3xm)x(q))
@@ -16,12 +16,17 @@ function [x,J,P] = bodyKin(obj,kinsol,body_or_frame_ind,pts)
 
 checkDirty(obj);
 
-if (nargout>3), error('Gradient of the Jacobian (dJ) not implemented yet.'); end
+compute_first_derivatives   = (nargout > 1);
+compute_P                   = (nargout > 2);
+compute_second_derivatives  = (nargout > 3);
 
 % todo: zap this after the transition
 if isa(body_or_frame_ind,'RigidBody'), error('support for passing in RigidBody objects has been removed.  please pass in the body index'); end
   
-if (kinsol.mex)
+if kinsol.mex
+  if compute_second_derivatives
+    error('Second derivatives not implemented in mex yet.');
+  end
   if (obj.mex_model_ptr==0)
     error('Drake:RigidBodyManipulator:InvalidKinematics','This kinsol is no longer valid because the mex model ptr has been deleted.');
   end
@@ -29,9 +34,9 @@ if (kinsol.mex)
     error('Drake:RigidBodyManipulator:InvalidKinematics','This kinsol is not valid because it was computed via mex, and you are now asking for an evaluation with non-numeric pts.  If you intended to use something like TaylorVar, then you must call doKinematics with use_mex = false');
   end
   
-  if (nargout>2)
+  if compute_P
     [x,J,P] = bodyKinmex(obj.mex_model_ptr,kinsol.q,body_or_frame_ind,pts);
-  elseif (nargout>1)
+  elseif compute_first_derivatives
     [x,J] = bodyKinmex(obj.mex_model_ptr,kinsol.q,body_or_frame_ind,pts);
   else
     x = bodyKinmex(obj.mex_model_ptr,kinsol.q,body_or_frame_ind,pts);
@@ -49,18 +54,28 @@ else
   
   m = size(pts,2);
   pts = [pts;ones(1,m)];
-  invT = inv(kinsol.T{body_ind}*Tframe);
+  T = kinsol.T{body_ind}*Tframe;
+  if compute_second_derivatives
+    dT = kinsol.dTdq{body_ind}*Tframe;
+    ddT = kinsol.ddTdqdq{body_ind}*Tframe;
+    [invT, dinvT, ddinvT] = invHT(T,dT,ddT);
+  elseif compute_first_derivatives
+    dT = kinsol.dTdq{body_ind}*Tframe;
+    [invT, dinvT] = invHT(T,dT);
+  else
+    invT = invHT(T);
+  end
   x = invT*pts;
   x = x(1:3,:);
   
   % Jacobians make use of d(inv(T))dqi = -inv(T)*dTdqi*inv(T)
-  if (nargout>2)
+  if compute_P
     P = zeros(3*m,3*m);
     for i=1:size(pts,2)
       P((i-1)*3+1:i*3,(i-1)*3+1:i*3)=invT(1:3,1:3);
     end
   end
-  if (nargout>1)
+  if compute_first_derivatives
     nq = size(kinsol.q,1);
     invT = inv(kinsol.T{body_ind}*Tframe);
     dTdq = cell(1,nq);
@@ -78,6 +93,20 @@ else
       grad = grad(1:3,:);
       J(:,i) = reshape(grad,[],1);
     end
+    %J = zeros(3*m,nq);
+    %for i=1:m
+      %grad = dinvT*pts(:,i);
+      %grad = grad(1:3,:);
+      %J((i-1)*3+(1:3),:) = reshape(grad,3,[]);
+    %end
+  end
+  if compute_second_derivatives
+    if isempty(kinsol.ddTdqdq{body_ind})
+      error('you must call doKinematics with the second derivative option enabled');
+    end
+    %ind = repmat(1:3*nq,nq,1)+repmat((0:3*nq:3*nq*(nq-1))',1,3*nq);
+    dJ_reshaped = ddinvT*pts;
+    dJ = reshape(permute(reshape(dJ_reshaped,[nq,3,nq,m]),[2,4,1,3]),3*m,nq^2);
   end
   
 end
