@@ -8,7 +8,7 @@ if (nargin<3 || isempty(tol)) tol=1e-8; end
 tf = true;
 errstr = '';
 
-if isscalar(desired_val)
+if isscalar(desired_val) && ~isempty(val)
   desired_val = repmat(desired_val,size(val));
 end
 
