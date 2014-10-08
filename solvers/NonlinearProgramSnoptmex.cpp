@@ -14,7 +14,6 @@ namespace snopt {
 
 using namespace std;
 
-static int snopt_userfun_name_len;
 static char* snopt_userfun_name;
 
 static int snopt_userfun(snopt::integer *Status, snopt::integer *n, snopt::doublereal x[],
@@ -68,7 +67,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     Flow[i] = static_cast<snopt::doublereal>(*(mxGetPr(prhs[3])+i));
     Fupp[i] = static_cast<snopt::doublereal>(*(mxGetPr(prhs[4])+i));
   }
-  snopt_userfun_name_len = mxGetNumberOfElements(prhs[5])+1;
+  int snopt_userfun_name_len = mxGetNumberOfElements(prhs[5])+1;
   snopt_userfun_name = new char[snopt_userfun_name_len];
   int userfun_name_status = mxGetString(prhs[5],snopt_userfun_name,snopt_userfun_name_len);
   if(userfun_name_status != 0)
@@ -201,6 +200,31 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   strOpt_len = strlen(strOpt9);
   snopt::integer iterations_limit = static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"IterationsLimit")));
   snopt::snseti_(strOpt9,&iterations_limit,&iPrint,&iSumm,&INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500); 
+
+  char strOpt11[200] = "Scale option";
+  strOpt_len = strlen(strOpt11);
+  snopt::integer scale_option= static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"ScaleOption")));
+  snopt::snseti_(strOpt11,&scale_option,&iPrint,&iSumm,&INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500); 
+
+  char strOpt12[200] = "New basis file";
+  strOpt_len = strlen(strOpt12);
+  snopt::integer new_basis_file = static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"NewBasisFile")));
+  snopt::snseti_(strOpt12,&new_basis_file,&iPrint,&iSumm,&INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500); 
+
+  char strOpt13[200] = "Old basis file";
+  strOpt_len = strlen(strOpt13);
+  snopt::integer old_basis_file = static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"OldBasisFile")));
+  snopt::snseti_(strOpt13,&old_basis_file,&iPrint,&iSumm,&INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500); 
+
+  char strOpt14[200] = "Backup basis file";
+  strOpt_len = strlen(strOpt14);
+  snopt::integer backup_basis_file = static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"BackupBasisFile")));
+  snopt::snseti_(strOpt14,&backup_basis_file,&iPrint,&iSumm,&INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500); 
+
+  char strOpt15[200] = "Linesearch tolerance";
+  strOpt_len = strlen(strOpt15);
+  snopt::doublereal line_search_tolerance= static_cast<snopt::doublereal>(*mxGetPr(mxGetField(prhs[13],0,"LinesearchTolerance")));
+  snopt::snsetr_(strOpt15,&line_search_tolerance,&iPrint,&iSumm,&INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500); 
 
   snopt::snopta_
     ( &Cold, &nF, &nx, &nxname, &nFname,
