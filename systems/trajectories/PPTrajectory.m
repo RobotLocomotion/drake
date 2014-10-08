@@ -69,7 +69,19 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
       end
     end
     
-    % todo: implement deriv and dderiv here
+    function df = deriv(obj,t)
+      [b,c,~,k,d] = unmkpp(obj.pp);
+      if (k==1)  % handle the case of too-high order
+        ppform = mkpp(b,0*c(:,1),d);
+      else
+        for i=1:k-1
+          cnew(:,i) = (k-i)*c(:,i);
+        end
+        ppform = mkpp(b,cnew,d);
+      end
+      df = ppval(ppform,t);
+    end
+    % todo: implement dderiv here
     
     function mobj = inFrame(obj,frame)
       if (obj.getOutputFrame == frame)
