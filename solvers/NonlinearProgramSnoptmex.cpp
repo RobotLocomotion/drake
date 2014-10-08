@@ -123,7 +123,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   char Prob[200]="";
   
   snopt::integer iSumm = -1;
-  snopt::integer iPrint = 9;
+  snopt::integer iPrint = 15;
 
   snopt::integer nS,nInf;
   snopt::doublereal sInf;
@@ -141,6 +141,9 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 		snopt::snseti_(strOpt10,&major_print_level,&iPrint,&iSumm,&INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500); 
     mxGetString(pprint_name,print_file_name,print_file_name_len);
     snopt::snopenappend_(&iPrint,print_file_name,&INFO_snopt,print_file_name_len);
+		char strOpt11[200] = "Print file";
+		strOpt_len = strlen(strOpt11);
+		snopt::snseti_(strOpt11,&iPrint,&iPrint,&iSumm,&INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500); 
   }
 
   snopt::sninit_(&iPrint,&iSumm,cw,&lencw,iw,&leniw,rw,&lenrw,8*500);
