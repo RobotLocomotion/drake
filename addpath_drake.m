@@ -29,21 +29,9 @@ if verLessThan('matlab','7.6')
   % because I rely on the new matlab classes with classdef
 end
 
-% turn off autosave for simulink models (seems evil, but generating
-% boatloads of autosaves is clearly worse)
-if (com.mathworks.services.Prefs.getBooleanPref('SaveOnModelUpdate'))
-  a = input('You currently have autosave enabled for simulink blocks.\nThis is fine, but will generate a lot of *.mdl.autosave files\nin your directory.  If you aren''t a regular Simulink user,\nthen I can disable that feature now.\n  Disable Simulink Autosave (y/n)? ', 's');
-  if (lower(a(1))=='y')
-    com.mathworks.services.Prefs.setBooleanPref('SaveOnModelUpdate',false);
-  end
-end
-% todo: try setting this before simulating, then resetting it after the
-% simulate?
-
 % add package directories to the matlab path
 addpath(fullfile(root,'systems'));
 addpath(fullfile(root,'systems','plants'));
-addpath(fullfile(root,'systems','plants','affordance'));
 addpath(fullfile(root,'systems','plants','collision'));
 addpath(fullfile(root,'systems','plants','constraint'));
 addpath(fullfile(root,'systems','controllers'));
@@ -78,5 +66,20 @@ clear util/getDrakePath;
 % Any other use will be considered a violation of the license.  You can obtain a free license
 % from here: http://pages.cs.wisc.edu/~ferris/path.html
 setenv('PATH_LICENSE_STRING', '2096056969&Russ_Tedrake&Massachusetts_Institute_of_Technology&&USR&75042&18_4_2014&1000&PATH&GEN&0_0_0&0_0_0&5000&0_0');
+
+% turn off autosave for simulink models (seems evil, but generating
+% boatloads of autosaves is clearly worse)
+if checkDependency('simulink')
+  autosave_options = get_param(0,'AutoSaveOptions');
+  if autosave_options.SaveOnModelUpdate
+    warning('Disabling autosave for simulink blocks (to avoid generating a lot of *.mdl.autosave files in your directory.  If you aren''t a regular Simulink user and don''t want this disabled, comment out this section in addpath_drake');
+    autosave_options.SaveOnModelUpdate = false;
+    set_param(0,'AutoSaveOptions',autosave_options);
+  end
+end
+% todo: try setting this before simulating, then resetting it after the
+% simulate?
+
+
 
 end
