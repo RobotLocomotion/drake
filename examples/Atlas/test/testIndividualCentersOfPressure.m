@@ -58,6 +58,11 @@ end
 end
 
 function testMex(r)
+
+if ~exist('individualCentersOfPressuremex','file')
+  return;
+end
+
 nq = r.getNumPositions();
 ntests = 100;
 
