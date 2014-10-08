@@ -46,7 +46,7 @@ classdef RelativePosition < drakeFunction.kinematic.Kinematic
       obj.n_pts = n_pts_tmp;
     end
 
-    function [pos,J] = eval(obj,q)
+    function [pos,J,dJ] = eval(obj,q)
       % pos = eval(obj,q) returns the relative positions of the points
       %
       % [pos,J] = eval(obj,q) also returns the Jacobian of the relative
@@ -54,6 +54,8 @@ classdef RelativePosition < drakeFunction.kinematic.Kinematic
       %
       % @param obj  -- drakeFunction.kinematic.RelativePosition object
       % @param q    -- Column vector of joint positions
+      compute_first_derivative = (nargout > 1);
+      compute_second_derivative = (nargout > 2);
       kinsol = obj.rbm.doKinematics(q);
       if obj.frameA == 0
         [pts_in_world,JA] = getCOM(obj.rbm,kinsol);
