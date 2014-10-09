@@ -307,12 +307,17 @@ namespace DrakeCollision
             // compute distance to hit
             
             btVector3 end = ray_callback.m_hitPointWorld;
+
+            // correct for margin
+            auto element_data = static_cast< ElementData* >(ray_callback.m_collisionObject->getUserPointer());
+            if (element_data->shape == MESH || element_data->shape == BOX) {
+              end = end - ray_callback.m_hitNormalWorld*ray_callback.m_collisionObject->getCollisionShape()->getMargin();
+            }
             
             Vector3d end_eigen(end.getX(), end.getY(), end.getZ());
             
             distances(i) = (end_eigen - origins.col(i)).norm();
-            
-            
+          
         } else {
             distances(i) = -1;
         }
