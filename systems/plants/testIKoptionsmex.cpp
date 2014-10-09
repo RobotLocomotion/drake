@@ -8,9 +8,9 @@ using namespace Eigen;
 
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
-  if(nlhs != 20 || nrhs != 1)
+  if(nlhs != 19 || nrhs != 1)
   {
-    mexErrMsgIdAndTxt("Drake:testIKoptions:BadInputs","Usage [robot_address,Q,Qa,Qv,debug_mode, sequentialSeedFlag,majorFeasibilityTolerance,majorIterationsLimit,iterationsLimit,superbasicsLimit,majorOptimalityTolerance,additional_tSamples,fixInitialState,q0_lb,q0_ub,qd0_lb,qd0_ub,qdf_lb,qdf_ub,use_rbm_joint_bnd] = testIKoptionsmex(ikoptions_ptr)");
+    mexErrMsgIdAndTxt("Drake:testIKoptions:BadInputs","Usage [robot_address,Q,Qa,Qv,debug_mode, sequentialSeedFlag,majorFeasibilityTolerance,majorIterationsLimit,iterationsLimit,superbasicsLimit,majorOptimalityTolerance,additional_tSamples,fixInitialState,q0_lb,q0_ub,qd0_lb,qd0_ub,qdf_lb,qdf_ub] = testIKoptionsmex(ikoptions_ptr)");
   }
   IKoptions* ikoptions = (IKoptions*) getDrakeMexPointer(prhs[0]);
   long long robot_address = reinterpret_cast<long long>(ikoptions->getRobotPtr());
@@ -37,7 +37,6 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   ikoptions->getq0(q0_lb,q0_ub);
   ikoptions->getqd0(qd0_lb,qd0_ub);
   ikoptions->getqdf(qdf_lb,qdf_ub);
-  bool use_rbm_joint_bnd = ikoptions->getUseRBMJointBnd();
   plhs[0] = mxCreateDoubleScalar((double) robot_address);
   plhs[1] = mxCreateDoubleMatrix(nq,nq,mxREAL);
   memcpy(mxGetPr(plhs[1]),Q.data(),sizeof(double)*nq*nq);
@@ -74,5 +73,4 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   memcpy(mxGetPr(plhs[17]),qdf_lb.data(),sizeof(double)*nq);
   plhs[18] = mxCreateDoubleMatrix(nq,1,mxREAL);
   memcpy(mxGetPr(plhs[18]),qdf_ub.data(),sizeof(double)*nq);
-  plhs[19] = mxCreateLogicalScalar(use_rbm_joint_bnd);
 }
