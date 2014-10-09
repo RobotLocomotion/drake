@@ -29,23 +29,18 @@ classdef NonlinearProgram
     display_fun_indices
     check_grad % A boolean, True if the user gradient will be checked against
                % numerical gradient at the begining and end of the nonlinear optimization
-    constraint_err_tol % A small scaler. Check whether the constraint are satisfied within the tolerance
+    constraint_err_tol % A small scalar. Check whether the constraint are satisfied within the tolerance
     
     nlcon % A cell array of NonlinearConstraint
     lcon % A cell array of LinearConstraint
     bbcon % A cell array of BoundingBoxConstraint
     cost % A cell array of NonlinearConstraint or LinearConstraint.
-    num_nlcon % number of nonlinear constraints
-    num_lcon % number of linear constraints
     
     nlcon_xind % A cell array, nlcon_xind{i} is a cell array of int vectors recording the indices of x that is used in evaluation the i'th NonlinearConstraint
                % nlcon{i}.eval(x(nlcon_xind{i}{1},x(nlcon_xind{i}{2},...)
-    nlcon_xind_stacked % a cell array of vectors, the stacked values of nlcon_xind{i}
     cost_xind_cell % A cell array, cost_xind{i} is a cell array of int vectors recording the indices of x that is used in evaluating obj.cost{i}
-    cost_xind_stacked % A cell array, cost_xind{i} is an int vector recording the indices of x that is used in evaluating obj.cost{i}
     bbcon_xind % A cell array, bbcon_xind{i} is an int vector recording the indices of x used in i'th BoundingBoxConstraint
-    nlcon_ineq_idx % row index of nonlinear inequality constraint
-    nlcon_eq_idx % row index of nonlinear equality constraint
+    
     
     % a cell array like nlcon_xind, where shared_data_xind_cell{i} is a
     % cell array of int vectors recording indices used in evaluating the 
@@ -60,10 +55,31 @@ classdef NonlinearProgram
     % shared_data used by nonlinear constraints and cost functions
     nlcon_dataind 
     cost_dataind
+    
   end
   
   properties (Access=private)
-    objcon_logic = false;
+    nlcon_xind_stacked % a cell array of vectors, the stacked values of nlcon_xind{i}
+    cost_xind_stacked % A cell array, cost_xind{i} is an int vector recording the indices of x that is used in evaluating obj.cost{i}
+    nlcon_ineq_idx % row index of nonlinear inequality constraint in the value [obj.nlcon{i}.eval for i = 1:length(obj.nlcon)]
+    nlcon_eq_idx % row index of nonlinear equality constraint in the value [obj.nlcon{i}.eval for i = 1:length(obj.nlcon)]
+    c2nlcon_idx  % An integer vector. The j'th row of the the nonlinear constraints [obj.nlcon{i}.eval for i = 1:length(obj.nlcon)] comes from the Constraint object obj.nlcon{obj.c2nlcon_idx(j)}
+    cin2nlcon_idx % An integer vector. The j'th row of inequality constraint cin is from Constraint object obj.nlcon{obj.cin2nlcon_idx(j)}
+    ceq2nlcon_idx % An integer vector. The j'th row of equality constraint ceq is from the Constraint object obj.nlcon{obj.ceq2nlcon_idx(j)}
+    Ain2lcon_idx % An integer vector. The j'th row of the inequality linear constraint Ain*x<=bin is from the Constraint object obj.lincon{obj.Ain_lincon_idx(j)}
+    Aeq2lcon_idx % An integer vector. The j'th row of the inequality linear constraint Aeq*x=beq is from the Constraint object obj.lincon{obj.Aeq_lincon_idx(j)}
+    
+    % Each Constraint object in the program is labeled with a unique ID
+    nlcon_id % nlcon_id(i) is the ID for obj.nlcon{i}
+    lcon_id % lcon_id(i) is the ID for obj.lcon{i}
+    bbcon_id % bbcon_id(i) is the ID for obj.bbcon{i}
+    
+    next_nlcon_id = -1 % The id of the next nonlinear constraint Constraint object to be added
+    next_lcon_id = -2 % The id of the next linear constraint LinearConstraint object to be added
+    next_bbcon_id = -3 % The id of the next BoundingBoxConstraint object to be added
+    
+    bbcon_lb % A obj.num_vars x length(obj.bbcon) matrix. bbcon_lb(:,i) is the lower bound of x coming from the BoundingBoxConstraint obj.bbcon{i}
+    bbcon_ub % A obj.num_vars x length(obj.bbcon) matrix. bbcon_lb(:,i) is the upper bound of x coming from the BoundingBoxConstraint obj.bbcon{i}
   end
 
   properties (Access = protected)
@@ -79,7 +95,7 @@ classdef NonlinearProgram
       % @param x_name       -- An optional argument. A cell of strings containing the name
       % of each decision variable
       if(nargin<2)
-        x_name = cellfun(@(i) sprintf('x%d',i),num2cell((1:obj.num_vars)'),'UniformOutput',false);
+        x_name = cellfun(@(i) sprintf('x%d',i),num2cell((1:num_vars)'),'UniformOutput',false);
       else
         if(~iscellstr(x_name) || numel(x_name) ~= num_vars)
           error('Drake:NonlinearProgra:InvalidArgument','Argument x_name should be a cell containing %d strings',obj.num_vars);
@@ -99,16 +115,14 @@ classdef NonlinearProgram
       obj.cin_lb = -inf(obj.num_cin,1);
       obj.iFfun = ones(obj.num_vars,1);
       obj.jFvar = (1:obj.num_vars)';
-      obj.iCinfun = reshape(bsxfun(@times,(1:obj.num_cin)',ones(1,obj.num_vars)),[],1);
-      obj.jCinvar = reshape(bsxfun(@times,ones(obj.num_cin,1),(1:obj.num_vars)),[],1);
-      obj.iCeqfun = reshape(bsxfun(@times,(1:obj.num_ceq)',ones(1,obj.num_vars)),[],1);
-      obj.jCeqvar = reshape(bsxfun(@times,ones(obj.num_ceq,1),(1:obj.num_vars)),[],1);
+      obj.iCinfun = [];
+      obj.jCinvar = [];
+      obj.iCeqfun = [];
+      obj.jCeqvar = [];
       
       obj.nlcon = {};
       obj.lcon = {};
       obj.bbcon = {};
-      obj.num_nlcon = 0;
-      obj.num_lcon = 0;
       obj.nlcon_xind = {};
       obj.nlcon_xind_stacked = {};
       obj.nlcon_ineq_idx = [];
@@ -126,11 +140,19 @@ classdef NonlinearProgram
       obj.nlcon_dataind = {};
       obj.cost_dataind = {};
       
-      if checkDependency('snopt')
-        obj = obj.setSolver('snopt');
-      else % todo: check for fmincon?
-        obj = obj.setSolver('fmincon');
-      end
+      obj.c2nlcon_idx = [];
+      obj.cin2nlcon_idx = [];
+      obj.ceq2nlcon_idx = [];
+      obj.Ain2lcon_idx = [];
+      obj.Aeq2lcon_idx = [];
+      
+      obj.nlcon_id = [];
+      obj.lcon_id = [];
+      obj.bbcon_id = [];
+      
+      obj.bbcon_lb = [];
+      obj.bbcon_ub = [];
+      obj = obj.setSolver('default');
       obj.solver_options.fmincon = optimset('Display','off');
       obj.solver_options.snopt = struct();
       obj.solver_options.snopt.MajorIterationsLimit = 1000;
@@ -148,17 +170,20 @@ classdef NonlinearProgram
       obj.solver_options.snopt.OldBasisFile = 0;
       obj.solver_options.snopt.BackupBasisFile = 0;
       obj.solver_options.snopt.LinesearchTolerance = 0.9;
+      obj.solver_options.fmincon.GradConstr = 'on';
+      obj.solver_options.fmincon.GradObj = 'on';
       obj.constraint_err_tol = 1e-4;
       obj.check_grad = false;
     end
     
-    function obj = addCompositeConstraints(obj,cnstr,xind,data_ind)
+    function [obj,cnstr_id] = addCompositeConstraints(obj,cnstr,xind,data_ind)
       % add a CompositeConstraint to the object, change the constraint evalation of the
       % program.
       % @param mgr     -- A CompositeConstraint object
       % @param xind      -- Optional argument. The x(xind) is the decision variables used
       % in evaluating the cnstr. Default value is (1:obj.num_vars)
       % @param data_ind  -- Optional argument. shared_data{data_ind} are the data objects used
+      % @retval cnstr_id -- A vector, cnstr_id(i) is the unique ID of the newly added constraint cnstr{i} in the program
       if(~isa(cnstr,'CompositeConstraint'))
         error('Drake:NonlinearProgram:UnsupportedConstraint','addCompositeConstraints expects a CompositeConstraint object');
       end
@@ -189,12 +214,13 @@ classdef NonlinearProgram
       end
       
       % add constraints
+      cnstr_id = zeros(length(cnstr.constraints),1);
       for k=1:length(cnstr.constraints),
-        obj = obj.addConstraint(cnstr.constraints{k}, args{:});
+        [obj,cnstr_id(k)] = obj.addConstraint(cnstr.constraints{k}, args{:});
       end      
     end
     
-    function obj = addConstraint(obj,cnstr,varargin)
+    function [obj,cnstr_id] = addConstraint(obj,cnstr,varargin)
       % obj = addConstraint(obj,cnstr,varargin)
       % Queries the constraint type and calls the appropriate addConstraint
       % method (e.g. addLinearConstraint, etc)
@@ -204,31 +230,33 @@ classdef NonlinearProgram
       % @param varargin the remaining arguments are passed directly through
       % to the specialized methods. Note that if cnstr is a cell array,
       % then the same varargin is passed to all of the specialized methods.
-      
+      % @retval cnstr_id   The unique ID of the newly added constraint in the program.
       if iscell(cnstr)
         for i=1:numel(cnstr)
-          obj = addConstraint(obj,cnstr{i},varargin{:});
+          [obj,cnstr_id] = addConstraint(obj,cnstr{i},varargin{:});
         end
       elseif isa(cnstr,'BoundingBoxConstraint')
-        obj = addBoundingBoxConstraint(obj,cnstr,varargin{:});
+        [obj,cnstr_id] = addBoundingBoxConstraint(obj,cnstr,varargin{:});
       elseif isa(cnstr,'LinearConstraint')
-        obj = addLinearConstraint(obj,cnstr,varargin{:});
+        [obj,cnstr_id] = addLinearConstraint(obj,cnstr,varargin{:});
       elseif isa(cnstr,'CompositeConstraint')
-        obj = addCompositeConstraints(obj,cnstr,varargin{:});
+        [obj,cnstr_id] = addCompositeConstraints(obj,cnstr,varargin{:});
       elseif isa(cnstr,'Constraint')
-        obj = addNonlinearConstraint(obj,cnstr,varargin{:});
+        [obj,cnstr_id] = addNonlinearConstraint(obj,cnstr,varargin{:});
       else
         error('Drake:NonlinearProgram:UnsupportedConstraint','Unsupported constraint type');
       end
     end
     
-    function obj = addNonlinearConstraint(obj,cnstr,xind, data_ind)
+    function [obj,cnstr_id] = addNonlinearConstraint(obj,cnstr,xind, data_ind)
       % add a NonlinearConstraint to the object, change the constraint evalation of the
       % program. 
       % @param cnstr     -- A NonlinearConstraint object
       % @param xind      -- Optional argument. The x(xind) is the decision variables used
       % in evaluating the cnstr. Default value is (1:obj.num_vars)
       % @param data_ind  -- Optional argument. shared_data{data_ind} are the data objects used
+      % @retval cnstr_id -- The ID of stored in obj.nlcon_id, this is the unique ID of the newly
+      % added constraint in the program.
       if(nargin<3)
         xind = {(1:obj.num_vars)'};
       end
@@ -260,8 +288,12 @@ classdef NonlinearProgram
       
       obj.cin_ub = [obj.cin_ub;cnstr.ub(cnstr.cin_idx)];
       obj.cin_lb = [obj.cin_lb;cnstr.lb(cnstr.cin_idx)];
-      obj.nlcon_ineq_idx = [obj.nlcon_ineq_idx;obj.num_nlcon+cnstr.cin_idx];
-      obj.nlcon_eq_idx = [obj.nlcon_eq_idx;obj.num_nlcon+cnstr.ceq_idx];
+      obj.nlcon_ineq_idx = [obj.nlcon_ineq_idx;obj.num_cin+obj.num_ceq+cnstr.cin_idx];
+      obj.nlcon_eq_idx = [obj.nlcon_eq_idx;obj.num_cin+obj.num_ceq+cnstr.ceq_idx];
+      obj.c2nlcon_idx = [obj.c2nlcon_idx;length(obj.nlcon)*ones(cnstr.num_cnstr,1)];
+      obj.cin2nlcon_idx = [obj.cin2nlcon_idx;length(obj.nlcon)*ones(length(cnstr.cin_idx),1)];
+      obj.ceq2nlcon_idx = [obj.ceq2nlcon_idx;length(obj.nlcon)*ones(length(cnstr.ceq_idx),1)];
+      
       Geq_idx = cnstr.lb(cnstr.iCfun) == cnstr.ub(cnstr.iCfun);
       Gin_idx = ~Geq_idx;
       inv_ceq_idx = zeros(cnstr.num_cnstr,1);
@@ -276,19 +308,24 @@ classdef NonlinearProgram
       obj.ceq_name = [obj.ceq_name;cnstr.name(cnstr.ceq_idx)];
       obj.num_cin = obj.num_cin + length(cnstr.cin_idx);
       obj.num_ceq = obj.num_ceq + length(cnstr.ceq_idx);
-      obj.num_nlcon = obj.num_nlcon + cnstr.num_cnstr;
       obj.nlcon_xind{end+1} = xind;
       obj.nlcon_xind_stacked{end+1} = xind_vec;
       obj.nlcon_dataind{end+1} = data_ind;
+      
+      cnstr_id = obj.next_nlcon_id;
+      obj.next_nlcon_id = obj.next_nlcon_id-3;
+      obj.nlcon_id = [obj.nlcon_id cnstr_id];
     end
     
-    function obj = addLinearConstraint(obj,cnstr,xind)
+    function [obj,cnstr_id] = addLinearConstraint(obj,cnstr,xind)
       % add a LinearConstraint to the program
       % @param cnstr     -- A LinearConstraint object
       % @param xind      -- Optional argument. x(xind) is the decision variables used in
       % evaluating the constraint. Default value is (1:obj.num_vars)
       % @param cnstr_name  -- An optional argument. A cell of strings. cnstr_name{i} is
       % the name of the i'th constraint. If not given, the cnstr.name will be used instead
+      % @retval cnstr_id   -- The ID stored in obj.lcon_id. This is the unique ID of the newly added
+      % constraint in the program.
       if cnstr.num_cnstr > 0
         if(nargin<3)
           xind = (1:obj.num_vars)';
@@ -305,6 +342,7 @@ classdef NonlinearProgram
         end
         obj.lcon = [obj.lcon,{cnstr}];
 
+
         cnstr_A = sparse(cnstr.iCfun,xind(cnstr.jCvar),cnstr.A_val,cnstr.num_cnstr,obj.num_vars,cnstr.nnz);
         cnstr_beq = (cnstr.lb(cnstr.ceq_idx)+cnstr.ub(cnstr.ceq_idx))/2;
         cnstr_Aeq = cnstr_A(cnstr.ceq_idx,:);
@@ -318,20 +356,27 @@ classdef NonlinearProgram
           obj.Ain = vertcat(obj.Ain,[cnstr_Ain(bin_ub_not_inf_idx,:);-cnstr_Ain(bin_lb_not_inf_idx,:)]);
           obj.bin = vertcat(obj.bin,[cnstr_bin_ub(bin_ub_not_inf_idx);-cnstr_bin_lb(bin_lb_not_inf_idx)]);
           obj.Ain_name = [obj.Ain_name;cnstr_ineq_name(bin_ub_not_inf_idx);cnstr_ineq_name(bin_lb_not_inf_idx)];
+          obj.Ain2lcon_idx = [obj.Ain2lcon_idx;length(obj.lcon)*ones(sum(bin_ub_not_inf_idx)+sum(bin_lb_not_inf_idx),1)];
         end
         obj.Aeq_name = [obj.Aeq_name;cnstr.name(cnstr.ceq_idx)];
         if(numel(cnstr_Aeq)>0)
           obj.Aeq = vertcat(obj.Aeq,cnstr_Aeq);
           obj.beq = vertcat(obj.beq,cnstr_beq);
+          obj.Aeq2lcon_idx = [obj.Aeq2lcon_idx;length(obj.lcon)*ones(size(cnstr_Aeq,1),1)];
         end
       end
+      cnstr_id = obj.next_lcon_id;
+      obj.next_lcon_id = obj.next_lcon_id-3;
+      obj.lcon_id = [obj.lcon_id cnstr_id];
     end   
 
-    function obj = addBoundingBoxConstraint(obj,cnstr,xind)
+    function [obj,cnstr_id] = addBoundingBoxConstraint(obj,cnstr,xind)
       % add a BoundingBoxConstraint to the program
       % @param cnstr      -- A BoundingBoxConstraint
       % @param xind       -- Optional argument. x(xind) is the decision variables to be
       % set bounds
+      % @retval cnstr_id  -- The ID stored in obj.bbcon_id. This is the unique ID of the newly added
+      % constraint in the program.
       if(nargin < 3)
         xind = (1:obj.num_vars)';
       end
@@ -348,6 +393,19 @@ classdef NonlinearProgram
       obj.bbcon = [obj.bbcon,{cnstr}];
       obj.x_lb(xind) = max([cnstr.lb obj.x_lb(xind)],[],2);
       obj.x_ub(xind) = min([cnstr.ub obj.x_ub(xind)],[],2);
+      if (any(obj.x_lb(xind)>obj.x_ub(xind)))
+        error('Drake:NonlinearProgram:InvalidConstraint','adding this bounding box constraint resulted in some lb>ub');
+      end
+      obj.bbcon_xind{end+1} = xind;
+      
+      cnstr_id = obj.next_bbcon_id;
+      obj.next_bbcon_id = obj.next_bbcon_id-3;
+      obj.bbcon_id = [obj.bbcon_id cnstr_id];
+      
+      obj.bbcon_lb(:,end+1) = -inf(obj.num_vars,1);
+      obj.bbcon_lb(xind,end) = cnstr.lb;
+      obj.bbcon_ub(:,end+1) = inf(obj.num_vars,1);
+      obj.bbcon_ub(xind,end) = cnstr.ub;
     end
     
     function obj = addCost(obj,cnstr,xind,data_ind)
@@ -396,6 +454,18 @@ classdef NonlinearProgram
       end
     end
     
+    function obj = addQuadraticCost(obj,Q,x_desired,xind)
+      % helper function for the very common case of adding the objective
+      %   g(x) = (x-xd)'*Q*(x-xd), Q = Q' >= 0
+      % @param Q a symmetric PSD cost matrix 
+      % @param x_desired column vector of desired values
+      % @param xind optional subset of x to apply cost to
+      
+      if nargin<3, xind = 1:obj.num_vars; end
+
+      obj = obj.addCost(QuadraticSumConstraint(0,inf,Q,x_desired),xind);
+    end
+    
     function args = getArgumentArray(obj,x,xind)
       % Retrieves the elements from the vector x related to xind and returns
       % them as a cell array where:
@@ -415,8 +485,8 @@ classdef NonlinearProgram
       % @retval dg  The gradient of g w.r.t x
       % @retval dh  The gradient of h w.r.t x
       shared_data = obj.evaluateSharedDataFunctions(x);
-      f = zeros(obj.num_nlcon,1);
-      G = zeros(obj.num_nlcon,obj.num_vars);
+      f = zeros(obj.num_cin+obj.num_ceq,1);
+      G = zeros(obj.num_cin+obj.num_ceq,obj.num_vars);
       f_count = 0;
       for i = 1:length(obj.nlcon)
         args = [getArgumentArray(obj,x,obj.nlcon_xind{i});shared_data(obj.nlcon_dataind{i})];
@@ -476,8 +546,8 @@ classdef NonlinearProgram
         obj.display_funs{i}(x(obj.display_fun_indices{i}));
       end
       
-      f = zeros(1+obj.num_nlcon,1);
-      G = zeros(1+obj.num_nlcon,obj.num_vars);
+      f = zeros(1+obj.num_cin+obj.num_ceq,1);
+      G = zeros(1+obj.num_cin+obj.num_ceq,obj.num_vars);
       for i = 1:length(obj.cost)
         args = [getArgumentArray(obj,x,obj.cost_xind_cell{i});shared_data(obj.cost_dataind{i})];
         if(nargout>1)
@@ -526,11 +596,11 @@ classdef NonlinearProgram
       obj.x_name = [obj.x_name;var_name];
       obj.x_lb = [obj.x_lb;-inf(num_new_vars,1)];
       obj.x_ub = [obj.x_ub;inf(num_new_vars,1)];
-      if(~isempty(obj.Aeq))
         obj.Aeq = [obj.Aeq zeros(length(obj.beq),num_new_vars)];
-      end
-      if(~isempty(obj.Ain))
         obj.Ain = [obj.Ain zeros(length(obj.bin),num_new_vars)];
+      if(~isempty(obj.bbcon))
+        obj.bbcon_lb(end+(1:num_new_vars),:) = -inf(num_new_vars,size(obj.bbcon_lb,2));
+        obj.bbcon_ub(end+(1:num_new_vars),:) = inf(num_new_vars,size(obj.bbcon_ub,2));
       end
     end
     
@@ -566,35 +636,6 @@ classdef NonlinearProgram
       end
     end
     
-    function obj = replaceBoundingBoxConstraint(obj,cnstr,cnstr_idx,xind)
-      % replace the cnstr_idx'th BoundingBoxConstraint in obj.bb_cnstr with the new cnstr.
-      % @param cnstr    -- A BoundingBoxConstraint object
-      % @param cnstr_idx  -- THe index of the replaced BoundingBoxConstraint in the
-      % obj.bb_cnstr cell
-      % @param xind      Optional argument. x(xind) is the decision variables used in
-      % evaluating the constraint. Default value is (1:obj.num_vars) 
-      if(nargin < 4)
-        xind = (1:obj.num_vars)';
-      end
-      xind = xind(:);
-      obj.x_lb = -inf(obj.num_vars,1);
-      obj.x_ub = inf(obj.num_vars,1);
-      num_bbcon = length(obj.bbcon);
-      sizecheck(cnstr_idx,[1,1]);
-      if(cnstr_idx>num_bbcon || cnstr_idx <1)
-        error('Drake:NonlinearProgram:replaceBoundingBoxConstraint:cnstr_idx is out of range');
-      end
-      bbcon_tmp = obj.bbcon;
-      bbcon_xind_tmp = obj.bbcon_xind;
-      bbcon_tmp{cnstr_idx} = cnstr;
-      bbcon_xind_tmp{cnstr_idx} = xind;
-      obj.bbcon = {};
-      obj.bbcon_xind = {};
-      for i = 1:length(obj.bbcon)
-        obj = obj.addBoundingBoxConstraint(bbcon_tmp{i},bbcon_xind_tmp{i});
-      end
-    end
-    
     function [obj,ind] = addSharedDataFunction(obj,user_fun,xind)
       % Adds the specified shared data function to be evaluated within each iteration of the program     
       % @param user_fun -- The function to be evaluated, where
@@ -611,7 +652,7 @@ classdef NonlinearProgram
       if isa(user_fun,'FunctionWrapper')
         obj.shared_data_functions{end+1} = user_fun;
       else
-        obj.shared_data_functions{end+1} = FunctionWrapper(user_fun);
+      obj.shared_data_functions{end+1} = FunctionWrapper(user_fun);
       end
       obj.shared_data_xind_cell{end+1} = xind;
       ind = obj.getNumSharedDataFunctions();
@@ -653,7 +694,7 @@ classdef NonlinearProgram
     
     function obj = setConstraintErrTol(obj,tol)
       if(~isnumeric(tol) || numel(tol) ~= 1)
-        error('Drake:NonlinearProgram:setConstraintErrTol:tol should be scaler');
+        error('Drake:NonlinearProgram:setConstraintErrTol:tol should be scalar');
       end
       if(tol<=0)
         error('Drake:NonlinearProgram:setConstraintErrTol:tol should be positive');
@@ -669,6 +710,11 @@ classdef NonlinearProgram
           error('Drake:NonlinearProgram:UnsupportedSolver',' SNOPT not found.  SNOPT support will be disabled.');
         end
         obj.solver = solver;
+      elseif(strcmp(solver,'studentSnopt'))
+        if(~checkDependency('studentSnopt'))
+          error('Drake:NonlinearProgram:UnsupportedSOlver',' SNOPT not found.  SNOPT support will be disabled.');
+        end
+        obj.solver = 'snopt';
       elseif(strcmp(solver,'fmincon'))
         if(~checkDependency('fmincon'))
           error('Drake:NonlinearProgram:UnsupportedSolver',' fmincon support is disabled. To enable it, install MATLAB Optimization toolbox');
@@ -682,6 +728,8 @@ classdef NonlinearProgram
       elseif(strcmp(solver,'default'))
         if(checkDependency('snopt'))
           obj = obj.setSolver('snopt');
+        elseif(checkDependency('studentSnopt')&&obj.num_vars<=300 && obj.num_cin+obj.num_ceq+size(obj.Ain,1)+size(obj.Aeq,1)<=300)
+          obj = obj.setSolver('studentSnopt');
         elseif(checkDependency('fmincon'))
           obj = obj.setSolver('fmincon');
         elseif(checkDependency('ipopt'))
@@ -756,7 +804,7 @@ classdef NonlinearProgram
           obj.solver_options.snopt.print = optionval;
         elseif(strcmpi(optionname(~isspace(optionname)),'scaleoption'))
           if(~isnumeric(optionval) || numel(optionval) ~= 1)
-            error('Drake:NonlinearProgram:setSolverOptions:scaleoption should be a scaler');
+            error('Drake:NonlinearProgram:setSolverOptions:scaleoption should be a scalar');
           end
           if(optionval ~= 0 && optionval ~= 1 && optionval ~= 2)
             error('Drake:NonlinearProgram:setSolverOptions:scaleoption should be either 0,1 or 2');
@@ -764,22 +812,22 @@ classdef NonlinearProgram
           obj.solver_options.snopt.scaleoption = optionval;
         elseif(strcmpi(optionname(~isspace(optionname)),'oldbasisfile'))
           if(~isnumeric(optionval) || numel(optionval) ~= 1)
-            error('Drake:NonlinearProgram:setSolverOptions:OptionVal', 'OldBasisFile should be a scaler');
+            error('Drake:NonlinearProgram:setSolverOptions:OptionVal', 'OldBasisFile should be a scalar');
           end
           obj.solver_options.snopt.OldBasisFile = optionval;
         elseif(strcmpi(optionname(~isspace(optionname)),'newbasisfile'))
           if(~isnumeric(optionval) || numel(optionval) ~= 1)
-            error('Drake:NonlinearProgram:setSolverOptions:OptionVal', 'NewBasisFile should be a scaler');
+            error('Drake:NonlinearProgram:setSolverOptions:OptionVal', 'NewBasisFile should be a scalar');
           end
           obj.solver_options.snopt.NewBasisFile = optionval;
         elseif(strcmpi(optionname(~isspace(optionname)),'backupbasisfile'))
           if(~isnumeric(optionval) || numel(optionval) ~= 1)
-            error('Drake:NonlinearProgram:setSolverOptions:OptionVal', 'BackupBasisFile should be a scaler');
+            error('Drake:NonlinearProgram:setSolverOptions:OptionVal', 'BackupBasisFile should be a scalar');
           end
           obj.solver_options.snopt.BackupBasisFile = optionval;
         elseif(strcmpi(optionname(~isspace(optionname)),'linesearchtolerance'))
           if(~isnumeric(optionval) || numel(optionval) ~= 1)
-            error('Drake:NonlinearProgram:setSolverOptions:scaleoption should be a scaler');
+            error('Drake:NonlinearProgram:setSolverOptions:scaleoption should be a scalar');
           end
           if(optionval < 0 || optionval > 1)
             error('Drake:NonlinearProgram:setSolverOptions:OptionVal', 'LinesearchTolerance should be between 0 and 1');
@@ -814,14 +862,14 @@ classdef NonlinearProgram
       % @param x0   A obj.num_vars x 1 double vector. The initial seed
       % @retval x   A obj.num_vars x 1 double vector. The solution obtained after running the
       % solver
-      % @retval objval  A double scaler. The value of the objective function after running the
+      % @retval objval  A double scalar. The value of the objective function after running the
       % solver
-      % @retval exitflag   An integer scaler.
+      % @retval exitflag   An integer scalar.
+      %                    1  -- Solved successful
       %                    *********************
       %                    If the solver is SNOPT, then exitflag is the same as the INFO returned by
       %                    the solver. Please refer to
       %                    http://www.cam.ucsd.edu/~peg/papers/sndoc7.pdf for more information
-      %                    1  -- Successfully solved through SNOPT
       %                    2  -- Solved with SNOPT, but the accuracy of the linear constraints
       %                    cannot be achieved.
       %                    3  -- Solved with SNOPT, but the accuracy of the nonlinear constraints
@@ -843,7 +891,6 @@ classdef NonlinearProgram
       %                    *********************
       %                    If the solver is fmincon, then the exitflag is 200 + fmincon_exitflag
       %                    200 -- In fmincon, number of iterations exceeds options.MaxIter
-      %                    201 -- In fmincon, the problem is solved successfully
       %                    199 -- In fmincon, stopped by an output function or plot function
       %                    198 -- In fmincon, no feasible point was found.
       %                    202 -- In fmincon, change in x was less than options.TolX and maximum constraint violation was less than options.TolCon.
@@ -854,7 +901,6 @@ classdef NonlinearProgram
       %                    197 -- In fmincon, objective function at current iteration went below options.ObjectiveLimit and maximum constraint violation was less than options.TolCon.
       %                    **********************
       %                    If the solver is IPOPT, then the exitflag = -100 + ipopt_exitflag
-      %                    -100  -- solved by Ipopt
       %                    -99   -- In ipopt, solved to acceptable level
       %                    -98   -- In ipopt, infeasible problem detected
       %                    -97   -- In ipopt, search direction becomes too small
@@ -883,7 +929,7 @@ classdef NonlinearProgram
       end
     end
     
-    function [x,objval,exitflag,execution_time] = compareSolvers(obj,x0,solvers)
+    function [x,objval,exitflag,execution_time,solvers] = compareSolvers(obj,x0,solvers)
       if nargin<3
         solvers = {};
         if(checkDependency('fmincon'))
@@ -892,12 +938,15 @@ classdef NonlinearProgram
         if(checkDependency('snopt'))
           solvers = [solvers,{'snopt'}];
         end
+        if(checkDependency('studentSnopt'))
+          solvers = [solvers,{'studentSnopt'}];
+        end
         if(checkDependency('ipopt'))
           solvers = [solvers,{'ipopt'}];
         end
         if(isempty(solvers))
           error('Drake:NonlinearProgram:NoNLPSolver','Cannot find any nonlinear program solvers, please ensure that either fmincon, snopt or ipopt is installed');
-        end
+      end
       end
        
       fprintf('    solver        objval        exitflag   execution time\n-------------------------------------------------------------\n')
@@ -922,6 +971,230 @@ classdef NonlinearProgram
         
         fprintf('%12s%12.3f%12d%17.4f\n',solvers{i},objval{i},exitflag{i},execution_time{i});
       end
+    end
+    
+    function [flag,cnstr_idx] = isNonlinearConstraintID(obj,cnstr_id)
+      % Given an ID, determine if any of the nonlinear constraint obj.nlcon has that ID
+      % @retval flag   True if the cnstr_id is a valid ID of the nonlinear constraint
+      % @retval cnstr_idx  If flag = true, obj.nlcon{cnstr_idx} is the nonlinear constraint with
+      % ID=cnstr_id. Otherwise, cnstr_idx = [];
+      if(~(numel(cnstr_id) == 1 && isnumeric(cnstr_id)))
+        error('Drake:NonlinearProgram:isNonlinearConstraintID:InvalidInput','cnstr_id should be a scalar');
+  end
+      cnstr_idx = find(obj.nlcon_id==cnstr_id);
+      flag = ~isempty(cnstr_idx);
+    end
+  
+    function [flag,cnstr_idx] = isLinearConstraintID(obj,cnstr_id)
+      % Given an ID, determine if any of the linear constraint obj.lcon has that ID
+      % @retval flag   True if the cnstr_id is a valid ID of the linear constraint
+      % @retval cnstr_idx  If flag = true, obj.lcon{cnstr_idx} is the linear constraint with
+      % ID=cnstr_id. Otherwise, cnstr_idx = [];
+      if(~(numel(cnstr_id) == 1 && isnumeric(cnstr_id)))
+        error('Drake:NonlinearProgram:isLinearConstraintID:InvalidInput','cnstr_id should be a scalar');
+      end
+      cnstr_idx = find(obj.lcon_id==cnstr_id);
+      flag = ~isempty(cnstr_idx);
+    end
+    
+    function [flag,cnstr_idx] = isBoundingBoxConstraintID(obj,cnstr_id)
+      % Given an ID, determine if any of the bounding box constraint obj.bbcon has that ID
+      % @retval flag   True if the cnstr_id is a valid ID of the bounding box constraint in the
+      % program
+      % @retval cnstr_idx  If flag = true, obj.bbcon{cnstr_idx} is the bounding box constraint with
+      % ID=cnstr_id. Otherwise, cnstr_idx = [];
+      if(~(numel(cnstr_id) == 1 && isnumeric(cnstr_id)))
+        error('Drake:NonlinearProgram:isBoundingBoxConstraintID:InvalidInput','cnstr_id should be a scalar');
+      end
+      cnstr_idx = find(obj.bbcon_id==cnstr_id);
+      flag = ~isempty(cnstr_idx);
+    end
+    
+    function obj = deleteConstraint(obj,delete_cnstr_id)
+      % delete a constraint from the program
+      % @param delete_cnstr_id   The Constraint object whose ID=delete_cnstr_id is going to be
+      % deleted from the program
+      if(isNonlinearConstraintID(obj,delete_cnstr_id))
+        obj = deleteNonlinearConstraint(obj,delete_cnstr_id);
+      elseif(isLinearConstraintID(obj,delete_cnstr_id))
+        obj = deleteLinearConstraint(obj,delete_cnstr_id);
+      elseif(isBoundingBoxConstraintID(obj,delete_cnstr_id))
+        obj = deleteBoundingBoxConstraintID(obj,delete_cnstr_id);
+      else
+        error('Drake:NonlinearProgram:deleteConstraint:InvalidInput','There is no Constraint in the program with the given ID');
+      end
+    end
+    
+    function [obj,new_cnstr_id] = updateConstraint(obj,varargin)
+      % update a Constraint of the program. Refer to obj.updateNonlinearConstraint,
+      % obj.updateLinearConstraint and obj.updateBoundingBoxConstraint for its use
+      cnstr_id = varargin{1};
+      obj = deleteConstraint(obj,cnstr_id);
+      [obj,new_cnstr_id] = addConstraint(obj,varargin{2:end});
+    end
+    
+    function obj = deleteNonlinearConstraint(obj,delete_cnstr_id)
+      % delete a nonlinear constraint from the program
+      % @param delete_cnstr_id   The id of the constraint being deleted. The id is generated when calling addNonlinearConstraint or updateNonlinearConstraint
+      [is_id_valid,delete_idx] = isNonlinearConstraintID(obj,delete_cnstr_id);
+      if(~is_id_valid)
+        error('Drake:NonlinearProgram:deleteNonlinearConstraint:InvalidInput','delete_cnstr_id is not a valid ID of the nonlinear constraints in the program');
+      end
+      
+      if(numel(delete_idx)~=1 || delete_idx~=floor(delete_idx))
+        error('Drake:NonlinearProgram:deleteNonlinearConstraint:InvalidInput','delete_idx should be an integer');
+      end
+      if(delete_idx<=0 || delete_idx>length(obj.nlcon))
+        error('Drake:NonlinearProgram:deleteNonlinearConstraint:InvalidInput','delete_idx out of bound');
+      end
+      
+      cin_delete_flag = obj.cin2nlcon_idx == delete_idx;
+      ceq_delete_flag = obj.ceq2nlcon_idx == delete_idx;
+      cin_idx = (1:obj.num_cin)';
+      cin_delete_idx = cin_idx(cin_delete_flag);
+      ceq_idx = (1:obj.num_ceq)';
+      ceq_delete_idx = ceq_idx(ceq_delete_flag);
+      c_delete_flag = obj.c2nlcon_idx == delete_idx;
+      c_idx = (1:obj.num_cin+obj.num_ceq)';
+      c_delete_idx = c_idx(c_delete_flag);
+      num_delete_cin = length(obj.nlcon{delete_idx}.cin_idx);
+      num_delete_ceq = length(obj.nlcon{delete_idx}.ceq_idx);
+      remaining_nlcon_idx = [1:delete_idx-1 delete_idx+1:length(obj.nlcon)];
+      obj.cin_lb = obj.cin_lb(~cin_delete_flag);
+      obj.cin_ub = obj.cin_ub(~cin_delete_flag);
+      obj.cin_name = obj.cin_name(~cin_delete_flag);
+      obj.ceq_name = obj.ceq_name(~ceq_delete_flag);
+      obj.num_cin = obj.num_cin-num_delete_cin;
+      obj.num_ceq = obj.num_ceq-num_delete_ceq;
+      
+      obj.nlcon = obj.nlcon(remaining_nlcon_idx);
+      obj.nlcon_id = obj.nlcon_id(remaining_nlcon_idx);
+      obj.nlcon_xind = obj.nlcon_xind(remaining_nlcon_idx);
+      obj.nlcon_xind_stacked = obj.nlcon_xind_stacked(remaining_nlcon_idx);
+      obj.nlcon_dataind = obj.nlcon_dataind(remaining_nlcon_idx);
+      old_nlcon_ineq_idx = obj.nlcon_ineq_idx;
+      obj.nlcon_ineq_idx = obj.nlcon_ineq_idx-sum(bsxfun(@minus,obj.nlcon_ineq_idx,c_delete_idx')>0,2);
+      obj.nlcon_ineq_idx = obj.nlcon_ineq_idx(~c_delete_flag(old_nlcon_ineq_idx));
+%       obj.nlcon_ineq_idx = obj.nlcon_ineq_idx(~c_delete_flag)-c_delta(obj.nlcon_ineq_idx(~c_delete_flag));
+      old_nlcon_eq_idx = obj.nlcon_eq_idx;
+      obj.nlcon_eq_idx = obj.nlcon_eq_idx-sum(bsxfun(@minus,obj.nlcon_eq_idx,c_delete_idx')>0,2);
+      obj.nlcon_eq_idx = obj.nlcon_eq_idx(~c_delete_flag(old_nlcon_eq_idx));
+%       obj.nlcon_eq_idx = obj.nlcon_eq_idx(~c_delete_flag)-c_delta(obj.nlcon_eq_idx(~c_delete_flag));
+      obj.c2nlcon_idx = obj.c2nlcon_idx(~c_delete_flag);
+      obj.c2nlcon_idx(obj.c2nlcon_idx>delete_idx) = obj.c2nlcon_idx(obj.c2nlcon_idx>delete_idx)-1;
+      obj.cin2nlcon_idx = obj.cin2nlcon_idx(~cin_delete_flag);
+      obj.cin2nlcon_idx(obj.cin2nlcon_idx>delete_idx) = obj.cin2nlcon_idx(obj.cin2nlcon_idx>delete_idx)-1;
+      obj.ceq2nlcon_idx = obj.ceq2nlcon_idx(~ceq_delete_flag);
+      obj.ceq2nlcon_idx(obj.ceq2nlcon_idx>delete_idx) = obj.ceq2nlcon_idx(obj.ceq2nlcon_idx>delete_idx)-1;
+      
+      old_iCinfun = obj.iCinfun;
+      obj.iCinfun = obj.iCinfun-sum(bsxfun(@minus,obj.iCinfun,cin_delete_idx')>0,2);
+      obj.iCinfun = obj.iCinfun(~cin_delete_flag(old_iCinfun));
+      obj.jCinvar = obj.jCinvar(~cin_delete_flag(old_iCinfun));
+      
+      old_iCeqfun = obj.iCeqfun;
+      obj.iCeqfun = obj.iCeqfun-sum(bsxfun(@minus,obj.iCeqfun,ceq_delete_idx')>0,2);
+      obj.iCeqfun = obj.iCeqfun(~ceq_delete_flag(old_iCeqfun));
+      obj.jCeqvar = obj.jCeqvar(~ceq_delete_flag(old_iCeqfun));
+    end
+    
+    function [obj,new_cnstr_id] = updateNonlinearConstraint(obj,varargin)
+      % updateNonlinearConstraint(obj,cnstr_id,cnstr,xind,data_ind)
+      % update the nonlinear constraint whose id=cnstr_id with a new Constraint object cnstr, the newly added Constraint
+      % cnstr has the ID new_cnstr_id
+      % @param cnstr_id    The ID of the constraint to be replaced. This ID is returned from
+      % obj.addNonlinearConstraint
+      % @param cnstr       A Constraint object. The constraint to be added
+      % @param xind   Same as the xind in obj.addNonlinearConstraint
+      % @param data_ind  Same as the data_ind in obj.addNonlinearConstraint
+      % @retval new_cnstr_id  The ID of the newly updated constraint in the program
+      cnstr_id = varargin{1};
+      obj = deleteNonlinearConstraint(obj,cnstr_id);
+      [obj,new_cnstr_id] = addNonlinearConstraint(obj,varargin{2:end});
+    end
+    
+    function obj = deleteLinearConstraint(obj,delete_cnstr_id)
+      % delete the LinearConstraint obj.lcon{cnstr_idx} from the program
+      % @param cnstr_id  The ID of the linear constraint to be deleted in the program
+      [is_id_valid,cnstr_idx] = isLinearConstraintID(obj,delete_cnstr_id);
+      if(~is_id_valid)
+        error('Drake:NonlinearProgram:deleteNonlinearConstraint:InvalidInput','delete_cnstr_id is not a valid ID of the nonlinear constraints in the program');
+      end
+      if(numel(cnstr_idx)~=1 || floor(cnstr_idx) ~= cnstr_idx)
+        error('Drake:NonlinearProgram:deleteLinearConstraint:InvalidInput','cnstr_idx should be an integer');
+      end
+      if(cnstr_idx<=0 || cnstr_idx> length(obj.lcon))
+        error('Drake:NonlinearProgram:deleteLinearConstraint:InvalidInput','cnstr_idx is out of bound');
+      end
+      
+      Ain_delete_flag = obj.Ain2lcon_idx == cnstr_idx;
+      Aeq_delete_flag = obj.Aeq2lcon_idx == cnstr_idx;
+      Ain_idx = (1:size(obj.Ain,1))';
+      Aeq_idx = (1:size(obj.Aeq,1))';
+      Ain_delete_idx = Ain_idx(Ain_delete_flag);
+      Aeq_delete_idx = Aeq_idx(Aeq_delete_flag);
+      Ain_remaining_idx = Ain_idx(~Ain_delete_flag);
+      Aeq_remaining_idx = Aeq_idx(~Aeq_delete_flag);
+      obj.Ain = obj.Ain(Ain_remaining_idx,:);
+      obj.bin = obj.bin(Ain_remaining_idx);
+      obj.Ain_name = obj.Ain_name(Ain_remaining_idx);
+      obj.Aeq = obj.Aeq(Aeq_remaining_idx,:);
+      obj.beq = obj.beq(Aeq_remaining_idx,:);
+      obj.Aeq_name = obj.Aeq_name(Aeq_remaining_idx);
+      
+      remaining_lcon_id = [1:cnstr_idx-1 cnstr_idx+1:length(obj.lcon)];
+      obj.lcon = obj.lcon(remaining_lcon_id);
+      obj.lcon_id = obj.lcon_id(remaining_lcon_id);
+      
+      obj.Ain2lcon_idx = obj.Ain2lcon_idx-sum(bsxfun(@minus,obj.Ain2lcon_idx,Ain_delete_idx')>0,2);
+      obj.Ain2lcon_idx = obj.Ain2lcon_idx(Ain_remaining_idx);
+      obj.Aeq2lcon_idx = obj.Aeq2lcon_idx-sum(bsxfun(@minus,obj.Aeq2lcon_idx,Aeq_delete_idx')>0,2);
+      obj.Aeq2lcon_idx = obj.Aeq2lcon_idx(Aeq_remaining_idx);
+    end
+    
+    function [obj,new_cnstr_id] = updateLinearConstraint(obj,varargin)
+      % updateLinearConstraint(obj,cnstr_id,cnstr,xind)
+      % update the linear constraint whose id=cnstr_id with a new Constraint object cnstr, the newly added Constraint
+      % cnstr has the ID new_cnstr_id
+      % @param cnstr_id    The ID of the constraint to be replaced. This ID is returned from
+      % obj.addLinearConstraint function
+      % @param cnstr       A Constraint object. The constraint to be added
+      % @param xind    Same as xind in addLinearConstraint
+      % @retval new_cnstr_id  The ID of the newly updated constraint in the program
+      cnstr_id = varargin{1};
+      obj = deleteLinearConstraint(obj,cnstr_id);
+      [obj,new_cnstr_id] = addLinearConstraint(obj,varargin{2:end});
+    end
+    
+    function obj = deleteBoundingBoxConstraint(obj,cnstr_id)
+      % delete the BoundingBoxConstraint in obj.bbcon with ID=cnstr_id from the program
+      % @param cnstr_id   The unique ID of the BoundingBoxConstraint in obj.bbcon that is going to
+      % be deleted
+      [is_id_valid,cnstr_idx] = isBoundingBoxConstraintID(obj,cnstr_id);
+      if(~is_id_valid)
+        error('Drake:NonlinearProgram:deleteBoundingBoxConstraint:InvalidInput','The program does not contain a BoundingBoxConstraint with such ID');
+      end
+      remaining_bbcon_id = [1:cnstr_idx-1 cnstr_idx+1:length(obj.bbcon)];
+      obj.bbcon = obj.bbcon(remaining_bbcon_id);
+      obj.bbcon_lb = obj.bbcon_lb(:,remaining_bbcon_id);
+      obj.bbcon_ub = obj.bbcon_ub(:,remaining_bbcon_id);
+      obj.x_lb = max([-inf(obj.num_vars,1) obj.bbcon_lb],[],2);
+      obj.x_ub = min([inf(obj.num_vars,1) obj.bbcon_ub],[],2);
+      obj.bbcon_id = obj.bbcon_id(remaining_bbcon_id);
+      obj.bbcon_xind = obj.bbcon_xind(remaining_bbcon_id);
+    end
+    
+    function [obj,new_cnstr_id] = updateBoundingBoxConstraint(obj,varargin)
+      % updateBoundingBoxConstraint(obj,cnstr_id,cnstr,xind)
+      % update the BoundingBoxConstraint whose id=cnstr_id with a new BoundingBoxConstraint cnstr
+      % @param cnstr_id   The ID of the constraint to be replaced. This ID is returned from
+      % obj.addBoundingBoxConstraint function
+      % @param cnstr       A Constraint object. The constraint to be added
+      % @param xind    Same as xind in obj.addBoundingBoxConstraint
+      % @retval new_cnstr_id  The ID of the newly updated constraint in the program
+      cnstr_id = varargin{1};
+      obj = deleteBoundingBoxConstraint(obj,cnstr_id);
+      [obj,new_cnstr_id] = addBoundingBoxConstraint(obj,varargin{2:end});
     end
   end
   
@@ -1069,12 +1342,12 @@ classdef NonlinearProgram
         [g,h,dg,dh] = obj.nonlinearConstraints(x);
         ceq = h;
         c = [g(~ub_inf_idx)-obj.cin_ub(~ub_inf_idx);obj.cin_lb(~lb_inf_idx)-g(~lb_inf_idx)];
-        dc = [dg(~ub_inf_idx,:);-dg(~lb_inf_idx,:)];
-        dceq = dh;
+        dc = [dg(~ub_inf_idx,:);-dg(~lb_inf_idx,:)]';
+        dceq = dh';
       end
       
-      [x,objval,exitflag] = fmincon(@obj.objective,x0,obj.Ain,...
-        obj.bin,obj.Aeq,obj.beq,obj.x_lb,obj.x_ub,@fmincon_userfun,obj.solver_options.fmincon);
+      [x,objval,exitflag] = fmincon(@obj.objective,x0,full(obj.Ain),...
+        obj.bin,full(obj.Aeq),obj.beq,obj.x_lb,obj.x_ub,@fmincon_userfun,obj.solver_options.fmincon);
       objval = full(objval);
       
       
@@ -1181,11 +1454,12 @@ classdef NonlinearProgram
                 msg='Objective function at current iteration went below options.ObjectiveLimit and maximum constraint violation was less than options.TolCon';
             end        
             warning('Drake:NonlinearProgram:FMINCONExitFlag',' FMINCON %2d %s',exitflag,msg); 
+            exitflag = exitflag+200;
           end
-          exitflag = exitflag+200;
+          
           
         case 'ipopt'
-          if(exitflag ~= 0 && exitflag ~= 1)
+          if(exitflag ~= 0)
             infeasible_constraint_name = infeasibleConstraint(obj,x);
             switch (exitflag)
               case 2
@@ -1220,8 +1494,11 @@ classdef NonlinearProgram
                 msg = 'internal error';
             end
             warning('Drake:NonlinearProgram:IPOPTExitFlag','Ipopt %4d %s',exitflag,msg);
+            exitflag = exitflag-100;
+          else
+            exitflag = 1;
           end
-          exitflag = exitflag-100;
+         
       end
     end 
   end

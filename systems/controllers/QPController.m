@@ -352,7 +352,7 @@ classdef QPController < MIMODrakeSystem
           end
           [~,~,JB] = contactConstraintsBV(r,kinsol,false,struct('terrain_only',~obj.use_bullet,...
             'body_idx',[1,active_supports(j)],'collision_groups',active_contact_groups(j)));
-          Dbar = [Dbar, vertcat(JB{active_contact_pts{j}})']; % because contact constraints seems to ignore the collision_groups option
+          Dbar = [Dbar, vertcat(JB{:})'];
           c_pre = c_pre + length(active_contact_pts{j});
         end
 
@@ -534,7 +534,7 @@ classdef QPController < MIMODrakeSystem
 
       if info_fqp<0
         % then call gurobi
-        disp('QPController: failed over to gurobi');
+        % disp('QPController: failed over to gurobi');
         model.Q = sparse(Hqp + REG*eye(nparams));
         model.A = [Aeq; Ain];
         model.rhs = [beq; bin];

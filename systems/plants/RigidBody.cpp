@@ -1,5 +1,6 @@
 
 #include "RigidBodyManipulator.h"
+#include <stdexcept>
 
 using namespace std;
 
@@ -24,13 +25,32 @@ void RigidBody::setN(int n) {
   ddTdqdq = MatrixXd::Zero(3*n*n,4);
 }
 
+
+#if !defined(_WIN32) && !defined(_WIN64)
+
+void RigidBody::setJoint(std::unique_ptr<DrakeJoint> joint)
+{
+  this->joint = move(joint);
+}
+
+const DrakeJoint& RigidBody::getJoint() const
+{
+  if (joint) {
+    return (*joint);
+  }
+  else {
+    throw runtime_error("Joint is not initialized");
+  }
+}
+#endif
+
 void RigidBody::computeAncestorDOFs(RigidBodyManipulator* model)
 {
   if (dofnum>=0) {
     int i,j;
     if (parent>=0) {
-      ancestor_dofs = model->bodies[parent].ancestor_dofs;
-      ddTdqdq_nonzero_rows = model->bodies[parent].ddTdqdq_nonzero_rows;
+      ancestor_dofs = model->bodies[parent]->ancestor_dofs;
+      ddTdqdq_nonzero_rows = model->bodies[parent]->ddTdqdq_nonzero_rows;
     }
 
     if (floating==1) {

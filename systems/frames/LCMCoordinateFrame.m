@@ -1,10 +1,28 @@
 classdef LCMCoordinateFrame < CoordinateFrame & LCMSubscriber & LCMPublisher
   
   methods
-    function obj=LCMCoordinateFrame(name,lcmcoder_or_lcmtype_or_dim,prefix)
+    function obj=LCMCoordinateFrame(name,lcmcoder_or_lcmtype_or_dim,prefix,coordinate_names_or_dim)
+      % @param coordinate_names is an optional input which is only used if
+      % checkDependency('lcm') == false.  
+      
       typecheck(name,'char');
       typecheck(prefix,'char');
       sizecheck(prefix,1);
+      
+      lc = [];
+      if checkDependency('lcm')
+        lc = lcm.lcm.LCM.getSingleton();
+      else
+        if nargin<4 || isempty(coordinate_names_or_dim)
+          error('Cannot construct LCMCoordinateFrame because the lcm dependency is not met.  Consider passing in the optional coordinate_names_or_dim argument which allows this class to function even without lcm');
+        end
+        if isnumeric(coordinate_names_or_dim)
+          lcmcoder_or_lcmtype_or_dim = coordinate_names_or_dim;
+        else
+          assert(iscellstr(coordinate_names_or_dim));
+          lcmcoder_or_lcmtype_or_dim = numel(coordinate_names_or_dim);
+        end
+      end
       
       if isnumeric(lcmcoder_or_lcmtype_or_dim)
         % then the lcmcoder will be set at some other time
@@ -20,7 +38,7 @@ classdef LCMCoordinateFrame < CoordinateFrame & LCMSubscriber & LCMPublisher
       
       obj = obj@CoordinateFrame(name,d,prefix);
       obj.channel = name;
-      obj.lc = lcm.lcm.LCM.getSingleton();
+      obj.lc = lc;
       
       % add a little extra logic to handle singleton frames (a 
       % relatively common occurence).  specifically, want to avoid
@@ -30,6 +48,10 @@ classdef LCMCoordinateFrame < CoordinateFrame & LCMSubscriber & LCMPublisher
           warning('Drake:LCMCoordinateFrame:OverwritingCoder','You are overwriting an existing lcm coder (on what must be a singleton coordinate frame).  Are you sure you''re using singletons correctly?');
         end
         setLCMCoder(obj,lcmcoder);
+      end
+      
+      if isempty(lc) && iscell(coordinate_names_or_dim)
+        obj.setCoordinateNames(coordinate_names_or_dim);
       end
     end
   

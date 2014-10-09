@@ -1,7 +1,7 @@
 function varargout = inverseKinBackend(obj,mode,t,q_seed,q_nom,varargin)
 % inverseKin(obj,mode,q_seed,q_nom,t,constraint1,constraint2,...,options)
 % Two modes,
-% mode 1 -- solve IK 
+% mode 1 -- solve IK
 %   min_q (q-q_nom'*Q*(q-q_nom)
 %   subject to
 %          constraint1 at t
@@ -11,10 +11,10 @@ function varargout = inverseKinBackend(obj,mode,t,q_seed,q_nom,varargin)
 %   If t = [], then all kc are ative.
 %   If t is a scalar, then solve IK for that single time only
 %   If t is an array, then for each time, solve an IK
-% 
+%
 % mode 2 -- solve IK for a sequence of time
-%   min_qi sum_i qdd_i'*Qa*qdd_i+qd_i'*Qv*qd_i+(q_i-q_nom(:,i))'*Q*(q_i-_nom(:,i)) 
-%   subject to 
+%   min_qi sum_i qdd_i'*Qa*qdd_i+qd_i'*Qv*qd_i+(q_i-q_nom(:,i))'*Q*(q_i-_nom(:,i))
+%   subject to
 %          constraint_j at t_i
 %   qd,qdd are computed by supposing q is a cubic spline.
 % @param q_seed       The seed guess, a matrix, wich column i representing the
@@ -23,13 +23,15 @@ function varargout = inverseKinBackend(obj,mode,t,q_seed,q_nom,varargin)
 %                     The nominal posture at t[i]
 % @param constraint   A Constraint class object, accept SingleTimeKinematicConstraint,
 %                     MultipleTimeKinematicConstraint,
-%                     QuasiStaticConstraint, PostureConstraint and MultipleTimeLinearPostureConstraint 
+%                     QuasiStaticConstraint, PostureConstraint and MultipleTimeLinearPostureConstraint
 %                     currently
 % @param ikoptions    An IKoptions object, please refer to IKoptions for detail
 
 % note: keeping typecheck/sizecheck to a minimum because this might have to
 % run inside a dynamical system (so should be fast)
-checkDependency('snopt');
+if(~checkDependency('snopt'))
+  error('Drake:MissingDependency:SNOPT','inverseKinBackend requires SNOPT. Either try install SNOPT, or try using InverseKinematics (capital case) or InverseKinematicsTrajectory (capital case) and set solver to fmincon or ipopt');
+end
 
 global SNOPT_USERFUN;
 nq = obj.getNumPositions();
@@ -273,8 +275,8 @@ if(mode == 2)
     q0_fixed = [];
     qdot0_fixed = [];
     qstart_idx = 1;
-    num_qfree = nT; 
-    num_qdotfree = 2; 
+    num_qfree = nT;
+    num_qdotfree = 2;
   end
   % Suppose the joint angles are interpolated using cubic splines, then the
   %[qdot(2);qdot(3);...;qdot(nT-1)] = velocity_mat*[q(1);q(2);...;q(nT)]+velocity_mat_qd0*qdot(1)+velocity_mat_qdf*qdot(nT);
@@ -606,7 +608,7 @@ if(mode == 2)
   snsetr('Major optimality tolerance',ikoptions.SNOPT_MajorOptimalityTolerance);
   snsetr('Major feasibility tolerance',ikoptions.SNOPT_MajorFeasibilityTolerance);
 
-  [w_sol,F,info] = snopt(w0,xlow,xupp,Flow,Fupp,'snoptUserfun',0,1,A,iAfun,jAvar,iGfun,jGvar);  
+  [w_sol,F,info] = snopt(w0,xlow,xupp,Flow,Fupp,'snoptUserfun',0,1,A,iAfun,jAvar,iGfun,jGvar);
   q = w_sol(qfree_idx);
   qdotf = w_sol(qdotf_idx);
   if(ikoptions.fixInitialState)
@@ -616,7 +618,7 @@ if(mode == 2)
     qdot0 = w_sol(qdot0_idx);
   end
   qdot = [qdot0 reshape(velocity_mat*q,nq,nT-2) qdotf];
-  qddot = reshape(accel_mat*q+accel_mat_qd0*qdot0+accel_mat_qdf*qdotf,nq,nT); 
+  qddot = reshape(accel_mat*q+accel_mat_qd0*qdot0+accel_mat_qdf*qdotf,nq,nT);
   q = reshape(q,nq,nT);
 
   if(info == 13 || info == 32 || info == 31)

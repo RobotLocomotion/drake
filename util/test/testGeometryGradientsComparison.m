@@ -1,4 +1,9 @@
 function testGeometryGradientsComparison()
+
+if exist('testGeometryGradientsmex','file')~=3
+  error('Drake:MissingDependency', 'Cannot find testGeometryGradientsmex. It may not have been compiled due to a missing dependency.');
+end
+
 twist_size = 6;
 nv = 8;
 nq = 15;

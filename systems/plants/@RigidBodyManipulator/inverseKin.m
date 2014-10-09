@@ -66,6 +66,6 @@ end
 if (use_mex || ikoptions.use_mex) && exist('inverseKinmex','file')
   [q,info,infeasible_constraint] = inverseKinmex(obj.getMexModelPtr,q_seed,q_nom,constraint_mex{:},ikoptions_mex);
 else
-  [q,info,infeasible_constraint]= inverseKinBackend(obj,1,[],q_seed,q_nom,varargin{:});
+  [q,info,infeasible_constraint]= inverseKinBackend(obj,1,[],q_seed,q_nom,varargin{:},ikoptions);
 end
 end

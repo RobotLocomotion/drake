@@ -81,7 +81,7 @@ N = length(ts);
 Vmin = zeros(N-1,1);
 
 sys = sys.inStateFrame(V0.getFrame); % convert system to Lyapunov function coordinates
-x=V0.getFrame.poly;
+x=V0.getFrame.getPoly;
  
 % evaluate dynamics and Vtraj at every ts once (for efficiency/clarity)
 for i=1:N
@@ -89,7 +89,7 @@ for i=1:N
 
   f{i} = sys.getPolyDynamics(ts(i));
   if (sys.getNumInputs>0)   % zero all inputs
-    f{i} = subs(f{i},sys.getInputFrame.poly,zeros(sys.getNumInputs,1));
+    f{i} = subs(f{i},sys.getInputFrame.getPoly,zeros(sys.getNumInputs,1));
   end
   
   dVdt{i}=V0.getPolyTimeDeriv(ts(i));

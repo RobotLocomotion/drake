@@ -44,7 +44,7 @@ classdef (InferiorClasses = {?ConstantTrajectory,?PPTrajectory,?FunctionHandleTr
     end
     
     function Vpoly = getPoly(obj,t)
-      x = obj.getFrame.poly;
+      x = obj.getFrame.getPoly;
       if isTI(obj)
         Vpoly = x'*obj.S*x + x'*obj.s1 + obj.s2;
       else
@@ -56,7 +56,7 @@ classdef (InferiorClasses = {?ConstantTrajectory,?PPTrajectory,?FunctionHandleTr
       if isTI(obj)
         pVpt = 0;
       else
-        x = obj.getFrame.poly;
+        x = obj.getFrame.getPoly;
         pVpt = x'*obj.S.deriv(t)*x + x'*obj.s1.deriv(t) + obj.s2.deriv(t);
       end
     end

@@ -1,41 +1,73 @@
-classdef RigidBodyHeightMapTerrain < RigidBodyTerrain
+classdef RigidBodyHeightMapTerrain < RigidBodyTerrain & RigidBodyGeometry
   
   methods
-    function obj = RigidBodyHeightMapTerrain(terrain_imagefile_or_heightmatrix,terrain_to_world_transform,varargin)
-      % usage:
-      %   RigidBodyHeightMapTerrain(terrain,T)
-      %  or
-      %   RigidBodyHeightMapTerrain(obj,terrain,pos,size)
+    function obj = RigidBodyHeightMapTerrain(x,y,Z,terrain_to_world_transform,options)
+      % @param terrain_to_world_transform a 4x4 transformation matrix.
+      % default I
       
-      if ischar(terrain_imagefile_or_heightmatrix)
-        a=imread(terrain_imagefile_or_heightmatrix);
-        terrain_height=double(rgb2gray(a))/255;
-      else
-        terrain_height = terrain_imagefile_or_heightmatrix;
-      end
+      if nargin<4, terrain_to_world_transform=eye(4); end
       
-      [m,n]=size(terrain_height);
-      if (nargin<2 || isempty(terrain_to_world_transform))
-        terrain_to_world_transform = [1,0,0,-(m-1)/2;0,1,0,(n-1)/2;0,0,1,0;0,0,0,1]; 
-      else
-        if sizecheck(terrain_to_world_transform,3)
-          % then it's setTerrain(obj,terrain,pos,size)
-          terrain_pos = terrain_to_world_transform(:);
-          if (nargin>2)
-            terrain_size=varargin{1}(:);
-            sizecheck(terrain_size,[3 1]);
-          else
-            terrain_size=[m-1;n-1;max(max(abs(terrain_height)))];
-          end
-          terrain_to_world_transform = [diag(terrain_size./[m-1;n-1;max(max(abs(terrain_height)))]), terrain_pos; 0 0 0 1]; 
-        end
-
-        sizecheck(terrain_to_world_transform,[4 4]);
-      end
+      obj@RigidBodyGeometry(4,terrain_to_world_transform);
       
-      obj.terrain_height = terrain_height;
-      obj.T_terrain_to_world = terrain_to_world_transform;
+      % note: I hate that these two are switched, but it is the convention
+      % for meshes in matlab
+      assert(size(Z,2)==length(x));
+      assert(size(Z,1)==length(y));
+      obj.x = x;
+      obj.y = y;
+      obj.Z = Z';  % store it in ndgrid format, instead of meshgrid format
       obj.T_world_to_terrain = inv(terrain_to_world_transform);
+
+      obj.c = hex2dec({'ee','cb','ad'})/256;  % something a little brighter (peach puff 2 from http://www.tayloredmktg.com/rgb/)
+    end
+
+    function pts = getPoints(obj)
+      % returned in body coordinates
+      [X,Y] = ndgrid(obj.x,obj.y);
+      pts = obj.T(1:3,:)*[X(:)';Y(:)';obj.Z(:)';ones(1,numel(X))];
+    end
+    
+    function pts = getBoundingBoxPoints(obj)
+      % returned in body coordinates
+      min_vals = [min(obj.x); min(obj.y); min(min(obj.Z))];
+      max_vals = [max(obj.x); max(obj.y); max(max(obj.Z))];
+      min_idx = logical([ 0 1 1 0 0 1 1 0;
+                          1 1 1 1 0 0 0 0;
+                          1 1 0 0 0 0 1 1]);
+      pts = obj.T(1:3,:)*[repmat(min_vals,1,8).*min_idx + repmat(max_vals,1,8).*(~min_idx); ones(1,8)];
+    end
+    
+    function shape = serializeToLCM(obj)
+      fname = [tempname,'.obj'];
+      writeOBJ(obj,fname);
+      shape = drake.lcmt_viewer_geometry_data();
+      shape.type = shape.MESH;
+      shape.string_data = fname;
+      shape.num_float_data = 1;
+      shape.float_data = 1;  % scale
+
+      shape.position = obj.T(1:3,4);
+      shape.quaternion = rotmat2quat(obj.T(1:3,1:3));
+      shape.color = [obj.c(:);1.0];
+    end
+
+    function geom = getRigidBodyContactGeometry(obj)
+      geom = [];
+    end
+
+    function geom = getRigidBodyShapeGeometry(obj)
+      geom = obj;
+    end
+    
+    function plotTerrain(obj)
+      [X,Y] = ndgrid(obj.x,obj.y);
+      xyz = [X(:)';Y(:)';obj.Z(:)'];
+      xyz = obj.T(1:3,:)*[xyz;1+0*xyz(1,:)];
+      mesh(reshape(xyz(1,:),size(X)),reshape(xyz(2,:),size(X)),reshape(xyz(3,:),size(X)));
+      xlabel('x');
+      ylabel('y');
+      zlabel('z');
+      axis equal;
     end
     
     function [z,normal] = getHeight(obj,xy)
@@ -43,116 +75,107 @@ classdef RigidBodyHeightMapTerrain < RigidBodyTerrain
       if (m>2) xy = xy(1:2,:); end
       
       % flip to terrain coordinates
-      flipY = diag([1,-1,1]);
-      xy = homogTransMult(flipY*obj.T_world_to_terrain([1 2 4],[1 2 4]),xy);
+      xy = homogTransMult(obj.T_world_to_terrain([1 2 4],[1 2 4]),xy);
 
-      %   ^ y
-      %  c|
-      %   |
-      %   |
-      %    -------> x
-      %   a     b
-      % a,b,c are all (effectively) integers
-      a = floor(xy);
-      b = a; b(1,:)=b(1,:)+1;
-      c = a; c(2,:)=c(2,:)+1;
-
-      %   ^ y
-      %  c|\  |a    if beyond the diagonal, then flip a to the opposite corner
-      %   | \*|
-      %   |  \|
-      %    -------> x
-      %       b
-      tmp = xy(1:2,:) - c;
-      to_flip = -tmp(1,:)<tmp(2,:);
-      a(:,to_flip) = a(:,to_flip)+1; % same as + repmat([1;1],1,sum(to_flip));
-
-      % compute barycentric coordinates
-      % http://en.wikipedia.org/wiki/Barycentric_coordinate_system_%28mathematics%29
-      % with r1=a,r2=b,r3=c
-      T_noflip = [-1 -1; 1 0];
-      T_flip = [1 1; 0 -1];
-      lambda=a;
-      lambda(:,~to_flip) = T_noflip*tmp(:,~to_flip);
-      lambda(:,to_flip) = T_flip*tmp(:,to_flip);
-      lambda(3,:) = 1-lambda(1,:)-lambda(2,:);
-
-      % todo: handle case where i'm off the mesh?  (with z = -inf?)
-      % if it happens now, the code below will error with "bad index"
-      s = size(obj.terrain_height);
-      az = obj.terrain_height(sub2ind(s,a(1,:)+1,a(2,:)+1));
-      bz = obj.terrain_height(sub2ind(s,b(1,:)+1,b(2,:)+1));
-      cz = obj.terrain_height(sub2ind(s,c(1,:)+1,c(2,:)+1));
-
-      z = lambda(1,:).*az + lambda(2,:).*bz + lambda(3,:).*cz;
-
-      normal = cross([b;bz]-[a;az],[c;cz]-[a;az]);  %[zeros(2,n); ones(1,n)];
-      normal(:,to_flip) = -normal(:,to_flip);
-
-      % convert back to world coordinates
-      flipY = diag([1,-1,1,1]);
-      pos = [xy;z];
-      pos = homogTransMult(obj.T_terrain_to_world*flipY,pos);
-      z = pos(3,:);
-      normal = homogTransMult(obj.T_terrain_to_world*flipY,normal)-repmat(homogTransMult(obj.T_terrain_to_world,zeros(3,1)),1,n);
-
-      % normalize normals
-      normal = normal./repmat(sqrt(sum(normal.^2,1)),3,1);
+      [indices,coefs,dcoefs] = barycentricInterpolation({obj.x,obj.y},xy);
+      z = sum(obj.Z(indices).*coefs,1);
+      if (nargout>1)
+        fx = sum(obj.Z(indices).*reshape(dcoefs(:,1),size(indices,1),n));
+        fy = sum(obj.Z(indices).*reshape(dcoefs(:,2),size(indices,1),n));
+        normal = [-fx;-fy;ones(1,n)];
+      end
     end
     
-    function [xgv,ygv] = writeWRL(obj,fp) % for visualization
-      T = obj.T_terrain_to_world;
-      xyz = homogTransMult(T,[0;0;0]);
-      axisangle = rotmat2axis(T(1:3,1:3));
-      xspacing = norm(homogTransMult(T,[1;0;0])-homogTransMult(T,[0;0;0]));
-      yspacing = norm(homogTransMult(T,[0;1;0])-homogTransMult(T,[0;0;0]));
-      [m,n]=size(obj.terrain_height);
-      [X,Y]=meshgrid(0:(m-1),0:(n-1));
-      pts = homogTransMult(T,[X(:),Y(:),obj.terrain_height(:)]');
-  
-      %  color1 = [204 102 0]/256;  % csail orange
-      color1 = hex2dec({'ee','cb','ad'})/256;  % something a little brighter (peach puff 2 from http://www.tayloredmktg.com/rgb/)
-      color2 = hex2dec({'cd','af','95'})/256;
-      fprintf(fp,'Transform {\n  translation %f %f %f\n  rotation %f %f %f %f\n  children [\n',xyz(1),xyz(2),xyz(3),axisangle(1),axisangle(2),axisangle(3),axisangle(4));
-      fprintf(fp,'Transform {\n  rotation  1 0 0 1.5708\n  children [\n');
+    function writeOBJ(obj,filename)
+      % writes the mesh to an alias wavefront file (e.g. for the viewers to
+      % parse)
+      % adapted from http://www.aleph.se/Nada/Ray/saveobjmesh.m
+      writeMeshOBJ(filename,obj.x,obj.y,obj.Z');
+    end
+    
+    function writeWRLShape(obj,fp,td)
+      
+      function tabprintf(fp,varargin), for i=1:td, fprintf(fp,'\t'); end, fprintf(fp,varargin{:}); end
+      tabprintf(fp,'Transform {\n'); td=td+1;
+      tabprintf(fp,'translation %f %f %f\n',obj.T(1:3,4));
+      tabprintf(fp,'rotation %f %f %f %f\n',rotmat2axis(obj.T(1:3,1:3)));
+      tabprintf(fp,'children [\n'); td=td+1;
+
+      xspacing = mean(diff(obj.x));
+      yspacing = mean(diff(obj.y));
+      if any(abs(diff(obj.x)-xspacing)>1e-5) || any(abs(diff(obj.x)-xspacing)>1e-5),
+        error('Drake:RigidBodyHeightMapTerrain:NonUniformGrid','vrml export currently only support uniform grids');
+      end
+      [m,n]=size(obj.Z);
+
+      % vrml view axis is y up, and elevation grid is y=height(x,z)
+      % so I need to treat y=z, and z=-y
+      fprintf(fp,'Transform {\n  translation %f %f %f\n children [\n',obj.x(1),obj.y(1),0);
+      fprintf(fp,'Transform {\n  rotation  1 0 0 1.5708\n scale 1 1 1\n children [\n');
+
       fprintf(fp,'Shape { geometry ElevationGrid {\n');
       %        fprintf(fp,'  solid "false"\n');
       fprintf(fp,'  xSpacing %f\n',xspacing);
-      fprintf(fp,'  zSpacing %f\n',yspacing);
+      fprintf(fp,'  zSpacing %f\n',-yspacing);
       fprintf(fp,'  xDimension %d\n',m);
       fprintf(fp,'  zDimension %d\n',n);
       fprintf(fp,'  height [');
-      fprintf(fp,' %d', pts(3,:));
+      fprintf(fp,' %d', obj.Z);
       fprintf(fp,' ]\n');
       fprintf(fp,'  solid TRUE\n');
       fprintf(fp,'  colorPerVertex TRUE\n');
       % note: colorPerVertex FALSE seems to be unsupported (loads but renders incorrectly) in the default simulink 3D animation vrml viewer
       fprintf(fp,'   color Color { color [');
-      for i=1:m
-        for j=1:n
-          if rem(i+j,2)==0
-            fprintf(fp,' %.1f %.1f %.1f,', color1);
-          else
-            fprintf(fp,' %.1f %.1f %.1f,', color2);
-          end
-        end
-      end
+      fprintf(fp,' %.1f %.1f %.1f,',repmat(obj.c(:),1,m*n));
       fprintf(fp,'] }\n'); % end Color
-      %  [nx,ny,nz] = surfnorm(obj.terrain_height);
-      %  fprintf(fp,'  normalPerVertex TRUE\n');
-      %  fprintf(fp,'  normal Normal { vector [');
-      %  fprintf(fp,' %.2f %.2f %.2f,', [nx(:),-nz(:),ny(:)]');  % rotx(pi/2)*normal
-      %  fprintf(fp,'] }\n'); % end normal
+      
+      if (0)
+        [x,y] = ndgrid(obj.x(1:end-1)+diff(obj.x)/2,obj.y(1:end-1)+diff(obj.y)/2);
+        [~,normals] = obj.getHeight([x(:)';y(:)']);
+        normals = [normals(1,:),normals(3,:),-normals(2,:)];
+        fprintf(fp,'  normalPerVertex FALSE\n');
+        fprintf(fp,'  normal Normal { vector [');
+        fprintf(fp,' %.2f %.2f %.2f,', normals);
+        fprintf(fp,'] }\n'); % end normal
+      end
+      
       fprintf(fp,'}\n}\n'); % end Shape
       fprintf(fp,']\n}\n'); % end Transform
       fprintf(fp,']\n}\n'); % end Transform
+      
+      td=td-1; tabprintf(fp,']\n'); % end children
+      td=td-1; tabprintf(fp,'}\n'); % end Transform {
+      
       fprintf(fp,'\n\n');
     end
   end
   
-  properties
-    terrain_height=zeros(20);  % height(i,j) = height at (xspacing * (i-1),-yspacing * (j-1))
-    T_terrain_to_world = [1,0,0,-10;0,1,0,10;0,0,1,0;0,0,0,1];  % translation from terrain coordinates to world coordinates
+  methods (Static=true)
+    function obj = loadFromImage(filename,ax,terrain_to_world_transform,options)
+      % @param filename the path to the image file
+      % @param ax axis specification [xmin,xmax,ymin,ymax].  note that the
+      % top left pixel of the image will be at xmin,ymax
+      % @param terrain_to_world_transform a 4x4 transformation matrix
+      % @option z_scale grayscale 255 = z_scale meters.  @default 1
+      % for additional options, see the class constructor;
+      
+      if nargin<3, terrain_to_world_transform=eye(4); end
+      if nargin<4, options=struct(); end
+      
+      if ~isfield(options,'z_scale'), options.z_scale=1; end
+        
+      a=imread(filename);
+      Z=options.z_scale*double(rgb2gray(a))/255;
+      Z=flipud(Z); % flip the y axis to go from image coordinates to cartesian coordinates
+      x = linspace(ax(1),ax(2),size(a,1));
+      y = linspace(ax(3),ax(4),size(a,2));
+      obj = RigidBodyHeightMapTerrain(x,y,Z,terrain_to_world_transform,options);
+    end
+    
+  end
+  
+  properties (SetAccess=protected)
+    x,y,Z;  % heightmap data
     T_world_to_terrain;
   end
 end

@@ -3,7 +3,6 @@ w = warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
 warning('off','Drake:RigidBody:NonPositiveInertiaMatrix');
 warning('off','Drake:RigidBodyManipulator:ReplacedCylinder');
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
-warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
 warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
 urdf = [getDrakePath,'/examples/Atlas/urdf/atlas_minimal_contact.urdf'];
 urdf_collision = [getDrakePath,'/examples/Atlas/urdf/atlas_convex_hull.urdf'];
@@ -67,7 +66,7 @@ if(com(3)>1+1e-5 || com(3)<0.9-1e-5)
   error('CoM constraint is not satisfied')
 end
 display('Check IK pointwise with a single CoM constraint')
-q = test_IKpointwise_userfun(robot,[0,1],[q_seed q_seed],[q_nom q_nom],kc1,ikoptions);
+[q,info] = test_IKpointwise_userfun(robot,[0,1],[q_seed q_seed],[q_nom q_nom],kc1,ikoptions);
 for i = 1:size(q,2)
   kinsol = doKinematics(robot,q(:,i));
   com = getCOM(robot,kinsol);
@@ -77,7 +76,8 @@ for i = 1:size(q,2)
   end
 end
 display('Check IK pointwise with multiple CoM constraints')
-q = test_IKpointwise_userfun(robot,[0,1],[q_seed q_seed],[q_nom q_nom],kc1,kc1prime,ikoptions);
+[q,info] = test_IKpointwise_userfun(robot,[0,1],[q_seed q_seed],[q_nom q_nom],kc1,kc1prime,ikoptions);
+if(all(info == 1)&&~isempty(info))
 kinsol = doKinematics(robot,q(:,1));
 com = getCOM(robot,kinsol);
 valuecheck(com(1:2),[0;0],1e-5);
@@ -90,7 +90,7 @@ valuecheck(com(1:2),[0;0],1e-5);
 if(com(3)>1+1e-5 ||com(3)<0.9-1e-5)
   error('CoM constraint is not satisfied');
 end
-
+end
 pc_knee = PostureConstraint(robot,tspan);
 l_knee_idx = find(strcmp(robot.getStateFrame.coordinates,'l_leg_kny'));
 r_knee_idx = find(strcmp(robot.getStateFrame.coordinates,'r_leg_kny'));
@@ -108,7 +108,8 @@ if(com(3)>1+1e-5 || com(3)<0.9-1e-5)
 end
 
 display('Check IK pointwise with a single CoM constraint with a posture constraint')
-q = test_IKpointwise_userfun(robot,[0,1],[q_seed q_seed+1e-3*randn(nq,1)],[q_nom q_nom],kc1,pc_knee,ikoptions);
+[q,info] = test_IKpointwise_userfun(robot,[0,1],[q_seed q_seed+1e-3*randn(nq,1)],[q_nom q_nom],kc1,pc_knee,ikoptions);
+if(all(info == 1)&&~isempty(info))
 if(any(q([l_knee_idx;r_knee_idx],:)<0.2-1e-5))
   error('Posture constraint is not satisfied');
 end
@@ -120,9 +121,11 @@ for i = 1:size(q,2)
     error('CoM constraint is not satisfied');
   end
 end
+end
 
 display('Check IK pointwise with multiple CoM constraints with a posture constraint')
-q = test_IKpointwise_userfun(robot,[0,1],[q_seed q_seed+1e-3*randn(nq,1)],[q_nom q_nom],kc1,kc1prime,pc_knee,ikoptions);
+[q,info] = test_IKpointwise_userfun(robot,[0,1],[q_seed q_seed+1e-3*randn(nq,1)],[q_nom q_nom],kc1,kc1prime,pc_knee,ikoptions);
+if(all(info == 1)&&~isempty(info))
 if(any(q([l_knee_idx;r_knee_idx],:)<0.2-1e-5))
   error('Posture constraint is not satisfied');
 end
@@ -138,7 +141,7 @@ valuecheck(com(1:2),[0;0],1e-5);
 if(com(3)>1+1e-5 ||com(3)<0.9-1e-5)
   error('CoM constraint is not satisfied');
 end
-
+end
 
 
 display('Check a body position constraint')
@@ -152,13 +155,15 @@ valuecheck(lfoot_pos(3,:),[0 0 0 0],1e-5);
 valuecheck(rfoot_pos(3,:),[0 0 0 0],1e-5);
 
 display('Check IK pointwise with body position constraint');
-q = test_IKpointwise_userfun(robot,[0,1],[q_seed q_seed+1e-3*randn(nq,1)],[q_nom q_nom],kc1,pc_knee,kc2l,kc2r,ikoptions);
+[q,info] = test_IKpointwise_userfun(robot,[0,1],[q_seed q_seed+1e-3*randn(nq,1)],[q_nom q_nom],kc1,pc_knee,kc2l,kc2r,ikoptions);
+if(all(info == 1)&&~isempty(info))
 for i = 1:size(q,2)
   kinsol = doKinematics(robot,q(:,i));
   lfoot_pos = forwardKin(robot,kinsol,l_foot,l_foot_pts,0);
   rfoot_pos = forwardKin(robot,kinsol,r_foot,r_foot_pts,0);
   valuecheck(lfoot_pos(3,:),[0 0 0 0],1e-5);
   valuecheck(rfoot_pos(3,:),[0 0 0 0],1e-5);
+end
 end
 
 display('Check a body position (in random frame) constraint')
@@ -175,7 +180,8 @@ valuecheck(lfoot_pos(3,:),[0 0 0 0],1e-5);
 valuecheck(rfoot_pos(3,:),[0 0 0 0],1e-5);
 
 display('Check IK pointwise with body position (in random frame) constraint');
-q = test_IKpointwise_userfun(robot,[0,1],[q_seed q_seed+1e-3*randn(nq,1)],[q_nom q_nom],kc1,pc_knee,kc2l_frame,kc2r_frame,ikoptions);
+[q,info] = test_IKpointwise_userfun(robot,[0,1],[q_seed q_seed+1e-3*randn(nq,1)],[q_nom q_nom],kc1,pc_knee,kc2l_frame,kc2r_frame,ikoptions);
+if(all(info == 1)&&~isempty(info))
 for i = 1:size(q,2)
   kinsol = doKinematics(robot,q(:,i));
   lfoot_pos = homogTransMult(invHT(T),forwardKin(robot,kinsol,l_foot,l_foot_pts,0));
@@ -183,10 +189,11 @@ for i = 1:size(q,2)
   valuecheck(lfoot_pos(3,:),[0 0 0 0],1e-5);
   valuecheck(rfoot_pos(3,:),[0 0 0 0],1e-5);
 end
-
+end
 
 display('Check the infeasible case')
 kc_err = WorldCoMConstraint(robot,[0;0;2],[0;0;inf],tspan);
+if(checkDependency('snopt'))
 [q,info,infeasible_constraint] = inverseKin(robot,q_seed,q_nom,kc_err,kc2l,kc2r,ikoptions);
 [qmex,info_mex,infeasible_constraint_mex] = inverseKin(robot,q_seed,q_nom,kc_err,kc2l,kc2r,ikmexoptions);
 valuecheck(info_mex,info);
@@ -195,11 +202,14 @@ if(info_mex ~= 13)
 end
 display('The infeasible constraints are');
 disp(infeasible_constraint_mex);
+end
 ikproblem = InverseKinematics(robot,q_nom,kc_err,kc2l,kc2r);
 [qik,F,info,infeasible_constraint_ik] = ikproblem.solve(q_seed);
+if(checkDependency('snopt'))
 [qmex,info_mex,infeasible_constraint_mex] = inverseKinPointwise(robot,[0,1],[q_seed q_seed+1e-3*randn(nq,1)],[q_nom q_nom],kc_err,kc2l,kc2r,ikmexoptions);
 display('The infeasible constraints are');
 disp(infeasible_constraint_mex);
+end
 
 display('Check a body quaternion constraint')
 kc3 = WorldQuatConstraint(robot,r_foot,[1;0;0;0],0,tspan);
@@ -208,11 +218,13 @@ kinsol = doKinematics(robot,q);
 rfoot_pos = forwardKin(robot,kinsol,r_foot,[0;0;0],2);
 valuecheck(rfoot_pos(4:7)'*[1;0;0;0],1,1e-5);
 display('Check IK pointwise with body orientation constraint');
-q = test_IKpointwise_userfun(robot,[0,1],[q_seed q_seed],[q_nom q_nom],kc1,pc_knee,kc2l,kc2r,kc3,ikoptions);
+[q,info] = test_IKpointwise_userfun(robot,[0,1],[q_seed q_seed],[q_nom q_nom],kc1,pc_knee,kc2l,kc2r,kc3,ikoptions);
+if(all(info == 1)&&~isempty(info))
 for i = 1:size(q,2)
   kinsol = doKinematics(robot,q(:,i));
   rfoot_pos = forwardKin(robot,kinsol,r_foot,[0;0;0],2);
   valuecheck(rfoot_pos(4:7)'*[1;0;0;0],1,1e-5);
+end
 end
 
 display('Check a gaze orientation constraint')
@@ -226,7 +238,8 @@ if(acos(rhand_gaze_vec'*rhand_gaze_des)>0.1*pi+1e-5)
   error('Gaze conethreshold does not satisfy');
 end
 display('Check IK pointwise with gaze orientation');
-q = test_IKpointwise_userfun(robot,[0,1],[q_seed q_seed+1e-3*randn(nq,1)],[q_nom q_nom],kc1,pc_knee,kc2l,kc2r,kc3,kc4,ikoptions);
+[q,info] = test_IKpointwise_userfun(robot,[0,1],[q_seed q_seed+1e-3*randn(nq,1)],[q_nom q_nom],kc1,pc_knee,kc2l,kc2r,kc3,kc4,ikoptions);
+if(all(info == 1)&&~isempty(info))
 for i = 1:size(q,2)
   kinsol = doKinematics(robot,q(:,i));
   rhand_pos = forwardKin(robot,kinsol,r_hand,[0 1;0 0;0 0],0);
@@ -235,6 +248,7 @@ for i = 1:size(q,2)
   if(acos(rhand_gaze_vec'*rhand_gaze_des)>0.1*pi+1e-5)
     error('Gaze conethreshold does not satisfy');
   end
+end
 end
 
 display('Check a gaze direction constraint')
@@ -247,7 +261,8 @@ if(acos(lhand_gaze_vec'*[1;0;0])>0.4*pi+1e-5)
   error('Gaze conethreshold does not satisfy');
 end
 display('Check IK pointwise with gaze direction Constraint');
-q = test_IKpointwise_userfun(robot,[0,1],[q_seed q_seed+1e-3*randn(nq,1)],[q_nom q_nom],kc1,pc_knee,kc2l,kc2r,kc3,kc4,kc5,ikoptions);
+[q,info] = test_IKpointwise_userfun(robot,[0,1],[q_seed q_seed+1e-3*randn(nq,1)],[q_nom q_nom],kc1,pc_knee,kc2l,kc2r,kc3,kc4,kc5,ikoptions);
+if(all(info == 1)&&~isempty(info))
 for i = 1:size(q,2)
   kinsol = doKinematics(robot,q(:,i));
   lhand_pos = forwardKin(robot,kinsol,l_hand,[0 1;0 0;0 0],0);
@@ -255,6 +270,7 @@ for i = 1:size(q,2)
   if(acos(lhand_gaze_vec'*[1;0;0])>0.4*pi+1e-5)
     error('Gaze conethreshold does not satisfy');
   end
+end
 end
 
 display('Check a gaze target constraint')
@@ -272,7 +288,8 @@ if(acos(head_gaze_vec'*head_gaze_des)>0.1*pi+1e-5)
   error('Does not satisfy conethreshold constraint');
 end
 display('Check IK pointwise with gaze target constraint');
-q = test_IKpointwise_userfun(robot,[0,1],[q_seed q_seed+1e-3*randn(nq,1)],[q_nom q_nom],kc1,pc_knee,kc2l,kc2r,kc3,kc4,kc5,kc6,ikoptions);
+[q,info] = test_IKpointwise_userfun(robot,[0,1],[q_seed q_seed+1e-3*randn(nq,1)],[q_nom q_nom],kc1,pc_knee,kc2l,kc2r,kc3,kc4,kc5,kc6,ikoptions);
+if(all(info == 1)&&~isempty(info))
 for i = 1:size(q,2)
   kinsol = doKinematics(robot,q(:,i));
   head_pos = forwardKin(robot,kinsol,head,[gaze_origin gaze_origin+gaze_axis],0);
@@ -283,7 +300,9 @@ for i = 1:size(q,2)
     error('Does not satisfy conethreshold constraint');
   end
 end
+end
 
+if(robot.getMexModelPtr~=0)
 display('Check all-to-all closest distance constraint')
 abcdc = AllBodiesClosestDistanceConstraint(robot,0.05,1e3,tspan);
 q = test_IK_userfun(robot,q_seed,q_nom,kc1,kc2l,kc2r,kc3,kc4,kc5,kc6,abcdc,ikoptions);
@@ -295,7 +314,7 @@ min_dist_cnstr = MinDistanceConstraint(robot,0.05,[],tspan);
 q = test_IK_userfun(robot,q_seed,q_nom,kc1,kc2l,kc2r,kc3,kc4,kc5,kc6,min_dist_cnstr,ikoptions);
 display('Check IK pointwise with minimum-distance constraint')
 q = test_IKpointwise_userfun(robot,[0,1],[q_seed,q_seed+1e-3*randn(nq,1)],[q_nom,q_nom],kc1,pc_knee,kc2l,kc2r,kc3,kc4,kc5,kc6,min_dist_cnstr,ikoptions);
-
+end
 display('Check quasi static constraint')
 qsc = QuasiStaticConstraint(robot);
 qsc = qsc.addContact(r_foot,r_foot_pts);
@@ -316,10 +335,12 @@ ikproblem = ikproblem.addCost(LinearConstraint(-inf,inf,1),ikproblem.num_vars);
 [q,F,info,infeasible_constraint] = ikproblem.solve(q_seed);
 
 display('Check quasi static constraint for pointwise');
-q = test_IKpointwise_userfun(robot,[0,1],[q_seed q_seed+1e-3*randn(nq,1)],[q_nom q_nom],kc1,qsc,kc2l,kc2r,kc3,kc4,kc5,kc6,ikoptions);
+[q,info] = test_IKpointwise_userfun(robot,[0,1],[q_seed q_seed+1e-3*randn(nq,1)],[q_nom q_nom],kc1,qsc,kc2l,kc2r,kc3,kc4,kc5,kc6,ikoptions);
+if(all(info == 1)&&~isempty(info))
 for i = 1:size(q,2)
   kinsol = doKinematics(robot,q(:,i));
   valuecheck(qsc.checkConstraint(kinsol),true);
+end
 end
 
 display('Check SingleTimeLinearPostureConstraint');
@@ -335,12 +356,13 @@ if(abs(q(l_leg_hpz)-q(r_leg_hpz))>0.1*pi+1e-8)
   error('SingleTimeLinearPostureConstraint is not satisfied');
 end
 display('Check SingleTimeLinearPostureConstraint for pointwise');
-q = test_IKpointwise_userfun(robot,[0,1],[q_seed q_seed+1e-3*randn(nq,1)],[q_nom q_nom],kc1,qsc,kc2l,kc2r,stlpc,ikoptions);
+[q ,info]= test_IKpointwise_userfun(robot,[0,1],[q_seed q_seed+1e-3*randn(nq,1)],[q_nom q_nom],kc1,qsc,kc2l,kc2r,stlpc,ikoptions);
+if(all(info == 1)&&~isempty(info))
 valuecheck(q([l_leg_kny;l_leg_hpy;l_leg_aky],:),q([r_leg_kny;r_leg_hpy;r_leg_aky],:),1e-10);
 if(any(abs(q(l_leg_hpz,:)-q(r_leg_hpz,:))>0.1*pi+1e-8))
   error('SingleTimeLinearPostureConstraint is not satisfied');
 end
-
+end
 
 display('Check point to point distance constraint')
 hands_distance_cnst = Point2PointDistanceConstraint(robot,l_hand,r_hand,[0;0;0],[0;0;0],0.5,1,tspan);
@@ -352,7 +374,8 @@ hand_dist = norm(lhand_pos-rhand_pos);
 if(hand_dist>1+1e-5 || hand_dist<0.5-1e-5)
   error('point to point distance constraint is not satisfied');
 end
-q = test_IKpointwise_userfun(robot,[0 1],[q_seed q_seed+1e-3*randn(nq,1)],[q_nom q_nom],kc1,qsc,kc2l,kc2r,kc3,hands_distance_cnst,ikoptions);
+[q,info] = test_IKpointwise_userfun(robot,[0 1],[q_seed q_seed+1e-3*randn(nq,1)],[q_nom q_nom],kc1,qsc,kc2l,kc2r,kc3,hands_distance_cnst,ikoptions);
+if(all(info == 1)&&~isempty(info))
 for i = 1:size(q,2)
   kinsol = doKinematics(robot,q(:,i));
   lhand_pos = forwardKin(robot,kinsol,l_hand,[0;0;0],0);
@@ -361,6 +384,7 @@ for i = 1:size(q,2)
   if(hand_dist>1+1e-5 || hand_dist<0.5-1e-5)
     error('point to point distance constraint is not satisfied');
   end
+end
 end
 
 head_pts = [[0;0;0] [0.1;0;0]];
@@ -384,7 +408,6 @@ l_hand_pos = forwardKin(robot,kinsol,l_hand,[0;0;0],0);
 if(l_hand_pos(3)>1+1e-5 || l_hand_pos(3)<0-1e-5 || norm(l_hand_pos(1:2))>0.2+1e-5 || norm(l_hand_pos(1:2))<0.1-1e-5)
   error('point to line segment constraint is not satisfied')
 end
-
 
 display('Check with addRobotFromURDF');
 xyz = 0.1*randn(3,1)+[1;1;1];
@@ -449,21 +472,25 @@ ikmexoptions = ikmexoptions.setMex(true);
 tic
 ikproblem = InverseKinematics(r,q_nom,varargin{1:end-1});
 ikproblem = ikproblem.setQ(ikoptions.Q);
+ikproblem = ikproblem.setSolverOptions('fmincon','Algorithm','sqp');
+ikproblem = ikproblem.setSolverOptions('fmincon','MaxIter',500);
 [qik,F,info,infeasible_cnstr_ik] = ikproblem.solve(q_seed);
 toc
 % valuecheck(qik,q,1e-6);
 testConstraint(r,[],qik,varargin{1:end-1});
-tic
-[qmex,info_mex] = inverseKin(r,q_seed,q_nom,varargin{1:end-1},ikmexoptions);
-toc
-if(info_mex>10)
-  error('SNOPT info is %d, IK mex fails to solve the problem',info_mex);
+if(checkDependency('snopt'))
+  tic
+  [qmex,info_mex] = inverseKin(r,q_seed,q_nom,varargin{1:end-1},ikmexoptions);
+  toc
+  if(info_mex>10)
+    error('SNOPT info is %d, IK mex fails to solve the problem',info_mex);
+  end
+  % valuecheck(q,qmex,5e-2);
+	testConstraint(r,[],qmex,varargin{1:end-1});
 end
-% valuecheck(q,qmex,5e-2);
-testConstraint(r,[],qmex,varargin{1:end-1});
 end
 
-function qmex = test_IKpointwise_userfun(r,t,q_seed,q_nom,varargin)
+function [qmex,info] = test_IKpointwise_userfun(r,t,q_seed,q_nom,varargin)
 ikoptions = varargin{end};
 ikoptions = ikoptions.setMex(false);
 ikmexoptions = ikoptions;
@@ -477,16 +504,21 @@ ikmexoptions = ikmexoptions.setMex(true);
 %for i = 1:length(t)
   %testConstraint(r,t(i),q(:,i),varargin{1:end-1});
 %end
-tic
-[qmex,info] = inverseKinPointwise(r,t,q_seed,q_nom,varargin{1:end-1},ikmexoptions);
-toc
-if(info>10)
-  error('SNOPT info is %d, IK pointwise mex fails to solve the problem',info);
+if(checkDependency('snopt'))
+  tic
+  [qmex,info] = inverseKinPointwise(r,t,q_seed,q_nom,varargin{1:end-1},ikmexoptions);
+  toc
+  if(info>10)
+    error('SNOPT info is %d, IK pointwise mex fails to solve the problem',info);
+  end
+  for i = 1:length(t)
+    testConstraint(r,t(i),qmex(:,i),varargin{1:end-1});
+  end
+  % valuecheck(q,qmex,5e-2);
+else
+  qmex = [];
+  info = [];
 end
-for i = 1:length(t)
-  testConstraint(r,t(i),qmex(:,i),varargin{1:end-1});
-end
-% valuecheck(q,qmex,5e-2);
 end
 
 function testConstraint(robot,t,q_sol,varargin)
@@ -528,5 +560,5 @@ for i = 1:nargin-3
   else
     error('The constraint is not supported');
   end
-end
+end  
 end
