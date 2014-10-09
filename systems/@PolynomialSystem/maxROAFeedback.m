@@ -59,10 +59,10 @@ if getNumStates(c0)>0, error('c0 must be a static controller'); end
 if ~isTI(c0), error('c0 must be time invariant'); end
 
 % Get x and other stuff
-x = V.getFrame.poly;
+x = V.getFrame.getPoly;
 num_x = sys.getNumStates();
 num_u = sys.getNumInputs();
-u = sys.getInputFrame.poly;
+u = sys.getInputFrame.getPoly;
 
 % Get V 
 S0 = V.S;

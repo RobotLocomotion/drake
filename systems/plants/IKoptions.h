@@ -4,8 +4,19 @@
 #include <Eigen/Dense>
 using namespace Eigen;
 
+#if defined(WIN32) || defined(WIN64)
+  #if defined(drakeIKoptions_EXPORTS)
+    #define DLLEXPORT __declspec( dllexport )
+  #else
+    #define DLLEXPORT __declspec( dllimport )
+  #endif
+#else
+  #define DLLEXPORT
+#endif
+
 class RigidBodyManipulator;
-class IKoptions
+
+class DLLEXPORT IKoptions
 {
   private:
     RigidBodyManipulator* robot;

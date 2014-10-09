@@ -41,13 +41,14 @@ classdef AllBodiesClosestDistanceConstraint < SingleTimeKinematicConstraint
       end;
       sizecheck(lb,[1,1]);
       sizecheck(ub,[1,1]);
-      ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.AllBodiesClosestDistanceConstraintType,robot.getMexModelPtr,lb,ub,active_collision_options,tspan);
       obj = obj@SingleTimeKinematicConstraint(robot,tspan);
       obj = setNumConstraint(obj);
       obj.lb = repmat(lb,obj.num_constraint,1);
       obj.ub = repmat(ub,obj.num_constraint,1);
       obj.type = RigidBodyConstraint.AllBodiesClosestDistanceConstraintType;
-      obj.mex_ptr = ptr;
+      if robot.getMexModelPtr~=0 && exist('constructPtrRigidBodyConstraintmex','file')
+        obj.mex_ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.AllBodiesClosestDistanceConstraintType,robot.getMexModelPtr,lb,ub,active_collision_options,tspan);
+      end
     end
 
     function cnstr = generateConstraint(obj,t)

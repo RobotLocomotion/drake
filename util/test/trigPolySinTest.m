@@ -1,5 +1,6 @@
 function trigPolySinTest
 
+checkDependency('spotless');
 q_mss=msspoly('q',2);
 s_mss=msspoly('s',2);
 c_mss=msspoly('c',2);

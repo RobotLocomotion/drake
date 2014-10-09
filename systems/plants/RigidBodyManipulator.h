@@ -8,6 +8,17 @@
 
 #include "collision/DrakeCollision.h"
 
+#if defined(WIN32) || defined(WIN64)
+  #if defined(drakeRBM_EXPORTS)
+    #define DLLEXPORT __declspec( dllexport )
+  #else
+    #define DLLEXPORT __declspec( dllimport )
+  #endif
+#else
+  #define DLLEXPORT
+  #include "DrakeJoint.h"  // todo: move this out of here
+#endif
+
 #include "RigidBody.h"
 #include "RigidBodyFrame.h"
 
@@ -16,7 +27,7 @@ using namespace Eigen;
 
 //extern std::set<int> emptyIntSet;  // was const std:set<int> emptyIntSet, but valgrind said I was leaking memory
 
-class RigidBodyManipulator 
+class DLLEXPORT RigidBodyManipulator 
 {
 public:
   RigidBodyManipulator(int num_dof, int num_featherstone_bodies=-1, int num_rigid_body_objects=-1, int num_rigid_body_frames=0);
@@ -72,7 +83,7 @@ public:
   template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD, typename DerivedE, typename DerivedF>
   void HandC(double* const q, double * const qd, MatrixBase<DerivedA> * const f_ext, MatrixBase<DerivedB> &H, MatrixBase<DerivedC> &C, MatrixBase<DerivedD> *dH=NULL, MatrixBase<DerivedE> *dC=NULL, MatrixBase<DerivedF> * const df_ext=NULL);
 
-  void addCollisionElement(const int body_ind, Matrix4d T_elem_to_lnk, DrakeCollision::Shape shape, std::vector<double> params, std::string group_name = "default");
+  void addCollisionElement(const int body_ind, const Matrix4d &T_elem_to_lnk, DrakeCollision::Shape shape, std::vector<double> params, std::string group_name = "default");
 
   void updateCollisionElements(const int body_ind);
 
@@ -138,7 +149,7 @@ public:
 
   // Rigid body objects
   int num_bodies;  // rigid body objects
-  std::vector<RigidBody,Eigen::aligned_allocator<RigidBody> > bodies;
+  std::vector<std::unique_ptr<RigidBody>> bodies;
 
   // Rigid body frames
   int num_frames;
@@ -214,6 +225,12 @@ private:
   
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+// The following was required for building w/ DLLEXPORT on windows (due to the unique_ptrs).  See
+// http://stackoverflow.com/questions/8716824/cannot-access-private-member-error-only-when-class-has-export-linkage
+private:
+  RigidBodyManipulator(const RigidBodyManipulator&) {}
+  RigidBodyManipulator& operator=(const RigidBodyManipulator&) { return *this; }
 };
 
 /*

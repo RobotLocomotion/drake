@@ -91,7 +91,11 @@ else
     return;
   end
   
-  force_collisionDetectTerrain = true;
+  if active_collision_options.terrain_only || ...
+      ~isfield(active_collision_options,'collision_groups') || ...
+      ismember('terrain',active_collision_options.collision_groups)
+    force_collisionDetectTerrain = true;
+  end
   
   if obj.mex_model_ptr == 0
     warnOnce(obj.warning_manager,'Drake:RigidBodyManipulator:collisionDetect:noMexPtr', ...
@@ -112,10 +116,22 @@ if ~isempty(obj.terrain) && ...
   % For each point on the manipulator that can collide with terrain,
   % find the closest point on the terrain geometry
   if isfield(active_collision_options,'body_idx')
-    terrain_contact_point_struct = ...
-      getTerrainContactPoints(obj,active_collision_options.body_idx);
+    if isfield(active_collision_options,'collision_groups')
+      terrain_contact_point_struct = getTerrainContactPoints(obj, ...
+        active_collision_options.body_idx,...
+        active_collision_options.collision_groups);
+    else
+      terrain_contact_point_struct = getTerrainContactPoints(obj, ...
+        active_collision_options.body_idx);
+    end
   else
-    terrain_contact_point_struct = getTerrainContactPoints(obj);
+    if isfield(active_collision_options,'collision_groups')
+      terrain_contact_point_struct = getTerrainContactPoints(obj, ...
+        2:obj.getNumBodies(),...
+        active_collision_options.collision_groups);
+    else
+      terrain_contact_point_struct = getTerrainContactPoints(obj);
+    end
   end
 
   if ~isempty(terrain_contact_point_struct)

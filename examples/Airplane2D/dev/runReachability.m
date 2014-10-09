@@ -62,7 +62,7 @@ options.degqT = options.degV - 2;
 options.degs0 = options.degW - 2;
 options.backoff_percent = 5;
 
-x = poly.getOutputFrame.poly;
+x = poly.getOutputFrame.getPoly;
 % Initial condition set (This is the initial condition set defined by some
 % sub-level set of the tvlqr S at time 0 - I chose this so I could compare
 % with our usual sos method. Obviously, with this approach, we can specify

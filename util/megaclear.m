@@ -10,7 +10,7 @@ function megaclear()
 %    while ~isempty(vrgcf), close(vrgcf); end
     if usejava('awt'), vrclear; end
 
-    evalin('base', 'h=findobj; delete(h(2:end));');  % delete dangling handles first
+    evalin('base', 'h=findobj; if numel(h)>1, delete(h(2:end)); end');  % delete dangling handles first
     evalin('base', 'clear all classes java imports');    % now clear everything else
     evalin('base', 'clear mex');  
 

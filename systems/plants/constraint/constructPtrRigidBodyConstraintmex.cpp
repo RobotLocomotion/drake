@@ -16,21 +16,6 @@ void checkBodyOrFrameID(const int body, const RigidBodyManipulator* model, const
   }
 }
 
-// convert Matlab cell array of strings into a C++ vector of strings
-vector<string> get_strings(const mxArray *rhs) {
-  int num = mxGetNumberOfElements(rhs);
-  vector<string> strings(num);
-  for (int i=0; i<num; i++) {
-    const mxArray *ptr = mxGetCell(rhs,i);
-    int buflen = mxGetN(ptr)*sizeof(mxChar)+1;
-    char* str = (char*)mxMalloc(buflen);
-    mxGetString(ptr, str, buflen);
-    strings[i] = string(str);
-    mxFree(str);
-  }
-  return strings;
-}
-
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
   if(!mxIsNumeric(prhs[0]))
@@ -95,7 +80,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","Usage ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint::PostureConstraintType,robot.mex_model_ptr,tspan)");
         }
         Vector2d tspan;
-        if(nrhs == 2)
+        if(nrhs < 3)
         {
           tspan<<-mxGetInf(),mxGetInf();
         }
@@ -206,12 +191,18 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         // Then get the group names for which to compute distances
         const mxArray* collision_groups = mxGetField(active_collision_options,0,
             "collision_groups");
-        if (collision_groups != NULL) {
-          for (const string& str : get_strings(collision_groups)) {
-            active_group_names.insert(str);
-          }
-        }
-
+	if (collision_groups != NULL) {
+	  int num = mxGetNumberOfElements(collision_groups);
+	  for (int i=0; i<num; i++) {
+	    const mxArray *ptr = mxGetCell(collision_groups,i);
+	    int buflen = mxGetN(ptr)*sizeof(mxChar)+1;
+	    char* str = (char*)mxMalloc(buflen);
+	    mxGetString(ptr, str, buflen);
+	    active_group_names.insert(str);
+	    mxFree(str);
+	  }
+	}
+	
         auto cnst = new AllBodiesClosestDistanceConstraint(model,lb,ub,
             active_bodies_idx,active_group_names,tspan);
         plhs[0] = createDrakeConstraintMexPointer((void*)cnst,
@@ -1120,11 +1111,17 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         // Then get the group names for which to compute distances
         const mxArray* collision_groups = mxGetField(active_collision_options,0,
             "collision_groups");
-        if (collision_groups != NULL) {
-          for (const string& str : get_strings(collision_groups)) {
-            active_group_names.insert(str);
-          }
-        }
+	if (collision_groups != NULL) {
+	  int num = mxGetNumberOfElements(collision_groups);
+	  for (int i=0; i<num; i++) {
+	    const mxArray *ptr = mxGetCell(collision_groups,i);
+	    int buflen = mxGetN(ptr)*sizeof(mxChar)+1;
+	    char* str = (char*)mxMalloc(buflen);
+	    mxGetString(ptr, str, buflen);
+	    active_group_names.insert(str);
+	    mxFree(str);
+	  }
+	}
 
         auto cnst = new MinDistanceConstraint(model,min_distance,active_bodies_idx,active_group_names,tspan);
         plhs[0] = createDrakeConstraintMexPointer((void*)cnst,

@@ -56,7 +56,7 @@ classdef Point2LineSegDistConstraint < SingleTimeKinematicConstraint
       if(nargin == 7)
         tspan = [-inf inf];
       end
-      ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.Point2LineSegDistConstraintType,robot.getMexModelPtr,pt_body,pt,line_body,line_ends,dist_lb,dist_ub,tspan);
+      
       obj = obj@SingleTimeKinematicConstraint(robot,tspan);
       if(~isnumeric(pt_body))
         error('Point2LineSegDistanceConstraint: pt_body should be numeric');
@@ -101,7 +101,9 @@ classdef Point2LineSegDistConstraint < SingleTimeKinematicConstraint
       obj.pt_body_name = obj.robot.getBody(obj.pt_body).linkname;
       obj.line_body_name = obj.robot.getBody(obj.line_body).linkname;
       obj.type = RigidBodyConstraint.Point2LineSegDistConstraintType;
-      obj.mex_ptr = ptr;
+      if robot.getMexModelPtr~=0 && exist('constructPtrRigidBodyConstraintmex','file')
+        obj.mex_ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.Point2LineSegDistConstraintType,robot.getMexModelPtr,pt_body,pt,line_body,line_ends,dist_lb,dist_ub,tspan);
+      end
     end
     
     function [lb,ub] = bounds(obj,t)

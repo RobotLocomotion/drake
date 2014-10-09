@@ -1,26 +1,20 @@
 classdef PostureConstraint<RigidBodyConstraint
   % A bounding box constraint on robot posture
-  % @param robot                      -- A robot
-  % @param lb                         -- The lower bound of posture
-  % @param ub                         -- The upper bound of posture
-  % @param joint_limit_min0           -- The default lower bound of the
-  %                                      posture of the robot
-  % @param joint_limit_max0           -- The default upper bound of the
-  %                                      posture of the robot
   properties(SetAccess = protected)
-    lb
-    ub
-    joint_limit_min0;
-    joint_limit_max0;
+    lb % The lower bound of posture
+    ub % The upper bound of posture
+    joint_limit_min0;% The default lower bound of the  posture of the robot
+    joint_limit_max0;% The default upper bound of the  posture of the robot
   end
   
   methods
     function obj = PostureConstraint(robot,tspan)
-      if(nargin == 1)
+		% @param robot                      -- A RigidBodyManipulator or a TimeSteppingRigidBodyManipulator object
+      if(nargin < 2)
         tspan = [-inf inf];
       end
       obj = obj@RigidBodyConstraint(RigidBodyConstraint.PostureConstraintCategory,robot,tspan);
-      [obj.joint_limit_min0,obj.joint_limit_max0] = robot.getJointLimits();
+			[obj.joint_limit_min0,obj.joint_limit_max0] = robot.getJointLimits();
       obj.lb = obj.joint_limit_min0;
       obj.ub = obj.joint_limit_max0;
       obj.type = RigidBodyConstraint.PostureConstraintType;
@@ -42,6 +36,9 @@ classdef PostureConstraint<RigidBodyConstraint
     end
     
     function obj = setJointLimits(obj,joint_ind,joint_min,joint_max)
+		  % @param joint_ind   A column vector. The indices of the joints whose joint limits are to be set
+			% @param joint_min   A column vector of the same size as joint_ind. The lower bound of the joints are max([robot.joint_limit_min(joint_ind) joint_min]),[],2);
+			% @param joint_max   A column vector of the same size as joint_ind. The upper bound of the joints are min([robot.joint_limit_max(joint_ind) joint_max]),[],2);
       if obj.mex_ptr~=0
         obj.mex_ptr = updatePtrRigidBodyConstraintmex(obj.mex_ptr,'bounds',joint_ind,joint_min,joint_max);
       end

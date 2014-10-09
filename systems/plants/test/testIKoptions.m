@@ -1,7 +1,6 @@
 function testIKoptions()
 % Check if the MATLAB and C++ IKoptions are consistent
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
-warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
 urdf = [getDrakePath,'/examples/Atlas/urdf/atlas_minimal_contact.urdf'];
 w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
 warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
@@ -98,6 +97,7 @@ checkIKoptions(ikoptions);
 valuecheck(ikoptions.additional_tSamples,[-2 -1 0 1]);
 display('setAdditionaltSamples pass');
 
+% check use_rbm_joint_bnd
 % Check updateRobot
 urdf_new = [getDrakePath,'/examples/PR2/pr2.urdf'];
 w = warning('off','Drake:RigidBodyManipulator:BodyHasZeroInertia');
