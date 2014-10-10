@@ -47,13 +47,14 @@ classdef RelativePosition < drakeFunction.kinematic.Kinematic
       obj.n_pts = n_pts_tmp;
     end
 
-    function [pos,J] = eval(obj,kinsol)
-      % pos = eval(obj,q) returns the relative positions of the points
+    function [pos,J] = eval(obj,q,kinsol)
+      % pos = eval(obj,q,kinsol) returns the relative positions of the points
       %
       % [pos,J] = eval(obj,q) also returns the Jacobian of the relative
       %   positions
       %
       % @param obj    -- drakeFunction.kinematic.RelativePosition object
+      % @param q      -- An obj.rbm.getNumPositions x 1 vector. The robot posture.
       % @param kinsol -- A kinsol struct, returned from RigidBodyManipulator.doKinematics function,
       % that stores the kinematic tree information for a posture.
       if obj.frameA == 0

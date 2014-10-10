@@ -37,7 +37,7 @@ function relativePositionTest(visualize)
 
   % Evaluate that DrakeFunction
   kinsol0 = rbm.doKinematics(q0,false,false);
-  [pos,J] = hand_pts_fcn.eval(kinsol0);
+  [pos,J] = hand_pts_fcn.eval(q0,kinsol0);
 
   if visualize
     lcmgl.glColor3f(1,0,0);
@@ -50,7 +50,7 @@ function relativePositionTest(visualize)
   end
 
   % Check the gradients of the DrakeFunction
-  [f,df] = geval(@(q) eval(hand_pts_fcn,rbm.doKinematics(q)),q0,struct('grad_method',{{'user','numerical'}},'tol',1e-4));
+  [f,df] = geval(@(q) eval(hand_pts_fcn,q,rbm.doKinematics(q)),q0,struct('grad_method',{{'user','numerical'}},'tol',1e-4));
 
 
   %% Solve an inverse kinematics problem

@@ -21,13 +21,14 @@ classdef RelativeQuaternion < drakeFunction.kinematic.Kinematic
       obj.frameA = obj.rbm.parseBodyOrFrameID(frameA);
       obj.frameB = obj.rbm.parseBodyOrFrameID(frameB);
     end
-    function [quat,dquat] = eval(obj,kinsol)
+    function [quat,dquat] = eval(obj,q,kinsol)
       % quat = eval(obj,q) returns the relative quaternion
       %
-      % [quat,dquat] = eval(obj,q) also returns the Jacobian of the relative
+      % [quat,dquat] = eval(obj,q,kinsol) also returns the Jacobian of the relative
       %   quaternion
       %
       % @param obj    -- drakeFunction.kinematic.RelativeQuaternion object
+      % @param q      -- An obj.rbm.getNumPositions x 1 vector. The robot posture.
       % @param kinsol -- A Kinsol struct returned from RigidBodyManipulator.doKinematics function,
       % stores the information about the kinematic tree
       [pos_A,J_A] = forwardKin(obj.rbm,kinsol,obj.frameA,[0;0;0],2);
