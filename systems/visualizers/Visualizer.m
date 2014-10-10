@@ -198,7 +198,7 @@ classdef Visualizer < DrakeSystem
     function inspector(obj,x0,state_dims,minrange,maxrange,visualized_system)
       % brings up a simple slider gui that displays the robot
       % in the specified state when possible.
-      % 
+      %
       % @param x0 the initial state to display the robot in
       % @param state_dims are the indices of the states to show on the
       % slider. Including velocity states will display the forces and torques.
@@ -236,7 +236,7 @@ classdef Visualizer < DrakeSystem
         % use a little undocumented matlab to get continuous slider feedback:
         slider_listener{i} = addlistener(slider{i},'ContinuousValueChange',@update_display);
       end
-      
+
       set(f, 'Position', [560 400 560 20 + 30*rows]);
       resize_gui();
       update_display(slider{1});
@@ -255,13 +255,13 @@ classdef Visualizer < DrakeSystem
 
       function update_display(source, eventdata)
         if nargin>1 && isempty(eventdata), return; end  % was running twice for most events
-        
+
         t = 0; x = x0;
         for i=1:numel(state_dims)
           x(state_dims(i)) = get(slider{i}, 'Value');
           set(value{i},'String',num2str(x(state_dims(i)),'%4.3f'));
         end
-        
+
         if (~isempty(visualized_system) && getNumStateConstraints(visualized_system)+getNumUnilateralConstraints(visualized_system)>0)
           % constrain the current slider to be exactly the specified value
           current_slider_statedim = get(source,'UserData');
@@ -289,15 +289,15 @@ classdef Visualizer < DrakeSystem
         end
         x0 = x;
         obj.drawWrapper(t,x);
-        
-        if (max(state_dims)>getNumPositions(visualized_system)&&isa(obj,'RigidBodyVisualizer'))
+
+        if (~isempty(visualized_system) && max(state_dims)>getNumPositions(visualized_system) && isa(obj,'RigidBodyVisualizer'))
           % was asked to show velocties on a RigidBodyManipulator, draw forces and torques
           q = x0(1:getNumPositions(visualized_system));
           qd = x0(getNumPositions(visualized_system)+1:getNumPositions(visualized_system)+getNumVelocities(visualized_system));
           visualized_system.drawLCMGLGravity(q,obj.gravity_visual_magnitude);
           visualized_system.drawLCMGLForces(q,qd,obj.gravity_visual_magnitude);
         end
-        
+
       end
     end
 
