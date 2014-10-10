@@ -143,7 +143,6 @@ class DLLEXPORT QuasiStaticConstraint: public RigidBodyConstraint
  * @param tspan          -- The time span of the constraint being valid
  * @param lb             -- The lower bound of the joints
  * @param ub             -- The upper bound of the joints
- * @param use_rbm_joint_bnd  -- A boolean, true if the posture bounds will be truncated to the RigidBodyManipulator's joint limits. @default is true
  *
  * @function setJointLimits   set the limit of some joints
  *   @param num_idx    The number of joints whose limits are going to be set
@@ -158,9 +157,8 @@ class DLLEXPORT PostureConstraint: public RigidBodyConstraint
     Eigen::VectorXd ub;
     Eigen::VectorXd joint_limit_min0;
     Eigen::VectorXd joint_limit_max0;
-    bool use_rbm_joint_bnd;
   public:
-    PostureConstraint(RigidBodyManipulator *model, const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan, bool use_rbm_joint_bnd=true);
+    PostureConstraint(RigidBodyManipulator *model, const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan);
     PostureConstraint(const PostureConstraint& rhs);
     bool isTimeValid(const double* t) const;
     void setJointLimits(int num_idx, const int* joint_idx, const Eigen::VectorXd& lb, const Eigen::VectorXd& ub);
