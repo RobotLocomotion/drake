@@ -55,7 +55,7 @@ methods
     end
     
     % grab the bounding boxes from all eps files
-    system(['more ', obj.dirname, '/*.eps | grep BoundingBox | sed -e "s/.*://g" > ',obj.dirname,'/bbox.txt']);
+    system(['more ', obj.dirname, '/*.eps | grep BoundingBox | sed -e "s/.*://g" | grep -v "(atend)" > ',obj.dirname,'/bbox.txt']);
     bbox = dlmread([obj.dirname,'/bbox.txt']);
     obj.bbox=[min(bbox(:,1:2)),max(bbox(:,3:4))];
     
