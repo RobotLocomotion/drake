@@ -35,17 +35,17 @@ function relativeEulerTest(visualize)
   kinsol_matlab = rbm.doKinematics(q0,false,false);
   
   % Evaluate that DrakeFunction
-  [rpy,J] = hand_orient_fcn.eval(kinsol_matlab);
+  [rpy,J] = hand_orient_fcn.eval(q0,kinsol_matlab);
   kinsol_mex = rbm.doKinematics(q0,false,true);
-  [rpy,J] = hand_orient_fcn.eval(kinsol_mex);
-  [~,J_geval] = geval(@(q) hand_orient_fcn.eval(doKinematics(rbm,q,false,true)),q0,struct('grad_method','numerical'));
+  [rpy,J] = hand_orient_fcn.eval(q0,kinsol_mex);
+  [~,J_geval] = geval(@(q) hand_orient_fcn.eval(q,doKinematics(rbm,q,false,true)),q0,struct('grad_method','numerical'));
   valuecheck(J,J_geval,1e-4);
 
   %% Test a nontrivial RelativeEuler object
   hand_orient_fcn = RelativeEuler(rbm,'l_hand','r_hand');
   kinsol_matlab = rbm.doKinematics(q0,false,false);
-  [rpy,J] = hand_orient_fcn.eval(kinsol_matlab);
+  [rpy,J] = hand_orient_fcn.eval(q0,kinsol_matlab);
   kinsol_mex = rbm.doKinematics(q0,false,true);
-  [~,J_geval] = geval(@(q) hand_orient_fcn.eval(doKinematics(rbm,q,false,true)),q0,struct('grad_method','numerical'));
+  [~,J_geval] = geval(@(q) hand_orient_fcn.eval(q0,doKinematics(rbm,q,false,true)),q0,struct('grad_method','numerical'));
   valuecheck(J,J_geval,1e-4);
 end

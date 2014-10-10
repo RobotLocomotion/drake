@@ -17,13 +17,14 @@ classdef WorldPosition < drakeFunction.kinematic.RelativePosition
       obj = obj@drakeFunction.kinematic.RelativePosition(rbm,frame,1,varargin{:});
     end
     
-    function [pos,J] = eval(obj,kinsol)
+    function [pos,J] = eval(obj,q,kinsol)
       % pos = eval(obj,kinsol) returns the world positions of the points
       %
       % [pos,J] = eval(obj,kinsol) also returns the Jacobian of the world
       %   positions
       %
       % @param obj  -- drakeFunction.kinematic.RelativePosition object
+      % @param q        -- An obj.rbm.getNumPositions x 1 vector. The robot posture.
       % @param kinsol  -- The kinsol struct returned from RigidBodyManipulator.doKinematics function
       if(obj.frameA == 0)
         [pos,J] = getCOM(obj.rbm,kinsol);

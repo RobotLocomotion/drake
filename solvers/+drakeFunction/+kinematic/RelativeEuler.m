@@ -23,11 +23,12 @@ classdef RelativeEuler < drakeFunction.kinematic.Kinematic
       obj.frameB = obj.rbm.parseBodyOrFrameID(frameB);
     end
     
-    function [rpy,drpy] = eval(obj,kinsol)
+    function [rpy,drpy] = eval(obj,q,kinsol)
       % rpy = eval(obj,kinsol) returns the relative euler
       %
       % [rpy,drpy] = eval(obj,kinsol) also returns the jacobian of the relative euler
       %
+      % @param q        -- An obj.rbm.getNumPositions x 1 vector. The robot posture.
       % @param kinsol   -- A struct returned from RigidBodyManipulator.doKinematics function, that
       % stored the kinematics tree information
       [pos_A,J_A] = forwardKin(obj.rbm,kinsol,obj.frameA,[0;0;0],1);
