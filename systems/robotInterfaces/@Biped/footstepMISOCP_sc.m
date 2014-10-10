@@ -85,7 +85,6 @@ for j = 1:num_precise_steps
     k = tan((th1 - th0)/2) / ((th1 - th0) / 2);
     Constraints = [Constraints,...
                    implies(sector(s,j), th0 <= yaw(j) <= th1)...
-                   implies(sector(s,j), [ct; st]' * [cos_yaw(j); sin_yaw(j)] == 1),...
                    implies(sector(s,j), [cos_yaw(j); sin_yaw(j)] == [ct; st] + (yaw(j) - th) * k * [-st; ct])];
   end
 end
@@ -111,8 +110,7 @@ for j = 3:num_precise_steps
   % Enforce relative step reachability
   for k = 1:size(rel_foci, 2)
     Constraints = [Constraints, ...
-      cone(x(1:2,j-1) + [cos_yaw(j-1), -sin_yaw(j-1); sin_yaw(j-1), cos_yaw(j-1)] * rel_foci(:,k) - x(1:2,j), ellipse_l + seed_plan.params.max_step_width * trim(j)),...
-%       cone(x(1:2,j-1) + [cos_yaw(j-1), -sin_yaw(j-1); sin_yaw(j-1), cos_yaw(j-1)] * rel_foci(:,k) - x(1:2,j), ellipse_l),...
+      pcone(x(1:2,j-1) + [cos_yaw(j-1), -sin_yaw(j-1); sin_yaw(j-1), cos_yaw(j-1)] * rel_foci(:,k) - x(1:2,j), ellipse_l + seed_plan.params.max_step_width * trim(j), 8),...
       abs(x(3,j) - x(3,j-1)) <= seed_plan.params.nom_upward_step];
 
   end
@@ -129,7 +127,7 @@ for j = num_precise_steps+1:nsteps
 
   % Enforce approximate step reachability
   Constraints = [Constraints, ...
-                 cone(x(1:2,j) - x(1:2,j-1), seed_plan.params.nom_forward_step),...
+                 pcone(x(1:2,j) - x(1:2,j-1), seed_plan.params.nom_forward_step, 8),...
                  abs(x(3,j) - x(3,j-1)) <= seed_plan.params.nom_upward_step];
 end
 
@@ -208,3 +206,19 @@ cos_yaw = cos_yaw(~trim);
 
 plan.sanity_check();
 
+end
+
+function constraint = pcone(v, r, num_pieces)
+  % Polynomial approximation of a conic constraint norm(v) <= r
+  A = zeros(num_pieces, 2);
+  b = repmat(r, num_pieces, 1);
+  ths = linspace(0, 2*pi, num_pieces);
+  for j = 1:num_pieces
+    th = ths(j);
+    c = cos(th);
+    s = sin(th);
+    R = [c, -s; s, c];
+    A(j,:) = (R * [1;0])';
+  end
+  constraint = A * v <= b;
+end
