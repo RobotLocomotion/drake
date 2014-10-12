@@ -265,8 +265,8 @@ classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
         df = [dfq;dfv];
       end
     
-    function [xtraj,utraj,ltraj,ljltraj,z,F,info] = solveTraj(obj,t_init,traj_init)
-      [xtraj,utraj,z,F,info] = solveTraj@DirectTrajectoryOptimization(obj,t_init,traj_init);
+    function [utraj,xtraj,ltraj,ljltraj,z,F,info] = solveTraj(obj,t_init,traj_init)
+      [utraj,xtraj,z,F,info] = solveTraj@DirectTrajectoryOptimization(obj,t_init,traj_init);
       t = [0; cumsum(z(obj.h_inds))];
       if obj.nC>0
         ltraj = PPTrajectory(foh(t,reshape(z(obj.l_inds),[],obj.N)));

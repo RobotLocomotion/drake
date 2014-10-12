@@ -37,7 +37,7 @@ traj_opt = traj_opt.compile();
 % traj_opt = traj_opt.setCheckGrad(true);
 % snprint('snopt.out');
 tic
-[xtraj,utraj,z,F,info] = solveTraj(traj_opt,t_init,traj_init);
+[utraj,xtraj,z,F,info] = solveTraj(traj_opt,t_init,traj_init);
 toc
 if (nargout<1)
   v = CompassGaitVisualizer(p);

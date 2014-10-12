@@ -32,7 +32,7 @@ traj_init.u = ConstantTrajectory(u0);
 info=0;
 while (info~=1)
   tic
-  [xtraj,utraj,z,F,info] = prog.solveTraj(tf0,traj_init);
+  [utraj,xtraj,z,F,info] = prog.solveTraj(tf0,traj_init);
   toc
 end
 

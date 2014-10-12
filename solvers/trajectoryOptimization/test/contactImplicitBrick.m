@@ -54,7 +54,7 @@ for i=1:length(scale_sequence)
     traj_init.x = xtraj;
     traj_init.l = ltraj;
   end
-  [xtraj,utraj,ltraj,~,z,F,info] = solveTraj(prog,tf,traj_init);
+  [utraj,xtraj,ltraj,~,z,F,info] = solveTraj(prog,tf,traj_init);
 end
 
 if visualize

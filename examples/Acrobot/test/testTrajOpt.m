@@ -40,7 +40,7 @@ traj_opt = traj_opt.addStateConstraint(ConstantConstraint(xf),N);
 % traj_opt = traj_opt.addLinearStateConstraint(LinearConstraint(xf,xf,eye(4)),N);
 
 tic
-[xtraj,utraj,z,F,info] = traj_opt.solveTraj(t_init,traj_init);
+[utraj,xtraj,z,F,info] = traj_opt.solveTraj(t_init,traj_init);
 toc
 
 v = p.constructVisualizer();

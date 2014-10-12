@@ -83,7 +83,7 @@ snprint('snopt.out');
 traj_opt = traj_opt.setSolverOptions('snopt','MajorIterationsLimit',100);
 traj_opt = traj_opt.setSolverOptions('snopt','MinorIterationsLimit',200000);
 traj_opt = traj_opt.setSolverOptions('snopt','IterationsLimit',200000);
-[xtraj,utraj,ltraj,ljltraj,z,F,info] = traj_opt.solveTraj(t_init,traj_init);
+[utraj,xtraj,ltraj,ljltraj,z,F,info] = traj_opt.solveTraj(t_init,traj_init);
 
 function [f,df] = running_cost_fun(h,x,u)
   f = h*u'*u;

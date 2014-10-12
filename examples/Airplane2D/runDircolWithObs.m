@@ -11,8 +11,8 @@ tf0 = .7;
 N = 21;
 prog = DircolTrajectoryOptimization(p,N,[0.2 3]);
 
-prog = addStateConstraint(prog,BoundingBoxConstraint(x0,x0),1);
-prog = addStateConstraint(prog,BoundingBoxConstraint(xf,xf),N);
+prog = addStateConstraint(prog,ConstantConstraint(x0),1);
+prog = addStateConstraint(prog,ConstantConstraint(xf),N);
 
 % add obstacles
 disp('Adding obstacles...');
@@ -34,7 +34,7 @@ drawnow
 prog = setSolverOptions(prog,'snopt','MajorOptimalityTolerance',1e-2);
 initial_guess.x = PPTrajectory(foh([0,tf0],[x0,xf]));
 tic
-[xtraj,utraj,~,~,info]=solveTraj(prog,tf0,initial_guess);
+[utraj,xtraj,~,~,info]=solveTraj(prog,tf0,initial_guess);
 toc
 
 if (nargout<1)

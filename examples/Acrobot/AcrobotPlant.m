@@ -100,22 +100,22 @@ classdef AcrobotPlant < Manipulator
       tf0 = 4;
       
       N = 21;
-      traj_opt = DircolTrajectoryOptimization(obj,N,[2 6]);
-      traj_opt = traj_opt.addStateConstraint(ConstantConstraint(x0),1);
-      traj_opt = traj_opt.addStateConstraint(ConstantConstraint(xf),N);
-      traj_opt = traj_opt.addRunningCost(@cost);
-      traj_opt = traj_opt.addFinalCost(@finalCost);
+      prog = DircolTrajectoryOptimization(obj,N,[2 6]);
+      prog = prog.addStateConstraint(ConstantConstraint(x0),1);
+      prog = prog.addStateConstraint(ConstantConstraint(xf),N);
+      prog = prog.addRunningCost(@cost);
+      prog = prog.addFinalCost(@finalCost);
       
       traj_init.x = PPTrajectory(foh([0,tf0],[double(x0),double(xf)]));
       
       info=0;
       while (info~=1)
         tic
-        [xtraj,utraj,z,F,info] = traj_opt.solveTraj(tf0,traj_init);
+        [utraj,xtraj,z,F,info] = prog.solveTraj(tf0,traj_init);
         toc
       end
 
-      function [g,dg] = cost(t,x,u);
+      function [g,dg] = cost(dt,x,u)
         R = 1;
         g = sum((R*u).*u,1);
         dg = [zeros(1,1+size(x,1)),2*u'*R];
