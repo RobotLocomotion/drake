@@ -44,7 +44,6 @@ addpath(fullfile(root,'systems','robotInterfaces','calibration'));
 addpath(fullfile(root,'solvers'));
 addpath(fullfile(root,'solvers','trajectoryOptimization'));
 addpath(fullfile(root,'util'));
-addpath(fullfile(root,'util','obstacles'));
 addpath(fullfile(root,'thirdParty'));
 addpath(fullfile(root,'thirdParty','path'));
 addpath(fullfile(root,'thirdParty','spatial'));
