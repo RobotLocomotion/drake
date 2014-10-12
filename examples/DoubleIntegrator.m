@@ -113,7 +113,7 @@ classdef DoubleIntegrator < LinearSystem
     end
 
     function runDircol
-      % Simple example of Direct Transcription trajectory optimization
+      % Simple example of Direct Collocation trajectory optimization
 
       % create the system
       plant = DoubleIntegrator;
