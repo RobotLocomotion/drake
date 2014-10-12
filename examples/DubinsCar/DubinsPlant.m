@@ -39,7 +39,7 @@ classdef DubinsPlant < DrakeSystem
       prog = prog.addRunningCost(@cost);
       prog = prog.addFinalCost(@finalCost);
 
-      function [g,dg] = cost(t,x,u)
+      function [g,dg] = cost(dt,x,u)
         R = 0;
         g = u'*R*u;
         %g = sum((R*u).*u,1);

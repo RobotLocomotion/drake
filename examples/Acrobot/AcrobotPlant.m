@@ -130,10 +130,10 @@ classdef AcrobotPlant < Manipulator
         g = sum((Q*xerr).*xerr + (R*u).*u,1);
         
         if (nargout>1)
-          dgdt = 0;
+          dgddt = 0;
           dgdx = 2*xerr'*Q;
           dgdu = 2*u'*R;
-          dg = [dgdt,dgdx,dgdu];
+          dg = [dgddt,dgdx,dgdu];
         end
       end
       

@@ -170,7 +170,7 @@ classdef ObstacleField
            % Adds the non-convex constraints for the ObstacleField to the 
            % given NonlinearProgram
            %
-           % @param prog a NonlinearProgram
+           % @param prog a DirectTrajectoryOptimization
            % @retval prog the updated NonlinearProgram
            
            prog = prog.addStateConstraint(FunctionHandleConstraint(-inf(obj.number_of_obstacles,1),zeros(obj.number_of_obstacles,1),2,@(x)obj.obstacleConstraint(x)),1:prog.N,1:2);

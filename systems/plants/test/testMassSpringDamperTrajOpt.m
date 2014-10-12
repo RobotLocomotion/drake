@@ -32,7 +32,7 @@ end
 
 end
 
-function [g,dg] = cost(t,x,u)
+function [g,dg] = cost(dt,x,u)
   R = eye(size(u,1));
   g = u'*R*u;
   dg = [zeros(1, 1 + size(x,1)),2*u(:)'];
