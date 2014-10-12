@@ -104,14 +104,12 @@ classdef CartPolePlant < Manipulator
       end
       
       traj_init.x = PPTrajectory(foh([0,tf0],[x0,xf]));
-      info=0;
-        traj_init.u = PPTrajectory(foh(linspace(0,tf0,N),randn(1,N)));
-%      while (info~=1)
+      for attempts=1:10
         tic
-        [utraj,xtraj,z,F,info,infeasible_constraint_name] = prog.solveTraj(tf0,traj_init);
-        if (info~=1) infeasible_constraint_name, end
+        [utraj,xtraj,z,F,info] = prog.solveTraj(tf0,traj_init);
         toc
-%      end
+        if info==1, break; end
+      end
     end
     
     function c=trajectorySwingUpAndBalance(obj)
