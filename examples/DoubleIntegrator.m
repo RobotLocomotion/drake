@@ -107,9 +107,9 @@ classdef DoubleIntegrator < LinearSystem
       end
       prog = addTrajectoryDisplayFunction(prog,@displayStateTrajectory);
       
-      % solve the optimization problem.
-      breakpoints = linspace(0,2,N);  % initial breakpoints t=0,...,2 seconds
-      prog.solveTraj(breakpoints);
+      % solve the optimization problem (with 2 sec as the initial guess for
+      % the duration)
+      prog.solveTraj(2);
     end
 
     function runDircol
@@ -142,9 +142,9 @@ classdef DoubleIntegrator < LinearSystem
       end
       prog = addTrajectoryDisplayFunction(prog,@displayStateTrajectory);
       
-      % solve the optimization problem.
-      breakpoints = linspace(0,2,N);  % initial breakpoints t=0,...,2 seconds
-      prog.solveTraj(breakpoints);
+      % solve the optimization problem (with 2 sec as the initial guess for
+      % the duration)
+      prog.solveTraj(2);
     end    
   end
   
