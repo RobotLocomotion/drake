@@ -90,11 +90,11 @@ classdef DoubleIntegrator < LinearSystem
       
       % add the initial value constraint
       x0 = [-2; -2];
-      prog = addStateConstraint(prog,BoundingBoxConstraint(x0,x0),1);
+      prog = addStateConstraint(prog,ConstantConstraint(x0),1);
       
       % add the final value constraint
       xf = [0;0];
-      prog = addStateConstraint(prog,BoundingBoxConstraint(xf,xf),N);
+      prog = addStateConstraint(prog,ConstantConstraint(xf),N);
       
       % add the cost function g(dt,x,u) = 1*dt
       prog = addRunningCost(prog,@(dt,x,u) dt);

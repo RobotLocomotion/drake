@@ -188,7 +188,7 @@ classdef UnderwaterAcrobotPlant < Manipulator
             end
 
             
-            function [g,dg] = cost(t,x,u)
+            function [g,dg] = cost(dt,x,u)
                 R = 1;
                 g = sum((R*u).*u,1);
                 dg = [zeros(1,1+size(x,1)),2*u'*R];

@@ -43,7 +43,7 @@ end
 
 end
 
-      function [g,dg] = cost(t,x,u,field)
+      function [g,dg] = cost(dt,x,u,field)
         R = 0.0001;
         
         % minimize the max obstacle constraint
