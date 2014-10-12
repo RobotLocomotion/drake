@@ -108,11 +108,11 @@ classdef AcrobotPlant < Manipulator
       
       traj_init.x = PPTrajectory(foh([0,tf0],[double(x0),double(xf)]));
       
-      info=0;
-      while (info~=1)
+      for attempts=1:10
         tic
         [utraj,xtraj,z,F,info] = prog.solveTraj(tf0,traj_init);
         toc
+        if info==1, break; end
       end
 
       function [g,dg] = cost(dt,x,u)
