@@ -30,7 +30,8 @@ classdef DircolTrajectoryOptimization < DirectTrajectoryOptimization
       
       n_vars = 2*nX + 2*nU + 1;
       cnstr = FunctionHandleConstraint(zeros(nX,1),zeros(nX,1),n_vars,@obj.constraint_fun);
-      
+      cnstr = setName(cnstr,'collocation');
+
       % create shared data functions to calculate dynamics at the knot
       % points
       shared_data_index = obj.getNumSharedDataFunctions;

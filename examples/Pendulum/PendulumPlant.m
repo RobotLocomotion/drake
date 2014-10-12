@@ -100,7 +100,7 @@ classdef PendulumPlant < SecondOrderSystem
       info=0;
       while (info~=1)
         tic
-        [xtraj,utraj,z,F,info] = traj_opt.solveTraj(tf0,traj_init);
+        [utraj,xtraj,z,F,info] = traj_opt.solveTraj(tf0,traj_init);
         toc
       end
     end

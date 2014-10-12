@@ -17,8 +17,8 @@ xf = double(xf);
 N = 11;
 prog = DircolTrajectoryOptimization(p,N,[0.1 1]);
 
-prog = addStateConstraint(prog,BoundingBoxConstraint(x0,x0),1);
-prog = addStateConstraint(prog,BoundingBoxConstraint(xf,xf),N);
+prog = addStateConstraint(prog,ConstantConstraint(x0),1);
+prog = addStateConstraint(prog,ConstantConstraint(xf),N);
 
 prog = addRunningCost(prog,@cost);
 prog = addFinalCost(prog,@finalCost);
@@ -33,7 +33,7 @@ while (info~=1)
   traj_init.u = setOutputFrame(PPTrajectory(foh(t_init,randn(1,N))),getInputFrame(p));
 
   tic
-  [xtraj,utraj,~,~,info]=solveTraj(prog,t_init,traj_init);
+  [utraj,xtraj,~,~,info]=solveTraj(prog,t_init,traj_init);
   toc
 end
 

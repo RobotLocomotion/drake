@@ -56,7 +56,7 @@ prog = prog.setSolverOptions('snopt','majoroptimalitytolerance',1e-2);
 prog = prog.setSolverOptions('snopt','majorfeasibilitytolerance',1e-2);
 
 tic
-[xtraj,utraj,z,F,info] = prog.solveTraj(tf0,traj_init);
+[utraj,xtraj,z,F,info] = prog.solveTraj(tf0,traj_init);
 toc
 
 %if (nargout<1)

@@ -160,7 +160,7 @@ classdef DirectTrajectoryOptimization < NonlinearProgram
       obj = addDisplayFunction(obj,@(z) display_fun(z(obj.h_inds),z(obj.x_inds),z(obj.u_inds)));
     end
     
-    function [xtraj,utraj,z,F,info] = solveTraj(obj,t_init,traj_init)
+    function [utraj,xtraj,z,F,info,infeasible_constraint_name] = solveTraj(obj,t_init,traj_init)
       % Solve the nonlinear program and return resulting trajectory
       % @param t_init initial timespan for solution.  can be a vector of
       % length obj.N specifying the times of each segment, or a scalar
@@ -173,9 +173,9 @@ classdef DirectTrajectoryOptimization < NonlinearProgram
       if nargin<3, traj_init = struct(); end
 
       z0 = obj.getInitialVars(t_init,traj_init);
-      [z,F,info] = obj.solve(z0);
+      [z,F,info,infeasible_constraint_name] = obj.solve(z0);
       utraj = reconstructInputTrajectory(obj,z);
-      if nargin>1, xtraj = reconstructStateTrajectory(obj,z); end
+      if nargout>1, xtraj = reconstructStateTrajectory(obj,z); end
     end
 
     function z0 = getInitialVars(obj,t_init,traj_init)

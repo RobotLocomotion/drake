@@ -288,7 +288,7 @@ classdef HybridTrajectoryOptimization < NonlinearProgram
       z0 = cell2mat(z0);
     end
     
-    function [xtraj,utraj,z,F,info] = solveTraj(obj,t_init,traj_init)
+    function [utraj,xtraj,z,F,info] = solveTraj(obj,t_init,traj_init)
       % Solve the nonlinear program and return resulting trajectory
       % @param t_init initial timespan for solution.  can be a vector of
       % length obj.N specifying the times of each segment, or a scalar
