@@ -1,14 +1,12 @@
 function [utraj,xtraj, v, p]=runDircolPerchingURDF(p, utraj0)
 
 tf0 = 1;
-N=4; %=21;
+N=41;
 if (nargin<1)
   options.floating = true;
   p = RigidBodyManipulator('GliderBalanced.urdf', options);
 end
-if (nargin<2)
-    utraj0 = PPTrajectory(foh(linspace(0,tf0,N),0*randn(1,N)));
-end
+
 %for the URDF, a negative pitch is pitched up.
 %    [X  Y  Z  Roll Pitch Yaw El
 x0 = [-3.3 0 .4 0 0 0 0  7 0 0 0 0 0 0]';
@@ -16,28 +14,31 @@ xf = [0 0 0 0 -pi/4 0 0  0 0 -1 0 0 0 0]';
 el_lo_limit = -.9473;
 el_up_limit = .4463;
 
-con.u.lb = p.umin;
-con.u.ub = p.umax;
-con.x.lb = [-inf,-inf,-inf,-inf,-pi/2,-inf,el_lo_limit, -inf,-inf,-inf,-inf,-inf,-inf,-inf]';
-con.x.ub = [inf,inf,inf,inf,pi/2,inf,el_up_limit, inf,inf,inf,inf,inf,inf,inf]';
-con.x0.lb = x0;
-con.x0.ub = x0;
-con.xf.lb = xf-[0.03,0.03,0.03,inf,pi/2,inf,inf, inf,inf,inf,inf,inf,inf,inf]';
-con.xf.ub = xf+[0.03,0.03,0.03,inf,pi/2,inf,inf, inf,inf,inf,inf,inf,inf,inf]';
-con.T.lb = .45;   
-con.T.ub = 1.5;
+prog = DircolTrajectoryOptimization(p,N,[.45 1.5]);
 
-options.MajorOptimalityTolerance=.03;
-options.MinorOptimalityTolerance=.03;
-options.method='dircol';
-options.grad_method={'user'};
-options.trajectory_cost_fun=@(t,x,u)plotDircolTraj(t,x,u);  % for debugging
+prog = prog.addStateConstraint(BoundingBoxConstraint([-inf,-inf,-inf,-inf,-pi/2,-inf,el_lo_limit, -inf,-inf,-inf,-inf,-inf,-inf,-inf]',[inf,inf,inf,inf,pi/2,inf,el_up_limit, inf,inf,inf,inf,inf,inf,inf]'),1:N);
+prog = prog.addStateConstraint(ConstantConstraint(x0),1);
+prog = prog.addStateConstraint(BoundingBoxConstraint(xf-[0.03,0.03,0.03,inf,pi/2,inf,inf, inf,inf,inf,inf,inf,inf,inf]',xf+[0.03,0.03,0.03,inf,pi/2,inf,inf, inf,inf,inf,inf,inf,inf,inf]'),N);
+
+prog = prog.addRunningCost(@cost);
+prog = prog.addFinalCost(@(t,x)finalCost(t,x,xf));
+
+prog = prog.addTrajectoryDisplayFunction(@plotDircolTraj);
+
+%options.MajorOptimalityTolerance=.03;
+%options.MinorOptimalityTolerance=.03;
+
+if nargin>1
+ traj_init.u = utraj0;
+else
+ traj_init = struct();
+end
 tic
-%options.grad_test = true;
-disp('Starting optimization');
-[utraj,xtraj,info] = trajectoryOptimization(p,@cost,@(t,x)finalcost(t,x,xf),x0,utraj0,con,options);
-if (info~=1) error('failed to find a trajectory'); end
+[xtraj,utraj,z,F,info,infeasible_constraint_name] = prog.solveTraj(tf0,traj_init);
+if (info~=1) infeasible_constraint_name, error('failed to find a trajectory'); end
 toc
+
+
 
 v = p.constructVisualizer();
 v.axis= [-4 .5 -.5 1];
@@ -46,7 +47,7 @@ v.playback(xtraj, struct('slider',true));
 
 end
 
-      function [g,dg] = cost(t,x,u)
+      function [g,dg] = cost(dt,x,u)
         Q = zeros(14,14); Q(14,14) = .1;
         g = x'*Q*x;
         if (nargout>1)
@@ -54,7 +55,7 @@ end
         end
       end
         
-      function [h,dh] = finalcost(t,x,xd)
+      function [h,dh] = finalCost(t,x,xd)
         xerr = x-xd;
 
         Qf = diag([10 10 10 0 20 0 0 1 1 1 0 1 0 0]);
@@ -65,7 +66,7 @@ end
         end
       end
       
-      function [J,dJ]=plotDircolTraj(t,x,u)
+      function plotDircolTraj(t,x,u)
       %{  
       figure(25);
         clf;
@@ -85,6 +86,4 @@ end
         hold off;
         delete(h);
       %}
-        J=0;
-        dJ=[0*t(:);0*x(:);0*u(:)]';
       end

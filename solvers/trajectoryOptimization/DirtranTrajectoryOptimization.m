@@ -75,6 +75,7 @@ classdef DirtranTrajectoryOptimization < DirectTrajectoryOptimization
       % numerical implementation specific (thus abstract)
       % this cost is assumed to be time-invariant
       % @param running_cost_function a function handle
+      %  of the form running_cost_function(dt,x,u)
       
       nX = obj.plant.getNumStates();
       nU = obj.plant.getNumInputs();

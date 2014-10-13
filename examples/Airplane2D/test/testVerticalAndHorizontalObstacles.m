@@ -1,5 +1,7 @@
 function testVerticalAndHorizontalObstacles
 
+tmp = addpathTemporary(fullfile(pwd,'..'));
+
 %% Test edge cases for vertical and horizontal obstacle borders
 obs = PolygonalObstacle2D([0,0,1,1], [0,1,1,0]);
 

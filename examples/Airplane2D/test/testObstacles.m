@@ -1,6 +1,6 @@
 function testObstacles
 
-close all
+tmp = addpathTemporary(fullfile(pwd,'..'));
 
 f = ObstacleField
 f = f.GenerateRandomObstacles();

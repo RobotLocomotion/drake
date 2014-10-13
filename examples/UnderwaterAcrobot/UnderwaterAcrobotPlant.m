@@ -171,33 +171,30 @@ classdef UnderwaterAcrobotPlant < Manipulator
         function [utraj,xtraj]=swingUpTrajectory(obj)
             [x0,~]=eqPoints(obj); tf0 = 4; xf = double(obj.xG);
             
-            con.u.lb = obj.umin;
-            con.u.ub = obj.umax;
-            con.x0.lb = x0;
-            con.x0.ub = x0;
-            con.xf.lb = xf;
-            con.xf.ub = xf;
-            con.T.lb = 2;
-            con.T.ub = 6;
+            N = 21;
+            prog = DircolTrajectoryOptimization(obj,N,[2 6]);
+            prog = prog.addStateConstraint(ConstantConstraint(x0),1);
+            prog = prog.addStateConstraint(ConstantConstraint(xf),N);
+            prog = prog.addRunningCost(@cost);
+            prog = prog.addFinalCost(@finalCost);
             
-            options.method='dircol';
+            traj_init.x = PPTrajectory(foh([0,tf0],[double(x0),double(xf)]));
             
-            %options.grad_test = true;
-            info=0;
-            while (info~=1)
-                utraj0 = PPTrajectory(foh(linspace(0,tf0,21),randn(1,21)));
-                tic
-                [utraj,xtraj,info] = trajectoryOptimization(obj,@cost,@finalcost,x0,utraj0,con,options);
-                toc
+            for attempts=1:10
+              tic
+              [xtraj,utraj,z,F,info] = prog.solveTraj(tf0,traj_init);
+              toc
+              if info==1, break; end
             end
+
             
-            function [g,dg] = cost(t,x,u)
+            function [g,dg] = cost(dt,x,u)
                 R = 1;
                 g = sum((R*u).*u,1);
                 dg = [zeros(1,1+size(x,1)),2*u'*R];
             end
             
-            function [h,dh] = finalcost(t,x)
+            function [h,dh] = finalCost(t,x)
                 h = t;
                 dh = [1,zeros(1,size(x,1))];
             end
