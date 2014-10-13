@@ -97,7 +97,10 @@ classdef DoubleIntegrator < LinearSystem
       prog = addStateConstraint(prog,ConstantConstraint(xf),N);
       
       % add the cost function g(dt,x,u) = 1*dt
-      prog = addRunningCost(prog,@(dt,x,u) dt);
+      function [g,dg] = cost(dt,x,u)
+        g = dt; dg = [1,0*x',0*u']; % see geval.m for our gradient format
+      end
+      prog = addRunningCost(prog,@cost);
       
       % add a display function to draw the trajectory on every iteration
       function displayStateTrajectory(t,x,u)
@@ -132,7 +135,10 @@ classdef DoubleIntegrator < LinearSystem
       prog = addStateConstraint(prog,BoundingBoxConstraint(xf,xf),N);
       
       % add the cost function g(dt,x,u) = 1*dt
-      prog = addRunningCost(prog,@(dt,x,u) dt);
+      function [g,dg] = cost(dt,x,u)
+        g = dt; dg = [1,0*x',0*u']; % see geval.m for our gradient format
+      end
+      prog = addRunningCost(prog,@cost);
       
       % add a display function to draw the trajectory on every iteration
       function displayStateTrajectory(t,x,u)

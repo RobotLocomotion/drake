@@ -126,7 +126,7 @@ classdef DirtranTrajectoryOptimization < DirectTrajectoryOptimization
     function [f,df] = midpoint_running_fun(obj,running_handle,h,x0,x1,u0,u1)
       nX = obj.plant.getNumStates();
       nU = obj.plant.getNumInputs();
-      [f,dg] = geval(running_handle,h,.5*(x0+x1),.5*(u0+u1));
+      [f,dg] = running_handle(h,.5*(x0+x1),.5*(u0+u1));
       
       df = [dg(:,1) .5*dg(:,2:1+nX) .5*dg(:,2:1+nX) .5*dg(:,2+nX:1+nX+nU) .5*dg(:,2+nX:1+nX+nU)];
     end

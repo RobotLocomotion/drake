@@ -135,13 +135,13 @@ classdef DircolTrajectoryOptimization < DirectTrajectoryOptimization
   
   methods (Access = protected)
     function [f,df] = running_fun_end(obj,running_handle,h,x,u)
-      [f,dg] = geval(running_handle,.5*h,x,u);
+      [f,dg] = running_handle(.5*h,x,u);
       
       df = [.5*dg(:,1) dg(:,2:end)];
     end
     
     function [f,df] = running_fun_mid(obj,running_handle,h0,h1,x,u)
-      [f,dg] = geval(running_handle,.5*(h0+h1),x,u);
+      [f,dg] = running_handle(.5*(h0+h1),x,u);
       
       df = [.5*dg(:,1) .5*dg(:,1) dg(:,2:end)];
     end
