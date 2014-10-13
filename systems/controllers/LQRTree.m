@@ -390,17 +390,12 @@ classdef LQRTree < HybridDrakeSystem
         end
         
         % try to find a trajectory
-        utraj0 = PPTrajectory(foh(linspace(0,tf0,nbreaks),randn(nU,nbreaks)));
-        con.x0.lb=xs;
-        con.x0.ub=xs;
-        con.u.lb = p.umin;
-        con.u.ub = p.umax;
-%        con.xf.lb=xG;  % just grow to the goal for now
-%        con.xf.ub=xG;
-%        con.uf.lb=uG;
-%        con.uf.ub=uG;
-        con.xf.ceq=@c.onTreeConstraint;
-        [utraj,xtraj,info] = trajectoryOptimization(p,@(t,x,u)trajCost(t,x,u,.01),@trajFinalCost,xs,utraj0,con,options);
+        prog = DircolTrajectoryOptimization(p,nbreaks,[options.Tslb,options.Tsub]);
+        prog = prog.addStateConstraint(ConstantConstraint(xs),1);
+        prog = prog.addStateConstraint(FunctionHandleConstraint(0,0,nX,@c.onTreeConstraint),nbreaks);
+        prog = prog.addRunningCost(@(t,x,u)trajCost(t,x,u,.01));
+        prog = prog.addFinalCost(@trajFinalCost);
+        [xtraj,utraj,~,~,info] = prog.solveTraj(tf0);
         if (info~=1) % failed to find a trajectory
           if (all(info~=[3,13,32]))
             [str,cat] = snoptInfo(info);

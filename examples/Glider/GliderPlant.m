@@ -31,7 +31,7 @@ classdef GliderPlant < DrakeSystem
   
   methods
     function obj = GliderPlant()
-      obj = obj@DrakeSystem(7,0,1,7);
+      obj = obj@DrakeSystem(7,0,1,7,false,true);
       obj = setDirectFeedthrough(obj,0);
       ulimit = 13; % max servo velocity
       obj = setInputLimits(obj,-ulimit,ulimit);

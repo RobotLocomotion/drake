@@ -91,6 +91,11 @@ classdef Constraint
 
     function obj = setName(obj,name)
       % @param name   -- A cell array, name{i} is the name string of i'th constraint
+      %                  if name is a string, then the variables will be
+      %                  named name1, name2, name3, etc.
+      if(ischar(name))
+        name=cellfun(@(a) [name,num2str(a)],num2cell(1:obj.num_cnstr),'UniformOutput',false)';
+      end
       if(~iscellstr(name))
         error('Drake:Constraint:name should be a cell array of string');
       end

@@ -44,7 +44,6 @@ addpath(fullfile(root,'systems','robotInterfaces','calibration'));
 addpath(fullfile(root,'solvers'));
 addpath(fullfile(root,'solvers','trajectoryOptimization'));
 addpath(fullfile(root,'util'));
-addpath(fullfile(root,'util','obstacles'));
 addpath(fullfile(root,'thirdParty'));
 addpath(fullfile(root,'thirdParty','path'));
 addpath(fullfile(root,'thirdParty','spatial'));
@@ -72,7 +71,7 @@ setenv('PATH_LICENSE_STRING', '2096056969&Russ_Tedrake&Massachusetts_Institute_o
 if checkDependency('simulink')
   autosave_options = get_param(0,'AutoSaveOptions');
   if autosave_options.SaveOnModelUpdate
-    warning('Disabling autosave for simulink blocks (to avoid generating a lot of *.mdl.autosave files in your directory.  If you aren''t a regular Simulink user and don''t want this disabled, comment out this section in addpath_drake');
+    warning('Drake:DisablingSimulinkAutosave','Disabling autosave for simulink blocks (to avoid generating a lot of *.mdl.autosave files in your directory.  If you aren''t a regular Simulink user and don''t want this disabled, comment out this section in addpath_drake');
     autosave_options.SaveOnModelUpdate = false;
     set_param(0,'AutoSaveOptions',autosave_options);
   end
