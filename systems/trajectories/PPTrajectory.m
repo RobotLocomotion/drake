@@ -105,6 +105,35 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
       obj.pp.breaks = obj.pp.breaks + offset;
       nobj = setOutputFrame(PPTrajectory(obj.pp),getOutputFrame(obj)); 
     end
+
+    function nobj = scaleTime(obj,scale)
+      % Scale the time of the PPTrajectory uniformly. The resulting trajectory has
+      % the duration of each segment multiplied by [scale]. The coefficients are
+      % also scaled in order to preserve the shape of the trajectory.
+      [breaks, flat_coefs, l, k, d] = unmkpp(obj.pp);
+      
+      breaks = breaks * scale;
+      if d == 1
+        coefs = flat_coefs;
+        for i = 1:size(coefs, 1)
+          coefs(i,:) = coefs(i,:) .* bsxfun(@power, (1/scale), (size(coefs, 2)-1):-1:0);
+        end
+      else
+        % Even though they give us l, k, d in that order, coefs should actually be a d-by-l-by-k array.
+        coefs = reshape(flat_coefs, [prod(d), l, k]);
+        for j = 1:(prod(d))
+          for i = 1:size(coefs, 2)
+            coefs(j,i,:) = coefs(j,i,:) .* reshape(bsxfun(@power, (1/scale), (size(coefs, 3)-1):-1:0), 1, 1, []);
+          end
+        end
+        coefs = reshape(coefs, [d, l, k]);
+      end
+      if d == 1
+        nobj = PPTrajectory(mkpp(breaks, coefs));
+      else
+        nobj = PPTrajectory(mkpp(breaks, coefs, d));
+      end
+    end
     
     function nobj = uminus(obj)
       obj.pp.coefs = -obj.pp.coefs;
