@@ -26,8 +26,6 @@ classdef IKoptions
 % @param qd0_lb             -- The lowerbound of the initial velocity
 % @param qdf_ub             -- The upper bound of the final velocity
 % @param qdf_lb             -- The lower bound of the final velocity
-% @param use_rbm_joint_bnd  -- A boolean variable. True if the robot uses the
-% RigidBodyManipulator's joint limits by default. @default is true
   properties(SetAccess=protected)
     robot
     nq
@@ -51,7 +49,6 @@ classdef IKoptions
     qdf_ub
     qdf_lb
     mex_ptr = 0;
-    use_rbm_joint_bnd = true;
   end
 
   methods(Access = protected)
@@ -314,15 +311,6 @@ classdef IKoptions
       if(obj.nq ~= nq_cache)
         obj = setDefaultParams(obj,robot);
       end
-    end
-    
-    function obj = setUseRBMJointBnd(obj,flag)
-      if obj.mex_ptr ~= 0
-        obj.mex_ptr = IKoptionsmex(3,obj.mex_ptr,'use_rbm_joint_bnd',flag);
-      end
-      typecheck(flag,'logical');
-      sizecheck(flag,[1,1]);
-      obj.use_rbm_joint_bnd = flag;
     end
   end
 end

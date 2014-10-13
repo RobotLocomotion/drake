@@ -166,17 +166,14 @@ classdef ObstacleField
            end
        end
        
-       function con = AddConstraints(obj, con)
-           % Adds the con.x.c constraint for the ObstacleField to the given
-           % constraint object.
+       function prog = AddConstraints(obj, prog)
+           % Adds the non-convex constraints for the ObstacleField to the 
+           % given NonlinearProgram
            %
-           % @param con input constraint object.  Must be a structure.
-           %    Other than that, we'll just overwrite con.x.c, so anything
-           %    else will be returned unchanged.
-           %
-           % @retval con Constraint structure with modified con.x.c value.
+           % @param prog a DirectTrajectoryOptimization
+           % @retval prog the updated NonlinearProgram
            
-           con.x.c = @(x)obj.obstacleConstraint(x);
+           prog = prog.addStateConstraint(FunctionHandleConstraint(-inf(obj.number_of_obstacles,1),zeros(obj.number_of_obstacles,1),2,@(x)obj.obstacleConstraint(x)),1:prog.N,1:2);
        end
        
        
