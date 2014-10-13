@@ -395,7 +395,7 @@ classdef LQRTree < HybridDrakeSystem
         prog = prog.addStateConstraint(FunctionHandleConstraint(0,0,nX,@c.onTreeConstraint),nbreaks);
         prog = prog.addRunningCost(@(t,x,u)trajCost(t,x,u,.01));
         prog = prog.addFinalCost(@trajFinalCost);
-        [utraj,xtraj,~,~,info] = prog.solveTraj(tf0);
+        [xtraj,utraj,~,~,info] = prog.solveTraj(tf0);
         if (info~=1) % failed to find a trajectory
           if (all(info~=[3,13,32]))
             [str,cat] = snoptInfo(info);

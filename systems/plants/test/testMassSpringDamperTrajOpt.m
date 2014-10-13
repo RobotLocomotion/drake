@@ -20,7 +20,7 @@ prog = prog.addTrajectoryDisplayFunction(@(t,x,u)plotDircolTraj(t,x,u,[1 2]));
 info = 0;
 for attempts=1:10,
   tic
-  [utraj,xtraj,~,~,info] = prog.solveTraj(tf0);
+  [xtraj,utraj,~,~,info] = prog.solveTraj(tf0);
   toc
   if info==1, break; end
 end

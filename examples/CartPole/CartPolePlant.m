@@ -106,7 +106,7 @@ classdef CartPolePlant < Manipulator
       traj_init.x = PPTrajectory(foh([0,tf0],[x0,xf]));
       for attempts=1:10
         tic
-        [utraj,xtraj,z,F,info] = prog.solveTraj(tf0,traj_init);
+        [xtraj,utraj,z,F,info] = prog.solveTraj(tf0,traj_init);
         toc
         if info==1, break; end
       end

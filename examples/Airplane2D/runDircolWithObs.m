@@ -34,7 +34,7 @@ drawnow
 prog = setSolverOptions(prog,'snopt','MajorOptimalityTolerance',1e-2);
 initial_guess.x = PPTrajectory(foh([0,tf0],[x0,xf]));
 tic
-[utraj,xtraj,~,~,info]=solveTraj(prog,tf0,initial_guess);
+[xtraj,utraj,~,~,info]=solveTraj(prog,tf0,initial_guess);
 toc
 
 if (nargout<1)
