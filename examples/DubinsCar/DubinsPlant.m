@@ -56,7 +56,7 @@ classdef DubinsPlant < DrakeSystem
       info = 0;
       while (info~=1)
         tic
-        [utraj,xtraj,z,F,info] = prog.solveTraj(tf0);
+        [xtraj,utraj,z,F,info] = prog.solveTraj(tf0);
         toc
       end
 

@@ -34,7 +34,7 @@ else
  traj_init = struct();
 end
 tic
-[utraj,xtraj,z,F,info,infeasible_constraint_name] = prog.solveTraj(tf0,traj_init);
+[xtraj,utraj,z,F,info,infeasible_constraint_name] = prog.solveTraj(tf0,traj_init);
 if (info~=1) infeasible_constraint_name, error('failed to find a trajectory'); end
 toc
 

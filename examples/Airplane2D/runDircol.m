@@ -33,7 +33,7 @@ while (info~=1)
   traj_init.u = setOutputFrame(PPTrajectory(foh(t_init,randn(1,N))),getInputFrame(p));
 
   tic
-  [utraj,xtraj,~,~,info]=solveTraj(prog,t_init,traj_init);
+  [xtraj,utraj,~,~,info]=solveTraj(prog,t_init,traj_init);
   toc
 end
 

@@ -182,7 +182,7 @@ classdef UnderwaterAcrobotPlant < Manipulator
             
             for attempts=1:10
               tic
-              [utraj,xtraj,z,F,info] = prog.solveTraj(tf0,traj_init);
+              [xtraj,utraj,z,F,info] = prog.solveTraj(tf0,traj_init);
               toc
               if info==1, break; end
             end
