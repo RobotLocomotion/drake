@@ -68,7 +68,6 @@ else
   x = invT*pts;
   x = x(1:3,:);
   
-  % Jacobians make use of d(inv(T))dqi = -inv(T)*dTdqi*inv(T)
   if compute_P
     P = zeros(3*m,3*m);
     for i=1:size(pts,2)
@@ -77,36 +76,18 @@ else
   end
   if compute_first_derivatives
     nq = size(kinsol.q,1);
-    invT = inv(kinsol.T{body_ind}*Tframe);
-    dTdq = cell(1,nq);
-    for i=1:nq
-      dTdq{i} = [kinsol.dTdq{body_ind}(i:nq:end,:);zeros(1,size(kinsol.dTdq{body_ind},2))];
-      dTdq{i} = dTdq{i}*Tframe;
-    end
-    dinvTdq = cell(1,nq);
-    for i=1:nq
-      dinvTdq{i} = -invT*dTdq{i}*invT;
-    end
     J = zeros(3*m,nq);
-    for i=1:nq
-      grad = dinvTdq{i}*pts;
-      grad = grad(1:3,:);
-      J(:,i) = reshape(grad,[],1);
+    for i=1:m
+      grad = dinvT*pts(:,i);
+      J((i-1)*3+(1:3),:) = reshape(grad,nq,3)';
     end
-    %J = zeros(3*m,nq);
-    %for i=1:m
-      %grad = dinvT*pts(:,i);
-      %grad = grad(1:3,:);
-      %J((i-1)*3+(1:3),:) = reshape(grad,3,[]);
-    %end
   end
   if compute_second_derivatives
     if isempty(kinsol.ddTdqdq{body_ind})
       error('you must call doKinematics with the second derivative option enabled');
     end
-    %ind = repmat(1:3*nq,nq,1)+repmat((0:3*nq:3*nq*(nq-1))',1,3*nq);
     dJ_reshaped = ddinvT*pts;
-    dJ = reshape(permute(reshape(dJ_reshaped,[nq,3,nq,m]),[2,4,1,3]),3*m,nq^2);
+    dJ = reshape(permute(reshape(dJ_reshaped,[nq,3,nq,m]),[2,4,3,1]),3*m,nq^2);
   end
   
 end
