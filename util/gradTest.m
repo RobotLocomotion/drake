@@ -81,10 +81,10 @@ if (~isfield(options,'tol')) options.tol = 0.01; end
 f = reshape(f,[],1);
 if (~iscell(df)) a{1} = df; df=a; clear a; end
 
-for b=1:19, fprintf(1,' '); end
 
 input_ind = 0;
 for v=1:length(varargin)
+  for b=1:19, fprintf(1,' '); end
   x = varargin{v};
   if ~isnumeric(x), continue; end
   
@@ -148,8 +148,8 @@ for v=1:length(varargin)
     clear y;
   end
   input_ind = input_ind + length(x);
+  fprintf(1,'\n');
 end
 
-fprintf(1,'\n');
 
 end

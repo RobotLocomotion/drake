@@ -14,27 +14,26 @@ tf0 = .8;                      % initial guess at duration
 x0 = double(x0);
 xf = double(xf);
 
-con.u.lb = p.umin;
-con.u.ub = p.umax;
-con.x0.lb = x0;
-con.x0.ub = x0;
-con.xf.lb = xf;
-con.xf.ub = xf;
-con.T.lb = 0.1;   
-con.T.ub = 1;
+N = 11;
+prog = DircolTrajectoryOptimization(p,N,[0.1 1]);
 
-options.method='dircol';
-options.MajorOptimalityTolerance=1e-2;
-options.trajectory_cost_fun=@(t,x,u)plotDircolTraj(t,x,u,[1 2]);  % for debugging
-%options.grad_test = true;
+prog = addStateConstraint(prog,ConstantConstraint(x0),1);
+prog = addStateConstraint(prog,ConstantConstraint(xf),N);
 
+prog = addRunningCost(prog,@cost);
+prog = addFinalCost(prog,@finalCost);
+
+prog = addTrajectoryDisplayFunction(prog,@(dt,x,u)plotDircolTraj(dt,x,u,[1 2]));
+%options.MajorOptimalityTolerance=1e-2;
+
+t_init = linspace(0,tf0,N);
 info = 0;
 while (info~=1)
   % generate a random trajectory
-  utraj0 = PPTrajectory(foh(linspace(0,tf0,11),randn(1,11)));
-  
+  traj_init.u = setOutputFrame(PPTrajectory(foh(t_init,randn(1,N))),getInputFrame(p));
+
   tic
-  [utraj,xtraj,info] = trajectoryOptimization(p,@cost,@finalcost,x0,utraj0,con,options);
+  [xtraj,utraj,~,~,info]=solveTraj(prog,t_init,traj_init);
   toc
 end
 
@@ -45,7 +44,7 @@ end
 
 end
 
-      function [g,dg] = cost(t,x,u)
+      function [g,dg] = cost(dt,x,u)
         R = 0;
         g = u'*R*u;
         %g = sum((R*u).*u,1);
@@ -53,7 +52,7 @@ end
         dg = zeros(1, 1 + size(x,1) + size(u,1));
       end
       
-      function [h,dh] = finalcost(t,x)
+      function [h,dh] = finalCost(t,x)
         h = t;
         dh = [1,zeros(1,size(x,1))];
       end
@@ -61,6 +60,7 @@ end
       function [J,dJ]=plotDircolTraj(t,x,u,plotdims)
         figure(25);
         h=plot(x(plotdims(1),:),x(plotdims(2),:),'r.-');
+        axis([-2 2 -1 10]); axis equal;
         drawnow;
         delete(h);
         J=0;

@@ -39,7 +39,6 @@ class DLLEXPORT IKoptions
     VectorXd qd0_ub;
     VectorXd qdf_lb;
     VectorXd qdf_ub;
-    bool use_rbm_joint_bnd;
   protected:
     void setDefaultParams(RigidBodyManipulator* robot);
   public:
@@ -79,8 +78,6 @@ class DLLEXPORT IKoptions
     void getqd0(VectorXd &lb, VectorXd &ub) const;
     void getqdf(VectorXd &lb, VectorXd &ub) const;
     void updateRobot(RigidBodyManipulator* new_robot);
-    void setUseRBMJointBnd(bool flag);
-    bool getUseRBMJointBnd() const;
 };
 #endif
 
