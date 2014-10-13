@@ -34,13 +34,22 @@ if compute_first_derivatives
   valuecheck(mod(size(dT,1),3),0);
   N = size(dT,1)/3;
 
+  dT_reshaped = permute(reshape(dT,[N,3,4]),[2,3,1]);
+
   % dR^T [3*N x 3]
-  dRtranspose = reshape(dT(:,1:3)',3*N,3);
+  dRtranspose = permute(dT_reshaped(1:3,1:3,:),[2,1,3]);
+  dRtranspose_flat = reshape(permute(dRtranspose,[2,1,3]),[3,3*N])';
+  dRtranspose_p_flat = dRtranspose_flat*p;
+  dRtranspose_p = reshape(dRtranspose_p_flat,[3,1,N]);
 
   % dp [3 x N]
-  dp = reshape(dT(:,4),N,3)';
-  dinvT_reshaped = [dRtranspose -dRtranspose*p - reshape(R'*dp,[3*N,1])];
-  dinvT = reshape(transposeBlocks(dinvT_reshaped,[3,4]),[4,3*N])';
+  dp = dT_reshaped(1:3,4,:);
+
+  Rtranspose_dp_flat = R'*reshape(dp,[3,N]);
+  Rtranspose_dp = reshape(Rtranspose_dp_flat,[3,1,N]);
+  dinvT_reshaped = [dRtranspose,  -dRtranspose_p - Rtranspose_dp];
+
+  dinvT = reshape(permute(dinvT_reshaped,[2,3,1]),[4,3*N])';
 
   if compute_second_derivatives
     if nargin < 3 
@@ -54,28 +63,29 @@ if compute_first_derivatives
     ddT_reshaped = permute(reshape(ddT,[N,3,N,4]), [2,4,1,3]);
 
     % ddR^T [3 x 3 x N x N]
-    ddRtranspose = ddT_reshaped(1:3,1:3,:,:);
+    ddRtranspose = permute(ddT_reshaped(1:3,1:3,:,:),[2,1,3,4]);
 
     % ddR^T*p [3 x 1 x N x N]
     ddRtranspose_p_flat = reshape(permute(ddRtranspose,[2,1,3,4]),[3,3*N*N])'*p;
     ddRtranspose_p = reshape(ddRtranspose_p_flat,[3,1,N,N]);
 
     % ddp [3 x 1 x N x N]
-    ddp = ddT_reshaped(:,4,:,:);
+    ddp = ddT_reshaped(1:3,4,:,:);
 
     % R^T*ddp [3 x 1 x N x N]
     Rtranspose_ddp_flat = R'*reshape(ddp,3,N*N);
     Rtranspose_ddp = reshape(Rtranspose_ddp_flat,[3,1,N,N]);
 
     % dRi^T * dpj [3 x 1 x N x N]
-    dRtranspose_i_dp_j = permute(reshape(dRtranspose*dp,[3,N,1,N]), [1,3,2,4]);
+    dp_flat = reshape(dp,[3,N]);
+    dRtranspose_i_dp_j = permute(reshape(dRtranspose_flat*dp_flat,[3,N,1,N]), [1,3,2,4]);
     dRtranspose_j_dp_i = permute(dRtranspose_i_dp_j, [1,2,4,3]);
 
     % ddinvT_reshaped [3 x 4 x N x N]
     ddinvT_reshaped = [ddRtranspose, -ddRtranspose_p - dRtranspose_i_dp_j - dRtranspose_j_dp_i - Rtranspose_ddp];
 
     % ddinvT [3*N^2 x 4]
-    ddinvT = reshape(permute(ddinvT_reshaped,[3,1,4,2]),3*N^2,4);
+    ddinvT = reshape(permute(ddinvT_reshaped,[2,3,1,4]),[4,3*N^2])';
   end
 end
 
