@@ -1,4 +1,4 @@
-function [x,J,P,dJ] = bodyKin(obj,kinsol,body_or_frame_ind,pts)
+function [x,P,J,dP,dJ] = bodyKin(obj,kinsol,body_or_frame_ind,pts)
 % computes the position of pts (given in the global frame) in the body frame
 %
 % @param kinsol solution structure obtained from doKinematics
@@ -16,9 +16,9 @@ function [x,J,P,dJ] = bodyKin(obj,kinsol,body_or_frame_ind,pts)
 
 checkDirty(obj);
 
-compute_first_derivatives   = (nargout > 1);
-compute_P                   = (nargout > 2);
-compute_second_derivatives  = (nargout > 3);
+compute_P                   = (nargout > 1);
+compute_first_derivatives   = (nargout > 2);
+compute_second_derivatives  = (nargout > 4);
 
 % todo: zap this after the transition
 if isa(body_or_frame_ind,'RigidBody'), error('support for passing in RigidBody objects has been removed.  please pass in the body index'); end
@@ -69,7 +69,7 @@ else
   x = x(1:3,:);
   
   if compute_P
-    P = zeros(3*m,3*m);
+    P = zeros(3*m,3*m)*kinsol.q(1); % keep the taylorvars happy
     for i=1:size(pts,2)
       P((i-1)*3+1:i*3,(i-1)*3+1:i*3)=invT(1:3,1:3);
     end
@@ -77,10 +77,18 @@ else
   if compute_first_derivatives
     nq = size(kinsol.q,1);
     J = zeros(3*m,nq);
+    if compute_P
+      dP = zeros(3*m,3*m,nq);
+      dinvT_reshaped = permute(reshape(dinvT,[nq,3,4]),[2,3,1]);
+    end
     for i=1:m
       grad = dinvT*pts(:,i);
       J((i-1)*3+(1:3),:) = reshape(grad,nq,3)';
+      if compute_P
+        dP((i-1)*3+1:i*3,(i-1)*3+1:i*3,:)=dinvT_reshaped(1:3,1:3,:);
+      end
     end
+    dP = reshape(dP,(3*m)^2,nq);
   end
   if compute_second_derivatives
     if isempty(kinsol.ddTdqdq{body_ind})
