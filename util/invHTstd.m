@@ -82,7 +82,7 @@ if compute_first_derivatives
     ddinvT_reshaped = [ddRtranspose, -ddRtranspose_p - dRtranspose_i_dp_j - dRtranspose_j_dp_i - Rtranspose_ddp; ...
                        zeros(1,4,N,N)];
 
-    % ddinvT [3*N^2 x 4]
+    % ddinvT [16 x N^2]
     ddinvT = reshape(ddinvT_reshaped,[4*4,N*N]);
   end
 end
