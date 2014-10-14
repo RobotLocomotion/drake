@@ -57,6 +57,9 @@ classdef RelativePosition < drakeFunction.kinematic.Kinematic
       % @param q      -- An obj.rbm.getNumPositions x 1 vector. The robot posture.
       % @param kinsol -- A kinsol struct, returned from RigidBodyManipulator.doKinematics function,
       % that stores the kinematic tree information for a posture.
+      if(nargin<3)
+        kinsol = doKinematics(obj.rbm,q);
+      end
       if obj.frameA == 0
         [pts_in_world,JA] = getCOM(obj.rbm,kinsol);
       else
