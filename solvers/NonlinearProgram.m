@@ -676,7 +676,7 @@ classdef NonlinearProgram
     function obj = addDisplayFunction(obj,display_fun,indices)
       % add a dispay function that gets called on every iteration of the
       % algorithm
-      % @param displayFun a function handle of the form displayFun(x(indices))
+      % @param display_fun a function handle of the form displayFun(x(indices))
       % @param indices optionally specify a subset of the decision
       % variables to be passed to the displayFun @default 1:obj.num_vars
       

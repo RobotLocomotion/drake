@@ -125,7 +125,7 @@ if (method==12 || method == 13) % user then taylorvar or user then numerical
       [varargout{:}]=feval(fun,varargin{:});
       return;  % if i get here, then it passed and I'm done
     catch exception
-      if (strcmp(exception.identifier,'MATLAB:maxlhs') || strcmp(exception.identifier,'MATLAB:TooManyOutputs'))
+      if (strcmp(exception.identifier,'MATLAB:maxlhs') || strcmp(exception.identifier,'MATLAB:TooManyOutputs') || strcmp(exception.identifier,'MATLAB:unassignedOutputs'))
         n=p;  % it failed, assume it only has the nominal outputs
       else  % it was some different error
         rethrow(exception);
