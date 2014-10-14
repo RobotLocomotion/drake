@@ -4,71 +4,46 @@ if (nargin<1)
   p = PlanePlant();
 end
 
-x0 = [3.9; 0; 0; 0];
-tf0 = .7;
+x0 = [3.9; 0; 0; 0]; 
 xf = [5; 9; 0; 0];
+tf0 = .7;
 
-utraj0 = PPTrajectory(foh(linspace(0,tf0,11),0*randn(1,11)));
-utraj0 = setOutputFrame(utraj0,p.getInputFrame);
+N = 21;
+prog = DircolTrajectoryOptimization(p,N,[0.2 3]);
 
-%con.u.lb = p.umin;
-%con.u.ub = p.umax;
-con.x0.lb = x0;
-con.x0.ub = x0;
-con.xf.lb = xf; %[xf(1:2);-inf(2,1)];
-con.xf.ub = xf; %[xf(1:2);inf(2,1)];
-con.T.lb = .2;
-con.T.ub = 3;
-
+prog = addStateConstraint(prog,ConstantConstraint(x0),1);
+prog = addStateConstraint(prog,ConstantConstraint(xf),N);
 
 % add obstacles
 disp('Adding obstacles...');
 field = ObstacleField();
 field = field.GenerateRandomObstacles();
-con = field.AddConstraints(con);
+prog = field.AddConstraints(prog);
+
+prog = addRunningCost(prog,@(dt,x,u)cost(dt,x,u,field));
+prog = addFinalCost(prog,@finalCost);
+
+prog = addTrajectoryDisplayFunction(prog,@(dt,x,u)plotDircolTraj(dt,x,u,[1 2]));
+
 
 figure(25); clf;  hold on;
 v = PlaneVisualizer(p,field);
 v.draw(0,x0);
 drawnow
 
-disp('Running trajectory optimization...');
-
-options.method='dircol';
-options.MajorOptimalityTolerance=1e-2;
-options.trajectory_cost_fun=@(t,x,u)plotDircolTraj(t,x,u,[1 2]);  % for debugging
-%options.grad_method={'user','taylorvar'};
+prog = setSolverOptions(prog,'snopt','MajorOptimalityTolerance',1e-2);
+initial_guess.x = PPTrajectory(foh([0,tf0],[x0,xf]));
 tic
-%options.grad_test = true;
-[utraj,xtraj,info] = trajectoryOptimization(p,@(t,x,u)cost(t,x,u,field),@finalcost,x0,utraj0,con,options);
-if (info~=1) error(['Airplane2D:SNOPT:INFO',num2str(info)],'failed to find a trajectory'); end
+[xtraj,utraj,~,~,info]=solveTraj(prog,tf0,initial_guess);
 toc
 
-% upsample
-ts = linspace(utraj.tspan(1),utraj.tspan(2),41);
-options.xtape0='simulate';
-utraj0 = PPTrajectory(foh(ts,utraj.eval(ts))); utraj0 = setOutputFrame(utraj0,utraj.getOutputFrame);
-[utraj,xtraj,info] = trajectoryOptimization(p,@(t,x,u)cost(t,x,u,field),@finalcost,x0,utraj0,con,options);
-if (info~=1) error(['Airplane2D:SNOPT:INFO',num2str(info)],'failed to improve the trajectory'); end
-
-hold off;
-
-if (nargout>0) 
-  return;
+if (nargout<1)
+  v.playback(xtraj);
 end
-
-%disp('Stabilizing trajectory...');
-c = tvlqr(p,xtraj,utraj,eye(4),1,eye(4));
-
-disp('Visualizing trajectory...');
-v.playback(xtraj);
-%v.display_dt=0;v.playback_speed=.5; v.playbackAVI(xtraj,'PlaneWithObs');
-
-disp('Done.');
 
 end
 
-      function [g,dg] = cost(t,x,u,field)
+      function [g,dg] = cost(dt,x,u,field)
         R = 0.0001;
         
         % minimize the max obstacle constraint
@@ -83,7 +58,7 @@ end
         %dg = zeros(1, 1 + size(x,1) + size(u,1));
       end
       
-      function [h,dh] = finalcost(t,x)
+      function [h,dh] = finalCost(t,x)
         h = t;
         dh = [1,zeros(1,size(x,1))];
       end
@@ -91,6 +66,7 @@ end
       function [J,dJ]=plotDircolTraj(t,x,u,plotdims)
         figure(25);
         h=plot(x(plotdims(1),:),x(plotdims(2),:),'r.-');
+        axis([-2 2 -1 10]); axis equal;
         drawnow;
         delete(h);
         J=0;
