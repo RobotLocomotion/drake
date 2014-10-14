@@ -234,7 +234,7 @@ kinsol = doKinematics(robot,q);
 rhand_pos = forwardKin(robot,kinsol,r_hand,[0 1;0 0;0 0],0);
 rhand_gaze_vec = rhand_pos(:,2)-rhand_pos(:,1);
 rhand_gaze_des = quat2rotmat([0.5;0.5;-0.5;0.5])*[1;0;0];
-if(acos(rhand_gaze_vec'*rhand_gaze_des)>0.1*pi+1e-5)
+if(acos(rhand_gaze_vec'*rhand_gaze_des)>0.1*pi+1e-4)
   error('Gaze conethreshold does not satisfy');
 end
 display('Check IK pointwise with gaze orientation');
@@ -245,7 +245,7 @@ for i = 1:size(q,2)
   rhand_pos = forwardKin(robot,kinsol,r_hand,[0 1;0 0;0 0],0);
   rhand_gaze_vec = rhand_pos(:,2)-rhand_pos(:,1);
   rhand_gaze_des = quat2rotmat([0.5;0.5;-0.5;0.5])*[1;0;0];
-  if(acos(rhand_gaze_vec'*rhand_gaze_des)>0.1*pi+1e-5)
+  if(acos(rhand_gaze_vec'*rhand_gaze_des)>0.1*pi+1e-4)
     error('Gaze conethreshold does not satisfy');
   end
 end
@@ -257,7 +257,7 @@ q = test_IK_userfun(robot,q_seed,q_nom,kc1,pc_knee,kc2l,kc2r,kc3,kc4,kc5,ikoptio
 kinsol = doKinematics(robot,q);
 lhand_pos = forwardKin(robot,kinsol,l_hand,[0 1;0 0;0 0],0);
 lhand_gaze_vec = lhand_pos(:,2)-lhand_pos(:,1);
-if(acos(lhand_gaze_vec'*[1;0;0])>0.4*pi+1e-5)
+if(acos(lhand_gaze_vec'*[1;0;0])>0.4*pi+1e-4)
   error('Gaze conethreshold does not satisfy');
 end
 display('Check IK pointwise with gaze direction Constraint');
@@ -267,7 +267,7 @@ for i = 1:size(q,2)
   kinsol = doKinematics(robot,q(:,i));
   lhand_pos = forwardKin(robot,kinsol,l_hand,[0 1;0 0;0 0],0);
   lhand_gaze_vec = lhand_pos(:,2)-lhand_pos(:,1);
-  if(acos(lhand_gaze_vec'*[1;0;0])>0.4*pi+1e-5)
+  if(acos(lhand_gaze_vec'*[1;0;0])>0.4*pi+1e-4)
     error('Gaze conethreshold does not satisfy');
   end
 end
@@ -284,7 +284,7 @@ head_pos = forwardKin(robot,kinsol,head,[gaze_origin gaze_origin+gaze_axis],0);
 head_gaze_vec = head_pos(:,2)-head_pos(:,1);
 head_gaze_des = gaze_target-head_pos(:,1);
 head_gaze_des = head_gaze_des/norm(head_gaze_des);
-if(acos(head_gaze_vec'*head_gaze_des)>0.1*pi+1e-5)
+if(acos(head_gaze_vec'*head_gaze_des)>0.1*pi+1e-4)
   error('Does not satisfy conethreshold constraint');
 end
 display('Check IK pointwise with gaze target constraint');
@@ -296,7 +296,7 @@ for i = 1:size(q,2)
   head_gaze_vec = head_pos(:,2)-head_pos(:,1);
   head_gaze_des = gaze_target-head_pos(:,1);
   head_gaze_des = head_gaze_des/norm(head_gaze_des);
-  if(acos(head_gaze_vec'*head_gaze_des)>0.1*pi+1e-5)
+  if(acos(head_gaze_vec'*head_gaze_des)>0.1*pi+1e-4)
     error('Does not satisfy conethreshold constraint');
   end
 end
