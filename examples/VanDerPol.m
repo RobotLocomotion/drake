@@ -62,7 +62,7 @@ classdef VanDerPol < PolynomialSystem
         h=fnplt(x);
         set(h,'Color',MITred);
         xa = x.eval(tf-.02); xb=x.eval(tf);
-        axisAnnotation('arrow',[xa(1),xb(1)],[xa(2),xb(2)],'Color',MITred,'HeadWidth',50,'HeadLength',50);
+        axisAnnotation('arrow',[xa(1),xb(1)],[xa(2),xb(2)],'Color',MITred,'HeadWidth',200,'HeadLength',150);
         drawnow;
       end
       axis([-2.5,2.5,-3,3]);

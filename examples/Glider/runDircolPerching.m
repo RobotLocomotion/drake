@@ -22,10 +22,14 @@ prog = prog.addFinalCost(@(t,x)finalCost(t,x,xf));
 
 prog = prog.addTrajectoryDisplayFunction(@plotDircolTraj);
 
-tic
-[xtraj,utraj,z,F,info,infeasible_constraint_name] = prog.solveTraj(tf0);
-if (info~=1) infeasible_constraint_name, error('failed to find a trajectory'); end
-toc
+for i=1:5
+  tic
+  [xtraj,utraj,z,F,info,infeasible_constraint_name] = prog.solveTraj(tf0);
+  toc
+  if info==1, break; end
+end
+if info~=1, error('Failed to find a trajectory'); end
+
 
 if (nargout<1)
   figure(1)
