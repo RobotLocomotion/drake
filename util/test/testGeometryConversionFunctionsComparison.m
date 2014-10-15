@@ -7,7 +7,7 @@ end
 nq = 15;
 
 for i = 1 : 100
-  q = uniformlyRandomQuat();
+  q = rpy2quat(uniformlyRandomNonsingularRPY());
   dq = randn(numel(q), nq);
   [omega2qd, domega2qd, omega2rpyd, domega2rpyd, ddomega2rpyd, rpyd2omega, qd2omega, dqd2omega, dq2R, drpydR, dqdR] = testGeometryConversionFunctionsmex(q, dq);
   
