@@ -33,7 +33,7 @@ function relativePositionTest(visualize)
   %% Test a basic RelativePosition object
   % Create a DrakeFunction that computes the world position of the hand points
   hand_pts_in_body = rbm.getBody(rbm.findLinkInd('l_hand')).getTerrainContactPoints();
-  hand_pts_fcn = RelativePosition(rbm,'l_hand','world',hand_pts_in_body);
+  hand_pts_fcn = RelativePosition(rbm,'l_hand','r_hand',hand_pts_in_body);
 
   % Evaluate that DrakeFunction
   kinsol0 = rbm.doKinematics(q0,false,false);
@@ -60,36 +60,26 @@ function relativePositionTest(visualize)
   % the xy-plane
   single_pt_dist_to_ground = SignedDistanceToHyperplane(Point(R3,0),Point(R3,[0;0;1]));
 
-  %% Enforce that the corners of the left foot be on the ground
+  %% Enforce that the corners of the left foot be on the same plane as the right foot
   % Create a DrakeFunction that computes the world positions of foot points
-  foot_pts_in_body = rbm.getBody(rbm.findLinkInd('l_foot')).getTerrainContactPoints();
-  foot_pts_fcn = RelativePosition(rbm,'l_foot','world',foot_pts_in_body);
+  lfoot_pts_in_body = rbm.getBody(rbm.findLinkInd('l_foot')).getTerrainContactPoints();
+  lfoot_pts_fcn = RelativePosition(rbm,'l_foot','r_foot',lfoot_pts_in_body);
+  rfoot_pts_in_body = rbm.getBody(rbm.findLinkInd('r_foot')).getTerrainContactPoints();
 
   % Create a DrakeFunction that computes the signed distances from m points to
   % the xy-plane, where m = foot_pts_fcn.n_pts
-  dist_to_ground_fcn = duplicate(single_pt_dist_to_ground,foot_pts_fcn.n_pts);
+  dist_to_rfoot_plane_fcn = duplicate(single_pt_dist_to_ground,lfoot_pts_fcn.n_pts);
 
   % Create an constraint mandating that the signed distances between the foot
   % points and the ground be zero
-  lb = zeros(foot_pts_fcn.n_pts,1);
+  lb = mean(rfoot_pts_in_body(3,:))*ones(lfoot_pts_fcn.n_pts,1);
   ub = lb;
-  foot_on_ground_cnstr = DrakeFunctionConstraint(lb,ub,dist_to_ground_fcn(foot_pts_fcn));
-
-  %% Enforce that the hand points be on the ground
-  % Create a DrakeFunction that computes the signed distances from m points to
-  % the xy-plane, where m = hand_pts_fcn.n_pts
-  dist_to_ground_fcn = duplicate(single_pt_dist_to_ground,hand_pts_fcn.n_pts);
-
-  % Create an constraint mandating that the signed distances between the foot
-  % points and the ground be zero
-  lb = zeros(hand_pts_fcn.n_pts,1);
-  ub = lb;
-  hand_on_ground_cnstr = DrakeFunctionConstraint(lb,ub,dist_to_ground_fcn(hand_pts_fcn));
+  foot_on_same_plane_cnstr = DrakeFunctionConstraint(lb,ub,dist_to_rfoot_plane_fcn(lfoot_pts_fcn));
 
   %% Enforce that the projection of the COM onto the xy-plane be within the
   %% convex hull of the foot points
   % Create a frame for the convex weights on the foot points
-  weights_frame = frames.realCoordinateSpace(foot_pts_fcn.n_pts);
+  weights_frame = frames.realCoordinateSpace(lfoot_pts_fcn.n_pts);
 
   % Create a DrakeFunction that computes the COM position
   com_fcn = WorldPosition(rbm,0);
@@ -98,10 +88,10 @@ function relativePositionTest(visualize)
 
   % Create a DrakeFunction that computes a linear combination of points in R3
   % given the points and the weights as inputs
-  lin_comb_of_pts = LinearCombination(foot_pts_fcn.n_pts,R3);
+  lin_comb_of_pts = LinearCombination(lfoot_pts_fcn.n_pts,R3);
   % Create a DrakeFUnction that computes a linear combination of the foot
   % points given joint-angles and weights as inputs
-  lin_comb_of_foot_pts = lin_comb_of_pts([foot_pts_fcn;Identity(weights_frame)]);
+  lin_comb_of_foot_pts = lin_comb_of_pts([lfoot_pts_fcn;Identity(weights_frame)]);
 
   % Create a DrakeFunction that computes the difference between the COM
   % position computed from the joint-angles and the linear combination of the
@@ -110,7 +100,7 @@ function relativePositionTest(visualize)
   support_polygon{2} = Identity(weights_frame);
 
   % Create a DrakeFunction that computes the sum of the weights
-  support_polygon{3} = Linear(weights_frame,frames.realCoordinateSpace(1),ones(1,foot_pts_fcn.n_pts));
+  support_polygon{3} = Linear(weights_frame,frames.realCoordinateSpace(1),ones(1,lfoot_pts_fcn.n_pts));
 
   % Create quasi-static constraints
   % xy-coordinates of COM must match a linear combination of the foot points
@@ -118,8 +108,8 @@ function relativePositionTest(visualize)
   qsc_cnstr{1} = DrakeFunctionConstraint([0;0;-Inf],[0;0;Inf],support_polygon{1});
 
   % The weights must be between 0 and 1
-  lb = zeros(foot_pts_fcn.n_pts,1);
-  ub = ones(foot_pts_fcn.n_pts,1);
+  lb = zeros(lfoot_pts_fcn.n_pts,1);
+  ub = ones(lfoot_pts_fcn.n_pts,1);
   qsc_cnstr{2} = DrakeFunctionConstraint(lb,ub,support_polygon{2});
 
   % The weights must sum to 1
@@ -129,12 +119,10 @@ function relativePositionTest(visualize)
   prog = InverseKinematics(rbm,q_nom);
   prog = prog.setQ(Q);
   q_inds = prog.q_idx;
-  w_inds = reshape(prog.num_vars+(1:foot_pts_fcn.n_pts),[],1);
+  w_inds = reshape(prog.num_vars+(1:lfoot_pts_fcn.n_pts),[],1);
   prog = prog.addDecisionVariable(numel(w_inds));
   
-  prog = prog.addConstraint(foot_on_ground_cnstr,q_inds,prog.kinsol_dataind);
-  prog = prog.addConstraint(hand_on_ground_cnstr,q_inds,prog.kinsol_dataind);
-
+  prog = prog.addConstraint(foot_on_same_plane_cnstr,q_inds,prog.kinsol_dataind);
 %   prog = prog.addConstraint(qsc_cnstr{1},[{q_inds};{w_inds}],{1});
   prog = prog.addConstraint(qsc_cnstr{2},w_inds);
   prog = prog.addConstraint(qsc_cnstr{3},w_inds);

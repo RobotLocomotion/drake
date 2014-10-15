@@ -15,6 +15,9 @@ classdef WorldEuler<drakeFunction.kinematic.RelativeEuler
       % @param q        -- An obj.rbm.getNumPositions x 1 vector. The robot posture.
       % @param kinsol   -- A struct returned from RigidBodyManipulator.doKinematics function, that
       % stored the kinematics tree information
+      if(nargin<3)
+        kinsol = doKinematics(obj.rbm,q);
+      end
       [pos,dpos] = forwardKin(obj.rbm,kinsol,obj.frameA,[0;0;0],1);
       rpy = pos(4:6);
       drpy = dpos(4:6,:);
