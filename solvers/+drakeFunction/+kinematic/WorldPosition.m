@@ -26,10 +26,13 @@ classdef WorldPosition < drakeFunction.kinematic.RelativePosition
       % @param obj  -- drakeFunction.kinematic.RelativePosition object
       % @param q        -- An obj.rbm.getNumPositions x 1 vector. The robot posture.
       % @param kinsol  -- The kinsol struct returned from RigidBodyManipulator.doKinematics function
+      if(nargin<3)
+        kinsol = doKinematics(obj.rbm,q);
+      end
       if(obj.frameA == 0)
         [pos,J] = getCOM(obj.rbm,kinsol);
       else
-        [pos,J] = forwardKin(obj.rbm,kinsol,obj.frameA,0);
+        [pos,J] = forwardKin(obj.rbm,kinsol,obj.frameA,obj.pts_in_A,0);
         pos = pos(:);
       end
     end

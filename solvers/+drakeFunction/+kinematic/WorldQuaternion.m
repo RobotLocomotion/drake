@@ -18,6 +18,9 @@ classdef WorldQuaternion < drakeFunction.kinematic.RelativeQuaternion
       % @param q        -- An obj.rbm.getNumPositions x 1 vector. The robot posture.
       % @param kinsol -- A Kinsol struct returned from RigidBodyManipulator.doKinematics function,
       % stores the information about the kinematic tree
+      if(nargin<3)
+        kinsol = doKinematics(obj.rbm,q);
+      end
       [pos,dpos] = forwardKin(obj.rbm,kinsol,obj.frameA,[0;0;0],2);
       quat = pos(4:7);
       dquat = dpos(4:7,:);
