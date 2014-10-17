@@ -53,13 +53,14 @@ namespace DrakeCollision
   void BulletModel::addElement(const int body_idx, const int parent_idx, 
                                 const Matrix4d& T_element_to_link, Shape shape, 
                                 const vector<double>& params, 
-                                const string& group_name, bool is_static)
+                                const string& group_name, bool is_static,
+                                bool use_margins)
   {
     //DEBUG
     //cout << "BulletModel::addElement: START" << endl;
     //END_DEBUG
     try {
-      bodies[body_idx].addElement(body_idx, parent_idx, T_element_to_link, shape, params, group_name );
+      bodies[body_idx].addElement(body_idx, parent_idx, T_element_to_link, shape, params, group_name, use_margins );
       
       const BulletElement& elem = bodies.at(body_idx).back();
       element_data.push_back(unique_ptr<ElementData>(new ElementData(body_idx,elem.getShape())));
@@ -307,12 +308,6 @@ namespace DrakeCollision
             // compute distance to hit
             
             btVector3 end = ray_callback.m_hitPointWorld;
-
-            // correct for margin
-            auto element_data = static_cast< ElementData* >(ray_callback.m_collisionObject->getUserPointer());
-            if (element_data->shape == MESH || element_data->shape == BOX) {
-              end = end - ray_callback.m_hitNormalWorld*ray_callback.m_collisionObject->getCollisionShape()->getMargin();
-            }
             
             Vector3d end_eigen(end.getX(), end.getY(), end.getZ());
             
