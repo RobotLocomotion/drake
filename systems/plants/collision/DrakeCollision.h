@@ -50,7 +50,7 @@ namespace DrakeCollision
 			    bool is_static,
           bool use_margins = true) {};
 
-    virtual void addElement(const int body_idx, const int parent_idx, 
+    virtual void addElementWithoutGroup(const int body_idx, const int parent_idx, 
 			    const Eigen::Matrix4d& T_element_to_link, Shape shape, 
 			    const std::vector<double>& params, 
 			    bool is_static,
