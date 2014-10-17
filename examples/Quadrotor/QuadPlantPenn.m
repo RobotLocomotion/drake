@@ -10,6 +10,14 @@ classdef QuadPlantPenn < SecondOrderSystem
             obj = obj.setOutputFrame(obj.getStateFrame);
         end
         
+        function m = getMass(obj)
+          m = obj.m
+        end
+        
+        function I = getInertia(obj)
+          I = obj.I;
+        end
+        
         function qdd = sodynamics(obj,t,q,qd,u)
             % States
             % x
@@ -26,8 +34,8 @@ classdef QuadPlantPenn < SecondOrderSystem
             % psidot
             
             % Parameters
-            m = 0.5000;
-            I = diag([0.0023,0.0023,0.004]);
+            m = obj.m;
+            I = obj.I;
             invI = diag(1./[0.0023,0.0023,0.004]);
             g = 9.81;
             L = 0.1750;
@@ -103,6 +111,10 @@ classdef QuadPlantPenn < SecondOrderSystem
             x = zeros(12,1);
         end
         
+    end
+    properties
+      m = .5;
+      I = diag([0.0023,0.0023,0.004]);
     end
     
 end
