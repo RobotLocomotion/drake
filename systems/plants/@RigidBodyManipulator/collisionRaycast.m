@@ -1,4 +1,5 @@
-function distance = collisionRaycast(obj, kinsol, origins, ray_endpoints)
+function distance = collisionRaycast(obj, kinsol, origins, ray_endpoints, ...
+  use_margins)
 % function distance = collisionRaycast(obj,kinsol, origin, point_on_ray)
 %
 % Uses bullet to perform a raycast, returning the distance or -1 on no hit. 
@@ -12,9 +13,16 @@ function distance = collisionRaycast(obj, kinsol, origins, ray_endpoints)
 % @param ray_endpoint vector of size 3 indicating the end point of the ray,
 %   specifying the direction and maximum length of the raycast.
 %   Size is 3 x N.
+% @param use_margins boolean indicating whether or not to use a collision
+%   model whose boxes and meshes are padded with a margin to improve
+%   numerical stability of contact gradient. Default true.
 %
 % @retval distance distance to the nearest hit on the ray, or -1 on no
 %    collision.
+
+if (nargin < 5)
+  use_margins = true;
+end
 
 checkDependency('bullet');
 
@@ -33,4 +41,4 @@ if (kinsol.mex ~= true)
     'Call doKinematics using mex before proceeding (got kinsol.mex ~= true).');
 end
 
-distance = collisionRaycastmex(obj.mex_model_ptr, origins, ray_endpoints);
+distance = collisionRaycastmex(obj.mex_model_ptr, origins, ray_endpoints, use_margins);
