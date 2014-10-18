@@ -87,7 +87,7 @@ classdef VanDerPol < PolynomialSystem
       prog = prog.addConstraint(LinearConstraint(0,0,[1,-1]),[prog.x_inds(2,N);prog.x_inds(2,1)]);
       
       % qdot(1)>0.5
-      prog = prog.addStateConstraint(BoundingBoxConstraint(.5,inf),1,2);
+      prog = prog.addStateConstraint(BoundingBoxConstraint(eps,inf),1,2);
       
       % add a display routine
       function draw(dt,x,~)
