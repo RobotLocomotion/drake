@@ -68,5 +68,36 @@ classdef VanDerPol < PolynomialSystem
       axis([-2.5,2.5,-3,3]);
 %      save vdp.mat x0;
     end
+    
+    function runDircol
+      vdp = VanDerPol();
+      
+      N = 41;
+      prog = DircolTrajectoryOptimization(vdp,N,[1,10]);
+      
+      % q(1) = 0
+      prog = prog.addStateConstraint(ConstantConstraint(0),1,1);
+      
+      % q(N) = 0
+      prog = prog.addStateConstraint(ConstantConstraint(0),N,1);
+      
+      % qdot(1) = qdot(N)
+      prog = prog.addConstraint(LinearConstraint(0,0,[1,-1]),[prog.x_inds(2,N);prog.x_inds(2,1)]);
+      
+      % qdot(1)>0
+      prog = prog.addStateConstraint(BoundingBoxConstraint(.5,inf),1,2);
+      
+      % add a display routine
+      function draw(t,x,~)
+        plot(x(1,:),x(2,:),'.-','LineWidth',2);
+        xlabel('$q$','interpreter','latex');
+        ylabel('$\dot{q}$','interpreter','latex');
+        axis([-2.5,2.5,-3,3]);
+        drawnow;
+      end
+      prog = prog.addTrajectoryDisplayFunction(@draw);
+      
+      prog.solveTraj(5);
+    end
   end
 end
