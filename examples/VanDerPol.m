@@ -4,11 +4,13 @@ classdef VanDerPol < PolynomialSystem
     function obj = VanDerPol()
       obj = obj@PolynomialSystem(2,0,0,2,false,true,false);
     end
-    function xdot = dynamicsRHS(obj,t,x,u)
+    function [xdot,df] = dynamicsRHS(obj,t,x,~)
       xdot = [x(2); -x(1)-x(2)*(x(1)^2-1)];
+      df = [zeros(2,1),[0 1; -1-2*x(1)*x(2), -(x(1)^2-1)]];
     end
-    function y=output(obj,t,x,u)
+    function [y,dy]=output(obj,t,x,~)
       y=x;
+      dy=[zeros(2,1),eye(2)];
     end
   end
   
@@ -72,7 +74,7 @@ classdef VanDerPol < PolynomialSystem
     function runDircol
       vdp = VanDerPol();
       
-      N = 41;
+      N = 61;
       prog = DircolTrajectoryOptimization(vdp,N,[1,10]);
       
       % q(1) = 0
@@ -84,12 +86,15 @@ classdef VanDerPol < PolynomialSystem
       % qdot(1) = qdot(N)
       prog = prog.addConstraint(LinearConstraint(0,0,[1,-1]),[prog.x_inds(2,N);prog.x_inds(2,1)]);
       
-      % qdot(1)>0
+      % qdot(1)>0.5
       prog = prog.addStateConstraint(BoundingBoxConstraint(.5,inf),1,2);
       
       % add a display routine
-      function draw(t,x,~)
-        plot(x(1,:),x(2,:),'.-','LineWidth',2);
+      function draw(dt,x,~)
+        clf; hold on; 
+        plot(x(1,:),x(2,:),'.-','LineWidth',2,'MarkerSize',20);
+        plot(x(1,1),x(2,1),'r.','LineWidth',2,'MarkerSize',20);
+        plot(x(1,N),x(2,N),'r.','LineWidth',2,'MarkerSize',20);
         xlabel('$q$','interpreter','latex');
         ylabel('$\dot{q}$','interpreter','latex');
         axis([-2.5,2.5,-3,3]);
@@ -97,7 +102,11 @@ classdef VanDerPol < PolynomialSystem
       end
       prog = prog.addTrajectoryDisplayFunction(@draw);
       
-      prog.solveTraj(5);
+      % use a circle in state space as the initial guess (seems to
+      % be needed to escape local minima)
+      ts = linspace(0,2*pi,10);
+      initial_guess.x = PPTrajectory(foh(ts,2*[sin(ts);cos(ts)]));
+      prog.solveTraj(2*pi,initial_guess);
     end
   end
 end
