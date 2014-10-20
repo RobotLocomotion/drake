@@ -59,7 +59,9 @@ classdef XCubed < PolynomialSystem
     end
     
     function sosExample()
-
+      checkDependency('spotless');
+      checkDependency('mosek');
+      
       % Define a new symbolic variable
       x=msspoly('x');
       
