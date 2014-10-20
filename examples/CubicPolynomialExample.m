@@ -1,4 +1,4 @@
-classdef XCubed < PolynomialSystem
+classdef CubicPolynomialExample < PolynomialSystem
 % Simple SOS region of attraction example.
 %
 % Consider the first-order, one-dimensional, dynamical system governed by
@@ -16,7 +16,7 @@ classdef XCubed < PolynomialSystem
 % one-sub-level set {x : V(x)<1} of the this polynomial, or x=(-1,1) 
   
   methods
-    function obj = XCubed()
+    function obj = CubicPolynomialExample()
       obj = obj@PolynomialSystem(1,0,0,1,false,true,false);
     end
     function xdot = dynamicsRHS(obj,t,x,u)
@@ -49,8 +49,8 @@ classdef XCubed < PolynomialSystem
   
   methods (Static=true)
     function run()
-      % create a new xcubed object
-      p = XCubed();
+      % create a new CubicPolynomialExample object
+      p = CubicPolynomialExample();
 
       % compute region of attraction       
       % the levelset V<1 is the region of attraction
@@ -128,7 +128,7 @@ classdef XCubed < PolynomialSystem
     end
     
     function animate()
-      p=XCubed();
+      p=CubicPolynomialExample();
       v=p.constructVisualizer();
 
       x1=p.simulate([0 5],.8);
@@ -138,11 +138,11 @@ classdef XCubed < PolynomialSystem
       x3=x3.shiftTime(6.5);
       x=HybridTrajectory({x1,x2,x3});
       v.playback(x);
-%      v.playbackSWF(x,'xcubed');
+%      v.playbackSWF(x,'CubicPolynomialExample');
     end
     
     function findFixedPointTest()
-      p=XCubed();
+      p=CubicPolynomialExample();
       
       xstar = findFixedPoint(p,.1*randn,[]);
       valuecheck(xstar,0,1e-4);
