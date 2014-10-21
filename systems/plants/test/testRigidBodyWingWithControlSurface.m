@@ -7,7 +7,7 @@
 disp('Constructing from URDF...');
 
 options.floating = true;
-r = RigidBodyManipulator('testRigidBodySubWingWithControlSurface.urdf', options);
+r = RigidBodyManipulator('testRigidBodyWingWithControlSurface.urdf', options);
 %v = r.constructVisualizer();
 
 % Visualize the constructed wing with the wing-drawing tools

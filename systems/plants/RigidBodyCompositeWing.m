@@ -9,30 +9,30 @@ classdef RigidBodyCompositeWing < RigidBodyForceElement
   
   properties
     
-    subwings = {}; % array of RigidBodySubWing's that make up this wing
+    contained_wings = {}; % array of RigidBodyWing's that make up this wing
     
-    subwing_left_edges; % sorted array of points along the wing denoting the left edge of each subwing. Index is the same as obj.subwings.
+    contained_wing_left_edges; % sorted array of points along the wing denoting the left edge of each contained_wing. Index is the same as obj.contained_wings.
     
     control_surfaces; % array of control surfaces on this wing, sorted by order appearing in the URDF
     
-    kinframe; % frame_id for the wing (note: there are different ones for the subwings based on their actual position)
+    kinframe; % frame_id for the wing (note: there are different ones for the contained_wings based on their actual position)
     
   end
   
 
   methods
-    function obj = RigidBodyWing(frame_id, profile, chord, span, stallAngle, velocity)
+    function obj = RigidBodyCompositeWing(frame_id, profile, chord, span, stallAngle, velocity)
       % This constructor supports no arguments or the arguments above.
-      % Given the parameters above, we create one RigidBodySubWing with the
+      % Given the parameters above, we create one RigidBodyWing with the
       % parameters described there.
       
       if nargin > 0
       
-        thisWing = RigidBodySubWing(frame_id, profile, chord, span, stallAngle, velocity);
+        this_contained_wing = RigidBodyWing(frame_id, profile, chord, span, stallAngle, velocity);
       
-        obj.subwings{length(obj.subwings) + 1} = this_subwing;
+        obj.contained_wings{length(obj.contained_wings) + 1} = this_contained_wing;
         
-        obj.subwing_left_edges = 0;
+        obj.contained_wing_left_edges = 0;
         
         obj.kinframe = frame_id;
         
@@ -46,8 +46,8 @@ classdef RigidBodyCompositeWing < RigidBodyForceElement
     
     
     function [force, B_force_or_dforce, dforce ] = computeSpatialForce(obj,manip,q,qd)
-      % Calls the appropriate RigidBodySubWing.computeSpatialForce
-      % for all of the subwings, adds the results, and returns.
+      % Calls the appropriate RigidBodyWing.computeSpatialForce
+      % for all of the contained wings, adds the results, and returns.
       %
       % @param manip RigidBodyManipulator we are a part of
       % @param q state vector
@@ -62,15 +62,15 @@ classdef RigidBodyCompositeWing < RigidBodyForceElement
       %   anywhere
 
       
-      if length(obj.subwings) < 1
-        error('computeSpatialForce called with no subwings.');
+      if length(obj.contained_wings) < 1
+        error('computeSpatialForce called with no contained wings.');
       end
       
       control_surface_flag = false;
       
-      for i = 1 : length(obj.subwings)
+      for i = 1 : length(obj.contained_wings)
         
-        if (obj.subwings{i}.has_control_surface)
+        if (obj.contained_wings{i}.has_control_surface)
           
           if control_surface_flag
             error('multiple control surfaces on one wing not supported.');
@@ -78,7 +78,7 @@ classdef RigidBodyCompositeWing < RigidBodyForceElement
           
           control_surface_flag = true;
           
-          [this_force, B_force, this_dforce, dB_force ] = obj.subwings{i}.computeSpatialForce(manip,q,qd);
+          [this_force, B_force, this_dforce, dB_force ] = obj.contained_wings{i}.computeSpatialForce(manip,q,qd);
           
           if i == 1
             force = this_force;
@@ -92,7 +92,7 @@ classdef RigidBodyCompositeWing < RigidBodyForceElement
           
         else
         
-          [this_force, this_dforce] = obj.subwings{i}.computeSpatialForce(manip, q, qd);
+          [this_force, this_dforce] = obj.contained_wings{i}.computeSpatialForce(manip, q, qd);
           if i == 1
             force = this_force;
             dforce = this_dforce;
@@ -115,13 +115,13 @@ classdef RigidBodyCompositeWing < RigidBodyForceElement
     end
         
     function obj = setInputNum(obj, input_num)
-      % override RigidBodyForceElement.setInputNum to support subwings.
+      % override RigidBodyForceElement.setInputNum to support contained_wings.
       
       obj.input_num = input_num;
       
-      for i = 1 : length(obj.subwings)
-        if obj.subwings{i}.has_control_surface
-          obj.subwings{i} = obj.subwings{i}.setInputNum(input_num);
+      for i = 1 : length(obj.contained_wings)
+        if obj.contained_wings{i}.has_control_surface
+          obj.contained_wings{i} = obj.contained_wings{i}.setInputNum(input_num);
         end
       end
     end
@@ -140,8 +140,8 @@ classdef RigidBodyCompositeWing < RigidBodyForceElement
         fill_color = 1;
       end
       
-      for i = 1 : length(obj.subwings)
-        obj.subwings{i}.drawWing(manip, q, qd, fill_color);
+      for i = 1 : length(obj.contained_wings)
+        obj.contained_wings{i}.drawWing(manip, q, qd, fill_color);
       end
     end
     
@@ -160,16 +160,16 @@ classdef RigidBodyCompositeWing < RigidBodyForceElement
       % @retval dCL derivative of coefficient of drag
       % @retval dCL derivative of pitch moment
       
-      if length(obj.subwings) == 1
+      if length(obj.contained_wings) == 1
         
         if (nargout > 3)
-          [CL, CD, CM, dCL, dCD, dCM] = obj.subwings{1}.coeffs(aoa);
+          [CL, CD, CM, dCL, dCD, dCM] = obj.contained_wings{1}.coeffs(aoa);
         else
-          [CL, CD, CM] = obj.subwings{1}.coeffs(aoa);
+          [CL, CD, CM] = obj.contained_wings{1}.coeffs(aoa);
         end
         
       else
-        error('Not supported for wings with more than one subwing.');
+        error('Not supported for wings with more than one contained wing.');
       end
       
       
@@ -180,6 +180,8 @@ classdef RigidBodyCompositeWing < RigidBodyForceElement
 
   methods (Static)
     function [model,obj] = parseURDFNode(model,robotnum,node,options)
+      % Build a RigidBodyCompositeWing from a URDF.
+      
       name = char(node.getAttribute('name'));
       name = regexprep(name, '\.', '_', 'preservecase');
 
@@ -216,10 +218,10 @@ classdef RigidBodyCompositeWing < RigidBodyForceElement
       if isempty(control_surface_nodes.item(0))
         % no control surfaces
         
-        this_subwing = RigidBodySubWing(obj.kinframe, profile, chord, span, stall_angle, nominal_speed);
+        this_contained_wing = RigidBodyWing(obj.kinframe, profile, chord, span, stall_angle, nominal_speed);
         
-        obj.subwings{length(obj.subwings) + 1} = this_subwing;
-        obj.subwing_left_edges = 0;
+        obj.contained_wings{length(obj.contained_wings) + 1} = this_contained_wing;
+        obj.contained_wing_left_edges = 0;
         
       else
         % deal with control surfaces
@@ -317,14 +319,14 @@ classdef RigidBodyCompositeWing < RigidBodyForceElement
             this_span = this_surface.span;
             
             
-            subwing_center_body_frame = [0; this_span / 2 + point_along_wing; 0];
+            contained_wing_center_body_frame = [0; this_span / 2 + point_along_wing; 0];
 
             
-            subwing_frame_xyz = left_edge_of_wing + obj.getSubWingFrameXYZ(subwing_center_body_frame, rpy);
+            contained_wing_frame_xyz = left_edge_of_wing + obj.getContainedWingFrameXYZ(contained_wing_center_body_frame, rpy);
 
-            [model,subwing_frame_id] = addFrame(model,RigidBodyFrame(parent,subwing_frame_xyz,rpy,[this_surface.name '_subwing' num2str(length(obj.subwings)) '_of_' name '_frame']));
+            [model,contained_wing_frame_id] = addFrame(model,RigidBodyFrame(parent,contained_wing_frame_xyz,rpy,[this_surface.name '_contained_wing' num2str(length(obj.contained_wings)) '_of_' name '_frame']));
             
-            this_subwing = RigidBodySubWingWithControlSurface(subwing_frame_id, profile, chord, this_span, stall_angle, nominal_speed, this_surface);
+            this_contained_wing = RigidBodyWingWithControlSurface(contained_wing_frame_id, profile, chord, this_span, stall_angle, nominal_speed, this_surface);
             
             
             obj.input_limits = [ obj.input_limits [ this_surface.min_deflection; this_surface.max_deflection] ];
@@ -343,18 +345,18 @@ classdef RigidBodyCompositeWing < RigidBodyForceElement
               this_span = min_left_edge_value - point_along_wing;
             end
             
-            subwing_center_body_frame = [0; this_span / 2 + point_along_wing; 0];
+            contained_wing_center_body_frame = [0; this_span / 2 + point_along_wing; 0];
             
-            subwing_frame_xyz = left_edge_of_wing + obj.getSubWingFrameXYZ(subwing_center_body_frame, rpy);
+            contained_wing_frame_xyz = left_edge_of_wing + obj.getContainedWingFrameXYZ(contained_wing_center_body_frame, rpy);
             
-            [model,subwing_frame_id] = addFrame(model,RigidBodyFrame(parent,subwing_frame_xyz,rpy,['subwing' num2str(length(obj.subwings)) '_of_' name '_frame']));
+            [model,contained_wing_frame_id] = addFrame(model,RigidBodyFrame(parent,contained_wing_frame_xyz,rpy,['contained_wing' num2str(length(obj.contained_wings)) '_of_' name '_frame']));
 
-            this_subwing = RigidBodySubWing(subwing_frame_id, profile, chord, this_span, stall_angle, nominal_speed);
+            this_contained_wing = RigidBodyWing(contained_wing_frame_id, profile, chord, this_span, stall_angle, nominal_speed);
           end
           
           
-          obj.subwings{length(obj.subwings) + 1} = this_subwing;
-          obj.subwing_left_edges = [ obj.subwing_left_edges point_along_wing ];
+          obj.contained_wings{length(obj.contained_wings) + 1} = this_contained_wing;
+          obj.contained_wing_left_edges = [ obj.contained_wing_left_edges point_along_wing ];
           
           point_along_wing = point_along_wing + this_span;
           
@@ -366,8 +368,8 @@ classdef RigidBodyCompositeWing < RigidBodyForceElement
       obj.name = name;
     end
     
-    function subwing_frame_xyz = getSubWingFrameXYZ(subwing_center_body_frame, rpy)
-      % figure out where the center of this subwing is, accounting
+    function contained_wing_frame_xyz = getContainedWingFrameXYZ(contained_wing_center_body_frame, rpy)
+      % figure out where the center of this contained wing is, accounting
       % for possible roll/pitch/yaw in the spec
 
       rot_matrix = [ cos(rpy(3))*cos(rpy(2)), cos(rpy(3))*sin(rpy(2))*sin(rpy(1)) - sin(rpy(3))*cos(rpy(1)), cos(rpy(3))*sin(rpy(2))*cos(rpy(1)) + sin(rpy(3))*sin(rpy(1)); ...
@@ -376,7 +378,7 @@ classdef RigidBodyCompositeWing < RigidBodyForceElement
 
 
 
-      subwing_frame_xyz = rot_matrix * subwing_center_body_frame;
+      contained_wing_frame_xyz = rot_matrix * contained_wing_center_body_frame;
       
     end
     

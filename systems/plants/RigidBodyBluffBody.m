@@ -1,4 +1,4 @@
-classdef RigidBodyDragForce < RigidBodyForceElement
+classdef RigidBodyBluffBody < RigidBodyForceElement
   % Element that provides an aerodynamic drag force at a point
   
   properties
@@ -21,7 +21,7 @@ classdef RigidBodyDragForce < RigidBodyForceElement
   
   methods
     
-    function obj = RigidBodyDragForce(frame_id, coefficient_drag_x, coefficient_drag_y, coefficient_drag_z, area_x, area_y, area_z)
+    function obj = RigidBodyBluffBody(frame_id, coefficient_drag_x, coefficient_drag_y, coefficient_drag_z, area_x, area_y, area_z)
       % Provides an aerodynamic drag force at a point
       %
       % Drag force is computed as:
@@ -77,7 +77,7 @@ classdef RigidBodyDragForce < RigidBodyForceElement
       
       % Compute airspeed over this point in xyz
       
-      [~, ~, ~, ~, ~, ~, wingvel_world_xyz ] = RigidBodySubWing.computeWingVelocity(obj.kinframe, manip, q, qd, kinsol);
+      [~, ~, ~, ~, ~, ~, wingvel_world_xyz ] = RigidBodyWing.computeWingVelocity(obj.kinframe, manip, q, qd, kinsol);
       
       velocity_x = wingvel_world_xyz(1);
       velocity_y = wingvel_world_xyz(2);
@@ -137,7 +137,7 @@ classdef RigidBodyDragForce < RigidBodyForceElement
       this_area_z = parseParamString(model,robotnum,char(node.getAttribute('area_z')));
       
       
-      obj = RigidBodyDragForce(this_frame_id, cdrag_x, cdrag_y, cdrag_z, this_area_x, this_area_y, this_area_z);
+      obj = RigidBodyBluffBody(this_frame_id, cdrag_x, cdrag_y, cdrag_z, this_area_x, this_area_y, this_area_z);
       obj.name = name;
       
     end
