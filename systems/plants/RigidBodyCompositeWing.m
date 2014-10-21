@@ -298,6 +298,7 @@ classdef RigidBodyCompositeWing < RigidBodyForceElement
           
           obj = RigidBodyWingWithControlSurface(this_frame_id, profile, chord, span, stall_angle, nominal_speed, control_surfaces_array(1));
           obj.name = name;
+          obj.input_limits = [ control_surfaces_array(1).min_deflection; control_surfaces_array(1).max_deflection];
           
           return;
           
