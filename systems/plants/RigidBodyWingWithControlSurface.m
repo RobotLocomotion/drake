@@ -1,5 +1,5 @@
-classdef RigidBodySubWingWithControlSurface < RigidBodySubWing
-  % Implements functionality similar to RigidBodySubWing but with a
+classdef RigidBodyWingWithControlSurface < RigidBodySubWing
+  % Implements functionality similar to RigidBodyWing but with a
   % control surface attached to the wing.
       
   properties
@@ -13,7 +13,7 @@ classdef RigidBodySubWingWithControlSurface < RigidBodySubWing
   
   methods
     
-    function obj = RigidBodySubWingWithControlSurface(frame_id, profile, chord, span, stall_angle, velocity, control_surface)
+    function obj = RigidBodyWingWithControlSurface(frame_id, profile, chord, span, stall_angle, velocity, control_surface)
       % Constructor taking similar arguments to RigidBodySubWing except
       % with the addition of a ControlSurface
       %
