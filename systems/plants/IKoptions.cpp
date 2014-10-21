@@ -338,3 +338,4 @@ void IKoptions::updateRobot(RigidBodyManipulator* new_robot)
     this->setDefaultParams(new_robot);
   }
 }
+

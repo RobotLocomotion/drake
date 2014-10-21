@@ -66,8 +66,8 @@ else
   tp_output=[];
 end
 
-if (sys.num_xcon>0) 
-  error('not implemented yet, but should be easy'); 
+if ~isempty(sys.state_constraints)
+  warning('state constraints not implemented yet, but some should be easy'); 
 end
 
 all_methods=[tp_dynamics_lhs(:);tp_dynamics_rhs;tp_update;tp_output];

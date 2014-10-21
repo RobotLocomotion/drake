@@ -28,14 +28,13 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
 
       if isempty(manipulator_or_urdf_filename) || ischar(manipulator_or_urdf_filename)
         % then make the corresponding manipulator
-        S = warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
-        warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
+        w = warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
         if options.twoD
           manip = PlanarRigidBodyManipulator(manipulator_or_urdf_filename,options);
         else
           manip = RigidBodyManipulator(manipulator_or_urdf_filename,options);
         end
-        warning(S);
+        warning(w);
       else
         manip = manipulator_or_urdf_filename;
       end
@@ -90,10 +89,9 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     end
 
     function model = compile(model)
-      S = warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
-      warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
+      w = warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
       model.manip = model.manip.compile();
-      warning(S);
+      warning(w);
 
       model = setNumDiscStates(model,model.manip.getNumContStates());
       model = setNumInputs(model,model.manip.getNumInputs());
@@ -636,16 +634,14 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
 
     function obj=addRobotFromURDF(obj,varargin)
       if obj.twoD
-        S = warning('off','Drake:PlanarRigidBodyManipulator:UnsupportedJointLimits');
-        warning('off','Drake:PlanarRigidBodyManipulator:UnsupportedContactPoints');
+        w = warning('off','Drake:PlanarRigidBodyManipulator:UnsupportedContactPoints');
         warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
       else
-        S = warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
-        warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
+        w = warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
       end
       obj.manip=addRobotFromURDF(obj.manip,varargin{:});
       obj=compile(obj);  % note: compiles the manip twice, but it's ok.
-      warning(S);
+      warning(w);
     end
 
     function varargout = doKinematics(obj,varargin)
@@ -712,9 +708,17 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       [varargout{:}]=collisionDetectTerrain(obj.manip,varargin{:});
     end
 
-    function varargout = stateConstraints(obj,varargin)
-      varargout = cell(1,nargout);
-      [varargout{:}] = stateConstraints(obj.manip,varargin{:});
+    function [obj,id] = addStateConstraint(obj,con)
+      % keep two copies of the constraints around ... :(
+      % todo: re-evaluate whether that is really necessary
+      [obj,id] = addStateConstraint@DrakeSystem(obj,con);
+      [obj.manip,manip_id] = obj.manip.addStateConstraint(obj,con);
+      assert(id==manip_id);
+    end
+    
+    function obj = updateStateConstraint(obj,id,con)
+      obj = updateStateConstraint@DrakeSystem(obj,id,con);
+      obj.manip = updateStateConstraint(obj.manip,id,con);
     end
 
     function varargout = positionConstraints(obj,varargin)
@@ -870,8 +874,8 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       obj.manip = replaceContactShapesWithCHull(obj.manip,body_indices,varargin{:});
     end
 
-    function groups = getCollisionGroups(obj)
-      groups = getCollisionGroups(obj.manip);
+    function groups = getContactShapeGroupNames(obj)
+      groups = getContactShapeGroupNames(obj.manip);
     end
 
     function f_friction = computeFrictionForce(obj,qd)
@@ -938,10 +942,6 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
 
     function model = setParams(model,p)
       model.manip = setParams(model.manip,p);
-    end
-
-    function [lb,ub] = getStateLimits(obj)
-      [lb,ub] = obj.manip.getStateLimits();
     end
 
     function terrain_contact_point_struct = getTerrainContactPoints(obj,varargin)

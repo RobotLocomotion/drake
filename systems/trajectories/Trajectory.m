@@ -209,10 +209,10 @@ classdef Trajectory < DrakeSystem
     function varargout = subsref(a,s)
       if (length(s)==1 && strcmp(s(1).type,'()'))
         breaks = a.getBreaks();
-        varargout=cell(1,nargout);
+        varargout=cell(1,max(nargout,1));
         [varargout{:}] = FunctionHandleTrajectory(@(t) subsref(a.eval(t),s),size(subsref(a.eval(breaks(1)),s)),breaks);
-      elseif nargout>0  % use builtin
-        varargout=cell(1,nargout);
+      else  % use builtin
+        varargout=cell(1,max(nargout,1));
         [varargout{:}] = builtin('subsref',a,s);
       end
     end
@@ -287,8 +287,10 @@ classdef Trajectory < DrakeSystem
         
         for i=1:prod(size(traj))
           S.type = '()'; S.subs = {i};
+          w = warning('off','Drake:FunctionHandleTrajectory');
           sub_traj = subsref(traj,S);
           sub_desired_traj = subsref(desired_traj,S);
+          warning(w);
           
           [thistf,errstr] = valuecheck(eval(sub_traj,ts),eval(sub_desired_traj,ts),tol);
           if ~thistf

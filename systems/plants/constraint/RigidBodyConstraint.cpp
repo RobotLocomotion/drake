@@ -272,8 +272,10 @@ void QuasiStaticConstraint::updateRobotnum(std::set<int> &robotnumset)
 
 PostureConstraint::PostureConstraint(RigidBodyManipulator* robot, const Eigen::Vector2d &tspan):RigidBodyConstraint(RigidBodyConstraint::PostureConstraintCategory,robot,tspan)
 {
-  this->lb = this->robot->joint_limit_min;
-  this->ub = this->robot->joint_limit_max;
+	this->joint_limit_min0 = this->robot->joint_limit_min;
+	this->joint_limit_max0 = this->robot->joint_limit_max;
+  this->lb = this->joint_limit_min0;
+  this->ub = this->joint_limit_max0;
   this->type = RigidBodyConstraint::PostureConstraintType;
 }
 
@@ -282,6 +284,8 @@ PostureConstraint::PostureConstraint(const PostureConstraint& rhs):RigidBodyCons
   int nq = this->robot->num_dof;
   this->lb.resize(nq);
   this->ub.resize(nq);
+  this->joint_limit_min0 = rhs.joint_limit_min0;
+  this->joint_limit_max0 = rhs.joint_limit_max0;
   for(int i = 0;i<nq;i++)
   {
     this->lb[i] = rhs.lb[i];
@@ -303,16 +307,16 @@ void PostureConstraint::setJointLimits(int num_idx,const int* joint_idx, const V
     {
       std::cerr<<"joint_idx["<<i<<"] is should be within [0 nq-1]"<<std::endl;
     }
-    if(lb[i]>this->robot->joint_limit_max[joint_idx[i]])
+		if(lb[i]>this->robot->joint_limit_max[joint_idx[i]])
+		{
+			std::cerr<<"joint lb is greater than the robot default joint maximum"<<std::endl;
+		}
+		if(ub[i]<this->robot->joint_limit_min[joint_idx[i]])
     {
-      std::cerr<<"joint lb is greater than the robot default joint maximum"<<std::endl;
+			std::cerr<<"joint ub is smaller than the robot default joint minimum"<<std::endl;
     }
-    if(ub[i]<this->robot->joint_limit_min[joint_idx[i]])
-    {
-      std::cerr<<"joint ub is greater than the robot default joint minimum"<<std::endl;
-    }
-    this->lb[joint_idx[i]] = (this->robot->joint_limit_min[joint_idx[i]]<lb[i]? lb[i]:this->robot->joint_limit_min[joint_idx[i]]);
-    this->ub[joint_idx[i]] = (this->robot->joint_limit_max[joint_idx[i]]>ub[i]? ub[i]:this->robot->joint_limit_max[joint_idx[i]]);
+		this->lb[joint_idx[i]] = (this->robot->joint_limit_min[joint_idx[i]]<lb[i]?lb[i]:this->robot->joint_limit_min[joint_idx[i]]);
+		this->ub[joint_idx[i]] = (this->robot->joint_limit_max[joint_idx[i]]>ub[i]?ub[i]:this->robot->joint_limit_max[joint_idx[i]]);
   }
 }
 

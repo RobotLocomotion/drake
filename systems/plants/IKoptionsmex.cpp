@@ -82,7 +82,6 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
             mexErrMsgIdAndTxt("Drake:updatePtrIKoptionsmex:BadInputs","debug must be a single boolean");
           }
           bool flag = *mxGetLogicals(prhs[3]);
-          ikoptions_new = new IKoptions(*ikoptions);
           ikoptions_new->setDebug(flag);
         }
         else if(field_str == "sequentialSeedFlag")

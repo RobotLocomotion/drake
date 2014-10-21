@@ -4,7 +4,9 @@
 
 /* barycentricInterpolation
  *  Looks up the indices and weighted coefficients for a barycentric
- * interpolation on an ndgrid.
+ * interpolation on an ndgrid:
+ *  [indices,coefs,dcoefs] = barycentricInterpolation(bins,pts)
+ *
  * @param bins is an m-element cell array with bins{i} describing the mesh
  *             discretization along dimention i.  Bin elements must be
  *             sorted in ascending order.
@@ -96,18 +98,23 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       b[i].dim = i;
 
       // truncate back onto the grid if it's off the edge
-      if (pt>current_bin[current_bin_size-1]) pt=current_bin[current_bin_size-1];
-      if (pt<current_bin[0]) pt=current_bin[0];
-
-      // note: could do smarter search here
-      int next_bin_index=1;
-      while (pt>current_bin[next_bin_index]) next_bin_index++;
-
       if (current_bin_size==1) { // support singleton dimensions
         // sidx is unchanged
         b[i].fracway = 1.0;
+      } else if (pt>current_bin[current_bin_size-1]) {
+        sidx += nskip[i]*(current_bin_size-1);
+        b[i].fracway=1.0;
+        b[i].dfracway=0.0;
+      } else if (pt<current_bin[0]) {
+        sidx += nskip[i];
+        b[i].fracway=0.0;
+        b[i].dfracway=0.0;
       } else {
-        sidx += nskip[i]*next_bin_index;  
+        // note: could do smarter search here
+        int next_bin_index=1;
+        while (pt>current_bin[next_bin_index]) next_bin_index++;
+        
+        sidx += nskip[i]*next_bin_index;
         b[i].fracway = (pt - current_bin[next_bin_index-1])/(current_bin[next_bin_index]-current_bin[next_bin_index-1]);
         b[i].dfracway = 1/(current_bin[next_bin_index]-current_bin[next_bin_index-1]);
       }

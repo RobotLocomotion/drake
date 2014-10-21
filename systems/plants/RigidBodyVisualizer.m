@@ -80,18 +80,19 @@ classdef RigidBodyVisualizer < Visualizer
       y=30*rows-10;
       for i=1:rows
         label{i} = uicontrol('Style','text','String',varnames{i}, ...
-          'Position',[10+280*(i>rows), y+30*rows*(i>rows), 90, 20],'BackgroundColor',[.8 .8 .8]);
+          'Position',[10+280*(i>rows), y+30*rows*(i>rows), 90, 20]);
         slider{i} = uicontrol('Style', 'slider', 'Min', minrange(i), 'Max', maxrange(i), ...
           'Value', desired_pt(i), 'Position', [100+280*(i>rows), y+30*rows*(i>rows), 170, 20],...
           'Callback',{@update_display});
 
         % use a little undocumented matlab to get continuous slider feedback:
-        slider_listener{i} = handle.listener(slider{i},'ActionEvent',@update_display);
+        slider_listener{i} = addlistener(slider{i},'ContinuousValueChange',@update_display);
         y = y - 30;
       end
       
 
       function update_display(source, eventdata)
+        if nargin>1 && isempty(eventdata), return; end  % was running twice for most events
         x = x0;
 
         for i=1:rows

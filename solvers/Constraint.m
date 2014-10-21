@@ -10,7 +10,7 @@ classdef Constraint
   properties(SetAccess = protected)
     lb      % The lower bound of the constraint
     ub      % The upper bound of the constraint
-    xdim    % The name of the constraint. If not specified, it is an empty string
+    xdim    % The size of the input to the constraint
     num_cnstr % An int scalar. The number of constraints
     name    % cell array of constraint names
     ceq_idx   % The row index of the equality constraint
@@ -91,11 +91,23 @@ classdef Constraint
 
     function obj = setName(obj,name)
       % @param name   -- A cell array, name{i} is the name string of i'th constraint
+      %                  if name is a string, then the variables will be
+      %                  named name1, name2, name3, etc.
+      if(ischar(name))
+        name=cellfun(@(a) [name,num2str(a)],num2cell(1:obj.num_cnstr),'UniformOutput',false)';
+      end
       if(~iscellstr(name))
         error('Drake:Constraint:name should be a cell array of string');
       end
       sizecheck(name,[obj.num_cnstr,1]);
       obj.name = name;
+    end
+    
+    function disp(obj)
+      fprintf('%d constraints on %d variables:\n',obj.num_cnstr,obj.xdim);
+      for j=1:obj.num_cnstr
+        fprintf('  %f <= %s <= %f\n',obj.lb(j),obj.name{j},obj.ub(j));
+      end
     end
 
     function varargout = eval(obj,varargin)
