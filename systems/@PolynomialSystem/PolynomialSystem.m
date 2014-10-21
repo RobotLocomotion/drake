@@ -115,7 +115,7 @@ classdef PolynomialSystem < DrakeSystem
       end
     end
     function p_state_constraints = getPolyStateConstraints(obj)
-      if (obj.num_xcon>0)
+      if (obj.num_xcon_eq>0)
         p_x=obj.getStateFrame.getPoly;
         obj.p_state_constraints=obj.stateConstraints(p_x);
       else
@@ -164,7 +164,7 @@ classdef PolynomialSystem < DrakeSystem
     function sys = inStateFrame(sys,frame)
       if (sys.getStateFrame == frame) return; end
 
-      if (~isCT(sys) || isRational(sys) || getNumStateConstraints(sys)>0 || getNumUnilateralConstraints(sys)>0), error('not implemented yet'); end   % though some of them would be easy to implement
+      if (~isCT(sys) || isRational(sys) || ~isempty(sys.state_constraints)), error('not implemented yet'); end   % though some of them would be easy to implement
 
       ctf = findTransform(getStateFrame(sys),frame,struct('throw_error_if_fail',true));
       dtf = findTransform(frame,getStateFrame(sys),struct('throw_error_if_fail',true));
@@ -210,7 +210,7 @@ classdef PolynomialSystem < DrakeSystem
       sys2 = sys2.inInputFrame(sys1.getOutputFrame);
       sys2 = sys2.inOutputFrame(sys1.getInputFrame);
 
-      if ~isa(sys2,'PolynomialSystem') || ~isTI(sys1) || ~isTI(sys2) || any(~isinf([sys1.umin;sys1.umax;sys2.umin;sys2.umax]))
+      if ~isa(sys2,'PolynomialSystem') || ~isTI(sys1) || ~isTI(sys2) || any(~isinf([sys1.umin;sys1.umax;sys2.umin;sys2.umax])) || getNumUnilateralConstraints(sys1)>0 || getNumUnilateralConstraints(sys2)>0
         sys = feedback@DrakeSystem(sys1,sys2);
         return;
       end
@@ -319,7 +319,7 @@ classdef PolynomialSystem < DrakeSystem
 
       sys2 = sys2.inInputFrame(sys1.getOutputFrame);
 
-      if ~isa(sys2,'PolynomialSystem') || ~isTI(sys1) || ~isTI(sys2) || any(~isinf([sys2.umin;sys2.umax]))
+      if ~isa(sys2,'PolynomialSystem') || ~isTI(sys1) || ~isTI(sys2) || any(~isinf([sys2.umin;sys2.umax])) || getNumUnilateralConstraints(sys1)>0 || getNumUnilateralConstraints(sys2)>0
         sys = cascade@DrakeSystem(sys1,sys2);
         return;
       end

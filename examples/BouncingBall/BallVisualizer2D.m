@@ -10,7 +10,7 @@ classdef BallVisualizer2D < Visualizer
       hFig=sfigure(25);  % select figure 25 without forcing it to the front
       clf;
       axisAnnotation('ellipse',...               % draw circle
-        [y(1); y(2); 0; 0] + obj.r*[-1;-1;2;2],...  % [x y w h]
+        [y(1), y(2), 0, 0] + obj.r*[-1,-1,2,2],...  % [x y w h]
         'FaceColor','r');                        % make it red
       line([-5,5]*obj.r,[0,0],'Color','k','LineWidth',1.5);
       axis equal;

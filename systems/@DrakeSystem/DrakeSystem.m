@@ -44,7 +44,7 @@ classdef DrakeSystem < DynamicalSystem
       % small random vector as an initial seed.
 
       x0 = .01*randn(obj.num_xd+obj.num_xc,1);
-      if getNumStateConstraints(obj)+getNumUnilateralConstraints(obj)>0
+      if ~isempty(obj.state_constraints)
         attempts=0;
         success=false;
         while (~success)
@@ -247,8 +247,8 @@ classdef DrakeSystem < DynamicalSystem
         add_line(mdl,'DrakeSys/1','out/1');
       end
 
-      if (obj.num_xcon>0)
-        warning('Drake:DrakeSystem:ConstraintsNotEnforced','system has constraints, but they aren''t enforced in the simulink model yet.');
+      if ~isempty(obj.state_constraints)
+        obj.warning_manager.warnOnce('Drake:DrakeSystem:ConstraintsNotEnforced','system has constraints, but they aren''t enforced in the simulink model yet.');
       end
     end
 
@@ -344,13 +344,104 @@ classdef DrakeSystem < DynamicalSystem
       obj.num_zcs = num_zcs;
     end
     function n = getNumStateConstraints(obj)
-      % Returns the number of zero crossings
-      n = obj.num_xcon;
+      % @retval the total number state *equality* constraints in the program
+      n = obj.num_xcon_eq;
     end
-    function obj = setNumStateConstraints(obj,num_xcon)
-      % Guards the number of zero crossings to make sure it's valid.
-      if (num_xcon<0), error('num_xcon must be >=0'); end
-      obj.num_xcon = num_xcon;
+    function n = getNumUnilateralConstraints(obj)
+      n = obj.num_xcon_ineq;
+    end
+    
+    function [obj,id] = addStateConstraint(obj,con,xind)
+      % @param con is a constraint object which takes the state of this
+      % system as input
+      % @param xind (optional) subset of the state indices
+
+      typecheck(con,'Constraint');
+      if nargin<3, 
+        xind = 1:obj.num_x; 
+      else
+        assert(all(xind>=1) && all(xind<=obj.num_x));
+      end
+      assert(con.xdim == length(xind),'DrakeSystem:InvalidStateConstraint','xdim mismatch');
+
+      obj.state_constraints{end+1} = con;
+      obj.state_constraint_xind{end+1} = xind;
+      obj.num_xcon_eq = obj.num_xcon_eq + sum(con.lb == con.ub);
+      obj.num_xcon_ineq = obj.num_xcon_ineq + sum(con.lb ~= con.ub);
+      id = numel(obj.state_constraints);
+    end
+
+    function obj = updateStateConstraint(obj,id,con,xind)
+      % @param id is the identifier returned from addStateConstraint
+      % @param con is a constraint object
+      % @param xind (optional) subset of the state indices
+      
+      rangecheck(id,0,numel(obj.state_constraints));
+      typecheck(con,'Constraint');
+      if (nargin<4) xind = obj.state_constraint_xind{id}; end
+      assert(con.xdim == length(xind),'DrakeSystem:InvalidStateConstraint','xdim mismatch');
+
+      obj.num_xcon_eq = obj.num_xcon_eq - sum(obj.state_constraints{id}.lb == obj.state_constraints{id}.ub);
+      obj.num_xcon_ineq = obj.num_xcon_ineq - sum(obj.state_constraints{id}.lb ~= obj.state_constraints{id}.ub);
+      obj.state_constraints{id} = con;
+      obj.state_constraint_xind{id} = xind;
+      obj.num_xcon_eq = obj.num_xcon_eq + sum(con.lb == con.ub);
+      obj.num_xcon_ineq = obj.num_xcon_ineq + sum(con.lb ~= con.ub);
+    end
+    
+    function displayStateConstraints(obj)
+      for i=1:length(obj.state_constraints)
+        disp(obj.state_constraints{i});
+      end
+    end
+  end
+
+  methods (Sealed)
+    function prog = addStateConstraintsToProgram(obj,prog,indices)
+      % adds state constraints and unilateral constraints to the
+      %   program on the specified indices.
+      % @param prog a NonlinearProgram object
+      % @indices index into N decision variables in the program upon which
+      % we are adding the constraints, where N is the number of state dimensions of this system
+
+      for i=1:numel(obj.state_constraints)
+        prog = prog.addConstraint(obj.state_constraints{i},indices(obj.state_constraint_xind{i}));
+      end
+    end
+    function prog = addInputConstraintsToProgram(obj,prog,indices)
+      % add bounding box constraint
+      % todo: consider whether it makes sense to a list of constraints
+      % objects instead of just input limits.  for now, this is sealed just
+      % to keep things clean.
+
+      con = BoundingBoxConstraint(obj.umin,obj.umax);
+      con = setName(con,cellfun(@(a) [a,'_limit'],obj.getInputFrame.coordinates,'UniformOutput',false));
+
+      prog = prog.addBoundingBoxConstraint(con,indices);
+    end
+    function varargout = stateConstraints(obj,x)
+      % Provides the old interface of a single constraint function which
+      % evaluates all of the *equality* constraints on the state
+      % (which should be == 0)
+      %
+      % @retval the evaluated *equality* constraints, and potentially their
+      % derivatives.
+
+      % Note: if you're tempted to overload this, you should be adding using the
+      % addStateConstraint method instead
+
+      varargout = cell(1,nargout);
+      for i=1:length(obj.state_constraints)
+        if ~isempty(obj.state_constraints{i}.ceq_idx)
+          % then evaluate this constraint to the requested derivative level
+          v = cell(1,nargout);
+          [v{:}] = obj.state_constraints{i}.eval(x);
+          v{1} = v{1} - obj.state_constraints{i}.lb;  % center it around 0
+          for j=1:nargout
+            varargout{j} = vertcat(varargout{j},v{j}(obj.state_constraints{i}.ceq_idx,:));
+          end
+        end
+      end
     end
   end
 
@@ -389,7 +480,7 @@ classdef DrakeSystem < DynamicalSystem
       if checkDependency('simulink') && exist('DCSFunction','file')
         [varargout{:}] = simulate@DynamicalSystem(obj,varargin{:});
       else
-        [varargout{:}] = simulateODE(obj,tspan,x0,options);
+        [varargout{:}] = simulateODE(obj,varargin{:});
       end
     end
     
@@ -505,6 +596,7 @@ classdef DrakeSystem < DynamicalSystem
         p_output = output(obj,t,x,u);
 
         if (obj.num_xcon>0)
+          % todo: extract polynomial constraints
           p_state_constraints = stateConstraints(obj,x);
         end
       catch ex
@@ -535,12 +627,6 @@ classdef DrakeSystem < DynamicalSystem
       sys = extractLinearSystem(extractAffineSystem(obj));
     end
 
-    function [lb,ub] = getStateLimits(obj)
-      % Get the lower and upper bounds on the state, currently implemented
-      % to just return inf/-inf
-      lb = -inf(obj.num_x,1);
-      ub = inf(obj.num_x,1);
-    end
   end
 
   methods % deprecated (due to refactoring)
@@ -587,9 +673,10 @@ classdef DrakeSystem < DynamicalSystem
     uid;    % unique identifier for simulink models of this block instance
     direct_feedthrough_flag=true;  % true/false: does the output depend on u?  set false if you can!
     ts=[];    % default sample times of the model
-  end
-  properties (SetAccess=protected, GetAccess=protected)
-    num_xcon = 0; % number of state constraints. @default: 0
+    num_xcon_eq = 0;  % number of state *equality* constraints
+    num_xcon_ineq = 0; % number of state *inequality* constraints
+    state_constraints={}; % a cell array of constraint objects which depend on the state vector x
+    state_constraint_xind={};  % cell array of xindices (one for each state constraint)
   end
   properties (SetAccess=private, GetAccess=public)
     umin=[];   % constrains u>=umin (default umin=-inf)

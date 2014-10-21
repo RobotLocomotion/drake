@@ -155,6 +155,8 @@ class DLLEXPORT PostureConstraint: public RigidBodyConstraint
   protected:
     Eigen::VectorXd lb;
     Eigen::VectorXd ub;
+    Eigen::VectorXd joint_limit_min0;
+    Eigen::VectorXd joint_limit_max0;
   public:
     PostureConstraint(RigidBodyManipulator *model, const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan);
     PostureConstraint(const PostureConstraint& rhs);

@@ -21,23 +21,8 @@ classdef FixedPointProgram < NonlinearProgram
       obj.sys = sys;
       obj = addDynamicConstraints(obj,x_dimensions_to_ignore);
       
-      function [c,dc] = state_constraints(x)
-        [c,dc] = geval(@sys.stateConstraints,x);
-      end
-        
-      if (sys.getNumStateConstraints>0)
-        num_xcon = sys.getNumStateConstraints();
-        obj = addConstraint(obj,FunctionHandleConstraint(zeros(num_xcon,1),zeros(num_xcon,1),num_x,@state_constraints),1:num_x);
-      end
-      
-      function [c,dc] = unilateral_constraints(x)
-        [c,dc] = geval(@sys.unilateralConstraints,x);
-      end
-      
-      if (sys.getNumUnilateralConstraints > 0)
-        nc = sys.getNumUnilateralConstraints;
-        obj = addConstraint(obj,FunctionHandleConstraint(zeros(nc,1),inf(nc,1),num_x,@unilateral_constraints),1:sys.num_x);
-      end
+      obj = sys.addStateConstraintsToProgram(obj,1:num_x);
+      obj = sys.addInputConstraintsToProgram(obj,num_x+(1:num_u));
     end
     
     function obj = addDynamicConstraints(obj,x_dimensions_to_ignore)

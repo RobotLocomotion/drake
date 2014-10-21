@@ -109,7 +109,8 @@ end
 
 loopjoints = node.getElementsByTagName('loop_joint');
 for i=0:(loopjoints.getLength()-1)
-  model = parseLoopJoint(model,robotnum,loopjoints.item(i),options);
+  [model,loop] = RigidBodyLoop.parseURDFNode(model,robotnum,loopjoints.item(i),options);
+  model.loop=[model.loop,loop];
 end
 
 forces = node.getElementsByTagName('force_element');

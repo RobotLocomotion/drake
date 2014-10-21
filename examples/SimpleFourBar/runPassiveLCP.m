@@ -12,8 +12,10 @@ xtraj = p.simulate([0 10]);
 x = xtraj.eval(xtraj.getBreaks);
 nq = getNumPositions(p);
 for i=1:size(x,2)
-  valuecheck(positionConstraints(p,x(1:nq,i)),zeros(2,1),1e-2);  
+  valuecheck(positionConstraints(p,x(1:nq,i)),zeros(3,1),1e-2);  
   % high tolerance is due to (relatively) large dt and linearization of phi
+  % change zeros(3,1) to zeros(2,1) when we (re-)implement planar loop
+  % constraints
 end
 
 v.playback(xtraj);

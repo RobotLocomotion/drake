@@ -28,6 +28,7 @@ if (size(ydot_plus,2)~=(length(t)-1)) error('ydot_plus is the wrong size'); end
 
 dt = diff(t);
 
+coefficients = zeros(n,4);
 for i=1:(length(t)-1)
   % solve the following vector equations:
   %   y(:,i) = c4
@@ -38,11 +39,17 @@ for i=1:(length(t)-1)
   %   [  0  0  0  I ] [ c1; c2; c3; c4 ] = y(:,i) , etc... 
 
   a=dt(i); b=a^2; c=a^3;
-  coefs(:,i,:) = reshape(([zeros(n,3*n),eye(n); ...
-    c*eye(n),b*eye(n),a*eye(n),eye(n); ...
-    zeros(n,2*n),eye(n),zeros(n); ...
-    3*b*eye(n),2*a*eye(n),eye(n),zeros(n)]) \ ...
-    [y(:,i);y(:,i+1);ydot_plus(:,i);ydot_minus(:,i)],n,4);
+  c4 = y(:,i);
+  c3 = ydot_plus(:,i);  
+  c1 = 1/b*(ydot_minus(:,i) - c3 - 2/a*(y(:,i+1) - c4 - a*c3));
+  c2 = 1/b*(y(:,i+1) - c4 - a*c3 - c*c1);
+ 
+  coefficients(:,1) = c1;
+  coefficients(:,2) = c2;
+  coefficients(:,3) = c3;
+  coefficients(:,4) = c4;
+
+  coefs(:,i,:) = coefficients;
 end
 
 pp = mkpp(t,coefs,dim);

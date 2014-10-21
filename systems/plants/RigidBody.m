@@ -13,8 +13,8 @@ classdef RigidBody < RigidBodyElement
     visual_shapes={}; % objects of type RigidBodyGeometry
     contact_shapes={}; % objects of type RigidBodyGeometry
 
-    collision_group_name={};  % string names of the groups
-    contact_shape_group={}; % contact_shape_group{i} is a list of indices into contact_shapes which belong to collision_group_name{i}
+    contact_shape_group_name={};  % string names of the groups
+    contact_shape_group={}; % contact_shape_group{i} is a list of indices into contact_shapes which belong to contact_shape_group_name{i}
     
     % joint properties
     parent=0;       % index (starting at 1) for rigid body parent.  0 means no parent
@@ -96,6 +96,10 @@ classdef RigidBody < RigidBodyElement
       error('contact points have been replaced by contact shapes');
     end
 
+    function dofnum(obj)
+      error('the dofnum parameter is no longer supported, use position_num and velocity_num instead');
+    end
+    
     function shapes = getContactShapes(body,collision_group,collision_ind)
       % @param collision_group (optional) return structures for only the
       % contact_shapes in that group.  can be an integer index or a string.
@@ -104,7 +108,7 @@ classdef RigidBody < RigidBodyElement
       else
         if ~isnumeric(collision_group)
           typecheck(collision_group,{'char','cell'});
-          collision_group = find(ismember(body.collision_group_name,collision_group));
+          collision_group = find(ismember(body.contact_shape_group_name,collision_group));
         end
         if (nargin < 3)
           shapes = body.contact_shapes([body.contact_shape_group{collision_group}]);
@@ -151,7 +155,7 @@ classdef RigidBody < RigidBodyElement
         end
         body.contact_shapes = {};
         body.contact_shape_group = {};
-        body.collision_group_name = {};
+        body.contact_shape_group_name = {};
         body = body.addContactShape(RigidBodyMeshPoints(pts));
       end
     end
@@ -165,7 +169,7 @@ classdef RigidBody < RigidBodyElement
       end
       for i=1:length(contact_groups)
         % boolean identifying if this contact_shape_group is being removed
-        group_elements = strcmpi(contact_groups{i},body.collision_group_name);
+        group_elements = strcmpi(contact_groups{i},body.contact_shape_group_name);
         if ~isempty(group_elements)
           % indices of the body.contact_shapes that are being removed
           contact_inds = [body.contact_shape_group{group_elements}];
@@ -186,7 +190,7 @@ classdef RigidBody < RigidBodyElement
           end
           % remove contact_shape_groups and names
           body.contact_shape_group(group_elements) = [];          
-          body.collision_group_name(group_elements) = [];
+          body.contact_shape_group_name(group_elements) = [];
         end
       end
     end
@@ -200,8 +204,8 @@ classdef RigidBody < RigidBodyElement
       end
       i=1;
       while i<=length(body.contact_shape_group)
-        %check of body.collision_group_name should not be kept
-        if ~ismember(body.collision_group_name{i},contact_groups)
+        %check of body.contact_shape_group_name should not be kept
+        if ~ismember(body.contact_shape_group_name{i},contact_groups)
           % indices of the body.contact_shapes that are being removed
           contact_inds = [body.contact_shape_group{i}];
           
@@ -221,7 +225,7 @@ classdef RigidBody < RigidBodyElement
           end
           % remove contact_shape_groups and names
           body.contact_shape_group(i) = [];          
-          body.collision_group_name(i) = [];
+          body.contact_shape_group_name(i) = [];
         else
           i=i+1;
         end
@@ -375,9 +379,7 @@ classdef RigidBody < RigidBodyElement
       end
       body.I = body.Imass+body.Iaddedmass;
       
-      try
-      valuecheck(body.I'-body.I,zeros(6)); %Check symmetry of matrix
-      catch
+      if isnumeric(body.I) && ~valuecheck(body.I'-body.I,zeros(6)); %Check symmetry of matrix
           warning('Spatial mass matrix is not symmetric, this is non-physical');
       end
     end    
@@ -439,10 +441,10 @@ classdef RigidBody < RigidBodyElement
       if nargin < 3, name='default'; end
       shape.name = name;
       body.contact_shapes = [body.contact_shapes,{shape}];
-      ind = find(strcmp(body.collision_group_name,name));
+      ind = find(strcmp(body.contact_shape_group_name,name));
       if isempty(ind)
-        body.collision_group_name=horzcat(body.collision_group_name,name);
-        ind=length(body.collision_group_name);
+        body.contact_shape_group_name=horzcat(body.contact_shape_group_name,name);
+        ind=length(body.contact_shape_group_name);
         body.contact_shape_group{ind} = length(body.contact_shapes);
       else
         body.contact_shape_group{ind} = [body.contact_shape_group{ind},length(body.contact_shapes)];
@@ -459,18 +461,18 @@ classdef RigidBody < RigidBodyElement
       shape4 = RigidBodySphere(3);
       shape5 = RigidBodySphere(3);
       body.contact_shapes = {shape1, shape2, shape3, shape4, shape5};
-      body.collision_group_name = {'group1','group2','group3'};
+      body.contact_shape_group_name = {'group1','group2','group3'};
       body.contact_shape_group = {[1 4],2,[3 5]};
       body2 = body.removeCollisionGroups('group1');
       body3 = body.removeCollisionGroups('group2');
       body4 = body.removeCollisionGroups('group2adfs');
       
       assert(isequal(body2.contact_shapes,{shape2, shape3, shape5}));
-      assert(isequal(body2.collision_group_name,{'group2','group3'}));
+      assert(isequal(body2.contact_shape_group_name,{'group2','group3'}));
       assert(isequal(body2.contact_shape_group,{[1], [2 3]}));
       
       assert(isequal(body3.contact_shapes,{shape1, shape3, shape4, shape5}));
-      assert(isequal(body3.collision_group_name,{'group1','group3'}));
+      assert(isequal(body3.contact_shape_group_name,{'group1','group3'}));
       assert(isequal(body3.contact_shape_group,{[1 3], [2 4]}));
       
       assert(isequal(body,body4));
@@ -480,7 +482,7 @@ classdef RigidBody < RigidBodyElement
       body7 = body.removeCollisionGroupsExcept({'group1'});
       
       assert(isequal(body7.contact_shapes,{shape1, shape4}));
-      assert(isequal(body7.collision_group_name,{'group1'}));
+      assert(isequal(body7.contact_shape_group_name,{'group1'}));
       assert(isequal(body7.contact_shape_group,{[1 2]}));
       
       assert(isequal(body2,body5));

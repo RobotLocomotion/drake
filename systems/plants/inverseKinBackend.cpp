@@ -439,10 +439,10 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
   qsc_ptr = nullptr;
   MatrixXd joint_limit_min(nq,nT);
   MatrixXd joint_limit_max(nq,nT);
-  for(int i = 0;i<nT;i++)
+	for(int i = 0;i<nT;i++)
   {
-    joint_limit_min.col(i) = model->joint_limit_min;
-    joint_limit_max.col(i) = model->joint_limit_max;
+		joint_limit_min.col(i) = model->joint_limit_min;
+		joint_limit_max.col(i) = model->joint_limit_max;
   }
   for(int i = 0;i<num_constraints;i++)
   {

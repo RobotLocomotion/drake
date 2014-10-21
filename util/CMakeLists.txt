@@ -1,10 +1,15 @@
 
-add_mex(realtime realtime.cpp)
+if (simulink_FOUND)
+  add_mex(realtime realtime.cpp)
+  endif()
+
 add_mex(barycentricInterpolation barycentricInterpolation.cpp)
 
 if (LCM_FOUND)
-  add_mex(lcmLogger lcmLogger.cpp)
-  pods_use_pkg_config_packages(lcmLogger lcm)
+  if (simulink_FOUND)
+    add_mex(lcmLogger lcmLogger.cpp)
+    pods_use_pkg_config_packages(lcmLogger lcm)
+  endif()
 
   add_mex(publishLCMLog publishLCMLog.cpp)
   pods_use_pkg_config_packages(publishLCMLog lcm)
@@ -25,7 +30,7 @@ if (eigen3_FOUND)
   pods_install_headers(drakeGradientUtil.h DESTINATION drake)
 
   endif(NOT WIN32)
-   
+
   add_library(drakeGeometryUtil SHARED drakeGeometryUtil.cpp)
   if (NOT WIN32)
   target_link_libraries(drakeGeometryUtil drakeGradientUtil)

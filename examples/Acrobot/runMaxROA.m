@@ -46,7 +46,7 @@ disp('Starting verification...')
 % Create closed loop system with optimized controller
 sysCl = feedback(p,c);
 V0 = V.getPoly;
-xinit = getLevelSet(decomp(V0),V0,[0;0;0;0]);
+xinit = getLevelSet(decomp(V0),V0,struct('x0',[0;0;0;0]));
 
 v = AcrobotVisualizer(p);
 
