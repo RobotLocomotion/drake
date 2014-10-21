@@ -2484,12 +2484,18 @@ classdef RigidBodyManipulator < Manipulator
 
       elnode = node.getElementsByTagName('wing').item(0);
       if ~isempty(elnode)
-        [model,fe] = RigidBodyWing.parseURDFNode(model,robotnum,elnode,options);
+        % the composite wing will handle the wing stuff, creating a normal
+        % RigidBodyWing if there are no control surfaces, creating a
+        % RigidBodyWingWithControlSurface if there is one control surface
+        % that covers the entire wing, or creating a RigidBodyCompositeWing
+        % if there is a wing that has part control surface and part not
+        
+        [model,fe] = RigidBodyCompositeWing.parseURDFNode(model,robotnum,elnode,options);
       end
       
-      elnode = node.getElementsByTagName('drag').item(0);
+      elnode = node.getElementsByTagName('bluff_body').item(0);
       if ~isempty(elnode)
-        [model,fe] = RigidBodyDragForce.parseURDFNode(model,robotnum,elnode,options);
+        [model,fe] = RigidBodyBluffBody.parseURDFNode(model,robotnum,elnode,options);
       end
 
       elnode = node.getElementsByTagName('thrust').item(0);

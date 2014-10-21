@@ -203,10 +203,6 @@ classdef RigidBodyCompositeWing < RigidBodyForceElement
       % search for control surfaces
       control_surface_nodes = node.getElementsByTagName('control_surface');
       
-      obj = RigidBodyWing();
-      
-      obj.kinframe = this_frame_id;
-      
       profile = char(node.getAttribute('profile'));
       chord = parseParamString(model,robotnum,char(node.getAttribute('chord')));
       span = parseParamString(model,robotnum,char(node.getAttribute('span')));
@@ -216,15 +212,16 @@ classdef RigidBodyCompositeWing < RigidBodyForceElement
       left_edge_of_wing = xyz - [0; span/2; 0];
       
       if isempty(control_surface_nodes.item(0))
-        % no control surfaces
+        % no control surfaces, only a normal wing
+        % create that object and return.
         
-        this_contained_wing = RigidBodyWing(obj.kinframe, profile, chord, span, stall_angle, nominal_speed);
+        obj = RigidBodyWing(this_frame_id, profile, chord, span, stall_angle, nominal_speed);
+        obj.name = name;
         
-        obj.contained_wings{length(obj.contained_wings) + 1} = this_contained_wing;
-        obj.contained_wing_left_edges = 0;
+        return;
         
       else
-        % deal with control surfaces
+        % has control surfaces
         
         if ~strcmpi(profile, 'flat plate')
             error('wings with control surfaces that are not flat plates is unimplemneted at the current time.');
@@ -232,6 +229,8 @@ classdef RigidBodyCompositeWing < RigidBodyForceElement
         
         % load control surface data
         count = 0;
+        
+        control_surfaces_array = [];
 
         this_surface = control_surface_nodes.item(count);
         while ~isempty(this_surface)
@@ -250,13 +249,13 @@ classdef RigidBodyCompositeWing < RigidBodyForceElement
           
           assert(surface_span + surface_left_edge_position_along_wing <= span, ['Control surface runs off the right end of the wing on surface "' surface_name '"']);
           
-          for other_surface = obj.control_surfaces
+          for other_surface = control_surfaces_array
             if strcmp(other_surface.name, surface_name)
               error(['Duplicate control surface name "' surface_name '"']);
             end
           end
           
-          obj.control_surfaces = [ obj.control_surfaces ControlSurface(surface_name, surface_chord, surface_span, surface_left_edge_position_along_wing, surface_min_deflection, surface_max_deflection) ];
+          control_surfaces_array = [ control_surfaces_array ControlSurface(surface_name, surface_chord, surface_span, surface_left_edge_position_along_wing, surface_min_deflection, surface_max_deflection) ];
 
           
           count = count + 1;
@@ -269,8 +268,8 @@ classdef RigidBodyCompositeWing < RigidBodyForceElement
         
         % do some sanity checks to make sure that the control surfaces do
         % not overlap
-        for surface = obj.control_surfaces
-          for surface2 = obj.control_surfaces
+        for surface = control_surfaces_array
+          for surface2 = control_surfaces_array
             
             if ~strcmp(surface.name, surface2.name)
               
@@ -286,6 +285,34 @@ classdef RigidBodyCompositeWing < RigidBodyForceElement
             end
           end
         end % end sanity checks
+        
+        
+        % check for the case where the entire wing has a control surface
+        if length(control_surfaces_array) == 1 && control_surfaces_array(1).left_edge_position_along_wing == 0 ...
+            && control_surfaces_array(1).span == span
+          
+          % this wing has only one control surface and it spans the entire
+          % wing, so we can just return a single
+          % RigidBodyWingWithControlSurface object
+          
+          
+          obj = RigidBodyWingWithControlSurface(this_frame_id, profile, chord, span, stall_angle, nominal_speed, control_surfaces_array(1));
+          obj.name = name;
+          
+          return;
+          
+        end
+        
+        
+
+        % if we are here,  that means we have a more complex wing that
+        % consists of componet parts.  Thus, we create a
+        % RigidBodyCompositeWing
+        
+        obj = RigidBodyCompositeWing();
+      
+        obj.kinframe = this_frame_id;
+        obj.control_surfaces = control_surfaces_array;
         
         % split the wing up starting from the left edge
         
