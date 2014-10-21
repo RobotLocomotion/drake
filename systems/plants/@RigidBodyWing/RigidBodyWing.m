@@ -2,6 +2,8 @@ classdef RigidBodyWing < RigidBodyForceElement
   % This class implements a wing element, supporting flat plates and
   % airfoils defined with NACA numbers, a geometry profile (with xfoil and
   % AVL backend) and .mat files defining wing performance
+  %
+  % URDF parsing is handled by RigidBodyCompositeWing.
 
   properties
     kinframe;  % index to RigidBodyFrame

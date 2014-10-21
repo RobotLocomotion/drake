@@ -1,6 +1,8 @@
 classdef RigidBodyWingWithControlSurface < RigidBodyWing
   % Implements functionality similar to RigidBodyWing but with a
   % control surface attached to the wing.
+  %
+  % URDF parsing is handled by RigidBodyCompositeWing.
       
   properties
     control_surface % the control surface attached to this wing
