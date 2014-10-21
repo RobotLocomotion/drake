@@ -7,7 +7,7 @@
 disp('Constructing from URDF...');
 
 options.floating = true;
-r = RigidBodyManipulator('testRigidBodySubWingWithControlSurface.urdf', options);
+r = RigidBodyManipulator('testRigidBodyWingWithControlSurface.urdf', options);
 
 %v = r.constructVisualizer();
 
@@ -43,7 +43,7 @@ final_x = xtraj.eval(end_t)
 
 % now simulate with drag forces
 disp('Simulating with drag forces...');
-r2 = RigidBodyManipulator('testRigidBodyDragForce.urdf', options);
+r2 = RigidBodyManipulator('testRigidBodyBluffBody.urdf', options);
 
 constant_traj = ConstantTrajectory([0.8 0.8 100]);
 constant_traj = constant_traj.setOutputFrame(r2.getInputFrame());

@@ -1,11 +1,7 @@
 classdef RigidBodyWing < RigidBodyForceElement
-  % This class implements all of the details for RigidBodyWing.  It is
-  % considered a sub-wing because all RigidBodyWings in Drake are
-  % containers for sub-wings, allowing one wing to be made up of multiple
-  % parts.
-  %
-  % Having multiple parts in one wing allows for simulation of a wing with
-  % control surface(s) by splitting up in the wing.
+  % This class implements a wing element, supporting flat plates and
+  % airfoils defined with NACA numbers, a geometry profile (with xfoil and
+  % AVL backend) and .mat files defining wing performance
 
   properties
     kinframe;  % index to RigidBodyFrame
@@ -26,7 +22,7 @@ classdef RigidBodyWing < RigidBodyForceElement
   end
 
   methods
-    function obj = RigidBodySubWing(frame_id, profile, chord, span, stallAngle, velocity)
+    function obj = RigidBodyWing(frame_id, profile, chord, span, stallAngle, velocity)
       %calls AVL and XFOIL over different angles of attack at the
       %given velocity, generates first order polynomials of the CL,
       %CD, and pitch moments of the wing.  The axes for use in DRAKE are:
@@ -403,9 +399,9 @@ classdef RigidBodyWing < RigidBodyForceElement
       kinsol = doKinematics(manip,q,true,true,qd);
 
       if (nargout > 1)
-        [wingvel_world_xz, wingYunit, dwingvel_worlddq, dwingvel_worlddqd, dwingYunitdq, dwingYunitdqd ] = RigidBodySubWing.computeWingVelocity(obj.kinframe, manip, q, qd, kinsol);
+        [wingvel_world_xz, wingYunit, dwingvel_worlddq, dwingvel_worlddqd, dwingYunitdq, dwingYunitdqd ] = RigidBodyWing.computeWingVelocity(obj.kinframe, manip, q, qd, kinsol);
       else
-        [ wingvel_world_xz, wingYunit ] = RigidBodySubWing.computeWingVelocity(obj.kinframe, manip, q, qd, kinsol);
+        [ wingvel_world_xz, wingYunit ] = RigidBodyWing.computeWingVelocity(obj.kinframe, manip, q, qd, kinsol);
       end
 
       
@@ -414,9 +410,9 @@ classdef RigidBodyWing < RigidBodyForceElement
       
 
       if (nargout>1)
-        [wingvel_rel, dwingvel_reldq, dwingvel_reldqd] = RigidBodySubWing.computeWingVelocityRelative(obj.kinframe, manip, kinsol, wingvel_world_xz, dwingvel_worlddq, dwingvel_worlddqd);
+        [wingvel_rel, dwingvel_reldq, dwingvel_reldqd] = RigidBodyWing.computeWingVelocityRelative(obj.kinframe, manip, kinsol, wingvel_world_xz, dwingvel_worlddq, dwingvel_worlddqd);
       else
-        wingvel_rel = RigidBodySubWing.computeWingVelocityRelative(obj.kinframe, manip, kinsol, wingvel_world_xz);
+        wingvel_rel = RigidBodyWing.computeWingVelocityRelative(obj.kinframe, manip, kinsol, wingvel_world_xz);
       end
 
       
@@ -524,7 +520,8 @@ classdef RigidBodyWing < RigidBodyForceElement
     end
     
     function drawWing(obj, manip, q, qd, fill_color)
-      % Draws the subwing onto the current figure
+      % Draws the wing onto the current figure
+      %
       % @param manip manipulator the wing is part of
       % @param q state vector
       % @param qd q-dot (state vector derivatives)

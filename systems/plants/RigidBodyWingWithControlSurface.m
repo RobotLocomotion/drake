@@ -1,4 +1,4 @@
-classdef RigidBodyWingWithControlSurface < RigidBodySubWing
+classdef RigidBodyWingWithControlSurface < RigidBodyWing
   % Implements functionality similar to RigidBodyWing but with a
   % control surface attached to the wing.
       
@@ -14,7 +14,7 @@ classdef RigidBodyWingWithControlSurface < RigidBodySubWing
   methods
     
     function obj = RigidBodyWingWithControlSurface(frame_id, profile, chord, span, stall_angle, velocity, control_surface)
-      % Constructor taking similar arguments to RigidBodySubWing except
+      % Constructor taking similar arguments to RigidBodyWing except
       % with the addition of a ControlSurface
       %
       % @param control_surface a ControlSurface attached to this wing.
@@ -26,7 +26,7 @@ classdef RigidBodyWingWithControlSurface < RigidBodySubWing
         return;
       end
       
-      obj = obj@RigidBodySubWing(frame_id, profile, chord, span, stall_angle, velocity);
+      obj = obj@RigidBodyWing(frame_id, profile, chord, span, stall_angle, velocity);
 
       obj.control_surface = control_surface;
       obj.direct_feedthrough_flag = true;
@@ -64,7 +64,7 @@ classdef RigidBodyWingWithControlSurface < RigidBodySubWing
       % first, call the parent class's  computeSpatialForce to get the
       % u-invariant parts
       
-      [force, dforce] = computeSpatialForce@RigidBodySubWing(obj, manip, q, qd);
+      [force, dforce] = computeSpatialForce@RigidBodyWing(obj, manip, q, qd);
       
       % now compute B and dB
       
@@ -73,8 +73,8 @@ classdef RigidBodyWingWithControlSurface < RigidBodySubWing
       
       % get the coefficients for this point
       
-      [ wingvel_world_xz, wingYunit ] = RigidBodySubWing.computeWingVelocity(obj.kinframe, manip, q, qd, kinsol);
-      wingvel_rel = RigidBodySubWing.computeWingVelocityRelative(obj.kinframe, manip, kinsol, wingvel_world_xz);
+      [ wingvel_world_xz, wingYunit ] = RigidBodyWing.computeWingVelocity(obj.kinframe, manip, q, qd, kinsol);
+      wingvel_rel = RigidBodyWing.computeWingVelocityRelative(obj.kinframe, manip, kinsol, wingvel_world_xz);
       
       
       
@@ -314,7 +314,7 @@ classdef RigidBodyWingWithControlSurface < RigidBodySubWing
     end
     
     function drawWing(obj, manip, q, qd, fill_color)
-      % Draws the subwing with control surfaces.
+      % Draws the wing with control surfaces.
       %
       % @param manip manipulator the wing is part of
       % @param q state vector
@@ -325,7 +325,7 @@ classdef RigidBodyWingWithControlSurface < RigidBodySubWing
       color = min([1 1 1], color);
       
       % first draw the main part of the wing
-      drawWing@RigidBodySubWing(obj, manip, q, qd, color)
+      drawWing@RigidBodyWing(obj, manip, q, qd, color)
       
       
       % now draw the control surface
