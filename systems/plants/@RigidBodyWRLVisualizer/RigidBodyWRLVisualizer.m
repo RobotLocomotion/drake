@@ -60,21 +60,21 @@ classdef RigidBodyWRLVisualizer < RigidBodyVisualizer
       draw(obj,t,x);
     end
     
-    function draw(obj,t,x)
+    function draw(obj,t,q)
       for i=1:length(obj.model.body)
         b = obj.model.body(i);
         if b.parent>0
           node=getfield(obj.wrl,b.jointname);
           if (b.floating==1)
-            node.rotation = rpy2axis(x(b.position_num(4:6)))';
-            node.translation = x(b.position_num(1:3))';
+            node.rotation = rpy2axis(q(b.position_num(4:6)))';
+            node.translation = q(b.position_num(1:3))';
           elseif (b.floating==2)
-            node.rotation = quat2axis(x(b.position_num(4:7)))';
-            node.translation = x(b.position_num(1:3))';
+            node.rotation = quat2axis(q(b.position_num(4:7)))';
+            node.translation = q(b.position_num(1:3))';
           elseif (b.pitch==0)
-            node.rotation=[b.joint_axis' x(b.position_num)];
+            node.rotation=[b.joint_axis' q(b.position_num)];
           elseif isinf(b.pitch)
-            node.translation=x(b.position_num)*b.joint_axis';
+            node.translation=q(b.position_num)*b.joint_axis';
           else
             error('helical joints not implemented yet (but would be simple)');
           end
