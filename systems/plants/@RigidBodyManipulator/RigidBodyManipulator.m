@@ -2479,7 +2479,7 @@ classdef RigidBodyManipulator < Manipulator
         % that covers the entire wing, or creating a RigidBodyCompositeWing
         % if there is a wing that has part control surface and part not
         
-        [model,fe] = RigidBodyCompositeWing.parseURDFNode(model,robotnum,elnode,options);
+        [model,fe] = RigidBodyWing.parseURDFNode(model,robotnum,elnode,options);
       end
       
       elnode = node.getElementsByTagName('bluff_body').item(0);
@@ -2510,7 +2510,11 @@ classdef RigidBodyManipulator < Manipulator
 
 
       if ~isempty(fe)
-        model.force{end+1} = fe;
+        if iscell(fe)
+          model.force = {model.force{:} fe{:}};
+        else
+          model.force{end+1} = fe;
+        end
       end
     end
 
