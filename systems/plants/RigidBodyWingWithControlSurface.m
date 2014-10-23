@@ -24,12 +24,13 @@ classdef RigidBodyWingWithControlSurface < RigidBodyWing
       
       % we need to be able to construct with no arguments per 
       % http://www.mathworks.com/help/matlab/matlab_oop/class-constructor-methods.html#btn2kiy
+      
+      obj = obj@RigidBodyWing(frame_id, profile, chord, span, stall_angle, velocity);
+
       if (nargin == 0)
         return;
       end
       
-      obj = obj@RigidBodyWing(frame_id, profile, chord, span, stall_angle, velocity);
-
       obj.control_surface = control_surface;
       obj.direct_feedthrough_flag = true;
       
