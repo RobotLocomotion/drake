@@ -669,6 +669,246 @@ classdef RigidBodyWing < RigidBodyForceElement
       end
       
     end
+
+    function [model, obj_or_cell_array_of_wings] = parseURDFNode(model,robotnum,node,options)
+      % Build a RigidBodyWing from a URDF.  Note that this can return a
+      % cell array for obj, in the case of a wing with two or more parts
+      % that mixes normal wings and wings with control surfaces
+      %
+      % @param model model we are adding to
+      % @param node parent node in the URDF
+      % @param options unused at the current time
+      %
+      % @retval model updated model
+      % @retval obj_or_cell_array_of_wings RigidBodyWing,
+      %    RigidBodyWingWithControlSurface, or a cell array of
+      %    RigidBodyWing and RigidBodyWingWithControlSurface's.
+      
+      name = char(node.getAttribute('name'));
+      name = regexprep(name, '\.', '_', 'preservecase');
+
+      elNode = node.getElementsByTagName('parent').item(0);
+      parent = findLinkInd(model,char(elNode.getAttribute('link')),robotnum);
+
+      xyz=zeros(3,1); rpy=zeros(3,1);
+      elnode = node.getElementsByTagName('origin').item(0);
+      if ~isempty(elnode)
+        if elnode.hasAttribute('xyz')
+          xyz = reshape(parseParamString(model,robotnum,char(elnode.getAttribute('xyz'))),3,1);
+        end
+        if elnode.hasAttribute('rpy')
+          rpy = reshape(parseParamString(model,robotnum,char(elnode.getAttribute('rpy'))),3,1);
+        end
+      end
+      
+      
+      % search for control surfaces
+      control_surface_nodes = node.getElementsByTagName('control_surface');
+      
+      wing_profile = char(node.getAttribute('profile'));
+      wing_chord = parseParamString(model,robotnum,char(node.getAttribute('chord')));
+      wing_span = parseParamString(model,robotnum,char(node.getAttribute('span')));
+      wing_stall_angle = parseParamString(model,robotnum,char(node.getAttribute('stall_angle')));
+      nominal_speed = parseParamString(model,robotnum,char(node.getAttribute('nominal_speed')));
+      
+      left_edge_of_wing = xyz - [0; wing_span/2; 0];
+      
+      if isempty(control_surface_nodes.item(0))
+        % no control surfaces, only a normal wing
+        % create that object and return.
+        
+        [model,this_frame_id] = addFrame(model,RigidBodyFrame(parent,xyz,rpy,[name,'_frame']));
+        
+        obj_or_cell_array_of_wings = RigidBodyWing(this_frame_id, wing_profile, wing_chord, wing_span, wing_stall_angle, nominal_speed);
+        obj_or_cell_array_of_wings.name = name;
+        
+        return;
+        
+      else
+        % has control surfaces
+        
+        if ~strcmpi(wing_profile, 'flat plate')
+            error('wings with control surfaces that are not flat plates is unimplemneted at the current time.');
+        end
+        
+        % load control surface data
+        count = 0;
+        
+        control_surfaces = [];
+
+        this_surface = control_surface_nodes.item(count);
+        while ~isempty(this_surface)
+        
+          
+          surface_name = char(this_surface.getAttribute('name'));
+          surface_chord = parseParamString(model,robotnum,char(this_surface.getAttribute('chord')));
+          surface_span = parseParamString(model,robotnum,char(this_surface.getAttribute('span')));
+          surface_left_edge_position_along_wing = parseParamString(model,robotnum,char(this_surface.getAttribute('left_edge_position_along_wing')));
+          surface_min_deflection = parseParamString(model,robotnum,char(this_surface.getAttribute('min_deflection')));
+          surface_max_deflection = parseParamString(model,robotnum,char(this_surface.getAttribute('max_deflection')));
+          
+          assert(surface_span > 0, ['Span must be > 0 on control surface "' surface_name '"']);
+          assert(surface_chord > 0, ['Chord must be > 0 on control surface "' surface_name '"']);
+          assert(surface_left_edge_position_along_wing >= 0, ['Left edge position must be >= 0 on control surface "' surface_name '"']);
+          
+          assert(surface_span + surface_left_edge_position_along_wing <= wing_span, ['Control surface runs off the right end of the wing on surface "' surface_name '"']);
+          
+          for other_surface = control_surfaces
+            if strcmp(other_surface.name, surface_name)
+              error(['Duplicate control surface name "' surface_name '"']);
+            end
+          end
+          
+          control_surfaces = [ control_surfaces ControlSurface(surface_name, surface_chord, surface_span, surface_left_edge_position_along_wing, surface_min_deflection, surface_max_deflection) ];
+
+          
+          count = count + 1;
+          this_surface = control_surface_nodes.item(count);
+          
+        end
+        
+        % now we split the wing up into multiple segments that either
+        % contain one of the control surfaces or don't
+        
+        % do some sanity checks to make sure that the control surfaces do
+        % not overlap
+        for surface = control_surfaces
+          for surface2 = control_surfaces
+            
+            if ~strcmp(surface.name, surface2.name)
+              
+              left1 = surface.left_edge_position_along_wing;
+              right1 = left1 + surface.span;
+              
+              left2 = surface2.left_edge_position_along_wing;
+              
+              if (left1 < left2 && right1 > left2)
+                error(['Control surfaces "' surface.name '" and "' surface2.name '" overlap.']);
+              end
+              
+            end
+          end
+        end % end sanity checks
+        
+        
+        % check for the case where the entire wing has a control surface
+        if length(control_surfaces) == 1 && control_surfaces(1).left_edge_position_along_wing == 0 ...
+            && control_surfaces(1).span == wing_span
+          
+          % this wing has only one control surface and it spans the entire
+          % wing, so we can just return a single
+          % RigidBodyWingWithControlSurface object
+          
+          [model,this_frame_id] = addFrame(model,RigidBodyFrame(parent,xyz,rpy,[name,'_frame']));
+          
+          obj_or_cell_array_of_wings = RigidBodyWingWithControlSurface(this_frame_id, wing_profile, wing_chord, wing_span, wing_stall_angle, nominal_speed, control_surfaces(1));
+          obj_or_cell_array_of_wings.name = name;
+          obj_or_cell_array_of_wings.input_limits = [ control_surfaces(1).min_deflection; control_surfaces(1).max_deflection];
+          
+          return;
+          
+        end
+        
+        
+
+        % if we are here,  that means we have a more complex wing that
+        % consists of componet parts and will return a cell array of wings
+
+        obj_or_cell_array_of_wings = {};
+        
+        % split the wing up starting from the left edge
+        
+        remaining_surfaces = control_surfaces;
+        point_along_wing = 0;
+        
+        while (wing_span - point_along_wing > 1e-6) % not always exactly less than
+        
+          % find the minimum value of the control surface left edges
+          min_left_edge_value = inf;
+          min_left_edge_index = -1;
+          
+          for i = 1 : length(remaining_surfaces)
+            % need a loop heree because min() doesn't support two matricies
+            % with two output arguments
+            if (remaining_surfaces(i).left_edge_position_along_wing < min_left_edge_value)
+              min_left_edge_value = remaining_surfaces(i).left_edge_position_along_wing;
+              min_left_edge_index = i;
+            end
+          end
+
+          if (min_left_edge_value == point_along_wing)
+            % control surface starts at the left edge
+
+            % span of this part of the wing is the span of the control
+            % surface
+
+            this_surface = control_surfaces(min_left_edge_index);
+            this_span = this_surface.span;
+            
+            
+            contained_wing_center_body_frame = [0; this_span / 2 + point_along_wing; 0];
+
+            
+            contained_wing_frame_xyz = left_edge_of_wing + RigidBodyWing.getContainedWingFrameXYZ(contained_wing_center_body_frame, rpy);
+
+            [model,new_wing_frame_id] = addFrame(model,RigidBodyFrame(parent,contained_wing_frame_xyz,rpy,[this_surface.name '_wing' num2str(length(obj_or_cell_array_of_wings)) '_of_' name '_frame']));
+            
+            this_wing = RigidBodyWingWithControlSurface(new_wing_frame_id, wing_profile, wing_chord, this_span, wing_stall_angle, nominal_speed, this_surface);
+            this_wing.input_limits = [ this_surface.min_deflection; this_surface.max_deflection ];
+            this_wing.name = ['wing_' num2str(length(obj_or_cell_array_of_wings)) '_of_' name '_and_control_surface_' this_surface.name];
+            
+            % remove this surface from consideration
+            remaining_surfaces(min_left_edge_index) = [];
+            
+
+          else
+            % make a non-control surfaced wing since the control surface
+            % does not start at the left edge
+
+            if (min_left_edge_value == inf)
+              this_span = wing_span - point_along_wing;
+            else
+              this_span = min_left_edge_value - point_along_wing;
+            end
+            
+            contained_wing_center_body_frame = [0; this_span / 2 + point_along_wing; 0];
+            
+            contained_wing_frame_xyz = left_edge_of_wing + RigidBodyWing.getContainedWingFrameXYZ(contained_wing_center_body_frame, rpy);
+            
+            [model,new_wing_frame_id] = addFrame(model,RigidBodyFrame(parent,contained_wing_frame_xyz,rpy,['wing' num2str(length(obj_or_cell_array_of_wings)) '_of_' name '_frame']));
+
+            this_wing = RigidBodyWing(new_wing_frame_id, wing_profile, wing_chord, this_span, wing_stall_angle, nominal_speed);
+            this_wing.name = ['wing_' num2str(length(obj_or_cell_array_of_wings)) '_of_' name];
+
+          end
+          
+          
+          obj_or_cell_array_of_wings{end + 1} = this_wing;
+          
+          point_along_wing = point_along_wing + this_span;
+          
+        end
+              
+        
+        
+      end
+      
+    end
+    
+    function contained_wing_frame_xyz = getContainedWingFrameXYZ(contained_wing_center_body_frame, rpy)
+      % figure out where the center of this contained wing is, accounting
+      % for possible roll/pitch/yaw in the spec
+
+      rot_matrix = [ cos(rpy(3))*cos(rpy(2)), cos(rpy(3))*sin(rpy(2))*sin(rpy(1)) - sin(rpy(3))*cos(rpy(1)), cos(rpy(3))*sin(rpy(2))*cos(rpy(1)) + sin(rpy(3))*sin(rpy(1)); ...
+                     sin(rpy(3))*cos(rpy(2)), sin(rpy(3))*sin(rpy(2))*sin(rpy(1)) + cos(rpy(3))*cos(rpy(1)), sin(rpy(3))*sin(rpy(2))*cos(rpy(1)) - cos(rpy(3))*sin(rpy(1)); ...
+                     -sin(rpy(2)),    cos(rpy(2))*sin(rpy(1)),    cos(rpy(2))*cos(rpy(1))   ];
+
+
+
+      contained_wing_frame_xyz = rot_matrix * contained_wing_center_body_frame;
+      
+    end
+    
     
   end
 
