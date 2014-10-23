@@ -237,10 +237,10 @@ classdef RigidBodyWingWithControlSurface < RigidBodyWing
       [ fCl, fCd, fCm, aoa_mat, control_surface_mat] = obj.flatplateControlSurface(aoa_range, control_surface_range);
       
       
-      fCl_interp = scatteredInterpolant(aoa_mat(:), control_surface_mat(:), fCl(:));
-      fCd_interp = scatteredInterpolant(aoa_mat(:), control_surface_mat(:), fCd(:));
-      fCm_interp = scatteredInterpolant(aoa_mat(:), control_surface_mat(:), fCm(:));
-
+      fCl_interp = griddedInterpolant(aoa_mat', control_surface_mat', fCl');
+      fCd_interp = griddedInterpolant(aoa_mat', control_surface_mat', fCd');
+      fCm_interp = griddedInterpolant(aoa_mat', control_surface_mat', fCm');
+      
     end
     
     function [ fCl, fCd, fCm, aoa_mat, control_surface_mat ] = flatplateControlSurface(obj, aoa, control_surface_angle_rad)
