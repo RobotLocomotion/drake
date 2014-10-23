@@ -1,4 +1,4 @@
-function [plan, sin_yaw, cos_yaw] = footstepMISOCP_sc(biped, seed_plan, weights, goal_pos)
+function [plan, sin_yaw, cos_yaw] = footstepUnitCircleMISOCP(biped, seed_plan, weights, goal_pos)
 % This planner is the first prototype of the mixed-integer planner
 % described in "Footstep Planning on Uneven Terrain with Mixed-Integer 
 % Convex Optimization" by Robin Deits and Russ Tedrake. 
@@ -24,6 +24,7 @@ function [plan, sin_yaw, cos_yaw] = footstepMISOCP_sc(biped, seed_plan, weights,
 %                 of the right foot sole, and likewise for
 %                 goal_pos.left
 
+t0 = tic;
 checkDependency('yalmip');
 checkDependency('gurobi');
 seed_plan.sanity_check();
@@ -32,7 +33,6 @@ rangecheck(seed_plan.footsteps(2).pos(6), -pi, pi);
 
 nsteps = length(seed_plan.footsteps);
 num_precise_steps = nsteps;
-max_num_steps = seed_plan.params.max_num_steps + 2;
 min_num_steps = max([seed_plan.params.min_num_steps + 2, 3]);
 
 x = sdpvar(4, nsteps, 'full');
@@ -44,10 +44,6 @@ yaw = x(4,:);
 trim = binvar(1, nsteps, 'full');
 
 region = binvar(length(seed_plan.safe_regions), nsteps, 'full');
-
-
-foci = [[0; 0.15], [0; -0.7]];
-ellipse_l = 0.55;
 
 seed_steps = [seed_plan.footsteps.pos];
 
@@ -92,14 +88,12 @@ end
 for j = 3:num_precise_steps
   % Ensure that the foot doesn't yaw too much per step
   if seed_plan.footsteps(j).frame_id == biped.foot_frame_id.left
-    rel_foci = [foci(1,:); -foci(2,:)];
     Constraints = [Constraints, ...
                    implies(~trim(j), 0 <= yaw(j) - yaw(j-1) <= pi/8)];
     for k = 1:size(sector, 1) - 1
       Constraints = [Constraints, sum(sector(k:k+1,j)) >= sector(k,j-1)];
     end
   else
-    rel_foci = foci;
     Constraints = [Constraints, ...
                    implies(~trim(j), -pi/8 <= yaw(j) - yaw(j-1) <= 0)];
     for k = 2:size(sector, 1)
@@ -108,9 +102,11 @@ for j = 3:num_precise_steps
   end
 
   % Enforce relative step reachability
-  for k = 1:size(rel_foci, 2)
+  [centers, radii] = biped.getReachabilityCircles(seed_plan.params, seed_plan.footsteps(j-1).frame_id);
+  for k = 1:size(centers, 2)
     Constraints = [Constraints, ...
       pcone(x(1:2,j-1) + [cos_yaw(j-1), -sin_yaw(j-1); sin_yaw(j-1), cos_yaw(j-1)] * rel_foci(:,k) - x(1:2,j), ellipse_l + seed_plan.params.max_step_width * trim(j), 8),...
+      polycone(x(1:2,j-1) + [cos_yaw(j-1), -sin_yaw(j-1); sin_yaw(j-1), cos_yaw(j-1)] * centers(:,k) - x(1:2,j), radii(k) + seed_plan.params.max_step_width * trim(j), 9),...
       abs(x(3,j) - x(3,j-1)) <= seed_plan.params.nom_upward_step];
 
   end
@@ -171,10 +167,12 @@ for j = 2:nsteps
   Objective = Objective + (x(:,j) - x(:,j-1))' * w_rel * (x(:,j) - x(:,j-1)) + -1 * w_trim * trim(j);
 end
 
+fprintf(1, 'setup: %f\n', toc(t0));
+t0 = tic;
 solvesdp(Constraints, Objective, sdpsettings('solver', 'gurobi'));
+fprintf(1, 'solve: %f\n', toc(t0));
 
 x = double(x);
-yaw = double(yaw);
 cos_yaw = double(cos_yaw);
 sin_yaw = double(sin_yaw);
 trim = double(trim);
