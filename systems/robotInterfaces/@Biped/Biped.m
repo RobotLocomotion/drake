@@ -157,6 +157,37 @@ classdef Biped < LeggedRobot
 
       foot_center = struct('right', rfoot0, 'left', lfoot0);
     end
+
+    function [centers, radii] = getReachabilityCircles(obj, params, fixed_foot_frame_id)
+      % Compute the centers and radii of the circular regions which constrain the
+      % next foot position in the frame of the fixed foot
+      params = applyDefaults(params, obj.default_footstep_params);
+      params = applyDefaults(params, struct('max_backward_step', params.max_forward_step));
+
+      v1x = params.max_forward_step - params.max_backward_step;
+      v2x = v1x;
+      mean_width = mean([params.min_step_width, params.max_step_width]);
+      r2 = -((params.min_step_width - mean_width)^2 + (params.max_forward_step - v1x)^2) / (2 * (params.min_step_width - mean_width));
+      r1 = r2;
+      v1y = params.max_step_width - r1;
+      v2y = params.min_step_width + r2;
+      v1 = [v1x; v1y];
+      v2 = [v2x; v2y];
+      centers = [v1, v2];
+      radii = [r1, r2];
+
+      if fixed_foot_frame_id == obj.foot_frame_id.right;
+      elseif fixed_foot_frame_id == obj.foot_frame_id.left
+        centers(2,:) = -centers(2,:);
+      else
+        error('Invalid foot frame ID: %d', fixed_foot_frame_id);
+      end
+
+    end
+
+
+
+
   end
 
 
