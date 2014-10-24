@@ -564,8 +564,30 @@ classdef RigidBodyWing < RigidBodyForceElement
       axis equal
       
     end
+    
+    function model = addWingVisualShapeToBody(obj, model, body)
+      % Adds a visual shape of the wing to the model on the body given for
+      % drawing the wing in a visualizer.
+      %
+      % @param model manipulator the wing is part of
+      % @param body body to add the visual shape to
+      %
+      % @retval model updated model
+
+      wing_height = 0.01;
+
+
+      box_size = [ obj.chord, obj.span, wing_height ];
+      
+      shape = RigidBodyBox(box_size, model.getFrame(obj.kinframe).T);
+      
+      model = model.addVisualShapeToBody(body, shape);
+
+    end
 
   end
+  
+  
 
   methods (Static)
     
@@ -710,6 +732,12 @@ classdef RigidBodyWing < RigidBodyForceElement
       wing_span = parseParamString(model,robotnum,char(node.getAttribute('span')));
       wing_stall_angle = parseParamString(model,robotnum,char(node.getAttribute('stall_angle')));
       nominal_speed = parseParamString(model,robotnum,char(node.getAttribute('nominal_speed')));
+      visual_geometry = parseParamString(model,robotnum,char(node.getAttribute('visual_geometry')));
+      
+      if isempty(visual_geometry)
+        % visual geometry defaults to on
+        visual_geometry = 1;
+      end
       
       left_edge_of_wing = xyz - [0; wing_span/2; 0];
       
@@ -721,6 +749,11 @@ classdef RigidBodyWing < RigidBodyForceElement
         
         obj_or_cell_array_of_wings = RigidBodyWing(this_frame_id, wing_profile, wing_chord, wing_span, wing_stall_angle, nominal_speed);
         obj_or_cell_array_of_wings.name = name;
+        
+        if (visual_geometry)
+          % add visual shapes for automatic drawing of the wing
+          model = obj_or_cell_array_of_wings.addWingVisualShapeToBody(model, parent);
+        end
         
         return;
         
@@ -801,10 +834,16 @@ classdef RigidBodyWing < RigidBodyForceElement
           
           [model,this_frame_id] = addFrame(model,RigidBodyFrame(parent,xyz,rpy,[name,'_frame']));
           
+          
           obj_or_cell_array_of_wings = RigidBodyWingWithControlSurface(this_frame_id, wing_profile, wing_chord, wing_span, wing_stall_angle, nominal_speed, control_surfaces(1));
           obj_or_cell_array_of_wings.name = name;
           obj_or_cell_array_of_wings.input_limits = [ control_surfaces(1).min_deflection; control_surfaces(1).max_deflection];
           
+          if (visual_geometry)
+            % add visual shapes for automatic drawing of the wing
+            model = obj_or_cell_array_of_wings.addWingVisualShapeToBody(model, parent);
+          end
+            
           return;
           
         end
@@ -882,6 +921,10 @@ classdef RigidBodyWing < RigidBodyForceElement
 
           end
           
+          if (visual_geometry)
+            % add visual shapes for automatic drawing of the wing
+            model = this_wing.addWingVisualShapeToBody(model, parent);
+          end
           
           obj_or_cell_array_of_wings{end + 1} = this_wing;
           

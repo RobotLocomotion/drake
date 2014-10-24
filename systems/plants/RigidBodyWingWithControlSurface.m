@@ -362,6 +362,49 @@ classdef RigidBodyWingWithControlSurface < RigidBodyWing
       
     end
     
+    function model = addWingVisualShapeToBody(obj, model, body)
+      % Adds a visual shape of the wing to the model on the body given for
+      % drawing the wing in a visualizer.
+      %
+      % @param model manipulator the wing is part of
+      % @param body body to add the visual shape to
+      %
+      % @retval model updated model
+
+      % call the parent wing's drawing system to add the main wing
+      model = addWingVisualShapeToBody@RigidBodyWing(obj, model, body);
+      
+      
+      % add another box for the control surface
+      
+      control_surface_height = 0.01;
+      
+      box_size = [ obj.control_surface.chord, obj.control_surface.span, control_surface_height ];
+      
+      % get the xyz and rpy of the control surface
+      origin = [-obj.chord/2 - obj.control_surface.chord/2; 0; 0];
+      
+      q = zeros(model.getNumContStates(), 1);
+      qd = zeros(model.getNumContStates(), 1);
+
+      T = model.getFrame(obj.kinframe).T;
+      R = T(1:3,1:3);
+      
+      pts = [origin; 1];
+      
+      xyz_rpy = [T(1:3,:)*pts; repmat(rotmat2rpy(R),1, 1)];
+      
+      xyz = xyz_rpy(1:3);
+      
+      rpy = xyz_rpy(4:6);
+      
+      shape = RigidBodyBox(box_size, xyz, rpy);
+      
+      shape = shape.setColor([1 .949 .211]);
+      
+      model = model.addVisualShapeToBody(body, shape);
+
+    end
     
   end
   
