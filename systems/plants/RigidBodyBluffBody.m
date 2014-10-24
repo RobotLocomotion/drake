@@ -77,7 +77,9 @@ classdef RigidBodyBluffBody < RigidBodyForceElement
       
       % Compute airspeed over this point in xyz
       
-      [~, ~, ~, ~, ~, ~, wingvel_world_xyz ] = RigidBodyWing.computeWingVelocity(obj.kinframe, manip, q, qd, kinsol);
+      wingvel_struct = RigidBodyWing.computeWingVelocity(obj.kinframe, manip, q, qd, kinsol);
+      
+      wingvel_world_xyz = wingvel_struct.wingvel_world_xyz;
       
       velocity_x = wingvel_world_xyz(1);
       velocity_y = wingvel_world_xyz(2);
