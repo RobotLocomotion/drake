@@ -2,9 +2,7 @@ classdef RigidBodyWing < RigidBodyForceElement
   % This class implements a wing element, supporting flat plates and
   % airfoils defined with NACA numbers, a geometry profile (with xfoil and
   % AVL backend) and .mat files defining wing performance
-  %
-  % URDF parsing is handled by RigidBodyCompositeWing.
-
+  
   properties
     kinframe;  % index to RigidBodyFrame
     fCl  % PPTrajectories (splines) representing the *dimensional* coefficients
@@ -232,7 +230,7 @@ classdef RigidBodyWing < RigidBodyForceElement
         xfoilfile = fileread(which('xfoilblank.txt'));
         filename = tempname;
         xfoil_cleanup = onCleanup(@()delete([filename,'*']));
-        polarLoc = [tempname,'_polar.txt'];
+        polarLoc = [filename,'_polar.txt'];
         if ~linux %because Windows.
           polarLoc = regexprep(polarLoc, '\\', '\\\\\\\\');
         end
@@ -401,20 +399,31 @@ classdef RigidBodyWing < RigidBodyForceElement
       kinsol = doKinematics(manip,q,true,true,qd);
 
       if (nargout > 1)
-        [wingvel_world_xz, wingYunit, dwingvel_worlddq, dwingvel_worlddqd, dwingYunitdq, dwingYunitdqd ] = RigidBodyWing.computeWingVelocity(obj.kinframe, manip, q, qd, kinsol);
+
+        [ wingvel_struct, wingvel_dstruct ] = RigidBodyWing.computeWingVelocity(obj.kinframe, manip, q, qd, kinsol);
+        
+        wingvel_world_xz = wingvel_struct.wingvel_world_xz;
+        wingYunit = wingvel_struct.wingYunit;
+        wingvel_world_xyz = wingvel_struct.wingvel_world_xyz;
+        
+        dwingvel_worlddq = wingvel_dstruct.dwingvel_worlddq;
+        dwingvel_worlddqd = wingvel_dstruct.dwingvel_worlddqd;
+        dwingYunitdq = wingvel_dstruct.dwingYunitdq;
+        dwingYunitdqd = wingvel_dstruct.dwingYunitdqd;
+
       else
-        [ wingvel_world_xz, wingYunit ] = RigidBodyWing.computeWingVelocity(obj.kinframe, manip, q, qd, kinsol);
+        wingvel_struct = RigidBodyWing.computeWingVelocity(obj.kinframe, manip, q, qd, kinsol);
+        
+        wingvel_world_xz = wingvel_struct.wingvel_world_xz;
+        wingYunit = wingvel_struct.wingYunit;
+        wingvel_world_xyz = wingvel_struct.wingvel_world_xyz;
+        
       end
 
-      
-
-      
-      
-
       if (nargout>1)
-        [wingvel_rel, dwingvel_reldq, dwingvel_reldqd] = RigidBodyWing.computeWingVelocityRelative(obj.kinframe, manip, kinsol, wingvel_world_xz, dwingvel_worlddq, dwingvel_worlddqd);
+        [wingvel_rel, dwingvel_reldq, dwingvel_reldqd] = RigidBodyWing.computeWingVelocityRelative(obj.kinframe, manip, kinsol, wingvel_struct, wingvel_dstruct);
       else
-        wingvel_rel = RigidBodyWing.computeWingVelocityRelative(obj.kinframe, manip, kinsol, wingvel_world_xz);
+        wingvel_rel = RigidBodyWing.computeWingVelocityRelative(obj.kinframe, manip, kinsol, wingvel_struct);
       end
 
       
@@ -521,50 +530,6 @@ classdef RigidBodyWing < RigidBodyForceElement
       end
     end
     
-    function drawWing(obj, manip, q, qd, fill_color)
-      % Draws the wing onto the current figure
-      %
-      % @param manip manipulator the wing is part of
-      % @param q state vector
-      % @param qd q-dot (state vector derivatives)
-      % @param fill_color @default 1
-      
-      if ~strcmpi(obj.profile, 'flat plate')
-        warning('Drawing may not be right for non-flat plate wings.');
-      end
-      
-      hold on
-      
-      kinsol = doKinematics(manip,q,false, false, qd);
-      
-      origin = forwardKin(manip, kinsol, obj.kinframe, zeros(3,1), 1);
-      
-      % draw a box around the origin in world frame
-      
-      height = 0.01;
-      
-      % get the corner points in 3d space
-      
-      p1 = [-obj.chord/2, -obj.span/2, 0];
-      
-      p2 = [ obj.chord/2, -obj.span/2, 0];
-      
-      p3 = [ obj.chord/2,  obj.span/2, 0];
-      
-      p4 = [-obj.chord/2,  obj.span/2, 0];
-      
-      pts = forwardKin(manip, kinsol, obj.kinframe, [p1; p2; p3; p4]');
-      
-      fill3(pts(1,:), pts(2,:), pts(3,:), fill_color);
-      
-      xlabel('x');
-      ylabel('y');
-      zlabel('z');
-      
-      axis equal
-      
-    end
-    
     function model = addWingVisualShapeToBody(obj, model, body)
       % Adds a visual shape of the wing to the model on the body given for
       % drawing the wing in a visualizer.
@@ -591,7 +556,7 @@ classdef RigidBodyWing < RigidBodyForceElement
 
   methods (Static)
     
-    function [wingvel_world_xz, wingYunit, dwingvel_worlddq, dwingvel_worlddqd, dwingYunitdq, dwingYunitdqd, wingvel_world_xyz ] = computeWingVelocity(kinframe, manip, q, qd, kinsol)
+    function [ wingvel_struct, wingvel_dstruct ]= computeWingVelocity(kinframe, manip, q, qd, kinsol)
       % Computes the velcity of the wing in word coordinates
       %
       % @param kinframe frame id of the kinematic frame
@@ -600,18 +565,27 @@ classdef RigidBodyWing < RigidBodyForceElement
       % @param qd q-dot (time derivative of state vector)
       % @param kinsol solution from doKinematics
       %
-      % @retval wingvel_world_xz velocity of the wing in world coodinates
-      %   projected onto the wing's XZ plane.  In other words, velocity with
-      %   sideslip subtracted out.
-      % @retval wingYunit unit vector along the wing's Y axis in world
-      %   coordinates
-      % @retval dwingvel_worlddq derivative of wing velocity with respect
-      %   to q
-      % @retval dwingvel_worlddqd derivative of the wing velocity with
-      %   respect to qdot
-      % @retval wingvel_world_xzy velocity of the wing in world coordinates
+      % @retval wingvel_struct which has the following values:
+      %   <pre>
+      %   wingvel_world_xz
+      %     velocity of the wing in world coodinates
+      %     projected onto the wing's XZ plane.  In other words, velocity with
+      %     sideslip subtracted out.
+      %   wingYunit
+      %     unit vector along the wing's Y axis in world
+      %     coordinates
+      %   </pre>
+      % @retval wingvel_dstruct which has the following values:
+      %   <pre>
+      %   dwingvel_worlddq
+      %     derivative of wing velocity with respect to q
+      %   dwingvel_worlddqd
+      %     derivative of the wing velocity with respect to qdot
+      %   wingvel_world_xzy
+      %     velocity of the wing in world coordinates
+      %   </pre>
       
-      if (nargout>2)
+      if (nargout>1)
         
         [~,J] = forwardKin(manip,kinsol,kinframe,zeros(3,1));
         Jdot = forwardJacDot(manip,kinsol,kinframe,zeros(3,1));
@@ -637,7 +611,7 @@ classdef RigidBodyWing < RigidBodyForceElement
       % input/option for "vectors_not_points".
 
       %project this onto the XZ plane of the wing (ignores sideslip)
-      if (nargout>2)
+      if (nargout>1)
         [wingYunit,dwingYunitdq] = forwardKin(manip,kinsol,kinframe,[0 0; 1 0; 0 0]);
         wingYunit = wingYunit(:,1)-wingYunit(:,2); % subtract out the origin
         dwingYunitdq = dwingYunitdq(1:3,:)-dwingYunitdq(4:6,:);
@@ -648,29 +622,39 @@ classdef RigidBodyWing < RigidBodyForceElement
       end
       
       sideslip = wingvel_world_xyz'*wingYunit;
-      if (nargout>2)
+      if (nargout>1)
         dsideslipdq = wingYunit'*dwingvel_worlddq + wingvel_world_xyz'*dwingYunitdq;
         dsideslipdqd = wingYunit'*dwingvel_worlddqd + wingvel_world_xyz'*dwingYunitdqd;
       end
 
       wingvel_world_xz = wingvel_world_xyz - sideslip*wingYunit;
-      if (nargout>2)
+      if (nargout>1)
         dwingvel_worlddq = dwingvel_worlddq - sideslip*dwingYunitdq - wingYunit*dsideslipdq;
         dwingvel_worlddqd = dwingvel_worlddqd - sideslip*dwingYunitdqd - wingYunit*dsideslipdqd;
+      end
+      
+      wingvel_struct.wingvel_world_xz = wingvel_world_xz;
+      wingvel_struct.wingYunit = wingYunit;
+      wingvel_struct.wingvel_world_xyz = wingvel_world_xyz;
+      
+      if (nargout>1)
+        wingvel_dstruct.dwingvel_worlddq = dwingvel_worlddq;
+        wingvel_dstruct.dwingvel_worlddqd = dwingvel_worlddqd;
+        wingvel_dstruct.dwingYunitdq = dwingYunitdq;
+        wingvel_dstruct.dwingYunitdqd = dwingYunitdqd;
       end
       
     end
     
         
-    function [wingvel_rel, dwingvel_reldq, dwingvel_reldqd] = computeWingVelocityRelative(kinframe, manip, kinsol, wingvel_world, dwingvel_worlddq, dwingvel_worlddqd)
+    function [wingvel_rel, dwingvel_reldq, dwingvel_reldqd] = computeWingVelocityRelative(kinframe, manip, kinsol, wingvel_struct, wingvel_dstruct)
       % Computes the relative wing velocity
       %
       % @param kinframe frame id (usually in obj.kinframe)
       % @param manip manipulator we are a part of
       % @param kinsol solution from doKinematics
-      % @param wingvel_world world velocity from computeWingVelocity
-      % @param dwingvel_worlddq from computeWingVelocity
-      % @param dwingvel_worlddqd from computeWingVelocity
+      % @param wingvel_struct from computeWingVelocity
+      % @param wingvel_dstruct from computeWingVelocity
       %
       % @retval wingvel_rel relative wing velocity
       % @retval dwingvel_reldq derivative of relative wing velocity with
@@ -679,14 +663,14 @@ classdef RigidBodyWing < RigidBodyForceElement
       %   respect to q-dot
       
       if (nargout>1)
-        [wingvel_rel,wingvel_relJ,wingvel_relP] = bodyKin(manip,kinsol,kinframe,[wingvel_world,zeros(3,1)]);
+        [wingvel_rel,wingvel_relJ,wingvel_relP] = bodyKin(manip,kinsol,kinframe,[wingvel_struct.wingvel_world_xz,zeros(3,1)]);
         wingvel_rel = wingvel_rel(:,1)-wingvel_rel(:,2);
         wingvel_relJ = wingvel_relJ(1:3,:)-wingvel_relJ(4:6,:);
         wingvel_relP = wingvel_relP(1:3,:)-wingvel_relP(4:6,:);
-        dwingvel_reldq = wingvel_relJ+wingvel_relP(:,1:3)*dwingvel_worlddq;
-        dwingvel_reldqd = wingvel_relP(:,1:3)*dwingvel_worlddqd;
+        dwingvel_reldq = wingvel_relJ+wingvel_relP(:,1:3)*wingvel_dstruct.dwingvel_worlddq;
+        dwingvel_reldqd = wingvel_relP(:,1:3)*wingvel_dstruct.dwingvel_worlddqd;
       else
-        wingvel_rel = bodyKin(manip,kinsol,kinframe,[wingvel_world,zeros(3,1)]);
+        wingvel_rel = bodyKin(manip,kinsol,kinframe,[wingvel_struct.wingvel_world_xz,zeros(3,1)]);
         wingvel_rel = wingvel_rel(:,1)-wingvel_rel(:,2);
       end
       

@@ -2,7 +2,7 @@ classdef RigidBodyWingWithControlSurface < RigidBodyWing
   % Implements functionality similar to RigidBodyWing but with a
   % control surface attached to the wing.
   %
-  % URDF parsing is handled by RigidBodyCompositeWing.
+  % URDF parsing is handled by RigidBodyWing.
       
   properties
     control_surface % the control surface attached to this wing
@@ -76,10 +76,12 @@ classdef RigidBodyWingWithControlSurface < RigidBodyWing
       
       % get the coefficients for this point
       
-      [ wingvel_world_xz, wingYunit ] = RigidBodyWing.computeWingVelocity(obj.kinframe, manip, q, qd, kinsol);
-      wingvel_rel = RigidBodyWing.computeWingVelocityRelative(obj.kinframe, manip, kinsol, wingvel_world_xz);
+      wingvel_struct = RigidBodyWing.computeWingVelocity(obj.kinframe, manip, q, qd, kinsol);
+      wingvel_rel = RigidBodyWing.computeWingVelocityRelative(obj.kinframe, manip, kinsol, wingvel_struct);
       
-      
+      wingvel_world_xz = wingvel_struct.wingvel_world_xz;
+      wingYunit = wingvel_struct.wingYunit;
+      wingvel_world_xyz = wingvel_struct.wingvel_world_xyz;
       
       airspeed = norm(wingvel_world_xz);
       
@@ -190,23 +192,6 @@ classdef RigidBodyWingWithControlSurface < RigidBodyWing
       dB_force = 0; %todo
 
          
-    end
-    
-    
-    function [fCl, fCd, fCm] = flatplate_old(obj)
-      disp('Using a flat plate airfoil with control surfaces.')
-        laminarpts = 30;
-        stallAngle = obj.stall_angle;
-        
-        angles = [-180:2:-(stallAngle+.0001) -stallAngle:2*stallAngle/laminarpts:(stallAngle-.0001) stallAngle:2:180];
-        %CMangles is used to make the Moment coefficient zero when the wing
-        %is not stalled
-        CMangles = [-180:2:-(stallAngle+.0001) zeros(1,laminarpts) stallAngle:2:180];
-        fCm = foh(angles, -(CMangles./90)*obj.rho*obj.area*obj.chord/4);
-        fCl = spline(angles, .5*(2*sind(angles).*cosd(angles))*obj.rho*obj.area);
-        fCd = spline(angles, .5*(2*sind(angles).^2)*obj.rho*obj.area);
-        
-      
     end
     
     function [ fCl_interp, fCd_interp, fCm_interp ] = flateplateControlSurfaceInterp(obj)
@@ -383,9 +368,6 @@ classdef RigidBodyWingWithControlSurface < RigidBodyWing
       
       % get the xyz and rpy of the control surface
       origin = [-obj.chord/2 - obj.control_surface.chord/2; 0; 0];
-      
-      q = zeros(model.getNumContStates(), 1);
-      qd = zeros(model.getNumContStates(), 1);
 
       T = model.getFrame(obj.kinframe).T;
       R = T(1:3,1:3);
