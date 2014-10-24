@@ -71,7 +71,7 @@ eventually support all of the same types as a 'joint' element. See the joint ele
             <xs:element name="linear_spring_damper" type="linear_spring_damper"/>
             <xs:element name="wing" type="wing">
                 <xs:annotation>
-                    <xs:documentation>See RigidBodyWing.m for more documentation</xs:documentation>
+                    <xs:documentation>Wing element supporting flat plates, airfoils, and control surfaces.</xs:documentation>
                 </xs:annotation>
             </xs:element>
             <xs:element name="thrust" type="thrust">
@@ -83,7 +83,8 @@ produced by a propeller on an airplane, or thrusters on the hands and
 feet of an Atlas robot to make Iron Man.</xs:documentation>
                 </xs:annotation>
             </xs:element>
-<xs:element name="propellor" type="propellor">
+
+            <xs:element name="propellor" type="propellor">
                 <xs:annotation>
                     <xs:documentation>Propellor elements produce both a thrust at a point on the parent body in a
 specified direction, along with a moment whose axis is the same as the thrust axis. This is useful for modelling propellors,
@@ -91,6 +92,9 @@ which typically produce both a thrust and a moment due to aerodynamic drag. The 
 from an input to the system, with different scalings for each.</xs:documentation>
                 </xs:annotation>
             </xs:element>
+
+
+
             <xs:element name="added_mass" type="added_mass">
                 <xs:annotation>
                     <xs:documentation> Places added-mass coefficients on a point on the parent body. Added-mass forces act like a 'drag' that is proportional to the acceleration of the body, rather than the velocity. Important when the body is comparable in mass to the surrounding fluid, or if rapid motions are needed.
@@ -189,8 +193,7 @@ the axes of the airfoil to line up with those of its parent body.</xs:documentat
             </xs:element>
             <xs:element name="control_surface" type="control_surface" minOccurs="0">
                 <xs:annotation>
-                    <xs:documentation>control surface attached to the wing.
-Can have up to one control surface per wing.</xs:documentation>
+                    <xs:documentation>Control surface attached to a wing.  Can have up to one control surface per wing.</xs:documentation>
                 </xs:annotation>
             </xs:element>
         </xs:all>
@@ -232,35 +235,106 @@ nominal speed in meters per second used to calculate the
 Reynolds number around which we design the aerodynamic coefficients.</xs:documentation>
             </xs:annotation>
         </xs:attribute>
+        <xs:attribute name="visual_geometry" type="xs:boolean" default="true">
+            <xs:annotation>
+                <xs:documentation>enable or disable automatic drawing of the wing</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
     </xs:complexType>
 
     <xs:complexType name="control_surface">
         <xs:attribute name="name" type="xs:string" use="required" />
-        <xs:attribute name="profile" type="xs:string" use="required" />
-        <xs:annotation>
-            <xs:documentation>Only "flat plate" supported right now.</xs:documentation>
-        </xs:annotation>
-        <xs:attribute name="chord" type="xs:double" use="required" />
-        <xs:annotation>
-            <xs:documentation>Length of the control surface.</xs:documentation>
-        </xs:annotation>
-        <xs:attribute name="span" type="xs:double" use="required" />
-        <xs:annotation>
-            <xs:documentation>Width of the control surface.</xs:documentation>
-        </xs:annotation>
-        <xs:attribute name="left_edge_position_along_wing" type="xs:double" use="required" />
-        <xs:annotation>
-            <xs:documentation>Position of the left edge of the control surface along the wing (in meters).</xs:documentation>
-        </xs:annotation>
-        <xs:attribute name="min_deflection" type="xs:double" use="required" />
-        <xs:annotation>
-            <xs:documentation>Minimum control surface deflection in radians.  Typical is around -0.90</xs:documentation>
-        </xs:annotation>
-        <xs:attribute name="max_deflection" type="xs:double" use="required" />
-        <xs:annotation>
-            <xs:documentation>Maximum control surface deflection in radians.  Typical is around 0.90</xs:documentation>
-        </xs:annotation>
+
+        <xs:attribute name="profile" type="xs:string" use="required">
+            <xs:annotation>
+                <xs:documentation>Only "flat plate" supported right now.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+
+        <xs:attribute name="chord" type="xs:double" use="required">
+            <xs:annotation>
+                <xs:documentation>Length of the control surface.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+
+        <xs:attribute name="span" type="xs:double" use="required">
+            <xs:annotation>
+                <xs:documentation>Width of the control surface.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+
+        <xs:attribute name="left_edge_position_along_wing" type="xs:double" use="required">
+            <xs:annotation>
+                <xs:documentation>Position of the left edge of the control surface along the wing (in meters).</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+
+        <xs:attribute name="min_deflection" type="xs:double" use="required">
+            <xs:annotation>
+                <xs:documentation>Minimum control surface deflection in radians.  Typical is around -0.90</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+
+        <xs:attribute name="max_deflection" type="xs:double" use="required">
+            <xs:annotation>
+                <xs:documentation>Maximum control surface deflection in radians.  Typical is around 0.90</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+
     </xs:complexType>
+
+    <xs:complexType name="propellor">
+        <xs:attribute name="name" type="xs:string" use="required" />
+
+        <xs:attribute default="-INF" name="lower_limit" type="xs:double">
+            <xs:annotation>
+                <xs:documentation>input minimum.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+
+        <xs:attribute default="INF" name="upper_limit" type="xs:double">
+            <xs:annotation>
+                <xs:documentation>input maximum.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+
+        <xs:attribute default="1" name="scale_factor_thrust" type="xs:double">
+            <xs:annotation>
+                <xs:documentation>scales the dimensionless input to Newtons of force.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+
+        <xs:attribute default="1" name="scale_factor_moment" type="xs:double">
+            <xs:annotation>
+                <xs:documentation>scales the dimensionless input to newton-meters of torque.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+
+        <xs:attribute name="visual_geometry" type="xs:boolean" default="true">
+            <xs:annotation>
+                <xs:documentation>true to enable automatic drawing of the propellor.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+
+        <xs:attribute name="visual_diameter" type="xs:boolean" default="0.2">
+            <xs:annotation>
+                <xs:documentation>diameter of the propllor when drawn.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+
+        <xs:element name="axis" type="axis" minOccurs="0" maxOccurs="1">
+            <xs:annotation>
+                <xs:documentation>Axis the thrust element acts on.  For example a propellor facing forward would point in the X-axis and you'd use: xyz="1 0 0". </xs:documentation>
+            </xs:annotation>
+        </xs:element>
+        <xs:element name="origin" type="pose" minOccurs="0">
+            <xs:annotation>
+                <xs:documentation>Position of the thrust element.  Example: xyz="0 0 0" rpy="0 0 0".</xs:documentation>
+            </xs:annotation>
+        </xs:element>
+
+    </xs:complexType>
+
     <xs:complexType name="thrust">
         <xs:all>
             <xs:element name="parent" type="link_reference">
@@ -271,15 +345,12 @@ which the force will be applied.</xs:documentation>
             </xs:element>
             <xs:element name="axis" type="axis" minOccurs="0" maxOccurs="1">
                 <xs:annotation>
-                    <xs:documentation>The joint axis specified in the joint frame. This is the axis of rotation for revolute joints, the axis of translation for prismatic joints, and the surface normal for planar joints. The axis is specified in the joint frame of reference. Fixed and floating joints do not use the axis field. </xs:documentation>
+                    <xs:documentation>Axis the thrust element acts on.  For example a propellor facing forward would point in the X-axis and you'd use: xyz="1 0 0". </xs:documentation>
                 </xs:annotation>
             </xs:element>
             <xs:element name="origin" type="pose" minOccurs="0">
                 <xs:annotation>
-                    <xs:documentation>This defines the position of
-the quarter-chord point of the airfoil, since that is the reference point
-used for the moment coefficient. RPY support has been excluded, requiring
-the axes of the airfoil to line up with those of its parent body.</xs:documentation>
+                    <xs:documentation>Position of the thrust element.  Example: xyz="0 0 0" rpy="0 0 0".</xs:documentation>
                 </xs:annotation>
             </xs:element>
         </xs:all>
