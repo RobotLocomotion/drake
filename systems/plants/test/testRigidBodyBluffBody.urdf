@@ -17,45 +17,6 @@
         iyz="-0.000001"
         izz="0.019316" />
     </inertial>
-    <visual>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
-      <geometry>
-        <box size=".5 2 .1" />
-      </geometry>
-      <material
-        name="">
-        <color
-          rgba="0.68 0.68 0.68 1" />
-      </material>
-    </visual>
-    <visual>
-      <origin
-        xyz="-.05 -1.025 .15"
-        rpy="0 0 0" />
-      <geometry>
-        <box size=".4 .05 .4" />
-      </geometry>
-      <material
-        name="">
-        <color
-          rgba="0.68 0.68 0.68 1" />
-      </material>
-    </visual>
-        <visual>
-      <origin
-        xyz="-.05 1.025 .15"
-        rpy="0 0 0" />
-      <geometry>
-        <box size=".4 .05 .4" />
-      </geometry>
-      <material
-        name="">
-        <color
-          rgba="0.68 0.68 0.68 1" />
-      </material>
-    </visual>
     <!-- include a box to represent the drag force -->
     <visual>
       <origin
