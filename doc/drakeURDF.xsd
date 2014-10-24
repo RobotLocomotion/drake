@@ -12,11 +12,11 @@ Documents URDF support for Drake, which implements much of the ROS URDF specific
     <xs:simpleType name="matlab_parameter_expression">
         <xs:annotation>
             <xs:documentation>Can be any string that will evaluate as a polynomial using "eval" in the matlab environment, where parameters are referenced with $param_name.
-Example: 
+Example:
 
 "$m * $l^2"
 or
-"$m2 * ($lc2 - $l1)" 
+"$m2 * ($lc2 - $l1)"
 </xs:documentation>
         </xs:annotation>
         <xs:restriction base="xs:string"/>
@@ -38,9 +38,9 @@ or
     </xs:complexType>
     <xs:complexType name="loop_joint">
         <xs:annotation>
-            <xs:documentation>You can add a loop joint if you have a kinematic loop (e.g. four-bar linkage, or even something more complicated) in your robot.  To use this interface, you must first describe every link in your robot as part of a kinematic tree (no loops). You should be able to take a path through the linkages that touches everything without any loops. Then add the remaining loops by referencing existing links from the tree. 
+            <xs:documentation>You can add a loop joint if you have a kinematic loop (e.g. four-bar linkage, or even something more complicated) in your robot.  To use this interface, you must first describe every link in your robot as part of a kinematic tree (no loops). You should be able to take a path through the linkages that touches everything without any loops. Then add the remaining loops by referencing existing links from the tree.
 
-There are a few limitations with the current implementation.  We do not currently support joint limits nor actuators at the new joint created by the loop_joint tag.  For all of the systems we have modeled so far, there has always been at least one of these "simple" joints in each kinematic loop; and we are simply careful to write down the initial kinematic tree so that it includes all of the more complex joints, leaving the simple joint as the loop joint. 
+There are a few limitations with the current implementation.  We do not currently support joint limits nor actuators at the new joint created by the loop_joint tag.  For all of the systems we have modeled so far, there has always been at least one of these "simple" joints in each kinematic loop; and we are simply careful to write down the initial kinematic tree so that it includes all of the more complex joints, leaving the simple joint as the loop joint.
 </xs:documentation>
         </xs:annotation>
         <xs:all>
@@ -87,13 +87,13 @@ feet of an Atlas robot to make Iron Man.</xs:documentation>
                 <xs:annotation>
                     <xs:documentation>Propellor elements produce both a thrust at a point on the parent body in a
 specified direction, along with a moment whose axis is the same as the thrust axis. This is useful for modelling propellors,
-which typically produce both a thrust and a moment due to aerodynamic drag. The magnitude of the force and torque are scaled 
+which typically produce both a thrust and a moment due to aerodynamic drag. The magnitude of the force and torque are scaled
 from an input to the system, with different scalings for each.</xs:documentation>
                 </xs:annotation>
             </xs:element>
             <xs:element name="added_mass" type="added_mass">
                 <xs:annotation>
-                    <xs:documentation> Places added-mass coefficients on a point on the parent body. Added-mass forces act like a 'drag' that is proportional to the acceleration of the body, rather than the velocity. Important when the body is comparable in mass to the surrounding fluid, or if rapid motions are needed. 
+                    <xs:documentation> Places added-mass coefficients on a point on the parent body. Added-mass forces act like a 'drag' that is proportional to the acceleration of the body, rather than the velocity. Important when the body is comparable in mass to the surrounding fluid, or if rapid motions are needed.
 
 These forces are represented by a 6x6 matrix 'Ma' similar to a mass matrix, where the force is F=-Ma*a (+coriolis terms). Each matrix element is refered as 'mij', where 'i' and 'j' are the rows and columns of the matrix. As is standard in the oceanographic literature, rows 123 are the linear accelerations, and 456 are the angular accelerations [note this is opposite of Featherstone's notation] </xs:documentation>
                 </xs:annotation>
@@ -187,6 +187,12 @@ used for the moment coefficient. RPY support has been excluded, requiring
 the axes of the airfoil to line up with those of its parent body.</xs:documentation>
                 </xs:annotation>
             </xs:element>
+            <xs:element name="control_surface" type="control_surface" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>control surface attached to the wing.
+Can have up to one control surface per wing.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
         </xs:all>
         <xs:attribute name="profile" type="xs:string">
             <xs:annotation>
@@ -226,6 +232,34 @@ nominal speed in meters per second used to calculate the
 Reynolds number around which we design the aerodynamic coefficients.</xs:documentation>
             </xs:annotation>
         </xs:attribute>
+    </xs:complexType>
+
+    <xs:complexType name="control_surface">
+        <xs:attribute name="name" type="xs:string" use="required" />
+        <xs:attribute name="profile" type="xs:string" use="required" />
+        <xs:annotation>
+            <xs:documentation>Only "flat plate" supported right now.</xs:documentation>
+        </xs:annotation>
+        <xs:attribute name="chord" type="xs:double" use="required" />
+        <xs:annotation>
+            <xs:documentation>Length of the control surface.</xs:documentation>
+        </xs:annotation>
+        <xs:attribute name="span" type="xs:double" use="required" />
+        <xs:annotation>
+            <xs:documentation>Width of the control surface.</xs:documentation>
+        </xs:annotation>
+        <xs:attribute name="left_edge_position_along_wing" type="xs:double" use="required" />
+        <xs:annotation>
+            <xs:documentation>Position of the left edge of the control surface along the wing (in meters).</xs:documentation>
+        </xs:annotation>
+        <xs:attribute name="min_deflection" type="xs:double" use="required" />
+        <xs:annotation>
+            <xs:documentation>Minimum control surface deflection in radians.  Typical is around -0.90</xs:documentation>
+        </xs:annotation>
+        <xs:attribute name="max_deflection" type="xs:double" use="required" />
+        <xs:annotation>
+            <xs:documentation>Maximum control surface deflection in radians.  Typical is around 0.90</xs:documentation>
+        </xs:annotation>
     </xs:complexType>
     <xs:complexType name="thrust">
         <xs:all>
@@ -538,7 +572,7 @@ this buoyancy is attached.</xs:documentation>
         </xs:attribute>
         <xs:attribute name="friction" type="matlab_parameter_expression">
             <xs:annotation>
-                <xs:documentation>coulomb friction coefficient.  
+                <xs:documentation>coulomb friction coefficient.
 
 total friction force is a piecewise linear approximation of sgn(qd)*Fc + qd*Fd:
 
