@@ -17,45 +17,6 @@
         iyz="-0.000001"
         izz="0.019316" />
     </inertial>
-    <visual>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
-      <geometry>
-        <box size=".5 2 .1" />
-      </geometry>
-      <material
-        name="">
-        <color
-          rgba="0.68 0.68 0.68 1" />
-      </material>
-    </visual>
-    <visual>
-      <origin
-        xyz="-.05 -1.025 .15"
-        rpy="0 0 0" />
-      <geometry>
-        <box size=".4 .05 .4" />
-      </geometry>
-      <material
-        name="">
-        <color
-          rgba="0.68 0.68 0.68 1" />
-      </material>
-    </visual>
-        <visual>
-      <origin
-        xyz="-.05 1.025 .15"
-        rpy="0 0 0" />
-      <geometry>
-        <box size=".4 .05 .4" />
-      </geometry>
-      <material
-        name="">
-        <color
-          rgba="0.68 0.68 0.68 1" />
-      </material>
-    </visual>
   </link>
   <force_element name="wing_force">
     <wing name="wing" profile="flat plate" chord="0.2097" span="0.8636" nominal_speed="10" stall_angle="10">
@@ -87,13 +48,13 @@
 
 
   <force_element name="propeller_force">
-    <propellor name="propeller" lower_limit="0" upper_limit="100" scale_factor_thrust="0.05159" scale_factor_moment="0">
+    <propellor name="propeller" lower_limit="0" upper_limit="100" scale_factor_thrust="0.05159" scale_factor_moment="0" visual_geometry="true" visual_diameter=".2">
   <!--see thrustSketch.m for data from the propeller to justify the scale_factor. The factor between scale_factor_thrust and scale_factor_moment is taken from the quadrotor urdf (which in turn is from the group at Penn)... but is disabled for this test -->
       <parent link="fuselage"/>
       <origin
-        xyz="0.0264162284363671 0 0"
+        xyz="-.15 0 0"
         rpy="0 0 0" />
-      <axis xyz="1 0 0"/>
+      <axis xyz="1 0 0" />
     </propellor>
   </force_element>
 </robot>

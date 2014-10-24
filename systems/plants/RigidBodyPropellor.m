@@ -100,6 +100,80 @@ classdef RigidBodyPropellor < RigidBodyForceElement
 
     end
     
+    function manip = addPropellorVisualShapeToBody(obj, manip, body, diameter)
+      % Adds a visual shape of the propellor to the model on the body given for
+      % drawing the in a visualizer.
+      %
+      % @param model manipulator the wing is part of
+      % @param body body to add the visual shape to
+      % @param diameter diameter of the propellor to draw
+      % @param axis the propellor produces thrust on
+      %
+      % @retval model updated model
+
+      prop_width = 0.05;
+      
+      % repect the axis the propellor produces thrust on
+      
+      % a cyclindar always starts facing up so rotate it so that it is
+      % facing in the direction of the thrust axis
+      
+      origin = [0; 0; 0];
+      default_axis = [0; 0; 1];
+      
+      if default_axis == obj.axis
+        rotmat = eye(3);
+      else
+        
+        a = default_axis;
+        b = obj.axis;
+        
+        % adapted from http://math.stackexchange.com/a/897677
+        % first, generate the basis in which to rotate
+        % with column vectors: [ normalized projection of b onto a, 
+        % normalized vector rejection of b onto a, and cross(b,a)
+        
+        u = a;
+        
+        v = (b - dot(a,b)*a) / norm(b - dot(a,b)*a);
+        
+        w = cross(b,a);
+        
+        Fi = [ u v w ];
+        
+        
+        
+        % build the matrix to rotate in that basis
+        
+        G = [ dot(a,b)   -norm(cross(a,b))   0; ...
+            norm(cross(a,b)) dot(a,b)         0; ...
+                0              0               1];
+
+        
+        rotmat = Fi * G * inv(Fi); 
+
+      end
+
+      pts = [origin; 1];
+
+      T = manip.getFrame(obj.kinframe).T;
+      R = T(1:3,1:3);
+
+      
+      xyz_rpy = [T(1:3,:)*pts; repmat(rotmat2rpy(R*rotmat),1, 1)];
+      
+      xyz = xyz_rpy(1:3);
+      
+      
+      rpy = xyz_rpy(4:6);
+      
+      
+      shape = RigidBodyCylinder(diameter/2, prop_width, xyz, rpy);
+      shape = shape.setColor([ .5 .5 .5 ]);
+      manip = manip.addVisualShapeToBody(body, shape);
+
+    end
+    
   end
   
   methods (Static)
@@ -133,12 +207,13 @@ classdef RigidBodyPropellor < RigidBodyForceElement
         scaleFacMoment = parseParamString(model,robotnum,char(node.getAttribute('scale_factor_moment')));
       end
       
-      axis = [1; 0; 0];
+      prop_axis = [1; 0; 0];
       elnode = node.getElementsByTagName('axis').item(0);
       if ~isempty(elnode)
-        axis = reshape(parseParamString(model,robotnum,char(elnode.getAttribute('xyz'))),3,1);
-        axis = axis/(norm(axis)+eps); % normalize
+        prop_axis = reshape(parseParamString(model,robotnum,char(elnode.getAttribute('xyz'))),3,1);
+        prop_axis = prop_axis/(norm(prop_axis)+eps); % normalize
       end
+        
       
       limits = [-inf,inf];
       if node.hasAttribute('lower_limit')
@@ -148,8 +223,25 @@ classdef RigidBodyPropellor < RigidBodyForceElement
         limits(2) = parseParamString(model,robotnum,char(node.getAttribute('upper_limit')));
       end
       
-      obj = RigidBodyPropellor(frame_id, axis, scaleFacThrust, scaleFacMoment, limits); 
+      obj = RigidBodyPropellor(frame_id, prop_axis, scaleFacThrust, scaleFacMoment, limits); 
       obj.name = name;
+      
+      visual_geometry = parseParamString(model,robotnum,char(node.getAttribute('visual_geometry')));
+      visual_diameter = parseParamString(model,robotnum,char(node.getAttribute('visual_diameter')));
+      
+      if isempty(visual_geometry)
+        visual_geometry = 1;
+      end
+      
+      if isempty(visual_diameter)
+        visual_diameter = 0.2;
+      end
+      
+      if visual_geometry
+        model = obj.addPropellorVisualShapeToBody(model, parent, visual_diameter);
+      end
+      
+      
     end
   end
   
