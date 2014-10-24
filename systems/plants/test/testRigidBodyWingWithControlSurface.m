@@ -12,18 +12,6 @@ function xtraj = testRigidBodyWingWithControlSurface()
   r = RigidBodyManipulator('testRigidBodyWingWithControlSurface.urdf', options);
   v = r.constructVisualizer();
 
-  % Visualize the constructed wing with the wing-drawing tools
-
-  q = zeros(r.getNumContStates(),1);
-  qd = zeros(r.getNumContStates(),1);
-  clf
-  for i = 1 : length(r.force)
-    plot3(0, 0, 0, '*');
-    if isa(r.force{i}, 'RigidBodyCompositeWing') || isa(r.force{i}, 'RigidBodyWing')
-      r.force{i}.drawWing(r, q, qd, [rand() rand() rand()]);
-    end
-  end
-
   %% simulate
 
   disp('Simulating...');

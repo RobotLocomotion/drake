@@ -2473,11 +2473,11 @@ classdef RigidBodyManipulator < Manipulator
 
       elnode = node.getElementsByTagName('wing').item(0);
       if ~isempty(elnode)
-        % the composite wing will handle the wing stuff, creating a normal
-        % RigidBodyWing if there are no control surfaces, creating a
-        % RigidBodyWingWithControlSurface if there is one control surface
-        % that covers the entire wing, or creating a RigidBodyCompositeWing
-        % if there is a wing that has part control surface and part not
+        % the wing parser may return a cell array of wings, in the case
+        % where the URDF asks for a wing that has portions that contain a
+        % control surface and portions that are normal wings.
+        % RigidBodyWing will automatically divide up and the wing create
+        % the parts as needed.
         
         [model,fe] = RigidBodyWing.parseURDFNode(model,robotnum,elnode,options);
       end
