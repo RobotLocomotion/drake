@@ -93,6 +93,12 @@ from an input to the system, with different scalings for each.</xs:documentation
                 </xs:annotation>
             </xs:element>
 
+            <xs:element name="bluff_body" type="bluff_body">
+                <xs:annotation>
+                    <xs:documentation>A bluff body that provides only drag force in xyz.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+
 
 
             <xs:element name="added_mass" type="added_mass">
@@ -283,7 +289,75 @@ Reynolds number around which we design the aerodynamic coefficients.</xs:documen
 
     </xs:complexType>
 
+    <xs:complexType name="bluff_body">
+        <xs:all>
+            <xs:element name="origin" type="pose" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>Position of the thrust element.  Example: xyz="0 0 0" rpy="0 0 0".</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:all>
+
+        <xs:attribute name="name" type="xs:string" use="required" />
+
+        <xs:attribute name="coefficient_drag_x" type="xs:double" use="required">
+            <xs:annotation>
+                <xs:documentation>coefficient of drag in the X dimension.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+
+        <xs:attribute name="coefficient_drag_y" type="xs:double" use="required">
+            <xs:annotation>
+                <xs:documentation>coefficient of drag in the Y dimension.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+
+        <xs:attribute name="coefficient_drag_z" type="xs:double" use="required">
+            <xs:annotation>
+                <xs:documentation>coefficient of drag in the Z dimension.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+
+        <xs:attribute name="area_x" type="xs:double" use="required">
+            <xs:annotation>
+                <xs:documentation>area of the bluff body for computing drag on the X axis.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+
+        <xs:attribute name="area_y" type="xs:double" use="required">
+            <xs:annotation>
+                <xs:documentation>area of the bluff body for computing drag on the Y axis.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+
+        <xs:attribute name="area_z" type="xs:double" use="required">
+            <xs:annotation>
+                <xs:documentation>area of the bluff body for computing drag on the Z axis.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+
+        <xs:attribute name="visual_geometry" type="xs:boolean" default="true">
+            <xs:annotation>
+                <xs:documentation>true to enable automatic drawing of the bluff_body as a red cube.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+
+    </xs:complexType>
+
     <xs:complexType name="propellor">
+        <xs:all>
+            <xs:element name="axis" type="axis" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Axis the thrust element acts on.  For example a propellor facing forward would point in the X-axis and you'd use: xyz="1 0 0". </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="origin" type="pose" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>Position of the thrust element.  Example: xyz="0 0 0" rpy="0 0 0".</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:all>
+
         <xs:attribute name="name" type="xs:string" use="required" />
 
         <xs:attribute default="-INF" name="lower_limit" type="xs:double">
@@ -321,18 +395,6 @@ Reynolds number around which we design the aerodynamic coefficients.</xs:documen
                 <xs:documentation>diameter of the propllor when drawn.</xs:documentation>
             </xs:annotation>
         </xs:attribute>
-
-        <xs:element name="axis" type="axis" minOccurs="0" maxOccurs="1">
-            <xs:annotation>
-                <xs:documentation>Axis the thrust element acts on.  For example a propellor facing forward would point in the X-axis and you'd use: xyz="1 0 0". </xs:documentation>
-            </xs:annotation>
-        </xs:element>
-        <xs:element name="origin" type="pose" minOccurs="0">
-            <xs:annotation>
-                <xs:documentation>Position of the thrust element.  Example: xyz="0 0 0" rpy="0 0 0".</xs:documentation>
-            </xs:annotation>
-        </xs:element>
-
     </xs:complexType>
 
     <xs:complexType name="thrust">
