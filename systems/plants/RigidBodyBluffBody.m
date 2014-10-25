@@ -81,6 +81,11 @@ classdef RigidBodyBluffBody < RigidBodyForceElement
       
       wingvel_world_xyz = wingvel_struct.wingvel_world_xyz;
       
+      % convert world velocity to velocity in the body fram
+      % TODO
+      
+      error('todo');
+      
       velocity_x = wingvel_world_xyz(1);
       velocity_y = wingvel_world_xyz(2);
       velocity_z = wingvel_world_xyz(3);
@@ -103,6 +108,29 @@ classdef RigidBodyBluffBody < RigidBodyForceElement
       
     end
     
+    function model = addBluffBodyVisualShapeToBody(obj, model, body)
+      % Adds a visual shape of the bluff body to the model on the body
+      % given for drawing in a visualizer.
+      %
+      % @param model manipulator the wing is part of
+      % @param body body to add the visual shape to
+      %
+      % @retval model updated model
+
+      min_size = 0.001;
+      
+      size_x = max(min_size, sqrt(obj.area_x));
+      size_y = max(min_size, sqrt(obj.area_y));
+      size_z = max(min_size, sqrt(obj.area_z));
+      
+      box_size = [ size_x size_y size_z ];
+      
+      shape = RigidBodyBox(box_size, model.getFrame(obj.kinframe).T);
+      shape = shape.setColor([1 0 0]); % red
+      
+      model = model.addVisualShapeToBody(body, shape);
+
+    end
     
   end
   
@@ -138,8 +166,19 @@ classdef RigidBodyBluffBody < RigidBodyForceElement
       this_area_y = parseParamString(model,robotnum,char(node.getAttribute('area_y')));
       this_area_z = parseParamString(model,robotnum,char(node.getAttribute('area_z')));
       
+      visual_geometry = parseParamString(model,robotnum,char(node.getAttribute('visual_geometry')));
+      
+      if isempty(visual_geometry)
+        % visual geometry defaults to on
+        visual_geometry = 1;
+      end
       
       obj = RigidBodyBluffBody(this_frame_id, cdrag_x, cdrag_y, cdrag_z, this_area_x, this_area_y, this_area_z);
+      
+      if (visual_geometry)
+        model = addBluffBodyVisualShapeToBody(obj, model, parent);
+      end
+      
       obj.name = name;
       
     end
