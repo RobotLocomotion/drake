@@ -77,6 +77,7 @@ classdef RigidBodyManipulator < Manipulator
       % @retval contact_options - Struct with the following fields:
       %     * ignore_self_collisions          @default false
       %     * replace_cylinders_with_capsules @default true
+      %     * use_bullet                      @default checkDependency('bullet')
       %   If a corresponding field exists in `options`, its value will
       %   be used.
       contact_options = struct();
@@ -92,6 +93,15 @@ classdef RigidBodyManipulator < Manipulator
           options.replace_cylinders_with_capsules;
       else
         contact_options.replace_cylinders_with_capsules = true;
+      end
+      if isfield(options,'use_bullet')
+        typecheck(options.use_bullet,'logical');
+        if options.use_bullet
+          checkDependency('bullet')
+        end
+        contact_options.use_bullet = options.use_bullet;
+      else
+        contact_options.use_bullet = checkDependency('bullet');
       end
       % NOTEST
     end
