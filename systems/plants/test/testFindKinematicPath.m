@@ -1,7 +1,6 @@
 function testFindKinematicPath()
 
-options.floating = true;
-robot = RigidBodyManipulator(fullfile('../urdf/atlas_minimal_contact.urdf'),options);
+robot = createAtlas('rpy');
 
 num_bodies = robot.getNumBodies();
 
