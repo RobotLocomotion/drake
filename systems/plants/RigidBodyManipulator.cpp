@@ -1041,7 +1041,7 @@ void RigidBodyManipulator::getContactPositionsJacDot(MatrixBase<Derived> &Jdot, 
 }
 
 /* [body_ind,Tframe] = parseBodyOrFrameID(body_or_frame_id) */
-int RigidBodyManipulator::parseBodyOrFrameID(const int body_or_frame_id, Matrix4d& Tframe)
+int RigidBodyManipulator::parseBodyOrFrameID(const int body_or_frame_id, Matrix4d* Tframe)
 {
   int body_ind=0;
   if (body_or_frame_id == -1) {
@@ -1049,12 +1049,108 @@ int RigidBodyManipulator::parseBodyOrFrameID(const int body_or_frame_id, Matrix4
   } else if (body_or_frame_id<0) {
     int frame_ind = -body_or_frame_id-2;
     body_ind = frames[frame_ind].body_ind;
-    Tframe = frames[frame_ind].Ttree;
+
+    if (Tframe)
+      (*Tframe) = frames[frame_ind].Ttree;
   } else {
     body_ind = body_or_frame_id;
-    Tframe = Matrix4d::Identity();
+    if (Tframe)
+      (*Tframe) = Matrix4d::Identity();
   }
   return body_ind;
+}
+
+void RigidBodyManipulator::findAncestorBodies(std::vector<int>& ancestor_bodies, int body_idx)
+{
+  const RigidBody* current_body = bodies[body_idx].get();
+  while (current_body->parent != -1)
+  {
+    ancestor_bodies.push_back(current_body->parent);
+    current_body = bodies[current_body->parent].get();
+  }
+}
+
+void RigidBodyManipulator::findKinematicPath(KinematicPath& path, int start_body_or_frame_idx, int end_body_or_frame_idx)
+{
+  // find all ancestors of start_body and end_body
+  int start_body = parseBodyOrFrameID(start_body_or_frame_idx);
+
+  std::vector<int> start_body_ancestors;
+  start_body_ancestors.push_back(start_body);
+  findAncestorBodies(start_body_ancestors, start_body);
+
+  int end_body = parseBodyOrFrameID(end_body_or_frame_idx);
+  std::vector<int> end_body_ancestors;
+  end_body_ancestors.push_back(end_body);
+  findAncestorBodies(end_body_ancestors, end_body);
+
+  // find least common ancestor
+  int common_size = std::min(start_body_ancestors.size(), end_body_ancestors.size());
+  bool least_common_ancestor_found = false;
+  std::vector<int>::iterator start_body_lca_it = start_body_ancestors.end() - common_size;
+  std::vector<int>::iterator end_body_lca_it = end_body_ancestors.end() - common_size;
+
+  for (int i = 0; i < common_size; i++) {
+    if (*start_body_lca_it == *end_body_lca_it) {
+      least_common_ancestor_found = true;
+      break;
+    }
+    start_body_lca_it++;
+    end_body_lca_it++;
+  }
+
+  if (!least_common_ancestor_found) {
+    std::ostringstream stream;
+    stream << "There is no path between " << bodies[start_body]->linkname << " and " << bodies[end_body]->linkname << ".";
+    throw std::runtime_error(stream.str());
+  }
+  int least_common_ancestor = *start_body_lca_it;
+
+//  std::ostringstream stream;
+//  stream << "start_body_ancestors:\n";
+//  for (std::vector<int>::iterator it = start_body_ancestors.begin(); it != start_body_ancestors.end(); it++) {
+//    stream << *it << "\n";
+//  }
+//  throw std::runtime_error(stream.str());
+
+//  std::ostringstream stream;
+//  stream << "end_body_ancestors:\n";
+//  for (std::vector<int>::iterator it = end_body_ancestors.begin(); it != end_body_ancestors.end(); it++) {
+//    stream << *it << "\n";
+//  }
+//  throw std::runtime_error(stream.str());
+
+//  std::ostringstream stream;
+//  stream << "least_common_ancestor: " << least_common_ancestor;
+//  throw std::runtime_error(stream.str());
+
+  // compute path
+  path.joint_path.clear();
+  path.joint_direction_signs.clear();
+  path.body_path.clear();
+
+  std::vector<int>::iterator it = start_body_ancestors.begin();
+  for ( ; it != start_body_lca_it; it++) {
+    path.joint_path.push_back(*it);
+    path.joint_direction_signs.push_back(-1);
+    path.body_path.push_back(*it);
+  }
+
+  path.body_path.push_back(least_common_ancestor);
+
+  std::vector<int>::reverse_iterator reverse_it(end_body_lca_it);
+  for ( ; reverse_it != end_body_ancestors.rend(); reverse_it++) {
+    path.joint_path.push_back(*reverse_it);
+    path.joint_direction_signs.push_back(1);
+    path.body_path.push_back(*reverse_it);
+  }
+
+//  std::ostringstream stream;
+//  stream << "body_path:\n";
+//  for (std::vector<int>::iterator it = path.body_path.begin(); it != path.body_path.end(); it++) {
+//    stream << *it << "\n";
+//  }
+//  throw std::runtime_error(stream.str());
 }
 
 /*
@@ -1067,7 +1163,7 @@ template <typename DerivedA, typename DerivedB>
 void RigidBodyManipulator::forwardKin(const int body_or_frame_id, const MatrixBase<DerivedA>& pts, const int rotation_type, MatrixBase<DerivedB> &x)
 {
   int n_pts = pts.cols(); Matrix4d Tframe;
-  int body_ind = parseBodyOrFrameID(body_or_frame_id,Tframe);
+  int body_ind = parseBodyOrFrameID(body_or_frame_id, &Tframe);
 
   MatrixXd T = bodies[body_ind]->T.topLeftCorner(3,4)*Tframe;
 
@@ -1130,7 +1226,7 @@ template <typename DerivedA, typename DerivedB, typename DerivedC, typename Deri
 void RigidBodyManipulator::bodyKin(const int body_or_frame_id, const MatrixBase<DerivedA>& pts, MatrixBase<DerivedB> &x, MatrixBase<DerivedC> *J, MatrixBase<DerivedD> *P)
 {
   Matrix4d Tframe;
-  int body_ind = parseBodyOrFrameID(body_or_frame_id,Tframe);
+  int body_ind = parseBodyOrFrameID(body_or_frame_id, &Tframe);
 
   MatrixXd Tinv = (bodies[body_ind]->T*Tframe).inverse();
   x = Tinv.topLeftCorner(3,4)*pts;
@@ -1163,7 +1259,7 @@ template <typename DerivedA, typename DerivedB>
 void RigidBodyManipulator::forwardJac(const int body_or_frame_id, const MatrixBase<DerivedA> &pts, const int rotation_type, MatrixBase<DerivedB> &J)
 {
   int n_pts = pts.cols(); Matrix4d Tframe;
-  int body_ind = parseBodyOrFrameID(body_or_frame_id,Tframe);
+  int body_ind = parseBodyOrFrameID(body_or_frame_id, &Tframe);
 
   MatrixXd dTdq =  bodies[body_ind]->dTdq.topLeftCorner(3*num_dof,4)*Tframe;
   MatrixXd tmp =dTdq*pts;
@@ -1271,7 +1367,7 @@ template <typename DerivedA, typename DerivedB>
 void RigidBodyManipulator::forwardJacDot(const int body_or_frame_id, const MatrixBase<DerivedA> &pts, const int rotation_type, MatrixBase<DerivedB>& Jdot)
 {
   int n_pts = pts.cols(); Matrix4d Tframe;
-  int body_ind = parseBodyOrFrameID(body_or_frame_id,Tframe);
+  int body_ind = parseBodyOrFrameID(body_or_frame_id, &Tframe);
 
 	MatrixXd tmp = bodies[body_ind]->dTdqdot*Tframe*pts;
 	MatrixXd Jdott = Map<MatrixXd>(tmp.data(),num_dof,3*n_pts);
@@ -1316,7 +1412,7 @@ template <typename DerivedA, typename DerivedB>
 void RigidBodyManipulator::forwarddJac(const int body_or_frame_id, const MatrixBase<DerivedA> &pts, MatrixBase<DerivedB>& dJ)
 {
   int n_pts = pts.cols(); Matrix4d Tframe;
-  int body_ind = parseBodyOrFrameID(body_or_frame_id,Tframe);
+  int body_ind = parseBodyOrFrameID(body_or_frame_id, &Tframe);
 
   int i,j;
   MatrixXd dJ_reshaped = MatrixXd(num_dof, 3*n_pts*num_dof);
