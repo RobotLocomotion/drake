@@ -326,10 +326,9 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
           % write as
           %   phiP + h*JP*qdn >= 0 && -phiP - h*JP*qdn >= 0
           if (nargout<5)
-            [phiP,JP] = geval(@positionConstraints,obj.manip,q);
-            %        [phiP,JP] = obj.manip.positionConstraints(q);
+            [phiP,JP] = obj.manip.positionConstraints(q);
           else
-            [phiP,JP,dJP] = geval(@positionConstraints,obj.manip,q);
+            [phiP,JP,dJP] = obj.manip.positionConstraints(q);
             dJP(nL+(1:nP),:) = [dJP; -dJP];
           end
           phiP = [phiP;-phiP];
