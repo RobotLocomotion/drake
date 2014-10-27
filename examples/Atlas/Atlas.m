@@ -17,6 +17,9 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       if ~isfield(options,'terrain')
         options.terrain = RigidBodyFlatTerrain;
       end
+      if ~isfield(options,'hands')
+        options.hands = 'none';
+      end
 
       path_handle = addpathTemporary(fullfile(getDrakePath,'examples','Atlas','frames'));
 
@@ -25,6 +28,18 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       obj = obj@Biped('r_foot_sole', 'l_foot_sole');
       warning(w);
 
+      if (~strcmp(options.hands, 'none'))
+        if (strcmp(options.hands, 'robotiq'))
+          options.weld_to_link = 29;
+%           lhand = TimeSteppingRigidBodyManipulator([],options.dt);
+%           rhand = TimeSteppingRigidBodyManipulator([],options.dt);
+          obj = addRobotFromURDF(obj, getFullPathFromRelativePath('cylinder.urdf'), [0; 0; 0], [0; 0; 0], options); 
+          obj.hands = options.hands;
+        else
+          error('unsupported hand type'); 
+        end
+      end
+      
       if options.floating
         % could also do fixed point search here
         obj = obj.setInitialState(obj.resolveConstraints(zeros(obj.getNumStates(),1)));
@@ -192,6 +207,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
                                     'drake_instep_shift', 0.0275,... % Distance to shift ZMP trajectory inward toward the instep from the center of the foot (m)
                                     'mu', 1.0,... % friction coefficient
                                     'constrain_full_foot_pose', true); % whether to constrain the swing foot roll and pitch
+    hands = 'none';
   end
   properties
     fixed_point_file = fullfile(getDrakePath(), 'examples', 'Atlas', 'data', 'atlas_fp.mat');
