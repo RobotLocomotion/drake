@@ -29,8 +29,8 @@ while testNumber < nTests
   if base ~= endEffector
     expressedIn = base;
     
-    [J, v_indices] = robot.geometricJacobian(kinsol, base, endEffector, expressedIn, false);
-    [Jmex, v_indicesmex] = robot.geometricJacobian(kinsolmex, base, endEffector, expressedIn, true);
+    [J, v_indices] = robot.geometricJacobian(kinsol, base, endEffector, expressedIn);
+    [Jmex, v_indicesmex] = robot.geometricJacobian(kinsolmex, base, endEffector, expressedIn);
     
     valuecheck(J, Jmex);
     valuecheck(v_indices, v_indicesmex);

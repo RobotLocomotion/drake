@@ -1,10 +1,12 @@
 function JAnalytical = analyticalJacobian(obj, kinsol, base, endEffector, points, rotationType)
 
 % NOTE: even though geometricJacobian is mexed, I need kinsol.T in what
-% follows, so I can't use a mex kinsol. Explicitly using non-mex
-% geometricJacobian. I intend to remove analyticalJacobian soon though, so
-% I'm not going to bother mexing it. --tk
-[JGeometric, vIndices] = geometricJacobian(obj, kinsol, base, endEffector, base, false);
+% follows, so I can't use a mex kinsol.
+if (kinsol.mex)
+    error('Drake:RigidBodyManipulator:NoMex','This method has not been mexed yet.');
+end
+
+[JGeometric, vIndices] = geometricJacobian(obj, kinsol, base, endEffector, base);
 JOmega = JGeometric(1 : 3, :);
 JV = JGeometric(4 : 6, :);
 
