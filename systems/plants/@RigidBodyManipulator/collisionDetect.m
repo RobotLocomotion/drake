@@ -62,7 +62,7 @@ if ~isfield(active_collision_options,'terrain_only')
   active_collision_options.terrain_only = false;
 end
 
-force_collisionDetectTerrain = false;
+force_collisionDetectTerrain = ~obj.contact_options.use_bullet;
 
 
 if (~active_collision_options.terrain_only && obj.mex_model_ptr ~= 0 && kinsol.mex)
