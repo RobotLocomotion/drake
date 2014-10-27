@@ -8,7 +8,7 @@ function [zmptraj, link_constraints, support_times, supports] = planZMPTraj(bipe
 if nargin < 4; options = struct(); end
 
 if ~isfield(options, 't0'); options.t0 = 0; end
-if ~isfield(options, 'first_step_hold_s'); options.first_step_hold_s = 1; end
+if ~isfield(options, 'first_step_hold_s'); options.first_step_hold_s = 1.5; end
 
 typecheck(biped,{'RigidBodyManipulator','TimeSteppingRigidBodyManipulator'});
 typecheck(q0,'numeric');
@@ -156,21 +156,6 @@ for f = {'right', 'left'}
   link_constraints(end+1) = struct('link_ndx', body_ind, 'pt', [0;0;0], 'ts', ts, 'poses', foot_poses, 'dposes', foot_dposes, 'contact_break_indices', find([foot_origin_knots.is_liftoff]), 'a0', a0, 'a1', a1, 'a2', a2, 'a3', a3, 'toe_off_allowed', [toe_off_allowed.(foot)]);
 end
 zmptraj = PPTrajectory(foh([zmp_knots.t], [zmp_knots.zmp]));
-
-foot_traj = PPTrajectory(mkpp(link_constraints(end).ts, cat(3, a3, a2, a1, a0), 6));
-
-t = linspace(ts(1), ts(end), 200);
-figure(5)
-clf
-subplot(211)
-ft = foot_traj.eval(t);
-plot(t, ft(1,:), t, ft(2,:), t, ft(3,:));
-legend('x', 'y', 'z');
-subplot(212)
-dtraj = fnder(foot_traj, 1);
-dt = dtraj.eval(t);
-plot(t, dt(1,:), t, dt(2,:), t, dt(3,:));
-legend('x', 'y', 'z');
 
 % create support body trajectory
 support_times = [zmp_knots.t];
