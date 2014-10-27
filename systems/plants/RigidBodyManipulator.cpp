@@ -3,6 +3,7 @@
 
 //#include "mex.h"
 #include "RigidBodyManipulator.h"
+#include "drakeGeometryUtil.h"
 
 #include <algorithm>
 #include <string>
@@ -1106,24 +1107,6 @@ void RigidBodyManipulator::findKinematicPath(KinematicPath& path, int start_body
   }
   int least_common_ancestor = *start_body_lca_it;
 
-//  std::ostringstream stream;
-//  stream << "start_body_ancestors:\n";
-//  for (std::vector<int>::iterator it = start_body_ancestors.begin(); it != start_body_ancestors.end(); it++) {
-//    stream << *it << "\n";
-//  }
-//  throw std::runtime_error(stream.str());
-
-//  std::ostringstream stream;
-//  stream << "end_body_ancestors:\n";
-//  for (std::vector<int>::iterator it = end_body_ancestors.begin(); it != end_body_ancestors.end(); it++) {
-//    stream << *it << "\n";
-//  }
-//  throw std::runtime_error(stream.str());
-
-//  std::ostringstream stream;
-//  stream << "least_common_ancestor: " << least_common_ancestor;
-//  throw std::runtime_error(stream.str());
-
   // compute path
   path.joint_path.clear();
   path.joint_direction_signs.clear();
@@ -1144,13 +1127,6 @@ void RigidBodyManipulator::findKinematicPath(KinematicPath& path, int start_body
     path.joint_direction_signs.push_back(1);
     path.body_path.push_back(*reverse_it);
   }
-
-//  std::ostringstream stream;
-//  stream << "body_path:\n";
-//  for (std::vector<int>::iterator it = path.body_path.begin(); it != path.body_path.end(); it++) {
-//    stream << *it << "\n";
-//  }
-//  throw std::runtime_error(stream.str());
 }
 
 /*
@@ -1253,6 +1229,56 @@ void RigidBodyManipulator::bodyKin(const int body_or_frame_id, const MatrixBase<
     }
   }
 
+}
+
+template<typename DerivedA>
+void RigidBodyManipulator::geometricJacobian(int base_body_or_frame_ind, int end_effector_body_or_frame_ind, int expressed_in_body_or_frame_ind, PlainObjectBase<DerivedA>& J, std::vector<int>* v_indices)
+{
+  // TODO: need to redo after changes to kinsol format
+  KinematicPath kinematic_path;
+  findKinematicPath(kinematic_path, base_body_or_frame_ind, end_effector_body_or_frame_ind);
+
+  int cols = 0;
+  int body_index;
+  for (int i = 0; i < kinematic_path.joint_path.size(); i++) {
+    body_index = kinematic_path.joint_path[i];
+    const std::unique_ptr<RigidBody>& body = bodies[body_index];
+    const DrakeJoint& joint = body->getJoint();
+    cols += joint.getNumVelocities();
+  }
+
+  Matrix4d Tframe;
+  int expressed_in_body = parseBodyOrFrameID(expressed_in_body_or_frame_ind, &Tframe);
+  Matrix4d T_world_to_frame = (bodies[expressed_in_body]->T * Tframe).inverse();
+
+  J.resize(TWIST_SIZE, cols);
+  DrakeJoint::MotionSubspaceType motion_subspace;
+  if (v_indices) {
+    v_indices->clear();
+    v_indices->reserve(cols);
+  }
+
+  int col_start = 0;
+  int sign;
+  for (int i = 0; i < kinematic_path.joint_path.size(); i++) {
+    body_index = kinematic_path.joint_path[i];
+    const std::unique_ptr<RigidBody>& body = bodies[body_index];
+    const DrakeJoint& joint = body->getJoint();
+
+    joint.motionSubspace(cached_q.data() + body->dofnum, motion_subspace); // TODO: should just let DrakeJoints work with VectorXds
+
+    sign = kinematic_path.joint_direction_signs[i];
+    auto block = J.template block<TWIST_SIZE, Dynamic>(0, col_start, TWIST_SIZE, joint.getNumVelocities());
+    block.noalias() = sign * transformSpatialMotion(Isometry3d(body->T), motion_subspace);
+
+    if (v_indices) {
+      for (int j = 0; j < joint.getNumVelocities(); j++) {
+        v_indices->push_back(body->dofnum + j); // FLOATINGBASE TODO: assumes qd = v
+      }
+    }
+    col_start = col_start + joint.getNumVelocities();
+  }
+  J = transformSpatialMotion(Isometry3d(T_world_to_frame), J);
 }
 
 template <typename DerivedA, typename DerivedB>
@@ -1696,6 +1722,9 @@ template DLLEXPORT void RigidBodyManipulator::forwardJac(const int, const Matrix
 //template DLLEXPORT void RigidBodyManipulator::forwarddJac(const int, const MatrixBase< Vector4d > &, MatrixBase< MatrixXd >&);
 template DLLEXPORT void RigidBodyManipulator::bodyKin(const int, const MatrixBase< MatrixXd >&, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > *);
 template DLLEXPORT void RigidBodyManipulator::bodyKin(const int, const MatrixBase< MatrixXd >&, MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > *);
+template DLLEXPORT void RigidBodyManipulator::geometricJacobian(int, int, int, PlainObjectBase< Matrix<double, 6, Dynamic> >&, std::vector<int>*);
+template DLLEXPORT void RigidBodyManipulator::geometricJacobian(int, int, int, PlainObjectBase< MatrixXd >&, std::vector<int>*);
+
 
 template DLLEXPORT void RigidBodyManipulator::HandC(double* const, double * const, MatrixBase< Map<MatrixXd> > * const, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<VectorXd> > &, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > * const);
 template DLLEXPORT void RigidBodyManipulator::HandC(double* const, double * const, MatrixBase< MatrixXd > * const, MatrixBase< MatrixXd > &, MatrixBase< VectorXd > &, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > * const);
