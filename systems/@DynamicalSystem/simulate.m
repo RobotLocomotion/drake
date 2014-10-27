@@ -152,11 +152,19 @@ end
 
 
 if (isdiscrete)
-  ytraj = DTTrajectory(t',y);
-  ytraj = setOutputFrame(ytraj,obj.getOutputFrame);
+  if isempty(y)
+    ytraj=[];   
+  else
+    ytraj = DTTrajectory(t',y);
+    ytraj = setOutputFrame(ytraj,obj.getOutputFrame);
+  end
   if (nargout>1)
-    xtraj = DTTrajectory(t',x);
-    xtraj = setOutputFrame(xtraj,obj.getStateFrame);
+    if isempty(x)
+      xtraj = [];
+    else
+      xtraj = DTTrajectory(t',x);
+      xtraj = setOutputFrame(xtraj,obj.getStateFrame);
+    end
   end
 else
   % note: could make this more exact.  see comments in bug# 623.
