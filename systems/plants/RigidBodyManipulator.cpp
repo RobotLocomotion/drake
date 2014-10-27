@@ -1231,6 +1231,7 @@ void RigidBodyManipulator::bodyKin(const int body_or_frame_id, const MatrixBase<
 
 }
 
+#if !defined(WIN32) && !defined(WIN64)
 template<typename DerivedA>
 void RigidBodyManipulator::geometricJacobian(int base_body_or_frame_ind, int end_effector_body_or_frame_ind, int expressed_in_body_or_frame_ind, PlainObjectBase<DerivedA>& J, std::vector<int>* v_indices)
 {
@@ -1280,6 +1281,7 @@ void RigidBodyManipulator::geometricJacobian(int base_body_or_frame_ind, int end
   }
   J = transformSpatialMotion(Isometry3d(T_world_to_frame), J);
 }
+#endif
 
 template <typename DerivedA, typename DerivedB>
 void RigidBodyManipulator::forwardJac(const int body_or_frame_id, const MatrixBase<DerivedA> &pts, const int rotation_type, MatrixBase<DerivedB> &J)
