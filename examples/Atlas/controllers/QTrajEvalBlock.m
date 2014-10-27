@@ -9,6 +9,7 @@ classdef QTrajEvalBlock < MIMODrakeSystem
     jlmin;
     jlmax;
     nq;
+    eta;
   end
   
   methods
@@ -52,7 +53,7 @@ classdef QTrajEvalBlock < MIMODrakeSystem
       obj.use_error_integrator = options.use_error_integrator;
       [obj.jlmin,obj.jlmax] = getJointLimits(obj.robot);
       obj.nq = getNumPositions(r);
-
+      obj.eta = 0.995;  % decay integral over time
     end
        
     function [qdes,x]=mimoOutput(obj,t,~,x)
@@ -69,7 +70,7 @@ classdef QTrajEvalBlock < MIMODrakeSystem
       if obj.use_error_integrator
         q = x(1:obj.nq);
         i_clamp = obj.controller_data.integral_clamps;
-        newintg = obj.controller_data.integral + obj.controller_data.integral_gains.*(qdes-q)*obj.dt;
+        newintg = obj.eta*obj.controller_data.integral + obj.controller_data.integral_gains.*(qdes-q)*obj.dt;
         newintg = max(-i_clamp,min(i_clamp,newintg));
         obj.controller_data.integral = newintg;
         qdes = qdes + newintg;
