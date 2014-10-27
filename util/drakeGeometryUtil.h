@@ -147,7 +147,20 @@ void quatdot2angularvelMatrix(const Eigen::MatrixBase<DerivedQ>& q,
     typename Gradient<DerivedM, QUAT_SIZE, 1>::type* dM = nullptr);
 
 /*
- * transform gradient methods
+ * spatial transform functions
+ */
+template<typename Scalar, typename DerivedM>
+Eigen::Matrix<Scalar, TWIST_SIZE, DerivedM::ColsAtCompileTime> transformSpatialMotion(
+    const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T,
+    const Eigen::MatrixBase<DerivedM>& M);
+
+template<typename Scalar, typename DerivedF>
+Eigen::Matrix<Scalar, TWIST_SIZE, DerivedF::ColsAtCompileTime> transformSpatialForce(
+    const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T,
+    const Eigen::MatrixBase<DerivedF>& F);
+
+/*
+ * spatial transform gradient methods
  */
 template<typename Scalar, typename DerivedS, typename DerivedQdotToV>
 Eigen::Matrix<Scalar, HOMOGENEOUS_TRANSFORM_SIZE, DerivedQdotToV::ColsAtCompileTime> dHomogTrans(
