@@ -12,7 +12,7 @@ params = applyDefaults(params, biped.default_walking_params);
 DEBUG = false;
 DEFAULT_FOOT_PITCH = pi/8; % The amount by which the swing foot pitches forward during walking
 
-APEX_FRACTIONS = [0.15, 0.85]; % We plan only two poses of the foot during the aerial phase of the swing.
+APEX_FRACTIONS = [0.15, 0.92]; % We plan only two poses of the foot during the aerial phase of the swing.
                                % Those poses are planned for locations where the toe has traveled a given
                                % fraction of the distance from its initial location to its final location.
 
@@ -22,12 +22,13 @@ FOOT_PITCH_RATE = 2*pi; % rad/s
 LATERAL_TOL = 1e-3; % Distance the sole can move to away from the line 
                     % between step1 and step2
 
-MIN_DIST_FOR_TOE_OFF = 0.0; % minimum distance of *forward* progress for toe-off to be allowed.
+MIN_DIST_FOR_TOE_OFF = 0.1; % minimum distance of *forward* progress for toe-off to be allowed.
                             % This disallows toe-off during backward stepping. 
                             % The distance is measured as the vector between the two swing poses
                             % dotted with the orientation of the stance foot
 
-MAX_LANDING_SPEED = 0.5;
+MAX_LANDING_SPEED = .5;
+MAX_TAKEOFF_SPEED = .5;
 
 if stance.frame_id == biped.foot_frame_id.right
   stance_foot_name = 'right';
@@ -147,8 +148,8 @@ zmp_knots = struct('t', initial_hold_time + (hold_time / 2),...
  'supp', RigidBodySupportState(biped, stance_body_index));
 
 foot_origin_knots = struct('t', zmp_knots(end).t, ...
-                           swing_foot_name, swing1_origin_pose, ...
-                           stance_foot_name, stance_origin_pose, ...
+                           swing_foot_name, [swing1_origin_pose; zeros(6,1)], ...
+                           stance_foot_name, [stance_origin_pose; zeros(6,1)], ...
                            'is_liftoff', true,...
                            'is_landing', false,...
                            'toe_off_allowed', struct(swing_foot_name, swing_distance_in_local >= MIN_DIST_FOR_TOE_OFF, stance_foot_name, false));
@@ -174,8 +175,8 @@ function add_foot_origin_knot(swing_pose, speed)
   if nargin < 2
     speed = params.step_speed;
   end
-  foot_origin_knots(end+1).(swing_foot_name) = swing_pose;
-  foot_origin_knots(end).(stance_foot_name) = stance_origin_pose;
+  foot_origin_knots(end+1).(swing_foot_name) = [swing_pose; zeros(6,1)];
+  foot_origin_knots(end).(stance_foot_name) = [stance_origin_pose; zeros(6,1)];
   cartesian_distance = norm(foot_origin_knots(end).(swing_foot_name)(1:3) - foot_origin_knots(end-1).(swing_foot_name)(1:3));
   yaw_distance = abs(foot_origin_knots(end).(swing_foot_name)(6) - foot_origin_knots(end-1).(swing_foot_name)(6));
   pitch_distance = abs(foot_origin_knots(end).(swing_foot_name)(5) - foot_origin_knots(end-1).(swing_foot_name)(5));
@@ -197,7 +198,7 @@ constraints = {posture_constraint,...
                WorldPositionInFrameConstraint(biped,swing_body_index,...
                     mean(swing_toe_points_in_foot, 2), T_toe_local_to_world, [toe_pos_in_local(1); -LATERAL_TOL; toe_ht_in_local], [toe_pos_in_local(1); LATERAL_TOL; toe_ht_in_local])};
 [pose, q_latest] = solve_for_pose(constraints, q_latest);
-add_foot_origin_knot(pose);
+add_foot_origin_knot(pose, min(params.step_speed, MAX_TAKEOFF_SPEED)/2);
 
 % Apex knot 2
 max_terrain_ht = max(terrain_pts_in_toe_local(3,:));
@@ -210,8 +211,12 @@ constraints = {posture_constraint,...
 [pose, ~] = solve_for_pose(constraints, q_latest);
 add_foot_origin_knot(pose);
 
+% Set the target velocities of the two apex poses based on the total distance traveled
+foot_origin_knots(end).(swing_foot_name)(7:12) = (foot_origin_knots(end).(swing_foot_name)(1:6) - foot_origin_knots(end-1).(swing_foot_name)(1:6)) / (foot_origin_knots(end).t - foot_origin_knots(end-1).t);
+foot_origin_knots(end-1).(swing_foot_name)(7:12) = (foot_origin_knots(end).(swing_foot_name)(1:6) - foot_origin_knots(end-1).(swing_foot_name)(1:6)) / (foot_origin_knots(end).t - foot_origin_knots(end-1).t);
+
 % Landing knot
-add_foot_origin_knot(swing2_origin_pose, min(params.step_speed, MAX_LANDING_SPEED));
+add_foot_origin_knot(swing2_origin_pose, min(params.step_speed, MAX_LANDING_SPEED)/2);
 foot_origin_knots(end).is_landing = true;
 zmp_knots(end+1).t = foot_origin_knots(end).t;
 zmp_knots(end).zmp = zmp1;
