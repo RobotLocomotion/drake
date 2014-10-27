@@ -49,6 +49,9 @@ classdef QPControllerData < ControllerData
     plan_shift % linear offset to be applied to x0
     pelvis_z_prev 
     
+    left_toe_off = false;
+    right_toe_off = false;
+    pelvis_foot_height_reference = 0;
     % dynamics related -----------------------------------------------------------
     mu % friction coefficient    
   end
