@@ -1,6 +1,10 @@
 function JAnalytical = analyticalJacobian(obj, kinsol, base, endEffector, points, rotationType)
 
-[JGeometric, vIndices] = geometricJacobian(obj, kinsol, base, endEffector, base);
+% NOTE: even though geometricJacobian is mexed, I need kinsol.T in what
+% follows, so I can't use a mex kinsol. Explicitly using non-mex
+% geometricJacobian. I intend to remove analyticalJacobian soon though, so
+% I'm not going to bother mexing it. --tk
+[JGeometric, vIndices] = geometricJacobian(obj, kinsol, base, endEffector, base, false);
 JOmega = JGeometric(1 : 3, :);
 JV = JGeometric(4 : 6, :);
 
