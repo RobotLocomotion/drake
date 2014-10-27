@@ -31,10 +31,10 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       if (~strcmp(options.hands, 'none'))
         if (strcmp(options.hands, 'robotiq'))
           options.weld_to_link = 29;
+          obj.hands = 1;
 %           lhand = TimeSteppingRigidBodyManipulator([],options.dt);
 %           rhand = TimeSteppingRigidBodyManipulator([],options.dt);
           obj = addRobotFromURDF(obj, getFullPathFromRelativePath('cylinder.urdf'), [0; 0; 0], [0; 0; 0], options); 
-          obj.hands = options.hands;
         else
           error('unsupported hand type'); 
         end
@@ -50,13 +50,23 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
         obj = obj.setInitialState(zeros(obj.getNumStates(),1));
       end
     end
-
+    
     function obj = compile(obj)
       obj = compile@TimeSteppingRigidBodyManipulator(obj);
-
-      path_handle = addpathTemporary(fullfile(getDrakePath,'examples','Atlas','frames'));
       
+      % Sanity check if we have hands.
+      if (~isa(obj.manip.getStateFrame().getFrameByNum(1), 'MultiCoordinateFrame'))
+        obj.hands = 0;
+      end
+      path_handle = addpathTemporary(fullfile(getDrakePath,'examples','Atlas','frames'));
       atlas_state_frame = AtlasState(obj);
+      if (obj.hands > 0)
+        % Tack on as many hands as we appear to have.
+        for i=2:obj.getStateFrame().getNumFrames
+          atlas_state_frame = {atlas_state_frame HandState(obj, i, 'HandState')};
+        end
+        atlas_state_frame = MultiCoordinateFrame(atlas_state_frame);
+      end
       tsmanip_state_frame = obj.getStateFrame();
       if tsmanip_state_frame.dim>atlas_state_frame.dim
         id = findSubFrameEquivalentModuloTransforms(tsmanip_state_frame,atlas_state_frame);
@@ -71,6 +81,13 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       obj = obj.setOutputFrame(state_frame);
 
       input_frame = AtlasInput(obj);
+      if (obj.hands > 0)
+        % Tack on as many hands as we appear to have.
+        for i=2:obj.getInputFrame().getNumFrames
+          input_frame = {input_frame HandInput(obj, i, 'HandInput')};
+        end
+        input_frame = MultiCoordinateFrame(input_frame);
+      end
       obj = obj.setInputFrame(input_frame);
       obj.manip = obj.manip.setInputFrame(input_frame);
     end
@@ -207,7 +224,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
                                     'drake_instep_shift', 0.0275,... % Distance to shift ZMP trajectory inward toward the instep from the center of the foot (m)
                                     'mu', 1.0,... % friction coefficient
                                     'constrain_full_foot_pose', true); % whether to constrain the swing foot roll and pitch
-    hands = 'none';
+    hands = 0; % 0, none; 1, Robotiq
   end
   properties
     fixed_point_file = fullfile(getDrakePath(), 'examples', 'Atlas', 'data', 'atlas_fp.mat');

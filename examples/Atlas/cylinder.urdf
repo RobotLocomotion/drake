@@ -23,7 +23,8 @@
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </visual>
   </link>
-  <link name="cylinder_2">
+
+   <link name="cylinder_2">
     <inertial>
       <mass value="0.1"/>
       <origin xyz="0 0 0"/>
@@ -37,15 +38,15 @@
     </collision>
     <visual>
       <geometry>
-        <cylinder length="0.25" radius="0.025"/>
+        <cylinder length="1.0" radius="0.025"/>
       </geometry>
       <material name="gray">
         <color rgba="0.5 0.5 .5 1"/>
       </material>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <origin rpy="1 0 0" xyz="0 0 0"/>
     </visual>
   </link>
-
+<!--
   <joint name="cylinder_joint" type="revolute">
     <origin rpy="0 -0 0" xyz="0 0 0"/>
     <axis xyz="1 0 0"/>
@@ -60,4 +61,5 @@
     <joint name="cylinder_joint"/>
     <mechanicalReduction>1</mechanicalReduction>
   </transmission>
+-->
 </robot>
