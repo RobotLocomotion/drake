@@ -98,7 +98,7 @@ public:
 
   bool getPairwiseClosestPoint(const int body_indA, const int body_indB, Vector3d &ptA, Vector3d &ptB, Vector3d &normal, double &distance, bool use_margins=true);
   
-  bool collisionRaycast(const Matrix3Xd &origins, const Matrix3Xd &ray_endpoints, VectorXd &distances, bool use_margins=true);
+  bool collisionRaycast(const Matrix3Xd &origins, const Matrix3Xd &ray_endpoints, VectorXd &distances, bool use_margins=false);
 
   //bool closestPointsAllBodies( MatrixXd& ptsA, MatrixXd& ptsB,
                                //MatrixXd& normal, VectorXd& distance,
