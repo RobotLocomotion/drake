@@ -52,8 +52,8 @@ supp0 = RigidBodySupportState(biped, initial_supports);
 zmp_knots = struct('t', options.t0, 'zmp', zmp0, 'supp', supp0);
 
 foot_origin_knots = struct('t', options.t0, ...
-  'right', zeros(6,1),...
-  'left', zeros(6,1),...
+  'right', zeros(12,1),...
+  'left', zeros(12,1),...
   'is_liftoff', false,...
   'is_landing', false,...
   'toe_off_allowed', struct('right', false, 'left', false));
@@ -64,7 +64,7 @@ for f = {'right', 'left'}
   sole_pose = steps.(foot)(1).pos;
   Tsole = [rpy2rotmat(sole_pose(4:6)), sole_pose(1:3); 0 0 0 1];
   Torig = Tsole / T;
-  foot_origin_knots.(foot) = [Torig(1:3,4); rotmat2rpy(Torig(1:3,1:3))];
+  foot_origin_knots.(foot) = [Torig(1:3,4); rotmat2rpy(Torig(1:3,1:3)); zeros(6,1)];
 end
 
 istep = struct('right', 1, 'left', 1);
@@ -124,7 +124,8 @@ zmp_knots(end+1) =  struct('t', foot_origin_knots(end).t, 'zmp', zmpf, 'supp', R
 link_constraints = struct('link_ndx',{}, 'pt', {}, 'ts', {}, 'poses', {}, 'dposes', {}, 'contact_break_indices', {}, 'a0', {}, 'a1', {}, 'a2', {}, 'a3', {}, 'toe_off_allowed', {});
 for f = {'right', 'left'}
   foot = f{1};
-  foot_poses = [foot_origin_knots.(foot)];
+  foot_states = [foot_origin_knots.(foot)];
+  foot_poses = foot_states(1:6,:);
   frame_id = biped.foot_frame_id.(foot);
   body_ind = biped.getFrame(frame_id).body_ind;
   for j = 4:6
@@ -132,10 +133,10 @@ for f = {'right', 'left'}
     foot_poses(j,2:end) = foot_poses(j,1:end-1) + angleDiff(foot_poses(j,1:end-1), foot_poses(j,2:end));
   end
   ts = [foot_origin_knots.t];
-  foot_traj = PPTrajectory(pchip(ts, foot_poses));
-  dtraj = fnder(foot_traj);
+  % foot_traj = PPTrajectory(pchip(ts, foot_poses));
+  % dtraj = fnder(foot_traj);
 
-  foot_dposes = dtraj.eval(ts);
+  foot_dposes = foot_states(7:12,:);
   % Compute cubic polynomial coefficients to save work in the controller
   % See Craig, J. Introduction to Robotics: Mechanics and Control, 2005, p207, eq 7.11
   n_segments = length(ts) - 1;
@@ -144,9 +145,9 @@ for f = {'right', 'left'}
   a2 = zeros(6, n_segments);
   a3 = zeros(6, n_segments);
   for j = 1:n_segments
-    if foot_origin_knots(j).is_landing
-      foot_dposes(:,j) = 0;
-    end
+    % if foot_origin_knots(j).is_landing
+    %   foot_dposes(:,j) = 0;
+    % end
     for k = 1:6
       [a0(k,j), a1(k,j), a2(k,j), a3(k,j)] = cubicSplineCoefficients(ts(j+1) - ts(j), foot_poses(k,j), foot_poses(k,j+1), foot_dposes(k,j), foot_dposes(k,j+1));
     end
@@ -156,6 +157,8 @@ for f = {'right', 'left'}
 end
 zmptraj = PPTrajectory(foh([zmp_knots.t], [zmp_knots.zmp]));
 
+foot_traj = PPTrajectory(mkpp(link_constraints(end).ts, cat(3, a3, a2, a1, a0), 6));
+
 t = linspace(ts(1), ts(end), 200);
 figure(5)
 clf
@@ -164,10 +167,10 @@ ft = foot_traj.eval(t);
 plot(t, ft(1,:), t, ft(2,:), t, ft(3,:));
 legend('x', 'y', 'z');
 subplot(212)
+dtraj = fnder(foot_traj, 1);
 dt = dtraj.eval(t);
 plot(t, dt(1,:), t, dt(2,:), t, dt(3,:));
 legend('x', 'y', 'z');
-% plot(t, sqrt(sum(dtraj.eval(t).^2,1)));
 
 % create support body trajectory
 support_times = [zmp_knots.t];
