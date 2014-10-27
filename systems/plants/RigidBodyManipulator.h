@@ -4,9 +4,11 @@
 #include <Eigen/Dense>
 #include <Eigen/LU>
 #include <set>
+#include <memory>
 #include <Eigen/StdVector> //#include <vector>
 
 #include "collision/DrakeCollision.h"
+#include "KinematicPath.h"
 
 #if defined(WIN32) || defined(WIN64)
   #if defined(drakeRBM_EXPORTS)
@@ -63,6 +65,10 @@ public:
   
   template <typename Derived>
     void getContactPositionsJacDot(MatrixBase<Derived> &Jdot, const std::set<int> &body_idx);// = emptyIntSet);
+
+  void findAncestorBodies(std::vector<int>& ancestor_bodies, int body);
+
+  void findKinematicPath(KinematicPath& path, int start_body_or_frame_idx, int end_body_or_frame_idx);
 
   template <typename DerivedA, typename DerivedB>
   void forwardKin(const int body_or_frame_ind, const MatrixBase<DerivedA>& pts, const int rotation_type, MatrixBase<DerivedB> &x);
@@ -172,7 +178,7 @@ public:
 
 
 private:
-  int parseBodyOrFrameID(const int body_or_frame_id, Matrix4d& Tframe);
+  int parseBodyOrFrameID(const int body_or_frame_id, Matrix4d* Tframe = nullptr);
 
   // variables for featherstone dynamics
   std::vector<VectorXd> S;
