@@ -79,24 +79,34 @@ classdef RigidBodyBluffBody < RigidBodyForceElement
       
       wingvel_struct = RigidBodyWing.computeWingVelocity(obj.kinframe, manip, q, qd, kinsol);
       
-      wingvel_world_xyz = wingvel_struct.wingvel_world_xyz;
+      % convert world velocity to velocity in the body frame
       
-      % convert world velocity to velocity in the body fram
-      % TODO
+      origin = zeros(3, 1);
       
-      error('todo');
+      body_origin = manip.bodyKin(kinsol, obj.kinframe, origin);
+      body_wingvel = manip.bodyKin(kinsol, obj.kinframe, wingvel_struct.wingvel_world_xyz);
       
-      velocity_x = wingvel_world_xyz(1);
-      velocity_y = wingvel_world_xyz(2);
-      velocity_z = wingvel_world_xyz(3);
+      body_wingvel = body_wingvel - body_origin;
       
-      force_x = -0.5 * obj.rho * velocity_x * velocity_x * obj.coefficient_drag_x * obj.area_x;
-      force_y = -0.5 * obj.rho * velocity_y * velocity_y * obj.coefficient_drag_y * obj.area_y;
-      force_z = -0.5 * obj.rho * velocity_z * velocity_z * obj.coefficient_drag_z * obj.area_z;
+      %keyboard
+      
+      velocity_x = body_wingvel(1);
+      velocity_y = body_wingvel(2);
+      velocity_z = body_wingvel(3);
+      
+      force_x = -sign(velocity_x) * 0.5 * obj.rho * velocity_x * velocity_x * obj.coefficient_drag_x * obj.area_x;
+      force_y = -sign(velocity_y) * 0.5 * obj.rho * velocity_y * velocity_y * obj.coefficient_drag_y * obj.area_y;
+      force_z = -sign(velocity_z) * 0.5 * obj.rho * velocity_z * velocity_z * obj.coefficient_drag_z * obj.area_z;
       
       
       
-      f = [force_x; force_y; force_z];
+      f_body = [force_x; force_y; force_z];
+      
+      % map body forces back to world coordinates
+      world_origin = manip.forwardKin(kinsol, obj.kinframe, origin);
+      f = manip.forwardKin(kinsol, obj.kinframe, f_body);
+      f = f - world_origin;
+      
       f = manip.cartesianForceToSpatialForce(kinsol, frame.body_ind, zeros(3,1), f);
       
       force = sparse(6, getNumBodies(manip)) * q(1); % q(1) for taylorvar
