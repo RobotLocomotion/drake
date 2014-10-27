@@ -5,8 +5,11 @@ function [r_rot,dr_rot] = quatRotateVec(q,r)
 % @param r - A vector
 % @retval r_rot - The vector given by rotating r by q
 % @retval dr_rot - The Jacobian of r_rot wrt [q;r]
-sizecheck(q,[4,1]);
-sizecheck(r,[3,1]);
+
+% these are slow and will if they are not met then an error will occur below
+%sizecheck(q,[4,1]);
+%sizecheck(r,[3,1]);
+
 if nargout > 1
   dq = [eye(4),zeros(4,3)];
   dr = [zeros(4),[zeros(1,3);eye(3)]];
