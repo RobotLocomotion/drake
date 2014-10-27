@@ -157,21 +157,6 @@ for f = {'right', 'left'}
 end
 zmptraj = PPTrajectory(foh([zmp_knots.t], [zmp_knots.zmp]));
 
-foot_traj = PPTrajectory(mkpp(link_constraints(end).ts, cat(3, a3, a2, a1, a0), 6));
-
-t = linspace(ts(1), ts(end), 200);
-figure(5)
-clf
-subplot(211)
-ft = foot_traj.eval(t);
-plot(t, ft(1,:), t, ft(2,:), t, ft(3,:));
-legend('x', 'y', 'z');
-subplot(212)
-dtraj = fnder(foot_traj, 1);
-dt = dtraj.eval(t);
-plot(t, dt(1,:), t, dt(2,:), t, dt(3,:));
-legend('x', 'y', 'z');
-
 % create support body trajectory
 support_times = [zmp_knots.t];
 supports = [zmp_knots.supp];
