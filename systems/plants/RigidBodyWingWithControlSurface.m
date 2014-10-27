@@ -81,7 +81,6 @@ classdef RigidBodyWingWithControlSurface < RigidBodyWing
       
       wingvel_world_xz = wingvel_struct.wingvel_world_xz;
       wingYunit = wingvel_struct.wingYunit;
-      wingvel_world_xyz = wingvel_struct.wingvel_world_xyz;
       
       airspeed = norm(wingvel_world_xz);
       
