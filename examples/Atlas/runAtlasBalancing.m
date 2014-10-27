@@ -21,6 +21,7 @@ warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits')
 
 options.floating = true;
 options.dt = 0.002;
+options.hands = 'robotiq';
 r = Atlas('urdf/atlas_minimal_contact.urdf',options);
 r = r.removeCollisionGroupsExcept({'heel','toe'});
 r = compile(r);
