@@ -7,8 +7,6 @@ end
 
 function testAtlas(floatingJointType)
 
-rng(123512, 'twister');
-
 robot = createAtlas(floatingJointType);
 
 nq = robot.getNumPositions();
