@@ -5,12 +5,12 @@ classdef FootContactBlock < MIMODrakeSystem
     num_outputs;
     mex_ptr;
     controller_data;
-    lfoot_idx;
-    rfoot_idx;
     using_flat_terrain; % true if using DRCFlatTerrain
     contact_threshold; % min height above terrain to be considered in contact
     use_lcm;
     use_contact_logic_OR;
+    robot;
+    nq;
   end
   
   methods
@@ -121,14 +121,13 @@ classdef FootContactBlock < MIMODrakeSystem
       end      
       obj.mex_ptr = SharedDataHandle(supportDetectmex(0,r.getMexModelPtr.ptr,terrain_map_ptr));
   
-      obj.rfoot_idx = findLinkInd(r,'r_foot');
-      obj.lfoot_idx = findLinkInd(r,'l_foot');
-          
       if isa(getTerrain(r),'DRCFlatTerrainMap')
         obj.using_flat_terrain = true;      
       else
         obj.using_flat_terrain = false;
       end
+      obj.robot = r;
+      obj.nq = getNumPositions(r);
 
     end
    
@@ -145,8 +144,29 @@ classdef FootContactBlock < MIMODrakeSystem
           breaking_contact = length(supp_prev.bodies)>length(supp.bodies);
           contact_logic_AND = breaking_contact;
         end  
+        if supp_idx < length(ctrl_data.support_times) 
+          supp_next = ctrl_data.supports(supp_idx+1);
+          t0 = ctrl_data.support_times(supp_idx);
+          t1 = ctrl_data.support_times(supp_idx+1);
+          if any(supp.bodies==obj.robot.foot_body_id.left) && any(supp.bodies==obj.robot.foot_body_id.right)
+            % double support
+            if any(supp_next.bodies==obj.robot.foot_body_id.right) && ~any(supp_next.bodies==obj.robot.foot_body_id.left)
+              obj.controller_data.pelvis_height_foot_reference = 1-(t1-t)/(t1-t0); % going into right contact
+            end
+            if any(supp_next.bodies==obj.robot.foot_body_id.left) && ~any(supp_next.bodies==obj.robot.foot_body_id.right)
+              obj.controller_data.pelvis_height_foot_reference = (t1-t)/(t1-t0); % going into left contact
+            end
+          elseif any(supp.bodies==obj.robot.foot_body_id.left)
+            % left support
+            obj.controller_data.pelvis_height_foot_reference = 0; % left
+          elseif any(supp.bodies==obj.robot.foot_body_id.right)
+            % right support
+            obj.controller_data.pelvis_height_foot_reference = 1; % right
+          end
+        end
       else      
         supp = ctrl_data.supports;
+        obj.controller_data.pelvis_height_foot_reference = 0; % left
       end
       
       % contact_sensor = -1 (no info), 0 (info, no contact), 1 (info, yes contact)
@@ -157,8 +177,8 @@ classdef FootContactBlock < MIMODrakeSystem
         contact_data = obj.contact_est_monitor.getMessage(); % slow
         if ~isempty(contact_data)
           msg = drc.foot_contact_estimate_t(contact_data);
-          contact_sensor(supp.bodies==obj.lfoot_idx) = msg.left_contact > 0.5;
-          contact_sensor(supp.bodies==obj.rfoot_idx) = msg.right_contact > 0.5;
+          contact_sensor(supp.bodies==obj.robot.foot_body_id.left) = msg.left_contact > 0.5;
+          contact_sensor(supp.bodies==obj.robot.foot_body_id.right) = msg.right_contact > 0.5;
         end
       end      
       
@@ -175,7 +195,7 @@ classdef FootContactBlock < MIMODrakeSystem
       
       active_supports = supportDetectmex(obj.mex_ptr.data,x,supp,contact_sensor,contact_thresh,height,contact_logic_AND);
 
-      y = [1.0*any(active_supports==obj.lfoot_idx); 1.0*any(active_supports==obj.rfoot_idx)];
+      y = [1.0*any(active_supports==obj.robot.foot_body_id.left); 1.0*any(active_supports==obj.robot.foot_body_id.right)];
       if obj.num_outputs > 1
         varargout = cell(1,obj.num_outputs);
         for i=1:obj.num_outputs
