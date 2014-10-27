@@ -394,6 +394,13 @@ classdef DrakeSystem < DynamicalSystem
         disp(obj.state_constraints{i});
       end
     end
+    
+    function obj = removeAllStateConstraints(obj)
+      obj.num_xcon_eq = 0;  
+      obj.num_xcon_ineq = 0;      
+      obj.state_constraints = {};
+      obj.state_constraint_xind = {};
+    end
   end
 
   methods (Sealed)
