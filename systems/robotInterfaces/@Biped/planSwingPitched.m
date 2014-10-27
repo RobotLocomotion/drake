@@ -180,10 +180,9 @@ function add_foot_origin_knot(swing_pose, speed)
   cartesian_distance = norm(foot_origin_knots(end).(swing_foot_name)(1:3) - foot_origin_knots(end-1).(swing_foot_name)(1:3));
   yaw_distance = abs(foot_origin_knots(end).(swing_foot_name)(6) - foot_origin_knots(end-1).(swing_foot_name)(6));
   pitch_distance = abs(foot_origin_knots(end).(swing_foot_name)(5) - foot_origin_knots(end-1).(swing_foot_name)(5));
-  % dt = max([cartesian_distance / speed,...
-  %           yaw_distance / FOOT_YAW_RATE,...
-  %           pitch_distance / FOOT_PITCH_RATE]);
-  dt = cartesian_distance / speed;
+  dt = max([cartesian_distance / speed,...
+            yaw_distance / FOOT_YAW_RATE,...
+            pitch_distance / FOOT_PITCH_RATE]);
   foot_origin_knots(end).t = foot_origin_knots(end-1).t + dt;
   foot_origin_knots(end).is_liftoff = false;
   foot_origin_knots(end).is_landing = false;
