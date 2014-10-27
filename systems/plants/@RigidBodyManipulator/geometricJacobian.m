@@ -1,15 +1,14 @@
-function [J, v_indices] = geometricJacobian(obj, kinsol, base, endEffector, expressedIn, use_mex)
+function [J, v_indices] = geometricJacobian(obj, kinsol, base, endEffector, expressedIn)
 %GEOMETRICJACOBIAN Computes the geometric Jacobian from base to endEffector
 % expressed in frame attached to expressedIn
 %   The general contract of this method is that for joint velocity vector
 %   v, the twist of endEffector with respect to base, expressed in
 %   expressedIn, can be computed as J * (v(vIndices)).
 
-if nargin < 6
-  use_mex = obj.mex_model_ptr ~= 0;
-end
-
-if use_mex
+if (kinsol.mex)
+  if (obj.mex_model_ptr==0)
+    error('Drake:RigidBodyManipulator:InvalidKinematics','This kinsol is no longer valid because the mex model ptr has been deleted.');
+  end
   [J, v_indices] = geometricJacobianmex(obj.mex_model_ptr, base, endEffector, expressedIn);
 else
   [~, jointPath, signs] = findKinematicPath(obj, base, endEffector);
