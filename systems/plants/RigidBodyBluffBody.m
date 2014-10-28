@@ -17,6 +17,7 @@ classdef RigidBodyBluffBody < RigidBodyForceElement
     area_z; % area of the drag surface in z
     
     visual_geometry; % true if drawing from the URDF properties
+    parent_id; % id of parent body from the URDF
     
   end
   
@@ -145,44 +146,44 @@ classdef RigidBodyBluffBody < RigidBodyForceElement
 
     end
     
-    function body=updateParams(obj,poly,pval)
-      % Override from RigidBodyElement to update drawing as well as parameters
-      
-      % first call the parent
-      obj = updateParams@RigidBodyElement(obj, poly, pval);
-      
-      % update drawing
-      if (obj.visual_geometry)
-        % remove any shapes for this body
-        
-        
-        
-        model = addBluffBodyVisualShapeToBody(obj, model, parent);
-        
-        
-        
-      end
-      
-    end
+%     function body=updateParams(obj,poly,pval)
+%       % Override from RigidBodyElement to update drawing as well as parameters
+%       
+%       % first call the parent
+%       obj = updateParams@RigidBodyElement(obj, poly, pval);
+%       
+%       % update drawing
+%       if (obj.visual_geometry)
+%         % remove any shapes for this body
+%         
+%         
+%         
+%         model = addBluffBodyVisualShapeToBody(obj, model, parent);
+%         
+%         
+%         
+%       end
+%       
+%     end
     
-    function model = updateVisualShapes(obj, model, parent_id)
+    function model = updateVisualShapes(obj, model)
       
       if (obj.visual_geometry)
-        body_idx = obj.parseBodyOrFrameID(parent_id);
+        body_idx = model.parseBodyOrFrameID(obj.parent_id);
         
         % remove any existing shapes for this body
-        for i = 1:length(obj.body(body_idx).visual_shapes)
+        for i = 1:length(model.body(body_idx).visual_shapes)
           
-          if strcmp(obj.body(body_idx).visual_shapes{i}.name, [obj.name '_urdf_shape']) == true
+          if strcmp(model.body(body_idx).visual_shapes{i}.name, [obj.name '_urdf_shape']) == true
             
             % remove this shape
-            obj.body(body_idx).visual_shapes{i} = {};
+            model.body(body_idx).visual_shapes{i} = {};
             
           end
         end
         
         % add new shapes
-        model = addBluffBodyVisualShapeToBody(obj, model, parent); % TODO
+        model = addBluffBodyVisualShapeToBody(obj, model, model.body(body_idx)); % TODO
         
         
       end
@@ -235,6 +236,7 @@ classdef RigidBodyBluffBody < RigidBodyForceElement
       obj = RigidBodyBluffBody(this_frame_id, cdrag_x, cdrag_y, cdrag_z, this_area_x, this_area_y, this_area_z);
       
       obj.visual_geometry = visual_geometry_urdf;
+      obj.parent_id = parent;
       
       % bind parameters, because if there is a parameter on area, we need
       % to know what it is (right now) for correct drawing
