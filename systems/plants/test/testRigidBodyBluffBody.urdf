@@ -1,6 +1,9 @@
 <robot xmlns="http://drake.mit.edu"
  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
  xsi:schemaLocation="http://drake.mit.edu ../../doc/drakeURDF.xsd" name="testRigidBodyBluffBody">
+
+ <parameter name="drag_area" value="0.2" ub="1000" lb="0" />
+
   <link
     name="fuselage">
     <inertial>
@@ -17,20 +20,7 @@
         iyz="-0.000001"
         izz="0.019316" />
     </inertial>
-    <!-- include a box to represent the drag force -->
-    <visual>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
-      <geometry>
-        <box size=".2 .2 .2" />
-      </geometry>
-      <material
-        name="">
-        <color
-          rgba="1 0 0 1" />
-      </material>
-    </visual>
+
   </link>
   <force_element name="left_wing_force">
     <wing name="left_wing" profile="flat plate" chord="0.2097" span="0.4318" nominal_speed="10" stall_angle="10">
@@ -84,8 +74,8 @@
   </force_element>
 
   <force_element name="fuselage_drag_force">
-    <bluff_body name="fuselage_drag" coefficient_drag_x="0.005" coefficient_drag_y="0.005" coefficient_drag_z="1.0"
-      area_x="0.2" area_y="0.2" area_z="0.2">
+    <bluff_body name="fuselage_drag" coefficient_drag_x="0.1" coefficient_drag_y="0.1" coefficient_drag_z="0.1"
+      area_x="$drag_area" area_y="$drag_area" area_z="$drag_area">
       <parent link="fuselage" />
       <origin
         xyz="0 0 0" />

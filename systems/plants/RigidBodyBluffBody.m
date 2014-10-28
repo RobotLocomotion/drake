@@ -16,6 +16,8 @@ classdef RigidBodyBluffBody < RigidBodyForceElement
     area_y; % area of the drag surface in y
     area_z; % area of the drag surface in z
     
+    visual_geometry; % true if drawing from the URDF properties
+    
   end
   
   
@@ -137,9 +139,54 @@ classdef RigidBodyBluffBody < RigidBodyForceElement
       
       shape = RigidBodyBox(box_size, model.getFrame(obj.kinframe).T);
       shape = shape.setColor([1 0 0]); % red
+      shape.name = [obj.name '_urdf_shape'];
       
       model = model.addVisualShapeToBody(body, shape);
 
+    end
+    
+    function body=updateParams(obj,poly,pval)
+      % Override from RigidBodyElement to update drawing as well as parameters
+      
+      % first call the parent
+      obj = updateParams@RigidBodyElement(obj, poly, pval);
+      
+      % update drawing
+      if (obj.visual_geometry)
+        % remove any shapes for this body
+        
+        
+        
+        model = addBluffBodyVisualShapeToBody(obj, model, parent);
+        
+        
+        
+      end
+      
+    end
+    
+    function model = updateVisualShapes(obj, model, parent_id)
+      
+      if (obj.visual_geometry)
+        body_idx = obj.parseBodyOrFrameID(parent_id);
+        
+        % remove any existing shapes for this body
+        for i = 1:length(obj.body(body_idx).visual_shapes)
+          
+          if strcmp(obj.body(body_idx).visual_shapes{i}.name, [obj.name '_urdf_shape']) == true
+            
+            % remove this shape
+            obj.body(body_idx).visual_shapes{i} = {};
+            
+          end
+        end
+        
+        % add new shapes
+        model = addBluffBodyVisualShapeToBody(obj, model, parent); % TODO
+        
+        
+      end
+      
     end
     
   end
@@ -167,6 +214,8 @@ classdef RigidBodyBluffBody < RigidBodyForceElement
       rpy = zeros(3,1);
       [model,this_frame_id] = addFrame(model,RigidBodyFrame(parent,xyz,rpy,[name,'_frame']));
       
+      
+      
       % get the drag coefficients of the element
       cdrag_x = parseParamString(model,robotnum,char(node.getAttribute('coefficient_drag_x')));
       cdrag_y = parseParamString(model,robotnum,char(node.getAttribute('coefficient_drag_y')));
@@ -176,16 +225,22 @@ classdef RigidBodyBluffBody < RigidBodyForceElement
       this_area_y = parseParamString(model,robotnum,char(node.getAttribute('area_y')));
       this_area_z = parseParamString(model,robotnum,char(node.getAttribute('area_z')));
       
-      visual_geometry = parseParamString(model,robotnum,char(node.getAttribute('visual_geometry')));
+      visual_geometry_urdf = parseParamString(model,robotnum,char(node.getAttribute('visual_geometry')));
       
-      if isempty(visual_geometry)
+      if isempty(visual_geometry_urdf)
         % visual geometry defaults to on
-        visual_geometry = 1;
+        visual_geometry_urdf = 1;
       end
       
       obj = RigidBodyBluffBody(this_frame_id, cdrag_x, cdrag_y, cdrag_z, this_area_x, this_area_y, this_area_z);
       
-      if (visual_geometry)
+      obj.visual_geometry = visual_geometry_urdf;
+      
+      % bind parameters, because if there is a parameter on area, we need
+      % to know what it is (right now) for correct drawing
+      obj = obj.bindParams(model, double(model.getParams()));
+      
+      if (obj.visual_geometry)
         model = addBluffBodyVisualShapeToBody(obj, model, parent);
       end
       
