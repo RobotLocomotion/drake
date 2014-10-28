@@ -10,7 +10,8 @@ namespace DrakeCollision
 {
   BulletElement::BulletElement(const Matrix4d& T_elem_to_link, Shape shape, 
                                 const vector<double>& params,
-                                const string& group_name)
+                                const string& group_name,
+                                bool use_margins)
     : T_elem_to_link(T_elem_to_link),shape(shape)
   {
     setGroupName(group_name);
@@ -30,7 +31,10 @@ namespace DrakeCollision
          * a btConvexHullShape.
          */
         bt_shape = new btConvexHullShape();
-        bt_shape->setMargin(0.05);
+        if (use_margins)
+          bt_shape->setMargin(0.05);
+        else
+          bt_shape->setMargin(0.0);
         for (int i=0; i<8; ++i){
           btVector3 vtx;
           bt_box.getVertex(i,vtx);
@@ -74,7 +78,10 @@ namespace DrakeCollision
                                           //params.size()/3,
                                           //(int) 3*sizeof(double) );
         bt_shape = new btConvexHullShape();
-        bt_shape->setMargin(0.05);
+        if (use_margins)
+          bt_shape->setMargin(0.05);
+        else
+          bt_shape->setMargin(0.0);
         for (int i=0; i<params.size(); i+=3){
           //DEBUG
           //std::cout << "BulletElement::BulletElement: Adding point " << i/3 + 1 << std::endl;
