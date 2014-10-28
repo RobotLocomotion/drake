@@ -9,13 +9,19 @@ function xtraj = testRigidBodyBluffBody
   disp('Constructing from URDF...');
 
   options.floating = true;
-  r = RigidBodyManipulator('testRigidBodyWingWithControlSurface.urdf', options);
+  r = RigidBodyManipulator('testRigidBodyBluffBody.urdf', options);
 
+
+  params = r.getParams();
+  params.drag_area = 0; % no drag force for the first simulation
+  
+  r = r.setParams(params);
+  
   v = r.constructVisualizer();
 
   %% simulate
 
-  disp('Simulating...');
+  disp('Simulating without drag force...');
 
   x0 = [0; 0; 0; 0; 0; 0; 15; 0; 0; 0; 0; 0];
   end_t = .5;
@@ -35,7 +41,12 @@ function xtraj = testRigidBodyBluffBody
 
   % now simulate with drag forces
   disp('Simulating with drag forces...');
-  r2 = RigidBodyManipulator('testRigidBodyBluffBody.urdf', options);
+  
+  params = r.getParams();
+
+  params.drag_area = 0; % no drag force for the first simulation
+  
+  r2 = r.setParams(params);
 
   v = r2.constructVisualizer();
 
