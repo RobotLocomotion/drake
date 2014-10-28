@@ -13,9 +13,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     timestep
     twoD=false
     position_control=false;
-    LCP_cache = struct('t',[],'x',[],'u',[],'nargout',[], ...
-      'z',[],'Mqdn',[],'wqdn',[], ...
-      'dz',[],'dMqdn',[],'dwqdn',[],'contact_data',[]);
+    LCP_cache;
   end
 
   methods
@@ -46,6 +44,9 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       end
 
       obj.timestep = timestep;
+      obj.LCP_cache = SharedDataHandle(struct('t',[],'x',[],'u',[],'nargout',[], ...
+        'z',[],'Mqdn',[],'wqdn',[], ...
+        'dz',[],'dMqdn',[],'dwqdn',[],'contact_data',[]));
 
       obj = setSampleTime(obj,[timestep;0]);
 
@@ -135,10 +136,10 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         model = setOutputFrame(model,getOutputFrame(model.manip));
         model = setDirectFeedthrough(model,model.manip.isDirectFeedthrough);
       end
-      model.LCP_cache.t = NaN;
-      model.LCP_cache.x = NaN(model.getNumStates(),1);
-      model.LCP_cache.u = NaN(model.getNumInputs(),1);
-      model.LCP_cache.nargout = NaN;
+      model.LCP_cache.data.t = NaN;
+      model.LCP_cache.data.x = NaN(model.getNumStates(),1);
+      model.LCP_cache.data.u = NaN(model.getNumInputs(),1);
+      model.LCP_cache.data.nargout = NaN;
       model.dirty = false;
     end
 
@@ -195,8 +196,8 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     end
 
     function hit = cacheHit(obj,t,x,u,num_args_out)
-      hit = (t==obj.LCP_cache.t && all(x==obj.LCP_cache.x) && ...
-             all(u==obj.LCP_cache.u) && num_args_out <= obj.LCP_cache.nargout);
+      hit = (t==obj.LCP_cache.data.t && all(x==obj.LCP_cache.data.x) && ...
+             all(u==obj.LCP_cache.data.u) && num_args_out <= obj.LCP_cache.data.nargout);
     end
 
     function [obj,z,Mqdn,wqdn,dz,dMqdn,dwqdn] = solveLCP(obj,t,x,u)
@@ -204,20 +205,20 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
 
       % todo: implement some basic caching here
       if cacheHit(obj,t,x,u,nargout)
-        z = obj.LCP_cache.z;
-        Mqdn = obj.LCP_cache.Mqdn;
-        wqdn = obj.LCP_cache.wqdn;
+        z = obj.LCP_cache.data.z;
+        Mqdn = obj.LCP_cache.data.Mqdn;
+        wqdn = obj.LCP_cache.data.wqdn;
         if nargout > 4
-          dz = obj.LCP_cache.dz;
-          dMqdn = obj.LCP_cache.dMqdn;
-          dwqdn = obj.LCP_cache.dwqdn;
+          dz = obj.LCP_cache.data.dz;
+          dMqdn = obj.LCP_cache.data.dMqdn;
+          dwqdn = obj.LCP_cache.data.dwqdn;
         end
       else
 
-        obj.LCP_cache.t = t;
-        obj.LCP_cache.x = x;
-        obj.LCP_cache.u = u;
-        obj.LCP_cache.nargout = nargout;
+        obj.LCP_cache.data.t = t;
+        obj.LCP_cache.data.x = x;
+        obj.LCP_cache.data.u = u;
+        obj.LCP_cache.data.nargout = nargout;
 
         num_q = obj.manip.num_positions;
         q=x(1:num_q); qd=x(num_q+(1:num_q));
@@ -302,7 +303,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
           end
           contact_data = struct();
         end
-        obj.LCP_cache.contact_data = contact_data;
+        obj.LCP_cache.data.contact_data = contact_data;
         if (nL > 0)
           if (obj.position_control)
             phiL = q(pos_control_index) - u;
@@ -343,8 +344,8 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
 
         M = zeros(nL+nP+(mC+2)*nC)*q(1);
         w = zeros(nL+nP+(mC+2)*nC,1)*q(1);
-        active = true(nL+nP+(mC+2)*nC,1);
-        active_tol = .01;
+        activeset_conservative_guess = true(nL+nP+(mC+2)*nC,1);
+        activeset_conservative_guess_tol = .01;
 
         Hinv = inv(H);
         wqdn = qd + h*Hinv*tau;
@@ -375,7 +376,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         if (nL > 0)
           w(1:nL) = phiL + h*JL*wqdn;
           M(1:nL,:) = h*JL*Mqdn;
-          active(1:nL) = (phiL + h*JL*qd) < active_tol;
+          activeset_conservative_guess(1:nL) = (phiL + h*JL*qd) < activeset_conservative_guess_tol;
           if (nargout>4)
             dJL = [zeros(prod(size(JL)),1),reshape(dJL,numel(JL),[]),zeros(numel(JL),num_q+obj.num_u)];
             if (obj.position_control)
@@ -393,7 +394,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         if (nP > 0)
           w(nL+(1:nP)) = phiP + h*JP*wqdn;
           M(nL+(1:nP),:) = h*JP*Mqdn;
-          active(nL+(1:nP)) = true;
+          activeset_conservative_guess(nL+(1:nP)) = true;
           if (nargout>4)
             dJP = [zeros(numel(JP),1),reshape(dJP,numel(JP),[]),zeros(numel(JP),num_q+obj.num_u)];
             dw(nL+(1:nP),:) = [zeros(size(JP,1),1),JP,zeros(size(JP,1),num_q+obj.num_u)] + h*matGradMultMat(JP,wqdn,dJP,dwqdn);
@@ -460,8 +461,8 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
             dM(nL+nP+nC+(1:mC*nC),1:size(Mqdn,2),:) = reshape(matGradMultMat(D,Mqdn,dD,dMqdn),mC*nC,size(Mqdn,2),[]);
           end
 
-          a = (phiC+h*n*qd) < active_tol;
-          active(nL+nP+(1:(mC+2)*nC),:) = repmat(a,mC+2,1);
+          a = (phiC+h*n*qd) < activeset_conservative_guess_tol;
+          activeset_conservative_guess(nL+nP+(1:(mC+2)*nC),:) = repmat(a,mC+2,1);
         end
 
         % check gradients
@@ -471,20 +472,36 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         %      end
         %      return;
 
+        
+        if (numel(obj.LCP_cache.data.z) == nL+nP+(mC+2)*nC)
+          % try doing the linear solve using the same active set as the
+          % previous solve
 
-        while (1)
+          z = obj.LCP_cache.data.z;
+          activeset_last = z>eps;
+          ac = find(activeset_last)'
+          z(activeset_last) = pinv(M(activeset_last,activeset_last))*(-w(activeset_last));
+          
+          inactive = ~activeset_last(1:(nL+nP+nC));  % only worry about the constraints that really matter.
+          missed = (M(inactive,activeset_last)*z(activeset_last)+w(inactive) < 0);
+          sum(missed)
+        else
+          missed = 1; % force the solve below
+        end
 
-        obj.LCP_cache.t = t;
-        obj.LCP_cache.x = x;
-        obj.LCP_cache.u = u;
-        obj.LCP_cache.nargout = nargout;
+        while any(missed)
+
+          obj.LCP_cache.data.t = t;
+          obj.LCP_cache.data.x = x;
+          obj.LCP_cache.data.u = u;
+          obj.LCP_cache.data.nargout = nargout;
           z = zeros(nL+nP+(mC+2)*nC,1);
-          if any(active)
-            z(active) = pathlcp(M(active,active),w(active));
+          if any(activeset_conservative_guess)
+            z(activeset_conservative_guess) = pathlcp(M(activeset_conservative_guess,activeset_conservative_guess),w(activeset_conservative_guess));
           end
-
-          inactive = ~active(1:(nL+nP+nC));  % only worry about the constraints that really matter.
-          missed = (M(inactive,active)*z(active)+w(inactive) < 0);
+          
+          inactive = ~activeset_conservative_guess(1:(nL+nP+nC));  % only worry about the constraints that really matter.
+          missed = (M(inactive,activeset_conservative_guess)*z(activeset_conservative_guess)+w(inactive) < 0);
           if ~any(missed), break; end
           % otherwise add the missed indices to the active set and repeat
           warning('Drake:TimeSteppingRigidBodyManipulator:ResolvingLCP',['t=',num2str(t),': missed ',num2str(sum(missed)),' constraints.  resolving lcp.']);
@@ -492,7 +509,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
           inactive(ind(missed)) = false;
           % add back in the related contact terms:
           inactive = [inactive; repmat(inactive(nL+nP+(1:nC)),mC+1,1)];
-          active = ~inactive;
+          activeset_conservative_guess = ~inactive;
         end
 
         % for debugging
@@ -502,9 +519,9 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         %lambda = z(nL+nP+3*nC+(1:nC))
         % end debugging
 
-        obj.LCP_cache.z = z;
-        obj.LCP_cache.Mqdn = Mqdn;
-        obj.LCP_cache.wqdn = wqdn;
+        obj.LCP_cache.data.z = z;
+        obj.LCP_cache.data.Mqdn = Mqdn;
+        obj.LCP_cache.data.wqdn = wqdn;
         if (nargout>4)
           % Quick derivation:
           % The LCP solves for z given that:
@@ -539,14 +556,16 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
             dwbar = dw(zposind,:);
             dz(zposind,:) = -pinv(Mbar)*(matGradMult(dMbar,zbar) + dwbar);
           end
-          obj.LCP_cache.dz = dz;
-          obj.LCP_cache.dMqdn = dMqdn;
-          obj.LCP_cache.dwqdn = dwqdn;
+          obj.LCP_cache.data.dz = dz;
+          obj.LCP_cache.data.dMqdn = dMqdn;
+          obj.LCP_cache.data.dwqdn = dwqdn;
         else
-          obj.LCP_cache.dz = [];
-          obj.LCP_cache.dMqdn = [];
-          obj.LCP_cache.dwqdn = [];
+          obj.LCP_cache.data.dz = [];
+          obj.LCP_cache.data.dMqdn = [];
+          obj.LCP_cache.data.dwqdn = [];
         end
+        
+        activeset_last = find(z>eps)'
       end
     end
 
