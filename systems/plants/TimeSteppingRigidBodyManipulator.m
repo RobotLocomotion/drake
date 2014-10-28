@@ -473,11 +473,6 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
 
 
         while (1)
-
-        obj.LCP_cache.t = t;
-        obj.LCP_cache.x = x;
-        obj.LCP_cache.u = u;
-        obj.LCP_cache.nargout = nargout;
           z = zeros(nL+nP+(mC+2)*nC,1);
           if any(active)
             z(active) = pathlcp(M(active,active),w(active));
@@ -501,7 +496,17 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         %beta2 = z(nL+nP+2*nC+(1:nC))
         %lambda = z(nL+nP+3*nC+(1:nC))
         % end debugging
+        % more debugging
+%        path_convergence_tolerance = 1e-6; % default according to http://pages.cs.wisc.edu/~ferris/path/options.pdf
+%        assert(all(z>=0));
+%        assert(all(M*z+w>=-path_convergence_tolerance));
+%        valuecheck(z'*(M*z+w),0,path_convergence_tolerance);
+        % end more debugging
 
+        obj.LCP_cache.t = t;
+        obj.LCP_cache.x = x;
+        obj.LCP_cache.u = u;
+        obj.LCP_cache.nargout = nargout;
         obj.LCP_cache.z = z;
         obj.LCP_cache.Mqdn = Mqdn;
         obj.LCP_cache.wqdn = wqdn;
