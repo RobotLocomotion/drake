@@ -41,6 +41,7 @@ function xtraj = testRigidBodyWingChangingParams()
   
   params = r.getParams();
   params.cs_chord = params.cs_chord + .1;
+  params.cs_span = params.cs_span - .1;
   r2 = r.setParams(params);
   
   v2 = r2.constructVisualizer();

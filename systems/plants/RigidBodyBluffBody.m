@@ -17,6 +17,8 @@ classdef RigidBodyBluffBody < RigidBodyForceElement
     visual_geometry; % true if drawing from the URDF properties
     parent_id; % id of parent body from the URDF
     
+    kinframe;
+    
   end
   
   
@@ -223,6 +225,7 @@ classdef RigidBodyBluffBody < RigidBodyForceElement
       % bind parameters, because if there is a parameter on area, we need
       % to know what it is (right now) for correct drawing
       obj = obj.bindParams(model, double(model.getParams()));
+      model = bindFrameParams(model, double(model.getParams()));
       
       if (obj.visual_geometry)
         model = addBluffBodyVisualShapeToBody(obj, model, parent);

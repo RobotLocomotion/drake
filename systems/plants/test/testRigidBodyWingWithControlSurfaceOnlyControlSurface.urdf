@@ -19,13 +19,23 @@
     </inertial>
   </link>
   <force_element name="wing_force">
-    <wing name="wing" profile="flat plate" chord="0.2097" span="0.8636" nominal_speed="10" stall_angle="10">
+    <wing_with_control_surface
+      name="wing"
+      profile="flat plate"
+      chord="0.2097"
+      span="0.8636"
+      nominal_speed="10"
+      stall_angle="10"
+      visual_geometry="true"
+      control_surface_chord="0.0402"
+      control_surface_min_deflection="-0.90"
+      control_surface_max_deflection="0.855">
+
       <parent link="fuselage"/>
         <origin
           xyz="0 0 0"
           rpy="0 0 0" />
-        <control_surface name="elevon" chord="0.0402" span="0.8636" left_edge_position_along_wing="0" min_deflection="-0.90" max_deflection="0.855" />
-    </wing>
+    </wing_with_control_surface>
   </force_element>
 
     <force_element name="left_winglet_force">

@@ -103,6 +103,7 @@ classdef RigidBodyWing < RigidBodyForceElement
       velocity = obj.velocity;
       stallAngle = obj.stall_angle;
       chord = obj.chord;
+      span = obj.span;
         
       linux = isunix();
       mach = velocity/341; % mach 1 at sea level is about 341 m/s
@@ -578,9 +579,9 @@ classdef RigidBodyWing < RigidBodyForceElement
 
     end
     
-    function body=updateParams(body,poly,pval)
+    function body = updateParams(body,poly,pval)
       % @override
-      
+
       body.airfoil_needs_update = true;
       
       body = updateParams@RigidBodyElement(body, poly, pval);
@@ -611,12 +612,12 @@ classdef RigidBodyWing < RigidBodyForceElement
       
     end
     
-    function [ body, model ]=bindParams(body,model,pval)
+    function body = bindParams(body,model,pval)
       % @override
-      
+
       body.airfoil_needs_update = true;
       
-      [body, model] = bindParams@RigidBodyElement(body,model,pval);
+      body = bindParams@RigidBodyElement(body,model,pval);
 
     end
 
@@ -798,6 +799,7 @@ classdef RigidBodyWing < RigidBodyForceElement
 
       % bind parameters before drawing so we know what to draw
       obj = obj.bindParams(model, double(model.getParams()));
+      model = bindFrameParams(model, double(model.getParams()));
 
       if (visual_geometry_urdf)
         % add visual shapes for automatic drawing of the wing
