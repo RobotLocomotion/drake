@@ -6,13 +6,10 @@ function [q3,dq3] = quatProduct(q1,q2)
 % @retval q3 - q1 q2
 % @retval dq3 - Jacobian of q3 wrt [q1;q2]
 
-% sizecheck(q1,[4,1]);
+% these are slow and will if they are not met then an error will occur
+% immediately below
+% sizecheck(q1,[4,1]);  
 % sizecheck(q2,[4,1]);
-q1_size = size(q1);
-q2_size = size(q2);
-if(length(q1_size) ~= 2 || q1_size(1) ~=4 || q1_size(2) ~= 1 || length(q2_size) ~= 2 || q2_size(1) ~= 4 || q2_size(2) ~= 1)
-error('Drake:quatProduct: quaternion must be of size 4 x 1 ');
-end
 
 w1 = q1(1);
 w2 = q2(1);

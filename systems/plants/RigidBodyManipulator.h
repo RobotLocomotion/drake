@@ -90,15 +90,15 @@ public:
   bool setCollisionFilter(const int body_ind, const uint16_t group, 
                           const uint16_t mask);
 
-  bool getPairwiseCollision(const int body_indA, const int body_indB, MatrixXd &ptsA, MatrixXd &ptsB, MatrixXd &normals);
+  bool getPairwiseCollision(const int body_indA, const int body_indB, MatrixXd &ptsA, MatrixXd &ptsB, MatrixXd &normals, bool use_margins=true);
 
-  bool getPairwisePointCollision(const int body_indA, const int body_indB, const int body_collision_indA, Vector3d &ptA, Vector3d &ptB, Vector3d &normal);
+  bool getPairwisePointCollision(const int body_indA, const int body_indB, const int body_collision_indA, Vector3d &ptA, Vector3d &ptB, Vector3d &normal, bool use_margins=true);
 
-  bool getPointCollision(const int body_ind, const int body_collision_ind, Vector3d &ptA, Vector3d &ptB, Vector3d &normal);
+  bool getPointCollision(const int body_ind, const int body_collision_ind, Vector3d &ptA, Vector3d &ptB, Vector3d &normal, bool use_margins=true);
 
-  bool getPairwiseClosestPoint(const int body_indA, const int body_indB, Vector3d &ptA, Vector3d &ptB, Vector3d &normal, double &distance);
+  bool getPairwiseClosestPoint(const int body_indA, const int body_indB, Vector3d &ptA, Vector3d &ptB, Vector3d &normal, double &distance, bool use_margins=true);
   
-  bool collisionRaycast(const Matrix3Xd &origins, const Matrix3Xd &ray_endpoints, VectorXd &distances);
+  bool collisionRaycast(const Matrix3Xd &origins, const Matrix3Xd &ray_endpoints, VectorXd &distances, bool use_margins=false);
 
   //bool closestPointsAllBodies( MatrixXd& ptsA, MatrixXd& ptsB,
                                //MatrixXd& normal, VectorXd& distance,
@@ -110,28 +110,33 @@ public:
                         std::vector<int>& bodyA_idx, 
                         std::vector<int>& bodyB_idx,
                         const std::vector<int>& bodies_idx,
-                        const std::set<std::string>& active_element_groups);
+                        const std::set<std::string>& active_element_groups,
+                        bool use_margins = true);
 
   bool collisionDetect( VectorXd& phi, MatrixXd& normal, 
                         MatrixXd& xA, MatrixXd& xB, 
                         std::vector<int>& bodyA_idx, 
                         std::vector<int>& bodyB_idx,
-                        const std::vector<int>& bodies_idx);
+                        const std::vector<int>& bodies_idx,
+                        bool use_margins = true);
 
   bool collisionDetect( VectorXd& phi, MatrixXd& normal, 
                         MatrixXd& xA, MatrixXd& xB, 
                         std::vector<int>& bodyA_idx, 
                         std::vector<int>& bodyB_idx,
-                        const std::set<std::string>& active_element_groups);
+                        const std::set<std::string>& active_element_groups,
+                        bool use_margins = true);
 
   bool collisionDetect( VectorXd& phi, MatrixXd& normal, 
                         MatrixXd& xA, MatrixXd& xB, 
                         std::vector<int>& bodyA_idx, 
-                        std::vector<int>& bodyB_idx);
+                        std::vector<int>& bodyB_idx,
+                        bool use_margins = true);
 
 
   bool allCollisions(std::vector<int>& bodyA_idx, std::vector<int>& bodyB_idx, 
-                     MatrixXd& ptsA, MatrixXd& ptsB);
+                     MatrixXd& ptsA, MatrixXd& ptsB,
+                        bool use_margins = true);
 
   //bool closestDistanceAllBodies(VectorXd& distance, MatrixXd& Jd);
   
@@ -222,7 +227,7 @@ private:
   int secondDerivativesCached;
 
   std::shared_ptr< DrakeCollision::Model > collision_model;
-  
+  std::shared_ptr< DrakeCollision::Model > collision_model_no_margins;  
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
