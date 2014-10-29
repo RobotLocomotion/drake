@@ -29,6 +29,8 @@ MAX_DISTANCE = 30;
 
 TRIM_THRESHOLD = [0.02; 0.02; 0.02; pi/16; pi/16; pi/16];
 
+REACHABILITY_METHOD = 'ellipse';
+
 nsteps = length(seed_plan.footsteps);
 min_num_steps = max([seed_plan.params.min_num_steps + 2, 3]);
 
@@ -55,14 +57,30 @@ Constraints = [x(:,1) == seed_steps(POSE_INDICES,1),...
                ];
 Objective = 0;
 
-%% Enforce ellipsoidal reachability
-for j = 3:nsteps
-  [foci, l] = biped.getReachabilityEllipse(seed_plan.params, seed_plan.footsteps(j-1).frame_id);
-  expr = 0;
-  for k = 1:size(foci, 2)
-    expr = expr + norm(x(1:2,j) - (x(1:2,j-1) + [cos_yaw(j-1), -sin_yaw(j-1); sin_yaw(j-1), cos_yaw(j-1)] * foci(:,k)));
+%% Enforce reachability
+if strcmp(REACHABILITY_METHOD, 'ellipse')
+  for j = 3:nsteps
+    [foci, l] = biped.getReachabilityEllipse(seed_plan.params, seed_plan.footsteps(j-1).frame_id);
+    % expr = 0;
+    dists = sdpvar(1, size(foci, 2), 'full');
+    for k = 1:size(foci, 2)
+      Constraints = [Constraints,...
+        polycone(x(1:2,j) - (x(1:2,j-1) + [cos_yaw(j-1), -sin_yaw(j-1); sin_yaw(j-1), cos_yaw(j-1)] * foci(:,k)), dists(k), 16),...
+        ];
+      % expr = expr + norm(x(1:2,j) - (x(1:2,j-1) + [cos_yaw(j-1), -sin_yaw(j-1); sin_yaw(j-1), cos_yaw(j-1)] * foci(:,k)));
+    end
+    % Constraints = [Constraints, expr <= l];
+    Constraints = [Constraints, sum(dists) <= l];
   end
-  Constraints = [Constraints, expr <= l];
+elseif strcmp(REACHABILITY_METHOD, 'circles')
+  for j = 3:nsteps
+    [centers, radii] = biped.getReachabilityCircles(seed_plan.params, seed_plan.footsteps(j-1).frame_id);
+    for k = 1:size(centers, 2)
+      Constraints = [Constraints, cone(x(1:2,j) - (x(1:2,j-1) + [cos_yaw(j-1), -sin_yaw(j-1); sin_yaw(j-1), cos_yaw(j-1)] * centers(:,k)), radii(k))];
+    end
+  end
+else
+  error('bad reachability method');
 end
 
 %% Enforce z and yaw reachability
@@ -84,11 +102,11 @@ end
 %% Enforce rotation convex relaxation
 for j = 3:nsteps
   Constraints = [Constraints,...
-    cone([cos_yaw(j); sin_yaw(j)], 1)];
+    polycone([cos_yaw(j); sin_yaw(j)], 1, 16)];
 end
 for j = 3:nsteps
   Constraints = [Constraints,...
-    cone([cos_yaw(j) - cos_yaw(j-1); sin_yaw(j) - sin_yaw(j-1)], pi/8)];
+    polycone([cos_yaw(j) - cos_yaw(j-1); sin_yaw(j) - sin_yaw(j-1)], pi/8, 16)];
 end
 
 %% Enforce rotation mixed-integer constraints
@@ -124,17 +142,17 @@ for q = 1:length(sector_boundaries)-1
   end
 end
 
-% for j = 3:nsteps
-%   if seed_plan.footsteps(j).frame_id == biped.foot_frame_id.left
-%     for k = 1:size(sector, 1) - 1
-%       Constraints = [Constraints, sum(sector(k:k+1,j)) >= sector(k,j-1)];
-%     end
-%   else
-%     for k = 2:size(sector, 1)
-%       Constraints = [Constraints, sum(sector(k-1:k,j)) >= sector(k,j-1)];
-%     end
-%   end
-% end
+for j = 3:nsteps
+  if seed_plan.footsteps(j).frame_id == biped.foot_frame_id.left
+    for k = 1:size(sector, 1) - 1
+      Constraints = [Constraints, sum(sector(k:k+1,j)) >= sector(k,j-1)];
+    end
+  else
+    for k = 2:size(sector, 1)
+      Constraints = [Constraints, sum(sector(k-1:k,j)) >= sector(k,j-1)];
+    end
+  end
+end
 
 
 %% Enforce convex regions of terrain
