@@ -17,9 +17,14 @@ classdef RigidBodyElement
       end
     end
     
-    function body=updateParams(body,poly,pval)
+    function [body, model]=updateParams(body,poly,pval,model)
       % this is only intended to be called from the parent manipulator
       % class. (maybe I should move it up to there?)
+      %
+      % model is returned in case you need to update it (ie update visual
+      % shapes in responce to a parameter change).  If you pass it, you
+      % should respect its (potentially new) returned value
+      
       fn = fieldnames(body.param_bindings);
       for i=1:length(fn)
         body.(fn{i}) = double(subs(body.param_bindings.(fn{i}),poly,pval));
@@ -37,6 +42,10 @@ classdef RigidBodyElement
     end
     
     function obj = updateBodyCoordinates(obj,body_ind,T_old_body_to_new_body)
+      % intentionally do nothing. overload if necessary
+    end
+    
+    function model = updateVisualShapes(obj, model)
       % intentionally do nothing. overload if necessary
     end
   end

@@ -113,6 +113,7 @@ classdef RigidBodyBluffBody < RigidBodyForceElement
       f = manip.cartesianForceToSpatialForce(kinsol, frame.body_ind, zeros(3,1), f);
       
       force = sparse(6, getNumBodies(manip)) * q(1); % q(1) for taylorvar
+      
       force(:, frame.body_ind) = f;
       
       % TODO
@@ -146,44 +147,24 @@ classdef RigidBodyBluffBody < RigidBodyForceElement
 
     end
     
-%     function body=updateParams(obj,poly,pval)
-%       % Override from RigidBodyElement to update drawing as well as parameters
-%       
-%       % first call the parent
-%       obj = updateParams@RigidBodyElement(obj, poly, pval);
-%       
-%       % update drawing
-%       if (obj.visual_geometry)
-%         % remove any shapes for this body
-%         
-%         
-%         
-%         model = addBluffBodyVisualShapeToBody(obj, model, parent);
-%         
-%         
-%         
-%       end
-%       
-%     end
-    
     function model = updateVisualShapes(obj, model)
+      % Update visual shapes.  This should be called after a parameter
+      % update that may change the automatic drawing of shapes (ie the area
+      % of the drag force is changed).
+      %
+      % @param model RigidBodyManipulator this is a part of
+      %
+      % @retval model updated model
+      
       
       if (obj.visual_geometry)
-        body_idx = model.parseBodyOrFrameID(obj.parent_id);
+        
         
         % remove any existing shapes for this body
-        for i = 1:length(model.body(body_idx).visual_shapes)
-          
-          if strcmp(model.body(body_idx).visual_shapes{i}.name, [obj.name '_urdf_shape']) == true
-            
-            % remove this shape
-            model.body(body_idx).visual_shapes{i} = {};
-            
-          end
-        end
+        model = model.removeShapeFromBody(obj.parent_id, [ obj.name '_urdf_shape' ]);
         
         % add new shapes
-        model = addBluffBodyVisualShapeToBody(obj, model, model.body(body_idx)); % TODO
+        model = addBluffBodyVisualShapeToBody(obj, model, obj.parent_id);
         
         
       end
@@ -234,6 +215,7 @@ classdef RigidBodyBluffBody < RigidBodyForceElement
       end
       
       obj = RigidBodyBluffBody(this_frame_id, cdrag_x, cdrag_y, cdrag_z, this_area_x, this_area_y, this_area_z);
+      obj.name = name;
       
       obj.visual_geometry = visual_geometry_urdf;
       obj.parent_id = parent;
@@ -246,7 +228,7 @@ classdef RigidBodyBluffBody < RigidBodyForceElement
         model = addBluffBodyVisualShapeToBody(obj, model, parent);
       end
       
-      obj.name = name;
+      
       
     end
     

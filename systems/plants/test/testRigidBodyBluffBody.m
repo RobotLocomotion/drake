@@ -14,7 +14,6 @@ function xtraj = testRigidBodyBluffBody
 
   params = r.getParams();
   params.drag_area = 0; % no drag force for the first simulation
-  
   r = r.setParams(params);
   
   v = r.constructVisualizer();
@@ -43,9 +42,7 @@ function xtraj = testRigidBodyBluffBody
   disp('Simulating with drag forces...');
   
   params = r.getParams();
-
-  params.drag_area = 0; % no drag force for the first simulation
-  
+  params.drag_area = 0.01; % no drag force for the first simulation
   r2 = r.setParams(params);
 
   v = r2.constructVisualizer();

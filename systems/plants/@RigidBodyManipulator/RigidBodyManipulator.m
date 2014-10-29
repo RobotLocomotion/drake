@@ -603,6 +603,20 @@ classdef RigidBodyManipulator < Manipulator
         end
         i=i+1;
       end
+      
+      %% update visual elements
+      
+      for i=1:length(model.force)
+        model = model.force{i}.updateVisualShapes(model);
+      end
+
+      for i=1:length(model.sensor)
+        model = model.sensor{i}.updateVisualShapes(model);
+      end
+
+      for i=1:length(model.actuator)
+        model = model.actuator(i).updateVisualShapes(model);
+      end
 
       %% extract featherstone model structure
       model = extractFeatherstone(model);
@@ -1213,6 +1227,27 @@ classdef RigidBodyManipulator < Manipulator
       %   (optional) @default 'default'
       obj = obj.addVisualShapeToBody(body_id,shape);
       obj = obj.addContactShapeToBody(body_id,shape,varargin{:});
+    end
+    
+    function obj = removeShapeFromBody(obj, body_id, shape_name)
+      % Removes the first shape a given body to match a name
+      %
+      % @param body_id body to remove shapes from
+      % @param shape_name name to match (will remove the first match)
+      %
+      % @retval obj updated object
+      
+      body_idx = obj.parseBodyOrFrameID(body_id);
+      
+      for i = 1:length(obj.body(body_idx).visual_shapes)
+
+        if strcmp(obj.body(body_idx).visual_shapes{i}.name, shape_name) == true
+
+          % remove this shape
+          obj.body(body_idx).visual_shapes(i) = [];
+          break;
+        end
+      end
     end
 
     function model = replaceContactShapesWithCHull(model,body_indices,varargin)
