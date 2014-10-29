@@ -92,7 +92,7 @@
 
       <parent link="fuselage"/>
       <origin
-          xyz="-0.08 -0.4318 0.081954"
+          xyz="-0.08 .12065+$cs_span 0.081954"
           rpy="1.5707 0 0" />
     </wing>
   </force_element>
@@ -109,7 +109,7 @@
 
       <parent link="fuselage"/>
       <origin
-          xyz="-0.08 0.4318 0.081954"
+          xyz="-0.08 -.12065-$cs_span 0.081954"
           rpy="1.5707 0 0" />
     </wing>
   </force_element>

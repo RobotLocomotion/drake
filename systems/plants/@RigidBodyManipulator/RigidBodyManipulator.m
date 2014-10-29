@@ -582,7 +582,7 @@ classdef RigidBodyManipulator < Manipulator
         if isa(this_t, 'msspoly')
           % this is a paramter
           
-          model.param_db_fr{i} = this_t;
+          model.param_db_fr{i}.T = this_t;
           
         end
         
@@ -592,14 +592,17 @@ classdef RigidBodyManipulator < Manipulator
       % now iterate through the model_db.frames and bind them to our frames
       fr = getParamFrame(model);
       
-      for i=1:length(model.param_db_fr)
+      for i=1:length(model.frame)
         
-        msspoly_t = model.param_db_fr{i};
-        
-        bound_t = double(subs(msspoly_t, fr.getPoly, pval));
-        
-        model.frame(i).T = bound_t;
-        
+        % check to see if we have data for this frame
+        if i <= length(model.param_db_fr) && ~isempty(model.param_db_fr{i})
+
+          msspoly_t = model.param_db_fr{i}.T;
+
+          bound_t = double(subs(msspoly_t, fr.getPoly, pval));
+
+          model.frame(i).T = bound_t;
+        end
       end
       
     end

@@ -6,7 +6,7 @@ classdef RigidBodyElement
   end
   
   methods
-    function [ body, model ] = bindParams(body,model,pval)
+    function body = bindParams(body,model,pval)
       % Bind parameters from msspolys to doubles
       %
       % @param body this object

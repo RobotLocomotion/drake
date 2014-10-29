@@ -71,7 +71,7 @@ eventually support all of the same types as a 'joint' element. See the joint ele
             <xs:element name="linear_spring_damper" type="linear_spring_damper"/>
             <xs:element name="wing" type="wing">
                 <xs:annotation>
-                    <xs:documentation>Wing element supporting flat plates, airfoils, and control surfaces.</xs:documentation>
+                    <xs:documentation>Wing element supporting flat plates, airfoils.  See wing_with_control_surface for a wing with a control surface attached.</xs:documentation>
                 </xs:annotation>
             </xs:element>
             <xs:element name="thrust" type="thrust">
@@ -197,11 +197,6 @@ used for the moment coefficient. RPY support has been excluded, requiring
 the axes of the airfoil to line up with those of its parent body.</xs:documentation>
                 </xs:annotation>
             </xs:element>
-            <xs:element name="control_surface" type="control_surface" minOccurs="0">
-                <xs:annotation>
-                    <xs:documentation>Control surface attached to a wing.  Can have up to one control surface per wing.</xs:documentation>
-                </xs:annotation>
-            </xs:element>
         </xs:all>
         <xs:attribute name="profile" type="xs:string">
             <xs:annotation>
@@ -248,40 +243,74 @@ Reynolds number around which we design the aerodynamic coefficients.</xs:documen
         </xs:attribute>
     </xs:complexType>
 
-    <xs:complexType name="control_surface">
-        <xs:attribute name="name" type="xs:string" use="required" />
-
-        <xs:attribute name="profile" type="xs:string" use="required">
+    <xs:complexType name="wing_with_control_surface">
+        <xs:all>
+            <xs:element name="parent" type="link_reference">
+                <xs:annotation>
+                    <xs:documentation>String naming the link on which
+this wing is attached.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="origin" type="pose" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>This defines the position of
+the quarter-chord point of the airfoil, since that is the reference point
+used for the moment coefficient. RPY support has been excluded, requiring
+the axes of the airfoil to line up with those of its parent body.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:all>
+        <xs:attribute name="profile" type="xs:string">
             <xs:annotation>
                 <xs:documentation>Only "flat plate" supported right now.</xs:documentation>
             </xs:annotation>
         </xs:attribute>
+        <xs:attribute name="chord" type="xs:double">
+            <xs:annotation>
+                <xs:documentation>the chord length in
+meters.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="span" type="xs:double">
+            <xs:annotation>
+                <xs:documentation>the span of the wing
+in meters.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="stall_angle" type="xs:double">
+            <xs:annotation>
+                <xs:documentation>the angle
+in degrees upon which the lift and drag performance returns to that of
+a flat plate. (this value is ignored if the profile is set to a flat plate).</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="nominal_speed" type="xs:double">
+            <xs:annotation>
+                <xs:documentation>an approximate
+nominal speed in meters per second used to calculate the
+Reynolds number around which we design the aerodynamic coefficients.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="visual_geometry" type="xs:boolean" default="true">
+            <xs:annotation>
+                <xs:documentation>enable or disable automatic drawing of the wing</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
 
-        <xs:attribute name="chord" type="xs:double" use="required">
+
+        <xs:attribute name="control_surface_chord" type="xs:double" use="required">
             <xs:annotation>
                 <xs:documentation>Length of the control surface.</xs:documentation>
             </xs:annotation>
         </xs:attribute>
 
-        <xs:attribute name="span" type="xs:double" use="required">
-            <xs:annotation>
-                <xs:documentation>Width of the control surface.</xs:documentation>
-            </xs:annotation>
-        </xs:attribute>
-
-        <xs:attribute name="left_edge_position_along_wing" type="xs:double" use="required">
-            <xs:annotation>
-                <xs:documentation>Position of the left edge of the control surface along the wing (in meters).</xs:documentation>
-            </xs:annotation>
-        </xs:attribute>
-
-        <xs:attribute name="min_deflection" type="xs:double" use="required">
+        <xs:attribute name="control_surface_min_deflection" type="xs:double" use="required">
             <xs:annotation>
                 <xs:documentation>Minimum control surface deflection in radians.  Typical is around -0.90</xs:documentation>
             </xs:annotation>
         </xs:attribute>
 
-        <xs:attribute name="max_deflection" type="xs:double" use="required">
+        <xs:attribute name="control_surface_max_deflection" type="xs:double" use="required">
             <xs:annotation>
                 <xs:documentation>Maximum control surface deflection in radians.  Typical is around 0.90</xs:documentation>
             </xs:annotation>
