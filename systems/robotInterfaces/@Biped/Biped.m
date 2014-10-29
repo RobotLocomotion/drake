@@ -162,7 +162,6 @@ classdef Biped < LeggedRobot
       % Compute the centers and radii of the circular regions which constrain the
       % next foot position in the frame of the fixed foot
       params = applyDefaults(params, obj.default_footstep_params);
-      params = applyDefaults(params, struct('max_backward_step', params.max_forward_step));
 
       v1x = params.max_forward_step - params.max_backward_step;
       v2x = v1x;
@@ -185,9 +184,27 @@ classdef Biped < LeggedRobot
 
     end
 
+    function [foci, l] = getReachabilityEllipse(obj, params, fixed_foot_frame_id)
+      params = applyDefaults(params, obj.default_footstep_params);
 
+      f1y = (params.max_step_width + params.min_step_width) / 2;
+      f2y = f1y;
+      l = params.max_forward_step + params.max_backward_step;
 
+      d = sqrt((params.max_forward_step + params.max_backward_step)^2 - (params.max_step_width - params.min_step_width)^2);
+      f1x = (params.max_forward_step - params.max_backward_step)/2 - d/2;
+      f2x = (params.max_forward_step - params.max_backward_step)/2 + d/2;
 
+      foci = [f1x f2x; f1y f2y];
+
+      if fixed_foot_frame_id == obj.foot_frame_id.right;
+      % nothing needed
+      elseif fixed_foot_frame_id == obj.foot_frame_id.left
+        foci(2,:) = -foci(2,:); % flip left-right
+      else
+        error('Invalid foot frame ID: %d', fixed_foot_frame_id);
+      end
+    end
   end
 
 
