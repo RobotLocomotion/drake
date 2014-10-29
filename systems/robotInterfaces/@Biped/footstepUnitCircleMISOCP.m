@@ -50,7 +50,7 @@ seed_steps = [seed_plan.footsteps.pos];
 min_yaw = pi * floor(seed_steps(6,1) / pi - 1);
 max_yaw = pi * ceil(seed_steps(6,1) / pi + 1);
 
-angle_boundaries = (-pi-pi/8):(pi/4):(pi-pi/8);
+angle_boundaries = (-pi-pi/16):(pi/8):(pi-pi/16);
 sector = binvar(length(angle_boundaries) - 1, num_precise_steps, 'full');
 
 Constraints = [x(:,1) == seed_steps([1,2,3,6],1),...
@@ -105,8 +105,7 @@ for j = 3:num_precise_steps
   [centers, radii] = biped.getReachabilityCircles(seed_plan.params, seed_plan.footsteps(j-1).frame_id);
   for k = 1:size(centers, 2)
     Constraints = [Constraints, ...
-      pcone(x(1:2,j-1) + [cos_yaw(j-1), -sin_yaw(j-1); sin_yaw(j-1), cos_yaw(j-1)] * rel_foci(:,k) - x(1:2,j), ellipse_l + seed_plan.params.max_step_width * trim(j), 8),...
-      polycone(x(1:2,j-1) + [cos_yaw(j-1), -sin_yaw(j-1); sin_yaw(j-1), cos_yaw(j-1)] * centers(:,k) - x(1:2,j), radii(k) + seed_plan.params.max_step_width * trim(j), 9),...
+      polycone(x(1:2,j-1) + [cos_yaw(j-1), -sin_yaw(j-1); sin_yaw(j-1), cos_yaw(j-1)] * centers(:,k) - x(1:2,j), radii(k) + seed_plan.params.max_step_width * trim(j), 17),...
       abs(x(3,j) - x(3,j-1)) <= seed_plan.params.nom_upward_step];
 
   end
