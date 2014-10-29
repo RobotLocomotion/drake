@@ -7,8 +7,6 @@ classdef RigidBodyBluffBody < RigidBodyForceElement
     coefficient_drag_y; % coefficient of drag in the y (left/right) direction
     coefficient_drag_z; % coefficient of drag in the z (up/down) direction
     
-    kinframe;
-    
     %Air density for 20 degC dry air, at sea level
     rho = 1.204;
     
@@ -147,13 +145,15 @@ classdef RigidBodyBluffBody < RigidBodyForceElement
 
     end
     
-    function model = updateVisualShapes(obj, model)
-      % Update visual shapes.  This should be called after a parameter
+    function [ obj, model ] = onCompile(obj, model)
+      % Update visual shapes on compile.  This should be called after a parameter
       % update that may change the automatic drawing of shapes (ie the area
       % of the drag force is changed).
       %
       % @param model RigidBodyManipulator this is a part of
       %
+      % @retval obj updated object, which you need to put back into
+      % the updated model
       % @retval model updated model
       
       

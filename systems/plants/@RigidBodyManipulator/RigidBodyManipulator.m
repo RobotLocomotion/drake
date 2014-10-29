@@ -9,6 +9,7 @@ classdef RigidBodyManipulator < Manipulator
     body=[];        % array of RigidBody objects
     actuator = [];  % array of RigidBodyActuator objects
     param_db = {};  % cell of structures (one per robot) containing parsed parameter info
+    param_db_fr={}; % cell array of parameters for the frames containing msspoly parameterized representations their properties
     loop=[];        % array of RigidBodyLoop objects
     sensor={};      % cell array of RigidBodySensor objects
     force={};       % cell array of RigidBodyForceElement objects
@@ -564,6 +565,44 @@ classdef RigidBodyManipulator < Manipulator
           error('unknown floating base type');
       end
     end
+    
+    function model = bindFrameParams(model, pval)
+      % Checks for parameters inside the model's frames and binds them to
+      % values
+      %
+      % @param pval input values for the parameters
+      %
+      % @retval model updated model
+      
+      % first, check inside the existing frames for any parameters
+      
+      for i=1:length(model.frame)
+        this_t = model.frame(i).T;
+        
+        if isa(this_t, 'msspoly')
+          % this is a paramter
+          
+          model.param_db_fr{i} = this_t;
+          
+        end
+        
+      end
+      
+      
+      % now iterate through the model_db.frames and bind them to our frames
+      fr = getParamFrame(model);
+      
+      for i=1:length(model.param_db_fr)
+        
+        msspoly_t = model.param_db_fr{i};
+        
+        bound_t = double(subs(msspoly_t, fr.getPoly, pval));
+        
+        model.frame(i).T = bound_t;
+        
+      end
+      
+    end
 
     function model = addSensor(model,sensor)
       % Adds a sensor to the RigidBodyManipulator.  This modifies the
@@ -604,18 +643,21 @@ classdef RigidBodyManipulator < Manipulator
         i=i+1;
       end
       
-      %% update visual elements
+      %% update RigidBodyElements
       
       for i=1:length(model.force)
-        model = model.force{i}.updateVisualShapes(model);
+        [new_element, model] = model.force{i}.onCompile(model);
+        model.force{i} = new_element;
       end
 
       for i=1:length(model.sensor)
-        model = model.sensor{i}.updateVisualShapes(model);
+        [new_element, model] = model.sensor{i}.onCompile(model);
+        model.sensor{i} = new_element;
       end
 
       for i=1:length(model.actuator)
-        model = model.actuator(i).updateVisualShapes(model);
+        [new_element, model] = model.actuator(i).onCompile(model);
+        model.actuator(i) = new_element;
       end
 
       %% extract featherstone model structure
@@ -959,6 +1001,9 @@ classdef RigidBodyManipulator < Manipulator
         model.actuator(i) = updateParams(model.actuator(i), fr.getPoly, p);
       end
       
+      % update frames in case parameters caused them to change
+      model = bindFrameParams(model, p);
+      
 
       model = compile(model);
     end
@@ -1230,7 +1275,7 @@ classdef RigidBodyManipulator < Manipulator
     end
     
     function obj = removeShapeFromBody(obj, body_id, shape_name)
-      % Removes the first shape a given body to match a name
+      % Removes all shapes from a given body that match a name
       %
       % @param body_id body to remove shapes from
       % @param shape_name name to match (will remove the first match)
@@ -1239,13 +1284,18 @@ classdef RigidBodyManipulator < Manipulator
       
       body_idx = obj.parseBodyOrFrameID(body_id);
       
+      removed_count = 0;
+      
       for i = 1:length(obj.body(body_idx).visual_shapes)
 
-        if strcmp(obj.body(body_idx).visual_shapes{i}.name, shape_name) == true
+        index = i - removed_count;
+        
+        if strcmp(obj.body(body_idx).visual_shapes{index}.name, shape_name) == true
 
           % remove this shape
-          obj.body(body_idx).visual_shapes(i) = [];
-          break;
+          obj.body(body_idx).visual_shapes(index) = [];
+          removed_count = removed_count + 1;
+          
         end
       end
     end
@@ -1721,8 +1771,22 @@ classdef RigidBodyManipulator < Manipulator
       model.dirty = true;
     end
 
-    function val = parseParamString(model,robotnum,str)
+    function [ val, default_value ] = parseParamString(model,robotnum,str)
+      % Parses parameter strings from URDFs and returns either the value or
+      % a msspoly expression for later use with
+      % RigidBodyElement.bindParams().
+      % 
       % @ingroup URDF Parsing
+      %
+      % @param model model we are building from a URDF
+      % @param robotnum robot number
+      % @param str string to parse
+      %
+      % @retval val parameter value (possibly with msspolys inside) to put
+      % in the property of the object
+      %
+      % @retval default_val value of the parameter when default values of
+      % params are used
 
       fr = getParamFrame(model); p=fr.getPoly;
       pstr = regexprep(str,'\$(\w+)','p(model.param_db{robotnum}.(''$1'').index)');
@@ -1731,6 +1795,13 @@ classdef RigidBodyManipulator < Manipulator
 %      else
 %        val = RigidBodyParameterizedValue(['[',pstr,']'],model,robotnum);
 %      end
+
+      if nargout > 1
+        % get the default value
+        pstr2 = regexprep(str,'\$(\w+)','model.param_db{robotnum}.(''$1'').value');
+        default_value = eval(['[',pstr2,']']);
+        
+      end
     end
 
     function [linknames,robotnums] = processCFGroupArgs(model,linknames,robotnums)
@@ -2508,13 +2579,12 @@ classdef RigidBodyManipulator < Manipulator
 
       elnode = node.getElementsByTagName('wing').item(0);
       if ~isempty(elnode)
-        % the wing parser may return a cell array of wings, in the case
-        % where the URDF asks for a wing that has portions that contain a
-        % control surface and portions that are normal wings.
-        % RigidBodyWing will automatically divide up and the wing create
-        % the parts as needed.
-        
         [model,fe] = RigidBodyWing.parseURDFNode(model,robotnum,elnode,options);
+      end
+      
+      elnode = node.getElementsByTagName('wing_with_control_surface').item(0);
+      if ~isempty(elnode)
+        [model,fe] = RigidBodyWingWithControlSurface.parseURDFNode(model,robotnum,elnode,options);
       end
       
       elnode = node.getElementsByTagName('bluff_body').item(0);
