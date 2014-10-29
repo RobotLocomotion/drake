@@ -2,7 +2,7 @@
  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
  xsi:schemaLocation="http://drake.mit.edu ../../doc/drakeURDF.xsd" name="testRigidBodyBluffBody">
 
- <parameter name="drag_area" value="0.2" ub="1000" lb="0" />
+ <parameter name="drag_area" value="0.01" ub="1000" lb="0" />
 
   <link
     name="fuselage">
@@ -67,14 +67,14 @@
   <!--see thrustSketch.m for data from the propeller to justify the scale_factor. The factor between scale_factor_thrust and scale_factor_moment is taken from the quadrotor urdf (which in turn is from the group at Penn)... but is disabled for this test -->
       <parent link="fuselage"/>
       <origin
-        xyz="0.0264162284363671 0 0"
+        xyz="-.15 0 0"
         rpy="0 0 0" />
       <axis xyz="1 0 0"/>
     </propellor>
   </force_element>
 
   <force_element name="fuselage_drag_force">
-    <bluff_body name="fuselage_drag" coefficient_drag_x="0.1" coefficient_drag_y="0.1" coefficient_drag_z="0.1"
+    <bluff_body name="fuselage_drag" coefficient_drag_x="1.05" coefficient_drag_y="1.05" coefficient_drag_z="1.05"
       area_x="$drag_area" area_y="$drag_area" area_z="$drag_area">
       <parent link="fuselage" />
       <origin
