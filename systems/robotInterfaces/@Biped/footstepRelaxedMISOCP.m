@@ -29,6 +29,8 @@ SECTOR_WIDTH = pi/8;
 POSE_INDICES = [1,2,3,6]; % which indices of xyzrpy we are searching over
 MAX_DISTANCE = 30;
 
+TRIM_THRESHOLD = [0.02; 0.02; 0.02; pi/16; pi/16; pi/16];
+
 nsteps = length(seed_plan.footsteps);
 min_num_steps = max([seed_plan.params.min_num_steps + 2, 3]);
 
@@ -171,12 +173,12 @@ Objective = Objective + sum(goal_obj(:));
 for j = 3:nsteps
   if seed_plan.footsteps(j).frame_id == biped.foot_frame_id.right
     Constraints = [Constraints,...
-      polycone(x(1:2,j) - goal_pos.right(1:2), goal_obj(1,j-2), 17),...
+      polycone(x(1:2,j) - goal_pos.right(1:2), goal_obj(1,j-2), 16),...
       goal_obj(2,j-2) >= sum(abs(x(3:4,j) - goal_pos.right(POSE_INDICES(3:4)))),...
       ];
   elseif seed_plan.footsteps(j).frame_id == biped.foot_frame_id.left
     Constraints = [Constraints,...
-      polycone(x(1:2,j) - goal_pos.left(1:2), goal_obj(1,j-2), 17),...
+      polycone(x(1:2,j) - goal_pos.left(1:2), goal_obj(1,j-2), 16),...
       goal_obj(2,j-2) >= sum(abs(x(3:4,j) - goal_pos.left(POSE_INDICES(3:4)))),...
       ];
   else
@@ -196,13 +198,13 @@ for j = 3:nsteps
   err = x(:,j) - [(x(1:2,j-1) + [cos_yaw(j-1), -sin_yaw(j-1); sin_yaw(j-1), cos_yaw(j-1)] * nom); x(3:4,j-1)];
   if j == nsteps
     Constraints = [Constraints,...
-      polycone(2 * err(1:2), rel_obj(1,j-2), 9),...
+      polycone(2 * err(1:2), rel_obj(1,j-2), 16),...
       rel_obj(2,j-2) >= 2*sum(abs(err(3:4))),...
       ];
   else
     Constraints = [Constraints,...
-      polycone(0.5 * (nsteps-j+1) * err(1:2), rel_obj(1,j-2), 9),...
-      polycone(2 * (nsteps-j+1) * err(1:2), rel_obj(1,j-2) + (nsteps-j+1)*((2 - 0.5) * seed_plan.params.nom_forward_step), 9),...
+      polycone(0.5 * (nsteps-j+1) * err(1:2), rel_obj(1,j-2), 16),...
+      polycone(2 * (nsteps-j+1) * err(1:2), rel_obj(1,j-2) + (nsteps-j+1)*((2 - 0.5) * seed_plan.params.nom_forward_step), 16),...
       rel_obj(2,j-2) >= sum(abs(err(3:4)))];
   end
 end
@@ -216,7 +218,7 @@ x = double(x);
 cos_yaw = double(cos_yaw);
 sin_yaw = double(sin_yaw);
 yaw = double(yaw)
-sector = double(sector)
+% sector = double(sector)
 
 
 figure(7);
@@ -226,6 +228,7 @@ plot(cos_yaw, sin_yaw, 'bo');
 plot(cos(yaw), sin(yaw), 'ro');
 th = linspace(0, 2*pi);
 plot(cos(th), sin(th), 'k-');
+drawnow()
 
 region = double(region);
 steps = zeros(6,nsteps);
@@ -246,8 +249,26 @@ for j = 1:nsteps
   plan.footsteps(j).pos = steps(:,j);
 end
 
+plan.relative_step_offsets()
+
 % Remove unnecessary footsteps
+at_final_pose = false(1, nsteps);
+at_final_pose(end-1:end) = true;
+for j = 3:nsteps-2
+  if mod(nsteps-j, 2)
+    at_final_pose(j) = all(abs(plan.footsteps(j).pos - plan.footsteps(end-1).pos) <= TRIM_THRESHOLD);
+  else
+    at_final_pose(j) = all(abs(plan.footsteps(j).pos - plan.footsteps(end).pos) <= TRIM_THRESHOLD);
+  end
+end
+trim = at_final_pose % Cut off any steps that are at the final poses
+trim(find(trim, 2, 'first')) = false % Don't cut off the final poses themselves
+
+plan = plan.slice(~trim);
+
+
 
 plan.sanity_check();
+plan.relative_step_offsets()
 
 end
