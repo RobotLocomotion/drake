@@ -1,4 +1,4 @@
-function [plan, sin_yaw, cos_yaw] = footstepUnitCircleMISOCP(biped, seed_plan, weights, goal_pos)
+function [plan, sin_yaw, cos_yaw] = footstepRelaxedMISOCP(biped, seed_plan, weights, goal_pos)
 % This implementation uses a mixed-integer SOCP to plan the number of footsteps to take,
 % the position and yaw of those steps, and the assignments of footsteps to
 % convex regions of obstacle-free terrain. 
@@ -22,8 +22,6 @@ t0 = tic;
 checkDependency('yalmip');
 checkDependency('gurobi');
 seed_plan.sanity_check();
-rangecheck(seed_plan.footsteps(1).pos(6), -pi, pi);
-rangecheck(seed_plan.footsteps(2).pos(6), -pi, pi);
 
 SECTOR_WIDTH = pi/8;
 POSE_INDICES = [1,2,3,6]; % which indices of xyzrpy we are searching over
@@ -169,7 +167,7 @@ end
 
 %% Add the objective on distance to the goal
 goal_obj = sdpvar(2, nsteps-2, 'full');
-Objective = Objective + sum(goal_obj(:));
+Objective = Objective + [ones(1,nsteps-3), 10] * sum(goal_obj,1)';
 for j = 3:nsteps
   if seed_plan.footsteps(j).frame_id == biped.foot_frame_id.right
     Constraints = [Constraints,...
@@ -198,14 +196,15 @@ for j = 3:nsteps
   err = x(:,j) - [(x(1:2,j-1) + [cos_yaw(j-1), -sin_yaw(j-1); sin_yaw(j-1), cos_yaw(j-1)] * nom); x(3:4,j-1)];
   if j == nsteps
     Constraints = [Constraints,...
-      polycone(2 * err(1:2), rel_obj(1,j-2), 16),...
-      rel_obj(2,j-2) >= 2*sum(abs(err(3:4))),...
+      polycone(20 * err(1:2), rel_obj(1,j-2), 16),...
+      rel_obj(2,j-2) >= 20*sum(abs(err(3:4))),...
       ];
   else
+    scale = nsteps - j + 10;
     Constraints = [Constraints,...
-      polycone(0.5 * (nsteps-j+1) * err(1:2), rel_obj(1,j-2), 16),...
-      polycone(2 * (nsteps-j+1) * err(1:2), rel_obj(1,j-2) + (nsteps-j+1)*((2 - 0.5) * seed_plan.params.nom_forward_step), 16),...
-      rel_obj(2,j-2) >= sum(abs(err(3:4)))];
+      polycone(0.5 * scale * err(1:2), rel_obj(1,j-2), 16),...
+      polycone(2 * scale * err(1:2), rel_obj(1,j-2) + scale*((2 - 0.5) * seed_plan.params.nom_forward_step), 16),...
+      rel_obj(2,j-2) >= scale * sum(abs(err(3:4)))];
   end
 end
 
