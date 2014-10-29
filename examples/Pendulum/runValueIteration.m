@@ -7,13 +7,14 @@ options.wrap_flag = [true;false];
 %cost = @mintime; ulimit = 1;
 cost = @lqrcost; ulimit = 5;
 xbins = {linspace(0,2*pi,51),linspace(-10,10,51)};
-mdp = MarkovDecisionProcess.discretizeSystem(plant,cost,xbins,linspace(-ulimit,ulimit,9),options);
+ubins = linspace(-ulimit,ulimit,9);
+mdp = MarkovDecisionProcess.discretizeSystem(plant,cost,xbins,ubins,options);
 
 function drawfun(J,PI)
   figure(2); clf;
   n1=length(xbins{1});
   n2=length(xbins{2});
-  subplot(2,1,1);imagesc(xbins{1},xbins{2},reshape(PI,n1,n2)');
+  subplot(2,1,1);imagesc(xbins{1},xbins{2},reshape(ubins(PI),n1,n2)');
   axis xy;
   xlabel('theta');
   ylabel('thetadot');

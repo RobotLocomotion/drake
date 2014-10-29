@@ -263,7 +263,7 @@ void rotz(double theta, Matrix3d &M, Matrix3d &dM, Matrix3d &ddM)
 
 
 RigidBodyManipulator::RigidBodyManipulator(int ndof, int num_featherstone_bodies, int num_rigid_body_objects, int num_rigid_body_frames)
-  :  collision_model(DrakeCollision::newModel())
+  :  collision_model(DrakeCollision::newModel()), collision_model_no_margins(DrakeCollision::newModel())
 {
   num_dof=0; NB=0; num_bodies=0; num_frames=0;
   a_grav = VectorXd::Zero(6);
@@ -338,6 +338,7 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
   }
 
   collision_model->resize(num_bodies);
+  collision_model_no_margins->resize(num_bodies);
 
   num_frames = num_rigid_body_frames;
   frames.resize(num_frames);
@@ -422,12 +423,14 @@ void RigidBodyManipulator::compile(void)
 void RigidBodyManipulator::addCollisionElement(const int body_ind, const Matrix4d & T_elem_to_lnk, DrakeCollision::Shape shape, vector<double> params, string group_name)
 {
   bool is_static = (bodies[body_ind]->parent==0);
-  collision_model->addElement(body_ind,bodies[body_ind]->parent,T_elem_to_lnk,shape,params,group_name,is_static);
+  collision_model->addElement(body_ind,bodies[body_ind]->parent,T_elem_to_lnk,shape,params,group_name,is_static, true);
+  collision_model_no_margins->addElement(body_ind,bodies[body_ind]->parent,T_elem_to_lnk,shape,params,group_name,is_static, false);
 }
 
 void RigidBodyManipulator::updateCollisionElements(const int body_ind)
 {
   collision_model->updateElementsForBody(body_ind, bodies[body_ind]->T);
+  collision_model_no_margins->updateElementsForBody(body_ind, bodies[body_ind]->T);
 };
 
 bool RigidBodyManipulator::setCollisionFilter(const int body_ind,
@@ -438,12 +441,19 @@ bool RigidBodyManipulator::setCollisionFilter(const int body_ind,
   //cout << "RigidBodyManipulator::setCollisionFilter: Group: " << group << endl;
   //cout << "RigidBodyManipulator::setCollisionFilter: Mask: " << mask << endl;
   //END_DEBUG
-  return collision_model->setCollisionFilter(body_ind,group,mask);
+  bool status_one = collision_model->setCollisionFilter(body_ind,group,mask);
+  bool status_two = collision_model_no_margins->setCollisionFilter(body_ind, group, mask);
+  assert(status_one == status_two);
+  return status_one && status_two;
 }
 
-bool RigidBodyManipulator::getPairwiseCollision(const int body_indA, const int body_indB, MatrixXd &ptsA, MatrixXd &ptsB, MatrixXd &normals)
+bool RigidBodyManipulator::getPairwiseCollision(const int body_indA, const int body_indB, 
+        MatrixXd &ptsA, MatrixXd &ptsB, MatrixXd &normals, bool use_margins)
 {
-  return collision_model->getPairwiseCollision(body_indA,body_indB,ptsA,ptsB,normals);
+  if (use_margins)
+    return collision_model->getPairwiseCollision(body_indA,body_indB,ptsA,ptsB,normals);
+  else
+    return collision_model_no_margins->getPairwiseCollision(body_indA,body_indB,ptsA,ptsB,normals);
 };
 
 bool RigidBodyManipulator::getPairwisePointCollision(const int body_indA,
@@ -451,11 +461,17 @@ bool RigidBodyManipulator::getPairwisePointCollision(const int body_indA,
                                                      const int body_collision_indA,
                                                      Vector3d &ptA,
                                                      Vector3d &ptB,
-                                                     Vector3d &normal)
+                                                     Vector3d &normal, 
+                                                     bool use_margins)
 {
-  if (collision_model->getPairwisePointCollision(body_indA, body_indB,
+  if ( (use_margins && collision_model->getPairwisePointCollision(body_indA, body_indB,
           body_collision_indA,
-          ptA,ptB,normal)) {
+          ptA,ptB,normal)) 
+       ||
+       (~use_margins && collision_model_no_margins->getPairwisePointCollision(body_indA, body_indB,
+          body_collision_indA,
+          ptA,ptB,normal))
+     ) {
     return true;
   } else {
 		ptA << 1,1,1;
@@ -468,10 +484,17 @@ bool RigidBodyManipulator::getPairwisePointCollision(const int body_indA,
 bool RigidBodyManipulator::getPointCollision(const int body_ind,
                                              const int body_collision_ind,
                                              Vector3d &ptA, Vector3d &ptB,
-                                             Vector3d &normal)
+                                             Vector3d &normal, 
+                                             bool use_margins)
 {
-  if (collision_model->getPointCollision(body_ind, body_collision_ind, ptA,ptB,
-          normal)) {
+  if ( (use_margins && 
+          collision_model->getPointCollision(body_ind, body_collision_ind, ptA,ptB,
+          normal))
+       ||
+       (~use_margins && 
+          collision_model_no_margins->getPointCollision(body_ind, body_collision_ind, ptA,ptB,
+          normal))
+     ){
     return true;
   } else {
     ptA << 1,1,1;
@@ -481,14 +504,28 @@ bool RigidBodyManipulator::getPointCollision(const int body_ind,
   }
 };
 
-bool RigidBodyManipulator::getPairwiseClosestPoint(const int body_indA, const int body_indB, Vector3d &ptA, Vector3d &ptB, Vector3d &normal, double &distance)
+bool RigidBodyManipulator::getPairwiseClosestPoint(const int body_indA, 
+                                             const int body_indB, 
+                                             Vector3d &ptA, Vector3d &ptB,
+                                             Vector3d &normal, 
+                                             double &distance, 
+                                             bool use_margins)
 {
-  return collision_model->getClosestPoints(body_indA,body_indB,ptA,ptB,normal,distance);
+  if (use_margins)
+    return collision_model->getClosestPoints(body_indA,body_indB,ptA,ptB,normal,distance);
+  else
+    return collision_model_no_margins->getClosestPoints(body_indA,body_indB,ptA,ptB,normal,distance);
 };
 
-bool RigidBodyManipulator::collisionRaycast(const Matrix3Xd &origins, const Matrix3Xd &ray_endpoints, VectorXd &distances)
+bool RigidBodyManipulator::collisionRaycast(const Matrix3Xd &origins, 
+                                            const Matrix3Xd &ray_endpoints, 
+                                            VectorXd &distances, 
+                                            bool use_margins )
 {
-  return collision_model->collisionRaycast(origins, ray_endpoints, distances);
+  if (use_margins)
+    return collision_model->collisionRaycast(origins, ray_endpoints, distances);
+  else
+    return collision_model_no_margins->collisionRaycast(origins, ray_endpoints, distances);
 }
 
 bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
@@ -498,9 +535,14 @@ bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
                                             vector<int>& bodyA_idx,
                                             vector<int>& bodyB_idx,
                                             const vector<int>& bodies_idx,
-                                            const set<string>& active_element_groups)
+                                            const set<string>& active_element_groups,
+                                            bool use_margins)
 {
-  return collision_model->closestPointsAllBodies(bodyA_idx,bodyB_idx,xA,xB,
+  if (use_margins)
+    return collision_model->closestPointsAllBodies(bodyA_idx,bodyB_idx,xA,xB,
+      normal,phi,bodies_idx,active_element_groups);
+  else
+    return collision_model_no_margins->closestPointsAllBodies(bodyA_idx,bodyB_idx,xA,xB,
       normal,phi,bodies_idx,active_element_groups);
 }
 
@@ -510,9 +552,14 @@ bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
                                             MatrixXd& xB,
                                             vector<int>& bodyA_idx, 
                                             vector<int>& bodyB_idx,
-                                            const vector<int>& bodies_idx)
+                                            const vector<int>& bodies_idx,
+                                            bool use_margins)
 {
-  return collision_model->closestPointsAllBodies(bodyA_idx,bodyB_idx,xA,xB,
+  if (use_margins)
+    return collision_model->closestPointsAllBodies(bodyA_idx,bodyB_idx,xA,xB,
+      normal,phi,bodies_idx);
+  else
+    return collision_model_no_margins->closestPointsAllBodies(bodyA_idx,bodyB_idx,xA,xB,
       normal,phi,bodies_idx);
 }
 
@@ -522,9 +569,14 @@ bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
                                             MatrixXd& xB,
                                             vector<int>& bodyA_idx, 
                                             vector<int>& bodyB_idx,
-                                            const set<string>& active_element_groups)
+                                            const set<string>& active_element_groups,
+                                            bool use_margins)
 {
-  return collision_model->closestPointsAllBodies(bodyA_idx,bodyB_idx,xA,xB,
+  if (use_margins)
+    return collision_model->closestPointsAllBodies(bodyA_idx,bodyB_idx,xA,xB,
+      normal,phi,active_element_groups);
+  else
+    return collision_model_no_margins->closestPointsAllBodies(bodyA_idx,bodyB_idx,xA,xB,
       normal,phi,active_element_groups);
 }
 
@@ -533,16 +585,24 @@ bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
                                             MatrixXd& xA, 
                                             MatrixXd& xB,
                                             vector<int>& bodyA_idx, 
-                                            vector<int>& bodyB_idx)
+                                            vector<int>& bodyB_idx,
+                                            bool use_margins)
 {
-  return collision_model->closestPointsAllBodies(bodyA_idx,bodyB_idx,xA,xB,normal,phi);
+  if (use_margins)
+    return collision_model->closestPointsAllBodies(bodyA_idx,bodyB_idx,xA,xB,normal,phi);
+  else
+    return collision_model_no_margins->closestPointsAllBodies(bodyA_idx,bodyB_idx,xA,xB,normal,phi);
 }
 
 bool RigidBodyManipulator::allCollisions(vector<int>& bodyA_idx,
                                          vector<int>& bodyB_idx,
-                                         MatrixXd& ptsA, MatrixXd& ptsB)
+                                         MatrixXd& ptsA, MatrixXd& ptsB,
+                                         bool use_margins)
 {
-  return collision_model->allCollisions(bodyA_idx, bodyB_idx, ptsA, ptsB);
+  if (use_margins)
+    return collision_model->allCollisions(bodyA_idx, bodyB_idx, ptsA, ptsB);
+  else
+    return collision_model_no_margins->allCollisions(bodyA_idx, bodyB_idx, ptsA, ptsB);
 }
 
 
@@ -793,6 +853,7 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
       //cout << "RigidBodyManipulator::doKinematics: updating body " << i << " ..." << endl;
       //END_DEBUG
       collision_model->updateElementsForBody(i,bodies[i]->T);
+      collision_model_no_margins->updateElementsForBody(i,bodies[i]->T);
       //DEBUG
       //cout << "RigidBodyManipulator::doKinematics: done updating body " << i << endl;
       //END_DEBUG
