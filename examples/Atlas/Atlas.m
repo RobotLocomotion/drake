@@ -32,9 +32,10 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
         if (strcmp(options.hands, 'robotiq'))
           options.weld_to_link = 29;
           obj.hands = 1;
+          
 %           lhand = TimeSteppingRigidBodyManipulator([],options.dt);
 %           rhand = TimeSteppingRigidBodyManipulator([],options.dt);
-          obj = addRobotFromURDF(obj, getFullPathFromRelativePath('cylinder.urdf'), [0; 0; 0], [0; 0; 0], options); 
+          obj = addRobotFromURDF(obj, getFullPathFromRelativePath('urdf/robotiq.urdf'), [0; -0.2; 0], [0; 0; 3.1415], options); 
         else
           error('unsupported hand type'); 
         end
@@ -90,6 +91,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       end
       obj = obj.setInputFrame(input_frame);
       obj.manip = obj.manip.setInputFrame(input_frame);
+      
     end
 
     function obj = setInitialState(obj,x0)
