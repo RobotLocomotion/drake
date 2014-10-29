@@ -44,8 +44,9 @@ rangecheck(seed_plan.footsteps(1).pos(6), -pi, pi);
 rangecheck(seed_plan.footsteps(2).pos(6), -pi, pi);
 
 nsteps = length(seed_plan.footsteps);
-foci = [[0; 0.15], [0; -0.7]];
-ellipse_l = 0.55;
+[foci, radii] = biped.getReachabilityCircles(seed_plan.params, biped.foot_frame_id.right);
+% foci = [[0; 0.15], [0; -0.7]];
+% ellipse_l = 0.55;
 
 seed_steps = [seed_plan.footsteps.pos];
 
@@ -315,12 +316,14 @@ bs = zeros(size(As, 1), 1);
 expected_offset = size(As, 1);
 % Reachability between steps
 for j = 2:nsteps-1
+  [rel_foci, radii] = biped.getReachabilityCircles(seed_plan.params, seed_plan.footsteps(j).frame_id);
+  assert(radii(1) == radii(2), 'I''m assuming that the reachability circles have equal radii');
   % Ensure that the foot doesn't yaw too much per step
   if seed_plan.footsteps(j).frame_id == biped.foot_frame_id.right
-    rel_foci = [foci(1,:); -foci(2,:)];
+    % rel_foci = [foci(1,:); -foci(2,:)];
     yaw_range = [0, pi/8];
   else
-    rel_foci = foci;
+    % rel_foci = foci;
     yaw_range = [-pi/8, 0];
   end
   
@@ -348,10 +351,10 @@ for j = 2:nsteps-1
 
   for k = 1:size(rel_foci, 2)
     % Constraints = [Constraints, ...
-    %   cone(x(1:2,j) + [cos_yaw(j), -sin_yaw(j); sin_yaw(j), cos_yaw(j)] * rel_foci(:,k) - x(1:2,j+1), ellipse_l),...
+    %   cone(x(1:2,j) + [cos_yaw(j), -sin_yaw(j); sin_yaw(j), cos_yaw(j)] * rel_foci(:,k) - x(1:2,j+1), radii(1)),...
     Qc = sparse(nv, nv);
     qc = zeros(nv, 1);
-    rhs = ellipse_l^2;
+    rhs = radii(1)^2;
     Qc(v.x.i(1:2,j+1),v.x.i(1:2,j+1)) = eye(2);
     Qc(v.x.i(1:2,j),v.x.i(1:2,j+1)) = -2*eye(2);
     Qc(v.x.i(1:2,j),v.x.i(1:2,j)) = eye(2);
