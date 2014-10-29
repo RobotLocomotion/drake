@@ -46,13 +46,13 @@
       <origin rpy="1 0 0" xyz="0 0 0"/>
     </visual>
   </link>
-<!--
+
   <joint name="cylinder_joint" type="revolute">
     <origin rpy="0 -0 0" xyz="0 0 0"/>
     <axis xyz="1 0 0"/>
     <parent link="cylinder_1"/>
     <child link="cylinder_2"/>
-    <dynamics damping="1.0" friction="0"/>
+    <dynamics damping="1.0" friction="0.1"/>
     <limit effort="130" lower="-0.8" upper="0.8" velocity="12"/>
     <safety_controller k_position="100" k_velocity="100" soft_lower_limit="-10.8" soft_upper_limit="10.8"/>
   </joint>
@@ -61,5 +61,5 @@
     <joint name="cylinder_joint"/>
     <mechanicalReduction>1</mechanicalReduction>
   </transmission>
--->
+
 </robot>

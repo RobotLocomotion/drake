@@ -21,19 +21,43 @@ warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits')
 
 options.floating = true;
 options.dt = 0.002;
-options.hands = 'robotiq';
 r = Atlas('urdf/atlas_minimal_contact.urdf',options);
+options.hands = 'robotiq';
+r_hands = Atlas('urdf/atlas_minimal_contact.urdf',options);
 r = r.removeCollisionGroupsExcept({'heel','toe'});
+r_hands = r_hands.removeCollisionGroupsExcept({'heel','toe'});
 r = compile(r);
+r_hands = compile(r_hands);
 
 nq = getNumPositions(r);
 
 % set initial state to fixed point
 load('data/atlas_fp.mat');
-xstar(1) = 0.1*randn();
-xstar(2) = 0.1*randn();
-xstar(6) = pi*randn();
-%xstar = [xstar; 0; 0];
+xstar(1) = 0; %0.1*randn();
+xstar(2) = 0; %0.1*randn();
+xstar(6) = 0;% pi*randn();
+
+% feasible init conditions
+x0 = Point(r_hands.getStateFrame);
+x0.finger_1_fourbar_0_joint_0 = -2.10;
+x0.finger_1_fourbar_0_joint_1 = 1.881;
+x0.finger_1_fourbar_0_joint_2 = -1.997;
+x0.finger_1_fourbar_3_joint_1 = 1.613;
+x0.finger_2_fourbar_0_joint_0 = -2.10;
+x0.finger_2_fourbar_0_joint_1 = 1.881;
+x0.finger_2_fourbar_0_joint_2 = -1.997;
+x0.finger_2_fourbar_3_joint_1 = 1.613;
+x0.finger_middle_fourbar_0_joint_0 = -2.10;
+x0.finger_middle_fourbar_0_joint_1 = 1.881;
+x0.finger_middle_fourbar_0_joint_2 = -1.997;
+x0.finger_middle_fourbar_3_joint_1 = 1.613;
+x0(1:length(xstar)) = xstar;
+x0 = resolveConstraints(r_hands,x0);
+xstar_hands = x0;
+xstar_hands(1:length(xstar)) = xstar;
+r_hands = r_hands.setInitialState(xstar_hands);
+
+xstar = xstar_hands(1:r.getNumStates);
 r = r.setInitialState(xstar);
 
 x0 = xstar;
@@ -94,7 +118,7 @@ ins(2).system = 1;
 ins(2).input = 3;
 outs(1).system = 2;
 outs(1).output = 1;
-sys = mimoFeedback(qp,r,[],[],ins,outs);
+sys = mimoFeedback(qp,r_hands,[],[],ins,outs);
 clear ins;
 
 % feedback foot contact detector with QP/atlas
@@ -118,7 +142,7 @@ qt = QTrajEvalBlock(r,ctrl_data);
 sys = mimoFeedback(qt,sys,[],[],[],outs);
 
 if visualize
-  v = r.constructVisualizer;
+  v = r_hands.constructVisualizer;
   v.display_dt = 0.01;
   S=warning('off','Drake:DrakeSystem:UnsupportedSampleTime');
   output_select(1).system=1;
@@ -126,6 +150,7 @@ if visualize
   sys = mimoCascade(sys,v,[],[],output_select);
   warning(S);
 end
+x0 = xstar_hands;
 x0(3) = 1.0; % drop it a bit
 
 traj = simulate(sys,[0 2],x0);
