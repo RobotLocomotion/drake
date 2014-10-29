@@ -1014,8 +1014,10 @@ classdef RigidBodyManipulator < Manipulator
       if nargin<3 || isempty(robot_num), robot_num=0; end
       jointname = lower(jointname);
       if ischar(robot_num) robot_num = strmatch(lower(robot_num),lower({model.name})); end
-      items = strfind(lower({model.body.jointname}),jointname);
-      ind = find(~cellfun(@isempty,items));
+      items = strcmp(lower({model.body.jointname}),jointname);
+      ind = find(items);
+%       items = strfind(lower({model.body.jointname}),jointname);
+%       ind = find(~cellfun(@isempty,items));
       if (robot_num~=0), ind = ind([model.body(ind).robotnum]==robot_num); end
       if (length(ind)~=1)
         if (nargin<4 || error_level>0)

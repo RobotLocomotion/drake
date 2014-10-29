@@ -22,17 +22,29 @@ warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits')
 options.floating = true;
 options.dt = 0.002;
 r = Atlas('urdf/atlas_minimal_contact.urdf',options);
+options.hands = 'robotiq';
+r_hands = Atlas('urdf/atlas_minimal_contact.urdf',options);
 r = r.removeCollisionGroupsExcept({'heel','toe'});
+r_hands = r_hands.removeCollisionGroupsExcept({'heel','toe'});
 r = compile(r);
+r_hands = compile(r_hands);
 
 nq = getNumPositions(r);
 
 % set initial state to fixed point
 load('data/atlas_fp.mat');
-xstar(1) = 0.1*randn();
-xstar(2) = 0.1*randn();
-xstar(6) = pi*randn();
+xstar(1) = 0; %0.1*randn();
+xstar(2) = 0; %0.1*randn();
+xstar(6) = 0;% pi*randn();
 r = r.setInitialState(xstar);
+
+% and hand state to a feasible sol
+% so lcp has an easier time
+load('data/robotiq_feas.mat');
+xstar_hands = zeros(r_hands.getNumStates, 1);
+xstar_hands(1:length(xstar)) = xstar;
+xstar_hands(length(xstar)+1:end) = xstar_hand;
+r_hands = r_hands.setInitialState(xstar_hands);
 
 x0 = xstar;
 q0 = x0(1:nq);
@@ -92,7 +104,7 @@ ins(2).system = 1;
 ins(2).input = 3;
 outs(1).system = 2;
 outs(1).output = 1;
-sys = mimoFeedback(qp,r,[],[],ins,outs);
+sys = mimoFeedback(qp,r_hands,[],[],ins,outs);
 clear ins;
 
 % feedback foot contact detector with QP/atlas
@@ -116,7 +128,7 @@ qt = QTrajEvalBlock(r,ctrl_data);
 sys = mimoFeedback(qt,sys,[],[],[],outs);
 
 if visualize
-  v = r.constructVisualizer;
+  v = r_hands.constructVisualizer;
   v.display_dt = 0.01;
   S=warning('off','Drake:DrakeSystem:UnsupportedSampleTime');
   output_select(1).system=1;
@@ -124,7 +136,7 @@ if visualize
   sys = mimoCascade(sys,v,[],[],output_select);
   warning(S);
 end
-x0 = xstar;
+x0 = xstar_hands;
 x0(3) = 1.0; % drop it a bit
 
 traj = simulate(sys,[0 2],x0);

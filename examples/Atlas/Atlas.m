@@ -36,6 +36,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
 %           lhand = TimeSteppingRigidBodyManipulator([],options.dt);
 %           rhand = TimeSteppingRigidBodyManipulator([],options.dt);
           obj = addRobotFromURDF(obj, getFullPathFromRelativePath('urdf/robotiq.urdf'), [0; -0.2; 0], [0; 0; 3.1415], options); 
+          %obj = addRobotFromURDF(obj, getFullPathFromRelativePath('cylinder.urdf'), [0; -0.2; 0], [0; 0; 3.1415], options); 
         else
           error('unsupported hand type'); 
         end
