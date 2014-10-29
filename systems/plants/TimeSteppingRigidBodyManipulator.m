@@ -476,11 +476,15 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
           z = zeros(nL+nP+(mC+2)*nC,1);
           if any(active)
             z(active) = pathlcp(M(active,active),w(active));
+            if all(active), break; end
+            inactive = ~active(1:(nL+nP+nC));  % only worry about the constraints that really matter.
+            missed = (M(inactive,active)*z(active)+w(inactive) < 0);
+          else
+            inactive=true(nL+nP+nC,1);
+            missed = (w(inactive)<0);
           end
-
-          inactive = ~active(1:(nL+nP+nC));  % only worry about the constraints that really matter.
-          missed = (M(inactive,active)*z(active)+w(inactive) < 0);
           if ~any(missed), break; end
+          
           % otherwise add the missed indices to the active set and repeat
           warning('Drake:TimeSteppingRigidBodyManipulator:ResolvingLCP',['t=',num2str(t),': missed ',num2str(sum(missed)),' constraints.  resolving lcp.']);
           ind = find(inactive);
