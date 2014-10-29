@@ -6,7 +6,15 @@ classdef RigidBodyElement
   end
   
   methods
-    function body=bindParams(body,model,pval)
+    function [ body, model ] = bindParams(body,model,pval)
+      % Bind parameters from msspolys to doubles
+      %
+      % @param body this object
+      % @param model model we are a part of
+      % @param pval values to set
+      %
+      % @retval updated body
+      
       fr = getParamFrame(model);
       pn = properties(body);
       for i=1:length(pn)
@@ -15,15 +23,12 @@ classdef RigidBodyElement
           body.(pn{i}) = double(subs(body.(pn{i}),fr.getPoly,pval));
         end
       end
+      
     end
     
-    function [body, model]=updateParams(body,poly,pval,model)
+    function body=updateParams(body,poly,pval)
       % this is only intended to be called from the parent manipulator
       % class. (maybe I should move it up to there?)
-      %
-      % model is returned in case you need to update it (ie update visual
-      % shapes in responce to a parameter change).  If you pass it, you
-      % should respect its (potentially new) returned value
       
       fn = fieldnames(body.param_bindings);
       for i=1:length(fn)
@@ -45,7 +50,7 @@ classdef RigidBodyElement
       % intentionally do nothing. overload if necessary
     end
     
-    function model = updateVisualShapes(obj, model)
+    function [obj, model] = onCompile(obj, model)
       % intentionally do nothing. overload if necessary
     end
   end

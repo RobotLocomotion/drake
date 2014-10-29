@@ -1,6 +1,10 @@
 <robot xmlns="http://drake.mit.edu"
  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
- xsi:schemaLocation="http://drake.mit.edu ../../doc/drakeURDF.xsd" name="testRigidBodyWingWithControlSurface">
+ xsi:schemaLocation="http://drake.mit.edu ../../doc/drakeURDF.xsd" name="testRigidBodyWingChangingParams">
+
+ <parameter name="cs_chord" value="0.0402" ub="1000" lb="0.0001" />
+ <parameter name="cs_span" value="0.31115" ub="1000" lb="0.0001" />
+
   <link
     name="fuselage">
     <inertial>
@@ -24,16 +28,17 @@
         name="left_wing_and_elveon"
         profile="flat plate"
         chord="0.2097"
-        span="0.31115"
+        span="$cs_span"
         nominal_speed="10"
         stall_angle="10"
         visual_geometry="true"
-        control_surface_chord="0.0402"
+        control_surface_chord="$cs_chord"
         control_surface_min_deflection="-0.90"
         control_surface_max_deflection="0.855">
       <parent link="fuselage"/>
         <origin
-          xyz="-0.0349593479683926 -0.276225 0.00735412367732659"
+
+          xyz="-0.0349593479683926 -.12065-$cs_span/2 0.00735412367732659"
           rpy="0 0 0" />
     </wing_with_control_surface>
   </force_element>
@@ -43,16 +48,16 @@
         name="right_wing_and_elveon"
         profile="flat plate"
         chord="0.2097"
-        span="0.31115"
+        span="$cs_span"
         nominal_speed="10"
         stall_angle="10"
         visual_geometry="true"
-        control_surface_chord="0.0402"
+        control_surface_chord="$cs_chord"
         control_surface_min_deflection="-0.90"
         control_surface_max_deflection="0.855">
       <parent link="fuselage"/>
       <origin
-          xyz="-0.0349593479683926 0.276225 0.00735412367732659"
+          xyz="-0.0349593479683926 .12065+$cs_span/2 0.00735412367732659"
           rpy="0 0 0" />
     </wing_with_control_surface>
   </force_element>
