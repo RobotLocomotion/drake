@@ -54,6 +54,11 @@ for j = 1:length(safe_regions)
   sizecheck(safe_regions(j).b, [size(safe_regions(j).A, 1), 1]);
   sizecheck(safe_regions(j).point, [3,1]);
   sizecheck(safe_regions(j).normal, [3,1]);
+  for k = 1:size(safe_regions(j).A, 1)
+    n = norm(safe_regions(j).A(k,:));
+    safe_regions(j).A(k,:) = safe_regions(j).A(k,:) / n;
+    safe_regions(j).b(k) = safe_regions(j).b(k) / n;
+  end
 end
 
 if options.step_params.leading_foot == 0 % lead left
