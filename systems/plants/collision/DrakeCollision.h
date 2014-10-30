@@ -9,9 +9,22 @@
 #include <stdexcept>
 #include <bitset>
 
+#include <stdint.h>
+
+#if defined(WIN32) || defined(WIN64)
+  #if defined(drakeCollision_EXPORTS)
+    #define DLLEXPORT __declspec( dllexport )
+  #else
+    #define DLLEXPORT __declspec( dllimport )
+  #endif
+#else
+    #define DLLEXPORT
+#endif
+
+
 namespace DrakeCollision
 {
-  enum Shape {
+  enum DLLEXPORT Shape {
     UNKNOWN,
     BOX,
     SPHERE,
@@ -20,13 +33,13 @@ namespace DrakeCollision
     CAPSULE
   };
 
-  enum ModelType {
+  enum DLLEXPORT ModelType {
     NONE,
     AUTO,
     BULLET
   };
 
-  class Model {
+  class DLLEXPORT Model {
   public:
     virtual void resize(int num_bodies) {};
     
@@ -34,15 +47,8 @@ namespace DrakeCollision
 			    const Eigen::Matrix4d& T_element_to_link, Shape shape, 
 			    const std::vector<double>& params, 
           const std::string& group_name,
-			    bool is_static) {};
-
-    virtual void addElement(const int body_idx, const int parent_idx, 
-			    const Eigen::Matrix4d& T_element_to_link, Shape shape, 
-			    const std::vector<double>& params, 
-			    bool is_static) 
-    {
-      addElement(body_idx,parent_idx,T_element_to_link,shape,params,"default",is_static);
-    };
+			    bool is_static,
+          bool use_margins = true) {};
 
     virtual bool updateElementsForBody(const int body_idx, 
 				       const Eigen::Matrix4d& T_link_to_world) { return false; };
@@ -114,23 +120,23 @@ namespace DrakeCollision
       virtual const std::set<std::string> elementGroupNames() const;
   };
 
-  std::shared_ptr<Model> newModel();
+  DLLEXPORT std::shared_ptr<Model> newModel();
 
-  std::shared_ptr<Model> newModel(ModelType model_type);
+  DLLEXPORT std::shared_ptr<Model> newModel(ModelType model_type);
 
 
   
   typedef std::bitset<16> bitmask;
   // Constants
-  extern const bitmask ALL_MASK;
-  extern const bitmask NONE_MASK;
-  extern const bitmask DEFAULT_GROUP;
+  extern const DLLEXPORT bitmask ALL_MASK;
+  extern const DLLEXPORT bitmask NONE_MASK;
+  extern const DLLEXPORT bitmask DEFAULT_GROUP;
 
   // Exceptions
 
-  class noClosestPointsResultException : public std::exception {};
+  class DLLEXPORT noClosestPointsResultException : public std::exception {};
 
-  class badShapeException : public std::exception
+  class DLLEXPORT badShapeException : public std::exception
   {
     public:
       badShapeException();
@@ -141,14 +147,14 @@ namespace DrakeCollision
       std::string shape_str;
   };
 
-  class zeroRadiusSphereException : public badShapeException
+  class DLLEXPORT zeroRadiusSphereException : public badShapeException
   {
     public:
       virtual const char* what() const throw();
       virtual ~zeroRadiusSphereException() throw() {};
   };
 
-  class unknownShapeException : public badShapeException
+  class DLLEXPORT unknownShapeException : public badShapeException
   {
     public:
       unknownShapeException(Shape shape) : badShapeException(shape){};
@@ -156,7 +162,7 @@ namespace DrakeCollision
       virtual ~unknownShapeException() throw() {};
   };
 
-  class unsupportedShapeException : public badShapeException
+  class DLLEXPORT unsupportedShapeException : public badShapeException
   {
     public:
       unsupportedShapeException(Shape shape) : badShapeException(shape){};

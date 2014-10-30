@@ -2,12 +2,12 @@ classdef PolynomialProgram < NonlinearProgram
 % Provides a common interface for polynomial optimization.
 %  (note: should perhaps be called a SpotPolynomialProgram, to parallel
 %  PolynomialSystem/SpotPolynomialSystem)
-%  
+%
 % Using x to denote the decision variables, attempts to solve the problem
 %
 %   minimize_x objective(x)
-%   subject to 
-%         equality_constraints(x) = 0 
+%   subject to
+%         equality_constraints(x) = 0
 %         inequality_constraint(x) <= 0
 %         Ain*x <= bin
 %         Aeq*x <= beq
@@ -35,7 +35,7 @@ classdef PolynomialProgram < NonlinearProgram
       if length(objective)~=1
         error('objective must be a scalar msspoly');
       end
-      
+
       if nargin<3, inequality_constraints = []; end
       if nargin<4, equality_constraints = []; end
       if nargin<5, options=struct(); end
@@ -43,7 +43,7 @@ classdef PolynomialProgram < NonlinearProgram
         % todo: check dependencies here and pick my favorite that is also installed
         options.solver = 'bertini';
       end
-      
+
       if ~isfunction(objective,decision_vars)
         error('objective function must only depend on the decision variables');
       end
@@ -82,7 +82,7 @@ classdef PolynomialProgram < NonlinearProgram
         obj.num_ceq = dim(1);
       end
     end
-    
+
     function [x,objval,exitflag,infeasible_constraint_name] = solve(obj,x0)
       switch lower(obj.solver)
         case 'gloptipoly'
@@ -91,7 +91,7 @@ classdef PolynomialProgram < NonlinearProgram
         case 'bertini'
           [x,objval,exitflag] = bertini(obj);
           [exitflag,infeasible_constraint_name] = obj.mapSolverInfo(exitflag,x);
-        otherwise 
+        otherwise
           [x,objval,exitflag,infeasible_constraint_name] = solve@NonlinearProgram(obj,x0);
       end
     end
@@ -101,7 +101,7 @@ classdef PolynomialProgram < NonlinearProgram
       if nargin<3, solvers = {'gloptipoly','bertini','snopt','fmincon'}; end
       [x,objval,exitflag,execution_time] = compareSolvers@NonlinearProgram(obj,x0,solvers);
     end
-    
+
     function [f,df] = objective(obj,x)
       f = double(msubs(obj.poly_objective,obj.decision_vars,x));
 
@@ -109,9 +109,9 @@ classdef PolynomialProgram < NonlinearProgram
         df = double(subs(diff(obj.poly_objective,obj.decision_vars),obj.decision_vars,x));
       end
     end
-    
+
     function [g,h,dg,dh] = nonlinearConstraints(obj,x)
-      if isempty(obj.poly_inequality_constraints) 
+      if isempty(obj.poly_inequality_constraints)
         g=[];
       else
         g = double(msubs(obj.poly_inequality_constraints,obj.decision_vars,x));
@@ -121,14 +121,14 @@ classdef PolynomialProgram < NonlinearProgram
       else
         h = double(msubs(obj.poly_equality_constraints,obj.decision_vars,x));
       end
-      
+
       if (nargout>2)
         if isempty(obj.poly_inequality_constraints)
           dg=[];
         else
           dg = double(subs(diff(obj.poly_inequality_constraints,obj.decision_vars),obj.decision_vars,x));
         end
-        
+
         if isempty(obj.poly_equality_constraints)
           dh=[];
         else
@@ -136,24 +136,20 @@ classdef PolynomialProgram < NonlinearProgram
         end
       end
     end
-    
+
     function obj = addDecisionVariable(obj,num_new_vars,var_name)
       error('Not implemented');
     end
 
-    function obj = addNonlinearConstraint(obj,cnstr,xind,data_ind)
+    function [obj,cnstr_id] = addNonlinearConstraint(obj,cnstr,xind,data_ind)
       error('Drake:PolynomialProgram:UnsupportedConstraint','PolynomialProgram does not accept NonlinearConstraint yet, but we will implement it as soon as possible');
     end
-    
-    
+
+
     function obj = replaceCost(obj,cost,cost_idx,xind)
       error('Drake:PolynomialProgram:UnsupportedConstraint','PolynomialProgram does support replaceCost yet, but we will implement it as soon as possible');
     end
-    
-    function obj = replaceBoundingBoxConstraint(obj,cnstr,cnstr_idx,xind)
-      error('Drake:PolynomialProgram:UnsupportedConstraint','PolynomialProgram does support replaceBoundingBoxConstraint yet, but we will implement it as soon as possible');
-    end
-    
+
     function obj = setSolver(obj,solver)
       % @param solver   -- 'gloptipoly' or 'bertini' or 'default' or the solvers in
       % NonlinearProgram. The default solver is gloptipoly
@@ -163,10 +159,12 @@ classdef PolynomialProgram < NonlinearProgram
           if(~checkDependency('gloptipoly3'))
             error('Drake:PolynomialProgram:UnsupportedSolver',' Gloptipoly3 not found.');
           end
+          obj.solver = 'gloptipoly';
         case 'bertini'
           if(~checkDependency('bertini'))
             error('Drake:PolynomialProgram:UnsupportedSolver',' Bertini not found.');
           end
+          obj.solver = 'bertini';
         case 'default'
           if(checkDependency('gloptipoly3'))
             obj = setSolver(obj,'gloptipoly');
@@ -180,5 +178,5 @@ classdef PolynomialProgram < NonlinearProgram
       end
     end
   end
-  
+
 end

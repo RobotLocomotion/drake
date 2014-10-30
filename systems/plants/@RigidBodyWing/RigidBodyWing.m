@@ -126,6 +126,7 @@ classdef RigidBodyWing < RigidBodyForceElement
         avlfile = regexprep(avlfile, '\$Yorig', sprintf('%.2f',0));
         avlfile = regexprep(avlfile, '\$Zorig', sprintf('%.2f',0));
         filename = tempname;
+        avl_cleanup = onCleanup(@()delete([filename,'*']));
         avlfilepath = [filename,'.avl'];
         avlid = fopen(avlfilepath, 'w');
         fprintf(avlid, avlfile);
@@ -204,7 +205,8 @@ classdef RigidBodyWing < RigidBodyForceElement
         % Reads template Xfoil commands file and fills in appropriate values
         xfoilfile = fileread(which('xfoilblank.txt'));
         filename = tempname;
-        polarLoc = [tempname,'_polar.txt'];
+        xfoil_cleanup = onCleanup(@()delete([filename,'*']));
+        polarLoc = [filename,'_polar.txt'];
         if ~linux %because Windows.
           polarLoc = regexprep(polarLoc, '\\', '\\\\\\\\');
         end
@@ -295,9 +297,6 @@ classdef RigidBodyWing < RigidBodyForceElement
         catch E
           disp('Warning: Error in matching up XFOIL Cds. Drag forces are likely underestimated')
         end
-        %output piped to a file to avoid cluttering
-        %Matlab's screen output
-        delete(fullfile(tempdir,'xfoilCMDoutput.txt'));
       end %runXfoil()
       function addPostStallPoints()
         postStallAngles = stallAngle+2:2:180;

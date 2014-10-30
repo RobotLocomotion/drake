@@ -107,8 +107,8 @@ classdef Visualizer < DrakeSystem
       time_display = uicontrol('Style', 'text', 'Position', [10, 10, 120, 20],...
         'String', sprintf(time_format, tspan(1)));
 
-      % use a little undocumented matlab to get continuous slider feedback:
-      time_slider_listener = handle.listener(time_slider,'ActionEvent',@update_time_display);
+      % set up continuous slider feedback:
+      time_slider_listener = addlistener(time_slider,'ContinuousValueChange',@update_time_display);
 
       function update_speed(source, eventdata)
         obj.playback_speed = 10 ^ (get(speed_slider, 'Value'));
@@ -196,8 +196,15 @@ classdef Visualizer < DrakeSystem
     end
 
     function inspector(obj,x0,state_dims,minrange,maxrange,visualized_system)
-      % set up a little gui with sliders to manually adjust each of the
-      % coordinates.
+      % brings up a simple slider gui that displays the robot
+      % in the specified state when possible.
+      %
+      % @param x0 the initial state to display the robot in
+      % @param state_dims are the indices of the states to show on the
+      % slider. Including velocity states will display the forces and torques.
+      % @param minrange is the lower bound for the sliders
+      % @param maxrange is the upper bound for the sliders
+      % @param visualized_system is the system to be displayed
 
       fr = obj.getInputFrame();
       if (nargin<2 || isempty(x0)), x0 = zeros(fr.dim,1); end
@@ -208,7 +215,10 @@ classdef Visualizer < DrakeSystem
 
       x0(state_dims) = max(min(x0(state_dims),maxrange),minrange);
       if ~isempty(visualized_system),
-        [x0,~,prog] = resolveConstraints(visualized_system,x0);
+        bb_min = -inf(size(x0)); bb_min(state_dims) = minrange;
+        bb_max = inf(size(x0)); bb_max(state_dims) = maxrange;
+        bbcon = BoundingBoxConstraint(bb_min,bb_max);
+        [x0,~,prog] = resolveConstraints(visualized_system,x0,[],bbcon);
       end
 
       rows = ceil(length(state_dims)/2);
@@ -217,14 +227,14 @@ classdef Visualizer < DrakeSystem
 
       for i=1:numel(state_dims)
         label{i} = uicontrol('Style','text','String',getCoordinateName(fr,state_dims(i)), ...
-          'BackgroundColor',[.8 .8 .8],'HorizontalAlignment','right');
+          'HorizontalAlignment','right');
         slider{i} = uicontrol('Style', 'slider', 'Min', minrange(i), 'Max', maxrange(i), ...
           'Value', x0(i), 'Callback',{@update_display},'UserData',state_dims(i));
         value{i} = uicontrol('Style','text','String',num2str(x0(i)), ...
-          'BackgroundColor',[.8 .8 .8],'HorizontalAlignment','left');
+          'HorizontalAlignment','left');
 
         % use a little undocumented matlab to get continuous slider feedback:
-        slider_listener{i} = handle.listener(slider{i},'ActionEvent',@update_display);
+        slider_listener{i} = addlistener(slider{i},'ContinuousValueChange',@update_display);
       end
 
       set(f, 'Position', [560 400 560 20 + 30*rows]);
@@ -244,11 +254,14 @@ classdef Visualizer < DrakeSystem
       end
 
       function update_display(source, eventdata)
+        if nargin>1 && isempty(eventdata), return; end  % was running twice for most events
+
         t = 0; x = x0;
         for i=1:numel(state_dims)
           x(state_dims(i)) = get(slider{i}, 'Value');
           set(value{i},'String',num2str(x(state_dims(i)),'%4.3f'));
         end
+
         if (~isempty(visualized_system) && getNumStateConstraints(visualized_system)+getNumUnilateralConstraints(visualized_system)>0)
           % constrain the current slider to be exactly the specified value
           current_slider_statedim = get(source,'UserData');
@@ -264,7 +277,10 @@ classdef Visualizer < DrakeSystem
             objective = QuadraticConstraint(0,inf,Q,b);
             this_prog = addCost(this_prog,objective,remaining_state_dims);
           end
-          x = solve(this_prog,x);
+          [x,objval,exitflag,infeasible_constraint_name] = solve(this_prog,x);
+          if ~isempty(infeasible_constraint_name)
+              infeasible_constraint_name
+          end
 %          .5*(x0(remaining_state_dims) - x(remaining_state_dims))^2
 %          fval = objective.eval(x(remaining_state_dims))
           for i=1:numel(state_dims)
@@ -273,6 +289,15 @@ classdef Visualizer < DrakeSystem
         end
         x0 = x;
         obj.drawWrapper(t,x);
+
+        if (~isempty(visualized_system) && max(state_dims)>getNumPositions(visualized_system) && isa(obj,'RigidBodyVisualizer'))
+          % was asked to show velocties on a RigidBodyManipulator, draw forces and torques
+          q = x0(1:getNumPositions(visualized_system));
+          qd = x0(getNumPositions(visualized_system)+1:getNumPositions(visualized_system)+getNumVelocities(visualized_system));
+          visualized_system.drawLCMGLGravity(q,obj.gravity_visual_magnitude);
+          visualized_system.drawLCMGLForces(q,qd,obj.gravity_visual_magnitude);
+        end
+
       end
     end
 

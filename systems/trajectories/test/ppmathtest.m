@@ -63,3 +63,27 @@ fr2.addTransform(AffineTransform(fr2,fr1,eye(2),x0));
 V = QuadraticLyapunovFunction(fr1,[4,0; 2,3],[1;1],.5);
 valuecheck(getLevelSetVolume(V),getLevelSetVolume(V.inFrame(fr2)));
 
+% Test time scaling
+scale = rand(1) + 1.01;
+a = PPTrajectory(spline([0 1 2 3], randn(3,4)));
+b = a.scaleTime(scale);
+for t = .25:.25:2.75
+  valuecheck(a.eval(t), b.eval(scale*t));
+end
+
+scale = rand(1) + 1.01;
+a = PPTrajectory(spline([0 1 2,3], randn(1,4)));
+b = a.scaleTime(scale);
+for t= .25:.25:2.75
+  valuecheck(a.eval(t), b.eval(scale*t));
+end
+
+% Test time scaling with concatenated trajectories
+a = PPTrajectory(spline([0 1 2 3], randn(1,4)));
+b = PPTrajectory(spline([0 1 2 3], randn(1,4)));
+c = a.vertcat(b);
+scale = rand(1) + 1.01;
+d = c.scaleTime(scale);
+for t= .25:.25:2.75
+  valuecheck(c.eval(t), d.eval(scale*t));
+end

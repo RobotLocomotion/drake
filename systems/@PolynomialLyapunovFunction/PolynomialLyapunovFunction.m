@@ -7,12 +7,13 @@ classdef PolynomialLyapunovFunction < LyapunovFunction
   methods
     function obj=PolynomialLyapunovFunction(frame,time_invariant)
       obj=obj@LyapunovFunction(frame,time_invariant);
+      checkDependency('spotless');
       obj.p_t = msspoly('t',1);
     end
     
     function V = eval(obj,t,x)
       if isTI(obj) t=0; elseif nargin<2 || isempty(t), error('you must specify a time'); end
-      V = double(subs(obj.getPoly(t),[obj.p_t;obj.getFrame.poly],[t;x]));
+      V = double(subs(obj.getPoly(t),[obj.p_t;obj.getFrame.getPoly],[t;x]));
     end
     
 %    function display(obj)
@@ -31,18 +32,18 @@ classdef PolynomialLyapunovFunction < LyapunovFunction
     function y = getLevelSet(obj,t,options)
       if (nargin<3) options=struct(); end
       if isTI(obj) t=0; elseif nargin<2 || isempty(t), error('you must specify a time'); end
-      y = getLevelSet(obj.getFrame.poly,obj.getPoly(t),options);
+      y = getLevelSet(obj.getFrame.getPoly,obj.getPoly(t),options);
     end
     
     function v = getLevelSetVolume(obj,t)
       if isTI(obj) t=0; elseif nargin<2 || isempty(t), error('you must specify a time'); end
-      v = getLevelSetVolume(obj.getFrame.poly,obj.getPoly(t));
+      v = getLevelSetVolume(obj.getFrame.getPoly,obj.getPoly(t));
     end
     
     function y = getProjection(obj,t,x0,plotdims,options)
       if (nargin<3) options=struct(); end
       if isTI(obj) t=0; elseif nargin<2 || isempty(t), error('you must specify a time'); end
-      y = getProjection(obj.getFrame.poly,obj.getPoly(t),x0,plotdims,options);
+      y = getProjection(obj.getFrame.getPoly,obj.getPoly(t),x0,plotdims,options);
     end
 
     function V = inFrame(obj,frame)
@@ -56,7 +57,7 @@ classdef PolynomialLyapunovFunction < LyapunovFunction
         if ~isTI(obj) || ~isTI(tf),  error('not implemented yet'); end
         if getNumStates(tf)>0 error('not implemented yet'); end
         try 
-          Vpoly = subss(obj.getPoly,obj.getFrame.poly,tf.output(0,[],frame.poly));
+          Vpoly = subss(obj.getPoly,obj.getFrame.getPoly,tf.output(0,[],frame.getPoly));
         catch
           warning('Drake:PolynomialLyapunovFunction:NonPolynomialTranform','The transform between these two frames must not be polynomial.  Kicking out to more general frame logic');
           V = inFrame@LyapunovFunction(obj,frame);
@@ -70,7 +71,7 @@ classdef PolynomialLyapunovFunction < LyapunovFunction
       if (~isTI(obj)) error('not implemented yet'); end
 
       Vpoly = obj.getPoly();
-      x = obj.getFrame.poly;
+      x = obj.getFrame.getPoly;
       
       if (deg(Vpoly,x)>2) error('not quadratic'); end
       

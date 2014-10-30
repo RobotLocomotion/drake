@@ -8,6 +8,8 @@ classdef InverseKinematics < NonlinearProgram
   % @param Q          -- A nq x nq double matrix, where nq is the DOF. Penalize the
   % posture error
   % @param q_nom      -- An nq x 1 double vector. The nominal posture.
+  % @param rbm_joint_bnd_cnstr_id  The ID of the BoundingBoxConstraint that enforces the
+  % posture to be within the joint limits of the RigidBodyManipulator
   properties(SetAccess = protected)
     Q
     q_nom
@@ -16,6 +18,7 @@ classdef InverseKinematics < NonlinearProgram
     nq
     robot
     kinsol_dataind
+    rbm_joint_bnd_cnstr_id
   end
   
   properties(Access = protected)
@@ -53,7 +56,7 @@ classdef InverseKinematics < NonlinearProgram
       obj.q_idx = (1:obj.nq)';
       obj.qsc_weight_idx = [];
       [q_lb,q_ub] = obj.robot.getJointLimits();
-      obj = obj.addBoundingBoxConstraint(BoundingBoxConstraint(q_lb,q_ub),obj.q_idx);
+      [obj,obj.rbm_joint_bnd_cnstr_id] = obj.addBoundingBoxConstraint(BoundingBoxConstraint(q_lb,q_ub),obj.q_idx);
 
       [obj,kinsol_dataind] = obj.addSharedDataFunction(@obj.kinematicsData,{obj.q_idx});
       obj.kinsol_dataind = kinsol_dataind;

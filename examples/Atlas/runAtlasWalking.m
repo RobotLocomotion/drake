@@ -1,14 +1,15 @@
 function runAtlasWalking(use_mex,use_bullet,use_angular_momentum,navgoal)
+% Example running walking QP controller from
+% Scott Kuindersma, Frank Permenter, and Russ Tedrake.
+% An efficiently solvable quadratic program for stabilizing dynamic
+% locomotion. In Proceedings of the International Conference on 
+% Robotics and Automation, Hong Kong, China, May 2014. IEEE.
 
-% see Kuindersma, Permenter, Tedrake, ICRA 2011 
+checkDependency('gurobi');
 
-if ~checkDependency('gurobi')
-  warning('Must have gurobi installed to run this example');
-  return;
-end
-
-addpath(fullfile(getDrakePath,'examples','ZMP'));
-addpath(fullfile(getDrakePath,'examples','Atlas','controllers'));
+path_handle = addpathTemporary({fullfile(getDrakePath,'examples','ZMP'),...
+                                fullfile(getDrakePath,'examples','Atlas','controllers'),...
+                                fullfile(getDrakePath,'examples','Atlas','frames')});
 
 plot_comtraj = true;
 
@@ -21,7 +22,6 @@ end
 
 % silence some warnings
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints')
-warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits')
 warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits')
 
 % construct robot model
@@ -46,12 +46,12 @@ q0 = x0(1:nq);
 
 % Find the initial positions of the feet
 R=rotz(navgoal(6));
-                 
-rfoot_navgoal = navgoal;                 
+
+rfoot_navgoal = navgoal;
 lfoot_navgoal = navgoal;
 
-rfoot_navgoal(1:3) = rfoot_navgoal(1:3) + R*[0;-0.13;0];                 
-lfoot_navgoal(1:3) = lfoot_navgoal(1:3) + R*[0;0.13;0];                 
+rfoot_navgoal(1:3) = rfoot_navgoal(1:3) + R*[0;-0.13;0];
+lfoot_navgoal(1:3) = lfoot_navgoal(1:3) + R*[0;0.13;0];
 
 % Plan footsteps to the goal
 goal_pos = struct('right', rfoot_navgoal, 'left', lfoot_navgoal);
@@ -65,7 +65,7 @@ T = ts(end);
 % if plot_comtraj
 %   % plot walking traj in drake viewer
 %   lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'walking-plan');
-% 
+%
 %   for i=1:length(ts)
 %     lcmgl.glColor3f(0, 0, 1);
 %     lcmgl.sphere([walking_plan_data.comtraj.eval(ts(i));0], 0.01, 20, 20);
@@ -110,7 +110,7 @@ if use_angular_momentum
   options.Kp_ang = 1.0; % angular momentum proportunal feedback gain
   options.W_kdot = 1e-5*eye(3); % angular momentum weight
 else
-  options.W_kdot = zeros(3); 
+  options.W_kdot = zeros(3);
 end
 
 lfoot_motion = BodyMotionControlBlock(r,'l_foot',ctrl_data,options);
@@ -152,7 +152,7 @@ ins(4).input = 5;
 outs(1).system = 2;
 outs(1).output = 1;
 sys = mimoFeedback(fc,sys,[],[],ins,outs);
-clear ins outs;  
+clear ins outs;
 
 % feedback PD block
 options.use_ik = false;
@@ -213,9 +213,14 @@ playback(v,traj,struct('slider',true));
 
 if plot_comtraj
   dt = 0.001;
-  tts = 0:dt:T;
-  xtraj_smooth=smoothts(traj.eval(tts),'e',150);
-  dtraj = fnder(PPTrajectory(spline(tts,xtraj_smooth)));
+  nx = r.getNumStates();
+  tts = traj.getBreaks();
+  x_smooth=zeros(nx,length(tts));
+  x_breaks = traj.eval(tts);
+  for i=1:nx
+    x_smooth(i,:) = smooth(x_breaks(i,:),15,'lowess');
+  end
+  dtraj = fnder(PPTrajectory(spline(tts,x_smooth)));
   qddtraj = dtraj(nq+(1:nq));
 
   lfoot = findLinkInd(r,'l_foot');
@@ -227,19 +232,25 @@ if plot_comtraj
   rms_zmp = 0;
   rms_com = 0;
   rms_foot = 0;
+  T = floor(T/dt)*dt;
 
   for i=1:length(ts)
-    xt=traj.eval(ts(i));
+    % ts is from the walking plan, but traj is only defined at the dt
+    % intervals
+    t = round(ts(i)/dt)*dt;
+    t = min(max(t,0),T);
+    
+    xt=traj.eval(t);
     q=xt(1:nq);
     qd=xt(nq+(1:nq));
-    qdd=qddtraj.eval(ts(i));
+    qdd=qddtraj.eval(t);
 
     kinsol = doKinematics(r,q);
 
     [com(:,i),J]=getCOM(r,kinsol);
     Jdot = forwardJacDot(r,kinsol,0);
-    comdes(:,i)=walking_plan_data.comtraj.eval(ts(i));
-    zmpdes(:,i)=walking_plan_data.zmptraj.eval(ts(i));
+    comdes(:,i)=walking_plan_data.comtraj.eval(t);
+    zmpdes(:,i)=walking_plan_data.zmptraj.eval(t);
     zmpact(:,i)=com(1:2,i) - com(3,i)/9.81 * (J(1:2,:)*qdd + Jdot(1:2,:)*qd);
 
     lfoot_cpos = terrainContactPositions(r,kinsol,lfoot);
@@ -263,11 +274,11 @@ if plot_comtraj
     rfoottraj = walking_plan_data.link_constraints(1).traj;
     lfoottraj = walking_plan_data.link_constraints(2).traj;
 
-    lfoot_des = eval(lfoottraj,ts(i));
+    lfoot_des = eval(lfoottraj,t);
     lfoot_des(3) = max(lfoot_des(3), 0.0811);     % hack to fix footstep planner bug
     rms_foot = rms_foot+norm(lfoot_des([1:3])-lfoot_p([1:3]))^2;
 
-    rfoot_des = eval(rfoottraj,ts(i));
+    rfoot_des = eval(rfoottraj,t);
     rfoot_des(3) = max(rfoot_des(3), 0.0811);     % hack to fix footstep planner bug
     rms_foot = rms_foot+norm(rfoot_des([1:3])-rfoot_p([1:3]))^2;
 
@@ -359,4 +370,3 @@ end
 end
 
 % TIMEOUT 1500
-

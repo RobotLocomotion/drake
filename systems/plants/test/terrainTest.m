@@ -1,7 +1,8 @@
 function terrainTest
 
+options.z_scale = 10;
+options.terrain = RigidBodyHeightMapTerrain.loadFromImage('terrainTest.png',[-10 30 -10 30],eye(4),options);
 options.floating = true;
-options.terrain = RigidBodyHeightMapTerrain('terrainTest.png',[-10;10;0],[40,40,10]);
 r = TimeSteppingRigidBodyManipulator('FallingBrick.urdf',.01,options);
 
 v = r.constructVisualizer();

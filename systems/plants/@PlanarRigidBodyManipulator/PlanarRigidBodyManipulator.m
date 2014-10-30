@@ -127,11 +127,6 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
       model = addFloatingBase@RigidBodyManipulator(model,parent,rootlink,xyz,rpy,'RPY');
     end
     
-    function model = compile(model)
-      model = compile@RigidBodyManipulator(model);
-      model = model.setNumPositionConstraints(2*length(model.loop));
-    end
-    
     function v=constructVisualizer(obj,options)
       checkDirty(obj);
       if nargin<2, options=struct(); end
@@ -178,21 +173,6 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
   end
   
   methods (Access=protected)
-    function [phi,dphi,ddphi] = loopConstraints(obj,q)
-      % handle kinematic loops
-      if nargout>2
-        [phi,dphi,ddphi] = loopConstraints@RigidBodyManipulator(obj,q);
-        dphi = obj.T_2D_to_3D'*dphi;
-        ddphi = obj.T_2D_to_3D'*ddphi;
-      elseif nargout>1
-        [phi,dphi] = loopConstraints@RigidBodyManipulator(obj,q);
-        dphi = obj.T_2D_to_3D'*dphi;
-      else
-        phi = loopConstraints@RigidBodyManipulator(obj,q);
-      end
-      phi = obj.T_2D_to_3D'*phi;
-    end  
-    
     function model = parseLoopJoint(model,robotnum,node,options)
       w = warning('off','Drake:RigidBodyManipulator:ThreeDLoopJoints');
       model = parseLoopJoint@RigidBodyManipulator(model,robotnum,node,options);

@@ -1,4 +1,9 @@
 function testDrakeJointsComparison()
+
+if exist('testDrakeJointsmex','file')~=3
+  error('Drake:MissingDependency', 'Cannot find testDrakeJointsmex. It may not have been compiled due to a missing dependency.');
+end
+
 data_in.prismatic.joint_axis = randn(3, 1);
 data_in.prismatic.joint_axis = data_in.prismatic.joint_axis / norm(data_in.prismatic.joint_axis);
 data_in.prismatic.q = randn;
