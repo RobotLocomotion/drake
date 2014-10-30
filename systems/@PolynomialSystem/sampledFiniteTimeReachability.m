@@ -50,11 +50,11 @@ if (~isfield(options,'degs0')) options.degs0 = options.degW - 2; end
 if (~isfield(options,'backoff_percent')) options.backoff_percent = 5; end
 
 % Get state
-x = poly.getOutputFrame.poly;
+x = poly.getOutputFrame.getPoly;
 nX = length(x);
 
 % Get state
-x = poly.getOutputFrame.poly;
+x = poly.getOutputFrame.getPoly;
 
 % Time derivative of nominal xtraj
 xdottraj = fnder(xtraj);
@@ -68,7 +68,7 @@ for i = 1:N
     % Get polynomial dynamics at sample point
     fi = poly.getPolyDynamics(ts(i));
     % Zero out input variable
-    fi = cleanmsspoly(subs(fi,poly.getInputFrame.poly,zeros(poly.getNumInputs,1)),options.clean_tol);
+    fi = cleanmsspoly(subs(fi,poly.getInputFrame.getPoly,zeros(poly.getNumInputs,1)),options.clean_tol);
     % Convert to Yalmip
     f = msspoly2sdpvar(x,xs,fi);
     % Do coordinate change to center things about 0

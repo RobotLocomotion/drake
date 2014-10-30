@@ -5,7 +5,6 @@ options.floating = true;
 options.terrain = RigidBodyFlatTerrain();
 
 w = warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
-warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
 warning('off','Drake:RigidBodyManipulator:BodyHasZeroInertia');
 warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
 warning('off','Drake:RigidBodyGeometry:SimplifiedCollisionGeometry');
@@ -26,9 +25,8 @@ if (0)
   sys = cascade(r,v);
   warning(s);
   simulate(sys,[0 10],x0);
-else 
+else
 % Run simulation, then play it back at realtime speed
   xtraj = simulate(r,[0 5],x0);
   v.playback(xtraj);
 end
-

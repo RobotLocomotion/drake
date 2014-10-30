@@ -31,19 +31,15 @@ classdef DubinsPlant < DrakeSystem
     
     function [utraj,xtraj]=runDircol(p,x0,xf,tf0)
 
-      con.u.lb = 0.5*p.umin; % Input saturations
-      con.u.ub = 0.5*p.umax;
-      con.x0.lb = x0; % Initial state
-      con.x0.ub = x0;
-      con.xf.lb = xf; % Final desired state
-      con.xf.ub = xf;
-      con.T.lb = 0.1; % Lower limit on how much time the trajectory should last for
-      con.T.ub = 1; % Upper limit on how long the trajectory should last for
+      N = 21;
+      prog = DircolTrajectoryOptimization(p,N,[.1 1]);
+      prog = prog.addInputConstraint(BoundingBoxConstraint(.5*p.umin,.5*p.umax),1:N);
+      prog = prog.addStateConstraint(ConstantConstraint(x0),1);
+      prog = prog.addStateConstraint(ConstantConstraint(xf),N);
+      prog = prog.addRunningCost(@cost);
+      prog = prog.addFinalCost(@finalCost);
 
-      options.method='dircol';
-      %options.grad_test = true;
-      
-      function [g,dg] = cost(t,x,u)
+      function [g,dg] = cost(dt,x,u)
         R = 0;
         g = u'*R*u;
         %g = sum((R*u).*u,1);
@@ -51,19 +47,16 @@ classdef DubinsPlant < DrakeSystem
         dg = zeros(1, 1 + size(x,1) + size(u,1));
       end
       
-      function [h,dh] = finalcost(t,x)
+      function [h,dh] = finalCost(t,x)
         h = t;
         dh = [1,zeros(1,size(x,1))];
       end
-      
 
+      traj_init.x = PPTrajectory(foh([0,tf0],[x0,xf]));
       info = 0;
       while (info~=1)
-        % generate a random trajectory
-        utraj0 = PPTrajectory(foh(linspace(0,tf0,11),0*randn(1,11)));
-        
         tic
-        [utraj,xtraj,info] = trajectoryOptimization(p,@cost,@finalcost,x0,utraj0,con,options);
+        [xtraj,utraj,z,F,info] = prog.solveTraj(tf0);
         toc
       end
 

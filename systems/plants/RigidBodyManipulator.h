@@ -8,6 +8,17 @@
 
 #include "collision/DrakeCollision.h"
 
+#if defined(WIN32) || defined(WIN64)
+  #if defined(drakeRBM_EXPORTS)
+    #define DLLEXPORT __declspec( dllexport )
+  #else
+    #define DLLEXPORT __declspec( dllimport )
+  #endif
+#else
+  #define DLLEXPORT
+  #include "DrakeJoint.h"  // todo: move this out of here
+#endif
+
 #include "RigidBody.h"
 #include "RigidBodyFrame.h"
 
@@ -16,7 +27,7 @@ using namespace Eigen;
 
 //extern std::set<int> emptyIntSet;  // was const std:set<int> emptyIntSet, but valgrind said I was leaking memory
 
-class RigidBodyManipulator 
+class DLLEXPORT RigidBodyManipulator 
 {
 public:
   RigidBodyManipulator(int num_dof, int num_featherstone_bodies=-1, int num_rigid_body_objects=-1, int num_rigid_body_frames=0);
@@ -72,22 +83,22 @@ public:
   template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD, typename DerivedE, typename DerivedF>
   void HandC(double* const q, double * const qd, MatrixBase<DerivedA> * const f_ext, MatrixBase<DerivedB> &H, MatrixBase<DerivedC> &C, MatrixBase<DerivedD> *dH=NULL, MatrixBase<DerivedE> *dC=NULL, MatrixBase<DerivedF> * const df_ext=NULL);
 
-  void addCollisionElement(const int body_ind, Matrix4d T_elem_to_lnk, DrakeCollision::Shape shape, std::vector<double> params, std::string group_name = "default");
+  void addCollisionElement(const int body_ind, const Matrix4d &T_elem_to_lnk, DrakeCollision::Shape shape, std::vector<double> params, std::string group_name = "default");
 
   void updateCollisionElements(const int body_ind);
 
   bool setCollisionFilter(const int body_ind, const uint16_t group, 
                           const uint16_t mask);
 
-  bool getPairwiseCollision(const int body_indA, const int body_indB, MatrixXd &ptsA, MatrixXd &ptsB, MatrixXd &normals);
+  bool getPairwiseCollision(const int body_indA, const int body_indB, MatrixXd &ptsA, MatrixXd &ptsB, MatrixXd &normals, bool use_margins=true);
 
-  bool getPairwisePointCollision(const int body_indA, const int body_indB, const int body_collision_indA, Vector3d &ptA, Vector3d &ptB, Vector3d &normal);
+  bool getPairwisePointCollision(const int body_indA, const int body_indB, const int body_collision_indA, Vector3d &ptA, Vector3d &ptB, Vector3d &normal, bool use_margins=true);
 
-  bool getPointCollision(const int body_ind, const int body_collision_ind, Vector3d &ptA, Vector3d &ptB, Vector3d &normal);
+  bool getPointCollision(const int body_ind, const int body_collision_ind, Vector3d &ptA, Vector3d &ptB, Vector3d &normal, bool use_margins=true);
 
-  bool getPairwiseClosestPoint(const int body_indA, const int body_indB, Vector3d &ptA, Vector3d &ptB, Vector3d &normal, double &distance);
+  bool getPairwiseClosestPoint(const int body_indA, const int body_indB, Vector3d &ptA, Vector3d &ptB, Vector3d &normal, double &distance, bool use_margins=true);
   
-  bool collisionRaycast(const Matrix3Xd &origins, const Matrix3Xd &ray_endpoints, VectorXd &distances);
+  bool collisionRaycast(const Matrix3Xd &origins, const Matrix3Xd &ray_endpoints, VectorXd &distances, bool use_margins=false);
 
   //bool closestPointsAllBodies( MatrixXd& ptsA, MatrixXd& ptsB,
                                //MatrixXd& normal, VectorXd& distance,
@@ -99,28 +110,33 @@ public:
                         std::vector<int>& bodyA_idx, 
                         std::vector<int>& bodyB_idx,
                         const std::vector<int>& bodies_idx,
-                        const std::set<std::string>& active_element_groups);
+                        const std::set<std::string>& active_element_groups,
+                        bool use_margins = true);
 
   bool collisionDetect( VectorXd& phi, MatrixXd& normal, 
                         MatrixXd& xA, MatrixXd& xB, 
                         std::vector<int>& bodyA_idx, 
                         std::vector<int>& bodyB_idx,
-                        const std::vector<int>& bodies_idx);
+                        const std::vector<int>& bodies_idx,
+                        bool use_margins = true);
 
   bool collisionDetect( VectorXd& phi, MatrixXd& normal, 
                         MatrixXd& xA, MatrixXd& xB, 
                         std::vector<int>& bodyA_idx, 
                         std::vector<int>& bodyB_idx,
-                        const std::set<std::string>& active_element_groups);
+                        const std::set<std::string>& active_element_groups,
+                        bool use_margins = true);
 
   bool collisionDetect( VectorXd& phi, MatrixXd& normal, 
                         MatrixXd& xA, MatrixXd& xB, 
                         std::vector<int>& bodyA_idx, 
-                        std::vector<int>& bodyB_idx);
+                        std::vector<int>& bodyB_idx,
+                        bool use_margins = true);
 
 
   bool allCollisions(std::vector<int>& bodyA_idx, std::vector<int>& bodyB_idx, 
-                     MatrixXd& ptsA, MatrixXd& ptsB);
+                     MatrixXd& ptsA, MatrixXd& ptsB,
+                        bool use_margins = true);
 
   //bool closestDistanceAllBodies(VectorXd& distance, MatrixXd& Jd);
   
@@ -211,9 +227,15 @@ private:
   int secondDerivativesCached;
 
   std::shared_ptr< DrakeCollision::Model > collision_model;
-  
+  std::shared_ptr< DrakeCollision::Model > collision_model_no_margins;  
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+// The following was required for building w/ DLLEXPORT on windows (due to the unique_ptrs).  See
+// http://stackoverflow.com/questions/8716824/cannot-access-private-member-error-only-when-class-has-export-linkage
+private:
+  RigidBodyManipulator(const RigidBodyManipulator&) {}
+  RigidBodyManipulator& operator=(const RigidBodyManipulator&) { return *this; }
 };
 
 /*

@@ -5,6 +5,7 @@ r = PlanarRigidBodyManipulator('../Acrobot.urdf');
 warning(w);
 hand = findFrameId(r,'hand');
 
+checkDependency('spotless');
 q = TrigPoly('q','s','c',2);
 
 kinsol = doKinematics(r,q);

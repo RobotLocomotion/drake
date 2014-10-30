@@ -57,6 +57,7 @@ classdef SimulinkModel < DynamicalSystem
     end
     function ts = getSampleTime(obj)
       [sys,x0,str,ts] = feval(obj.mdl,[],[],[],'sizes');
+      ts = ts'; 
     end
     function mdl = getModel(obj)
       mdl = obj.mdl;

@@ -1,5 +1,6 @@
 function testIndividualCentersOfPressure()
-addpath(fullfile(pwd,'..'));
+
+path_handle = addpathTemporary(fullfile(getDrakePath,'examples','Atlas'));
 
 options.floating = true;
 options.use_mex = true;
@@ -57,6 +58,11 @@ end
 end
 
 function testMex(r)
+
+if exist('individualCentersOfPressuremex','file')~=3
+  error('Drake:MissingDependency', 'Cannot find individualCentersOfPressuremex. It may not have been compiled due to a missing dependency.');
+end
+
 nq = r.getNumPositions();
 ntests = 100;
 

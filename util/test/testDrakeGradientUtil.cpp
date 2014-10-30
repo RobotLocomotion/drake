@@ -114,11 +114,11 @@ void testGetSubMatrixGradient(int ntests) {
   const int A_cols = 4;
   const int nq = 34;
 
-  std::array<int, 3> rows {0, 1, 2};
-  std::array<int, 3> cols {0, 1, 2};
+  std::array<int, 3> rows{ {0, 1, 2} };
+  std::array<int, 3> cols{ {0, 1, 2} };
 
-//  std::array<int, 3> rows {0, 1, 2};
-//  std::array<int, 3> cols {0, 1, 2};
+//  std::array<int, 3> rows{ {0, 1, 2} };
+//  std::array<int, 3> cols{ {0, 1, 2} };
 
   for (int testnr = 0; testnr < ntests; testnr++) {
     auto dA = Matrix<double, A_rows * A_cols, Dynamic>::Random(A_rows * A_cols, nq).eval();
@@ -136,8 +136,8 @@ void testSetSubMatrixGradient(int ntests, bool check) {
   const int A_cols = 4;
   const int nq = 34;
 
-  std::array<int, 3> rows {0, 1, 2};
-  std::array<int, 3> cols {0, 1, 2};
+  std::array<int, 3> rows{ {0, 1, 2} };
+  std::array<int, 3> cols{ {0, 1, 2} };
 
   int q_start = 2;
   const int q_subvector_size = 3;

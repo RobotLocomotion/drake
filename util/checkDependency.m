@@ -6,17 +6,24 @@ function ok = checkDependency(dep,minimum_version)
 % or
 %     if (~checkDependency('snopt')) error('my error'); end
 
-
 persistent conf;
 
 ldep = lower(dep);
 conf_var = [ldep,'_enabled'];
 
-ok = isfield(conf,conf_var) && ~isempty(conf.(conf_var)) && conf.(conf_var);
-if ~ok
-  % then try to evaluate the dependency now...
-
+already_checked = isfield(conf,conf_var) && ~isempty(conf.(conf_var));
+if already_checked
+  ok = conf.(conf_var);
+else % then try to evaluate the dependency now...
   switch(ldep)
+    case 'simulink'
+      v=ver('simulink');
+      conf.simulink_enabled = ~isempty(v);
+      if verLessThan('simulink','7.3')
+        warning('Drake:SimulinkVersion','Most features of Drake require SIMULINK version 7.3 or above.');
+        % haven't actually tested with lower versions
+      end
+
     case 'spotless'
       % require spotless
       conf.spotless_enabled = logical(exist('msspoly','class'));
@@ -103,17 +110,19 @@ if ~ok
         disp(' ');
       end
 
-    case 'snopt'
-      conf.snopt_enabled = logical(exist('snset','file'));
-      if (~conf.snopt_enabled)
-        conf.snopt_enabled = pod_pkg_config('snopt') && logical(exist('snopt','file'));
+    case {'snopt','studentsnopt'}
+      [conf.snopt_enabled,conf.studentsnopt_enabled] = snoptEnabled();
+      if (~conf.snopt_enabled && ~conf.studentsnopt_enabled)
+        pod_pkg_config('snopt');
+        [conf.snopt_enabled,conf.studentsnopt_enabled] = snoptEnabled();
       end
 
-      if ~conf.snopt_enabled && nargout<1
+      if ~conf.snopt_enabled && ~conf.studentsnopt_enabled && nargout<1
         disp(' ');
         disp(' SNOPT not found.  SNOPT support will be disabled.');
         disp(' To re-enable, add the SNOPT matlab folder to your path and rerun addpath_drake.');
         disp(' SNOPT can be obtained from <a href="https://tig.csail.mit.edu/software/">https://tig.csail.mit.edu/software/</a> .');
+        disp(' studentSNOPT can be obtained from <a href="http://www.cam.ucsd.edu/~peg/Software.html">http://www.cam.ucsd.edu/~peg/Software.html</a> .');
         disp(' ');
       end
 
@@ -129,7 +138,7 @@ if ~ok
     case 'vrml'
       unsupported = false;
       if(exist('vrinstall','file'))
-        conf.vrml_enabled = logical(vrinstall('-check','-viewer'));% && usejava('awt');  % usejava('awt') return 0 if running with no display
+        conf.vrml_enabled = logical(vrinstall('-check','viewer'));% && usejava('awt');  % usejava('awt') return 0 if running with no display
         if ismac
           [~,osx] = system('sw_vers -productVersion');
           if ~verStringLessThan(osx,'10.9') && verLessThan('matlab','8.1')
@@ -174,6 +183,31 @@ if ~ok
         disp(' ');
       end
 
+    case 'mosek'
+      conf.mosek_enabled = logical(exist('mosekopt','file'));
+      if (~conf.mosek_enabled)
+        conf.mosek_enabled = pod_pkg_config('mosek') && logical(exist('mosekopt','file'));
+      end
+      
+      if (conf.mosek_enabled)
+        % Check for license issues
+        try
+          mosekopt();
+        catch ex;
+          conf.mosek_enabled = false;
+          disp(getReport(ex,'extended'));
+        end
+      end
+      
+      if ~conf.mosek_enabled && nargout<1
+        disp(' ');
+        disp(' Mosek not found or not working. Mosek support will be disabled.');
+        disp(' Note that Mosek does provide free academic licenses')
+        disp('    To enable, install Mosek and a license from');
+        disp('    <a href="http://mosek.com/">http://mosek.com/</a> .');
+        disp(' ');
+      end
+      
     case 'gurobi'
       conf.gurobi_enabled = logical(exist('gurobi','file')); %&& ~isempty(getenv('GUROBI_HOME')));
       if (~conf.gurobi_enabled)
@@ -198,7 +232,8 @@ if ~ok
       if ~conf.gurobi_enabled && nargout<1
         disp(' ');
         disp(' GUROBI not found or not working. GUROBI support will be disabled.');
-        disp('    To enable, install GUROBI and a free academic license from');
+        disp(' Note that GUROBI does provide free academic licenses')
+        disp('    To enable, install GUROBI and a license from');
         disp('    <a href="http://www.gurobi.com/download/licenses/free-academic">http://www.gurobi.com/download/licenses/free-academic</a> .');
         disp(' Then, you will need to set several environment variables.');
         disp(' Please see <a href="http://drake.mit.edu/quickstart">http://drake.mit.edu/quickstart</a> for more info.');
@@ -311,7 +346,7 @@ if ~ok
         end
       end
       conf.xfoil_enabled = ~isempty(conf.xfoil);
-      
+
     case 'fmincon'
       conf.fmincon_enabled = logical(exist('fmincon.m','file'));
       if(~conf.fmincon_enabled)
@@ -321,7 +356,7 @@ if ~ok
           disp(' ');
         end
       end
-      
+
     case 'quadprog'
       conf.quadprog_enabled = logical(exist('quadprog.m','file'));
       if(~conf.quadprog_enabled)
@@ -329,9 +364,30 @@ if ~ok
           disp(' ');
           disp(' quadprog support is disabled. To enable it, install MATLAB Optimization toolbox');
           disp(' ');
-        end
+      end
       end
       
+    case 'lsqlin'
+      conf.lsqlin_enabled = logical(exist('lsqlin.m','file'));
+      if(~conf.lsqlin_enabled)
+        if nargout<1
+          disp(' ');
+          disp(' lsqlin support is disabled. To enable it, install MATLAB Optimization toolbox');
+          disp(' ');
+        end
+      end
+
+    case 'iris'
+      conf.iris_enabled = logical(exist('+iris/inflate_region.m','file')); 
+      if (~conf.iris_enabled)
+        conf.iris_enabled = pod_pkg_config('iris');
+      end
+      if ~conf.iris_enabled && nargout<1
+        disp(' ');
+        disp(' iris (Iterative Regional Inflation by SDP) is disabled. To enable it, install the IRIS matlab package from here: https://github.com/rdeits/iris-distro and re-run addpath_drake.');
+        disp(' ');
+      end
+
     otherwise
 
       % todo: call ver(dep) here?
@@ -341,9 +397,10 @@ if ~ok
   end
 
   ok = conf.(conf_var);
-  if (nargout<1 && ~ok)
-    error(['Drake:MissingDependency:',dep],['Cannot find required dependency: ',dep]);
-  end
+end
+
+if (nargout<1 && ~ok)
+  error(['Drake:MissingDependency:',dep],['Cannot find required dependency: ',dep]);
 end
 
 end
@@ -362,7 +419,7 @@ function success=pod_pkg_config(podname)
   end
 
   if ~success && nargout<1
-    error(['Cannot find required pod ',podname]);
+    disp(['Cannot find required pod ',podname]);
   end
 end
 
@@ -378,4 +435,27 @@ function tf = verStringLessThan(a,b)
       parts(3) = 0; % zero-fills to 3 elements
     end
   end
+end
+
+function [snopt_enabled,studentsnopt_enabled] = snoptEnabled()
+% check if snopt exists, if it does, check if it is student version
+snopt_val = logical(exist('snset','file'));
+if(snopt_val)
+  snopt_path = which('snopt.m');
+  snopt_readme=fileread([snopt_path(1:end-7),'README']);
+  if(isempty(regexp(snopt_readme,'studentVersions','match')))
+    snopt_val = 1;
+  else
+    snopt_val = 2;
+  end
+else
+  snopt_val = 0;
+end
+if(snopt_val == 0)
+  snopt_enabled = false;
+  studentsnopt_enabled = false;
+else
+  snopt_enabled = snopt_val == 1;
+  studentsnopt_enabled = snopt_val == 2;
+end
 end

@@ -34,7 +34,9 @@ classdef RigidBodyMesh < RigidBodyGeometry
       elseif strcmpi(ext,'.stl') || exist(fullfile(path,[name,'.stl']),'file')
         if ~strcmpi(ext,'.stl'), ext = '.stl'; end
         wrlfile = fullfile(tempdir,[name,'.wrl']);
-        stl2vrml(fullfile(path,[name,ext]),tempdir);
+        if ~exist(wrlfile,'file')
+          stl2vrml(fullfile(path,[name,ext]),tempdir);
+        end
       else
         error(['unknown mesh file extension ',obj.filename]);
       end

@@ -1,9 +1,7 @@
 function testFindKinematicPath()
 
 options.floating = true;
-w = warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
 robot = RigidBodyManipulator(fullfile('../urdf/atlas_minimal_contact.urdf'),options);
-warning(w);
 
 num_bodies = robot.getNumBodies();
 
@@ -22,22 +20,22 @@ for i = 1 : num_bodies
     valuecheck(robot.findKinematicPath(i, parent), [i; parent]);
     valuecheck(robot.findKinematicPath(parent, i), [parent; i]);
   end
-  
+
   for j = 1 : num_bodies
     path = robot.findKinematicPath(i, j);
-    
+
     % verify that no paths have repeated entries
     valuecheck(length(unique(path)), length(path));
-    
+
     % verify that all paths are connected
     assert(isLinkPathConnected(path, robot));
-    
+
     % verify that all paths have at most one direction change
     assert(getDirectionChanges(path) < 2)
-    
+
     if (getDirectionChanges(path) == 1)
     end
-    
+
 %     if (getDirectionChanges(path) > 1)
 %       printBodyNames(path, robot);
 %       robot.drawKinematicTree();
@@ -55,7 +53,7 @@ for i = 1 : path_length
   if j <= path_length
     a = path(i);
     b = path(j);
-    
+
     is_a_parent_of_b = robot.getBody(a).parent == b;
     is_b_parent_of_a = robot.getBody(b).parent == a;
     if ~(is_a_parent_of_b || is_b_parent_of_a)
@@ -88,4 +86,3 @@ for i = 1 : length(path)
   disp(robot.getLinkName(path(i)))
 end
 end
-

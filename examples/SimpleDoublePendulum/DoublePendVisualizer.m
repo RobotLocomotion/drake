@@ -15,19 +15,9 @@ classdef DoublePendVisualizer < Visualizer
     end
     
     function draw(obj,t,x)
-      persistent hFig
       l1=obj.l1; l2=obj.l2; m1=obj.m1; m2=obj.m2;
       scale=0.1;
       
-      if (isempty(hFig))
-        hFig = sfigure(32);
-        set(hFig,'DoubleBuffer','on');
-      end
-  
-      sfigure(hFig);
-      clf;
-      hold on;
-
       x1 = l1*[sin(x(1)); -cos(x(1))];
       x2 = x1 + l2*[sin(x(1)+x(2)); -cos(x(1)+x(2))];
 
@@ -41,10 +31,8 @@ classdef DoublePendVisualizer < Visualizer
       l = 1.2*(l1+l2);
       axis equal;
       axis([-l l -l l])
-      hold off;
 
       title(['t = ', num2str(t,'%0.2f')]);
-      drawnow;
     end
   end
 
