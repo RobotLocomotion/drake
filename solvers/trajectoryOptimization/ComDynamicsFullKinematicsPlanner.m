@@ -69,27 +69,9 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
         x_name{3*obj.N+(i-1)*3+3} = sprintf('Hdot_z[%d]',i);
       end
       obj = obj.addDecisionVariable(6*obj.N,x_name);
-      function [c,dc] = comMatch(kinsol,com)
-        [com_q,dcom_q] = obj.robot.getCOM(kinsol);
-        c = com_q-com;
-        dc = [dcom_q -eye(3)];
-      end
-      function [c,dc] = angularMomentumMatch(kinsol,v,H)
-        [A,dA] = obj.robot.getCMMdA(kinsol);
-        c = A(1:3,:)*v-H;
-        dc = [[eye(3) zeros(3)]*matGradMult(dA,v) A(1:3,:) -eye(3)];
-      end
       
-      for i = 1:obj.N
-        com_cnstr = FunctionHandleConstraint(zeros(3,1),zeros(3,1),obj.nq+3,@(~,com,kinsol) comMatch(kinsol,com));
-        com_cnstr = com_cnstr.setName([{sprintf('com_x(q)=com_x[%d]',i)};{sprintf('com_y(q)=com_y[%d]',i)};{sprintf('com_z(q)=com_z[%d]',i)}]);
-        obj = obj.addConstraint(com_cnstr,[{obj.q_inds(:,i)};{obj.com_inds(:,i)}],obj.kinsol_dataind(i));
-        H_cnstr = FunctionHandleConstraint(zeros(3,1),zeros(3,1),obj.nq+obj.nv+3,@(~,v,H,kinsol) angularMomentumMatch(kinsol,v,H));
-        H_cnstr = H_cnstr.setName([{sprintf('A_x*v=H_x[%d]',i)};{sprintf('A_y*v=H_y[%d]',i)};{sprintf('A_z*v=H_z[%d]',i)}]);
-        obj = obj.addConstraint(H_cnstr,[{obj.q_inds(:,i)};{obj.v_inds(:,i)};{obj.H_inds(:,i)}],obj.kinsol_dataind(i));
-      end
       obj.add_dynamic_constraint_flag = true;
-      obj = obj.addDynamicConstraints();
+      obj = addDynamicConstraints(obj);
 
       sizecheck(Q,[obj.nq,obj.nq]);
       if(any(eig(Q)<0))
@@ -336,6 +318,39 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
         lambda{i} = reshape(x_sol(obj.lambda_inds{i}),size(obj.lambda_inds{i},1),[],nT);
       end
       wrench = obj.contactWrench(x_sol);
+    end
+    
+    function obj = addDynamicConstraints(obj)
+      if(obj.add_dynamic_constraint_flag)
+        obj = addCentroidalDynamicConstraints(obj);
+        obj = addDynamicConstraints@SimpleDynamicsFullKinematicsPlanner(obj);
+      end
+    end
+  end
+  
+  methods(Access = protected)
+    function obj = addCentroidalDynamicConstraints(obj)
+      function [c,dc] = comMatch(kinsol,com)
+        [com_q,dcom_q] = obj.robot.getCOM(kinsol);
+        c = com_q-com;
+        dc = [dcom_q -eye(3)];
+      end
+      function [c,dc] = angularMomentumMatch(kinsol,v,H)
+        [A,dA] = obj.robot.getCMMdA(kinsol);
+        c = A(1:3,:)*v-H;
+        dc = [[eye(3) zeros(3)]*matGradMult(dA,v) A(1:3,:) -eye(3)];
+      end
+      
+      if(obj.add_dynamic_constraint_flag)
+        for i = 1:obj.N
+          com_cnstr = FunctionHandleConstraint(zeros(3,1),zeros(3,1),obj.nq+3,@(~,com,kinsol) comMatch(kinsol,com));
+          com_cnstr = com_cnstr.setName([{sprintf('com_x(q)=com_x[%d]',i)};{sprintf('com_y(q)=com_y[%d]',i)};{sprintf('com_z(q)=com_z[%d]',i)}]);
+          obj = obj.addConstraint(com_cnstr,[{obj.q_inds(:,i)};{obj.com_inds(:,i)}],obj.kinsol_dataind(i));
+          H_cnstr = FunctionHandleConstraint(zeros(3,1),zeros(3,1),obj.nq+obj.nv+3,@(~,v,H,kinsol) angularMomentumMatch(kinsol,v,H));
+          H_cnstr = H_cnstr.setName([{sprintf('A_x*v=H_x[%d]',i)};{sprintf('A_y*v=H_y[%d]',i)};{sprintf('A_z*v=H_z[%d]',i)}]);
+          obj = obj.addConstraint(H_cnstr,[{obj.q_inds(:,i)};{obj.v_inds(:,i)};{obj.H_inds(:,i)}],obj.kinsol_dataind(i));
+        end
+      end
     end
   end
 end
