@@ -165,7 +165,7 @@ cdfkp = cdfkp.addCost(FunctionHandleConstraint(-inf,inf,2,@comApexHeightCost),{c
 % add a constraint on the com apex height
 apex_height_cnstr = FunctionHandleConstraint(1.4,inf,2,@comApexHeight);
 apex_height_cnstr = apex_height_cnstr.setName({'com apex height'});
-cdfkp = cdfkp.addDifferentiableConstraint(apex_height_cnstr,{cdfkp.com_inds(3,toe_takeoff_idx);cdfkp.comdot_inds(3,toe_takeoff_idx)});
+cdfkp = cdfkp.addNonlinearConstraint(apex_height_cnstr,{cdfkp.com_inds(3,toe_takeoff_idx);cdfkp.comdot_inds(3,toe_takeoff_idx)});
 
 % add a symmetric constraint
 symmetry_cnstr = symmetryConstraint(robot,2:nT-1);
@@ -186,7 +186,7 @@ cdfkp = cdfkp.setSolverOptions('snopt','majoroptimalitytolerance',2e-4);
 cdfkp = cdfkp.setSolverOptions('snopt','superbasicslimit',2000);
 cdfkp = cdfkp.setSolverOptions('snopt','print','test_jump.out');
 
-seed_sol = load('test_jump','-mat','x_sol');
+% seed_sol = load('test_jump','-mat','x_sol');
 if(mode == 0)
   jump = load('test_jump','-mat','t_sol','v_sol','q_sol','wrench_sol','com_sol','comdot_sol','comddot_sol');
   v = ContactWrenchVisualizer(robot,jump.t_sol,jump.wrench_sol);
@@ -215,7 +215,7 @@ if(mode == 0)
 end
 if(mode == 1)
 tic
-[x_sol,F,info] = cdfkp.solve(seed_sol.x_sol);
+[x_sol,F,info] = cdfkp.solve(x_seed);
 toc
 [q_sol,v_sol,h_sol,t_sol,com_sol,comdot_sol,comddot_sol,H_sol,Hdot_sol,lambda_sol,wrench_sol] = parseSolution(cdfkp,x_sol);
 xtraj_sol = PPTrajectory(foh(cumsum([0 h_sol]),[q_sol;v_sol]));
