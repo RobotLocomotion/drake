@@ -87,6 +87,8 @@ if isempty(v_seed)
   add_var('region', 'B', [length(seed_plan.safe_regions), nsteps], 0, 1);
   add_var('sector', 'B', [length(sector_boundaries)-1, nsteps], 0, 1);
   add_var('reach_slack', 'C', [3, nsteps-2, 2], 0, MAX_DISTANCE);
+  add_var('goal_obj', 'C', [2, nsteps-2], 0, inf);
+  add_var('goal_slack', 'C', [2, nsteps-2], -inf, inf);
   % add_var('trig_slack', 'C', [2, nsteps-2], -1, 1);
 else
   add_var('cos_yaw', 'C', [1, nsteps], -1, 1, v_seed.cos_yaw.value);
@@ -94,6 +96,7 @@ else
   add_var('region', 'B', [length(seed_plan.safe_regions), nsteps], 0, 1, v_seed.region.value);
   add_var('sector', 'B', [length(sector_boundaries)-1, nsteps], 0, 1, v_seed.sector.value);
   add_var('reach_slack', 'C', [3, nsteps-2, 2], 0, MAX_DISTANCE, v_seed.reach_slack.value);
+  add_var('goal_slack', 'C', [2, nsteps-2], 0, MAX_DISTANCE, v_seed.goal_slack.value);
   % add_var('trig_slack', 'C', [2, nsteps-2], -1, 1, v_seed.trig_slack.value);
 end
 
@@ -433,24 +436,55 @@ assert(offset == expected_offset);
 Aeq = [Aeq; Aeq_i];
 beq = [beq; beq_i];
 
-% %% Add the objective on distance to the goal
-% goal_obj = sdpvar(2, nsteps-2, 'full');
+%% Add the objective on distance to the goal
 % Objective = Objective + [0.1 * ones(1,nsteps-3), 10] * sum(goal_obj,1)';
-% for j = 3:nsteps
-%   if seed_plan.footsteps(j).frame_id == biped.foot_frame_id.right
-%     Constraints = [Constraints,...
-%       polycone(x(1:2,j) - goal_pos.right(1:2), goal_obj(1,j-2), 16),...
-%       goal_obj(2,j-2) >= [1, 1] * abs(x(3:4,j) - goal_pos.right(POSE_INDICES(3:4))),...
-%       ];
-%   elseif seed_plan.footsteps(j).frame_id == biped.foot_frame_id.left
-%     Constraints = [Constraints,...
-%       polycone(x(1:2,j) - goal_pos.left(1:2), goal_obj(1,j-2), 16),...
-%       goal_obj(2,j-2) >= [1, 1] * abs(x(3:4,j) - goal_pos.left(POSE_INDICES(3:4))),...
-%       ];
-%   else
-%     error('Invalid frame ID: %d', seed_plan.footsteps(j).frame_id);
-%   end
-% end
+c(v.goal_obj.i(:,1:end-1)) = 0.1;
+c(v.goal_obj.i(:,end)) = 10;
+cones = [cones, struct('index', mat2cell([v.goal_obj.i(1,:); v.goal_slack.i], 3, ones(1, nsteps-2)))];
+Aeq_i = zeros(2*(nsteps-2), nv);
+beq_i = zeros(size(Aeq_i, 1), 1);
+Ai = zeros(2*(nsteps-2), nv);
+bi = zeros(size(Ai, 1), 1);
+offset = 0;
+expected_offset = size(Aeq_i, 1);
+for j = 3:nsteps
+  if seed_plan.footsteps(j).frame_id == biped.foot_frame_id.right
+    % Constraints = [Constraints,...
+    %   polycone(x(1:2,j) - goal_pos.right(1:2), goal_obj(1,j-2), 16),...
+    %   goal_obj(2,j-2) >= [1, 1] * abs(x(3:4,j) - goal_pos.right(POSE_INDICES(3:4))),...
+    %   ];
+    goal = goal_pos.right;
+  elseif seed_plan.footsteps(j).frame_id == biped.foot_frame_id.left
+    % Constraints = [Constraints,...
+    %   polycone(x(1:2,j) - goal_pos.left(1:2), goal_obj(1,j-2), 16),...
+    %   goal_obj(2,j-2) >= [1, 1] * abs(x(3:4,j) - goal_pos.left(POSE_INDICES(3:4))),...
+    %   ];
+    goal = goal_pos.left;
+  else
+    error('Invalid frame ID: %d', seed_plan.footsteps(j).frame_id);
+  end
+
+  Aeq_i(offset+1, v.x.i(1,j)) = 1;
+  Aeq_i(offset+1, v.goal_slack.i(1,j-2)) = -1;
+  beq_i(offset+1) = goal(1);
+  Aeq_i(offset+2, v.x.i(2,j)) = 1;
+  Aeq_i(offset+2, v.goal_slack.i(2,j-2)) = -1;
+  beq_i(offset+2) = goal(2);
+
+  Ai(offset+1, v.x.i(3:4,j)) = [1, 1];
+  Ai(offset+1, v.goal_obj.i(2,j-2)) = -1;
+  bi(offset+1) = [1,1] * goal(POSE_INDICES(3:4));
+  Ai(offset+2, v.x.i(3:4,j)) = -[1, 1];
+  Ai(offset+2, v.goal_obj.i(2,j-2)) = -1;
+  bi(offset+2) = -[1, 1] * goal(POSE_INDICES(3:4));
+
+  offset = offset + 2;
+end
+Aeq = [Aeq; Aeq_i];
+beq = [beq; beq_i];
+A = [A; Ai];
+b = [b; bi];
+assert(offset == expected_offset);
 
 % %% Add the objective on relative step displacements
 % rel_obj = sdpvar(2, nsteps-2, 'full');
