@@ -728,6 +728,11 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       obj = updateStateConstraint@DrakeSystem(obj,id,con);
       obj.manip = updateStateConstraint(obj.manip,id,con);
     end
+    
+    function obj = removeAllStateConstraints(obj)
+      obj = removeAllStateConstraints@DrakeSystem(obj);
+      obj.manip = removeAllStateConstraints(obj.manip);
+    end
 
     function varargout = positionConstraints(obj,varargin)
       varargout = cell(1,nargout);
