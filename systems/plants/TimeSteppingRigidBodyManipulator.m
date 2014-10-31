@@ -168,7 +168,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         qdn = Mqdn*z + wqdn;
       end
       qn = q + h*qdn;
-      xdn = [q; qd];
+      xdn = [qn; qdn];
 
       if (nargout>1)  % compute gradients
         if isempty(z)

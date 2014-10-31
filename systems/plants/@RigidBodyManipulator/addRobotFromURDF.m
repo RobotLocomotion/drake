@@ -144,9 +144,10 @@ ind = find([model.body.parent]<1);
 rootlink = ind([model.body(ind).robotnum]==robotnum);
 
 for i=1:length(rootlink)
-  if (weldLink == 1 && ~isempty(options.floating))
+  if (~isempty(options.floating)) % && weldLink == 1?
     model = addFloatingBase(model,weldLink,rootlink(i),xyz,rpy,options.floating);
   else
+    % If this stays then branch is unecessary, as is options.floating
     model = addJoint(model,'','fixed',weldLink,rootlink(i),xyz,rpy);
   end
 end
