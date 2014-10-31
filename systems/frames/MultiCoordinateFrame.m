@@ -286,6 +286,13 @@ classdef MultiCoordinateFrame < CoordinateFrame
       end
     end
 
+    function obj = replaceFrameNum(obj,num,new_subframe)
+      if new_subframe.dim ~= obj.frame{num}.dim
+        error('new subframe does not match the dimensions of the frame you are trying to replace');
+      end
+      obj.frame{num} = new_subframe;
+    end
+    
     function str = getCoordinateName(obj,i)
       ind = obj.frame_id(i);
       str = getCoordinateName(obj.frame{ind},find(obj.coord_ids{ind}==i));
