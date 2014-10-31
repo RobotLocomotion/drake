@@ -11,8 +11,10 @@ function [x,P,J,dP,dJ] = bodyKin(obj,kinsol,body_or_frame_ind,pts)
 %
 % if pts is a 3xm matrix, then x will be a 3xm matrix
 %  and (following our gradient convention) J will be a ((3xm)x(q))
-%  matrix, with [J1;J2;...;Jm] where Ji = dxidq
-%  and P will be a ((3xm)x(3xm)) matrix, with [P1;P2;...] where Pi = dxidpts
+%  matrix, with [J1;J2;...;Jm] where Ji = dxidq, P will be a
+%  ((3xm)x(3xm)) matrix, with [P1;P2;...] where Pi = dxidpts, and dJ
+%  will be a ((3*m)x(nq^2)) matrix, with [dJ1,dJ2,...,dJq] where 
+%  dJj = dJdqj
 
 checkDirty(obj);
 
