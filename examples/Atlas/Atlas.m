@@ -35,6 +35,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
           
 %           lhand = TimeSteppingRigidBodyManipulator([],options.dt);
 %           rhand = TimeSteppingRigidBodyManipulator([],options.dt);
+          options.floating = true;
           obj = addRobotFromURDF(obj, getFullPathFromRelativePath('urdf/robotiq.urdf'), [0; -0.2; 0], [0; 0; 3.1415], options); 
           %obj = addRobotFromURDF(obj, getFullPathFromRelativePath('cylinder.urdf'), [0; -0.2; 0], [0; 0; 3.1415], options); 
         else
@@ -64,7 +65,8 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       if (obj.hands > 0)
         atlas_state_frame = getStateFrame(obj);
         atlas_state_frame = replaceFrameNum(atlas_state_frame,1,AtlasState(obj));
-        % Tack on as many hands as we appear to have.
+        % Sub in handstates for each hand
+        % TODO: by name?
         for i=2:obj.getStateFrame().getNumFrames
           atlas_state_frame = replaceFrameNum(atlas_state_frame,i,HandState(obj,i,'HandState'));
         end
@@ -84,14 +86,18 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       obj = obj.setStateFrame(state_frame);
       obj = obj.setOutputFrame(state_frame);
 
-      input_frame = AtlasInput(obj);
       if (obj.hands > 0)
-        % Tack on as many hands as we appear to have.
+        input_frame = getInputFrame(obj);
+        input_frame  = replaceFrameNum(input_frame,1,AtlasInput(obj));
+        % Sub in handstates for each hand
+        % TODO: by name?
         for i=2:obj.getInputFrame().getNumFrames
-          input_frame = {input_frame HandInput(obj, i, 'HandInput')};
+          input_frame = replaceFrameNum(input_frame,i,HandInput(obj,i,'HandInput'));
         end
-        input_frame = MultiCoordinateFrame(input_frame);
+      else
+        input_frame = AtlasInput(obj);
       end
+      
       obj = obj.setInputFrame(input_frame);
       obj.manip = obj.manip.setInputFrame(input_frame);
       
