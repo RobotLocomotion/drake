@@ -83,23 +83,6 @@ classdef RelativePosition < drakeFunction.kinematic.Kinematic
         [pts_in_B,P,JB] = obj.rbm.bodyKin(kinsol,obj.frameB,pts_in_world);
       end
       J = JB + P*JA;
-
-
-      %[T_B_to_world,dT_B_to_world] = forwardKin(obj.rbm,kinsol,obj.frameB,[0;0;0],2);
-      %[quat_world_to_B,dquat_world_to_B] = quatConjugate(T_B_to_world(4:7));
-      %dquat_world_to_B = dquat_world_to_B*dT_B_to_world(4:7,:);
-      %[xyz_world_to_B,dxyz_world_to_B] = quatRotateVec(quat_world_to_B,T_B_to_world(1:3));
-      %xyz_world_to_B = -xyz_world_to_B;
-      %dxyz_world_to_B = -dxyz_world_to_B*[dquat_world_to_B;dT_B_to_world(1:3,:)];
-
-      %pts_in_B = zeros(3,obj.n_pts)*q(1);
-      %J = zeros(3*obj.n_pts,obj.rbm.getNumPositions())*q(1);
-      %for i = 1:obj.n_pts
-        %[pts_in_B1,dpts_in_B1] = quatRotateVec(quat_world_to_B,pts_in_world(:,i));
-        %dpts_in_B1 = dpts_in_B1*[dquat_world_to_B;JA(3*(i-1)+(1:3),:)];
-        %pts_in_B(:,i) = pts_in_B1+xyz_world_to_B;
-        %J(3*(i-1)+(1:3),:) = dpts_in_B1+dxyz_world_to_B;
-      %end
       pos = reshape(pts_in_B,[],1);
     end
   end
