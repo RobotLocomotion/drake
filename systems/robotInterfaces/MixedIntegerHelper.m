@@ -100,13 +100,36 @@ classdef MixedIntegerHelper
 
     function obj = addConesByIndex(obj, idx)
       assert(obj.frozen, 'cannot add constraints or cost until helper is frozen');
-      obj.cones = [obj.cones, struct('index', mat2cell(idx, size(idx, 1), ones(1, size(idx, 2))))];
+      obj = obj.addCones(struct('index', mat2cell(idx, size(idx, 1), ones(1, size(idx, 2)))));
     end
 
     function obj = addPolyCones(obj, polycones)
       assert(obj.frozen, 'cannot add constraints or cost until helper is frozen');
       obj.polycones = [obj.polycones, polycones];
     end
+
+    function obj = addPolyConesByIndex(obj, idx, N)
+      assert(obj.frozen, 'cannot add constraints or cost until helper is frozen');
+      if length(N) == 1
+        N = repmat(N, 1, size(idx, 2));
+      else
+        assert(length(N) == size(idx, 2));
+      end
+      obj = obj.addPolyCones(struct('index', mat2cell(idx, size(idx, 1), ones(1, size(idx, 2))), 'N', num2cell(N)));
+    end
+
+    function obj = addConesOrPolyConesByIndex(obj, idx, N)
+      if nargin < 3 || isempty(N)
+        N = 0;
+      end
+      if all(N == 0)
+        obj = obj.addConesByIndex(idx);
+      else
+        assert(all(N ~= 0), 'Cannot mix cones and polycones in the same call');
+        obj = obj.addPolyConesByIndex(idx, N);
+      end
+    end
+
 
     function obj = addQuadcon(obj, quadcon)
       assert(obj.frozen, 'cannot add constraints or cost until helper is frozen');
@@ -125,9 +148,24 @@ classdef MixedIntegerHelper
 
 
     function obj = convertPolyCones(obj)
-      if ~isempty(obj.polycones)
-        error('not implemented yet');
+      nconstraints = sum([obj.polycones.N]);
+      A = zeros(nconstraints, obj.nv);
+      b = zeros(size(A, 1), 1);
+      offset = 0;
+      for j = 1:length(obj.polycones)
+        assert(size(obj.polycones(j).index, 1) == 3, 'polygonal cone approximation only valid for cones with 3 entries (approximates x1 <= norm([x2; x3]))')
+        N = obj.polycones(j).N;
+        for k = 1:N
+          th = (2*pi) / N * (k-1);
+          ai = rotmat(th) * [1;0];
+          A(offset+1, obj.polycones(j).index(2)) = ai(1);
+          A(offset+1, obj.polycones(j).index(3)) = ai(2);
+          A(offset+1, obj.polycones(j).index(1)) = -1;
+          offset = offset+1;
+        end
       end
+      assert(offset == nconstraints);
+      obj = obj.addLinearConstraints(A, b, [], []);
     end
 
     function model = getGurobiModel(obj)

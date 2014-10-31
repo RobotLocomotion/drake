@@ -10,7 +10,9 @@ SECTOR_WIDTH = pi/8;
 POSE_INDICES = [1,2,3,6]; % which indices of xyzrpy we are searching over
 MAX_DISTANCE = 30;
 
-TRIM_THRESHOLD = [0.02; 0.02; 0.02; pi/16; pi/16; pi/16];
+TRIM_THRESHOLD = [0.02; 0.02; inf; inf; inf; pi/16];
+
+POLYCONE_APPROX_LEVEL = 0;
 
 REACHABILITY_METHOD = 'ellipse';
 
@@ -71,7 +73,7 @@ p.v.sin_yaw.ub(1:2) = sin(seed_steps(6,1:2));
 %% Enforce reachability
 nfoci = 2;
 slack_i = [p.v.reach_slack.i([3,1,2],:,1), p.v.reach_slack.i([3,1,2],:,2)];
-p = p.addConesByIndex(slack_i);
+p = p.addConesOrPolyConesByIndex(slack_i, POLYCONE_APPROX_LEVEL);
 if strcmp(REACHABILITY_METHOD, 'ellipse')
   Aeq_i = zeros(2*nfoci * (nsteps-2), p.nv);
   beq_i = zeros(size(Aeq_i,1), 1);
@@ -116,7 +118,7 @@ elseif strcmp(REACHABILITY_METHOD, 'circles')
   offset = 0;
   expected_offset = size(Aeq_i, 1);
   slack_i = [p.v.reach_slack.i([3,1,2],:,1), p.v.reach_slack.i([3,1,2],:,2)];
-  p = p.addConesByIndex(slack_i);
+  p = p.addConesOrPolyConesByIndex(slack_i, POLYCONE_APPROX_LEVEL);
   for j = 3:nsteps
     [centers, radii] = biped.getReachabilityCircles(seed_plan.params, seed_plan.footsteps(j-1).frame_id);
     assert(size(centers, 2) == ncenters, 'I have hard-coded the number of reachability circle centers');
@@ -192,13 +194,13 @@ p = p.addLinearConstraints(Ai, bi, [], []);
 assert(offset == expected_offset);
 
 %% Enforce rotation convex relaxation
-p = p.addConesByIndex([p.v.sincos_bound.i; p.v.cos_yaw.i; p.v.sin_yaw.i]);
+p = p.addConesOrPolyConesByIndex([p.v.sincos_bound.i; p.v.cos_yaw.i; p.v.sin_yaw.i], POLYCONE_APPROX_LEVEL);
 
 Aeq_i = zeros(2*(nsteps-2), p.nv);
 beq_i = zeros(size(Aeq_i, 1), 1);
 offset = 0;
 expected_offset = size(Aeq_i, 1);
-p = p.addConesByIndex([p.v.sincos_slack_bound.i; p.v.sincos_slack.i]);
+p = p.addConesOrPolyConesByIndex([p.v.sincos_slack_bound.i; p.v.sincos_slack.i], POLYCONE_APPROX_LEVEL);
 for j = 3:nsteps
   %   polycone([cos_yaw(j) - cos_yaw(j-1); sin_yaw(j) - sin_yaw(j-1)], pi/8, 16)];
   Aeq_i(offset+1, p.v.cos_yaw.i(j)) = 1;
@@ -382,7 +384,7 @@ p = p.addLinearConstraints([], [], Aeq_i, beq_i);
 % Objective = Objective + [0.1 * ones(1,nsteps-3), 10] * sum(goal_obj,1)';
 p = p.setLinearCostEntries(p.v.goal_obj.i(:,1:end-1), 0.1);
 p = p.setLinearCostEntries(p.v.goal_obj.i(:,end), 10);
-p = p.addConesByIndex([p.v.goal_obj.i(1,:); p.v.goal_slack.i]);
+p = p.addConesOrPolyConesByIndex([p.v.goal_obj.i(1,:); p.v.goal_slack.i], POLYCONE_APPROX_LEVEL);
 Aeq_i = zeros(2*(nsteps-2), p.nv);
 beq_i = zeros(size(Aeq_i, 1), 1);
 Ai = zeros(2*(nsteps-2), p.nv);
@@ -436,7 +438,7 @@ offset_eq = 0;
 expected_offset_eq = size(Aeq_i, 1);
 offset_ineq = 0;
 expected_offset_ineq = size(Ai, 1);
-p = p.addConesByIndex([p.v.rel_obj.i(1,:), p.v.nom_step_slack.i; p.v.rel_slack.i(:,:,1), p.v.rel_slack.i(:,:,2)]);
+p = p.addConesOrPolyConesByIndex([p.v.rel_obj.i(1,:), p.v.nom_step_slack.i; p.v.rel_slack.i(:,:,1), p.v.rel_slack.i(:,:,2)], POLYCONE_APPROX_LEVEL);
 for j = 3:nsteps
   if seed_plan.footsteps(j-1).frame_id == biped.foot_frame_id.right
     nom = [0; seed_plan.params.nom_step_width];
@@ -557,7 +559,7 @@ offset = 0;
 expected_offset = size(Aeq_i, 1);
 % Objective = Objective + sum(foot_obj(:));
 p = p.setLinearCostEntries(p.v.swing_obj.i, 1);
-p = p.addConesByIndex([p.v.swing_obj.i(1,:); p.v.swing_slack.i]);
+p = p.addConesOrPolyConesByIndex([p.v.swing_obj.i(1,:); p.v.swing_slack.i], POLYCONE_APPROX_LEVEL);
 for j = 3:nsteps
   % err = x(:,j) - x(:,j-2);
   % Constraints = [Constraints,...
@@ -595,7 +597,7 @@ assert(offset == expected_offset)
 p = p.addLinearConstraints(Ai, bi, Aeq_i, beq_i);
 
 params = struct();
-params.mipgap = 1e-4;
+% params.mipgap = 1e-4;
 params.outputflag = 1;
 % params.ConcurrentMIP = 4;
 % params.NodeMethod = 0;
@@ -647,8 +649,8 @@ for j = 3:nsteps-2
     at_final_pose(j) = all(abs(plan.footsteps(j).pos - plan.footsteps(end).pos) <= TRIM_THRESHOLD);
   end
 end
-trim = at_final_pose; % Cut off any steps that are at the final poses
-trim(find(trim, 2, 'first')) = false; % Don't cut off the final poses themselves
+trim = at_final_pose % Cut off any steps that are at the final poses
+trim(find(trim, 2, 'first')) = false % Don't cut off the final poses themselves
 
 plan = plan.slice(~trim);
 
