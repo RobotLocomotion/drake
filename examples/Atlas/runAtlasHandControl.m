@@ -41,9 +41,7 @@ r = r.setInitialState(xstar);
 % and hand state to a feasible sol
 % so lcp has an easier time
 load('data/robotiq_feas.mat');
-xstar_hands = zeros(r_hands.getNumStates, 1);
-xstar_hands(1:length(xstar)) = xstar;
-xstar_hands(length(xstar)+1:end) = xstar_hand;
+xstar_hands = r_hands.getStateFrame().mergeCoordinates({xstar,xstar_hand});
 r_hands = r_hands.setInitialState(xstar_hands);
 
 x0 = xstar;

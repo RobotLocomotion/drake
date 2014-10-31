@@ -151,46 +151,6 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       end
     end
     
-    function [q, qd] = separateStateVector(obj, x)
-      % Construct position, velocity vectors from our sub-frames
-      % (x lists out q, qd for each subframe separately -- not all
-      % q's then all qd's)
-      if (isa(obj.getStateFrame, 'MultiCoordinateFrame'))
-        q = zeros(obj.manip.num_positions, 1); qd = q;
-        qind = 1;
-        xind = 1;
-        frames = obj.getStateFrame;
-        for i=1:frames.getNumFrames
-          subframe = frames.getFrameByNum(i);
-          q(qind:qind-1+subframe.dim/2) = x(xind:xind-1+subframe.dim/2);
-          qd(qind:qind-1+subframe.dim/2) = x(subframe.dim/2+xind:xind-1+subframe.dim);
-          qind = qind + subframe.dim/2;
-          xind = xind + subframe.dim;
-        end
-      else
-        q=x(1:obj.manip.num_positions); qd=x((obj.manip.num_positions+1):end);
-      end
-    end
-    
-    function [x] = reconstructStateVector(obj, q, qd)
-      % Construct state vector by listing q, qd for each
-      % subframe in order
-      if (isa(obj.getStateFrame, 'MultiCoordinateFrame'))
-        x = zeros(2*obj.manip.num_positions, 1);
-        qind = 1; xind = 1;
-        frames = obj.getStateFrame;
-        for i=1:frames.getNumFrames
-          subframe = frames.getFrameByNum(i);
-          x(xind:xind-1+subframe.dim/2) = q(qind:qind-1+subframe.dim/2);
-          x(subframe.dim/2+xind:xind-1+subframe.dim) = qd(qind:qind-1+subframe.dim/2);
-          qind = qind + subframe.dim/2;
-          xind = xind + subframe.dim;
-        end
-      else
-        x = [q;qd];
-      end
-    end
-
     function [xdn,df] = update(obj,t,x,u)
       if (nargout>1)
         [obj,z,Mqdn,wqdn,dz,dMqdn,dwqdn] = solveLCP(obj,t,x,u);
@@ -199,7 +159,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       end
       
       num_q = obj.manip.num_positions;
-      [q, qd] = obj.separateStateVector(x);
+      q = x(1:obj.manip.num_positions); qd = x(obj.manip.num_positions+1:end);
       h = obj.timestep;
       
       if isempty(z)
@@ -208,7 +168,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         qdn = Mqdn*z + wqdn;
       end
       qn = q + h*qdn;
-      xdn = obj.reconstructStateVector(qn, qdn);
+      xdn = [q; qd];
 
       if (nargout>1)  % compute gradients
         if isempty(z)
@@ -260,7 +220,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         obj.LCP_cache.nargout = nargout;
 
         num_q = obj.manip.num_positions;
-        [q, qd] = obj.separateStateVector(x);
+        q = x(1:obj.manip.num_positions); qd = x(obj.manip.num_positions+1:end);
         h = obj.timestep;
 
         if (nargout<5)

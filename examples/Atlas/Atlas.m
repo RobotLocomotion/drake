@@ -61,13 +61,15 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
         obj.hands = 0;
       end
       path_handle = addpathTemporary(fullfile(getDrakePath,'examples','Atlas','frames'));
-      atlas_state_frame = AtlasState(obj);
       if (obj.hands > 0)
+        atlas_state_frame = getStateFrame(obj);
+        atlas_state_frame = replaceFrameNum(atlas_state_frame,1,AtlasState(obj));
         % Tack on as many hands as we appear to have.
         for i=2:obj.getStateFrame().getNumFrames
-          atlas_state_frame = {atlas_state_frame HandState(obj, i, 'HandState')};
+          atlas_state_frame = replaceFrameNum(atlas_state_frame,i,HandState(obj,i,'HandState'));
         end
-        atlas_state_frame = MultiCoordinateFrame(atlas_state_frame);
+      else
+        atlas_state_frame = AtlasState(obj);
       end
       tsmanip_state_frame = obj.getStateFrame();
       if tsmanip_state_frame.dim>atlas_state_frame.dim
