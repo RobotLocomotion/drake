@@ -89,7 +89,7 @@ function add_var(name, type_, size_, lb, ub, start_)
   v.(name).type = type_;
   v.(name).size = size_;
   v.(name).i = reshape(nv + (1:prod(v.(name).size)), v.(name).size);
-  nv = nv + v.(name).i(end);
+  nv = nv + prod(v.(name).size);
   if isscalar(lb)
     lb = repmat(lb, v.(name).size);
   end
