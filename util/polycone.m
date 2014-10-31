@@ -10,9 +10,9 @@ sizecheck(r, 1);
 sizecheck(N, 1);
 A = zeros(N, 2);
 b = repmat(r, N, 1);
-ths = linspace(0, 2*pi, N);
 for j = 1:N
-  R = rotmat(ths(j));
+  th = (2*pi) / N * (j-1);
+  R = rotmat(th);
   A(j,:) = (R * [1;0])';
 end
 tf = A * v <= b;
