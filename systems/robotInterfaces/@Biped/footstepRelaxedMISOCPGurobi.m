@@ -1,5 +1,5 @@
 function [plan, v] = footstepRelaxedMISOCPGurobi(biped, seed_plan, weights, goal_pos, v_seed)
-
+t0 = tic();
 checkDependency('gurobi');
 seed_plan.sanity_check();
 if nargin < 5
@@ -58,7 +58,7 @@ function add_var(name, type_, size_, lb, ub, start_)
   v.(name).type = type_;
   v.(name).size = size_;
   v.(name).i = reshape(nv + (1:prod(v.(name).size)), v.(name).size);
-  nv = nv + v.(name).i(end);
+  nv = nv + prod(v.(name).size);
   if isscalar(lb)
     lb = repmat(lb, v.(name).size);
   end
@@ -86,10 +86,14 @@ if isempty(v_seed)
   add_var('sin_yaw', 'C', [1, nsteps], -1, 1);
   add_var('region', 'B', [length(seed_plan.safe_regions), nsteps], 0, 1);
   add_var('sector', 'B', [length(sector_boundaries)-1, nsteps], 0, 1);
-  add_var('reach_slack', 'C', [3, nsteps-2, 2], 0, MAX_DISTANCE);
+  add_var('reach_slack', 'C', [3, nsteps-2, 2], -MAX_DISTANCE, MAX_DISTANCE);
   add_var('goal_obj', 'C', [2, nsteps-2], 0, inf);
   add_var('goal_slack', 'C', [2, nsteps-2], -inf, inf);
-  % add_var('trig_slack', 'C', [2, nsteps-2], -1, 1);
+  add_var('rel_obj', 'C', [2, nsteps-2], 0, inf);
+  add_var('rel_slack', 'C', [2, nsteps-2, 2], -inf, inf);
+  add_var('nom_step_slack', 'C', [1, nsteps-2], -inf, inf);
+  add_var('swing_obj', 'C', [2, nsteps-2], 0, inf);
+  add_var('swing_slack', 'C', [2, nsteps-2], -inf, inf);
 else
   add_var('cos_yaw', 'C', [1, nsteps], -1, 1, v_seed.cos_yaw.value);
   add_var('sin_yaw', 'C', [1, nsteps], -1, 1, v_seed.sin_yaw.value);
@@ -99,6 +103,7 @@ else
   add_var('goal_slack', 'C', [2, nsteps-2], 0, MAX_DISTANCE, v_seed.goal_slack.value);
   % add_var('trig_slack', 'C', [2, nsteps-2], -1, 1, v_seed.trig_slack.value);
 end
+nv
 
 c = zeros(nv, 1);
 Q = sparse(nv, nv);
@@ -124,7 +129,7 @@ v.sin_yaw.ub(1:2) = sin(seed_steps(6,1:2));
 
 %% Enforce reachability
 nfoci = 2;
-slack_i = reshape(v.reach_slack.i([3,1,2],:,:), 3, nfoci*(nsteps-2));
+slack_i = [v.reach_slack.i([3,1,2],:,1), v.reach_slack.i([3,1,2],:,2)];
 cones = [cones, struct('index', mat2cell(slack_i, 3, ones(1, size(slack_i,2))))];
 if strcmp(REACHABILITY_METHOD, 'ellipse')
   Aeq_i = zeros(2*nfoci * (nsteps-2), nv);
@@ -156,9 +161,9 @@ if strcmp(REACHABILITY_METHOD, 'ellipse')
       beq_i(offset+2) = 0;
       offset = offset + 2;
 
-      Ai(j-2, v.reach_slack.i(3,j-2,k)) = 1;
     end
     % Constraints = [Constraints, sum(dists) <= l];
+    Ai(j-2, v.reach_slack.i(3,j-2,:)) = 1;
     bi(j-2) = l;
   end
   assert(offset == expected_offset, 'setup check failed');
@@ -172,10 +177,10 @@ elseif strcmp(REACHABILITY_METHOD, 'circles')
   beq_i = zeros(size(Aeq_i, 1), 1);
   offset = 0;
   expected_offset = size(Aeq_i, 1);
-  slack_i = reshape(v.reach_slack.i([3,1,2],:,:), 3, ncenters*(nsteps-2));
+  slack_i = [v.reach_slack.i([3,1,2],:,1), v.reach_slack.i([3,1,2],:,2)];
   cones = [cones, struct('index', mat2cell(slack_i, 3, ones(1, size(slack_i,2))))];
   for j = 3:nsteps
-    [centers, radii] = biped.getReachabilityCircles(seed_plan.params, seed_plan.footsteps(j-1).frame_id);
+    [centers, radii] = biped.getReachabilityCircles(seed_plan.params, seed_plan.footsteps(j-1).frame_id)
     assert(size(centers, 2) == ncenters, 'I have hard-coded the number of reachability circle centers');
     for k = 1:size(centers, 2)
       % Constraints = [Constraints, cone(x(1:2,j) - (x(1:2,j-1) + [cos_yaw(j-1), -sin_yaw(j-1); sin_yaw(j-1), cos_yaw(j-1)] * centers(:,k)), radii(k))];
@@ -486,65 +491,181 @@ A = [A; Ai];
 b = [b; bi];
 assert(offset == expected_offset);
 
-% %% Add the objective on relative step displacements
-% rel_obj = sdpvar(2, nsteps-2, 'full');
+%% Add the objective on relative step displacements
 % Objective = Objective + sum(rel_obj(:));
-% for j = 3:nsteps
-%   if seed_plan.footsteps(j-1).frame_id == biped.foot_frame_id.right
-%     nom = [0; seed_plan.params.nom_step_width];
-%   else
-%     nom = [0; -seed_plan.params.nom_step_width];
-%   end
-%   err = x(:,j) - [(x(1:2,j-1) + [cos_yaw(j-1), -sin_yaw(j-1); sin_yaw(j-1), cos_yaw(j-1)] * nom); x(3:4,j-1)];
-%   if j == nsteps
-%     Constraints = [Constraints,...
-%       polycone(20 * err(1:2), rel_obj(1,j-2), 16),...
-%       rel_obj(2,j-2) >= 20 * [1, 1] * abs(err(3:4)),...
-%       ];
-%   else
-%     scale = 0.1 * (nsteps - j) + 1;
-%     Constraints = [Constraints,...
-%       polycone(0.5 * scale * err(1:2), rel_obj(1,j-2), 16),...
-%       polycone(2 * scale * err(1:2), rel_obj(1,j-2) + scale*((2 - 0.5) * seed_plan.params.nom_forward_step), 16),...
-%       rel_obj(2,j-2) >= [1, 1] * abs(err(3:4))];
-%   end
-% end
+c(v.rel_obj.i) = 1;
+Aeq_i = zeros(4*(nsteps-2)-2, nv);
+beq_i = zeros(size(Aeq_i, 1), 1);
+Ai = zeros(3*(nsteps-2)-1, nv);
+bi = zeros(size(Ai, 1), 1);
+offset_eq = 0;
+expected_offset_eq = size(Aeq_i, 1);
+offset_ineq = 0;
+expected_offset_ineq = size(Ai, 1);
+cones = [cones, struct('index', mat2cell([v.rel_obj.i(1,:), v.nom_step_slack.i; v.rel_slack.i(:,:,1), v.rel_slack.i(:,:,2)], 3, ones(1, 2*(nsteps-2))))];
+for j = 3:nsteps
+  if seed_plan.footsteps(j-1).frame_id == biped.foot_frame_id.right
+    nom = [0; seed_plan.params.nom_step_width];
+  else
+    nom = [0; -seed_plan.params.nom_step_width];
+  end
+  % err = x(:,j) - [(x(1:2,j-1) + [cos_yaw(j-1), -sin_yaw(j-1); sin_yaw(j-1), cos_yaw(j-1)] * nom); x(3:4,j-1)];
 
-% %% Add the objective on movement of each foot
-% foot_obj = sdpvar(2, nsteps-2, 'full');
+  if j == nsteps
+    % Constraints = [Constraints,...
+    %   polycone(20 * err(1:2), rel_obj(1,j-2), 16),...
+    %   rel_obj(2,j-2) >= 20 * [1, 1] * abs(err(3:4)),...
+    %   ];
+    weight = 20;
+    Aeq_i(offset_eq+1, v.x.i(1,j)) = weight;
+    Aeq_i(offset_eq+1, v.x.i(1,j-1)) = -weight;
+    Aeq_i(offset_eq+1, v.cos_yaw.i(j-1)) = -weight * nom(1);
+    Aeq_i(offset_eq+1, v.sin_yaw.i(j-1)) = weight * nom(2);
+    Aeq_i(offset_eq+1, v.rel_slack.i(1,j-2,1)) = -1;
+    beq_i(offset_eq+1) = 0;
+
+    Aeq_i(offset_eq+2, v.x.i(2,j)) = weight;
+    Aeq_i(offset_eq+2, v.x.i(2,j-1)) = -weight;
+    Aeq_i(offset_eq+2, v.sin_yaw.i(j-1)) = -weight * nom(1);
+    Aeq_i(offset_eq+2, v.cos_yaw.i(j-1)) = -weight * nom(2);
+    Aeq_i(offset_eq+2, v.rel_slack.i(2,j-2,1)) = -1;
+    beq_i(offset_eq+2) = 0;
+    offset_eq = offset_eq + 2;
+
+    Ai(offset_ineq+1, v.x.i(3,j)) = weight;
+    Ai(offset_ineq+1, v.x.i(4,j)) = weight;
+    Ai(offset_ineq+1, v.x.i(3,j-1)) = -weight;
+    Ai(offset_ineq+1, v.x.i(4,j-1)) = -weight;
+    Ai(offset_ineq+1, v.rel_obj.i(2,j-2)) = -1;
+    bi(offset_ineq+1) = 0;
+
+    Ai(offset_ineq+2, v.x.i(3,j)) = -weight;
+    Ai(offset_ineq+2, v.x.i(4,j)) = -weight;
+    Ai(offset_ineq+2, v.x.i(3,j-1)) = weight;
+    Ai(offset_ineq+2, v.x.i(4,j-1)) = weight;
+    Ai(offset_ineq+2, v.rel_obj.i(2,j-2)) = -1;
+    bi(offset_ineq+2) = 0;
+    offset_ineq = offset_ineq + 2;
+  else
+    scale = 0.1 * (nsteps - j) + 1;
+    % Constraints = [Constraints,...
+    %   polycone(0.5 * scale * err(1:2), rel_obj(1,j-2), 16),...
+    %   polycone(2 * scale * err(1:2), rel_obj(1,j-2) + scale*((2 - 0.5) * seed_plan.params.nom_forward_step), 16),...
+    %   rel_obj(2,j-2) >= [1, 1] * abs(err(3:4))];
+
+    alpha1 = 0.5;
+    alpha2 = 2;
+    weight = alpha1 * scale;
+    Aeq_i(offset_eq+1, v.x.i(1,j)) = weight;
+    Aeq_i(offset_eq+1, v.x.i(1,j-1)) = -weight;
+    Aeq_i(offset_eq+1, v.cos_yaw.i(j-1)) = -weight * nom(1);
+    Aeq_i(offset_eq+1, v.sin_yaw.i(j-1)) = weight * nom(2);
+    Aeq_i(offset_eq+1, v.rel_slack.i(1,j-2,1)) = -1;
+    beq_i(offset_eq+1) = 0;
+
+    Aeq_i(offset_eq+2, v.x.i(2,j)) = weight;
+    Aeq_i(offset_eq+2, v.x.i(2,j-1)) = -weight;
+    Aeq_i(offset_eq+2, v.sin_yaw.i(j-1)) = -weight * nom(1);
+    Aeq_i(offset_eq+2, v.cos_yaw.i(j-1)) = -weight * nom(2);
+    Aeq_i(offset_eq+2, v.rel_slack.i(2,j-2,1)) = -1;
+    beq_i(offset_eq+2) = 0;
+    offset_eq = offset_eq + 2;
+
+    weight = alpha2 * scale;
+    Aeq_i(offset_eq+1, v.x.i(1,j)) = weight;
+    Aeq_i(offset_eq+1, v.x.i(1,j-1)) = -weight;
+    Aeq_i(offset_eq+1, v.cos_yaw.i(j-1)) = -weight * nom(1);
+    Aeq_i(offset_eq+1, v.sin_yaw.i(j-1)) = weight * nom(2);
+    Aeq_i(offset_eq+1, v.rel_slack.i(1,j-2,2)) = -1;
+    beq_i(offset_eq+1) = 0;
+
+    Aeq_i(offset_eq+2, v.x.i(2,j)) = weight;
+    Aeq_i(offset_eq+2, v.x.i(2,j-1)) = -weight;
+    Aeq_i(offset_eq+2, v.sin_yaw.i(j-1)) = -weight * nom(1);
+    Aeq_i(offset_eq+2, v.cos_yaw.i(j-1)) = -weight * nom(2);
+    Aeq_i(offset_eq+2, v.rel_slack.i(2,j-2,2)) = -1;
+    beq_i(offset_eq+2) = 0;
+    offset_eq = offset_eq + 2;
+
+    % rel_obj(1,j-2) >= nom_step_slack(1,j-2) - scale*(2-0.5) * nom_forward_step
+    Ai(offset_ineq+1, v.rel_obj.i(1,j-2)) = -1;
+    Ai(offset_ineq+1, v.nom_step_slack.i(j-2)) = 1;
+    bi(offset_ineq+1) = scale * (alpha2 - alpha1) * seed_plan.params.nom_forward_step;
+    offset_ineq = offset_ineq + 1;
+
+    weight = 1;
+    Ai(offset_ineq+1, v.x.i(3,j)) = weight;
+    Ai(offset_ineq+1, v.x.i(4,j)) = weight;
+    Ai(offset_ineq+1, v.x.i(3,j-1)) = -weight;
+    Ai(offset_ineq+1, v.x.i(4,j-1)) = -weight;
+    Ai(offset_ineq+1, v.rel_obj.i(2,j-2)) = -1;
+    bi(offset_ineq+1) = 0;
+
+    Ai(offset_ineq+2, v.x.i(3,j)) = -weight;
+    Ai(offset_ineq+2, v.x.i(4,j)) = -weight;
+    Ai(offset_ineq+2, v.x.i(3,j-1)) = weight;
+    Ai(offset_ineq+2, v.x.i(4,j-1)) = weight;
+    Ai(offset_ineq+2, v.rel_obj.i(2,j-2)) = -1;
+    bi(offset_ineq+2) = 0;
+    offset_ineq = offset_ineq + 2;
+  end
+end
+assert(offset_eq == expected_offset_eq)
+assert(offset_ineq == expected_offset_ineq)
+A = [A; Ai];
+b = [b; bi];
+Aeq = [Aeq; Aeq_i];
+beq = [beq; beq_i];
+
+%% Add the objective on movement of each foot
+Aeq_i = zeros(2*(nsteps-2), nv);
+beq_i = zeros(size(Aeq_i, 1), 1);
+Ai = zeros(size(Aeq_i, 1), nv);
+bi = zeros(size(Ai, 1), 1);
+offset = 0;
+expected_offset = size(Aeq_i, 1);
 % Objective = Objective + sum(foot_obj(:));
-% for j = 3:nsteps
-%   err = x(:,j) - x(:,j-2);
-%   Constraints = [Constraints,...
-%     polycone(err(1:2), foot_obj(1,j-2), 16),...
-%     foot_obj(2,j-2) >= [1, .5] * abs(err(3:4)),...
-%     ];
-% end
+c(v.swing_obj.i) = 1;
+cones = [cones, struct('index', mat2cell([v.swing_obj.i(1,:); v.swing_slack.i], 3, ones(1, nsteps-2)))];
+for j = 3:nsteps
+  % err = x(:,j) - x(:,j-2);
+  % Constraints = [Constraints,...
+  %   polycone(err(1:2), foot_obj(1,j-2), 16),...
+  %   foot_obj(2,j-2) >= [1, .5] * abs(err(3:4)),...
+  %   ];
+  Aeq_i(offset+1, v.x.i(1,j)) = 1;
+  Aeq_i(offset+1, v.x.i(1,j-2)) = -1;
+  Aeq_i(offset+1, v.swing_slack.i(1,j-2)) = -1;
+  beq_i(offset+1) = 0;
 
-% fprintf(1, 'setup: %f\n', toc(t0));
-% t0 = tic;
-% solvesdp(Constraints, Objective, sdpsettings('solver', 'gurobi'));
-% fprintf(1, 'solve: %f\n', toc(t0));
+  Aeq_i(offset+2, v.x.i(2,j)) = 1;
+  Aeq_i(offset+2, v.x.i(2,j-2)) = -1;
+  Aeq_i(offset+2, v.swing_slack.i(2,j-2)) = -1;
+  beq_i(offset+2) = 0;
 
-% x = double(x);
-% cos_yaw = double(cos_yaw);
-% sin_yaw = double(sin_yaw);
-% yaw = double(yaw)
-% % sector = double(sector)
+  yaw_weight = 0.5;
+  Ai(offset+1, v.x.i(3,j)) = 1;
+  Ai(offset+1, v.x.i(4,j)) = yaw_weight;
+  Ai(offset+1, v.x.i(3,j-2)) = -1;
+  Ai(offset+1, v.x.i(4,j-2)) = -yaw_weight;
+  Ai(offset+1, v.swing_obj.i(2,j-2)) = -1;
+  bi(offset+1) = 0;
 
+  Ai(offset+2, v.x.i(3,j)) = -1;
+  Ai(offset+2, v.x.i(4,j)) = -yaw_weight;
+  Ai(offset+2, v.x.i(3,j-2)) = 1;
+  Ai(offset+2, v.x.i(4,j-2)) = yaw_weight;
+  Ai(offset+2, v.swing_obj.i(2,j-2)) = -1;
+  bi(offset+2) = 0;
 
-% figure(7);
-% clf
-% hold on
-% plot(cos_yaw, sin_yaw, 'bo');
-% plot(cos(yaw), sin(yaw), 'ro');
-% th = linspace(0, 2*pi);
-% plot(cos(th), sin(th), 'k-');
-% drawnow()
+  offset = offset + 2;
+end
+assert(offset == expected_offset)
+A = [A; Ai];
+b = [b; bi];
+Aeq = [Aeq; Aeq_i];
+beq = [beq; beq_i];
 
-% region = double(region);
-% steps = zeros(6,nsteps);
-% steps(POSE_INDICES,:) = x;
 
 var_names = fieldnames(v);
 clear model params
@@ -578,13 +699,10 @@ end
 params.mipgap = 1e-4;
 params.outputflag = 1;
 params.ConcurrentMIP = 4;
-params.NodeMethod = 0;
-% params.Cuts = 3;
-% params.Heuristics = 0.2;
-% params.Presolve = 2;
-% params.MIQCPMethod = 1;
-% params.MIPFocus = 2;
+% params.NodeMethod = 0;
 
+
+fprintf('setup: %f\n', toc(t0));
 % Solve the problem
 result = gurobi(model, params);
 
@@ -609,41 +727,45 @@ plan = seed_plan;
 for j = 1:nsteps
   plan.footsteps(j).pos = steps(:,j);
 end
-% region_order = nan(1, size(region, 2));
-% for j = 1:length(region_order)
-%   i = find(round(region(:,j)));
-%   if ~isempty(i)
-%     region_order(j) = i;
-%   end
-% end
-% assert(length(region_order) == size(region, 2));
-% plan.region_order = region_order;
 
-% for j = 1:nsteps
-%   plan.footsteps(j).pos = steps(:,j);
-% end
+% figure(7);
+% clf
+% hold on
+% plot(cos_yaw, sin_yaw, 'bo');
+% plot(cos(yaw), sin(yaw), 'ro');
+% th = linspace(0, 2*pi);
+% plot(cos(th), sin(th), 'k-');
+% drawnow()
 
-% plan.relative_step_offsets()
+region = v.region.value;
 
-% % Remove unnecessary footsteps
-% at_final_pose = false(1, nsteps);
-% at_final_pose(end-1:end) = true;
-% for j = 3:nsteps-2
-%   if mod(nsteps-j, 2)
-%     at_final_pose(j) = all(abs(plan.footsteps(j).pos - plan.footsteps(end-1).pos) <= TRIM_THRESHOLD);
-%   else
-%     at_final_pose(j) = all(abs(plan.footsteps(j).pos - plan.footsteps(end).pos) <= TRIM_THRESHOLD);
-%   end
-% end
-% trim = at_final_pose % Cut off any steps that are at the final poses
-% trim(find(trim, 2, 'first')) = false % Don't cut off the final poses themselves
+region_order = nan(1, size(region, 2));
+for j = 1:length(region_order)
+  i = find(region(:,j));
+  if ~isempty(i)
+    region_order(j) = i;
+  end
+end
+assert(length(region_order) == size(region, 2));
+plan.region_order = region_order;
 
-% plan = plan.slice(~trim);
+% Remove unnecessary footsteps
+at_final_pose = false(1, nsteps);
+at_final_pose(end-1:end) = true;
+for j = 3:nsteps-2
+  if mod(nsteps-j, 2)
+    at_final_pose(j) = all(abs(plan.footsteps(j).pos - plan.footsteps(end-1).pos) <= TRIM_THRESHOLD);
+  else
+    at_final_pose(j) = all(abs(plan.footsteps(j).pos - plan.footsteps(end).pos) <= TRIM_THRESHOLD);
+  end
+end
+trim = at_final_pose; % Cut off any steps that are at the final poses
+trim(find(trim, 2, 'first')) = false; % Don't cut off the final poses themselves
 
+plan = plan.slice(~trim);
 
-
-% plan.sanity_check();
-% plan.relative_step_offsets()
+plan.sanity_check();
+plan.relative_step_offsets()
 
 end
 
