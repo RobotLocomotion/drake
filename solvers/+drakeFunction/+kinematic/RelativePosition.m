@@ -52,8 +52,17 @@ classdef RelativePosition < drakeFunction.kinematic.Kinematic
       % [pos,J] = eval(obj,q) also returns the Jacobian of the relative
       %   positions
       %
+      % [pos,J,dJ] = eval(obj,q) also returns the second-derivaties of
+      %   the relative positions
+      %
       % @param obj  -- drakeFunction.kinematic.RelativePosition object
       % @param q    -- Column vector of joint positions
+      %
+      % @retval pos -- [3 x n_pts] array containing the positions of
+      %                pts_in_A relative to frameB
+      % @retval J   -- [3*n_pts x nq] Jacobian of pos w.r.t. q
+      % @retval dJ  -- [3*n_pts x nq^2] second-derivatives of pos w.r.t.
+      %                q in geval format
       compute_second_derivatives = (nargout > 2);
       if compute_second_derivatives
         kinsol = obj.rbm.doKinematics(q,true,false);
