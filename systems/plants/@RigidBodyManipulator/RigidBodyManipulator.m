@@ -9,7 +9,6 @@ classdef RigidBodyManipulator < Manipulator
     body=[];        % array of RigidBody objects
     actuator = [];  % array of RigidBodyActuator objects
     param_db = {};  % cell of structures (one per robot) containing parsed parameter info
-    param_db_fr={}; % cell array of parameters for the frames containing msspoly parameterized representations their properties
     loop=[];        % array of RigidBodyLoop objects
     sensor={};      % cell array of RigidBodySensor objects
     force={};       % cell array of RigidBodyForceElement objects
@@ -565,47 +564,6 @@ classdef RigidBodyManipulator < Manipulator
           error('unknown floating base type');
       end
     end
-    
-    function model = bindFrameParams(model, pval)
-      % Checks for parameters inside the model's frames and binds them to
-      % values
-      %
-      % @param pval input values for the parameters
-      %
-      % @retval model updated model
-      
-      % first, check inside the existing frames for any parameters
-      
-      for i=1:length(model.frame)
-        this_t = model.frame(i).T;
-        
-        if isa(this_t, 'msspoly')
-          % this is a paramter
-          
-          model.param_db_fr{i}.T = this_t;
-          
-        end
-        
-      end
-      
-      
-      % now iterate through the model_db.frames and bind them to our frames
-      fr = getParamFrame(model);
-      
-      for i=1:length(model.frame)
-        
-        % check to see if we have data for this frame
-        if i <= length(model.param_db_fr) && ~isempty(model.param_db_fr{i})
-
-          msspoly_t = model.param_db_fr{i}.T;
-
-          bound_t = double(subs(msspoly_t, fr.getPoly, pval));
-
-          model.frame(i).T = bound_t;
-        end
-      end
-      
-    end
 
     function model = addSensor(model,sensor)
       % Adds a sensor to the RigidBodyManipulator.  This modifies the
@@ -1004,8 +962,10 @@ classdef RigidBodyManipulator < Manipulator
         model.actuator(i) = updateParams(model.actuator(i), fr.getPoly, p);
       end
       
-      % update frames in case parameters caused them to change
-      model = bindFrameParams(model, p);
+      for i=1:length(model.frame)
+        model.frame(i) = updateParams(model.frame(i), fr.getPoly, p);
+      end
+      
       
 
       model = compile(model);
