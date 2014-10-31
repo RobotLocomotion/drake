@@ -33,12 +33,54 @@ classdef RigidBodyFrame
       end
     end
     
+    function obj = bindParams(obj, model, pval)
+      % Checks for parameters inside this frame and binds them to real
+      % values
+      %
+      % @param model model we are a part of
+      % @param pval values to set
+      %
+      % @retval obj updated frame object
+      
+      if isa(obj.T, 'msspoly')
+        % this is a paramter
+        obj.param_binding_T = obj.T;
+        
+        % bind it to a value
+        fr = getParamFrame(model);
+        obj = obj.updateParams(fr.getPoly(), pval);
+      end
+      
+      
+    end
+    
+    function obj = updateParams(obj, poly, pval)
+      % Checks for parameters inside this frame and binds them to real
+      % values
+      %
+      % @param poly parameter frame's polynomials (from frame.getPoly())
+      % @param pval input values for the parameters
+      %
+      % @retval obj updated frame
+      
+      
+      % first, check inside this frame for parameters
+        
+
+      % check to see if we have data for this frame
+      if ~isempty(obj.param_binding_T)
+        obj.T = double(subs(obj.param_binding_T, poly, pval));
+      end
+      
+    end
+    
   end
 
   properties
     name
     body_ind
     T
+    param_binding_T = []; % if this frame has parameters, the msspoly representation is stored here
   end
 end
 

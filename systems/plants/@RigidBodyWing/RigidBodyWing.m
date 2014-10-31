@@ -799,8 +799,9 @@ classdef RigidBodyWing < RigidBodyForceElement
 
       % bind parameters before drawing so we know what to draw
       obj = obj.bindParams(model, double(model.getParams()));
-      model = bindFrameParams(model, double(model.getParams()));
-
+      bound_frame = model.getFrame(this_frame_id).bindParams(model, double(model.getParams()));
+      model = model.setFrame(this_frame_id, bound_frame);
+      
       if (visual_geometry_urdf)
         % add visual shapes for automatic drawing of the wing
         model = obj.addWingVisualShapeToBody(model, parent);

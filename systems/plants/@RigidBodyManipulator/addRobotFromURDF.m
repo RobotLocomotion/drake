@@ -163,6 +163,10 @@ for i=1:length(model.actuator)
   model.actuator(i) = bindParams(model.actuator(i), model, pval);
 end
 
+for i=1:length(model.frame)
+  model.frame(i) = bindParams(model.frame(i), model, pval);
+end
+
 end
 
 function model = parseParameter(model,robotnum,node,options)

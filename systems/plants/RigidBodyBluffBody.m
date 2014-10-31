@@ -225,7 +225,8 @@ classdef RigidBodyBluffBody < RigidBodyForceElement
       % bind parameters, because if there is a parameter on area, we need
       % to know what it is (right now) for correct drawing
       obj = obj.bindParams(model, double(model.getParams()));
-      model = bindFrameParams(model, double(model.getParams()));
+      bound_frame = model.getFrame(this_frame_id).bindParams(model, double(model.getParams()));
+      model = model.setFrame(this_frame_id, bound_frame);
       
       if (obj.visual_geometry)
         model = addBluffBodyVisualShapeToBody(obj, model, parent);
