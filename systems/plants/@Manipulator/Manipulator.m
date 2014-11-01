@@ -219,6 +219,17 @@ classdef Manipulator < DrakeSystem
       obj.num_velocity_constraints = obj.num_velocity_constraints+con.num_cnstr;
       obj.velocity_constraints{id} = con;
     end
+    
+    function obj = removeAllStateConstraints(obj)
+      obj.num_position_constraints=0;
+      obj.num_velocity_constraints=0;
+      obj.position_constraints = {};  
+      obj.position_constraint_ids = [];
+      obj.velocity_constraints = {};
+      obj.velocity_constraint_ids = []; 
+      obj.joint_limit_constraint_id = [];
+      obj = removeAllStateConstraints@DrakeSystem(obj);
+    end
   end
 
   methods
