@@ -140,6 +140,25 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
       nobj = PPTrajectory(obj.pp);
     end
     
+    function tf = eq(a,b)
+      % only implement the trivial case of pptraj=scalar const
+      % (which is what I need right now)
+      if isscalar(a)
+        tmp=b;b=a;a=tmp;
+      end
+      if isscalar(b)
+        % first check if it's a constant
+        if any(a.pp.coefs(:,1:end-1)~=0), tf=false; return; end
+        tf = all(a.pp.coefs(:,end)==b);
+      else
+        error('not implemented yet');
+      end
+    end
+    
+    function tf = ne(a,b)
+      tf = ~eq(a,b);
+    end
+    
     function t = getBreaks(obj)
       t = obj.pp.breaks;
     end
@@ -486,11 +505,11 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
         if isempty(a) % handle the special case
           [breaks,coefs,l,k,d] = unmkpp(b.pp);
           e=[];
-          coefs = reshape(coefs,[d,l,k]);
+          d_extended = [d,l,k];
+          coefs = reshape(coefs,d_extended);
           s.subs = {s.subs{:},':',':'};
           e = subsasgn(e,s,coefs);
-          d=size(coefs); d=d(1:end-2);
-          a = PPTrajectory(mkpp(breaks,e,d));
+          a = PPTrajectory(mkpp(breaks,e,d_extended(1:end-2)));
           return;
         end
         if isnumeric(a) % then b must be a PPTrajectory
