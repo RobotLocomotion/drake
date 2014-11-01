@@ -96,7 +96,7 @@ elseif isa(R,'cell')
   
   if isa(R{1},'double'), R{1} = ConstantTrajectory(R{1}); 
   else typecheck(R{1},'Trajectory'); end
-  sizecheck(Q{1},[nU,nU]);
+  sizecheck(R{1},[nU,nU]);
 
   if isa(R{2},'double'), R{2} = ConstantTrajectory(R{2});
   else typecheck(R{2},'Trajectory'); end
