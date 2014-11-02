@@ -60,27 +60,5 @@ else
     joint_path = [path_start; path_end];
     signs = [-ones(size(path_start)); ones(size(path_end))];
   end
-  
-  % THIS IS MUCH SLOWER:
-  % start_body_ancestors = [start_body; obj.findAncestorBodies(start_body)];
-  % end_body_ancestors = [end_body; obj.findAncestorBodies(end_body)];
-  % [common_ancestors, start_indices, end_indices] = intersect(start_body_ancestors, end_body_ancestors);
-  % if isempty(common_ancestors)
-  %   error(['there is no path between ' start_body ' and ' end_body]);
-  % end
-  %
-  % [least_common_ancestor, least_common_ancestor_index] = max(common_ancestors);
-  %
-  % start_index = start_indices(least_common_ancestor_index);
-  % path_start = start_body_ancestors(1 : start_index - 1);
-  %
-  % end_index = end_indices(least_common_ancestor_index);
-  % path_end = flipud(end_body_ancestors(1 : end_index - 1));
-  %
-  % body_path = [path_start; least_common_ancestor; path_end];
-  % joint_path = [path_start; path_end];
-  % signs = [-ones(size(path_start)); ones(size(path_end))];
-end
-
 end
 
