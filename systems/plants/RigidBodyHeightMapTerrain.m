@@ -37,25 +37,25 @@ classdef RigidBodyHeightMapTerrain < RigidBodyTerrain & RigidBodyGeometry
       pts = obj.T(1:3,:)*[repmat(min_vals,1,8).*min_idx + repmat(max_vals,1,8).*(~min_idx); ones(1,8)];
     end
     
-    function shape = serializeToLCM(obj)
+    function geometry = serializeToLCM(obj)
       fname = [tempname,'.obj'];
       writeOBJ(obj,fname);
-      shape = drake.lcmt_viewer_geometry_data();
-      shape.type = shape.MESH;
-      shape.string_data = fname;
-      shape.num_float_data = 1;
-      shape.float_data = 1;  % scale
+      geometry = drake.lcmt_viewer_geometry_data();
+      geometry.type = geometry.MESH;
+      geometry.string_data = fname;
+      geometry.num_float_data = 1;
+      geometry.float_data = 1;  % scale
 
-      shape.position = obj.T(1:3,4);
-      shape.quaternion = rotmat2quat(obj.T(1:3,1:3));
-      shape.color = [obj.c(:);1.0];
+      geometry.position = obj.T(1:3,4);
+      geometry.quaternion = rotmat2quat(obj.T(1:3,1:3));
+      geometry.color = [obj.c(:);1.0];
     end
 
-    function geom = getRigidBodyContactGeometry(obj)
+    function geom = getCollisionGeometry(obj)
       geom = [];
     end
 
-    function geom = getRigidBodyShapeGeometry(obj)
+    function geom = getVisualGeometry(obj)
       geom = obj;
     end
     
