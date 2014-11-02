@@ -7,6 +7,7 @@
 #include <Eigen/StdVector> //#include <vector>
 
 #include "collision/DrakeCollision.h"
+#include "KinematicPath.h"
 
 #if defined(WIN32) || defined(WIN64)
   #if defined(drakeRBM_EXPORTS)
@@ -64,6 +65,10 @@ public:
   template <typename Derived>
     void getContactPositionsJacDot(MatrixBase<Derived> &Jdot, const std::set<int> &body_idx);// = emptyIntSet);
 
+  void findAncestorBodies(std::vector<int>& ancestor_bodies, int body);
+
+  void findKinematicPath(KinematicPath& path, int start_body_or_frame_idx, int end_body_or_frame_idx);
+
   template <typename DerivedA, typename DerivedB>
   void forwardKin(const int body_or_frame_ind, const MatrixBase<DerivedA>& pts, const int rotation_type, MatrixBase<DerivedB> &x);
 
@@ -79,6 +84,10 @@ public:
   template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD>
   void bodyKin(const int body_ind, const MatrixBase<DerivedA>& pts, MatrixBase<DerivedB> &x, MatrixBase<DerivedC> *J=NULL, MatrixBase<DerivedD> *P=NULL);
 
+#if !defined(WIN32) && !defined(WIN64)
+  template<typename DerivedA>
+  void geometricJacobian(int base_body_or_frame_ind, int end_effector_body_or_frame_ind, int expressed_in_body_or_frame_ind, PlainObjectBase<DerivedA>& J, std::vector<int>* v_indices);
+#endif
 
   template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD, typename DerivedE, typename DerivedF>
   void HandC(double* const q, double * const qd, MatrixBase<DerivedA> * const f_ext, MatrixBase<DerivedB> &H, MatrixBase<DerivedC> &C, MatrixBase<DerivedD> *dH=NULL, MatrixBase<DerivedE> *dC=NULL, MatrixBase<DerivedF> * const df_ext=NULL);
@@ -177,7 +186,7 @@ public:
 
 
 private:
-  int parseBodyOrFrameID(const int body_or_frame_id, Matrix4d& Tframe);
+  int parseBodyOrFrameID(const int body_or_frame_id, Matrix4d* Tframe = nullptr);
 
   // variables for featherstone dynamics
   std::vector<VectorXd> S;

@@ -1,17 +1,23 @@
 function testFindKinematicPath()
 
-options.floating = true;
-robot = RigidBodyManipulator(fullfile('../urdf/atlas_minimal_contact.urdf'),options);
+robot = createAtlas('rpy');
 
-num_bodies = robot.getNumBodies();
+testPathToSelf(robot);
+testAllPaths(robot);
 
+end
+
+function testPathToSelf(robot)
 % verify that path to self contains only self
+num_bodies = robot.getNumBodies();
 for i = 1 : num_bodies
   path = robot.findKinematicPath(i, i);
   valuecheck(path, i);
 end
+end
 
-
+function testAllPaths(robot)
+num_bodies = robot.getNumBodies();
 for i = 1 : num_bodies
   % verify that path to parent contains only self and parent and that path to
   % child is flipud(path from child to parent)
@@ -20,29 +26,34 @@ for i = 1 : num_bodies
     valuecheck(robot.findKinematicPath(i, parent), [i; parent]);
     valuecheck(robot.findKinematicPath(parent, i), [parent; i]);
   end
-
+  
   for j = 1 : num_bodies
-    path = robot.findKinematicPath(i, j);
-
+    [body_path_mex, joint_path_mex, signs_mex] = robot.findKinematicPath(i, j, true);
+    [body_path_non_mex, joint_path_non_mex, signs_non_mex] = robot.findKinematicPath(i, j, false);
+    
+    % compare mex and matlab
+    valuecheck(body_path_mex, body_path_non_mex);
+    valuecheck(joint_path_mex, joint_path_non_mex);
+    valuecheck(signs_mex, signs_non_mex);
+    
     % verify that no paths have repeated entries
-    valuecheck(length(unique(path)), length(path));
-
+    valuecheck(length(unique(body_path_mex)), length(body_path_mex));
+    
     % verify that all paths are connected
-    assert(isLinkPathConnected(path, robot));
-
+    assert(isLinkPathConnected(body_path_mex, robot));
+    
     % verify that all paths have at most one direction change
-    assert(getDirectionChanges(path) < 2)
-
-    if (getDirectionChanges(path) == 1)
+    assert(getDirectionChanges(body_path_mex) < 2)
+    
+    if (getDirectionChanges(body_path_mex) == 1)
     end
-
-%     if (getDirectionChanges(path) > 1)
-%       printBodyNames(path, robot);
-%       robot.drawKinematicTree();
-%     end
+    
+    %     if (getDirectionChanges(path) > 1)
+    %       printBodyNames(path, robot);
+    %       robot.drawKinematicTree();
+    %     end
   end
 end
-
 end
 
 function ret = isLinkPathConnected(path, robot)
@@ -53,7 +64,7 @@ for i = 1 : path_length
   if j <= path_length
     a = path(i);
     b = path(j);
-
+    
     is_a_parent_of_b = robot.getBody(a).parent == b;
     is_b_parent_of_a = robot.getBody(b).parent == a;
     if ~(is_a_parent_of_b || is_b_parent_of_a)

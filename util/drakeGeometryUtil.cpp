@@ -652,6 +652,29 @@ Eigen::Matrix<typename Derived::Scalar, SPACE_DIMENSION, RPY_SIZE> rpydot2angula
   return E;
 }
 
+template<typename Scalar, typename DerivedM>
+Eigen::Matrix<Scalar, TWIST_SIZE, DerivedM::ColsAtCompileTime> transformSpatialMotion(
+    const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T,
+    const Eigen::MatrixBase<DerivedM>& M) {
+  Eigen::Matrix<Scalar, TWIST_SIZE, DerivedM::ColsAtCompileTime> ret(TWIST_SIZE, M.cols());
+  ret.template topRows<3>().noalias() = T.linear() * M.template topRows<3>();
+  ret.template bottomRows<3>().noalias() = -ret.template topRows<3>().colwise().cross(T.translation());
+  ret.template bottomRows<3>().noalias() += T.linear() * M.template bottomRows<3>();
+  return ret;
+}
+
+template<typename Scalar, typename DerivedF>
+Eigen::Matrix<Scalar, TWIST_SIZE, DerivedF::ColsAtCompileTime> transformSpatialForce(
+    const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T,
+    const Eigen::MatrixBase<DerivedF>& F) {
+  Eigen::Matrix<Scalar, TWIST_SIZE, DerivedF::ColsAtCompileTime> ret(TWIST_SIZE, F.cols());
+  Eigen::Transform<Scalar, 3, Eigen::Isometry> Tinv = T.inverse();
+  ret.template bottomRows<3>().noalias() = Tinv.linear() * F.template bottomRows<3>();
+  ret.template topRows<3>().noalias() = -ret.template bottomRows<3>().colwise().cross(Tinv.translation());
+  ret.template topRows<3>().noalias() = Tinv.linear() * F.template topRows<3>();
+  return ret;
+}
+
 template<typename Scalar, typename DerivedS, typename DerivedQdotToV>
 Eigen::Matrix<Scalar, HOMOGENEOUS_TRANSFORM_SIZE, DerivedQdotToV::ColsAtCompileTime> dHomogTrans(
     const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T,
@@ -861,6 +884,22 @@ template DLLEXPORT Vector3d rotmat2rpy(const MatrixBase< Map<Matrix3d> >&);
 template DLLEXPORT Vector4d rpy2axis(const Eigen::MatrixBase< Map<Vector3d> >&);
 template DLLEXPORT Vector4d rpy2quat(const Eigen::MatrixBase< Map<Vector3d> >&);
 template DLLEXPORT Matrix3d rpy2rotmat(const Eigen::MatrixBase< Map<Vector3d> >&);
+
+template DLLEXPORT Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic> transformSpatialMotion(
+    const Eigen::Isometry3d&,
+    const Eigen::MatrixBase< Matrix<double, TWIST_SIZE, Eigen::Dynamic> >&);
+
+template DLLEXPORT Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic> transformSpatialMotion(
+    const Eigen::Isometry3d&,
+    const Eigen::MatrixBase< MatrixXd >&);
+
+template DLLEXPORT Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic> transformSpatialForce(
+    const Eigen::Isometry3d&,
+    const Eigen::MatrixBase< Matrix<double, TWIST_SIZE, Eigen::Dynamic> >&);
+
+template DLLEXPORT Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic> transformSpatialForce(
+    const Eigen::Isometry3d&,
+    const Eigen::MatrixBase< MatrixXd >&);
 
 #if !defined(WIN32) && !defined(WIN64)
 
