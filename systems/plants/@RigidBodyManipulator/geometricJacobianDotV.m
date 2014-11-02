@@ -19,6 +19,10 @@ function jDotV = geometricJacobianDotV(obj, kinsol, twists, base, endEffector, e
 % across the individual joints (with vdot set to zero), transformed to
 % expressedIn frame before addition.
 
+if (kinsol.mex)
+    error('Drake:RigidBodyManipulator:NoMex','This method has not been mexed yet.');
+end
+
 [~, jointPath, signs] = obj.findKinematicPath(base, endEffector);
 
 jDotV = zeros(6, 1);
