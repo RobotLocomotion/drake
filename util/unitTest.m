@@ -368,7 +368,7 @@ function pnode = crawlDir(pdir,pnode,only_test_dirs,options)
         elseif ~isempty(param)
           error([fullfile(pwd,'.UNITTEST'),' has a an unknown tag: ',param]);
         else
-          crawlDir(name,node,only_test_dirs && ~strcmpi(name,'test'),options);
+          crawlDir(name,node,only_test_dirs && ~isTestDir(name),options);
         end
       elseif exist(name,'file')
         files=vertcat(files,dir(name));
@@ -388,7 +388,7 @@ function pnode = crawlDir(pdir,pnode,only_test_dirs,options)
     if (files(i).isdir)
       % then recurse into the directory
       if (files(i).name(1)~='.' && ~any(strcmpi(files(i).name,{'dev','slprj','autogen-matlab','autogen-posters'})))  % skip . and dev directories
-        crawlDir(files(i).name,node,only_test_dirs && ~strcmpi(files(i).name,'test'),options);
+        crawlDir(files(i).name,node,only_test_dirs && ~isTestDir(files(i).name),options);
       end
       continue;
     end
@@ -908,4 +908,9 @@ end
     thisElement = docNode.createElement(element_name);
     thisElement.appendChild(docNode.createTextNode(text));
     parent.appendChild(thisElement);
+  end
+
+  function tf = isTestDir(dirname)
+    % Supports package notation in which folders begin with a +
+    tf = strcmp(dirname, 'test') || strcmp(dirname, '+test');
   end
