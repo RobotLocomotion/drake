@@ -52,7 +52,7 @@ classdef Constraint
 
       obj.name = repmat({''},obj.num_cnstr,1);
 
-      obj.grad_method = 'user';
+      obj.grad_method = 'user_then_taylorvar';
 
       obj.iCfun = reshape(bsxfun(@times,(1:obj.num_cnstr)',ones(1,obj.xdim)),[],1);
       obj.jCvar = reshape(bsxfun(@times,1:obj.xdim,ones(obj.num_cnstr,1)),[],1);
@@ -111,7 +111,7 @@ classdef Constraint
     end
 
     function varargout = eval(obj,varargin)
-      if obj.grad_level==-2  % no gradients available
+      if obj.grad_level==-2  % no gradients available (non-differentiable)
         varargout{1} = obj.constraintEval(varargin{:});
       else
         % special casing 'user' to avoid geval for speed reasons
