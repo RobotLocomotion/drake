@@ -66,7 +66,13 @@ classdef MixedIntegerHelper
         start_ = [];
       end
       obj.v.(name).start = nan(obj.v.(name).size);
-      obj.v.(name).start(1:size(start_, 1), 1:size(start_, 2)) = start_;
+      if size(start_, 1) > obj.v.(name).size(1)
+        start_ = start_(1:obj.v.(name).size(1),:,:);
+      end
+      if size(start_, 2) > obj.v.(name).size(2)
+        start_ = start_(:,1:obj.v.(name).size(2),:);
+      end
+      obj.v.(name).start(1:size(start_, 1), 1:size(start_, 2), 1:size(start_, 3)) = start_;
     end
 
     function obj = freeze(obj)
