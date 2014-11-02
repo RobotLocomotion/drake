@@ -1,9 +1,7 @@
 function [plan, sin_yaw, cos_yaw] = footstepUnitCircleMISOCP(biped, seed_plan, weights, goal_pos)
-% This planner is the first prototype of the mixed-integer planner
-% described in "Footstep Planning on Uneven Terrain with Mixed-Integer 
-% Convex Optimization" by Robin Deits and Russ Tedrake. 
-% 
-% Note: this is now obsolete: please use footstepMIQCQP.m instead.
+% This planner is derived from the one presented in the Humanoids 2014 paper, but it performs
+% the piecewise linear approximation on the unit circle of sin and cos, rather than performing
+% separate approximations for each function of theta.
 % 
 % This implementation uses a mixed-integer SOCP to plan the number of footsteps to take,
 % the position and yaw of those steps, and the assignments of footsteps to
