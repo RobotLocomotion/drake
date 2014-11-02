@@ -1,4 +1,4 @@
-function [plan, sin_yaw, cos_yaw] = footstepRelaxedMISOCP(biped, seed_plan, weights, goal_pos)
+function [plan, sin_yaw, cos_yaw] = footstepRelaxedMISOCP(biped, seed_plan, weights, goal_pos, ~)
 % This implementation uses a mixed-integer SOCP to plan the number of footsteps to take,
 % the position and yaw of those steps, and the assignments of footsteps to
 % convex regions of obstacle-free terrain. 
@@ -27,7 +27,9 @@ SECTOR_WIDTH = pi/8;
 POSE_INDICES = [1,2,3,6]; % which indices of xyzrpy we are searching over
 MAX_DISTANCE = 30;
 
-TRIM_THRESHOLD = [0.02; 0.02; 0.02; pi/16; pi/16; pi/16];
+TRIM_THRESHOLD = [0.02; 0.02; inf; inf; inf; pi/16];
+
+POLYCONE_APPROX_LEVEL = 0;
 
 REACHABILITY_METHOD = 'ellipse';
 
@@ -65,7 +67,7 @@ if strcmp(REACHABILITY_METHOD, 'ellipse')
     dists = sdpvar(1, size(foci, 2), 'full');
     for k = 1:size(foci, 2)
       Constraints = [Constraints,...
-        polycone(x(1:2,j) - (x(1:2,j-1) + [cos_yaw(j-1), -sin_yaw(j-1); sin_yaw(j-1), cos_yaw(j-1)] * foci(:,k)), dists(k), 16),...
+        coneOrPolyCone(x(1:2,j) - (x(1:2,j-1) + [cos_yaw(j-1), -sin_yaw(j-1); sin_yaw(j-1), cos_yaw(j-1)] * foci(:,k)), dists(k), POLYCONE_APPROX_LEVEL),...
         ];
       % expr = expr + norm(x(1:2,j) - (x(1:2,j-1) + [cos_yaw(j-1), -sin_yaw(j-1); sin_yaw(j-1), cos_yaw(j-1)] * foci(:,k)));
     end
@@ -102,11 +104,11 @@ end
 %% Enforce rotation convex relaxation
 for j = 3:nsteps
   Constraints = [Constraints,...
-    polycone([cos_yaw(j); sin_yaw(j)], 1, 16)];
+    coneOrPolyCone([cos_yaw(j); sin_yaw(j)], 1, POLYCONE_APPROX_LEVEL)];
 end
 for j = 3:nsteps
   Constraints = [Constraints,...
-    polycone([cos_yaw(j) - cos_yaw(j-1); sin_yaw(j) - sin_yaw(j-1)], pi/8, 16)];
+    coneOrPolyCone([cos_yaw(j) - cos_yaw(j-1); sin_yaw(j) - sin_yaw(j-1)], pi/8, POLYCONE_APPROX_LEVEL)];
 end
 
 %% Enforce rotation mixed-integer constraints
@@ -189,12 +191,12 @@ Objective = Objective + [0.1 * ones(1,nsteps-3), 10] * sum(goal_obj,1)';
 for j = 3:nsteps
   if seed_plan.footsteps(j).frame_id == biped.foot_frame_id.right
     Constraints = [Constraints,...
-      polycone(x(1:2,j) - goal_pos.right(1:2), goal_obj(1,j-2), 16),...
+      coneOrPolyCone(x(1:2,j) - goal_pos.right(1:2), goal_obj(1,j-2), POLYCONE_APPROX_LEVEL),...
       goal_obj(2,j-2) >= [1, 1] * abs(x(3:4,j) - goal_pos.right(POSE_INDICES(3:4))),...
       ];
   elseif seed_plan.footsteps(j).frame_id == biped.foot_frame_id.left
     Constraints = [Constraints,...
-      polycone(x(1:2,j) - goal_pos.left(1:2), goal_obj(1,j-2), 16),...
+      coneOrPolyCone(x(1:2,j) - goal_pos.left(1:2), goal_obj(1,j-2), POLYCONE_APPROX_LEVEL),...
       goal_obj(2,j-2) >= [1, 1] * abs(x(3:4,j) - goal_pos.left(POSE_INDICES(3:4))),...
       ];
   else
@@ -214,14 +216,14 @@ for j = 3:nsteps
   err = x(:,j) - [(x(1:2,j-1) + [cos_yaw(j-1), -sin_yaw(j-1); sin_yaw(j-1), cos_yaw(j-1)] * nom); x(3:4,j-1)];
   if j == nsteps
     Constraints = [Constraints,...
-      polycone(20 * err(1:2), rel_obj(1,j-2), 16),...
+      coneOrPolyCone(20 * err(1:2), rel_obj(1,j-2), POLYCONE_APPROX_LEVEL),...
       rel_obj(2,j-2) >= 20 * [1, 1] * abs(err(3:4)),...
       ];
   else
     scale = 0.1 * (nsteps - j) + 1;
     Constraints = [Constraints,...
-      polycone(0.5 * scale * err(1:2), rel_obj(1,j-2), 16),...
-      polycone(2 * scale * err(1:2), rel_obj(1,j-2) + scale*((2 - 0.5) * seed_plan.params.nom_forward_step), 16),...
+      coneOrPolyCone(0.5 * scale * err(1:2), rel_obj(1,j-2), POLYCONE_APPROX_LEVEL),...
+      coneOrPolyCone(2 * scale * err(1:2), rel_obj(1,j-2) + scale*((2 - 0.5) * seed_plan.params.nom_forward_step), POLYCONE_APPROX_LEVEL),...
       rel_obj(2,j-2) >= [1, 1] * abs(err(3:4))];
   end
 end
@@ -232,7 +234,7 @@ Objective = Objective + sum(foot_obj(:));
 for j = 3:nsteps
   err = x(:,j) - x(:,j-2);
   Constraints = [Constraints,...
-    polycone(err(1:2), foot_obj(1,j-2), 16),...
+    coneOrPolyCone(err(1:2), foot_obj(1,j-2), POLYCONE_APPROX_LEVEL),...
     foot_obj(2,j-2) >= [1, .5] * abs(err(3:4)),...
     ];
 end
@@ -277,7 +279,7 @@ for j = 1:nsteps
   plan.footsteps(j).pos = steps(:,j);
 end
 
-plan.relative_step_offsets()
+% plan.relative_step_offsets()
 
 % Remove unnecessary footsteps
 at_final_pose = false(1, nsteps);
@@ -289,14 +291,22 @@ for j = 3:nsteps-2
     at_final_pose(j) = all(abs(plan.footsteps(j).pos - plan.footsteps(end).pos) <= TRIM_THRESHOLD);
   end
 end
-trim = at_final_pose % Cut off any steps that are at the final poses
-trim(find(trim, 2, 'first')) = false % Don't cut off the final poses themselves
+trim = at_final_pose; % Cut off any steps that are at the final poses
+trim(find(trim, 2, 'first')) = false; % Don't cut off the final poses themselves
 
 plan = plan.slice(~trim);
 
 
 
 plan.sanity_check();
-plan.relative_step_offsets()
+% plan.relative_step_offsets()
 
+end
+
+function constraint = coneOrPolyCone(x, v, N)
+  if N == 0
+    constraint = cone(x, v);
+  else
+    constraint = polycone(x, v, N);
+  end
 end
