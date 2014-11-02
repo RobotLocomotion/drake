@@ -405,7 +405,7 @@ classdef RigidBodyWing < RigidBodyForceElement
       end
 
       if (nargout>1)
-        [wingvel_rel,wingvel_relJ,wingvel_relP] = bodyKin(manip,kinsol,obj.kinframe,[wingvel_world,zeros(3,1)]);
+        [wingvel_rel,wingvel_relP,wingvel_relJ] = bodyKin(manip,kinsol,obj.kinframe,[wingvel_world,zeros(3,1)]);
         wingvel_rel = wingvel_rel(:,1)-wingvel_rel(:,2);
         wingvel_relJ = wingvel_relJ(1:3,:)-wingvel_relJ(4:6,:);
         wingvel_relP = wingvel_relP(1:3,:)-wingvel_relP(4:6,:);
@@ -461,7 +461,7 @@ classdef RigidBodyWing < RigidBodyForceElement
 
       % convert torque to joint frame (featherstone dynamics algorithm never reasons in body coordinates)
       if (nargout>1)
-        [torque_body, torque_bodyJ, torque_bodyP] = bodyKin(manip,kinsol,frame.body_ind,[torque_world,zeros(3,1)]);
+        [torque_body, torque_bodyP, torque_bodyJ] = bodyKin(manip,kinsol,frame.body_ind,[torque_world,zeros(3,1)]);
         torque_body = torque_body(:,1)-torque_body(:,2);
         torque_bodyJ = torque_bodyJ(1:3,:)-torque_bodyJ(4:6,:);
         torque_bodyP = torque_bodyP(1:3,:)-torque_bodyP(4:6,:);

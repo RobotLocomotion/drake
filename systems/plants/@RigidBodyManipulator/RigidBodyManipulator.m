@@ -324,7 +324,7 @@ classdef RigidBodyManipulator < Manipulator
 
       % convert force to body coordinates
       if (nargout>1)
-        [ftmp,ftmpJ,ftmpP]=bodyKin(obj,kinsol,body_ind,[force,zeros(3,1)]);
+        [ftmp,ftmpP,ftmpJ]=bodyKin(obj,kinsol,body_ind,[force,zeros(3,1)]);
       else
         ftmp=bodyKin(obj,kinsol,body_ind,[force,zeros(3,1)]);
       end
