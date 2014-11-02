@@ -31,7 +31,7 @@ thetadot_orbit3 = orbit(rw.getMode(1),theta_samples,11);
 [Theta,ThetaDot] = meshgrid(theta_samples(1:10:end),linspace(0,2,21));
 xdot = rw.getMode(1).dynamics(0,[Theta(:)';ThetaDot(:)';0*Theta(:)']);
 ThetaDDot = reshape(xdot(2,:),size(Theta));
-  
+
   function draw(dt,x,u)
     quiver(Theta,ThetaDot,ThetaDot,ThetaDDot,'r');
     hold on;
@@ -46,11 +46,9 @@ ThetaDDot = reshape(xdot(2,:),size(Theta));
     hold off;
     axis([rw.gamma - 2*rw.alpha,rw.gamma+2*rw.alpha,0 2]);
     drawnow;
-    pause;
   end
 prog = prog.addTrajectoryDisplayFunction(@draw);
 
 prog.solveTraj(1);
 
 end
-

@@ -4,7 +4,7 @@ p = PlanarRigidBodyManipulator('../Pendulum.urdf');
 
 x=randn(2,1); %p.getInitialState();
 q=x(1);qd=x(1);
-[phi,J]=geval(@p.positionConstraints,q);
+[phi,J]=p.positionConstraints(q);
 
 psi = p.velocityConstraints(q,qd);
 
