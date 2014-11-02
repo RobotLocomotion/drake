@@ -27,14 +27,14 @@ world = rb.getBody(1);
 obstacle1 = RigidBodyCapsule(1, 10);
 obstacle1.T(1:3, 4) = [ 10; 0; 0 ];
 
-world.contact_shapes{end+1} = obstacle1;
-world.visual_shapes{end+1} = obstacle1;
+world.collision_geometry{end+1} = obstacle1;
+world.visual_geometry{end+1} = obstacle1;
 
 obstacle2 = RigidBodyCapsule(1, 10);
 obstacle2.T(1:3, 4) = [ -10; 0; 0 ];
 
-world.contact_shapes{end+1} = obstacle2;
-world.visual_shapes{end+1} = obstacle2;
+world.collision_geometry{end+1} = obstacle2;
+world.visual_geometry{end+1} = obstacle2;
 
 % put the new world back into the rb
 rb = rb.setBody(1, world);
