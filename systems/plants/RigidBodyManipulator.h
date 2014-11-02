@@ -4,7 +4,6 @@
 #include <Eigen/Dense>
 #include <Eigen/LU>
 #include <set>
-#include <memory>
 #include <Eigen/StdVector> //#include <vector>
 
 #include "collision/DrakeCollision.h"
