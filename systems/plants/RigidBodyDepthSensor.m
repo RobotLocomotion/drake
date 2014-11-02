@@ -45,7 +45,7 @@ classdef RigidBodyDepthSensor < RigidBodySensor
     
     function points = output(obj,manip,t,x,u)
       % Computes the output of the sensor
-      % @param manip RigidBodyManipulator with collision geometries
+      % @param manip RigidBodyManipulator with collision geometry
       % @param t time (unused)
       % @param x system state
       % @param u control input (unused)

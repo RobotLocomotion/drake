@@ -10,15 +10,15 @@ r_foot = r.findLinkInd('r_foot');
 l_hand = r.findLinkInd('l_hand');
 r_hand = r.findLinkInd('r_hand');
 head = r.findLinkInd('head');
-nLPts = length(r.getBody(l_foot).getContactShapes);
+nLPts = length(r.getBody(l_foot).getCollisionGeometry);
 l_foot_pts = zeros(3,nLPts);
 for i=1:nLPts,
-  l_foot_pts(:,i) = r.getBody(l_foot).getContactShapes{i}.getPoints;
+  l_foot_pts(:,i) = r.getBody(l_foot).getCollisionGeometry{i}.getPoints;
 end
-nRPts = length(r.getBody(r_foot).getContactShapes);
+nRPts = length(r.getBody(r_foot).getCollisionGeometry);
 r_foot_pts = zeros(3,nRPts);
 for i=1:nRPts,
-  r_foot_pts(:,i) = r.getBody(r_foot).getContactShapes{i}.getPoints;
+  r_foot_pts(:,i) = r.getBody(r_foot).getCollisionGeometry{i}.getPoints;
 end
 l_hand_pts = [0;0;0];
 r_hand_pts = [0;0;0];

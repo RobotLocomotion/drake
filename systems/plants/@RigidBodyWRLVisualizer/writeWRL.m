@@ -89,8 +89,8 @@ function writeWRLBodyAndChildren(model,body_ind,fp,td)
     tabprintf(fp,'children [\n'); td=td+1;
   end
 
-  for i=1:length(body.visual_shapes)
-    writeWRLShape(body.visual_shapes{i},fp,td);
+  for i=1:length(body.visual_geometry)
+    writeWRLShape(body.visual_geometry{i},fp,td);
   end
 
   for i=1:length(model.body)

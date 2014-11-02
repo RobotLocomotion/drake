@@ -77,10 +77,10 @@ classdef CollisionFilterGroup
         % Remove child link
         obj = obj.removeMembers(linkname,robotnum);
 
-        % Add the parent link if the parent has no contact shapes but the child
+        % Add the parent link if the parent has no collision geometry but the child
         % does
-        if ~isempty(model.getBody(child_index).contact_shapes)
-          if isempty(model.getBody(parent_index).contact_shapes)
+        if ~isempty(model.getBody(child_index).collision_geometry)
+          if isempty(model.getBody(parent_index).collision_geometry)
             add_parent = true;
           else
             warnOnce(obj.warning_manager, ...

@@ -17,8 +17,8 @@ classdef PlanarRigidBodyVisualizer < RigidBodyVisualizer
       w = warning('off','Drake:RigidBodyGeometry:SimplifiedCollisionGeometry');
       for i=1:length(obj.model.body)
         b = obj.model.body(i);
-        for j=1:length(b.visual_shapes)
-          [obj.body(i).x{j},obj.body(i).y{j},obj.body(i).z{j},obj.body(i).c{j}] = getPatchData(b.visual_shapes{j},manip.x_axis,manip.y_axis, manip.view_axis);
+        for j=1:length(b.visual_geometry)
+          [obj.body(i).x{j},obj.body(i).y{j},obj.body(i).z{j},obj.body(i).c{j}] = getPatchData(b.visual_geometry{j},manip.x_axis,manip.y_axis, manip.view_axis);
         end
       end
       warning(w);

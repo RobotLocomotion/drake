@@ -35,15 +35,15 @@ r_foot = robot.findLinkInd('r_foot');
 l_hand = robot.findLinkInd('l_hand');
 r_hand = robot.findLinkInd('r_hand');
 head = robot.findLinkInd('head');
-nLPts = length(robot.getBody(l_foot).getContactShapes);
+nLPts = length(robot.getBody(l_foot).getCollisionGeometry);
 l_foot_pts = zeros(3,nLPts);
 for i=1:nLPts,
-  l_foot_pts(:,i) = robot.getBody(l_foot).getContactShapes{i}.getPoints;
+  l_foot_pts(:,i) = robot.getBody(l_foot).getCollisionGeometry{i}.getPoints;
 end
-nRPts = length(robot.getBody(r_foot).getContactShapes);
+nRPts = length(robot.getBody(r_foot).getCollisionGeometry);
 r_foot_pts = zeros(3,nRPts);
 for i=1:nRPts,
-  r_foot_pts(:,i) = robot.getBody(r_foot).getContactShapes{i}.getPoints;
+  r_foot_pts(:,i) = robot.getBody(r_foot).getCollisionGeometry{i}.getPoints;
 end
 
 q = randn(nq,1);
