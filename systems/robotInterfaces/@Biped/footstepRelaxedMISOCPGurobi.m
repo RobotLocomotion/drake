@@ -42,18 +42,32 @@ if isempty(v_seed)
   p = p.addVariable('region', 'B', [length(seed_plan.safe_regions), nsteps], 0, 1);
   p = p.addVariable('sector', 'B', [length(sector_boundaries)-1, nsteps], 0, 1);
   p = p.addVariable('reach_slack', 'C', [3, nsteps-2, 2], -MAX_DISTANCE, MAX_DISTANCE);
-  p = p.addVariable('goal_obj', 'C', [2, nsteps-2], 0, inf);
+  p = p.addVariable('goal_obj', 'C', [3, nsteps-2], 0, inf);
   p = p.addVariable('goal_slack', 'C', [2, nsteps-2], -inf, inf);
-  p = p.addVariable('rel_obj', 'C', [2, nsteps-2], 0, inf);
+  p = p.addVariable('rel_obj', 'C', [3, nsteps-2], 0, inf);
   p = p.addVariable('rel_slack', 'C', [2, nsteps-2, 2], -inf, inf);
   p = p.addVariable('nom_step_slack', 'C', [1, nsteps-2], -inf, inf);
-  p = p.addVariable('swing_obj', 'C', [2, nsteps-2], 0, inf);
+  p = p.addVariable('swing_obj', 'C', [3, nsteps-2], 0, inf);
   p = p.addVariable('swing_slack', 'C', [2, nsteps-2], -inf, inf);
   p = p.addVariable('sincos_bound', 'C', [1, nsteps], 1, 1); % fixed to 1
   p = p.addVariable('sincos_slack', 'C', [2, nsteps-2], -1, 1);
   p = p.addVariable('sincos_slack_bound', 'C', [1, nsteps-2], SECTOR_WIDTH,SECTOR_WIDTH);
 else
-  error('not supporting v_seed yet')
+  p = p.addVariable('cos_yaw', 'C', [1, nsteps], -1, 1, v_seed.cos_yaw.value);
+  p = p.addVariable('sin_yaw', 'C', [1, nsteps], -1, 1, v_seed.sin_yaw.value);
+  p = p.addVariable('region', 'B', [length(seed_plan.safe_regions), nsteps], 0, 1, v_seed.region.value);
+  p = p.addVariable('sector', 'B', [length(sector_boundaries)-1, nsteps], 0, 1, v_seed.sector.value);
+  p = p.addVariable('reach_slack', 'C', [3, nsteps-2, 2], -MAX_DISTANCE, MAX_DISTANCE, v_seed.reach_slack.value);
+  p = p.addVariable('goal_obj', 'C', [2, nsteps-2], 0, inf);
+  p = p.addVariable('goal_slack', 'C', [2, nsteps-2], -inf, inf);
+  p = p.addVariable('rel_obj', 'C', [2, nsteps-2], 0, inf, v_seed.rel_obj.value);
+  p = p.addVariable('rel_slack', 'C', [2, nsteps-2, 2], -inf, inf, v_seed.rel_slack.value);
+  p = p.addVariable('nom_step_slack', 'C', [1, nsteps-2], -inf, inf, v_seed.nom_step_slack.value);
+  p = p.addVariable('swing_obj', 'C', [2, nsteps-2], 0, inf, v_seed.swing_obj.value);
+  p = p.addVariable('swing_slack', 'C', [2, nsteps-2], -inf, inf, v_seed.swing_slack.value);
+  p = p.addVariable('sincos_bound', 'C', [1, nsteps], 1, 1, v_seed.sincos_bound.value); % fixed to 1
+  p = p.addVariable('sincos_slack', 'C', [2, nsteps-2], -1, 1, v_seed.sincos_slack.value);
+  p = p.addVariable('sincos_slack_bound', 'C', [1, nsteps-2], SECTOR_WIDTH,SECTOR_WIDTH, v_seed.sincos_slack_bound.value);
 end
 p.nv
 p = p.freeze();
@@ -216,17 +230,6 @@ for j = 3:nsteps
 end
 assert(offset == expected_offset);
 
-% offset = 0;
-% expected_offset = nsteps-2;
-% quadcon_i = struct('Qc', cell(1,nsteps-2), 'q', cell(1,nsteps-2), 'rhs', cell(1,nsteps-2));
-% for j = 3:nsteps
-%   % Constraints = [Constraints,...
-%   r = [p.v.cos_yaw.i(j), 
-%   c = [p.v.cos_yaw.i(j)
-%   s = [1,
-%   Qc = sparse([
-% end
-
 %% Enforce rotation mixed-integer constraints
 sector_boundaries = (min_yaw - SECTOR_WIDTH/2):SECTOR_WIDTH:(max_yaw + SECTOR_WIDTH/2);
 
@@ -387,10 +390,12 @@ p = p.setLinearCostEntries(p.v.goal_obj.i(:,end), 10);
 p = p.addConesOrPolyConesByIndex([p.v.goal_obj.i(1,:); p.v.goal_slack.i], POLYCONE_APPROX_LEVEL);
 Aeq_i = zeros(2*(nsteps-2), p.nv);
 beq_i = zeros(size(Aeq_i, 1), 1);
-Ai = zeros(2*(nsteps-2), p.nv);
+offset_eq = 0;
+expected_offset_eq = size(Aeq_i, 1);
+Ai = zeros(4*(nsteps-2), p.nv);
 bi = zeros(size(Ai, 1), 1);
-offset = 0;
-expected_offset = size(Aeq_i, 1);
+offset_ineq = 0;
+expected_offset_ineq = size(Ai, 1);
 for j = 3:nsteps
   if seed_plan.footsteps(j).frame_id == biped.foot_frame_id.right
     % Constraints = [Constraints,...
@@ -408,31 +413,41 @@ for j = 3:nsteps
     error('Invalid frame ID: %d', seed_plan.footsteps(j).frame_id);
   end
 
-  Aeq_i(offset+1, p.v.x.i(1,j)) = 1;
-  Aeq_i(offset+1, p.v.goal_slack.i(1,j-2)) = -1;
-  beq_i(offset+1) = goal(1);
-  Aeq_i(offset+2, p.v.x.i(2,j)) = 1;
-  Aeq_i(offset+2, p.v.goal_slack.i(2,j-2)) = -1;
-  beq_i(offset+2) = goal(2);
+  Aeq_i(offset_eq+1, p.v.x.i(1,j)) = 1;
+  Aeq_i(offset_eq+1, p.v.goal_slack.i(1,j-2)) = -1;
+  beq_i(offset_eq+1) = goal(1);
+  Aeq_i(offset_eq+2, p.v.x.i(2,j)) = 1;
+  Aeq_i(offset_eq+2, p.v.goal_slack.i(2,j-2)) = -1;
+  beq_i(offset_eq+2) = goal(2);
+  offset_eq = offset_eq + 2;
 
-  Ai(offset+1, p.v.x.i(3:4,j)) = [1, 1];
-  Ai(offset+1, p.v.goal_obj.i(2,j-2)) = -1;
-  bi(offset+1) = [1,1] * goal(POSE_INDICES(3:4));
-  Ai(offset+2, p.v.x.i(3:4,j)) = -[1, 1];
-  Ai(offset+2, p.v.goal_obj.i(2,j-2)) = -1;
-  bi(offset+2) = -[1, 1] * goal(POSE_INDICES(3:4));
+  % The entry of -2 for goal_obj reflects the fact that we're actually splitting the weight evenly between z and yaw error
+  Ai(offset_ineq+1, p.v.x.i(3,j)) = 1;
+  Ai(offset_ineq+1, p.v.goal_obj.i(2,j-2)) = -2;
+  bi(offset_ineq+1) = goal(POSE_INDICES(3));
+  Ai(offset_ineq+2, p.v.x.i(3,j)) = -1;
+  Ai(offset_ineq+2, p.v.goal_obj.i(2,j-2)) = -2;
+  bi(offset_ineq+2) = -goal(POSE_INDICES(3));
 
-  offset = offset + 2;
+  Ai(offset_ineq+3, p.v.x.i(4,j)) = 1;
+  Ai(offset_ineq+3, p.v.goal_obj.i(3,j-2)) = -2;
+  bi(offset_ineq+3) = goal(POSE_INDICES(4));
+  Ai(offset_ineq+4, p.v.x.i(4,j)) = -1;
+  Ai(offset_ineq+4, p.v.goal_obj.i(3,j-2)) = -2;
+  bi(offset_ineq+4) = -goal(POSE_INDICES(4));
+
+  offset_ineq = offset_ineq + 4;
 end
 p = p.addLinearConstraints(Ai, bi, Aeq_i, beq_i);
-assert(offset == expected_offset);
+assert(offset_eq == expected_offset_eq);
+assert(offset_ineq == expected_offset_ineq);
 
 %% Add the objective on relative step displacements
 % Objective = Objective + sum(rel_obj(:));
 p = p.setLinearCostEntries(p.v.rel_obj.i, 1);
 Aeq_i = zeros(4*(nsteps-2)-2, p.nv);
 beq_i = zeros(size(Aeq_i, 1), 1);
-Ai = zeros(3*(nsteps-2)-1, p.nv);
+Ai = zeros(5*(nsteps-2)-1, p.nv);
 bi = zeros(size(Ai, 1), 1);
 offset_eq = 0;
 expected_offset_eq = size(Aeq_i, 1);
@@ -458,30 +473,31 @@ for j = 3:nsteps
     Aeq_i(offset_eq+1, p.v.cos_yaw.i(j-1)) = -weight * nom(1);
     Aeq_i(offset_eq+1, p.v.sin_yaw.i(j-1)) = weight * nom(2);
     Aeq_i(offset_eq+1, p.v.rel_slack.i(1,j-2,1)) = -1;
-    beq_i(offset_eq+1) = 0;
 
     Aeq_i(offset_eq+2, p.v.x.i(2,j)) = weight;
     Aeq_i(offset_eq+2, p.v.x.i(2,j-1)) = -weight;
     Aeq_i(offset_eq+2, p.v.sin_yaw.i(j-1)) = -weight * nom(1);
     Aeq_i(offset_eq+2, p.v.cos_yaw.i(j-1)) = -weight * nom(2);
     Aeq_i(offset_eq+2, p.v.rel_slack.i(2,j-2,1)) = -1;
-    beq_i(offset_eq+2) = 0;
     offset_eq = offset_eq + 2;
 
     Ai(offset_ineq+1, p.v.x.i(3,j)) = weight;
-    Ai(offset_ineq+1, p.v.x.i(4,j)) = weight;
     Ai(offset_ineq+1, p.v.x.i(3,j-1)) = -weight;
-    Ai(offset_ineq+1, p.v.x.i(4,j-1)) = -weight;
-    Ai(offset_ineq+1, p.v.rel_obj.i(2,j-2)) = -1;
-    bi(offset_ineq+1) = 0;
+    Ai(offset_ineq+1, p.v.rel_obj.i(2,j-2)) = -2;
 
     Ai(offset_ineq+2, p.v.x.i(3,j)) = -weight;
-    Ai(offset_ineq+2, p.v.x.i(4,j)) = -weight;
     Ai(offset_ineq+2, p.v.x.i(3,j-1)) = weight;
-    Ai(offset_ineq+2, p.v.x.i(4,j-1)) = weight;
-    Ai(offset_ineq+2, p.v.rel_obj.i(2,j-2)) = -1;
-    bi(offset_ineq+2) = 0;
-    offset_ineq = offset_ineq + 2;
+    Ai(offset_ineq+2, p.v.rel_obj.i(2,j-2)) = -2;
+
+    Ai(offset_ineq+3, p.v.x.i(4,j)) = weight;
+    Ai(offset_ineq+3, p.v.x.i(4,j-1)) = -weight;
+    Ai(offset_ineq+3, p.v.rel_obj.i(3,j-2)) = -2;
+
+    Ai(offset_ineq+4, p.v.x.i(4,j)) = -weight;
+    Ai(offset_ineq+4, p.v.x.i(4,j-1)) = weight;
+    Ai(offset_ineq+4, p.v.rel_obj.i(3,j-2)) = -2;
+
+    offset_ineq = offset_ineq + 4;
   else
     scale = 0.1 * (nsteps - j) + 1;
     % Constraints = [Constraints,...
@@ -504,7 +520,6 @@ for j = 3:nsteps
     Aeq_i(offset_eq+2, p.v.sin_yaw.i(j-1)) = -weight * nom(1);
     Aeq_i(offset_eq+2, p.v.cos_yaw.i(j-1)) = -weight * nom(2);
     Aeq_i(offset_eq+2, p.v.rel_slack.i(2,j-2,1)) = -1;
-    beq_i(offset_eq+2) = 0;
     offset_eq = offset_eq + 2;
 
     weight = alpha2 * scale;
@@ -513,14 +528,12 @@ for j = 3:nsteps
     Aeq_i(offset_eq+1, p.v.cos_yaw.i(j-1)) = -weight * nom(1);
     Aeq_i(offset_eq+1, p.v.sin_yaw.i(j-1)) = weight * nom(2);
     Aeq_i(offset_eq+1, p.v.rel_slack.i(1,j-2,2)) = -1;
-    beq_i(offset_eq+1) = 0;
 
     Aeq_i(offset_eq+2, p.v.x.i(2,j)) = weight;
     Aeq_i(offset_eq+2, p.v.x.i(2,j-1)) = -weight;
     Aeq_i(offset_eq+2, p.v.sin_yaw.i(j-1)) = -weight * nom(1);
     Aeq_i(offset_eq+2, p.v.cos_yaw.i(j-1)) = -weight * nom(2);
     Aeq_i(offset_eq+2, p.v.rel_slack.i(2,j-2,2)) = -1;
-    beq_i(offset_eq+2) = 0;
     offset_eq = offset_eq + 2;
 
     % rel_obj(1,j-2) >= nom_step_slack(1,j-2) - scale*(2-0.5) * nom_forward_step
@@ -530,20 +543,24 @@ for j = 3:nsteps
     offset_ineq = offset_ineq + 1;
 
     weight = 1;
+
     Ai(offset_ineq+1, p.v.x.i(3,j)) = weight;
-    Ai(offset_ineq+1, p.v.x.i(4,j)) = weight;
     Ai(offset_ineq+1, p.v.x.i(3,j-1)) = -weight;
-    Ai(offset_ineq+1, p.v.x.i(4,j-1)) = -weight;
-    Ai(offset_ineq+1, p.v.rel_obj.i(2,j-2)) = -1;
-    bi(offset_ineq+1) = 0;
+    Ai(offset_ineq+1, p.v.rel_obj.i(2,j-2)) = -2;
 
     Ai(offset_ineq+2, p.v.x.i(3,j)) = -weight;
-    Ai(offset_ineq+2, p.v.x.i(4,j)) = -weight;
     Ai(offset_ineq+2, p.v.x.i(3,j-1)) = weight;
-    Ai(offset_ineq+2, p.v.x.i(4,j-1)) = weight;
-    Ai(offset_ineq+2, p.v.rel_obj.i(2,j-2)) = -1;
-    bi(offset_ineq+2) = 0;
-    offset_ineq = offset_ineq + 2;
+    Ai(offset_ineq+2, p.v.rel_obj.i(2,j-2)) = -2;
+
+    Ai(offset_ineq+3, p.v.x.i(4,j)) = weight;
+    Ai(offset_ineq+3, p.v.x.i(4,j-1)) = -weight;
+    Ai(offset_ineq+3, p.v.rel_obj.i(3,j-2)) = -2;
+
+    Ai(offset_ineq+4, p.v.x.i(4,j)) = -weight;
+    Ai(offset_ineq+4, p.v.x.i(4,j-1)) = weight;
+    Ai(offset_ineq+4, p.v.rel_obj.i(3,j-2)) = -2;
+
+    offset_ineq = offset_ineq + 4;
   end
 end
 assert(offset_eq == expected_offset_eq)
@@ -553,10 +570,12 @@ p = p.addLinearConstraints(Ai, bi, Aeq_i, beq_i);
 %% Add the objective on movement of each foot
 Aeq_i = zeros(2*(nsteps-2), p.nv);
 beq_i = zeros(size(Aeq_i, 1), 1);
-Ai = zeros(size(Aeq_i, 1), p.nv);
+offset_eq = 0;
+expected_offset_eq = size(Aeq_i, 1);
+Ai = zeros(4*(nsteps-2), p.nv);
 bi = zeros(size(Ai, 1), 1);
-offset = 0;
-expected_offset = size(Aeq_i, 1);
+offset_ineq = 0;
+expected_offset_ineq = size(Ai, 1);
 % Objective = Objective + sum(foot_obj(:));
 p = p.setLinearCostEntries(p.v.swing_obj.i, 1);
 p = p.addConesOrPolyConesByIndex([p.v.swing_obj.i(1,:); p.v.swing_slack.i], POLYCONE_APPROX_LEVEL);
@@ -566,39 +585,44 @@ for j = 3:nsteps
   %   polycone(err(1:2), foot_obj(1,j-2), 16),...
   %   foot_obj(2,j-2) >= [1, .5] * abs(err(3:4)),...
   %   ];
-  Aeq_i(offset+1, p.v.x.i(1,j)) = 1;
-  Aeq_i(offset+1, p.v.x.i(1,j-2)) = -1;
-  Aeq_i(offset+1, p.v.swing_slack.i(1,j-2)) = -1;
-  beq_i(offset+1) = 0;
+  Aeq_i(offset_eq+1, p.v.x.i(1,j)) = 1;
+  Aeq_i(offset_eq+1, p.v.x.i(1,j-2)) = -1;
+  Aeq_i(offset_eq+1, p.v.swing_slack.i(1,j-2)) = -1;
 
-  Aeq_i(offset+2, p.v.x.i(2,j)) = 1;
-  Aeq_i(offset+2, p.v.x.i(2,j-2)) = -1;
-  Aeq_i(offset+2, p.v.swing_slack.i(2,j-2)) = -1;
-  beq_i(offset+2) = 0;
+  Aeq_i(offset_eq+2, p.v.x.i(2,j)) = 1;
+  Aeq_i(offset_eq+2, p.v.x.i(2,j-2)) = -1;
+  Aeq_i(offset_eq+2, p.v.swing_slack.i(2,j-2)) = -1;
+
+  offset_eq = offset_eq + 2;
+
 
   yaw_weight = 0.5;
-  Ai(offset+1, p.v.x.i(3,j)) = 1;
-  Ai(offset+1, p.v.x.i(4,j)) = yaw_weight;
-  Ai(offset+1, p.v.x.i(3,j-2)) = -1;
-  Ai(offset+1, p.v.x.i(4,j-2)) = -yaw_weight;
-  Ai(offset+1, p.v.swing_obj.i(2,j-2)) = -1;
-  bi(offset+1) = 0;
+  Ai(offset_ineq+1, p.v.x.i(3,j)) = 1;
+  Ai(offset_ineq+1, p.v.x.i(3,j-2)) = -1;
+  Ai(offset_ineq+1, p.v.swing_obj.i(2,j-2)) = -2;
 
-  Ai(offset+2, p.v.x.i(3,j)) = -1;
-  Ai(offset+2, p.v.x.i(4,j)) = -yaw_weight;
-  Ai(offset+2, p.v.x.i(3,j-2)) = 1;
-  Ai(offset+2, p.v.x.i(4,j-2)) = yaw_weight;
-  Ai(offset+2, p.v.swing_obj.i(2,j-2)) = -1;
-  bi(offset+2) = 0;
+  Ai(offset_ineq+2, p.v.x.i(3,j)) = -1;
+  Ai(offset_ineq+2, p.v.x.i(3,j-2)) = 1;
+  Ai(offset_ineq+2, p.v.swing_obj.i(2,j-2)) = -2;
 
-  offset = offset + 2;
+  Ai(offset_ineq+3, p.v.x.i(4,j)) = yaw_weight;
+  Ai(offset_ineq+3, p.v.x.i(4,j-2)) = -yaw_weight;
+  Ai(offset_ineq+3, p.v.swing_obj.i(3,j-2)) = -2;
+
+  Ai(offset_ineq+4, p.v.x.i(4,j)) = -yaw_weight;
+  Ai(offset_ineq+4, p.v.x.i(4,j-2)) = yaw_weight;
+  Ai(offset_ineq+4, p.v.swing_obj.i(3,j-2)) = -2;
+
+  offset_ineq = offset_ineq + 4;
+
 end
-assert(offset == expected_offset)
+assert(offset_eq == expected_offset_eq)
+assert(offset_ineq == expected_offset_ineq)
 p = p.addLinearConstraints(Ai, bi, Aeq_i, beq_i);
 
 params = struct();
 % params.mipgap = 1e-4;
-params.outputflag = 1;
+params.outputflag = 0;
 % params.ConcurrentMIP = 4;
 % params.NodeMethod = 0;
 
@@ -618,14 +642,14 @@ for j = 1:nsteps
   plan.footsteps(j).pos = steps(:,j);
 end
 
-% figure(7);
-% clf
-% hold on
-% plot(cos_yaw, sin_yaw, 'bo');
-% plot(cos(yaw), sin(yaw), 'ro');
-% th = linspace(0, 2*pi);
-% plot(cos(th), sin(th), 'k-');
-% drawnow()
+figure(7);
+clf
+hold on
+plot(p.v.cos_yaw.value, p.v.sin_yaw.value, 'bo');
+plot(cos(p.v.x.value(4,:)), sin(p.v.x.value(4,:)), 'ro');
+th = linspace(0, 2*pi);
+plot(cos(th), sin(th), 'k-');
+drawnow()
 
 region = p.v.region.value;
 
@@ -649,13 +673,13 @@ for j = 3:nsteps-2
     at_final_pose(j) = all(abs(plan.footsteps(j).pos - plan.footsteps(end).pos) <= TRIM_THRESHOLD);
   end
 end
-trim = at_final_pose % Cut off any steps that are at the final poses
-trim(find(trim, 2, 'first')) = false % Don't cut off the final poses themselves
+trim = at_final_pose; % Cut off any steps that are at the final poses
+trim(find(trim, 2, 'first')) = false; % Don't cut off the final poses themselves
 
 plan = plan.slice(~trim);
 
 plan.sanity_check();
-plan.relative_step_offsets()
+% plan.relative_step_offsets()
 
 v = p.v;
 fprintf(1, 'extract: %f\n', toc(t0));
