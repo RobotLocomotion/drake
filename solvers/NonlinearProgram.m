@@ -1269,7 +1269,7 @@ classdef NonlinearProgram
         x_all = zeros(obj.num_vars,1);
         x_all(free_x_idx) = x_free;
         x_all(fix_x_idx) = x_fix;
-        [f,G] = geval(@obj.objectiveAndNonlinearConstraints,x_all);
+        [f,G] = objectiveAndNonlinearConstraints(obj,x_all);
         f = [f;zeros(length(bin_free)+length(beq_free),1)];
         
         G = G(sub2ind(size(G),iGfun,jGvar));
