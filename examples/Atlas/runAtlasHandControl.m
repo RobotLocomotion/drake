@@ -1,4 +1,7 @@
-function runAtlasBalancing(use_mex)
+function runAtlasHandControl(use_mex)
+
+% Tests out the piping to add a robotiq hand (with kinematic loops)
+% to Atlas, and hook up a controller to command its joints
 
 if ~checkDependency('gurobi')
   warning('Must have gurobi installed to run this example');
@@ -21,6 +24,7 @@ warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits')
 
 options.floating = true;
 options.dt = 0.002;
+options.hands = 'robotiq_weight_only';
 r = Atlas('urdf/atlas_minimal_contact.urdf',options);
 options.hands = 'robotiq';
 r_hands = Atlas('urdf/atlas_minimal_contact.urdf',options);
@@ -42,9 +46,10 @@ r = r.setInitialState(xstar);
 % so lcp has an easier time
 %load('data/robotiq_feas.mat');
 xstar_hands = r_hands.getInitialState();
-xstar_hands(r_hands.getStateFrame.coord_ids{1}) = xstar;
+xstar_hands(1:length(xstar)) = xstar;
 %xstar_hands = r_hands.getStateFrame().mergeCoordinates({xstar,xstar_hand});
-%r_hands = r_hands.setInitialState(xstar_hands);
+xstar_hands = r_hands.resolveConstraints(xstar_hands);
+r_hands = r_hands.setInitialState(xstar_hands);
 
 x0 = xstar;
 q0 = x0(1:nq);
@@ -66,7 +71,7 @@ rhand_ind = findLinkInd(r,'r_hand');
 lhand_ind = findLinkInd(r,'l_hand');
 rhand_pos = forwardKin(r,kinsol,rhand_ind,[0;0;0],1);
 lhand_pos = forwardKin(r,kinsol,lhand_ind,[0;0;0],1);
-diff = [0.1+0.1*rand(); 0.05*randn(); 0.1+0.5*rand()]
+diff = [0.1+0.1*rand(); 0.05*randn(); 0.1+0.5*rand()];
 rhand_goal = rhand_pos(1:3) + diff;
 lhand_goal = lhand_pos(1:3) + diff;
 
@@ -179,6 +184,8 @@ ins(2).system = 1;
 ins(2).input = 2;
 outs(1).system = 1;
 outs(1).output = 1;
+outs(2).system = 1;
+outs(2).output = 2;
 sys = mimoFeedback(sys, rh,[],[],ins,outs);
 clear ins;
 clear outs;
@@ -191,6 +198,8 @@ ins(1).system = 2;
 ins(1).input = 1;
 outs(1).system = 2;
 outs(1).output = 1;
+outs(2).system = 2;
+outs(2).output = 2;
 sys = mimoFeedback(fc,sys,[],[],ins,outs);
 clear ins;
 
@@ -199,6 +208,10 @@ options.use_ik = false;
 pd = IKPDBlock(r,ctrl_data,options);
 ins(1).system = 1;
 ins(1).input = 1;
+outs(1).system = 2;
+outs(1).output = 1;
+outs(2).system = 2;
+outs(2).output = 2;
 sys = mimoFeedback(pd,sys,[],[],ins,outs);
 clear ins;
 
@@ -211,6 +224,8 @@ if visualize
   S=warning('off','Drake:DrakeSystem:UnsupportedSampleTime');
   output_select(1).system=1;
   output_select(1).output=1;
+  output_select(2).system=1;
+  output_select(2).output=2;
   sys = mimoCascade(sys,v,[],[],output_select);
   warning(S);
 end
@@ -219,14 +234,10 @@ x0(3) = 1.0; % drop it a bit
 
 traj = simulate(sys,[0 2],x0);
 if visualize
+  % This doesn't see hand movements. Why?
   playback(v,traj,struct('slider',true));
 end
 
-xf = traj.eval(traj.tspan(2));
-
-err = norm(xf(1:6)-xstar(1:6))
-if err > 0.02
-  error('drakeBalancing unit test failed: error is too large');
-end
+%xf = traj.eval(traj.tspan(2));
 
 end
