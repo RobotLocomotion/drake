@@ -12,11 +12,11 @@ Documents URDF support for Drake, which implements much of the ROS URDF specific
     <xs:simpleType name="matlab_parameter_expression">
         <xs:annotation>
             <xs:documentation>Can be any string that will evaluate as a polynomial using "eval" in the matlab environment, where parameters are referenced with $param_name.
-Example: 
+Example:
 
 "$m * $l^2"
 or
-"$m2 * ($lc2 - $l1)" 
+"$m2 * ($lc2 - $l1)"
 </xs:documentation>
         </xs:annotation>
         <xs:restriction base="xs:string"/>
@@ -38,9 +38,9 @@ or
     </xs:complexType>
     <xs:complexType name="loop_joint">
         <xs:annotation>
-            <xs:documentation>You can add a loop joint if you have a kinematic loop (e.g. four-bar linkage, or even something more complicated) in your robot.  To use this interface, you must first describe every link in your robot as part of a kinematic tree (no loops). You should be able to take a path through the linkages that touches everything without any loops. Then add the remaining loops by referencing existing links from the tree. 
+            <xs:documentation>You can add a loop joint if you have a kinematic loop (e.g. four-bar linkage, or even something more complicated) in your robot.  To use this interface, you must first describe every link in your robot as part of a kinematic tree (no loops). You should be able to take a path through the linkages that touches everything without any loops. Then add the remaining loops by referencing existing links from the tree.
 
-There are a few limitations with the current implementation.  We do not currently support joint limits nor actuators at the new joint created by the loop_joint tag.  For all of the systems we have modeled so far, there has always been at least one of these "simple" joints in each kinematic loop; and we are simply careful to write down the initial kinematic tree so that it includes all of the more complex joints, leaving the simple joint as the loop joint. 
+There are a few limitations with the current implementation.  We do not currently support joint limits nor actuators at the new joint created by the loop_joint tag.  For all of the systems we have modeled so far, there has always been at least one of these "simple" joints in each kinematic loop; and we are simply careful to write down the initial kinematic tree so that it includes all of the more complex joints, leaving the simple joint as the loop joint.
 </xs:documentation>
         </xs:annotation>
         <xs:all>
@@ -71,7 +71,7 @@ eventually support all of the same types as a 'joint' element. See the joint ele
             <xs:element name="linear_spring_damper" type="linear_spring_damper"/>
             <xs:element name="wing" type="wing">
                 <xs:annotation>
-                    <xs:documentation>See RigidBodyWing.m for more documentation</xs:documentation>
+                    <xs:documentation>Wing element supporting flat plates, airfoils.  See wing_with_control_surface for a wing with a control surface attached.</xs:documentation>
                 </xs:annotation>
             </xs:element>
             <xs:element name="thrust" type="thrust">
@@ -83,17 +83,27 @@ produced by a propeller on an airplane, or thrusters on the hands and
 feet of an Atlas robot to make Iron Man.</xs:documentation>
                 </xs:annotation>
             </xs:element>
-<xs:element name="propellor" type="propellor">
+
+            <xs:element name="propellor" type="propellor">
                 <xs:annotation>
                     <xs:documentation>Propellor elements produce both a thrust at a point on the parent body in a
 specified direction, along with a moment whose axis is the same as the thrust axis. This is useful for modelling propellors,
-which typically produce both a thrust and a moment due to aerodynamic drag. The magnitude of the force and torque are scaled 
+which typically produce both a thrust and a moment due to aerodynamic drag. The magnitude of the force and torque are scaled
 from an input to the system, with different scalings for each.</xs:documentation>
                 </xs:annotation>
             </xs:element>
+
+            <xs:element name="bluff_body" type="bluff_body">
+                <xs:annotation>
+                    <xs:documentation>A bluff body that provides only drag force in xyz.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+
+
+
             <xs:element name="added_mass" type="added_mass">
                 <xs:annotation>
-                    <xs:documentation> Places added-mass coefficients on a point on the parent body. Added-mass forces act like a 'drag' that is proportional to the acceleration of the body, rather than the velocity. Important when the body is comparable in mass to the surrounding fluid, or if rapid motions are needed. 
+                    <xs:documentation> Places added-mass coefficients on a point on the parent body. Added-mass forces act like a 'drag' that is proportional to the acceleration of the body, rather than the velocity. Important when the body is comparable in mass to the surrounding fluid, or if rapid motions are needed.
 
 These forces are represented by a 6x6 matrix 'Ma' similar to a mass matrix, where the force is F=-Ma*a (+coriolis terms). Each matrix element is refered as 'mij', where 'i' and 'j' are the rows and columns of the matrix. As is standard in the oceanographic literature, rows 123 are the linear accelerations, and 456 are the angular accelerations [note this is opposite of Featherstone's notation] </xs:documentation>
                 </xs:annotation>
@@ -226,7 +236,196 @@ nominal speed in meters per second used to calculate the
 Reynolds number around which we design the aerodynamic coefficients.</xs:documentation>
             </xs:annotation>
         </xs:attribute>
+        <xs:attribute name="visual_geometry" type="xs:boolean" default="true">
+            <xs:annotation>
+                <xs:documentation>enable or disable automatic drawing of the wing</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
     </xs:complexType>
+
+    <xs:complexType name="wing_with_control_surface">
+        <xs:all>
+            <xs:element name="parent" type="link_reference">
+                <xs:annotation>
+                    <xs:documentation>String naming the link on which
+this wing is attached.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="origin" type="pose" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>This defines the position of
+the quarter-chord point of the airfoil, since that is the reference point
+used for the moment coefficient. RPY support has been excluded, requiring
+the axes of the airfoil to line up with those of its parent body.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:all>
+        <xs:attribute name="profile" type="xs:string">
+            <xs:annotation>
+                <xs:documentation>Only "flat plate" supported right now.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="chord" type="xs:double">
+            <xs:annotation>
+                <xs:documentation>the chord length in
+meters.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="span" type="xs:double">
+            <xs:annotation>
+                <xs:documentation>the span of the wing
+in meters.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="stall_angle" type="xs:double">
+            <xs:annotation>
+                <xs:documentation>the angle
+in degrees upon which the lift and drag performance returns to that of
+a flat plate. (this value is ignored if the profile is set to a flat plate).</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="nominal_speed" type="xs:double">
+            <xs:annotation>
+                <xs:documentation>an approximate
+nominal speed in meters per second used to calculate the
+Reynolds number around which we design the aerodynamic coefficients.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="visual_geometry" type="xs:boolean" default="true">
+            <xs:annotation>
+                <xs:documentation>enable or disable automatic drawing of the wing</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+
+
+        <xs:attribute name="control_surface_chord" type="xs:double" use="required">
+            <xs:annotation>
+                <xs:documentation>Length of the control surface.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+
+        <xs:attribute name="control_surface_min_deflection" type="xs:double" use="required">
+            <xs:annotation>
+                <xs:documentation>Minimum control surface deflection in radians.  Typical is around -0.90</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+
+        <xs:attribute name="control_surface_max_deflection" type="xs:double" use="required">
+            <xs:annotation>
+                <xs:documentation>Maximum control surface deflection in radians.  Typical is around 0.90</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+
+    </xs:complexType>
+
+    <xs:complexType name="bluff_body">
+        <xs:all>
+            <xs:element name="origin" type="pose" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>Position of the thrust element.  Example: xyz="0 0 0" rpy="0 0 0".</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:all>
+
+        <xs:attribute name="name" type="xs:string" use="required" />
+
+        <xs:attribute name="coefficient_drag_x" type="xs:double" use="required">
+            <xs:annotation>
+                <xs:documentation>coefficient of drag in the X dimension.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+
+        <xs:attribute name="coefficient_drag_y" type="xs:double" use="required">
+            <xs:annotation>
+                <xs:documentation>coefficient of drag in the Y dimension.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+
+        <xs:attribute name="coefficient_drag_z" type="xs:double" use="required">
+            <xs:annotation>
+                <xs:documentation>coefficient of drag in the Z dimension.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+
+        <xs:attribute name="area_x" type="xs:double" use="required">
+            <xs:annotation>
+                <xs:documentation>area of the bluff body for computing drag on the X axis.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+
+        <xs:attribute name="area_y" type="xs:double" use="required">
+            <xs:annotation>
+                <xs:documentation>area of the bluff body for computing drag on the Y axis.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+
+        <xs:attribute name="area_z" type="xs:double" use="required">
+            <xs:annotation>
+                <xs:documentation>area of the bluff body for computing drag on the Z axis.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+
+        <xs:attribute name="visual_geometry" type="xs:boolean" default="true">
+            <xs:annotation>
+                <xs:documentation>true to enable automatic drawing of the bluff_body as a red cube.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+
+    </xs:complexType>
+
+    <xs:complexType name="propellor">
+        <xs:all>
+            <xs:element name="axis" type="axis" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>Axis the thrust element acts on.  For example a propellor facing forward would point in the X-axis and you'd use: xyz="1 0 0". </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="origin" type="pose" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>Position of the thrust element.  Example: xyz="0 0 0" rpy="0 0 0".</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:all>
+
+        <xs:attribute name="name" type="xs:string" use="required" />
+
+        <xs:attribute default="-INF" name="lower_limit" type="xs:double">
+            <xs:annotation>
+                <xs:documentation>input minimum.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+
+        <xs:attribute default="INF" name="upper_limit" type="xs:double">
+            <xs:annotation>
+                <xs:documentation>input maximum.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+
+        <xs:attribute default="1" name="scale_factor_thrust" type="xs:double">
+            <xs:annotation>
+                <xs:documentation>scales the dimensionless input to Newtons of force.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+
+        <xs:attribute default="1" name="scale_factor_moment" type="xs:double">
+            <xs:annotation>
+                <xs:documentation>scales the dimensionless input to newton-meters of torque.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+
+        <xs:attribute name="visual_geometry" type="xs:boolean" default="true">
+            <xs:annotation>
+                <xs:documentation>true to enable automatic drawing of the propellor.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+
+        <xs:attribute name="visual_diameter" type="xs:boolean" default="0.2">
+            <xs:annotation>
+                <xs:documentation>diameter of the propllor when drawn.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:complexType>
+
     <xs:complexType name="thrust">
         <xs:all>
             <xs:element name="parent" type="link_reference">
@@ -237,15 +436,12 @@ which the force will be applied.</xs:documentation>
             </xs:element>
             <xs:element name="axis" type="axis" minOccurs="0" maxOccurs="1">
                 <xs:annotation>
-                    <xs:documentation>The joint axis specified in the joint frame. This is the axis of rotation for revolute joints, the axis of translation for prismatic joints, and the surface normal for planar joints. The axis is specified in the joint frame of reference. Fixed and floating joints do not use the axis field. </xs:documentation>
+                    <xs:documentation>Axis the thrust element acts on.  For example a propellor facing forward would point in the X-axis and you'd use: xyz="1 0 0". </xs:documentation>
                 </xs:annotation>
             </xs:element>
             <xs:element name="origin" type="pose" minOccurs="0">
                 <xs:annotation>
-                    <xs:documentation>This defines the position of
-the quarter-chord point of the airfoil, since that is the reference point
-used for the moment coefficient. RPY support has been excluded, requiring
-the axes of the airfoil to line up with those of its parent body.</xs:documentation>
+                    <xs:documentation>Position of the thrust element.  Example: xyz="0 0 0" rpy="0 0 0".</xs:documentation>
                 </xs:annotation>
             </xs:element>
         </xs:all>
@@ -538,7 +734,7 @@ this buoyancy is attached.</xs:documentation>
         </xs:attribute>
         <xs:attribute name="friction" type="matlab_parameter_expression">
             <xs:annotation>
-                <xs:documentation>coulomb friction coefficient.  
+                <xs:documentation>coulomb friction coefficient.
 
 total friction force is a piecewise linear approximation of sgn(qd)*Fc + qd*Fd:
 

@@ -324,7 +324,7 @@ classdef RigidBodyManipulator < Manipulator
 
       % convert force to body coordinates
       if (nargout>1)
-        [ftmp,ftmpJ,ftmpP]=bodyKin(obj,kinsol,body_ind,[force,zeros(3,1)]);
+        [ftmp,ftmpP,ftmpJ]=bodyKin(obj,kinsol,body_ind,[force,zeros(3,1)]);
       else
         ftmp=bodyKin(obj,kinsol,body_ind,[force,zeros(3,1)]);
       end
@@ -576,6 +576,15 @@ classdef RigidBodyManipulator < Manipulator
     end
 
     function model = addSensor(model,sensor)
+      % Adds a sensor to the RigidBodyManipulator.  This modifies the
+      % model.sensor parameter and marks the model as dirty.
+      %
+      % @param model existing RigidBodyManipulator the sensor should be
+      %   added to
+      % @param sensor sensor to add
+      %
+      % @retval new RigidBodyManipulator with the sensor added.
+      
       typecheck(sensor,'RigidBodySensor');
       model.sensor{end+1}=sensor;
       model.dirty = true;
@@ -603,6 +612,23 @@ classdef RigidBodyManipulator < Manipulator
           end
         end
         i=i+1;
+      end
+      
+      %% update RigidBodyElements
+      
+      for i=1:length(model.force)
+        [new_element, model] = model.force{i}.onCompile(model);
+        model.force{i} = new_element;
+      end
+
+      for i=1:length(model.sensor)
+        [new_element, model] = model.sensor{i}.onCompile(model);
+        model.sensor{i} = new_element;
+      end
+
+      for i=1:length(model.actuator)
+        [new_element, model] = model.actuator(i).onCompile(model);
+        model.actuator(i) = new_element;
       end
 
       %% extract featherstone model structure
@@ -651,7 +677,7 @@ classdef RigidBodyManipulator < Manipulator
         if model.force{i}.direct_feedthrough_flag
           input_num = size(B,2)+1;
           B(1,size(B,2)+1) = 0; %Add another column to B
-          model.force{i}.input_num = input_num;
+          model.force{i} = model.force{i}.setInputNum(input_num);
           u_limit(size(u_limit,1)+1,:) = model.force{i}.input_limits;
         end
       end
@@ -931,8 +957,26 @@ classdef RigidBodyManipulator < Manipulator
       end
 
       for i=1:length(model.body)
-        model.body(i) = updateParams(model.body(i),fr.getPoly,p);
+        model.body(i) = updateParams(model.body(i),fr.getPoly, p);
       end
+      
+      for i=1:length(model.force)
+        model.force{i} = updateParams(model.force{i}, fr.getPoly, p);
+      end
+
+      for i=1:length(model.sensor)
+        model.sensor{i} = updateParams(model.sensor{i}, fr.getPoly, p);
+      end
+
+      for i=1:length(model.actuator)
+        model.actuator(i) = updateParams(model.actuator(i), fr.getPoly, p);
+      end
+      
+      for i=1:length(model.frame)
+        model.frame(i) = updateParams(model.frame(i), fr.getPoly, p);
+      end
+      
+      
 
       model = compile(model);
     end
@@ -1201,6 +1245,32 @@ classdef RigidBodyManipulator < Manipulator
       %   (optional) @default 'default'
       obj = obj.addVisualShapeToBody(body_id,shape);
       obj = obj.addContactShapeToBody(body_id,shape,varargin{:});
+    end
+    
+    function obj = removeShapeFromBody(obj, body_id, shape_name)
+      % Removes all shapes from a given body that match a name
+      %
+      % @param body_id body to remove shapes from
+      % @param shape_name name to match (will remove the first match)
+      %
+      % @retval obj updated object
+      
+      body_idx = obj.parseBodyOrFrameID(body_id);
+      
+      removed_count = 0;
+      
+      for i = 1:length(obj.body(body_idx).visual_shapes)
+
+        index = i - removed_count;
+        
+        if strcmp(obj.body(body_idx).visual_shapes{index}.name, shape_name) == true
+
+          % remove this shape
+          obj.body(body_idx).visual_shapes(index) = [];
+          removed_count = removed_count + 1;
+          
+        end
+      end
     end
 
     function model = replaceContactShapesWithCHull(model,body_indices,varargin)
@@ -1674,8 +1744,22 @@ classdef RigidBodyManipulator < Manipulator
       model.dirty = true;
     end
 
-    function val = parseParamString(model,robotnum,str)
+    function [ val, default_value ] = parseParamString(model,robotnum,str)
+      % Parses parameter strings from URDFs and returns either the value or
+      % a msspoly expression for later use with
+      % RigidBodyElement.bindParams().
+      % 
       % @ingroup URDF Parsing
+      %
+      % @param model model we are building from a URDF
+      % @param robotnum robot number
+      % @param str string to parse
+      %
+      % @retval val parameter value (possibly with msspolys inside) to put
+      % in the property of the object
+      %
+      % @retval default_val value of the parameter when default values of
+      % params are used
 
       fr = getParamFrame(model); p=fr.getPoly;
       pstr = regexprep(str,'\$(\w+)','p(model.param_db{robotnum}.(''$1'').index)');
@@ -1684,6 +1768,13 @@ classdef RigidBodyManipulator < Manipulator
 %      else
 %        val = RigidBodyParameterizedValue(['[',pstr,']'],model,robotnum);
 %      end
+
+      if nargout > 1
+        % get the default value
+        pstr2 = regexprep(str,'\$(\w+)','model.param_db{robotnum}.(''$1'').value');
+        default_value = eval(['[',pstr2,']']);
+        
+      end
     end
 
     function [linknames,robotnums] = processCFGroupArgs(model,linknames,robotnums)
@@ -1891,15 +1982,16 @@ classdef RigidBodyManipulator < Manipulator
         inputnames = {model.actuator.name};
       end
       for i = 1:length(model.force)
-        if isa(model.force{i},'RigidBodyThrust')
+        if isa(model.force{i},'RigidBodyThrust') || isa(model.force{i}, 'RigidBodyPropellor')
           frame = model.frame(-model.force{i}.kinframe);
           inputparents = [inputparents model.body(frame.body_ind)];
           inputnames{end+1} = model.force{i}.name;
-        elseif isa(model.force{i},'RigidBodyPropellor')
+        elseif model.force{i}.direct_feedthrough_flag
           frame = model.frame(-model.force{i}.kinframe);
           inputparents = [inputparents model.body(frame.body_ind)];
           inputnames{end+1} = model.force{i}.name;
         end
+        
       end
       for i=1:length(model.name)
         robot_inputs = [inputparents.robotnum]==i;
@@ -2462,6 +2554,16 @@ classdef RigidBodyManipulator < Manipulator
       if ~isempty(elnode)
         [model,fe] = RigidBodyWing.parseURDFNode(model,robotnum,elnode,options);
       end
+      
+      elnode = node.getElementsByTagName('wing_with_control_surface').item(0);
+      if ~isempty(elnode)
+        [model,fe] = RigidBodyWingWithControlSurface.parseURDFNode(model,robotnum,elnode,options);
+      end
+      
+      elnode = node.getElementsByTagName('bluff_body').item(0);
+      if ~isempty(elnode)
+        [model,fe] = RigidBodyBluffBody.parseURDFNode(model,robotnum,elnode,options);
+      end
 
       elnode = node.getElementsByTagName('thrust').item(0);
       if ~isempty(elnode)
@@ -2486,7 +2588,11 @@ classdef RigidBodyManipulator < Manipulator
 
 
       if ~isempty(fe)
-        model.force{end+1} = fe;
+        if iscell(fe)
+          model.force = {model.force{:} fe{:}};
+        else
+          model.force{end+1} = fe;
+        end
       end
     end
 
