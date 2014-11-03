@@ -46,35 +46,43 @@ classdef RelativePosition < drakeFunction.kinematic.Kinematic
       obj.n_pts = n_pts_tmp;
     end
 
-    function [pos,J] = eval(obj,q)
+    function [pos,J,dJ] = eval(obj,q)
       % pos = eval(obj,q) returns the relative positions of the points
       %
       % [pos,J] = eval(obj,q) also returns the Jacobian of the relative
       %   positions
       %
+      % [pos,J,dJ] = eval(obj,q) also returns the second-derivaties of
+      %   the relative positions
+      %
       % @param obj  -- drakeFunction.kinematic.RelativePosition object
       % @param q    -- Column vector of joint positions
-      kinsol = obj.rbm.doKinematics(q);
-      if obj.frameA == 0
-        [pts_in_world,JA] = getCOM(obj.rbm,kinsol);
+      %
+      % @retval pos -- [3 x n_pts] array containing the positions of
+      %                pts_in_A relative to frameB
+      % @retval J   -- [3*n_pts x nq] Jacobian of pos w.r.t. q
+      % @retval dJ  -- [3*n_pts x nq^2] second-derivatives of pos w.r.t.
+      %                q in geval format
+      compute_second_derivatives = (nargout > 2);
+      if compute_second_derivatives
+        kinsol = obj.rbm.doKinematics(q,true,false);
+        if obj.frameA == 0
+          [pts_in_world,JA,dJA] = getCOM(obj.rbm,kinsol);
+        else
+          [pts_in_world,JA,dJA] = forwardKin(obj.rbm,kinsol,obj.frameA,obj.pts_in_A,0);
+        end
+        [pts_in_B,P,JB,dP,dJB] = obj.rbm.bodyKin(kinsol,obj.frameB,pts_in_world);
+        dJ = dJB + reshape(matGradMultMat(P,JA,dP,reshape(dJA,numel(JA),[])),size(dJB));
       else
-        [pts_in_world,JA] = forwardKin(obj.rbm,kinsol,obj.frameA,obj.pts_in_A,0);
+        kinsol = obj.rbm.doKinematics(q);
+        if obj.frameA == 0
+          [pts_in_world,JA] = getCOM(obj.rbm,kinsol);
+        else
+          [pts_in_world,JA] = forwardKin(obj.rbm,kinsol,obj.frameA,obj.pts_in_A,0);
+        end
+        [pts_in_B,P,JB] = obj.rbm.bodyKin(kinsol,obj.frameB,pts_in_world);
       end
-      [T_B_to_world,dT_B_to_world] = forwardKin(obj.rbm,kinsol,obj.frameB,[0;0;0],2);
-      [quat_world_to_B,dquat_world_to_B] = quatConjugate(T_B_to_world(4:7));
-      dquat_world_to_B = dquat_world_to_B*dT_B_to_world(4:7,:);
-      [xyz_world_to_B,dxyz_world_to_B] = quatRotateVec(quat_world_to_B,T_B_to_world(1:3));
-      xyz_world_to_B = -xyz_world_to_B;
-      dxyz_world_to_B = -dxyz_world_to_B*[dquat_world_to_B;dT_B_to_world(1:3,:)];
-
-      pts_in_B = zeros(3,obj.n_pts)*q(1);
-      J = zeros(3*obj.n_pts,obj.rbm.getNumPositions())*q(1);
-      for i = 1:obj.n_pts
-        [pts_in_B1,dpts_in_B1] = quatRotateVec(quat_world_to_B,pts_in_world(:,i));
-        dpts_in_B1 = dpts_in_B1*[dquat_world_to_B;JA(3*(i-1)+(1:3),:)];
-        pts_in_B(:,i) = pts_in_B1+xyz_world_to_B;
-        J(3*(i-1)+(1:3),:) = dpts_in_B1+dxyz_world_to_B;
-      end
+      J = JB + P*JA;
       pos = reshape(pts_in_B,[],1);
     end
   end
