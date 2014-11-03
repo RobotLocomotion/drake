@@ -1,4 +1,4 @@
-function [plan, v] = footstepMIQCQP(biped, seed_plan, weights, goal_pos, v_seed)
+function [plan, v, solvertime] = footstepMIQCQP(biped, seed_plan, weights, goal_pos, v_seed)
 % Footstep planner based on the approach presented in "Footstep Planning on
 % Uneven Terrain with Mixed-Integer Convex Optimization" by Robin Deits and
 % Russ Tedrake. This implementation uses a mixed-integer
@@ -34,6 +34,8 @@ function [plan, v] = footstepMIQCQP(biped, seed_plan, weights, goal_pos, v_seed)
 
 
 DEBUG_GOAL_CONSTRAINT = false; % if true, force the final steps to the goal pose as a constraint instead of an objective
+
+DEBUG = true;
 
 checkDependency('gurobi');
 if nargin < 5
@@ -493,32 +495,97 @@ if DEBUG_GOAL_CONSTRAINT
   beq = [beq; beq_i];
 else
   % Distance to goal objective
-  w_goal = diag(weights.goal([1,2,3,6]));
+  w_goal = diag(weights.goal([1,1,3,6]));
   for j = nsteps-1:nsteps
     if seed_plan.footsteps(j).frame_id == biped.foot_frame_id.right
       xg = reshape(goal_pos.right([1,2,3,6]), [], 1);
     else
       xg = reshape(goal_pos.left([1,2,3,6]), [], 1);
     end
-    Q(v.x.i(:,j), v.x.i(:,j)) = w_goal;
-    c(v.x.i(:,j)) = -2 * xg' * w_goal;
-    objcon = objcon + xg' * w_goal * xg;
+    Qi = sparse([], [], [], nv, nv, 2);
+    ci = zeros(nv, 1);
+    Qi(v.x.i(:,j), v.x.i(:,j)) = w_goal;
+    ci(v.x.i(:,j)) = -2 * w_goal * xg;
+    objcon_i = xg' * w_goal * xg;
+    if DEBUG
+      x1 = xg;
+      X = zeros(nv, 1);
+      X(v.x.i(:,j)) = x1;
+      err = (x1 - xg);
+      Obj_des = err' * w_goal * err;
+      Obj_actual = X' * Qi * X + ci' * X + objcon_i;
+      valuecheck(Obj_actual, Obj_des);
+      for k = 1:10
+        x1 = rand(4,1);
+        X = zeros(nv, 1);
+        X(v.x.i(:,j)) = x1;
+        err = (x1 - xg);
+        Obj_des = err' * w_goal * err;
+        Obj_actual = X' * Qi * X + ci' * X + objcon_i;
+        valuecheck(Obj_actual, Obj_des);
+      end
+    end
+    Q = Q + Qi;
+    c = c + ci;
+    objcon = objcon + objcon_i;
   end
 end
 
 % Step displacement objective
 w_rel = diag(weights.relative([1,1,3,6]));
+% w_rel(4,4) = 100
 for j = 3:nsteps
+  Q_new = sparse([], [], [], nv, nv, 18);
   if j == nsteps
     w_rel = diag(weights.relative_final([1,1,3,6]));
   end
-  Q(v.x.i(:,j), v.x.i(:,j)) = Q(v.x.i(:,j), v.x.i(:,j)) + w_rel;
-  Q(v.x.i(:,j-1), v.x.i(:,j)) = Q(v.x.i(:,j-1), v.x.i(:,j)) - 2 * w_rel;
-  Q(v.x.i(:,j-1), v.x.i(:,j-1)) = Q(v.x.i(:,j-1), v.x.i(:,j-1)) + w_rel;
+  if seed_plan.footsteps(j-1).frame_id == biped.foot_frame_id.right
+    nom = [0; seed_plan.params.nom_step_width];
+  else
+    nom = [0; -seed_plan.params.nom_step_width];
+  end
+  % err = x(:,j) - (x(1:2,j-1) + [cos_yaw(j-1), -sin_yaw(j-1); sin_yaw(j-1), cos_yaw(j-1)] * nom; x(3:4,j-1))
+  % err(1:2) == x(1:2,j) - x(1:2,j-1) - [-nom(2) * sin_yaw(j-1); nom(2) * cos_yaw(j-1)]
+  % 
+  Q_new(v.x.i(1:2,j), v.x.i(1:2,j)) = w_rel(1:2,1:2);
+  Q_new(v.x.i(1:2,j-1), v.x.i(1:2,j-1)) = w_rel(1:2,1:2);
+  Q_new(v.x.i(1,j-1), v.x.i(1,j)) = -2 * w_rel(1,1);
+  Q_new(v.x.i(2,j-1), v.x.i(2,j)) = -2 * w_rel(2,2);
+  Q_new(v.sin_yaw.i(j-1), v.sin_yaw.i(j-1)) = w_rel(1,1) * nom(2)^2;
+  Q_new(v.cos_yaw.i(j-1), v.cos_yaw.i(j-1)) = w_rel(2,2) * nom(2)^2;
+  Q_new(v.x.i(1,j), v.sin_yaw.i(j-1)) = 2 * w_rel(1,1) * nom(2);
+  Q_new(v.x.i(2,j), v.cos_yaw.i(j-1)) = -2 * w_rel(2,2) * nom(2);
+  Q_new(v.x.i(1,j-1), v.sin_yaw.i(j-1)) = -2 * w_rel(1,1) * nom(2);
+  Q_new(v.x.i(2,j-1), v.cos_yaw.i(j-1)) = 2 * w_rel(2,2) * nom(2);
+
+  Q_new(v.x.i(3:4,j), v.x.i(3:4,j)) = w_rel(3:4,3:4);
+  Q_new(v.x.i(3:4,j-1), v.x.i(3:4,j)) = -2 * w_rel(3:4,3:4);
+  Q_new(v.x.i(3:4,j-1), v.x.i(3:4,j-1)) = w_rel(3:4,3:4);
+
+  if DEBUG
+    % Try some random values to make sure our Q_new is correct
+    for k = 1:10
+      x1 = rand(4,1);
+      x2 = rand(4,1);
+      sy = rand();
+      cy = rand();
+      X = zeros(nv, 1);
+      X(v.x.i(:,j-1)) = x1;
+      X(v.x.i(:,j)) = x2;
+      X(v.sin_yaw.i(j-1)) = sy;
+      X(v.cos_yaw.i(j-1)) = cy;
+      err = (x2 - [x1(1:2) + [cy, -sy; sy, cy] * nom; x1(3:4)]);
+      O_des = err' * w_rel * err;
+      O_actual = X' * Q_new * X;
+      valuecheck(O_des, O_actual);
+    end
+  end
+  Q = Q + Q_new;
+
 end
 
 % Trim objective
-w_trim = 1 * w_rel(1) * (seed_plan.params.nom_forward_step^2);
+w_trim = 1 * weights.relative(1) * (seed_plan.params.nom_forward_step^2);
 for j = 3:nsteps
   c(v.trim.i(j)) = -w_trim;
   objcon = objcon + w_trim;
@@ -550,8 +617,8 @@ end
 
 params.mipgap = 1e-4;
 params.outputflag = 1;
-params.ConcurrentMIP = 4;
-params.NodeMethod = 0;
+% params.ConcurrentMIP = 4;
+% params.NodeMethod = 0;
 % params.Cuts = 3;
 % params.Heuristics = 0.2;
 % params.Presolve = 2;
@@ -560,6 +627,7 @@ params.NodeMethod = 0;
 
 % Solve the problem
 result = gurobi(model, params);
+solvertime = result.runtime;
 
 % Extract the solution
 for j = 1:length(var_names)
