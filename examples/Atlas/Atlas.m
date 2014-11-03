@@ -184,22 +184,22 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
 
   properties (SetAccess = protected, GetAccess = public)
     x0
-    default_footstep_params = struct('nom_forward_step', 0.40,... % m
-                                      'max_forward_step', 0.50,...% m
-                                      'max_step_width', 0.32,...% m
-                                      'min_step_width', 0.23,...% m
-                                      'nom_step_width', 0.26,...% m
-                                      'max_outward_angle', pi/8,... % rad
-                                      'max_inward_angle', 0.01,... % rad
-                                      'nom_upward_step', 0.2,... % m
-                                      'nom_downward_step', 0.2,...% m
-                                      'max_num_steps', 20,...
-                                      'min_num_steps', 1,...
-                                      'leading_foot', 1); % 0: left, 1: right
-    default_walking_params = struct('step_speed', 1.5,... % speed of the swing foot (m/s)
+    default_footstep_params = struct('nom_forward_step', 0.45,... % m
+                                     'max_forward_step', 0.50,...% m
+                                     'max_step_width', 0.42,...% m
+                                     'min_step_width', 0.20,...% m
+                                     'nom_step_width', 0.26,...% m
+                                     'max_outward_angle', pi/8,... % rad
+                                     'max_inward_angle', 0.01,... % rad
+                                     'nom_upward_step', 0.2,... % m
+                                     'nom_downward_step', 0.2,...% m
+                                     'max_num_steps', 20,...
+                                     'min_num_steps', 1,...
+                                     'leading_foot', 1); % 0: left, 1: right
+    default_walking_params = struct('step_speed', 1.25,... % speed of the swing foot (m/s)
                                     'step_height', 0.05,... % approximate clearance over terrain (m)
                                     'hold_frac', 0.3,... % fraction of the swing time spent in double support
-                                    'drake_min_hold_time', 0.25,... % minimum time in double support (s)
+                                    'drake_min_hold_time', 0.3,... % minimum time in double support (s)
                                     'drake_instep_shift', 0.02,... % Distance to shift ZMP trajectory inward toward the instep from the center of the foot (m)
                                     'mu', 1.0,... % friction coefficient
                                     'constrain_full_foot_pose', true); % whether to constrain the swing foot roll and pitch
