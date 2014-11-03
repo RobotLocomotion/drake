@@ -30,18 +30,25 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
 
       if (~strcmp(options.hands, 'none'))
         if (strcmp(options.hands, 'robotiq'))
-          options.weld_to_link = 29;
+          options_hand.weld_to_link = 29;
           obj.hands = 1;
           
 %           lhand = TimeSteppingRigidBodyManipulator([],options.dt);
 %           rhand = TimeSteppingRigidBodyManipulator([],options.dt);
-          options.floating = true;
-          obj = addRobotFromURDF(obj, getFullPathFromRelativePath('urdf/robotiq.urdf'), [0; -0.2; 0], [0; 0; 3.1415], options); 
+          obj = obj.addRobotFromURDF(getFullPathFromRelativePath('urdf/robotiq.urdf'), [0; -0.2; 0], [0; 0; 3.1415], options_hand); 
           %obj = addRobotFromURDF(obj, getFullPathFromRelativePath('cylinder.urdf'), [0; -0.2; 0], [0; 0; 3.1415], options); 
+        elseif (strcmp(options.hands, 'robotiq_weight_only'))
+          % Adds a box with weight roughly approximating the hands, so that
+          % the controllers know what's up
+          options_hand.weld_to_link = 29;
+          obj = obj.addRobotFromURDF(getFullPathFromRelativePath('urdf/robotiq_box.urdf'), [0; -0.2; 0], [0; 0; 3.1415], options_hand); 
+          %obj.manip.body.mass{29} = obj.manip.body.mass{29} + 100;
+          
         else
           error('unsupported hand type'); 
         end
       end
+
       
       if options.floating
         % could also do fixed point search here
