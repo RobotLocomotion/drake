@@ -1,4 +1,4 @@
-function [plan, v] = footstepRelaxedMISOCPGurobi(biped, seed_plan, weights, goal_pos, v_seed)
+function [plan, v, solvertime] = footstepRelaxedMISOCPGurobi(biped, seed_plan, weights, goal_pos, v_seed)
 t0 = tic();
 checkDependency('gurobi');
 seed_plan.sanity_check();
@@ -25,7 +25,7 @@ seed_steps = [seed_plan.footsteps.pos];
 
 min_yaw = pi * floor(seed_steps(6,1) / pi - 1);
 max_yaw = pi * ceil(seed_steps(6,1) / pi + 1);
-sector_boundaries = (min_yaw - SECTOR_WIDTH/2):SECTOR_WIDTH:(max_yaw + SECTOR_WIDTH/2);
+sector_boundaries = (min_yaw):SECTOR_WIDTH:(max_yaw);
 
 p = MixedIntegerHelper();
 
@@ -36,7 +36,7 @@ x_ub = [MAX_DISTANCE + repmat(seed_steps(1:3,1), 1, nsteps);
 
 x_start = seed_steps([1,2,3,6],:);
 p = p.addVariable('x', 'C', [4, nsteps], x_lb, x_ub, x_start);
-if isempty(v_seed)
+if isempty(v_seed) || ~isstruct(v_seed)
   p = p.addVariable('cos_yaw', 'C', [1, nsteps], -1, 1);
   p = p.addVariable('sin_yaw', 'C', [1, nsteps], -1, 1);
   p = p.addVariable('region', 'B', [length(seed_plan.safe_regions), nsteps], 0, 1);
@@ -49,7 +49,7 @@ if isempty(v_seed)
   p = p.addVariable('nom_step_slack', 'C', [1, nsteps-2], -inf, inf);
   p = p.addVariable('swing_obj', 'C', [3, nsteps-2], 0, inf);
   p = p.addVariable('swing_slack', 'C', [2, nsteps-2], -inf, inf);
-  p = p.addVariable('sincos_bound', 'C', [1, nsteps], 1, 1); % fixed to 1
+  p = p.addVariable('sincos_bound', 'C', [1, nsteps-2], 1, 1); % fixed to 1
   p = p.addVariable('sincos_slack', 'C', [2, nsteps-2], -1, 1);
   p = p.addVariable('sincos_slack_bound', 'C', [1, nsteps-2], SECTOR_WIDTH,SECTOR_WIDTH);
 else
@@ -58,14 +58,14 @@ else
   p = p.addVariable('region', 'B', [length(seed_plan.safe_regions), nsteps], 0, 1, v_seed.region.value);
   p = p.addVariable('sector', 'B', [length(sector_boundaries)-1, nsteps], 0, 1, v_seed.sector.value);
   p = p.addVariable('reach_slack', 'C', [3, nsteps-2, 2], -MAX_DISTANCE, MAX_DISTANCE, v_seed.reach_slack.value);
-  p = p.addVariable('goal_obj', 'C', [2, nsteps-2], 0, inf);
+  p = p.addVariable('goal_obj', 'C', [3, nsteps-2], 0, inf);
   p = p.addVariable('goal_slack', 'C', [2, nsteps-2], -inf, inf);
-  p = p.addVariable('rel_obj', 'C', [2, nsteps-2], 0, inf, v_seed.rel_obj.value);
+  p = p.addVariable('rel_obj', 'C', [3, nsteps-2], 0, inf, v_seed.rel_obj.value);
   p = p.addVariable('rel_slack', 'C', [2, nsteps-2, 2], -inf, inf, v_seed.rel_slack.value);
   p = p.addVariable('nom_step_slack', 'C', [1, nsteps-2], -inf, inf, v_seed.nom_step_slack.value);
-  p = p.addVariable('swing_obj', 'C', [2, nsteps-2], 0, inf, v_seed.swing_obj.value);
+  p = p.addVariable('swing_obj', 'C', [3, nsteps-2], 0, inf, v_seed.swing_obj.value);
   p = p.addVariable('swing_slack', 'C', [2, nsteps-2], -inf, inf, v_seed.swing_slack.value);
-  p = p.addVariable('sincos_bound', 'C', [1, nsteps], 1, 1, v_seed.sincos_bound.value); % fixed to 1
+  p = p.addVariable('sincos_bound', 'C', [1, nsteps-2], 1, 1, v_seed.sincos_bound.value); % fixed to 1
   p = p.addVariable('sincos_slack', 'C', [2, nsteps-2], -1, 1, v_seed.sincos_slack.value);
   p = p.addVariable('sincos_slack_bound', 'C', [1, nsteps-2], SECTOR_WIDTH,SECTOR_WIDTH, v_seed.sincos_slack_bound.value);
 end
@@ -208,13 +208,13 @@ p = p.addLinearConstraints(Ai, bi, [], []);
 assert(offset == expected_offset);
 
 %% Enforce rotation convex relaxation
-p = p.addConesOrPolyConesByIndex([p.v.sincos_bound.i; p.v.cos_yaw.i; p.v.sin_yaw.i], POLYCONE_APPROX_LEVEL);
+p = p.addConesOrPolyConesByIndex([p.v.sincos_bound.i; p.v.cos_yaw.i(3:nsteps); p.v.sin_yaw.i(3:nsteps)], POLYCONE_APPROX_LEVEL);
 
 Aeq_i = zeros(2*(nsteps-2), p.nv);
 beq_i = zeros(size(Aeq_i, 1), 1);
 offset = 0;
 expected_offset = size(Aeq_i, 1);
-p = p.addConesOrPolyConesByIndex([p.v.sincos_slack_bound.i; p.v.sincos_slack.i], POLYCONE_APPROX_LEVEL);
+p = p.addConesOrPolyConesByIndex([p.v.sincos_slack_bound.i; p.v.sincos_slack.i], 4);
 for j = 3:nsteps
   %   polycone([cos_yaw(j) - cos_yaw(j-1); sin_yaw(j) - sin_yaw(j-1)], pi/8, 16)];
   Aeq_i(offset+1, p.v.cos_yaw.i(j)) = 1;
@@ -231,7 +231,6 @@ end
 assert(offset == expected_offset);
 
 %% Enforce rotation mixed-integer constraints
-sector_boundaries = (min_yaw - SECTOR_WIDTH/2):SECTOR_WIDTH:(max_yaw + SECTOR_WIDTH/2);
 
 % Constraints = [Constraints, sum(sector, 1) == 1];
 Aeq_i = zeros(nsteps, p.nv);
@@ -621,8 +620,8 @@ assert(offset_ineq == expected_offset_ineq)
 p = p.addLinearConstraints(Ai, bi, Aeq_i, beq_i);
 
 params = struct();
-% params.mipgap = 1e-4;
-params.outputflag = 0;
+params.mipgap = 1e-4;
+params.outputflag = 1;
 % params.ConcurrentMIP = 4;
 % params.NodeMethod = 0;
 
@@ -630,7 +629,7 @@ fprintf(1, 'setup: %f\n', toc(t0));
 
 % Solve the problem
 t0 = tic();
-p = p.solveGurobi(params);
+[p, solvertime] = p.solveGurobi(params);
 fprintf(1, 'solve: %f\n', toc(t0));
 
 t0 = tic();
@@ -683,6 +682,7 @@ plan.sanity_check();
 
 v = p.v;
 fprintf(1, 'extract: %f\n', toc(t0));
+
 
 end
 
