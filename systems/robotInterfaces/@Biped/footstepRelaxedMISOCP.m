@@ -1,4 +1,4 @@
-function [plan, sin_yaw, cos_yaw] = footstepRelaxedMISOCP(biped, seed_plan, weights, goal_pos, ~)
+function [plan, seed, solvertime] = footstepRelaxedMISOCP(biped, seed_plan, weights, goal_pos, ~)
 % This implementation uses a mixed-integer SOCP to plan the number of footsteps to take,
 % the position and yaw of those steps, and the assignments of footsteps to
 % convex regions of obstacle-free terrain. 
@@ -106,13 +106,13 @@ for j = 3:nsteps
   Constraints = [Constraints,...
     coneOrPolyCone([cos_yaw(j); sin_yaw(j)], 1, POLYCONE_APPROX_LEVEL)];
 end
-for j = 3:nsteps
-  Constraints = [Constraints,...
-    coneOrPolyCone([cos_yaw(j) - cos_yaw(j-1); sin_yaw(j) - sin_yaw(j-1)], pi/8, POLYCONE_APPROX_LEVEL)];
-end
+% for j = 3:nsteps
+%   Constraints = [Constraints,...
+%     coneOrPolyCone([cos_yaw(j) - cos_yaw(j-1); sin_yaw(j) - sin_yaw(j-1)], pi/8, POLYCONE_APPROX_LEVEL)];
+% end
 
 %% Enforce rotation mixed-integer constraints
-sector_boundaries = (min_yaw - SECTOR_WIDTH/2):SECTOR_WIDTH:(max_yaw + SECTOR_WIDTH/2);
+sector_boundaries = (min_yaw):SECTOR_WIDTH:(max_yaw);
 sector = binvar(length(sector_boundaries) - 1, nsteps, 'full');
 
 Constraints = [Constraints, sum(sector, 1) == 1];
@@ -147,11 +147,15 @@ end
 for j = 3:nsteps
   if seed_plan.footsteps(j).frame_id == biped.foot_frame_id.left
     for k = 1:size(sector, 1) - 1
-      Constraints = [Constraints, sum(sector(k:k+1,j)) >= sector(k,j-1)];
+      Constraints = [Constraints,...
+       sum(sector(k:k+1,j)) >= sector(k,j-1), ...
+      ];
     end
   else
     for k = 2:size(sector, 1)
-      Constraints = [Constraints, sum(sector(k-1:k,j)) >= sector(k,j-1)];
+      Constraints = [Constraints,...
+       sum(sector(k-1:k,j)) >= sector(k,j-1), ...
+      ];
     end
   end
 end
@@ -241,7 +245,8 @@ end
 
 fprintf(1, 'setup: %f\n', toc(t0));
 t0 = tic;
-solvesdp(Constraints, Objective, sdpsettings('solver', 'gurobi'));
+diagnostics = solvesdp(Constraints, Objective, sdpsettings('solver', 'gurobi', 'gurobi.MIPGap', 1e-4));
+solvertime = diagnostics.solvertime;
 fprintf(1, 'solve: %f\n', toc(t0));
 
 x = double(x);
@@ -300,6 +305,8 @@ plan = plan.slice(~trim);
 
 plan.sanity_check();
 % plan.relative_step_offsets()
+
+seed = [];
 
 end
 

@@ -1,4 +1,4 @@
-function plan = footstepMIQP(biped, seed_plan, weights, goal_pos)
+function [plan, seed, solvertime] = footstepMIQP(biped, seed_plan, weights, goal_pos)
 % Run the Mixed Integer Quadratic Program form of the footstep planning problem.
 % This form can efficiently choose the assignment of individual foot positions to
 % safe (obstacle-free) regions, but always keeps the yaw value of every foot
@@ -232,6 +232,7 @@ else
 end
 
 result = gurobi(model, params);
+solvertime = result.runtime;
 if strcmp(result.status, 'INFEASIBLE') || strcmp(result.status, 'INF_OR_UNBD')
   warning('DRC:footstepMIQP:InfeasibleProblem', 'The footstep planning problem is infeasible. This often occurs when the robot cannot reach from its current pose into any of the safe regions');
   plan = seed_plan.slice(1:2);
@@ -274,3 +275,5 @@ min_num_steps = max(min_num_steps, ceil(2 * dtheta / max_yaw_rate + 2));
 
 final_nsteps = min(max_num_steps, max(min_num_steps, final_step_idx));
 plan = plan.slice(1:final_nsteps);
+
+seed = [];

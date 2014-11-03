@@ -225,9 +225,10 @@ classdef MixedIntegerHelper
     end
 
 
-    function obj = solveGurobi(obj, params)
+    function [obj, solvertime] = solveGurobi(obj, params)
       model = obj.getGurobiModel();
       result = gurobi(model, params);
+      solvertime = result.runtime;
       obj = obj.extractResult(result);
     end
   end
