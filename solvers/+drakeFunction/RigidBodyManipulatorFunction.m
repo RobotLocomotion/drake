@@ -14,7 +14,7 @@ classdef RigidBodyManipulatorFunction < drakeFunction.DrakeFunction
       typecheck(rbm,{'RigidBodyManipulator', ...
                      'TimeSteppingRigidBodyManipulator'});
       obj = obj@drakeFunction.DrakeFunction(input_frame,output_frame);
-      obj.rbm = rbm;
+      obj.rbm = rbm.removeAllStateConstraints();
     end
 
     function obj = setRigidBodyManipulator(obj, rbm)

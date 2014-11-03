@@ -34,7 +34,7 @@ function [x,F,info] = signedDistanceToHyperplaneTest(N)
   hyperplane_constraint = DrakeFunctionConstraint(zeros(2*N,1),Inf(2*N,1),hyperplane_distances);
 
   % Create nonlinear program
-  prog = NonlinearProgramWConstraintObjects(3*N);
+  prog = NonlinearProgram(3*N);
   prog = prog.addDisplayFunction(@(r)displayCallback(lcmgl,radius,origin,r),r_inds);
 
   % Add constraints
