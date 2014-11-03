@@ -37,6 +37,7 @@ for j = 1:length(b.getContactShapes())
 end
 
 if can_draw_lcm_polytopes
+  lcmgl = LCMGLClient('iris_seeds');
   % Clear the displayed polytopes
   drawLCMPolytope(0, 0, 0, 0, lc);
   % pause
@@ -81,12 +82,6 @@ start = [start, [0;0;0], [0;0;0]];
 goal = [goal, [0;0;0], [0;0;0]];
 [ytraj, ~, ~, safe_region_assignments] = prob.solveTrajectory(start, goal, safe_regions);
 
-% Run the program again with the region assignments fixed, for a 5-th-degree polynomial
-prob.traj_degree = 5;
-[ytraj, diagnostics, ~, ~] = prob.solveTrajectory(start, goal, safe_regions, safe_region_assignments);
-diagnostics
-
-
 % Add an all-zeros yaw trajectory
 ytraj = ytraj.vertcat(ConstantTrajectory(0));
 
@@ -118,6 +113,5 @@ for j = 1:5
   subplot(5, 1, j);
   fnplt(fnder(ytraj(1), j));
 end
-keyboard();
 end
 
