@@ -38,7 +38,7 @@ classdef RobotiqControlBlock < MIMODrakeSystem
     function y=mimoOutput(obj,t,~,x)      
       % Input is hand state, output is hand inputs
       % For now just issue time-varying force
-      y = 1.0*cos(0)*[1; 1; 1]
+      y = 0.5*[cos(6*t); cos(6*t); cos(6*t)];
 		end
   end
   
