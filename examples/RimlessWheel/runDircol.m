@@ -46,7 +46,7 @@ ThetaDDot = reshape(xdot(2,:),size(Theta));
     hold off;
     axis([rw.gamma - 2*rw.alpha,rw.gamma+2*rw.alpha,0 2]);
     drawnow;
-    pause;
+%    pause;
   end
 prog = prog.addTrajectoryDisplayFunction(@draw);
 

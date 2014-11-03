@@ -109,17 +109,19 @@ classdef BotVisualizer < RigidBodyVisualizer
       obj.draw_msg.position = single(zeros(nb,3));
       obj.draw_msg.quaternion = single(zeros(nb,4));
       
-      draw(obj,0,zeros(getNumStates(manip),1));
+      draw(obj,0,zeros(getNumPositions(manip),1));
     end
     
     function drawWrapper(obj,t,y)
       draw(obj,t,y);
     end
     
-    function draw(obj,t,y)
+    function draw(obj,t,q)
       obj.draw_msg.timestamp = int64(t*1000000);
       
-      kinsol = doKinematics(obj.model,y(1:getNumPositions(obj.model)));
+      q = q(1:obj.model.num_positions);  % be robust to people passing in the full state
+      
+      kinsol = doKinematics(obj.model,q);
       for i=1:getNumBodies(obj.model)
         pt = forwardKin(obj.model,kinsol,i,zeros(3,1),2);
         obj.draw_msg.position(i,:) = pt(1:3);
