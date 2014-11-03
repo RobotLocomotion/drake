@@ -124,10 +124,10 @@ classdef Manipulator < DrakeSystem
       phi=[]; psi=[];
       qd = vToqdot(obj, q) * v;
       if ~isempty(obj.position_constraints) && ~isempty(obj.velocity_constraints)
-        [phi,J,dJ] = geval(@obj.positionConstraints,q);
+        [phi,J,dJ] = obj.positionConstraints(q);
         Jdotqd = dJ*reshape(qd*qd',obj.num_positions^2,1);
 
-        [psi,dpsi] = geval(@obj.velocityConstraints,q,qd);
+        [psi,dpsi] = obj.velocityConstraints(q,qd);
         dpsidq = dpsi(:,1:obj.num_positions);
         dpsidqd = dpsi(:,obj.num_positions+1:end);
 
@@ -136,14 +136,14 @@ classdef Manipulator < DrakeSystem
 
         constraint_force = -[J;dpsidqd]'*pinv([J*term1;dpsidqd*term1])*[J*term2 + Jdotqd + alpha*J*qd; dpsidqd*term2 + dpsidq*qd + beta*psi];
       elseif ~isempty(obj.position_constraints)  % note: it didn't work to just have dpsidq,etc=[], so it seems like the best solution is to handle each case...
-        [phi,J,dJ] = geval(@obj.positionConstraints,q);
+        [phi,J,dJ] = obj.positionConstraints(q);
         % todo: find a way to use Jdot*qd directly (ala Twan's code)
         % instead of computing dJ
         Jdotqd = dJ*reshape(qd*qd',obj.num_positions^2,1);
 
         constraint_force = -J'*pinv(J*Hinv*J')*(J*Hinv*tau + Jdotqd + alpha*J*qd);
       elseif ~isempty(obj.velocity_constraints)
-        [psi,J] = geval(@obj.velocityConstraints,q,qd);
+        [psi,J] = obj.velocityConstraints(q,qd);
         dpsidq = J(:,1:obj.num_positions);
         dpsidqd = J(:,obj.num_positions+1:end);
 
