@@ -35,7 +35,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
           
 %           lhand = TimeSteppingRigidBodyManipulator([],options.dt);
 %           rhand = TimeSteppingRigidBodyManipulator([],options.dt);
-          obj = obj.addRobotFromURDF(getFullPathFromRelativePath('urdf/robotiq.urdf'), [0; -0.2; 0], [0; 0; 3.1415], options_hand); 
+          obj = obj.addRobotFromURDF(getFullPathFromRelativePath('urdf/robotiq.urdf'), [0; -0.18; 0], [0; 3.1415; 3.1415], options_hand); 
           %obj = addRobotFromURDF(obj, getFullPathFromRelativePath('cylinder.urdf'), [0; -0.2; 0], [0; 0; 3.1415], options); 
         elseif (strcmp(options.hands, 'robotiq_weight_only'))
           % Adds a box with weight roughly approximating the hands, so that
