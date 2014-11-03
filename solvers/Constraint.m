@@ -23,9 +23,11 @@ classdef Constraint
   end
 
   properties
-    grad_level    % derivative level of user gradients provided
-    grad_method   % A string indicating the method to compute gradient. Refer to
-                  %    'geval' for all supported method. @default 'user'
+    grad_level        % derivative level of user gradients provided
+    grad_method='';   % A string indicating the method to compute gradient. If empty,
+                      % then it calls geval only if the grad_level is insufficient
+                      % to supply all of the requested arguments.  Refer to
+                      % the 'geval' documentation for additional supported values. @default ''
   end
 
   methods
@@ -51,8 +53,6 @@ classdef Constraint
       obj.grad_level = grad_level;
 
       obj.name = repmat({''},obj.num_cnstr,1);
-
-      obj.grad_method = 'user_then_taylorvar';
 
       obj.iCfun = reshape(bsxfun(@times,(1:obj.num_cnstr)',ones(1,obj.xdim)),[],1);
       obj.jCvar = reshape(bsxfun(@times,1:obj.xdim,ones(obj.num_cnstr,1)),[],1);
