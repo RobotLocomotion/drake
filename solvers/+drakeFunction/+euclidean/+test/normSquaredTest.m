@@ -17,7 +17,7 @@ function [x,F,info] = normSquaredTest(N)
   squared_dist_between_pts_fcn = norm_squared_fcn(Difference(R3));
   distance_constraint = DrakeFunctionConstraint((2*radius)^2,inf,squared_dist_between_pts_fcn);
 
-  prog = NonlinearProgramWConstraintObjects(3*N);
+  prog = NonlinearProgram(3*N);
   prog = prog.addDisplayFunction(@(r)displayCallback(lcmgl,radius,r),r_inds);
   for i = 1:N
     for j = i+1:N
