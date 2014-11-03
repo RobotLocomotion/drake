@@ -1,4 +1,4 @@
-function plan = footstepAlternatingMIQP(obj, plan, weights, goal_pos)
+function [plan, seed, solvertime] = footstepAlternatingMIQP(obj, plan, weights, goal_pos)
 %footstepAlternatingMIQP plan footsteps by alternating between an MIQP (to
 % assign steps to safe regions and determine total number of steps) and an
 % NLP (to find the orientations of the steps)
@@ -18,6 +18,7 @@ function plan = footstepAlternatingMIQP(obj, plan, weights, goal_pos)
 ANGLE_CHANGE_THRESHOLD = pi/32;
 
 num_outer_iterations = 2;
+t0 = tic();
 for j = 1:num_outer_iterations
   miqp_plan = footstepMIQP(obj, plan, weights, goal_pos);
   if length(miqp_plan.footsteps) <= 2
@@ -33,6 +34,8 @@ for j = 1:num_outer_iterations
     break
   end
 end
+solvertime = toc(t0);
+seed = [];
 
 end
 
