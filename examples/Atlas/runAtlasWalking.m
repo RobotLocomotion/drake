@@ -17,7 +17,7 @@ if (nargin<1); use_mex = true; end
 if (nargin<2); use_bullet = false; end
 if (nargin<3); use_angular_momentum = false; end
 if (nargin<4)
-  navgoal = [randn();0.25*randn();0;0;0;0];
+  navgoal = [rand();0.25*randn();0;0;0;0];
 end
 
 % silence some warnings
@@ -102,7 +102,7 @@ options.use_bullet = use_bullet;
 options.w_qdd = zeros(nq,1);
 options.w_grf = 0;
 options.debug = false;
-options.contact_threshold = 0.002;
+options.contact_threshold = 0.005;
 options.solver = 0; % 0 fastqp, 1 gurobi
 options.use_mex = use_mex;
 
@@ -120,7 +120,7 @@ motion_frames = {lfoot_motion.getOutputFrame,rfoot_motion.getOutputFrame,...
 pelvis_motion.getOutputFrame};
 
 options.body_accel_input_weights = 0.5*[1 1 1];
-qp = QPController(r,motion_frames,ctrl_data,options);
+qp = AtlasQPController(r,motion_frames,ctrl_data,options);
 
 % feedback QP controller with atlas
 ins(1).system = 1;
@@ -140,6 +140,7 @@ clear ins outs;
 
 % feedback foot contact detector with QP/atlas
 options.use_lcm=false;
+options.use_contact_logic_OR=false;
 fc = FootContactBlock(r,ctrl_data,options);
 ins(1).system = 2;
 ins(1).input = 1;
@@ -271,8 +272,10 @@ if plot_comtraj
       rfoot_steps(:,rstep_counter) = rfoot_p;
     end
 
-    rfoottraj = walking_plan_data.link_constraints(1).traj;
-    lfoottraj = walking_plan_data.link_constraints(2).traj;
+    rfoottraj = PPTrajectory(pchip(walking_plan_data.link_constraints(1).ts,...
+                                   walking_plan_data.link_constraints(1).poses));
+    lfoottraj = PPTrajectory(pchip(walking_plan_data.link_constraints(2).ts,...
+                                   walking_plan_data.link_constraints(2).poses));
 
     lfoot_des = eval(lfoottraj,t);
     lfoot_des(3) = max(lfoot_des(3), 0.0811);     % hack to fix footstep planner bug
