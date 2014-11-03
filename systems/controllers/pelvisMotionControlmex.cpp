@@ -57,7 +57,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     else if (sizeof(pdata)==8) cid = mxUINT64_CLASS;
     else mexErrMsgIdAndTxt("Drake:pelvisMotionControlmex:PointerSize","Are you on a 32-bit machine or 64-bit machine??");
      
-    pdata->pelvis_height_previous = -1;
+    pdata->pelvis_height_previous = -10001;
 
     pdata->pelvis_body_index = pdata->r->findLinkInd("pelvis", 0);
     pdata->rfoot_body_index = pdata->r->findLinkInd("r_foot", 0);
@@ -93,7 +93,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   pdata->r->forwardKin(pdata->pelvis_body_index,zero,1,pelvis_pose);
   pdata->r->forwardJac(pdata->pelvis_body_index,zero,1,Jpelvis);
 
-  if (pdata->pelvis_height_previous<0) {
+  if (pdata->pelvis_height_previous<-10000) {
     pdata->pelvis_height_previous = pelvis_pose(2);
   }
 
