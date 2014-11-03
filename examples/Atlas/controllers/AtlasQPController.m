@@ -35,7 +35,7 @@ classdef AtlasQPController < QPController
       typecheck(options.min_knee_angle,'double');
       obj.min_knee_angle = options.min_knee_angle;
     else
-      obj.min_knee_angle = 0.7;
+      obj.min_knee_angle = 0.0;
     end
 
     obj.controller_data.left_toe_off = false;
