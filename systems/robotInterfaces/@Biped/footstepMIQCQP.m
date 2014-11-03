@@ -146,15 +146,14 @@ v.x.ub(:,1) = seed_steps([1,2,3,6], 1);
 v.x.lb(:,2) = seed_steps([1,2,3,6], 2);
 v.x.ub(:,2) = seed_steps([1,2,3,6], 2);
 
-% sum(region, 1) + trim == 1,...
+% sum(region, 1) == 1,...
 offset = 0;
-Aeq_i = zeros(nsteps, nv);
+Aeq_i = zeros(nsteps-2, nv);
 beq_i = zeros(size(Aeq_i, 1), 1);
 expected_offset = size(Aeq_i, 1);
-for j = 1:nsteps
+for j = 3:nsteps
   % ai = zeros(1, nv);
   Aeq_i(offset+1, v.region.i(:,j)) = 1;
-  Aeq_i(offset+1, v.trim.i(j)) = 1;
   beq_i(offset+1) = 1;
   offset = offset + 1;
 end
@@ -178,9 +177,9 @@ for j = 1:nsteps
   Aeq = [Aeq; ai]; beq = [beq; bi];
 end
 
-% trim(1:2) == 1
-v.trim.lb(1:2) = 1;
-v.trim.ub(1:2) = 1;
+% trim(end-1:end) == 1
+v.trim.lb(end-1:end) = 1;
+v.trim.ub(end-1:end) = 1;
 
 % Debug: uncomment these to fix the sin and cos sectors
 % ai = zeros(nsteps, nv);
@@ -194,14 +193,14 @@ v.trim.ub(1:2) = 1;
 % Aeq = [Aeq; ai];
 % beq = [beq; bi];
 
-% trim(1:end-1) >= trim(2:end)
+% trim(1:end-1) <= trim(2:end)
 offset = 0;
 A_i = zeros(nsteps-1, nv);
 b_i = zeros(size(A_i, 1), 1);
 expected_offset = size(A_i, 1);
 for j = 2:nsteps
-  A_i(offset+1, v.trim.i(j)) = 1;
-  A_i(offset+1, v.trim.i(j-1)) = -1;
+  A_i(offset+1, v.trim.i(j)) = -1;
+  A_i(offset+1, v.trim.i(j-1)) = 1;
   offset = offset + 1;
 end
 A = [A; A_i];
@@ -437,33 +436,32 @@ assert(offset == expected_offset);
 A = [A; Ar];
 b = [b; br];
 
-% trim(j) fixes step j to the initial pose of that foot (so we can trim it out of the plan later)
-A_i = zeros((8)*(nsteps - 3), nv);
+% trim(j) fixes step j to the final pose of that foot (so we can trim it out of the plan later)
+A_i = zeros((8)*(nsteps - 4), nv);
 b_i = zeros(size(A_i, 1), 1);
 offset = 0;
 expected_offset = size(A_i, 1);
 M = 100;
-for j = 3:nsteps-1
-  if seed_plan.footsteps(j).frame_id == seed_plan.footsteps(1).frame_id
-    % Constraints = [Constraints, implies(trim(j), x(:,j) == seed_steps([1,2,3,6],1))];
-    k = 1;
+for j = 3:nsteps-2
+  if seed_plan.footsteps(j).frame_id == seed_plan.footsteps(end).frame_id
+    % Constraints = [Constraints, implies(trim(j), x(:,j) == x(:,end))];
+    k = length(seed_plan.footsteps);
   else
-    % Constraints = [Constraints, implies(trim(j), x(:,j) == seed_steps([1,2,3,6], 2))];
-    k = 2;
+    % Constraints = [Constraints, implies(trim(j), x(:,j) == x(:,end-1))];
+    k = length(seed_plan.footsteps)-1;
   end
-  target = seed_steps([1,2,3,6], k);
-  % x(:,j) <= target
+  % x(:,j) <= x(:,k)
   A_i(offset+(1:4), v.x.i(:,j)) = eye(4);
   A_i(offset+(1:4), v.trim.i(j)) = M;
-  A_i(offset+(1:4), v.trim.i(j+1)) = -M;
-  b_i(offset+(1:4)) = target + M;
+  A_i(offset+(1:4), v.x.i(:,k)) = -eye(4);
+  b_i(offset+(1:4)) = M;
   offset = offset + 4;
 
-  % x(:,j) >= target ---> -x(:,j) <= -target
+  % x(:,j) >= x(:,k) ---> -x(:,j) <= -x(:,k)
   A_i(offset+(1:4), v.x.i(:,j)) = -eye(4);
   A_i(offset+(1:4), v.trim.i(j)) = M;
-  A_i(offset+(1:4), v.trim.i(j+1)) = -M;
-  b_i(offset+(1:4)) = -target + M;
+  A_i(offset+(1:4), v.x.i(:,k)) = eye(4);
+  b_i(offset+(1:4)) = M;
   offset = offset + 4;
 end
 assert(offset == expected_offset);
@@ -693,7 +691,7 @@ assert(length(region_order) == length(plan.footsteps));
 plan.region_order = region_order;
 
 % Remove unnecessary footsteps
-v.trim.value(find(v.trim.value, 2, 'last')) = false;
+v.trim.value(find(v.trim.value, 2, 'first')) = false;
 plan = plan.slice(~v.trim.value);
 
 plan.sanity_check();

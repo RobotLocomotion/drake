@@ -43,7 +43,12 @@ yaw = x(4,:);
 
 trim = binvar(1, nsteps, 'full');
 
-region = binvar(length(seed_plan.safe_regions), nsteps, 'full');
+nregions = length(seed_plan.safe_regions);
+if nregions > 1
+  region = binvar(length(seed_plan.safe_regions), nsteps, 'full');
+else
+  region = true(1, nsteps);
+end
 
 
 [foci, radii] = biped.getReachabilityCircles(seed_plan.params, biped.foot_frame_id.right);
@@ -67,12 +72,16 @@ Constraints = [x(:,1) == seed_steps([1,2,3,6],1),...
                x(1:3,:) <= 100 + repmat(seed_steps(1:3,1), 1, nsteps)...
                -1 <= cos_yaw <= 1,...
                -1 <= sin_yaw <= 1,...
-               sum(region, 1) + trim == 1,...
                sum(sin_sector, 1) == 1,...
                sum(cos_sector, 1) == 1,...
-               trim(1:2) == 1,...
-               trim(1:end-1) >= trim(2:end),...
+               trim(end-1:end) == 1,...
+               trim(1:end-1) <= trim(2:end),...
                ];
+
+if nregions > 1
+  Constraints = [Constraints, sum(region, 1) == 1];
+               % sum(region, 1) + trim == 1,...
+end
 
 % Enforce min number of steps
 Constraints = [Constraints, ...
@@ -119,14 +128,14 @@ for j = 3:num_precise_steps
   [rel_foci, radii] = biped.getReachabilityCircles(seed_plan.params, seed_plan.footsteps(j-1).frame_id);
   if seed_plan.footsteps(j).frame_id == biped.foot_frame_id.left
     Constraints = [Constraints, ...
-                   implies(~trim(j), 0 <= yaw(j) - yaw(j-1) <= pi/8)];
+                   0 <= yaw(j) - yaw(j-1) <= pi/8];
     for k = 1:size(cos_sector, 1) - 1
       Constraints = [Constraints, sum(cos_sector(k:k+1,j)) >= cos_sector(k,j-1),...
                                   sum(sin_sector(k:k+1,j)) >= sin_sector(k,j-1)];
     end
   else
     Constraints = [Constraints, ...
-                   implies(~trim(j), -pi/8 <= yaw(j) - yaw(j-1) <= 0)];
+                   -pi/8 <= yaw(j) - yaw(j-1) <= 0];
     for k = 2:size(cos_sector, 1)
       Constraints = [Constraints, sum(cos_sector(k-1:k,j)) >= cos_sector(k,j-1),...
                                   sum(sin_sector(k-1:k,j)) >= sin_sector(k,j-1)];
@@ -147,9 +156,9 @@ end
 for j = num_precise_steps+1:nsteps
   % Ensure that the foot doesn't yaw too much per step
   if seed_plan.footsteps(j).frame_id == biped.foot_frame_id.left
-    Constraints = [Constraints, implies(~trim(j), 0 <= yaw(j) - yaw(j-1) <= pi/8)];
+    Constraints = [Constraints, 0 <= yaw(j) - yaw(j-1) <= pi/8];
   else
-    Constraints = [Constraints, implies(~trim(j), -pi/8 <= yaw(j) - yaw(j-1) <= 0)];
+    Constraints = [Constraints, -pi/8 <= yaw(j) - yaw(j-1) <= 0];
   end
 
   % Enforce approximate step reachability
@@ -162,21 +171,28 @@ end
 for j = 3:nsteps
   for r = 1:length(seed_plan.safe_regions)
     Ar = [seed_plan.safe_regions(r).A(:,1:2), zeros(size(seed_plan.safe_regions(r).A, 1), 1), seed_plan.safe_regions(r).A(:,3)];
-    Constraints = [Constraints, ...
-       implies(region(r,j), Ar * x(:,j) <= seed_plan.safe_regions(r).b),...
-       implies(region(r,j), seed_plan.safe_regions(r).normal' * x(1:3,j) == seed_plan.safe_regions(r).normal' * seed_plan.safe_regions(r).point)];
+    if nregions > 1
+      Constraints = [Constraints, ...
+         implies(region(r,j), Ar * x(:,j) <= seed_plan.safe_regions(r).b),...
+         implies(region(r,j), seed_plan.safe_regions(r).normal' * x(1:3,j) == seed_plan.safe_regions(r).normal' * seed_plan.safe_regions(r).point)];
+    elseif region(r,j)
+      Constraints = [Constraints,...
+        Ar * x(:,j) <= seed_plan.safe_regions(r).b,...
+        seed_plan.safe_regions(r).normal' * x(1:3,j) == seed_plan.safe_regions(r).normal' * seed_plan.safe_regions(r).point];
+    end
   end
 end
 
-% trim(j) fixes step j to the initial pose of that foot (so we can trim it out of the plan later)
-for j = 3:(nsteps)
-  if seed_plan.footsteps(j).frame_id == seed_plan.footsteps(1).frame_id
-    Constraints = [Constraints, implies(trim(j), x(:,j) == seed_steps([1,2,3,6],1))];
+% trim(j) fixes step j to the final pose of that foot (so we can trim it out of the plan later)
+for j = 3:(nsteps-2)
+  if seed_plan.footsteps(j).frame_id == seed_plan.footsteps(end).frame_id
+    Constraints = [Constraints, implies(trim(j), x(:,j) == x(:,end))];
   else
-    Constraints = [Constraints, implies(trim(j), x(:,j) == seed_steps([1,2,3,6], 2))];
+    Constraints = [Constraints, implies(trim(j), x(:,j) == x(:,end-1))];
   end
 end
 
+weights.relative(6) = 0.1;
 w_goal = diag(weights.goal([1,1,3,6]));
 w_rel = diag(weights.relative([1,1,3,6]));
 w_trim = weights.relative(1) * (seed_plan.params.nom_forward_step^2);
@@ -233,7 +249,7 @@ end
 
 % Remove unnecessary footsteps
 trim = round(trim);
-trim(find(trim, 2, 'last')) = 0;
+trim(find(trim, 2, 'first')) = 0;
 plan = plan.slice(~trim);
 
 seed = [];
