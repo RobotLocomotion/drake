@@ -8,11 +8,11 @@ classdef RigidBodyTerrain < RigidBodyElement
     function obj = RigidBodyTerrain()
     end
     
-    function geom = getRigidBodyContactGeometry(obj)
+    function geom = getCollisionGeometry(obj)
       geom = [];
     end
 
-    function geom = getRigidBodyShapeGeometry(obj)
+    function geom = getVisualGeometry(obj)
       geom = [];
     end
   end

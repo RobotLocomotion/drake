@@ -73,7 +73,7 @@ for i=1:10
   success=(exitflag==1 || exitflag==2);
 
   xyz_idx = bsxfun(@plus,0:6:6*(n_points-1),(1:3)');
-  err = bsxfun(@minus,abs(qsol(xyz_idx)),[r.body(1).contact_shapes{1}.size]/2);
+  err = bsxfun(@minus,abs(qsol(xyz_idx)),[r.body(1).collision_geometry{1}.size]/2);
   if ~all(any(abs(err)<0.01,1))
     error('Points not on brick!');
   end

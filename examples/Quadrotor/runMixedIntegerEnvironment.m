@@ -31,9 +31,9 @@ x0(1:3) = start;
 v.draw(0,double(x0));
 
 b = r.getBody(1);
-obstacles = cell(1, length(b.getContactShapes()));
-for j = 1:length(b.getContactShapes())
-  obstacles{j} = b.getContactShapes{j}.getPoints();
+obstacles = cell(1, length(b.getCollisionGeometry()));
+for j = 1:length(b.getCollisionGeometry())
+  obstacles{j} = b.getCollisionGeometry{j}.getPoints();
 end
 
 if can_draw_lcm_polytopes
