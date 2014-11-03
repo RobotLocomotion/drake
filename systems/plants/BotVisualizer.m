@@ -119,6 +119,8 @@ classdef BotVisualizer < RigidBodyVisualizer
     function draw(obj,t,q)
       obj.draw_msg.timestamp = int64(t*1000000);
       
+      q = q(1:obj.model.num_positions);  % be robust to people passing in the full state
+      
       kinsol = doKinematics(obj.model,q);
       for i=1:getNumBodies(obj.model)
         pt = forwardKin(obj.model,kinsol,i,zeros(3,1),2);
