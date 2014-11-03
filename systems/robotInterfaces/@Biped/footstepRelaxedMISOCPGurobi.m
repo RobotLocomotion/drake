@@ -453,6 +453,7 @@ expected_offset_eq = size(Aeq_i, 1);
 offset_ineq = 0;
 expected_offset_ineq = size(Ai, 1);
 p = p.addConesOrPolyConesByIndex([p.v.rel_obj.i(1,:), p.v.nom_step_slack.i; p.v.rel_slack.i(:,:,1), p.v.rel_slack.i(:,:,2)], POLYCONE_APPROX_LEVEL);
+yaw_weight = 0.25;
 for j = 3:nsteps
   if seed_plan.footsteps(j-1).frame_id == biped.foot_frame_id.right
     nom = [0; seed_plan.params.nom_step_width];
@@ -460,6 +461,7 @@ for j = 3:nsteps
     nom = [0; -seed_plan.params.nom_step_width];
   end
   % err = x(:,j) - [(x(1:2,j-1) + [cos_yaw(j-1), -sin_yaw(j-1); sin_yaw(j-1), cos_yaw(j-1)] * nom); x(3:4,j-1)];
+
 
   if j == nsteps
     % Constraints = [Constraints,...
@@ -488,12 +490,12 @@ for j = 3:nsteps
     Ai(offset_ineq+2, p.v.x.i(3,j-1)) = weight;
     Ai(offset_ineq+2, p.v.rel_obj.i(2,j-2)) = -2;
 
-    Ai(offset_ineq+3, p.v.x.i(4,j)) = weight;
-    Ai(offset_ineq+3, p.v.x.i(4,j-1)) = -weight;
+    Ai(offset_ineq+3, p.v.x.i(4,j)) = yaw_weight * weight;
+    Ai(offset_ineq+3, p.v.x.i(4,j-1)) = -yaw_weight * weight;
     Ai(offset_ineq+3, p.v.rel_obj.i(3,j-2)) = -2;
 
-    Ai(offset_ineq+4, p.v.x.i(4,j)) = -weight;
-    Ai(offset_ineq+4, p.v.x.i(4,j-1)) = weight;
+    Ai(offset_ineq+4, p.v.x.i(4,j)) = -yaw_weight * weight;
+    Ai(offset_ineq+4, p.v.x.i(4,j-1)) = yaw_weight * weight;
     Ai(offset_ineq+4, p.v.rel_obj.i(3,j-2)) = -2;
 
     offset_ineq = offset_ineq + 4;
@@ -551,12 +553,12 @@ for j = 3:nsteps
     Ai(offset_ineq+2, p.v.x.i(3,j-1)) = weight;
     Ai(offset_ineq+2, p.v.rel_obj.i(2,j-2)) = -2;
 
-    Ai(offset_ineq+3, p.v.x.i(4,j)) = weight;
-    Ai(offset_ineq+3, p.v.x.i(4,j-1)) = -weight;
+    Ai(offset_ineq+3, p.v.x.i(4,j)) = yaw_weight * weight;
+    Ai(offset_ineq+3, p.v.x.i(4,j-1)) = -yaw_weight * weight;
     Ai(offset_ineq+3, p.v.rel_obj.i(3,j-2)) = -2;
 
-    Ai(offset_ineq+4, p.v.x.i(4,j)) = -weight;
-    Ai(offset_ineq+4, p.v.x.i(4,j-1)) = weight;
+    Ai(offset_ineq+4, p.v.x.i(4,j)) = -yaw_weight * weight;
+    Ai(offset_ineq+4, p.v.x.i(4,j-1)) = yaw_weight * weight;
     Ai(offset_ineq+4, p.v.rel_obj.i(3,j-2)) = -2;
 
     offset_ineq = offset_ineq + 4;
@@ -595,7 +597,6 @@ for j = 3:nsteps
   offset_eq = offset_eq + 2;
 
 
-  yaw_weight = 0.5;
   Ai(offset_ineq+1, p.v.x.i(3,j)) = 1;
   Ai(offset_ineq+1, p.v.x.i(3,j-2)) = -1;
   Ai(offset_ineq+1, p.v.swing_obj.i(2,j-2)) = -2;

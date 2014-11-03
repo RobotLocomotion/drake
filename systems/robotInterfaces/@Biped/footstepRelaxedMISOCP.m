@@ -221,14 +221,14 @@ for j = 3:nsteps
   if j == nsteps
     Constraints = [Constraints,...
       coneOrPolyCone(20 * err(1:2), rel_obj(1,j-2), POLYCONE_APPROX_LEVEL),...
-      rel_obj(2,j-2) >= 20 * [1, 1] * abs(err(3:4)),...
+      rel_obj(2,j-2) >= 20 * [1, .25] * abs(err(3:4)),...
       ];
   else
     scale = 0.1 * (nsteps - j) + 1;
     Constraints = [Constraints,...
       coneOrPolyCone(0.5 * scale * err(1:2), rel_obj(1,j-2), POLYCONE_APPROX_LEVEL),...
       coneOrPolyCone(2 * scale * err(1:2), rel_obj(1,j-2) + scale*((2 - 0.5) * seed_plan.params.nom_forward_step), POLYCONE_APPROX_LEVEL),...
-      rel_obj(2,j-2) >= [1, 1] * abs(err(3:4))];
+      rel_obj(2,j-2) >= [1, .25] * abs(err(3:4))];
   end
 end
 
@@ -252,7 +252,7 @@ fprintf(1, 'solve: %f\n', toc(t0));
 x = double(x);
 cos_yaw = double(cos_yaw);
 sin_yaw = double(sin_yaw);
-yaw = double(yaw)
+yaw = double(yaw);
 % sector = double(sector)
 
 
