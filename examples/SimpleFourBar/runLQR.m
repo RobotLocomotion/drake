@@ -7,7 +7,7 @@ v.xlim = [-8 8]; v.ylim = [-4 10];
 
 x_nom = [0.4485; -2.2775; -1.6694; 0; 0; 0]; u_nom = -6.5407;
 v.draw(0,x_nom);
-[x_nom,u_nom,~,x_resolve_constraints] = findFixedPoint(r,x_nom,u_nom);
+[x_nom,u_nom] = findFixedPoint(r,x_nom,u_nom);
 v.draw(0,x_nom);
 
 Q = diag([10 10 10 1 1 1]);
