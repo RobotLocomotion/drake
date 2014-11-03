@@ -86,52 +86,6 @@ classdef Quadrotor < RigidBodyManipulator
       obj = compile(obj);
     end    
     
-    function obj = addBox(obj, lwh, xy, yaw)
-      % Adds a single box (this is addTree but without the leaves) with specified length width height, xy
-      % location, and yaw orientation.
-      height = lwh(1,3);
-      width_param = lwh(1,1:2);
-      treeTrunk = RigidBodyBox([.2+.8*width_param height],...
-          [xy;height/2+0.005],[0;0;yaw]);
-      % treeTrunk.c = [83,53,10]/255;  % brown
-      treeTrunk.c = [191,120,21]/255;  % brown
-      obj = addShapeToBody(obj,'world',treeTrunk);
-      obj = addContactShapeToBody(obj,'world',treeTrunk);
-      obj = compile(obj);
-    end    
-    
-    function obj = addFloatingBox(obj, lwh, xyz, yaw, color)
-      if nargin < 5
-        color = [.8,.8,.8]; % gray
-      end
-      % Adds a single box with specified length width height, x,y, and z
-      % location, and yaw orientation.
-      height = lwh(1,3);
-      length = lwh(1,1);
-      width = lwh(1,2);
-      floatBox = RigidBodyBox([length width height],...
-          [xyz(1,1) xyz(1,2) xyz(1,3)],[0;0;yaw]);
-      floatBox.c = color;
-      obj = addShapeToBody(obj,'world',floatBox);
-      obj = addContactShapeToBody(obj,'world',floatBox);
-      obj = compile(obj);
-    end    
-    
-    function obj = addTable(r, lwh, xyz, dist)
-      % This adds 5 Floating boxes given the size, location, tilt of
-      % the Quadrant III leg, and shortest dist. from one leg to an
-      % adjacent one
-      
-      %leg boxes
-      r = addFloatingBox(r, lwh, [xyz(1,1),xyz(1,2),xyz(1,3)], 0);
-      r = addFloatingBox(r, lwh, [xyz(1,1),xyz(1,2)+dist,xyz(1,3)], 0);
-      r = addFloatingBox(r, lwh, [xyz(1,1)+dist,xyz(1,2),xyz(1,3)], 0);
-      r = addFloatingBox(r, lwh, [xyz(1,1)+dist,xyz(1,2)+dist,xyz(1,3)], 0);
-      %surface box
-      obj = addFloatingBox(r, [dist+.3,dist+.3,0.1], [xyz(1,1)+dist/2,xyz(1,2)+dist/2, 2 * xyz(1,3)], 0);
-
-    end    
-    
     function traj_opt = addPlanVisualizer(obj,traj_opt)
       % spew out an lcmgl visualization of the trajectory.  intended to be
       % used as a callback (fake objective) in the direct trajectory
