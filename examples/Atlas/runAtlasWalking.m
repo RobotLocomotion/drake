@@ -17,7 +17,8 @@ if (nargin<1); use_mex = true; end
 if (nargin<2); use_bullet = false; end
 if (nargin<3); use_angular_momentum = false; end
 if (nargin<4)
-  navgoal = [rand();0.25*randn();0;0;0;0];
+%  navgoal = [2*rand();0.25*randn();0;0;0;0];
+  navgoal = [1.5;0;0;0;0;0];
 end
 
 % silence some warnings
@@ -100,9 +101,10 @@ options.dt = 0.003;
 options.slack_limit = 100;
 options.use_bullet = use_bullet;
 options.w_qdd = zeros(nq,1);
-options.w_grf = 0;
+options.w_grf = 1e-8;
+options.w_slack = 5.0;
 options.debug = false;
-options.contact_threshold = 0.005;
+options.contact_threshold = 0.002;
 options.solver = 0; % 0 fastqp, 1 gurobi
 options.use_mex = use_mex;
 
@@ -113,13 +115,18 @@ else
   options.W_kdot = zeros(3);
 end
 
+options.Kp =150*ones(6,1);
+options.Kd = 2*sqrt(options.Kp);
 lfoot_motion = BodyMotionControlBlock(r,'l_foot',ctrl_data,options);
 rfoot_motion = BodyMotionControlBlock(r,'r_foot',ctrl_data,options);
+options.Kp = [100; 100; 100; 150; 150; 150];
+options.Kd = 2*sqrt(options.Kp);
 pelvis_motion = PelvisMotionControlBlock(r,'pelvis',ctrl_data,options);
 motion_frames = {lfoot_motion.getOutputFrame,rfoot_motion.getOutputFrame,...
 pelvis_motion.getOutputFrame};
 
-options.body_accel_input_weights = 0.5*[1 1 1];
+options.body_accel_input_weights = [.1 .1 .1];
+options.min_knee_angle = 0.7;
 qp = AtlasQPController(r,motion_frames,ctrl_data,options);
 
 % feedback QP controller with atlas
@@ -157,6 +164,8 @@ clear ins outs;
 
 % feedback PD block
 options.use_ik = false;
+options.Kp = 160.0*ones(nq,1);
+options.Kd = 19.0*ones(nq,1);
 pd = IKPDBlock(r,ctrl_data,options);
 ins(1).system = 1;
 ins(1).input = 1;
