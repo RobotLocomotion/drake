@@ -5,7 +5,7 @@ function tf = polycone(v, r, N)
 %            can be used as a drop-in replacement for the Yalmip cone()
 %            function. 
 
-sizecheck(v, 2);
+sizecheck(v, [2, nan]);
 sizecheck(r, 1);
 sizecheck(N, 1);
 A = zeros(N, 2);
@@ -13,7 +13,7 @@ b = repmat(r, N, 1);
 for j = 1:N
   th = (2*pi) / N * (j-1);
   R = rotmat(th);
-  A(j,:) = (R * [1;0])';
+  A(j,:) = (R * [0;1])';
 end
-tf = A * v <= b;
+tf = A * v <= repmat(b, 1, size(v, 2));
 

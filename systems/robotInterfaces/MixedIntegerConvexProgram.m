@@ -1,23 +1,37 @@
-classdef MixedIntegerHelper
+classdef MixedIntegerConvexProgram
   properties
-    v = struct();
+    vars = struct();
     nv = 0;
-    c;
-    Q;
-    A;
-    b;
-    Aeq;
-    beq;
-    quadcon;
-    objcon;
-    cones;
-    polycones;
+    c = zeros(0, 1);
+    Q = sparse(0, 0);
+    A = zeros(0, 0);
+    b = zeros(0, 1);
+    Aeq = zeros(0, 0);
+    beq = zeros(0, 1);
+    quadcon = struct('Qc', {}, 'q', {}, 'rhs', {});
+    objcon = 0;
+    cones = struct('index', {});
+    polycones = struct('index', {}, 'N', {});
+    symbolic_constraints;
+    symbolic_objective = 0;
+  end
 
-    frozen = false;
+  properties (SetAccess = protected)
+    using_symbolic = false;
+    symbolic_vars = [];
   end
 
   methods
-    function obj = MixedIntegerHelper()
+    function obj = MixedIntegerConvexProgram(using_symbolic)
+      if nargin < 1
+        using_symbolic = false;
+      end
+      if using_symbolic
+        checkDependency('yalmip');
+        obj.symbolic_constraints = lmi();
+      end
+
+      obj.using_symbolic = using_symbolic;
     end
 
     function obj = addVariable(obj, name, type_, size_, lb, ub, start_)
@@ -49,50 +63,57 @@ classdef MixedIntegerHelper
       if obj.frozen
         error('This problem has been frozen (by adding constraints) so you cannot add any more new variables');
       end
-      obj.v.(name) = struct();
-      obj.v.(name).type = type_;
-      obj.v.(name).size = size_;
-      obj.v.(name).i = reshape(obj.nv + (1:prod(obj.v.(name).size)), obj.v.(name).size);
-      obj.nv = obj.nv + prod(obj.v.(name).size);
+      obj.vars.(name) = struct();
+      obj.vars.(name).type = type_;
+      obj.vars.(name).size = size_;
+      obj.vars.(name).i = reshape(obj.nv + (1:prod(obj.vars.(name).size)), obj.vars.(name).size);
+      obj.nv = obj.nv + prod(obj.vars.(name).size);
       if isscalar(lb)
-        lb = repmat(lb, obj.v.(name).size);
+        lb = repmat(lb, obj.vars.(name).size);
       end
       if isscalar(ub)
-        ub = repmat(ub, obj.v.(name).size);
+        ub = repmat(ub, obj.vars.(name).size);
       end
-      obj.v.(name).lb = lb;
-      obj.v.(name).ub = ub;
+      obj.vars.(name).lb = lb;
+      obj.vars.(name).ub = ub;
       if nargin < 7
         start_ = [];
       end
-      obj.v.(name).start = nan(obj.v.(name).size);
-      if size(start_, 1) > obj.v.(name).size(1)
-        start_ = start_(1:obj.v.(name).size(1),:,:);
+      obj.vars.(name).start = nan(obj.vars.(name).size);
+      if size(start_, 1) > obj.vars.(name).size(1)
+        start_ = start_(1:obj.vars.(name).size(1),:,:);
       end
-      if size(start_, 2) > obj.v.(name).size(2)
-        start_ = start_(:,1:obj.v.(name).size(2),:);
+      if size(start_, 2) > obj.vars.(name).size(2)
+        start_ = start_(:,1:obj.vars.(name).size(2),:);
       end
-      obj.v.(name).start(1:size(start_, 1), 1:size(start_, 2), 1:size(start_, 3)) = start_;
-    end
+      obj.vars.(name).start(1:size(start_, 1), 1:size(start_, 2), 1:size(start_, 3)) = start_;
 
-    function obj = freeze(obj)
-      % Indicate that we're done adding new variables and ready to add constraints and cost
-      assert(~obj.frozen, 'cannot freeze twice');
-      obj.frozen = true;
-      obj.c = zeros(obj.nv, 1);
-      obj.Q = sparse(obj.nv, obj.nv);
-      obj.A = zeros(0, obj.nv);
-      obj.b = zeros(0, 1);
-      obj.Aeq = zeros(0, obj.nv);
-      obj.beq = zeros(0, 1);
-      obj.quadcon = struct('Qc', {}, 'q', {}, 'rhs', {});
-      obj.objcon = 0;
-      obj.cones = struct('index', {});
-      obj.polycones = struct('index', {}, 'N', {});
+      % Add symbolic variables if we're doing that
+      if obj.using_symbolic
+        size_cell =num2cell(obj.vars.(name).size);
+        if strcmp(obj.vars.(name).type, 'B')
+          obj.vars.(name).symb = binvar(size_cell{:});
+        elseif strcmp(obj.vars.(name).type, 'I')
+          obj.vars.(name).symb = intvar(size_cell{:});
+        else
+          obj.vars.(name).symb = sdpvar(size_cell{:});
+        end
+        if isempty(obj.symbolic_vars)
+          obj.symbolic_vars = reshape(obj.vars.(name).symb, [], 1);
+        else
+          obj.symbolic_vars = [obj.symbolic_vars; reshape(obj.vars.(name).symb, [], 1)];
+        end
+      end
+
+      num_new_vars = prod(obj.vars.(name).size);
+      obj.c = [obj.c; zeros(num_new_vars, 1)];
+      obj.Q = [obj.Q, sparse(num_new_vars, num_new_vars);
+               sparse(num_new_vars, num_new_vars * 2)];
+      obj.A = [obj.A, zeros(size(obj.A, 1), num_new_vars)];
+      obj.Aeq = [obj.Aeq, zeros(size(obj.Aeq, 1), num_new_vars)];
     end
 
     function obj = addLinearConstraints(obj, A, b, Aeq, beq)
-      assert(obj.frozen, 'cannot add constraints or cost until helper is frozen');
       obj.A = [obj.A; A];
       obj.b = [obj.b; b];
       obj.Aeq = [obj.Aeq; Aeq];
@@ -100,22 +121,18 @@ classdef MixedIntegerHelper
     end
 
     function obj = addCones(obj, cones)
-      assert(obj.frozen, 'cannot add constraints or cost until helper is frozen');
       obj.cones = [obj.cones, cones];
     end
 
     function obj = addConesByIndex(obj, idx)
-      assert(obj.frozen, 'cannot add constraints or cost until helper is frozen');
       obj = obj.addCones(struct('index', mat2cell(idx, size(idx, 1), ones(1, size(idx, 2)))));
     end
 
     function obj = addPolyCones(obj, polycones)
-      assert(obj.frozen, 'cannot add constraints or cost until helper is frozen');
       obj.polycones = [obj.polycones, polycones];
     end
 
     function obj = addPolyConesByIndex(obj, idx, N)
-      assert(obj.frozen, 'cannot add constraints or cost until helper is frozen');
       if length(N) == 1
         N = repmat(N, 1, size(idx, 2));
       else
@@ -138,17 +155,14 @@ classdef MixedIntegerHelper
 
 
     function obj = addQuadcon(obj, quadcon)
-      assert(obj.frozen, 'cannot add constraints or cost until helper is frozen');
       obj.quadcon = [obj.quadcon, quadcon];
     end
 
     function obj = setLinearCost(obj, c)
-      assert(obj.frozen, 'cannot add constraints or cost until helper is frozen');
       obj.c = c;
     end
 
     function obj = setLinearCostEntries(obj, idx, val)
-      assert(obj.frozen, 'cannot add constraints or cost until helper is frozen');
       obj.c(idx) = val;
     end
 
@@ -174,10 +188,28 @@ classdef MixedIntegerHelper
       obj = obj.addLinearConstraints(A, b, [], []);
     end
 
+    function obj = solve(obj)
+      if obj.using_symbolic
+        obj = obj.solveYalmip();
+      else
+        obj = obj.solveGurobi();
+      end
+    end
+
+    function [obj, solvertime] = solveGurobi(obj, params)
+      if nargin < 2
+        params = struct();
+      end
+      model = obj.getGurobiModel();
+      result = gurobi(model, params);
+      solvertime = result.runtime;
+      obj = obj.extractResult(result.x);
+    end
+
     function model = getGurobiModel(obj)
       obj = obj.convertPolyCones();
 
-      var_names = fieldnames(obj.v);
+      var_names = fieldnames(obj.vars);
 
       model = struct();
       model.A = sparse([obj.A; obj.Aeq]);
@@ -200,36 +232,55 @@ classdef MixedIntegerHelper
       model.ub = inf(obj.nv, 1);
       for j = 1:length(var_names)
         name = var_names{j};
-        i = reshape(obj.v.(name).i, [], 1);
-        model.vtype(i) = obj.v.(name).type;
-        model.lb(i) = reshape(obj.v.(name).lb, [], 1);
-        model.ub(i) = reshape(obj.v.(name).ub, [], 1);
-        model.start(i) = reshape(obj.v.(name).start, [], 1);
+        i = reshape(obj.vars.(name).i, [], 1);
+        model.vtype(i) = obj.vars.(name).type;
+        model.lb(i) = reshape(obj.vars.(name).lb, [], 1);
+        model.ub(i) = reshape(obj.vars.(name).ub, [], 1);
+        model.start(i) = reshape(obj.vars.(name).start, [], 1);
       end
     end
 
-    function obj = extractResult(obj, result)
+    function obj = extractResult(obj, x)
       var_names = fieldnames(obj.v);
       % Extract the solution
       for j = 1:length(var_names)
         name = var_names{j};
-        i = reshape(obj.v.(name).i, [], 1);
-        if obj.v.(name).type == 'I' 
-          obj.v.(name).value = reshape(round(result.x(i)), obj.v.(name).size);
-        elseif obj.v.(name).type == 'B'
-          obj.v.(name).value = reshape(logical(round(result.x(i))), obj.v.(name).size);
+        i = reshape(obj.vars.(name).i, [], 1);
+        if obj.vars.(name).type == 'I' 
+          obj.vars.(name).value = reshape(round(x(i)), obj.vars.(name).size);
+        elseif obj.vars.(name).type == 'B'
+          obj.vars.(name).value = reshape(logical(round(x(i))), obj.vars.(name).size);
         else
-          obj.v.(name).value = reshape(result.x(i), obj.v.(name).size);
+          obj.vars.(name).value = reshape(x(i), obj.vars.(name).size);
         end
       end
     end
 
+    function obj = solveYalmip(obj)
+      constraints = obj.symbolic_constraints;
+      objective = obj.symbolic_objective;
 
-    function [obj, solvertime] = solveGurobi(obj, params)
-      model = obj.getGurobiModel();
-      result = gurobi(model, params);
-      solvertime = result.runtime;
-      obj = obj.extractResult(result);
+      % Now add in any constraints or objectives which were declared non-symbolically
+      objective = objective + obj.symbolic_vars' * obj.Q * obj.symbolic_vars + obj.c' * obj.symbolic_vars + obj.objcon;
+      constraints = [constraints,...
+        obj.Aeq * obj.symbolic_vars == obj.beq,...
+        obj.A * obj.symbolic_vars <= obj.b,...
+        ];
+      for j = 1:length(obj.quadcon)
+        constraints = [constraints,...
+          obj.symbolic_vars' * obj.quadcon(j).Qc * obj.symbolic_vars + obj.quadcon(j)' * obj.symbolic_vars <= obj.quadcon(j).rhs];
+      end
+      for j = 1:length(obj.cones)
+        constraints = [constraints,...
+          cone(obj.symbolic_vars(obj.cones(j).index(2:end)), obj.symbolic_vars(obj.cones(j).index(1)))];
+      end
+      for j = 1:length(obj.polycones)
+        constraints = [constraints,...
+          polycone(obj.symbolic_vars(obj.polycones(j).index(2:end)), obj.symbolic_vars(obj.polycones(j).index(1)), obj.polycones(j).N)];
+      end
+
+      optimize(constraints, objective, sdpsettings('solver', 'gurobi'));
+      obj = obj.extractResult(double(obj.symbolic_vars));
     end
   end
 end
