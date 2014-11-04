@@ -6,7 +6,7 @@ addpath(fullfile(getDrakePath, 'examples', 'Atlas'));
 options.floating = true;
 options.dt = 0.001;
 
-rng(118)
+% rng(118)
 
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints')
 warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits')
@@ -46,10 +46,10 @@ else
   safe_regions(1) = struct('A', Ai, 'b', bi, 'point', [0;0;0], 'normal', [0;0;1]);
 end
 
-% goal_pos = struct('right', [2;2-0.15;0.1;0;0;pi/2],...
-%                   'left',  [2;2+0.15;0.1;0;0;pi/2]);
-goal_pos = struct('right', [1; -0.15; 0.1; 0; 0; 0],...
-                  'left', [1; 0.15; 0.1; 0; 0; 0]);
+goal_pos = struct('right', [1+0.13;1;0.1;0;0;pi/2],...
+                  'left',  [1-0.13;1;0.1;0;0;pi/2]);
+% goal_pos = struct('right', [1; 1-0.13; 0.1; 0; 0; 0],...
+%                   'left', [1; 1+0.13; 0.1; 0; 0; 0]);
 
 params = r.default_footstep_params;
 params.max_num_steps = 10;
@@ -98,22 +98,27 @@ function test_solver(solver, h, t)
 end
 
 figure(1)
-h = subplot(2, 3, 1)
-test_solver(@footstepMIQP, h, 'miqp');
-drawnow()
-h = subplot(2, 3, 2)
-test_solver(@footstepAlternatingMIQP, h, 'alternating miqp');
-drawnow()
+% h = subplot(2, 3, 1)
+% test_solver(@footstepMIQP, h, 'miqp');
+% drawnow()
+% h = subplot(2, 3, 2)
+% test_solver(@footstepAlternatingMIQP, h, 'alternating miqp');
+% drawnow()
 h = subplot(2, 3, 3)
+params.rot_mode = 'sincos_linear';
 test_solver(@footstepMISOCP, h, 'humanoids2014');
 drawnow()
 h = subplot(2, 3, 4)
-test_solver(@footstepMIQCQP, h, 'humanoids2014 gurobi');
+params.rot_mode = 'circle_linear_eq';
+test_solver(@footstepMISOCP, h, 'humanoids2014 circle eq');
 drawnow()
-h = subplot(2, 3, 5)
-test_solver(@footstepRelaxedMISOCP, h, 'relaxed yalmip');
-drawnow()
-h = subplot(2, 3, 6)
-test_solver(@footstepRelaxedMISOCPGurobi, h, 'relaxed gurobi');
-drawnow()
+% h = subplot(2, 3, 4)
+% test_solver(@footstepMIQCQP, h, 'humanoids2014 gurobi');
+% drawnow()
+% h = subplot(2, 3, 5)
+% test_solver(@footstepRelaxedMISOCP, h, 'relaxed yalmip');
+% drawnow()
+% h = subplot(2, 3, 6)
+% test_solver(@footstepRelaxedMISOCPGurobi, h, 'relaxed gurobi');
+% drawnow()
 end
