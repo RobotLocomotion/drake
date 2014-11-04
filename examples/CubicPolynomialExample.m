@@ -114,15 +114,15 @@ classdef CubicPolynomialExample < PolynomialSystem
       plot(xs,-xs+xs.^3,'k','linewidth',2);
       legend('xdot');
       axis tight
-      pause;
+%      pause;
       
       plot(xs,-2*xs.^2+2*xs.^4,'r','linewidth',2);
       legend('xdot','Vdot');
-      pause;
+%      pause;
       
       plot(xs,lambda,'g','linewidth',2);
       legend('xdot','Vdot','lambda');
-      pause;
+%      pause;
       
       plot(xs,vl,'b','linewidth',2);
       legend('xdot','Vdot','lambda','Vdot+lambda*(1-V)');

@@ -7,7 +7,7 @@ classdef RigidBodyVisualizer < Visualizer
   end
   methods
     function obj = RigidBodyVisualizer(manip)
-      obj = obj@Visualizer(getStateFrame(manip));
+      obj = obj@Visualizer(getPositionFrame(manip));
       obj.model = manip;
     end
     function inspector(obj,x0,state_dims,minrange,maxrange,options)
