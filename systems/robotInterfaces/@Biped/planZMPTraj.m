@@ -161,4 +161,52 @@ zmptraj = PPTrajectory(foh([zmp_knots.t], [zmp_knots.zmp]));
 support_times = [zmp_knots.t];
 supports = [zmp_knots.supp];
 
+pelvis_reference_height = zeros(1,length(support_times));
+      
+lfoot_link_con_ind = [link_constraints.link_ndx]==biped.foot_body_id.left;
+rfoot_link_con_ind = [link_constraints.link_ndx]==biped.foot_body_id.right;
+lfoot_des = evaluateSplineInLinkConstraints(0,link_constraints,lfoot_link_con_ind);
+rfoot_des = evaluateSplineInLinkConstraints(0,link_constraints,rfoot_link_con_ind);
+pelvis_reference_height(1) = min(lfoot_des(3),rfoot_des(3));
+
+for i=1:length(support_times)-1
+  isDoubleSupport = any(supports(i).bodies==biped.foot_body_id.left) && any(supports(i).bodies==biped.foot_body_id.right);
+  isRightSupport = ~any(supports(i).bodies==biped.foot_body_id.left) && any(supports(i).bodies==biped.foot_body_id.right);
+  isLeftSupport = any(supports(i).bodies==biped.foot_body_id.left) && ~any(supports(i).bodies==biped.foot_body_id.right);
+
+  nextIsDoubleSupport = any(supports(i+1).bodies==biped.foot_body_id.left) && any(supports(i+1).bodies==biped.foot_body_id.right);
+  nextIsRightSupport = ~any(supports(i+1).bodies==biped.foot_body_id.left) && any(supports(i+1).bodies==biped.foot_body_id.right);
+  nextIsLeftSupport = any(supports(i+1).bodies==biped.foot_body_id.left) && ~any(supports(i+1).bodies==biped.foot_body_id.right);
+
+  t = support_times(i);
+  t_next = support_times(i+1);
+  lfoot_des = evaluateSplineInLinkConstraints(t,link_constraints,lfoot_link_con_ind);
+  rfoot_des = evaluateSplineInLinkConstraints(t,link_constraints,rfoot_link_con_ind);
+  lfoot_des_next = evaluateSplineInLinkConstraints(t_next,link_constraints,lfoot_link_con_ind);
+  rfoot_des_next = evaluateSplineInLinkConstraints(t_next,link_constraints,rfoot_link_con_ind);
+
+  if isDoubleSupport && nextIsDoubleSupport
+    pelvis_reference_height(i+1) = pelvis_reference_height(i);
+  elseif isDoubleSupport && nextIsLeftSupport
+    pelvis_reference_height(i+1) = lfoot_des_next(3);
+  elseif isDoubleSupport && nextIsRightSupport
+    pelvis_reference_height(i+1) = rfoot_des_next(3);
+  elseif isLeftSupport && nextIsDoubleSupport 
+    % check to see if foot is going down
+    if rfoot_des_next(3)+0.025 < lfoot_des(3)
+      pelvis_reference_height(i+1) = rfoot_des_next(3);
+    else
+      pelvis_reference_height(i+1) = lfoot_des(3);
+    end
+  elseif isRightSupport && nextIsDoubleSupport 
+    % check to see if foot is going down
+    if lfoot_des_next(3)+0.025 < rfoot_des(3)
+      pelvis_reference_height(i+1) = lfoot_des_next(3);
+    else
+      pelvis_reference_height(i+1) = rfoot_des(3);
+    end
+  end
+end
+link_constraints(1).pelvis_reference_height = pelvis_reference_height;
+
 end
