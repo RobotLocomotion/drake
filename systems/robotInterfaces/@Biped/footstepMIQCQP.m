@@ -116,14 +116,14 @@ add_var('x', 'C', [4, nsteps], x_lb, x_ub, x_start);
 if isempty(v_seed)
   add_var('cos_yaw', 'C', [1, nsteps], -1, 1);
   add_var('sin_yaw', 'C', [1, nsteps], -1, 1);
-  add_var('region', 'B', [length(seed_plan.safe_regions), nsteps], 0, 1);
+  add_var('region', 'B', [length(seed_plan.safe_regions), nsteps-2], 0, 1);
   add_var('cos_sector', 'B', [length(cos_boundaries)-1, nsteps], 0, 1);
   add_var('sin_sector', 'B', [length(sin_boundaries)-1, nsteps], 0, 1);
   add_var('trim', 'B', [1, nsteps], 0, 1);
 else
   add_var('cos_yaw', 'C', [1, nsteps], -1, 1, v_seed.cos_yaw.value);
   add_var('sin_yaw', 'C', [1, nsteps], -1, 1, v_seed.sin_yaw.value);
-  add_var('region', 'B', [length(seed_plan.safe_regions), nsteps], 0, 1, v_seed.region.value);
+  add_var('region', 'B', [length(seed_plan.safe_regions), nsteps-2], 0, 1, v_seed.region.value);
   add_var('cos_sector', 'B', [length(cos_boundaries)-1, nsteps], 0, 1, v_seed.cos_sector.value);
   add_var('sin_sector', 'B', [length(sin_boundaries)-1, nsteps], 0, 1, v_seed.sin_sector.value);
   add_var('trim', 'B', [1, nsteps], 0, 1, v_seed.trim.value);
@@ -153,7 +153,7 @@ beq_i = zeros(size(Aeq_i, 1), 1);
 expected_offset = size(Aeq_i, 1);
 for j = 3:nsteps
   % ai = zeros(1, nv);
-  Aeq_i(offset+1, v.region.i(:,j)) = 1;
+  Aeq_i(offset+1, v.region.i(:,j-2)) = 1;
   beq_i(offset+1) = 1;
   offset = offset + 1;
 end
@@ -425,7 +425,7 @@ for j = 3:nsteps
 
     Ai = zeros(size(A_region, 1), nv);
     Ai(:,v.x.i(:,j)) = A_region;
-    Ai(:,v.region.i(r,j)) = M;
+    Ai(:,v.region.i(r,j-2)) = M;
     bi = b_region + M;
     Ar(offset + (1:size(Ai, 1)), :) = Ai;
     br(offset + (1:size(Ai, 1)), :) = bi;
@@ -687,6 +687,7 @@ for j = 1:length(region_order)
     region_order(j) = i;
   end
 end
+region_order = [1, 1, region_order];
 assert(length(region_order) == length(plan.footsteps));
 plan.region_order = region_order;
 
