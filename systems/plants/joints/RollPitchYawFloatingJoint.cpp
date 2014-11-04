@@ -30,7 +30,8 @@ void RollPitchYawFloatingJoint::motionSubspace(double* const q, MotionSubspaceTy
 {
   motion_subspace.resize(TWIST_SIZE, getNumVelocities());
   Map<Vector3d> rpy(&q[3]);
-  auto E = rpydot2angularvelMatrix(rpy);
+	Matrix<double,SPACE_DIMENSION,RPY_SIZE> E;
+  rpydot2angularvelMatrix(rpy,E);
   auto R = rpy2rotmat(rpy);
   motion_subspace.block<3, 3>(0, 0).setZero();
   motion_subspace.block<3, 3>(0, 3) = R.transpose() * E;
