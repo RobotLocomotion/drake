@@ -602,7 +602,7 @@ classdef RigidBodyWing < RigidBodyForceElement
         
         
         % remove any existing geometry for this body
-        model = model.removeGeometryFromBody(obj.parent_id, [ obj.name '_urdf_geometry' ]);
+        model = model.removeVisualGeometryFromBody(obj.parent_id, [ obj.name '_urdf_geometry' ]);
         
         % add new geometry
         model = addWingVisualGeometryToBody(obj, model, obj.parent_id);
