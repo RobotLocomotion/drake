@@ -122,6 +122,10 @@ classdef RigidBodyBluffBody < RigidBodyForceElement
       
     end
     
+    function varargout = addBluffBodyVisualShapeToBody(varargin)
+      errorDeprecatedFunction('addBluffBodyVisualGeometryToBody');
+    end
+    
     function model = addBluffBodyVisualGeometryToBody(obj, model, body)
       % Adds a visual geometry of the bluff body to the model on the body
       % given for drawing in a visualizer.

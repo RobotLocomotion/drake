@@ -365,6 +365,10 @@ classdef RigidBodyWingWithControlSurface < RigidBodyWing
       
     end
     
+    function varargout = addWingVisualShapeToBody(varargin)
+      errorDeprecatedFunction('addWingVisualGeometryToBody');
+    end
+    
     function model = addWingVisualGeometryToBody(obj, model, body)
       % Adds a visual geometry of the wing to the model on the body given for
       % drawing the wing in a visualizer.
@@ -405,6 +409,10 @@ classdef RigidBodyWingWithControlSurface < RigidBodyWing
       
       model = model.addVisualGeometryToBody(body, geometry);
 
+    end
+    
+    function varargout = updateVisualShapes(varargin)
+      errorDeprecatedFunction('updateVisualGeometry');
     end
     
     function model = updateVisualGeometry(obj, model)

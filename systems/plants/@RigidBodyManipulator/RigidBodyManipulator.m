@@ -192,6 +192,10 @@ classdef RigidBodyManipulator < Manipulator
       obj = addTerrainGeometry(obj);
     end
 
+    function obj = addTerrainGeometries(varargin)
+      errorDeprecatedFunction('addTerrainGeometry')
+    end
+    
     function obj = addTerrainGeometry(obj)
       if ~isempty(obj.terrain)
         geom = obj.terrain.getCollisionGeometry();
@@ -201,7 +205,7 @@ classdef RigidBodyManipulator < Manipulator
             if ~any(cellfun(@(geometry) isequal(geom{i},geometry),obj.body(1).collision_geometry))
               obj = obj.addCollisionGeometryToBody(1,geom{i},'terrain');
               obj.dirty = true;
-          end
+            end
           end
         end
         geom = obj.terrain.getVisualGeometry();
@@ -210,11 +214,15 @@ classdef RigidBodyManipulator < Manipulator
           for i=1:numel(geom)
             if ~any(cellfun(@(geometry) isequal(geom{i},geometry),obj.body(1).visual_geometry))
               obj.body(1).visual_geometry{end+1} = geom{i};
-          obj.dirty = true;
+              obj.dirty = true;
+            end
+          end
         end
       end
     end
-      end
+    
+    function obj = removeTerrainGeometries(varargin)
+      errorDeprecatedFunction('removeTerrainGeometry');
     end
 
     function obj = removeTerrainGeometry(obj)
@@ -1117,6 +1125,10 @@ classdef RigidBodyManipulator < Manipulator
       end
     end
 
+    function varargout = getContactShapeGroupNames(varargin)
+      errorDeprecatedFunction('getCollisionGeometryGroupNames');
+    end
+    
     function groups = getCollisionGeometryGroupNames(model)
       groups = {};
       for i=1:length(model.body)
@@ -1208,6 +1220,10 @@ classdef RigidBodyManipulator < Manipulator
         end
       end
     end
+    
+    function obj = addContactShapeToBody(varargin)
+      errorDeprecatedFunction('addCollisionGeometryToBody');
+    end
 
     function obj = addCollisionGeometryToBody(obj,body_id,geometry,varargin)
       % obj = addCollisionGeometryToBody(obj,body_id,geometry,group_name)
@@ -1224,6 +1240,10 @@ classdef RigidBodyManipulator < Manipulator
       obj.body(body_idx) = obj.body(body_idx).addCollisionGeometry(geometry, varargin{:});
       obj.dirty = true;
     end
+    
+    function varargout = addVisualShapeToBody(varargin)
+      errorDeprecatedFunction('addVisualGeometryToBody');
+    end
 
     function obj = addVisualGeometryToBody(obj,body_id,geometry)
       % obj = addCollisionGeometryToBody(obj,body_id,geometry)
@@ -1233,6 +1253,10 @@ classdef RigidBodyManipulator < Manipulator
       % @param geometry - RigidBodyGeometry (or child class) object
       body_idx = obj.parseBodyOrFrameID(body_id);
       obj.body(body_idx).visual_geometry{end+1} = geometry;
+    end
+    
+    function varargout = addShapeToBody(varargin)
+      errorDeprecatedFunction('addGeometryToBody');
     end
 
     function obj = addGeometryToBody(obj,body_id,geometry,varargin)
@@ -1245,6 +1269,10 @@ classdef RigidBodyManipulator < Manipulator
       %   (optional) @default 'default'
       obj = obj.addVisualGeometryToBody(body_id,geometry);
       obj = obj.addCollisionGeometryToBody(body_id,geometry,varargin{:});
+    end
+    
+    function varargout = removeShapeFromBody(varargin)
+      errorDeprecatedFunction('removeVisualGeometryFromBody');
     end
     
     function obj = removeVisualGeometryFromBody(obj, body_id, geometry_name)
@@ -1271,6 +1299,10 @@ classdef RigidBodyManipulator < Manipulator
           
         end
       end
+    end
+    
+    function varargout = replaceContactShapesWithCHull(varargin)
+      errorDeprecatedFunction('replaceCollisionGeometryWithConvexHull');
     end
 
     function model = replaceCollisionGeometryWithConvexHull(model,body_indices,varargin)
@@ -2248,6 +2280,10 @@ classdef RigidBodyManipulator < Manipulator
         otherwise
           error(['sensor element type ',type,' not supported (yet?)']);
       end
+    end
+    
+    function obj = adjustContactShapes(varargin)
+      errorDeprecatedFunction('adjustCollisionGeometry');
     end
 
     function model = adjustCollisionGeometry(model)
