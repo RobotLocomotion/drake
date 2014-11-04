@@ -558,6 +558,10 @@ classdef RigidBodyWing < RigidBodyForceElement
       end
     end
     
+    function obj = addWingVisualShapeToBody(varargin)
+      errorDeprecatedFunction('addWingVisualGeometryToBody');
+    end
+    
     function model = addWingVisualGeometryToBody(obj, model, body)
       % Adds a visual geometry of the wing to the model on the body given for
       % drawing the wing in a visualizer.
@@ -586,6 +590,10 @@ classdef RigidBodyWing < RigidBodyForceElement
       
       body = updateParams@RigidBodyElement(body, poly, pval);
       
+    end
+    
+    function obj = updateVisualShapes(varargin)
+      errorDeprecatedFunction('updateVisualGeometry');
     end
     
     function model = updateVisualGeometry(obj, model)

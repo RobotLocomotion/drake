@@ -100,6 +100,10 @@ classdef RigidBodyPropellor < RigidBodyForceElement
 
     end
     
+    function varargout = addPropellorVisualShapeToBody(varargin)
+      errorDeprecatedFunction('addPropellorVisualGeometryToBody');
+    end
+    
     function manip = addPropellorVisualGeometryToBody(obj, manip, body, diameter)
       % Adds a visual geometry of the propellor to the model on the body given for
       % drawing the in a visualizer.

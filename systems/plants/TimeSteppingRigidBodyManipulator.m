@@ -870,21 +870,41 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     function c = getBodyContacts(obj,body_idx)
       c = obj.manip.body(body_idx).collision_geometry;
     end
+    
+    function varargout = addContactShapeToBody(varargin)
+      errorDeprecatedFunction('addCollisionGeometryToBody');
+    end
 
     function obj = addCollisionGeometryToBody(obj,varargin)
       obj.manip = addCollisionGeometryToBody(obj.manip,varargin{:});
+    end
+    
+    function varargout = addVisualShapeToBody(varargin)
+      errorDeprecatedFunction('addVisualGeometryToBody');
     end
 
     function obj = addVisualGeometryToBody(obj,varargin)
       obj.manip = addVisualGeometryToBody(obj.manip,varargin{:});
     end
+    
+    function varargout = addShapeToBody(varargin)
+      errorDeprecatedFunction('addGeometryToBody');
+    end
 
     function obj = addGeometryToBody(obj,varargin)
       obj.manip = addGeometryToBody(obj.manip,varargin{:});
     end
+    
+    function varargout = replaceContactShapesWithCHull(varargin)
+      errorDeprecatedFunction('replaceCollisionGeometryWithConvexHull');
+    end
 
     function obj = replaceCollisionGeometryWithConvexHull(obj,body_indices,varargin)
       obj.manip = replaceCollisionGeometryWithConvexHull(obj.manip,body_indices,varargin{:});
+    end
+
+    function varargout = getContactShapeGroupNames(varargin)
+      errorDeprecatedFunction('getCollisionGeometryGroupNames');
     end
 
     function groups = getCollisionGeometryGroupNames(obj)

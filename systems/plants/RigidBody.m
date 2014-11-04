@@ -54,10 +54,7 @@ classdef RigidBody < RigidBodyElement
   end
   
   methods    
-    function contact_pts(body)
-      error('contact_pts has been replaced by collision_geometry');
-    end
-    
+
     function varargout = forwardKin(varargin)
       error('forwardKin(body,...) has been replaced by forwardKin(model,body_num,...), because it has a mex version.  please update your kinematics calls');
     end
@@ -98,6 +95,10 @@ classdef RigidBody < RigidBodyElement
 
     function dofnum(obj)
       error('the dofnum parameter is no longer supported, use position_num and velocity_num instead');
+    end
+    
+    function varargout = getContactShapes(varargin)
+      errorDeprecatedFunction('getCollisionGeometry');
     end
     
     function geometry = getCollisionGeometry(body,collision_group,collision_ind)
@@ -142,6 +143,10 @@ classdef RigidBody < RigidBodyElement
       end
     end
      
+    function varargout = replaceContactShapesWithCHull(varargin)
+      errorDeprecatedFunction('replaceCollisionGeometryWithConvexHull');
+    end
+    
     function body = replaceCollisionGeometryWithConvexHull(body,scale_factor)
       pts = [];
       for i = 1:length(body.collision_geometry)
@@ -437,6 +442,10 @@ classdef RigidBody < RigidBodyElement
       end
     end
 
+    function varargout = addContactShape(varargin)
+      errorDeprecatedFunction('addCollisionGeometry')
+    end
+    
     function body = addCollisionGeometry(body,geometry,name)
       if nargin < 3, name='default'; end
       geometry.name = name;
@@ -453,6 +462,23 @@ classdef RigidBody < RigidBodyElement
   end
   
   methods (Static)
+    % Deprecated properties
+    function varargout = contact_pts(varargin)
+      errorDeprecatedFunction('collision_geometry');
+    end
+    function varargout = visual_shapes(varargin)
+      errorDeprecatedFunction('visual_geometry');
+    end
+    function varargout = contact_shapes(varargin)
+      errorDeprecatedFunction('collision_geometry');
+    end
+    function varargout = contact_shape_group_name(varargin)
+      errorDeprecatedFunction('collision_geometry_group_names');
+    end
+    function varargout = contact_shape_group(varargin)
+      errorDeprecatedFunction('collision_geometry_group_indices');
+    end
+    
     function testRemoveCollisionGroups
       body = RigidBody();
       geometry1 = RigidBodySphere(1);
