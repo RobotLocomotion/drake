@@ -106,14 +106,16 @@ classdef PelvisMotionControlBlock < DrakeSystem
         z_des = obj.alpha*obj.controller_data.pelvis_z_prev + (1-obj.alpha)*(foot_z+obj.nominal_pelvis_height); % X cm above feet
         obj.controller_data.pelvis_z_prev = z_des;
 
-        body_des = [nan;nan;z_des;0;0;angleAverage(lfoot_des(6),rfoot_des(6))]; 
-        err = [body_des(1:3)-p(1:3);angleDiff(p(4:end),body_des(4:end))];
-
+        rpy_des = [0;0;angleAverage(lfoot_des(6),rfoot_des(6))];
+        body_des = [0;0;z_des;rpy_des]; 
+        err = [body_des(1:3)-p(1:3);1.0*angleDiff(p(4:end),rpy_des)];
         body_vdot = obj.Kp.*err - obj.Kd.*(J*qd);
+        body_vdot(1:2) = nan; % don't care about x-y
+        
         if obj.use_mex == 2
           % check that matlab/mex agree
           body_vdot_mex = pelvisMotionControlmex(obj.mex_ptr.data,x,lfoot_des(6),rfoot_des(6),ctrl_data.pelvis_foot_height_reference);  
-          valuecheck(body_vdot_mex,body_vdot);
+          valuecheck(body_vdot_mex,body_vdot,1e-4);
         end
       else
         body_vdot = pelvisMotionControlmex(obj.mex_ptr.data,x,lfoot_des(6),rfoot_des(6),ctrl_data.pelvis_foot_height_reference);  

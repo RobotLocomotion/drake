@@ -27,8 +27,8 @@ MIN_DIST_FOR_TOE_OFF = 0.1; % minimum distance of *forward* progress for toe-off
                             % The distance is measured as the vector between the two swing poses
                             % dotted with the orientation of the stance foot
 
-MAX_LANDING_SPEED = .5;
-MAX_TAKEOFF_SPEED = .5;
+MAX_LANDING_SPEED = 0.75;
+MAX_TAKEOFF_SPEED = 1.5;
 
 if stance.frame_id == biped.foot_frame_id.right
   stance_foot_name = 'right';
