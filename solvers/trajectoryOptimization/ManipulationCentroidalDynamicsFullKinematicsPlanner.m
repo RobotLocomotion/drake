@@ -8,8 +8,8 @@ classdef ManipulationCentroidalDynamicsFullKinematicsPlanner < ComDynamicsFullKi
   
   properties(Access = protected)
     grasp_object_com
-    grasp_object_inertia;
-    nq;
+    grasp_object_inertia_origin; % The inertia of the object being grasped, about its body origin
+		grasp_object_inertia_com; % The inertia of the object being grasped, about its body COM, with axes aligned with the body frame
   end
   
   methods
@@ -21,9 +21,9 @@ classdef ManipulationCentroidalDynamicsFullKinematicsPlanner < ComDynamicsFullKi
       end
       obj.grasp_object_idx = grasp_object_idx;
       obj.grasp_object_com = obj.robot.getBody(obj.grasp_object_idx).com;
-      obj.grasp_object_inertia = obj.robot.getBody(obj.grasp_object_idx).inertia;
+      obj.grasp_object_inertia_origin = obj.robot.getBody(obj.grasp_object_idx).inertia;
       obj.robot_mass = obj.robot.getBody(obj.grasp_object_idx).mass;
-      obj.nq = obj.robot.getNumPositions();
+			obj.grasp_object_inertia_com = obj.grasp_object_inertia_origin+obj.robot_mass*[obj.grasp_object_com(2)^2+obj.grasp_object_com(3)^2 obj.grasp_object_com(1)*obj.grasp_object_com(2) obj.grasp_object_com(1)*obj.grasp_object_com(3); obj.grasp_object_com(1)*obj.grasp_object_com(2) obj.grasp_object_com(1)^2+obj.grasp_object_com(3)^2 obj.grasp_object_com(2)*obj.grasp_object_com(3);obj.grasp_object_com(1)*obj.grasp_object_com(3) obj.grasp_object_com(2)*obj.grasp_object_com(3) obj.grasp_object_com(1)^2+obj.grasp_object_com(2)^2];
     end
   end
   
@@ -42,12 +42,26 @@ classdef ManipulationCentroidalDynamicsFullKinematicsPlanner < ComDynamicsFullKi
       end
       
       function [c,dc] = angularMomentumMatch(q,v,k)
-        xyz = q(obj.grasp_object_xyz_idx);
         rpy = q(obj.grasp_object_rpy_idx);
         rpydot = v(obj.grasp_object_rpy_idx);
+        [omega,domega] = rpydot2angularvel(rpy,rpydot);
         [R,dR] = rpy2rotmat(rpy);
-        Rdot = reshape(dR*rpydot,3,3);
-        omega = R'*Rdot;
+				c = R*obj.grasp_object_inertia_com*omega-k;
+        dc = zeros(3,obj.nq+obj.nv+3);
+        dcdrpy = matGradMult(dR,obj.grasp_object_inertia_com*omega)*dR+R*obj.grasp_object_inertia_com*domega(:,1:3);
+        dcdrpydot = R*obj.grasp_object_inertia_com*domega(:,4:6);
+        dc(:,obj.grasp_object_rpy_idx) = dcdrpy;
+        dc(:,obj.nq+obj.grasp_object_rpy_idx) = dcdrpydot;
+        dc(:,obj.nq+obj.nv+(1:3)) = -eye(3);
+      end
+      
+      for i = 1:obj.N
+        com_cnstr = FunctionHandleConstraint(zeros(3,1),zeros(3,1), obj.nq+3, @comMatch);
+        com_cnstr = com_cnstr.setName([{sprintf('com_x(q)=com_x[%d]',i)};{sprintf('com_y(q)=com_y[%d]',i)};{sprintf('com_z(q)=com_z[%d]',i)}]);
+        obj = obj.addConstraint(com_cnstr,[{obj.q_inds(:,i)};{obj.com_inds(:,i)}]);
+        k_cnstr = FunctionHandleConstraint(zeros(3,1),zeros(3,1),obj.nq+obj.nv+3,@angularMomentumMatch);
+        k_cnstr = k_cnstr.setName([{sprintf('I*omega=k_x[%d]',i)};{sprintf('I*omega=k_y[%d]',i)};{sprintf('I*omega=k_z[%d]',i)}]);
+        obj = obj.addConstraint(k_cnstr,[{obj.q_inds(:,i)};{obj.v_inds(:,i)};{obj.H_inds(:,i)}]);
       end
     end
   end
