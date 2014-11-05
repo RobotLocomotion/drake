@@ -34,10 +34,6 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
      Q_contact_force % A 3 x 3 PSD matrix. minimize the weighted L2 norm of the contact force.
   end
 
-  properties(Access = protected)
-    add_dynamic_constraint_flag = false;% If this flag is false, then bypass the addDynamicConstraint function
-  end
-
   methods
     function obj = SimpleDynamicsFullKinematicsPlanner(plant,robot,N,tf_range,Q_contact_force,contact_wrench_struct,options)
       % @param robot   A RigidBodyManipulator or a TimeSteppingRigidBodyManipulator
