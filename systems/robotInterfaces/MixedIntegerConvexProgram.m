@@ -188,11 +188,11 @@ classdef MixedIntegerConvexProgram
       obj = obj.addLinearConstraints(A, b, [], []);
     end
 
-    function obj = solve(obj)
+    function [obj, ok, solvertime] = solve(obj)
       if obj.using_symbolic
-        obj = obj.solveYalmip();
+        [obj, ok, solvertime] = obj.solveYalmip();
       else
-        obj = obj.solveGurobi();
+        [obj, ok, solvertime] = obj.solveGurobi();
       end
     end
 
@@ -256,7 +256,7 @@ classdef MixedIntegerConvexProgram
       end
     end
 
-    function obj = solveYalmip(obj)
+    function [obj, ok, solvertime] = solveYalmip(obj)
       constraints = obj.symbolic_constraints;
       objective = obj.symbolic_objective;
 
@@ -285,7 +285,9 @@ classdef MixedIntegerConvexProgram
           polycone(obj.symbolic_vars(obj.polycones(j).index(2:end)), obj.symbolic_vars(obj.polycones(j).index(1)), obj.polycones(j).N)];
       end
 
-      optimize(constraints, objective, sdpsettings('solver', 'gurobi'));
+      diagnostics = optimize(constraints, objective, sdpsettings('solver', 'gurobi'))
+      ok = diagnostics.problem == 0;
+      solvertime = diagnostics.solvertime;
       obj = obj.extractResult(double(obj.symbolic_vars));
     end
   end
