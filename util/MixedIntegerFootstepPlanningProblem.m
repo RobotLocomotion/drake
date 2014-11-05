@@ -460,7 +460,49 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
         end
         obj.symbolic_objective = obj.symbolic_objective - w_trim * sum(trim);
       else
-        error('not implemented');
+        obj.vars.trim.lb(end-1:end) = 1;
+        obj.vars.trim.ub(end-1:end) = 1;
+        obj.vars.trim.lb(1:2) = 0;
+        obj.vars.trim.ub(1:2) = 0;
+
+        Ai = zeros(obj.nsteps-1 + 1 + max(obj.nsteps-4, 0) * 8, obj.nv);
+        bi = zeros(size(Ai, 1), 1);
+        offset = 0;
+        expected_offset = size(Ai, 1);
+        for j = 2:obj.nsteps
+          % trim(j) >= trim(j-1)
+          Ai(offset+1, obj.vars.trim.i(j)) = -1;
+          Ai(offset+1, obj.vars.trim.i(j-1)) = 1;
+          offset = offset + 1;
+        end
+        % sum(trim) <= obj.nsteps - (min_num_steps - 2)
+        Ai(offset+1, obj.vars.trim.i) = 1;
+        bi(offset+1) = obj.nsteps - (min_num_steps - 2);
+        offset = offset + 1;
+        M = obj.max_distance;
+        for j = 3:obj.nsteps-2
+          if mod(obj.nsteps-j, 2)
+            % obj.symbolic_constraints = [obj.symbolic_constraints, implies(trim(j), x(:,j) == x(:,end-1))];
+            k = obj.nsteps-1;
+          else
+            k = obj.nsteps;
+          end
+          % x(:,j) - x(:,k) <= M(1-trim(j))
+          Ai(offset+(1:4), obj.vars.footsteps.i(:,j)) = eye(4);
+          Ai(offset+(1:4), obj.vars.footsteps.i(:,k)) = -eye(4);
+          Ai(offset+(1:4), obj.vars.trim.i(j)) = M;
+          bi(offset+(1:4)) = M;
+          offset = offset + 4;
+
+          % x(:,j) - x(:,k) >= -M(1-trim(j))
+          Ai(offset+(1:4), obj.vars.footsteps.i(:,j)) = -eye(4);
+          Ai(offset+(1:4), obj.vars.footsteps.i(:,k)) = eye(4);
+          Ai(offset+(1:4), obj.vars.trim.i(j)) = M;
+          bi(offset+(1:4)) = M;
+          offset = offset + 4;
+        end
+        obj = obj.addLinearConstraints(Ai, bi, [], []);
+        assert(offset == expected_offset);
       end
     end
 

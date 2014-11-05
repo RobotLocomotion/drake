@@ -28,7 +28,7 @@ p1 = p1.addZAndYawReachability(true);
 p2 = p2.addZAndYawReachability(true);
 
 p1 = p1.addTrimToFinalPoses(true);
-p2 = p2.addTrimToFinalPoses(true);
+p2 = p2.addTrimToFinalPoses(false);
 
 p1 = p1.addQuadraticGoalObjective(goal_pos, nsteps-1:nsteps, [1,1], true);
 p2 = p2.addQuadraticGoalObjective(goal_pos, nsteps-1:nsteps, [1,1], false);
