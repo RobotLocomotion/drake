@@ -5,12 +5,13 @@ p = MixedIntegerFootstepPlanningProblem(biped, seed_plan, true);
 p.weights = weights;
 p = p.addQuadraticGoalObjective(goal_pos, nsteps-1:nsteps, [1,1], true);
 
-% p = p.addOuterUnitCircleEquality(8, true);
-% p = p.addXYReachabilityCircles(true);
+p = p.addOuterUnitCircleEquality(8, true);
+% p = p.addSinCosLinearEquality(true);
+p = p.addXYReachabilityCircles(true);
 
-p = p.addInnerUnitCircleInequality(8, true);
-p = p.addOuterUnitCircleCone(true);
-p = p.addXYReachabilityEllipse(true);
+% p = p.addInnerUnitCircleInequality(8, true);
+% p = p.addOuterUnitCircleCone(true);
+% p = p.addXYReachabilityEllipse(true);
 
 p = p.addQuadraticRelativeObjective(true);
 p = p.addZAndYawReachability(true);
