@@ -51,9 +51,9 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
       end
     end
 
-    function obj = addRelaxedUnitCircle(obj, use_symbolic)
-      obj = obj.addVariable('cos_yaw', 'C', [1, obj.nsteps], -1, 1);
-      obj = obj.addVariable('sin_yaw', 'C', [1, obj.nsteps], -1, 1);
+    function obj = addOuterUnitCircleCone(obj, use_symbolic)
+      obj = obj.addVariableIfNotPresent('cos_yaw', 'C', [1, obj.nsteps], -1, 1);
+      obj = obj.addVariableIfNotPresent('sin_yaw', 'C', [1, obj.nsteps], -1, 1);
       if use_symbolic
         assert(obj.using_symbolic);
         for j = 1:obj.nsteps
@@ -65,14 +65,22 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
       end
     end
 
-    function obj = addRotationOuterUnitCircle(obj, num_slices, use_symbolic)
+    function obj = addOuterUnitCircleEquality(obj, num_slices, use_symbolic)
       sector_width = 2*pi / num_slices;
       yaw0 = obj.seed_plan.footsteps(1).pos(6);
       angle_boundaries = (yaw0 - pi - sector_width/2):sector_width:(yaw0 + pi - sector_width/2);
 
       obj = obj.addVariable('sector', 'B', [length(angle_boundaries)-1, obj.nsteps], 0, 1);
-      obj = obj.addVariable('cos_yaw', 'C', [1, obj.nsteps], -1, 1);
-      obj = obj.addVariable('sin_yaw', 'C', [1, obj.nsteps], -1, 1);
+      obj = obj.addVariableIfNotPresent('cos_yaw', 'C', [1, obj.nsteps], -1, 1);
+      obj = obj.addVariableIfNotPresent('sin_yaw', 'C', [1, obj.nsteps], -1, 1);
+      obj.vars.cos_yaw.lb(1) = cos(obj.seed_plan.footsteps(1).pos(6));
+      obj.vars.cos_yaw.ub(1) = cos(obj.seed_plan.footsteps(1).pos(6));
+      obj.vars.cos_yaw.lb(2) = cos(obj.seed_plan.footsteps(2).pos(6));
+      obj.vars.cos_yaw.ub(2) = cos(obj.seed_plan.footsteps(2).pos(6));
+      obj.vars.sin_yaw.lb(1) = sin(obj.seed_plan.footsteps(1).pos(6));
+      obj.vars.sin_yaw.ub(1) = sin(obj.seed_plan.footsteps(1).pos(6));
+      obj.vars.sin_yaw.lb(2) = sin(obj.seed_plan.footsteps(2).pos(6));
+      obj.vars.sin_yaw.ub(2) = sin(obj.seed_plan.footsteps(2).pos(6));
 
       if use_symbolic
         yaw = obj.vars.footsteps.symb(4,:);
@@ -94,14 +102,83 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
           ct = cos(th);
           st = sin(th);
           k = tan((th1 - th0)/2) / ((th1 - th0) / 2);
-          for j = 1:obj.nsteps
+          for j = 3:obj.nsteps
             obj.symbolic_constraints = [obj.symbolic_constraints,...
               implies(sector(s,j), th0 <= yaw(j) <= th1),...
               implies(sector(s,j), [cos_yaw(j); sin_yaw(j)] == [ct; st] + (yaw(j) - th) * k * [-st; ct])];
           end
         end
+      else
+        error('not implemented');
+      end
 
-        % Restrict the set of sector transitions based on the reachability of Atlas
+      obj = obj.addSectorTransitionConstraints(use_symbolic);
+    end
+
+    function obj = addInnerUnitCircleInequality(obj, num_slices, use_symbolic)
+      sector_width = 2*pi / num_slices;
+      yaw0 = obj.seed_plan.footsteps(1).pos(6);
+      angle_boundaries = (yaw0 - pi - sector_width/2):sector_width:(yaw0 + pi - sector_width/2);
+
+      obj = obj.addVariable('sector', 'B', [length(angle_boundaries)-1, obj.nsteps], 0, 1);
+      obj = obj.addVariableIfNotPresent('cos_yaw', 'C', [1, obj.nsteps], -1, 1);
+      obj = obj.addVariableIfNotPresent('sin_yaw', 'C', [1, obj.nsteps], -1, 1);
+      obj.vars.cos_yaw.lb(1) = cos(obj.seed_plan.footsteps(1).pos(6));
+      obj.vars.cos_yaw.ub(1) = cos(obj.seed_plan.footsteps(1).pos(6));
+      obj.vars.cos_yaw.lb(2) = cos(obj.seed_plan.footsteps(2).pos(6));
+      obj.vars.cos_yaw.ub(2) = cos(obj.seed_plan.footsteps(2).pos(6));
+      obj.vars.sin_yaw.lb(1) = sin(obj.seed_plan.footsteps(1).pos(6));
+      obj.vars.sin_yaw.ub(1) = sin(obj.seed_plan.footsteps(1).pos(6));
+      obj.vars.sin_yaw.lb(2) = sin(obj.seed_plan.footsteps(2).pos(6));
+      obj.vars.sin_yaw.ub(2) = sin(obj.seed_plan.footsteps(2).pos(6));
+
+      if use_symbolic
+        yaw = obj.vars.footsteps.symb(4,:);
+        sector = obj.vars.sector.symb;
+        cos_yaw = obj.vars.cos_yaw.symb;
+        sin_yaw = obj.vars.sin_yaw.symb;
+        assert(obj.using_symbolic)
+        obj.symbolic_constraints = [obj.symbolic_constraints,...
+          sum(sector, 1) == 1,...
+          yaw0 - pi <= yaw <= yaw0 + pi,...
+          -1 <= sin_yaw <= 1,...
+          -1 <= cos_yaw <= 1,...
+          polycone([cos_yaw; sin_yaw], 1, num_slices),...
+          ];
+        for s = 1:length(angle_boundaries)-1
+          th0 = angle_boundaries(s);
+          th1 = angle_boundaries(s+1);
+          c0 = cos(th0);
+          s0 = sin(th0);
+          c1 = cos(th1);
+          s1 = sin(th1);
+          v = [c1; s1] - [c0; s0];
+          d0 = v' * [c0; s0];
+          d1 = v' * [c1; s1];
+          u = [0, 1; -1, 0] * v;
+          u = u / norm(u);
+
+          for j = 3:obj.nsteps
+            obj.symbolic_constraints = [obj.symbolic_constraints,...
+              implies(sector(s,j), th0 <= yaw(j) <= th1),...
+              implies(sector(s,j), u' * [cos_yaw(j); sin_yaw(j)] >= u' * [c0; s0]),...
+              implies(sector(s,j), (v' * [cos_yaw(j); sin_yaw(j)] - d0) / (d1 - d0) == (yaw(j) - th0) / (th1 - th0)),...
+              ];
+          end
+        end
+      else
+        error('not implemented');
+      end
+
+      obj = obj.addSectorTransitionConstraints(use_symbolic);
+    end
+
+
+    function obj = addSectorTransitionConstraints(obj, use_symbolic)
+      % Restrict the set of sector transitions based on the reachability of Atlas
+      if use_symbolic
+        assert(obj.using_symbolic);
+        sector = obj.vars.sector.symb;
         for j = 3:obj.nsteps
           if obj.seed_plan.footsteps(j).frame_id == obj.biped.foot_frame_id.left
             for k = 1:size(sector, 1) - 1
