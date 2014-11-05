@@ -390,6 +390,9 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
     end
 
     function obj = addTerrainRegions(obj, safe_regions, use_symbolic)
+      if isempty(safe_regions)
+        safe_regions = obj.seed_plan.safe_regions;
+      end
       nr = length(safe_regions);
       obj = obj.addVariable('region', 'B', [nr, obj.nsteps], 0, 1);
       obj.vars.region.lb(1,1:2) = 1;
@@ -401,6 +404,8 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
         assert(obj.using_symbolic)
         region = obj.vars.region.symb;
         x = obj.vars.footsteps.symb;
+        obj.symbolic_constraints = [obj.symbolic_constraints,...
+          sum(region, 1) == 1];
         for r = 1:nr
           A = safe_regions(r).A;
           b = safe_regions(r).b;
@@ -416,8 +421,55 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
           end
         end
       else
-        error('not implemented');
+        Ai = zeros((obj.nsteps-2) * sum(cellfun(@(x) size(x, 1) + 2, {safe_regions.A})), obj.nv);
+        bi = zeros(size(Ai, 1), 1);
+        offset_ineq = 0;
+        Aeq = zeros(obj.nsteps-2, obj.nv);
+        beq = ones(obj.nsteps-2, 1);
+        offset_eq = 0;
+
+        for r = 1:nr
+          A = safe_regions(r).A;
+          b = safe_regions(r).b;
+          Ar = [A(:,1:2), zeros(size(A, 1), 1), A(:,3);
+                safe_regions(r).normal', 0;
+                -safe_regions(r).normal', 0];
+          br = [b;
+                safe_regions(r).normal' * safe_regions(r).point;
+                -safe_regions(r).normal' * safe_regions(r).point];
+          s = size(Ar, 1);
+          M = obj.max_distance;
+          for j = 3:obj.nsteps
+            Ai(offset_ineq + (1:s), obj.vars.footsteps.i(:,j)) = Ar;
+            Ai(offset_ineq + (1:s), obj.vars.region.i(r,j)) = M;
+            bi(offset_ineq + (1:s)) = br + M;
+            offset_ineq = offset_ineq + s;
+          end
+        end
+        assert(offset_ineq == size(Ai, 1));
+        for j = 3:obj.nsteps
+          Aeq(offset_eq + 1, obj.vars.region.i(:,j)) = 1;
+          offset_eq = offset_eq + 1;
+        end
+        assert(offset_eq == size(Aeq, 1));
+        obj = obj.addLinearConstraints(Ai, bi, Aeq, beq);
       end
+    end
+
+    function plan = getFootstepPlan(obj)
+      if ~isfield(obj.vars.footsteps, 'value')
+        [obj, ok, ~] = obj.solve();
+        if ~ok
+          error('Drake:FootstepPlanner:InfeasibleProblem', 'The footstep planning problem is infeasible');
+        end
+      end
+      steps = zeros(6, obj.nsteps);
+      steps(obj.pose_indices, :) = obj.vars.footsteps.value;
+      plan = obj.seed_plan;
+      for j = 1:obj.nsteps
+        plan.footsteps(j).pos = steps(:,j);
+      end
+      plan = plan.trim_duplicates();
     end
   end
 end

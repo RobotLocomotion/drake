@@ -22,10 +22,10 @@ fp.xstar(3) = fp.xstar(3) + 0.50; % make sure we're not assuming z = 0
 foot_orig = struct('right', [0;-0.15;0;0;0;0], 'left', [0;0.15;0;0;0;0]);
 
 safe_regions = struct('A', {}, 'b', {}, 'point', {}, 'normal', {});
-n_regions = 1;
+n_regions = 10;
 lb = [0;-.2;-0.05];
 ub = [2;2.2;0.05];
-stone_scale = 3;
+stone_scale = .3;
 if 1
   stones = [0;-0.15;0];
   [Ai, bi] = poly2lincon(stones(1) + stone_scale*[-1, -1, 1, 1],...
