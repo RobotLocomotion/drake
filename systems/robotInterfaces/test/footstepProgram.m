@@ -7,7 +7,7 @@ p1.weights = weights;
 p2.weights = weights;
 
 p1 = p1.addOuterUnitCircleEquality(8, true);
-p2 = p2.addOuterUnitCircleEquality(8, true);
+p2 = p2.addOuterUnitCircleEquality(8, false);
 % p = p.addSinCosLinearEquality(true);
 p1 = p1.addXYReachabilityCircles(true);
 p2 = p2.addXYReachabilityCircles(true);
@@ -39,7 +39,7 @@ p2 = p2.addTerrainRegions([], false);
 [p1, ok, solvertime] = p1.solve();
 [p2, ok, solvertime] = p2.solve();
 
-valuecheck(p1.vars.footsteps.value, p2.vars.footsteps.value, 1e-2);
+valuecheck(p2.vars.footsteps.value, p1.vars.footsteps.value, 1e-2);
 
 plan = p1.getFootstepPlan();
 

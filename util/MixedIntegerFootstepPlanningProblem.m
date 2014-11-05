@@ -99,8 +99,6 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
         obj.symbolic_constraints = [obj.symbolic_constraints,...
           sum(sector, 1) == 1,...
           yaw0 - pi <= yaw <= yaw0 + pi,...
-          -1 <= sin_yaw <= 1,...
-          -1 <= cos_yaw <= 1,...
           polycone([cos_yaw; sin_yaw], 1, num_slices),...
           ];
         for s = 1:length(angle_boundaries)-1
@@ -117,9 +115,21 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
           end
         end
       else
-        Ai = zeros((length(angle_boundaries)-1)*(obj.nsteps-2)*6, obj.nv)
+        obj.vars.footsteps.lb(4,3:end) = yaw0 - pi;
+        obj.vars.footsteps.ub(4,3:end) = yaw0 + pi;
+        obj = obj.addVariable('unit_circle_radius', 'C', [1,1], 1, 1);
+        obj = obj.addPolyConesByIndex([repmat(obj.vars.unit_circle_radius.i, 1, obj.nsteps); obj.vars.cos_yaw.i; obj.vars.sin_yaw.i], num_slices);
+        Aeq = zeros(obj.nsteps, obj.nv);
+        beq = zeros(size(Aeq, 1), 1);
+        for j = 1:obj.nsteps
+          Aeq(j, obj.vars.sector.i(:,j)) = 1;
+          beq(j) = 1;
+        end
+
+        Ai = zeros((length(angle_boundaries)-1)*(obj.nsteps-2)*6, obj.nv);
         bi = zeros(size(Ai, 1), 1);
         offset = 0;
+        expected_offset = size(Ai, 1);
         M = 2*pi;
         for s = 1:length(angle_boundaries)-1
           th0 = angle_boundaries(s);
@@ -136,7 +146,7 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
             offset = offset + 1;
 
             % yaw(j) <= th1 + M(1-sector(s,j))
-            Ai(offset+1, obj.vars.footsteps,i(4,j)) = 1;
+            Ai(offset+1, obj.vars.footsteps.i(4,j)) = 1;
             Ai(offset+1, obj.vars.sector.i(s,j)) = M;
             bi(offset+1) = th1 + M;
             offset = offset + 1;
@@ -146,11 +156,32 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
             Ai(offset+1, obj.vars.footsteps.i(4,j)) = st * k;
             Ai(offset+1, obj.vars.sector.i(s,j)) = M;
             bi(offset+1) = ct - th * k * -st + M;
+            offset = offset + 1;
 
             % cos_yaw(j) >= ct + (yaw(j) - th) * k * -st - M(1-sector(s,j))
-            
-            Ai(offset+1, obj.vars.cos_yaw.i(j)) = 
+            Ai(offset+1, obj.vars.cos_yaw.i(j)) = -1;
+            Ai(offset+1, obj.vars.footsteps.i(4,j)) = k * -st;
+            Ai(offset+1, obj.vars.sector.i(s,j)) = M;
+            bi(offset+1) = -ct + th * k * -st + M;
+            offset = offset + 1;
 
+            % sin_yaw(j) <= st + (yaw(j) - th) * k * ct + M(1-sector(s,j))
+            Ai(offset+1, obj.vars.sin_yaw.i(j)) = 1;
+            Ai(offset+1, obj.vars.footsteps.i(4,j)) = -k * ct;
+            Ai(offset+1, obj.vars.sector.i(s,j)) = M;
+            bi(offset+1) = st + -th * k * ct + M;
+            offset = offset + 1;
+
+            % sin_yaw(j) >= st + (yaw(j) - th) * k * ct - M(1-sector(s,j))
+            Ai(offset+1, obj.vars.sin_yaw.i(j)) = -1;
+            Ai(offset+1, obj.vars.footsteps.i(4,j)) = k * ct;
+            Ai(offset+1, obj.vars.sector.i(s,j)) = M;
+            bi(offset+1) = -st + th * k * ct + M;
+            offset = offset + 1;
+          end
+        end
+        assert(offset == expected_offset);
+        obj = obj.addLinearConstraints(Ai, bi, Aeq, beq);
       end
 
       obj = obj.addSectorTransitionConstraints(use_symbolic);
@@ -321,7 +352,29 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
           end
         end
       else
-        error('not implemented');
+        Ai = zeros((obj.nsteps-2)*(obj.vars.sector.size(1)-1), obj.nv);
+        bi = zeros(size(Ai, 1), 1);
+        offset = 0;
+        expected_offset = size(Ai, 1);
+        for j = 3:obj.nsteps
+          if obj.seed_plan.footsteps(j).frame_id == obj.biped.foot_frame_id.left
+            for k = 1:obj.vars.sector.size(1) - 1
+              % obj.symbolic_constraints = [obj.symbolic_constraints, sum(sector(k:k+1,j)) >= sector(k,j-1)];
+              Ai(offset+1, obj.vars.sector.i(k,j-1)) = 1;
+              Ai(offset+1, obj.vars.sector.i(k:k+1,j)) = -1;
+              offset = offset + 1;
+            end
+          else
+            for k = 2:obj.vars.sector.size(1)
+              % obj.symbolic_constraints = [obj.symbolic_constraints, sum(sector(k-1:k,j)) >= sector(k,j-1)];
+              Ai(offset+1, obj.vars.sector.i(k,j-1)) = 1;
+              Ai(offset+1, obj.vars.sector.i(k-1:k,j)) = -1;
+              offset = offset + 1;
+            end
+          end
+        end
+        assert(offset == expected_offset);
+        obj = obj.addLinearConstraints(Ai, bi, [], []);
       end
     end
 
