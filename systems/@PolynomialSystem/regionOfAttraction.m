@@ -41,7 +41,7 @@ function V = regionOfAttraction(sys,varargin)
 
 if (~isCT(sys)) error('only handle CT case so far'); end
 
-if (sys.num_xcon>0) error('state constraints not implemented yet'); end
+if ~isempty(sys.state_constraints) error('state constraints not implemented yet'); end
 if (isRational(sys)) error('rational dynamics not supported yet'); end
 if (~isTI(sys)) error('only works for time-invariant systems (so far)'); end
 
@@ -402,13 +402,13 @@ function V = rhoLineSearch(V0,f,options)
     
   %% bracket the solution
   rhomin=0; rhomax=1;
-  while ( checkRho(rhomax, x,V,Vdot,prog,L1) > 0 )
+  while ( checkRho(rhomax, x,V,Vdot,prog,L1,options) > 0 )
     rhomin = rhomax;
     rhomax = 1.2*rhomax;
   end
   
   %% now do binary search (mark's version might be better here)
-  rho = fzero(@(rho) checkRho(rho, x,V,Vdot,prog,L1),[rhomin rhomax])
+  rho = fzero(@(rho) checkRho(rho, x,V,Vdot,prog,L1,options),[rhomin rhomax])
 
   V = V/rho;
 
@@ -463,18 +463,19 @@ function [slack,info] = checkConstantRho(V0,f,options)
   [prog,L1] = prog.newSOSPoly(Lmonom);
   
 
-  [slack,info] = checkRho(1, x, V, Vdot, prog, L1)
+  [slack,info] = checkRho(1, x, V, Vdot, prog, L1, options)
   
 end
   
 
-function [slack,info] = checkRho(rho,x,V,Vdot,prog,L)
+function [slack,info] = checkRho(rho,x,V,Vdot,prog,L,options)
   [prog,slack] = prog.newFree(1);
   
   prog = prog.withSOS(-Vdot + L*(V - rho) - slack*V);
   
+  solver = options.solver;
   options = spot_sdp_default_options();
-  sol = prog.minimize(-slack,@spot_sedumi,options);
+  sol = prog.minimize(-slack,solver,options);
   
    if ~sol.isPrimalFeasible
       error('Problem looks primal infeasible');
@@ -574,4 +575,3 @@ function y=doubleSafe(x)
   y=double(x);
   if (~isa(y,'double')) error('double failed'); end
 end
-

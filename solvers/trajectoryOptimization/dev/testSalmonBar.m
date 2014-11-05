@@ -6,7 +6,6 @@ checkDependency('lcmgl');
 w = warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
 warning('off','Drake:RigidBody:NonPositiveInertiaMatrix');
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
-warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
 warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
 robot = RigidBodyManipulator([getDrakePath,'/examples/Atlas/urdf/atlas_convex_hull.urdf'],struct('floating',true));
 nq = robot.getNumPositions();
@@ -147,21 +146,21 @@ if(mode == 1)
   kinsol_start = robot.doKinematics(q_start);
   com_start = robot.getCOM(kinsol_start);
   cdfkp = climbOneStep(robot,l_hand,r_hand,l_hand_pt,r_hand_pt,l_hand_grasp_axis,r_hand_grasp_axis,l_rung_pos1,r_rung_pos1,l_rung_pos2,r_rung_pos2,l_pole_pos,r_pole_pos,bar_radius,q_start);
-  
+
   cdfkp = cdfkp.setSolverOptions('snopt','iterationslimit',1e6);
   cdfkp = cdfkp.setSolverOptions('snopt','majoriterationslimit',1000);
   cdfkp = cdfkp.setSolverOptions('snopt','majorfeasibilitytolerance',2e-6);
   cdfkp = cdfkp.setSolverOptions('snopt','majoroptimalitytolerance',1e-3);
   cdfkp = cdfkp.setSolverOptions('snopt','superbasicslimit',2000);
   cdfkp = cdfkp.setSolverOptions('snopt','print','test_salmonbar_ladder1.out');
-  
+
   nT = cdfkp.N;
   x_seed = zeros(cdfkp.num_vars,1);
   x_seed(cdfkp.h_inds(:)) = 0.1;
   x_seed(cdfkp.q_inds(:)) = reshape(bsxfun(@times,q_start,ones(1,nT)),[],1);
   x_seed(cdfkp.com_inds(:)) = reshape(bsxfun(@times,com_start,ones(1,nT)),[],1);
   x_seed(cdfkp.lambda_inds{1}(:)) = 1/16;
-  
+
   seed_sol = load('test_salmonbar_ladder1','-mat','x_sol');
   tic
   [x_sol,F,info] = cdfkp.solve(seed_sol.x_sol);
@@ -424,4 +423,3 @@ Q(1,1) = 0;
 Q(2,2) = 0;
 cdfkp = cdfkp.addCost(QuadraticConstraint(-inf,inf,Q,zeros(nq,1)),cdfkp.q_inds(:,static_idx));
 end
-

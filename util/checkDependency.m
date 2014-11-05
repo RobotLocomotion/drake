@@ -23,7 +23,7 @@ else % then try to evaluate the dependency now...
         warning('Drake:SimulinkVersion','Most features of Drake require SIMULINK version 7.3 or above.');
         % haven't actually tested with lower versions
       end
-    
+
     case 'spotless'
       % require spotless
       conf.spotless_enabled = logical(exist('msspoly','class'));
@@ -56,7 +56,7 @@ else % then try to evaluate the dependency now...
 
         if (conf.lcm_enabled)
           javaaddpathProtectGlobals(fullfile(pods_get_base_path,'share','java','lcmtypes_drake.jar'));
-          [retval,info] = systemWCMakeEnv('util/check_multicast_is_loopback.sh');
+          [retval,info] = systemWCMakeEnv([getDrakePath,'/util/check_multicast_is_loopback.sh']);
           if (retval)
             info = strrep(info,'ERROR: ','');
             info = strrep(info,'./',[getDrakePath,'/util/']);
@@ -124,17 +124,17 @@ else % then try to evaluate the dependency now...
         disp(' SNOPT can be obtained from <a href="https://tig.csail.mit.edu/software/">https://tig.csail.mit.edu/software/</a> .');
         disp(' studentSNOPT can be obtained from <a href="http://www.cam.ucsd.edu/~peg/Software.html">http://www.cam.ucsd.edu/~peg/Software.html</a> .');
         disp(' ');
-      end   
-      
+      end
+
     case 'ipopt'
       conf.ipopt_enabled = logical(exist(['ipopt.',mexext],'file'));
-
+      
       if ~conf.ipopt_enabled && nargout<1
         disp(' ');
         disp(' IPOPT not found. IPOPT support will be disabled.');
         disp(' ');
       end
-
+      
     case 'vrml'
       unsupported = false;
       if(exist('vrinstall','file'))
@@ -168,39 +168,46 @@ else % then try to evaluate the dependency now...
       end
 
       if (conf.sedumi_enabled)
-          %  sedumiA=[10,2,3,4;5,7,6,4];
-          %  sedumib=[4;6];
-          %  sedumic=[0;1;0;1];
-          %  sedumiT=sedumi(sedumiA,sedumib,sedumic);%,struct('f',4),struct('fid',0));
-          %  if(~sedumiT)
-          %    error('SeDuMi seems to have encountered a problem. Please verify that your SeDuMi install is working.');
-          %  end
+        %  sedumiA=[10,2,3,4;5,7,6,4];
+        %  sedumib=[4;6];
+        %  sedumic=[0;1;0;1];
+        %  sedumiT=sedumi(sedumiA,sedumib,sedumic);%,struct('f',4),struct('fid',0));
+        %  if(~sedumiT)
+        %    error('SeDuMi seems to have encountered a problem. Please verify that your SeDuMi install is working.');
+        %  end
       elseif nargout<1
-          disp(' ');
-          disp(' SeDuMi not found.  SeDuMi support will be disabled.');
-          disp(' To re-enable, add SeDuMi to your matlab path and rerun addpath_drake.');
-          disp(' SeDuMi can be downloaded for free from <a href="http://sedumi.ie.lehigh.edu/">http://sedumi.ie.lehigh.edu/</a> ');
-          disp(' ');
+        disp(' ');
+        disp(' SeDuMi not found.  SeDuMi support will be disabled.');
+        disp(' To re-enable, add SeDuMi to your matlab path and rerun addpath_drake.');
+        disp(' SeDuMi can be downloaded for free from <a href="http://sedumi.ie.lehigh.edu/">http://sedumi.ie.lehigh.edu/</a> ');
+        disp(' ');
+      end
+
+    case 'mosek'
+      conf.mosek_enabled = logical(exist('mosekopt','file'));
+      if (~conf.mosek_enabled)
+        conf.mosek_enabled = pod_pkg_config('mosek') && logical(exist('mosekopt','file'));
       end
       
-      case 'mosek'
-          conf.mosek_enabled = logical(exist('mosekopt','file'));
-          if (~conf.mosek_enabled)
-              conf.mosek_enabled = pod_pkg_config('mosek') && logical(exist('mosekopt','file'));
-          end
-          
-          if (conf.mosek_enabled)
-              ok = mosekopt;
-              if (ok ~= 0)
-                  error('MOSEK seems to have encountered a problem. Please verify that your MOSEK install is working.');
-              end
-          elseif nargout<1
-              disp(' ');
-              disp(' MOSEK not found.  MOSEK support will be disabled.');
-              disp(' MOSEK can be downloaded with a free academic license from <a href="http://www.mosek.com/resources/academic-license">http://www.mosek.com/resources/academic-license</a> ');
-              disp(' ');
-          end
-
+      if (conf.mosek_enabled)
+        % Check for license issues
+        try
+          mosekopt();
+        catch ex;
+          conf.mosek_enabled = false;
+          disp(getReport(ex,'extended'));
+        end
+      end
+      
+      if ~conf.mosek_enabled && nargout<1
+        disp(' ');
+        disp(' Mosek not found or not working. Mosek support will be disabled.');
+        disp(' Note that Mosek does provide free academic licenses')
+        disp('    To enable, install Mosek and a license from');
+        disp('    <a href="http://mosek.com/">http://mosek.com/</a> .');
+        disp(' ');
+      end
+      
     case 'gurobi'
       conf.gurobi_enabled = logical(exist('gurobi','file')); %&& ~isempty(getenv('GUROBI_HOME')));
       if (~conf.gurobi_enabled)
@@ -246,12 +253,12 @@ else % then try to evaluate the dependency now...
 
     case 'fastqp'
       conf.fastqp_enabled = logical(exist(['fastqpmex.',mexext],'file'));
-
+      
       if ~conf.fastqp_enabled && nargout<1
         disp(' ');
         disp(' fastqp not found. fastqp support will be disabled.');
       end
-
+      
     case 'bertini'
       conf.bertini_enabled = logical(exist('bertini','file'));
       if (~conf.bertini_enabled)
@@ -357,7 +364,7 @@ else % then try to evaluate the dependency now...
           disp(' ');
           disp(' quadprog support is disabled. To enable it, install MATLAB Optimization toolbox');
           disp(' ');
-        end
+      end
       end
       
     case 'lsqlin'
@@ -370,6 +377,17 @@ else % then try to evaluate the dependency now...
         end
       end
 
+    case 'iris'
+      conf.iris_enabled = logical(exist('+iris/inflate_region.m','file')); 
+      if (~conf.iris_enabled)
+        conf.iris_enabled = pod_pkg_config('iris');
+      end
+      if ~conf.iris_enabled && nargout<1
+        disp(' ');
+        disp(' iris (Iterative Regional Inflation by SDP) is disabled. To enable it, install the IRIS matlab package from here: https://github.com/rdeits/iris-distro and re-run addpath_drake.');
+        disp(' ');
+      end
+
     otherwise
 
       % todo: call ver(dep) here?
@@ -379,9 +397,10 @@ else % then try to evaluate the dependency now...
   end
 
   ok = conf.(conf_var);
-  if (nargout<1 && ~ok)
-    error(['Drake:MissingDependency:',dep],['Cannot find required dependency: ',dep]);
-  end
+end
+
+if (nargout<1 && ~ok)
+  error(['Drake:MissingDependency:',dep],['Cannot find required dependency: ',dep]);
 end
 
 end

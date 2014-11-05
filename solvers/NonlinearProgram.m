@@ -170,6 +170,8 @@ classdef NonlinearProgram
       obj.solver_options.snopt.OldBasisFile = 0;
       obj.solver_options.snopt.BackupBasisFile = 0;
       obj.solver_options.snopt.LinesearchTolerance = 0.9;
+      obj.solver_options.fmincon.GradConstr = 'on';
+      obj.solver_options.fmincon.GradObj = 'on';
       obj.constraint_err_tol = 1e-4;
       obj.check_grad = false;
     end
@@ -391,6 +393,9 @@ classdef NonlinearProgram
       obj.bbcon = [obj.bbcon,{cnstr}];
       obj.x_lb(xind) = max([cnstr.lb obj.x_lb(xind)],[],2);
       obj.x_ub(xind) = min([cnstr.ub obj.x_ub(xind)],[],2);
+      if (any(obj.x_lb(xind)>obj.x_ub(xind)))
+        error('Drake:NonlinearProgram:InvalidConstraint','adding this bounding box constraint resulted in some lb>ub');
+      end
       obj.bbcon_xind{end+1} = xind;
       
       cnstr_id = obj.next_bbcon_id;
@@ -447,6 +452,18 @@ classdef NonlinearProgram
         obj.jFvar = unique([obj.jFvar;xind_vec(cnstr.jCvar)]);
         obj.iFfun = ones(length(obj.jFvar),1);
       end
+    end
+    
+    function obj = addQuadraticCost(obj,Q,x_desired,xind)
+      % helper function for the very common case of adding the objective
+      %   g(x) = (x-xd)'*Q*(x-xd), Q = Q' >= 0
+      % @param Q a symmetric PSD cost matrix 
+      % @param x_desired column vector of desired values
+      % @param xind optional subset of x to apply cost to
+      
+      if nargin<3, xind = 1:obj.num_vars; end
+
+      obj = obj.addCost(QuadraticSumConstraint(0,inf,Q,x_desired),xind);
     end
     
     function args = getArgumentArray(obj,x,xind)
@@ -579,8 +596,8 @@ classdef NonlinearProgram
       obj.x_name = [obj.x_name;var_name];
       obj.x_lb = [obj.x_lb;-inf(num_new_vars,1)];
       obj.x_ub = [obj.x_ub;inf(num_new_vars,1)];
-      obj.Aeq = [obj.Aeq zeros(length(obj.beq),num_new_vars)];
-      obj.Ain = [obj.Ain zeros(length(obj.bin),num_new_vars)];
+        obj.Aeq = [obj.Aeq zeros(length(obj.beq),num_new_vars)];
+        obj.Ain = [obj.Ain zeros(length(obj.bin),num_new_vars)];
       if(~isempty(obj.bbcon))
         obj.bbcon_lb(end+(1:num_new_vars),:) = -inf(num_new_vars,size(obj.bbcon_lb,2));
         obj.bbcon_ub(end+(1:num_new_vars),:) = inf(num_new_vars,size(obj.bbcon_ub,2));
@@ -635,7 +652,7 @@ classdef NonlinearProgram
       if isa(user_fun,'FunctionWrapper')
         obj.shared_data_functions{end+1} = user_fun;
       else
-        obj.shared_data_functions{end+1} = FunctionWrapper(user_fun);
+      obj.shared_data_functions{end+1} = FunctionWrapper(user_fun);
       end
       obj.shared_data_xind_cell{end+1} = xind;
       ind = obj.getNumSharedDataFunctions();
@@ -659,7 +676,7 @@ classdef NonlinearProgram
     function obj = addDisplayFunction(obj,display_fun,indices)
       % add a dispay function that gets called on every iteration of the
       % algorithm
-      % @param displayFun a function handle of the form displayFun(x(indices))
+      % @param display_fun a function handle of the form displayFun(x(indices))
       % @param indices optionally specify a subset of the decision
       % variables to be passed to the displayFun @default 1:obj.num_vars
       
@@ -929,7 +946,7 @@ classdef NonlinearProgram
         end
         if(isempty(solvers))
           error('Drake:NonlinearProgram:NoNLPSolver','Cannot find any nonlinear program solvers, please ensure that either fmincon, snopt or ipopt is installed');
-        end
+      end
       end
        
       fprintf('    solver        objval        exitflag   execution time\n-------------------------------------------------------------\n')
@@ -963,11 +980,11 @@ classdef NonlinearProgram
       % ID=cnstr_id. Otherwise, cnstr_idx = [];
       if(~(numel(cnstr_id) == 1 && isnumeric(cnstr_id)))
         error('Drake:NonlinearProgram:isNonlinearConstraintID:InvalidInput','cnstr_id should be a scalar');
-      end
+  end
       cnstr_idx = find(obj.nlcon_id==cnstr_id);
       flag = ~isempty(cnstr_idx);
     end
-    
+  
     function [flag,cnstr_idx] = isLinearConstraintID(obj,cnstr_id)
       % Given an ID, determine if any of the linear constraint obj.lcon has that ID
       % @retval flag   True if the cnstr_id is a valid ID of the linear constraint
@@ -1252,7 +1269,7 @@ classdef NonlinearProgram
         x_all = zeros(obj.num_vars,1);
         x_all(free_x_idx) = x_free;
         x_all(fix_x_idx) = x_fix;
-        [f,G] = geval(@obj.objectiveAndNonlinearConstraints,x_all);
+        [f,G] = objectiveAndNonlinearConstraints(obj,x_all);
         f = [f;zeros(length(bin_free)+length(beq_free),1)];
         
         G = G(sub2ind(size(G),iGfun,jGvar));
@@ -1325,8 +1342,8 @@ classdef NonlinearProgram
         [g,h,dg,dh] = obj.nonlinearConstraints(x);
         ceq = h;
         c = [g(~ub_inf_idx)-obj.cin_ub(~ub_inf_idx);obj.cin_lb(~lb_inf_idx)-g(~lb_inf_idx)];
-        dc = [dg(~ub_inf_idx,:);-dg(~lb_inf_idx,:)];
-        dceq = dh;
+        dc = [dg(~ub_inf_idx,:);-dg(~lb_inf_idx,:)]';
+        dceq = dh';
       end
       
       [x,objval,exitflag] = fmincon(@obj.objective,x0,full(obj.Ain),...

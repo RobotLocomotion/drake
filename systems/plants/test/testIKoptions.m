@@ -1,7 +1,6 @@
 function testIKoptions()
 % Check if the MATLAB and C++ IKoptions are consistent
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
-warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
 urdf = [getDrakePath,'/examples/Atlas/urdf/atlas_minimal_contact.urdf'];
 w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
 warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
@@ -99,15 +98,6 @@ valuecheck(ikoptions.additional_tSamples,[-2 -1 0 1]);
 display('setAdditionaltSamples pass');
 
 % check use_rbm_joint_bnd
-valuecheck(ikoptions.use_rbm_joint_bnd,true);
-checkIKoptions(ikoptions);
-ikoptions = ikoptions.setUseRBMJointBnd(false);
-valuecheck(ikoptions.use_rbm_joint_bnd,false);
-checkIKoptions(ikoptions);
-ikoptions = ikoptions.setUseRBMJointBnd(true);
-valuecheck(ikoptions.use_rbm_joint_bnd,true);
-checkIKoptions(ikoptions);
-
 % Check updateRobot
 urdf_new = [getDrakePath,'/examples/PR2/pr2.urdf'];
 w = warning('off','Drake:RigidBodyManipulator:BodyHasZeroInertia');
@@ -127,8 +117,7 @@ ikoptions_mex = ikoptions.mex_ptr;
   majorFeasibilityTolerance_mex,majorIterationsLimit_mex,...
   iterationsLimit_mex,superbasicsLimit_mex,majorOptimalityTolerance_mex,...
   additional_tSamples_mex,...
-  fixInitialState_mex,q0_lb_mex,q0_ub_mex,qd0_lb_mex,qd0_ub_mex,qdf_lb_mex,qdf_ub_mex,...
-  use_rbm_joint_bnd]...
+  fixInitialState_mex,q0_lb_mex,q0_ub_mex,qd0_lb_mex,qd0_ub_mex,qdf_lb_mex,qdf_ub_mex]...
   = testIKoptionsmex(ikoptions_mex);
 valuecheck(ikoptions.robot.getMexModelPtr.ptr,robot_address_mex);
 valuecheck(ikoptions.Q,Q_mex,1e-10);
@@ -149,5 +138,4 @@ valuecheck(ikoptions.qd0_lb,qd0_lb_mex);
 valuecheck(ikoptions.qd0_ub,qd0_ub_mex);
 valuecheck(ikoptions.qdf_lb,qdf_lb_mex);
 valuecheck(ikoptions.qdf_ub,qdf_ub_mex);
-valuecheck(ikoptions.use_rbm_joint_bnd,use_rbm_joint_bnd);
 end

@@ -10,7 +10,7 @@ classdef Constraint
   properties(SetAccess = protected)
     lb      % The lower bound of the constraint
     ub      % The upper bound of the constraint
-    xdim    % The name of the constraint. If not specified, it is an empty string
+    xdim    % The size of the input to the constraint
     num_cnstr % An int scalar. The number of constraints
     name    % cell array of constraint names
     ceq_idx   % The row index of the equality constraint
@@ -23,9 +23,11 @@ classdef Constraint
   end
 
   properties
-    grad_level    % derivative level of user gradients provided
-    grad_method   % A string indicating the method to compute gradient. Refer to
-                  %    'geval' for all supported method. @default 'user'
+    grad_level        % derivative level of user gradients provided
+    grad_method='';   % A string indicating the method to compute gradient. If empty,
+                      % then it calls geval only if the grad_level is insufficient
+                      % to supply all of the requested arguments.  Refer to
+                      % the 'geval' documentation for additional supported values. @default ''
   end
 
   methods
@@ -51,8 +53,6 @@ classdef Constraint
       obj.grad_level = grad_level;
 
       obj.name = repmat({''},obj.num_cnstr,1);
-
-      obj.grad_method = 'user';
 
       obj.iCfun = reshape(bsxfun(@times,(1:obj.num_cnstr)',ones(1,obj.xdim)),[],1);
       obj.jCvar = reshape(bsxfun(@times,1:obj.xdim,ones(obj.num_cnstr,1)),[],1);
@@ -91,19 +91,31 @@ classdef Constraint
 
     function obj = setName(obj,name)
       % @param name   -- A cell array, name{i} is the name string of i'th constraint
+      %                  if name is a string, then the variables will be
+      %                  named name1, name2, name3, etc.
+      if(ischar(name))
+        name=cellfun(@(a) [name,num2str(a)],num2cell(1:obj.num_cnstr),'UniformOutput',false)';
+      end
       if(~iscellstr(name))
         error('Drake:Constraint:name should be a cell array of string');
       end
       sizecheck(name,[obj.num_cnstr,1]);
       obj.name = name;
     end
+    
+    function disp(obj)
+      fprintf('%d constraints on %d variables:\n',obj.num_cnstr,obj.xdim);
+      for j=1:obj.num_cnstr
+        fprintf('  %f <= %s <= %f\n',obj.lb(j),obj.name{j},obj.ub(j));
+      end
+    end
 
     function varargout = eval(obj,varargin)
-      if obj.grad_level==-2  % no gradients available
+      if obj.grad_level==-2  % no gradients available (non-differentiable)
         varargout{1} = obj.constraintEval(varargin{:});
       else
         % special casing 'user' to avoid geval for speed reasons
-        varargout=cell(1,nargout);
+        varargout=cell(1,max(nargout,1));
         if (isempty(obj.grad_method) && nargout<=obj.grad_level+1) ...
             || strcmp(obj.grad_method,'user')
           [varargout{:}] = obj.constraintEval(varargin{:});

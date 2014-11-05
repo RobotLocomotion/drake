@@ -109,7 +109,8 @@ end
 
 loopjoints = node.getElementsByTagName('loop_joint');
 for i=0:(loopjoints.getLength()-1)
-  model = parseLoopJoint(model,robotnum,loopjoints.item(i),options);
+  [model,loop] = RigidBodyLoop.parseURDFNode(model,robotnum,loopjoints.item(i),options);
+  model.loop=[model.loop,loop];
 end
 
 forces = node.getElementsByTagName('force_element');
@@ -150,6 +151,22 @@ for i=1:length(model.body)
   model.body(i) = bindParams(model.body(i),model,pval);
 end
 
+for i=1:length(model.force)
+  model.force{i} = bindParams(model.force{i}, model, pval);
+end
+
+for i=1:length(model.sensor)
+  model.sensor{i} = bindParams(model.sensor{i}, model, pval);
+end
+
+for i=1:length(model.actuator)
+  model.actuator(i) = bindParams(model.actuator(i), model, pval);
+end
+
+for i=1:length(model.frame)
+  model.frame(i) = bindParams(model.frame(i), model, pval);
+end
+
 end
 
 function model = parseParameter(model,robotnum,node,options)
@@ -158,7 +175,7 @@ function model = parseParameter(model,robotnum,node,options)
   n = char(node.getAttribute('lb'));  % optional
   if isempty(n), model.param_db{robotnum}.(name).lb = -inf; else model.param_db{robotnum}.(name).lb = str2num(n); end
   n = char(node.getAttribute('ub'));  % optional
-  if isempty(n), model.param_db{robotnum}.(name).ub = inf; else model.param_db{robotnum}.ub = str2num(n); end
+  if isempty(n), model.param_db{robotnum}.(name).ub = inf; else model.param_db{robotnum}.(name).ub = str2num(n); end
 end
 
 function model = parseGazebo(model,robotnum,node,options)

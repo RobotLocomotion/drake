@@ -29,7 +29,7 @@ function varargout = inverseKinBackend(obj,mode,t,q_seed,q_nom,varargin)
 
 % note: keeping typecheck/sizecheck to a minimum because this might have to
 % run inside a dynamical system (so should be fast)
-if(~checkDependency('snopt'))
+if(~checkDependency('snopt') && ~checkDependency('studentsnopt'))
   error('Drake:MissingDependency:SNOPT','inverseKinBackend requires SNOPT. Either try install SNOPT, or try using InverseKinematics (capital case) or InverseKinematicsTrajectory (capital case) and set solver to fmincon or ipopt');
 end
 
@@ -47,14 +47,9 @@ ikoptions = varargin{end};
 %   qsc = QuasiStaticConstraint(obj);
 qsc = QuasiStaticConstraint(obj,[-inf,inf],1);
 qsc = qsc.setActive(false);
-if(ikoptions.use_rbm_joint_bnd)
-  [joint_min,joint_max] = obj.getJointLimits();
-  joint_min = bsxfun(@times,joint_min,ones(1,nT));
-  joint_max = bsxfun(@times,joint_max,ones(1,nT));
-else
-  joint_min = -inf(nq,nT);
-  joint_max = inf(nq,nT);
-end
+[joint_min,joint_max] = obj.getJointLimits();
+joint_min = bsxfun(@times,joint_min,ones(1,nT));
+joint_max = bsxfun(@times,joint_max,ones(1,nT));
 for i = 1:nT
   if(isempty(t))
     ti = [];

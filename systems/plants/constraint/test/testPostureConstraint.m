@@ -54,31 +54,4 @@ display('Check generateConstraint function')
 pc_bbcnstr = pc2.generateConstraint(t);
 valuecheck(pc_bbcnstr{1}.lb,lb2);
 valuecheck(pc_bbcnstr{1}.ub,ub2);
-
-display('Check the constraint when use_rbm_joint_bnd = false');
-pc3 = PostureConstraint(r,[-inf,inf],true);
-[joint_lb,joint_ub] = r.getJointLimits();
-valuecheck(joint_lb,pc3.lb);
-valuecheck(joint_ub,pc3.ub);
-[lb_mex,ub_mex] = testPostureConstraintmex(pc3.mex_ptr,t);
-valuecheck(joint_lb,lb_mex);
-valuecheck(joint_ub,ub_mex);
-pc3 = PostureConstraint(r,[-inf,inf],false);
-valuecheck(pc3.lb,-inf(nq,1));
-valuecheck(pc3.ub,inf(nq,1));
-[lb_mex,ub_mex] = testPostureConstraintmex(pc3.mex_ptr,t);
-valuecheck(lb_mex,-inf(nq,1));
-valuecheck(ub_mex,inf(nq,1));
-pc3 = pc3.setJointLimits([l_leg_kny;r_leg_kny],[0.2;0.2],[0.4;0.4]);
-inf_joint_idx = true(nq,1);
-inf_joint_idx([l_leg_kny;r_leg_kny]) = false;
-valuecheck(pc3.lb(inf_joint_idx),-inf(nq-2,1));
-valuecheck(pc3.ub(inf_joint_idx),inf(nq-2,1));
-valuecheck(pc3.lb([l_leg_kny;r_leg_kny]),[0.2;0.2]);
-valuecheck(pc3.ub([l_leg_kny;r_leg_kny]),[0.4;0.4]);
-[lb_mex,ub_mex] = testPostureConstraintmex(pc3.mex_ptr,t);
-valuecheck(lb_mex(inf_joint_idx),-inf(nq-2,1));
-valuecheck(ub_mex(inf_joint_idx),inf(nq-2,1));
-valuecheck(lb_mex([l_leg_kny;r_leg_kny]),[0.2;0.2]);
-valuecheck(ub_mex([l_leg_kny;r_leg_kny]),[0.4;0.4]);
 end

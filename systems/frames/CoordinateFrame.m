@@ -65,7 +65,7 @@ classdef CoordinateFrame < handle
       obj.prefix = prefix;
 
       ind=1;
-      function str=coordinateName(~);
+      function str=coordinateName(~)
         str=[prefix(ind),sprintf('%d',sum(prefix(1:ind)==prefix(ind)))];
         ind=ind+1;
       end

@@ -287,8 +287,10 @@ classdef Trajectory < DrakeSystem
         
         for i=1:prod(size(traj))
           S.type = '()'; S.subs = {i};
+          w = warning('off','Drake:FunctionHandleTrajectory');
           sub_traj = subsref(traj,S);
           sub_desired_traj = subsref(desired_traj,S);
+          warning(w);
           
           [thistf,errstr] = valuecheck(eval(sub_traj,ts),eval(sub_desired_traj,ts),tol);
           if ~thistf

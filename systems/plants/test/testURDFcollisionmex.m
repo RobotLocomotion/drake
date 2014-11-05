@@ -18,7 +18,6 @@ function testURDFcollisionmex
     urdffile = GetFullPath(urdf{1});
     fprintf(1,'testing %s\n', urdffile);
     w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
-    warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
     warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
     r = RigidBodyManipulator(urdffile,struct('floating',true));
 
