@@ -73,14 +73,7 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
       obj = obj.addVariable('sector', 'B', [length(angle_boundaries)-1, obj.nsteps], 0, 1);
       obj = obj.addVariableIfNotPresent('cos_yaw', 'C', [1, obj.nsteps], -1, 1);
       obj = obj.addVariableIfNotPresent('sin_yaw', 'C', [1, obj.nsteps], -1, 1);
-      obj.vars.cos_yaw.lb(1) = cos(obj.seed_plan.footsteps(1).pos(6));
-      obj.vars.cos_yaw.ub(1) = cos(obj.seed_plan.footsteps(1).pos(6));
-      obj.vars.cos_yaw.lb(2) = cos(obj.seed_plan.footsteps(2).pos(6));
-      obj.vars.cos_yaw.ub(2) = cos(obj.seed_plan.footsteps(2).pos(6));
-      obj.vars.sin_yaw.lb(1) = sin(obj.seed_plan.footsteps(1).pos(6));
-      obj.vars.sin_yaw.ub(1) = sin(obj.seed_plan.footsteps(1).pos(6));
-      obj.vars.sin_yaw.lb(2) = sin(obj.seed_plan.footsteps(2).pos(6));
-      obj.vars.sin_yaw.ub(2) = sin(obj.seed_plan.footsteps(2).pos(6));
+      obj = obj.addInitialSinCosConstraints();
 
       if use_symbolic
         yaw = obj.vars.footsteps.symb(4,:);
@@ -123,14 +116,7 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
       obj = obj.addVariable('sector', 'B', [length(angle_boundaries)-1, obj.nsteps], 0, 1);
       obj = obj.addVariableIfNotPresent('cos_yaw', 'C', [1, obj.nsteps], -1, 1);
       obj = obj.addVariableIfNotPresent('sin_yaw', 'C', [1, obj.nsteps], -1, 1);
-      obj.vars.cos_yaw.lb(1) = cos(obj.seed_plan.footsteps(1).pos(6));
-      obj.vars.cos_yaw.ub(1) = cos(obj.seed_plan.footsteps(1).pos(6));
-      obj.vars.cos_yaw.lb(2) = cos(obj.seed_plan.footsteps(2).pos(6));
-      obj.vars.cos_yaw.ub(2) = cos(obj.seed_plan.footsteps(2).pos(6));
-      obj.vars.sin_yaw.lb(1) = sin(obj.seed_plan.footsteps(1).pos(6));
-      obj.vars.sin_yaw.ub(1) = sin(obj.seed_plan.footsteps(1).pos(6));
-      obj.vars.sin_yaw.lb(2) = sin(obj.seed_plan.footsteps(2).pos(6));
-      obj.vars.sin_yaw.ub(2) = sin(obj.seed_plan.footsteps(2).pos(6));
+      obj = obj.addInitialSinCosConstraints();
 
       if use_symbolic
         yaw = obj.vars.footsteps.symb(4,:);
@@ -141,8 +127,6 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
         obj.symbolic_constraints = [obj.symbolic_constraints,...
           sum(sector, 1) == 1,...
           yaw0 - pi <= yaw <= yaw0 + pi,...
-          -1 <= sin_yaw <= 1,...
-          -1 <= cos_yaw <= 1,...
           polycone([cos_yaw; sin_yaw], 1, num_slices),...
           ];
         for s = 1:length(angle_boundaries)-1
@@ -172,6 +156,106 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
 
       obj = obj.addSectorTransitionConstraints(use_symbolic);
     end
+
+    function obj = addSinCosLinearEquality(obj, use_symbolic)
+      yaw0 = obj.seed_plan.footsteps(1).pos(6);
+      min_yaw = pi * floor(yaw0 / pi - 1);
+      max_yaw = pi * ceil(yaw0 / pi + 1);
+      cos_boundaries = reshape(bsxfun(@plus, [min_yaw:pi:max_yaw; min_yaw:pi:max_yaw], [-(pi/2-1); (pi/2-1)]), 1, []);
+      sin_boundaries = reshape(bsxfun(@plus, [min_yaw:pi:max_yaw; min_yaw:pi:max_yaw], [-1; 1]), 1, []);
+
+      obj = obj.addVariableIfNotPresent('cos_yaw', 'C', [1, obj.nsteps], -1, 1);
+      obj = obj.addVariableIfNotPresent('sin_yaw', 'C', [1, obj.nsteps], -1, 1);
+      obj = obj.addVariable('cos_sector', 'B', [length(cos_boundaries)-1, obj.nsteps], 0, 1);
+      obj = obj.addVariable('sin_sector', 'B', [length(sin_boundaries)-1, obj.nsteps], 0, 1);
+      obj = obj.addInitialSinCosConstraints();
+
+      if use_symbolic
+        assert(obj.using_symbolic);
+        cos_sector = obj.vars.cos_sector.symb;
+        sin_sector = obj.vars.sin_sector.symb;
+        cos_yaw = obj.vars.cos_yaw.symb;
+        sin_yaw = obj.vars.sin_yaw.symb;
+        yaw = obj.vars.footsteps.symb(4,:);
+
+        obj.symbolic_constraints = [obj.symbolic_constraints,...
+          sum(cos_sector, 1) == 1,...
+          sum(sin_sector, 1) == 1,...
+          min_yaw <= yaw <= max_yaw,...
+          polycone([cos_yaw; sin_yaw], norm([pi/4;pi/4]), 8),...
+          ];
+
+        for s = 1:length(cos_boundaries)-1
+          th0 = cos_boundaries(s);
+          th1 = cos_boundaries(s+1);
+
+          th = (th0 + th1)/2;
+          cos_slope = -sin(th);
+          cos_intercept = cos(th) - (cos_slope * th);
+
+          for j = 3:obj.nsteps
+            obj.symbolic_constraints = [obj.symbolic_constraints,...
+              implies(cos_sector(s,j), th0 <= yaw(j) <= th1),...
+              implies(cos_sector(s,j), cos_yaw(j) == cos_slope * yaw(j) + cos_intercept)];
+          end
+        end
+        for s = 1:length(sin_boundaries)-1
+          th0 = sin_boundaries(s);
+          th1 = sin_boundaries(s+1);
+
+          th = (th0 + th1)/2;
+          sin_slope = cos(th);
+          sin_intercept = sin(th) - (sin_slope * th);
+
+          for j = 3:obj.nsteps
+            obj.symbolic_constraints = [obj.symbolic_constraints,...
+              implies(sin_sector(s,j), th0 <= yaw(j) <= th1),...
+              implies(sin_sector(s,j), sin_yaw(j) == sin_slope * yaw(j) + sin_intercept)];
+          end
+        end
+        % Consistency between sin and cos sectors
+        for k = 1:size(sin_sector, 1)
+          for j = 3:obj.nsteps
+            obj.symbolic_constraints = [obj.symbolic_constraints,...
+              sum(sin_sector(max(1,k-1):min(k+1,size(sin_sector,1)),j)) >= cos_sector(k,j),...
+              sum(cos_sector(max(1,k-1):min(k+1,size(cos_sector,1)),j)) >= sin_sector(k,j)];
+          end
+        end
+
+        % Transitions between sectors
+        for j = 3:obj.nsteps
+          if obj.seed_plan.footsteps(j).frame_id == obj.biped.foot_frame_id.left
+            for k = 1:size(cos_sector, 1) - 1
+              obj.symbolic_constraints = [obj.symbolic_constraints,...
+               sum(cos_sector(k:k+1,j)) >= cos_sector(k,j-1),...
+               sum(sin_sector(k:k+1,j)) >= sin_sector(k,j-1),...
+               ];
+            end
+          else
+            for k = 2:size(cos_sector, 1)
+              obj.symbolic_constraints = [obj.symbolic_constraints,...
+                sum(cos_sector(k-1:k,j)) >= cos_sector(k,j-1),...
+                sum(sin_sector(k-1:k,j)) >= sin_sector(k,j-1),...
+                ];
+            end
+          end
+        end
+      else
+        error('not implemented');
+      end
+    end
+
+    function obj = addInitialSinCosConstraints(obj)
+      obj.vars.cos_yaw.lb(1) = cos(obj.seed_plan.footsteps(1).pos(6));
+      obj.vars.cos_yaw.ub(1) = cos(obj.seed_plan.footsteps(1).pos(6));
+      obj.vars.cos_yaw.lb(2) = cos(obj.seed_plan.footsteps(2).pos(6));
+      obj.vars.cos_yaw.ub(2) = cos(obj.seed_plan.footsteps(2).pos(6));
+      obj.vars.sin_yaw.lb(1) = sin(obj.seed_plan.footsteps(1).pos(6));
+      obj.vars.sin_yaw.ub(1) = sin(obj.seed_plan.footsteps(1).pos(6));
+      obj.vars.sin_yaw.lb(2) = sin(obj.seed_plan.footsteps(2).pos(6));
+      obj.vars.sin_yaw.ub(2) = sin(obj.seed_plan.footsteps(2).pos(6));
+    end
+
 
 
     function obj = addSectorTransitionConstraints(obj, use_symbolic)
