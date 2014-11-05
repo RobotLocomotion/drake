@@ -33,9 +33,10 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
     end
 
     function obj = addQuadraticGoalObjective(obj, goal_pose, step_indices, relative_weights, use_symbolic)
+      w_goal = diag(obj.weights.goal(obj.pose_indices));
+
       if use_symbolic
         assert(obj.using_symbolic);
-        w_goal = diag(obj.weights.goal(obj.pose_indices));
         for i = 1:length(step_indices)
           j = step_indices(i);
           if obj.seed_plan.footsteps(j).frame_id == obj.biped.foot_frame_id.right
@@ -47,7 +48,20 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
           obj.symbolic_objective = obj.symbolic_objective + relative_weights(i) * err' * w_goal * err; 
         end
       else
-        error('not implemented');
+        for j = step_indices
+          if obj.seed_plan.footsteps(j).frame_id == obj.biped.foot_frame_id.right
+            xg = goal_pose.right(obj.pose_indices);
+          else
+            xg = goal_pose.left(obj.pose_indices);
+          end
+          Qi = sparse([], [], [], obj.nv, obj.nv, 4);
+          ci = zeros(obj.nv, 1);
+          Qi(obj.vars.footsteps.i(:,j), obj.vars.footsteps.i(:,j)) = w_goal;
+          ci(obj.vars.footsteps.i(:,j)) = -2 * w_goal * xg;
+          objcon_i = xg' * w_goal * xg;
+
+          obj = obj.addCost(Qi, ci, objcon_i);
+        end
       end
     end
 
@@ -61,7 +75,8 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
             cone([obj.vars.cos_yaw.symb(j); obj.vars.sin_yaw.symb(j)], 1)];
         end
       else
-        error('not implemented');
+        obj = obj.addVariable('unit_circle_radius', 'C', [1,1], 1, 1);
+        obj = obj.addConesByIndex([repmat(obj.vars.unit_circle_radius.i, 1, obj.nsteps); obj.vars.cos_yaw.i; obj.vars.sin_yaw.i]);
       end
     end
 

@@ -175,6 +175,17 @@ classdef MixedIntegerConvexProgram
       obj.c(idx) = val;
     end
 
+    function obj = addCost(obj, Q, c, objcon)
+      if ~isempty(Q)
+        obj.Q = obj.Q + Q;
+      end
+      if ~isempty(c)
+        obj.c = obj.c + c;
+      end
+      if ~isempty(objcon)
+        obj.objcon = obj.objcon + objcon;
+      end
+    end
 
     function obj = convertPolyCones(obj)
       nconstraints = sum([obj.polycones.N]);
