@@ -60,8 +60,8 @@ classdef MixedIntegerConvexProgram
       % the entry in a constraint matrix A corresponding to the jth row and kth column 
       % of variable 'foo' to 1, we can do the following:
       % A(1, v.foo.i(j,k)) = 1;
-      if obj.frozen
-        error('This problem has been frozen (by adding constraints) so you cannot add any more new variables');
+      if isfield(obj.vars, name)
+        error('Drake:MixedIntegerConvexProgram:DuplicateVariableName', 'Cannot add a variable with the same name as an existing one');
       end
       obj.vars.(name) = struct();
       obj.vars.(name).type = type_;
@@ -107,8 +107,8 @@ classdef MixedIntegerConvexProgram
 
       num_new_vars = prod(obj.vars.(name).size);
       obj.c = [obj.c; zeros(num_new_vars, 1)];
-      obj.Q = [obj.Q, sparse(num_new_vars, num_new_vars);
-               sparse(num_new_vars, num_new_vars * 2)];
+      obj.Q = [obj.Q, sparse(size(obj.Q, 1), num_new_vars);
+               sparse(num_new_vars, num_new_vars + size(obj.Q, 2))];
       obj.A = [obj.A, zeros(size(obj.A, 1), num_new_vars)];
       obj.Aeq = [obj.Aeq, zeros(size(obj.Aeq, 1), num_new_vars)];
     end
@@ -241,7 +241,7 @@ classdef MixedIntegerConvexProgram
     end
 
     function obj = extractResult(obj, x)
-      var_names = fieldnames(obj.v);
+      var_names = fieldnames(obj.vars);
       % Extract the solution
       for j = 1:length(var_names)
         name = var_names{j};
@@ -266,6 +266,12 @@ classdef MixedIntegerConvexProgram
         obj.Aeq * obj.symbolic_vars == obj.beq,...
         obj.A * obj.symbolic_vars <= obj.b,...
         ];
+      var_names = fieldnames(obj.vars);
+      for j = 1:length(var_names)
+        name = var_names{j};
+        constraints = [constraints,...
+         obj.vars.(name).lb <= obj.vars.(name).symb <= obj.vars.(name).ub];
+       end
       for j = 1:length(obj.quadcon)
         constraints = [constraints,...
           obj.symbolic_vars' * obj.quadcon(j).Qc * obj.symbolic_vars + obj.quadcon(j)' * obj.symbolic_vars <= obj.quadcon(j).rhs];
