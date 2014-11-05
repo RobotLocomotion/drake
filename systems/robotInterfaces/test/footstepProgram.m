@@ -16,26 +16,26 @@ p = p.addXYReachabilityCircles(true);
 p = p.addQuadraticRelativeObjective(true);
 p = p.addZAndYawReachability(true);
 p = p.addTrimToFinalPoses(true);
+p1 = p.addTerrainRegions([], true);
+p2 = p.addTerrainRegions([], false);
 
-[p, ok, solvertime] = p.solve();
+[p1, ok, solvertime] = p1.solve();
+[p2, ok, solvertime] = p2.solve();
 
-steps = zeros(6, nsteps);
-steps(p.pose_indices, :) = p.vars.footsteps.value
+valuecheck(p1.vars.footsteps.value, p2.vars.footsteps.value, 1e-2);
+
+plan = p1.getFootstepPlan();
 
 figure(21)
 clf
 hold on
-plot(p.vars.cos_yaw.value, p.vars.sin_yaw.value, 'bo')
-plot(cos(p.vars.footsteps.value(4,:)), sin(p.vars.footsteps.value(4,:)), 'ro')
+plot(p1.vars.cos_yaw.value, p1.vars.sin_yaw.value, 'bo')
+plot(cos(p1.vars.footsteps.value(4,:)), sin(p1.vars.footsteps.value(4,:)), 'ro')
 plot(cos(linspace(0, 2*pi)), sin(linspace(0, 2*pi)), 'k-')
 ylim([-1.1,1.1])
 axis equal
 
-plan = seed_plan;
-for j = 1:nsteps
-  plan.footsteps(j).pos = steps(:,j);
-end
-plan = plan.trim_duplicates();
 plan.step_matrix()
+plan.relative_step_offsets()
 
 seed = [];
