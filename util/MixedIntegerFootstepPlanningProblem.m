@@ -117,7 +117,40 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
           end
         end
       else
-        error('not implemented');
+        Ai = zeros((length(angle_boundaries)-1)*(obj.nsteps-2)*6, obj.nv)
+        bi = zeros(size(Ai, 1), 1);
+        offset = 0;
+        M = 2*pi;
+        for s = 1:length(angle_boundaries)-1
+          th0 = angle_boundaries(s);
+          th1 = angle_boundaries(s+1);
+          th = (th0 + th1) / 2;
+          ct = cos(th);
+          st = sin(th);
+          k = tan((th1 - th0)/2) / ((th1 - th0) / 2);
+          for j = 3:obj.nsteps
+            % -yaw(j) <= -th0 + M(1-sector(s,j))
+            Ai(offset+1, obj.vars.footsteps.i(4,j)) = -1;
+            Ai(offset+1, obj.vars.sector.i(s,j)) = M;
+            bi(offset+1) = -th0 + M;
+            offset = offset + 1;
+
+            % yaw(j) <= th1 + M(1-sector(s,j))
+            Ai(offset+1, obj.vars.footsteps,i(4,j)) = 1;
+            Ai(offset+1, obj.vars.sector.i(s,j)) = M;
+            bi(offset+1) = th1 + M;
+            offset = offset + 1;
+
+            % cos_yaw(j) <= ct + (yaw(j) - th) * k * -st + M(1-sector(s,j))
+            Ai(offset+1, obj.vars.cos_yaw.i(j)) = 1;
+            Ai(offset+1, obj.vars.footsteps.i(4,j)) = st * k;
+            Ai(offset+1, obj.vars.sector.i(s,j)) = M;
+            bi(offset+1) = ct - th * k * -st + M;
+
+            % cos_yaw(j) >= ct + (yaw(j) - th) * k * -st - M(1-sector(s,j))
+            
+            Ai(offset+1, obj.vars.cos_yaw.i(j)) = 
+
       end
 
       obj = obj.addSectorTransitionConstraints(use_symbolic);
