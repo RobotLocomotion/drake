@@ -10,25 +10,38 @@ classdef ManipulationCentroidalDynamicsFullKinematicsPlanner < ComDynamicsFullKi
     grasp_object_com
     grasp_object_inertia_origin; % The inertia of the object being grasped, about its body origin
 		grasp_object_inertia_com; % The inertia of the object being grasped, about its body COM, with axes aligned with the body frame
+		add_simple_dynamics = false;
   end
   
   methods
     function obj = ManipulationCentroidalDynamicsFullKinematicsPlanner(robot,grasp_object_idx,N,tf_range,Q_comddot,Qv,Q,q_nom,Q_contact_force,contact_wrench_struct,options)
-      if nargin < 10, options = struct(); end
+      if nargin < 11, options = struct(); end
       obj = obj@ComDynamicsFullKinematicsPlanner(robot,N,tf_range,Q_comddot,Qv,Q,q_nom,Q_contact_force,contact_wrench_struct,options);
       if(~isnumeric(grasp_object_idx) || numel(grasp_object_idx) ~= 1)
         error('Drake:ManipulationCentroidalDynamicsFullKinematicsPlanner: grasp_object_idx should be a scalar');
       end
       obj.grasp_object_idx = grasp_object_idx;
+			obj.grasp_object_xyz_idx = obj.robot.getBody(obj.grasp_object_idx).position_num(1:3);
+			obj.grasp_object_rpy_idx = obj.robot.getBody(obj.grasp_object_idx).position_num(4:6);
       obj.grasp_object_com = obj.robot.getBody(obj.grasp_object_idx).com;
       obj.grasp_object_inertia_origin = obj.robot.getBody(obj.grasp_object_idx).inertia;
       obj.robot_mass = obj.robot.getBody(obj.grasp_object_idx).mass;
 			obj.grasp_object_inertia_com = obj.grasp_object_inertia_origin+obj.robot_mass*[obj.grasp_object_com(2)^2+obj.grasp_object_com(3)^2 obj.grasp_object_com(1)*obj.grasp_object_com(2) obj.grasp_object_com(1)*obj.grasp_object_com(3); obj.grasp_object_com(1)*obj.grasp_object_com(2) obj.grasp_object_com(1)^2+obj.grasp_object_com(3)^2 obj.grasp_object_com(2)*obj.grasp_object_com(3);obj.grasp_object_com(1)*obj.grasp_object_com(3) obj.grasp_object_com(2)*obj.grasp_object_com(3) obj.grasp_object_com(1)^2+obj.grasp_object_com(2)^2];
+			obj.add_simple_dynamics = true;
+			obj = addSimpleDynamicConstraints(obj);
     end
+		
+		function obj = addSimpleDynamicConstraints(obj)
+		  if(obj.add_simple_dynamics)
+				obj = addSimpleDynamicConstraints@ComDynamicsFullKinematicsPlanner(obj);
+			end
+		end
+
   end
   
+	
   methods(Access = protected)
-    function obj = addSimpleDynamicConstraints(obj)
+    function obj = addCentroidalDynamicConstraints(obj)
       function [c,dc] = comMatch(q,com)
         xyz = q(obj.grasp_object_xyz_idx);
         rpy = q(obj.grasp_object_rpy_idx);
@@ -48,7 +61,7 @@ classdef ManipulationCentroidalDynamicsFullKinematicsPlanner < ComDynamicsFullKi
         [R,dR] = rpy2rotmat(rpy);
 				c = R*obj.grasp_object_inertia_com*omega-k;
         dc = zeros(3,obj.nq+obj.nv+3);
-        dcdrpy = matGradMult(dR,obj.grasp_object_inertia_com*omega)*dR+R*obj.grasp_object_inertia_com*domega(:,1:3);
+        dcdrpy = matGradMult(dR,obj.grasp_object_inertia_com*omega)+R*obj.grasp_object_inertia_com*domega(:,1:3);
         dcdrpydot = R*obj.grasp_object_inertia_com*domega(:,4:6);
         dc(:,obj.grasp_object_rpy_idx) = dcdrpy;
         dc(:,obj.nq+obj.grasp_object_rpy_idx) = dcdrpydot;
