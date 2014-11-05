@@ -113,6 +113,15 @@ classdef MixedIntegerConvexProgram
       obj.Aeq = [obj.Aeq, zeros(size(obj.Aeq, 1), num_new_vars)];
     end
 
+    function obj = addVariableIfNotPresent(obj, varargin)
+      name = varargin{1};
+      if isfield(obj.vars, name)
+        return
+      else
+        obj = obj.addVariable(varargin{:});
+      end
+    end
+
     function obj = addLinearConstraints(obj, A, b, Aeq, beq)
       obj.A = [obj.A; A];
       obj.b = [obj.b; b];
