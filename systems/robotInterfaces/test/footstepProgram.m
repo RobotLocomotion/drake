@@ -7,14 +7,14 @@ p = p.addQuadraticGoalObjective(goal_pos, nsteps-1:nsteps, [1,1], true);
 p = p.addRotationOuterUnitCircle(8, true);
 p = p.addQuadraticRelativeObjective(true);
 p = p.addZAndYawReachability(true);
-p = p.addXYReachabilityCircles(true);
+% p = p.addXYReachabilityCircles(true);
+p = p.addXYReachabilityEllipse(true);
+p = p.addTrimToFinalPoses(true);
 
-p = p.solve();
+[p, ok, solvertime] = p.solve();
 
 steps = zeros(6, nsteps);
 steps(p.pose_indices, :) = p.vars.footsteps.value
-% p.vars.cos_yaw.value
-% p.vars.sin_yaw.value
 
 figure(21)
 clf
@@ -29,6 +29,7 @@ plan = seed_plan;
 for j = 1:nsteps
   plan.footsteps(j).pos = steps(:,j);
 end
+plan = plan.trim_duplicates();
+plan.step_matrix()
 
 seed = [];
-solvertime = 0;

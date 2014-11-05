@@ -157,6 +157,53 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
       end
     end
 
+    function obj = addXYReachabilityEllipse(obj, use_symbolic)
+      if use_symbolic
+        assert(obj.using_symbolic);
+        x = obj.vars.footsteps.symb;
+        cos_yaw = obj.vars.cos_yaw.symb;
+        sin_yaw = obj.vars.sin_yaw.symb;
+        for j = 3:obj.nsteps
+          [rel_foci, l] = obj.biped.getReachabilityEllipse(obj.seed_plan.params, obj.seed_plan.footsteps(j-1).frame_id);
+          expr = 0;
+          for k = 1:size(rel_foci, 2)
+            expr = expr + norm(x(1:2,j) - (x(1:2,j-1) + [cos_yaw(j-1), -sin_yaw(j-1); sin_yaw(j-1), cos_yaw(j-1)] * rel_foci(:,k)));
+          end
+          obj.symbolic_constraints = [obj.symbolic_constraints,...
+            expr <= l];
+        end
+      else
+        error('not implemented');
+      end
+    end
+
+    function obj = addTrimToFinalPoses(obj, use_symbolic)
+      obj = obj.addVariable('trim', 'B', [1, obj.nsteps], 0, 1);
+      w_trim = obj.weights.relative(1) * (obj.seed_plan.params.nom_forward_step^2);
+      min_num_steps = max([obj.seed_plan.params.min_num_steps + 2, 3]);
+
+      if use_symbolic
+        assert(obj.using_symbolic);
+        trim = obj.vars.trim.symb;
+        x = obj.vars.footsteps.symb;
+        obj.symbolic_constraints = [obj.symbolic_constraints,...
+          trim(end-1:end) == 1,...
+          trim(1:2) == 0,...
+          trim(2:end) >= trim(1:end-1),...
+          sum(trim) <= obj.nsteps - (min_num_steps - 2)];
+        for j = 3:obj.nsteps-2
+          if mod(obj.nsteps-j, 2)
+            obj.symbolic_constraints = [obj.symbolic_constraints, implies(trim(j), x(:,j) == x(:,end-1))];
+          else
+            obj.symbolic_constraints = [obj.symbolic_constraints, implies(trim(j), x(:,j) == x(:,end))];
+          end
+        end
+        obj.symbolic_objective = obj.symbolic_objective - w_trim * sum(trim);
+      else
+        error('not implemented');
+      end
+    end
+
     function obj = addQuadraticRelativeObjective(obj, use_symbolic)
       if use_symbolic
         assert(obj.using_symbolic);
