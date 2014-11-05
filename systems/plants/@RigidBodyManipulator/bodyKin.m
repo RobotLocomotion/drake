@@ -16,14 +16,9 @@ function [x,P,J,dP,dJ] = bodyKin(obj,kinsol,body_or_frame_ind,pts)
 %  will be a ((3*m)x(nq^2)) matrix, with [dJ1,dJ2,...,dJq] where 
 %  dJj = dJdqj
 
-checkDirty(obj);
-
 compute_P                   = (nargout > 1);
 compute_first_derivatives   = (nargout > 2);
 compute_second_derivatives  = (nargout > 4);
-
-% todo: zap this after the transition
-if isa(body_or_frame_ind,'RigidBody'), error('support for passing in RigidBody objects has been removed.  please pass in the body index'); end
   
 if kinsol.mex
   if compute_second_derivatives
