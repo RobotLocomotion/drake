@@ -37,7 +37,7 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   endif()
 elseif (MSVC)
 #  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /arch:SSE2 /openmp")
-#  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:SSE2 /openmp")  
+#  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:SSE2 /openmp")
 endif()
 
 # set up matlab build
@@ -159,5 +159,5 @@ endif()
 add_test(NAME "RigidBodyManipulatorMemoryTest"
 	WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/examples/Acrobot"
 	COMMAND "matlab" #"${CMAKE_SOURCE_DIR}/cmake/matlab_clean.pl"
-	"-nosplash" "-nodisplay" "-r" "addpath('${CMAKE_INSTALL_PREFIX}/matlab'); addpath_${POD_NAME}; try, r = RigidBodyManipulator('Acrobot.urdf'); megaclear; catch ex, disp(getReport(ex,'extended')); disp(''); knownIssue('$testname',ex); force_close_system; exit(1); end; force_close_system; exit(0)")
+	"-nosplash" "-nodisplay" "-r" "addpath('${CMAKE_INSTALL_PREFIX}/matlab'); addpath_${POD_NAME}; try, r = RigidBodyManipulator('Acrobot.urdf'); megaclear; catch ex, disp(getReport(ex,'extended')); disp(''); force_close_system; exit(1); end; force_close_system; exit(0)")
 set_tests_properties(RigidBodyManipulatorMemoryTest PROPERTIES TIMEOUT 60)

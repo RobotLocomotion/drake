@@ -35,12 +35,14 @@ classdef WorldGazeTargetConstraint < GazeTargetConstraint
       if(nargin == 6)
         tspan = [-inf inf];
       end
-      ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.WorldGazeTargetConstraintType,robot.getMexModelPtr,body,axis,target,gaze_origin,conethreshold,tspan);
       obj = obj@GazeTargetConstraint(robot,axis,target,gaze_origin,conethreshold,tspan);
       obj.body = obj.robot.parseBodyOrFrameID(body);
       obj.body_name = obj.robot.getBodyOrFrameName(obj.body);
       obj.type = RigidBodyConstraint.WorldGazeTargetConstraintType;
-      obj.mex_ptr = ptr;
+      if(robot.getMexModelPtr~=0 && exist('constructPtrRigidBodyConstraintmex','file'))
+        ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.WorldGazeTargetConstraintType,robot.getMexModelPtr,body,axis,target,gaze_origin,conethreshold,tspan);
+        obj.mex_ptr = ptr;
+      end
     end
     
     function name_str = name(obj,t)

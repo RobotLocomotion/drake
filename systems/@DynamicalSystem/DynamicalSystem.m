@@ -294,13 +294,15 @@ classdef DynamicalSystem
       newsys.simulink_params = sys.simulink_params;  
     end
     
-    function [x,success,prog] = resolveConstraints(obj,x0,v)
+    function [x,success,prog] = resolveConstraints(obj,x0,v,constraints)
       % attempts to find a x which satisfies the constraints,
       % using x0 as the initial guess.
       %
       % @param x0 initial guess for state satisfying constraints
       % @param v (optional) a visualizer that should be called while the
       % solver is doing it's thing
+      % @param constraints (optional) additional constraints to pass to the
+      % solver
 
       if nargin<3, v=[]; end
       if isa(x0,'Point')
@@ -312,12 +314,19 @@ classdef DynamicalSystem
 
       prog = addStateConstraintsToProgram(obj,prog,1:nx);
       
+      if nargin>3,
+        prog = addConstraint(prog,constraints);
+      end
+      
       if ~isempty(v)
         prog = addDisplayFunction(prog,@(x)v.draw(0,x));
       end
       
-      [x,~,exitflag] = solve(prog,x0);
+      [x,~,exitflag,infeasible_constraint_name] = solve(prog,x0);
       success=(exitflag==1);
+      if ~isempty(infeasible_constraint_name)
+        infeasible_constraint_name
+      end
       if (nargout<2 && ~success)
         error('Drake:DynamicalSystem:ResolveConstraintsFailed','failed to resolve constraints');
       end
@@ -343,8 +352,8 @@ classdef DynamicalSystem
         con = FunctionHandleConstraint(zeros(nc,1),zeros(nc,1),nx,@obj.stateConstraints);
         con.grad_method = 'user_then_taylorvar';
         prog = addConstraint(prog,con,indices);
-      end
-      
+    end
+    
       % add unilateral constraints
       nc = getNumUnilateralConstraints(obj);
       if nc>0

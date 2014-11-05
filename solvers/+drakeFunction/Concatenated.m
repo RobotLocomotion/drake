@@ -72,9 +72,15 @@ classdef Concatenated < drakeFunction.DrakeFunction
       obj = obj.setSparsityPattern();
     end
 
-    function [f,df] = eval(obj,x)
-      [f_cell,df_cell] = evalContainedFunctions(obj,x);
-      [f,df] = combineOutputs(obj,f_cell,df_cell);
+    function [f,df,ddf] = eval(obj,x)
+      compute_second_derivatives = (nargout > 2);
+      if compute_second_derivatives
+        [f_cell,df_cell,ddf_cell] = evalContainedFunctions(obj,x);
+        [f,df,ddf] = combineOutputs(obj,f_cell,df_cell,ddf_cell);
+      else
+        [f_cell,df_cell] = evalContainedFunctions(obj,x);
+        [f,df] = combineOutputs(obj,f_cell,df_cell);
+      end
     end
 
     function obj = setSparsityPattern(obj)
@@ -111,26 +117,44 @@ classdef Concatenated < drakeFunction.DrakeFunction
       %                      component function
       % @retval df_cell   -- Cell array of Jacobians for each component
       %                      function
+      compute_second_derivatives = (nargout > 2);
       x_cell = cell(size(obj.contained_functions));
       f_cell = cell(size(x_cell));
       df_cell = cell(size(x_cell));
+      if compute_second_derivatives
+        ddf_cell = cell(size(x_cell));
+      end
       if obj.same_input
         x_cell(:) = {x};
       else
         x_cell = splitCoordinates(obj.input_frame, x);
       end
       contained_functions_local = obj.contained_functions;
-      for i = 1:obj.n_contained_functions
-        [f_cell{i},df_cell{i}] = eval(contained_functions_local{i},x_cell{i});
+      if compute_second_derivatives
+        for i = 1:obj.n_contained_functions
+          [f_cell{i},df_cell{i},ddf_cell{i}] = eval(contained_functions_local{i},x_cell{i});
+        end
+      else
+        for i = 1:obj.n_contained_functions
+          [f_cell{i},df_cell{i}] = eval(contained_functions_local{i},x_cell{i});
+        end
       end
     end
 
-    function [f,df] = combineOutputs(obj,f_cell,df_cell)
+    function [f,df,ddf] = combineOutputs(obj,f_cell,df_cell,ddf_cell)
+      compute_second_derivatives = (nargout > 2);
       f = vertcat(f_cell{:});
       if obj.same_input
         df = vertcat(df_cell{:});
       else
         df = blkdiag(df_cell{:});
+      end
+      if compute_second_derivatives
+        if obj.same_input
+          ddf = vertcat(ddf_cell{:});
+        else
+          error('Really hoping we don''t get here')
+        end
       end
     end
   end

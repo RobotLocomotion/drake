@@ -15,7 +15,7 @@ num_u=sys.getNumInputs();
 num_y=sys.getNumOutputs();
 
 if (sys.getNumStateConstraints()>0 || sys.getNumUnilateralConstraints()>0)
-  error('cannot taylorApprox systems with state constraints');  % should I consider allowing it, but simply dropping the constraint?
+  warning('Drake:DrakeSystem:TaylorApprox:UnsupportedStateConstraints','This system has state constraints that are being passed to the taylor approximated version (yet)');  
 end
 
 if (num_x), p_x = sys.getStateFrame.getPoly; else p_x=[]; end

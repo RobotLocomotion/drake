@@ -47,15 +47,8 @@ namespace DrakeCollision
 			    const Eigen::Matrix4d& T_element_to_link, Shape shape, 
 			    const std::vector<double>& params, 
           const std::string& group_name,
-			    bool is_static) {};
-
-    virtual void addElement(const int body_idx, const int parent_idx, 
-			    const Eigen::Matrix4d& T_element_to_link, Shape shape, 
-			    const std::vector<double>& params, 
-			    bool is_static) 
-    {
-      addElement(body_idx,parent_idx,T_element_to_link,shape,params,"default",is_static);
-    };
+			    bool is_static,
+          bool use_margins = true) {};
 
     virtual bool updateElementsForBody(const int body_idx, 
 				       const Eigen::Matrix4d& T_link_to_world) { return false; };

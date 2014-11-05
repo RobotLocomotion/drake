@@ -53,6 +53,7 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
         obj = setNumZeroCrossings(obj,max(getNumZeroCrossings(obj),getNumZeroCrossings(mode_sys)));
       end
       if (getNumStateConstraints(mode_sys)>0)
+        error('need to reimplement this');  % presumably by adding the state constraints augmented by the mode
         obj = setNumStateConstraints(obj,max(getNumStateConstraints(obj),getNumStateConstraints(mode_sys)));
       end
       if getNumUnilateralConstraints(mode_sys)>0
@@ -250,20 +251,7 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
         zcs(n+(1:n2))=zeroCrossings(obj.modes{m},t,xm,u);
       end
     end
-
-    function con = stateConstraints(obj,x)
-      m = x(1);
-      % should I publish the constant mode constraint here?
-
-      nX = getNumStates(obj.modes{m});
-      ncon = getNumStateConstraints(obj.modes{m});
-      con = zeros(getNumStateConstraints(obj),1);
-      if (nX>0 && ncon)
-        xm = x(1+(1:nX));
-        con(1:ncon) = stateConstraints(obj.modes{m},xm);
-      end
-    end
-
+    
     function [x,success] = resolveConstraints(obj,x,v)
       m = x(1);
       nX = getNumStates(obj.modes{m});

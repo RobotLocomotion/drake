@@ -38,11 +38,13 @@ classdef MinDistanceConstraint < SingleTimeKinematicConstraint
       if nargin < 3, active_collision_options = struct(); end;
       sizecheck(min_distance,[1,1]);
       assert(min_distance>0);
-      ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.MinDistanceConstraintType,robot.getMexModelPtr,min_distance,active_collision_options,tspan);
+      checkDependency('bullet');
       obj = obj@SingleTimeKinematicConstraint(robot,tspan);
       obj.type = RigidBodyConstraint.MinDistanceConstraintType;
       obj.min_distance = min_distance;
-      obj.mex_ptr = ptr;
+      if robot.getMexModelPtr~=0 && exist('constructPtrRigidBodyConstraintmex','file')
+        obj.mex_ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.MinDistanceConstraintType,robot.getMexModelPtr,min_distance,active_collision_options,tspan);
+      end
       obj.num_constraint = 1;
       obj.active_collision_options = active_collision_options;
     end

@@ -96,6 +96,10 @@ classdef RigidBody < RigidBodyElement
       error('contact points have been replaced by contact shapes');
     end
 
+    function dofnum(obj)
+      error('the dofnum parameter is no longer supported, use position_num and velocity_num instead');
+    end
+    
     function shapes = getContactShapes(body,collision_group,collision_ind)
       % @param collision_group (optional) return structures for only the
       % contact_shapes in that group.  can be an integer index or a string.
@@ -375,9 +379,7 @@ classdef RigidBody < RigidBodyElement
       end
       body.I = body.Imass+body.Iaddedmass;
       
-      try
-      valuecheck(body.I'-body.I,zeros(6)); %Check symmetry of matrix
-      catch
+      if isnumeric(body.I) && ~valuecheck(body.I'-body.I,zeros(6)); %Check symmetry of matrix
           warning('Spatial mass matrix is not symmetric, this is non-physical');
       end
     end    
