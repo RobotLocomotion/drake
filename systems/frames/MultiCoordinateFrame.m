@@ -293,6 +293,11 @@ classdef MultiCoordinateFrame < CoordinateFrame
       obj.frame{num} = new_subframe;
     end
     
+    function obj = appendFrame(obj,new_subframe)
+      newframes = obj.frame; newframes{end+1} = new_subframe;
+      obj = obj.constructFrame(newframes);
+    end
+    
     function str = getCoordinateName(obj,i)
       ind = obj.frame_id(i);
       str = getCoordinateName(obj.frame{ind},find(obj.coord_ids{ind}==i));
