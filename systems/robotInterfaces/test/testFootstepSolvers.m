@@ -106,12 +106,12 @@ figure(1)
 % drawnow()
 h = subplot(2, 3, 3)
 params.rot_mode = 'sincos_linear';
-test_solver(@footstepMISOCP, h, 'humanoids2014');
+test_solver(@footstepProgram, h, 'humanoids2014');
 drawnow()
-h = subplot(2, 3, 4)
-params.rot_mode = 'circle_linear_eq';
-test_solver(@footstepMISOCP, h, 'humanoids2014 circle eq');
-drawnow()
+% h = subplot(2, 3, 4)
+% params.rot_mode = 'circle_linear_eq';
+% test_solver(@footstepMISOCP, h, 'humanoids2014 circle eq');
+% drawnow()
 % h = subplot(2, 3, 4)
 % test_solver(@footstepMIQCQP, h, 'humanoids2014 gurobi');
 % drawnow()
