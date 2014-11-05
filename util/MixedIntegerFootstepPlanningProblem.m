@@ -256,8 +256,6 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
       obj.vars.sin_yaw.ub(2) = sin(obj.seed_plan.footsteps(2).pos(6));
     end
 
-
-
     function obj = addSectorTransitionConstraints(obj, use_symbolic)
       % Restrict the set of sector transitions based on the reachability of Atlas
       if use_symbolic
@@ -385,6 +383,37 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
           err = x(:,j) - [x(1:2,j-1) + R * nom; 
                           x(3:4,j-1)];
           obj.symbolic_objective = obj.symbolic_objective + err' * w_rel * err;
+        end
+      else
+        error('not implemented');
+      end
+    end
+
+    function obj = addTerrainRegions(obj, safe_regions, use_symbolic)
+      nr = length(safe_regions);
+      obj = obj.addVariable('region', 'B', [nr, obj.nsteps], 0, 1);
+      obj.vars.region.lb(1,1:2) = 1;
+      obj.vars.region.ub(1,1:2) = 1;
+      obj.vars.region.lb(2:end,1:2) = 0;
+      obj.vars.region.ub(2:end,1:2) = 0;
+
+      if use_symbolic
+        assert(obj.using_symbolic)
+        region = obj.vars.region.symb;
+        x = obj.vars.footsteps.symb;
+        for r = 1:nr
+          A = safe_regions(r).A;
+          b = safe_regions(r).b;
+          Ar_ineq = [A(:,1:2), zeros(size(A, 1), 1), A(:,3)];
+          br_ineq = b;
+          Ar_eq = [safe_regions(r).normal', 0];
+          br_eq = safe_regions(r).normal' * safe_regions(r).point;
+
+          for j = 3:obj.nsteps
+            obj.symbolic_constraints = [obj.symbolic_constraints,...
+              implies(region(r,j), [Ar_ineq * x(:,j) <= br_ineq,...
+                                    Ar_eq * x(:,j) == br_eq])];
+          end
         end
       else
         error('not implemented');
