@@ -224,12 +224,13 @@ classdef MixedIntegerConvexProgram
       end
     end
 
-    function [obj, solvertime] = solveGurobi(obj, params)
+    function [obj, ok, solvertime] = solveGurobi(obj, params)
       if nargin < 2
         params = struct();
       end
       model = obj.getGurobiModel();
       result = gurobi(model, params);
+      ok = ~(strcmp(result.status, 'INFEASIBLE') || strcmp(result.status, 'INF_OR_UNBD'));
       solvertime = result.runtime;
       obj = obj.extractResult(result.x);
     end
