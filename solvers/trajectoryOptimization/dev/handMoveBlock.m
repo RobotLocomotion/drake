@@ -86,6 +86,28 @@ mcdfkp = mcdfkp.addNonlinearConstraint(finger1_fixed_cnstr,mcdfkp.q_inds(:,grasp
 mcdfkp = mcdfkp.addNonlinearConstraint(finger2_fixed_cnstr,mcdfkp.q_inds(:,grasp_idx:nT),mcdfkp.kinsol_dataind(grasp_idx:nT));
 mcdfkp = mcdfkp.addNonlinearConstraint(finger3_fixed_cnstr,mcdfkp.q_inds(:,grasp_idx:nT),mcdfkp.kinsol_dataind(grasp_idx:nT));
 
+mcdfkp = mcdfkp.addRigidBodyConstraint(pickup_finger1_cnstr,{grasp_idx});
+mcdfkp = mcdfkp.addRigidBodyConstraint(pickup_finger2_cnstr,{grasp_idx});
+mcdfkp = mcdfkp.addRigidBodyConstraint(pickup_finger3_cnstr,{grasp_idx});
+
+% object above ground
+above_ground_cnstr = WorldPositionConstraint(robot,object_idx,block_corners,[nan;nan;0.01]*ones(1,8),nan(3,8));
+mcdfkp = mcdfkp.addRigidBodyConstraint(above_ground_cnstr,num2cell(takeoff_idx+1:land_idx-1));
+
+x_seed = zeros(mcdfkp.num_vars,1);
+
+mcdfkp = mcdfkp.setSolverOptions('snopt','iterationslimit',1e6);
+mcdfkp = mcdfkp.setSolverOptions('snopt','majoriterationslimit',2000);
+mcdfkp = mcdfkp.setSolverOptions('snopt','majorfeasibilitytolerance',1e-6);
+mcdfkp = mcdfkp.setSolverOptions('snopt','majoroptimalitytolerance',2e-4);
+mcdfkp = mcdfkp.setSolverOptions('snopt','superbasicslimit',2000);
+mcdfkp = mcdfkp.setSolverOptions('snopt','print','test_grasp_move.out');
+tic
+[x_sol,F,info] = mcdfkp.solve(x_seed);
+toc
+[q_sol,v_sol,h_sol,t_sol,com_sol,comdot_sol,comddot_sol,H_sol,Hdot_sol,lambda_sol,wrench_sol] = parseSolution(mcdfkp,x_sol);
+xtraj_sol = PPTrajectory(foh(cumsum([0 h_sol]),[q_sol;v_sol]));
+xtraj_sol = xtraj_sol.setOutputFrame(robot.getStateFrame);
 % object above the ground
 keyboard
 end
