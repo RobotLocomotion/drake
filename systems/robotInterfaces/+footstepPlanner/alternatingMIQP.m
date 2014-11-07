@@ -26,7 +26,7 @@ ANGLE_CHANGE_THRESHOLD = pi/32;
 num_outer_iterations = 2;
 solvertime = 0;
 for j = 1:num_outer_iterations
-  [miqp_plan, t] = footstepPlanner.fixedRotation(obj, plan, weights, goal_pos, use_symbolic);
+  [miqp_plan, t] = footstepPlanner.footstepMIQP(obj, plan, weights, goal_pos, use_symbolic);
   solvertime = solvertime + t;
   if length(miqp_plan.footsteps) <= 2
     % No feasible solution was found

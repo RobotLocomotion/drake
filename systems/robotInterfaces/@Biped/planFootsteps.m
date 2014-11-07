@@ -21,7 +21,7 @@ function [plan, solvertime] = planFootsteps(obj, start_pos_or_q, goal_pos, safe_
 %                      A*v <= b AND normal'*v(1:3) == normal'*point
 % @param options a struct of options
 %
-% @option method_handle (default: @footstepAlternatingMIQP) the footstep planning
+% @option method_handle (default: @footstepPlanner.alternatingMIQP) the footstep planning
 %                method to use, expressed as a function handle
 % @option step_params (default: struct()) specific parameters for footstep
 %                     planning. Attributes set here overload those in
@@ -29,7 +29,7 @@ function [plan, solvertime] = planFootsteps(obj, start_pos_or_q, goal_pos, safe_
 
 if nargin < 5; options = struct(); end
 if nargin < 4; safe_regions = []; end
-if ~isfield(options, 'method_handle'); options.method_handle = @footstepPlanner.humanoids2014; end
+if ~isfield(options, 'method_handle'); options.method_handle = @footstepPlanner.alternatingMIQP; end
 if ~isfield(options, 'step_params'); options.step_params = struct(); end
 options.step_params = obj.applyDefaultFootstepParams(options.step_params);
 
