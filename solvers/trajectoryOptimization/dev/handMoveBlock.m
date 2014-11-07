@@ -12,18 +12,24 @@ q0(9) = 1.5;
 object_idx = 2;
 finger1_link3 = robot.findLinkInd('finger_1_link_3');
 finger1_tip = [0.01;0.01;0];
+finger1_tip_back = [0.01;-0.02;0];
 finger2_link3 = robot.findLinkInd('finger_2_link_3');
 finger2_tip = [0.01;0.01;0];
+finger2_tip_back = [0.01;-0.02;0];
 finger3_link3 = robot.findLinkInd('finger_middle_link_3');
 finger3_tip = [0.01;0.01;0];
+finger3_tip_back = [0.01;-0.02;0];
 block_side1 = repmat(block_size/2,1,4).*[1 1 -1 -1;1 -1 1 -1;-1 -1 -1 -1];
 block_side2 = repmat(block_size/2,1,4).*[1 1 1 1;1 1 -1 -1;1 -1 1 -1];
 block_side3 = repmat(block_size/2,1,4).*[-1 -1 -1 -1;1 1 -1 -1;1 -1 1 -1];
 block_corners = repmat(block_size/2,1,8).*[1 1 1 1 -1 -1 -1 -1;1 1 -1 -1 1 1 -1 -1;1 -1 1 -1 1 -1 1 -1];
 
-pickup_finger1_cnstr = WorldPositionConstraint(robot,finger1_link3,finger1_tip,block_origin_start(1:3)+block_size/2.*[-1;-0.7;-0.7],block_origin_start(1:3)+block_size/2.*[-1;0.7;0.7]);
-pickup_finger2_cnstr = WorldPositionConstraint(robot,finger2_link3,finger2_tip,block_origin_start(1:3)+block_size/2.*[-1;-0.7;-0.7],block_origin_start(1:3)+block_size/2.*[-1;0.7;0.7]);
-pickup_finger3_cnstr = WorldPositionConstraint(robot,finger3_link3,finger3_tip,block_origin_start(1:3)+block_size/2.*[1;-0.7;-0.7],block_origin_start(1:3)+block_size/2.*[1;0.7;0.7]);
+pickup_finger1_cnstr1 = WorldPositionConstraint(robot,finger1_link3,finger1_tip,block_origin_start(1:3)+block_size/2.*[-1;-0.7;-0.7],block_origin_start(1:3)+block_size/2.*[-1;0.7;0.7]);
+pickup_finger1_cnstr2 = WorldPositionConstraint(robot,finger1_link3,finger1_tip_back,block_origin_start(1:3)+block_size/2.*[-inf;-0.7;-0.7],block_origin_start(1:3)+block_size/2.*[-1.001;0.7;0.7]);
+pickup_finger2_cnstr1 = WorldPositionConstraint(robot,finger2_link3,finger2_tip,block_origin_start(1:3)+block_size/2.*[-1;-0.7;-0.7],block_origin_start(1:3)+block_size/2.*[-1;0.7;0.7]);
+pickup_finger2_cnstr2 = WorldPositionConstraint(robot,finger2_link3,finger2_tip_back,block_origin_start(1:3)+block_size/2.*[-inf;-0.7;-0.7],block_origin_start(1:3)+block_size/2.*[-1.001;0.7;0.7]);
+pickup_finger3_cnstr1 = WorldPositionConstraint(robot,finger3_link3,finger3_tip,block_origin_start(1:3)+block_size/2.*[1;-0.7;-0.7],block_origin_start(1:3)+block_size/2.*[1;0.7;0.7]);
+pickup_finger3_cnstr2 = WorldPositionConstraint(robot,finger3_link3,finger3_tip_back,block_origin_start(1:3)+block_size/2.*[1.001;-0.7;-0.7],block_origin_start(1:3)+block_size/2.*[inf;0.7;0.7]);
 
 block_base_idx = (1:6)';
 pc_pickup = PostureConstraint(robot);
@@ -36,7 +42,7 @@ Q(1:12) = 0;
 Q = diag(Q);
 options = IKoptions(robot);
 options = options.setQ(Q);
-q_pickup = inverseKin(robot,q0,q0,pickup_finger1_cnstr,pickup_finger2_cnstr,pickup_finger3_cnstr,pc_pickup,options);
+q_pickup = inverseKin(robot,q0,q0,pickup_finger1_cnstr1,pickup_finger2_cnstr1,pickup_finger3_cnstr1,pc_pickup,options);
 
 grasp_idx = 3;
 takeoff_idx = 4;
@@ -86,9 +92,12 @@ mcdfkp = mcdfkp.addNonlinearConstraint(finger1_fixed_cnstr,mcdfkp.q_inds(:,grasp
 mcdfkp = mcdfkp.addNonlinearConstraint(finger2_fixed_cnstr,mcdfkp.q_inds(:,grasp_idx:nT),mcdfkp.kinsol_dataind(grasp_idx:nT));
 mcdfkp = mcdfkp.addNonlinearConstraint(finger3_fixed_cnstr,mcdfkp.q_inds(:,grasp_idx:nT),mcdfkp.kinsol_dataind(grasp_idx:nT));
 
-mcdfkp = mcdfkp.addRigidBodyConstraint(pickup_finger1_cnstr,{grasp_idx});
-mcdfkp = mcdfkp.addRigidBodyConstraint(pickup_finger2_cnstr,{grasp_idx});
-mcdfkp = mcdfkp.addRigidBodyConstraint(pickup_finger3_cnstr,{grasp_idx});
+mcdfkp = mcdfkp.addRigidBodyConstraint(pickup_finger1_cnstr1,{grasp_idx});
+mcdfkp = mcdfkp.addRigidBodyConstraint(pickup_finger2_cnstr1,{grasp_idx});
+mcdfkp = mcdfkp.addRigidBodyConstraint(pickup_finger3_cnstr1,{grasp_idx});
+mcdfkp = mcdfkp.addRigidBodyConstraint(pickup_finger1_cnstr2,{grasp_idx});
+mcdfkp = mcdfkp.addRigidBodyConstraint(pickup_finger2_cnstr2,{grasp_idx});
+mcdfkp = mcdfkp.addRigidBodyConstraint(pickup_finger3_cnstr2,{grasp_idx});
 
 % object above ground
 above_ground_cnstr = WorldPositionConstraint(robot,object_idx,block_corners,[nan;nan;0.01]*ones(1,8),nan(3,8));
