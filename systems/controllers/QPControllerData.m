@@ -100,7 +100,7 @@ classdef QPControllerData < ControllerData
       assert(isnumeric(data.Qy));
       % optional properties
       if isfield(data,'link_constraints')
-        assert(isstruct(data.link_constraints));
+        assert(isstruct(data.link_constraints) || isempty(data.link_constraints));
       end
       if isfield(data,'R')
         assert(isnumeric(data.R));

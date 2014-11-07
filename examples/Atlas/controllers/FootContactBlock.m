@@ -146,7 +146,7 @@ classdef FootContactBlock < MIMODrakeSystem
         if supp_idx < length(ctrl_data.support_times) 
           t0 = ctrl_data.support_times(supp_idx);
           t1 = ctrl_data.support_times(supp_idx+1);
-          if isfield(ctrl_data.link_constraints(1),'pelvis_reference_height')
+          if ~isempty(ctrl_data.link_constraints) && isfield(ctrl_data.link_constraints(1),'pelvis_reference_height')
             pelvis_ref = ctrl_data.link_constraints(1).pelvis_reference_height(supp_idx);
             pelvis_ref_next = ctrl_data.link_constraints(1).pelvis_reference_height(supp_idx+1);
             eta = double((t1-t)/(t1-t0));
