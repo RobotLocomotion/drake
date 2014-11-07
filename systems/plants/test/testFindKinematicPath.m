@@ -11,41 +11,45 @@ function testPathToSelf(robot)
 % verify that path to self contains only self
 num_bodies = robot.getNumBodies();
 for i = 1 : num_bodies
-  path = robot.findKinematicPath(i, i);
+  path = robot.findKinematicPath(i, i, false);
   valuecheck(path, i);
 end
 end
 
 function testAllPaths(robot)
+
+compare_to_mex = exist('findKinematicPathmex','file') == 3;
+
 num_bodies = robot.getNumBodies();
 for i = 1 : num_bodies
   % verify that path to parent contains only self and parent and that path to
   % child is flipud(path from child to parent)
   parent = robot.getBody(i).parent;
   if parent ~= 0
-    valuecheck(robot.findKinematicPath(i, parent), [i; parent]);
-    valuecheck(robot.findKinematicPath(parent, i), [parent; i]);
+    valuecheck(robot.findKinematicPath(i, parent, false), [i; parent]);
+    valuecheck(robot.findKinematicPath(parent, i, false), [parent; i]);
   end
   
   for j = 1 : num_bodies
-    [body_path_mex, joint_path_mex, signs_mex] = robot.findKinematicPath(i, j, true);
-    [body_path_non_mex, joint_path_non_mex, signs_non_mex] = robot.findKinematicPath(i, j, false);
-    
-    % compare mex and matlab
-    valuecheck(body_path_mex, body_path_non_mex);
-    valuecheck(joint_path_mex, joint_path_non_mex);
-    valuecheck(signs_mex, signs_non_mex);
+    [body_path, joint_path, signs] = robot.findKinematicPath(i, j, false);
+
+    if compare_to_mex
+      [body_path_mex, joint_path_mex, signs_mex] = robot.findKinematicPath(i, j, true);
+      valuecheck(body_path_mex, body_path);
+      valuecheck(joint_path_mex, joint_path);
+      valuecheck(signs_mex, signs);
+    end
     
     % verify that no paths have repeated entries
-    valuecheck(length(unique(body_path_mex)), length(body_path_mex));
+    valuecheck(length(unique(body_path)), length(body_path));
     
     % verify that all paths are connected
-    assert(isLinkPathConnected(body_path_mex, robot));
+    assert(isLinkPathConnected(body_path, robot));
     
     % verify that all paths have at most one direction change
-    assert(getDirectionChanges(body_path_mex) < 2)
+    assert(getDirectionChanges(body_path) < 2)
     
-    if (getDirectionChanges(body_path_mex) == 1)
+    if (getDirectionChanges(body_path) == 1)
     end
     
     %     if (getDirectionChanges(path) > 1)
