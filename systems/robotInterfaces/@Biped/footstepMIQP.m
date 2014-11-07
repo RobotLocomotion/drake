@@ -225,11 +225,11 @@ model.objcon = objcon;
 params = struct();
 params.timelimit = 5;
 params.mipgap = 1e-4;
-if DEBUG
+% if DEBUG
   params.outputflag = 1;
-else
-  params.outputflag = 0;
-end
+% else
+  % params.outputflag = 0;
+% end
 
 result = gurobi(model, params);
 solvertime = result.runtime;

@@ -102,28 +102,13 @@ figure(1)
 h = subplot(2, 3, 1)
 test_solver(@footstepPlanner.fixedRotation, h, 'miqp');
 drawnow()
-% h = subplot(2, 3, 2)
-% test_solver(@footstepAlternatingMIQP, h, 'alternating miqp');
-% drawnow()
+h = subplot(2, 3, 2);
+test_solver(@footstepPlanner.alternatingMIQP, h, 'alternating miqp');
+drawnow()
 h = subplot(2, 3, 3);
 test_solver(@footstepPlanner.linearUnitCircle, h, 'linear unit circle');
 drawnow()
 h = subplot(2, 3, 4);
 test_solver(@footstepPlanner.humanoids2014, h, 'humanoids2014');
-% h = subplot(2, 3, 4)
-% test_solver(@footstepSmallAngle, h, 'humanoids2014');
-% drawnow()
-% h = subplot(2, 3, 4)
-% params.rot_mode = 'circle_linear_eq';
-% test_solver(@footstepMISOCP, h, 'humanoids2014 circle eq');
-% drawnow()
-% h = subplot(2, 3, 4)
-% test_solver(@footstepMIQCQP, h, 'humanoids2014 gurobi');
-% drawnow()
-% h = subplot(2, 3, 5)
-% test_solver(@footstepRelaxedMISOCP, h, 'relaxed yalmip');
-% drawnow()
-% h = subplot(2, 3, 6)
-% test_solver(@footstepRelaxedMISOCPGurobi, h, 'relaxed gurobi');
-% drawnow()
+drawnow();
 end
