@@ -111,6 +111,14 @@ classdef MixedIntegerConvexProgram
                sparse(num_new_vars, num_new_vars + size(obj.Q, 2))];
       obj.A = [obj.A, zeros(size(obj.A, 1), num_new_vars)];
       obj.Aeq = [obj.Aeq, zeros(size(obj.Aeq, 1), num_new_vars)];
+      if length(obj.quadcon) > 10
+        obj.biped.warning_manager.warnOnce('Drake:MixedIntegerConvexProgram:ReallocatingQuadraticConstraints', 'Reallocating matrices for many quadratic constraints. This may be inefficient. If possible, try to finish adding new variables before you start adding quadratic constraints');
+      end
+      for j = 1:length(obj.quadcon)
+        obj.quadcon(j).Qc = [obj.quadcon(j).Qc, sparse(size(obj.quadcon(j).Qc, 1), num_new_vars);
+          sparse(num_new_vars, num_new_vars + size(obj.quadcon(j).Qc, 2))];
+        obj.quadcon(j).q = [obj.quadcon(j).q; zeros(num_new_vars, 1)];
+      end
     end
 
     function obj = addVariableIfNotPresent(obj, varargin)
@@ -294,7 +302,7 @@ classdef MixedIntegerConvexProgram
        end
       for j = 1:length(obj.quadcon)
         constraints = [constraints,...
-          obj.symbolic_vars' * obj.quadcon(j).Qc * obj.symbolic_vars + obj.quadcon(j)' * obj.symbolic_vars <= obj.quadcon(j).rhs];
+          obj.symbolic_vars' * obj.quadcon(j).Qc * obj.symbolic_vars + obj.quadcon(j).q' * obj.symbolic_vars <= obj.quadcon(j).rhs];
       end
       for j = 1:length(obj.cones)
         constraints = [constraints,...
