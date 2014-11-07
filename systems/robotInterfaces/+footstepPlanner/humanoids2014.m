@@ -20,17 +20,10 @@ function [plan, solvertime] = humanoids2014(biped, seed_plan, weights, goal_pos,
 %                 goal_pos.right is the desired 6 DOF pose
 %                 of the right foot sole, and likewise for
 %                 goal_pos.left
-% @param v_seed (optional) an advanced starting point for the mixed-integer
-%               solver. This should be a structure of the same form as 'v'
-%               returned by this function, and may be useful for re-running
-%               the planner after making a small change to the problem. If
-%               the values contained in this seed lead to a feasible
-%               solution, then this can dramatically improve the
-%               performance of the optimization. 
+% @option use_symbolic (default: false) whether to use the symbolic yalmip
+%                     version of the solver, which is slower to set up
+%                     but easier to modify.
 % @retval plan a FootstepPlan with the results of the optimization
-% @retval v a data structure describing all of the variables in the
-%           optimization. This is only useful to you if you intend to pass
-%           it in as 'v_seed' to another run of this planner.
 
 
 if nargin < 5

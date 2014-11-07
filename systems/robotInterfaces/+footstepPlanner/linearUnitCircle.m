@@ -1,4 +1,27 @@
 function [plan, solvertime] = linearUnitCircle(biped, seed_plan, weights, goal_pos, use_symbolic)
+% Footstep planner based on the approach presented in "Footstep Planning on
+% Uneven Terrain with Mixed-Integer Convex Optimization" by Robin Deits and
+% Russ Tedrake, but modified to use a slightly more accurate approximation
+% of the unit circle of rotations. See humanoids2014.m for more detail.
+%
+% This planner should be used by passing the 'method_handle', @footstepPlanner.linearUnitCircle 
+% option to planFootsteps.m.
+% 
+% @param seed_plan a blank footstep plan, provinding the structure of the
+%                  desired plan. Probably generated with
+%                  FootstepPlan.blank_plan()
+% @param weights a struct with fields 'goal', 'relative', and
+%                'relative_final' describing the various contributions to
+%                the cost function. These are described in detail in
+%                Biped.getFootstepOptimizationWeights()
+% @param goal_pos a struct with fields 'right' and 'left'.
+%                 goal_pos.right is the desired 6 DOF pose
+%                 of the right foot sole, and likewise for
+%                 goal_pos.left
+% @option use_symbolic (default: false) whether to use the symbolic yalmip
+%                     version of the solver, which is slower to set up
+%                     but easier to modify.
+% @retval plan a FootstepPlan with the results of the optimization
 
 if nargin < 5
   use_symbolic = 0;

@@ -11,6 +11,17 @@ function [plan, solvertime] = fixedRotation(biped, seed_plan, weights, goal_pos,
 %                  but undetermined footstep positions and region assignments
 %                  can be NaN. The first two footstep poses must not be NaN,
 %                  since they correspond to the current positions of the feet
+% @param weights a struct with fields 'goal', 'relative', and
+%                'relative_final' describing the various contributions to
+%                the cost function. These are described in detail in
+%                Biped.getFootstepOptimizationWeights()
+% @param goal_pos a struct with fields 'right' and 'left'.
+%                 goal_pos.right is the desired 6 DOF pose
+%                 of the right foot sole, and likewise for
+%                 goal_pos.left
+% @option use_symbolic (default: false) whether to use the symbolic yalmip
+%                     version of the solver, which is slower to set up
+%                     but easier to modify.
 % @retval plan a FootstepPlan matching the number of footsteps, frame_id, etc.
 %              of the seed plan, but with the footstep positions and region_order
 %              replaced by the results of the MIQP
@@ -64,11 +75,5 @@ if use_symbolic == 2
   plot(cos(linspace(0, 2*pi)), sin(linspace(0, 2*pi)), 'k-')
   ylim([-1.1,1.1])
   axis equal
-
-  plan3 = footstepPlanner.footstepMIQP(biped, seed_plan, weights, goal_pos);
-  plan3steps = plan3.step_matrix();
-  plansteps = plan.step_matrix();
-  valuecheck(plansteps(1:3,:), plan3steps(1:3,:), 1e-2);
-  valuecheck(plansteps(6,:), plan3steps(6,:), pi/64);
 end
 
