@@ -868,6 +868,48 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
       end
     end
 
+    function obj = fixRotation(obj)
+      for j = 3:obj.nsteps
+        if isnan(obj.seed_plan.footsteps(j).pos(6))
+          if mod(j, 2)
+            yaw = obj.seed_plan.footsteps(1).pos(6);
+          else
+            yaw = obj.seed_plan.footsteps(2).pos(6);
+          end
+        else
+          yaw = obj.seed_plan.footsteps(j).pos(6);
+        end
+
+        obj.seed_plan.footsteps(j).pos(6) = yaw;
+        obj.vars.footsteps.lb(4,j) = yaw - 0.01;
+        obj.vars.footsteps.ub(4,j) = yaw + 0.01;
+      end
+
+      seed_steps = [obj.seed_plan.footsteps.pos];
+      yaw = seed_steps(6,:);
+      obj = obj.addVariable('cos_yaw', 'C', [1, obj.nsteps], cos(yaw), cos(yaw));
+      obj = obj.addVariable('sin_yaw', 'C', [1, obj.nsteps], sin(yaw), sin(yaw));
+    end
+
+    function obj = addReachabilityLinearConstraints(obj)
+      seed_steps = [obj.seed_plan.footsteps.pos];
+      yaw = seed_steps(6,:);
+      if any(isnan(yaw))
+        error('Drake:MixedIntegerFootstepPlanningProblem:NaNsInYaw', 'Cannot handle NaNs in seed step yaws. You can call fixRotation() to set these yaw values correctly');
+      end
+      for j = 3:obj.nsteps
+        R = [rotmat(yaw(j-1)), zeros(2,2); zeros(2,2), eye(2)];
+        [A_reach, b_reach] = obj.biped.getReachabilityPolytope(obj.seed_plan.footsteps(j-1).frame_id, obj.seed_plan.footsteps(j).frame_id, obj.seed_plan.params);
+        A_reach = A_reach(:,obj.pose_indices);
+        Ai = zeros(size(A_reach, 1), obj.nv);
+        rA_reach = A_reach * R;
+        Ai(:,obj.vars.footsteps.i(:,j)) = rA_reach;
+        Ai(:,obj.vars.footsteps.i(:,j-1)) = -rA_reach;
+        bi = b_reach;
+        obj = obj.addLinearConstraints(Ai, bi, [], []);
+      end
+    end
+
     function obj = addSmallRelativeAngleRotation(obj, use_symbolic)
       error('these constraints turned out to be backwards, so this approach doesn''t work yet -rdeits');
       obj = obj.addVariable('sin_is_positive', 'B', [1, obj.nsteps], 0, 1);
