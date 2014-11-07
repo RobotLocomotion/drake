@@ -186,7 +186,7 @@ classdef MixedIntegerConvexProgram
       % norm([x2, x3]) <= x1 
       % with the linear constraints
       % A[x2; x3] <= b
-      sizecheck(idx, [3, Nan]); 
+      sizecheck(idx, [3, nan]); 
 
       if length(N) == 1
         N = repmat(N, 1, size(idx, 2));
