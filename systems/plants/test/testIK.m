@@ -51,7 +51,7 @@ q_seed = q_nom+1e-2*randn(nq,1);
 ikoptions = IKoptions(robot);
 ikoptions = ikoptions.setDebug(true);
 ikoptions = ikoptions.setMex(false);
-ikoptions = ikoptions.setMajorIterationsLimit(500);
+ikoptions = ikoptions.setMajorIterationsLimit(1000);
 ikmexoptions = ikoptions;
 ikmexoptions = ikmexoptions.setMex(true);
 
@@ -422,6 +422,7 @@ kc4 = kc4.updateRobot(robot);
 kc5 = kc5.updateRobot(robot);
 kc6 = kc6.updateRobot(robot);
 ikoptions = ikoptions.updateRobot(robot);
+ikoptions = ikoptions.setMajorIterationsLimit(2000);
 ikmexoptions = ikmexoptions.updateRobot(robot);
 nq_aff = length(robot.getStateFrame.frame{2}.coordinates)/2;
 q_seed_aff = zeros(nq_aff,1);
@@ -474,6 +475,7 @@ ikproblem = InverseKinematics(r,q_nom,varargin{1:end-1});
 ikproblem = ikproblem.setQ(ikoptions.Q);
 ikproblem = ikproblem.setSolverOptions('fmincon','Algorithm','sqp');
 ikproblem = ikproblem.setSolverOptions('fmincon','MaxIter',500);
+ikproblem = ikproblem.setSolverOptions('snopt','MajorIterationsLimit',ikoptions.SNOPT_MajorIterationsLimit);
 [qik,F,info,infeasible_cnstr_ik] = ikproblem.solve(q_seed);
 toc
 % valuecheck(qik,q,1e-6);
@@ -508,7 +510,7 @@ if(checkDependency('snopt'))
   tic
   [qmex,info] = inverseKinPointwise(r,t,q_seed,q_nom,varargin{1:end-1},ikmexoptions);
   toc
-  if(info>10)
+  if(any(info>10))
     error('SNOPT info is %d, IK pointwise mex fails to solve the problem',info);
   end
   for i = 1:length(t)

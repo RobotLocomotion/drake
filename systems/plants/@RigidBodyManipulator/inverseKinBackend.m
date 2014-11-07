@@ -665,7 +665,8 @@ else
   weights = [];
 end
 [J,dJ] = IK_cost_fun(obj,q,q_nom,Q);
-[c,dc] = IK_constraint_fun(obj,q,t,st_kc_cell,stlpc_cell,nC,nG,qsc,weights);
+kinsol = doKinematics(obj,q,false,false);
+[c,dc] = IK_constraint_fun(obj,q,t,st_kc_cell,stlpc_cell,nC,nG,qsc,weights,kinsol);
 f = [J;c];
 G = [dJ;dc];
 end
@@ -696,23 +697,27 @@ end
   accel_mat,accel_mat_qd0,accel_mat_qdf,nq,nT,num_qfree,num_qdotfree,qstart_idx,fixInitialState);
 nf_cum = 1;
 nG_cum = nq*(num_qfree+num_qdotfree);
+kinsol_cell = cell(1,nT);
 for i = qstart_idx:nT
-  [f(nf_cum+(1:nc_array(i))),G(nG_cum+(1:nG_array(i)))] = IK_constraint_fun(obj,q(:,i),t(i),st_kc_cell,stlpc_nc,nc_array(i),nG_array(i),qsc,qsc_weights(:,i));
+  kinsol_cell{i} = doKinematics(obj,q(:,i),false,false);
+  [f(nf_cum+(1:nc_array(i))),G(nG_cum+(1:nG_array(i)))] = IK_constraint_fun(obj,q(:,i),t(i),st_kc_cell,stlpc_nc,nc_array(i),nG_array(i),qsc,qsc_weights(:,i),kinsol_cell{i});
   nf_cum = nf_cum+nc_array(i);
   nG_cum = nG_cum+nG_array(i);
 end
 q_inbetween = zeros(nq,num_inbetween_tSamples);
 q_samples = zeros(nq,num_inbetween_tSamples+nT);
+kinsol_samples = cell(1,num_inbetween_tSamples+nT);
 qknot_qsamples_idx = zeros(1,nT); % q_samples(:,qknot_qsamples_idx(i)) = q(:,i);
 inbetween_idx = 0;
 for i = 1:nT-1
+  kinsol_samples{inbetween_idx+i} = kinsol_cell{i};
   q_inbetween(:,inbetween_idx+(1:length(t_inbetween{i}))) = reshape(dqInbetweendqknot{i}*q(:)+dqInbetweendqd0{i}*qdot0+dqInbetweendqdf{i}*qdotf,nq,length(t_inbetween{i}));
   for j = 1:length(t_inbetween{i})
     t_j = t_inbetween{i}(j)+t(i);
-    kinsol = doKinematics(obj,q_inbetween(:,inbetween_idx+j),false,false);
+    kinsol_samples{inbetween_idx+i+j} = doKinematics(obj,q_inbetween(:,inbetween_idx+j),false,false);
     for k = 1:length(st_kc_cell)
       if(st_kc_cell{k}.isTimeValid(t_j))
-        [c_k,dc_k] = st_kc_cell{k}.eval(t_j,kinsol);
+        [c_k,dc_k] = st_kc_cell{k}.eval(t_j,kinsol_samples{inbetween_idx+i+j});
         nc = st_kc_cell{k}.getNumConstraint(t_j);
         f(nf_cum+(1:nc)) = c_k;
         if(~fixInitialState)
@@ -732,10 +737,11 @@ for i = 1:nT-1
 end
 q_samples(:,end) = q(:,end);
 qknot_qsamples_idx(end) = num_inbetween_tSamples+nT;
+kinsol_samples{end} = doKinematics(obj,q(:,end),false,false);
 
 for i = 1:length(mt_kc_cell)
   mtkc_nc_i = mt_kc_cell{i}.getNumConstraint(t_samples(qstart_idx:end));
-  [c_i,dc_i]= mt_kc_cell{i}.eval(t_samples(qstart_idx:end),q_samples(:,qstart_idx:end));
+  [c_i,dc_i]= mt_kc_cell{i}.eval(t_samples(qstart_idx:end),kinsol_samples(qstart_idx:end));
   f(nf_cum+(1:mtkc_nc_i)) = c_i;
   G(nG_cum+(1:mtkc_nc_i*nq*num_qfree)) = dc_i(:,reshape(bsxfun(@plus,(qknot_qsamples_idx(qstart_idx:end)-qstart_idx)*nq,(1:nq)'),1,[]));
   inbetween_idx = 0;
@@ -790,10 +796,9 @@ else
 end
 end
 
-function [c,G] = IK_constraint_fun(obj,q,t,st_kc_cell,stlpc_nc,nC,nG,qsc,weights)
+function [c,G] = IK_constraint_fun(obj,q,t,st_kc_cell,stlpc_nc,nC,nG,qsc,weights,kinsol)
 c = zeros(nC,1);
 G = zeros(nG,1);
-kinsol = doKinematics(obj,q,false,false);
 nc= 0;
 ng = 0;
 for i = 1:length(st_kc_cell)
