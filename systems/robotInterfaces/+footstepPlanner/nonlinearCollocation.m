@@ -1,4 +1,4 @@
-function [plan, exitflag, output_cost] = footstepNLP(biped, seed_plan, weights, goal_pos)
+function [plan, solvertime] = nonlinearCollocation(biped, seed_plan, weights, goal_pos, ~)
 % A nonlinear footstep planner. This planner takes both the absolute pose of each footstep
 % and the relative displacements between footsteps as decision variables, while
 % constraining that they agree with one another. It optimizes the distance from the final step
@@ -174,24 +174,24 @@ if USE_SNOPT
   ObjRow = 1;
   global SNOPT_USERFUN
   SNOPT_USERFUN = @collocation_userfun;
-  % tic
+  t0 = tic();
   [xstar, fval, ~, ~, exitflag] = snsolve(x0,xlow,xupp,xmul,xstate,    ...
                Flow,Fupp,Fmul,Fstate,      ...
                ObjAdd,ObjRow,A_sn(iAndx),iAfun,jAvar,...
                iGfun,jGvar,'snoptUserfun');
-  % toc
+  solvertime = toc(t0);
   if debug
     exitflag
   end
 else
-  % tic
+  t0 = tic();
   [xstar, fval, exitflag] = fmincon(@objfun, x0, sparse(A), b, ...
                   sparse(Aeq), beq, lb, ub, @constraints, ...
                   optimset('Algorithm', 'interior-point', ...
                   'DerivativeCheck', 'on', ...
                   'GradConstr', 'on', ...
                   'GradObj', 'on', 'OutputFcn',{}));
-  % toc
+  solvertime = toc(t0);
 end
 
 % plotfun(xstar);

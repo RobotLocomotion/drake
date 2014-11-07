@@ -24,7 +24,7 @@ end
 
 if (use_symbolic == 0 || use_symbolic == 2)
   t0 = tic();
-  p2 = MixedIntegerFootstepPlanningProblem(biped, seed_plan, true);
+  p2 = MixedIntegerFootstepPlanningProblem(biped, seed_plan, false);
   p2.weights = weights;
   p2 = p2.fixRotation();
   p2 = p2.addReachabilityLinearConstraints();

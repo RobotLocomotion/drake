@@ -990,7 +990,14 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
       for j = 1:obj.nsteps
         plan.footsteps(j).pos = steps(:,j);
       end
+
+      for j = 1:obj.nsteps
+        region_ndx = find(obj.vars.region.value(:,j));
+        assert(length(region_ndx) == 1, 'Got no (or multiple) region assignments for this footstep. This indicates an infeasibility or bad setup in the mixed-integer program');
+        plan.region_order(j) = region_ndx;
+      end
       plan = plan.trim_duplicates();
+
     end
   end
 end
