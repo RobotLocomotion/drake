@@ -1,37 +1,67 @@
 classdef MixedIntegerConvexProgram
+% This class is meant to represent general mixed-integer linear, quadratic, quadratically-constrained, and second-order-cone programs. It allows you to define symbolic constraints using Yalmip, which are typically easy to prototype, or to define low-level constraints by directly constructing the A, b, Aeq, beq, etc. matrices, which is typically much faster. For an example of usage, see the MixedIntegerFootstepPlanningProblem subclass. 
   properties
     vars = struct();
+
+    % the number of variables
     nv = 0;
+
+    % the linear cost vector c'x
     c = zeros(0, 1);
+
+    % the quadratic cost matrix x'Qx
     Q = sparse(0, 0);
+
+    % linear inequalities Ax <= b
     A = zeros(0, 0);
     b = zeros(0, 1);
+
+    % linear equalities Ax == b
     Aeq = zeros(0, 0);
     beq = zeros(0, 1);
+
+    % quadratic constraints x'Qc x + q' x <= rhs
     quadcon = struct('Qc', {}, 'q', {}, 'rhs', {});
+
+    % constant term in the objective
     objcon = 0;
+
+    % indices of second-order cones (see http://www.gurobi.com/documentation/5.6/reference-manual/matlab_gurobi)
     cones = struct('index', {});
+
+    % indices of polygonal approximations of second-order cones. The structure of these constraints are designed to mimic the second-order constraints in obj.cones, but they use a polygonal linear outer approximation of the conic constraint. The number of pieces in each approximation is set by N.
     polycones = struct('index', {}, 'N', {});
+
+    % a list of symbolic constraints constructed with yalmip
     symbolic_constraints;
+
+    % a symbolic objective term constructed in yalmip
     symbolic_objective = 0;
   end
 
   properties (SetAccess = protected)
-    using_symbolic = false;
+    has_symbolic = false;
     symbolic_vars = [];
   end
 
   methods
-    function obj = MixedIntegerConvexProgram(using_symbolic)
+    function obj = MixedIntegerConvexProgram(has_symbolic)
+      % Construct a new mixed-integer convex program.
+      % @param has_symbolic whether to create symbolic variables in yalmip corresponding to
+      %                     all of the variables in the problem. If obj.has_symbolic is true,
+      %                     you can use both symbolic and non-symbolic (and thus faster) 
+      %                     constraints as you wish. If obj.has_symbolic is not true, then
+      %                     you cannot, and you must instead construct all of your constraint
+      %                     and objective matrices directly.
       if nargin < 1
-        using_symbolic = false;
+        has_symbolic = false;
       end
-      if using_symbolic
+      if has_symbolic
         checkDependency('yalmip');
         obj.symbolic_constraints = lmi();
       end
 
-      obj.using_symbolic = using_symbolic;
+      obj.has_symbolic = has_symbolic;
     end
 
     function obj = addVariable(obj, name, type_, size_, lb, ub, start_)
@@ -39,8 +69,8 @@ classdef MixedIntegerConvexProgram
       % This is a new approach that I'm experimenting with, which should offer
       % a mix of the advantages of symbolic and matrix-based optimization
       % frameworks. The idea is that we have a single Matlab struct (named just
-      % 'v' for convenience) and each variable in the optimization has a
-      % corresponding named field in v. For each variable, we have subfields as
+      % 'vars' for convenience) and each variable in the optimization has a
+      % corresponding named field in vars. For each variable, we have subfields as
       % follows:
       % type: 'B', 'I', or 'C' for binary, integer, or continuous variables
       % size: a 2x1 vector describing the shape of the variable
@@ -50,7 +80,7 @@ classdef MixedIntegerConvexProgram
       % ub: upper bound, a matrix
       % start:  the initial values as a matrix of the same size as 'size'
       %
-      % After optimization, there will be an additional field added to v, called
+      % After optimization, there will be an additional field added to each variable, called
       % 'value', which will contain the final values after optimization.
       % 
       % The 'i' field of indices is useful because when
@@ -89,7 +119,7 @@ classdef MixedIntegerConvexProgram
       obj.vars.(name).start(1:size(start_, 1), 1:size(start_, 2), 1:size(start_, 3)) = start_;
 
       % Add symbolic variables if we're doing that
-      if obj.using_symbolic
+      if obj.has_symbolic
         size_cell =num2cell(obj.vars.(name).size);
         if strcmp(obj.vars.(name).type, 'B')
           obj.vars.(name).symb = binvar(size_cell{:});
@@ -146,10 +176,18 @@ classdef MixedIntegerConvexProgram
     end
 
     function obj = addPolyCones(obj, polycones)
+      % Add polygonal approximations of second-order cones
       obj.polycones = [obj.polycones, polycones];
     end
 
     function obj = addPolyConesByIndex(obj, idx, N)
+      % Polycones only support approximations of cones with two variables on the left-hand side 
+      % and one on the right-hand side. That is, we can only approximate the constraint that 
+      % norm([x2, x3]) <= x1 
+      % with the linear constraints
+      % A[x2; x3] <= b
+      sizecheck(idx, [3, Nan]); 
+
       if length(N) == 1
         N = repmat(N, 1, size(idx, 2));
       else
@@ -169,7 +207,6 @@ classdef MixedIntegerConvexProgram
         obj = obj.addPolyConesByIndex(idx, N);
       end
     end
-
 
     function obj = addQuadcon(obj, quadcon)
       obj.quadcon = [obj.quadcon, quadcon];
@@ -196,6 +233,7 @@ classdef MixedIntegerConvexProgram
     end
 
     function obj = convertPolyCones(obj)
+      % Build linear constraints for our polygonal cone approximations
       nconstraints = sum([obj.polycones.N]);
       A = zeros(nconstraints, obj.nv);
       b = zeros(size(A, 1), 1);
@@ -213,11 +251,13 @@ classdef MixedIntegerConvexProgram
         end
       end
       assert(offset == nconstraints);
+
       obj = obj.addLinearConstraints(A, b, [], []);
+      obj.polycones = struct('index', {}, 'N', {});
     end
 
     function [obj, solvertime] = solve(obj)
-      if obj.using_symbolic
+      if obj.has_symbolic
         [obj, solvertime] = obj.solveYalmip();
       else
         [obj, solvertime] = obj.solveGurobi();

@@ -1,4 +1,6 @@
 classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
+% A general structure for various footstep planning approaches. For example implementations,
+% see footstepPlanner.humanoids2014, footstepPlanner.linearUnitCircle, and footstepPlanner.fixedRotation
   properties
     biped;
     nsteps;
@@ -9,8 +11,19 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
   end
 
   methods
-    function obj = MixedIntegerFootstepPlanningProblem(biped, seed_plan, using_symbolic)
-      obj = obj@MixedIntegerConvexProgram(using_symbolic);
+    function obj = MixedIntegerFootstepPlanningProblem(biped, seed_plan, has_symbolic)
+      % Construct a new problem, optionally with internal symbolic representations of
+      % all variables. For more info on the symbolic vars, see MixedIntegerConvexProgram
+      % @param biped a Biped.
+      % @param seed_plan a blank footstep plan, provinding the structure of the
+      %                  desired plan. Probably generated with
+      %                  FootstepPlan.blank_plan()
+      % @param has_symbolic whether to keep symbolic variables
+
+      typecheck(biped, 'Biped');
+      typecheck(seed_plan, 'FootstepPlan');
+
+      obj = obj@MixedIntegerConvexProgram(has_symbolic);
 
       obj.biped = biped;
       obj.seed_plan = seed_plan;
@@ -33,10 +46,12 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
     end
 
     function obj = addQuadraticGoalObjective(obj, goal_pose, step_indices, relative_weights, use_symbolic)
+      % For each index j in step_indices, add a cost of the form:
+      % relative_weights(j) * (footsteps(:,j) - xgoal)' * w_goal * (footsteps(:,j) - xgoal)
       w_goal = diag(obj.weights.goal(obj.pose_indices));
 
       if use_symbolic
-        assert(obj.using_symbolic);
+        assert(obj.has_symbolic);
         for i = 1:length(step_indices)
           j = step_indices(i);
           if obj.seed_plan.footsteps(j).frame_id == obj.biped.foot_frame_id.right
@@ -66,10 +81,11 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
     end
 
     function obj = addOuterUnitCircleCone(obj, use_symbolic)
+      % Add a convex conic constraint that sin^2 + cos^2 <= 1
       obj = obj.addVariableIfNotPresent('cos_yaw', 'C', [1, obj.nsteps], -1, 1);
       obj = obj.addVariableIfNotPresent('sin_yaw', 'C', [1, obj.nsteps], -1, 1);
       if use_symbolic
-        assert(obj.using_symbolic);
+        assert(obj.has_symbolic);
         for j = 1:obj.nsteps
           obj.symbolic_constraints = [obj.symbolic_constraints,...
             cone([obj.vars.cos_yaw.symb(j); obj.vars.sin_yaw.symb(j)], 1)];
@@ -81,6 +97,8 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
     end
 
     function obj = addOuterUnitCircleEquality(obj, num_slices, use_symbolic)
+      % Add mixed-integer linear constraints requiring that sin and cos live on the 
+      % piecewise linear outer approximation of the unit circle with num_slices sides.
       sector_width = 2*pi / num_slices;
       yaw0 = obj.seed_plan.footsteps(1).pos(6);
       angle_boundaries = (yaw0 - pi - sector_width/2):sector_width:(yaw0 + pi - sector_width/2);
@@ -95,7 +113,7 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
         sector = obj.vars.sector.symb;
         cos_yaw = obj.vars.cos_yaw.symb;
         sin_yaw = obj.vars.sin_yaw.symb;
-        assert(obj.using_symbolic)
+        assert(obj.has_symbolic)
         obj.symbolic_constraints = [obj.symbolic_constraints,...
           sum(sector, 1) == 1,...
           yaw0 - pi <= yaw <= yaw0 + pi,...
@@ -188,6 +206,8 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
     end
 
     function obj = addInnerUnitCircleInequality(obj, num_slices, use_symbolic)
+      % Add mixed-integer linear constraints requiring that sin and cos live outside
+      % the piecewise linear inner approximation of the unit circle with num_slices sides.
       sector_width = 2*pi / num_slices;
       yaw0 = obj.seed_plan.footsteps(1).pos(6);
       angle_boundaries = (yaw0 - pi - sector_width/2):sector_width:(yaw0 + pi - sector_width/2);
@@ -202,7 +222,7 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
         sector = obj.vars.sector.symb;
         cos_yaw = obj.vars.cos_yaw.symb;
         sin_yaw = obj.vars.sin_yaw.symb;
-        assert(obj.using_symbolic)
+        assert(obj.has_symbolic)
         obj.symbolic_constraints = [obj.symbolic_constraints,...
           sum(sector, 1) == 1,...
           yaw0 - pi <= yaw <= yaw0 + pi,...
@@ -237,6 +257,10 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
     end
 
     function obj = addSinCosLinearEquality(obj, use_symbolic)
+      % Add mixed-integer linear constraints implementing the piecewise linear relationship
+      % between yaw and cos(yaw), sin(yaw) described in "Footstep Planning on
+      % Uneven Terrain with Mixed-Integer Convex Optimization" by Robin Deits and
+      % Russ Tedrake (Humanoids 2014)
       yaw0 = obj.seed_plan.footsteps(1).pos(6);
       min_yaw = pi * floor(yaw0 / pi - 1);
       max_yaw = pi * ceil(yaw0 / pi + 1);
@@ -253,7 +277,7 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
       obj.vars.footsteps.ub(4,3:end) = max_yaw;
 
       if use_symbolic
-        assert(obj.using_symbolic);
+        assert(obj.has_symbolic);
         cos_sector = obj.vars.cos_sector.symb;
         sin_sector = obj.vars.sin_sector.symb;
         cos_yaw = obj.vars.cos_yaw.symb;
@@ -453,6 +477,7 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
     end
 
     function obj = addInitialSinCosConstraints(obj)
+      % Constrain the values of sin and cos for the current poses of the feet
       obj.vars.cos_yaw.lb(1) = cos(obj.seed_plan.footsteps(1).pos(6));
       obj.vars.cos_yaw.ub(1) = cos(obj.seed_plan.footsteps(1).pos(6));
       obj.vars.cos_yaw.lb(2) = cos(obj.seed_plan.footsteps(2).pos(6));
@@ -466,7 +491,7 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
     function obj = addSectorTransitionConstraints(obj, use_symbolic)
       % Restrict the set of sector transitions based on the reachability of Atlas
       if use_symbolic
-        assert(obj.using_symbolic);
+        assert(obj.has_symbolic);
         sector = obj.vars.sector.symb;
         for j = 3:obj.nsteps
           if obj.seed_plan.footsteps(j).frame_id == obj.biped.foot_frame_id.left
@@ -507,8 +532,9 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
     end
 
     function obj = addZAndYawReachability(obj, use_symbolic)
+      % Add basic limits on delta z and delta yaw between footsteps
       if use_symbolic
-        assert(obj.using_symbolic);
+        assert(obj.has_symbolic);
         x = obj.vars.footsteps.symb;
         yaw = x(4,:);
         for j = 3:obj.nsteps
@@ -565,8 +591,12 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
     end
 
     function obj = addXYReachabilityCircles(obj, use_symbolic)
+      % Add quadratic constraints to restrict the relative foot displacements in X and Y. This
+      % is the reachability method described in "Footstep Planning on
+      % Uneven Terrain with Mixed-Integer Convex Optimization" by Robin Deits and
+      % Russ Tedrake
       if use_symbolic
-        assert(obj.using_symbolic);
+        assert(obj.has_symbolic);
         x = obj.vars.footsteps.symb;
         cos_yaw = obj.vars.cos_yaw.symb;
         sin_yaw = obj.vars.sin_yaw.symb;
@@ -625,8 +655,10 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
     end
 
     function obj = addXYReachabilityEllipse(obj, use_symbolic)
+      % Add second-order conic constraints to restrict the reachable set of foot poses with an ellipse
+      % instead of a set of circles (as in addXYReachabilityCircles). 
       if use_symbolic
-        assert(obj.using_symbolic);
+        assert(obj.has_symbolic);
         x = obj.vars.footsteps.symb;
         cos_yaw = obj.vars.cos_yaw.symb;
         sin_yaw = obj.vars.sin_yaw.symb;
@@ -645,6 +677,10 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
     end
 
     function obj = addTrimToFinalPoses(obj, use_symbolic)
+      % Add a binary variable for each footstep which, if true, forces that footstep to the
+      % final pose in the footstep plan. This allows us to trim it out of the footstep plan later.
+      % A linear objective placed on those trim variables lets us tune the number of footsteps
+      % in the plan.
       if obj.nsteps <= 3
         % Only one step to take, no point in trimming
         return
@@ -654,7 +690,7 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
       min_num_steps = max([obj.seed_plan.params.min_num_steps + 2, 3]);
 
       if use_symbolic
-        assert(obj.using_symbolic);
+        assert(obj.has_symbolic);
         trim = obj.vars.trim.symb;
         x = obj.vars.footsteps.symb;
         obj.symbolic_constraints = [obj.symbolic_constraints,...
@@ -722,8 +758,9 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
     end
 
     function obj = addQuadraticRelativeObjective(obj, use_symbolic)
+      % Add a quadratic cost on the relative displacement between footsteps
       if use_symbolic
-        assert(obj.using_symbolic);
+        assert(obj.has_symbolic);
         x = obj.vars.footsteps.symb;
         for j = 3:obj.nsteps
           R = [obj.vars.cos_yaw.symb(j-1), -obj.vars.sin_yaw.symb(j-1); 
@@ -802,6 +839,8 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
     end
 
     function obj = addTerrainRegions(obj, safe_regions, use_symbolic)
+      % Add regions of safe terrain and mixed-integer constraints which require that 
+      % each footstep lie within one of those safe regions.
       if isempty(safe_regions)
         safe_regions = obj.seed_plan.safe_regions;
       end
@@ -813,7 +852,7 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
       obj.vars.region.ub(2:end,1:2) = 0;
 
       if use_symbolic
-        assert(obj.using_symbolic)
+        assert(obj.has_symbolic)
         region = obj.vars.region.symb;
         x = obj.vars.footsteps.symb;
         obj.symbolic_constraints = [obj.symbolic_constraints,...
@@ -869,6 +908,7 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
     end
 
     function obj = fixRotation(obj)
+      % Fix the rotations of every step (see footstepPlanner.fixedRotation())
       for j = 3:obj.nsteps
         if isnan(obj.seed_plan.footsteps(j).pos(6))
           if mod(j, 2)
@@ -892,6 +932,7 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
     end
 
     function obj = addReachabilityLinearConstraints(obj)
+      % Add linear constraints describing the reachable polytope (see footstepPlanner.fixedRotation())
       seed_steps = [obj.seed_plan.footsteps.pos];
       yaw = seed_steps(6,:);
       if any(isnan(yaw))
@@ -910,74 +951,75 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
       end
     end
 
-    function obj = addSmallRelativeAngleRotation(obj, use_symbolic)
-      error('these constraints turned out to be backwards, so this approach doesn''t work yet -rdeits');
-      obj = obj.addVariable('sin_is_positive', 'B', [1, obj.nsteps], 0, 1);
-      obj = obj.addVariable('cos_is_positive', 'B', [1, obj.nsteps], 0, 1);
-      obj = obj.addVariable('abs_delta_cos', 'C', [1, obj.nsteps-1], 0, 1);
-      obj = obj.addVariable('abs_delta_sin', 'C', [1, obj.nsteps-1], 0, 1);
-      obj = obj.addVariable('abs_delta_theta', 'C', [1, obj.nsteps-1], 0, pi);
-      obj = obj.addVariable('abs_sin', 'C', [1, obj.nsteps-1], 0, 1);
-      obj = obj.addVariable('abs_cos', 'C', [1, obj.nsteps-1], 0, 1);
-      obj = obj.addVariable('cos_yaw', 'C', [1, obj.nsteps], -1, 1);
-      obj = obj.addVariable('sin_yaw', 'C', [1, obj.nsteps], -1, 1);
-      obj = obj.addVariable('abs_delta_cos_slack', 'C', [1, obj.nsteps-1], 0, 1);
-      obj = obj.addVariable('abs_delta_sin_slack', 'C', [1, obj.nsteps-1], 0, 1);
-      obj = obj.addInitialSinCosConstraints();
+    % function obj = addSmallRelativeAngleRotation(obj, use_symbolic)
+    %   error('these constraints turned out to be backwards, so this approach doesn''t work yet -rdeits');
+    %   obj = obj.addVariable('sin_is_positive', 'B', [1, obj.nsteps], 0, 1);
+    %   obj = obj.addVariable('cos_is_positive', 'B', [1, obj.nsteps], 0, 1);
+    %   obj = obj.addVariable('abs_delta_cos', 'C', [1, obj.nsteps-1], 0, 1);
+    %   obj = obj.addVariable('abs_delta_sin', 'C', [1, obj.nsteps-1], 0, 1);
+    %   obj = obj.addVariable('abs_delta_theta', 'C', [1, obj.nsteps-1], 0, pi);
+    %   obj = obj.addVariable('abs_sin', 'C', [1, obj.nsteps-1], 0, 1);
+    %   obj = obj.addVariable('abs_cos', 'C', [1, obj.nsteps-1], 0, 1);
+    %   obj = obj.addVariable('cos_yaw', 'C', [1, obj.nsteps], -1, 1);
+    %   obj = obj.addVariable('sin_yaw', 'C', [1, obj.nsteps], -1, 1);
+    %   obj = obj.addVariable('abs_delta_cos_slack', 'C', [1, obj.nsteps-1], 0, 1);
+    %   obj = obj.addVariable('abs_delta_sin_slack', 'C', [1, obj.nsteps-1], 0, 1);
+    %   obj = obj.addInitialSinCosConstraints();
 
-      if use_symbolic
-        assert(obj.using_symbolic);
-        abs_delta_cos = obj.vars.abs_delta_cos.symb;
-        abs_delta_sin = obj.vars.abs_delta_sin.symb;
-        abs_delta_cos_slack = obj.vars.abs_delta_cos_slack.symb;
-        abs_delta_sin_slack = obj.vars.abs_delta_sin_slack.symb;
-        abs_delta_theta = obj.vars.abs_delta_theta.symb;
-        sin_is_positive = obj.vars.sin_is_positive.symb;
-        cos_is_positive = obj.vars.cos_is_positive.symb;
-        yaw = obj.vars.footsteps.symb(4,:);
-        cos_yaw = obj.vars.cos_yaw.symb;
-        sin_yaw = obj.vars.sin_yaw.symb;
-        abs_sin = obj.vars.abs_sin.symb;
-        abs_cos = obj.vars.abs_cos.symb;
-        for j = 2:obj.nsteps
-          obj.symbolic_constraints = [obj.symbolic_constraints,...
-            implies(sin_is_positive(j-1), sin_yaw(j-1) == abs_sin(j-1)),...
-            implies(~sin_is_positive(j-1), sin_yaw(j-1) == -abs_sin(j-1)),...
-            implies(cos_is_positive(j-1), cos_yaw(j-1) == abs_cos(j-1)),...
-            implies(~cos_is_positive(j-1), cos_yaw(j-1) == -abs_cos(j-1)),...
-            ];
-          if obj.seed_plan.footsteps(j).frame_id == obj.biped.foot_frame_id.right
-            obj.symbolic_constraints = [obj.symbolic_constraints, ...
-              abs_delta_theta(j-1) == -(yaw(j) - yaw(j-1)),...
-              implies(sin_is_positive(j-1), abs_delta_cos(j-1) == cos_yaw(j) - cos_yaw(j-1)),...
-              implies(~sin_is_positive(j-1), abs_delta_cos(j-1) == -(cos_yaw(j) - cos_yaw(j-1))),...
-              implies(cos_is_positive(j-1), abs_delta_sin(j-1) == -(sin_yaw(j) - sin_yaw(j-1))),...
-              implies(~cos_is_positive(j-1), abs_delta_sin(j-1) == sin_yaw(j) - sin_yaw(j-1)),...
-              ];
-          else
-            obj.symbolic_constraints = [obj.symbolic_constraints,...
-              abs_delta_theta(j-1) == (yaw(j) - yaw(j-1)),...
-              implies(sin_is_positive(j-1), abs_delta_cos(j-1) == -(cos_yaw(j) - cos_yaw(j-1))),...
-              implies(~sin_is_positive(j-1), abs_delta_cos(j-1) == (cos_yaw(j) - cos_yaw(j-1))),...
-              implies(cos_is_positive(j-1), abs_delta_sin(j-1) == (sin_yaw(j) - sin_yaw(j-1))),...
-              implies(~cos_is_positive(j-1), abs_delta_sin(j-1) == -(sin_yaw(j) - sin_yaw(j-1))),...
-              ];
-          end
-          obj.symbolic_constraints = [obj.symbolic_constraints,...
-            abs_delta_cos(j-1) >= abs_delta_cos_slack(j-1) * abs_delta_cos_slack(j-1);
-            abs_delta_sin(j-1) >= abs_delta_sin_slack(j-1) * abs_delta_sin_slack(j-1);
-            rcone(abs_delta_cos_slack(j-1), abs_delta_theta(j-1)/2, abs_sin(j-1)),...
-            rcone(abs_delta_sin_slack(j-1), abs_delta_theta(j-1)/2, abs_cos(j-1)),...
-            cone([cos_yaw(j) - cos_yaw(j-1); sin_yaw(j) - sin_yaw(j-1)], abs_delta_theta(j-1)),...
-            cone([cos_yaw(j); sin_yaw(j)], 1),...
-            ];
-        end
-      else
-        error('not implemented');
-      end
-    end
+    %   if use_symbolic
+    %     assert(obj.has_symbolic);
+    %     abs_delta_cos = obj.vars.abs_delta_cos.symb;
+    %     abs_delta_sin = obj.vars.abs_delta_sin.symb;
+    %     abs_delta_cos_slack = obj.vars.abs_delta_cos_slack.symb;
+    %     abs_delta_sin_slack = obj.vars.abs_delta_sin_slack.symb;
+    %     abs_delta_theta = obj.vars.abs_delta_theta.symb;
+    %     sin_is_positive = obj.vars.sin_is_positive.symb;
+    %     cos_is_positive = obj.vars.cos_is_positive.symb;
+    %     yaw = obj.vars.footsteps.symb(4,:);
+    %     cos_yaw = obj.vars.cos_yaw.symb;
+    %     sin_yaw = obj.vars.sin_yaw.symb;
+    %     abs_sin = obj.vars.abs_sin.symb;
+    %     abs_cos = obj.vars.abs_cos.symb;
+    %     for j = 2:obj.nsteps
+    %       obj.symbolic_constraints = [obj.symbolic_constraints,...
+    %         implies(sin_is_positive(j-1), sin_yaw(j-1) == abs_sin(j-1)),...
+    %         implies(~sin_is_positive(j-1), sin_yaw(j-1) == -abs_sin(j-1)),...
+    %         implies(cos_is_positive(j-1), cos_yaw(j-1) == abs_cos(j-1)),...
+    %         implies(~cos_is_positive(j-1), cos_yaw(j-1) == -abs_cos(j-1)),...
+    %         ];
+    %       if obj.seed_plan.footsteps(j).frame_id == obj.biped.foot_frame_id.right
+    %         obj.symbolic_constraints = [obj.symbolic_constraints, ...
+    %           abs_delta_theta(j-1) == -(yaw(j) - yaw(j-1)),...
+    %           implies(sin_is_positive(j-1), abs_delta_cos(j-1) == cos_yaw(j) - cos_yaw(j-1)),...
+    %           implies(~sin_is_positive(j-1), abs_delta_cos(j-1) == -(cos_yaw(j) - cos_yaw(j-1))),...
+    %           implies(cos_is_positive(j-1), abs_delta_sin(j-1) == -(sin_yaw(j) - sin_yaw(j-1))),...
+    %           implies(~cos_is_positive(j-1), abs_delta_sin(j-1) == sin_yaw(j) - sin_yaw(j-1)),...
+    %           ];
+    %       else
+    %         obj.symbolic_constraints = [obj.symbolic_constraints,...
+    %           abs_delta_theta(j-1) == (yaw(j) - yaw(j-1)),...
+    %           implies(sin_is_positive(j-1), abs_delta_cos(j-1) == -(cos_yaw(j) - cos_yaw(j-1))),...
+    %           implies(~sin_is_positive(j-1), abs_delta_cos(j-1) == (cos_yaw(j) - cos_yaw(j-1))),...
+    %           implies(cos_is_positive(j-1), abs_delta_sin(j-1) == (sin_yaw(j) - sin_yaw(j-1))),...
+    %           implies(~cos_is_positive(j-1), abs_delta_sin(j-1) == -(sin_yaw(j) - sin_yaw(j-1))),...
+    %           ];
+    %       end
+    %       obj.symbolic_constraints = [obj.symbolic_constraints,...
+    %         abs_delta_cos(j-1) >= abs_delta_cos_slack(j-1) * abs_delta_cos_slack(j-1);
+    %         abs_delta_sin(j-1) >= abs_delta_sin_slack(j-1) * abs_delta_sin_slack(j-1);
+    %         rcone(abs_delta_cos_slack(j-1), abs_delta_theta(j-1)/2, abs_sin(j-1)),...
+    %         rcone(abs_delta_sin_slack(j-1), abs_delta_theta(j-1)/2, abs_cos(j-1)),...
+    %         cone([cos_yaw(j) - cos_yaw(j-1); sin_yaw(j) - sin_yaw(j-1)], abs_delta_theta(j-1)),...
+    %         cone([cos_yaw(j); sin_yaw(j)], 1),...
+    %         ];
+    %     end
+    %   else
+    %     error('not implemented');
+    %   end
+    % end
 
     function plan = getFootstepPlan(obj)
+      % Solve the problem if needed and retrieve a footstep plan with the corresponding solution.
       if ~isfield(obj.vars.footsteps, 'value')
         obj = obj.solve();
       end
