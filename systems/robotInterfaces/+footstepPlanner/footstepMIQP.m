@@ -1,4 +1,4 @@
-function [plan, seed, solvertime] = footstepMIQP(biped, seed_plan, weights, goal_pos)
+function [plan, seed, solvertime] = footstepMIQP(biped, seed_plan, weights, goal_pos, ~)
 % Run the Mixed Integer Quadratic Program form of the footstep planning problem.
 % This form can efficiently choose the assignment of individual foot positions to
 % safe (obstacle-free) regions, but always keeps the yaw value of every foot
@@ -235,10 +235,10 @@ else
 end
 
 result = gurobi(model, params);
-solvertime = result.runtime;
 if strcmp(result.status, 'INFEASIBLE') || strcmp(result.status, 'INF_OR_UNBD')
   error('Drake:MixedIntegerConvexProgram:InfeasibleProblem', 'The problem is infeasible');
 end
+solvertime = result.runtime;
 xstar = result.x;
 steps = xstar(x_ndx);
 steps = [steps(1:3,:); zeros(2, size(steps, 2)); steps(4,:)];

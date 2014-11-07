@@ -66,18 +66,21 @@ end
 
 figure(1)
 h = subplot(2, 3, 1);
-test_solver(@footstepPlanner.fixedRotation, h, 'miqp');
+test_solver(@footstepPlanner.footstepMIQP, h, 'miqp');
 drawnow()
 h = subplot(2, 3, 2);
-test_solver(@footstepPlanner.alternatingMIQP, h, 'alternating miqp');
+test_solver(@footstepPlanner.fixedRotation, h, 'fixedRotation');
 drawnow()
 h = subplot(2, 3, 3);
-test_solver(@footstepPlanner.linearUnitCircle, h, 'linear unit circle');
+test_solver(@footstepPlanner.alternatingMIQP, h, 'alternating miqp');
 drawnow()
 h = subplot(2, 3, 4);
+test_solver(@footstepPlanner.linearUnitCircle, h, 'linear unit circle');
+drawnow()
+h = subplot(2, 3, 5);
 test_solver(@footstepPlanner.humanoids2014, h, 'humanoids2014');
 drawnow();
-h = subplot(2, 3, 5);
+h = subplot(2, 3, 6);
 test_solver(@footstepPlanner.dev.relaxedMISOCP, h, 'relaxedMISOCP');
 drawnow();
 end

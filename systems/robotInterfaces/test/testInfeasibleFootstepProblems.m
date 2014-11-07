@@ -68,6 +68,7 @@ function test_solver(solver)
   end
 end
 
+test_solver(@footstepPlanner.footstepMIQP);
 test_solver(@footstepPlanner.fixedRotation);
 test_solver(@footstepPlanner.alternatingMIQP);
 test_solver(@footstepPlanner.linearUnitCircle);
