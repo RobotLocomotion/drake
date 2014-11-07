@@ -1,4 +1,4 @@
-
+checkDependency('yalmip');
 expr = {};
 ths = linspace(0, 2*pi, 17);
 ths = ths(1:end-1);

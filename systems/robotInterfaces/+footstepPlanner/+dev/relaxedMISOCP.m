@@ -1,4 +1,4 @@
-function [plan, seed, solvertime] = footstepRelaxedMISOCP(biped, seed_plan, weights, goal_pos, ~)
+function [plan, solvertime] = relaxedMISOCP(biped, seed_plan, weights, goal_pos, ~)
 % This implementation uses a mixed-integer SOCP to plan the number of footsteps to take,
 % the position and yaw of those steps, and the assignments of footsteps to
 % convex regions of obstacle-free terrain. 
