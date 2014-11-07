@@ -1,4 +1,19 @@
 function [plan, solvertime] = fixedRotation(biped, seed_plan, weights, goal_pos, use_symbolic)
+% Run the Mixed Integer Quadratic Program form of the footstep planning problem.
+% This form can efficiently choose the assignment of individual foot positions to
+% safe (obstacle-free) regions, but always keeps the yaw value of every foot
+% fixed.
+%
+% The structure of the desired footstep plan is indicated by the seed plan.
+% @param seed_plan a FootstepPlan object which specifies the structure of the
+%                  desired footstep plan. This seed_plan must contain a
+%                  list of Footsteps and the region_order of matching length,
+%                  but undetermined footstep positions and region assignments
+%                  can be NaN. The first two footstep poses must not be NaN,
+%                  since they correspond to the current positions of the feet
+% @retval plan a FootstepPlan matching the number of footsteps, frame_id, etc.
+%              of the seed plan, but with the footstep positions and region_order
+%              replaced by the results of the MIQP
 
 if nargin < 5
   use_symbolic = 0;
@@ -39,7 +54,8 @@ if (use_symbolic == 0 || use_symbolic == 2)
 end
 
 if use_symbolic == 2
-  valuecheck(p2.vars.footsteps.value, p1.vars.footsteps.value, 1e-2);
+  valuecheck(p2.vars.footsteps.value(1:3,:), p1.vars.footsteps.value(1:3,:), 1e-2);
+  valuecheck(p2.vars.footsteps.value(4,:), p1.vars.footsteps.value(4,:), pi/64);
   figure(21)
   clf
   hold on
@@ -49,7 +65,10 @@ if use_symbolic == 2
   ylim([-1.1,1.1])
   axis equal
 
-  plan3 = footstepMIQP(biped, seed_plan, weights, goal_pos);
-  valuecheck(plan.step_matrix(), plan3.step_matrix(), 1e-2);
+  plan3 = footstepPlanner.footstepMIQP(biped, seed_plan, weights, goal_pos);
+  plan3steps = plan3.step_matrix();
+  plansteps = plan.step_matrix();
+  valuecheck(plansteps(1:3,:), plan3steps(1:3,:), 1e-2);
+  valuecheck(plansteps(6,:), plan3steps(6,:), pi/64);
 end
 

@@ -3,6 +3,9 @@ function [plan, seed, solvertime] = footstepMIQP(biped, seed_plan, weights, goal
 % This form can efficiently choose the assignment of individual foot positions to
 % safe (obstacle-free) regions, but always keeps the yaw value of every foot
 % fixed.
+% 
+% Note: this planner will soon be replaced by footstepPlanner.fixedRotation(), which 
+% should produce the same results but uses a more consistent internal structure.
 %
 % The structure of the desired footstep plan is indicated by the seed plan.
 % @param seed_plan a FootstepPlan object which specifies the structure of the

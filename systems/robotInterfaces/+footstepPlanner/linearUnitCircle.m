@@ -41,7 +41,8 @@ if (use_symbolic == 0 || use_symbolic == 2)
 end
 
 if use_symbolic == 2
-  valuecheck(p2.vars.footsteps.value, p1.vars.footsteps.value, 1e-2);
+  valuecheck(p2.vars.footsteps.value(1:3,:), p1.vars.footsteps.value(1:3,:), 1e-2);
+  valuecheck(p2.vars.footsteps.value(4,:), p1.vars.footsteps.value(4,:), pi/64);
   figure(21)
   clf
   hold on

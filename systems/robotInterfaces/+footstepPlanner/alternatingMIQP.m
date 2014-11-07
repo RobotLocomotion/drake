@@ -1,5 +1,5 @@
 function [plan, solvertime] = alternatingMIQP(obj, plan, weights, goal_pos, ~)
-%footstepAlternatingMIQP plan footsteps by alternating between an MIQP (to
+% footstepPlanner.alternatingMIQP plan footsteps by alternating between an MIQP (to
 % assign steps to safe regions and determine total number of steps) and an
 % NLP (to find the orientations of the steps)
 % @param plan a blank footstep plan, provinding the structure of the

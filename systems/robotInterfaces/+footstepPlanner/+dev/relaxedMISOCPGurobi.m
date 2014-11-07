@@ -1,4 +1,4 @@
-function [plan, v, solvertime] = footstepRelaxedMISOCPGurobi(biped, seed_plan, weights, goal_pos, v_seed)
+function [plan, solvertime] = relaxedMISOCPGurobi(biped, seed_plan, weights, goal_pos, v_seed)
 t0 = tic();
 checkDependency('gurobi');
 seed_plan.sanity_check();
