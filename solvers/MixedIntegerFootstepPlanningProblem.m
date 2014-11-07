@@ -898,7 +898,7 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
         error('Drake:MixedIntegerFootstepPlanningProblem:NaNsInYaw', 'Cannot handle NaNs in seed step yaws. You can call fixRotation() to set these yaw values correctly');
       end
       for j = 3:obj.nsteps
-        R = [rotmat(yaw(j-1)), zeros(2,2); zeros(2,2), eye(2)];
+        R = [rotmat(-yaw(j-1)), zeros(2,2); zeros(2,2), eye(2)];
         [A_reach, b_reach] = obj.biped.getReachabilityPolytope(obj.seed_plan.footsteps(j-1).frame_id, obj.seed_plan.footsteps(j).frame_id, obj.seed_plan.params);
         A_reach = A_reach(:,obj.pose_indices);
         Ai = zeros(size(A_reach, 1), obj.nv);

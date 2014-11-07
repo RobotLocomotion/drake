@@ -47,7 +47,7 @@ sizecheck(goal_pos.left, [6,1]);
 if isempty(safe_regions)
   n = rpy2rotmat(start_pos.right(4:6)) * [0;0;1];
   pt = start_pos.right(1:3);
-  safe_regions = [struct('A', zeros(0,3), 'b', zeros(0,1), 'point', pt, 'normal', n)];
+  safe_regions = struct('A', zeros(0,3), 'b', zeros(0,1), 'point', pt, 'normal', n);
 end
 for j = 1:length(safe_regions)
   sizecheck(safe_regions(j).A, [NaN, 3]);
