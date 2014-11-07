@@ -294,8 +294,25 @@ classdef MultiCoordinateFrame < CoordinateFrame
     end
     
     function obj = appendFrame(obj,new_subframe)
+      old_me = obj;
       newframes = obj.frame; newframes{end+1} = new_subframe;
       obj = obj.constructFrame(newframes);
+      obj.frame_id(1:end-new_subframe.dim) = old_me.frame_id;
+      obj.coord_ids(1:end-1) = old_me.coord_ids;
+      % Make sure the vectors are all facing the same way...
+      % In the drakeAtlasSimul case this was actually a problem...
+      % maybe the frame coord_ids as initialized within Atlas
+      % somewhere were set up as 1xN? MultiCoordFrame seems to 
+      % generate Nx1 natively. But only 1xN is working for
+      % later frame generation... I need to figure this out :P
+      for i=1:length(obj.coord_ids)
+        vec = obj.coord_ids{i};
+        obj.coord_ids{i} = vec(:).';
+      end
+%       obj.frame{end+1} = new_subframe;
+%       obj.frame_id(end+1:end+new_subframe.dim) = length(obj.frame);
+%       obj.coord_ids{end+1} = length(obj.frame_id)-new_subframe.dim+1:length(obj.frame_id);
+      %
     end
     
     function str = getCoordinateName(obj,i)
