@@ -37,12 +37,14 @@ if nargin < 5
   use_symbolic = 0;
 end
 
+nsteps = length(seed_plan.footsteps);
+
 if use_symbolic
-  nsteps = length(seed_plan.footsteps);
   t0 = tic();
   p1 = MixedIntegerFootstepPlanningProblem(biped, seed_plan, true);
   p1.weights = weights;
   p1 = p1.addSinCosLinearEquality(true);
+  % p1 = p1.addOuterUnitCircleEquality(8, true);
   p1 = p1.addQuadraticRelativeObjective(true);
   p1 = p1.addZAndYawReachability(true);
   p1 = p1.addTrimToFinalPoses(true);
@@ -50,7 +52,7 @@ if use_symbolic
   p1 = p1.addTerrainRegions([], true);
   p1 = p1.addXYReachabilityCircles(true);
   fprintf(1, 'yalmip setup: %f\n', toc(t0));
-  [p1, ok, solvertime] = p1.solve();
+  [p1, solvertime] = p1.solve();
   fprintf(1, 'yalmip total: %f\n', toc(t0));
   plan = p1.getFootstepPlan();
 end
@@ -60,6 +62,7 @@ if (use_symbolic == 0 || use_symbolic == 2)
   p2 = MixedIntegerFootstepPlanningProblem(biped, seed_plan, false);
   p2.weights = weights;
   p2 = p2.addSinCosLinearEquality(false);
+  % p2 = p2.addOuterUnitCircleEquality(8, false);
   p2 = p2.addQuadraticRelativeObjective(false);
   p2 = p2.addZAndYawReachability(false);
   p2 = p2.addTrimToFinalPoses(false);
@@ -67,7 +70,7 @@ if (use_symbolic == 0 || use_symbolic == 2)
   p2 = p2.addTerrainRegions([], false);
   p2 = p2.addXYReachabilityCircles(false);
   fprintf(1, 'gurobi setup: %f\n', toc(t0));
-  [p2, ok, solvertime] = p2.solve();
+  [p2, solvertime] = p2.solve();
   fprintf(1, 'gurobi total: %f\n', toc(t0));
   plan = p2.getFootstepPlan();
 end

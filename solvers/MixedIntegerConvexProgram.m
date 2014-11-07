@@ -216,21 +216,25 @@ classdef MixedIntegerConvexProgram
       obj = obj.addLinearConstraints(A, b, [], []);
     end
 
-    function [obj, ok, solvertime] = solve(obj)
+    function [obj, solvertime] = solve(obj)
       if obj.using_symbolic
-        [obj, ok, solvertime] = obj.solveYalmip();
+        [obj, solvertime] = obj.solveYalmip();
       else
-        [obj, ok, solvertime] = obj.solveGurobi();
+        [obj, solvertime] = obj.solveGurobi();
       end
     end
 
-    function [obj, ok, solvertime] = solveGurobi(obj, params)
+    function [obj, solvertime] = solveGurobi(obj, params)
       if nargin < 2
         params = struct();
       end
+      params = applyDefaults(params, struct('outputflag', 0));
       model = obj.getGurobiModel();
       result = gurobi(model, params);
       ok = ~(strcmp(result.status, 'INFEASIBLE') || strcmp(result.status, 'INF_OR_UNBD'));
+      if ~ok
+        error('Drake:MixedIntegerConvexProgram:InfeasibleProblem', 'The mixed-integer problem is infeasible.');
+      end
       solvertime = result.runtime;
       obj = obj.extractResult(result.x);
     end
@@ -285,7 +289,7 @@ classdef MixedIntegerConvexProgram
       end
     end
 
-    function [obj, ok, solvertime] = solveYalmip(obj)
+    function [obj, solvertime] = solveYalmip(obj)
       constraints = obj.symbolic_constraints;
       objective = obj.symbolic_objective;
 
@@ -314,8 +318,11 @@ classdef MixedIntegerConvexProgram
           polycone(obj.symbolic_vars(obj.polycones(j).index(2:end)), obj.symbolic_vars(obj.polycones(j).index(1)), obj.polycones(j).N)];
       end
 
-      diagnostics = optimize(constraints, objective, sdpsettings('solver', 'gurobi'))
+      diagnostics = optimize(constraints, objective, sdpsettings('solver', 'gurobi', 'verbose', 0));
       ok = diagnostics.problem == 0;
+      if ~ok
+        error('Drake:MixedIntegerConvexProgram:InfeasibleProblem', 'The mixed-integer problem is infeasible.');
+      end
       solvertime = diagnostics.solvertime;
       obj = obj.extractResult(double(obj.symbolic_vars));
     end
