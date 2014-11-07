@@ -115,7 +115,7 @@ classdef Constraint
         varargout{1} = obj.constraintEval(varargin{:});
       else
         % special casing 'user' to avoid geval for speed reasons
-        varargout=cell(1,nargout);
+        varargout=cell(1,max(nargout,1));
         if (isempty(obj.grad_method) && nargout<=obj.grad_level+1) ...
             || strcmp(obj.grad_method,'user')
           [varargout{:}] = obj.constraintEval(varargin{:});
