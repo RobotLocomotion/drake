@@ -23,8 +23,9 @@ foot_orig = struct('right', [0;-0.15;0;0;0;0], 'left', [0;0.15;0;0;0;0]);
 
 safe_regions = struct('A', {}, 'b', {}, 'point', {}, 'normal', {});
 n_regions = 10;
-lb = [0;-.2;-0.05];
-ub = [2;2.2;0.05];
+z = (rand() - 0.5) * 2 * 0.05;
+lb = [0;-.2;z];
+ub = [2;2.2;z];
 stone_scale = .3;
 if 1
   stones = [0;-0.15;0];
@@ -74,7 +75,7 @@ function test_solver(solver, h, t)
   seed_plan = FootstepPlan.blank_plan(r, nsteps, [r.foot_frame_id.right, r.foot_frame_id.left], params, safe_regions);
   seed_plan.footsteps(1).pos = foot_orig.right;
   seed_plan.footsteps(2).pos = foot_orig.left;
-  [plan, ~, solvertime] = solver(r, seed_plan, weights, goal_pos);
+  [plan, solvertime] = solver(r, seed_plan, weights, goal_pos, 2);
 
   axes(h);
   cla(h);
@@ -104,10 +105,14 @@ figure(1)
 % h = subplot(2, 3, 2)
 % test_solver(@footstepAlternatingMIQP, h, 'alternating miqp');
 % drawnow()
-h = subplot(2, 3, 3)
-params.rot_mode = 'sincos_linear';
-test_solver(@footstepProgram, h, 'humanoids2014');
+h = subplot(2, 3, 3);
+test_solver(@footstepPlanner.linearUnitCircle, h, 'linear unit circle');
 drawnow()
+h = subplot(2, 3, 4);
+test_solver(@footstepPlanner.humanoids2014, h, 'humanoids2014');
+% h = subplot(2, 3, 4)
+% test_solver(@footstepSmallAngle, h, 'humanoids2014');
+% drawnow()
 % h = subplot(2, 3, 4)
 % params.rot_mode = 'circle_linear_eq';
 % test_solver(@footstepMISOCP, h, 'humanoids2014 circle eq');

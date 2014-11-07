@@ -33,8 +33,6 @@ if ~isfield(options, 'method_handle'); options.method_handle = @footstepAlternat
 if ~isfield(options, 'step_params'); options.step_params = struct(); end
 options.step_params = obj.applyDefaultFootstepParams(options.step_params);
 
-persistent seed;
-
 if isnumeric(start_pos_or_q)
   start_pos = obj.feetPosition(start_pos_or_q);
 else
@@ -86,8 +84,7 @@ start_pos.left(4:5) = 0;
 
 weights = getFootstepOptimizationWeights(obj);
 
-[plan, ~, solvertime] = options.method_handle(obj, plan, weights, goal_pos);
-% seed = new_seed;
+[plan, solvertime] = options.method_handle(obj, plan, weights, goal_pos);
 
 end
 
