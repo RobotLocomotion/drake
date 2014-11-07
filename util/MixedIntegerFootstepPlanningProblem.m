@@ -517,6 +517,10 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
     end
 
     function obj = addTrimToFinalPoses(obj, use_symbolic)
+      if obj.nsteps <= 3
+        % Only one step to take, no point in trimming
+        return
+      end
       obj = obj.addVariable('trim', 'B', [1, obj.nsteps], 0, 1);
       w_trim = obj.weights.relative(1) * (obj.seed_plan.params.nom_forward_step^2);
       min_num_steps = max([obj.seed_plan.params.min_num_steps + 2, 3]);
@@ -537,7 +541,7 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
             obj.symbolic_constraints = [obj.symbolic_constraints, implies(trim(j), x(:,j) == x(:,end))];
           end
         end
-        obj.symbolic_objective = obj.symbolic_objective - w_trim * sum(trim);
+        obj.symbolic_objective = obj.symbolic_objective - w_trim * sum(trim) + w_trim * obj.nsteps;
       else
         obj.vars.trim.lb(end-1:end) = 1;
         obj.vars.trim.ub(end-1:end) = 1;
@@ -567,21 +571,25 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
             k = obj.nsteps;
           end
           % x(:,j) - x(:,k) <= M(1-trim(j))
-          Ai(offset+(1:4), obj.vars.footsteps.i(:,j)) = eye(4);
-          Ai(offset+(1:4), obj.vars.footsteps.i(:,k)) = -eye(4);
+          Ai(offset+(1:4), obj.vars.footsteps.i(:,j)) = speye(4);
+          Ai(offset+(1:4), obj.vars.footsteps.i(:,k)) = -speye(4);
           Ai(offset+(1:4), obj.vars.trim.i(j)) = M;
           bi(offset+(1:4)) = M;
           offset = offset + 4;
 
           % x(:,j) - x(:,k) >= -M(1-trim(j))
-          Ai(offset+(1:4), obj.vars.footsteps.i(:,j)) = -eye(4);
-          Ai(offset+(1:4), obj.vars.footsteps.i(:,k)) = eye(4);
+          Ai(offset+(1:4), obj.vars.footsteps.i(:,j)) = -speye(4);
+          Ai(offset+(1:4), obj.vars.footsteps.i(:,k)) = speye(4);
           Ai(offset+(1:4), obj.vars.trim.i(j)) = M;
           bi(offset+(1:4)) = M;
           offset = offset + 4;
         end
         obj = obj.addLinearConstraints(Ai, bi, [], []);
         assert(offset == expected_offset);
+
+        c = zeros(obj.nv, 1);
+        c(obj.vars.trim.i) = -w_trim;
+        obj = obj.addCost([], c, w_trim * obj.nsteps);
       end
     end
 
@@ -590,7 +598,7 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
         assert(obj.using_symbolic);
         x = obj.vars.footsteps.symb;
         for j = 3:obj.nsteps
-          R = [obj.vars.cos_yaw.symb(j-1), obj.vars.sin_yaw.symb(j-1); 
+          R = [obj.vars.cos_yaw.symb(j-1), -obj.vars.sin_yaw.symb(j-1); 
                obj.vars.sin_yaw.symb(j-1), obj.vars.cos_yaw.symb(j-1)];
           if j == obj.nsteps
             w_rel = diag(obj.weights.relative_final(obj.pose_indices));
@@ -607,7 +615,61 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
           obj.symbolic_objective = obj.symbolic_objective + err' * w_rel * err;
         end
       else
-        error('not implemented');
+        Qi = sparse(obj.nv, obj.nv);
+        for j = 3:obj.nsteps
+          if j == obj.nsteps
+            w_rel = obj.weights.relative_final(obj.pose_indices);
+          else
+            w_rel = obj.weights.relative(obj.pose_indices);
+          end
+          if obj.seed_plan.footsteps(j-1).frame_id == obj.biped.foot_frame_id.right
+            nom = [0; obj.seed_plan.params.nom_step_width];
+          else
+            nom = [0; -obj.seed_plan.params.nom_step_width];
+          end
+          assert(nom(1) == 0, 'I have hard-coded the assumption that nom(1) == 0. You can set use_symbolic=true if you want a non-zero value');
+          Qnew = [...
+            obj.vars.footsteps.i(1:2,j), obj.vars.footsteps.i(1:2,j), w_rel(1:2);
+            obj.vars.footsteps.i(1:2,j-1), obj.vars.footsteps.i(1:2,j-1), w_rel(1:2);
+            obj.vars.footsteps.i(1:2,j), obj.vars.footsteps.i(1:2,j-1), -w_rel(1:2);
+            obj.vars.footsteps.i(1:2,j-1), obj.vars.footsteps.i(1:2,j), -w_rel(1:2);
+            obj.vars.sin_yaw.i(j-1), obj.vars.sin_yaw.i(j-1), w_rel(1) * nom(2)^2;
+            obj.vars.cos_yaw.i(j-1), obj.vars.cos_yaw.i(j-1), w_rel(2) * nom(2)^2;
+            obj.vars.footsteps.i(1,j), obj.vars.sin_yaw.i(j-1), w_rel(1) * nom(2);
+            obj.vars.sin_yaw.i(j-1), obj.vars.footsteps.i(1,j), w_rel(1) * nom(2);
+            obj.vars.footsteps.i(2,j), obj.vars.cos_yaw.i(j-1), -w_rel(2) * nom(2);
+            obj.vars.cos_yaw.i(j-1), obj.vars.footsteps.i(2,j), -w_rel(2) * nom(2);
+            obj.vars.footsteps.i(1,j-1), obj.vars.sin_yaw.i(j-1), -w_rel(1) * nom(2);
+            obj.vars.sin_yaw.i(j-1), obj.vars.footsteps.i(1,j-1), -w_rel(1) * nom(2);
+            obj.vars.footsteps.i(2,j-1), obj.vars.cos_yaw.i(j-1), w_rel(2) * nom(2);
+            obj.vars.cos_yaw.i(j-1), obj.vars.footsteps.i(2,j-1), w_rel(2) * nom(2);
+            obj.vars.footsteps.i(3:4,j), obj.vars.footsteps.i(3:4,j), w_rel(3:4);
+            obj.vars.footsteps.i(3:4,j-1), obj.vars.footsteps.i(3:4,j), -w_rel(3:4);
+            obj.vars.footsteps.i(3:4,j), obj.vars.footsteps.i(3:4,j-1), -w_rel(3:4);
+            obj.vars.footsteps.i(3:4,j-1), obj.vars.footsteps.i(3:4,j-1), w_rel(3:4);
+            ];
+
+          Qnew = sparse(Qnew(:,1), Qnew(:,2), Qnew(:,3), obj.nv, obj.nv);
+          for k = 1:10
+            x1 = rand(4,1);
+            x2 = rand(4,1);
+            sy = rand();
+            cy = rand();
+            X = zeros(obj.nv, 1);
+            X(obj.vars.footsteps.i(:,j-1)) = x1;
+            X(obj.vars.footsteps.i(:,j)) = x2;
+            X(obj.vars.sin_yaw.i(j-1)) = sy;
+            X(obj.vars.cos_yaw.i(j-1)) = cy;
+            err = (x2 - [x1(1:2) + [cy, -sy; sy, cy] * nom; x1(3:4)]);
+            O_des = err' * diag(w_rel) * err;
+            O_actual = X' * Qnew * X;
+            valuecheck(O_des, O_actual);
+          end
+
+
+          Qi = Qi + Qnew;
+        end
+        obj = obj.addCost(Qi, [], []);
       end
     end
 
