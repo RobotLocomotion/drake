@@ -29,7 +29,7 @@ function [plan, solvertime] = planFootsteps(obj, start_pos_or_q, goal_pos, safe_
 
 if nargin < 5; options = struct(); end
 if nargin < 4; safe_regions = []; end
-if ~isfield(options, 'method_handle'); options.method_handle = @footstepAlternatingMIQP; end
+if ~isfield(options, 'method_handle'); options.method_handle = @footstepPlanner.humanoids2014; end
 if ~isfield(options, 'step_params'); options.step_params = struct(); end
 options.step_params = obj.applyDefaultFootstepParams(options.step_params);
 
@@ -84,7 +84,15 @@ start_pos.left(4:5) = 0;
 
 weights = getFootstepOptimizationWeights(obj);
 
-[plan, solvertime] = options.method_handle(obj, plan, weights, goal_pos);
+try
+  [plan, solvertime] = options.method_handle(obj, plan, weights, goal_pos);
+catch e
+  if strcmp(e.identifier, 'Drake:MixedIntegerConvexProgram:InfeasibleProblem')
+    warning('The footstep planning problem is infeasible. Returning just the initial footstep poses');
+    plan = plan.slice(1:2);
+    solvertime = 0;
+  end
+end
 
 end
 

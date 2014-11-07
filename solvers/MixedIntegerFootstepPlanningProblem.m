@@ -979,10 +979,7 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
 
     function plan = getFootstepPlan(obj)
       if ~isfield(obj.vars.footsteps, 'value')
-        [obj, ok, ~] = obj.solve();
-        if ~ok
-          error('Drake:FootstepPlanner:InfeasibleProblem', 'The footstep planning problem is infeasible');
-        end
+        obj = obj.solve();
       end
       steps = zeros(6, obj.nsteps);
       steps(obj.pose_indices, :) = obj.vars.footsteps.value;

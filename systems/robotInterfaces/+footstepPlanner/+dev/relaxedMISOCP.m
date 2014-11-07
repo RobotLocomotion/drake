@@ -246,6 +246,9 @@ end
 fprintf(1, 'setup: %f\n', toc(t0));
 t0 = tic;
 diagnostics = solvesdp(Constraints, Objective, sdpsettings('solver', 'gurobi', 'gurobi.MIPGap', 1e-4));
+if ~(diagnostics.problem == 0)
+  error('Drake:MixedIntegerConvexProgram:InfeasibleProblem', 'The problem is infeasible');
+end
 solvertime = diagnostics.solvertime;
 fprintf(1, 'solve: %f\n', toc(t0));
 

@@ -1,4 +1,5 @@
-function testFootstepSolvers()
+function testFootstepSolversNoRegions()
+% Test all the footstep planners with no mixed-integer safe region selection.
 
 checkDependency('gurobi');
 addpath(fullfile(getDrakePath, 'examples', 'Atlas'));
@@ -21,28 +22,13 @@ fp.xstar(3) = fp.xstar(3) + 0.50; % make sure we're not assuming z = 0
 z = (rand() - 0.5) * 2 * 0.05;
 foot_orig = struct('right', [0;-0.15;z;0;0;0], 'left', [0;0.15;z;0;0;0]);
 
-safe_regions = struct('A', {}, 'b', {}, 'point', {}, 'normal', {});
-n_regions = 10;
-lb = [0;-.2;z];
-ub = [2;2.2;z];
-stone_scale = .3;
-stones = [0;-0.15;z];
-[Ai, bi] = poly2lincon(stones(1) + stone_scale*[-1, -1, 1, 1],...
-                       stones(2) + stone_scale*[-1, 1, 1, -1]);
-Ai = [Ai, zeros(size(Ai, 1), 1)];
-safe_regions(end+1) = struct('A', Ai, 'b', bi, 'point', [0;0;stones(3)], 'normal', [0;0;1]);
-for j = 2:n_regions
-  stones(:,end+1) = rand(3,1) .* (ub - lb) + lb;
-  [Ai, bi] = poly2lincon(stones(1,end) + stone_scale*[-1, -1, 1, 1],...
-                         stones(2,end) + stone_scale*[-1, 1, 1, -1]);
-  Ai = [Ai, zeros(size(Ai, 1), 1)];
-  safe_regions(end+1) = struct('A', Ai, 'b', bi, 'point', [0;0;stones(3,end)], 'normal', [0;0;1]);
-end
+n = rpy2rotmat(foot_orig.right(4:6)) * [0;0;1];
+pt = foot_orig.right(1:3);
+safe_regions = struct('A', [1,0,0], 'b', 30, 'point', pt, 'normal', n);
+% safe_regions = struct('A', zeros(0,3), 'b', zeros(0,1), 'point', pt, 'normal', n);
 
 goal_pos = struct('right', [1+0.13;1;z;0;0;pi/2],...
                   'left',  [1-0.13;1;z;0;0;pi/2]);
-% goal_pos = struct('right', [1; 1-0.13; 0.1; 0; 0; 0],...
-%                   'left', [1; 1+0.13; 0.1; 0; 0; 0]);
 
 params = r.default_footstep_params;
 params.max_num_steps = 10;
@@ -72,11 +58,6 @@ function test_solver(solver, h, t)
   hold on
   quiver(h, steps(1,l_ndx), steps(2,l_ndx), cos(steps(6,l_ndx)), sin(steps(6,l_ndx)), 'r', 'AutoScaleFactor', 0.2)
   plot(steps(1,:), steps(2,:), 'k:')
-  for j = 1:size(stones, 2)
-    pts = [stones(1,j) + stone_scale*[-1, -1, 1, 1];
-             stones(2,j) + stone_scale*[-1, 1, 1, -1]];
-    patch(pts(1,:), pts(2,:), 'k', 'FaceAlpha', 0.2);
-  end
   axis equal
   xlim([-.25, 2.25])
   ylim([-.25, 2.25])
