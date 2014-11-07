@@ -249,6 +249,9 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
       obj = obj.addVariable('sin_sector', 'B', [length(sin_boundaries)-1, obj.nsteps], 0, 1);
       obj = obj.addInitialSinCosConstraints();
 
+      obj.vars.footsteps.lb(4,3:end) = min_yaw;
+      obj.vars.footsteps.ub(4,3:end) = max_yaw;
+
       if use_symbolic
         assert(obj.using_symbolic);
         cos_sector = obj.vars.cos_sector.symb;
@@ -260,7 +263,6 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
         obj.symbolic_constraints = [obj.symbolic_constraints,...
           sum(cos_sector, 1) == 1,...
           sum(sin_sector, 1) == 1,...
-          min_yaw <= yaw <= max_yaw,...
           polycone([cos_yaw; sin_yaw], norm([pi/4;pi/4]), 8),...
           ];
 
@@ -320,7 +322,133 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
           end
         end
       else
-        error('not implemented');
+        obj = obj.addVariable('unit_circle_slack', 'C', [1,1], norm([pi/4;pi/4]), norm([pi/4;pi/4]));
+        Aeq_s = zeros(obj.nsteps, obj.nv);
+        Aeq_c = zeros(obj.nsteps, obj.nv);
+        beq = ones(size(Aeq_s, 1), 1);
+        for j = 1:obj.nsteps
+          Aeq_c(j, obj.vars.cos_sector.i(:,j)) = 1;
+          Aeq_s(j, obj.vars.sin_sector.i(:,j)) = 1;
+        end
+        obj = obj.addLinearConstraints([], [], [Aeq_s; Aeq_c], [beq; beq]);
+        obj = obj.addPolyConesByIndex([repmat(obj.vars.unit_circle_slack.i, 1, obj.nsteps-2); obj.vars.cos_yaw.i(3:end); obj.vars.sin_yaw.i(3:end)], 8);
+
+        M = 2*pi;
+        Ai = zeros((obj.nsteps-2) * (length(cos_boundaries)-1 + length(sin_boundaries)-1) * 4, obj.nv);
+        bi = zeros(size(Ai, 1), 1);
+        offset = 0;
+        expected_offset = size(Ai, 1);
+        for s = 1:length(cos_boundaries)-1
+          th0 = cos_boundaries(s);
+          th1 = cos_boundaries(s+1);
+
+          th = (th0 + th1)/2;
+          cos_slope = -sin(th);
+          cos_intercept = cos(th) - (cos_slope * th);
+
+          for j = 3:obj.nsteps
+            % -yaw(j) <= -th0 + M(1-cos_sector(s,j))
+            Ai(offset+1, obj.vars.footsteps.i(4,j)) = -1;
+            Ai(offset+1, obj.vars.cos_sector.i(s,j)) = M;
+            bi(offset+1) = -th0 + M;
+            % yaw(j) <= th1 + M(1-cos_sector(s,j))
+            Ai(offset+2, obj.vars.footsteps.i(4,j)) = 1;
+            Ai(offset+2, obj.vars.cos_sector.i(s,j)) = M;
+            bi(offset+2) = th1 + M;
+            offset = offset + 2;
+
+            % cos_yaw(j) <= cos_slope * yaw(j) + cos_intercept + M(1-cos_sector(s,j))
+            Ai(offset+1, obj.vars.cos_yaw.i(j)) = 1;
+            Ai(offset+1, obj.vars.footsteps.i(4,j)) = -cos_slope;
+            Ai(offset+1, obj.vars.cos_sector.i(s,j)) = M;
+            bi(offset+1) = cos_intercept + M;
+            % cos_yaw(j) >= cos_slope * yaw(j) + cos_intercept - M(1-cos_sector(s,j))
+            Ai(offset+2, obj.vars.cos_yaw.i(j)) = -1;
+            Ai(offset+2, obj.vars.footsteps.i(4,j)) = cos_slope;
+            Ai(offset+2, obj.vars.cos_sector.i(s,j)) = M;
+            bi(offset+2) = -cos_intercept + M;
+            offset = offset + 2;
+          end
+        end
+        for s = 1:length(sin_boundaries)-1
+          th0 = sin_boundaries(s);
+          th1 = sin_boundaries(s+1);
+
+          th = (th0 + th1)/2;
+          sin_slope = cos(th);
+          sin_intercept = sin(th) - (sin_slope * th);
+
+          for j = 3:obj.nsteps
+            % -yaw(j) <= -th0 + M(1-sin_sector(s,j))
+            Ai(offset+1, obj.vars.footsteps.i(4,j)) = -1;
+            Ai(offset+1, obj.vars.sin_sector.i(s,j)) = M;
+            bi(offset+1) = -th0 + M;
+            % yaw(j) <= th1 + M(1-sin_sector(s,j))
+            Ai(offset+2, obj.vars.footsteps.i(4,j)) = 1;
+            Ai(offset+2, obj.vars.sin_sector.i(s,j)) = M;
+            bi(offset+2) = th1 + M;
+            offset = offset + 2;
+
+            % sin_yaw(j) <= sin_slope * yaw(j) + sin_intercept + M(1-sin_sector(s,j))
+            Ai(offset+1, obj.vars.sin_yaw.i(j)) = 1;
+            Ai(offset+1, obj.vars.footsteps.i(4,j)) = -sin_slope;
+            Ai(offset+1, obj.vars.sin_sector.i(s,j)) = M;
+            bi(offset+1) = sin_intercept + M;
+            % sin_yaw(j) >= sin_slope * yaw(j) + sin_intercept - M(1-sin_sector(s,j))
+            Ai(offset+2, obj.vars.sin_yaw.i(j)) = -1;
+            Ai(offset+2, obj.vars.footsteps.i(4,j)) = sin_slope;
+            Ai(offset+2, obj.vars.sin_sector.i(s,j)) = M;
+            bi(offset+2) = -sin_intercept + M;
+            offset = offset + 2;
+          end
+        end
+        assert(offset == expected_offset);
+        obj = obj.addLinearConstraints(Ai, bi, [], []);
+
+        % Consistency between sin and cos sectors
+        Ai = zeros((obj.nsteps-2) * obj.vars.sin_sector.size(1) * 2, obj.nv);
+        bi = zeros(size(Ai, 1), 1);
+        offset = 0;
+        expected_offset = size(Ai, 1);
+        nsectors = obj.vars.sin_sector.size(1);
+        for k = 1:nsectors
+          for j = 3:obj.nsteps
+            Ai(offset+1, obj.vars.cos_sector.i(k,j)) = 1;
+            Ai(offset+1, obj.vars.sin_sector.i(max(1,k-1):min(k+1,nsectors),j)) = -1;
+            Ai(offset+2, obj.vars.sin_sector.i(k,j)) = 1;
+            Ai(offset+2, obj.vars.cos_sector.i(max(1,k-1):min(k+1,nsectors),j)) = -1;
+            offset = offset + 2;
+          end
+        end
+        assert(offset == expected_offset);
+        obj = obj.addLinearConstraints(Ai, bi, [], []);
+
+        % Transitions between sectors
+        Ai = zeros((obj.nsteps-2) * (nsectors-1) * 2, obj.nv);
+        bi = zeros(size(Ai, 1), 1);
+        offset = 0;
+        expected_offset = size(Ai, 1);
+        for j = 3:obj.nsteps
+          if obj.seed_plan.footsteps(j).frame_id == obj.biped.foot_frame_id.left
+            for k = 1:nsectors - 1
+              Ai(offset+1, obj.vars.cos_sector.i(k,j-1)) = 1;
+              Ai(offset+1, obj.vars.cos_sector.i(k:k+1,j)) = -1;
+              Ai(offset+2, obj.vars.sin_sector.i(k,j-1)) = 1;
+              Ai(offset+2, obj.vars.sin_sector.i(k:k+1,j)) = -1;
+              offset = offset + 2;
+            end
+          else
+            for k = 2:nsectors
+              Ai(offset+1, obj.vars.cos_sector.i(k,j-1)) = 1;
+              Ai(offset+1, obj.vars.cos_sector.i(k-1:k,j)) = -1;
+              Ai(offset+2, obj.vars.sin_sector.i(k,j-1)) = 1;
+              Ai(offset+2, obj.vars.sin_sector.i(k-1:k,j)) = -1;
+              offset = offset + 2;
+            end
+          end
+        end
+        assert(offset == expected_offset);
+        obj = obj.addLinearConstraints(Ai, bi, [], []);
       end
     end
 
