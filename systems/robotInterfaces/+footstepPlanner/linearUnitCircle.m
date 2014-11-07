@@ -40,9 +40,13 @@ if use_symbolic
   p1 = p1.addQuadraticGoalObjective(goal_pos, nsteps-1:nsteps, [1,1], true);
   p1 = p1.addTerrainRegions([], true);
   p1 = p1.addXYReachabilityCircles(true);
-  fprintf(1, 'yalmip setup: %f\n', toc(t0));
+  if use_symbolic == 2
+    fprintf(1, 'yalmip setup: %f\n', toc(t0));
+  end
   [p1, solvertime] = p1.solve();
-  fprintf(1, 'yalmip total: %f\n', toc(t0));
+  if use_symbolic == 2
+    fprintf(1, 'yalmip total: %f\n', toc(t0));
+  end
   plan = p1.getFootstepPlan();
 end
 
@@ -57,9 +61,13 @@ if (use_symbolic == 0 || use_symbolic == 2)
   p2 = p2.addQuadraticGoalObjective(goal_pos, nsteps-1:nsteps, [1,1], false);
   p2 = p2.addTerrainRegions([], false);
   p2 = p2.addXYReachabilityCircles(false);
-  fprintf(1, 'gurobi setup: %f\n', toc(t0));
+  if use_symbolic == 2
+    fprintf(1, 'gurobi setup: %f\n', toc(t0));
+  end
   [p2, solvertime] = p2.solve();
-  fprintf(1, 'gurobi total: %f\n', toc(t0));
+  if use_symbolic == 2
+    fprintf(1, 'gurobi total: %f\n', toc(t0));
+  end
   plan = p2.getFootstepPlan();
 end
 
