@@ -395,7 +395,44 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
             -obj.seed_plan.params.nom_downward_step <= x(3,j) - x(3,j-1) <= obj.seed_plan.params.nom_upward_step];
         end
       else
-        error('not implemented');
+        Ai = zeros((obj.nsteps-2)*4, obj.nv);
+        bi = zeros(size(Ai, 1), 1);
+        offset = 0;
+        expected_offset = size(Ai, 1);
+        for j = 3:obj.nsteps
+          if obj.seed_plan.footsteps(j).frame_id == obj.biped.foot_frame_id.left
+            % obj.symbolic_constraints = [obj.symbolic_constraints,...
+            %   -obj.seed_plan.params.max_inward_angle <= yaw(j) - yaw(j-1) <= obj.seed_plan.params.max_outward_angle];
+            Ai(offset+1, obj.vars.footsteps.i(4,j)) = -1;
+            Ai(offset+1, obj.vars.footsteps.i(4,j-1)) = 1;
+            bi(offset+1) = obj.seed_plan.params.max_inward_angle;
+            Ai(offset+2, obj.vars.footsteps.i(4,j)) = 1;
+            Ai(offset+2, obj.vars.footsteps.i(4,j-1)) = -1;
+            bi(offset+2) = obj.seed_plan.params.max_outward_angle;
+            offset = offset + 2;
+          else
+            % obj.symbolic_constraints = [obj.symbolic_constraints,...
+            %   -obj.seed_plan.params.max_outward_angle <= yaw(j) - yaw(j-1) <= obj.seed_plan.params.max_inward_angle];
+            Ai(offset+1, obj.vars.footsteps.i(4,j)) = -1;
+            Ai(offset+1, obj.vars.footsteps.i(4,j-1)) = 1;
+            bi(offset+1) = obj.seed_plan.params.max_outward_angle;
+            Ai(offset+2, obj.vars.footsteps.i(4,j)) = 1;
+            Ai(offset+2, obj.vars.footsteps.i(4,j-1)) = -1;
+            bi(offset+2) = obj.seed_plan.params.max_inward_angle;
+            offset = offset + 2;
+          end
+          % obj.symbolic_constraints = [obj.symbolic_constraints,...
+          %   -obj.seed_plan.params.nom_downward_step <= x(3,j) - x(3,j-1) <= obj.seed_plan.params.nom_upward_step];
+          Ai(offset+1, obj.vars.footsteps.i(3,j)) = -1;
+          Ai(offset+1, obj.vars.footsteps.i(3,j-1)) = 1;
+          bi(offset+1) = obj.seed_plan.params.nom_downward_step;
+          Ai(offset+2, obj.vars.footsteps.i(3,j)) = 1;
+          Ai(offset+2, obj.vars.footsteps.i(3,j-1)) = -1;
+          bi(offset+2) = obj.seed_plan.params.nom_upward_step;
+          offset = offset + 2;
+        end
+        assert(offset == expected_offset);
+        obj = obj.addLinearConstraints(Ai, bi, [], []);
       end
     end
 
@@ -413,7 +450,49 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
           end
         end
       else
-        error('not implemented')
+        ncons = 2 * (obj.nsteps-2);
+        quadcon = struct('Qc', repmat({sparse(obj.nv, obj.nv)}, 1, ncons), 'q', repmat({zeros(obj.nv, 1)}, 1, ncons), 'rhs', repmat({0}, 1, ncons));
+        offset = 0;
+        expected_offset = length(quadcon);
+        for j = 2:obj.nsteps-1
+          [rel_foci, radii] = obj.biped.getReachabilityCircles(obj.seed_plan.params, obj.seed_plan.footsteps(j).frame_id);
+          assert(size(rel_foci, 2) == 2, 'I have hard-coded the number of reachability circles in this code. You can set use_symbolic=true if you need more than two');
+
+          for k = 1:size(rel_foci, 2)
+            quadcon(offset+1).rhs = radii(k)^2;
+
+            Qc_elementwise = [...
+              obj.vars.footsteps.i(1:2,j+1), obj.vars.footsteps.i(1:2,j+1), [1;1];
+              obj.vars.footsteps.i(1:2,j), obj.vars.footsteps.i(1:2,j), [1;1];
+              obj.vars.footsteps.i(1:2,j+1), obj.vars.footsteps.i(1:2,j), [-1; -1];
+              obj.vars.footsteps.i(1:2,j), obj.vars.footsteps.i(1:2,j+1), [-1; -1];
+              obj.vars.footsteps.i(1,j+1), obj.vars.cos_yaw.i(j), -1 * rel_foci(1,k);
+              obj.vars.cos_yaw.i(j), obj.vars.footsteps.i(1,j+1), -1 * rel_foci(1,k);
+              obj.vars.footsteps.i(1,j+1), obj.vars.sin_yaw.i(j), 1 * rel_foci(2,k);
+              obj.vars.sin_yaw.i(j), obj.vars.footsteps.i(1,j+1), 1 * rel_foci(2,k);
+              obj.vars.footsteps.i(2,j+1), obj.vars.sin_yaw.i(j), -1 * rel_foci(1,k);
+              obj.vars.sin_yaw.i(j), obj.vars.footsteps.i(2,j+1), -1 * rel_foci(1,k);
+              obj.vars.footsteps.i(2,j+1), obj.vars.cos_yaw.i(j) -1 * rel_foci(2,k);
+              obj.vars.cos_yaw.i(j), obj.vars.footsteps.i(2,j+1), -1 * rel_foci(2,k);
+              obj.vars.footsteps.i(1,j), obj.vars.cos_yaw.i(j), 1 * rel_foci(1,k);
+              obj.vars.cos_yaw.i(j), obj.vars.footsteps.i(1,j), 1 * rel_foci(1,k);
+              obj.vars.footsteps.i(1,j), obj.vars.sin_yaw.i(j), -1 * rel_foci(2,k);
+              obj.vars.sin_yaw.i(j), obj.vars.footsteps.i(1,j), -1 * rel_foci(2,k);
+              obj.vars.footsteps.i(2,j), obj.vars.sin_yaw.i(j), 1 * rel_foci(1,k);
+              obj.vars.sin_yaw.i(j), obj.vars.footsteps.i(2,j), 1 * rel_foci(1,k);
+              obj.vars.footsteps.i(2,j) obj.vars.cos_yaw.i(j), 1 * rel_foci(2,k);
+              obj.vars.cos_yaw.i(j), obj.vars.footsteps.i(2,j), 1 * rel_foci(2,k);
+              obj.vars.cos_yaw.i(j), obj.vars.cos_yaw.i(j), rel_foci(1,k)^2 + rel_foci(2,k)^2;
+              obj.vars.sin_yaw.i(j), obj.vars.sin_yaw.i(j), rel_foci(1,k)^2 + rel_foci(2,k)^2;
+              ];
+            quadcon(offset+1).Qc = sparse(Qc_elementwise(:,1), Qc_elementwise(:,2), Qc_elementwise(:,3), obj.nv, obj.nv);
+
+            quadcon(offset+1).q = zeros(obj.nv, 1);
+            offset = offset + 1;
+          end
+        end
+        assert(offset == expected_offset);
+        obj = obj.addQuadcon(quadcon);
       end
     end
 
@@ -596,6 +675,73 @@ classdef MixedIntegerFootstepPlanningProblem < MixedIntegerConvexProgram
         end
         assert(offset_eq == size(Aeq, 1));
         obj = obj.addLinearConstraints(Ai, bi, Aeq, beq);
+      end
+    end
+
+    function obj = addSmallRelativeAngleRotation(obj, use_symbolic)
+      error('these constraints turned out to be backwards, so this approach doesn''t work yet -rdeits');
+      obj = obj.addVariable('sin_is_positive', 'B', [1, obj.nsteps], 0, 1);
+      obj = obj.addVariable('cos_is_positive', 'B', [1, obj.nsteps], 0, 1);
+      obj = obj.addVariable('abs_delta_cos', 'C', [1, obj.nsteps-1], 0, 1);
+      obj = obj.addVariable('abs_delta_sin', 'C', [1, obj.nsteps-1], 0, 1);
+      obj = obj.addVariable('abs_delta_theta', 'C', [1, obj.nsteps-1], 0, pi);
+      obj = obj.addVariable('abs_sin', 'C', [1, obj.nsteps-1], 0, 1);
+      obj = obj.addVariable('abs_cos', 'C', [1, obj.nsteps-1], 0, 1);
+      obj = obj.addVariable('cos_yaw', 'C', [1, obj.nsteps], -1, 1);
+      obj = obj.addVariable('sin_yaw', 'C', [1, obj.nsteps], -1, 1);
+      obj = obj.addVariable('abs_delta_cos_slack', 'C', [1, obj.nsteps-1], 0, 1);
+      obj = obj.addVariable('abs_delta_sin_slack', 'C', [1, obj.nsteps-1], 0, 1);
+      obj = obj.addInitialSinCosConstraints();
+
+      if use_symbolic
+        assert(obj.using_symbolic);
+        abs_delta_cos = obj.vars.abs_delta_cos.symb;
+        abs_delta_sin = obj.vars.abs_delta_sin.symb;
+        abs_delta_cos_slack = obj.vars.abs_delta_cos_slack.symb;
+        abs_delta_sin_slack = obj.vars.abs_delta_sin_slack.symb;
+        abs_delta_theta = obj.vars.abs_delta_theta.symb;
+        sin_is_positive = obj.vars.sin_is_positive.symb;
+        cos_is_positive = obj.vars.cos_is_positive.symb;
+        yaw = obj.vars.footsteps.symb(4,:);
+        cos_yaw = obj.vars.cos_yaw.symb;
+        sin_yaw = obj.vars.sin_yaw.symb;
+        abs_sin = obj.vars.abs_sin.symb;
+        abs_cos = obj.vars.abs_cos.symb;
+        for j = 2:obj.nsteps
+          obj.symbolic_constraints = [obj.symbolic_constraints,...
+            implies(sin_is_positive(j-1), sin_yaw(j-1) == abs_sin(j-1)),...
+            implies(~sin_is_positive(j-1), sin_yaw(j-1) == -abs_sin(j-1)),...
+            implies(cos_is_positive(j-1), cos_yaw(j-1) == abs_cos(j-1)),...
+            implies(~cos_is_positive(j-1), cos_yaw(j-1) == -abs_cos(j-1)),...
+            ];
+          if obj.seed_plan.footsteps(j).frame_id == obj.biped.foot_frame_id.right
+            obj.symbolic_constraints = [obj.symbolic_constraints, ...
+              abs_delta_theta(j-1) == -(yaw(j) - yaw(j-1)),...
+              implies(sin_is_positive(j-1), abs_delta_cos(j-1) == cos_yaw(j) - cos_yaw(j-1)),...
+              implies(~sin_is_positive(j-1), abs_delta_cos(j-1) == -(cos_yaw(j) - cos_yaw(j-1))),...
+              implies(cos_is_positive(j-1), abs_delta_sin(j-1) == -(sin_yaw(j) - sin_yaw(j-1))),...
+              implies(~cos_is_positive(j-1), abs_delta_sin(j-1) == sin_yaw(j) - sin_yaw(j-1)),...
+              ];
+          else
+            obj.symbolic_constraints = [obj.symbolic_constraints,...
+              abs_delta_theta(j-1) == (yaw(j) - yaw(j-1)),...
+              implies(sin_is_positive(j-1), abs_delta_cos(j-1) == -(cos_yaw(j) - cos_yaw(j-1))),...
+              implies(~sin_is_positive(j-1), abs_delta_cos(j-1) == (cos_yaw(j) - cos_yaw(j-1))),...
+              implies(cos_is_positive(j-1), abs_delta_sin(j-1) == (sin_yaw(j) - sin_yaw(j-1))),...
+              implies(~cos_is_positive(j-1), abs_delta_sin(j-1) == -(sin_yaw(j) - sin_yaw(j-1))),...
+              ];
+          end
+          obj.symbolic_constraints = [obj.symbolic_constraints,...
+            abs_delta_cos(j-1) >= abs_delta_cos_slack(j-1) * abs_delta_cos_slack(j-1);
+            abs_delta_sin(j-1) >= abs_delta_sin_slack(j-1) * abs_delta_sin_slack(j-1);
+            rcone(abs_delta_cos_slack(j-1), abs_delta_theta(j-1)/2, abs_sin(j-1)),...
+            rcone(abs_delta_sin_slack(j-1), abs_delta_theta(j-1)/2, abs_cos(j-1)),...
+            cone([cos_yaw(j) - cos_yaw(j-1); sin_yaw(j) - sin_yaw(j-1)], abs_delta_theta(j-1)),...
+            cone([cos_yaw(j); sin_yaw(j)], 1),...
+            ];
+        end
+      else
+        error('not implemented');
       end
     end
 
