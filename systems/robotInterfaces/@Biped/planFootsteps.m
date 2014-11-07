@@ -91,6 +91,8 @@ catch e
     warning('The footstep planning problem is infeasible. Returning just the initial footstep poses');
     plan = plan.slice(1:2);
     solvertime = 0;
+  else
+    rethrow(e);
   end
 end
 
