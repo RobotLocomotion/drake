@@ -279,6 +279,10 @@ classdef MultiCoordinateFrame < CoordinateFrame
       fr = obj.frame{id};
     end
     
+    function id = getFrameNumByName(obj,name)
+      id = find(cellfun(@(a)strcmp(a.name,name),obj.frame));
+    end
+    
     function id = getFrameNum(obj,frame)
       id = find(cellfun(@(a)isequal(a,frame),obj.frame));
       if length(id)>1
