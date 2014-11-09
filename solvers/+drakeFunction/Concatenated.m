@@ -53,10 +53,10 @@ classdef Concatenated < drakeFunction.DrakeFunction
       %   functions. Otherwise, the input to the concatenated function
       %   is split and distributed to the component functions.
       %
-      % obj = Concatenated(fcns) is the same as Concatenated(fcns,false).
+      % obj = Concatenated(fcns) is the same as Concatenated(fcns,true).
       %
       % @param fcns         -- Cell array of DrakeFunction objects
-      % @param same_input   -- Logical scalar, @default is false
+      % @param same_input   -- Logical scalar
       if nargin < 2, same_input = false; end
       typecheck(fcns,'cell');
       assert(all(cellfun(@(arg)isa(arg,'drakeFunction.DrakeFunction'), fcns)));
