@@ -1,4 +1,8 @@
 classdef GraspFrictionConeWrench < RigidBodyContactWrench
+  % When consider hand contact, the usual case is that we have a contact
+  % patch on the hand, but the contact normal direction is specified on the
+  % object being grasped. This class allows the user to specify a grasp
+  % point on the hand, with grasp normal on the object
   properties(SetAccess = protected)
     grasp_object_idx  % The index of the object being grasped
     finger_idx  % The index of the finger of grasping
