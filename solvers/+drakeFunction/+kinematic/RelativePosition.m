@@ -34,6 +34,7 @@ classdef RelativePosition < drakeFunction.kinematic.Kinematic
       end
       sizecheck(pts_in_A,[3,NaN]);
       n_pts_tmp = size(pts_in_A,2);
+      assert(n_pts_tmp>=1);
       output_frame = MultiCoordinateFrame.constructFrame( ...
         repmat({drakeFunction.frames.realCoordinateSpace(3)},1,n_pts_tmp));
       obj = obj@drakeFunction.kinematic.Kinematic(rbm,output_frame);

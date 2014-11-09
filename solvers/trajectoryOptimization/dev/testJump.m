@@ -176,6 +176,7 @@ apex_idx = floor((toe_takeoff_idx+toe_land_idx)/2);
 % cdfkp = cdfkp.addRigidBodyConstraint(r_foot_apex_height,{apex_idx});
 cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(qstar(3)+0.25,inf),cdfkp.q_inds(3,apex_idx));
 
+
 % add a symmetric constraint
 symmetry_cnstr = symmetryConstraint(robot,2:nT-1);
 cdfkp = cdfkp.addLinearConstraint(symmetry_cnstr,reshape(cdfkp.q_inds(:,2:nT-1),[],1));
@@ -229,7 +230,7 @@ if(mode == 0)
 end
 if(mode == 1)
 tic
-[x_sol,F,info] = cdfkp.solve(seed_sol.x_sol);
+[x_sol,F,info] = cdfkp.solve(x_seed);
 toc
 [q_sol,v_sol,h_sol,t_sol,com_sol,comdot_sol,comddot_sol,H_sol,Hdot_sol,lambda_sol,wrench_sol] = parseSolution(cdfkp,x_sol);
 xtraj_sol = PPTrajectory(foh(cumsum([0 h_sol]),[q_sol;v_sol]));
