@@ -26,8 +26,8 @@ classdef Composed < drakeFunction.DrakeFunction
       obj = obj.setSparsityPattern();
     end
 
-    function [f,df] = eval(obj,x)
-      [f_inner, df_inner] = eval(obj.fcn_inner,x);
+    function [f,df] = eval(obj,varargin)
+      [f_inner, df_inner] = eval(obj.fcn_inner,varargin{:});
       [f,df_df_inner] = eval(obj.fcn_outer,f_inner);
       df = df_df_inner*df_inner;
     end

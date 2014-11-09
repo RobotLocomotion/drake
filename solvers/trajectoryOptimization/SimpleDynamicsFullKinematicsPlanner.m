@@ -34,10 +34,6 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
      Q_contact_force % A 3 x 3 PSD matrix. minimize the weighted L2 norm of the contact force.
   end
 
-  properties(Access = protected)
-    add_dynamic_constraint_flag = false;% If this flag is false, then bypass the addDynamicConstraint function
-  end
-
   methods
     function obj = SimpleDynamicsFullKinematicsPlanner(plant,robot,N,tf_range,Q_contact_force,contact_wrench_struct,options)
       % @param robot   A RigidBodyManipulator or a TimeSteppingRigidBodyManipulator
@@ -329,42 +325,40 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
       obj = obj.addForceNormCost();
     end
 
-    function obj = addDynamicConstraints(obj)
+    function obj = addSimpleDynamicConstraints(obj)
       % First I find out the order of the contact_wrench such that it is in the same
       % order of lambda
-      if(obj.add_dynamic_constraint_flag)
-        tLeft_contact_wrench_idx = [];
-        tLeft_lambda_idx = zeros(obj.num_lambda_knot,1);
-        tLeft_lambda_count = 0;
+      tLeft_contact_wrench_idx = [];
+      tLeft_lambda_idx = zeros(obj.num_lambda_knot,1);
+      tLeft_lambda_count = 0;
+      for j = 1:length(obj.unique_contact_bodies)
+        tLeft_valid_pt_idx = obj.lambda2contact_wrench{j}(:,1) ~= 0;
+        tLeft_lambda_idx_j_count = sum(tLeft_valid_pt_idx)*size(obj.lambda_inds{j},1);
+        tLeft_lambda_idx(tLeft_lambda_count+(1:tLeft_lambda_idx_j_count))...
+          = reshape(obj.lambda_inds{j}(:,tLeft_valid_pt_idx,1),[],1);
+        tLeft_lambda_count = tLeft_lambda_count+tLeft_lambda_idx_j_count;
+        tLeft_contact_wrench_idx = [tLeft_contact_wrench_idx unique(obj.lambda2contact_wrench{j}(tLeft_valid_pt_idx,1)','stable')];
+      end
+      tLeft_lambda_idx = tLeft_lambda_idx(1:tLeft_lambda_count);
+      obj = obj.addContactDynamicConstraints(1,{tLeft_contact_wrench_idx},{tLeft_lambda_idx});
+      for i = 2:obj.N
+        tRight_contact_wrench_idx = [];
+        tRight_lambda_idx = zeros(obj.num_lambda_knot,1);
+        tRight_lambda_count = 0;
         for j = 1:length(obj.unique_contact_bodies)
-          tLeft_valid_pt_idx = obj.lambda2contact_wrench{j}(:,1) ~= 0;
-          tLeft_lambda_idx_j_count = sum(tLeft_valid_pt_idx)*size(obj.lambda_inds{j},1);
-          tLeft_lambda_idx(tLeft_lambda_count+(1:tLeft_lambda_idx_j_count))...
-            = reshape(obj.lambda_inds{j}(:,tLeft_valid_pt_idx,1),[],1);
-          tLeft_lambda_count = tLeft_lambda_count+tLeft_lambda_idx_j_count;
-          tLeft_contact_wrench_idx = [tLeft_contact_wrench_idx unique(obj.lambda2contact_wrench{j}(tLeft_valid_pt_idx,1)','stable')];
+          tRight_valid_pt_idx = obj.lambda2contact_wrench{j}(:,i) ~= 0;
+          tRight_lambda_idx_j_count = sum(tRight_valid_pt_idx)*size(obj.lambda_inds{j},1);
+          tRight_lambda_idx(tRight_lambda_count+(1:tRight_lambda_idx_j_count))...
+            =reshape(obj.lambda_inds{j}(:,tRight_valid_pt_idx,i),[],1);
+          tRight_lambda_count = tRight_lambda_count+tRight_lambda_idx_j_count;
+          tRight_contact_wrench_idx = [tRight_contact_wrench_idx unique(obj.lambda2contact_wrench{j}(tRight_valid_pt_idx,i)','stable')];
         end
-        tLeft_lambda_idx = tLeft_lambda_idx(1:tLeft_lambda_count);
-        obj = obj.addContactDynamicConstraints(1,{tLeft_contact_wrench_idx},{tLeft_lambda_idx});
-        for i = 2:obj.N
-          tRight_contact_wrench_idx = [];
-          tRight_lambda_idx = zeros(obj.num_lambda_knot,1);
-          tRight_lambda_count = 0;
-          for j = 1:length(obj.unique_contact_bodies)
-            tRight_valid_pt_idx = obj.lambda2contact_wrench{j}(:,i) ~= 0;
-            tRight_lambda_idx_j_count = sum(tRight_valid_pt_idx)*size(obj.lambda_inds{j},1);
-            tRight_lambda_idx(tRight_lambda_count+(1:tRight_lambda_idx_j_count))...
-              =reshape(obj.lambda_inds{j}(:,tRight_valid_pt_idx,i),[],1);
-            tRight_lambda_count = tRight_lambda_count+tRight_lambda_idx_j_count;
-            tRight_contact_wrench_idx = [tRight_contact_wrench_idx unique(obj.lambda2contact_wrench{j}(tRight_valid_pt_idx,i)','stable')];
-          end
-          tRight_lambda_idx = tRight_lambda_idx(1:tRight_lambda_count);
-          obj = obj.addContactDynamicConstraints(i,{tRight_contact_wrench_idx},{tRight_lambda_idx});
-          obj = obj.addContactDynamicConstraints([i-1,i],[{tLeft_contact_wrench_idx},{tRight_contact_wrench_idx}],[{tLeft_lambda_idx},{tRight_lambda_idx}]);
-          tLeft_contact_wrench_idx = tRight_contact_wrench_idx;
-          tLeft_lambda_idx = tRight_lambda_idx;
-          tLeft_lambda_count = tRight_lambda_count;
-        end
+        tRight_lambda_idx = tRight_lambda_idx(1:tRight_lambda_count);
+        obj = obj.addContactDynamicConstraints(i,{tRight_contact_wrench_idx},{tRight_lambda_idx});
+        obj = obj.addContactDynamicConstraints([i-1,i],[{tLeft_contact_wrench_idx},{tRight_contact_wrench_idx}],[{tLeft_lambda_idx},{tRight_lambda_idx}]);
+        tLeft_contact_wrench_idx = tRight_contact_wrench_idx;
+        tLeft_lambda_idx = tRight_lambda_idx;
+        tLeft_lambda_count = tRight_lambda_count;
       end
     end
 
