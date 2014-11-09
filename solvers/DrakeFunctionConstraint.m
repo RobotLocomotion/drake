@@ -33,9 +33,9 @@ classdef DrakeFunctionConstraint < Constraint
   end
 
   methods (Access = protected)
-    function varargout = constraintEval(obj,varargin)
+    function varargout = constraintEval(obj,x)
       varargout = cell(nargout,1);
-      [varargout{:}] = obj.fcn.eval(varargin{:});
+      [varargout{:}] = obj.fcn.eval(x);
     end
   end
 end

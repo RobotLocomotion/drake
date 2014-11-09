@@ -30,11 +30,10 @@ function relativePositionTest(visualize)
   %% Test a basic RelativePosition object
   % Create a DrakeFunction that computes the world position of the hand points
   hand_pts_in_body = rbm.getBody(rbm.findLinkInd('l_hand')).getTerrainContactPoints();
-  hand_pts_fcn = RelativePosition(rbm,'l_hand','r_hand',hand_pts_in_body);
+  hand_pts_fcn = RelativePosition(rbm,'l_hand','world',hand_pts_in_body);
 
   % Evaluate that DrakeFunction
-  kinsol0 = rbm.doKinematics(q0,false,false);
-  [pos,J] = hand_pts_fcn.eval(q0,kinsol0);
+  [pos,J] = hand_pts_fcn(q0);
 
   if visualize
     lcmgl.glColor3f(1,0,0);
