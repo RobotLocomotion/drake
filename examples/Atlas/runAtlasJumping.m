@@ -6,7 +6,7 @@ if ~checkDependency('gurobi')
 end
 
 if (nargin<1); use_mex = true; end
-if (nargin<2); use_angular_momentum = true; end
+if (nargin<2); use_angular_momentum = false; end
 
 addpath(fullfile(getDrakePath,'examples','Atlas','controllers'));
 addpath(fullfile(getDrakePath,'examples','Atlas','frames'));
@@ -27,12 +27,14 @@ v = r.constructVisualizer;
 v.display_dt = 0.005;
 
 % load in running trajectory
-sol = load([getDrakePath,'/solvers/trajectoryOptimization/dev/test_jump2.mat'],'xtraj_sol','com_sol','comdot_sol','comddot_sol','t_sol');
+sol = load([getDrakePath,'/solvers/trajectoryOptimization/dev/test_jump3.mat'],'xtraj_sol','com_sol','comdot_sol','comddot_sol','t_sol');
 
 ts = unique(sol.xtraj_sol.getBreaks);
 xtraj = sol.xtraj_sol;
 r.setInitialState(xtraj.eval(0));
 x_knots = xtraj.eval(ts);
+
+back_bky = r.getBody(r.findJointInd('back_bky')).position_num;
 
 link_indices = [findLinkInd(r,'l_foot'), findLinkInd(r,'r_foot'),...
     findLinkInd(r,'l_hand'), findLinkInd(r,'r_hand'), ...
@@ -108,7 +110,7 @@ x0traj_takeoff = x0traj_takeoff.setOutputFrame(COMState);
 u0traj_takeoff = PPTrajectory(foh(ts(1:toe_takeoff_idx),comddot(:,1:toe_takeoff_idx)));
 u0traj_takeoff = u0traj_takeoff.setOutputFrame(COMAcceleration);
 
-Q = diag([10 10 10 1 1 1]);
+Q = 10*diag([10 10 10 1 1 1]);
 R = 0.0001*eye(3);
 A = [zeros(3),eye(3); zeros(3,6)];
 B = [zeros(3); eye(3)];
@@ -120,9 +122,10 @@ ti_sys = ti_sys.setOutputFrame(COMState);
 ti_sys = ti_sys.setInputFrame(COMAcceleration);
 [~,V] = tvlqr(ti_sys,x0traj,u0traj,Q,R,Q,options);
 
+[~,Vf] = tilqr(ti_sys,[com(:,end);zeros(3,1)],zeros(3,1),Q,R);
 options_landing = options;
 options_landing.tspan = [ts(toe_land_idx) ts(nT)];
-[~,V_landing] = tvlqr(ti_sys,x0traj_landing,u0traj_landing,Q,R,Q,options_landing);
+[~,V_landing] = tvlqr(ti_sys,x0traj_landing,u0traj_landing,Q,R,Vf.S,options_landing);
 A_flight = [eye(3) (ts(toe_land_idx)-ts(toe_takeoff_idx))*eye(3);zeros(3) eye(3)];
 S_landing = V_landing.S.eval(V_landing.S.tspan(1));
 s1_landing = V_landing.s1.eval(V_landing.s1.tspan(1));
@@ -135,14 +138,14 @@ options_takeoff.tspan = [ts(1) ts(toe_takeoff_idx)];
 [~,V_takeoff] = tvlqr(ti_sys,x0traj_takeoff,u0traj_takeoff,Q,R,{S_takeoff;s1_takeoff;s2_takeoff},options_takeoff);
 S_flight_values = zeros(6,6,2);
 S_flight_values(:,:,1) = S_takeoff;
-S_flight_values(:,:,2) = S_takeoff;
-S_flight = PPTrajectory(zoh([ts(toe_takeoff_idx) ts(toe_land_idx)],S_flight_values));
-V_S = V_takeoff.append(S_flight);
+S_flight_values(:,:,2) = S_landing;
+S_flight = PPTrajectory(foh([ts(toe_takeoff_idx) ts(toe_land_idx)],S_flight_values));
+V_S = V_takeoff.S.append(S_flight);
 V_S = V_S.append(V_landing.S);
-s1_flight = PPTrajectory(zoh([ts(toe_takeoff_idx) ts(toe_land_idx)],[s1_takeoff s1_takeoff]));
+s1_flight = PPTrajectory(foh([ts(toe_takeoff_idx) ts(toe_land_idx)],[s1_takeoff s1_landing]));
 V_s1 = V_takeoff.s1.append(s1_flight);
 V_s1 = V_s1.append(V_landing.s1);
-s2_flight = PPTrajectory(zoh([ts(toe_takeoff_idx) ts(toe_land_idx)],[s2_takeoff s2_takeoff]));
+s2_flight = PPTrajectory(foh([ts(toe_takeoff_idx) ts(toe_land_idx)],[s2_takeoff s2_landing]));
 V_s2 = V_takeoff.s2.append(s2_flight);
 V_s2 = V_s2.append(V_landing.s2);
 
@@ -170,7 +173,8 @@ ctrl_data = QPControllerData(true,struct(...
 
 % instantiate QP controller
 options.slack_limit = 1000;
-options.w_qdd = 0.1*ones(nq,1);
+options.w_qdd = 1e-5*ones(nq,1);
+% options.w_qdd(back_bky) = 0.01;
 options.w_qdd(1:6) = 0;
 options.w_grf = 0;
 options.w_slack = 3;
@@ -249,6 +253,8 @@ sys = mimoFeedback(fc,sys,[],[],ins,outs);
 clear ins;  
   
 % feedback PD block
+% options.Kp =250*ones(34,1);
+% options.Kd = 2*sqrt(options.Kp);
 options.use_ik = false;
 pd = IKPDBlock(r,ctrl_data,options);
 ins(1).system = 1;
@@ -341,7 +347,7 @@ output_select(1).output=1;
 sys = mimoCascade(sys,v,[],[],output_select);
 warning(S);
 
-traj = simulate(sys,[0 ts(end)],xtraj.eval(0));
+traj = simulate(sys,[0 ts(end)+1],xtraj.eval(0));
 playback(v,traj,struct('slider',true));
 
 end
