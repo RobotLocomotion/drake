@@ -15,6 +15,7 @@ classdef ManipulationCentroidalDynamicsFullKinematicsPlanner < ComDynamicsFullKi
   
   methods
     function obj = ManipulationCentroidalDynamicsFullKinematicsPlanner(robot,grasp_object_idx,N,tf_range,Q_comddot,Qv,Q,q_nom,Q_contact_force,contact_wrench_struct,options)
+      % @param grasp_object_idx   The index of the object being grasped
       if nargin < 11, options = struct(); end
       obj = obj@ComDynamicsFullKinematicsPlanner(robot,N,tf_range,Q_comddot,Qv,Q,q_nom,Q_contact_force,contact_wrench_struct,options);
       if(~isnumeric(grasp_object_idx) || numel(grasp_object_idx) ~= 1)
@@ -30,17 +31,17 @@ classdef ManipulationCentroidalDynamicsFullKinematicsPlanner < ComDynamicsFullKi
 			obj.add_simple_dynamics = true;
 			obj = addSimpleDynamicConstraints(obj);
     end
-		
-		function obj = addSimpleDynamicConstraints(obj)
-		  if(obj.add_simple_dynamics)
-				obj = addSimpleDynamicConstraints@ComDynamicsFullKinematicsPlanner(obj);
-			end
-		end
 
   end
   
 	
   methods(Access = protected)
+    function obj = addSimpleDynamicConstraints(obj)
+		  if(obj.add_simple_dynamics)
+				obj = addSimpleDynamicConstraints@ComDynamicsFullKinematicsPlanner(obj);
+			end
+    end
+    
     function obj = addCentroidalDynamicConstraints(obj)
       function [c,dc] = comMatch(q,com)
         xyz = q(obj.grasp_object_xyz_idx);
