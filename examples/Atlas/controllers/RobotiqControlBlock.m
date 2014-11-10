@@ -5,13 +5,13 @@ classdef RobotiqControlBlock < MIMODrakeSystem
   
   methods
     function obj = RobotiqControlBlock(r, ind, name, options)
-      % @param r rigid body manipulator instance with hands
+      % @param r ts rigid body manipulator instance with hands
       % @param ind Index of hand -- depends on order they were added to r
       % @param name A name to indentify this hand
       % @param options struct
       % @option nothing yet -- nothing yet
 
-      typecheck(r,'Biped');
+      typecheck(r,'TimeSteppingRigidBodyManipulator');
        
       if nargin<4
         options = struct();
