@@ -36,6 +36,10 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
 
   methods
     function obj = SimpleDynamicsFullKinematicsPlanner(plant,robot,N,tf_range,Q_contact_force,contact_wrench_struct,options)
+      % @param plant   This is the plant going to be used in
+      % DirectTRajectoryOptimization, it can be different from robot since
+      % we want to use simple dynamics here. Refer to
+      % DirectTrajectoryOptimization for more details.
       % @param robot   A RigidBodyManipulator or a TimeSteppingRigidBodyManipulator
       % @param N   The number of knot points
       % @param tf_range  A double. The bounds on the total time

@@ -26,8 +26,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
   angularvel2quatdotMatrix(q, omega2qd, &domega2qd);
   angularvel2rpydotMatrix(rpy, omega2rpyd, &domega2rpyd, &ddomega2rpyd);
-	Matrix<double, SPACE_DIMENSION, RPY_SIZE> rpyd2omega;
-	typename Gradient<Matrix<double,SPACE_DIMENSION,RPY_SIZE>,RPY_SIZE,1>::type drpyd2omega;
+  Matrix<double, SPACE_DIMENSION, RPY_SIZE> rpyd2omega;
+  typename Gradient<Matrix<double,SPACE_DIMENSION,RPY_SIZE>,RPY_SIZE,1>::type drpyd2omega;
   rpydot2angularvelMatrix(rpy,rpyd2omega,&drpyd2omega);
   quatdot2angularvelMatrix(q, qd2omega, &dqd2omega);
   auto R = quat2rotmat(q);
