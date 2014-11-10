@@ -868,27 +868,47 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     end
 
     function c = getBodyContacts(obj,body_idx)
-      c = obj.manip.body(body_idx).contact_shapes;
+      c = obj.manip.body(body_idx).collision_geometry;
+    end
+    
+    function varargout = addContactShapeToBody(varargin)
+      errorDeprecatedFunction('addCollisionGeometryToBody');
     end
 
-    function obj = addContactShapeToBody(obj,varargin)
-      obj.manip = addContactShapeToBody(obj.manip,varargin{:});
+    function obj = addCollisionGeometryToBody(obj,varargin)
+      obj.manip = addCollisionGeometryToBody(obj.manip,varargin{:});
+    end
+    
+    function varargout = addVisualShapeToBody(varargin)
+      errorDeprecatedFunction('addVisualGeometryToBody');
     end
 
-    function obj = addVisualShapeToBody(obj,varargin)
-      obj.manip = addVisualShapeToBody(obj.manip,varargin{:});
+    function obj = addVisualGeometryToBody(obj,varargin)
+      obj.manip = addVisualGeometryToBody(obj.manip,varargin{:});
+    end
+    
+    function varargout = addShapeToBody(varargin)
+      errorDeprecatedFunction('addGeometryToBody');
     end
 
-    function obj = addShapeToBody(obj,varargin)
-      obj.manip = addShapeToBody(obj.manip,varargin{:});
+    function obj = addGeometryToBody(obj,varargin)
+      obj.manip = addGeometryToBody(obj.manip,varargin{:});
+    end
+    
+    function varargout = replaceContactShapesWithCHull(varargin)
+      errorDeprecatedFunction('replaceCollisionGeometryWithConvexHull');
     end
 
-    function obj = replaceContactShapesWithCHull(obj,body_indices,varargin)
-      obj.manip = replaceContactShapesWithCHull(obj.manip,body_indices,varargin{:});
+    function obj = replaceCollisionGeometryWithConvexHull(obj,body_indices,varargin)
+      obj.manip = replaceCollisionGeometryWithConvexHull(obj.manip,body_indices,varargin{:});
     end
 
-    function groups = getContactShapeGroupNames(obj)
-      groups = getContactShapeGroupNames(obj.manip);
+    function varargout = getContactShapeGroupNames(varargin)
+      errorDeprecatedFunction('getCollisionGeometryGroupNames');
+    end
+
+    function groups = getCollisionGeometryGroupNames(obj)
+      groups = getCollisionGeometryGroupNames(obj.manip);
     end
 
     function f_friction = computeFrictionForce(obj,qd)

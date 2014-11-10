@@ -122,12 +122,16 @@ classdef RigidBodyBluffBody < RigidBodyForceElement
       
     end
     
-    function model = addBluffBodyVisualShapeToBody(obj, model, body)
-      % Adds a visual shape of the bluff body to the model on the body
+    function varargout = addBluffBodyVisualShapeToBody(varargin)
+      errorDeprecatedFunction('addBluffBodyVisualGeometryToBody');
+    end
+    
+    function model = addBluffBodyVisualGeometryToBody(obj, model, body)
+      % Adds a visual geometry of the bluff body to the model on the body
       % given for drawing in a visualizer.
       %
       % @param model manipulator the wing is part of
-      % @param body body to add the visual shape to
+      % @param body body to add the visual geometry to
       %
       % @retval model updated model
 
@@ -139,17 +143,17 @@ classdef RigidBodyBluffBody < RigidBodyForceElement
       
       box_size = [ size_x size_y size_z ];
       
-      shape = RigidBodyBox(box_size, model.getFrame(obj.kinframe).T);
-      shape = shape.setColor([1 0 0]); % red
-      shape.name = [obj.name '_urdf_shape'];
+      geometry = RigidBodyBox(box_size, model.getFrame(obj.kinframe).T);
+      geometry = geometry.setColor([1 0 0]); % red
+      geometry.name = [obj.name '_urdf_geometry'];
       
-      model = model.addVisualShapeToBody(body, shape);
+      model = model.addVisualGeometryToBody(body, geometry);
 
     end
     
     function [ obj, model ] = onCompile(obj, model)
-      % Update visual shapes on compile.  This should be called after a parameter
-      % update that may change the automatic drawing of shapes (ie the area
+      % Update visual geometry on compile.  This should be called after a parameter
+      % update that may change the automatic drawing of geometry (ie the area
       % of the drag force is changed).
       %
       % @param model RigidBodyManipulator this is a part of
@@ -162,11 +166,11 @@ classdef RigidBodyBluffBody < RigidBodyForceElement
       if (obj.visual_geometry)
         
         
-        % remove any existing shapes for this body
-        model = model.removeShapeFromBody(obj.parent_id, [ obj.name '_urdf_shape' ]);
+        % remove any existing geometry for this body
+        model = model.removeVisualGeometryFromBody(obj.parent_id, [ obj.name '_urdf_geometry' ]);
         
-        % add new shapes
-        model = addBluffBodyVisualShapeToBody(obj, model, obj.parent_id);
+        % add new geometry
+        model = addBluffBodyVisualGeometryToBody(obj, model, obj.parent_id);
         
         
       end
@@ -229,7 +233,7 @@ classdef RigidBodyBluffBody < RigidBodyForceElement
       model = model.setFrame(this_frame_id, bound_frame);
       
       if (obj.visual_geometry)
-        model = addBluffBodyVisualShapeToBody(obj, model, parent);
+        model = addBluffBodyVisualGeometryToBody(obj, model, parent);
       end
       
       

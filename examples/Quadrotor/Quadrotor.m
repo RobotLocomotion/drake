@@ -43,10 +43,9 @@ classdef Quadrotor < RigidBodyManipulator
         xy = randn(2,1);
         while(norm(xy)<1), xy = randn(2,1); end
         height = .5+rand;
-        shape = RigidBodyBox([.2+.8*rand(1,2) height],[xy;height/2],[0;0;randn]);
-        shape.c = rand(3,1);
-        obj = addShapeToBody(obj,'world',shape);
-        obj = addContactShapeToBody(obj,'world',shape);
+        geometry = RigidBodyBox([.2+.8*rand(1,2) height],[xy;height/2],[0;0;randn]);
+        geometry.c = rand(3,1);
+        obj = addGeometryToBody(obj,'world',geometry);
       end
       
       obj = compile(obj);
@@ -76,13 +75,11 @@ classdef Quadrotor < RigidBodyManipulator
       treeTrunk = RigidBodyBox([.2+.8*width_param height],...
           [xy;height/2],[0;0;yaw]);
       treeTrunk.c = [83,53,10]/255;  % brown
-      obj = addShapeToBody(obj,'world',treeTrunk);
-      obj = addContactShapeToBody(obj,'world',treeTrunk);
+      obj = addGeometryToBody(obj,'world',treeTrunk);
       treeLeaves = RigidBodyBox(1.5*[.2+.8*width_param height/4],...
           [xy;height + height/8],[0;0;yaw]);
       treeLeaves.c = [0,0.7,0];  % green
-      obj = addShapeToBody(obj,'world',treeLeaves);
-      obj = addContactShapeToBody(obj,'world',treeLeaves);
+      obj = addGeometryToBody(obj,'world',treeLeaves);
       obj = compile(obj);
     end    
     
