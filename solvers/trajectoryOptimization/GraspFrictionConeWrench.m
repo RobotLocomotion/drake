@@ -9,7 +9,7 @@ classdef GraspFrictionConeWrench < RigidBodyContactWrench
     finger_grasp_pt % The position of the grasping point on the finger, in finger frame
     grasp_object_FC_axis % A 3 x 1 vector. The normal direction in the GRASP OBJECT frame
     FC_mu % The friction coefficient
-    force_normalize_factor   % A positive double scaler. The actual force is force_normalize_factor*force_parameter,
+    force_normalization_factor   % A positive double scaler. The actual force is force_normalization_factor*force_parameter,
                              % where force parameters are the arguments being constrained
   end
   
@@ -18,7 +18,7 @@ classdef GraspFrictionConeWrench < RigidBodyContactWrench
   end
   
   methods
-    function obj = GraspFrictionConeWrench(robot,grasp_object_idx, finger_idx, finger_grasp_pt,grasp_object_FC_axis,FC_mu,force_normalize_factor)
+    function obj = GraspFrictionConeWrench(robot,grasp_object_idx, finger_idx, finger_grasp_pt,grasp_object_FC_axis,FC_mu,force_normalization_factor)
       obj = obj@RigidBodyContactWrench(robot,finger_idx,finger_grasp_pt);
       if(~isnumeric(grasp_object_idx) || numel(grasp_object_idx) ~= 1)
         error('Drake:GraspFrictionConeWrench: grasp_object_idx should be a scalar');
@@ -45,15 +45,14 @@ classdef GraspFrictionConeWrench < RigidBodyContactWrench
       end
       FC_axis_norm = sqrt(sum(grasp_object_FC_axis.^2,1));
       obj.grasp_object_FC_axis = grasp_object_FC_axis./(bsxfun(@times,FC_axis_norm,ones(3,1)));
-      g = 9.81;
       if(nargin<7)
-        force_normalize_factor = obj.robot.getMass*g;
+        force_normalization_factor = obj.robot.getMass*norm(obj.robot.gravity);
       else
-        if(~isnumeric(force_normalize_factor) || numel(force_normalize_factor) ~= 1 || force_normalize_factor<=0)
-          error('Drake:RigidBodyConeWrench: force_normalize_factor should be a positive scalar');
+        if(~isnumeric(force_normalization_factor) || numel(force_normalization_factor) ~= 1 || force_normalization_factor<=0)
+          error('Drake:RigidBodyConeWrench: force_normalization_factor should be a positive scalar');
         end
       end
-      obj.force_normalize_factor = force_normalize_factor;
+      obj.force_normalization_factor = force_normalization_factor;
       obj.cos_theta_square = 1./(obj.FC_mu.^2+ones(1,obj.num_pts));
       obj.num_wrench_constraint = 2*obj.num_pts;
       obj.num_pt_F = 3;
@@ -106,7 +105,7 @@ classdef GraspFrictionConeWrench < RigidBodyContactWrench
     end
     
     function A = force(obj)
-      A = obj.force_normalize_factor*speye(3*obj.num_pts);
+      A = obj.force_normalization_factor*speye(3*obj.num_pts);
     end 
     
     function [pos,J] = contactPosition(obj,kinsol)
