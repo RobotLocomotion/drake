@@ -6,11 +6,11 @@ classdef SalmonBarVisualizer < ContactWrenchVisualizer
     r_hand_pt
   end
   methods
-    function obj = SalmonBarVisualizer(manip,t_knot,wrench_sol,l_hand,r_hand,l_hand_pt,r_hand_pt,use_contact_shapes)
+    function obj = SalmonBarVisualizer(manip,t_knot,wrench_sol,l_hand,r_hand,l_hand_pt,r_hand_pt,use_collision_geometry)
       if(nargin<8)
-        use_contact_shapes = false;
+        use_collision_geometry = false;
       end
-      obj = obj@ContactWrenchVisualizer(manip,t_knot,wrench_sol,use_contact_shapes);
+      obj = obj@ContactWrenchVisualizer(manip,t_knot,wrench_sol,use_collision_geometry);
       obj.l_hand = l_hand;
       obj.r_hand = r_hand;
       obj.l_hand_pt = l_hand_pt;

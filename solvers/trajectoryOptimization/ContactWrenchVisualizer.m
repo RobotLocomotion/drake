@@ -15,11 +15,11 @@ classdef ContactWrenchVisualizer < BotVisualizer
   end
   
   methods
-    function obj = ContactWrenchVisualizer(manip,t_knot,wrench_sol,use_contact_shapes)
+    function obj = ContactWrenchVisualizer(manip,t_knot,wrench_sol,use_collision_geometry)
       if nargin <4 
-        use_contact_shapes = false; 
+        use_collision_geometry = false; 
       end
-      obj = obj@BotVisualizer(manip,use_contact_shapes);
+      obj = obj@BotVisualizer(manip,use_collision_geometry);
       if(~isnumeric(t_knot))
         error('Drake:ContactWrenchVisualizer:t_knot should be numeric');
       end

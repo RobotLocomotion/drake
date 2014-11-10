@@ -118,11 +118,11 @@ while (true)
   % it gets *everything* correct
   current_body = setInertial(current_body,X_old_body_to_new_body'*current_body.I*X_old_body_to_new_body);
 
-  for i=1:length(current_body.visual_shapes)
-    current_body.visual_shapes{i}.T = current_body.visual_shapes{i}.T*T_old_body_to_new_body;
+  for i=1:length(current_body.visual_geometry)
+    current_body.visual_geometry{i}.T = current_body.visual_geometry{i}.T*T_old_body_to_new_body;
   end
-  for i=1:length(current_body.contact_shapes)
-    current_body.contact_shapes{i}.T = current_body.contact_shapes{i}.T*T_old_body_to_new_body;
+  for i=1:length(current_body.collision_geometry)
+    current_body.collision_geometry{i}.T = current_body.collision_geometry{i}.T*T_old_body_to_new_body;
   end
 
   for j=1:length(rbm.loop)

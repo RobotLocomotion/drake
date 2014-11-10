@@ -98,7 +98,7 @@ classdef RigidBodyWing < RigidBodyForceElement
         return;
       end
       
-      model = obj.updateVisualShapes(model);
+      model = obj.updateVisualGeometry(model);
       profile = obj.profile;
       velocity = obj.velocity;
       stallAngle = obj.stall_angle;
@@ -558,12 +558,16 @@ classdef RigidBodyWing < RigidBodyForceElement
       end
     end
     
-    function model = addWingVisualShapeToBody(obj, model, body)
-      % Adds a visual shape of the wing to the model on the body given for
+    function obj = addWingVisualShapeToBody(varargin)
+      errorDeprecatedFunction('addWingVisualGeometryToBody');
+    end
+    
+    function model = addWingVisualGeometryToBody(obj, model, body)
+      % Adds a visual geometry of the wing to the model on the body given for
       % drawing the wing in a visualizer.
       %
       % @param model manipulator the wing is part of
-      % @param body body to add the visual shape to
+      % @param body body to add the visual geometry to
       %
       % @retval model updated model
 
@@ -572,10 +576,10 @@ classdef RigidBodyWing < RigidBodyForceElement
 
       box_size = [ obj.chord, obj.span, wing_height ];
       
-      shape = RigidBodyBox(box_size, model.getFrame(obj.kinframe).T);
-      shape.name = [ obj.name '_urdf_shape' ];
+      geometry = RigidBodyBox(box_size, model.getFrame(obj.kinframe).T);
+      geometry.name = [ obj.name '_urdf_geometry' ];
       
-      model = model.addVisualShapeToBody(body, shape);
+      model = model.addVisualGeometryToBody(body, geometry);
 
     end
     
@@ -588,9 +592,13 @@ classdef RigidBodyWing < RigidBodyForceElement
       
     end
     
-    function model = updateVisualShapes(obj, model)
-      % Update visual shapes.  This should be called after a parameter
-      % update that may change the automatic drawing of shapes (ie the area
+    function obj = updateVisualShapes(varargin)
+      errorDeprecatedFunction('updateVisualGeometry');
+    end
+    
+    function model = updateVisualGeometry(obj, model)
+      % Update visual geometry.  This should be called after a parameter
+      % update that may change the automatic drawing of geometry (ie the area
       % of the drag force is changed).
       %
       % @param model RigidBodyManipulator this is a part of
@@ -601,11 +609,11 @@ classdef RigidBodyWing < RigidBodyForceElement
       if (obj.visual_geometry)
         
         
-        % remove any existing shapes for this body
-        model = model.removeShapeFromBody(obj.parent_id, [ obj.name '_urdf_shape' ]);
+        % remove any existing geometry for this body
+        model = model.removeVisualGeometryFromBody(obj.parent_id, [ obj.name '_urdf_geometry' ]);
         
-        % add new shapes
-        model = addWingVisualShapeToBody(obj, model, obj.parent_id);
+        % add new geometry
+        model = addWingVisualGeometryToBody(obj, model, obj.parent_id);
         
         
       end
@@ -803,8 +811,8 @@ classdef RigidBodyWing < RigidBodyForceElement
       model = model.setFrame(this_frame_id, bound_frame);
       
       if (visual_geometry_urdf)
-        % add visual shapes for automatic drawing of the wing
-        model = obj.addWingVisualShapeToBody(model, parent);
+        % add visual geometry for automatic drawing of the wing
+        model = obj.addWingVisualGeometryToBody(model, parent);
       end
       
     end

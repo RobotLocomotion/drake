@@ -44,8 +44,8 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensorWithState %& Visu
       end
       body = getBody(manip,obj.kinframe.body_ind);
       
-      if isempty(body.getContactShapes)
-        error('Drake:ContactForceTorqueSensor:NoContactShapes','There are no contact shapes associated with body %s',body.linkname);
+      if isempty(body.getCollisionGeometry)
+        error('Drake:ContactForceTorqueSensor:NoCollisionGeometry','There are no collision geometry associated with body %s',body.linkname);
       end
     end
     
