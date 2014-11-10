@@ -27,7 +27,7 @@ classdef ManipulationCentroidalDynamicsFullKinematicsPlanner < ComDynamicsFullKi
       obj.grasp_object_com = obj.robot.getBody(obj.grasp_object_idx).com;
       obj.grasp_object_inertia_origin = obj.robot.getBody(obj.grasp_object_idx).inertia;
       obj.robot_mass = obj.robot.getBody(obj.grasp_object_idx).mass;
-			obj.grasp_object_inertia_com = obj.grasp_object_inertia_origin+obj.robot_mass*[obj.grasp_object_com(2)^2+obj.grasp_object_com(3)^2 obj.grasp_object_com(1)*obj.grasp_object_com(2) obj.grasp_object_com(1)*obj.grasp_object_com(3); obj.grasp_object_com(1)*obj.grasp_object_com(2) obj.grasp_object_com(1)^2+obj.grasp_object_com(3)^2 obj.grasp_object_com(2)*obj.grasp_object_com(3);obj.grasp_object_com(1)*obj.grasp_object_com(3) obj.grasp_object_com(2)*obj.grasp_object_com(3) obj.grasp_object_com(1)^2+obj.grasp_object_com(2)^2];
+      obj.grasp_object_inertia_com = obj.grasp_object_inertia_origin-obj.robot_mass*(obj.grasp_object_com'*obj.grasp_object_com)*eye(3)+obj.grasp_object_com*obj.grasp_object_com';
 			obj.add_simple_dynamics = true;
 			obj = addSimpleDynamicConstraints(obj);
     end
