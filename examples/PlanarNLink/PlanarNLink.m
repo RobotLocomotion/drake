@@ -41,17 +41,17 @@ classdef PlanarNLink < PlanarRigidBodyManipulator
       body.linkname=['link',num2str(ind-1)];
       body.robotnum=1;
       body = setInertial(body,mass,[0;0;-len/2],diag([1;mass*len^2/12;1]));  % solid rod w/ uniform mass
-      body.visual_shapes{1} = RigidBodyCylinder(radius,len);
-      body.visual_shapes{1}.T = [eye(3),[0 0 -len/2]';zeros(1,3),1];
+      body.visual_geometry{1} = RigidBodyCylinder(radius,len);
+      body.visual_geometry{1}.T = [eye(3),[0 0 -len/2]';zeros(1,3),1];
       h=figure(1035); set(h,'Visible','off');
       co = get(gca,'ColorOrder');
       close(h);
-      body.visual_shapes{1}.c = co(mod(ind-2,size(co,1))+1,:);
+      body.visual_geometry{1}.c = co(mod(ind-2,size(co,1))+1,:);
       model.body = [model.body, body];
       
       % joint properties
       if (ind>2)
-        parentlen=model.body(ind-1).visual_shapes{1}.len;
+        parentlen=model.body(ind-1).visual_geometry{1}.len;
       else
         parentlen = 0;
       end

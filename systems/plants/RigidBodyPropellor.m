@@ -100,12 +100,16 @@ classdef RigidBodyPropellor < RigidBodyForceElement
 
     end
     
-    function manip = addPropellorVisualShapeToBody(obj, manip, body, diameter)
-      % Adds a visual shape of the propellor to the model on the body given for
+    function varargout = addPropellorVisualShapeToBody(varargin)
+      errorDeprecatedFunction('addPropellorVisualGeometryToBody');
+    end
+    
+    function manip = addPropellorVisualGeometryToBody(obj, manip, body, diameter)
+      % Adds a visual geometry of the propellor to the model on the body given for
       % drawing the in a visualizer.
       %
       % @param model manipulator the wing is part of
-      % @param body body to add the visual shape to
+      % @param body body to add the visual geometry to
       % @param diameter diameter of the propellor to draw
       % @param axis the propellor produces thrust on
       %
@@ -168,9 +172,9 @@ classdef RigidBodyPropellor < RigidBodyForceElement
       rpy = xyz_rpy(4:6);
       
       
-      shape = RigidBodyCylinder(diameter/2, prop_width, xyz, rpy);
-      shape = shape.setColor([ .5 .5 .5 ]);
-      manip = manip.addVisualShapeToBody(body, shape);
+      geometry = RigidBodyCylinder(diameter/2, prop_width, xyz, rpy);
+      geometry = geometry.setColor([ .5 .5 .5 ]);
+      manip = manip.addVisualGeometryToBody(body, geometry);
 
     end
     
@@ -238,7 +242,7 @@ classdef RigidBodyPropellor < RigidBodyForceElement
       end
       
       if visual_geometry
-        model = obj.addPropellorVisualShapeToBody(model, parent, visual_diameter);
+        model = obj.addPropellorVisualGeometryToBody(model, parent, visual_diameter);
       end
       
       

@@ -26,7 +26,7 @@ function [phi,normal,xA,xB,idxA,idxB] = collisionDetect(obj,kinsol, ...
 %   * body_idx - vector of body indices. Only these bodies will be
 %       considered for collsion detection
 %       @default - Consider all bodies
-%   * collision_groups - cell array of strings. Only the contact shapes
+%   * collision_groups - cell array of strings. Only the collision geometry
 %       belonging to these groups will be considered for collision
 %       detection.Note that the filtering based on
 %       collision_filter_groups and adjacency in the kinematic tree
@@ -86,7 +86,7 @@ else
   xB = [];
   idxB = [];
   
-  if isempty([obj.body.contact_shapes])
+  if isempty([obj.body.collision_geometry])
     % then I don't have any contact geometry.  all done.
     return;
   end

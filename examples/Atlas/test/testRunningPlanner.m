@@ -20,8 +20,8 @@ function [sol,robot_vis,v,cdfkp] = testRunningPlanner(seed,stride_length,major_i
   atlas_urdf = [getDrakePath,'/examples/Atlas/urdf/atlas_convex_hull.urdf'];
   atlas_vis_urdf = [getDrakePath,'/examples/Atlas/urdf/atlas_minimal_contact.urdf'];
   robot = RigidBodyManipulator(atlas_urdf,options);
-  robot = robot.replaceContactShapesWithCHull(robot.findLinkInd('l_hand'),1);
-  robot = robot.replaceContactShapesWithCHull(robot.findLinkInd('r_hand'),1);
+  robot = robot.replaceCollisionGeometryWithConvexHull(robot.findLinkInd('l_hand'),1);
+  robot = robot.replaceCollisionGeometryWithConvexHull(robot.findLinkInd('r_hand'),1);
   robot = compile(robot);
   robot_vis = RigidBodyManipulator(atlas_vis_urdf,options);
   if options.add_obstacle
@@ -598,10 +598,10 @@ function robot = addObstacle(robot,obstacle_x_position)
   wall1 = RigidBodyBox(2*[0.1; 1.235; 1.0],[obstacle_x_position-0.2,-0.565-1,1],[0;0;0]);
   wall2 = RigidBodyBox(2*[0.1; 0.15; 1.0],[obstacle_x_position-0.2,1.65-1,1],[0;0;0]);
   wall3 = RigidBodyBox(2*[0.1; 1.8; 0.25],[obstacle_x_position-0.2,0-1,2.25],[0;0;0]);
-  robot = robot.addShapeToBody('world',beam);
-  robot = robot.addShapeToBody('world',wall1);
-  robot = robot.addShapeToBody('world',wall2);
-  robot = robot.addShapeToBody('world',wall3);
+  robot = robot.addGeometryToBody('world',beam);
+  robot = robot.addGeometryToBody('world',wall1);
+  robot = robot.addGeometryToBody('world',wall2);
+  robot = robot.addGeometryToBody('world',wall3);
   robot = compile(robot);
 end
 
