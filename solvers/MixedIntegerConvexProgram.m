@@ -222,7 +222,7 @@ classdef MixedIntegerConvexProgram
 
     function obj = addCost(obj, Q, c, objcon)
       if ~isempty(Q)
-        obj.Q = obj.Q + Q;
+        obj.Q = obj.Q + sparse(Q);
       end
       if ~isempty(c)
         obj.c = obj.c + c;
@@ -230,6 +230,14 @@ classdef MixedIntegerConvexProgram
       if ~isempty(objcon)
         obj.objcon = obj.objcon + objcon;
       end
+    end
+
+    function obj = addSymbolicConstraints(obj, expr)
+      obj.symbolic_constraints = [obj.symbolic_constraints, expr];
+    end
+
+    function obj = addSymbolicCost(obj, expr)
+      obj.symbolic_objective = obj.symbolic_objective + expr;
     end
 
     function obj = convertPolyCones(obj)
