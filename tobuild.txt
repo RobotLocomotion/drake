@@ -15,5 +15,6 @@ bertini
 sedumi
 avl
 xfoil
+iris
 spotless
 drake

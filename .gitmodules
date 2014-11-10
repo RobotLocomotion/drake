@@ -60,3 +60,6 @@
 [submodule "director"]
 	path = director
 	url = https://github.com/RobotLocomotion/director
+[submodule "iris"]
+	path = iris
+	url = https://github.com/rdeits/iris-distro
