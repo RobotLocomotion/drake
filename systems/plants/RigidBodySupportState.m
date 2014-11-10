@@ -41,7 +41,7 @@ classdef RigidBodySupportState
         for i=1:length(obj.bodies)
           terrain_contact_point_struct = getTerrainContactPoints(r,obj.bodies(i));
           obj.contact_pts{i} = 1:size(terrain_contact_point_struct.pts,2);
-          obj.contact_groups{i} = r.getBody(obj.bodies(i)).collision_geometry_group_indices;
+          obj.contact_groups{i} = r.getBody(obj.bodies(i)).collision_geometry_group_names;
           obj.num_contact_pts(i)=length(obj.contact_pts{i});
         end
       end
