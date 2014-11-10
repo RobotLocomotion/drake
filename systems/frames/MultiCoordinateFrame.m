@@ -313,10 +313,6 @@ classdef MultiCoordinateFrame < CoordinateFrame
         vec = obj.coord_ids{i};
         obj.coord_ids{i} = vec(:).';
       end
-%       obj.frame{end+1} = new_subframe;
-%       obj.frame_id(end+1:end+new_subframe.dim) = length(obj.frame);
-%       obj.coord_ids{end+1} = length(obj.frame_id)-new_subframe.dim+1:length(obj.frame_id);
-      %
     end
     
     function str = getCoordinateName(obj,i)
