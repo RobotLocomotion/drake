@@ -917,6 +917,10 @@ classdef NonlinearProgram
       %                    -201  -- In ipopt, non-IPOPT exception thrown
       %                    -202  -- In ipopt, insufficient memory
       %                    -299  -- In ipopt, internal error
+      % 
+      % When using fmincon, if the algorithm is not specified through
+      % setSolverOptions('fmincon','Algorithm',ALGORITHM), then it will
+      % iterate all possible algorithms in fmincon to search for a solution.
       switch lower(obj.solver)
         case 'snopt'
           [x,objval,exitflag,infeasible_constraint_name] = snopt(obj,x0);
@@ -1346,8 +1350,21 @@ classdef NonlinearProgram
         dceq = dh';
       end
       
-      [x,objval,exitflag] = fmincon(@obj.objective,x0,full(obj.Ain),...
-        obj.bin,full(obj.Aeq),obj.beq,obj.x_lb,obj.x_ub,@fmincon_userfun,obj.solver_options.fmincon);
+      if(isempty(obj.solver_options.fmincon.Algorithm))
+        algorithms = {'interior-point','sqp','active-set','trust-region-reflective'};
+        fmincon_options = obj.solver_options.fmincon;
+        for i = 1:length(algorithms)
+          fmincon_options.Algorithm = algorithms{i};
+          [x,objval,exitflag] = fmincon(@obj.objective,x0,full(obj.Ain),...
+            obj.bin,full(obj.Aeq),obj.beq,obj.x_lb,obj.x_ub,@fmincon_userfun,fmincon_options);
+          if(exitflag == 1)
+            break;
+          end
+        end
+      else
+        [x,objval,exitflag] = fmincon(@obj.objective,x0,full(obj.Ain),...
+            obj.bin,full(obj.Aeq),obj.beq,obj.x_lb,obj.x_ub,@fmincon_userfun,obj.solver_options.fmincon);
+      end
       objval = full(objval);
       
       
