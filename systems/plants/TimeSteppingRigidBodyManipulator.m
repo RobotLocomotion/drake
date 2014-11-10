@@ -150,25 +150,25 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         end
       end
     end
-
+    
     function [xdn,df] = update(obj,t,x,u)
       if (nargout>1)
         [obj,z,Mqdn,wqdn,dz,dMqdn,dwqdn] = solveLCP(obj,t,x,u);
       else
         [obj,z,Mqdn,wqdn] = solveLCP(obj,t,x,u);
       end
-
+      
       num_q = obj.manip.num_positions;
-      q=x(1:num_q); qd=x((num_q+1):end);
+      q = x(1:obj.manip.num_positions); qd = x(obj.manip.num_positions+1:end);
       h = obj.timestep;
-
+      
       if isempty(z)
         qdn = wqdn;
       else
         qdn = Mqdn*z + wqdn;
       end
       qn = q + h*qdn;
-      xdn = [qn;qdn];
+      xdn = [qn; qdn];
 
       if (nargout>1)  % compute gradients
         if isempty(z)
@@ -220,7 +220,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         obj.LCP_cache.nargout = nargout;
 
         num_q = obj.manip.num_positions;
-        q=x(1:num_q); qd=x(num_q+(1:num_q));
+        q = x(1:obj.manip.num_positions); qd = x(obj.manip.num_positions+1:end);
         h = obj.timestep;
 
         if (nargout<5)

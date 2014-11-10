@@ -1,0 +1,104 @@
+<?xml version="1.0" ?>
+
+<robot name="cylinder" xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <link name="cylinder_1">
+    <inertial>
+      <mass value="0.5"/>
+      <origin xyz="0 0 0"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+    </inertial>
+    <collision>
+      <geometry>
+        <cylinder length="0.25" radius="0.025"/>
+      </geometry>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+    </collision>
+    <visual>
+      <geometry>
+        <cylinder length="0.25" radius="0.025"/>
+      </geometry>
+      <material name="gray">
+        <color rgba="0.5 0.5 .5 1"/>
+      </material>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+    </visual>
+  </link>
+
+   <link name="cylinder_2">
+    <inertial>
+      <mass value="0.5"/>
+      <origin rpy="0 0 0" xyz="0 0.1 0"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+    </inertial>
+    <collision>
+      <geometry>
+        <cylinder length="0.1" radius="0.025"/>
+      </geometry>
+      <origin rpy="0 0 0" xyz="0 0.1 0"/>
+    </collision>
+    <visual>
+      <geometry>
+        <cylinder length="0.1" radius="0.025"/>
+      </geometry>
+      <material name="gray">
+        <color rgba="0.5 0.5 .5 1"/>
+      </material>
+      <origin rpy="0 0 0" xyz="0 0.1 0"/>
+    </visual>
+  </link>
+
+  <link name="cylinder_3">
+    <inertial>
+      <mass value="0.5"/>
+      <origin rpy="0 0 0" xyz="0 0.2 0"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+    </inertial>
+    <collision>
+      <geometry>
+        <cylinder length="0.1" radius="0.025"/>
+      </geometry>
+      <origin rpy="0 0 0" xyz="0 0.2 0"/>
+    </collision>
+    <visual>
+      <geometry>
+        <cylinder length="0.1" radius="0.025"/>
+      </geometry>
+      <material name="gray">
+        <color rgba="0.5 0.5 .5 1"/>
+      </material>
+      <origin rpy="0 0 0" xyz="0 0.2 0"/>
+    </visual>
+  </link>
+
+  <joint name="cylinder_joint" type="revolute">
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <parent link="cylinder_1"/>
+    <child link="cylinder_2"/>
+    <dynamics damping="0.1" friction="0.1"/>
+    <limit effort="130" lower="-0.8" upper="0.8" velocity="12"/>
+    <safety_controller k_position="100" k_velocity="100" soft_lower_limit="-10.8" soft_upper_limit="10.8"/>
+  </joint>
+
+  <joint name="cylinder_joint_2" type="revolute">
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <parent link="cylinder_2"/>
+    <child link="cylinder_3"/>
+    <dynamics damping="0.1" friction="0.1"/>
+    <limit effort="130" lower="-0.8" upper="0.8" velocity="12"/>
+    <safety_controller k_position="100" k_velocity="100" soft_lower_limit="-10.8" soft_upper_limit="10.8"/>
+  </joint>
+
+  <transmission name="cylinder_joint_2_trans" type="pr2_mechanism_model/SimpleTransmission">
+    <actuator name="cylinder_joint_2_motor"/>
+    <joint name="cylinder_joint_2"/>
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+  <transmission name="cylinder_joint_trans" type="pr2_mechanism_model/SimpleTransmission">
+    <actuator name="cylinder_joint_motor"/>
+    <joint name="cylinder_joint"/>
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+
+</robot>

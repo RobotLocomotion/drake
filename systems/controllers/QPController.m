@@ -25,7 +25,17 @@ classdef QPController < MIMODrakeSystem
     
     qddframe = controller_data.acceleration_input_frame; % input frame for desired qddot 
         
-    input_frame = MultiCoordinateFrame({r.getStateFrame,qddframe,FootContactState,body_accel_input_frames{:}});
+%     robot_state_frames = r.getStateFrame();
+%     if (isa(r.getStateFrame, 'MultiCoordinateFrame'))
+%       % flatten
+%       state_frame_elems = cell(robot_state_frames.getNumFrames, 1);
+%       for i=1:robot_state_frames.getNumFrames
+%         state_frame_elems{i} = robot_state_frames.getFrameByNum(i);
+%       end
+%       robot_state_frames = state_frame_elems;
+%     end
+    
+    input_frame = MultiCoordinateFrame({r.getStateFrame, qddframe,FootContactState,body_accel_input_frames{:}});
 
     % whether to output generalized accelerations AND inputs (u)    
     if ~isfield(options,'output_qdd')
