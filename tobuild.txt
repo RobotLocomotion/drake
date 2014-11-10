@@ -9,7 +9,7 @@ bullet
 octomap
 snopt
 gurobi
-mosek
+#mosek
 gloptipoly3
 bertini
 sedumi
