@@ -187,45 +187,53 @@ classdef RigidBodyManipulator < Manipulator
       if ~isempty(terrain)
         typecheck(terrain,'RigidBodyTerrain');
       end
-      obj = removeTerrainGeometries(obj);
+      obj = removeTerrainGeometry(obj);
       obj.terrain = terrain;
-      obj = addTerrainGeometries(obj);
+      obj = addTerrainGeometry(obj);
     end
 
-    function obj = addTerrainGeometries(obj)
+    function obj = addTerrainGeometries(varargin)
+      errorDeprecatedFunction('addTerrainGeometry')
+    end
+    
+    function obj = addTerrainGeometry(obj)
       if ~isempty(obj.terrain)
-        geom = obj.terrain.getRigidBodyContactGeometry();
+        geom = obj.terrain.getCollisionGeometry();
         if ~isempty(geom)
           if ~iscell(geom), geom={geom}; end
           for i=1:numel(geom)
-            if ~any(cellfun(@(shape) isequal(geom{i},shape),obj.body(1).contact_shapes))
-              obj = obj.addContactShapeToBody(1,geom{i},'terrain');
+            if ~any(cellfun(@(geometry) isequal(geom{i},geometry),obj.body(1).collision_geometry))
+              obj = obj.addCollisionGeometryToBody(1,geom{i},'terrain');
               obj.dirty = true;
-          end
+            end
           end
         end
-        geom = obj.terrain.getRigidBodyShapeGeometry();
+        geom = obj.terrain.getVisualGeometry();
         if ~isempty(geom)
           if ~iscell(geom), geom={geom}; end
           for i=1:numel(geom)
-            if ~any(cellfun(@(shape) isequal(geom{i},shape),obj.body(1).visual_shapes))
-              obj.body(1).visual_shapes{end+1} = geom{i};
-          obj.dirty = true;
+            if ~any(cellfun(@(geometry) isequal(geom{i},geometry),obj.body(1).visual_geometry))
+              obj.body(1).visual_geometry{end+1} = geom{i};
+              obj.dirty = true;
+            end
+          end
         end
       end
     end
-      end
+    
+    function obj = removeTerrainGeometries(varargin)
+      errorDeprecatedFunction('removeTerrainGeometry');
     end
 
-    function obj = removeTerrainGeometries(obj)
+    function obj = removeTerrainGeometry(obj)
       if ~isempty(obj.terrain)
-        geom = obj.terrain.getRigidBodyContactGeometry();
-        geom_contact_idx = cellfun(@(shape) isequal(geom,shape),obj.body(1).contact_shapes);
-        obj.body(1).contact_shapes(geom_contact_idx) = [];
+        geom = obj.terrain.getCollisionGeometry();
+        geom_contact_idx = cellfun(@(geometry) isequal(geom,geometry),obj.body(1).collision_geometry);
+        obj.body(1).collision_geometry(geom_contact_idx) = [];
 
-        geom = obj.terrain.getRigidBodyShapeGeometry();
-        geom_visual_idx = cellfun(@(shape) isequal(geom,shape),obj.body(1).visual_shapes);
-        obj.body(1).visual_shapes(geom_visual_idx) = [];
+        geom = obj.terrain.getVisualGeometry();
+        geom_visual_idx = cellfun(@(geometry) isequal(geom,geometry),obj.body(1).visual_geometry);
+        obj.body(1).visual_geometry(geom_visual_idx) = [];
         
         obj.dirty = true;
       end
@@ -752,7 +760,7 @@ classdef RigidBodyManipulator < Manipulator
         valuecheck(model.body(i).T_body_to_joint(end,end),1);
       end
 
-      model = adjustContactShapes(model);
+      model = adjustCollisionGeometry(model);
       model = setupCollisionFiltering(model);
 
       model.dirty = false;
@@ -1117,10 +1125,14 @@ classdef RigidBodyManipulator < Manipulator
       end
     end
 
-    function groups = getContactShapeGroupNames(model)
+    function varargout = getContactShapeGroupNames(varargin)
+      errorDeprecatedFunction('getCollisionGeometryGroupNames');
+    end
+    
+    function groups = getCollisionGeometryGroupNames(model)
       groups = {};
       for i=1:length(model.body)
-        groups = horzcat(groups,model.body(i).contact_shape_group_name);
+        groups = horzcat(groups,model.body(i).collision_geometry_group_names);
       end
       groups = unique(groups);
     end
@@ -1208,50 +1220,66 @@ classdef RigidBodyManipulator < Manipulator
         end
       end
     end
+    
+    function obj = addContactShapeToBody(varargin)
+      errorDeprecatedFunction('addCollisionGeometryToBody');
+    end
 
-    function obj = addContactShapeToBody(obj,body_id,shape,varargin)
-      % obj = addContactShapeToBody(obj,body_id,shape,group_name)
+    function obj = addCollisionGeometryToBody(obj,body_id,geometry,varargin)
+      % obj = addCollisionGeometryToBody(obj,body_id,geometry,group_name)
       %
       % obj must be re-compiled after calling this method
       %
       % @param obj - RigidBodyManipulator object
       % @param body_id - Body index or body name
-      % @param shape - RigidBodyGeometry (or child class) object
+      % @param geometry - RigidBodyGeometry (or child class) object
       % @param group_name - String containing the name of the collision group
       %   (optional) @default 'default'
 
       body_idx = obj.parseBodyOrFrameID(body_id);
-      obj.body(body_idx) = obj.body(body_idx).addContactShape(shape, varargin{:});
+      obj.body(body_idx) = obj.body(body_idx).addCollisionGeometry(geometry, varargin{:});
       obj.dirty = true;
     end
-
-    function obj = addVisualShapeToBody(obj,body_id,shape)
-      % obj = addContactShapeToBody(obj,body_id,shape)
-      %
-      % @param obj - RigidBodyManipulator object
-      % @param body_id - Body index or body name
-      % @param shape - RigidBodyGeometry (or child class) object
-      body_idx = obj.parseBodyOrFrameID(body_id);
-      obj.body(body_idx).visual_shapes{end+1} = shape;
+    
+    function varargout = addVisualShapeToBody(varargin)
+      errorDeprecatedFunction('addVisualGeometryToBody');
     end
 
-    function obj = addShapeToBody(obj,body_id,shape,varargin)
-      % obj = addShapeToBody(obj,body_id,shape)
+    function obj = addVisualGeometryToBody(obj,body_id,geometry)
+      % obj = addCollisionGeometryToBody(obj,body_id,geometry)
       %
       % @param obj - RigidBodyManipulator object
       % @param body_id - Body index or body name
-      % @param shape - RigidBodyGeometry (or child class) object
-      % @param group_name - String containing the name of the collision group
-      %   (optional) @default 'default'
-      obj = obj.addVisualShapeToBody(body_id,shape);
-      obj = obj.addContactShapeToBody(body_id,shape,varargin{:});
+      % @param geometry - RigidBodyGeometry (or child class) object
+      body_idx = obj.parseBodyOrFrameID(body_id);
+      obj.body(body_idx).visual_geometry{end+1} = geometry;
     end
     
-    function obj = removeShapeFromBody(obj, body_id, shape_name)
-      % Removes all shapes from a given body that match a name
+    function varargout = addShapeToBody(varargin)
+      errorDeprecatedFunction('addGeometryToBody');
+    end
+
+    function obj = addGeometryToBody(obj,body_id,geometry,varargin)
+      % obj = addGeometryToBody(obj,body_id,geometry)
       %
-      % @param body_id body to remove shapes from
-      % @param shape_name name to match (will remove the first match)
+      % @param obj - RigidBodyManipulator object
+      % @param body_id - Body index or body name
+      % @param geometry - RigidBodyGeometry (or child class) object
+      % @param group_name - String containing the name of the collision group
+      %   (optional) @default 'default'
+      obj = obj.addVisualGeometryToBody(body_id,geometry);
+      obj = obj.addCollisionGeometryToBody(body_id,geometry,varargin{:});
+    end
+    
+    function varargout = removeShapeFromBody(varargin)
+      errorDeprecatedFunction('removeVisualGeometryFromBody');
+    end
+    
+    function obj = removeVisualGeometryFromBody(obj, body_id, geometry_name)
+      % Removes all geometry from a given body that match a name
+      %
+      % @param body_id body to remove geometry from
+      % @param geometry_name name to match (will remove the first match)
       %
       % @retval obj updated object
       
@@ -1259,29 +1287,33 @@ classdef RigidBodyManipulator < Manipulator
       
       removed_count = 0;
       
-      for i = 1:length(obj.body(body_idx).visual_shapes)
+      for i = 1:length(obj.body(body_idx).visual_geometry)
 
         index = i - removed_count;
         
-        if strcmp(obj.body(body_idx).visual_shapes{index}.name, shape_name) == true
+        if strcmp(obj.body(body_idx).visual_geometry{index}.name, geometry_name) == true
 
-          % remove this shape
-          obj.body(body_idx).visual_shapes(index) = [];
+          % remove this geometry
+          obj.body(body_idx).visual_geometry(index) = [];
           removed_count = removed_count + 1;
           
         end
       end
     end
+    
+    function varargout = replaceContactShapesWithCHull(varargin)
+      errorDeprecatedFunction('replaceCollisionGeometryWithConvexHull');
+    end
 
-    function model = replaceContactShapesWithCHull(model,body_indices,varargin)
+    function model = replaceCollisionGeometryWithConvexHull(model,body_indices,varargin)
       if any(body_indices==1)
-        model = removeTerrainGeometries(model);
+        model = removeTerrainGeometry(model);
       end
       for body_idx = reshape(body_indices,1,[])
-        model.body(body_idx) = replaceContactShapesWithCHull(model.body(body_idx),varargin{:});
+        model.body(body_idx) = replaceCollisionGeometryWithConvexHull(model.body(body_idx),varargin{:});
       end
       if any(body_indices==1)
-        model = addTerrainGeometries(model);
+        model = addTerrainGeometry(model);
       end
       model.dirty = true;
     end
@@ -1459,7 +1491,7 @@ classdef RigidBodyManipulator < Manipulator
     function v = constructVisualizer(obj,options)
       checkDirty(obj);
       if nargin<2, options=struct(); end
-      if ~isfield(options,'use_contact_shapes'), options.use_contact_shapes = false; end;
+      if ~isfield(options,'use_collision_geometry'), options.use_collision_geometry = false; end;
       if ~isfield(options,'viewer'), options.viewer = {'BotVisualizer','RigidBodyWRLVisualizer','NullVisualizer'};
       elseif ~iscell(options.viewer), options.viewer = {options.viewer}; end
 
@@ -1471,7 +1503,7 @@ classdef RigidBodyManipulator < Manipulator
           case 'NullVisualizer'
             arg = {getOutputFrame(obj)};
           case 'BotVisualizer'
-            arg = {obj,options.use_contact_shapes};
+            arg = {obj,options.use_collision_geometry};
           otherwise
             arg = {obj,options};
         end
@@ -2128,27 +2160,27 @@ classdef RigidBodyManipulator < Manipulator
           parent = setInertial(parent,parent.I + body.Xtree' * body.I * body.Xtree);
         end
 
-        for j=1:length(body.visual_shapes)
-          body.visual_shapes{j}.T = body.Ttree*body.visual_shapes{j}.T;
+        for j=1:length(body.visual_geometry)
+          body.visual_geometry{j}.T = body.Ttree*body.visual_geometry{j}.T;
         end
-        parent.visual_shapes = horzcat(parent.visual_shapes,body.visual_shapes);
+        parent.visual_geometry = horzcat(parent.visual_geometry,body.visual_geometry);
 
-        if (~isempty(body.contact_shapes))
-          for j=1:length(body.contact_shapes)
-            body.contact_shapes{j}.T = body.Ttree*body.contact_shapes{j}.T;
+        if (~isempty(body.collision_geometry))
+          for j=1:length(body.collision_geometry)
+            body.collision_geometry{j}.T = body.Ttree*body.collision_geometry{j}.T;
           end
-          nshapes = length(parent.contact_shapes);
-          parent.contact_shapes = {parent.contact_shapes{:},body.contact_shapes{:}};
+          ngeometry = length(parent.collision_geometry);
+          parent.collision_geometry = {parent.collision_geometry{:},body.collision_geometry{:}};
 
-          if ~isempty(body.contact_shape_group_name)
-            ngroups=length(parent.contact_shape_group_name);
-            [parent.contact_shape_group_name,ia,ic]=unique(horzcat(parent.contact_shape_group_name,body.contact_shape_group_name),'stable');
+          if ~isempty(body.collision_geometry_group_names)
+            ngroups=length(parent.collision_geometry_group_names);
+            [parent.collision_geometry_group_names,ia,ic]=unique(horzcat(parent.collision_geometry_group_names,body.collision_geometry_group_names),'stable');
             % note: passing 'stable' to unique (above) ensures that
-            if length(parent.contact_shape_group)<length(parent.contact_shape_group_name)
-              parent.contact_shape_group{length(parent.contact_shape_group_name)}=[];
+            if length(parent.collision_geometry_group_indices)<length(parent.collision_geometry_group_names)
+              parent.collision_geometry_group_indices{length(parent.collision_geometry_group_names)}=[];
             end
-            for j=1:length(body.contact_shape_group)
-              parent.contact_shape_group{ic(ngroups+j)} = [parent.contact_shape_group{ic(ngroups+j)},nshapes+body.contact_shape_group{j}];
+            for j=1:length(body.collision_geometry_group_indices)
+              parent.collision_geometry_group_indices{ic(ngroups+j)} = [parent.collision_geometry_group_indices{ic(ngroups+j)},ngeometry+body.collision_geometry_group_indices{j}];
             end
           end
         end
@@ -2249,10 +2281,14 @@ classdef RigidBodyManipulator < Manipulator
           error(['sensor element type ',type,' not supported (yet?)']);
       end
     end
+    
+    function obj = adjustContactShapes(varargin)
+      errorDeprecatedFunction('adjustCollisionGeometry');
+    end
 
-    function model = adjustContactShapes(model)
-      % model = adjustContactShapes(model) returns the model with
-      % adjusted contact geometries, according to the setings in
+    function model = adjustCollisionGeometry(model)
+      % model = adjustCollisionGeometry(model) returns the model with
+      % adjusted collision geometry, according to the setings in
       % model.contact_options. These are
       %   * Replace cylinders with capsules
       %
@@ -2271,12 +2307,12 @@ classdef RigidBodyManipulator < Manipulator
             [num2cell(find(body_changed))';getLinkName(model,body_changed)];
           warning(message_id, ...
             ['The bodies listed below each contained at least one ' ...
-            'RigidBodyCylinder as a contact shape:' ...
+            'RigidBodyCylinder as a collision geometry:' ...
             '\n\n' ...
             '\tBody Idx\tBody Name\n' ...
             repmat('\t%d:\t\t%s\n',1,sum(body_changed)) ...
             '\n\n' ...
-            'These contact shapes were replaced by ' ...
+            'These collision geometries were replaced by ' ...
             'RigidBodyCapsule objects, as the cylinder contact geometry ' ...
             'is less robust.\n\nTo prevent this replacement, ' ...
             'construct your manipulator with: ' ...

@@ -8,25 +8,25 @@ robot = RigidBodyManipulator([getDrakePath,'/examples/Atlas/urdf/atlas_convex_hu
 l_foot = robot.findLinkInd('l_foot');
 r_foot = robot.findLinkInd('r_foot');
 utorso = robot.findLinkInd('utorso');
-l_foot_shapes_heel = robot.getBody(l_foot).getContactShapes('heel');
-l_foot_shapes_toe = robot.getBody(l_foot).getContactShapes('toe');
-r_foot_shapes_heel = robot.getBody(r_foot).getContactShapes('heel');
-r_foot_shapes_toe = robot.getBody(r_foot).getContactShapes('toe');
+l_foot_geometry_heel = robot.getBody(l_foot).getCollisionGeometry('heel');
+l_foot_geometry_toe = robot.getBody(l_foot).getCollisionGeometry('toe');
+r_foot_geometry_heel = robot.getBody(r_foot).getCollisionGeometry('heel');
+r_foot_geometry_toe = robot.getBody(r_foot).getCollisionGeometry('toe');
 l_foot_toe = [];
 l_foot_heel = [];
 r_foot_toe = [];
 r_foot_heel = [];
-for i = 1:length(l_foot_shapes_heel)
-  l_foot_heel = [l_foot_heel l_foot_shapes_heel{i}.getPoints];
+for i = 1:length(l_foot_geometry_heel)
+  l_foot_heel = [l_foot_heel l_foot_geometry_heel{i}.getPoints];
 end
-for i = 1:length(l_foot_shapes_toe)
-  l_foot_toe = [l_foot_toe l_foot_shapes_toe{i}.getPoints];
+for i = 1:length(l_foot_geometry_toe)
+  l_foot_toe = [l_foot_toe l_foot_geometry_toe{i}.getPoints];
 end
-for i = 1:length(r_foot_shapes_heel)
-  r_foot_heel = [r_foot_heel r_foot_shapes_heel{i}.getPoints];
+for i = 1:length(r_foot_geometry_heel)
+  r_foot_heel = [r_foot_heel r_foot_geometry_heel{i}.getPoints];
 end
-for i = 1:length(r_foot_shapes_toe)
-  r_foot_toe = [r_foot_toe r_foot_shapes_toe{i}.getPoints];
+for i = 1:length(r_foot_geometry_toe)
+  r_foot_toe = [r_foot_toe r_foot_geometry_toe{i}.getPoints];
 end
 l_foot_bottom = [l_foot_toe l_foot_heel];
 r_foot_bottom = [r_foot_toe r_foot_heel];
