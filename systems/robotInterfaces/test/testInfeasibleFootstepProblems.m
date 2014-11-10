@@ -73,7 +73,9 @@ test_solver(@footstepPlanner.fixedRotation);
 test_solver(@footstepPlanner.alternatingMIQP);
 test_solver(@footstepPlanner.linearUnitCircle);
 test_solver(@footstepPlanner.humanoids2014);
-test_solver(@footstepPlanner.dev.relaxedMISOCP);
+if checkDependency('yalmip')
+  test_solver(@footstepPlanner.dev.relaxedMISOCP);
+end
 
 disp('ok');
 end
