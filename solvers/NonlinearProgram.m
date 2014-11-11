@@ -1355,8 +1355,14 @@ classdef NonlinearProgram
         fmincon_options = obj.solver_options.fmincon;
         for i = 1:length(algorithms)
           fmincon_options.Algorithm = algorithms{i};
+          try
           [x,objval,exitflag] = fmincon(@obj.objective,x0,full(obj.Ain),...
             obj.bin,full(obj.Aeq),obj.beq,obj.x_lb,obj.x_ub,@fmincon_userfun,fmincon_options);
+          catch err
+            if(~strcmp(err.identifier,'optimlib:fmincon:ConstrTRR'))
+              rethrow(err);
+            end
+          end
           if(exitflag == 1)
             break;
           end
