@@ -67,54 +67,54 @@ Qv = zeros(nv);
 Q = zeros(nq);
 q_nom = bsxfun(@times,q_pickup,ones(1,nT));
 Q_contact_force = 0.01*eye(3);
-mcdfkp = ManipulationCentroidalDynamicsFullKinematicsPlanner(robot,object_idx,nT,tf_range,Q_comddot,Qv,Q,q_nom,Q_contact_force,[finger1_contact_wrench finger2_contact_wrench finger3_contact_wrench ground_contact_wrench]);
+sbdfkp = SingleBodyDynamicsFullKinematicsPlanner(robot,object_idx,nT,tf_range,Q_comddot,Qv,Q,q_nom,Q_contact_force,[finger1_contact_wrench finger2_contact_wrench finger3_contact_wrench ground_contact_wrench]);
 
 % bounds on time interval
-mcdfkp = mcdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(0.03*ones(nT-1,1),0.1*ones(nT-1,1)),mcdfkp.h_inds(:));
+sbdfkp = sbdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(0.03*ones(nT-1,1),0.1*ones(nT-1,1)),sbdfkp.h_inds(:));
 
 
 % bounds on initial state
 hand_base_start = [0;0;0.5;0;0;0];
-mcdfkp = mcdfkp.addBoundingBoxConstraint(ConstantConstraint(reshape(bsxfun(@times,block_origin_start,ones(1,takeoff_idx)),[],1)),reshape(mcdfkp.q_inds(block_base_idx,1:takeoff_idx),[],1));
-mcdfkp = mcdfkp.addBoundingBoxConstraint(ConstantConstraint(hand_base_start),mcdfkp.q_inds(hand_base_idx,1));
-mcdfkp = mcdfkp.addBoundingBoxConstraint(ConstantConstraint(zeros(nv,1)),mcdfkp.v_inds(:,1));
+sbdfkp = sbdfkp.addBoundingBoxConstraint(ConstantConstraint(reshape(bsxfun(@times,block_origin_start,ones(1,takeoff_idx)),[],1)),reshape(sbdfkp.q_inds(block_base_idx,1:takeoff_idx),[],1));
+sbdfkp = sbdfkp.addBoundingBoxConstraint(ConstantConstraint(hand_base_start),sbdfkp.q_inds(hand_base_idx,1));
+sbdfkp = sbdfkp.addBoundingBoxConstraint(ConstantConstraint(zeros(nv,1)),sbdfkp.v_inds(:,1));
 
 % bounds on final state
 block_origin_final = block_origin_start+[0.3;0;0;0;0;pi/2];
-mcdfkp = mcdfkp.addBoundingBoxConstraint(ConstantConstraint(reshape(bsxfun(@times,block_origin_final,ones(1,nT-land_idx+1)),[],1)),reshape(mcdfkp.q_inds(block_base_idx,land_idx:nT),[],1));
+sbdfkp = sbdfkp.addBoundingBoxConstraint(ConstantConstraint(reshape(bsxfun(@times,block_origin_final,ones(1,nT-land_idx+1)),[],1)),reshape(sbdfkp.q_inds(block_base_idx,land_idx:nT),[],1));
 
 % grasp finger tips does not move
 finger1_fixed_cnstr = RelativeFixedPositionConstraint(robot,finger1_link3,finger1_tip,object_idx,nT-grasp_idx+1);
 finger2_fixed_cnstr = RelativeFixedPositionConstraint(robot,finger2_link3,finger2_tip,object_idx,nT-grasp_idx+1);
 finger3_fixed_cnstr = RelativeFixedPositionConstraint(robot,finger3_link3,finger3_tip,object_idx,nT-grasp_idx+1);
 
-mcdfkp = mcdfkp.addNonlinearConstraint(finger1_fixed_cnstr,mcdfkp.q_inds(:,grasp_idx:nT),mcdfkp.kinsol_dataind(grasp_idx:nT));
-mcdfkp = mcdfkp.addNonlinearConstraint(finger2_fixed_cnstr,mcdfkp.q_inds(:,grasp_idx:nT),mcdfkp.kinsol_dataind(grasp_idx:nT));
-mcdfkp = mcdfkp.addNonlinearConstraint(finger3_fixed_cnstr,mcdfkp.q_inds(:,grasp_idx:nT),mcdfkp.kinsol_dataind(grasp_idx:nT));
+sbdfkp = sbdfkp.addNonlinearConstraint(finger1_fixed_cnstr,sbdfkp.q_inds(:,grasp_idx:nT),sbdfkp.kinsol_dataind(grasp_idx:nT));
+sbdfkp = sbdfkp.addNonlinearConstraint(finger2_fixed_cnstr,sbdfkp.q_inds(:,grasp_idx:nT),sbdfkp.kinsol_dataind(grasp_idx:nT));
+sbdfkp = sbdfkp.addNonlinearConstraint(finger3_fixed_cnstr,sbdfkp.q_inds(:,grasp_idx:nT),sbdfkp.kinsol_dataind(grasp_idx:nT));
 
-mcdfkp = mcdfkp.addRigidBodyConstraint(pickup_finger1_cnstr1,{grasp_idx});
-mcdfkp = mcdfkp.addRigidBodyConstraint(pickup_finger2_cnstr1,{grasp_idx});
-mcdfkp = mcdfkp.addRigidBodyConstraint(pickup_finger3_cnstr1,{grasp_idx});
-mcdfkp = mcdfkp.addRigidBodyConstraint(pickup_finger1_cnstr2,{grasp_idx});
-mcdfkp = mcdfkp.addRigidBodyConstraint(pickup_finger2_cnstr2,{grasp_idx});
-mcdfkp = mcdfkp.addRigidBodyConstraint(pickup_finger3_cnstr2,{grasp_idx});
+sbdfkp = sbdfkp.addRigidBodyConstraint(pickup_finger1_cnstr1,{grasp_idx});
+sbdfkp = sbdfkp.addRigidBodyConstraint(pickup_finger2_cnstr1,{grasp_idx});
+sbdfkp = sbdfkp.addRigidBodyConstraint(pickup_finger3_cnstr1,{grasp_idx});
+sbdfkp = sbdfkp.addRigidBodyConstraint(pickup_finger1_cnstr2,{grasp_idx});
+sbdfkp = sbdfkp.addRigidBodyConstraint(pickup_finger2_cnstr2,{grasp_idx});
+sbdfkp = sbdfkp.addRigidBodyConstraint(pickup_finger3_cnstr2,{grasp_idx});
 
 % object above ground
 above_ground_cnstr = WorldPositionConstraint(robot,object_idx,block_corners,[nan;nan;0.01]*ones(1,8),nan(3,8));
-mcdfkp = mcdfkp.addRigidBodyConstraint(above_ground_cnstr,num2cell(takeoff_idx+1:land_idx-1));
+sbdfkp = sbdfkp.addRigidBodyConstraint(above_ground_cnstr,num2cell(takeoff_idx+1:land_idx-1));
 
-x_seed = zeros(mcdfkp.num_vars,1);
+x_seed = zeros(sbdfkp.num_vars,1);
 
-mcdfkp = mcdfkp.setSolverOptions('snopt','iterationslimit',1e6);
-mcdfkp = mcdfkp.setSolverOptions('snopt','majoriterationslimit',2000);
-mcdfkp = mcdfkp.setSolverOptions('snopt','majorfeasibilitytolerance',1e-6);
-mcdfkp = mcdfkp.setSolverOptions('snopt','majoroptimalitytolerance',2e-4);
-mcdfkp = mcdfkp.setSolverOptions('snopt','superbasicslimit',2000);
-mcdfkp = mcdfkp.setSolverOptions('snopt','print','test_grasp_move.out');
+sbdfkp = sbdfkp.setSolverOptions('snopt','iterationslimit',1e6);
+sbdfkp = sbdfkp.setSolverOptions('snopt','majoriterationslimit',2000);
+sbdfkp = sbdfkp.setSolverOptions('snopt','majorfeasibilitytolerance',1e-6);
+sbdfkp = sbdfkp.setSolverOptions('snopt','majoroptimalitytolerance',2e-4);
+sbdfkp = sbdfkp.setSolverOptions('snopt','superbasicslimit',2000);
+sbdfkp = sbdfkp.setSolverOptions('snopt','print','test_grasp_move.out');
 tic
-[x_sol,F,info] = mcdfkp.solve(x_seed);
+[x_sol,F,info] = sbdfkp.solve(x_seed);
 toc
-[q_sol,v_sol,h_sol,t_sol,com_sol,comdot_sol,comddot_sol,H_sol,Hdot_sol,lambda_sol,wrench_sol] = parseSolution(mcdfkp,x_sol);
+[q_sol,v_sol,h_sol,t_sol,com_sol,comdot_sol,comddot_sol,H_sol,Hdot_sol,lambda_sol,wrench_sol] = parseSolution(sbdfkp,x_sol);
 xtraj_sol = PPTrajectory(foh(cumsum([0 h_sol]),[q_sol;v_sol]));
 xtraj_sol = xtraj_sol.setOutputFrame(robot.getStateFrame);
 % object above the ground

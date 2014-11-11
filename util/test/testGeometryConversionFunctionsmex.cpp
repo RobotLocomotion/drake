@@ -43,7 +43,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   plhs[outnum++] = eigenToMatlab(domega2rpyd);
   plhs[outnum++] = eigenToMatlab(ddomega2rpyd);
   plhs[outnum++] = eigenToMatlab(rpyd2omega);
-	plhs[outnum++] = eigenToMatlab(drpyd2omega);
+  plhs[outnum++] = eigenToMatlab(drpyd2omega);
   plhs[outnum++] = eigenToMatlab(qd2omega);
   plhs[outnum++] = eigenToMatlab(dqd2omega);
   plhs[outnum++] = eigenToMatlab(dq2R);
