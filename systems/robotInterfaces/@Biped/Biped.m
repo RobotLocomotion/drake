@@ -157,6 +157,54 @@ classdef Biped < LeggedRobot
 
       foot_center = struct('right', rfoot0, 'left', lfoot0);
     end
+
+    function [centers, radii] = getReachabilityCircles(obj, params, fixed_foot_frame_id)
+      % Compute the centers and radii of the circular regions which constrain the
+      % next foot position in the frame of the fixed foot
+      params = applyDefaults(params, obj.default_footstep_params);
+
+      v1x = params.max_forward_step - params.max_backward_step;
+      v2x = v1x;
+      mean_width = mean([params.min_step_width, params.max_step_width]);
+      r2 = -((params.min_step_width - mean_width)^2 + (params.max_forward_step - v1x)^2) / (2 * (params.min_step_width - mean_width));
+      r1 = r2;
+      v1y = params.max_step_width - r1;
+      v2y = params.min_step_width + r2;
+      v1 = [v1x; v1y];
+      v2 = [v2x; v2y];
+      centers = [v1, v2];
+      radii = [r1, r2];
+
+      if fixed_foot_frame_id == obj.foot_frame_id.right;
+      elseif fixed_foot_frame_id == obj.foot_frame_id.left
+        centers(2,:) = -centers(2,:);
+      else
+        error('Invalid foot frame ID: %d', fixed_foot_frame_id);
+      end
+
+    end
+
+    function [foci, l] = getReachabilityEllipse(obj, params, fixed_foot_frame_id)
+      params = applyDefaults(params, obj.default_footstep_params);
+
+      f1y = (params.max_step_width + params.min_step_width) / 2;
+      f2y = f1y;
+      l = params.max_forward_step + params.max_backward_step;
+
+      d = sqrt((params.max_forward_step + params.max_backward_step)^2 - (params.max_step_width - params.min_step_width)^2);
+      f1x = (params.max_forward_step - params.max_backward_step)/2 - d/2;
+      f2x = (params.max_forward_step - params.max_backward_step)/2 + d/2;
+
+      foci = [f1x f2x; f1y f2y];
+
+      if fixed_foot_frame_id == obj.foot_frame_id.right;
+      % nothing needed
+      elseif fixed_foot_frame_id == obj.foot_frame_id.left
+        foci(2,:) = -foci(2,:); % flip left-right
+      else
+        error('Invalid foot frame ID: %d', fixed_foot_frame_id);
+      end
+    end
   end
 
 
