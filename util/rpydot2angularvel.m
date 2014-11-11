@@ -9,10 +9,10 @@ function [omega,domega] = rpydot2angularvel(rpy,rpydot)
 % @retval domega. A 4 x 6 matrix. The gradient of omega w.r.t [rpy;rpydot]
 
 if(nargout <= 1)
-	E = rpydot2angularvelMatrix(rpy);
-	omega = E*rpydot;
+  E = rpydot2angularvelMatrix(rpy);
+  omega = E*rpydot;
 else
-	[E,dE] = rpydot2angularvelMatrix(rpy);
-	omega = E*rpydot;
-	domega = [matGradMult(dE,rpydot) E];
+  [E,dE] = rpydot2angularvelMatrix(rpy);
+  omega = E*rpydot;
+  domega = [matGradMult(dE,rpydot) E];
 end

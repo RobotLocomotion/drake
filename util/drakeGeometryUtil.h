@@ -140,8 +140,8 @@ void angularvel2rpydotMatrix(const Eigen::MatrixBase<DerivedRPY>& rpy,
 
 template<typename DerivedRPY, typename DerivedE>
 void rpydot2angularvelMatrix(const Eigen::MatrixBase<DerivedRPY>& rpy,
-		Eigen::MatrixBase<DerivedE>& E,
-		typename Gradient<DerivedE,RPY_SIZE,1>::type* dE=nullptr);
+    Eigen::MatrixBase<DerivedE>& E,
+    typename Gradient<DerivedE,RPY_SIZE,1>::type* dE=nullptr);
 
 template <typename DerivedQ, typename DerivedM>
 void quatdot2angularvelMatrix(const Eigen::MatrixBase<DerivedQ>& q,

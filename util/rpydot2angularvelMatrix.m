@@ -29,17 +29,17 @@ sin_y = sin(y);
 
 E = [ cos_p*cos_y, -sin_y, 0;...
       cos_p*sin_y,  cos_y, 0;...
-			     -sin_p,      0, 1];
+	   -sin_p,      0, 1];
 if(nargout>1)
   rows = zeros(7,1);
-	cols = zeros(7,1);
-	vals = zeros(7,1);
-	rows(1) = 1; cols(1) = 2; vals(1) = -sin_p*cos_y;
-	rows(2) = 1; cols(2) = 3; vals(2) = -cos_p*sin_y;
+  cols = zeros(7,1);
+  vals = zeros(7,1);
+  rows(1) = 1; cols(1) = 2; vals(1) = -sin_p*cos_y;
+  rows(2) = 1; cols(2) = 3; vals(2) = -cos_p*sin_y;
   rows(3) = 2; cols(3) = 2; vals(3) = -sin_p*sin_y;	
   rows(4) = 2; cols(4) = 3; vals(4) = cos_p*cos_y;
-	rows(5) = 3; cols(5) = 2; vals(5) = -cos_p;
+  rows(5) = 3; cols(5) = 2; vals(5) = -cos_p;
   rows(6) = 4; cols(6) = 3; vals(6) = -cos_y;
-	rows(7) = 5; cols(7) = 3; vals(7) = -sin_y;
-	dE = sparse(rows,cols,vals,9,3,7);
+  rows(7) = 5; cols(7) = 3; vals(7) = -sin_y;
+  dE = sparse(rows,cols,vals,9,3,7);
 end

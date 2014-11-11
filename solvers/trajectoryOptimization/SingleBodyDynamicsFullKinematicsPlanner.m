@@ -1,4 +1,4 @@
-classdef ManipulationCentroidalDynamicsFullKinematicsPlanner < ComDynamicsFullKinematicsPlanner
+classdef SingleBodyDynamicsFullKinematicsPlanner < ComDynamicsFullKinematicsPlanner
   % only compute the centroidal dynamics on the object being grasped
   properties(SetAccess = protected)
     grasp_object_idx  % The index of the object being grasped.
@@ -14,7 +14,7 @@ classdef ManipulationCentroidalDynamicsFullKinematicsPlanner < ComDynamicsFullKi
   end
   
   methods
-    function obj = ManipulationCentroidalDynamicsFullKinematicsPlanner(robot,grasp_object_idx,N,tf_range,Q_comddot,Qv,Q,q_nom,Q_contact_force,contact_wrench_struct,options)
+    function obj = SingleBodyDynamicsFullKinematicsPlanner(robot,grasp_object_idx,N,tf_range,Q_comddot,Qv,Q,q_nom,Q_contact_force,contact_wrench_struct,options)
       % @param grasp_object_idx   The index of the object being grasped
       if nargin < 11, options = struct(); end
       obj = obj@ComDynamicsFullKinematicsPlanner(robot,N,tf_range,Q_comddot,Qv,Q,q_nom,Q_contact_force,contact_wrench_struct,options);
