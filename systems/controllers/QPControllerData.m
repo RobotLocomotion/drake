@@ -49,6 +49,9 @@ classdef QPControllerData < ControllerData
     plan_shift % linear offset to be applied to x0
     pelvis_z_prev 
     
+    left_toe_off = false;
+    right_toe_off = false;
+    pelvis_foot_height_reference = 0;
     % dynamics related -----------------------------------------------------------
     mu % friction coefficient    
   end
@@ -97,7 +100,7 @@ classdef QPControllerData < ControllerData
       assert(isnumeric(data.Qy));
       % optional properties
       if isfield(data,'link_constraints')
-        assert(isstruct(data.link_constraints));
+        assert(isstruct(data.link_constraints) || isempty(data.link_constraints));
       end
       if isfield(data,'R')
         assert(isnumeric(data.R));
