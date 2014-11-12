@@ -15,6 +15,8 @@ function runMixedIntegerEnvironment(r, start, goal, lb, ub, seeds, traj_degree, 
 checkDependency('lcmgl');
 checkDependency('iris');
 
+AUTOSAVE = false;
+
 bot_radius = 0.3;
 
 can_draw_lcm_polytopes = logical(exist('drawLCMPolytope', 'file'));
@@ -127,9 +129,11 @@ else
   c = tvlqr(r,xtraj,utraj,Q,R,Qf);
   sys = feedback(r,c);
   xtraj_sim = simulate(sys,[0 tf],x0);
-  folder = fullfile('~/locomotion/papers/icra-2015-uav-miqp/data', datestr(now,'yyyy-mm-dd_HH.MM.SS'));
-  system(sprintf('mkdir -p %s', folder));
-  save(fullfile(folder, 'results.mat'), 'xtraj', 'ytraj', 'utraj', 'r', 'v', 'safe_region_assignments', 'prob', 'safe_regions', 'xtraj_sim', 'start', 'goal');
+  if AUTOSAVE
+    folder = fullfile('~/locomotion/papers/icra-2015-uav-miqp/data', datestr(now,'yyyy-mm-dd_HH.MM.SS'));
+    system(sprintf('mkdir -p %s', folder));
+    save(fullfile(folder, 'results.mat'), 'xtraj', 'ytraj', 'utraj', 'r', 'v', 'safe_region_assignments', 'prob', 'safe_regions', 'xtraj_sim', 'start', 'goal');
+  end
 
 end
 v.playback(xtraj_sim, struct('slider', true));
