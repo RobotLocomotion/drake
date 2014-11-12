@@ -1,6 +1,7 @@
 % Simple example of common lyapunov functions
 % for robust stability of linear systems
 
+checkDependency('spotless');
 checkDependency('mosek');
 
 n = 4;
