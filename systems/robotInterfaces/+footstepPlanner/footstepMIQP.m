@@ -1,8 +1,11 @@
-function plan = footstepMIQP(biped, seed_plan, weights, goal_pos)
+function [plan, solvertime] = footstepMIQP(biped, seed_plan, weights, goal_pos, ~)
 % Run the Mixed Integer Quadratic Program form of the footstep planning problem.
 % This form can efficiently choose the assignment of individual foot positions to
 % safe (obstacle-free) regions, but always keeps the yaw value of every foot
 % fixed.
+% 
+% Note: this planner will soon be replaced by footstepPlanner.fixedRotation(), which 
+% should produce the same results but uses a more consistent internal structure.
 %
 % The structure of the desired footstep plan is indicated by the seed plan.
 % @param seed_plan a FootstepPlan object which specifies the structure of the
@@ -109,7 +112,7 @@ A = [A; At];
 b = [b; bt];
 
 
-w_trim = 1.1 * weights.relative(1) * seed_plan.params.nom_forward_step^2;
+w_trim = 1 * weights.relative(1) * seed_plan.params.nom_forward_step^2;
 % If t(j) is true, then require that step(i) == step(i+2) 
 M = 10;
 for j = 3:nsteps-2
@@ -233,10 +236,9 @@ end
 
 result = gurobi(model, params);
 if strcmp(result.status, 'INFEASIBLE') || strcmp(result.status, 'INF_OR_UNBD')
-  warning('DRC:footstepMIQP:InfeasibleProblem', 'The footstep planning problem is infeasible. This often occurs when the robot cannot reach from its current pose into any of the safe regions');
-  plan = seed_plan.slice(1:2);
-  return
+  error('Drake:MixedIntegerConvexProgram:InfeasibleProblem', 'The problem is infeasible');
 end
+solvertime = result.runtime;
 xstar = result.x;
 steps = xstar(x_ndx);
 steps = [steps(1:3,:); zeros(2, size(steps, 2)); steps(4,:)];

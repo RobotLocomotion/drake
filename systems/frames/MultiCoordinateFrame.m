@@ -279,6 +279,10 @@ classdef MultiCoordinateFrame < CoordinateFrame
       fr = obj.frame{id};
     end
     
+    function id = getFrameNumByName(obj,name)
+      id = find(cellfun(@(a)strcmp(a.name,name),obj.frame));
+    end
+    
     function id = getFrameNum(obj,frame)
       id = find(cellfun(@(a)isequal(a,frame),obj.frame));
       if length(id)>1
@@ -286,6 +290,31 @@ classdef MultiCoordinateFrame < CoordinateFrame
       end
     end
 
+    function obj = replaceFrameNum(obj,num,new_subframe)
+      if new_subframe.dim ~= obj.frame{num}.dim
+        error('new subframe does not match the dimensions of the frame you are trying to replace');
+      end
+      obj.frame{num} = new_subframe;
+    end
+    
+    function obj = appendFrame(obj,new_subframe)
+      old_me = obj;
+      newframes = obj.frame; newframes{end+1} = new_subframe;
+      obj = obj.constructFrame(newframes);
+      obj.frame_id(1:end-new_subframe.dim) = old_me.frame_id;
+      obj.coord_ids(1:end-1) = old_me.coord_ids;
+      % Make sure the vectors are all facing the same way...
+      % In the drakeAtlasSimul case this was actually a problem...
+      % maybe the frame coord_ids as initialized within Atlas
+      % somewhere were set up as 1xN? MultiCoordFrame seems to 
+      % generate Nx1 natively. But only 1xN is working for
+      % later frame generation... I need to figure this out :P
+      for i=1:length(obj.coord_ids)
+        vec = obj.coord_ids{i};
+        obj.coord_ids{i} = vec(:).';
+      end
+    end
+    
     function str = getCoordinateName(obj,i)
       ind = obj.frame_id(i);
       str = getCoordinateName(obj.frame{ind},find(obj.coord_ids{ind}==i));
