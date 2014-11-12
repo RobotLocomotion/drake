@@ -236,7 +236,7 @@ private:
   int secondDerivativesCached;
 
   // collision_model and collision_model_no_margins both maintain
-  // a collection of the collision geometry in the world, for use in
+  // a collection of the collision geometry in the RBM for use in
   // collision detection of different kinds. collision_model has
   // small margins applied to all collision geometry when that
   // geometry is added, to improve the numerical stability of
