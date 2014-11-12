@@ -176,9 +176,15 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
       %   and 3 and 4 together.
       typecheck(constraint,'RigidBodyConstraint');
       if ~iscell(time_index)
-        % then use { time_index(1), time_index(2), ... } ,
-        % aka independent constraints for each time
-        time_index = num2cell(reshape(time_index,1,[]));
+        if isa(constraint,'MultipleTimeKinematicConstraint')
+          % then use { time_index(1), time_index(2), ... } ,
+          % aka independent constraints for each time
+          time_index = {reshape(time_index,1,[])};
+        else
+          % then use { time_index(1), time_index(2), ... } ,
+          % aka independent constraints for each time
+          time_index = num2cell(reshape(time_index,1,[]));
+        end
       end
       for j = 1:numel(time_index)
         if isa(constraint,'SingleTimeKinematicConstraint')
