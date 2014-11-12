@@ -40,7 +40,7 @@ if can_draw_lcm_polytopes
   lcmgl = LCMGLClient('iris_seeds');
   % Clear the displayed polytopes
   drawLCMPolytope(0, 0, 0, 0, lc);
-  pause
+  % pause
 end
 
 dim = length(lb);
@@ -50,11 +50,11 @@ b_bounds = [ub; -lb];
 if can_draw_lcm_polytopes
   % Draw the bounding box
   drawLCMPolytope(A_bounds, b_bounds, 100, true, lc);
-  pause
+  % pause
 
   % Clear the displayed polytopes
   drawLCMPolytope(0, 0, 0, 0, lc);
-  pause
+  % pause
 end
 
 region_idx = 1;
@@ -80,7 +80,7 @@ prob.num_traj_segments = num_traj_segments;
 prob.traj_degree = traj_degree;
 prob.bot_radius = bot_radius;
 
-if 1
+if 0
   load('../data/2014-10-07_14.15.47/results.mat', 'xtraj_sim', 'ytraj');
   % xtraj_sim = xtraj_sim.setOutputFrame(r.getStateFrame());
 

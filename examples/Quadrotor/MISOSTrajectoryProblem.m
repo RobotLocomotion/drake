@@ -173,9 +173,18 @@ classdef MISOSTrajectoryProblem
         for d = 1:dim
           objective = objective + Cd{j}{obj.traj_degree}(:,d)' * Cd{j}{obj.traj_degree}(:,d);
         end
+      elseif obj.traj_degree == 5
+        c = reshape(coefficients(X{j}, t), [], dim);
+        objective = objective + sum((factorial(4) * c(end-1,:)).^2 + 1/2 * 2 * (factorial(4) * c(end-1,:)) .* (factorial(5) * c(end,:)) + 1/3 * (factorial(5) * c(end,:)).^2);
+
+        % for d = 1:dim
+        %   c = coefficients(X{j}(d), t);
+        %   objective = objective + (factorial(4) * c(end-1))^2 + 1/2 * 2 * (factorial(4) * c(end-1) * factorial(5) * c(end)) + 1/3 * (factorial(5) * c(end))^2;
+        % end
+        % snap_coeffs = Cd{j}{4};
+        % objective = objective + sum(sum(snap_coeffs' .* snap_coeffs', 1) ./ (1:obj.traj_degree+1));
       else
-        snap_coeffs = Cd{j}{4};
-        objective = objective + sum(sum(snap_coeffs' .* snap_coeffs', 1) ./ (1:obj.traj_degree+1));
+        error('not implemented yet');
       end
 
       % Set up the SOS constraints to keep each polynomial in its assigned region
@@ -183,7 +192,7 @@ classdef MISOSTrajectoryProblem
         sigma{j}{rs} = {};
         nr = size(region{rs},1);
         for r = 1:nr
-          sigma{j}{rs}{r} = {};
+          % sigma{j}{rs}{r} = {};
           A = safe_region_sets{rs}(r).A;
           b = safe_region_sets{rs}(r).b;
           for k = 1:size(A,1)
@@ -195,20 +204,22 @@ classdef MISOSTrajectoryProblem
             [coeff, ~] = coefficients(bi - obj.bot_radius - (ai*(C{j}') * basis), t, monolist(t, obj.traj_degree));
             sigma{j}{rs}{r}{k} = {sdpvar(1, obj.traj_degree), sdpvar(1, obj.traj_degree)};
             % objective = objective + 0.01 * (sum(abs(sigma{j}{rs}{r}{k}{1})) + sum(abs(sigma{j}{rs}{r}{k}{2})));
-            sigma1 = sigma{j}{rs}{r}{k}{1}*monolist(t, obj.traj_degree-1);
-            sigma2 = sigma{j}{rs}{r}{k}{2}*monolist(t, obj.traj_degree-1);
+            % sigma1 = sigma{j}{rs}{r}{k}{1}*monolist(t, obj.traj_degree-1);
+            % sigma2 = sigma{j}{rs}{r}{k}{2}*monolist(t, obj.traj_degree-1);
             Q1 = sdpvar((obj.traj_degree-1)/2 + 1);
             Q2 = sdpvar((obj.traj_degree-1)/2 + 1);
             m = monolist(t, (obj.traj_degree-1)/2);
             if isa(region{rs}(r,j), 'sdpvar')
               constraints = [constraints,...
-                             implies(region{rs}(r,j), coeff == coefficients((sigma1)*(t) + (sigma2)*(1-t), t)),...
+                             % implies(region{rs}(r,j), coeff == coefficients((sigma1)*(t) + (sigma2)*(1-t), t)),...
+                             implies(region{rs}(r,j), coeff' == [0, sigma{j}{rs}{r}{k}{1}] + [sigma{j}{rs}{r}{k}{2}, 0] - [0, sigma{j}{rs}{r}{k}{2}]),...
                              -SIGMA_BOUND <= sigma{j}{rs}{r}{k}{1} <= SIGMA_BOUND,...
                              -SIGMA_BOUND <= sigma{j}{rs}{r}{k}{2} <= SIGMA_BOUND,...
                             ];
             elseif region{rs}(r,j)
               constraints = [constraints,...
-                             coeff == coefficients((sigma1)*(t) + (sigma2)*(1-t), t)];
+                             % coeff == coefficients((sigma1)*(t) + (sigma2)*(1-t), t)];
+                             coeff' == [0, sigma{j}{rs}{r}{k}{1}] + [sigma{j}{rs}{r}{k}{2}, 0] - [0, sigma{j}{rs}{r}{k}{2}]];
             end
             if obj.traj_degree == 1
               constraints = [constraints, sigma1 >= 0, sigma2 >= 0];
@@ -219,12 +230,16 @@ classdef MISOSTrajectoryProblem
                              ];
             else
               constraints = [constraints,...
-                             coefficients(sigma1, t) == coefficients(m'*Q1*m, t),...
-                             coefficients(sigma2, t) == coefficients(m'*Q2*m, t),...
+                             % sos(sigma1),...
+                             % sos(sigma2),...
+                             sigma{j}{rs}{r}{k}{1}' == coefficients(m'*Q1*m, t),...
+                             sigma{j}{rs}{r}{k}{2}' == coefficients(m'*Q2*m, t),...
                              Q1 >= 0,...
                              Q2 >= 0,...
+                             % trace(Q1) == 1,...
+                             % trace(Q2) == 1,...
                            ];
-              objective = objective + trace(Q1) + trace(Q2);
+              % objective = objective + 0.1 * trace(Q1) + 0.1 * trace(Q2);
             end
           end
         end
@@ -233,7 +248,7 @@ classdef MISOSTrajectoryProblem
 
     t0 = tic;
     if obj.traj_degree > 3 && isempty(cell2mat(safe_region_assignments))
-      diagnostics = optimize(constraints, objective, sdpsettings('solver', 'bnb', 'bnb.maxiter', 5000, 'verbose', 0, 'debug', true));
+      diagnostics = optimize(constraints, objective, sdpsettings('solver', 'bnb', 'bnb.maxiter', 5000, 'verbose', 3, 'debug', true))
     else
       if checkDependency('mosek');
         diagnostics = optimize(constraints, objective, sdpsettings('solver', 'mosek', 'mosek.MSK_DPAR_MIO_TOL_REL_GAP', 1e-2, 'mosek.MSK_DPAR_MIO_MAX_TIME', 600, 'verbose', 3));
@@ -245,7 +260,7 @@ classdef MISOSTrajectoryProblem
     end
     toc(t0);
 
-    breaks = 0:obj.dt:(obj.num_traj_segments*obj.dt);
+    breaks = 0:1:(obj.num_traj_segments);
     coeffs = zeros([dim, length(breaks)-1, obj.traj_degree+1]);
 
     if diagnostics.problem == 0
@@ -257,17 +272,48 @@ classdef MISOSTrajectoryProblem
           if length(ct) < obj.traj_degree + 1
             ct = [ct; 1e-6]; % stupid yalmip bug when polynomial is constant
           end
-          lambda = t / obj.dt;
-          z = ct'* monolist(lambda, obj.traj_degree);
-          [cz, ~] = coefficients(z, t, monolist(t, obj.traj_degree));
-          coeffs(i,k,:) = flip(cz');
+          % lambda = t / obj.dt;
+          % z = ct'* monolist(lambda, obj.traj_degree);
+          % [cz, ~] = coefficients(z, t, monolist(t, obj.traj_degree));
+          coeffs(i,k,:) = flip(ct');
         end
       end
     end
-    
-    ytraj = PPTrajectory(mkpp(breaks, coeffs, dim));
 
-    objective = double(objective);
+    objective = double(objective)
+    
+    ytraj = PPTrajectory(mkpp(breaks, coeffs, dim)); 
+
+    % Check our minimum snap objective formula
+    obj_approx = [];
+    if obj.traj_degree > 3
+      snap_traj = fnder(ytraj, 4);
+    else
+      snap_traj = fnder(ytraj, obj.traj_degree);
+    end
+    ks = [100, 300, 500, 700, 900]; 
+    for k = ks
+      tsample = linspace(breaks(1), breaks(end), k);
+      snap_samples = snap_traj.eval(tsample);
+      obj_approx(end+1) = sum(sum(snap_samples.^2, 1) * (tsample(2) - tsample(1)));
+    end
+    figure(78)
+    clf
+    hold on
+    obj_approx
+    plot(ks, obj_approx, 'k.-');
+    plot([ks(1), ks(end)], [objective, objective], 'k--')
+
+    if obj.traj_degree == 5
+      obj_symb = 0;
+      for j = 1:obj.num_traj_segments
+        obj_symb = obj_symb + sum((factorial(4) * coeffs(:,j,2)).^2 + (factorial(4) * coeffs(:,j,2)) .* (factorial(5) * coeffs(:,j,1)) + (1/3) * (factorial(5) * coeffs(:,j,1)).^2);
+      end
+      obj_symb
+      plot([ks(1), ks(end)], [obj_symb, obj_symb], 'r--')
+    end
+
+    ytraj = ytraj.scaleTime(obj.dt);
 
     if isempty(cell2mat(safe_region_assignments))
       safe_region_assignments = cell(1, length(region));
