@@ -104,18 +104,6 @@ classdef DirectTrajectoryOptimization < NonlinearProgram
     function h_inds = getHinds(obj)
       h_inds = obj.h_inds;
     end
-    
-    function N = getN(obj)
-      N = obj.N;
-    end
-
-    function x_inds = getXinds(obj)
-      x_inds = obj.x_inds;
-    end
-
-    function h_inds = getHinds(obj)
-      h_inds = obj.h_inds;
-    end
 
     function obj = addInputConstraint(obj,constraint,time_index)
       % Add constraint (or composite constraint) that is a function of the
