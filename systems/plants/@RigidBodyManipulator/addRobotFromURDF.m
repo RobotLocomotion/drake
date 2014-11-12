@@ -134,15 +134,20 @@ for i=0:(frames.getLength()-1)
 end
 
 % weld the root link of this robot to the world link
+% or some other link if specified in options
+if (isfield(options, 'weld_to_link'))
+  weldLink = options.weld_to_link;
+else
+  weldLink = 1; % world link
+end
 ind = find([model.body.parent]<1);
 rootlink = ind([model.body(ind).robotnum]==robotnum);
-worldlink = 1;
 
 for i=1:length(rootlink)
-  if ~isempty(options.floating)
-    model = addFloatingBase(model,worldlink,rootlink(i),xyz,rpy,options.floating);
+  if (~isempty(options.floating))
+    model = addFloatingBase(model,weldLink,rootlink(i),xyz,rpy,options.floating);
   else
-    model = addJoint(model,'','fixed',worldlink,rootlink(i),xyz,rpy);
+    model = addJoint(model,'','fixed',weldLink,rootlink(i),xyz,rpy);
   end
 end
 

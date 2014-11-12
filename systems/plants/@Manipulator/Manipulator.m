@@ -180,7 +180,7 @@ classdef Manipulator < DrakeSystem
         [obj,obj.position_constraint_ids(1,id)] = addStateConstraint(obj,state_con);
       else 
         obj.num_position_constraints = obj.num_position_constraints-obj.position_constraints{id}.num_cnstr;
-        obj = updateStateConstraint(obj,obj.position_constraint_ids(1,id),state_con);
+        obj = updateStateConstraint(obj,obj.position_constraint_ids(1,id),state_con, 1:2*obj.num_positions);
       end
       
       obj.num_position_constraints = obj.num_position_constraints+con.num_cnstr;
