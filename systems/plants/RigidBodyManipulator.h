@@ -235,6 +235,16 @@ private:
   bool kinematicsInit;
   int secondDerivativesCached;
 
+  // collision_model and collision_model_no_margins both maintain
+  // a collection of the collision geometry in the RBM for use in
+  // collision detection of different kinds. collision_model has
+  // small margins applied to all collision geometry when that
+  // geometry is added, to improve the numerical stability of
+  // contact gradients taken using the model. collision_model_no_margins
+  // does not apply these margins, such that it can be used for
+  // precise raycasting, e.g. for simulating a laser scanner
+  // These models are switched between with the use_margins flag
+  // to collision-relevant methods of the RBM.
   std::shared_ptr< DrakeCollision::Model > collision_model;
   std::shared_ptr< DrakeCollision::Model > collision_model_no_margins;  
 public:
