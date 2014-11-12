@@ -224,7 +224,7 @@ classdef LeggedRobotPlanningProblem
         ignored_bodies_current = unique(ignored_bodies{i});
 
         active_collision_options.body_idx = setdiff(1:obj.robot.getNumBodies(),ignored_bodies_current);
-        active_collision_options.collision_groups = setdiff(unique([obj.robot.body.collision_group_name]),ignored_groups);
+        active_collision_options.collision_groups = setdiff(unique([obj.robot.body.collision_geometry_group_names]),ignored_groups);
         min_distance_constraint = MinDistanceConstraint(obj.robot,obj.min_distance,active_collision_options);  
         prog = prog.addRigidBodyConstraint(min_distance_constraint,i);
 
