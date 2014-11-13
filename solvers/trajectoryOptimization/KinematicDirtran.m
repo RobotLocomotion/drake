@@ -14,6 +14,14 @@ classdef KinematicDirtran < KinematicTrajectoryOptimization ...
       obj.v_inds = obj.x_inds(robot.getNumPositions()+(1:robot.getNumVelocities()),:);
     end
 
+    function obj = addConstraint(obj, constraint, varargin)
+      if isa(constraint, 'RigidBodyConstraint')
+        obj = addRigidBodyConstraint(obj,constraint, varargin{:});
+      else
+        obj = addConstraint@DirtranTrajectoryOptimization(obj,constraint,varargin{:});
+      end
+    end
+
     function [xtraj,z,F,info] = solveTraj(obj,t_init,q_traj_init)
       traj_init.x = [q_traj_init;q_traj_init.fnder()];      
       traj_init.u = q_traj_init.fnder().fnder();

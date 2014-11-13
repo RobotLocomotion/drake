@@ -154,6 +154,14 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
         df = [0.5*(q-q_nom)'*Q*(q-q_nom)*[1,1], (h(1)+h(2))*(q-q_nom)'*Q];
       end
     end
+
+    function obj = addConstraint(obj, constraint, varargin)
+      if isa(constraint, 'RigidBodyConstraint')
+        obj = addRigidBodyConstraint(obj,constraint, varargin{:});
+      else
+        obj = addConstraint@SimpleDynamicsFullKinematicsPlanner(obj,constraint,varargin{:});
+      end
+    end
     
     function obj = addContactDynamicConstraints(obj,knot_idx,contact_wrench_idx,knot_lambda_idx)
       num_knots = numel(knot_idx);
