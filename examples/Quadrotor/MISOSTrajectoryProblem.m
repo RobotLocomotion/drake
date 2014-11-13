@@ -162,8 +162,11 @@ classdef MISOSTrajectoryProblem
     objective = 0;
 
     sigma = {};
+    Q = {};
+    m = monolist(t, (obj.traj_degree-1)/2);
     for j = 1:obj.num_traj_segments
       sigma{j} = {};
+      Q{j} = {};
       if isempty(cell2mat(safe_region_assignments))
         constraints = [constraints, ...
                        -C_BOUND <= C{j} <= C_BOUND,...
@@ -176,13 +179,6 @@ classdef MISOSTrajectoryProblem
       elseif obj.traj_degree == 5
         c = reshape(coefficients(X{j}, t), [], dim);
         objective = objective + sum((factorial(4) * c(end-1,:)).^2 + 1/2 * 2 * (factorial(4) * c(end-1,:)) .* (factorial(5) * c(end,:)) + 1/3 * (factorial(5) * c(end,:)).^2);
-
-        % for d = 1:dim
-        %   c = coefficients(X{j}(d), t);
-        %   objective = objective + (factorial(4) * c(end-1))^2 + 1/2 * 2 * (factorial(4) * c(end-1) * factorial(5) * c(end)) + 1/3 * (factorial(5) * c(end))^2;
-        % end
-        % snap_coeffs = Cd{j}{4};
-        % objective = objective + sum(sum(snap_coeffs' .* snap_coeffs', 1) ./ (1:obj.traj_degree+1));
       else
         error('not implemented yet');
       end
@@ -190,6 +186,7 @@ classdef MISOSTrajectoryProblem
       % Set up the SOS constraints to keep each polynomial in its assigned region
       for rs = 1:length(region)
         sigma{j}{rs} = {};
+        Q{j}{rs} = {};
         nr = size(region{rs},1);
         for r = 1:nr
           % sigma{j}{rs}{r} = {};
@@ -204,6 +201,28 @@ classdef MISOSTrajectoryProblem
             [coeff, ~] = coefficients(bi - obj.bot_radius - (ai*(C{j}') * basis), t, monolist(t, obj.traj_degree));
             if k > length(sigma{j}{rs})
               sigma{j}{rs}{k} = {sdpvar(1, obj.traj_degree), sdpvar(1, obj.traj_degree)};
+              if obj.traj_degree == 1
+                constraints = [constraints,...
+                  sigma{j}{rs}{k}{1} >= 0,...
+                  sigma{j}{rs}{k}{2} >= 0,...
+                  ];
+              elseif obj.traj_degree == 3
+                constraints = [constraints, ...
+                               rcone(sigma{j}{rs}{k}{1}(2), 2*sigma{j}{rs}{k}{1}(1), sigma{j}{rs}{k}{1}(3)),...
+                               rcone(sigma{j}{rs}{k}{2}(2), 2*sigma{j}{rs}{k}{2}(1), sigma{j}{rs}{k}{2}(3)),...
+                               ];
+              elseif obj.traj_degree > 3
+                Q{j}{rs}{k} = {sdpvar((obj.traj_degree-1)/2 + 1), sdpvar((obj.traj_degree-1)/2 + 1)};
+                constraints = [constraints,...
+                  sigma{j}{rs}{k}{1}' == coefficients(m'*Q{j}{rs}{k}{1}*m, t),...
+                  sigma{j}{rs}{k}{2}' == coefficients(m'*Q{j}{rs}{k}{2}*m, t),...
+                  Q{j}{rs}{k}{1} >= 0,...
+                  Q{j}{rs}{k}{2} >= 0,...
+                  ];
+                % objective = objective + 0.1 * trace(Q{j}{rs}{k}{1}) + 0.1 * trace(Q{j}{rs}{k}{2});
+              else
+                error('not implemented');
+              end
               if isa(region{rs}(1,1), 'sdpvar')
                 constraints = [constraints,...
                  -SIGMA_BOUND <= sigma{j}{rs}{k}{1} <= SIGMA_BOUND,...
@@ -211,9 +230,6 @@ classdef MISOSTrajectoryProblem
                  ];
               end
             end
-            Q1 = sdpvar((obj.traj_degree-1)/2 + 1);
-            Q2 = sdpvar((obj.traj_degree-1)/2 + 1);
-            m = monolist(t, (obj.traj_degree-1)/2);
             if isa(region{rs}(r,j), 'sdpvar')
               constraints = [constraints,...
                              % implies(region{rs}(r,j), coeff == coefficients((sigma1)*(t) + (sigma2)*(1-t), t)),...
@@ -224,42 +240,18 @@ classdef MISOSTrajectoryProblem
                              % coeff == coefficients((sigma1)*(t) + (sigma2)*(1-t), t)];
                              coeff' == [0, sigma{j}{rs}{k}{1}] + [sigma{j}{rs}{k}{2}, 0] - [0, sigma{j}{rs}{k}{2}]];
             end
-            if obj.traj_degree == 1
-              constraints = [constraints, sigma1 >= 0, sigma2 >= 0];
-            elseif obj.traj_degree == 3
-              constraints = [constraints, ...
-                             rcone(sigma{j}{rs}{k}{1}(2), 2*sigma{j}{rs}{k}{1}(1), sigma{j}{rs}{k}{1}(3)),...
-                             rcone(sigma{j}{rs}{k}{2}(2), 2*sigma{j}{rs}{k}{2}(1), sigma{j}{rs}{k}{2}(3)),...
-                             ];
-            else
-              constraints = [constraints,...
-                             % sos(sigma1),...
-                             % sos(sigma2),...
-                             sigma{j}{rs}{k}{1}' == coefficients(m'*Q1*m, t),...
-                             sigma{j}{rs}{k}{2}' == coefficients(m'*Q2*m, t),...
-                             Q1 >= 0,...
-                             Q2 >= 0,...
-                             % trace(Q1) == 1,...
-                             % trace(Q2) == 1,...
-                           ];
-              objective = objective + 0.1 * trace(Q1) + 0.1 * trace(Q2);
-            end
           end
         end
       end
     end
 
-    if obj.traj_degree > 3 && ~isempty(cell2mat(safe_region_assignments))
-      [model, recoverymodel, diagnostics] = export(constraints, objective, sdpsettings('solver', 'sedumi'))
-      keyboard()
-    end
 
     t0 = tic;
     if obj.traj_degree > 3 && isempty(cell2mat(safe_region_assignments))
       diagnostics = optimize(constraints, objective, sdpsettings('solver', 'bnb', 'bnb.maxiter', 5000, 'verbose', 3, 'debug', true))
     else
       if checkDependency('mosek');
-        diagnostics = optimize(constraints, objective, sdpsettings('solver', 'mosek', 'mosek.MSK_DPAR_MIO_TOL_REL_GAP', 1e-2, 'mosek.MSK_DPAR_MIO_MAX_TIME', 600, 'verbose', 3));
+        diagnostics = optimize(constraints, objective, sdpsettings('solver', 'mosek', 'mosek.MSK_DPAR_MIO_TOL_REL_GAP', 1e-2, 'mosek.MSK_DPAR_MIO_MAX_TIME', 600, 'verbose', 3))
       else
         warning('Mosek not found. Will fall back to gurobi');
         checkDependency('gurobi');
@@ -268,10 +260,17 @@ classdef MISOSTrajectoryProblem
     end
     toc(t0);
 
+    % if obj.traj_degree > 3 && ~isempty(cell2mat(safe_region_assignments))
+    %   % [model, recoverymodel, diagnostics] = export(constraints, objective, sdpsettings('solver', 'sedumi'))
+    %   optimize(constraints, objective, sdpsettings('solver', 'mosek', 'savedebug', 1));
+    %   load mosekdebug
+    %   mosekopt('write(probfile.task)', prob);
+    % end
+
     breaks = 0:1:(obj.num_traj_segments);
     coeffs = zeros([dim, length(breaks)-1, obj.traj_degree+1]);
 
-    if diagnostics.problem == 0
+    if diagnostics.problem == 0 || diagnostics.problem == 9
       % Build the output trajectory
       for k = 1:length(breaks)-1
         c = value(C{k});
