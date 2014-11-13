@@ -1,7 +1,11 @@
 function [a0, a1, a2, a3] = cubicSplineCoefficients(tf, q0, qf, qdot0, qdotf)
 % cubicSplineCoefficients: compute the coefficients for a cubic polynomial spline
 % See Craig, J. Introduction to Robotics: Mechanics and Control, 2005, p207, eq 7.11
-% These coefficients assume that q0 and qdot0 occur at time = 0
+% These coefficients assume that q0 and qdot0 occur at time = 0.
+%
+% Note that these are exactly the same coefficients computed by pchipDeriv,
+% but this code is 5 to 10 times faster. For a comparison of the results and
+% performance, see test/testCubicSplineCoefficients.m
 
 a0 = q0;
 a1 = qdot0;
