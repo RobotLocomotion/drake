@@ -147,7 +147,7 @@ smoothDistancePenalty(double& c, MatrixXd& dc,
 void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 
   if (nrhs < 2) {
-    mexErrMsgIdAndTxt("Drake:collisionDetectmex:NotEnoughInputs","Usage smoothDistancePenaltymex(model_ptr,min_distance)");
+    mexErrMsgIdAndTxt("Drake:smoothDistancePenaltymex:NotEnoughInputs","Usage smoothDistancePenaltymex(model_ptr,min_distance)");
   }
 
   // first get the model_ptr back from matlab
@@ -175,7 +175,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
           sizeof(double)*n_active_bodies);
       copy(tmp.begin(),tmp.end(),active_bodies_idx.begin());
     } else {
-      mexErrMsgIdAndTxt("Drake:collisionDetectmex:WrongInputClass","active_collision_options.body_idx must be an int32 or a double array");
+      mexErrMsgIdAndTxt("Drake:smoothDistancePenaltymex:WrongInputClass","active_collision_options.body_idx must be an int32 or a double array");
     }
     transform(active_bodies_idx.begin(),active_bodies_idx.end(),
               active_bodies_idx.begin(),
