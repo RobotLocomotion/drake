@@ -56,7 +56,7 @@ else % then try to evaluate the dependency now...
 
         if (conf.lcm_enabled)
           javaaddpathProtectGlobals(fullfile(pods_get_base_path,'share','java','lcmtypes_drake.jar'));
-          [retval,info] = systemWCMakeEnv('util/check_multicast_is_loopback.sh');
+          [retval,info] = systemWCMakeEnv(fullfile(getDrakePath(),'util','check_multicast_is_loopback.sh'));
           if (retval)
             info = strrep(info,'ERROR: ','');
             info = strrep(info,'./',[getDrakePath,'/util/']);
