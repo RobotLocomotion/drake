@@ -6,6 +6,7 @@
 #include <cmath>
 #include <vector>
 #include <array>
+#include <assert.h>
 
 template<unsigned int Size>
 std::array<int, Size> intRange(int start)
@@ -17,28 +18,49 @@ std::array<int, Size> intRange(int start)
   return ret;
 }
 
+/* 
 constexpr int gradientNumRows(int A_size, int nq, int derivativeOrder) {
   return (A_size == Eigen::Dynamic || nq == Eigen::Dynamic)
     ? Eigen::Dynamic
     : (derivativeOrder == 1 ? A_size : nq * gradientNumRows(A_size, nq, derivativeOrder - 1));
 }
+*/
 
-template<typename Derived, int Nq, int DerivativeOrder = 1>
+template<typename Derived, int Nq, int DerivativeOrder>
+struct Gradient {
+  typedef Eigen::Matrix<typename Derived::Scalar, (Derived::SizeAtCompileTime == Eigen::Dynamic || Nq == Eigen::Dynamic) ? Eigen::Dynamic : Nq * Gradient<Derived, Nq, DerivativeOrder - 1>::type::SizeAtCompileTime, Nq> type;
+};
+
+template<typename Derived, int Nq>
+struct Gradient<Derived, Nq, 1> {
+  typedef Eigen::Matrix<typename Derived::Scalar, Derived::SizeAtCompileTime, Nq> type;
+};
+
+
+/* template<typename Derived, int Nq, int DerivativeOrder = 1>
 struct Gradient {
   typedef Eigen::Matrix<typename Derived::Scalar, gradientNumRows(Derived::SizeAtCompileTime, Nq, DerivativeOrder), Nq> type;
 };
+ */
+#define matGradMultMatNumRows(rows_A, cols_B) (((rows_A) == Eigen::Dynamic || (cols_B) == Eigen::Dynamic) ? Eigen::Dynamic : ((rows_A) * (cols_B)))
 
-constexpr int matGradMultMatNumRows(int rows_A, int cols_B) {
+
+/* constexpr int matGradMultMatNumRows(int rows_A, int cols_B) {
   return (rows_A == Eigen::Dynamic || cols_B == Eigen::Dynamic) ? Eigen::Dynamic : (rows_A * cols_B);
-}
+} */
 
-constexpr int matGradMultNumRows(int rows_dA, int rows_b) {
+#define matGradMultNumRows(rows_dA, rows_b) (((rows_dA) == Eigen::Dynamic || (rows_b) == Eigen::Dynamic) ? Eigen::Dynamic : ((rows_dA) / (rows_b)))
+
+
+/* constexpr int matGradMultNumRows(int rows_dA, int rows_b) {
   return (rows_dA == Eigen::Dynamic || rows_b == Eigen::Dynamic) ? Eigen::Dynamic : (rows_dA / rows_b);
-}
+} */
 
-constexpr int getRowBlockGradientNumRows(unsigned long M_cols, unsigned long block_rows) {
+#define getRowBlockGradientNumRows(M_cols, block_rows) ((M_cols) == Eigen::Dynamic ? Eigen::Dynamic : (M_cols) * (block_rows))
+
+/* constexpr int getRowBlockGradientNumRows(unsigned long M_cols, unsigned long block_rows) {
   return M_cols == Eigen::Dynamic ? Eigen::Dynamic : M_cols * block_rows;
-}
+} */
 
 /*
  * Profile results: looks like return value optimization works; a version that sets a reference
