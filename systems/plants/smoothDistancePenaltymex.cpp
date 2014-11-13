@@ -115,8 +115,27 @@ smoothDistancePenalty(double& c, MatrixXd& dc,
 
 
 /*
- * mex interface for bullet collision detection
- * closest-distance for each body to all other bodies (~(NB^2-NB)/2 points)
+ * mex interface for evaluating a smooth-penalty on violations of a
+ * minimum-distance constraint. For each eligible pair of collision geometries,
+ * a penalty is computed according to
+ *
+ * \f[
+ * c = 
+ * \begin{cases}
+ *   -de^{\frac{1}{d}}, & d <   0  \\
+ *   0,                & d \ge 0.
+ * \end{cases}
+ * \f]
+ *
+ * where $d$ is the normalized violation of the minimum distance, $d_{min}$
+ *
+ * \f[
+ * d = \frac{(\phi - d_{min})}{d_{min}}
+ * \f]
+ *
+ * for a signed distance of $\phi$ between the geometries. These pairwise costs
+ * are summed to yield a single penalty which is zero if and only if all
+ * eligible pairs of collision geometries are separated by at least $d_{min}$.
  *
  * MATLAB signature:
  *
