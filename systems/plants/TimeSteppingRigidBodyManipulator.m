@@ -326,10 +326,9 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
           % write as
           %   phiP + h*JP*qdn >= 0 && -phiP - h*JP*qdn >= 0
           if (nargout<5)
-            [phiP,JP] = geval(@positionConstraints,obj.manip,q);
-            %        [phiP,JP] = obj.manip.positionConstraints(q);
+            [phiP,JP] = obj.manip.positionConstraints(q);
           else
-            [phiP,JP,dJP] = geval(@positionConstraints,obj.manip,q);
+            [phiP,JP,dJP] = obj.manip.positionConstraints(q);
             dJP(nL+(1:nP),:) = [dJP; -dJP];
           end
           phiP = [phiP;-phiP];
@@ -474,19 +473,18 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
 
 
         while (1)
-
-        obj.LCP_cache.t = t;
-        obj.LCP_cache.x = x;
-        obj.LCP_cache.u = u;
-        obj.LCP_cache.nargout = nargout;
           z = zeros(nL+nP+(mC+2)*nC,1);
           if any(active)
             z(active) = pathlcp(M(active,active),w(active));
+            if all(active), break; end
+            inactive = ~active(1:(nL+nP+nC));  % only worry about the constraints that really matter.
+            missed = (M(inactive,active)*z(active)+w(inactive) < 0);
+          else
+            inactive=true(nL+nP+nC,1);
+            missed = (w(inactive)<0);
           end
-
-          inactive = ~active(1:(nL+nP+nC));  % only worry about the constraints that really matter.
-          missed = (M(inactive,inactive)*z(inactive)+w(inactive) < 0);
           if ~any(missed), break; end
+          
           % otherwise add the missed indices to the active set and repeat
           warning('Drake:TimeSteppingRigidBodyManipulator:ResolvingLCP',['t=',num2str(t),': missed ',num2str(sum(missed)),' constraints.  resolving lcp.']);
           ind = find(inactive);
@@ -502,7 +500,17 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         %beta2 = z(nL+nP+2*nC+(1:nC))
         %lambda = z(nL+nP+3*nC+(1:nC))
         % end debugging
+        % more debugging
+%        path_convergence_tolerance = 1e-6; % default according to http://pages.cs.wisc.edu/~ferris/path/options.pdf
+%        assert(all(z>=0));
+%        assert(all(M*z+w>=-path_convergence_tolerance));
+%        valuecheck(z'*(M*z+w),0,path_convergence_tolerance);
+        % end more debugging
 
+        obj.LCP_cache.t = t;
+        obj.LCP_cache.x = x;
+        obj.LCP_cache.u = u;
+        obj.LCP_cache.nargout = nargout;
         obj.LCP_cache.z = z;
         obj.LCP_cache.Mqdn = Mqdn;
         obj.LCP_cache.wqdn = wqdn;
@@ -720,6 +728,11 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       obj = updateStateConstraint@DrakeSystem(obj,id,con);
       obj.manip = updateStateConstraint(obj.manip,id,con);
     end
+    
+    function obj = removeAllStateConstraints(obj)
+      obj = removeAllStateConstraints@DrakeSystem(obj);
+      obj.manip = removeAllStateConstraints(obj.manip);
+    end
 
     function varargout = positionConstraints(obj,varargin)
       varargout = cell(1,nargout);
@@ -859,27 +872,47 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     end
 
     function c = getBodyContacts(obj,body_idx)
-      c = obj.manip.body(body_idx).contact_shapes;
+      c = obj.manip.body(body_idx).collision_geometry;
+    end
+    
+    function varargout = addContactShapeToBody(varargin)
+      errorDeprecatedFunction('addCollisionGeometryToBody');
     end
 
-    function obj = addContactShapeToBody(obj,varargin)
-      obj.manip = addContactShapeToBody(obj.manip,varargin{:});
+    function obj = addCollisionGeometryToBody(obj,varargin)
+      obj.manip = addCollisionGeometryToBody(obj.manip,varargin{:});
+    end
+    
+    function varargout = addVisualShapeToBody(varargin)
+      errorDeprecatedFunction('addVisualGeometryToBody');
     end
 
-    function obj = addVisualShapeToBody(obj,varargin)
-      obj.manip = addVisualShapeToBody(obj.manip,varargin{:});
+    function obj = addVisualGeometryToBody(obj,varargin)
+      obj.manip = addVisualGeometryToBody(obj.manip,varargin{:});
+    end
+    
+    function varargout = addShapeToBody(varargin)
+      errorDeprecatedFunction('addGeometryToBody');
     end
 
-    function obj = addShapeToBody(obj,varargin)
-      obj.manip = addShapeToBody(obj.manip,varargin{:});
+    function obj = addGeometryToBody(obj,varargin)
+      obj.manip = addGeometryToBody(obj.manip,varargin{:});
+    end
+    
+    function varargout = replaceContactShapesWithCHull(varargin)
+      errorDeprecatedFunction('replaceCollisionGeometryWithConvexHull');
     end
 
-    function obj = replaceContactShapesWithCHull(obj,body_indices,varargin)
-      obj.manip = replaceContactShapesWithCHull(obj.manip,body_indices,varargin{:});
+    function obj = replaceCollisionGeometryWithConvexHull(obj,body_indices,varargin)
+      obj.manip = replaceCollisionGeometryWithConvexHull(obj.manip,body_indices,varargin{:});
     end
 
-    function groups = getContactShapeGroupNames(obj)
-      groups = getContactShapeGroupNames(obj.manip);
+    function varargout = getContactShapeGroupNames(varargin)
+      errorDeprecatedFunction('getCollisionGeometryGroupNames');
+    end
+
+    function groups = getCollisionGeometryGroupNames(obj)
+      groups = getCollisionGeometryGroupNames(obj.manip);
     end
 
     function f_friction = computeFrictionForce(obj,qd)

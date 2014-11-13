@@ -17,17 +17,35 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       if ~isfield(options,'terrain')
         options.terrain = RigidBodyFlatTerrain;
       end
-
-      path_handle = addpathTemporary(fullfile(getDrakePath,'examples','Atlas','frames'));
-      w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
-      
+      if ~isfield(options,'hands')
+        options.hands = 'none';
+      end
       if ~isfield(options,'control_rate')
         options.control_rate = 250;
       end
-      
+
+      path_handle = addpathTemporary(fullfile(getDrakePath,'examples','Atlas','frames'));
+      w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
+
       obj = obj@TimeSteppingRigidBodyManipulator(urdf,options.dt,options);
       obj = obj@Biped('r_foot', 'l_foot','r_foot_sole', 'l_foot_sole');
       
+      if (~strcmp(options.hands, 'none'))
+        if (strcmp(options.hands, 'robotiq'))
+          options_hand.weld_to_link = 29;
+          obj.hands = 1;
+          obj = obj.addRobotFromURDF(getFullPathFromRelativePath('urdf/robotiq.urdf'), [0; -0.18; 0], [0; 3.1415; 3.1415], options_hand);  
+        elseif (strcmp(options.hands, 'robotiq_weight_only'))
+          % Adds a box with weight roughly approximating the hands, so that
+          % the controllers know what's up
+          % Will soon be replaced with an equivalent welded mass.
+          options_hand.weld_to_link = 29;
+          obj = obj.addRobotFromURDF(getFullPathFromRelativePath('urdf/robotiq_box.urdf'), [0; -0.2; 0], [0; 0; 3.1415], options_hand); 
+        else
+          error('unsupported hand type'); 
+        end
+      end
+
       if options.floating
         % could also do fixed point search here
         obj = obj.setInitialState(obj.resolveConstraints(zeros(obj.getNumStates(),1)));
@@ -46,13 +64,26 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       obj.left_toe_right_full_support = RigidBodySupportState(obj,[obj.foot_body_id.left,obj.foot_body_id.right],{{'toe'},{'heel','toe'}});
       obj.left_full_right_toe_support = RigidBodySupportState(obj,[obj.foot_body_id.left,obj.foot_body_id.right],{{'heel','toe'},{'toe'}});
     end
-
+    
     function obj = compile(obj)
       obj = compile@TimeSteppingRigidBodyManipulator(obj);
-
-      path_handle = addpathTemporary(fullfile(getDrakePath,'examples','Atlas','frames'));
       
-      atlas_state_frame = AtlasState(obj);
+      % Sanity check if we have hands.
+      if (~isa(obj.manip.getStateFrame().getFrameByNum(1), 'MultiCoordinateFrame'))
+        obj.hands = 0;
+      end
+      path_handle = addpathTemporary(fullfile(getDrakePath,'examples','Atlas','frames'));
+      if (obj.hands > 0)
+        atlas_state_frame = getStateFrame(obj);
+        atlas_state_frame = replaceFrameNum(atlas_state_frame,1,AtlasState(obj));
+        % Sub in handstates for each hand
+        % TODO: by name?
+        for i=2:obj.getStateFrame().getNumFrames
+          atlas_state_frame = replaceFrameNum(atlas_state_frame,i,HandState(obj,i,'HandState'));
+        end
+      else
+        atlas_state_frame = AtlasState(obj);
+      end
       tsmanip_state_frame = obj.getStateFrame();
       if tsmanip_state_frame.dim>atlas_state_frame.dim
         id = findSubFrameEquivalentModuloTransforms(tsmanip_state_frame,atlas_state_frame);
@@ -66,9 +97,21 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       obj = obj.setStateFrame(state_frame);
       obj = obj.setOutputFrame(state_frame);
 
-      input_frame = AtlasInput(obj);
+      if (obj.hands > 0)
+        input_frame = getInputFrame(obj);
+        input_frame  = replaceFrameNum(input_frame,1,AtlasInput(obj));
+        % Sub in handstates for each hand
+        % TODO: by name?
+        for i=2:obj.getInputFrame().getNumFrames
+          input_frame = replaceFrameNum(input_frame,i,HandInput(obj,i,'HandInput'));
+        end
+      else
+        input_frame = AtlasInput(obj);
+      end
+      
       obj = obj.setInputFrame(input_frame);
       obj.manip = obj.manip.setInputFrame(input_frame);
+      
     end
 
     function obj = setInitialState(obj,x0)
@@ -203,6 +246,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
                                     'drake_instep_shift', 0.02,... % Distance to shift ZMP trajectory inward toward the instep from the center of the foot (m)
                                     'mu', 1.0,... % friction coefficient
                                     'constrain_full_foot_pose', true); % whether to constrain the swing foot roll and pitch
+    hands = 0; % 0, none; 1, Robotiq
   end
   properties
     fixed_point_file = fullfile(getDrakePath(), 'examples', 'Atlas', 'data', 'atlas_fp.mat');

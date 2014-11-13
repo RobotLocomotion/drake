@@ -186,7 +186,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     //DEBUG
     //cout << "constructModelmex: About to parse collision geometry"  << endl;
     //END_DEBUG
-    pm = mxGetProperty(pBodies,i,"contact_shapes");
+    pm = mxGetProperty(pBodies,i,"collision_geometry");
     Matrix4d T;
     if (!mxIsEmpty(pm)){
       for (int j=0; j<mxGetNumberOfElements(pm); j++) {

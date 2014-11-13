@@ -205,6 +205,12 @@ classdef Visualizer < DrakeSystem
       % @param minrange is the lower bound for the sliders
       % @param maxrange is the upper bound for the sliders
       % @param visualized_system is the system to be displayed
+      %
+      % Example, for drawing forces on a 12-state floating base system:
+      %
+      % <pre>
+      %   v.inspector(zeros(12,1), 1:12)
+      % </pre>
 
       fr = obj.getInputFrame();
       if (nargin<2 || isempty(x0)), x0 = zeros(fr.dim,1); end
@@ -229,8 +235,8 @@ classdef Visualizer < DrakeSystem
         label{i} = uicontrol('Style','text','String',getCoordinateName(fr,state_dims(i)), ...
           'HorizontalAlignment','right');
         slider{i} = uicontrol('Style', 'slider', 'Min', minrange(i), 'Max', maxrange(i), ...
-          'Value', x0(i), 'Callback',{@update_display},'UserData',state_dims(i));
-        value{i} = uicontrol('Style','text','String',num2str(x0(i)), ...
+          'Value', x0(state_dims(i)), 'Callback',{@update_display},'UserData',state_dims(i));
+        value{i} = uicontrol('Style','text','String',num2str(x0(state_dims(i))), ...
           'HorizontalAlignment','left');
 
         % use a little undocumented matlab to get continuous slider feedback:

@@ -19,7 +19,7 @@
     </inertial>
     <visual>
       <origin
-        xyz="-.1 0 0"
+        xyz=".1 0 0"
         rpy="0 0 0" />
       <geometry>
         <box size = ".4 1 .01"/>
@@ -40,7 +40,7 @@
     </collision>
   </link>
   <force_element name="Wing_force">
-    <wing chord=".4" span="1" nominal_speed="10" stall_angle="12" profile="ht23.dat"> 
+    <wing chord=".4" span="1" nominal_speed="10" stall_angle="12" profile="ht23.dat" visual_geometry="false">
     	<parent link="Wing"/>
     	<origin xyz=".1 0 0"/>
     </wing>

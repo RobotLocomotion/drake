@@ -32,7 +32,7 @@ classdef RigidBodySpringDamper < RigidBodyForceElement
           dv2dqd = J2;
           % r = x1-x2; l=sqrt(r'r); ldot=(r'rdot)/sqrt(r'r);
           length = norm(x1-x2);
-          dlengthdq = ((x1-x2)'/norm(x1-x2))*(J1-J2);
+          dlengthdq = ((x1-x2)'/(length+eps))*(J1-J2);
           vel = ((x1-x2)'*(v1-v2))/(length+eps);
           dveldq =  (((J1-J2)'*(v1-v2)+(x1-x2)'*(dv1dq-dv2dq))*(length+eps)-((x1-x2)'*(v1-v2))*dlengthdq)/(length+eps)^2;
           dveldqd = (((x1-x2)'*(dv1dqd-dv2dqd))*(length+eps))/(length+eps)^2;
@@ -51,7 +51,7 @@ classdef RigidBodySpringDamper < RigidBodyForceElement
           [x1,J1] = forwardKin(manip,kinsol,obj.body1,obj.pos1);
           [x2,J2] = forwardKin(manip,kinsol,obj.body2,obj.pos2);
           length = norm(x1-x2);
-          dlengthdq = ((x1-x2)'/norm(x1-x2))*(J1-J2);
+          dlengthdq = ((x1-x2)'/(length+eps))*(J1-J2);
           vel = 0;
           dveldq = zeros(1,nq);
           dveldqd = zeros(1,nq);

@@ -368,7 +368,7 @@ function pnode = crawlDir(pdir,pnode,only_test_dirs,options)
         elseif ~isempty(param)
           error([fullfile(pwd,'.UNITTEST'),' has a an unknown tag: ',param]);
         else
-          crawlDir(name,node,only_test_dirs && ~strcmpi(name,'test'),options);
+          crawlDir(name,node,only_test_dirs && ~isTestDir(name),options);
         end
       elseif exist(name,'file')
         files=vertcat(files,dir(name));
@@ -388,7 +388,7 @@ function pnode = crawlDir(pdir,pnode,only_test_dirs,options)
     if (files(i).isdir)
       % then recurse into the directory
       if (files(i).name(1)~='.' && ~any(strcmpi(files(i).name,{'dev','slprj','autogen-matlab','autogen-posters'})))  % skip . and dev directories
-        crawlDir(files(i).name,node,only_test_dirs && ~strcmpi(files(i).name,'test'),options);
+        crawlDir(files(i).name,node,only_test_dirs && ~isTestDir(files(i).name),options);
       end
       continue;
     end
@@ -615,28 +615,7 @@ end
 function [pass,elapsed_time] = runTest(runpath,test,options)
 p=pwd;
 
-% Detect if this is a MATLAB 'package', which requires special handling
-% to make sure we call the right function. More info can be found here:
-% http://www.mathworks.com/help/matlab/matlab_oop/scoping-classes-with-packages.html
-pathParts = strsplit(runpath, filesep);
-packageMembers = cellfun(@(x) ~isempty(regexp(x, '^\+')), pathParts);
-if any(packageMembers)
-  % We are passing around the name of the test to run as a string, not a 
-  % function handle. That means that even if we were to import the package
-  % containing that test file, when the name of the function is passed to 
-  % feval_in_contained_workspace, the import is lost and the test cannot 
-  % be found. Instead, we have to modify the name of the test to include 
-  % its full package name so that Matlab can find it. 
-  packageStart = find(packageMembers, 1, 'first');
-  pathParts = cellfun(@(x) regexprep(x,'^\+', ''), pathParts, 'UniformOutput', false);
-  packageName = strjoin(pathParts(packageStart:end), '.');
-  test = [packageName, '.', test];
-else
-  % It's not a package, so we can just cd to the directory containing the
-  % test.
-  cd(runpath);
-end
-%  disp(['running ',path,'/',test,'...']);
+cd(runpath);
 
 if nargin<3, error('needs three arguments now'); end
 
@@ -698,11 +677,11 @@ mytic = tic;
 
 % useful for debugging: if 'dbstop if error' is on, then don't use try catch.
 if any(strcmp('error',{s.cond})) ||any(strcmp('warning',{s.cond}))
-  feval_in_contained_workspace(test);
+  fevalPackageSafe(test);
 else
   try
     lastwarn('');  % clears lastwarn
-    feval_in_contained_workspace(test);
+    fevalPackageSafe(test);
     if (options.warnings_are_errors) 
       [msg,id] = lastwarn;
       if ~isempty(msg)
@@ -781,10 +760,6 @@ if ~isempty(cdashTestNode)
 end
 
 cd(p);
-end
-
-function feval_in_contained_workspace(f) % helps with scripts
-  feval(f);
 end
 
 function [bfound, trailing_text] = checkFile(filename,strings,search_comments)
@@ -908,4 +883,9 @@ end
     thisElement = docNode.createElement(element_name);
     thisElement.appendChild(docNode.createTextNode(text));
     parent.appendChild(thisElement);
+  end
+
+  function tf = isTestDir(dirname)
+    % Supports package notation in which folders begin with a +
+    tf = strcmp(dirname, 'test') || strcmp(dirname, '+test');
   end
