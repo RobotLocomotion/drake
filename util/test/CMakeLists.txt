@@ -1,5 +1,5 @@
-
-add_mex(debugMexTest debugMexTest.cpp)
+# tk 20141113 debugMexTest causes compilation errors on Ubuntu 32 bit
+# add_mex(debugMexTest debugMexTest.cpp)
 
 if (eigen3_FOUND)
   if (NOT WIN32) # todo: fix this
