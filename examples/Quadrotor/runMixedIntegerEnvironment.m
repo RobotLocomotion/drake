@@ -1,4 +1,4 @@
-function runMixedIntegerEnvironment(r, start, goal, lb, ub, seeds, traj_degree, num_traj_segments, n_regions)
+function runMixedIntegerEnvironment(r, start, goal, lb, ub, seeds, traj_degree, num_traj_segments, n_regions, dt)
 % NOTEST
 % Run the mixed-integer SOS trajectory planner on a simulated 3D environment, using IRIS to seed
 % convex regions of safe space. For example usage, see runMixedIntegerForest and runMixedIntegerOffice.
@@ -11,11 +11,16 @@ function runMixedIntegerEnvironment(r, start, goal, lb, ub, seeds, traj_degree, 
 % @param traj_degree degree of the trajectory pieces
 % @param num_traj_segments number of polynomial pieces
 % @param n_regions number of IRIS regions
+% @param dt the time (in seconds) duration of each trajectory piece
 
 checkDependency('lcmgl');
 checkDependency('iris');
 
-AUTOSAVE = false;
+if nargin < 10
+  dt = 0.5;
+end
+
+AUTOSAVE = true;
 
 bot_radius = 0.3;
 
@@ -64,9 +69,9 @@ function done = drawRegion(r, seed)
   if can_draw_lcm_polytopes
     drawLCMPolytope(r.A, r.b, region_idx, false, lc);
     region_idx = region_idx + 1;
-    % lcmgl.glColor3f(.8,.8,.2);
-    % lcmgl.sphere(seed, 0.06, 20, 20);
-    % lcmgl.switchBuffers();
+    lcmgl.glColor3f(.8,.8,.2);
+    lcmgl.sphere(seed, 0.06, 20, 20);
+    lcmgl.switchBuffers();
     % pause
   end
   done = false;
@@ -81,12 +86,12 @@ prob = MISOSTrajectoryProblem();
 prob.num_traj_segments = num_traj_segments;
 prob.traj_degree = traj_degree;
 prob.bot_radius = bot_radius;
+prob.dt = dt;
 
 if 0
-  load('../data/2014-10-07_14.15.47/results.mat', 'xtraj_sim', 'ytraj');
+  load('../data/2014-11-12_18.00.58/results.mat', 'xtraj_sim', 'ytraj');
   % xtraj_sim = xtraj_sim.setOutputFrame(r.getStateFrame());
 
-  ytraj = ytraj.scaleTime(0.75);
   ytraj = ytraj.setOutputFrame(DifferentiallyFlatOutputFrame);
   [xtraj, utraj] = invertFlatOutputs(r,ytraj);
   % v.playback(xtraj, struct('slider', true));
@@ -134,8 +139,8 @@ else
     system(sprintf('mkdir -p %s', folder));
     save(fullfile(folder, 'results.mat'), 'xtraj', 'ytraj', 'utraj', 'r', 'v', 'safe_region_assignments', 'prob', 'safe_regions', 'xtraj_sim', 'start', 'goal');
   end
-
 end
+v = v.setInputFrame(sys.getOutputFrame().getFrameByName('quadrotorPosition'));
 v.playback(xtraj_sim, struct('slider', true));
 
 % Draw the result
@@ -146,7 +151,7 @@ lcmgl.glColor3f(0.0,0.0,1.0);
 
 breaks = ytraj.getBreaks();
 ts = linspace(breaks(1), breaks(end));
-Y = ytraj.eval(ts);
+Y = squeeze(ytraj.eval(ts));
 for i = 1:size(Y, 2)-1
   lcmgl.glVertex3f(Y(1,i), Y(2,i), Y(3,i));
   lcmgl.glVertex3f(Y(1,i+1), Y(2,i+1), Y(3,i+1));
