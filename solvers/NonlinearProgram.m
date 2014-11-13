@@ -80,6 +80,8 @@ classdef NonlinearProgram
     
     bbcon_lb % A obj.num_vars x length(obj.bbcon) matrix. bbcon_lb(:,i) is the lower bound of x coming from the BoundingBoxConstraint obj.bbcon{i}
     bbcon_ub % A obj.num_vars x length(obj.bbcon) matrix. bbcon_lb(:,i) is the upper bound of x coming from the BoundingBoxConstraint obj.bbcon{i}
+    which_snopt  % 1 if NonlinearProgramSnoptmex is used. 
+                 % 2 if user has their own snopt in MATLAB path
   end
 
   properties (Access = protected)
@@ -165,7 +167,7 @@ classdef NonlinearProgram
       obj.solver_options.snopt.VerifyLevel = 0;
       obj.solver_options.snopt.DerivativeOption = 1;
       obj.solver_options.snopt.print = '';
-      obj.solver_options.snopt.scaleoption = 0;
+      obj.solver_options.snopt.ScaleOption = 0;
       obj.solver_options.snopt.NewBasisFile = 0;
       obj.solver_options.snopt.OldBasisFile = 0;
       obj.solver_options.snopt.BackupBasisFile = 0;
@@ -706,10 +708,14 @@ classdef NonlinearProgram
       % @param solver  Can be 'snopt', 'ipopt', 'fmincon' and 'default'.
       typecheck(solver,'char');
       if(strcmp(solver,'snopt'))
-        if(~checkDependency('snopt'))
+        if(checkDependency('NonlinearProgramSnoptmex'))
+          obj.which_snopt = 1;
+        elseif(checkDependency('snopt'))
+          obj.which_snopt = 2;
+        else
           error('Drake:NonlinearProgram:UnsupportedSolver',' SNOPT not found.  SNOPT support will be disabled.');
         end
-        obj.solver = solver;
+        obj.solver = 'snopt';
       elseif(strcmp(solver,'studentSnopt'))
         if(~checkDependency('studentSnopt'))
           error('Drake:NonlinearProgram:UnsupportedSOlver',' SNOPT not found.  SNOPT support will be disabled.');
@@ -804,12 +810,12 @@ classdef NonlinearProgram
           obj.solver_options.snopt.print = optionval;
         elseif(strcmpi(optionname(~isspace(optionname)),'scaleoption'))
           if(~isnumeric(optionval) || numel(optionval) ~= 1)
-            error('Drake:NonlinearProgram:setSolverOptions:scaleoption should be a scalar');
+            error('Drake:NonlinearProgram:setSolverOptions:ScaleOption should be a scalar');
           end
           if(optionval ~= 0 && optionval ~= 1 && optionval ~= 2)
-            error('Drake:NonlinearProgram:setSolverOptions:scaleoption should be either 0,1 or 2');
+            error('Drake:NonlinearProgram:setSolverOptions:ScaleOption should be either 0,1 or 2');
           end
-          obj.solver_options.snopt.scaleoption = optionval;
+          obj.solver_options.snopt.ScaleOption = optionval;
         elseif(strcmpi(optionname(~isspace(optionname)),'oldbasisfile'))
           if(~isnumeric(optionval) || numel(optionval) ~= 1)
             error('Drake:NonlinearProgram:setSolverOptions:OptionVal', 'OldBasisFile should be a scalar');
@@ -827,7 +833,7 @@ classdef NonlinearProgram
           obj.solver_options.snopt.BackupBasisFile = optionval;
         elseif(strcmpi(optionname(~isspace(optionname)),'linesearchtolerance'))
           if(~isnumeric(optionval) || numel(optionval) ~= 1)
-            error('Drake:NonlinearProgram:setSolverOptions:scaleoption should be a scalar');
+            error('Drake:NonlinearProgram:setSolverOptions:LineSearchTolerance should be a scalar');
           end
           if(optionval < 0 || optionval > 1)
             error('Drake:NonlinearProgram:setSolverOptions:OptionVal', 'LinesearchTolerance should be between 0 and 1');
@@ -1254,21 +1260,7 @@ classdef NonlinearProgram
       jGvar_free = x2freeXmap(jGvar(jGvar_free_idx));
       
       A_free = [Ain_free;Aeq_free];
-      snseti('Major Iterations Limit',obj.solver_options.snopt.MajorIterationsLimit);
-      snseti('Minor Iterations Limit',obj.solver_options.snopt.MinorIterationsLimit);
-      snsetr('Major Optimality Tolerance',obj.solver_options.snopt.MajorOptimalityTolerance);
-      snsetr('Major Feasibility Tolerance',obj.solver_options.snopt.MajorFeasibilityTolerance);
-      snsetr('Minor Feasibility Tolerance',obj.solver_options.snopt.MinorFeasibilityTolerance);
-      snseti('Superbasics Limit',obj.solver_options.snopt.SuperbasicsLimit);
-      snseti('Derivative Option',obj.solver_options.snopt.DerivativeOption);
-      snseti('Verify level',obj.solver_options.snopt.VerifyLevel);
-      snseti('Iterations Limit',obj.solver_options.snopt.IterationsLimit);
-      snseti('Scale option',obj.solver_options.snopt.scaleoption);
-      snseti('New Basis File',obj.solver_options.snopt.NewBasisFile);
-      snseti('Old Basis File',obj.solver_options.snopt.OldBasisFile);
-      snseti('Backup Basis File',obj.solver_options.snopt.BackupBasisFile);
-      snsetr('Linesearch tolerance',obj.solver_options.snopt.LinesearchTolerance);
-
+     
       function [f,G] = snopt_userfun(x_free)
         x_all = zeros(obj.num_vars,1);
         x_all(free_x_idx) = x_free;
@@ -1313,16 +1305,23 @@ classdef NonlinearProgram
         checkGradient(x0_free);
       end
       
-      if(~isempty(obj.solver_options.snopt.print))
-        snprint(obj.solver_options.snopt.print);
+      if(obj.which_snopt == 1)
+        [x_free,objval,exitflag,xmul,Fmul] = NonlinearProgramSnoptmex(x0_free, ...
+          x_lb_free,x_ub_free, ...
+          lb,ub,...
+          'snoptUserfun',...
+          0,1,...
+          Avals,iAfun,jAvar,...
+          iGfun_free,jGvar_free,obj.solver_options.snopt);
+      elseif(obj.which_snopt == 2)
+        [x_free,objval,exitflag,xmul,Fmul] = snopt(x0_free, ...
+          x_lb_free,x_ub_free, ...
+          lb,ub,...
+          'snoptUserfun',...
+          0,1,...
+          Avals,iAfun,jAvar,...
+          iGfun_free,jGvar_free);
       end
-      [x_free,objval,exitflag] = snopt(x0_free, ...
-        x_lb_free,x_ub_free, ...
-        lb,ub,...
-        'snoptUserfun',...
-        0,1,...
-        Avals,iAfun,jAvar,...
-        iGfun_free,jGvar_free);
       if(obj.check_grad)
         display('check the gradient for the SNOPT solution');
         checkGradient(x_free);
