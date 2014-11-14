@@ -90,9 +90,11 @@ Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, Eigen::Dynamic> getSubMa
 }
 
 template<int QSubvectorSize, typename Derived, std::size_t NRows, std::size_t NCols>
-Eigen::Matrix<typename Derived::Scalar, (int) (NRows * NCols), (QSubvectorSize == Eigen::Dynamic ? Derived::ColsAtCompileTime : QSubvectorSize)>
+typename GetSubMatrixGradientArray<QSubvectorSize, Derived, NRows, NCols>::type
 getSubMatrixGradient(const Eigen::MatrixBase<Derived>& dM,
-    const std::array<int, NRows>& rows, const std::array<int, NCols>& cols, int M_rows, int q_start, int q_subvector_size) {
+    const typename GetSubMatrixGradientArray<QSubvectorSize, Derived, NRows, NCols>::row_array_type& rows,
+	const typename GetSubMatrixGradientArray<QSubvectorSize, Derived, NRows, NCols>::col_array_type& cols,
+	int M_rows, int q_start, int q_subvector_size) {
   if (q_subvector_size == Eigen::Dynamic) {
     q_subvector_size = dM.cols() - q_start;
   }
@@ -107,7 +109,7 @@ getSubMatrixGradient(const Eigen::MatrixBase<Derived>& dM,
 }
 
 template<typename Derived>
-Eigen::Matrix<typename Derived::Scalar, 1, Derived::ColsAtCompileTime>
+typename GetSubMatrixGradientSingleElement<Derived>::type
 getSubMatrixGradient(const Eigen::MatrixBase<Derived>& dM, int row, int col, int M_rows) {
   return dM.row(row + col * M_rows);
 }
@@ -199,11 +201,10 @@ MAKE_SETSUBMATRIXGRADIENT_EXPLICIT_INSTANTIATION(double, 4, Eigen::Dynamic, Eige
 MAKE_SETSUBMATRIXGRADIENT_EXPLICIT_INSTANTIATION(double, 4, Eigen::Dynamic, Eigen::Dynamic, 9, 4, 4, 3)
 #undef MAKE_SETSUBMATRIXGRADIENT_EXPLICIT_INSTANTIATION
 
-
 #define MAKE_GETSUBMATRIXGRADIENT_ARRAY_EXPLICIT_INSTANTIATION(Type, DMRows, DMCols, NRows, NCols, QSubvectorSize) \
-		template Eigen::Matrix<Type, (NRows) * (NCols), QSubvectorSize == Eigen::Dynamic ? DMCols : QSubvectorSize> \
+		template GetSubMatrixGradientArray<QSubvectorSize, Eigen::Matrix<Type, DMRows, DMCols>, NRows, NCols>::type \
 		getSubMatrixGradient(const Eigen::MatrixBase< Eigen::Matrix<Type, DMRows, DMCols> >&, \
-		    const std::array<int, NRows>&, const std::array<int, NCols>&, int, int, int);
+		    const GetSubMatrixGradientArray<QSubvectorSize, Eigen::Matrix<Type, DMRows, DMCols>, NRows, NCols>::row_array_type&, const GetSubMatrixGradientArray<QSubvectorSize, Eigen::Matrix<Type, DMRows, DMCols>, NRows, NCols>::col_array_type&, int, int, int);
 MAKE_GETSUBMATRIXGRADIENT_ARRAY_EXPLICIT_INSTANTIATION(double, Eigen::Dynamic, Eigen::Dynamic, 3, 1, Eigen::Dynamic)
 MAKE_GETSUBMATRIXGRADIENT_ARRAY_EXPLICIT_INSTANTIATION(double, 16, Eigen::Dynamic, 3, 3, Eigen::Dynamic)
 MAKE_GETSUBMATRIXGRADIENT_ARRAY_EXPLICIT_INSTANTIATION(double, 16, Eigen::Dynamic, 3, 1, Eigen::Dynamic)
@@ -211,7 +212,7 @@ MAKE_GETSUBMATRIXGRADIENT_ARRAY_EXPLICIT_INSTANTIATION(double, 3, Eigen::Dynamic
 #undef MAKE_GETSUBMATRIXGRADIENT_ARRAY_EXPLICIT_INSTANTIATION
 
 #define MAKE_GETSUBMATRIXGRADIENT_SINGLE_ELEMENT_EXPLICIT_INSTANTIATION(Type, DMRows, DMCols) \
-		template Eigen::Matrix<Type, 1, DMCols> \
+		template GetSubMatrixGradientSingleElement< Eigen::Matrix<Type, DMRows, DMCols> >::type \
 		getSubMatrixGradient(const Eigen::MatrixBase< Eigen::Matrix<Type, DMRows, DMCols> >&, int, int, int);
 MAKE_GETSUBMATRIXGRADIENT_SINGLE_ELEMENT_EXPLICIT_INSTANTIATION(double, 9, Eigen::Dynamic)
 #undef MAKE_GETSUBMATRIXGRADIENT_SINGLE_ELEMENT_EXPLICIT_INSTANTIATION

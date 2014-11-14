@@ -8,11 +8,12 @@
 #include <array>
 #include <assert.h>
 
-/* Turn 'default template arguments are only allowed on a class template' error (C4519) into a warning
-   According to Stroustrup:
-   The prohibition of default template arguments for function templates is a misbegotten remnant of the
-   time where freestanding functions were treated as second class citizens and required all template 
-   arguments to be deduced from the function arguments rather than specified.
+/* 
+ * Turn 'default template arguments are only allowed on a class template' error (C4519) into a warning
+ * According to Stroustrup:
+ * The prohibition of default template arguments for function templates is a misbegotten remnant of the
+ * time where freestanding functions were treated as second class citizens and required all template 
+ * arguments to be deduced from the function arguments rather than specified.
 */
 #if defined(_WIN32) || defined(_WIN64)
 #pragma warning(1 : 4519)
@@ -44,19 +45,40 @@ struct Gradient<Derived, Nq, 1> {
   typedef typename Eigen::Matrix<typename Derived::Scalar, Derived::SizeAtCompileTime, Nq> type;
 };
 
-// #define matGradMultMatNumRows(rows_A, cols_B) ((((rows_A) == Eigen::Dynamic) || ((cols_B) == Eigen::Dynamic)) ? Eigen::Dynamic : ((rows_A) * (cols_B)))
+/*
+ * Output type of matGradMultMat
+ */
 template<typename DerivedA, typename DerivedB, typename DerivedDA>
 struct MatGradMultMat {
   typedef typename Eigen::Matrix<typename DerivedA::Scalar, (DerivedA::RowsAtCompileTime == Eigen::Dynamic || DerivedB::ColsAtCompileTime == Eigen::Dynamic ? Eigen::Dynamic : DerivedA::RowsAtCompileTime * DerivedB::ColsAtCompileTime), DerivedDA::ColsAtCompileTime> type;
 };
 
+/*
+ * Output type of matGradMult
+ */
 template<typename DerivedDA, typename Derivedb>
 struct MatGradMult {
   typedef typename Eigen::Matrix<typename DerivedDA::Scalar, (DerivedDA::RowsAtCompileTime == Eigen::Dynamic || Derivedb::RowsAtCompileTime == Eigen::Dynamic ? Eigen::Dynamic : DerivedDA::RowsAtCompileTime / Derivedb::RowsAtCompileTime), DerivedDA::ColsAtCompileTime> type;
 };
 
-#define getRowBlockGradientNumRows(M_cols, block_rows) (((M_cols) == Eigen::Dynamic) ? Eigen::Dynamic : ((M_cols) * (block_rows)))
+/*
+ * Output type and array types of getSubMatrixGradient for std::arrays specifying rows and columns
+ */
+template<int QSubvectorSize, typename Derived, std::size_t NRows, std::size_t NCols>
+struct GetSubMatrixGradientArray {
+  typedef typename Eigen::Matrix<typename Derived::Scalar, (int) (NRows * NCols), (QSubvectorSize == Eigen::Dynamic ? Derived::ColsAtCompileTime : QSubvectorSize)> type;
+  typedef typename std::array<int, NRows> row_array_type;
+  typedef typename std::array<int, NCols> col_array_type;
+};
 
+/*
+ * Output type of getSubMatrixGradient for a single element of the input matrix
+ */
+ template<typename Derived>
+ struct GetSubMatrixGradientSingleElement {
+   typedef typename Eigen::Matrix<typename Derived::Scalar, 1, Derived::ColsAtCompileTime> type;
+ };
+ 
 /*
  * Profile results: looks like return value optimization works; a version that sets a reference
  * instead of returning a value is just as fast and this is cleaner.
@@ -85,12 +107,14 @@ Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, Eigen::Dynamic> getSubMa
     int M_rows, int q_start = 0, int q_subvector_size = -1);
 
 template<int QSubvectorSize = -1, typename Derived, std::size_t NRows, std::size_t NCols>
-Eigen::Matrix<typename Derived::Scalar, (int) (NRows * NCols), (QSubvectorSize == Eigen::Dynamic ? Derived::ColsAtCompileTime : QSubvectorSize)>
+typename GetSubMatrixGradientArray<QSubvectorSize, Derived, NRows, NCols>::type
 getSubMatrixGradient(const Eigen::MatrixBase<Derived>& dM,
-    const std::array<int, NRows>& rows, const std::array<int, NCols>& cols, int M_rows, int q_start = 0, int q_subvector_size = QSubvectorSize);
+    const typename GetSubMatrixGradientArray<QSubvectorSize, Derived, NRows, NCols>::row_array_type& rows,
+	const typename GetSubMatrixGradientArray<QSubvectorSize, Derived, NRows, NCols>::col_array_type& cols,
+	int M_rows, int q_start = 0, int q_subvector_size = QSubvectorSize);
 
 template<typename Derived>
-Eigen::Matrix<typename Derived::Scalar, 1, Derived::ColsAtCompileTime>
+typename GetSubMatrixGradientSingleElement<Derived>::type
 getSubMatrixGradient(const Eigen::MatrixBase<Derived>& dM, int row, int col, int M_rows);
 
 template<typename DerivedA, typename DerivedB>
