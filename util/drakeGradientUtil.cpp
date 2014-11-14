@@ -8,11 +8,11 @@
  */
 template <typename Derived>
 typename Derived::PlainObject transposeGrad(
-    const Eigen::MatrixBase<Derived>& dX, int rows_X)
+    const Eigen::MatrixBase<Derived>& dX, typename Derived::Index rows_X)
 {
   typename Derived::PlainObject dX_transpose(dX.rows(), dX.cols());
   typename Derived::Index numel = dX.rows();
-  int index = 0;
+  typename Derived::Index index = 0;
   for (int i = 0; i < numel; i++) {
     dX_transpose.row(i) = dX.row(index);
     index += rows_X;
@@ -108,7 +108,7 @@ getSubMatrixGradient(const Eigen::MatrixBase<Derived>& dM,
 
 template<typename Derived>
 typename GetSubMatrixGradientSingleElement<Derived>::type
-getSubMatrixGradient(const Eigen::MatrixBase<Derived>& dM, int row, int col, int M_rows) {
+getSubMatrixGradient(const Eigen::MatrixBase<Derived>& dM, int row, int col, typename Derived::Index M_rows) {
   return dM.row(row + col * M_rows);
 }
 
@@ -209,12 +209,12 @@ MAKE_GETSUBMATRIXGRADIENT_ARRAY_EXPLICIT_INSTANTIATION(double, 3, Eigen::Dynamic
 
 #define MAKE_GETSUBMATRIXGRADIENT_SINGLE_ELEMENT_EXPLICIT_INSTANTIATION(Type, DMRows, DMCols) \
 		template GetSubMatrixGradientSingleElement< Eigen::Matrix<Type, DMRows, DMCols> >::type \
-		getSubMatrixGradient(const Eigen::MatrixBase< Eigen::Matrix<Type, DMRows, DMCols> >&, int, int, int);
+		getSubMatrixGradient(const Eigen::MatrixBase< Eigen::Matrix<Type, DMRows, DMCols> >&, int, int, Eigen::Matrix<Type, DMRows, DMCols>::Index);
 MAKE_GETSUBMATRIXGRADIENT_SINGLE_ELEMENT_EXPLICIT_INSTANTIATION(double, 9, Eigen::Dynamic)
 #undef MAKE_GETSUBMATRIXGRADIENT_SINGLE_ELEMENT_EXPLICIT_INSTANTIATION
 
 #define MAKE_TRANSPOSEGRAD_EXPLICIT_INSTANTIATION(Type, Rows, Cols) \
-        template Eigen::Matrix<Type, Rows, Cols>::PlainObject transposeGrad(const Eigen::MatrixBase<Eigen::Matrix<Type, Rows, Cols>>&, int);
+        template Eigen::Matrix<Type, Rows, Cols>::PlainObject transposeGrad(const Eigen::MatrixBase<Eigen::Matrix<Type, Rows, Cols>>&, Eigen::Matrix<Type, Rows, Cols>::Index);
 //MAKE_TRANSPOSEGRAD_EXPLICIT_INSTANTIATION(double, Eigen::Dynamic, Eigen::Dynamic)
 MAKE_TRANSPOSEGRAD_EXPLICIT_INSTANTIATION(double, 3, 3)
 MAKE_TRANSPOSEGRAD_EXPLICIT_INSTANTIATION(double, 4, 4)

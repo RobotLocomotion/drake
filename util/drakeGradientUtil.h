@@ -83,7 +83,7 @@ struct GetSubMatrixGradientSingleElement {
  */
 template <typename Derived>
 typename Derived::PlainObject transposeGrad(
-    const Eigen::MatrixBase<Derived>& dX, int rows_X);
+    const Eigen::MatrixBase<Derived>& dX, typename Derived::Index rows_X);
 
 template <typename DerivedA, typename DerivedB, typename DerivedDA, typename DerivedDB>
 typename MatGradMultMat<DerivedA, DerivedB, DerivedDA>::type
@@ -113,7 +113,7 @@ getSubMatrixGradient(const Eigen::MatrixBase<Derived>& dM,
 
 template<typename Derived>
 typename GetSubMatrixGradientSingleElement<Derived>::type
-getSubMatrixGradient(const Eigen::MatrixBase<Derived>& dM, int row, int col, int M_rows);
+getSubMatrixGradient(const Eigen::MatrixBase<Derived>& dM, int row, int col, typename Derived::Index M_rows);
 
 template<typename DerivedA, typename DerivedB>
 void setSubMatrixGradient(Eigen::MatrixBase<DerivedA>& dM, const Eigen::MatrixBase<DerivedB>& dM_submatrix,

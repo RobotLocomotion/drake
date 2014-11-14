@@ -173,15 +173,20 @@ typename TransformSpatial<DerivedF>::type transformSpatialForce(
 /*
  * spatial transform gradient methods
  */
-template<typename Scalar, typename DerivedS, typename DerivedQdotToV>
-Eigen::Matrix<Scalar, HOMOGENEOUS_TRANSFORM_SIZE, DerivedQdotToV::ColsAtCompileTime> dHomogTrans(
-    const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T,
+ template<typename DerivedQdotToV>
+struct DHomogTrans {
+  typedef typename Eigen::Matrix<typename DerivedQdotToV::Scalar, HOMOGENEOUS_TRANSFORM_SIZE, DerivedQdotToV::ColsAtCompileTime> type;
+};
+ 
+template<typename DerivedS, typename DerivedQdotToV>
+typename DHomogTrans<DerivedQdotToV>::type dHomogTrans(
+    const Eigen::Transform<typename DerivedQdotToV::Scalar, 3, Eigen::Isometry>& T,
     const Eigen::MatrixBase<DerivedS>& S,
     const Eigen::MatrixBase<DerivedQdotToV>& qdot_to_v);
 
-template<typename Scalar, typename DerivedDT>
-Eigen::Matrix<Scalar, HOMOGENEOUS_TRANSFORM_SIZE, DerivedDT::ColsAtCompileTime> dHomogTransInv(
-    const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T,
+template<typename DerivedDT>
+typename DHomogTrans<DerivedDT>::type dHomogTransInv(
+    const Eigen::Transform<typename DerivedDT::Scalar, 3, Eigen::Isometry>& T,
     const Eigen::MatrixBase<DerivedDT>& dT);
 
 template <typename Scalar, typename DerivedX, typename DerivedDT, typename DerivedDX>
