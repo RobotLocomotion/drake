@@ -102,14 +102,14 @@ matGradMult(const Eigen::MatrixBase<DerivedDA>& dA, const Eigen::MatrixBase<Deri
 template<typename Derived>
 Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, Eigen::Dynamic> getSubMatrixGradient(
     const Eigen::MatrixBase<Derived>& dM, const std::vector<int>& rows, const std::vector<int>& cols,
-    int M_rows, int q_start = 0, int q_subvector_size = -1);
+    typename Derived::Index M_rows, int q_start = 0, typename Derived::Index q_subvector_size = -1);
 
 template<int QSubvectorSize, typename Derived, std::size_t NRows, std::size_t NCols>
 typename GetSubMatrixGradientArray<QSubvectorSize, Derived, NRows, NCols>::type
 getSubMatrixGradient(const Eigen::MatrixBase<Derived>& dM,
   const std::array<int, NRows>& rows,
   const std::array<int, NCols>& cols,
-  int M_rows, int q_start = 0, typename Derived::Index q_subvector_size = QSubvectorSize);
+  typename Derived::Index M_rows, int q_start = 0, typename Derived::Index q_subvector_size = QSubvectorSize);
 
 template<typename Derived>
 typename GetSubMatrixGradientSingleElement<Derived>::type
@@ -117,7 +117,7 @@ getSubMatrixGradient(const Eigen::MatrixBase<Derived>& dM, int row, int col, typ
 
 template<typename DerivedA, typename DerivedB>
 void setSubMatrixGradient(Eigen::MatrixBase<DerivedA>& dM, const Eigen::MatrixBase<DerivedB>& dM_submatrix,
-    const std::vector<int>& rows, const std::vector<int>& cols, int M_rows, int q_start = 0, int q_subvector_size = -1);
+    const std::vector<int>& rows, const std::vector<int>& cols, int M_rows, int q_start = 0, typename DerivedA::Index q_subvector_size = -1);
 
 template<int QSubvectorSize, typename DerivedA, typename DerivedB, std::size_t NRows, std::size_t NCols>
 void setSubMatrixGradient(Eigen::MatrixBase<DerivedA>& dM, const Eigen::MatrixBase<DerivedB>& dM_submatrix,
