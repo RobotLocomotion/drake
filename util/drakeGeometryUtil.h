@@ -5,6 +5,7 @@
 #include <cstring>
 #include <cmath>
 #include <random>
+#include "drakeGradientUtil.h"
 
 #if defined(WIN32) || defined(WIN64)
   #undef DLLEXPORT
@@ -15,7 +16,6 @@
   #endif
 #else
   #define DLLEXPORT
-  #include "drakeGradientUtil.h"
 #endif
 
 const int TWIST_SIZE = 6;
@@ -103,7 +103,6 @@ DLLEXPORT Eigen::Matrix<typename Derived::Scalar, 3, 3> vectorToSkewSymmetric(co
  * rotation conversion gradient functions
  */
 
-#if !defined(WIN32) && !defined(WIN64)
 template <typename Derived>
 void normalizeVec(
     const Eigen::MatrixBase<Derived>& x,
@@ -154,14 +153,19 @@ void quatdot2angularvelMatrix(const Eigen::MatrixBase<DerivedQ>& q,
 /*
  * spatial transform functions
  */
-template<typename Scalar, typename DerivedM>
-Eigen::Matrix<Scalar, TWIST_SIZE, DerivedM::ColsAtCompileTime> transformSpatialMotion(
-    const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T,
+template<typename Derived>
+struct TransformSpatial {
+  typedef typename Eigen::Matrix<typename Derived::Scalar, TWIST_SIZE, Derived::ColsAtCompileTime> type;
+};
+
+template<typename DerivedM>
+typename TransformSpatial<DerivedM>::type transformSpatialMotion(
+    const Eigen::Transform<typename DerivedM::Scalar, 3, Eigen::Isometry>& T,
     const Eigen::MatrixBase<DerivedM>& M);
 
-template<typename Scalar, typename DerivedF>
-Eigen::Matrix<Scalar, TWIST_SIZE, DerivedF::ColsAtCompileTime> transformSpatialForce(
-    const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T,
+template<typename DerivedF>
+typename TransformSpatial<DerivedF>::type transformSpatialForce(
+    const Eigen::Transform<typename DerivedF::Scalar, 3, Eigen::Isometry>& T,
     const Eigen::MatrixBase<DerivedF>& F);
 
 //#if !defined(WIN32) && !defined(WIN64)
@@ -193,6 +197,5 @@ typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime>::type dTransformAdjoin
     const Eigen::MatrixBase<DerivedX>& X,
     const Eigen::MatrixBase<DerivedDT>& dT,
     const Eigen::MatrixBase<DerivedDX>& dX);
-#endif
 
 #endif

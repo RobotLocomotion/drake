@@ -72,10 +72,10 @@ struct GetSubMatrixGradientArray {
 /*
  * Output type of getSubMatrixGradient for a single element of the input matrix
  */
- template<typename Derived>
- struct GetSubMatrixGradientSingleElement {
-   typedef typename Eigen::Matrix<typename Derived::Scalar, 1, Derived::ColsAtCompileTime> type;
- };
+template<typename Derived>
+struct GetSubMatrixGradientSingleElement {
+  typedef typename Eigen::Matrix<typename Derived::Scalar, 1, Derived::ColsAtCompileTime> type;
+};
  
 /*
  * Profile results: looks like return value optimization works; a version that sets a reference
