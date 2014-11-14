@@ -721,26 +721,25 @@ template<typename DerivedDT>
 typename DHomogTrans<DerivedDT>::type dHomogTransInv(
     const Eigen::Transform<typename DerivedDT::Scalar, 3, Eigen::Isometry>& T,
     const Eigen::MatrixBase<DerivedDT>& dT) {
-  typename DerivedDT::Index nq_at_compile_time = DerivedDT::ColsAtCompileTime;
   typename DerivedDT::Index nq = dT.cols();
 
   const auto& R = T.linear();
   const auto& p = T.translation();
 
-  std::array<int, 3> rows{ {0, 1, 2} };
-  std::array<int, 3> R_cols{ {0, 1, 2} };
-  std::array<int, 1> p_cols{ {3} };
+  std::array<int, 3> rows = {0, 1, 2};
+  std::array<int, 3> R_cols = {0, 1, 2};
+  std::array<int, 1> p_cols = {3};
 
-  auto dR = getSubMatrixGradient(dT, rows, R_cols, T.Rows);
-  auto dp = getSubMatrixGradient(dT, rows, p_cols, T.Rows);
+  auto dR = getSubMatrixGradient<Eigen::Dynamic>(dT, rows, R_cols, T.Rows);
+  auto dp = getSubMatrixGradient<Eigen::Dynamic>(dT, rows, p_cols, T.Rows);
 
   auto dinvT_R = transposeGrad(dR, R.rows());
   auto dinvT_p = (-R.transpose() * dp - matGradMult(dinvT_R, p)).eval();
 
   const int numel = HOMOGENEOUS_TRANSFORM_SIZE;
-  Eigen::Matrix<typename DerivedDT::Scalar, numel, nq_at_compile_time> ret(numel, nq);
-  setSubMatrixGradient(ret, dinvT_R, rows, R_cols, T.Rows);
-  setSubMatrixGradient(ret, dinvT_p, rows, p_cols, T.Rows);
+  Eigen::Matrix<typename DerivedDT::Scalar, numel, DerivedDT::ColsAtCompileTime> ret(numel, nq);
+  setSubMatrixGradient<Eigen::Dynamic>(ret, dinvT_R, rows, R_cols, T.Rows);
+  setSubMatrixGradient<Eigen::Dynamic>(ret, dinvT_p, rows, p_cols, T.Rows);
 
   // zero out gradient of elements in last row:
   const int last_row = 3;
@@ -758,30 +757,30 @@ typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime, 1>::type dTransformAdj
     const Eigen::MatrixBase<DerivedDT>& dT,
     const Eigen::MatrixBase<DerivedDX>& dX) {
   assert(dT.cols() == dX.cols());
-  int nq = dT.cols();
+  typename DerivedDT::Index nq = dT.cols();
 
   const auto& R = T.linear();
   const auto& p = T.translation();
 
-  std::array<int, 3> rows{ {0, 1, 2} };
-  std::array<int, 3> R_cols{ {0, 1, 2} };
-  std::array<int, 1> p_cols{ {3} };
+  std::array<int, 3> rows = {0, 1, 2};
+  std::array<int, 3> R_cols = {0, 1, 2};
+  std::array<int, 1> p_cols = {3};
 
-  auto dR = getSubMatrixGradient(dT, rows, R_cols, T.Rows);
-  auto dp = getSubMatrixGradient(dT, rows, p_cols, T.Rows);
+  auto dR = getSubMatrixGradient<Eigen::Dynamic>(dT, rows, R_cols, T.Rows);
+  auto dp = getSubMatrixGradient<Eigen::Dynamic>(dT, rows, p_cols, T.Rows);
 
   typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime, 1>::type ret(X.size(), nq);
-  std::array<int, 3> Xomega_rows{ {0, 1, 2} };
-  std::array<int, 3> Xv_rows{ {3, 4, 5} };
+  std::array<int, 3> Xomega_rows = {0, 1, 2};
+  std::array<int, 3> Xv_rows = {3, 4, 5};
   for (int col = 0; col < X.cols(); col++) {
     auto Xomega_col = X.template block<3, 1>(0, col);
     auto Xv_col = X.template block<3, 1>(3, col);
 
     auto RXomega_col = (R * Xomega_col).eval();
 
-    std::array<int, 1> col_array{ {col} };
-    auto dXomega_col = getSubMatrixGradient(dX, Xomega_rows, col_array, X.rows());
-    auto dXv_col = getSubMatrixGradient(dX, Xv_rows, col_array, X.rows());
+    std::array<int, 1> col_array = {col};
+    auto dXomega_col = getSubMatrixGradient<Eigen::Dynamic>(dX, Xomega_rows, col_array, X.rows());
+    auto dXv_col = getSubMatrixGradient<Eigen::Dynamic>(dX, Xv_rows, col_array, X.rows());
 
     auto dRXomega_col = (R * dXomega_col + matGradMult(dR, Xomega_col)).eval();
     auto dRXv_col = (R * dXv_col + matGradMult(dR, Xv_col)).eval();
@@ -789,8 +788,8 @@ typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime, 1>::type dTransformAdj
     auto dp_hatRXomega_col = ((dp.colwise().cross(RXomega_col) - dRXomega_col.colwise().cross(p)).eval()).eval();
     auto Xv_part = (dp_hatRXomega_col + dRXv_col).eval();
 
-    setSubMatrixGradient(ret, dRXomega_col, Xomega_rows, col_array, X.rows());
-    setSubMatrixGradient(ret, Xv_part, Xv_rows, col_array, X.rows());
+    setSubMatrixGradient<Eigen::Dynamic>(ret, dRXomega_col, Xomega_rows, col_array, X.rows());
+    setSubMatrixGradient<Eigen::Dynamic>(ret, Xv_part, Xv_rows, col_array, X.rows());
   }
   return ret;
 }
@@ -925,7 +924,7 @@ template DHomogTrans<MatrixXd>::type dHomogTrans(
     const MatrixBase< Matrix<double, TWIST_SIZE, Dynamic> >&,
     const MatrixBase< MatrixXd >&);
 
-template Matrix<double, HOMOGENEOUS_TRANSFORM_SIZE, Dynamic> dHomogTransInv(
+template DHomogTrans<Matrix<double, HOMOGENEOUS_TRANSFORM_SIZE, Dynamic>>::type dHomogTransInv(
     const Isometry3d&,
     const MatrixBase< Matrix<double, HOMOGENEOUS_TRANSFORM_SIZE, Dynamic> >&);
 
