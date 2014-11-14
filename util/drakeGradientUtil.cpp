@@ -98,8 +98,8 @@ getSubMatrixGradient(const Eigen::MatrixBase<Derived>& dM,
   }
   Eigen::Matrix<typename Derived::Scalar, NRows * NCols, Derived::ColsAtCompileTime> dM_submatrix(NRows * NCols, q_subvector_size);
   int index = 0;
-  for (std::array<int, NCols>::const_iterator col = cols.begin(); col != cols.end(); ++col) {
-    for (std::array<int, NRows>::const_iterator row = rows.begin(); row != rows.end(); ++row) {
+  for (typename std::array<int, NCols>::const_iterator col = cols.begin(); col != cols.end(); ++col) {
+    for (typename std::array<int, NRows>::const_iterator row = rows.begin(); row != rows.end(); ++row) {
       dM_submatrix.row(index++) = dM.template block<1, QSubvectorSize> ((*row) + (*col) * M_rows, q_start, 1, q_subvector_size);
     }
   }
@@ -119,8 +119,8 @@ void setSubMatrixGradient(Eigen::MatrixBase<DerivedA>& dM, const Eigen::MatrixBa
     q_subvector_size = dM.cols() - q_start;
   }
   int index = 0;
-  for (std::array<int, NCols>::const_iterator col = cols.begin(); col != cols.end(); ++col) {
-    for (std::array<int, NRows>::const_iterator row = rows.begin(); row != rows.end(); ++row) {
+  for (typename std::vector<int>::const_iterator col = cols.begin(); col != cols.end(); ++col) {
+    for (typename std::vector<int>::const_iterator row = rows.begin(); row != rows.end(); ++row) {
       dM.block((*row) + (*col) * M_rows, q_start, 1, q_subvector_size) = dM_submatrix.row(index++);
     }
   }
@@ -133,8 +133,8 @@ void setSubMatrixGradient(Eigen::MatrixBase<DerivedA>& dM, const Eigen::MatrixBa
     q_subvector_size = dM.cols() - q_start;
   }
   int index = 0;
-  for (std::array<int, NCols>::const_iterator col = cols.begin(); col != cols.end(); ++col) {
-    for (std::array<int, NRows>::const_iterator row = rows.begin(); row != rows.end(); ++row) {
+  for (typename std::array<int, NCols>::const_iterator col = cols.begin(); col != cols.end(); ++col) {
+    for (typename std::array<int, NRows>::const_iterator row = rows.begin(); row != rows.end(); ++row) {
       dM.template block<1, QSubvectorSize> ((*row) + (*col) * M_rows, q_start, 1, q_subvector_size) = dM_submatrix.row(index++);
     }
   }
