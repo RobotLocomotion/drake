@@ -1,4 +1,6 @@
 # tk 20141113 debugMexTest causes compilation errors on Ubuntu 32 bit
+# See https://github.com/RobotLocomotion/drake/issues/553
+# debugMexTester.m and debugMexTest.cpp were moved to dev
 # add_mex(debugMexTest debugMexTest.cpp)
 
 if (eigen3_FOUND)
