@@ -11,7 +11,7 @@ typename Derived::PlainObject transposeGrad(
     const Eigen::MatrixBase<Derived>& dX, int rows_X)
 {
   typename Derived::PlainObject dX_transpose(dX.rows(), dX.cols());
-  int numel = dX.rows();
+  typename Derived::Index numel = dX.rows();
   int index = 0;
   for (int i = 0; i < numel; i++) {
     dX_transpose.row(i) = dX.row(index);
@@ -92,7 +92,7 @@ typename GetSubMatrixGradientArray<QSubvectorSize, Derived, NRows, NCols>::type
 getSubMatrixGradient(const Eigen::MatrixBase<Derived>& dM,
   const std::array<int, NRows>& rows,
   const std::array<int, NCols>& cols,
-  int M_rows, int q_start, int q_subvector_size) {
+  int M_rows, int q_start, typename Derived::Index q_subvector_size) {
   if (q_subvector_size == Eigen::Dynamic) {
     q_subvector_size = dM.cols() - q_start;
   }
@@ -128,7 +128,7 @@ void setSubMatrixGradient(Eigen::MatrixBase<DerivedA>& dM, const Eigen::MatrixBa
 
 template<int QSubvectorSize, typename DerivedA, typename DerivedB, std::size_t NRows, std::size_t NCols>
 void setSubMatrixGradient(Eigen::MatrixBase<DerivedA>& dM, const Eigen::MatrixBase<DerivedB>& dM_submatrix,
-    const std::array<int, NRows>& rows, const std::array<int, NCols>& cols, int M_rows, int q_start, int q_subvector_size) {
+    const std::array<int, NRows>& rows, const std::array<int, NCols>& cols, int M_rows, int q_start, typename DerivedA::Index q_subvector_size) {
   if (q_subvector_size == Eigen::Dynamic) {
     q_subvector_size = dM.cols() - q_start;
   }
@@ -187,7 +187,7 @@ MAKE_MATGRADMULTMAT_TRANSPOSE_B_EXPLICIT_INSTANTIATION(double, 4, 1, 4, 4, 4, 4)
 #undef MAKE_MATGRADMULTMAT_TRANSPOSE_B_EXPLICIT_INSTANTIATION
 
 #define MAKE_SETSUBMATRIXGRADIENT_EXPLICIT_INSTANTIATION(Type, QSubvectorSize, DMRows, DMCols, DMSubRows, DMSubCols, NRows, NCols) \
-		template void setSubMatrixGradient<QSubvectorSize,Eigen::Matrix<Type, DMRows, DMCols>, Eigen::Matrix<Type, DMSubRows, DMSubCols>, NRows, NCols>(Eigen::MatrixBase< Eigen::Matrix<Type, DMRows, DMCols> >&, const Eigen::MatrixBase< Eigen::Matrix<Type, DMSubRows, DMSubCols> >&, const std::array<int, NRows>&, const std::array<int, NCols>&, int, int, int);
+		template void setSubMatrixGradient<QSubvectorSize,Eigen::Matrix<Type, DMRows, DMCols>, Eigen::Matrix<Type, DMSubRows, DMSubCols>, NRows, NCols>(Eigen::MatrixBase< Eigen::Matrix<Type, DMRows, DMCols> >&, const Eigen::MatrixBase< Eigen::Matrix<Type, DMSubRows, DMSubCols> >&, const std::array<int, NRows>&, const std::array<int, NCols>&, int, int, Eigen::Matrix<Type, DMSubRows, DMSubCols>::Index);
 //MAKE_SETSUBMATRIXGRADIENT_EXPLICIT_INSTANTIATION(double, Eigen::Dynamic, Eigen::Dynamic, Eigen::Dynamic, 3, Eigen::Dynamic, 3, 1)
 MAKE_SETSUBMATRIXGRADIENT_EXPLICIT_INSTANTIATION(double, Eigen::Dynamic, Eigen::Dynamic, Eigen::Dynamic, 3, Eigen::Dynamic, 3, 1)
 MAKE_SETSUBMATRIXGRADIENT_EXPLICIT_INSTANTIATION(double, Eigen::Dynamic, 16, Eigen::Dynamic, Eigen::Dynamic, Eigen::Dynamic, 3, 3)
@@ -200,7 +200,7 @@ MAKE_SETSUBMATRIXGRADIENT_EXPLICIT_INSTANTIATION(double, 4, Eigen::Dynamic, Eige
 #undef MAKE_SETSUBMATRIXGRADIENT_EXPLICIT_INSTANTIATION
 
 #define MAKE_GETSUBMATRIXGRADIENT_ARRAY_EXPLICIT_INSTANTIATION(Type, DMRows, DMCols, NRows, NCols, QSubvectorSize) \
-	template GetSubMatrixGradientArray<QSubvectorSize, Eigen::Matrix<Type, DMRows, DMCols>, NRows, NCols>::type getSubMatrixGradient<QSubvectorSize, Eigen::Matrix<Type, DMRows, DMCols>, NRows, NCols>(const Eigen::MatrixBase< Eigen::Matrix<Type, DMRows, DMCols> >&, const std::array<int, NRows>&, const std::array<int, NCols>&, int, int, int);
+	template GetSubMatrixGradientArray<QSubvectorSize, Eigen::Matrix<Type, DMRows, DMCols>, NRows, NCols>::type getSubMatrixGradient<QSubvectorSize, Eigen::Matrix<Type, DMRows, DMCols>, NRows, NCols>(const Eigen::MatrixBase< Eigen::Matrix<Type, DMRows, DMCols> >&, const std::array<int, NRows>&, const std::array<int, NCols>&, int, int, Eigen::Matrix<Type, DMRows, DMCols>::Index);
 MAKE_GETSUBMATRIXGRADIENT_ARRAY_EXPLICIT_INSTANTIATION(double, Eigen::Dynamic, Eigen::Dynamic, 3, 1, Eigen::Dynamic)
 MAKE_GETSUBMATRIXGRADIENT_ARRAY_EXPLICIT_INSTANTIATION(double, 16, Eigen::Dynamic, 3, 3, Eigen::Dynamic)
 MAKE_GETSUBMATRIXGRADIENT_ARRAY_EXPLICIT_INSTANTIATION(double, 16, Eigen::Dynamic, 3, 1, Eigen::Dynamic)

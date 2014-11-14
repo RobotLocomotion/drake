@@ -109,7 +109,7 @@ typename GetSubMatrixGradientArray<QSubvectorSize, Derived, NRows, NCols>::type
 getSubMatrixGradient(const Eigen::MatrixBase<Derived>& dM,
   const std::array<int, NRows>& rows,
   const std::array<int, NCols>& cols,
-  int M_rows, int q_start = 0, int q_subvector_size = QSubvectorSize);
+  int M_rows, int q_start = 0, typename Derived::Index q_subvector_size = QSubvectorSize);
 
 template<typename Derived>
 typename GetSubMatrixGradientSingleElement<Derived>::type
@@ -121,6 +121,6 @@ void setSubMatrixGradient(Eigen::MatrixBase<DerivedA>& dM, const Eigen::MatrixBa
 
 template<int QSubvectorSize, typename DerivedA, typename DerivedB, std::size_t NRows, std::size_t NCols>
 void setSubMatrixGradient(Eigen::MatrixBase<DerivedA>& dM, const Eigen::MatrixBase<DerivedB>& dM_submatrix,
-    const std::array<int, NRows>& rows, const std::array<int, NCols>& cols, int M_rows, int q_start = 0, int q_subvector_size = QSubvectorSize);
+    const std::array<int, NRows>& rows, const std::array<int, NCols>& cols, int M_rows, int q_start = 0, typename DerivedA::Index q_subvector_size = QSubvectorSize);
 
 #endif /* DRAKEGRADIENTUTIL_H_ */
