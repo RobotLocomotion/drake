@@ -34,7 +34,7 @@ std::array<int, Size> intRange(int start)
  */
 template<typename Derived, int Nq, int DerivativeOrder = 1>
 struct Gradient {
-  typedef typename Eigen::Matrix<typename Derived::Scalar, ((Derived::SizeAtCompileTime == Eigen::Dynamic || Nq == Eigen::Dynamic) ? Eigen::Dynamic : Gradient<typename Derived, Nq, DerivativeOrder - 1>::template type::SizeAtCompileTime), Nq> type;
+  typedef typename Eigen::Matrix<typename Derived::Scalar, ((Derived::SizeAtCompileTime == Eigen::Dynamic || Nq == Eigen::Dynamic) ? Eigen::Dynamic : Gradient<Derived, Nq, DerivativeOrder - 1>::type::SizeAtCompileTime), Nq> type;
 };
 
 /*
@@ -67,8 +67,6 @@ struct MatGradMult {
 template<int QSubvectorSize, typename Derived, std::size_t NRows, std::size_t NCols>
 struct GetSubMatrixGradientArray {
   typedef typename Eigen::Matrix<typename Derived::Scalar, (int) (NRows * NCols), (QSubvectorSize == Eigen::Dynamic ? Derived::ColsAtCompileTime : QSubvectorSize)> type;
-  typedef typename std::array<int, NRows> row_array_type;
-  typedef typename std::array<int, NCols> col_array_type;
 };
 
 /*
@@ -109,8 +107,8 @@ Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, Eigen::Dynamic> getSubMa
 template<int QSubvectorSize = -1, typename Derived, std::size_t NRows, std::size_t NCols>
 typename GetSubMatrixGradientArray<QSubvectorSize, Derived, NRows, NCols>::type
 getSubMatrixGradient(const Eigen::MatrixBase<Derived>& dM,
-    const typename GetSubMatrixGradientArray<QSubvectorSize, Derived, NRows, NCols>::row_array_type& rows,
-	const typename GetSubMatrixGradientArray<QSubvectorSize, Derived, NRows, NCols>::col_array_type& cols,
+  const std::array<int, NRows>& rows,
+  const std::array<int, NCols>& cols,
 	int M_rows, int q_start = 0, int q_subvector_size = QSubvectorSize);
 
 template<typename Derived>
