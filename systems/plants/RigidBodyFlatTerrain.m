@@ -3,11 +3,8 @@ classdef RigidBodyFlatTerrain < RigidBodyTerrain
 %  everywhere
   
   methods 
-    function obj = RigidBodyFlatTerrain(color)
-      if nargin < 1
-        color = hex2dec({'ee','cb','ad'})'/256;  % something a little brighter (peach puff 2 from http://www.tayloredmktg.com/rgb/)
-      end
-      obj.geom = constructRigidBodyGeometry(obj, color);
+    function obj = RigidBodyFlatTerrain()
+      obj.geom = constructRigidBodyGeometry(obj);
     end
     
     function [z,normal] = getHeight(obj,xy)
@@ -23,18 +20,19 @@ classdef RigidBodyFlatTerrain < RigidBodyTerrain
     function geom = getVisualGeometry(obj)
       geom = obj.geom;
     end
+
+    function obj = setGeometryColor(obj, color)
+      geom = obj.getVisualGeometry();
+      geom.c = reshape(color, 3, 1);
+      obj.geom = geom;
+    end
     
-    function geom = constructRigidBodyGeometry(obj, color)
-      if nargin < 2
-        color = hex2dec({'ee','cb','ad'})'/256;  % something a little brighter (peach puff 2 from http://www.tayloredmktg.com/rgb/)
-      else
-        color = reshape(color, 3, 1);
-      end
+    function geom = constructRigidBodyGeometry(obj)
       box_width = 1000;
       box_depth = 10;
       geom = RigidBodyBox([box_width;box_width;box_depth]);
       geom.T(3,4) = -box_depth/2;
-      geom.c = color;
+      geom.c = hex2dec({'ee','cb','ad'})'/256;  % something a little brighter (peach puff 2 from http://www.tayloredmktg.com/rgb/);
       geom.name = 'terrain';
 %      geom.c = hex2dec({'cd','af','95'})'/256;
     end
