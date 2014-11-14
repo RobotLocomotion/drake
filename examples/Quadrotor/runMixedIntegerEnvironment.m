@@ -20,7 +20,7 @@ if nargin < 10
   dt = 0.5;
 end
 
-AUTOSAVE = true;
+AUTOSAVE = false;
 
 bot_radius = 0.3;
 
@@ -88,62 +88,59 @@ prob.traj_degree = traj_degree;
 prob.bot_radius = bot_radius;
 prob.dt = dt;
 
-if 0
-  load('../data/2014-11-12_18.00.58/results.mat', 'xtraj_sim', 'ytraj');
-  % xtraj_sim = xtraj_sim.setOutputFrame(r.getStateFrame());
+% Add initial and final velocities and accelerations
+start = [start, [0;0;0], [0;0;0]];
+goal = [goal, [0;0;0], [0;0;0]];
 
-  ytraj = ytraj.setOutputFrame(DifferentiallyFlatOutputFrame);
-  [xtraj, utraj] = invertFlatOutputs(r,ytraj);
-  % v.playback(xtraj, struct('slider', true));
-  % keyboard()
+% Find a piecewise 3rd-degree polynomial through the convex regions from start to goal
+[~, ~, ~, safe_region_assignments] = prob.solveTrajectory(start, goal, safe_regions);
 
-  % Simulate the result
-  x0 = xtraj.eval(0);
-  tf = utraj.tspan(2);
-  Q = 10*eye(12);
-  R = eye(4);
-  Qf = 10*eye(12);
-  c = tvlqr(r,xtraj,utraj,Q,R,Qf);
-  sys = feedback(r,c);
-  xtraj_sim = simulate(sys,[0 tf],x0);
-else
-  start = [start, [0;0;0], [0;0;0]];
-  goal = [goal, [0;0;0], [0;0;0]];
-  [ytraj, ~, ~, safe_region_assignments] = prob.solveTrajectory(start, goal, safe_regions);
+% load('../data/2014-11-12_18.00.58/results.mat', 'ytraj', 'safe_region_assignments');
 
-  % Run the program again with the region assignments fixed, for a 5-th-degree polynomial
-  prob.traj_degree = 5;
-  [ytraj, diagnostics, ~, ~] = prob.solveTrajectory(start, goal, safe_regions, safe_region_assignments);
-  diagnostics
+% Run the program again with the region assignments fixed, for a piecewise 5th-degree polynomial
+prob.traj_degree = 5;
+ytraj = prob.solveTrajectory(start, goal, safe_regions, safe_region_assignments);
 
+% Add an all-zeros yaw trajectory
+ytraj = ytraj.vertcat(ConstantTrajectory(0));
 
-  % Add an all-zeros yaw trajectory
-  ytraj = ytraj.vertcat(ConstantTrajectory(0));
+% % Invert differentially flat outputs to find the state traj
+ytraj = ytraj.setOutputFrame(DifferentiallyFlatOutputFrame);
+[xtraj, utraj] = invertFlatOutputs(r,ytraj);
 
-  % Invert differentially flat outputs to find the state traj
-  ytraj = ytraj.setOutputFrame(DifferentiallyFlatOutputFrame);
-  [xtraj, utraj] = invertFlatOutputs(r,ytraj);
-  % v.playback(xtraj, struct('slider', true));
+figure(83);
+clf
+hold on
+ts = utraj.getBreaks();
+ts = linspace(ts(1), ts(end), 100);
+u = utraj.eval(ts);
+plot(ts, u(1,:), ts, u(2,:), ts, u(3,:), ts, u(4,:))
+drawnow()
+% v.playback(xtraj, struct('slider', true));
 
-  % Simulate the result
-  x0 = xtraj.eval(0);
-  tf = utraj.tspan(2);
-  Q = 10*eye(12);
-  R = eye(4);
-  Qf = 10*eye(12);
-  c = tvlqr(r,xtraj,utraj,Q,R,Qf);
-  sys = feedback(r,c);
-  xtraj_sim = simulate(sys,[0 tf],x0);
-  if AUTOSAVE
-    folder = fullfile('~/locomotion/papers/icra-2015-uav-miqp/data', datestr(now,'yyyy-mm-dd_HH.MM.SS'));
-    system(sprintf('mkdir -p %s', folder));
-    save(fullfile(folder, 'results.mat'), 'xtraj', 'ytraj', 'utraj', 'r', 'v', 'safe_region_assignments', 'prob', 'safe_regions', 'xtraj_sim', 'start', 'goal');
-  end
+% Stabilize the trajectory with TVLQR
+x0 = xtraj.eval(0);
+tf = utraj.tspan(2);
+Q = 10*eye(12);
+R = eye(4);
+Qf = 10*eye(12);
+c = tvlqr(r,xtraj,utraj,Q,R,Qf);
+sys = feedback(r,c);
+% sys = cascade(utraj, r);
+
+% Simulate the result
+xtraj_sim = simulate(sys,[0 tf],x0);
+
+if AUTOSAVE
+  folder = fullfile('~/locomotion/papers/icra-2015-uav-miqp/data', datestr(now,'yyyy-mm-dd_HH.MM.SS'));
+  system(sprintf('mkdir -p %s', folder));
+  save(fullfile(folder, 'results.mat'), 'xtraj', 'ytraj', 'utraj', 'r', 'v', 'safe_region_assignments', 'prob', 'safe_regions', 'xtraj_sim', 'start', 'goal', 'sys');
 end
+
+% Draw the result
 v = v.setInputFrame(sys.getOutputFrame().getFrameByName('quadrotorPosition'));
 v.playback(xtraj_sim, struct('slider', true));
 
-% Draw the result
 lc = lcm.lcm.LCM.getSingleton();
 lcmgl = drake.util.BotLCMGLClient(lc, 'quad_trajectory');
 lcmgl.glBegin(lcmgl.LCMGL_LINES);
@@ -157,16 +154,15 @@ for i = 1:size(Y, 2)-1
   lcmgl.glVertex3f(Y(1,i+1), Y(2,i+1), Y(3,i+1));
 end
 
+figure(123)
+clf
+hold on
+Ysnap = fnder(ytraj, 4);
+Ysn = squeeze(Ysnap.eval(ts));
+plot(ts, sum(Y.^2, 1), ts, sum(Ysn.^2, 1))
+
 lcmgl.glEnd();
 lcmgl.switchBuffers();
-
-
-% figure(1)
-% for j = 1:5
-%   subplot(5, 1, j);
-%   fnplt(fnder(ytraj(1), j));
-% end
-
 
 end
 
