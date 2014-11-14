@@ -8,6 +8,16 @@
 #include <array>
 #include <assert.h>
 
+/* Turn 'default template arguments are only allowed on a class template' error (C4519) into a warning
+   According to Stroustrup:
+   The prohibition of default template arguments for function templates is a misbegotten remnant of the
+   time where freestanding functions were treated as second class citizens and required all template 
+   arguments to be deduced from the function arguments rather than specified.
+*/
+#if defined(_WIN32) || defined(_WIN64)
+#pragma warning(1 : 4519)
+#endif
+
 template<unsigned int Size>
 std::array<int, Size> intRange(int start)
 {
@@ -23,7 +33,7 @@ std::array<int, Size> intRange(int start)
  */
 template<typename Derived, int Nq, int DerivativeOrder = 1>
 struct Gradient {
-  typedef Eigen::Matrix<typename Derived::Scalar, (Derived::SizeAtCompileTime == Eigen::Dynamic || Nq == Eigen::Dynamic) ? Eigen::Dynamic : Gradient<Derived, Nq, DerivativeOrder - 1>::type::SizeAtCompileTime, Nq> type;
+  typedef typename Eigen::Matrix<typename Derived::Scalar, (Derived::SizeAtCompileTime == Eigen::Dynamic || Nq == Eigen::Dynamic) ? Eigen::Dynamic : Gradient<typename Derived, Nq, DerivativeOrder - 1>::template type::SizeAtCompileTime, Nq> type;
 };
 
 /*
@@ -31,7 +41,7 @@ struct Gradient {
  */
 template<typename Derived, int Nq>
 struct Gradient<Derived, Nq, 1> {
-  typedef Eigen::Matrix<typename Derived::Scalar, Derived::SizeAtCompileTime, Nq> type;
+  typedef typename Eigen::Matrix<typename Derived::Scalar, Derived::SizeAtCompileTime, Nq> type;
 };
 
 #define matGradMultMatNumRows(rows_A, cols_B) (((rows_A) == Eigen::Dynamic || (cols_B) == Eigen::Dynamic) ? Eigen::Dynamic : ((rows_A) * (cols_B)))
@@ -68,7 +78,7 @@ Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, Eigen::Dynamic> getSubMa
     int M_rows, int q_start = 0, int q_subvector_size = -1);
 
 template<int QSubvectorSize = -1, typename Derived, std::size_t NRows, std::size_t NCols>
-Eigen::Matrix<typename Derived::Scalar, (int) (NRows * NCols), QSubvectorSize == Eigen::Dynamic ? Derived::ColsAtCompileTime : QSubvectorSize>
+Eigen::Matrix<typename Derived::Scalar, (int) (NRows * NCols), (QSubvectorSize == Eigen::Dynamic ? Derived::ColsAtCompileTime : QSubvectorSize)>
 getSubMatrixGradient(const Eigen::MatrixBase<Derived>& dM,
     const std::array<int, NRows>& rows, const std::array<int, NCols>& cols, int M_rows, int q_start = 0, int q_subvector_size = QSubvectorSize);
 
