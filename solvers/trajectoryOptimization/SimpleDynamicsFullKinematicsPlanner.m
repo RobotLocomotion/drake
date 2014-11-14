@@ -176,9 +176,15 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
       %   and 3 and 4 together.
       typecheck(constraint,'RigidBodyConstraint');
       if ~iscell(time_index)
-        % then use { time_index(1), time_index(2), ... } ,
-        % aka independent constraints for each time
-        time_index = num2cell(reshape(time_index,1,[]));
+        if isa(constraint,'MultipleTimeKinematicConstraint')
+          % then use { time_index(1), time_index(2), ... } ,
+          % aka independent constraints for each time
+          time_index = {reshape(time_index,1,[])};
+        else
+          % then use { time_index(1), time_index(2), ... } ,
+          % aka independent constraints for each time
+          time_index = num2cell(reshape(time_index,1,[]));
+        end
       end
       for j = 1:numel(time_index)
         if isa(constraint,'SingleTimeKinematicConstraint')
@@ -202,9 +208,9 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
             end
             obj.qsc_weight_inds{time_index{j}} = obj.num_vars+(1:constraint.num_pts)';
             obj = obj.addDecisionVariable(constraint.num_pts,qsc_weight_names);
-            obj = obj.addDifferentiableConstraint(cnstr{1},{obj.q_inds(:,time_index{j});obj.qsc_weight_inds{time_index{j}}},obj.kinsol_dataind(time_index{j}));
-            obj = obj.addLinearConstraint(cnstr{2},obj.qsc_weight_inds{time_index{j}});
-            obj = obj.addBoundingBoxConstraint(cnstr{3},obj.qsc_weight_inds{time_index{j}});
+            obj = obj.addConstraint(cnstr{1},{obj.q_inds(:,time_index{j});obj.qsc_weight_inds{time_index{j}}},obj.kinsol_dataind(time_index{j}));
+            obj = obj.addConstraint(cnstr{2},obj.qsc_weight_inds{time_index{j}});
+            obj = obj.addConstraint(cnstr{3},obj.qsc_weight_inds{time_index{j}});
           end
         elseif isa(constraint,'SingleTimeLinearPostureConstraint')
           cnstr = constraint.generateConstraint();

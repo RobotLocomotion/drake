@@ -36,13 +36,13 @@ classdef Affine < drakeFunction.DrakeFunction
       [obj.iCfun, obj.jCvar] = find(obj.A);
     end
 
-    function fcn = concatenated(obj, varargin)
+    function fcn = concatenate(obj, varargin)
       if islogical(varargin{end})
         same_input = varargin{end};
         fcns = [obj, varargin(1:end-1)];
       else
         same_input = false;
-        fcns = [obj, varargin];
+        fcns = [{obj}, varargin];
       end
       typecheck(fcns,'cell');
       if all(cellfun(@(arg)isa(arg,'drakeFunction.Affine'), fcns));
@@ -51,14 +51,14 @@ classdef Affine < drakeFunction.DrakeFunction
         if same_input
           A_cat = cell2mat(reshape(cellfun(@(fcn) fcn.A, fcns, 'UniformOutput',false),[],1));
         else
-          A_cell = reshape(cellfun(@(fcn) fcn.A, fcns, 'UniformOutput',false),1,[]);
+          A_cell = reshape(cellfun(@(fcn) sparse(fcn.A), fcns, 'UniformOutput',false),1,[]);
           A_cat = blkdiag(A_cell{:});
         end
         b_cat = cell2mat(reshape(cellfun(@(fcn) fcn.b, fcns, 'UniformOutput',false),[],1));
         fcn = drakeFunction.Affine(input_frame,output_frame,A_cat,b_cat);
       else
         % punt to DrakeFunction
-        fcn = concatenated@drakeFunction.DrakeFunction(obj, varargin{:});
+        fcn = concatenate@drakeFunction.DrakeFunction(obj, varargin{:});
       end
     end
   end

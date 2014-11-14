@@ -22,8 +22,12 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       end
 
       path_handle = addpathTemporary(fullfile(getDrakePath,'examples','Atlas','frames'));
-
       w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
+      
+      if ~isfield(options,'control_rate')
+        options.control_rate = 250;
+      end
+      
       obj = obj@TimeSteppingRigidBodyManipulator(urdf,options.dt,options);
       obj = obj@Biped('r_foot_sole', 'l_foot_sole');
       warning(w);
@@ -54,6 +58,14 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
         obj.manip = compile(obj.manip);
         obj = obj.setInitialState(zeros(obj.getNumStates(),1));
       end
+      
+      obj.left_full_support = RigidBodySupportState(obj,obj.foot_body_id.left);
+      obj.left_toe_support = RigidBodySupportState(obj,obj.foot_body_id.left,{{'toe'}});
+      obj.right_full_support = RigidBodySupportState(obj,obj.foot_body_id.right);
+      obj.right_toe_support = RigidBodySupportState(obj,obj.foot_body_id.right,{{'toe'}});
+      obj.left_full_right_full_support = RigidBodySupportState(obj,[obj.foot_body_id.left,obj.foot_body_id.right]);
+      obj.left_toe_right_full_support = RigidBodySupportState(obj,[obj.foot_body_id.left,obj.foot_body_id.right],{{'toe'},{'heel','toe'}});
+      obj.left_full_right_toe_support = RigidBodySupportState(obj,[obj.foot_body_id.left,obj.foot_body_id.right],{{'heel','toe'},{'toe'}});
     end
     
     function obj = compile(obj)
@@ -122,10 +134,10 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
     function weights = getFootstepOptimizationWeights(obj)
       % Return a reasonable set of default weights for the footstep planner
       % optimization. The weights describe the following quantities:
-      % 'relative': the contribution to the cost function of the 
-      %             displacement from one step to the next 
+      % 'relative': the contribution to the cost function of the
+      %             displacement from one step to the next
       % 'relative_final': the cost contribution of the displacement of the
-      %                   displacement of the very last step (this can be 
+      %                   displacement of the very last step (this can be
       %                   larger than the normal 'relative' cost in
       %                   order to encourage the feet to be close together
       %                   at the end of a plan)
@@ -133,7 +145,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       %         footsteps to their respective goal poses.
       % Each weight is a 6 element vector, describing the weights on
       % [x, y, z, roll, pitch, yaw]
-      
+
       weights = struct('relative', [1;1;1;0;0;0.5],...
                        'relative_final', [10;10;10;0;0;1],...
                        'goal', [100;100;0;0;0;10]);
@@ -242,5 +254,13 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
   end
   properties
     fixed_point_file = fullfile(getDrakePath(), 'examples', 'Atlas', 'data', 'atlas_fp.mat');
+    % preconstructing these for efficiency
+    left_full_support
+    left_toe_support
+    right_full_support
+    right_toe_support
+    left_full_right_full_support
+    left_toe_right_full_support
+    left_full_right_toe_support
   end
 end
