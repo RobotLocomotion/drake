@@ -3,7 +3,9 @@ function [r] = runMixedIntegerOffice
 % Run the mixed-integer SOS trajectory planner in the office environment
 
 r = Quadrotor();
-r = r.setTerrain(RigidBodyFlatTerrain([0, 170, 255]'/256));
+terrain = RigidBodyFlatTerrain();
+terrain = terrain.setGeometryColor([0, 170, 255]'/256);
+r = r.setTerrain(terrain);
 
 degree = 3;
 n_segments = 7;
@@ -22,7 +24,7 @@ seeds = [...
          ]';
 n_regions = 7;
 
-runMixedIntegerEnvironment(r, start, goal, lb, ub, seeds, degree, n_segments, n_regions, 1.5);
+runMixedIntegerEnvironment(r, start, goal, lb, ub, seeds, degree, n_segments, n_regions, 0.5);
 
 
 return;
