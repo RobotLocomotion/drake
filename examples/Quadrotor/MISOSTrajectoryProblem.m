@@ -12,6 +12,7 @@ classdef MISOSTrajectoryProblem
                     %         at least this distance within the polytopes defined by the safe regions).
     basis = 'legendre'; % option: 'monomials' or 'legendre'. The polynomial basis to use.
     dt = 0.5; % Duration of each trajectory piece (seconds)
+    debug = false;
   end
 
   methods
@@ -59,8 +60,8 @@ classdef MISOSTrajectoryProblem
     sizecheck(goal, [dim, nan]);
 
 
-    C_BOUND = 10;
-    SIGMA_BOUND = 1000;
+    C_BOUND = 100;
+    SIGMA_BOUND = 100;
 
     t = sdpvar(1,1);
 
@@ -70,11 +71,11 @@ classdef MISOSTrajectoryProblem
       shifted_legendre = [1;
                           2*t - 1;
                           6*t^2 - 6*t + 1;
-                          20*t^3 - 30*t^2 + 12*t - 1;
-                          70*t^4 - 140*t^3 + 90*t^2 - 20*t + 1;
-                          252*t^5 - 630*t^4 + 560*t^3 - 210*t^2 + 30*t - 1;
-                          924*t^6 - 2772*t^5 + 3150*t^4 - 1680*t^3 + 420*t^2 - 42*t + 1;
-                          3432*t^7 - 12012*t^6 + 16632*t^5 - 11550*t^4 + 4200*t^3 - 756*t^2 + 56*t - 1;
+                          (20*t^3 - 30*t^2 + 12*t - 1)/5;
+                          (70*t^4 - 140*t^3 + 90*t^2 - 20*t + 1)/10;
+                          (252*t^5 - 630*t^4 + 560*t^3 - 210*t^2 + 30*t - 1)/50;
+                          (924*t^6 - 2772*t^5 + 3150*t^4 - 1680*t^3 + 420*t^2 - 42*t + 1)/100;
+                          (3432*t^7 - 12012*t^6 + 16632*t^5 - 11550*t^4 + 4200*t^3 - 756*t^2 + 56*t - 1)/1000;
                           ];
       basis = shifted_legendre(1:obj.traj_degree+1);
     else
@@ -174,11 +175,11 @@ classdef MISOSTrajectoryProblem
       end
       if obj.traj_degree <= 3
         for d = 1:dim
-          objective = objective + Cd{j}{obj.traj_degree}(:,d)' * Cd{j}{obj.traj_degree}(:,d);
+          objective = objective + 0.01 * (Cd{j}{obj.traj_degree}(:,d)' * Cd{j}{obj.traj_degree}(:,d));
         end
       elseif obj.traj_degree == 5
         c = reshape(coefficients(X{j}, t), [], dim);
-        objective = objective + sum((factorial(4) * c(end-1,:)).^2 + 1/2 * 2 * (factorial(4) * c(end-1,:)) .* (factorial(5) * c(end,:)) + 1/3 * (factorial(5) * c(end,:)).^2);
+        objective = objective + 0.01 * (sum((factorial(4) * c(end-1,:)).^2 + 1/2 * 2 * (factorial(4) * c(end-1,:)) .* (factorial(5) * c(end,:)) + 1/3 * (factorial(5) * c(end,:)).^2));
       else
         error('not implemented yet');
       end
@@ -189,7 +190,6 @@ classdef MISOSTrajectoryProblem
         Q{j}{rs} = {};
         nr = size(region{rs},1);
         for r = 1:nr
-          % sigma{j}{rs}{r} = {};
           A = safe_region_sets{rs}(r).A;
           b = safe_region_sets{rs}(r).b;
           for k = 1:size(A,1)
@@ -219,7 +219,6 @@ classdef MISOSTrajectoryProblem
                   Q{j}{rs}{k}{1} >= 0,...
                   Q{j}{rs}{k}{2} >= 0,...
                   ];
-                % objective = objective + 0.1 * trace(Q{j}{rs}{k}{1}) + 0.1 * trace(Q{j}{rs}{k}{2});
               else
                 error('not implemented');
               end
@@ -248,10 +247,12 @@ classdef MISOSTrajectoryProblem
 
     t0 = tic;
     if obj.traj_degree > 3 && isempty(cell2mat(safe_region_assignments))
-      diagnostics = optimize(constraints, objective, sdpsettings('solver', 'bnb', 'bnb.maxiter', 5000, 'verbose', 3, 'debug', true))
+      diagnostics = optimize(constraints, objective, sdpsettings('solver', 'bnb', 'bnb.maxiter', 5000, 'verbose', 1, 'debug', true));
+    % elseif obj.traj_degree > 3 && ~isempty(cell2mat(safe_region_assignments))
+    %   diagnostics = optimize(constraints, objective, sdpsettings('solver', 'frlib', 'frlib.solver', 'mosek', 'verbose', 3));
     else
       if checkDependency('mosek');
-        diagnostics = optimize(constraints, objective, sdpsettings('solver', 'mosek', 'mosek.MSK_DPAR_MIO_TOL_REL_GAP', 1e-2, 'mosek.MSK_DPAR_MIO_MAX_TIME', 600, 'verbose', 3))
+        diagnostics = optimize(constraints, objective, sdpsettings('solver', 'mosek', 'mosek.MSK_DPAR_MIO_TOL_REL_GAP', 1e-2, 'mosek.MSK_DPAR_MIO_MAX_TIME', 600, 'verbose', 3));
       else
         warning('Mosek not found. Will fall back to gurobi');
         checkDependency('gurobi');
@@ -271,6 +272,9 @@ classdef MISOSTrajectoryProblem
     coeffs = zeros([dim, length(breaks)-1, obj.traj_degree+1]);
 
     if diagnostics.problem == 0 || diagnostics.problem == 9
+      % Mosek will sometimes fail with MSK_RES_TRM_STALL, which yalmip considers an error, but 
+      % which appears to produce good solutions anyway. That gives us diagnostics.problem = 9.
+
       % Build the output trajectory
       for k = 1:length(breaks)-1
         c = value(C{k});
@@ -279,9 +283,6 @@ classdef MISOSTrajectoryProblem
           if length(ct) < obj.traj_degree + 1
             ct = [ct; 1e-6]; % stupid yalmip bug when polynomial is constant
           end
-          % lambda = t / obj.dt;
-          % z = ct'* monolist(lambda, obj.traj_degree);
-          % [cz, ~] = coefficients(z, t, monolist(t, obj.traj_degree));
           coeffs(i,k,:) = flip(ct');
         end
       end
@@ -291,33 +292,35 @@ classdef MISOSTrajectoryProblem
     
     ytraj = PPTrajectory(mkpp(breaks, coeffs, dim)); 
 
-    % Check our minimum snap objective formula
-    obj_approx = [];
-    if obj.traj_degree > 3
-      snap_traj = fnder(ytraj, 4);
-    else
-      snap_traj = fnder(ytraj, obj.traj_degree);
-    end
-    ks = [100, 300, 500, 700, 900]; 
-    for k = ks
-      tsample = linspace(breaks(1), breaks(end), k);
-      snap_samples = snap_traj.eval(tsample);
-      obj_approx(end+1) = sum(sum(snap_samples.^2, 1) * (tsample(2) - tsample(1)));
-    end
-    figure(78)
-    clf
-    hold on
-    obj_approx
-    plot(ks, obj_approx, 'k.-');
-    plot([ks(1), ks(end)], [objective, objective], 'k--')
-
-    if obj.traj_degree == 5
-      obj_symb = 0;
-      for j = 1:obj.num_traj_segments
-        obj_symb = obj_symb + sum((factorial(4) * coeffs(:,j,2)).^2 + (factorial(4) * coeffs(:,j,2)) .* (factorial(5) * coeffs(:,j,1)) + (1/3) * (factorial(5) * coeffs(:,j,1)).^2);
+    if obj.debug
+      % Check our minimum snap objective formula
+      obj_approx = [];
+      if obj.traj_degree > 3
+        snap_traj = fnder(ytraj, 4);
+      else
+        snap_traj = fnder(ytraj, obj.traj_degree);
       end
-      obj_symb
-      plot([ks(1), ks(end)], [obj_symb, obj_symb], 'r--')
+      ks = [100, 300, 500, 700, 900]; 
+      for k = ks
+        tsample = linspace(breaks(1), breaks(end), k);
+        snap_samples = snap_traj.eval(tsample);
+        obj_approx(end+1) = sum(sum(snap_samples.^2, 1) * (tsample(2) - tsample(1)));
+      end
+      figure(78)
+      clf
+      hold on
+      obj_approx
+      plot(ks, obj_approx, 'k.-');
+      plot([ks(1), ks(end)], [objective, objective], 'k--')
+
+      if obj.traj_degree == 5
+        obj_symb = 0;
+        for j = 1:obj.num_traj_segments
+          obj_symb = obj_symb + sum((factorial(4) * coeffs(:,j,2)).^2 + (factorial(4) * coeffs(:,j,2)) .* (factorial(5) * coeffs(:,j,1)) + (1/3) * (factorial(5) * coeffs(:,j,1)).^2);
+        end
+        obj_symb
+        plot([ks(1), ks(end)], [obj_symb, obj_symb], 'r--')
+      end
     end
 
     ytraj = ytraj.scaleTime(obj.dt);
