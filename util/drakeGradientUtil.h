@@ -33,7 +33,7 @@ std::array<int, Size> intRange(int start)
  */
 template<typename Derived, int Nq, int DerivativeOrder = 1>
 struct Gradient {
-  typedef typename Eigen::Matrix<typename Derived::Scalar, (Derived::SizeAtCompileTime == Eigen::Dynamic || Nq == Eigen::Dynamic) ? Eigen::Dynamic : Gradient<typename Derived, Nq, DerivativeOrder - 1>::template type::SizeAtCompileTime, Nq> type;
+  typedef typename Eigen::Matrix<typename Derived::Scalar, ((Derived::SizeAtCompileTime == Eigen::Dynamic || Nq == Eigen::Dynamic) ? Eigen::Dynamic : Gradient<typename Derived, Nq, DerivativeOrder - 1>::template type::SizeAtCompileTime), Nq> type;
 };
 
 /*
@@ -44,11 +44,15 @@ struct Gradient<Derived, Nq, 1> {
   typedef typename Eigen::Matrix<typename Derived::Scalar, Derived::SizeAtCompileTime, Nq> type;
 };
 
-#define matGradMultMatNumRows(rows_A, cols_B) (((rows_A) == Eigen::Dynamic || (cols_B) == Eigen::Dynamic) ? Eigen::Dynamic : ((rows_A) * (cols_B)))
+#define matGradMultMatNumRows(rows_A, cols_B) ((((rows_A) == Eigen::Dynamic) || ((cols_B) == Eigen::Dynamic)) ? Eigen::Dynamic : ((rows_A) * (cols_B)))
 
-#define matGradMultNumRows(rows_dA, rows_b) (((rows_dA) == Eigen::Dynamic || (rows_b) == Eigen::Dynamic) ? Eigen::Dynamic : ((rows_dA) / (rows_b)))
+// #define matGradMultNumRows(rows_dA, rows_b) ((((rows_dA) == Eigen::Dynamic) || ((rows_b) == Eigen::Dynamic)) ? Eigen::Dynamic : ((rows_dA) / (rows_b)))
+template<typename DerivedDA, typename Derivedb>
+struct MatGradMult {
+  typedef typename Eigen::Matrix<typename DerivedDA::Scalar, (DerivedDA::RowsAtCompileTime == Eigen::Dynamic || Derivedb::RowsAtCompileTime == Eigen::Dynamic ? Eigen::Dynamic : DerivedDA::RowsAtCompileTime / Derivedb::RowsAtCompileTime), DerivedDA::ColsAtCompileTime> type;
+};
 
-#define getRowBlockGradientNumRows(M_cols, block_rows) ((M_cols) == Eigen::Dynamic ? Eigen::Dynamic : (M_cols) * (block_rows))
+#define getRowBlockGradientNumRows(M_cols, block_rows) (((M_cols) == Eigen::Dynamic) ? Eigen::Dynamic : ((M_cols) * (block_rows)))
 
 /*
  * Profile results: looks like return value optimization works; a version that sets a reference
@@ -68,7 +72,7 @@ matGradMultMat(
 
 
 template<typename DerivedDA, typename Derivedb>
-Eigen::Matrix<typename DerivedDA::Scalar, matGradMultNumRows(DerivedDA::RowsAtCompileTime, Derivedb::RowsAtCompileTime), DerivedDA::ColsAtCompileTime>
+typename MatGradMult<DerivedDA, Derivedb>::type
 matGradMult(const Eigen::MatrixBase<DerivedDA>& dA, const Eigen::MatrixBase<Derivedb>& b);
 
 // TODO: could save copies once http://eigen.tuxfamily.org/bz/show_bug.cgi?id=329 is fixed

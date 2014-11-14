@@ -56,7 +56,7 @@ matGradMultMat(
 }
 
 template<typename DerivedDA, typename Derivedb>
-Eigen::Matrix<typename DerivedDA::Scalar, matGradMultNumRows(DerivedDA::RowsAtCompileTime, Derivedb::RowsAtCompileTime), DerivedDA::ColsAtCompileTime>
+typename MatGradMult<DerivedDA, Derivedb>::type
 matGradMult(const Eigen::MatrixBase<DerivedDA>& dA, const Eigen::MatrixBase<Derivedb>& b) {
   const int nq = dA.cols();
   assert(b.cols() == 1);
@@ -144,14 +144,14 @@ void setSubMatrixGradient(Eigen::MatrixBase<DerivedA>& dM, const Eigen::MatrixBa
 
 // explicit instantiations
 #define MAKE_MATGRADMULT_EXPLICIT_INSTANTIATION(Type, DARows, DACols, BRows) \
-		template Eigen::Matrix<Type, matGradMultNumRows(DARows, BRows), DACols>\
+		template MatGradMult<Eigen::Matrix<Type, DARows, DACols>, Eigen::Matrix<Type, BRows, 1>>::type\
 		matGradMult(const Eigen::MatrixBase< Eigen::Matrix<Type, DARows, DACols> >& dA, const Eigen::MatrixBase< Eigen::Matrix<Type, BRows, 1> >& b);
 MAKE_MATGRADMULT_EXPLICIT_INSTANTIATION(double, 9, Eigen::Dynamic, 3)
 MAKE_MATGRADMULT_EXPLICIT_INSTANTIATION(double, Eigen::Dynamic, Eigen::Dynamic, 6)
 #undef MAKE_MATGRADMULT_EXPLICIT_INSTANTIATION
 
 #define MAKE_MATGRADMULT_BLOCK_B_EXPLICIT_INSTANTIATION(Type, DARows, DACols, BRows, BCols, BBlockRows) \
-    template Eigen::Matrix<Type, matGradMultNumRows(DARows, BBlockRows), DACols> \
+    template MatGradMult<Eigen::Matrix<Type, DARows, DACols>, Eigen::Block< Eigen::Matrix<Type, BRows, BCols> const, BBlockRows, 1> >::type \
     matGradMult(const Eigen::MatrixBase< Eigen::Matrix<Type, DARows, DACols> >&, const Eigen::MatrixBase< Eigen::Block< Eigen::Matrix<Type, BRows, BCols> const, BBlockRows, 1> >&);
 MAKE_MATGRADMULT_BLOCK_B_EXPLICIT_INSTANTIATION(double, 9, Eigen::Dynamic, 6, Eigen::Dynamic, 3)
 MAKE_MATGRADMULT_BLOCK_B_EXPLICIT_INSTANTIATION(double, 9, Eigen::Dynamic, 4, 4, 3)
