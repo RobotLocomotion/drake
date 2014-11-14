@@ -44,9 +44,12 @@ struct Gradient<Derived, Nq, 1> {
   typedef typename Eigen::Matrix<typename Derived::Scalar, Derived::SizeAtCompileTime, Nq> type;
 };
 
-#define matGradMultMatNumRows(rows_A, cols_B) ((((rows_A) == Eigen::Dynamic) || ((cols_B) == Eigen::Dynamic)) ? Eigen::Dynamic : ((rows_A) * (cols_B)))
+// #define matGradMultMatNumRows(rows_A, cols_B) ((((rows_A) == Eigen::Dynamic) || ((cols_B) == Eigen::Dynamic)) ? Eigen::Dynamic : ((rows_A) * (cols_B)))
+template<typename DerivedA, typename DerivedB, typename DerivedDA>
+struct MatGradMultMat {
+  typedef typename Eigen::Matrix<typename DerivedA::Scalar, (DerivedA::RowsAtCompileTime == Eigen::Dynamic || DerivedB::ColsAtCompileTime == Eigen::Dynamic ? Eigen::Dynamic : DerivedA::RowsAtCompileTime * DerivedB::ColsAtCompileTime), DerivedDA::ColsAtCompileTime> type;
+};
 
-// #define matGradMultNumRows(rows_dA, rows_b) ((((rows_dA) == Eigen::Dynamic) || ((rows_b) == Eigen::Dynamic)) ? Eigen::Dynamic : ((rows_dA) / (rows_b)))
 template<typename DerivedDA, typename Derivedb>
 struct MatGradMult {
   typedef typename Eigen::Matrix<typename DerivedDA::Scalar, (DerivedDA::RowsAtCompileTime == Eigen::Dynamic || Derivedb::RowsAtCompileTime == Eigen::Dynamic ? Eigen::Dynamic : DerivedDA::RowsAtCompileTime / Derivedb::RowsAtCompileTime), DerivedDA::ColsAtCompileTime> type;
@@ -63,7 +66,7 @@ typename Derived::PlainObject transposeGrad(
     const Eigen::MatrixBase<Derived>& dX, int rows_X);
 
 template <typename DerivedA, typename DerivedB, typename DerivedDA, typename DerivedDB>
-Eigen::Matrix<typename DerivedA::Scalar, matGradMultMatNumRows(DerivedA::RowsAtCompileTime, DerivedB::ColsAtCompileTime), DerivedDA::ColsAtCompileTime>
+typename MatGradMultMat<DerivedA, DerivedB, DerivedDA>::type
 matGradMultMat(
     const Eigen::MatrixBase<DerivedA>& A,
     const Eigen::MatrixBase<DerivedB>& B,

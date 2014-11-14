@@ -24,7 +24,7 @@ typename Derived::PlainObject transposeGrad(
 }
 
 template <typename DerivedA, typename DerivedB, typename DerivedDA, typename DerivedDB>
-Eigen::Matrix<typename DerivedA::Scalar, matGradMultMatNumRows(DerivedA::RowsAtCompileTime, DerivedB::ColsAtCompileTime), DerivedDA::ColsAtCompileTime>
+typename MatGradMultMat<DerivedA, DerivedB, DerivedDA>::type
 matGradMultMat(
     const Eigen::MatrixBase<DerivedA>& A,
     const Eigen::MatrixBase<DerivedB>& B,
@@ -34,9 +34,7 @@ matGradMultMat(
   const int nq = dA.cols();
   const int nq_at_compile_time = DerivedDA::ColsAtCompileTime;
 
-  Eigen::Matrix<typename DerivedA::Scalar,
-  matGradMultMatNumRows(DerivedA::RowsAtCompileTime, DerivedB::ColsAtCompileTime),
-  DerivedDA::ColsAtCompileTime> ret(A.rows() * B.cols(), nq);
+  typename MatGradMultMat<DerivedA, DerivedB, DerivedDA>::type ret(A.rows() * B.cols(), nq);
 
   for (int col = 0; col < B.cols(); col++) {
     auto block = ret.template block<DerivedA::RowsAtCompileTime, nq_at_compile_time>(col * A.rows(), 0, A.rows(), nq);
@@ -63,7 +61,7 @@ matGradMult(const Eigen::MatrixBase<DerivedDA>& dA, const Eigen::MatrixBase<Deri
   assert(dA.rows() % b.rows() == 0);
   const int A_rows = dA.rows() / b.rows();
 
-  Eigen::Matrix<typename DerivedDA::Scalar, matGradMultNumRows(DerivedDA::RowsAtCompileTime, Derivedb::RowsAtCompileTime), DerivedDA::ColsAtCompileTime> ret(A_rows, nq);
+  typename MatGradMult<DerivedDA, Derivedb>::type ret(A_rows, nq);
 
   ret.setZero();
   for (int row = 0; row < b.rows(); row++) {
@@ -158,7 +156,7 @@ MAKE_MATGRADMULT_BLOCK_B_EXPLICIT_INSTANTIATION(double, 9, Eigen::Dynamic, 4, 4,
 #undef MAKE_MATGRADMULT_EXPLICIT_INSTANTIATION
 
 #define MAKE_MATGRADMULTMAT_EXPLICIT_INSTANTIATION(Type, ARows, ACols, BCols, DARows, DBRows, NQ) \
-		template Eigen::Matrix<Type, matGradMultMatNumRows(ARows, BCols), NQ> matGradMultMat(\
+		template MatGradMultMat<Eigen::Matrix<Type, ARows, ACols>, Eigen::Matrix<Type, ACols, BCols>, Eigen::Matrix<Type, DARows, NQ>>::type matGradMultMat(\
 		    const Eigen::MatrixBase< Eigen::Matrix<Type, ARows, ACols> >&,\
 		    const Eigen::MatrixBase< Eigen::Matrix<Type, ACols, BCols> >&,\
 		    const Eigen::MatrixBase< Eigen::Matrix<Type, DARows, NQ> >&,\
@@ -170,7 +168,7 @@ MAKE_MATGRADMULTMAT_EXPLICIT_INSTANTIATION(double, 4, 3, 3, 12, 9, 4)
 #undef MAKE_MATGRADMULTMAT_EXPLICIT_INSTANTIATION
 
 #define MAKE_MATGRADMULTMAT_TRANSPOSE_A_EXPLICIT_INSTANTIATION(Type, ARows, ACols, BCols, DARows, DBRows, NQ) \
-    template Eigen::Matrix<Type, matGradMultMatNumRows(ARows, BCols), NQ> matGradMultMat(\
+    template MatGradMultMat<Eigen::Transpose<Eigen::Matrix<Type, ACols, ARows>>, Eigen::Matrix<Type, ACols, BCols>, Eigen::Matrix<Type, DARows, NQ>>::type matGradMultMat(\
         const Eigen::MatrixBase< Eigen::Transpose<Eigen::Matrix<Type, ACols, ARows>> >&,\
         const Eigen::MatrixBase< Eigen::Matrix<Type, ACols, BCols> >&,\
         const Eigen::MatrixBase< Eigen::Matrix<Type, DARows, NQ> >&,\
@@ -179,7 +177,7 @@ MAKE_MATGRADMULTMAT_TRANSPOSE_A_EXPLICIT_INSTANTIATION(double, 3, 3, 4, 9, 12, 4
 #undef MAKE_MATGRADMULTMAT_TRANSPOSE_A_EXPLICIT_INSTANTIATION
 
 #define MAKE_MATGRADMULTMAT_TRANSPOSE_B_EXPLICIT_INSTANTIATION(Type, ARows, ACols, BCols, DARows, DBRows, NQ) \
-    template Eigen::Matrix<Type, matGradMultMatNumRows(ARows, BCols), NQ> matGradMultMat(\
+    template MatGradMultMat<Eigen::Matrix<Type, ARows, ACols>, Eigen::Transpose<Eigen::Matrix<Type, BCols, ACols>>, Eigen::Matrix<Type, DARows, NQ>>::type matGradMultMat(\
         const Eigen::MatrixBase< Eigen::Matrix<Type, ARows, ACols> >&,\
         const Eigen::MatrixBase< Eigen::Transpose<Eigen::Matrix<Type, BCols, ACols>> >&,\
         const Eigen::MatrixBase< Eigen::Matrix<Type, DARows, NQ> >&,\
