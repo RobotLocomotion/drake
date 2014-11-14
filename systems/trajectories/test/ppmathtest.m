@@ -87,3 +87,10 @@ d = c.scaleTime(scale);
 for t= .25:.25:2.75
   valuecheck(c.eval(t), d.eval(scale*t));
 end
+
+% Test vertical concatenation maintaining dimension of the trajectory
+a = PPTrajectory(spline(1:5, randn(4,5)));
+b = PPTrajectory(spline(1:5, randn(4,5)));
+c = a.vertcat(b);
+
+sizecheck(c.eval([1.5, 2.5]), [8, 2]);
