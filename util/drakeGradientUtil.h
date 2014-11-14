@@ -19,6 +19,16 @@
 #pragma warning(1 : 4519)
 #endif
 
+#if defined(WIN32) || defined(WIN64)
+  #if defined(drakeGradientUtil_EXPORTS)
+    #define DLLEXPORT __declspec( dllexport )
+  #else
+    #define DLLEXPORT __declspec( dllimport )
+  #endif
+#else
+  #define DLLEXPORT
+#endif
+
 template<std::size_t Size>
 std::array<int, Size> intRange(int start)
 {
@@ -82,11 +92,11 @@ struct GetSubMatrixGradientSingleElement {
  * instead of returning a value is just as fast and this is cleaner.
  */
 template <typename Derived>
-typename Derived::PlainObject transposeGrad(
+DLLEXPORT typename Derived::PlainObject transposeGrad(
     const Eigen::MatrixBase<Derived>& dX, typename Derived::Index rows_X);
 
 template <typename DerivedA, typename DerivedB, typename DerivedDA, typename DerivedDB>
-typename MatGradMultMat<DerivedA, DerivedB, DerivedDA>::type
+DLLEXPORT typename MatGradMultMat<DerivedA, DerivedB, DerivedDA>::type
 matGradMultMat(
     const Eigen::MatrixBase<DerivedA>& A,
     const Eigen::MatrixBase<DerivedB>& B,
@@ -95,32 +105,33 @@ matGradMultMat(
 
 
 template<typename DerivedDA, typename Derivedb>
-typename MatGradMult<DerivedDA, Derivedb>::type
+DLLEXPORT typename MatGradMult<DerivedDA, Derivedb>::type
 matGradMult(const Eigen::MatrixBase<DerivedDA>& dA, const Eigen::MatrixBase<Derivedb>& b);
 
 // TODO: could save copies once http://eigen.tuxfamily.org/bz/show_bug.cgi?id=329 is fixed
 template<typename Derived>
-Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, Eigen::Dynamic> getSubMatrixGradient(
+DLLEXPORT Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, Eigen::Dynamic> getSubMatrixGradient(
     const Eigen::MatrixBase<Derived>& dM, const std::vector<int>& rows, const std::vector<int>& cols,
     typename Derived::Index M_rows, int q_start = 0, typename Derived::Index q_subvector_size = -1);
 
 template<int QSubvectorSize, typename Derived, std::size_t NRows, std::size_t NCols>
-typename GetSubMatrixGradientArray<QSubvectorSize, Derived, NRows, NCols>::type
+DLLEXPORT typename GetSubMatrixGradientArray<QSubvectorSize, Derived, NRows, NCols>::type
 getSubMatrixGradient(const Eigen::MatrixBase<Derived>& dM,
   const std::array<int, NRows>& rows,
   const std::array<int, NCols>& cols,
   typename Derived::Index M_rows, int q_start = 0, typename Derived::Index q_subvector_size = QSubvectorSize);
 
 template<typename Derived>
-typename GetSubMatrixGradientSingleElement<Derived>::type
+DLLEXPORT typename GetSubMatrixGradientSingleElement<Derived>::type
 getSubMatrixGradient(const Eigen::MatrixBase<Derived>& dM, int row, int col, typename Derived::Index M_rows);
 
 template<typename DerivedA, typename DerivedB>
-void setSubMatrixGradient(Eigen::MatrixBase<DerivedA>& dM, const Eigen::MatrixBase<DerivedB>& dM_submatrix,
+DLLEXPORT void setSubMatrixGradient(Eigen::MatrixBase<DerivedA>& dM, const Eigen::MatrixBase<DerivedB>& dM_submatrix,
     const std::vector<int>& rows, const std::vector<int>& cols, int M_rows, int q_start = 0, typename DerivedA::Index q_subvector_size = -1);
 
 template<int QSubvectorSize, typename DerivedA, typename DerivedB, std::size_t NRows, std::size_t NCols>
-void setSubMatrixGradient(Eigen::MatrixBase<DerivedA>& dM, const Eigen::MatrixBase<DerivedB>& dM_submatrix,
+DLLEXPORT void setSubMatrixGradient(Eigen::MatrixBase<DerivedA>& dM, const Eigen::MatrixBase<DerivedB>& dM_submatrix,
     const std::array<int, NRows>& rows, const std::array<int, NCols>& cols, int M_rows, int q_start = 0, typename DerivedA::Index q_subvector_size = QSubvectorSize);
 
+#undef DLLEXPORT
 #endif /* DRAKEGRADIENTUTIL_H_ */
