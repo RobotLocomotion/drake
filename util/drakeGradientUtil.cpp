@@ -92,7 +92,7 @@ Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, Eigen::Dynamic> getSubMa
 }
 
 template<int QSubvectorSize, typename Derived, std::size_t NRows, std::size_t NCols>
-Eigen::Matrix<typename Derived::Scalar, (int) (NRows * NCols), QSubvectorSize == Eigen::Dynamic ? Derived::ColsAtCompileTime : QSubvectorSize>
+Eigen::Matrix<typename Derived::Scalar, (int) (NRows * NCols), (QSubvectorSize == Eigen::Dynamic ? Derived::ColsAtCompileTime : QSubvectorSize)>
 getSubMatrixGradient(const Eigen::MatrixBase<Derived>& dM,
     const std::array<int, NRows>& rows, const std::array<int, NCols>& cols, int M_rows, int q_start, int q_subvector_size) {
   if (q_subvector_size == Eigen::Dynamic) {
