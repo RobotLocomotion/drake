@@ -244,7 +244,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
           nL = sum([obj.manip.joint_limit_min~=-inf;obj.manip.joint_limit_max~=inf]); % number of joint limits
         end
         nContactPairs = obj.manip.getNumContactPairs;
-        nP = 2*obj.manip.num_position_constraints;  % number of position constraints
+        nP = obj.manip.num_position_constraints;  % number of position constraints
         nV = obj.manip.num_velocity_constraints;
 
         if (nContactPairs+nL+nP+nV==0)
@@ -283,6 +283,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
             mC = length(D);
           end
           J = zeros(nL + nP + (mC+2)*nC,num_q)*q(1); % *q(1) is for taylorvar
+          lb = zeros(nL+nP+(mC+2)*nC,1);
           D = vertcat(D{:});
           J(nL+nP+(1:nC),:) = n;
           J(nL+nP+nC+(1:mC*nC),:) = D;
@@ -297,6 +298,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
           mC=0;
           nC=0;
           J = zeros(nL+nP,num_q);
+          lb = zeros(nL+nP,1);
           if (nargout>4)
             dJ = zeros(nL+nP,num_q^2);
           end
@@ -329,11 +331,9 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
             [phiP,JP] = obj.manip.positionConstraints(q);
           else
             [phiP,JP,dJP] = obj.manip.positionConstraints(q);
-            dJP(nL+(1:nP),:) = [dJP; -dJP];
           end
-          phiP = [phiP;-phiP];
-          JP = [JP; -JP];
           J(nL+(1:nP),:) = JP;
+          lb(nL+(1:nP),1) = -inf;
         end
 
         %% Bilateral velocity constraints
@@ -475,7 +475,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         while (1)
           z = zeros(nL+nP+(mC+2)*nC,1);
           if any(active)
-            z(active) = pathlcp(M(active,active),w(active));
+            z(active) = pathlcp(M(active,active),w(active),lb(active));
             if all(active), break; end
             inactive = ~active(1:(nL+nP+nC));  % only worry about the constraints that really matter.
             missed = (M(inactive,active)*z(active)+w(inactive) < 0);
