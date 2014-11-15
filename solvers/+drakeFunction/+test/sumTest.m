@@ -15,7 +15,7 @@ function sumTest()
 
   % Test with same inputs
   N = 10;
-  sum_fun = Composed(Sum(frame,N),Concatenated(repmat({fun1},10,1),true));
+  sum_fun = Composed(Sum(frame,N),Concatenated(repmat({fun1},1,10),true));
   x = rand(5,1);
   [f,df] = sum_fun(x);
   valuecheck(f,N*x);

@@ -21,6 +21,12 @@ if length(ts)>300 % limit number of IK samples to something reasonable
   ts = linspace(0,walking_plan_data.comtraj.tspan(end),300);
 end
 
+% We no longer compute a trajectory for the feet, just a sequence of poses,
+% so we need to build that trajectory now.
+for j = 1:length(walking_plan_data.link_constraints)
+  walking_plan_data.link_constraints(j).traj = PPTrajectory(pchip(walking_plan_data.link_constraints(j).ts, walking_plan_data.link_constraints(j).poses));
+end
+
 %% create desired joint trajectory
 cost = Point(obj.getStateFrame,1);
 cost.base_x = 0;

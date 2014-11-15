@@ -3,8 +3,13 @@ classdef AtlasState < SingletonCoordinateFrame
   methods
     function obj=AtlasState(r)
       typecheck(r,'TimeSteppingRigidBodyManipulator');
-
-      obj = obj@SingletonCoordinateFrame('AtlasState',r.getManipulator().getNumStates(),'x',r.getManipulator().getStateFrame.coordinates);
+      manipStateFrame = r.getManipulator().getStateFrame();
+      % sanity check for stateless hands
+      if (r.hands > 0)
+        manipStateFrame = manipStateFrame.getFrameByNum(1);
+      end
+      coordinates = manipStateFrame.coordinates;
+      obj = obj@SingletonCoordinateFrame('AtlasState',length(coordinates),'x',coordinates);
     end
   end
 end

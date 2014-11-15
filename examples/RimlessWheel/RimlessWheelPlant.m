@@ -52,12 +52,21 @@ classdef RimlessWheelPlant < HybridDrakeSystem
   end
 
   methods (Static)
-    function run()
+    function run(w0)
+      % @param w0 optional initial condition (with theta = gamma-alpha)
+      % Nice values to try:
+      %  w0 = 5,10,.95,-5, or -4.8
+
       r = RimlessWheelPlant();
       v = RimlessWheelVisualizer(r);
 
-%      v.axis = [0 10 -1 2];
-      xtraj = simulate(r,[0 10]);
+      if nargin<1, w0 = 20*randn(); end
+      x0 = [1; r.gamma - r.alpha; w0; 0];
+      
+      v.axis = [-5 10 -1 3];
+      w = warning('off','Drake:DynamicalSystem:SuccessiveZeroCrossings');
+      xtraj = simulate(r,[0 10],x0);
+      warning(w);
       playback(v,xtraj);
     end
   end

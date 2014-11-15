@@ -5,7 +5,7 @@ function testActiveCollisionOptions()
 
   w = warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
   r = RigidBodyManipulator(urdf,options);
-  r = r.addShapeToBody('world',RigidBodySphere(1),'groupA');
+  r = r.addGeometryToBody('world',RigidBodySphere(1),'groupA');
   r = compile(r);
   warning(w);
 

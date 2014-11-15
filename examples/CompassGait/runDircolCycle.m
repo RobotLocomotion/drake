@@ -20,10 +20,6 @@ xf = x0;
 t_init{1} = linspace(0,t1,N(1));
 t_init{2} = linspace(0,tf-t1,N(2));
 
-traj_init{1}.u = PPTrajectory(foh(t_init{1},0*randn(1,N(1))));
-traj_init{1}.u = traj_init{1}.u.setOutputFrame(p.getInputFrame);
-traj_init{2}.u = PPTrajectory(foh(t_init{2},0*randn(1,N(2))));
-traj_init{2}.u = traj_init{2}.u.setOutputFrame(p.getInputFrame);
 traj_init{1}.x0 = x0;
 traj_init{2}.x0 = x1;
 

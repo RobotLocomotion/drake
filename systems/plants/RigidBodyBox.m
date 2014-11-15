@@ -49,16 +49,16 @@ classdef RigidBodyBox < RigidBodyGeometry
       pts = getPoints(obj);
     end
     
-    function shape = serializeToLCM(obj)
-      shape = drake.lcmt_viewer_geometry_data();
-      shape.type = shape.BOX;
-      shape.string_data = '';
-      shape.num_float_data = 3;
-      shape.float_data = obj.size;
+    function geometry = serializeToLCM(obj)
+      geometry = drake.lcmt_viewer_geometry_data();
+      geometry.type = geometry.BOX;
+      geometry.string_data = '';
+      geometry.num_float_data = 3;
+      geometry.float_data = obj.size;
       
-      shape.position = obj.T(1:3,4);
-      shape.quaternion = rotmat2quat(obj.T(1:3,1:3));
-      shape.color = [obj.c(:);1.0];
+      geometry.position = obj.T(1:3,4);
+      geometry.quaternion = rotmat2quat(obj.T(1:3,1:3));
+      geometry.color = [obj.c(:);1.0];
     end
     
     function writeWRLShape(obj,fp,td)

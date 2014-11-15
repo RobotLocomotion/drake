@@ -29,7 +29,7 @@ classdef RigidBodySupportState
           body_groups = contact_groups{i};
           body_points = [];
           for j=1:length(body_groups)
-            group_pts = body.contact_shape_group{strcmp(body.contact_shape_group_name,body_groups{j})};
+            group_pts = body.collision_geometry_group_indices{strcmp(body.collision_geometry_group_names,body_groups{j})};
             body_points = [body_points,group_pts];
           end
           obj.contact_pts{i} = body_points;
@@ -41,7 +41,7 @@ classdef RigidBodySupportState
         for i=1:length(obj.bodies)
           terrain_contact_point_struct = getTerrainContactPoints(r,obj.bodies(i));
           obj.contact_pts{i} = 1:size(terrain_contact_point_struct.pts,2);
-          obj.contact_groups{i} = r.getBody(obj.bodies(i)).contact_shape_group_name;
+          obj.contact_groups{i} = r.getBody(obj.bodies(i)).collision_geometry_group_names;
           obj.num_contact_pts(i)=length(obj.contact_pts{i});
         end
       end

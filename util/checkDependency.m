@@ -56,7 +56,7 @@ else % then try to evaluate the dependency now...
 
         if (conf.lcm_enabled)
           javaaddpathProtectGlobals(fullfile(pods_get_base_path,'share','java','lcmtypes_drake.jar'));
-          [retval,info] = systemWCMakeEnv([getDrakePath,'/util/check_multicast_is_loopback.sh']);
+          [retval,info] = systemWCMakeEnv(fullfile(getDrakePath(),'util','check_multicast_is_loopback.sh'));
           if (retval)
             info = strrep(info,'ERROR: ','');
             info = strrep(info,'./',[getDrakePath,'/util/']);
@@ -183,24 +183,31 @@ else % then try to evaluate the dependency now...
         disp(' ');
       end
 
-      case 'mosek'
-          conf.mosek_enabled = logical(exist('mosekopt','file'));
-          if (~conf.mosek_enabled)
-              conf.mosek_enabled = pod_pkg_config('mosek') && logical(exist('mosekopt','file'));
-          end
-          
-          if (conf.mosek_enabled)
-              ok = mosekopt;
-              if (ok ~= 0)
-                  error('MOSEK seems to have encountered a problem. Please verify that your MOSEK install is working.');
-              end
-          elseif nargout<1
-              disp(' ');
-              disp(' MOSEK not found.  MOSEK support will be disabled.');
-              disp(' MOSEK can be downloaded with a free academic license from <a href="http://www.mosek.com/resources/academic-license">http://www.mosek.com/resources/academic-license</a> ');
-              disp(' ');
-          end
-
+    case 'mosek'
+      conf.mosek_enabled = logical(exist('mosekopt','file'));
+      if (~conf.mosek_enabled)
+        conf.mosek_enabled = pod_pkg_config('mosek') && logical(exist('mosekopt','file'));
+      end
+      
+      if (conf.mosek_enabled)
+        % Check for license issues
+        try
+          mosekopt();
+        catch ex;
+          conf.mosek_enabled = false;
+          disp(getReport(ex,'extended'));
+        end
+      end
+      
+      if ~conf.mosek_enabled && nargout<1
+        disp(' ');
+        disp(' Mosek not found or not working. Mosek support will be disabled.');
+        disp(' Note that Mosek does provide free academic licenses')
+        disp('    To enable, install Mosek and a license from');
+        disp('    <a href="http://mosek.com/">http://mosek.com/</a> .');
+        disp(' ');
+      end
+      
     case 'gurobi'
       conf.gurobi_enabled = logical(exist('gurobi','file')); %&& ~isempty(getenv('GUROBI_HOME')));
       if (~conf.gurobi_enabled)
@@ -368,6 +375,17 @@ else % then try to evaluate the dependency now...
           disp(' lsqlin support is disabled. To enable it, install MATLAB Optimization toolbox');
           disp(' ');
         end
+      end
+
+    case 'iris'
+      conf.iris_enabled = logical(exist('+iris/inflate_region.m','file')); 
+      if (~conf.iris_enabled)
+        conf.iris_enabled = pod_pkg_config('iris');
+      end
+      if ~conf.iris_enabled && nargout<1
+        disp(' ');
+        disp(' iris (Iterative Regional Inflation by SDP) is disabled. To enable it, install the IRIS matlab package from here: https://github.com/rdeits/iris-distro and re-run addpath_drake.');
+        disp(' ');
       end
 
     otherwise
