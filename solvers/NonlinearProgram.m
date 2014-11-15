@@ -36,8 +36,9 @@ classdef NonlinearProgram
     bbcon % A cell array of BoundingBoxConstraint
     cost % A cell array of NonlinearConstraint or LinearConstraint.
     
-    nlcon_xind % A cell array, nlcon_xind{i} is a cell array of int vectors recording the indices of x that is used in evaluation the i'th NonlinearConstraint
+    nlcon_xind % A cell array, nlcon_xind{i} is a cell array of int vectors recording the indices of x that is used in evaluation the i'th Constraint obj.nlcon{i}
                % nlcon{i}.eval(x(nlcon_xind{i}{1},x(nlcon_xind{i}{2},...)
+    lcon_xind % A cell array, lcon_xind{i} is the cell array of the int vectors recording the indices of x that is used in evaluation the i'th LinearConstraint obj.lcon{i}
     cost_xind_cell % A cell array, cost_xind{i} is a cell array of int vectors recording the indices of x that is used in evaluating obj.cost{i}
     bbcon_xind % A cell array, bbcon_xind{i} is an int vector recording the indices of x used in i'th BoundingBoxConstraint
     
@@ -127,6 +128,7 @@ classdef NonlinearProgram
       obj.nlcon_xind_stacked = {};
       obj.nlcon_ineq_idx = [];
       obj.nlcon_eq_idx = [];
+      obj.lcon_xind = {};
       obj.cost = {};
       obj.cost_xind_cell = {};
       obj.cost_xind_stacked = {};
@@ -366,6 +368,7 @@ classdef NonlinearProgram
           obj.Aeq2lcon_idx = [obj.Aeq2lcon_idx;length(obj.lcon)*ones(size(cnstr_Aeq,1),1)];
         end
       end
+      obj.lcon_xind{end+1} = xind;
       cnstr_id = obj.next_lcon_id;
       obj.next_lcon_id = obj.next_lcon_id-3;
       obj.lcon_id = [obj.lcon_id cnstr_id];
@@ -1159,6 +1162,7 @@ classdef NonlinearProgram
       remaining_lcon_id = [1:cnstr_idx-1 cnstr_idx+1:length(obj.lcon)];
       obj.lcon = obj.lcon(remaining_lcon_id);
       obj.lcon_id = obj.lcon_id(remaining_lcon_id);
+      obj.lcon_xind = obj.lcon_xind(remaining_lcon_id);
       
       obj.Ain2lcon_idx = obj.Ain2lcon_idx-sum(bsxfun(@minus,obj.Ain2lcon_idx,Ain_delete_idx')>0,2);
       obj.Ain2lcon_idx = obj.Ain2lcon_idx(Ain_remaining_idx);
