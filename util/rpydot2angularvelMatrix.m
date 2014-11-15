@@ -1,4 +1,4 @@
-function E = rpydot2angularvelMatrix(rpy)
+function [E,dE] = rpydot2angularvelMatrix(rpy)
 % Computes matrix that converts time derivatives of rpy 
 % (rolldot, pitchdot, yawdot) into the angular velocity vector expressed in
 % base frame.  See eq. (5.41) in Craig05.
@@ -7,6 +7,7 @@ function E = rpydot2angularvelMatrix(rpy)
 %
 % @retval E matrix such that omega = E * rpyd, where omega is the angular
 % velocity vector in base frame and rpyd is the time derivative of rpy
+% @retval dE. A 9 x 3 matrix. The gradient of E w.r.t rpy
 
 % Derived using:
 % syms r p y real; rpy=[r p y];
@@ -21,6 +22,24 @@ function E = rpydot2angularvelMatrix(rpy)
 p=rpy(2);
 y=rpy(3);
 
-E = [ cos(p)*cos(y), -sin(y), 0; ...
-      cos(p)*sin(y),  cos(y), 0; ...
-            -sin(p),       0, 1];
+cos_p = cos(p);
+sin_p = sin(p);
+cos_y = cos(y);
+sin_y = sin(y);
+
+E = [ cos_p*cos_y, -sin_y, 0;...
+      cos_p*sin_y,  cos_y, 0;...
+	   -sin_p,      0, 1];
+if(nargout>1)
+  rows = zeros(7,1);
+  cols = zeros(7,1);
+  vals = zeros(7,1);
+  rows(1) = 1; cols(1) = 2; vals(1) = -sin_p*cos_y;
+  rows(2) = 1; cols(2) = 3; vals(2) = -cos_p*sin_y;
+  rows(3) = 2; cols(3) = 2; vals(3) = -sin_p*sin_y;	
+  rows(4) = 2; cols(4) = 3; vals(4) = cos_p*cos_y;
+  rows(5) = 3; cols(5) = 2; vals(5) = -cos_p;
+  rows(6) = 4; cols(6) = 3; vals(6) = -cos_y;
+  rows(7) = 5; cols(7) = 3; vals(7) = -sin_y;
+  dE = sparse(rows,cols,vals,9,3,7);
+end
