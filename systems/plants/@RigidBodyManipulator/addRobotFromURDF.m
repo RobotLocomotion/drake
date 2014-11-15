@@ -134,21 +134,42 @@ for i=0:(frames.getLength()-1)
 end
 
 % weld the root link of this robot to the world link
+% or some other link if specified in options
+if (isfield(options, 'weld_to_link'))
+  weldLink = options.weld_to_link;
+else
+  weldLink = 1; % world link
+end
 ind = find([model.body.parent]<1);
 rootlink = ind([model.body(ind).robotnum]==robotnum);
-worldlink = 1;
 
 for i=1:length(rootlink)
-  if ~isempty(options.floating)
-    model = addFloatingBase(model,worldlink,rootlink(i),xyz,rpy,options.floating);
+  if (~isempty(options.floating))
+    model = addFloatingBase(model,weldLink,rootlink(i),xyz,rpy,options.floating);
   else
-    model = addJoint(model,'','fixed',worldlink,rootlink(i),xyz,rpy);
+    model = addJoint(model,'','fixed',weldLink,rootlink(i),xyz,rpy);
   end
 end
 
 % finish parameter parsing
 for i=1:length(model.body)
   model.body(i) = bindParams(model.body(i),model,pval);
+end
+
+for i=1:length(model.force)
+  model.force{i} = bindParams(model.force{i}, model, pval);
+end
+
+for i=1:length(model.sensor)
+  model.sensor{i} = bindParams(model.sensor{i}, model, pval);
+end
+
+for i=1:length(model.actuator)
+  model.actuator(i) = bindParams(model.actuator(i), model, pval);
+end
+
+for i=1:length(model.frame)
+  model.frame(i) = bindParams(model.frame(i), model, pval);
 end
 
 end
@@ -159,7 +180,7 @@ function model = parseParameter(model,robotnum,node,options)
   n = char(node.getAttribute('lb'));  % optional
   if isempty(n), model.param_db{robotnum}.(name).lb = -inf; else model.param_db{robotnum}.(name).lb = str2num(n); end
   n = char(node.getAttribute('ub'));  % optional
-  if isempty(n), model.param_db{robotnum}.(name).ub = inf; else model.param_db{robotnum}.ub = str2num(n); end
+  if isempty(n), model.param_db{robotnum}.(name).ub = inf; else model.param_db{robotnum}.(name).ub = str2num(n); end
 end
 
 function model = parseGazebo(model,robotnum,node,options)

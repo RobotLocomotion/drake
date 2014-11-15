@@ -17,7 +17,8 @@ if (nargin<1); use_mex = true; end
 if (nargin<2); use_bullet = false; end
 if (nargin<3); use_angular_momentum = false; end
 if (nargin<4)
-  navgoal = [randn();0.25*randn();0;0;0;0];
+%  navgoal = [2*rand();0.25*randn();0;0;0;0];
+  navgoal = [1.5;0;0;0;0;0];
 end
 
 % silence some warnings
@@ -100,7 +101,8 @@ options.dt = 0.003;
 options.slack_limit = 100;
 options.use_bullet = use_bullet;
 options.w_qdd = zeros(nq,1);
-options.w_grf = 0;
+options.w_grf = 1e-8;
+options.w_slack = 5.0;
 options.debug = false;
 options.contact_threshold = 0.002;
 options.solver = 0; % 0 fastqp, 1 gurobi
@@ -113,14 +115,19 @@ else
   options.W_kdot = zeros(3);
 end
 
+options.Kp =150*ones(6,1);
+options.Kd = 2*sqrt(options.Kp);
 lfoot_motion = BodyMotionControlBlock(r,'l_foot',ctrl_data,options);
 rfoot_motion = BodyMotionControlBlock(r,'r_foot',ctrl_data,options);
+options.Kp = [100; 100; 100; 150; 150; 150];
+options.Kd = 2*sqrt(options.Kp);
 pelvis_motion = PelvisMotionControlBlock(r,'pelvis',ctrl_data,options);
 motion_frames = {lfoot_motion.getOutputFrame,rfoot_motion.getOutputFrame,...
 pelvis_motion.getOutputFrame};
 
-options.body_accel_input_weights = 0.5*[1 1 1];
-qp = QPController(r,motion_frames,ctrl_data,options);
+options.body_accel_input_weights = [.1 .1 .1];
+options.min_knee_angle = 0.7;
+qp = AtlasQPController(r,motion_frames,ctrl_data,options);
 
 % feedback QP controller with atlas
 ins(1).system = 1;
@@ -140,6 +147,7 @@ clear ins outs;
 
 % feedback foot contact detector with QP/atlas
 options.use_lcm=false;
+options.use_contact_logic_OR=false;
 fc = FootContactBlock(r,ctrl_data,options);
 ins(1).system = 2;
 ins(1).input = 1;
@@ -156,6 +164,8 @@ clear ins outs;
 
 % feedback PD block
 options.use_ik = false;
+options.Kp = 160.0*ones(nq,1);
+options.Kd = 19.0*ones(nq,1);
 pd = IKPDBlock(r,ctrl_data,options);
 ins(1).system = 1;
 ins(1).input = 1;
@@ -213,9 +223,14 @@ playback(v,traj,struct('slider',true));
 
 if plot_comtraj
   dt = 0.001;
+  nx = r.getNumStates();
   tts = traj.getBreaks();
-  xtraj_smooth=smoothts(traj.eval(tts),'e',150);
-  dtraj = fnder(PPTrajectory(spline(tts,xtraj_smooth)));
+  x_smooth=zeros(nx,length(tts));
+  x_breaks = traj.eval(tts);
+  for i=1:nx
+    x_smooth(i,:) = smooth(x_breaks(i,:),15,'lowess');
+  end
+  dtraj = fnder(PPTrajectory(spline(tts,x_smooth)));
   qddtraj = dtraj(nq+(1:nq));
 
   lfoot = findLinkInd(r,'l_foot');
@@ -266,8 +281,10 @@ if plot_comtraj
       rfoot_steps(:,rstep_counter) = rfoot_p;
     end
 
-    rfoottraj = walking_plan_data.link_constraints(1).traj;
-    lfoottraj = walking_plan_data.link_constraints(2).traj;
+    rfoottraj = PPTrajectory(pchip(walking_plan_data.link_constraints(1).ts,...
+                                   walking_plan_data.link_constraints(1).poses));
+    lfoottraj = PPTrajectory(pchip(walking_plan_data.link_constraints(2).ts,...
+                                   walking_plan_data.link_constraints(2).poses));
 
     lfoot_des = eval(lfoottraj,t);
     lfoot_des(3) = max(lfoot_des(3), 0.0811);     % hack to fix footstep planner bug

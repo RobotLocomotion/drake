@@ -83,36 +83,32 @@ classdef CartPolePlant < Manipulator
     
     function [utraj,xtraj]=swingUpTrajectory(obj)
       x0 = zeros(4,1); tf0 = 4; xf = double(obj.xG);
-
-      %con.u.lb = p.umin;
-      %con.u.ub = p.umax;
-      con.x0.lb = x0;
-      con.x0.ub = x0;
-      con.xf.lb = xf;
-      con.xf.ub = xf;
-      con.T.lb = 2;
-      con.T.ub = 6;
-
-      options.method='dircol';
+      N = 21;
       
-      function [g,dg] = cost(t,x,u);
+      obj = setInputLimits(obj,-inf,inf);
+      prog = DircolTrajectoryOptimization(obj,N,[2 6]);
+      prog = prog.addStateConstraint(ConstantConstraint(x0),1);
+      prog = prog.addStateConstraint(ConstantConstraint(xf),N);
+      prog = prog.addRunningCost(@cost);
+      prog = prog.addFinalCost(@finalCost);
+      
+      function [g,dg] = cost(dt,x,u)
         R = 1;
         g = sum((R*u).*u,1);
         dg = [zeros(1,1+size(x,1)),2*u'*R];
       end
       
-      function [h,dh] = finalcost(t,x)
+      function [h,dh] = finalCost(t,x)
         h = t;
         dh = [1,zeros(1,size(x,1))];
       end
       
-      info=0;
-      while (info~=1)
-        utraj0 = PPTrajectory(foh(linspace(0,tf0,31),randn(1,31)));
+      traj_init.x = PPTrajectory(foh([0,tf0],[x0,xf]));
+      for attempts=1:10
         tic
-        %options.grad_test = true;
-        [utraj,xtraj,info] = trajectoryOptimization(obj,@cost,@finalcost,x0,utraj0,con,options);
+        [xtraj,utraj,z,F,info] = prog.solveTraj(tf0,traj_init);
         toc
+        if info==1, break; end
       end
     end
     

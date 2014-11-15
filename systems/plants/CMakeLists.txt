@@ -22,7 +22,7 @@ if (NOT WIN32)
 endif(NOT WIN32)
 
   pods_install_libraries(drakeRBM)
-  pods_install_headers(RigidBodyManipulator.h RigidBody.h RigidBodyFrame.h DESTINATION drake)
+  pods_install_headers(RigidBodyManipulator.h RigidBody.h RigidBodyFrame.h KinematicPath.h DESTINATION drake)
   pods_install_pkg_config_file(drake-rbm
     LIBS -ldrakeRBM
     REQUIRES
@@ -60,9 +60,12 @@ endif(NOT WIN32)
   add_rbm_mex(forwardKinmex)
   add_rbm_mex(bodyKinmex)
   add_rbm_mex(collisionDetectmex)
+  add_rbm_mex(smoothDistancePenaltymex)
   add_rbm_mex(collisionRaycastmex)
   add_rbm_mex(allCollisionsmex)
   add_rbm_mex(getCMMmex)
+  add_rbm_mex(findKinematicPathmex)
+  add_rbm_mex(geometricJacobianmex)
 
   add_library(drakeIKoptions SHARED IKoptions.cpp)
   target_link_libraries(drakeIKoptions drakeRBM drakeUtil)

@@ -124,6 +124,7 @@ if visualize
   sys = mimoCascade(sys,v,[],[],output_select);
   warning(S);
 end
+x0 = xstar;
 x0(3) = 1.0; % drop it a bit
 
 traj = simulate(sys,[0 2],x0);

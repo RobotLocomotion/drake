@@ -155,7 +155,7 @@
     <visual group="l_hand_extra">
       <origin rpy="-1.57079 -1.57079 0" xyz="0 0.29016 0.0112"/>
       <geometry>
-        <mesh filename="meshes/GRIPPER_OPEN.wrl" scale="1 1 1"/>
+        <mesh filename="meshes/GRIPPER_OPEN_chull.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
     <collision group="l_hand_extra">
@@ -496,7 +496,7 @@
     <visual group="r_hand_extra">
       <origin rpy="-1.57079 -1.57079 3.142" xyz="0 -0.29016 0.0112"/>
       <geometry>
-        <mesh filename="meshes/GRIPPER_OPEN.wrl" scale="1 1 1"/>
+        <mesh filename="meshes/GRIPPER_OPEN_chull.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
     <collision group="r_hand_extra">

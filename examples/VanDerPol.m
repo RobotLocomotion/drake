@@ -4,11 +4,13 @@ classdef VanDerPol < PolynomialSystem
     function obj = VanDerPol()
       obj = obj@PolynomialSystem(2,0,0,2,false,true,false);
     end
-    function xdot = dynamicsRHS(obj,t,x,u)
+    function [xdot,df] = dynamicsRHS(obj,t,x,~)
       xdot = [x(2); -x(1)-x(2)*(x(1)^2-1)];
+      df = [zeros(2,1),[0 1; -1-2*x(1)*x(2), -(x(1)^2-1)]];
     end
-    function y=output(obj,t,x,u)
+    function [y,dy]=output(obj,t,x,~)
       y=x;
+      dy=[zeros(2,1),eye(2)];
     end
   end
   
@@ -62,11 +64,49 @@ classdef VanDerPol < PolynomialSystem
         h=fnplt(x);
         set(h,'Color',MITred);
         xa = x.eval(tf-.02); xb=x.eval(tf);
-        axisAnnotation('arrow',[xa(1),xb(1)],[xa(2),xb(2)],'Color',MITred,'HeadWidth',50,'HeadLength',50);
+        axisAnnotation('arrow',[xa(1),xb(1)],[xa(2),xb(2)],'Color',MITred,'HeadWidth',200,'HeadLength',150);
         drawnow;
       end
       axis([-2.5,2.5,-3,3]);
 %      save vdp.mat x0;
+    end
+    
+    function runDircol
+      vdp = VanDerPol();
+      
+      N = 61;
+      prog = DircolTrajectoryOptimization(vdp,N,[1,10]);
+      
+      % q(1) = 0
+      prog = prog.addStateConstraint(ConstantConstraint(0),1,1);
+      
+      % q(N) = 0
+      prog = prog.addStateConstraint(ConstantConstraint(0),N,1);
+      
+      % qdot(1) = qdot(N)
+      prog = prog.addConstraint(LinearConstraint(0,0,[1,-1]),[prog.x_inds(2,N);prog.x_inds(2,1)]);
+      
+      % qdot(1)>0.5
+      prog = prog.addStateConstraint(BoundingBoxConstraint(eps,inf),1,2);
+      
+      % add a display routine
+      function draw(dt,x,~)
+        clf; hold on; 
+        plot(x(1,:),x(2,:),'.-','LineWidth',2,'MarkerSize',20);
+        plot(x(1,1),x(2,1),'r.','LineWidth',2,'MarkerSize',20);
+        plot(x(1,N),x(2,N),'r.','LineWidth',2,'MarkerSize',20);
+        xlabel('$q$','interpreter','latex');
+        ylabel('$\dot{q}$','interpreter','latex');
+        axis([-2.5,2.5,-3,3]);
+        drawnow;
+      end
+      prog = prog.addTrajectoryDisplayFunction(@draw);
+      
+      % use a circle in state space as the initial guess (seems to
+      % be needed to escape local minima)
+      ts = linspace(0,2*pi,10);
+      initial_guess.x = PPTrajectory(foh(ts,2*[sin(ts);cos(ts)]));
+      prog.solveTraj(2*pi,initial_guess);
     end
   end
 end

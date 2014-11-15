@@ -151,6 +151,49 @@ classdef FootstepPlan
       % pitch yaw
       steps = [obj.footsteps.pos];
     end
+
+    function obj = trim_duplicates(obj, trim_threshold)
+      % Remove steps from the beginning which are identical to the initial
+      % poses and remove steps at the end which are identical to the final poses,
+      % returning a modified copy of the plan.
+      if nargin < 2
+        trim_threshold = [0.02; 0.02; 0.02; inf; inf; pi/32];
+      end
+      poses = [obj.footsteps.pos];
+      nsteps = length(obj.footsteps);
+
+      trim_init = false(1, nsteps);
+      trim_init(1:2) = 1;
+      trim_final = false(1, nsteps);
+      trim_final(end-1:end) = 1;
+      % initial trim
+      for j = 3:nsteps
+        if sum(~trim_init) + 2 < obj.params.min_num_steps
+          break
+        end
+        if mod(j, 2)
+          trim_init(j) = all(abs(poses(:,j) - poses(:,1)) <= trim_threshold);
+        else
+          trim_init(j) = all(abs(poses(:,j) - poses(:,2)) <= trim_threshold);
+        end
+      end
+      trim_init(find(trim_init, 2, 'last')) = false;
+
+      % final trim
+      for j = 3:nsteps-2
+        if sum(~trim_final) + 2 < obj.params.min_num_steps
+          break
+        end
+        if mod(nsteps-j, 2)
+          trim_final(j) = all(abs(poses(:,j) - poses(:,end-1)) <= trim_threshold);
+        else
+          trim_final(j) = all(abs(poses(:,j) - poses(:,end)) <= trim_threshold);
+        end
+      end
+      trim_final(find(trim_final, 2, 'first')) = false;
+
+      obj = obj.slice(~(trim_init | trim_final));
+    end
   end
 
   methods(Static=true)

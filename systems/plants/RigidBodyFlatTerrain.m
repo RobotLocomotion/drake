@@ -13,11 +13,11 @@ classdef RigidBodyFlatTerrain < RigidBodyTerrain
       normal = repmat([0;0;1],1,n);
     end
 
-    function geom = getRigidBodyContactGeometry(obj)
+    function geom = getCollisionGeometry(obj)
       geom = obj.geom;
     end
 
-    function geom = getRigidBodyShapeGeometry(obj)
+    function geom = getVisualGeometry(obj)
       geom = obj.geom;
     end
     

@@ -69,27 +69,8 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
         x_name{3*obj.N+(i-1)*3+3} = sprintf('Hdot_z[%d]',i);
       end
       obj = obj.addDecisionVariable(6*obj.N,x_name);
-      function [c,dc] = comMatch(kinsol,com)
-        [com_q,dcom_q] = obj.robot.getCOM(kinsol);
-        c = com_q-com;
-        dc = [dcom_q -eye(3)];
-      end
-      function [c,dc] = angularMomentumMatch(kinsol,v,H)
-        [A,dA] = obj.robot.getCMMdA(kinsol);
-        c = A(1:3,:)*v-H;
-        dc = [[eye(3) zeros(3)]*matGradMult(dA,v) A(1:3,:) -eye(3)];
-      end
       
-      for i = 1:obj.N
-        com_cnstr = FunctionHandleConstraint(zeros(3,1),zeros(3,1),obj.nq+3,@(~,com,kinsol) comMatch(kinsol,com));
-        com_cnstr = com_cnstr.setName([{sprintf('com_x(q)=com_x[%d]',i)};{sprintf('com_y(q)=com_y[%d]',i)};{sprintf('com_z(q)=com_z[%d]',i)}]);
-        obj = obj.addConstraint(com_cnstr,[{obj.q_inds(:,i)};{obj.com_inds(:,i)}],obj.kinsol_dataind(i));
-        H_cnstr = FunctionHandleConstraint(zeros(3,1),zeros(3,1),obj.nq+obj.nv+3,@(~,v,H,kinsol) angularMomentumMatch(kinsol,v,H));
-        H_cnstr = H_cnstr.setName([{sprintf('A_x*v=H_x[%d]',i)};{sprintf('A_y*v=H_y[%d]',i)};{sprintf('A_z*v=H_z[%d]',i)}]);
-        obj = obj.addConstraint(H_cnstr,[{obj.q_inds(:,i)};{obj.v_inds(:,i)};{obj.H_inds(:,i)}],obj.kinsol_dataind(i));
-      end
-      obj.add_dynamic_constraint_flag = true;
-      obj = obj.addDynamicConstraints();
+      obj = addSimpleDynamicConstraints(obj);
 
       sizecheck(Q,[obj.nq,obj.nq]);
       if(any(eig(Q)<0))
@@ -152,6 +133,80 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
       function [f,df] = qCost(Q,q_nom,h,q)
         f = 0.5*(h(1)+h(2))*((q-q_nom)'*Q*(q-q_nom));
         df = [0.5*(q-q_nom)'*Q*(q-q_nom)*[1,1], (h(1)+h(2))*(q-q_nom)'*Q];
+      end
+    end
+
+    function obj = addConstraint(obj, constraint, varargin)
+      if isa(constraint, 'RigidBodyConstraint')
+        obj = addRigidBodyConstraint(obj,constraint, varargin{:});
+      else
+        obj = addConstraint@SimpleDynamicsFullKinematicsPlanner(obj,constraint,varargin{:});
+      end
+    end
+    
+    
+    
+    function obj = addCoMBounds(obj,knot_idx,com_lb,com_ub)
+      % @param knot_idx  The indices of the knots on which the com position will be
+      % constrained within the bounding box.
+      knot_idx = knot_idx(:)';
+      num_knots = numel(knot_idx);
+      sizecheck(com_lb,[3,num_knots]);
+      sizecheck(com_ub,[3,num_knots]);
+      obj = obj.addBoundingBoxConstraint(BoundingBoxConstraint(com_lb(:),com_ub(:)),reshape(obj.com_inds(:,knot_idx),[],1));
+    end
+    
+    function obj = addRunningCost(obj,running_cost)
+    end
+    
+    function [q,v,h,t,com,comdot,comddot,H,Hdot,lambda,wrench] = parseSolution(obj,x_sol)
+      nq = obj.robot.getNumPositions;
+      nT = obj.N;
+      q = reshape(x_sol(obj.q_inds(:)),nq,nT);
+      v = reshape(x_sol(obj.v_inds(:)),nq,nT);
+      h = reshape(x_sol(obj.h_inds),1,[]);
+      t = cumsum([0 h]);
+      com = reshape(x_sol(obj.com_inds),3,[]);
+      comdot = reshape(x_sol(obj.comdot_inds),3,[]);
+      comddot = reshape(x_sol(obj.comddot_inds),3,[]);
+      H = reshape(x_sol(obj.H_inds),3,[]);
+      Hdot = reshape(x_sol(obj.Hdot_inds),3,[])*obj.torque_multiplier;
+      lambda = cell(length(obj.unique_contact_bodies),1);
+      for i = 1:length(obj.unique_contact_bodies)
+        lambda{i} = reshape(x_sol(obj.lambda_inds{i}),size(obj.lambda_inds{i},1),[],nT);
+      end
+      wrench = obj.contactWrench(x_sol);
+    end
+    
+    function obj = addDynamicConstraints(obj)
+    end
+  end
+  
+  methods(Access = protected)
+    function obj = addSimpleDynamicConstraints(obj)
+      obj = addCentroidalDynamicConstraints(obj);
+      obj = addSimpleDynamicConstraints@SimpleDynamicsFullKinematicsPlanner(obj);
+    end
+    
+    function obj = addCentroidalDynamicConstraints(obj)
+      function [c,dc] = comMatch(kinsol,com)
+        [com_q,dcom_q] = obj.robot.getCOM(kinsol);
+        c = com_q-com;
+        dc = [dcom_q -eye(3)];
+      end
+      function [c,dc] = angularMomentumMatch(kinsol,v,H)
+        [A,dA] = obj.robot.getCMMdA(kinsol);
+        c = A(1:3,:)*v-H;
+        dc = [[eye(3) zeros(3)]*matGradMult(dA,v) A(1:3,:) -eye(3)];
+      end
+      
+      for i = 1:obj.N
+        com_cnstr = FunctionHandleConstraint(zeros(3,1),zeros(3,1),obj.nq+3,@(~,com,kinsol) comMatch(kinsol,com));
+        com_cnstr = com_cnstr.setName([{sprintf('com_x(q)=com_x[%d]',i)};{sprintf('com_y(q)=com_y[%d]',i)};{sprintf('com_z(q)=com_z[%d]',i)}]);
+        obj = obj.addConstraint(com_cnstr,[{obj.q_inds(:,i)};{obj.com_inds(:,i)}],obj.kinsol_dataind(i));
+        H_cnstr = FunctionHandleConstraint(zeros(3,1),zeros(3,1),obj.nq+obj.nv+3,@(~,v,H,kinsol) angularMomentumMatch(kinsol,v,H));
+        H_cnstr = H_cnstr.setName([{sprintf('A_x*v=H_x[%d]',i)};{sprintf('A_y*v=H_y[%d]',i)};{sprintf('A_z*v=H_z[%d]',i)}]);
+        obj = obj.addConstraint(H_cnstr,[{obj.q_inds(:,i)};{obj.v_inds(:,i)};{obj.H_inds(:,i)}],obj.kinsol_dataind(i));
       end
     end
     
@@ -304,38 +359,6 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
           lambda1_start_idx = lambda1_start_idx+obj.contact_wrench{wrench_idx1}.num_pt_F*obj.contact_wrench{wrench_idx1}.num_pts;
         end
       end
-    end
-    
-    function obj = addCoMBounds(obj,knot_idx,com_lb,com_ub)
-      % @param knot_idx  The indices of the knots on which the com position will be
-      % constrained within the bounding box.
-      knot_idx = knot_idx(:)';
-      num_knots = numel(knot_idx);
-      sizecheck(com_lb,[3,num_knots]);
-      sizecheck(com_ub,[3,num_knots]);
-      obj = obj.addBoundingBoxConstraint(BoundingBoxConstraint(com_lb(:),com_ub(:)),reshape(obj.com_inds(:,knot_idx),[],1));
-    end
-    
-    function obj = addRunningCost(obj,running_cost)
-    end
-    
-    function [q,v,h,t,com,comdot,comddot,H,Hdot,lambda,wrench] = parseSolution(obj,x_sol)
-      nq = obj.robot.getNumPositions;
-      nT = obj.N;
-      q = reshape(x_sol(obj.q_inds(:)),nq,nT);
-      v = reshape(x_sol(obj.v_inds(:)),nq,nT);
-      h = reshape(x_sol(obj.h_inds),1,[]);
-      t = cumsum([0 h]);
-      com = reshape(x_sol(obj.com_inds),3,[]);
-      comdot = reshape(x_sol(obj.comdot_inds),3,[]);
-      comddot = reshape(x_sol(obj.comddot_inds),3,[]);
-      H = reshape(x_sol(obj.H_inds),3,[]);
-      Hdot = reshape(x_sol(obj.Hdot_inds),3,[])*obj.torque_multiplier;
-      lambda = cell(length(obj.unique_contact_bodies),1);
-      for i = 1:length(obj.unique_contact_bodies)
-        lambda{i} = reshape(x_sol(obj.lambda_inds{i}),size(obj.lambda_inds{i},1),[],nT);
-      end
-      wrench = obj.contactWrench(x_sol);
     end
   end
 end

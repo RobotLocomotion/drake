@@ -11,7 +11,8 @@ namespace DrakeCollision
       void addElement(const int body_idx, const int parent_idx, 
                       const Eigen::Matrix4d& T_elem_to_link, Shape shape, 
                       const std::vector<double>& params,
-                      const std::string& group_name)
+                      const std::string& group_name,
+                      bool use_margins = true)
       {
         //DEBUG
         //std::cout << "Body::addElement: START" << std::endl;
@@ -20,7 +21,7 @@ namespace DrakeCollision
           //DEBUG
           //std::cout << "Body::addElement: Add new element" << std::endl;
           //END_DEBUG
-            elements.emplace_back(T_elem_to_link, shape, params, group_name);
+            elements.emplace_back(T_elem_to_link, shape, params, group_name, use_margins);
         } else {
           //DEBUG
           //std::cout << "Body::addElement: Indices don't match" << std::endl;
@@ -31,7 +32,7 @@ namespace DrakeCollision
             //END_DEBUG
             this->body_idx = body_idx;
             this->parent_idx = parent_idx;
-            elements.emplace_back(T_elem_to_link, shape, params, group_name);
+            elements.emplace_back(T_elem_to_link, shape, params, group_name, use_margins);
             //DEBUG
             //std::cout << "body_idx = " << body_idx << std::endl;
             //std::cout << "this->body_idx = " << this->body_idx << std::endl;

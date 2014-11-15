@@ -115,6 +115,16 @@ classdef InverseKinematics < NonlinearProgram
         obj = obj.replaceCost(obj.pe,1,obj.q_idx);
       end
     end
+
+    function obj = setQnom(obj,q_nom)
+      obj.q_nom = q_nom;
+      obj.pe = PostureError(obj.Q,obj.q_nom);
+      if(isempty(obj.cost))
+        obj = obj.addCost(obj.pe,obj.q_idx);
+      else
+        obj = obj.replaceCost(obj.pe,1,obj.q_idx);
+      end
+    end
     
     function [q,F,info,infeasible_constraint] = solve(obj,q_seed)
       x0 = zeros(obj.num_vars,1);
