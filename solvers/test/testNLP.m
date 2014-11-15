@@ -31,6 +31,7 @@ valuecheck(nlp1.beq,0);
 valuecheck(nlp1.Aeq,[1 0 3]);
 valuecheck(nlp1.Ain,[A(1,:);-A(1,:)]);
 valuecheck(nlp1.bin,[10;0]);
+valuecheck(nlp1.lcon_xind{1},[1;3]);
 x0 = [1;2;4];
 [x1,F,info] = testAllSolvers(nlp1,x0);
 c1 = cnstr1_userfun(x1);
@@ -273,7 +274,7 @@ valuecheck(nlp4.nlcon{new_cnstr_idx}.eval(x4),cnstr4.eval(x4));
 %%%%%
 display('check deleteLinearConstraint')
 nlp4 = nlp4.deleteLinearConstraint(lincon1_id);
-if(~isempty(nlp4.Ain) || ~isempty(nlp4.bin) || ~isempty(nlp4.Aeq) || ~isempty(nlp4.beq) || ~isempty(nlp4.Ain_name) || ~isempty(nlp4.Aeq_name) || ~isempty(nlp4.lcon))
+if(~isempty(nlp4.Ain) || ~isempty(nlp4.bin) || ~isempty(nlp4.Aeq) || ~isempty(nlp4.beq) || ~isempty(nlp4.Ain_name) || ~isempty(nlp4.Aeq_name) || ~isempty(nlp4.lcon) || ~isempty(nlp4.lcon_xind))
   error('The linear constraint should be empty');
 end
 if(nlp4.isLinearConstraintID(lincon1_id))
@@ -309,6 +310,8 @@ sizecheck(nlp4.Ain,[3,4]);
 sizecheck(nlp4.bin,[3,1]);
 sizecheck(nlp4.Aeq,[1,4]);
 sizecheck(nlp4.beq,[1,1]);
+sizecheck(nlp4.lcon_xind,[1,1]);
+valuecheck(nlp4.lcon_xind{1},[1;2;3;4])
 if(nlp4.isLinearConstraintID(lincon1_id))
   error('The deleted linear constraint should not be contained in the program');
 end
@@ -318,7 +321,7 @@ if(any(lincon2.eval(x4)>lincon2.ub+1e-5) || any(lincon2.eval(x4)<lincon2.lb-1e-5
 end
 
 nlp4 = nlp4.deleteLinearConstraint(lincon2_id);
-if(~isempty(nlp4.Ain) || ~isempty(nlp4.bin) || ~isempty(nlp4.Aeq) || ~isempty(nlp4.beq) || ~isempty(nlp4.Ain_name) || ~isempty(nlp4.Aeq_name) || ~isempty(nlp4.lcon))
+if(~isempty(nlp4.Ain) || ~isempty(nlp4.bin) || ~isempty(nlp4.Aeq) || ~isempty(nlp4.beq) || ~isempty(nlp4.Ain_name) || ~isempty(nlp4.Aeq_name) || ~isempty(nlp4.lcon) || ~isempty(nlp4.lcon_xind))
   error('The linear constraint should be empty');
 end
 if(nlp4.isLinearConstraintID(lincon2_id))
@@ -332,6 +335,8 @@ sizecheck(nlp4.Ain,[2,4]);
 sizecheck(nlp4.bin,[2,1]);
 sizecheck(nlp4.Aeq,[1,4]);
 sizecheck(nlp4.beq,[1,1]);
+sizecheck(nlp4.lcon_xind,[1,1]);
+valuecheck(nlp4.lcon_xind{1},[1;3]);
 valuecheck(length(nlp4.lcon),1);
 [x4,F,info] = testAllSolvers(nlp4,x4);
 if(any(lincon1.eval(x4([1;3]))>lincon1.ub+1e-5) || any(lincon1.eval(x4([1;3]))<lincon1.lb-1e-5))
