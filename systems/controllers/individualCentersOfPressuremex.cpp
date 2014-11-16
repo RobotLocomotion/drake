@@ -35,7 +35,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
     for (int i = 0; i < mxGetNumberOfElements(mxBodies); i++) {
       mxArray* mxBodyContactPts = mxGetCell(mxContactPts, i);
-      int nc = mxGetNumberOfElements(mxBodyContactPts);
+      int nc = static_cast<int>(mxGetNumberOfElements(mxBodyContactPts));
       if (nc < 1)
         continue;
 
@@ -56,7 +56,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   MatrixXd normals(3,num_active_contact_pts);
   memcpy(normals.data(), mxGetPr(prhs[2]), sizeof(double)*normals.size());
 
-  int nd = mxGetScalar(prhs[3]);
+  int nd = static_cast<int>(mxGetScalar(prhs[3]));
   MatrixXd B(3, num_active_contact_pts * nd);
   memcpy(B.data(), mxGetPr(prhs[4]), sizeof(double)*B.size());
 

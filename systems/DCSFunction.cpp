@@ -19,7 +19,7 @@ bool isa(const mxArray* mxa, const char* class_str)
   prhs[0] = const_cast<mxArray*>(mxa);
   prhs[1] = mxCreateString(class_str);
   mexCallMATLAB(1,&plhs,2,prhs,"isa");
-  bool tf = (bool) mxGetScalar(plhs);
+  bool tf = (mxGetScalar(plhs)!=0.0);
   mxDestroyArray(plhs);
   mxDestroyArray(prhs[1]);
   return tf;
@@ -104,7 +104,7 @@ static void mdlInitializeSizes(SimStruct *S)
   int num_w=0;
   if (isa(psys,"StochasticDrakeSystem")) {
     if (mexCallMATLABsafe(S,1,plhs,1,&psys,"getNumDisturbances")) return;
-    num_w = mxGetScalar(plhs[0]);
+    num_w = static_cast<int>(mxGetScalar(plhs[0]));
     mxDestroyArray(plhs[0]);
   }
   
@@ -140,7 +140,7 @@ static void mdlInitializeSizes(SimStruct *S)
   }
 
   if (mexCallMATLABsafe(S,1,plhs,1,&psys,"getSampleTime")) return;
-  ssSetNumSampleTimes(S, mxGetN(plhs[0]));
+  ssSetNumSampleTimes(S, static_cast<int_T>(mxGetN(plhs[0])));
   mxDestroyArray(plhs[0]);
 
   if (mexCallMATLABsafe(S,1, plhs, 1, &psys, "getNumZeroCrossings")) return;
@@ -203,7 +203,7 @@ static void mdlInitializeConditions(SimStruct *S)
   
   if (isa(psys,"StochasticDrakeSystem")) {
     if (mexCallMATLABsafe(S,1,plhs,1,&psys,"getNumDisturbances")) return;
-    int num_w = mxGetScalar(plhs[0]);
+    int num_w = static_cast<int>(mxGetScalar(plhs[0]));
     mxDestroyArray(plhs[0]);
     ssSetIWorkValue(S, IS_STOCHASTIC_IDX, num_w);
   } else {
@@ -250,7 +250,7 @@ static void mdlOutputs(SimStruct *S, int_T tid)
   const real_T *w = num_w>0 ? ssGetInputPortRealSignal(S,num_u>0?1:0) : NULL;
   real_T *y = (num_y>0) ? ssGetOutputPortRealSignal(S, 0) : NULL;
   mxArray* plhs[2];
-  bool fsm = ssGetIWorkValue(S,IS_HYBRID_IDX);
+  bool fsm = (ssGetIWorkValue(S,IS_HYBRID_IDX)!=0);
 
   mxArray *prhs[5];
   prhs[0] = psys;                                  // obj

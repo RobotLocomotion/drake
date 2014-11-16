@@ -7,6 +7,13 @@
 #include <iostream>
 
 
+#if defined(WIN32) || defined(WIN64)
+  #define isnan(x) _isnan(x)
+  #define isinf(x) (!_finite(x))
+#else
+  #define isnan(x) std::isnan(x)
+#endif
+
 namespace snopt {
 #include "snopt.hh"
 #include "snfilewrapper.hh"

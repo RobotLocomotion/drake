@@ -9,7 +9,9 @@
 #include "collision/DrakeCollision.h"
 #include "KinematicPath.h"
 
-#if defined(WIN32) || defined(WIN64)
+#undef DLLEXPORT
+#if 0 //defined(WIN32) || defined(WIN64)
+  #undef DLLEXPORT
   #if defined(drakeRBM_EXPORTS)
     #define DLLEXPORT __declspec( dllexport )
   #else
@@ -17,13 +19,17 @@
   #endif
 #else
   #define DLLEXPORT
+#endif
+
+#if defined(WIN32) || defined(WIN64)
+#else
   #include "DrakeJoint.h"  // todo: move this out of here
 #endif
 
 #include "RigidBody.h"
 #include "RigidBodyFrame.h"
 
-#define INF -2147483648
+#define INF -std::numeric_limits<int>::infinity()
 using namespace Eigen;
 
 //extern std::set<int> emptyIntSet;  // was const std:set<int> emptyIntSet, but valgrind said I was leaking memory

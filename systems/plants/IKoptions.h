@@ -4,7 +4,8 @@
 #include <Eigen/Dense>
 using namespace Eigen;
 
-#if defined(WIN32) || defined(WIN64)
+#undef DLLEXPORT
+#if 0 //defined(WIN32) || defined(WIN64)
   #if defined(drakeIKoptions_EXPORTS)
     #define DLLEXPORT __declspec( dllexport )
   #else
