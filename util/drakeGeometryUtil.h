@@ -7,6 +7,7 @@
 #include <random>
 
 #if defined(WIN32) || defined(WIN64)
+  #undef DLLEXPORT
   #if defined(drakeGeometryUtil_EXPORTS)
     #define DLLEXPORT __declspec( dllexport )
   #else
@@ -148,6 +149,8 @@ void quatdot2angularvelMatrix(const Eigen::MatrixBase<DerivedQ>& q,
     Eigen::MatrixBase<DerivedM>& M,
     typename Gradient<DerivedM, QUAT_SIZE, 1>::type* dM = nullptr);
 
+//#endif
+
 /*
  * spatial transform functions
  */
@@ -160,6 +163,8 @@ template<typename Scalar, typename DerivedF>
 Eigen::Matrix<Scalar, TWIST_SIZE, DerivedF::ColsAtCompileTime> transformSpatialForce(
     const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T,
     const Eigen::MatrixBase<DerivedF>& F);
+
+//#if !defined(WIN32) && !defined(WIN64)
 
 /*
  * spatial transform gradient methods

@@ -34,15 +34,15 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   bool b_jacdot;
   if(body_ind != -1)
   {
-    b_jacdot = nrhs>5 && (bool) mxGetScalar(prhs[5]);
+    b_jacdot = nrhs>5 && (mxGetScalar(prhs[5])!=0.0);
   }
   else
   {
-    b_jacdot = (bool) mxGetScalar(prhs[4]);
+    b_jacdot = (mxGetScalar(prhs[4])!=0.0);
   }
 
   if (body_ind==-1) {  // compute center of mass
-    int num_robot = mxGetNumberOfElements(prhs[3]);
+    int num_robot = static_cast<int>(mxGetNumberOfElements(prhs[3]));
     set<int> robotnum_set;
     double* probotnum = mxGetPr(prhs[3]);
     for(int i = 0;i<num_robot;i++)
@@ -82,8 +82,8 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
     mexErrMsgIdAndTxt("Drake:forwardKinmex:NotEnoughInputs", "Usage forwardKinmex(model_ptr,q_cache,body_index,pts,rotation_type,b_jacdot)");
   }
 
-  int n_pts = mxGetN(prhs[3]);
-  int dim = mxGetM(prhs[3]), dim_with_rot=dim;
+  int n_pts = static_cast<int>(mxGetN(prhs[3]));
+  int dim = static_cast<int>(mxGetM(prhs[3])), dim_with_rot=dim;
   
 //  if (dim != 2 && dim != 3)
 //    mexErrMsgIdAndTxt("Drake:forwardKinmex:BadInputs", "number of rows in pts must be 2 or 3");
