@@ -28,7 +28,7 @@
 #include "RigidBody.h"
 #include "RigidBodyFrame.h"
 
-#define INF -std::numeric_limits<int>::infinity()
+#define INF std::numeric_limits<int>::infinity()
 using namespace Eigen;
 
 //extern std::set<int> emptyIntSet;  // was const std:set<int> emptyIntSet, but valgrind said I was leaking memory
