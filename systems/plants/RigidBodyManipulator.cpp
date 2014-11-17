@@ -1043,14 +1043,14 @@ int RigidBodyManipulator::getNumContacts(const set<int> &body_idx)
 template <typename Derived>
 void RigidBodyManipulator::getContactPositions(MatrixBase<Derived> &pos, const set<int> &body_idx)
 {
-  int n=0,nc,nb=body_idx.size(),bi;
+  int n=0,nc,nb=static_cast<int>(body_idx.size()),bi;
   if (nb==0) nb=num_bodies;
   set<int>::iterator iter = body_idx.begin();
   MatrixXd p;
   for (int i=0; i<nb; i++) {
     if (body_idx.size()==0) bi=i;
     else bi=*iter++;
-    nc = bodies[bi]->contact_pts.cols();
+    nc = static_cast<int>(bodies[bi]->contact_pts.cols());
     if (nc>0) {
       // note: it's possible to pass pos.block in directly but requires such an ugly hack that I think it's not worth it:
       // http://eigen.tuxfamily.org/dox/TopicFunctionTakingEigenTypes.html
@@ -1065,14 +1065,14 @@ void RigidBodyManipulator::getContactPositions(MatrixBase<Derived> &pos, const s
 template <typename Derived>
 void RigidBodyManipulator::getContactPositionsJac(MatrixBase<Derived> &J, const set<int> &body_idx)
 {
-  int n=0,nc,nb=body_idx.size(),bi;
+  int n=0,nc,nb=static_cast<int>(body_idx.size()),bi;
   if (nb==0) nb=num_bodies;
   set<int>::iterator iter = body_idx.begin();
   MatrixXd p;
   for (int i=0; i<nb; i++) {
     if (body_idx.size()==0) bi=i;
     else bi=*iter++;
-    nc = bodies[bi]->contact_pts.cols();
+    nc = static_cast<int>(bodies[bi]->contact_pts.cols());
     if (nc>0) {
       p.resize(3*nc,num_dof);
       forwardJac(bi,bodies[bi]->contact_pts,0,p);
@@ -1085,14 +1085,14 @@ void RigidBodyManipulator::getContactPositionsJac(MatrixBase<Derived> &J, const 
 template <typename Derived>
 void RigidBodyManipulator::getContactPositionsJacDot(MatrixBase<Derived> &Jdot, const set<int> &body_idx)
 {
-  int n=0,nc,nb=body_idx.size(),bi;
+  int n=0,nc,nb=static_cast<int>(body_idx.size()),bi;
   if (nb==0) nb=num_bodies;
   set<int>::iterator iter = body_idx.begin();
   MatrixXd p;
   for (int i=0; i<nb; i++) {
     if (body_idx.size()==0) bi=i;
     else bi=*iter++;
-    nc = bodies[bi]->contact_pts.cols();
+    nc = static_cast<int>(bodies[bi]->contact_pts.cols());
     if (nc>0) {
       p.resize(3*nc,num_dof);
       forwardJacDot(bi,bodies[bi]->contact_pts,0,p);
@@ -1199,7 +1199,7 @@ void RigidBodyManipulator::findKinematicPath(KinematicPath& path, int start_body
 template <typename DerivedA, typename DerivedB>
 void RigidBodyManipulator::forwardKin(const int body_or_frame_id, const MatrixBase<DerivedA>& pts, const int rotation_type, MatrixBase<DerivedB> &x)
 {
-  int n_pts = pts.cols(); Matrix4d Tframe;
+  int n_pts = static_cast<int>(pts.cols()); Matrix4d Tframe;
   int body_ind = parseBodyOrFrameID(body_or_frame_id, &Tframe);
 
   MatrixXd T = bodies[body_ind]->T.topLeftCorner(3,4)*Tframe;
@@ -1347,7 +1347,7 @@ void RigidBodyManipulator::geometricJacobian(int base_body_or_frame_ind, int end
 template <typename DerivedA, typename DerivedB>
 void RigidBodyManipulator::forwardJac(const int body_or_frame_id, const MatrixBase<DerivedA> &pts, const int rotation_type, MatrixBase<DerivedB> &J)
 {
-  int n_pts = pts.cols(); Matrix4d Tframe;
+  int n_pts = static_cast<int>(pts.cols()); Matrix4d Tframe;
   int body_ind = parseBodyOrFrameID(body_or_frame_id, &Tframe);
 
   MatrixXd dTdq =  bodies[body_ind]->dTdq.topLeftCorner(3*num_dof,4)*Tframe;
@@ -1455,7 +1455,7 @@ void RigidBodyManipulator::forwardJac(const int body_or_frame_id, const MatrixBa
 template <typename DerivedA, typename DerivedB>
 void RigidBodyManipulator::forwardJacDot(const int body_or_frame_id, const MatrixBase<DerivedA> &pts, const int rotation_type, MatrixBase<DerivedB>& Jdot)
 {
-  int n_pts = pts.cols(); Matrix4d Tframe;
+  int n_pts = static_cast<int>(pts.cols()); Matrix4d Tframe;
   int body_ind = parseBodyOrFrameID(body_or_frame_id, &Tframe);
 
 	MatrixXd tmp = bodies[body_ind]->dTdqdot*Tframe*pts;
@@ -1500,7 +1500,7 @@ void RigidBodyManipulator::forwardJacDot(const int body_or_frame_id, const Matri
 template <typename DerivedA, typename DerivedB>
 void RigidBodyManipulator::forwarddJac(const int body_or_frame_id, const MatrixBase<DerivedA> &pts, MatrixBase<DerivedB>& dJ)
 {
-  int n_pts = pts.cols(); Matrix4d Tframe;
+  int n_pts = static_cast<int>(pts.cols()); Matrix4d Tframe;
   int body_ind = parseBodyOrFrameID(body_or_frame_id, &Tframe);
 
   int i,j;
