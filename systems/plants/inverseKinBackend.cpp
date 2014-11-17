@@ -6,6 +6,7 @@
 #include <cstring>
 #include <iostream>
 #include <limits>
+#include <cmath>
 
 #if defined(WIN32) || defined(WIN64)
   #define isnan(x) _isnan(x)
