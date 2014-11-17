@@ -8,7 +8,7 @@ using namespace std;
 using namespace Eigen;
 
 template <typename DerivedA, typename DerivedB, typename DerivedC>
-void inverseKinPointwise(RigidBodyManipulator* model, const int nT, const double* t, const MatrixBase<DerivedA> &q_seed, const MatrixBase<DerivedB> &q_nom, const int num_constraints, RigidBodyConstraint** const constraint_array, MatrixBase<DerivedC> &q_sol, int* INFO, vector<string> &infeasible_constraint, const IKoptions &ikoptions)
+drakeIK_DLLEXPORT void inverseKinPointwise(RigidBodyManipulator* model, const int nT, const double* t, const MatrixBase<DerivedA> &q_seed, const MatrixBase<DerivedB> &q_nom, const int num_constraints, RigidBodyConstraint** const constraint_array, MatrixBase<DerivedC> &q_sol, int* INFO, vector<string> &infeasible_constraint, const IKoptions &ikoptions)
 {
   int nq = model->num_dof;
   MatrixXd qdot_dummy(nq,nT);
@@ -16,5 +16,5 @@ void inverseKinPointwise(RigidBodyManipulator* model, const int nT, const double
   inverseKinBackend(model,1,nT,t,q_seed,q_nom,num_constraints,constraint_array,q_sol,qdot_dummy,qddot_dummy,INFO,infeasible_constraint,ikoptions);
 }
 
-template void inverseKinPointwise(RigidBodyManipulator* model, const int nT, const double* t, const MatrixBase<Map<MatrixXd>> &q_seed, const MatrixBase<Map<MatrixXd>> &q_nom, const int num_constraints, RigidBodyConstraint** const constraint_array, MatrixBase<Map<MatrixXd>> &q_sol, int* INFO, vector<string> &infeasible_constraint, const IKoptions &ikoptions);
-template void inverseKinPointwise(RigidBodyManipulator* model, const int nT, const double* t, const MatrixBase<MatrixXd> &q_seed, const MatrixBase<MatrixXd> &q_nom, const int num_constraints, RigidBodyConstraint** const constraint_array, MatrixBase<MatrixXd> &q_sol, int* INFO, vector<string> &infeasible_constraint, const IKoptions &ikoptions);
+template drakeIK_DLLEXPORT void inverseKinPointwise(RigidBodyManipulator* model, const int nT, const double* t, const MatrixBase<Map<MatrixXd>> &q_seed, const MatrixBase<Map<MatrixXd>> &q_nom, const int num_constraints, RigidBodyConstraint** const constraint_array, MatrixBase<Map<MatrixXd>> &q_sol, int* INFO, vector<string> &infeasible_constraint, const IKoptions &ikoptions);
+template drakeIK_DLLEXPORT void inverseKinPointwise(RigidBodyManipulator* model, const int nT, const double* t, const MatrixBase<MatrixXd> &q_seed, const MatrixBase<MatrixXd> &q_nom, const int num_constraints, RigidBodyConstraint** const constraint_array, MatrixBase<MatrixXd> &q_sol, int* INFO, vector<string> &infeasible_constraint, const IKoptions &ikoptions);
