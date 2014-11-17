@@ -39,7 +39,13 @@ elseif (MSVC)
 #  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /arch:SSE2 /openmp")
 #  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:SSE2 /openmp")
 
-#  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4251")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4251")
+    # disable warning C4251: e.g.'RigidBody::linkname' : class 'std::basic_string<_Elem,_Traits,_Ax>' needs to have dll-interface to be used by clients of class 'RigidBody'
+    # followed by template linking errors.  After reading, e.g.:
+    #   https://connect.microsoft.com/VisualStudio/feedback/details/696593/vc-10-vs-2010-basic-string-exports
+    # I think we're not being sufficiently careful with our library interfaces (on other platforms as well) - Russ
+
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4996") # disable sprintf security warning
 endif()
 
 # set up matlab build

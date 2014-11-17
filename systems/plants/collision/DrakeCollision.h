@@ -12,7 +12,7 @@
 #include <stdint.h>
 
 #undef DLLEXPORT
-#if 0 //defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(WIN64)
   #if defined(drakeCollision_EXPORTS)
     #define DLLEXPORT __declspec( dllexport )
   #else

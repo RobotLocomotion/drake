@@ -100,9 +100,9 @@ static snopt::integer nx_tmp;
 
 static void gevalNumerical(void (*func_ptr)(const VectorXd &, VectorXd &),const VectorXd &x, VectorXd &c, MatrixXd &dc,int order = 2)
 {
-  int nx = x.rows();
+  int nx = static_cast<int>(x.rows());
   (*func_ptr)(x,c);
-  int nc = c.rows();
+  int nc = static_cast<int>(c.rows());
   dc.resize(nc,nx);
   double err = 1e-10;
   for(int i = 0;i<nx;i++)
@@ -166,7 +166,7 @@ static void IK_constraint_fun(double* x,double* c, double* G)
     c[nc_accum+num_qsc_cnst-1] = 0.0;
     memcpy(G+ng_accum,dcnst.data(),sizeof(double)*dcnst.size());
     nc_accum += num_qsc_cnst;
-    ng_accum += dcnst.size();
+    ng_accum += static_cast<int>(dcnst.size());
   }
 } 
 
@@ -338,7 +338,7 @@ static int snoptIKtrajfun(snopt::integer *Status, snopt::integer *n, snopt::doub
     }
     q_samples.col(inbetween_idx+i) = q.col(i);
     q_samples.block(0,inbetween_idx+i+1,nq,t_inbetween[i].size()) = q_inbetween.block(0,inbetween_idx,nq,t_inbetween[i].size());
-    inbetween_idx += t_inbetween[i].size();
+    inbetween_idx += static_cast<int>(t_inbetween[i].size());
   }
   q_samples.col(nT+num_inbetween_tSamples-1) = q.col(nT-1);
 
@@ -625,7 +625,7 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
       A_array[i].conservativeResize(A_array[i].size()+A.size());
       A_array[i].tail(A.size()) = A;
       nc_array[i] += st_lpc_nc[j];
-      nA_array[i] += A.size();
+      nA_array[i] += static_cast<int>(A.size());
       if(debug_mode)
       {
         vector<string> constraint_name;
@@ -720,7 +720,7 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
       }
       nF = nc_array[i]+1;
 
-      snopt::integer lenA = A_array[i].size();
+      snopt::integer lenA = static_cast<int>(A_array[i].size());
       snopt::integer* iAfun;
       snopt::integer* jAvar;
       snopt::doublereal* A;

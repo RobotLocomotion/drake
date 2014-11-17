@@ -5,7 +5,7 @@
 using namespace Eigen;
 
 #undef DLLEXPORT
-#if 0 //defined(WIN32) || defined(WIN64)
+#if defined(WIN32) || defined(WIN64)
   #if defined(drakeIKoptions_EXPORTS)
     #define DLLEXPORT __declspec( dllexport )
   #else

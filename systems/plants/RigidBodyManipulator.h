@@ -10,8 +10,7 @@
 #include "KinematicPath.h"
 
 #undef DLLEXPORT
-#if 0 //defined(WIN32) || defined(WIN64)
-  #undef DLLEXPORT
+#if defined(WIN32) || defined(WIN64)
   #if defined(drakeRBM_EXPORTS)
     #define DLLEXPORT __declspec( dllexport )
   #else

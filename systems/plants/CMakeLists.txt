@@ -14,18 +14,7 @@ endif()
 
 if (eigen3_FOUND)
   # todo: check eigen version.  3.1.0 didn't work for clang.  3.2.0 did.
-  if (MSVC)
-    add_library(drakeRBM STATIC RigidBodyManipulator.cpp RigidBody.cpp)
-    # note: switched this to STATIC, because of the complexity that started mounting
-    # with warnings like this:
-    #   warning C4251: 'RigidBody::linkname' : class 'std::basic_string<_Elem,_Traits,_Ax>' needs to have dll-interface to be used by clients of class 'RigidBody'
-    # followed by template linking errors.  After reading, e.g.:
-    #   https://connect.microsoft.com/VisualStudio/feedback/details/696593/vc-10-vs-2010-basic-string-exports
-    # I think we're not being sufficiently careful with our library interfaces (on other platforms as well)
-    # This will obviously increase the size of the resulting mex files, but should be safer.  - Russ
-  else()
-    add_library(drakeRBM SHARED RigidBodyManipulator.cpp RigidBody.cpp)  
-  endif(MSVC)
+ add_library(drakeRBM SHARED RigidBodyManipulator.cpp RigidBody.cpp)  
  
  target_link_libraries(drakeRBM drakeCollision)
 if (NOT WIN32) 
@@ -78,13 +67,11 @@ endif(NOT WIN32)
   add_rbm_mex(allCollisionsmex)
   add_rbm_mex(getCMMmex)
   add_rbm_mex(findKinematicPathmex)
-
-  if (MSVC)
-    add_library(drakeIKoptions STATIC IKoptions.cpp)
-  else()
+  if (NOT MSVC)
     add_rbm_mex(geometricJacobianmex) # todo: pull this out
-    add_library(drakeIKoptions SHARED IKoptions.cpp)
   endif()
+
+  add_library(drakeIKoptions SHARED IKoptions.cpp)
   target_link_libraries(drakeIKoptions drakeRBM drakeUtil)
   macro(add_ikoptions_mex)
     add_mex(${ARGV} ${ARGV}.cpp)
