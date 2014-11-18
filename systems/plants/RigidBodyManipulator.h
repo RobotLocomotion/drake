@@ -7,6 +7,7 @@
 #include <Eigen/StdVector> //#include <vector>
 
 #include "collision/DrakeCollision.h"
+#include "KinematicPath.h"
 
 #if defined(WIN32) || defined(WIN64)
   #if defined(drakeRBM_EXPORTS)
@@ -64,6 +65,10 @@ public:
   template <typename Derived>
     void getContactPositionsJacDot(MatrixBase<Derived> &Jdot, const std::set<int> &body_idx);// = emptyIntSet);
 
+  void findAncestorBodies(std::vector<int>& ancestor_bodies, int body);
+
+  void findKinematicPath(KinematicPath& path, int start_body_or_frame_idx, int end_body_or_frame_idx);
+
   template <typename DerivedA, typename DerivedB>
   void forwardKin(const int body_or_frame_ind, const MatrixBase<DerivedA>& pts, const int rotation_type, MatrixBase<DerivedB> &x);
 
@@ -79,6 +84,10 @@ public:
   template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD>
   void bodyKin(const int body_ind, const MatrixBase<DerivedA>& pts, MatrixBase<DerivedB> &x, MatrixBase<DerivedC> *J=NULL, MatrixBase<DerivedD> *P=NULL);
 
+#if !defined(WIN32) && !defined(WIN64)
+  template<typename DerivedA>
+  void geometricJacobian(int base_body_or_frame_ind, int end_effector_body_or_frame_ind, int expressed_in_body_or_frame_ind, PlainObjectBase<DerivedA>& J, std::vector<int>* v_indices);
+#endif
 
   template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD, typename DerivedE, typename DerivedF>
   void HandC(double* const q, double * const qd, MatrixBase<DerivedA> * const f_ext, MatrixBase<DerivedB> &H, MatrixBase<DerivedC> &C, MatrixBase<DerivedD> *dH=NULL, MatrixBase<DerivedE> *dC=NULL, MatrixBase<DerivedF> * const df_ext=NULL);
@@ -90,15 +99,15 @@ public:
   bool setCollisionFilter(const int body_ind, const uint16_t group, 
                           const uint16_t mask);
 
-  bool getPairwiseCollision(const int body_indA, const int body_indB, MatrixXd &ptsA, MatrixXd &ptsB, MatrixXd &normals);
+  bool getPairwiseCollision(const int body_indA, const int body_indB, MatrixXd &ptsA, MatrixXd &ptsB, MatrixXd &normals, bool use_margins=true);
 
-  bool getPairwisePointCollision(const int body_indA, const int body_indB, const int body_collision_indA, Vector3d &ptA, Vector3d &ptB, Vector3d &normal);
+  bool getPairwisePointCollision(const int body_indA, const int body_indB, const int body_collision_indA, Vector3d &ptA, Vector3d &ptB, Vector3d &normal, bool use_margins=true);
 
-  bool getPointCollision(const int body_ind, const int body_collision_ind, Vector3d &ptA, Vector3d &ptB, Vector3d &normal);
+  bool getPointCollision(const int body_ind, const int body_collision_ind, Vector3d &ptA, Vector3d &ptB, Vector3d &normal, bool use_margins=true);
 
-  bool getPairwiseClosestPoint(const int body_indA, const int body_indB, Vector3d &ptA, Vector3d &ptB, Vector3d &normal, double &distance);
+  bool getPairwiseClosestPoint(const int body_indA, const int body_indB, Vector3d &ptA, Vector3d &ptB, Vector3d &normal, double &distance, bool use_margins=true);
   
-  bool collisionRaycast(const Matrix3Xd &origins, const Matrix3Xd &ray_endpoints, VectorXd &distances);
+  bool collisionRaycast(const Matrix3Xd &origins, const Matrix3Xd &ray_endpoints, VectorXd &distances, bool use_margins=false);
 
   //bool closestPointsAllBodies( MatrixXd& ptsA, MatrixXd& ptsB,
                                //MatrixXd& normal, VectorXd& distance,
@@ -110,28 +119,33 @@ public:
                         std::vector<int>& bodyA_idx, 
                         std::vector<int>& bodyB_idx,
                         const std::vector<int>& bodies_idx,
-                        const std::set<std::string>& active_element_groups);
+                        const std::set<std::string>& active_element_groups,
+                        bool use_margins = true);
 
   bool collisionDetect( VectorXd& phi, MatrixXd& normal, 
                         MatrixXd& xA, MatrixXd& xB, 
                         std::vector<int>& bodyA_idx, 
                         std::vector<int>& bodyB_idx,
-                        const std::vector<int>& bodies_idx);
+                        const std::vector<int>& bodies_idx,
+                        bool use_margins = true);
 
   bool collisionDetect( VectorXd& phi, MatrixXd& normal, 
                         MatrixXd& xA, MatrixXd& xB, 
                         std::vector<int>& bodyA_idx, 
                         std::vector<int>& bodyB_idx,
-                        const std::set<std::string>& active_element_groups);
+                        const std::set<std::string>& active_element_groups,
+                        bool use_margins = true);
 
   bool collisionDetect( VectorXd& phi, MatrixXd& normal, 
                         MatrixXd& xA, MatrixXd& xB, 
                         std::vector<int>& bodyA_idx, 
-                        std::vector<int>& bodyB_idx);
+                        std::vector<int>& bodyB_idx,
+                        bool use_margins = true);
 
 
   bool allCollisions(std::vector<int>& bodyA_idx, std::vector<int>& bodyB_idx, 
-                     MatrixXd& ptsA, MatrixXd& ptsB);
+                     MatrixXd& ptsA, MatrixXd& ptsB,
+                        bool use_margins = true);
 
   //bool closestDistanceAllBodies(VectorXd& distance, MatrixXd& Jd);
   
@@ -172,7 +186,7 @@ public:
 
 
 private:
-  int parseBodyOrFrameID(const int body_or_frame_id, Matrix4d& Tframe);
+  int parseBodyOrFrameID(const int body_or_frame_id, Matrix4d* Tframe = nullptr);
 
   // variables for featherstone dynamics
   std::vector<VectorXd> S;
@@ -221,8 +235,18 @@ private:
   bool kinematicsInit;
   int secondDerivativesCached;
 
+  // collision_model and collision_model_no_margins both maintain
+  // a collection of the collision geometry in the RBM for use in
+  // collision detection of different kinds. collision_model has
+  // small margins applied to all collision geometry when that
+  // geometry is added, to improve the numerical stability of
+  // contact gradients taken using the model. collision_model_no_margins
+  // does not apply these margins, such that it can be used for
+  // precise raycasting, e.g. for simulating a laser scanner
+  // These models are switched between with the use_margins flag
+  // to collision-relevant methods of the RBM.
   std::shared_ptr< DrakeCollision::Model > collision_model;
-  
+  std::shared_ptr< DrakeCollision::Model > collision_model_no_margins;  
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 

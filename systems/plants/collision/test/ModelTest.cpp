@@ -43,9 +43,9 @@ BOOST_AUTO_TEST_CASE(filter_by_body)
   T_body3_to_world.topRightCorner(3,1) << 2,2,0;
 
   shared_ptr<Model> model = newModel();
-  model->addElement(1,0,Matrix4d::Identity(),BOX,box_params,false);
-  model->addElement(2,0,Matrix4d::Identity(),SPHERE,sphere_params,false);
-  model->addElement(3,0,Matrix4d::Identity(),SPHERE,sphere_params,false);
+  model->addElement(1,0,Matrix4d::Identity(),BOX,box_params,"default",false);
+  model->addElement(2,0,Matrix4d::Identity(),SPHERE,sphere_params,"default",false);
+  model->addElement(3,0,Matrix4d::Identity(),SPHERE,sphere_params,"default",false);
   model->updateElementsForBody(1, T_body1_to_world);
   model->updateElementsForBody(2, T_body2_to_world);
   model->updateElementsForBody(3, T_body3_to_world);

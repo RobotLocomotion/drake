@@ -31,6 +31,7 @@ classdef RigidBodyContactWrench
     FrictionConeType = 1;
     LinearFrictionConeType = 2;
     GraspType = 3;
+    GraspFrictionConeType = 4;
   end
   
   methods

@@ -10,7 +10,7 @@ function [x,F,info] = smoothNormTest(N)
   smooth_dist_between_pts_fcn = smooth_norm_fcn(Difference(R3));
   distance_constraint = DrakeFunctionConstraint((2*radius),inf,smooth_dist_between_pts_fcn);
 
-  prog = NonlinearProgramWConstraintObjects(3*N);
+  prog = NonlinearProgram(3*N);
   prog = prog.addDisplayFunction(@(r)displayCallback(lcmgl,radius,r),r_inds);
   for i = 1:N
     for j = i+1:N

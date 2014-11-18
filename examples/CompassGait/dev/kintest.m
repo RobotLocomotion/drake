@@ -4,7 +4,7 @@ p = PlanarRigidBodyManipulator('CompassGait.urdf');
 
 x=randn(8,1); %p.getInitialState();
 q=x(1:4);qd=x(5:8);
-[phi,J]=geval(@p.positionConstraints,q);
+[phi,J]=p.positionConstraints(q);
 
 psi = p.velocityConstraints(q,qd);
 

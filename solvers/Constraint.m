@@ -23,9 +23,11 @@ classdef Constraint
   end
 
   properties
-    grad_level    % derivative level of user gradients provided
-    grad_method   % A string indicating the method to compute gradient. Refer to
-                  %    'geval' for all supported method. @default 'user'
+    grad_level        % derivative level of user gradients provided
+    grad_method='';   % A string indicating the method to compute gradient. If empty,
+                      % then it calls geval only if the grad_level is insufficient
+                      % to supply all of the requested arguments.  Refer to
+                      % the 'geval' documentation for additional supported values. @default ''
   end
 
   methods
@@ -51,8 +53,6 @@ classdef Constraint
       obj.grad_level = grad_level;
 
       obj.name = repmat({''},obj.num_cnstr,1);
-
-      obj.grad_method = 'user';
 
       obj.iCfun = reshape(bsxfun(@times,(1:obj.num_cnstr)',ones(1,obj.xdim)),[],1);
       obj.jCvar = reshape(bsxfun(@times,1:obj.xdim,ones(obj.num_cnstr,1)),[],1);
@@ -111,11 +111,11 @@ classdef Constraint
     end
 
     function varargout = eval(obj,varargin)
-      if obj.grad_level==-2  % no gradients available
+      if obj.grad_level==-2  % no gradients available (non-differentiable)
         varargout{1} = obj.constraintEval(varargin{:});
       else
         % special casing 'user' to avoid geval for speed reasons
-        varargout=cell(1,nargout);
+        varargout=cell(1,max(nargout,1));
         if (isempty(obj.grad_method) && nargout<=obj.grad_level+1) ...
             || strcmp(obj.grad_method,'user')
           [varargout{:}] = obj.constraintEval(varargin{:});

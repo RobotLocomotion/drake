@@ -92,6 +92,18 @@ classdef DirectTrajectoryOptimization < NonlinearProgram
       end
 
     end
+    
+    function N = getN(obj)
+      N = obj.N;
+    end
+
+    function x_inds = getXinds(obj)
+      x_inds = obj.x_inds;
+    end
+
+    function h_inds = getHinds(obj)
+      h_inds = obj.h_inds;
+    end
 
     function obj = addInputConstraint(obj,constraint,time_index)
       % Add constraint (or composite constraint) that is a function of the
@@ -192,25 +204,30 @@ classdef DirectTrajectoryOptimization < NonlinearProgram
 
       if nargin<3, traj_init = struct(); end
 
+      nU = getNumInputs(obj.plant);
       if isfield(traj_init,'u')
         z0(obj.u_inds) = traj_init.u.eval(t_init);
       else
-        nU = getNumInputs(obj.plant);
         z0(obj.u_inds) = 0.01*randn(nU,obj.N);
       end
 
       if isfield(traj_init,'x')
         z0(obj.x_inds) = traj_init.x.eval(t_init);
       else
-        if ~isfield(traj_init,'u')
-          traj_init.u = setOutputFrame(PPTrajectory(foh(t_init,reshape(z0(obj.u_inds),nU,obj.N))),getInputFrame(obj.plant));
+        if nU>0
+          if ~isfield(traj_init,'u')
+            traj_init.u = setOutputFrame(PPTrajectory(foh(t_init,reshape(z0(obj.u_inds),nU,obj.N))),getInputFrame(obj.plant));
+          end
+          
+          % todo: if x0 and xf are equality constrained, then initialize with
+          % a straight line from x0 to xf (this was the previous behavior)
+          
+          %simulate
+          sys_ol = cascade(traj_init.u,obj.plant);
+        else
+          sys_ol = obj.plant;
         end
-
-        % todo: if x0 and xf are equality constrained, then initialize with
-        % a straight line from x0 to xf (this was the previous behavior)
-
-        %simulate
-        sys_ol = cascade(traj_init.u,obj.plant);
+        
         if ~isfield(traj_init,'x0')
           [~,x_sim] = sys_ol.simulate([t_init(1) t_init(end)]);
         else

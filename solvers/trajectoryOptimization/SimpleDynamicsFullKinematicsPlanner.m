@@ -34,18 +34,20 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
      Q_contact_force % A 3 x 3 PSD matrix. minimize the weighted L2 norm of the contact force.
   end
 
-  properties(Access = protected)
-    add_dynamic_constraint_flag = false;% If this flag is false, then bypass the addDynamicConstraint function
-  end
-
   methods
     function obj = SimpleDynamicsFullKinematicsPlanner(plant,robot,N,tf_range,Q_contact_force,contact_wrench_struct,options)
+      % @param plant   This is the plant going to be used in
+      % DirectTRajectoryOptimization, it can be different from robot since
+      % we want to use simple dynamics here. Refer to
+      % DirectTrajectoryOptimization for more details.
       % @param robot   A RigidBodyManipulator or a TimeSteppingRigidBodyManipulator
       % @param N   The number of knot points
       % @param tf_range  A double. The bounds on the total time
       % @param Q_contact_force. A 3 x 3 PSD matrix. minimize the weighted L2 norm of the
       % contact force
-      % @param contact_wrench_struct  A cell of of structs, with fields 'active_knot' and 'cwc'
+      % @param contact_wrench_struct  A cell of of structs, with fields
+      % 'active_knot' and 'cw', where 'cw' fields contain the
+      % RigidBodyContactWrench objects
       if(nargin<7)
         options = struct();
       end
@@ -176,9 +178,15 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
       %   and 3 and 4 together.
       typecheck(constraint,'RigidBodyConstraint');
       if ~iscell(time_index)
-        % then use { time_index(1), time_index(2), ... } ,
-        % aka independent constraints for each time
-        time_index = num2cell(reshape(time_index,1,[]));
+        if isa(constraint,'MultipleTimeKinematicConstraint')
+          % then use { time_index(1), time_index(2), ... } ,
+          % aka independent constraints for each time
+          time_index = {reshape(time_index,1,[])};
+        else
+          % then use { time_index(1), time_index(2), ... } ,
+          % aka independent constraints for each time
+          time_index = num2cell(reshape(time_index,1,[]));
+        end
       end
       for j = 1:numel(time_index)
         if isa(constraint,'SingleTimeKinematicConstraint')
@@ -202,9 +210,9 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
             end
             obj.qsc_weight_inds{time_index{j}} = obj.num_vars+(1:constraint.num_pts)';
             obj = obj.addDecisionVariable(constraint.num_pts,qsc_weight_names);
-            obj = obj.addDifferentiableConstraint(cnstr{1},{obj.q_inds(:,time_index{j});obj.qsc_weight_inds{time_index{j}}},obj.kinsol_dataind(time_index{j}));
-            obj = obj.addLinearConstraint(cnstr{2},obj.qsc_weight_inds{time_index{j}});
-            obj = obj.addBoundingBoxConstraint(cnstr{3},obj.qsc_weight_inds{time_index{j}});
+            obj = obj.addConstraint(cnstr{1},{obj.q_inds(:,time_index{j});obj.qsc_weight_inds{time_index{j}}},obj.kinsol_dataind(time_index{j}));
+            obj = obj.addConstraint(cnstr{2},obj.qsc_weight_inds{time_index{j}});
+            obj = obj.addConstraint(cnstr{3},obj.qsc_weight_inds{time_index{j}});
           end
         elseif isa(constraint,'SingleTimeLinearPostureConstraint')
           cnstr = constraint.generateConstraint();
@@ -224,6 +232,40 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
       end
     end
 
+    function wrench_sol = contactWrench(obj,x)
+      % Given x as the decision variables, find out the contact wrench
+      % @param x   An obj.num_vars x 1 vector
+      % @retval wrench_sol   An length(obj.unique_contact_bodies) x obj.N array of struct, each struct contains fiels of body,
+      % body_pts, pts_pos, force and torque
+      wrench_sol = struct('body',[],'body_pts',[],'pts_pos',[],'force',[],'torque',[]);
+      for j = 1:obj.N
+        q = x(obj.q_inds(:,j));
+        kinsol = obj.robot.doKinematics(q);
+        for i = 1:length(obj.unique_contact_bodies)
+          wrench_sol(i,j).body = obj.unique_contact_bodies(i);
+          wrench_sol(i,j).body_pts = obj.unique_body_contact_pts{i};
+          wrench_sol(i,j).pts_pos = forwardKin(obj.robot,kinsol,wrench_sol(i,j).body,wrench_sol(i,j).body_pts,0);
+          num_pts_i = size(obj.unique_body_contact_pts{i},2);
+          lambda_ij = reshape(x(obj.lambda_inds{i}(:,:,j)),size(obj.lambda_inds{i}(:,:,j),1),num_pts_i);
+          force_ij = zeros(3,num_pts_i);
+          torque_ij = zeros(3,num_pts_i);
+          unique_contact_wrench_ij = unique(obj.lambda2contact_wrench{i}(obj.lambda2contact_wrench{i}(:,j)~= 0,j))';
+          for k = unique_contact_wrench_ij
+            body_pts_ijk_idx = obj.lambda2contact_wrench{i}(:,j) == k;
+            A_force = obj.contact_wrench{k}.force;
+            A_torque = obj.contact_wrench{k}.torque;
+            force_ij(:,body_pts_ijk_idx) = reshape(A_force*reshape(lambda_ij(:,body_pts_ijk_idx),[],1),3,[]);
+            torque_ij(:,body_pts_ijk_idx) = reshape(A_torque*reshape(lambda_ij(:,body_pts_ijk_idx),[],1),3,[]);
+          end
+          wrench_sol(i,j).force = force_ij;
+          wrench_sol(i,j).torque = torque_ij;
+        end
+      end
+    end
+
+  end
+
+  methods(Access = protected)
     function obj = parseRigidBodyContactWrench(obj)
       num_contact_wrench = length(obj.contact_wrench);
       obj.unique_contact_bodies = [];
@@ -328,77 +370,7 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
       end
       obj = obj.addForceNormCost();
     end
-
-    function obj = addDynamicConstraints(obj)
-      % First I find out the order of the contact_wrench such that it is in the same
-      % order of lambda
-      if(obj.add_dynamic_constraint_flag)
-        tLeft_contact_wrench_idx = [];
-        tLeft_lambda_idx = zeros(obj.num_lambda_knot,1);
-        tLeft_lambda_count = 0;
-        for j = 1:length(obj.unique_contact_bodies)
-          tLeft_valid_pt_idx = obj.lambda2contact_wrench{j}(:,1) ~= 0;
-          tLeft_lambda_idx_j_count = sum(tLeft_valid_pt_idx)*size(obj.lambda_inds{j},1);
-          tLeft_lambda_idx(tLeft_lambda_count+(1:tLeft_lambda_idx_j_count))...
-            = reshape(obj.lambda_inds{j}(:,tLeft_valid_pt_idx,1),[],1);
-          tLeft_lambda_count = tLeft_lambda_count+tLeft_lambda_idx_j_count;
-          tLeft_contact_wrench_idx = [tLeft_contact_wrench_idx unique(obj.lambda2contact_wrench{j}(tLeft_valid_pt_idx,1)','stable')];
-        end
-        tLeft_lambda_idx = tLeft_lambda_idx(1:tLeft_lambda_count);
-        obj = obj.addContactDynamicConstraints(1,{tLeft_contact_wrench_idx},{tLeft_lambda_idx});
-        for i = 2:obj.N
-          tRight_contact_wrench_idx = [];
-          tRight_lambda_idx = zeros(obj.num_lambda_knot,1);
-          tRight_lambda_count = 0;
-          for j = 1:length(obj.unique_contact_bodies)
-            tRight_valid_pt_idx = obj.lambda2contact_wrench{j}(:,i) ~= 0;
-            tRight_lambda_idx_j_count = sum(tRight_valid_pt_idx)*size(obj.lambda_inds{j},1);
-            tRight_lambda_idx(tRight_lambda_count+(1:tRight_lambda_idx_j_count))...
-              =reshape(obj.lambda_inds{j}(:,tRight_valid_pt_idx,i),[],1);
-            tRight_lambda_count = tRight_lambda_count+tRight_lambda_idx_j_count;
-            tRight_contact_wrench_idx = [tRight_contact_wrench_idx unique(obj.lambda2contact_wrench{j}(tRight_valid_pt_idx,i)','stable')];
-          end
-          tRight_lambda_idx = tRight_lambda_idx(1:tRight_lambda_count);
-          obj = obj.addContactDynamicConstraints(i,{tRight_contact_wrench_idx},{tRight_lambda_idx});
-          obj = obj.addContactDynamicConstraints([i-1,i],[{tLeft_contact_wrench_idx},{tRight_contact_wrench_idx}],[{tLeft_lambda_idx},{tRight_lambda_idx}]);
-          tLeft_contact_wrench_idx = tRight_contact_wrench_idx;
-          tLeft_lambda_idx = tRight_lambda_idx;
-          tLeft_lambda_count = tRight_lambda_count;
-        end
-      end
-    end
-
-    function wrench_sol = contactWrench(obj,x)
-      % Given x as the decision variables, find out the contact wrench
-      % @param x   An obj.num_vars x 1 vector
-      % @retval wrench_sol   An length(obj.unique_contact_bodies) x obj.N array of struct, each struct contains fiels of body,
-      % body_pts, pts_pos, force and torque
-      wrench_sol = struct('body',[],'body_pts',[],'pts_pos',[],'force',[],'torque',[]);
-      for j = 1:obj.N
-        q = x(obj.q_inds(:,j));
-        kinsol = obj.robot.doKinematics(q);
-        for i = 1:length(obj.unique_contact_bodies)
-          wrench_sol(i,j).body = obj.unique_contact_bodies(i);
-          wrench_sol(i,j).body_pts = obj.unique_body_contact_pts{i};
-          wrench_sol(i,j).pts_pos = forwardKin(obj.robot,kinsol,wrench_sol(i,j).body,wrench_sol(i,j).body_pts,0);
-          num_pts_i = size(obj.unique_body_contact_pts{i},2);
-          lambda_ij = reshape(x(obj.lambda_inds{i}(:,:,j)),size(obj.lambda_inds{i}(:,:,j),1),num_pts_i);
-          force_ij = zeros(3,num_pts_i);
-          torque_ij = zeros(3,num_pts_i);
-          unique_contact_wrench_ij = unique(obj.lambda2contact_wrench{i}(obj.lambda2contact_wrench{i}(:,j)~= 0,j))';
-          for k = unique_contact_wrench_ij
-            body_pts_ijk_idx = obj.lambda2contact_wrench{i}(:,j) == k;
-            A_force = obj.contact_wrench{k}.force;
-            A_torque = obj.contact_wrench{k}.torque;
-            force_ij(:,body_pts_ijk_idx) = reshape(A_force*reshape(lambda_ij(:,body_pts_ijk_idx),[],1),3,[]);
-            torque_ij(:,body_pts_ijk_idx) = reshape(A_torque*reshape(lambda_ij(:,body_pts_ijk_idx),[],1),3,[]);
-          end
-          wrench_sol(i,j).force = force_ij;
-          wrench_sol(i,j).torque = torque_ij;
-        end
-      end
-    end
-
+    
     function obj = addForceNormCost(obj)
       % add a quadratic cost on sum_i,j force_j[i]'*obj.Q_contact_force*force_j[i]
       A_force = cell(length(obj.contact_wrench),1);
@@ -435,9 +407,46 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
       force_norm_cost = force_norm_cost.setSparseStructure(ones(length(active_lambda_inds),1),active_lambda_inds);
       obj = obj.addCost(force_norm_cost);
     end
+    
+    function obj = addSimpleDynamicConstraints(obj)
+      % First I find out the order of the contact_wrench such that it is in the same
+      % order of lambda
+      tLeft_contact_wrench_idx = [];
+      tLeft_lambda_idx = zeros(obj.num_lambda_knot,1);
+      tLeft_lambda_count = 0;
+      for j = 1:length(obj.unique_contact_bodies)
+        tLeft_valid_pt_idx = obj.lambda2contact_wrench{j}(:,1) ~= 0;
+        tLeft_lambda_idx_j_count = sum(tLeft_valid_pt_idx)*size(obj.lambda_inds{j},1);
+        tLeft_lambda_idx(tLeft_lambda_count+(1:tLeft_lambda_idx_j_count))...
+          = reshape(obj.lambda_inds{j}(:,tLeft_valid_pt_idx,1),[],1);
+        tLeft_lambda_count = tLeft_lambda_count+tLeft_lambda_idx_j_count;
+        tLeft_contact_wrench_idx = [tLeft_contact_wrench_idx unique(obj.lambda2contact_wrench{j}(tLeft_valid_pt_idx,1)','stable')];
+      end
+      tLeft_lambda_idx = tLeft_lambda_idx(1:tLeft_lambda_count);
+      obj = obj.addContactDynamicConstraints(1,{tLeft_contact_wrench_idx},{tLeft_lambda_idx});
+      for i = 2:obj.N
+        tRight_contact_wrench_idx = [];
+        tRight_lambda_idx = zeros(obj.num_lambda_knot,1);
+        tRight_lambda_count = 0;
+        for j = 1:length(obj.unique_contact_bodies)
+          tRight_valid_pt_idx = obj.lambda2contact_wrench{j}(:,i) ~= 0;
+          tRight_lambda_idx_j_count = sum(tRight_valid_pt_idx)*size(obj.lambda_inds{j},1);
+          tRight_lambda_idx(tRight_lambda_count+(1:tRight_lambda_idx_j_count))...
+            =reshape(obj.lambda_inds{j}(:,tRight_valid_pt_idx,i),[],1);
+          tRight_lambda_count = tRight_lambda_count+tRight_lambda_idx_j_count;
+          tRight_contact_wrench_idx = [tRight_contact_wrench_idx unique(obj.lambda2contact_wrench{j}(tRight_valid_pt_idx,i)','stable')];
+        end
+        tRight_lambda_idx = tRight_lambda_idx(1:tRight_lambda_count);
+        obj = obj.addContactDynamicConstraints(i,{tRight_contact_wrench_idx},{tRight_lambda_idx});
+        obj = obj.addContactDynamicConstraints([i-1,i],[{tLeft_contact_wrench_idx},{tRight_contact_wrench_idx}],[{tLeft_lambda_idx},{tRight_lambda_idx}]);
+        tLeft_contact_wrench_idx = tRight_contact_wrench_idx;
+        tLeft_lambda_idx = tRight_lambda_idx;
+        tLeft_lambda_count = tRight_lambda_count;
+      end
+    end
   end
-
-  methods(Abstract)
+  
+  methods(Abstract,Access = protected)
     obj = addContactDynamicConstraints(obj,num_knot,contact_wrench_idx, knot_lambda_idx)
   end
 end

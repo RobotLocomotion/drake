@@ -5,8 +5,8 @@ using namespace Eigen;
 
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
-  if (nrhs != 2 || nlhs != 11) {
-    mexErrMsgIdAndTxt("Drake:testGeometryGradientsmex:BadInputs","Usage [omega2qd, domega2qd, omega2rpyd, domega2rpyd, ddomega2rpyd, rpyd2omega, qd2omega, dqd2omega, dq2R, drpydR, dqdR] = testGeometryGradientsmex(q, dq)");
+  if (nrhs != 2 || nlhs != 12) {
+    mexErrMsgIdAndTxt("Drake:testGeometryConversionFunctionsmex:BadInputs","Usage [omega2qd, domega2qd, omega2rpyd, domega2rpyd, ddomega2rpyd, rpyd2omega, drpyd2omega,qd2omega, dqd2omega, dq2R, drpydR, dqdR] = testGeometryConversionFunctionsmex(q, dq)");
   }
 
   int argnum = 0;
@@ -26,7 +26,9 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
   angularvel2quatdotMatrix(q, omega2qd, &domega2qd);
   angularvel2rpydotMatrix(rpy, omega2rpyd, &domega2rpyd, &ddomega2rpyd);
-  auto rpyd2omega = rpydot2angularvelMatrix(rpy);
+  Matrix<double, SPACE_DIMENSION, RPY_SIZE> rpyd2omega;
+  typename Gradient<Matrix<double,SPACE_DIMENSION,RPY_SIZE>,RPY_SIZE,1>::type drpyd2omega;
+  rpydot2angularvelMatrix(rpy,rpyd2omega,&drpyd2omega);
   quatdot2angularvelMatrix(q, qd2omega, &dqd2omega);
   auto R = quat2rotmat(q);
   auto dq2R = dquat2rotmat(q);
@@ -41,6 +43,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   plhs[outnum++] = eigenToMatlab(domega2rpyd);
   plhs[outnum++] = eigenToMatlab(ddomega2rpyd);
   plhs[outnum++] = eigenToMatlab(rpyd2omega);
+  plhs[outnum++] = eigenToMatlab(drpyd2omega);
   plhs[outnum++] = eigenToMatlab(qd2omega);
   plhs[outnum++] = eigenToMatlab(dqd2omega);
   plhs[outnum++] = eigenToMatlab(dq2R);

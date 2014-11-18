@@ -27,7 +27,7 @@ x0.base_ydot = 5;
 u0 = double(nominalThrust(r));
 
 %if (nargout<1)
-  v = constructVisualizer(r);%,struct('use_contact_shapes',true));
+  v = constructVisualizer(r);%,struct('use_collision_geometry',true));
   v.draw(0,double(x0));
 
   prog = addPlanVisualizer(r,prog);

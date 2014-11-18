@@ -49,13 +49,14 @@ classdef DoubleIntegrator < LinearSystem
       costfun = @mintime_cost;
 %      costfun = @lqr_cost;
       xbins = {[-3:.2:3],[-4:.2:4]};
-      mdp = MarkovDecisionProcess.discretizeSystem(p,costfun,xbins,linspace(-1,1,9),options);
+      ubins = linspace(p.umin,p.umax,9);
+      mdp = MarkovDecisionProcess.discretizeSystem(p,costfun,xbins,ubins,options);
       
       function drawfun(J,PI)
         figure(2); clf;
         n1=length(xbins{1});
         n2=length(xbins{2});
-        subplot(2,1,1);imagesc(xbins{1},xbins{2},reshape(PI,n1,n2)');
+        subplot(2,1,1);imagesc(xbins{1},xbins{2},reshape(ubins(PI),n1,n2)');
         axis xy;
         xlabel('q');
         ylabel('qdot');

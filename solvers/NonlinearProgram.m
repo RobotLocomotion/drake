@@ -172,6 +172,7 @@ classdef NonlinearProgram
       obj.solver_options.snopt.LinesearchTolerance = 0.9;
       obj.solver_options.fmincon.GradConstr = 'on';
       obj.solver_options.fmincon.GradObj = 'on';
+      obj.solver_options.snopt.sense = 'Minimize';
       obj.constraint_err_tol = 1e-4;
       obj.check_grad = false;
     end
@@ -833,6 +834,15 @@ classdef NonlinearProgram
             error('Drake:NonlinearProgram:setSolverOptions:OptionVal', 'LinesearchTolerance should be between 0 and 1');
           end
           obj.solver_options.snopt.LinesearchTolerance = optionval;
+        elseif(strcmpi(optionname(~isspace(optionname)),'sense'))
+          if(~ischar(optionval))
+            error('Drake:NonlinearProgram:setSolverOptions:OptionVal', 'sense should be a string');
+          end
+          if(~any(strcmp(optionval,{'Minimize','Maximize','Feasible point'})))
+            error('Drake:NonlinearProgram:setSolverOptions:Sense', ...
+              'sense must be one of the following: ''Minimize'', ''Maximize'', ''Feasible point''');
+          end
+          obj.solver_options.snopt.sense = optionval;
         end
       elseif(strcmpi((solver),'fmincon'))
         obj.solver_options.fmincon = optimset(obj.solver_options.fmincon, optionname, optionval);
@@ -917,6 +927,10 @@ classdef NonlinearProgram
       %                    -201  -- In ipopt, non-IPOPT exception thrown
       %                    -202  -- In ipopt, insufficient memory
       %                    -299  -- In ipopt, internal error
+      % 
+      % When using fmincon, if the algorithm is not specified through
+      % setSolverOptions('fmincon','Algorithm',ALGORITHM), then it will
+      % iterate all possible algorithms in fmincon to search for a solution.
       switch lower(obj.solver)
         case 'snopt'
           [x,objval,exitflag,infeasible_constraint_name] = snopt(obj,x0);
@@ -1264,12 +1278,13 @@ classdef NonlinearProgram
       snseti('Old Basis File',obj.solver_options.snopt.OldBasisFile);
       snseti('Backup Basis File',obj.solver_options.snopt.BackupBasisFile);
       snsetr('Linesearch tolerance',obj.solver_options.snopt.LinesearchTolerance);
+      snset(obj.solver_options.snopt.sense)
 
       function [f,G] = snopt_userfun(x_free)
         x_all = zeros(obj.num_vars,1);
         x_all(free_x_idx) = x_free;
         x_all(fix_x_idx) = x_fix;
-        [f,G] = geval(@obj.objectiveAndNonlinearConstraints,x_all);
+        [f,G] = objectiveAndNonlinearConstraints(obj,x_all);
         f = [f;zeros(length(bin_free)+length(beq_free),1)];
         
         G = G(sub2ind(size(G),iGfun,jGvar));
@@ -1346,8 +1361,27 @@ classdef NonlinearProgram
         dceq = dh';
       end
       
-      [x,objval,exitflag] = fmincon(@obj.objective,x0,full(obj.Ain),...
-        obj.bin,full(obj.Aeq),obj.beq,obj.x_lb,obj.x_ub,@fmincon_userfun,obj.solver_options.fmincon);
+      if(isempty(obj.solver_options.fmincon.Algorithm))
+        algorithms = {'interior-point','sqp','active-set','trust-region-reflective'};
+        fmincon_options = obj.solver_options.fmincon;
+        for i = 1:length(algorithms)
+          fmincon_options.Algorithm = algorithms{i};
+          try
+          [x,objval,exitflag] = fmincon(@obj.objective,x0,full(obj.Ain),...
+            obj.bin,full(obj.Aeq),obj.beq,obj.x_lb,obj.x_ub,@fmincon_userfun,fmincon_options);
+          catch err
+            if(~strcmp(err.identifier,'optimlib:fmincon:ConstrTRR'))
+              rethrow(err);
+            end
+          end
+          if(exitflag == 1)
+            break;
+          end
+        end
+      else
+        [x,objval,exitflag] = fmincon(@obj.objective,x0,full(obj.Ain),...
+            obj.bin,full(obj.Aeq),obj.beq,obj.x_lb,obj.x_ub,@fmincon_userfun,obj.solver_options.fmincon);
+      end
       objval = full(objval);
       
       
