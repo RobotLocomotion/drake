@@ -7,9 +7,6 @@
   #include <math.h>
   #define isnan(x) _isnan(x)
   #define isinf(x) (!_finite(x))
-//  #define isinf(x) _isinf(x) 
-  #undef _CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES
-  #define _CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES 1
 #else
   #define isnan(x) std::isnan(x)
   #define isinf(x) std::isinf(x)
