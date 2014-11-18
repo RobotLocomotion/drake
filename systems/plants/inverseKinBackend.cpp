@@ -762,8 +762,8 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
       }
       snopt::doublereal* Flow = new snopt::doublereal[nF];
       snopt::doublereal* Fupp = new snopt::doublereal[nF];
-      Flow[0] = 0;
-      Fupp[0] = std::numeric_limits<int>::infinity();
+      Flow[0] = 0.0;
+      Fupp[0] = std::numeric_limits<double>::infinity();
       for(int k = 0;k<nc_array[i];k++)
       {
         Flow[1+k] = Cmin_array[i](k);
@@ -821,13 +821,13 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
       }
 
       snopt::integer minrw,miniw,mincw;
-      snopt::integer lenrw = 10000000, leniw = 500000, lencw = 500;
+      snopt::integer lenrw = 10000000, leniw = 500000;
       snopt::doublereal* rw;
       rw = (snopt::doublereal*) std::calloc(lenrw,sizeof(snopt::doublereal));
       //doublereal rw[lenrw];
       snopt::integer* iw;
       iw = (snopt::integer*) std::calloc(lenrw,sizeof(snopt::integer));
-      char cw[8*500];
+      char cw[8*500]; snopt::integer lencw = 500;  // these two should match (but don't want to bother with dynamic allocation)
 
       snopt::integer Cold = 0; //, Basis = 1, Warm = 2;
       snopt::doublereal *xmul = new snopt::doublereal[nx];
@@ -873,22 +873,22 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
       //snopt::snfilewrapper_(specname,&iSpecs,&INFO_snopt[i],cw,&lencw,iw,&leniw,rw,&lenrw,spec_len,8*lencw);
       char strOpt1[200] = "Derivative option";
       snopt::integer DerOpt = 1, strOpt_len = static_cast<snopt::integer>(strlen(strOpt1));
-      snopt::snseti_(strOpt1,&DerOpt,&iPrint,&iSumm,&INFO_snopt[i],cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500);
+      snopt::snseti_(strOpt1,&DerOpt,&iPrint,&iSumm,&INFO_snopt[i],cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*lencw);
       char strOpt2[200] = "Major optimality tolerance";
 	  strOpt_len = static_cast<snopt::integer>(strlen(strOpt2));
-      snopt::snsetr_(strOpt2,&SNOPT_MajorOptimalityTolerance,&iPrint,&iSumm,&INFO_snopt[i],cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500);
+      snopt::snsetr_(strOpt2,&SNOPT_MajorOptimalityTolerance,&iPrint,&iSumm,&INFO_snopt[i],cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*lencw);
       char strOpt3[200] = "Major feasibility tolerance";
 	  strOpt_len = static_cast<snopt::integer>(strlen(strOpt3));
-      snopt::snsetr_(strOpt3,&SNOPT_MajorFeasibilityTolerance,&iPrint,&iSumm,&INFO_snopt[i],cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500);
+      snopt::snsetr_(strOpt3,&SNOPT_MajorFeasibilityTolerance,&iPrint,&iSumm,&INFO_snopt[i],cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*lencw);
       char strOpt4[200] = "Superbasics limit";
 	  strOpt_len = static_cast<snopt::integer>(strlen(strOpt4));
-      snopt::snseti_(strOpt4,&SNOPT_SuperbasicsLimit,&iPrint,&iSumm,&INFO_snopt[i],cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500);
+      snopt::snseti_(strOpt4,&SNOPT_SuperbasicsLimit,&iPrint,&iSumm,&INFO_snopt[i],cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*lencw);
       char strOpt5[200] = "Major iterations limit";
 	  strOpt_len = static_cast<snopt::integer>(strlen(strOpt5));
-      snopt::snseti_(strOpt5,&SNOPT_MajorIterationsLimit,&iPrint,&iSumm,&INFO_snopt[i],cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500);
+      snopt::snseti_(strOpt5,&SNOPT_MajorIterationsLimit,&iPrint,&iSumm,&INFO_snopt[i],cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*lencw);
       char strOpt6[200] = "Iterations limit";
 	  strOpt_len = static_cast<snopt::integer>(strlen(strOpt6));
-      snopt::snseti_(strOpt6,&SNOPT_IterationsLimit,&iPrint,&iSumm,&INFO_snopt[i],cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500);
+      snopt::snseti_(strOpt6,&SNOPT_IterationsLimit,&iPrint,&iSumm,&INFO_snopt[i],cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*lencw);
      
 
       //debug only
@@ -983,11 +983,11 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
       {
         double *ub_err = new double[nF];
         double *lb_err = new double[nF];
-        double max_lb_err = -std::numeric_limits<int>::infinity();
-        double max_ub_err = -std::numeric_limits<int>::infinity();
+        double max_lb_err = -std::numeric_limits<double>::infinity();
+        double max_ub_err = -std::numeric_limits<double>::infinity();
         bool *infeasible_constraint_idx = new bool[nF];
-        ub_err[0] = -std::numeric_limits<int>::infinity();
-        lb_err[0] = -std::numeric_limits<int>::infinity();
+        ub_err[0] = -std::numeric_limits<double>::infinity();
+        lb_err[0] = -std::numeric_limits<double>::infinity();
         infeasible_constraint_idx[0] = false;
         for(int j = 1;j<nF;j++)
         {
@@ -1795,12 +1795,12 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
       }
     }
     snopt::integer minrw,miniw,mincw;
-    snopt::integer lenrw = 20000000, leniw = 2000000, lencw = 5000;
+    snopt::integer lenrw = 20000000, leniw = 2000000;
     snopt::doublereal* rw;
     rw = (snopt::doublereal*) std::calloc(lenrw,sizeof(snopt::doublereal));
     snopt::integer* iw;
     iw = (snopt::integer*) std::calloc(leniw,sizeof(snopt::integer));
-    char cw[8*5000];
+    char cw[8*5000]; snopt::ineteger lencw = 5000;  // these two should match (but don't want to bother with dynamic allocation)
 
     snopt::integer Cold = 0; //, Basis = 1; //, Warm = 2;
     snopt::doublereal *xmul = new snopt::doublereal[nx];
@@ -1838,22 +1838,22 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
     snopt::sninit_(&iPrint,&iSumm,cw,&lencw,iw,&leniw,rw,&lenrw,8*500);
     char strOpt1[200] = "Derivative option";
     snopt::integer DerOpt = 1, strOpt_len = static_cast<snopt::integer>(strlen(strOpt1));
-    snopt::snseti_(strOpt1,&DerOpt,&iPrint,&iSumm,INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500);
+    snopt::snseti_(strOpt1,&DerOpt,&iPrint,&iSumm,INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*lencw);
     char strOpt2[200] = "Major optimality tolerance";
 	strOpt_len = static_cast<snopt::integer>(strlen(strOpt2));
-    snopt::snsetr_(strOpt2,&SNOPT_MajorOptimalityTolerance,&iPrint,&iSumm,INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500);
+    snopt::snsetr_(strOpt2,&SNOPT_MajorOptimalityTolerance,&iPrint,&iSumm,INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*lencw);
     char strOpt3[200] = "Major feasibility tolerance";
     strOpt_len = static_cast<snopt::integer>(strlen(strOpt3));
-    snopt::snsetr_(strOpt3,&SNOPT_MajorFeasibilityTolerance,&iPrint,&iSumm,INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500);
+    snopt::snsetr_(strOpt3,&SNOPT_MajorFeasibilityTolerance,&iPrint,&iSumm,INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*lencw);
     char strOpt4[200] = "Superbasics limit";
 	strOpt_len = static_cast<snopt::integer>(strlen(strOpt4));
-    snopt::snseti_(strOpt4,&SNOPT_SuperbasicsLimit,&iPrint,&iSumm,INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500);
+    snopt::snseti_(strOpt4,&SNOPT_SuperbasicsLimit,&iPrint,&iSumm,INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*lencw);
     char strOpt5[200] = "Major iterations limit";
     strOpt_len = static_cast<snopt::integer>(strlen(strOpt5));
-    snopt::snseti_(strOpt5,&SNOPT_MajorIterationsLimit,&iPrint,&iSumm,INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500);
+    snopt::snseti_(strOpt5,&SNOPT_MajorIterationsLimit,&iPrint,&iSumm,INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*lencw);
     char strOpt6[200] = "Iterations limit";
 	strOpt_len = static_cast<snopt::integer>(strlen(strOpt6));
-    snopt::snseti_(strOpt6,&SNOPT_IterationsLimit,&iPrint,&iSumm,INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500);
+    snopt::snseti_(strOpt6,&SNOPT_IterationsLimit,&iPrint,&iSumm,INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*lencw);
     //debug only
     /*MATFile *pmat;
     pmat = matOpen("inverseKinBackend_cpp.mat","w");
