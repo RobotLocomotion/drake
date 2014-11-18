@@ -28,7 +28,8 @@
 #include "RigidBody.h"
 #include "RigidBodyFrame.h"
 
-#define INF std::numeric_limits<int>::infinity()
+#define INF -2147483648    // this number is only used for checking the pitch to see if it's a revolute joint or a helical joint, and is set to match the value handed to us for inf from matlab.
+
 using namespace Eigen;
 
 //extern std::set<int> emptyIntSet;  // was const std:set<int> emptyIntSet, but valgrind said I was leaking memory
