@@ -1800,7 +1800,7 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
     rw = (snopt::doublereal*) std::calloc(lenrw,sizeof(snopt::doublereal));
     snopt::integer* iw;
     iw = (snopt::integer*) std::calloc(leniw,sizeof(snopt::integer));
-    char cw[8*5000]; snopt::ineteger lencw = 5000;  // these two should match (but don't want to bother with dynamic allocation)
+    char cw[8*5000]; snopt::integer lencw = 5000;  // these two should match (but don't want to bother with dynamic allocation)
 
     snopt::integer Cold = 0; //, Basis = 1; //, Warm = 2;
     snopt::doublereal *xmul = new snopt::doublereal[nx];
