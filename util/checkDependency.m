@@ -376,6 +376,16 @@ else % then try to evaluate the dependency now...
           disp(' ');
         end
       end
+      
+    case 'nonlinearprogramsnoptmex'
+      conf.nonlinearprogramsnoptmex_enabled = logical(exist('NonlinearProgramSnoptmex','file')==3);
+      if(~conf.nonlinearprogramsnoptmex_enabled)
+        if(nargout<1)
+          disp(' ');
+          disp(' NonlinearProgramSnoptmex is disabled. To enable it, compile NonlinearProgramSnoptmex.cpp with snopt');
+          disp(' ');
+        end
+      end
 
     case 'iris'
       conf.iris_enabled = logical(exist('+iris/inflate_region.m','file')); 
@@ -439,7 +449,7 @@ end
 
 function [snopt_enabled,studentsnopt_enabled] = snoptEnabled()
 % check if snopt exists, if it does, check if it is student version
-snopt_val = logical(exist('snset','file'));
+snopt_val = logical(exist('snopt.m','file'));
 if(snopt_val)
   snopt_path = which('snopt.m');
   snopt_readme=fileread([snopt_path(1:end-7),'README']);

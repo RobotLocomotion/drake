@@ -19,9 +19,18 @@ if (gurobi_FOUND AND eigen3_FOUND)
 	pods_install_headers(fastQP.h gurobiQP.h DESTINATION drake)
 	pods_install_pkg_config_file(drake-qp
 	    LIBS -ldrakeQP
-	    REQUIRES gurobi 
+	    REQUIRES gurobi
 	    VERSION 0.0.1)
 
 endif()
 
+pods_find_pkg_config(snopt_cpp)
 
+
+if(snopt_cpp_FOUND)
+	find_library(GFORTRAN_LIBRARY NAMES gfortran libgfortran PATHS ${MATLAB_ROOT}/sys/os/*/)
+  add_mex(NonlinearProgramSnoptmex NonlinearProgramSnoptmex.cpp)
+  pods_use_pkg_config_packages(NonlinearProgramSnoptmex snopt_cpp)
+  set_target_properties(NonlinearProgramSnoptmex PROPERTIES COMPILE_FLAGS -fPIC)
+	target_link_libraries(NonlinearProgramSnoptmex ${GFORTRAN_LIBRARY})
+endif()
