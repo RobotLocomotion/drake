@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 2.8.6) # for UseJava.cmake
+#cmake_policy(SET CMP0042 NEW)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
