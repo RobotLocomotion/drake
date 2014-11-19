@@ -1,5 +1,9 @@
 *.autosave
 *.mex*
+*.exp
+*.pdb
+*.lib
+*.ilk
 *.o
 *.aux
 *.log

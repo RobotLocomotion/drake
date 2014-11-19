@@ -54,7 +54,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   double* pts = mxGetPr(prhs[1]);
 
   int i,j;
-  int m = mxGetM(prhs[1]), n=mxGetN(prhs[1]), d=m+1;
+  int m = static_cast<int>(mxGetM(prhs[1])), n=static_cast<int>(mxGetN(prhs[1])), d=m+1;
 
   if (mxGetNumberOfElements(prhs[0])!=m)
     mexErrMsgIdAndTxt("Drake:barycentricInterpolation:BadInput","the number of bins must equal the dimension of the points");
@@ -65,7 +65,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   int* nskip = new int[m];  // offsets for inline sub2ind
   for (i=0; i<m; i++) {
     pbin = mxGetCell(prhs[0],i);
-    binsize[i] = mxGetNumberOfElements(pbin);
+    binsize[i] = static_cast<int>(mxGetNumberOfElements(pbin));
     bins[i]=mxGetPr(pbin);
     if (i==0) nskip[i]=1;
     else nskip[i] = nskip[i-1]*binsize[i-1];

@@ -26,7 +26,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
   if (mxGetNumberOfElements(prhs[1])!=model->NB)
     mexErrMsgIdAndTxt("Drake:doKinematicsmex:BadInputs", "q must be size %d x 1", model->NB);
   q = mxGetPr(prhs[1]);
-  bool b_compute_second_derivatives = (bool) mxGetScalar(prhs[2]);
+  bool b_compute_second_derivatives = (mxGetScalar(prhs[2])!=0.0);
   if (mxGetNumberOfElements(prhs[3])>0) 
     qd = mxGetPr(prhs[3]);
      

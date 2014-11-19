@@ -12,6 +12,7 @@
 #ifndef DRAKE_UTIL_H_
 #define DRAKE_UTIL_H_
 
+#undef DLLEXPORT
 #if defined(WIN32) || defined(WIN64)
   #if defined(drakeUtil_EXPORTS)
     #define DLLEXPORT __declspec( dllexport )

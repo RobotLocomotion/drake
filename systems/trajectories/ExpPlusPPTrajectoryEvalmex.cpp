@@ -45,7 +45,7 @@ public:
     return F;
   }
 
-  Eval(const VectorXd& breaks, const MatrixXd& K, const MatrixXd& A, const MatrixXd& alpha, const MatrixXd& gamma) : m_breaks(breaks), m_K(K), m_A(A), m_alpha(alpha), m_gamma(gamma), m_n(alpha.cols()), m_d(K.rows()), m_p(gamma.cols()) {}
+  Eval(const VectorXd& breaks, const MatrixXd& K, const MatrixXd& A, const MatrixXd& alpha, const MatrixXd& gamma) : m_breaks(breaks), m_K(K), m_A(A), m_alpha(alpha), m_gamma(gamma), m_n(static_cast<int>(alpha.cols())), m_d(static_cast<int>(K.rows())), m_p(static_cast<int>(gamma.cols())) {}
 
   int dim() {
     return m_d;
@@ -62,7 +62,7 @@ public:
   }
 
   void compute(const VectorXd& t, Map<MatrixXd>& y, Map<MatrixXd>& jj) {
-    int m = t.rows();
+    int m = static_cast<int>(t.rows());
     for(int k=0; k<m; k++) {
       double tk = t(k);
       // find the right interval
@@ -124,7 +124,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
       Map<VectorXd> t(mxGetPr(prhs[1]), mxGetNumberOfElements(prhs[1]));
 
-      int m = t.rows();
+      int m = static_cast<int>(t.rows());
       int d = eval->dim();
 
       plhs[0] = mxCreateDoubleMatrix(d,m,mxREAL);

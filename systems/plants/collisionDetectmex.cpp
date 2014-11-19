@@ -37,7 +37,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
     //DEBUG
     //cout << "collisionDetectmex: Received body_idx" << endl;
     //END_DEBUG
-    int n_active_bodies = mxGetNumberOfElements(body_idx);
+    int n_active_bodies = static_cast<int>(mxGetNumberOfElements(body_idx));
     //DEBUG
     //cout << "collisionDetectmex: n_active_bodies = " << n_active_bodies << endl;
     //END_DEBUG
@@ -53,10 +53,10 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   const mxArray* collision_groups = mxGetField(active_collision_options,0,
                                                "collision_groups");
   if (collision_groups != NULL) {
-    int num = mxGetNumberOfElements(collision_groups);
+    int num = static_cast<int>(mxGetNumberOfElements(collision_groups));
     for (int i=0; i<num; i++) {
       const mxArray *ptr = mxGetCell(collision_groups,i);
-      int buflen = mxGetN(ptr)*sizeof(mxChar)+1;
+      int buflen = static_cast<int>(mxGetN(ptr)*sizeof(mxChar))+1;
       char* str = (char*)mxMalloc(buflen);
       mxGetString(ptr, str, buflen);
       active_group_names.insert(str);
@@ -92,27 +92,27 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
       [](int i){return ++i;});
 
   if (nlhs>0) {
-    plhs[0] = mxCreateDoubleMatrix(3,ptsA.cols(),mxREAL);
+    plhs[0] = mxCreateDoubleMatrix(3,static_cast<int>(ptsA.cols()),mxREAL);
     memcpy(mxGetPr(plhs[0]),ptsA.data(),sizeof(double)*3*ptsA.cols());
   }
   if (nlhs>1) {
-    plhs[1] = mxCreateDoubleMatrix(3,ptsB.cols(),mxREAL);
+    plhs[1] = mxCreateDoubleMatrix(3,static_cast<int>(ptsB.cols()),mxREAL);
     memcpy(mxGetPr(plhs[1]),ptsB.data(),sizeof(double)*3*ptsB.cols());
   }
   if (nlhs>2) {
-    plhs[2] = mxCreateDoubleMatrix(3,normals.cols(),mxREAL);
+    plhs[2] = mxCreateDoubleMatrix(3,static_cast<int>(normals.cols()),mxREAL);
     memcpy(mxGetPr(plhs[2]),normals.data(),sizeof(double)*3*normals.cols());
   }
   if (nlhs>3) {
-    plhs[3] = mxCreateDoubleMatrix(1,dist.size(),mxREAL);
+    plhs[3] = mxCreateDoubleMatrix(1,static_cast<int>(dist.size()),mxREAL);
     memcpy(mxGetPr(plhs[3]),dist.data(),sizeof(double)*dist.size());
   }
   if (nlhs>4) {
-    plhs[4] = mxCreateNumericMatrix(1,idxA.size(),mxINT32_CLASS,mxREAL);
+    plhs[4] = mxCreateNumericMatrix(1,static_cast<int>(idxA.size()),mxINT32_CLASS,mxREAL);
     memcpy(mxGetPr(plhs[4]),idxA.data(),sizeof(int32_T)*idxA.size());
   }
   if (nlhs>5) {
-    plhs[5] = mxCreateNumericMatrix(1,idxB.size(),mxINT32_CLASS,mxREAL);
+    plhs[5] = mxCreateNumericMatrix(1,static_cast<int>(idxB.size()),mxINT32_CLASS,mxREAL);
     memcpy(mxGetPr(plhs[5]),idxB.data(),sizeof(int32_T)*idxB.size());
   }
 }

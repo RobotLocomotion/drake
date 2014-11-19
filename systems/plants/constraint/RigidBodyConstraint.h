@@ -15,7 +15,7 @@
 #include <Eigen/Sparse>
 #include <sstream>
 
-
+#undef DLLEXPORT 
 #if defined(WIN32) || defined(WIN64)
   #if defined(drakeRigidBodyConstraint_EXPORTS)
     #define DLLEXPORT __declspec( dllexport )

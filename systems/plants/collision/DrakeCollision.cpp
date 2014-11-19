@@ -16,9 +16,9 @@ namespace DrakeCollision
   shared_ptr<Model> newModel()
   {
 #ifdef BULLET_COLLISION
-    return newModel(ModelType::BULLET);
+    return newModel(BULLET);
 #else
-    return newModel(ModelType::NONE);
+    return newModel(NONE);
 #endif
   }
 
