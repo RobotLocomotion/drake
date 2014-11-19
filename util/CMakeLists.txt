@@ -38,16 +38,6 @@ if (eigen3_FOUND)
   pods_install_libraries(drakeGeometryUtil)
   pods_install_headers(drakeGeometryUtil.h DESTINATION drake)
 
-  if (NOT WIN32)
-  add_mex(test/testQuatmex test/testQuatmex.cpp)
-  target_link_libraries(test/testQuatmex drakeGeometryUtil)
-
-  add_mex(test/testGeometryGradientsmex test/testGeometryGradientsmex.cpp)
-  target_link_libraries(test/testGeometryGradientsmex drakeGeometryUtil)
-
-  add_mex(test/testGeometryConversionFunctionsmex test/testGeometryConversionFunctionsmex.cpp)
-  target_link_libraries(test/testGeometryConversionFunctionsmex drakeGeometryUtil)
-  endif()
 endif()
 
 add_subdirectory(test)
