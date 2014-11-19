@@ -1270,21 +1270,6 @@ classdef NonlinearProgram
       jGvar_free = x2freeXmap(jGvar(jGvar_free_idx));
       
       A_free = [Ain_free;Aeq_free];
-      snseti('Major Iterations Limit',obj.solver_options.snopt.MajorIterationsLimit);
-      snseti('Minor Iterations Limit',obj.solver_options.snopt.MinorIterationsLimit);
-      snsetr('Major Optimality Tolerance',obj.solver_options.snopt.MajorOptimalityTolerance);
-      snsetr('Major Feasibility Tolerance',obj.solver_options.snopt.MajorFeasibilityTolerance);
-      snsetr('Minor Feasibility Tolerance',obj.solver_options.snopt.MinorFeasibilityTolerance);
-      snseti('Superbasics Limit',obj.solver_options.snopt.SuperbasicsLimit);
-      snseti('Derivative Option',obj.solver_options.snopt.DerivativeOption);
-      snseti('Verify level',obj.solver_options.snopt.VerifyLevel);
-      snseti('Iterations Limit',obj.solver_options.snopt.IterationsLimit);
-      snseti('Scale option',obj.solver_options.snopt.scaleoption);
-      snseti('New Basis File',obj.solver_options.snopt.NewBasisFile);
-      snseti('Old Basis File',obj.solver_options.snopt.OldBasisFile);
-      snseti('Backup Basis File',obj.solver_options.snopt.BackupBasisFile);
-      snsetr('Linesearch tolerance',obj.solver_options.snopt.LinesearchTolerance);
-      snset(obj.solver_options.snopt.sense)
      
       function [f,G] = snopt_userfun(x_free)
         x_all = zeros(obj.num_vars,1);
@@ -1339,6 +1324,22 @@ classdef NonlinearProgram
           Avals,iAfun,jAvar,...
           iGfun_free,jGvar_free,obj.solver_options.snopt);
       elseif(obj.which_snopt == 2)
+        snseti('Major Iterations Limit',obj.solver_options.snopt.MajorIterationsLimit);
+        snseti('Minor Iterations Limit',obj.solver_options.snopt.MinorIterationsLimit);
+        snsetr('Major Optimality Tolerance',obj.solver_options.snopt.MajorOptimalityTolerance);
+        snsetr('Major Feasibility Tolerance',obj.solver_options.snopt.MajorFeasibilityTolerance);
+        snsetr('Minor Feasibility Tolerance',obj.solver_options.snopt.MinorFeasibilityTolerance);
+        snseti('Superbasics Limit',obj.solver_options.snopt.SuperbasicsLimit);
+        snseti('Derivative Option',obj.solver_options.snopt.DerivativeOption);
+        snseti('Verify level',obj.solver_options.snopt.VerifyLevel);
+        snseti('Iterations Limit',obj.solver_options.snopt.IterationsLimit);
+        snseti('Scale option',obj.solver_options.snopt.ScaleOption);
+        snseti('New Basis File',obj.solver_options.snopt.NewBasisFile);
+        snseti('Old Basis File',obj.solver_options.snopt.OldBasisFile);
+        snseti('Backup Basis File',obj.solver_options.snopt.BackupBasisFile);
+        snsetr('Linesearch tolerance',obj.solver_options.snopt.LinesearchTolerance);
+        snset(obj.solver_options.snopt.sense);
+        
         [x_free,objval,exitflag,xmul,Fmul] = snopt(x0_free, ...
           x_lb_free,x_ub_free, ...
           lb,ub,...
