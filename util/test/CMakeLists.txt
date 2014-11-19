@@ -15,5 +15,14 @@ if (eigen3_FOUND)
   include_directories( .. )
   add_test(NAME testDrakeGradientUtil COMMAND testDrakeGradientUtil)
 
+  add_mex(testQuatmex testQuatmex.cpp)
+  target_link_libraries(testQuatmex drakeGeometryUtil)
+
+  add_mex(testGeometryGradientsmex testGeometryGradientsmex.cpp)
+  target_link_libraries(testGeometryGradientsmex drakeGeometryUtil)
+
+  add_mex(testGeometryConversionFunctionsmex testGeometryConversionFunctionsmex.cpp)
+  target_link_libraries(testGeometryConversionFunctionsmex drakeGeometryUtil)
   endif(NOT WIN32)
+
 endif(eigen3_FOUND)

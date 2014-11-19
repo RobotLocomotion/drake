@@ -56,7 +56,7 @@ timespec *remaining_delay)
   static bool initialized;
   /* Number of performance counter increments per nanosecond,
    * or zero if it could not be determined.  */
-  static double ticks_per_nanosecond;
+  static double ticks_per_nanosecond = 0.0;
 
   if (requested_delay->tv_nsec < 0 || BILLION <= requested_delay->tv_nsec)
   {
@@ -89,8 +89,8 @@ timespec *remaining_delay)
        * (or maybe more if the system is loaded), we subtract 10 ms.  */
       int sleep_millis = (int) requested_delay->tv_nsec / 1000000 - 10;
       /* Determine how many ticks to delay.  */
-      LONGLONG wait_ticks = requested_delay->tv_nsec *
-              ticks_per_nanosecond;
+      LONGLONG wait_ticks = static_cast<LONGLONG>(requested_delay->tv_nsec *
+              ticks_per_nanosecond);
       /* Start.  */
       LARGE_INTEGER counter_before;
       if (QueryPerformanceCounter(&counter_before))
@@ -187,8 +187,8 @@ struct timeval doubleToTimeval(double t)
 {
   // create the struct timeval
 	struct timeval tv;
-	tv.tv_sec = (time_t) t;
-	tv.tv_usec = (suseconds_t)((t - tv.tv_sec ) * 1000000.0 );
+	tv.tv_sec = static_cast<decltype(tv.tv_sec)>(t);
+	tv.tv_usec = static_cast<decltype(tv.tv_usec)>((t - tv.tv_sec ) * 1000000.0 );
 
 	// return the timeval struct
 	return( tv );

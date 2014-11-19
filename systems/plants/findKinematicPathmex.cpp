@@ -20,17 +20,17 @@ mxArray* stdVectorToMatlab(const std::vector<int>& vec) {
 //  }
 //  return pm;
 
-  mxArray* pm = mxCreateDoubleMatrix(vec.size(), 1, mxREAL);
+  mxArray* pm = mxCreateDoubleMatrix(static_cast<int>(vec.size()), 1, mxREAL);
   for (int i = 0; i < vec.size(); i++) {
     mxGetPr(pm)[i] = (double) vec[i];
   }
   return pm;
 }
 
-void baseZeroToBaseOne(std::vector<int>& vec) {
-  for (auto& val : vec) {
-    val++;
-  }
+void baseZeroToBaseOne(std::vector<int>& vec) 
+{
+  for (std::vector<int>::iterator iter=vec.begin(); iter!=vec.end(); iter++)
+    (*iter)++;
 }
 
 void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {

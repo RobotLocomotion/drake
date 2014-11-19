@@ -9,6 +9,7 @@
 #include "collision/DrakeCollision.h"
 #include "KinematicPath.h"
 
+#undef DLLEXPORT
 #if defined(WIN32) || defined(WIN64)
   #if defined(drakeRBM_EXPORTS)
     #define DLLEXPORT __declspec( dllexport )
@@ -17,13 +18,18 @@
   #endif
 #else
   #define DLLEXPORT
+#endif
+
+#if defined(WIN32) || defined(WIN64)
+#else
   #include "DrakeJoint.h"  // todo: move this out of here
 #endif
 
 #include "RigidBody.h"
 #include "RigidBodyFrame.h"
 
-#define INF -2147483648
+#define INF -2147483648    // this number is only used for checking the pitch to see if it's a revolute joint or a helical joint, and is set to match the value handed to us for inf from matlab.
+
 using namespace Eigen;
 
 //extern std::set<int> emptyIntSet;  // was const std:set<int> emptyIntSet, but valgrind said I was leaking memory
@@ -257,9 +263,5 @@ private:
   RigidBodyManipulator& operator=(const RigidBodyManipulator&) { return *this; }
 };
 
-/*
-template<typename T> int sgn(T val) {
-  return (T(0) < val) - (val < T(0));
-};
-*/
+
 #endif

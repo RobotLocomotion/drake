@@ -11,6 +11,7 @@
 
 #include <stdint.h>
 
+#undef DLLEXPORT
 #if defined(WIN32) || defined(WIN64)
   #if defined(drakeCollision_EXPORTS)
     #define DLLEXPORT __declspec( dllexport )
@@ -134,9 +135,9 @@ namespace DrakeCollision
 
   // Exceptions
 
-  class DLLEXPORT noClosestPointsResultException : public std::exception {};
+  class noClosestPointsResultException : public std::exception {};
 
-  class DLLEXPORT badShapeException : public std::exception
+  class badShapeException : public std::exception
   {
     public:
       badShapeException();
@@ -147,14 +148,14 @@ namespace DrakeCollision
       std::string shape_str;
   };
 
-  class DLLEXPORT zeroRadiusSphereException : public badShapeException
+  class zeroRadiusSphereException : public badShapeException
   {
     public:
       virtual const char* what() const throw();
       virtual ~zeroRadiusSphereException() throw() {};
   };
 
-  class DLLEXPORT unknownShapeException : public badShapeException
+  class unknownShapeException : public badShapeException
   {
     public:
       unknownShapeException(Shape shape) : badShapeException(shape){};
@@ -162,7 +163,7 @@ namespace DrakeCollision
       virtual ~unknownShapeException() throw() {};
   };
 
-  class DLLEXPORT unsupportedShapeException : public badShapeException
+  class unsupportedShapeException : public badShapeException
   {
     public:
       unsupportedShapeException(Shape shape) : badShapeException(shape){};

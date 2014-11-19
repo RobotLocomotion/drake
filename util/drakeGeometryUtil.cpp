@@ -273,7 +273,7 @@ Eigen::Matrix<typename Derived::Scalar, 4, 1> rotmat2quat(const Eigen::MatrixBas
 
   Matrix<typename Derived::Scalar, 4, 3> A;
   A.row(0) << 1.0, 1.0, 1.0;
-  A.row(1.0) << 1.0, -1.0, -1.0;
+  A.row(1) << 1.0, -1.0, -1.0;
   A.row(2) << -1.0, 1.0, -1.0;
   A.row(3) << -1.0, -1.0, 1.0;
   Matrix<typename Derived::Scalar, 4, 1> B = A * M.diagonal();
@@ -894,23 +894,24 @@ template DLLEXPORT Vector4d rpy2axis(const Eigen::MatrixBase< Map<Vector3d> >&);
 template DLLEXPORT Vector4d rpy2quat(const Eigen::MatrixBase< Map<Vector3d> >&);
 template DLLEXPORT Matrix3d rpy2rotmat(const Eigen::MatrixBase< Map<Vector3d> >&);
 
-template DLLEXPORT Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic> transformSpatialMotion(
-    const Eigen::Isometry3d&,
-    const Eigen::MatrixBase< Matrix<double, TWIST_SIZE, Eigen::Dynamic> >&);
-
-template DLLEXPORT Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic> transformSpatialMotion(
-    const Eigen::Isometry3d&,
-    const Eigen::MatrixBase< MatrixXd >&);
-
-template DLLEXPORT Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic> transformSpatialForce(
-    const Eigen::Isometry3d&,
-    const Eigen::MatrixBase< Matrix<double, TWIST_SIZE, Eigen::Dynamic> >&);
-
-template DLLEXPORT Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic> transformSpatialForce(
-    const Eigen::Isometry3d&,
-    const Eigen::MatrixBase< MatrixXd >&);
-
 #if !defined(WIN32) && !defined(WIN64)
+
+template DLLEXPORT Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic> transformSpatialMotion(
+    const Eigen::Isometry3d&,
+    const Eigen::MatrixBase< Matrix<double, TWIST_SIZE, Eigen::Dynamic> >&);
+
+template DLLEXPORT Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic> transformSpatialMotion(
+    const Eigen::Isometry3d&,
+    const Eigen::MatrixBase< MatrixXd >&);
+
+template DLLEXPORT Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic> transformSpatialForce(
+    const Eigen::Isometry3d&,
+    const Eigen::MatrixBase< Matrix<double, TWIST_SIZE, Eigen::Dynamic> >&);
+
+template DLLEXPORT Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic> transformSpatialForce(
+    const Eigen::Isometry3d&,
+    const Eigen::MatrixBase< MatrixXd >&);
+
 
 template typename Gradient<Matrix3d, QUAT_SIZE>::type dquat2rotmat(const Eigen::MatrixBase<Vector4d>&);
 template typename Gradient<Matrix3d, QUAT_SIZE>::type dquat2rotmat(const Eigen::MatrixBase< Map<Vector4d> >&);

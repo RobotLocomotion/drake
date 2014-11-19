@@ -53,7 +53,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   plhs[10] = mxCreateDoubleScalar(majorOptimalityTolerance);
   if(t_samples.size()>0)
   {
-    plhs[11] = mxCreateDoubleMatrix(1,t_samples.size(),mxREAL);
+    plhs[11] = mxCreateDoubleMatrix(1,static_cast<int>(t_samples.size()),mxREAL);
     memcpy(mxGetPr(plhs[11]),t_samples.data(),sizeof(double)*t_samples.size());
   }
   else

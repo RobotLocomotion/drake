@@ -39,7 +39,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     case 3:
       {
         IKoptions* ikoptions = (IKoptions*) getDrakeMexPointer(prhs[1]);
-        mwSize strlen = mxGetNumberOfElements(prhs[2])+1;
+        mwSize strlen = static_cast<mwSize>(mxGetNumberOfElements(prhs[2]))+1;
         char* field = new char[strlen];
         mxGetString(prhs[2],field,strlen);
         string field_str(field);
