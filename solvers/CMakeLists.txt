@@ -28,7 +28,7 @@ pods_find_pkg_config(snopt_cpp)
 
 
 if(snopt_cpp_FOUND)
-	find_library(GFORTRAN_LIBRARY NAMES gfortran libgfortran PATHS ${MATLAB_ROOT}/sys/os/*/)
+	find_library(GFORTRAN_LIBRARY NAMES gfortran libgfortran PATHS ${MATLAB_ROOT}/sys/os/maci64/ ${MATLAB_ROOT}/sys/os/glnxa64/)
   add_mex(NonlinearProgramSnoptmex NonlinearProgramSnoptmex.cpp)
   pods_use_pkg_config_packages(NonlinearProgramSnoptmex snopt_cpp)
   set_target_properties(NonlinearProgramSnoptmex PROPERTIES COMPILE_FLAGS -fPIC)
