@@ -28,8 +28,19 @@ pods_find_pkg_config(snopt_cpp)
 
 
 if(snopt_cpp_FOUND)
-	find_library(GFORTRAN_LIBRARY NAMES gfortran libgfortran PATHS ${MATLAB_ROOT}/sys/os/maci64/ ${MATLAB_ROOT}/sys/os/glnxa64/)
-  add_mex(NonlinearProgramSnoptmex NonlinearProgramSnoptmex.cpp)
+	find_library(GFORTRAN_LIBRARY NAMES gfortran libgfortran
+	  PATHS "${MATLAB_ROOT}/sys/os/"
+		PATH_SUFFIXES glnxa64/ maci64/ NO_DEFAULT_PATH )
+	if (NOT GFORTRAN_LIBRARY)
+		# the above does not seem work on linux out of the box, because matlab
+		# symlinks to libgfortran.so.3 but not to libgfortran.so, and cmake isn't
+		# able to find it with the default CMAKE_FIND_LIBRARY_SUFFIXES.  Instead
+		# of setting that variable, here is the annoying work-around:
+		find_file(GFORTRAN_LIBRARY NAMES libgfortran.so.3
+			PATHS "${MATLAB_ROOT}/sys/os/"
+			PATH_SUFFIXES glnxa64/ maci64/ NO_DEFAULT_PATH)
+	endif()
+	add_mex(NonlinearProgramSnoptmex NonlinearProgramSnoptmex.cpp)
   pods_use_pkg_config_packages(NonlinearProgramSnoptmex snopt_cpp)
   set_target_properties(NonlinearProgramSnoptmex PROPERTIES COMPILE_FLAGS -fPIC)
 	target_link_libraries(NonlinearProgramSnoptmex ${GFORTRAN_LIBRARY})
