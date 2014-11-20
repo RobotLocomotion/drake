@@ -66,7 +66,7 @@ public:
       idx = m_cached_idx;
     } else {
       // search for the correct interval
-      idx = m_breaks.rows()-2;
+      idx = static_cast<int>(m_breaks.rows())-2;
       // todo: binary search
       for (int b=static_cast<int>(m_breaks.rows())-2; b>=1; b--) { // ignore first and last break
         if (t < m_breaks(b)) idx=b-1;
