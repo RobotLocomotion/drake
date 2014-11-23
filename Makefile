@@ -36,7 +36,11 @@ configure:
 
 	# create the temporary build directory if needed
 	@mkdir -p pod-build
-	@cd pod-build && ln -sf ../CTestCustom.cmake  # actually has to live in the build path
+ifeq ($(shell uname -o),Cygwin)
+	@echo "set(CTEST_CUSTOM_PRE_TEST \"`which bash | cygpath -f - -w | sed -e 's/\\\\/\\\\\\\\/g'` -l -c \\\"`pwd`/cmake/add_matlab_unit_tests.pl `pwd`\\\"\")" > pod-build/CTestCustom.cmake 
+else
+	@echo "set(CTEST_CUSTOM_PRE_TEST \"../cmake/add_matlab_unit_tests.pl ..\")" > pod-build/CTestCustom.cmake # actually has to live in the build path
+endif
 
 	# run CMake to generate and configure the build scripts
 	@cd pod-build && cmake $(CMAKE_FLAGS) -DCMAKE_INSTALL_PREFIX="$(BUILD_PREFIX)" \
