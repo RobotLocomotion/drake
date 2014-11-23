@@ -28,9 +28,7 @@ if (eigen3_FOUND)
   pods_install_headers(drakeGradientUtil.h DESTINATION drake)
 
   add_library(drakeGeometryUtil SHARED drakeGeometryUtil.cpp)
-  if (NOT WIN32)
   target_link_libraries(drakeGeometryUtil drakeGradientUtil)
-  endif()
   pods_install_libraries(drakeGeometryUtil)
   pods_install_headers(drakeGeometryUtil.h DESTINATION drake)
 
