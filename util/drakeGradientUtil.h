@@ -20,6 +20,7 @@
 #endif
 
 #if defined(WIN32) || defined(WIN64)
+  #undef DLLEXPORT
   #if defined(drakeGradientUtil_EXPORTS)
     #define DLLEXPORT __declspec( dllexport )
   #else

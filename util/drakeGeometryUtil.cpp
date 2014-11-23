@@ -890,8 +890,6 @@ template DLLEXPORT Vector4d rpy2axis(const Eigen::MatrixBase< Map<Vector3d> >&);
 template DLLEXPORT Vector4d rpy2quat(const Eigen::MatrixBase< Map<Vector3d> >&);
 template DLLEXPORT Matrix3d rpy2rotmat(const Eigen::MatrixBase< Map<Vector3d> >&);
 
-#if !defined(WIN32) && !defined(WIN64)
-
 template DLLEXPORT Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic> transformSpatialMotion(
     const Eigen::Isometry3d&,
     const Eigen::MatrixBase< Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic> >&);
@@ -954,10 +952,10 @@ template void angularvel2rpydotMatrix(const Eigen::MatrixBase<Vector3d>& rpy,
 
 template void rpydot2angularvelMatrix(const Eigen::MatrixBase<Vector3d>& rpy,
     Eigen::MatrixBase<Eigen::Matrix<double, SPACE_DIMENSION, RPY_SIZE> >& E,
-    typename Gradient<Matrix<double,SPACE_DIMENSION,RPY_SIZE>,RPY_SIZE,1>::type* dE);
+    Gradient<Matrix<double,SPACE_DIMENSION,RPY_SIZE>,RPY_SIZE,1>::type* dE);
 template void rpydot2angularvelMatrix(const Eigen::MatrixBase<Map<Vector3d>>& rpy,
     Eigen::MatrixBase<Eigen::Matrix<double, SPACE_DIMENSION, RPY_SIZE> >& E,
-    typename Gradient<Matrix<double,SPACE_DIMENSION,RPY_SIZE>,RPY_SIZE,1>::type* dE);
+    Gradient<Matrix<double,SPACE_DIMENSION,RPY_SIZE>,RPY_SIZE,1>::type* dE);
 
 
 template void quatdot2angularvelMatrix(const Eigen::MatrixBase<Vector4d>& q,
