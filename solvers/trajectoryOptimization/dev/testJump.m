@@ -243,7 +243,6 @@ toc
 xtraj_sol = PPTrajectory(foh(cumsum([0 h_sol]),[q_sol;v_sol]));
 xtraj_sol = xtraj_sol.setOutputFrame(robot.getStateFrame);
 end
-keyboard;
 end
 
 function [h,dh] = comApexHeight(takeoff_height,takeoff_vel)
