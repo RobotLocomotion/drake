@@ -8,19 +8,8 @@
 #include <array>
 #include <assert.h>
 
-/* 
- * Turn 'default template arguments are only allowed on a class template' error (C4519) into a warning
- * According to Stroustrup:
- * The prohibition of default template arguments for function templates is a misbegotten remnant of the
- * time where freestanding functions were treated as second class citizens and required all template 
- * arguments to be deduced from the function arguments rather than specified.
-*/
-#if defined(_WIN32) || defined(_WIN64)
-#pragma warning(1 : 4519)
-#endif
-
+#undef DLLEXPORT
 #if defined(WIN32) || defined(WIN64)
-  #undef DLLEXPORT
   #if defined(drakeGradientUtil_EXPORTS)
     #define DLLEXPORT __declspec( dllexport )
   #else
@@ -134,5 +123,4 @@ template<int QSubvectorSize, typename DerivedA, typename DerivedB, std::size_t N
 DLLEXPORT void setSubMatrixGradient(Eigen::MatrixBase<DerivedA>& dM, const Eigen::MatrixBase<DerivedB>& dM_submatrix,
     const std::array<int, NRows>& rows, const std::array<int, NCols>& cols, int M_rows, int q_start = 0, typename DerivedA::Index q_subvector_size = QSubvectorSize);
 
-#undef DLLEXPORT
 #endif /* DRAKEGRADIENTUTIL_H_ */
