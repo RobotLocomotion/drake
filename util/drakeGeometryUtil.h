@@ -7,8 +7,8 @@
 #include <random>
 #include "drakeGradientUtil.h"
 
+#undef DLLEXPORT
 #if defined(WIN32) || defined(WIN64)
-  #undef DLLEXPORT
   #if defined(drakeGeometryUtil_EXPORTS)
     #define DLLEXPORT __declspec( dllexport )
   #else
@@ -139,7 +139,7 @@ DLLEXPORT void angularvel2rpydotMatrix(const Eigen::MatrixBase<DerivedRPY>& rpy,
     typename Gradient<DerivedPhi, RPY_SIZE, 2>::type* ddphi = nullptr);
 
 template<typename DerivedRPY, typename DerivedE>
-void rpydot2angularvelMatrix(const Eigen::MatrixBase<DerivedRPY>& rpy,
+DLLEXPORT void rpydot2angularvelMatrix(const Eigen::MatrixBase<DerivedRPY>& rpy,
     Eigen::MatrixBase<DerivedE>& E,
     typename Gradient<DerivedE,RPY_SIZE,1>::type* dE=nullptr);
 
