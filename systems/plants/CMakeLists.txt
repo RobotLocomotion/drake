@@ -28,10 +28,7 @@ if (eigen3_FOUND)
 
   add_subdirectory(collision)
   add_subdirectory(constraint)
-
-if (NOT WIN32)
   add_subdirectory(joints)
-endif(NOT WIN32)
 
   if (Boost_FOUND)
     add_library(drakeRBMurdf URDFRigidBodyManipulator.cpp)

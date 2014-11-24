@@ -4,6 +4,7 @@
 //#include "mex.h"
 #include "drakeGeometryUtil.h"
 #include "RigidBodyManipulator.h"
+#include "DrakeJoint.h"
 
 #include <algorithm>
 #include <string>

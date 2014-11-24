@@ -22,10 +22,8 @@ class RigidBodyManipulator;
 using namespace Eigen;
 
 class DLLEXPORT RigidBody {
-#if !defined(_WIN32) && !defined(_WIN64)
 private:
   std::unique_ptr<DrakeJoint> joint;
-#endif
 
 public:
   RigidBody();
@@ -33,10 +31,8 @@ public:
   void setN(int n);
   void computeAncestorDOFs(RigidBodyManipulator* model);
 
-#if !defined(_WIN32) && !defined(_WIN64)
   void setJoint(std::unique_ptr<DrakeJoint> joint);
   const DrakeJoint& getJoint() const;
-#endif
 
 public:
   std::string linkname;

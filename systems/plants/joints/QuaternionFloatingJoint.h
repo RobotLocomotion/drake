@@ -6,8 +6,9 @@
 class QuaternionFloatingJoint: public DrakeJoint
 {
   // disable copy construction and assignment
-  QuaternionFloatingJoint(const QuaternionFloatingJoint&) = delete;
-  QuaternionFloatingJoint& operator=(const QuaternionFloatingJoint&) = delete;
+  // not available in MSVC2010...
+  // QuaternionFloatingJoint(const QuaternionFloatingJoint&) = delete;
+  // QuaternionFloatingJoint& operator=(const QuaternionFloatingJoint&) = delete;
 
 public:
   QuaternionFloatingJoint(const std::string& name, const Eigen::Isometry3d& transform_to_parent_body);
@@ -19,8 +20,8 @@ public:
   virtual void motionSubspace(double* const q, MotionSubspaceType& motion_subspace, Eigen::MatrixXd* dmotion_subspace = nullptr) const; //override;
 
   virtual void motionSubspaceDotTimesV(double* const q, double* const v, Vector6d& motion_subspace_dot_times_v,
-      typename Gradient<Vector6d, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdq = nullptr,
-      typename Gradient<Vector6d, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdv = nullptr) const; //override;
+      Gradient<Vector6d, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdq = nullptr,
+      Gradient<Vector6d, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdv = nullptr) const; //override;
 
   virtual void randomConfiguration(double* const q, std::default_random_engine& generator) const; //override;
 

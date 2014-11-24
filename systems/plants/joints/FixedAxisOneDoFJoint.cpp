@@ -1,9 +1,12 @@
 #include "FixedAxisOneDoFJoint.h"
+#include "drakeFloatingPointUtil.h"
 #include <cmath>
 #include <Eigen/Core>
 #include <limits>
 #include <exception>
 #include <stdexcept>
+
+
 
 using namespace Eigen;
 
@@ -41,8 +44,8 @@ void FixedAxisOneDoFJoint::motionSubspace(double* const q, MotionSubspaceType& m
 
 void FixedAxisOneDoFJoint::motionSubspaceDotTimesV(double* const q, double* const v,
     Vector6d& motion_subspace_dot_times_v,
-    typename Gradient<Vector6d, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdq,
-    typename Gradient<Vector6d, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdv) const
+    Gradient<Vector6d, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdq,
+    Gradient<Vector6d, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdv) const
 {
   motion_subspace_dot_times_v.setZero();
 
@@ -57,7 +60,7 @@ void FixedAxisOneDoFJoint::motionSubspaceDotTimesV(double* const q, double* cons
 
 void FixedAxisOneDoFJoint::randomConfiguration(double* q, std::default_random_engine& generator) const
 {
-  if (std::isfinite(joint_limit_min) && std::isfinite(joint_limit_max)) {
+  if (isFinite(joint_limit_min) && isFinite(joint_limit_max)) {
     std::uniform_real_distribution<double> distribution(joint_limit_min, joint_limit_max);
     q[0] = distribution(generator);
   }
@@ -65,10 +68,10 @@ void FixedAxisOneDoFJoint::randomConfiguration(double* q, std::default_random_en
     std::normal_distribution<double> distribution;
     double stddev = 1.0;
     double joint_limit_offset = 1.0;
-    if (std::isfinite(joint_limit_min)) {
+    if (isFinite(joint_limit_min)) {
       distribution = std::normal_distribution<double>(joint_limit_min + joint_limit_offset, stddev);
     }
-    else if (std::isfinite(joint_limit_max)) {
+    else if (isFinite(joint_limit_max)) {
       distribution = std::normal_distribution<double>(joint_limit_max - joint_limit_offset, stddev);
     }
     else {
