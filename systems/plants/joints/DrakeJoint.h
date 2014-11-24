@@ -7,9 +7,20 @@
 #include <random>
 #include "drakeGeometryUtil.h"
 
+#undef DLLEXPORT_DRAKEJOINT
+#if defined(WIN32) || defined(WIN64)
+  #if defined(drakeJoints_EXPORTS)
+    #define DLLEXPORT_DRAKEJOINT __declspec( dllexport )
+  #else
+    #define DLLEXPORT_DRAKEJOINT __declspec( dllimport )
+  #endif
+#else
+  #define DLLEXPORT_DRAKEJOINT
+#endif
+
 class RigidBody;
 
-class DrakeJoint
+class DLLEXPORT_DRAKEJOINT DrakeJoint
 {
   // disable copy construction and assignment
   // not available in MSVC2010...

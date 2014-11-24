@@ -9,15 +9,15 @@
 #include "collision/DrakeCollision.h"
 #include "KinematicPath.h"
 
-#undef DLLEXPORT
+#undef DLLEXPORT_RBM
 #if defined(WIN32) || defined(WIN64)
   #if defined(drakeRBM_EXPORTS)
-    #define DLLEXPORT __declspec( dllexport )
+    #define DLLEXPORT_RBM __declspec( dllexport )
   #else
-    #define DLLEXPORT __declspec( dllimport )
+    #define DLLEXPORT_RBM __declspec( dllimport )
   #endif
 #else
-  #define DLLEXPORT
+  #define DLLEXPORT_RBM
 #endif
 
 
@@ -30,7 +30,7 @@ using namespace Eigen;
 
 //extern std::set<int> emptyIntSet;  // was const std:set<int> emptyIntSet, but valgrind said I was leaking memory
 
-class DLLEXPORT RigidBodyManipulator 
+class DLLEXPORT_RBM RigidBodyManipulator 
 {
 public:
   RigidBodyManipulator(int num_dof, int num_featherstone_bodies=-1, int num_rigid_body_objects=-1, int num_rigid_body_frames=0);
@@ -250,7 +250,7 @@ private:
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-// The following was required for building w/ DLLEXPORT on windows (due to the unique_ptrs).  See
+// The following was required for building w/ DLLEXPORT_RBM on windows (due to the unique_ptrs).  See
 // http://stackoverflow.com/questions/8716824/cannot-access-private-member-error-only-when-class-has-export-linkage
 private:
   RigidBodyManipulator(const RigidBodyManipulator&) {}
