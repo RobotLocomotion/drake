@@ -3,7 +3,7 @@
 
 #include "FixedAxisOneDoFJoint.h"
 
-class RevoluteJoint: public FixedAxisOneDoFJoint
+class DLLEXPORT_DRAKEJOINT RevoluteJoint: public FixedAxisOneDoFJoint
 {
   // disable copy construction and assignment
   // not available in MSVC2010...

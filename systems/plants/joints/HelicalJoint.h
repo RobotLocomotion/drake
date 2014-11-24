@@ -3,7 +3,7 @@
 
 #include "FixedAxisOneDoFJoint.h"
 
-class HelicalJoint: public FixedAxisOneDoFJoint
+class DLLEXPORT_DRAKEJOINT HelicalJoint: public FixedAxisOneDoFJoint
 {
   // disable copy construction and assignment
   // not available in MSVC2010...

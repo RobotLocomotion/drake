@@ -3,7 +3,7 @@
 
 #include "DrakeJoint.h"
 
-class FixedAxisOneDoFJoint : public DrakeJoint
+class DLLEXPORT_DRAKEJOINT FixedAxisOneDoFJoint : public DrakeJoint
 {
   // disable copy construction and assignment
   // not available in MSVC2010...

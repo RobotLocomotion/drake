@@ -6,8 +6,9 @@
 #include <set>
 #include <Eigen/StdVector>
 #include <memory>
+#include "DrakeJoint.h"
 
-class DLLEXPORT IndexRange {
+class DLLEXPORT_RBM IndexRange {
  public:
   int start;
   int length;
@@ -21,7 +22,7 @@ class RigidBodyManipulator;
 
 using namespace Eigen;
 
-class DLLEXPORT RigidBody {
+class DLLEXPORT_RBM RigidBody {
 private:
   std::unique_ptr<DrakeJoint> joint;
 

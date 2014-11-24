@@ -3,7 +3,7 @@
 
 #include "DrakeJoint.h"
 
-class QuaternionFloatingJoint: public DrakeJoint
+class DLLEXPORT_DRAKEJOINT QuaternionFloatingJoint: public DrakeJoint
 {
   // disable copy construction and assignment
   // not available in MSVC2010...

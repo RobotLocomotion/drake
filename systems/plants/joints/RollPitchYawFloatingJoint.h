@@ -3,7 +3,7 @@
 
 #include "DrakeJoint.h"
 
-class RollPitchYawFloatingJoint: public DrakeJoint
+class DLLEXPORT_DRAKEJOINT RollPitchYawFloatingJoint: public DrakeJoint
 {
 public:
   // disable copy construction and assignment

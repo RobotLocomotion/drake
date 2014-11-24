@@ -1,7 +1,7 @@
 #ifndef _RIGIDBODYFRAME_H_
 #define _RIGIDBODYFRAME_H_
 
-class DLLEXPORT RigidBodyFrame {
+class DLLEXPORT_RBM RigidBodyFrame {
 public:
   std::string name;
   int body_ind;

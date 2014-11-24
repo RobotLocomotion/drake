@@ -3,7 +3,7 @@
 
 #include "FixedAxisOneDoFJoint.h"
 
-class PrismaticJoint: public FixedAxisOneDoFJoint
+class DLLEXPORT_DRAKEJOINT PrismaticJoint: public FixedAxisOneDoFJoint
 {
   // disable copy construction and assignment
   // not available in MSVC2010...
