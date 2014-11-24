@@ -248,8 +248,6 @@ classdef MISOSTrajectoryProblem
     t0 = tic;
     if obj.traj_degree > 3 && isempty(cell2mat(safe_region_assignments))
       diagnostics = optimize(constraints, objective, sdpsettings('solver', 'bnb', 'bnb.maxiter', 5000, 'verbose', 1, 'debug', true));
-    % elseif obj.traj_degree > 3 && ~isempty(cell2mat(safe_region_assignments))
-    %   diagnostics = optimize(constraints, objective, sdpsettings('solver', 'frlib', 'frlib.solver', 'mosek', 'verbose', 3));
     else
       if checkDependency('mosek');
         diagnostics = optimize(constraints, objective, sdpsettings('solver', 'mosek', 'mosek.MSK_DPAR_MIO_TOL_REL_GAP', 1e-2, 'mosek.MSK_DPAR_MIO_MAX_TIME', 600, 'verbose', 3));
@@ -261,18 +259,11 @@ classdef MISOSTrajectoryProblem
     end
     toc(t0);
 
-    % if obj.traj_degree > 3 && ~isempty(cell2mat(safe_region_assignments))
-    %   % [model, recoverymodel, diagnostics] = export(constraints, objective, sdpsettings('solver', 'sedumi'))
-    %   optimize(constraints, objective, sdpsettings('solver', 'mosek', 'savedebug', 1));
-    %   load mosekdebug
-    %   mosekopt('write(probfile.task)', prob);
-    % end
-
     breaks = 0:1:(obj.num_traj_segments);
     coeffs = zeros([dim, length(breaks)-1, obj.traj_degree+1]);
 
     if diagnostics.problem == 0 || diagnostics.problem == 9
-      % Mosek will sometimes fail with MSK_RES_TRM_STALL, which yalmip considers an error, but 
+      % Mosek will sometimes halt with MSK_RES_TRM_STALL, which yalmip considers an error, but 
       % which appears to produce good solutions anyway. That gives us diagnostics.problem = 9.
 
       % Build the output trajectory
@@ -288,11 +279,12 @@ classdef MISOSTrajectoryProblem
       end
     end
 
-    objective = double(objective)
+    objective = double(objective);
     
     ytraj = PPTrajectory(mkpp(breaks, coeffs, dim)); 
 
     if obj.debug
+      objective
       % Check our minimum snap objective formula
       obj_approx = [];
       if obj.traj_degree > 3
