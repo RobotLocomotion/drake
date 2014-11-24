@@ -46,7 +46,7 @@ void QuaternionFloatingJoint::motionSubspaceDotTimesV(double* const q, double* c
   }
 }
 
-void QuaternionFloatingJoint::randomConfiguration(double* const q, std::default_random_engine& generator) const
+void QuaternionFloatingJoint::randomConfiguration(double* q, std::default_random_engine& generator) const
 {
   normal_distribution<double> normal;
 

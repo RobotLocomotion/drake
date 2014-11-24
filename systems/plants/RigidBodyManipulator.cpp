@@ -1293,7 +1293,6 @@ void RigidBodyManipulator::bodyKin(const int body_or_frame_id, const MatrixBase<
 
 }
 
-#if !defined(WIN32) && !defined(WIN64)
 template<typename DerivedA>
 void RigidBodyManipulator::geometricJacobian(int base_body_or_frame_ind, int end_effector_body_or_frame_ind, int expressed_in_body_or_frame_ind, PlainObjectBase<DerivedA>& J, std::vector<int>* v_indices)
 {
@@ -1343,7 +1342,6 @@ void RigidBodyManipulator::geometricJacobian(int base_body_or_frame_ind, int end
   }
   J = transformSpatialMotion(Isometry3d(T_world_to_frame), J);
 }
-#endif
 
 template <typename DerivedA, typename DerivedB>
 void RigidBodyManipulator::forwardJac(const int body_or_frame_id, const MatrixBase<DerivedA> &pts, const int rotation_type, MatrixBase<DerivedB> &J)
@@ -1788,10 +1786,8 @@ template DLLEXPORT void RigidBodyManipulator::forwardJacDot(const int, const Mat
 template DLLEXPORT void RigidBodyManipulator::bodyKin(const int, const MatrixBase< MatrixXd >&, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > *);
 template DLLEXPORT void RigidBodyManipulator::bodyKin(const int, const MatrixBase< MatrixXd >&, MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > *);
 
-#if !defined(WIN32) && !defined(WIN64)
 template DLLEXPORT void RigidBodyManipulator::geometricJacobian(int, int, int, PlainObjectBase< Matrix<double, 6, Dynamic> >&, std::vector<int>*);
 template DLLEXPORT void RigidBodyManipulator::geometricJacobian(int, int, int, PlainObjectBase< MatrixXd >&, std::vector<int>*);
-#endif
 
 template DLLEXPORT void RigidBodyManipulator::HandC(double* const, double * const, MatrixBase< Map<MatrixXd> > * const, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<VectorXd> > &, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > * const);
 template DLLEXPORT void RigidBodyManipulator::HandC(double* const, double * const, MatrixBase< MatrixXd > * const, MatrixBase< MatrixXd > &, MatrixBase< VectorXd > &, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > * const);
