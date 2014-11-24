@@ -62,8 +62,8 @@ void RollPitchYawFloatingJoint::motionSubspace(double* const q, MotionSubspaceTy
 
 void RollPitchYawFloatingJoint::motionSubspaceDotTimesV(double* const q, double* const v,
     Vector6d& motion_subspace_dot_times_v,
-    typename Gradient<Vector6d, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdq,
-    typename Gradient<Vector6d, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdv) const
+    Gradient<Vector6d, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdq,
+    Gradient<Vector6d, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdv) const
 {
   motion_subspace_dot_times_v.resize(TWIST_SIZE, 1);
   Map<Vector3d> rpy(&q[3]);

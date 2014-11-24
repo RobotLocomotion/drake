@@ -12,8 +12,9 @@ class RigidBody;
 class DrakeJoint
 {
   // disable copy construction and assignment
-  DrakeJoint(const DrakeJoint&) = delete;
-  DrakeJoint& operator=(const DrakeJoint&) = delete;
+  // not available in MSVC2010...
+  // DrakeJoint(const DrakeJoint&) = delete;
+  // DrakeJoint& operator=(const DrakeJoint&) = delete;
 
 private:
   const std::string name;
@@ -44,8 +45,8 @@ public:
   virtual void motionSubspace(double* const q, MotionSubspaceType& motion_subspace, Eigen::MatrixXd* dmotion_subspace = nullptr) const = 0;
 
   virtual void motionSubspaceDotTimesV(double* const q, double* const v, Vector6d& motion_subspace_dot_times_v,
-      typename Gradient<Vector6d, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdq = nullptr,
-      typename Gradient<Vector6d, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdv = nullptr) const = 0;
+      Gradient<Vector6d, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdq = nullptr,
+      Gradient<Vector6d, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdv = nullptr) const = 0;
 
   virtual void randomConfiguration(double* q, std::default_random_engine& generator) const = 0;
 

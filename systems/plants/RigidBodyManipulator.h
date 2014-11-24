@@ -20,10 +20,6 @@
   #define DLLEXPORT
 #endif
 
-#if defined(WIN32) || defined(WIN64)
-#else
-  #include "DrakeJoint.h"  // todo: move this out of here
-#endif
 
 #include "RigidBody.h"
 #include "RigidBodyFrame.h"

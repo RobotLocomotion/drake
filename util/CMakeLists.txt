@@ -32,6 +32,7 @@ if (eigen3_FOUND)
   pods_install_libraries(drakeGeometryUtil)
   pods_install_headers(drakeGeometryUtil.h DESTINATION drake)
 
+  pods_install_headers(drakeFloatingPointUtil.h DESTINATION drake)
 endif()
 
 add_subdirectory(test)
