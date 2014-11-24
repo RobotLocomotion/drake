@@ -107,16 +107,20 @@ x_seed = zeros(sbdfkp.num_vars,1);
 
 sbdfkp = sbdfkp.setSolverOptions('snopt','iterationslimit',1e6);
 sbdfkp = sbdfkp.setSolverOptions('snopt','majoriterationslimit',2000);
-sbdfkp = sbdfkp.setSolverOptions('snopt','majorfeasibilitytolerance',1e-6);
-sbdfkp = sbdfkp.setSolverOptions('snopt','majoroptimalitytolerance',2e-4);
+sbdfkp = sbdfkp.setSolverOptions('snopt','majorfeasibilitytolerance',2e-6);
+sbdfkp = sbdfkp.setSolverOptions('snopt','majoroptimalitytolerance',5e-4);
 sbdfkp = sbdfkp.setSolverOptions('snopt','superbasicslimit',2000);
 sbdfkp = sbdfkp.setSolverOptions('snopt','print','test_grasp_move.out');
 tic
 [x_sol,F,info] = sbdfkp.solve(x_seed);
 toc
 [q_sol,v_sol,h_sol,t_sol,com_sol,comdot_sol,comddot_sol,H_sol,Hdot_sol,lambda_sol,wrench_sol] = parseSolution(sbdfkp,x_sol);
+v = robot.constructVisualizer();
 xtraj_sol = PPTrajectory(foh(cumsum([0 h_sol]),[q_sol;v_sol]));
 xtraj_sol = xtraj_sol.setOutputFrame(robot.getStateFrame);
+qtraj_sol = PPTrajectory(foh(t_sol,q_sol));
+qtraj_sol = qtraj_sol.setOutputFrame(v.getInputFrame);
+v.playback(qtraj_sol,struct('slider',true));
 % object above the ground
 keyboard
 end
