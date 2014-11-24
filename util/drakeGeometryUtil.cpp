@@ -839,19 +839,19 @@ typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime>::type dTransformAdjoin
 }
 
 // explicit instantiations
-template void normalizeVec(
+template DLLEXPORT void normalizeVec(
     const MatrixBase< Vector3d >& x,
     Vector3d& x_norm,
     Gradient<Vector3d, 3, 1>::type*,
     Gradient<Vector3d, 3, 2>::type*);
 
-template void normalizeVec(
+template DLLEXPORT void normalizeVec(
     const MatrixBase< Vector4d >& x,
     Vector4d& x_norm,
     Gradient<Vector4d, 4, 1>::type*,
     Gradient<Vector4d, 4, 2>::type*);
 
-template void normalizeVec(
+template DLLEXPORT void normalizeVec(
     const MatrixBase< Map<Vector4d> >& x,
     Vector4d& x_norm,
     Gradient<Vector4d, 4, 1>::type*,
