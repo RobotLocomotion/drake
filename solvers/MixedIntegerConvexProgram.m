@@ -371,8 +371,7 @@ classdef MixedIntegerConvexProgram
           polycone(obj.symbolic_vars(obj.polycones(j).index(2:end)), obj.symbolic_vars(obj.polycones(j).index(1)), obj.polycones(j).N)];
       end
 
-      diagnostics = optimize(constraints, objective, sdpsettings('solver', 'gurobi', 'verbose', 0))
-      diagnostics.info
+      diagnostics = optimize(constraints, objective, sdpsettings('solver', 'gurobi', 'verbose', 0));
       ok = diagnostics.problem == 0 || diagnostics.problem == -1;
       if ~ok
         error('Drake:MixedIntegerConvexProgram:InfeasibleProblem', 'The mixed-integer problem is infeasible.');
