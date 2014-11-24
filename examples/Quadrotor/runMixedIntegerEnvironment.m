@@ -47,7 +47,6 @@ if can_draw_lcm_polytopes
   lcmgl = LCMGLClient('iris_seeds');
   % Clear the displayed polytopes
   drawLCMPolytope(0, 0, 0, 0, lc);
-  % pause
 end
 
 dim = length(lb);
@@ -57,11 +56,9 @@ b_bounds = [ub; -lb];
 if can_draw_lcm_polytopes
   % Draw the bounding box
   drawLCMPolytope(A_bounds, b_bounds, 100, true, lc);
-  % pause
 
   % Clear the displayed polytopes
   drawLCMPolytope(0, 0, 0, 0, lc);
-  % pause
 end
 
 region_idx = 1;
@@ -72,7 +69,6 @@ function done = drawRegion(r, seed)
     lcmgl.glColor3f(.8,.8,.2);
     lcmgl.sphere(seed, 0.06, 20, 20);
     lcmgl.switchBuffers();
-    % pause
   end
   done = false;
 end
@@ -94,8 +90,6 @@ goal = [goal, [0;0;0], [0;0;0]];
 
 % Find a piecewise 3rd-degree polynomial through the convex regions from start to goal
 [~, ~, ~, safe_region_assignments] = prob.solveTrajectory(start, goal, safe_regions);
-
-% load('../data/2014-11-12_18.00.58/results.mat', 'ytraj', 'safe_region_assignments');
 
 % Run the program again with the region assignments fixed, for a piecewise 5th-degree polynomial
 prob.traj_degree = 5;
@@ -132,7 +126,7 @@ sys = feedback(r,c);
 xtraj_sim = simulate(sys,[0 tf],x0);
 
 if AUTOSAVE
-  folder = fullfile('~/locomotion/papers/icra-2015-uav-miqp/data', datestr(now,'yyyy-mm-dd_HH.MM.SS'));
+  folder = fullfile('../data', datestr(now,'yyyy-mm-dd_HH.MM.SS'));
   system(sprintf('mkdir -p %s', folder));
   save(fullfile(folder, 'results.mat'), 'xtraj', 'ytraj', 'utraj', 'r', 'v', 'safe_region_assignments', 'prob', 'safe_regions', 'xtraj_sim', 'start', 'goal', 'sys');
 end
