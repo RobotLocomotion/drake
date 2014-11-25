@@ -1453,14 +1453,20 @@ classdef RigidBodyManipulator < Manipulator
         end
     end
 
-    function m = getMass(model)
+    function m = getMass(model, robotnum)
       % todo: write total_mass to class and simply return it instead of
       % looping every time (since the result is a constant between
       % compiles)
+      if nargin < 2
+        robotnum = 0; % robot num of 0 means all robots
+      end
+
       m = 0;
       for i=1:length(model.body)
-        bm = model.body(i).mass;
-        m = m + bm;
+        if robotnum == 0 || model.body(i).robotnum == robotnum
+          bm = model.body(i).mass;
+          m = m + bm;
+        end
       end
     end
 

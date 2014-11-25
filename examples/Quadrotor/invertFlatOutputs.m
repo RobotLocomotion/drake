@@ -42,7 +42,8 @@ end
 function [x,u] = extractStateAndInput(plant,t,ytraj,ydtraj,yddtraj,ydddtraj,yddddtraj,options)
     g = plant.getGravity;
     zW = g/norm(g);
-    m = plant.getMass;
+    robotnum = plant.getBody(plant.findLinkInd('base_link')).robotnum;
+    m = plant.getMass(robotnum);
     I = plant.getInertia;
     y = ytraj.eval(t);
     yd = ydtraj.eval(t);
@@ -99,5 +100,5 @@ function [x,u] = extractStateAndInput(plant,t,ytraj,ydtraj,yddtraj,ydddtraj,yddd
         L(i) = norm(frame.T(1:3,4)-com);
     end
     omega_squared = [kF; 0, kF(2)*L(2), 0, -kF(4)*L(4); -kF(1)*L(1), 0, kF(3)*L(3), 0; kM(1), -kM(2), kM(3), -kM(4)]\mellinger_u;
-    u = kF'.*omega_squared;
+    u = omega_squared;
 end
