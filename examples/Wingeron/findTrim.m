@@ -13,7 +13,7 @@ function [ sol,exitflag ] = findTrim(X0)
 %   [14.4165 -0.0007 0]
 %   [0 0 0]
 %   [0 0 0 0]
-%   
+%
 %Torques[LWing   RWing   Elev   Rudder  Thrust]
 %   U = [-0.0187 -0.0169 0.0020 -0.0095 573.0327]
 %
@@ -24,7 +24,6 @@ function [ sol,exitflag ] = findTrim(X0)
 
 options.floating = true;
 w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
-warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
 p = RigidBodyManipulator('Plane.URDF', options);
 warning(w);
@@ -49,7 +48,7 @@ lb = [0 0 0 -.1 -1 -.1 -1 -1 -1 -1 10 -tol 0  0   0   0   0 0 0 0 -2 -2 -2 -2 0]
 ub = [0 0 0  .1  1  .1  1  1  1  1 20 tol  0  0   0   0   0 0 0 0 2  2  2  2  700]';
 %                          function x0, A,b, Aeq,beq,lb,ub,nlcon,options
 [sol,~,exitflag] = fmincon(@minfun, X0, A,b, [], [], lb, ub, [],options);
-    
+
     function y = minfun(inX)
         x = inX(1:20);
         u = inX(21:25);

@@ -372,7 +372,9 @@ classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
         for i=1:obj.N-1,
           gamma_inds = obj.l_inds(obj.nD+2:obj.nD+2:end,i);
           lambda_inds = obj.l_inds(repmat((1:1+obj.nD)',obj.nC,1) + kron((0:obj.nC-1)',(2+obj.nD)*ones(obj.nD+1,1)),i);          
-          z0(obj.nonlincompl_slack_inds{i}) = obj.nonlincompl_constraints{i}.slack_fun(z0([obj.x_inds(:,i+1);gamma_inds;lambda_inds]));
+          if ~isempty(obj.nonlincompl_slack_inds{i})
+            z0(obj.nonlincompl_slack_inds{i}) = obj.nonlincompl_constraints{i}.slack_fun(z0([obj.x_inds(:,i+1);gamma_inds;lambda_inds]));
+          end
         end
       end
     end

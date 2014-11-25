@@ -1,15 +1,18 @@
 function val = getCMakeParam(param)
 % Checks the cmake cache and extracts the stored parameter
 
-txt = fileread(fullfile(getDrakePath,'pod-build','CMakeCache.txt'));
-if isempty(txt)
-  error('Couldn''t find the cmake cache.  Did you run make?');
+cache_file_name = fullfile(getDrakePath,'pod-build','CMakeCache.txt');
+if ~exist(cache_file_name,'file')
+  val = [];  % fail silently
+  return;
 end
+
+txt = fileread(fullfile(getDrakePath,'pod-build','CMakeCache.txt'));
 tokens = regexp(txt,[param,':\w+=(.*)'],'tokens','dotexceptnewline');
 if isempty(tokens)
   val = [];
 else
-  val = tokens{1}{1};
+  val = strtrim(tokens{1}{1});
 end
 
 % Note: This was the old way of doing it.  But we found it less robust,

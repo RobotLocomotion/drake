@@ -1,5 +1,11 @@
 function JAnalytical = analyticalJacobian(obj, kinsol, base, endEffector, points, rotationType)
 
+% NOTE: even though geometricJacobian is mexed, I need kinsol.T in what
+% follows, so I can't use a mex kinsol.
+if (kinsol.mex)
+    error('Drake:RigidBodyManipulator:NoMex','This method has not been mexed yet.');
+end
+
 [JGeometric, vIndices] = geometricJacobian(obj, kinsol, base, endEffector, base);
 JOmega = JGeometric(1 : 3, :);
 JV = JGeometric(4 : 6, :);
@@ -18,7 +24,7 @@ for i = 1 : nPoints
 end
 
 JX = -xHats * JOmega + repmat(JV, nPoints, 1);
-vSize = obj.num_q; % TODO: should be num_v once it exists
+vSize = obj.num_velocities;
 
 switch (rotationType)
   case 0 % no rotation included

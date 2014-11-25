@@ -7,6 +7,7 @@ classdef SpotPolynomialSystem < PolynomialSystem
     p_output
     p_state_constraints
     p_t
+    p_state_constraint_id
   end
   
   methods
@@ -28,7 +29,7 @@ classdef SpotPolynomialSystem < PolynomialSystem
       obj = setPolyDynamics(obj,p_dynamics_rhs,p_dynamics_lhs);
       obj = setPolyUpdate(obj,p_update);
       obj = setPolyOutput(obj,p_output);
-      if (nargin>7)
+      if (nargin>7 && ~isempty(p_state_constraints))
         obj = setPolyStateConstraints(obj,p_state_constraints);
       end
     end
@@ -36,8 +37,8 @@ classdef SpotPolynomialSystem < PolynomialSystem
     % Implement default methods using msspoly vars explicitly
     function [f,df] = dynamicsRHS(obj,t,x,u)
       p_t=obj.p_t;
-      p_x=obj.getStateFrame.poly; 
-      p_u=obj.getInputFrame.poly; 
+      p_x=obj.getStateFrame.getPoly; 
+      p_u=obj.getInputFrame.getPoly; 
       f = double(subs(obj.p_dynamics_rhs,[p_t;p_x;p_u],[t;x;u]));
       if (nargout>1)
         df = double(subs(diff(obj.p_dynamics_rhs,[p_t;p_x;p_u]),[p_t;p_x;p_u],[t;x;u]));
@@ -46,8 +47,8 @@ classdef SpotPolynomialSystem < PolynomialSystem
     
     function [e,de] = dynamicsLHS(obj,t,x,u)
       p_t=obj.p_t;
-      p_x=obj.getStateFrame.poly; 
-      p_u=obj.getInputFrame.poly; 
+      p_x=obj.getStateFrame.getPoly; 
+      p_u=obj.getInputFrame.getPoly; 
       e = double(subs(obj.p_dynamics_lhs,[p_t;p_x;p_u],[t;x;u]));
       if (nargout>1)
         de = double(subs(diff(obj.p_dynamics_lhs,[p_t;p_x;p_u]),[p_t;p_x;p_u],[t;x;u]));
@@ -56,8 +57,8 @@ classdef SpotPolynomialSystem < PolynomialSystem
     
     function [xdn,df] = update(obj,t,x,u)
       p_t=obj.p_t;
-      p_x=obj.getStateFrame.poly;
-      p_u=obj.getInputFrame.poly;
+      p_x=obj.getStateFrame.getPoly;
+      p_u=obj.getInputFrame.getPoly;
       xdn = double(subs(obj.p_update,[p_t;p_x;p_u],[t;x;u]));
       if (nargout>1)
         df = double(subs(diff(obj.p_update,[p_t;p_x;p_u]),[p_t;p_x;p_u],[t;x;u]));
@@ -66,39 +67,31 @@ classdef SpotPolynomialSystem < PolynomialSystem
     
     function [y,dy] = output(obj,t,x,u)
       p_t=obj.p_t;
-      p_x=obj.getStateFrame.poly;
-      if (nargin<4 || obj.num_u<1) p_u=[]; u=[]; else p_u=obj.getInputFrame.poly; end  % ok for systems without direct feedthrough
+      p_x=obj.getStateFrame.getPoly;
+      if (nargin<4 || obj.num_u<1) p_u=[]; u=[]; else p_u=obj.getInputFrame.getPoly; end  % ok for systems without direct feedthrough
       y = double(subs(obj.p_output,[p_t;p_x;p_u],[t;x;u]));
       if (nargout>1)
         dy = double(subs(diff(obj.p_output,[p_t;p_x;p_u]),[p_t;p_x;p_u],[t;x;u]));
       end
     end    
     
-    function [phi,dphi] = stateConstraints(obj,x)
-      p_x=obj.getStateFrame.poly;
-      phi = double(subs(obj.p_state_constraints,p_x,x));
-      if (nargout>1)
-        dphi = double(subs(diff(obj.p_state_constraints,p_x),p_x,x));
-      end
-    end
-    
     function obj = setInputFrame(obj,frame)
       if frame.dim>0
-        if obj.getNumStates()>0 && any(match(obj.getStateFrame.poly,frame.poly)~=0)
+        if obj.getNumStates()>0 && any(match(obj.getStateFrame.getPoly,frame.getPoly)~=0)
           error('input frame poly clashes with current state frame poly.  this could lead to massive confusion');
         end
 
         if ~isempty(obj.p_dynamics_rhs)
-          obj.p_dynamics_rhs = subs(obj.p_dynamics_rhs,obj.getInputFrame.poly,frame.poly);
+          obj.p_dynamics_rhs = subs(obj.p_dynamics_rhs,obj.getInputFrame.getPoly,frame.getPoly);
         end
         if ~isempty(obj.p_dynamics_lhs)
-          obj.p_dynamics_lhs = subs(obj.p_dynamics_lhs,obj.getInputFrame.poly,frame.poly);
+          obj.p_dynamics_lhs = subs(obj.p_dynamics_lhs,obj.getInputFrame.getPoly,frame.getPoly);
         end
         if ~isempty(obj.p_update)
-          obj.p_update = subs(obj.p_update,obj.getInputFrame.poly,frame.poly);
+          obj.p_update = subs(obj.p_update,obj.getInputFrame.getPoly,frame.getPoly);
         end
         if ~isempty(obj.p_output) && obj.isDirectFeedthrough()
-          obj.p_output = subs(obj.p_output,obj.getInputFrame.poly,frame.poly);
+          obj.p_output = subs(obj.p_output,obj.getInputFrame.getPoly,frame.getPoly);
         end
       end
       
@@ -107,24 +100,24 @@ classdef SpotPolynomialSystem < PolynomialSystem
     
     function obj = setStateFrame(obj,frame)
       if frame.dim>0
-        if obj.getNumInputs()>0 && any(match(obj.getInputFrame.poly,frame.poly)~=0)
+        if obj.getNumInputs()>0 && any(match(obj.getInputFrame.getPoly,frame.getPoly)~=0)
           error('state frame poly clashes with current input frame poly.  this could lead to massive confusion');
         end
         
         if ~isempty(obj.p_dynamics_rhs)
-          obj.p_dynamics_rhs = subs(obj.p_dynamics_rhs,obj.getStateFrame.poly,frame.poly);
+          obj.p_dynamics_rhs = subs(obj.p_dynamics_rhs,obj.getStateFrame.getPoly,frame.getPoly);
         end
         if ~isempty(obj.p_dynamics_lhs)
-          obj.p_dynamics_lhs = subs(obj.p_dynamics_lhs,obj.getStateFrame.poly,frame.poly);
+          obj.p_dynamics_lhs = subs(obj.p_dynamics_lhs,obj.getStateFrame.getPoly,frame.getPoly);
         end
         if ~isempty(obj.p_update)
-          obj.p_update = subs(obj.p_update,obj.getStateFrame.poly,frame.poly);
+          obj.p_update = subs(obj.p_update,obj.getStateFrame.getPoly,frame.getPoly);
         end
         if ~isempty(obj.p_output)
-          obj.p_output = subs(obj.p_output,obj.getStateFrame.poly,frame.poly);
+          obj.p_output = subs(obj.p_output,obj.getStateFrame.getPoly,frame.getPoly);
         end
         if ~isempty(obj.p_state_constraints)
-          obj.p_state_constraints = subs(obj.p_state_constraints,obj.getStateFrame.poly,frame.poly);
+          obj.p_state_constraints = subs(obj.p_state_constraints,obj.getStateFrame.getPoly,frame.getPoly);
         end
       end
       
@@ -137,8 +130,8 @@ classdef SpotPolynomialSystem < PolynomialSystem
         if ~iscolumn(p_dynamics_rhs) error('p_dynamics_rhs must be a column vector'); end
         obj = setNumContStates(obj,size(p_dynamics_rhs,1));
         p_t=obj.p_t;
-        p_x=obj.getStateFrame.poly;
-        p_u=obj.getInputFrame.poly;
+        p_x=obj.getStateFrame.getPoly;
+        p_u=obj.getInputFrame.getPoly;
         
         if any(match([p_t;p_x;p_u],decomp(p_dynamics_rhs))==0)
           error('p_dynamics_rhs depends on variables other than t,x, and u (from the current state and input frames)');
@@ -174,8 +167,8 @@ classdef SpotPolynomialSystem < PolynomialSystem
         if ~iscolumn(p_update) error('p_update must be a column vector'); end
         obj = setNumDiscStates(obj,size(p_update,1));
         p_t=obj.p_t;
-        p_x=obj.getStateFrame.poly;
-        p_u=obj.getInputFrame.poly;
+        p_x=obj.getStateFrame.getPoly;
+        p_u=obj.getInputFrame.getPoly;
         
         if any(match([p_t;p_x;p_u],decomp(p_update))==0)
           error('p_update depends on variables other than t,x, and u (from the current state and input frames)');
@@ -197,8 +190,8 @@ classdef SpotPolynomialSystem < PolynomialSystem
         if ~iscolumn(p_output) error('p_output must be a column vector'); end
         obj = setNumOutputs(obj,size(p_output,1));
         p_t=obj.p_t;
-        p_x=obj.getStateFrame.poly;
-        p_u=obj.getInputFrame.poly;
+        p_x=obj.getStateFrame.getPoly;
+        p_u=obj.getInputFrame.getPoly;
         
         if any(match([p_t;p_x;p_u],decomp(p_output))==0)
           error('p_output depends on variables other than t,x, and u (from the current state and input frames)');
@@ -218,11 +211,20 @@ classdef SpotPolynomialSystem < PolynomialSystem
       if ~isempty(p_state_constraints)
         typecheck(p_state_constraints,'msspoly');
         if ~iscolumn(p_state_constraints) error('p_state_constraints must be a column vector'); end
-        if ~isempty(decomp(p_state_constraints)) && any(match(obj.getStateFrame.poly,decomp(p_state_constraints))==0)
+        if ~isempty(decomp(p_state_constraints)) && any(match(obj.getStateFrame.getPoly,decomp(p_state_constraints))==0)
           error('p_state_constraints depends on variables other than x (the current state frame)');
         end
+        con = SpotPolynomialConstraint(zeros(size(p_state_constraints)),zeros(size(p_state_constraints)),obj.getStateFrame.getPoly,p_state_constraints);
+        if isempty(obj.p_state_constraint_id)
+          [obj,obj.p_state_constraint_id] = addStateConstraint(obj,con);
+        else
+          obj = updateStateConstraint(obj,obj.p_constraint_id,con);
+        end
+      else
+        if ~isempty(obj.p_state_constraint_id)
+          obj = updateStateConstraint(obj,obj.p_constraint_id,NullConstraint(getNumStates(obj)));
+        end
       end
-      obj = setNumStateConstraints(obj,length(p_state_constraints));
       obj.p_state_constraints = p_state_constraints;
     end
     
@@ -236,8 +238,8 @@ classdef SpotPolynomialSystem < PolynomialSystem
       end
       
       t=0;
-      p_x=obj.getStateFrame.poly;
-      p_u=obj.getInputFrame.poly;
+      p_x=obj.getStateFrame.getPoly;
+      p_u=obj.getInputFrame.getPoly;
       
       Ac = []; Bc = []; xcdot0=[];
       if (obj.num_xc>0)

@@ -5,8 +5,8 @@ options.grad_method = {'user','taylorvar'};
 p = PlanarRigidBodyManipulator('../../../examples/Acrobot/Acrobot.urdf');
 for i=1:25
   t = rand;
-  x = randn(4,1);
-  u = randn;
+  x = rand(4,1);
+  u = rand;
   
   [xdot,dxdot] = geval(@p.dynamics,t,x,u,options);
 end
@@ -14,8 +14,8 @@ end
 p = RigidBodyManipulator('../../../examples/FurutaPendulum/FurutaPendulum.urdf');
 for i=1:25
   t = rand;
-  x = randn(4,1);
-  u = randn;
+  x = rand(4,1);
+  u = rand;
   
   [xdot,dxdot] = geval(@p.dynamics,t,x,u,options);
 end
@@ -23,7 +23,7 @@ end
 p = RigidBodyManipulator('FallingBrick.urdf',struct('floating','RPY'));
 for i=1:25
   t = rand;
-  x = randn(12,1);
+  x = rand(12,1);
   u = [];
   
 %  [H,C,B,dH,dC,dB] = geval(3,@p.manipulatorDynamics,x(1:6),x(7:12),options);
@@ -34,7 +34,7 @@ end
 p = RigidBodyManipulator('FallingBrick.urdf',struct('floating','rpy'));
 for i=1:100
   t = rand;
-  x = randn(12,1);
+  x = rand(12,1);
   u = [];
   
 %  [H,C,B,dH,dC,dB] = geval(3,@p.manipulatorDynamics,x(1:6),x(7:12),options);

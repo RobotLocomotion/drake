@@ -27,6 +27,8 @@ function V = sampledFiniteTimeVerification(sys,ts,G,varargin)
 % @option plot_rho set to true for visual progress/debugging output
 % @option degL1 polynomial degree of the first lagrange multiplier
 % @option degL2 polynomial degree of the second lagrange multiplier
+% @option lyap_parameterization specifies whether you search over the
+% rescaling of the Lyapunov function (rho) or the entire Lyapunov Function (rhoS).
 %
 % @retval V a time-varying PolynomialLyapunovFunction who's one-level set
 % defines the verified invariant region.
@@ -51,7 +53,7 @@ if (~isfield(options,'max_iterations')) options.max_iterations=10; end
 if (~isfield(options,'converged_tol')) options.converged_tol=.01; end
 if (~isfield(options,'stability')) options.stability=false; end  % true implies that we want exponential stability
 if (~isfield(options,'plot_rho')) options.plot_rho = true; end
-
+if (~isfield(options,'lyap_parameterization')) options.lyap_parameterization = 'rho'; end %choose to search over rho or rho & S.
 if (isa(varargin{1},'Trajectory'))
   x0 = varargin{1}.inFrame(sys.getStateFrame);
   Q = eye(num_xc);
@@ -79,28 +81,33 @@ N = length(ts);
 Vmin = zeros(N-1,1);
 
 sys = sys.inStateFrame(V0.getFrame); % convert system to Lyapunov function coordinates
-x=V0.getFrame.poly;
-
+x=V0.getFrame.getPoly;
+ 
 % evaluate dynamics and Vtraj at every ts once (for efficiency/clarity)
 for i=1:N
   V{i}=V0.getPoly(ts(i));
 
-  f = sys.getPolyDynamics(ts(i));
+  f{i} = sys.getPolyDynamics(ts(i));
   if (sys.getNumInputs>0)   % zero all inputs
-    f = subs(f,sys.getInputFrame.poly,zeros(sys.getNumInputs,1));
+    f{i} = subs(f{i},sys.getInputFrame.getPoly,zeros(sys.getNumInputs,1));
   end
   
-  Vdot{i}=diff(V{i},x)*f + V0.getPolyTimeDeriv(ts(i));
+  dVdt{i}=V0.getPolyTimeDeriv(ts(i));
+  Vdot{i}=diff(V{i},x)*f{i} + V0.getPolyTimeDeriv(ts(i));
 
   % balancing 
+  if (strcmp(options.lyap_parameterization,'rho'))
   S1=.5*doubleSafe(subs(diff(diff(V{i},x)',x),x,0*x));
   S2=.5*doubleSafe(subs(diff(diff(Vdot{i},x)',x),x,0*x));
   [T,D] = balanceQuadForm(S1,S2);
-  
+  Ts{i}=T;
   V{i}=clean(subss(V{i},x,T*x));
   Vdot{i}=clean(subss(Vdot{i},x,T*x));
-  
+  f{i}=clean(subss(f{i},x,T*x));
+  else
+  end
   Vmin(i) = minimumV(x,V{i});
+
 end
 
 if (~isfield(options,'degL1'))
@@ -113,40 +120,336 @@ rho = flipud(rhof*exp(-options.rho0_tau*(ts-ts(1))/(ts(end)-ts(1))))+max(Vmin);
 rhodot = diff(rho)./dts;
 
 % check accuracy by sampling
+
+
 for i=1:N-1
   m(i)=sampleCheck(x,V{i},Vdot{i},rho(i),rhodot(i));
 end
+
+
 if (max(m)>0)
   figure(4);clf;fnplt(foh(ts,rho')); 
   figure(5);clf;plot(ts(1:end-1),m); drawnow;
   error('Drake:PolynomialTrajectorySystem:InfeasibleRho','infeasible rho. increase options.rho0_tau');
 end
 
+V_0=V;
+Vdot_0=Vdot;
+
 % perform bilinear search the actual verification here
 rhointegral=0;
 for iter=1:options.max_iterations
   last_rhointegral = rhointegral; 
   L=findMultipliers(x,V,Vdot,rho,rhodot,options);
-  [rho,rhointegral]=optimizeRho(x,V,Vdot,L,dts,Vmin,rhof,options);
-  rhodot = diff(rho)./dts;
-
-  % plot current rho
-  if (options.plot_rho)
-    rhopp=foh(ts,rho');
-    figure(10); fnplt(rhopp); title(['iteration ',num2str(iter)]); drawnow;
-  end
   
-  % check for convergence
-  if ((rhointegral - last_rhointegral) < options.converged_tol*last_rhointegral)  % see if it's converged
-    break;
+  if (strcmp(options.lyap_parameterization,'rho'))
+      
+      [rho,rhointegral]=optimizeRho(x,V,Vdot,L,dts,Vmin,rhof,options);       
+      
+      rhodot = diff(rho)./dts;
+      % plot current rho
+      if (options.plot_rho)
+        rhopp=foh(ts,rho');
+        figure(10); fnplt(rhopp); title(['iteration ',num2str(iter)]); drawnow;
+      end
+
+      % check for convergence
+      if ((rhointegral - last_rhointegral) < options.converged_tol*last_rhointegral)  % see if it's converged
+        break;
+      end
+
+      
+  elseif (strcmp(options.lyap_parameterization,'rhoS'))
+        
+        [V, Vdot, Phi,f, rho, rhointegral]=optimize_V2(V_0,Vdot_0,dVdt,f,L,x,rho,rhodot,ts,dts,options);
+        rhodot = diff(rho)./dts;
+        % plot current rho
+        if (options.plot_rho)
+        rhopp=foh(ts,rho');
+        figure(10); fnplt(rhopp); title(['iteration ',num2str(iter)]); drawnow;
+        end
+
+        % check for convergence
+        if ((rhointegral - last_rhointegral) < options.converged_tol*last_rhointegral)  % see if it's converged
+        break;
+        end
+    
+  else
+      
+  end 
+  
+ 
+end
+
+  if (strcmp(options.lyap_parameterization,'rho'))
+      
+      V = PPTrajectory(foh(ts,1./rho'))*V0;  % note: the inverse here is an approximation (since 1/rho is not polynomial).  It would be better to rewrite the verification conditions in terms of inv(rho)
+    
+  elseif (strcmp(options.lyap_parameterization,'rhoS'))
+      
+     for k=1:length(Phi);Phim(:,:,k)=double(Phi{k});end
+     Phipp=PPTrajectory(foh(ts,Phim));     
+     V = QuadraticLyapunovFunction(getFrame(V0),V0.S+Phipp,V0.s1,V0.s2);
+    V = PPTrajectory(foh(ts,1./rho'))*V;
   end
+
+
 end
 
-V = PPTrajectory(foh(ts,1./rho'))*V0;  % note: the inverse here is an approximation (since 1/rho is not polynomial).  It would be better to rewrite the verification conditions in terms of inv(rho)
+
+
+function [V Vdot Phi sigma_integral]=optimize_V1(V0,Vdot0,dVdti,fx,L,x,rho,rhodot,ts,dts,options)
+
+display('Optimizing V...')
+tic
+N=length(V0);
+prog=mssprog;
+epsilon=-10^-8;
+persistent flag;
+persistent Sprev
+
+if isempty(flag)
+   
+    for k=1:N
+       
+      S0=   double(diff(diff(V0{k},x)',x)/2); 
+      Sprev{k}=S0/rho(k);
+        
+    end
+    
+    flag=1;
+    
+end
+
+
+
+xdim=length(x);
+
+sigma_integral=0;
+
+Phi=[];
+
+for k=1:N-1
+   [prog phi]=new(prog,xdim,'psd');
+   Phi{k}=phi;
+end
+
+Phif=double(diff(diff(V0{N},x)',x)/2);
+
+Phi{N}=Phif*0+1;
+
+for k=1:N-1
+
+ 
+    
+    
+Phidot=(Phi{k+1}-Phi{k})/dts(k);
+
+S0=   double(diff(diff(V0{k},x)',x)/2);
+
+Sdot0=double(diff(diff(dVdti{k},x)',x)/2);
+    
+S=S0.*Phi{k};
+
+%S=Phi{k};
+
+Sdot=(Sdot0.*Phi{k})+(S0.*Phidot); 
+
+%Sdot=Phidot;
+
+V{k}=x'*S*x;
+
+dVdt=x'*Sdot*x;
+
+dVdx=diff(V{k},x);
+
+Vdot{k}=dVdx*fx{k}+dVdt;
+
+sigma_integral = sigma_integral+ trace(inv(Sprev{k})*S)/rho(k);%exp(-options.rho0_tau*ts(k)/ts(N))*trace(S);
+
+prog.sos=epsilon-(Vdot{k}-rhodot(k)+L{k}*(V{k}-rho(k)));
+
+   
+
+%prog.sos=epsilon-(Vdot{k}+L{k}*(V{k}-1));
+
+end
+
+S0=double(diff(diff(V0{N},x)',x)/2);
+
+V{N}=x'*S0*x;
+
+[prog,info] = sedumi(prog,sigma_integral,0);
+
+if info.numerr>0
+   
+    display(['numerical error= ' num2str(info.numerr)]);
+    
+end
+
+for k=1:N
+V{k} = prog(V{k});
+end
+
+for k=1:N
+       
+  S=double(diff(diff(V{k},x)',x)/2); 
+  Sprev{k}=S/rho(k);
+        
+end
+
+
+for k=1:N-1
+Vdot{k}=prog(Vdot{k});
+end
+% 
+% for k=1:N-1
+%  %balancing 
+%   S1=.5*doubleSafe(subs(diff(diff(V{k},x)',x),x,0*x));
+%   S2=.5*doubleSafe(subs(diff(diff(Vdot{k},x)',x),x,0*x));
+%   [T,D] = balanceQuadForm(S1,S2);
+%   
+%   V{k}=subss(V{k},x,T*x);
+%   Vdot{k}=subss(Vdot{k},x,T*x);
+% end
+
+for k=1:N-1
+Phi{k}=double(prog(Phi{k}));
+end
+
+sigma_integral=double(prog(sigma_integral));
+toc
 
 end
 
 
+function [V, Vdot, Phi,fx, rho, rhointegral]=optimize_V2(V0,Vdot0,dVdti,fx,L,x,rho0,rhodot0,ts,dts,options)
+
+display('Optimizing V...')
+tic
+N=length(V0);
+prog=mssprog;
+epsilon=-10^-8;
+persistent flag;
+persistent Sprev
+
+if isempty(flag)
+   
+    for k=1:N
+       
+      S0=   double(diff(diff(V0{k},x)',x)/2); 
+      Sprev{k}=S0;
+        
+    end
+    
+    flag=1;
+    
+end
+
+
+  [prog,rho] = new(prog,N-1,'pos');
+  rho = [rho;1];
+
+xdim=length(x);
+
+sigma_integral=0;
+
+Phi=[];
+
+for k=1:N-1
+    [prog,phi0] = new(prog,xdim*xdim,'free');
+
+      Phi{k}=reshape(phi0,xdim,xdim);
+end
+
+Phif=double(diff(diff(V0{N},x)',x)/2);
+
+Phi{N}=Phif*0;
+rhointegral=0;
+for k=1:N-1
+    
+       rhodot(k,1) = (rho(k+1)-rho(k))/dts(k);
+    rhointegral = rhointegral+rho(k)*dts(k);
+
+Phidot=(Phi{k+1}-Phi{k})/dts(k);
+
+S0=   double(diff(diff(V0{k},x)',x)/2);
+
+Sdot0=double(diff(diff(dVdti{k},x)',x)/2);
+    
+S=S0+Phi{k};
+
+Sdot=Sdot0+Phidot; 
+
+V{k}=x'*S*x;
+
+dVdt=x'*Sdot*x;
+
+dVdx=diff(V{k},x);
+
+Vdot{k}=dVdx*fx{k}+dVdt;
+
+sigma_integral = sigma_integral+ trace(S);
+
+prog.sos=epsilon-(Vdot{k}-rhodot(k)+L{k}*(V{k}-rho(k)));
+
+prog.sos=V{k};
+
+prog.eq=trace(S)-trace(S0);
+end
+
+S0=double(diff(diff(V0{N},x)',x)/2);
+
+V{N}=x'*S0*x;
+
+pars.fid = 1;
+[prog,info] = sedumi(prog,-rhointegral,0,pars,1);
+
+if info.numerr>0
+   
+    display(['numerical error= ' num2str(info.numerr)]);
+    
+end
+
+for k=1:N
+V{k} = prog(V{k});
+end
+
+rho=double(prog(rho));
+
+for k=1:N
+       
+  S=double(diff(diff(V{k},x)',x)/2); 
+  Sprev{k}=S/rho(k);
+        
+end
+
+
+for k=1:N-1
+Vdot{k}=prog(Vdot{k});
+end
+
+% for k=1:N-1
+%  %balancing 
+%   S1=.5*doubleSafe(subs(diff(diff(V{k},x)',x),x,0*x));
+%   S2=.5*doubleSafe(subs(diff(diff(Vdot{k},x)',x),x,0*x));
+%   [T,D] = balanceQuadForm(S1,S2);
+%   
+%   V{k}=clean(subss(V{k},x,T*x));
+%   Vdot{k}=clean(subss(Vdot{k},x,T*x));
+%   fx{k}=clean(subss(fx{k},x,T*x));
+% end
+
+for k=1:N-1
+Phi{k}=double(prog(Phi{k}));
+end
+
+sigma_integral=double(prog(sigma_integral));
+
+rhointegral=double(prog(rhointegral));
+toc
+
+end
 
 % fix lagrange multipliers, optimize rho
 function [rho,rhointegral]=optimizeRho(x,V,Vdot,L,dts,Vmin,rhof,options)
@@ -178,6 +481,11 @@ function [rho,rhointegral]=optimizeRho(x,V,Vdot,L,dts,Vmin,rhof,options)
 end
 
 
+
+
+
+
+
 % fix rho, optimize lagrange multipliers
 function L=findMultipliers(x,V,Vdot,rho,rhodot,options)
   % note: compute L for each sample point in parallel using parfor
@@ -185,12 +493,12 @@ function L=findMultipliers(x,V,Vdot,rho,rhodot,options)
   N = length(V)-1;
   if (matlabpool('size')==0) matlabpool; end
  
-  parfor i=1:N
+  for i=1:N
     prog = mssprog;
     Lxmonom = monomials(x,0:options.degL1);
     [prog,l] = new(prog,length(Lxmonom),'free');
     L1 = l'*Lxmonom;
-    
+   
     [prog,gamma] = new(prog,1,'free');
     if (options.stability)
 
@@ -206,12 +514,14 @@ function L=findMultipliers(x,V,Vdot,rho,rhodot,options)
     end
     
     [prog,info{i}] = sedumi(prog,gamma,0);
+    
     if (info{i}.pinf==0 && info{i}.dinf==0)
       slack{i}=double(prog(gamma));
       L{i} = prog(L1);
     end
   end
-  
+  %slack
+ 
   for i=fliplr(1:N)
     if (slack{i}>1e-4 || info{i}.pinf~=0 || info{i}.dinf~=0)
       if (length(x)~=2)
@@ -313,3 +623,8 @@ function y=doubleSafe(x)
   y=double(x);
   if (~isa(y,'double')) error('double failed'); end
 end
+
+  function V=Lyapunov(t,S,Sdot,Phi,Phidot,x0,p_x,p_t,options)
+      V = (p_x-x0)'*(S{1}.*ppval(t,Phi)+(Sdot{1}.*ppval(t,Phi)+S{1}.*ppval(t,Phidot))*(p_t-t))*(p_x-x0);
+      %V = (p_x-x0)'*(ppval(t,Phi)+(ppval(t,Phidot))*(p_t-t))*(p_x-x0);
+  end

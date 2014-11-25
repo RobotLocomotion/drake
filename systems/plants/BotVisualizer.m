@@ -14,8 +14,8 @@ classdef BotVisualizer < RigidBodyVisualizer
 %    draw
 %    playbackMovie
 %    lcmglwrappers
-    function obj = BotVisualizer(manip,use_contact_shapes)
-      if nargin < 2, use_contact_shapes = false; end
+    function obj = BotVisualizer(manip,use_collision_geometry)
+      if nargin < 2, use_collision_geometry = false; end
       
       global g_disable_visualizers;
       if g_disable_visualizers % evaluates to false if empty
@@ -33,10 +33,6 @@ classdef BotVisualizer < RigidBodyVisualizer
       end
       typecheck(manip,'RigidBodyManipulator');
       
-      if ~BotVisualizer.isSupportedTerrain(manip.terrain)
-        error('Drake:BotVisualizer:UnsupportedModel', ...
-          'This model has terrain that is not supported by BotVisualizer (yet)');
-      end
 %      if numel(manip.urdf)~=1
 %        error('Drake:BotVisualizer:UnsupportedModel','I don''t actually support robots with multiple urdfs yet, but it will be easy enough');
 %      end
@@ -70,19 +66,19 @@ classdef BotVisualizer < RigidBodyVisualizer
         link = drake.lcmt_viewer_link_data();
         link.name = b.linkname;
         link.robot_num = b.robotnum;
-        if use_contact_shapes
-          link.num_geom = length(b.contact_shapes);
+        if use_collision_geometry
+          link.num_geom = length(b.collision_geometry);
         else
-          link.num_geom = length(b.visual_shapes);
+          link.num_geom = length(b.visual_geometry);
         end
         if (link.num_geom>0)
           link.geom = javaArray('drake.lcmt_viewer_geometry_data',link.num_geom);
         end
         for j=1:link.num_geom
-          if use_contact_shapes
-            link.geom(j) = serializeToLCM(b.contact_shapes{j});
+          if use_collision_geometry
+            link.geom(j) = serializeToLCM(b.collision_geometry{j});
           else
-            link.geom(j) = serializeToLCM(b.visual_shapes{j});
+            link.geom(j) = serializeToLCM(b.visual_geometry{j});
           end
         end
         vr.link(i) = link;
@@ -104,7 +100,7 @@ classdef BotVisualizer < RigidBodyVisualizer
         end
       end
       
-      nq = getNumDOF(manip);
+      nq = getNumPositions(manip);
       obj.draw_msg = drake.lcmt_viewer_draw();
       nb = getNumBodies(manip);
       obj.draw_msg.num_links = nb;
@@ -113,17 +109,19 @@ classdef BotVisualizer < RigidBodyVisualizer
       obj.draw_msg.position = single(zeros(nb,3));
       obj.draw_msg.quaternion = single(zeros(nb,4));
       
-      draw(obj,0,zeros(getNumStates(manip),1));
+      draw(obj,0,zeros(getNumPositions(manip),1));
     end
     
     function drawWrapper(obj,t,y)
       draw(obj,t,y);
     end
     
-    function draw(obj,t,y)
+    function draw(obj,t,q)
       obj.draw_msg.timestamp = int64(t*1000000);
       
-      kinsol = doKinematics(obj.model,y(1:getNumDOF(obj.model)));
+      q = q(1:obj.model.num_positions);  % be robust to people passing in the full state
+      
+      kinsol = doKinematics(obj.model,q);
       for i=1:getNumBodies(obj.model)
         pt = forwardKin(obj.model,kinsol,i,zeros(3,1),2);
         obj.draw_msg.position(i,:) = pt(1:3);
@@ -197,16 +195,6 @@ classdef BotVisualizer < RigidBodyVisualizer
       delete(ppms_filename);
     end
     
-  end
-
-  methods (Static)
-    function is_supported_terrain = isSupportedTerrain(terrain)
-      if isempty(terrain), is_supported_terrain = true; return; end;
-
-      supported_classes = { 'RigidBodyFlatTerrain', ...
-                            'RigidBodyFlatTerrainNoGeometry'};
-      is_supported_terrain = any(cellfun(@(str)isa(terrain,str),supported_classes));
-    end
   end
   
   properties 

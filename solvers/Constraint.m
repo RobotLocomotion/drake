@@ -10,7 +10,7 @@ classdef Constraint
   properties(SetAccess = protected)
     lb      % The lower bound of the constraint
     ub      % The upper bound of the constraint
-    xdim    % The name of the constraint. If not specified, it is an empty string
+    xdim    % The size of the input to the constraint
     num_cnstr % An int scalar. The number of constraints
     name    % cell array of constraint names
     ceq_idx   % The row index of the equality constraint
@@ -23,9 +23,11 @@ classdef Constraint
   end
 
   properties
-    grad_level    % derivative level of user gradients provided
-    grad_method   % A string indicating the method to compute gradient. Refer to
-                  %    'geval' for all supported method. @default 'user'
+    grad_level        % derivative level of user gradients provided
+    grad_method='';   % A string indicating the method to compute gradient. If empty,
+                      % then it calls geval only if the grad_level is insufficient
+                      % to supply all of the requested arguments.  Refer to
+                      % the 'geval' documentation for additional supported values. @default ''
   end
 
   methods
@@ -41,18 +43,7 @@ classdef Constraint
       %                1 - first derivatives provided
       %                ...
       %              @default -1
-      if(~isnumeric(lb) || ~isnumeric(ub))
-        error('Drake:Constraint:BadInputs','lb and ub should be numeric')
-      end
-      if(obj.num_cnstr ~= numel(obj.ub))
-        error('Drake:Constraint:BadInputs','Constraint lb and ub should have same number of elements');
-      end
-      if(any(obj.lb>obj.ub))
-        error('Drake:Constraint:BadInputs','Constraint lb should be no larger than ub');
-      end
-      obj.lb = lb(:);
-      obj.ub = ub(:);
-
+      obj = obj.setBounds(lb,ub);
       if(~isnumeric(xdim) || numel(xdim) ~= 1 || xdim<0 || xdim ~= floor(xdim))
         error('Drake:Constraint:BadInputs','xdim should be a non-negative integer');
       end
@@ -61,14 +52,7 @@ classdef Constraint
       if (nargin<4), grad_level = -1; end
       obj.grad_level = grad_level;
 
-      obj.num_cnstr = numel(obj.lb);
       obj.name = repmat({''},obj.num_cnstr,1);
-
-      c_idx = (1:obj.num_cnstr)';
-      obj.ceq_idx = c_idx(obj.lb == obj.ub);
-      obj.cin_idx = c_idx(obj.lb ~= obj.ub);
-
-      obj.grad_method = 'user';
 
       obj.iCfun = reshape(bsxfun(@times,(1:obj.num_cnstr)',ones(1,obj.xdim)),[],1);
       obj.jCvar = reshape(bsxfun(@times,1:obj.xdim,ones(obj.num_cnstr,1)),[],1);
@@ -107,31 +91,71 @@ classdef Constraint
 
     function obj = setName(obj,name)
       % @param name   -- A cell array, name{i} is the name string of i'th constraint
+      %                  if name is a string, then the variables will be
+      %                  named name1, name2, name3, etc.
+      if(ischar(name))
+        name=cellfun(@(a) [name,num2str(a)],num2cell(1:obj.num_cnstr),'UniformOutput',false)';
+      end
       if(~iscellstr(name))
         error('Drake:Constraint:name should be a cell array of string');
       end
       sizecheck(name,[obj.num_cnstr,1]);
       obj.name = name;
     end
+    
+    function disp(obj)
+      fprintf('%d constraints on %d variables:\n',obj.num_cnstr,obj.xdim);
+      for j=1:obj.num_cnstr
+        fprintf('  %f <= %s <= %f\n',obj.lb(j),obj.name{j},obj.ub(j));
+      end
+    end
 
     function varargout = eval(obj,varargin)
-      if obj.grad_level==-2  % no gradients available
+      if obj.grad_level==-2  % no gradients available (non-differentiable)
         varargout{1} = obj.constraintEval(varargin{:});
       else
         % special casing 'user' to avoid geval for speed reasons
-        varargout=cell(1,nargout);
+        varargout=cell(1,max(nargout,1));
         if (isempty(obj.grad_method) && nargout<=obj.grad_level+1) ...
-            || all(strcmp('user',obj.grad_method))
+            || strcmp(obj.grad_method,'user')
           [varargout{:}] = obj.constraintEval(varargin{:});
         else
-          gopt.grad_method = obj.grad_method;
-          gopt.grad_level = obj.grad_level;
-          [varargout{:}] = geval(@obj.constraintEval,varargin{:},gopt);
+          [varargout{:}] = geval(@obj.constraintEval,varargin{:},struct('grad_method',obj.grad_method,'grad_level',obj.grad_level));
         end
       end
     end
+    
+    function obj = setBounds(obj,lb,ub)
+      % revise the bounds for the constraint
+      % @param lb   The lower bound of the constraint
+      % @param ub   The upper bound of the constraint
+      if(any(~isnumeric(lb)) || any(~isnumeric(ub)))
+        error('Drake:Constraint:setBounds:BadInputs','Argument lb and ub should be numeric');
+      end
+      lb = lb(:);
+      ub = ub(:);
+      if(numel(lb) ~= numel(ub))
+        error('Drake:Constraint:setBounds:BadInputs','lb and ub should have the same number of elements');
+      end
+      if(any(lb>ub))
+        error('Drake:Constraint:setBounds:BadInputs','lb should be no larger than ub');
+      end
+      num_cnstr_new = numel(lb);
+      if(isempty(obj.num_cnstr))
+        obj.num_cnstr = num_cnstr_new;
+      else
+        if(obj.num_cnstr ~= num_cnstr_new)
+          error('Drake:Constraint:setBounds:ChangeBoundSize','The size of the constraint bounds is changed');
+        end
+      end
+      obj.lb = lb;
+      obj.ub = ub;
+      c_idx = (1:obj.num_cnstr)';
+      obj.cin_idx = c_idx(obj.lb ~= obj.ub);
+      obj.ceq_idx = c_idx(obj.lb == obj.ub);
+    end
   end
-
+  
   methods(Abstract, Access = protected)
     varargout = constraintEval(obj, varargin);
   end

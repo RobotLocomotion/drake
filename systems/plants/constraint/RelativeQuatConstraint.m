@@ -105,7 +105,7 @@ classdef RelativeQuatConstraint < QuatConstraint
     
     function joint_idx = kinematicsPathJoints(obj)
       [~,joint_path] = obj.robot.findKinematicPath(obj.body_a.idx,obj.body_b.idx);
-      joint_idx = vertcat(obj.robot.body(joint_path).dofnum)';
+      joint_idx = vertcat(obj.robot.body(joint_path).position_num)';
     end
   end
 end

@@ -39,7 +39,7 @@ classdef QuasiStaticConstraint<RigidBodyConstraint
         error('Drake:QuasiStaticConstraint: robotnum is not accepted');
       end
       obj.robotnum = robotnum;
-      obj.nq = robot.getNumDOF;
+      obj.nq = robot.getNumPositions;
       obj.shrinkFactor = 0.9;
       obj.active = false;
       obj.num_bodies = 0;
@@ -170,11 +170,12 @@ classdef QuasiStaticConstraint<RigidBodyConstraint
       problem.x0 = 1/obj.num_pts*ones(obj.num_pts,1);
       problem.Aeq = ones(1,obj.num_pts);
       problem.beq = 1;
-      problem.lb = zeros(1,obj.num_pts);
-      problem.ub = ones(1,obj.num_pts);
+      problem.lb = zeros(obj.num_pts,1);
+      problem.ub = ones(obj.num_pts,1);
       problem.solver = 'lsqlin';
       problem.options = optimset('LargeScale','off','Display','off');
-      [weights,resnorm,~,exitflag] = lsqlin(problem);
+      checkDependency('lsqlin');
+      [weights,resnorm,~,exitflag] = lsqlin(problem.C,problem.d,[],[],problem.Aeq,problem.beq,problem.lb,problem.ub,problem.x0,problem.options);
       flag = resnorm<1e-6;
     end
     
@@ -209,8 +210,10 @@ classdef QuasiStaticConstraint<RigidBodyConstraint
     
     function obj = updateRobot(obj,robot)
       obj.robot = robot;
-      obj.nq = obj.robot.getNumDOF();
-      obj.mex_ptr = updatePtrRigidBodyConstraintmex(obj.mex_ptr,'robot',obj.robot.getMexModelPtr);
+      obj.nq = obj.robot.getNumPositions();
+      if(robot.getMexModelPtr~=0 && exist('updatePtrRigidBodyConstraintmex','file'))
+        obj.mex_ptr = updatePtrRigidBodyConstraintmex(obj.mex_ptr,'robot',obj.robot.getMexModelPtr);
+      end
     end
     
     function cnstr = generateConstraint(obj,t)

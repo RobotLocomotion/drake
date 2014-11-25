@@ -10,7 +10,8 @@ namespace DrakeCollision
     public:
       BulletElement(const Eigen::Matrix4d& T_elem_to_link, Shape shape, 
                     const std::vector<double>& params,
-                    const std::string& group_name);
+                    const std::string& group_name,
+                    bool use_margins = true);
 
       void updateWorldTransform(const Eigen::Matrix4d& T_link_to_world);
 

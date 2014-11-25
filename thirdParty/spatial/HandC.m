@@ -28,7 +28,7 @@ end
 external_force = ( nargin > 3 && length(f_ext) > 0 );
 
 for i = 1:model.NB
-  n = model.dofnum(i);
+  n = model.position_num(i);
   [ XJ, S{i} ] = jcalc( model.pitch(i), q(n) );
   vJ = S{i}*qd(n);
   Xup{i} = XJ * model.Xtree{i};
@@ -50,7 +50,7 @@ IC = model.I;				% composite inertia calculation
 C = zeros(model.NB,1)*q(1);
 
 for i = model.NB:-1:1
-  n = model.dofnum(i);
+  n = model.position_num(i);
   C(n,1) = S{i}' * fvp{i};
   if model.parent(i) ~= 0
     fvp{model.parent(i)} = fvp{model.parent(i)} + Xup{i}'*fvp{i};
@@ -63,14 +63,14 @@ end
 H=zeros(model.NB)*q(1);
 
 for i = 1:model.NB
-  n = model.dofnum(i);
+  n = model.position_num(i);
   fh = IC{i} * S{i};
   H(n,n) = S{i}' * fh;
   j = i;
   while model.parent(j) > 0
     fh = Xup{j}' * fh;
     j = model.parent(j);
-    np = model.dofnum(j);
+    np = model.position_num(j);
     H(n,np) = S{j}' * fh;
     H(np,n) = H(n,np);
   end

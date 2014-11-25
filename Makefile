@@ -23,11 +23,9 @@ ifneq "$(BUILD_PREFIX)" "$(CMAKE_INSTALL_PREFIX)"
 	OUT:=$(shell echo "\nBUILD_PREFIX $(BUILD_PREFIX) does not match CMAKE cache $(CMAKE_INSTALL_PREFIX).  Forcing configure\n\n"; touch CMakeLists.txt)
 endif
 
-# note: this is evaluated at run time, so must be in the pod-build directory
-CMAKE_MAKE_PROGRAM="`cmake -LA -N | grep CMAKE_MAKE_PROGRAM | cut -d "=" -f2`"
 
 all: pod-build/Makefile
-	cd pod-build && $(CMAKE_MAKE_PROGRAM) all install
+	cmake --build pod-build --config $(BUILD_TYPE) --target install
 
 pod-build/Makefile:
 	$(MAKE) configure
@@ -38,10 +36,15 @@ configure:
 
 	# create the temporary build directory if needed
 	@mkdir -p pod-build
-	@cd pod-build && ln -sf ../CTestCustom.cmake  # actually has to live in the build path
+ifeq ($(shell uname -o),Cygwin)
+	@echo "set(CTEST_CUSTOM_PRE_TEST \"`which bash | cygpath -f - -w | sed -e 's/\\\\/\\\\\\\\/g'` -l -c \\\"`pwd`/cmake/add_matlab_unit_tests.pl `pwd`\\\"\")" > pod-build/CTestCustom.cmake 
+	@which python | cygpath -f - -w > .python
+else
+	@echo "set(CTEST_CUSTOM_PRE_TEST \"../cmake/add_matlab_unit_tests.pl ..\")" > pod-build/CTestCustom.cmake # actually has to live in the build path
+endif
 
 	# run CMake to generate and configure the build scripts
-	@cd pod-build && cmake -DCMAKE_INSTALL_PREFIX="$(BUILD_PREFIX)" \
+	@cd pod-build && cmake $(CMAKE_FLAGS) -DCMAKE_INSTALL_PREFIX="$(BUILD_PREFIX)" \
 		   -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) ..
 
 .PHONY: doc doxygen
@@ -68,7 +71,7 @@ mlint	:
 	matlab -nodisplay -r "addpath(fullfile(pwd,'thirdParty','runmlint')); runmlint('.mlintopts'); exit"
 
 test	:  configure
-	-@cd pod-build && ctest -D Experimental --output-on-failure --timeout 300
+	-@cd pod-build && ctest -D Experimental --output-on-failure --timeout 300 
 
 test_continuous : configure
 	while true; do $(MAKE) Continuous; sleep 300; done
@@ -77,14 +80,16 @@ release_filelist:
 	echo ".UNITTEST"
 	echo ".mlintopts"
 	find * -type f | grep -v "pod-build" | grep -v "\.valgrind" | grep -v "\.viewer-prefs" | grep -v "\.out" | grep -v "\.autosave" | grep -v "\.git" | grep -v "\.tmp" | grep -v "drake_config\.mat" | grep -v "DoxygenMatlab" | grep -v "\.aux" | grep -v "\.d" | grep -v "\.log" | grep -v "\.bib"
+	find pod-build/lib -type f
+	-find pod-build/bin -type f 2> /dev/null
 
 clean:
 	-if [ -e pod-build/install_manifest.txt ]; then rm -f `cat pod-build/install_manifest.txt`; fi
-	-if [ -d pod-build ]; then cd pod-build && $(CMAKE_MAKE_PROGRAM) clean; cd ..; rm -rf pod-build; fi
+	-if [ -d pod-build ]; then cmake --build pod-build --target clean; rm -rf pod-build; fi
 
 # other (custom) targets are passed through to the cmake-generated Makefile
 %::
-	cd pod-build && $(CMAKE_MAKE_PROGRAM) $@
+	cmake --build pod-build --config $(BUILD_TYPE) --target $@
 
 # Default to a less-verbose build.  If you want all the gory compiler output,
 # run "make VERBOSE=1"

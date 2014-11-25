@@ -12,7 +12,6 @@ function collisionDetectGradTest(visualize,n_debris)
   options.floating = true;
   S = warning('OFF','Drake:RigidBodyManipulator:UnsupportedContactPoints');
   warning('OFF','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
-  warning('OFF','Drake:RigidBodyManipulator:UnsupportedJointLimits');
   r = RigidBodyManipulator([getDrakePath(),'/examples/Atlas/urdf/atlas_convex_hull.urdf'],options);
   for i = 1:n_debris
     r = r.addRobotFromURDF('FallingBrick.urdf',3*(2*rand(3,1)-1),2*pi*rand(3,1));
@@ -52,7 +51,7 @@ end
 
 % Remove this when the RBM method is implemented
 function n_pos = getNumPositions(r)
-  n_pos = r.getNumDOF();
+  n_pos = r.getNumPositions();
 end
 
 function [ptsA_in_world, ptsB_in_world, ptsA, ptsB, idxA, idxB] = drawClosestPoints(r,q,v,lcmgl)

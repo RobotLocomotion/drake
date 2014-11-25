@@ -15,6 +15,16 @@
 #include <Eigen/Sparse>
 #include <sstream>
 
+#undef DLLEXPORT 
+#if defined(WIN32) || defined(WIN64)
+  #if defined(drakeRigidBodyConstraint_EXPORTS)
+    #define DLLEXPORT __declspec( dllexport )
+  #else
+    #define DLLEXPORT __declspec( dllimport )
+  #endif
+#else
+  #define DLLEXPORT
+#endif
 
 class RigidBodyManipulator;
 
@@ -24,9 +34,9 @@ namespace DrakeRigidBodyConstraint{
   extern Eigen::Vector2d default_tspan;
 }
 
-void drakePrintMatrix(const Eigen::MatrixXd &mat);
+DLLEXPORT void drakePrintMatrix(const Eigen::MatrixXd &mat);
 
-class RigidBodyConstraint
+class DLLEXPORT RigidBodyConstraint
 {
   protected:
     int category;
@@ -75,7 +85,7 @@ class RigidBodyConstraint
 
 /**
  * @class QuasiStaticConstraint       -- Constrain the Center of Mass (CoM) is within the support polygon. The support polygon is a shrunk area of the contact polygon
- * @param robot     
+ * @param robot
  * @param tspan           -- The time span of this constraint being active
  * @param robotnumset     -- The set of the robots in the RigidBodyManipulator for which the CoM is computed
  * @param shrinkFactor    -- The factor to shrink the contact polygon. The shrunk area is the support polygon.
@@ -98,7 +108,7 @@ class RigidBodyConstraint
  *    @param body_pts            -- body_pts[i] are the contact points on body[i]
  */
 
-class QuasiStaticConstraint: public RigidBodyConstraint
+class DLLEXPORT QuasiStaticConstraint: public RigidBodyConstraint
 {
   protected:
     std::set<int> m_robotnumset;
@@ -111,11 +121,11 @@ class QuasiStaticConstraint: public RigidBodyConstraint
     std::vector<Eigen::MatrixXd> body_pts;
     static const std::set<int> defaultRobotNumSet;
   public:
-    QuasiStaticConstraint(RigidBodyManipulator* robot, const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan,const std::set<int> &robotnumset = QuasiStaticConstraint::defaultRobotNumSet); 
+    QuasiStaticConstraint(RigidBodyManipulator* robot, const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan,const std::set<int> &robotnumset = QuasiStaticConstraint::defaultRobotNumSet);
     QuasiStaticConstraint(const QuasiStaticConstraint &rhs);
     bool isTimeValid(const double* t) const;
     int getNumConstraint(const double* t) const;
-    void eval(const double* t,const double* weights,Eigen::VectorXd &c, Eigen::MatrixXd &dc) const; 
+    void eval(const double* t,const double* weights,Eigen::VectorXd &c, Eigen::MatrixXd &dc) const;
     void bounds(const double* t,Eigen::VectorXd &lb, Eigen::VectorXd &ub) const;
     void name(const double* t,std::vector<std::string> &name_str) const;
     virtual ~QuasiStaticConstraint(void);
@@ -133,18 +143,20 @@ class QuasiStaticConstraint: public RigidBodyConstraint
  * @param tspan          -- The time span of the constraint being valid
  * @param lb             -- The lower bound of the joints
  * @param ub             -- The upper bound of the joints
- * 
+ *
  * @function setJointLimits   set the limit of some joints
  *   @param num_idx    The number of joints whose limits are going to be set
  *   @param joint_idx  joint_idx[i] is the index of the i'th joint whose limits are going to be set
  *   @param lb         lb[i] is the lower bound of the joint joint_idx[i]
  *   @param ub         ub[i] is the upper bound of the joint joint_idx[i]
  */
-class PostureConstraint: public RigidBodyConstraint
+class DLLEXPORT PostureConstraint: public RigidBodyConstraint
 {
   protected:
     Eigen::VectorXd lb;
     Eigen::VectorXd ub;
+    Eigen::VectorXd joint_limit_min0;
+    Eigen::VectorXd joint_limit_max0;
   public:
     PostureConstraint(RigidBodyManipulator *model, const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan);
     PostureConstraint(const PostureConstraint& rhs);
@@ -171,7 +183,7 @@ class PostureConstraint: public RigidBodyConstraint
  *   @return jAvar    The column index of the non-zero entries in the gradient matrix
  *   @return A        The value of the non-zero entries in the gradient matrix
  */
-class MultipleTimeLinearPostureConstraint: public RigidBodyConstraint
+class DLLEXPORT MultipleTimeLinearPostureConstraint: public RigidBodyConstraint
 {
   protected:
     int numValidTime(const std::vector<bool> &valid_flag) const;
@@ -214,7 +226,7 @@ class MultipleTimeLinearPostureConstraint: public RigidBodyConstraint
  *   @return jAvar    The column index of the non-zero entries in the gradient matrix
  *   @return A        The value of the non-zero entries in the gradient matrix
  */
-class SingleTimeLinearPostureConstraint: public RigidBodyConstraint
+class DLLEXPORT SingleTimeLinearPostureConstraint: public RigidBodyConstraint
 {
   protected:
     Eigen::VectorXi iAfun;
@@ -240,7 +252,7 @@ class SingleTimeLinearPostureConstraint: public RigidBodyConstraint
 /*
  * class SingleTimeKinematicConstraint   An abstract class that constrain the kinematics of the robot at individual time. Need to call doKinematics first for the robot and then evaulate this constraint.
  */
-class SingleTimeKinematicConstraint: public RigidBodyConstraint
+class DLLEXPORT SingleTimeKinematicConstraint: public RigidBodyConstraint
 {
   protected:
     int num_constraint;
@@ -256,7 +268,7 @@ class SingleTimeKinematicConstraint: public RigidBodyConstraint
     virtual ~SingleTimeKinematicConstraint(){};
 };
 
-class MultipleTimeKinematicConstraint : public RigidBodyConstraint
+class DLLEXPORT MultipleTimeKinematicConstraint : public RigidBodyConstraint
 {
   protected:
     int numValidTime(const double* t,int n_breaks) const;
@@ -273,13 +285,13 @@ class MultipleTimeKinematicConstraint : public RigidBodyConstraint
     virtual ~MultipleTimeKinematicConstraint(){};
 };
 
-class PositionConstraint : public SingleTimeKinematicConstraint
+class DLLEXPORT PositionConstraint : public SingleTimeKinematicConstraint
 {
   protected:
     Eigen::VectorXd lb;
     Eigen::VectorXd ub;
     std::vector<bool> null_constraint_rows;
-    Eigen::MatrixXd pts; 
+    Eigen::MatrixXd pts;
     int n_pts;
     virtual void evalPositions(Eigen::MatrixXd &pos,Eigen::MatrixXd &J) const = 0;
     virtual void evalNames(const double* t,std::vector<std::string> &cnst_names) const = 0;
@@ -292,7 +304,7 @@ class PositionConstraint : public SingleTimeKinematicConstraint
     virtual ~PositionConstraint(void) {};
 };
 
-class WorldPositionConstraint: public PositionConstraint
+class DLLEXPORT WorldPositionConstraint: public PositionConstraint
 {
   protected:
     int body;
@@ -304,7 +316,7 @@ class WorldPositionConstraint: public PositionConstraint
     virtual ~WorldPositionConstraint();
 };
 
-class WorldCoMConstraint: public PositionConstraint
+class DLLEXPORT WorldCoMConstraint: public PositionConstraint
 {
   protected:
     std::set<int> m_robotnum;
@@ -316,10 +328,10 @@ class WorldCoMConstraint: public PositionConstraint
   public:
     WorldCoMConstraint(RigidBodyManipulator *model, Eigen::Vector3d lb, Eigen::Vector3d ub, const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan, const std::set<int> &robotnum = WorldCoMConstraint::defaultRobotNumSet);
     void updateRobotnum(const std::set<int> &robotnum);
-    virtual ~WorldCoMConstraint(); 
+    virtual ~WorldCoMConstraint();
 };
 
-class RelativePositionConstraint: public PositionConstraint
+class DLLEXPORT RelativePositionConstraint: public PositionConstraint
 {
   protected:
     int bodyA_idx;
@@ -335,19 +347,19 @@ class RelativePositionConstraint: public PositionConstraint
     virtual ~RelativePositionConstraint();
 };
 
-class QuatConstraint: public SingleTimeKinematicConstraint
+class DLLEXPORT QuatConstraint: public SingleTimeKinematicConstraint
 {
   protected:
     double tol;
     virtual void evalOrientationProduct(double &prod, Eigen::MatrixXd &dprod) const = 0;
   public:
-    QuatConstraint(RigidBodyManipulator *model, double tol, Eigen::Vector2d tspan = DrakeRigidBodyConstraint::default_tspan);
+    QuatConstraint(RigidBodyManipulator *model, double tol, const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan);
     virtual void eval(const double* t, Eigen::VectorXd &c, Eigen::MatrixXd &dc) const;
     virtual void bounds(const double* t, Eigen::VectorXd &lb, Eigen::VectorXd &ub) const;
     virtual ~QuatConstraint();
 };
 
-class WorldQuatConstraint: public QuatConstraint
+class DLLEXPORT WorldQuatConstraint: public QuatConstraint
 {
   protected:
     int body;
@@ -355,7 +367,7 @@ class WorldQuatConstraint: public QuatConstraint
     Eigen::Vector4d quat_des;
     virtual void evalOrientationProduct(double &prod, Eigen::MatrixXd &dprod) const;
   public:
-    WorldQuatConstraint(RigidBodyManipulator *model, int body, Eigen::Vector4d quat_des, double tol, Eigen::Vector2d tspan = DrakeRigidBodyConstraint::default_tspan);
+    WorldQuatConstraint(RigidBodyManipulator *model, int body, const Eigen::Vector4d &quat_des, double tol, const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan);
     virtual void name(const double* t, std::vector<std::string> &name_str) const;
     virtual ~WorldQuatConstraint();
 
@@ -363,7 +375,7 @@ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-class RelativeQuatConstraint: public QuatConstraint
+class DLLEXPORT RelativeQuatConstraint: public QuatConstraint
 {
   protected:
     int bodyA_idx;
@@ -373,7 +385,7 @@ class RelativeQuatConstraint: public QuatConstraint
     Eigen::Vector4d quat_des;
     virtual void evalOrientationProduct(double &prod, Eigen::MatrixXd &dprod) const;
   public:
-    RelativeQuatConstraint(RigidBodyManipulator *model, int bodyA_idx, int bodyB_idx, Eigen::Vector4d &quat_des, double tol, Eigen::Vector2d tspan = DrakeRigidBodyConstraint::default_tspan);
+    RelativeQuatConstraint(RigidBodyManipulator *model, int bodyA_idx, int bodyB_idx, const Eigen::Vector4d &quat_des, double tol, const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan);
     virtual void name(const double* t, std::vector<std::string> &name_str) const;
     virtual ~RelativeQuatConstraint();
 
@@ -381,7 +393,7 @@ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-class EulerConstraint: public SingleTimeKinematicConstraint
+class DLLEXPORT EulerConstraint: public SingleTimeKinematicConstraint
 {
   protected:
     Eigen::VectorXd ub;
@@ -390,46 +402,46 @@ class EulerConstraint: public SingleTimeKinematicConstraint
     Eigen::VectorXd avg_rpy;
     virtual void evalrpy(Eigen::Vector3d &rpy, Eigen::MatrixXd &J) const = 0;
   public:
-    EulerConstraint(RigidBodyManipulator *model, Eigen::Vector3d lb, Eigen::Vector3d ub, Eigen::Vector2d tspan = DrakeRigidBodyConstraint::default_tspan);
+    EulerConstraint(RigidBodyManipulator *model, const Eigen::Vector3d &lb, const Eigen::Vector3d &ub, const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan);
     EulerConstraint(const EulerConstraint &rhs);
     virtual void eval(const double* t, Eigen::VectorXd &c, Eigen::MatrixXd &dc) const;
     virtual void bounds(const double* t, Eigen::VectorXd &lb, Eigen::VectorXd &ub) const;
     virtual ~EulerConstraint(void) {};
 };
 
-class WorldEulerConstraint: public EulerConstraint
+class DLLEXPORT WorldEulerConstraint: public EulerConstraint
 {
   protected:
     int body;
     std::string body_name;
     virtual void evalrpy(Eigen::Vector3d &rpy, Eigen::MatrixXd &J) const;
   public:
-    WorldEulerConstraint(RigidBodyManipulator *model, int body, Eigen::Vector3d lb, Eigen::Vector3d ub, Eigen::Vector2d tspan = DrakeRigidBodyConstraint::default_tspan);
+    WorldEulerConstraint(RigidBodyManipulator *model, int body, const Eigen::Vector3d &lb, const Eigen::Vector3d &ub, const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan);
     virtual void name(const double* t, std::vector<std::string> &name_str) const;
     virtual ~WorldEulerConstraint();
 };
 
-class GazeConstraint : public SingleTimeKinematicConstraint
+class DLLEXPORT GazeConstraint : public SingleTimeKinematicConstraint
 {
   protected:
     Eigen::Vector3d axis;
     double conethreshold;
   public:
-    GazeConstraint(RigidBodyManipulator *model, Eigen::Vector3d axis, double conethreshold = 0.0, Eigen::Vector2d tspan = DrakeRigidBodyConstraint::default_tspan);
+    GazeConstraint(RigidBodyManipulator *model, const Eigen::Vector3d &axis, double conethreshold = 0.0, const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan);
     virtual ~GazeConstraint(void){};
 
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-class GazeOrientConstraint : public GazeConstraint
+class DLLEXPORT GazeOrientConstraint : public GazeConstraint
 {
   protected:
     double threshold;
     Eigen::Vector4d quat_des;
     virtual void evalOrientation(Eigen::Vector4d &quat, Eigen::MatrixXd &dquat_dq) const = 0;
   public:
-    GazeOrientConstraint(RigidBodyManipulator* model, Eigen::Vector3d axis, Eigen::Vector4d quat_des, double conethreshold, double threshold, Eigen::Vector2d tspan = DrakeRigidBodyConstraint::default_tspan);
+    GazeOrientConstraint(RigidBodyManipulator* model, const Eigen::Vector3d &axis, const Eigen::Vector4d &quat_des, double conethreshold, double threshold, const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan);
     virtual void eval(const double* t, Eigen::VectorXd &c, Eigen::MatrixXd &dc) const;
     virtual void bounds(const double* t,Eigen::VectorXd &lb, Eigen::VectorXd &ub) const;
     virtual ~GazeOrientConstraint(void){};
@@ -437,68 +449,68 @@ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-class WorldGazeOrientConstraint: public GazeOrientConstraint
+class DLLEXPORT WorldGazeOrientConstraint: public GazeOrientConstraint
 {
   protected:
     int body;
     std::string body_name;
     virtual void evalOrientation(Eigen::Vector4d &quat, Eigen::MatrixXd &dquat_dq) const;
   public:
-    WorldGazeOrientConstraint(RigidBodyManipulator* model, int body, Eigen::Vector3d axis, Eigen::Vector4d quat_des,double conethreshold, double threshold, Eigen::Vector2d tspan = DrakeRigidBodyConstraint::default_tspan);
+    WorldGazeOrientConstraint(RigidBodyManipulator* model, int body, const Eigen::Vector3d &axis, const Eigen::Vector4d &quat_des,double conethreshold, double threshold, const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan);
     virtual void name(const double* t,std::vector<std::string> &name_str) const;
     virtual ~WorldGazeOrientConstraint(){};
 };
 
-class GazeDirConstraint: public GazeConstraint
+class DLLEXPORT GazeDirConstraint: public GazeConstraint
 {
   protected:
     Eigen::Vector3d dir;
   public:
-    GazeDirConstraint(RigidBodyManipulator* model, Eigen::Vector3d axis, Eigen::Vector3d dir,double conethreshold, Eigen::Vector2d tspan = DrakeRigidBodyConstraint::default_tspan);
+    GazeDirConstraint(RigidBodyManipulator* model, const Eigen::Vector3d &axis, const Eigen::Vector3d &dir,double conethreshold, const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan);
     virtual void bounds(const double* t, Eigen::VectorXd &lb, Eigen::VectorXd &ub) const;
     virtual ~GazeDirConstraint(void){};
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-class WorldGazeDirConstraint: public GazeDirConstraint
+class DLLEXPORT WorldGazeDirConstraint: public GazeDirConstraint
 {
   protected:
     int body;
     std::string body_name;
   public:
-    WorldGazeDirConstraint(RigidBodyManipulator* model, int body,Eigen::Vector3d axis, Eigen::Vector3d dir, double conethreshold, Eigen::Vector2d tspan = DrakeRigidBodyConstraint::default_tspan);
+    WorldGazeDirConstraint(RigidBodyManipulator* model, int body, const Eigen::Vector3d &axis, const Eigen::Vector3d &dir, double conethreshold, const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan);
     virtual void eval(const double* t, Eigen::VectorXd &c, Eigen::MatrixXd &dc) const;
     virtual void name(const double* t, std::vector<std::string> &name_str) const;
     virtual ~WorldGazeDirConstraint(void){};
 };
 
-class GazeTargetConstraint: public GazeConstraint
+class DLLEXPORT GazeTargetConstraint: public GazeConstraint
 {
   protected:
     Eigen::Vector3d target;
     Eigen::Vector4d gaze_origin;
   public:
-    GazeTargetConstraint(RigidBodyManipulator* model, Eigen::Vector3d axis, Eigen::Vector3d target, Eigen::Vector4d gaze_origin, double conethreshold, Eigen::Vector2d tspan = DrakeRigidBodyConstraint::default_tspan);
+    GazeTargetConstraint(RigidBodyManipulator* model, const Eigen::Vector3d &axis, const Eigen::Vector3d &target, const Eigen::Vector4d &gaze_origin, double conethreshold, const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan);
     virtual void bounds(const double* t, Eigen::VectorXd &lb, Eigen::VectorXd &ub) const;
     virtual ~GazeTargetConstraint(void){};
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-class WorldGazeTargetConstraint: public GazeTargetConstraint
+class DLLEXPORT WorldGazeTargetConstraint: public GazeTargetConstraint
 {
   protected:
     int body;
     std::string body_name;
   public:
-    WorldGazeTargetConstraint(RigidBodyManipulator* model, int body, Eigen::Vector3d axis, Eigen::Vector3d target, Eigen::Vector4d gaze_origin, double conethreshold, Eigen::Vector2d tspan = DrakeRigidBodyConstraint::default_tspan);
+    WorldGazeTargetConstraint(RigidBodyManipulator* model, int body, const Eigen::Vector3d &axis, const Eigen::Vector3d &target, const Eigen::Vector4d &gaze_origin, double conethreshold, const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan);
     virtual void eval(const double* t, Eigen::VectorXd &c, Eigen::MatrixXd &dc) const;
     virtual void name(const double* t, std::vector<std::string> &name_str) const;
     virtual ~WorldGazeTargetConstraint(void){};
 };
 
-class RelativeGazeTargetConstraint: public GazeTargetConstraint
+class DLLEXPORT RelativeGazeTargetConstraint: public GazeTargetConstraint
 {
   protected:
     int bodyA_idx;
@@ -506,13 +518,13 @@ class RelativeGazeTargetConstraint: public GazeTargetConstraint
     std::string bodyA_name;
     std::string bodyB_name;
   public:
-    RelativeGazeTargetConstraint(RigidBodyManipulator* model, int bodyA_idx, int bodyB_idx, const Eigen::Vector3d &axis, const Eigen::Vector3d &target, const Eigen::Vector4d &gaze_origin,  double conethreshold, Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan);
+    RelativeGazeTargetConstraint(RigidBodyManipulator* model, int bodyA_idx, int bodyB_idx, const Eigen::Vector3d &axis, const Eigen::Vector3d &target, const Eigen::Vector4d &gaze_origin,  double conethreshold, const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan);
     virtual void eval(const double* t, Eigen::VectorXd &c, Eigen::MatrixXd &dc) const;
     virtual void name(const double* t, std::vector<std::string> &name_str) const;
     virtual ~RelativeGazeTargetConstraint(void){};
 };
 
-class RelativeGazeDirConstraint: public GazeDirConstraint
+class DLLEXPORT RelativeGazeDirConstraint: public GazeDirConstraint
 {
   protected:
     int bodyA_idx;
@@ -520,13 +532,13 @@ class RelativeGazeDirConstraint: public GazeDirConstraint
     std::string bodyA_name;
     std::string bodyB_name;
   public:
-    RelativeGazeDirConstraint(RigidBodyManipulator* model, int bodyA_idx, int bodyB_idx, const Eigen::Vector3d &axis, const Eigen::Vector3d &dir, double conethreshold, Eigen::Vector2d tspan = DrakeRigidBodyConstraint::default_tspan);
+    RelativeGazeDirConstraint(RigidBodyManipulator* model, int bodyA_idx, int bodyB_idx, const Eigen::Vector3d &axis, const Eigen::Vector3d &dir, double conethreshold, const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan);
     virtual void eval(const double* t, Eigen::VectorXd &c, Eigen::MatrixXd &dc) const;
     virtual void name(const double* t, std::vector<std::string> &name_str) const;
     virtual ~RelativeGazeDirConstraint(void){};
 };
 
-class Point2PointDistanceConstraint: public SingleTimeKinematicConstraint
+class DLLEXPORT Point2PointDistanceConstraint: public SingleTimeKinematicConstraint
 {
   protected:
     int bodyA;
@@ -543,7 +555,7 @@ class Point2PointDistanceConstraint: public SingleTimeKinematicConstraint
     virtual ~Point2PointDistanceConstraint(void){};
 };
 
-class Point2LineSegDistConstraint: public SingleTimeKinematicConstraint
+class DLLEXPORT Point2LineSegDistConstraint: public SingleTimeKinematicConstraint
 {
   protected:
     int pt_body;
@@ -562,7 +574,7 @@ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-class WorldFixedPositionConstraint: public MultipleTimeKinematicConstraint
+class DLLEXPORT WorldFixedPositionConstraint: public MultipleTimeKinematicConstraint
 {
   protected:
     int body;
@@ -577,7 +589,7 @@ class WorldFixedPositionConstraint: public MultipleTimeKinematicConstraint
     virtual ~WorldFixedPositionConstraint(void){};
 };
 
-class WorldFixedOrientConstraint: public MultipleTimeKinematicConstraint
+class DLLEXPORT WorldFixedOrientConstraint: public MultipleTimeKinematicConstraint
 {
   protected:
     int body;
@@ -591,7 +603,7 @@ class WorldFixedOrientConstraint: public MultipleTimeKinematicConstraint
     virtual ~WorldFixedOrientConstraint(void){};
 };
 
-class WorldFixedBodyPoseConstraint: public MultipleTimeKinematicConstraint
+class DLLEXPORT WorldFixedBodyPoseConstraint: public MultipleTimeKinematicConstraint
 {
   protected:
     int body;
@@ -605,7 +617,7 @@ class WorldFixedBodyPoseConstraint: public MultipleTimeKinematicConstraint
     virtual ~WorldFixedBodyPoseConstraint(void){};
 };
 
-class AllBodiesClosestDistanceConstraint : public SingleTimeKinematicConstraint
+class DLLEXPORT AllBodiesClosestDistanceConstraint : public SingleTimeKinematicConstraint
 {
   protected:
     double ub;
@@ -613,11 +625,11 @@ class AllBodiesClosestDistanceConstraint : public SingleTimeKinematicConstraint
     std::vector<int> active_bodies_idx;
     std::set<std::string> active_group_names;
   public:
-    AllBodiesClosestDistanceConstraint(RigidBodyManipulator* model, 
+    AllBodiesClosestDistanceConstraint(RigidBodyManipulator* model,
                                        double lb, double ub,
-                                       std::vector<int> active_bodies_idx,
-                                       std::set<std::string> active_group_names,
-                                       Eigen::Vector2d tspan = DrakeRigidBodyConstraint::default_tspan);
+                                       const std::vector<int> &active_bodies_idx,
+                                       const std::set<std::string> &active_group_names,
+                                       const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan);
     //AllBodiesClosestDistanceConstraint(const AllBodiesClosestDistanceConstraint& rhs);
     virtual void updateRobot(RigidBodyManipulator *robot);
     virtual void eval(const double* t,Eigen::VectorXd& c, Eigen::MatrixXd& dc) const;
@@ -626,7 +638,7 @@ class AllBodiesClosestDistanceConstraint : public SingleTimeKinematicConstraint
     virtual ~AllBodiesClosestDistanceConstraint(){};
 };
 
-class MinDistanceConstraint : public SingleTimeKinematicConstraint
+class DLLEXPORT MinDistanceConstraint : public SingleTimeKinematicConstraint
 {
   protected:
     double min_distance;
@@ -634,9 +646,9 @@ class MinDistanceConstraint : public SingleTimeKinematicConstraint
     std::set<std::string> active_group_names;
   public:
     MinDistanceConstraint(RigidBodyManipulator* model, double min_distance,
-                                       std::vector<int> active_bodies_idx,
-                                       std::set<std::string> active_group_names,
-                                       Eigen::Vector2d tspan = DrakeRigidBodyConstraint::default_tspan);
+                                       const std::vector<int> &active_bodies_idx,
+                                       const std::set<std::string> &active_group_names,
+                                       const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan);
     //MinDistanceConstraint(const MinDistanceConstraint& rhs);
     virtual void eval(const double* t,Eigen::VectorXd& c, Eigen::MatrixXd& dc) const;
     virtual void name(const double* t, std::vector<std::string> &name) const;
@@ -646,7 +658,7 @@ class MinDistanceConstraint : public SingleTimeKinematicConstraint
     virtual ~MinDistanceConstraint(){};
 };
 
-class WorldPositionInFrameConstraint: public WorldPositionConstraint
+class DLLEXPORT WorldPositionInFrameConstraint: public WorldPositionConstraint
 {
   protected:
     Eigen::Matrix4d T_world_to_frame;
@@ -654,15 +666,15 @@ class WorldPositionInFrameConstraint: public WorldPositionConstraint
     virtual void evalPositions(Eigen::MatrixXd &pos, Eigen::MatrixXd &J) const;
     virtual void evalNames(const double* t,std::vector<std::string> &cnst_names) const;
   public:
-    WorldPositionInFrameConstraint(RigidBodyManipulator *model, int body, 
-        const Eigen::MatrixXd &pts, const Eigen::Matrix4d& T_world_to_frame, 
-        Eigen::MatrixXd lb, Eigen::MatrixXd ub, const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan);
+    WorldPositionInFrameConstraint(RigidBodyManipulator *model, int body,
+        const Eigen::MatrixXd &pts, const Eigen::Matrix4d& T_world_to_frame,
+        const Eigen::MatrixXd &lb, const Eigen::MatrixXd &ub, const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan);
     virtual ~WorldPositionInFrameConstraint();
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-class PostureChangeConstraint: public MultipleTimeLinearPostureConstraint
+class DLLEXPORT PostureChangeConstraint: public MultipleTimeLinearPostureConstraint
 {
   protected:
     Eigen::VectorXi joint_ind;
@@ -679,4 +691,3 @@ class PostureChangeConstraint: public MultipleTimeLinearPostureConstraint
     virtual ~PostureChangeConstraint(){};
 };
 #endif
-

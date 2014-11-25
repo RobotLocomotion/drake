@@ -18,7 +18,6 @@ function testURDFcollisionmex
     urdffile = GetFullPath(urdf{1});
     fprintf(1,'testing %s\n', urdffile);
     w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
-    warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
     warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
     r = RigidBodyManipulator(urdffile,struct('floating',true));
 
@@ -29,7 +28,7 @@ function testURDFcollisionmex
     r = compile(r);
     warning(w);
 
-    q = 0*rand(getNumDOF(r),1);
+    q = 0*rand(getNumPositions(r),1);
     kinsol = doKinematics(r,q);
 
     if (~exist(urdf_collision_test,'file'))

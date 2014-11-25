@@ -7,8 +7,8 @@ p = RigidBodyManipulator('../quadrotor.urdf',struct('floating',true));
 warning(w);
 
 for i=1:20
-q = randn(p.getNumPositions,1);
-v = randn(p.getNumVelocities,1);
+q = rand(p.getNumPositions,1);
+v = rand(p.getNumVelocities,1);
 
 [H_tv,C_tv,B_tv,dH_tv,dC_tv,dB_tv] = geval(3,@p.manipulatorDynamics,q,v,struct('grad_method','taylorvar'));
 [H_mat,C_mat,B_mat,dH_mat,dC_mat,dB_mat] = p.manipulatorDynamics(q,v,false);

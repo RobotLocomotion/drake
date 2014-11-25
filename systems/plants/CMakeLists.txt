@@ -14,12 +14,15 @@ endif()
 
 if (eigen3_FOUND)
   # todo: check eigen version.  3.1.0 didn't work for clang.  3.2.0 did.
-
-  add_library(drakeRBM SHARED RigidBodyManipulator.cpp RigidBody.cpp)
+ add_library(drakeRBM SHARED RigidBodyManipulator.cpp RigidBody.cpp)
  target_link_libraries(drakeRBM drakeCollision)
+if (NOT WIN32) 
+ include_directories( joints )
+ target_link_libraries(drakeRBM drakeJoints)
+endif(NOT WIN32)
 
   pods_install_libraries(drakeRBM)
-  pods_install_headers(RigidBodyManipulator.h RigidBody.h RigidBodyFrame.h DESTINATION drake)
+  pods_install_headers(RigidBodyManipulator.h RigidBody.h RigidBodyFrame.h KinematicPath.h DESTINATION drake)
   pods_install_pkg_config_file(drake-rbm
     LIBS -ldrakeRBM
     REQUIRES
@@ -28,11 +31,16 @@ if (eigen3_FOUND)
   add_subdirectory(collision)
   add_subdirectory(constraint)
 
+if (NOT WIN32)
+  add_subdirectory(joints)
+endif(NOT WIN32)
+
   if (Boost_FOUND)
     add_library(drakeRBMurdf URDFRigidBodyManipulator.cpp)
     target_link_libraries(drakeRBMurdf drakeRBM drakeURDFinterface ${Boost_LIBRARIES})
+    if (NOT MSVC)
     set_target_properties(drakeRBMurdf PROPERTIES COMPILE_FLAGS -fPIC )
-
+    endif()
     pods_install_libraries(drakeRBMurdf)
 
     add_subdirectory(urdf_interface)
@@ -53,9 +61,14 @@ if (eigen3_FOUND)
   add_rbm_mex(forwardKinmex)
   add_rbm_mex(bodyKinmex)
   add_rbm_mex(collisionDetectmex)
+  add_rbm_mex(smoothDistancePenaltymex)
   add_rbm_mex(collisionRaycastmex)
   add_rbm_mex(allCollisionsmex)
   add_rbm_mex(getCMMmex)
+  add_rbm_mex(findKinematicPathmex)
+  if (NOT MSVC)
+    add_rbm_mex(geometricJacobianmex) # todo: pull this out
+  endif()
 
   add_library(drakeIKoptions SHARED IKoptions.cpp)
   target_link_libraries(drakeIKoptions drakeRBM drakeUtil)

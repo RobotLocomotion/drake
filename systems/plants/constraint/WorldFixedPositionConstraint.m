@@ -19,7 +19,7 @@ classdef WorldFixedPositionConstraint < MultipleTimeKinematicConstraint
   methods(Access = protected)
     function [c,dc_valid] = evalValidTime(obj,kinsol_cell)
       N = length(kinsol_cell);
-      nq = obj.robot.getNumDOF();
+      nq = obj.robot.getNumPositions();
       n_pts = size(obj.pts,2);
       pos = zeros(3*n_pts,N);
       if(nargout == 2)
@@ -131,7 +131,7 @@ classdef WorldFixedPositionConstraint < MultipleTimeKinematicConstraint
 
     function joint_idx = kinematicPathJoints(obj)
       [~,joint_path] = obj.robot.findKinematicPath(1,obj.body);
-      joint_idx = vertcat(obj.robot.body(joint_path).dofnum)';
+      joint_idx = vertcat(obj.robot.body(joint_path).position_num)';
     end
   end
 end

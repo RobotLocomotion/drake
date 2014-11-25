@@ -11,6 +11,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/regex.hpp>
+#include "joints/drakeJointUtil.h"
 
 using namespace std;
 
@@ -177,9 +178,9 @@ URDFRigidBodyManipulator::URDFRigidBodyManipulator(void)
 : 
   RigidBodyManipulator(0,0,1)
 {
-	bodies[0].linkname = "world";
-	bodies[0].parent = -1;
-        bodies[0].robotnum = 0;
+	bodies[0]->linkname = "world";
+	bodies[0]->parent = -1;
+        bodies[0]->robotnum = 0;
 }
 
 void setJointLimits(boost::shared_ptr<urdf::ModelInterface> urdf_model, boost::shared_ptr<urdf::Joint> j, const map<string, int> &dofname_to_dofnum, VectorXd& joint_limit_min, VectorXd& joint_limit_max);
@@ -222,19 +223,19 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
       if (dn == dofname_to_dofnum.end()) ROS_ERROR("can't find joint %s.  this shouldn't happen", j->name.c_str());
       _dofnum = dn->second;
 
-    	bodies[index].linkname = l->first;
-    	bodies[index].jointname = j->name;
+    	bodies[index]->linkname = l->first;
+    	bodies[index]->jointname = j->name;
         if(l->second->inertial == nullptr)
         {
-          bodies[index].mass = 0.0;
+          bodies[index]->mass = 0.0;
         }
         else
         {
-          bodies[index].mass = l->second->inertial->mass;
+          bodies[index]->mass = l->second->inertial->mass;
         }
-//    	cout << "body[" << index << "] linkname: " << bodies[index].linkname << ", jointname: " << bodies[index].jointname << endl;
+//    	cout << "body[" << index << "] linkname: " << bodies[index]->linkname << ", jointname: " << bodies[index]->jointname << endl;
 
-        bodies[index].robotnum = robotnum;
+        bodies[index]->robotnum = robotnum;
 
     	{ // set up parent
     		map<string, boost::shared_ptr<urdf::Link> >::iterator pl=_urdf_model->links_.find(j->parent_link_name);
@@ -245,36 +246,36 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
     			map<string, int>::iterator pjn=jointname_to_jointnum.find(pj->name);
     			if (pjn == jointname_to_jointnum.end()) ROS_ERROR("can't find joint %s.  this shouldn't happen", pj->name.c_str());
 
-    			bodies[index].parent = pjn->second;
+    			bodies[index]->parent = pjn->second;
     			parent[index-1] = pjn->second-1;
     		} else { // the parent body is the floating base
             	string jointname="base";
                 map<string, int>::iterator jn=jointname_to_jointnum.find(jointname);
                 if (jn == jointname_to_jointnum.end()) ROS_ERROR("can't find joint %s.  this shouldn't happen",jointname.c_str());
-                bodies[index].parent = jn->second;
+                bodies[index]->parent = jn->second;
     		}
     	}
 
-    	bodies[index].dofnum = _dofnum;
+    	bodies[index]->dofnum = _dofnum;
     	dofnum[index-1] = _dofnum;
 
     	// set pitch and floating
     	switch (j->type) {
     	case urdf::Joint::PRISMATIC:
     		pitch[index-1] = INF;
-    		bodies[index].pitch = INF;
-    		bodies[index].floating=0;
+    		bodies[index]->pitch = INF;
+    		bodies[index]->floating=0;
     		break;
       default:  // continuous, rotary, fixed, ...
       	pitch[index-1] = 0.0;
-      	bodies[index].pitch = 0.0;
-      	bodies[index].floating=0;
+      	bodies[index]->pitch = 0.0;
+      	bodies[index]->floating=0;
       	break;
       }
 
       // setup kinematic tree
       {
-      	poseToTransform(j->parent_to_joint_origin_transform,bodies[index].Ttree);
+      	poseToTransform(j->parent_to_joint_origin_transform,bodies[index]->Ttree);
 
         Vector3d zvec; zvec << 0,0,1;
         Vector3d joint_axis; joint_axis << j->axis.x, j->axis.y, j->axis.z;
@@ -289,11 +290,22 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
         qy=axis(1)*sin(angle/2.0);
         qz=axis(2)*sin(angle/2.0);
 
-        bodies[index].T_body_to_joint <<
+        bodies[index]->T_body_to_joint <<
                 qw*qw + qx*qx - qy*qy - qz*qz, 2*qx*qy - 2*qw*qz, 2*qx*qz + 2*qw*qy, 0,
                 2*qx*qy + 2*qw*qz,  qw*qw + qy*qy - qx*qx - qz*qz, 2*qy*qz - 2*qw*qx, 0,
                 2*qx*qz - 2*qw*qy, 2*qy*qz + 2*qw*qx, qw*qw + qz*qz - qx*qx - qy*qy, 0,
                 0, 0, 0, 1;
+      }
+      {
+        // set DrakeJoint
+        // FIXME creating joint based on bodies[index]->floating and bodies[index]->pitch to match the switch (j->type) above.
+        // This switch doesn't handle floating joints however...
+        // Best not to change functionality at this point.
+        Vector3d joint_axis;
+        joint_axis << j->axis.x, j->axis.y, j->axis.z;
+        Isometry3d transform_to_parent_body;
+        poseToTransform(j->parent_to_joint_origin_transform,transform_to_parent_body.matrix());
+        bodies[index]->setJoint(createJoint(j->name, transform_to_parent_body, bodies[index]->floating, joint_axis, bodies[index]->pitch));
       }
 
     } else { // no joint, this link is attached directly to the floating base
@@ -313,18 +325,18 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
       _dofnum = dn->second;
 
     	// set up RigidBody (kinematics)
-    	bodies[index].linkname = l->first;
-    	bodies[index].jointname = jointname;
-        bodies[index].robotnum = robotnum;
+    	bodies[index]->linkname = l->first;
+    	bodies[index]->jointname = jointname;
+        bodies[index]->robotnum = robotnum;
 
-//    	cout << "body[" << index << "] linkname: " << bodies[index].linkname << ", jointname: " << bodies[index].jointname << endl;
+//    	cout << "body[" << index << "] linkname: " << bodies[index]->linkname << ", jointname: " << bodies[index]->jointname << endl;
 
-    	bodies[index].parent = 0;
-    	bodies[index].dofnum = _dofnum;
-      bodies[index].floating = 1;
+    	bodies[index]->parent = 0;
+    	bodies[index]->dofnum = _dofnum;
+      bodies[index]->floating = 1;
       // pitch is irrelevant
-      bodies[index].Ttree = Matrix4d::Identity();
-      bodies[index].T_body_to_joint = Matrix4d::Identity();
+      bodies[index]->Ttree = Matrix4d::Identity();
+      bodies[index]->T_body_to_joint = Matrix4d::Identity();
 
       // todo: set up featherstone structure (dynamics)
       parent[index-1] = -1;
@@ -406,7 +418,7 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
           }
         }
       }
-      if (bodies[index].parent<0) {
+      if (bodies[index]->parent<0) {
         updateCollisionElements(index);  // update static objects only once - right here on load
       }
     }

@@ -44,8 +44,8 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensorWithState %& Visu
       end
       body = getBody(manip,obj.kinframe.body_ind);
       
-      if isempty(body.getContactShapes)
-        error('Drake:ContactForceTorqueSensor:NoContactShapes','There are no contact shapes associated with body %s',body.linkname);
+      if isempty(body.getCollisionGeometry)
+        error('Drake:ContactForceTorqueSensor:NoCollisionGeometry','There are no collision geometry associated with body %s',body.linkname);
       end
     end
     
@@ -57,7 +57,7 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensorWithState %& Visu
     %      xft = splitCoordinates(getInputFrame(obj),xft);
     %      x = xft{1}; ft = xft{2};
     %
-    %      kinsol = doKinematics(obj.manip,x(1:obj.manip.getNumDOF),false,false);
+    %      kinsol = doKinematics(obj.manip,x(1:obj.manip.getNumPositions),false,false);
     %
     %      body_pts = kinsol.T{obj.body}\[obj.xyz, obj.xyz+.001*ft(1:2); 1 1];  % convert force from sensor coords to body coords
     %      body_pts = body_pts(1:2,:);

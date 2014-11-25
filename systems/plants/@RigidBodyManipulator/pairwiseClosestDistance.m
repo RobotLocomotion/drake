@@ -19,7 +19,7 @@ end
 
 if isempty(ptA)
   phi = 1;
-  Jphi = zeros(1,getNumDOF(obj));
+  Jphi = zeros(1,getNumPositions(obj));
 else
   p = sign(distance)*(ptA(:)-ptB(:));
   %phi = p'*p;

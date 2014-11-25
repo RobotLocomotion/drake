@@ -32,6 +32,8 @@ if (isempty(options.rational_dynamics_numerator) + isempty(options.rational_dyna
   error('must specify both numerator and denominator if specifying rational dynamics'); 
 end
 
+checkDependency('spotless');
+
 t=msspoly('t',1);
 q=msspoly('q',sys.num_x);
 s=msspoly('s',sys.num_x);
@@ -64,8 +66,8 @@ else
   tp_output=[];
 end
 
-if (sys.num_xcon>0) 
-  error('not implemented yet, but should be easy'); 
+if ~isempty(sys.state_constraints)
+  warning('state constraints not implemented yet, but some should be easy'); 
 end
 
 all_methods=[tp_dynamics_lhs(:);tp_dynamics_rhs;tp_update;tp_output];
@@ -148,7 +150,7 @@ end
 % set up new coordinate frame
 tpframe = CoordinateFrame(['TP',sys.getStateFrame().name],length(xnew),'x');
 tpframe.setCoordinateNames(newname);
-p_xnew=tpframe.poly;
+p_xnew=tpframe.getPoly;
 
 % set up transformations between the frames
 sys.getStateFrame.addTransform(TrigToPolyTransform(sys.getStateFrame,tpframe,sin_ind,cos_ind,x_ind));

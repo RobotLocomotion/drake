@@ -26,7 +26,7 @@ function [phi,normal,xA,xB,idxA,idxB] = collisionDetect(obj,kinsol, ...
 %   * body_idx - vector of body indices. Only these bodies will be
 %       considered for collsion detection
 %       @default - Consider all bodies
-%   * collision_groups - cell array of strings. Only the contact shapes
+%   * collision_groups - cell array of strings. Only the collision geometry
 %       belonging to these groups will be considered for collision
 %       detection.Note that the filtering based on
 %       collision_filter_groups and adjacency in the kinematic tree
@@ -62,7 +62,7 @@ if ~isfield(active_collision_options,'terrain_only')
   active_collision_options.terrain_only = false;
 end
 
-force_collisionDetectTerrain = false;
+force_collisionDetectTerrain = ~obj.contact_options.use_bullet;
 
 
 if (~active_collision_options.terrain_only && obj.mex_model_ptr ~= 0 && kinsol.mex)
@@ -86,12 +86,16 @@ else
   xB = [];
   idxB = [];
   
-  if isempty([obj.body.contact_shapes])
+  if isempty([obj.body.collision_geometry])
     % then I don't have any contact geometry.  all done.
     return;
   end
   
-  force_collisionDetectTerrain = true;
+  if active_collision_options.terrain_only || ...
+      ~isfield(active_collision_options,'collision_groups') || ...
+      ismember('terrain',active_collision_options.collision_groups)
+    force_collisionDetectTerrain = true;
+  end
   
   if obj.mex_model_ptr == 0
     warnOnce(obj.warning_manager,'Drake:RigidBodyManipulator:collisionDetect:noMexPtr', ...
@@ -112,10 +116,22 @@ if ~isempty(obj.terrain) && ...
   % For each point on the manipulator that can collide with terrain,
   % find the closest point on the terrain geometry
   if isfield(active_collision_options,'body_idx')
-    terrain_contact_point_struct = ...
-      getTerrainContactPoints(obj,active_collision_options.body_idx);
+    if isfield(active_collision_options,'collision_groups')
+      terrain_contact_point_struct = getTerrainContactPoints(obj, ...
+        active_collision_options.body_idx,...
+        active_collision_options.collision_groups);
+    else
+      terrain_contact_point_struct = getTerrainContactPoints(obj, ...
+        active_collision_options.body_idx);
+    end
   else
-    terrain_contact_point_struct = getTerrainContactPoints(obj);
+    if isfield(active_collision_options,'collision_groups')
+      terrain_contact_point_struct = getTerrainContactPoints(obj, ...
+        2:obj.getNumBodies(),...
+        active_collision_options.collision_groups);
+    else
+      terrain_contact_point_struct = getTerrainContactPoints(obj);
+    end
   end
 
   if ~isempty(terrain_contact_point_struct)

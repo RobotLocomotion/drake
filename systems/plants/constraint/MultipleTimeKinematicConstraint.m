@@ -23,7 +23,7 @@ classdef MultipleTimeKinematicConstraint < RigidBodyConstraint
       valid_t_idx = obj.isTimeValid(t);
       valid_t = t(valid_t_idx);
       valid_kinsol_cell = kinsol_cell(valid_t_idx);
-      nq = obj.robot.getNumDOF();
+      nq = obj.robot.getNumPositions();
       if(length(valid_t)>=2)
         num_valid_t = size(valid_t,2);
         [c,dc_valid] = evalValidTime(obj,valid_kinsol_cell);
@@ -40,7 +40,9 @@ classdef MultipleTimeKinematicConstraint < RigidBodyConstraint
     
     function obj = updateRobot(obj,robot)
       obj.robot = robot;
-      obj.mex_ptr = updatePtrRigidBodyConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
+      if(robot.getMexModelPtr~=0 && exist('updatePtrRigidBodyConstraintmex','file'))
+        obj.mex_ptr = updatePtrRigidBodyConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
+      end
     end
     
     function cnstr = generateConstraint(obj,t,N)
@@ -68,7 +70,7 @@ classdef MultipleTimeKinematicConstraint < RigidBodyConstraint
         num_valid_t = length(valid_t_idx);
         if(num_valid_t >= 2)
           [lb,ub] = obj.bounds(t);
-          nq = obj.robot.getNumDOF;
+          nq = obj.robot.getNumPositions;
           cnstr = {FunctionHandleConstraint(lb,ub,length(t)*nq,@(varargin) obj.eval(t,varargin(numel(t)+(1:numel(t)))))};
           num_cnstr = obj.getNumConstraint(t);
           joint_idx = obj.kinematicPathJoints();
@@ -85,8 +87,8 @@ classdef MultipleTimeKinematicConstraint < RigidBodyConstraint
     
     function joint_idx = kinematicPathJoints(obj)
       % return the indices of the joints used to evaluate the constraint. The default
-      % value is (1:obj.robot.getNumDOF);
-      joint_idx = (1:obj.robot.getNumDOF);
+      % value is (1:obj.robot.getNumPositions);
+      joint_idx = (1:obj.robot.getNumPositions);
     end
   end
   

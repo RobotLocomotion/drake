@@ -42,7 +42,7 @@ classdef IKPDBlock < MIMODrakeSystem
       obj = setOutputFrame(obj,coords);
 
       obj.controller_data = controller_data;
-      obj.nq = getNumDOF(r);
+      obj.nq = getNumPositions(r);
       obj.input_foot_contacts = options.input_foot_contacts;
       
       if isfield(options,'Kp')

@@ -1,5 +1,9 @@
 *.autosave
 *.mex*
+*.exp
+*.pdb
+*.lib
+*.ilk
 *.o
 *.aux
 *.log
@@ -97,3 +101,4 @@ solvers/test/startRegen_1
 VALGRIND_OUTPUT.xml
 *.ppms.gz
 *.DS_Store
+glider_trajs.mat

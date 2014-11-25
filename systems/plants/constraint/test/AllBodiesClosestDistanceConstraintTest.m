@@ -8,7 +8,6 @@ function AllBodiesClosestDistanceConstraintTest(n,draw_pause)
   options.floating = true;
   w = warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
   warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
-  warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');  
   warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
   r = RigidBodyManipulator([getDrakePath(), '/examples/Atlas/urdf/atlas_convex_hull.urdf'],options);
   warning(w);
@@ -20,7 +19,7 @@ function AllBodiesClosestDistanceConstraintTest(n,draw_pause)
   r = compile(r);
 
   S = load([getDrakePath,'/examples/Atlas/data/atlas_fp.mat']);
-  q_nom = S.xstar(1:r.getNumDOF());
+  q_nom = S.xstar(1:r.getNumPositions());
   options = optimset('TolFun',1e-5,'TolX',1e-6);
   constraintTester('AllBodiesClosestDistanceConstraintTest',r,@makeCon, @(r) q_nom, @makeQseed, n, draw_pause,options,@objFun);
 

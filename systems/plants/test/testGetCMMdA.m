@@ -8,13 +8,12 @@ function testGetCMMdA()
   for test_case = test_cases
     options.floating = test_case.floating;
     %options.floating = false;
-    w = warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
-    warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
+    w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
     warning('off','Drake:RigidBodyManipulator:NonPSDInertia');
     warning('off','Drake:RigidBodyManipulator:ReplacedCylinder');
     r = RigidBodyManipulator(test_case.urdf,options);
     warning(w);
-    nq = r.getNumDOF();
+    nq = r.getNumPositions();
     q = rand(nq,1);
     [A,dA] = geval(@r.getCMMdA,q,struct('grad_method',{{'user','taylorvar'}}));
     [A,dA] = geval(@r.getCMMdA,q, ...

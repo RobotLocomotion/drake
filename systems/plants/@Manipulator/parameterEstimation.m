@@ -31,7 +31,9 @@ if (getOutputFrame(obj)~=getStateFrame(obj))
   error('Only full-state feedback is implemented so far');
 end
 
-nq = obj.num_q;
+checkDependency('spotless');
+
+nq = obj.num_positions;
 nu = obj.num_u;
 p_orig = double(getParams(obj));  % probably only for testing
 
@@ -44,7 +46,7 @@ qt=TrigPoly(q,s,c);
 qd=msspoly('qd',nq);
 qdd=msspoly('qdd',nq);
 u=msspoly('u',nu);
-p=obj.getParamFrame.poly;
+p=obj.getParamFrame.getPoly;
 pobj = setParams(obj,p);
 [H,C,B] = manipulatorDynamics(pobj,qt,qd);
 err = H*qdd + C - B*u;

@@ -1,4 +1,4 @@
-classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
+classdef DirectTrajectoryOptimization < NonlinearProgram
   %DIRECTTRAJECTORYOPTIMIZATION An abstract class for direct method approaches to
   % trajectory optimization.
   %
@@ -61,7 +61,7 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
       %todo: replace getVarInfo with setupVarInfo
       % initialize with 0 variables and then add them
 
-      obj = obj@NonlinearProgramWConstraintObjects(0);
+      obj = obj@NonlinearProgram(0);
       obj.options = options;
       obj.plant = plant;
 
@@ -91,10 +91,18 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
         obj = obj.addConstraint(control_limit,obj.u_inds(:));
       end
 
-      % add state limits as bounding box constraints
-      [state_lb,state_ub] = plant.getStateLimits();
-      state_limit = BoundingBoxConstraint(repmat(state_lb,N,1),repmat(state_ub,N,1));
-      obj = obj.addConstraint(state_limit,obj.x_inds(:));
+    end
+    
+    function N = getN(obj)
+      N = obj.N;
+    end
+
+    function x_inds = getXinds(obj)
+      x_inds = obj.x_inds;
+    end
+
+    function h_inds = getHinds(obj)
+      h_inds = obj.h_inds;
     end
 
     function obj = addInputConstraint(obj,constraint,time_index)
@@ -155,7 +163,16 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
       end
     end
 
-    function [xtraj,utraj,z,F,info] = solveTraj(obj,t_init,traj_init)
+    function obj = addTrajectoryDisplayFunction(obj,display_fun)
+      % add a dispay function that gets called on every iteration of the
+      % algorithm
+      % @param display_fun a function handle of the form displayFun(t,x,u)
+      %       where t is a 1-by-N, x is n-by-N and u is m-by-N
+      
+      obj = addDisplayFunction(obj,@(z) display_fun(z(obj.h_inds),z(obj.x_inds),z(obj.u_inds)));
+    end
+    
+    function [xtraj,utraj,z,F,info,infeasible_constraint_name] = solveTraj(obj,t_init,traj_init)
       % Solve the nonlinear program and return resulting trajectory
       % @param t_init initial timespan for solution.  can be a vector of
       % length obj.N specifying the times of each segment, or a scalar
@@ -168,9 +185,9 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
       if nargin<3, traj_init = struct(); end
 
       z0 = obj.getInitialVars(t_init,traj_init);
-      [z,F,info] = obj.solve(z0);
-      utraj = reconstructInputTrajectory(obj,z);
-      if nargin>1, xtraj = reconstructStateTrajectory(obj,z); end
+      [z,F,info,infeasible_constraint_name] = obj.solve(z0);
+      xtraj = reconstructStateTrajectory(obj,z);
+      if nargout>1, utraj = reconstructInputTrajectory(obj,z); end
     end
 
     function z0 = getInitialVars(obj,t_init,traj_init)
@@ -187,25 +204,30 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
 
       if nargin<3, traj_init = struct(); end
 
+      nU = getNumInputs(obj.plant);
       if isfield(traj_init,'u')
         z0(obj.u_inds) = traj_init.u.eval(t_init);
       else
-        nU = getNumInputs(obj.plant);
         z0(obj.u_inds) = 0.01*randn(nU,obj.N);
       end
 
       if isfield(traj_init,'x')
         z0(obj.x_inds) = traj_init.x.eval(t_init);
       else
-        if ~isfield(traj_init,'u')
-          traj_init.u = setOutputFrame(PPTrajectory(foh(t_init,reshape(z0(obj.u_inds),nU,obj.N))),getInputFrame(obj.plant));
+        if nU>0
+          if ~isfield(traj_init,'u')
+            traj_init.u = setOutputFrame(PPTrajectory(foh(t_init,reshape(z0(obj.u_inds),nU,obj.N))),getInputFrame(obj.plant));
+          end
+          
+          % todo: if x0 and xf are equality constrained, then initialize with
+          % a straight line from x0 to xf (this was the previous behavior)
+          
+          %simulate
+          sys_ol = cascade(traj_init.u,obj.plant);
+        else
+          sys_ol = obj.plant;
         end
 
-        % todo: if x0 and xf are equality constrained, then initialize with
-        % a straight line from x0 to xf (this was the previous behavior)
-
-        %simulate
-        sys_ol = cascade(traj_init.u,obj.plant);
         if ~isfield(traj_init,'x0')
           [~,x_sim] = sys_ol.simulate([t_init(1) t_init(end)]);
         else

@@ -68,6 +68,7 @@ if ~isfield(options,'gui') options.gui = true; end
 if ~isfield(options,'autorun') options.autorun = ~options.gui; end
 if ~isfield(options,'logfile') options.logfile = ''; end
 if ~isfield(options,'test_dirs_only') options.test_dirs_only = false; end
+if ~isfield(options,'include_scripts_as_tests') options.include_scripts_as_tests = false; end
 if ~isfield(options,'warnings_are_errors') options.warnings_are_errors = false; end
 if ~isempty(options.logfile) options.logfileptr = fopen(options.logfile,'w');
 else options.logfileptr = -1; end
@@ -367,7 +368,7 @@ function pnode = crawlDir(pdir,pnode,only_test_dirs,options)
         elseif ~isempty(param)
           error([fullfile(pwd,'.UNITTEST'),' has a an unknown tag: ',param]);
         else
-          crawlDir(name,node,only_test_dirs && ~strcmpi(name,'test'),options);
+          crawlDir(name,node,only_test_dirs && ~isTestDir(name),options);
         end
       elseif exist(name,'file')
         files=vertcat(files,dir(name));
@@ -387,7 +388,7 @@ function pnode = crawlDir(pdir,pnode,only_test_dirs,options)
     if (files(i).isdir)
       % then recurse into the directory
       if (files(i).name(1)~='.' && ~any(strcmpi(files(i).name,{'dev','slprj','autogen-matlab','autogen-posters'})))  % skip . and dev directories
-        crawlDir(files(i).name,node,only_test_dirs && ~strcmpi(files(i).name,'test'),options);
+        crawlDir(files(i).name,node,only_test_dirs && ~isTestDir(files(i).name),options);
       end
       continue;
     end
@@ -413,8 +414,15 @@ function pnode = crawlDir(pdir,pnode,only_test_dirs,options)
         end
         
         if options.test_list_file>=0
-          [tf,timeout] = checkMethod(fname,m{j},'TIMEOUT');
-          fprintf(options.test_list_file,[testname,'.',m{j},'\t',pwd,'\t',timeout,'\n']);
+          test_properties = '';
+          
+          [tf,timeout] = checkFile(files(i).name,'TIMEOUT');
+          if (tf), test_properties = sprintf('%s TIMEOUT %s',test_properties,timeout); end
+          
+          [tf] = checkFile(files(i).name,'RUN_SERIAL');
+          if (tf), test_properties = sprintf('%s RUN_SERIAL',test_properties); end
+          
+          fprintf(options.test_list_file,'%s.%s\t%s\t%s\n',testname,m{j},pwd,test_properties);
         end
         
         if options.gui
@@ -430,13 +438,20 @@ function pnode = crawlDir(pdir,pnode,only_test_dirs,options)
         continue;
       end
       % reject if it is a script
-      if (~checkFile(files(i).name,'function',false))
+      if ~options.include_scripts_as_tests && ~checkFile(files(i).name,'function',false)
         continue;
       end
       
       if options.test_list_file>=0
+        test_properties = '';
+
         [tf,timeout] = checkFile(files(i).name,'TIMEOUT');
-        fprintf(options.test_list_file,[testname,'\t',pwd,'\t',timeout,'\n']);
+        if (tf), test_properties = sprintf('%s TIMEOUT %s',test_properties,timeout); end 
+        
+        [tf] = checkFile(files(i).name,'RUN_SERIAL');
+        if (tf), test_properties = sprintf('%s RUN_SERIAL',test_properties); end 
+
+        fprintf(options.test_list_file,'%s\t%s\t%s\n',testname,pwd,test_properties);
       end
       
       if (options.gui)
@@ -599,8 +614,8 @@ end
 
 function [pass,elapsed_time] = runTest(runpath,test,options)
 p=pwd;
+
 cd(runpath);
-%  disp(['running ',path,'/',test,'...']);
 
 if nargin<3, error('needs three arguments now'); end
 
@@ -662,11 +677,11 @@ mytic = tic;
 
 % useful for debugging: if 'dbstop if error' is on, then don't use try catch.
 if any(strcmp('error',{s.cond})) ||any(strcmp('warning',{s.cond}))
-  feval_in_contained_workspace(test);
+  fevalPackageSafe(test);
 else
   try
     lastwarn('');  % clears lastwarn
-    feval_in_contained_workspace(test);
+    fevalPackageSafe(test);
     if (options.warnings_are_errors) 
       [msg,id] = lastwarn;
       if ~isempty(msg)
@@ -697,7 +712,6 @@ else
         sprintf('*******************************************************\n') ];
       
       fprintf(1,'\n\n%s',msg);
-      knownIssue(fullfile(regexprep(runpath,[getDrakePath,filesep],''),test),ex);
       
       % strip the html tags out of the logfile (which are irrelevant outside of matlab and make it difficult to read):
       msg = regexprep(msg,'''[^'']*''','');
@@ -746,10 +760,6 @@ if ~isempty(cdashTestNode)
 end
 
 cd(p);
-end
-
-function feval_in_contained_workspace(f) % helps with scripts
-  feval(f);
 end
 
 function [bfound, trailing_text] = checkFile(filename,strings,search_comments)
@@ -873,4 +883,9 @@ end
     thisElement = docNode.createElement(element_name);
     thisElement.appendChild(docNode.createTextNode(text));
     parent.appendChild(thisElement);
+  end
+
+  function tf = isTestDir(dirname)
+    % Supports package notation in which folders begin with a +
+    tf = strcmp(dirname, 'test') || strcmp(dirname, '+test');
   end

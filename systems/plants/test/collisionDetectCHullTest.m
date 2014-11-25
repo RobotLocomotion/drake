@@ -17,15 +17,15 @@ lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'bullet_collision_c
 for i=1:2
   r = addRobotFromURDF(r,'FallingBrick.urdf',zeros(3,1),zeros(3,1),options);
 end
-r = r.replaceContactShapesWithCHull(1:r.getNumBodies());
+r = r.replaceCollisionGeometryWithConvexHull(1:r.getNumBodies());
 r = r.compile();
 
 v = r.constructVisualizer();
 
-q = zeros(getNumDOF(r),1);
+q = zeros(getNumPositions(r),1);
 
 kinsol = doKinematics(r,q);
-pts = r.body(2).contact_shapes{1}.getPoints();
+pts = r.body(2).collision_geometry{1}.getPoints();
 bnd.xmin=min(pts(1,:));
 bnd.xmax=max(pts(1,:));
 bnd.ymin=min(pts(2,:));
@@ -48,7 +48,7 @@ for x=linspace(-2*(bnd.xmax-bnd.xmin),2*(bnd.xmax-bnd.xmin),50);
   valuecheck(phi, dist_ref,tol);
 end
 
-q = zeros(getNumDOF(r),1);
+q = zeros(getNumPositions(r),1);
 for y=linspace(-2*(bnd.ymax-bnd.ymin),2*(bnd.ymax-bnd.ymin),50);
   q(2)=y;
   
@@ -62,7 +62,7 @@ for y=linspace(-2*(bnd.ymax-bnd.ymin),2*(bnd.ymax-bnd.ymin),50);
   valuecheck(phi, dist_ref,tol);
 end
 
-q = zeros(getNumDOF(r),1);
+q = zeros(getNumPositions(r),1);
 for z=linspace(-2*(bnd.zmax-bnd.zmin),2*(bnd.zmax-bnd.zmin),50);
   q(3)=z;
   

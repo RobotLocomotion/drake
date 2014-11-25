@@ -20,7 +20,7 @@ J = [];
 dPsi = [];
 % Compute H*qddot, one form of the implicit dynamics
 
-q=x(1:obj.num_q); qd=x((obj.num_q+1):end);
+q=x(1:obj.num_positions); qd=x((obj.num_positions+1):end);
 nContactConst = obj.num_contacts;
 %       nonContactPConst = obj.num_bilateral_constraints - nContactConst;
 nonContactPConst = obj.getNumJointLimitConstraints;
@@ -35,26 +35,26 @@ nClutch = 0;
 
 if (nUniPConstraints > 0)
   [phi,J,dJ] = obj.jointLimitConstraints(q);
-  %         dJdqlambda = zeros(obj.num_q^2,1);
-  %         for i=1:obj.num_q^2,
+  %         dJdqlambda = zeros(obj.num_positions^2,1);
+  %         for i=1:obj.num_positions^2,
   %           dJdqlambda(i,1) = dJ(:,i)'*lambda(1:nUniPConstraints);
   %         end
   dJdqlambda = dJ'*lambda(1:nUniPConstraints);
-  dconstraint = [zeros(obj.num_q,1) reshape(dJdqlambda,obj.num_q,obj.num_q)...
-    zeros(obj.num_q) zeros(obj.num_q,obj.num_u) J' ...
-    zeros(obj.num_q,2*nContactConst + nonContactPConst - nUniPConstraints+nClutch)] + dconstraint;
+  dconstraint = [zeros(obj.num_positions,1) reshape(dJdqlambda,obj.num_positions,obj.num_positions)...
+    zeros(obj.num_positions) zeros(obj.num_positions,obj.num_u) J' ...
+    zeros(obj.num_positions,2*nContactConst + nonContactPConst - nUniPConstraints+nClutch)] + dconstraint;
   constraint = constraint + J'*lambda(1:nUniPConstraints);
 end
 
 %       if (nonContactPConst - nUniPConstraints>0)
 %         error('Not yet implemented in trunk version');
 %         [phi,J,dJ] = obj.positionConstraints(q);
-%         dJdqlambda = zeros(obj.num_q^2,1);
-%         for i=1:obj.num_q^2,
+%         dJdqlambda = zeros(obj.num_positions^2,1);
+%         for i=1:obj.num_positions^2,
 %           dJdqlambda(i,1) = dJ(:,i)'*lambda(nUniPConstraints+1:end);
 %         end
-%         dconstraint = [zeros(obj.num_q,1) reshape(dJdqlambda,obj.num_q,obj.num_q)...
-%           zeros(obj.num_q) zeros(obj.num_q,obj.num_u + nUniPConstraints) J' zeros(obj.num_q,2*nContactConst+nClutch)] + dconstraint;
+%         dconstraint = [zeros(obj.num_positions,1) reshape(dJdqlambda,obj.num_positions,obj.num_positions)...
+%           zeros(obj.num_positions) zeros(obj.num_positions,obj.num_u + nUniPConstraints) J' zeros(obj.num_positions,2*nContactConst+nClutch)] + dconstraint;
 %         constraint = constraint + J'*lambda(nUniPConstraints+1:end);
 %       end
 
@@ -67,31 +67,31 @@ if (nContactConst > 0)
   phi = zeros(2*length(phi_n),1);
   phi(1:2:end) = phi_f;
   phi(2:2:end) = phi_n;
-  J = zeros(length(phi), obj.num_q);
+  J = zeros(length(phi), obj.num_positions);
   J(1:2:end,:) = D{1};
   J(2:2:end,:) = n;
-  dJ = zeros(length(phi), obj.num_q^2);
+  dJ = zeros(length(phi), obj.num_positions^2);
   dJ(2:2:end,:) = reshape(dn,length(phi_n),[]);
   dJ(1:2:end,:) = reshape(dD{1},length(phi_n),[]);
   dPsi = dPsi(1:2:end,:);
   
-  %         dJdqlambda = zeros(obj.num_q^2,1)*x(1);
-  %         for i=1:obj.num_q^2,
+  %         dJdqlambda = zeros(obj.num_positions^2,1)*x(1);
+  %         for i=1:obj.num_positions^2,
   %           dJdqlambda(i,1) = dJ(:,i)'*cLambda;
   %         end
   dJdqlambda = dJ'*cLambda;
-  dconstraint = [zeros(obj.num_q,1) reshape(dJdqlambda,obj.num_q,obj.num_q)...
-    zeros(obj.num_q, obj.num_q + obj.num_u + nonContactPConst) J' zeros(obj.num_q, nClutch)] + dconstraint;
+  dconstraint = [zeros(obj.num_positions,1) reshape(dJdqlambda,obj.num_positions,obj.num_positions)...
+    zeros(obj.num_positions, obj.num_positions + obj.num_u + nonContactPConst) J' zeros(obj.num_positions, nClutch)] + dconstraint;
   constraint = constraint + J'*cLambda;
 end
 
-dHqddot = [zeros(obj.num_q,1) -dC B ...
-  zeros(obj.num_q,nonContactPConst+2*nContactConst+nClutch)] + dconstraint;
+dHqddot = [zeros(obj.num_positions,1) -dC B ...
+  zeros(obj.num_positions,nonContactPConst+2*nContactConst+nClutch)] + dconstraint;
 
 %       if (~isempty(obj.model.passive_K) && ~isempty(obj.model.passive_B))
 %         % determine which passive joints are active
 %         active_ind = (q < obj.model.passive_max+1e-6).*(q > obj.model.passive_min-1e-6);
-%         dHqddot(:,2:(1+2*obj.num_q)) = dHqddot(:,2:(1+2*obj.num_q)) - ...
+%         dHqddot(:,2:(1+2*obj.num_positions)) = dHqddot(:,2:(1+2*obj.num_positions)) - ...
 %           [obj.model.passive_K*diag(active_ind) obj.model.passive_B*diag(active_ind)];
 %
 %         passive_force = (-obj.model.passive_K*(q - obj.model.passive_nom) -...

@@ -6,23 +6,23 @@ classdef RigidBodyTerrain < RigidBodyElement
   end
   methods 
     function obj = RigidBodyTerrain()
-      obj.geom = constructRigidBodyGeometry(obj);
     end
     
-    function geom = getRigidBodyGeometry(obj)
-      geom = obj.geom;
+    function varargout = getRigidBodyContactGeometry(varargin)
+      errorDeprecatedFunction('getCollisionGeometry');
     end
-
-    function geom = constructRigidBodyGeometry(obj)
+    
+    function geom = getCollisionGeometry(obj)
       geom = [];
     end
     
-    function writeWRL(obj,fptr)
+    function varargout = getRigidBodyShapeGeometry(varargin)
+      errorDeprecatedFunction('getVisualGeometry');
+    end
+
+    function geom = getVisualGeometry(obj)
+      geom = [];
     end
   end
 
-  properties (Access = protected)
-    geom % RigidBodyGeometry object
-  end
-  
 end

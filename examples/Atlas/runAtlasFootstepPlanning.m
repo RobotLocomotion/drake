@@ -13,7 +13,7 @@ r = Atlas('urdf/atlas_minimal_contact.urdf');
 r = r.setInitialState(xstar);
 
 % Find the initial positions of the feet
-kinsol = doKinematics(r, xstar(1:r.getNumDOF()));
+kinsol = doKinematics(r, xstar(1:r.getNumPositions()));
 start_pos = struct('right', forwardKin(r, kinsol, r.foot_frame_id.right, [0;0;0], 1), ...
                    'left', forwardKin(r, kinsol, r.foot_frame_id.left, [0;0;0], 1));
 

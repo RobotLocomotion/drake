@@ -16,6 +16,7 @@ else
   n_points = 3;
 end
 
+w = warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
 r = RigidBodyManipulator([],struct('terrain',[]));
 for i=1:n_points
   fprintf('Adding point no. %d ...\n',i);
@@ -27,12 +28,13 @@ r.collision_filter_groups('points')=CollisionFilterGroup();
 r = addLinksToCollisionFilterGroup(r,repmat({'point'},1,n_points),'points',1:n_points);
 r = addToIgnoredListOfCollisionFilterGroup(r,'points','points');
 r = r.compile();
+warning(w);
 v = r.constructVisualizer();
 
 dist_min = 0.0;
 dist_max = 0.0;
 
-%c = mycon(randn(r.getNumDOF(),1));  % call it once to make sure it doesn't crash
+%c = mycon(randn(r.getNumPositions(),1));  % call it once to make sure it doesn't crash
 
   function stop=drawme(q,optimValues,state)
     stop=false;
@@ -63,7 +65,7 @@ problem.options=optimset('GradObj','on','GradConstr','on','Algorithm','interior-
 
 tic;
 for i=1:10
-  q0 = 3*(rand(r.getNumDOF(),1)-0.5);
+  q0 = 3*(rand(r.getNumPositions(),1)-0.5);
   v.draw(0,[q0;0*q0]);
   problem.x0 = q0;
 
@@ -71,7 +73,7 @@ for i=1:10
   success=(exitflag==1 || exitflag==2);
 
   xyz_idx = bsxfun(@plus,0:6:6*(n_points-1),(1:3)');
-  err = bsxfun(@minus,abs(qsol(xyz_idx)),[r.body(1).contact_shapes{1}.size]/2);
+  err = bsxfun(@minus,abs(qsol(xyz_idx)),[r.body(1).collision_geometry{1}.size]/2);
   if ~all(any(abs(err)<0.01,1))
     error('Points not on brick!');
   end

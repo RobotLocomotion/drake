@@ -29,11 +29,14 @@ classdef CascadeSystem < DrakeSystem
       [obj.sys1ind,obj.sys2ind] = stateIndicesForCombination(sys1,sys2);
 
       obj = setNumZeroCrossings(obj,sys1.getNumZeroCrossings()+sys2.getNumZeroCrossings()+sum(~isinf([sys2.umin;sys2.umax])));
-      obj = setNumStateConstraints(obj,sys1.getNumStateConstraints()+sys2.getNumStateConstraints());
-      if getNumUnilateralConstraints(sys1)>0 || getNumUnilateralConstraints(sys2)>0
-        error('not implemented yet (but would be trivial)');
+      
+      for i=1:numel(sys1.state_constraints)
+        obj = addStateConstraint(obj,sys1.state_constraints{i},obj.sys1ind(sys1.state_constraint_xind{i}));
       end
-
+      for i=1:numel(sys2.state_constraints)
+        obj = addStateConstraint(obj,sys2.state_constraints{i},obj.sys2ind(sys2.state_constraint_xind{i}));
+      end
+      
       obj = setSampleTime(obj,[sys1.getSampleTime(),sys2.getSampleTime()]);
 
       obj = setInputFrame(obj,sys1.getInputFrame());
@@ -108,19 +111,7 @@ classdef CascadeSystem < DrakeSystem
       ind=find(~isinf(obj.sys2.umax));
       if (~isempty(ind)) zcs=[zcs;obj.sys2.umax(ind) - y1(ind)]; end
     end
-
-    function con = stateConstraints(obj,x)
-      [x1,x2]=decodeX(obj,x);
-      if (getNumStateConstraints(obj.sys1)>0)
-        con=stateConstraints(obj.sys1,x1);
-      else
-        con=[];
-      end
-      if (getNumStateConstraints(obj.sys2)>0)
-        con=[con;stateConstraints(obj.sys2,x2)];
-      end
-    end
-
+    
     % todo: implement cascade, and if sys1 or sys2 can be cascaded more
     % efficient (e.g. two affinesystems), then do it internally instead of
     % adding a nested cascade system.  Will require getting precendence over

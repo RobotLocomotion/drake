@@ -4,25 +4,24 @@ function [sol,robot_vis,v,cdfkp] = testRunningPlanner(seed,stride_length,major_i
   if (nargin < 2 || isempty(stride_length)), stride_length = 2; end
   if (nargin < 3 || isempty(major_iteration_limit)), major_iteration_limit = 200; end
   if (nargin < 4 || isempty(suffix)), suffix = 'testRunning'; end
-  if (nargin < 5 || isempty(options)) 
-    options = defaultOptionsStruct(); 
+  if (nargin < 5 || isempty(options))
+    options = defaultOptionsStruct();
   else
-    options = parseOptionsStruct(options); 
+    options = parseOptionsStruct(options);
   end
 
   % Construct RigidBodyManipulator
   w = warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
   warning('off','Drake:RigidBody:NonPositiveInertiaMatrix');
   warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
-  warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
   warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
   options.floating = true;
   options.terrain = RigidBodyFlatTerrain;
   atlas_urdf = [getDrakePath,'/examples/Atlas/urdf/atlas_convex_hull.urdf'];
   atlas_vis_urdf = [getDrakePath,'/examples/Atlas/urdf/atlas_minimal_contact.urdf'];
   robot = RigidBodyManipulator(atlas_urdf,options);
-  robot = robot.replaceContactShapesWithCHull(robot.findLinkInd('l_hand'),1);
-  robot = robot.replaceContactShapesWithCHull(robot.findLinkInd('r_hand'),1);
+  robot = robot.replaceCollisionGeometryWithConvexHull(robot.findLinkInd('l_hand'),1);
+  robot = robot.replaceCollisionGeometryWithConvexHull(robot.findLinkInd('r_hand'),1);
   robot = compile(robot);
   robot_vis = RigidBodyManipulator(atlas_vis_urdf,options);
   if options.add_obstacle
@@ -45,7 +44,7 @@ function [sol,robot_vis,v,cdfkp] = testRunningPlanner(seed,stride_length,major_i
   l_uleg = robot.findLinkInd('l_uleg');
   r_uleg = robot.findLinkInd('r_uleg');
   head = robot.findLinkInd('head');
-  neck_idx = robot.getBody(robot.findJointInd('neck_ay')).dofnum;
+  neck_idx = robot.getBody(robot.findJointInd('neck_ay')).position_num;
   freeze_idx = neck_idx;
   r_foot_bottom = robot.getBody(r_foot).getTerrainContactPoints();
   l_foot_toe    = robot.getBody(l_foot).getTerrainContactPoints('toe');
@@ -64,7 +63,7 @@ function [sol,robot_vis,v,cdfkp] = testRunningPlanner(seed,stride_length,major_i
   v.draw(0,qstar);
   q0 = qstar;
   q0(neck_idx) = 0;
-  if options.start_from_standing 
+  if options.start_from_standing
     assert(~isempty(options.stride_filename));
     S = load(options.stride_filename);
     options.q_apex = S.sol.q(:,end);
@@ -243,7 +242,7 @@ function [sol,robot_vis,v,cdfkp] = testRunningPlanner(seed,stride_length,major_i
     fb_v_max = 5;
     cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(-fb_v_max*ones(3,N),fb_v_max*ones(3,N)),cdfkp.v_inds(1:3,:));
   end
-  
+
   % Add initial contition constraints
   if options.start_from_standing
     cdfkp = cdfkp.addConstraint(ConstantConstraint([0;0]), ...
@@ -393,7 +392,7 @@ function [sol,robot_vis,v,cdfkp] = testRunningPlanner(seed,stride_length,major_i
       end
     end
   end
-  
+
   % TODO: Set up seed
   if isempty(seed)
     x_seed = zeros(cdfkp.num_vars,1);
@@ -415,7 +414,7 @@ function [sol,robot_vis,v,cdfkp] = testRunningPlanner(seed,stride_length,major_i
   else
     x_seed = seed.x_sol;
   end
-  
+
   % Set up solver options
   cdfkp = cdfkp.setSolverOptions('snopt','iterationslimit',1e6);
   cdfkp = cdfkp.setSolverOptions('snopt','majoriterationslimit',major_iteration_limit);
@@ -424,14 +423,14 @@ function [sol,robot_vis,v,cdfkp] = testRunningPlanner(seed,stride_length,major_i
   cdfkp = cdfkp.setSolverOptions('snopt','superbasicslimit',2000);
   cdfkp = cdfkp.setSolverOptions('snopt','linesearchtolerance',0.9);
   cdfkp = cdfkp.setSolverOptions('snopt','print',sprintf('snopt_%s.out',suffix));
-  
+
   % Solve trajectory optimization
   tic
   %profile on;
   [x_sol,~,~] = cdfkp.solve(x_seed);
   %profile off;
   toc
-  
+
   % Parse trajectory optimization output
   sol.x_sol = x_sol;
   sol.q = reshape(x_sol(cdfkp.q_inds(:)),nq,N);
@@ -484,52 +483,52 @@ function half_periodic_constraint = halfPeriodicConstraint(robot)
     eq_mat(row,[initial_indices(idx) final_indices(idx)]) = [1 1];
   end
 
-  l_arm_usy_idx = robot.getBody(robot.findJointInd('l_arm_usy')).dofnum;
-  r_arm_usy_idx = robot.getBody(robot.findJointInd('r_arm_usy')).dofnum;
+  l_arm_usy_idx = robot.getBody(robot.findJointInd('l_arm_usy')).position_num;
+  r_arm_usy_idx = robot.getBody(robot.findJointInd('r_arm_usy')).position_num;
   symmetric_matrix = addSymmetricPair(symmetric_matrix,1:2,l_arm_usy_idx,r_arm_usy_idx);
 
-  l_arm_shx_idx = robot.getBody(robot.findJointInd('l_arm_shx')).dofnum;
-  r_arm_shx_idx = robot.getBody(robot.findJointInd('r_arm_shx')).dofnum;
+  l_arm_shx_idx = robot.getBody(robot.findJointInd('l_arm_shx')).position_num;
+  r_arm_shx_idx = robot.getBody(robot.findJointInd('r_arm_shx')).position_num;
   symmetric_matrix = addAntiSymmetricPair(symmetric_matrix,3:4,l_arm_shx_idx,r_arm_shx_idx);
 
-  l_arm_ely_idx = robot.getBody(robot.findJointInd('l_arm_ely')).dofnum;
-  r_arm_ely_idx = robot.getBody(robot.findJointInd('r_arm_ely')).dofnum;
+  l_arm_ely_idx = robot.getBody(robot.findJointInd('l_arm_ely')).position_num;
+  r_arm_ely_idx = robot.getBody(robot.findJointInd('r_arm_ely')).position_num;
   symmetric_matrix = addSymmetricPair(symmetric_matrix,5:6,l_arm_ely_idx,r_arm_ely_idx);
 
-  l_arm_elx_idx = robot.getBody(robot.findJointInd('l_arm_elx')).dofnum;
-  r_arm_elx_idx = robot.getBody(robot.findJointInd('r_arm_elx')).dofnum;
+  l_arm_elx_idx = robot.getBody(robot.findJointInd('l_arm_elx')).position_num;
+  r_arm_elx_idx = robot.getBody(robot.findJointInd('r_arm_elx')).position_num;
   symmetric_matrix = addAntiSymmetricPair(symmetric_matrix,7:8,l_arm_elx_idx,r_arm_elx_idx);
 
-  l_arm_uwy_idx = robot.getBody(robot.findJointInd('l_arm_uwy')).dofnum;
-  r_arm_uwy_idx = robot.getBody(robot.findJointInd('r_arm_uwy')).dofnum;
+  l_arm_uwy_idx = robot.getBody(robot.findJointInd('l_arm_uwy')).position_num;
+  r_arm_uwy_idx = robot.getBody(robot.findJointInd('r_arm_uwy')).position_num;
   symmetric_matrix = addSymmetricPair(symmetric_matrix,9:10,l_arm_uwy_idx,r_arm_uwy_idx);
 
-  l_arm_mwx_idx = robot.getBody(robot.findJointInd('l_arm_mwx')).dofnum;
-  r_arm_mwx_idx = robot.getBody(robot.findJointInd('r_arm_mwx')).dofnum;
+  l_arm_mwx_idx = robot.getBody(robot.findJointInd('l_arm_mwx')).position_num;
+  r_arm_mwx_idx = robot.getBody(robot.findJointInd('r_arm_mwx')).position_num;
   symmetric_matrix = addAntiSymmetricPair(symmetric_matrix,11:12,l_arm_mwx_idx,r_arm_mwx_idx);
 
-  l_leg_hpz_idx = robot.getBody(robot.findJointInd('l_leg_hpz')).dofnum;
-  r_leg_hpz_idx = robot.getBody(robot.findJointInd('r_leg_hpz')).dofnum;
+  l_leg_hpz_idx = robot.getBody(robot.findJointInd('l_leg_hpz')).position_num;
+  r_leg_hpz_idx = robot.getBody(robot.findJointInd('r_leg_hpz')).position_num;
   symmetric_matrix = addAntiSymmetricPair(symmetric_matrix,13:14,l_leg_hpz_idx,r_leg_hpz_idx);
 
-  l_leg_hpx_idx = robot.getBody(robot.findJointInd('l_leg_hpx')).dofnum;
-  r_leg_hpx_idx = robot.getBody(robot.findJointInd('r_leg_hpx')).dofnum;
+  l_leg_hpx_idx = robot.getBody(robot.findJointInd('l_leg_hpx')).position_num;
+  r_leg_hpx_idx = robot.getBody(robot.findJointInd('r_leg_hpx')).position_num;
   symmetric_matrix = addAntiSymmetricPair(symmetric_matrix,15:16,l_leg_hpx_idx,r_leg_hpx_idx);
 
-  l_leg_hpy_idx = robot.getBody(robot.findJointInd('l_leg_hpy')).dofnum;
-  r_leg_hpy_idx = robot.getBody(robot.findJointInd('r_leg_hpy')).dofnum;
+  l_leg_hpy_idx = robot.getBody(robot.findJointInd('l_leg_hpy')).position_num;
+  r_leg_hpy_idx = robot.getBody(robot.findJointInd('r_leg_hpy')).position_num;
   symmetric_matrix = addSymmetricPair(symmetric_matrix,17:18,l_leg_hpy_idx,r_leg_hpy_idx);
 
-  l_leg_kny_idx = robot.getBody(robot.findJointInd('l_leg_kny')).dofnum;
-  r_leg_kny_idx = robot.getBody(robot.findJointInd('r_leg_kny')).dofnum;
+  l_leg_kny_idx = robot.getBody(robot.findJointInd('l_leg_kny')).position_num;
+  r_leg_kny_idx = robot.getBody(robot.findJointInd('r_leg_kny')).position_num;
   symmetric_matrix = addSymmetricPair(symmetric_matrix,19:20,l_leg_kny_idx,r_leg_kny_idx);
 
-  l_leg_akx_idx = robot.getBody(robot.findJointInd('l_leg_akx')).dofnum;
-  r_leg_akx_idx = robot.getBody(robot.findJointInd('r_leg_akx')).dofnum;
+  l_leg_akx_idx = robot.getBody(robot.findJointInd('l_leg_akx')).position_num;
+  r_leg_akx_idx = robot.getBody(robot.findJointInd('r_leg_akx')).position_num;
   symmetric_matrix = addAntiSymmetricPair(symmetric_matrix,21:22,l_leg_akx_idx,r_leg_akx_idx);
 
-  l_leg_aky_idx = robot.getBody(robot.findJointInd('l_leg_aky')).dofnum;
-  r_leg_aky_idx = robot.getBody(robot.findJointInd('r_leg_aky')).dofnum;
+  l_leg_aky_idx = robot.getBody(robot.findJointInd('l_leg_aky')).position_num;
+  r_leg_aky_idx = robot.getBody(robot.findJointInd('r_leg_aky')).position_num;
   symmetric_matrix = addSymmetricPair(symmetric_matrix,23:24,l_leg_aky_idx,r_leg_aky_idx);
 
   %base_y = findJointIndices(robot,'base_y'); base_y = base_y(1);
@@ -548,13 +547,13 @@ function half_periodic_constraint = halfPeriodicConstraint(robot)
   base_yaw = 6;
   equal_matrix = addOpposite(equal_matrix,5,base_yaw);
 
-  back_bkz = robot.getBody(robot.findJointInd('back_bkz')).dofnum;
+  back_bkz = robot.getBody(robot.findJointInd('back_bkz')).position_num;
   equal_matrix = addOpposite(equal_matrix,6,back_bkz);
 
-  back_bky = robot.getBody(robot.findJointInd('back_bky')).dofnum;
+  back_bky = robot.getBody(robot.findJointInd('back_bky')).position_num;
   equal_matrix = addEquality(equal_matrix,7,back_bky);
 
-  back_bkx = robot.getBody(robot.findJointInd('back_bkx')).dofnum;
+  back_bkx = robot.getBody(robot.findJointInd('back_bkx')).position_num;
   equal_matrix = addOpposite(equal_matrix,8,back_bkx);
 
   lb = zeros(2*num_symmetry+num_equal,1);
@@ -571,19 +570,19 @@ function displayCallback(in_stance,N,x)
   x_data = [zeros(2,numel(ts));q;0*q];
   utime = now() * 24 * 60 * 60;
   snopt_info_vector = ones(1, size(x_data,2));
-  sfigure(7); 
+  sfigure(7);
   subplot(2,1,1);
-  plot(ts,com_z,'bo-'); 
+  plot(ts,com_z,'bo-');
   hold on
-  plot(ts(in_stance),com_z(in_stance),'ro-'); 
+  plot(ts(in_stance),com_z(in_stance),'ro-');
   title('COM Height')
   xlabel('t (s)')
   ylabel('z (m)')
   hold off
   subplot(2,1,2);
-  plot(ts,comdot_x,'bo-'); 
+  plot(ts,comdot_x,'bo-');
   hold on
-  plot(ts(in_stance),comdot_x(in_stance),'ro-'); 
+  plot(ts(in_stance),comdot_x(in_stance),'ro-');
   title('COM velocity')
   xlabel('t (s)')
   ylabel('xdot (m/s)')
@@ -599,10 +598,10 @@ function robot = addObstacle(robot,obstacle_x_position)
   wall1 = RigidBodyBox(2*[0.1; 1.235; 1.0],[obstacle_x_position-0.2,-0.565-1,1],[0;0;0]);
   wall2 = RigidBodyBox(2*[0.1; 0.15; 1.0],[obstacle_x_position-0.2,1.65-1,1],[0;0;0]);
   wall3 = RigidBodyBox(2*[0.1; 1.8; 0.25],[obstacle_x_position-0.2,0-1,2.25],[0;0;0]);
-  robot = robot.addShapeToBody('world',beam);
-  robot = robot.addShapeToBody('world',wall1);
-  robot = robot.addShapeToBody('world',wall2);
-  robot = robot.addShapeToBody('world',wall3);
+  robot = robot.addGeometryToBody('world',beam);
+  robot = robot.addGeometryToBody('world',wall1);
+  robot = robot.addGeometryToBody('world',wall2);
+  robot = robot.addGeometryToBody('world',wall3);
   robot = compile(robot);
 end
 
@@ -635,4 +634,3 @@ function options = parseOptionsStruct(options_in)
     end
   end
 end
-

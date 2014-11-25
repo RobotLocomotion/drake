@@ -14,7 +14,7 @@ if (kinsol.mex)
         'getCMMdA is not implemented in mex yet');
 else
   q = kinsol.q;
-  nq = getNumDOF(model);
+  nq = getNumPositions(model);
   m = model.featherstone;
 
   A = zeros(6,nq) + 0*q(1);
@@ -47,7 +47,7 @@ else
   end
   
   for i = m.NB:-1:1
-    n = m.dofnum(i);
+    n = m.position_num(i);
     [Xi,phi] = jcalc(m.pitch(i), q(n));
     Xup{i} = Xi * m.Xtree{i} + 0*q(n);
   
@@ -70,7 +70,7 @@ else
   end
   
   for i = 1:m.NB
-    n = m.dofnum(i);
+    n = m.position_num(i);
     if m.parent(i) > 0
       Xworld{i} = Xup{i} * Xworld{m.parent(i)};
       if compute_first_derivative

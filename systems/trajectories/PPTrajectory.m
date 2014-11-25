@@ -69,7 +69,19 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
       end
     end
     
-    % todo: implement deriv and dderiv here
+    function df = deriv(obj,t)
+      [b,c,~,k,d] = unmkpp(obj.pp);
+      if (k==1)  % handle the case of too-high order
+        ppform = mkpp(b,0*c(:,1),d);
+      else
+        for i=1:k-1
+          cnew(:,i) = (k-i)*c(:,i);
+        end
+        ppform = mkpp(b,cnew,d);
+      end
+      df = ppval(ppform,t);
+    end
+    % todo: implement dderiv here
     
     function mobj = inFrame(obj,frame)
       if (obj.getOutputFrame == frame)
@@ -93,10 +105,58 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
       obj.pp.breaks = obj.pp.breaks + offset;
       nobj = setOutputFrame(PPTrajectory(obj.pp),getOutputFrame(obj)); 
     end
+
+    function nobj = scaleTime(obj,scale)
+      % Scale the time of the PPTrajectory uniformly. The resulting trajectory has
+      % the duration of each segment multiplied by [scale]. The coefficients are
+      % also scaled in order to preserve the shape of the trajectory.
+      [breaks, flat_coefs, l, k, d] = unmkpp(obj.pp);
+      
+      breaks = breaks * scale;
+      if d == 1
+        coefs = flat_coefs;
+        for i = 1:size(coefs, 1)
+          coefs(i,:) = coefs(i,:) .* bsxfun(@power, (1/scale), (size(coefs, 2)-1):-1:0);
+        end
+      else
+        % Even though they give us l, k, d in that order, coefs should actually be a d-by-l-by-k array.
+        coefs = reshape(flat_coefs, [prod(d), l, k]);
+        for j = 1:(prod(d))
+          for i = 1:size(coefs, 2)
+            coefs(j,i,:) = coefs(j,i,:) .* reshape(bsxfun(@power, (1/scale), (size(coefs, 3)-1):-1:0), 1, 1, []);
+          end
+        end
+        coefs = reshape(coefs, [d, l, k]);
+      end
+      if d == 1
+        nobj = PPTrajectory(mkpp(breaks, coefs));
+      else
+        nobj = PPTrajectory(mkpp(breaks, coefs, d));
+      end
+    end
     
     function nobj = uminus(obj)
       obj.pp.coefs = -obj.pp.coefs;
       nobj = PPTrajectory(obj.pp);
+    end
+    
+    function tf = eq(a,b)
+      % only implement the trivial case of pptraj=scalar const
+      % (which is what I need right now)
+      if isscalar(a)
+        tmp=b;b=a;a=tmp;
+      end
+      if isscalar(b)
+        % first check if it's a constant
+        if any(a.pp.coefs(:,1:end-1)~=0), tf=false; return; end
+        tf = all(a.pp.coefs(:,end)==b);
+      else
+        error('not implemented yet');
+      end
+    end
+    
+    function tf = ne(a,b)
+      tf = ~eq(a,b);
     end
     
     function t = getBreaks(obj)
@@ -415,6 +475,10 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
         d = [d(1)+d2(1),d(2:end)];
         coefs = [coefs;coefs2];
       end
+      if numel(d)==2 && d(2)==1
+        d = d(1); % column vectors are a special case that's handled differently by the spline class
+        coefs = reshape(coefs, [d, l, k]);
+      end
       c = PPTrajectory(mkpp(breaks,coefs,d));
       fr = cellfun(@(a) getOutputFrame(a),varargin,'UniformOutput',false);
       c = setOutputFrame(c,MultiCoordinateFrame.constructFrame({getOutputFrame(a),fr{:}}));
@@ -432,6 +496,7 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
         s.subs = {s.subs{:},':',':'};
         coefs = subsref(coefs,s);
         d=size(subsref(a.eval(a.tspan(1)),s));
+        if numel(d)==2 && d(2)==1, d = d(1); end  % column vectors are a special case that's handled differently by the spline class
         varargout{1} = PPTrajectory(mkpp(breaks,coefs,d));
       elseif nargout>0  % use builtin
         varargout=cell(1,nargout);
@@ -444,11 +509,11 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
         if isempty(a) % handle the special case
           [breaks,coefs,l,k,d] = unmkpp(b.pp);
           e=[];
-          coefs = reshape(coefs,[d,l,k]);
+          d_extended = [d,l,k];
+          coefs = reshape(coefs,d_extended);
           s.subs = {s.subs{:},':',':'};
           e = subsasgn(e,s,coefs);
-          d=size(coefs); d=d(1:end-2);
-          a = PPTrajectory(mkpp(breaks,e,d));
+          a = PPTrajectory(mkpp(breaks,e,d_extended(1:end-2)));
           return;
         end
         if isnumeric(a) % then b must be a PPTrajectory

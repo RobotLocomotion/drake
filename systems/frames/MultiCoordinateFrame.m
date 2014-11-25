@@ -8,7 +8,7 @@ classdef MultiCoordinateFrame < CoordinateFrame
   % no contract guaranteeing that they will continue to match after 
   % subsequent coordinate renamings for the multi-frame or the sub-frames.
   
-  properties
+  properties (SetAccess=public,GetAccess=public)
     frame={};     % a list of CoordinateFrame objects
     frame_id=[];  % for each coordinate, an integer index into the frame 
                   % (from the list above) associated with that coordinate
@@ -40,23 +40,6 @@ classdef MultiCoordinateFrame < CoordinateFrame
         rangecheck(frame_id,1,length(coordinate_frames));
       end
       
-      % if coordinate_frame contains multi-frames, then extract them here
-      % (don't allow recursive multi-frames)
-      cf = coordinate_frames;
-      coordinate_frames={};
-      for i=length(cf):-1:1
-        if isa(cf{i},'MultiCoordinateFrame')
-          coordinate_frames=vertcat(cf{i}.frame,coordinate_frames);
-          if ~isempty(frame_id)
-            % update frame ids accordingly (by wedging these frames in)
-            frame_id(frame_id>i) = frame_id(frame_id>i)+length(cf{i}.frame)-1;
-            frame_id(frame_id==i) = cf{i}.frame_id + i-1;
-          end
-        else
-          coordinate_frames=vertcat({cf{i}},coordinate_frames);
-        end
-      end
-      
       for i=1:length(coordinate_frames)
         typecheck(coordinate_frames{i},'CoordinateFrame');
         name = [name,'+',coordinate_frames{i}.name];
@@ -72,18 +55,6 @@ classdef MultiCoordinateFrame < CoordinateFrame
       obj.frame = coordinate_frames;
       obj.frame_id = frame_id;
       obj.coord_ids = coord_ids;
-      
-      % add a transform from this multiframe to the child frame
-      % iff the subframes are unique
-      for i=1:length(coordinate_frames)
-        d = coordinate_frames{i}.dim;
-        
-        if ~any(cellfun(@(a) a==coordinate_frames{i},coordinate_frames([1:i-1,i+1:end])))
-          T = sparse(1:d,obj.coord_ids{i},1,d,dim);
-          tf = AffineTransform(obj,coordinate_frames{i},T,zeros(d,1));
-          addTransform(obj,tf);
-        end
-      end
       
       % preallocate
       obj.cell_vals = cell(1,length(obj.frame));
@@ -116,20 +87,26 @@ classdef MultiCoordinateFrame < CoordinateFrame
       end
     end
     
-    function tf = findTransform(obj,target,options)
-      % There are two ways to get a transform from this multiframe to
+    function [tf,options] = findTransform(obj,target,options)
+      % There are three ways to get a transform from this multiframe to
       % another frame.  One is if a transform exists directly from the
-      % multi-frame.  The other is if the required transforms exist for ALL
-      % of the child frames.  see the mimoCascade and mimoFeedback methods
-      % for more complex combinations.
+      % multi-frame.  Another is if the required transforms exist for ALL
+      % of the child frames.  The third is if a transform exists from ONE
+      % of the child frames to the entire target frame (e.g. if the target
+      % is actually one of the child frames).  See the mimoCascade and
+      % mimoFeedback methods for more complex combinations.
 
       if (nargin<3) options=struct(); end
       if ~isfield(options,'throw_error_if_fail') options.throw_error_if_fail = false; end
 
-      opt2 = options;
-      opt2.throw_error_if_fail=false;
-      tf = findTransform@CoordinateFrame(obj,target,opt2);
+      throw_error_if_fail = options.throw_error_if_fail;
+      options.throw_error_if_fail=false;
+      [tf,options] = findTransform@CoordinateFrame(obj,target,options);
+
       if isempty(tf) && isa(target,'MultiCoordinateFrame')
+        % see if there are transforms from all of the children to all of
+        % the target children
+
         % this could only happen if the target is also a multiframe
         
         % handle the simple case first, where the number of subframes is 
@@ -137,11 +114,11 @@ classdef MultiCoordinateFrame < CoordinateFrame
         tf=[];
         if getNumFrames(obj)==getNumFrames(target)
           for i=1:length(obj.frame)
-            tfi = findTransform(obj.frame{i},getFrameByNum(target,i),opt2);
+            tfi = findTransform(obj.frame{i},getFrameByNum(target,i),options);
             if isempty(tfi)
               tf=[];
               fr2=getFrameByNum(target,i);
-              warning(['Could not find any transform between ',obj.frame{i}.name,' and ', fr2.name]);
+%              warning(['Could not find any transform between ',obj.frame{i}.name,' and ', fr2.name]);
               break;
             elseif isempty(tf)
               tf = tfi;
@@ -152,9 +129,24 @@ classdef MultiCoordinateFrame < CoordinateFrame
         end
       end
       
-      if isempty(tf) && options.throw_error_if_fail
+      if isempty(tf)
+        % see if there is a transform from any ONE of the children to
+        % the entire target
+        [child_tf,fid]=findChildTransform(obj,target,options);
+        if fid>0
+          d = obj.frame{fid}.dim;
+          T = sparse(1:d,obj.coord_ids{fid},1,d,obj.dim);
+          tf = AffineTransform(obj,obj.frame{fid},T,zeros(d,1));
+          if ~isempty(child_tf)
+            tf = cascade(tf,child_tf);
+          end
+        end
+      end
+
+      if isempty(tf) && throw_error_if_fail
         error(['Could not find any transform between ',obj.name,' and ', target.name]);
       end
+      options.throw_error_if_fail = throw_error_if_fail;
     end
     
     function [tf,fid] = findChildTransform(obj,target,options)
@@ -233,6 +225,15 @@ classdef MultiCoordinateFrame < CoordinateFrame
       end
     end
     
+    function ids = findSubFrameEquivalentModuloTransforms(obj,fr)
+      ids=[];
+      for i=1:length(obj.frame)
+        if isequal_modulo_transforms(obj.frame{i},fr)
+          ids(end+1) = i;
+        end
+      end
+    end
+
     function varargout = splitCoordinates(obj,vector_vals)
       % Extract values of individual CoordinateFrames from a vector in the
       % multi-frame.  
@@ -278,6 +279,10 @@ classdef MultiCoordinateFrame < CoordinateFrame
       fr = obj.frame{id};
     end
     
+    function id = getFrameNumByName(obj,name)
+      id = find(cellfun(@(a)strcmp(a.name,name),obj.frame));
+    end
+    
     function id = getFrameNum(obj,frame)
       id = find(cellfun(@(a)isequal(a,frame),obj.frame));
       if length(id)>1
@@ -285,6 +290,31 @@ classdef MultiCoordinateFrame < CoordinateFrame
       end
     end
 
+    function obj = replaceFrameNum(obj,num,new_subframe)
+      if new_subframe.dim ~= obj.frame{num}.dim
+        error('new subframe does not match the dimensions of the frame you are trying to replace');
+      end
+      obj.frame{num} = new_subframe;
+    end
+    
+    function obj = appendFrame(obj,new_subframe)
+      old_me = obj;
+      newframes = obj.frame; newframes{end+1} = new_subframe;
+      obj = obj.constructFrame(newframes);
+      obj.frame_id(1:end-new_subframe.dim) = old_me.frame_id;
+      obj.coord_ids(1:end-1) = old_me.coord_ids;
+      % Make sure the vectors are all facing the same way...
+      % In the drakeAtlasSimul case this was actually a problem...
+      % maybe the frame coord_ids as initialized within Atlas
+      % somewhere were set up as 1xN? MultiCoordFrame seems to 
+      % generate Nx1 natively. But only 1xN is working for
+      % later frame generation... I need to figure this out :P
+      for i=1:length(obj.coord_ids)
+        vec = obj.coord_ids{i};
+        obj.coord_ids{i} = vec(:).';
+      end
+    end
+    
     function str = getCoordinateName(obj,i)
       ind = obj.frame_id(i);
       str = getCoordinateName(obj.frame{ind},find(obj.coord_ids{ind}==i));
@@ -372,7 +402,7 @@ classdef MultiCoordinateFrame < CoordinateFrame
   methods (Static=true)
     function obj = constructFrame(frames,frame_ids,zap_empty_frames)
       % if frames has only a single element, then return it, otherwise
-      % construct the construct the mimo frame
+      % construct the multi-frame
       typecheck(frames,'cell');
       
       if (nargin<2) frame_ids =[]; end
@@ -401,4 +431,3 @@ classdef MultiCoordinateFrame < CoordinateFrame
     end
   end
 end
-  

@@ -19,7 +19,7 @@ if (nargin<4 || isempty(rpy)), rpy = zeros(3,1); end
 
 if (nargin<5), options = struct(); end
 if (~isfield(options,'floating')), options.floating = ''; end  % no floating base
-if isnumeric(options.floating) || islogical(options.floating) 
+if isnumeric(options.floating) || islogical(options.floating)
   if (options.floating)
     options.floating = 'rpy';
   else
@@ -29,7 +29,7 @@ end
 if (~isfield(options,'inertial')), options.inertial = true; end
 if (~isfield(options,'visual')), options.visual = true; end
 if (~isfield(options,'collision')), options.collision = true; end
-if (~isfield(options,'sensors')), options.sensors = false; end
+if (~isfield(options,'sensors')), options.sensors = true; end
 if (~isfield(options,'visual_geometry')), options.visual_geometry = false; end
 if (~isfield(options,'namesuffix')), options.namesuffix = ''; end
 if (~isfield(options,'inertia_error')), options.inertia_error = 0.0; end
@@ -94,7 +94,7 @@ for i=0:(links.getLength()-1)
 end
 
 if isempty(model.collision_filter_groups)
-  model.collision_filter_groups=containers.Map('KeyType','char','ValueType','any');     
+  model.collision_filter_groups=containers.Map('KeyType','char','ValueType','any');
   model.collision_filter_groups('no_collision') = CollisionFilterGroup();
 end
 collision_filter_groups = node.getElementsByTagName('collision_filter_group');
@@ -109,7 +109,8 @@ end
 
 loopjoints = node.getElementsByTagName('loop_joint');
 for i=0:(loopjoints.getLength()-1)
-  model = parseLoopJoint(model,robotnum,loopjoints.item(i),options);
+  [model,loop] = RigidBodyLoop.parseURDFNode(model,robotnum,loopjoints.item(i),options);
+  model.loop=[model.loop,loop];
 end
 
 forces = node.getElementsByTagName('force_element');
@@ -133,27 +134,44 @@ for i=0:(frames.getLength()-1)
 end
 
 % weld the root link of this robot to the world link
+% or some other link if specified in options
+if (isfield(options, 'weld_to_link'))
+  weldLink = options.weld_to_link;
+else
+  weldLink = 1; % world link
+end
 ind = find([model.body.parent]<1);
 rootlink = ind([model.body(ind).robotnum]==robotnum);
-worldlink = 1;
 
 for i=1:length(rootlink)
-  if ~isempty(options.floating)
-    model = addFloatingBase(model,worldlink,rootlink(i),xyz,rpy,options.floating);
+  if (~isempty(options.floating))
+    model = addFloatingBase(model,weldLink,rootlink(i),xyz,rpy,options.floating);
   else
-    model = addJoint(model,'','fixed',worldlink,rootlink(i),xyz,rpy);
+    model = addJoint(model,'','fixed',weldLink,rootlink(i),xyz,rpy);
   end
-end
-
-if options.sensors
-  model = addSensor(model,RigidBodyJointSensor(model,robotnum));
 end
 
 % finish parameter parsing
 for i=1:length(model.body)
   model.body(i) = bindParams(model.body(i),model,pval);
 end
-  
+
+for i=1:length(model.force)
+  model.force{i} = bindParams(model.force{i}, model, pval);
+end
+
+for i=1:length(model.sensor)
+  model.sensor{i} = bindParams(model.sensor{i}, model, pval);
+end
+
+for i=1:length(model.actuator)
+  model.actuator(i) = bindParams(model.actuator(i), model, pval);
+end
+
+for i=1:length(model.frame)
+  model.frame(i) = bindParams(model.frame(i), model, pval);
+end
+
 end
 
 function model = parseParameter(model,robotnum,node,options)
@@ -162,7 +180,7 @@ function model = parseParameter(model,robotnum,node,options)
   n = char(node.getAttribute('lb'));  % optional
   if isempty(n), model.param_db{robotnum}.(name).lb = -inf; else model.param_db{robotnum}.(name).lb = str2num(n); end
   n = char(node.getAttribute('ub'));  % optional
-  if isempty(n), model.param_db{robotnum}.(name).ub = inf; else model.param_db{robotnum}.ub = str2num(n); end
+  if isempty(n), model.param_db{robotnum}.(name).ub = inf; else model.param_db{robotnum}.(name).ub = str2num(n); end
 end
 
 function model = parseGazebo(model,robotnum,node,options)
@@ -201,9 +219,9 @@ function model = parseFrame(model,robotnum,node,options)
   if node.hasAttribute('rpy')
     rpy = reshape(parseParamString(model,robotnum,char(node.getAttribute('rpy'))),3,1);
   end
-  
+
   % todo: make sure frame names are unique?
-  
+
   model.frame = vertcat(model.frame,RigidBodyFrame(link,xyz,rpy,name));
 end
 
@@ -238,5 +256,4 @@ end
 if (isempty(actuator.joint)), error('transmission elements must specify a joint name'); end
 
 model.actuator=[model.actuator,actuator];
-end    
-    
+end

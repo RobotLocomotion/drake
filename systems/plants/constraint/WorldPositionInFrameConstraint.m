@@ -42,12 +42,14 @@ classdef WorldPositionInFrameConstraint < WorldPositionConstraint
       if(nargin < 7)
         tspan = [-inf,inf];
       end
-      ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.WorldPositionInFrameConstraintType,robot.getMexModelPtr,body,pts,o_T_f,lb,ub,tspan);
       obj = obj@WorldPositionConstraint(robot,body,pts,lb,ub,tspan);
       obj.o_T_f = o_T_f;
       obj.f_T_o = invHT(o_T_f);
       obj.type = RigidBodyConstraint.WorldPositionInFrameConstraintType;
-      obj.mex_ptr = ptr;
+      if robot.getMexModelPtr~=0 && exist('constructPtrRigidBodyConstraintmex','file')
+        ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.WorldPositionInFrameConstraintType,robot.getMexModelPtr,body,pts,o_T_f,lb,ub,tspan);
+        obj.mex_ptr = ptr;
+      end
     end
     
     

@@ -37,7 +37,9 @@ classdef SingleTimeKinematicConstraint < RigidBodyConstraint
     
     function obj = updateRobot(obj,robot)
       obj.robot = robot;
-      obj.mex_ptr = updatePtrRigidBodyConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
+      if(robot.getMexModelPtr~=0 && exist('updatePtrRigidBodyConstraintmex','file'))
+        obj.mex_ptr = updatePtrRigidBodyConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
+      end
     end
     
     function [c,dc] = eval(obj,t,kinsol)
@@ -54,7 +56,7 @@ classdef SingleTimeKinematicConstraint < RigidBodyConstraint
       if nargin < 2, t = obj.tspan(1); end;
       if(obj.isTimeValid(t))
         [lb,ub] = obj.bounds(t);
-        cnstr = {FunctionHandleConstraint(lb,ub,obj.robot.getNumDOF,@(~,kinsol) obj.eval(t,kinsol))};
+        cnstr = {FunctionHandleConstraint(lb,ub,obj.robot.getNumPositions,@(~,kinsol) obj.eval(t,kinsol))};
         name_str = obj.name(t);
         cnstr{1} = cnstr{1}.setName(name_str);
         joint_idx = obj.kinematicsPathJoints();
@@ -67,8 +69,8 @@ classdef SingleTimeKinematicConstraint < RigidBodyConstraint
     
     function joint_idx = kinematicsPathJoints(obj)
       % return the indices of the joints used to evaluate the constraint. The default
-      % value is (1:obj.robot.getNumDOF);
-      joint_idx = (1:obj.robot.getNumDOF);
+      % value is (1:obj.robot.getNumPositions);
+      joint_idx = (1:obj.robot.getNumPositions);
     end
   end
   

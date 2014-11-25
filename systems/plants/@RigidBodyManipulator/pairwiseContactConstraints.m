@@ -42,7 +42,7 @@ mu=1.0;
 
 if isempty(ptsA)
   phi = 1;
-  n = zeros(1,getNumDOF(obj));
+  n = zeros(1,getNumPositions(obj));
 else
   relpos = ptsA-ptsB;
   s = sign(sum(relpos.*normal,1));

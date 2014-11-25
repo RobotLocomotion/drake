@@ -1,7 +1,7 @@
 function varargout = inverseKinBackend(obj,mode,t,q_seed,q_nom,varargin)
 % inverseKin(obj,mode,q_seed,q_nom,t,constraint1,constraint2,...,options)
 % Two modes,
-% mode 1 -- solve IK 
+% mode 1 -- solve IK
 %   min_q (q-q_nom'*Q*(q-q_nom)
 %   subject to
 %          constraint1 at t
@@ -11,10 +11,10 @@ function varargout = inverseKinBackend(obj,mode,t,q_seed,q_nom,varargin)
 %   If t = [], then all kc are ative.
 %   If t is a scalar, then solve IK for that single time only
 %   If t is an array, then for each time, solve an IK
-% 
+%
 % mode 2 -- solve IK for a sequence of time
-%   min_qi sum_i qdd_i'*Qa*qdd_i+qd_i'*Qv*qd_i+(q_i-q_nom(:,i))'*Q*(q_i-_nom(:,i)) 
-%   subject to 
+%   min_qi sum_i qdd_i'*Qa*qdd_i+qd_i'*Qv*qd_i+(q_i-q_nom(:,i))'*Q*(q_i-_nom(:,i))
+%   subject to
 %          constraint_j at t_i
 %   qd,qdd are computed by supposing q is a cubic spline.
 % @param q_seed       The seed guess, a matrix, wich column i representing the
@@ -23,16 +23,18 @@ function varargout = inverseKinBackend(obj,mode,t,q_seed,q_nom,varargin)
 %                     The nominal posture at t[i]
 % @param constraint   A Constraint class object, accept SingleTimeKinematicConstraint,
 %                     MultipleTimeKinematicConstraint,
-%                     QuasiStaticConstraint, PostureConstraint and MultipleTimeLinearPostureConstraint 
+%                     QuasiStaticConstraint, PostureConstraint and MultipleTimeLinearPostureConstraint
 %                     currently
 % @param ikoptions    An IKoptions object, please refer to IKoptions for detail
 
 % note: keeping typecheck/sizecheck to a minimum because this might have to
 % run inside a dynamical system (so should be fast)
-checkDependency('snopt');
+if(~checkDependency('snopt') && ~checkDependency('studentsnopt'))
+  error('Drake:MissingDependency:SNOPT','inverseKinBackend requires SNOPT. Either try install SNOPT, or try using InverseKinematics (capital case) or InverseKinematicsTrajectory (capital case) and set solver to fmincon or ipopt');
+end
 
 global SNOPT_USERFUN;
-nq = obj.getNumDOF();
+nq = obj.getNumPositions();
 if(isempty(t))
   nT = 1;
 else
@@ -273,8 +275,8 @@ if(mode == 2)
     q0_fixed = [];
     qdot0_fixed = [];
     qstart_idx = 1;
-    num_qfree = nT; 
-    num_qdotfree = 2; 
+    num_qfree = nT;
+    num_qdotfree = 2;
   end
   % Suppose the joint angles are interpolated using cubic splines, then the
   %[qdot(2);qdot(3);...;qdot(nT-1)] = velocity_mat*[q(1);q(2);...;q(nT)]+velocity_mat_qd0*qdot(1)+velocity_mat_qdf*qdot(nT);
@@ -606,7 +608,7 @@ if(mode == 2)
   snsetr('Major optimality tolerance',ikoptions.SNOPT_MajorOptimalityTolerance);
   snsetr('Major feasibility tolerance',ikoptions.SNOPT_MajorFeasibilityTolerance);
 
-  [w_sol,F,info] = snopt(w0,xlow,xupp,Flow,Fupp,'snoptUserfun',0,1,A,iAfun,jAvar,iGfun,jGvar);  
+  [w_sol,F,info] = snopt(w0,xlow,xupp,Flow,Fupp,'snoptUserfun',0,1,A,iAfun,jAvar,iGfun,jGvar);
   q = w_sol(qfree_idx);
   qdotf = w_sol(qdotf_idx);
   if(ikoptions.fixInitialState)
@@ -616,7 +618,7 @@ if(mode == 2)
     qdot0 = w_sol(qdot0_idx);
   end
   qdot = [qdot0 reshape(velocity_mat*q,nq,nT-2) qdotf];
-  qddot = reshape(accel_mat*q+accel_mat_qd0*qdot0+accel_mat_qdf*qdotf,nq,nT); 
+  qddot = reshape(accel_mat*q+accel_mat_qd0*qdot0+accel_mat_qdf*qdotf,nq,nT);
   q = reshape(q,nq,nT);
 
   if(info == 13 || info == 32 || info == 31)
@@ -663,7 +665,8 @@ else
   weights = [];
 end
 [J,dJ] = IK_cost_fun(obj,q,q_nom,Q);
-[c,dc] = IK_constraint_fun(obj,q,t,st_kc_cell,stlpc_cell,nC,nG,qsc,weights);
+kinsol = doKinematics(obj,q,false,false);
+[c,dc] = IK_constraint_fun(obj,q,t,st_kc_cell,stlpc_cell,nC,nG,qsc,weights,kinsol);
 f = [J;c];
 G = [dJ;dc];
 end
@@ -694,23 +697,27 @@ end
   accel_mat,accel_mat_qd0,accel_mat_qdf,nq,nT,num_qfree,num_qdotfree,qstart_idx,fixInitialState);
 nf_cum = 1;
 nG_cum = nq*(num_qfree+num_qdotfree);
+kinsol_cell = cell(1,nT);
 for i = qstart_idx:nT
-  [f(nf_cum+(1:nc_array(i))),G(nG_cum+(1:nG_array(i)))] = IK_constraint_fun(obj,q(:,i),t(i),st_kc_cell,stlpc_nc,nc_array(i),nG_array(i),qsc,qsc_weights(:,i));
+  kinsol_cell{i} = doKinematics(obj,q(:,i),false,false);
+  [f(nf_cum+(1:nc_array(i))),G(nG_cum+(1:nG_array(i)))] = IK_constraint_fun(obj,q(:,i),t(i),st_kc_cell,stlpc_nc,nc_array(i),nG_array(i),qsc,qsc_weights(:,i),kinsol_cell{i});
   nf_cum = nf_cum+nc_array(i);
   nG_cum = nG_cum+nG_array(i);
 end
 q_inbetween = zeros(nq,num_inbetween_tSamples);
 q_samples = zeros(nq,num_inbetween_tSamples+nT);
+kinsol_samples = cell(1,num_inbetween_tSamples+nT);
 qknot_qsamples_idx = zeros(1,nT); % q_samples(:,qknot_qsamples_idx(i)) = q(:,i);
 inbetween_idx = 0;
 for i = 1:nT-1
+  kinsol_samples{inbetween_idx+i} = kinsol_cell{i};
   q_inbetween(:,inbetween_idx+(1:length(t_inbetween{i}))) = reshape(dqInbetweendqknot{i}*q(:)+dqInbetweendqd0{i}*qdot0+dqInbetweendqdf{i}*qdotf,nq,length(t_inbetween{i}));
   for j = 1:length(t_inbetween{i})
     t_j = t_inbetween{i}(j)+t(i);
-    kinsol = doKinematics(obj,q_inbetween(:,inbetween_idx+j),false,false);
+    kinsol_samples{inbetween_idx+i+j} = doKinematics(obj,q_inbetween(:,inbetween_idx+j),false,false);
     for k = 1:length(st_kc_cell)
       if(st_kc_cell{k}.isTimeValid(t_j))
-        [c_k,dc_k] = st_kc_cell{k}.eval(t_j,kinsol);
+        [c_k,dc_k] = st_kc_cell{k}.eval(t_j,kinsol_samples{inbetween_idx+i+j});
         nc = st_kc_cell{k}.getNumConstraint(t_j);
         f(nf_cum+(1:nc)) = c_k;
         if(~fixInitialState)
@@ -730,10 +737,11 @@ for i = 1:nT-1
 end
 q_samples(:,end) = q(:,end);
 qknot_qsamples_idx(end) = num_inbetween_tSamples+nT;
+kinsol_samples{end} = doKinematics(obj,q(:,end),false,false);
 
 for i = 1:length(mt_kc_cell)
   mtkc_nc_i = mt_kc_cell{i}.getNumConstraint(t_samples(qstart_idx:end));
-  [c_i,dc_i]= mt_kc_cell{i}.eval(t_samples(qstart_idx:end),q_samples(:,qstart_idx:end));
+  [c_i,dc_i]= mt_kc_cell{i}.eval(t_samples(qstart_idx:end),kinsol_samples(qstart_idx:end));
   f(nf_cum+(1:mtkc_nc_i)) = c_i;
   G(nG_cum+(1:mtkc_nc_i*nq*num_qfree)) = dc_i(:,reshape(bsxfun(@plus,(qknot_qsamples_idx(qstart_idx:end)-qstart_idx)*nq,(1:nq)'),1,[]));
   inbetween_idx = 0;
@@ -788,10 +796,9 @@ else
 end
 end
 
-function [c,G] = IK_constraint_fun(obj,q,t,st_kc_cell,stlpc_nc,nC,nG,qsc,weights)
+function [c,G] = IK_constraint_fun(obj,q,t,st_kc_cell,stlpc_nc,nC,nG,qsc,weights,kinsol)
 c = zeros(nC,1);
 G = zeros(nG,1);
-kinsol = doKinematics(obj,q,false,false);
 nc= 0;
 ng = 0;
 for i = 1:length(st_kc_cell)

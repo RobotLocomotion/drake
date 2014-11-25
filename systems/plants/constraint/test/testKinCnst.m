@@ -8,12 +8,11 @@ aff_urdf = [getDrakePath,'/systems/plants/constraint/test/valve_task_wall.urdf']
 
 options.floating = true;
 w = warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
-warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
 warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
 warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
 warning('off','Drake:RigidBodyManipulator:ReplacedCylinder');
 robot = RigidBodyManipulator(urdf,options);
-nq = robot.getNumDOF();
+nq = robot.getNumPositions();
 
 robot_collision = RigidBodyManipulator(urdf_collision,options);
 ignored_bodies = {'ltorso','mtorso','r_talus','l_talus'};
@@ -36,15 +35,15 @@ r_foot = robot.findLinkInd('r_foot');
 l_hand = robot.findLinkInd('l_hand');
 r_hand = robot.findLinkInd('r_hand');
 head = robot.findLinkInd('head');
-nLPts = length(robot.getBody(l_foot).getContactShapes);
+nLPts = length(robot.getBody(l_foot).getCollisionGeometry);
 l_foot_pts = zeros(3,nLPts);
 for i=1:nLPts,
-  l_foot_pts(:,i) = robot.getBody(l_foot).getContactShapes{i}.getPoints;
+  l_foot_pts(:,i) = robot.getBody(l_foot).getCollisionGeometry{i}.getPoints;
 end
-nRPts = length(robot.getBody(r_foot).getContactShapes);
+nRPts = length(robot.getBody(r_foot).getCollisionGeometry);
 r_foot_pts = zeros(3,nRPts);
 for i=1:nRPts,
-  r_foot_pts(:,i) = robot.getBody(r_foot).getContactShapes{i}.getPoints;
+  r_foot_pts(:,i) = robot.getBody(r_foot).getCollisionGeometry{i}.getPoints;
 end
 
 q = randn(nq,1);
@@ -248,7 +247,7 @@ end
 
 function testKinCnst_userfun(singleTimeFlag,always_use_mex_dynamics,t,q,q_aff,cnst_type,robot,robot_aff,varargin)
 robot_ptr = robot.getMexModelPtr;
-nq = robot.getNumDOF();
+nq = robot.getNumPositions();
 nT = length(t);
 if(singleTimeFlag)
   kc_mex = constructRigidBodyConstraint(cnst_type,true,robot_ptr,varargin{:});
@@ -311,7 +310,7 @@ valuecheck(ub,cnstr{1}.ub);
 %%%% Check Kinematics Constraint after adding robot
 kc = kc.updateRobot(robot_aff);
 kc_mex = kc.mex_ptr;
-nq_aff = robot_aff.getNumDOF();
+nq_aff = robot_aff.getNumPositions();
 num_cnst = kc.getNumConstraint(t);
 if(singleTimeFlag)
   [type_mex,num_cnst_mex,c_mex,dc_mex,cnst_name_mex,lb_mex,ub_mex] = testSingleTimeKinCnstmex(kc_mex,q_aff,t);
@@ -352,7 +351,7 @@ end
 
 function testKinCnstInvalidTime_userfun(singleTimeFlag,always_use_mex_dynamics,t,q,cnst_type,robot,varargin)
 robot_ptr = robot.getMexModelPtr;
-nq = robot.getNumDOF();
+nq = robot.getNumPositions();
 if(singleTimeFlag)
   kc_mex = constructRigidBodyConstraint(cnst_type,true,robot_ptr,varargin{:});
   kc = constructRigidBodyConstraint(cnst_type,false,robot,varargin{:});

@@ -16,9 +16,9 @@ namespace DrakeCollision
   shared_ptr<Model> newModel()
   {
 #ifdef BULLET_COLLISION
-    return newModel(ModelType::BULLET);
+    return newModel(BULLET);
 #else
-    return newModel(ModelType::NONE);
+    return newModel(NONE);
 #endif
   }
 
@@ -50,9 +50,12 @@ namespace DrakeCollision
     : shape_str()
   {}
   badShapeException::badShapeException(Shape shape)
-    : shape_str(to_string(shape))
-  {}
-
+  { 
+    std::ostringstream ostr; 
+    ostr << shape; 
+    this->shape_str = ostr.str(); 
+  }
+ 
   const char* badShapeException::what() const throw()
   {
     return "Ignoring this collision element";

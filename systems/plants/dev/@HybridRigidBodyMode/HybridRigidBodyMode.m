@@ -8,43 +8,42 @@ classdef HybridRigidBodyMode < RigidBodyManipulator
                       %               = 1 in contact, static friction
                       %               = 2 in contact, sliding friction
   end
-  
+
   methods
     function obj = HybridRigidBodyMode(urdf_filename,joint_limit_state,contact_state,options)
       if (nargin<4) options=struct(); end
-      S = warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
-      warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
+      w = warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
       obj = obj@RigidBodyManipulator(urdf_filename,options);
-      warning(S);
-      
-      sizecheck(joint_limit_state,[obj.num_q,1]);
+      warning(w);
+
+      sizecheck(joint_limit_state,[obj.num_positions,1]);
       obj.joint_limit_state = joint_limit_state;
-      
+
       sizecheck(contact_state,[obj.num_contacts,1]);
       obj.contact_state = contact_state;
 
       % a reminder that somwhere I need to implement the sliding friction
       if any(contact_state>1) error('not implemented yet'); end
-      
+
       obj = compile(obj);
     end
-    
+
     function obj = compile(obj)
       obj = compile@RigidBodyManipulator(obj);
-      
+
       if (obj.num_position_constraints  || obj.num_velocity_constraints)
         error('still need to handle the case whether there are other constraints involved, too');
       end
-      
+
       obj = setNumPositionConstraints(obj,sum(obj.joint_limit_state~=0)+3*sum(obj.contact_state>0));
       obj = setNumVelocityConstraints(obj,0*sum(obj.contact_state==1));
     end
-    
+
     function [phi,dphi,ddphi] = positionConstraints(obj,q)
       % phi = [phi_joint_limits;phi_contact_normal]
       % phi_contact_normal -- The distance between the active contact
       % points to the contact surface
-      
+
       if(nargout == 1)
         phi_j = jointLimitConstraints(obj,q);
         pc_normal = contactNormalConstraints(obj,q);
@@ -63,29 +62,29 @@ classdef HybridRigidBodyMode < RigidBodyManipulator
         ddphi = [ddphi_j; ddpc_normal];
       end
     end
-    
+
 %    function psi = velocityConstraints(obj,q,qd)
 %      [~,Jt] = contactTangentialConstraints(obj,q);
 %      psi = cellfun(@(J) J*qd,Jt(:),'UniformOutput',false);
 %      psi = vertcat(psi{:});
 %    end
-        
+
     function [phi_j,dphi_j,ddphi_j] = jointLimitConstraints(obj,q)
       % only the active joint limit
-      joint_ind = (1:obj.num_q)';
+      joint_ind = (1:obj.num_positions)';
       joint_ind1 = joint_ind(obj.joint_limit_state == 1);
       joint_ind2 = joint_ind(obj.joint_limit_state == 2);
       phi_j = [q(joint_ind1)-obj.joint_limit_min(joint_ind1);...
         obj.joint_limit_max(joint_ind2)-q(joint_ind2)];
       if(nargout>1)
-        dphi_j = [sparse((1:length(joint_ind1))',joint_ind1,ones(length(joint_ind1),1),length(joint_ind1),obj.num_q);...
-          sparse((1:length(joint_ind2))',joint_ind2,-ones(length(joint_ind2),1),length(joint_ind2),obj.num_q)];
+        dphi_j = [sparse((1:length(joint_ind1))',joint_ind1,ones(length(joint_ind1),1),length(joint_ind1),obj.num_positions);...
+          sparse((1:length(joint_ind2))',joint_ind2,-ones(length(joint_ind2),1),length(joint_ind2),obj.num_positions)];
         if(nargout>2)
-          ddphi_j = sparse((length(joint_ind1)+length(joint_ind2)),obj.num_q*obj.num_q);
+          ddphi_j = sparse((length(joint_ind1)+length(joint_ind2)),obj.num_positions*obj.num_positions);
         end
       end
     end
-    
+
     function [pc_normal,dpc_normal,ddpc_normal] = contactNormalConstraints(obj,q)
       % only the normal of the active contact points
       if(nargout>2)
@@ -138,19 +137,19 @@ classdef HybridRigidBodyMode < RigidBodyManipulator
         end
       end
     end
-        
+
     function [p,J,dJ] = activeContactPositions(obj,q)
       %@retval p(:,i) = [px;py;pz] is the position of the ith active
       %contact points
       contact_pts_ind = 1:obj.num_contacts;
       contact_pts_ind1 = contact_pts_ind(obj.contact_state == 1);
-      
+
       kinsol = doKinematics(obj,q,nargout>2);
       contact_pos = zeros(3,length(contact_pts_ind1))*q(1);
       if nargout>1
-        J = zeros(3*length(contact_pts_ind1),obj.num_q)*q(1);
+        J = zeros(3*length(contact_pts_ind1),obj.num_positions)*q(1);
         if(nargout>2)
-          dJ = zeros(3*length(contact_pts_ind1),obj.num_q^2)*q(1);
+          dJ = zeros(3*length(contact_pts_ind1),obj.num_positions^2)*q(1);
         end
       end
       count = 0;
@@ -181,7 +180,7 @@ classdef HybridRigidBodyMode < RigidBodyManipulator
       end
       p = contact_pos;
     end
-    
+
     function [c,dc] = frictionConeConstraints(obj,q,lambda_contact)
       % c>=0 means the friction force is in the friction cone
       contact_ind = (1:obj.num_contacts)';
@@ -206,27 +205,27 @@ classdef HybridRigidBodyMode < RigidBodyManipulator
           dc_col = [];
           dc_val = [];
           dc_row = [dc_row;(1:contact_length1)'];
-          dc_col = [dc_col;obj.num_q+reshape((1:contact_length1)*(1+num_tan),[],1)];
+          dc_col = [dc_col;obj.num_positions+reshape((1:contact_length1)*(1+num_tan),[],1)];
           dc_val = [dc_val; reshape(2*lambda_normal.*mu.^2.*sum(normal.^2,1),[],1)];
           for k = 1:num_tan
             dc_row = [dc_row;(1:contact_length1)'];
-            dc_col = [dc_col;obj.num_q+reshape((0:(contact_length1-1))*(1+num_tan)+k,[],1)];
+            dc_col = [dc_col;obj.num_positions+reshape((0:(contact_length1-1))*(1+num_tan)+k,[],1)];
             dc_val = [dc_val;reshape(-2*sum(friction.*tan{k},1),[],1)];
           end
-          dc = sparse(dc_row,dc_col,dc_val,contact_length1,obj.num_q+numel(lambda_contact));
+          dc = sparse(dc_row,dc_col,dc_val,contact_length1,obj.num_positions+numel(lambda_contact));
         end
       end
-      
+
     end
-    
+
     function [x,success] = resolveConstraints(obj,x0,v)
       if (nargin<3) v=[]; end
       [x,success] = resolveConstraints@SecondOrderSystem(obj,x0,v);
       %  the manipulator resolve constraints add inequality constraints for
-      %  joint limits and contacts.  this call skips over that method and 
+      %  joint limits and contacts.  this call skips over that method and
       %  goes right to the normal second order system method, since those
       %  inequalities are irrelevant here.
     end
-    
+
   end
 end

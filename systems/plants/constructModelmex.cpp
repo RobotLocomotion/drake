@@ -1,27 +1,16 @@
 #include "mex.h"
 #include <iostream>
+#include <cmath>
 #include "drakeUtil.h"
 #include "RigidBodyManipulator.h"
+#include <stdexcept>
 
-#define INF -2147483648
+#if !defined(WIN32) && !defined(WIN64)
+  #include "joints/drakeJointUtil.h"
+#endif
 
 using namespace Eigen;
 using namespace std;
-
-// convert Matlab cell array of strings into a C++ vector of strings
-vector<string> get_strings(const mxArray *rhs) {
-  int num = mxGetNumberOfElements(rhs);
-  vector<string> strings(num);
-  for (int i=0; i<num; i++) {
-    const mxArray *ptr = mxGetCell(rhs,i);
-    int buflen = mxGetN(ptr)*sizeof(mxChar)+1;
-    char* str = (char*)mxMalloc(buflen);
-    mxGetString(ptr, str, buflen);
-    strings[i] = string(str);
-    mxFree(str);
-  }
-  return strings;
-}
 
 void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 {
@@ -50,11 +39,11 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 
   const mxArray* pBodies = mxGetProperty(pRBM,0,"body");
   if (!pBodies) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","the body array is invalid");
-  int num_bodies = mxGetNumberOfElements(pBodies);
+  int num_bodies = static_cast<int>(mxGetNumberOfElements(pBodies));
 
   const mxArray* pFrames = mxGetProperty(pRBM,0,"frame");
   if (!pFrames) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","the frame array is invalid");
-  int num_frames = mxGetNumberOfElements(pFrames);
+  int num_frames = static_cast<int>(mxGetNumberOfElements(pFrames));
 
   // set up the model
   pm = mxGetField(featherstone,0,"NB");
@@ -69,9 +58,10 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.pitch.");
   double* pitch = mxGetPr(pm);
 
-  pm = mxGetField(featherstone,0,"dofnum");
-  if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.dofnum.");
+  pm = mxGetField(featherstone,0,"position_num");
+  if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.position_num.");
   double* dofnum = mxGetPr(pm);
+//  throw runtime_error("here");
 
   pm = mxGetField(featherstone,0,"damping");
   if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.damping.");
@@ -119,54 +109,84 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     //END_DEBUG
     pm = mxGetProperty(pBodies,i,"linkname");
     mxGetString(pm,buf,100);
-    model->bodies[i].linkname.assign(buf,strlen(buf));
+    model->bodies[i]->linkname.assign(buf,strlen(buf));
 
     pm = mxGetProperty(pBodies,i,"jointname");
     mxGetString(pm,buf,100);
-    model->bodies[i].jointname.assign(buf,strlen(buf));
+    model->bodies[i]->jointname.assign(buf,strlen(buf));
 
     pm = mxGetProperty(pBodies,i,"robotnum");
-    model->bodies[i].robotnum = (int) mxGetScalar(pm)-1;
+    model->bodies[i]->robotnum = (int) mxGetScalar(pm)-1;
 
     pm = mxGetProperty(pBodies,i,"mass");
-    model->bodies[i].mass = (double) mxGetScalar(pm);
+    model->bodies[i]->mass = (double) mxGetScalar(pm);
 
     pm = mxGetProperty(pBodies,i,"com");
-    if (!mxIsEmpty(pm)) memcpy(model->bodies[i].com.data(),mxGetPr(pm),sizeof(double)*3);
+    if (!mxIsEmpty(pm)) memcpy(model->bodies[i]->com.data(),mxGetPr(pm),sizeof(double)*3);
 
-    pm = mxGetProperty(pBodies,i,"dofnum");
-    model->bodies[i].dofnum = (int) mxGetScalar(pm) - 1;  //zero-indexed
+    pm = mxGetProperty(pBodies,i,"position_num");
+    model->bodies[i]->dofnum = (int) mxGetScalar(pm) - 1;  //zero-indexed
 
-    pm = mxGetProperty(pBodies,i,"floating");
-    model->bodies[i].floating = (int) mxGetScalar(pm);
 
-    pm = mxGetProperty(pBodies,i,"pitch");
-    model->bodies[i].pitch = (int) mxGetScalar(pm);
+    {
+      mxGetString(mxGetProperty(pBodies, i, "jointname"), buf, 100);
+      string jointname;
+      jointname.assign(buf, strlen(buf));
+
+      pm = mxGetProperty(pBodies, i, "Ttree");
+      // todo: check that the size is 4x4
+      Isometry3d Ttree;
+      memcpy(Ttree.data(), mxGetPr(pm), sizeof(double) * 4 * 4);
+
+      int floating = (int) mxGetScalar(mxGetProperty(pBodies, i, "floating"));
+
+      Eigen::Vector3d joint_axis;
+      pm = mxGetProperty(pBodies, i, "joint_axis");
+      memcpy(joint_axis.data(), mxGetPr(pm), sizeof(double) * 3);
+
+      double pitch = mxGetScalar(mxGetProperty(pBodies, i, "pitch"));
+
+#if !defined(WIN32) && !defined(WIN64)
+      model->bodies[i]->setJoint(createJoint(jointname, Ttree, floating, joint_axis, pitch));
+//      mexPrintf((model->bodies[i]->getJoint().getName() + "\n").c_str());
+#endif
+    }
+    {
+      pm = mxGetProperty(pBodies,i,"jointname");
+      mxGetString(pm,buf,100);
+      model->bodies[i]->jointname.assign(buf,strlen(buf));
+
+      pm = mxGetProperty(pBodies,i,"Ttree");
+      // todo: check that the size is 4x4
+      memcpy(model->bodies[i]->Ttree.data(),mxGetPr(pm),sizeof(double)*4*4);
+
+      pm = mxGetProperty(pBodies,i,"floating");
+      model->bodies[i]->floating = (int) mxGetScalar(pm);
+
+      pm = mxGetProperty(pBodies,i,"pitch");
+      model->bodies[i]->pitch = (int) mxGetScalar(pm);
+    }
 
     pm = mxGetProperty(pBodies,i,"parent");
     if (!pm || mxIsEmpty(pm))
-    	model->bodies[i].parent = -1;
+    	model->bodies[i]->parent = -1;
     else
-    	model->bodies[i].parent = mxGetScalar(pm) - 1;
+    	model->bodies[i]->parent = static_cast<int>(mxGetScalar(pm)) - 1;
 
-    if (model->bodies[i].dofnum>=0) {
+    if (model->bodies[i]->dofnum>=0) {
        pm = mxGetProperty(pBodies,i,"joint_limit_min");
-       model->joint_limit_min[model->bodies[i].dofnum] = mxGetScalar(pm);
+       model->joint_limit_min[model->bodies[i]->dofnum] = mxGetScalar(pm);
        pm = mxGetProperty(pBodies,i,"joint_limit_max");
-       model->joint_limit_max[model->bodies[i].dofnum] = mxGetScalar(pm);
+       model->joint_limit_max[model->bodies[i]->dofnum] = mxGetScalar(pm);
     }
 
-    pm = mxGetProperty(pBodies,i,"Ttree");
-    // todo: check that the size is 4x4
-    memcpy(model->bodies[i].Ttree.data(),mxGetPr(pm),sizeof(double)*4*4);
-
     pm = mxGetProperty(pBodies,i,"T_body_to_joint");
-    memcpy(model->bodies[i].T_body_to_joint.data(),mxGetPr(pm),sizeof(double)*4*4);
+    memcpy(model->bodies[i]->T_body_to_joint.data(),mxGetPr(pm),sizeof(double)*4*4);
 
     //DEBUG
     //cout << "constructModelmex: About to parse collision geometry"  << endl;
     //END_DEBUG
-    pm = mxGetProperty(pBodies,i,"contact_shapes");
+    pm = mxGetProperty(pBodies,i,"collision_geometry");
     Matrix4d T;
     if (!mxIsEmpty(pm)){
       for (int j=0; j<mxGetNumberOfElements(pm); j++) {
@@ -184,7 +204,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 
         // Get element-to-link transform from MATLAB object
         memcpy(T.data(), mxGetPr(mxGetProperty(pShape,0,"T")), sizeof(double)*4*4);
-        auto shape = (DrakeCollision::Shape)mxGetScalar(mxGetProperty(pShape,0,"bullet_shape_id"));
+        auto shape = (DrakeCollision::Shape)static_cast<int>(mxGetScalar(mxGetProperty(pShape,0,"bullet_shape_id")));
         vector<double> params_vec;
         switch (shape) {
           case DrakeCollision::BOX:
@@ -231,7 +251,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
             break;
         }
         model->addCollisionElement(i,T,shape,params_vec,group_name);
-        if (model->bodies[i].parent<0) {
+        if (model->bodies[i]->parent<0) {
           model->updateCollisionElements(i);  // update static objects only once - right here on load
         }
       }
@@ -266,7 +286,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     //}
     //cout << "constructModelmex: Get numel of struct" << endl;
     //END_DEBUG
-    const int n_bodies_w_contact_pts = mxGetNumberOfElements(contact_pts_struct[0]);
+    const int n_bodies_w_contact_pts = static_cast<int>(mxGetNumberOfElements(contact_pts_struct[0]));
     //DEBUG
     //cout << "constructModelmex: Got numel of struct:" << n_bodies_w_contact_pts << endl;
     //END_DEBUG
@@ -288,17 +308,17 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
       //cout << "constructModelmex: Get points" << endl;
       //cout << "constructModelmex: Get number of points" << endl;
       //END_DEBUG
-      n_pts = mxGetN(pPts);
+      n_pts = static_cast<int>(mxGetN(pPts));
       //DEBUG
       //cout << "constructModelmex: Got number of points: " << n_pts << endl;
       //cout << "constructModelmex: Set contact_pts of body" << endl;
       //END_DEBUG
       Map<MatrixXd> pts(mxGetPr(pPts),3,n_pts);
-      model->bodies[body_idx].contact_pts.resize(4,n_pts);
-      model->bodies[body_idx].contact_pts << pts, MatrixXd::Ones(1,n_pts);
+      model->bodies[body_idx]->contact_pts.resize(4,n_pts);
+      model->bodies[body_idx]->contact_pts << pts, MatrixXd::Ones(1,n_pts);
       //DEBUG
       //cout << "constructModelmex: Contact_pts of body: " << endl;
-      //cout << model->bodies[body_idx].contact_pts << endl;
+      //cout << model->bodies[body_idx]->contact_pts << endl;
       //END_DEBUG
     }
   }
@@ -312,7 +332,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     model->frames[i].body_ind = (int) mxGetScalar(pm)-1;
 
     pm = mxGetProperty(pFrames,i,"T");
-    memcpy(model->frames[i].T.data(),mxGetPr(pm),sizeof(double)*4*4);
+    memcpy(model->frames[i].Ttree.data(),mxGetPr(pm),sizeof(double)*4*4);
   }
 
 

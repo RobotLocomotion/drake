@@ -13,7 +13,7 @@ classdef Point2PointDistanceConstraint < SingleTimeKinematicConstraint
   
   methods(Access = protected)
     function [c,dc] = evalValidTime(obj,kinsol)      
-      nq = obj.robot.getNumDOF();
+      nq = obj.robot.getNumPositions();
       if(obj.body_a.idx ~= 1)
         [posA,dposA] = forwardKin(obj.robot,kinsol,obj.body_a.idx,obj.ptA,0);
       else
@@ -58,7 +58,7 @@ classdef Point2PointDistanceConstraint < SingleTimeKinematicConstraint
         error('Point2PointDistanceConstraint:SameBodies',  ...
         'body_a and body_b should refer different frames or bodies');
       end
-      mex_ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.Point2PointDistanceConstraintType,robot.getMexModelPtr,body_a_idx,body_b_idx,ptA,ptB,dist_lb,dist_ub,tspan);
+      
       obj = obj@SingleTimeKinematicConstraint(robot,tspan);
       obj.body_a.idx = body_a_idx;
       obj.body_b.idx = body_b_idx;
@@ -90,7 +90,9 @@ classdef Point2PointDistanceConstraint < SingleTimeKinematicConstraint
       obj.dist_lb = dist_lb;
       obj.dist_ub = dist_ub;
       obj.type = RigidBodyConstraint.Point2PointDistanceConstraintType;
-      obj.mex_ptr = mex_ptr;
+      if robot.getMexModelPtr~=0 && exist('constructPtrRigidBodyConstraintmex','file')
+        obj.mex_ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.Point2PointDistanceConstraintType,robot.getMexModelPtr,body_a_idx,body_b_idx,ptA,ptB,dist_lb,dist_ub,tspan);
+      end
     end
     
     function [lb,ub] = bounds(obj,t)
@@ -116,7 +118,7 @@ classdef Point2PointDistanceConstraint < SingleTimeKinematicConstraint
     
     function joint_idx = kinematicsPathJoints(obj)
       [~,joint_path] = obj.robot.findKinematicPath(obj.body_a.idx,obj.body_b.idx);
-      joint_idx = vertcat(obj.robot.body(joint_path).dofnum)';
+      joint_idx = vertcat(obj.robot.body(joint_path).position_num)';
     end
   end
 end

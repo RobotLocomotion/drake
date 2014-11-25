@@ -12,12 +12,12 @@ classdef RigidBodyTorsionalSpring < RigidBodyForceElement
   
   methods
     function [f_ext,df_ext] = computeSpatialForce(obj,manip,q,qd)
-      theta = q(manip.body(obj.child_body).dofnum);
+      theta = q(manip.body(obj.child_body).position_num);
       torque = obj.k*(obj.rest_angle - theta);
       f_ext = sparse(6,getNumBodies(manip));
       
       if (nargout>1)
-         dthetadq = zeros(1,size(q,1)); dthetadq(manip.body(obj.child_body).dofnum) = 1;
+         dthetadq = zeros(1,size(q,1)); dthetadq(manip.body(obj.child_body).position_num) = 1;
          dtorquedq = -obj.k*dthetadq;
          df_ext = sparse(6*getNumBodies(manip),size(q,1)+size(qd,1));
       end
@@ -68,7 +68,7 @@ classdef RigidBodyTorsionalSpring < RigidBodyForceElement
       jointNode = node.getElementsByTagName('joint').item(0);
       obj.child_body = findJointInd(model,char(jointNode.getAttribute('name')),robotnum);
       obj.parent_body = model.body(obj.child_body).parent;
-      assert(numel(model.body(obj.child_body).dofnum)==1 && model.body(obj.child_body).pitch==0,'Torsional springs are currnetly only supported for pin joints (aka, continuous and rotational joints)');
+      assert(numel(model.body(obj.child_body).position_num)==1 && model.body(obj.child_body).pitch==0,'Torsional springs are currnetly only supported for pin joints (aka, continuous and rotational joints)');
     end
   end
 end
