@@ -38,6 +38,7 @@ configure:
 	@mkdir -p pod-build
 ifeq ($(shell uname -o),Cygwin)
 	@echo "set(CTEST_CUSTOM_PRE_TEST \"`which bash | cygpath -f - -w | sed -e 's/\\\\/\\\\\\\\/g'` -l -c \\\"`pwd`/cmake/add_matlab_unit_tests.pl `pwd`\\\"\")" > pod-build/CTestCustom.cmake 
+	@which python | cygpath -f - -w > .python
 else
 	@echo "set(CTEST_CUSTOM_PRE_TEST \"../cmake/add_matlab_unit_tests.pl ..\")" > pod-build/CTestCustom.cmake # actually has to live in the build path
 endif
