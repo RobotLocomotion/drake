@@ -15,13 +15,13 @@ using namespace std;
  */
 
 // TODO: stop copying these functions everywhere and find a good place for them
-template<int RowsAtCompileTime, int ColsAtCompileTime>
-mxArray* eigenToMatlab(Eigen::Matrix<double, RowsAtCompileTime, ColsAtCompileTime> &m)
+template <typename DerivedA>
+mxArray* eigenToMatlab(const DerivedA &m)
 {
-  mxArray* pm = mxCreateDoubleMatrix(m.rows(), m.cols(), mxREAL);
-  if (m.rows() * m.cols() > 0)
-    memcpy(mxGetPr(pm), m.data(), sizeof(double) * m.rows() * m.cols());
-  return pm;
+ mxArray* pm = mxCreateDoubleMatrix(static_cast<int>(m.rows()),static_cast<int>(m.cols()),mxREAL);
+ if (m.rows()*m.cols()>0)
+   memcpy(mxGetPr(pm),m.data(),sizeof(double)*m.rows()*m.cols());
+ return pm;
 }
 
 mxArray* stdVectorToMatlab(const std::vector<int>& vec) {

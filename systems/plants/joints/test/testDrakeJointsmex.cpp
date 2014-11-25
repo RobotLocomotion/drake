@@ -66,7 +66,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   const mwSize ndim = 1;
   mwSize dims[] = {1};
   plhs[0] = mxCreateStructArray(ndim, dims, 0, nullptr);
-  for (const unique_ptr<DrakeJoint>& joint : joints) {
+  for (vector<unique_ptr<DrakeJoint>>::const_iterator it = joints.begin(); it != joints.end(); it++) {
+    const unique_ptr<DrakeJoint>& joint = (*it);
     mxArray* joint_struct_in = safelyGetField(prhs[0], joint->getName());
     VectorXd q = matlabToEigen<Eigen::Dynamic, 1>(safelyGetField(joint_struct_in, "q"));
     VectorXd v = matlabToEigen<Eigen::Dynamic, 1>(safelyGetField(joint_struct_in, "v"));
@@ -85,8 +86,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
     typedef Eigen::Matrix<double, 6, 1> Vector6d;
     Vector6d motion_subspace_dot_times_v;
-    typename Gradient<Vector6d, Eigen::Dynamic>::type dmotion_subspace_dot_times_vdq;
-    typename Gradient<Vector6d, Eigen::Dynamic>::type dmotion_subspace_dot_times_vdv;
+    Gradient<Vector6d, Eigen::Dynamic>::type dmotion_subspace_dot_times_vdq;
+    Gradient<Vector6d, Eigen::Dynamic>::type dmotion_subspace_dot_times_vdv;
 
     joint->motionSubspaceDotTimesV(q.data(), v.data(), motion_subspace_dot_times_v,
         &dmotion_subspace_dot_times_vdq,
