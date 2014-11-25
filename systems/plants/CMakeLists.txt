@@ -61,9 +61,7 @@ if (eigen3_FOUND)
   add_rbm_mex(allCollisionsmex)
   add_rbm_mex(getCMMmex)
   add_rbm_mex(findKinematicPathmex)
-  if (NOT MSVC)
-    add_rbm_mex(geometricJacobianmex) # todo: pull this out
-  endif()
+  add_rbm_mex(geometricJacobianmex)
 
   add_library(drakeIKoptions SHARED IKoptions.cpp)
   target_link_libraries(drakeIKoptions drakeRBM drakeUtil)
