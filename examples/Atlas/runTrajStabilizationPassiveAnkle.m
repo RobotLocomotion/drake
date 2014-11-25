@@ -5,6 +5,7 @@ if ~checkDependency('gurobi')
   return;
 end
 addpath(fullfile(getDrakePath,'examples','SpringFlamingo'));
+addpath(fullfile(getDrakePath,'examples','Atlas','frames'));
 
 if nargin < 1
   segment_number = -1; % do full traj
@@ -19,6 +20,8 @@ s = 'urdf/atlas_simple_spring_ankle_planar_contact.urdf';
 dt = 0.001;
 w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
 r = TimeSteppingRigidBodyManipulator(s,dt,options);
+r = r.setOutputFrame(AtlasXZState(r));
+r = r.setStateFrame(AtlasXZState(r));
 warning(w);
 
 nx = getNumStates(r);
@@ -32,7 +35,7 @@ data_dir = fullfile(getDrakePath,'examples','Atlas','data');
 traj_file = strcat(data_dir,'/atlas_passiveankle_traj_lqr_090314_zoh.mat');
 load(traj_file);
 
-[xtraj,utraj,Btraj,Straj_full] = repeatTraj(r,xtraj,utraj,Btraj,Straj_full,3,true);
+[xtraj,utraj,Btraj,Straj_full] = repeatTraj(r,xtraj,utraj,Btraj,Straj_full,2,true);
 
 %%% this is converting the trajectory to a zoh
 % if true
