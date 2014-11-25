@@ -801,7 +801,7 @@ typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime>::type dTransformAdjoin
     const Eigen::MatrixBase<DerivedDT>& dT,
     const Eigen::MatrixBase<DerivedDX>& dX) {
   assert(dT.cols() == dX.cols());
-  int nq = dT.cols();
+  typename DerivedDT::Index nq = dT.cols();
 
   const auto& R = T.linear();
   const auto& p = T.translation();

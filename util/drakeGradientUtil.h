@@ -117,10 +117,10 @@ getSubMatrixGradient(const Eigen::MatrixBase<Derived>& dM, int row, int col, typ
 
 template<typename DerivedA, typename DerivedB>
 DLLEXPORT void setSubMatrixGradient(Eigen::MatrixBase<DerivedA>& dM, const Eigen::MatrixBase<DerivedB>& dM_submatrix,
-    const std::vector<int>& rows, const std::vector<int>& cols, int M_rows, int q_start = 0, typename DerivedA::Index q_subvector_size = -1);
+    const std::vector<int>& rows, const std::vector<int>& cols, typename DerivedA::Index M_rows, typename DerivedA::Index q_start = 0, typename DerivedA::Index q_subvector_size = -1);
 
 template<int QSubvectorSize, typename DerivedA, typename DerivedB, std::size_t NRows, std::size_t NCols>
 DLLEXPORT void setSubMatrixGradient(Eigen::MatrixBase<DerivedA>& dM, const Eigen::MatrixBase<DerivedB>& dM_submatrix,
-    const std::array<int, NRows>& rows, const std::array<int, NCols>& cols, int M_rows, int q_start = 0, typename DerivedA::Index q_subvector_size = QSubvectorSize);
+    const std::array<int, NRows>& rows, const std::array<int, NCols>& cols, typename DerivedA::Index M_rows, typename DerivedA::Index q_start = 0, typename DerivedA::Index q_subvector_size = QSubvectorSize);
 
 #endif /* DRAKEGRADIENTUTIL_H_ */
