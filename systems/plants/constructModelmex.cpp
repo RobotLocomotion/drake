@@ -5,9 +5,7 @@
 #include "RigidBodyManipulator.h"
 #include <stdexcept>
 
-#if !defined(WIN32) && !defined(WIN64)
-  #include "joints/drakeJointUtil.h"
-#endif
+#include "joints/drakeJointUtil.h"
 
 using namespace Eigen;
 using namespace std;
@@ -146,10 +144,8 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 
       double pitch = mxGetScalar(mxGetProperty(pBodies, i, "pitch"));
 
-#if !defined(WIN32) && !defined(WIN64)
       model->bodies[i]->setJoint(createJoint(jointname, Ttree, floating, joint_axis, pitch));
 //      mexPrintf((model->bodies[i]->getJoint().getName() + "\n").c_str());
-#endif
     }
     {
       pm = mxGetProperty(pBodies,i,"jointname");
