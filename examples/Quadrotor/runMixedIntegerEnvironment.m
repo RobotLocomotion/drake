@@ -15,6 +15,7 @@ function runMixedIntegerEnvironment(r, start, goal, lb, ub, seeds, traj_degree, 
 
 checkDependency('lcmgl');
 checkDependency('iris');
+checkDependency('mosek');
 
 if nargin < 10
   dt = 0.5;
@@ -24,7 +25,7 @@ AUTOSAVE = false;
 
 bot_radius = 0.3;
 
-can_draw_lcm_polytopes = logical(exist('drawLCMPolytope', 'file'));
+can_draw_lcm_polytopes = logical(exist('drawLCMPolytope', 'file')) && logical(exist('drc.lin_con_t'));
 
 lc = lcm.lcm.LCM.getSingleton();
 lcmgl = LCMGLClient('quad_goal');
@@ -89,18 +90,24 @@ start = [start, [0;0;0], [0;0;0]];
 goal = [goal, [0;0;0], [0;0;0]];
 
 % Find a piecewise 3rd-degree polynomial through the convex regions from start to goal
+disp('Running mixed-integer convex program for 3rd-degree polynomial...');
 [~, ~, ~, safe_region_assignments] = prob.solveTrajectory(start, goal, safe_regions);
+disp('done!');
 
 % Run the program again with the region assignments fixed, for a piecewise 5th-degree polynomial
+disp('Running semidefinite program for 5th-degree polynomial...');
 prob.traj_degree = 5;
 ytraj = prob.solveTrajectory(start, goal, safe_regions, safe_region_assignments);
+disp('done!');
 
 % Add an all-zeros yaw trajectory
 ytraj = ytraj.vertcat(ConstantTrajectory(0));
 
 % % Invert differentially flat outputs to find the state traj
+disp('Inverting differentially flat system...')
 ytraj = ytraj.setOutputFrame(DifferentiallyFlatOutputFrame);
 [xtraj, utraj] = invertFlatOutputs(r,ytraj);
+disp('done!');
 
 figure(83);
 clf
@@ -118,12 +125,16 @@ tf = utraj.tspan(2);
 Q = 10*eye(12);
 R = eye(4);
 Qf = 10*eye(12);
+disp('Computing stabilizing controller with TVLQR...');
 c = tvlqr(r,xtraj,utraj,Q,R,Qf);
 sys = feedback(r,c);
+disp('done!');
 % sys = cascade(utraj, r);
 
 % Simulate the result
+disp('Simulating the system...');
 xtraj_sim = simulate(sys,[0 tf],x0);
+disp('done!');
 
 if AUTOSAVE
   folder = fullfile('../data', datestr(now,'yyyy-mm-dd_HH.MM.SS'));
