@@ -2,6 +2,7 @@ function testDoKinematics
 
 regressionTestAtlas();
 
+testFloatingObject();
 end
 
 
@@ -57,4 +58,12 @@ end
 
 function out = varname(~)
   out = inputname(1);
+end
+
+function testFloatingObject()
+robot = RigidBodyManipulator([getDrakePath,'/examples/Atlas/urdf/atlas_minimal_contact.urdf'],struct('floating',true));
+robot = robot.addRobotFromURDF([getDrakePath,'/solvers/trajectoryOptimization/dev/block.urdf'],[],[],struct('floating',true));
+nq = robot.getNumPositions();
+q = randn(nq,1);
+kinsol = robot.doKinematics(q,false,false);
 end
