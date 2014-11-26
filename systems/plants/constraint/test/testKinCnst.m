@@ -190,13 +190,15 @@ valuecheck(c,[0;sum(kc.isTimeValid(t3))]);
 testKinCnst_userfun(false,false,t3,q31,q31_aff,RigidBodyConstraint.WorldFixedBodyPoseConstraintType,robot,robot_aff,l_hand,tspan2);
 
 
-display('Check all-to-all closest-distance constraint');
-testKinCnst_userfun(true,true,t_valid,q,q_aff,RigidBodyConstraint.AllBodiesClosestDistanceConstraintType,robot_collision,robot_collision_aff,0.05,1e1,struct(),tspan0);
-testKinCnstInvalidTime_userfun(true,true,t_invalid,q,RigidBodyConstraint.AllBodiesClosestDistanceConstraintType,robot_collision,0.05,1e1,struct(),tspan0);
+if checkDependency('bullet')
+  display('Check all-to-all closest-distance constraint');
+  testKinCnst_userfun(true,true,t_valid,q,q_aff,RigidBodyConstraint.AllBodiesClosestDistanceConstraintType,robot_collision,robot_collision_aff,0.05,1e1,struct(),tspan0);
+  testKinCnstInvalidTime_userfun(true,true,t_invalid,q,RigidBodyConstraint.AllBodiesClosestDistanceConstraintType,robot_collision,0.05,1e1,struct(),tspan0);
 
-display('Check minimum distance constraint');
-testKinCnst_userfun(true,true,t_valid,q,q_aff,RigidBodyConstraint.MinDistanceConstraintType,robot_collision,robot_collision_aff,0.05,[],tspan0);
-testKinCnstInvalidTime_userfun(true,true,t_invalid,q,RigidBodyConstraint.MinDistanceConstraintType,robot_collision,0.05,[],tspan0);
+  display('Check minimum distance constraint');
+  testKinCnst_userfun(true,true,t_valid,q,q_aff,RigidBodyConstraint.MinDistanceConstraintType,robot_collision,robot_collision_aff,0.05,[],tspan0);
+  testKinCnstInvalidTime_userfun(true,true,t_invalid,q,RigidBodyConstraint.MinDistanceConstraintType,robot_collision,0.05,[],tspan0);
+end
 
 display('Check point to point distance constraint');
 lhand_pts = rand(3,2);
