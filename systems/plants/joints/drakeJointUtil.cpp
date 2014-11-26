@@ -5,6 +5,7 @@
 #include "RevoluteJoint.h"
 #include "QuaternionFloatingJoint.h"
 #include "RollPitchYawFloatingJoint.h"
+#include "drakeFloatingPointUtil.h"
 #include <cmath>
 #include <stdexcept>
 
@@ -17,7 +18,7 @@ std::unique_ptr<DrakeJoint> createJoint(const std::string& joint_name, const Iso
   case 0: {
     if (pitch == 0.0) {
       joint = std::unique_ptr<RevoluteJoint>(new RevoluteJoint(joint_name, transform_to_parent_body, joint_axis));
-    } else if (std::isinf(pitch)) {
+    } else if (isInf(pitch)) {
       joint = std::unique_ptr<PrismaticJoint>(new PrismaticJoint(joint_name, transform_to_parent_body, joint_axis));
     } else {
       joint = std::unique_ptr<HelicalJoint>(new HelicalJoint(joint_name, transform_to_parent_body, joint_axis, pitch));

@@ -4,7 +4,8 @@
 # add_mex(debugMexTest debugMexTest.cpp)
 
 if (eigen3_FOUND)
-  if (NOT WIN32) # todo: fix this
+  if (NOT WIN32)
+  # doesn't work because the timing tests require the <chrono> include
   add_executable(testDrakeGeometryUtil testDrakeGeometryUtil.cpp)
   target_link_libraries(testDrakeGeometryUtil drakeGeometryUtil drakeGradientUtil)
   include_directories( .. )
@@ -14,7 +15,8 @@ if (eigen3_FOUND)
   target_link_libraries(testDrakeGradientUtil drakeGeometryUtil drakeGradientUtil)
   include_directories( .. )
   add_test(NAME testDrakeGradientUtil COMMAND testDrakeGradientUtil)
-
+  endif (NOT WIN32)
+  
   add_mex(testQuatmex testQuatmex.cpp)
   target_link_libraries(testQuatmex drakeGeometryUtil)
 
@@ -23,6 +25,4 @@ if (eigen3_FOUND)
 
   add_mex(testGeometryConversionFunctionsmex testGeometryConversionFunctionsmex.cpp)
   target_link_libraries(testGeometryConversionFunctionsmex drakeGeometryUtil)
-  endif(NOT WIN32)
-
 endif(eigen3_FOUND)

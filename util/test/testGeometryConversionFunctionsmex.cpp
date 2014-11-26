@@ -12,22 +12,22 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   int argnum = 0;
   Isometry3d T;
   auto q = matlabToEigen<QUAT_SIZE, 1>(prhs[argnum++]);
-  auto dq = matlabToEigen<QUAT_SIZE>(prhs[argnum++]);
+  auto dq = matlabToEigen<QUAT_SIZE, Eigen::Dynamic>(prhs[argnum++]);
 
   auto rpy = quat2rpy(q);
 
   Matrix<double, QUAT_SIZE, SPACE_DIMENSION> omega2qd;
-  typename Gradient<Matrix<double, QUAT_SIZE, SPACE_DIMENSION>, QUAT_SIZE, 1>::type domega2qd;
+  Gradient<Matrix<double, QUAT_SIZE, SPACE_DIMENSION>, QUAT_SIZE, 1>::type domega2qd;
   Matrix<double, RPY_SIZE, SPACE_DIMENSION> omega2rpyd;
-  typename Gradient<Matrix<double, RPY_SIZE, SPACE_DIMENSION>, RPY_SIZE, 1>::type domega2rpyd;
-  typename Gradient<Matrix<double, RPY_SIZE, SPACE_DIMENSION>, RPY_SIZE, 2>::type ddomega2rpyd;
+  Gradient<Matrix<double, RPY_SIZE, SPACE_DIMENSION>, RPY_SIZE, 1>::type domega2rpyd;
+  Gradient<Matrix<double, RPY_SIZE, SPACE_DIMENSION>, RPY_SIZE, 2>::type ddomega2rpyd;
   Matrix<double, SPACE_DIMENSION, QUAT_SIZE> qd2omega;
-  typename Gradient<Matrix<double, SPACE_DIMENSION, QUAT_SIZE>, QUAT_SIZE, 1>::type dqd2omega;
+  Gradient<Matrix<double, SPACE_DIMENSION, QUAT_SIZE>, QUAT_SIZE, 1>::type dqd2omega;
 
   angularvel2quatdotMatrix(q, omega2qd, &domega2qd);
   angularvel2rpydotMatrix(rpy, omega2rpyd, &domega2rpyd, &ddomega2rpyd);
   Matrix<double, SPACE_DIMENSION, RPY_SIZE> rpyd2omega;
-  typename Gradient<Matrix<double,SPACE_DIMENSION,RPY_SIZE>,RPY_SIZE,1>::type drpyd2omega;
+  Gradient<Matrix<double,SPACE_DIMENSION,RPY_SIZE>,RPY_SIZE,1>::type drpyd2omega;
   rpydot2angularvelMatrix(rpy,rpyd2omega,&drpyd2omega);
   quatdot2angularvelMatrix(q, qd2omega, &dqd2omega);
   auto R = quat2rotmat(q);
