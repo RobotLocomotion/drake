@@ -1,13 +1,18 @@
 #ifndef TESTUTIL_H_
 #define TESTUTIL_H_
 
+#if !defined(WIN32) && !defined(WIN64)
 #include <chrono>
+#endif
+
 #include <Eigen/Core>
 #include <iostream>
 #include <stdexcept>
+
 #include "mex.h"
 
-
+// requires <chrono>, which isn't available in MSVC2010...
+#if !defined(WIN32) && !defined(WIN64)
 template<typename TimeT = std::chrono::milliseconds>
 struct measure
 {
@@ -25,6 +30,7 @@ struct measure
     return duration.count();
   }
 };
+#endif
 
 template<typename DerivedA, typename DerivedB>
 void valuecheck(const Eigen::DenseBase<DerivedA>& a, const Eigen::DenseBase<DerivedB>& b, typename DerivedA::Scalar tolerance = 1e-8)
@@ -45,7 +51,7 @@ void valuecheck(double a, double b, double tolerance = 1e-8)
   }
 }
 
-template<int RowsAtCompileTime = Eigen::Dynamic, int ColsAtCompileTime = Eigen::Dynamic>
+template<int RowsAtCompileTime, int ColsAtCompileTime>
 Eigen::Matrix<double, RowsAtCompileTime, ColsAtCompileTime> matlabToEigen(const mxArray* matlab_array)
 {
   const mwSize* size_array = mxGetDimensions(matlab_array);
@@ -54,13 +60,13 @@ Eigen::Matrix<double, RowsAtCompileTime, ColsAtCompileTime> matlabToEigen(const 
   return ret;
 }
 
-template<int RowsAtCompileTime, int ColsAtCompileTime>
-mxArray* eigenToMatlab(Eigen::Matrix<double, RowsAtCompileTime, ColsAtCompileTime> &m)
+template <typename DerivedA>
+mxArray* eigenToMatlab(const DerivedA &m)
 {
-  mxArray* pm = mxCreateDoubleMatrix(m.rows(), m.cols(), mxREAL);
-  if (m.rows() * m.cols() > 0)
-    memcpy(mxGetPr(pm), m.data(), sizeof(double) * m.rows() * m.cols());
-  return pm;
+ mxArray* pm = mxCreateDoubleMatrix(static_cast<int>(m.rows()),static_cast<int>(m.cols()),mxREAL);
+ if (m.rows()*m.cols()>0)
+   memcpy(mxGetPr(pm),m.data(),sizeof(double)*m.rows()*m.cols());
+ return pm;
 }
 
 #endif /* TESTUTIL_H_ */

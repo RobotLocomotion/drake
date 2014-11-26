@@ -9,21 +9,17 @@
 #include "collision/DrakeCollision.h"
 #include "KinematicPath.h"
 
-#undef DLLEXPORT
+#undef DLLEXPORT_RBM
 #if defined(WIN32) || defined(WIN64)
   #if defined(drakeRBM_EXPORTS)
-    #define DLLEXPORT __declspec( dllexport )
+    #define DLLEXPORT_RBM __declspec( dllexport )
   #else
-    #define DLLEXPORT __declspec( dllimport )
+    #define DLLEXPORT_RBM __declspec( dllimport )
   #endif
 #else
-  #define DLLEXPORT
+  #define DLLEXPORT_RBM
 #endif
 
-#if defined(WIN32) || defined(WIN64)
-#else
-  #include "DrakeJoint.h"  // todo: move this out of here
-#endif
 
 #include "RigidBody.h"
 #include "RigidBodyFrame.h"
@@ -34,7 +30,7 @@ using namespace Eigen;
 
 //extern std::set<int> emptyIntSet;  // was const std:set<int> emptyIntSet, but valgrind said I was leaking memory
 
-class DLLEXPORT RigidBodyManipulator 
+class DLLEXPORT_RBM RigidBodyManipulator 
 {
 public:
   RigidBodyManipulator(int num_dof, int num_featherstone_bodies=-1, int num_rigid_body_objects=-1, int num_rigid_body_frames=0);
@@ -90,10 +86,8 @@ public:
   template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD>
   void bodyKin(const int body_ind, const MatrixBase<DerivedA>& pts, MatrixBase<DerivedB> &x, MatrixBase<DerivedC> *J=NULL, MatrixBase<DerivedD> *P=NULL);
 
-#if !defined(WIN32) && !defined(WIN64)
   template<typename DerivedA>
   void geometricJacobian(int base_body_or_frame_ind, int end_effector_body_or_frame_ind, int expressed_in_body_or_frame_ind, PlainObjectBase<DerivedA>& J, std::vector<int>* v_indices);
-#endif
 
   template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD, typename DerivedE, typename DerivedF>
   void HandC(double* const q, double * const qd, MatrixBase<DerivedA> * const f_ext, MatrixBase<DerivedB> &H, MatrixBase<DerivedC> &C, MatrixBase<DerivedD> *dH=NULL, MatrixBase<DerivedE> *dC=NULL, MatrixBase<DerivedF> * const df_ext=NULL);
@@ -256,7 +250,7 @@ private:
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-// The following was required for building w/ DLLEXPORT on windows (due to the unique_ptrs).  See
+// The following was required for building w/ DLLEXPORT_RBM on windows (due to the unique_ptrs).  See
 // http://stackoverflow.com/questions/8716824/cannot-access-private-member-error-only-when-class-has-export-linkage
 private:
   RigidBodyManipulator(const RigidBodyManipulator&) {}

@@ -124,7 +124,7 @@ void testGetSubMatrixGradient(int ntests) {
     auto dA = Matrix<double, A_rows * A_cols, Dynamic>::Random(A_rows * A_cols, nq).eval();
 //    Matrix<double, A_rows * A_cols, Dynamic> dA = Matrix<double, A_rows * A_cols, Dynamic>::Random(A_rows * A_cols, nq);
 
-    auto dA_submatrix = getSubMatrixGradient(dA, rows, cols, A_rows, 1, 2);
+    auto dA_submatrix = getSubMatrixGradient<Eigen::Dynamic>(dA, rows, cols, A_rows, 1, 2);
     volatile auto vol = dA_submatrix.eval();
 //    std::cout << "dA:\n" << dA << "\n\n";
 //    std::cout << "dA_submatrix:\n" << dA_submatrix << "\n\n";
@@ -145,10 +145,10 @@ void testSetSubMatrixGradient(int ntests, bool check) {
 
   for (int testnr = 0; testnr < ntests; testnr++) {
     auto dA = Matrix<double, A_rows * A_cols, Eigen::Dynamic>::Random(A_rows * A_cols, nq).eval();
-    setSubMatrixGradient(dA, dA_submatrix, rows, cols, A_rows, q_start, q_subvector_size);
+    setSubMatrixGradient<Eigen::Dynamic>(dA, dA_submatrix, rows, cols, A_rows, q_start, q_subvector_size);
 
     if (check) {
-      auto dA_submatrix_back = getSubMatrixGradient(dA, rows, cols, A_rows, q_start, q_subvector_size);
+      auto dA_submatrix_back = getSubMatrixGradient<Eigen::Dynamic>(dA, rows, cols, A_rows, q_start, q_subvector_size);
       if (!dA_submatrix_back.isApprox(dA_submatrix, 1e-10)) {
 //        std::cout << "dA_submatrix" << dA_submatrix << std::endl << std::endl;
 //        std::cout << "dA_submatrix_back" << dA_submatrix_back << std::endl << std::endl;

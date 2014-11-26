@@ -3,11 +3,12 @@
 
 #include "FixedAxisOneDoFJoint.h"
 
-class HelicalJoint: public FixedAxisOneDoFJoint
+class DLLEXPORT_DRAKEJOINT HelicalJoint: public FixedAxisOneDoFJoint
 {
   // disable copy construction and assignment
-  HelicalJoint(const HelicalJoint&) = delete;
-  HelicalJoint& operator=(const HelicalJoint&) = delete;
+  // not available in MSVC2010...
+  // HelicalJoint(const HelicalJoint&) = delete;
+  // HelicalJoint& operator=(const HelicalJoint&) = delete;
 
 private:
   const Eigen::Vector3d axis;
