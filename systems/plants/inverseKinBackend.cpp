@@ -57,7 +57,7 @@ static snopt::integer* nG_array;
 static snopt::integer* nA_array;
 static int nq;
 static double *t = nullptr;
-static double *t_samples = nullptr; 
+static double *t_samples = nullptr;
 static double* ti = nullptr;
 static int num_st_kc;
 static int num_mt_kc;
@@ -169,7 +169,7 @@ static void IK_constraint_fun(double* x,double* c, double* G)
     nc_accum += num_qsc_cnst;
     ng_accum += static_cast<int>(dcnst.size());
   }
-} 
+}
 
 static void IK_cost_fun(double* x, double &J, double* dJ)
 {
@@ -298,13 +298,13 @@ static int snoptIKtrajfun(snopt::integer *Status, snopt::integer *n, snopt::doub
   MatrixXd q_inbetween = MatrixXd::Zero(nq,num_inbetween_tSamples);
   MatrixXd q_samples = MatrixXd::Zero(nq,num_inbetween_tSamples+nT);
   int inbetween_idx = 0;
-  
+
   for(int i = 0;i<nT-1;i++)
   {
     q.resize(nq*nT,1);
     MatrixXd q_inbetween_block_tmp = dqInbetweendqknot[i]*q+dqInbetweendqd0[i]*qdot0+dqInbetweendqdf[i]*qdotf;
-    q_inbetween_block_tmp.resize(nq,t_inbetween[i].size());  
-    q_inbetween.block(0,inbetween_idx,nq,t_inbetween[i].size()) = q_inbetween_block_tmp; 
+    q_inbetween_block_tmp.resize(nq,t_inbetween[i].size());
+    q_inbetween.block(0,inbetween_idx,nq,t_inbetween[i].size()) = q_inbetween_block_tmp;
     q.resize(nq,nT);
     for(int j = 0;j<t_inbetween[i].size();j++)
     {
@@ -511,7 +511,7 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
   }
   else
   {
-    qscActiveFlag = qsc_ptr->isActive(); 
+    qscActiveFlag = qsc_ptr->isActive();
     num_qsc_pts = qsc_ptr->getNumWeights();
   }
   ikoptions.getQ(Q);
@@ -554,7 +554,7 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
   VectorXi* iAfun_array = new VectorXi[nT];
   VectorXi* jAvar_array = new VectorXi[nT];
   VectorXd* Cmin_array = new VectorXd[nT];
-  VectorXd* Cmax_array = new VectorXd[nT]; 
+  VectorXd* Cmax_array = new VectorXd[nT];
   vector<string>* Cname_array = new vector<string>[nT];
   for(int i =0;i<nT;i++)
   {
@@ -566,6 +566,20 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
     iAfun_array[i].resize(0);
     jAvar_array[i].resize(0);
   }
+
+  const int DEFAULT_LENRW = 100000;
+  const int DEFAULT_LENIW = 50000;
+  const int DEFAULT_LENCW = 500;
+  snopt::integer minrw,miniw,mincw;
+  snopt::integer lenrw = DEFAULT_LENRW, leniw = DEFAULT_LENIW, lencw = DEFAULT_LENCW;
+  snopt::doublereal rw_static[DEFAULT_LENRW];
+  snopt::integer iw_static[DEFAULT_LENIW];
+  char cw_static[8*DEFAULT_LENCW];
+  snopt::doublereal *rw = rw_static;
+  snopt::integer *iw = iw_static;
+  char* cw = cw_static;
+
+
   for(int i = 0;i<nT;i++)
   {
     for(int j = 0;j<num_st_kc;j++)
@@ -792,7 +806,7 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
           }
           //memcpy(x,q_seed.col(i).data(),sizeof(double)*nq);
         }
-        else 
+        else
         {
           if(INFO_snopt[i-1]>10)
           {
@@ -820,15 +834,6 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
         }
       }
 
-      snopt::integer minrw,miniw,mincw;
-      snopt::integer lenrw = 10000000, leniw = 500000;
-      snopt::doublereal* rw;
-      rw = (snopt::doublereal*) std::calloc(lenrw,sizeof(snopt::doublereal));
-      //doublereal rw[lenrw];
-      snopt::integer* iw;
-      iw = (snopt::integer*) std::calloc(lenrw,sizeof(snopt::integer));
-      char cw[8*500]; snopt::integer lencw = 500;  // these two should match (but don't want to bother with dynamic allocation)
-
       snopt::integer Cold = 0; //, Basis = 1, Warm = 2;
       snopt::doublereal *xmul = new snopt::doublereal[nx];
       snopt::integer    *xstate = new snopt::integer[nx];
@@ -846,7 +851,7 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
       snopt::doublereal ObjAdd = 0.0;
 
       snopt::integer ObjRow = 1;
-      
+
       snopt::integer   nxname = 1, nFname = 1, npname = 0;
       char* xnames = new char[nxname*8];
       char* Fnames = new char[nFname*8];
@@ -869,7 +874,24 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
       npname = strlen(Prob);
       snopenappend_(&iPrint,printname, &INFO_snopt[i], prnt_len);*/
 
-      snopt::sninit_(&iPrint,&iSumm,cw,&lencw,iw,&leniw,rw,&lenrw,8*500);
+      snopt::snmema_(&INFO_snopt[i],&nF,&nx,&nxname,&nFname,&lenA,&nG,&mincw,&miniw,&minrw,cw,&lencw,iw,&leniw,rw,&lenrw,8*lencw);
+      if (minrw>lenrw) {
+        if (rw != rw_static) { delete[] rw; }
+        lenrw = minrw;
+        rw = new snopt::doublereal[lenrw];
+      }
+      if (miniw>leniw) {
+        if (iw != iw_static) { delete[] iw; }
+        leniw = miniw;
+        iw = new snopt::integer[leniw];
+      }
+      if (mincw>lencw) {
+        if (cw != cw_static) { delete[] cw; }
+        lencw = mincw;
+        cw = new char[8*lencw];
+      }
+
+      snopt::sninit_(&iPrint,&iSumm,cw,&lencw,iw,&leniw,rw,&lenrw,8*lencw);
       //snopt::snfilewrapper_(specname,&iSpecs,&INFO_snopt[i],cw,&lencw,iw,&leniw,rw,&lenrw,spec_len,8*lencw);
       char strOpt1[200] = "Derivative option";
       snopt::integer DerOpt = 1, strOpt_len = static_cast<snopt::integer>(strlen(strOpt1));
@@ -889,17 +911,17 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
       char strOpt6[200] = "Iterations limit";
 	  strOpt_len = static_cast<snopt::integer>(strlen(strOpt6));
       snopt::snseti_(strOpt6,&SNOPT_IterationsLimit,&iPrint,&iSumm,&INFO_snopt[i],cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*lencw);
-     
+
 
       //debug only
-      /* 
+      /*
       double* f = new double[nF];
       double* G = new double[nG];
       model->doKinematics(x);
       IK_cost_fun(x,f[0],G);
       IK_constraint_fun(x,&f[1],&G[nq]);
       mxArray* f_ptr = mxCreateDoubleMatrix(nF,1,mxREAL);
-      mxArray* G_ptr = mxCreateDoubleMatrix(nG,1,mxREAL); 
+      mxArray* G_ptr = mxCreateDoubleMatrix(nG,1,mxREAL);
       memcpy(mxGetPr(f_ptr),f,sizeof(double)*(nF));
       memcpy(mxGetPr(G_ptr),G,sizeof(double)*(nG));
       mxSetCell(plhs[0],0,f_ptr);
@@ -914,7 +936,7 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
       {
         iGfun_tmp[k] = (double) iGfun[k];
         jGvar_tmp[k] = (double) jGvar[k];
-      } 
+      }
       memcpy(mxGetPr(iGfun_ptr),iGfun_tmp,sizeof(double)*nG);
       memcpy(mxGetPr(jGvar_ptr),jGvar_tmp,sizeof(double)*nG);
       mxSetCell(plhs[0],2,iGfun_ptr);
@@ -954,7 +976,7 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
       mxSetCell(plhs[0],9,jAvar_ptr);
       mxSetCell(plhs[0],10,A_ptr);
       printf("get iAfun jAvar A\n");
-      
+
       mxArray* nF_ptr = mxCreateDoubleScalar((double) nF);
       mxSetCell(plhs[0],11,nF_ptr);*/
       snopt::snopta_
@@ -968,8 +990,8 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
           &nS, &nInf, &sInf,
           cw, &lencw, iw, &leniw, rw, &lenrw,
           cw, &lencw, iw, &leniw, rw, &lenrw,
-          npname, 8*nxname, 8*nFname,
-          8*500, 8*500);
+          8*npname, 8*nxname, 8*nFname,
+          8*lencw, 8*lencw);
       //snclose_(&iPrint);
       //snclose_(&iSpecs);
       vector<string> Fname(Cname_array[i]);
@@ -1040,8 +1062,8 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
           q_sol(j,i) = q_sol(j,i)<joint_limit_max(j,i)?q_sol(j,i):joint_limit_max(j,i);
         }
       }
-      
-      
+
+
       delete[] xmul; delete[] xstate; delete[] xnames;
       delete[] F; delete[] Fmul; delete[] Fstate; delete[] Fnames;
       delete[] iGfun;  delete[] jGvar;
@@ -1050,7 +1072,6 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
         delete[] iAfun;  delete[] jAvar;  delete[] A;
       }
       delete[] x; delete[] xlow; delete[] xupp; delete[] Flow; delete[] Fupp;
-
     }
   }
   if(mode == 2)
@@ -1082,7 +1103,7 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
     if(fixInitialState)
     {
       q0_fixed.resize(nq);
-      q0_fixed = q_seed.col(0); 
+      q0_fixed = q_seed.col(0);
       qdot0_fixed.resize(nq);
       qdot0_fixed = (qd0_lb+qd0_ub)/2;
       qstart_idx = 1;
@@ -1168,7 +1189,7 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
     }
     else
     {
-      qdot0_idx = nullptr; 
+      qdot0_idx = nullptr;
     }
     int qdot_idx_start = 0;
     if(qscActiveFlag)
@@ -1360,7 +1381,7 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
         dqInbetweendqdf[i] = dq_idqdknot_ip1;
       }
     }
-    
+
     snopt::integer* nc_inbetween_array = new snopt::integer[num_inbetween_tSamples];
     snopt::integer* nG_inbetween_array = new snopt::integer[num_inbetween_tSamples];
     VectorXd* Cmin_inbetween_array = new VectorXd[num_inbetween_tSamples];
@@ -1395,7 +1416,7 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
         {
           for(int l = 0;l<nc;l++)
           {
-            iCfun_append(k*nc+l) = nc_inbetween_array[i]+l;            
+            iCfun_append(k*nc+l) = nc_inbetween_array[i]+l;
           }
         }
         iCfun_inbetween_array[i].tail(nc*nq*(num_qfree+num_qdotfree)) = iCfun_append;
@@ -1446,7 +1467,7 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
     }
 
     // parse the constraint for MultipleTimeLinearPostureConstraint at time t
-    
+
     mt_lpc_nc = new int[num_mt_lpc];
     int* mtlpc_nA = new int[num_mt_lpc];
     VectorXi* mtlpc_iAfun = new VectorXi[num_mt_lpc];
@@ -1521,10 +1542,10 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
     snopt::integer lenA = 0;
     for(int j = qstart_idx;j<nT;j++)
     {
-      nF += nc_array[j]; 
+      nF += nc_array[j];
       nG += nG_array[j];
       lenA += nA_array[j];
-    } 
+    }
     for(int j = 0;j<num_inbetween_tSamples;j++)
     {
       nF += nc_inbetween_array[j];
@@ -1794,13 +1815,6 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
         x[i] = 0.0;
       }
     }
-    snopt::integer minrw,miniw,mincw;
-    snopt::integer lenrw = 20000000, leniw = 2000000;
-    snopt::doublereal* rw;
-    rw = (snopt::doublereal*) std::calloc(lenrw,sizeof(snopt::doublereal));
-    snopt::integer* iw;
-    iw = (snopt::integer*) std::calloc(leniw,sizeof(snopt::integer));
-    char cw[8*5000]; snopt::integer lencw = 5000;  // these two should match (but don't want to bother with dynamic allocation)
 
     snopt::integer Cold = 0; //, Basis = 1; //, Warm = 2;
     snopt::doublereal *xmul = new snopt::doublereal[nx];
@@ -1821,7 +1835,7 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
     snopt::doublereal ObjAdd = 0.0;
 
     snopt::integer ObjRow = 1;
-    
+
     snopt::integer   nxname = 1, nFname = 1, npname = 0;
     char* xnames = new char[nxname*8];
     char* Fnames = new char[nFname*8];
@@ -1864,7 +1878,7 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
     nx_tmp = nx;
     nG_tmp = nG;
     nF_tmp = nF;
-    printf("start to debug\n"); 
+    printf("start to debug\n");
     VectorXd f_vec(nF,1);
     VectorXd G_vec(nG,1);
     VectorXd x_vec(nx,1);
@@ -1874,13 +1888,13 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
     }
     snoptIKtraj_userfun(x_vec,f_vec,G_vec);
     mxArray* f_ptr = mxCreateDoubleMatrix(nF,1,mxREAL);
-    mxArray* G_ptr = mxCreateDoubleMatrix(nG,1,mxREAL); 
+    mxArray* G_ptr = mxCreateDoubleMatrix(nG,1,mxREAL);
     memcpy(mxGetPr(f_ptr),f_vec.data(),sizeof(double)*(nF));
     memcpy(mxGetPr(G_ptr),G_vec.data(),sizeof(double)*(nG));
     matPutVariable(pmat,"f",f_ptr);
     matPutVariable(pmat,"G",G_ptr);
     printf("got f,G\n");
-    
+
     double* iGfun_tmp = new double[nG];
     double* jGvar_tmp = new double[nG];
     mxArray* iGfun_ptr = mxCreateDoubleMatrix(nG,1,mxREAL);
@@ -1889,7 +1903,7 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
     {
       iGfun_tmp[k] = (double) iGfun[k];
       jGvar_tmp[k] = (double) jGvar[k];
-    } 
+    }
     memcpy(mxGetPr(iGfun_ptr),iGfun_tmp,sizeof(double)*nG);
     memcpy(mxGetPr(jGvar_ptr),jGvar_tmp,sizeof(double)*nG);
     matPutVariable(pmat,"iGfun",iGfun_ptr);
@@ -1931,7 +1945,7 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
     matPutVariable(pmat,"iAfun",iAfun_ptr);
     matPutVariable(pmat,"jAvar",jAvar_ptr);
     matPutVariable(pmat,"A",A_ptr);
-    printf("got iAfun jAvar A\n"); 
+    printf("got iAfun jAvar A\n");
     mxArray* velocity_mat_ptr = mxCreateDoubleMatrix(nq*(nT-2),nq*nT,mxREAL);
     memcpy(mxGetPr(velocity_mat_ptr),velocity_mat.data(),sizeof(double)*nq*(nT-2)*nq*nT);
     matPutVariable(pmat,"velocity_mat",velocity_mat_ptr);
@@ -1959,9 +1973,9 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
     mxArray* dqInbetweendqdf_cell = mxCreateCellArray(1,cell_dim);
     for(int i = 0;i<nT-1;i++)
     {
-      dqInbetweendqknot_ptr[i] = mxCreateDoubleMatrix(nq*t_inbetween[i].size(),nq*nT,mxREAL); 
-      dqInbetweendqd0_ptr[i] = mxCreateDoubleMatrix(nq*t_inbetween[i].size(),nq,mxREAL); 
-      dqInbetweendqdf_ptr[i] = mxCreateDoubleMatrix(nq*t_inbetween[i].size(),nq,mxREAL); 
+      dqInbetweendqknot_ptr[i] = mxCreateDoubleMatrix(nq*t_inbetween[i].size(),nq*nT,mxREAL);
+      dqInbetweendqd0_ptr[i] = mxCreateDoubleMatrix(nq*t_inbetween[i].size(),nq,mxREAL);
+      dqInbetweendqdf_ptr[i] = mxCreateDoubleMatrix(nq*t_inbetween[i].size(),nq,mxREAL);
       memcpy(mxGetPr(dqInbetweendqknot_ptr[i]),dqInbetweendqknot[i].data(),sizeof(double)*dqInbetweendqknot[i].size());
       memcpy(mxGetPr(dqInbetweendqd0_ptr[i]),dqInbetweendqd0[i].data(),sizeof(double)*dqInbetweendqd0[i].size());
       memcpy(mxGetPr(dqInbetweendqdf_ptr[i]),dqInbetweendqdf[i].data(),sizeof(double)*dqInbetweendqdf[i].size());
@@ -1981,8 +1995,8 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
     mxArray* jCvar_inbetween_cell = mxCreateCellArray(1,cell_dim);
     for(int i = 0;i<num_inbetween_tSamples;i++)
     {
-      iCfun_inbetween_ptr[i] = mxCreateDoubleMatrix(nG_inbetween_array[i],1,mxREAL); 
-      jCvar_inbetween_ptr[i] = mxCreateDoubleMatrix(nG_inbetween_array[i],1,mxREAL); 
+      iCfun_inbetween_ptr[i] = mxCreateDoubleMatrix(nG_inbetween_array[i],1,mxREAL);
+      jCvar_inbetween_ptr[i] = mxCreateDoubleMatrix(nG_inbetween_array[i],1,mxREAL);
       double* iCfun_inbetween_i_double = new double[nG_inbetween_array[i]];
       double* jCvar_inbetween_i_double = new double[nG_inbetween_array[i]];
       for(int j = 0;j<nG_inbetween_array[i];j++)
@@ -1998,7 +2012,7 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
     }
     matPutVariable(pmat,"iCfun_inbetween",iCfun_inbetween_cell);
     matPutVariable(pmat,"jCvar_inbetween",jCvar_inbetween_cell);
-    delete[] iCfun_inbetween_ptr; delete[] jCvar_inbetween_ptr; 
+    delete[] iCfun_inbetween_ptr; delete[] jCvar_inbetween_ptr;
     printf("get iCfun_inbetween\n");
     matClose(pmat);
     // end of debugging
@@ -2065,7 +2079,7 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
     for(int j = 0;j<nq;j++)
     {
       qdotf(j) = x[qdotf_idx[j]];
-    } 
+    }
     if(!fixInitialState)
     {
       for(int j = 0;j<nq;j++)
@@ -2096,7 +2110,7 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
     qdot_sol_tmp.resize(nq,nT-2);
     qdot_sol.block(0,1,nq,nT-2) = qdot_sol_tmp;
     MatrixXd qddot_sol_tmp(nq*nT,1);
-    qddot_sol_tmp= accel_mat*q_sol_tmp+accel_mat_qd0*qdot0+accel_mat_qdf*qdotf; 
+    qddot_sol_tmp= accel_mat*q_sol_tmp+accel_mat_qd0*qdot0+accel_mat_qdf*qdotf;
     qddot_sol_tmp.resize(nq,nT);
     qddot_sol = qddot_sol_tmp;
 
@@ -2153,8 +2167,7 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
     }
     *INFO = static_cast<int>(*INFO_snopt);
 
-    delete rw;
-    delete[] xmul; delete[] xstate; delete[] xnames; 
+    delete[] xmul; delete[] xstate; delete[] xnames;
     delete[] F; delete[] Fmul; delete[] Fstate; delete[] Fnames;
     delete[] iGfun;  delete[] jGvar;
     if(!fixInitialState)
@@ -2166,21 +2179,24 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
       delete[] iAfun;  delete[] jAvar;  delete[] A;
     }
     delete[] x; delete[] xlow; delete[] xupp; delete[] Flow; delete[] Fupp; delete[] Fname;
-    delete[] dt; delete[] dt_ratio;  
+    delete[] dt; delete[] dt_ratio;
     delete[] t_inbetween; delete[] t_samples; delete[] dqInbetweendqknot; delete[] dqInbetweendqd0; delete[] dqInbetweendqdf;
     delete[] nc_inbetween_array; delete[] nG_inbetween_array; delete[] Cmin_inbetween_array; delete[] Cmax_inbetween_array;
     delete[] iCfun_inbetween_array; delete[] jCvar_inbetween_array;
     delete[] qknot_qsamples_idx;
     delete[] mt_lpc_nc; delete[] mtlpc_nA; delete[] mtlpc_iAfun; delete[] mtlpc_jAvar; delete[] mtlpc_A; delete[] mtlpc_lb; delete[] mtlpc_ub;
-  } 
+  }
   if (INFO_snopt) delete[] INFO_snopt;
   delete[] iAfun_array; delete[] jAvar_array; delete[] A_array;
+  if (rw != rw_static) { delete[] rw; }
+  if (iw != iw_static) { delete[] iw; }
+  if (cw != cw_static) { delete[] cw; }
   if(mode == 2)
   {
     delete[] qfree_idx; delete[] qdotf_idx;
     delete[] mt_kc_nc;
   }
-  delete[] iCfun_array; delete[] jCvar_array; 
+  delete[] iCfun_array; delete[] jCvar_array;
   delete[] Cmin_array; delete[] Cmax_array; delete[] Cname_array;
   delete[] nc_array; delete[] nG_array; delete[] nA_array;
   delete[] st_lpc_nc;
