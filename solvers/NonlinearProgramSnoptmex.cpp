@@ -102,12 +102,25 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   char Fnames[1];  // should match nFname
   char Prob[200]="";
 
+  const int DEFAULT_LENRW = 100000;
+  const int DEFAULT_LENIW = 50000;
+  const int DEFAULT_LENCW = 500;
   snopt::integer minrw,miniw,mincw;
+  snopt::integer lenrw = DEFAULT_LENRW, leniw = DEFAULT_LENIW, lencw = DEFAULT_LENCW;
+  snopt::doublereal rw[DEFAULT_LENRW]; // = (snopt::doublereal*) std::calloc(lenrw,sizeof(snopt::doublereal));
+  snopt::integer iw[DEFAULT_LENIW]; // = (snopt::integer*) std::calloc(leniw,sizeof(snopt::integer));
+  char cw[DEFAULT_LENCW];
+  /* dynamic allocation version.  see issue #586 (note: best may be to use static allocation when possible and only dynamically allocate when necessary.  e.g. prw = rw_static)
   snopt::integer lenrw = 10000000, leniw = 500000, lencw = 500;
   snopt::doublereal *rw = new snopt::doublereal[lenrw];
   snopt::integer *iw = new snopt::integer[leniw];
   char* cw = new char[lencw];
+  */
   snopt::snmema_(&INFO_snopt,&nF,&nx,&nxname,&nFname,&lenA,&lenG,&mincw,&miniw,&minrw,cw,&lencw,iw,&leniw,rw,&lenrw,lencw);
+  if((mincw>lencw) | (miniw>leniw) | (minrw>lenrw)) {
+    mexErrMsgTxt("NonlinearProgramSnoptCMex: static allocation was insufficient.  Need to handle this case by dynamically reallocating memory (only when necessary)");
+  }
+  /* dynamic allocation version 
   if (minrw>lenrw) {
     delete[] rw;
     lenrw = minrw;
@@ -123,7 +136,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     lencw = mincw;
     cw = new char[lencw];
   }
-    
+  */
+  
   snopt::integer Cold = 0;
   snopt::doublereal *xmul = new snopt::doublereal[nx];
   snopt::integer *xstate = new snopt::integer[nx];
@@ -283,9 +297,11 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   delete[] F;
   delete[] Fmul;
   delete[] Fstate;
+  /* dynamic allocation version.  these delete calls were failing.  see commit logs and issue #586
   delete[] rw;
   delete[] iw;
   delete[] cw;
+  */
   if(print_file_name_len!= 0)
   {
     snopt::snclose_(&iPrint);
