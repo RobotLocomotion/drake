@@ -54,18 +54,20 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   snopt::doublereal* x    = new snopt::doublereal[nx];
   snopt::doublereal* xlow = new snopt::doublereal[nx];
   snopt::doublereal* xupp = new snopt::doublereal[nx];
+  double* px = mxGetPr(prhs[0]), *pxlow = mxGetPr(prhs[1]), *pxupp = mxGetPr(prhs[2]);
   for(snopt::integer i = 0;i<nx;i++)
   {
-    x[i] = static_cast<snopt::doublereal>(*(mxGetPr(prhs[0])+i));
-    xlow[i] = static_cast<snopt::doublereal>(*(mxGetPr(prhs[1])+i));
-    xupp[i] = static_cast<snopt::doublereal>(*(mxGetPr(prhs[2])+i));
+    x[i] = static_cast<snopt::doublereal>(*px++);
+    xlow[i] = static_cast<snopt::doublereal>(*pxlow++);
+    xupp[i] = static_cast<snopt::doublereal>(*pxupp++);
   }
   snopt::doublereal* Flow = new snopt::doublereal[nF];
   snopt::doublereal* Fupp = new snopt::doublereal[nF];
+  double* pFlow = mxGetPr(prhs[3]), *pFupp = mxGetPr(prhs[4]);
   for(snopt::integer i = 0;i<nF;i++)
   {
-    Flow[i] = static_cast<snopt::doublereal>(*(mxGetPr(prhs[3])+i));
-    Fupp[i] = static_cast<snopt::doublereal>(*(mxGetPr(prhs[4])+i));
+    Flow[i] = static_cast<snopt::doublereal>(*pFlow++);
+    Fupp[i] = static_cast<snopt::doublereal>(*pFupp++);
   }
   int snopt_userfun_name_len = static_cast<int>(mxGetNumberOfElements(prhs[5]))+1;
   snopt_userfun_name = new char[snopt_userfun_name_len];
@@ -78,19 +80,21 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   snopt::doublereal* A     = new snopt::doublereal[lenA];
   snopt::integer*    iAfun = new snopt::integer[lenA];
   snopt::integer*    jAvar = new snopt::integer[lenA];
+  double* pA = mxGetPr(prhs[8]), *piAfun = mxGetPr(prhs[9]), *pjAvar = mxGetPr(prhs[10]);
   for(snopt::integer i = 0;i<lenA;i++)
   {
-    A[i] = static_cast<snopt::doublereal>(*(mxGetPr(prhs[8])+i));
-    iAfun[i] = static_cast<snopt::integer>(*(mxGetPr(prhs[9])+i));
-    jAvar[i] = static_cast<snopt::integer>(*(mxGetPr(prhs[10])+i));
+    A[i] = static_cast<snopt::doublereal>(*pA++);
+    iAfun[i] = static_cast<snopt::integer>(*piAfun++);
+    jAvar[i] = static_cast<snopt::integer>(*pjAvar++);
   }
   snopt::integer lenG = static_cast<snopt::integer>(mxGetNumberOfElements(prhs[11]));
   snopt::integer* iGfun = new snopt::integer[lenG];
   snopt::integer* jGvar = new snopt::integer[lenG];
+  double *piGfun = mxGetPr(prhs[11]), *pjGvar = mxGetPr(prhs[12]);
   for(snopt::integer i = 0;i<lenG;i++)
   {
-    iGfun[i] = static_cast<snopt::integer>(*(mxGetPr(prhs[11])+i));
-    jGvar[i] = static_cast<snopt::integer>(*(mxGetPr(prhs[12])+i));
+    iGfun[i] = static_cast<snopt::integer>(*piGfun++);
+    jGvar[i] = static_cast<snopt::integer>(*pjGvar++);
   }
   snopt::integer INFO_snopt;
   snopt::integer nxname = 1, nFname = 1, npname = 0;
@@ -98,21 +102,26 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   char Fnames[1*8];  // should match 8*nFname
   char Prob[200]="";
 
+  const int DEFAULT_LENRW = 100000;
+  const int DEFAULT_LENIW = 50000;
+  const int DEFAULT_LENCW = 500; 
   snopt::integer minrw,miniw,mincw;
-  snopt::integer lenrw = 10000000, leniw = 500000, lencw = 500;
-  snopt::doublereal* rw = (snopt::doublereal*) std::calloc(lenrw,sizeof(snopt::doublereal));
-  snopt::integer* iw = (snopt::integer*) std::calloc(leniw,sizeof(snopt::integer));
-  char cw[8*500]; // should match lencw
-	snopt::snmema_(&INFO_snopt,&nF,&nx,&nxname,&nFname,&lenA,&lenG,&mincw,&miniw,&minrw,cw,&lencw,iw,&leniw,rw,&lenrw,8*lencw);
-	if((mincw>lencw) | (miniw>leniw) | (minrw>lenrw))
-	{
-		lenrw = minrw;
-		leniw = miniw;
-		lencw = mincw;
-		rw = (snopt::doublereal*) std::calloc(lenrw,sizeof(snopt::doublereal));
-		iw = (snopt::integer*) std::calloc(leniw,sizeof(snopt::integer));
-	}
-
+  snopt::integer lenrw = DEFAULT_LENRW, leniw = DEFAULT_LENIW, lencw = DEFAULT_LENCW;
+  snopt::doublereal rw[DEFAULT_LENRW]; // = (snopt::doublereal*) std::calloc(lenrw,sizeof(snopt::doublereal));
+  snopt::integer iw[DEFAULT_LENIW]; // = (snopt::integer*) std::calloc(leniw,sizeof(snopt::integer));
+  char cw[DEFAULT_LENCW]; 
+  snopt::snmema_(&INFO_snopt,&nF,&nx,&nxname,&nFname,&lenA,&lenG,&mincw,&miniw,&minrw,cw,&lencw,iw,&leniw,rw,&lenrw,lencw);
+  if((mincw>lencw) | (miniw>leniw) | (minrw>lenrw)) {
+    mexErrMsgTxt("Need to revist this logic.  The old version was leaking memory.  I can do a more careful ");
+      /*	  
+		  lenrw = minrw;
+		  leniw = miniw;
+		  lencw = mincw;
+		  rw = (snopt::doublereal*) std::calloc(lenrw,sizeof(snopt::doublereal));
+		  iw = (snopt::integer*) std::calloc(leniw,sizeof(snopt::integer));
+      */
+  }
+    
   snopt::integer Cold = 0;
   snopt::doublereal *xmul = new snopt::doublereal[nx];
   snopt::integer *xstate = new snopt::integer[nx];
@@ -141,18 +150,19 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
   mxArray* pprint_name = mxGetField(prhs[13],0,"print");
   int print_file_name_len = static_cast<snopt::integer>(mxGetNumberOfElements(pprint_name))+1;
-  char* print_file_name = new char[print_file_name_len];
   if(print_file_name_len != 0)
   {
-		char strOpt10[200] = "Major print level";
-		strOpt_len = static_cast<snopt::integer>(strlen(strOpt10));
-		snopt::integer major_print_level = 11;
-		snopt::snseti_(strOpt10,&major_print_level,&iPrint,&iSumm,&INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500);
+    char* print_file_name = new char[print_file_name_len];
+    char strOpt10[200] = "Major print level";
+    strOpt_len = static_cast<snopt::integer>(strlen(strOpt10));
+    snopt::integer major_print_level = 11;
+    snopt::snseti_(strOpt10,&major_print_level,&iPrint,&iSumm,&INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500);
     mxGetString(pprint_name,print_file_name,print_file_name_len);
     snopt::snopenappend_(&iPrint,print_file_name,&INFO_snopt,print_file_name_len);
-		char strOpt11[200] = "Print file";
-		strOpt_len = static_cast<snopt::integer>(strlen(strOpt11));
-		snopt::snseti_(strOpt11,&iPrint,&iPrint,&iSumm,&INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500);
+    char strOpt11[200] = "Print file";
+    strOpt_len = static_cast<snopt::integer>(strlen(strOpt11));
+    snopt::snseti_(strOpt11,&iPrint,&iPrint,&iSumm,&INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500);
+    delete[] print_file_name;
   }
 
   snopt::sninit_(&iPrint,&iSumm,cw,&lencw,iw,&leniw,rw,&lenrw,8*500);
@@ -275,6 +285,4 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   {
     snopt::snclose_(&iPrint);
   }
-  delete[] print_file_name;
-
 }
