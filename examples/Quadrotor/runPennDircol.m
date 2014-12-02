@@ -8,11 +8,11 @@ function [utraj,xtraj,prog,r] = runPennDircol
 plant = 'penn';
 
 if plant == 'russ'
-    r = Quadrotor();
-    disp('using russ rotor!')
+  r = Quadrotor();
+  disp('using russ rotor!')
 elseif plant == 'penn'
-    r = QuadPlantPenn(); % Quadrotor constructor
-    disp('using penn rotor!')
+  r = QuadWindPlant(); % Quadrotor constructor
+  disp('using quad plant in wind based on penn plant!!')
 end
 
 
@@ -24,9 +24,9 @@ prog = DircolTrajectoryOptimization(r,N,[minimum_duration maximum_duration]);
 x0 = Point(getStateFrame(r));  % initial conditions: all-zeros
 
 if plant == 'russ'
-    x0.base_z = .5; % lift the quad off the ground
+  x0.base_z = .5; % lift the quad off the ground
 elseif plant == 'penn'
-    x0.z = .5; % lift the quad off the ground
+  x0.z = .5; % lift the quad off the ground
 end
 
 
@@ -36,7 +36,16 @@ prog = prog.addStateConstraint(ConstantConstraint(double(x0)),1); % DirectTrajec
 prog = prog.addInputConstraint(ConstantConstraint(u0),1); % DirectTrajectoryOptimization method
 
 xf = x0;                       % final conditions: translated in x
-xf.base_x = 2;                 % translate x by 2
+
+
+if plant == 'russ'
+  xf.base_x = 2;                 % translate x by 2
+elseif plant == 'penn'
+  xf.x = 2;                 % translate x by 2
+end
+
+
+
 prog = prog.addStateConstraint(ConstantConstraint(double(xf)),N); % DirectTrajectoryOptimization method
 prog = prog.addInputConstraint(ConstantConstraint(u0),N); % DirectTrajectoryOptimization method
 
@@ -49,14 +58,14 @@ traj_init.u = ConstantTrajectory(u0); % traj_init.u is a ConstantTrajectory < Tr
 
 info=0;
 while (info~=1)
-    tic
-    [xtraj,utraj,z,F,info] = prog.solveTraj(tf0,traj_init); % DirectTrajectoryOptimization method
-    toc
+  tic
+  [xtraj,utraj,z,F,info] = prog.solveTraj(tf0,traj_init); % DirectTrajectoryOptimization method
+  toc
 end
 
 if (nargout<1)
-    v = constructVisualizer(r);
-    v.playback(xtraj,struct('slider',true));
+  v = constructVisualizer(r);
+  v.playback(xtraj,struct('slider',true));
 end
 
 end
