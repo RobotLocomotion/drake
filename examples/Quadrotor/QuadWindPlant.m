@@ -89,8 +89,12 @@ classdef QuadWindPlant < SecondOrderSystem
       M3 = km*w3;
       M4 = km*w4;
       
+      xquad = x(1);
+      yquad = x(2);
+      zquad = x(3);
+      quadpos = [xquad;yquad;zquad];
       
-      xyz_ddot = (1/m)*([0;5;-m*g] + R*[0;0;F1+F2+F3+F4]); % sideways constant wind field (the "5" in y direction)
+      xyz_ddot = (1/m)*([0;0;-m*g] + R*[0;0;F1+F2+F3+F4] + quadwind(quadpos)); % call to wind field in dynamics
       
       pqr = rpydot2angularvel([phi;theta;psi],[phidot;thetadot;psidot]);
       pqr = R'*pqr;
@@ -118,6 +122,14 @@ classdef QuadWindPlant < SecondOrderSystem
       
       
       qdd = [xyz_ddot;rpy_ddot];
+    end
+    
+    function wind = quadwind(quadpos)
+      % quadpos is [xquad;yquad;zquad]
+      xwind = 0;
+      ywind = 0;
+      zwind = 0;
+      wind = [xwind;ywind;zwind]
     end
     
     function y = output(obj,t,x,u)
