@@ -1,3 +1,4 @@
+
 function [utraj,xtraj,prog,r] = runPennDircol
 
 % simple planning demo which takes the quadrotor from hover at x=0m to a new hover at
@@ -51,7 +52,9 @@ xf = x0;                       % final conditions: translated in x
 if plant == 'russ'
   xf.base_x = 2;                 % translate x by 2
 elseif plant == 'penn'
-  xf.x = 2;                 % translate x by 2
+  xf.x = 6;                 % translate x
+  xf.z = 4;                 % translate z
+  xf.y = 3;                 % translate x
 end
 
 
