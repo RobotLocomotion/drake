@@ -35,8 +35,9 @@ lcmgl.switchBuffers();
 
 v = constructVisualizer(r);
 x0 = double(Point(getStateFrame(r)));  % initial conditions: all-zeros
-x0(1:3) = start;
-v.draw(0,double(x0));
+x0(1:3) = start; % set start point
+v.draw(0,double(x0)); % ?
+
 
 b = r.getBody(1);
 obstacles = cell(1, length(b.getCollisionGeometry()));

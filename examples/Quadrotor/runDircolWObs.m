@@ -60,7 +60,7 @@ tic
 toc
 
 %if (nargout<1)
-  v.playback(xtraj);%,struct('slider',true));
+  v.playback(xtraj,struct('slider',true));
 %end
 
 end
