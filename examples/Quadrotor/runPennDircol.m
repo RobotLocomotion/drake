@@ -9,9 +9,19 @@ plant = 'penn';
 
 if plant == 'russ'
   r = Quadrotor();
+  v = constructVisualizer(r);
   disp('using russ rotor!')
 elseif plant == 'penn'
+  r_temp = Quadrotor();
+  v = constructVisualizer(r_temp);
   r = QuadWindPlant(); % Quadrotor constructor
+  
+  % coordinate transform from r.getOutputFrame to v.getInputFrame
+  %ct = CoordinateTransform(
+  
+  r.setOutputFrame(r_temp.getStateFrame());
+  
+  %v = v.setInputFrame(r.getOutputFrame());
   disp('using quad plant in wind based on penn plant!!')
 end
 
@@ -64,7 +74,7 @@ while (info~=1)
 end
 
 if (nargout<1)
-  v = constructVisualizer(r);
+  xtraj = xtraj.setOutputFrame(r_temp.getStateFrame());
   v.playback(xtraj,struct('slider',true));
 end
 

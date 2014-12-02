@@ -30,7 +30,7 @@ classdef QuadWindPlant < SecondOrderSystem
       g = r.gravity
     end
     
-    function qdd = sodynamics(obj,t,q,qd,u)
+    function [qdd, df] = sodynamics(obj,t,q,qd,u)
       % States
       % x
       % y
@@ -44,6 +44,10 @@ classdef QuadWindPlant < SecondOrderSystem
       % phidot
       % thetadot
       % psidot
+      
+      if (nargout>1)
+        [df]= dynamicsGradients(obj,t,q,qd,u,nargout-1);
+      end
       
       % Parameters
       m = obj.m;
@@ -110,9 +114,8 @@ classdef QuadWindPlant < SecondOrderSystem
         Phi*Rdot*pqr;
       
       % xdot = [x(7:12);xyz_ddot;rpy_ddot];
+      
       qdd = [xyz_ddot;rpy_ddot];
-      
-      
     end
     
     function y = output(obj,t,x,u)
