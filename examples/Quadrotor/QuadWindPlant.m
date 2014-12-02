@@ -90,7 +90,7 @@ classdef QuadWindPlant < SecondOrderSystem
       M4 = km*w4;
       
       
-      xyz_ddot = (1/m)*([0;0;-m*g] + R*[0;0;F1+F2+F3+F4]);
+      xyz_ddot = (1/m)*([0;5;-m*g] + R*[0;0;F1+F2+F3+F4]); % sideways constant wind field (the "5" in y direction)
       
       pqr = rpydot2angularvel([phi;theta;psi],[phidot;thetadot;psidot]);
       pqr = R'*pqr;
@@ -114,6 +114,8 @@ classdef QuadWindPlant < SecondOrderSystem
         Phi*Rdot*pqr;
       
       % xdot = [x(7:12);xyz_ddot;rpy_ddot];
+      
+      
       
       qdd = [xyz_ddot;rpy_ddot];
     end
