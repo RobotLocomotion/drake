@@ -49,6 +49,7 @@ classdef QuadWindPlant < SecondOrderSystem
         [df]= dynamicsGradients(obj,t,q,qd,u,nargout-1);
       end
       
+      
       % Parameters
       m = obj.m;
       I = obj.I;
@@ -94,7 +95,14 @@ classdef QuadWindPlant < SecondOrderSystem
       zquad = x(3);
       quadpos = [xquad;yquad;zquad];
       
-      xyz_ddot = (1/m)*([0;0;-m*g] + R*[0;0;F1+F2+F3+F4] + quadwind(quadpos)); % call to wind field in dynamics
+      
+      [windout,dquadinwind] = obj.quadwind(quadpos);
+      
+      if (nargout>1)
+        df = df + dquadinwind;
+      end
+      
+      xyz_ddot = (1/m)*([0;0;-m*g] + R*[0;0;F1+F2+F3+F4] + windout); % call to wind field in dynamics
       
       pqr = rpydot2angularvel([phi;theta;psi],[phidot;thetadot;psidot]);
       pqr = R'*pqr;
@@ -124,13 +132,34 @@ classdef QuadWindPlant < SecondOrderSystem
       qdd = [xyz_ddot;rpy_ddot];
     end
     
-    function wind = quadwind(quadpos)
+    function [wind,dquadinwind] = quadwind(obj,quadpos)
       % quadpos is [xquad;yquad;zquad]
+      
+      xquad = quadpos(1);
+      yquad = quadpos(2);
+      zquad = quadpos(3);
+      
       xwind = 0;
-      ywind = 0;
+      %if zquad < 5
+      %  ywind = zquad/10;
+      %else
+        ywind = 5;
+      %end
+      
+      
       zwind = 0;
-      wind = [xwind;ywind;zwind]
+      
+      
+      wind = [xwind;ywind;zwind];
+      dquadinwind = sparse(6,17);
+      dquadinwind(2,4) = 1/10;
+      
+      %dydotdot/dz
+      
+      
+      
     end
+    
     
     function y = output(obj,t,x,u)
       y = x;

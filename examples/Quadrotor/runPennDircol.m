@@ -54,7 +54,7 @@ if plant == 'russ'
 elseif plant == 'penn'
   xf.x = 6;                 % translate x
   xf.z = 4;                 % translate z
-  xf.y = 3;                 % translate x
+  xf.y = 0;                 % translate x
 end
 
 
