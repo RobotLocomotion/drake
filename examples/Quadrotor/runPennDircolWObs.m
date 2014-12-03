@@ -1,4 +1,4 @@
-function [utraj,xtraj,prog,r] = runPennDircol
+function [utraj,xtraj,prog,r] = runPennDircolWObs
 
 % simple planning demo which takes the quadrotor from hover at x=0m to a new hover at
 % x=2m with minimal thrust.
@@ -20,6 +20,15 @@ elseif plant == 'penn'
   %oquad = Quadrotor();
   %oquad = addRobotFromURDF(oquad, 'office.urdf');
   %v = constructVisualizer(oquad);
+  r_temp = addOcean(r_temp, [.8,.45,1.25], [.20;2.5], pi/4);
+  r_temp = addTree(r_temp, [.5,.35,1.65], [-.25;5], -pi/6);
+  r_temp = addTree(r_temp, [.55,.65,1.5], [.25;7.5], pi/4);
+  r_temp = addTree(r_temp, [.55,.85,1.6], [-1.35;8.5], pi/3.7);
+  r_temp = addTree(r_temp, [.85,.95,1.65], [-1.85;5.2], -pi/3.7);
+  r_temp = addTree(r_temp, [.75,.9,1.75], [2;4.4], -pi/5);
+  % Random trees to make forest bigger and more dense
+  %r_temp = addTrees(r_temp, 25);
+  
   
   v = constructVisualizer(r_temp);
   r = QuadWindPlant(); % Quadrotor constructor
@@ -47,6 +56,8 @@ elseif plant == 'penn'
   x0.z = .5; % lift the quad off the ground
 end
 
+v.draw(0,double(x0));
+prog = addPlanVisualizer(r,prog);
 
 u0 = double(nominalThrust(r));
 

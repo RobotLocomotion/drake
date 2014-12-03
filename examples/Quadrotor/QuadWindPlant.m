@@ -96,7 +96,7 @@ classdef QuadWindPlant < SecondOrderSystem
       quadpos = [xquad;yquad;zquad];
       
       
-      [windout,dquadinwind] = obj.quadwind(quadpos);
+      [windout,dquadinwind] = obj.quadwind(quadpos,t);
       
       if (nargout>1)
         df = df + dquadinwind;
@@ -132,7 +132,7 @@ classdef QuadWindPlant < SecondOrderSystem
       qdd = [xyz_ddot;rpy_ddot];
     end
     
-    function [wind,dquadinwind] = quadwind(obj,quadpos)
+    function [wind,dquadinwind] = quadwind(obj,quadpos,t)
       % quadpos is [xquad;yquad;zquad]
       
 
@@ -142,9 +142,11 @@ classdef QuadWindPlant < SecondOrderSystem
       zquad = quadpos(3);
            
       %windfield = 'zero';
-      %windfield = 'constant';
+      windfield = 'constant';
       %windfield = 'linear';
-      windfield = 'quadratic';
+      %windfield = 'quadratic';
+      %windfield = 'exp';
+      %windfield = 'tvsin';
       
       xwind = 0;
       
@@ -156,7 +158,15 @@ classdef QuadWindPlant < SecondOrderSystem
       elseif strcmp(windfield, 'linear')
         ywind = zquad;
       elseif strcmp(windfield, 'quadratic')
-        ywind = zquad^2; % quadratic
+        ywind = zquad^2;
+      elseif strcmp(windfield, 'exp')
+        a = 1;
+        C=20/exp(6.5);
+        b=0;
+        %z  = b + C*exp(a*ydotdot);
+        ywind = 1/a*log((zquad-b)/C);
+      elseif strcmp(windfield, 'tvsin')
+        ywind = 1000*sin(10*t);
       else
         disp('Please specify which kind of wind field!')
       end
@@ -173,11 +183,15 @@ classdef QuadWindPlant < SecondOrderSystem
       elseif strcmp(windfield, 'constant')
         ;
       elseif strcmp(windfield, 'linear')
-        dquadinwind(2,4) = 1/obj.m; % linear
+        dquadinwind(2,4) = 1/obj.m;
       elseif strcmp(windfield, 'quadratic')
-        dquadinwind(2,4) = 2*zquad/obj.m; % quadratic
-      else
-        disp('Please specify which kind of wind field!')
+        dquadinwind(2,4) = 2*zquad/obj.m;
+      elseif strcmp(windfield, 'exp')
+      %  dquadinwind(2,4) = 1/a*1/((zquad-b)/C)/obj.m;
+      elseif strcmp(windfield, 'tvsin')
+        dquadinwind(2,1) = 1000*cos(10*t)/obj.m;
+      %else
+      %  disp('Please specify which kind of wind field!')
       end
       
     end
@@ -221,6 +235,31 @@ classdef QuadWindPlant < SecondOrderSystem
       treeLeaves.c = [0,0.7,0];  % green
       obj = addGeometryToBody(obj,'world',treeLeaves);
       obj = compile(obj);
+    end
+    
+    function traj_opt = addPlanVisualizer(obj,traj_opt)
+      % spew out an lcmgl visualization of the trajectory.  intended to be
+      % used as a callback (fake objective) in the direct trajectory
+      % optimization classes
+      
+      if ~checkDependency('lcmgl')
+        warning('lcmgl dependency is missing.  skipping visualization');
+        return;
+      end
+      lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(), 'QuadrotorPlan');
+      
+      typecheck(traj_opt,'DirectTrajectoryOptimization');
+      
+      traj_opt = traj_opt.addDisplayFunction(@(x)visualizePlan(x,lcmgl),traj_opt.x_inds(1:3,:));
+      
+      function visualizePlan(x,lcmgl)
+        lcmgl.glColor3f(1, 0, 0);
+        lcmgl.glPointSize(3);
+        lcmgl.points(x(1,:),x(2,:),x(3,:));
+        lcmgl.glColor3f(.5, .5, 1);
+        lcmgl.plot3(x(1,:),x(2,:),x(3,:));
+        lcmgl.switchBuffers;
+      end
     end
     
   end

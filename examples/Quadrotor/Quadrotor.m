@@ -81,7 +81,20 @@ classdef Quadrotor < RigidBodyManipulator
       treeLeaves.c = [0,0.7,0];  % green
       obj = addGeometryToBody(obj,'world',treeLeaves);
       obj = compile(obj);
-    end    
+    end
+    
+    function obj = addOcean(obj, lwh, xy, yaw)
+      % Adds a single tree with specified length width height, xy
+      % location, and yaw orientation.
+      height = -0.01;
+      width_param = [50,50] ;%lwh(1,1:2);
+      treeTrunk = RigidBodyBox([.2+.8*width_param height],...
+          [xy;height/2],[0;0;0]);
+      treeTrunk.c = [5,28,255]/255;  % blue
+      obj = addGeometryToBody(obj,'world',treeTrunk);
+      obj = compile(obj);
+    end
+    
     
     function traj_opt = addPlanVisualizer(obj,traj_opt)
       % spew out an lcmgl visualization of the trajectory.  intended to be
