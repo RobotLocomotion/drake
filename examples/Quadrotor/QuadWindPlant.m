@@ -35,7 +35,7 @@ classdef QuadWindPlant < DrakeSystem
       g = r.gravity
     end
     
-    function [xdot, df] = dynamics(obj,t,x,u)
+    function [xdot,df] = dynamics(obj,t,x,u)
       % States
       % x
       % y
@@ -51,7 +51,7 @@ classdef QuadWindPlant < DrakeSystem
       % psidot
       
       if (nargout>1)
-        [df]= dynamicsGradients(obj,t,x(1:6),x(7:12),u,nargout-1);
+        [df]= dynamicsGradients(obj,t,x(1:12),u,nargout-1);
       end
       
       
@@ -137,9 +137,7 @@ classdef QuadWindPlant < DrakeSystem
       qdd = [xyz_ddot;rpy_ddot];
       qd = x(7:12);
       xdot = [qd;qdd];
-      if (nargout>1)
-        df = [zeros(6,1+6), eye(6), zeros(6,4); df];
-      end
+      
     end
     
     function [wind,dquadinwind] = quadwind(obj,quadpos,t)
@@ -186,20 +184,20 @@ classdef QuadWindPlant < DrakeSystem
       wind = [xwind;ywind;zwind];
       
       
-      dquadinwind = sparse(6,17);
+      dquadinwind = sparse(12,17);
       
       if strcmp(windfield, 'zero')
         ;
       elseif strcmp(windfield, 'constant')
         ;
       elseif strcmp(windfield, 'linear')
-        dquadinwind(2,4) = 1/obj.m;
+        dquadinwind(8,4) = 1/obj.m;
       elseif strcmp(windfield, 'quadratic')
-        dquadinwind(2,4) = 2*zquad/obj.m;
+        dquadinwind(8,4) = 2*zquad/obj.m;
       elseif strcmp(windfield, 'exp')
-      %  dquadinwind(2,4) = 1/a*1/((zquad-b)/C)/obj.m;
+      %  dquadinwind(8,4) = 1/a*1/((zquad-b)/C)/obj.m;
       elseif strcmp(windfield, 'tvsin')
-        dquadinwind(2,1) = 10*cos(10*t)/obj.m;
+        dquadinwind(8,1) = 10*cos(10*t)/obj.m;
       %else
       %  disp('Please specify which kind of wind field!')
       end
