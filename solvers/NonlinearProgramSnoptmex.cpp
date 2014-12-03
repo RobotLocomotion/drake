@@ -124,7 +124,6 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   snopt::doublereal *rw = rw_static;
   snopt::integer *iw = iw_static;
   char* cw = cw_static;
-
   snopt::snmema_(&INFO_snopt,&nF,&nx,&nxname,&nFname,&lenA,&lenG,&mincw,&miniw,&minrw,cw,&lencw,iw,&leniw,rw,&lenrw,8*lencw);
   if (minrw>lenrw) {
     //    mexPrintf("reallocation rw with size %d\n",minrw);
@@ -160,25 +159,23 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   snopt::doublereal ObjAdd = static_cast<snopt::doublereal>(mxGetScalar(prhs[6]));
   snopt::integer ObjRow = static_cast<snopt::integer>(mxGetScalar(prhs[7]));
 
-
   snopt::integer iSumm = -1;
   snopt::integer iPrint = -1;
 
   snopt::integer nS,nInf;
   snopt::doublereal sInf;
-
   mxArray* pprint_name = mxGetField(prhs[13],0,"print");
-  snopt::integer print_file_name_len = static_cast<snopt::integer>(mxGetNumberOfElements(pprint_name));
+  snopt::integer print_file_name_len = static_cast<snopt::integer>(mxGetNumberOfElements(pprint_name))+1;
   char* print_file_name = NULL;
   if(print_file_name_len != 0) {
     iPrint = 9;
+    print_file_name = new char[print_file_name_len];
     mxGetString(pprint_name,print_file_name,print_file_name_len);
     snopt::snopenappend_(&iPrint,print_file_name,&INFO_snopt,print_file_name_len);
     
     mysnseti("Major print level",static_cast<snopt::integer>(11),&iPrint,&iSumm,&INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw);
     mysnseti("Print file",iPrint,&iPrint,&iSumm,&INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw);
   }
-
   snopt::sninit_(&iPrint,&iSumm,cw,&lencw,iw,&leniw,rw,&lenrw,8*lencw);
   
   mysnseti("Derivative option",static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"DerivativeOption"))),&iPrint,&iSumm,&INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw);
@@ -209,7 +206,6 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
       cw, &lencw, iw, &leniw, rw, &lenrw,
       npname, 8*nxname, 8*nFname,
       8*lencw,8*lencw);
-
   plhs[0] = mxCreateDoubleMatrix(nx,1,mxREAL);
   plhs[3] = mxCreateDoubleMatrix(nx,1,mxREAL);
   for(int i = 0;i<nx;i++)
