@@ -140,13 +140,16 @@ classdef QuadWindPlant < SecondOrderSystem
       zquad = quadpos(3);
       
       xwind = 0;
-      ywind = 10*zquad; 
+      %ywind = zquad; % linear
+      ywind = zquad^2; % quadratic
       zwind = 0;
       
       
       wind = [xwind;ywind;zwind];
       dquadinwind = sparse(6,17);
-      dquadinwind(2,4) = 10/obj.m; 
+      %dquadinwind(2,4) = 1/obj.m; % linear
+      dquadinwind(2,4) = 2*zquad/obj.m; % quadratic (and next line)
+      %dquadinwind(2,10) = 2/obj.m/10; 
       
     end
     
