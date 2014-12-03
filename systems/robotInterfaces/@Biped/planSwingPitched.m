@@ -102,9 +102,8 @@ terrain_pts_in_toe_local = inv(T_toe_local_to_world) * T_local_to_world * [terra
 swing1_toe_points_in_toe_local = T_toe_local_to_world \ swing1_toe_points_in_world;
 swing2_toe_points_in_toe_local = T_toe_local_to_world \ swing2_toe_points_in_world;
 
-quat_swing1 = rpy2quat(swing1.pos(4:6));
-quat_toe_off = rotmat2quat(quat2rotmat(quat_swing1) * rpy2rotmat([0;toe_off_angle;0]));
-quat_swing2 = rpy2quat(swing2.pos(4:6));
+quat_toe_off = rotmat2quat(rpy2rotmat(swing1.pos(4:6)) * rpy2rotmat([0;toe_off_angle;0]) / T_sole_to_foot(1:3,1:3));
+quat_swing2 = rotmat2quat(rpy2rotmat(swing2.pos(4:6)) / T_sole_to_foot(1:3,1:3));
 
 cost = Point(biped.getStateFrame(),1);
 cost.base_x = 0;
@@ -115,7 +114,6 @@ cost.base_yaw = 0;
 ikoptions = IKoptions(biped);
 ikoptions = ikoptions.setQ(diag(cost(1:biped.getNumPositions())));
 
-full_IK_calls = 0;
 q_latest = xstar(1:biped.getNumPositions());
 
 if DEBUG
@@ -130,11 +128,12 @@ stance_sole = [rpy2rotmat(stance.pos(4:6)), stance.pos(1:3); 0 0 0 1];
 stance_origin = stance_sole / T;
 stance_origin_pose = [stance_origin(1:3,4); rotmat2rpy(stance_origin(1:3,1:3))];
 
-T = biped.getFrame(stance.frame_id).T;
+T = biped.getFrame(swing1.frame_id).T;
 swing1_sole = [rpy2rotmat(swing1.pos(4:6)), swing1.pos(1:3); 0 0 0 1];
 swing1_origin = swing1_sole / T;
 swing1_origin_pose = [swing1_origin(1:3,4); rotmat2rpy(swing1_origin(1:3,1:3))];
 
+T = biped.getFrame(swing2.frame_id).T;
 swing2_sole = [rpy2rotmat(swing2.pos(4:6)), swing2.pos(1:3); 0 0 0 1];
 swing2_origin = swing2_sole / T;
 swing2_origin_pose = [swing2_origin(1:3,4); rotmat2rpy(swing2_origin(1:3,1:3))];
@@ -159,7 +158,6 @@ function [pose, q0] = solve_for_pose(constraints, q0)
   for k = 1:length(constraints)
     constraint_ptrs{end+1} = constraints{k}.mex_ptr;
   end
-  full_IK_calls = full_IK_calls + 1;
   [q0, info] = inverseKin(biped,q0,q0,constraint_ptrs{:},ikoptions);
   if info >= 10
     error('Drake:planSwingPitched', 'The foot pose IK problem could not be solved. This should not happen and likely indicates a bug in the constraints.');
@@ -178,8 +176,10 @@ function add_foot_origin_knot(swing_pose, speed)
   foot_origin_knots(end+1).(swing_foot_name) = [swing_pose; zeros(6,1)];
   foot_origin_knots(end).(stance_foot_name) = [stance_origin_pose; zeros(6,1)];
   cartesian_distance = norm(foot_origin_knots(end).(swing_foot_name)(1:3) - foot_origin_knots(end-1).(swing_foot_name)(1:3));
-  yaw_distance = abs(foot_origin_knots(end).(swing_foot_name)(6) - foot_origin_knots(end-1).(swing_foot_name)(6));
-  pitch_distance = abs(foot_origin_knots(end).(swing_foot_name)(5) - foot_origin_knots(end-1).(swing_foot_name)(5));
+  sole1 = rotmat2rpy(rpy2rotmat(foot_origin_knots(end-1).(swing_foot_name)(4:6)) * T_sole_to_foot(1:3,1:3));
+  sole2 = rotmat2rpy(rpy2rotmat(foot_origin_knots(end).(swing_foot_name)(4:6)) * T_sole_to_foot(1:3,1:3));
+  yaw_distance = abs(sole2(3) - sole1(3));
+  pitch_distance = abs(sole2(2) - sole1(2));
   dt = max([cartesian_distance / speed,...
             yaw_distance / FOOT_YAW_RATE,...
             pitch_distance / FOOT_PITCH_RATE]);

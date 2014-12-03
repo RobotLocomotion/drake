@@ -58,7 +58,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   
   int desired_support_argid = narg++;
 
-  double* double_contact_sensor = mxGetPr(prhs[narg]); int len = mxGetNumberOfElements(prhs[narg++]);
+  double* double_contact_sensor = mxGetPr(prhs[narg]); int len = static_cast<int>(mxGetNumberOfElements(prhs[narg++]));
   VectorXi contact_sensor(len);  
   for (i=0; i<len; i++)
     contact_sensor(i)=(int)double_contact_sensor[i];
@@ -88,7 +88,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     
     for (i=0; i<mxGetNumberOfElements(mxBodies);i++) {
       mxArray* mxBodyContactPts = mxGetCell(mxContactPts,i);
-      int nc = mxGetNumberOfElements(mxBodyContactPts);
+      int nc = static_cast<int>(mxGetNumberOfElements(mxBodyContactPts));
       if (nc<1) continue;
       
       SupportStateElement se;
@@ -124,7 +124,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   }
 
   if (nlhs>0) {
-    plhs[0] = mxCreateDoubleMatrix(1,active_supports.size(),mxREAL);
+    plhs[0] = mxCreateDoubleMatrix(1,static_cast<int>(active_supports.size()),mxREAL);
     pr = mxGetPr(plhs[0]);
     int i=0;
     for (vector<SupportStateElement>::iterator iter = active_supports.begin(); iter!=active_supports.end(); iter++) {

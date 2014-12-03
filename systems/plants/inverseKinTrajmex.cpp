@@ -17,7 +17,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   }
   RigidBodyManipulator* model = (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
   int nq = model->num_dof;
-  int nT = mxGetNumberOfElements(prhs[1]);
+  int nT = static_cast<int>(mxGetNumberOfElements(prhs[1]));
   double* t = mxGetPr(prhs[1]);
   Map<VectorXd> qdot0_seed(mxGetPr(prhs[2]),nq);
   Map<MatrixXd> q_seed(mxGetPr(prhs[3]),nq,nT);

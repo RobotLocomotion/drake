@@ -1,7 +1,13 @@
 classdef KinematicDirtran < KinematicTrajectoryOptimization ...
                             & DirtranTrajectoryOptimization
+  % Trajectory planning problem in which the acceleration of the joints is
+  % taken to be directly controllable. The decision variables are the joint
+  % postitions (q), velocities (v), and accelerations (u) at each knot point.
+  % Linear interpolation is used to enforce the relationships between those
+  % quantities as described in DirtranTrajectoryOptimization.
   properties
-    v_inds
+    v_inds % nv x N array of indices into the decision variable vector
+           % corresponding to the velocities at each knot point.
   end
   methods
     function obj = KinematicDirtran(robot,N,duration,options)
@@ -12,6 +18,14 @@ classdef KinematicDirtran < KinematicTrajectoryOptimization ...
       obj = obj@KinematicTrajectoryOptimization(robot);
       %obj.v_inds = obj.u_inds;
       obj.v_inds = obj.x_inds(robot.getNumPositions()+(1:robot.getNumVelocities()),:);
+    end
+
+    function obj = addConstraint(obj, constraint, varargin)
+      if isa(constraint, 'RigidBodyConstraint')
+        obj = addRigidBodyConstraint(obj,constraint, varargin{:});
+      else
+        obj = addConstraint@DirtranTrajectoryOptimization(obj,constraint,varargin{:});
+      end
     end
 
     function [xtraj,z,F,info] = solveTraj(obj,t_init,q_traj_init)

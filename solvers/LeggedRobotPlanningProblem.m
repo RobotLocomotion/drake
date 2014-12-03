@@ -1,9 +1,58 @@
 classdef LeggedRobotPlanningProblem
-  properties
+  % Factory class for motion planning problems involving robots that implement
+  % the 'LeggedRobot' interface. Allows us to represent problems in a way
+  % that's not tied to a specific solution method. This is still a work in
+  % progress - at present it supports quasi-static planning with the
+  % 'KinematicDirtran' class and dynamic planning with the
+  % 'ComDynamicsFullKinematicsPlanner'.
+  %
+  % The bulk of the problem is represented by two structures
+  %    * constraint_struct - Constraint objects, each with an associated tspan
+  %        indicating the portion of the plan (between 0 and 1) for which the
+  %        constraint is active.
+  %    * support_struct    - Points on the robot which can provide support and an
+  %        associated tspan indicating the portion of the plan (between 0 and 1)
+  %        for which those points support the robot. These are stored stored
+  %        separately fron the rest of the constraints to allow for the
+  %        generation of planners that treat contacts differently (e.g.
+  %        quasi-static planning vs. dynamic planning) from the same problem
+  %        specification.
+  %  These properties are set via the addSupport and addConstraint methods.
+  %
+  %  There are also several publicly set-able properties that affect the
+  %  planning problem:
+  %     * mu - Coefficient of friction for all support contacts
+  %     * min_distance - Minimum allowable difference between collision
+  %         geometries that are eligible for collision. See
+  %         RigidBodyManipulator/collisionDetect for more details on which
+  %         collision geometries are eligible to collide with each other.
+  %     * quasistatic_shrink_factor - Shrink factor to be used in all
+  %         QuasiStaticConstraint objects contained in generated planners.
+  %     * n_interp_points - Number of intermediate points between knots at
+  %         which collision avoidance constraints should be evaluated.
+  %     * excluded_collision_groups - Structure array with two fields
+  %         - name: String containing the name of the collision geometry group
+  %             to be ignored
+  %         - tspan: Portion of the plan between 0 and 1 for which the group
+  %             should be ignored
+  %     * fixed_inital_state - If 'true', then the intial state will be fixed
+  %         to a value specified at the time the planner is generated.
+  %     * start_from_rest - If 'true', then the robot will have zero velocity
+  %         in all coordinates at the beginning of the plan.
+  %     * end_at_rest - If 'true', then the robot will have zero velocity
+  %         in all coordinates at the end of the plan.
+  %     * Q - Weighting matrix used in planners that impose a quadratic cost on
+  %         deviation from a nominal position trajectory
+  %     * v_max - Upper bound on the velocities at all times. We currently
+  %         assume that the velocity limits are symmetric.
+  properties (SetAccess = protected)
     robot
-    supports = struct('body',{},'pts',{},'tspan',{},'constraints',{})
-    rigid_body_constraints = struct('constraint',{},'tspan',{});
-    mu = 1
+    support_struct = struct('body',{},'pts',{},'tspan',{})
+    constraint_struct = struct('constraint',{},'tspan',{});
+  end
+
+  properties
+    mu = 1;
     min_distance = 0.03;
     quasistatic_shrink_factor = 0.2;
     n_interp_points = 0;
@@ -11,13 +60,22 @@ classdef LeggedRobotPlanningProblem
     fixed_initial_state = true;
     start_from_rest = true;
     end_at_rest = true;
-    Q
+    Q;
     v_max = 30*pi/180;
   end
 
   methods
     function obj = LeggedRobotPlanningProblem(robot,options)
       obj.robot = robot;
+      if ~isfield(options,'fixed_initial_state')
+        options.fixed_initial_state =  true;
+      end
+      if ~isfield(options,'start_from_rest')
+        options.start_from_rest =  true;
+      end
+      if ~isfield(options,'end_at_rest')
+        options.end_at_rest =  true;
+      end
       if isfield(options,'n_interp_points')
         obj.n_interp_points = options.n_interp_points;
       end
@@ -37,46 +95,137 @@ classdef LeggedRobotPlanningProblem
       obj.Q(2,2) = 0;
       obj.Q(3,3) = 0;
       obj.Q(6,6) = 0;
+      obj.fixed_initial_state = options.fixed_initial_state;
+      obj.start_from_rest = options.start_from_rest;
+      obj.end_at_rest = options.end_at_rest;
     end
+
     function obj = addSupport(obj,body_id,pts,tspan,constraints)
+      % obj = addSupport(obj,body_id,pts,tspan,constraints) adds an element to
+      % the support_struct for this problem.
+      %
+      % @param obj          --  LeggedRobotPlanningProblem object
+      % @param body_id      --  Name or body index / frame id of the body or
+      %                         frame which provides support
+      % @param pts          --  Points on the body (or in the frame) specified
+      %                         by body_id that provide support
+      % @param tspan        --  Portion of the plan for which this support is
+      %                         active, between 0 and 1.
+      % @param constraints  --  Cell array of kinematic constraints imposed by
+      %                         this contact
       support.body = obj.robot.parseBodyOrFrameID(body_id);
       support.pts = pts;
       support.tspan = tspan;
-      support.constraints = constraints;
-      obj.supports(end+1) = support;
+      for i = 1:numel(constraints)
+        obj.constraint_struct(end+1).constraint = constraints{i};
+        obj.constraint_struct(end).tspan = tspan;
+      end
+      obj.support_struct(end+1) = support;
     end
 
-    function obj = addRigidBodyConstraint(obj,constraint)
+    function obj = addConstraint(obj, constraint, tspan)
+      % obj = addConstraint(obj,constraint,tspan) adds an element to
+      % the constraint_struct for this problem.
+      %
+      % @param obj          --  LeggedRobotPlanningProblem object
+      % @param constraints  --  Constraint or RigidBodyConstraint object that
+      %                         defines a kinematic constraint on the robot.
+      %                         Can also be a cell array of such objects. In
+      %                         that case tspan must be a cell array of the
+      %                         same size.
+      % @param tspan        --  Two element vector indicating the portion of
+      %                         the plan for which this constraint is active,
+      %                         between 0 and 1. Can also be a cell array of
+      %                         such vectors.
       if iscell(constraint)
+        assert(numel(constraint) == numel(tspan), ...
+          'Drake:LeggedRobotPlanningProblem:BadInputDimensions', ...
+          'If constraint is a cell array, tspan must be a cell array of the same size')
         for i = 1:numel(constraint)
-          obj = obj.addRigidBodyConstraint(constraint{i});
+          obj = obj.addConstraint(constraint{i},tspan{i});
         end
       else
         new_constraint.constraint = constraint;
-        new_constraint.tspan = min(1,max(0,constraint.tspan));
-        obj.rigid_body_constraints(end+1) = new_constraint;
+        new_constraint.tspan = tspan;
+        obj.constraint_struct(end+1) = new_constraint;
+      end
+    end
+
+    function obj = addRigidBodyConstraint(obj,constraint)
+      % obj = addRigidBodyConstraint(obj,constraint) adds an element to the
+      % constraint_struct of this problem where the active time of the
+      % constraint is taken from the tspan property of the
+      % RigidBodyConstraintObject constraint.
+      %
+      % @param obj        --  LeggedRobotPlanningProblem object
+      % @param constraint --  RigidBodyConstraint object
+      if iscell(constraint)
+        tspan = cell(size(constraint));
+        for i = 1:numel(constraint)
+          tspan{i} = min(1,max(0,constraint{i}.tspan));
+        end
+        obj = obj.addConstraint(constraint,tspan);
+      else
+        tspan = min(1,max(0,constraint.tspan));
+        obj = obj.addConstraint(constraint,tspan);
       end
     end
     
     function obj = addSupportOnFlatGround(obj,body_id,pts,tspan)
+      % obj = addSupportOnFlatGround(obj,body_id,pts,tspan) adds an element to
+      % the support_struct of this problem for which the points on(in) the
+      % specified body(frame) are in static contact with flat ground at z = 0.
+      %
+      % @param obj          --  LeggedRobotPlanningProblem object
+      % @param body_id      --  Name or body index / frame id of the body or
+      %                         frame which provides support
+      % @param pts          --  Points on the body (or in the frame) specified
+      %                         by body_id that provide support
+      % @param tspan        --  Portion of the plan for which this support is
+      %                         active, between 0 and 1.
       n_pts = min(size(pts,2),3);
       lb = repmat([NaN; NaN; 0],1,n_pts);
       ub = repmat([NaN; NaN; 0],1,n_pts);
       constraints{1} = WorldPositionConstraint(obj.robot,body_id,pts(:,1:n_pts),lb,ub);
-      constraints{2} = WorldFixedPositionConstraint(obj.robot,body_id,pts(:,1:n_pts));
+      if n_pts == 3
+        constraints{2} = WorldFixedBodyPoseConstraint(obj.robot,body_id);
+      else
+        constraints{2} = WorldFixedPositionConstraint(obj.robot,body_id,pts(:,1:n_pts));
+      end
       obj = addSupport(obj,body_id,pts,tspan,constraints);
     end
     
     function prog = generateComDynamicsFullKinematicsPlanner(obj,N,durations,q_nom_traj,q0,Q_comddot, Qv, ...
         Q_contact_force,options)
-      % @param N  -- Number of knot points
+      % prog = generateComDynamicsFullKinematicsPlanner(obj,N,durations,q_nom_traj,q0,Q_comddot, Qv, ...
+      %  Q_contact_force,options) returns a ComDynamicsFullKinematicsPlanner
+      %  object corresponding to this problem.
+      %
+      % @param obj              --  LeggedRobotPlanningProblem object
+      % @param N                --  Number of knot points
+      % @param durations        --  Two element vector giving the lower and
+      %                             upper bounds on the final time of the plan.
+      %                             The initial time is always t = 0.
+      % @param q_nom_traj       --  Nominal position trajectory
+      % @param q0               --  Initial position. Only used if
+      %                             fixed_initial_state is set to true
+      % @param Q_comddot        --  Weight on center of mass acceleration
+      %                             penalty
+      % @param Qv               --  Weight on joint velocity penalty
+      % @param Q_contact_force  --  Weight on contact force penalty
+      % @param options          --  Structure containing additional options to
+      %                             be passed to the
+      %                             ComDynamicsFullKinematicsPlanner
+      %                             constructor
+      %
+      % @retval prog            --  ComDynamicsFullKinematicsPlanner object
       if nargin < 6, Q_comddot = []; end
       if nargin < 7, Qv = []; end
       if nargin < 9, Q_contact_force = []; end
       if nargin < 10, options = struct(); end
       
       % Extract stance information
-      in_stance = arrayfun(@(supp)activeKnots(supp,N), obj.supports, ...
+      in_stance = arrayfun(@(supp)activeKnots(supp,N), obj.support_struct, ...
         'UniformOutput',false);
       
       % Set up linearized friction cone edges
@@ -93,7 +242,7 @@ classdef LeggedRobotPlanningProblem
       for i = 1:numel(in_stance)
         contact_wrench_struct(i).active_knot = in_stance{i}(2:end);
         contact_wrench_struct(i).cw = ...
-          LinearFrictionConeWrench(obj.robot,obj.supports(i).body,obj.supports(i).pts,...
+          LinearFrictionConeWrench(obj.robot,obj.support_struct(i).body,obj.support_struct(i).pts,...
           FC_edge);
       end
       
@@ -130,10 +279,28 @@ classdef LeggedRobotPlanningProblem
     end
 
     function prog = generateQuasiStaticPlanner(obj,N,durations,q_nom_traj,q0,varargin)
+      % prog = generateQuasiStaticPlanner(obj,N,durations,q_nom_traj,q0,varargin)
+      %   returns a KinematicDirtran object corresponding to this problem with
+      %   quasi-static motion constraints (COM must remain above the convex
+      %   hull of the active support points at all times).
+      %
+      % @param obj              --  LeggedRobotPlanningProblem object
+      % @param N                --  Number of knot points
+      % @param durations        --  Two element vector giving the lower and
+      %                             upper bounds on the final time of the plan.
+      %                             The initial time is always t = 0.
+      % @param q_nom_traj       --  Nominal position trajectory
+      % @param q0               --  Initial position. Only used if
+      %                             fixed_initial_state is set to true
+      % @param varargin         --  All additional arguments are passed
+      %                             directly to the KinematicDirtran constructor
+      %
+      % @retval prog            -- KinematicDirtran object
+      
       % Create kinematic planner
       prog = KinematicDirtran(obj.robot,N,durations,varargin{:});
 
-      % Add kinematic constraints for supports
+      % Add kinematic constraints for support_struct
       prog = obj.addSupportConstraintsToPlanner(prog);
 
       % Add collision avoidance constraints
@@ -142,8 +309,8 @@ classdef LeggedRobotPlanningProblem
       % Add Quasistatic Constraints
       prog = obj.addQuasiStaticConstraintsToPlanner(prog);
 
-      % Add RigidBodyConstraints
-      prog = obj.addRigidBodyConstraintsToPlanner(prog);
+      % Add Constraints
+      prog = obj.addConstraintsToPlanner(prog);
 
       % Add Velocity constraints
       prog = prog.addConstraint(BoundingBoxConstraint(-repmat(obj.v_max,1,prog.N-2),repmat(obj.v_max,1,prog.N-2)),prog.v_inds(:,2:end-1));
@@ -171,18 +338,21 @@ classdef LeggedRobotPlanningProblem
       end
     end
 
+  end
+
+  methods (Access = protected)
     function prog = addQuasiStaticConstraintsToPlanner(obj,prog)
-      in_stance = arrayfun(@(supp)activeKnots(supp,prog.N), obj.supports, ...
+      in_stance = arrayfun(@(supp)activeKnots(supp,prog.N), obj.support_struct, ...
         'UniformOutput',false);
       for i = 1:prog.N
         qsc_constraint = [];
-        for j = 1:numel(obj.supports)
+        for j = 1:numel(obj.support_struct)
           if ismember(i,in_stance{j})
             if isempty(qsc_constraint)
               qsc_constraint = QuasiStaticConstraint(obj.robot,[-inf,inf],1);
             end
-            qsc_constraint = qsc_constraint.addContact(obj.supports(j).body, ...
-                                                       obj.supports(j).pts);
+            qsc_constraint = qsc_constraint.addContact(obj.support_struct(j).body, ...
+                                                       obj.support_struct(j).pts);
           end
         end
         if ~isempty(qsc_constraint)
@@ -193,16 +363,8 @@ classdef LeggedRobotPlanningProblem
       end
     end
 
-    function prog = addRigidBodyConstraintsToPlanner(obj,prog)
-      is_active = arrayfun(@(supp)activeKnots(supp,prog.N), ...
-        obj.rigid_body_constraints, 'UniformOutput',false);
-      for i = 1:numel(obj.rigid_body_constraints)
-        prog = prog.addRigidBodyConstraint(obj.rigid_body_constraints(i).constraint,is_active{i});
-      end
-    end
-
     function prog = addCollisionConstraintsToPlanner(obj,prog)
-      in_stance = arrayfun(@(supp)activeKnots(supp,prog.N), obj.supports, ...
+      in_stance = arrayfun(@(supp)activeKnots(supp,prog.N), obj.support_struct, ...
         'UniformOutput',false);
       group_excluded = arrayfun(@(grp)activeKnots(grp,prog.N), obj.excluded_collision_groups, ...
         'UniformOutput',false);
@@ -210,9 +372,9 @@ classdef LeggedRobotPlanningProblem
       interpolation_parameter = (1:obj.n_interp_points)/(obj.n_interp_points+1);
       for i = 1:prog.N
         ignored_bodies{i} = [];
-        for j = 1:numel(obj.supports)
+        for j = 1:numel(obj.support_struct)
           if ismember(i,in_stance{j})
-            ignored_bodies{i}(end+1) = obj.supports(j).body;
+            ignored_bodies{i}(end+1) = obj.support_struct(j).body;
           end
         end
         ignored_groups = {};
@@ -224,7 +386,7 @@ classdef LeggedRobotPlanningProblem
         ignored_bodies_current = unique(ignored_bodies{i});
 
         active_collision_options.body_idx = setdiff(1:obj.robot.getNumBodies(),ignored_bodies_current);
-        active_collision_options.collision_groups = setdiff(unique([obj.robot.body.collision_group_name]),ignored_groups);
+        active_collision_options.collision_groups = setdiff(unique([obj.robot.body.collision_geometry_group_names]),ignored_groups);
         min_distance_constraint = MinDistanceConstraint(obj.robot,obj.min_distance,active_collision_options);  
         prog = prog.addRigidBodyConstraint(min_distance_constraint,i);
 
@@ -235,14 +397,22 @@ classdef LeggedRobotPlanningProblem
       end
     end
 
+    function prog = addConstraintsToPlanner(obj, prog)
+      active_knots = arrayfun(@(cnstr)activeKnots(cnstr,prog.N), ...
+                              obj.constraint_struct, 'UniformOutput', false);
+      for i = 1:numel(obj.constraint_struct)
+        prog = prog.addConstraint(obj.constraint_struct(i).constraint,active_knots{i});
+      end
+    end
+
     function prog = addSupportConstraintsToPlanner(obj,prog)
-      in_stance = arrayfun(@(supp)activeKnots(supp,prog.N), obj.supports, ...
+      in_stance = arrayfun(@(supp)activeKnots(supp,prog.N), obj.support_struct, ...
         'UniformOutput',false);
-      for i = 1:numel(obj.supports)
-        if ~isempty(obj.supports(i).constraints)
-          for j = 1:numel(obj.supports(i).constraints)
+      for i = 1:numel(obj.support_struct)
+        if ~isempty(obj.support_struct(i).constraints)
+          for j = 1:numel(obj.support_struct(i).constraints)
             prog = prog.addRigidBodyConstraint( ...
-              obj.supports(i).constraints{j},in_stance{i});
+              obj.support_struct(i).constraints{j},in_stance{i});
           end
         end
       end

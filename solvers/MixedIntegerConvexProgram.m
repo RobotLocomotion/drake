@@ -122,11 +122,11 @@ classdef MixedIntegerConvexProgram
       if obj.has_symbolic
         size_cell =num2cell(obj.vars.(name).size);
         if strcmp(obj.vars.(name).type, 'B')
-          obj.vars.(name).symb = binvar(size_cell{:});
+          obj.vars.(name).symb = binvar(size_cell{:}, 'full');
         elseif strcmp(obj.vars.(name).type, 'I')
-          obj.vars.(name).symb = intvar(size_cell{:});
+          obj.vars.(name).symb = intvar(size_cell{:}, 'full');
         else
-          obj.vars.(name).symb = sdpvar(size_cell{:});
+          obj.vars.(name).symb = sdpvar(size_cell{:}, 'full');
         end
         if isempty(obj.symbolic_vars)
           obj.symbolic_vars = reshape(obj.vars.(name).symb, [], 1);
@@ -237,6 +237,10 @@ classdef MixedIntegerConvexProgram
     end
 
     function obj = addSymbolicCost(obj, expr)
+      obj = obj.addSymbolicObjective(expr);
+    end
+
+    function obj = addSymbolicObjective(obj, expr)
       obj.symbolic_objective = obj.symbolic_objective + expr;
     end
 
@@ -351,7 +355,8 @@ classdef MixedIntegerConvexProgram
       for j = 1:length(var_names)
         name = var_names{j};
         constraints = [constraints,...
-         obj.vars.(name).lb <= obj.vars.(name).symb <= obj.vars.(name).ub];
+         obj.vars.(name).lb <= obj.vars.(name).symb,...
+         obj.vars.(name).symb <= obj.vars.(name).ub];
        end
       for j = 1:length(obj.quadcon)
         constraints = [constraints,...
@@ -367,7 +372,7 @@ classdef MixedIntegerConvexProgram
       end
 
       diagnostics = optimize(constraints, objective, sdpsettings('solver', 'gurobi', 'verbose', 0));
-      ok = diagnostics.problem == 0;
+      ok = diagnostics.problem == 0 || diagnostics.problem == -1;
       if ~ok
         error('Drake:MixedIntegerConvexProgram:InfeasibleProblem', 'The mixed-integer problem is infeasible.');
       end

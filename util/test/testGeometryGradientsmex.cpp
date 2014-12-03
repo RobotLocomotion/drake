@@ -12,10 +12,10 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   int argnum = 0;
   Isometry3d T;
   memcpy(T.data(),mxGetPr(prhs[argnum++]), sizeof(double)*HOMOGENEOUS_TRANSFORM_SIZE);
-  auto S = matlabToEigen<TWIST_SIZE>(prhs[argnum++]);
-  auto qdot_to_v = matlabToEigen<>(prhs[argnum++]);
-  auto X = matlabToEigen<TWIST_SIZE>(prhs[argnum++]);
-  auto dX = matlabToEigen<>(prhs[argnum++]);
+  auto S = matlabToEigen<TWIST_SIZE, Eigen::Dynamic>(prhs[argnum++]);
+  auto qdot_to_v = matlabToEigen<Eigen::Dynamic, Eigen::Dynamic>(prhs[argnum++]);
+  auto X = matlabToEigen<TWIST_SIZE, Eigen::Dynamic>(prhs[argnum++]);
+  auto dX = matlabToEigen<Eigen::Dynamic, Eigen::Dynamic>(prhs[argnum++]);
   auto x = matlabToEigen<4, 1>(prhs[argnum++]);
 
   auto dT = dHomogTrans(T, S, qdot_to_v).eval();

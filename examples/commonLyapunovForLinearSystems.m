@@ -1,6 +1,7 @@
 % Simple example of common lyapunov functions
 % for robust stability of linear systems
 
+checkDependency('spotless');
 checkDependency('mosek');
 
 n = 4;
@@ -29,11 +30,14 @@ end
 % run the optimization
 sol = prog.minimize(trace(P),@spot_mosek);
 
-% display the results
-P = double(sol.eval(P))
-%isPositiveDefinite(P)
-eig(P)
-
+if sol.isPrimalFeasible()
+  % display the results
+  P = double(sol.eval(P))
+  %isPositiveDefinite(P)
+  eig(P)
+else
+  fprintf('Could not find a common Lyapunov function.\nThis is expected to occur with some probability:  not all\n random sets of stable matrices will have a common Lyapunov\n function\n');
+end
 
 % another example from the lecture notes:
 %a = randn;  ab = 2*rand - 1;  b=ab/a;

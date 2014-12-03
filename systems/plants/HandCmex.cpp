@@ -4,8 +4,6 @@
 #include "drakeUtil.h"
 #include "RigidBodyManipulator.h"
 
-#define INF -2147483648
-
 using namespace Eigen;
 using namespace std;
 
