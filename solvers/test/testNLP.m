@@ -54,7 +54,7 @@ end
 % x1+3*x3 = 0
 nlp1 = nlp1.addCost(FunctionHandleObjective(1,@cost1_userfun),2);
 nlp1 = nlp1.addCost(FunctionHandleObjective(2,@cost2_userfun),[1;3]);
-nlp1 = nlp1.addCost(LinearConstraint(-inf,inf,1),3);
+nlp1 = nlp1.addCost(LinearConstraint(-inf,inf,[0 1]),[1;3]);
 [x2,F,info] = testAllSolvers(nlp1,x0);
 c2 = cnstr1_userfun(x2);
 if(c2(1)>4+1e-5 || c2(2)>5+1e-5)
@@ -386,6 +386,18 @@ valuecheck(nlp4.x_lb,[0;-inf;-inf;-inf]);
 valuecheck(nlp4.x_ub,inf(4,1));
 sizecheck(nlp4.bbcon,[1,1]);
 sizecheck(nlp4.bbcon_xind,[1,1]);
+
+% check the case that the input argument to a constraint contain duplicate decision
+% variables
+% min  x1+x1^2
+% s.t  x1+x2+x1x2 >=1
+nlp5 = NonlinearProgram(2);
+nlp5 = nlp5.addCost(FunctionHandleConstraint(-inf,inf,1,@cost4_userfun,1),[1 1]);
+[c,dc] = geval(@(x) nlp5.objective(x), randn(2,1),struct('grad_method',{[{'user'},{'taylorvar'}]})) ;
+cnstr5 = FunctionHandleConstraint(1,inf,3,@cnstr5_userfun,1);
+nlp5 = nlp5.addConstraint(cnstr5,[1;2;1]);
+[g,h,dg,dh] = geval(2,@(x) nlp5.nonlinearConstraints(x), randn(2,1),struct('grad_method',{[{'user'},{'numerical'}]})) ;
+[c,dc] = geval(2,@(x) nlp5.objectiveAndNonlinearConstraints(x), randn(2,1),struct('grad_method',{[{'user'},{'numerical'}]})) ;
 end
 
 function [c,dc] = cnstr1_userfun(x)
@@ -423,6 +435,11 @@ dc = [x2 x1];
 end
 end
 
+function [c,dc] = cost4_userfun(x)
+c = x(1)+x(2)^2;
+dc = [1 2*x(2)];
+end
+
 function [c,dc] = cnstr2_userfun(x)
 c = [x(1)*x(2)*x(3);x(2)^2+x(2)*x(3)+2*x(3)^2];
 if(nargout>1)
@@ -435,6 +452,11 @@ c = [x(1)*x(2)+x(3);x(1)+x(3)^2;x(1)+2*x(3)*x(4)+x(4)^2];
 if(nargout>1)
   dc = [x(2) x(1) 1 0;1 0 2*x(3) 0;1 0 2*x(4) 2*x(3)+2*x(4)];
 end
+end
+
+function [c,dc] = cnstr5_userfun(x)
+c = x(1)+x(2)+x(3)*x(2);
+dc = [1 1+x(3) x(2)];
 end
 
   function [x,F,info] = solveWDefaultSolver(nlp,x)
