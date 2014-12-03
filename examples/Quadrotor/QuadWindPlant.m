@@ -135,21 +135,50 @@ classdef QuadWindPlant < SecondOrderSystem
     function [wind,dquadinwind] = quadwind(obj,quadpos)
       % quadpos is [xquad;yquad;zquad]
       
+
+      
       xquad = quadpos(1);
       yquad = quadpos(2);
       zquad = quadpos(3);
+           
+      %windfield = 'zero';
+      %windfield = 'constant';
+      %windfield = 'linear';
+      windfield = 'quadratic';
       
       xwind = 0;
-      %ywind = zquad; % linear
-      ywind = zquad^2; % quadratic
+      
+      
+      if strcmp(windfield, 'zero')
+        ywind = 0;
+      elseif strcmp(windfield, 'constant')
+        ywind = 5;
+      elseif strcmp(windfield, 'linear')
+        ywind = zquad;
+      elseif strcmp(windfield, 'quadratic')
+        ywind = zquad^2; % quadratic
+      else
+        disp('Please specify which kind of wind field!')
+      end
+      
       zwind = 0;
       
-      
       wind = [xwind;ywind;zwind];
+      
+      
       dquadinwind = sparse(6,17);
-      %dquadinwind(2,4) = 1/obj.m; % linear
-      dquadinwind(2,4) = 2*zquad/obj.m; % quadratic (and next line)
-      %dquadinwind(2,10) = 2/obj.m/10; 
+      
+      if strcmp(windfield, 'zero')
+        ;
+      elseif strcmp(windfield, 'constant')
+        ;
+      elseif strcmp(windfield, 'linear')
+        dquadinwind(2,4) = 1/obj.m; % linear
+      elseif strcmp(windfield, 'quadratic')
+        dquadinwind(2,4) = 2*zquad/obj.m; % quadratic
+      else
+        disp('Please specify which kind of wind field!')
+      end
       
     end
     
