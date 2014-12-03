@@ -391,6 +391,8 @@ sizecheck(nlp4.bbcon_xind,[1,1]);
 % variables
 % min  x1+x1^2
 % s.t  x1+x2+x1x2 >=1
+%        x2<=1
+%      2*x1+x2 >= -1
 nlp5 = NonlinearProgram(2);
 nlp5 = nlp5.addCost(FunctionHandleConstraint(-inf,inf,1,@cost4_userfun,1),[1 1]);
 [c,dc] = geval(@(x) nlp5.objective(x), randn(2,1),struct('grad_method',{[{'user'},{'taylorvar'}]})) ;
@@ -398,6 +400,8 @@ cnstr5 = FunctionHandleConstraint(1,inf,3,@cnstr5_userfun,1);
 nlp5 = nlp5.addConstraint(cnstr5,[1;2;1]);
 [g,h,dg,dh] = geval(2,@(x) nlp5.nonlinearConstraints(x), randn(2,1),struct('grad_method',{[{'user'},{'numerical'}]})) ;
 [c,dc] = geval(2,@(x) nlp5.objectiveAndNonlinearConstraints(x), randn(2,1),struct('grad_method',{[{'user'},{'numerical'}]})) ;
+nlp5 = nlp5.addBoundingBoxConstraint(BoundingBoxConstraint(-inf(2,1),[1;2]),[2;2]);
+valuecheck(nlp5.x_ub,[inf;1]);
 end
 
 function [c,dc] = cnstr1_userfun(x)

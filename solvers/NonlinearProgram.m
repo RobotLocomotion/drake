@@ -406,8 +406,10 @@ classdef NonlinearProgram
         error('Drake:NonlinearProgram:InvalidArgument','the length of xind must match the x-dimension of the constraint');
       end
       obj.bbcon = [obj.bbcon,{cnstr}];
-      obj.x_lb(xind) = max([cnstr.lb obj.x_lb(xind)],[],2);
-      obj.x_ub(xind) = min([cnstr.ub obj.x_ub(xind)],[],2);
+      for i = 1:length(xind)
+        obj.x_lb(xind(i)) = max([cnstr.lb(i) obj.x_lb(xind(i))],[],2);
+        obj.x_ub(xind(i)) = min([cnstr.ub(i) obj.x_ub(xind(i))],[],2);
+      end
       if (any(obj.x_lb(xind)>obj.x_ub(xind)))
         error('Drake:NonlinearProgram:InvalidConstraint','adding this bounding box constraint resulted in some lb>ub');
       end
