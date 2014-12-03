@@ -1,4 +1,4 @@
-classdef QuadWindPlant < SecondOrderSystem
+classdef QuadWindPlant < DrakeSystem
   % Modified from QuadPlantPenn
   
   % Modified from D. Mellinger, N. Michael, and V. Kumar,
@@ -7,7 +7,12 @@ classdef QuadWindPlant < SecondOrderSystem
   
   methods
     function obj = QuadWindPlant()
-      obj = obj@SecondOrderSystem(6,4,1);
+      
+      
+      %obj = obj@SecondOrderSystem(6,4,1);
+      obj = obj@DrakeSystem(12,0,4,12,false,1);
+      
+      
       obj = setStateFrame(obj,CoordinateFrame('QuadState',12,'x',{'x','y','z','roll','pitch','yaw','xdot','ydot','zdot','rolldot','pitchdot','yawdot'}));
       obj = obj.setOutputFrame(obj.getStateFrame);
     end
@@ -30,7 +35,7 @@ classdef QuadWindPlant < SecondOrderSystem
       g = r.gravity
     end
     
-    function [qdd, df] = sodynamics(obj,t,q,qd,u)
+    function [xdot, df] = dynamics(obj,t,x,u)
       % States
       % x
       % y
@@ -46,7 +51,7 @@ classdef QuadWindPlant < SecondOrderSystem
       % psidot
       
       if (nargout>1)
-        [df]= dynamicsGradients(obj,t,q,qd,u,nargout-1);
+        [df]= dynamicsGradients(obj,t,x(1:6),x(7:12),u,nargout-1);
       end
       
       
@@ -58,7 +63,7 @@ classdef QuadWindPlant < SecondOrderSystem
       L = 0.1750;
       
       % states
-      x = [q;qd];
+      
       
       phi = x(4);
       theta = x(5);
@@ -130,6 +135,11 @@ classdef QuadWindPlant < SecondOrderSystem
       
       
       qdd = [xyz_ddot;rpy_ddot];
+      qd = x(7:12);
+      xdot = [qd;qdd];
+      if (nargout>1)
+        df = [zeros(6,1+6), eye(6), zeros(6,4); df];
+      end
     end
     
     function [wind,dquadinwind] = quadwind(obj,quadpos,t)
@@ -143,8 +153,8 @@ classdef QuadWindPlant < SecondOrderSystem
            
       %windfield = 'zero';
       %windfield = 'constant';
-      windfield = 'linear';
-      %windfield = 'quadratic';
+      %windfield = 'linear';
+      windfield = 'quadratic';
       %windfield = 'exp';
       %windfield = 'tvsin';
       

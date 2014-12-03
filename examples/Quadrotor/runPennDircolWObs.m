@@ -63,37 +63,37 @@ u0 = double(nominalThrust(r));
 
 prog = prog.addStateConstraint(ConstantConstraint(double(x0)),1); % DirectTrajectoryOptimization method
 
-bd = inf;
+bd = 1e3;
 
 seasurface = Point(getStateFrame(r));
 seasurface.x = -bd;
 seasurface.y = -bd;
-seasurface.z = 0;
-%seasurface.roll = -bd;
-%seasurface.pitch = -bd;
-%seasurface.yaw = -bd;
-%seasurface.xdot = -bd;
-%seasurface.ydot = -bd;
-%seasurface.zdot = -bd;
-%seasurface.rolldot = -bd;
-%seasurface.pitchdot = -bd;
-%seasurface.yawdot = -bd;
+seasurface.z = 0.2;
+seasurface.roll = -bd;
+seasurface.pitch = -bd;
+seasurface.yaw = -bd;
+seasurface.xdot = -bd;
+seasurface.ydot = -bd;
+seasurface.zdot = -bd;
+seasurface.rolldot = -bd;
+seasurface.pitchdot = -bd;
+seasurface.yawdot = -bd;
 
 world = Point(getStateFrame(r));
-seasurface.x = bd;
-seasurface.y = bd;
-seasurface.z = bd;
-%seasurface.roll = bd;
-%seasurface.pitch = bd;
-%seasurface.yaw = bd;
-%seasurface.xdot = bd;
-%seasurface.ydot = bd;
-%seasurface.zdot = bd;
-%seasurface.rolldot = bd;
-%seasurface.pitchdot = bd;
-%seasurface.yawdot = bd;
+world.x = bd;
+world.y = bd;
+world.z = bd;
+world.roll = bd;
+world.pitch = bd;
+world.yaw = bd;
+world.xdot = bd;
+world.ydot = bd;
+world.zdot = bd;
+world.rolldot = bd;
+world.pitchdot = bd;
+world.yawdot = bd;
 
-prog = prog.addStateConstraint(BoundingBoxConstraint(double(world),double(seasurface)),{1,2}); 
+prog = prog.addStateConstraint(BoundingBoxConstraint(double(seasurface),double(world)),{1,2,3,4,5,6,7,8,9}); 
 
 prog = prog.addInputConstraint(ConstantConstraint(u0),1); % DirectTrajectoryOptimization method
 
