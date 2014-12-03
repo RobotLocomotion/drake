@@ -1,10 +1,10 @@
-function [df] = dynamicsGradients(a1, a2, a3, a4, a5, order)
+function [df] = dynamicsGradientsinLinearWind(a1, a2, a3, a4, a5, order)
 % This is an auto-generated file.
 %
 % See <a href="matlab: help generateGradients">generateGradients</a>. 
-%
-% Generated with no wind field (defined in quadwind method in QuadWindPlant
-% class):
+% 
+% Generated with linear wind: ywind = zquad
+% computes exact same gradients as with no wind field)
 % r = QuadWindPlant()
 % generateGradients('sodynamics',1,'dynamicsGradients',r,0,randn(6,1),randn(6,1),randn(4,1))
 
@@ -28,6 +28,7 @@ I_6=a1.I(6);
 I_7=a1.I(7);
 I_8=a1.I(8);
 I_9=a1.I(9);
+a3_3=a3(3);
 a3_4=a3(4);
 a3_5=a3(5);
 a3_6=a3(6);
@@ -50,6 +51,7 @@ df(1,14) = (sin(a3_4)*sin(a3_6) + cos(a3_4)*cos(a3_6)*sin(a3_5))/m;
 df(1,15) = (sin(a3_4)*sin(a3_6) + cos(a3_4)*cos(a3_6)*sin(a3_5))/m;
 df(1,16) = (sin(a3_4)*sin(a3_6) + cos(a3_4)*cos(a3_6)*sin(a3_5))/m;
 df(1,17) = (sin(a3_4)*sin(a3_6) + cos(a3_4)*cos(a3_6)*sin(a3_5))/m;
+df(2,4) = 1/m;
 df(2,5) = -((cos(a3_4)*cos(a3_6) + sin(a3_4)*sin(a3_5)*sin(a3_6))*(a5_1 + a5_2 + a5_3 + a5_4))/m;
 df(2,6) = (cos(a3_4)*cos(a3_5)*sin(a3_6)*(a5_1 + a5_2 + a5_3 + a5_4))/m;
 df(2,7) = ((sin(a3_4)*sin(a3_6) + cos(a3_4)*cos(a3_6)*sin(a3_5))*(a5_1 + a5_2 + a5_3 + a5_4))/m;

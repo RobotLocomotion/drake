@@ -27,6 +27,8 @@ function generateGradients(fun,order,fname,varargin)
 % note: could support multiple input arguments as classes, but then i have
 % to worry about duplicate parameter names, etc, etc.
 
+tic
+
 typecheck(fun,{'function_handle','char'});
 if (nargout(fun)>1) warning('Your function has multiple outputs, but\nI currently only generate gradients for the first output'); end
   
@@ -230,6 +232,8 @@ for i=2:length(varargin)
 end
 fprintf(1,',nargout-1);\n  end\n');
 fprintf(1,'where you must replace a1 - an with the actual names of your inputs.\n\n');
+
+toc
 
 end
 

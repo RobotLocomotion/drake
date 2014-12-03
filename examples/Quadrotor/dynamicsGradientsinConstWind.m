@@ -1,10 +1,10 @@
-function [df] = dynamicsGradients(a1, a2, a3, a4, a5, order)
+function [df] = dynamicsGradientsinConstWind(a1, a2, a3, a4, a5, order)
 % This is an auto-generated file.
 %
 % See <a href="matlab: help generateGradients">generateGradients</a>. 
-%
-% Generated with no wind field (defined in quadwind method in QuadWindPlant
-% class):
+% 
+% Generated with a constant +5 wind velocity in y direction (no surprise,
+% computes exact same gradients as with no wind field)
 % r = QuadWindPlant()
 % generateGradients('sodynamics',1,'dynamicsGradients',r,0,randn(6,1),randn(6,1),randn(4,1))
 
@@ -39,6 +39,7 @@ a5_2=a5(2);
 a5_3=a5(3);
 a5_4=a5(4);
 m=a1.m;
+
 
 
 % Compute Gradients:
