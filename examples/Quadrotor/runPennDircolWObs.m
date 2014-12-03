@@ -21,11 +21,11 @@ elseif plant == 'penn'
   %oquad = addRobotFromURDF(oquad, 'office.urdf');
   %v = constructVisualizer(oquad);
   r_temp = addOcean(r_temp, [.8,.45,1.25], [.20;2.5], pi/4);
-  r_temp = addTree(r_temp, [.5,.35,1.65], [-.25;5], -pi/6);
-  r_temp = addTree(r_temp, [.55,.65,1.5], [.25;7.5], pi/4);
-  r_temp = addTree(r_temp, [.55,.85,1.6], [-1.35;8.5], pi/3.7);
-  r_temp = addTree(r_temp, [.85,.95,1.65], [-1.85;5.2], -pi/3.7);
-  r_temp = addTree(r_temp, [.75,.9,1.75], [2;4.4], -pi/5);
+  %r_temp = addTree(r_temp, [.5,.35,1.65], [-.25;5], -pi/6);
+  %r_temp = addTree(r_temp, [.55,.65,1.5], [.25;7.5], pi/4);
+  %r_temp = addTree(r_temp, [.55,.85,1.6], [-1.35;8.5], pi/3.7);
+  %r_temp = addTree(r_temp, [.85,.95,1.65], [-1.85;5.2], -pi/3.7);
+  %r_temp = addTree(r_temp, [.75,.9,1.75], [2;4.4], -pi/5);
   % Random trees to make forest bigger and more dense
   %r_temp = addTrees(r_temp, 25);
   
@@ -62,6 +62,39 @@ prog = addPlanVisualizer(r,prog);
 u0 = double(nominalThrust(r));
 
 prog = prog.addStateConstraint(ConstantConstraint(double(x0)),1); % DirectTrajectoryOptimization method
+
+bd = inf;
+
+seasurface = Point(getStateFrame(r));
+seasurface.x = -bd;
+seasurface.y = -bd;
+seasurface.z = 0;
+%seasurface.roll = -bd;
+%seasurface.pitch = -bd;
+%seasurface.yaw = -bd;
+%seasurface.xdot = -bd;
+%seasurface.ydot = -bd;
+%seasurface.zdot = -bd;
+%seasurface.rolldot = -bd;
+%seasurface.pitchdot = -bd;
+%seasurface.yawdot = -bd;
+
+world = Point(getStateFrame(r));
+seasurface.x = bd;
+seasurface.y = bd;
+seasurface.z = bd;
+%seasurface.roll = bd;
+%seasurface.pitch = bd;
+%seasurface.yaw = bd;
+%seasurface.xdot = bd;
+%seasurface.ydot = bd;
+%seasurface.zdot = bd;
+%seasurface.rolldot = bd;
+%seasurface.pitchdot = bd;
+%seasurface.yawdot = bd;
+
+prog = prog.addStateConstraint(BoundingBoxConstraint(double(world),double(seasurface)),{1,2}); 
+
 prog = prog.addInputConstraint(ConstantConstraint(u0),1); % DirectTrajectoryOptimization method
 
 xf = x0;                       % final conditions: translated in x

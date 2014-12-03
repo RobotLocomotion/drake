@@ -142,8 +142,8 @@ classdef QuadWindPlant < SecondOrderSystem
       zquad = quadpos(3);
            
       %windfield = 'zero';
-      windfield = 'constant';
-      %windfield = 'linear';
+      %windfield = 'constant';
+      windfield = 'linear';
       %windfield = 'quadratic';
       %windfield = 'exp';
       %windfield = 'tvsin';
@@ -166,7 +166,7 @@ classdef QuadWindPlant < SecondOrderSystem
         %z  = b + C*exp(a*ydotdot);
         ywind = 1/a*log((zquad-b)/C);
       elseif strcmp(windfield, 'tvsin')
-        ywind = 1000*sin(10*t);
+        ywind = 10*sin(10*t);
       else
         disp('Please specify which kind of wind field!')
       end
@@ -189,7 +189,7 @@ classdef QuadWindPlant < SecondOrderSystem
       elseif strcmp(windfield, 'exp')
       %  dquadinwind(2,4) = 1/a*1/((zquad-b)/C)/obj.m;
       elseif strcmp(windfield, 'tvsin')
-        dquadinwind(2,1) = 1000*cos(10*t)/obj.m;
+        dquadinwind(2,1) = 10*cos(10*t)/obj.m;
       %else
       %  disp('Please specify which kind of wind field!')
       end
@@ -256,7 +256,7 @@ classdef QuadWindPlant < SecondOrderSystem
         lcmgl.glColor3f(1, 0, 0);
         lcmgl.glPointSize(3);
         lcmgl.points(x(1,:),x(2,:),x(3,:));
-        lcmgl.glColor3f(.5, .5, 1);
+        lcmgl.glColor3f(1, .5, 0);
         lcmgl.plot3(x(1,:),x(2,:),x(3,:));
         lcmgl.switchBuffers;
       end
