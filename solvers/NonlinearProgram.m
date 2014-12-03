@@ -341,7 +341,7 @@ classdef NonlinearProgram
       % the name of the i'th constraint. If not given, the cnstr.name will be used instead
       % @retval cnstr_id   -- The ID stored in obj.lcon_id. This is the unique ID of the newly added
       % constraint in the program.
-      if cnstr.num_cnstr > 0
+%       if cnstr.num_cnstr > 0
         if(nargin<3)
           xind = (1:obj.num_vars)';
         end
@@ -379,10 +379,11 @@ classdef NonlinearProgram
           obj.beq = vertcat(obj.beq,cnstr_beq);
           obj.Aeq2lcon_idx = [obj.Aeq2lcon_idx;length(obj.lcon)*ones(size(cnstr_Aeq,1),1)];
         end
-      end
-      cnstr_id = obj.next_lcon_id;
-      obj.next_lcon_id = obj.next_lcon_id-3;
-      obj.lcon_id = [obj.lcon_id cnstr_id];
+        cnstr_id = obj.next_lcon_id;
+        obj.next_lcon_id = obj.next_lcon_id-3;
+        obj.lcon_id = [obj.lcon_id cnstr_id];
+%       end
+      
     end   
 
     function [obj,cnstr_id] = addBoundingBoxConstraint(obj,cnstr,xind)
@@ -1201,9 +1202,13 @@ classdef NonlinearProgram
       obj.lcon = obj.lcon(remaining_lcon_id);
       obj.lcon_id = obj.lcon_id(remaining_lcon_id);
       
-      obj.Ain2lcon_idx = obj.Ain2lcon_idx-sum(bsxfun(@minus,obj.Ain2lcon_idx,Ain_delete_idx')>0,2);
+      if(~isempty(obj.Ain2lcon_idx) && ~isempty(Ain_delete_idx'))
+        obj.Ain2lcon_idx = obj.Ain2lcon_idx-sum(bsxfun(@minus,obj.Ain2lcon_idx,Ain_delete_idx')>0,2);
+      end
       obj.Ain2lcon_idx = obj.Ain2lcon_idx(Ain_remaining_idx);
-      obj.Aeq2lcon_idx = obj.Aeq2lcon_idx-sum(bsxfun(@minus,obj.Aeq2lcon_idx,Aeq_delete_idx')>0,2);
+      if(~isempty(obj.Aeq2lcon_idx) && ~isempty(Aeq_delete_idx'))
+        obj.Aeq2lcon_idx = obj.Aeq2lcon_idx-sum(bsxfun(@minus,obj.Aeq2lcon_idx,Aeq_delete_idx')>0,2);
+      end
       obj.Aeq2lcon_idx = obj.Aeq2lcon_idx(Aeq_remaining_idx);
     end
     

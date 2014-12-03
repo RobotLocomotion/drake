@@ -402,6 +402,12 @@ nlp5 = nlp5.addConstraint(cnstr5,[1;2;1]);
 [c,dc] = geval(2,@(x) nlp5.objectiveAndNonlinearConstraints(x), randn(2,1),struct('grad_method',{[{'user'},{'numerical'}]})) ;
 nlp5 = nlp5.addBoundingBoxConstraint(BoundingBoxConstraint(-inf(2,1),[1;2]),[2;2]);
 valuecheck(nlp5.x_ub,[inf;1]);
+
+% check add empty linear constraint
+[nlp5,null_lincon_id] = nlp5.addLinearConstraint(LinearConstraint([],[],zeros(0,nlp5.num_vars)));
+nlp5 = nlp5.deleteLinearConstraint(null_lincon_id);
+[nlp4,null_lincon_id] = nlp4.addLinearConstraint(LinearConstraint([],[],zeros(0,nlp4.num_vars)));
+nlp4 = nlp4.deleteLinearConstraint(null_lincon_id);
 end
 
 function [c,dc] = cnstr1_userfun(x)
