@@ -9,11 +9,11 @@ using namespace std;
 
 // convert Matlab cell array of strings into a C++ vector of strings
 vector<string> get_strings(const mxArray *rhs) {
-  int num = mxGetNumberOfElements(rhs);
+  int num = static_cast<int>(mxGetNumberOfElements(rhs));
   vector<string> strings(num);
   for (int i=0; i<num; i++) {
     const mxArray *ptr = mxGetCell(rhs,i);
-    int buflen = mxGetN(ptr)*sizeof(mxChar)+1;
+    int buflen = static_cast<int>(mxGetN(ptr)*sizeof(mxChar))+1;
     char* str = (char*)mxMalloc(buflen);
     mxGetString(ptr, str, buflen);
     strings[i] = string(str);
@@ -37,11 +37,11 @@ smoothDistancePenalty(double& c, MatrixXd& dc,
   VectorXd scaled_dist, pairwise_costs;
   MatrixXd ddist_dq, dscaled_dist_ddist, dpairwise_costs_dscaled_dist;
 
-  int num_pts = xA.cols();
+  int num_pts = static_cast<int>(xA.cols());
   ddist_dq = MatrixXd::Zero(num_pts,robot->num_dof);
 
   // Scale distance
-  int nd = dist.size();
+  int nd = static_cast<int>(dist.size());
   double recip_min_dist = 1/min_distance;
   scaled_dist = recip_min_dist*dist - VectorXd::Ones(nd,1);
   dscaled_dist_ddist = recip_min_dist*MatrixXd::Identity(nd,nd);
@@ -75,8 +75,8 @@ smoothDistancePenalty(double& c, MatrixXd& dc,
     //std::cout << "MinDistanceConstraint::eval: Second loop: " << k << std::endl;
     //END_DEBUG
     int l = 0;
-    int numA = orig_idx_of_pt_on_bodyA.at(k).size();
-    int numB = orig_idx_of_pt_on_bodyB.at(k).size();
+    int numA = static_cast<int>(orig_idx_of_pt_on_bodyA.at(k).size());
+    int numB = static_cast<int>(orig_idx_of_pt_on_bodyB.at(k).size());
     MatrixXd x_k(3, numA + numB);
     for (; l < numA; ++l) {
       //DEBUG
@@ -115,8 +115,27 @@ smoothDistancePenalty(double& c, MatrixXd& dc,
 
 
 /*
- * mex interface for bullet collision detection
- * closest-distance for each body to all other bodies (~(NB^2-NB)/2 points)
+ * mex interface for evaluating a smooth-penalty on violations of a
+ * minimum-distance constraint. For each eligible pair of collision geometries,
+ * a penalty is computed according to
+ *
+ * \f[
+ * c = 
+ * \begin{cases}
+ *   -de^{\frac{1}{d}}, & d <   0  \\
+ *   0,                & d \ge 0.
+ * \end{cases}
+ * \f]
+ *
+ * where $d$ is the normalized violation of the minimum distance, $d_{min}$
+ *
+ * \f[
+ * d = \frac{(\phi - d_{min})}{d_{min}}
+ * \f]
+ *
+ * for a signed distance of $\phi$ between the geometries. These pairwise costs
+ * are summed to yield a single penalty which is zero if and only if all
+ * eligible pairs of collision geometries are separated by at least $d_{min}$.
  *
  * MATLAB signature:
  *
@@ -128,7 +147,7 @@ smoothDistancePenalty(double& c, MatrixXd& dc,
 void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 
   if (nrhs < 2) {
-    mexErrMsgIdAndTxt("Drake:collisionDetectmex:NotEnoughInputs","Usage smoothDistancePenaltymex(model_ptr,min_distance)");
+    mexErrMsgIdAndTxt("Drake:smoothDistancePenaltymex:NotEnoughInputs","Usage smoothDistancePenaltymex(model_ptr,min_distance)");
   }
 
   // first get the model_ptr back from matlab
@@ -144,19 +163,17 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   const mxArray* active_collision_options = prhs[3];
   const mxArray* body_idx = mxGetField(active_collision_options,0,"body_idx");
   if (body_idx != NULL) {
-    int n_active_bodies = mxGetNumberOfElements(body_idx);
+    int n_active_bodies = static_cast<int>(mxGetNumberOfElements(body_idx));
     active_bodies_idx.resize(n_active_bodies);
     if (mxGetClassID(body_idx) == mxINT32_CLASS) {
       memcpy(active_bodies_idx.data(),(int*) mxGetData(body_idx),
           sizeof(int)*n_active_bodies);
     } else if(mxGetClassID(body_idx) == mxDOUBLE_CLASS) {
-      vector<double> tmp;
-      tmp.resize(n_active_bodies);
-      memcpy(tmp.data(),mxGetPr(body_idx),
-          sizeof(double)*n_active_bodies);
-      copy(tmp.begin(),tmp.end(),active_bodies_idx.begin());
+	  double* ptr = mxGetPr(body_idx);
+	  for (int i=0; i<n_active_bodies; i++)
+		active_bodies_idx[i] = static_cast<int>(ptr[i]);
     } else {
-      mexErrMsgIdAndTxt("Drake:collisionDetectmex:WrongInputClass","active_collision_options.body_idx must be an int32 or a double array");
+      mexErrMsgIdAndTxt("Drake:smoothDistancePenaltymex:WrongInputClass","active_collision_options.body_idx must be an int32 or a double array");
     }
     transform(active_bodies_idx.begin(),active_bodies_idx.end(),
               active_bodies_idx.begin(),
@@ -167,8 +184,14 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   const mxArray* collision_groups = mxGetField(active_collision_options,0,
                                                "collision_groups");
   if (collision_groups != NULL) {
-    for (const string& str : get_strings(collision_groups)) {
-      active_group_names.insert(str);
+	int num = static_cast<int>(mxGetNumberOfElements(collision_groups));
+	for (int i=0; i<num; i++) {
+      const mxArray *ptr = mxGetCell(collision_groups,i);
+	  int buflen = static_cast<int>(mxGetN(ptr)*sizeof(mxChar))+1;
+	  char* str = (char*)mxMalloc(buflen);
+	  mxGetString(ptr, str, buflen);
+	  active_group_names.insert(str);
+	  mxFree(str);
     }
   }
 
@@ -206,7 +229,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
     plhs[0] = mxCreateDoubleScalar(penalty);
   }
   if (nlhs>1) {
-    plhs[1] = mxCreateDoubleMatrix(dpenalty.rows(),dpenalty.cols(),mxREAL);
+    plhs[1] = mxCreateDoubleMatrix(static_cast<int>(dpenalty.rows()),static_cast<int>(dpenalty.cols()),mxREAL);
     memcpy(mxGetPr(plhs[1]),dpenalty.data(),sizeof(double)*dpenalty.size());
   }
 }

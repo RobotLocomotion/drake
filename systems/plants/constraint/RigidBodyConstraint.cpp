@@ -7,7 +7,6 @@
   #include <math.h>
   #define isnan(x) _isnan(x)
   #define isinf(x) (!_finite(x))
-//  #define isinf(x) _isinf(x)
 #else
   #define isnan(x) std::isnan(x)
   #define isinf(x) std::isinf(x)
@@ -233,7 +232,7 @@ void QuasiStaticConstraint::addContact(int num_new_bodies,const int* new_bodies,
           unique_body_pts.insert(new_body_pts[i].block(0,k,3,1));
         }
         this->num_pts -= this->num_body_pts[j];
-        this->num_body_pts[j] = unique_body_pts.size();
+        this->num_body_pts[j] = static_cast<int>(unique_body_pts.size());
         this->num_pts += this->num_body_pts[j];
         this->body_pts[j].resize(4,this->num_body_pts[j]);
         int col_idx = 0;
@@ -248,10 +247,10 @@ void QuasiStaticConstraint::addContact(int num_new_bodies,const int* new_bodies,
     if(!findDuplicateBody)
     {
       bodies.push_back(new_bodies[i]);
-      num_body_pts.push_back(new_body_pts[i].cols());
+      num_body_pts.push_back(static_cast<int>(new_body_pts[i].cols()));
       body_pts.push_back(new_body_pts[i]);
       num_bodies++;
-      num_pts += new_body_pts[i].cols();
+      num_pts += static_cast<int>(new_body_pts[i].cols());
     }
   }
 }
@@ -401,8 +400,8 @@ void MultipleTimeLinearPostureConstraint::eval(const double* t, int n_breaks, co
   VectorXd A;
   this->geval(t,n_breaks,iAfun,jAvar,A);
   int num_cnst = this->getNumConstraint(t,n_breaks);
-  dc.resize(num_cnst,q.size());
-  dc.reserve(A.size());
+  dc.resize(num_cnst,static_cast<int>(q.size()));
+  dc.reserve(static_cast<int>(A.size()));
   for(int i = 0;i<iAfun.size();i++)
   {
     dc.insert(iAfun(i),jAvar(i)) = A(i);
@@ -413,13 +412,13 @@ SingleTimeLinearPostureConstraint::SingleTimeLinearPostureConstraint(RigidBodyMa
 {
   this->lb = lb;
   this->ub = ub;
-  this->num_constraint = this->lb.size();
+  this->num_constraint = static_cast<int>(this->lb.size());
   for(int i = 0;i<this->num_constraint;i++)
   {
     if(lb(i)>ub(i))
       std::cerr<<"Drake:RigidBodyConstraint:SingleTimeLinearPostureConstraint:lb must be no larger than ub"<<std::endl;
   }
-  int lenA = iAfun.size();
+  int lenA = static_cast<int>(iAfun.size());
   if(jAvar.size() != lenA || A.size() != lenA)
   {
     std::cerr<<"Drake:RigidBodyConstraint:SingleTimeLinearPostureConstraint:iAfun,jAvar and A should be of the same size"<<std::endl;
@@ -680,7 +679,7 @@ void MultipleTimeKinematicConstraint::updateRobot(RigidBodyManipulator* robot)
 
 PositionConstraint::PositionConstraint(RigidBodyManipulator *robot, const MatrixXd &pts, MatrixXd lb, MatrixXd ub, const Vector2d &tspan):SingleTimeKinematicConstraint(robot,tspan)
 {
-  this->n_pts = pts.cols();
+  this->n_pts = static_cast<int>(pts.cols());
   if(pts.rows() != 4)
   {
     std::cerr<<"pts must have 4 rows"<<std::endl;
@@ -1743,7 +1742,7 @@ Point2PointDistanceConstraint::Point2PointDistanceConstraint(RigidBodyManipulato
   this->bodyB = bodyB;
   this->ptA = ptA;
   this->ptB = ptB;
-  this->num_constraint = ptA.cols();
+  this->num_constraint = static_cast<int>(ptA.cols());
   this->dist_lb = dist_lb;
   this->dist_ub = dist_ub;
   this->type = RigidBodyConstraint::Point2PointDistanceConstraintType;
@@ -1949,7 +1948,7 @@ int WorldFixedPositionConstraint::getNumConstraint(const double* t, int n_breaks
   int num_valid_t = this->numValidTime(t,n_breaks);
   if(num_valid_t>=2)
   {
-    return this->pts.cols();
+    return static_cast<int>(this->pts.cols());
   }
   else
   {
@@ -1959,7 +1958,7 @@ int WorldFixedPositionConstraint::getNumConstraint(const double* t, int n_breaks
 
 void WorldFixedPositionConstraint::eval_valid(const double* valid_t, int num_valid_t, const MatrixXd &valid_q, VectorXd &c, MatrixXd &dc_valid) const
 {
-  int n_pts = this->pts.cols();
+  int n_pts = static_cast<int>(this->pts.cols());
   int nq = this->robot->num_dof;
   MatrixXd *pos = new MatrixXd[num_valid_t];
   MatrixXd *dpos = new MatrixXd[num_valid_t];
@@ -2004,7 +2003,7 @@ void WorldFixedPositionConstraint::bounds(const double* t, int n_breaks, VectorX
   int num_valid_t = this->numValidTime(t,n_breaks);
   if(num_valid_t>=2)
   {
-    int n_pts = this->pts.cols();
+    int n_pts = static_cast<int>(this->pts.cols());
     lb.resize(n_pts,1);
     ub.resize(n_pts,1);
     lb = VectorXd::Zero(n_pts);
@@ -2022,7 +2021,7 @@ void WorldFixedPositionConstraint::name(const double* t, int n_breaks,std::vecto
   int num_valid_t = this->numValidTime(t,n_breaks);
   if(num_valid_t>=2)
   {
-    int n_pts = this->pts.cols();
+    int n_pts = static_cast<int>(this->pts.cols());
     for(int i = 0;i<n_pts;i++)
     {
       char cnst_name_buffer[500];
@@ -2241,7 +2240,7 @@ AllBodiesClosestDistanceConstraint::AllBodiesClosestDistanceConstraint(
   //DEBUG
   //std::cout << "ABCDC::ABCDC: c.size() = " << c.size() << std::endl;
   //END_DEBUG
-  num_constraint = c.size();
+  num_constraint = static_cast<int>(c.size());
   this->type = RigidBodyConstraint::AllBodiesClosestDistanceConstraintType;
 };
 
@@ -2265,7 +2264,7 @@ void AllBodiesClosestDistanceConstraint::updateRobot(RigidBodyManipulator* robot
   VectorXd c;
   MatrixXd dc;
   this->eval(&t,c,dc);
-  this->num_constraint = c.size();
+  this->num_constraint = static_cast<int>(c.size());
 }
 
 void
@@ -2289,7 +2288,7 @@ AllBodiesClosestDistanceConstraint::eval(const double* t, VectorXd& c, MatrixXd&
         robot->collisionDetect(c,normal,xA,xB,idxA,idxB);
       }
     }
-    int num_pts = xA.cols();
+    int num_pts = static_cast<int>(xA.cols());
     dc = MatrixXd::Zero(num_pts,robot->num_dof);
     MatrixXd JA = MatrixXd::Zero(3,robot->num_dof);
     MatrixXd JB = MatrixXd::Zero(3,robot->num_dof);
@@ -2380,7 +2379,7 @@ MinDistanceConstraint::eval(const double* t, VectorXd& c, MatrixXd& dc) const
     }
   }
 
-  int num_pts = xA.cols();
+  int num_pts = static_cast<int>(xA.cols());
   ddist_dq = MatrixXd::Zero(num_pts,robot->num_dof);
 
   // Compute Jacobian of closest distance vector
@@ -2408,8 +2407,8 @@ MinDistanceConstraint::eval(const double* t, VectorXd& c, MatrixXd& dc) const
     //std::cout << "MinDistanceConstraint::eval: Second loop: " << k << std::endl;
     //END_DEBUG
     int l = 0;
-    int numA = orig_idx_of_pt_on_bodyA.at(k).size();
-    int numB = orig_idx_of_pt_on_bodyB.at(k).size();
+    int numA = static_cast<int>(orig_idx_of_pt_on_bodyA.at(k).size());
+    int numB = static_cast<int>(orig_idx_of_pt_on_bodyB.at(k).size());
     MatrixXd x_k(3, numA + numB);
     for (; l < numA; ++l) {
       //DEBUG
@@ -2454,7 +2453,7 @@ MinDistanceConstraint::eval(const double* t, VectorXd& c, MatrixXd& dc) const
 
 void MinDistanceConstraint::scaleDistance(const Eigen::VectorXd &dist, Eigen::VectorXd &scaled_dist, Eigen::MatrixXd &dscaled_dist_ddist) const
 {
-  int nd = dist.size();
+  int nd = static_cast<int>(dist.size());
   double recip_min_dist = 1/this->min_distance;
   scaled_dist = recip_min_dist*dist - VectorXd::Ones(nd,1);
   dscaled_dist_ddist = recip_min_dist*MatrixXd::Identity(nd,nd);
@@ -2462,7 +2461,7 @@ void MinDistanceConstraint::scaleDistance(const Eigen::VectorXd &dist, Eigen::Ve
 
 void MinDistanceConstraint::penalty(const Eigen::VectorXd &dist, Eigen::VectorXd &cost, Eigen::MatrixXd &dcost_ddist) const
 {
-  int nd = dist.size();
+  int nd = static_cast<int>(dist.size());
   cost = VectorXd::Zero(nd,1);
   dcost_ddist = MatrixXd::Zero(nd,nd);
   for (int i = 0; i < nd; ++i) {
@@ -2579,7 +2578,7 @@ int PostureChangeConstraint::getNumConstraint(const double* t, int n_breaks) con
 {
   std::vector<bool> valid_flag = this->isTimeValid(t,n_breaks);
   int num_valid_t = this->numValidTime(valid_flag);
-  if(num_valid_t>=2) return (num_valid_t-1)*this->joint_ind.size();
+  if(num_valid_t>=2) return (num_valid_t-1)*static_cast<int>(this->joint_ind.size());
   else return 0;
 }
 
@@ -2613,7 +2612,7 @@ void PostureChangeConstraint::geval(const double* t, int n_breaks, VectorXi &iAf
   int num_valid_t = this->numValidTime(valid_flag);
   if(num_valid_t>=2)
   {
-    int num_joints = this->joint_ind.size();
+    int num_joints = static_cast<int>(this->joint_ind.size());
     int nc = this->getNumConstraint(t,n_breaks);
     int nq = this->robot->num_dof;
     iAfun.resize(nc*2);
@@ -2679,7 +2678,7 @@ void PostureChangeConstraint::bounds(const double* t, int n_breaks, VectorXd &lb
     int nc = this->getNumConstraint(t,n_breaks);
     lb.resize(nc);
     ub.resize(nc);
-    int num_joints = this->joint_ind.size();
+    int num_joints = static_cast<int>(this->joint_ind.size());
     for(int i = 0;i<num_valid_t-1;i++)
     {
       lb.block(i*num_joints,0,num_joints,1) = this->lb_change;

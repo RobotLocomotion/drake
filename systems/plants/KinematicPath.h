@@ -4,9 +4,6 @@
 #include <vector>
 #include <memory>
 
-class DrakeJoint;
-class RigidBody;
-
 struct KinematicPath
 {
   std::vector<int> joint_path;

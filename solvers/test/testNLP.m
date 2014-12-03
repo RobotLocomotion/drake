@@ -32,6 +32,7 @@ valuecheck(nlp1.Aeq,[1 0 3]);
 valuecheck(nlp1.Ain,[A(1,:);-A(1,:)]);
 valuecheck(nlp1.bin,[10;0]);
 x0 = [1;2;4];
+nlp1 = nlp1.setSolverOptions('snopt','print','print.out');
 [x1,F,info] = testAllSolvers(nlp1,x0);
 c1 = cnstr1_userfun(x1);
 if(c1(1)>4+1e-5 || c1(2)>5+1e-5)

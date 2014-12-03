@@ -9,7 +9,7 @@ if (bullet_FOUND)
   set(bullet "yes" CACHE STRING "yes" )
 endif()
 
-add_library(drakeCollision SHARED ${drakeCollision_SRC_FILES})
+  add_library(drakeCollision SHARED ${drakeCollision_SRC_FILES})
 if (bullet_FOUND)
   pods_use_pkg_config_packages(drakeCollision bullet)
 endif()

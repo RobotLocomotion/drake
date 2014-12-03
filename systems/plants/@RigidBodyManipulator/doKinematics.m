@@ -52,6 +52,7 @@ else
       % see notes below
       kinsol.dTdq{i} = kinsol.dTdq{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint;
       
+      dTJ = cell(6,1);
       dTJ{1} = sparse(1,4,1,4,4);
       dTJ{2} = sparse(2,4,1,4,4);
       dTJ{3} = sparse(3,4,1,4,4);

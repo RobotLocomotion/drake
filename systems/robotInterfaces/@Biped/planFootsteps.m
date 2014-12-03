@@ -47,7 +47,7 @@ sizecheck(goal_pos.left, [6,1]);
 if isempty(safe_regions)
   terrain = obj.getTerrain();
   if isempty(terrain)
-    % Use the plan of the feet to define the terrain
+    % Use the plane of the feet to define the terrain
     n = rpy2rotmat(start_pos.right(4:6)) * [0;0;1];
     pt = start_pos.right(1:3);
   else

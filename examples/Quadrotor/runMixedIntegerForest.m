@@ -15,6 +15,7 @@ goal = [1; 10; 0.5];
 seeds = [...
          start';
          goal';
+         [0.5, 5, 0.5]; % the middle of the forest
          ]';
         
 
@@ -22,6 +23,6 @@ lb = [-3;-2;0.01];
 ub = [3;13;2];
 degree = 3;
 n_segments = 7;
-n_regions = 9;
+n_regions = 8;
 
 runMixedIntegerEnvironment(r, start, goal, lb, ub, seeds, degree, n_segments, n_regions);

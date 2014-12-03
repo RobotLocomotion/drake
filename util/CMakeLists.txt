@@ -23,31 +23,16 @@ if (eigen3_FOUND)
 
   pods_install_libraries(drakeUtil)
 
-  if (NOT WIN32) # todo: fix this
-
   add_library(drakeGradientUtil SHARED drakeGradientUtil.cpp)
   pods_install_libraries(drakeGradientUtil)
   pods_install_headers(drakeGradientUtil.h DESTINATION drake)
 
-  endif(NOT WIN32)
-
   add_library(drakeGeometryUtil SHARED drakeGeometryUtil.cpp)
-  if (NOT WIN32)
   target_link_libraries(drakeGeometryUtil drakeGradientUtil)
-  endif()
   pods_install_libraries(drakeGeometryUtil)
   pods_install_headers(drakeGeometryUtil.h DESTINATION drake)
 
-  if (NOT WIN32)
-  add_mex(test/testQuatmex test/testQuatmex.cpp)
-  target_link_libraries(test/testQuatmex drakeGeometryUtil)
-
-  add_mex(test/testGeometryGradientsmex test/testGeometryGradientsmex.cpp)
-  target_link_libraries(test/testGeometryGradientsmex drakeGeometryUtil)
-
-  add_mex(test/testGeometryConversionFunctionsmex test/testGeometryConversionFunctionsmex.cpp)
-  target_link_libraries(test/testGeometryConversionFunctionsmex drakeGeometryUtil)
-  endif()
+  pods_install_headers(drakeFloatingPointUtil.h DESTINATION drake)
 endif()
 
 add_subdirectory(test)

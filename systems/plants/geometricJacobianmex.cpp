@@ -15,13 +15,13 @@ using namespace std;
  */
 
 // TODO: stop copying these functions everywhere and find a good place for them
-template<int RowsAtCompileTime, int ColsAtCompileTime>
-mxArray* eigenToMatlab(Eigen::Matrix<double, RowsAtCompileTime, ColsAtCompileTime> &m)
+template <typename DerivedA>
+mxArray* eigenToMatlab(const DerivedA &m)
 {
-  mxArray* pm = mxCreateDoubleMatrix(m.rows(), m.cols(), mxREAL);
-  if (m.rows() * m.cols() > 0)
-    memcpy(mxGetPr(pm), m.data(), sizeof(double) * m.rows() * m.cols());
-  return pm;
+ mxArray* pm = mxCreateDoubleMatrix(static_cast<int>(m.rows()),static_cast<int>(m.cols()),mxREAL);
+ if (m.rows()*m.cols()>0)
+   memcpy(mxGetPr(pm),m.data(),sizeof(double)*m.rows()*m.cols());
+ return pm;
 }
 
 mxArray* stdVectorToMatlab(const std::vector<int>& vec) {
@@ -31,17 +31,17 @@ mxArray* stdVectorToMatlab(const std::vector<int>& vec) {
 //  }
 //  return pm;
 
-  mxArray* pm = mxCreateDoubleMatrix(vec.size(), 1, mxREAL);
-  for (int i = 0; i < vec.size(); i++) {
+  mxArray* pm = mxCreateDoubleMatrix(static_cast<int>(vec.size()), 1, mxREAL);
+  for (int i = 0; i < static_cast<int>(vec.size()); i++) {
     mxGetPr(pm)[i] = (double) vec[i];
   }
   return pm;
 }
 
-void baseZeroToBaseOne(std::vector<int>& vec) {
-  for (auto& val : vec) {
-    val++;
-  }
+void baseZeroToBaseOne(std::vector<int>& vec) 
+{
+  for (std::vector<int>::iterator iter=vec.begin(); iter!=vec.end(); iter++)
+	(*iter)++;
 }
 
 void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {

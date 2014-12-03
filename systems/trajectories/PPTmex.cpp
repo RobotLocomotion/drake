@@ -39,7 +39,7 @@ private:
 
 public:
 
-  PPTrajectory(const VectorXd& breaks, const MatrixXd& coefs, double order, double d1, double d2)
+  PPTrajectory(const VectorXd& breaks, const MatrixXd& coefs, int order, int d1, int d2)
   : m_breaks(breaks), m_coefs(coefs), m_order(order), m_d1(d1), m_d2(d2), m_cached_idx(-1)
   {}
 
@@ -66,9 +66,9 @@ public:
       idx = m_cached_idx;
     } else {
       // search for the correct interval
-      idx = m_breaks.rows()-2;
+      idx = static_cast<int>(m_breaks.rows())-2;
       // todo: binary search
-      for (int b=m_breaks.rows()-2; b>=1; b--) { // ignore first and last break
+      for (int b=static_cast<int>(m_breaks.rows())-2; b>=1; b--) { // ignore first and last break
         if (t < m_breaks(b)) idx=b-1;
       }
       m_cached_idx = idx;
@@ -89,14 +89,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     // create object
     Map<VectorXd> breaks(mxGetPr(prhs[0]), mxGetNumberOfElements(prhs[0]));
     Map<MatrixXd>  coefs(mxGetPr(prhs[1]), mxGetM(prhs[1]), mxGetN(prhs[1]));
-    double *order = mxGetPr(prhs[2]);
+    int order = static_cast<int>(mxGetScalar(prhs[2]));
     Map<VectorXd>   dims(mxGetPr(prhs[3]), mxGetNumberOfElements(prhs[3]));
 
-    int d1 = dims(0);
+    int d1 = static_cast<int>(dims(0));
     int d2 = 1;
     if (dims.rows() > 1)
-      d2 = dims(1);
-    PPTrajectory *ppt = new PPTrajectory(breaks, coefs, *order, d1, d2);
+      d2 = static_cast<int>(dims(1));
+    PPTrajectory *ppt = new PPTrajectory(breaks, coefs, order, d1, d2);
     mxClassID cid;
     if (sizeof(ppt)==4) cid = mxUINT32_CLASS;
     else if (sizeof(ppt)==8) cid = mxUINT64_CLASS;

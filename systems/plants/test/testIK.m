@@ -302,18 +302,18 @@ for i = 1:size(q,2)
 end
 end
 
-if(robot.getMexModelPtr~=0)
-display('Check all-to-all closest distance constraint')
-abcdc = AllBodiesClosestDistanceConstraint(robot,0.05,1e3,tspan);
-q = test_IK_userfun(robot,q_seed,q_nom,kc1,kc2l,kc2r,kc3,kc4,kc5,kc6,abcdc,ikoptions);
-display('Check IK pointwise with all-to-all closest distance constraint')
-q = test_IKpointwise_userfun(robot,[0,1],[q_seed,q_seed+1e-3*randn(nq,1)],[q_nom,q_nom],kc1,pc_knee,kc2l,kc2r,kc3,kc4,kc5,kc6,abcdc,ikoptions);
+if(checkDependency('bullet'))
+  display('Check all-to-all closest distance constraint')
+  abcdc = AllBodiesClosestDistanceConstraint(robot,0.05,1e3,tspan);
+  q = test_IK_userfun(robot,q_seed,q_nom,kc1,kc2l,kc2r,kc3,kc4,kc5,kc6,abcdc,ikoptions);
+  display('Check IK pointwise with all-to-all closest distance constraint')
+  q = test_IKpointwise_userfun(robot,[0,1],[q_seed,q_seed+1e-3*randn(nq,1)],[q_nom,q_nom],kc1,pc_knee,kc2l,kc2r,kc3,kc4,kc5,kc6,abcdc,ikoptions);
 
-display('Check minimum-distance constraint')
-min_dist_cnstr = MinDistanceConstraint(robot,0.05,[],tspan);
-q = test_IK_userfun(robot,q_seed,q_nom,kc1,kc2l,kc2r,kc3,kc4,kc5,kc6,min_dist_cnstr,ikoptions);
-display('Check IK pointwise with minimum-distance constraint')
-q = test_IKpointwise_userfun(robot,[0,1],[q_seed,q_seed+1e-3*randn(nq,1)],[q_nom,q_nom],kc1,pc_knee,kc2l,kc2r,kc3,kc4,kc5,kc6,min_dist_cnstr,ikoptions);
+  display('Check minimum-distance constraint')
+  min_dist_cnstr = MinDistanceConstraint(robot,0.05,[],tspan);
+  q = test_IK_userfun(robot,q_seed,q_nom,kc1,kc2l,kc2r,kc3,kc4,kc5,kc6,min_dist_cnstr,ikoptions);
+  display('Check IK pointwise with minimum-distance constraint')
+  q = test_IKpointwise_userfun(robot,[0,1],[q_seed,q_seed+1e-3*randn(nq,1)],[q_nom,q_nom],kc1,pc_knee,kc2l,kc2r,kc3,kc4,kc5,kc6,min_dist_cnstr,ikoptions);
 end
 display('Check quasi static constraint')
 qsc = QuasiStaticConstraint(robot);

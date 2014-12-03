@@ -1,5 +1,5 @@
-#include "IKoptions.h"
 #include "RigidBodyManipulator.h"
+#include "IKoptions.h"
 using namespace std;
 using namespace Eigen;
 

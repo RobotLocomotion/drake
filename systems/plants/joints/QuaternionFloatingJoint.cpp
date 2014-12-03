@@ -34,8 +34,8 @@ void QuaternionFloatingJoint::motionSubspace(double* const q, MotionSubspaceType
 
 void QuaternionFloatingJoint::motionSubspaceDotTimesV(double* const q, double* const v,
     Vector6d& motion_subspace_dot_times_v,
-    typename Gradient<Vector6d, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdq,
-    typename Gradient<Vector6d, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdv) const
+    Gradient<Vector6d, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdq,
+    Gradient<Vector6d, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdv) const
 {
   motion_subspace_dot_times_v.setZero();
   if (dmotion_subspace_dot_times_vdq) {
@@ -46,7 +46,7 @@ void QuaternionFloatingJoint::motionSubspaceDotTimesV(double* const q, double* c
   }
 }
 
-void QuaternionFloatingJoint::randomConfiguration(double* const q, std::default_random_engine& generator) const
+void QuaternionFloatingJoint::randomConfiguration(double* q, std::default_random_engine& generator) const
 {
   normal_distribution<double> normal;
 
@@ -73,9 +73,9 @@ void QuaternionFloatingJoint::qdot2v(double* q, Eigen::MatrixXd& qdot_to_v, Eige
   Vector4d quattilde;
   Matrix<double, SPACE_DIMENSION, QUAT_SIZE> M;
   Matrix<double, SPACE_DIMENSION, QUAT_SIZE> RTransposeM;
-  typename Gradient<Vector4d, QUAT_SIZE, 1>::type dquattildedquat;
+  Gradient<Vector4d, QUAT_SIZE, 1>::type dquattildedquat;
   if (dqdot_to_v) {
-    typename Gradient<Vector4d, QUAT_SIZE, 2>::type ddquattildedquat;
+    Gradient<Vector4d, QUAT_SIZE, 2>::type ddquattildedquat;
     normalizeVec(quat, quattilde, &dquattildedquat, &ddquattildedquat);
     auto dR = dquat2rotmat(quat);
     Gradient<Matrix<double, SPACE_DIMENSION, QUAT_SIZE>, QUAT_SIZE, 1>::type dM;
@@ -110,7 +110,7 @@ void QuaternionFloatingJoint::v2qdot(double* q, Eigen::MatrixXd& v_to_qdot, Eige
   Matrix<double, QUAT_SIZE, SPACE_DIMENSION> M;
   if (dv_to_qdot) {
     auto dR = dquat2rotmat(quat);
-    typename Gradient<decltype(M), QUAT_SIZE, 1>::type dM;
+    Gradient<decltype(M), QUAT_SIZE, 1>::type dM;
     angularvel2quatdotMatrix(quat, M, &dM);
 
     dv_to_qdot->setZero(v_to_qdot.size(), getNumPositions());

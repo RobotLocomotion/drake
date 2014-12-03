@@ -16,10 +16,8 @@ if (eigen3_FOUND)
   # todo: check eigen version.  3.1.0 didn't work for clang.  3.2.0 did.
  add_library(drakeRBM SHARED RigidBodyManipulator.cpp RigidBody.cpp)
  target_link_libraries(drakeRBM drakeCollision)
-if (NOT WIN32) 
  include_directories( joints )
  target_link_libraries(drakeRBM drakeJoints)
-endif(NOT WIN32)
 
   pods_install_libraries(drakeRBM)
   pods_install_headers(RigidBodyManipulator.h RigidBody.h RigidBodyFrame.h KinematicPath.h DESTINATION drake)
@@ -30,16 +28,14 @@ endif(NOT WIN32)
 
   add_subdirectory(collision)
   add_subdirectory(constraint)
-
-if (NOT WIN32)
   add_subdirectory(joints)
-endif(NOT WIN32)
 
   if (Boost_FOUND)
     add_library(drakeRBMurdf URDFRigidBodyManipulator.cpp)
     target_link_libraries(drakeRBMurdf drakeRBM drakeURDFinterface ${Boost_LIBRARIES})
+    if (NOT MSVC)
     set_target_properties(drakeRBMurdf PROPERTIES COMPILE_FLAGS -fPIC )
-
+    endif()
     pods_install_libraries(drakeRBMurdf)
 
     add_subdirectory(urdf_interface)

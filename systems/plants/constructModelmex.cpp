@@ -5,9 +5,7 @@
 #include "RigidBodyManipulator.h"
 #include <stdexcept>
 
-#if !defined(WIN32) && !defined(WIN64)
-  #include "joints/drakeJointUtil.h"
-#endif
+#include "joints/drakeJointUtil.h"
 
 using namespace Eigen;
 using namespace std;
@@ -39,11 +37,11 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 
   const mxArray* pBodies = mxGetProperty(pRBM,0,"body");
   if (!pBodies) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","the body array is invalid");
-  int num_bodies = mxGetNumberOfElements(pBodies);
+  int num_bodies = static_cast<int>(mxGetNumberOfElements(pBodies));
 
   const mxArray* pFrames = mxGetProperty(pRBM,0,"frame");
   if (!pFrames) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","the frame array is invalid");
-  int num_frames = mxGetNumberOfElements(pFrames);
+  int num_frames = static_cast<int>(mxGetNumberOfElements(pFrames));
 
   // set up the model
   pm = mxGetField(featherstone,0,"NB");
@@ -146,10 +144,8 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 
       double pitch = mxGetScalar(mxGetProperty(pBodies, i, "pitch"));
 
-#if !defined(WIN32) && !defined(WIN64)
       model->bodies[i]->setJoint(createJoint(jointname, Ttree, floating, joint_axis, pitch));
 //      mexPrintf((model->bodies[i]->getJoint().getName() + "\n").c_str());
-#endif
     }
     {
       pm = mxGetProperty(pBodies,i,"jointname");
@@ -171,7 +167,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     if (!pm || mxIsEmpty(pm))
     	model->bodies[i]->parent = -1;
     else
-    	model->bodies[i]->parent = mxGetScalar(pm) - 1;
+    	model->bodies[i]->parent = static_cast<int>(mxGetScalar(pm)) - 1;
 
     if (model->bodies[i]->dofnum>=0) {
        pm = mxGetProperty(pBodies,i,"joint_limit_min");
@@ -286,7 +282,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     //}
     //cout << "constructModelmex: Get numel of struct" << endl;
     //END_DEBUG
-    const int n_bodies_w_contact_pts = mxGetNumberOfElements(contact_pts_struct[0]);
+    const int n_bodies_w_contact_pts = static_cast<int>(mxGetNumberOfElements(contact_pts_struct[0]));
     //DEBUG
     //cout << "constructModelmex: Got numel of struct:" << n_bodies_w_contact_pts << endl;
     //END_DEBUG
@@ -308,7 +304,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
       //cout << "constructModelmex: Get points" << endl;
       //cout << "constructModelmex: Get number of points" << endl;
       //END_DEBUG
-      n_pts = mxGetN(pPts);
+      n_pts = static_cast<int>(mxGetN(pPts));
       //DEBUG
       //cout << "constructModelmex: Got number of points: " << n_pts << endl;
       //cout << "constructModelmex: Set contact_pts of body" << endl;

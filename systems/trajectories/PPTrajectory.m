@@ -475,6 +475,10 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
         d = [d(1)+d2(1),d(2:end)];
         coefs = [coefs;coefs2];
       end
+      if numel(d)==2 && d(2)==1
+        d = d(1); % column vectors are a special case that's handled differently by the spline class
+        coefs = reshape(coefs, [d, l, k]);
+      end
       c = PPTrajectory(mkpp(breaks,coefs,d));
       fr = cellfun(@(a) getOutputFrame(a),varargin,'UniformOutput',false);
       c = setOutputFrame(c,MultiCoordinateFrame.constructFrame({getOutputFrame(a),fr{:}}));

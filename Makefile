@@ -36,10 +36,15 @@ configure:
 
 	# create the temporary build directory if needed
 	@mkdir -p pod-build
-	@cd pod-build && ln -sf ../CTestCustom.cmake  # actually has to live in the build path
+ifeq ($(shell uname -o),Cygwin)
+	@echo "set(CTEST_CUSTOM_PRE_TEST \"`which bash | cygpath -f - -w | sed -e 's/\\\\/\\\\\\\\/g'` -l -c \\\"`pwd`/cmake/add_matlab_unit_tests.pl `pwd`\\\"\")" > pod-build/CTestCustom.cmake 
+	@which python | cygpath -f - -w > .python
+else
+	@echo "set(CTEST_CUSTOM_PRE_TEST \"../cmake/add_matlab_unit_tests.pl ..\")" > pod-build/CTestCustom.cmake # actually has to live in the build path
+endif
 
 	# run CMake to generate and configure the build scripts
-	@cd pod-build && cmake -DCMAKE_INSTALL_PREFIX="$(BUILD_PREFIX)" \
+	@cd pod-build && cmake $(CMAKE_FLAGS) -DCMAKE_INSTALL_PREFIX="$(BUILD_PREFIX)" \
 		   -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) ..
 
 .PHONY: doc doxygen
@@ -76,7 +81,7 @@ release_filelist:
 	echo ".mlintopts"
 	find * -type f | grep -v "pod-build" | grep -v "\.valgrind" | grep -v "\.viewer-prefs" | grep -v "\.out" | grep -v "\.autosave" | grep -v "\.git" | grep -v "\.tmp" | grep -v "drake_config\.mat" | grep -v "DoxygenMatlab" | grep -v "\.aux" | grep -v "\.d" | grep -v "\.log" | grep -v "\.bib"
 	find pod-build/lib -type f
-	find pod-build/bin -type f
+	-find pod-build/bin -type f 2> /dev/null
 
 clean:
 	-if [ -e pod-build/install_manifest.txt ]; then rm -f `cat pod-build/install_manifest.txt`; fi
