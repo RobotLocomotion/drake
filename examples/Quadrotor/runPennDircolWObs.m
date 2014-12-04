@@ -36,7 +36,8 @@ elseif plant == 'penn'
   % coordinate transform from r.getOutputFrame to v.getInputFrame
   %ct = CoordinateTransform(
   
-  r.setOutputFrame(r_temp.getStateFrame());
+  % uncomment this to get plotting back
+  %r.setOutputFrame(r_temp.getStateFrame());
   
   %v = v.setInputFrame(r.getOutputFrame());
   disp('using quad plant in wind based on penn plant!!')
@@ -63,7 +64,7 @@ u0 = double(nominalThrust(r));
 
 prog = prog.addStateConstraint(ConstantConstraint(double(x0)),1); % DirectTrajectoryOptimization method
 
-bd = 1e3;
+bd = 10;
 
 seasurface = Point(getStateFrame(r));
 seasurface.x = -bd;
@@ -78,6 +79,7 @@ seasurface.zdot = -bd;
 seasurface.rolldot = -bd;
 seasurface.pitchdot = -bd;
 seasurface.yawdot = -bd;
+seasurface.mytime = -bd;
 
 world = Point(getStateFrame(r));
 world.x = bd;
@@ -92,8 +94,9 @@ world.zdot = bd;
 world.rolldot = bd;
 world.pitchdot = bd;
 world.yawdot = bd;
+world.mytime = bd;
 
-prog = prog.addStateConstraint(BoundingBoxConstraint(double(seasurface),double(world)),{1,2,3,4,5,6,7,8,9}); 
+prog = prog.addStateConstraint(BoundingBoxConstraint(double(seasurface),double(world)),{1,2,3,4,5,6,7,8,9,10}); 
 
 prog = prog.addInputConstraint(ConstantConstraint(u0),1); % DirectTrajectoryOptimization method
 
@@ -123,6 +126,7 @@ traj_init.u = ConstantTrajectory(u0); % traj_init.u is a ConstantTrajectory < Tr
 info=0;
 while (info~=1)
   tic
+  snseti ('Verify level', 3);
   [xtraj,utraj,z,F,info] = prog.solveTraj(tf0,traj_init); % DirectTrajectoryOptimization method
   toc
 end

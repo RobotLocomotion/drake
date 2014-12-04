@@ -10,10 +10,10 @@ classdef QuadWindPlant < DrakeSystem
       
       
       %obj = obj@SecondOrderSystem(6,4,1);
-      obj = obj@DrakeSystem(12,0,4,12,false,1);
+      obj = obj@DrakeSystem(13,0,4,13,false,1);
       
       
-      obj = setStateFrame(obj,CoordinateFrame('QuadState',12,'x',{'x','y','z','roll','pitch','yaw','xdot','ydot','zdot','rolldot','pitchdot','yawdot'}));
+      obj = setStateFrame(obj,CoordinateFrame('QuadState',13,'x',{'x','y','z','roll','pitch','yaw','xdot','ydot','zdot','rolldot','pitchdot','yawdot','mytime'}));
       obj = obj.setOutputFrame(obj.getStateFrame);
     end
     
@@ -51,7 +51,7 @@ classdef QuadWindPlant < DrakeSystem
       % psidot
       
       if (nargout>1)
-        [df]= dynamicsGradients(obj,t,x(1:12),u,nargout-1);
+        [df]= dynamicsGradients(obj,t,x,u,nargout-1);
       end
       
       
@@ -101,7 +101,7 @@ classdef QuadWindPlant < DrakeSystem
       quadpos = [xquad;yquad;zquad];
       
       
-      [windout,dquadinwind] = obj.quadwind(quadpos,t);
+      [windout,dquadinwind] = obj.quadwind(quadpos,x(13)); % pass mytime to quadwind 
       
       if (nargout>1)
         df = df + dquadinwind;
@@ -136,11 +136,11 @@ classdef QuadWindPlant < DrakeSystem
       
       qdd = [xyz_ddot;rpy_ddot];
       qd = x(7:12);
-      xdot = [qd;qdd];
+      xdot = [qd;qdd;1]; % the 1 at the end is for mytime
       
     end
     
-    function [wind,dquadinwind] = quadwind(obj,quadpos,t)
+    function [wind,dquadinwind] = quadwind(obj,quadpos,mytime)
       % quadpos is [xquad;yquad;zquad]
       
 
@@ -149,10 +149,10 @@ classdef QuadWindPlant < DrakeSystem
       yquad = quadpos(2);
       zquad = quadpos(3);
            
-      %windfield = 'zero';
+      windfield = 'zero';
       %windfield = 'constant';
       %windfield = 'linear';
-      windfield = 'quadratic';
+      %windfield = 'quadratic';
       %windfield = 'exp';
       %windfield = 'tvsin';
       
@@ -174,7 +174,7 @@ classdef QuadWindPlant < DrakeSystem
         %z  = b + C*exp(a*ydotdot);
         ywind = 1/a*log((zquad-b)/C);
       elseif strcmp(windfield, 'tvsin')
-        ywind = 10*sin(10*t);
+        ywind = -10*sin(10*mytime);
       else
         disp('Please specify which kind of wind field!')
       end
@@ -184,7 +184,7 @@ classdef QuadWindPlant < DrakeSystem
       wind = [xwind;ywind;zwind];
       
       
-      dquadinwind = sparse(12,17);
+      dquadinwind = sparse(13,18);
       
       if strcmp(windfield, 'zero')
         ;
@@ -197,7 +197,7 @@ classdef QuadWindPlant < DrakeSystem
       elseif strcmp(windfield, 'exp')
       %  dquadinwind(8,4) = 1/a*1/((zquad-b)/C)/obj.m;
       elseif strcmp(windfield, 'tvsin')
-        dquadinwind(8,1) = 10*cos(10*t)/obj.m;
+        dquadinwind(8,1) = -10*cos(10*mytime)/obj.m;
       %else
       %  disp('Please specify which kind of wind field!')
       end
@@ -210,7 +210,7 @@ classdef QuadWindPlant < DrakeSystem
     end
     
     function x = getInitialState(obj)
-      x = zeros(12,1);
+      x = zeros(13,1);
     end
     
     function obj = addTrees(obj,number_of_obstacles)
