@@ -46,7 +46,7 @@ end
 
 N = 11;
 minimum_duration = .1;
-maximum_duration = 4;
+maximum_duration = 3;
 prog = DircolTrajectoryOptimization(r,N,[minimum_duration maximum_duration]);
 
 x0 = Point(getStateFrame(r));  % initial conditions: all-zeros
@@ -96,25 +96,38 @@ world.pitchdot = bd;
 world.yawdot = bd;
 world.mytime = bd;
 
-prog = prog.addStateConstraint(BoundingBoxConstraint(double(seasurface),double(world)),{1,2,3,4,5,6,7,8,9,10}); 
+Ncell = {};
+for i = 1:N
+  Ncell = [Ncell i];
+end
+prog = prog.addStateConstraint(BoundingBoxConstraint(double(seasurface),double(world)),Ncell); 
 
 prog = prog.addInputConstraint(ConstantConstraint(u0),1); % DirectTrajectoryOptimization method
 
 xf = x0;                       % final conditions: translated in x
-
+upperxf = x0;
+lowerxf = x0;
 
 if plant == 'russ'
   xf.base_x = 2;                 % translate x by 2
 elseif plant == 'penn'
-  xf.x = 6;                 % translate x
-  xf.z = 4;                 % translate z
-  xf.y = 0;                 % translate x
-  xf.mytime = 4;
+  upperxf.x = 6;                 % translate x
+  upperxf.z = 4;                 % translate z
+  upperxf.y = 0;                 % translate x
+  upperxf.mytime = maximum_duration;
+  
+  lowerxf.x = 6;                 % translate x
+  lowerxf.z = 4;                 % translate z
+  lowerxf.y = 0;                 % translate x
+  lowerxf.mytime = minimum_duration;
+  
 end
 
 
 
-prog = prog.addStateConstraint(ConstantConstraint(double(xf)),N); % DirectTrajectoryOptimization method
+prog = prog.addStateConstraint(BoundingBoxConstraint(double(lowerxf),double(upperxf)),N); 
+% Constant Constraint is simpler for a time-invarying problem
+% prog = prog.addStateConstraint(ConstantConstraint(double(xf)),N); % DirectTrajectoryOptimization method
 prog = prog.addInputConstraint(ConstantConstraint(u0),N); % DirectTrajectoryOptimization method
 
 prog = prog.addRunningCost(@cost); % note: DirCol not Direct!  DircolTrajectoryOptimization method
@@ -133,7 +146,7 @@ while (info~=1)
 end
 
 if (nargout<1)
-  xtraj = xtraj(1:12)
+  xtraj = xtraj(1:12);
   xtraj = xtraj.setOutputFrame(r_temp.getStateFrame());
   v.playback(xtraj,struct('slider',true));
 end
