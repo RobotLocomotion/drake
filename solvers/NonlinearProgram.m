@@ -1378,6 +1378,7 @@ classdef NonlinearProgram
         snseti('Old Basis File',obj.solver_options.snopt.OldBasisFile);
         snseti('Backup Basis File',obj.solver_options.snopt.BackupBasisFile);
         snsetr('Linesearch tolerance',obj.solver_options.snopt.LinesearchTolerance);
+        snprint(obj.solver_options.snopt.print);
         snset(obj.solver_options.snopt.sense);
         
         [x_free,objval,exitflag,xmul,Fmul] = snopt(x0_free, ...
