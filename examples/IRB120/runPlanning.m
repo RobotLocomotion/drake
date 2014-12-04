@@ -1,6 +1,6 @@
 function runPlanning()
 
-r=RigidBodyManipulator('irb_120.urdf',struct('floating',true));  % takes long time
+r=RigidBodyManipulator('irb_120.urdf',struct('floating',true));  
 
 v=r.constructVisualizer();
 
@@ -15,7 +15,6 @@ grasp_orient = angle2quat(0,pi,0)';
 
 T = 1;
 N = 2;
-offset = 6;
 Allcons = cell(0,1);
 
 gripper_cons = WorldPositionConstraint(r, gripper_idx,gripper_pt,pos_final,pos_final,[T,T]);
@@ -24,9 +23,6 @@ tol = 0;
 r_gripper_cons_orient = WorldQuatConstraint(r,gripper_idx,grasp_orient,tol,[0.1*T,T]);
 
 Allcons{end+1} = r_gripper_cons_orient;
-
-kinsol = r.doKinematics(q0(1:r.getNumDOF));
-pos0 = r.forwardKin(kinsol,gripper_idx,[0,0,.1]');
 
 Allcons{end+1} = gripper_cons;
 for i=1:6
@@ -38,7 +34,7 @@ end
 q_start_nom = q0;
 
 [q_end_nom,snopt_info_ik,infeasible_constraint_ik] = inverseKin(r,q_start_nom,q_start_nom,...
-Allcons{:},ikoptions);
+Allcons{:});
 qtraj_guess = PPTrajectory(foh([0 T],[q_start_nom, q_end_nom]));
 
 t_vec = linspace(0,T,N);
@@ -46,7 +42,7 @@ t_vec = linspace(0,T,N);
 % do IK
 [xtraj,snopt_info,infeasible_constraint] = inverseKinTraj(r,...
 t_vec,qtraj_guess,qtraj_guess,...
-Allcons{:},ikoptions);
+Allcons{:});
 
 q_end = xtraj.eval(xtraj.tspan(end));
 
