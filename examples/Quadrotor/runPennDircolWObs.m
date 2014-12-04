@@ -146,17 +146,26 @@ while (info~=1)
 end
 
 
-%lcmgl.glColor3f(0,0,i/numel(p.force));
-%lcmgl.glColor3f(0,0,0);
-%pos = [0 0 0];
-%force = [1 1 1];
-%lcmgl.drawVector3d(pos,force);
+
+        lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(), 'Windy');
+        lcmgl.glColor3f(0,1,0);
+        pos = [0, 0, 0];
+        force = [0.5, 0.5, 0.5];
+        %lcmgl.drawVector3d([0,0,0],[1,1,1]);
+        lcmgl.drawVector3d(pos,force);
+        
+        %lcmgl.glColor3f(0, 0, 1);
+        %lcmgl.plot3(x(1,1:2)+1,x(2,1:2),x(3,1:2));
+        lcmgl.switchBuffers;
+
 
 if (nargout<1)
   xtraj = xtraj(1:12);
   xtraj = xtraj.setOutputFrame(r_temp.getStateFrame());
   v.playback(xtraj,struct('slider',true));
 end
+
+
 
 end
 

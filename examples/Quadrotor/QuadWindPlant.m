@@ -272,7 +272,18 @@ classdef QuadWindPlant < DrakeSystem
         lcmgl.glColor3f(1, .5, 0);
         lcmgl.plot3(x(1,:),x(2,:),x(3,:));
         lcmgl.switchBuffers;
+        
+
+        
+
+
+
       end
+      
+      
+
+
+      
     end
     
   end
