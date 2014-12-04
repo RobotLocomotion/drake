@@ -44,7 +44,7 @@ elseif plant == 'penn'
 end
 
 
-N = 11;
+N = 21;
 minimum_duration = .1;
 maximum_duration = 3;
 prog = DircolTrajectoryOptimization(r,N,[minimum_duration maximum_duration]);
@@ -100,7 +100,7 @@ Ncell = {};
 for i = 1:N
   Ncell = [Ncell i];
 end
-prog = prog.addStateConstraint(BoundingBoxConstraint(double(seasurface),double(world)),Ncell); 
+prog = prog.addStateConstraint(BoundingBoxConstraint(double(seasurface),double(world)),Ncell);
 
 prog = prog.addInputConstraint(ConstantConstraint(u0),1); % DirectTrajectoryOptimization method
 
@@ -125,7 +125,7 @@ end
 
 
 
-prog = prog.addStateConstraint(BoundingBoxConstraint(double(lowerxf),double(upperxf)),N); 
+prog = prog.addStateConstraint(BoundingBoxConstraint(double(lowerxf),double(upperxf)),N);
 % Constant Constraint is simpler for a time-invarying problem
 % prog = prog.addStateConstraint(ConstantConstraint(double(xf)),N); % DirectTrajectoryOptimization method
 prog = prog.addInputConstraint(ConstantConstraint(u0),N); % DirectTrajectoryOptimization method
@@ -157,8 +157,86 @@ if (nargout<1)
 end
 
 % Plot wind
-[winddontcare,dquadinwinddontcare] = quadwind(r,[0,0,0],0,1);
+%[winddontcare,dquadinwinddontcare] = quadwind(r,[0,0,0],0,1);
 
+%xquad = quadpos(1);
+%yquad = quadpos(2);
+%zquad = quadpos(3);
+
+windfield = 'zero';
+%windfield = 'constant';
+%windfield = 'linear';
+%windfield = 'quadratic';
+%windfield = 'sqrt';
+%windfield = 'exp';
+%windfield = 'difftailhead';
+%windfield = 'tvsin';
+%windfield = 'tlinear';
+
+
+
+lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(), 'Windy');
+
+lcmgl.glColor3f(0,1,0);
+if strcmp(windfield, 'difftailhead')
+  for yi = -5:0.5:5
+    xwind = 10*sin(yi);
+    ywind = 0;
+    zwind = 0;
+    pos = [0, yi, 0];
+    force = [xwind, ywind, zwind];
+    %lcmgl.drawVector3d([0,0,0],[1,1,1]);
+    lcmgl.drawVector3d(pos,force);
+  end
+  
+else
+  for xi = 1:10
+    %for yi = 1:10
+    for zi = 1:10
+      
+      xwind = 0;
+      
+      if strcmp(windfield, 'zero')
+        ywind = 0;
+      elseif strcmp(windfield, 'constant')
+        ywind = 5;
+      elseif strcmp(windfield, 'linear')
+        ywind = zi;
+      elseif strcmp(windfield, 'quadratic')
+        ywind = zi^2;
+      elseif strcmp(windfield, 'sqrt')
+        ywind = (abs(zquad))^(1/2);
+      elseif strcmp(windfield, 'exp')
+        a = 1;
+        C=20/exp(6.5);
+        b=-1;
+        d = 0;
+        %z  = b + C*exp(a*ydotdot);
+        ywind = 1/a*log((zi-b)/C) - d;
+      elseif strcmp(windfield, 'tvsin')
+        ywind = -10*sin(10*mytime);
+      elseif strcmp(windfield, 'tlinear')
+        ywind = -5 - mytime;
+      else
+        disp('Please specify which kind of wind field!')
+      end
+      
+      zwind = 0;
+      
+      pos = [xi, 0, zi];
+      force = [xwind, ywind, zwind];
+      %lcmgl.drawVector3d([0,0,0],[1,1,1]);
+      lcmgl.drawVector3d(pos,force);
+    end
+    
+  end
+end
+
+
+  %lcmgl.glColor3f(0, 0, 1);
+  %lcmgl.plot3(x(1,1:2)+1,x(2,1:2),x(3,1:2));
+  lcmgl.switchBuffers;
+ 
 
 end
 

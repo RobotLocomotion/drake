@@ -150,15 +150,19 @@ classdef QuadWindPlant < DrakeSystem
       zquad = quadpos(3);
            
       %windfield = 'zero';
-      windfield = 'constant';
+      %windfield = 'constant';
       %windfield = 'linear';
       %windfield = 'quadratic';
+      %windfield = 'sqrt';
       %windfield = 'exp';
-      %windfield = 'tvsin';
+      %windfield = 'difftailhead';
+      windfield = 'tvsin';
       %windfield = 'tlinear';
       
       xwind = 0;
-      
+      if strcmp(windfield, 'difftailhead')
+        xwind = 10*sin(yquad);
+      end
       
       if strcmp(windfield, 'zero')
         ywind = 0;
@@ -168,12 +172,17 @@ classdef QuadWindPlant < DrakeSystem
         ywind = zquad;
       elseif strcmp(windfield, 'quadratic')
         ywind = zquad^2;
+      elseif strcmp(windfield, 'sqrt')
+        ywind = (abs(zquad))^(1/2);
       elseif strcmp(windfield, 'exp')
         a = 1;
         C=20/exp(6.5);
-        b=0;
+        b=-1;
+        d = 0;
         %z  = b + C*exp(a*ydotdot);
-        ywind = 1/a*log((zquad-b)/C);
+        ywind = 1/a*log((zquad-b)/C) - d;   
+      elseif strcmp(windfield, 'difftailhead')
+        ywind = 0;
       elseif strcmp(windfield, 'tvsin')
         ywind = -10*sin(10*mytime);
       elseif strcmp(windfield, 'tlinear')
@@ -197,14 +206,18 @@ classdef QuadWindPlant < DrakeSystem
         dquadinwind(8,4) = 1/obj.m;
       elseif strcmp(windfield, 'quadratic')
         dquadinwind(8,4) = 2*zquad/obj.m;
+      elseif strcmp(windfield, 'sqrt')
+        ywind = 1/2*(abs(zquad))^(-1/2);
       elseif strcmp(windfield, 'exp')
-      %  dquadinwind(8,4) = 1/a*1/((zquad-b)/C)/obj.m;
+        dquadinwind(8,4) = 1/a*1/((zquad-b)/C)/obj.m;
+      elseif strcmp(windfield, 'difftailhead')
+        dquadinwind(7,3) = 10*cos(yquad)/obj.m;
       elseif strcmp(windfield, 'tvsin')
         dquadinwind(8,1) = -10*cos(10*mytime)/obj.m;
       elseif strcmp(windfield, 'tlinear')
         dquadinwind(8,1) = -1/obj.m;
-      %else
-      %  disp('Please specify which kind of wind field!')
+        %else
+        %  disp('Please specify which kind of wind field!')
       end
       
       
@@ -227,9 +240,7 @@ classdef QuadWindPlant < DrakeSystem
         %lcmgl.glColor3f(0, 0, 1);
         %lcmgl.plot3(x(1,1:2)+1,x(2,1:2),x(3,1:2));
         lcmgl.switchBuffers;
-        
-        
-        
+
       end
       
       
