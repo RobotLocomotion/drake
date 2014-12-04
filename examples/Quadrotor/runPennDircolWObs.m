@@ -147,16 +147,7 @@ end
 
 
 
-        lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(), 'Windy');
-        lcmgl.glColor3f(0,1,0);
-        pos = [0, 0, 0];
-        force = [0.5, 0.5, 0.5];
-        %lcmgl.drawVector3d([0,0,0],[1,1,1]);
-        lcmgl.drawVector3d(pos,force);
-        
-        %lcmgl.glColor3f(0, 0, 1);
-        %lcmgl.plot3(x(1,1:2)+1,x(2,1:2),x(3,1:2));
-        lcmgl.switchBuffers;
+
 
 
 if (nargout<1)
@@ -165,6 +156,8 @@ if (nargout<1)
   v.playback(xtraj,struct('slider',true));
 end
 
+% Plot wind
+[winddontcare,dquadinwinddontcare] = quadwind(r,[0,0,0],0,1);
 
 
 end

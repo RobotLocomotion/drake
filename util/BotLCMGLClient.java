@@ -433,8 +433,8 @@ public class BotLCMGLClient {
 
   public synchronized void drawVector3d(double[] origin, double[] vector) {
     double body_width = 0.0025;
-    double head_width = 0.01;
-    double head_length = 0.01;
+    double head_width = 0.5;
+    double head_length = 0.5;
     int slices = 20;
     int stacks = 20;
 

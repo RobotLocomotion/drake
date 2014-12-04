@@ -90,7 +90,7 @@ classdef Quadrotor < RigidBodyManipulator
       width_param = [50,50] ;%lwh(1,1:2);
       treeTrunk = RigidBodyBox([.2+.8*width_param height],...
           [xy;height/2],[0;0;0]);
-      treeTrunk.c = [5,28,255]/255;  % blue
+      treeTrunk.c = [50,50,50]/255;  % blue
       obj = addGeometryToBody(obj,'world',treeTrunk);
       obj = compile(obj);
     end

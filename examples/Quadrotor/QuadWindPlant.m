@@ -101,7 +101,7 @@ classdef QuadWindPlant < DrakeSystem
       quadpos = [xquad;yquad;zquad];
       
       
-      [windout,dquadinwind] = obj.quadwind(quadpos,x(13)); % pass mytime to quadwind 
+      [windout,dquadinwind] = obj.quadwind(quadpos,x(13),0); % pass mytime to quadwind 
       
       if (nargout>1)
         df = df + dquadinwind;
@@ -140,7 +140,7 @@ classdef QuadWindPlant < DrakeSystem
       
     end
     
-    function [wind,dquadinwind] = quadwind(obj,quadpos,mytime)
+    function [wind,dquadinwind] = quadwind(obj,quadpos,mytime,plotme)
       % quadpos is [xquad;yquad;zquad]
       
 
@@ -206,6 +206,32 @@ classdef QuadWindPlant < DrakeSystem
       %else
       %  disp('Please specify which kind of wind field!')
       end
+      
+      
+      
+      lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(), 'Windy');
+      
+      if plotme == 1
+        lcmgl.glColor3f(0,1,0);
+        for xi = 1:10
+          %for yi = 1:10
+          for zi = 1:10
+            pos = [xi, 0, zi];
+            force = [xwind, ywind, zwind];
+            %lcmgl.drawVector3d([0,0,0],[1,1,1]);
+            lcmgl.drawVector3d(pos,force);
+          end
+          
+        end
+        
+        %lcmgl.glColor3f(0, 0, 1);
+        %lcmgl.plot3(x(1,1:2)+1,x(2,1:2),x(3,1:2));
+        lcmgl.switchBuffers;
+        
+        
+        
+      end
+      
       
     end
     
