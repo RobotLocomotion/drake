@@ -145,6 +145,13 @@ while (info~=1)
   toc
 end
 
+
+%lcmgl.glColor3f(0,0,i/numel(p.force));
+%lcmgl.glColor3f(0,0,0);
+%pos = [0 0 0];
+%force = [1 1 1];
+%lcmgl.drawVector3d(pos,force);
+
 if (nargout<1)
   xtraj = xtraj(1:12);
   xtraj = xtraj.setOutputFrame(r_temp.getStateFrame());

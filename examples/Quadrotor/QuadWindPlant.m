@@ -150,11 +150,12 @@ classdef QuadWindPlant < DrakeSystem
       zquad = quadpos(3);
            
       %windfield = 'zero';
-      %windfield = 'constant';
+      windfield = 'constant';
       %windfield = 'linear';
       %windfield = 'quadratic';
       %windfield = 'exp';
-      windfield = 'tvsin';
+      %windfield = 'tvsin';
+      %windfield = 'tlinear';
       
       xwind = 0;
       
@@ -175,6 +176,8 @@ classdef QuadWindPlant < DrakeSystem
         ywind = 1/a*log((zquad-b)/C);
       elseif strcmp(windfield, 'tvsin')
         ywind = -10*sin(10*mytime);
+      elseif strcmp(windfield, 'tlinear')
+        ywind = -5 - mytime;
       else
         disp('Please specify which kind of wind field!')
       end
@@ -198,6 +201,8 @@ classdef QuadWindPlant < DrakeSystem
       %  dquadinwind(8,4) = 1/a*1/((zquad-b)/C)/obj.m;
       elseif strcmp(windfield, 'tvsin')
         dquadinwind(8,1) = -10*cos(10*mytime)/obj.m;
+      elseif strcmp(windfield, 'tlinear')
+        dquadinwind(8,1) = -1/obj.m;
       %else
       %  disp('Please specify which kind of wind field!')
       end
