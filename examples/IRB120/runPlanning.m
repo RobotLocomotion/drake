@@ -1,6 +1,7 @@
-if(~exist('r','var'))
-  r=RigidBodyManipulator('irb_120.urdf',struct('floating',true));  % takes long time
-end
+function runPlanning()
+
+r=RigidBodyManipulator('irb_120.urdf',struct('floating',true));  % takes long time
+
 v=r.constructVisualizer();
 
 % default starting pose
