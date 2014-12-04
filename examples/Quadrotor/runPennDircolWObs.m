@@ -109,6 +109,7 @@ elseif plant == 'penn'
   xf.x = 6;                 % translate x
   xf.z = 4;                 % translate z
   xf.y = 0;                 % translate x
+  xf.mytime = 4;
 end
 
 
@@ -132,6 +133,7 @@ while (info~=1)
 end
 
 if (nargout<1)
+  xtraj = xtraj(1:12)
   xtraj = xtraj.setOutputFrame(r_temp.getStateFrame());
   v.playback(xtraj,struct('slider',true));
 end
@@ -151,7 +153,8 @@ end
 function [h,dh] = finalCost(t,x)
 
 h = t;
-dh = [1,zeros(1,size(x,1))];
+dh = [1,zeros(1,size(x,1))]; % original
+%dh = [1,zeros(1,size(x,1)-1),1]; % is this right?
 
 end
 

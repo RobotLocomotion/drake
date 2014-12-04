@@ -149,12 +149,12 @@ classdef QuadWindPlant < DrakeSystem
       yquad = quadpos(2);
       zquad = quadpos(3);
            
-      windfield = 'zero';
+      %windfield = 'zero';
       %windfield = 'constant';
       %windfield = 'linear';
       %windfield = 'quadratic';
       %windfield = 'exp';
-      %windfield = 'tvsin';
+      windfield = 'tvsin';
       
       xwind = 0;
       
