@@ -4,12 +4,15 @@
 #include <Eigen/Dense>
 using namespace Eigen;
 
+#undef drakeIKoptions_DLLEXPORT
 #if defined(WIN32) || defined(WIN64)
   #if defined(drakeIKoptions_EXPORTS)
     #define drakeIKoptions_DLLEXPORT __declspec( dllexport )
+  #elif defined(drakeIK_EXPORTS) // because this gets built in both the drakeIKoptions target and the drakeIK target...
+    #define drakeIKoptions_DLLEXPORT __declspec( dllexport )
   #else
     #define drakeIKoptions_DLLEXPORT __declspec( dllimport )
-  #endif
+  #endif  
 #else
   #define drakeIKoptions_DLLEXPORT
 #endif

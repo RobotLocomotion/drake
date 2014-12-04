@@ -3,11 +3,12 @@
 
 #include "DrakeJoint.h"
 
-class FixedAxisOneDoFJoint : public DrakeJoint
+class DLLEXPORT_DRAKEJOINT FixedAxisOneDoFJoint : public DrakeJoint
 {
   // disable copy construction and assignment
-  FixedAxisOneDoFJoint(const DrakeJoint&) = delete;
-  FixedAxisOneDoFJoint& operator=(const FixedAxisOneDoFJoint&) = delete;
+  // not available in MSVC2010...
+  // FixedAxisOneDoFJoint(const DrakeJoint&) = delete;
+  // FixedAxisOneDoFJoint& operator=(const FixedAxisOneDoFJoint&) = delete;
 
 private:
   Eigen::Matrix<double, TWIST_SIZE, 1> joint_axis;
@@ -25,10 +26,10 @@ public:
   virtual void motionSubspace(double* const q, MotionSubspaceType& motion_subspace, Eigen::MatrixXd* dmotion_subspace) const; //override;
 
   virtual void motionSubspaceDotTimesV(double* const q, double* const v, Vector6d& motion_subspace_dot_times_v,
-      typename Gradient<Vector6d, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdq = nullptr,
-      typename Gradient<Vector6d, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdv = nullptr) const; //override;
+      Gradient<Vector6d, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdq = nullptr,
+      Gradient<Vector6d, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdv = nullptr) const; //override;
 
-  virtual void randomConfiguration(double* const q, std::default_random_engine& generator) const; //override;
+  virtual void randomConfiguration(double* q, std::default_random_engine& generator) const; //override;
 
   virtual void qdot2v(double* q, Eigen::MatrixXd& qdot_to_v, Eigen::MatrixXd* dqdot_to_v) const; //override;
 

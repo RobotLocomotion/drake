@@ -26,8 +26,6 @@ void RigidBody::setN(int n) {
 }
 
 
-#if !defined(_WIN32) && !defined(_WIN64)
-
 void RigidBody::setJoint(std::unique_ptr<DrakeJoint> joint)
 {
   this->joint = move(joint);
@@ -42,7 +40,6 @@ const DrakeJoint& RigidBody::getJoint() const
     throw runtime_error("Joint is not initialized");
   }
 }
-#endif
 
 void RigidBody::computeAncestorDOFs(RigidBodyManipulator* model)
 {
