@@ -4,9 +4,9 @@ if ~checkDependency('gurobi')
   warning('Must have gurobi installed to run this example');
   return;
 end
-addpath(fullfile(getDrakePath,'examples','SpringFlamingo'));
-addpath(fullfile(getDrakePath,'examples','Atlas','frames'));
 
+path_handle = addpathTemporary({fullfile(getDrakePath,'examples','Atlas','controllers'),...
+                                fullfile(getDrakePath,'examples','Atlas','frames')});
 if nargin < 1
   segment_number = -1; % do full traj
 end
@@ -17,9 +17,8 @@ options.floating = true;
 options.ignore_self_collisions = true;
 options.terrain = RigidBodyFlatTerrain();
 s = 'urdf/atlas_simple_spring_ankle_planar_contact.urdf';
-dt = 0.001;
 w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
-r = TimeSteppingRigidBodyManipulator(s,dt,options);
+r = Atlas(s,options);
 r = r.setOutputFrame(AtlasXZState(r));
 r = r.setStateFrame(AtlasXZState(r));
 warning(w);

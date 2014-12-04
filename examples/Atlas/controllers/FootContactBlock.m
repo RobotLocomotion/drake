@@ -27,8 +27,8 @@ classdef FootContactBlock < MIMODrakeSystem
       %         if true: do logical OR with planned support and sensed 
       %           support except when breaking contact
 
-      typecheck(r,'Biped');
-      typecheck(controller_data,'QPControllerData');
+      %typecheck(r,'Biped');
+      %typecheck(controller_data,'QPControllerData');
        
       if nargin<3
         options = struct();
@@ -71,7 +71,7 @@ classdef FootContactBlock < MIMODrakeSystem
         sizecheck(options.use_lcm,[1 1]);
         obj.use_lcm = options.use_lcm;
       else
-        obj.use_lcm = true;
+        obj.use_lcm = false;
       end
 
       if isfield(options,'use_contact_logic_OR')
