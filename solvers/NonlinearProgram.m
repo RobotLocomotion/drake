@@ -82,8 +82,6 @@ classdef NonlinearProgram
     bbcon_ub % A obj.num_vars x length(obj.bbcon) matrix. bbcon_lb(:,i) is the upper bound of x coming from the BoundingBoxConstraint obj.bbcon{i}
     which_snopt  % 1 if NonlinearProgramSnoptmex is used. 
                  % 2 if user has their own snopt in MATLAB path
-    cost_duplicate_var % A numel(obj.cost) x 1 boolean array. cost_duplicate_var(i) is true if the i'th cost takes duplicate decision variable as input arguments, like cost(x,x) = x+x;
-    nlcon_duplicate_var % A numel(obj.nlcon) x 1 boolean array. nlcon_duplicate_var(i) is true if the i'th nlcon takes duplicate decision variable as input arguments, like f(x,x) = x+x^2;
   end
 
   properties (Access = protected)
@@ -156,9 +154,6 @@ classdef NonlinearProgram
       
       obj.bbcon_lb = [];
       obj.bbcon_ub = [];
-      
-      obj.cost_duplicate_var = [];
-      obj.nlcon_duplicate_var = [];
       
       obj = obj.setSolver('default');
       obj.solver_options.fmincon = optimset('Display','off');
@@ -320,10 +315,7 @@ classdef NonlinearProgram
       obj.nlcon_xind{end+1} = xind;
       obj.nlcon_xind_stacked{end+1} = xind_vec;
       if(length(unique(xind_vec)) ~= length(xind_vec))
-        warning('Drake:NonlinearProgram:DuplicateVarNLcon','The input nonlinear constraint has the same decision variable being used duplicatedly as input argument, for example f(x,x) = x+x, consider to combine the input argument to remove the duplicity, by writing f(x) = 2*x');
-        obj.nlcon_duplicate_var(end+1) = true;
-      else
-        obj.nlcon_duplicate_var(end+1) = false;
+        error('Drake:NonlinearProgram:addNonlinearConstraint: The input xind argument has duplicate entries');
       end
       obj.nlcon_dataind{end+1} = data_ind;
       
@@ -407,10 +399,11 @@ classdef NonlinearProgram
         error('Drake:NonlinearProgram:InvalidArgument','the length of xind must match the x-dimension of the constraint');
       end
       obj.bbcon = [obj.bbcon,{cnstr}];
-      for i = 1:length(xind)
-        obj.x_lb(xind(i)) = max([cnstr.lb(i) obj.x_lb(xind(i))],[],2);
-        obj.x_ub(xind(i)) = min([cnstr.ub(i) obj.x_ub(xind(i))],[],2);
+      if(length(unique(xind)) ~= length(xind))
+        error('Drake:NonlinearProgram:addBoundingBoxConstraint: The input xind has duplicate entries, check the xind argument');
       end
+      obj.x_lb(xind) = max([cnstr.lb obj.x_lb(xind)],[],2);
+      obj.x_ub(xind) = min([cnstr.ub obj.x_ub(xind)],[],2);
       if (any(obj.x_lb(xind)>obj.x_ub(xind)))
         error('Drake:NonlinearProgram:InvalidConstraint','adding this bounding box constraint resulted in some lb>ub');
       end
@@ -454,10 +447,7 @@ classdef NonlinearProgram
       obj.cost_xind_cell{end+1} = xind;
       obj.cost_xind_stacked{end+1} = xind_vec;
       if(length(unique(xind_vec)) ~= length(xind_vec))
-        obj.cost_duplicate_var(end+1) = true;
-        warning('Drake:NonlinearProgram:DuplicateVarCost','The input cost has the same decision variable being used duplicatedly as input argument for the cost, for example cost(x,x) = x+x, consider to combine the input argument to remove the duplicity, by writing cost(x) = 2*x');
-      else
-        obj.cost_duplicate_var(end+1) = false;
+        error('Drake:NonlinearProgram:addCost: The xind argument has duplicate entries, check xind');
       end
       obj.cost_dataind{end+1} = data_ind;
 %         obj.cost_xind_cell = [obj.cost_xind_cell,{xind(cnstr.jCvar)}];
@@ -502,16 +492,8 @@ classdef NonlinearProgram
       for i = 1:length(obj.nlcon)
         args = [getArgumentArray(obj,x,obj.nlcon_xind{i});shared_data(obj.nlcon_dataind{i})];
         if(nargout>2)
-          if(obj.nlcon_duplicate_var(i))
-            [f(f_count+(1:obj.nlcon{i}.num_cnstr)),G_tmp] = ...
-              obj.nlcon{i}.eval(args{:});
-            for j = 1:length(obj.nlcon_xind_stacked{i})
-              G(f_count+(1:obj.nlcon{i}.num_cnstr),obj.nlcon_xind_stacked{i}(j)) = G(f_count+(1:obj.nlcon{i}.num_cnstr),obj.nlcon_xind_stacked{i}(j))+G_tmp(:,j);
-            end
-          else
-            [f(f_count+(1:obj.nlcon{i}.num_cnstr)),G(f_count+(1:obj.nlcon{i}.num_cnstr),obj.nlcon_xind_stacked{i})] = ...
-              obj.nlcon{i}.eval(args{:});
-          end
+          [f(f_count+(1:obj.nlcon{i}.num_cnstr)),G(f_count+(1:obj.nlcon{i}.num_cnstr),obj.nlcon_xind_stacked{i})] = ...
+            obj.nlcon{i}.eval(args{:});
         else
           f(f_count+(1:obj.nlcon{i}.num_cnstr)) = obj.nlcon{i}.eval(args{:});
         end
@@ -548,13 +530,7 @@ classdef NonlinearProgram
         end
         f = f+fi;
         if(nargout>1)
-          if(obj.cost_duplicate_var(i))
-            for j = 1:length(obj.cost_xind_stacked{i})
-              df(obj.cost_xind_stacked{i}(j)) = df(obj.cost_xind_stacked{i}(j))+dfi(j);
-            end
-          else
-            df(obj.cost_xind_stacked{i}) = df(obj.cost_xind_stacked{i})+dfi;
-          end
+          df(obj.cost_xind_stacked{i}) = df(obj.cost_xind_stacked{i})+dfi;
         end
       end
     end
@@ -582,29 +558,15 @@ classdef NonlinearProgram
         end
         f(1) = f(1)+fi;
         if(nargout>1)
-          if(obj.cost_duplicate_var(i))
-            for j = 1:length(obj.cost_xind_stacked{i})
-              G(1,obj.cost_xind_stacked{i}(j)) = G(obj.cost_xind_stacked{i}(j))+dfi(j);
-            end
-          else
-            G(1,obj.cost_xind_stacked{i}) = G(1,obj.cost_xind_stacked{i})+dfi;
-          end
+          G(1,obj.cost_xind_stacked{i}) = G(1,obj.cost_xind_stacked{i})+dfi;
         end
       end
       f_count = 1;
       for i = 1:length(obj.nlcon)
         args = [getArgumentArray(obj,x,obj.nlcon_xind{i});shared_data(obj.nlcon_dataind{i})];
         if(nargout>1)
-          if(obj.nlcon_duplicate_var(i))
-            [f(f_count+(1:obj.nlcon{i}.num_cnstr)),G_tmp] = ...
-              obj.nlcon{i}.eval(args{:});
-            for j = 1:length(obj.nlcon_xind_stacked{i})
-              G(f_count+(1:obj.nlcon{i}.num_cnstr),obj.nlcon_xind_stacked{i}(j)) = G(f_count+(1:obj.nlcon{i}.num_cnstr),obj.nlcon_xind_stacked{i}(j))+G_tmp(:,j);
-            end
-          else
-            [f(f_count+(1:obj.nlcon{i}.num_cnstr)),G(f_count+(1:obj.nlcon{i}.num_cnstr),obj.nlcon_xind_stacked{i})] = ...
-              obj.nlcon{i}.eval(args{:});
-          end
+          [f(f_count+(1:obj.nlcon{i}.num_cnstr)),G(f_count+(1:obj.nlcon{i}.num_cnstr),obj.nlcon_xind_stacked{i})] = ...
+            obj.nlcon{i}.eval(args{:});
         else
           f(f_count+(1:obj.nlcon{i}.num_cnstr)) = obj.nlcon{i}.eval(args{:});
         end
