@@ -32,7 +32,7 @@ load('data/atlas_fp.mat');
 % xstar(2) = 0.1*randn();
 % xstar(6) = pi*randn();
 
-xstar(r.getNumPositions() + (1:2)) = [0; 0.8];
+xstar(r.getNumPositions() + (1:2)) = [0.4; 0];
 
 r = r.setInitialState(xstar);
 
