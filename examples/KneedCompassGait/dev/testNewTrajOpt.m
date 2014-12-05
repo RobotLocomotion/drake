@@ -43,11 +43,11 @@ N2 = floor(N/2);
 
 if nargin < 2
   %Try to come up with a reasonable trajectory
-  x1 = [.3;1;pi/8-pi/16;pi/8;-pi/8;pi/8;zeros(6,1)];
+  x1 = [.1;1;pi/8-pi/16;pi/8;-pi/8;pi/8;zeros(6,1)];
   t_init = linspace(0,T0,N);
 %   traj_init.x = PPTrajectory(foh(t_init,linspacevec(x0,xf,N)));
-traj_init.x = PPTrajectory(foh(t_init,[linspacevec(x0,x1,N2), linspacevec(x1,xf,N-N2)]));
-  traj_init.u = PPTrajectory(foh(t_init,randn(3,N)));
+  traj_init.x = PPTrajectory(foh(t_init,[linspacevec(x0,x1,N2), linspacevec(x1,xf,N-N2)]));
+  traj_init.u = PPTrajectory(foh(t_init,zeros(3,N)));
   traj_init.l = PPTrajectory(foh(t_init,[repmat([1;zeros(7,1)],1,N2) repmat([zeros(4,1);1;zeros(3,1)],1,N-N2)]));
   traj_init.ljl = PPTrajectory(foh(t_init,zeros(p.getNumJointLimitConstraints,N)));
   scale = .1;
