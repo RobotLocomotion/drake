@@ -30,6 +30,12 @@ else
 end
 
 link_constraints = dynamic_footstep_plan.buildLinkConstraints();
+% link_constraints(1).pelvis_reference_height
+% link_constraints(2).pelvis_reference_height
+warning('pelvis reference height forced to zero');
+link_constraints(1).pelvis_reference_height = zeros(1, length(link_constraints(1).ts));
+link_constraints(2).pelvis_reference_height = zeros(1, length(link_constraints(1).ts));
+
 zmptraj = dynamic_footstep_plan.getZMPTraj();
 
 zmptraj = setOutputFrame(zmptraj,desiredZMP);

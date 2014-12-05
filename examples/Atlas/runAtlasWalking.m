@@ -12,6 +12,9 @@ path_handle = addpathTemporary({fullfile(getDrakePath,'examples','ZMP'),...
                                 fullfile(getDrakePath,'examples','Atlas','frames')});
 
 plot_comtraj = true;
+if plot_comtraj
+  checkDependency('lcmgl');
+end
 
 if (nargin<1); use_mex = true; end
 if (nargin<2); use_bullet = false; end
@@ -65,7 +68,7 @@ q0 = x0(1:nq);
 feet_position = r.feetPosition(q0);
 contact = [feet_position.right(3) < 0.01; feet_position.left(3) < 0.01];
 % recovery_planner = runRecovery(x0(1:3), x0(r.getNumPositions() + (1:3)), feet_position.right(1:2), feet_position.left(1:2), contact);
-recovery_planner = runRecovery(x0(1:3), x0(r.getNumPositions() + (1:3)), feet_position.right(1:2), feet_position.left(1:2), contact);
+recovery_planner = runRecovery([x0(1:2);0.76], x0(r.getNumPositions() + (1:3)), feet_position.right(1:2), feet_position.left(1:2), contact);
 dynamic_footstep_plan = recovery_planner.getDynamicFootstepPlan(r, r.feetPosition(q0));
 
 walking_plan_data = r.planWalkingZMP(x0, dynamic_footstep_plan);
@@ -73,18 +76,18 @@ walking_plan_data = r.planWalkingZMP(x0, dynamic_footstep_plan);
 ts = walking_plan_data.zmptraj.getBreaks();
 T = ts(end);
 
-% if plot_comtraj
-%   % plot walking traj in drake viewer
-%   lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'walking-plan');
-%
-%   for i=1:length(ts)
-%     lcmgl.glColor3f(0, 0, 1);
-%     lcmgl.sphere([walking_plan_data.comtraj.eval(ts(i));0], 0.01, 20, 20);
-%     lcmgl.glColor3f(0, 1, 0);
-%     lcmgl.sphere([walking_plan_data.zmptraj.eval(ts(i));0], 0.01, 20, 20);
-%   end
-%   lcmgl.switchBuffers();
-% end
+if plot_comtraj
+  % plot walking traj in drake viewer
+  lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'walking-plan');
+
+  for i=1:length(ts)
+    lcmgl.glColor3f(0, 0, 1);
+    lcmgl.sphere([walking_plan_data.comtraj.eval(ts(i));0], 0.01, 20, 20);
+    lcmgl.glColor3f(0, 1, 0);
+    lcmgl.sphere([walking_plan_data.zmptraj.eval(ts(i));0], 0.01, 20, 20);
+  end
+  lcmgl.switchBuffers();
+end
 
 
 ctrl_data = QPControllerData(true,struct(...
@@ -231,7 +234,6 @@ warning(S);
 traj = simulate(sys,[0 T],x0);
 % playback(v,traj,struct('slider',true));
 xstar = traj.eval(T);
-end
 
 if plot_comtraj
   dt = 0.001;
@@ -390,6 +392,7 @@ if plot_comtraj
 %   error('runAtlasWalking unit test failed: error is too large');
 %   navgoal
 % end
+end
 
 end
 
