@@ -99,7 +99,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   char Prob[200]="";
 
   snopt::integer minrw,miniw,mincw;
-  snopt::integer lenrw = 10000000, leniw = 500000, lencw = 500;
+  snopt::integer lenrw = 1000000000, leniw = 5000000, lencw = 50000;
   snopt::doublereal* rw = (snopt::doublereal*) std::calloc(lenrw,sizeof(snopt::doublereal));
   snopt::integer* iw = (snopt::integer*) std::calloc(leniw,sizeof(snopt::integer));
   char cw[8*500]; // should match lencw
@@ -142,7 +142,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   mxArray* pprint_name = mxGetField(prhs[13],0,"print");
   int print_file_name_len = static_cast<snopt::integer>(mxGetNumberOfElements(pprint_name))+1;
   char* print_file_name = new char[print_file_name_len];
-  if(print_file_name_len != 0)
+  if(print_file_name_len != 1)
   {
 		char strOpt10[200] = "Major print level";
 		strOpt_len = static_cast<snopt::integer>(strlen(strOpt10));
@@ -271,7 +271,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   delete[] F;
   delete[] Fmul;
   delete[] Fstate;
-  if(print_file_name_len!= 0)
+  if(print_file_name_len!= 1)
   {
     snopt::snclose_(&iPrint);
   }
