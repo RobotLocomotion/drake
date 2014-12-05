@@ -17,7 +17,7 @@ v = p.constructVisualizer; v.playback(xtraj4);
 display('iter 4')
 %%
 [p,xtraj5,utraj5,ltraj5,ljltraj5,z5,F5,info5,traj_opt5] = testNewTrajOpt(xtraj4,utraj4,ltraj4,ljltraj4,0);
-v = p.constructVisualizer; v.playback(xtraj5);
+v = p.constructVisualizer; v.playback(xtraj5,struct('slider',true));
 display('iter 5')
 %%
 if info5 ~= 1
