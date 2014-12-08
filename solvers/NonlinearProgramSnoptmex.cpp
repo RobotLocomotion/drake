@@ -9,7 +9,7 @@
 namespace snopt {
 #include "snopt.hh"
 #include "snfilewrapper.hh"
-#include "snoptProblem.hh"
+//#include "snoptProblem.hh"
 }
 
 using namespace std;
@@ -167,14 +167,15 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   mxArray* pprint_name = mxGetField(prhs[13],0,"print");
   snopt::integer print_file_name_len = static_cast<snopt::integer>(mxGetNumberOfElements(pprint_name))+1;
   char* print_file_name = NULL;
-  if(print_file_name_len != 0) {
+  if(print_file_name_len != 1) {
     iPrint = 9;
     print_file_name = new char[print_file_name_len];
     mxGetString(pprint_name,print_file_name,print_file_name_len);
     snopt::snopenappend_(&iPrint,print_file_name,&INFO_snopt,print_file_name_len);
+    mexPrintf("-------\n open file %s with info %d\n",print_file_name,INFO_snopt);
     
-    mysnseti("Major print level",static_cast<snopt::integer>(11),&iPrint,&iSumm,&INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw);
-    mysnseti("Print file",iPrint,&iPrint,&iSumm,&INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw);
+    //mysnseti("Major print level",static_cast<snopt::integer>(11),&iPrint,&iSumm,&INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw);
+    //mysnseti("Print file",iPrint,&iPrint,&iSumm,&INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw);
   }
   snopt::sninit_(&iPrint,&iSumm,cw,&lencw,iw,&leniw,rw,&lenrw,8*lencw);
   
@@ -238,9 +239,10 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   delete[] Fmul;
   delete[] Fstate;
 
-  if(print_file_name_len!= 0)
+  if(print_file_name_len!= 1)
   {
     snopt::snclose_(&iPrint);
+    mexPrintf("close print file\n");
     delete[] print_file_name;
   }
   if (rw != rw_static) { delete[] rw; }
