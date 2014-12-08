@@ -135,18 +135,32 @@ classdef BotVisualizer < RigidBodyVisualizer
       % http://en.wikipedia.org/wiki/Moment_of_inertia#Inertia_ellipsoid
         for i=1:getNumBodies(obj.model)
           b = obj.model.body(i);
-          pt = forwardKin(obj.model,kinsol,i,b.com,2);
-          R = quat2rotmat(pt(4:end));
-          obj.lcmgl_inertia_ellipsoids.glPushMatrix();
-          obj.lcmgl_inertia_ellipsoids.glColor3f(1,0,0);
-          obj.lcmgl_inertia_ellipsoids.glTranslated(pt(1),pt(2),pt(3));
-          [V,D] = eig(b.inertia);
-          axis_angle = rpy2axis(rotmat2rpy(R*V)); % note: should be rotmat2axis, but this revealed a corner case not covered properly.  i've added a unit test and issue #601
-          obj.lcmgl_inertia_ellipsoids.glRotated(180*axis_angle(4)/pi,axis_angle(1),axis_angle(2),axis_angle(3));
-          D=1./sqrt(diag(D));
-          obj.lcmgl_inertia_ellipsoids.glScalef(D(1),D(2),D(3));
-          obj.lcmgl_inertia_ellipsoids.sphere(zeros(3,1),obj.inertia_ellipsoids_scale,20,20);
-          obj.lcmgl_inertia_ellipsoids.glPopMatrix();
+          if b.mass>0
+            pt = forwardKin(obj.model,kinsol,i,b.com,2);
+            R = quat2rotmat(pt(4:end));
+            obj.lcmgl_inertia_ellipsoids.glPushMatrix();
+            obj.lcmgl_inertia_ellipsoids.glTranslated(pt(1),pt(2),pt(3));
+            [V,D] = eig(b.inertia);
+            axis_angle = rpy2axis(rotmat2rpy(R*V)); % note: should be rotmat2axis, but this revealed a corner case not covered properly.  i've added a unit test and issue #601
+            obj.lcmgl_inertia_ellipsoids.glRotated(180*axis_angle(4)/pi,axis_angle(1),axis_angle(2),axis_angle(3));
+            D=1./sqrt(diag(D));
+            obj.lcmgl_inertia_ellipsoids.glPushMatrix();
+            obj.lcmgl_inertia_ellipsoids.glColor3f(0,0,1);
+            obj.lcmgl_inertia_ellipsoids.glScalef(D(1),D(2),1e-5);
+            obj.lcmgl_inertia_ellipsoids.sphere(zeros(3,1),obj.inertia_ellipsoids_scale,20,20);
+            obj.lcmgl_inertia_ellipsoids.glPopMatrix();
+            obj.lcmgl_inertia_ellipsoids.glPushMatrix();
+            obj.lcmgl_inertia_ellipsoids.glColor3f(0,1,0);
+            obj.lcmgl_inertia_ellipsoids.glScalef(D(1),1e-5,D(3));
+            obj.lcmgl_inertia_ellipsoids.sphere(zeros(3,1),obj.inertia_ellipsoids_scale,20,20);
+            obj.lcmgl_inertia_ellipsoids.glPopMatrix();
+            obj.lcmgl_inertia_ellipsoids.glPushMatrix();
+            obj.lcmgl_inertia_ellipsoids.glColor3f(1,0,0);
+            obj.lcmgl_inertia_ellipsoids.glScalef(1e-5,D(2),D(3));
+            obj.lcmgl_inertia_ellipsoids.sphere(zeros(3,1),obj.inertia_ellipsoids_scale,20,20);
+            obj.lcmgl_inertia_ellipsoids.glPopMatrix();
+            obj.lcmgl_inertia_ellipsoids.glPopMatrix();
+          end
         end
         
         obj.lcmgl_inertia_ellipsoids.switchBuffers();

@@ -40,7 +40,7 @@
     <inertial>
       <origin xyz="0 0 -1" rpy="0 0 0" />
       <mass value="1" />
-      <!-- note: the inertia of a ROD about it's COM is mr^2/2, 1/12 m*(3r^2+L^2) -->
+      <!-- note: the inertia of a solid ROD about it's COM is mr^2/2, 1/12 m*(3r^2+L^2) -->
       <inertia ixx=".3681" ixy="0" ixz="0" iyy="0.3681" iyz="0" izz=".0013" />
     </inertial>
     <visual>
