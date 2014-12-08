@@ -38,12 +38,17 @@ r = compile(r);
 
 % set initial state to fixed point
 load(fullfile(getDrakePath,'examples','Atlas','data','atlas_fp.mat'));
-xstar(r.getNumPositions() + (1:2)) = [0.45; 0.0];
+xstar(r.getNumPositions() + (1:2)) = [0.25; 0.0];
+xstar = Point(r.getStateFrame(), xstar);
+% xstar.r_leg_hpy = -0.5;
+% xstar.r_leg_kny = 1.3;
+xstar = double(xstar);
 
 r = r.setInitialState(xstar);
 
 v = r.constructVisualizer;
 v.display_dt = 0.03;
+v.draw(0, xstar)
 
 nq = getNumPositions(r);
 
@@ -76,10 +81,11 @@ else
 end
 % recovery_planner = runRecovery(x0(1:3), x0(r.getNumPositions() + (1:3)), feet_position.right(1:2), feet_position.left(1:2), contact);
 recovery_planner = runRecovery([x0(1:2);0.76], x0(r.getNumPositions() + (1:3)), cop0, feet_position.right(1:2), feet_position.left(1:2), contact);
-pause
 dynamic_footstep_plan = recovery_planner.getDynamicFootstepPlan(r, r.feetPosition(q0));
+% pause()
 
 walking_plan_data = r.planWalkingZMP(x0, dynamic_footstep_plan);
+keyboard()
 
 ts = walking_plan_data.zmptraj.getBreaks();
 T = ts(end);
@@ -240,7 +246,25 @@ output_select(1).output=1;
 sys = mimoCascade(sys,v,[],[],output_select);
 warning(S);
 traj = simulate(sys,[0 T],x0);
+
 playback(v,traj,struct('slider',true));
+tsample = 0:0.01:T;
+rsole = zeros(6, length(tsample));
+lsole = zeros(6, length(tsample));
+for j = 1:length(tsample)
+  t = tsample(j);
+  x = traj.eval(t);
+  kinsol = r.doKinematics(x(1:r.getNumPositions()));
+  rsole(:,j) = r.forwardKin(kinsol, r.foot_frame_id.right, [0;0;0], 1);
+  lsole(:,j) = r.forwardKin(kinsol, r.foot_frame_id.left, [0;0;0], 1);
+end
+figure(321)
+subplot 212
+hold on
+plot(tsample, rsole(3,:), 'b.-')
+plot(tsample, lsole(3,:), 'g.-')
+xlim([0, T]);
+
 xstar = traj.eval(T);
 
 if plot_comtraj
@@ -400,7 +424,7 @@ if plot_comtraj
 %   error('runAtlasWalking unit test failed: error is too large');
 %   navgoal
 % end
-pause
+pause()
 end
 
 end

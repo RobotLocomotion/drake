@@ -26,6 +26,11 @@ classdef DynamicFootstepPlan
     function link_constraints = buildLinkConstraints(obj)
       % Build trajectories
       link_constraints = struct('link_ndx',{}, 'pt', {}, 'ts', {}, 'poses', {}, 'dposes', {}, 'contact_break_indices', {}, 'coefs', {}, 'toe_off_allowed', {});
+      figure(321)
+      clf
+      subplot 211
+      hold on
+
       for f = {'right', 'left'}
         foot = f{1};
         foot_states = [obj.foot_origin_knots.(foot)];
@@ -42,6 +47,12 @@ classdef DynamicFootstepPlan
           foot_dposes = foot_states(7:12,:);
           foot_pp = pchipDeriv(ts, foot_poses, foot_dposes);
         end
+
+        tsample = linspace(ts(1), ts(end), 200);
+        xs = ppval(foot_pp, tsample);
+        figure(321)
+        plot(tsample, xs(3,:), 'b.-')
+        xlim([0, ts(end)])
 
         % Compute cubic polynomial coefficients to save work in the controller
         [~, coefs, l, k, d] = unmkpp(foot_pp);
@@ -65,6 +76,8 @@ classdef DynamicFootstepPlan
         isDoubleSupport = any(supports(i).bodies==obj.biped.foot_body_id.left) && any(supports(i).bodies==obj.biped.foot_body_id.right);
         isRightSupport = ~any(supports(i).bodies==obj.biped.foot_body_id.left) && any(supports(i).bodies==obj.biped.foot_body_id.right);
         isLeftSupport = any(supports(i).bodies==obj.biped.foot_body_id.left) && ~any(supports(i).bodies==obj.biped.foot_body_id.right);
+        plot(support_times(i:i+1), 0.15 + 0.05*(isRightSupport|isDoubleSupport)*[1, 1], 'go:')
+        plot(support_times(i:i+1), 0.15 + 0.05*(isLeftSupport|isDoubleSupport)*[1,1], 'ro:')
 
         nextIsDoubleSupport = any(supports(i+1).bodies==obj.biped.foot_body_id.left) && any(supports(i+1).bodies==obj.biped.foot_body_id.right);
         nextIsRightSupport = ~any(supports(i+1).bodies==obj.biped.foot_body_id.left) && any(supports(i+1).bodies==obj.biped.foot_body_id.right);
