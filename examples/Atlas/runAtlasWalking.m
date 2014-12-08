@@ -38,7 +38,7 @@ r = compile(r);
 
 % set initial state to fixed point
 load(fullfile(getDrakePath,'examples','Atlas','data','atlas_fp.mat'));
-xstar(r.getNumPositions() + (1:2)) = [0.4; 0.0];
+xstar(r.getNumPositions() + (1:2)) = [0.45; 0.0];
 
 r = r.setInitialState(xstar);
 
@@ -59,6 +59,7 @@ lfoot_navgoal(1:3) = lfoot_navgoal(1:3) + R*[0;0.13;0];
 % Plan footsteps to the goal
 % goal_pos = struct('right', rfoot_navgoal, 'left', lfoot_navgoal);
 % footstep_plan = r.planFootsteps(q0, goal_pos);
+zmpact = [];
 
 while true
 x0 = xstar;
@@ -67,8 +68,15 @@ q0 = x0(1:nq);
 
 feet_position = r.feetPosition(q0);
 contact = [feet_position.right(3) < 0.01; feet_position.left(3) < 0.01];
+cop0 = mean([feet_position.right(1:2), feet_position.left(1:2)], 2);
+if isempty(zmpact)
+  cop0 = mean([feet_position.right(1:2), feet_position.left(1:2)], 2);
+else
+  cop0 = zmpact(:,end);
+end
 % recovery_planner = runRecovery(x0(1:3), x0(r.getNumPositions() + (1:3)), feet_position.right(1:2), feet_position.left(1:2), contact);
-recovery_planner = runRecovery([x0(1:2);0.76], x0(r.getNumPositions() + (1:3)), feet_position.right(1:2), feet_position.left(1:2), contact);
+recovery_planner = runRecovery([x0(1:2);0.76], x0(r.getNumPositions() + (1:3)), cop0, feet_position.right(1:2), feet_position.left(1:2), contact);
+pause
 dynamic_footstep_plan = recovery_planner.getDynamicFootstepPlan(r, r.feetPosition(q0));
 
 walking_plan_data = r.planWalkingZMP(x0, dynamic_footstep_plan);
@@ -232,7 +240,7 @@ output_select(1).output=1;
 sys = mimoCascade(sys,v,[],[],output_select);
 warning(S);
 traj = simulate(sys,[0 T],x0);
-% playback(v,traj,struct('slider',true));
+playback(v,traj,struct('slider',true));
 xstar = traj.eval(T);
 
 if plot_comtraj
@@ -392,6 +400,7 @@ if plot_comtraj
 %   error('runAtlasWalking unit test failed: error is too large');
 %   navgoal
 % end
+pause
 end
 
 end
