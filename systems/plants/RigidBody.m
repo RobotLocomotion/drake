@@ -388,7 +388,7 @@ classdef RigidBody < RigidBodyElement
           warning('Spatial mass matrix is not symmetric, this is non-physical');
       end
     end    
-    
+        
     function body = parseVisual(body,node,model,options)
       c = .7*[1 1 1];
       

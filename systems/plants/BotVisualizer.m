@@ -130,6 +130,37 @@ classdef BotVisualizer < RigidBodyVisualizer
       
       lc = lcm.lcm.LCM.getSingleton();
       lc.publish('DRAKE_VIEWER_DRAW',obj.draw_msg);
+      
+      if ~isempty(obj.lcmgl_inertia_ellipsoids)
+      % http://en.wikipedia.org/wiki/Moment_of_inertia#Inertia_ellipsoid
+        for i=1:getNumBodies(obj.model)
+          b = obj.model.body(i);
+          pt = forwardKin(obj.model,kinsol,i,b.com,2);
+          R = quat2rotmat(pt(4:end));
+          obj.lcmgl_inertia_ellipsoids.glPushMatrix();
+          obj.lcmgl_inertia_ellipsoids.glColor3f(1,0,0);
+          obj.lcmgl_inertia_ellipsoids.glTranslated(pt(1),pt(2),pt(3));
+          [V,D] = eig(b.inertia);
+          axis_angle = rpy2axis(rotmat2rpy(R*V)); % note: should be rotmat2axis, but this revealed a corner case not covered properly.  i've added a unit test and issue #601
+          obj.lcmgl_inertia_ellipsoids.glRotated(180*axis_angle(4)/pi,axis_angle(1),axis_angle(2),axis_angle(3));
+          D=1./sqrt(diag(D));
+          obj.lcmgl_inertia_ellipsoids.glScalef(D(1),D(2),D(3));
+          obj.lcmgl_inertia_ellipsoids.sphere(zeros(3,1),obj.inertia_ellipsoids_scale,20,20);
+          obj.lcmgl_inertia_ellipsoids.glPopMatrix();
+        end
+        
+        obj.lcmgl_inertia_ellipsoids.switchBuffers();
+      end
+    end
+    
+    function obj = enableLCMGLInertiaEllipsoids(obj,scale)
+      % @param scale a positive scalar where the ellipsoid draw is the
+      % levelset T = .5*omega'*I*omega = .5*scale
+      checkDependency('lcmgl');
+      obj.lcmgl_inertia_ellipsoids = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton,'Inertia Ellipsoid');
+      if nargin>1
+        obj.inertia_ellipsoids_scale=scale;
+      end
     end
     
     function obj = loadRenderer(obj,renderer_dynobj_path)
@@ -201,5 +232,7 @@ classdef BotVisualizer < RigidBodyVisualizer
     viewer_id;
     draw_msg;
     status_agg;
+    lcmgl_inertia_ellipsoids;
+    inertia_ellipsoids_scale=.02; 
   end
 end
