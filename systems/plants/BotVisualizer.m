@@ -143,7 +143,12 @@ classdef BotVisualizer < RigidBodyVisualizer
             [V,D] = eig(b.inertia);
             axis_angle = rpy2axis(rotmat2rpy(R*V)); % note: should be rotmat2axis, but this revealed a corner case not covered properly.  i've added a unit test and issue #601
             obj.lcmgl_inertia_ellipsoids.glRotated(180*axis_angle(4)/pi,axis_angle(1),axis_angle(2),axis_angle(3));
-            D=1./sqrt(diag(D));
+            D=1./sqrt(diag(D));  % poinsot's ellipsoid
+%            D=real(sqrt(2*b.mass./(5*(trace(D)-2*diag(D))))); %
+%            alternative scaling (equivalent ellipsoid) from
+%            http://www.mathworks.com/help/physmod/sm/mech/vis/about-body-color-and-geometry.html
+%            (better scaling, but requires triangle inequalities, which seem to not hold
+%            in many of our systems)
             obj.lcmgl_inertia_ellipsoids.glPushMatrix();
             obj.lcmgl_inertia_ellipsoids.glColor3f(0,0,1);
             obj.lcmgl_inertia_ellipsoids.glScalef(D(1),D(2),1e-5);
