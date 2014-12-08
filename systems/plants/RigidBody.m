@@ -333,7 +333,9 @@ classdef RigidBody < RigidBodyElement
       inertia = eta*inertia;  
       
       if any(rpy)
-        error([body.linkname,': rpy in inertia block not implemented yet (but would be easy)']);
+        % transform inertia back into body coordinates
+        R = rpy2rotmat(rpy);
+        inertia = R*inertia*R';
       end
       body = setInertial(body,mass,xyz,inertia);
     end
@@ -388,7 +390,7 @@ classdef RigidBody < RigidBodyElement
           warning('Spatial mass matrix is not symmetric, this is non-physical');
       end
     end    
-    
+        
     function body = parseVisual(body,node,model,options)
       c = .7*[1 1 1];
       
@@ -562,6 +564,20 @@ classdef RigidBody < RigidBodyElement
   methods    
     function obj = updateBodyIndices(obj,map_from_old_to_new)
       obj.parent = map_from_old_to_new(obj.parent);
+    end
+  end
+  
+  methods (Static=true)
+    function b = ConstantDensityBox(mass,size)
+      % create a constant density box
+      % @param total mass (kg)
+      % @param size 3x1 vector w/ length, width, height
+      
+      b = RigidBody();
+      b = setInertial(b,mass,zeros(3,1),mass/12*diag([size(2)^2+size(3)^2,size(1)^2+size(2)^2,size(1)^2+size(2)^2]));
+      geom = RigidBodyBox(size);
+      b.visual_geometry{1} = geom;
+      b.collision_geometry{1} = geom;
     end
   end
 end
