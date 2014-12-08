@@ -333,7 +333,9 @@ classdef RigidBody < RigidBodyElement
       inertia = eta*inertia;  
       
       if any(rpy)
-        error([body.linkname,': rpy in inertia block not implemented yet (but would be easy)']);
+        % transform inertia back into body coordinates
+        R = rpy2rotmat(rpy);
+        inertia = R*inertia*R';
       end
       body = setInertial(body,mass,xyz,inertia);
     end
