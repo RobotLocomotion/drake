@@ -354,6 +354,15 @@ classdef RigidBodyManipulator < Manipulator
       end
     end
 
+    function [model,id]=addBody(model,b)
+      % @ingroup Kinematic Tree
+      typecheck(b,'RigidBody');
+      sizecheck(b,1);
+      model.body = [model.body,b];
+      id = length(model.body);
+      model.dirty = true;
+    end
+    
     function model=addJoint(model,name,type,parent_ind,child_ind,xyz,rpy,axis,damping,coulomb_friction,static_friction,coulomb_window,limits)
       % @ingroup Kinematic Tree
       typecheck(parent_ind,'double');

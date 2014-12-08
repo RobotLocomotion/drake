@@ -154,6 +154,7 @@ classdef NonlinearProgram
       
       obj.bbcon_lb = [];
       obj.bbcon_ub = [];
+      
       obj = obj.setSolver('default');
       obj.solver_options.fmincon = optimset('Display','off');
       obj.solver_options.snopt = struct();
@@ -313,6 +314,9 @@ classdef NonlinearProgram
       obj.num_ceq = obj.num_ceq + length(cnstr.ceq_idx);
       obj.nlcon_xind{end+1} = xind;
       obj.nlcon_xind_stacked{end+1} = xind_vec;
+      if(length(unique(xind_vec)) ~= length(xind_vec))
+        error('Drake:NonlinearProgram:addNonlinearConstraint: The input xind argument has duplicate entries');
+      end
       obj.nlcon_dataind{end+1} = data_ind;
       
       cnstr_id = obj.next_nlcon_id;
@@ -329,7 +333,7 @@ classdef NonlinearProgram
       % the name of the i'th constraint. If not given, the cnstr.name will be used instead
       % @retval cnstr_id   -- The ID stored in obj.lcon_id. This is the unique ID of the newly added
       % constraint in the program.
-      if cnstr.num_cnstr > 0
+%       if cnstr.num_cnstr > 0
         if(nargin<3)
           xind = (1:obj.num_vars)';
         end
@@ -367,10 +371,11 @@ classdef NonlinearProgram
           obj.beq = vertcat(obj.beq,cnstr_beq);
           obj.Aeq2lcon_idx = [obj.Aeq2lcon_idx;length(obj.lcon)*ones(size(cnstr_Aeq,1),1)];
         end
-      end
-      cnstr_id = obj.next_lcon_id;
-      obj.next_lcon_id = obj.next_lcon_id-3;
-      obj.lcon_id = [obj.lcon_id cnstr_id];
+        cnstr_id = obj.next_lcon_id;
+        obj.next_lcon_id = obj.next_lcon_id-3;
+        obj.lcon_id = [obj.lcon_id cnstr_id];
+%       end
+      
     end   
 
     function [obj,cnstr_id] = addBoundingBoxConstraint(obj,cnstr,xind)
@@ -394,6 +399,9 @@ classdef NonlinearProgram
         error('Drake:NonlinearProgram:InvalidArgument','the length of xind must match the x-dimension of the constraint');
       end
       obj.bbcon = [obj.bbcon,{cnstr}];
+      if(length(unique(xind)) ~= length(xind))
+        error('Drake:NonlinearProgram:addBoundingBoxConstraint: The input xind has duplicate entries, check the xind argument');
+      end
       obj.x_lb(xind) = max([cnstr.lb obj.x_lb(xind)],[],2);
       obj.x_ub(xind) = min([cnstr.ub obj.x_ub(xind)],[],2);
       if (any(obj.x_lb(xind)>obj.x_ub(xind)))
@@ -431,30 +439,20 @@ classdef NonlinearProgram
       if ~isa(cnstr,'Constraint')
         error('Drake:NonlinearProgram:UnsupportedConstraint','addCost expects a Constraint object');
       end
-      
-      if(isa(cnstr,'LinearConstraint'))
-        % Treat linear constraints differently
-        if(cnstr.num_cnstr ~= 1)
-          error('Drake:NonlinearProgram:WrongCost','addCost only accept scalar function');
-        end
-        obj.cost = [obj.cost,{cnstr}];
-        obj.cost_xind_cell{end+1} = {xind_vec(cnstr.jCvar);};
-        obj.cost_xind_stacked{end+1} = xind_vec(cnstr.jCvar);
-        obj.cost_dataind{end+1} = data_ind;
-        obj.jFvar = unique([obj.jFvar;xind_vec(cnstr.jCvar)]);
-        obj.iFfun = ones(length(obj.jFvar),1);
-      else
-        if(cnstr.num_cnstr ~= 1)
-          error('Drake:NonlinearProgram:WrongCost','addCost only accept scalar function');
-        end
-        obj.cost = [obj.cost,{cnstr}];
-        obj.cost_xind_cell{end+1} = xind;
-        obj.cost_xind_stacked{end+1} = xind_vec;
-        obj.cost_dataind{end+1} = data_ind;
-%         obj.cost_xind_cell = [obj.cost_xind_cell,{xind(cnstr.jCvar)}];
-        obj.jFvar = unique([obj.jFvar;xind_vec(cnstr.jCvar)]);
-        obj.iFfun = ones(length(obj.jFvar),1);
+            
+      if(cnstr.num_cnstr ~= 1)
+        error('Drake:NonlinearProgram:WrongCost','addCost only accept scalar function');
       end
+      obj.cost = [obj.cost,{cnstr}];
+      obj.cost_xind_cell{end+1} = xind;
+      obj.cost_xind_stacked{end+1} = xind_vec;
+      if(length(unique(xind_vec)) ~= length(xind_vec))
+        error('Drake:NonlinearProgram:addCost: The xind argument has duplicate entries, check xind');
+      end
+      obj.cost_dataind{end+1} = data_ind;
+%         obj.cost_xind_cell = [obj.cost_xind_cell,{xind(cnstr.jCvar)}];
+      obj.jFvar = unique([obj.jFvar;xind_vec(cnstr.jCvar)]);
+      obj.iFfun = ones(length(obj.jFvar),1);
     end
     
     function obj = addQuadraticCost(obj,Q,x_desired,xind)
@@ -567,8 +565,8 @@ classdef NonlinearProgram
       for i = 1:length(obj.nlcon)
         args = [getArgumentArray(obj,x,obj.nlcon_xind{i});shared_data(obj.nlcon_dataind{i})];
         if(nargout>1)
-        [f(f_count+(1:obj.nlcon{i}.num_cnstr)),G(f_count+(1:obj.nlcon{i}.num_cnstr),obj.nlcon_xind_stacked{i})] = ...
-          obj.nlcon{i}.eval(args{:});
+          [f(f_count+(1:obj.nlcon{i}.num_cnstr)),G(f_count+(1:obj.nlcon{i}.num_cnstr),obj.nlcon_xind_stacked{i})] = ...
+            obj.nlcon{i}.eval(args{:});
         else
           f(f_count+(1:obj.nlcon{i}.num_cnstr)) = obj.nlcon{i}.eval(args{:});
         end
@@ -1166,9 +1164,13 @@ classdef NonlinearProgram
       obj.lcon = obj.lcon(remaining_lcon_id);
       obj.lcon_id = obj.lcon_id(remaining_lcon_id);
       
-      obj.Ain2lcon_idx = obj.Ain2lcon_idx-sum(bsxfun(@minus,obj.Ain2lcon_idx,Ain_delete_idx')>0,2);
+      if(~isempty(obj.Ain2lcon_idx) && ~isempty(Ain_delete_idx'))
+        obj.Ain2lcon_idx = obj.Ain2lcon_idx-sum(bsxfun(@minus,obj.Ain2lcon_idx,Ain_delete_idx')>0,2);
+      end
       obj.Ain2lcon_idx = obj.Ain2lcon_idx(Ain_remaining_idx);
-      obj.Aeq2lcon_idx = obj.Aeq2lcon_idx-sum(bsxfun(@minus,obj.Aeq2lcon_idx,Aeq_delete_idx')>0,2);
+      if(~isempty(obj.Aeq2lcon_idx) && ~isempty(Aeq_delete_idx'))
+        obj.Aeq2lcon_idx = obj.Aeq2lcon_idx-sum(bsxfun(@minus,obj.Aeq2lcon_idx,Aeq_delete_idx')>0,2);
+      end
       obj.Aeq2lcon_idx = obj.Aeq2lcon_idx(Aeq_remaining_idx);
     end
     
@@ -1338,6 +1340,9 @@ classdef NonlinearProgram
         snseti('Old Basis File',obj.solver_options.snopt.OldBasisFile);
         snseti('Backup Basis File',obj.solver_options.snopt.BackupBasisFile);
         snsetr('Linesearch tolerance',obj.solver_options.snopt.LinesearchTolerance);
+        if(~isempty(obj.solver_options.snopt.print))
+          snprint(obj.solver_options.snopt.print);
+        end
         snset(obj.solver_options.snopt.sense);
         
         [x_free,objval,exitflag,xmul,Fmul] = snopt(x0_free, ...
