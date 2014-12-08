@@ -50,8 +50,7 @@ classdef SingleBodyDynamicsFullKinematicsPlanner < ComDynamicsFullKinematicsPlan
         c = xyz+R*obj.grasp_object_com-com;
         dc = zeros(3,obj.nq+3);
         dc(:,obj.grasp_object_xyz_idx) = eye(3);
-        dc(:,obj.grasp_object_rpy_idx) = sparse(reshape(bsxfun(@times,(1:3)',ones(1,3)),[],1),...
-          1:9,reshape(bsxfun(@times,obj.grasp_object_com,ones(1,3)),[],1),3,9)*dR;
+        dc(:,obj.grasp_object_rpy_idx) = matGradMult(dR,obj.grasp_object_com);
         dc(:,obj.nq+(1:3)) = -eye(3);
       end
       
