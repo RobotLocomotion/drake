@@ -32,7 +32,7 @@ load('data/atlas_fp.mat');
 % xstar(2) = 0.1*randn();
 % xstar(6) = pi*randn();
 
-xstar(r.getNumPositions() + (1:2)) = [0.4; 0];
+xstar(r.getNumPositions() + (1:2)) = [0.45; 0];
 
 r = r.setInitialState(xstar);
 
@@ -129,7 +129,7 @@ end
 x0 = xstar;
 % x0(3) = 1.0; % drop it a bit
 
-traj = simulate(sys,[0 2],x0);
+traj = simulate(sys,[0 1.75],x0);
 if visualize
   playback(v,traj,struct('slider',true));
 end
