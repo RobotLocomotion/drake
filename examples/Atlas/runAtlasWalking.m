@@ -38,10 +38,10 @@ r = compile(r);
 
 % set initial state to fixed point
 load(fullfile(getDrakePath,'examples','Atlas','data','atlas_fp.mat'));
-xstar(r.getNumPositions() + (1:2)) = [0.25; 0.0];
+xstar(r.getNumPositions() + (1:2)) = [0.0; 0.5];
 xstar = Point(r.getStateFrame(), xstar);
-% xstar.r_leg_hpy = -0.5;
-% xstar.r_leg_kny = 1.3;
+xstar.r_leg_hpy = -0.6;
+xstar.r_leg_kny = 1.3;
 xstar = double(xstar);
 
 r = r.setInitialState(xstar);
@@ -142,7 +142,7 @@ else
   options.W_kdot = zeros(3);
 end
 
-options.Kp =150*ones(6,1);
+options.Kp =1500*ones(6,1);
 options.Kd = 2*sqrt(options.Kp);
 lfoot_motion = BodyMotionControlBlock(r,'l_foot',ctrl_data,options);
 rfoot_motion = BodyMotionControlBlock(r,'r_foot',ctrl_data,options);
