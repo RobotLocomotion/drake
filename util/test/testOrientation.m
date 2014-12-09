@@ -21,11 +21,6 @@ for i = 1:1000
 end
 disp('quat to rotmat and rotmat to quat is consistent');
 
-% corner case from issue #601
-mat = [0,1,0;1,0,0;0,0,1];
-valuecheck(rotmat2axis(mat),rpy2axis(rotmat2rpy(mat)));
-valuecheck(quat2axis(rotmat2quat(mat)),rpy2axis(rotmat2rpy(mat)));
-
 % Check the corner case of rotmat2quat
 quat = [1;0;0;0];
 mat = quat2rotmat(quat);
