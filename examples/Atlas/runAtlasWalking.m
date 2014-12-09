@@ -38,10 +38,10 @@ r = compile(r);
 
 % set initial state to fixed point
 load(fullfile(getDrakePath,'examples','Atlas','data','atlas_fp.mat'));
-xstar(r.getNumPositions() + (1:2)) = [0.0; 0.5];
+xstar(r.getNumPositions() + (1:2)) = [0.0; 0.55];
 xstar = Point(r.getStateFrame(), xstar);
-xstar.r_leg_hpy = -0.6;
-xstar.r_leg_kny = 1.3;
+% xstar.r_leg_hpy = -0.6;
+% xstar.r_leg_kny = 1.3;
 xstar = double(xstar);
 
 r = r.setInitialState(xstar);
