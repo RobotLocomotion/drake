@@ -120,11 +120,19 @@ classdef MultiCoordinateFrame < CoordinateFrame
               fr2=getFrameByNum(target,i);
 %              warning(['Could not find any transform between ',obj.frame{i}.name,' and ', fr2.name]);
               break;
-            elseif isempty(tf)
+            end  
+            
+            if isempty(tf)
               tf = tfi;
             else
               tf = parallel(tf,tfi);
             end
+          end
+          
+          if ~isempty(tf)
+            % prepend remapping from coordinates of parent to children
+            T = sparse(1:obj.dim,[obj.coord_ids{:}],1,obj.dim,obj.dim);
+            tf = cascade(AffineTransform(obj,tf.getInputFrame,T,zeros(obj.dim,1)),tf);
           end
         end
       end
@@ -134,9 +142,7 @@ classdef MultiCoordinateFrame < CoordinateFrame
         % the entire target
         [child_tf,fid]=findChildTransform(obj,target,options);
         if fid>0
-          d = obj.frame{fid}.dim;
-          T = sparse(1:d,obj.coord_ids{fid},1,d,obj.dim);
-          tf = AffineTransform(obj,obj.frame{fid},T,zeros(d,1));
+          tf = transformToChild(obj,fid);
           if ~isempty(child_tf)
             tf = cascade(tf,child_tf);
           end
@@ -147,6 +153,12 @@ classdef MultiCoordinateFrame < CoordinateFrame
         error(['Could not find any transform between ',obj.name,' and ', target.name]);
       end
       options.throw_error_if_fail = throw_error_if_fail;
+    end
+    
+    function tf = transformToChild(obj,frame_id)
+      d = obj.frame{frame_id}.dim;
+      T = sparse(1:d,obj.coord_ids{frame_id},1,d,obj.dim);
+      tf = AffineTransform(obj,obj.frame{frame_id},T,zeros(d,1));
     end
     
     function [tf,fid] = findChildTransform(obj,target,options)
