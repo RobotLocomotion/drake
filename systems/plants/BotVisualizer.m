@@ -168,7 +168,7 @@ classdef BotVisualizer < RigidBodyVisualizer
               abc = zeros(3,1);
             else
               abchat = sqrt(abchat_sq);
-              k = nthroot(sum(I)/(2*sum(abchat_sq)*obj.inertia_ellipsoids_density*4/15*pi*prod(abchat)),3);
+              k = nthroot(sum(I)/(2*sum(abchat_sq)*obj.inertia_ellipsoids_density*4/15*pi*prod(abchat)),5);
               abc = k*abchat;
             end
             
