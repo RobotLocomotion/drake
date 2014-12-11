@@ -200,6 +200,7 @@ classdef LinearInvertedPendulum < LinearSystem
     function [ct,Vt,comtraj] = ZMPtrackerClosedForm(h,dZMP,options)
       if nargin<3 options = struct(); end
       if ~isfield(options,'compute_lyapunov') options.compute_lyapunov = (nargout>1); end
+      if ~isfield(options, 'Qz') options.Qz = eye(2); end
       
       typecheck(dZMP,'Trajectory');
       dZMP = dZMP.inFrame(desiredZMP);
@@ -214,15 +215,26 @@ classdef LinearInvertedPendulum < LinearSystem
       dt = diff(breaks);
 
       hg = h/9.81;
-      A = [zeros(2),eye(2);zeros(2,4)]; B = [zeros(2);eye(2)];
-      Q = diag([1 1 0 0]);
-      R = hg^2*eye(2); Ri = inv(R);
-      N = -hg*[eye(2);zeros(2)];
+      A = [zeros(2),eye(2);zeros(2,4)]; 
+      B = [zeros(2);eye(2)];
+      C = [eye(2), zeros(2)];
+      D = -hg*eye(2);
+
+      % LQR costs for the output system
+      Q = options.Qz;
+      R = zeros(2);
+
+      % Convert to costs in xbar, u
+      Q1 = C'*Q*C;
+      R1 = R + D'*Q*D;
+      R1i = inv(R1);
+      N = C'*Q*D;
       
-      [K,S] = lqr(A,B,Q,R,N); K=-K;
+      [K,S] = lqr(A,B,Q1,R1,N); K=-K;
       
-      A2 = (N+S*B)*Ri*B' - A';
-      B2 = [2*eye(2); zeros(2)] + 2*hg*(N + S*B)*Ri;
+      NB = (N' + B'*S);
+      A2 = NB'*R1i*B' - A';
+      B2 = 2*(C' - NB'*R1i*D)*Q;
       
       assert(rank(A2)==4);
       A2i = inv(A2);
@@ -232,10 +244,10 @@ classdef LinearInvertedPendulum < LinearSystem
       gamma = zeros(2,n,k);
       for j=n:-1:1
         beta(:,j,k) = -A2i*B2*cf(:,j,1);
-        gamma(:,j,k) = -hg*Ri*cf(:,j,1) - .5*Ri*B'*beta(:,j,k);
+        gamma(:,j,k) = D*R1i*cf(:,j,1) - .5*R1i*B'*beta(:,j,k);
         for i=k-1:-1:1
           beta(:,j,i) = A2i*( i*beta(:,j,i+1) - B2*cf(:,j,k-i+1) );
-          gamma(:,j,i) = -hg*Ri*cf(:,j,k-i+1) - .5*Ri*B'*beta(:,j,i);
+          gamma(:,j,i) = D*R1i*cf(:,j,k-i+1) - .5*R1i*B'*beta(:,j,i);
         end
         if (j==n)
           s1dt = zeros(4,1);
@@ -245,7 +257,7 @@ classdef LinearInvertedPendulum < LinearSystem
         alpha(:,j) = expm(A2*dt(j)) \ (s1dt - squeeze(beta(:,j,:))*(dt(j).^(0:k-1)'));
       end
       
-      ct = AffineSystem([],[],[],[],[],[],[],K,ExpPlusPPTrajectory(breaks,-.5*Ri*B',A2,alpha,gamma));
+      ct = AffineSystem([],[],[],[],[],[],[],K,ExpPlusPPTrajectory(breaks,-.5*R1i*B',A2,alpha,gamma));
         
       if options.compute_lyapunov
         s1traj = ExpPlusPPTrajectory(breaks,eye(4),A2,alpha,beta);
@@ -259,9 +271,9 @@ classdef LinearInvertedPendulum < LinearSystem
       end
         
       if (nargout>2)
-        Ay = [A + B*K, -.5*B*Ri*B'; zeros(4), A2];
+        Ay = [A + B*K, -.5*B*R1i*B'; zeros(4), A2];
         Ayi = inv(Ay);
-        By = [-hg*B*Ri; B2];
+        By = [-hg*B*R1i; B2];
         
         a = zeros(4,n);
         b = zeros(4,n,k);
@@ -289,8 +301,10 @@ classdef LinearInvertedPendulum < LinearSystem
         [s1,j] = eval(s1traj,t);
         trel = t-breaks(j);
         zbar = squeeze(cf(:,j,:))*trel.^(k-1:-1:0)';
-        rs = hg*zbar + .5*B'*s1;
-        s2dot = - zbar'*zbar + rs'*Ri*rs;
+        r2 = -2*D*Q*zbar;
+        rs = 0.5*(r2 + B'*s1);
+        q3 = zbar'*Q*zbar;
+        s2dot = -q3 + rs'*R1i*rs;
       end
     end
     
