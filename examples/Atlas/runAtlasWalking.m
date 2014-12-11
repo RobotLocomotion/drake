@@ -1,4 +1,4 @@
-function runAtlasWalking(use_mex,use_bullet,use_angular_momentum,navgoal)
+function runAtlasWalking(perturbation)
 % Example running walking QP controller from
 % Scott Kuindersma, Frank Permenter, and Russ Tedrake.
 % An efficiently solvable quadratic program for stabilizing dynamic
@@ -16,13 +16,18 @@ if plot_comtraj
   checkDependency('lcmgl');
 end
 
-if (nargin<1); use_mex = true; end
-if (nargin<2); use_bullet = false; end
-if (nargin<3); use_angular_momentum = false; end
-if (nargin<4)
-%  navgoal = [2*rand();0.25*randn();0;0;0;0];
-  navgoal = [1.5;0;0;0;0;0];
-end
+% if (nargin<1); use_mex = true; end
+% if (nargin<2); use_bullet = false; end
+% if (nargin<3); use_angular_momentum = false; end
+% if (nargin<4)
+% %  navgoal = [2*rand();0.25*randn();0;0;0;0];
+%   navgoal = [1.5;0;0;0;0;0];
+% end
+use_mex = false;
+use_bullet = false;
+use_angular_momentum = false;
+navgoal = [1.5;0;0;0;0;0];
+
 
 % silence some warnings
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints')
@@ -37,18 +42,16 @@ r = r.removeCollisionGroupsExcept({'heel','toe'});
 r = compile(r);
 
 % set initial state to fixed point
-load(fullfile(getDrakePath,'examples','Atlas','data','atlas_fp.mat'));
-xstar(r.getNumPositions() + (1:2)) = [0.0; 0.55];
+load(fullfile(getDrakePath,'examples','Atlas','data','atlas_lower_fp.mat'));
+% xstar(r.getNumPositions() + (1:2)) = [0.3; 0.3];
 xstar = Point(r.getStateFrame(), xstar);
-% xstar.r_leg_hpy = -0.6;
-% xstar.r_leg_kny = 1.3;
+xstar.r_leg_hpy = -0.9;
+xstar.r_leg_kny = 1.7;
 xstar = double(xstar);
-
-r = r.setInitialState(xstar);
+xstar(r.getNumPositions() + (1:2)) = xstar(r.getNumPositions() + (1:2)) + perturbation;
 
 v = r.constructVisualizer;
 v.display_dt = 0.03;
-v.draw(0, xstar)
 
 nq = getNumPositions(r);
 
@@ -69,20 +72,27 @@ zmpact = [];
 while true
 x0 = xstar;
 r = r.setInitialState(xstar);
+v.draw(0, xstar)
 q0 = x0(1:nq);
 
 feet_position = r.feetPosition(q0);
 contact = [feet_position.right(3) < 0.01; feet_position.left(3) < 0.01];
 cop0 = mean([feet_position.right(1:2), feet_position.left(1:2)], 2);
 if isempty(zmpact)
-  cop0 = mean([feet_position.right(1:2), feet_position.left(1:2)], 2);
+  feet = [feet_position.right(1:2), feet_position.left(1:2)];
+  cop0 = mean(feet(:,contact'), 2);
 else
   cop0 = zmpact(:,end);
 end
+kinsol = r.doKinematics(q0);
+[qcom, J] = r.getCOM(kinsol);
+qcomdot = J * x0((r.getNumPositions()+1):end);
+% qcom = qcom - [0.1; 0; 0]
+qcom
+qcomdot
 % recovery_planner = runRecovery(x0(1:3), x0(r.getNumPositions() + (1:3)), feet_position.right(1:2), feet_position.left(1:2), contact);
-recovery_planner = runRecovery([x0(1:2);0.76], x0(r.getNumPositions() + (1:3)), cop0, feet_position.right(1:2), feet_position.left(1:2), contact);
+recovery_planner = runRecovery(qcom, qcomdot, cop0, feet_position.right(1:2), feet_position.left(1:2), contact);
 dynamic_footstep_plan = recovery_planner.getDynamicFootstepPlan(r, r.feetPosition(q0));
-% pause()
 
 walking_plan_data = r.planWalkingZMP(x0, dynamic_footstep_plan);
 keyboard()
@@ -106,7 +116,7 @@ end
 
 ctrl_data = QPControllerData(true,struct(...
   'acceleration_input_frame',AtlasCoordinates(r),...
-  'D',-0.89/9.81*eye(2),... % assumed COM height
+  'D',-0.94/9.81*eye(2),... % assumed COM height
   'Qy',eye(2),...
   'S',walking_plan_data.V.S,... % always a constant
   's1',walking_plan_data.V.s1,...
@@ -122,15 +132,19 @@ ctrl_data = QPControllerData(true,struct(...
   'y0',walking_plan_data.zmptraj,...
   'ignore_terrain',false,...
   'plan_shift',[0;0;0],...
-  'constrained_dofs',[findJointIndices(r,'arm');findJointIndices(r,'back');findJointIndices(r,'neck')]));
+  'constrained_dofs',[]));
 
 options.dt = 0.003;
 options.slack_limit = 100;
 options.use_bullet = use_bullet;
-options.w_qdd = zeros(nq,1);
+w_qdd = zeros(nq, 1);
+w_qdd(findJointIndices(r, 'arm')) = .0001;
+w_qdd(findJointIndices(r, 'back')) = .0001;
+w_qdd(findJointIndices(r, 'neck')) = .0001;
+options.w_qdd = w_qdd;
 options.w_grf = 1e-8;
 options.w_slack = 5.0;
-options.debug = false;
+options.debug = true;
 options.contact_threshold = 0.002;
 options.solver = 0; % 0 fastqp, 1 gurobi
 options.use_mex = use_mex;
@@ -142,17 +156,18 @@ else
   options.W_kdot = zeros(3);
 end
 
-options.Kp =1500*ones(6,1);
+options.Kp =150*ones(6,1);
 options.Kd = 2*sqrt(options.Kp);
 lfoot_motion = BodyMotionControlBlock(r,'l_foot',ctrl_data,options);
 rfoot_motion = BodyMotionControlBlock(r,'r_foot',ctrl_data,options);
 options.Kp = [100; 100; 100; 150; 150; 150];
 options.Kd = 2*sqrt(options.Kp);
 pelvis_motion = PelvisMotionControlBlock(r,'pelvis',ctrl_data,options);
+% pelvis_motion.nominal_pelvis_height = 0.87;
 motion_frames = {lfoot_motion.getOutputFrame,rfoot_motion.getOutputFrame,...
 pelvis_motion.getOutputFrame};
 
-options.body_accel_input_weights = [.1 .1 .1];
+options.body_accel_input_weights = [.001 .001 .001];
 options.min_knee_angle = 0.7;
 qp = AtlasQPController(r,motion_frames,ctrl_data,options);
 
@@ -174,7 +189,7 @@ clear ins outs;
 
 % feedback foot contact detector with QP/atlas
 options.use_lcm=false;
-options.use_contact_logic_OR=false;
+options.use_contact_logic_OR=true;
 fc = FootContactBlock(r,ctrl_data,options);
 ins(1).system = 2;
 ins(1).input = 1;
@@ -365,14 +380,18 @@ if plot_comtraj
   plot(ts,comdes(2,:),'g');
   plot(ts,com(2,:),'m.-');
   hold off;
+  
+  figure(4)
+  clf
+  hold on;
+  plot(comdes(1,:),comdes(2,:),'g.-','LineWidth',3);
+  plot(com(1,:),com(2,:),'m.-','LineWidth',1);
 
   figure(3)
   clf;
   plot(zmpdes(1,:),zmpdes(2,:),'b','LineWidth',3);
   hold on;
   plot(zmpact(1,:),zmpact(2,:),'r.-','LineWidth',1);
-  %plot(comdes(1,:),comdes(2,:),'g','LineWidth',3);
-  %plot(com(1,:),com(2,:),'m.-','LineWidth',1);
 
   left_foot_steps = eval(lfoottraj,lfoottraj.getBreaks);
   tc_lfoot = getTerrainContactPoints(r,lfoot);
