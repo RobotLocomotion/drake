@@ -24,7 +24,9 @@ h = fnplt(comtraj2); set(h,'Color','b');
 h = fnplt(comtraj); set(h,'Color','r');
 legend('zmp','com from closed form','com from tracker');
 
-limp = LinearInvertedPendulum(1.0);
+ht = 1.0;
+g = 9.81;
+limp = LinearInvertedPendulum(ht);
 x0 = randn(2,1);
 zmptraj = setOutputFrame(PPTrajectory(spline(ts,[x0(1) + 0.5*cos(ts*pi); x0(2) + sin(ts*pi)])),desiredZMP);
 tic 
@@ -44,5 +46,24 @@ h = fnplt(zmptraj(2)); set(h,'Color','k');
 h = fnplt(comtraj(2)); set(h,'Color','b');
 h = fnplt(comtraj2(2)); set(h,'Color','r');
 
+coms = comtraj.eval(ts);
+ddcoms = eval(fnder(comtraj, 2), ts);
+com2s = comtraj2.eval(ts);
+ddcom2s = [[0;0], (diff(com2s, 2, 2)./ (ts(2)-ts(1))^2), [0;0]];
+zmps = zmptraj.eval(ts);
 
+% Plot acceleration of CoM divided by distance from CoM to ZmP, which
+% should always be equal to 1 from the LIPM dynamics.
+figure(3)
+clf
+subplot(2,1,1);
+hold on
+plot(ts, ddcoms(1,:) ./ ((g/ht)*(coms(1,:) - zmps(1,:))), 'b.-');
+plot(ts, ddcom2s(1,:) / ((g/ht)*(com2s(1,:) - zmps(1,:))), 'r.-');
+
+subplot(2,1,2);
+hold on
+plot(ts, ddcoms(2,:) ./ ((g/ht)*(coms(2,:) - zmps(2,:))), 'b.-');
+plot(ts, ddcom2s(2,:) / ((g/ht)*(com2s(2,:) - zmps(2,:))), 'r.-');
+legend('closed form', 'tracker');
 
