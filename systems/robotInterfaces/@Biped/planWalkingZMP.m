@@ -41,13 +41,15 @@ zmptraj = dynamic_footstep_plan.getZMPTraj();
 zmptraj = setOutputFrame(zmptraj,desiredZMP);
 
 kinsol = doKinematics(obj, q0);
-com = getCOM(obj, kinsol);
+[com, J] = getCOM(obj, kinsol);
+comdot = J * x0((obj.getNumPositions()+1):end);
 
 foot_pos = forwardKin(obj, kinsol, [obj.foot_frame_id.right, obj.foot_frame_id.left], [0;0;0]);
 zfeet = mean(foot_pos(3,:));
 
 % get COM traj from desired ZMP traj
 options.com0 = com(1:2);
+options.comdot0 = comdot(1:2);
 [c,V,comtraj] = LinearInvertedPendulum.ZMPtrackerClosedForm(com(3)-zfeet,zmptraj,options);
 
 [supports, support_times] = dynamic_footstep_plan.getSupports();

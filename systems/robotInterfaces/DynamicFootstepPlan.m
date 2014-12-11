@@ -62,6 +62,10 @@ classdef DynamicFootstepPlan
         link_constraints(end+1) = struct('link_ndx', body_ind, 'pt', [0;0;0], 'ts', ts, 'poses', foot_poses, 'dposes', foot_dposes, 'contact_break_indices', find([obj.foot_origin_knots.is_liftoff]), 'coefs', coefs, 'toe_off_allowed', [toe_off_allowed.(foot)]);
       end
 
+      zmptraj = obj.getZMPTraj();
+      zmps = zmptraj.eval(tsample);
+      plot(tsample, zmps(2,:), 'm.-');
+
       [supports, support_times] = obj.getSupports();
       pelvis_reference_height = zeros(1,length(support_times));
             
