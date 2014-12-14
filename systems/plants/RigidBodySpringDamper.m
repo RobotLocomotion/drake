@@ -16,7 +16,7 @@ classdef RigidBodySpringDamper < RigidBodyForceElement
       % bodykin
       
       nq = size(q,1);
-      
+
       if (obj.b~=0)
         if (nargout>1)
           kinsol = doKinematics(manip,q,false,true,qd);
@@ -47,6 +47,7 @@ classdef RigidBodySpringDamper < RigidBodyForceElement
           vel = ((x1-x2)'*(v1-v2))/(length+eps);
         end
       else
+        kinsol = doKinematics(manip,q);
         if (nargout>1)
           [x1,J1] = forwardKin(manip,kinsol,obj.body1,obj.pos1);
           [x2,J2] = forwardKin(manip,kinsol,obj.body2,obj.pos2);
