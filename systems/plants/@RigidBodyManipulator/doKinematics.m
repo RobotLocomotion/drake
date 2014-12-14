@@ -11,6 +11,10 @@ function kinsol=doKinematics(model,q,b_compute_second_derivatives,use_mex,qd)
 %
 
 if model.use_new_kinsol
+  checkDirty(model);
+  if nargin<5, qd=[]; end
+  if nargin<4, use_mex = true; end
+  
   compute_gradients = true;
   v = qd;
   compute_JdotV = true;
@@ -194,7 +198,7 @@ function kinsol = doKinematicsNew(model, q, compute_gradients, use_mex, v, compu
 
 checkDirty(model);
 if nargin<5, v=[]; end
-if nargin<6 && ~isempty(v), compute_JdotV=true; end
+if nargin<6 && ~isempty(v), compute_JdotV=false; end
 if nargin<4, use_mex = true; end
 if nargin<3, compute_gradients = false; end
 
@@ -255,8 +259,8 @@ for i=1:nb
   if body.parent<1
     T{i} = body.Ttree;
   else
-    qi = q(body.position_num); % qi is 6x1
-    T_body_to_parent = body.Ttree*jointTransform(body, qi);
+    q_body = q(body.position_num); % qi is 6x1
+    T_body_to_parent = body.Ttree*jointTransform(body, q_body);
     T{i}=T{body.parent}*T_body_to_parent;
   end
 end
@@ -272,11 +276,11 @@ end
 
 for i = 2 : nb
   body = bodies(i);
-  qBody = q(body.position_num);
+  q_body = q(body.position_num);
   if compute_gradients
-    [S{i}, dSdq{i}] = motionSubspace(body, qBody);
+    [S{i}, dSdq{i}] = motionSubspace(body, q_body);
   else
-    S{i} = motionSubspace(body, qBody);
+    S{i} = motionSubspace(body, q_body);
   end
 end
 end
