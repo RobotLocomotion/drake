@@ -273,7 +273,7 @@ classdef RigidBody < RigidBodyElement
       for i=1:length(pn)
         if isa(body.(pn{i}),'msspoly')
           body.param_bindings.(pn{i}) = body.(pn{i});
-          body.(pn{i}) = double(subs(body.(pn{i}),fr.getPoly,pval));
+          body.(pn{i}) = double(subs(body.(pn{i}),fr.poly,pval));
         end
       end
     end
@@ -404,7 +404,7 @@ classdef RigidBody < RigidBodyElement
       geomnode = node.getElementsByTagName('geometry').item(0);
       if ~isempty(geomnode)
         if (options.visual || options.visual_geometry)
-          shape = RigidBodyGeometry.parseURDFNode(geomnode,xyz,rpy,model,body.robotnum,options);
+          shape = RigidBodyGeometry.parse_URDF_or_SDF_Node(geomnode,xyz,rpy,model,body.robotnum,options);
           shape.c = c;
           body.visual_shapes = {body.visual_shapes{:},shape};
         end
@@ -425,7 +425,7 @@ classdef RigidBody < RigidBodyElement
       
       geomnode = node.getElementsByTagName('geometry').item(0);
       if ~isempty(geomnode)
-        shape = RigidBodyGeometry.parseURDFNode(geomnode,xyz,rpy,model,body.robotnum,options);
+        shape = RigidBodyGeometry.parse_URDF_or_SDF_Node(geomnode,xyz,rpy,model,body.robotnum,options);  
         if (node.hasAttribute('group'))
           name=char(node.getAttribute('group'));
         else

@@ -1,7 +1,7 @@
-function model=addRobotFromURDF(model,urdf_filename,xyz,rpy,options)
-% Parses URDF
+function model=addRobotFromSDF(model,sdf_filename,options)
+% Parses SDF
 %
-% @param urdf_filename filename of file to parse
+% @param sdf_filename filename of file to parse
 %
 % @options floating boolean where true means that a floating joint is
 % automatically added to the root. @default false
@@ -12,10 +12,7 @@ function model=addRobotFromURDF(model,urdf_filename,xyz,rpy,options)
 % @options visual_geometry boolean where true means to extract the
 % points from the visual geometries (might be very dense for meshes).
 % Useful for extracting the 2D geometries later.  @default false
-% @ingroup URDF Parsing
-
-if (nargin<3 || isempty(xyz)), xyz = zeros(3,1); end
-if (nargin<4 || isempty(rpy)), rpy = zeros(3,1); end
+% @ingroup SDF Parsing
 
 if (nargin<5), options = struct(); end
 if (~isfield(options,'floating')), options.floating = ''; end  % no floating base
@@ -35,34 +32,56 @@ if (~isfield(options,'namesuffix')), options.namesuffix = ''; end
 if (~isfield(options,'inertia_error')), options.inertia_error = 0.0; end
 if (~isfield(options,'damping_error')), options.damping_error = 0.0; end
 if (~isfield(options,'ignore_friction')), options.ignore_friction = false; end
-if (~isfield(options,'filetype')), options.filetype = 'urdf'; end
+if (~isfield(options,'filetype')), options.filetype = 'sdf'; end
 
-%disp(['Parsing ', urdf_filename]);
-[options.urdfpath,name,ext] = fileparts(urdf_filename);
+%disp(['Parsing ', sdf_filename]);
+[options.sdfpath,name,ext] = fileparts(sdf_filename);
 
-urdf = xmlread(urdf_filename);
+sdf = xmlread(sdf_filename);
 
-robot = urdf.getElementsByTagName('robot').item(0);
-if isempty(robot)
-  robot = urdf.getElementsByTagName('model').item(0);
+world = sdf.getElementsByTagName('world').item(0);
+
+if isempty(world)
+  world = sdf.getElementsByTagName('model').item(0);
 end
 
-if isempty(robot)
-  error('there are no robots in this urdf file');
+% if isempty(robot)
+%   error('there are no robots in this sdf file');
+% end
+worldname = char(world.getAttribute('name'))
+worldname = regexprep(worldname, '\.', '_', 'preservecase')
+worldname = [worldname,options.namesuffix]
+
+model.name = [model.name, {worldname}]
+modelnum = length(model.name)
+
+sdf_models = world.getElementsByTagName('model')
+
+for i=0:(modelnum-1)
+    model = parseSDFModel(model,sdf_models.item(i),options);
+%  [~,options] = model.parseMaterial(materials.item(i),options);
 end
 
-model = parseRobot(model,robot,xyz,rpy,options);
-
-model.urdf = vertcat(model.urdf, GetFullPath(urdf_filename));
+model.urdf = vertcat(model.urdf, GetFullPath(sdf_filename));
 model.dirty = true;
-
 model = compile(model);  % ideally this would happen on entry into any function...
-
 end
 
+function model=parseSDFModel(model,node,options)
+% Constructs a model from an XML node
+model_nodes = node.getChildNodes;
+xyz = zeros(3,1);
+rpy = zeros(3,1);
 
-function model=parseRobot(model,node,xyz,rpy,options)
-% Constructs a robot from a URDF XML node
+for i=0:model_nodes.getLength - 1
+    model_tag = model_nodes.item(i);
+    if strcmp('[pose: null]', char(model_tag))
+        pose_array = strsplit(char(model_tag.getTextContent), ' ');
+        xyz = reshape(str2num(char(pose_array(1:3))),[3,1]);
+        rpy = reshape(str2num(char(pose_array(4:6))),[3,1]);
+    end
+end
+
 
 %disp(['Parsing robot ', char(node.getAttribute('name')), ' from URDF file...']);
 robotname = char(node.getAttribute('name'));
@@ -81,6 +100,7 @@ parameters = node.getElementsByTagName('parameter');
 for i=0:(parameters.getLength()-1)
   model = parseParameter(model,robotnum,parameters.item(i),options);
 end
+
 % set the parameter frame immediately so that I can use the indices in my
 % parameter parsing
 [model,paramframe,pval] = constructParamFrame(model);
@@ -90,6 +110,7 @@ end
 
 links = node.getElementsByTagName('link');
 for i=0:(links.getLength()-1)
+  links.item(i).getAttribute('name')
   model = parseLink(model,robotnum,links.item(i),options);
 end
 
@@ -97,6 +118,7 @@ if isempty(model.collision_filter_groups)
   model.collision_filter_groups=containers.Map('KeyType','char','ValueType','any');
   model.collision_filter_groups('no_collision') = CollisionFilterGroup();
 end
+
 collision_filter_groups = node.getElementsByTagName('collision_filter_group');
 for i=0:(collision_filter_groups.getLength()-1)
   model = parseCollisionFilterGroup(model,robotnum,collision_filter_groups.item(i),options);

@@ -101,12 +101,13 @@ classdef RigidBodyGeometry
   end
   
   methods (Static)
-    function obj = parseURDFNode(node,x0,rpy,model,robotnum,options)
-      T= [rpy2rotmat(rpy),x0; 0 0 0 1];
       
+    function obj = parseURDFNode(node,x0,rpy,model,robotnum,options)
+      checkwhichentered = 'urdf';
+      T= [rpy2rotmat(rpy),x0; 0 0 0 1];
       childNodes = node.getChildNodes();
       for i=1:childNodes.getLength()
-        thisNode = childNodes.item(i-1);
+        thisNode = childNodes.item(i-1)
         switch (lower(char(thisNode.getNodeName())))
           case 'box'
             size = parseParamString(model,robotnum,char(thisNode.getAttribute('size')));
@@ -151,7 +152,75 @@ classdef RigidBodyGeometry
         obj.T = T;
       end
     end
+    
+    function obj = parseSDFNode(node,x0,rpy,model,robotnum,options)
+      checkwhichentered = 'sdf';
+      T= [rpy2rotmat(rpy),x0; 0 0 0 1];
+      childNodes = node.getChildNodes();
+      for i=1:childNodes.getLength()
+        thisNode = childNodes.item(i-1);
+        switch (lower(char(thisNode.getNodeName())))
+          case 'box'
+            children = thisNode.getChildNodes();
+            for i=1:children.getLength()
+                char_child = char(children.item(i-1));
+                if strcmp('[size: null]', char_child)
+                    size_text = char(children.item(i-1).getTextContent);
+                end
+            end
+            size = parseParamString(model,robotnum,size_text);
+            size = reshape(size, [3 1]);
+            obj = RigidBodyBox(size);
+          case 'sphere'
+            r = parseParamString(model,robotnum,char(thisNode.getAttribute('radius')));
+            obj = RigidBodySphere(r);
+          case 'cylinder'
+            r = parseParamString(model,robotnum,char(thisNode.getAttribute('radius')));
+            l = parseParamString(model,robotnum,char(thisNode.getAttribute('length')));
+            obj = RigidBodyCylinder(r,l);  % l/2
+          case 'mesh'
+            filename=char(thisNode.getAttribute('filename'));
+            scale = 1;
+            if thisNode.hasAttribute('scale')
+              scale = parseParamString(model,robotnum,char(thisNode.getAttribute('scale')));
+            end
+            
+            % parse strings with forward and backward slashes
+            filename = strrep(filename,'/',filesep);
+            filename = strrep(filename,'\',filesep);
 
+            if ~isempty(strfind(filename,['package:',filesep,filesep]))
+              filename=strrep(filename,['package:',filesep,filesep],'');
+              [package,filename]=strtok(filename,filesep);
+              filename=[rospack(package),filename];
+            else
+              [path,name,ext] = fileparts(filename);
+              if (isempty(path) || path(1)~=filesep)  % the it's a relative path
+                path = fullfile(options.urdfpath,path);
+              end
+              filename = fullfile(path,[name,ext]);
+            end
+            
+            obj = RigidBodyMesh(GetFullPath(filename));
+            obj.scale = scale;
+          case 'capsule'
+            r = parseParamString(model,robotnum,char(thisNode.getAttribute('radius')));
+            l = parseParamString(model,robotnum,char(thisNode.getAttribute('length')));
+            obj = RigidBodyCapsule(r,l);  % l/2
+        end
+        obj.T = T;
+      end
+    end
+    
+    function obj = parse_URDF_or_SDF_Node(node,x0,rpy,model,robotnum,options)
+          if(strcmp(options.filetype,'sdf'))
+            obj = RigidBodyGeometry.parseSDFNode(node,x0,rpy,model,robotnum,options);
+          elseif(strcmp(options.filetype,'urdf'))
+            obj = RigidBodyGeometry.parseURDFNode(node,x0,rpy,model,robotnum,options);
+          else
+            warn = 'check that options.filetype equals urdf or sdf'
+          end
+    end
   end
   
   properties  % note: constructModelmex currently depends on these being public

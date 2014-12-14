@@ -38,23 +38,29 @@ classdef RigidBodyManipulator < Manipulator
   end
 
   methods
-    function obj = RigidBodyManipulator(urdf_filename,options)
+    function obj = RigidBodyManipulator(filename,options)
       % Construct a new rigid body manipulator object with a single (empty)
       % RigidBody (called 'world'), and optionally load a first robot from
       % urdf (see documentation for addRobotFromURDF for details on the
       % inputs).
-
+      [pathstr,name,ext] = fileparts(filename);
+      
       if (nargin<2), options = struct(); end
       if ~isfield(options,'terrain'), options.terrain = []; end;
-
+      if (~isfield(options,'filetype')), options.filetype = ext(2:end); end
+      
       obj = obj@Manipulator(0,0);
       obj.body = newBody(obj);
       obj.body.linkname = 'world';
       obj = setTerrain(obj,options.terrain);
       obj.contact_options = obj.parseContactOptions(options);
-
-      if (nargin>0 && ~isempty(urdf_filename))
-        obj = addRobotFromURDF(obj,urdf_filename,zeros(3,1),zeros(3,1),options);
+      
+      if (nargin>0 && ~isempty(filename))
+        if strcmp(options.filetype, 'urdf')
+            obj = addRobotFromURDF(obj,filename,zeros(3,1),zeros(3,1),options);
+        elseif strcmp(options.filetype, 'sdf')
+            obj = addRobotFromSDF(obj,filename,zeros(3,1),zeros(3,1),options);
+        end
       end
     end
   end
@@ -714,7 +720,7 @@ classdef RigidBodyManipulator < Manipulator
       model.dirty = false;
 
       model = createMexPointer(model);
-
+      
       % collisionDetect may require the mex version of the manipulator,
       % so it should go after createMexPointer
       phi = model.collisionDetect(zeros(model.getNumPositions,1));
@@ -727,6 +733,7 @@ classdef RigidBodyManipulator < Manipulator
 %      if cond(H)>1e3
 %        warning('Drake:RigidBodyManipulator:SingularH','H appears to be singular (cond(H)=%f).  Are you sure you have a well-defined model?',cond(H));
 %      end
+
     end
 
     function indices = findJointIndices(model, str)
@@ -880,7 +887,7 @@ classdef RigidBodyManipulator < Manipulator
       end
 
       for i=1:length(model.body)
-        model.body(i) = updateParams(model.body(i),fr.getPoly,p);
+        model.body(i) = updateParams(model.body(i),fr.poly,p);
       end
 
       model = compile(model);
@@ -1210,84 +1217,6 @@ classdef RigidBodyManipulator < Manipulator
         lcmgl.sphere(xB_in_world,.01,20,20);
       end
       lcmgl.glColor3f(.7,.7,.7); % gray
-    end
-    
-    function drawLCMGLGravity(model,q,gravity_visual_magnitude)
-        % draws a vector centered at the robot's center 
-        % of mass having the direction of the gravitational
-        % force on the robot.
-        %
-        % @param q the position of the robot
-        % @param gravity_visual_magnitude specifies the visual length of 
-        % the vector representing the gravitational force.
-        
-        if (nargin<3), gravity_visual_magnitude=0.25; end
-        gravity_force = getMass(model)*model.gravity;
-        vector_scale = gravity_visual_magnitude/norm(gravity_force,2);
-        lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton,'Gravity');
-        lcmgl.glColor3f(1,0,0);
-        lcmgl.drawVector3d(getCOM(model,q),vector_scale*gravity_force);
-        lcmgl.switchBuffers();
-    end
-    
-    function drawLCMGLForces(model,q,qd,gravity_visual_magnitude)
-        % draws the forces and torques on the robot. They are
-        % spatial vectors (wrenches) and are drawn at the body's
-        % origin on which they act. Forces are in green and torques
-        % in purple. The magnitude of each vector is scaled by
-        % the same amount that the vector corresponding to the 
-        % gravitational force on the robot would be scaled in order to
-        % make it have a norm equal to gravity_visual_magnitude. Use 
-        % drawLCMGLGravity to draw the gravity.
-        %
-        % @param q the position of the robot
-        % @param qd the velocities of the robot
-        % @param gravity_visual_magnitude specifies the (would-be) visual 
-        % length of the vector representing the gravitational force.
-        
-        if (nargin<4), gravity_visual_magnitude=0.25; end
-        gravity_force = getMass(model)*model.gravity;
-        vector_scale = gravity_visual_magnitude/norm(gravity_force,2);
-        
-        kinsol = doKinematics(model,q);
-        force_vectors = {};
-        for i=1:length(model.force)
-            if ~model.force{i}.direct_feedthrough_flag
-                force_element = model.force{i};
-                force_type = class(force_element);
-                if isprop(force_element,'child_body')
-                    body_ind = force_element.child_body;
-                else
-                    body_frame = getFrame(model,force_element.kinframe);
-                    body_ind = body_frame.body_ind;
-                end
-                f_ext = computeSpatialForce(force_element,model,q,qd);
-                joint_wrench = f_ext(:,body_ind);
-                body_wrench = inv(model.body(body_ind).X_joint_to_body)'*joint_wrench;
-                pos = forwardKin(model,kinsol,body_ind,[zeros(3,1),body_wrench(1:3),body_wrench(4:6)]);
-                point = pos(:,1);
-                torque_ext = pos(:,2)-point;
-                force_ext = pos(:,3)-point;
-                if ~isfield(force_vectors,force_type), force_vectors.(force_type) = []; end
-                force_vectors.(force_type) = [force_vectors.(force_type),[point;torque_ext;force_ext]];
-            end
-        end
-        force_types = fields(force_vectors);
-        for i=1:length(force_types);
-            force_type = force_types(i); force_type = force_type{1};
-            vectors = force_vectors.(force_type);
-            lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton,force_type);
-            for j=1:size(vectors,2)
-                point = vectors(1:3,j);
-                torque_ext = vectors(4:6,j);
-                force_ext = vectors(7:9,j);
-                lcmgl.glColor3f(.4,.2,.4);
-                lcmgl.drawVector3d(point,vector_scale*torque_ext);
-                lcmgl.glColor3f(.2,.4,.2);
-                lcmgl.drawVector3d(point,vector_scale*force_ext);
-            end
-            lcmgl.switchBuffers();
-        end
     end
 
     function m = getMass(model)
@@ -1622,7 +1551,7 @@ classdef RigidBodyManipulator < Manipulator
     function val = parseParamString(model,robotnum,str)
       % @ingroup URDF Parsing
 
-      fr = getParamFrame(model); p=fr.getPoly;
+      fr = getParamFrame(model); p=fr.poly;
       pstr = regexprep(str,'\$(\w+)','p(model.param_db{robotnum}.(''$1'').index)');
 %      if strcmp(pstr,str)  % then it didn't have any parameters in it
         val = eval(['[',pstr,']']);
@@ -1968,12 +1897,15 @@ classdef RigidBodyManipulator < Manipulator
           % same as the composite inertia calculation in HandC.m
           parent = setInertial(parent,parent.I + body.Xtree' * body.I * body.Xtree);
         end
-
+        %Struct is added in this section: 
+        %begin
+        %body
         for j=1:length(body.visual_shapes)
-          body.visual_shapes{j}.T = body.Ttree*body.visual_shapes{j}.T;
+          body.visual_shapes{j}.T = body.Ttree*body.visual_shapes{j}.T
         end
         parent.visual_shapes = horzcat(parent.visual_shapes,body.visual_shapes);
-
+        %body
+        %end
         if (~isempty(body.contact_shapes))
           for j=1:length(body.contact_shapes)
             body.contact_shapes{j}.T = body.Ttree*body.contact_shapes{j}.T;
