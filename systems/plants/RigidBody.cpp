@@ -8,7 +8,7 @@ const int defaultRobotNum[1] = {0};
 const set<int> RigidBody::defaultRobotNumSet(defaultRobotNum,defaultRobotNum+1);
 
 RigidBody::RigidBody(void) :
-    S(DrakeJoint::MotionSubspaceType(TWIST_SIZE, 0)),
+    S(TWIST_SIZE, 0),
     dSdqi(0, 0),
     J(TWIST_SIZE, 0),
     dJdq(0, 0),
@@ -50,16 +50,17 @@ void RigidBody::setN(int n) {
 }
 
 
-void RigidBody::setJoint(std::unique_ptr<DrakeJoint> joint)
+void RigidBody::setJoint(std::unique_ptr<DrakeJoint> new_joint)
 {
-  this->joint = move(joint);
+  this->joint = move(new_joint);
+
   S.resize(TWIST_SIZE, joint->getNumVelocities());
   dSdqi.resize(S.size(), joint->getNumPositions());
   J.resize(TWIST_SIZE, joint->getNumVelocities());
   qdot_to_v.resize(joint->getNumVelocities(), joint->getNumPositions()),
-  dqdot_to_v_dqi(qdot_to_v.size(), joint->getNumPositions()),
-  v_to_qdot(joint->getNumPositions(), joint->getNumVelocities()),
-  dv_to_qdot_dqi(v_to_qdot.size(), joint->getNumPositions());
+  dqdot_to_v_dqi.resize(qdot_to_v.size(), joint->getNumPositions()),
+  v_to_qdot.resize(joint->getNumPositions(), joint->getNumVelocities()),
+  dv_to_qdot_dqi.resize(v_to_qdot.size(), joint->getNumPositions());
   dSdotVdqi.resize(TWIST_SIZE, joint->getNumPositions());
   dSdotVdvi.resize(TWIST_SIZE, joint->getNumVelocities());
 }
