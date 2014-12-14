@@ -304,6 +304,13 @@ classdef RigidBodyManipulator < Manipulator
     function obj = setJointLimits(obj,jl_min,jl_max)
       obj = setJointLimits@Manipulator(obj,jl_min,jl_max);
       obj.dirty = true;
+      for i = 1:getNumBodies(obj)
+        pos_num = obj.body(i).position_num;
+        if(any(pos_num~= 0)) % not the world body
+          obj.body(i).joint_limit_min = jl_min(pos_num)';
+          obj.body(i).joint_limit_max = jl_max(pos_num)';
+        end
+      end
     end
 
     function g = getGravity(obj,grav)
