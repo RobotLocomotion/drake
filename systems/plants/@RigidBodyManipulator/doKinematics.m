@@ -330,9 +330,9 @@ for i = 2 : nb
   body = bodies(i);
   nq = size(dTdq{i}, 2);
   Si = S{i};
-  dSdqi = zeros(numel(Si), nq) * dTdq{i}(1); % to make TaylorVar work better
-  dSdqi(:, body.position_num) = dSdq{i};
-  ret{i} = dTransformAdjoint(T{i}, Si, dTdq{i}, dSdqi);
+  dSidq = zeros(numel(Si), nq) * dTdq{i}(1); % to make TaylorVar work better
+  dSidq(:, body.position_num) = dSdq{i};
+  ret{i} = dTransformAdjoint(T{i}, Si, dTdq{i}, dSidq);
 end
 end
 

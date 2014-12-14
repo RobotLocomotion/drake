@@ -5,14 +5,15 @@ function [J, v_indices] = geometricJacobian(obj, kinsol, base, end_effector, exp
 %   v, the twist of endEffector with respect to base, expressed in
 %   expressedIn, can be computed as J * (v(vIndices)).
 
-if obj.use_new_kinsol
-  [J, v_indices, dJdq] = geometricJacobianNew(obj, kinsol, base, end_effector, expressed_in);
+
+if (kinsol.mex)
+  if (obj.mex_model_ptr==0)
+    error('Drake:RigidBodyManipulator:InvalidKinematics','This kinsol is no longer valid because the mex model ptr has been deleted.');
+  end
+  [J, v_indices] = geometricJacobianmex(obj.mex_model_ptr, base, end_effector, expressed_in);
 else
-  if (kinsol.mex)
-    if (obj.mex_model_ptr==0)
-      error('Drake:RigidBodyManipulator:InvalidKinematics','This kinsol is no longer valid because the mex model ptr has been deleted.');
-    end
-    [J, v_indices] = geometricJacobianmex(obj.mex_model_ptr, base, end_effector, expressed_in);
+  if obj.use_new_kinsol
+    [J, v_indices] = geometricJacobianNew(obj, kinsol, base, end_effector, expressed_in);
   else
     [~, jointPath, signs] = findKinematicPath(obj, base, end_effector);
     v_indices = velocityVectorIndices(obj.body, jointPath);
