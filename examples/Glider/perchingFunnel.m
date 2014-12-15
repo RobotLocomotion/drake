@@ -1,4 +1,4 @@
-function PerchingFunnel
+function perchingFunnel
 
 close all
 megaclear;
@@ -7,6 +7,7 @@ p = GliderPlant;
 %p = p.setInputLimits(-inf,inf);
 
 %create mss state variables
+addpath_spotless;
 x=msspoly('x',7);
 
 % obtain nomial trajectories via dircol with end constraints
