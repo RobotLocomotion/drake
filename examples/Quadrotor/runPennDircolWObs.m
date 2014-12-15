@@ -102,6 +102,10 @@ for i = 1:N
 end
 prog = prog.addStateConstraint(BoundingBoxConstraint(double(seasurface),double(world)),Ncell);
 
+%field = ObstacleField();
+%field = field.GenerateRandomObstacles();
+%prog = field.AddConstraints(prog);
+
 prog = prog.addInputConstraint(ConstantConstraint(u0),1); % DirectTrajectoryOptimization method
 
 xf = x0;                       % final conditions: translated in x
@@ -156,6 +160,15 @@ if (nargout<1)
   v.playback(xtraj,struct('slider',true));
 end
 
+
+% BEN'S CASCADE CODE
+
+% utraj = setOutputFrame(utraj,getInputFrame(r));
+%sys = cascade(utraj,r);
+%systraj = sys.simulate([0 utraj.tspan(2)],xtraj.eval(0));
+%v.playback(systraj,struct('slider',true));
+
+
 % Plot wind
 %[winddontcare,dquadinwinddontcare] = quadwind(r,[0,0,0],0,1);
 
@@ -163,8 +176,8 @@ end
 %yquad = quadpos(2);
 %zquad = quadpos(3);
 
-windfield = 'zero';
-%windfield = 'constant';
+%windfield = 'zero';
+windfield = 'constant';
 %windfield = 'linear';
 %windfield = 'quadratic';
 %windfield = 'sqrt';
