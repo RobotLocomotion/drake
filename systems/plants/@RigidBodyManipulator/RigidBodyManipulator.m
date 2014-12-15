@@ -2414,10 +2414,25 @@ classdef RigidBodyManipulator < Manipulator
       end
       if model.contact_options.ignore_self_collisions
         body_indices = 1:model.getNumBodies();
+
+        % Loop over the robots in the RigidBodyManipulator
         for i = 1:length(model.name)
+          % Get the indices of the bodies belonging to this robot
           robot_i_body_indices = body_indices([model.body.robotnum] == i);
+
+          % Remove the bodies in this robot from all collision filter
+          % groups
+          for collision_fg_name = model.collision_filter_groups.keys()
+            model = model.removeLinksFromCollisionFilterGroup(robot_i_body_indices,collision_fg_name{1},i);
+          end
+
+          % Create a collision filter group with the name of the robot
           model.collision_filter_groups(model.name{i}) = CollisionFilterGroup();
+
+          % Add all links in the robot to the new collision filter group
           model = model.addLinksToCollisionFilterGroup(robot_i_body_indices,model.name{i},i);
+
+          % Set the new collision filter group to ignore itself
           model = model.addToIgnoredListOfCollisionFilterGroup(model.name{i},model.name{i});
         end
       end
