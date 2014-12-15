@@ -31,7 +31,7 @@ limp = LinearInvertedPendulum(ht);
 x0 = randn(2,1);
 zmptraj = setOutputFrame(PPTrajectory(spline(ts,[x0(1) + 0.5*cos(ts*pi); x0(2) + sin(ts*pi)])),desiredZMP);
 tic 
-[c_closed_form,V,comtraj] = ZMPtracker(limp,zmptraj,struct('use_tvlqr',false,'ignore_frames',true,'com0',x0,'Qz',Q_scale*eye(2)));
+[c_closed_form,V,comtraj] = ZMPtracker(limp,zmptraj,struct('use_tvlqr',false,'ignore_frames',true,'com0',x0,'Qy',Q_scale*diag([0,0,0,0,1,1])));
 toc
 tic 
 comtraj_harada = COMplan(limp,x0,comtraj.eval(tf),zmptraj);
