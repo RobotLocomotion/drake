@@ -539,8 +539,10 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
               % M(M_inactive, z_inactive)*z(z_inactive) + w(M_inactive) >= 0
               %
               % check:
-              % z(z_inactive)'*(M(z_inactive, z_inactive)*z(z_inactive) + w(z_inactive)) == 0
-              z_active = ~z_inactive(1:(nL+nP+nC));  % only worry about the constraints that really matter.
+              % z(z_inactive)'*(M(z_inactive, z_inactive)*z(z_inactive) + w(z_inactive)) == 0  % since it is not checked by QP
+              % M(z_active,z_inactive)*z(z_inactive)+w(z_active) >= 0  % since we're assuming that z(z_active) == 0
+              z_active = ~z_inactive(1:(nL+nP+nC));  % only look at joint limit, position, and normal variables since if cn_i = 0, 
+              % then that's a solution and we don't care about the relative velocity \lambda_i
               QP_FAILED = any(M(z_active,z_inactive)*z(z_inactive)+w(z_active) < 0) || (abs(z(z_inactive)'*(M(z_inactive, z_inactive)*z(z_inactive) + w(z_inactive)))>1e-8);
             else
               obj.LCP_cache.data.fastqp_active_set = [];
@@ -561,8 +563,8 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
               end
               obj.LCP_cache.data.M_active = M*z+w<1e-8;
               obj.LCP_cache.data.z_inactive = z>lb+1e-8;            
+
             elseif obj.solver_type == 1
-            
   %             path_tic = tic;
               while 1
                 if any(z_inactive_guess)
@@ -573,8 +575,9 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
                     z(z_inactive_guess) = pathlcp(M(z_inactive_guess,z_inactive_guess),w(z_inactive_guess),lb(z_inactive_guess),ub(z_inactive_guess),obj.LCP_cache.data.z(z_inactive_guess));
                   end
                   if all(z_inactive_guess), break; end
-                  z_active = ~z_inactive_guess(1:(nL+nP+nC));  % only worry about the constraints that really matter.
-                  missed = (M(z_active,z_inactive_guess)*z(z_inactive_guess)+w(z_active) < 0);
+                    z_active = ~z_inactive(1:(nL+nP+nC));  % only look at joint limit, position, and contact normals since if cn_i = 0, 
+                    % then that's a valid solution, \beta_i=0, and we don't care about the relative velocity of the contact, \lambda_i
+                    missed = (M(z_active,z_inactive_guess)*z(z_inactive_guess)+w(z_active) < 0);
                 else
                   z_active=true(nL+nP+nC,1);
                   missed = (w(z_active)<0);
