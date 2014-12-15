@@ -70,6 +70,7 @@ classdef LinearInvertedPendulum < LinearSystem
       if nargin<3 options = struct(); end
       if ~isfield(options,'use_tvlqr') options.use_tvlqr = true; end
       if ~isfield(options,'compute_lyapunov') options.compute_lyapunov = (nargout>1); end
+      if ~isfield(options,'Qy') options.Qy = diag([0 0 0 0 1 1]); end
       if ~options.use_tvlqr
         if isfield(options,'dCOM') || ~isTI(obj) || ~isa(dZMP,'PPTrajectory')
           warning('closed-form solution not implemented for these options (yet)');
@@ -104,9 +105,6 @@ classdef LinearInvertedPendulum < LinearSystem
         dZMP = dZMP.inFrame(desiredZMP);
         
         zmp_tf = dZMP.eval(dZMP.tspan(end));
-        if ~isfield(options,'Qy')
-          options.Qy = diag([0 0 0 0 1 1]);
-        end
 
         if(isTI(obj))
           [c,V] = lqr(obj,zmp_tf,options.Qy);
@@ -200,7 +198,7 @@ classdef LinearInvertedPendulum < LinearSystem
     function [ct,Vt,comtraj] = ZMPtrackerClosedForm(h,dZMP,options)
       if nargin<3 options = struct(); end
       if ~isfield(options,'compute_lyapunov') options.compute_lyapunov = (nargout>1); end
-      if ~isfield(options, 'Qz') options.Qz = eye(2); end
+      if ~isfield(options, 'Qy') options.Qy = diag([0,0,0,0,1,1]); end
       
       typecheck(dZMP,'Trajectory');
       dZMP = dZMP.inFrame(desiredZMP);
@@ -223,7 +221,7 @@ classdef LinearInvertedPendulum < LinearSystem
       D = -hg*eye(2);
 
       % LQR costs for the output system
-      Q = options.Qz
+      Q = options.Qy(5:6,5:6); % for consistency with the other solution methods
       R = zeros(2);
 
       % Convert to costs in xbar, u
