@@ -140,29 +140,56 @@ classdef BotVisualizer < RigidBodyVisualizer
             R = quat2rotmat(pt(4:end));
             obj.lcmgl_inertia_ellipsoids.glPushMatrix();
             obj.lcmgl_inertia_ellipsoids.glTranslated(pt(1),pt(2),pt(3));
-            [V,D] = eig(b.inertia);
-            axis_angle = rpy2axis(rotmat2rpy(R*V)); % note: should be rotmat2axis, but this revealed a corner case not covered properly.  i've added a unit test and issue #601
+            [V,I] = eig(b.inertia);
+            if (det(V)<0) V(:,1)=-V(:,1); end
+            axis_angle = rotmat2axis(R*V);
             obj.lcmgl_inertia_ellipsoids.glRotated(180*axis_angle(4)/pi,axis_angle(1),axis_angle(2),axis_angle(3));
-            D=1./sqrt(diag(D));  % poinsot's ellipsoid
-%            D=real(sqrt(2*b.mass./(5*(trace(D)-2*diag(D))))); %
-%            alternative scaling (equivalent ellipsoid) from
+%            abc=1./sqrt(diag(I));  % poinsot's ellipsoid
+
+            % my formulation: find an ellipsoid of constant density, 
+            % obj.inertial_ellipsoids_density, with the same inertia
+            %  find a,b,c,m,  subject to
+            %       m/5 (b^2+c^2) = Ia
+            %       m/5 (a^2+c^2) = Ib
+            %       m/5 (a^2+b^2) = Ic
+            %       m = obj.inertia_ellipsoids_density * 4*pi/3*a*b*c
+            % which can be solved (in closed-form) iff the inertial triangle inequalities hold
+            %       Ia < Ib+Ic, Ib < Ia+Ic, Ic < Ia+Ib
+            % by observing that there exists a density rhohat for which
+            % mhat = 5/2 and the solution ahat,bhat,chat is 
+            %    ahat=sqrt(Ib+Ic-Ia), bhat=sqrt(Ia+Ic-Ib), chat=sqrt(Ib+Ic-Ia)
+            % and then we can scale this ellipse to the match the desired
+            % density using: a=k*ahat, b=k*bhat, c=k*chat. Solving for k
+            % (handling the possibility that one of the diagonal 
+            % elements of I could be zero. yields
+            I = diag(I);
+            abchat_sq = [-1 1 1; 1 -1 1; 1 1 -1]*I;
+            if any(abchat_sq<0)
+              abc = zeros(3,1);
+            else
+              abchat = sqrt(abchat_sq);
+              k = nthroot(sum(I)/(2*sum(abchat_sq)*obj.inertia_ellipsoids_density*4/15*pi*prod(abchat)),5);
+              abc = k*abchat;
+            end
+            
+%            alternative scaling (also some form of equivalent ellipsoid) from
 %            http://www.mathworks.com/help/physmod/sm/mech/vis/about-body-color-and-geometry.html
-%            (better scaling, but requires triangle inequalities, which seem to not hold
-%            in many of our systems)
+%            abc=real(sqrt(2*b.mass./(5*(trace(I)-2*diag(I))))); 
+
             obj.lcmgl_inertia_ellipsoids.glPushMatrix();
             obj.lcmgl_inertia_ellipsoids.glColor3f(0,0,1);
-            obj.lcmgl_inertia_ellipsoids.glScalef(D(1),D(2),1e-5);
-            obj.lcmgl_inertia_ellipsoids.sphere(zeros(3,1),obj.inertia_ellipsoids_scale,20,20);
+            obj.lcmgl_inertia_ellipsoids.glScalef(abc(1),abc(2),1e-5);
+            obj.lcmgl_inertia_ellipsoids.sphere(zeros(3,1),1,20,20);
             obj.lcmgl_inertia_ellipsoids.glPopMatrix();
             obj.lcmgl_inertia_ellipsoids.glPushMatrix();
             obj.lcmgl_inertia_ellipsoids.glColor3f(0,1,0);
-            obj.lcmgl_inertia_ellipsoids.glScalef(D(1),1e-5,D(3));
-            obj.lcmgl_inertia_ellipsoids.sphere(zeros(3,1),obj.inertia_ellipsoids_scale,20,20);
+            obj.lcmgl_inertia_ellipsoids.glScalef(abc(1),1e-5,abc(3));
+            obj.lcmgl_inertia_ellipsoids.sphere(zeros(3,1),1,20,20);
             obj.lcmgl_inertia_ellipsoids.glPopMatrix();
             obj.lcmgl_inertia_ellipsoids.glPushMatrix();
             obj.lcmgl_inertia_ellipsoids.glColor3f(1,0,0);
-            obj.lcmgl_inertia_ellipsoids.glScalef(1e-5,D(2),D(3));
-            obj.lcmgl_inertia_ellipsoids.sphere(zeros(3,1),obj.inertia_ellipsoids_scale,20,20);
+            obj.lcmgl_inertia_ellipsoids.glScalef(1e-5,abc(2),abc(3));
+            obj.lcmgl_inertia_ellipsoids.sphere(zeros(3,1),1,20,20);
             obj.lcmgl_inertia_ellipsoids.glPopMatrix();
             obj.lcmgl_inertia_ellipsoids.glPopMatrix();
           end
@@ -172,13 +199,14 @@ classdef BotVisualizer < RigidBodyVisualizer
       end
     end
     
-    function obj = enableLCMGLInertiaEllipsoids(obj,scale)
-      % @param scale a positive scalar where the ellipsoid draw is the
-      % levelset T = .5*omega'*I*omega = .5*scale
+    function obj = enableLCMGLInertiaEllipsoids(obj,density)
+      % @param density a positive scalar where the ellipsoid drawn is the
+      % the equivalent ellipsoid with the specified density.  @default is
+      % the density of wood (walnut).
       checkDependency('lcmgl');
       obj.lcmgl_inertia_ellipsoids = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton,'Inertia Ellipsoid');
       if nargin>1
-        obj.inertia_ellipsoids_scale=scale;
+        obj.inertia_ellipsoids_density=density;
       end
     end
     
@@ -252,6 +280,6 @@ classdef BotVisualizer < RigidBodyVisualizer
     draw_msg;
     status_agg;
     lcmgl_inertia_ellipsoids;
-    inertia_ellipsoids_scale=.02; 
+    inertia_ellipsoids_density=600; % kg/m^3 density of wood (walnut) 
   end
 end
