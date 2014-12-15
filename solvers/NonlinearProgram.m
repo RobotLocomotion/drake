@@ -896,7 +896,8 @@ classdef NonlinearProgram
       %                    6  -- SNOPT thinks it runs out of major iterations limits, but the
       %                    solution satisfies the constraints within obj.constraint_err_tol. try
       %                    increase the major iterations limits
-      %                    12 -- SNOPT fails as the linear constraints are infeasible
+      %                    11 -- SNOPT fails as the linear constraints are infeasible
+      %                    12 -- SNOPT fails as the linear equality constraints are infeasible
       %                    13 -- SNOPT fails as the nonlinear constraints are infeasible
       %                    31 -- SNOPT fails by running out of iterations limit
       %                    32 -- SNOPT fails by running out of major iterations limit
