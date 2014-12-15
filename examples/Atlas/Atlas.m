@@ -243,7 +243,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
                                       'max_num_steps', 10,...
                                       'min_num_steps', 1,...
                                       'leading_foot', 1); % 0: left, 1: right
-    default_walking_params = struct('step_speed', 0.3,... % speed of the swing foot (m/s)
+    default_walking_params = struct('step_speed', 0.5,... % speed of the swing foot (m/s)
                                     'step_height', 0.065,... % approximate clearance over terrain (m)
                                     'hold_frac', 0.4,... % fraction of the swing time spent in double support
                                     'drake_min_hold_time', 1.0,... % minimum time in double support (s)
