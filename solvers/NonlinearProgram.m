@@ -896,7 +896,13 @@ classdef NonlinearProgram
       %                    6  -- SNOPT thinks it runs out of major iterations limits, but the
       %                    solution satisfies the constraints within obj.constraint_err_tol. try
       %                    increase the major iterations limits
-      %                    12 -- SNOPT fails as the linear constraints are infeasible
+      %                    11 -- SNOPT fails as the linear constraints are infeasible.
+      %                          This is most likely because the decision variables in
+      %                          some constraints (nonlinear or linear constraints) are fixed (due to the equality bounding
+      %                          box constraint on the decision variable). Consider either
+      %                          to remove the constraints, or relax the bounding box
+      %                          constraint on the decision variable.
+      %                    12 -- SNOPT fails as the linear equality constraints are infeasible
       %                    13 -- SNOPT fails as the nonlinear constraints are infeasible
       %                    31 -- SNOPT fails by running out of iterations limit
       %                    32 -- SNOPT fails by running out of major iterations limit
@@ -1317,6 +1323,28 @@ classdef NonlinearProgram
         checkGradient(x0_free);
       end
       
+      grad_pattern = sparse([iGfun_free;iAfun],[jGvar_free;jAvar],[ones(length(iGfun_free),1);Avals],length(lb),length(x_lb_free));
+      empty_grad_row = all(grad_pattern == 0,2);
+      if(any(empty_grad_row))
+        empty_grad_row = find(empty_grad_row);
+        empty_grad_cin = empty_grad_row(empty_grad_row>1 & empty_grad_row<=1+obj.num_cin)-1;
+        empty_grad_ceq = empty_grad_row(empty_grad_row>1+obj.num_cin & empty_grad_row<=1+obj.num_cin+obj.num_ceq)-(1+obj.num_cin);
+        empty_grad_Ain = empty_grad_row(empty_grad_row>1+obj.num_cin+obj.num_ceq & empty_grad_row<=1+obj.num_cin+obj.num_ceq+size(obj.Ain,1))-(1+obj.num_cin+obj.num_ceq);
+        empty_grad_Aeq = empty_grad_row(empty_grad_row>1+obj.num_cin+obj.num_ceq+size(obj.Ain,1))-(1+obj.num_cin+obj.num_ceq+size(obj.Ain,1));
+        if(~isempty(empty_grad_cin))
+          warning('Drake:NonlinearProgram:EmptyGradient',sprintf('The decision variables in nonlinear inequality constraint %d are all fixed (due to equality bounding box constraints on the decision variables). Consider either removing this constraint, or relaxing the bounds on the decision variables.',empty_grad_cin));
+        end
+        if(~isempty(empty_grad_ceq))
+          warning('Drake:NonlinearProgram:EmptyGradient',sprintf('The decision variables in nonlinear equality constraint %d are all fixed (due to equality bounding box constraints on the decision variables). Consider either removing this constraint, or relaxing the bounds on the decision variables.',empty_grad_ceq));
+        end
+        if(~isempty(empty_grad_Ain))
+          warning('Drake:NonlinearProgram:EmptyGradient',sprintf('The decision variables in linear inequality constraint %d are all fixed (due to equality bounding box constraints on the decision variables). Consider either removing this constraint, or relaxing the bounds on the decision variables.',empty_grad_Ain));
+        end
+        if(~isempty(empty_grad_Aeq))
+          warning('Drake:NonlinearProgram:EmptyGradient',sprintf('The decision variables in linear equality constraint %d are all fixed (due to equality bounding box constraints on the decision variables). Consider either removing this constraint, or relaxing the bounds on the decision variables.',empty_grad_Aeq));
+        end
+      end
+      
       if(obj.which_snopt == 1)
         [x_free,objval,exitflag,xmul,Fmul] = NonlinearProgramSnoptmex(x0_free, ...
           x_lb_free,x_ub_free, ...
@@ -1362,6 +1390,20 @@ classdef NonlinearProgram
       x(fix_x_idx) = x_fix;
       objval = objval(1);
       [exitflag,infeasible_constraint_name] = obj.mapSolverInfo(exitflag,x);
+      if(exitflag == 11)
+        if(~isempty(empty_grad_cin))
+          display(sprintf('The decision variables in nonlinear inequality constraint %d are all fixed (due to equality bounding box constraints on the decision variables). Consider either removing this constraint, or relaxing the bounds on the decision variables.\n',empty_grad_cin));
+        end
+        if(~isempty(empty_grad_ceq))
+          display(sprintf('The decision variables in nonlinear equality constraint %d are all fixed (due to equality bounding box constraints on the decision variables). Consider either removing this constraint, or relaxing the bounds on the decision variables.\n',empty_grad_ceq));
+        end
+        if(~isempty(empty_grad_Ain))
+          display(sprintf('The decision variables in linear inequality constraint %d are all fixed (due to equality bounding box constraints on the decision variables). Consider either removing this constraint, or relaxing the bounds on the decision variables.\n',empty_grad_Ain));
+        end
+        if(~isempty(empty_grad_Aeq))
+          display(sprintf('The decision variables in linear equality constraint %d are all fixed (due to equality bounding box constraints on the decision variables). Consider either removing this constraint, or relaxing the bounds on the decision variables.\n',empty_grad_Aeq));
+        end
+      end
     end
     
     function [x,objval,exitflag,infeasible_constraint_name] = fmincon(obj,x0)
