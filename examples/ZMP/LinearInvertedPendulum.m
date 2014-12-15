@@ -210,8 +210,10 @@ classdef LinearInvertedPendulum < LinearSystem
       % closed-form solution, see derivation in zmp_riccati.pdf
       [breaks,coefs,n,k,d] = unmkpp(dZMP.pp);
       assert(prod(d)==2);
-      cf = reshape(coefs,[2,n,k]);
-      cf(:,:,k) = cf(:,:,k) - repmat(zmp_tf,1,n);  % switch to zbar coordinates
+      coefs_flipped = reshape(coefs,[2,n,k]);
+      c = flip(coefs_flipped, 3); % matlab writes coefficients in descending order, we use ascending
+
+      c(:,:,1) = c(:,:,1) - repmat(zmp_tf,1,n);  % switch to zbar coordinates
       dt = diff(breaks);
 
       hg = h/9.81;
@@ -221,7 +223,7 @@ classdef LinearInvertedPendulum < LinearSystem
       D = -hg*eye(2);
 
       % LQR costs for the output system
-      Q = options.Qz;
+      Q = options.Qz
       R = zeros(2);
 
       % Convert to costs in xbar, u
@@ -243,11 +245,11 @@ classdef LinearInvertedPendulum < LinearSystem
       beta = zeros(4,n,k);
       gamma = zeros(2,n,k);
       for j=n:-1:1
-        beta(:,j,k) = -A2i*B2*cf(:,j,1);
-        gamma(:,j,k) = D*R1i*cf(:,j,1) - .5*R1i*B'*beta(:,j,k);
+        beta(:,j,k) = -A2i*B2*c(:,j,k);
+        gamma(:,j,k) = R1i*D*Q*c(:,j,k) - .5*R1i*B'*beta(:,j,k);
         for i=k-1:-1:1
-          beta(:,j,i) = A2i*( i*beta(:,j,i+1) - B2*cf(:,j,k-i+1) );
-          gamma(:,j,i) = D*R1i*cf(:,j,k-i+1) - .5*R1i*B'*beta(:,j,i);
+          beta(:,j,i) = A2i*( i*beta(:,j,i+1) - B2*c(:,j,i) );
+          gamma(:,j,i) = R1i*D*Q*c(:,j,i) - .5*R1i*B'*beta(:,j,i);
         end
         if (j==n)
           s1dt = zeros(4,1);
@@ -273,7 +275,7 @@ classdef LinearInvertedPendulum < LinearSystem
       if (nargout>2)
         Ay = [A + B*K, -.5*B*R1i*B'; zeros(4), A2];
         Ayi = inv(Ay);
-        By = [-hg*B*R1i; B2];
+        By = [B*R1i*D*Q; B2];
         
         a = zeros(4,n);
         b = zeros(4,n,k);
@@ -283,11 +285,9 @@ classdef LinearInvertedPendulum < LinearSystem
         if isfield(options,'comdot0'), x(3:4) = options.comdot0; end
         
         for j=1:n
-          b(:,j,k) = -Ayi(1:4,:)*By*cf(:,j,1);
-          %            valuecheck(-Ayi(5:8,:)*By*cf(:,j,1),beta(:,j,k));
+          b(:,j,k) = -Ayi(1:4,:)*By*c(:,j,k);
           for i=k-1:-1:1
-            b(:,j,i) = Ayi(1:4,:)*( i*[b(:,j,i+1);beta(:,j,i+1)] - By*cf(:,j,k-i+1) );
-            %              valuecheck( Ayi(5:8,:)*( i*[b(:,j,i+1);beta(:,j,i+1)] - By*cf(:,j,k-i+1) ),beta(:,j,i));
+            b(:,j,i) = Ayi(1:4,:)*( i*[b(:,j,i+1);beta(:,j,i+1)] - By*c(:,j,i) );
           end
           a(:,j) = x - b(:,j,1);
           x = [eye(4),zeros(4)]*expm(Ay*dt(j))*[a(:,j);alpha(:,j)] + squeeze(b(:,j,:))*(dt(j).^(0:k-1)');
@@ -300,7 +300,7 @@ classdef LinearInvertedPendulum < LinearSystem
       function s2dot = s2dynamics(t,s2)
         [s1,j] = eval(s1traj,t);
         trel = t-breaks(j);
-        zbar = squeeze(cf(:,j,:))*trel.^(k-1:-1:0)';
+        zbar = squeeze(c(:,j,:))*trel.^(0:k-1)';
         r2 = -2*D*Q*zbar;
         rs = 0.5*(r2 + B'*s1);
         q3 = zbar'*Q*zbar;

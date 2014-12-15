@@ -26,54 +26,37 @@ legend('zmp','com from closed form','com from Harada analytic');
 
 ht = 1.0;
 g = 9.81;
+Q_scale = rand()*10 + 1;
 limp = LinearInvertedPendulum(ht);
 x0 = randn(2,1);
 zmptraj = setOutputFrame(PPTrajectory(spline(ts,[x0(1) + 0.5*cos(ts*pi); x0(2) + sin(ts*pi)])),desiredZMP);
 tic 
-[c,V,comtraj] = ZMPtracker(limp,zmptraj,struct('use_tvlqr',false,'ignore_frames',true,'com0',x0));
+[c_closed_form,V,comtraj] = ZMPtracker(limp,zmptraj,struct('use_tvlqr',false,'ignore_frames',true,'com0',x0,'Qz',Q_scale*eye(2)));
 toc
 tic 
-comtraj_harada = COMplan(limp,x0,eval(comtraj,tf),zmptraj);
+comtraj_harada = COMplan(limp,x0,comtraj.eval(tf),zmptraj);
 toc
 tic
-c_tvlqr = ZMPtracker(limp,zmptraj,struct('use_tvlqr',true,'ignore_frames',true,'com0',x0));
+c_tvlqr = ZMPtracker(limp,zmptraj,struct('use_tvlqr',true,'ignore_frames',true,'com0',x0,'Qy',Q_scale*diag([0,0,0,0,1,1])));
 toc
-tic
-comtraj_sim = COMplanFromTracker(limp,x0, [0;0], ts([1,end]), c_tvlqr);
-toc
+comtraj_sim_closed = COMplanFromTracker(limp,x0, [0;0], ts([1,end]), c_closed_form);
+ddcomtraj_sim = fnder(comtraj_sim_closed, 2);
+comtraj_sim_tvlqr = COMplanFromTracker(limp,x0, [0;0], ts([1,end]), c_tvlqr);
 
 figure(2); clf;
 subplot(2,1,1); hold on;
 h = fnplt(zmptraj(1));  set(h,'Color','k');
 h = fnplt(comtraj(1));  set(h,'Color','b');
-h = fnplt(comtraj_harada(1)); set(h,'Color','r');
-h = fnplt(comtraj_sim(1)); set(h,'Color','g');
+h = fnplt(comtraj_harada(1)); set(h,'Color','r','LineStyle','none','Marker','^');
+h = fnplt(comtraj_sim_closed(1)); set(h,'Color','g','LineStyle','none','Marker','+');
+h = fnplt(comtraj_sim_closed(1) - ht/g * ddcomtraj_sim(1)); set(h,'Color','b','LineStyle','none','Marker','o');
 subplot(2,1,2); hold on;
 h = fnplt(zmptraj(2)); set(h,'Color','k');
 h = fnplt(comtraj(2)); set(h,'Color','b');
-h = fnplt(comtraj_harada(2)); set(h,'Color','r');
-h = fnplt(comtraj_sim(2)); set(h,'Color','g','Marker','o');
-legend('zmp', 'com from closed form', 'com from Harada analytic', 'com from sim')
+h = fnplt(comtraj_harada(2)); set(h,'Color','r','LineStyle','none','Marker','^');
+h = fnplt(comtraj_sim_closed(2)); set(h,'Color','g','LineStyle','none','Marker','+');
+h = fnplt(comtraj_sim_closed(2) - ht/g * ddcomtraj_sim(2)); set(h,'Color','b','LineStyle','none','Marker','o');
+legend('zmp', 'com from closed form', 'com from Harada analytic', 'com from sim', 'zmp from sim');
 
-coms = comtraj.eval(ts);
-ddcoms = eval(fnder(comtraj, 2), ts);
-com2s = comtraj_harada.eval(ts);
-ddcom2s = [[0;0], (diff(com2s, 2, 2)./ (ts(2)-ts(1))^2), [0;0]];
-zmps = zmptraj.eval(ts);
-
-% Plot acceleration of CoM divided by distance from CoM to ZmP, which
-% should always be equal to 1 from the LIPM dynamics. It's not always 1,
-% however, because the actual and desired ZMP do not always match.
-figure(3)
-clf
-subplot(2,1,1);
-hold on
-plot(ts, ddcoms(1,:) ./ ((g/ht)*(coms(1,:) - zmps(1,:))), 'b.-');
-plot(ts, ddcom2s(1,:) / ((g/ht)*(com2s(1,:) - zmps(1,:))), 'r.-');
-
-subplot(2,1,2);
-hold on
-plot(ts, ddcoms(2,:) ./ ((g/ht)*(coms(2,:) - zmps(2,:))), 'b.-');
-plot(ts, ddcom2s(2,:) / ((g/ht)*(com2s(2,:) - zmps(2,:))), 'r.-');
-legend('closed form', 'tracker');
-
+tsample = linspace(ts(1), ts(end), 100);
+valuecheck(comtraj_sim_closed.eval(tsample), comtraj_sim_tvlqr.eval(tsample), 1e-3);
