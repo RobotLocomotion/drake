@@ -209,7 +209,13 @@ classdef LinearInvertedPendulum < LinearSystem
       [breaks,coefs,n,k,d] = unmkpp(dZMP.pp);
       assert(prod(d)==2);
       coefs_flipped = reshape(coefs,[2,n,k]);
-      c = flip(coefs_flipped, 3); % matlab writes coefficients in descending order, we use ascending
+
+      % matlab writes coefficients in descending order, we use ascending
+      if logical(exist('flip','builtin')) % flipdim is deprecated, but flip does not exist in 2012b
+        c = flip(coefs_flipped, 3); 
+      else
+        c = flipdim(coefs_flipped, 3);
+      end
 
       c(:,:,1) = c(:,:,1) - repmat(zmp_tf,1,n);  % switch to zbar coordinates
       dt = diff(breaks);
