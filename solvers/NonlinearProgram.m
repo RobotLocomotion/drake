@@ -896,7 +896,12 @@ classdef NonlinearProgram
       %                    6  -- SNOPT thinks it runs out of major iterations limits, but the
       %                    solution satisfies the constraints within obj.constraint_err_tol. try
       %                    increase the major iterations limits
-      %                    11 -- SNOPT fails as the linear constraints are infeasible
+      %                    11 -- SNOPT fails as the linear constraints are infeasible.
+      %                          This is most likely because the decision variables in
+      %                          some constraints (nonlinear or linear constraints) are fixed (due to the equality bounding
+      %                          box constraint on the decision variable). Consider either
+      %                          to remove the constraints, or relax the bounding box
+      %                          constraint on the decision variable.
       %                    12 -- SNOPT fails as the linear equality constraints are infeasible
       %                    13 -- SNOPT fails as the nonlinear constraints are infeasible
       %                    31 -- SNOPT fails by running out of iterations limit
@@ -1385,6 +1390,20 @@ classdef NonlinearProgram
       x(fix_x_idx) = x_fix;
       objval = objval(1);
       [exitflag,infeasible_constraint_name] = obj.mapSolverInfo(exitflag,x);
+      if(exitflag == 11)
+        if(~isempty(empty_grad_cin))
+          display(sprintf('The decision variables in nonlinear inequality constraint %d are all fixed (due to equality bounding box constraints on the decision variables). Consider either removing this constraint, or relaxing the bounds on the decision variables.\n',empty_grad_cin));
+        end
+        if(~isempty(empty_grad_ceq))
+          display(sprintf('The decision variables in nonlinear equality constraint %d are all fixed (due to equality bounding box constraints on the decision variables). Consider either removing this constraint, or relaxing the bounds on the decision variables.\n',empty_grad_ceq));
+        end
+        if(~isempty(empty_grad_Ain))
+          display(sprintf('The decision variables in linear inequality constraint %d are all fixed (due to equality bounding box constraints on the decision variables). Consider either removing this constraint, or relaxing the bounds on the decision variables.\n',empty_grad_Ain));
+        end
+        if(~isempty(empty_grad_Aeq))
+          display(sprintf('The decision variables in linear equality constraint %d are all fixed (due to equality bounding box constraints on the decision variables). Consider either removing this constraint, or relaxing the bounds on the decision variables.\n',empty_grad_Aeq));
+        end
+      end
     end
     
     function [x,objval,exitflag,infeasible_constraint_name] = fmincon(obj,x0)
