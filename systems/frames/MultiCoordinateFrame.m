@@ -46,7 +46,7 @@ classdef MultiCoordinateFrame < CoordinateFrame
         dim = dim+coordinate_frames{i}.dim;
         prefix = vertcat(prefix,coordinate_frames{i}.prefix);
         coordinates(frame_id==i) = reshape(coordinate_frames{i}.coordinates,[],1);
-        coord_ids{i} = find(frame_id==i);
+        coord_ids{i} = reshape(find(frame_id==i),1,[]);
       end
       name=name(2:end); % remove extra '+'
       
@@ -54,7 +54,7 @@ classdef MultiCoordinateFrame < CoordinateFrame
       obj = obj@CoordinateFrame(name,dim,prefix,coordinates);
       obj.frame = coordinate_frames;
       obj.frame_id = frame_id;
-      obj.coord_ids = coord_ids;
+      obj.coord_ids = reshape(coord_ids,1,[]);
       
       % preallocate
       obj.cell_vals = cell(1,length(obj.frame));
