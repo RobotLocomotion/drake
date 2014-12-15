@@ -50,7 +50,7 @@ classdef MultiCoordinateFrame < CoordinateFrame
       end
       name=name(2:end); % remove extra '+'
       
-      sizecheck(frame_id,dim);
+      sizecheck(frame_id,[dim,nan]);
       obj = obj@CoordinateFrame(name,dim,prefix,coordinates);
       obj.frame = coordinate_frames;
       obj.frame_id = frame_id;
