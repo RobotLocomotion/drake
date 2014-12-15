@@ -1317,6 +1317,28 @@ classdef NonlinearProgram
         checkGradient(x0_free);
       end
       
+      grad_pattern = sparse([iGfun_free;iAfun],[jGvar_free;jAvar],[ones(length(iGfun_free),1);Avals],length(lb),length(x_lb_free));
+      empty_grad_row = all(grad_pattern == 0,2);
+      if(any(empty_grad_row))
+        empty_grad_row = find(empty_grad_row);
+        empty_grad_cin = empty_grad_row(empty_grad_row>1 & empty_grad_row<=1+obj.num_cin)-1;
+        empty_grad_ceq = empty_grad_row(empty_grad_row>1+obj.num_cin & empty_grad_row<=1+obj.num_cin+obj.num_ceq)-(1+obj.num_cin);
+        empty_grad_Ain = empty_grad_row(empty_grad_row>1+obj.num_cin+obj.num_ceq & empty_grad_row<=1+obj.num_cin+obj.num_ceq+size(obj.Ain,1))-(1+obj.num_cin+obj.num_ceq);
+        empty_grad_Aeq = empty_grad_row(empty_grad_row>1+obj.num_cin+obj.num_ceq+size(obj.Ain,1))-(1+obj.num_cin+obj.num_ceq+size(obj.Ain,1));
+        if(~isempty(empty_grad_cin))
+          warning('Drake:NonlinearProgram:EmptyGradient',sprintf('The decisition variables in nonlinear inequality constraint %d are all fixed due to the equality bounding box constraint on the decision variables, consider to either remove this constraint, or loose the bounds on the decision variables',empty_grad_cin));
+        end
+        if(~isempty(empty_grad_ceq))
+          warning('Drake:NonlinearProgram:EmptyGradient',sprintf('The decisition variables in nonlinear equality constraint %d are all fixed due to the equality bounding box constraint on the decision variables, consider to either remove this constraint, or loose the bounds on the decision variables',empty_grad_ceq));
+        end
+        if(~isempty(empty_grad_Ain))
+          warning('Drake:NonlinearProgram:EmptyGradient',sprintf('The decisition variables in linear inequality constraint %d are all fixed due to the equality bounding box constraint on the decision variables, consider to either remove this constraint, or loose the bounds on the decision variables',empty_grad_Ain));
+        end
+        if(~isempty(empty_grad_Aeq))
+          warning('Drake:NonlinearProgram:EmptyGradient','The decisition variables in linear equality constraint %d are all fixed due to the equality bounding box constraint on the decision variables, consider to either remove this constraint, or loose the bounds on the decision variables',empty_grad_Aeq);
+        end
+      end
+      
       if(obj.which_snopt == 1)
         [x_free,objval,exitflag,xmul,Fmul] = NonlinearProgramSnoptmex(x0_free, ...
           x_lb_free,x_ub_free, ...
