@@ -934,6 +934,13 @@ classdef RigidBodyManipulator < Manipulator
       model.dirty = true;
     end
 
+    function model = setForce(model,force_ind,force)
+      typecheck(force_ind,'numeric');
+      typecheck(force,'RigidBodyForceElement');
+      model.force{force_ind} = force;
+      model.dirty = true;
+    end
+    
     function [model,frame_id] = addFrame(model,frame)
       % @ingroup Kinematic Tree
       typecheck(frame,'RigidBodyFrame');
