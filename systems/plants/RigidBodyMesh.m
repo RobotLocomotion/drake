@@ -80,6 +80,19 @@ classdef RigidBodyMesh < RigidBodyGeometry
       pts = loadFile(obj);
     end
 
+    function geom = convertToOBJ(geom)
+      [path,name,ext] = fileparts(geom.filename);
+      if ~strcmpi(ext,'.obj') && ~exist(fullfile(path,[name,'.obj']),'file')
+        exe = ''; if ispc, exe = '.exe'; end 
+        converter = fullfile(pods_get_bin_path,['convert_to_obj',exe]);
+        if exist(converter)
+          systemWCMakeEnv([converter,' ',geom.filename]);
+        else
+          error('can''t convert %s to OBJ format',geom.filename); 
+        end
+      end
+      geom.filename = fullfile(path,[name,'.obj']);
+    end
     
     function geometry = serializeToLCM(obj)
       geometry = drake.lcmt_viewer_geometry_data();

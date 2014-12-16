@@ -76,8 +76,14 @@ classdef BotVisualizer < RigidBodyVisualizer
         end
         for j=1:link.num_geom
           if use_collision_geometry
+            if isa(b.collision_geometry{j},'RigidBodyMesh')
+              b.collision_geometry{j} = convertToOBJ(b.collision_geometry{j});
+            end
             link.geom(j) = serializeToLCM(b.collision_geometry{j});
           else
+            if isa(b.visual_geometry{j},'RigidBodyMesh')
+              b.visual_geometry{j} = convertToOBJ(b.visual_geometry{j});
+            end
             link.geom(j) = serializeToLCM(b.visual_geometry{j});
           end
         end
