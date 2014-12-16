@@ -3,6 +3,8 @@ function walking_plan_data = planWalkingZMP(obj, x0, footstep_plan)
 % @param x0 the initial robot state vector
 % @param footstep_plan a FootstepPlan
 
+path_handle = addpathTemporary(fullfile(getDrakePath(), 'examples', 'ZMP'));
+
 footstep_plan.sanity_check();
 for j = 1:length(footstep_plan.footsteps)
   footstep_plan.footsteps(j).walking_params = applyDefaults(struct(footstep_plan.footsteps(j).walking_params),...

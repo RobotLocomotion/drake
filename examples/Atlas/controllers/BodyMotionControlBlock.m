@@ -11,6 +11,7 @@ classdef BodyMotionControlBlock < DrakeSystem
     body_ind;
     mex_ptr;
     use_mex;
+    use_plan_shift;
   end
   
   methods

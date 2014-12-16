@@ -6,10 +6,8 @@ function runAtlasWalking(use_mex,use_bullet,use_angular_momentum,navgoal)
 % Robotics and Automation, Hong Kong, China, May 2014. IEEE.
 
 checkDependency('gurobi');
-
-path_handle = addpathTemporary({fullfile(getDrakePath,'examples','ZMP'),...
-                                fullfile(getDrakePath,'examples','Atlas','controllers'),...
-                                fullfile(getDrakePath,'examples','Atlas','frames')});
+path_handle = addpathTemporary({fullfile(getDrakePath(), 'examples', 'Atlas', 'frames'),...
+                                fullfile(getDrakePath(), 'examples', 'Atlas', 'controllers')});
 
 plot_comtraj = true;
 
@@ -76,7 +74,6 @@ T = ts(end);
 %   lcmgl.switchBuffers();
 % end
 
-
 ctrl_data = QPControllerData(true,struct(...
   'acceleration_input_frame',AtlasCoordinates(r),...
   'D',-0.89/9.81*eye(2),... % assumed COM height
@@ -100,13 +97,18 @@ ctrl_data = QPControllerData(true,struct(...
 options.dt = 0.003;
 options.slack_limit = 100;
 options.use_bullet = use_bullet;
-options.w_qdd = zeros(nq,1);
 options.w_grf = 1e-8;
 options.w_slack = 5.0;
 options.debug = false;
 options.contact_threshold = 0.002;
-options.solver = 0; % 0 fastqp, 1 gurobi
 options.use_mex = use_mex;
+options.foot_damping_ration = 1.0;
+options.Kp_foot = 150*ones(6,1);
+options.Kp_pelvis = [100; 100; 100; 150; 150; 150];
+options.pelvis_damping_ratio = 1.0;
+options.body_accel_input_weights = [.1 .1 .1];
+options.Kp_q = 160.0*ones(nq,1);
+options.q_damping_ratio = 0.75;
 
 if use_angular_momentum
   options.Kp_ang = 1.0; % angular momentum proportunal feedback gain
@@ -115,19 +117,8 @@ else
   options.W_kdot = zeros(3);
 end
 
-options.Kp =150*ones(6,1);
-options.Kd = 2*sqrt(options.Kp);
-lfoot_motion = BodyMotionControlBlock(r,'l_foot',ctrl_data,options);
-rfoot_motion = BodyMotionControlBlock(r,'r_foot',ctrl_data,options);
-options.Kp = [100; 100; 100; 150; 150; 150];
-options.Kd = 2*sqrt(options.Kp);
-pelvis_motion = PelvisMotionControlBlock(r,'pelvis',ctrl_data,options);
-motion_frames = {lfoot_motion.getOutputFrame,rfoot_motion.getOutputFrame,...
-pelvis_motion.getOutputFrame};
 
-options.body_accel_input_weights = [.1 .1 .1];
-options.min_knee_angle = 0.7;
-qp = AtlasQPController(r,motion_frames,ctrl_data,options);
+[qp,lfoot_motion,rfoot_motion,pelvis_motion,pd,options] = r.constructQPWalkingController(ctrl_data,options);
 
 % feedback QP controller with atlas
 ins(1).system = 1;
@@ -163,10 +154,6 @@ sys = mimoFeedback(fc,sys,[],[],ins,outs);
 clear ins outs;
 
 % feedback PD block
-options.use_ik = false;
-options.Kp = 160.0*ones(nq,1);
-options.Kd = 19.0*ones(nq,1);
-pd = IKPDBlock(r,ctrl_data,options);
 ins(1).system = 1;
 ins(1).input = 1;
 ins(2).system = 2;
