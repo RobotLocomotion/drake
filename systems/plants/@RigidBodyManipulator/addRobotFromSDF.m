@@ -1,6 +1,7 @@
 function model=addRobotFromSDF(model,sdf_filename,xyz,rpy,options)
 % Parses SDF.
-% See, for instance, https://bitbucket.org/osrf/gazebo_models/
+% The spec is here: http://sdformat.org/spec
+% A nice trove of models is here: https://bitbucket.org/osrf/gazebo_models/
 %
 % @param sdf_filename filename of file to parse
 %
@@ -32,7 +33,7 @@ if (~isfield(options,'namesuffix')), options.namesuffix = ''; end
 
 sdf = xmlread(sdf_filename);
 
-models = sdf.getElementsByTagName('model')
+models = sdf.getElementsByTagName('model');
 for i=0:(models.getLength-1)
   model = parseSDFModel(model,models.item(i),xyz,rpy,options);
 end
@@ -60,7 +61,6 @@ end
 
 links = node.getElementsByTagName('link');
 for i=0:(links.getLength()-1)
-  links.item(i).getAttribute('name')
   model = parseLink(model,robotnum,links.item(i),options);
 end
 
@@ -117,63 +117,59 @@ end
       xyz=zeros(3,1); rpy=zeros(3,1);
       posenode = node.getElementsByTagName('pose').item(0);  % seems to be ok, even if pose tag doesn't exist
       if ~isempty(posenode)
-        mass = sscanf(char(getNodeValue(getFirstChild(posenode))),'%f');
-        xyz = mass(1:3); rpy = pos(4:6);
+        pose = parseParamString(model,body.robotnum,char(getNodeValue(getFirstChild(posenode))));
+        xyz = pose(1:3); rpy = pose(4:6);
       end
       massnode = node.getElementsByTagName('mass').item(0);
       if ~isempty(massnode)
-        mass = sscanf(char(getNodeValue(getFirstChild(massnode))),'%f');
+        mass = parseParamString(model,body.robotnum,char(getNodeValue(getFirstChild(massnode))));
       end
       inode = node.getElementsByTagName('inertia').item(0);
       if ~isempty(inode)
-        if inode.getElementsByTagName('ixx').item(0), ixx = parseParamString(model,body.robotnum,char(inode.getAttribute('ixx'))); else ixx=0; end
-        if inode.hasAttribute('ixy'), ixy = parseParamString(model,body.robotnum,char(inode.getAttribute('ixy'))); else ixy=0; end
-        if inode.hasAttribute('ixz'), ixz = parseParamString(model,body.robotnum,char(inode.getAttribute('ixz'))); else ixz=0; end
-        if inode.hasAttribute('iyy'), iyy = parseParamString(model,body.robotnum,char(inode.getAttribute('iyy'))); else iyy=0; end
-        if inode.hasAttribute('iyz'), iyz = parseParamString(model,body.robotnum,char(inode.getAttribute('iyz'))); else iyz=0; end
-        if inode.hasAttribute('izz'), izz = parseParamString(model,body.robotnum,char(inode.getAttribute('izz'))); else izz=0; end
+        ii=inode.getElementsByTagName('ixx').item(0);
+        if ~isempty(ii), ixx = parseParamString(model,body.robotnum,char(getNodeValue(getFirstChild(ii)))); else ixx=0; end
+        ii=inode.getElementsByTagName('ixy').item(0);
+        if ~isempty(ii), ixy = parseParamString(model,body.robotnum,char(getNodeValue(getFirstChild(ii)))); else ixy=0; end
+        ii=inode.getElementsByTagName('ixz').item(0);
+        if ~isempty(ii), ixz = parseParamString(model,body.robotnum,char(getNodeValue(getFirstChild(ii)))); else ixz=0; end
+        ii=inode.getElementsByTagName('iyy').item(0);
+        if ~isempty(ii), iyy = parseParamString(model,body.robotnum,char(getNodeValue(getFirstChild(ii)))); else iyy=0; end
+        ii=inode.getElementsByTagName('iyz').item(0);
+        if ~isempty(ii), iyz = parseParamString(model,body.robotnum,char(getNodeValue(getFirstChild(ii)))); else iyz=0; end
+        ii=inode.getElementsByTagName('izz').item(0);
+        if ~isempty(ii), izz = parseParamString(model,body.robotnum,char(getNodeValue(getFirstChild(ii)))); else izz=0; end
         inertia = [ixx, ixy, ixz; ixy, iyy, iyz; ixz, iyz, izz];
       end
-      
-      % randomly scale inertia
-      % keep scale factor positive to ensure positive definiteness
-      % x'*I*x > 0 && eta > 0 ==> x'*(eta*I)*x > 0
-      eta = 1 + min(1,max(-0.9999,options.inertia_error*randn()));
-      inertia = eta*inertia;  
       
       if any(rpy)
         % transform inertia back into body coordinates
         R = rpy2rotmat(rpy);
         inertia = R*inertia*R';
       end
-      body = setInertial(body,mass,xyz,inertia);
+      body = setInertial(body,mass,xyz(:),inertia);
     end
     
     function body = parseVisual(body,node,model,options)
       c = .7*[1 1 1];
       
       xyz=zeros(3,1); rpy=zeros(3,1);
-      origin = node.getElementsByTagName('origin').item(0);  % seems to be ok, even if origin tag doesn't exist
-      if ~isempty(origin)
-        if origin.hasAttribute('xyz')
-          xyz = reshape(parseParamString(model,body.robotnum,char(origin.getAttribute('xyz'))),3,1);
-        end
-        if origin.hasAttribute('rpy')
-          rpy = reshape(parseParamString(model,body.robotnum,char(origin.getAttribute('rpy'))),3,1);
-        end
+      posenode = node.getElementsByTagName('pose').item(0);  % seems to be ok, even if pose tag doesn't exist
+      if ~isempty(posenode)
+        pose = parseParamString(model,body.robotnum,char(getNodeValue(getFirstChild(posenode))));
+        xyz = pose(1:3); rpy = pose(4:6);
       end
         
       matnode = node.getElementsByTagName('material').item(0);
       if ~isempty(matnode)
-        c = RigidBodyManipulator.parseMaterial(matnode,options);
+        warning('materials not implemented yet');
       end
       
       geomnode = node.getElementsByTagName('geometry').item(0);
       if ~isempty(geomnode)
         if (options.visual || options.visual_geometry)
-         geometry = RigidBodyGeometry.parseURDFNode(geomnode,xyz,rpy,model,body.robotnum,options);
-          geometry.c = c;
-          body.visual_geometry = {body.visual_geometry{:},geometry};
+         geometry = RigidBodyGeometry.parseSDFNode(geomnode,xyz,rpy,model,body.robotnum,options);
+         geometry.c = c;
+         body.visual_geometry = {body.visual_geometry{:},geometry};
         end
       end        
     end
