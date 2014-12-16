@@ -30,7 +30,6 @@ elseif plant == 'penn'
   %r_temp = addTrees(r_temp, 25);
   
   v = constructVisualizer(r_temp);
-  v2 = constructVisualizer(r_temp);
   
   r = QuadWindPlant(); % Quadrotor constructor
   
@@ -59,7 +58,6 @@ elseif plant == 'penn'
 end
 
 v.draw(0,double(x0));
-v2.draw(0,double(x0));
 
 prog = addPlanVisualizer(r,prog);
 
@@ -170,10 +168,26 @@ Q = 10*eye(13);
 R = eye(4);
 Qf = 10*eye(13);
 disp('Computing stabilizing controller with TVLQR...');
-c = tvlqr(r,xtraj,utraj,Q,R,Qf);
-sys = feedback(r,c);
+ltvsys = tvlqr(r,xtraj,utraj,Q,R,Qf);
+
+%r2 = QuadWindPlant();
+%ltvsys = ltvsys.setInputFrame(r2.getOutputFrame);
+%r2 = r2.setOutputFrame(r.getStateFrame());
+
+r2 = QuadWindPlant_Constant();
+r2 = r2.setOutputFrame(r.getOutputFrame);
+
+r2 = r2.setInputFrame(r.getInputFrame);
+
+
+
+sys = feedback(r2,ltvsys);
 toc;
 disp('done!');
+
+% Simulate on a different wind system
+%r2 = QuadWindPlant_Constant();
+%sys = feedback(r2,c);
 
 % Cascade
 %tic;
@@ -186,7 +200,6 @@ disp('Simulating the system...');
 xtraj_sim = simulate(sys,[0 tf],x0);
 toc;
 disp('done!');
-
 
 
 % Draw the TVLQR result
@@ -225,10 +238,10 @@ v.playback(xtraj_sim, struct('slider', true));
 %yquad = quadpos(2);
 %zquad = quadpos(3);
 
-%windfield = 'zero';
+windfield = 'zero';
 %windfield = 'constant';
 %windfield = 'linear';
-windfield = 'quadratic';
+%windfield = 'quadratic';
 %windfield = 'sqrt';
 %windfield = 'exp';
 %windfield = 'difftailhead';

@@ -1,4 +1,4 @@
-classdef QuadWindPlant < DrakeSystem
+classdef QuadWindPlant_Constant < DrakeSystem
   % Modified from QuadPlantPenn
   
   % Modified from D. Mellinger, N. Michael, and V. Kumar,
@@ -6,7 +6,7 @@ classdef QuadWindPlant < DrakeSystem
   %  In Proceedings of the 12th International Symposium on Experimental Robotics (ISER 2010), 2010.
   
   methods
-    function obj = QuadWindPlant()
+    function obj = QuadWindPlant_Constant()
       
       
       %obj = obj@SecondOrderSystem(6,4,1);
@@ -51,7 +51,7 @@ classdef QuadWindPlant < DrakeSystem
       % psidot
       
       if (nargout>1)
-        [df]= dynamicsGradients(obj,t,x,u,nargout-1);
+        [df]= dynamicsGradients_Constant(obj,t,x,u,nargout-1);
       end
       
       
@@ -149,8 +149,8 @@ classdef QuadWindPlant < DrakeSystem
       yquad = quadpos(2);
       zquad = quadpos(3);
            
-      windfield = 'zero';
-      %windfield = 'constant';
+      %windfield = 'zero';
+      windfield = 'constant';
       %windfield = 'linear';
       %windfield = 'quadratic';
       %windfield = 'sqrt';
