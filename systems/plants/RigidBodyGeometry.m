@@ -171,7 +171,9 @@ classdef RigidBodyGeometry
         thisNode = childNodes.item(i-1);
         switch (lower(char(thisNode.getNodeName())))
           case 'box'
-            error('not implemented yet');
+            sizeNode = thisNode.getElementsByTagName('size').item(0);
+            size = parseParamString(model,robotnum,char(getNodeValue(getFirstChild(sizeNode))));
+            obj = RigidBodyBox(size);
           case 'sphere'
             error('not implemented yet');
           case 'cylinder'

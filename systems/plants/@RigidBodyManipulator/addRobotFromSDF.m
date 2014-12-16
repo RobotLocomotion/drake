@@ -1,5 +1,5 @@
 function model=addRobotFromSDF(model,sdf_filename,xyz,rpy,options)
-% Parses SDF.
+% Parses SDF and/or Gazebo WORLD file
 % The spec is here: http://sdformat.org/spec
 % A nice trove of models is here: https://bitbucket.org/osrf/gazebo_models/
 %
@@ -30,6 +30,7 @@ if (~isfield(options,'inertial')), options.inertial = true; end
 if (~isfield(options,'visual')), options.visual = true; end
 if (~isfield(options,'collision')), options.collision = true; end
 if (~isfield(options,'namesuffix')), options.namesuffix = ''; end
+if (~isfield(options,'compile')) options.compile = true; end
 
 sdf = xmlread(sdf_filename);
 
@@ -39,7 +40,9 @@ for i=0:(models.getLength-1)
 end
 
 model.dirty = true;
-model = compile(model); % ideally this would happen on entry into any function...
+if options.compile
+  model = compile(model); % ideally this would happen on entry into any function...
+end
 
 end
 
@@ -53,6 +56,18 @@ robotname = [robotname,options.namesuffix];
 model.name = [model.name, {robotname}];
 model.urdf = vertcat(model.urdf, '');
 robotnum = length(model.name);
+
+posenode = node.getElementsByTagName('pose').item(0);  % seems to be ok, even if pose tag doesn't exist
+if ~isempty(posenode)
+  pose = parseParamString(model,robotnum,char(getNodeValue(getFirstChild(posenode))));
+  pose = pose(:);
+  xyz = xyz + rpy2rotmat(rpy)*pose(1:3); rpy = rotmat2rpy(rpy2rotmat(rpy)*rpy2rotmat(pose(4:6)));
+end
+
+includes = node.getElementsByTagName('include');
+for i=0:(includes.getLength()-1)
+  model = parseInclude(model,robotnum,includes.item(i),xyz,rpy,options);
+end
 
 materials = node.getElementsByTagName('material');
 for i=0:(materials.getLength()-1)
@@ -80,6 +95,44 @@ for i=1:length(rootlink)
     model = addJoint(model,'','fixed',worldlink,rootlink(i),xyz,rpy);
   end
 end
+
+end
+
+function model=parseInclude(model,robotnum,node,xyz,rpy,options)
+
+posenode = node.getElementsByTagName('pose').item(0);  % seems to be ok, even if pose tag doesn't exist
+if ~isempty(posenode)
+  pose = parseParamString(model,robotnum,char(getNodeValue(getFirstChild(posenode))));
+  pose = pose(:);
+  xyz = xyz + rpy2rotmat(rpy)*pose(1:3); rpy = rotmat2rpy(rpy2rotmat(rpy)*rpy2rotmat(pose(4:6)));
+end
+
+uriNode = node.getElementsByTagName('uri').item(0);
+filename = char(getNodeValue(getFirstChild(uriNode)));
+
+% parse strings with forward and backward slashes
+filename = strrep(filename,'/',filesep);
+filename = strrep(filename,'\',filesep);
+            
+if ~isempty(strfind(filename,['model:',filesep,filesep]))
+  filename=strrep(filename,['model:',filesep,filesep],'');
+  [gazebo_model,filename]=strtok(filename,filesep);
+  filename=[gazeboModelPath(gazebo_model),filename];
+  filename = fullfile(filename,'model.sdf');
+else
+  strrep(filename,'file://','');
+  if ~isempty(strfind(filename,'http://'))
+    error('urls not supported yet -- but might not be too hard');
+  end
+  [path,name,ext] = fileparts(filename);
+  if (isempty(path) || path(1)~=filesep)  % the it's a relative path
+    path = fullfile(options.urdfpath,path);
+  end
+  filename = fullfile(path,[name,ext]);
+end
+            
+options.compile = false;
+model = addRobotFromSDF(model,filename,xyz,rpy,options);
 
 end
 
@@ -118,6 +171,7 @@ end
       posenode = node.getElementsByTagName('pose').item(0);  % seems to be ok, even if pose tag doesn't exist
       if ~isempty(posenode)
         pose = parseParamString(model,body.robotnum,char(getNodeValue(getFirstChild(posenode))));
+        pose = pose(:);
         xyz = pose(1:3); rpy = pose(4:6);
       end
       massnode = node.getElementsByTagName('mass').item(0);
@@ -156,6 +210,7 @@ end
       posenode = node.getElementsByTagName('pose').item(0);  % seems to be ok, even if pose tag doesn't exist
       if ~isempty(posenode)
         pose = parseParamString(model,body.robotnum,char(getNodeValue(getFirstChild(posenode))));
+        pose = pose(:);
         xyz = pose(1:3); rpy = pose(4:6);
       end
         
