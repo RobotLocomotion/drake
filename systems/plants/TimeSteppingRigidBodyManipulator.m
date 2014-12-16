@@ -575,7 +575,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
                     z(z_inactive_guess) = pathlcp(M(z_inactive_guess,z_inactive_guess),w(z_inactive_guess),lb(z_inactive_guess),ub(z_inactive_guess),obj.LCP_cache.data.z(z_inactive_guess));
                   end
                   if all(z_inactive_guess), break; end
-                    z_active = ~z_inactive(1:(nL+nP+nC));  % only look at joint limit, position, and contact normals since if cn_i = 0, 
+                    z_active = ~z_inactive_guess(1:(nL+nP+nC));  % only look at joint limit, position, and contact normals since if cn_i = 0, 
                     % then that's a valid solution, \beta_i=0, and we don't care about the relative velocity of the contact, \lambda_i
                     missed = (M(z_active,z_inactive_guess)*z(z_inactive_guess)+w(z_active) < 0);
                 else
@@ -585,7 +585,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
                 if ~any(missed), break; end
 
                 % otherwise add the missed indices to the active set and repeat
-    %             warning('Drake:TimeSteppingRigidBodyManipulator:ResolvingLCP',['t=',num2str(t),': missed ',num2str(sum(missed)),' constraints.  resolving lcp.']);
+                warning('Drake:TimeSteppingRigidBodyManipulator:ResolvingLCP',['t=',num2str(t),': missed ',num2str(sum(missed)),' constraints.  resolving lcp.']);
                 ind = find(z_active);
                 z_active(ind(missed)) = false;
                 % add back in the related contact terms:
