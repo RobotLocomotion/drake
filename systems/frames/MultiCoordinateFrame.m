@@ -21,6 +21,7 @@ classdef MultiCoordinateFrame < CoordinateFrame
   methods
     function obj = MultiCoordinateFrame(coordinate_frames,frame_id)
       if (nargin<2) frame_id = []; end
+      frame_id = reshape(frame_id, [], 1);
       
       typecheck(coordinate_frames,'cell');
       name=[];
@@ -50,7 +51,7 @@ classdef MultiCoordinateFrame < CoordinateFrame
       end
       name=name(2:end); % remove extra '+'
       
-      sizecheck(frame_id,dim);
+      sizecheck(frame_id,[dim,nan]);
       obj = obj@CoordinateFrame(name,dim,prefix,coordinates);
       obj.frame = coordinate_frames;
       obj.frame_id = frame_id;
