@@ -304,6 +304,13 @@ classdef RigidBodyManipulator < Manipulator
     function obj = setJointLimits(obj,jl_min,jl_max)
       obj = setJointLimits@Manipulator(obj,jl_min,jl_max);
       obj.dirty = true;
+      for i = 1:getNumBodies(obj)
+        pos_num = obj.body(i).position_num;
+        if(any(pos_num~= 0)) % not the world body
+          obj.body(i).joint_limit_min = jl_min(pos_num)';
+          obj.body(i).joint_limit_max = jl_max(pos_num)';
+        end
+      end
     end
 
     function g = getGravity(obj,grav)
@@ -354,6 +361,15 @@ classdef RigidBodyManipulator < Manipulator
       end
     end
 
+    function [model,id]=addBody(model,b)
+      % @ingroup Kinematic Tree
+      typecheck(b,'RigidBody');
+      sizecheck(b,1);
+      model.body = [model.body,b];
+      id = length(model.body);
+      model.dirty = true;
+    end
+    
     function model=addJoint(model,name,type,parent_ind,child_ind,xyz,rpy,axis,damping,coulomb_friction,static_friction,coulomb_window,limits)
       % @ingroup Kinematic Tree
       typecheck(parent_ind,'double');
@@ -918,6 +934,13 @@ classdef RigidBodyManipulator < Manipulator
       model.dirty = true;
     end
 
+    function model = setForce(model,force_ind,force)
+      typecheck(force_ind,'numeric');
+      typecheck(force,'RigidBodyForceElement');
+      model.force{force_ind} = force;
+      model.dirty = true;
+    end
+    
     function [model,frame_id] = addFrame(model,frame)
       % @ingroup Kinematic Tree
       typecheck(frame,'RigidBodyFrame');
@@ -2391,10 +2414,25 @@ classdef RigidBodyManipulator < Manipulator
       end
       if model.contact_options.ignore_self_collisions
         body_indices = 1:model.getNumBodies();
+
+        % Loop over the robots in the RigidBodyManipulator
         for i = 1:length(model.name)
+          % Get the indices of the bodies belonging to this robot
           robot_i_body_indices = body_indices([model.body.robotnum] == i);
+
+          % Remove the bodies in this robot from all collision filter
+          % groups
+          for collision_fg_name = model.collision_filter_groups.keys()
+            model = model.removeLinksFromCollisionFilterGroup(robot_i_body_indices,collision_fg_name{1},i);
+          end
+
+          % Create a collision filter group with the name of the robot
           model.collision_filter_groups(model.name{i}) = CollisionFilterGroup();
+
+          % Add all links in the robot to the new collision filter group
           model = model.addLinksToCollisionFilterGroup(robot_i_body_indices,model.name{i},i);
+
+          % Set the new collision filter group to ignore itself
           model = model.addToIgnoredListOfCollisionFilterGroup(model.name{i},model.name{i});
         end
       end
