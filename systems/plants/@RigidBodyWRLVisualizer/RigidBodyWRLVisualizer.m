@@ -25,6 +25,15 @@ classdef RigidBodyWRLVisualizer < RigidBodyVisualizer
       
       wrlfile = fullfile(tempdir,[obj.model.name{1},'.wrl']);
       writeWRL(obj,wrlfile,options);
+      
+      % For some inexplicable reason, any interaction with the VR system causes 
+      % subsequent calls to evalin('base', 'clear all classes java imports'); 
+      % to become incredibly slow (on the order of 20 seconds instead of 0.01 
+      % seconds). We are overwriting vrworld to set an environment variable so 
+      % that later, in megaclear, we can skip a call to vrwho() if no vr worlds 
+      % have been created. 
+
+      setenv('HAS_MATLAB_VRWORLD', '1');
       obj.wrl = vrworld(wrlfile);
       if ~strcmpi(get(obj.wrl,'Open'),'on')
         open(obj.wrl);
