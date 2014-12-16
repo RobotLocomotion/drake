@@ -30,6 +30,8 @@ elseif plant == 'penn'
   %r_temp = addTrees(r_temp, 25);
   
   v = constructVisualizer(r_temp);
+  v2 = constructVisualizer(r_temp);
+  
   r = QuadWindPlant(); % Quadrotor constructor
   
   % coordinate transform from r.getOutputFrame to v.getInputFrame
@@ -57,6 +59,8 @@ elseif plant == 'penn'
 end
 
 v.draw(0,double(x0));
+v2.draw(0,double(x0));
+
 prog = addPlanVisualizer(r,prog);
 
 u0 = double(nominalThrust(r));
@@ -159,6 +163,7 @@ end
 
 % ROBIN's TVLQR CODE
 
+tic;
 x0 = xtraj.eval(0);
 tf = utraj.tspan(2);
 Q = 10*eye(13);
@@ -167,24 +172,36 @@ Qf = 10*eye(13);
 disp('Computing stabilizing controller with TVLQR...');
 c = tvlqr(r,xtraj,utraj,Q,R,Qf);
 sys = feedback(r,c);
+toc;
 disp('done!');
+
+% Cascade
+tic;
+sys = cascade(utraj, r);
+toc;
+
+sys = feedback(r,c);
 
 % Simulate the result
+tic;
 disp('Simulating the system...');
 xtraj_sim = simulate(sys,[0 tf],x0);
+toc;
 disp('done!');
 
-% Draw the result
+
+
+% Draw the TVLQR result
 xtraj_sim = xtraj_sim(1:12);
 xtraj_sim = xtraj_sim.setOutputFrame(r_temp.getStateFrame());
 v.playback(xtraj_sim, struct('slider', true));
 
 
-
+% % Draw the original result
 % if (nargout<1)
-%   xtraj = xtraj(1:12);
-%   xtraj = xtraj.setOutputFrame(r_temp.getStateFrame());
-%   v.playback(xtraj,struct('slider',true));
+%    xtraj = xtraj(1:12);
+%    xtraj = xtraj.setOutputFrame(r_temp.getStateFrame());
+%    v2.playback(xtraj,struct('slider',true));
 % end
 
 
