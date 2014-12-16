@@ -111,36 +111,58 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   snopt::integer nxname = 1, nFname = 1, npname = 0;
   char xnames[8*1];  // should match nxname
   char Fnames[8*1];  // should match nFname
-  char Prob[200]="";
+  char Prob[200]="drake.out";
 
-  const int DEFAULT_LENRW = 100000;
-  const int DEFAULT_LENIW = 50000;
+  snopt::integer iSumm = -1;
+  snopt::integer iPrint = -1;
+
+  snopt::integer nS,nInf;
+  snopt::doublereal sInf;
+  mxArray* pprint_name = mxGetField(prhs[13],0,"print");
+  snopt::integer print_file_name_len = static_cast<snopt::integer>(mxGetNumberOfElements(pprint_name))+1;
+  char* print_file_name = NULL;
+  if(print_file_name_len != 1) {
+    iPrint = 9;
+    print_file_name = new char[print_file_name_len];
+    mxGetString(pprint_name,print_file_name,print_file_name_len);
+    snopt::snopenappend_(&iPrint,print_file_name,&INFO_snopt,print_file_name_len);
+    
+    //mysnseti("Major print level",static_cast<snopt::integer>(11),&iPrint,&iSumm,&INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw);
+    //mysnseti("Print file",iPrint,&iPrint,&iSumm,&INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw);
+  }
+
+  const int DEFAULT_LENRW = 500000;
+  const int DEFAULT_LENIW = 500000;
   const int DEFAULT_LENCW = 500;
   snopt::integer minrw,miniw,mincw;
   snopt::integer lenrw = DEFAULT_LENRW, leniw = DEFAULT_LENIW, lencw = DEFAULT_LENCW;
-  snopt::doublereal rw_static[DEFAULT_LENRW]; // = (snopt::doublereal*) std::calloc(lenrw,sizeof(snopt::doublereal));
-  snopt::integer iw_static[DEFAULT_LENIW]; // = (snopt::integer*) std::calloc(leniw,sizeof(snopt::integer));
+  snopt::doublereal rw_static[DEFAULT_LENRW]; 
+  snopt::integer iw_static[DEFAULT_LENIW]; 
   char cw_static[8*DEFAULT_LENCW];
   snopt::doublereal *rw = rw_static;
   snopt::integer *iw = iw_static;
   char* cw = cw_static;
+  snopt::sninit_(&iPrint,&iSumm,cw,&lencw,iw,&leniw,rw,&lenrw,8*lencw);
   snopt::snmema_(&INFO_snopt,&nF,&nx,&nxname,&nFname,&lenA,&lenG,&mincw,&miniw,&minrw,cw,&lencw,iw,&leniw,rw,&lenrw,8*lencw);
   if (minrw>lenrw) {
-    //    mexPrintf("reallocation rw with size %d\n",minrw);
+        //mexPrintf("reallocation rw with size %d\n",minrw);
     lenrw = minrw;
     rw = new snopt::doublereal[lenrw];
   }
   if (miniw>leniw) {
-    //    mexPrintf("reallocation iw with size %d\n",miniw);
+        //mexPrintf("reallocation iw with size %d\n",miniw);
     leniw = miniw;
     iw = new snopt::integer[leniw];
   }
   if (mincw>lencw) {
-    //    mexPrintf("reallocation cw with size %d\n",mincw);
+        //mexPrintf("reallocation cw with size %d\n",mincw);
     lencw = mincw;
     cw = new char[8*lencw];
   }
+  snopt::sninit_(&iPrint,&iSumm,cw,&lencw,iw,&leniw,rw,&lenrw,8*lencw);
   
+  
+
   snopt::integer Cold = 0;
   snopt::doublereal *xmul = new snopt::doublereal[nx];
   snopt::integer *xstate = new snopt::integer[nx];
@@ -159,25 +181,6 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   snopt::doublereal ObjAdd = static_cast<snopt::doublereal>(mxGetScalar(prhs[6]));
   snopt::integer ObjRow = static_cast<snopt::integer>(mxGetScalar(prhs[7]));
 
-  snopt::integer iSumm = -1;
-  snopt::integer iPrint = -1;
-
-  snopt::integer nS,nInf;
-  snopt::doublereal sInf;
-  mxArray* pprint_name = mxGetField(prhs[13],0,"print");
-  snopt::integer print_file_name_len = static_cast<snopt::integer>(mxGetNumberOfElements(pprint_name))+1;
-  char* print_file_name = NULL;
-  if(print_file_name_len != 1) {
-    iPrint = 9;
-    print_file_name = new char[print_file_name_len];
-    mxGetString(pprint_name,print_file_name,print_file_name_len);
-    snopt::snopenappend_(&iPrint,print_file_name,&INFO_snopt,print_file_name_len);
-    mexPrintf("-------\n open file %s with info %d\n",print_file_name,INFO_snopt);
-    
-    //mysnseti("Major print level",static_cast<snopt::integer>(11),&iPrint,&iSumm,&INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw);
-    //mysnseti("Print file",iPrint,&iPrint,&iSumm,&INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw);
-  }
-  snopt::sninit_(&iPrint,&iSumm,cw,&lencw,iw,&leniw,rw,&lenrw,8*lencw);
   
   mysnseti("Derivative option",static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"DerivativeOption"))),&iPrint,&iSumm,&INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw);
   mysnseti("Major iterations limit",static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"MajorIterationsLimit"))),&iPrint,&iSumm,&INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw);
@@ -242,7 +245,6 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   if(print_file_name_len!= 1)
   {
     snopt::snclose_(&iPrint);
-    mexPrintf("close print file\n");
     delete[] print_file_name;
   }
   if (rw != rw_static) { delete[] rw; }
