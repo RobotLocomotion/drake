@@ -652,6 +652,11 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       warning(w);
     end
 
+    function obj=addRobotFromSDF(obj,varargin)
+      obj.manip=addRobotFromSDF(obj.manip,varargin{:});
+      obj=compile(obj);  % note: compiles the manip twice, but it's ok.
+    end
+    
     function varargout = doKinematics(obj,varargin)
       varargout = cell(1,nargout);
       [varargout{:}]=doKinematics(obj.manip,varargin{:});
