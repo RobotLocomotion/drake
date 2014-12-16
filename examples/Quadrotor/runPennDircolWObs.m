@@ -176,11 +176,9 @@ toc;
 disp('done!');
 
 % Cascade
-tic;
-sys = cascade(utraj, r);
-toc;
-
-sys = feedback(r,c);
+%tic;
+%sys = cascade(utraj, r);
+%toc;
 
 % Simulate the result
 tic;
@@ -228,9 +226,9 @@ v.playback(xtraj_sim, struct('slider', true));
 %zquad = quadpos(3);
 
 %windfield = 'zero';
-windfield = 'constant';
+%windfield = 'constant';
 %windfield = 'linear';
-%windfield = 'quadratic';
+windfield = 'quadratic';
 %windfield = 'sqrt';
 %windfield = 'exp';
 %windfield = 'difftailhead';
