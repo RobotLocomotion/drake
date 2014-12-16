@@ -555,12 +555,12 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
             
             if obj.solver_type == 0
               % solve the full lcp
-              if isempty(obj.LCP_cache.data.z)
+              %if isempty(obj.LCP_cache.data.z)
                 z = pathlcp(M,w,lb,ub);
-              else
-                % still hand in the old solution; should be better than z=0
-                z = pathlcp(M,w,lb,ub,obj.LCP_cache.data.z);
-              end
+              %else
+              %  % still hand in the old solution; should be better than z=0
+              %  z = pathlcp(M,w,lb,ub,obj.LCP_cache.data.z);
+              %end
               obj.LCP_cache.data.M_active = M*z+w<1e-8;
               obj.LCP_cache.data.z_inactive = z>lb+1e-8;            
 
@@ -568,12 +568,12 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
   %             path_tic = tic;
               while 1
                 if any(z_inactive_guess)
-                  if isempty(obj.LCP_cache.data.z)
+                  %if isempty(obj.LCP_cache.data.z)
                     z(z_inactive_guess) = pathlcp(M(z_inactive_guess,z_inactive_guess),w(z_inactive_guess),lb(z_inactive_guess),ub(z_inactive_guess));
-                  else
-                    % still hand in the old solution; should be better than z=0
-                    z(z_inactive_guess) = pathlcp(M(z_inactive_guess,z_inactive_guess),w(z_inactive_guess),lb(z_inactive_guess),ub(z_inactive_guess),obj.LCP_cache.data.z(z_inactive_guess));
-                  end
+                  %else
+                  %  % still hand in the old solution; should be better than z=0
+                  %  z(z_inactive_guess) = pathlcp(M(z_inactive_guess,z_inactive_guess),w(z_inactive_guess),lb(z_inactive_guess),ub(z_inactive_guess),obj.LCP_cache.data.z(z_inactive_guess));
+                  %end
                   if all(z_inactive_guess), break; end
                     z_active = ~z_inactive_guess(1:(nL+nP+nC));  % only look at joint limit, position, and contact normals since if cn_i = 0, 
                     % then that's a valid solution, \beta_i=0, and we don't care about the relative velocity of the contact, \lambda_i
