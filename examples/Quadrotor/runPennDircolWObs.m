@@ -163,7 +163,7 @@ end
 
 % BEN'S CASCADE CODE
 
-% utraj = setOutputFrame(utraj,getInputFrame(r));
+%utraj = setOutputFrame(utraj,getInputFrame(r_temp));
 %sys = cascade(utraj,r);
 %systraj = sys.simulate([0 utraj.tspan(2)],xtraj.eval(0));
 %v.playback(systraj,struct('slider',true));
