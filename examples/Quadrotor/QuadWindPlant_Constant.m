@@ -149,8 +149,8 @@ classdef QuadWindPlant_Constant < DrakeSystem
       yquad = quadpos(2);
       zquad = quadpos(3);
            
-      %windfield = 'zero';
-      windfield = 'constant';
+      windfield = 'zero';
+      %windfield = 'constant';
       %windfield = 'linear';
       %windfield = 'quadratic';
       %windfield = 'sqrt';
@@ -165,9 +165,9 @@ classdef QuadWindPlant_Constant < DrakeSystem
       end
       
       if strcmp(windfield, 'zero')
-        ywind = 0;
+        ywind = 0 + 0.01*randn(1);
       elseif strcmp(windfield, 'constant')
-        ywind = 5;
+        ywind = 2 + 10*randn(1);
       elseif strcmp(windfield, 'linear')
         ywind = zquad;
       elseif strcmp(windfield, 'quadratic')

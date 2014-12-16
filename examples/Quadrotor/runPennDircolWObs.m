@@ -164,7 +164,8 @@ end
 tic;
 x0 = xtraj.eval(0);
 tf = utraj.tspan(2);
-Q = 10*eye(13);
+% Q = 10*eye(13);
+Q = 10 * [eye(3) zeros(3,10) ; zeros(10,3) zeros(10)];
 R = eye(4);
 Qf = 10*eye(13);
 disp('Computing stabilizing controller with TVLQR...');

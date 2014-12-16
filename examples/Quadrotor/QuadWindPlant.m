@@ -167,7 +167,7 @@ classdef QuadWindPlant < DrakeSystem
       if strcmp(windfield, 'zero')
         ywind = 0;
       elseif strcmp(windfield, 'constant')
-        ywind = 5;
+        ywind = 2;
       elseif strcmp(windfield, 'linear')
         ywind = zquad;
       elseif strcmp(windfield, 'quadratic')
