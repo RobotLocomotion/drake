@@ -18,7 +18,7 @@
 namespace snopt {
 #include "snopt.hh"
 #include "snfilewrapper.hh"
-#include "snoptProblem.hh"
+//#include "snoptProblem.hh"
 }
 #undef abs
 #undef max
@@ -874,6 +874,7 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
       npname = strlen(Prob);
       snopenappend_(&iPrint,printname, &INFO_snopt[i], prnt_len);*/
 
+      snopt::sninit_(&iPrint,&iSumm,cw,&lencw,iw,&leniw,rw,&lenrw,8*lencw);
       snopt::snmema_(&INFO_snopt[i],&nF,&nx,&nxname,&nFname,&lenA,&nG,&mincw,&miniw,&minrw,cw,&lencw,iw,&leniw,rw,&lenrw,8*lencw);
       if (minrw>lenrw) {
         if (rw != rw_static) { delete[] rw; }
