@@ -26,22 +26,8 @@ classdef RigidBodyMesh < RigidBodyGeometry
     end
     
     function [pts,ind,normals] = loadFile(obj)
-      [path,name,ext] = fileparts(obj.filename);
-      wrlfile=[];
-      if strcmpi(ext,'.wrl') || exist(fullfile(path,[name,'.wrl']),'file')
-        if ~strcmpi(ext,'.wrl'), ext = '.wrl'; end
-        wrlfile = fullfile(path,[name,ext]);
-      elseif strcmpi(ext,'.stl') || exist(fullfile(path,[name,'.stl']),'file')
-        if ~strcmpi(ext,'.stl'), ext = '.stl'; end
-        wrlfile = fullfile(tempdir,[name,'.wrl']);
-        if ~exist(wrlfile,'file')
-          stl2vrml(fullfile(path,[name,ext]),tempdir);
-        end
-      else
-        error(['unknown mesh file extension ',obj.filename]);
-      end
-      
-      txt=fileread(wrlfile);
+      obj = convertToWRL(obj);
+      txt=fileread(obj.filename);
         
       pts=regexp(txt,'point[\s\n]*\[([^\]]*)\]','tokens'); pts = pts{1}{1};
       pts=strread(pts,'%f','delimiter',' ,');
@@ -80,6 +66,18 @@ classdef RigidBodyMesh < RigidBodyGeometry
       pts = loadFile(obj);
     end
 
+    function geom = convertToWRL(geom)
+      [path,name,ext] = fileparts(obj.filename);
+      if ~strcmpi(ext,'.wrl') && ~exist(fullfile(path,[name,'.wrl']),'file')
+        if strcmpi(ext,'.stl') || exist(fullfile(path,[name,'.stl']),'file')
+          stl2vrml(fullfile(path,[name,ext]),path);
+        else
+          error(['unknown mesh file extension ',obj.filename]);
+        end
+      end
+      geom.filename = fullfile(path,[name,'.wrl']);
+    end
+    
     function geom = convertToOBJ(geom)
       [path,name,ext] = fileparts(geom.filename);
       if ~strcmpi(ext,'.obj') && ~exist(fullfile(path,[name,'.obj']),'file')
