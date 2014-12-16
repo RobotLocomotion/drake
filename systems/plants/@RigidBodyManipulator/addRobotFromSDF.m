@@ -29,19 +29,54 @@ end
 if (~isfield(options,'inertial')), options.inertial = true; end
 if (~isfield(options,'visual')), options.visual = true; end
 if (~isfield(options,'collision')), options.collision = true; end
+if (~isfield(options,'nameprefix')), options.nameprefix = ''; end
 if (~isfield(options,'namesuffix')), options.namesuffix = ''; end
 if (~isfield(options,'compile')) options.compile = true; end
 
 sdf = xmlread(sdf_filename);
+sdf = sdf.getElementsByTagName('sdf').item(0);
+
+worlds = sdf.getElementsByTagName('world');
+for i=0:(worlds.getLength-1)
+  model = parseSDFWorld(model,worlds.item(i),xyz,rpy,options);
+end
 
 models = sdf.getElementsByTagName('model');
 for i=0:(models.getLength-1)
+  if (models.item(i).getParentNode()~=sdf), continue; end
   model = parseSDFModel(model,models.item(i),xyz,rpy,options);
 end
+
+includes = sdf.getElementsByTagName('include');
+for i=0:(includes.getLength()-1)
+  if (includes.item(i).getParentNode()~=sdf), continue; end
+  model = parseInclude(model,1,includes.item(i),xyz,rpy,options);
+end
+
 
 model.dirty = true;
 if options.compile
   model = compile(model); % ideally this would happen on entry into any function...
+end
+
+end
+
+function model=parseSDFWorld(model,node,xyz,rpy,options)
+
+worldname = char(node.getAttribute('name'));
+worldname = regexprep(worldname, '\.', '_', 'preservecase');
+options.nameprefix = [worldname,'_',options.nameprefix];
+
+models = node.getElementsByTagName('model');
+for i=0:(models.getLength-1)
+  if (models.item(i).getParentNode()~=node), continue; end
+  model = parseSDFModel(model,models.item(i),xyz,rpy,options);
+end
+
+includes = node.getElementsByTagName('include');
+for i=0:(includes.getLength()-1)
+  if (includes.item(i).getParentNode()~=node), continue; end
+  model = parseInclude(model,1,includes.item(i),xyz,rpy,options);
 end
 
 end
@@ -52,7 +87,7 @@ function model=parseSDFModel(model,node,xyz,rpy,options)
 %disp(['Parsing robot ', char(node.getAttribute('name')), ' from URDF file...']);
 robotname = char(node.getAttribute('name'));
 robotname = regexprep(robotname, '\.', '_', 'preservecase');
-robotname = [robotname,options.namesuffix];
+robotname = [options.nameprefix,robotname,options.namesuffix];
 model.name = [model.name, {robotname}];
 model.urdf = vertcat(model.urdf, '');
 robotnum = length(model.name);
@@ -66,6 +101,8 @@ end
 
 includes = node.getElementsByTagName('include');
 for i=0:(includes.getLength()-1)
+  if (includes.item(i).getParentNode()~=node), continue; end
+  options.nameprefix = [robotname,'_'];
   model = parseInclude(model,robotnum,includes.item(i),xyz,rpy,options);
 end
 
@@ -83,6 +120,8 @@ joints = node.getElementsByTagName('joint');
 for i=0:(joints.getLength()-1)
   model = parseJoint(model,robotnum,joints.item(i),options);
 end
+
+model = removeFixedJoints(model);  % do this early and often, to help scale to more complex environments.
 
 % weld the root link of this robot to the world link
 ind = find([model.body.parent]<1);
@@ -216,15 +255,17 @@ end
         
       matnode = node.getElementsByTagName('material').item(0);
       if ~isempty(matnode)
-        warning('materials not implemented yet');
+        model.warning_manager.warnOnce('Drake:RigidBodyManipulator:addRobotfromSDF:NoMaterials','materials not implemented yet');
       end
       
       geomnode = node.getElementsByTagName('geometry').item(0);
       if ~isempty(geomnode)
         if (options.visual || options.visual_geometry)
          geometry = RigidBodyGeometry.parseSDFNode(geomnode,xyz,rpy,model,body.robotnum,options);
-         geometry.c = c;
-         body.visual_geometry = {body.visual_geometry{:},geometry};
+         if ~isempty(geometry)
+           geometry.c = c;
+           body.visual_geometry = {body.visual_geometry{:},geometry};
+         end
         end
       end        
     end

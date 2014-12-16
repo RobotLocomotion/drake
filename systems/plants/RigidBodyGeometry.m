@@ -166,6 +166,7 @@ classdef RigidBodyGeometry
     function obj = parseSDFNode(node,x0,rpy,model,robotnum,options)
       T= [rpy2rotmat(rpy),x0; 0 0 0 1];
       
+      obj=[];
       childNodes = node.getChildNodes();
       for i=1:childNodes.getLength()
         thisNode = childNodes.item(i-1);
@@ -174,12 +175,6 @@ classdef RigidBodyGeometry
             sizeNode = thisNode.getElementsByTagName('size').item(0);
             size = parseParamString(model,robotnum,char(getNodeValue(getFirstChild(sizeNode))));
             obj = RigidBodyBox(size);
-          case 'sphere'
-            error('not implemented yet');
-          case 'cylinder'
-            error('not implemented yet');
-          case 'capsule'
-            error('not implemented yet');
           case 'mesh'
             uriNode = thisNode.getElementsByTagName('uri').item(0);
             filename = char(getNodeValue(getFirstChild(uriNode)));
@@ -209,10 +204,15 @@ classdef RigidBodyGeometry
               end
               filename = fullfile(path,[name,ext]);
             end
-            
             obj = RigidBodyMesh(GetFullPath(filename));
             obj.scale = scale;
+          case '#text'
+            % intentionally do nothing
+          otherwise
+            model.warning_manager.warnOnce(['Drake:RigidBodyGeometry:UnsupportedGeometry:',char(thisNode.getNodeName())],['SDF geometry ',char(thisNode.getNodeName()),' not implemented yet']);
         end
+      end
+      if ~isempty(obj)
         obj.T = T;
       end
     end    
