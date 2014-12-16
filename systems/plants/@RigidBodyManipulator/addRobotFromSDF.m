@@ -118,7 +118,8 @@ end
 
 joints = node.getElementsByTagName('joint');
 for i=0:(joints.getLength()-1)
-  model = parseJoint(model,robotnum,joints.item(i),options);
+  model.warning_manager.warnOnce('Drake:RigidBodyManipulator:ParseSDF:JointsNotImplementedYet','i haven''t actually implemented joints yet ;-/');
+%  model = parseJoint(model,robotnum,joints.item(i),options);
 end
 
 model = removeFixedJoints(model);  % do this early and often, to help scale to more complex environments.

@@ -206,7 +206,7 @@ classdef RigidBodyGeometry
             end
             obj = RigidBodyMesh(GetFullPath(filename));
             obj.scale = scale;
-          case '#text'
+          case {'#text','#comment'}
             % intentionally do nothing
           otherwise
             model.warning_manager.warnOnce(['Drake:RigidBodyGeometry:UnsupportedGeometry:',char(thisNode.getNodeName())],['SDF geometry ',char(thisNode.getNodeName()),' not implemented yet']);
