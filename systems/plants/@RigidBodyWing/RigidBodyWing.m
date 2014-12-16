@@ -457,14 +457,26 @@ classdef RigidBodyWing < RigidBodyForceElement
       
       airspeed = norm(wingvel_world_xz);
       if (nargout>1)
-        dairspeeddq = (wingvel_world_xz'*dwingvel_worlddq)/norm(wingvel_world_xz);
-        dairspeeddqd = (wingvel_world_xz'*dwingvel_worlddqd)/norm(wingvel_world_xz);
+        if (norm(wingvel_world_xz)==0)
+          warning('Airspeed is zero, gradient ill defined!');
+          dairspeeddq = zeros(1,numel(q));
+          dairspeeddqd = zeros(1,numel(qd));
+        else
+          dairspeeddq = (wingvel_world_xz'*dwingvel_worlddq)/norm(wingvel_world_xz);
+          dairspeeddqd = (wingvel_world_xz'*dwingvel_worlddqd)/norm(wingvel_world_xz);
+        end
       end
 
       aoa = -(180/pi)*atan2(wingvel_rel(3),wingvel_rel(1));
       if (nargout>1)
-        daoadq = -(180/pi)*(wingvel_rel(1)*dwingvel_reldq(3,:)-wingvel_rel(3)*dwingvel_reldq(1,:))/(wingvel_rel(1)^2+wingvel_rel(3)^2);
-        daoadqd = -(180/pi)*(wingvel_rel(1)*dwingvel_reldqd(3,:)-wingvel_rel(3)*dwingvel_reldqd(1,:))/(wingvel_rel(1)^2+wingvel_rel(3)^2);
+        if ((wingvel_rel(1)^2+wingvel_rel(3)^2)==0)
+          warning('Wing velocity is zero, gradient ill defined!');
+          daoadq = zeros(1,numel(q));
+          daoadqd = zeros(1,numel(qd));
+        else
+          daoadq = -(180/pi)*(wingvel_rel(1)*dwingvel_reldq(3,:)-wingvel_rel(3)*dwingvel_reldq(1,:))/(wingvel_rel(1)^2+wingvel_rel(3)^2);
+          daoadqd = -(180/pi)*(wingvel_rel(1)*dwingvel_reldqd(3,:)-wingvel_rel(3)*dwingvel_reldqd(1,:))/(wingvel_rel(1)^2+wingvel_rel(3)^2);
+        end
       end
 
       %lift and drag are the forces on the body in the world frame.
