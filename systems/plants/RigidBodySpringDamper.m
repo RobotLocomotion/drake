@@ -34,7 +34,7 @@ classdef RigidBodySpringDamper < RigidBodyForceElement
           length = norm(x1-x2);
           dlengthdq = ((x1-x2)'/(length+eps))*(J1-J2);
           vel = ((x1-x2)'*(v1-v2))/(length+eps);
-          dveldq =  (((J1-J2)'*(v1-v2)+(x1-x2)'*(dv1dq-dv2dq))*(length+eps)-((x1-x2)'*(v1-v2))*dlengthdq)/(length+eps)^2;
+          dveldq =  (((v1-v2)'*(J1-J2)+(x1-x2)'*(dv1dq-dv2dq))*(length+eps)-((x1-x2)'*(v1-v2))*dlengthdq)/(length+eps)^2;
           dveldqd = (((x1-x2)'*(dv1dqd-dv2dqd))*(length+eps))/(length+eps)^2;
         else
           kinsol = doKinematics(manip,q);
@@ -78,10 +78,10 @@ classdef RigidBodySpringDamper < RigidBodyForceElement
       fvect1 = force*(x2-x1)/(length+eps);
       fvect2 = force*(x1-x2)/(length+eps);
       if (nargout>1)
-          dfvect1dq = ((dforcedq*(x2-x1)+force*(J2-J1))*(length+eps)-force*(x2-x1)*dlengthdq)/(length+eps)^2;
-          dfvect1dqd = dforcedqd*(x2-x1)*(length+eps)/(length+eps)^2;
-          dfvect2dq = ((dforcedq*(x1-x2)+force*(J1-J2))*(length+eps)-force*(x1-x2)*dlengthdq)/(length+eps)^2;
-          dfvect2dqd = dforcedqd*(x1-x2)*(length+eps)/(length+eps)^2;
+          dfvect1dq = (((x2-x1)*dforcedq+force*(J2-J1))*(length+eps)-force*(x2-x1)*dlengthdq)/(length+eps)^2;
+          dfvect1dqd = (x2-x1)*dforcedqd*(length+eps)/(length+eps)^2;
+          dfvect2dq = (((x1-x2)*dforcedq+force*(J1-J2))*(length+eps)-force*(x1-x2)*dlengthdq)/(length+eps)^2;
+          dfvect2dqd = (x1-x2)*dforcedqd*(length+eps)/(length+eps)^2;
       end
       
       if (nargout>1)
