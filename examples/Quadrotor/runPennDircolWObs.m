@@ -29,7 +29,6 @@ elseif plant == 'penn'
   % Random trees to make forest bigger and more dense
   %r_temp = addTrees(r_temp, 25);
   
-  
   v = constructVisualizer(r_temp);
   r = QuadWindPlant(); % Quadrotor constructor
   
@@ -64,7 +63,7 @@ u0 = double(nominalThrust(r));
 
 prog = prog.addStateConstraint(ConstantConstraint(double(x0)),1); % DirectTrajectoryOptimization method
 
-bd = 10;
+bd = inf;
 
 seasurface = Point(getStateFrame(r));
 seasurface.x = -bd;
@@ -154,11 +153,42 @@ end
 
 
 
-if (nargout<1)
-  xtraj = xtraj(1:12);
-  xtraj = xtraj.setOutputFrame(r_temp.getStateFrame());
-  v.playback(xtraj,struct('slider',true));
-end
+
+
+
+
+% ROBIN's TVLQR CODE
+
+x0 = xtraj.eval(0);
+tf = utraj.tspan(2);
+Q = 10*eye(13);
+R = eye(4);
+Qf = 10*eye(13);
+disp('Computing stabilizing controller with TVLQR...');
+c = tvlqr(r,xtraj,utraj,Q,R,Qf);
+sys = feedback(r,c);
+disp('done!');
+
+% Simulate the result
+disp('Simulating the system...');
+xtraj_sim = simulate(sys,[0 tf],x0);
+disp('done!');
+
+% Draw the result
+xtraj_sim = xtraj_sim(1:12);
+xtraj_sim = xtraj_sim.setOutputFrame(r_temp.getStateFrame());
+v.playback(xtraj_sim, struct('slider', true));
+
+
+
+% if (nargout<1)
+%   xtraj = xtraj(1:12);
+%   xtraj = xtraj.setOutputFrame(r_temp.getStateFrame());
+%   v.playback(xtraj,struct('slider',true));
+% end
+
+
+
 
 
 % BEN'S CASCADE CODE
@@ -169,7 +199,11 @@ end
 %v.playback(systraj,struct('slider',true));
 
 
-% Plot wind
+
+
+
+
+% PLOT WIND
 %[winddontcare,dquadinwinddontcare] = quadwind(r,[0,0,0],0,1);
 
 %xquad = quadpos(1);
