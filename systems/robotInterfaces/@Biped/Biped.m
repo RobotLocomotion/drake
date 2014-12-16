@@ -207,4 +207,3 @@ classdef Biped < LeggedRobot
 
 
 end
-
