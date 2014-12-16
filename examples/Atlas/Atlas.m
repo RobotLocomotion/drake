@@ -1,5 +1,4 @@
 classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
-
   methods
 
     function obj=Atlas(urdf,options)
@@ -27,7 +26,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       if ~isfield(options,'control_rate')
         options.control_rate = 250;
       end
-      
+
       obj = obj@TimeSteppingRigidBodyManipulator(urdf,options.dt,options);
       obj = obj@Biped('r_foot_sole', 'l_foot_sole');
       warning(w);
@@ -36,15 +35,14 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
         if (strcmp(options.hands, 'robotiq'))
           options_hand.weld_to_link = 29;
           obj.hands = 1;
-          obj = obj.addRobotFromURDF(getFullPathFromRelativePath('urdf/robotiq.urdf'), [0; -0.18; 0], [0; 3.1415; 3.1415], options_hand);  
+          obj = obj.addRobotFromURDF(getFullPathFromRelativePath('urdf/robotiq.urdf'), [0; -0.195; -0.01], [0; -3.1415/2; 3.1415], options_hand);
         elseif (strcmp(options.hands, 'robotiq_weight_only'))
           % Adds a box with weight roughly approximating the hands, so that
           % the controllers know what's up
-          % Will soon be replaced with an equivalent welded mass.
           options_hand.weld_to_link = 29;
-          obj = obj.addRobotFromURDF(getFullPathFromRelativePath('urdf/robotiq_box.urdf'), [0; -0.2; 0], [0; 0; 3.1415], options_hand); 
+          obj = obj.addRobotFromURDF(getFullPathFromRelativePath('urdf/robotiq_box.urdf'), [0; -0.195; -0.01], [0; -3.1415/2; 3.1415], options_hand);
         else
-          error('unsupported hand type'); 
+          error('unsupported hand type');
         end
       end
 
@@ -67,10 +65,10 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       obj.left_toe_right_full_support = RigidBodySupportState(obj,[obj.foot_body_id.left,obj.foot_body_id.right],{{'toe'},{'heel','toe'}});
       obj.left_full_right_toe_support = RigidBodySupportState(obj,[obj.foot_body_id.left,obj.foot_body_id.right],{{'heel','toe'},{'toe'}});
     end
-    
+
     function obj = compile(obj)
       obj = compile@TimeSteppingRigidBodyManipulator(obj);
-      
+
       % Sanity check if we have hands.
       if (~isa(obj.manip.getStateFrame().getFrameByNum(1), 'MultiCoordinateFrame'))
         obj.hands = 0;
@@ -111,7 +109,6 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       else
         input_frame = AtlasInput(obj);
       end
-      
       obj = obj.setInputFrame(input_frame);
       obj.manip = obj.manip.setInputFrame(input_frame);
       
@@ -147,7 +144,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       % [x, y, z, roll, pitch, yaw]
 
       weights = struct('relative', [1;1;1;0;0;0.5],...
-                       'relative_final', [10;10;10;0;0;1],...
+                       'relative_final', [10;10;10;0;0;2],...
                        'goal', [100;100;0;0;0;10]);
     end
 
@@ -232,7 +229,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
     x0
     default_footstep_params = struct('nom_forward_step', 0.25,... % m
                                       'max_forward_step', 0.35,...% m
-                                      'max_backward_step', 0.2,... %m
+                                      'max_backward_step', 0.2,...% m
                                       'max_step_width', 0.38,...% m
                                       'min_step_width', 0.18,...% m
                                       'nom_step_width', 0.26,...% m
@@ -244,15 +241,13 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
                                       'min_num_steps', 1,...
                                       'leading_foot', 1); % 0: left, 1: right
     default_walking_params = struct('step_speed', 0.5,... % speed of the swing foot (m/s)
-                                    'step_height', 0.065,... % approximate clearance over terrain (m)
+                                    'step_height', 0.05,... % approximate clearance over terrain (m)
                                     'hold_frac', 0.4,... % fraction of the swing time spent in double support
                                     'drake_min_hold_time', 1.0,... % minimum time in double support (s)
                                     'drake_instep_shift', 0.0275,... % Distance to shift ZMP trajectory inward toward the instep from the center of the foot (m)
                                     'mu', 1.0,... % friction coefficient
                                     'constrain_full_foot_pose', true); % whether to constrain the swing foot roll and pitch
     hands = 0; % 0, none; 1, Robotiq
-  end
-  properties
     fixed_point_file = fullfile(getDrakePath(), 'examples', 'Atlas', 'data', 'atlas_fp.mat');
     % preconstructing these for efficiency
     left_full_support
