@@ -18,7 +18,7 @@
 namespace snopt {
 #include "snopt.hh"
 #include "snfilewrapper.hh"
-#include "snoptProblem.hh"
+//#include "snoptProblem.hh"
 }
 #undef abs
 #undef max
@@ -874,6 +874,7 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
       npname = strlen(Prob);
       snopenappend_(&iPrint,printname, &INFO_snopt[i], prnt_len);*/
 
+      snopt::sninit_(&iPrint,&iSumm,cw,&lencw,iw,&leniw,rw,&lenrw,8*lencw);
       snopt::snmema_(&INFO_snopt[i],&nF,&nx,&nxname,&nFname,&lenA,&nG,&mincw,&miniw,&minrw,cw,&lencw,iw,&leniw,rw,&lenrw,8*lencw);
       if (minrw>lenrw) {
         if (rw != rw_static) { delete[] rw; }
@@ -1848,6 +1849,24 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
 
     snopt::integer nS, nInf;
     snopt::doublereal sInf;
+
+    snopt::sninit_(&iPrint,&iSumm,cw,&lencw,iw,&leniw,rw,&lenrw,8*lencw);
+    snopt::snmema_(INFO_snopt,&nF,&nx,&nxname,&nFname,&lenA,&nG,&mincw,&miniw,&minrw,cw,&lencw,iw,&leniw,rw,&lenrw,8*lencw);
+    if (minrw>lenrw) {
+      if (rw != rw_static) { delete[] rw; }
+      lenrw = minrw;
+      rw = new snopt::doublereal[lenrw];
+    }
+    if (miniw>leniw) {
+      if (iw != iw_static) { delete[] iw; }
+      leniw = miniw;
+      iw = new snopt::integer[leniw];
+    }
+    if (mincw>lencw) {
+      if (cw != cw_static) { delete[] cw; }
+      lencw = mincw;
+      cw = new char[8*lencw];
+    }
 
     snopt::sninit_(&iPrint,&iSumm,cw,&lencw,iw,&leniw,rw,&lenrw,8*500);
     char strOpt1[200] = "Derivative option";

@@ -194,9 +194,9 @@ end
 display('Check the infeasible case')
 kc_err = WorldCoMConstraint(robot,[0;0;2],[0;0;inf],tspan);
 if(checkDependency('snopt'))
-[q,info,infeasible_constraint] = inverseKin(robot,q_seed,q_nom,kc_err,kc2l,kc2r,ikoptions);
+% [q,info,infeasible_constraint] = inverseKin(robot,q_seed,q_nom,kc_err,kc2l,kc2r,ikoptions);
 [qmex,info_mex,infeasible_constraint_mex] = inverseKin(robot,q_seed,q_nom,kc_err,kc2l,kc2r,ikmexoptions);
-valuecheck(info_mex,info);
+% valuecheck(info_mex,info);
 if(info_mex ~= 13)
   error('This should be infeasible');
 end
@@ -463,13 +463,13 @@ ikmexoptions = ikoptions;
 ikmexoptions = ikmexoptions.setMex(true);
 % [f,G,iGfun,jGvar,Fupp,Flow,xupp,xlow,iAfun,jAvar,A,nF] = inverseKin(r,q_seed,q_nom,varargin{1:end-1},ikmexoptions);
 % keyboard;
-%tic
-%[q,info] = inverseKin(r,q_seed,q_nom,varargin{1:end-1},ikoptions);
-%toc
-%if(info>10)
-  %error('SNOPT info is %d, IK fails to solve the problem',info);
-%end
-%testConstraint(r,[],q,varargin{1:end-1});
+% tic
+% [q,info] = inverseKin(r,q_seed,q_nom,varargin{1:end-1},ikoptions);
+% toc
+% if(info>10)
+%   error('SNOPT info is %d, IK fails to solve the problem',info);
+% end
+% testConstraint(r,[],q,varargin{1:end-1});
 tic
 ikproblem = InverseKinematics(r,q_nom,varargin{1:end-1});
 ikproblem = ikproblem.setQ(ikoptions.Q);

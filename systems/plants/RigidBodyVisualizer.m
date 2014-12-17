@@ -85,7 +85,6 @@ classdef RigidBodyVisualizer < Visualizer
           'Value', desired_pt(i), 'Position', [100+280*(i>rows), y+30*rows*(i>rows), 170, 20],...
           'Callback',{@update_display});
 
-        % use a little undocumented matlab to get continuous slider feedback:
         slider_listener{i} = addlistener(slider{i},'ContinuousValueChange',@update_display);
         y = y - 30;
       end
