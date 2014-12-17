@@ -1,6 +1,6 @@
-function runDRCPracticeTask(task_number)
+function runDRCPracticeTask
 
-if nargin<1, task_number=2; end
+task_number=2; % consider taking the task number as an input if/when we load the other tasks
 
 clear gazeboModelPath;
 setenv('GAZEBO_MODEL_PATH',[fullfile(getDrakePath,'examples','Atlas','sdf')]); 
