@@ -2,7 +2,6 @@ function multiRobotTest
 
 urdf = 'FallingBrick.urdf';
 options.terrain = RigidBodyFlatTerrain();
-options.use_bullet = false;
 r = TimeSteppingRigidBodyManipulator('',.01,options);
 
 options.floating = true;

@@ -509,10 +509,9 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         end
 
         if isempty(obj.LCP_cache.data.z)
-          z = zeros(nL+nP+(mC+2)*nC,1); 
-        else
-          z = obj.LCP_cache.data.z; 
+          obj.LCP_cache.data.z = zeros(nL+nP+(mC+2)*nC,1); 
         end
+        z = zeros(nL+nP+(mC+2)*nC,1); 
         
         QP_FAILED = true;
         
@@ -525,7 +524,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
             Ain_fqp = [-M(M_inactive,z_inactive); -eye(n_z_inactive)];
             bin_fqp = [w(M_inactive); -lb(z_inactive)];
             QblkDiag = {eye(n_z_inactive)};
-            fqp = -z(z_inactive);
+            fqp = -obj.LCP_cache.data.z(z_inactive);
 %             fastqp_tic = tic;
             [z_,info_fqp] = fastQPmex(QblkDiag,fqp,Ain_fqp,bin_fqp,Aeq,beq,[]);
 %             fastqp_time = toc(fastqp_tic);
