@@ -33,7 +33,7 @@ classdef QTrajEvalBlock < MIMODrakeSystem
       
       atlas_state = getStateFrame(r);
       input_frame = atlas_state;
-      output_frame = MultiCoordinateFrame({AtlasCoordinates(r),atlas_state});
+      output_frame = MultiCoordinateFrame({atlasFrames.AtlasCoordinates(r),atlas_state});
       
       obj = obj@MIMODrakeSystem(0,0,input_frame,output_frame,true,true);
       obj = setInputFrame(obj,input_frame);

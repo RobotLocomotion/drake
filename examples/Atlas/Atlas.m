@@ -68,17 +68,16 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       if (~isa(obj.manip.getStateFrame().getFrameByNum(1), 'MultiCoordinateFrame'))
         obj.hands = 0;
       end
-      path_handle = addpathTemporary(fullfile(getDrakePath,'examples','Atlas','frames'));
       if (obj.hands > 0)
         atlas_state_frame = getStateFrame(obj);
-        atlas_state_frame = replaceFrameNum(atlas_state_frame,1,AtlasState(obj));
+        atlas_state_frame = replaceFrameNum(atlas_state_frame,1,atlasFrames.AtlasState(obj));
         % Sub in handstates for each hand
         % TODO: by name?
         for i=2:obj.getStateFrame().getNumFrames
-          atlas_state_frame = replaceFrameNum(atlas_state_frame,i,HandState(obj,i,'HandState'));
+          atlas_state_frame = replaceFrameNum(atlas_state_frame,i,atlasFrames.HandState(obj,i,'atlasFrames.HandState'));
         end
       else
-        atlas_state_frame = AtlasState(obj);
+        atlas_state_frame = atlasFrames.AtlasState(obj);
       end
       tsmanip_state_frame = obj.getStateFrame();
       if tsmanip_state_frame.dim>atlas_state_frame.dim
@@ -95,14 +94,14 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
 
       if (obj.hands > 0)
         input_frame = getInputFrame(obj);
-        input_frame  = replaceFrameNum(input_frame,1,AtlasInput(obj));
+        input_frame  = replaceFrameNum(input_frame,1,atlasFrames.AtlasInput(obj));
         % Sub in handstates for each hand
         % TODO: by name?
         for i=2:obj.getInputFrame().getNumFrames
-          input_frame = replaceFrameNum(input_frame,i,HandInput(obj,i,'HandInput'));
+          input_frame = replaceFrameNum(input_frame,i,atlasFrames.HandInput(obj,i,'atlasFrames.HandInput'));
         end
       else
-        input_frame = AtlasInput(obj);
+        input_frame = atlasFrames.AtlasInput(obj);
       end
       obj = obj.setInputFrame(input_frame);
       obj.manip = obj.manip.setInputFrame(input_frame);
@@ -201,25 +200,23 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
         'Kp_q',0.0*ones(obj.getNumPositions(),1),...
         'q_damping_ratio',0.0));
       
-      path_handle = addpathTemporary(fullfile(getDrakePath(), 'examples', 'Atlas', 'controllers'));
-
       options.w_qdd(findJointIndices(obj,'back_bkx')) = 0.1;
       options.Kp_q(findJointIndices(obj,'back_bkx')) = 50;
 
       options.Kp = options.Kp_pelvis;
       options.Kd = getDampingGain(options.Kp,options.pelvis_damping_ratio);
       if isfield(options,'use_walking_pelvis_block') && options.use_walking_pelvis_block
-        pelvis_control_block = PelvisMotionControlBlock(obj,'pelvis',controller_data,options);
+        pelvis_control_block = atlasControllers.PelvisMotionControlBlock(obj,'pelvis',controller_data,options);
       else
-        pelvis_control_block = BodyMotionControlBlock(obj,'pelvis',controller_data,options);
+        pelvis_control_block = atlasControllers.BodyMotionControlBlock(obj,'pelvis',controller_data,options);
       end
 
       if isfield(options,'use_foot_motion_block') && options.use_foot_motion_block
         foot_options = struct('Kp', options.Kp_foot,...
                               'Kd', getDampingGain(options.Kp,options.foot_damping_ratio),...
                               'use_plan_shift', true);
-        lfoot_control_block = BodyMotionControlBlock(obj,'l_foot',controller_data,foot_options);
-        rfoot_control_block = BodyMotionControlBlock(obj,'r_foot',controller_data,foot_options);
+        lfoot_control_block = atlasControllers.BodyMotionControlBlock(obj,'l_foot',controller_data,foot_options);
+        rfoot_control_block = atlasControllers.BodyMotionControlBlock(obj,'r_foot',controller_data,foot_options);
         motion_frames = {lfoot_control_block.getOutputFrame,rfoot_control_block.getOutputFrame,...
           pelvis_control_block.getOutputFrame};
       else
@@ -227,11 +224,11 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
         rfoot_control_block = [];
         motion_frames = {pelvis_control_block.getOutputFrame};
       end
-      qp = AtlasQPController(obj,motion_frames,controller_data,options);
+      qp = atlasControllers.AtlasQPController(obj,motion_frames,controller_data,options);
 
       options.Kp = options.Kp_q;
       options.Kd = getDampingGain(options.Kp,options.q_damping_ratio);
-      pd = IKPDBlock(obj,controller_data,options);
+      pd = atlasControllers.IKPDBlock(obj,controller_data,options);
     end
 
   end
