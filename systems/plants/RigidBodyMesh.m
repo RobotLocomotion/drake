@@ -67,12 +67,12 @@ classdef RigidBodyMesh < RigidBodyGeometry
     end
 
     function geom = convertToWRL(geom)
-      [path,name,ext] = fileparts(obj.filename);
+      [path,name,ext] = fileparts(geom.filename);
       if ~strcmpi(ext,'.wrl') && ~exist(fullfile(path,[name,'.wrl']),'file')
         if strcmpi(ext,'.stl') || exist(fullfile(path,[name,'.stl']),'file')
           stl2vrml(fullfile(path,[name,ext]),path);
         else
-          error(['unknown mesh file extension ',obj.filename]);
+          error(['unknown mesh file extension ',geom.filename]);
         end
       end
       geom.filename = fullfile(path,[name,'.wrl']);
