@@ -198,7 +198,8 @@ disp('done!');
 % Simulate the result
 tic;
 disp('Simulating the system...');
-xtraj_sim = simulate(sys,[0 tf],x0);
+%xtraj_sim = simulate(sys,[0 tf],x0);
+[xtraj_sim, out2, out3]  = simulate(sys,[0 tf],x0);
 toc;
 disp('done!');
 
