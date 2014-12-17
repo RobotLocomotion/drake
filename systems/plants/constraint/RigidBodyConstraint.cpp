@@ -2409,6 +2409,10 @@ MinDistanceConstraint::eval(const double* t, VectorXd& c, MatrixXd& dc) const
     int l = 0;
     int numA = static_cast<int>(orig_idx_of_pt_on_bodyA.at(k).size());
     int numB = static_cast<int>(orig_idx_of_pt_on_bodyB.at(k).size());
+    if(numA+numB==0)
+    {
+      continue;
+    }
     MatrixXd x_k(3, numA + numB);
     for (; l < numA; ++l) {
       //DEBUG
