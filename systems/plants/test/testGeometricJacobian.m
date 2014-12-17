@@ -22,6 +22,11 @@ while testNumber < nTests
   q = randn(nq, 1);
   v = randn(nv, 1);
   kinsol = robot.doKinematics(q,false,false, v);
+  if isfield(kinsol, 'Tdot'); % TODO: remove after floating base changes are made
+    Tdots = kinsol.Tdot;
+  else
+    Tdots = computeTdots(kinsol.T, kinsol.twists);
+  end
   kinsolmex = robot.doKinematics(q, false, true, v);
   
   base = randi(bodyRange);
@@ -39,8 +44,8 @@ while testNumber < nTests
     
     HBase = kinsol.T{base};
     HBody = kinsol.T{endEffector};
-    HBaseDot = kinsol.Tdot{base};
-    HBodyDot = kinsol.Tdot{endEffector};
+    HBaseDot = Tdots{base};
+    HBodyDot = Tdots{endEffector};
     
     HBodyToBase = HBase \ HBody;
     transformDot = twistToTildeForm(twist) * HBodyToBase;

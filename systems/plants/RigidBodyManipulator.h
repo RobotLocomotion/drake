@@ -41,6 +41,8 @@ public:
   void compile(void);  // call me after the model is loaded
   void doKinematics(double* q, bool b_compute_second_derivatives=false, double* qd=NULL);
 
+  void doKinematicsNew(double* q, bool compute_gradients = false, double* v = nullptr, bool compute_JdotV = false);
+
   template <typename Derived>
   void getCMM(double* const q, double* const qd, MatrixBase<Derived> &A, MatrixBase<Derived> &Adot);
 
@@ -157,7 +159,7 @@ public:
 public:
   std::vector<std::string> robot_name;
 
-  int num_dof;
+  int num_dof; // treated as nq now; TODO: rename to nq
   VectorXd joint_limit_min;
   VectorXd joint_limit_max;
 
@@ -183,6 +185,8 @@ public:
   VectorXd a_grav;
 
   VectorXd cached_q, cached_qd;  // these should be private
+
+  bool use_new_kinsol;
 
 
 private:

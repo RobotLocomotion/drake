@@ -622,6 +622,10 @@ bool RigidBodyManipulator::allCollisions(vector<int>& bodyA_idx,
 
 void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivatives, double* qd)
 {
+  if (use_new_kinsol) {
+    doKinematicsNew(q, true, qd, true);
+  }
+
   //DEBUG
   //try{
   //END_DEBUG
@@ -876,6 +880,147 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
   //END_DEBUG
 }
 
+void RigidBodyManipulator::doKinematicsNew(double* q, bool compute_gradients, double* v, bool compute_JdotV) {
+  int nq = num_dof;
+  int nv = num_dof; // FIXME
+
+  // other bodies
+  for (int i = 0; i < bodies.size(); i++) {
+    RigidBody& body = *bodies[i];
+
+    if (body.hasParent()) {
+      double* q_body = &q[body.dofnum];
+
+      // transform
+      Isometry3d T_body_to_parent = Isometry3d(body.Ttree) * body.getJoint().jointTransform(q_body); // TODO: Matrix4d -> Isometry3d conversion
+      Isometry3d T = Isometry3d(bodies[body.parent]->T) * T_body_to_parent;
+      body.T = T.matrix(); // TODO: Isometry3d -> Matrix4d conversion
+
+      // motion subspace in body frame
+      Eigen::MatrixXd* dSdq = compute_gradients ? &(body.dSdqi) : nullptr;
+      body.getJoint().motionSubspace(q_body, body.S, dSdq);
+
+      // motion subspace in world frame
+      body.J = transformSpatialMotion(T, body.S);
+
+      // qdot to v
+      Eigen::MatrixXd* dqdot_to_v = compute_gradients ? &(body.dqdot_to_v_dqi) : nullptr;
+      body.getJoint().qdot2v(q, body.qdot_to_v, dqdot_to_v);
+
+      // v to qdot
+      Eigen::MatrixXd* dv_to_qdot = compute_gradients ? &(body.dv_to_qdot_dqi) : nullptr;
+      body.getJoint().v2qdot(q, body.v_to_qdot, dv_to_qdot);
+
+      if (compute_gradients) {
+        // gradient of transform
+        auto dT_body_to_parentdqi = dHomogTrans(T_body_to_parent, body.S, body.qdot_to_v).eval();
+        body.dTdq_new.setZero();
+        Gradient<Isometry3d::MatrixType, Eigen::Dynamic>::type dT_body_to_parentdq(HOMOGENEOUS_TRANSFORM_SIZE, nq);
+        dT_body_to_parentdq.setZero();
+        dT_body_to_parentdq.middleCols(body.dofnum, body.getJoint().getNumPositions()) = dT_body_to_parentdqi;
+        body.dTdq_new = matGradMultMat(bodies[body.parent]->T, T_body_to_parent.matrix(), bodies[body.parent]->dTdq_new, dT_body_to_parentdq);
+
+        // gradient of motion subspace in world
+        MatrixXd dSdq = MatrixXd::Zero(body.S.size(), nq);
+        dSdq.middleCols(body.dofnum, body.getJoint().getNumPositions()) = body.dSdqi;
+        body.dJdq = dTransformAdjoint(T, body.S, body.dTdq_new, dSdq);
+      }
+
+      if (v) {
+        // twist
+        double* v_body = &v[body.dofnum]; // FIXME: using dofnum for velocity...
+        Map<VectorXd> v_body_map(v_body, body.getJoint().getNumVelocities());
+        typedef Matrix<double, TWIST_SIZE, 1> Vector6d;
+        Vector6d joint_twist = body.J * v_body_map;
+        body.twist = bodies[body.parent]->twist + joint_twist;
+
+        Gradient<Vector6d, Eigen::Dynamic>::type djoint_twistdq(TWIST_SIZE, nq);
+        if (compute_gradients) {
+          djoint_twistdq = matGradMult(body.dJdq, v_body_map);
+          // dtwistdq
+          body.dtwistdq = bodies[body.parent]->dtwistdq + djoint_twistdq;
+        }
+
+        if (compute_JdotV) {
+          // Sdotv
+          auto dSdotVdqi = compute_gradients ? &body.dSdotVdqi : nullptr;
+          auto dSdotVdvi = compute_gradients ? &body.dSdotVdvi : nullptr;
+          body.getJoint().motionSubspaceDotTimesV(q_body, v_body, body.SdotV, dSdotVdqi, dSdotVdvi);
+
+          // Jdotv
+          auto joint_accel = (crm(body.twist) * joint_twist + transformSpatialMotion(T, body.SdotV)).eval();
+          body.JdotV = bodies[body.parent]->JdotV + joint_accel;
+
+          if (compute_gradients) {
+            // dJdotvdq
+            // TODO: exploit sparsity better
+            Matrix<double, TWIST_SIZE, Eigen::Dynamic> dSdotVdq(TWIST_SIZE, nq);
+            dSdotVdq.setZero();
+            dSdotVdq.middleCols(body.dofnum, body.getJoint().getNumPositions()) = body.dSdotVdqi;
+            MatrixXd dcrm_twist_joint_twistdq(TWIST_SIZE, nq);
+            dcrm(body.twist, joint_twist, body.dtwistdq, djoint_twistdq, &dcrm_twist_joint_twistdq); // TODO: make dcrm templated
+            body.dJdotVdq = bodies[body.parent]->dJdotVdq
+                + dcrm_twist_joint_twistdq
+                + dTransformAdjoint(T, body.SdotV, body.dTdq_new, dSdotVdq);
+
+            // dJdotvdv
+            // TODO: exploit sparsity better
+            Matrix<double, TWIST_SIZE, Eigen::Dynamic> jacobian(TWIST_SIZE, 0);
+            std::vector<int> v_indices;
+            geometricJacobian(0, i, 0, jacobian, &v_indices);
+
+            Matrix<double, TWIST_SIZE, Eigen::Dynamic> dtwistdv(TWIST_SIZE, nv);
+            dtwistdv.setZero();
+            for (int j = 0; j < v_indices.size(); j++) {
+              dtwistdv.col(v_indices[j]) = jacobian.col(j);
+            }
+            Matrix<double, TWIST_SIZE, Eigen::Dynamic> djoint_twistdv(TWIST_SIZE, nv);
+            djoint_twistdv.setZero();
+            djoint_twistdv.middleCols(body.dofnum, body.getJoint().getNumVelocities()) = body.S; // FIXME: using dofnum for velocity...
+
+            MatrixXd djoint_acceldv(TWIST_SIZE, nv);
+            dcrm(body.twist, joint_twist, dtwistdv, djoint_twistdv, &djoint_acceldv);
+            Matrix<double, TWIST_SIZE, Eigen::Dynamic> dSdotVdv(TWIST_SIZE, nv);
+            dSdotVdv.setZero();
+            dSdotVdv.middleCols(body.dofnum, body.getJoint().getNumVelocities()) = *dSdotVdvi; // FIXME: using dofnum for velocity...
+            djoint_acceldv += transformSpatialMotion(T, dSdotVdv);
+            body.dJdotVdv = bodies[body.parent]->dJdotVdv + djoint_acceldv;
+          }
+        }
+      }
+      else {
+        body.T = body.Ttree;
+        // motion subspace in body frame is empty
+        // motion subspace in world frame is empty
+        // qdot to v is empty
+        // v to qdot is empty
+        if (compute_gradients) {
+          // gradient of transform
+          body.dTdq_new.setZero();
+          // gradient of motion subspace in world is empty
+        }
+        if (v) {
+          body.twist.setZero();
+          if (compute_gradients) {
+            body.dtwistdq.setZero();
+          }
+          if (compute_JdotV) {
+            body.SdotV.setZero();
+            if (compute_gradients) {
+              body.dSdotVdqi.setZero();
+              body.dSdotVdvi.setZero();
+            }
+            body.JdotV.setZero();
+            if (compute_gradients) {
+              body.dJdotVdq.setZero();
+              body.dJdotVdv.setZero();
+            }
+          }
+        }
+      }
+    }
+  }
+}
 
 template <typename Derived>
 void RigidBodyManipulator::getCMM(double* const q, double* const qd, MatrixBase<Derived> &A, MatrixBase<Derived> &Adot)
@@ -1296,51 +1441,98 @@ void RigidBodyManipulator::bodyKin(const int body_or_frame_id, const MatrixBase<
 template<typename DerivedA>
 void RigidBodyManipulator::geometricJacobian(int base_body_or_frame_ind, int end_effector_body_or_frame_ind, int expressed_in_body_or_frame_ind, PlainObjectBase<DerivedA>& J, std::vector<int>* v_indices)
 {
-  // TODO: need to redo after changes to kinsol format
-  KinematicPath kinematic_path;
-  findKinematicPath(kinematic_path, base_body_or_frame_ind, end_effector_body_or_frame_ind);
+  // TODO: gradient
+  if (use_new_kinsol) {
+    KinematicPath kinematic_path;
+    findKinematicPath(kinematic_path, base_body_or_frame_ind, end_effector_body_or_frame_ind);
 
-  int cols = 0;
-  int body_index;
-  for (int i = 0; i < kinematic_path.joint_path.size(); i++) {
-    body_index = kinematic_path.joint_path[i];
-    const std::unique_ptr<RigidBody>& body = bodies[body_index];
-    const DrakeJoint& joint = body->getJoint();
-    cols += joint.getNumVelocities();
-  }
-
-  Matrix4d Tframe;
-  int expressed_in_body = parseBodyOrFrameID(expressed_in_body_or_frame_ind, &Tframe);
-  Matrix4d T_world_to_frame = (bodies[expressed_in_body]->T * Tframe).inverse();
-
-  J.resize(TWIST_SIZE, cols);
-  DrakeJoint::MotionSubspaceType motion_subspace;
-  if (v_indices) {
-    v_indices->clear();
-    v_indices->reserve(cols);
-  }
-
-  int col_start = 0;
-  int sign;
-  for (int i = 0; i < kinematic_path.joint_path.size(); i++) {
-    body_index = kinematic_path.joint_path[i];
-    const std::unique_ptr<RigidBody>& body = bodies[body_index];
-    const DrakeJoint& joint = body->getJoint();
-
-    joint.motionSubspace(cached_q.data() + body->dofnum, motion_subspace); // TODO: should just let DrakeJoints work with VectorXds
-
-    sign = kinematic_path.joint_direction_signs[i];
-    auto block = J.template block<TWIST_SIZE, Dynamic>(0, col_start, TWIST_SIZE, joint.getNumVelocities());
-    block.noalias() = sign * transformSpatialMotion(Isometry3d(body->T), motion_subspace);
-
-    if (v_indices) {
-      for (int j = 0; j < joint.getNumVelocities(); j++) {
-        v_indices->push_back(body->dofnum + j); // FLOATINGBASE TODO: assumes qd = v
-      }
+    int cols = 0;
+    int body_index;
+    for (int i = 0; i < kinematic_path.joint_path.size(); i++) {
+      body_index = kinematic_path.joint_path[i];
+      const std::unique_ptr<RigidBody>& body = bodies[body_index];
+      const DrakeJoint& joint = body->getJoint();
+      cols += joint.getNumVelocities();
     }
-    col_start = col_start + joint.getNumVelocities();
+
+    J.resize(TWIST_SIZE, cols);
+    DrakeJoint::MotionSubspaceType motion_subspace;
+    if (v_indices) {
+      v_indices->clear();
+      v_indices->reserve(cols);
+    }
+
+    int col_start = 0;
+    int sign;
+    for (int i = 0; i < kinematic_path.joint_path.size(); i++) {
+      body_index = kinematic_path.joint_path[i];
+      RigidBody& body = *bodies[body_index];
+      const DrakeJoint& joint = body.getJoint();
+      sign = kinematic_path.joint_direction_signs[i];
+      auto block = J.template block<TWIST_SIZE, Dynamic>(0, col_start, TWIST_SIZE, joint.getNumVelocities());
+      block.noalias() = sign * body.J;
+
+      if (v_indices) {
+        for (int j = 0; j < joint.getNumVelocities(); j++) {
+          v_indices->push_back(body.dofnum + j); // FLOATINGBASE TODO: assumes qd = v
+        }
+      }
+      col_start = col_start + joint.getNumVelocities();
+    }
+
+    if (expressed_in_body_or_frame_ind != 0) {
+      Matrix4d Tframe;
+      int expressed_in_body = parseBodyOrFrameID(expressed_in_body_or_frame_ind, &Tframe);
+      Matrix4d T_world_to_frame = (bodies[expressed_in_body]->T * Tframe).inverse();
+      J = transformSpatialMotion(Isometry3d(T_world_to_frame), J);
+    }
   }
-  J = transformSpatialMotion(Isometry3d(T_world_to_frame), J);
+  else {
+    KinematicPath kinematic_path;
+    findKinematicPath(kinematic_path, base_body_or_frame_ind, end_effector_body_or_frame_ind);
+
+    int cols = 0;
+    int body_index;
+    for (int i = 0; i < kinematic_path.joint_path.size(); i++) {
+      body_index = kinematic_path.joint_path[i];
+      const std::unique_ptr<RigidBody>& body = bodies[body_index];
+      const DrakeJoint& joint = body->getJoint();
+      cols += joint.getNumVelocities();
+    }
+
+    Matrix4d Tframe;
+    int expressed_in_body = parseBodyOrFrameID(expressed_in_body_or_frame_ind, &Tframe);
+    Matrix4d T_world_to_frame = (bodies[expressed_in_body]->T * Tframe).inverse();
+
+    J.resize(TWIST_SIZE, cols);
+    DrakeJoint::MotionSubspaceType motion_subspace;
+    if (v_indices) {
+      v_indices->clear();
+      v_indices->reserve(cols);
+    }
+
+    int col_start = 0;
+    int sign;
+    for (int i = 0; i < kinematic_path.joint_path.size(); i++) {
+      body_index = kinematic_path.joint_path[i];
+      const std::unique_ptr<RigidBody>& body = bodies[body_index];
+      const DrakeJoint& joint = body->getJoint();
+
+      joint.motionSubspace(cached_q.data() + body->dofnum, motion_subspace); // TODO: should just let DrakeJoints work with VectorXds
+
+      sign = kinematic_path.joint_direction_signs[i];
+      auto block = J.template block<TWIST_SIZE, Dynamic>(0, col_start, TWIST_SIZE, joint.getNumVelocities());
+      block.noalias() = sign * transformSpatialMotion(Isometry3d(body->T), motion_subspace);
+
+      if (v_indices) {
+        for (int j = 0; j < joint.getNumVelocities(); j++) {
+          v_indices->push_back(body->dofnum + j); // FLOATINGBASE TODO: assumes qd = v
+        }
+      }
+      col_start = col_start + joint.getNumVelocities();
+    }
+    J = transformSpatialMotion(Isometry3d(T_world_to_frame), J);
+  }
 }
 
 template <typename DerivedA, typename DerivedB>
