@@ -35,9 +35,7 @@ classdef RigidBodyManipulator < Manipulator
     B = [];
     mex_model_ptr = 0;
     dirty = true;
-    %collision_filter_groups=containers.Map('KeyType','char','ValueType','any');
-    collision_filter_groups;
-      % map of CollisionFilterGroup objects
+    collision_filter_groups;  % map of CollisionFilterGroup objects
   end
 
   methods
@@ -51,10 +49,13 @@ classdef RigidBodyManipulator < Manipulator
       if ~isfield(options,'terrain'), options.terrain = []; end;
 
       obj = obj@Manipulator(0,0);
-      obj.body = newBody(obj);
+      obj.body = RigidBody();
       obj.body.linkname = 'world';
       obj = setTerrain(obj,options.terrain);
       obj.contact_options = obj.parseContactOptions(options);
+
+      obj.collision_filter_groups=containers.Map('KeyType','char','ValueType','any');
+      obj.collision_filter_groups('no_collision') = CollisionFilterGroup();
 
       if (nargin>0 && ~isempty(urdf_filename))
         obj = addRobotFromURDF(obj,urdf_filename,zeros(3,1),zeros(3,1),options);
@@ -363,7 +364,7 @@ classdef RigidBodyManipulator < Manipulator
       end
     end
 
-    function [model,id]=addBody(model,b)
+    function [model,id]=addLink(model,b)
       % @ingroup Kinematic Tree
       typecheck(b,'RigidBody');
       sizecheck(b,1);
@@ -520,35 +521,35 @@ classdef RigidBodyManipulator < Manipulator
           model = addJoint(model,'base','floating_quat',parent,rootlink,xyz,rpy);
 
         case 'RPY'  % instrinsic coordinates
-          body1 = newBody(model);
+          body1 = RigidBody();
           body1.linkname = 'base_x';
           body1.robotnum=robotnum;
           model.body = [model.body,body1];
           body1_ind = length(model.body);
           model = addJoint(model,body1.linkname,'prismatic',parent,body1_ind,xyz,rpy,[1;0;0],0);
 
-          body2=newBody(model);
+          body2=RigidBody();
           body2.linkname = 'base_y';
           body2.robotnum=robotnum;
           model.body = [model.body,body2];
           body2_ind = length(model.body);
           model = addJoint(model,body2.linkname,'prismatic',body1_ind,body2_ind,zeros(3,1),zeros(3,1),[0;1;0],0);
 
-          body3=newBody(model);
+          body3=RigidBody();
           body3.linkname = 'base_z';
           body3.robotnum=robotnum;
           model.body = [model.body,body3];
           body3_ind = length(model.body);
           model = addJoint(model,body3.linkname,'prismatic',body2_ind,body3_ind,zeros(3,1),zeros(3,1),[0;0;1],0);
 
-          body4=newBody(model);
+          body4=RigidBody();
           body4.linkname = 'base_relative_roll';
           body4.robotnum=robotnum;
           model.body = [model.body,body4];
           body4_ind = length(model.body);
           model = addJoint(model,body4.linkname,'revolute',body3_ind,body4_ind,zeros(3,1),zeros(3,1),[1;0;0],0);
 
-          body5=newBody(model);
+          body5=RigidBody();
           body5.linkname = 'base_relative_pitch';
           body5.robotnum=robotnum;
           model.body = [model.body,body5];
@@ -559,35 +560,35 @@ classdef RigidBodyManipulator < Manipulator
 
         case 'YPR' % intrinsic
 
-          body1 = newBody(model);
+          body1 = RigidBody();
           body1.linkname = 'base_x';
           body1.robotnum=robotnum;
           model.body = [model.body,body1];
           body1_ind = length(model.body);
           model = addJoint(model,body1.linkname,'prismatic',parent,body1_ind,xyz,rpy,[1;0;0],0);
 
-          body2=newBody(model);
+          body2 = RigidBody();
           body2.linkname = 'base_y';
           body2.robotnum=robotnum;
           model.body = [model.body,body2];
           body2_ind = length(model.body);
           model = addJoint(model,body2.linkname,'prismatic',body1_ind,body2_ind,zeros(3,1),zeros(3,1),[0;1;0],0);
 
-          body3=newBody(model);
+          body3= RigidBody();
           body3.linkname = 'base_z';
           body3.robotnum=robotnum;
           model.body = [model.body,body3];
           body3_ind = length(model.body);
           model = addJoint(model,body3.linkname,'prismatic',body2_ind,body3_ind,zeros(3,1),zeros(3,1),[0;0;1],0);
 
-          body4=newBody(model);
+          body4=RigidBody();
           body4.linkname = ['base_relative_yaw'];
           body4.robotnum=robotnum;
           model.body = [model.body,body4];
           body4_ind = length(model.body);
           model = addJoint(model,body4.linkname,'revolute',body3_ind,body4_ind,zeros(3,1),zeros(3,1),[0;0;1],0);
 
-          body5=newBody(model);
+          body5=RigidBody();
           body5.linkname = 'base_relative_pitch';
           body5.robotnum=robotnum;
           model.body = [model.body,body5];
@@ -1497,6 +1498,7 @@ classdef RigidBodyManipulator < Manipulator
 
     function body = newBody(model)
       % @ingroup Kinematic Tree
+      errorDeprecatedFunction('RigidBody()');  % since it doesn't actually serve any purpose now that planar rigid bodies are rigid bodies.
       body = RigidBody();
     end
 
@@ -2260,59 +2262,6 @@ classdef RigidBodyManipulator < Manipulator
       end
     end
 
-    function model=parseLink(model,robotnum,node,options)
-
-      ignore = char(node.getAttribute('drakeIgnore'));
-      if strcmp(lower(ignore),'true')
-        return;
-      end
-
-      body = newBody(model);
-      body.robotnum = robotnum;
-
-      body.linkname=char(node.getAttribute('name'));
-      body.linkname=regexprep(body.linkname, '[\[\]\\\/\.]+', '_', 'preservecase');
-
-      if (options.inertial && node.getElementsByTagName('inertial').getLength()>0)
-        body = parseInertial(body,node.getElementsByTagName('inertial').item(0),model,options);
-      end
-
-      if (options.visual && node.getElementsByTagName('visual').getLength()>0)
-        visualItem = 0;
-        while(~isempty(node.getElementsByTagName('visual').item(visualItem)))
-          body = parseVisual(body,node.getElementsByTagName('visual').item(visualItem),model,options);
-          visualItem = visualItem+1;
-        end
-      end
-
-      if options.collision && node.getElementsByTagName('collision').getLength()>0
-        collisionItem = 0;
-        while(~isempty(node.getElementsByTagName('collision').item(collisionItem)))
-          body = parseCollision(body,node.getElementsByTagName('collision').item(collisionItem),model,options);
-          collisionItem = collisionItem+1;
-        end
-      end
-
-      if options.sensors && node.getElementsByTagName('sensor').getLength()>0
-        sensorItem = 0;
-        while(~isempty(node.getElementsByTagName('sensor').item(sensorItem)))
-          model = parseSensor(model,robotnum,node.getElementsByTagName('sensor').item(sensorItem),numel(model.body)+1,options);
-          sensorItem = sensorItem+1;
-        end
-      end
-
-      model.body=[model.body,body];
-    end
-
-    function model = parseSensor(model,robotnum,node,body_ind,options)
-      switch char(node.getAttribute('type'))
-        case 'imu'
-          model = addSensor(model,RigidBodyInertialMeasurementUnit.parseURDFNode(model,robotnum,node,body_ind,options));
-        otherwise
-          error(['sensor element type ',type,' not supported (yet?)']);
-      end
-    end
-    
     function obj = adjustContactShapes(varargin)
       errorDeprecatedFunction('adjustCollisionGeometry');
     end
@@ -2360,39 +2309,6 @@ classdef RigidBodyManipulator < Manipulator
             '\n\n'],changed_body_idx_and_names{:},class(model), ...
             message_id,class(model));
         end
-      end
-    end
-
-    function model = parseCollisionFilterGroup(model,robotnum,node,options)
-      ignore = char(node.getAttribute('drakeIgnore'));
-      if strcmpi(ignore,'true')
-        return;
-      end
-      collision_fg_name = char(node.getAttribute('name'));
-      if isKey(model.collision_filter_groups,collision_fg_name)
-        error('RigidBodyManipulator:parseCollisionFilterGroup:repeated_collision_fg_name', ...
-              ['A collision filter group with the collision_fg_name %s already exists in this '...
-               'RigidBodyManipulator'], collision_fg_name);
-      end
-
-      model.collision_filter_groups(collision_fg_name) = CollisionFilterGroup();
-
-      members = node.getElementsByTagName('member');
-      if members.getLength()>0
-        members_cell = cell(1,members.getLength());
-        for i=0:(members.getLength()-1)
-          members_cell{i+1} = char(members.item(i).getAttribute('link'));
-        end
-        model = addLinksToCollisionFilterGroup(model,members_cell,collision_fg_name,robotnum);
-      end
-
-      ignored_collision_fgs = node.getElementsByTagName('ignored_collision_filter_group');
-      if ignored_collision_fgs.getLength()>0
-        ignored_collision_fgs_cell = cell(1,ignored_collision_fgs.getLength());
-        for i=0:(ignored_collision_fgs.getLength()-1)
-          ignored_collision_fgs_cell{i+1} = char(ignored_collision_fgs.item(i).getAttribute('collision_filter_group'));
-        end
-        model = addToIgnoredListOfCollisionFilterGroup(model,ignored_collision_fgs_cell,collision_fg_name);
       end
     end
 
@@ -2493,190 +2409,6 @@ classdef RigidBodyManipulator < Manipulator
       end
     end
 
-    function model=parseJoint(model,robotnum,node,options)
-
-      ignore = char(node.getAttribute('drakeIgnore'));
-      if strcmp(lower(ignore),'true')
-        return;
-      end
-
-      parentNode = node.getElementsByTagName('parent').item(0);
-      if isempty(parentNode) % then it's not the main joint element.  for instance, the transmission element has a joint element, too
-        return
-      end
-      parent = findLinkInd(model,char(parentNode.getAttribute('link')),robotnum);
-
-      childNode = node.getElementsByTagName('child').item(0);
-      child = findLinkInd(model,char(childNode.getAttribute('link')),robotnum);
-
-      name = char(node.getAttribute('name'));
-      type = char(node.getAttribute('type'));
-      xyz=zeros(3,1); rpy=zeros(3,1);
-      origin = node.getElementsByTagName('origin').item(0);  % seems to be ok, even if origin tag doesn't exist
-      if ~isempty(origin)
-        if origin.hasAttribute('xyz')
-          xyz = reshape(parseParamString(model,robotnum,char(origin.getAttribute('xyz'))),3,1);
-        end
-        if origin.hasAttribute('rpy')
-          rpy = reshape(parseParamString(model,robotnum,char(origin.getAttribute('rpy'))),3,1);
-        end
-      end
-      axis=[1;0;0];  % default according to URDF documentation
-      axisnode = node.getElementsByTagName('axis').item(0);
-      if ~isempty(axisnode)
-        if axisnode.hasAttribute('xyz')
-          axis = reshape(parseParamString(model,robotnum,char(axisnode.getAttribute('xyz'))),3,1);
-          axis = axis/(norm(axis)+eps); % normalize
-        end
-      end
-      damping=0;
-      coulomb_friction=0;
-      static_friction=0;
-      coulomb_window=eps;
-      dynamics = node.getElementsByTagName('dynamics').item(0);
-      if ~isempty(dynamics)
-        if dynamics.hasAttribute('damping')
-          damping = parseParamString(model,robotnum,char(dynamics.getAttribute('damping')));
-        end
-        if ~options.ignore_friction && dynamics.hasAttribute('friction')
-          coulomb_friction = parseParamString(model,robotnum,char(dynamics.getAttribute('friction')));
-          if coulomb_friction < 0
-            error('RigidBodyManipulator: coulomb_friction must be >= 0');
-          end
-        end
-        if ~options.ignore_friction && dynamics.hasAttribute('stiction')
-          warning('RigidBodyManipulator:  stiction is not supported yet.');
-          static_friction = parseParamString(model,robotnum,char(dynamics.getAttribute('stiction')));
-          if static_friction < 0
-            error('RigidBodyManipulator: static_friction must be >= 0');
-          end
-        end
-        if ~options.ignore_friction && dynamics.hasAttribute('coulomb_window')
-          coulomb_window = parseParamString(model,robotnum,char(dynamics.getAttribute('coulomb_window')));
-          if coulomb_window <= 0
-            error('RigidBodyManipulator: coulomb_window must be > 0');
-          end
-        end
-      end
-
-      % add noise to damping
-      if ~isnumeric(damping) && options.damping_error
-        warning('damping error not supported for parameterized values (yet)');
-      end
-      if isnumeric(damping)
-        damping = max(0,(1+options.damping_error*randn())*damping);
-      end
-
-      joint_limit_min=-inf;
-      joint_limit_max=inf;
-      effort_min=-inf;
-      effort_max=inf;
-      velocity_limit=inf;
-      limits = node.getElementsByTagName('limit').item(0);
-      if ~isempty(limits)
-        if limits.hasAttribute('lower')
-          joint_limit_min = parseParamString(model,robotnum,char(limits.getAttribute('lower')));
-        end
-        if limits.hasAttribute('upper');
-          joint_limit_max = parseParamString(model,robotnum,char(limits.getAttribute('upper')));
-        end
-        if limits.hasAttribute('effort');
-          if ~isfield(options,'ignore_effort_limits') || ~options.ignore_effort_limits
-            effort = parseParamString(model,robotnum,char(limits.getAttribute('effort')));
-            effort_min = min(-effort,effort); % just in case someone puts the min effort in the URDF
-            effort_max = max(-effort,effort);
-          end
-        end
-        if limits.hasAttribute('effort_min');
-          if ~isfield(options,'ignore_effort_limits') || ~options.ignore_effort_limits
-            effort_min = parseParamString(model,robotnum,char(limits.getAttribute('effort_min')));
-          end
-        end
-        if limits.hasAttribute('effort_max');
-          if ~isfield(options,'ignore_effort_limits') || ~options.ignore_effort_limits
-            effort_max = parseParamString(model,robotnum,char(limits.getAttribute('effort_max')));
-          end
-        end
-        if limits.hasAttribute('velocity');
-          warnOnce(model.warning_manager,'Drake:RigidBodyManipulator:UnsupportedVelocityLimits','RigidBodyManipulator: velocity limits are not supported yet');
-          velocity_limit = parseParamString(model,robotnum,char(limits.getAttribute('velocity')));
-        end
-      end
-
-      limits = struct();
-      limits.joint_limit_min = joint_limit_min;
-      limits.joint_limit_max = joint_limit_max;
-      limits.effort_min = effort_min;
-      limits.effort_max = effort_max;
-      limits.velocity_limit = velocity_limit;
-
-      name=regexprep(name, '\.', '_', 'preservecase');
-      model = addJoint(model,name,type,parent,child,xyz,rpy,axis,damping,coulomb_friction,static_friction,coulomb_window,limits);
-
-      if node.hasAttribute('has_position_sensor')
-        model.body(child).has_position_sensor = str2num(char(node.getAttribute('has_position_sensor')));
-      end
-    end
-
-
-    function model = parseForceElement(model,robotnum,node,options)
-      fe = [];
-      childNodes = node.getChildNodes();
-      elnode = node.getElementsByTagName('linear_spring_damper').item(0);
-      if ~isempty(elnode)
-        [model,fe] = RigidBodySpringDamper.parseURDFNode(model,robotnum,elnode,options);
-      end
-
-      elnode = node.getElementsByTagName('torsional_spring').item(0);
-      if ~isempty(elnode)
-        [model,fe] = RigidBodyTorsionalSpring.parseURDFNode(model,robotnum,elnode,options);
-      end
-
-      elnode = node.getElementsByTagName('wing').item(0);
-      if ~isempty(elnode)
-        [model,fe] = RigidBodyWing.parseURDFNode(model,robotnum,elnode,options);
-      end
-      
-      elnode = node.getElementsByTagName('wing_with_control_surface').item(0);
-      if ~isempty(elnode)
-        [model,fe] = RigidBodyWingWithControlSurface.parseURDFNode(model,robotnum,elnode,options);
-      end
-      
-      elnode = node.getElementsByTagName('bluff_body').item(0);
-      if ~isempty(elnode)
-        [model,fe] = RigidBodyBluffBody.parseURDFNode(model,robotnum,elnode,options);
-      end
-
-      elnode = node.getElementsByTagName('thrust').item(0);
-      if ~isempty(elnode)
-        [model,fe] = RigidBodyThrust.parseURDFNode(model,robotnum,elnode,options);
-      end
-
-      elnode = node.getElementsByTagName('added_mass').item(0);
-      if ~isempty(elnode)
-        [model,fe] = RigidBodyAddedMass.parseURDFNode(model,robotnum,elnode,options);
-      end
-
-      elnode = node.getElementsByTagName('buoyancy').item(0);
-      if ~isempty(elnode)
-        [model,fe] = RigidBodyBuoyant.parseURDFNode(model,robotnum,elnode,options);
-      end
-
-      elnode = node.getElementsByTagName('propellor').item(0);
-      if ~isempty(elnode)
-        [model,fe] = RigidBodyPropellor.parseURDFNode(model,robotnum,elnode,options);
-      end
-
-
-
-      if ~isempty(fe)
-        if iscell(fe)
-          model.force = {model.force{:} fe{:}};
-        else
-          model.force{end+1} = fe;
-        end
-      end
-    end
 
 
     function model = updateBodyIndices(model,map_from_new_to_old)
