@@ -163,6 +163,59 @@ classdef RigidBodyGeometry
       end
     end
 
+    function obj = parseSDFNode(node,x0,rpy,model,robotnum,options)
+      T= [rpy2rotmat(rpy),x0; 0 0 0 1];
+      
+      obj=[];
+      childNodes = node.getChildNodes();
+      for i=1:childNodes.getLength()
+        thisNode = childNodes.item(i-1);
+        switch (lower(char(thisNode.getNodeName())))
+          case 'box'
+            sizeNode = thisNode.getElementsByTagName('size').item(0);
+            size = parseParamString(model,robotnum,char(getNodeValue(getFirstChild(sizeNode))));
+            obj = RigidBodyBox(size);
+          case 'mesh'
+            uriNode = thisNode.getElementsByTagName('uri').item(0);
+            filename = char(getNodeValue(getFirstChild(uriNode)));
+
+            scale = 1;
+            scaleNode = thisNode.getElementsByTagName('scale').item(0);
+            if ~isempty(scaleNode)
+              scale = parseParamString(model,robotnum,char(getNodeValue(getFirstChild(scaleNode))));
+            end
+            
+            % parse strings with forward and backward slashes
+            filename = strrep(filename,'/',filesep);
+            filename = strrep(filename,'\',filesep);
+            
+            if ~isempty(strfind(filename,['model:',filesep,filesep]))
+              filename=strrep(filename,['model:',filesep,filesep],'');
+              [model,filename]=strtok(filename,filesep);
+              filename=[gazeboModelPath(model),filename];
+            else
+              strrep(filename,'file://','');
+              if ~isempty(strfind(filename,'http://'))
+                error('urls not supported yet -- but might not be too hard');
+              end
+              [path,name,ext] = fileparts(filename);
+              if (isempty(path) || path(1)~=filesep)  % the it's a relative path
+                path = fullfile(options.urdfpath,path);
+              end
+              filename = fullfile(path,[name,ext]);
+            end
+            obj = RigidBodyMesh(GetFullPath(filename));
+            obj.scale = scale;
+          case {'#text','#comment'}
+            % intentionally do nothing
+          otherwise
+            model.warning_manager.warnOnce(['Drake:RigidBodyGeometry:UnsupportedGeometry:',char(thisNode.getNodeName())],['SDF geometry ',char(thisNode.getNodeName()),' not implemented yet']);
+        end
+      end
+      if ~isempty(obj)
+        obj.T = T;
+      end
+    end    
   end
   
   properties  % note: constructModelmex currently depends on these being public
