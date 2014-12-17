@@ -1,4 +1,9 @@
 classdef HaltSimulationBlock < DrakeSystem
+% This block provides an easy way to halt your running simulation gently (i.e. without ctrl+c).
+% If you cascade the HaltSimulationBlock with your current system (for example, Atlas), then
+% a button will be created which, when clicked, ends the simulation without throwing an error. 
+% This might be useful if, for example, you would like to see results plotted from a simulation
+% without running it to completion.
   properties
     lc;
     monitor
@@ -9,6 +14,15 @@ classdef HaltSimulationBlock < DrakeSystem
 
   methods
     function obj = HaltSimulationBlock(frame, show_button, use_lcm)
+      % Construct a block to easily halt a running simulation. 
+      % @param frame the output frame of your current plant
+      % @param show_button whether to show a Matlab button labeled 'Halt Simulation'
+      % @param use_lcm whether to also listen on the LCM channel HALT_DRAKE_SIMULATION.
+      %                if true, a drc.utime_t message on that channel will also halt sim.
+      % example usage:
+      %    r = Atlas(fullfile(getDrakePath,'examples','Atlas','urdf','atlas_minimal_contact.urdf'))
+      %    sys = cascade(r, HaltSimulationBlock(r.getOutputFrame()));
+      %    simulate(sys, [0, 5]);
       if nargin < 3
         use_lcm = true;
       end
