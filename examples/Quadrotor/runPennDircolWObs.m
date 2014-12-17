@@ -180,9 +180,9 @@ r2 = r2.setOutputFrame(r.getOutputFrame);
 
 r2 = r2.setInputFrame(r.getInputFrame);
 
+% NOTE: Back to feedback on original plant for now
+sys = feedback(r,ltvsys);
 
-
-sys = feedback(r2,ltvsys);
 toc;
 disp('done!');
 
@@ -239,15 +239,17 @@ v.playback(xtraj_sim, struct('slider', true));
 %yquad = quadpos(2);
 %zquad = quadpos(3);
 
-windfield = 'zero';
-%windfield = 'constant';
+%windfield = 'zero';
+windfield = 'constant';
 %windfield = 'linear';
 %windfield = 'quadratic';
 %windfield = 'sqrt';
 %windfield = 'exp';
 %windfield = 'difftailhead';
+%windfield = 'thermals';
 %windfield = 'tvsin';
 %windfield = 'tlinear';
+
 
 
 
@@ -264,7 +266,21 @@ if strcmp(windfield, 'difftailhead')
     %lcmgl.drawVector3d([0,0,0],[1,1,1]);
     lcmgl.drawVector3d(pos,force);
   end
-  
+elseif strcmp(windfield, 'thermals')
+  for yi = -5:0.2:5
+    for xi = 1:0.2:10
+    xwind = 0;
+    ywind = 0;
+    if (xi - 3)^2 + yi^2 < 1
+      zwind = 3;
+    else
+      zwind = 0;
+    end
+    pos = [xi, yi, 0];
+    force = [xwind, ywind, zwind];
+    lcmgl.drawVector3d(pos,force);
+    end
+  end
 else
   for xi = 1:10
     %for yi = 1:10
@@ -309,10 +325,10 @@ else
 end
 
 
-  %lcmgl.glColor3f(0, 0, 1);
-  %lcmgl.plot3(x(1,1:2)+1,x(2,1:2),x(3,1:2));
-  lcmgl.switchBuffers;
- 
+%lcmgl.glColor3f(0, 0, 1);
+%lcmgl.plot3(x(1,1:2)+1,x(2,1:2),x(3,1:2));
+lcmgl.switchBuffers;
+
 
 end
 
