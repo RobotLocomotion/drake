@@ -22,7 +22,7 @@ v.display_dt = 0.05;
 x0 = r.getInitialState();
 nq = getNumPositions(r);
 
-T = walking_plan_data.comtraj.tspan(2);
+T = walking_plan_data.comtraj.tspan(2)-0.001;
 
 ctrl_data = QPControllerData(true,struct(...
   'acceleration_input_frame',atlasFrames.AtlasCoordinates(r),...

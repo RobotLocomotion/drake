@@ -32,4 +32,4 @@ for j = 1:length(footstep_plan.footsteps)
   mu(j) = footstep_plan.footsteps(j).walking_params.mu;
 end
 
-walking_plan_data = WalkingPlanData(x0, support_times, supports, link_constraints, zmptraj, V, c, comtraj, mu);
+walking_plan_data = WalkingPlanData(q0, support_times, supports, link_constraints, zmptraj, V, c, comtraj, mu);

@@ -37,7 +37,6 @@ v.display_dt = 0.03;
 nq = getNumPositions(r);
 
 x0 = xstar;
-q0 = x0(1:nq);
 
 % Find the initial positions of the feet
 R=rotz(navgoal(6));
@@ -52,7 +51,7 @@ lfoot_navgoal(1:3) = lfoot_navgoal(1:3) + R*[0;0.13;0];
 goal_pos = struct('right', rfoot_navgoal, 'left', lfoot_navgoal);
 footstep_plan = r.planFootsteps(q0, goal_pos);
 
-walking_plan_data = r.planWalkingZMP(x0, footstep_plan);
+walking_plan_data = r.planWalkingZMP(x0(1:r.getNumPositions()), footstep_plan);
 
 traj = atlasUtil.simulateWalking(r, walking_plan_data, use_mex, false, use_bullet, use_angular_momentum, true);
 
