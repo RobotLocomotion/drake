@@ -6,6 +6,7 @@ if ~checkDependency('gurobi')
 end
 
 path_handle = addpathTemporary(fullfile(getDrakePath(), 'examples', 'ZMP'));
+import atlasControllers.*;
 
 % put robot in a random x,y,yaw position and balance for 2 seconds
 visualize = true;
@@ -96,7 +97,7 @@ clear ins;
 % feedback foot contact detector with QP/atlas
 options.use_lcm=false;
 options.contact_threshold = 0.002;
-fc = atlasControllers.FootContactBlock(r,ctrl_data,options);
+fc = FootContactBlock(r,ctrl_data,options);
 ins(1).system = 2;
 ins(1).input = 1;
 sys = mimoFeedback(fc,sys,[],[],ins,outs);
@@ -104,13 +105,13 @@ clear ins;
 
 % feedback PD trajectory controller
 options.use_ik = false;
-pd = atlasControllers.IKPDBlock(r,ctrl_data,options);
+pd = IKPDBlock(r,ctrl_data,options);
 ins(1).system = 1;
 ins(1).input = 1;
 sys = mimoFeedback(pd,sys,[],[],ins,outs);
 clear ins;
 
-qt = atlasControllers.QTrajEvalBlock(r,ctrl_data);
+qt = QTrajEvalBlock(r,ctrl_data);
 sys = mimoFeedback(qt,sys,[],[],[],outs);
 
 if visualize

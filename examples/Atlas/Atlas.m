@@ -178,6 +178,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
     end
 
     function [qp,lfoot_control_block,rfoot_control_block,pelvis_control_block,pd,options] = constructQPBalancingController(obj,controller_data,options)
+      import atlasControllers.*;
       if nargin < 3
         options = struct();
       end
@@ -206,17 +207,17 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       options.Kp = options.Kp_pelvis;
       options.Kd = getDampingGain(options.Kp,options.pelvis_damping_ratio);
       if isfield(options,'use_walking_pelvis_block') && options.use_walking_pelvis_block
-        pelvis_control_block = atlasControllers.PelvisMotionControlBlock(obj,'pelvis',controller_data,options);
+        pelvis_control_block = PelvisMotionControlBlock(obj,'pelvis',controller_data,options);
       else
-        pelvis_control_block = atlasControllers.BodyMotionControlBlock(obj,'pelvis',controller_data,options);
+        pelvis_control_block = BodyMotionControlBlock(obj,'pelvis',controller_data,options);
       end
 
       if isfield(options,'use_foot_motion_block') && options.use_foot_motion_block
         foot_options = struct('Kp', options.Kp_foot,...
                               'Kd', getDampingGain(options.Kp,options.foot_damping_ratio),...
                               'use_plan_shift', true);
-        lfoot_control_block = atlasControllers.BodyMotionControlBlock(obj,'l_foot',controller_data,foot_options);
-        rfoot_control_block = atlasControllers.BodyMotionControlBlock(obj,'r_foot',controller_data,foot_options);
+        lfoot_control_block = BodyMotionControlBlock(obj,'l_foot',controller_data,foot_options);
+        rfoot_control_block = BodyMotionControlBlock(obj,'r_foot',controller_data,foot_options);
         motion_frames = {lfoot_control_block.getOutputFrame,rfoot_control_block.getOutputFrame,...
           pelvis_control_block.getOutputFrame};
       else
@@ -224,11 +225,11 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
         rfoot_control_block = [];
         motion_frames = {pelvis_control_block.getOutputFrame};
       end
-      qp = atlasControllers.AtlasQPController(obj,motion_frames,controller_data,options);
+      qp = AtlasQPController(obj,motion_frames,controller_data,options);
 
       options.Kp = options.Kp_q;
       options.Kd = getDampingGain(options.Kp,options.q_damping_ratio);
-      pd = atlasControllers.IKPDBlock(obj,controller_data,options);
+      pd = IKPDBlock(obj,controller_data,options);
     end
 
   end
