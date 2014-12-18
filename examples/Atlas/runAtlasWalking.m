@@ -49,7 +49,7 @@ lfoot_navgoal(1:3) = lfoot_navgoal(1:3) + R*[0;0.13;0];
 
 % Plan footsteps to the goal
 goal_pos = struct('right', rfoot_navgoal, 'left', lfoot_navgoal);
-footstep_plan = r.planFootsteps(q0, goal_pos);
+footstep_plan = r.planFootsteps(x0(1:nq), goal_pos);
 
 walking_plan_data = r.planWalkingZMP(x0(1:r.getNumPositions()), footstep_plan);
 

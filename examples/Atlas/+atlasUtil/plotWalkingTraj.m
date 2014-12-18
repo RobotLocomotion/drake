@@ -1,4 +1,5 @@
 function [com, rms_com] = plotWalkingTraj(r, traj, walking_plan_data)
+%NOTEST
 
 nq = r.getNumPositions();
 tts = traj.getBreaks();
