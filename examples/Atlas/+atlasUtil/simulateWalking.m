@@ -4,6 +4,8 @@ function traj = simulateWalking(r, walking_plan_data, use_mex, use_ik, use_bulle
 typecheck(r, 'Atlas');
 typecheck(walking_plan_data, 'WalkingPlanData');
 
+import atlasControllers.*;
+
 % silence some warnings
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints')
 warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits')
@@ -56,7 +58,7 @@ if use_angular_momentum
   options.W_kdot = 1e-5*eye(3); % angular momentum weight
 end
 
-haltBlock = atlasControllers.HaltSimulationBlock(r.getOutputFrame(), draw_button, ~draw_button);
+haltBlock = HaltSimulationBlock(r.getOutputFrame(), draw_button, ~draw_button);
 
 if (use_ik)
   options.w_qdd = 0.001*ones(nq,1);
@@ -75,14 +77,14 @@ if (use_ik)
 
   % feedback foot contact detector with QP/atlas
   options.use_lcm=false;
-  fc = atlasControllers.FootContactBlock(r,ctrl_data,options);
+  fc = FootContactBlock(r,ctrl_data,options);
   ins(1).system = 2;
   ins(1).input = 1;
   sys = mimoFeedback(fc,sys,[],[],ins,outs);
   clear ins;  
   
   % feedback PD block
-  pd = atlasControllers.IKPDBlock(r,ctrl_data,options);
+  pd = IKPDBlock(r,ctrl_data,options);
   ins(1).system = 1;
   ins(1).input = 1;
   sys = mimoFeedback(pd,sys,[],[],ins,outs);
@@ -119,7 +121,7 @@ else
   
   % feedback foot contact detector with QP/atlas
   options.use_lcm=false;
-  fc = atlasControllers.FootContactBlock(r,ctrl_data,options);
+  fc = FootContactBlock(r,ctrl_data,options);
   ins(1).system = 2;
   ins(1).input = 1;
   ins(2).system = 2;
@@ -176,7 +178,7 @@ else
   clear ins outs;
 end
 
-qt = atlasControllers.QTrajEvalBlock(r,ctrl_data);
+qt = QTrajEvalBlock(r,ctrl_data);
 outs(1).system = 2;
 outs(1).output = 1;
 sys = mimoFeedback(qt,sys,[],[],[],outs);

@@ -8,8 +8,7 @@ end
 if (nargin<1); use_mex = true; end
 if (nargin<2); use_angular_momentum = false; end
 
-addpath(fullfile(getDrakePath,'examples','Atlas','controllers'));
-addpath(fullfile(getDrakePath,'examples','Atlas','frames'));
+import atlasControllers.*;
 
 % silence some warnings
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints')
@@ -193,14 +192,14 @@ boptions.Kp =250*ones(6,1);
 boptions.Kd = 2*sqrt(boptions.Kp);
 boptions_foot.Kp = 500*ones(6,1);
 boptions_foot.Kd = 2*sqrt(boptions_foot.Kp);
-lfoot_motion = atlasControllers.BodyMotionControlBlock(r,'l_foot',ctrl_data,boptions_foot);
-rfoot_motion = atlasControllers.BodyMotionControlBlock(r,'r_foot',ctrl_data,boptions_foot);
-pelvis_motion = atlasControllers.BodyMotionControlBlock(r,'pelvis',ctrl_data,boptions);
-lhand_motion = atlasControllers.BodyMotionControlBlock(r,'l_hand',ctrl_data,boptions);
-rhand_motion = atlasControllers.BodyMotionControlBlock(r,'r_hand',ctrl_data,boptions);
+lfoot_motion = BodyMotionControlBlock(r,'l_foot',ctrl_data,boptions_foot);
+rfoot_motion = BodyMotionControlBlock(r,'r_foot',ctrl_data,boptions_foot);
+pelvis_motion = BodyMotionControlBlock(r,'pelvis',ctrl_data,boptions);
+lhand_motion = BodyMotionControlBlock(r,'l_hand',ctrl_data,boptions);
+rhand_motion = BodyMotionControlBlock(r,'r_hand',ctrl_data,boptions);
 % boptions.Kp(4:6) = NaN; % don't constrain orientation
 % boptions.Kd(4:6) = NaN;
-torso_motion = atlasControllers.BodyMotionControlBlock(r,'utorso',ctrl_data,boptions);
+torso_motion = BodyMotionControlBlock(r,'utorso',ctrl_data,boptions);
 
 
 motion_frames = {lfoot_motion.getOutputFrame,rfoot_motion.getOutputFrame,...
@@ -234,7 +233,7 @@ clear ins;
 
 % feedback foot contact detector with QP/atlas
 options.use_lcm=false;
-fc = atlasControllers.FootContactBlock(r,ctrl_data,options);
+fc = FootContactBlock(r,ctrl_data,options);
 ins(1).system = 2;
 ins(1).input = 1;
 ins(2).system = 2;
@@ -256,7 +255,7 @@ clear ins;
 % options.Kp =250*ones(34,1);
 % options.Kd = 2*sqrt(options.Kp);
 options.use_ik = false;
-pd = atlasControllers.IKPDBlock(r,ctrl_data,options);
+pd = IKPDBlock(r,ctrl_data,options);
 ins(1).system = 1;
 ins(1).input = 1;
 ins(2).system = 2;
@@ -335,7 +334,7 @@ ins(1).input = 1;
 sys = mimoFeedback(torso_motion,sys,[],[],ins,outs);
 clear ins;
 
-qt = atlasControllers.QTrajEvalBlock(r,ctrl_data);
+qt = QTrajEvalBlock(r,ctrl_data);
 outs(1).system = 2;
 outs(1).output = 1;
 sys = mimoFeedback(qt,sys,[],[],[],outs);
