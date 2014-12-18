@@ -13,8 +13,6 @@ gripper_idx = findLinkInd(r,'link_6');
 gripper_pt = [-0.04,0,0.1]';
 grasp_orient = angle2quat(0,pi,0)';
 
-      kinsol = r.doKinematics(q0(1:r.getNumDOF));
-      pos0 = r.forwardKin(kinsol,gripper_idx,gripper_pt);
 T = 1;
 N = 2;
 Allcons = cell(0,1);
