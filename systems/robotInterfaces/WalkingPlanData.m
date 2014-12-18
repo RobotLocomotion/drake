@@ -2,7 +2,7 @@ classdef WalkingPlanData
 % Container for the results of the ZMP walking planning, which can be consumed by planWalkingStateTraj
 % to generate the full walking motion.
   properties
-    x0
+    q0
     support_times
     supports
     link_constraints
@@ -14,8 +14,8 @@ classdef WalkingPlanData
   end
 
   methods
-    function obj = WalkingPlanData(x0, support_times, supports, link_constraints, zmptraj, V, c, comtraj, mu)
-      obj.x0 = x0;
+    function obj = WalkingPlanData(q0, support_times, supports, link_constraints, zmptraj, V, c, comtraj, mu)
+      obj.q0 = q0;
       obj.support_times = support_times;
       obj.supports = supports;
 
