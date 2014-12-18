@@ -8,9 +8,7 @@ if ~checkDependency('gurobi')
   return;
 end
 
-path_handle = addpathTemporary({fullfile(getDrakePath,'examples','ZMP'),...
-                                fullfile(getDrakePath,'examples','Atlas','controllers'),...
-                                fullfile(getDrakePath,'examples','Atlas','frames')});
+path_handle = addpathTemporary(fullfile(getDrakePath(), 'examples', 'ZMP'));
 
 % put robot in a random x,y,yaw position and balance for 2 seconds
 visualize = true;
@@ -177,7 +175,7 @@ sys = mimoFeedback(qp,r_hands,[],[],ins,outs);
 clear ins;
 clear outs;
 
-rh = RobotiqControlBlock(r_hands, 2, '');
+rh = atlasControllers.RobotiqControlBlock(r_hands, 2, '');
 ins(1).system = 1;
 ins(1).input = 1;
 ins(2).system = 1;
@@ -193,7 +191,7 @@ clear outs;
 % feedback foot contact detector with QP/atlas
 options.use_lcm=false;
 options.contact_threshold = 0.002;
-fc = FootContactBlock(r,ctrl_data,options);
+fc = atlasControllers.FootContactBlock(r,ctrl_data,options);
 ins(1).system = 2;
 ins(1).input = 1;
 outs(1).system = 2;
@@ -205,7 +203,7 @@ clear ins;
 
 % feedback PD trajectory controller
 options.use_ik = false;
-pd = IKPDBlock(r,ctrl_data,options);
+pd = atlasControllers.IKPDBlock(r,ctrl_data,options);
 ins(1).system = 1;
 ins(1).input = 1;
 outs(1).system = 2;
@@ -215,7 +213,7 @@ outs(2).output = 2;
 sys = mimoFeedback(pd,sys,[],[],ins,outs);
 clear ins;
 
-qt = QTrajEvalBlock(r,ctrl_data);
+qt = atlasControllers.QTrajEvalBlock(r,ctrl_data);
 sys = mimoFeedback(qt,sys,[],[],[],outs);
 
 if visualize
