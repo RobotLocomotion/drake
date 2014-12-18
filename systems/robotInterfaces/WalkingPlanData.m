@@ -55,6 +55,9 @@ classdef WalkingPlanData
       end
 
       for j = 1:length(obj.link_constraints)
+        if ~isfield(obj.link_constraints(j), 'traj')
+          obj.link_constraints(j).traj = PPTrajectory(mkpp(obj.link_constraints(j).ts, cat(3, obj.link_constraints(j).a3, obj.link_constraints(j).a2, obj.link_constraints(j).a1, obj.link_constraints(j).a0), 6));
+        end
         if ~isempty(obj.link_constraints(j).traj)
           plot_traj_foh(obj.link_constraints(j).traj, [0.8, 0.8, 0.2]);
         else
