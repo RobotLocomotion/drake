@@ -1,7 +1,6 @@
 function testPositionControlGradients
 
-options.enable_fastqp = false; % want to use only one solver for numerical gradient
-p = TimeSteppingRigidBodyManipulator('ActuatedPendulum.urdf', .01,options);
+p = TimeSteppingRigidBodyManipulator('ActuatedPendulum.urdf', .01);
 p = enableIdealizedPositionControl(p, true);
 p = compile(p);
 
