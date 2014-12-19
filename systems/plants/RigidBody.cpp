@@ -7,7 +7,24 @@ using namespace std;
 const int defaultRobotNum[1] = {0};
 const set<int> RigidBody::defaultRobotNumSet(defaultRobotNum,defaultRobotNum+1);
 
-RigidBody::RigidBody(void)
+RigidBody::RigidBody(void) :
+    S(TWIST_SIZE, 0),
+    dSdqi(0, 0),
+    J(TWIST_SIZE, 0),
+    dJdq(0, 0),
+    qdot_to_v(0, 0),
+    dqdot_to_v_dqi(0, 0),
+    v_to_qdot(0, 0),
+    dv_to_qdot_dqi(0, 0),
+    dTdq_new(HOMOGENEOUS_TRANSFORM_SIZE, 0),
+    twist(TWIST_SIZE, 1),
+    dtwistdq(TWIST_SIZE, 0),
+    SdotV(TWIST_SIZE, 1),
+    dSdotVdqi(TWIST_SIZE, 0),
+    dSdotVdvi(TWIST_SIZE, 0),
+    JdotV(TWIST_SIZE, 1),
+    dJdotVdq(TWIST_SIZE, 0),
+    dJdotVdv(TWIST_SIZE, 0)
 {
 	dofnum=0;
 	mass = 0.0;
@@ -23,12 +40,29 @@ void RigidBody::setN(int n) {
   dTdq = MatrixXd::Zero(3*n,4);
   dTdqdot = MatrixXd::Zero(3*n,4);
   ddTdqdq = MatrixXd::Zero(3*n*n,4);
+
+  dJdq.resize(J.size(), n);
+  dTdq_new.resize(T.size(), n);
+  dtwistdq.resize(twist.size(), n);
+
+  dJdotVdq.resize(TWIST_SIZE, n); // TODO: nq
+  dJdotVdv.resize(TWIST_SIZE, n); // TODO: nv
 }
 
 
-void RigidBody::setJoint(std::unique_ptr<DrakeJoint> joint)
+void RigidBody::setJoint(std::unique_ptr<DrakeJoint> new_joint)
 {
-  this->joint = move(joint);
+  this->joint = move(new_joint);
+
+  S.resize(TWIST_SIZE, joint->getNumVelocities());
+  dSdqi.resize(S.size(), joint->getNumPositions());
+  J.resize(TWIST_SIZE, joint->getNumVelocities());
+  qdot_to_v.resize(joint->getNumVelocities(), joint->getNumPositions()),
+  dqdot_to_v_dqi.resize(qdot_to_v.size(), joint->getNumPositions()),
+  v_to_qdot.resize(joint->getNumPositions(), joint->getNumVelocities()),
+  dv_to_qdot_dqi.resize(v_to_qdot.size(), joint->getNumPositions());
+  dSdotVdqi.resize(TWIST_SIZE, joint->getNumPositions());
+  dSdotVdvi.resize(TWIST_SIZE, joint->getNumVelocities());
 }
 
 const DrakeJoint& RigidBody::getJoint() const
@@ -94,6 +128,10 @@ void RigidBody::computeAncestorDOFs(RigidBodyManipulator* model)
       ddTdqdq_nonzero_rows_grouped.insert(ind);
     }
   }
+}
+
+bool RigidBody::hasParent() const {
+  return parent >= 0;
 }
 
 ostream &operator<<( ostream &out, const RigidBody &b)

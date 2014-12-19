@@ -77,9 +77,14 @@ classdef Visualizer < DrakeSystem
       defaultOptions.lcmlog = [];
       options = applyDefaults(options,defaultOptions);
 
+      if ishandle(89)
+        position = get(89, 'Position');
+      else
+        position = [560, 400];
+      end
       f = sfigure(89);
       set(f, 'Visible', 'off');
-      set(f, 'Position', [560 400 560 70]);
+      set(f, 'Position', [position(1:2), 560, 70]);
 
       tspan = xtraj.getBreaks();
       t0 = tspan(1);

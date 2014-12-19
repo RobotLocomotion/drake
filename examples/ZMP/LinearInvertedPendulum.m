@@ -70,6 +70,7 @@ classdef LinearInvertedPendulum < LinearSystem
       if nargin<3 options = struct(); end
       if ~isfield(options,'use_tvlqr') options.use_tvlqr = true; end
       if ~isfield(options,'compute_lyapunov') options.compute_lyapunov = (nargout>1); end
+      if ~isfield(options,'Qy') options.Qy = diag([0 0 0 0 1 1]); end
       if ~options.use_tvlqr
         if isfield(options,'dCOM') || ~isTI(obj) || ~isa(dZMP,'PPTrajectory')
           warning('closed-form solution not implemented for these options (yet)');
@@ -104,9 +105,6 @@ classdef LinearInvertedPendulum < LinearSystem
         dZMP = dZMP.inFrame(desiredZMP);
         
         zmp_tf = dZMP.eval(dZMP.tspan(end));
-        if ~isfield(options,'Qy')
-          options.Qy = diag([0 0 0 0 1 1]);
-        end
 
         if(isTI(obj))
           [c,V] = lqr(obj,zmp_tf,options.Qy);
@@ -200,6 +198,7 @@ classdef LinearInvertedPendulum < LinearSystem
     function [ct,Vt,comtraj] = ZMPtrackerClosedForm(h,dZMP,options)
       if nargin<3 options = struct(); end
       if ~isfield(options,'compute_lyapunov') options.compute_lyapunov = (nargout>1); end
+      if ~isfield(options, 'Qy') options.Qy = diag([0,0,0,0,1,1]); end
       
       typecheck(dZMP,'Trajectory');
       dZMP = dZMP.inFrame(desiredZMP);
@@ -209,20 +208,39 @@ classdef LinearInvertedPendulum < LinearSystem
       % closed-form solution, see derivation in zmp_riccati.pdf
       [breaks,coefs,n,k,d] = unmkpp(dZMP.pp);
       assert(prod(d)==2);
-      cf = reshape(coefs,[2,n,k]);
-      cf(:,:,k) = cf(:,:,k) - repmat(zmp_tf,1,n);  % switch to zbar coordinates
+      coefs_flipped = reshape(coefs,[2,n,k]);
+
+      % matlab writes coefficients in descending order, we use ascending
+      if logical(exist('flip','builtin')) % flipdim is deprecated, but flip does not exist in 2012b
+        c = flip(coefs_flipped, 3); 
+      else
+        c = flipdim(coefs_flipped, 3);
+      end
+
+      c(:,:,1) = c(:,:,1) - repmat(zmp_tf,1,n);  % switch to zbar coordinates
       dt = diff(breaks);
 
       hg = h/9.81;
-      A = [zeros(2),eye(2);zeros(2,4)]; B = [zeros(2);eye(2)];
-      Q = diag([1 1 0 0]);
-      R = hg^2*eye(2); Ri = inv(R);
-      N = -hg*[eye(2);zeros(2)];
+      A = [zeros(2),eye(2);zeros(2,4)]; 
+      B = [zeros(2);eye(2)];
+      C = [eye(2), zeros(2)];
+      D = -hg*eye(2);
+
+      % LQR costs for the output system
+      Q = options.Qy(5:6,5:6); % for consistency with the other solution methods
+      R = zeros(2);
+
+      % Convert to costs in xbar, u
+      Q1 = C'*Q*C;
+      R1 = R + D'*Q*D;
+      R1i = inv(R1);
+      N = C'*Q*D;
       
-      [K,S] = lqr(A,B,Q,R,N); K=-K;
+      [K,S] = lqr(A,B,Q1,R1,N); K=-K;
       
-      A2 = (N+S*B)*Ri*B' - A';
-      B2 = [2*eye(2); zeros(2)] + 2*hg*(N + S*B)*Ri;
+      NB = (N' + B'*S);
+      A2 = NB'*R1i*B' - A';
+      B2 = 2*(C' - NB'*R1i*D)*Q;
       
       assert(rank(A2)==4);
       A2i = inv(A2);
@@ -231,11 +249,11 @@ classdef LinearInvertedPendulum < LinearSystem
       beta = zeros(4,n,k);
       gamma = zeros(2,n,k);
       for j=n:-1:1
-        beta(:,j,k) = -A2i*B2*cf(:,j,1);
-        gamma(:,j,k) = -hg*Ri*cf(:,j,1) - .5*Ri*B'*beta(:,j,k);
+        beta(:,j,k) = -A2i*B2*c(:,j,k);
+        gamma(:,j,k) = R1i*D*Q*c(:,j,k) - .5*R1i*B'*beta(:,j,k);
         for i=k-1:-1:1
-          beta(:,j,i) = A2i*( i*beta(:,j,i+1) - B2*cf(:,j,k-i+1) );
-          gamma(:,j,i) = -hg*Ri*cf(:,j,k-i+1) - .5*Ri*B'*beta(:,j,i);
+          beta(:,j,i) = A2i*( i*beta(:,j,i+1) - B2*c(:,j,i) );
+          gamma(:,j,i) = R1i*D*Q*c(:,j,i) - .5*R1i*B'*beta(:,j,i);
         end
         if (j==n)
           s1dt = zeros(4,1);
@@ -245,7 +263,7 @@ classdef LinearInvertedPendulum < LinearSystem
         alpha(:,j) = expm(A2*dt(j)) \ (s1dt - squeeze(beta(:,j,:))*(dt(j).^(0:k-1)'));
       end
       
-      ct = AffineSystem([],[],[],[],[],[],[],K,ExpPlusPPTrajectory(breaks,-.5*Ri*B',A2,alpha,gamma));
+      ct = AffineSystem([],[],[],[],[],[],[],K,ExpPlusPPTrajectory(breaks,-.5*R1i*B',A2,alpha,gamma));
         
       if options.compute_lyapunov
         s1traj = ExpPlusPPTrajectory(breaks,eye(4),A2,alpha,beta);
@@ -259,9 +277,9 @@ classdef LinearInvertedPendulum < LinearSystem
       end
         
       if (nargout>2)
-        Ay = [A + B*K, -.5*B*Ri*B'; zeros(4), A2];
+        Ay = [A + B*K, -.5*B*R1i*B'; zeros(4), A2];
         Ayi = inv(Ay);
-        By = [-hg*B*Ri; B2];
+        By = [B*R1i*D*Q; B2];
         
         a = zeros(4,n);
         b = zeros(4,n,k);
@@ -271,11 +289,9 @@ classdef LinearInvertedPendulum < LinearSystem
         if isfield(options,'comdot0'), x(3:4) = options.comdot0; end
         
         for j=1:n
-          b(:,j,k) = -Ayi(1:4,:)*By*cf(:,j,1);
-          %            valuecheck(-Ayi(5:8,:)*By*cf(:,j,1),beta(:,j,k));
+          b(:,j,k) = -Ayi(1:4,:)*By*c(:,j,k);
           for i=k-1:-1:1
-            b(:,j,i) = Ayi(1:4,:)*( i*[b(:,j,i+1);beta(:,j,i+1)] - By*cf(:,j,k-i+1) );
-            %              valuecheck( Ayi(5:8,:)*( i*[b(:,j,i+1);beta(:,j,i+1)] - By*cf(:,j,k-i+1) ),beta(:,j,i));
+            b(:,j,i) = Ayi(1:4,:)*( i*[b(:,j,i+1);beta(:,j,i+1)] - By*c(:,j,i) );
           end
           a(:,j) = x - b(:,j,1);
           x = [eye(4),zeros(4)]*expm(Ay*dt(j))*[a(:,j);alpha(:,j)] + squeeze(b(:,j,:))*(dt(j).^(0:k-1)');
@@ -288,9 +304,11 @@ classdef LinearInvertedPendulum < LinearSystem
       function s2dot = s2dynamics(t,s2)
         [s1,j] = eval(s1traj,t);
         trel = t-breaks(j);
-        zbar = squeeze(cf(:,j,:))*trel.^(k-1:-1:0)';
-        rs = hg*zbar + .5*B'*s1;
-        s2dot = - zbar'*zbar + rs'*Ri*rs;
+        zbar = squeeze(c(:,j,:))*trel.^(0:k-1)';
+        r2 = -2*D*Q*zbar;
+        rs = 0.5*(r2 + B'*s1);
+        q3 = zbar'*Q*zbar;
+        s2dot = -q3 + rs'*R1i*rs;
       end
     end
     

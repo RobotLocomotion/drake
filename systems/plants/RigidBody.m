@@ -296,47 +296,7 @@ classdef RigidBody < RigidBodyElement
       end
     end
     
-    function body=parseInertial(body,node,model,options)
-      mass = 0;
-      inertia = zeros(3);
-      xyz=zeros(3,1); rpy=zeros(3,1);
-      origin = node.getElementsByTagName('origin').item(0);  % seems to be ok, even if origin tag doesn't exist
-      if ~isempty(origin)
-        if origin.hasAttribute('xyz')
-          xyz = reshape(parseParamString(model,body.robotnum,char(origin.getAttribute('xyz'))),3,1);
-        end
-        if origin.hasAttribute('rpy')
-          rpy = reshape(parseParamString(model,body.robotnum,char(origin.getAttribute('rpy'))),3,1);
-        end
-      end
-      massnode = node.getElementsByTagName('mass').item(0);
-      if ~isempty(massnode)
-        if (massnode.hasAttribute('value'))
-          mass = parseParamString(model,body.robotnum,char(massnode.getAttribute('value')));
-        end
-      end
-      inode = node.getElementsByTagName('inertia').item(0);
-      if ~isempty(inode)
-        if inode.hasAttribute('ixx'), ixx = parseParamString(model,body.robotnum,char(inode.getAttribute('ixx'))); else ixx=0; end
-        if inode.hasAttribute('ixy'), ixy = parseParamString(model,body.robotnum,char(inode.getAttribute('ixy'))); else ixy=0; end
-        if inode.hasAttribute('ixz'), ixz = parseParamString(model,body.robotnum,char(inode.getAttribute('ixz'))); else ixz=0; end
-        if inode.hasAttribute('iyy'), iyy = parseParamString(model,body.robotnum,char(inode.getAttribute('iyy'))); else iyy=0; end
-        if inode.hasAttribute('iyz'), iyz = parseParamString(model,body.robotnum,char(inode.getAttribute('iyz'))); else iyz=0; end
-        if inode.hasAttribute('izz'), izz = parseParamString(model,body.robotnum,char(inode.getAttribute('izz'))); else izz=0; end
-        inertia = [ixx, ixy, ixz; ixy, iyy, iyz; ixz, iyz, izz];
-      end
-      
-      % randomly scale inertia
-      % keep scale factor positive to ensure positive definiteness
-      % x'*I*x > 0 && eta > 0 ==> x'*(eta*I)*x > 0
-      eta = 1 + min(1,max(-0.9999,options.inertia_error*randn()));
-      inertia = eta*inertia;  
-      
-      if any(rpy)
-        error([body.linkname,': rpy in inertia block not implemented yet (but would be easy)']);
-      end
-      body = setInertial(body,mass,xyz,inertia);
-    end
+
     
     function body = setInertial(body,varargin)
       % setInertial(body,mass,com,inertia [,addedmass]) or setInertial(body,spatialI [,addedmass])
@@ -388,59 +348,8 @@ classdef RigidBody < RigidBodyElement
           warning('Spatial mass matrix is not symmetric, this is non-physical');
       end
     end    
-    
-    function body = parseVisual(body,node,model,options)
-      c = .7*[1 1 1];
-      
-      xyz=zeros(3,1); rpy=zeros(3,1);
-      origin = node.getElementsByTagName('origin').item(0);  % seems to be ok, even if origin tag doesn't exist
-      if ~isempty(origin)
-        if origin.hasAttribute('xyz')
-          xyz = reshape(parseParamString(model,body.robotnum,char(origin.getAttribute('xyz'))),3,1);
-        end
-        if origin.hasAttribute('rpy')
-          rpy = reshape(parseParamString(model,body.robotnum,char(origin.getAttribute('rpy'))),3,1);
-        end
-      end
         
-      matnode = node.getElementsByTagName('material').item(0);
-      if ~isempty(matnode)
-        c = RigidBodyManipulator.parseMaterial(matnode,options);
-      end
-      
-      geomnode = node.getElementsByTagName('geometry').item(0);
-      if ~isempty(geomnode)
-        if (options.visual || options.visual_geometry)
-         geometry = RigidBodyGeometry.parseURDFNode(geomnode,xyz,rpy,model,body.robotnum,options);
-          geometry.c = c;
-          body.visual_geometry = {body.visual_geometry{:},geometry};
-        end
-      end        
-    end
-    
-    function body = parseCollision(body,node,model,options)
-      xyz=zeros(3,1); rpy=zeros(3,1);
-      origin = node.getElementsByTagName('origin').item(0);  % seems to be ok, even if origin tag doesn't exist
-      if ~isempty(origin)
-        if origin.hasAttribute('xyz')
-          xyz = reshape(parseParamString(model,body.robotnum,char(origin.getAttribute('xyz'))),3,1);
-        end
-        if origin.hasAttribute('rpy')
-          rpy = reshape(parseParamString(model,body.robotnum,char(origin.getAttribute('rpy'))),3,1);
-        end
-      end
-      
-      geomnode = node.getElementsByTagName('geometry').item(0);
-      if ~isempty(geomnode)
-        geometry = RigidBodyGeometry.parseURDFNode(geomnode,xyz,rpy,model,body.robotnum,options);
-        if (node.hasAttribute('group'))
-          name=char(node.getAttribute('group'));
-        else
-          name='default';
-        end
-        body = addCollisionGeometry(body,geometry,name);
-      end
-    end
+
 
     function varargout = addContactShape(varargin)
       errorDeprecatedFunction('addCollisionGeometry')
@@ -562,6 +471,20 @@ classdef RigidBody < RigidBodyElement
   methods    
     function obj = updateBodyIndices(obj,map_from_old_to_new)
       obj.parent = map_from_old_to_new(obj.parent);
+    end
+  end
+  
+  methods (Static=true)
+    function b = ConstantDensityBox(mass,size)
+      % create a constant density box
+      % @param total mass (kg)
+      % @param size 3x1 vector w/ length, width, height
+      
+      b = RigidBody();
+      b = setInertial(b,mass,zeros(3,1),mass/12*diag([size(2)^2+size(3)^2,size(1)^2+size(2)^2,size(1)^2+size(2)^2]));
+      geom = RigidBodyBox(size);
+      b.visual_geometry{1} = geom;
+      b.collision_geometry{1} = geom;
     end
   end
 end

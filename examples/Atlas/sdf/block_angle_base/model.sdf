@@ -1,0 +1,206 @@
+<?xml version="1.0" ?>
+<sdf version="1.4">
+ 
+  <model name="block_angle_base">
+    <static>true</static>
+    <pose>0 0 0 0 0 0</pose>
+        
+
+          <include>
+            <name>block_0_0</name>
+            <pose> 0.0 0.0 -0.10099999999999999 -0.0 0 1.570796 </pose>
+            <uri>model://cinder_block_wide</uri>
+          </include>
+        
+
+          <include>
+            <name>block_0_1</name>
+            <pose> 0.386 0.0 -0.10099999999999999 0.1745327777777778 0 1.570796 </pose>
+            <uri>model://cinder_block_wide</uri>
+          </include>
+        
+
+          <include>
+            <name>block_0_2</name>
+            <pose> 0.772 0.0 -0.10099999999999999 -0.3490655555555556 0 1.570796 </pose>
+            <uri>model://cinder_block_wide</uri>
+          </include>
+        
+
+          <include>
+            <name>block_0_3</name>
+            <pose> 1.158 0.0 -0.10099999999999999 0.5235983333333334 0 1.570796 </pose>
+            <uri>model://cinder_block_wide</uri>
+          </include>
+        
+
+          <include>
+            <name>block_1_0</name>
+            <pose> 0.386 0.387 -0.10099999999999999 -0.0 0 1.570796 </pose>
+            <uri>model://cinder_block_wide</uri>
+          </include>
+        
+
+          <include>
+            <name>block_1_1</name>
+            <pose> 0.772 0.387 -0.10099999999999999 0.1745327777777778 0 1.570796 </pose>
+            <uri>model://cinder_block_wide</uri>
+          </include>
+        
+
+          <include>
+            <name>block_1_2</name>
+            <pose> 1.158 0.387 -0.10099999999999999 -0.3490655555555556 0 1.570796 </pose>
+            <uri>model://cinder_block_wide</uri>
+          </include>
+        
+
+          <include>
+            <name>block_1_3</name>
+            <pose> 1.544 0.387 -0.10099999999999999 0.5235983333333334 0 1.570796 </pose>
+            <uri>model://cinder_block_wide</uri>
+          </include>
+        
+
+          <include>
+            <name>block_2_0</name>
+            <pose> 0.772 0.774 -0.10099999999999999 -0.0 0 1.570796 </pose>
+            <uri>model://cinder_block_wide</uri>
+          </include>
+        
+
+          <include>
+            <name>block_2_1</name>
+            <pose> 1.158 0.774 -0.10099999999999999 0.1745327777777778 0 1.570796 </pose>
+            <uri>model://cinder_block_wide</uri>
+          </include>
+        
+
+          <include>
+            <name>block_2_2</name>
+            <pose> 1.544 0.774 -0.10099999999999999 -0.3490655555555556 0 1.570796 </pose>
+            <uri>model://cinder_block_wide</uri>
+          </include>
+        
+
+          <include>
+            <name>block_2_3</name>
+            <pose> 1.93 0.774 -0.10099999999999999 0.5235983333333334 0 1.570796 </pose>
+            <uri>model://cinder_block_wide</uri>
+          </include>
+        
+
+          <include>
+            <name>block_3_0</name>
+            <pose> 1.158 1.161 -0.10099999999999999 -0.0 0 1.570796 </pose>
+            <uri>model://cinder_block_wide</uri>
+          </include>
+        
+
+          <include>
+            <name>block_3_1</name>
+            <pose> 1.544 1.161 -0.10099999999999999 0.1745327777777778 0 1.570796 </pose>
+            <uri>model://cinder_block_wide</uri>
+          </include>
+        
+
+          <include>
+            <name>block_3_2</name>
+            <pose> 1.93 1.161 -0.10099999999999999 -0.3490655555555556 0 1.570796 </pose>
+            <uri>model://cinder_block_wide</uri>
+          </include>
+        
+
+          <include>
+            <name>block_3_3</name>
+            <pose> 2.316 1.161 -0.10099999999999999 0.5235983333333334 0 1.570796 </pose>
+            <uri>model://cinder_block_wide</uri>
+          </include>
+        
+
+          <include>
+            <name>block_4_0</name>
+            <pose> 1.544 1.548 -0.10099999999999999 -0.0 0 1.570796 </pose>
+            <uri>model://cinder_block_wide</uri>
+          </include>
+        
+
+          <include>
+            <name>block_4_1</name>
+            <pose> 1.9300000000000002 1.548 -0.10099999999999999 0.1745327777777778 0 1.570796 </pose>
+            <uri>model://cinder_block_wide</uri>
+          </include>
+        
+
+          <include>
+            <name>block_4_2</name>
+            <pose> 2.316 1.548 -0.10099999999999999 -0.3490655555555556 0 1.570796 </pose>
+            <uri>model://cinder_block_wide</uri>
+          </include>
+        
+
+          <include>
+            <name>block_4_3</name>
+            <pose> 2.702 1.548 -0.10099999999999999 0.5235983333333334 0 1.570796 </pose>
+            <uri>model://cinder_block_wide</uri>
+          </include>
+        
+
+          <include>
+            <name>block_5_0</name>
+            <pose> 1.9300000000000002 1.935 -0.10099999999999999 -0.0 0 1.570796 </pose>
+            <uri>model://cinder_block_wide</uri>
+          </include>
+        
+
+          <include>
+            <name>block_5_1</name>
+            <pose> 2.3160000000000003 1.935 -0.10099999999999999 0.1745327777777778 0 1.570796 </pose>
+            <uri>model://cinder_block_wide</uri>
+          </include>
+        
+
+          <include>
+            <name>block_5_2</name>
+            <pose> 2.702 1.935 -0.10099999999999999 -0.3490655555555556 0 1.570796 </pose>
+            <uri>model://cinder_block_wide</uri>
+          </include>
+        
+
+          <include>
+            <name>block_5_3</name>
+            <pose> 3.088 1.935 -0.10099999999999999 0.5235983333333334 0 1.570796 </pose>
+            <uri>model://cinder_block_wide</uri>
+          </include>
+        
+
+          <include>
+            <name>block_6_0</name>
+            <pose> 2.316 2.322 -0.10099999999999999 -0.0 0 1.570796 </pose>
+            <uri>model://cinder_block_wide</uri>
+          </include>
+        
+
+          <include>
+            <name>block_6_1</name>
+            <pose> 2.702 2.322 -0.10099999999999999 0.1745327777777778 0 1.570796 </pose>
+            <uri>model://cinder_block_wide</uri>
+          </include>
+        
+
+          <include>
+            <name>block_6_2</name>
+            <pose> 3.088 2.322 -0.10099999999999999 -0.3490655555555556 0 1.570796 </pose>
+            <uri>model://cinder_block_wide</uri>
+          </include>
+        
+
+          <include>
+            <name>block_6_3</name>
+            <pose> 3.4739999999999998 2.322 -0.10099999999999999 0.5235983333333334 0 1.570796 </pose>
+            <uri>model://cinder_block_wide</uri>
+          </include>
+
+  </model>
+
+</sdf>

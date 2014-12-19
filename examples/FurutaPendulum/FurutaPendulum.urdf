@@ -7,7 +7,7 @@
   <link name="base_link">
     <inertial>
       <mass value="1" />
-      <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="0.083" />
+      <inertia ixx=".0067" ixy="0" ixz="0" iyy=".0067" iyz="0" izz="0.0067" />
     </inertial>
     <visual>
       <geometry>
@@ -23,7 +23,7 @@
     <inertial>
       <origin xyz="0 .5 0" rpy="0 0 0" />
       <mass value="1" />
-      <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="0.083" />
+      <inertia ixx=".084" ixy="0" ixz="0" iyy=".0013" iyz="0" izz=".084" />
     </inertial>
     <visual>
       <origin xyz="0 .45 0" rpy="1.5708 0 0" />
@@ -40,8 +40,8 @@
     <inertial>
       <origin xyz="0 0 -1" rpy="0 0 0" />
       <mass value="1" />
-      <!-- note: the inertia of a ROD about it's COM is 1/12 m*L^2 -->
-      <inertia ixx="1" ixy="0" ixz="0" iyy="0.33" iyz="0" izz="1" />
+      <!-- note: the inertia of a solid ROD about it's COM is mr^2/2, 1/12 m*(3r^2+L^2) -->
+      <inertia ixx=".3681" ixy="0" ixz="0" iyy="0.3681" iyz="0" izz=".0013" />
     </inertial>
     <visual>
       <origin xyz="0 0 -1" rpy="0 0 0" />

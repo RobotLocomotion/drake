@@ -24,7 +24,7 @@ doc/autogen-matlab
 doc/feedback.tex
 doc/modeling.tex
 doc/planning.tex
-fort.0
+fort.*
 drake.a
 include/lcmt_acrobot_u.h
 include/lcmt_acrobot_x.h
