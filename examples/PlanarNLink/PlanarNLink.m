@@ -21,9 +21,9 @@ classdef PlanarNLink < PlanarRigidBodyManipulator
       model.body=body;
       
       % first link
-      model = addLink(model,1,1,.05);
+      model = addPlanarLink(model,1,1,.05);
       for i=2:N
-        model = addLink(model,1.2,1.2,.05);
+        model = addPlanarLink(model,1.2,1.2,.05);
       end
       
       model = compile(model);
@@ -32,7 +32,7 @@ classdef PlanarNLink < PlanarRigidBodyManipulator
   end
   
   methods (Access=private)
-    function model=addLink(model,mass,len,radius)
+    function model=addPlanarLink(model,mass,len,radius)
       
       body=RigidBody();
       ind=length(model.body)+1;
