@@ -7,6 +7,7 @@ else
 end
 
 options.floating = true;
+options.use_bullet = false;
 options.terrain = RigidBodyFlatTerrain();
 r = TimeSteppingRigidBodyManipulator('ball.urdf',0.005,options);
 if display
