@@ -65,8 +65,8 @@ public:
 
   virtual void v2qdot(double* q, Eigen::MatrixXd& v_to_qdot, Eigen::MatrixXd* dv_to_qdot) const = 0;
 
-//public:
-//  EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 };
 
 #endif /* DRAKEJOINT_H_ */
