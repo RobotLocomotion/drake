@@ -4,6 +4,7 @@ S = warning('OFF','Drake:RigidBodyManipulator:WeldedLinkInd');
 options.floating = true;
 options.twoD = true;
 options.terrain = RigidBodyFlatTerrain;
+options.use_bullet = false; 
 p = TimeSteppingRigidBodyManipulator('FallingBrickContactPoints.urdf',.01,options);
 p = addSensor(p,FullStateFeedbackSensor());
 body = findLinkInd(p,'brick');
