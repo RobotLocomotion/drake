@@ -524,7 +524,8 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
             Ain_fqp = [-M(M_inactive,z_inactive); -eye(n_z_inactive)];
             bin_fqp = [w(M_inactive); -lb(z_inactive)];
             QblkDiag = {eye(n_z_inactive)};
-            fqp = -obj.LCP_cache.data.z(z_inactive);
+            fqp = -0*obj.LCP_cache.data.z(z_inactive); % could used the previous solution here
+            % but it introduces unwanted hidden state
 %             fastqp_tic = tic;
             [z_,info_fqp] = fastQPmex(QblkDiag,fqp,Ain_fqp,bin_fqp,Aeq,beq,[]);
 %             fastqp_time = toc(fastqp_tic);
