@@ -39,7 +39,7 @@ classdef RigidBodyHeightMapTerrain < RigidBodyTerrain & RigidBodyGeometry
     
     function geometry = serializeToLCM(obj)
       fname = [tempname,'.obj'];
-      writeOBJ(obj,fname);
+      writeMeshOBJ(obj,fname);
       geometry = drake.lcmt_viewer_geometry_data();
       geometry.type = geometry.MESH;
       geometry.string_data = fname;
@@ -170,6 +170,10 @@ classdef RigidBodyHeightMapTerrain < RigidBodyTerrain & RigidBodyGeometry
       x = linspace(ax(1),ax(2),size(a,1));
       y = linspace(ax(3),ax(4),size(a,2));
       obj = RigidBodyHeightMapTerrain(x,y,Z,terrain_to_world_transform,options);
+    end
+    
+    function obj = constructHeightMapFromRaycast(x,y,z_scan,filename)
+      error('not implemented yet');
     end
     
   end
