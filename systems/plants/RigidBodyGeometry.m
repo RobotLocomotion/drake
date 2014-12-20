@@ -121,7 +121,7 @@ classdef RigidBodyGeometry
         switch (lower(char(thisNode.getNodeName())))
           case 'box'
             size = parseParamString(model,robotnum,char(thisNode.getAttribute('size')));
-            obj = RigidBodyBox(size);
+            obj = RigidBodyBox(size(:));
           case 'sphere'
             r = parseParamString(model,robotnum,char(thisNode.getAttribute('radius')));
             obj = RigidBodySphere(r);
