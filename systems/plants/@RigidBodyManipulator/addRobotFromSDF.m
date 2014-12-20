@@ -201,6 +201,14 @@ if (options.visual && node.getElementsByTagName('visual').getLength()>0)
   end
 end
 
+if (options.collision && node.getElementsByTagName('collision').getLength()>0)
+  collisionItem = 0;
+  while(~isempty(node.getElementsByTagName('collision').item(collisionItem)))
+    body = parseCollision(body,node.getElementsByTagName('collision').item(collisionItem),model,options);
+    collisionItem = collisionItem+1;
+  end
+end
+
 model.body=[model.body,body];
 end
 
@@ -273,24 +281,16 @@ end
     
     function body = parseCollision(body,node,model,options)
       xyz=zeros(3,1); rpy=zeros(3,1);
-      origin = node.getElementsByTagName('origin').item(0);  % seems to be ok, even if origin tag doesn't exist
-      if ~isempty(origin)
-        if origin.hasAttribute('xyz')
-          xyz = reshape(parseParamString(model,body.robotnum,char(origin.getAttribute('xyz'))),3,1);
-        end
-        if origin.hasAttribute('rpy')
-          rpy = reshape(parseParamString(model,body.robotnum,char(origin.getAttribute('rpy'))),3,1);
-        end
+      posenode = node.getElementsByTagName('pose').item(0);  % seems to be ok, even if pose tag doesn't exist
+      if ~isempty(posenode)
+        pose = parseParamString(model,body.robotnum,char(getNodeValue(getFirstChild(posenode))));
+        pose = pose(:);
+        xyz = pose(1:3); rpy = pose(4:6);
       end
-      
+            
       geomnode = node.getElementsByTagName('geometry').item(0);
       if ~isempty(geomnode)
-        geometry = RigidBodyGeometry.parseURDFNode(geomnode,xyz,rpy,model,body.robotnum,options);
-        if (node.hasAttribute('group'))
-          name=char(node.getAttribute('group'));
-        else
-          name='default';
-        end
-        body = addCollisionGeometry(body,geometry,name);
+        geometry = RigidBodyGeometry.parseSDFNode(geomnode,xyz,rpy,model,body.robotnum,options);
+        body = addCollisionGeometry(body,geometry);
       end
     end 
