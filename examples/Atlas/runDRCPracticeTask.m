@@ -11,4 +11,4 @@ r = r.addRobotFromSDF(['sdf/drc_practice_task_',num2str(task_number),'.world'],[
 v = r.constructVisualizer();
 x0 = Point(r.getStateFrame());
 x0.base_x = -3.5;
-v.inspector(x0)
+v.draw(0,x0)
