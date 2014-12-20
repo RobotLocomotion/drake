@@ -20,8 +20,18 @@ classdef RigidBodyMeshPoints < RigidBodyMesh
     end
     
     function msg = serializeToLCM(obj)
-      error('not implemented yet');
+      warning('Drake:RigidBodyMeshPoints:NoOBJVisualization','OBJ visualization is not implemented yet for RigidBodyMeshPoints (but it shouldn''t be too hard)');
+      msg = drake.lcmt_viewer_geometry_data();
+      msg.type = msg.SPHERE;
+      msg.string_data = '';
+      msg.num_float_data = 1;
+      msg.float_data = 0;
     end
+    
+    function writeWRLShape(obj,fp,td)
+      warning('Drake:RigidBodyMeshPoints:NoWRLVisualization','WRL visualization is not implemented yet for RigidBodyMeshPoints (but it would be easy)');
+    end
+    
   end
   
   properties
