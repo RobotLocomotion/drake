@@ -39,7 +39,7 @@ classdef RigidBodyHeightMapTerrain < RigidBodyTerrain & RigidBodyGeometry
     
     function geometry = serializeToLCM(obj)
       fname = [tempname,'.obj'];
-      writeMeshOBJ(obj,fname);
+      writeOBJ(obj,fname);
       geometry = drake.lcmt_viewer_geometry_data();
       geometry.type = geometry.MESH;
       geometry.string_data = fname;
@@ -172,8 +172,30 @@ classdef RigidBodyHeightMapTerrain < RigidBodyTerrain & RigidBodyGeometry
       obj = RigidBodyHeightMapTerrain(x,y,Z,terrain_to_world_transform,options);
     end
     
-    function obj = constructHeightMapFromRaycast(x,y,z_scan,filename)
-      error('not implemented yet');
+    function obj = constructHeightMapFromRaycast(manip,q,x,y,scanner_height)
+      % uses ray-casting to "scan" the terrain. The result can be used as a heightmap which is 
+      % computationally much simpler (and less expensive) to deal with than a bullet collision
+      % world. 
+      % 
+      % @param manip a RigidBodyManipulator object
+      % @param filename name of the file to write the heightmap to.  should
+      % end in .mat
+      % @param x a vector of the scanner grid lines in the x direction
+      % @param y a vector of the scanner grid lines in the y direction
+      % @param scanner_height a scalar heigh to scan from.  should be
+      % safelu above the terrain. 
+      if nargin<4, scanner_height=10; end
+      
+      [X,Y] = meshgrid(x,y);
+      origin = [reshape(X,1,[]); reshape(Y,1,[]); repmat(scanner_height,1,numel(X))];
+      pts = [origin(1:2,:); zeros(1,numel(X))];
+      
+      kinsol = doKinematics(manip,q);
+      distance = collisionRaycast(manip,kinsol,origin,pts);
+      distance(distance<0) = inf;
+      Z = scanner_height - reshape(distance,size(X));
+      
+      obj = RigidBodyHeightMapTerrain(x,y,Z);
     end
     
   end
