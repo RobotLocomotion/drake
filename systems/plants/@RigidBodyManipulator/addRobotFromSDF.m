@@ -32,6 +32,7 @@ if (~isfield(options,'collision')), options.collision = true; end
 if (~isfield(options,'nameprefix')), options.nameprefix = ''; end
 if (~isfield(options,'namesuffix')), options.namesuffix = ''; end
 if (~isfield(options,'compile')) options.compile = true; end
+if (~isfield(options, 'weld_to_link')) options.weld_to_link = 1; end % world link 
 
 sdf = xmlread(sdf_filename);
 sdf = sdf.getElementsByTagName('sdf').item(0);
@@ -52,7 +53,6 @@ for i=0:(includes.getLength()-1)
   if (includes.item(i).getParentNode()~=sdf), continue; end
   model = parseInclude(model,1,includes.item(i),xyz,rpy,options);
 end
-
 
 model.dirty = true;
 if options.compile
@@ -84,13 +84,24 @@ end
 function model=parseSDFModel(model,node,xyz,rpy,options)
 % Constructs a model from an XML node
 
-%disp(['Parsing robot ', char(node.getAttribute('name')), ' from URDF file...']);
-robotname = char(node.getAttribute('name'));
-robotname = regexprep(robotname, '\.', '_', 'preservecase');
-robotname = [options.nameprefix,robotname,options.namesuffix];
-model.name = [model.name, {robotname}];
-model.urdf = vertcat(model.urdf, '');
-robotnum = length(model.name);
+staticNode = node.getElementsByTagName('static').item(0);
+if ~isempty(staticNode)
+  options.static = parseParamString(model,1,char(getNodeValue(getFirstChild(staticNode))));
+elseif ~isfield(options,'static')
+  options.static = false;
+end
+
+if options.static
+  robotnum = 1;
+else
+  %disp(['Parsing robot ', char(node.getAttribute('name')), ' from URDF file...']);
+  robotname = char(node.getAttribute('name'));
+  robotname = regexprep(robotname, '\.', '_', 'preservecase');
+  robotname = [options.nameprefix,robotname,options.namesuffix];
+  model.name = [model.name, {robotname}];
+  model.urdf = vertcat(model.urdf, '');
+  robotnum = length(model.name);
+end
 
 posenode = node.getElementsByTagName('pose').item(0);  % seems to be ok, even if pose tag doesn't exist
 if ~isempty(posenode)
@@ -102,7 +113,7 @@ end
 includes = node.getElementsByTagName('include');
 for i=0:(includes.getLength()-1)
   if (includes.item(i).getParentNode()~=node), continue; end
-  options.nameprefix = [robotname,'_'];
+  if ~options.static, options.nameprefix = [robotname,'_']; end
   model = parseInclude(model,robotnum,includes.item(i),xyz,rpy,options);
 end
 
@@ -113,32 +124,38 @@ end
 
 links = node.getElementsByTagName('link');
 for i=0:(links.getLength()-1)
-  model = parseLink(model,robotnum,links.item(i),options);
+  model = parseLink(model,robotnum,links.item(i),xyz,rpy,options);
 end
 
-joints = node.getElementsByTagName('joint');
-for i=0:(joints.getLength()-1)
-  model.warning_manager.warnOnce('Drake:RigidBodyManipulator:ParseSDF:JointsNotImplementedYet','i haven''t actually implemented joints yet ;-/');
-%  model = parseJoint(model,robotnum,joints.item(i),options);
-end
+if ~options.static
+  joints = node.getElementsByTagName('joint');
+  for i=0:(joints.getLength()-1)
+    model.warning_manager.warnOnce('Drake:RigidBodyManipulator:ParseSDF:JointsNotImplementedYet','i haven''t actually implemented joints yet ;-/');
+    %  model = parseJoint(model,robotnum,joints.item(i),options);
+  end
+  model = removeFixedJoints(model);  % do this early and often, to help scale to more complex environments.
 
-model = removeFixedJoints(model);  % do this early and often, to help scale to more complex environments.
-
-% weld the root link of this robot to the world link
-ind = find([model.body.parent]<1);
-rootlink = ind([model.body(ind).robotnum]==robotnum);
-worldlink = 1;
-for i=1:length(rootlink)
-  if ~isempty(options.floating)
-    model = addFloatingBase(model,worldlink,rootlink(i),xyz,rpy,options.floating);
-  else
-    model = addJoint(model,'','fixed',worldlink,rootlink(i),xyz,rpy);
+  ind = find([model.body.parent]<1);
+  rootlink = ind([model.body(ind).robotnum]==robotnum);
+  for i=1:length(rootlink)
+    if ~isempty(options.floating)
+      model = addFloatingBase(model,options.weld_to_link,rootlink(i),xyz,rpy,options.floating);
+    else
+      model = addJoint(model,'','fixed',options.weld_to_link,rootlink(i),xyz,rpy);
+    end
   end
 end
 
 end
 
 function model=parseInclude(model,robotnum,node,xyz,rpy,options)
+
+staticNode = node.getElementsByTagName('static').item(0);
+if ~isempty(staticNode)
+  options.static = parseParamString(model,1,char(getNodeValue(getFirstChild(staticNode))));
+elseif ~isfield(options,'static')
+  options.static = false;
+end
 
 posenode = node.getElementsByTagName('pose').item(0);  % seems to be ok, even if pose tag doesn't exist
 if ~isempty(posenode)
@@ -176,27 +193,38 @@ model = addRobotFromSDF(model,filename,xyz,rpy,options);
 
 end
 
-function model=parseLink(model,robotnum,node,options)
+function model=parseLink(model,robotnum,node,xyz,rpy,options)
 
 ignore = char(node.getAttribute('drakeIgnore'));
 if strcmp(lower(ignore),'true')
   return;
 end
 
-body = RigidBody();
-body.robotnum = robotnum;
+staticNode = node.getElementsByTagName('static').item(0);
+if ~isempty(staticNode)
+  options.static = parseParamString(model,1,char(getNodeValue(getFirstChild(staticNode))));
+elseif ~isfield(options,'static')
+  options.static = false;
+end
 
-body.linkname=char(node.getAttribute('name'));
-body.linkname=regexprep(body.linkname, '[\[\]\\\/\.]+', '_', 'preservecase');
+if options.static
+  body = model.body(1);
+else
+  body = RigidBody();
+  body.robotnum = robotnum;
+
+  body.linkname=char(node.getAttribute('name'));
+  body.linkname=regexprep(body.linkname, '[\[\]\\\/\.]+', '_', 'preservecase');
+end
 
 if (options.inertial && node.getElementsByTagName('inertial').getLength()>0)
-  body = parseInertial(body,node.getElementsByTagName('inertial').item(0),model,options);
+  body = parseInertial(body,node.getElementsByTagName('inertial').item(0),model,xyz,rpy,options);
 end
 
 if (options.visual && node.getElementsByTagName('visual').getLength()>0)
   visualItem = 0;
   while(~isempty(node.getElementsByTagName('visual').item(visualItem)))
-    body = parseVisual(body,node.getElementsByTagName('visual').item(visualItem),model,options);
+    body = parseVisual(body,node.getElementsByTagName('visual').item(visualItem),model,xyz,rpy,options);
     visualItem = visualItem+1;
   end
 end
@@ -204,23 +232,27 @@ end
 if (options.collision && node.getElementsByTagName('collision').getLength()>0)
   collisionItem = 0;
   while(~isempty(node.getElementsByTagName('collision').item(collisionItem)))
-    body = parseCollision(body,node.getElementsByTagName('collision').item(collisionItem),model,options);
+    body = parseCollision(body,node.getElementsByTagName('collision').item(collisionItem),model,xyz,rpy,options);
     collisionItem = collisionItem+1;
   end
 end
 
-model.body=[model.body,body];
+if options.static
+  model.body(1) = body;
+else
+  model.body=[model.body,body];
 end
 
-    function body=parseInertial(body,node,model,options)
+end
+
+    function body=parseInertial(body,node,model,xyz,rpy,options)
       mass = 0;
       inertia = zeros(3);
-      xyz=zeros(3,1); rpy=zeros(3,1);
       posenode = node.getElementsByTagName('pose').item(0);  % seems to be ok, even if pose tag doesn't exist
       if ~isempty(posenode)
         pose = parseParamString(model,body.robotnum,char(getNodeValue(getFirstChild(posenode))));
         pose = pose(:);
-        xyz = pose(1:3); rpy = pose(4:6);
+        xyz = xyz + rpy2rotmat(rpy)*pose(1:3); rpy = rotmat2rpy(rpy2rotmat(rpy)*rpy2rotmat(pose(4:6)));
       end
       massnode = node.getElementsByTagName('mass').item(0);
       if ~isempty(massnode)
@@ -248,18 +280,25 @@ end
         R = rpy2rotmat(rpy);
         inertia = R*inertia*R';
       end
-      body = setInertial(body,mass,xyz(:),inertia);
+      
+      % add to existing mass/inertia (especially to support static objects)
+      if ~isempty(body.com)
+        xyz = (body.com*body.mass + xyz*mass)/(body.mass+mass);
+        inertia = body.inertia + inertia; % should already be in the same frame
+        mass = body.mass + mass;
+      end
+      
+      body = setInertial(body,mass,xyz,inertia);
     end
     
-    function body = parseVisual(body,node,model,options)
+    function body = parseVisual(body,node,model,xyz,rpy,options)
       c = .7*[1 1 1];
       
-      xyz=zeros(3,1); rpy=zeros(3,1);
       posenode = node.getElementsByTagName('pose').item(0);  % seems to be ok, even if pose tag doesn't exist
       if ~isempty(posenode)
         pose = parseParamString(model,body.robotnum,char(getNodeValue(getFirstChild(posenode))));
         pose = pose(:);
-        xyz = pose(1:3); rpy = pose(4:6);
+        xyz = xyz + rpy2rotmat(rpy)*pose(1:3); rpy = rotmat2rpy(rpy2rotmat(rpy)*rpy2rotmat(pose(4:6)));
       end
         
       matnode = node.getElementsByTagName('material').item(0);
@@ -279,13 +318,12 @@ end
       end        
     end
     
-    function body = parseCollision(body,node,model,options)
-      xyz=zeros(3,1); rpy=zeros(3,1);
+    function body = parseCollision(body,node,model,xyz,rpy,options)
       posenode = node.getElementsByTagName('pose').item(0);  % seems to be ok, even if pose tag doesn't exist
       if ~isempty(posenode)
         pose = parseParamString(model,body.robotnum,char(getNodeValue(getFirstChild(posenode))));
         pose = pose(:);
-        xyz = pose(1:3); rpy = pose(4:6);
+        xyz = xyz + rpy2rotmat(rpy)*pose(1:3); rpy = rotmat2rpy(rpy2rotmat(rpy)*rpy2rotmat(pose(4:6)));
       end
             
       geomnode = node.getElementsByTagName('geometry').item(0);
