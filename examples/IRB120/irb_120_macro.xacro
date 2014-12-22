@@ -1,0 +1,181 @@
+<?xml version="1.0" ?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+<xacro:macro name="irb_120" params="prefix" >
+  <link name="${prefix}base_link">
+		<visual>
+			<geometry>
+				<mesh filename="meshes/visual/base_link.stl" scale="0.0254 0.0254 0.0254"/>
+			</geometry>
+			<origin rpy="0 0 0" xyz="0 0 0"/>
+      			<material
+        			name="abb_orange">
+        			<color
+          			rgba="1 0.43 0 1" />
+      			</material>
+		</visual>
+		<collision>
+			<geometry>
+				<mesh filename="meshes/collision/base_link.stl" scale="0.0254 0.0254 0.0254"/>
+			</geometry>
+			<origin rpy="0 0 0" xyz="0 0 0"/>
+		</collision>
+	</link>
+	<link name="${prefix}link_1">
+		<visual>
+			<geometry>
+				<mesh filename="meshes/visual/link_1.stl" scale="0.0254 0.0254 0.0254"/>
+			</geometry>
+			<origin rpy="0 0 0" xyz="0 0 0"/>
+      			<material
+        			name="abb_orange">
+        			<color
+          			rgba="1 0.43 0 1" />
+      			</material>
+		</visual>
+		<collision>
+			<geometry>
+				<mesh filename="meshes/collision/link_1.stl" scale="0.0254 0.0254 0.0254"/>
+			</geometry>
+			<origin rpy="0 0 0" xyz="0 0 0"/>
+		</collision>
+	</link>
+	<link name="${prefix}link_2">
+		<visual>
+			<geometry>
+				<mesh filename="meshes/visual/link_2.stl" scale="0.0254 0.0254 0.0254"/>
+			</geometry>
+            <origin rpy="0 3.14159 0" xyz="0 0.269999754796 -0.0574996276953"/>
+      			<material
+        			name="abb_orange">
+        			<color
+          			rgba="1 0.43 0 1" />
+      			</material>
+		</visual>
+		<collision>
+			<geometry>
+				<mesh filename="meshes/collision/link_2.stl" scale="0.0254 0.0254 0.0254"/>
+			</geometry>
+			<origin rpy="0 3.14159 0" xyz="0 0.269999754796 -0.0574996276953"/>
+		</collision>
+	</link>
+	<link name="${prefix}link_3">
+		<visual>
+			<geometry>
+				<mesh filename="meshes/visual/link_3.stl" scale="0.0254 0.0254 0.0254"/>
+			</geometry>
+            <origin rpy="0 0 0" xyz="0.071952848745 -0.0661526901756 0"/>
+      			<material
+        			name="abb_orange">
+        			<color
+          			rgba="1 0.43 0 1" />
+      			</material>
+		</visual>
+		<collision>
+			<geometry>
+				<mesh filename="meshes/collision/link_3.stl" scale="0.0254 0.0254 0.0254"/>
+			</geometry>
+            <origin rpy="0 0 0" xyz="0.071952848745 -0.0661526901756 0"/>
+		</collision>
+	</link>
+	<link name="${prefix}link_4">
+		<visual>
+			<geometry>
+				<mesh filename="meshes/visual/link_4.stl" scale="0.0254 0.0254 0.0254"/>
+			</geometry>
+			<origin rpy="0 0 0" xyz="0.302187012 0.00151561224702 -0.000313229561613"/>
+      			<material
+        			name="abb_orange">
+        			<color
+          			rgba="1 0.43 0 1" />
+      			</material>
+		</visual>
+		<collision>
+			<geometry>
+				<mesh filename="meshes/collision/link_4.stl" scale="0.0254 0.0254 0.0254"/>
+			</geometry>
+			<origin rpy="0 0 0" xyz="0.302187012 0.00151561224702 0"/>
+		</collision>
+	</link>
+	<link name="${prefix}link_5">
+		<visual>
+			<geometry>
+				<mesh filename="meshes/visual/link_5.stl" scale="0.0254 0.0254 0.0254"/>
+			</geometry>
+			<origin rpy="0 0 0" xyz="-0.301998488439 -0.629998750685 0"/>
+      			<material
+        			name="abb_orange">
+        			<color
+          			rgba="1 0.43 0 1" />
+      			</material>
+		</visual>
+		<collision>
+			<geometry>
+				<mesh filename="meshes/collision/link_5.stl" scale="0.0254 0.0254 0.0254"/>
+			</geometry>
+			<origin rpy="0 0 0" xyz="-0.301998488439 -0.629998750685 0"/>
+		</collision>
+	</link>
+	<link name="${prefix}link_6">
+		<visual>
+			<geometry>
+				<mesh filename="package://abb_common/meshes/irb_120/visual/link_6.stl" scale="0.0254 0.0254 0.0254"/>
+			</geometry>
+			<origin rpy="0 0 0" xyz="0 0 -0.0130000906507"/>
+      			<material
+        			name="abb_black">
+        			<color
+          			rgba="0 0 0 1" />
+      			</material>
+		</visual>
+		<collision>
+			<geometry>
+				<mesh filename="meshes/collision/link_6.stl" scale="0.0254 0.0254 0.0254"/>
+			</geometry>
+			<origin rpy="0 0 0" xyz="0 0 -0.0130000906507"/>
+		</collision>
+	</link>
+	
+	<joint name="joint1" type="revolute">
+		<parent link="${prefix}base_link"/>
+		<child link="${prefix}link_1"/>
+		<limit effort="300" lower="-2.88" upper="2.88" velocity="4.36"/>
+		<axis xyz="0 1 0"/>
+		<origin rpy="-3.14159265359 3.14159265359 3.14159265359" xyz="0 0 0"/>
+	</joint>
+	<joint name="joint2" type="revolute">
+		<parent link="${prefix}link_1"/>
+		<child link="${prefix}link_2"/>
+		<limit effort="300" lower="-1.92" upper="1.92" velocity="4.36"/>
+		<axis xyz="0 0 1"/>
+        <origin rpy="3.14159265359 0 3.14159265359" xyz="0 0.290 0"/>
+	</joint>
+	<joint name="joint3" type="revolute">
+		<parent link="${prefix}link_2"/>
+		<child link="${prefix}link_3"/>
+		<limit effort="300" lower="-1.575" upper="1.23" velocity="4.36"/>
+		<axis xyz="0 0 -1"/>
+		<origin rpy="3.14159265359 0 3.14159265359" xyz="0 0.270 0"/>
+	</joint>
+	<joint name="joint4" type="revolute">
+		<parent link="${prefix}link_3"/>
+		<child link="${prefix}link_4"/>
+		<limit effort="300" lower="-2.80" upper="2.80" velocity="5.58"/>
+		<axis xyz="1 0 0"/>
+		<origin rpy="0 0 0" xyz="0 0.070 0"/>
+	</joint>
+	<joint name="joint5" type="revolute">
+		<parent link="${prefix}link_4"/>
+		<child link="${prefix}link_5"/>
+		<limit effort="300" lower="-2.10" upper="2.10" velocity="5.58"/>
+		<axis xyz="0 0 -1"/>
+		<origin rpy="0 0 0" xyz="0.302 0 0"/>
+	</joint>
+	<joint name="joint6" type="revolute">
+		<parent link="${prefix}link_5"/>
+		<child link="${prefix}link_6"/>
+		<limit effort="300" lower="-6.985" upper="6.985" velocity="7.33"/>
+		<axis xyz="0 0 1"/>
+		<origin rpy="-1.5707961734 0 -1.57079621992" xyz="0.072 0 0"/>
+	</joint>
+  </xacro:macro>
+</robot>
