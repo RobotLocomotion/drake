@@ -56,6 +56,19 @@ packages={};
 path = getenv(varname);
 while ~isempty(path)
   [token,path]=strtok(path,pathsep);
+  % First look for package.xml
+  [info,p] = system(['find -L ',token,' -iname package.xml']);
+  if info==0 
+    while ~isempty(p)
+      [pt,p]=strtok(p);
+      pt=fileparts(pt);
+      p = regexprep(p,[pt,'.*\n'],'','dotexceptnewline');
+      packages=vertcat(packages,pt);
+    end
+  else  % if find fails for some reason (windows?), then do it the hard way...
+    packages = vertcat(packages,searchdir(token));
+  end
+  % Then look for manifest.xml (deprecated)
   [info,p] = system(['find -L ',token,' -iname manifest.xml']);
   if info==0 
     while ~isempty(p)
