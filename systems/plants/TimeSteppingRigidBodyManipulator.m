@@ -60,6 +60,11 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         typecheck(options.enable_fastqp,'logical');
         obj.enable_fastqp = options.enable_fastqp;
       end
+      
+      if ~checkDependency('fastqp')
+        warning('Drake:TimeSteppingRigidBodyManipulator:MissingDependency','You seem to be missing fastQP. Disabling active-set LCP update.')
+        obj.enable_fastqp = false;
+      end
 
       obj.timestep = timestep;
       obj.LCP_cache = SharedDataHandle(struct('t',[],'x',[],'u',[],'nargout',[], ...
