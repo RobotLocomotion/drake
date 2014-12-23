@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="utf-8"?>
+<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1">
+  <asset>
+    <contributor>
+      <author>Blender User</author>
+      <authoring_tool>Blender 2.68.0 r58536</authoring_tool>
+    </contributor>
+    <created>2013-08-30T15:30:52</created>
+    <modified>2013-08-30T15:30:52</modified>
+    <unit name="meter" meter="1"/>
+    <up_axis>Z_UP</up_axis>
+  </asset>
+  <library_images>
+    <image id="__auto_2_jpg" name="__auto_2_jpg">
+      <init_from>../materials/textures/cinder_block.png</init_from>
+    </image>
+    <image id="cinder_block_jpg" name="cinder_block_jpg">
+      <init_from>../materials/textures/cinder_block.png</init_from>
+    </image>
+  </library_images>
+  <library_effects>
+    <effect id="__auto_1-effect">
+      <profile_COMMON>
+        <newparam sid="cinder_block_jpg-surface">
+          <surface type="2D">
+            <init_from>cinder_block_jpg</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="cinder_block_jpg-sampler">
+          <sampler2D>
+            <source>cinder_block_jpg-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <phong>
+            <emission>
+              <color sid="emission">0.1 0.1 0.1 1</color>
+            </emission>
+            <ambient>
+              <color sid="ambient">0.2 0.2 0.2 1</color>
+            </ambient>
+            <diffuse>
+              <texture texture="cinder_block_jpg-sampler" texcoord="ID16-mesh-map-0"/>
+            </diffuse>
+            <specular>
+              <color sid="specular">0.25 0.25 0.25 1</color>
+            </specular>
+            <shininess>
+              <float sid="shininess">50</float>
+            </shininess>
+            <index_of_refraction>
+              <float sid="index_of_refraction">1</float>
+            </index_of_refraction>
+          </phong>
+        </technique>
+        <extra>
+          <technique profile="GOOGLEEARTH">
+            <double_sided>1</double_sided>
+          </technique>
+        </extra>
+      </profile_COMMON>
+      <extra><technique profile="MAX3D"><double_sided>1</double_sided></technique></extra>
+    </effect>
+    <effect id="__auto_2-effect">
+      <profile_COMMON>
+        <newparam sid="__auto_2_jpg-surface">
+          <surface type="2D">
+            <init_from>__auto_2_jpg</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="__auto_2_jpg-sampler">
+          <sampler2D>
+            <source>__auto_2_jpg-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <phong>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <ambient>
+              <color sid="ambient">0 0 0 1</color>
+            </ambient>
+            <diffuse>
+              <texture texture="__auto_2_jpg-sampler" texcoord="ID16-mesh-map-0"/>
+            </diffuse>
+            <specular>
+              <color sid="specular">0.25 0.25 0.25 1</color>
+            </specular>
+            <shininess>
+              <float sid="shininess">50</float>
+            </shininess>
+            <index_of_refraction>
+              <float sid="index_of_refraction">1</float>
+            </index_of_refraction>
+          </phong>
+        </technique>
+        <extra>
+          <technique profile="GOOGLEEARTH">
+            <double_sided>1</double_sided>
+          </technique>
+        </extra>
+      </profile_COMMON>
+      <extra><technique profile="MAX3D"><double_sided>1</double_sided></technique></extra>
+    </effect>
+  </library_effects>
+  <library_materials>
+    <material id="__auto_1-material" name="__auto_1">
+      <instance_effect url="#__auto_1-effect"/>
+    </material>
+    <material id="__auto_2-material" name="__auto_2">
+      <instance_effect url="#__auto_2-effect"/>
+    </material>
+  </library_materials>
+  <library_geometries>
+    <geometry id="ID16-mesh" name="ID16">
+      <mesh>
+        <source id="ID16-mesh-positions">
+          <float_array id="ID16-mesh-positions-array" count="72">3.8126 -7.8125 5.625 -3.8126 7.8125 5.625 -3.8126 -7.8125 5.625 3.8126 7.8125 5.625 -3.8126 -6.8125 4.625 -3.8126 -7.8125 0 -3.8126 -0.49998 4.625 -3.8126 0.50002 4.625 -3.8126 -0.49998 1 -3.8126 6.8125 4.625 -3.8126 6.8125 1 -3.8126 -6.8125 1 -3.8126 7.8125 0 -3.8126 0.50002 1 3.8126 -7.8125 0 3.8126 -6.8125 1 3.8126 7.8125 0 3.8126 -0.49998 1 3.8126 0.50002 1 3.8126 0.50002 4.625 3.8126 6.8125 1 3.8126 6.8125 4.625 3.8126 -6.8125 4.625 3.8126 -0.49998 4.625</float_array>
+          <technique_common>
+            <accessor source="#ID16-mesh-positions-array" count="24" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="ID16-mesh-normals">
+          <float_array id="ID16-mesh-normals-array" count="156">0 0 1 0 0 1 -1 0 0 -1 0 0 -1 0 0 -1 0 0 0 0 1 -1 0 0 0 1 0 0 0 1 0 1 0 0 0 -1 -1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0 -1 0 0 0 -1 0 0 0 -1 -1 0 0 0 -1 0 -1 0 0 0 -1 0 0 -1 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 1 0 0 0 1 0 0 1 0 0 0 -1 0 0 -1 0 0 1 0 1 0 0 0 1 0 1 0 0 0 -1 0 -1 0 0 0 -1 0 -1 0</float_array>
+          <technique_common>
+            <accessor source="#ID16-mesh-normals-array" count="52" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="ID16-mesh-map-0">
+          <float_array id="ID16-mesh-map-0-array" count="312">0.5040171 0.02462047 0.2663399 0.5154661 0.2648363 0.02535432 0.2663399 0.5154661 0.5040171 0.02462047 0.5055207 0.5147323 0.6819609 0.02462047 0.6513937 0.2854555 0.6512975 0.2540884 0.6834646 0.5147323 0.6520012 0.4834613 0.6819609 0.02462047 0.6520012 0.4834613 0.6834646 0.5147323 0.5382953 0.4838101 0.6819609 0.02462047 0.6520012 0.4834613 0.6513937 0.2854555 0.7042602 0.515881 0.9022648 0.5152736 0.704994 0.7550618 0.5376878 0.2858044 0.5375916 0.2544372 0.6513937 0.2854555 0.8614085 0.2760927 0.9751144 0.2757439 0.8621422 0.5152736 0.5062544 0.7550618 0.5055207 0.5158811 0.7042602 0.7544543 0.9751144 0.02462047 0.9758481 0.2638013 0.8614085 0.02496933 0.4635758 0.7546468 0.2655701 0.7552543 0.4628421 0.5154661 0.6819609 0.02462047 0.6512975 0.2540884 0.65069 0.05608379 0.8614085 0.5147323 0.8293376 0.2854568 0.8292414 0.2540897 0.8292414 0.2540897 0.8293376 0.2854568 0.7156316 0.2858057 0.8293376 0.2854568 0.8614085 0.5147323 0.8299451 0.4834613 0.8299451 0.4834613 0.8614085 0.5147323 0.7162391 0.4838101 0.5070244 0.5152736 0.5382953 0.4838101 0.6834646 0.5147323 0.5382953 0.4838101 0.5055207 0.0251618 0.5376878 0.2858044 0.5382953 0.4838101 0.5070244 0.5152736 0.5055207 0.0251618 0.5376878 0.2858044 0.5055207 0.0251618 0.5375916 0.2544372 0.6512975 0.2540884 0.6513937 0.2854555 0.5375916 0.2544372 0.5375916 0.2544372 0.5055207 0.0251618 0.5369841 0.05643266 0.1503966 0.7556032 0.2641025 0.7552543 0.1511303 0.994784 0.2641025 0.5154661 0.2648363 0.7546469 0.06609797 0.5160736 0.5369841 0.05643266 0.5055207 0.0251618 0.65069 0.05608379 0.4635758 0.9944352 0.3498699 0.994784 0.4628421 0.7552543 0.6819609 0.02462047 0.65069 0.05608379 0.5055207 0.0251618 0.8814342 0.9942427 0.7042602 0.7556031 0.8807005 0.7550618 0.7042602 0.7556031 0.8814342 0.9942427 0.704994 0.9947839 0.8599048 0.02462047 0.8286339 0.05608379 0.6834646 0.02516174 0.8286339 0.05608379 0.8599048 0.02462047 0.8614085 0.5147323 0.8286339 0.05608379 0.8614085 0.5147323 0.8292414 0.2540897 0.6834646 0.02516174 0.714928 0.05643266 0.6849682 0.5152736 0.714928 0.05643266 0.6834646 0.02516174 0.8286339 0.05608379 0.6849682 0.5152736 0.714928 0.05643266 0.7155354 0.2544385 0.6849682 0.5152736 0.7155354 0.2544385 0.7156316 0.2858057 0.8292414 0.2540897 0.7156316 0.2858057 0.7155354 0.2544385 0.6849682 0.5152736 0.7156316 0.2858057 0.7162391 0.4838101 0.6849682 0.5152736 0.7162391 0.4838101 0.8614085 0.5147323 0.5278199 0.9947839 0.7035264 0.7550618 0.7042602 0.9942427 0.7035264 0.7550618 0.5278199 0.9947839 0.5270862 0.7556031 0.2633327 0.02462047 0.2648363 0.5147323 0.02415186 0.02535432 0.02565544 0.5154661 0.02415186 0.02535432 0.2648363 0.5147323 0.9022648 0.5152736 0.9029985 0.7544543 0.704994 0.7550618 0.9751144 0.2757439 0.9758481 0.5149247 0.8621422 0.5152736 0.5055207 0.5158811 0.7035264 0.5152736 0.7042602 0.7544543 0.9758481 0.2638013 0.8621422 0.2641502 0.8614085 0.02496933 0.2655701 0.7552543 0.2648363 0.5160735 0.4628421 0.5154661 0.2641025 0.7552543 0.2648363 0.9944352 0.1511303 0.994784 0.2648363 0.7546469 0.0668317 0.7552543 0.06609797 0.5160736 0.3498699 0.994784 0.3491362 0.7556032 0.4628421 0.7552543</float_array>
+          <technique_common>
+            <accessor source="#ID16-mesh-map-0-array" count="156" stride="2">
+              <param name="S" type="float"/>
+              <param name="T" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="ID16-mesh-vertices">
+          <input semantic="POSITION" source="#ID16-mesh-positions"/>
+        </vertices>
+        <polylist material="__auto_1-material" count="52">
+          <input semantic="VERTEX" source="#ID16-mesh-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#ID16-mesh-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#ID16-mesh-map-0" offset="2" set="0"/>
+          <vcount>3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 </vcount>
+          <p>0 0 0 1 0 1 2 0 2 1 1 3 0 1 4 3 1 5 12 2 6 8 2 7 13 2 8 5 3 9 11 3 10 12 3 11 11 4 12 5 4 13 4 4 14 12 5 15 11 5 16 8 5 17 18 6 18 20 6 19 13 6 20 6 7 21 7 7 22 8 7 23 19 8 24 18 8 25 7 8 26 11 9 27 15 9 28 8 9 29 15 10 30 11 10 31 22 10 32 4 11 33 6 11 34 22 11 35 12 12 36 13 12 37 10 12 38 16 13 39 18 13 40 17 13 41 17 14 42 18 14 43 19 14 44 18 15 45 16 15 46 20 15 47 20 16 48 16 16 49 21 16 50 2 17 51 4 17 52 5 17 53 4 18 54 1 18 55 6 18 56 4 19 57 2 19 58 1 19 59 6 20 60 1 20 61 7 20 62 13 21 63 8 21 64 7 21 65 7 22 66 1 22 67 9 22 68 6 23 69 8 23 70 23 23 71 19 24 72 7 24 73 21 24 74 9 25 75 1 25 76 10 25 77 20 26 78 21 26 79 10 26 80 12 27 81 10 27 82 1 27 83 14 28 84 2 28 85 5 28 86 2 29 87 14 29 88 0 29 89 14 30 90 15 30 91 0 30 92 15 31 93 14 31 94 16 31 95 15 32 96 16 32 97 17 32 98 0 33 99 22 33 100 3 33 101 22 34 102 0 34 103 15 34 104 3 35 105 22 35 106 23 35 107 3 36 108 23 36 109 19 36 110 17 37 111 19 37 112 23 37 113 3 38 114 19 38 115 21 38 116 3 39 117 21 39 118 16 39 119 1 40 120 16 40 121 12 40 122 16 41 123 1 41 124 3 41 125 16 42 126 14 42 127 12 42 128 5 43 129 12 43 130 14 43 131 20 44 132 10 44 133 13 44 134 18 45 135 13 45 136 7 45 137 15 46 138 17 46 139 8 46 140 11 47 141 4 47 142 22 47 143 6 48 144 23 48 145 22 48 146 8 49 147 17 49 148 23 49 149 7 50 150 9 50 151 21 50 152 21 51 153 9 51 154 10 51 155</p>
+        </polylist>
+      </mesh>
+      <extra><technique profile="MAYA"><double_sided>1</double_sided></technique></extra>
+    </geometry>
+  </library_geometries>
+  <library_controllers/>
+  <library_visual_scenes>
+    <visual_scene id="Scene" name="Scene">
+      <node id="SketchUp_002" name="SketchUp_002" type="NODE">
+        <matrix sid="transform">0.0254 0 0 0 0 0.0254 0 0 0 0 0.0254 0 0 0 0 1</matrix>
+        <instance_geometry url="#ID16-mesh">
+          <bind_material>
+            <technique_common>
+              <instance_material symbol="__auto_1-material" target="#__auto_1-material">
+                <bind_vertex_input semantic="ID16-mesh-map-0" input_semantic="TEXCOORD" input_set="0"/>
+              </instance_material>
+              <instance_material symbol="__auto_2-material" target="#__auto_2-material">
+                <bind_vertex_input semantic="ID16-mesh-map-0" input_semantic="TEXCOORD" input_set="0"/>
+              </instance_material>
+            </technique_common>
+          </bind_material>
+        </instance_geometry>
+      </node>
+    </visual_scene>
+  </library_visual_scenes>
+  <scene>
+    <instance_visual_scene url="#Scene"/>
+  </scene>
+</COLLADA>

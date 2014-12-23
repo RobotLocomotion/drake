@@ -7,6 +7,7 @@ else
 end
 
 options.floating = true;
+options.use_bullet = false;
 options.terrain = RigidBodyFlatTerrain();
 r = TimeSteppingRigidBodyManipulator('ball.urdf',0.005,options);
 if display
@@ -17,12 +18,12 @@ end
 
 x0 = zeros(12,1);
 x0(3) = 15;
-x0(6+1) = randn();
-x0(6+2) = randn();
+x0(6+1) = rand()-.5;
+x0(6+2) = rand()-.5;
 x0(6+3) = 10*rand();
-x0(6+4) = 0.5*randn();
-x0(6+5) = 0.5*randn();
-x0(6+6) = 0.5*randn();
+x0(6+4) = 0.5*(rand()-.5);
+x0(6+5) = 0.5*(rand()-.5);
+x0(6+6) = 0.5*(rand()-.5);
 
   function A = myfun(q)
     % for derivative check

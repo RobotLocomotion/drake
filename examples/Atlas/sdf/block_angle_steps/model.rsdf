@@ -1,0 +1,48 @@
+<?xml version="1.0" ?>
+<sdf version="1.4">
+ 
+  <% 
+    # Constant declarations
+    # Generate a trapezoidal step shape of cinderblocks
+    width  = 6 # x dimension
+    height = 3
+    
+    origin_x = 0 # location of first block
+    origin_y = 0 
+    origin_z = 0 
+
+    block_x = 0.386
+    block_y = 0.387
+    block_z = 0.092
+
+    angle_inc = 10 * Math::PI/180 
+  %>
+  <model name="block_angle_steps">
+    <pose><%= origin_x %> <%= origin_y %> <%= origin_z %> 0 0 0</pose>
+    <% for i in 0..width %>
+      <% for j in 0..height %>
+        
+        <% if j < height/2
+             depth_range = (0..(j).ceil).to_a
+           else
+             depth_range = ((0..(j).ceil).to_a).reverse
+           end
+        %>
+        <% for k in depth_range %>
+          <% x0 = origin_x + block_x*j + block_x*i %>
+          <% y0 = origin_y + block_y*i %>
+          <% z0 = origin_z + block_z*k %>
+
+          <% rx = j*angle_inc * ( 2*(j % 2)-1 ) %>
+          <include>
+            <name><%= 'block_' + i.to_s + '_' + j.to_s + '_' + k.to_s %></name>
+            <pose> <%= x0 %> <%= y0 %> <%= z0 %> <%= rx %> 0 1.570796 </pose>
+            <uri>model://cinder_block_wide</uri>
+          </include>
+        <% end %>
+      <% end %>
+    <% end %>
+
+  </model>
+
+</sdf>

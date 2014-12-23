@@ -24,12 +24,12 @@ if (gurobi_FOUND AND eigen3_FOUND)
 
 endif()
 
-pods_find_pkg_config(snopt_cpp)
+pods_find_pkg_config(snopt_c)
 
 
-if(snopt_cpp_FOUND)
+if(snopt_c_FOUND)
 	add_mex(NonlinearProgramSnoptmex NonlinearProgramSnoptmex.cpp)
-  pods_use_pkg_config_packages(NonlinearProgramSnoptmex snopt_cpp)
+  pods_use_pkg_config_packages(NonlinearProgramSnoptmex snopt_c)
   set_target_properties(NonlinearProgramSnoptmex PROPERTIES COMPILE_FLAGS -fPIC)
 
   	# link against matlab's copy of the gfortran library, if possible
