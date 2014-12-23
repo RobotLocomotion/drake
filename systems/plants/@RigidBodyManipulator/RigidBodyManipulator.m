@@ -1934,7 +1934,7 @@ classdef RigidBodyManipulator < Manipulator
       if getNumPositions(obj)<1, fr = []; return; end
       
       if nargin<2, 
-        fr = MultiCoordinateFrame.constructFrame(obj.robot_position_frames);
+        fr = MultiCoordinateFrame.constructFrame(obj.robot_position_frames,[],true);
       else
         fr = obj.robot_position_frames{robotnum};
       end
@@ -1944,7 +1944,7 @@ classdef RigidBodyManipulator < Manipulator
       % if robotnum is not specified, then it returns a velocity frame
       % including all velocity variables (for all robots)
       if nargin<2, 
-        fr = MultiCoordinateFrame.constructFrame(obj.robot_velocity_frames);
+        fr = MultiCoordinateFrame.constructFrame(obj.robot_velocity_frames,[],true);
       else
         fr = obj.robot_velocity_frames{robotnum};
       end
