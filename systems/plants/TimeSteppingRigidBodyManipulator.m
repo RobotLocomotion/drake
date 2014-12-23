@@ -14,7 +14,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     twoD=false
     position_control=false;
     LCP_cache;
-    enable_fastqp = true; % whether we use the active set LCP
+    enable_fastqp; % whether we use the active set LCP
     
     % solver type options: (with active set if enable_fastqp = true)
     %  0 : solve the full LCP 
@@ -56,9 +56,15 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         obj.solver_type = options.solver_type;
       end
 
-      if isfield(options,'enable_fastqp') 
+      if ~isfield(options,'enable_fastqp')
+        obj.enable_fastqp = checkDependency('fastqp');
+      else
         typecheck(options.enable_fastqp,'logical');
         obj.enable_fastqp = options.enable_fastqp;
+        if obj.enable_fastqp && ~checkDependency('fastqp')
+          warning('Drake:TimeSteppingRigidBodyManipulator:MissingDependency','You seem to be missing fastQP. Disabling active-set LCP update.')
+          obj.enable_fastqp = false;
+        end
       end
 
       obj.timestep = timestep;
