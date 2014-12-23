@@ -39,7 +39,7 @@ classdef RigidBodyManipulator < Manipulator
   end
 
   methods
-    function obj = RigidBodyManipulator(urdf_filename,options)
+    function obj = RigidBodyManipulator(filename,options)
       % Construct a new rigid body manipulator object with a single (empty)
       % RigidBody (called 'world'), and optionally load a first robot from
       % urdf (see documentation for addRobotFromURDF for details on the
@@ -57,8 +57,13 @@ classdef RigidBodyManipulator < Manipulator
       obj.collision_filter_groups=containers.Map('KeyType','char','ValueType','any');
       obj.collision_filter_groups('no_collision') = CollisionFilterGroup();
 
-      if (nargin>0 && ~isempty(urdf_filename))
-        obj = addRobotFromURDF(obj,urdf_filename,zeros(3,1),zeros(3,1),options);
+      if (nargin>0 && ~isempty(filename))
+        [path,name,ext]=fileparts(filename);
+        if strcmpi(ext,'.urdf')
+          obj = addRobotFromURDF(obj,filename,zeros(3,1),zeros(3,1),options);
+        elseif strcmpi(ext,'.sdf') || strcmpi(ext,'.world')
+          obj = addRobotFromSDF(obj,filename,zeros(3,1),zeros(3,1),options);
+        end          
       end
     end
   end
@@ -620,9 +625,6 @@ classdef RigidBodyManipulator < Manipulator
     function model = compile(model)
       % After parsing, compute some relevant data structures that will be
       % accessed in the dynamics and visualization
-      if isempty(model.name)
-        return;  % nothing to compile
-      end
 
       model = removeFixedJoints(model);
 
@@ -685,8 +687,6 @@ classdef RigidBodyManipulator < Manipulator
           model.body(i).velocity_num=0;
         end
       end
-
-      if (num_q<1) error('This model has no DOF!'); end
 
       u_limit = repmat(inf,length(model.actuator),1);
       u_limit = [-u_limit u_limit]; % lower/upper limits
@@ -767,8 +767,10 @@ classdef RigidBodyManipulator < Manipulator
         model = setDirectFeedthrough(model,false);
       end
 
-      model = model.setJointLimits([model.body.joint_limit_min]',[model.body.joint_limit_max]');
-
+      if getNumPositions(model)>0
+        model = model.setJointLimits([model.body.joint_limit_min]',[model.body.joint_limit_max]');
+      end
+      
       model = model.setInputLimits(u_limit(:,1),u_limit(:,2));
 
       %% check basic assumption from kinematics:
@@ -1929,6 +1931,8 @@ classdef RigidBodyManipulator < Manipulator
     function fr = getPositionFrame(obj,robotnum)
       % if robotnum is not specified, then it returns a position frame
       % including all position variables (for all robots)
+      if getNumPositions(obj)<1, fr = []; return; end
+      
       if nargin<2, 
         fr = MultiCoordinateFrame.constructFrame(obj.robot_position_frames);
       else
@@ -2091,6 +2095,7 @@ classdef RigidBodyManipulator < Manipulator
           model.body(i).position_num=0;
         end
       end
+      m = struct('NB',dof,'parent',[],'position_num',[],'pitch',[],'damping',[],'coulomb_friction',[],'static_friction',[],'coulomb_window',[],'Xtree',[],'X_joint_to_body',[],'I',[]);
       m.NB= dof;
       n=1;
       m.f_ext_map_from = inds;  % size is length(model.body) output is index into NB, or zero

@@ -121,7 +121,7 @@ classdef RigidBodyGeometry
         switch (lower(char(thisNode.getNodeName())))
           case 'box'
             size = parseParamString(model,robotnum,char(thisNode.getAttribute('size')));
-            obj = RigidBodyBox(size);
+            obj = RigidBodyBox(size(:));
           case 'sphere'
             r = parseParamString(model,robotnum,char(thisNode.getAttribute('radius')));
             obj = RigidBodySphere(r);
@@ -172,8 +172,8 @@ classdef RigidBodyGeometry
         thisNode = childNodes.item(i-1);
         switch (lower(char(thisNode.getNodeName())))
           case 'box'
-            sizeNode = thisNode.getElementsByTagName('size').item(0);
-            size = parseParamString(model,robotnum,char(getNodeValue(getFirstChild(sizeNode))));
+            size_node = thisNode.getElementsByTagName('size').item(0);
+            size = parseParamString(model,robotnum,char(getNodeValue(getFirstChild(size_node))));
             obj = RigidBodyBox(size);
           case 'mesh'
             uriNode = thisNode.getElementsByTagName('uri').item(0);
@@ -206,6 +206,25 @@ classdef RigidBodyGeometry
             end
             obj = RigidBodyMesh(GetFullPath(filename));
             obj.scale = scale;
+          case 'plane'
+            size_node = thisNode.getElementsByTagName('size').item(0);
+            size = parseParamString(model,robotnum,char(getNodeValue(getFirstChild(size_node))));
+            normal_node = thisNode.getElementsByTagName('normal').item(0);
+            normal = parseParamString(model,robotnum,char(getNodeValue(getFirstChild(normal_node))));
+            
+            pts = diag([size/2,0])*[ 1 1 -1 -1; 1 -1 -1 1; 0 0 0 0];
+            
+            % now rotate [0;0;1] onto the normal
+            % http://math.stackexchange.com/questions/180418/calculate-rotation-matrix-to-align-vector-a-to-vector-b-in-3d
+            v = [ -normal(2); normal(1); 0];
+            s = norm(v); c = normal(3);
+            if abs(s)<eps^2
+              R = diag([sign(c),1,sign(c)]);
+            else
+              vx = [ 0, -v(3), v(2); v(3), 0, -v(1); -v(2), v(1), 0];
+              R = eye(3) + vx + vx*vx*(1-c)/(s^2);
+            end
+            obj = RigidBodyMeshPoints(R*pts);            
           case {'#text','#comment'}
             % intentionally do nothing
           otherwise
