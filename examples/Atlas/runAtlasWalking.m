@@ -379,6 +379,9 @@ if rms_com > length(footstep_plan.footsteps)*0.5
   navgoal
 end
 
+% make sure we're at least vaguely close to the goal
+valuecheck(com(1:3,end), [navgoal(1:2); 0.9], 0.2);
+
 end
 
 % TIMEOUT 1500
