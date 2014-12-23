@@ -267,6 +267,7 @@ void rotz(double theta, Matrix3d &M, Matrix3d &dM, Matrix3d &ddM)
 RigidBodyManipulator::RigidBodyManipulator(int ndof, int num_featherstone_bodies, int num_rigid_body_objects, int num_rigid_body_frames)
   :  collision_model(DrakeCollision::newModel()), collision_model_no_margins(DrakeCollision::newModel())
 {
+  use_new_kinsol = false;
   num_dof=0; NB=0; num_bodies=0; num_frames=0;
   a_grav = VectorXd::Zero(6);
   resize(ndof,num_featherstone_bodies,num_rigid_body_objects,num_rigid_body_frames);
