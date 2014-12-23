@@ -39,7 +39,7 @@ add_subdirectory(test)
 
 
 # Mex debugging tools:
-if (NOT WIN32)
+if (0) #NOT WIN32)
 add_mex(debugMex SHARED debugMexLib.cpp)
 target_link_libraries(debugMex -ldl)
 #set_property( SOURCE debugMexLib.cpp PROPERTY COMPILE_FLAGS -DMX_COMPAT_32 )

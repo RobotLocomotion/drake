@@ -894,6 +894,10 @@ template DLLEXPORT Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic> transformSp
     const Eigen::Isometry3d&,
     const Eigen::MatrixBase< Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic> >&);
 
+template DLLEXPORT Eigen::Matrix<double, TWIST_SIZE, 1> transformSpatialMotion(
+    const Eigen::Isometry3d&,
+    const Eigen::MatrixBase< Eigen::Matrix<double, TWIST_SIZE, 1> >&);
+
 template DLLEXPORT TransformSpatial< MatrixXd >::type transformSpatialMotion<MatrixXd>(
     const Eigen::Isometry3d&,
     const Eigen::MatrixBase< MatrixXd >&);
@@ -931,6 +935,12 @@ template DLLEXPORT Gradient< Matrix<double, TWIST_SIZE, Dynamic>, Dynamic, 1>::t
     const MatrixBase< Matrix<double, TWIST_SIZE, Dynamic> >&,
     const MatrixBase< Matrix<double, HOMOGENEOUS_TRANSFORM_SIZE, Dynamic> >&,
     const MatrixBase<MatrixXd>&);
+
+template DLLEXPORT Gradient< Matrix<double, TWIST_SIZE, 1>, Dynamic, 1>::type dTransformAdjoint(
+    const Isometry3d&,
+    const MatrixBase< Matrix<double, TWIST_SIZE, 1> >&,
+    const MatrixBase< Matrix<double, HOMOGENEOUS_TRANSFORM_SIZE, Dynamic> >&,
+    const MatrixBase< Matrix<double, TWIST_SIZE, Eigen::Dynamic> >&);
 
 template DLLEXPORT Gradient< Matrix<double, TWIST_SIZE, Dynamic>, Dynamic, 1>::type dTransformAdjointTranspose(
     const Isometry3d&,

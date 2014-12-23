@@ -99,8 +99,8 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensorWithState %& Visu
       kinsol = doKinematics(manip,x(1:nq));
       
       % find contact indices that relate to this body
-      contact_idxA = find(tsmanip.LCP_cache.contact_data.idxA == obj.kinframe.body_ind)';
-      contact_idxB = find(tsmanip.LCP_cache.contact_data.idxB == obj.kinframe.body_ind)';
+      contact_idxA = find(tsmanip.LCP_cache.data.contact_data.idxA == obj.kinframe.body_ind)';
+      contact_idxB = find(tsmanip.LCP_cache.data.contact_data.idxB == obj.kinframe.body_ind)';
       
       if isempty(contact_idxA)
         contact_idxA = zeros(1,0);
@@ -113,20 +113,20 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensorWithState %& Visu
       N = nA + nB;
       % extract relevant contact information
       % contact positions on the body
-      contact_pos_body = [tsmanip.LCP_cache.contact_data.xA(:,contact_idxA) ...
-        tsmanip.LCP_cache.contact_data.xB(:,contact_idxB)];
+      contact_pos_body = [tsmanip.LCP_cache.data.contact_data.xA(:,contact_idxA) ...
+        tsmanip.LCP_cache.data.contact_data.xB(:,contact_idxB)];
       
       % contact normal and tangential directions in world coordinates
-      nD = length(tsmanip.LCP_cache.contact_data.d);
+      nD = length(tsmanip.LCP_cache.data.contact_data.d);
       nC_body = nA + nB;
       nC = manip.getNumContactPairs;
       nL = manip.getNumJointLimitConstraints;
       nP = 2*manip.num_position_constraints;  % number of position constraints
       
-      normal_world = [tsmanip.LCP_cache.contact_data.normal(:,contact_idxA)...
-        -tsmanip.LCP_cache.contact_data.normal(:,contact_idxB)];
+      normal_world = [tsmanip.LCP_cache.data.contact_data.normal(:,contact_idxA)...
+        -tsmanip.LCP_cache.data.contact_data.normal(:,contact_idxB)];
 
-      d_mat = cell2mat(tsmanip.LCP_cache.contact_data.d);
+      d_mat = cell2mat(tsmanip.LCP_cache.data.contact_data.d);
       tangent_world = [d_mat(:,kron(0:nD-1,nC*ones(1,nA)) + repmat(contact_idxA,1,nD)) ...
         -d_mat(:,kron(0:nD-1,nC*ones(1,nB)) + repmat(contact_idxB,1,nD))];
       
