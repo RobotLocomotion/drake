@@ -134,6 +134,7 @@ classdef MultiCoordinateFrame < CoordinateFrame
             % prepend remapping from coordinates of parent to children
             T = sparse(1:obj.dim,[obj.coord_ids{:}],1,obj.dim,obj.dim);
             tf = cascade(AffineTransform(obj,tf.getInputFrame,T,zeros(obj.dim,1)),tf);
+            tf = setOutputFrame(tf,target);  % because the parallel combination loop above will results in an input frame with a ladder of subframes.
           end
         end
       end
