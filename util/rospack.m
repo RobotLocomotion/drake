@@ -56,6 +56,19 @@ packages={};
 path = getenv(varname);
 while ~isempty(path)
   [token,path]=strtok(path,pathsep);
+  % First look for package.xml
+  [info,p] = system(['find -L ',token,' -iname package.xml']);
+  if info==0 
+    while ~isempty(p)
+      [pt,p]=strtok(p);
+      pt=fileparts(pt);
+      p = regexprep(p,[pt,'.*\n'],'','dotexceptnewline');
+      packages=vertcat(packages,pt);
+    end
+  else  % if find fails for some reason (windows?), then do it the hard way...
+    packages = vertcat(packages,searchdir(token,'package.xml'));
+  end
+  % Then look for manifest.xml (deprecated)
   [info,p] = system(['find -L ',token,' -iname manifest.xml']);
   if info==0 
     while ~isempty(p)
@@ -65,14 +78,14 @@ while ~isempty(path)
       packages=vertcat(packages,pt);
     end
   else  % if find fails for some reason (windows?), then do it the hard way...
-    packages = vertcat(packages,searchdir(token));
+    packages = vertcat(packages,searchdir(token,'manifest.xml'));
   end
 end
 
 end
 
-function packages = searchdir(path)
-  if ~isempty(dir(fullfile(path,'manifest.xml')));
+function packages = searchdir(path,str)
+  if ~isempty(dir(fullfile(path,str)));
     packages = {path};
     return;
   end
@@ -81,6 +94,6 @@ function packages = searchdir(path)
   d = dir(path);
   for i=find([d.isdir])
     if (d(i).name(1)=='.') continue; end
-    packages = vertcat(packages,searchdir(d(i).name));
+    packages = vertcat(packages,searchdir(d(i).name,str));
   end
 end
