@@ -9,7 +9,7 @@ function plan = runAtlasWalkingPlanning(options)
 if nargin<1, options = struct(); end
 if ~isfield(options,'terrain'), options.terrain = RigidBodyFlatTerrain(); end
 if ~isfield(options,'navgoal'), options.navgoal = [1.5;0;0;0;0;0]; end
-if ~isfield(options,'initial_pose'), options.initial_pose = []; end
+if ~isfield(options,'safe_regions'), options.safe_regions = []; end
 
 checkDependency('lcmgl');
 
@@ -18,7 +18,7 @@ path_handle = addpathTemporary(fullfile(getDrakePath(), 'examples', 'ZMP'));
 % Set up the model
 load('data/atlas_fp.mat', 'xstar');
 x0 = xstar;
-if ~isfield(options,'initial_pose'), x0(1:6) = options.initial_pose; end
+if isfield(options,'initial_pose'), x0(1:6) = options.initial_pose; end
 
 r = Atlas('urdf/atlas_minimal_contact.urdf',options);
 x0 = r.resolveConstraints(x0);
@@ -34,7 +34,7 @@ lfoot_navgoal(1:3) = lfoot_navgoal(1:3) + R*[0;0.13;0];
 
 % Plan footsteps to the goal
 goal_pos = struct('right', rfoot_navgoal, 'left', lfoot_navgoal);
-footstep_plan = r.planFootsteps(q0, goal_pos);
+footstep_plan = r.planFootsteps(q0, goal_pos, options.safe_regions);
 
 % Show the result
 v = r.constructVisualizer();
