@@ -34,11 +34,11 @@ xtraj = sol.xtraj_sol;
 r.setInitialState(xtraj.eval(0));
 x_knots = xtraj.eval(ts);
 
-back_bky = r.getBody(r.findJointInd('back_bky')).position_num;
+back_bky = r.getBody(r.findJointId('back_bky')).position_num;
 
-link_indices = [findLinkInd(r,'l_foot'), findLinkInd(r,'r_foot'),...
-    findLinkInd(r,'l_hand'), findLinkInd(r,'r_hand'), ...
-    findLinkInd(r,'pelvis'), findLinkInd(r,'utorso')];
+link_indices = [findLinkId(r,'l_foot'), findLinkId(r,'r_foot'),...
+    findLinkId(r,'l_hand'), findLinkId(r,'r_hand'), ...
+    findLinkId(r,'pelvis'), findLinkId(r,'utorso')];
 
 body_knots = cell(length(link_indices));
 for j=1:length(link_indices)
@@ -76,8 +76,8 @@ ts = sol.t_sol;
 
 
 % manually extracting the support traj for now
-l_foot = r.findLinkInd('l_foot');
-r_foot = r.findLinkInd('r_foot');
+l_foot = r.findLinkId('l_foot');
+r_foot = r.findLinkId('r_foot');
 
 toe_takeoff_idx = 7;
 toe_land_idx = 12;

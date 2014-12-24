@@ -186,7 +186,7 @@ classdef RigidBodyPropellor < RigidBodyForceElement
       name = regexprep(name, '\.', '_', 'preservecase');
       
       elnode = node.getElementsByTagName('parent').item(0);
-      parent = findLinkInd(model,char(elnode.getAttribute('link')),robotnum);
+      parent = findLinkId(model,char(elnode.getAttribute('link')),robotnum);
       
       xyz = zeros(3,1); rpy = zeros(3,1);
       elnode = node.getElementsByTagName('origin').item(0);

@@ -7,8 +7,8 @@ function RelativeGazeOrientConstraintTest(varargin)
 end
 
 function con = makeCon(r)
-  bodyA_idx = findLinkInd(r,'r_gripper_palm_link');
-  bodyB_idx = findLinkInd(r,'l_gripper_palm_link');
+  bodyA_idx = findLinkId(r,'r_gripper_palm_link');
+  bodyB_idx = findLinkId(r,'l_gripper_palm_link');
   %rpy = [pi/2;pi/2;0];
   %rpy = 2*pi*rand(3,1) - pi;
   rpy = [2*pi;pi;0].*rand(3,1) - [pi;pi/2;0];

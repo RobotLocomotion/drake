@@ -59,14 +59,14 @@ classdef RigidBodyLoop < RigidBodyElement
       loop.name = regexprep(loop.name, '\.', '_', 'preservecase');
 
       link1Node = node.getElementsByTagName('link1').item(0);
-      link1 = findLinkInd(model,char(link1Node.getAttribute('link')),robotnum);
+      link1 = findLinkId(model,char(link1Node.getAttribute('link')),robotnum);
       loop.body1 = link1;
       if link1Node.hasAttribute('xyz')
         loop.pt1 = reshape(str2num(char(link1Node.getAttribute('xyz'))),3,1);
       end
 
       link2Node = node.getElementsByTagName('link2').item(0);
-      link2 = findLinkInd(model,char(link2Node.getAttribute('link')),robotnum);
+      link2 = findLinkId(model,char(link2Node.getAttribute('link')),robotnum);
       loop.body2 = link2;
       if link2Node.hasAttribute('xyz')
         loop.pt2 = reshape(str2num(char(link2Node.getAttribute('xyz'))),3,1);

@@ -37,7 +37,7 @@ function relativePositionNonlinearProgramTest(visualize)
   %% Solve an inverse kinematics problem
   
   % Create a DrakeFunction that computes the world position of the hand points
-  hand_pts_in_body = rbm.getBody(rbm.findLinkInd('l_hand')).getTerrainContactPoints();
+  hand_pts_in_body = rbm.getBody(rbm.findLinkId('l_hand')).getTerrainContactPoints();
   hand_pts_fcn = RelativePosition(rbm,'l_hand','world',hand_pts_in_body);
 
   %% Constraints on body points
@@ -47,7 +47,7 @@ function relativePositionNonlinearProgramTest(visualize)
 
   %% Enforce that the corners of the left foot be on the ground
   % Create a DrakeFunction that computes the world positions of foot points
-  foot_pts_in_body = rbm.getBody(rbm.findLinkInd('l_foot')).getTerrainContactPoints();
+  foot_pts_in_body = rbm.getBody(rbm.findLinkId('l_foot')).getTerrainContactPoints();
   foot_pts_fcn = RelativePosition(rbm,'l_foot','world',foot_pts_in_body);
 
   % Create a DrakeFunction that computes the signed distances from m points to
