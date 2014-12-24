@@ -1,9 +1,15 @@
-function runAtlasWalking(use_mex,use_bullet,use_angular_momentum,navgoal)
+function runAtlasWalking(example_options)
 % Example running walking QP controller from
 % Scott Kuindersma, Frank Permenter, and Russ Tedrake.
 % An efficiently solvable quadratic program for stabilizing dynamic
 % locomotion. In Proceedings of the International Conference on 
 % Robotics and Automation, Hong Kong, China, May 2014. IEEE.
+%
+% @option use_mex
+% @option use_bullet
+% @option use_angular_momentum
+% @options navgoal
+% 
 
 checkDependency('gurobi');
 
@@ -13,13 +19,15 @@ path_handle = addpathTemporary({fullfile(getDrakePath,'examples','ZMP'),...
 
 plot_comtraj = true;
 
-if (nargin<1); use_mex = true; end
-if (nargin<2); use_bullet = false; end
-if (nargin<3); use_angular_momentum = false; end
-if (nargin<4)
+if nargin<1, example_options=struct(); end
+if ~isfield(example_options,'use_mex'), example_options.use_mex = true; end
+if ~isfield(example_options,'use_bullet') example_options.use_bullet = false; end
+if ~isfield(example_options,'use_angular_momentum') example_options.use_angular_momentum = false; end
+if ~isfield(example_options,'navgoal')
 %  navgoal = [2*rand();0.25*randn();0;0;0;0];
-  navgoal = [1.5;0;0;0;0;0];
+  example_options.navgoal = [1.5;0;0;0;0;0];
 end
+if ~isfield(example_options,'terrain'), example_options.terrain = RigidBodyFlatTerrain; end
 
 % silence some warnings
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints')
@@ -27,14 +35,18 @@ warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits')
 
 % construct robot model
 options.floating = true;
+options.ignore_self_collisions = true;
 options.ignore_friction = true;
 options.dt = 0.001;
+options.terrain = example_options.terrain;
 r = Atlas(fullfile(getDrakePath,'examples','Atlas','urdf','atlas_minimal_contact.urdf'),options);
 r = r.removeCollisionGroupsExcept({'heel','toe'});
 r = compile(r);
 
 % set initial state to fixed point
 load(fullfile(getDrakePath,'examples','Atlas','data','atlas_fp.mat'));
+if ~isfield(options,'initial_pose'), xstar(1:6) = options.initial_pose; end
+xstar = r.resolveConstraints(xstar);
 r = r.setInitialState(xstar);
 
 v = r.constructVisualizer;
@@ -46,10 +58,10 @@ x0 = xstar;
 q0 = x0(1:nq);
 
 % Find the initial positions of the feet
-R=rotz(navgoal(6));
+R=rotz(example_options.navgoal(6));
 
-rfoot_navgoal = navgoal;
-lfoot_navgoal = navgoal;
+rfoot_navgoal = example_options.navgoal;
+lfoot_navgoal = example_options.navgoal;
 
 rfoot_navgoal(1:3) = rfoot_navgoal(1:3) + R*[0;-0.13;0];
 lfoot_navgoal(1:3) = lfoot_navgoal(1:3) + R*[0;0.13;0];
@@ -99,16 +111,16 @@ ctrl_data = QPControllerData(true,struct(...
 
 options.dt = 0.003;
 options.slack_limit = 100;
-options.use_bullet = use_bullet;
+options.use_bullet = example_options.use_bullet;
 options.w_qdd = zeros(nq,1);
 options.w_grf = 1e-8;
 options.w_slack = 5.0;
 options.debug = false;
 options.contact_threshold = 0.002;
 options.solver = 0; % 0 fastqp, 1 gurobi
-options.use_mex = use_mex;
+options.use_mex = example_options.use_mex;
 
-if use_angular_momentum
+if example_options.use_angular_momentum
   options.Kp_ang = 1.0; % angular momentum proportunal feedback gain
   options.W_kdot = 1e-5*eye(3); % angular momentum weight
 else
@@ -376,11 +388,11 @@ if plot_comtraj
 
 if rms_com > length(footstep_plan.footsteps)*0.5
   error('runAtlasWalking unit test failed: error is too large');
-  navgoal
+  example_options.navgoal
 end
 
 % make sure we're at least vaguely close to the goal
-valuecheck(com(1:3,end), [navgoal(1:2); 0.9], 0.2);
+valuecheck(com(1:3,end), [example_options.navgoal(1:2); 0.9], 0.2);
 
 end
 
