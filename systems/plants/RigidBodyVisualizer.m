@@ -46,8 +46,8 @@ classdef RigidBodyVisualizer < Visualizer
       % which calls inverse kinematics to drive the specified point on the
       % robot through a Cartesian endpoint (when possible).
       % 
-      % @param body_or_frame_id e.g. from findFrameId,findJointInd, or
-      % findLinkInd
+      % @param body_or_frame_id e.g. from findFrameId,findJointId, or
+      % findLinkId
       % @param pt a 3x1 point in Cartesian space
       % @param q0 (optional) initial pose for the robot @default uses
       % getInitialState()

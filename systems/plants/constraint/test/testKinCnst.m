@@ -30,11 +30,11 @@ robot_collision_aff = robot_collision_aff.addToIgnoredListOfCollisionFilterGroup
 robot_collision_aff = robot_collision_aff.compile();
 
 
-l_foot = robot.findLinkInd('l_foot');
-r_foot = robot.findLinkInd('r_foot');
-l_hand = robot.findLinkInd('l_hand');
-r_hand = robot.findLinkInd('r_hand');
-head = robot.findLinkInd('head');
+l_foot = robot.findLinkId('l_foot');
+r_foot = robot.findLinkId('r_foot');
+l_hand = robot.findLinkId('l_hand');
+r_hand = robot.findLinkId('r_hand');
+head = robot.findLinkId('head');
 nLPts = length(robot.getBody(l_foot).getCollisionGeometry);
 l_foot_pts = zeros(3,nLPts);
 for i=1:nLPts,

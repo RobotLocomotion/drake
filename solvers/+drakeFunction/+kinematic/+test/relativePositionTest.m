@@ -29,7 +29,7 @@ function relativePositionTest(visualize)
 
   %% Test a basic RelativePosition object
   % Create a DrakeFunction that computes the world position of the hand points
-  hand_pts_in_body = rbm.getBody(rbm.findLinkInd('l_hand')).getTerrainContactPoints();
+  hand_pts_in_body = rbm.getBody(rbm.findLinkId('l_hand')).getTerrainContactPoints();
   hand_pts_fcn = RelativePosition(rbm,'l_hand','world',hand_pts_in_body);
 
   % Evaluate that DrakeFunction
@@ -40,7 +40,7 @@ function relativePositionTest(visualize)
     for pt = reshape(pos,3,[])
       lcmgl.sphere(pt,0.05,20,20);
     end
-    rbm.drawLCMGLAxes(lcmgl,q0,rbm.findLinkInd('l_hand'));
+    rbm.drawLCMGLAxes(lcmgl,q0,rbm.findLinkId('l_hand'));
     lcmgl.switchBuffers();
     v.draw(0,q0);
   end

@@ -841,7 +841,7 @@ classdef RigidBodyManipulator < Manipulator
     end    
     
     function indices = findPositionIndices(model, str)
-      %findJointIndices Returns position indices in the state vector for joints whose
+      %findPositionIndices Returns position indices in the state vector for joints whose
       % name contains a specified string.
       %   @param str (sub)string to be searched for
       %   @retvall indices array of indices into state vector
@@ -1055,9 +1055,9 @@ classdef RigidBodyManipulator < Manipulator
       % @ingroup Kinematic Tree
       if ischar(body_ind_or_joint_name)
         if nargin>2
-          body_ind_or_joint_name = findJointInd(model,body_ind_or_joint_name,robot);
+          body_ind_or_joint_name = findJointId(model,body_ind_or_joint_name,robot);
         else
-          body_ind_or_joint_name = findJointInd(model,body_ind_or_joint_name);
+          body_ind_or_joint_name = findJointId(model,body_ind_or_joint_name);
         end
       end
 
@@ -1250,7 +1250,7 @@ classdef RigidBodyManipulator < Manipulator
         body_idx_or_frame_id = body_or_frame;
       else % then it's a string
         try
-          body_idx_or_frame_id = findLinkInd(obj,body_or_frame,robotnum);
+          body_idx_or_frame_id = findLinkId(obj,body_or_frame,robotnum);
         catch ex
           if strcmp(ex.identifier,'Drake:RigidBodyManipulator:UniqueLinkNotFound')
             try
@@ -2419,7 +2419,7 @@ classdef RigidBodyManipulator < Manipulator
 
     function link_indices = findCollisionFilterGroupMemberIndices(model,collision_fg_name)
       [linknames,robotnums] = model.collision_filter_groups(collision_fg_name).getMembers();
-      link_indices = cellfun(@(name,num) findLinkInd(model,name,num), ...
+      link_indices = cellfun(@(name,num) findLinkId(model,name,num), ...
                              linknames,robotnums);
     end
 

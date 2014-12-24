@@ -926,16 +926,16 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       [varargout{:}] = parseBodyOrFrameID(obj.manip,varargin{:});
     end
 
-    function joint_ind = findJointInd(model,varargin)
-      joint_ind = findJointInd(model.manip,varargin{:});
+    function joint_ind = findJointId(model,varargin)
+      joint_ind = findJointId(model.manip,varargin{:});
     end
 
-    function body_ind = findLinkInd(model,varargin)
-      body_ind = findLinkInd(model.manip,varargin{:});
+    function body_ind = findLinkId(model,varargin)
+      body_ind = findLinkId(model.manip,varargin{:});
     end
 
-    function indices = findJointIndices(model, varargin)
-      indices = findJointIndices(model.manip,varargin{:});
+    function indices = findPositionIndices(model, varargin)
+      indices = findPositionIndices(model.manip,varargin{:});
     end
 
     function body = findLink(model,varargin)
