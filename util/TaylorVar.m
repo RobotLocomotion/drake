@@ -228,6 +228,9 @@ classdef TaylorVar
           a=TaylorVar(reshape(f,a.dim),{dcdx});
         end
       else
+        if (isscalar(a) && ~isscalar(b)) a=repmat(a,size(b)); end
+        if (isscalar(b) && ~isscalar(a)) b=repmat(b,size(a)); end
+        
         b=b(:);
         a.f=a.f.*b;
         for o=1:length(a.df)
