@@ -10,6 +10,7 @@ octomap
 snopt
 gurobi
 mosek
+yalmip
 gloptipoly3
 bertini
 sedumi
