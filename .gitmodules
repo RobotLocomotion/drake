@@ -63,3 +63,6 @@
 [submodule "iris"]
 	path = iris
 	url = https://github.com/rdeits/iris-distro
+[submodule "yalmip"]
+	path = yalmip
+	url = https://github.com/RobotLocomotion/yalmip
