@@ -5,7 +5,7 @@ warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
 options.terrain = RigidBodyFlatTerrain();
 options.floating = true;
 options.ignore_self_collisions = true;
-p = PlanarRigidBodyManipulator('urdf/atlas_simple_spring_ankle_planar_contact.urdf',options);
+p = PlanarRigidBodyManipulator('../urdf/atlas_simple_spring_ankle_planar_contact.urdf',options);
 
 if nargin < 6
   N = 21;
