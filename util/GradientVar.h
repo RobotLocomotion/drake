@@ -21,8 +21,8 @@ private:
   std::unique_ptr<ChildGradientVarType> grad;
 
 private:
-  GradientVar(const GradientVar& other); // disallow copy construction
   GradientVar& operator= (const GradientVar& other); // disallow assignment
+//  GradientVar(const GradientVar& other);
 
 public:
   GradientVar(int rows, int cols, int nq = 0, int order = 0) :
@@ -30,6 +30,15 @@ public:
     grad(order > 0 ? new ChildGradientVarType(rows * cols, nq, nq, order - 1) : nullptr)
   {
 //    std::cout << "rows: " << rows << ", cols: " << cols << std::endl;
+    // empty
+  }
+
+  // copy constructor
+  GradientVar(const GradientVar& other) :
+     val(other.val),
+     grad(other.grad == nullptr ? nullptr : new ChildGradientVarType(*other.grad))
+  {
+//    std::cout << "copy constructor called" << std::endl;
     // empty
   }
 
