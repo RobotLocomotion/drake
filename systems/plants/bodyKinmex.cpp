@@ -36,8 +36,8 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
       mexErrMsgIdAndTxt("Drake:forwardKinmex:BadInputs","body_ind must be -1 (for com) or between -num_frames-1 and num_bodies-1");
   }
 
-  int n_pts = mxGetN(prhs[3]);
-  int dim = mxGetM(prhs[3]);
+  int n_pts = static_cast<int>(mxGetN(prhs[3]));
+  int dim = static_cast<int>(mxGetM(prhs[3]));
   
   if (dim != 3)
     mexErrMsgIdAndTxt("Drake:bodyKinmex:BadInputs", "number of rows in pts must be 3");

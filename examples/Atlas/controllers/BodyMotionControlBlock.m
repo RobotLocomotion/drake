@@ -56,7 +56,7 @@ classdef BodyMotionControlBlock < DrakeSystem
       end
       obj = setSampleTime(obj,[obj.dt;0]); % sets controller update rate
       obj.robot = r;
-      obj.body_ind = findLinkInd(r,name);
+      obj.body_ind = findLinkId(r,name);
 
       if isfield(options,'use_mex')
         sizecheck(options.use_mex,1);

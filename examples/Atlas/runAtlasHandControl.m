@@ -58,7 +58,7 @@ kinsol = doKinematics(r,q0);
 com = getCOM(r,kinsol);
 
 % build TI-ZMP controller
-footidx = [findLinkInd(r,'r_foot'), findLinkInd(r,'l_foot')];
+footidx = [findLinkId(r,'r_foot'), findLinkId(r,'l_foot')];
 foot_pos = terrainContactPositions(r,kinsol,footidx);
 comgoal = mean([mean(foot_pos(1:2,1:4)');mean(foot_pos(1:2,5:8)')])';
 limp = LinearInvertedPendulum(com(3));
@@ -67,16 +67,16 @@ limp = LinearInvertedPendulum(com(3));
 foot_support = RigidBodySupportState(r,find(~cellfun(@isempty,strfind(r.getLinkNames(),'foot'))));
 
 % generate manip plan
-rhand_ind = findLinkInd(r,'r_hand');
-lhand_ind = findLinkInd(r,'l_hand');
+rhand_ind = findLinkId(r,'r_hand');
+lhand_ind = findLinkId(r,'l_hand');
 rhand_pos = forwardKin(r,kinsol,rhand_ind,[0;0;0],1);
 lhand_pos = forwardKin(r,kinsol,lhand_ind,[0;0;0],1);
 diff = [0.1+0.1*rand(); 0.05*randn(); 0.1+0.5*rand()];
 rhand_goal = rhand_pos(1:3) + diff;
 lhand_goal = lhand_pos(1:3) + diff;
 
-rfoot_ind = findLinkInd(r,'r_foot');
-lfoot_ind = findLinkInd(r,'l_foot');
+rfoot_ind = findLinkId(r,'r_foot');
+lfoot_ind = findLinkId(r,'l_foot');
 rfoot_pos = forwardKin(r,kinsol,rfoot_ind,[0;0;0],1);
 lfoot_pos = forwardKin(r,kinsol,lfoot_ind,[0;0;0],1);
 

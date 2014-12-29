@@ -7,8 +7,11 @@ classdef SharedDataHandle < handle
 %    will internally be accessing the shared data structure. 
 
   properties (SetAccess=private,GetAccess=public)
-    data
     deleteFcn=[];
+  end
+  
+  properties
+    data;
   end
   
   methods 

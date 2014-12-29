@@ -95,7 +95,7 @@ ctrl_data = QPControllerData(true,struct(...
   'y0',walking_plan_data.zmptraj,...
   'ignore_terrain',false,...
   'plan_shift',[0;0;0],...
-  'constrained_dofs',[findJointIndices(r,'arm');findJointIndices(r,'back');findJointIndices(r,'neck')]));
+  'constrained_dofs',[findPositionIndices(r,'arm');findPositionIndices(r,'back');findPositionIndices(r,'neck')]));
 
 options.dt = 0.003;
 options.slack_limit = 100;
@@ -233,8 +233,8 @@ if plot_comtraj
   dtraj = fnder(PPTrajectory(spline(tts,x_smooth)));
   qddtraj = dtraj(nq+(1:nq));
 
-  lfoot = findLinkInd(r,'l_foot');
-  rfoot = findLinkInd(r,'r_foot');
+  lfoot = findLinkId(r,'l_foot');
+  rfoot = findLinkId(r,'r_foot');
 
   lstep_counter = 0;
   rstep_counter = 0;
@@ -378,6 +378,9 @@ if rms_com > length(footstep_plan.footsteps)*0.5
   error('runAtlasWalking unit test failed: error is too large');
   navgoal
 end
+
+% make sure we're at least vaguely close to the goal
+valuecheck(com(1:3,end), [navgoal(1:2); 0.9], 0.2);
 
 end
 

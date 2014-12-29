@@ -15,12 +15,12 @@ ignored_bodies = {'ltorso','mtorso','r_talus','l_talus'};
 r_collision = addLinksToCollisionFilterGroup(r_collision,ignored_bodies,'no_collision',1);
 r_collision = r_collision.compile();
 
-l_foot = robot.findLinkInd('l_foot');
-r_foot = robot.findLinkInd('r_foot');
-l_hand = robot.findLinkInd('l_hand');
-r_hand = robot.findLinkInd('r_hand');
-head = robot.findLinkInd('head');
-world = robot.findLinkInd('world');
+l_foot = robot.findLinkId('l_foot');
+r_foot = robot.findLinkId('r_foot');
+l_hand = robot.findLinkId('l_hand');
+r_hand = robot.findLinkId('r_hand');
+head = robot.findLinkId('head');
+world = robot.findLinkId('world');
 l_foot_geometry = robot.getBody(l_foot).getCollisionGeometry;
 r_foot_geometry = robot.getBody(r_foot).getCollisionGeometry;
 l_foot_pts = [];
@@ -194,9 +194,9 @@ end
 display('Check the infeasible case')
 kc_err = WorldCoMConstraint(robot,[0;0;2],[0;0;inf],tspan);
 if(checkDependency('snopt'))
-[q,info,infeasible_constraint] = inverseKin(robot,q_seed,q_nom,kc_err,kc2l,kc2r,ikoptions);
+% [q,info,infeasible_constraint] = inverseKin(robot,q_seed,q_nom,kc_err,kc2l,kc2r,ikoptions);
 [qmex,info_mex,infeasible_constraint_mex] = inverseKin(robot,q_seed,q_nom,kc_err,kc2l,kc2r,ikmexoptions);
-valuecheck(info_mex,info);
+% valuecheck(info_mex,info);
 if(info_mex ~= 13)
   error('This should be infeasible');
 end
@@ -463,13 +463,13 @@ ikmexoptions = ikoptions;
 ikmexoptions = ikmexoptions.setMex(true);
 % [f,G,iGfun,jGvar,Fupp,Flow,xupp,xlow,iAfun,jAvar,A,nF] = inverseKin(r,q_seed,q_nom,varargin{1:end-1},ikmexoptions);
 % keyboard;
-%tic
-%[q,info] = inverseKin(r,q_seed,q_nom,varargin{1:end-1},ikoptions);
-%toc
-%if(info>10)
-  %error('SNOPT info is %d, IK fails to solve the problem',info);
-%end
-%testConstraint(r,[],q,varargin{1:end-1});
+% tic
+% [q,info] = inverseKin(r,q_seed,q_nom,varargin{1:end-1},ikoptions);
+% toc
+% if(info>10)
+%   error('SNOPT info is %d, IK fails to solve the problem',info);
+% end
+% testConstraint(r,[],q,varargin{1:end-1});
 tic
 ikproblem = InverseKinematics(r,q_nom,varargin{1:end-1});
 ikproblem = ikproblem.setQ(ikoptions.Q);
