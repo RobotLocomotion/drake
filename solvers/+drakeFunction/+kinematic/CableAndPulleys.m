@@ -65,16 +65,38 @@ classdef CableAndPulleys < drakeFunction.kinematic.Kinematic
         pt = forwardKin(obj.rbm,kinsol,obj.pulley(i).frame,obj.pulley(i).xyz);
         
         if i>1
-          d1 = 2*obj.pulley(i-1).radius;
-          d2 = 2*obj.pulley(i).radius;
-          if d1>0 || d2>0,
+          r1 = obj.pulley(i-1).radius;
+          r2 = obj.pulley(i).radius;
+          if r1>0 || r2>0,
+            alignment = dot(obj.pulley(i-1).axis,obj.pulley(i).axis);
+            if r1>0 && r2>0, % then make sure the axes are aligned
+              assert(abs(alignment)==1,'Drake:CablesAndPulleys:AxisAlignedPulleys','Neighboring pulleys with radius>0 must be axis-aligned.  Consider adding a radius zero pulley if you need to "bend" around a corner.');
+            end
+            
+            % as described in https://github.com/RobotLocomotion/drake/issues/546
+            vec = pt-last_pt;
+            C = sqrt(vec'*vec);
+            sin_alpha = (r2 - r1)/C;
+            cos_alpha = sqrt(1-sin_alpha^2);
+            % length = 2*C*cos_alpha;
+            
+            cvec = vec/C;
+            bvec = cross(cvec,obj.pulley(i-1).axis);
+            vertex = horzcat(vertex,last_pt-r1*sin_alpha*cvec+r1*cos_alpha*bvec);
+            
+            bvec = cross(cvec,obj.pulley(i).axis);
+            vertex = horzcat(vertex,pt-r2*sin_alpha*cvec+r2*cos_alpha*bvec);
+            n = size(vertex,2);
+            edge = horzcat(edge,[n-1;n]);
+            
             obj.rbm.warning_manager.warnOnce('Drake:CableAndPulleys:RadiusNotImplementedYet','radius logic not implemented yet. pretending that radius = 0');
+          else
+            vertex = horzcat(vertex,pt);
+            edge = horzcat(edge,[i-1;i]);
           end
-          edge = horzcat(edge,[i-1;i]);
         end
         
         last_pt = pt; 
-        vertex = horzcat(vertex,pt);
       end
     end
     

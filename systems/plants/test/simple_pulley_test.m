@@ -12,6 +12,8 @@ x0.slider1 = 2;
 x0.slider2 = 2.2;
 
 x0 = resolveConstraints(r,x0);
+v.draw(0,x0(1:2));
+%return;
 
 ytraj = simulate(r,[0 4],x0);
 if(0)
