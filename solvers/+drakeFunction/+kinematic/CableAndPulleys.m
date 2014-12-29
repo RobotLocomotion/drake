@@ -47,6 +47,37 @@ classdef CableAndPulleys < drakeFunction.kinematic.Kinematic
       
     end
     
+    function [vertex,edge] = getSegments(obj,q)
+      % this method is intended to make is easy to display the cable
+      % @retval vertices is a 3-by-n list of 3D points (in world
+      % coordinates)
+      % @retval edges is a 2-by-m list of integer indices into vertices -
+      % one column for each line segment
+      % Note: we use this format because there is not necessarily a line
+      % that should be drawn between each sequential vertex (e.g. it would
+      % draw a line directly through a pulley).  
+      
+      kinsol = obj.rbm.doKinematics(q);
+
+      vertex = [];
+      edge = [];
+      for i=1:numel(obj.pulley)
+        pt = forwardKin(obj.rbm,kinsol,obj.pulley(i).frame,obj.pulley(i).xyz);
+        
+        if i>1
+          d1 = 2*obj.pulley(i-1).radius;
+          d2 = 2*obj.pulley(i).radius;
+          if d1>0 || d2>0,
+            obj.rbm.warning_manager.warnOnce('Drake:CableAndPulleys:RadiusNotImplementedYet','radius logic not implemented yet. pretending that radius = 0');
+          end
+          edge = horzcat(edge,[i-1;i]);
+        end
+        
+        last_pt = pt; 
+        vertex = horzcat(vertex,pt);
+      end
+    end
+    
     function obj = updateBodyIndices(obj,map_from_old_to_new)
       for i=1:numel(obj.pulley)
         obj.pulley(i).frame = map_from_old_to_new(obj.pulley(i).frame);

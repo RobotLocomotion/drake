@@ -14,12 +14,14 @@ x0.slider2 = 2.2;
 x0 = resolveConstraints(r,x0);
 
 ytraj = simulate(r,[0 4],x0);
+if(0)
 ts = ytraj.getBreaks();
 for i=1:numel(ts)
   x = ytraj.eval(ts(i));
   length(i) = r.position_constraints{1}.eval(x(1:2));
 end
 figure(1); clf; plot(ts,length);
+end
 
 v.playback(ytraj,struct('slider',true));
 
