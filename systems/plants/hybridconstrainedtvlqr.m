@@ -57,6 +57,10 @@ if ~isfield(options,'use_zoh_qd')
   options.use_zoh_qd = false;
 end
 
+if ~isfield(options,'use_zoh_u')
+  options.use_zoh_u = false;
+end
+
 if ~isfield(options,'shift_times')
   options.shift_times = false;
 end
@@ -72,6 +76,10 @@ if options.use_zoh_qd
   qtraj = PPTrajectory(foh(t_t,x(1:obj.getNumPositions,:)));
   qdtraj = PPTrajectory(zoh(t_t,[x(1+obj.getNumPositions:end,2:end) zeros(obj.getNumVelocities,1)]));
   xtraj = [qtraj;qdtraj];
+end
+
+if options.use_zoh_u
+  utraj = PPTrajectory(zoh(t_t,u));
 end
 
 if options.use_joint_limits
@@ -191,7 +199,7 @@ end
 
 function xp = jump(obj,xm,constraint_ind,options)
 %Computes xp, the post impact state of jumping to this mode
-q=xm(1:obj.num_q); qd=xm((obj.num_q+1):end);
+q=xm(1:obj.getNumPositions()); qd=xm((obj.getNumPositions()+1):end);
 H = manipulatorDynamics(obj,q,qd);
 Hinv = inv(H);
 if (size(constraint_ind) > 0)
@@ -205,7 +213,7 @@ if (size(constraint_ind) > 0)
  
   [phi_n,normal,d,xA,xB,idxA,idxB,mu,n,D] = contactConstraints(obj,q);
   
-  J = zeros(2*length(phi_n), obj.num_q);
+  J = zeros(2*length(phi_n), obj.getNumPositions());
   J(1:2:end,:) = D{1};
   J(2:2:end,:) = n;
   

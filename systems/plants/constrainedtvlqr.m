@@ -87,7 +87,7 @@ dynamicsFun = @(t,x,u) constrainedDynamics(obj,t,x,u,constraint_ind,options);
 Pfun = @(t,P) Pdynamics(obj,t,xtraj,utraj,P,constraint_ind,alpha_1,alpha_2,options);
 [tout,yout] = ode45(Pfun,tspan,P0);
 
-nQ = obj.num_q;                         %unconstrained position state size
+nQ = obj.getNumPositions();                         %unconstrained position state size
 nQC = length(constraint_ind);          %number of constrained positions
 
 Ptraj = PPTrajectory(foh(tout,reshape(yout',2*nQ,2*nQ-2*nQC,[])));
@@ -141,8 +141,8 @@ end
 
 
 function [F,Fdot]=getFandFdot(obj,t,x,u,constraint_ind,options)
-q = x(1:obj.num_q);
-qd = x(obj.num_q+1:end);
+q = x(1:obj.getNumPositions());
+qd = x(obj.getNumPositions()+1:end);
 
 
 if options.use_joint_limits
@@ -195,7 +195,7 @@ end
 
 % if nargout > 1
 %   xd = constrainedDynamics(obj,t,x,u,constraint_ind);
-%   qdd = xd(obj.num_q+1:end);
+%   qdd = xd(obj.getNumPositions()+1:end);
 %   
 %   [~,ddJqd] = geval(@obj.getdJgqd,q,qd,struct('grad_method','numerical'));
 %   
@@ -203,7 +203,7 @@ end
 %   ddJqddt0(1:2:end,:) = matGradMult(dD{1},qdd);
 %   ddJqddt0(2:2:end,:) = matGradMult(dn,qdd);
 %   
-%   ddJqddt = ddJqddt0 + matGradMult(ddJqd(:,1:obj.num_q),qd);
+%   ddJqddt = ddJqddt0 + matGradMult(ddJqd(:,1:obj.getNumPositions()),qd);
 %   
 %   %assuming dJ is zeros for joint limits here, this is could be a bad idea
 %   ddJqddt = [zeros(size(J_limit));ddJqddt];
@@ -260,7 +260,7 @@ end
 function Pdot = Pdynamics(obj,t,xtraj,utraj,P,constraint_ind,alpha_1,alpha_2,options)
 x = xtraj.eval(t);
 u = utraj.eval(t);
-P = reshape(P,2*obj.num_q,[]);
+P = reshape(P,2*obj.getNumPositions(),[]);
 Pdot = getPdot(obj,t,x,u,P,constraint_ind,alpha_1,alpha_2,options);
 Pdot = Pdot(:);
 % t
@@ -274,8 +274,8 @@ P_t = Ptraj.eval(t);
 Pdot_t = getPdot(p,t,x_t,u_t,P_t,constraint_ind,alpha_1,alpha_2,options);
 
 [xd,dxd] = geval(dynamicsfn,t,x_t,u_t,struct('grad_method','numerical'));
-A = dxd(:,2:2*p.num_q+1);
-B = dxd(:,2+2*p.num_q:end);
+A = dxd(:,2:2*p.getNumPositions()+1);
+B = dxd(:,2+2*p.getNumPositions():end);
   
 % A_t = P_t'*A*P_t + P_t'*Pdot_t;  %was this
 A_t = P_t'*A*P_t + Pdot_t'*P_t;
@@ -297,8 +297,8 @@ P_t = Ptraj.eval(t);
 Pdot_t = getPdot(p,t,x_t,u_t,P_t,constraint_ind,alpha_1,alpha_2,options);
 
 [xd,dxd] = geval(dynamicsfn,t,x_t,u_t,struct('grad_method','numerical'));
-A = dxd(:,2:2*p.num_q+1);
-B = dxd(:,2+2*p.num_q:end);
+A = dxd(:,2:2*p.getNumPositions()+1);
+B = dxd(:,2+2*p.getNumPositions():end);
   
 % A_t = P_t'*A*P_t + P_t'*Pdot_t;  %was this
 A_t = P_t'*A*P_t + Pdot_t'*P_t;
@@ -313,7 +313,7 @@ sqrtSdot = sqrtSdot(:);
 end
 
 function xdot = constrainedDynamics(obj,t,x,u,constraint_ind,options)
-q=x(1:obj.num_q); qd=x((obj.num_q+1):end);
+q=x(1:obj.getNumPositions()); qd=x((obj.getNumPositions()+1):end);
 [H,C,B] = manipulatorDynamics(obj,q,qd);
 Hinv = inv(H);
 if (size(constraint_ind) > 0)  
@@ -330,11 +330,11 @@ if (size(constraint_ind) > 0)
 %   phi(1:2:end) = phi_f;
   phi(2:2:end) = phi_n;
   
-  J = zeros(length(phi), obj.num_q);
+  J = zeros(length(phi), obj.getNumPositions());
   J(1:2:end,:) = D{1};
   J(2:2:end,:) = n;
   
-  dJ = zeros(length(phi), obj.num_q^2);
+  dJ = zeros(length(phi), obj.getNumPositions()^2);
   dJ(2:2:end,:) = reshape(dn,length(phi_n),[]);
   dJ(1:2:end,:) = reshape(dD{1},length(phi_n),[]);
   
@@ -343,7 +343,7 @@ if (size(constraint_ind) > 0)
 %   phi_full = [phi; phi_limit];
   
 %   phi_sub = phi_full(constraint_ind);
-  Jdotqd = dJ_full(constraint_ind,:)*reshape(qd*qd',obj.num_q^2,1);
+  Jdotqd = dJ_full(constraint_ind,:)*reshape(qd*qd',obj.getNumPositions()^2,1);
   J_sub = J_full(constraint_ind,:);
   
   if isempty(u)
