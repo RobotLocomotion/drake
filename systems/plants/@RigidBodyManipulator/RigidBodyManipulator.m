@@ -825,6 +825,14 @@ classdef RigidBodyManipulator < Manipulator
         model.loop(j) = loop;
       end
 
+      for j=1:length(model.position_constraints)
+        % todo: generalize this by moving the updateConstraint logic above into
+        % drakeFunction.RBM
+        if isa(model.position_constraints{j},'DrakeFunctionConstraint') && isa(model.position_constraints{j}.fcn,'drakeFunction.kinematic.CableAndPulleys')
+          model = updatePositionEqualityConstraint(model,j,DrakeFunctionConstraint(model.position_constraints{j}.lb,model.position_constraints{j}.ub,setRigidBodyManipulator(model.position_constraints{j}.fcn,model)));
+        end
+      end
+      
       if (model.num_contact_pairs>0)
         warning('Drake:RigidBodyManipulator:UnsupportedContactPoints','Contact is not supported by the dynamics methods of this class.  Consider using TimeSteppingRigidBodyManipulator or HybridPlanarRigidBodyManipulator');
       end
@@ -1931,7 +1939,10 @@ classdef RigidBodyManipulator < Manipulator
     function fr = getPositionFrame(obj,robotnum)
       % if robotnum is not specified, then it returns a position frame
       % including all position variables (for all robots)
-      if getNumPositions(obj)<1, fr = []; return; end
+      if getNumPositions(obj)<1, 
+        fr = CoordinateFrame('JointPositions',0); 
+        return;
+      end
       
       if nargin<2, 
         fr = MultiCoordinateFrame.constructFrame(obj.robot_position_frames,[],true);
@@ -1943,7 +1954,12 @@ classdef RigidBodyManipulator < Manipulator
     function fr = getVelocityFrame(obj,robotnum)
       % if robotnum is not specified, then it returns a velocity frame
       % including all velocity variables (for all robots)
-      if nargin<2, 
+      if getNumVelocities(obj)<1, 
+        fr = CoordinateFrame('JointVelocities',0); 
+        return;
+      end
+      
+      if nargin<2,
         fr = MultiCoordinateFrame.constructFrame(obj.robot_velocity_frames,[],true);
       else
         fr = obj.robot_velocity_frames{robotnum};
@@ -2238,6 +2254,13 @@ classdef RigidBodyManipulator < Manipulator
         for key = model.collision_filter_groups.keys
           model.collision_filter_groups(key{1}) = updateForRemovedLink(model.collision_filter_groups(key{1}),model,i,parent.linkname,key{1});
         end
+        for j=1:length(model.position_constraints)
+          % todo: generalize this by moving the updateConstraint logic above into
+          % drakeFunction.RBM
+          if isa(model.position_constraints{j},'DrakeFunctionConstraint') && isa(model.position_constraints{j}.fcn,'drakeFunction.kinematic.CableAndPulleys')
+            model = updatePositionEqualityConstraint(model,j,DrakeFunctionConstraint(model.position_constraints{j}.lb,model.position_constraints{j}.ub,updateForRemovedLink(model.position_constraints{j}.fcn,model,i)));
+          end
+        end
 
         % remove actuators
         if (~isempty(model.actuator) && any([model.actuator.joint] == i))
@@ -2444,6 +2467,13 @@ classdef RigidBodyManipulator < Manipulator
       end
       for i=1:length(model.frame)
         model.frame(i) = updateBodyIndices(model.frame(i),mapfun);
+      end
+      for j=1:length(model.position_constraints)
+        % todo: generalize this by moving the updateConstraint logic above into
+        % drakeFunction.RBM
+        if isa(model.position_constraints{j},'DrakeFunctionConstraint') && isa(model.position_constraints{j}.fcn,'drakeFunction.kinematic.CableAndPulleys')
+          model = updatePositionEqualityConstraint(model,j,DrakeFunctionConstraint(model.position_constraints{j}.lb,model.position_constraints{j}.ub,updateBodyIndices(model.position_constraints{j}.fcn,mapfun)));
+        end
       end
     end
 
