@@ -146,12 +146,12 @@ classdef RigidBodySpringDamper < RigidBodyForceElement
       end
       
       linkNode = node.getElementsByTagName('link1').item(0);
-      obj.body1 = findLinkInd(model,char(linkNode.getAttribute('link')),robotnum);
+      obj.body1 = findLinkId(model,char(linkNode.getAttribute('link')),robotnum);
       if linkNode.hasAttribute('xyz')
         obj.pos1 = reshape(parseParamString(model,robotnum,char(linkNode.getAttribute('xyz'))),3,1);
       end
       linkNode = node.getElementsByTagName('link2').item(0);
-      obj.body2 = findLinkInd(model,char(linkNode.getAttribute('link')),robotnum);
+      obj.body2 = findLinkId(model,char(linkNode.getAttribute('link')),robotnum);
       if linkNode.hasAttribute('xyz')
         obj.pos2 = reshape(parseParamString(model,robotnum,char(linkNode.getAttribute('xyz'))),3,1);
       end

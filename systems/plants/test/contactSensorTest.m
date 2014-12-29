@@ -7,7 +7,7 @@ options.terrain = RigidBodyFlatTerrain;
 options.use_bullet = false; 
 p = TimeSteppingRigidBodyManipulator('FallingBrickContactPoints.urdf',.01,options);
 p = addSensor(p,FullStateFeedbackSensor());
-body = findLinkInd(p,'brick');
+body = findLinkId(p,'brick');
 frame = RigidBodyFrame(body,zeros(3,1),zeros(3,1),'FT_frame');
 p = addFrame(p,frame);
 p = addSensor(p,ContactForceTorqueSensor(p,frame));
@@ -31,7 +31,7 @@ options.twoD = false;
 p = TimeSteppingRigidBodyManipulator('FallingBrickContactPoints.urdf',.01,options);
 
 p = addSensor(p,FullStateFeedbackSensor);
-body = findLinkInd(p,'brick');
+body = findLinkId(p,'brick');
 frame = RigidBodyFrame(body,zeros(3,1),zeros(3,1),'FT_frame');
 p = addFrame(p,frame);
 p = addSensor(p,ContactForceTorqueSensor(p,frame));

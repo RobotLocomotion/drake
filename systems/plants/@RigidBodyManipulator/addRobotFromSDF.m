@@ -6,7 +6,8 @@ function model=addRobotFromSDF(model,sdf_filename,xyz,rpy,options)
 % @param sdf_filename filename of file to parse
 %
 % @options floating boolean where true means that a floating joint is
-% automatically added to the root. @default false
+% automatically added to the root. (note that the default is different than for urdf)
+% @default true 
 % @options inertial boolean where true means parse dynamics parameters,
 % false means skip them. @default true
 % @options visual boolean where true means parse graphics parameters, false
@@ -18,7 +19,7 @@ if (nargin<3 || isempty(xyz)), xyz = zeros(3,1); end
 if (nargin<4 || isempty(rpy)), rpy = zeros(3,1); end
 
 if (nargin<5), options = struct(); end
-if (~isfield(options,'floating')), options.floating = ''; end % no floating base
+if (~isfield(options,'floating')), options.floating = 'rpy'; end
 if isnumeric(options.floating) || islogical(options.floating)
   if (options.floating)
     options.floating = 'rpy';
@@ -32,7 +33,7 @@ if (~isfield(options,'collision')), options.collision = true; end
 if (~isfield(options,'nameprefix')), options.nameprefix = ''; end
 if (~isfield(options,'namesuffix')), options.namesuffix = ''; end
 if (~isfield(options,'compile')) options.compile = true; end
-if (~isfield(options, 'weld_to_link')) options.weld_to_link = 1; end % world link 
+if (~isfield(options,'weld_to_link')) options.weld_to_link = 1; end % world link 
 
 sdf = xmlread(sdf_filename);
 sdf = sdf.getElementsByTagName('sdf').item(0);
