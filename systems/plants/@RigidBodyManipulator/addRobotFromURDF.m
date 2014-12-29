@@ -271,10 +271,10 @@ parentNode = node.getElementsByTagName('parent').item(0);
 if isempty(parentNode) % then it's not the main joint element.  for instance, the transmission element has a joint element, too
   return
 end
-parent = findLinkInd(model,char(parentNode.getAttribute('link')),robotnum);
+parent = findLinkId(model,char(parentNode.getAttribute('link')),robotnum);
 
 childNode = node.getElementsByTagName('child').item(0);
-child = findLinkInd(model,char(childNode.getAttribute('link')),robotnum);
+child = findLinkId(model,char(childNode.getAttribute('link')),robotnum);
 
 name = char(node.getAttribute('name'));
 type = char(node.getAttribute('type'));
@@ -457,7 +457,7 @@ end
 function model = parseGazebo(model,robotnum,node,options)
 ref = char(node.getAttribute('reference'));
 if ~isempty(ref)
-  body_ind = findLinkInd(model,ref,robotnum,-1);
+  body_ind = findLinkId(model,ref,robotnum,-1);
   if body_ind>0
     grav = node.getElementsByTagName('turnGravityOff').item(0);
     if ~isempty(grav)
@@ -482,7 +482,7 @@ end
 
 function model = parseFrame(model,robotnum,node,options)
   name = char(node.getAttribute('name'));    % mandatory
-  link = findLinkInd(model,char(node.getAttribute('link')),robotnum);
+  link = findLinkId(model,char(node.getAttribute('link')),robotnum);
   xyz=zeros(3,1); rpy=zeros(3,1);
   if node.hasAttribute('xyz')
     xyz = reshape(parseParamString(model,robotnum,char(node.getAttribute('xyz'))),3,1);
@@ -514,7 +514,7 @@ for i=1:childNodes.getLength()
       actuator.name=regexprep(actuator.name, '\.', '_', 'preservecase');
     case 'joint'
       jn=regexprep(char(thisNode.getAttribute('name')), '\.', '_', 'preservecase');
-      actuator.joint = findJointInd(model,jn,robotnum);
+      actuator.joint = findJointId(model,jn,robotnum);
     case 'mechanicalreduction'
       actuator.reduction = str2num(char(thisNode.getFirstChild().getNodeValue()));
     case {'#text','#comment'}

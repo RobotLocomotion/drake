@@ -23,7 +23,7 @@ q = xstar(1:nq);
 sides = {'l', 'r'};
 active_supports = nan(1, length(sides));
 for i = 1 : length(sides)
-  active_supports(i) = r.findLinkInd([sides{i} '_foot']);
+  active_supports(i) = r.findLinkId([sides{i} '_foot']);
 end
 
 kinsol = r.doKinematics(q, false, false);
@@ -73,7 +73,7 @@ for testnr = 1 : ntests
   sides = {'l', 'r'};
   active_supports = nan(1, length(sides));
   for i = 1 : length(sides)
-    active_supports(i) = r.findLinkInd([sides{i} '_foot']);
+    active_supports(i) = r.findLinkId([sides{i} '_foot']);
   end
 
   kinsol = r.doKinematics(q, false, false);

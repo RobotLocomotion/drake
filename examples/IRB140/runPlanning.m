@@ -9,7 +9,7 @@ q0 = [0,0,0,0,0,0]';
 
 %pos_final = [-0.5, 0, 1.015]';
 pos_final = [-1.212+0.5, -0.1+0.5, 1.025]';
-gripper_idx = findLinkInd(r,'link_6');
+gripper_idx = findLinkId(r,'link_6');
 gripper_pt = [-0.04,0,0.1]';
 grasp_orient = angle2quat(-1.3,1.1,0.8)';
 

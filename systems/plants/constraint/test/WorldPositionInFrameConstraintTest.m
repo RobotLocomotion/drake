@@ -13,7 +13,7 @@ end
 
 function con = makeCon(r)
   %n_pts = 4;
-  bodyA_idx = findLinkInd(r,'r_gripper_palm_link');
+  bodyA_idx = findLinkId(r,'r_gripper_palm_link');
   rpy = 2*pi*rand(3,1) - pi;
   xyz = [0.2;0.2;0.2].*rand(3,1) + [0.5;0.0;0.5];
   lb = [-0.001;-0.5;-0.001];

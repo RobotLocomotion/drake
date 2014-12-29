@@ -28,8 +28,8 @@ classdef AtlasQPController < QPController
       obj.debug_pub = ControllerDebugPublisher('CONTROLLER_DEBUG');
     end
     
-    obj.r_knee_idx = r.findJointIndices('r_leg_kny');
-    obj.l_knee_idx = r.findJointIndices('l_leg_kny');
+    obj.r_knee_idx = r.findPositionIndices('r_leg_kny');
+    obj.l_knee_idx = r.findPositionIndices('l_leg_kny');
     if isfield(options,'min_knee_angle')
       sizecheck(options.min_knee_angle,1);
       typecheck(options.min_knee_angle,'double');

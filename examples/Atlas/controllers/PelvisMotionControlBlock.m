@@ -79,7 +79,7 @@ classdef PelvisMotionControlBlock < DrakeSystem
         obj.mex_ptr = SharedDataHandle(pelvisMotionControlmex(0,obj.robot.getMexModelPtr.ptr,obj.alpha,obj.nominal_pelvis_height,obj.Kp,obj.Kd));
       end
 
-      obj.body_ind = findLinkInd(r,name);
+      obj.body_ind = findLinkId(r,name);
     end
    
     function y=output(obj,t,~,x)
