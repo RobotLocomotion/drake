@@ -405,12 +405,8 @@ classdef RigidBodyManipulator < Manipulator
       end
 
       jointname = regexprep(name, '\.', '_', 'preservecase');
-      if ismember(lower(jointname),lower({model.body.jointname}))
-        num = 2;
-        while ismember(lower([jointname,num2str(num)]),lower({model.body.jointname}))
-          num = num+1;
-        end
-        jointname = [jointname,num2str(num)];
+      if ismember(lower(jointname),lower({model.body([model.body.robotnum]==child.robotnum).jointname}))
+        model.warning_manager.warnOnce('Drake:RigidBodyManipulator:DuplicateJointName',['You already have a joint named ', jointname, ' on this robot.  This can cause problems later if you try to access elements of the state vector by name']);
       end
       child.jointname = jointname;
       rangecheck(parent_ind,1,getNumBodies(model));
@@ -836,14 +832,33 @@ classdef RigidBodyManipulator < Manipulator
     end
 
     function indices = findJointIndices(model, str)
-      %findJointIndices Returns indices in the state vector for joints whose
+      model.warning_manager.warnOnce('Drake:RigidBodyManipulator:findJointIndicesDeprecated','findJointIndices has been replaced with findPositionIndices.  please update your code');
+      indiced = findPositionIndices(model,str);
+    end    
+    
+    function indices = findPositionIndices(model, str)
+      %findPositionIndices Returns position indices in the state vector for joints whose
       % name contains a specified string.
       %   @param str (sub)string to be searched for
       %   @retvall indices array of indices into state vector
       indices = find(~cellfun('isempty',strfind(model.getStateFrame().coordinates(1:getNumPositions(model)),str)));
     end
 
-    function body_ind = findLinkInd(model,linkname,robot,error_level)
+    function indices = findVelocityIndices(model, str)
+      %findJointVelocityIndices Returns velocity indices in the state vector for joints whose
+      % name contains a specified string.
+      %   @param str (sub)string to be searched for
+      %   @retvall indices array of indices into state vector
+      indices = find(~cellfun('isempty',strfind(model.getStateFrame().coordinates((getNumPositions(model)+1):end),str)));
+    end
+    
+    
+    function body_ind = findLinkInd(model,varargin)
+      model.warning_manager.warnOnce('Drake:RigidBodyManipulator:finkLinkIndDeprecated','findLinkInd has been replaced with findLinkId.  please update your code');
+      body_ind = findLinkId(model,varargin{:})
+    end
+    
+    function body_id = findLinkId(model,linkname,robot,error_level)
       % @param robot can be the robot number or the name of a robot
       % robot=0 means look at all robots
       % @param error_level >0 for throw error, 0 for throw warning, <0 for do nothing. @default throw error
@@ -884,27 +899,31 @@ classdef RigidBodyManipulator < Manipulator
               linkname,robot);
           end
         else
-          body_ind=0;
+          body_id=0;
           if (error_level==0)
             warning(['couldn''t find unique link ' ,linkname]);
           end
         end
       else
-        body_ind = ind;
+        body_id = ind;
       end
     end
 
     function body = findLink(model,linkname,varargin)
       % @ingroup Deprecated
-      error('the finkLink method has been deprecated.  if you really must get a *copy* of the body, then use finkLinkInd followed by getBody');
+      error('the finkLink method has been deprecated.  if you really must get a *copy* of the body, then use finkLinkId followed by getBody');
     end
 
     function is_valid = isValidLinkIndex(obj,idx)
+      model.warning_manager.warnOnce('Drake:RigidBodyManipulator:isValidLinkIndexDeprecated','isValidLinkIndex has been replaced with isValidLinkId.  please update your code');
+    end
+    
+    function is_valid = isValidLinkId(obj,id)
       % @ingroup Kinematic Tree
-      if ~isnumeric(idx)
-        is_valid=false(size(idx));
+      if ~isnumeric(id)
+        is_valid=false(size(id));
       else
-        is_valid = idx >= 1 & idx <= obj.getNumBodies() & mod(idx,1) == 0;
+        is_valid = id >= 1 & id <= obj.getNumBodies() & mod(id,1) == 0;
       end
     end
 
@@ -1032,9 +1051,9 @@ classdef RigidBodyManipulator < Manipulator
       % @ingroup Kinematic Tree
       if ischar(body_ind_or_joint_name)
         if nargin>2
-          body_ind_or_joint_name = findJointInd(model,body_ind_or_joint_name,robot);
+          body_ind_or_joint_name = findJointId(model,body_ind_or_joint_name,robot);
         else
-          body_ind_or_joint_name = findJointInd(model,body_ind_or_joint_name);
+          body_ind_or_joint_name = findJointId(model,body_ind_or_joint_name);
         end
       end
 
@@ -1042,28 +1061,32 @@ classdef RigidBodyManipulator < Manipulator
       model.body(body_ind_or_joint_name).pitch = nan;
       model.dirty = true;
     end
+    
+    function body_ind = findJointInd(model,varargin)
+      model.warning_manager.warnOnce('Drake:RigidBodyManipulator:finkJointIndDeprecated','findJointInd has been replaced with findJointId.  please update your code');
+      body_ind = findJointId(model,varargin{:});
+    end
 
-    function body_ind = findJointInd(model,jointname,robot_num,error_level)
+    function body_id = findJointId(model,jointname,robot_num,error_level)
       % @param robot_num can be the robot number or the name of a robot
       % robot_num=0 means look at all robots
       % @ingroup Kinematic Tree
       if nargin<3 || isempty(robot_num), robot_num=0; end
       jointname = lower(jointname);
       if ischar(robot_num) robot_num = strmatch(lower(robot_num),lower({model.name})); end
-      items = strfind(lower({model.body.jointname}),jointname);
-      ind = find(~cellfun(@isempty,items));
+      ind = find(strcmp(jointname,lower({model.body.jointname})));
       if (robot_num~=0), ind = ind([model.body(ind).robotnum]==robot_num); end
       if (length(ind)~=1)
         if (nargin<4 || error_level>0)
-          error(['couldn''t find unique joint ' ,jointname]);
+          error('Drake:RigidBodyManipulator:UniqueJointNotFound',['couldn''t find unique joint ' ,jointname]);
         else
-          body_ind=0;
+          body_id=0;
           if (error_level==0)
-            warning(['couldn''t find unique joint ' ,jointname]);
+            warning('Drake:RigidBodyManipulator:UniqueJointNotFound',['couldn''t find unique joint ' ,jointname]);
           end
         end
       else
-        body_ind = ind;
+        body_id = ind;
       end
     end
 
@@ -1223,7 +1246,7 @@ classdef RigidBodyManipulator < Manipulator
         body_idx_or_frame_id = body_or_frame;
       else % then it's a string
         try
-          body_idx_or_frame_id = findLinkInd(obj,body_or_frame,robotnum);
+          body_idx_or_frame_id = findLinkId(obj,body_or_frame,robotnum);
         catch ex
           if strcmp(ex.identifier,'Drake:RigidBodyManipulator:UniqueLinkNotFound')
             try
@@ -2392,7 +2415,7 @@ classdef RigidBodyManipulator < Manipulator
 
     function link_indices = findCollisionFilterGroupMemberIndices(model,collision_fg_name)
       [linknames,robotnums] = model.collision_filter_groups(collision_fg_name).getMembers();
-      link_indices = cellfun(@(name,num) findLinkInd(model,name,num), ...
+      link_indices = cellfun(@(name,num) findLinkId(model,name,num), ...
                              linknames,robotnums);
     end
 
