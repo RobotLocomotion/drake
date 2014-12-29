@@ -31,7 +31,12 @@ void test()
   std::cout << var3.gradient().gradient().value() << std::endl << std::endl;
   std::cout << "maxOrder: " << var3.maxOrder() << std::endl << std::endl;
 
-//  GradientVar<double, rows, cols> var4 = var3;
+  GradientVar<double, 6, Eigen::Dynamic> var4(6, 3);
+  var4.value().setConstant(5.0);
+  std::cout << var4.value() << std::endl << std::endl;
+
+  GradientVar<double, rows, cols> var3_copy(var3);
+  std::cout << var3_copy.gradient().gradient().value() << std::endl << std::endl;
 }
 
 int main(int argc, char **argv)
