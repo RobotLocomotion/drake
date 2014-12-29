@@ -6,6 +6,7 @@ if ~checkDependency('gurobi')
 end
 
 path_handle = addpathTemporary({fullfile(getDrakePath,'examples','Atlas','controllers'),...
+                                fullfile(getDrakePath,'examples','Atlas'),...
                                 fullfile(getDrakePath,'examples','Atlas','frames')});
 if nargin < 1
   segment_number = -1; % do full traj
@@ -16,7 +17,7 @@ options.view = 'right';
 options.floating = true;
 options.ignore_self_collisions = true;
 options.terrain = RigidBodyFlatTerrain();
-s = 'urdf/atlas_simple_spring_ankle_planar_contact.urdf';
+s = '../urdf/atlas_simple_spring_ankle_planar_contact.urdf';
 w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
 r = Atlas(s,options);
 r = r.setOutputFrame(AtlasXZState(r));
@@ -30,8 +31,7 @@ nu = getNumInputs(r);
 v = r.constructVisualizer;
 v.display_dt = 0.01;
 
-data_dir = fullfile(getDrakePath,'examples','Atlas','data');
-traj_file = strcat(data_dir,'/atlas_passiveankle_traj_lqr_090314_zoh.mat');
+traj_file = 'data/atlas_passiveankle_traj_lqr_090314_zoh.mat';
 load(traj_file);
 
 [xtraj,utraj,Btraj,Straj_full] = repeatTraj(r,xtraj,utraj,Btraj,Straj_full,2,true);
