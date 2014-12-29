@@ -17,32 +17,115 @@ classdef CableAndPulleys < drakeFunction.kinematic.Kinematic
       obj.pulley = horzcat(obj.pulley, p);
     end
     
-    function [length,J] = eval(obj,q)
+    function [length,dlength] = eval(obj,q)
       kinsol = obj.rbm.doKinematics(q);
 
       length = 0;
-      J = 0*q';
+      dlength = 0*q';
       for i=1:numel(obj.pulley)
-        [pt,dpt] = forwardKin(obj.rbm,kinsol,obj.pulley(i).frame,obj.pulley(i).xyz);
+        if nargout>1
+          [pt,dpt] = forwardKin(obj.rbm,kinsol,obj.pulley(i).frame,obj.pulley(i).xyz);
+        else
+          pt = forwardKin(obj.rbm,kinsol,obj.pulley(i).frame,obj.pulley(i).xyz);
+        end          
         
         if i>1
           vec = pt-last_pt;
-          dvec = dpt-last_dpt;
           C = sqrt(vec'*vec);
-          dC = vec'*dvec/C;
           
-          d1 = 2*obj.pulley(i-1).radius;
-          d2 = 2*obj.pulley(i).radius;
-          if d1>0 || d2>0,
-            obj.rbm.warning_manager.warnOnce('Drake:CableAndPulleys:RadiusNotImplementedYet','radius logic not implemented yet. pretending that radius = 0');
+          if nargout>1
+            dvec = dpt-last_dpt;
+            dC = vec'*dvec/C;
           end
-          length = length+C;
-          J = J+dC;
-%          crossover = -dot(obj.pulley(i-1).axis,obj.pulley(i).axis);
-%          if (dot(obj.pulley(i-1)
+          
+          r1 = obj.pulley(i-1).radius;
+          r2 = obj.pulley(i).radius;
+          if r1>0 || r2>0,            
+            alignment = dot(obj.pulley(i-1).axis,obj.pulley(i).axis);
+            if r1>0 && r2>0, % then make sure the axes are aligned
+              assert(abs(alignment)==1,'Drake:CablesAndPulleys:AxisAlignedPulleys','Neighboring pulleys with radius>0 must be axis-aligned.  Consider adding a radius zero pulley if you need to "bend" around a corner.');
+            end
+            
+            % as described in https://github.com/RobotLocomotion/drake/issues/546
+            cvec = vec/C;
+            
+            s = (r2-r1)/C;
+            alpha = asin(s);
+            if r1>0,
+              pt1 = last_pt + r1*axis2rotmat([obj.pulley(i-1).axis;-pi/2-alpha])*cvec;
+            else
+              pt1 = last_pt;
+            end
+                        
+            if nargout>1
+              ds = -(r2-r1)/C^2*dC;
+              dalpha = 1/sqrt(1-s^2)*ds;
+              dcvec = dvec/C - vec/C^2*dC;
+              if r1>0
+                dpt1 = last_dpt - r1*daxis2rotmatdtheta([obj.pulley(i-1).axis;-pi/2-alpha])*cvec*dalpha + r1*axis2rotmat([obj.pulley(i-1).axis;-pi/2-alpha])*dcvec;
+              else
+                dpt1 = last_dpt;
+              end
+            end            
+            
+            if r2>0
+              pt2 = pt + r2*axis2rotmat([obj.pulley(i).axis;-pi/2-alpha])*cvec;
+            else
+              pt2 = pt;
+            end
+            
+            vec = pt2-pt1;
+            C = sqrt(vec'*vec);
+            length = length+C;
+            
+            if nargout>1
+              if r2>0
+                dpt2 = dpt - r2*daxis2rotmatdtheta([obj.pulley(i).axis;-pi/2-alpha])*cvec*dalpha + r2*axis2rotmat([obj.pulley(i).axis;-pi/2-alpha])*dcvec;
+              else
+                dpt2 = dpt;
+              end
+              dvec = dpt2 - dpt1;
+              dC = vec'*dvec/C;
+              dlength = dlength+dC;
+            end
+            
+            if r1>0,
+              %% now add in the arc length between pt1 and last_attachment_pt
+              v1 = (pt1-last_pt)/r1; v2 = (last_attachment_pt-last_pt)/r1;
+              c = dot(v1,v2); svec = cross(v1,v2); s = norm(svec);
+              theta = atan2(s,c);
+              if theta<0, theta=theta+2*pi; end
+              length = length+theta*r1;
+              
+              if nargout>1
+                dv1 = (dpt1-last_dpt)/r1; dv2 = (last_attachment_dpt-last_dpt)/r1;
+                dc = v2'*dv1+v1'*dv2; dsvec=dcross(v1,v2)*[dv1;dv2]; ds = svec'*dsvec/s;
+                dtheta = -s*dc + c*ds;
+                dlength = dlength + dtheta*r1;
+              end
+            end
+            last_attachment_pt = pt2;
+              
+            if nargout>1, last_attachment_dpt = dpt2; end
+          else
+            length = length+C;
+            last_attachment_pt = pt;
+            if nargout>1
+              dlength = dlength+dC;
+              last_attachment_dpt = dpt;
+            end
+          end
+        else
+          last_attachment_pt = pt;
+          if nargout>1
+            last_attachment_dpt = dpt;
+          end
         end
         
-        last_pt = pt; last_dpt = dpt;
+        last_pt = pt; 
+        if nargout>1
+          last_dpt = dpt;
+        end
       end
       
     end
@@ -76,20 +159,15 @@ classdef CableAndPulleys < drakeFunction.kinematic.Kinematic
             % as described in https://github.com/RobotLocomotion/drake/issues/546
             vec = pt-last_pt;
             C = sqrt(vec'*vec);
-            sin_alpha = (r2 - r1)/C;
-            cos_alpha = sqrt(1-sin_alpha^2);
-            % length = 2*C*cos_alpha;
-            
             cvec = vec/C;
-            bvec = cross(cvec,obj.pulley(i-1).axis);
-            vertex = horzcat(vertex,last_pt-r1*sin_alpha*cvec+r1*cos_alpha*bvec);
             
-            bvec = cross(cvec,obj.pulley(i).axis);
-            vertex = horzcat(vertex,pt-r2*sin_alpha*cvec+r2*cos_alpha*bvec);
+            alpha = asin((r2-r1)/C);
+            pt1 = last_pt + r1*axis2rotmat([obj.pulley(i-1).axis;-pi/2-alpha])*cvec;
+            pt2 = pt + r2*axis2rotmat([obj.pulley(i).axis;-pi/2-alpha])*cvec;
+            
+            vertex = horzcat(vertex,[pt1,pt2]);
             n = size(vertex,2);
             edge = horzcat(edge,[n-1;n]);
-            
-            obj.rbm.warning_manager.warnOnce('Drake:CableAndPulleys:RadiusNotImplementedYet','radius logic not implemented yet. pretending that radius = 0');
           else
             vertex = horzcat(vertex,pt);
             edge = horzcat(edge,[i-1;i]);

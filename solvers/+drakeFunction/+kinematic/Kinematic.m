@@ -30,6 +30,7 @@ classdef Kinematic < drakeFunction.RigidBodyManipulatorFunction
     function obj = setRigidBodyManipulator(obj, rbm)
       obj = setRigidBodyManipulator@drakeFunction.RigidBodyManipulatorFunction(obj, rbm);
       obj.input_frame = rbm.getPositionFrame();
+      obj = obj.setSparsityPattern();
     end
   end
 
