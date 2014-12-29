@@ -1,4 +1,4 @@
-classdef RigidBodyManipulatorFunction < drakeFunction.DrakeFunction
+classdef RigidBodyManipulatorFunction < drakeFunction.DrakeFunction & RigidBodyElement
   % Abstract parent class for functions that need to store a
   % RigidBodyManipulator
   properties (SetAccess = protected)
