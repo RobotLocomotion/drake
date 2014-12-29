@@ -507,50 +507,32 @@ function model = parseCable(model,robotnum,node,options)
   min_length = parseParamString(model,robotnum,char(node.getAttribute('min_length')));
   max_length = parseParamString(model,robotnum,char(node.getAttribute('max_length')));
 
-  terminator_nodes = node.getElementsByTagName('terminator');
-  assert(terminator_nodes.getLength()==2);  % must have 2 terminators
-  terminatorA_frame = findLinkInd(model,char(terminator_nodes.item(0).getAttribute('link')),robotnum);
-  terminatorA_xyz = zeros(3,1);
-  if terminator_nodes.item(0).hasAttribute('xyz')
-    terminatorA_xyz = reshape(parseParamString(model,robotnum,char(terminator_nodes.item(1).getAttribute('xyz'))),3,1);
-  end
-  terminatorB_frame = findLinkInd(model,char(terminator_nodes.item(1).getAttribute('link')),robotnum);
-  terminatorB_xyz = zeros(3,1);
-  if terminator_nodes.item(1).hasAttribute('xyz')
-    terminatorB_xyz = reshape(parseParamString(model,robotnum,char(terminator_nodes.item(1).getAttribute('xyz'))),3,1);
-  end
-
-  cable_length_function = drakeFunction.kinematic.CableAndPulleys(model,name,terminatorA_frame,terminatorA_xyz,terminatorB_frame,terminatorB_xyz);
+  cable_length_function = drakeFunction.kinematic.CableAndPulleys(model,name);
   
   children = node.getChildNodes;
-  crossover = false;
   for i=0:(children.getLength()-1)
     this_node = children.item(i);
     switch(char(getNodeName(this_node)))
-      case 'pulley'
+      case {'terminator','pulley'}
         link = findLinkInd(model,char(this_node.getAttribute('link')),robotnum);
         xyz=zeros(3,1); 
         axis=[1;0;0];
         radius=0;
         num_wraps=0;
-        if node.hasAttribute('xyz')
-          xyz = reshape(parseParamString(model,robotnum,char(node.getAttribute('xyz'))),3,1);
+        if this_node.hasAttribute('xyz')
+          xyz = reshape(parseParamString(model,robotnum,char(this_node.getAttribute('xyz'))),3,1);
         end
-        if node.hasAttribute('axis')
-          axis = reshape(parseParamString(model,robotnum,char(node.getAttribute('axis'))),3,1);
+        if this_node.hasAttribute('axis')
+          axis = reshape(parseParamString(model,robotnum,char(this_node.getAttribute('axis'))),3,1);
           axis = axis/(norm(axis)+eps); % normalize
         end
-        if node.hasAttribute('radius')
-          radius = parseParamString(model,robotnum,char(node.getAttribute('radius')));
+        if this_node.hasAttribute('radius')
+          radius = parseParamString(model,robotnum,char(this_node.getAttribute('radius')));
         end
-        if node.hasAttribute('number_of_wraps')
-          num_wraps = parseParamString(model,robotnum,char(node.getAttribute('number_of_wraps')));
+        if this_node.hasAttribute('number_of_wraps')
+          num_wraps = parseParamString(model,robotnum,char(this_node.getAttribute('number_of_wraps')));
         end
-        cable_length_function = addPulley(cable_length_function,link,xyz,axis,radius,num_wraps,crossover);
-        crossover = false;
-      case 'crossover'
-        if crossover, error('cannot have multiple crossovers between pulleys'); end
-        crossover = true;
+        cable_length_function = addPulley(cable_length_function,link,xyz,axis,radius,num_wraps);
     end
   end
   
@@ -558,7 +540,7 @@ function model = parseCable(model,robotnum,node,options)
     error('only implemented cables with min_length = max_length so far');
   end
   
-  model = addPositionEqualityConstraint(model,DrakeFunctionConstraint(min_length^2,max_length^2,cable_length_function));
+  model = addPositionEqualityConstraint(model,DrakeFunctionConstraint(min_length,max_length,cable_length_function));
 end
 
 function model=parseTransmission(model,robotnum,node,options)

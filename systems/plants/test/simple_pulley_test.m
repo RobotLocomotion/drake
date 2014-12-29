@@ -12,10 +12,18 @@ x0.slider1 = 2;
 x0.slider2 = 2.2;
 
 x0 = resolveConstraints(r,x0);
-initial_length_squared = r.position_constraints{1}.eval(x0)
 
-ytraj = simulate(r,[0 1],x0);
+ytraj = simulate(r,[0 4],x0);
+ts = ytraj.getBreaks();
+for i=1:numel(ts)
+  x = ytraj.eval(ts(i));
+  length(i) = r.position_constraints{1}.eval(x(1:2));
+end
+figure(1); clf; plot(ts,length);
+
 v.playback(ytraj,struct('slider',true));
+
+
 
 qf = Point(getOutputFrame(r),ytraj.eval(1));
 assert(qf.slider1>0);
