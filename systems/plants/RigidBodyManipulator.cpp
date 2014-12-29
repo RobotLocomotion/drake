@@ -915,7 +915,6 @@ void RigidBodyManipulator::doKinematicsNew(double* q, bool compute_gradients, do
       if (compute_gradients) {
         // gradient of transform
         auto dT_body_to_parentdqi = dHomogTrans(T_body_to_parent, body.S, body.qdot_to_v).eval();
-        body.dTdq_new.setZero();
         Gradient<Isometry3d::MatrixType, Eigen::Dynamic>::type dT_body_to_parentdq(HOMOGENEOUS_TRANSFORM_SIZE, nq);
         dT_body_to_parentdq.setZero();
         dT_body_to_parentdq.middleCols(body.dofnum, body.getJoint().getNumPositions()) = dT_body_to_parentdqi;
@@ -966,14 +965,13 @@ void RigidBodyManipulator::doKinematicsNew(double* q, bool compute_gradients, do
 
             // dJdotvdv
             // TODO: exploit sparsity better
-            Matrix<double, TWIST_SIZE, Eigen::Dynamic> jacobian(TWIST_SIZE, 0);
             std::vector<int> v_indices;
-            geometricJacobian(0, i, 0, jacobian, &v_indices);
+            auto jacobian = geometricJacobian<double>(0, i, 0, 0, &v_indices);
 
             Matrix<double, TWIST_SIZE, Eigen::Dynamic> dtwistdv(TWIST_SIZE, nv);
             dtwistdv.setZero();
             for (int j = 0; j < v_indices.size(); j++) {
-              dtwistdv.col(v_indices[j]) = jacobian.col(j);
+              dtwistdv.col(v_indices[j]) = jacobian.value().col(j);
             }
             Matrix<double, TWIST_SIZE, Eigen::Dynamic> djoint_twistdv(TWIST_SIZE, nv);
             djoint_twistdv.setZero();
@@ -989,33 +987,33 @@ void RigidBodyManipulator::doKinematicsNew(double* q, bool compute_gradients, do
           }
         }
       }
-      else {
-        body.T = body.Ttree;
-        // motion subspace in body frame is empty
-        // motion subspace in world frame is empty
-        // qdot to v is empty
-        // v to qdot is empty
+    }
+    else {
+      body.T = body.Ttree;
+      // motion subspace in body frame is empty
+      // motion subspace in world frame is empty
+      // qdot to v is empty
+      // v to qdot is empty
+      if (compute_gradients) {
+        // gradient of transform
+        body.dTdq_new.setZero();
+        // gradient of motion subspace in world is empty
+      }
+      if (v) {
+        body.twist.setZero();
         if (compute_gradients) {
-          // gradient of transform
-          body.dTdq_new.setZero();
-          // gradient of motion subspace in world is empty
+          body.dtwistdq.setZero();
         }
-        if (v) {
-          body.twist.setZero();
+        if (compute_JdotV) {
+          body.SdotV.setZero();
           if (compute_gradients) {
-            body.dtwistdq.setZero();
+            body.dSdotVdqi.setZero();
+            body.dSdotVdvi.setZero();
           }
-          if (compute_JdotV) {
-            body.SdotV.setZero();
-            if (compute_gradients) {
-              body.dSdotVdqi.setZero();
-              body.dSdotVdvi.setZero();
-            }
-            body.JdotV.setZero();
-            if (compute_gradients) {
-              body.dJdotVdq.setZero();
-              body.dJdotVdv.setZero();
-            }
+          body.JdotV.setZero();
+          if (compute_gradients) {
+            body.dJdotVdq.setZero();
+            body.dJdotVdv.setZero();
           }
         }
       }
@@ -1439,13 +1437,18 @@ void RigidBodyManipulator::bodyKin(const int body_or_frame_id, const MatrixBase<
 
 }
 
-template<typename DerivedA>
-void RigidBodyManipulator::geometricJacobian(int base_body_or_frame_ind, int end_effector_body_or_frame_ind, int expressed_in_body_or_frame_ind, PlainObjectBase<DerivedA>& J, std::vector<int>* v_indices)
+template<typename Scalar>
+GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJacobian(
+    int base_body_or_frame_ind, int end_effector_body_or_frame_ind, int expressed_in_body_or_frame_ind, int gradient_order, std::vector<int>* v_indices)
 {
-  // TODO: gradient
   if (use_new_kinsol) {
+    if (gradient_order > 1) {
+      throw std::runtime_error("gradient order not supported");
+    }
+
     KinematicPath kinematic_path;
     findKinematicPath(kinematic_path, base_body_or_frame_ind, end_effector_body_or_frame_ind);
+    int nq = num_dof;
 
     int cols = 0;
     int body_index;
@@ -1456,7 +1459,9 @@ void RigidBodyManipulator::geometricJacobian(int base_body_or_frame_ind, int end
       cols += joint.getNumVelocities();
     }
 
-    J.resize(TWIST_SIZE, cols);
+    GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> ret(TWIST_SIZE, cols, nq, gradient_order);
+    auto& J = ret.value();
+
     DrakeJoint::MotionSubspaceType motion_subspace;
     if (v_indices) {
       v_indices->clear();
@@ -1470,8 +1475,13 @@ void RigidBodyManipulator::geometricJacobian(int base_body_or_frame_ind, int end
       RigidBody& body = *bodies[body_index];
       const DrakeJoint& joint = body.getJoint();
       sign = kinematic_path.joint_direction_signs[i];
-      auto block = J.template block<TWIST_SIZE, Dynamic>(0, col_start, TWIST_SIZE, joint.getNumVelocities());
-      block.noalias() = sign * body.J;
+      auto J_block = J.template block<TWIST_SIZE, Dynamic>(0, col_start, TWIST_SIZE, joint.getNumVelocities());
+      J_block.noalias() = sign * body.J;
+
+      if (gradient_order > 0) {
+        auto& dJ = ret.gradient().value();
+        dJ.block(col_start * TWIST_SIZE, 0, J_block.size(), nq).noalias() = (sign * body.dJdq).eval();
+      }
 
       if (v_indices) {
         for (int j = 0; j < joint.getNumVelocities(); j++) {
@@ -1485,10 +1495,24 @@ void RigidBodyManipulator::geometricJacobian(int base_body_or_frame_ind, int end
       Matrix4d Tframe;
       int expressed_in_body = parseBodyOrFrameID(expressed_in_body_or_frame_ind, &Tframe);
       Matrix4d T_world_to_frame = (bodies[expressed_in_body]->T * Tframe).inverse();
+      if (gradient_order > 0) {
+        auto& dJ = ret.gradient().value();
+        Gradient<Matrix4d, Eigen::Dynamic>::type dTframe(Tframe.size(), nq);
+        dTframe.setZero();
+        auto dT_frame_to_world = matGradMultMat(bodies[expressed_in_body]->T, Tframe, bodies[expressed_in_body]->dTdq_new, dTframe);
+        auto dT_world_to_frame = dHomogTransInv(Isometry3d(bodies[expressed_in_body]->T * Tframe), dT_frame_to_world);
+//        std::cout << dT_world_to_frame << std::endl << std::endl;
+        dJ = (dTransformAdjoint(Isometry3d(T_world_to_frame), J, dT_world_to_frame, dJ)).eval(); // eval to avoid aliasing
+      }
       J = transformSpatialMotion(Isometry3d(T_world_to_frame), J);
     }
+    return ret;
   }
   else {
+    if (gradient_order > 0) {
+      throw std::runtime_error("gradient order not supported");
+    }
+
     KinematicPath kinematic_path;
     findKinematicPath(kinematic_path, base_body_or_frame_ind, end_effector_body_or_frame_ind);
 
@@ -1505,7 +1529,8 @@ void RigidBodyManipulator::geometricJacobian(int base_body_or_frame_ind, int end
     int expressed_in_body = parseBodyOrFrameID(expressed_in_body_or_frame_ind, &Tframe);
     Matrix4d T_world_to_frame = (bodies[expressed_in_body]->T * Tframe).inverse();
 
-    J.resize(TWIST_SIZE, cols);
+    GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> ret(TWIST_SIZE, cols);
+    auto& J = ret.value();
     DrakeJoint::MotionSubspaceType motion_subspace;
     if (v_indices) {
       v_indices->clear();
@@ -1533,6 +1558,7 @@ void RigidBodyManipulator::geometricJacobian(int base_body_or_frame_ind, int end
       col_start = col_start + joint.getNumVelocities();
     }
     J = transformSpatialMotion(Isometry3d(T_world_to_frame), J);
+    return ret;
   }
 }
 
@@ -1979,8 +2005,8 @@ template DLLEXPORT_RBM void RigidBodyManipulator::forwardJacDot(const int, const
 template DLLEXPORT_RBM void RigidBodyManipulator::bodyKin(const int, const MatrixBase< MatrixXd >&, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > *);
 template DLLEXPORT_RBM void RigidBodyManipulator::bodyKin(const int, const MatrixBase< MatrixXd >&, MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > *);
 
-template DLLEXPORT_RBM void RigidBodyManipulator::geometricJacobian(int, int, int, PlainObjectBase< Matrix<double, 6, Dynamic> >&, std::vector<int>*);
-template DLLEXPORT_RBM void RigidBodyManipulator::geometricJacobian(int, int, int, PlainObjectBase< MatrixXd >&, std::vector<int>*);
+template DLLEXPORT_RBM GradientVar<double, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJacobian<double>(int, int, int, int, std::vector<int>*);
+//template DLLEXPORT_RBM void RigidBodyManipulator::geometricJacobian(int, int, int, PlainObjectBase< MatrixXd >&, std::vector<int>*);
 
 template DLLEXPORT_RBM void RigidBodyManipulator::HandC(double* const, double * const, MatrixBase< Map<MatrixXd> > * const, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<VectorXd> > &, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > * const);
 template DLLEXPORT_RBM void RigidBodyManipulator::HandC(double* const, double * const, MatrixBase< MatrixXd > * const, MatrixBase< MatrixXd > &, MatrixBase< VectorXd > &, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > * const);
