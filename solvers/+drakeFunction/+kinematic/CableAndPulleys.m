@@ -1,15 +1,11 @@
 classdef CableAndPulleys < drakeFunction.kinematic.Kinematic
 
   methods
-    function obj = CableAndPulleys(rbm,name,terminatorA_frame,terminatorA_xyz,terminatorB_frame,terminatorB_xyz)
+    function obj = CableAndPulleys(rbm,name)
       obj = obj@drakeFunction.kinematic.Kinematic(rbm,CoordinateFrame([name,'_length'],1,'l',{'length'}));
-      obj.terminatorA_frame = terminatorA_frame;
-      obj.terminatorA_xyz = terminatorA_xyz;
-      obj.terminatorB_frame = terminatorB_frame;
-      obj.terminatorB_xyz = terminatorB_xyz;
     end
 
-    function obj = addPulley(obj,frame,xyz,axis,radius,number_of_wraps,crossover)
+    function obj = addPulley(obj,frame,xyz,axis,radius,number_of_wraps)
       % note: the order of addition DOES MATTER
 
       p.frame = frame;
@@ -17,40 +13,52 @@ classdef CableAndPulleys < drakeFunction.kinematic.Kinematic
       p.axis = axis;
       p.radius = radius;
       p.number_of_wraps = number_of_wraps;
-      p.crossover = crossover;
       
       obj.pulley = horzcat(obj.pulley, p);
     end
     
-    function [length_squared,J] = eval(obj,q)
+    function [length,J] = eval(obj,q)
       kinsol = obj.rbm.doKinematics(q);
-      
-      [terminatorA,JA] = forwardKin(obj.rbm,kinsol,obj.terminatorA_frame,obj.terminatorA_xyz);
 
+      length = 0;
+      J = 0*q';
+      for i=1:numel(obj.pulley)
+        [pt,dpt] = forwardKin(obj.rbm,kinsol,obj.pulley(i).frame,obj.pulley(i).xyz);
+        
+        if i>1
+          vec = pt-last_pt;
+          dvec = dpt-last_dpt;
+          C = sqrt(vec'*vec);
+          dC = vec'*dvec/C;
+          
+          d1 = 2*obj.pulley(i-1).radius;
+          d2 = 2*obj.pulley(i).radius;
+          if d1>0 || d2>0,
+            obj.rbm.warning_manager.warnOnce('Drake:CableAndPulleys:RadiusNotImplementedYet','radius logic not implemented yet. pretending that radius = 0');
+          end
+          length = length+C;
+          J = J+dC;
+%          crossover = -dot(obj.pulley(i-1).axis,obj.pulley(i).axis);
+%          if (dot(obj.pulley(i-1)
+        end
+        
+        last_pt = pt; last_dpt = dpt;
+      end
       
-      
-      [terminatorB,JB] = forwardKin(obj.rbm,kinsol,obj.terminatorB_frame,obj.terminatorB_xyz);
-      
-      vec = terminatorA - terminatorB;
-      Jvec = JA - JB;
-
-      length_squared = vec'*vec;
-      J = 2*vec'*Jvec;
     end
     
     function obj = updateBodyIndices(obj,map_from_old_to_new)
-      obj.terminatorA_frame = map_from_old_to_new(obj.terminatorA_frame);
-      obj.terminatorB_frame = map_from_old_to_new(obj.terminatorB_frame);
+      for i=1:numel(obj.pulley)
+        obj.pulley(i).frame = map_from_old_to_new(obj.pulley(i).frame);
+      end
     end
     
     function obj = updateForRemovedLink(obj,model,body_ind)
-      if (obj.terminatorA_frame == body_ind)
-        obj.terminatorA_xyz = model.body(body_ind).Ttree(1:end-1,:)*[obj.terminatorA_xyz;1];
-        obj.terminatorA_frame = model.body(body_ind).parent;
-      end
-      if (obj.terminatorB_frame == body_ind)
-        obj.terminatorB_xyz = model.body(body_ind).Ttree(1:end-1,:)*[obj.terminatorB_xyz;1];
-        obj.terminatorB_frame = model.body(body_ind).parent;
+      for i=1:numel(obj.pulley)
+        if (obj.pulley(i).frame == body_ind)
+          obj.pulley(i).xyz = model.body(body_ind).Ttree(1:end-1,:)*[obj.pulley(i).xyz;1];
+          obj.pulley(i).frame = model.body(body_ind).parent;
+        end
       end
     end
     
@@ -61,12 +69,6 @@ classdef CableAndPulleys < drakeFunction.kinematic.Kinematic
   end
 
   properties
-    terminatorA_frame  % link id or frame id for one end of the cable
-    terminatorA_xyz    % position in terminatorA_frame
-    
-    terminatorB_frame  % link id or frame id for the other end
-    terminatorB_xyz    % position in terminatorB_frame
-    
     pulley = [];
   end
 end

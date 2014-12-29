@@ -547,16 +547,19 @@ e.g. terminator - pulley - pulley - crossover - pulley - terminator
                     <xs:documentation/>
                 </xs:annotation>
             </xs:element>
-            <xs:element maxOccurs="unbounded" minOccurs="0" name="crossover" type="xs:string"/>
         </xs:all>
-        <xs:attribute default="&quot;&quot;" name="name"/>
+        <xs:attribute default="cable" name="name"/>
         <xs:attribute name="min_length" use="required"/>
         <xs:attribute name="max_length" use="required"/>
     </xs:complexType>
     <xs:complexType name="pulley">
         <xs:attribute name="link" type="xs:string" use="required"/>
         <xs:attribute default="0 0 0" name="xyz" type="matlab_parameter_expression"/>
-        <xs:attribute default="0 0 0" name="axis" type="matlab_parameter_expression"/>
+        <xs:attribute default="0 0 0" name="axis" type="matlab_parameter_expression">
+            <xs:annotation>
+                <xs:documentation>the cable wraps counter-clockwise (right-hand rule) around the pulley axis</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
         <xs:attribute default="0" name="radius" type="matlab_parameter_expression">
             <xs:annotation>
                 <xs:documentation>All attachments are implemented as (frictionless) pulleys.  Simple attachments are pulleys of radius zero.</xs:documentation>

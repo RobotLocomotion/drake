@@ -56,7 +56,7 @@
     <axis xyz="0 0 1"/>
     <parent link="base"/>
     <child link="mass1"/>
-    <dynamics damping=".1"/>
+    <dynamics damping="2"/>
   </joint>
   
   <joint name="slider2" type="prismatic">
@@ -64,12 +64,12 @@
     <axis xyz="0 0 1"/>
     <parent link="base"/>
     <child link="mass2"/>
-    <dynamics damping=".1"/>
+    <dynamics damping="2"/>
   </joint>
 
   <cable min_length="5" max_length="5">
     <terminator link="mass1"/>
-    <pulley link="base" xyz="0 1 4" axis="0 1 0" radius="1"/>
+    <pulley link="base" xyz="0 1 4" axis="0 -1 0" radius="1"/>
     <terminator link="mass2"/>
   </cable>
 
