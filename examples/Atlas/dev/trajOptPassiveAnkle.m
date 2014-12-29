@@ -1,11 +1,11 @@
-function [p,xtraj,utraj,ltraj,ljltraj,z,F,info,traj_opt] = runTrajOpt(xtraj,utraj,ltraj,ljltraj,scale,N)
+function [p,xtraj,utraj,ltraj,ljltraj,z,F,info,traj_opt] = trajOptPassiveAnkle(xtraj,utraj,ltraj,ljltraj,scale,N)
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
 warning('off','Drake:RigidBodyManipulator:WeldedLinkInd');
 warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
 options.terrain = RigidBodyFlatTerrain();
 options.floating = true;
 options.ignore_self_collisions = true;
-p = PlanarRigidBodyManipulator('urdf/atlas_simple_planar_contact.urdf',options);
+p = PlanarRigidBodyManipulator('urdf/atlas_simple_spring_ankle_planar_contact.urdf',options);
 
 if nargin < 6
   N = 21;
@@ -45,7 +45,7 @@ if nargin < 2
   q1 = [.20;0;0;.1;.2;-.3;0;-1;.5;0];
   phi_tmp = p.contactConstraints(q1);
   q1(2) = -phi_tmp(1);
-  q2 = [.5;0;.2;.5;.4;0;0;-.4;.2;0];
+  q2 = [xf(1);0;.2;.5;.4;0;0;-.4;.2;0];
   phi_tmp = p.contactConstraints(q2);
   q2(2) = -phi_tmp(3);
   
@@ -56,7 +56,7 @@ if nargin < 2
   
   traj_init.x = PPTrajectory(foh(t_init,x_vec));
   traj_init.x = traj_init.x.setOutputFrame(p.getStateFrame); 
-  traj_init.u = PPTrajectory(foh(t_init,randn(7,N)));
+  traj_init.u = PPTrajectory(foh(t_init,0*randn(5,N)));
   
   lp = [1;0;0;0];
   ln = zeros(4,1);
@@ -150,8 +150,8 @@ z0 = traj_opt.getInitialVars(t_init,traj_init);
   end
 
   function [f,df] = running_cost_fun(h,x,u)
-    K = 1;
-    R = eye(7);
+    K = 0.01;
+    R = eye(5);
     f = K*u'*R*u;
     df = [0 zeros(1,20) 2*K*u'*R];
   end
@@ -161,12 +161,12 @@ z0 = traj_opt.getInitialVars(t_init,traj_init);
     
     [phi,~,~,~,~,~,~,~,n] = p.contactConstraints(q,false,struct('terrain_only',true));
     phi0 = [.2;.2;.2;.2];
-    K = 5000;
+    K = 50;
     I = find(phi < phi0);
     f = K*(phi(I) - phi0(I))'*(phi(I) - phi0(I));
     % phi: 2x1
     % n: 2xnq
-    df = [0 2*K*(phi(I)-phi0(I))'*n(I,:) zeros(1,17)];
+    df = [0 2*K*(phi(I)-phi0(I))'*n(I,:) zeros(1,15)];
 
 %    K = 100;
 %    K_log = 100;
