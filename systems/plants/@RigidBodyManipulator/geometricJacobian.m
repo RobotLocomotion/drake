@@ -51,7 +51,7 @@ function [J, v_indices, dJdq] = geometricJacobianNew(obj, kinsol, base, end_effe
 % @param base index of `base' rigid body
 % @param end_effector index of `end effector' rigid body
 % @param expressed_in an integer ID for a RigidBody or RigidBodyFrame
-% (obtained via e.g., findLinkInd or findFrameInd) signifying in which
+% (obtained via e.g., findLinkId or findFrameInd) signifying in which
 % frame the geometric Jacobian should be expressed
 %
 % @retval J the geometric Jacobian such that the twist of end_effector with

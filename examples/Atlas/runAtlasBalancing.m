@@ -41,7 +41,7 @@ kinsol = doKinematics(r,q0);
 com = getCOM(r,kinsol);
 
 % build TI-ZMP controller
-footidx = [findLinkInd(r,'r_foot'), findLinkInd(r,'l_foot')];
+footidx = [findLinkId(r,'r_foot'), findLinkId(r,'l_foot')];
 foot_pos = terrainContactPositions(r,kinsol,footidx);
 comgoal = mean([mean(foot_pos(1:2,1:4)');mean(foot_pos(1:2,5:8)')])';
 limp = LinearInvertedPendulum(com(3));
