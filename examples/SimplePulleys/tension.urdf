@@ -67,7 +67,7 @@
     <axis xyz="0 1 0"/>
     <parent link="base"/>
     <child link="tensioner"/>
-    <dynamics damping="2"/>
+    <dynamics damping="0"/>
   </joint>
   
   <link name="load_x" />
@@ -76,14 +76,14 @@
     <axis xyz="1 0 0"/>
     <parent link="base"/>
     <child link="load_x"/>
-    <dynamics damping="2"/>
+    <dynamics damping="0"/>
   </joint>
   <joint name="load_z" type="prismatic">
     <origin xyz="0 0 0"/>
     <axis xyz="0 0 1"/>
     <parent link="load_x"/>
     <child link="load"/>
-    <dynamics damping="2"/>
+    <dynamics damping="0"/>
   </joint>
 
   <force_element name="tensioner_spring">

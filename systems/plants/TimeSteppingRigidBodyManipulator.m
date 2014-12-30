@@ -508,7 +508,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
 
         if isempty(obj.LCP_cache.data.z_inactive)
           z_inactive = z_inactive_guess;
-          M_active = false(nL+nP+(mC+2)*nC,1);
+          M_active = z_inactive;
         else
           z_inactive = obj.LCP_cache.data.z_inactive;
           M_active = obj.LCP_cache.data.M_active;
