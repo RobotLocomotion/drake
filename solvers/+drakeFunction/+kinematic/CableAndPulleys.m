@@ -32,6 +32,8 @@ classdef CableAndPulleys < drakeFunction.kinematic.Kinematic
           pt = forwardKin(obj.rbm,kinsol,obj.pulley(i).frame,obj.pulley(i).xyz);
         end          
         
+        length = length + 2*pi*obj.pulley(i).radius*obj.pulley(i).number_of_wraps;
+        
         if i>1
           vec = pt-last_pt;
           C = sqrt(vec'*vec);

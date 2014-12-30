@@ -9,7 +9,7 @@ v.xlim = [-5 5];
 v.ylim = [-.2 6.2];
 
 x0 = Point(getStateFrame(r));
-x0.load_x = 0;
+x0.load_x = 1;
 x0.load_z = 4;
 %x0.tensioner_angle = pi/2;
 %x0.load_zdot = -4;
@@ -22,7 +22,7 @@ v.drawWrapper(0,x0(1:3));
 x0 = resolveConstraints(r,x0,v);
 v.drawWrapper(0,x0(1:3));
 
-ytraj = simulate(r,[0 1],x0);
+ytraj = simulate(r,[0 8],x0);
 if(0)
 ts = ytraj.getBreaks();
 for i=1:numel(ts)
