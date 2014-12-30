@@ -40,6 +40,7 @@ classdef CableAndPulleys < drakeFunction.kinematic.Kinematic
           
           r1 = obj.pulley(i-1).radius;
           r2 = obj.pulley(i).radius;
+          assert(C>r1+r2+eps); % cut me a little slack, eh?
           if r1>0 || r2>0,            
             alignment = dot(obj.pulley(i-1).axis,obj.pulley(i).axis);
             if r1>0 && r2>0, % then make sure the axes are aligned
@@ -50,8 +51,8 @@ classdef CableAndPulleys < drakeFunction.kinematic.Kinematic
             cvec = vec/C;
             
             if alignment>0 % then it's like an open flat belt drive
-              s = (r2-r1)/C;
-              alpha = asin(s);
+              s = (r2-r1)/C;  
+              alpha = asin(s); 
               pt1 = last_pt + r1*axis2rotmat([obj.pulley(i-1).axis;-pi/2-alpha])*cvec;
               pt2 = pt + r2*axis2rotmat([obj.pulley(i).axis;-pi/2-alpha])*cvec;
               if nargout>1
@@ -100,7 +101,7 @@ classdef CableAndPulleys < drakeFunction.kinematic.Kinematic
             
             if nargout>1
               dvec = dpt2 - dpt1;
-              dC = vec'*dvec/C;
+              dC = vec'*dvec/(C+eps);
               dlength = dlength+dC;
             end
             

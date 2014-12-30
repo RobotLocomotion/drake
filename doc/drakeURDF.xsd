@@ -113,6 +113,7 @@ These forces are represented by a 6x6 matrix 'Ma' similar to a mass matrix, wher
                     <xs:documentation> Adds a buoyancy force to the parent body, placed at a defined center of buoyancy. </xs:documentation>
                 </xs:annotation>
             </xs:element>
+            <xs:element name="torsional_spring" type="torsional_spring"/>
         </xs:choice>
         <xs:attribute name="name" type="xs:string"/>
     </xs:complexType>
