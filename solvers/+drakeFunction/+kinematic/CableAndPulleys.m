@@ -43,47 +43,62 @@ classdef CableAndPulleys < drakeFunction.kinematic.Kinematic
           if r1>0 || r2>0,            
             alignment = dot(obj.pulley(i-1).axis,obj.pulley(i).axis);
             if r1>0 && r2>0, % then make sure the axes are aligned
-              assert(abs(alignment)==1,'Drake:CablesAndPulleys:AxisAlignedPulleys','Neighboring pulleys with radius>0 must be axis-aligned.  Consider adding a radius zero pulley if you need to "bend" around a corner.');
+              assert(abs(alignment)-1>-1e-8,'Drake:CablesAndPulleys:AxisAlignedPulleys','Neighboring pulleys with radius>0 must be axis-aligned.  Consider adding a radius zero pulley if you need to "bend" around a corner.');
             end
             
             % as described in https://github.com/RobotLocomotion/drake/issues/546
             cvec = vec/C;
             
-            s = (r2-r1)/C;
-            alpha = asin(s);
-            if r1>0,
+            if alignment>0 % then it's like an open flat belt drive
+              s = (r2-r1)/C;
+              alpha = asin(s);
               pt1 = last_pt + r1*axis2rotmat([obj.pulley(i-1).axis;-pi/2-alpha])*cvec;
-            else
-              pt1 = last_pt;
+              pt2 = pt + r2*axis2rotmat([obj.pulley(i).axis;-pi/2-alpha])*cvec;
+              if nargout>1
+                ds = -(r2-r1)/C^2*dC;
+                dalpha = 1/sqrt(1-s^2)*ds;
+                dcvec = dvec/C - vec/C^2*dC;
+                if r1>0
+                  dpt1 = last_dpt - r1*daxis2rotmatdtheta([obj.pulley(i-1).axis;-pi/2-alpha])*cvec*dalpha + r1*axis2rotmat([obj.pulley(i-1).axis;-pi/2-alpha])*dcvec;
+                else
+                  dpt1 = last_dpt;
+                end
+                if r2>0
+                  dpt2 = dpt - r2*daxis2rotmatdtheta([obj.pulley(i).axis;-pi/2-alpha])*cvec*dalpha + r2*axis2rotmat([obj.pulley(i).axis;-pi/2-alpha])*dcvec;
+                else
+                  dpt2 = dpt;
+                end
+              end
+            
+            else % then it's like a cross flat belt drive
+              s = (r1+r2)/C;
+              alpha = asin(s);
+              pt1 = last_pt + r1*axis2rotmat([obj.pulley(i-1).axis;-pi/2+alpha])*cvec;
+              pt2 = pt + r2*axis2rotmat([obj.pulley(i).axis;-pi/2-alpha])*cvec;
+
+              if nargout>1
+                ds = -(r1+r2)/C^2*dC;
+                dalpha = 1/sqrt(1-s^2)*ds;
+                dcvec = dvec/C - vec/C^2*dC;
+                if r1>0
+                  dpt1 = last_dpt + r1*daxis2rotmatdtheta([obj.pulley(i-1).axis;-pi/2+alpha])*cvec*dalpha + r1*axis2rotmat([obj.pulley(i-1).axis;-pi/2+alpha])*dcvec;
+                else
+                  dpt1 = last_dpt;
+                end
+                if r2>0
+                  dpt2 = dpt - r2*daxis2rotmatdtheta([obj.pulley(i).axis;-pi/2-alpha])*cvec*dalpha + r2*axis2rotmat([obj.pulley(i).axis;-pi/2-alpha])*dcvec;
+                else
+                  dpt2 = dpt;
+                end
+              end
+              
             end
                         
-            if nargout>1
-              ds = -(r2-r1)/C^2*dC;
-              dalpha = 1/sqrt(1-s^2)*ds;
-              dcvec = dvec/C - vec/C^2*dC;
-              if r1>0
-                dpt1 = last_dpt - r1*daxis2rotmatdtheta([obj.pulley(i-1).axis;-pi/2-alpha])*cvec*dalpha + r1*axis2rotmat([obj.pulley(i-1).axis;-pi/2-alpha])*dcvec;
-              else
-                dpt1 = last_dpt;
-              end
-            end            
-            
-            if r2>0
-              pt2 = pt + r2*axis2rotmat([obj.pulley(i).axis;-pi/2-alpha])*cvec;
-            else
-              pt2 = pt;
-            end
-            
             vec = pt2-pt1;
             C = sqrt(vec'*vec);
             length = length+C;
             
             if nargout>1
-              if r2>0
-                dpt2 = dpt - r2*daxis2rotmatdtheta([obj.pulley(i).axis;-pi/2-alpha])*cvec*dalpha + r2*axis2rotmat([obj.pulley(i).axis;-pi/2-alpha])*dcvec;
-              else
-                dpt2 = dpt;
-              end
               dvec = dpt2 - dpt1;
               dC = vec'*dvec/C;
               dlength = dlength+dC;
@@ -99,7 +114,7 @@ classdef CableAndPulleys < drakeFunction.kinematic.Kinematic
               
               if nargout>1
                 dv1 = (dpt1-last_dpt)/r1; dv2 = (last_attachment_dpt-last_dpt)/r1;
-                dc = v2'*dv1+v1'*dv2; dsvec=dcross(v1,v2)*[dv1;dv2]; ds = svec'*dsvec/s;
+                dc = v2'*dv1+v1'*dv2; dsvec=dcross(v1,v2)*[dv1;dv2]; ds = svec'*dsvec/(s+eps);
                 dtheta = -s*dc + c*ds;
                 dlength = dlength + dtheta*r1;
               end
@@ -153,7 +168,7 @@ classdef CableAndPulleys < drakeFunction.kinematic.Kinematic
           if r1>0 || r2>0,
             alignment = dot(obj.pulley(i-1).axis,obj.pulley(i).axis);
             if r1>0 && r2>0, % then make sure the axes are aligned
-              assert(abs(alignment)==1,'Drake:CablesAndPulleys:AxisAlignedPulleys','Neighboring pulleys with radius>0 must be axis-aligned.  Consider adding a radius zero pulley if you need to "bend" around a corner.');
+              assert(abs(alignment)-1>-1e-8,'Drake:CablesAndPulleys:AxisAlignedPulleys','Neighboring pulleys with radius>0 must be axis-aligned.  Consider adding a radius zero pulley if you need to "bend" around a corner.');
             end
             
             % as described in https://github.com/RobotLocomotion/drake/issues/546
@@ -161,9 +176,16 @@ classdef CableAndPulleys < drakeFunction.kinematic.Kinematic
             C = sqrt(vec'*vec);
             cvec = vec/C;
             
-            alpha = asin((r2-r1)/C);
-            pt1 = last_pt + r1*axis2rotmat([obj.pulley(i-1).axis;-pi/2-alpha])*cvec;
-            pt2 = pt + r2*axis2rotmat([obj.pulley(i).axis;-pi/2-alpha])*cvec;
+            if alignment>0 % then it's like an open flat belt drive
+              alpha = asin((r2-r1)/C);
+              pt1 = last_pt + r1*axis2rotmat([obj.pulley(i-1).axis;-pi/2-alpha])*cvec;
+              pt2 = pt + r2*axis2rotmat([obj.pulley(i).axis;-pi/2-alpha])*cvec;
+            else % then it's like a cross flat belt drive
+              alpha = asin((r1+r2)/C);
+              pt1 = last_pt + r1*axis2rotmat([obj.pulley(i-1).axis;-pi/2+alpha])*cvec;
+              pt2 = pt + r2*axis2rotmat([obj.pulley(i).axis;-pi/2-alpha])*cvec;
+            end
+              
             
             vertex = horzcat(vertex,[pt1,pt2]);
             n = size(vertex,2);
