@@ -1,10 +1,9 @@
-function simple_pulley_test
-
-r = PlanarRigidBodyManipulator('simple_pulley.urdf');
+function multiple_pulleys
+r = PlanarRigidBodyManipulator('multiple_pulleys.urdf');
 
 clf;
 v = r.constructVisualizer();
-v.xlim = [-3 3];
+v.xlim = [-5 5];
 v.ylim = [-.2 6.2];
 
 x0 = Point(getStateFrame(r));

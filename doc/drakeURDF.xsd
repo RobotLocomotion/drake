@@ -544,7 +544,7 @@ e.g. terminator - pulley - pulley - crossover - pulley - terminator
             <xs:element form="qualified" maxOccurs="unbounded" minOccurs="0" name="pulley"
                 type="pulley">
                 <xs:annotation>
-                    <xs:documentation/>
+                    <xs:documentation>provides a radius about which the cable slides (as if it were frictionless - the actual motion of the pulley is not simulated)</xs:documentation>
                 </xs:annotation>
             </xs:element>
         </xs:all>
