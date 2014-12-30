@@ -1,5 +1,7 @@
 function multiple_pulleys
-r = PlanarRigidBodyManipulator('multiple_pulleys.urdf');
+%r = PlanarRigidBodyManipulator('multiple_pulleys.urdf');
+r = TimeSteppingRigidBodyManipulator('multiple_pulleys.urdf',.01,struct('twoD',true));
+
 
 clf;
 v = r.constructVisualizer();
@@ -11,7 +13,7 @@ x0.slider1 = 2;
 x0.slider2 = 2.2;
 
 %[l,dl]=r.position_constraints{1}.eval(x0(1:2))
-r.position_constraints{1}.checkGradient(.001,x0(1:2));
+%r.position_constraints{1}.checkGradient(.001,x0(1:2));
 
 x0 = resolveConstraints(r,x0);
 v.draw(0,x0(1:2));

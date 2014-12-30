@@ -22,8 +22,11 @@ classdef CableAndPulleys < drakeFunction.kinematic.Kinematic
 
       length = 0;
       dlength = 0*q';
+%      ddlength = zeros(1,numel(q)^2);
       for i=1:numel(obj.pulley)
-        if nargout>1
+        if nargout>2
+          [pt,ddpt] = forwardKin(obj.rbm,kinsol,obj.pulley(i).frame,obj.pulley(i).xyz);
+        elseif nargout>1
           [pt,dpt] = forwardKin(obj.rbm,kinsol,obj.pulley(i).frame,obj.pulley(i).xyz);
         else
           pt = forwardKin(obj.rbm,kinsol,obj.pulley(i).frame,obj.pulley(i).xyz);

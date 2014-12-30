@@ -1,7 +1,8 @@
 function simple_pulley
 
 % note that the masses are constrained to move only vertically
-r = PlanarRigidBodyManipulator('simple_pulley.urdf');
+%r = PlanarRigidBodyManipulator('simple_pulley.urdf');
+r = TimeSteppingRigidBodyManipulator('simple_pulley.urdf',.01,struct('twoD',true));
 
 clf;
 v = r.constructVisualizer();
@@ -13,7 +14,7 @@ x0.slider1 = 2;
 x0.slider2 = 2.2;
 
 %[l,dl]=r.position_constraints{1}.eval(x0(1:2))
-r.position_constraints{1}.checkGradient(.001,x0(1:2));
+%r.position_constraints{1}.checkGradient(.001,x0(1:2));
 
 x0 = resolveConstraints(r,x0);
 v.draw(0,x0(1:2));
