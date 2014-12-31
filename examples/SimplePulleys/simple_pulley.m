@@ -22,13 +22,13 @@ v.draw(0,x0(1:2));
 %return;
 
 ytraj = simulate(r,[0 4],x0);
-if(0)
+
 ts = ytraj.getBreaks();
+rbm = r.getManipulator();
+length = rbm.position_constraints{1}.eval(x0(1:2));
 for i=1:numel(ts)
   x = ytraj.eval(ts(i));
-  length(i) = r.position_constraints{1}.eval(x(1:2));
-end
-figure(1); clf; plot(ts,length);
+  valuecheck(rbm.position_constraints{1}.eval(x(1:2)),length,1e-2);
 end
 
 v.playback(ytraj,struct('slider',true));
