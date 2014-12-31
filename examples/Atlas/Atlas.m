@@ -161,8 +161,8 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
         'Kp_q',0.0*ones(obj.getNumPositions(),1),...
         'q_damping_ratio',0.5));
 
-      options.w_qdd(findJointIndices(obj,'back_bkx')) = 0.01;
-      options.Kp_q(findJointIndices(obj,'back_bkx')) = 50;
+      options.w_qdd(findPositionIndices(obj,'back_bkx')) = 0.01;
+      options.Kp_q(findPositionIndices(obj,'back_bkx')) = 50;
 
       acc_limit = [100;100;100;50;50;50];
       body_accel_bounds(1).body_idx = obj.foot_body_id.right;
@@ -201,8 +201,8 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
         'Kp_q',0.0*ones(obj.getNumPositions(),1),...
         'q_damping_ratio',0.0));
       
-      options.w_qdd(findJointIndices(obj,'back_bkx')) = 0.1;
-      options.Kp_q(findJointIndices(obj,'back_bkx')) = 50;
+      options.w_qdd(findPositionIndices(obj,'back_bkx')) = 0.1;
+      options.Kp_q(findPositionIndices(obj,'back_bkx')) = 50;
 
       options.Kp = options.Kp_pelvis;
       options.Kd = getDampingGain(options.Kp,options.pelvis_damping_ratio);
