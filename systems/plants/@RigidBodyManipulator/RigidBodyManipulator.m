@@ -830,7 +830,7 @@ classdef RigidBodyManipulator < Manipulator
       for j=1:length(model.position_constraints)
         % todo: generalize this by moving the updateConstraint logic above into
         % drakeFunction.RBM
-        if isa(model.position_constraints{j},'DrakeFunctionConstraint') && isa(model.position_constraints{j}.fcn,'drakeFunction.kinematic.CableAndPulleys')
+        if isa(model.position_constraints{j},'DrakeFunctionConstraint') && isa(model.position_constraints{j}.fcn,'drakeFunction.kinematic.CableLength')
           model = updatePositionEqualityConstraint(model,j,DrakeFunctionConstraint(model.position_constraints{j}.lb,model.position_constraints{j}.ub,setRigidBodyManipulator(model.position_constraints{j}.fcn,model)));
         end
       end
@@ -2437,7 +2437,7 @@ classdef RigidBodyManipulator < Manipulator
       for j=1:length(model.position_constraints)
         % todo: generalize this by moving the updateConstraint logic above into
         % drakeFunction.RBM
-        if isa(model.position_constraints{j},'DrakeFunctionConstraint') && isa(model.position_constraints{j}.fcn,'drakeFunction.kinematic.CableAndPulleys')
+        if isa(model.position_constraints{j},'DrakeFunctionConstraint') && isa(model.position_constraints{j}.fcn,'drakeFunction.kinematic.CableLength')
           model = updatePositionEqualityConstraint(model,j,DrakeFunctionConstraint(model.position_constraints{j}.lb,model.position_constraints{j}.ub,feval(fcn,model.position_constraints{j}.fcn,varargin{:})));
         end
       end

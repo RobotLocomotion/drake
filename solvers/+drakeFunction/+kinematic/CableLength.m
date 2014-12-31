@@ -1,7 +1,7 @@
-classdef CableAndPulleys < drakeFunction.kinematic.Kinematic
+classdef CableLength < drakeFunction.kinematic.Kinematic
 
   methods
-    function obj = CableAndPulleys(rbm,name)
+    function obj = CableLength(rbm,name)
       obj = obj@drakeFunction.kinematic.Kinematic(rbm,CoordinateFrame([name,'_length'],1,'l',{'length'}));
     end
 
