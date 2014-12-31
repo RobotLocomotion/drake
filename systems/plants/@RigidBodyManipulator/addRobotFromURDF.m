@@ -489,7 +489,7 @@ function model = parseCable(model,robotnum,node,options)
   min_length = parseParamString(model,robotnum,char(node.getAttribute('min_length')));
   max_length = parseParamString(model,robotnum,char(node.getAttribute('max_length')));
 
-  cable_length_function = drakeFunction.kinematic.CableAndPulleys(model,name);
+  cable_length_function = drakeFunction.kinematic.CableLength(model,name);
   
   children = node.getChildNodes;
   for i=0:(children.getLength()-1)

@@ -33,5 +33,5 @@ figure(1); clf; plot(ts,length);
 end
 
 v.playback(ytraj,struct('slider',true));
-
+%v.playbackSWF(ytraj,'tension')
 
