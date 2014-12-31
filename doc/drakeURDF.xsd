@@ -113,6 +113,7 @@ These forces are represented by a 6x6 matrix 'Ma' similar to a mass matrix, wher
                     <xs:documentation> Adds a buoyancy force to the parent body, placed at a defined center of buoyancy. </xs:documentation>
                 </xs:annotation>
             </xs:element>
+            <xs:element name="torsional_spring" type="torsional_spring"/>
         </xs:choice>
         <xs:attribute name="name" type="xs:string"/>
     </xs:complexType>
@@ -327,7 +328,7 @@ Reynolds number around which we design the aerodynamic coefficients.</xs:documen
             </xs:element>
         </xs:all>
 
-        <xs:attribute name="name" type="xs:string" use="required" />
+        <xs:attribute name="name" type="xs:string" use="required"/>
 
         <xs:attribute name="coefficient_drag_x" type="xs:double" use="required">
             <xs:annotation>
@@ -387,7 +388,7 @@ Reynolds number around which we design the aerodynamic coefficients.</xs:documen
             </xs:element>
         </xs:all>
 
-        <xs:attribute name="name" type="xs:string" use="required" />
+        <xs:attribute name="name" type="xs:string" use="required"/>
 
         <xs:attribute default="-INF" name="lower_limit" type="xs:double">
             <xs:annotation>
@@ -533,6 +534,44 @@ this buoyancy is attached.</xs:documentation>
         </xs:attribute>
     </xs:complexType>
 
+    <xs:complexType name="cable">
+        <xs:all>
+            <xs:annotation>
+                <xs:documentation>Note: the order of the terminator, pulleys, and crossovers DOES MATTER - they specific the kinematic path of the cable.
+e.g. terminator - pulley - pulley - crossover - pulley - terminator
+</xs:documentation>
+            </xs:annotation>
+            <xs:element maxOccurs="2" minOccurs="2" name="terminator" type="link_reference_w_pose"/>
+            <xs:element form="qualified" maxOccurs="unbounded" minOccurs="0" name="pulley"
+                type="pulley">
+                <xs:annotation>
+                    <xs:documentation>provides a radius about which the cable slides (as if it were frictionless - the actual motion of the pulley is not simulated)</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:all>
+        <xs:attribute default="cable" name="name"/>
+        <xs:attribute name="min_length" use="required"/>
+        <xs:attribute name="max_length" use="required"/>
+    </xs:complexType>
+    <xs:complexType name="pulley">
+        <xs:attribute name="link" type="xs:string" use="required"/>
+        <xs:attribute default="0 0 0" name="xyz" type="matlab_parameter_expression"/>
+        <xs:attribute default="0 0 0" name="axis" type="matlab_parameter_expression">
+            <xs:annotation>
+                <xs:documentation>the cable wraps counter-clockwise (right-hand rule) around the pulley axis</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute default="0" name="radius" type="matlab_parameter_expression">
+            <xs:annotation>
+                <xs:documentation>All attachments are implemented as (frictionless) pulleys.  Simple attachments are pulleys of radius zero.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="number_of_wraps" type="xs:int">
+            <xs:annotation>
+                <xs:documentation>Number of times that the cable is wrapped completely around a pulley.  Adds additional 2*pi*radius*number_of_wraps to the computed length of the cable.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:complexType>
     <xs:simpleType name="joint_type">
         <xs:restriction base="xs:string">
             <xs:enumeration value="revolute"/>

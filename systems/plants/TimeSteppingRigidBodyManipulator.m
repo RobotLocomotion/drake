@@ -508,7 +508,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
 
         if isempty(obj.LCP_cache.data.z_inactive)
           z_inactive = z_inactive_guess;
-          M_active = false(nL+nP+(mC+2)*nC,1);
+          M_active = z_inactive;
         else
           z_inactive = obj.LCP_cache.data.z_inactive;
           M_active = obj.LCP_cache.data.M_active;
@@ -541,7 +541,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
               z(z_inactive) = z_; 
               obj.LCP_cache.data.fastqp_active_set = find(abs(Ain_fqp*z_ - bin_fqp)<1e-6);
               % we know:
-              % z(z_inactive) >= 0
+              % z(z_inactive) >= lb
               % M(M_active, z_inactive)*z(z_inactive) + w(M_active) = 0
               % M(M_inactive, z_inactive)*z(z_inactive) + w(M_inactive) >= 0
               %

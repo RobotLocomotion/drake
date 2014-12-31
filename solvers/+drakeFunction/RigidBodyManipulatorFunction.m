@@ -1,4 +1,4 @@
-classdef RigidBodyManipulatorFunction < drakeFunction.DrakeFunction
+classdef RigidBodyManipulatorFunction < drakeFunction.DrakeFunction & RigidBodyElement
   % Abstract parent class for functions that need to store a
   % RigidBodyManipulator
   properties (SetAccess = protected)
@@ -11,16 +11,14 @@ classdef RigidBodyManipulatorFunction < drakeFunction.DrakeFunction
       % @param rbm          -- RigidBodyManipulator object
       % @param input_frame  -- CoordinateFrame object
       % @param output_frame -- CoordinateFrame object
-      typecheck(rbm,{'RigidBodyManipulator', ...
-                     'TimeSteppingRigidBodyManipulator'});
       obj = obj@drakeFunction.DrakeFunction(input_frame,output_frame);
-      obj.rbm = rbm.removeAllStateConstraints();
+      obj = setRigidBodyManipulator(obj,rbm);
     end
 
     function obj = setRigidBodyManipulator(obj, rbm)
       typecheck(rbm,{'RigidBodyManipulator', ...
                      'TimeSteppingRigidBodyManipulator'});
-      obj.rbm = rbm;
+      obj.rbm = rbm.removeAllStateConstraints();  % so I don't end up with recursive copies
     end
   end
 end

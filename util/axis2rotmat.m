@@ -1,5 +1,5 @@
 function R = axis2rotmat(a)
-% convert from axis angle, a = (x,y,z,theta);
+% convert from axis angle, a = [x;y;z;theta];
 a(1:3) = a(1:3)/norm(a(1:3));
 x = a(1);
 y = a(2);
