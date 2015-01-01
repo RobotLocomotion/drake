@@ -10,8 +10,8 @@ x_smooth=smoothts(traj.eval(tts),'e',150);
 dtraj = fnder(PPTrajectory(spline(tts,x_smooth)));
 qddtraj = dtraj(nq+(1:nq));
 
-lfoot = findLinkInd(r,'l_foot');
-rfoot = findLinkInd(r,'r_foot');
+lfoot = findLinkId(r,'l_foot');
+rfoot = findLinkId(r,'r_foot');
 
 lstep_counter = 0;
 rstep_counter = 0;
