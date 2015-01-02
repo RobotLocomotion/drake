@@ -1,10 +1,10 @@
 
 %%
-[p,xtraj,utraj,ltraj,ljltraj,z,F,info,traj_opt] = trajOptPassiveAnkle();
-v = p.constructVisualizer; v.playback(xtraj);
+[p,xtraj1,utraj1,ltraj1,ljltraj1,z1,F1,info1,traj_opt1] = trajOptPassiveAnkle();
+v = p.constructVisualizer; v.playback(xtraj1);
 display('iter 1')
 %%
-[p,xtraj2,utraj2,ltraj2,ljltraj2,z2,F2,info2,traj_opt2] = trajOptPassiveAnkle(xtraj,utraj,ltraj,ljltraj,.1);
+[p,xtraj2,utraj2,ltraj2,ljltraj2,z2,F2,info2,traj_opt2] = trajOptPassiveAnkle(xtraj1,utraj1,ltraj1,ljltraj1,.1);
 v = p.constructVisualizer; v.playback(xtraj2);
 display('iter 2')
 %%
@@ -16,8 +16,8 @@ display('iter 3')
 v = p.constructVisualizer; v.playback(xtraj4);
 display('iter 4')
 %%
-[p,xtraj5,utraj5,ltraj5,ljltraj5,z5,F5,info5,traj_opt5] = trajOptPassiveAnkle(xtraj4,utraj4,ltraj4,ljltraj4,0);
-v = p.constructVisualizer; v.playback(xtraj5,struct('slider',true));
+[p,xtraj,utraj,ltraj,ljltraj,z,F,info,traj_opt] = trajOptPassiveAnkle(xtraj4,utraj4,ltraj4,ljltraj4,0);
+v = p.constructVisualizer; v.playback(xtraj,struct('slider',true));
 display('iter 5')
 %%
 

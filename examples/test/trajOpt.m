@@ -1,4 +1,4 @@
-function [p,xtraj,utraj,ltraj,ljltraj,z,F,info,traj_opt] = runHopperTrajOpt(xtraj,utraj,ltraj,ljltraj,scale)
+function [p,xtraj,utraj,ltraj,ljltraj,z,F,info,traj_opt] = trajOpt(xtraj,utraj,ltraj,ljltraj,scale)
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
 warning('off','Drake:RigidBodyManipulator:WeldedLinkInd');
 warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
