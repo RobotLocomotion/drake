@@ -12,20 +12,56 @@ p = PlanarRigidBodyManipulator('OneLegHopper.urdf',options);
 
 N = 30;
 
-q0 = [0;.7;.2;-.4;.2+pi/2];
+q0 = [0;0;.6;-1.2;.6+pi/2];
+phi_f = p.contactConstraints(q0);
+q0(2) = -phi_f(1);
 x0 = [q0;zeros(5,1)];
 
-qf = [0;0;.6;-1.2;.6+pi/2];
+q1 = [-0.075;0;.6;-1.2;.2+pi/2];
+phi_f = p.contactConstraints(q1);
+q1(2) = -phi_f(1) + 0.1;
+x1 = [q1;zeros(5,1)];
+
+qf = [-0.15;0;.6;-1.2;.6+pi/2];
 phi_f = p.contactConstraints(qf);
 qf(2) = -phi_f(1);
+xf = [qf;zeros(5,1)];
+v=p.constructVisualizer;
 
 N1 = floor(N/2);
 N2 = N-N1;
 d = floor(N/4);
 tf0 = .5;
 if nargin < 2
+    
+%     % guess an intermediary state
+%   q1 = [.20;0;0;.1;.2;-.3;0;-1;.5;0];
+%   phi_tmp = p.contactConstraints(q1);
+%   q1(2) = -phi_tmp(1);
+%   q2 = [xf(1);0;.2;.5;.4;0;0;-.4;.2;0];
+%   phi_tmp = p.contactConstraints(q2);
+%   q2(2) = -phi_tmp(3);
+%   
+%   x1 = [q1;.25;zeros(9,1)];
+%   x2 = [q2;.25;zeros(9,1)];
+%   x_vec = [linspacevec(x0,x1,N1-d) linspacevec(x1,x2,2*d) linspacevec(x2,xf,N2-d)];
+%   t_init = linspace(0,tf0,N);
+%   
+%   traj_init.x = PPTrajectory(foh(t_init,x_vec));
+%   traj_init.x = traj_init.x.setOutputFrame(p.getStateFrame); 
+%   traj_init.u = PPTrajectory(foh(t_init,0*randn(5,N)));
+%   
+%   lp = [1;0;0;0];
+%   ln = zeros(4,1);
+%   traj_init.l = PPTrajectory(foh(t_init,[repmat([lp;lp;ln;ln],1,N1-d) zeros(16,2*d) repmat([ln;ln;lp;lp],1,N2-d)]));
+%   traj_init.ljl = [];
+%   
+%   
+%   
+%   
+%   
   t_init = linspace(0,tf0,N);
-  traj_init.x = PPTrajectory(foh(t_init,linspacevec([q0;zeros(5,1)],[qf;zeros(5,1)],N)));
+  traj_init.x = PPTrajectory(foh(t_init,[linspacevec(x0,x1,floor(N/2)),linspacevec(x1,xf,N-floor(N/2))]));
   traj_init.x = traj_init.x.setOutputFrame(p.getStateFrame);
  
   traj_init.u = PPTrajectory(foh(t_init,randn(getNumInputs(p),N)));
