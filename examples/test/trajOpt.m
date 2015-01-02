@@ -10,19 +10,19 @@ p = PlanarRigidBodyManipulator('OneLegHopper.urdf',options);
 
 %todo: add joint limits, periodicity constraint
 
-N = 30;
+N = 40;
 
 q0 = [0;0;.6;-1.2;.6+pi/2];
 phi_f = p.contactConstraints(q0);
 q0(2) = -phi_f(1);
 x0 = [q0;zeros(5,1)];
 
-q1 = [-0.075;0;.6;-1.2;.2+pi/2];
+q1 = [-0.1;0;.6;-1.2;.2+pi/2];
 phi_f = p.contactConstraints(q1);
-q1(2) = -phi_f(1) + 0.1;
+q1(2) = -phi_f(1) + 0.15;
 x1 = [q1;zeros(5,1)];
 
-qf = [-0.15;0;.6;-1.2;.6+pi/2];
+qf = [-0.2;0;.6;-1.2;.6+pi/2];
 phi_f = p.contactConstraints(qf);
 qf(2) = -phi_f(1);
 xf = [qf;zeros(5,1)];
@@ -31,7 +31,7 @@ v=p.constructVisualizer;
 N1 = floor(N/2);
 N2 = N-N1;
 d = floor(N/4);
-tf0 = .5;
+tf0 = .4;
 if nargin < 2
     
 %     % guess an intermediary state
@@ -68,7 +68,7 @@ if nargin < 2
   
   lp = [1;0;0;0];
   ln = zeros(4,1);
-  traj_init.l = PPTrajectory(foh(t_init,[repmat([ln;ln],1,N1+d) repmat([lp;lp],1,N2-d)]));
+  traj_init.l = PPTrajectory(foh(t_init,[repmat([lp;lp],1,d) repmat([ln;ln],1,N-2*d) repmat([lp;lp],1,d)]));
   traj_init.ljl = [];
   
   scale = 1;
