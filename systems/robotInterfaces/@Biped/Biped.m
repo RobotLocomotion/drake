@@ -156,6 +156,12 @@ classdef Biped < LeggedRobot
       foot_center = struct('right', rfoot0, 'left', lfoot0);
     end
 
+    function foot_min_z = getFootHeight(obj,q)
+      % Get the height in world coordinates of the lower of the robot's foot soles
+      foot_center = obj.feetPosition(q);
+      foot_min_z = min(foot_center.right(3), foot_center.left(3));
+    end
+
     function [centers, radii] = getReachabilityCircles(obj, params, fixed_foot_frame_id)
       % Compute the centers and radii of the circular regions which constrain the
       % next foot position in the frame of the fixed foot
@@ -203,8 +209,18 @@ classdef Biped < LeggedRobot
         error('Invalid foot frame ID: %d', fixed_foot_frame_id);
       end
     end
+    
+    function bool = isDoubleSupport(obj,rigid_body_support_state)
+      bool = any(rigid_body_support_state.bodies==obj.robot.foot_body_id.left) && any(rigid_body_support_state.bodies==obj.robot.foot_body_id.right);
+    end
+
+    function bool = isLeftSupport(obj,rigid_body_support_state)
+      bool = any(rigid_body_support_state.bodies==obj.robot.foot_body_id.left) && ~any(rigid_body_support_state.bodies==obj.robot.foot_body_id.right);
+    end
+
+    function bool = isRightSupport(obj,rigid_body_support_state)
+      bool = ~any(rigid_body_support_state.bodies==obj.robot.foot_body_id.left) && any(rigid_body_support_state.bodies==obj.robot.foot_body_id.right);
+    end
   end
-
-
 end
 
