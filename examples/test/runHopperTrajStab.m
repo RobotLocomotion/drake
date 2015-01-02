@@ -21,6 +21,8 @@ options.ignore_self_collisions = true;
 s = 'OneLegHopper_passiveankle.urdf';
 dt = 0.001;
 r = TimeSteppingRigidBodyManipulator(s,dt,options);
+r = r.setStateFrame(OneLegHopperState(r));
+r = r.setOutputFrame(OneLegHopperState(r));
 
 nx = getNumStates(r);
 nq = getNumPositions(r);
@@ -29,10 +31,10 @@ nu = getNumInputs(r);
 v = r.constructVisualizer;
 v.display_dt = 0.01;
 
-% load('hopper_traj_lqr_081414.mat');
-load('hopper_passiveankle_traj_lqr_081414.mat');
+% load('data/hopper_traj_lqr_081414.mat');
+load('data/hopper_passiveankle_traj_lqr_081414.mat');
 xtraj = xtraj.setOutputFrame(getStateFrame(r));
-v.playback(xtraj,struct('slider',true));
+v.playback(xtraj);
 
 support_times = zeros(1,length(Straj_full));
 for i=1:length(Straj_full)
@@ -42,7 +44,7 @@ end
 options.right_foot_name = 'foot';
 options.left_foot_name = 'thigh'; % junk for now
 
-foot_ind = findLinkInd(r,'foot');
+foot_ind = findLinkId(r,'foot');
 
 support_times(2) = support_times(2);
 % manually specifiy modes for now
