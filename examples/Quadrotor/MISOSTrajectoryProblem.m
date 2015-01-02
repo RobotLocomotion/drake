@@ -144,7 +144,7 @@ classdef MISOSTrajectoryProblem
           region{j} = safe_region_assignments{j};
         end
       else
-        region{j} = true;
+        region{j} = true(1, obj.num_traj_segments);
       end
     end
 
