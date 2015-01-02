@@ -550,7 +550,9 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
               % M(z_active,z_inactive)*z(z_inactive)+w(z_active) >= 0  % since we're assuming that z(z_active) == 0
               z_active = ~z_inactive(1:(nL+nP+nC));  % only look at joint limit, position, and normal variables since if cn_i = 0, 
               % then that's a solution and we don't care about the relative velocity \lambda_i
-              QP_FAILED = (~isempty(w(z_active)) && any(M(z_active,z_inactive)*z(z_inactive)+w(z_active) < 0)) || (abs(z(z_inactive)'*(M(z_inactive, z_inactive)*z(z_inactive) + w(z_inactive)))>1e-8);
+              QP_FAILED = (~isempty(w(z_active)) && any(M(z_active,z_inactive)*z(z_inactive)+w(z_active) < 0)) || ...
+                (abs(z(z_inactive)'*(M(z_inactive, z_inactive)*z(z_inactive) + w(z_inactive)))>1e-8) || ...
+                any(((z(z_inactive)>lb(z_inactive)+1e-8) & (M(z_inactive, z_inactive)*z(z_inactive)+w(z_inactive)>1e-8)));
             else
               obj.LCP_cache.data.fastqp_active_set = [];
             end
