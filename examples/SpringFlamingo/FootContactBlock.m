@@ -71,15 +71,15 @@ classdef FootContactBlock < MIMODrakeSystem
       obj.mex_ptr = SharedDataHandle(supportDetectmex(0,r.getMexModelPtr.ptr,0));
    
       if isfield(options,'left_foot_name')
-        obj.lfoot_idx = findLinkInd(r,options.left_foot_name);
+        obj.lfoot_idx = findLinkId(r,options.left_foot_name);
       else
-        obj.lfoot_idx = findLinkInd(r,'left_foot');
+        obj.lfoot_idx = findLinkId(r,'left_foot');
       end
       
       if isfield(options,'right_foot_name')
-        obj.rfoot_idx = findLinkInd(r,options.right_foot_name);
+        obj.rfoot_idx = findLinkId(r,options.right_foot_name);
       else
-        obj.rfoot_idx = findLinkInd(r,'right_foot');
+        obj.rfoot_idx = findLinkId(r,'right_foot');
       end
     end
    
