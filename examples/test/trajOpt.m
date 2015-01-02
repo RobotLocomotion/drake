@@ -10,19 +10,21 @@ p = PlanarRigidBodyManipulator('OneLegHopper.urdf',options);
 
 %todo: add joint limits, periodicity constraint
 
-N = 30;
+N = 20;
+
+distance = .3;
 
 q0 = [0;0;.6;-1.2;.6+pi/2];
 phi_f = p.contactConstraints(q0);
 q0(2) = -phi_f(1);
 x0 = [q0;zeros(5,1)];
 
-q1 = [-0.075;0;.6;-1.2;.2+pi/2];
+q1 = [-distance/2;0;.6;-1.2;.2+pi/2];
 phi_f = p.contactConstraints(q1);
 q1(2) = -phi_f(1) + 0.1;
 x1 = [q1;zeros(5,1)];
 
-qf = [-0.15;0;.6;-1.2;.6+pi/2];
+qf = [-distance;0;.6;-1.2;.6+pi/2];
 phi_f = p.contactConstraints(qf);
 qf(2) = -phi_f(1);
 xf = [qf;zeros(5,1)];
@@ -68,7 +70,7 @@ if nargin < 2
   
   lp = [1;0;0;0];
   ln = zeros(4,1);
-  traj_init.l = PPTrajectory(foh(t_init,[repmat([ln;ln],1,N1+d) repmat([lp;lp],1,N2-d)]));
+  traj_init.l = PPTrajectory(foh(t_init,[repmat([lp;lp],1,d) repmat([ln;ln],1,N-2*d) repmat([lp;lp],1,d)]));
   traj_init.ljl = [];
   
   scale = 1;
@@ -103,7 +105,7 @@ to_options.lambda_mult = p.getMass*9.81*tf0/N/2;
 to_options.lambda_jl_mult = tf0/N;
 
 % to_options.integration_method = ContactImplicitTrajectoryOptimization.MIDPOINT;
-to_options.integration_method = ContactImplicitTrajectoryOptimization.BACKWARD_EULER;
+to_options.integration_method = ContactImplicitTrajectoryOptimization.MIXED;
 
 traj_opt = ContactImplicitTrajectoryOptimization(p,N,T_span,to_options);
 traj_opt = traj_opt.addRunningCost(@running_cost_fun);
@@ -113,7 +115,7 @@ traj_opt = traj_opt.addStateConstraint(BoundingBoxConstraint(x0_min,x0_max),1);
 traj_opt = traj_opt.addStateConstraint(BoundingBoxConstraint(xf_min,xf_max),N);
 
 % traj_opt = traj_opt.setCheckGrad(true);
-snprint('snopt.out');
+traj_opt = traj_opt.setSolverOptions('snopt','print','snopt.out');
 traj_opt = traj_opt.setSolverOptions('snopt','MajorIterationsLimit',100);
 traj_opt = traj_opt.setSolverOptions('snopt','MinorIterationsLimit',200000);
 traj_opt = traj_opt.setSolverOptions('snopt','IterationsLimit',200000);
