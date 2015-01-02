@@ -143,7 +143,7 @@ classdef PolynomialSystem < DrakeSystem
 
     function obj = setInputFrame(obj,frame)
       if frame.dim>0
-        if obj.getNumStates()>0 && any(match(obj.getStateFrame.getPoly,frame.getPoly)~=0)
+        if obj.getNumStates()>0 && hasSamePrefix(obj.getStateFrame,frame)
           error('input frame poly clashes with current state frame poly.  this could lead to massive confusion');
         end
       end
@@ -153,7 +153,7 @@ classdef PolynomialSystem < DrakeSystem
 
     function obj = setStateFrame(obj,frame)
       if frame.dim>0
-        if obj.getNumInputs()>0 && any(match(obj.getInputFrame.getPoly,frame.getPoly)~=0)
+        if obj.getNumInputs()>0 && hasSamePrefix(obj.getInputFrame,frame)
           error('state frame poly clashes with current input frame poly.  this could lead to massive confusion');
         end
       end
