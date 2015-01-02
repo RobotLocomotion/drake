@@ -496,7 +496,7 @@ function model = parseCable(model,robotnum,node,options)
     this_node = children.item(i);
     switch(char(getNodeName(this_node)))
       case {'terminator','pulley'}
-        link = findLinkInd(model,char(this_node.getAttribute('link')),robotnum);
+        link = findLinkId(model,char(this_node.getAttribute('link')),robotnum);
         xyz=zeros(3,1); 
         axis=[1;0;0];
         radius=0;
