@@ -11,7 +11,7 @@ classdef AtlasInput < SingletonCoordinateFrame
       input_names = manipInputFrame.coordinates;
       input_names = regexprep(input_names,'_motor',''); % remove motor suffix     
       
-      obj = obj@SingletonCoordinateFrame('AtlasInput',length(input_names),'x',input_names);
+      obj = obj@SingletonCoordinateFrame('atlasFrames.AtlasInput',length(input_names),'x',input_names);
     end
   end
 end
