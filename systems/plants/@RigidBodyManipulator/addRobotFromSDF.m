@@ -30,6 +30,7 @@ end
 if (~isfield(options,'inertial')), options.inertial = true; end
 if (~isfield(options,'visual')), options.visual = true; end
 if (~isfield(options,'collision')), options.collision = true; end
+if (~isfield(options,'collision_meshes')), options.collision_meshes = true; end
 if (~isfield(options,'nameprefix')), options.nameprefix = ''; end
 if (~isfield(options,'namesuffix')), options.namesuffix = ''; end
 if (~isfield(options,'compile')) options.compile = true; end
@@ -66,7 +67,7 @@ function model=parseSDFWorld(model,node,xyz,rpy,options)
 
 worldname = char(node.getAttribute('name'));
 worldname = regexprep(worldname, '\.', '_', 'preservecase');
-options.nameprefix = [worldname,'_',options.nameprefix];
+%options.nameprefix = [worldname,'_',options.nameprefix];
 
 models = node.getElementsByTagName('model');
 for i=0:(models.getLength-1)
@@ -131,8 +132,7 @@ end
 if ~options.static
   joints = node.getElementsByTagName('joint');
   for i=0:(joints.getLength()-1)
-    model.warning_manager.warnOnce('Drake:RigidBodyManipulator:ParseSDF:JointsNotImplementedYet','i haven''t actually implemented joints yet ;-/');
-    %  model = parseJoint(model,robotnum,joints.item(i),options);
+    model = parseJoint(model,robotnum,joints.item(i),options);
   end
   model = removeFixedJoints(model);  % do this early and often, to help scale to more complex environments.
 
@@ -330,6 +330,107 @@ end
       geomnode = node.getElementsByTagName('geometry').item(0);
       if ~isempty(geomnode)
         geometry = RigidBodyGeometry.parseSDFNode(geomnode,xyz,rpy,model,body.robotnum,options);
-        body = addCollisionGeometry(body,geometry);
+        if ~options.collision_meshes && isa(geometry,'RigidBodyMesh')
+          geometry = [];
+        end
+        if ~isempty(geometry)
+          body = addCollisionGeometry(body,geometry);
+        end
       end
     end 
+    
+function model=parseJoint(model,robotnum,node,options)
+
+ignore = char(node.getAttribute('drakeIgnore'));
+if strcmp(lower(ignore),'true')
+  return;
+end
+
+parentNode = node.getElementsByTagName('parent').item(0);
+if isempty(parentNode) % then it's not the main joint element.  for instance, the transmission element has a joint element, too
+  return
+end
+parent = findLinkId(model,char(getNodeValue(getFirstChild(parentNode))),robotnum,-1);
+if isempty(parent)
+  parent = findLinkId(model,char(getNodeValue(getFirstChild(parentNode))),0);
+end
+
+childNode = node.getElementsByTagName('child').item(0);
+childname = char(getNodeValue(getFirstChild(childNode)));
+if strfind(childname,'::')
+  part = strsplit(childname,'::');
+  child = findLinkId(model,part{2},part{1});
+else
+  child = findLinkId(model,childname,robotnum);
+end
+
+name = char(node.getAttribute('name'));
+type = char(node.getAttribute('type'));
+xyz=zeros(3,1); rpy=zeros(3,1);
+posenode = node.getElementsByTagName('pose').item(0);  % seems to be ok, even if pose tag doesn't exist
+if ~isempty(posenode)
+  pose = parseParamString(model,body.robotnum,char(getNodeValue(getFirstChild(posenode))));
+  pose = pose(:);
+  xyz = xyz + rpy2rotmat(rpy)*pose(1:3); rpy = rotmat2rpy(rpy2rotmat(rpy)*rpy2rotmat(pose(4:6)));
+end
+
+axis=[1;0;0];  % default according to URDF documentation
+damping=0;
+joint_limit_min=-inf;
+joint_limit_max=inf;
+effort_min=-inf;
+effort_max=inf;
+velocity_limit=inf;
+
+axisNode = node.getElementsByTagName('axis').item(0);  
+if ~isempty(axisNode)
+  xyzNode = axisNode.getElementsByTagName('xyz').item(0);
+  if ~isempty(xyzNode)
+    axis = reshape(parseParamString(model,robotnum,char(getNodeValue(getFirstChild(xyzNode)))),3,1);
+    axis = axis/(norm(axis)+eps); % normalize
+  end
+  dynamicsNode = axisNode.getElementsByTagName('dynamics').item(0);
+  if ~isempty(dynamicsNode)
+    dampingNode = dynamicsNode.getElementsByTagName('damping').item(0);
+    if ~isempty(dampingNode)
+      damping = parseParamString(model,robotnum,char(getNodeValue(getFirstChild(dampingNode))));
+    end
+  end
+
+  limitsNode = axisNode.getElementsByTagName('limit').item(0);
+  if ~isempty(limitsNode)
+    thisNode = limitsNode.getElementsByTagName('lower').item(0);
+    if ~isempty(thisNode)
+      joint_limit_min = parseParamString(model,robotnum,char(getNodeValue(getFirstChild(thisNode))));
+    end
+    thisNode = limitsNode.getElementsByTagName('upper').item(0);
+    if ~isempty(thisNode)
+      joint_limit_max = parseParamString(model,robotnum,char(getNodeValue(getFirstChild(thisNode))));
+    end
+    thisNode = limitsNode.getElementsByTagName('effort').item(0);
+    if ~isempty(thisNode)
+      if ~isfield(options,'ignore_effort_limits') || ~options.ignore_effort_limits
+        effort = parseParamString(model,robotnum,char(getNodeValue(getFirstChild(thisNode))));
+        effort_min = min(-effort,effort); % just in case someone puts the min effort in the URDF
+        effort_max = max(-effort,effort);
+      end
+    end
+    thisNode = limitsNode.getElementsByTagName('velocity').item(0);
+    if ~isempty(thisNode)
+      warnOnce(model.warning_manager,'Drake:RigidBodyManipulator:UnsupportedVelocityLimits','RigidBodyManipulator: velocity limits are not supported yet');
+      velocity_limit = parseParamString(model,robotnum,char(getNodeValue(getFirstChild(thisNode))));
+    end
+  end
+end
+
+limitsNode = struct();
+limitsNode.joint_limit_min = joint_limit_min;
+limitsNode.joint_limit_max = joint_limit_max;
+limitsNode.effort_min = effort_min;
+limitsNode.effort_max = effort_max;
+limitsNode.velocity_limit = velocity_limit;
+
+name=regexprep(name, '\.', '_', 'preservecase');
+model = addJoint(model,name,type,parent,child,xyz,rpy,axis,damping,[],[],[],limitsNode);
+
+end    
