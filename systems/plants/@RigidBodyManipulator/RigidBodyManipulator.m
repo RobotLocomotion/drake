@@ -400,10 +400,6 @@ classdef RigidBodyManipulator < Manipulator
 
       child = model.body(child_ind);
 
-      if child.parent>0
-        error(['there is already a joint connecting this child (' child.linkname ') to a parent (' model.body(parent_ind).linkname ') on joint ' name ]);
-      end
-
       jointname = regexprep(name, '\.', '_', 'preservecase');
       if ismember(lower(jointname),lower({model.body([model.body.robotnum]==child.robotnum).jointname}))
         model.warning_manager.warnOnce('Drake:RigidBodyManipulator:DuplicateJointName',['You already have a joint named ', jointname, ' on this robot.  This can cause problems later if you try to access elements of the state vector by name']);
@@ -452,6 +448,7 @@ classdef RigidBodyManipulator < Manipulator
         valuecheck(child.T_body_to_joint*[axis;1],[0;0;1;1],1e-6);
       end
 
+      child.floating = 0;
       switch lower(type)
         case {'revolute','continuous'}
           child.pitch = 0;
@@ -877,10 +874,12 @@ classdef RigidBodyManipulator < Manipulator
       linkname = lower(linkname);
       linkname=regexprep(linkname, '[\[\]\\\/\.]+', '_', 'preservecase');
 
-      if ischar(robot) robot = strmatch(lower(robot),lower(model.name)); end
+      if ischar(robot) 
+        robot = strmatch(lower(robot),lower(model.name)); 
+      end
       items = strfind(lower({model.body.linkname}),linkname);
       ind = find(~cellfun(@isempty,items));
-      if (robot~=0), ind = ind([model.body(ind).robotnum]==robot); end
+      if (robot~=0), ind = ind(ismember([model.body(ind).robotnum],robot)); end
       if (length(ind)>0) % then handle removed fixed joints
         i=1;
         while i<=length(ind)
@@ -909,7 +908,7 @@ classdef RigidBodyManipulator < Manipulator
               linkname,robot);
           end
         else
-          body_id=[];
+          body_id=ind;
           if (error_level==0)
             warning(['couldn''t find unique link ' ,linkname]);
           end
