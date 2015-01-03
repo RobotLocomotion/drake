@@ -877,7 +877,7 @@ classdef RigidBodyManipulator < Manipulator
       linkname = lower(linkname);
       linkname=regexprep(linkname, '[\[\]\\\/\.]+', '_', 'preservecase');
 
-      if ischar(robot) robot = strmatch(lower(robot),lower({model.name})); end
+      if ischar(robot) robot = strmatch(lower(robot),lower(model.name)); end
       items = strfind(lower({model.body.linkname}),linkname);
       ind = find(~cellfun(@isempty,items));
       if (robot~=0), ind = ind([model.body(ind).robotnum]==robot); end
@@ -909,7 +909,7 @@ classdef RigidBodyManipulator < Manipulator
               linkname,robot);
           end
         else
-          body_id=0;
+          body_id=[];
           if (error_level==0)
             warning(['couldn''t find unique link ' ,linkname]);
           end
