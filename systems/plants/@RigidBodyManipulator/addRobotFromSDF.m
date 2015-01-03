@@ -97,16 +97,20 @@ if options.static
   robotnum = 1;
 else
   %disp(['Parsing robot ', char(node.getAttribute('name')), ' from URDF file...']);
-  robotname = char(node.getAttribute('name'));
-  robotname = regexprep(robotname, '\.', '_', 'preservecase');
-  robotname = [options.nameprefix,robotname,options.namesuffix];
+  if isfield(options,'model_name')
+    robotname = options.model_name;
+  else
+    robotname = char(node.getAttribute('name'));
+    robotname = regexprep(robotname, '\.', '_', 'preservecase');
+    robotname = [options.nameprefix,robotname,options.namesuffix];
+  end
   model.name = [model.name, {robotname}];
   model.urdf = vertcat(model.urdf, '');
   robotnum = length(model.name);
 end
 
-posenode = node.getElementsByTagName('pose').item(0);  % seems to be ok, even if pose tag doesn't exist
-if ~isempty(posenode)
+posenode = getFirstChildByTagName(node,'pose');
+if ~isempty(posenode) 
   pose = parseParamString(model,robotnum,char(getNodeValue(getFirstChild(posenode))));
   pose = pose(:);
   xyz = xyz + rpy2rotmat(rpy)*pose(1:3); rpy = rotmat2rpy(rpy2rotmat(rpy)*rpy2rotmat(pose(4:6)));
@@ -115,7 +119,7 @@ end
 includes = node.getElementsByTagName('include');
 for i=0:(includes.getLength()-1)
   if (includes.item(i).getParentNode()~=node), continue; end
-  if ~options.static, options.nameprefix = [robotname,'_']; end
+%  if ~options.static, options.nameprefix = [robotname,'_']; end
   model = parseInclude(model,robotnum,includes.item(i),xyz,rpy,options);
 end
 
@@ -156,6 +160,11 @@ if ~isempty(staticNode)
   options.static = parseParamString(model,1,char(getNodeValue(getFirstChild(staticNode))));
 elseif ~isfield(options,'static')
   options.static = false;
+end
+
+nameNode = node.getElementsByTagName('name').item(0);  % seems to be ok, even if pose tag doesn't exist
+if ~isempty(nameNode)
+  options.model_name=char(getNodeValue(getFirstChild(nameNode)));
 end
 
 posenode = node.getElementsByTagName('pose').item(0);  % seems to be ok, even if pose tag doesn't exist
@@ -199,6 +208,13 @@ function model=parseLink(model,robotnum,node,xyz,rpy,options)
 ignore = char(node.getAttribute('drakeIgnore'));
 if strcmp(lower(ignore),'true')
   return;
+end
+
+posenode = getFirstChildByTagName(node,'pose');  % seems to be ok, even if pose tag doesn't exist
+if ~isempty(posenode)
+  pose = parseParamString(model,robotnum,char(getNodeValue(getFirstChild(posenode))));
+  pose = pose(:);
+  xyz = xyz + rpy2rotmat(rpy)*pose(1:3); rpy = rotmat2rpy(rpy2rotmat(rpy)*rpy2rotmat(pose(4:6)));
 end
 
 staticNode = node.getElementsByTagName('static').item(0);
@@ -312,6 +328,9 @@ end
         if (options.visual || options.visual_geometry)
          geometry = RigidBodyGeometry.parseSDFNode(geomnode,xyz,rpy,model,body.robotnum,options);
          if ~isempty(geometry)
+           if isa(geometry,'RigidBodyMesh')
+             geometry.scale=.0254; % gazebo dae meshes appear to be in inches
+           end
            geometry.c = c;
            body.visual_geometry = {body.visual_geometry{:},geometry};
          end
@@ -332,6 +351,8 @@ end
         geometry = RigidBodyGeometry.parseSDFNode(geomnode,xyz,rpy,model,body.robotnum,options);
         if ~options.collision_meshes && isa(geometry,'RigidBodyMesh')
           geometry = [];
+        elseif isa(geometry,'RigidBodyMesh')
+          geometry.scale=.0254;  % meshes appear to be in inches
         end
         if ~isempty(geometry)
           body = addCollisionGeometry(body,geometry);
@@ -359,7 +380,9 @@ childNode = node.getElementsByTagName('child').item(0);
 childname = char(getNodeValue(getFirstChild(childNode)));
 if strfind(childname,'::')
   part = strsplit(childname,'::');
-  child = findLinkId(model,part{2},part{1});
+  child = findLinkId(model,part{2},part{1},-1);
+  if isempty(child), error(['couldn''t find ',childname]); end
+  child = child(end);  % take the most recent match
 else
   child = findLinkId(model,childname,robotnum);
 end
@@ -371,9 +394,10 @@ posenode = node.getElementsByTagName('pose').item(0);  % seems to be ok, even if
 if ~isempty(posenode)
   pose = parseParamString(model,body.robotnum,char(getNodeValue(getFirstChild(posenode))));
   pose = pose(:);
-  xyz = xyz + rpy2rotmat(rpy)*pose(1:3); rpy = rotmat2rpy(rpy2rotmat(rpy)*rpy2rotmat(pose(4:6)));
+  xyz = pose(1:3); rpy = pose(4:6);
 end
 
+%fprintf('%s: %f %f %f\n',childname,xyz(1),xyz(2),xyz(3));
 axis=[1;0;0];  % default according to URDF documentation
 damping=0;
 joint_limit_min=-inf;
@@ -434,3 +458,17 @@ name=regexprep(name, '\.', '_', 'preservecase');
 model = addJoint(model,name,type,parent,child,xyz,rpy,axis,damping,[],[],[],limitsNode);
 
 end    
+
+function childnode = getFirstChildByTagName(node,tag)
+% just like getElementsByTagName(tag).item(0) but the search is restricted
+% to immediate children of the node
+
+childnode = [];
+list = node.getChildNodes();
+for i=0:(list.getLength()-1)
+  if strcmpi(char(getNodeName(list.item(i))),tag)
+    childnode = list.item(i);
+  end
+end
+
+end
