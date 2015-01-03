@@ -143,7 +143,7 @@ if AUTOSAVE
 end
 
 % Draw the result
-v = v.setInputFrame(sys.getOutputFrame().getFrameByName('quadrotorPosition'));
+xtraj_sim = xtraj_sim.setOutputFrame(r.getStateFrame());
 v.playback(xtraj_sim, struct('slider', true));
 
 lc = lcm.lcm.LCM.getSingleton();
