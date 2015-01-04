@@ -53,6 +53,7 @@ methods
     obj.Q = Q;
     obj.f = f;
   % todo: check dependencies here and pick my favorite that is also installed
+    checkDependency('gurobi');
     obj.solver = 'gurobi';
     obj.solver_options.quadprog = optimset('Display','off');
   end

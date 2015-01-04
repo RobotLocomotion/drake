@@ -113,7 +113,7 @@ classdef Manipulator < DrakeSystem
 
   end
 
-  methods (Access=private)
+  methods (Access=protected)
     function constraint_force = computeConstraintForce(obj,q,v,H,tau,Hinv)
       % Helper function to compute the internal forces required to enforce
       % equality constraints
