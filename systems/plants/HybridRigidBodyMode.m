@@ -124,7 +124,7 @@ classdef HybridRigidBodyMode < DrakeSystem
       Jdotv = dJ*reshape(qd*qd',obj.num_positions^2,1);
       
       % was: lb_inds = phi<=lb; ub_inds = phi>=ub; 
-      lb_inds = constraint_state<0.5 | constraint_state>1.5;
+      lb_inds = constraint_state<-0.5 | constraint_state>1.5;
       ub_inds = constraint_state>0.5;
       
       nf = numel(phi);

@@ -12,16 +12,17 @@ x0 = resolveConstraints(p,x0);
 
 theta2 = ytraj(2);
 
-clf;
+figure(1); clf;
 fnplt(theta2);
 hold on;
 h = fnplt(xtraj(3)); set(h,'Color','r');
+
+v = p.constructVisualizer();
+v.playback(ytraj);
 
 for ts=0:.1:4;
   assert(theta2.eval(ts)<=1.5 && theta2.eval(ts)>=-1.5);
 end
 
-%v = p.constructVisualizer();
-%v.playback(ytraj);
 
 
