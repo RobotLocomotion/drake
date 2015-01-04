@@ -21,6 +21,7 @@ classdef RigidBodyManipulator < Manipulator
     num_contact_pairs;
     contact_options; % struct containing options for contact/collision handling
     contact_constraint_id=[];
+    all_terrain_contact_points_struct=[];
     frame = [];     % array of RigidBodyFrame objects
 
     robot_state_frames;
@@ -790,6 +791,9 @@ classdef RigidBodyManipulator < Manipulator
       % so it should go after createMexPointer
       [phi,~,~,~,idxA,idxB] = model.collisionDetect(zeros(model.getNumPositions,1));
       model.num_contact_pairs = length(phi);
+
+      % cache the full set of terrain contact points
+      model.all_terrain_contact_points_struct = model.getTerrainContactPoints();
       
       % can't really add the full complementarity constraints here,
       % since the state constraints only take x as the input.  so 
@@ -1136,31 +1140,35 @@ classdef RigidBodyManipulator < Manipulator
       %
       % See also RigidBodyGeometry/getTerrainContactPoints,
       % RigidBodyManipulator/terrainContactPositions
-      if nargin < 2
-        body_idx = 2:obj.getNumBodies(); % World-fixed objects can't collide
-                                         % with the terrain
-      end
-      if nargin >= 3
-        if all(cellfun(@ischar,contact_groups))
-          contact_groups = {contact_groups};
+      if nargin == 1 && ~isempty(obj.all_terrain_contact_points_struct)
+        terrain_contact_point_struct = obj.all_terrain_contact_points_struct;
+      else
+        if nargin < 2
+          body_idx = 2:obj.getNumBodies(); % World-fixed objects can't collide
+          % with the terrain
         end
-        if numel(contact_groups) == 1
-          contact_groups = repmat(contact_groups,size(body_idx));
-        else
-          sizecheck(contact_groups,size(body_idx));
-        end
-      end
-      terrain_contact_point_struct = struct('pts',{},'idx',{});
-      for i = 1:length(body_idx)
-        bi=body_idx(i);
-        if bi ~= 1
-          if nargin < 3
-            pts = getTerrainContactPoints(obj.body(bi));
-          else
-            pts = getTerrainContactPoints(obj.body(bi),contact_groups{i});
+        if nargin >= 3
+          if all(cellfun(@ischar,contact_groups))
+            contact_groups = {contact_groups};
           end
-          if ~isempty(pts)
-            terrain_contact_point_struct(end+1) = struct('pts',pts,'idx',bi);
+          if numel(contact_groups) == 1
+            contact_groups = repmat(contact_groups,size(body_idx));
+          else
+            sizecheck(contact_groups,size(body_idx));
+          end
+        end
+        terrain_contact_point_struct = struct('pts',{},'idx',{});
+        for i = 1:length(body_idx)
+          bi=body_idx(i);
+          if bi ~= 1
+            if nargin < 3
+              pts = getTerrainContactPoints(obj.body(bi));
+            else
+              pts = getTerrainContactPoints(obj.body(bi),contact_groups{i});
+            end
+            if ~isempty(pts)
+              terrain_contact_point_struct(end+1) = struct('pts',pts,'idx',bi);
+            end
           end
         end
       end
