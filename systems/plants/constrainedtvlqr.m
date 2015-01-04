@@ -119,12 +119,16 @@ c = c.setOutputFrame(obj.getInputFrame);
 
 Straj_full = Ptraj*Straj*Ptraj';
 
-tt = Straj.pp.breaks;
-F_data = zeros(size(F0,1),size(F0,2),length(tt));
-for i=1:length(tt),
-  F_data(:,:,i) = getFandFdot(obj,tt(i),xtraj.eval(tt(i)),utraj.eval(tt(i)),constraint_ind,options);
+if size(F0,1)>0
+  tt = Straj.pp.breaks;
+  F_data = zeros(size(F0,1),size(F0,2),length(tt));
+  for i=1:length(tt),
+    F_data(:,:,i) = getFandFdot(obj,tt(i),xtraj.eval(tt(i)),utraj.eval(tt(i)),constraint_ind,options);
+  end
+  Ftraj = PPTrajectory(foh(tt,F_data));
+else
+  Ftraj = [];
 end
-Ftraj = PPTrajectory(foh(tt,F_data));
 end
 
 function B = getBTrajectory(p,ts,xtraj,utraj,constraint_ind,options)

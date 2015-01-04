@@ -80,6 +80,7 @@
     <child link="shin"/>
     <origin rpy="0 0 0" xyz="0 0 -.3"/>
     <axis xyz="0 1 0"/>
+    <limit effort="400"/>
   </joint>
 
   <joint name="ankle" type="continuous">
@@ -87,6 +88,7 @@
     <child link="foot"/>
     <origin rpy="0 0 0" xyz="0 0 -.3"/>
     <axis xyz="0 1 0"/>
+    <limit effort="400"/>
   </joint>
 
   <transmission name="knee_motor" type="SimpleTransmission">

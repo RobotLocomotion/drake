@@ -18,6 +18,7 @@ options.view = 'right';
 options.terrain = RigidBodyFlatTerrain();
 options.floating = true;
 options.ignore_self_collisions = true;
+options.use_bullet = false;
 s = 'OneLegHopper.urdf';
 dt = 0.001;
 r = TimeSteppingRigidBodyManipulator(s,dt,options);
@@ -48,12 +49,8 @@ foot_ind = findLinkId(r,'foot');
 support_times(2) = support_times(2);
 % manually specifiy modes for now
 supports = [RigidBodySupportState(r,foot_ind); ...
-  RigidBodySupportState(r,foot_ind); ...
-  RigidBodySupportState(r,foot_ind,{{'heel'}}); ...
-  RigidBodySupportState(r,foot_ind); ...
   RigidBodySupportState(r,foot_ind,{{'toe'}}); ...
   RigidBodySupportState(r,[]); ...
-  RigidBodySupportState(r,foot_ind); ...
   RigidBodySupportState(r,foot_ind)];
 
 if segment_number<1
@@ -78,10 +75,10 @@ ctrl_data = FullStateQPControllerData(true,struct(...
   'supports',supports));
 
 % instantiate QP controller
-options.slack_limit = inf;
-options.w_qdd = zeros(nq,1);
-options.w_grf = 0.0;
-options.w_slack = 0.0;
+options.slack_limit = 10;
+options.w_qdd = 0*ones(nq,1);
+options.w_grf = 1e-4;
+options.w_slack = 1.0;
 options.Kp_accel = 0.0;
 options.contact_threshold = 1e-3;
 qp = FullStateQPController(r,ctrl_data,options);
@@ -94,7 +91,7 @@ outs(1).output = 1;
 sys = mimoFeedback(qp,r,[],[],ins,outs);
 
 % feedback foot contact detector 
-options.use_contact_logic_OR = true;
+options.use_contact_logic_OR = false;
 fc = FootContactBlock(r,ctrl_data,options);
 sys = mimoFeedback(fc,sys,[],[],[],outs);
   
