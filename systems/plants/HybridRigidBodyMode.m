@@ -103,6 +103,8 @@ classdef HybridRigidBodyMode < DrakeSystem
       %    subject to \phiddot_i >= 0 for all \phi_i <= lb_i
       %    and \phiddot_i <= 0 for all \phi_i >= ub
       %  todo: consider adding stabilization terms back in, too
+      %  note: this is not the perfect objective, since the units are
+      %  somewhat arbitrary (and dependent on the relative scaling of phi)
       
       nf = 0;
 
