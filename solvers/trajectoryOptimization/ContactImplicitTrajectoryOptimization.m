@@ -388,5 +388,18 @@ classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
       end
     end
     
+    function utraj = reconstructInputTrajectory(obj,z)
+      % use a zero order hold
+      t = [0; cumsum(z(obj.h_inds))];
+
+      if size(obj.u_inds,1)>0
+        u = reshape(z(obj.u_inds),[],obj.N);
+        utraj = PPTrajectory(zoh(t,u));
+        utraj = utraj.setOutputFrame(obj.plant.getInputFrame);
+      else
+        utraj=[];
+      end
+    end
+    
   end
 end
