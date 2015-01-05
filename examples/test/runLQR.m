@@ -51,7 +51,7 @@ end
 c = AffineSystem([],[],[],[],[],[],[],-Ktraj,Ktraj*xtraj + utraj);
 c = c.setInputFrame(r.getOutputFrame);
 c = c.setOutputFrame(r.getInputFrame);
-t0 = round(Ktraj.tspan(1),3)+0.001;
+t0 = round(1000*Ktraj.tspan(1))/1000;
 tf = Ktraj.tspan(2);
 
 sys = feedback(r,c);

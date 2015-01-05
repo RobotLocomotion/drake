@@ -77,7 +77,7 @@ ctrl_data = FullStateQPControllerData(true,struct(...
 % instantiate QP controller
 options.slack_limit = 10;
 options.w_qdd = 0*ones(nq,1);
-options.w_grf = 1e-4;
+options.w_grf = 0;
 options.w_slack = 1.0;
 options.Kp_accel = 0.0;
 options.contact_threshold = 1e-3;

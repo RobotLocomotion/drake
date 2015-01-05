@@ -17,12 +17,12 @@ phi_f = p.contactConstraints(q0);
 q0(2) = -phi_f(1);
 x0 = [q0;zeros(5,1)];
 
-q1 = [-0.1;0;.6;-1.2;.2+pi/2];
+q1 = [-0.075;0;.6;-1.2;.2+pi/2];
 phi_f = p.contactConstraints(q1);
 q1(2) = -phi_f(1) + 0.15;
 x1 = [q1;zeros(5,1)];
 
-qf = [-0.2;0;.6;-1.2;.6+pi/2];
+qf = [-0.15;0;.6;-1.2;.6+pi/2];
 phi_f = p.contactConstraints(qf);
 qf(2) = -phi_f(1);
 xf = [qf;zeros(5,1)];
@@ -63,8 +63,8 @@ T_span = [tf0 tf0];
 x0_min = [q0;zeros(5,1)];
 x0_max = [q0;zeros(5,1)];
 
-xf_min = [qf;zeros(5,1)] - [.1;.01;zeros(8,1)];
-xf_max = [qf;zeros(5,1)] + [.1;.01;zeros(8,1)];
+xf_min = [qf;zeros(5,1)] - [.05;0;zeros(8,1)];
+xf_max = [qf;zeros(5,1)] + [.05;0;zeros(8,1)];
 
 to_options.compl_slack = scale*.01;
 to_options.lincompl_slack = scale*.001;
