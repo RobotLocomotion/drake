@@ -8,25 +8,25 @@ options.ignore_self_collisions = true;
 p = PlanarRigidBodyManipulator('OneLegHopper.urdf',options);
 % trajopt = ContactImplicitTrajectoryOptimization(p,[],[],[],10,[1 1]);
 
-%todo: add joint limits, periodicity constraint
-
 N = 40;
+
+x_vel = -0.0;
+qd_init = [x_vel;zeros(4,1)];
 
 q0 = [0;0;.6;-1.2;.6+pi/2];
 phi_f = p.contactConstraints(q0);
 q0(2) = -phi_f(1);
-x0 = [q0;zeros(5,1)];
+x0 = [q0;qd_init];
 
 q1 = [-0.075;0;.6;-1.2;.2+pi/2];
 phi_f = p.contactConstraints(q1);
 q1(2) = -phi_f(1) + 0.15;
-x1 = [q1;zeros(5,1)];
+x1 = [q1;qd_init];
 
 qf = [-0.15;0;.6;-1.2;.6+pi/2];
 phi_f = p.contactConstraints(qf);
 qf(2) = -phi_f(1);
-xf = [qf;zeros(5,1)];
-v=p.constructVisualizer;
+xf = [qf;qd_init];
 
 N1 = floor(N/2);
 N2 = N-N1;
@@ -60,11 +60,11 @@ end
 T_span = [tf0 tf0];
 
 
-x0_min = [q0;zeros(5,1)];
-x0_max = [q0;zeros(5,1)];
+x0_min = [q0;qd_init];
+x0_max = [q0;qd_init];
 
-xf_min = [qf;zeros(5,1)] - [.05;0;zeros(8,1)];
-xf_max = [qf;zeros(5,1)] + [.05;0;zeros(8,1)];
+xf_min = [qf;qd_init] - [.05;zeros(9,1)];
+xf_max = [qf;qd_init] + [.05;zeros(9,1)];
 
 to_options.compl_slack = scale*.01;
 to_options.lincompl_slack = scale*.001;
