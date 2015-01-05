@@ -21,7 +21,12 @@ classdef RigidBodyManipulator < Manipulator
     num_contact_pairs;
     contact_options; % struct containing options for contact/collision handling
     contact_constraint_id=[];
-    all_terrain_contact_points_struct=[];
+
+    % struct containing the output of 'obj.getTerrainContactPoints()'.
+    % That output does not change between compilations, and is requested
+    % at every simulation dt, so storing it can speed things up.
+    cached_terrain_contact_points_struct=[];
+                                            
     frame = [];     % array of RigidBodyFrame objects
 
     robot_state_frames;
@@ -625,6 +630,9 @@ classdef RigidBodyManipulator < Manipulator
 
       model = removeFixedJoints(model);
 
+      % Clear cached contact points
+      model.cached_terrain_contact_points_struct = [];
+
       % reorder body list to make sure that parents before children in the
       % list (otherwise simple loops over bodies might not compute
       % kinematics/dynamics correctly)
@@ -793,7 +801,7 @@ classdef RigidBodyManipulator < Manipulator
       model.num_contact_pairs = length(phi);
 
       % cache the full set of terrain contact points
-      model.all_terrain_contact_points_struct = model.getTerrainContactPoints();
+      model.cached_terrain_contact_points_struct = model.getTerrainContactPoints();
       
       % can't really add the full complementarity constraints here,
       % since the state constraints only take x as the input.  so 
@@ -1140,8 +1148,9 @@ classdef RigidBodyManipulator < Manipulator
       %
       % See also RigidBodyGeometry/getTerrainContactPoints,
       % RigidBodyManipulator/terrainContactPositions
-      if nargin == 1 && ~isempty(obj.all_terrain_contact_points_struct)
-        terrain_contact_point_struct = obj.all_terrain_contact_points_struct;
+      checkDirty(obj);
+      if nargin == 1 && ~isempty(obj.cached_terrain_contact_points_struct)
+        terrain_contact_point_struct = obj.cached_terrain_contact_points_struct;
       else
         if nargin < 2
           body_idx = 2:obj.getNumBodies(); % World-fixed objects can't collide
