@@ -19,6 +19,7 @@ options.terrain = RigidBodyFlatTerrain();
 options.floating = true;
 options.ignore_self_collisions = true;
 options.use_bullet = false;
+options.enable_fastqp = false;
 s = 'OneLegHopper.urdf';
 dt = 0.001;
 r = TimeSteppingRigidBodyManipulator(s,dt,options);
@@ -32,9 +33,9 @@ nu = getNumInputs(r);
 v = r.constructVisualizer;
 v.display_dt = 0.01;
 
-load('data/hopper_traj_lqr_working.mat');
+load('data/hopper_traj_lqr.mat');
 
-[xtraj,utraj,Btraj,Straj,Straj_full] = repeatTraj(xtraj,utraj,Btraj,Straj,Straj_full,1);
+[xtraj,utraj,Btraj,Straj,Straj_full] = repeatTraj(xtraj,utraj,Btraj,Straj,Straj_full,5);
 
 xtraj = xtraj.setOutputFrame(getStateFrame(r));
 v.playback(xtraj);
@@ -49,12 +50,12 @@ options.left_foot_name = 'thigh'; % junk for now
 
 foot_ind = findLinkId(r,'foot');
 
-[ts,modes] = extractHybridModes(r,xtraj);
+[ts,modes] = extractHybridModes(r,xtraj,support_times+0.03); % hack add time to make sure it's fully into the next mode
 
-support_times = ts([1 find(diff(modes))]);
-modes = modes([1 1+find(diff(modes))]);
+% support_times = ts([1 find(diff(modes_))]);
+% modes = modes_([1 1+find(diff(modes_))]);
 
-if length(support_times) ~= length(modes)
+if length(support_times) ~= length(Straj)
   disp('these should be equal');
   keyboard;
 end

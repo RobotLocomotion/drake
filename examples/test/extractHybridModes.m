@@ -18,7 +18,7 @@ modes = [];
 for i=1:length(ts)
   x = xtraj.eval(ts(i));
   phi = r.contactConstraints(x(1:r.getNumPositions));
-  in_contact = phi < 5e-4;
+  in_contact = phi < 5e-3;
   if in_contact(1) && in_contact(2) % heel+toe
     modes = [modes,1];
   elseif in_contact(1) % toe
