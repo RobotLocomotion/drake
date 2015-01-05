@@ -8,8 +8,8 @@ options.ignore_self_collisions = true;
 p = PlanarRigidBodyManipulator('OneLegHopper.urdf',options);
 % trajopt = ContactImplicitTrajectoryOptimization(p,[],[],[],10,[1 1]);
 
-%todo: add joint limits, periodicity constraint
-
+N = 40;
+distance = 0.15;
 
 x_vel = -0.0;
 qd_init = [x_vel;zeros(4,1)];
@@ -77,7 +77,7 @@ to_options.lambda_mult = p.getMass*9.81*tf0/N/2;
 to_options.lambda_jl_mult = tf0/N;
 
 % to_options.integration_method = ContactImplicitTrajectoryOptimization.MIDPOINT;
-to_options.integration_method = ContactImplicitTrajectoryOptimization.MIXED;
+to_options.integration_method = ContactImplicitTrajectoryOptimization.BACKWARD_EULER;
 
 traj_opt = ContactImplicitTrajectoryOptimization(p,N,T_span,to_options);
 traj_opt = traj_opt.addRunningCost(@running_cost_fun);
