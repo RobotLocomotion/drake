@@ -1,4 +1,4 @@
-function [c,Ktraj,Straj,Ptraj,Btraj,tvec,Straj_full,Ftraj] = hybridconstrainedtvlqr(obj,xtraj,utraj,ltraj,Q,R,Qf,options)
+function [c,Ktraj,Straj,Ptraj,Btraj,tvec,Straj_full,Ftraj,xtraj,utraj] = hybridconstrainedtvlqr(obj,xtraj,utraj,ltraj,Q,R,Qf,options)
 %HYBRIDCONSTRAINEDTVLQR
 % TVLQR for a hybrid model with constraints
 % @input obj The plant object

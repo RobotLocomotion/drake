@@ -1,4 +1,4 @@
-function runHopperTrajStab(segment_number)
+function runTrajStab(segment_number)
 
 if ~checkDependency('gurobi')
   warning('Must have gurobi installed to run this example');
@@ -18,7 +18,8 @@ options.view = 'right';
 options.terrain = RigidBodyFlatTerrain();
 options.floating = true;
 options.ignore_self_collisions = true;
-s = 'OneLegHopper_passiveankle.urdf';
+options.use_bullet = false;
+s = 'OneLegHopper.urdf';
 dt = 0.001;
 r = TimeSteppingRigidBodyManipulator(s,dt,options);
 r = r.setStateFrame(OneLegHopperState(r));
@@ -31,8 +32,7 @@ nu = getNumInputs(r);
 v = r.constructVisualizer;
 v.display_dt = 0.01;
 
-% load('data/hopper_traj_lqr_081414.mat');
-load('data/hopper_passiveankle_traj_lqr_081414.mat');
+load('data/hopper_traj_lqr.mat');
 xtraj = xtraj.setOutputFrame(getStateFrame(r));
 v.playback(xtraj);
 
@@ -48,9 +48,9 @@ foot_ind = findLinkId(r,'foot');
 
 support_times(2) = support_times(2);
 % manually specifiy modes for now
-supports = [RigidBodySupportState(r,[]); ...
-  RigidBodySupportState(r,foot_ind); ...
-  RigidBodySupportState(r,foot_ind,{{'heel'}}); ...
+supports = [RigidBodySupportState(r,foot_ind); ...
+  RigidBodySupportState(r,foot_ind,{{'toe'}}); ...
+  RigidBodySupportState(r,[]); ...
   RigidBodySupportState(r,foot_ind)];
 
 if segment_number<1
@@ -75,12 +75,12 @@ ctrl_data = FullStateQPControllerData(true,struct(...
   'supports',supports));
 
 % instantiate QP controller
-options.slack_limit = inf;
-options.w_qdd = 0.001*ones(nq,1);
-options.w_grf = 0.0;
-options.w_slack = 0.0;
+options.slack_limit = 10;
+options.w_qdd = 0*ones(nq,1);
+options.w_grf = 0;
+options.w_slack = 1.0;
 options.Kp_accel = 0.0;
-options.contact_threshold = 1e-2;
+options.contact_threshold = 1e-3;
 qp = FullStateQPController(r,ctrl_data,options);
 
 % feedback QP controller with spring flamingo
@@ -91,7 +91,7 @@ outs(1).output = 1;
 sys = mimoFeedback(qp,r,[],[],ins,outs);
 
 % feedback foot contact detector 
-options.use_contact_logic_OR = true;
+options.use_contact_logic_OR = false;
 fc = FootContactBlock(r,ctrl_data,options);
 sys = mimoFeedback(fc,sys,[],[],[],outs);
   

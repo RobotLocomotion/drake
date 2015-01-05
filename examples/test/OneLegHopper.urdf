@@ -20,7 +20,7 @@
   <link name="shin">
     <inertial>
       <origin rpy="0 0 0" xyz="0 0 -.15"/>
-      <mass value="1"/>
+      <mass value="0.5"/>
       <inertia ixx=".0075" ixy="0" ixz="0" iyy=".0075" iyz="0" izz=".0075"/>
     </inertial>
     <visual>
@@ -37,7 +37,7 @@
   <link name="foot">
     <inertial>
       <origin rpy="0 0 0" xyz="0 0 -.1"/>
-      <mass value="1"/>
+      <mass value="0.5"/>
       <inertia ixx=".0033" ixy="0" ixz="0" iyy=".0033" iyz="0" izz=".0033"/>
     </inertial>
     <visual>
@@ -49,18 +49,30 @@
         <color rgba=".8 .8 .8 1"/>
       </material>
     </visual>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
+    <collision group="heel">
+      <origin rpy="0 0 0" xyz="0.02 0 0"/>
       <geometry>
         <sphere radius="0"/>
       </geometry>
     </collision>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 -.2"/>
+    <visual>
+      <origin rpy="0 0 0" xyz="0.02 0 0"/>
+      <geometry>
+        <sphere radius=".005"/>
+      </geometry>
+    </visual>
+    <collision group="toe">
+      <origin rpy="0 0 0" xyz="0.02 0 -.2"/>
       <geometry>
         <sphere radius="0"/>
       </geometry>
     </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="0.02 0 -.2"/>
+      <geometry>
+        <sphere radius=".005"/>
+      </geometry>
+    </visual>
   </link>
 
   <joint name="knee" type="continuous">
@@ -68,6 +80,7 @@
     <child link="shin"/>
     <origin rpy="0 0 0" xyz="0 0 -.3"/>
     <axis xyz="0 1 0"/>
+    <limit effort="100"/>
   </joint>
 
   <joint name="ankle" type="continuous">
@@ -75,6 +88,7 @@
     <child link="foot"/>
     <origin rpy="0 0 0" xyz="0 0 -.3"/>
     <axis xyz="0 1 0"/>
+    <limit effort="100"/>
   </joint>
 
   <transmission name="knee_motor" type="SimpleTransmission">

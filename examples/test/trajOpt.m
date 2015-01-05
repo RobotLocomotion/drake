@@ -21,7 +21,7 @@ x0 = [q0;zeros(5,1)];
 
 q1 = [-distance/2;0;.6;-1.2;.2+pi/2];
 phi_f = p.contactConstraints(q1);
-q1(2) = -phi_f(1) + 0.1;
+q1(2) = -phi_f(1) + 0.15;
 x1 = [q1;zeros(5,1)];
 
 qf = [-distance;0;.6;-1.2;.6+pi/2];
@@ -33,40 +33,13 @@ v=p.constructVisualizer;
 N1 = floor(N/2);
 N2 = N-N1;
 d = floor(N/4);
-tf0 = .5;
-if nargin < 2
-    
-%     % guess an intermediary state
-%   q1 = [.20;0;0;.1;.2;-.3;0;-1;.5;0];
-%   phi_tmp = p.contactConstraints(q1);
-%   q1(2) = -phi_tmp(1);
-%   q2 = [xf(1);0;.2;.5;.4;0;0;-.4;.2;0];
-%   phi_tmp = p.contactConstraints(q2);
-%   q2(2) = -phi_tmp(3);
-%   
-%   x1 = [q1;.25;zeros(9,1)];
-%   x2 = [q2;.25;zeros(9,1)];
-%   x_vec = [linspacevec(x0,x1,N1-d) linspacevec(x1,x2,2*d) linspacevec(x2,xf,N2-d)];
-%   t_init = linspace(0,tf0,N);
-%   
-%   traj_init.x = PPTrajectory(foh(t_init,x_vec));
-%   traj_init.x = traj_init.x.setOutputFrame(p.getStateFrame); 
-%   traj_init.u = PPTrajectory(foh(t_init,0*randn(5,N)));
-%   
-%   lp = [1;0;0;0];
-%   ln = zeros(4,1);
-%   traj_init.l = PPTrajectory(foh(t_init,[repmat([lp;lp;ln;ln],1,N1-d) zeros(16,2*d) repmat([ln;ln;lp;lp],1,N2-d)]));
-%   traj_init.ljl = [];
-%   
-%   
-%   
-%   
-%   
+tf0 = 0.5;
+if nargin < 2  
   t_init = linspace(0,tf0,N);
   traj_init.x = PPTrajectory(foh(t_init,[linspacevec(x0,x1,floor(N/2)),linspacevec(x1,xf,N-floor(N/2))]));
   traj_init.x = traj_init.x.setOutputFrame(p.getStateFrame);
  
-  traj_init.u = PPTrajectory(foh(t_init,randn(getNumInputs(p),N)));
+  traj_init.u = PPTrajectory(foh(t_init,zeros(getNumInputs(p),N)));
   
   lp = [1;0;0;0];
   ln = zeros(4,1);
@@ -86,14 +59,14 @@ else
 end
 
 
-T_span = [1 1];
+T_span = [tf0 tf0];
 
 
 x0_min = [q0;zeros(5,1)];
 x0_max = [q0;zeros(5,1)];
 
-xf_min = [qf;zeros(5,1)] - [.1;.01;zeros(8,1)];
-xf_max = [qf;zeros(5,1)] + [.1;.01;zeros(8,1)];
+xf_min = [qf;zeros(5,1)] - [.05;0;zeros(8,1)];
+xf_max = [qf;zeros(5,1)] + [.05;0;zeros(8,1)];
 
 to_options.compl_slack = scale*.01;
 to_options.lincompl_slack = scale*.001;
@@ -152,7 +125,7 @@ traj_opt = traj_opt.setSolverOptions('snopt','MajorOptimalityTolerance',1e-5);
   function [f,df] = final_cost_fun(T,x)
     K = 1;
     f = K*T;
-    df = [K zeros(1,18)];
+    df = [K zeros(1,10)];
     
   end
 
