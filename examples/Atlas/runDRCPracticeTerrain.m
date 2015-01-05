@@ -16,5 +16,9 @@ end
 options.terrain = height_map;  
 options.navgoal = [6.5;0;0;0;0;0];
 options.initial_pose = [-3;0;0;0;0;0];
+
+findSafeTerrain(options.terrain, options.initial_pose, options.navgoal);
+
 runAtlasWalkingPlanning(options);
+
 
