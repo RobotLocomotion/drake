@@ -285,11 +285,11 @@ classdef MixedIntegerConvexProgram
       params = applyDefaults(params, struct('outputflag', 0));
       model = obj.getGurobiModel();
       result = gurobi(model, params);
-      objval = result.objval;
       ok = ~(strcmp(result.status, 'INFEASIBLE') || strcmp(result.status, 'INF_OR_UNBD'));
       if ~ok
         error('Drake:MixedIntegerConvexProgram:InfeasibleProblem', 'The mixed-integer problem is infeasible.');
       end
+      objval = result.objval;
       solvertime = result.runtime;
       obj = obj.extractResult(result.x);
     end
@@ -375,11 +375,11 @@ classdef MixedIntegerConvexProgram
       end
 
       diagnostics = optimize(constraints, objective, sdpsettings('solver', 'gurobi', 'verbose', 0));
-      objval = double(objective);
       ok = diagnostics.problem == 0 || diagnostics.problem == -1;
       if ~ok
         error('Drake:MixedIntegerConvexProgram:InfeasibleProblem', 'The mixed-integer problem is infeasible.');
       end
+      objval = double(objective);
       solvertime = diagnostics.solvertime;
       obj = obj.extractResult(double(obj.symbolic_vars));
     end
