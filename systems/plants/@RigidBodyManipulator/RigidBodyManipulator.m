@@ -603,6 +603,60 @@ classdef RigidBodyManipulator < Manipulator
       end
     end
 
+    function xdot = constrainedDynamics(obj,t,x,u,constraint_ind,options)
+      if nargin<6
+        options = struct();
+      end
+      q=x(1:obj.getNumPositions()); 
+      qd=x((obj.getNumPositions()+1):end);
+      [H,C,B] = manipulatorDynamics(obj,q,qd);
+      Hinv = inv(H);
+      if (size(constraint_ind) > 0)  
+        if isfield(options,'use_joint_limits') && options.use_joint_limits
+          [~,J_limit,dJ_limit] = obj.jointLimitConstraints(q);
+        else
+          J_limit = zeros(0,length(q));
+          dJ_limit = zeros(0,length(q)^2);
+        end
+
+        [phi_n,normal,d,xA,xB,idxA,idxB,mu,n,D,dn,dD] = obj.contactConstraints(q);
+
+        phi = zeros(2*length(phi_n),1);
+      %   phi(1:2:end) = phi_f;
+        phi(2:2:end) = phi_n;
+
+        J = zeros(length(phi), obj.getNumPositions());
+        J(1:2:end,:) = D{1};
+        J(2:2:end,:) = n;
+
+        dJ = zeros(length(phi), obj.getNumPositions()^2);
+        dJ(2:2:end,:) = reshape(dn,length(phi_n),[]);
+        dJ(1:2:end,:) = reshape(dD{1},length(phi_n),[]);
+
+        J_full = [J_limit;J];
+        dJ_full = [dJ_limit;dJ];
+      %   phi_full = [phi; phi_limit];
+
+      %   phi_sub = phi_full(constraint_ind);
+        Jdotqd = dJ_full(constraint_ind,:)*reshape(qd*qd',obj.getNumPositions()^2,1);
+        J_sub = J_full(constraint_ind,:);
+
+        if isempty(u)
+          constraint_force = -J_sub'*(pinv(J_sub*Hinv*J_sub')*(J_sub*Hinv*(-C) + Jdotqd));
+        else
+          constraint_force = -J_sub'*(pinv(J_sub*Hinv*J_sub')*(J_sub*Hinv*(B*u-C) + Jdotqd));
+        end
+      else
+        constraint_force = 0;
+      end
+      % constraint_force = 0;
+      if isempty(u)
+        qdd = Hinv*(constraint_force - C);
+      else
+        qdd = Hinv*(B*u + constraint_force - C);
+      end
+      xdot = [qd;qdd];
+    end
     function model = addSensor(model,sensor)
       % Adds a sensor to the RigidBodyManipulator.  This modifies the
       % model.sensor parameter and marks the model as dirty.
