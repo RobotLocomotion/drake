@@ -318,19 +318,3 @@ sqrtSdot = sqrtSdot(:);
 % t
 end
 
-  [xd,dxd] = geval(dynamicsfn,t,x_t,u_t,struct('grad_method','numerical'));
-  A = dxd(:,2:2*p.getNumPositions()+1);
-  B = dxd(:,2+2*p.getNumPositions():end);
-
-  % A_t = P_t'*A*P_t + P_t'*Pdot_t;  %was this
-  A_t = P_t'*A*P_t + Pdot_t'*P_t;
-  B_t = P_t'*B;
-
-  sqrtS = reshape(sqrtS,size(A_t,1),[]);
-
-  sqrtSdot = -A_t'*sqrtS + .5*sqrtS*sqrtS'*B_t*inv(R)*B_t'*sqrtS - .5*P_t'*Q*P_t*inv(sqrtS)';
-
-  sqrtSdot = sqrtSdot(:);
-  % t
-end
-
