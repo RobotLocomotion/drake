@@ -364,7 +364,7 @@ classdef FullStateQPController < MIMODrakeSystem
       qp_active_set = find(abs(Ain_fqp*alpha - bin_fqp)<1e-6);
       obj.controller_data.qp_active_set = qp_active_set;
     end
-    beta=Ibeta*alpha
+%     beta=Ibeta*alpha
     y = Iu*alpha     
     
   end

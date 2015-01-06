@@ -2,14 +2,14 @@ function [xtraj_,utraj_,Btraj_,Straj_] = flipLeftRight(r,xtraj,utraj,Btraj,Straj
 % specific to planar Atlas model 
 
 % keep the same
-base_x = findJointIndices(r,'base_x');
-base_z = findJointIndices(r,'base_z');
-base_relative_pitch = findJointIndices(r,'base_relative_pitch');
-back_bky = findJointIndices(r,'back_bky');
+base_x = findPositionIndices(r,'base_x');
+base_z = findPositionIndices(r,'base_z');
+base_relative_pitch = findPositionIndices(r,'base_relative_pitch');
+back_bky = findPositionIndices(r,'back_bky');
 
 % flip
-l_leg = findJointIndices(r,'l_leg');
-r_leg = findJointIndices(r,'r_leg');
+l_leg = findPositionIndices(r,'l_leg');
+r_leg = findPositionIndices(r,'r_leg');
 
 nq = getNumPositions(r);
 
