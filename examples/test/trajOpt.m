@@ -5,6 +5,7 @@ warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
 options.terrain = RigidBodyFlatTerrain();
 options.floating = true;
 options.ignore_self_collisions = true;
+options.use_bullet = false;
 p = PlanarRigidBodyManipulator('OneLegHopper.urdf',options);
 % trajopt = ContactImplicitTrajectoryOptimization(p,[],[],[],10,[1 1]);
 
@@ -77,8 +78,8 @@ T_span = [tf0 tf0];
 x0_min = [q0;qd_init];
 x0_max = [q0;qd_init];
 
-xf_min = [qf;qd_init] - [.05;zeros(9,1)];
-xf_max = [qf;qd_init] + [.05;zeros(9,1)];
+xf_min = [qf;qd_init] - [.0;zeros(9,1)];
+xf_max = [qf;qd_init] + [.0;zeros(9,1)];
 
 to_options.compl_slack = scale*.01;
 to_options.lincompl_slack = scale*.001;

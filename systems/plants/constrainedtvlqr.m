@@ -84,6 +84,7 @@ dynamicsFun = @(t,x,u) constrainedDynamics(obj,t,x,u,constraint_ind,options);
 % utraj = PPTrajectory(foh(t_vec,u_vec));
 
 
+display(sprintf('Solving for P forwards, from %f to %f',tspan(1),tspan(end)));
 Pfun = @(t,P) Pdynamics(obj,t,xtraj,utraj,P,constraint_ind,alpha_1,alpha_2,options);
 [tout,yout] = ode45(Pfun,tspan,P0);
 
@@ -100,6 +101,7 @@ else
   Sf = Sf^(1/2);
   Sfun = @(t,S) sqrtSdynamics(t,S,obj,dynamicsFun,xtraj,utraj,Ptraj,Q,R,constraint_ind,alpha_1,alpha_2,options);
 end
+display(sprintf('Solving for S backwards, from %f to %f',tspan(end),tspan(1)));
 [tout,yout] = ode45(Sfun,tspan(end:-1:1),Sf);
 
 S_data = reshape(yout',2*nQ - 2*nQC,2*nQ - 2*nQC,[]);
@@ -253,7 +255,7 @@ if cond(A) > 1e3  %results from F*P != 0
   display(sprintf('%f %e',t, cond(A)));
 %   keyboard
 end
-t
+% t
 Pdot = reshape(pinv(A)*b,n,n-d);
 
 if any(abs(Pdot) > 1e2)
@@ -309,6 +311,10 @@ A_t = P_t'*A*P_t + Pdot_t'*P_t;
 B_t = P_t'*B;
   
 sqrtS = reshape(sqrtS,size(A_t,1),[]);
+% display(sprintf('%f \t %f \t',t,rcond(sqrtS),cond(sqrtS)))
+% if rcond(sqrtS) < 1e-4,
+%   keyboard
+% end
 
 sqrtSdot = -A_t'*sqrtS + .5*sqrtS*sqrtS'*B_t*inv(R)*B_t'*sqrtS - .5*P_t'*Q*P_t*inv(sqrtS)';
 
