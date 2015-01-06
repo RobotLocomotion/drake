@@ -43,6 +43,11 @@ slope_angle = reshape(slope_angle, s);
 potential_safe_grid = slope_angle < options.max_slope_angle;
 
 while true
+%   
+%   figure(3)
+%   clf
+%   imshow(potential_safe_grid, 'InitialMagnification', 'fit');
+  
 
   obs_dists = iris.terrain_grid.obs_dist(potential_safe_grid);
 
@@ -70,6 +75,13 @@ while true
   end
 
   boundary_mask = logical(iris.terrain_grid.component_boundary(plane_mask, i0));
+%   
+%   figure(4)
+%   clf
+%   subplot(211)
+%   imshow(plane_mask, 'InitialMagnification', 'fit');
+%   subplot(212)
+%   imshow(~boundary_mask, 'InitialMagnification', 'fit');
   
   obs_x = X(boundary_mask);
   obs_y = Y(boundary_mask);
@@ -88,7 +100,7 @@ while true
   lcmgl.switchBuffers();
   
   
-  inpoly = all(bsxfun(@minus, A * [reshape(X, 1, []); reshape(Y, 1, [])], b) <= 0, 1);
+  inpoly = all(bsxfun(@minus, A * [reshape(X, 1, []); reshape(Y, 1, [])], b) <= options.resolution / 2, 1);
   inpoly = reshape(inpoly, s);
   potential_safe_grid = potential_safe_grid & ~inpoly;
 end
