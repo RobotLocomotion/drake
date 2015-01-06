@@ -65,12 +65,10 @@ c_region.b = [c_region.b; new_c_region.b];
 c_region.A = [c_region.A; [0, 0, 1; 0, 0, -1]];
 c_region.b = [c_region.b; [initial_yaw + pi; -(initial_yaw - pi)]];
 
-xyyaw_poly = iris.Polytope(c_region.A, c_region.b);
+xyyaw_poly = iris.Polytope(c_region.A, c_region.b).reduce();
 
-% simplify the polytope by converting to V-rep and back
 vertices = xyyaw_poly.getVertices();
 if ~isempty(vertices)
-  xyyaw_poly = iris.Polytope.fromVertices(vertices);
   terrain_region = iris.TerrainRegion(xyyaw_poly.A, xyyaw_poly.b, planar_region.point, planar_region.normal);
   
 %   xs = iris.sample_convex_polytope(terrain_region.A, terrain_region.b, 100);

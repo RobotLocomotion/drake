@@ -35,7 +35,9 @@ lfoot_navgoal(1:3) = lfoot_navgoal(1:3) + R*[0;0.13;0];
 % Plan footsteps to the goal
 goal_pos = struct('right', rfoot_navgoal, 'left', lfoot_navgoal);
 footstep_plan = r.planFootsteps(q0, goal_pos, options.safe_regions, struct('method_handle', @footstepPlanner.humanoids2014));
-
+if length(footstep_plan.footsteps) < 3
+  error('Drake:NoFeasibleFootstepPlan', 'No feasible footstep plan could be found');
+end
 
 % Snap to terrain
 nsteps = length(footstep_plan.footsteps);

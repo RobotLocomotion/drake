@@ -15,16 +15,28 @@ end
 
 options.terrain = height_map;  
 options.navgoal = [6.5;0;0;0;0;0];
-options.initial_pose = [-3;0;0;0;0;0];
-% options.initial_pose = [0;0;0;0;0;0]
+% options.initial_pose = [-3;0;0;0;0;0];
+options.initial_pose = [0;0;0;0;0;0]
 
 while true
+  profile on
   options.safe_regions = findSafeTerrain(options.terrain, options.initial_pose, options.navgoal);
-  xtraj = runAtlasWalkingPlanning(options);
+  try
+    xtraj = runAtlasWalkingPlanning(options);
+  catch e
+    if strcmp(e.identifier, 'Drake:NoFeasibleFootstepPlan')
+      % then we're done
+      break
+    else
+      rethrow(e);
+    end
+  end
+  profile viewer
   breaks = xtraj.getBreaks();
   xf = xtraj.eval(breaks(end));
   options.initial_pose = xf(1:6);
   disp('pausing for playback...press any key to continue');
+  pause
   options.initial_pose
 end
 
