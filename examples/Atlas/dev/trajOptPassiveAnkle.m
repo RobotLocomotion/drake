@@ -76,7 +76,7 @@ else
   
 %   tf0 = t_init(end);
 end
-T_span = [1 2];
+T_span = [tf0/2 tf0];
 
 
 x0_min = x0 - [0;0;0;1;1;1;1;.2;.2;1;5*ones(10,1)];

@@ -147,57 +147,57 @@ end
 
 
 function [F,Fdot]=getFandFdot(obj,t,x,u,constraint_ind,options)
-q = x(1:obj.getNumPositions());
-qd = x(obj.getNumPositions()+1:end);
+  q = x(1:obj.getNumPositions());
+  qd = x(obj.getNumPositions()+1:end);
 
 
-if options.use_joint_limits
-  [phi_limit,J_limit,dJ_limit] = obj.jointLimitConstraints(q);
-  dJ_limit = reshape(dJ_limit,[],length(q));
-else
-  phi_limit = [];
-  J_limit = zeros(0,length(q));
-  dJ_limit = zeros(0,length(q)^2);
-end
+  if options.use_joint_limits
+    [phi_limit,J_limit,dJ_limit] = obj.jointLimitConstraints(q);
+    dJ_limit = reshape(dJ_limit,[],length(q));
+  else
+    phi_limit = [];
+    J_limit = zeros(0,length(q));
+    dJ_limit = zeros(0,length(q)^2);
+  end
 
 
-[phi_n,normal,d,xA,xB,idxA,idxB,mu,n,D,dn,dD] = obj.contactConstraints(q);
+  [phi_n,normal,d,xA,xB,idxA,idxB,mu,n,D,dn,dD] = obj.contactConstraints(q);
 
-J = zeros(2*size(n,1),size(n,2));
-J(1:2:end,:) = D{1};
-J(2:2:end,:) = n;
+  J = zeros(2*size(n,1),size(n,2));
+  J(1:2:end,:) = D{1};
+  J(2:2:end,:) = n;
 
-J = [J_limit;J];
-J = J(constraint_ind,:);
+  J = [J_limit;J];
+  J = J(constraint_ind,:);
 
-phi = zeros(2*size(n,1),1);
-% phi(1:2:end,:) = phi_f;
-phi(2:2:end,:) = phi_n;
-phi = [phi_limit;phi];
-phi = phi(constraint_ind);
-if any(phi > 1e-2)
-%   keyboard
-%   warning('Constraint does not evaluate to near 0')
-end
+  phi = zeros(2*size(n,1),1);
+  % phi(1:2:end,:) = phi_f;
+  phi(2:2:end,:) = phi_n;
+  phi = [phi_limit;phi];
+  phi = phi(constraint_ind);
+  if any(phi > 1e-2)
+  %   keyboard
+  %   warning('Constraint does not evaluate to near 0')
+  end
 
-dJqd = zeros(2*size(n,1),size(n,2));
-dJqd(1:2:end,:) = matGradMult(dD{1},qd);
-dJqd(2:2:end,:) = matGradMult(dn,qd);
+  dJqd = zeros(2*size(n,1),size(n,2));
+  dJqd(1:2:end,:) = matGradMult(dD{1},qd);
+  dJqd(2:2:end,:) = matGradMult(dn,qd);
 
-if size(J_limit,1) > 0
-  dJqd = [matGradMult(dJ_limit,qd); dJqd];
-end
-dJqd = dJqd(constraint_ind,:);
+  if size(J_limit,1) > 0
+    dJqd = [matGradMult(dJ_limit,qd); dJqd];
+  end
+  dJqd = dJqd(constraint_ind,:);
 
-F = full([J zeros(size(J));dJqd J]);
+  F = full([J zeros(size(J));dJqd J]);
 
-if nargout > 1
-  % Fdot = -F A
-  dynamicsFun = @(t,x,u) constrainedDynamics(obj,t,x,u,constraint_ind,options);
-  [~,A] = geval(dynamicsFun,t,x,u,struct('grad_method','numerical'));
-  
-  Fdot = - F*A(:,2:1+length(x));
-end
+  if nargout > 1
+    % Fdot = -F A
+    dynamicsFun = @(t,x,u) constrainedDynamics(obj,t,x,u,constraint_ind,options);
+    [~,A] = geval(dynamicsFun,t,x,u,struct('grad_method','numerical'));
+
+    Fdot = - F*A(:,2:1+length(x));
+  end
 
 % if nargout > 1
 %   xd = constrainedDynamics(obj,t,x,u,constraint_ind);
@@ -235,21 +235,21 @@ end
 % end
 
 function Pdot = getPdot(obj,t,x,u,P,constraint_ind,alpha_1,alpha_2,options)
-n = length(x);
-d = n - size(P,2);
-[F,Fdot] = getFandFdot(obj,t,x,u,constraint_ind,options);
-A = kron(eye(n-d),F);
-b = -reshape(Fdot*P + alpha_1*F*P,[],1);
-ortho_err = eye(n-d) - P'*P;
-for i=1:n-d,
-  for j=1:i,
-    row = zeros(1,n*(n-d));
-    row((1:n) + n*(i-1)) = P(:,j)';
-    row((1:n) + n*(j-1)) = row((1:n) + n*(j-1)) + P(:,i)';
-    A = [A;row];
-    b = [b;alpha_2*ortho_err(i,j)];
+  n = length(x);
+  d = n - size(P,2);
+  [F,Fdot] = getFandFdot(obj,t,x,u,constraint_ind,options);
+  A = kron(eye(n-d),F);
+  b = -reshape(Fdot*P + alpha_1*F*P,[],1);
+  ortho_err = eye(n-d) - P'*P;
+  for i=1:n-d,
+    for j=1:i,
+      row = zeros(1,n*(n-d));
+      row((1:n) + n*(i-1)) = P(:,j)';
+      row((1:n) + n*(j-1)) = row((1:n) + n*(j-1)) + P(:,i)';
+      A = [A;row];
+      b = [b;alpha_2*ortho_err(i,j)];
+    end
   end
-end
 if cond(A) > 1e3  %results from F*P != 0
   warning('The A matrix in getPdot is poorly conditioned.  Implies that J is poorly conditioned OR F*P != 0')
   display(sprintf('%f %e',t, cond(A)));
@@ -258,41 +258,41 @@ end
 % t
 Pdot = reshape(pinv(A)*b,n,n-d);
 
-if any(abs(Pdot) > 1e2)
-  f = 1;
-end
+  if any(abs(Pdot) > 1e2)
+    f = 1;
+  end
 end
 
 function Pdot = Pdynamics(obj,t,xtraj,utraj,P,constraint_ind,alpha_1,alpha_2,options)
-x = xtraj.eval(t);
-u = utraj.eval(t);
-P = reshape(P,2*obj.getNumPositions(),[]);
-Pdot = getPdot(obj,t,x,u,P,constraint_ind,alpha_1,alpha_2,options);
-Pdot = Pdot(:);
-% t
+  x = xtraj.eval(t);
+  u = utraj.eval(t);
+  P = reshape(P,2*obj.getNumPositions(),[]);
+  Pdot = getPdot(obj,t,x,u,P,constraint_ind,alpha_1,alpha_2,options);
+  Pdot = Pdot(:);
+  % t
 end
 
 function Sdot = Sdynamics(t,S,p,dynamicsfn,xtraj,utraj,Ptraj,Q,R,constraint_ind,alpha_1,alpha_2,options)
-% S_dot = -A'S - SA + SBinv(R)B'S - Q
-x_t = xtraj.eval(t);
-u_t = utraj.eval(t);
-P_t = Ptraj.eval(t);
-Pdot_t = getPdot(p,t,x_t,u_t,P_t,constraint_ind,alpha_1,alpha_2,options);
+  % S_dot = -A'S - SA + SBinv(R)B'S - Q
+  x_t = xtraj.eval(t);
+  u_t = utraj.eval(t);
+  P_t = Ptraj.eval(t);
+  Pdot_t = getPdot(p,t,x_t,u_t,P_t,constraint_ind,alpha_1,alpha_2,options);
 
-[xd,dxd] = geval(dynamicsfn,t,x_t,u_t,struct('grad_method','numerical'));
-A = dxd(:,2:2*p.getNumPositions()+1);
-B = dxd(:,2+2*p.getNumPositions():end);
-  
-% A_t = P_t'*A*P_t + P_t'*Pdot_t;  %was this
-A_t = P_t'*A*P_t + Pdot_t'*P_t;
-B_t = P_t'*B;
-  
-S = reshape(S,size(A_t,1),[]);
+  [xd,dxd] = geval(dynamicsfn,t,x_t,u_t,struct('grad_method','numerical'));
+  A = dxd(:,2:2*p.getNumPositions()+1);
+  B = dxd(:,2+2*p.getNumPositions():end);
 
-Sdot = -A_t'*S - S*A_t + S*B_t*inv(R)*B_t'*S - P_t'*Q*P_t;
+  % A_t = P_t'*A*P_t + P_t'*Pdot_t;  %was this
+  A_t = P_t'*A*P_t + Pdot_t'*P_t;
+  B_t = P_t'*B;
 
-Sdot = Sdot(:);
-% t
+  S = reshape(S,size(A_t,1),[]);
+
+  Sdot = -A_t'*S - S*A_t + S*B_t*inv(R)*B_t'*S - P_t'*Q*P_t;
+
+  Sdot = Sdot(:);
+  % t
 end
 
 function sqrtSdot = sqrtSdynamics(t,sqrtS,p,dynamicsfn,xtraj,utraj,Ptraj,Q,R,constraint_ind,alpha_1,alpha_2,options)
@@ -311,10 +311,6 @@ A_t = P_t'*A*P_t + Pdot_t'*P_t;
 B_t = P_t'*B;
   
 sqrtS = reshape(sqrtS,size(A_t,1),[]);
-% display(sprintf('%f \t %f \t',t,rcond(sqrtS),cond(sqrtS)))
-% if rcond(sqrtS) < 1e-4,
-%   keyboard
-% end
 
 sqrtSdot = -A_t'*sqrtS + .5*sqrtS*sqrtS'*B_t*inv(R)*B_t'*sqrtS - .5*P_t'*Q*P_t*inv(sqrtS)';
 
@@ -322,53 +318,19 @@ sqrtSdot = sqrtSdot(:);
 % t
 end
 
-function xdot = constrainedDynamics(obj,t,x,u,constraint_ind,options)
-q=x(1:obj.getNumPositions()); qd=x((obj.getNumPositions()+1):end);
-[H,C,B] = manipulatorDynamics(obj,q,qd);
-Hinv = inv(H);
-if (size(constraint_ind) > 0)  
-  if options.use_joint_limits
-    [~,J_limit,dJ_limit] = obj.jointLimitConstraints(q);
-  else
-    J_limit = zeros(0,length(q));
-    dJ_limit = zeros(0,length(q)^2);
-  end
+  [xd,dxd] = geval(dynamicsfn,t,x_t,u_t,struct('grad_method','numerical'));
+  A = dxd(:,2:2*p.getNumPositions()+1);
+  B = dxd(:,2+2*p.getNumPositions():end);
 
-  [phi_n,normal,d,xA,xB,idxA,idxB,mu,n,D,dn,dD] = obj.contactConstraints(q);
-  
-  phi = zeros(2*length(phi_n),1);
-%   phi(1:2:end) = phi_f;
-  phi(2:2:end) = phi_n;
-  
-  J = zeros(length(phi), obj.getNumPositions());
-  J(1:2:end,:) = D{1};
-  J(2:2:end,:) = n;
-  
-  dJ = zeros(length(phi), obj.getNumPositions()^2);
-  dJ(2:2:end,:) = reshape(dn,length(phi_n),[]);
-  dJ(1:2:end,:) = reshape(dD{1},length(phi_n),[]);
-  
-  J_full = [J_limit;J];
-  dJ_full = [dJ_limit;dJ];
-%   phi_full = [phi; phi_limit];
-  
-%   phi_sub = phi_full(constraint_ind);
-  Jdotqd = dJ_full(constraint_ind,:)*reshape(qd*qd',obj.getNumPositions()^2,1);
-  J_sub = J_full(constraint_ind,:);
-  
-  if isempty(u)
-    constraint_force = -J_sub'*(pinv(J_sub*Hinv*J_sub')*(J_sub*Hinv*(-C) + Jdotqd));
-  else
-    constraint_force = -J_sub'*(pinv(J_sub*Hinv*J_sub')*(J_sub*Hinv*(B*u-C) + Jdotqd));
-  end
-else
-  constraint_force = 0;
+  % A_t = P_t'*A*P_t + P_t'*Pdot_t;  %was this
+  A_t = P_t'*A*P_t + Pdot_t'*P_t;
+  B_t = P_t'*B;
+
+  sqrtS = reshape(sqrtS,size(A_t,1),[]);
+
+  sqrtSdot = -A_t'*sqrtS + .5*sqrtS*sqrtS'*B_t*inv(R)*B_t'*sqrtS - .5*P_t'*Q*P_t*inv(sqrtS)';
+
+  sqrtSdot = sqrtSdot(:);
+  % t
 end
-% constraint_force = 0;
-if isempty(u)
-  qdd = Hinv*(constraint_force - C);
-else
-  qdd = Hinv*(B*u + constraint_force - C);
-end
-xdot = [qd;qdd];
-end
+

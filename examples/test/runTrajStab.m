@@ -38,6 +38,7 @@ load('data/hopper_traj_lqr_refined.mat');
 N_hops = 5;
 
 [xtraj,utraj,Btraj,Straj,Straj_full] = repeatTraj(xtraj,utraj,Btraj,Straj,Straj_full,N_hops);
+%mode_data = repmat(mode_data,1,N_hops+1);
 
 xtraj = xtraj.setOutputFrame(getStateFrame(r));
 v.playback(xtraj);
@@ -103,6 +104,8 @@ ctrl_data = FullStateQPControllerData(true,struct(...
   'u0',utraj,...
   'support_times',support_times,...
   'supports',supports));
+
+%ctrl_data.mode_data = mode_data;
 
 % instantiate QP controller
 options.slack_limit = 10;
