@@ -56,8 +56,8 @@ end
 options.right_foot_name = 'r_foot';
 options.left_foot_name = 'l_foot'; 
 
-lfoot_ind = findLinkInd(r,options.left_foot_name);
-rfoot_ind = findLinkInd(r,options.right_foot_name);  
+lfoot_ind = findLinkId(r,options.left_foot_name);
+rfoot_ind = findLinkId(r,options.right_foot_name);  
 
 % manually specifiy modes for now
 % supports = [RigidBodySupportState(r,lfoot_ind); ...

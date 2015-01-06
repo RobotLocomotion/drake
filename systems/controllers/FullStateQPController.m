@@ -248,6 +248,7 @@ classdef FullStateQPController < MIMODrakeSystem
     end
     neps = nc*dim;
     if obj.offset_x
+      xoffset = obj.controller_data.xoffset
       x0(1) = x0(1) - obj.controller_data.xoffset;
     end
     %----------------------------------------------------------------------

@@ -7,7 +7,7 @@ function [ts,modes] = extractHybridModes(r,xtraj,switch_times)
 %   mode 4: flight
 
 if nargin < 3
-  ts = xtraj.tspan(1):0.001:xtraj.tspan(2);
+  ts = linspace(xtraj.tspan(1),xtraj.tspan(2),2000);
 %   ts = xtraj.getBreaks();
 else
   ts = switch_times;
