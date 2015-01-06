@@ -1,4 +1,4 @@
-function cspace_polytope = bodyCSpaceRegion(planar_polytope, initial_yaw, X, Y, Z);
+function terrain_region = bodyCSpaceRegion(planar_region, initial_yaw, X, Y, Z);
 
 original_foot_shape = [-0.13, -0.13, 0.13, 0.13;
               0.0562, -0.0562, 0.0562, -0.0562];
@@ -9,8 +9,8 @@ collision_boxes = struct('z', [0, 0.05, 0.35, 0.75, 1.15],...
      [-0.13, -0.13, 0.25, 0.25; .25, -.25, .25, -.25],...
      [-0.2, -0.2, 0.25, 0.25; .4, -.4, .4, -.4],...
      [-0.35, -0.35, 0.25, 0.25; .4, -.4, .4, -.4]});
-   
-normal = planar_polytope.Aeq';
+
+normal = planar_region.normal;
 normal = normal/norm(normal);
 
 R = rotmat(initial_yaw);
@@ -35,8 +35,8 @@ contact_pts = foot_shape;
 contact_vel = Rdot * contact_pts;
 
 new_c_region = struct('A', [], 'b', []);
-A = planar_polytope.A(:,1:2);
-b = planar_polytope.b;
+A = planar_region.A(:,1:2);
+b = planar_region.b;
 
 for j = 1:size(A, 1)
   ai = A(j,:);
@@ -65,29 +65,34 @@ c_region.b = [c_region.b; new_c_region.b];
 c_region.A = [c_region.A; [0, 0, 1; 0, 0, -1]];
 c_region.b = [c_region.b; [initial_yaw + pi; -(initial_yaw - pi)]];
 
-cspace_polytope = iris.Polytope(c_region.A, c_region.b);
+xyyaw_poly = iris.Polytope(c_region.A, c_region.b);
 
 % simplify the polytope by converting to V-rep and back
-vertices = cspace_polytope.getVertices();
+vertices = xyyaw_poly.getVertices();
 if ~isempty(vertices)
-  cspace_polytope = iris.Polytope.fromVertices(vertices);
+  xyyaw_poly = iris.Polytope.fromVertices(vertices);
+  terrain_region = iris.TerrainRegion(xyyaw_poly.A, xyyaw_poly.b, planar_region.point, planar_region.normal);
   
-  xs = iris.sample_convex_polytope(cspace_polytope.A, cspace_polytope(end).b, 200);
-  lcmgl = LCMGLClient('sampled_foot_poses');
-  for j = 1:size(xs, 2)
-    xyyaw = xs(:,j);
-    foot_shape = bsxfun(@plus, [xyyaw(1:2); 0.2], Rplane * rpy2rotmat([0;0;xyyaw(3)]) * [original_foot_shape; zeros(1, size(original_foot_shape, 2))]);
-    lcmgl.glBegin(lcmgl.LCMGL_LINES);
-    k = [1:size(foot_shape, 2), 1];
-    for i = 1:length(k)-1
-      lcmgl.glVertex3d(foot_shape(1,k(i)), foot_shape(2,k(i)), foot_shape(3,k(i)));
-      lcmgl.glVertex3d(foot_shape(1,k(i+1)), foot_shape(2,k(i+1)), foot_shape(3,k(i+1)));
-    end
-    lcmgl.glEnd();
-  end 
-  lcmgl.switchBuffers();
+%   xs = iris.sample_convex_polytope(terrain_region.A, terrain_region.b, 100);
+%   lcmgl = LCMGLClient('sampled_foot_poses');
+%   lcmgl.glColor3f(.2,.9,.2);
+%   for j = 1:size(xs, 2)
+%     xyyaw = xs(:,j);
+%     % n1 * x + n2 * y + n3 * z = n*p
+%     % z = (n*p - n1x - n2y) / n3
+%     z = 0.05 + (planar_region.normal' * planar_region.point - planar_region.normal(1:2)' * xyyaw(1:2)) / planar_region.normal(3); 
+%     foot_shape = bsxfun(@plus, [xyyaw(1:2); z], Rplane * rpy2rotmat([0;0;xyyaw(3)]) * [original_foot_shape; zeros(1, size(original_foot_shape, 2))]);
+%     lcmgl.glBegin(lcmgl.LCMGL_LINES);
+%     k = convhull(foot_shape(1,:), foot_shape(2,:));
+%     for i = 1:length(k)-1
+%       lcmgl.glVertex3d(foot_shape(1,k(i)), foot_shape(2,k(i)), foot_shape(3,k(i)));
+%       lcmgl.glVertex3d(foot_shape(1,k(i+1)), foot_shape(2,k(i+1)), foot_shape(3,k(i+1)));
+%     end
+%     lcmgl.glEnd();
+%   end 
+%   lcmgl.switchBuffers();
 else
-  cspace_polytope = []; % system has no feasible set
+  terrain_region = []; % system has no feasible set
 end
 
 

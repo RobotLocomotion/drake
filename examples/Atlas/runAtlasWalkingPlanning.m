@@ -1,4 +1,4 @@
-function plan = runAtlasWalkingPlanning(options)
+function xtraj = runAtlasWalkingPlanning(options)
 % Demonstration of footstep and walking planning on Atlas. First, the footstep planning
 % step generates a set of reachable footstep poses. Next, we use those foot poses to
 % plan a trajectory of the Zero Moment Point (ZMP), from which we can derive a
@@ -34,7 +34,26 @@ lfoot_navgoal(1:3) = lfoot_navgoal(1:3) + R*[0;0.13;0];
 
 % Plan footsteps to the goal
 goal_pos = struct('right', rfoot_navgoal, 'left', lfoot_navgoal);
-footstep_plan = r.planFootsteps(q0, goal_pos, options.safe_regions);
+footstep_plan = r.planFootsteps(q0, goal_pos, options.safe_regions, struct('method_handle', @footstepPlanner.humanoids2014));
+
+
+% Snap to terrain
+nsteps = length(footstep_plan.footsteps);
+for j = 3:nsteps
+  if ~footstep_plan.footsteps(j).pos_fixed(3)
+    footstep_plan.footsteps(j) = fitStepToTerrain(r, footstep_plan.footsteps(j));
+  end
+end
+
+
+% Add terrain profiles
+for j = 3:nsteps
+  [~, contact_width] = contactVolume(r, ...
+                                        footstep_plan.footsteps(j-2), ...
+                                        footstep_plan.footsteps(j));
+  footstep_plan.footsteps(j).terrain_pts = sampleSwingTerrain(r, footstep_plan.footsteps(j-2), footstep_plan.footsteps(j), contact_width/2, struct());
+end
+
 
 % Show the result
 v = r.constructVisualizer();
