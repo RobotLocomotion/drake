@@ -1112,6 +1112,10 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       varargout = cell(1,nargout);
       [varargout{:}] = terrainContactPositions(obj.manip,varargin{:});
     end
+    
+    function xdot = constrainedDynamics(obj,varargin)
+      xdot = constrainedDynamics(obj.manip,varargin{:});
+    end
 
     function distance = collisionRaycast(obj, kinsol, origin, point_on_ray, use_margins)
       if nargin < 5

@@ -26,6 +26,9 @@ classdef FullStateQPControllerData < ControllerData
     link_constraints = []
     ignore_terrain = false
  
+    xoffset = 0;
+    mode_data;
+    
     % Contact stuff --------------------------------------------------------------
     support_times % vector of contact transition times
     supports % (array of) RigidBodySupportState object(s)
