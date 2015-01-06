@@ -84,6 +84,7 @@ dynamicsFun = @(t,x,u) constrainedDynamics(obj,t,x,u,constraint_ind,options);
 % utraj = PPTrajectory(foh(t_vec,u_vec));
 
 
+display(sprintf('Solving for P forwards, from %f to %f',tspan(1),tspan(end)));
 Pfun = @(t,P) Pdynamics(obj,t,xtraj,utraj,P,constraint_ind,alpha_1,alpha_2,options);
 [tout,yout] = ode45(Pfun,tspan,P0);
 
@@ -100,6 +101,7 @@ else
   Sf = Sf^(1/2);
   Sfun = @(t,S) sqrtSdynamics(t,S,obj,dynamicsFun,xtraj,utraj,Ptraj,Q,R,constraint_ind,alpha_1,alpha_2,options);
 end
+display(sprintf('Solving for S backwards, from %f to %f',tspan(end),tspan(1)));
 [tout,yout] = ode45(Sfun,tspan(end:-1:1),Sf);
 
 S_data = reshape(yout',2*nQ - 2*nQC,2*nQ - 2*nQC,[]);
@@ -248,13 +250,13 @@ function Pdot = getPdot(obj,t,x,u,P,constraint_ind,alpha_1,alpha_2,options)
       b = [b;alpha_2*ortho_err(i,j)];
     end
   end
-  if cond(A) > 1e3  %results from F*P != 0
-    warning('The A matrix in getPdot is poorly conditioned.  Implies that J is poorly conditioned OR F*P != 0')
-    display(sprintf('%f %e',t, cond(A)));
-  %   keyboard
-  end
-  t
-  Pdot = reshape(pinv(A)*b,n,n-d);
+if cond(A) > 1e3  %results from F*P != 0
+  warning('The A matrix in getPdot is poorly conditioned.  Implies that J is poorly conditioned OR F*P != 0')
+  display(sprintf('%f %e',t, cond(A)));
+%   keyboard
+end
+% t
+Pdot = reshape(pinv(A)*b,n,n-d);
 
   if any(abs(Pdot) > 1e2)
     f = 1;
@@ -294,25 +296,25 @@ function Sdot = Sdynamics(t,S,p,dynamicsfn,xtraj,utraj,Ptraj,Q,R,constraint_ind,
 end
 
 function sqrtSdot = sqrtSdynamics(t,sqrtS,p,dynamicsfn,xtraj,utraj,Ptraj,Q,R,constraint_ind,alpha_1,alpha_2,options)
-  % S_dot = -A'S - SA + SBinv(R)B'S - Q
-  x_t = xtraj.eval(t);
-  u_t = utraj.eval(t);
-  P_t = Ptraj.eval(t);
-  Pdot_t = getPdot(p,t,x_t,u_t,P_t,constraint_ind,alpha_1,alpha_2,options);
+% S_dot = -A'S - SA + SBinv(R)B'S - Q
+x_t = xtraj.eval(t);
+u_t = utraj.eval(t);
+P_t = Ptraj.eval(t);
+Pdot_t = getPdot(p,t,x_t,u_t,P_t,constraint_ind,alpha_1,alpha_2,options);
 
-  [xd,dxd] = geval(dynamicsfn,t,x_t,u_t,struct('grad_method','numerical'));
-  A = dxd(:,2:2*p.getNumPositions()+1);
-  B = dxd(:,2+2*p.getNumPositions():end);
+[xd,dxd] = geval(dynamicsfn,t,x_t,u_t,struct('grad_method','numerical'));
+A = dxd(:,2:2*p.getNumPositions()+1);
+B = dxd(:,2+2*p.getNumPositions():end);
+  
+% A_t = P_t'*A*P_t + P_t'*Pdot_t;  %was this
+A_t = P_t'*A*P_t + Pdot_t'*P_t;
+B_t = P_t'*B;
+  
+sqrtS = reshape(sqrtS,size(A_t,1),[]);
 
-  % A_t = P_t'*A*P_t + P_t'*Pdot_t;  %was this
-  A_t = P_t'*A*P_t + Pdot_t'*P_t;
-  B_t = P_t'*B;
+sqrtSdot = -A_t'*sqrtS + .5*sqrtS*sqrtS'*B_t*inv(R)*B_t'*sqrtS - .5*P_t'*Q*P_t*inv(sqrtS)';
 
-  sqrtS = reshape(sqrtS,size(A_t,1),[]);
-
-  sqrtSdot = -A_t'*sqrtS + .5*sqrtS*sqrtS'*B_t*inv(R)*B_t'*sqrtS - .5*P_t'*Q*P_t*inv(sqrtS)';
-
-  sqrtSdot = sqrtSdot(:);
-  % t
+sqrtSdot = sqrtSdot(:);
+% t
 end
 

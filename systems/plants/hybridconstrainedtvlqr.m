@@ -123,7 +123,7 @@ for i=1:size(mode,2)-1,
     for j=2:length(constraint_ind),
       J_sub = [J_sub;J(constraint_ind(j),:)];
 %       if rank(J_sub) ~= size(J_sub,1),
-      if cond(J_sub) > 1e3
+      if cond(J_sub) > 1e2
         J_sub = J_sub(1:end-1,:);
         constraint_bool(constraint_ind(j),i) = 0;
       end
@@ -152,6 +152,11 @@ for i=1:size(mode,2)-1,
     mode_ind = mode_ind + 1;
     mode_start = i+1;
   end
+end
+
+display(sprintf('Identified %d modes, with timings:',length(mode_data)));
+for i=1:length(mode_data),
+  display(sprintf('t %f to %f',mode_data{i}.tspan(1),mode_data{i}.tspan(2)));
 end
 
 if options.periodic
