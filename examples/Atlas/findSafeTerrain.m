@@ -1,4 +1,4 @@
-function planar_regions = findSafeTerrain(terrain, initial_pose, navgoal, varargin)
+function safe_regions = findSafeTerrain(terrain, initial_pose, navgoal, varargin)
 
 p = inputParser();
 p.addRequired('terrain', @(x) typecheck(x,'RigidBodyTerrain'));
@@ -6,7 +6,7 @@ p.addRequired('initial_pose', @(x) sizecheck(x, 6));
 p.addRequired('navgoal', @(x) sizecheck(x, 6));
 p.addParameter('resolution', 0.05, @isnumeric);
 p.addParameter('forward_dist', 3, @isnumeric);
-p.addParameter('width', 4, @isnumeric);
+p.addParameter('width', 2, @isnumeric);
 p.addParameter('backward_dist', 0.5, @isnumeric);
 p.addParameter('max_slope_angle', 40 * pi/180, @isnumeric);
 p.addParameter('plane_dist_tol', 0.05, @isnumeric);
@@ -17,7 +17,7 @@ options = p.Results;
 checkDependency('mosek');
 checkDependency('iris');
 
-planar_regions = iris.Polytope.empty();
+planar_regions = iris.TerrainRegion.empty();
 
 dist_to_goal = norm(navgoal(1:2) - initial_pose(1:2));
 
@@ -75,31 +75,37 @@ while true
   obs_y = Y(boundary_mask);
   obstacle_pts = reshape([reshape(obs_x, 1, []); reshape(obs_y, 1, [])], 2, 1, []);
   obstacle_pts = bsxfun(@plus, obstacle_pts, 0.5 * options.resolution * [-1, 1, 1, -1; -1, -1, 1, 1]);
-  size(obstacle_pts)
 
   [A_bounds, b_bounds] = poly2lincon([X(end,1), X(end,end), X(1,end), X(1,1)], [Y(end,1), Y(end,end), Y(1,end), Y(1,1)]);
-  [A, b, C, d, results] = iris.inflate_region(obstacle_pts, A_bounds, b_bounds, [x0; y0]);
+  [A, b, C, d, results] = iris.inflate_region(obstacle_pts, A_bounds, b_bounds, [x0; y0], struct('require_containment', true));
   
-  p = iris.Polytope([A, zeros(size(A, 1), 1)], b, n0', n0'*[x0;y0;z0]);
+  p = iris.TerrainRegion([A, zeros(size(A, 1), 1)], b, [x0;y0;z0], n0);
   planar_regions(end+1) = p;
   
   lcmgl = LCMGLClient('planar_region');
-  p.drawLCMGL(lcmgl);
+  lcmgl.glColor3f(.2,.2,.9);
+  planar_regions(end).getXYZPolytope().drawLCMGL(lcmgl);
   lcmgl.switchBuffers();
+  
   
   inpoly = all(bsxfun(@minus, A * [reshape(X, 1, []); reshape(Y, 1, [])], b) <= 0, 1);
   inpoly = reshape(inpoly, s);
   potential_safe_grid = potential_safe_grid & ~inpoly;
-  break
 end
 
 
-c_space_regions = iris.Polytope.empty();
+safe_regions = iris.TerrainRegion.empty();
 for j = 1:length(planar_regions)
-  c_space_regions(end+1) = bodyCSpaceRegion(planar_regions(j), initial_pose(6), X, Y, Z);
+  lcmgl = LCMGLClient('planar_region');
+  lcmgl.glColor3f(.2,.2,.9);
+  planar_regions(j).getXYZPolytope().drawLCMGL(lcmgl);
+  lcmgl.switchBuffers();
+  
+  safe_region = bodyCSpaceRegion(planar_regions(j), initial_pose(6), X, Y, Z);
+  if ~isempty(safe_region)
+    safe_regions(end+1) = safe_region;
+  end
   
 end
 
-
-
-safe_regions = [];
+disp('done')

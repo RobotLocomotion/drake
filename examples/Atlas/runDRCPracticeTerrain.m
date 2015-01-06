@@ -16,9 +16,18 @@ end
 options.terrain = height_map;  
 options.navgoal = [6.5;0;0;0;0;0];
 options.initial_pose = [-3;0;0;0;0;0];
+% options.initial_pose = [0;0;0;0;0;0]
 
-findSafeTerrain(options.terrain, options.initial_pose, options.navgoal);
+while true
+  options.safe_regions = findSafeTerrain(options.terrain, options.initial_pose, options.navgoal);
+  xtraj = runAtlasWalkingPlanning(options);
+  breaks = xtraj.getBreaks();
+  xf = xtraj.eval(breaks(end));
+  options.initial_pose = xf(1:6);
+  disp('pausing for playback...press any key to continue');
+  options.initial_pose
+end
 
-runAtlasWalkingPlanning(options);
+
 
 
