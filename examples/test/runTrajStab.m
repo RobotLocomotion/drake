@@ -33,9 +33,11 @@ nu = getNumInputs(r);
 v = r.constructVisualizer;
 v.display_dt = 0.01;
 
-load('data/hopper_traj_lqr.mat');
+load('data/hopper_traj_lqr_40_knots.mat');
+% load('data/hopper_traj_lqr_refined.mat');
+N_hops = 5;
 
-[xtraj,utraj,Btraj,Straj,Straj_full] = repeatTraj(xtraj,utraj,Btraj,Straj,Straj_full,5);
+[xtraj,utraj,Btraj,Straj,Straj_full] = repeatTraj(xtraj,utraj,Btraj,Straj,Straj_full,N_hops);
 
 xtraj = xtraj.setOutputFrame(getStateFrame(r));
 v.playback(xtraj);
@@ -152,7 +154,7 @@ if 1
   [ts,modes] = extractHybridModes(r,xtraj);
   [ts_,modes_] = extractHybridModes(r,pptraj);
 
-  figure(999);
+  figure(998);
   plot(ts,modes,'b');
   hold on;
   plot(ts_,modes_,'r');

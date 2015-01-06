@@ -87,7 +87,12 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
       if (obj.getOutputFrame == frame)
         mobj = obj;
       else
-        tf = findTransform(obj.getOutputFrame,frame,struct('throw_error_if_fail',true));
+%         tf = findTransform(obj.getOutputFrame,frame,struct('throw_error_if_fail',true));
+        tf = findTransform(obj.getOutputFrame,frame);
+        if isempty(tf)
+          mobj = obj;
+          return;
+        end
         if isa(tf,'AffineSystem') && getNumStates(tf)==0
           D=tf.D;c=tf.y0;
           mobj = D*obj + c;

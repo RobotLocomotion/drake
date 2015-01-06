@@ -77,6 +77,10 @@ classdef DirectTrajectoryOptimization < NonlinearProgram
           A_time = ones(1,N-1);
           time_constraint = LinearConstraint(durations(1),durations(2),A_time);
           obj = obj.addConstraint(time_constraint,obj.h_inds);
+        case 3 % fixed scaling          
+          A_time = [ones(1,N-1);[diag(options.time_scaling(1:end-1)) zeros(N-2,1)] - [zeros(N-2,1) diag(options.time_scaling(2:end))]];
+          time_constraint = LinearConstraint([durations(1);zeros(N-2,1)],[durations(2);zeros(N-2,1)],A_time);
+          obj = obj.addConstraint(time_constraint,obj.h_inds);
       end
 
       % Ensure that all h values are non-negative
