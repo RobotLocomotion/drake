@@ -1,0 +1,415 @@
+<robot xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://drake.mit.edu drake-distro/drake/doc/drakeURDF.xsd"
+ xmlns="http://drake.mit.edu">
+  
+  <!-- converted from https://svn.csail.mit.edu/littledog/trunk/simulation/little_dog.sd -->
+
+  <link name="body">
+    <inertial>
+      <mass value="1.800000" />
+      <inertia ixx="0.001625" ixy="0" ixz="0" iyy="0.009178" iyz="0" izz="0.008794" />
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="meshes/body.obj" scale=".0254 .0254 .0254" />
+      </geometry>
+      <material name="black">
+      	<color rgba="0.1 0.1 0.1 1" />
+      </material>
+    </visual>
+  </link>
+
+  <link name="front_left_hip">
+    <inertial>
+      <origin xyz="0.000000 0.002900 0.000000" rpy="0 0 0" />
+      <mass value="0.062300" />
+      <inertia ixx="0.000004" ixy="0" ixz="0" iyy="0.000015" iyz="0" izz="0.000015" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+<!--      <geometry>
+        <mesh filename="meshes/front_left_hip.obj" scale=".0254 .0254 .0254"/>
+      </geometry>
+-->
+      <material name="black" />
+    </visual>
+  </link>
+
+  <joint name="front_left_hip_roll" type="revolute">
+    <parent link="body" />
+    <child link="front_left_hip" />
+    <origin xyz="0.101000 0.036250 0.000000" />
+    <axis xyz="1 0 0" />
+    <limit lower="-.6" upper=".6"/>
+  </joint>
+  
+  <transmission type="SimpleTransmission">
+    <joint name="front_left_hip_roll"/>
+    <actuator name="front_left_hip_roll"/>
+  </transmission>
+  
+  <link name="front_left_upper_leg">
+    <inertial>
+      <origin xyz="0.000000 0.000000 -0.016600" rpy="0 0 0" />
+      <mass value="0.127900" />
+      <inertia ixx="0.000082" ixy="0" ixz="0" iyy="0.000089" iyz="0" izz="0.000015" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="meshes/front_left_upper.obj" scale=".0254 .0254 .0254"/>
+      </geometry>
+      <material name="black" />
+    </visual>
+  </link>
+  
+  <joint name="front_left_hip_pitch" type="revolute">
+    <parent link="front_left_hip" />
+    <child link="front_left_upper_leg" />
+    <origin xyz="0 0.0236 0" />
+    <axis xyz="0 1 0" />
+    <limit lower="-3.5" upper="2.4"/>
+  </joint>  
+
+  <transmission type="SimpleTransmission">
+    <joint name="front_left_hip_pitch"/>
+    <actuator name="front_left_hip_pitch"/>
+  </transmission>
+  
+  <link name="front_left_lower_leg"> 
+    <inertial>
+      <origin xyz="0.000000 0.000000 -0.020200" rpy="0 0 0" />
+      <mass value="0.046400" />
+      <inertia ixx="0.000038" ixy="0" ixz="0" iyy="0.000035" iyz="0" izz="0.000004" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="meshes/front_left_lower.obj" scale="0.0254 0.0254 0.0254"/>
+      </geometry>
+      <material name="black" />
+    </visual>
+    <collision group="left_lower_legs">
+      <origin xyz="-0.0265 0 -0.048" /> <!-- note this is approximate -->
+      <geometry>
+        <capsule radius="0.012" length="0.09" />
+      </geometry>
+    </collision>
+    <collision group="feet">
+      <origin xyz="-0.0265 0 -0.0985"/>
+      <geometry>
+        <sphere radius="0.0103"/>
+      </geometry>
+    </collision>
+  </link>
+  
+  <joint name="front_left_knee" type="revolute">
+    <parent link="front_left_upper_leg" />
+    <child link="front_left_lower_leg" />
+    <origin xyz="0 0 -0.0751" />
+    <axis xyz="0 1 0" />
+    <limit lower="-3.1" upper="1.0"/>
+  </joint>
+
+  <transmission type="SimpleTransmission">
+    <joint name="front_left_knee"/>
+    <actuator name="front_left_knee"/>
+  </transmission>
+
+  <frame link="front_left_lower_leg" name="front_left_foot_center" xyz="-0.0265 0 -0.0985"/>
+
+  <link name="front_right_hip">
+    <inertial>
+      <origin xyz="0.000000 -0.002900 0.000000" rpy="0 0 0" />
+      <mass value="0.062300" />
+      <inertia ixx="0.000004" ixy="0" ixz="0" iyy="0.000015" iyz="0" izz="0.000015" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+<!--      <geometry>
+        <mesh filename="meshes/front_right_hip.obj" scale="0.0254 0.0254 0.0254"/>
+      </geometry> -->
+      <material name="black" />
+    </visual>
+  </link>
+
+  <joint name="front_right_hip_roll" type="revolute">
+    <parent link="body" />
+    <child link="front_right_hip" />
+    <origin xyz="0.101000 -0.036250 0.000000" />
+    <axis xyz="1 0 0" />
+    <limit lower="-.6" upper=".6"/>
+  </joint>
+  
+  <transmission type="SimpleTransmission">
+    <joint name="front_right_hip_roll"/>
+    <actuator name="front_right_hip_roll"/>
+  </transmission>
+
+  <link name="front_right_upper_leg">
+    <inertial>
+      <origin xyz="0.000000 0.000000 -0.016600" rpy="0 0 0" />
+      <mass value="0.127900" />
+      <inertia ixx="0.000082" ixy="0" ixz="0" iyy="0.000089" iyz="0" izz="0.000015" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="meshes/front_right_upper.obj" scale="0.0254 0.0254 0.0254"/>
+      </geometry>
+      <material name="black"/>
+    </visual>
+  </link>
+
+  <joint name="front_right_hip_pitch" type="revolute">
+    <parent link="front_right_hip" />
+    <child link="front_right_upper_leg" />
+    <origin xyz="0 -0.0236 0" />
+    <axis xyz="0 1 0" />
+    <limit lower="-3.5" upper="2.4"/>
+  </joint>
+  
+  <transmission type="SimpleTransmission">
+    <joint name="front_right_hip_pitch"/>
+    <actuator name="front_right_hip_pitch"/>
+  </transmission>
+  
+  <link name="front_right_lower_leg"> 
+    <inertial>
+      <origin xyz="0.000000 0.000000 -0.020200" rpy="0 0 0" />
+      <mass value="0.046400" />
+      <inertia ixx="0.000038" ixy="0" ixz="0" iyy="0.000035" iyz="0" izz="0.000004" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="meshes/front_right_lower.obj" scale="0.0254 0.0254 0.0254"/>
+      </geometry>
+      <material name="black"/>
+    </visual>
+    <collision group="right_lower_legs">
+      <origin xyz="-0.0265 0 -0.048" /> <!-- note this is approximate -->
+      <geometry>
+        <capsule radius="0.012" length="0.09" />
+      </geometry>
+    </collision>
+    <collision group="feet">
+      <origin xyz="-0.0265 0 -0.0985"/>
+      <geometry>
+        <sphere radius="0.0103"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="front_right_knee" type="revolute">
+    <parent link="front_right_upper_leg" />
+    <child link="front_right_lower_leg" />
+    <origin xyz="0 0 -0.0751" />
+    <axis xyz="0 1 0" />
+    <limit lower="-3.1" upper="1.0"/>
+  </joint>
+  
+  <transmission type="SimpleTransmission">
+    <joint name="front_right_knee"/>
+    <actuator name="front_right_knee"/>
+  </transmission>
+  
+  <frame link="front_right_lower_leg" name="front_right_foot_center" xyz="-0.0265 0 -0.0985"/>
+  
+  <link name="back_left_hip">
+    <inertial>
+      <origin xyz="0.000000 0.002900 0.000000" rpy="0 0 0" />
+      <mass value="0.062300" />
+      <inertia ixx="0.000004" ixy="0" ixz="0" iyy="0.000015" iyz="0" izz="0.000015" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+<!--      <geometry>
+        <mesh filename="meshes/back_left_hip.obj" scale="0.0254 0.0254 0.0254"/>
+      </geometry>      -->
+      <material name="black" />
+    </visual>
+  </link>
+
+  <joint name="back_left_hip_roll" type="revolute">
+    <parent link="body" />
+    <child link="back_left_hip" />
+    <origin xyz="-0.101000 0.036250 0.000000" />
+    <axis xyz="1 0 0" />
+    <limit lower="-.6" upper=".6"/>
+  </joint>
+  
+  <transmission type="SimpleTransmission">
+    <joint name="back_left_hip_roll"/>
+    <actuator name="back_left_hip_roll"/>
+  </transmission>
+  
+  <link name="back_left_upper_leg">
+    <inertial>
+      <origin xyz="0.000000 0.000000 -0.016600" rpy="0 0 0" />
+      <mass value="0.127900" />
+      <inertia ixx="0.000082" ixy="0" ixz="0" iyy="0.000089" iyz="0" izz="0.000015" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="meshes/back_left_upper.obj" scale="0.0254 0.0254 0.0254"/>
+      </geometry>
+      <material name="black" />
+    </visual>
+  </link>
+
+  <joint name="back_left_hip_pitch" type="revolute">
+    <parent link="back_left_hip" />
+    <child link="back_left_upper_leg" />
+    <origin xyz="0 0.0236 0" />
+    <axis xyz="0 1 0" />
+    <limit lower="-2.4" upper="3.5"/>
+  </joint>
+  
+  <transmission type="SimpleTransmission">
+    <joint name="back_left_hip_pitch"/>
+    <actuator name="back_left_hip_pitch"/>
+  </transmission>
+  
+  <link name="back_left_lower_leg"> 
+    <inertial>
+      <origin xyz="0.000000 0.000000 -0.020200" rpy="0 0 0" />
+      <mass value="0.046400" />
+      <inertia ixx="0.000038" ixy="0" ixz="0" iyy="0.000035" iyz="0" izz="0.000004" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="meshes/back_left_lower.obj" scale="0.0254 0.0254 0.0254"/>
+      </geometry>
+      <material name="black" />
+    </visual>
+    <collision group="left_lower_legs">
+      <origin xyz="0.0265 0 -0.048" /> <!-- note this is approximate -->
+      <geometry>
+        <capsule radius="0.012" length="0.09" />
+      </geometry>
+    </collision>
+    <collision group="feet">
+      <origin xyz="0.0265 0 -0.0985"/>
+      <geometry>
+        <sphere radius="0.0103"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="back_left_knee" type="revolute">
+    <parent link="back_left_upper_leg" />
+    <child link="back_left_lower_leg" />
+    <origin xyz="0 0 -0.0751" />
+    <axis xyz="0 1 0" />
+    <limit lower="-1.0" upper="3.1"/>
+  </joint>
+
+  <transmission type="SimpleTransmission">
+    <joint name="back_left_knee"/>
+    <actuator name="back_left_knee"/>
+  </transmission>
+  
+  <frame link="back_left_lower_leg" name="back_left_foot_center" xyz="0.0265 0 -0.0985"/>
+  
+  <link name="back_right_hip">
+    <inertial>
+      <origin xyz="0.000000 -0.002900 0.000000" rpy="0 0 0" />
+      <mass value="0.062300" />
+      <inertia ixx="0.000004" ixy="0" ixz="0" iyy="0.000015" iyz="0" izz="0.000015" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+<!--      <geometry>
+        <mesh filename="meshes/back_right_hip.obj" scale="0.0254 0.0254 0.0254"/>
+      </geometry>-->
+      <material name="black" />
+    </visual>
+  </link>
+
+  <joint name="back_right_hip_roll" type="revolute">
+    <parent link="body" />
+    <child link="back_right_hip" />
+    <origin xyz="-0.101000 -0.036250 0.000000" />
+    <axis xyz="1 0 0" />
+    <limit lower="-.6" upper=".6"/>
+  </joint>
+  
+  <transmission type="SimpleTransmission">
+    <joint name="back_right_hip_roll"/>
+    <actuator name="back_right_hip_roll"/>
+  </transmission>
+  
+  <link name="back_right_upper_leg">
+    <inertial>
+      <origin xyz="0.000000 0.000000 -0.016600" rpy="0 0 0" />
+      <mass value="0.127900" />
+      <inertia ixx="0.000082" ixy="0" ixz="0" iyy="0.000089" iyz="0" izz="0.000015" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="meshes/back_right_upper.obj" scale="0.0254 0.0254 0.0254"/>
+      </geometry>
+      <material name="black" />
+    </visual>
+  </link>
+
+  <joint name="back_right_hip_pitch" type="revolute">
+    <parent link="back_right_hip" />
+    <child link="back_right_upper_leg" />
+    <origin xyz="0 -0.0207 0" />
+    <axis xyz="0 1 0" />
+    <limit lower="-2.4" upper="3.5"/>
+  </joint>
+  
+  <transmission type="SimpleTransmission">
+    <joint name="back_right_hip_pitch"/>
+    <actuator name="back_right_hip_pitch"/>
+  </transmission>
+  
+  <link name="back_right_lower_leg"> 
+    <inertial>
+      <origin xyz="0.000000 0.000000 -0.020200" rpy="0 0 0" />
+      <mass value="0.046400" />
+      <inertia ixx="0.000038" ixy="0" ixz="0" iyy="0.000035" iyz="0" izz="0.000004" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="meshes/back_right_lower.obj" scale="0.0254 0.0254 0.0254"/>
+      </geometry>
+      <material name="black" />
+    </visual>
+    <collision group="right_lower_legs">
+      <origin xyz="0.0265 0 -0.048" /> <!-- note this is approximate -->
+      <geometry>
+        <capsule radius="0.012" length="0.09" />
+      </geometry>
+    </collision>
+    <collision group="feet">
+      <origin xyz="0.0265 0 -0.0985"/>
+      <geometry>
+        <sphere radius="0.0103"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="back_right_knee" type="revolute">
+    <parent link="back_right_upper_leg" />
+    <child link="back_right_lower_leg" />
+    <origin xyz="0 0 -0.0751" />
+    <axis xyz="0 1 0" />
+    <limit lower="-1.0" upper="3.1"/>
+  </joint>
+
+  <transmission type="SimpleTransmission">
+    <joint name="back_right_knee"/>
+    <actuator name="back_right_knee"/>
+  </transmission>
+  
+  <frame link="back_right_lower_leg" name="back_right_foot_center" xyz="0.0265 0 -0.0985"/>
+  
+</robot>
