@@ -127,7 +127,7 @@ methods
 
       % Find index of xtraj with Euclidean distance closest to x as starting
       % guess
-      [r index_euclid] = min(sqrt(sum((obj.X-repmat(x,1,size(obj.X,2))).^2,1)));
+      [~,index_euclid] = min(sqrt(sum((obj.X-repmat(x,1,size(obj.X,2))).^2,1)));
       
       % find tau with z(tau)'x = 0
       
@@ -142,7 +142,7 @@ methods
           return; 
       end
       
-      [r, subindex] = min(abs(index_euclid-indices_z));
+      [~, subindex] = min(abs(index_euclid-indices_z));
       i = indices_z(subindex);
       
       tau = obj.time_samples(i);
@@ -155,9 +155,12 @@ methods
     end      
 
   function plotData(obj,x, tau, u,t)
-    x0 = obj.x0.eval(tau); u0 = obj.u0.eval(tau);
-    Q = obj.Qtraj.eval(tau); Ri = inv(obj.Rtraj.eval(tau));
-    nX = length(x0); nU = length(u0);
+    x0 = obj.x0.eval(tau); 
+    u0 = obj.u0.eval(tau);
+    Q = obj.Qtraj.eval(tau); 
+    Ri = inv(obj.Rtraj.eval(tau));
+    nX = length(x0); 
+    nU = length(u0);
     tmp=obj.plant;
     [ft,df] = geval(@tmp.dynamics,tau, x0, u0);
     A = df(:,1+(1:nX));
@@ -207,7 +210,7 @@ methods
     X = [];
     K_preEval = [];
     plant;
-end
+  end
 
 
 
