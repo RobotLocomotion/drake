@@ -2,8 +2,7 @@ function ctrans=runTransverseSwingup
 
 p = PendulumPlant();
 
-[utraj,xtraj]=runDircol(p);
-% OKTOFAIL
+[utraj,xtraj] = swingUpTrajectory(p);
 
 % artificially truncate trajectory to test
 %tspan = .6*utraj.tspan; breaks=utraj.getBreaks();  breaks=breaks(breaks<tspan(end));
@@ -33,16 +32,17 @@ plotSurface(transSurf,xtraj,.4); drawnow;
 disp('Computing transverse lqr...')
 [ctrans,sys,xtraj2,utraj2,Vtraj,Vf] = transverseLQRClosedLoop(p,xtraj,utraj,10*eye(2),1,10*eye(2),transSurf);
 
-disp('Estimating funnel...')
-psys = taylorApprox(sys,xtraj2,[],3,3);  %ignore var 3 (tau)
-options=struct();
-options.rho0_tau=10;
-options.max_iterations=25;
-V=sampledTransverseVerification(psys,Vf,Vtraj,Vtraj.getBreaks(),xtraj,utraj2,transSurf,options);
-
-figure(3); clf;
-transSurf.plotFunnel(V,xtraj);
-fnplt(xtraj);
+% disp('Estimating funnel...')
+% xtraj2 = xtraj2.setOutputFrame(sys.getOutputFrame);
+% psys = taylorApprox(sys,xtraj2,[],3,3);  %ignore var 3 (tau)
+% options=struct();
+% options.rho0_tau=10;
+% options.max_iterations=25;
+% V=sampledTransverseVerification(psys,Vf,Vtraj,Vtraj.getBreaks(),xtraj,utraj2,transSurf,options);
+% 
+% figure(3); clf;
+% transSurf.plotFunnel(V,xtraj);
+% fnplt(xtraj);
 
 disp('Simulating...');
 v=PendulumVisualizer;
@@ -51,11 +51,13 @@ v=PendulumVisualizer;
 
 for i=1:5
 %  x0=[randn(2,1);0];
-  y=simulate(sys,[0 1]);%,x0);
+  y=simulate(sys,[0 5]);%,x0);
+  figure(1);
   fnplt(y);
+  figure(25);
+  v.playback(y);
 end
 
-v.playback(y);
 
 end
 

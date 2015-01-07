@@ -22,15 +22,15 @@ methods
       t0 = obj.x0.tspan(1);
       tf = obj.x0.tspan(end);
       obj.tspan = [t0 tf];
-      obj.ts = linspace(t0,tf,1e3);
-      obj.X = obj.x0.eval(obj.ts);
-      obj.zs = obj.TransSurf.z.eval(obj.ts);
+      obj.time_samples = linspace(t0,tf,1e3);
+      obj.X = obj.x0.eval(obj.time_samples);
+      obj.zs = obj.TransSurf.z.eval(obj.time_samples);
       
       %These should be added back in when running on the real robot since
       %evaluating K takes a long time
       
       obj.K_preEval = flipToPP(obj.K);
-%      obj.K_preEval = DTTrajectory(obj.K.eval(obj.ts), obj.ts(2)-obj.ts(1));
+%      obj.K_preEval = DTTrajectory(obj.K.eval(obj.time_samples), obj.time_samples(2)-obj.time_samples(1));
 %      obj.K_preEval = obj.K_preEval.shiftTime(t0);
     end
     
@@ -145,7 +145,7 @@ methods
       [r, subindex] = min(abs(index_euclid-indices_z));
       i = indices_z(subindex);
       
-      tau = obj.ts(i);
+      tau = obj.time_samples(i);
 %       
 %       f = @(t) ztraj.eval(t)'*(x-x0traj.eval(t));
 %       
@@ -202,7 +202,7 @@ methods
     TransSurf = [];
     tspan = [];
     x0s = [];
-    ts = [];
+    time_samples = [];
     zs = [];
     X = [];
     K_preEval = [];
