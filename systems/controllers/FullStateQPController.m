@@ -223,7 +223,6 @@ classdef FullStateQPController < DrakeSystem
       active_ind = phi<=obj.contact_threshold;
       phi_err = [phi_err;-phi(~active_ind)];
       
-      find(active_ind)
       nc = nc+sum(active_ind);
       Dbar = [Dbar, vertcat(JB{active_ind})']; 
       ndot = matGradMult(dn,qd);
