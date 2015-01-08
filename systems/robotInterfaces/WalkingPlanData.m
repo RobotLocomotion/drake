@@ -2,7 +2,7 @@ classdef WalkingPlanData
 % Container for the results of the ZMP walking planning, which can be consumed by planWalkingStateTraj
 % to generate the full walking motion.
   properties
-    x0
+    q0
     support_times
     supports
     link_constraints
@@ -14,8 +14,8 @@ classdef WalkingPlanData
   end
 
   methods
-    function obj = WalkingPlanData(x0, support_times, supports, link_constraints, zmptraj, V, c, comtraj, mu)
-      obj.x0 = x0;
+    function obj = WalkingPlanData(q0, support_times, supports, link_constraints, zmptraj, V, c, comtraj, mu)
+      obj.q0 = q0;
       obj.support_times = support_times;
       obj.supports = supports;
 
@@ -54,6 +54,11 @@ classdef WalkingPlanData
         lcmgl.glEnd();
       end
 
+      if ~isfield(obj.link_constraints(1), 'traj')
+        for j = 1:length(obj.link_constraints)
+          obj.link_constraints(j).traj = PPTrajectory(mkpp(obj.link_constraints(j).ts, cat(3, obj.link_constraints(j).a3, obj.link_constraints(j).a2, obj.link_constraints(j).a1, obj.link_constraints(j).a0), 6));
+        end
+      end
       for j = 1:length(obj.link_constraints)
         if ~isempty(obj.link_constraints(j).traj)
           plot_traj_foh(obj.link_constraints(j).traj, [0.8, 0.8, 0.2]);
