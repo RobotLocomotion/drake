@@ -25,7 +25,7 @@ nu = getNumInputs(r);
 v = r.constructVisualizer;
 v.display_dt = 0.001;
 
-load('data/hopper_traj_lqr.mat');
+load('data/hopper_traj_lqr_40_knots.mat');
 xtraj = xtraj.setOutputFrame(getStateFrame(r));
 v.playback(xtraj);
 
