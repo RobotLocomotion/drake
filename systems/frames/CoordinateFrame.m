@@ -80,6 +80,11 @@ classdef CoordinateFrame < handle
         obj.coordinates = {coordinates{:}}';
       end
     end
+    
+    function tf = hasSamePrefix(frame1,frame2)
+      % useful for alarming on a possible prefix clash between two polys
+      tf = any(any(bsxfun(@eq,frame1.prefix,frame2.prefix')));
+    end
 
     function p = getPoly(obj)
       % create the poly now if it hasn't been created yet
