@@ -53,9 +53,9 @@ classdef IRB140 < TimeSteppingRigidBodyManipulator
           arm_state_frame = replaceFrameNum(arm_state_frame,1,IRB140State(obj));
           % Sub in handstates for each hand
           % TODO: by name?
-          %for i=2:obj.getStateFrame().getNumFrames
-          %  arm_state_frame = replaceFrameNum(arm_state_frame,i,atlasFrames.HandState(obj,i,'atlasFrames.HandState'));
-          %end
+          for i=2:obj.getStateFrame().getNumFrames
+            arm_state_frame = replaceFrameNum(arm_state_frame,i,HandState(obj,i,'HandState'));
+          end
         else
           arm_state_frame = IRB140State(obj);
         end
@@ -77,9 +77,9 @@ classdef IRB140 < TimeSteppingRigidBodyManipulator
           input_frame  = replaceFrameNum(input_frame,1,IRB140Input(obj));
           % Sub in handstates for each hand
           % TODO: by name?
-          %for i=2:obj.getInputFrame().getNumFrames
-          %  input_frame = replaceFrameNum(input_frame,i,atlasFrames.HandInput(obj,i,'atlasFrames.HandInput'));
-          %end
+          for i=2:obj.getInputFrame().getNumFrames
+            input_frame = replaceFrameNum(input_frame,i,HandInput(obj,i,'HandInput'));
+          end
         else
           input_frame = IRB140Input(obj);
         end
