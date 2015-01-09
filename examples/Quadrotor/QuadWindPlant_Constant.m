@@ -143,14 +143,34 @@ classdef QuadWindPlant_Constant < DrakeSystem
     function [wind,dquadinwind] = quadwind(obj,quadpos,mytime,plotme)
       % quadpos is [xquad;yquad;zquad]
       
-
+      randvec = [   -1.5100
+    0.2651
+   -0.4997
+   -0.2095
+   -1.7304
+    0.8416
+    0.2161
+    1.0956
+    0.6211
+   -0.7955
+   -1.2218
+   -0.5108
+    0.5195
+   -1.1049
+   -0.2449
+   -2.1857
+   -0.9844
+    0.4734
+    0.8165
+    1.3909];
+      
       
       xquad = quadpos(1);
       yquad = quadpos(2);
       zquad = quadpos(3);
-           
-      windfield = 'zero';
-      %windfield = 'constant';
+      
+      %windfield = 'zero';
+      windfield = 'constant';
       %windfield = 'linear';
       %windfield = 'quadratic';
       %windfield = 'sqrt';
@@ -167,7 +187,10 @@ classdef QuadWindPlant_Constant < DrakeSystem
       if strcmp(windfield, 'zero')
         ywind = 0 + 0.01*randn(1);
       elseif strcmp(windfield, 'constant')
-        ywind = 2 + 10*randn(1);
+        %ywind = 2;
+        index = round(1+mytime*4);
+        index = mod(index,20);
+        ywind = 2 + 2*randvec(index);
       elseif strcmp(windfield, 'linear')
         ywind = zquad;
       elseif strcmp(windfield, 'quadratic')

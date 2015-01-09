@@ -180,8 +180,8 @@ r2 = r2.setOutputFrame(r.getOutputFrame);
 
 r2 = r2.setInputFrame(r.getInputFrame);
 
-% NOTE: Back to feedback on original plant for now
-sys = feedback(r,ltvsys);
+% CREATE FEEDBACK CONTROLLER
+sys = feedback(r2,ltvsys);
 
 toc;
 disp('done!');
@@ -199,7 +199,7 @@ disp('done!');
 tic;
 disp('Simulating the system...');
 %xtraj_sim = simulate(sys,[0 tf],x0);
-[xtraj_sim, out2, out3]  = simulate(sys,[0 tf],x0);
+xtraj_sim = simulate(sys,[0 tf],x0);
 toc;
 disp('done!');
 
@@ -292,7 +292,7 @@ else
       if strcmp(windfield, 'zero')
         ywind = 0;
       elseif strcmp(windfield, 'constant')
-        ywind = 5;
+        ywind = 2;
       elseif strcmp(windfield, 'linear')
         ywind = zi;
       elseif strcmp(windfield, 'quadratic')
