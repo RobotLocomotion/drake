@@ -29,6 +29,7 @@ end
 if (~isfield(options,'inertial')), options.inertial = true; end
 if (~isfield(options,'visual')), options.visual = true; end
 if (~isfield(options,'collision')), options.collision = true; end
+if (~isfield(options,'collision_meshes')), options.collision_meshes = true; end
 if (~isfield(options,'sensors')), options.sensors = true; end
 if (~isfield(options,'visual_geometry')), options.visual_geometry = false; end
 if (~isfield(options,'namesuffix')), options.namesuffix = ''; end
@@ -624,8 +625,10 @@ end
       if ~isempty(geomnode)
         if (options.visual || options.visual_geometry)
          geometry = RigidBodyGeometry.parseURDFNode(geomnode,xyz,rpy,model,body.robotnum,options);
-          geometry.c = c;
-          body.visual_geometry = {body.visual_geometry{:},geometry};
+         if ~isempty(geometry)
+           geometry.c = c;
+           body.visual_geometry = {body.visual_geometry{:},geometry};
+         end
         end
       end        
     end
@@ -645,11 +648,13 @@ end
       geomnode = node.getElementsByTagName('geometry').item(0);
       if ~isempty(geomnode)
         geometry = RigidBodyGeometry.parseURDFNode(geomnode,xyz,rpy,model,body.robotnum,options);
-        if (node.hasAttribute('group'))
-          name=char(node.getAttribute('group'));
-        else
-          name='default';
+        if ~isempty(geometry)
+          if (node.hasAttribute('group'))
+            name=char(node.getAttribute('group'));
+          else
+            name='default';
+          end
+          body = addCollisionGeometry(body,geometry,name);
         end
-        body = addCollisionGeometry(body,geometry,name);
       end
     end    
