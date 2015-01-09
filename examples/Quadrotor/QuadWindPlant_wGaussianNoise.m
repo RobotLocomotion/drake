@@ -6,7 +6,7 @@ classdef QuadWindPlant_wGaussianNoise < DrakeSystem
   %  In Proceedings of the 12th International Symposium on Experimental Robotics (ISER 2010), 2010.
   
   methods
-    function obj = QuadWindPlant_Constant()
+    function obj = QuadWindPlant_wGaussianNoise()
       
       
       %obj = obj@SecondOrderSystem(6,4,1);

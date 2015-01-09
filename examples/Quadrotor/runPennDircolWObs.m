@@ -159,7 +159,7 @@ end
 
 
 
-% ROBIN's TVLQR CODE
+% CREATE TVLQR
 
 tic;
 x0 = xtraj.eval(0);
@@ -172,25 +172,24 @@ disp('Computing stabilizing controller with TVLQR...');
 ltvsys = tvlqr(r,xtraj,utraj,Q,R,Qf);
 
 %r2 = QuadWindPlant();
-%ltvsys = ltvsys.setInputFrame(r2.getOutputFrame);
 %r2 = r2.setOutputFrame(r.getStateFrame());
 
-r2 = QuadWindPlant_Constant();
+r2 = QuadWindPlant_wGaussianNoise();
 r2 = r2.setOutputFrame(r.getOutputFrame);
-
 r2 = r2.setInputFrame(r.getInputFrame);
 
 % CREATE FEEDBACK CONTROLLER
+
+% For no Gaussian noise (simulating on same plant):
+% sys = feedback(r2,ltvsys);
+
+% For Gaussian noise (simulating on different plant):
 sys = feedback(r2,ltvsys);
 
 toc;
 disp('done!');
 
-% Simulate on a different wind system
-%r2 = QuadWindPlant_Constant();
-%sys = feedback(r2,c);
-
-% Cascade
+% Cascade if desired
 %tic;
 %sys = cascade(utraj, r);
 %toc;
@@ -216,7 +215,6 @@ v.playback(xtraj_sim, struct('slider', true));
 %    xtraj = xtraj.setOutputFrame(r_temp.getStateFrame());
 %    v2.playback(xtraj,struct('slider',true));
 % end
-
 
 
 
