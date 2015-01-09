@@ -33,11 +33,11 @@ nu = getNumInputs(r);
 v = r.constructVisualizer;
 v.display_dt = 0.01;
 
-load('data/hopper_traj_lqr_40_knots.mat');
-% load('data/hopper_traj_lqr_refined.mat');
+% load('data/hopper_traj_lqr_40_knots.mat');
+load('data/hopper_traj_lqr_refined.mat');
 N_hops = 1;
 
-[xtraj,utraj,Btraj,Straj,Straj_full] = repeatTraj(xtraj,utraj,Btraj,Straj,Straj_full,N_hops);
+[xtraj,utraj,Btraj,Straj,Straj_full] = repeatTraj(xtraj,utraj,Btraj,Straj,Straj_full,N_hops-1);
 %mode_data = repmat(mode_data,1,N_hops+1);
 
 xtraj = xtraj.setOutputFrame(getStateFrame(r));

@@ -87,60 +87,60 @@ traj_opt = traj_opt.addStateConstraint(BoundingBoxConstraint(xf_min,xf_max),N);
 traj_opt = traj_opt.addInputConstraint(LinearConstraint(zeros(2,1),zeros(2,1),[eye(2),-eye(2)]),{[1,N-1]});% force first and next-to-last inputs to be equal (we drop the last input because it's junk)
 
 
-% for i=1:i0-1,
-%   li = ltraj.eval(t_init(i));
-%   if li(1) > .1
-%     traj_opt = traj_opt.addConstraint(BoundingBoxConstraint(.1,inf),traj_opt.l_inds(1,i));
-%   elseif li(1) < 1e-3
-%     traj_opt = traj_opt.addConstraint(BoundingBoxConstraint(0,0),traj_opt.l_inds(1,i));
-%   end
-%   
-%   if li(5) > .1
-%     traj_opt = traj_opt.addConstraint(BoundingBoxConstraint(.1,inf),traj_opt.l_inds(5,i));
-%   elseif li(5) < 1e-3
-%     traj_opt = traj_opt.addConstraint(BoundingBoxConstraint(0,0),traj_opt.l_inds(5,i));
-%   end
-% end
-% 
-% if fix_first
-%   for i=i0:iend+N_refine,
-%     li = ltraj.eval(t_init(i));
-%     if li(1) > .1
-%       traj_opt = traj_opt.addConstraint(BoundingBoxConstraint(.1,inf),traj_opt.l_inds(1,i));
-%     elseif li(1) < 1e-3
-%       traj_opt = traj_opt.addConstraint(BoundingBoxConstraint(0,0),traj_opt.l_inds(1,i));
-%     end
-%   end
-% end
-% 
-% if fix_second
-%   for i=i0:iend+N_refine,
-%     li = ltraj.eval(t_init(i));
-%     if li(5) > .1
-%       traj_opt = traj_opt.addConstraint(BoundingBoxConstraint(.1,inf),traj_opt.l_inds(5,i));
-%     elseif li(5) < 1e-3
-%       traj_opt = traj_opt.addConstraint(BoundingBoxConstraint(0,0),traj_opt.l_inds(5,i));
-%     end
-%   end
-% end
-% 
-% 
-% for i=iend + 1 + N_refine:N,
-%   li = ltraj.eval(t_init(i));
-%   if li(1) > .1
-%     traj_opt = traj_opt.addConstraint(BoundingBoxConstraint(.1,inf),traj_opt.l_inds(1,i));
-%   elseif li(1) < 1e-3
-%     traj_opt = traj_opt.addConstraint(BoundingBoxConstraint(0,0),traj_opt.l_inds(1,i));
-%   end
-%   
-%   if li(5) > .1
-%     traj_opt = traj_opt.addConstraint(BoundingBoxConstraint(.1,inf),traj_opt.l_inds(5,i));
-%   elseif li(5) < 1e-3
-%     traj_opt = traj_opt.addConstraint(BoundingBoxConstraint(0,0),traj_opt.l_inds(5,i));
-%   end
-% end
+for i=1:i0-1,
+  li = ltraj.eval(t_init(i));
+  if li(1) > .1
+    traj_opt = traj_opt.addConstraint(BoundingBoxConstraint(.1,inf),traj_opt.l_inds(1,i));
+  elseif li(1) < 1e-3
+    traj_opt = traj_opt.addConstraint(BoundingBoxConstraint(0,0),traj_opt.l_inds(1,i));
+  end
+  
+  if li(5) > .1
+    traj_opt = traj_opt.addConstraint(BoundingBoxConstraint(.1,inf),traj_opt.l_inds(5,i));
+  elseif li(5) < 1e-3
+    traj_opt = traj_opt.addConstraint(BoundingBoxConstraint(0,0),traj_opt.l_inds(5,i));
+  end
+end
 
-traj_opt = traj_opt.addConstraint(BoundingBoxConstraint(.1*ones(1,10),inf(1,10)),traj_opt.l_inds(5,1:10));
+if fix_first
+  for i=i0:iend+N_refine,
+    li = ltraj.eval(t_init(i));
+    if li(1) > .1
+      traj_opt = traj_opt.addConstraint(BoundingBoxConstraint(.1,inf),traj_opt.l_inds(1,i));
+    elseif li(1) < 1e-3
+      traj_opt = traj_opt.addConstraint(BoundingBoxConstraint(0,0),traj_opt.l_inds(1,i));
+    end
+  end
+end
+
+if fix_second
+  for i=i0:iend+N_refine,
+    li = ltraj.eval(t_init(i));
+    if li(5) > .1
+      traj_opt = traj_opt.addConstraint(BoundingBoxConstraint(.1,inf),traj_opt.l_inds(5,i));
+    elseif li(5) < 1e-3
+      traj_opt = traj_opt.addConstraint(BoundingBoxConstraint(0,0),traj_opt.l_inds(5,i));
+    end
+  end
+end
+
+
+for i=iend + 1 + N_refine:N,
+  li = ltraj.eval(t_init(i));
+  if li(1) > .1
+    traj_opt = traj_opt.addConstraint(BoundingBoxConstraint(.1,inf),traj_opt.l_inds(1,i));
+  elseif li(1) < 1e-3
+    traj_opt = traj_opt.addConstraint(BoundingBoxConstraint(0,0),traj_opt.l_inds(1,i));
+  end
+  
+  if li(5) > .1
+    traj_opt = traj_opt.addConstraint(BoundingBoxConstraint(.1,inf),traj_opt.l_inds(5,i));
+  elseif li(5) < 1e-3
+    traj_opt = traj_opt.addConstraint(BoundingBoxConstraint(0,0),traj_opt.l_inds(5,i));
+  end
+end
+
+% traj_opt = traj_opt.addConstraint(BoundingBoxConstraint(.1*ones(1,10),inf(1,10)),traj_opt.l_inds(5,1:10));
 
 
 % traj_opt = traj_opt.setCheckGrad(true);
