@@ -9,8 +9,14 @@ v.xlim = [-3 16];
 v.ylim = [-7 7];
 
 x0 = Point(getStateFrame(r));
-x0.ball_x = 11;
-x0.ball_y = -.5;
+x0.ball_x = 10;
+x0.ball_y = 0;
+x0.finger1_proximal = .35;
+x0.finger1_middle = -.75;
+x0.finger1_distal = .375;
+x0.finger2_proximal = -.35;
+x0.finger2_middle = .75;
+x0.finger2_distal = -.375;
 
 m = r.getManipulator();
 l=m.position_constraints{1}.eval(x0(1:getNumPositions(r)))
