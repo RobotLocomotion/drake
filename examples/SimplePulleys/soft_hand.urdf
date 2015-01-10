@@ -153,6 +153,11 @@
     <parent link="finger1_middle"/>
     <child link="finger1_distal"/>
   </joint>
+
+  <transmission type="SimpleTransmission" name="finger1_distal">
+    <joint name="finger1_distal"/>
+    <actuator name="finger1_distal"/>
+  </transmission>
   
   <link name="finger1_tensioner">
     <inertial>
@@ -184,7 +189,7 @@
   </joint>
 
   <force_element name="finger1_tensioner_spring">
-    <torsional_spring rest_angle="0" stiffness="20">
+    <torsional_spring rest_angle="0" stiffness="8">
       <joint name="finger1_tensioner"/>
     </torsional_spring>
   </force_element>
@@ -295,6 +300,11 @@
     </visual>
   </link>
   
+  <transmission type="SimpleTransmission" name="finger2_distal">
+    <joint name="finger2_distal"/>
+    <actuator name="finger2_distal"/>
+  </transmission>
+  
   <joint name="finger2_tensioner" type="revolute">
     <origin xyz="0 -1.5 0"/>
     <axis xyz="0 0 1"/>
@@ -304,7 +314,7 @@
   </joint>
   
   <force_element name="finger2_tensioner_spring">
-    <torsional_spring rest_angle="0" stiffness="20">
+    <torsional_spring rest_angle="0" stiffness="8">
       <joint name="finger2_tensioner"/>
     </torsional_spring>
   </force_element>

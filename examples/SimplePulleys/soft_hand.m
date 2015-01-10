@@ -19,15 +19,19 @@ x0.finger2_middle = .75;
 x0.finger2_distal = -.375;
 
 m = r.getManipulator();
-l=m.position_constraints{1}.eval(x0(1:getNumPositions(r)))
+l1=m.position_constraints{1}.eval(x0(1:getNumPositions(r)))
+l2=m.position_constraints{2}.eval(x0(1:getNumPositions(r)))
 
 x0 = resolveConstraints(r,x0); %,v);
 v.drawWrapper(0,x0(1:getNumPositions(r)));
 
-v.inspector(x0);
-return;
+%v.inspector(x0);
+%return;
 
-ytraj = simulate(r,[0 8],x0);
+ts = 0:.1:10;
+utraj = setOutputFrame(PPTrajectory(spline(ts,[-.2*sin(ts);.2*cos(ts)])),getInputFrame(r));
+
+ytraj = simulate(cascade(utraj,r),[0 10],x0);
 if(0)
 ts = ytraj.getBreaks();
 for i=1:numel(ts)
@@ -37,6 +41,6 @@ end
 figure(1); clf; plot(ts,length);
 end
 
-v.playback(ytraj,struct('slider',true));
+v.playback(ytraj);%,struct('slider',true));
 %v.playbackSWF(ytraj,'tension')
 
