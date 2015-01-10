@@ -523,7 +523,9 @@ function model = parseCable(model,robotnum,node,options)
     error('only implemented cables with min_length = max_length so far');
   end
   
-  model = addPositionEqualityConstraint(model,DrakeFunctionConstraint(min_length,max_length,cable_length_function));
+  constraint = DrakeFunctionConstraint(min_length,max_length,cable_length_function);
+  constraint = setName(constraint,cable_length_function.getOutputFrame.name);
+  model = addPositionEqualityConstraint(model,constraint);
 end
 
 function model=parseTransmission(model,robotnum,node,options)
