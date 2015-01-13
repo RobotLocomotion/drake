@@ -39,6 +39,9 @@ p = compile(p);
 
 [ytraj,xtraj] = simulate(p,[0 T]);
 
+%v = p.constructVisualizer();
+%v.playback(ytraj,struct('slider',true));
+
 % should find initial conditions for the brick which are resting on the
 % ground. 
 yf = Point(p.getOutputFrame,eval(ytraj,T));
@@ -50,5 +53,3 @@ valuecheck(yf.torque_y,0,1e-5);
 valuecheck(yf.torque_z,0,1e-5);
 warning(S);
 
-%v = p.constructVisualizer();
-%v.playback(ytraj);
