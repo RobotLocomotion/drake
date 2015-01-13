@@ -2,7 +2,7 @@ classdef IRB140Input < SingletonCoordinateFrame
   % irb140 input coordinate frame
   methods
     function obj=IRB140Input(r)
-      typecheck(r,'TimeSteppingRigidBodyManipulator');
+      typecheck(r,{'TimeSteppingRigidBodyManipulator','RigidBodyManipulator'});
 
       manipInputFrame = r.getManipulator().getInputFrame();
       if (r.hands > 0)

@@ -2,7 +2,7 @@ classdef IRB140State < SingletonCoordinateFrame
   
   methods
     function obj=IRB140State(r)
-      typecheck(r,'TimeSteppingRigidBodyManipulator');
+      typecheck(r,{'TimeSteppingRigidBodyManipulator','RigidBodyManipulator'});
       manipStateFrame = r.getManipulator().getStateFrame();
       if (r.hands > 0)
         manipStateFrame = manipStateFrame.getFrameByNum(1);
