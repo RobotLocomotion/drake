@@ -5,9 +5,8 @@ if ~checkDependency('gurobi')
   return;
 end
 
-path_handle = addpathTemporary({fullfile(getDrakePath,'examples','Atlas','controllers'),...
-                                fullfile(getDrakePath,'examples','Atlas'),...
-                                fullfile(getDrakePath,'examples','Atlas','frames')});
+path_handle = addpathTemporary(fullfile(getDrakePath,'examples','Atlas'));
+
 if nargin < 1
   segment_number = -1; % do full traj
 end
@@ -31,10 +30,13 @@ nu = getNumInputs(r);
 v = r.constructVisualizer;
 v.display_dt = 0.01;
 
-traj_file = 'data/atlas_passiveankle_traj_lqr_090314_zoh.mat';
+%traj_file = 'data/atlas_passiveankle_traj_lqr_090314_zoh.mat';
+traj_file = 'data/atlas_passive_ankle_lqr.mat';
+
+
 load(traj_file);
 
-% [xtraj,utraj,Btraj,Straj_full] = repeatTraj(r,xtraj,utraj,Btraj,Straj_full,1,true);
+[xtraj,utraj,Btraj,Straj_full] = repeatTraj(r,xtraj,utraj,Btraj,Straj_full,2,true);
 
 %%% this is converting the trajectory to a zoh
 % if true
@@ -46,7 +48,7 @@ load(traj_file);
 % end
 
 xtraj = xtraj.setOutputFrame(getStateFrame(r));
-% v.playback(xtraj,struct('slider',true));
+v.playback(xtraj);%,struct('slider',true));
 
 support_times = zeros(1,length(Straj_full));
 for i=1:length(Straj_full)
@@ -110,8 +112,8 @@ ctrl_data = FullStateQPControllerData(true,struct(...
   'supports',supports));
 
 % instantiate QP controller
-options.cpos_slack_limit = inf;
-options.w_cpos_slack = 0.01;
+options.cpos_slack_limit = 20;
+options.w_cpos_slack = 0;
 options.phi_slack_limit = inf;
 options.w_phi_slack = 0.0;
 options.w_qdd = 0*ones(nq,1);
@@ -135,7 +137,7 @@ traj = simulate(sys,[t0 tf],xtraj.eval(t0));
 playback(v,traj,struct('slider',true));
 
 
-if 1
+if 0
   % plot mode sequence
   pptraj = PPTrajectory(foh(traj.getBreaks,traj.eval(traj.getBreaks)));
   

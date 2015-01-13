@@ -115,6 +115,7 @@ options.w_phi_slack = 0.0;
 options.w_qdd = 0*ones(nq,1);
 options.w_grf = 0;
 options.Kp_accel = 0;
+options.Kp_phi = 10;
 options.contact_threshold = 1e-3;
 qp = FullStateQPController(r,ctrl_data,options);
 
