@@ -1,0 +1,136 @@
+
+<robot xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://drake.mit.edu ../../../doc/drakeURDF.xsd" xmlns="http://drake.mit.edu"
+ name="simple_valve_wall">
+    
+    
+<link name="wall">
+    <visual>
+        <material><color rgba="1 .8 .6 0"/></material>
+        <origin xyz="0 0 1"/>
+        <geometry>
+            <box size=".1 1 2"/>
+        </geometry>
+    </visual>
+    <collision>
+        <origin xyz="0 0 1"/>
+        <geometry>
+            <box size=".1 1 2"/>
+        </geometry>
+    </collision>
+</link>    
+    
+<link name="handle">
+    <!-- stem -->
+    <visual>
+        <origin rpy="0 1.57 0"/>
+        <geometry>
+            <cylinder radius=".02" length=".1"/>
+        </geometry>
+    </visual>
+    <collision>
+        <origin rpy="0 1.57 0"/>
+        <geometry>
+            <cylinder radius=".02" length=".1"/>
+        </geometry>
+    </collision>
+    <!-- handle -->
+    <visual>
+        <origin xyz="-.0505 0 .08"/>
+        <geometry>
+            <box size=".01 .05 .2"/>
+        </geometry>
+    </visual>
+    <collision>
+        <origin xyz="-.0505 0 .08"/>
+        <geometry>
+            <box size=".01 .05 .2"/>
+        </geometry>
+    </collision>
+</link>    
+    
+<joint name="handle" type="revolute">
+    <origin xyz="-.1 -.25 1"/>
+    <axis xyz="-1 0 0"/>
+    <parent link="wall"/>
+    <child link="handle"/>
+    <dynamics damping="5"/>
+    <!-- todo: add (coulumb) friction -->
+</joint>    
+
+<link name="wheel">
+    <!-- stem -->
+    <visual>
+        <origin rpy="0 1.57 0"/>
+        <geometry>
+            <cylinder radius=".02" length=".1"/>
+        </geometry>
+    </visual>
+    <collision>
+        <origin rpy="0 1.57 0"/>
+        <geometry>
+            <cylinder radius=".02" length=".1"/>
+        </geometry>
+    </collision>
+    <!-- wheel -->
+    <visual>
+        <origin xyz="-.0505 0 0" rpy="0 1.57 0"/>
+        <geometry>
+            <cylinder radius=".15" length=".02"/>
+        </geometry>
+    </visual>
+    <collision>
+        <origin xyz="-.0505 0 0" rpy="0 1.57 0"/>
+        <geometry>
+            <cylinder radius=".15" length=".02"/>
+        </geometry>
+    </collision>
+    <!-- some visual (only) markings so we can see the orientation -->
+    <visual>
+        <origin xyz="-.06 0 .08" rpy="0 0 0"/>
+        <material>
+            <color rgba="0 0 0 0"/>
+        </material>
+        <geometry>
+            <box size=".01 .01 .1"/>
+        </geometry>
+    </visual>
+    <visual>
+        <origin xyz="-.06 0 -.08" rpy="0 0 0"/>
+        <material>
+            <color rgba="0 0 0 0"/>
+        </material>
+        <geometry>
+            <box size=".01 .01 .1"/>
+        </geometry>
+    </visual>
+    <visual>
+        <origin xyz="-.06 .08 0" rpy="1.57 0 0"/>
+        <material>
+            <color rgba="0 0 0 0"/>
+        </material>
+        <geometry>
+            <box size=".01 .01 .1"/>
+        </geometry>
+    </visual>
+    <visual>
+        <origin xyz="-.06 -.08 0" rpy="1.57 0 0"/>
+        <material>
+            <color rgba="0 0 0 0"/>
+        </material>
+        <geometry>
+            <box size=".01 .01 .1"/>
+        </geometry>
+    </visual>
+</link>   
+
+<joint name="wheel" type="revolute">
+    <origin xyz="-.1 .25 1"/>
+    <axis xyz="-1 0 0"/>
+    <parent link="wall"/>
+    <child link="wheel"/>
+    <dynamics damping="5"/>
+    <!-- todo: add (coulumb) friction -->
+</joint>    
+    
+</robot>
