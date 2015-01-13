@@ -51,6 +51,9 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
         obj.manip = compile(obj.manip);
         obj = obj.setInitialState(zeros(obj.getNumStates(),1));
       end
+      if isfield(options, 'atlas_version')
+        obj.atlas_version = options.atlas_version;
+      end
       
       obj.left_full_support = RigidBodySupportState(obj,obj.foot_body_id.left);
       obj.left_toe_support = RigidBodySupportState(obj,obj.foot_body_id.left,{{'toe'}});
@@ -265,7 +268,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
     left_full_right_full_support
     left_toe_right_full_support
     left_full_right_toe_support
-    atlas_version = 4;
+    atlas_version = [];
   end
 
   properties
