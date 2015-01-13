@@ -16,13 +16,21 @@ checkDependency('lcmgl');
 path_handle = addpathTemporary(fullfile(getDrakePath(), 'examples', 'ZMP'));
 
 % Set up the model
-load('data/atlas_fp.mat', 'xstar');
-x0 = xstar;
-if isfield(options,'initial_pose'), x0(1:6) = options.initial_pose; end
-
 r = Atlas('urdf/atlas_minimal_contact.urdf',options);
-x0 = r.resolveConstraints(x0);
+v = r.constructVisualizer();
+
+if ~isfield(options, 'x0')
+  load('data/atlas_fp.mat', 'xstar');
+  x0 = xstar;
+  if isfield(options,'initial_pose'), x0(1:6) = options.initial_pose; end
+  x0 = r.resolveConstraints(x0);
+else
+  x0 = options.x0;
+  options.initial_state = x0(1:6);
+end
+
 r = r.setInitialState(x0);
+v.draw(0, x0);
 
 q0 = x0(1:r.getNumPositions());
 
@@ -58,8 +66,6 @@ end
 
 
 % Show the result
-v = r.constructVisualizer();
-v.draw(0, x0);
 walking_plan_data = r.planWalkingZMP(x0, footstep_plan);
 [xtraj, htraj, ts] = r.planWalkingStateTraj(walking_plan_data);
 
