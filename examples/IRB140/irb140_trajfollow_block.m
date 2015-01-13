@@ -39,6 +39,8 @@ classdef irb140_trajfollow_block < MIMODrakeSystem
     end
     
     function varargout=mimoOutput(obj,t,~,state)
+      % proof-of-concept end-effector control. Will presumably be
+      % replaced with something fancier and better-performing
       K_P = 10000;
       K_D = 1000;
       K_D_P = 100;
@@ -47,12 +49,15 @@ classdef irb140_trajfollow_block < MIMODrakeSystem
       efforts = K_P*error(1:obj.nq) + K_D*error(1:obj.nq) + K_D_P*error(obj.nq+1:end);
       varargout = {efforts};
       
+      % Draw target end-effector position (or something in line with it,
+      % anyway, since true end-effector position isn't yet figured out
+      % for the real arm) for reference.
       if ~isempty(obj.lcmgl)
         obj.lcmgl.glColor3f(1, 0, 0);
         kinsol = doKinematics(obj.r.getManipulator,target_pose(1:obj.r.getNumPositions));
         pt = forwardKin(obj.r.getManipulator,kinsol,6,[0.3,0,0.0].');
         obj.lcmgl.glTranslated(pt(1), pt(2), pt(3));
-        obj.lcmgl.box([0,0,0], [0.05, 0.05, 0.05]);
+        obj.lcmgl.box([0,0,0], [0.025, 0.025, 0.025]);
         obj.lcmgl.switchBuffers;
       end
       
