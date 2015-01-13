@@ -3,6 +3,8 @@ fprintf('Setup...\n');
 dt = 0.001;
 options.dt = dt;
 options.floating = false;
+options.base_offset = [0;0;0]; %[-0.5, 0, 1.5]'; %For now positions on ground
+options.base_rpy = [-pi/2, 0, 0]';
 options.ignore_self_collisions = true;
 options.collision = false;
 options.hands = 'none';
@@ -24,7 +26,8 @@ x0_hand = r_hand.getInitialState();
 
 %% final pose
 fprintf('Generating target traj\n');
-target_xtraj = runPlanning(x0(1:r.getNumPositions), [-0.7, 0.4, 0.7]', 0);
+options.visualize = true;
+target_xtraj = runPlanning(x0(1:r.getNumPositions), [0.5, 0.0, 0.5]', options);
 
 
 pd_control = irb140_trajfollow_block(r, target_xtraj);
@@ -55,5 +58,5 @@ warning(S);
 
 traj = simulate(sys,[0 2],x0_hand);
 
-  % This doesn't see hand movements. Why?
-  playback(v,traj,struct('slider',true));
+% This doesn't see hand movements. Why?
+playback(v,traj,struct('slider',true));
