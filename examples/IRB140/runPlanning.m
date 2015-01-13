@@ -1,19 +1,29 @@
-function xtraj = runPlanning(q0, pos_final, visualize)
+function xtraj = runPlanning(q0, pos_final, options)
 % default starting pose
 if nargin<1
   q0 = [0,0,0,0,0,0]';
 end
-%pos_final = [-0.5, 0, 1.015]';
 if (nargin<2)
-  pos_final = [-1.212+0.5, -0.1+0.5, 1.025]';
+  % Somewhere out in front as an example
+  pos_final = [0.5, 0.0, 0.5]';
 end
 if (nargin<3)
-  visualize = false;
+  options = [];
+end
+
+if ~isfield(options,'visualize')
+  options.visualize = true;
+end
+if ~isfield(options,'base_offset')
+  options.base_offset = [0.0, 0, 0.0]';
+end
+if ~isfield(options,'base_rpy')
+  options.base_rpy = [-pi/2, 0.0, 0]';
 end
 
 r=RigidBodyManipulator();
-r = addRobotFromURDF(r,'irb_140.urdf',[-0.5, 0, 1.5]',[pi/2, pi/2, 0]');
-if (visualize)
+r = addRobotFromURDF(r,'irb_140.urdf',options.base_offset,options.base_rpy);
+if (options.visualize)
   v=r.constructVisualizer();
 end
 
@@ -49,7 +59,7 @@ t_vec = linspace(0,T,N);
 
 q_end = xtraj.eval(xtraj.tspan(end));
 % do visualize
-if visualize && snopt_info <= 10
+if options.visualize && snopt_info <= 10
   v.playback(xtraj);
 end
 

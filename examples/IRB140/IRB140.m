@@ -16,10 +16,16 @@ classdef IRB140 < TimeSteppingRigidBodyManipulator
       if ~isfield(options,'hands')
         options.hands = 'none';
       end
+      if ~isfield(options,'base_offset')
+        options.base_offset = [-0.5, 0, 1.5]';
+      end
+      if ~isfield(options,'base_rpy')
+        options.base_rpy = [pi/2, pi/2, 0]';
+      end
       
       obj = obj@TimeSteppingRigidBodyManipulator('',options.dt,options);
       obj.initialized = 1;
-      obj = obj.addRobotFromURDF(urdf,[0,0,0]',[-pi/2, 0, 0]',options);
+      obj = obj.addRobotFromURDF(urdf,options.base_offset,options.base_rpy,options);
       
       if (~strcmp(options.hands, 'none'))
         if (strcmp(options.hands, 'robotiq'))
