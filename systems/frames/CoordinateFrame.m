@@ -336,7 +336,7 @@ classdef CoordinateFrame < handle
 
       if ~isnumeric(dims) || ~isvector(dims) error('dims must be a numeric vector'); end
       if (any(dims>obj.dim | dims<1)) error(['dims must be between 1 and ',obj.dim]); end
-      fr = CoordinateFrame([obj.name,mat2str(dims)], length(dims), obj.prefix);
+      fr = CoordinateFrame([obj.name,mat2str(dims)], length(dims), obj.prefix(dims));
       fr.coordinates = obj.coordinates(dims);
       if ~isempty(fr.poly)
         fr.poly = obj.poly(dims);
