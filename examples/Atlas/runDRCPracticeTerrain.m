@@ -15,11 +15,11 @@ end
 
 options.terrain = height_map;  
 options.navgoal = [6.5;0;0;0;0;0];
-% options.initial_pose = [-3;0;0;0;0;0];
-options.initial_pose = [0;0;0;0;0;0]
+options.initial_pose = [-3;0;0;0;0;0];
+% options.initial_pose = [0;0;0;0;0;0]
 
 while true
-  profile on
+%   profile on
   options.safe_regions = findSafeTerrain(options.terrain, options.initial_pose, options.navgoal);
   try
     xtraj = runAtlasWalkingPlanning(options);
@@ -31,12 +31,13 @@ while true
       rethrow(e);
     end
   end
-  profile viewer
+%   profile viewer
   breaks = xtraj.getBreaks();
   xf = xtraj.eval(breaks(end));
+  options.x0 = xf;
   options.initial_pose = xf(1:6);
-  disp('pausing for playback...press any key to continue');
-  pause
+  disp('pausing for playback...use dbcont to continue');
+  keyboard()
   options.initial_pose
 end
 
