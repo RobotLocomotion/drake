@@ -6,10 +6,10 @@ options.floating = false;
 options.ignore_self_collisions = true;
 options.collision = false;
 options.hands = 'none';
-r = IRB140('irb_140_manual_transmissions.urdf', options);
+r = IRB140('irb_140.urdf', options);
 options_hand = options;
 options_hand.hands = 'robotiq';
-r_hand = IRB140('irb_140_manual_transmissions.urdf', options_hand);
+r_hand = IRB140('irb_140.urdf', options_hand);
 
 r_hand = r_hand.removeCollisionGroupsExcept({'palm', 'knuckle'});
 r_hand = r_hand.compile();
