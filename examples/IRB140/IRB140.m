@@ -11,10 +11,7 @@ classdef IRB140 < TimeSteppingRigidBodyManipulator
         options.dt = 0.001;
       end
       if ~isfield(options,'floating')
-        options.floating = true;
-      end
-      if ~isfield(options,'terrain')
-        options.terrain = RigidBodyFlatTerrain;
+        options.floating = false;
       end
       if ~isfield(options,'hands')
         options.hands = 'none';

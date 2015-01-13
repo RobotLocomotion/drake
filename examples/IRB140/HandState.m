@@ -2,7 +2,7 @@ classdef HandState < SingletonCoordinateFrame
   
   methods
     function obj=HandState(r, ind, name)
-      typecheck(r,'TimeSteppingRigidBodyManipulator');
+      typecheck(r,{'TimeSteppingRigidBodyManipulator','RigidBodyManipulator'});
       % Inds indicate which element of the overall state frame
       % our hand state is. 
       manipStateFrame = r.getManipulator().getStateFrame();
