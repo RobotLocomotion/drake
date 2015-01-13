@@ -3,8 +3,6 @@ classdef FullStateQPController < DrakeSystem
   function obj = FullStateQPController(r,controller_data,options)
     % @param r rigid body manipulator instance
     % @param controller_data FullStateQPControllerData object containing the matrices that
-    % define the underlying linear system, the ZMP trajectory, Riccati
-    % solution, etc.
     % @param options structure for specifying objective weights, slack
     % bounds, etc.
     typecheck(r,'TimeSteppingRigidBodyManipulator');
@@ -127,18 +125,6 @@ classdef FullStateQPController < DrakeSystem
       obj.contact_threshold = 0.001;
     end
     
-    if isfield(options,'left_foot_name')
-      obj.lfoot_idx = findLinkId(r,options.left_foot_name);
-    else
-      obj.lfoot_idx = findLinkId(r,'left_foot');
-    end
-
-    if isfield(options,'right_foot_name')
-      obj.rfoot_idx = findLinkId(r,options.right_foot_name);
-    else
-      obj.rfoot_idx = findLinkId(r,'right_foot');
-    end
-      
     obj.gurobi_options.outputflag = 0; % not verbose
     if options.solver==0
       obj.gurobi_options.method = 2; % -1=automatic, 0=primal simplex, 1=dual simplex, 2=barrier
@@ -387,7 +373,7 @@ classdef FullStateQPController < DrakeSystem
       obj.controller_data.qp_active_set = qp_active_set;
     end
 %     beta=Ibeta*alpha
-    y = Iu*alpha     
+    y = Iu*alpha;
     
   end
   end
@@ -403,8 +389,6 @@ classdef FullStateQPController < DrakeSystem
     cpos_slack_limit; 
     phi_slack_limit; 
     Kp_accel; % gain for support acceleration constraint: accel=-Kp_accel*vel
-    rfoot_idx;
-    lfoot_idx;
     gurobi_options = struct();
     solver=0;
     lc;
