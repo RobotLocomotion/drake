@@ -79,6 +79,22 @@ classdef FullStateQPController < DrakeSystem
     else
       obj.Kp_accel = 0.0; % default desired acceleration=0
     end       
+    
+    if isfield(options,'Kp_phi')
+      typecheck(options.Kp_phi,'double');
+      sizecheck(options.Kp_phi,1);
+      obj.Kp_phi = options.Kp_phi;
+    else
+      obj.Kp_phi = 10;
+    end
+
+    if isfield(options,'Kd_phi')
+      typecheck(options.Kd_phi,'double');
+      sizecheck(options.Kd_phi,1);
+      obj.Kd_phi = options.Kd_phi;
+    else
+      obj.Kd_phi = 2*sqrt(obj.Kp_phi);
+    end
 
     % hard bound on cpos_ddot slack variables
     if isfield(options,'cpos_slack_limit')
@@ -293,9 +309,7 @@ classdef FullStateQPController < DrakeSystem
     end
 
     if ~isempty(phi_err)
-      Kp_phi = 10;
-      Kd_phi = 2*sqrt(Kp_phi);
-      phi_ddot_desired = Kp_phi*phi_err - Kd_phi*(Jndot*qd);
+      phi_ddot_desired = obj.Kp_phi*phi_err - obj.Kd_phi*(Jndot*qd);
       Aeq_{3} = Jn*Iqdd + Ieta;
       beq_{3} = -Jndot*qd + phi_ddot_desired; 
     end
@@ -389,6 +403,8 @@ classdef FullStateQPController < DrakeSystem
     cpos_slack_limit; 
     phi_slack_limit; 
     Kp_accel; % gain for support acceleration constraint: accel=-Kp_accel*vel
+    Kp_phi; 
+    Kd_phi; 
     gurobi_options = struct();
     solver=0;
     lc;
