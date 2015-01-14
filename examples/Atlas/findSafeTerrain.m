@@ -7,7 +7,7 @@ p.addRequired('navgoal', @(x) sizecheck(x, 6));
 p.addParameter('resolution', 0.05, @isnumeric);
 p.addParameter('forward_dist', 3, @isnumeric);
 p.addParameter('width', 2, @isnumeric);
-p.addParameter('backward_dist', 0.5, @isnumeric);
+p.addParameter('backward_dist', 1, @isnumeric);
 p.addParameter('max_slope_angle', 40 * pi/180, @isnumeric);
 p.addParameter('plane_dist_tol', 0.05, @isnumeric);
 p.addParameter('normal_angle_tol', 10 * pi/180, @isnumeric);
@@ -117,7 +117,7 @@ while true
   [A_bounds, b_bounds] = poly2lincon([X(end,1), X(end,end), X(1,end), X(1,1)], [Y(end,1), Y(end,end), Y(1,end), Y(1,1)]);
   [A, b, C, d, results] = iris.inflate_region(obstacle_pts, A_bounds, b_bounds, [x0; y0], struct('require_containment', true));
   
-  p = iris.TerrainRegion([A, zeros(size(A, 1), 1)], b, [x0;y0;z0], n0);
+  p = iris.TerrainRegion([A, zeros(size(A, 1), 1)], b, C, d, [x0;y0;z0], n0);
   planar_regions(end+1) = p;
   poly = p.getXYZPolytope().normalize();
   poly.b = poly.b - FOOT_LENGTH;
@@ -140,6 +140,7 @@ safe_regions = iris.TerrainRegion.empty();
 for j = 1:length(planar_regions)
   lcmgl.glColor3f(.2,.2,.9);
   planar_regions(j).getXYZPolytope().drawLCMGL(lcmgl);
+  lcmgl.switchBuffers();
   
   safe_region = bodyCSpaceRegion(planar_regions(j), initial_pose(6), X, Y, Z);
   if ~isempty(safe_region)
