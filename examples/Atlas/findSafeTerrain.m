@@ -7,7 +7,7 @@ p.addRequired('navgoal', @(x) sizecheck(x, 6));
 p.addParameter('resolution', 0.05, @isnumeric);
 p.addParameter('forward_dist', 3, @isnumeric);
 p.addParameter('width', 2, @isnumeric);
-p.addParameter('backward_dist', 1, @isnumeric);
+p.addParameter('backward_dist', 0.5, @isnumeric);
 p.addParameter('max_slope_angle', 40 * pi/180, @isnumeric);
 p.addParameter('plane_dist_tol', 0.05, @isnumeric);
 p.addParameter('normal_angle_tol', 10 * pi/180, @isnumeric);
@@ -140,7 +140,7 @@ safe_regions = iris.TerrainRegion.empty();
 for j = 1:length(planar_regions)
   lcmgl.glColor3f(.2,.2,.9);
   planar_regions(j).getXYZPolytope().drawLCMGL(lcmgl);
-  lcmgl.switchBuffers();
+%   lcmgl.switchBuffers();
   
   safe_region = bodyCSpaceRegion(planar_regions(j), initial_pose(6), X, Y, Z);
   if ~isempty(safe_region)
