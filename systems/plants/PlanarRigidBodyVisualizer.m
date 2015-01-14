@@ -65,6 +65,15 @@ classdef PlanarRigidBodyVisualizer < RigidBodyVisualizer
           end
         end
       end
+      
+      for j=1:length(obj.model.position_constraints)
+        % todo: generalize this to all position constraints?
+        if isa(obj.model.position_constraints{j},'DrakeFunctionConstraint') && isa(obj.model.position_constraints{j}.fcn,'drakeFunction.kinematic.CableLength')
+          [pts,edges] = getSegments(obj.model.position_constraints{j}.fcn,q);
+          pts = obj.Tview*pts; x=pts(1,:);y=pts(2,:);z=pts(3,:);
+          line(x(edges),y(edges),z(edges),'Color','k','LineWidth',3);
+        end
+      end
 
       if (obj.debug)
         com = getCOM(obj.model,q);
