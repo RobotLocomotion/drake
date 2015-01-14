@@ -25,9 +25,13 @@ foot_shape = R * original_foot_shape;
 
 % Reorient the foot onto the terrain plane
 c = cross([0;0;1], normal);
-ax = c / norm(c);
-angle = asin(norm(c));
-Rplane = axis2rotmat([ax; angle]);
+if norm(c) >= 1e-6
+  ax = c / norm(c);
+  angle = asin(norm(c));
+  Rplane = axis2rotmat([ax; angle]);
+else
+  Rplane = eye(3);
+end
 foot_shape =  Rplane * [foot_shape; zeros(1, size(foot_shape, 2))];
 foot_shape = foot_shape(1:2,:);
 
@@ -38,11 +42,11 @@ new_c_region = struct('A', [], 'b', []);
 A = planar_region.A(:,1:2);
 b = planar_region.b;
 
-for j = 1:size(A, 1)
-  ai = A(j,:);
+for i = 1:size(A, 1)
+  ai = A(i,:);
   n = norm(ai);
   ai = ai / n;
-  bi = b(j) / n;
+  bi = b(i) / n;
   
   p = ai * contact_pts;
   v = ai * contact_vel;
@@ -56,7 +60,7 @@ for j = 1:size(A, 1)
   end
 end
 
-new_c_region.b = new_c_region.b + new_c_region.A * [0;0;-initial_yaw];
+new_c_region.b = new_c_region.b + new_c_region.A * [0;0;initial_yaw];
 
 c_region.A = [c_region.A; new_c_region.A];
 c_region.b = [c_region.b; new_c_region.b];
@@ -89,6 +93,7 @@ if ~isempty(vertices)
 %     lcmgl.glEnd();
 %   end 
 %   lcmgl.switchBuffers();
+%   disp('here');
 else
   terrain_region = []; % system has no feasible set
 end
