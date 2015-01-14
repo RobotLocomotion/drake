@@ -19,7 +19,7 @@ namespace DrakeCollision
     //std::cout << "BulletElement::BulletElement: START" << std::endl;
     //END_DEBUG
     btCollisionShape* bt_shape;
-    double small_margin = 1e-8;
+    double small_margin = 1e-9;
     switch (shape) {
       case BOX:
         {
