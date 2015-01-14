@@ -100,9 +100,7 @@ c_region.b = c_region.b + c_region.A * [0;0;initial_yaw];
 c_region.A = [c_region.A; [0, 0, 1; 0, 0, -1]];
 c_region.b = [c_region.b; [initial_yaw + pi; -(initial_yaw - pi)]];
 
-tic
 xyyaw_poly = iris.Polytope(c_region.A, c_region.b).reduce();
-toc();
 
 vertices = xyyaw_poly.getVertices();
 if ~isempty(vertices)

@@ -14,13 +14,13 @@ else
 end
 
 options.terrain = height_map;  
-options.navgoal = [6.5;0;0;0;0;0];
-% options.initial_pose = [-3;0;0;0;0;0];
+options.initial_pose = [-3;0;0;0;0;0];
 % options.initial_pose = [0;0;0;0;0;0]
-options.initial_pose = [-1;0;0;0;0;pi/4];
+% options.initial_pose = [-1;0;0;0;0;pi/4];
 
 while true
 %   profile on
+  options.navgoal = [options.initial_pose(1)+3; 0;0;0;0;0];
   options.safe_regions = findSafeTerrain(options.terrain, options.initial_pose, options.navgoal);
   try
     xtraj = runAtlasWalkingPlanning(options);
