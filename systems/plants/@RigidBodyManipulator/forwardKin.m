@@ -3,7 +3,7 @@ function [x,J,dJ] = forwardKin(obj,kinsol,body_or_frame_ind,pts,rotation_type)
 %
 % @param kinsol solution structure obtained from doKinematics
 % @param body_or_frame_ind, an integer ID for a RigidBody or RigidBodyFrame
-% (obtained via e.g., findLinkInd or findFrameInd)
+% (obtained via e.g., findLinkId or findFrameInd)
 % @param rotation_type integer flag indicated whether rotations and
 % derivatives should be computed (0 - no rotations, 1 - rpy, 2 - quat)
 % @retval x the position of pts (given in the body frame) in the global

@@ -6,7 +6,7 @@ m = PlanarRigidBodyManipulator('../Acrobot.urdf');
 warning(w);
 options.grad_method = {'user','taylorvar'};
 
-lower_link_id = findLinkInd(m,'lower_link');
+lower_link_id = findLinkId(m,'lower_link');
 hand_id = findFrameId(m,'hand');
 
 for i=1:100

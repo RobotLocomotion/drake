@@ -1873,7 +1873,7 @@ void RigidBodyManipulator::HandC(double * const q, double * const qd, MatrixBase
   }
 }
 
-int RigidBodyManipulator::findLinkInd(string linkname, int robot)
+int RigidBodyManipulator::findLinkId(string linkname, int robot)
 {
   std::transform(linkname.begin(), linkname.end(), linkname.begin(), ::tolower); // convert to lower case
 

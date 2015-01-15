@@ -322,4 +322,41 @@
     <axis xyz="1 0 0"/>
     <origin rpy="0 0 0" xyz="0.065 0 0"/>
   </joint>
+
+  <transmission name="joint1_trans" type="SimpleTransmission">
+    <joint name="joint1"/>
+    <actuator name="joint1_motor"/>
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+
+  <transmission name="joint2_trans" type="SimpleTransmission">
+    <joint name="joint2"/>
+    <actuator name="joint2_motor"/>
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+
+  <transmission name="joint3_trans" type="SimpleTransmission">
+    <joint name="joint3"/>
+    <actuator name="joint3_motor"/>
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+
+  <transmission name="joint4_trans" type="SimpleTransmission">
+    <joint name="joint4"/>
+    <actuator name="joint4_motor"/>
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+
+  <transmission name="joint5_trans" type="SimpleTransmission">
+    <joint name="joint5"/>
+    <actuator name="joint5_motor"/>
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+  
+  <transmission name="joint6_trans" type="SimpleTransmission">
+    <joint name="joint6"/>
+    <actuator name="joint6_motor"/>
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+  
 </robot>

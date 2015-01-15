@@ -6,7 +6,7 @@ classdef CartTable2D < TimeSteppingRigidBodyManipulator
       
       obj = addSensor(obj,FullStateFeedbackSensor());
       % Commented out pending rewrite of ContactForceTorqueSensor
-      %ft_frame = RigidBodyFrame(findLinkInd(obj,'base'),zeros(3,1),zeros(3,1),'ft_frame');
+      %ft_frame = RigidBodyFrame(findLinkId(obj,'base'),zeros(3,1),zeros(3,1),'ft_frame');
       %obj = addFrame(obj,ft_frame);
       %s = ContactForceTorqueSensor(obj,ft_frame);
 %     %s.frame = CartTable2DFT;

@@ -18,8 +18,8 @@ xtraj = rsim.simulate([0 3],x0);
 v.playback(xtraj);
 
 
-ground = r.findLinkInd('world+ground_plane');
-brick = r.findLinkInd('brick');
+ground = r.findLinkId('world+ground_plane');
+brick = r.findLinkId('brick');
 
 cpts = 1:size(getBodyContacts(r,brick),2);
 

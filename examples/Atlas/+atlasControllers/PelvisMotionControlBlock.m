@@ -22,7 +22,7 @@ classdef PelvisMotionControlBlock < DrakeSystem
       typecheck(controller_data,'QPControllerData');
       
       input_frame = getStateFrame(r);
-      output_frame = BodySpatialAcceleration(r,name);
+      output_frame = atlasFrames.BodySpatialAcceleration(r,name);
       obj = obj@DrakeSystem(0,0,input_frame.dim,output_frame.dim,true,false);
       obj = setInputFrame(obj,input_frame);
       obj = setOutputFrame(obj,output_frame);
@@ -79,7 +79,7 @@ classdef PelvisMotionControlBlock < DrakeSystem
         obj.mex_ptr = SharedDataHandle(pelvisMotionControlmex(0,obj.robot.getMexModelPtr.ptr,obj.alpha,obj.nominal_pelvis_height,obj.Kp,obj.Kd));
       end
 
-      obj.body_ind = findLinkInd(r,name);
+      obj.body_ind = findLinkId(r,name);
     end
    
     function y=output(obj,t,~,x)

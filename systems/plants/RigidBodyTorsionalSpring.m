@@ -66,7 +66,7 @@ classdef RigidBodyTorsionalSpring < RigidBodyForceElement
       end
       
       jointNode = node.getElementsByTagName('joint').item(0);
-      obj.child_body = findJointInd(model,char(jointNode.getAttribute('name')),robotnum);
+      obj.child_body = findJointId(model,char(jointNode.getAttribute('name')),robotnum);
       obj.parent_body = model.body(obj.child_body).parent;
       assert(numel(model.body(obj.child_body).position_num)==1 && model.body(obj.child_body).pitch==0,'Torsional springs are currnetly only supported for pin joints (aka, continuous and rotational joints)');
     end

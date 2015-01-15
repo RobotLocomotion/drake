@@ -149,7 +149,7 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensorWithState %& Visu
       for i=1:N,
         torque = torque + cross(contact_pos_body(:,i),normal(:,i)*z(normal_ind(i)));
         for j=1:2*nD,
-          torque = torque + cross(contact_pos_body(:,i),tangent(:,i*(nD-1) + j)*z(tangent_ind(i*(nD-1) + j)));
+          torque = torque + cross(contact_pos_body(:,i),tangent(:,i+(j-1)*N)*z(tangent_ind(i+(j-1)*N)));
         end
       end
       

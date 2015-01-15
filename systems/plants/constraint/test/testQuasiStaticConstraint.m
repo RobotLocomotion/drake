@@ -5,11 +5,11 @@ options.floating = true;
 r = RigidBodyManipulator(urdf,options);
 nq = r.getNumPositions();
 
-l_foot = r.findLinkInd('l_foot');
-r_foot = r.findLinkInd('r_foot');
-l_hand = r.findLinkInd('l_hand');
-r_hand = r.findLinkInd('r_hand');
-head = r.findLinkInd('head');
+l_foot = r.findLinkId('l_foot');
+r_foot = r.findLinkId('r_foot');
+l_hand = r.findLinkId('l_hand');
+r_hand = r.findLinkId('r_hand');
+head = r.findLinkId('head');
 nLPts = length(r.getBody(l_foot).getCollisionGeometry);
 l_foot_pts = zeros(3,nLPts);
 for i=1:nLPts,

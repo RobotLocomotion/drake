@@ -188,7 +188,7 @@ classdef RigidBodyBluffBody < RigidBodyForceElement
       name = regexprep(name, '\.', '_', 'preservecase');
 
       elNode = node.getElementsByTagName('parent').item(0);
-      parent = findLinkInd(model,char(elNode.getAttribute('link')),robotnum);
+      parent = findLinkId(model,char(elNode.getAttribute('link')),robotnum);
       
       % get the xyz position of the element
       xyz=zeros(3,1);

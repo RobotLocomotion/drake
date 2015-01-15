@@ -29,10 +29,8 @@ classdef Kinematic < drakeFunction.RigidBodyManipulatorFunction
 
     function obj = setRigidBodyManipulator(obj, rbm)
       obj = setRigidBodyManipulator@drakeFunction.RigidBodyManipulatorFunction(obj, rbm);
-      assert(isequal_modulo_transforms(obj.input_frame,rbm.getPositionFrame()),...
-        ['The input frame of this function is incompatible with the ', ...
-         'position frame of the RigidBodyManipulator, rbm.']);
       obj.input_frame = rbm.getPositionFrame();
+      obj = obj.setSparsityPattern();
     end
   end
 

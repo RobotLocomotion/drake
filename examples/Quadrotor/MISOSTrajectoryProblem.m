@@ -144,7 +144,7 @@ classdef MISOSTrajectoryProblem
           region{j} = safe_region_assignments{j};
         end
       else
-        region{j} = true;
+        region{j} = true(1, obj.num_traj_segments);
       end
     end
 
@@ -274,7 +274,7 @@ classdef MISOSTrajectoryProblem
           if length(ct) < obj.traj_degree + 1
             ct = [ct; 1e-6]; % stupid yalmip bug when polynomial is constant
           end
-          coeffs(i,k,:) = flip(ct');
+          coeffs(i,k,:) = fliplr(reshape(ct,1,[]));
         end
       end
     end

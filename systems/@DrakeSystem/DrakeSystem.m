@@ -215,6 +215,8 @@ classdef DrakeSystem < DynamicalSystem
 
       % make a simulink model from this block
       mdl = [class(obj),'_',obj.uid];  % use the class name + uid as the model name
+      mdl = regexprep(mdl, '\.', '_'); % take any dots out to make it a valid Matlab function
+      mdl = mdl(1:min(59,length(mdl))); % truncate the name so that simulink won't throw a warning about it being too long
       close_system(mdl,0);  % close it if there is an instance already open
       new_system(mdl,'Model');
       set_param(mdl,'SolverPrmCheckMsg','none');  % disables warning for automatic selection of default timestep

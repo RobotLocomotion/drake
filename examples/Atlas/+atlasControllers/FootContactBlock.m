@@ -46,10 +46,10 @@ classdef FootContactBlock < MIMODrakeSystem
     
       input_frame = getStateFrame(r);
       if options.num_outputs > 1
-        [outputs{1:options.num_outputs}] = deal(FootContactState);
+        [outputs{1:options.num_outputs}] = deal(atlasFrames.FootContactState);
         output_frame = MultiCoordinateFrame(outputs);
       else
-        output_frame = FootContactState;
+        output_frame = atlasFrames.FootContactState;
       end
       
       obj = obj@MIMODrakeSystem(0,0,input_frame,output_frame,true,true);
