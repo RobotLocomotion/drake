@@ -19,6 +19,7 @@ namespace DrakeCollision
     //std::cout << "BulletElement::BulletElement: START" << std::endl;
     //END_DEBUG
     btCollisionShape* bt_shape;
+    double small_margin = 1e-9;
     switch (shape) {
       case BOX:
         {
@@ -34,7 +35,7 @@ namespace DrakeCollision
         if (use_margins)
           bt_shape->setMargin(0.05);
         else
-          bt_shape->setMargin(0.0);
+          bt_shape->setMargin(small_margin);
         for (int i=0; i<8; ++i){
           btVector3 vtx;
           bt_box.getVertex(i,vtx);
@@ -81,7 +82,7 @@ namespace DrakeCollision
         if (use_margins)
           bt_shape->setMargin(0.05);
         else
-          bt_shape->setMargin(0.0);
+          bt_shape->setMargin(small_margin);
         for (int i=0; i<params.size(); i+=3){
           //DEBUG
           //std::cout << "BulletElement::BulletElement: Adding point " << i/3 + 1 << std::endl;
