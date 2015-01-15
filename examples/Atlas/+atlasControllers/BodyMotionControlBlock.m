@@ -11,6 +11,7 @@ classdef BodyMotionControlBlock < DrakeSystem
     body_ind;
     mex_ptr;
     use_mex;
+    use_plan_shift;
   end
   
   methods
@@ -19,7 +20,7 @@ classdef BodyMotionControlBlock < DrakeSystem
       typecheck(controller_data,'QPControllerData');
       
       input_frame = getStateFrame(r);
-      output_frame = BodySpatialAcceleration(r,name);
+      output_frame = atlasFrames.BodySpatialAcceleration(r,name);
       obj = obj@DrakeSystem(0,0,input_frame.dim,output_frame.dim,true,false);
       obj = setInputFrame(obj,input_frame);
       obj = setOutputFrame(obj,output_frame);
@@ -54,9 +55,17 @@ classdef BodyMotionControlBlock < DrakeSystem
       else
         obj.dt = 0.001;
       end
+
+      if isfield(options,'use_plan_shift')
+        typecheck(options.use_plan_shift,{'logical', 'double'});
+        sizecheck(options.use_plan_shift, [1 1]);
+        obj.use_plan_shift = options.use_plan_shift;
+	  else
+        obj.use_plan_shift = false;
+      end
       obj = setSampleTime(obj,[obj.dt;0]); % sets controller update rate
       obj.robot = r;
-      obj.body_ind = findLinkInd(r,name);
+      obj.body_ind = findLinkId(r,name);
 
       if isfield(options,'use_mex')
         sizecheck(options.use_mex,1);
@@ -99,6 +108,10 @@ classdef BodyMotionControlBlock < DrakeSystem
         a2 = ctrl_data.link_constraints(link_con_ind).a2(:,body_traj_ind);
         a3 = ctrl_data.link_constraints(link_con_ind).a3(:,body_traj_ind);
         [body_des,body_v_des,body_vdot_des] = evalCubicSplineSegment(tt,a0,a1,a2,a3);
+      end
+
+      if obj.use_plan_shift
+        body_des(3) = body_des(3) - ctrl_data.plan_shift(3);
       end
       
       if (obj.use_mex == 0 || obj.use_mex==2)

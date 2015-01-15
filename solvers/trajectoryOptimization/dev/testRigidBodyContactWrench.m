@@ -7,7 +7,7 @@ q = qstar+1e-2*randn(nq,1);
 kinsol = robot.doKinematics(qstar);
 
 display('Check FrictionConeWrench');
-l_foot = robot.findLinkInd('l_foot');
+l_foot = robot.findLinkId('l_foot');
 nLPts = length(robot.getBody(l_foot).getCollisionGeometry);
 l_foot_pt = zeros(3,nLPts);
 for i=1:nLPts,
@@ -65,7 +65,7 @@ testRigidBodyContactWrench_userfun(lfc_wrench,qstar+1e-2*randn(nq,1),F,[]);
 
 %%%%%%
 display('Check GraspWrench');
-l_hand = robot.findLinkInd('l_hand');
+l_hand = robot.findLinkId('l_hand');
 force_max = 100;
 A_torque = [eye(3);ones(1,3)];
 b_torque_ub = [10;20;30;40];
@@ -167,7 +167,7 @@ testRigidBodyContactWrench_userfun(cg_wrench,q,F,slack);
 
 display('check GraspFrictionConeWrench');
 robot = robot.addRobotFromURDF('block.urdf',[],[],struct('floating',true));
-block = robot.findLinkInd('block');
+block = robot.findLinkId('block');
 mu = 1;
 normal = [0;0;1];
 gfc_wrench = GraspFrictionConeWrench(robot,block,l_hand,[[0;0;0] [0;0;1]],normal,mu);

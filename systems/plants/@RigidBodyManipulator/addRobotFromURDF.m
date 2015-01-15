@@ -29,6 +29,7 @@ end
 if (~isfield(options,'inertial')), options.inertial = true; end
 if (~isfield(options,'visual')), options.visual = true; end
 if (~isfield(options,'collision')), options.collision = true; end
+if (~isfield(options,'collision_meshes')), options.collision_meshes = true; end
 if (~isfield(options,'sensors')), options.sensors = true; end
 if (~isfield(options,'visual_geometry')), options.visual_geometry = false; end
 if (~isfield(options,'namesuffix')), options.namesuffix = ''; end
@@ -129,6 +130,11 @@ for i=0:(frames.getLength()-1)
   model = parseFrame(model,robotnum,frames.item(i),options);
 end
 
+cables = node.getElementsByTagName('cable');
+for i=0:(cables.getLength()-1)
+  model = parseCable(model,robotnum,cables.item(i),options);
+end
+
 % weld the root link of this robot to the world link
 % or some other link if specified in options
 if (isfield(options, 'weld_to_link'))
@@ -148,25 +154,7 @@ for i=1:length(rootlink)
 end
 
 % finish parameter parsing
-for i=1:length(model.body)
-  model.body(i) = bindParams(model.body(i),model,pval);
-end
-
-for i=1:length(model.force)
-  model.force{i} = bindParams(model.force{i}, model, pval);
-end
-
-for i=1:length(model.sensor)
-  model.sensor{i} = bindParams(model.sensor{i}, model, pval);
-end
-
-for i=1:length(model.actuator)
-  model.actuator(i) = bindParams(model.actuator(i), model, pval);
-end
-
-for i=1:length(model.frame)
-  model.frame(i) = bindParams(model.frame(i), model, pval);
-end
+model = applyToAllRigidBodyElements(model,'bindParams',model,pval);
 
 end
 
@@ -271,10 +259,10 @@ parentNode = node.getElementsByTagName('parent').item(0);
 if isempty(parentNode) % then it's not the main joint element.  for instance, the transmission element has a joint element, too
   return
 end
-parent = findLinkInd(model,char(parentNode.getAttribute('link')),robotnum);
+parent = findLinkId(model,char(parentNode.getAttribute('link')),robotnum);
 
 childNode = node.getElementsByTagName('child').item(0);
-child = findLinkInd(model,char(childNode.getAttribute('link')),robotnum);
+child = findLinkId(model,char(childNode.getAttribute('link')),robotnum);
 
 name = char(node.getAttribute('name'));
 type = char(node.getAttribute('type'));
@@ -457,7 +445,7 @@ end
 function model = parseGazebo(model,robotnum,node,options)
 ref = char(node.getAttribute('reference'));
 if ~isempty(ref)
-  body_ind = findLinkInd(model,ref,robotnum,-1);
+  body_ind = findLinkId(model,ref,robotnum,-1);
   if body_ind>0
     grav = node.getElementsByTagName('turnGravityOff').item(0);
     if ~isempty(grav)
@@ -482,7 +470,7 @@ end
 
 function model = parseFrame(model,robotnum,node,options)
   name = char(node.getAttribute('name'));    % mandatory
-  link = findLinkInd(model,char(node.getAttribute('link')),robotnum);
+  link = findLinkId(model,char(node.getAttribute('link')),robotnum);
   xyz=zeros(3,1); rpy=zeros(3,1);
   if node.hasAttribute('xyz')
     xyz = reshape(parseParamString(model,robotnum,char(node.getAttribute('xyz'))),3,1);
@@ -496,6 +484,47 @@ function model = parseFrame(model,robotnum,node,options)
   model.frame = vertcat(model.frame,RigidBodyFrame(link,xyz,rpy,name));
 end
 
+function model = parseCable(model,robotnum,node,options)
+  name = char(node.getAttribute('name'));   
+  if isempty(name), name='cable'; end
+  min_length = parseParamString(model,robotnum,char(node.getAttribute('min_length')));
+  max_length = parseParamString(model,robotnum,char(node.getAttribute('max_length')));
+
+  cable_length_function = drakeFunction.kinematic.CableLength(model,name);
+  
+  children = node.getChildNodes;
+  for i=0:(children.getLength()-1)
+    this_node = children.item(i);
+    switch(char(getNodeName(this_node)))
+      case {'terminator','pulley'}
+        link = findLinkId(model,char(this_node.getAttribute('link')),robotnum);
+        xyz=zeros(3,1); 
+        axis=[1;0;0];
+        radius=0;
+        num_wraps=0;
+        if this_node.hasAttribute('xyz')
+          xyz = reshape(parseParamString(model,robotnum,char(this_node.getAttribute('xyz'))),3,1);
+        end
+        if this_node.hasAttribute('axis')
+          axis = reshape(parseParamString(model,robotnum,char(this_node.getAttribute('axis'))),3,1);
+          axis = axis/(norm(axis)+eps); % normalize
+        end
+        if this_node.hasAttribute('radius')
+          radius = parseParamString(model,robotnum,char(this_node.getAttribute('radius')));
+        end
+        if this_node.hasAttribute('number_of_wraps')
+          num_wraps = parseParamString(model,robotnum,char(this_node.getAttribute('number_of_wraps')));
+        end
+        cable_length_function = addPulley(cable_length_function,link,xyz,axis,radius,num_wraps);
+    end
+  end
+  
+  if (min_length~=max_length)
+    error('only implemented cables with min_length = max_length so far');
+  end
+  
+  model = addPositionEqualityConstraint(model,DrakeFunctionConstraint(min_length,max_length,cable_length_function));
+end
 
 function model=parseTransmission(model,robotnum,node,options)
 
@@ -514,7 +543,7 @@ for i=1:childNodes.getLength()
       actuator.name=regexprep(actuator.name, '\.', '_', 'preservecase');
     case 'joint'
       jn=regexprep(char(thisNode.getAttribute('name')), '\.', '_', 'preservecase');
-      actuator.joint = findJointInd(model,jn,robotnum);
+      actuator.joint = findJointId(model,jn,robotnum);
     case 'mechanicalreduction'
       actuator.reduction = str2num(char(thisNode.getFirstChild().getNodeValue()));
     case {'#text','#comment'}
@@ -596,8 +625,10 @@ end
       if ~isempty(geomnode)
         if (options.visual || options.visual_geometry)
          geometry = RigidBodyGeometry.parseURDFNode(geomnode,xyz,rpy,model,body.robotnum,options);
-          geometry.c = c;
-          body.visual_geometry = {body.visual_geometry{:},geometry};
+         if ~isempty(geometry)
+           geometry.c = c;
+           body.visual_geometry = {body.visual_geometry{:},geometry};
+         end
         end
       end        
     end
@@ -617,11 +648,13 @@ end
       geomnode = node.getElementsByTagName('geometry').item(0);
       if ~isempty(geomnode)
         geometry = RigidBodyGeometry.parseURDFNode(geomnode,xyz,rpy,model,body.robotnum,options);
-        if (node.hasAttribute('group'))
-          name=char(node.getAttribute('group'));
-        else
-          name='default';
+        if ~isempty(geometry)
+          if (node.hasAttribute('group'))
+            name=char(node.getAttribute('group'));
+          else
+            name='default';
+          end
+          body = addCollisionGeometry(body,geometry,name);
         end
-        body = addCollisionGeometry(body,geometry,name);
       end
     end    

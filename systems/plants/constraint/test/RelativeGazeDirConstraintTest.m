@@ -7,8 +7,8 @@ function RelativeGazeDirConstraintTest(varargin)
 end
 
 function con = makeCon(r)
-  bodyA_idx = findLinkInd(r,'r_gripper_palm_link');
-  bodyB_idx = findLinkInd(r,'l_gripper_palm_link');
+  bodyA_idx = findLinkId(r,'r_gripper_palm_link');
+  bodyB_idx = findLinkId(r,'l_gripper_palm_link');
   direction = [1;0;0];
   ax = rand(3,1)-[0;0.5;0.5];
   %x = 1; y = 0; z = 0;

@@ -25,7 +25,6 @@ else % then try to evaluate the dependency now...
       end
 
     case 'spotless'
-      % require spotless
       conf.spotless_enabled = logical(exist('msspoly','class'));
       if ~conf.spotless_enabled
         if ~pod_pkg_config('spotless')
@@ -293,9 +292,12 @@ else % then try to evaluate the dependency now...
 
     case 'yalmip'
       conf.yalmip_enabled = logical(exist('sdpvar','file'));
+      if (~conf.yalmip_enabled)
+        conf.yalmip_enabled = pod_pkg_config('yalmip') && logical(exist('sdpvar','file'));
+      end
       if ~conf.yalmip_enabled && nargout<1
         disp(' ');
-        disp(' YALMIP not found.  YALMIP support will be disabled.  To re-enable, install YALMIP and rerun addpath_drake.');
+        disp(' YALMIP not found.  To enable, install YALMIP (e.g. by cloning https://github.com/RobotLocomotion/yalmip into drake-distro and running make).');
         disp(' ');
       end
 

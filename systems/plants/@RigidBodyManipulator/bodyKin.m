@@ -3,7 +3,7 @@ function [x,P,J,dP,dJ] = bodyKin(obj,kinsol,body_or_frame_ind,pts)
 %
 % @param kinsol solution structure obtained from doKinematics
 % @param body_or_frame_ind, an integer ID for a RigidBody or RigidBodyFrame
-% (obtained via e.g., findLinkInd or findFrameInd)
+% (obtained via e.g., findLinkId or findFrameInd)
 % @retval x the position of pts (given in the global frame) in the body frame
 % @retval J the Jacobian, dxdq
 % @retval P the gradient, dxdpts - useful when computing forces

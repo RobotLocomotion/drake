@@ -5,9 +5,8 @@ if ~checkDependency('gurobi')
   return;
 end
 
-path_handle = addpathTemporary({fullfile(getDrakePath,'examples','ZMP'),...
-                                fullfile(getDrakePath,'examples','Atlas','controllers'),...
-                                fullfile(getDrakePath,'examples','Atlas','frames')});
+path_handle = addpathTemporary(fullfile(getDrakePath(), 'examples', 'ZMP'));
+import atlasControllers.*;
 
 % put robot in a random x,y,yaw position and balance for 2 seconds
 visualize = true;
@@ -41,7 +40,7 @@ kinsol = doKinematics(r,q0);
 com = getCOM(r,kinsol);
 
 % build TI-ZMP controller
-footidx = [findLinkInd(r,'r_foot'), findLinkInd(r,'l_foot')];
+footidx = [findLinkId(r,'r_foot'), findLinkId(r,'l_foot')];
 foot_pos = terrainContactPositions(r,kinsol,footidx);
 comgoal = mean([mean(foot_pos(1:2,1:4)');mean(foot_pos(1:2,5:8)')])';
 limp = LinearInvertedPendulum(com(3));
@@ -51,7 +50,7 @@ foot_support = RigidBodySupportState(r,find(~cellfun(@isempty,strfind(r.getLinkN
 
 
 ctrl_data = QPControllerData(false,struct(...
-  'acceleration_input_frame',AtlasCoordinates(r),...
+  'acceleration_input_frame',atlasFrames.AtlasCoordinates(r),...
   'D',-com(3)/9.81*eye(2),...
   'Qy',eye(2),...
   'S',V.S,...

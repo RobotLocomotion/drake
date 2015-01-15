@@ -1612,10 +1612,10 @@ classdef NonlinearProgram
         ub = ub(2:end);
         ub_err = fval-ub;
         max_ub_err = max(ub_err);
-        max_ub_err = max_ub_err*(max_ub_err>0);
+        if (max_ub_err<0), max_ub_err=0; end
         lb_err = lb-fval;
         max_lb_err = max(lb_err);
-        max_lb_err = max_lb_err*(max_lb_err>0);
+        if (max_lb_err<0), max_lb_err=0; end
         if(max_ub_err+max_lb_err>2*obj.constraint_err_tol)
           infeasible_constraint_idx = (ub_err>obj.constraint_err_tol) | (lb_err>obj.constraint_err_tol);
           cnstr_name = [obj.cin_name;obj.ceq_name;obj.Ain_name;obj.Aeq_name];

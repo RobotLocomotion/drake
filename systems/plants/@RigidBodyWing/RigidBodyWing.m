@@ -520,7 +520,7 @@ classdef RigidBodyWing < RigidBodyForceElement
       %inputs of point (body coordinates), and force (world coordinates)
       %returns [torque; xforce; yforce] in the body coordinates
       %obj.body.position_num should have 6 elements for
-      %linkID = manip.findLinkInd(obj.body.linkname, 0);
+      %linkID = manip.findLinkId(obj.body.linkname, 0);
       if (nargout>1)
         [f,fJ,fP] = cartesianForceToSpatialForce(manip, kinsol, frame.body_ind, frame.T(1:3,4),lift_world+drag_world);
         dfdq = fJ+fP*(dlift_worlddq+ddrag_worlddq);
@@ -771,7 +771,7 @@ classdef RigidBodyWing < RigidBodyForceElement
       name = regexprep(name, '\.', '_', 'preservecase');
 
       elNode = node.getElementsByTagName('parent').item(0);
-      parent = findLinkInd(model,char(elNode.getAttribute('link')),robotnum);
+      parent = findLinkId(model,char(elNode.getAttribute('link')),robotnum);
 
       xyz=zeros(3,1); rpy=zeros(3,1);
       elnode = node.getElementsByTagName('origin').item(0);

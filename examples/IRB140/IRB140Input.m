@@ -1,8 +1,8 @@
-classdef AtlasInput < SingletonCoordinateFrame
-  % atlas input coordinate frame
+classdef IRB140Input < SingletonCoordinateFrame
+  % irb140 input coordinate frame
   methods
-    function obj=AtlasInput(r)
-      typecheck(r,'TimeSteppingRigidBodyManipulator');
+    function obj=IRB140Input(r)
+      typecheck(r,{'TimeSteppingRigidBodyManipulator','RigidBodyManipulator'});
 
       manipInputFrame = r.getManipulator().getInputFrame();
       if (r.hands > 0)
@@ -11,7 +11,7 @@ classdef AtlasInput < SingletonCoordinateFrame
       input_names = manipInputFrame.coordinates;
       input_names = regexprep(input_names,'_motor',''); % remove motor suffix     
       
-      obj = obj@SingletonCoordinateFrame('AtlasInput',length(input_names),'x',input_names);
+      obj = obj@SingletonCoordinateFrame('IRB140',length(input_names),'x',input_names);
     end
   end
 end

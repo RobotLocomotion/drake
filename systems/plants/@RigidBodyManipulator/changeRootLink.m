@@ -23,7 +23,7 @@ new_rbm = rbm;
 if isnumeric(link) && link>=0
   root = link;
 elseif ischar(link)
-  root = findLinkInd(new_rbm,link);
+  root = findLinkId(new_rbm,link);
 end
 
 % basic algorithm:

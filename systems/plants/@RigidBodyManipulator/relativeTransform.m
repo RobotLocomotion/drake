@@ -3,10 +3,10 @@ function [T, dTdq] = relativeTransform(obj, kinsol, base, body)
 %
 % @param kinsol solution structure obtained from doKinematics
 % @param base an integer ID for a RigidBody or RigidBodyFrame
-% (obtained via e.g., findLinkInd or findFrameInd) signifying the base
+% (obtained via e.g., findLinkId or findFrameInd) signifying the base
 % frame.
 % @param body an integer ID for a RigidBody or RigidBodyFrame
-% (obtained via e.g., findLinkInd or findFrameInd) signifying the body
+% (obtained via e.g., findLinkId or findFrameInd) signifying the body
 % frame.
 %
 % @retval T transform from body frame to base frame

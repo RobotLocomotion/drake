@@ -13,8 +13,6 @@ if ~isfield(options,'safe_regions'), options.safe_regions = []; end
 
 checkDependency('lcmgl');
 
-path_handle = addpathTemporary(fullfile(getDrakePath(), 'examples', 'ZMP'));
-
 % Set up the model
 r = Atlas('urdf/atlas_minimal_contact.urdf',options);
 v = r.constructVisualizer();

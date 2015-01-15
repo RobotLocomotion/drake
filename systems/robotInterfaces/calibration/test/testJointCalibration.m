@@ -83,8 +83,8 @@ warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
 r = RigidBodyManipulator(fullfile(getDrakePath,'examples','Atlas','urdf','atlas_minimal_contact.urdf'),options);
 warning(w);
 
-bodies{1} = r.findLinkInd('utorso');
-bodies{2} = r.findLinkInd('r_hand');
+bodies{1} = r.findLinkId('utorso');
+bodies{2} = r.findLinkId('r_hand');
 [~, joint_indices] = r.findKinematicPath(bodies{1}, bodies{2});
 q_indices = [r.getBody(joint_indices).position_num];
 

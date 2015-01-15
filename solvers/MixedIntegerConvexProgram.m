@@ -61,6 +61,8 @@ classdef MixedIntegerConvexProgram
         obj.symbolic_constraints = lmi();
       end
 
+      checkDependency('gurobi');
+      
       obj.has_symbolic = has_symbolic;
     end
 
@@ -268,15 +270,15 @@ classdef MixedIntegerConvexProgram
       obj.polycones = struct('index', {}, 'N', {});
     end
 
-    function [obj, solvertime] = solve(obj)
+    function [obj, solvertime, objval] = solve(obj)
       if obj.has_symbolic
-        [obj, solvertime] = obj.solveYalmip();
+        [obj, solvertime, objval] = obj.solveYalmip();
       else
-        [obj, solvertime] = obj.solveGurobi();
+        [obj, solvertime, objval] = obj.solveGurobi();
       end
     end
 
-    function [obj, solvertime] = solveGurobi(obj, params)
+    function [obj, solvertime, objval] = solveGurobi(obj, params)
       checkDependency('gurobi');
       if nargin < 2
         params = struct();
@@ -288,6 +290,7 @@ classdef MixedIntegerConvexProgram
       if ~ok
         error('Drake:MixedIntegerConvexProgram:InfeasibleProblem', 'The mixed-integer problem is infeasible.');
       end
+      objval = result.objval;
       solvertime = result.runtime;
       obj = obj.extractResult(result.x);
     end
@@ -342,7 +345,7 @@ classdef MixedIntegerConvexProgram
       end
     end
 
-    function [obj, solvertime] = solveYalmip(obj)
+    function [obj, solvertime, objval] = solveYalmip(obj)
       checkDependency('gurobi');
       constraints = obj.symbolic_constraints;
       objective = obj.symbolic_objective;
@@ -378,6 +381,7 @@ classdef MixedIntegerConvexProgram
       if ~ok
         error('Drake:MixedIntegerConvexProgram:InfeasibleProblem', 'The mixed-integer problem is infeasible.');
       end
+      objval = double(objective);
       solvertime = diagnostics.solvertime;
       obj = obj.extractResult(double(obj.symbolic_vars));
     end

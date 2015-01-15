@@ -82,8 +82,8 @@ if (runsim)
 end
 
 function [xstar,ustar,zstar] = computeFixedPoint(r,x0,u0,v)
-  l_foot = r.findLinkInd('l_foot');
-  r_foot = r.findLinkInd('r_foot');
+  l_foot = r.findLinkId('l_foot');
+  r_foot = r.findLinkId('r_foot');
   
   nx = r.getNumStates();
   nq = nx/2;

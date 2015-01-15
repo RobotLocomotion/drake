@@ -10,12 +10,12 @@ warning(w);
 nom_data = load('../../../examples/Atlas/data/atlas_fp.mat');
 v = r.constructVisualizer();
 
-r_foot = r.findLinkInd('r_foot');
-l_foot = r.findLinkInd('l_foot');
-r_hand = r.findLinkInd('r_hand');
-l_hand = r.findLinkInd('l_hand');
-head = r.findLinkInd('head');
-pelvis = r.findLinkInd('pelvis');
+r_foot = r.findLinkId('r_foot');
+l_foot = r.findLinkId('l_foot');
+r_hand = r.findLinkId('r_hand');
+l_hand = r.findLinkId('l_hand');
+head = r.findLinkId('head');
+pelvis = r.findLinkId('pelvis');
 
 l_hand_geometry = r.getBody(l_hand).getCollisionGeometry;
 r_hand_geometry = r.getBody(r_hand).getCollisionGeometry;

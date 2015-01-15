@@ -1,4 +1,4 @@
-function [x,active,fail] = fastQP(Qdiag,f,Aeq,beq,Ain,bin,active)
+function [x,active,fail] = fastQP(Qdiag,f,Ain,bin,Aeq,beq,active)
     %min 1/2 * x'diag(Qdiag)'x + f'x s.t A x = b, Ain x <= bin 
     %using active set method.  Iterative solve a linearly constrained
     %quadratic minimization problem where linear constraints include
