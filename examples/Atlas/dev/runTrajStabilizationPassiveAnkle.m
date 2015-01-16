@@ -36,7 +36,9 @@ traj_file = 'data/atlas_passive_ankle_lqr.mat';
 
 load(traj_file);
 
-[xtraj,utraj,Btraj,Straj_full] = repeatTraj(r,xtraj,utraj,Btraj,Straj_full,2,true);
+repeat_n = 1;
+
+[xtraj,utraj,Btraj,Straj_full] = repeatTraj(r,xtraj,utraj,Btraj,Straj_full,repeat_n,true);
 
 %%% this is converting the trajectory to a zoh
 % if true
@@ -54,13 +56,16 @@ support_times = zeros(1,length(Straj_full));
 for i=1:length(Straj_full)
   support_times(i) = Straj_full{i}.tspan(1);
 end
-
-[~,modes] = extractHybridModes(r,xtraj,support_times+0.03); % hack add time to make sure it's fully into the next mode
-
-
+% 
+% [~,modes] = extractHybridModes(r,xtraj,support_times+0.02); % hack add time to make sure it's fully into the next mode
+% 
+% figure(23423);
+% plot(support_times+0.03,modes,'b.-');
+ 
 options.right_foot_name = 'r_foot';
 options.left_foot_name = 'l_foot'; 
-
+modes = [8,6,1,3,4,4,2,1,7,8];
+modes = repmat(modes,1,repeat_n);
 lfoot_ind = findLinkId(r,options.left_foot_name);
 rfoot_ind = findLinkId(r,options.right_foot_name);  
 
@@ -112,14 +117,15 @@ ctrl_data = FullStateQPControllerData(true,struct(...
   'supports',supports));
 
 % instantiate QP controller
-options.cpos_slack_limit = 20;
-options.w_cpos_slack = 0;
+options.cpos_slack_limit = inf;
+options.w_cpos_slack = 1.0;
 options.phi_slack_limit = inf;
 options.w_phi_slack = 0.0;
 options.w_qdd = 0*ones(nq,1);
 options.w_grf = 0;
 options.Kp_accel = 0;
-options.contact_threshold = 1e-3;
+options.contact_threshold = 1e-4;
+options.offset_x = true;
 qp = FullStateQPController(r,ctrl_data,options);
 
 % feedback QP controller with Atlas
