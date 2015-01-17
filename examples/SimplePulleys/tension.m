@@ -1,6 +1,5 @@
 function tension
 
-% note that the masses are constrained to move only vertically
 %r = PlanarRigidBodyManipulator('tension.urdf');
 r = TimeSteppingRigidBodyManipulator('tension.urdf',.01,struct('twoD',true));
 

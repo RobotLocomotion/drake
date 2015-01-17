@@ -21,11 +21,12 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
       obj = setSampleTime(obj,[-1;0]);  % use inherited sample time until modes are added
     end
 
-    function [obj,mode_num] = addMode(obj,mode_sys,name)
+    function [obj,mode_num] = addMode(obj,mode_sys,name)%,add_mode_number_to_output)
       typecheck(mode_sys,'DrakeSystem');
       if isa(mode_sys,'HybridDrakeSystem') error('hybrid modes are not supported (yet)'); end
       if isa(mode_sys,'StochasticDrakeSystem') error('stochastic modes are not supported (yet)'); end
       if (getNumStates(mode_sys)>0 && ~(mode_sys.isCT() || mode_sys.isInheritedTime())) error('only CT or inherited sample time modes are allowed for now'); end
+%      if nargin<4 || isempty(add_mode_number_to_output), add_mode_number_to_output = false; end
       obj.target_mode = {obj.target_mode{:},[]};
       obj.guard = {obj.guard{:},{}};
       obj.transition = {obj.transition{:},{}};
@@ -52,13 +53,13 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
       if (getNumZeroCrossings(mode_sys)>0)
         obj = setNumZeroCrossings(obj,max(getNumZeroCrossings(obj),getNumZeroCrossings(mode_sys)));
       end
-      if (getNumStateConstraints(mode_sys)>0)
-        error('need to reimplement this');  % presumably by adding the state constraints augmented by the mode
-        obj = setNumStateConstraints(obj,max(getNumStateConstraints(obj),getNumStateConstraints(mode_sys)));
-      end
-      if getNumUnilateralConstraints(mode_sys)>0
-        error('not implemented yet');
-      end
+%      if (getNumStateConstraints(mode_sys)>0)
+%        error('need to reimplement this');  % presumably by adding the state constraints augmented by the mode
+%        obj = setNumStateConstraints(obj,max(getNumStateConstraints(obj),getNumStateConstraints(mode_sys)));
+%      end
+%      if getNumUnilateralConstraints(mode_sys)>0
+%        error('not implemented yet');
+%      end
 
       obj = setSampleTime(obj,[getSampleTime(obj),getSampleTime(mode_sys)]);
       obj = setDirectFeedthrough(obj,isDirectFeedthrough(obj) || isDirectFeedthrough(mode_sys));
@@ -197,7 +198,7 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
       x0 = [x0;repmat(0,getNumStates(obj)-length(x0),1)];
     end
 
-    function x0 = getInitialStateWInput(obj,t,x,u);
+    function x0 = getInitialStateWInput(obj,t,x,u)
       m = x(1); nX = getNumStates(obj.modes{m});
       if (nX>0) xm = x(1+(1:nX)); else xm=[]; end
       x0=[x(1); getInitialStateWInput(obj.modes{m},t,xm,u)];
