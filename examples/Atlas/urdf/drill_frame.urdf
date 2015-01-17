@@ -1,0 +1,200 @@
+<robot
+  name="drill_frame">
+  <link name="frame">
+    <inertial>
+      <origin xyz="0 0 0.93345"
+        rpy="0 0 0" />
+      <mass value="3.48" />
+      <inertia
+        ixx="2.164659"
+        ixy="0"
+        ixz="0.001012"
+        iyy="1.291287"
+        iyz="0"
+        izz="0.874868" />
+    </inertial>
+ <visual>
+      <origin xyz="0 -0.62865 0.93345"
+        rpy="0 0 0" />
+      <geometry>
+        <box size=".0381 .0381 1.8669" />
+      </geometry>
+      <material name="">
+        <color rgba="0 1 1 1" />
+      </material>
+    </visual>
+<visual>
+      <origin xyz="0 0.62865 0.93345"
+        rpy="0 0 0" />
+      <geometry>
+        <box size=".0381 .0381 1.8669" />
+      </geometry>
+      <material name="">
+        <color rgba="0 1 1 1" />
+      </material>
+    </visual>
+<visual>
+      <origin xyz="0 0 1.61925"
+        rpy="0 0 0" />
+      <geometry>
+        <box size=".0381 1.21920 .0381" />
+      </geometry>
+      <material name="">
+        <color rgba="0 1 1 1" />
+      </material>
+    </visual>
+<visual>
+      <origin xyz="0 0 .66675"
+        rpy="0 0 0" />
+      <geometry>
+        <box size=".0381 1.21920 .0381" />
+      </geometry>
+      <material name="">
+        <color rgba="0 1 1 1" />
+      </material>
+    </visual>
+<visual>
+      <origin xyz="0 0 0.01905"
+        rpy="0 0 0" />
+      <geometry>
+        <box size=".0381 1.21920 .0381" />
+      </geometry>
+      <material name="">
+        <color rgba="0 1 1 1" />
+      </material>
+    </visual>
+<visual>
+      <origin xyz=".017462 0 0.70485"
+        rpy="0 0 0" />
+      <geometry>
+        <box size="0.003175 1.143 .0381" />
+      </geometry>
+      <material name="">
+        <color rgba="0 1 1 1" />
+      </material>
+    </visual>
+<visual>
+      <origin xyz=".017462 0 1.58115"
+        rpy="0 0 0" />
+      <geometry>
+        <box size="0.003175 1.143 .0381" />
+      </geometry>
+      <material name="">
+        <color rgba="0 1 1 1" />
+      </material>
+    </visual>
+ <collision>
+      <origin xyz="0 -0.62865 0.93345"
+        rpy="0 0 0" />
+      <geometry>
+        <box size=".0381 .0381 1.8669" />
+      </geometry>
+      <material name="">
+        <color rgba="0 1 1 1" />
+      </material>
+    </collision>
+<collision>
+      <origin xyz="0 0.62865 0.93345"
+        rpy="0 0 0" />
+      <geometry>
+        <box size=".0381 .0381 1.8669" />
+      </geometry>
+      <material name="">
+        <color rgba="0 1 1 1" />
+      </material>
+    </collision>
+<collision>
+      <origin xyz="0 0 1.61925"
+        rpy="0 0 0" />
+      <geometry>
+        <box size=".0381 1.21920 .0381" />
+      </geometry>
+      <material name="">
+        <color rgba="0 1 1 1" />
+      </material>
+    </collision>
+<collision>
+      <origin xyz="0 0 .66675"
+        rpy="0 0 0" />
+      <geometry>
+        <box size=".0381 1.21920 .0381" />
+      </geometry>
+      <material name="">
+        <color rgba="0 1 1 1" />
+      </material>
+    </collision>
+<collision>
+      <origin xyz="0 0 0.01905"
+        rpy="0 0 0" />
+      <geometry>
+        <box size=".0381 1.21920 .0381" />
+      </geometry>
+      <material name="">
+        <color rgba="0 1 1 1" />
+      </material>
+    </collision>
+<collision>
+      <origin xyz=".017462 0 0.70485"
+        rpy="0 0 0" />
+      <geometry>
+        <box size="0.003175 1.143 .0381" />
+      </geometry>
+      <material name="">
+        <color rgba="0 1 1 1" />
+      </material>
+    </collision>
+<collision>
+      <origin xyz=".017462 0 1.58115"
+        rpy="0 0 0" />
+      <geometry>
+        <box size="0.003175 1.143 .0381" />
+      </geometry>
+      <material name="">
+        <color rgba="0 1 1 1" />
+      </material>
+    </collision>
+</link>
+
+<link name="sheet_rock">
+    <inertial>
+      <origin xyz="0 0 0"
+        rpy="0 0 0" />
+      <mass value="8.71" />
+      <inertia
+        ixx="1.685803"
+        ixy="0"
+        ixz="0"
+        iyy="0.607006"
+        iyz="0"
+        izz="1.079031" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <box size="0.01273 1.2192 .9144"/>
+      </geometry>
+      <material name="">
+        <color rgba="0 1 0 1" />
+      </material>
+    </visual>    
+<collision>   
+ <origin xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <box size="0.01273 1.2192 .9144"/>
+      </geometry>
+      <material name="">
+        <color rgba="0 1 0 1" />
+</material>
+</collision>    
+  </link>
+<joint
+    name="Fixed_1"
+    type="fixed">
+    <parent link="frame" />
+    <child link="sheet_rock" />
+    <origin xyz=".009525 0 1.143" />
+    <axis xyz="0 0 1" />
+  </joint>
+</robot>
