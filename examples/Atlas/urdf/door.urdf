@@ -1,6 +1,5 @@
-<robot xmlns="http://drake.mit.edu"
- xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
- xsi:schemaLocation="http://drake.mit.edu ../../../doc/drakeURDF.xsd" name="door">
+<robot
+  name="door">
   <link name="Left_Jamb">
     <inertial>
       <origin xyz="0 -0.56515 1.029495"
@@ -38,7 +37,7 @@
  
  <link name="Door">
     <inertial>
-      <origin xyz="0.023812 0.460375 -0.000794"
+      <origin xyz=".023812 0.460375 -0.000794"
         rpy="0 0 0" />
       <mass value="3.63" />
       <inertia
@@ -50,7 +49,7 @@
         izz="0.253210" />
     </inertial>
     <visual>
-      <origin xyz="0.023812 0.460375 -0.000794"
+      <origin xyz=".023812 0.460375 -0.000794"
         rpy="0 0 0" />
       <geometry>
         <box size="0.03493 0.9144 2.032"/>
@@ -128,9 +127,29 @@
       <material name="">
         <color rgba="0 0 1 1" />
       </material>
-    </visual>    
+    </visual> 
 <collision>   
    <origin xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <box size="0.0762 0.03175 0.0254"/>
+      </geometry>
+      <material name="">
+        <color rgba="0 0 1 1" />
+      </material>
+</collision>       
+<visual>
+      <origin xyz="-0.12065 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <box size="0.0762 0.03175 0.0254"/>
+      </geometry>
+      <material name="">
+        <color rgba="0 0 1 1" />
+      </material>
+    </visual>    
+<collision>   
+   <origin xyz="-0.12065 0 0"
         rpy="0 0 0" />
       <geometry>
         <box size="0.0762 0.03175 0.0254"/>
@@ -163,9 +182,29 @@
       <material name="">
         <color rgba="0 0 1 1" />
       </material>
-    </visual>    
+    </visual> 
 <collision>   
       <origin xyz="-0.004765 -0.060325 0"
+        rpy="0 0 0" />
+      <geometry>
+        <box size="0.00953 0.0889 0.0254"/>
+      </geometry>
+      <material name="">
+        <color rgba="0 0 1 1" />
+      </material>
+</collision> 
+<visual>
+      <origin xyz="-0.1920875 -0.060325 0"
+        rpy="0 0 0" />
+      <geometry>
+        <box size="0.00953 0.0889 0.0254"/>
+      </geometry>
+      <material name="">
+        <color rgba="0 0 1 1" />
+      </material>
+    </visual>       
+<collision>   
+      <origin xyz="-0.1920875 -0.060325 0"
         rpy="0 0 0" />
       <geometry>
         <box size="0.00953 0.0889 0.0254"/>
@@ -199,8 +238,9 @@
     type="continuous">
     <parent link="Door" />
     <child link="Knob1" />
-    <origin xyz="0.08539 0.8509 -0.102394" />
+    <origin xyz="0.079375 0.8509 -0.102394" />
     <axis xyz="1 0 0" />
+<limit lower="-pi/2" upper="pi/2" />
   </joint>
 
 <joint
