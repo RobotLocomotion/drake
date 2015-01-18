@@ -105,6 +105,11 @@ classdef ChineseYoYo < HybridDrakeSystem
       v = FunctionHandleVisualizer(getOutputFrame(obj),@mydraw);
     end
     
+    function [T,U] = energy(obj,x)
+      ind = findLinkInd(obj.no_contact,'tensioner');
+      [T,U] = energy(obj.no_contact,obj.x(2:end));
+    end
+    
   end
   
   methods (Static)
@@ -116,6 +121,7 @@ classdef ChineseYoYo < HybridDrakeSystem
       v.drawWrapper(0,x0);
       ytraj = simulate(r,[0 3],x0);
       v.playback(ytraj,struct('slider',true));
+      v.playbackSWF(ytraj,'chinese_yoyo');
     end
   end
 end
