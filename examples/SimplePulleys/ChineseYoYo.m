@@ -63,6 +63,10 @@ classdef ChineseYoYo < HybridDrakeSystem
       else % mode==2
         modep = 1;
         
+        % note: this shouldn't do any mechanical work (phidot should already 
+        % be zero at the transition, because the in_contact phi is equivalent 
+        % to the no_contact phi when the ball is tangent to the cable), but 
+        % let's put it in for numerical reasons
         [phi,J] = obj.no_contact.position_constraints{1}.eval(q);
       end
       % solve zero post-transition velocities for all active constraints
@@ -120,23 +124,30 @@ classdef ChineseYoYo < HybridDrakeSystem
       v.drawWrapper(0,x0);
       [ytraj,xtraj] = simulate(r,[0 5],x0);
       v.playback(ytraj,struct('slider',true));
-%      v.playbackSWF(ytraj,'chinese_yoyo');
       
-      tt=getBreaks(xtraj);E=tt;cable_length=tt;
-      nq=getNumPositions(r.no_contact);
-      for i=1:length(tt)
-        x = xtraj.eval(tt(i));
-        [T,U] = energy(r,x);
-        E(i)= T+U;
-        if (x(1)==1)
-          cable_length(i)=r.no_contact.position_constraints{1}.fcn.eval(x(2:(1+nq)));
-        else
-          cable_length(i)=r.in_contact.position_constraints{1}.fcn.eval(x(2:(1+nq)));
+      if (0) 
+        % energy / cable length plotting 
+        % note, set alpha=0 in Manipulator/computeConstraintForce to reveal
+        % some artifacts, especially at the release guard when
+        % the pulley effectively hits a hard-stop.  this is due to the fact
+        % that phidot>0 during the in_contact phase.  it's hard to tell if
+        % this is numerical artifact or a bad gradient in CableLength.
+        tt=getBreaks(xtraj);E=tt;cable_length=tt;
+        nq=getNumPositions(r.no_contact);
+        for i=1:length(tt)
+          x = xtraj.eval(tt(i));
+          [T,U] = energy(r,x);
+          E(i)= T+U;
+          if (x(1)==1)
+            cable_length(i)=r.no_contact.position_constraints{1}.fcn.eval(x(2:(1+nq)));
+          else
+            cable_length(i)=r.in_contact.position_constraints{1}.fcn.eval(x(2:(1+nq)));
+          end
         end
+        figure(1); clf;
+        subplot(2,1,1); plot(tt,E);
+        subplot(2,1,2); plot(tt,cable_length);
       end
-      figure(1); clf; 
-      subplot(2,1,1); plot(tt,E);
-      subplot(2,1,2); plot(tt,cable_length);
     end
   end
 end
