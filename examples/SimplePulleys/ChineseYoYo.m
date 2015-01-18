@@ -49,28 +49,27 @@ classdef ChineseYoYo < HybridDrakeSystem
       dg = -[0,0,0,1,0,0,0];
     end
     
-    function [xp,mode,status] = collisionDynamics(obj,mode,t,xm,u)
+    function [xp,modep,status] = collisionDynamics(obj,mode,t,xm,u)
+      q = xm(1:obj.no_contact.num_positions);
+      v = xm(obj.no_contact.num_positions+1:end);
+      H = manipulatorDynamics(obj.no_contact,q,v);
+      Hinv = inv(H);
+
       if (mode==1)
         % then i have a collision
-        mode = 2;
-
-        q = xm(1:obj.no_contact.num_positions);
-        v = xm(obj.no_contact.num_positions+1:end);
-        H = manipulatorDynamics(obj.no_contact,q,v);
-        Hinv = inv(H);
+        modep = 2;
 
         [phi,J] = obj.in_contact.position_constraints{1}.eval(q);
-        lb = obj.in_contact.position_constraints{1}.lb;
-        ub = obj.in_contact.position_constraints{1}.ub;
-        
-        % solve zero post-transition velocities for all active constraints
-        J = J*vToqdot(obj.no_contact, q);
-        vp = (eye(obj.no_contact.num_velocities)-Hinv*J'*pinv(J*Hinv*J')*J)*v;
-        xp = [q;vp];
       else % mode==2
-        mode = 1;
-        xp = xm;
+        modep = 1;
+        
+        [phi,J] = obj.no_contact.position_constraints{1}.eval(q);
       end
+      % solve zero post-transition velocities for all active constraints
+      J = J*vToqdot(obj.no_contact, q);
+      vp = (eye(obj.no_contact.num_velocities)-Hinv*J'*pinv(J*Hinv*J')*J)*v;
+      xp = [q;vp];
+      
       status = 0;
     end
     
@@ -79,7 +78,7 @@ classdef ChineseYoYo < HybridDrakeSystem
       % barf
       x0 = Point(getStateFrame(obj));
       x0.m = 1;
-      x0.load_x = 1;
+      x0.load_x = 0;  % was 1
       x0.load_z = 4.5;
       x0 = double(x0);
       x0(2:end) = resolveConstraints(obj.no_contact,x0(2:end));
@@ -106,8 +105,8 @@ classdef ChineseYoYo < HybridDrakeSystem
     end
     
     function [T,U] = energy(obj,x)
-      ind = findLinkInd(obj.no_contact,'tensioner');
-      [T,U] = energy(obj.no_contact,obj.x(2:end));
+      ind = findLinkId(obj.no_contact,'tensioner');
+      [T,U] = energy(obj.no_contact,x(2:end));
     end
     
   end
@@ -119,9 +118,25 @@ classdef ChineseYoYo < HybridDrakeSystem
       
       x0 = getInitialState(r);
       v.drawWrapper(0,x0);
-      ytraj = simulate(r,[0 3],x0);
+      [ytraj,xtraj] = simulate(r,[0 5],x0);
       v.playback(ytraj,struct('slider',true));
-      v.playbackSWF(ytraj,'chinese_yoyo');
+%      v.playbackSWF(ytraj,'chinese_yoyo');
+      
+      tt=getBreaks(xtraj);E=tt;cable_length=tt;
+      nq=getNumPositions(r.no_contact);
+      for i=1:length(tt)
+        x = xtraj.eval(tt(i));
+        [T,U] = energy(r,x);
+        E(i)= T+U;
+        if (x(1)==1)
+          cable_length(i)=r.no_contact.position_constraints{1}.fcn.eval(x(2:(1+nq)));
+        else
+          cable_length(i)=r.in_contact.position_constraints{1}.fcn.eval(x(2:(1+nq)));
+        end
+      end
+      figure(1); clf; 
+      subplot(2,1,1); plot(tt,E);
+      subplot(2,1,2); plot(tt,cable_length);
     end
   end
 end

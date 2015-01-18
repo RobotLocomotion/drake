@@ -15,8 +15,9 @@ x0.load_z = 4;
 
 v.drawWrapper(0,x0(1:3));
 
-%[l,dl]=r.position_constraints{1}.eval(x0(1:3))
-%r.position_constraints{1}.checkGradient(.001,x0(1:3));
+manip = r.getManipulator();
+[l,dl]=manip.position_constraints{1}.eval(x0(1:3))
+manip.position_constraints{1}.checkGradient(.001,x0(1:3));
 
 x0 = resolveConstraints(r,x0,v);
 v.drawWrapper(0,x0(1:3));

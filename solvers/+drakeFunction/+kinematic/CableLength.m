@@ -18,14 +18,14 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
     end
     
     function [length,dlength] = eval(obj,q)
-      kinsol = obj.rbm.doKinematics(q);
+      kinsol = obj.rbm.doKinematics(q,nargout>2);
 
       length = 0;
       dlength = 0*q';
-%      ddlength = zeros(1,numel(q)^2);
+      ddlength = zeros(1,numel(q)^2);
       for i=1:numel(obj.pulley)
         if nargout>2
-          [pt,ddpt] = forwardKin(obj.rbm,kinsol,obj.pulley(i).frame,obj.pulley(i).xyz);
+          [pt,dpt,ddpt] = forwardKin(obj.rbm,kinsol,obj.pulley(i).frame,obj.pulley(i).xyz);
         elseif nargout>1
           [pt,dpt] = forwardKin(obj.rbm,kinsol,obj.pulley(i).frame,obj.pulley(i).xyz);
         else
@@ -41,6 +41,11 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
           if nargout>1
             dvec = dpt-last_dpt;
             dC = vec'*dvec/C;
+            
+            if nargout>2
+              ddvec = ddpt - last_ddpt;
+% not finished yet:  ddC = dvec'*dvec/C + vec'*ddvec/C - vec'*dvec*dC/C^2;
+            end
           end
           
           r1 = obj.pulley(i-1).radius;

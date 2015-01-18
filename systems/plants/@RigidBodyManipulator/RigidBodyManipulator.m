@@ -874,7 +874,7 @@ classdef RigidBodyManipulator < Manipulator
     
     function body_ind = findLinkInd(model,varargin)
       model.warning_manager.warnOnce('Drake:RigidBodyManipulator:finkLinkIndDeprecated','findLinkInd has been replaced with findLinkId.  please update your code');
-      body_ind = findLinkId(model,varargin{:})
+      body_ind = findLinkId(model,varargin{:});
     end
     
     function body_id = findLinkId(model,linkname,robot,error_level)
