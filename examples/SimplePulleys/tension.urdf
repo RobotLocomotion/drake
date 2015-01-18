@@ -78,7 +78,7 @@
     <axis xyz="0 1 0"/>
     <parent link="base"/>
     <child link="tensioner"/>
-<!--    <dynamics damping=".5"/> -->
+    <dynamics damping=".5"/>
   </joint>
   
   <link name="load_x" />
