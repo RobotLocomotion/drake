@@ -118,7 +118,7 @@ classdef Manipulator < DrakeSystem
       % Helper function to compute the internal forces required to enforce
       % equality constraints
 
-      alpha = 10;  % 1/time constant of position constraint satisfaction (see my latex rigid body notes)
+      alpha = 5;  % 1/time constant of position constraint satisfaction (see my latex rigid body notes)
       beta = 0;    % 1/time constant of velocity constraint satisfaction
 
       phi=[]; psi=[];
@@ -142,6 +142,8 @@ classdef Manipulator < DrakeSystem
         Jdotqd = dJ*reshape(qd*qd',obj.num_positions^2,1);
 
         constraint_force = -J'*pinv(J*Hinv*J')*(J*Hinv*tau + Jdotqd + 2*alpha*J*qd + alpha^2*phi);
+        % useful for debugging:
+        % phi, phidot = J*qd, phiddot = J*Hinv*(tau+constraint_force)+Jdotqd
       elseif ~isempty(obj.velocity_constraints)
         [psi,J] = obj.velocityConstraints(q,qd);
         dpsidq = J(:,1:obj.num_positions);
