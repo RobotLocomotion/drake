@@ -78,7 +78,7 @@
     <axis xyz="0 1 0"/>
     <parent link="base"/>
     <child link="tensioner"/>
-    <dynamics damping=".5"/>
+<!--    <dynamics damping=".5"/> -->
   </joint>
   
   <link name="load_x" />
@@ -98,7 +98,7 @@
   </joint>
 
   <force_element name="tensioner_spring">
-    <torsional_spring rest_angle="0" stiffness="20">
+    <torsional_spring rest_angle="0" stiffness="40">
       <joint name="tensioner_angle"/>
     </torsional_spring>
   </force_element>
