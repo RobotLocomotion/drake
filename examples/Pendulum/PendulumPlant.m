@@ -45,6 +45,13 @@ classdef PendulumPlant < SecondOrderSystem
       end
     end
     
+    function [T,U] = energy(obj,x)
+      theta = x(1);
+      thetadot = x(2);
+      T = .5*obj.m*obj.l^2*thetadot^2;
+      U = -obj.m*obj.g*obj.l*cos(theta);
+    end
+    
     function x = getInitialState(obj)
       % Start me anywhere!
       x = randn(2,1);
