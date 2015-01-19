@@ -1,0 +1,37 @@
+<?xml version="1.0" ?>
+<sdf version="1.4">
+ 
+  <% 
+    # Constant declarations
+    # Generate a trapezoidal step shape of cinderblocks
+   
+    length = 7 # x dimension
+    width  = 6 # across
+
+    block_side_length = 0.387353556 
+    block_height = 0.092075
+
+  %>
+  <model name="block_cover">
+    <pose> 0 0 0 0 0 0 </pose>
+
+    <% for i in 0..length-1 %>
+      <% for j in 0..width-1 %>
+      <%
+       #select center
+       x0 = (block_side_length*(width-1) + block_side_length/2) + block_side_length*i + block_side_length*j
+       y0 = block_side_length/2 + block_side_length*j 
+
+       %>
+          <include>
+            <name><%= 'block_' + i.to_s + '_' + j.to_s %></name>
+            <pose> <%= x0 %> <%= y0 %> 0 0 0 0 </pose>
+            <uri>model://cinder_block_narrow</uri>
+          </include>
+
+      <% end %>
+    <% end %>
+
+  </model>
+
+</sdf>
