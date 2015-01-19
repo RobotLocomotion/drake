@@ -1,5 +1,6 @@
 function model=addRobotFromURDFString(model,urdf_string,varargin)
-% Parses URDF
+% Parses URDF from a string. Filename references must use the
+% "package://" syntax, as there is no notion of a relative path here.
 %
 % @param urdf_string xml string containing the urdf 
 %
@@ -21,3 +22,5 @@ fprintf(file_id, urdf_string);
 fclose(file_id);
 
 model = addRobotFromURDF(model, urdf_filename, varargin{:});
+
+delete(urdf_filename);
