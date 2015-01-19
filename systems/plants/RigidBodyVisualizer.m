@@ -27,7 +27,8 @@ classdef RigidBodyVisualizer < Visualizer
       if (nargin<2), x0 = getInitialState(obj.model); end
       if (nargin<3), state_dims = 1:getNumPositions(obj.model); end
       [jlmin,jlmax] = getJointLimits(obj.model);
-      jlmin(isinf(jlmin))=-2*pi; jlmax(isinf(jlmax))=2*pi;
+      q0 = x0(1:getNumPositions(obj.model));
+      jlmin(isinf(jlmin))=q0(isinf(jlmin))-2*pi; jlmax(isinf(jlmax))=q0(isinf(jlmax))+2*pi;
       xmin = [jlmin;-100*ones(getNumVelocities(obj.model),1)];
       xmax = [jlmax;100*ones(getNumVelocities(obj.model),1)];
       if (nargin<4), minrange = xmin(state_dims); end
