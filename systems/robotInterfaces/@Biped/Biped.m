@@ -223,12 +223,18 @@ classdef Biped < LeggedRobot
     end
 
     function fc = getFootContacts(obj, q)
+      % For a given configuration of the biped, determine whether each foot is
+      % in contact with the terrain. 
+      % @param q a robot configuration vector
+      % @retval fc a logical vector of length 2. If fc(1) is true, then the right
+      %            foot is in contact. If fc(2) is true, then the left foot is in
+      %            contact. 
       [phiC,~,~,~,idxA,idxB] = obj.collisionDetect(q,false);
       within_thresh = phiC < 0.002;
       contact_pairs = [idxA(within_thresh); idxB(within_thresh)];
       
       % The following would be faster but would require us to have
-      % hightmaps in Bullet
+      % heightmaps in Bullet
       %[~,~,idxA,idxB] = obj.r_control.allCollisions(x(1:obj.nq_control));
       %contact_pairs = [idxA; idxB];
       foot_indices = [obj.foot_body_id.right, obj.foot_body_id.left];
