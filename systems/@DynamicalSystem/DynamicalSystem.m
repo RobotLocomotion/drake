@@ -319,7 +319,7 @@ classdef DynamicalSystem
       end
       
       if ~isempty(v)
-        prog = addDisplayFunction(prog,@(x)v.draw(0,x));
+        prog = addDisplayFunction(prog,@(x)v.drawWrapper(0,x));
       end
       
       [x,~,exitflag,infeasible_constraint_name] = solve(prog,x0);
