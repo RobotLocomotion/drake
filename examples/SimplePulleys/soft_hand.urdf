@@ -1,0 +1,347 @@
+
+<robot xmlns="http://drake.mit.edu"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://drake.mit.edu ../../doc/drakeURDF.xsd" name="SimplePulley">
+
+  <material name="skeleton">
+    <color rgba=".7 .7 .7 0"/>
+  </material>
+
+  <material name="orange">
+    <color rgba="1 .5 0 0"/>
+  </material>
+  
+  <material name="black">
+    <color rgba="0 0 0 0"/>
+  </material>
+  
+  <link name="base">
+    <visual>
+      <material name="skeleton"/>
+      <origin xyz="-.5 0 0"/>
+      <geometry>
+        <box size="3 5 1"/>
+      </geometry>
+    </visual>
+  </link>
+  
+  <link name="ball">
+    <inertial>
+      <mass value="2"/>
+      <inertia ixx="0.506667" ixy="0.000000" ixz="0.000000" iyy="1.000000" iyz="0.000000" izz="0.506667" />
+    </inertial>
+    <visual>
+      <material>
+        <color rgba=".8 0 0 0"/>
+      </material>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="1.2" length="2"/>
+      </geometry>
+    </visual>
+    
+    <!-- add a "line" for a visual reference -->
+    <!--    <visual>
+      <material>
+        <color rgba="0 0 0 0"/>
+      </material>
+      <origin xyz="0 .2 0.45" rpy="0 0 0"/>
+      <geometry>
+        <box size=".01 .2 .9"/>
+      </geometry>
+    </visual> -->
+  </link> 
+  
+  
+  <link name="ball_x" />
+  <joint name="ball_x" type="prismatic">
+    <origin xyz="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <parent link="base"/>
+    <child link="ball_x"/>
+    <dynamics damping="0"/>
+  </joint>
+  <joint name="ball_y" type="prismatic">
+    <origin xyz="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <parent link="ball_x"/>
+    <child link="ball"/>
+    <dynamics damping="0"/>
+  </joint>
+  
+  
+  <link name="finger1_proximal">
+    <inertial>
+      <mass value="1"/>
+      <inertia ixx="0.065833" ixy="0.000000" ixz="0.000000" iyy="0.065833" iyz="0.000000" izz="0.125" />
+    </inertial>
+    <visual>
+      <material name="skeleton"/>
+      <origin xyz="2.5 0 0"/>
+      <geometry>
+        <box size="5 .1 .1"/>
+      </geometry>
+    </visual>
+    <visual>
+      <material name="skeleton"/>
+      <origin xyz="5 0 0"/>
+      <geometry>
+        <box size=".1 2 .1"/>
+      </geometry>
+    </visual>
+  </link>
+  
+  <joint name="finger1_proximal" type="continuous">
+    <origin xyz="0 1.5 0"/>
+    <axis xyz="0 0 1"/>
+    <parent link="base"/>
+    <child link="finger1_proximal"/>
+  </joint>
+
+  <link name="finger1_middle">
+    <inertial>
+      <mass value="1"/>
+      <inertia ixx="0.065833" ixy="0.000000" ixz="0.000000" iyy="0.065833" iyz="0.000000" izz="0.125" />
+    </inertial>
+    <visual>
+      <material name="skeleton"/>
+      <origin xyz="2 0 0"/>
+      <geometry>
+        <box size="4 .1 .1"/>
+      </geometry>
+    </visual>
+    <visual>
+      <material name="skeleton"/>
+      <origin xyz="4 0 0"/>
+      <geometry>
+        <box size=".1 1.8 .1"/>
+      </geometry>
+    </visual>
+  </link>
+  
+  <joint name="finger1_middle" type="continuous">
+    <origin xyz="5 0 0"/>
+    <axis xyz="0 0 1"/>
+    <parent link="finger1_proximal"/>
+    <child link="finger1_middle"/>
+  </joint>
+  
+  <link name="finger1_distal">
+    <inertial>
+      <mass value="1"/>
+      <inertia ixx="0.065833" ixy="0.000000" ixz="0.000000" iyy="0.065833" iyz="0.000000" izz="0.125" />
+    </inertial>
+    <visual>
+      <material name="skeleton"/>
+      <origin xyz="2 0 0"/>
+      <geometry>
+        <box size="4 .1 .1"/>
+      </geometry>
+    </visual>
+    <visual>
+      <material name="skeleton"/>
+      <origin xyz="4 0 0"/>
+      <geometry>
+        <cylinder radius=".8" length=".2"/>
+      </geometry>
+    </visual>
+  </link>
+  
+  <joint name="finger1_distal" type="continuous">
+    <origin xyz="4 0 0"/>
+    <axis xyz="0 0 1"/>
+    <parent link="finger1_middle"/>
+    <child link="finger1_distal"/>
+  </joint>
+
+  <transmission type="SimpleTransmission" name="finger1_distal">
+    <joint name="finger1_distal"/>
+    <actuator name="finger1_distal"/>
+  </transmission>
+  
+  <link name="finger1_tensioner">
+    <inertial>
+      <mass value="1"/>
+      <inertia ixx="0.065833" ixy="0.000000" ixz="0.000000" iyy="0.065833" iyz="0.000000" izz="0.125" />
+    </inertial>
+    <visual>
+      <material name="orange" />
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="1" length="1.2"/>
+      </geometry>
+    </visual>
+    <visual> 
+      <material name="black"/>
+      <origin xyz="-.45 0 1.2" rpy="0 0 0"/>
+      <geometry>
+        <box size=".8 .01 .2"/>
+      </geometry>
+    </visual>
+  </link>
+  
+  <joint name="finger1_tensioner" type="revolute">
+    <origin xyz="0 1.5 0"/>
+    <axis xyz="0 0 1"/>
+    <parent link="base"/>
+    <child link="finger1_tensioner"/>
+    <dynamics damping=".5"/>
+  </joint>
+
+  <force_element name="finger1_tensioner_spring">
+    <torsional_spring rest_angle="0" stiffness="8">
+      <joint name="finger1_tensioner"/>
+    </torsional_spring>
+  </force_element>
+  
+  
+  <link name="finger2_proximal">
+    <inertial>
+      <mass value="1"/>
+      <inertia ixx="0.065833" ixy="0.000000" ixz="0.000000" iyy="0.065833" iyz="0.000000" izz="0.125" />
+    </inertial>
+    <visual>
+      <material name="skeleton"/>
+      <origin xyz="2.5 0 0"/>
+      <geometry>
+        <box size="5 .1 .1"/>
+      </geometry>
+    </visual>
+    <visual>
+      <material name="skeleton"/>
+      <origin xyz="5 0 0"/>
+      <geometry>
+        <box size=".1 2 .1"/>
+      </geometry>
+    </visual>
+  </link>
+  
+  <joint name="finger2_proximal" type="continuous">
+    <origin xyz="0 -1.5 0"/>
+    <axis xyz="0 0 1"/>
+    <parent link="base"/>
+    <child link="finger2_proximal"/>
+  </joint>
+  
+  <link name="finger2_middle">
+    <inertial>
+      <mass value="1"/>
+      <inertia ixx="0.065833" ixy="0.000000" ixz="0.000000" iyy="0.065833" iyz="0.000000" izz="0.125" />
+    </inertial>
+    <visual>
+      <material name="skeleton"/>
+      <origin xyz="2 0 0"/>
+      <geometry>
+        <box size="4 .1 .1"/>
+      </geometry>
+    </visual>
+    <visual>
+      <material name="skeleton"/>
+      <origin xyz="4 0 0"/>
+      <geometry>
+        <box size=".1 1.8 .1"/>
+      </geometry>
+    </visual>
+  </link>
+  
+  <joint name="finger2_middle" type="continuous">
+    <origin xyz="5 0 0"/>
+    <axis xyz="0 0 1"/>
+    <parent link="finger2_proximal"/>
+    <child link="finger2_middle"/>
+  </joint>
+  
+  <link name="finger2_distal">
+    <inertial>
+      <mass value="1"/>
+      <inertia ixx="0.065833" ixy="0.000000" ixz="0.000000" iyy="0.065833" iyz="0.000000" izz="0.125" />
+    </inertial>
+    <visual>
+      <material name="skeleton"/>
+      <origin xyz="2 0 0"/>
+      <geometry>
+        <box size="4 .1 .1"/>
+      </geometry>
+    </visual>
+    <visual>
+      <material name="skeleton"/>
+      <origin xyz="4 0 0"/>
+      <geometry>
+        <cylinder radius=".8" length=".2"/>
+      </geometry>
+    </visual>
+  </link>
+  
+  <joint name="finger2_distal" type="continuous">
+    <origin xyz="4 0 0"/>
+    <axis xyz="0 0 1"/>
+    <parent link="finger2_middle"/>
+    <child link="finger2_distal"/>
+  </joint>
+
+  <link name="finger2_tensioner">
+    <inertial>
+      <mass value="1"/>
+      <inertia ixx="0.065833" ixy="0.000000" ixz="0.000000" iyy="0.065833" iyz="0.000000" izz="0.125" />
+    </inertial>
+    <visual>
+      <material name="orange" />
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="1" length="1.2"/>
+      </geometry>
+    </visual>
+    <visual> 
+      <material name="black"/>
+      <origin xyz="-.45 0 1.2" rpy="0 0 0"/>
+      <geometry>
+        <box size=".8 .01 .2"/>
+      </geometry>
+    </visual>
+  </link>
+  
+  <transmission type="SimpleTransmission" name="finger2_distal">
+    <joint name="finger2_distal"/>
+    <actuator name="finger2_distal"/>
+  </transmission>
+  
+  <joint name="finger2_tensioner" type="revolute">
+    <origin xyz="0 -1.5 0"/>
+    <axis xyz="0 0 1"/>
+    <parent link="base"/>
+    <child link="finger2_tensioner"/>
+    <dynamics damping=".5"/>
+  </joint>
+  
+  <force_element name="finger2_tensioner_spring">
+    <torsional_spring rest_angle="0" stiffness="8">
+      <joint name="finger2_tensioner"/>
+    </torsional_spring>
+  </force_element>
+
+  <cable name="finger1_cable" min_length="30" max_length="30"> 
+    <terminator link="base" xyz="0 2.5 2" />
+    <pulley link="finger1_proximal" xyz="5 1 2" radius="0"/>
+    <pulley link="finger1_middle" xyz="4 .9 2" radius="0"/>
+    <pulley link="finger1_distal" xyz="4 0 2" radius=".8" axis="0 0 -1"/>
+    <pulley link="ball" xyz="0 0 2" radius="1.2" axis="0 0 1"/> 
+    <pulley link="finger1_middle" xyz="4 -.9 2" radius="0"/>
+    <pulley link="finger1_proximal" xyz="5 -1 2" radius="0"/>
+    <pulley link="base" xyz="0 1.5 2" radius="1" axis="0 0 -1"/>
+    <terminator link="finger1_tensioner" xyz="-1.02 0 2"/>
+  </cable>
+
+  <cable name="finger2_cable" min_length="30" max_length="30"> 
+    <terminator link="base" xyz="0 -2.5 2" />
+    <pulley link="finger2_proximal" xyz="5 -1 2" radius="0"/>
+    <pulley link="finger2_middle" xyz="4 -.9 2" radius="0"/>
+    <pulley link="finger2_distal" xyz="4 0 2" radius=".8" axis="0 0 1"/>
+    <pulley link="ball" xyz="0 0 2" radius="1.2" axis="0 0 -1"/>
+    <pulley link="finger2_middle" xyz="4 .9 2" radius="0"/>
+    <pulley link="finger2_proximal" xyz="5 1 2" radius="0"/>
+    <pulley link="base" xyz="0 -1.5 2" radius="1" axis="0 0 1"/>
+    <terminator link="finger2_tensioner" xyz="-1.02 0 2"/>
+  </cable>
+  
+
+</robot>
