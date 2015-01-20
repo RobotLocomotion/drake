@@ -85,8 +85,15 @@ public:
 
 class Mesh : public Geometry {
 public:
-  Mesh(string fname, float scale=1.0) {
-    scale_x = scale_y = scale_z = scale;
+  Mesh(string fname, int num_scale_factors, float *scale=NULL) {
+    if ( scale && num_scale_factors == 3 ) {
+      scale_x = scale[0];
+      scale_y = scale[1];
+      scale_z = scale[2];  
+    }
+    else if ( scale && num_scale_factors == 1 ) {
+      scale_x = scale_y = scale_z = scale[0];
+    }
 
     boost::filesystem::path mypath(fname);
     string ext = mypath.extension().native();
@@ -180,7 +187,7 @@ class LinkGeometry {
       break;
     case DRAKE_LCMT_VIEWER_GEOMETRY_DATA_MESH:
       {
-	boost::shared_ptr<Geometry> g(boost::static_pointer_cast<Geometry>(new Mesh(geometry_data->string_data, geometry_data->float_data[0])));
+	boost::shared_ptr<Geometry> g(boost::static_pointer_cast<Geometry>(new Mesh(geometry_data->string_data, geometry_data->num_float_data, geometry_data->float_data)));
 	pGeometry = g;
       }
       break;

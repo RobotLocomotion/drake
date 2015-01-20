@@ -618,7 +618,7 @@ e.g. terminator - pulley - pulley - crossover - pulley - terminator
             </xs:element>
             <xs:element name="inertia" type="inertia" minOccurs="0" maxOccurs="1">
                 <xs:annotation>
-                    <xs:documentation>The 3x3 rotational inertia matrix, represented in the inertia frame. Because the rotational inertia matrix is symmetric, only 6 above-diagonal elements of this matrix are specified here, using the attributes ixx, ixy, ixz, iyy, iyz, izz. </xs:documentation>
+                    <xs:documentation>The 3x3 rotational inertia matrix, represented in the inertia frame (as defined by the origin tag, e.g., about the center of mass of this link). Because the rotational inertia matrix is symmetric, only 6 above-diagonal elements of this matrix are specified here, using the attributes ixx, ixy, ixz, iyy, iyz, izz. </xs:documentation>
                 </xs:annotation>
             </xs:element>
         </xs:all>

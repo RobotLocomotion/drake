@@ -45,7 +45,9 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
           
           r1 = obj.pulley(i-1).radius;
           r2 = obj.pulley(i).radius;
-          assert(C>r1+r2+eps); % cut me a little slack, eh?
+          if (C<r1+r2+eps) % cut me a little slack, eh?
+            continue;  % just skip this one... because the optimizers might actually get here
+          end
           if r1>0 || r2>0,            
             alignment = dot(obj.pulley(i-1).axis,obj.pulley(i).axis);
             if r1>0 && r2>0, % then make sure the axes are aligned
@@ -197,8 +199,9 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
             n = size(vertex,2);
             edge = horzcat(edge,[n-1;n]);
           else
-            vertex = horzcat(vertex,pt);
-            edge = horzcat(edge,[i-1;i]);
+            vertex = horzcat(vertex,[last_pt,pt]);
+            n = size(vertex,2);
+            edge = horzcat(edge,[n-1;n]);
           end
         end
         
