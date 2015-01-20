@@ -8,9 +8,7 @@ classdef ChineseYoYo < HybridDrakeSystem
   methods
     function obj = ChineseYoYo
       in_contact = PlanarRigidBodyManipulator('tension.urdf');
-
-      in_contact = PlanarRigidBodyManipulator('tension.urdf');
-
+      
       % manually remove the ball from the pulley system:
       pulley_constraint = in_contact.position_constraints{1};
       cable_length_fcn = pulley_constraint.fcn;
@@ -20,10 +18,12 @@ classdef ChineseYoYo < HybridDrakeSystem
       
       obj = obj@HybridDrakeSystem(0,1+getNumOutputs(in_contact));
       obj = setInputFrame(obj,getInputFrame(in_contact));
+      
+      % construct an output frame which has the mode number as the first
+      % output, followed by the state of the current mode
       obj = setOutputFrame(obj,MultiCoordinateFrame.constructFrame({CoordinateFrame('mode',1,'m',{'m'}),getOutputFrame(in_contact)}));
       
-      % add the modes, but with an extra output containing the mode
-      % numbers
+      % add the modes, using transforms to produce the extra output containing the mode number
       nmy = getNumOutputs(no_contact);
       tf = AffineTransform(getOutputFrame(no_contact),getOutputFrame(obj),[zeros(1,nmy);eye(nmy)],[1;zeros(nmy,1)]);
       obj = addMode(obj,cascade(no_contact,tf));
@@ -39,12 +39,17 @@ classdef ChineseYoYo < HybridDrakeSystem
     end
     
     function [g,dg] = collisionGuard(obj,t,x,u)
+      % detect when the ball makes contact with the string
+      % currently implemented as: z position of the ball <= 4
       % todo: generalize this using line segements of the cable constraint?
       g = x(3) - 4;  % x(3) = load_z
       dg = [0,0,0,1,0,0,0];
     end
     
     function [g,dg] = aerialGuard(obj,t,x,u)
+      % detect when the ball leaves the string
+      % currently implemented as: z position of the ball > 4
+      % todo: generalize this
       g = 4 - x(3);
       dg = -[0,0,0,1,0,0,0];
     end
@@ -70,7 +75,7 @@ classdef ChineseYoYo < HybridDrakeSystem
         [phi,J] = obj.no_contact.position_constraints{1}.eval(q);
       end
       % solve zero post-transition velocities for all active constraints
-      J = J*vToqdot(obj.no_contact, q);
+      J = J*vToqdot(obj.no_contact, q);  % note: this will be the same for both modes
       vp = (eye(obj.no_contact.num_velocities)-Hinv*J'*pinv(J*Hinv*J')*J)*v;
       xp = [q;vp];
       
