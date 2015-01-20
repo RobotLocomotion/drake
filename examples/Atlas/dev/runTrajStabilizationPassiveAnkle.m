@@ -124,8 +124,8 @@ options.w_phi_slack = 0.0;
 options.w_qdd = 0*ones(nq,1);
 options.w_grf = 0;
 options.Kp_accel = 0;
-options.contact_threshold = 1e-4;
-options.offset_x = true;
+options.contact_threshold = 1e-3;
+options.offset_x = false;
 qp = FullStateQPController(r,ctrl_data,options);
 
 % feedback QP controller with Atlas
@@ -155,6 +155,17 @@ if 0
   hold on;
   plot(ts_,modes_,'r');
   hold off;
+end
+
+if 1
+  pptraj = PPTrajectory(foh(traj.getBreaks,traj.eval(traj.getBreaks)));
+  for i=1:10
+    figure(100+i);
+    hold on;
+    fnplt(xtraj(i));
+    fnplt(pptraj(i));
+    hold off;
+  end
 end
 end
 

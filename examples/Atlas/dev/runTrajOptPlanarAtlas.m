@@ -31,11 +31,11 @@ R_periodic(17,17) = 1; % back joint
 R_periodic(2:end,p.getNumStates+2:end) = -eye(p.getNumStates-1);
 options.R_periodic = R_periodic;
 
-N = 21;
+N = 40;
 N1 = floor(N/2);
 N2 = N-N1;
 d = floor(N/8);
-tf0 = 1.0;
+tf0 = 0.75;
 
 n_knots = 5;
 ts = linspace(0,tf0,n_knots);
@@ -49,17 +49,17 @@ qknots(2,1) = z;
 
 qknots(:,2) = [0;z;.2;-.3;.2;-0.1;0;-0.9;1.3;0];
 
-qknots(:,3) = [0.2;0;.3;-.1;.2;-0.1;0;-0.9;0.3;0];
+qknots(:,3) = [0.15;0;.3;-.1;.2;-0.1;0;-0.9;0.3;0];
 phi = p.contactConstraints(qknots(:,3));
 z = -min(phi);
 qknots(2,3) = z;
 
-qknots(:,4) = [0.2;0;.4;-.1;.2;-0.1;0;-0.9;0.3;0];
+qknots(:,4) = [0.15;0;.4;-.1;.2;-0.1;0;-0.9;0.3;0];
 phi = p.contactConstraints(qknots(:,4));
 z = -min(phi);
 qknots(2,4) = z;
 
-qknots(:,5) = [0.4;0;.2;-.5;1.1;0;0;-.3;.2;-0.1];
+qknots(:,5) = [0.3;0;.2;-.5;1.1;0;0;-.3;.2;-0.1];
 phi = p.contactConstraints(qknots(:,5));
 z = -min(phi);
 qknots(2,5) = z;

@@ -37,6 +37,7 @@ end
 
 nx = p.getNumStates();
 nu = p.getNumInputs();
+nq = p.getNumPositions();
 nv = p.getNumVelocities();
 
 if isfield(options,'x0')
@@ -93,6 +94,7 @@ to_options.integration_method = ContactImplicitTrajectoryOptimization.BACKWARD_E
 traj_opt = ContactImplicitTrajectoryOptimization(p,N,T_span,to_options);
 traj_opt = traj_opt.addRunningCost(@running_cost_fun);
 traj_opt = traj_opt.addRunningCost(@foot_height_fun);
+traj_opt = traj_opt.addRunningCost(@pelvis_motion_fun);
 traj_opt = traj_opt.addFinalCost(@final_cost_fun);
 traj_opt = traj_opt.addStateConstraint(BoundingBoxConstraint(x0_min,x0_max),1);
 traj_opt = traj_opt.addStateConstraint(BoundingBoxConstraint(xf_min,xf_max),N);
@@ -155,11 +157,11 @@ z0 = traj_opt.getInitialVars(t_init,traj_init);
   end
 
   function [f,df] = foot_height_fun(h,x,u)
-    q = x(1:10);
+    q = x(1:nq);
     
     [phi,~,~,~,~,~,~,~,n] = p.contactConstraints(q,false,struct('terrain_only',true));
     phi0 = [.1;.1;.1;.1];
-    K = 10;
+    K = 20;
     I = find(phi < phi0);
     f = K*(phi(I) - phi0(I))'*(phi(I) - phi0(I));
     % phi: 2x1
@@ -172,10 +174,29 @@ z0 = traj_opt.getInitialVars(t_init,traj_init);
 %    df = [0 sum(-K*K_log*n./(K_log*repmat(phi,1,length(q)) + .2)) zeros(1,15)];
   end
 
+  function [f,df] = pelvis_motion_fun(h,x,u)
+    pitch_idx = 3;
+    pitch_dot_idx = p.getNumPositions+pitch_idx;
+
+    Kq = 500;
+    Kqd = 500;
+    f = Kq*x(pitch_idx)^2 + Kqd*x(pitch_dot_idx)^2; % try to avoid moving the pelvis quickly
+    df = zeros(1,1+nx+nu);
+    df(1+pitch_idx) = 2*Kq*x(pitch_idx);
+    df(1+pitch_dot_idx) = 2*Kqd*x(pitch_dot_idx);
+
+%    K = 100;
+%    K_log = 100;
+%    f = sum(-K*log(K_log*phi + .2));
+%    df = [0 sum(-K*K_log*n./(K_log*repmat(phi,1,length(q)) + .2)) zeros(1,15)];
+  end
+
+
+
   function [f,df] = final_cost_fun(T,x)
     K = 1;
     f = K*T;
-    df = [K zeros(1,20)];
+    df = [K zeros(1,nx)];
     
   end
 
