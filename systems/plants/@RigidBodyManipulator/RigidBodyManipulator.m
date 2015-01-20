@@ -60,7 +60,7 @@ classdef RigidBodyManipulator < Manipulator
       obj = setTerrain(obj,options.terrain);
       obj.contact_options = obj.parseContactOptions(options);
 
-      obj.collision_filter_groups=containers.Map('KeyType','char','ValueType','any');
+      obj.collision_filter_groups = PassByValueMap('KeyType','char','ValueType','any');
       obj.collision_filter_groups('no_collision') = CollisionFilterGroup();
 
       if (nargin>0 && ~isempty(filename))
@@ -2358,7 +2358,7 @@ classdef RigidBodyManipulator < Manipulator
       % In case no robots were loaded from urdf, initialize
       % collision_filter_groups here.
       if isempty(model.collision_filter_groups)
-        model.collision_filter_groups=containers.Map('KeyType','char','ValueType','any');
+        model.collision_filter_groups = PassByValueMap('KeyType','char','ValueType','any');
         model.collision_filter_groups('no_collision') = CollisionFilterGroup();
       end
       if model.contact_options.ignore_self_collisions
