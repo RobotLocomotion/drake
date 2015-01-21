@@ -23,6 +23,10 @@ classdef RigidBodyForceElement < RigidBodyElement
     function obj = setInputNum(obj, input_num)
       obj.input_num = input_num;
     end
+    
+    function [T,U] = energy(obj,manip,q,qd)
+      T=0;U=0;
+    end
   end
   
   methods (Static=true)

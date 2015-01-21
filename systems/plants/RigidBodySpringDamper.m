@@ -125,6 +125,10 @@ classdef RigidBodySpringDamper < RigidBodyForceElement
         obj.body2 = model.body(body_ind).parent;
       end
     end
+    
+    function [T,U] = energy(obj,manip,q,qd)
+      error('not implemented yet (but would be trivial)');
+    end
   end
   
   methods (Static)
