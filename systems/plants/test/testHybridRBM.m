@@ -15,7 +15,8 @@ theta2 = ytraj(2);
 figure(1); clf;
 fnplt(theta2);
 hold on;
-h = fnplt(xtraj(3)); set(h,'Color','r');
+h = fnplt(1.5*xtraj(3)); set(h,'Color','r');  % draw the joint limit mode
+return
 
 v = p.constructVisualizer();
 v.playback(ytraj);

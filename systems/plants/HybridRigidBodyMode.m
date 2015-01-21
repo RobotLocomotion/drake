@@ -99,13 +99,17 @@ classdef HybridRigidBodyMode < DrakeSystem
       end
       
       % solve for constraint force with 
-      %  min_f ||f||^2 
-      %    subject to \phiddot_i >= 0 for all \phi_i <= lb_i
-      %    and \phiddot_i <= 0 for all \phi_i >= ub
-      %  todo: consider adding stabilization terms back in, too
-      %  note: this is not the perfect objective, since the units are
-      %  somewhat arbitrary (and dependent on the relative scaling of phi)
-      
+      %  find f 
+      %  subject to 
+      %     phiddot >=0 
+      %     f >=0 
+      %     phiddot'f = 0
+      % refinement: handle ub and lb by 
+      %  find flb,fub
+      %    phiddotlb >=0, flb>=0, phiddotlb'*flb=0
+      %   -phiddotub >=0, fub>=0, phiddotub'*fub=0
+      % f = flb-fub
+
       nf = 0;
 
       phi=[]; J=[]; dJ = []; lb=[]; ub=[];
@@ -122,28 +126,35 @@ classdef HybridRigidBodyMode < DrakeSystem
       % todo: find a way to use Jdot*qd directly (ala Twan's code)
       % instead of computing dJ
       Jdotv = dJ*reshape(qd*qd',obj.num_positions^2,1);
+      % phiddot = M*f + w
+      M = J*Hinv*J';  
+      w = J*Hinv*tau + Jdotv;  
+      
       
       % was: lb_inds = phi<=lb; ub_inds = phi>=ub; 
       lb_inds = constraint_state<-0.5 | constraint_state>1.5;
       ub_inds = constraint_state>0.5;
+
+      f = zeros(numel(phi),1);
       
-      nf = numel(phi);
-      Jlb = J(lb_inds,:);  Jub = J(ub_inds,:); 
-      Ain = [-Jlb*Hinv*J'; Jub*Hinv*J'];
-      bin = [Jlb;-Jub]*Hinv*tau + [Jdotv(lb_inds);-Jdotv(ub_inds)];
-      
-      % todo: use fastqp first?
-      prog = QuadraticProgram(eye(nf),zeros(nf,1),Ain,bin);
-      f = prog.solve();
+      M_all = [ M(lb_inds,lb_inds),-M(lb_inds,ub_inds); ...
+           -M(ub_inds,lb_inds), M(ub_inds,ub_inds)];
+      w_all = [ w(lb_inds); -w(ub_inds) ];
+      f_all = pathlcp(M_all,w_all);
+      f(lb_inds) = f_all(1:sum(lb_inds));
+      if any(ub_inds)
+        f(ub_inds) = f(ub_inds) - f_all(sum(lb_inds)+1:end);
+      end
+
       vdot = Hinv*(tau + J'*f);
       
       % useful for debugging
-      %if any(lb_inds)
-      %  phiddot_lb = Jlb*Hinv*(tau+J'*f)+Jdotv(lb_inds)
-      %end
-      %if any(ub_inds)
-      %  phiddot_ub = Jub*Hinv*(tau+J'*f)+Jdotv(ub_inds)
-      %end
+%       if any(lb_inds)
+%         phiddot_lb = M(lb_inds,:)*f+w(lb_inds)
+%       end
+%       if any(ub_inds)
+%         phiddot_ub = M(ub_inds,:)*f+w(ub_inds)
+%       end
       
       xdot = [vToqdot(obj,q)*v; vdot];
     end    
