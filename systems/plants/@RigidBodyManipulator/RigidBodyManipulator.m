@@ -21,6 +21,12 @@ classdef RigidBodyManipulator < Manipulator
     num_contact_pairs;
     contact_options; % struct containing options for contact/collision handling
     contact_constraint_id=[];
+
+    % struct containing the output of 'obj.getTerrainContactPoints()'.
+    % That output does not change between compilations, and is requested
+    % at every simulation dt, so storing it can speed things up.
+    cached_terrain_contact_points_struct=[];
+                                            
     frame = [];     % array of RigidBodyFrame objects
 
     robot_state_frames;
@@ -678,6 +684,9 @@ classdef RigidBodyManipulator < Manipulator
 
       model = removeFixedJoints(model);
 
+      % Clear cached contact points
+      model.cached_terrain_contact_points_struct = [];
+
       % reorder body list to make sure that parents before children in the
       % list (otherwise simple loops over bodies might not compute
       % kinematics/dynamics correctly)
@@ -694,7 +703,9 @@ classdef RigidBodyManipulator < Manipulator
       end
       
       %% update RigidBodyElements
-      
+      % todo: use applyToAllRigidBodyElements (but will have to generalize
+      % it to take multiple outputs, or make sure onCompile doesn't have to
+      % return the second argument)
       for i=1:length(model.force)
         [new_element, model] = model.force{i}.onCompile(model);
         model.force{i} = new_element;
@@ -842,6 +853,9 @@ classdef RigidBodyManipulator < Manipulator
       % so it should go after createMexPointer
       [phi,~,~,~,idxA,idxB] = model.collisionDetect(zeros(model.getNumPositions,1));
       model.num_contact_pairs = length(phi);
+
+      % cache the full set of terrain contact points
+      model.cached_terrain_contact_points_struct = model.getTerrainContactPoints();
       
       % can't really add the full complementarity constraints here,
       % since the state constraints only take x as the input.  so 
@@ -875,6 +889,14 @@ classdef RigidBodyManipulator < Manipulator
         model.loop(j) = loop;
       end
 
+      for j=1:length(model.position_constraints)
+        % todo: generalize this by moving the updateConstraint logic above into
+        % drakeFunction.RBM
+        if isa(model.position_constraints{j},'DrakeFunctionConstraint') && isa(model.position_constraints{j}.fcn,'drakeFunction.kinematic.CableLength')
+          model = updatePositionEqualityConstraint(model,j,DrakeFunctionConstraint(model.position_constraints{j}.lb,model.position_constraints{j}.ub,setRigidBodyManipulator(model.position_constraints{j}.fcn,model)));
+        end
+      end
+      
       if (model.num_contact_pairs>0)
         warning('Drake:RigidBodyManipulator:UnsupportedContactPoints','Contact is not supported by the dynamics methods of this class.  Consider using TimeSteppingRigidBodyManipulator or HybridPlanarRigidBodyManipulator');
       end
@@ -1064,28 +1086,8 @@ classdef RigidBodyManipulator < Manipulator
           k=k+1;
         end
       end
-
-      for i=1:length(model.body)
-        model.body(i) = updateParams(model.body(i),fr.getPoly, p);
-      end
       
-      for i=1:length(model.force)
-        model.force{i} = updateParams(model.force{i}, fr.getPoly, p);
-      end
-
-      for i=1:length(model.sensor)
-        model.sensor{i} = updateParams(model.sensor{i}, fr.getPoly, p);
-      end
-
-      for i=1:length(model.actuator)
-        model.actuator(i) = updateParams(model.actuator(i), fr.getPoly, p);
-      end
-      
-      for i=1:length(model.frame)
-        model.frame(i) = updateParams(model.frame(i), fr.getPoly, p);
-      end
-      
-      
+      model = applyToAllRigidBodyElements(model,'updateParams',fr.getPoly,p);
 
       model = compile(model);
     end
@@ -1200,31 +1202,36 @@ classdef RigidBodyManipulator < Manipulator
       %
       % See also RigidBodyGeometry/getTerrainContactPoints,
       % RigidBodyManipulator/terrainContactPositions
-      if nargin < 2
-        body_idx = 2:obj.getNumBodies(); % World-fixed objects can't collide
-                                         % with the terrain
-      end
-      if nargin >= 3
-        if all(cellfun(@ischar,contact_groups))
-          contact_groups = {contact_groups};
+      checkDirty(obj);
+      if nargin == 1 && ~isempty(obj.cached_terrain_contact_points_struct)
+        terrain_contact_point_struct = obj.cached_terrain_contact_points_struct;
+      else
+        if nargin < 2
+          body_idx = 2:obj.getNumBodies(); % World-fixed objects can't collide
+          % with the terrain
         end
-        if numel(contact_groups) == 1
-          contact_groups = repmat(contact_groups,size(body_idx));
-        else
-          sizecheck(contact_groups,size(body_idx));
-        end
-      end
-      terrain_contact_point_struct = struct('pts',{},'idx',{});
-      for i = 1:length(body_idx)
-        bi=body_idx(i);
-        if bi ~= 1
-          if nargin < 3
-            pts = getTerrainContactPoints(obj.body(bi));
-          else
-            pts = getTerrainContactPoints(obj.body(bi),contact_groups{i});
+        if nargin >= 3
+          if all(cellfun(@ischar,contact_groups))
+            contact_groups = {contact_groups};
           end
-          if ~isempty(pts)
-            terrain_contact_point_struct(end+1) = struct('pts',pts,'idx',bi);
+          if numel(contact_groups) == 1
+            contact_groups = repmat(contact_groups,size(body_idx));
+          else
+            sizecheck(contact_groups,size(body_idx));
+          end
+        end
+        terrain_contact_point_struct = struct('pts',{},'idx',{});
+        for i = 1:length(body_idx)
+          bi=body_idx(i);
+          if bi ~= 1
+            if nargin < 3
+              pts = getTerrainContactPoints(obj.body(bi));
+            else
+              pts = getTerrainContactPoints(obj.body(bi),contact_groups{i});
+            end
+            if ~isempty(pts)
+              terrain_contact_point_struct(end+1) = struct('pts',pts,'idx',bi);
+            end
           end
         end
       end
@@ -2008,7 +2015,10 @@ classdef RigidBodyManipulator < Manipulator
     function fr = getPositionFrame(obj,robotnum)
       % if robotnum is not specified, then it returns a position frame
       % including all position variables (for all robots)
-      if getNumPositions(obj)<1, fr = []; return; end
+      if getNumPositions(obj)<1, 
+        fr = CoordinateFrame('JointPositions',0); 
+        return;
+      end
       
       if nargin<2, 
         fr = MultiCoordinateFrame.constructFrame(obj.robot_position_frames,[],true);
@@ -2020,7 +2030,12 @@ classdef RigidBodyManipulator < Manipulator
     function fr = getVelocityFrame(obj,robotnum)
       % if robotnum is not specified, then it returns a velocity frame
       % including all velocity variables (for all robots)
-      if nargin<2, 
+      if getNumVelocities(obj)<1, 
+        fr = CoordinateFrame('JointVelocities',0); 
+        return;
+      end
+      
+      if nargin<2,
         fr = MultiCoordinateFrame.constructFrame(obj.robot_velocity_frames,[],true);
       else
         fr = obj.robot_velocity_frames{robotnum};
@@ -2300,18 +2315,7 @@ classdef RigidBodyManipulator < Manipulator
           end
         end
 
-        for j=1:length(model.loop)
-          model.loop(j) = updateForRemovedLink(model.loop(j),model,i);
-        end
-        for j=1:length(model.sensor)
-          model.sensor{j} = updateForRemovedLink(model.sensor{j},model,i);
-        end
-        for j=1:length(model.force)
-          model.force{j} = updateForRemovedLink(model.force{j},model,i);
-        end
-        for j=1:length(model.frame)
-          model.frame(j) = updateForRemovedLink(model.frame(j),model,i);
-        end
+        model = applyToAllRigidBodyElements(model,'updateForRemovedLink',model,i);
         for key = model.collision_filter_groups.keys
           model.collision_filter_groups(key{1}) = updateForRemovedLink(model.collision_filter_groups(key{1}),model,i,parent.linkname,key{1});
         end
@@ -2491,8 +2495,6 @@ classdef RigidBodyManipulator < Manipulator
       end
     end
 
-
-
     function model = updateBodyIndices(model,map_from_new_to_old)
       % @ingroup Kinematic Tree
       nold = length(model.body);
@@ -2503,24 +2505,35 @@ classdef RigidBodyManipulator < Manipulator
       map(map_from_new_to_old) = 1:length(model.body);
       map = [0,map];
       mapfun = @(i) map(i+1);
-
+      
+      model = applyToAllRigidBodyElements(model,'updateBodyIndices',mapfun);
+    end
+    
+    function model = applyToAllRigidBodyElements(model,fcn,varargin)
       for i=1:length(model.body)
-        model.body(i) = updateBodyIndices(model.body(i),mapfun);
+        model.body(i) = feval(fcn,model.body(i),varargin{:});
       end
       for i=1:length(model.actuator)
-        model.actuator(i) = updateBodyIndices(model.actuator(i),mapfun);
+        model.actuator(i) = feval(fcn,model.actuator(i),varargin{:});
       end
       for i=1:length(model.loop)
-        model.loop(i) = updateBodyIndices(model.loop(i),mapfun);
+        model.loop(i) = feval(fcn,model.loop(i),varargin{:});
       end
       for i=1:length(model.sensor)
-        model.sensor{i} = updateBodyIndices(model.sensor{i},mapfun);
+        model.sensor{i} = feval(fcn,model.sensor{i},varargin{:});
       end
       for i=1:length(model.force)
-        model.force{i} = updateBodyIndices(model.force{i},mapfun);
+        model.force{i} = feval(fcn,model.force{i},varargin{:});
       end
       for i=1:length(model.frame)
-        model.frame(i) = updateBodyIndices(model.frame(i),mapfun);
+        model.frame(i) = feval(fcn,model.frame(i),varargin{:});
+      end
+      for j=1:length(model.position_constraints)
+        % todo: generalize this by moving the updateConstraint logic above into
+        % drakeFunction.RBM
+        if isa(model.position_constraints{j},'DrakeFunctionConstraint') && isa(model.position_constraints{j}.fcn,'drakeFunction.kinematic.CableLength')
+          model = updatePositionEqualityConstraint(model,j,DrakeFunctionConstraint(model.position_constraints{j}.lb,model.position_constraints{j}.ub,feval(fcn,model.position_constraints{j}.fcn,varargin{:})));
+        end
       end
     end
 

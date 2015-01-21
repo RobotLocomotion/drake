@@ -9,7 +9,7 @@ classdef AtlasState < SingletonCoordinateFrame
         manipStateFrame = manipStateFrame.getFrameByNum(1);
       end
       coordinates = manipStateFrame.coordinates;
-      obj = obj@SingletonCoordinateFrame('AtlasState',length(coordinates),'x',coordinates);
+      obj = obj@SingletonCoordinateFrame('atlasFrames.AtlasState',length(coordinates),'x',coordinates);
     end
   end
 end

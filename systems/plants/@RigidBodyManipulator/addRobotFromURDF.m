@@ -129,6 +129,11 @@ for i=0:(frames.getLength()-1)
   model = parseFrame(model,robotnum,frames.item(i),options);
 end
 
+cables = node.getElementsByTagName('cable');
+for i=0:(cables.getLength()-1)
+  model = parseCable(model,robotnum,cables.item(i),options);
+end
+
 % weld the root link of this robot to the world link
 % or some other link if specified in options
 if (isfield(options, 'weld_to_link'))
@@ -148,25 +153,7 @@ for i=1:length(rootlink)
 end
 
 % finish parameter parsing
-for i=1:length(model.body)
-  model.body(i) = bindParams(model.body(i),model,pval);
-end
-
-for i=1:length(model.force)
-  model.force{i} = bindParams(model.force{i}, model, pval);
-end
-
-for i=1:length(model.sensor)
-  model.sensor{i} = bindParams(model.sensor{i}, model, pval);
-end
-
-for i=1:length(model.actuator)
-  model.actuator(i) = bindParams(model.actuator(i), model, pval);
-end
-
-for i=1:length(model.frame)
-  model.frame(i) = bindParams(model.frame(i), model, pval);
-end
+model = applyToAllRigidBodyElements(model,'bindParams',model,pval);
 
 end
 
@@ -496,6 +483,47 @@ function model = parseFrame(model,robotnum,node,options)
   model.frame = vertcat(model.frame,RigidBodyFrame(link,xyz,rpy,name));
 end
 
+function model = parseCable(model,robotnum,node,options)
+  name = char(node.getAttribute('name'));   
+  if isempty(name), name='cable'; end
+  min_length = parseParamString(model,robotnum,char(node.getAttribute('min_length')));
+  max_length = parseParamString(model,robotnum,char(node.getAttribute('max_length')));
+
+  cable_length_function = drakeFunction.kinematic.CableLength(model,name);
+  
+  children = node.getChildNodes;
+  for i=0:(children.getLength()-1)
+    this_node = children.item(i);
+    switch(char(getNodeName(this_node)))
+      case {'terminator','pulley'}
+        link = findLinkId(model,char(this_node.getAttribute('link')),robotnum);
+        xyz=zeros(3,1); 
+        axis=[1;0;0];
+        radius=0;
+        num_wraps=0;
+        if this_node.hasAttribute('xyz')
+          xyz = reshape(parseParamString(model,robotnum,char(this_node.getAttribute('xyz'))),3,1);
+        end
+        if this_node.hasAttribute('axis')
+          axis = reshape(parseParamString(model,robotnum,char(this_node.getAttribute('axis'))),3,1);
+          axis = axis/(norm(axis)+eps); % normalize
+        end
+        if this_node.hasAttribute('radius')
+          radius = parseParamString(model,robotnum,char(this_node.getAttribute('radius')));
+        end
+        if this_node.hasAttribute('number_of_wraps')
+          num_wraps = parseParamString(model,robotnum,char(this_node.getAttribute('number_of_wraps')));
+        end
+        cable_length_function = addPulley(cable_length_function,link,xyz,axis,radius,num_wraps);
+    end
+  end
+  
+  if (min_length~=max_length)
+    error('only implemented cables with min_length = max_length so far');
+  end
+  
+  model = addPositionEqualityConstraint(model,DrakeFunctionConstraint(min_length,max_length,cable_length_function));
+end
 
 function model=parseTransmission(model,robotnum,node,options)
 

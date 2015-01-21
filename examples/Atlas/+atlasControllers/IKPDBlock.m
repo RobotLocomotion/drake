@@ -31,9 +31,9 @@ classdef IKPDBlock < MIMODrakeSystem
         typecheck(options.input_foot_contacts,'logical');
       end
       
-      coords = AtlasCoordinates(r);
+      coords = atlasFrames.AtlasCoordinates(r);
       if options.input_foot_contacts
-        input_frame = MultiCoordinateFrame({coords,r.getStateFrame,FootContactState});
+        input_frame = MultiCoordinateFrame({coords,r.getStateFrame,atlasFrames.FootContactState});
       else
         input_frame = MultiCoordinateFrame({coords,r.getStateFrame});
       end

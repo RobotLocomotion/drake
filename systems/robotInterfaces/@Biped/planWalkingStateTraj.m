@@ -12,7 +12,7 @@ if nargin < 3
 end
 
 nq = obj.getNumPositions();
-q0 = walking_plan_data.x0(1:nq);
+q0 = walking_plan_data.q0;
 qstar = xstar(1:nq);
 
 % time spacing of samples for IK

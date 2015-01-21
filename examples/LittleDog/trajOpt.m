@@ -17,33 +17,53 @@ else
   N = length(t_init);
 end
 
-distance = .1;
-x_vel = -0.0;
+tf0 = 1.0;
 
-qd_init = [x_vel;zeros(p.getNumVelocities()-1,1)];
+% initial guess
+t_knots = [0,0.25*tf0,0.50*tf0,0.75*tf0,tf0];
+n_knots = length(t_knots);
+q_knots = zeros(p.getNumPositions(),n_knots);
+qd_knots = zeros(p.getNumVelocities(),n_knots);
 
-q0 = [0;0;0;0.2;-0.8;-0.2;0.8];
-phi_f = p.contactConstraints(q0);
-q0(2) = -min(phi_f);
-x0 = [q0;qd_init];
+distance = 0.2;
+pitch_angle = 0.4;
 
-q1 = [distance/2;0;0;0.2;-0.8;-0.2;0.8];
-phi_f = p.contactConstraints(q1);
-q1(2) = -min(phi_f) + 0.15;
-x1 = [q1;qd_init];
+q_knots(:,1) = [0;0;0;0.3;-0.9;-0.3;0.9];
+phi_f = p.contactConstraints(q_knots(:,1));
+q_knots(2,1) = -min(phi_f);
 
-qf = [distance;0;0;0.2;-0.8;-0.2;0.8];
-phi_f = p.contactConstraints(qf);
-qf(2) = -min(phi_f);
-xf = [qf;qd_init];
+q_knots(:,2) = [-0.05;0;-pitch_angle;0.3;-0.9;-0.3;0.9];
+phi_f = p.contactConstraints(q_knots(:,2));
+q_knots(2,2) = -min(phi_f);
 
-N1 = floor(N/2);
-N2 = N-N1;
+q_knots(:,3) = [0.5*distance;0;0;0.3;-0.9;-0.3;0.9];
+phi_f = p.contactConstraints(q_knots(:,3));
+q_knots(2,3) = -min(phi_f) + 0.075;
+
+q_knots(:,4) = [distance+0.05;0;pitch_angle;0.3;-0.9;-0.3;0.9];
+phi_f = p.contactConstraints(q_knots(:,4));
+q_knots(2,4) = -min(phi_f);
+
+q_knots(:,5) = [distance;0;0;0.3;-0.9;-0.3;0.9];
+phi_f = p.contactConstraints(q_knots(:,5));
+q_knots(2,5) = -min(phi_f);
+
+x_knots = [q_knots;qd_knots];
+
+n_segments = n_knots-1;
+Nfill = floor(N/n_segments);
+Nlast = N-(n_segments-1)*Nfill;
 d = floor(N/4);
-tf0 = 0.5;
 if nargin < 2  
   t_init = linspace(0,tf0,N);
-  traj_init.x = PPTrajectory(foh(t_init,[linspacevec(x0,x1,floor(N/2)),linspacevec(x1,xf,N-floor(N/2))]));
+  
+  x_init = zeros(p.getNumStates,N);
+  for i=1:n_segments-1
+    x_init(:,(i-1)*Nfill+(1:Nfill)) = linspacevec(x_knots(:,i),x_knots(:,i+1),Nfill);
+  end
+  x_init(:,(n_segments-1)*Nfill+(1:Nlast)) = linspacevec(x_knots(:,n_knots-1),x_knots(:,n_knots),Nlast);
+  
+  traj_init.x = PPTrajectory(foh(t_init,x_init));
   traj_init.x = traj_init.x.setOutputFrame(p.getStateFrame);
 
   if 0
@@ -79,15 +99,13 @@ else
   traj_init.ljl = ljltraj;
 end
 
+T_span = [tf0/2 tf0];
 
-T_span = [tf0 tf0];
+x0_min = x_knots(:,1);
+x0_max = x_knots(:,1);
 
-
-x0_min = [q0;qd_init];
-x0_max = [q0;qd_init];
-
-xf_min = [qf;qd_init] - zeros(getNumStates(p),1);
-xf_max = [qf;qd_init] + zeros(getNumStates(p),1);
+xf_min = x_knots(:,5) - zeros(getNumStates(p),1);
+xf_max = x_knots(:,5) + zeros(getNumStates(p),1);
 
 to_options.compl_slack = scale*.01;
 to_options.lincompl_slack = scale*.001;
@@ -150,7 +168,6 @@ traj_opt = traj_opt.setSolverOptions('snopt','MajorOptimalityTolerance',1e-5);
     K = 1;
     f = K*T;
     df = [K zeros(1,14)];
-    
   end
 
 end

@@ -8,8 +8,7 @@ end
 if (nargin<1); use_mex = true; end
 if (nargin<2); use_angular_momentum = false; end
 
-addpath(fullfile(getDrakePath,'examples','Atlas','controllers'));
-addpath(fullfile(getDrakePath,'examples','Atlas','frames'));
+import atlasControllers.*;
 
 % silence some warnings
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints')
@@ -96,19 +95,19 @@ r = r.setInitialState(x_knots(:,1));
 
 % build TV-LQR controller on COM dynamics
 x0traj = PPTrajectory(foh(ts,[com;comdot]));
-x0traj = x0traj.setOutputFrame(COMState);
+x0traj = x0traj.setOutputFrame(atlasFrames.COMState);
 u0traj = PPTrajectory(foh(ts,comddot));
-u0traj = u0traj.setOutputFrame(COMAcceleration);
+u0traj = u0traj.setOutputFrame(atlasFrames.COMAcceleration);
 
 x0traj_landing = PPTrajectory(foh(ts(toe_land_idx:nT),[com(:,toe_land_idx:nT);comdot(:,toe_land_idx:nT)]));
-x0traj_landing = x0traj_landing.setOutputFrame(COMState);
+x0traj_landing = x0traj_landing.setOutputFrame(atlasFrames.COMState);
 u0traj_landing = PPTrajectory(foh(ts(toe_land_idx:nT),comddot(:,toe_land_idx:nT)));
-u0traj_landing = u0traj_landing.setOutputFrame(COMAcceleration);
+u0traj_landing = u0traj_landing.setOutputFrame(atlasFrames.COMAcceleration);
 
 x0traj_takeoff = PPTrajectory(foh(ts(1:toe_takeoff_idx),[com(:,1:toe_takeoff_idx);comdot(:,1:toe_takeoff_idx)]));
-x0traj_takeoff = x0traj_takeoff.setOutputFrame(COMState);
+x0traj_takeoff = x0traj_takeoff.setOutputFrame(atlasFrames.COMState);
 u0traj_takeoff = PPTrajectory(foh(ts(1:toe_takeoff_idx),comddot(:,1:toe_takeoff_idx)));
-u0traj_takeoff = u0traj_takeoff.setOutputFrame(COMAcceleration);
+u0traj_takeoff = u0traj_takeoff.setOutputFrame(atlasFrames.COMAcceleration);
 
 Q = 10*diag([10 10 10 1 1 1]);
 R = 0.0001*eye(3);
@@ -117,9 +116,9 @@ B = [zeros(3); eye(3)];
 options.tspan = ts;
 options.sqrtmethod = false;
 ti_sys = LinearSystem(A,B,[],[],eye(6),[]);
-ti_sys = ti_sys.setStateFrame(COMState);
-ti_sys = ti_sys.setOutputFrame(COMState);
-ti_sys = ti_sys.setInputFrame(COMAcceleration);
+ti_sys = ti_sys.setStateFrame(atlasFrames.COMState);
+ti_sys = ti_sys.setOutputFrame(atlasFrames.COMState);
+ti_sys = ti_sys.setInputFrame(atlasFrames.COMAcceleration);
 [~,V] = tvlqr(ti_sys,x0traj,u0traj,Q,R,Q,options);
 
 [~,Vf] = tilqr(ti_sys,[com(:,end);zeros(3,1)],zeros(3,1),Q,R);
@@ -150,7 +149,7 @@ V_s2 = V_takeoff.s2.append(s2_flight);
 V_s2 = V_s2.append(V_landing.s2);
 
 ctrl_data = QPControllerData(true,struct(...
-  'acceleration_input_frame',AtlasCoordinates(r),...
+  'acceleration_input_frame',atlasFrames.AtlasCoordinates(r),...
   'A',A,...
   'B',B,...
   'C',eye(6),...

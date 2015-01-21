@@ -53,7 +53,7 @@ options.left_foot_name = 'thigh'; % junk for now
 
 foot_ind = findLinkId(r,'foot');
 
-[ts,modes] = extractHybridModes(r,xtraj,support_times+0.03); % hack add time to make sure it's fully into the next mode
+[~,modes] = extractHybridModes(r,xtraj,support_times+0.03); % hack add time to make sure it's fully into the next mode
 
 % support_times = ts([1 find(diff(modes_))]);
 % modes = modes_([1 1+find(diff(modes_))]);
@@ -108,36 +108,29 @@ ctrl_data = FullStateQPControllerData(true,struct(...
 %ctrl_data.mode_data = mode_data;
 
 % instantiate QP controller
-options.slack_limit = 10;
+options.cpos_slack_limit = 10;
+options.w_cpos_slack = 1.0;
+options.phi_slack_limit = 10;
+options.w_phi_slack = 0.0;
 options.w_qdd = 0*ones(nq,1);
 options.w_grf = 0;
-options.w_slack = 1.0;
-options.Kp_accel = 0.0;
+options.Kp_accel = 0;
+options.Kp_phi = 10;
 options.contact_threshold = 1e-3;
 qp = FullStateQPController(r,ctrl_data,options);
 
 % feedback QP controller with spring flamingo
-ins(1).system = 1;
-ins(1).input = 2;
-outs(1).system = 2;
-outs(1).output = 1;
-sys = mimoFeedback(qp,r,[],[],ins,outs);
+sys = feedback(r,qp);
 
-% feedback foot contact detector 
-options.use_contact_logic_OR = false;
-fc = FootContactBlock(r,ctrl_data,options);
-sys = mimoFeedback(fc,sys,[],[],[],outs);
-  
 S=warning('off','Drake:DrakeSystem:UnsupportedSampleTime');
 output_select(1).system=1;
 output_select(1).output=1;
 sys = mimoCascade(sys,v,[],[],output_select);
 warning(S);
 
-tspan = xtraj.tspan();
 traj = simulate(sys,[t0 tf],xtraj.eval(t0));
 playback(v,traj,struct('slider',true));
-keyboard
+
 if 0
   % plot position tracking
   pptraj = PPTrajectory(foh(traj.getBreaks,traj.eval(traj.getBreaks)));

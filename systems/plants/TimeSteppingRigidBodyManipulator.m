@@ -508,7 +508,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
 
         if isempty(obj.LCP_cache.data.z_inactive)
           z_inactive = z_inactive_guess;
-          M_active = false(nL+nP+(mC+2)*nC,1);
+          M_active = z_inactive;
         else
           z_inactive = obj.LCP_cache.data.z_inactive;
           M_active = obj.LCP_cache.data.M_active;
@@ -541,7 +541,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
               z(z_inactive) = z_; 
               obj.LCP_cache.data.fastqp_active_set = find(abs(Ain_fqp*z_ - bin_fqp)<1e-6);
               % we know:
-              % z(z_inactive) >= 0
+              % z(z_inactive) >= lb
               % M(M_active, z_inactive)*z(z_inactive) + w(M_active) = 0
               % M(M_inactive, z_inactive)*z(z_inactive) + w(M_inactive) >= 0
               %
@@ -550,7 +550,8 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
               % M(z_active,z_inactive)*z(z_inactive)+w(z_active) >= 0  % since we're assuming that z(z_active) == 0
               z_active = ~z_inactive(1:(nL+nP+nC));  % only look at joint limit, position, and normal variables since if cn_i = 0, 
               % then that's a solution and we don't care about the relative velocity \lambda_i
-              QP_FAILED = (~isempty(w(z_active)) && any(M(z_active,z_inactive)*z(z_inactive)+w(z_active) < 0)) || (abs(z(z_inactive)'*(M(z_inactive, z_inactive)*z(z_inactive) + w(z_inactive)))>1e-8);
+              QP_FAILED = (~isempty(w(z_active)) && any(M(z_active,z_inactive)*z(z_inactive)+w(z_active) < 0)) || ...
+                any(((z(z_inactive)>lb(z_inactive)+1e-8) & (M(z_inactive, z_inactive)*z(z_inactive)+w(z_inactive)>1e-8)));
             else
               obj.LCP_cache.data.fastqp_active_set = [];
             end
@@ -604,11 +605,11 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
               obj.LCP_cache.data.fastqp_active_set = [];
 
               % take M_active, z_inactive on reduced LCP
-              obj.LCP_cache.data.M_active = false(nL+nP+(2+mC)*nC,1);
-              obj.LCP_cache.data.M_active(z_inactive_guess) = ...
-                M(z_inactive_guess,z_inactive_guess)*z(z_inactive_guess)+w(z_inactive_guess)<1e-8;
               obj.LCP_cache.data.z_inactive = false(nL+nP+(2+mC)*nC,1);
               obj.LCP_cache.data.z_inactive(z_inactive_guess) = z(z_inactive_guess)>lb(z_inactive_guess)+1e-8;            
+              % use conservative guess of M_active to avoid occasional numerical issues
+              % when M*z_inactive + w > 1e-8 by a small amount
+              obj.LCP_cache.data.M_active = obj.LCP_cache.data.z_inactive; 
             end
 %             if isempty(active_set_fail_count)
 %                active_set_fail_count = 1;

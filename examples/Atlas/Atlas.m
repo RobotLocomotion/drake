@@ -1,5 +1,4 @@
 classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
-
   methods
 
     function obj=Atlas(urdf,options)
@@ -21,12 +20,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
         options.hands = 'none';
       end
 
-      path_handle = addpathTemporary(fullfile(getDrakePath,'examples','Atlas','frames'));
       w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
-      
-      if ~isfield(options,'control_rate')
-        options.control_rate = 250;
-      end
       
       obj = obj@TimeSteppingRigidBodyManipulator(urdf,options.dt,options);
       obj = obj@Biped('r_foot_sole', 'l_foot_sole');
@@ -36,15 +30,14 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
         if (strcmp(options.hands, 'robotiq'))
           options_hand.weld_to_link = 29;
           obj.hands = 1;
-          obj = obj.addRobotFromURDF(getFullPathFromRelativePath('urdf/robotiq.urdf'), [0; -0.18; 0], [0; 3.1415; 3.1415], options_hand);  
+          obj = obj.addRobotFromURDF(getFullPathFromRelativePath('urdf/robotiq.urdf'), [0; -0.195; -0.01], [0; -3.1415/2; 3.1415], options_hand);
         elseif (strcmp(options.hands, 'robotiq_weight_only'))
           % Adds a box with weight roughly approximating the hands, so that
           % the controllers know what's up
-          % Will soon be replaced with an equivalent welded mass.
           options_hand.weld_to_link = 29;
-          obj = obj.addRobotFromURDF(getFullPathFromRelativePath('urdf/robotiq_box.urdf'), [0; -0.2; 0], [0; 0; 3.1415], options_hand); 
+          obj = obj.addRobotFromURDF(getFullPathFromRelativePath('urdf/robotiq_box.urdf'), [0; -0.195; -0.01], [0; -3.1415/2; 3.1415], options_hand);
         else
-          error('unsupported hand type'); 
+          error('unsupported hand type');
         end
       end
 
@@ -67,25 +60,24 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       obj.left_toe_right_full_support = RigidBodySupportState(obj,[obj.foot_body_id.left,obj.foot_body_id.right],{{'toe'},{'heel','toe'}});
       obj.left_full_right_toe_support = RigidBodySupportState(obj,[obj.foot_body_id.left,obj.foot_body_id.right],{{'heel','toe'},{'toe'}});
     end
-    
+
     function obj = compile(obj)
       obj = compile@TimeSteppingRigidBodyManipulator(obj);
-      
+
       % Sanity check if we have hands.
       if (~isa(obj.manip.getStateFrame().getFrameByNum(1), 'MultiCoordinateFrame'))
         obj.hands = 0;
       end
-      path_handle = addpathTemporary(fullfile(getDrakePath,'examples','Atlas','frames'));
       if (obj.hands > 0)
         atlas_state_frame = getStateFrame(obj);
-        atlas_state_frame = replaceFrameNum(atlas_state_frame,1,AtlasState(obj));
+        atlas_state_frame = replaceFrameNum(atlas_state_frame,1,atlasFrames.AtlasState(obj));
         % Sub in handstates for each hand
         % TODO: by name?
         for i=2:obj.getStateFrame().getNumFrames
-          atlas_state_frame = replaceFrameNum(atlas_state_frame,i,HandState(obj,i,'HandState'));
+          atlas_state_frame = replaceFrameNum(atlas_state_frame,i,atlasFrames.HandState(obj,i,'atlasFrames.HandState'));
         end
       else
-        atlas_state_frame = AtlasState(obj);
+        atlas_state_frame = atlasFrames.AtlasState(obj);
       end
       tsmanip_state_frame = obj.getStateFrame();
       if tsmanip_state_frame.dim>atlas_state_frame.dim
@@ -102,16 +94,15 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
 
       if (obj.hands > 0)
         input_frame = getInputFrame(obj);
-        input_frame  = replaceFrameNum(input_frame,1,AtlasInput(obj));
+        input_frame  = replaceFrameNum(input_frame,1,atlasFrames.AtlasInput(obj));
         % Sub in handstates for each hand
         % TODO: by name?
         for i=2:obj.getInputFrame().getNumFrames
-          input_frame = replaceFrameNum(input_frame,i,HandInput(obj,i,'HandInput'));
+          input_frame = replaceFrameNum(input_frame,i,atlasFrames.HandInput(obj,i,'atlasFrames.HandInput'));
         end
       else
-        input_frame = AtlasInput(obj);
+        input_frame = atlasFrames.AtlasInput(obj);
       end
-      
       obj = obj.setInputFrame(input_frame);
       obj.manip = obj.manip.setInputFrame(input_frame);
       
@@ -147,83 +138,98 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       % [x, y, z, roll, pitch, yaw]
 
       weights = struct('relative', [1;1;1;0;0;0.5],...
-                       'relative_final', [10;10;10;0;0;1],...
+                       'relative_final', [10;10;10;0;0;2],...
                        'goal', [100;100;0;0;0;10]);
     end
 
-    function [xstar,ustar,zstar] = getFixedPoint(obj,options)
-      if nargin < 2 || ~isfield(options,'visualize')
-        options.visualize = false;
+    function [qp,lfoot_control_block,rfoot_control_block,pelvis_control_block,pd,options] = constructQPWalkingController(obj,controller_data,options)
+      if nargin < 3
+        options = struct();
       end
+      options = applyDefaults(options, struct(...
+        'w_qdd',zeros(obj.getNumVelocities(),1),...
+        'input_foot_contacts',true,...
+        'Kp_pelvis',[0; 0; 20; 20; 20; 20],...
+        'use_walking_pelvis_block',true,...
+        'pelvis_damping_ratio',0.5,...
+        'Kp_accel',0.0,...
+        'body_accel_input_weights',[0.15 0.15 0.075],...
+        'use_foot_motion_block',true,...
+        'Kp_foot',[12; 12; 12; 12; 12; 12],...
+        'foot_damping_ratio',0.7,...
+        'min_knee_angle',0.7,...
+        'Kp_q',0.0*ones(obj.getNumPositions(),1),...
+        'q_damping_ratio',0.5));
 
-      x0 = Point(obj.getStateFrame());
-      x0 = resolveConstraints(obj,x0);
-      u0 = zeros(obj.getNumInputs(),1);
+      options.w_qdd(findPositionIndices(obj,'back_bkx')) = 0.01;
+      options.Kp_q(findPositionIndices(obj,'back_bkx')) = 50;
 
-      nq = obj.getNumPositions();
-      nu = obj.getNumInputs();
-      nz = obj.getNumContacts()*3;
-      z0 = zeros(nz,1);
-      q0 = x0(1:nq);
+      acc_limit = [100;100;100;50;50;50];
+      body_accel_bounds(1).body_idx = obj.foot_body_id.right;
+      body_accel_bounds(1).min_acceleration = -acc_limit;
+      body_accel_bounds(1).max_acceleration = acc_limit;
+      body_accel_bounds(2).body_idx = obj.foot_body_id.left;
+      body_accel_bounds(2).min_acceleration = -acc_limit;
+      body_accel_bounds(2).max_acceleration = acc_limit;
+      if ~isfield(options, 'boddy_accel_bounds'); options.body_accel_bounds = body_accel_bounds; end;
+      
+      [qp,lfoot_control_block,rfoot_control_block,pelvis_control_block,pd,options] = ...
+        constructQPBalancingController(obj,controller_data,options);
+    end
 
-      problem.x0 = [q0;u0;z0];
-      problem.objective = @(quz) 0; % feasibility problem
-      problem.nonlcon = @(quz) mycon(quz);
-      problem.solver = 'fmincon';
+    function [qp,lfoot_control_block,rfoot_control_block,pelvis_control_block,pd,options] = constructQPBalancingController(obj,controller_data,options)
+      import atlasControllers.*;
+      if nargin < 3
+        options = struct();
+      end
+      options = applyDefaults(options, struct(...
+        'slack_limit',30,...
+        'w_qdd',0.0*ones(obj.getNumVelocities(),1),...
+        'W_kdot',0.0*eye(3),...
+        'w_grf',0.0,...
+        'w_slack',0.05,...
+        'Kp_accel',1.0,...
+        'debug',false,...
+        'use_mex',true,...
+        'contact_threshold',0.001,...
+        'output_qdd',true,...
+        'solver',0,...  % 0 fastqp, 1 gurobi
+        'Kp_pelvis',20*[1; 1; 1; 0.6; 0.6; 0.6],...
+        'pelvis_damping_ratio',0.7,...
+        'body_accel_input_weights',0.01,...
+        'use_ik',false,...
+        'Kp_q',0.0*ones(obj.getNumPositions(),1),...
+        'q_damping_ratio',0.0));
+      
+      options.w_qdd(findPositionIndices(obj,'back_bkx')) = 0.1;
+      options.Kp_q(findPositionIndices(obj,'back_bkx')) = 50;
 
-      if options.visualize
-        v = obj.constructVisualizer;
-        %problem.options=optimset('DerivativeCheck','on','GradConstr','on','Algorithm','interior-point','Display','iter','OutputFcn',@drawme,'TolX',1e-14,'MaxFunEvals',5000);
-        problem.options=optimset('GradConstr','on','Algorithm','interior-point','Display','iter','OutputFcn',@drawme,'TolX',1e-14,'MaxFunEvals',5000);
+      options.Kp = options.Kp_pelvis;
+      options.Kd = getDampingGain(options.Kp,options.pelvis_damping_ratio);
+      if isfield(options,'use_walking_pelvis_block') && options.use_walking_pelvis_block
+        pelvis_control_block = PelvisMotionControlBlock(obj,'pelvis',controller_data,options);
       else
-        problem.options=optimset('GradConstr','on','Algorithm','interior-point','TolX',1e-14,'MaxFunEvals',5000);
+        pelvis_control_block = BodyMotionControlBlock(obj,'pelvis',controller_data,options);
       end
 
-      lb_z = -1e6*ones(nz,1);
-      lb_z(3:3:end) = 0; % normal forces must be >=0
-      ub_z = 1e6*ones(nz,1);
-
-      [jl_min,jl_max] = obj.getJointLimits();
-      % force search to be close to starting position
-      problem.lb = [max(q0-0.05,jl_min+0.01); obj.umin; lb_z];
-      problem.ub = [min(q0+0.05,jl_max-0.01); obj.umax; ub_z];
-      %problem.lb(2) = 0.0; % body z
-
-      [quz_sol,~,exitflag] = fmincon(problem);
-      success=(exitflag==1);
-      xstar = [quz_sol(1:nq); zeros(nq,1)];
-      ustar = quz_sol(nq+(1:nu));
-      zstar = quz_sol(nq+nu+(1:nz));
-      if (~success)
-        error('failed to find fixed point');
+      if isfield(options,'use_foot_motion_block') && options.use_foot_motion_block
+        foot_options = struct('Kp', options.Kp_foot,...
+                              'Kd', getDampingGain(options.Kp,options.foot_damping_ratio),...
+                              'use_plan_shift', true);
+        lfoot_control_block = BodyMotionControlBlock(obj,'l_foot',controller_data,foot_options);
+        rfoot_control_block = BodyMotionControlBlock(obj,'r_foot',controller_data,foot_options);
+        motion_frames = {lfoot_control_block.getOutputFrame,rfoot_control_block.getOutputFrame,...
+          pelvis_control_block.getOutputFrame};
+      else
+        lfoot_control_block = [];
+        rfoot_control_block = [];
+        motion_frames = {pelvis_control_block.getOutputFrame};
       end
+      qp = AtlasQPController(obj,motion_frames,controller_data,options);
 
-      function stop=drawme(quz,optimValues,state)
-        stop=false;
-        v.draw(0,[quz(1:nq); zeros(nq,1)]);
-      end
-
-      function [c,ceq,GC,GCeq] = mycon(quz)
-        q=quz(1:nq);
-        u=quz(nq+(1:nu));
-        z=quz(nq+nu+(1:nz));
-
-        [~,C,B,~,dC,~] = obj.manip.manipulatorDynamics(q,zeros(nq,1));
-        [phiC,JC] = obj.contactConstraints(q);
-        [~,J,dJ] = obj.contactPositions(q);
-
-        % ignore friction constraints for now
-        c = 0;
-        GC = zeros(nq+nu+nz,1);
-
-        dJz = zeros(nq,nq);
-        for i=1:nq
-            dJz(:,i) = dJ(:,(i-1)*nq+1:i*nq)'*z;
-        end
-
-        ceq = [C-B*u-J'*z; phiC];
-        GCeq = [[dC(1:nq,1:nq)-dJz,-B,-J']',[JC'; zeros(nu+nz,length(phiC))]];
-      end
+      options.Kp = options.Kp_q;
+      options.Kd = getDampingGain(options.Kp,options.q_damping_ratio);
+      pd = IKPDBlock(obj,controller_data,options);
     end
 
   end
@@ -232,7 +238,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
     x0
     default_footstep_params = struct('nom_forward_step', 0.25,... % m
                                       'max_forward_step', 0.35,...% m
-                                      'max_backward_step', 0.2,... %m
+                                      'max_backward_step', 0.2,...% m
                                       'max_step_width', 0.38,...% m
                                       'min_step_width', 0.18,...% m
                                       'nom_step_width', 0.26,...% m
@@ -244,16 +250,13 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
                                       'min_num_steps', 1,...
                                       'leading_foot', 1); % 0: left, 1: right
     default_walking_params = struct('step_speed', 0.5,... % speed of the swing foot (m/s)
-                                    'step_height', 0.065,... % approximate clearance over terrain (m)
+                                    'step_height', 0.05,... % approximate clearance over terrain (m)
                                     'hold_frac', 0.4,... % fraction of the swing time spent in double support
                                     'drake_min_hold_time', 1.0,... % minimum time in double support (s)
-                                    'drake_instep_shift', 0.0275,... % Distance to shift ZMP trajectory inward toward the instep from the center of the foot (m)
+                                    'drake_instep_shift', 0.0,... % Distance to shift ZMP trajectory inward toward the instep from the center of the foot (m)
                                     'mu', 1.0,... % friction coefficient
                                     'constrain_full_foot_pose', true); % whether to constrain the swing foot roll and pitch
     hands = 0; % 0, none; 1, Robotiq
-  end
-  properties
-    fixed_point_file = fullfile(getDrakePath(), 'examples', 'Atlas', 'data', 'atlas_fp.mat');
     % preconstructing these for efficiency
     left_full_support
     left_toe_support
@@ -262,5 +265,9 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
     left_full_right_full_support
     left_toe_right_full_support
     left_full_right_toe_support
+  end
+
+  properties
+    fixed_point_file = fullfile(getDrakePath(), 'examples', 'Atlas', 'data', 'atlas_fp.mat');
   end
 end

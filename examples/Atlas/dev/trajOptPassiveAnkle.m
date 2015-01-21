@@ -28,18 +28,19 @@ R_periodic(2:end,p.getNumStates+2:end) = -eye(p.getNumStates-1);
 
 periodic_constraint = LinearConstraint(zeros(p.getNumStates,1),zeros(p.getNumStates,1),R_periodic);
 
-%red to blue
-q0 = [0;0;.2;-.4;.2;0;0;-1;2;0];
+xvel = 0.5;
+
+q0 = [0;0;.2;-.4;.2;0;0;-1;1.5;0];
 phi_tmp = p.contactConstraints(q0);
 q0(2) = -phi_tmp(1);
-x0 = [q0;.25;zeros(9,1)];
+x0 = [q0;xvel;zeros(9,1)];
 xf = -pinv(R_periodic(:,21:end))*(R_periodic(:,1:20)*x0);
-xf(1) = .5;
+xf(1) = .4;
 v = p.constructVisualizer;
 N1 = floor(N/2);
 N2 = N-N1;
 d = floor(N/8);
-tf0 = 2;
+tf0 = 1.5;
 if nargin < 2
   % guess an intermediary state
   q1 = [.20;0;0;.1;.2;-.3;0;-1;.5;0];
@@ -49,8 +50,8 @@ if nargin < 2
   phi_tmp = p.contactConstraints(q2);
   q2(2) = -phi_tmp(3);
   
-  x1 = [q1;.25;zeros(9,1)];
-  x2 = [q2;.25;zeros(9,1)];
+  x1 = [q1;xvel;zeros(9,1)];
+  x2 = [q2;xvel;zeros(9,1)];
   x_vec = [linspacevec(x0,x1,N1-d) linspacevec(x1,x2,2*d) linspacevec(x2,xf,N2-d)];
   t_init = linspace(0,tf0,N);
   
@@ -79,11 +80,12 @@ end
 T_span = [tf0/2 tf0];
 
 
-x0_min = x0 - [0;0;0;1;1;1;1;.2;.2;1;5*ones(10,1)];
-x0_max = x0 + [0;0;0;1;1;1;1;.2;.2;1;5*ones(10,1)];
+xdelta = [0;0;0;1;1;1;1;.2;.2;1;0.1;5*ones(9,1)];
+x0_min = x0 - xdelta;
+x0_max = x0 + xdelta;
 
-xf_min = xf - [0;0;0;1;1;1;1;1;1;1;5*ones(10,1)];
-xf_max = xf + [0;0;0;1;1;1;1;1;1;1;5*ones(10,1)];
+xf_min = xf - xdelta;
+xf_max = xf + xdelta;
 
 to_options.compl_slack = scale*.01;
 to_options.lincompl_slack = scale*.01;
@@ -161,7 +163,7 @@ z0 = traj_opt.getInitialVars(t_init,traj_init);
     
     [phi,~,~,~,~,~,~,~,n] = p.contactConstraints(q,false,struct('terrain_only',true));
     phi0 = [.2;.2;.2;.2];
-    K = 50;
+    K = 30;
     I = find(phi < phi0);
     f = K*(phi(I) - phi0(I))'*(phi(I) - phi0(I));
     % phi: 2x1

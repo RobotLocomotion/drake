@@ -1,10 +1,8 @@
-classdef FullStateQPController < MIMODrakeSystem
+classdef FullStateQPController < DrakeSystem
   methods
   function obj = FullStateQPController(r,controller_data,options)
     % @param r rigid body manipulator instance
     % @param controller_data FullStateQPControllerData object containing the matrices that
-    % define the underlying linear system, the ZMP trajectory, Riccati
-    % solution, etc.
     % @param options structure for specifying objective weights, slack
     % bounds, etc.
     typecheck(r,'TimeSteppingRigidBodyManipulator');
@@ -16,10 +14,10 @@ classdef FullStateQPController < MIMODrakeSystem
       options = struct();
     end
             
-    input_frame = MultiCoordinateFrame({r.getStateFrame,FootContactState});
+    input_frame = r.getStateFrame();
     output_frame = r.getInputFrame();
     
-    obj = obj@MIMODrakeSystem(0,0,input_frame,output_frame,true,true);
+    obj = obj@DrakeSystem(0,0,input_frame.dim,output_frame.dim,true,true);
     obj = setInputFrame(obj,input_frame);
     obj = setOutputFrame(obj,output_frame);
 
@@ -55,13 +53,22 @@ classdef FullStateQPController < MIMODrakeSystem
       obj.w_grf = 0.0;
     end    
 
-    % weight for slack vars
-    if isfield(options,'w_slack')
-      typecheck(options.w_slack,'double');
-      sizecheck(options.w_slack,1);
-      obj.w_slack = options.w_slack;
+    % weight for cpos slack vars
+    if isfield(options,'w_cpos_slack')
+      typecheck(options.w_cpos_slack,'double');
+      sizecheck(options.w_cpos_slack,1);
+      obj.w_cpos_slack = options.w_cpos_slack;
     else
-      obj.w_slack = 0.001;
+      obj.w_cpos_slack = 0.001;
+    end       
+    
+    % weight for phi slack vars
+    if isfield(options,'w_phi_slack')
+      typecheck(options.w_phi_slack,'double');
+      sizecheck(options.w_phi_slack,1);
+      obj.w_phi_slack = options.w_phi_slack;
+    else
+      obj.w_phi_slack = 0.001;
     end       
 
     % gain for support acceleration constraint: accel=-Kp_accel*vel
@@ -72,14 +79,39 @@ classdef FullStateQPController < MIMODrakeSystem
     else
       obj.Kp_accel = 0.0; % default desired acceleration=0
     end       
-
-    % hard bound on slack variable values
-    if isfield(options,'slack_limit')
-      typecheck(options.slack_limit,'double');
-      sizecheck(options.slack_limit,1);
-      obj.slack_limit = options.slack_limit;
+    
+    if isfield(options,'Kp_phi')
+      typecheck(options.Kp_phi,'double');
+      sizecheck(options.Kp_phi,1);
+      obj.Kp_phi = options.Kp_phi;
     else
-      obj.slack_limit = 10;
+      obj.Kp_phi = 10;
+    end
+
+    if isfield(options,'Kd_phi')
+      typecheck(options.Kd_phi,'double');
+      sizecheck(options.Kd_phi,1);
+      obj.Kd_phi = options.Kd_phi;
+    else
+      obj.Kd_phi = 2*sqrt(obj.Kp_phi);
+    end
+
+    % hard bound on cpos_ddot slack variables
+    if isfield(options,'cpos_slack_limit')
+      typecheck(options.cpos_slack_limit,'double');
+      sizecheck(options.cpos_slack_limit,1);
+      obj.cpos_slack_limit = options.cpos_slack_limit;
+    else
+      obj.cpos_slack_limit = 10;
+    end
+
+    % hard bound on phi_ddot slack variables
+    if isfield(options,'phi_slack_limit')
+      typecheck(options.phi_slack_limit,'double');
+      sizecheck(options.phi_slack_limit,1);
+      obj.phi_slack_limit = options.phi_slack_limit;
+    else
+      obj.phi_slack_limit = 10;
     end
 
     if isfield(options,'solver') 
@@ -100,18 +132,15 @@ classdef FullStateQPController < MIMODrakeSystem
       obj.offset_x = true;
     end
     
-    if isfield(options,'left_foot_name')
-      obj.lfoot_idx = findLinkId(r,options.left_foot_name);
+    if isfield(options,'contact_threshold')
+      % minimum height above terrain for points to be in contact
+      typecheck(options.contact_threshold,'double');
+      sizecheck(options.contact_threshold,[1 1]);
+      obj.contact_threshold = options.contact_threshold;
     else
-      obj.lfoot_idx = findLinkId(r,'left_foot');
+      obj.contact_threshold = 0.001;
     end
-
-    if isfield(options,'right_foot_name')
-      obj.rfoot_idx = findLinkId(r,options.right_foot_name);
-    else
-      obj.rfoot_idx = findLinkId(r,'right_foot');
-    end
-      
+    
     obj.gurobi_options.outputflag = 0; % not verbose
     if options.solver==0
       obj.gurobi_options.method = 2; % -1=automatic, 0=primal simplex, 1=dual simplex, 2=barrier
@@ -130,14 +159,9 @@ classdef FullStateQPController < MIMODrakeSystem
     [obj.jlmin, obj.jlmax] = getJointLimits(r);
   end
     
-  function y=mimoOutput(obj,t,~,varargin)
-    %out_tic = tic;
-
+  function y=output(obj,t,~,x)
     ctrl_data = obj.controller_data;
       
-    x = varargin{1};
-    fc = varargin{2};
-       
     r = obj.robot;
     nq = obj.numq; 
     q = x(1:nq); 
@@ -170,82 +194,76 @@ classdef FullStateQPController < MIMODrakeSystem
     end
     q0 = x0(1:nq);
 
-    support_bodies = [];
-    contact_pts = {};
-    contact_groups = {};
-    n_contact_pts = [];
-    ind = 1;
-    
-    plan_supp = ctrl_data.supports(supp_idx);
+    % get phi for planned contact groups
+    % if phi < threshold, then add to active contacts
+    % else, add to desired contacts
 
-    lfoot_plan_supp_ind = plan_supp.bodies==obj.lfoot_idx;
-    rfoot_plan_supp_ind = plan_supp.bodies==obj.rfoot_idx;
-    if fc(1)>0
-      support_bodies(ind) = obj.lfoot_idx;
-      contact_pts{ind} = plan_supp.contact_pts{lfoot_plan_supp_ind};
-      contact_groups{ind} = plan_supp.contact_groups{lfoot_plan_supp_ind};
-      n_contact_pts(ind) = plan_supp.num_contact_pts(lfoot_plan_supp_ind);
-      ind=ind+1;
+    kinsol = doKinematics(r,q,true,true,qd);
+    rigid_body_support_state = ctrl_data.supports(supp_idx);
+    
+    planned_supports = rigid_body_support_state.bodies;
+    planned_contact_groups = rigid_body_support_state.contact_groups;
+    %planned_num_contacts = rigid_body_support_state.num_contact_pts;      
+
+    dim = 2; % 2D or 3D
+
+    Jn = [];
+    Jndot = [];
+    phi_err = [];
+    Dbar = [];
+    xp = [];
+    Jp = [];
+    Jpdot = [];
+    nc = 0;
+    for j=1:length(planned_supports)
+      % ridiculously inefficient for testing
+      [phi,~,~,~,~,~,~,~,n,~,dn,~] = contactConstraints(r,kinsol,false,struct('terrain_only',1,...
+          'body_idx',[1,planned_supports(j)],'collision_groups',planned_contact_groups(j)));
+      [~,~,JB] = contactConstraintsBV(r,kinsol,false,struct('terrain_only',1,...
+          'body_idx',[1,planned_supports(j)],'collision_groups',planned_contact_groups(j)));
+      
+      active_ind = phi<=obj.contact_threshold;
+      phi_err = [phi_err;-phi(~active_ind)];
+      
+      nc = nc+sum(active_ind);
+      Dbar = [Dbar, vertcat(JB{active_ind})']; 
+      ndot = matGradMult(dn,qd);
+      Jn = [Jn; n(~active_ind,:)];
+      Jndot = [Jndot; ndot(~active_ind,:)];
+
+       % hacky here because we're lacking planar system support
+      terrain_pts = getTerrainContactPoints(r,planned_supports(j),planned_contact_groups(j));
+      pts = [terrain_pts.pts];
+      pts = pts(:,active_ind);
+
+      xz_pts = pts([1 3],:);
+      [xp_j,Jp_j] = forwardKin(r,kinsol,planned_supports(j),xz_pts,0);
+      Jpdot_j = forwardJacDot(r,kinsol,planned_supports(j),pts,0);
+          
+      xp = [xp,xp_j];
+      Jp = [Jp;Jp_j];
+      Jpdot = [Jpdot;Jpdot_j];
     end
-    if fc(2)>0
-      support_bodies(ind) = obj.rfoot_idx;
-      contact_pts{ind} = plan_supp.contact_pts{rfoot_plan_supp_ind};
-      contact_groups{ind} = plan_supp.contact_groups{rfoot_plan_supp_ind};
-      n_contact_pts(ind) = plan_supp.num_contact_pts(rfoot_plan_supp_ind);
+    if exist('xz_pts') && ~isempty(xz_pts)
+      % compute foot placement error
+      kinsol0 = r.doKinematics(q0);
+      xp0 = forwardKin(r,kinsol0,planned_supports(j),xz_pts,0);
+      obj.controller_data.xoffset = mean(xp0(1,:)-xp_j(1,:)); % not quite right, need to take this over all bodies in contact
     end
     
-    supp.bodies = support_bodies;
-    supp.contact_pts = contact_pts;
-    supp.contact_groups = contact_groups;
-    supp.num_contact_pts = n_contact_pts;
-    supp.contact_surfaces = 0*support_bodies;
-    
-    kinsol = doKinematics(r,q,false,true,qd);
-
-    active_supports = supp.bodies;
-    active_contact_pts = supp.contact_pts;
-    active_contact_groups = supp.contact_groups;
-    num_active_contacts = supp.num_contact_pts;      
-
-    dim = 2; % 3D
     if dim==2
+       % delete y rows
+      yind = 2:3:nc*3;
+      Jpdot(yind,:) = [];
+      Jp = sparse(Jp);
+      Jpdot = sparse(Jpdot);
+
       nd = 2; % for friction cone approx, hard coded for now
     elseif dim==3
       nd = 4; % for friction cone approx, hard coded for now
     end
     [H,C,B] = manipulatorDynamics(r,q,qd);
     
-    if ~isempty(active_supports)
-      nc = sum(num_active_contacts);
-      c_pre = 0;
-      Dbar = [];
-      for j=1:length(active_supports)
-        [~,~,JB] = contactConstraintsBV(r,kinsol,false,struct('terrain_only',1,...
-          'body_idx',[1,active_supports(j)],'collision_groups',active_contact_groups(j)));
-        Dbar = [Dbar, vertcat(JB{:})']; % because contact constraints seems to ignore the collision_groups option
-        c_pre = c_pre + length(active_contact_pts{j});
-      end
-      
-      % hacky here because we're lacking planar system support
-      terrain_pts = getTerrainContactPoints(r,active_supports,active_contact_groups);
-      pts = [terrain_pts.pts];
-      xz_pts = pts([1 3],:);
-      [xp,Jp] = forwardKin(r,kinsol,active_supports,xz_pts,0);
-      Jpdot = forwardJacDot(r,kinsol,active_supports,pts,0);
-     
-      % compute foor placement error
-      kinsol0 = r.doKinematics(q0);
-      xp0 = forwardKin(r,kinsol0,active_supports,xz_pts,0);
-      obj.controller_data.xoffset = mean(xp0(1,:)-xp(1,:));
-      
-      % delete y rows
-      yind = 2:3:nc*3;
-      Jpdot(yind,:) = [];
-      Jp = sparse(Jp);
-      Jpdot = sparse(Jpdot);
-    else
-      nc = 0;
-    end
     neps = nc*dim;
     if obj.offset_x
       xoffset = obj.controller_data.xoffset
@@ -256,22 +274,25 @@ classdef FullStateQPController < MIMODrakeSystem
 
     nu = getNumInputs(r);
     nf = nc*nd; % number of contact force variables
-    nparams = nu+nq+nf+neps;
+    neta = length(phi_err);
+    nparams = nu+nq+nf+neps+neta;
     Iu = zeros(nu,nparams); Iu(:,1:nu) = eye(nu);
     Iqdd = zeros(nq,nparams); Iqdd(:,nu+(1:nq)) = eye(nq);
     Ibeta = zeros(nf,nparams); Ibeta(:,nu+nq+(1:nf)) = eye(nf);
-    Ieps = zeros(neps,nparams);
+    Ieps = zeros(neps,nparams); % cpos_ddot slack vars
     Ieps(:,nu+nq+nf+(1:neps)) = eye(neps);
+    Ieta = zeros(neta,nparams); % phi_ddot slack vars
+    Ieta(:,nu+nq+nf+neps+(1:neta)) = eye(neta);
 
 
     %----------------------------------------------------------------------
     % Set up problem constraints ------------------------------------------
 
-    lb = [r.umin' -inf*ones(1,nq) zeros(1,nf)   -obj.slack_limit*ones(1,neps)]'; % qddot/contact forces/slack vars
-    ub = [r.umax' inf*ones(1,nq) inf*ones(1,nf) obj.slack_limit*ones(1,neps)]';
+    lb = [r.umin' -inf*ones(1,nq) zeros(1,nf) -obj.cpos_slack_limit*ones(1,neps) -obj.phi_slack_limit*ones(1,neta)]'; % qddot/contact forces/slack vars
+    ub = [r.umax' inf*ones(1,nq) inf*ones(1,nf) obj.cpos_slack_limit*ones(1,neps) obj.phi_slack_limit*ones(1,neta)]';
 
-    Aeq_ = cell(1,2);
-    beq_ = cell(1,2);
+    Aeq_ = cell(1,3);
+    beq_ = cell(1,3);
 
     % dynamics constraints
     if nc>0
@@ -287,6 +308,12 @@ classdef FullStateQPController < MIMODrakeSystem
       beq_{2} = -Jpdot*qd - obj.Kp_accel*Jp*qd; 
     end
 
+    if ~isempty(phi_err)
+      phi_ddot_desired = obj.Kp_phi*phi_err - obj.Kd_phi*(Jndot*qd);
+      Aeq_{3} = Jn*Iqdd + Ieta;
+      beq_{3} = -Jndot*qd + phi_ddot_desired; 
+    end
+    
     % linear equality constraints: Aeq*alpha = beq
     Aeq = sparse(vertcat(Aeq_{:}));
     beq = vertcat(beq_{:});
@@ -303,18 +330,14 @@ classdef FullStateQPController < MIMODrakeSystem
     % min: ubar*R*ubar + 2*xbar'*S*B*u + w_eps*quad(epsilon) + w_grf*quad(beta) 
     xbar = x-x0; 
     Hqp = Iu'*R*Iu;
-      
     fqp = xbar'*S*B_ls*Iu;
-%       Kp = 1; Kd = 1.0*sqrt(Kp);
-%       qdd_des = Kp*(x0(1:nq)-x(1:nq)) + Kd*(x0(nq+(1:nq))-x(nq+(1:nq)))
-%       fqp = -qdd_des'*Q*Iqdd;
-    fqp = fqp - u0'*R*Iu;
-%       fqp = -u0'*R*Iu;
+    fqp = fqp-u0'*R*Iu;
 
     Hqp(nu+(1:nq),nu+(1:nq)) = diag(obj.w_qdd);
     if nc > 0
       Hqp(nu+nq+(1:nf),nu+nq+(1:nf)) = obj.w_grf*eye(nf); 
-      Hqp(nparams-neps+1:end,nparams-neps+1:end) = obj.w_slack*eye(neps); 
+      Hqp(nu+nq+nf+(1:neps),nu+nq+nf+(1:neps)) = obj.w_cpos_slack*eye(neps); 
+      Hqp(nu+nq+nf+neps+(1:neta),nu+nq+nf+neps+(1:neta)) = obj.w_phi_slack*eye(neta); 
     end
     
     %----------------------------------------------------------------------
@@ -330,7 +353,9 @@ classdef FullStateQPController < MIMODrakeSystem
     % call fastQPmex first
     QblkDiag = {Hqp(1:(nu+nq),1:(nu+nq)) + REG*eye(nu+nq), ...
                 obj.w_grf*ones(nf,1) + REG*ones(nf,1), ...
-                obj.w_slack*ones(neps,1) + REG*ones(neps,1)};
+                obj.w_cpos_slack*ones(neps,1) + REG*ones(neps,1), ...
+                obj.w_phi_slack*ones(neta,1) + REG*ones(neta,1)};
+              
     Aeq_fqp = full(Aeq);
     % NOTE: model.obj is 2* f for fastQP!!!
     [alpha,info_fqp] = fastQPmex(QblkDiag,fqp,Ain_fqp,bin_fqp,Aeq_fqp,beq,ctrl_data.qp_active_set);
@@ -355,18 +380,14 @@ classdef FullStateQPController < MIMODrakeSystem
         keyboard;
       end
 
-%         qp_tic = tic;
       result = gurobi(model,obj.gurobi_options);
-%         qp_toc = toc(qp_tic);
-%         fprintf('QP solve: %2.4f\n',qp_toc);
-
       alpha = result.x;
 
       qp_active_set = find(abs(Ain_fqp*alpha - bin_fqp)<1e-6);
       obj.controller_data.qp_active_set = qp_active_set;
     end
 %     beta=Ibeta*alpha
-    y = Iu*alpha     
+    y = Iu*alpha;
     
   end
   end
@@ -377,11 +398,13 @@ classdef FullStateQPController < MIMODrakeSystem
     controller_data; % shared data handle that holds S, h, foot trajectories, etc.
     w_grf; % scalar ground reaction force weight
     w_qdd; % qdd objective function weight vector
-    w_slack; % scalar slack var weight
-    slack_limit; % maximum absolute magnitude of acceleration slack variable values
+    w_cpos_slack; % scalar slack var weight
+    w_phi_slack; % scalar slack var weight
+    cpos_slack_limit; 
+    phi_slack_limit; 
     Kp_accel; % gain for support acceleration constraint: accel=-Kp_accel*vel
-    rfoot_idx;
-    lfoot_idx;
+    Kp_phi; 
+    Kd_phi; 
     gurobi_options = struct();
     solver=0;
     lc;
@@ -389,6 +412,7 @@ classdef FullStateQPController < MIMODrakeSystem
     ineq_array = repmat('<',100,1); % so we can avoid using repmat in the loop
     jlmin;
     jlmax;
+    contact_threshold;
     offset_x; % whether or not to offset the nominal state in the x-dimension
   end
 end

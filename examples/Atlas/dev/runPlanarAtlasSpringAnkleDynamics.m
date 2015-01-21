@@ -4,7 +4,11 @@ function runPlanarAtlasSpringAnkleDynamics
 options.twoD = true;
 options.view = 'right';
 options.floating = true;
-options.terrain = RigidBodyFlatTerrain();
+l = 0.4;
+boxes = [0.0, 0.0, 2*l, 1, 0.12;
+         l/2, 0.0, l, 1, 0.24];
+options.terrain = RigidBodyStepTerrain(boxes);
+%options.terrain = RigidBodyFlatTerrain();
 s = '../urdf/atlas_simple_spring_ankle.urdf';
 dt = 0.001;
 w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
