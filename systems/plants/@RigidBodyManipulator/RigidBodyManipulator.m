@@ -1078,7 +1078,12 @@ classdef RigidBodyManipulator < Manipulator
       ind = find(strcmp(jointname,lower({model.body.jointname})));
       if (robot_num~=0), ind = ind([model.body(ind).robotnum]==robot_num); end
       if (length(ind)~=1)
-        if (nargin<4 || error_level>0)
+        % if there is more than one index, check if one of them is an exact match of the search string
+        exact_matches = strcmpi({model.body.jointname},jointname);
+        ind = find(exact_matches);
+        if ( length(ind) == 1 )
+            body_ind = ind;
+        elseif (nargin<4 || error_level>0)
           error('Drake:RigidBodyManipulator:UniqueJointNotFound',['couldn''t find unique joint ' ,jointname]);
         else
           body_id=0;
