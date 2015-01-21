@@ -1491,18 +1491,14 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJ
     }
 
     if (expressed_in_body_or_frame_ind != 0) {
-      Matrix4d Tframe;
-      int expressed_in_body = parseBodyOrFrameID(expressed_in_body_or_frame_ind, &Tframe);
-      Matrix4d T_world_to_frame = (bodies[expressed_in_body]->T * Tframe).inverse();
+      auto T_world_to_frame_gradientvar = relativeTransform<double>(expressed_in_body_or_frame_ind, 0, gradient_order);
+      Isometry3d T_world_to_frame(T_world_to_frame_gradientvar.value());
+
       if (gradient_order > 0) {
         auto& dJ = ret.gradient().value();
-        Gradient<Matrix4d, Eigen::Dynamic>::type dTframe(Tframe.size(), nq);
-        dTframe.setZero();
-        auto dT_frame_to_world = matGradMultMat(bodies[expressed_in_body]->T, Tframe, bodies[expressed_in_body]->dTdq_new, dTframe);
-        auto dT_world_to_frame = dHomogTransInv(Isometry3d(bodies[expressed_in_body]->T * Tframe), dT_frame_to_world);
-        dJ = (dTransformAdjoint(Isometry3d(T_world_to_frame), J, dT_world_to_frame, dJ)).eval(); // eval to avoid aliasing
+        dJ = (dTransformAdjoint(T_world_to_frame, J, T_world_to_frame_gradientvar.gradient().value(), dJ)).eval(); // eval to avoid aliasing
       }
-      J = transformSpatialMotion(Isometry3d(T_world_to_frame), J);
+      J = transformSpatialMotion(T_world_to_frame, J);
     }
     return ret;
   }
@@ -1558,6 +1554,36 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJ
     J = transformSpatialMotion(Isometry3d(T_world_to_frame), J);
     return ret;
   }
+}
+
+template<typename Scalar>
+GradientVar<Scalar, SPACE_DIMENSION + 1, SPACE_DIMENSION + 1> RigidBodyManipulator::relativeTransform(int base_or_frame_ind, int body_or_frame_ind, int gradient_order)
+{
+  int nq = num_dof;
+  GradientVar<Scalar, SPACE_DIMENSION + 1, SPACE_DIMENSION + 1> ret(SPACE_DIMENSION + 1, SPACE_DIMENSION + 1, nq, gradient_order);
+
+  Matrix4d Tbase_frame;
+  int base_ind = parseBodyOrFrameID(base_or_frame_ind, &Tbase_frame);
+  Matrix4d Tbody_frame;
+  int body_ind = parseBodyOrFrameID(body_or_frame_ind, &Tbody_frame);
+
+  Isometry3d Tbaseframe_to_world = bodies[base_ind]->T_new * Isometry3d(Tbase_frame); // TODO: copy to Isometry3d
+  Isometry3d Tworld_to_baseframe = Tbaseframe_to_world.inverse();
+  Isometry3d Tbodyframe_to_world = bodies[body_ind]->T_new * Isometry3d(Tbody_frame); // TODO: copy to Isometry3d
+  ret.value() = (Tworld_to_baseframe * Tbodyframe_to_world).matrix();
+
+  if (gradient_order > 0) {
+    auto dTbase_frame = Matrix<Scalar, HOMOGENEOUS_TRANSFORM_SIZE, Dynamic>::Zero(HOMOGENEOUS_TRANSFORM_SIZE, nq).eval();
+    auto dTbaseframe_to_world = matGradMultMat(bodies[base_ind]->T_new.matrix(), Tbase_frame, bodies[base_ind]->dTdq_new, dTbase_frame);
+    auto dTworld_to_baseframe = dHomogTransInv(Tbaseframe_to_world, dTbaseframe_to_world);
+    auto dTbody_frame = Matrix<Scalar, HOMOGENEOUS_TRANSFORM_SIZE, Dynamic>::Zero(HOMOGENEOUS_TRANSFORM_SIZE, nq).eval();
+    auto dTbodyframe_to_world = matGradMultMat(bodies[body_ind]->T_new.matrix(), Tbody_frame, bodies[body_ind]->dTdq_new, dTbody_frame);
+    ret.gradient().value() = matGradMultMat(Tworld_to_baseframe.matrix(), Tbodyframe_to_world.matrix(), dTworld_to_baseframe, dTbodyframe_to_world);
+  }
+  if (gradient_order > 1) {
+    throw std::runtime_error("gradient order > 1 not supported");
+  }
+  return ret;
 }
 
 template <typename DerivedA, typename DerivedB>
@@ -2004,6 +2030,7 @@ template DLLEXPORT_RBM void RigidBodyManipulator::bodyKin(const int, const Matri
 template DLLEXPORT_RBM void RigidBodyManipulator::bodyKin(const int, const MatrixBase< MatrixXd >&, MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > *);
 
 template DLLEXPORT_RBM GradientVar<double, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJacobian<double>(int, int, int, int, std::vector<int>*);
+template DLLEXPORT_RBM GradientVar<double, SPACE_DIMENSION + 1, SPACE_DIMENSION + 1> RigidBodyManipulator::relativeTransform(int, int, int);
 //template DLLEXPORT_RBM void RigidBodyManipulator::geometricJacobian(int, int, int, PlainObjectBase< MatrixXd >&, std::vector<int>*);
 
 template DLLEXPORT_RBM void RigidBodyManipulator::HandC(double* const, double * const, MatrixBase< Map<MatrixXd> > * const, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<VectorXd> > &, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > * const);
