@@ -76,16 +76,19 @@ lcmgl.glColor3f(.2,.2,.9);
 figure(5)
 clf
 hold on
+
+seed_ind = 1;
 while true
   
   figure(3)
   clf
   imshow(potential_safe_grid, 'InitialMagnification', 'fit');
   
-
-  if length(safe_regions) == 0
-    [~, m0] = min(abs(Y(:,1) - options.initial_pose(2)));
-    [~, n0] = min(abs(X(1,:) - options.initial_pose(1)));
+  if seed_ind <= size(options.seeds, 2)
+    start = options.seeds([1,2,6],seed_ind);
+    seed_ind = seed_ind + 1;
+    [~, m0] = min(abs(Y(:,1) - start(2)));
+    [~, n0] = min(abs(X(1,:) - start(1)));
     i0 = sub2ind(s, m0, n0);
   else
     obs_dists = iris.terrain_grid.obs_dist(potential_safe_grid);
@@ -169,11 +172,11 @@ while true
   % z = (n'*point - n(1:2)'*[x;y])/n(3)
 
   dZ = Z - reshape((n0'*p0 - n0(1:2)'*[reshape(X,1,[]);reshape(Y,1,[])])/n0(3), size(Z));
-  figure(7)
-  clf
-  hold on
-  mesh(X, Y, dZ)
-  plot3(x0, y0, 0, 'ro', 'MarkerSize', 10, 'MarkerFaceColor', 'r')
+%   figure(7)
+%   clf
+%   hold on
+%   mesh(X, Y, dZ)
+%   plot3(x0, y0, 0, 'ro', 'MarkerSize', 10, 'MarkerFaceColor', 'r')
   for j = 1:length(collision_boxes.z)
     if isempty(collision_boxes.boxes{j})
       continue
@@ -221,13 +224,13 @@ while true
   end
 %   iris.drawing.animate_results(results);
 
-  figure(11)
-  clf
-  hold on
-  for j = 1:size(c_obs, 3)
-  iris.drawing.drawPolyFromVertices(c_obs(:,:,j), 'k');
-  end
-  iris.drawing.drawPolyFromVertices(iris.thirdParty.polytopes.lcon2vert(A,b)', 'r')
+%   figure(11)
+%   clf
+%   hold on
+%   for j = 1:size(c_obs, 3)
+%   iris.drawing.drawPolyFromVertices(c_obs(:,:,j), 'k');
+%   end
+%   iris.drawing.drawPolyFromVertices(iris.thirdParty.polytopes.lcon2vert(A,b)', 'r')
 
   figure(12)
   clf
