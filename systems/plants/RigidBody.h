@@ -86,6 +86,7 @@ public:
   Gradient<Vector6d, Eigen::Dynamic>::type dJdotVdq;
   Gradient<Vector6d, Eigen::Dynamic>::type dJdotVdv;
 
+  Isometry3d T_new;
   Gradient<Isometry3d::MatrixType, Eigen::Dynamic>::type dTdq_new;
 
   friend std::ostream& operator<<( std::ostream &out, const RigidBody &b);

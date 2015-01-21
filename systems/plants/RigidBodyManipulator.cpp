@@ -893,16 +893,15 @@ void RigidBodyManipulator::doKinematicsNew(double* q, bool compute_gradients, do
       double* q_body = &q[body.dofnum];
 
       // transform
-      Isometry3d T_body_to_parent = Isometry3d(body.Ttree) * body.getJoint().jointTransform(q_body); // TODO: Matrix4d -> Isometry3d conversion
-      Isometry3d T = Isometry3d(bodies[body.parent]->T) * T_body_to_parent;
-      body.T = T.matrix(); // TODO: Isometry3d -> Matrix4d conversion
+      Isometry3d T_body_to_parent = Isometry3d(body.Ttree) * body.getJoint().jointTransform(q_body);
+      body.T_new = bodies[body.parent]->T_new * T_body_to_parent;
 
       // motion subspace in body frame
       Eigen::MatrixXd* dSdq = compute_gradients ? &(body.dSdqi) : nullptr;
       body.getJoint().motionSubspace(q_body, body.S, dSdq);
 
       // motion subspace in world frame
-      body.J = transformSpatialMotion(T, body.S);
+      body.J = transformSpatialMotion(body.T_new, body.S);
 
       // qdot to v
       Eigen::MatrixXd* dqdot_to_v = compute_gradients ? &(body.dqdot_to_v_dqi) : nullptr;
@@ -918,12 +917,12 @@ void RigidBodyManipulator::doKinematicsNew(double* q, bool compute_gradients, do
         Gradient<Isometry3d::MatrixType, Eigen::Dynamic>::type dT_body_to_parentdq(HOMOGENEOUS_TRANSFORM_SIZE, nq);
         dT_body_to_parentdq.setZero();
         dT_body_to_parentdq.middleCols(body.dofnum, body.getJoint().getNumPositions()) = dT_body_to_parentdqi;
-        body.dTdq_new = matGradMultMat(bodies[body.parent]->T, T_body_to_parent.matrix(), bodies[body.parent]->dTdq_new, dT_body_to_parentdq);
+        body.dTdq_new = matGradMultMat(bodies[body.parent]->T_new.matrix(), T_body_to_parent.matrix(), bodies[body.parent]->dTdq_new, dT_body_to_parentdq);
 
         // gradient of motion subspace in world
         MatrixXd dSdq = MatrixXd::Zero(body.S.size(), nq);
         dSdq.middleCols(body.dofnum, body.getJoint().getNumPositions()) = body.dSdqi;
-        body.dJdq = dTransformAdjoint(T, body.S, body.dTdq_new, dSdq);
+        body.dJdq = dTransformAdjoint(body.T_new, body.S, body.dTdq_new, dSdq);
       }
 
       if (v) {
@@ -948,7 +947,7 @@ void RigidBodyManipulator::doKinematicsNew(double* q, bool compute_gradients, do
           body.getJoint().motionSubspaceDotTimesV(q_body, v_body, body.SdotV, dSdotVdqi, dSdotVdvi);
 
           // Jdotv
-          auto joint_accel = (crm(body.twist) * joint_twist + transformSpatialMotion(T, body.SdotV)).eval();
+          auto joint_accel = (crm(body.twist) * joint_twist + transformSpatialMotion(body.T_new, body.SdotV)).eval();
           body.JdotV = bodies[body.parent]->JdotV + joint_accel;
 
           if (compute_gradients) {
@@ -961,7 +960,7 @@ void RigidBodyManipulator::doKinematicsNew(double* q, bool compute_gradients, do
             dcrm(body.twist, joint_twist, body.dtwistdq, djoint_twistdq, &dcrm_twist_joint_twistdq); // TODO: make dcrm templated
             body.dJdotVdq = bodies[body.parent]->dJdotVdq
                 + dcrm_twist_joint_twistdq
-                + dTransformAdjoint(T, body.SdotV, body.dTdq_new, dSdotVdq);
+                + dTransformAdjoint(body.T_new, body.SdotV, body.dTdq_new, dSdotVdq);
 
             // dJdotvdv
             // TODO: exploit sparsity better
@@ -982,14 +981,14 @@ void RigidBodyManipulator::doKinematicsNew(double* q, bool compute_gradients, do
             Matrix<double, TWIST_SIZE, Eigen::Dynamic> dSdotVdv(TWIST_SIZE, nv);
             dSdotVdv.setZero();
             dSdotVdv.middleCols(body.dofnum, body.getJoint().getNumVelocities()) = *dSdotVdvi; // FIXME: using dofnum for velocity...
-            djoint_acceldv += transformSpatialMotion(T, dSdotVdv);
+            djoint_acceldv += transformSpatialMotion(body.T_new, dSdotVdv);
             body.dJdotVdv = bodies[body.parent]->dJdotVdv + djoint_acceldv;
           }
         }
       }
     }
     else {
-      body.T = body.Ttree;
+      body.T_new = Isometry3d(body.Ttree);
       // motion subspace in body frame is empty
       // motion subspace in world frame is empty
       // qdot to v is empty
@@ -1501,7 +1500,6 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJ
         dTframe.setZero();
         auto dT_frame_to_world = matGradMultMat(bodies[expressed_in_body]->T, Tframe, bodies[expressed_in_body]->dTdq_new, dTframe);
         auto dT_world_to_frame = dHomogTransInv(Isometry3d(bodies[expressed_in_body]->T * Tframe), dT_frame_to_world);
-//        std::cout << dT_world_to_frame << std::endl << std::endl;
         dJ = (dTransformAdjoint(Isometry3d(T_world_to_frame), J, dT_world_to_frame, dJ)).eval(); // eval to avoid aliasing
       }
       J = transformSpatialMotion(Isometry3d(T_world_to_frame), J);

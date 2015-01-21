@@ -16,6 +16,7 @@ RigidBody::RigidBody(void) :
     dqdot_to_v_dqi(0, 0),
     v_to_qdot(0, 0),
     dv_to_qdot_dqi(0, 0),
+    T_new(Isometry3d::Identity()),
     dTdq_new(HOMOGENEOUS_TRANSFORM_SIZE, 0),
     twist(TWIST_SIZE, 1),
     dtwistdq(TWIST_SIZE, 0),
