@@ -1,7 +1,7 @@
 classdef HybridRigidBodyMode < DrakeSystem
-% Simple shell around an RBM which adds one extra variable which emulates
-% the "mode" (but avoids the pitfalls of having many modes as individual
-% systems/transitions in the HybridDrakeSystem
+% Simple shell around an RBM which adds extra (discrete) variables to store 
+% the "mode", but avoids the pitfalls of having many copies of nearly
+% identical systems stored as different modes in the HybridDrakeSystem
 
   methods
     function obj = HybridRigidBodyMode(model,options)
