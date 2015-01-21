@@ -101,10 +101,13 @@ for test = 1 : nTests
   end_effector = randi(bodyRange);
   expressed_in = randi(bodyRange);
   
-  kinsol = robot.doKinematics(q,false,false);
+  options.use_mex = false;
+  options.compute_gradients = true;
+  kinsol = robot.doKinematics(q, [], [], [], options);
   [J, v_indices, dJdq] = robot.geometricJacobian(kinsol, base, end_effector, expressed_in);
   
-  kinsol_mex = robot.doKinematics(q, false, true);
+  options.use_mex = true;
+  kinsol_mex = robot.doKinematics(q, [], [], [], options);
   [J_mex, v_indices_mex, dJdq_mex] = robot.geometricJacobian(kinsol_mex, base, end_effector, expressed_in);
   
   valuecheck(J, J_mex);
