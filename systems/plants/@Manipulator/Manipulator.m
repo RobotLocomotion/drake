@@ -118,7 +118,7 @@ classdef Manipulator < DrakeSystem
       % Helper function to compute the internal forces required to enforce
       % equality constraints
 
-      alpha = 10;  % 1/time constant of position constraint satisfaction (see my latex rigid body notes)
+      alpha = 5;  % 1/time constant of position constraint satisfaction (see my latex rigid body notes)
       beta = 0;    % 1/time constant of velocity constraint satisfaction
 
       phi=[]; psi=[];
@@ -134,14 +134,16 @@ classdef Manipulator < DrakeSystem
         term1=Hinv*[J;dpsidqd]';
         term2=Hinv*tau;
 
-        constraint_force = -[J;dpsidqd]'*pinv([J*term1;dpsidqd*term1])*[J*term2 + Jdotqd + alpha*J*qd; dpsidqd*term2 + dpsidq*qd + beta*psi];
+        constraint_force = -[J;dpsidqd]'*pinv([J*term1;dpsidqd*term1])*[J*term2 + Jdotqd + 2*alpha*J*qd + alpha^2*phi; dpsidqd*term2 + dpsidq*qd + beta*psi];
       elseif ~isempty(obj.position_constraints)  % note: it didn't work to just have dpsidq,etc=[], so it seems like the best solution is to handle each case...
         [phi,J,dJ] = obj.positionConstraints(q);
         % todo: find a way to use Jdot*qd directly (ala Twan's code)
         % instead of computing dJ
         Jdotqd = dJ*reshape(qd*qd',obj.num_positions^2,1);
 
-        constraint_force = -J'*pinv(J*Hinv*J')*(J*Hinv*tau + Jdotqd + alpha*J*qd);
+        constraint_force = -J'*pinv(J*Hinv*J')*(J*Hinv*tau + Jdotqd + 2*alpha*J*qd + alpha^2*phi);
+        % useful for debugging:
+        % phi, phidot = J*qd, phiddot = J*Hinv*(tau+constraint_force)+Jdotqd
       elseif ~isempty(obj.velocity_constraints)
         [psi,J] = obj.velocityConstraints(q,qd);
         dpsidq = J(:,1:obj.num_positions);
