@@ -82,7 +82,11 @@ function [J, v_indices, dJdq] = geometricJacobianNew(obj, kinsol, base, end_effe
 compute_gradient = nargout > 2;
 
 [~, joint_path, signs] = findKinematicPath(obj, base, end_effector);
-v_indices = vertcat(obj.body(joint_path).velocity_num);
+if isempty(joint_path)
+  v_indices = zeros(0, 1); % size fix
+else
+  v_indices = vertcat(obj.body(joint_path).velocity_num);
+end
 
 if isempty(joint_path)
   J = zeros(6,0);
