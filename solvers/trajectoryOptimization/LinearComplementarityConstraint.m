@@ -43,7 +43,9 @@ classdef LinearComplementarityConstraint < CompositeConstraint
           nlcon = FunctionHandleConstraint(zeros(zdim,1),zeros(zdim,1)+slack,xdim+zdim,@prodfun);
           constraints = {bcon;lincon;nlcon};
         case 3
-          constraints = FunctionHandleConstraint(zeros(zdim,1),zeros(zdim,1),zdim,@fbfun);
+          constraints = FunctionHandleConstraint(-slack + zeros(zdim,1),slack + zeros(zdim,1),xdim+zdim,@fbfun);
+        otherwise
+          error('Unknown mode %d in LinearComplementarityConstraint',mode);
       end
       function [f,df] = prodfun(y)
         x = y(1:xdim);
