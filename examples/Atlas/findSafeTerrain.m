@@ -25,7 +25,7 @@ collision_boxes = struct('z', [0, 0.05, 0.35, 0.75, 1.15],...
      [-0.17, -0.17, 0.17, 0.17; 0.07, -0.07, 0.07, -0.07],...
      [-0.17, -0.17, 0.25, 0.25; .25, -.25, .25, -.25],...
      [-0.2, -0.2, 0.25, 0.25; .4, -.4, .4, -.4],...
-     [-0.4, -0.4, 0.3, 0.3; .4, -.4, .4, -.4]}});
+     [-0.4, -0.4, 0.3, 0.3; .45, -.45, .45, -.45]}});
 
 
 checkDependency('mosek');
@@ -80,9 +80,9 @@ hold on
 seed_ind = 1;
 while true
   
-  figure(3)
-  clf
-  imshow(potential_safe_grid, 'InitialMagnification', 'fit');
+%   figure(3)
+%   clf
+%   imshow(potential_safe_grid, 'InitialMagnification', 'fit');
   
   if seed_ind <= size(options.seeds, 2)
     start = options.seeds([1,2,6],seed_ind);
@@ -232,9 +232,9 @@ while true
 %   end
 %   iris.drawing.drawPolyFromVertices(iris.thirdParty.polytopes.lcon2vert(A,b)', 'r')
 
-  figure(12)
-  clf
-  iris.drawing.drawPolyFromVertices(iris.thirdParty.polytopes.lcon2vert(A,b)', 'r')
+%   figure(12)
+%   clf
+%   iris.drawing.drawPolyFromVertices(iris.thirdParty.polytopes.lcon2vert(A,b)', 'r')
   
   p = iris.TerrainRegion(A, b, C, d, p0, n0);
   safe_regions(end+1) = p;
