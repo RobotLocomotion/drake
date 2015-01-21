@@ -19,17 +19,21 @@ else
   if obj.use_new_kinsol
     [J, v_indices, dJ] = geometricJacobianNew(obj, kinsol, base, end_effector, expressed_in);
   else
-    [~, jointPath, signs] = findKinematicPath(obj, base, end_effector);
-    v_indices = velocityVectorIndices(obj.body, jointPath);
+    [~, joint_path, signs] = findKinematicPath(obj, base, end_effector);
+    v_indices = velocityVectorIndices(obj.body, joint_path);
+    if isempty(joint_path)
+      J = zeros(6,0);
+      return;
+    end
     
-    motionSubspaces = cell(1, length(jointPath));
-    for i = 1 : length(jointPath)
-      body = obj.body(jointPath(i));
+    motionSubspaces = cell(1, length(joint_path));
+    for i = 1 : length(joint_path)
+      body = obj.body(joint_path(i));
       motionSubspaces{i} = motionSubspace(body, kinsol.q(body.position_num));
     end
     
     transformedMotionSubspaces = cellfun(@transformMotionSubspace, ...
-      kinsol.T(jointPath), motionSubspaces, num2cell(signs'), 'UniformOutput', ...
+      kinsol.T(joint_path), motionSubspaces, num2cell(signs'), 'UniformOutput', ...
       false); % change frame from body to world
     J = cell2mat(transformedMotionSubspaces);
     J = transformTwists(inv(kinsol.T{expressed_in}), J); % change frame from world to expressedIn
