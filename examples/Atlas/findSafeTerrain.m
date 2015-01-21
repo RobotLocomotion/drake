@@ -11,21 +11,42 @@ p.addParameter('backward_dist', 0.5, @isnumeric);
 p.addParameter('max_slope_angle', 40 * pi/180, @isnumeric);
 p.addParameter('plane_dist_tol', 0.05, @isnumeric);
 p.addParameter('normal_angle_tol', 10 * pi/180, @isnumeric);
+p.addParameter('seeds', []);
 p.parse(terrain, initial_pose, navgoal, varargin{:});
 options = p.Results;
+
+original_foot_shape = [-0.12, -0.12, 0.11, 0.11;
+              0.04, -0.04, 0.04, -0.04];
+
+ 
+collision_boxes = struct('z', [0, 0.05, 0.35, 0.75, 1.15],...
+  'boxes', {{[],...
+     [-0.17, -0.17, 0.17, 0.17; 0.06, -0.06, 0.06, -0.06],...
+     [-0.17, -0.17, 0.25, 0.25; .25, -.25, .25, -.25],...
+     [-0.2, -0.2, 0.25, 0.25; .4, -.4, .4, -.4],...
+     [-0.35, -0.35, 0.25, 0.25; .4, -.4, .4, -.4]}});
+collision_max = 0;
+for j = 1:length(collision_boxes.boxes)
+  if ~isempty(collision_boxes.boxes{j})
+  collision_max = max(collision_max, max(max(abs(collision_boxes.boxes{j}))));
+  end
+end
+
+
 
 checkDependency('mosek');
 checkDependency('iris');
 
 FOOT_LENGTH = 0.2;
 
-planar_regions = iris.TerrainRegion.empty();
 region_obstacles = iris.Polytope.empty();
 
 dist_to_goal = norm(navgoal(1:2) - initial_pose(1:2));
 
 xprime = -options.backward_dist:options.resolution:min(dist_to_goal, options.forward_dist);
 yprime = -options.width/2:options.resolution:options.width/2;
+
+safe_regions = iris.TerrainRegion.empty();
 
 [Xp, Yp] = meshgrid(xprime, yprime);
 s = size(Xp);
@@ -45,7 +66,21 @@ Z = reshape(Z, s);
 slope_angle = reshape(slope_angle, s);
 potential_safe_grid = slope_angle < options.max_slope_angle;
 
+for dx = [-1,1]
+  for dy = [-1, 1]
+    dZ = Z(2:end-1,2:end-1) - Z((2+dx):(end-1+dx),(2+dy):(end-1+dy));
+    potential_safe_grid(2:end-1,2:end-1) = potential_safe_grid(2:end-1,2:end-1) & abs(dZ) < 0.1;
+  end
+end
+
+in_existing_regions_mask = true(s);
+
 lcmgl = LCMGLClient('planar_region');
+lcmgl.glColor3f(.2,.2,.9);
+
+% figure(5)
+% clf
+% hold on
 while true
 %   
 %   figure(3)
@@ -53,16 +88,32 @@ while true
 %   imshow(potential_safe_grid, 'InitialMagnification', 'fit');
   
 
-  obs_dists = iris.terrain_grid.obs_dist(potential_safe_grid);
-
-  [max_dist, i0] = max(obs_dists(:));
-  if max_dist < 0.5 * FOOT_LENGTH / options.resolution
-    break;
+  if length(safe_regions) == 0
+    [~, m0] = min(abs(Y(:,1) - options.initial_pose(2)));
+    [~, n0] = min(abs(X(1,:) - options.initial_pose(1)));
+    i0 = sub2ind(s, m0, n0);
+  else
+    obs_dists = iris.terrain_grid.obs_dist(potential_safe_grid);
+    [max_dist, i0] = max(obs_dists(:));
+    if max_dist < 0.5 * FOOT_LENGTH / options.resolution
+      break;
+    end
   end
+  
   x0 = X(i0);
   y0 = Y(i0);
   z0 = Z(i0);
+  p0 = [x0;y0;z0];
   n0 = normal(:,i0);
+  % Reorient the foot onto the terrain plane
+  c = cross([0;0;1], n0);
+  if norm(c) >= 1e-6
+    ax = c / norm(c);
+    angle = asin(norm(c));
+    Rplane = axis2rotmat([ax; angle]);
+  else
+    Rplane = eye(3);
+  end
 
   dist_to_plane = abs(n0'*[reshape(X, 1, []); reshape(Y, 1, []); reshape(Z, 1, [])] - n0'*[x0;y0;z0]);
   dist_to_plane = reshape(dist_to_plane, s);
@@ -71,16 +122,13 @@ while true
 
   normal_product = n0' * normal;
   normal_product = reshape(normal_product, s);
-%   normal_product = medfilt2(normal_product, [3,3], 'symmetric');
-%   normal_product = imfilter(normal_product, ones(3), 'symmetric');
   normal_angle_mask = normal_product > cos(options.normal_angle_tol);
   
-  in_existing_regions_mask = false(1, numel(X));
-  for j = 1:length(region_obstacles)
-    in_existing_regions_mask = in_existing_regions_mask | all(bsxfun(@le, region_obstacles(j).A(:,1:2) * [reshape(X, 1, []); reshape(Y, 1, [])], region_obstacles(j).b), 1);
-  end
-  in_existing_regions_mask = reshape(in_existing_regions_mask, s);
-  in_existing_regions_mask = ~in_existing_regions_mask;
+%   for j = 1:length(region_obstacles)
+%     in_existing_regions_mask = in_existing_regions_mask | all(bsxfun(@le, region_obstacles(j).A(:,1:2) * [reshape(X, 1, []); reshape(Y, 1, [])], region_obstacles(j).b), 1);
+%   end
+%   in_existing_regions_mask = reshape(in_existing_regions_mask, s);
+%   in_existing_regions_mask = ~in_existing_regions_mask;
 
   plane_mask = dist_mask & normal_angle_mask & in_existing_regions_mask;
   
@@ -89,7 +137,7 @@ while true
   end
 
   boundary_mask = logical(iris.terrain_grid.component_boundary(plane_mask, i0));
-  
+%   
 %   figure(4)
 %   clf
 %   subplot(321)
@@ -108,45 +156,95 @@ while true
 %   imshow(~boundary_mask, 'InitialMagnification', 'fit');
 %   title('boundary');
   
+%   figure(6)
+%   clf
+%   hold on
+  
   obs_x = X(boundary_mask);
   obs_y = Y(boundary_mask);
   obstacle_pts = reshape([reshape(obs_x, 1, []); reshape(obs_y, 1, [])], 2, 1, []);
-%   obstacle_pts = bsxfun(@plus, obstacle_pts, 0.5 * options.resolution * [-1, 1, 1, -1; -1, -1, 1, 1]);
-  obstacle_pts = bsxfun(@plus, obstacle_pts, 0.25 * options.resolution * [-1, 1, 1, -1; -1, -1, 1, 1]);
-
-  [A_bounds, b_bounds] = poly2lincon([X(end,1), X(end,end), X(1,end), X(1,1)], [Y(end,1), Y(end,end), Y(1,end), Y(1,1)]);
-  [A, b, C, d, results] = iris.inflate_region(obstacle_pts, A_bounds, b_bounds, [x0; y0], struct('require_containment', true));
+%   plot(obstacle_pts(1,:), obstacle_pts(2,:), 'k.');
+  theta_steps = initial_pose(6) + (-pi:pi/4:pi);
   
-  p = iris.TerrainRegion([A, zeros(size(A, 1), 1)], b, C, d, [x0;y0;z0], n0);
-  planar_regions(end+1) = p;
-  poly = p.getXYZPolytope().normalize();
-  poly.b = poly.b - FOOT_LENGTH;
-  region_obstacles(end+1) = poly;
+  c_obs = iris.cspace.cspace3(obstacle_pts, original_foot_shape, theta_steps);
   
-  lcmgl.glColor3f(.2,.2,.9);
-  planar_regions(end).getXYZPolytope().drawLCMGL(lcmgl);
-  lcmgl.switchBuffers();
-  
-  
-  inpoly = all(bsxfun(@minus, A * [reshape(X, 1, []); reshape(Y, 1, [])], b) <= options.resolution / 2, 1);
-  inpoly = reshape(inpoly, s);
-  potential_safe_grid = potential_safe_grid & ~inpoly;
-end
+    
+  % compute distance from the heightmap Z to the current plane
+  % n' * [x;y;z] = n' * point
+  % z = (n'*point - n(1:2)'*[x;y])/n(3)
 
-
-
-
-safe_regions = iris.TerrainRegion.empty();
-for j = 1:length(planar_regions)
-  lcmgl.glColor3f(.2,.2,.9);
-  planar_regions(j).getXYZPolytope().drawLCMGL(lcmgl);
-%   lcmgl.switchBuffers();
-  
-  safe_region = bodyCSpaceRegion(planar_regions(j), initial_pose(6), X, Y, Z);
-  if ~isempty(safe_region)
-    safe_regions(end+1) = safe_region;
+  dZ = Z - reshape((n0'*p0 - n0(1:2)'*[reshape(X,1,[]);reshape(Y,1,[])])/n0(3), size(Z));
+%   figure(7)
+%   clf
+%   hold on
+%   mesh(X, Y, dZ)
+%   plot3(x0, y0, 0, 'ro', 'MarkerSize', 10, 'MarkerFaceColor', 'r')
+  for j = 1:length(collision_boxes.z)
+    if isempty(collision_boxes.boxes{j})
+      continue
+    end
+    zmin = collision_boxes.z(j);
+    if j < length(collision_boxes.z)
+      zmax = collision_boxes.z(j+1);
+    else
+      zmax = inf;
+    end
+    z_range_mask = dZ >= zmin & dZ <= zmax;
+    boundary_mask = logical(iris.terrain_grid.component_boundary(~z_range_mask, i0));
+    obs_x = X(boundary_mask);
+    obs_y = Y(boundary_mask);
+    if ~isempty(obs_x)
+      obstacle_pts = reshape([reshape(obs_x, 1, []); reshape(obs_y, 1, [])], 2, 1, []);
+      figure(6)
+%       plot(obstacle_pts(1,:), obstacle_pts(2,:), 'k.');
+      c_obs = cat(3, c_obs, iris.cspace.cspace3(obstacle_pts, collision_boxes.boxes{j}, theta_steps));
+    end
   end
   
+
+  [A_bounds, b_bounds] = poly2lincon([X(end,1), X(end,end), X(1,end), X(1,1)], [Y(end,1), Y(end,end), Y(1,end), Y(1,1)]);
+  A_bounds = [A_bounds, zeros(size(A_bounds, 1), 1); zeros(2, size(A_bounds, 2)), [-1;1]];
+  b_bounds = [b_bounds; -theta_steps(1); theta_steps(end)];
+  [A, b, C, d, results] = iris.inflate_region(c_obs, A_bounds, b_bounds, [x0; y0; initial_pose(6)], struct('require_containment', true));
+%   iris.drawing.animate_results(results);
+  
+  p = iris.TerrainRegion(A, b, C, d, p0, n0);
+  safe_regions(end+1) = p.reducePolytope();
+  poly = iris.Polytope(A(:,1:2), b).normalize();
+  figure(5)
+  poly.plotVertices('r.-');
+%   poly = p.getXYZPolytope().normalize();
+%   poly.drawLCMGL(lcmgl);
+%   lcmgl.switchBuffers();
+  poly.b = poly.b - FOOT_LENGTH;
+%   region_obstacles(end+1) = poly;
+  in_existing_regions_mask(i0) = false;
+  potential_safe_grid(i0) = false;
+  
+  inpoly = all(bsxfun(@minus, A * [reshape(X, 1, []); reshape(Y, 1, []); initial_pose(6) + zeros(1,numel(X))], b) <= options.resolution / 2, 1);
+  inpoly = reshape(inpoly, s);
+  potential_safe_grid = potential_safe_grid & ~inpoly;
+  
+%     xs = iris.sample_convex_polytope(safe_regions(end).A, safe_regions(end).b, 100);
+%     lcmgl = LCMGLClient('sampled_foot_poses');
+%     lcmgl.glColor3f(.2,.9,.2);
+%     for j = 1:size(xs, 2)
+%       xyyaw = xs(:,j);
+%       % n1 * x + n2 * y + n3 * z = n*p
+%       % z = (n*p - n1x - n2y) / n3
+%       z = 0.05 + (n0' * p0 - n0(1:2)' * xyyaw(1:2)) / n0(3); 
+%       foot_shape = bsxfun(@plus, [xyyaw(1:2); z], Rplane * rpy2rotmat([0;0;xyyaw(3)]) * [original_foot_shape; zeros(1, size(original_foot_shape, 2))]);
+%       lcmgl.glBegin(lcmgl.LCMGL_LINES);
+%       k = convhull(foot_shape(1,:), foot_shape(2,:));
+%       for i = 1:length(k)-1
+%         lcmgl.glVertex3d(foot_shape(1,k(i)), foot_shape(2,k(i)), foot_shape(3,k(i)));
+%         lcmgl.glVertex3d(foot_shape(1,k(i+1)), foot_shape(2,k(i+1)), foot_shape(3,k(i+1)));
+%       end
+%       lcmgl.glEnd();
+%     end 
+%     lcmgl.switchBuffers();
+    disp('here');
+
 end
 lcmgl.switchBuffers();
 
