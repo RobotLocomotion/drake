@@ -4,13 +4,14 @@ p = inputParser();
 p.addRequired('terrain', @(x) typecheck(x,'RigidBodyTerrain'));
 p.addRequired('initial_pose', @(x) sizecheck(x, 6));
 p.addRequired('navgoal', @(x) sizecheck(x, 6));
-p.addParameter('resolution', 0.05, @isnumeric);
+p.addParameter('resolution', 0.025, @isnumeric);
 p.addParameter('forward_dist', 3, @isnumeric);
 p.addParameter('width', 2, @isnumeric);
 p.addParameter('backward_dist', 0.5, @isnumeric);
 p.addParameter('max_slope_angle', 40 * pi/180, @isnumeric);
 p.addParameter('plane_dist_tol', 0.05, @isnumeric);
 p.addParameter('normal_angle_tol', 10 * pi/180, @isnumeric);
+p.addParameter('xy_bounds', iris.Polytope(zeros(0,2),zeros(0,1)));
 p.addParameter('seeds', []);
 p.parse(terrain, initial_pose, navgoal, varargin{:});
 options = p.Results;
@@ -24,22 +25,13 @@ collision_boxes = struct('z', [0, 0.05, 0.35, 0.75, 1.15],...
      [-0.17, -0.17, 0.17, 0.17; 0.07, -0.07, 0.07, -0.07],...
      [-0.17, -0.17, 0.25, 0.25; .25, -.25, .25, -.25],...
      [-0.2, -0.2, 0.25, 0.25; .4, -.4, .4, -.4],...
-     [-0.35, -0.35, 0.25, 0.25; .4, -.4, .4, -.4]}});
-collision_max = 0;
-for j = 1:length(collision_boxes.boxes)
-  if ~isempty(collision_boxes.boxes{j})
-  collision_max = max(collision_max, max(max(abs(collision_boxes.boxes{j}))));
-  end
-end
-
+     [-0.4, -0.4, 0.3, 0.3; .4, -.4, .4, -.4]}});
 
 
 checkDependency('mosek');
 checkDependency('iris');
 
 FOOT_LENGTH = 0.2;
-
-region_obstacles = iris.Polytope.empty();
 
 dist_to_goal = norm(navgoal(1:2) - initial_pose(1:2));
 
@@ -66,10 +58,13 @@ Z = reshape(Z, s);
 slope_angle = reshape(slope_angle, s);
 potential_safe_grid = slope_angle < options.max_slope_angle;
 
+within_bounds = all(bsxfun(@le, options.xy_bounds.A * [reshape(X, 1, []); reshape(Y, 1, [])], options.xy_bounds.b), 1);
+potential_safe_grid = potential_safe_grid & reshape(within_bounds,s);
+
 for dx = [-1,1]
   for dy = [-1, 1]
     dZ = Z(2:end-1,2:end-1) - Z((2+dx):(end-1+dx),(2+dy):(end-1+dy));
-    potential_safe_grid(2:end-1,2:end-1) = potential_safe_grid(2:end-1,2:end-1) & abs(dZ) < 0.1;
+    potential_safe_grid(2:end-1,2:end-1) = potential_safe_grid(2:end-1,2:end-1) & abs(dZ) < 0.05;
   end
 end
 
@@ -82,10 +77,10 @@ figure(5)
 clf
 hold on
 while true
-%   
-%   figure(3)
-%   clf
-%   imshow(potential_safe_grid, 'InitialMagnification', 'fit');
+  
+  figure(3)
+  clf
+  imshow(potential_safe_grid, 'InitialMagnification', 'fit');
   
 
   if length(safe_regions) == 0
@@ -95,7 +90,7 @@ while true
   else
     obs_dists = iris.terrain_grid.obs_dist(potential_safe_grid);
     [max_dist, i0] = max(obs_dists(:));
-    if max_dist < 1.0 * FOOT_LENGTH / options.resolution
+    if max_dist < 0.5 * FOOT_LENGTH / options.resolution
       break;
     end
   end
@@ -174,11 +169,11 @@ while true
   % z = (n'*point - n(1:2)'*[x;y])/n(3)
 
   dZ = Z - reshape((n0'*p0 - n0(1:2)'*[reshape(X,1,[]);reshape(Y,1,[])])/n0(3), size(Z));
-%   figure(7)
-%   clf
-%   hold on
-%   mesh(X, Y, dZ)
-%   plot3(x0, y0, 0, 'ro', 'MarkerSize', 10, 'MarkerFaceColor', 'r')
+  figure(7)
+  clf
+  hold on
+  mesh(X, Y, dZ)
+  plot3(x0, y0, 0, 'ro', 'MarkerSize', 10, 'MarkerFaceColor', 'r')
   for j = 1:length(collision_boxes.z)
     if isempty(collision_boxes.boxes{j})
       continue
@@ -191,6 +186,12 @@ while true
     end
     z_range_mask = dZ >= zmin & dZ <= zmax;
     boundary_mask = logical(iris.terrain_grid.component_boundary(~z_range_mask, i0));
+%     figure(9)
+%     clf
+%     subplot 211
+%     imshow(z_range_mask, 'InitialMagnification', 'fit');
+%     subplot 212
+%     imshow(boundary_mask, 'InitialMagnification', 'fit');
     obs_x = X(boundary_mask);
     obs_y = Y(boundary_mask);
     if ~isempty(obs_x)
@@ -203,25 +204,46 @@ while true
   
 
   [A_bounds, b_bounds] = poly2lincon([X(end,1), X(end,end), X(1,end), X(1,1)], [Y(end,1), Y(end,end), Y(1,end), Y(1,1)]);
+  A_bounds = [A_bounds; options.xy_bounds.A];
+  b_bounds = [b_bounds; options.xy_bounds.b];
   A_bounds = [A_bounds, zeros(size(A_bounds, 1), 1); zeros(2, size(A_bounds, 2)), [-1;1]];
   b_bounds = [b_bounds; -theta_steps(1); theta_steps(end)];
-  [A, b, C, d, results] = iris.inflate_region(c_obs, A_bounds, b_bounds, [x0; y0; initial_pose(6)], struct('require_containment', true));
+  try
+    [A, b, C, d, results] = iris.inflate_region(c_obs, A_bounds, b_bounds, [x0; y0; initial_pose(6)], struct('require_containment', true, 'error_on_infeas_start', true));
+  catch e
+    if strcmp(e.identifier, 'IRIS:InfeasibleStart')     
+      in_existing_regions_mask(i0) = false;
+      potential_safe_grid(i0) = false;
+      continue
+    else
+      rethrow(e)
+    end
+  end
 %   iris.drawing.animate_results(results);
+
+  figure(11)
+  clf
+  hold on
+  for j = 1:size(c_obs, 3)
+  iris.drawing.drawPolyFromVertices(c_obs(:,:,j), 'k');
+  end
+  iris.drawing.drawPolyFromVertices(iris.thirdParty.polytopes.lcon2vert(A,b)', 'r')
+
+  figure(12)
+  clf
+  iris.drawing.drawPolyFromVertices(iris.thirdParty.polytopes.lcon2vert(A,b)', 'r')
   
   p = iris.TerrainRegion(A, b, C, d, p0, n0);
   safe_regions(end+1) = p;
   poly = iris.Polytope(A(:,1:2), b).normalize();
-  figure(5)
-  poly.plotVertices('r.-');
-%   poly = p.getXYZPolytope().normalize();
-%   poly.drawLCMGL(lcmgl);
-%   lcmgl.switchBuffers();
+%   figure(5)
+%   poly.plotVertices('r.-');
   poly.b = poly.b - FOOT_LENGTH;
 %   region_obstacles(end+1) = poly;
   in_existing_regions_mask(i0) = false;
   potential_safe_grid(i0) = false;
   
-  inpoly = all(bsxfun(@minus, A * [reshape(X, 1, []); reshape(Y, 1, []); initial_pose(6) + zeros(1,numel(X))], b) <= options.resolution / 2, 1);
+  inpoly = all(bsxfun(@minus, A * [reshape(X, 1, []); reshape(Y, 1, []); initial_pose(6) + zeros(1,numel(X))], b) <= FOOT_LENGTH / 2, 1);
   inpoly = reshape(inpoly, s);
   potential_safe_grid = potential_safe_grid & ~inpoly;
   
@@ -243,7 +265,7 @@ while true
 %       lcmgl.glEnd();
 %     end 
 %     lcmgl.switchBuffers();
-    disp('here');
+%     disp('here');
 
 end
 lcmgl.switchBuffers();

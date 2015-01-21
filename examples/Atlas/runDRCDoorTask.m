@@ -24,8 +24,8 @@ options.terrain = heightmap;
 
 while true
 %   profile on
-  options.navgoal = [options.initial_pose(1)+3; 0;0;0;0;pi/2];
-  options.safe_regions = findSafeTerrain(heightmap, options.initial_pose, options.navgoal);
+  options.navgoal = [options.initial_pose(1)+3; 0;0;0;0;0];
+  options.safe_regions = findSafeTerrain(heightmap, options.initial_pose, options.navgoal, 'width', 1.5, 'xy_bounds', iris.Polytope.fromBounds([-1,-.5], [2, .5]));
   try
     xtraj = runAtlasWalkingPlanning(options);
   catch e
