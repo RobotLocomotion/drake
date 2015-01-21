@@ -33,7 +33,7 @@ classdef RigidBodyManipulator < Manipulator
     robot_position_frames;
     robot_velocity_frames;
     
-    use_new_kinsol = false;
+    use_new_kinsol = true;
   end
 
   properties (Access=public)  % i think these should be private, but probably needed to access them from mex? - Russ
