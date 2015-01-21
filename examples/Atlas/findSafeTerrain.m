@@ -15,13 +15,13 @@ p.addParameter('seeds', []);
 p.parse(terrain, initial_pose, navgoal, varargin{:});
 options = p.Results;
 
-original_foot_shape = [-0.12, -0.12, 0.11, 0.11;
+original_foot_shape = [-0.12, -0.12, 0.13, 0.13;
               0.04, -0.04, 0.04, -0.04];
 
  
 collision_boxes = struct('z', [0, 0.05, 0.35, 0.75, 1.15],...
   'boxes', {{[],...
-     [-0.17, -0.17, 0.17, 0.17; 0.06, -0.06, 0.06, -0.06],...
+     [-0.17, -0.17, 0.17, 0.17; 0.07, -0.07, 0.07, -0.07],...
      [-0.17, -0.17, 0.25, 0.25; .25, -.25, .25, -.25],...
      [-0.2, -0.2, 0.25, 0.25; .4, -.4, .4, -.4],...
      [-0.35, -0.35, 0.25, 0.25; .4, -.4, .4, -.4]}});
@@ -78,9 +78,9 @@ in_existing_regions_mask = true(s);
 lcmgl = LCMGLClient('planar_region');
 lcmgl.glColor3f(.2,.2,.9);
 
-% figure(5)
-% clf
-% hold on
+figure(5)
+clf
+hold on
 while true
 %   
 %   figure(3)
@@ -95,7 +95,7 @@ while true
   else
     obs_dists = iris.terrain_grid.obs_dist(potential_safe_grid);
     [max_dist, i0] = max(obs_dists(:));
-    if max_dist < 0.5 * FOOT_LENGTH / options.resolution
+    if max_dist < 1.0 * FOOT_LENGTH / options.resolution
       break;
     end
   end
@@ -195,7 +195,7 @@ while true
     obs_y = Y(boundary_mask);
     if ~isempty(obs_x)
       obstacle_pts = reshape([reshape(obs_x, 1, []); reshape(obs_y, 1, [])], 2, 1, []);
-      figure(6)
+%       figure(6)
 %       plot(obstacle_pts(1,:), obstacle_pts(2,:), 'k.');
       c_obs = cat(3, c_obs, iris.cspace.cspace3(obstacle_pts, collision_boxes.boxes{j}, theta_steps));
     end
@@ -209,7 +209,7 @@ while true
 %   iris.drawing.animate_results(results);
   
   p = iris.TerrainRegion(A, b, C, d, p0, n0);
-  safe_regions(end+1) = p.reducePolytope();
+  safe_regions(end+1) = p;
   poly = iris.Polytope(A(:,1:2), b).normalize();
   figure(5)
   poly.plotVertices('r.-');
