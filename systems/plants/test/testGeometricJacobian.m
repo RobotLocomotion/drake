@@ -11,6 +11,7 @@ robot = RigidBodyManipulator('FallingBrick.urdf',options);
 checkTransformDerivatives(robot);
 if robot.use_new_kinsol
   checkJacobianGradients(robot);
+  checkMex(robot);
 end
 end
 
@@ -19,6 +20,7 @@ robot = createAtlas(floatingJointType);
 checkTransformDerivatives(robot);
 if robot.use_new_kinsol
   checkJacobianGradients(robot);
+  checkMex(robot);
 end
 end
 
@@ -82,6 +84,32 @@ for test = 1 : nTests
   [~, dJdq_geval] = geval(1, @(q) gevalFunction(robot, q, base, end_effector, expressed_in), q, option);
   valuecheck(dJdq_geval, dJdq, 1e-5);
   
+end
+end
+
+function checkMex(robot)
+nb = length(robot.body);
+
+bodyRange = [1, nb];
+nTests = 10;
+
+for test = 1 : nTests
+  %   q = getRandomConfiguration(robot);
+  q = randn(robot.getNumPositions(), 1);
+  
+  base = randi(bodyRange);
+  end_effector = randi(bodyRange);
+  expressed_in = randi(bodyRange);
+  
+  kinsol = robot.doKinematics(q,false,false);
+  [J, v_indices, dJdq] = robot.geometricJacobian(kinsol, base, end_effector, expressed_in);
+  
+  kinsol_mex = robot.doKinematics(q, false, true);
+  [J_mex, v_indices_mex, dJdq_mex] = robot.geometricJacobian(kinsol_mex, base, end_effector, expressed_in);
+  
+  valuecheck(J, J_mex);
+  valuecheck(v_indices, v_indices_mex);
+  valuecheck(dJdq, dJdq_mex);
 end
 end
 
