@@ -27,7 +27,7 @@ while true
   options.navgoal = [options.initial_pose(1)+3; 0;0;0;0;0];
   options.safe_regions = findSafeTerrain(heightmap, options.initial_pose, options.navgoal,...
     'width', 1.5, ...
-    'xy_bounds', iris.Polytope.fromBounds([-1,-.5], [2, .5]),...
+    'xy_bounds', iris.Polytope.fromBounds([-1,-.5], [3, .5]),...
     'seeds', [1;0;0;0;0;pi/2]);
   try
     xtraj = runAtlasWalkingPlanning(options);
@@ -45,7 +45,7 @@ while true
   options.x0 = xf;
   options.initial_pose = xf(1:6);
   disp('pausing for playback...use dbcont to continue');
-  keyboard()
+%   keyboard()
   options.initial_pose
 end
 

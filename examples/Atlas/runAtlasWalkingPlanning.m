@@ -10,6 +10,7 @@ if nargin<1, options = struct(); end
 if ~isfield(options,'terrain'), options.terrain = RigidBodyFlatTerrain(); end
 if ~isfield(options,'navgoal'), options.navgoal = [1.5;0;0;0;0;0]; end
 if ~isfield(options,'safe_regions'), options.safe_regions = []; end
+if ~isfield(options,'step_params'), options.step_params = struct(); end
 
 checkDependency('lcmgl');
 
@@ -40,7 +41,7 @@ lfoot_navgoal(1:3) = lfoot_navgoal(1:3) + R*[0;0.13;0];
 
 % Plan footsteps to the goal
 goal_pos = struct('right', rfoot_navgoal, 'left', lfoot_navgoal);
-footstep_plan = r.planFootsteps(q0, goal_pos, options.safe_regions, struct('method_handle', @footstepPlanner.humanoids2014));
+footstep_plan = r.planFootsteps(q0, goal_pos, options.safe_regions, struct('method_handle', @footstepPlanner.humanoids2014, 'step_params', options.step_params));
 if length(footstep_plan.footsteps) < 3
   error('Drake:NoFeasibleFootstepPlan', 'No feasible footstep plan could be found');
 end
@@ -78,7 +79,7 @@ else
   footstep_plan.draw_2d();
 end
 
-v.playback(xtraj, struct('slider', true));
+v.playback(xtraj, struct('slider', false));
 
 
 end
