@@ -33,9 +33,12 @@ while test_number < n_tests
     points = randn(3, nPoints);
     
     option.grad_method = 'taylorvar';
-    kinsol = robot.doKinematics(q, true, false);
+    kinsol_options.use_mex = false;
+    kinsol_options.compute_gradients = true;
+    kinsol_options_geval.use_mex = kinsol_options.use_mex;
+    kinsol = robot.doKinematics(q, [], [], [], kinsol_options);
     [~, J, dJ] = robot.forwardKinV(kinsol, end_effector, points, rotation_type, base);
-    [~, J_geval, dJ_geval] = geval(1, @(q) robot.forwardKinV(robot.doKinematics(q, false, false), end_effector, points, rotation_type, base), q, option);
+    [~, J_geval, dJ_geval] = geval(1, @(q) robot.forwardKinV(robot.doKinematics(q, [], [], [], kinsol_options_geval), end_effector, points, rotation_type, base), q, option);
     valuecheck(J_geval, J, 1e-10);
     valuecheck(dJ_geval, dJ, 1e-10);
     test_number = test_number + 1;

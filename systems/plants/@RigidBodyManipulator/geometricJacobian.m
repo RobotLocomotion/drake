@@ -17,7 +17,11 @@ if (kinsol.mex)
   end
 else
   if obj.use_new_kinsol
-    [J, v_indices, dJ] = geometricJacobianNew(obj, kinsol, base, end_effector, expressed_in);
+    if nargout > 2
+      [J, v_indices, dJ] = geometricJacobianNew(obj, kinsol, base, end_effector, expressed_in);
+    else
+      [J, v_indices] = geometricJacobianNew(obj, kinsol, base, end_effector, expressed_in);
+    end
   else
     [~, joint_path, signs] = findKinematicPath(obj, base, end_effector);
     v_indices = velocityVectorIndices(obj.body, joint_path);
@@ -90,7 +94,9 @@ end
 
 if isempty(joint_path)
   J = zeros(6,0);
-  dJdq = zeros(0, obj.num_positions);
+  if compute_gradient
+    dJdq = zeros(0, obj.num_positions);
+  end
   return;
 end
 
