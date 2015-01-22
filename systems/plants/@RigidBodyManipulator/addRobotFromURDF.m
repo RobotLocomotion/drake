@@ -149,7 +149,7 @@ for i=1:length(rootlink)
   if (~isempty(options.floating))
     model = addFloatingBase(model,weldLink,rootlink(i),xyz,rpy,options.floating);
   else
-    model = addJoint(model,'','fixed',weldLink,rootlink(i),xyz,rpy);
+    model = addJoint(model,'weld','fixed',weldLink,rootlink(i),xyz,rpy);
   end
 end
 

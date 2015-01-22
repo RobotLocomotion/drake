@@ -49,7 +49,7 @@ classdef RigidBodyCylinder < RigidBodyGeometry
         % just draw a circle in the viewing plane
         Tview = [x_axis, y_axis, view_axis]';
         valuecheck(svd(Tview),[1;1;1]);  % assert that it's orthonormal
-        theta = 0:0.1:2*pi;
+        theta = 0:0.3:2*pi;
         pts = Tview'*obj.radius*[cos(theta); sin(theta); 0*theta+obj.len/2] + repmat(obj.T(1:3,4),1,length(theta));
         x = pts(1,:)';
         y = pts(2,:)';
