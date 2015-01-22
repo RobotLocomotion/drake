@@ -160,7 +160,13 @@ function [pose, q0] = solve_for_pose(constraints, q0)
   end
   [q0, info] = inverseKin(biped,q0,q0,constraint_ptrs{:},ikoptions);
   if info >= 10
-    error('Drake:planSwingPitched', 'The foot pose IK problem could not be solved. This should not happen and likely indicates a bug in the constraints.');
+    % try again?
+    [q0, info] = inverseKin(biped,q0,q0,constraint_ptrs{:},ikoptions);
+    if info < 10
+      warning('Whoa...tried inverseKin again and got a different result...');
+    else
+      error('Drake:planSwingPitched', 'The foot pose IK problem could not be solved. This should not happen and likely indicates a bug in the constraints.');
+    end
   end
   if DEBUG
     v.draw(0, q0);

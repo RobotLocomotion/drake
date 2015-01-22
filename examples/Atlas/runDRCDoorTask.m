@@ -5,7 +5,7 @@ checkDependency('mosek');
 
 options.floating = true;
 options.replace_cylinders_with_capsules = false;
-options.atlas_version = 4;
+options.atlas_version = 3;
 r = Atlas('urdf/atlas_minimal_contact.urdf',options);
 
 door = RigidBodyManipulator();
