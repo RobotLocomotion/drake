@@ -1,5 +1,6 @@
 function runDRCPracticeTask
 
+checkDependency('iris');
 task_number=2; % consider taking the task number as an input if/when we load the other tasks
 
 clear gazeboModelPath;
@@ -18,9 +19,13 @@ options.initial_pose = [-3;0;0;0;0;0];
 % options.initial_pose = [0;0;0;0;0;0]
 % options.initial_pose = [-1;0;0;0;0;pi/4];
 
+region_server = iris.terrain_grid.Server();
+region_server.addHeightmap(1, options.terrain);
+
 while true
 %   profile on
   options.navgoal = [options.initial_pose(1)+3; 0;0;0;0;0];
+  % options.safe_regions = region_server.findSafeTerrainRegions(1, 
   options.safe_regions = findSafeTerrain(options.terrain, options.initial_pose, options.navgoal);
   try
     xtraj = runAtlasWalkingPlanning(options);
