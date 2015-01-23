@@ -39,7 +39,7 @@ r = compile(r);
 
 % set initial state to fixed point
 load(fullfile(getDrakePath,'examples','Atlas','data','atlas_fp.mat'));
-if ~isfield(options,'initial_pose'), xstar(1:6) = options.initial_pose; end
+if isfield(options,'initial_pose'), xstar(1:6) = options.initial_pose; end
 xstar = r.resolveConstraints(xstar);
 r = r.setInitialState(xstar);
 
