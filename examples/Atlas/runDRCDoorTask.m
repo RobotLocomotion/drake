@@ -1,4 +1,5 @@
 function runDRCDoorTask
+% Plan a walking trajectory to pass through a simulated doorframe. 
 
 checkDependency('iris');
 checkDependency('mosek');

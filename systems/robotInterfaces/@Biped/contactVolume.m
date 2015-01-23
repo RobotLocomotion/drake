@@ -1,4 +1,9 @@
 function [contact_length, contact_width] = contactVolume(biped, swing1, swing2)
+% Find the effective length and width of the prism swept out by the robot's foot as it moves
+% from swing1 to swing2. 
+% @param biped a Biped
+% @param swing1 a Footstep
+% @param swing2 a Footstep
 
 xhat = swing2.pos(1:2) - swing1.pos(1:2);
 xhat = xhat / norm(xhat);
