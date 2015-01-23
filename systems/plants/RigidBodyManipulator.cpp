@@ -1573,11 +1573,9 @@ GradientVar<Scalar, SPACE_DIMENSION + 1, SPACE_DIMENSION + 1> RigidBodyManipulat
   ret.value() = (Tworld_to_baseframe * Tbodyframe_to_world).matrix();
 
   if (gradient_order > 0) {
-    auto dTbase_frame = Matrix<Scalar, HOMOGENEOUS_TRANSFORM_SIZE, Dynamic>::Zero(HOMOGENEOUS_TRANSFORM_SIZE, nq).eval();
-    auto dTbaseframe_to_world = matGradMultMat(bodies[base_ind]->T_new.matrix(), Tbase_frame, bodies[base_ind]->dTdq_new, dTbase_frame);
+    auto dTbaseframe_to_world = matGradMult(bodies[base_ind]->dTdq_new, Tbase_frame);
     auto dTworld_to_baseframe = dHomogTransInv(Tbaseframe_to_world, dTbaseframe_to_world);
-    auto dTbody_frame = Matrix<Scalar, HOMOGENEOUS_TRANSFORM_SIZE, Dynamic>::Zero(HOMOGENEOUS_TRANSFORM_SIZE, nq).eval();
-    auto dTbodyframe_to_world = matGradMultMat(bodies[body_ind]->T_new.matrix(), Tbody_frame, bodies[body_ind]->dTdq_new, dTbody_frame);
+    auto dTbodyframe_to_world = matGradMult(bodies[body_ind]->dTdq_new, Tbody_frame);
     ret.gradient().value() = matGradMultMat(Tworld_to_baseframe.matrix(), Tbodyframe_to_world.matrix(), dTworld_to_baseframe, dTbodyframe_to_world);
   }
   if (gradient_order > 1) {
@@ -1758,6 +1756,14 @@ void RigidBodyManipulator::forwarddJac(const int body_or_frame_id, const MatrixB
   MatrixXd dJ_t = Map<MatrixXd>(dJ_reshaped.data(), num_dof*num_dof, 3*n_pts);
   dJ = dJ_t.transpose();
 }
+
+template <typename Scalar, typename DerivedPoints>
+GradientVar<Scalar, Dynamic, Dynamic> RigidBodyManipulator::forwardJacV(int body_or_frame_ind, const MatrixBase<DerivedPoints> points, int rotation_type, int base_or_frame_ind)
+{
+//  GradientVar<Scalar, SPACE_DIMENSION + 1, SPACE_DIMENSION + 1> T_gradientvar = relativeTransform(base_or_frame_ind, body_or_frame_ind, gradient_order);
+
+}
+
 
 template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD, typename DerivedE, typename DerivedF>
 void RigidBodyManipulator::HandC(double * const q, double * const qd, MatrixBase<DerivedA> * const f_ext, MatrixBase<DerivedB> &H, MatrixBase<DerivedC> &C, MatrixBase<DerivedD> *dH, MatrixBase<DerivedE> *dC, MatrixBase<DerivedF> * const df_ext)
