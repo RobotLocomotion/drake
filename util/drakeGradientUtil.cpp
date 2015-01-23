@@ -1,7 +1,6 @@
 #include "drakeGradientUtil.h"
 #include <cassert>
 
-
 /*
  * Profile results: looks like return value optimization works; a version that sets a reference
  * instead of returning a value is just as fast and this is cleaner.
@@ -51,19 +50,23 @@ matGradMultMat(
 //  return Eigen::kroneckerProduct(Eigen::MatrixXd::Identity(B.cols(), B.cols()), A) * dB + Eigen::kroneckerProduct(B.transpose(), Eigen::MatrixXd::Identity(A.rows(), A.rows())) * dA;
 }
 
-template<typename DerivedDA, typename Derivedb>
-typename MatGradMult<DerivedDA, Derivedb>::type
-matGradMult(const Eigen::MatrixBase<DerivedDA>& dA, const Eigen::MatrixBase<Derivedb>& b) {
-  typename DerivedDA::Index nq = dA.cols();
-  assert(b.cols() == 1);
-  assert(dA.rows() % b.rows() == 0);
-  typename DerivedDA::Index A_rows = dA.rows() / b.rows();
+template<typename DerivedDA, typename DerivedB>
+typename MatGradMult<DerivedDA, DerivedB>::type
+matGradMult(const Eigen::MatrixBase<DerivedDA>& dA, const Eigen::MatrixBase<DerivedB>& B) {
+  assert(dA.rows() % B.rows() == 0);
+  typename DerivedDA::Index A_rows = dA.rows() / B.rows();
+  const int A_rows_at_compile_time = (DerivedDA::RowsAtCompileTime == Eigen::Dynamic || DerivedB::RowsAtCompileTime == Eigen::Dynamic) ?
+      Eigen::Dynamic :
+      static_cast<int>(DerivedDA::RowsAtCompileTime / DerivedB::RowsAtCompileTime);
 
-  typename MatGradMult<DerivedDA, Derivedb>::type ret(A_rows, nq);
-
+  typename MatGradMult<DerivedDA, DerivedB>::type ret(A_rows * B.cols(), dA.cols());
   ret.setZero();
-  for (int row = 0; row < b.rows(); row++) {
-    ret += b(row, 0) * dA.block(row * A_rows, 0, A_rows, nq);
+  for (int col = 0; col < B.cols(); col++) {
+    auto block = ret.template block<A_rows_at_compile_time, DerivedDA::ColsAtCompileTime>(col * A_rows, 0, A_rows, dA.cols());
+    for (int row = 0; row < B.rows(); row++) {
+      // B * dA part:
+      block.noalias() += B(row, col) * dA.template block<A_rows_at_compile_time, DerivedDA::ColsAtCompileTime>(row * A_rows, 0, A_rows, dA.cols());
+    }
   }
   return ret;
 }
@@ -141,11 +144,12 @@ void setSubMatrixGradient(Eigen::MatrixBase<DerivedA>& dM, const Eigen::MatrixBa
 }
 
 // explicit instantiations
-#define MAKE_MATGRADMULT_EXPLICIT_INSTANTIATION(Type, DARows, DACols, BRows) \
-		template DLLEXPORT MatGradMult<Eigen::Matrix<Type, DARows, DACols>, Eigen::Matrix<Type, BRows, 1>>::type\
-		matGradMult(const Eigen::MatrixBase< Eigen::Matrix<Type, DARows, DACols> >& dA, const Eigen::MatrixBase< Eigen::Matrix<Type, BRows, 1> >& b);
-MAKE_MATGRADMULT_EXPLICIT_INSTANTIATION(double, 9, Eigen::Dynamic, 3)
-MAKE_MATGRADMULT_EXPLICIT_INSTANTIATION(double, Eigen::Dynamic, Eigen::Dynamic, 6)
+#define MAKE_MATGRADMULT_EXPLICIT_INSTANTIATION(Type, DARows, DACols, BRows, BCols) \
+		template DLLEXPORT MatGradMult<Eigen::Matrix<Type, DARows, DACols>, Eigen::Matrix<Type, BRows, BCols>>::type\
+		matGradMult(const Eigen::MatrixBase< Eigen::Matrix<Type, DARows, DACols> >& dA, const Eigen::MatrixBase< Eigen::Matrix<Type, BRows, BCols> >& b);
+MAKE_MATGRADMULT_EXPLICIT_INSTANTIATION(double, 9, Eigen::Dynamic, 3, 1)
+MAKE_MATGRADMULT_EXPLICIT_INSTANTIATION(double, Eigen::Dynamic, Eigen::Dynamic, 6, 1)
+MAKE_MATGRADMULT_EXPLICIT_INSTANTIATION(double, 16, Eigen::Dynamic, 4, 4)
 #undef MAKE_MATGRADMULT_EXPLICIT_INSTANTIATION
 
 #define MAKE_MATGRADMULT_MAP_B_EXPLICIT_INSTANTIATION(Type, DARows, DACols, BRows) \
