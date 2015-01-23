@@ -71,6 +71,4 @@ end
 r.constructVisualizer().playback(combined_xtraj, struct('slider', true));
 rangecheck(options.initial_pose(1:2), [4;-1.5], [inf; 1.5]);
 
-
-
-
+%TIMEOUT 1000
