@@ -16,6 +16,7 @@ else
   save data/practice_terrain.mat height_map;
 end
 
+r = r.setTerrain(height_map).compile();
 options.terrain = height_map;  
 options.initial_pose = [-3;0;0;0;0;0];
 % options.initial_pose = [0;0;0;0;0;0]
@@ -27,6 +28,7 @@ region_server.addHeightmap(1, options.terrain);
 region_args = {r.getFootstepPlanningCollisionModel()};
 seeds = [[-0.6;-0.2;0;0;0;pi/4]];
 i = 1;
+combined_xtraj = [];
 while true
   options.navgoal = [options.initial_pose(1)+3; 0;0;0;0;0];
   options.safe_regions = region_server.findSafeTerrainRegions(1, region_args{:}, 'xy_bounds', iris.Polytope.fromBounds(options.initial_pose(1:2) - [0.5;1], options.initial_pose(1:2) + [3; 1]), 'seeds', seeds);
@@ -53,12 +55,20 @@ while true
   xf = xtraj.eval(breaks(end));
   options.x0 = xf;
   options.initial_pose = xf(1:6);
+  if isempty(combined_xtraj)
+    combined_xtraj = xtraj;
+  else
+    b = combined_xtraj.getBreaks();
+    xtraj = xtraj.shiftTime(b(end)-breaks(1));
+    combined_xtraj = combined_xtraj.append(xtraj);
+  end
   % disp('pausing for playback...use dbcont to continue');
   % keyboard()
   options.initial_pose
 end
 
-rangecheck(options.initial_pose(1:2), [2;-1.5], [inf, 1.5]);
+r.constructVisualizer().playback(combined_xtraj, struct('slider', true));
+rangecheck(options.initial_pose(1:2), [4;-1.5], [inf; 1.5]);
 
 
 
