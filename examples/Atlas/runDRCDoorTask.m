@@ -69,5 +69,5 @@ while true
   options.initial_pose;
 end
 
-r.constructVisualizer().playback(combined_xtraj);
+r.constructVisualizer().playback(combined_xtraj, struct('slider', true));
 rangecheck(options.initial_pose(1:2), [1;-1], [inf; 1]);
