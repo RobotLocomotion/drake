@@ -1,4 +1,5 @@
 function pos = fitPoseToNormal(pos, normal)
+% Given a 6 DOF pose and a normal, reorient the pose to match the normal but preserve its intrinsic yaw.
 
 sizecheck(pos(:,1), [6,1]);
 

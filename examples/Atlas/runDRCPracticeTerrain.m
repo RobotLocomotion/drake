@@ -1,4 +1,5 @@
-function runDRCPracticeTask
+function runDRCPracticeTerrain
+% Plan a walking trajectory over a set of cinderblocks, like those seen at the DRC Trials in 2013. 
 
 checkDependency('iris');
 task_number=2; % consider taking the task number as an input if/when we load the other tasks
