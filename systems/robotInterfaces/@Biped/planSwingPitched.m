@@ -60,7 +60,7 @@ T_local_to_world = [[rotmat(atan2(swing2.pos(2) - swing1.pos(2), swing2.pos(1) -
 % Determine how much of a forward step this is
 swing_distance_in_local = (swing2.pos(1:2) - swing1.pos(1:2))' * (rotmat(stance.pos(6)) * [1;0]);
 
-if swing_distance_in_local > 0
+if swing_distance_in_local > MIN_DIST_FOR_TOE_OFF
   toe_off_angle = DEFAULT_FOOT_PITCH;
 else
   toe_off_angle = 0;
