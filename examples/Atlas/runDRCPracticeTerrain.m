@@ -6,7 +6,7 @@ options.atlas_version = 3;
 r = Atlas('urdf/atlas_minimal_contact.urdf',options);
 
 clear gazeboModelPath;
-setenv('GAZEBO_MODEL_PATH',[fullfile(getDrakePath,'examples','Atlas','sdf')]); 
+setenv('GAZEBO_MODEL_PATH',fullfile(getDrakePath,'examples','Atlas','sdf')); 
 
 if exist('data/practice_terrain.mat','file')
   load data/practice_terrain.mat;
@@ -28,7 +28,6 @@ region_args = {r.getFootstepPlanningCollisionModel()};
 seeds = [[-0.6;-0.2;0;0;0;pi/4]];
 i = 1;
 while true
-%   profile on
   options.navgoal = [options.initial_pose(1)+3; 0;0;0;0;0];
   options.safe_regions = region_server.findSafeTerrainRegions(1, region_args{:}, 'xy_bounds', iris.Polytope.fromBounds(options.initial_pose(1:2) - [0.5;1], options.initial_pose(1:2) + [3; 1]), 'seeds', seeds);
   seeds = [];
@@ -50,15 +49,16 @@ while true
       rethrow(e);
     end
   end
-%   profile viewer
   breaks = xtraj.getBreaks();
   xf = xtraj.eval(breaks(end));
   options.x0 = xf;
   options.initial_pose = xf(1:6);
-  disp('pausing for playback...use dbcont to continue');
-  keyboard()
+  % disp('pausing for playback...use dbcont to continue');
+  % keyboard()
   options.initial_pose
 end
+
+rangecheck(options.initial_pose(1:2), [2;-1.5], [inf, 1.5]);
 
 
 
