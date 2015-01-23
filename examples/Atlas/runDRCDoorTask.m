@@ -16,6 +16,7 @@ x0_door = Point(door.getStateFrame(), door.getInitialState());
 x0_door.hinge = pi/2;
 
 heightmap = RigidBodyHeightMapTerrain.constructHeightMapFromRaycast(door,x0_door(1:door.getNumPositions()),-1:.015:3,-1:.015:1,10);
+r = r.setTerrain(heightmap).compile();
 
 options.initial_pose = [0;0;0;0;0;pi/2];
 options.terrain = heightmap;
@@ -28,7 +29,7 @@ region_args = {r.getFootstepPlanningCollisionModel(), ...
    'debug', false};
 
 i = 1;  
-options.safe_regions = region_server.findSafeTerrainRegions(1, region_args{:}, 'seeds', [1;0;0;0;0;pi/2],'debug', true);
+options.safe_regions = region_server.findSafeTerrainRegions(1, region_args{:}, 'seeds', [1;0;0;0;0;pi/2]);
 
 combined_xtraj = [];
 
@@ -68,5 +69,5 @@ while true
   options.initial_pose;
 end
 
-r.setTerrain(heightmap).constructVisualizer().playback(combined_xtraj);
+r.constructVisualizer().playback(combined_xtraj);
 rangecheck(options.initial_pose(1:2), [1;-1], [inf; 1]);
