@@ -87,7 +87,7 @@ public:
   void forwarddJac(const int body_ind, const MatrixBase<DerivedA>& pts, MatrixBase<DerivedB> &dJ);
 
   template <typename Scalar, typename DerivedPoints>
-  GradientVar<Scalar, Dynamic, Dynamic> forwardJacV(int body_or_frame_ind, const MatrixBase<DerivedPoints> points, int rotation_type, int base_or_frame_ind);
+  GradientVar<Scalar, Dynamic, Dynamic> forwardJacV(int body_or_frame_ind, const MatrixBase<DerivedPoints> points, int rotation_type, int base_or_frame_ind, int gradient_order);
 
   template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD>
   void bodyKin(const int body_ind, const MatrixBase<DerivedA>& pts, MatrixBase<DerivedB> &x, MatrixBase<DerivedC> *J=NULL, MatrixBase<DerivedD> *P=NULL);

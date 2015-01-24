@@ -62,6 +62,7 @@ if (eigen3_FOUND)
   add_rbm_mex(getCMMmex)
   add_rbm_mex(findKinematicPathmex)
   add_rbm_mex(geometricJacobianmex)
+  add_rbm_mex(forwardJacVmex)
 
   add_library(drakeIKoptions SHARED IKoptions.cpp)
   target_link_libraries(drakeIKoptions drakeRBM drakeUtil)

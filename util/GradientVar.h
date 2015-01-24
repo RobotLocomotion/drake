@@ -51,7 +51,12 @@ public:
     return val;
   }
 
-  bool hasGradient()
+  const DataType& value() const
+  {
+    return val;
+  }
+
+  bool hasGradient() const
   {
     return grad.operator bool();
   }
@@ -66,9 +71,24 @@ public:
     }
   }
 
-  int maxOrder()
+  const ChildGradientVarType& gradient() const
   {
-    return hasGradient() ? 1 + gradient().maxOrder() : 0;
+    if (hasGradient()) {
+      return *grad;
+    }
+    else {
+      throw std::runtime_error("gradient not available");
+    }
+  }
+
+  int maxOrder() const
+  {
+    return hasGradient() ? 1 + grad->maxOrder() : 0;
+  }
+
+  int getNumVariables() const
+  {
+    return hasGradient() ? grad->value().cols() : -1;
   }
 
 public:
