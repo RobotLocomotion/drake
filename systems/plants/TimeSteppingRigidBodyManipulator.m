@@ -394,8 +394,10 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         obj.LCP_cache.data.contact_data = contact_data;
 
         % now that J is allocated (since it's size is known), apply JL
-        J(1:nL,:) = JL;
-        if nargout>=5, dJL(1:nL,:) = dJL; end
+        if (nL>0)
+          J(1:nL,:) = JL;
+          if nargout>=5, dJL(1:nL,:) = dJL; end
+        end
 
         %% Bilateral position constraints
         if nP > 0
