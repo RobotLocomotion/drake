@@ -97,7 +97,7 @@ for i=1:100
   xdn = update(m_rpy,0,[q;qd],u);
   xdn2 = update(m_ypr_rel,0,[q(ind);qd(ind)],u);
   
-  valuecheck(xdn,xdn2([ind;nq+ind]),1e-4);
+  valuecheck(xdn,xdn2([ind;nq+ind]),1e-3);
 end
 warning(w);
 
