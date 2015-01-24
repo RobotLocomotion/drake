@@ -18,7 +18,7 @@ function model=addRobotFromURDFString(model,urdf_string,varargin)
 typecheck(urdf_string,'char');
 urdf_filename = tempname;
 file_id = fopen(urdf_filename,'w');
-fprintf(file_id, urdf_string);
+fprintf(file_id, '%s', urdf_string);
 fclose(file_id);
 
 model = addRobotFromURDF(model, urdf_filename, varargin{:});
