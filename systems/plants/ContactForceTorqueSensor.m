@@ -119,7 +119,7 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensorWithState %& Visu
       % contact normal and tangential directions in world coordinates
       nD = length(tsmanip.LCP_cache.data.contact_data.d);
       nC_body = nA + nB;
-      nC = manip.getNumContactPairs;
+      nC = size(tsmanip.LCP_cache.data.contact_data.normal,2);
       nL = manip.getNumJointLimitConstraints;
       nP = 2*manip.num_position_constraints;  % number of position constraints
       

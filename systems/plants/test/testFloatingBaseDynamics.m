@@ -8,10 +8,10 @@ urdf=urdf{1};
 options.floating = 'rpy';
 options.terrain = RigidBodyFlatTerrain();
 w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
-m_rpy = TimeSteppingRigidBodyManipulator(urdf,.01,options);
+m_rpy = TimeSteppingRigidBodyManipulator(urdf,.001,options);
 options.floating = 'YPR';
 options.namesuffix = 'ypr_rel'; % floating base uses YPR (with relative/intrinsic angles)
-m_ypr_rel = TimeSteppingRigidBodyManipulator(urdf,.01,options);
+m_ypr_rel = TimeSteppingRigidBodyManipulator(urdf,.001,options);
 collision_options.terrain_only = true;
 if regexp(urdf,'atlas')
   m_rpy = m_rpy.removeCollisionGroupsExcept({'toe','heel'});
