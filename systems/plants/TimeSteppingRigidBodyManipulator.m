@@ -302,6 +302,10 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         %   J = [JL; JP; n; D{1}; ...; D{mC}; zeros(nC,num_q)]
 
         possible_indices_changed = false;
+        possible_limit_indices = [];
+        possible_contact_indices = [];
+        
+        while (1) 
         
         if (nL > 0)
           if (obj.position_control)
@@ -316,7 +320,9 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
             else
               [phiL,JL,dJL] = obj.manip.jointLimitConstraints(q);
             end
-            possible_limit_indices = (phiL + h*JL*qd) < z_inactive_guess_tol;
+            if isempty(possible_limit_indices)
+              possible_limit_indices = (phiL + h*JL*qd) < z_inactive_guess_tol;
+            end
             nL = sum(possible_limit_indices);
             phi_check = phiL(~possible_limit_indices);
             J_check = JL(~possible_limit_indices,:);
@@ -328,6 +334,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
             if isempty(obj.LCP_cache.data.possible_limit_indices) || any(obj.LCP_cache.data.possible_limit_indices~=possible_limit_indices)
               possible_indices_changed = true;
             end
+            obj.LCP_cache.data.possible_limit_indices=possible_limit_indices;
           end
         else
           phi_check = zeros(0,1);
@@ -349,7 +356,9 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
             dJ(nL+nP+nC+(1:mC*nC),:) = dD;
           else
             [phiC,normal,d,xA,xB,idxA,idxB,mu,n,D] = obj.manip.contactConstraints(q,true);
-            possible_contact_indices = (phiC+h*n*qd) < z_inactive_guess_tol;
+            if isempty(possible_contact_indices)
+              possible_contact_indices = (phiC+h*n*qd) < z_inactive_guess_tol;
+            end
             nC = sum(possible_contact_indices);
             mC = length(D);
           end
@@ -368,6 +377,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
           if isempty(obj.LCP_cache.data.possible_contact_indices) || any(obj.LCP_cache.data.possible_contact_indices~=possible_contact_indices)
               possible_indices_changed = true;
           end
+          obj.LCP_cache.data.possible_contact_indices=possible_contact_indices;
           
           J(nL+nP+(1:nC),:) = n;
           J(nL+nP+nC+(1:mC*nC),:) = D;
@@ -560,11 +570,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         if obj.enable_fastqp
           n_z_inactive = sum(z_inactive);
           if n_z_inactive > 0
-            try
             Aeq = M(M_active,z_inactive); 
-            catch
-              keyboard
-            end
             beq = -w(M_active);
             M_inactive = ~M_active & z_inactive;            
             Ain_fqp = [-M(M_inactive,z_inactive); -eye(n_z_inactive)];
@@ -618,11 +624,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
                     z_active = ~z_inactive_guess(1:(nL+nP+nC));  % only look at joint limit, position, and contact normals since if cn_i = 0, 
                     % then that's a valid solution, \beta_i=0, and we don't care about the relative velocity of the contact, \lambda_i
                   if ~any(z_active), break; end
-                    try 
-                    missed = (M(z_active,z_inactive_guess)*z(z_inactive_guess)+w(z_active) < 0);
-                    catch
-                      keyboard
-                    end
+                  missed = (M(z_active,z_inactive_guess)*z(z_inactive_guess)+w(z_active) < 0);
                 else
                   z_active=true(nL+nP+nC,1);
                   missed = (w(z_active)<0);
@@ -708,17 +710,19 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
           obj.LCP_cache.data.dwqdn = [];
         end
         
-        if any(phi_check + h*J_check*(Mqdn*z + wqdn) < 0)
-          % useful debugging info
-          Point(getVelocityFrame(obj.manip),qd)
-          % note: this also trips with the quaternion singularity (e.g.
-          % when we get really big angular velocities)
-          error('Drake:TimeSteppingRigidBodyManipulator:Penetration','This timestep violated our assumptions about which contacts could possibly become active in one timestep.  Consider reducing your dt.  If it seems to happen a lot, then please let us know about it.');
+        penetration = phi_check + h*J_check*(Mqdn*z + wqdn) < 0;
+        if any(penetration)
+          % then add the constraint and run the entire loop again!
+          limits = sum(~possible_limit_indices);
+          possible_limit_indices(~possible_limit_indices) = penetration(1:limits);
+          possible_contact_indices(~possible_contact_indices) = penetration(limits+1:end);
+          
+          obj.warning_manager.warnOnce('Drake:TimeSteppingRigidBodyManipulator:ResolvingLCP','This timestep violated our assumptions about which contacts could possibly become active in one timestep.  Consider reducing your dt.  If it seems to happen a lot, then please let us know about it.');
+        else
+          break;
         end
         
-%            obj.LCP_cache.data.possible_limit_indices=possible_limit_indices;
-          obj.LCP_cache.data.possible_contact_indices=possible_contact_indices;
-        
+        end
       end
     end
 
