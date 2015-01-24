@@ -400,8 +400,8 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
             dJ = zeros(nL+nP,num_q^2);
           end
           contact_data = struct();
-          phi_check=[];
-          J_check=[];
+          phi_check = zeros(0,1);
+          J_check = zeros(0,num_q);
         end
         obj.LCP_cache.data.contact_data = contact_data;
 
