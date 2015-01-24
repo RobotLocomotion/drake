@@ -6,6 +6,7 @@
 #include <cmath>
 #include <random>
 #include "drakeGradientUtil.h"
+#include "GradientVar.h"
 
 #undef DLLEXPORT
 #if defined(WIN32) || defined(WIN64)
@@ -83,6 +84,9 @@ DLLEXPORT Eigen::Matrix<typename Derived::Scalar, 4, 1> rotmat2quat(const Eigen:
 template<typename Derived>
 DLLEXPORT Eigen::Matrix<typename Derived::Scalar, 3, 1> rotmat2rpy(const Eigen::MatrixBase<Derived>& R);
 
+template<typename Scalar>
+DLLEXPORT GradientVar<Scalar, Eigen::Dynamic, 1> rotmat2Representation(const GradientVar<Scalar, SPACE_DIMENSION, SPACE_DIMENSION>& R, int rotation_type);
+
 /*
  * rpy2x
  */
@@ -137,6 +141,11 @@ DLLEXPORT void angularvel2rpydotMatrix(const Eigen::MatrixBase<DerivedRPY>& rpy,
     typename Eigen::MatrixBase<DerivedPhi>& phi,
     typename Gradient<DerivedPhi, RPY_SIZE, 1>::type* dphi = nullptr,
     typename Gradient<DerivedPhi, RPY_SIZE, 2>::type* ddphi = nullptr);
+
+template<typename Scalar>
+DLLEXPORT GradientVar<Scalar, Eigen::Dynamic, SPACE_DIMENSION> angularvel2RepresentationDotMatrix(
+    int rotation_type,
+    GradientVar<Scalar, Eigen::Dynamic, 1> qrot);
 
 template<typename DerivedRPY, typename DerivedE>
 DLLEXPORT void rpydot2angularvelMatrix(const Eigen::MatrixBase<DerivedRPY>& rpy,
