@@ -70,16 +70,26 @@ classdef CollisionFilterGroup
       % Get group members
       [linknames,robotnums] = obj.getMembers();
 
+      % Check if the parent is in the group
+      if any(strcmp(linknames,old_parent_linkname) & cellfun(@(num) num == parent_robotnum,robotnums))
+        % Remove the old parent link
+        obj = obj.removeMembers(old_parent_linkname,parent_robotnum);
+
+        % Update parent link name
+        add_parent = true;
+      end
+
       % Check if the child is in the group
       linkname = model.getLinkName(child_index);
       robotnum = model.getBody(child_index).robotnum;
+
       if any(strcmp(linknames,linkname) & cellfun(@(num) num == robotnum,robotnums))
         % Remove child link
         obj = obj.removeMembers(linkname,robotnum);
 
         % Add the parent link if the parent has no collision geometry but the child
         % does
-        if ~isempty(model.getBody(child_index).collision_geometry)
+        if ~add_parent && ~isempty(model.getBody(child_index).collision_geometry)
           if isempty(model.getBody(parent_index).collision_geometry)
             add_parent = true;
           else
@@ -92,12 +102,6 @@ classdef CollisionFilterGroup
               new_parent_linkname, collision_fg_name);
           end
         end
-      end
-
-      % Update parent link name if the parent is present in the group
-      if any(strcmp(linknames,old_parent_linkname) & cellfun(@(num) num == parent_robotnum,robotnums))
-        obj = obj.removeMembers(old_parent_linkname,parent_robotnum);
-        add_parent = true;
       end
 
       % Add the parent to the group if necessary
