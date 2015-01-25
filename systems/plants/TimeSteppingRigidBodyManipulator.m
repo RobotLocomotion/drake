@@ -57,7 +57,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
 
       obj.timestep = timestep;
       obj.LCP_cache = SharedDataHandle(struct('t',[],'x',[],'u',[],'nargout',[], ...
-        'z',[],'Mqdn',[],'wqdn',[], 'possible_contact_indices',[],'possible_limit_indices',[],'z_inactive', [], 'M_active', [], ...
+        'z',[],'Mqdn',[],'wqdn',[], 'possible_contact_indices',[],'possible_limit_indices',[], ...
         'dz',[],'dMqdn',[],'dwqdn',[],'contact_data',[],'fastqp_active_set',[]));
 
       obj = setSampleTime(obj,[timestep;0]);
@@ -549,12 +549,14 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         %      end
         %      return;
 
-        if possible_indices_changed || isempty(obj.LCP_cache.data.z_inactive)
+        if possible_indices_changed 
           z_inactive = true(nL+nP+(mC+2)*nC,1);
           M_active = z_inactive;
         else
-          z_inactive = obj.LCP_cache.data.z_inactive;
-          M_active = obj.LCP_cache.data.M_active;
+          z_inactive = obj.LCP_cache.data.z>lb+1e-8;
+          % use conservative guess of M_active to avoid occasional numerical issues
+          % when M*z_inactive + w > 1e-8 by a small amount
+          M_active = z_inactive;
         end
 
         z = zeros(nL+nP+(mC+2)*nC,1); 
@@ -628,11 +630,6 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         obj.LCP_cache.data.z = z;
         obj.LCP_cache.data.Mqdn = Mqdn;
         obj.LCP_cache.data.wqdn = wqdn;
-        obj.LCP_cache.data.z_inactive = z>lb+1e-8;
-%        obj.LCP_cache.data.M_active = M*z+w<1e-8;
-        % use conservative guess of M_active to avoid occasional numerical issues
-        % when M*z_inactive + w > 1e-8 by a small amount
-        obj.LCP_cache.data.M_active = obj.LCP_cache.data.z_inactive;
         
         if (nargout>4)
           % Quick derivation:
