@@ -301,9 +301,13 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         % and implement equation (7) from Anitescu97, by collecting
         %   J = [JL; JP; n; D{1}; ...; D{mC}; zeros(nC,num_q)]
 
-        possible_indices_changed = false;
+        % a "possible" index is one that is close enough to contact or the
+        % limit to have a chance at being active.  now we don't even
+        % construct the M and w matrices for contacts/limits that seem
+        % impossible to reach within this timestep.  
         possible_limit_indices = [];
         possible_contact_indices = [];
+        possible_indices_changed = false;
         
         while (1) 
         
@@ -324,6 +328,10 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
               possible_limit_indices = (phiL + h*JL*qd) < z_inactive_guess_tol;
             end
             nL = sum(possible_limit_indices);
+            
+            % phi_check and J_check are the "impossible indices"
+            % which get checked at the end of the method (to make sure
+            % that they did not somehow make contact or hit the limit)
             phi_check = phiL(~possible_limit_indices);
             J_check = JL(~possible_limit_indices,:);
             phiL = phiL(possible_limit_indices);
