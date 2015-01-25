@@ -15,12 +15,6 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     position_control=false;
     LCP_cache;
     enable_fastqp; % whether we use the active set LCP
-    
-    % solver type options: (with active set if enable_fastqp = true)
-    %  0 : solve the full LCP 
-    %  1 : solve the sub LCP using a guess as to what contacts
-    %      will be active. not accurate in general, but faster than 'full'
-    solver_type = 1; 
   end
 
   methods
@@ -50,12 +44,6 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         obj.twoD = true;
       end
       
-      if isfield(options,'solver_type') 
-        typecheck(options.solver_type,'double');
-        rangecheck(options.solver_type,0,1);
-        obj.solver_type = options.solver_type;
-      end
-
       if ~isfield(options,'enable_fastqp')
         obj.enable_fastqp = checkDependency('fastqp');
       else
@@ -319,10 +307,10 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
             % dJ = 0 by default, which is correct here
             dJL = zeros(length(phiL),num_q^2);
           else
-            if (nargout<5)
-              [phiL,JL] = obj.manip.jointLimitConstraints(q);
-            else
+            if (nargout>4)
               [phiL,JL,dJL] = obj.manip.jointLimitConstraints(q);
+            else
+              [phiL,JL] = obj.manip.jointLimitConstraints(q);
             end
             if isempty(possible_limit_indices)
               possible_limit_indices = (phiL + h*JL*qd) < z_inactive_guess_tol;
@@ -336,7 +324,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
             J_check = JL(~possible_limit_indices,:);
             phiL = phiL(possible_limit_indices);
             JL = JL(possible_limit_indices,:);
-            if (nargout >= 5)
+            if (nargout>4)
               dJL = dJL(possible_limit_indices,:);
             end
             if isempty(obj.LCP_cache.data.possible_limit_indices) || any(obj.LCP_cache.data.possible_limit_indices~=possible_limit_indices)
@@ -353,23 +341,16 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         if (nContactPairs > 0)
           if (nargout>4)
             [phiC,normal,d,xA,xB,idxA,idxB,mu,n,D,dn,dD] = obj.manip.contactConstraints(q,true);
-            possible_contact_indices = (phiC+h*n*qd) < z_inactive_guess_tol;
-            nC = sum(possible_contact_indices);
-            mC = length(D);
-            
-            dJ = zeros(nL+nP+(mC+2)*nC,num_q^2);  % was sparse, but reshape trick for the transpose below didn't work
-            dJ(nL+nP+(1:nC),:) = reshape(dn,nC,[]);
-            dD = cellfun(@(A)reshape(A,size(D{1},1),size(D{1},2)*size(dD{1},2)),dD,'UniformOutput',false);
-            dD = vertcat(dD{:});
-            dJ(nL+nP+nC+(1:mC*nC),:) = dD;
           else
             [phiC,normal,d,xA,xB,idxA,idxB,mu,n,D] = obj.manip.contactConstraints(q,true);
-            if isempty(possible_contact_indices)
-              possible_contact_indices = (phiC+h*n*qd) < z_inactive_guess_tol;
-            end
-            nC = sum(possible_contact_indices);
-            mC = length(D);
           end
+          
+          if isempty(possible_contact_indices)
+            possible_contact_indices = (phiC+h*n*qd) < z_inactive_guess_tol;
+          end
+          nC = sum(possible_contact_indices);
+          mC = length(D);
+          
           J = zeros(nL + nP + (mC+2)*nC,num_q)*q(1); % *q(1) is for taylorvar
           lb = zeros(nL+nP+(mC+2)*nC,1);
           ub = Big*ones(nL+nP+(mC+2)*nC,1);
@@ -390,6 +371,14 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
           J(nL+nP+(1:nC),:) = n;
           J(nL+nP+nC+(1:mC*nC),:) = D;
 
+          if nargout>4
+            dJ = zeros(nL+nP+(mC+2)*nC,num_q^2);  % was sparse, but reshape trick for the transpose below didn't work
+            dJ(nL+nP+(1:nC),:) = reshape(dn(possible_contact_indices,:),nC,[]);
+            dD = cellfun(@(A)reshape(A(possible_contact_indices,:),size(D{1},1),size(D{1},2)*size(dD{1},2)),dD,'UniformOutput',false);
+            dD = vertcat(dD{:});
+            dJ(nL+nP+nC+(1:mC*nC),:) = dD;
+          end
+          
           contact_data.normal = normal(:,possible_contact_indices);
           for i=1:length(d)
             contact_data.d{i} = d{i}(:,possible_contact_indices);
@@ -552,7 +541,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
             dM(nL+nP+nC+(1:mC*nC),1:size(Mqdn,2),:) = reshape(matGradMultMat(D,Mqdn,dD,dMqdn),mC*nC,size(Mqdn,2),[]);
           end
         end
-
+        
         % check gradients
         %      xdn = M;
         %      if (nargout>1)
@@ -606,50 +595,17 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
               % then that's a solution and we don't care about the relative velocity \lambda_i
               QP_FAILED = (~isempty(w(z_active)) && any(M(z_active,z_inactive)*z(z_inactive)+w(z_active) < 0)) || ...
                 any(((z(z_inactive)>lb(z_inactive)+1e-8) & (M(z_inactive, z_inactive)*z(z_inactive)+w(z_inactive)>1e-8)));
-            else
-              obj.LCP_cache.data.fastqp_active_set = [];
             end
           end
         end
 
         if QP_FAILED 
             % then the active set has changed, call pathlcp
-            
-            if obj.solver_type == 0
-              % solve the full lcp
-              %if isempty(obj.LCP_cache.data.z)
-                z = pathlcp(M,w,lb,ub);
-              %else
-              %  % still hand in the old solution; should be better than z=0
-              %  z = pathlcp(M,w,lb,ub,obj.LCP_cache.data.z);
-              %end
-            elseif obj.solver_type == 1
-  %             path_tic = tic;
-              z_inactive_guess = z_inactive;
-              while 1
-                if any(z_inactive_guess)
-                  z(z_inactive_guess) = pathlcp(M(z_inactive_guess,z_inactive_guess),w(z_inactive_guess),lb(z_inactive_guess),ub(z_inactive_guess));
-                    z_active = ~z_inactive_guess(1:(nL+nP+nC));  % only look at joint limit, position, and contact normals since if cn_i = 0, 
-                    % then that's a valid solution, \beta_i=0, and we don't care about the relative velocity of the contact, \lambda_i
-                  if ~any(z_active), break; end
-                  missed = (M(z_active,z_inactive_guess)*z(z_inactive_guess)+w(z_active) < 0);
-                else
-                  z_active=true(nL+nP+nC,1);
-                  missed = (w(z_active)<0);
-                end
-                if ~any(missed), break; end
-
-                % otherwise add the missed indices to the active set and repeat
-                ind = find(z_active);
-                z_active(ind(missed)) = false;
-                % add back in the related contact terms:
-                z_active = [z_active; repmat(z_active(nL+nP+(1:nC)),mC+1,1)];
-                z_inactive_guess = ~z_active;
-              end
+            %path_tic = tic;
+            z = pathlcp(M,w,lb,ub);
   %             path_time = toc(path_tic);
   %             fprintf('Path solve time: %2.5f\n',path_time);
-              obj.LCP_cache.data.fastqp_active_set = [];
-            end
+            obj.LCP_cache.data.fastqp_active_set = [];
 %             if isempty(active_set_fail_count)
 %                active_set_fail_count = 1;
 %             else
@@ -677,7 +633,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         % use conservative guess of M_active to avoid occasional numerical issues
         % when M*z_inactive + w > 1e-8 by a small amount
         obj.LCP_cache.data.M_active = obj.LCP_cache.data.z_inactive;
-
+        
         if (nargout>4)
           % Quick derivation:
           % The LCP solves for z given that:
