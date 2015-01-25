@@ -401,6 +401,16 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
           J_check = zeros(0,num_q);
         end
         obj.LCP_cache.data.contact_data = contact_data;
+        
+        if (nC+nL+nP+nV==0)  % if there are no possible contacts
+          z = [];
+          Mqdn = [];
+          wqdn = qd + h*(H\tau);
+          if (nargout>4) 
+            error('need to implement this case'); 
+          end
+          return;
+        end
 
         % now that J is allocated (since it's size is known), apply JL
         if (nL>0)
@@ -549,9 +559,11 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         %      end
         %      return;
 
+        z = zeros(nL+nP+(mC+2)*nC,1); 
         if possible_indices_changed 
           z_inactive = true(nL+nP+(mC+2)*nC,1);
           M_active = z_inactive;
+          obj.LCP_cache.data.z = z;
         else
           z_inactive = obj.LCP_cache.data.z>lb+1e-8;
           % use conservative guess of M_active to avoid occasional numerical issues
@@ -559,11 +571,6 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
           M_active = z_inactive;
         end
 
-        z = zeros(nL+nP+(mC+2)*nC,1); 
-        if possible_indices_changed || isempty(obj.LCP_cache.data.z) 
-          obj.LCP_cache.data.z = z;
-        end
-        
         QP_FAILED = true;
         
         if obj.enable_fastqp
