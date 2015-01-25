@@ -550,7 +550,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         %      return;
 
         z = zeros(nL+nP+(mC+2)*nC,1); 
-        if possible_indices_changed 
+        if possible_indices_changed || isempty(obj.LCP_cache.data.z)
           z_inactive = true(nL+nP+(mC+2)*nC,1);
           M_active = z_inactive;
           obj.LCP_cache.data.z = z;
