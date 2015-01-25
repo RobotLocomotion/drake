@@ -672,8 +672,11 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         obj.LCP_cache.data.z = z;
         obj.LCP_cache.data.Mqdn = Mqdn;
         obj.LCP_cache.data.wqdn = wqdn;
-        obj.LCP_cache.data.M_active = M*z+w<1e-8;
         obj.LCP_cache.data.z_inactive = z>lb+1e-8;
+%        obj.LCP_cache.data.M_active = M*z+w<1e-8;
+        % use conservative guess of M_active to avoid occasional numerical issues
+        % when M*z_inactive + w > 1e-8 by a small amount
+        obj.LCP_cache.data.M_active = obj.LCP_cache.data.z_inactive;
 
         if (nargout>4)
           % Quick derivation:
