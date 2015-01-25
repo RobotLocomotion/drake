@@ -267,16 +267,6 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         nV = obj.manip.num_velocity_constraints;
         Big = 1e20;
 
-        if (nContactPairs+nL+nP+nV==0)
-          z = [];
-          Mqdn = [];
-          wqdn = qd + h*(H\tau);
-          if (nargout>4) 
-            error('need to implement this case'); 
-          end
-          return;
-        end
-
         % Set up the LCP:
         % z >= 0, Mz + w >= 0, z'*(Mz + w) = 0
         % for documentation below, use slack vars: s = Mz + w >= 0
