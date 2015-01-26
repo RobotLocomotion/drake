@@ -33,7 +33,14 @@ if nargin<5
 end
 
 if obj.use_new_kinsol
-  [x, J, dJ] = forwardKinNew(obj, kinsol, body_or_frame_ind, pts, rotation_type, 1);
+  if nargout > 2
+    [x, J, dJ] = forwardKinNew(obj, kinsol, body_or_frame_ind, pts, rotation_type);
+    dJ = reshape(dJ, size(J, 1), []); % convert to strange second derivative output format
+  elseif nargout > 1
+    [x, J] = forwardKinNew(obj, kinsol, body_or_frame_ind, pts, rotation_type);
+  else
+    x = forwardKinNew(obj, kinsol, body_or_frame_ind, pts, rotation_type);
+  end
 else
   
   % todo: zap this after the transition
@@ -234,18 +241,32 @@ compute_gradient = nargout > 2;
 if (nargin<6), base_ind=1; end
 if (nargin<5), rotation_type=0; end
 
-if compute_jacobian
-  if compute_gradient
-    [x, Jv, dJv] = forwardKinV(obj, kinsol, body_or_frame_ind, points, rotation_type, base_ind);
-    dJv = reshape(dJv, [], obj.getNumPositions()); % convert to standard derivative format
-    dJ = matGradMultMat(Jv, kinsol.qdotToV, dJv, kinsol.dqdotToVdq);
-    dJ = reshape(dJ, size(Jv, 1), []); % convert to strange second derivative output format
-  else
-    [x, Jv] = forwardKinV(obj, kinsol, body_or_frame_ind, points, rotation_type, base_ind);
+if (kinsol.mex)
+  if (obj.mex_model_ptr==0)
+    error('Drake:RigidBodyManipulator:InvalidKinematics','This kinsol is no longer valid because the mex model ptr has been deleted.');
   end
-  J = Jv * kinsol.qdotToV;
+  if nargout > 2
+    [x, J, dJ] = forwardKinVmex(obj.mex_model_ptr, body_or_frame_ind, points, rotation_type, 1, true);
+    dJ = reshape(dJ, size(J, 1), []); % convert to strange second derivative output format
+  elseif nargout > 1
+    [x, J] = forwardKinVmex(obj.mex_model_ptr, body_or_frame_ind, points, rotation_type, 1, true);
+  else
+    x = forwardKinVmex(obj.mex_model_ptr, body_or_frame_ind, points, rotation_type, 1, true);
+  end
 else
-  x = forwardKinV(obj, kinsol, body_or_frame_ind, points, rotation_type, base_ind);
+  if compute_jacobian
+    if compute_gradient
+      [x, Jv, dJv] = forwardKinV(obj, kinsol, body_or_frame_ind, points, rotation_type, base_ind);
+      dJv = reshape(dJv, [], obj.getNumPositions()); % convert to standard derivative format
+      dJ = matGradMultMat(Jv, kinsol.qdotToV, dJv, kinsol.dqdotToVdq);
+      dJ = reshape(dJ, size(Jv, 1), []); % convert to strange second derivative output format
+    else
+      [x, Jv] = forwardKinV(obj, kinsol, body_or_frame_ind, points, rotation_type, base_ind);
+    end
+    J = Jv * kinsol.qdotToV;
+  else
+    x = forwardKinV(obj, kinsol, body_or_frame_ind, points, rotation_type, base_ind);
+  end
 end
 
 end
