@@ -34,7 +34,7 @@
           <% y0 = origin_y + block_y*i %>
           <% z0 = origin_z + block_z*k %>
           <include>
-            <name><%= 'block_' + i.to_s + '_' + j.to_s + '_' + k.to_s %></name>
+            <name><%= "\"block_" + i.to_s + '_' + j.to_s + "\"" %></name>
             <pose> <%= x0 %> <%= y0 %> <%= z0 %> 0 0 1.570796 </pose>
             <uri>model://cinder_block_wide</uri>
           </include>

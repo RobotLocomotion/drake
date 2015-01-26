@@ -72,14 +72,14 @@
 
        %>
 
-          <link name=<%='block_' + i.to_s + '_' + j.to_s  %> >
+          <link name=<%= "\"block_" + i.to_s + '_' + j.to_s + "\""  %> >
             <pose> <%= x0 %> <%= y0 %> <%= z0 %> 0 0 0 </pose>
             <inertial>
-		<pose><%= wedge_dist_x %> <%= wedge_dist_y %> <%= wedge_height_from_center %> 0 0 <%= current_angle %></pose>		
+		<pose> <%= wedge_dist_x %> <%= wedge_dist_y %> <%= wedge_height_from_center %> 0 0 <%= current_angle %> </pose>		
                 <!-- approximate as uniform box 0.387 x 0.387 x 0.092 m -->
 		<mass>20.0</mass>
                 <inertia>
-		  <ixx><%= 20.0/12 * 2.0 * (wedge_width**2) %></ixx>
+		  <ixx><%= 20.0/12.0 * 2.0 * (wedge_width**2.0) %></ixx>
 		  <ixy>0.0000</ixy>
 		  <iyy><%= 20.0/12 * (wedge_width**2 + smaller_wedge_len**2) %></iyy>
 		  <ixz>0.0000</ixz>
