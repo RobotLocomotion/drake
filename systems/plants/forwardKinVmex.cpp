@@ -44,8 +44,8 @@ Eigen::Matrix<double, RowsAtCompileTime, ColsAtCompileTime> matlabToEigen(const 
 
 void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
 
-  std::string usage = "Usage [x, J, dJ] = forwardKinVMex(model_ptr, body_or_frame_ind, points, rotation_type, base_or_frame_ind)";
-  if (nrhs != 5) {
+  std::string usage = "Usage [x, J, dJ] = forwardKinVMex(model_ptr, body_or_frame_ind, points, rotation_type, base_or_frame_ind, compute_analytic_jacobian)";
+  if (nrhs != 6) {
     mexErrMsgIdAndTxt("Drake:geometricJacobianmex:WrongNumberOfInputs", usage.c_str());
   }
 
@@ -60,13 +60,14 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
   auto points = matlabToEigen<SPACE_DIMENSION, Eigen::Dynamic>(prhs[2]);
   int rotation_type = (int) mxGetScalar(prhs[3]);
   int base_or_frame_ind = ((int) mxGetScalar(prhs[4])) - 1; // base 1 to base 0
+  bool compute_analytic_jacobian = (bool) (mxGetLogicals(prhs[5]))[0];
 
   int gradient_order = nlhs > 1 ? nlhs - 2 : 0;
   auto x = model->forwardKinNew(points, body_or_frame_ind, base_or_frame_ind, rotation_type, gradient_order);
   plhs[0] = eigenToMatlab(x.value());
 
   if (nlhs > 1) {
-    auto J = model->forwardJacV(x, body_or_frame_ind, base_or_frame_ind, rotation_type, false);
+    auto J = model->forwardJacV(x, body_or_frame_ind, base_or_frame_ind, rotation_type, compute_analytic_jacobian);
     plhs[1] = eigenToMatlab(J.value());
     if (nlhs > 2) {
       plhs[2] = eigenToMatlab(J.gradient().value());
