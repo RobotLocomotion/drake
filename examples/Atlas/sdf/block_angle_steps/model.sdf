@@ -9,10 +9,10 @@
       
       
 
-          <link name=block_0_0 >
+          <link name="block_0_0" >
             <pose> 0.19 0.19 0.092075 0 0 0 </pose>
             <inertial>
-		<pose>0.1615197161299224 0 0.07451778387007757 0 0 1.570796</pose>		
+		<pose> 0.1615197161299224 0 0.07451778387007757 0 0 1.570796 </pose>		
                 <!-- approximate as uniform box 0.387 x 0.387 x 0.092 m -->
 		<mass>20.0</mass>
                 <inertia>
@@ -61,10 +61,10 @@
       
       
 
-          <link name=block_0_1 >
+          <link name="block_0_1" >
             <pose> 0.5700000000000001 0.5700000000000001 0.092075 0 0 0 </pose>
             <inertial>
-		<pose>-0.1615197161299224 0 0.07451778387007757 0 0 1.570796</pose>		
+		<pose> -0.1615197161299224 0 0.07451778387007757 0 0 1.570796 </pose>		
                 <!-- approximate as uniform box 0.387 x 0.387 x 0.092 m -->
 		<mass>20.0</mass>
                 <inertia>
@@ -113,10 +113,10 @@
       
       
 
-          <link name=block_0_2 >
+          <link name="block_0_2" >
             <pose> 0.95 0.95 0.092075 0 0 0 </pose>
             <inertial>
-		<pose>0.1615197161299224 0 0.07451778387007757 0 0 1.570796</pose>		
+		<pose> 0.1615197161299224 0 0.07451778387007757 0 0 1.570796 </pose>		
                 <!-- approximate as uniform box 0.387 x 0.387 x 0.092 m -->
 		<mass>20.0</mass>
                 <inertia>
@@ -165,10 +165,10 @@
       
       
 
-          <link name=block_0_3 >
+          <link name="block_0_3" >
             <pose> 1.33 1.33 0.092075 0 0 0 </pose>
             <inertial>
-		<pose>-0.1615197161299224 0 0.07451778387007757 0 0 1.570796</pose>		
+		<pose> -0.1615197161299224 0 0.07451778387007757 0 0 1.570796 </pose>		
                 <!-- approximate as uniform box 0.387 x 0.387 x 0.092 m -->
 		<mass>20.0</mass>
                 <inertia>
@@ -217,10 +217,10 @@
       
       
 
-          <link name=block_0_4 >
+          <link name="block_0_4" >
             <pose> 1.71 1.71 0.092075 0 0 0 </pose>
             <inertial>
-		<pose>0.1615197161299224 0 0.07451778387007757 0 0 1.570796</pose>		
+		<pose> 0.1615197161299224 0 0.07451778387007757 0 0 1.570796 </pose>		
                 <!-- approximate as uniform box 0.387 x 0.387 x 0.092 m -->
 		<mass>20.0</mass>
                 <inertia>
@@ -269,10 +269,10 @@
       
       
 
-          <link name=block_0_5 >
+          <link name="block_0_5" >
             <pose> 2.09 2.09 0.092075 0 0 0 </pose>
             <inertial>
-		<pose>-0.1615197161299224 0 0.07451778387007757 0 0 1.570796</pose>		
+		<pose> -0.1615197161299224 0 0.07451778387007757 0 0 1.570796 </pose>		
                 <!-- approximate as uniform box 0.387 x 0.387 x 0.092 m -->
 		<mass>20.0</mass>
                 <inertia>
@@ -323,10 +323,10 @@
       
       
 
-          <link name=block_1_0 >
+          <link name="block_1_0" >
             <pose> 0.5700000000000001 0.19 0.1381125 0 0 0 </pose>
             <inertial>
-		<pose>0 0.1615197161299224 0.07451778387007757 0 0 0</pose>		
+		<pose> 0 0.1615197161299224 0.07451778387007757 0 0 0 </pose>		
                 <!-- approximate as uniform box 0.387 x 0.387 x 0.092 m -->
 		<mass>20.0</mass>
                 <inertia>
@@ -375,10 +375,10 @@
       
       
 
-          <link name=block_1_1 >
+          <link name="block_1_1" >
             <pose> 0.9500000000000001 0.5700000000000001 0.1381125 0 0 0 </pose>
             <inertial>
-		<pose>0 -0.1615197161299224 0.07451778387007757 0 0 0</pose>		
+		<pose> 0 -0.1615197161299224 0.07451778387007757 0 0 0 </pose>		
                 <!-- approximate as uniform box 0.387 x 0.387 x 0.092 m -->
 		<mass>20.0</mass>
                 <inertia>
@@ -427,10 +427,10 @@
       
       
 
-          <link name=block_1_2 >
+          <link name="block_1_2" >
             <pose> 1.33 0.95 0.1381125 0 0 0 </pose>
             <inertial>
-		<pose>0 0.1615197161299224 0.07451778387007757 0 0 0</pose>		
+		<pose> 0 0.1615197161299224 0.07451778387007757 0 0 0 </pose>		
                 <!-- approximate as uniform box 0.387 x 0.387 x 0.092 m -->
 		<mass>20.0</mass>
                 <inertia>
@@ -479,10 +479,10 @@
       
       
 
-          <link name=block_1_3 >
+          <link name="block_1_3" >
             <pose> 1.7100000000000002 1.33 0.1381125 0 0 0 </pose>
             <inertial>
-		<pose>0 -0.1615197161299224 0.07451778387007757 0 0 0</pose>		
+		<pose> 0 -0.1615197161299224 0.07451778387007757 0 0 0 </pose>		
                 <!-- approximate as uniform box 0.387 x 0.387 x 0.092 m -->
 		<mass>20.0</mass>
                 <inertia>
@@ -531,10 +531,10 @@
       
       
 
-          <link name=block_1_4 >
+          <link name="block_1_4" >
             <pose> 2.09 1.71 0.1381125 0 0 0 </pose>
             <inertial>
-		<pose>0 0.1615197161299224 0.07451778387007757 0 0 0</pose>		
+		<pose> 0 0.1615197161299224 0.07451778387007757 0 0 0 </pose>		
                 <!-- approximate as uniform box 0.387 x 0.387 x 0.092 m -->
 		<mass>20.0</mass>
                 <inertia>
@@ -583,10 +583,10 @@
       
       
 
-          <link name=block_1_5 >
+          <link name="block_1_5" >
             <pose> 2.4699999999999998 2.09 0.1381125 0 0 0 </pose>
             <inertial>
-		<pose>0 -0.1615197161299224 0.07451778387007757 0 0 0</pose>		
+		<pose> 0 -0.1615197161299224 0.07451778387007757 0 0 0 </pose>		
                 <!-- approximate as uniform box 0.387 x 0.387 x 0.092 m -->
 		<mass>20.0</mass>
                 <inertia>
@@ -637,10 +637,10 @@
       
       
 
-          <link name=block_2_0 >
+          <link name="block_2_0" >
             <pose> 0.95 0.19 0.23018750000000002 0 0 0 </pose>
             <inertial>
-		<pose>0.1615197161299224 0 0.07451778387007757 0 0 1.570796</pose>		
+		<pose> 0.1615197161299224 0 0.07451778387007757 0 0 1.570796 </pose>		
                 <!-- approximate as uniform box 0.387 x 0.387 x 0.092 m -->
 		<mass>20.0</mass>
                 <inertia>
@@ -689,10 +689,10 @@
       
       
 
-          <link name=block_2_1 >
+          <link name="block_2_1" >
             <pose> 1.33 0.5700000000000001 0.23018750000000002 0 0 0 </pose>
             <inertial>
-		<pose>-0.1615197161299224 0 0.07451778387007757 0 0 1.570796</pose>		
+		<pose> -0.1615197161299224 0 0.07451778387007757 0 0 1.570796 </pose>		
                 <!-- approximate as uniform box 0.387 x 0.387 x 0.092 m -->
 		<mass>20.0</mass>
                 <inertia>
@@ -741,10 +741,10 @@
       
       
 
-          <link name=block_2_2 >
+          <link name="block_2_2" >
             <pose> 1.71 0.95 0.23018750000000002 0 0 0 </pose>
             <inertial>
-		<pose>0.1615197161299224 0 0.07451778387007757 0 0 1.570796</pose>		
+		<pose> 0.1615197161299224 0 0.07451778387007757 0 0 1.570796 </pose>		
                 <!-- approximate as uniform box 0.387 x 0.387 x 0.092 m -->
 		<mass>20.0</mass>
                 <inertia>
@@ -793,10 +793,10 @@
       
       
 
-          <link name=block_2_3 >
+          <link name="block_2_3" >
             <pose> 2.09 1.33 0.23018750000000002 0 0 0 </pose>
             <inertial>
-		<pose>-0.1615197161299224 0 0.07451778387007757 0 0 1.570796</pose>		
+		<pose> -0.1615197161299224 0 0.07451778387007757 0 0 1.570796 </pose>		
                 <!-- approximate as uniform box 0.387 x 0.387 x 0.092 m -->
 		<mass>20.0</mass>
                 <inertia>
@@ -845,10 +845,10 @@
       
       
 
-          <link name=block_2_4 >
+          <link name="block_2_4" >
             <pose> 2.4699999999999998 1.71 0.23018750000000002 0 0 0 </pose>
             <inertial>
-		<pose>0.1615197161299224 0 0.07451778387007757 0 0 1.570796</pose>		
+		<pose> 0.1615197161299224 0 0.07451778387007757 0 0 1.570796 </pose>		
                 <!-- approximate as uniform box 0.387 x 0.387 x 0.092 m -->
 		<mass>20.0</mass>
                 <inertia>
@@ -897,10 +897,10 @@
       
       
 
-          <link name=block_2_5 >
+          <link name="block_2_5" >
             <pose> 2.8499999999999996 2.09 0.23018750000000002 0 0 0 </pose>
             <inertial>
-		<pose>-0.1615197161299224 0 0.07451778387007757 0 0 1.570796</pose>		
+		<pose> -0.1615197161299224 0 0.07451778387007757 0 0 1.570796 </pose>		
                 <!-- approximate as uniform box 0.387 x 0.387 x 0.092 m -->
 		<mass>20.0</mass>
                 <inertia>
@@ -951,10 +951,10 @@
       
       
 
-          <link name=block_3_0 >
+          <link name="block_3_0" >
             <pose> 1.33 0.19 0.3222625 0 0 0 </pose>
             <inertial>
-		<pose>0 0.1615197161299224 0.07451778387007757 0 0 0</pose>		
+		<pose> 0 0.1615197161299224 0.07451778387007757 0 0 0 </pose>		
                 <!-- approximate as uniform box 0.387 x 0.387 x 0.092 m -->
 		<mass>20.0</mass>
                 <inertia>
@@ -1003,10 +1003,10 @@
       
       
 
-          <link name=block_3_1 >
+          <link name="block_3_1" >
             <pose> 1.71 0.5700000000000001 0.3222625 0 0 0 </pose>
             <inertial>
-		<pose>0 -0.1615197161299224 0.07451778387007757 0 0 0</pose>		
+		<pose> 0 -0.1615197161299224 0.07451778387007757 0 0 0 </pose>		
                 <!-- approximate as uniform box 0.387 x 0.387 x 0.092 m -->
 		<mass>20.0</mass>
                 <inertia>
@@ -1055,10 +1055,10 @@
       
       
 
-          <link name=block_3_2 >
+          <link name="block_3_2" >
             <pose> 2.09 0.95 0.3222625 0 0 0 </pose>
             <inertial>
-		<pose>0 0.1615197161299224 0.07451778387007757 0 0 0</pose>		
+		<pose> 0 0.1615197161299224 0.07451778387007757 0 0 0 </pose>		
                 <!-- approximate as uniform box 0.387 x 0.387 x 0.092 m -->
 		<mass>20.0</mass>
                 <inertia>
@@ -1107,10 +1107,10 @@
       
       
 
-          <link name=block_3_3 >
+          <link name="block_3_3" >
             <pose> 2.47 1.33 0.3222625 0 0 0 </pose>
             <inertial>
-		<pose>0 -0.1615197161299224 0.07451778387007757 0 0 0</pose>		
+		<pose> 0 -0.1615197161299224 0.07451778387007757 0 0 0 </pose>		
                 <!-- approximate as uniform box 0.387 x 0.387 x 0.092 m -->
 		<mass>20.0</mass>
                 <inertia>
@@ -1159,10 +1159,10 @@
       
       
 
-          <link name=block_3_4 >
+          <link name="block_3_4" >
             <pose> 2.85 1.71 0.3222625 0 0 0 </pose>
             <inertial>
-		<pose>0 0.1615197161299224 0.07451778387007757 0 0 0</pose>		
+		<pose> 0 0.1615197161299224 0.07451778387007757 0 0 0 </pose>		
                 <!-- approximate as uniform box 0.387 x 0.387 x 0.092 m -->
 		<mass>20.0</mass>
                 <inertia>
@@ -1211,10 +1211,10 @@
       
       
 
-          <link name=block_3_5 >
+          <link name="block_3_5" >
             <pose> 3.23 2.09 0.3222625 0 0 0 </pose>
             <inertial>
-		<pose>0 -0.1615197161299224 0.07451778387007757 0 0 0</pose>		
+		<pose> 0 -0.1615197161299224 0.07451778387007757 0 0 0 </pose>		
                 <!-- approximate as uniform box 0.387 x 0.387 x 0.092 m -->
 		<mass>20.0</mass>
                 <inertia>
@@ -1265,10 +1265,10 @@
       
       
 
-          <link name=block_4_0 >
+          <link name="block_4_0" >
             <pose> 1.71 0.19 0.23018750000000002 0 0 0 </pose>
             <inertial>
-		<pose>0.1615197161299224 0 0.07451778387007757 0 0 1.570796</pose>		
+		<pose> 0.1615197161299224 0 0.07451778387007757 0 0 1.570796 </pose>		
                 <!-- approximate as uniform box 0.387 x 0.387 x 0.092 m -->
 		<mass>20.0</mass>
                 <inertia>
@@ -1317,10 +1317,10 @@
       
       
 
-          <link name=block_4_1 >
+          <link name="block_4_1" >
             <pose> 2.09 0.5700000000000001 0.23018750000000002 0 0 0 </pose>
             <inertial>
-		<pose>-0.1615197161299224 0 0.07451778387007757 0 0 1.570796</pose>		
+		<pose> -0.1615197161299224 0 0.07451778387007757 0 0 1.570796 </pose>		
                 <!-- approximate as uniform box 0.387 x 0.387 x 0.092 m -->
 		<mass>20.0</mass>
                 <inertia>
@@ -1369,10 +1369,10 @@
       
       
 
-          <link name=block_4_2 >
+          <link name="block_4_2" >
             <pose> 2.4699999999999998 0.95 0.23018750000000002 0 0 0 </pose>
             <inertial>
-		<pose>0.1615197161299224 0 0.07451778387007757 0 0 1.570796</pose>		
+		<pose> 0.1615197161299224 0 0.07451778387007757 0 0 1.570796 </pose>		
                 <!-- approximate as uniform box 0.387 x 0.387 x 0.092 m -->
 		<mass>20.0</mass>
                 <inertia>
@@ -1421,10 +1421,10 @@
       
       
 
-          <link name=block_4_3 >
+          <link name="block_4_3" >
             <pose> 2.85 1.33 0.23018750000000002 0 0 0 </pose>
             <inertial>
-		<pose>-0.1615197161299224 0 0.07451778387007757 0 0 1.570796</pose>		
+		<pose> -0.1615197161299224 0 0.07451778387007757 0 0 1.570796 </pose>		
                 <!-- approximate as uniform box 0.387 x 0.387 x 0.092 m -->
 		<mass>20.0</mass>
                 <inertia>
@@ -1473,10 +1473,10 @@
       
       
 
-          <link name=block_4_4 >
+          <link name="block_4_4" >
             <pose> 3.23 1.71 0.23018750000000002 0 0 0 </pose>
             <inertial>
-		<pose>0.1615197161299224 0 0.07451778387007757 0 0 1.570796</pose>		
+		<pose> 0.1615197161299224 0 0.07451778387007757 0 0 1.570796 </pose>		
                 <!-- approximate as uniform box 0.387 x 0.387 x 0.092 m -->
 		<mass>20.0</mass>
                 <inertia>
@@ -1525,10 +1525,10 @@
       
       
 
-          <link name=block_4_5 >
+          <link name="block_4_5" >
             <pose> 3.61 2.09 0.23018750000000002 0 0 0 </pose>
             <inertial>
-		<pose>-0.1615197161299224 0 0.07451778387007757 0 0 1.570796</pose>		
+		<pose> -0.1615197161299224 0 0.07451778387007757 0 0 1.570796 </pose>		
                 <!-- approximate as uniform box 0.387 x 0.387 x 0.092 m -->
 		<mass>20.0</mass>
                 <inertia>
@@ -1579,10 +1579,10 @@
       
       
 
-          <link name=block_5_0 >
+          <link name="block_5_0" >
             <pose> 2.09 0.19 0.1381125 0 0 0 </pose>
             <inertial>
-		<pose>0 0.1615197161299224 0.07451778387007757 0 0 0</pose>		
+		<pose> 0 0.1615197161299224 0.07451778387007757 0 0 0 </pose>		
                 <!-- approximate as uniform box 0.387 x 0.387 x 0.092 m -->
 		<mass>20.0</mass>
                 <inertia>
@@ -1631,10 +1631,10 @@
       
       
 
-          <link name=block_5_1 >
+          <link name="block_5_1" >
             <pose> 2.4699999999999998 0.5700000000000001 0.1381125 0 0 0 </pose>
             <inertial>
-		<pose>0 -0.1615197161299224 0.07451778387007757 0 0 0</pose>		
+		<pose> 0 -0.1615197161299224 0.07451778387007757 0 0 0 </pose>		
                 <!-- approximate as uniform box 0.387 x 0.387 x 0.092 m -->
 		<mass>20.0</mass>
                 <inertia>
@@ -1683,10 +1683,10 @@
       
       
 
-          <link name=block_5_2 >
+          <link name="block_5_2" >
             <pose> 2.8499999999999996 0.95 0.1381125 0 0 0 </pose>
             <inertial>
-		<pose>0 0.1615197161299224 0.07451778387007757 0 0 0</pose>		
+		<pose> 0 0.1615197161299224 0.07451778387007757 0 0 0 </pose>		
                 <!-- approximate as uniform box 0.387 x 0.387 x 0.092 m -->
 		<mass>20.0</mass>
                 <inertia>
@@ -1735,10 +1735,10 @@
       
       
 
-          <link name=block_5_3 >
+          <link name="block_5_3" >
             <pose> 3.23 1.33 0.1381125 0 0 0 </pose>
             <inertial>
-		<pose>0 -0.1615197161299224 0.07451778387007757 0 0 0</pose>		
+		<pose> 0 -0.1615197161299224 0.07451778387007757 0 0 0 </pose>		
                 <!-- approximate as uniform box 0.387 x 0.387 x 0.092 m -->
 		<mass>20.0</mass>
                 <inertia>
@@ -1787,10 +1787,10 @@
       
       
 
-          <link name=block_5_4 >
+          <link name="block_5_4" >
             <pose> 3.61 1.71 0.1381125 0 0 0 </pose>
             <inertial>
-		<pose>0 0.1615197161299224 0.07451778387007757 0 0 0</pose>		
+		<pose> 0 0.1615197161299224 0.07451778387007757 0 0 0 </pose>		
                 <!-- approximate as uniform box 0.387 x 0.387 x 0.092 m -->
 		<mass>20.0</mass>
                 <inertia>
@@ -1839,10 +1839,10 @@
       
       
 
-          <link name=block_5_5 >
+          <link name="block_5_5" >
             <pose> 3.9899999999999998 2.09 0.1381125 0 0 0 </pose>
             <inertial>
-		<pose>0 -0.1615197161299224 0.07451778387007757 0 0 0</pose>		
+		<pose> 0 -0.1615197161299224 0.07451778387007757 0 0 0 </pose>		
                 <!-- approximate as uniform box 0.387 x 0.387 x 0.092 m -->
 		<mass>20.0</mass>
                 <inertia>
@@ -1893,10 +1893,10 @@
       
       
 
-          <link name=block_6_0 >
+          <link name="block_6_0" >
             <pose> 2.47 0.19 0.092075 0 0 0 </pose>
             <inertial>
-		<pose>0.1615197161299224 0 0.07451778387007757 0 0 1.570796</pose>		
+		<pose> 0.1615197161299224 0 0.07451778387007757 0 0 1.570796 </pose>		
                 <!-- approximate as uniform box 0.387 x 0.387 x 0.092 m -->
 		<mass>20.0</mass>
                 <inertia>
@@ -1945,10 +1945,10 @@
       
       
 
-          <link name=block_6_1 >
+          <link name="block_6_1" >
             <pose> 2.85 0.5700000000000001 0.092075 0 0 0 </pose>
             <inertial>
-		<pose>-0.1615197161299224 0 0.07451778387007757 0 0 1.570796</pose>		
+		<pose> -0.1615197161299224 0 0.07451778387007757 0 0 1.570796 </pose>		
                 <!-- approximate as uniform box 0.387 x 0.387 x 0.092 m -->
 		<mass>20.0</mass>
                 <inertia>
@@ -1997,10 +1997,10 @@
       
       
 
-          <link name=block_6_2 >
+          <link name="block_6_2" >
             <pose> 3.2300000000000004 0.95 0.092075 0 0 0 </pose>
             <inertial>
-		<pose>0.1615197161299224 0 0.07451778387007757 0 0 1.570796</pose>		
+		<pose> 0.1615197161299224 0 0.07451778387007757 0 0 1.570796 </pose>		
                 <!-- approximate as uniform box 0.387 x 0.387 x 0.092 m -->
 		<mass>20.0</mass>
                 <inertia>
@@ -2049,10 +2049,10 @@
       
       
 
-          <link name=block_6_3 >
+          <link name="block_6_3" >
             <pose> 3.6100000000000003 1.33 0.092075 0 0 0 </pose>
             <inertial>
-		<pose>-0.1615197161299224 0 0.07451778387007757 0 0 1.570796</pose>		
+		<pose> -0.1615197161299224 0 0.07451778387007757 0 0 1.570796 </pose>		
                 <!-- approximate as uniform box 0.387 x 0.387 x 0.092 m -->
 		<mass>20.0</mass>
                 <inertia>
@@ -2101,10 +2101,10 @@
       
       
 
-          <link name=block_6_4 >
+          <link name="block_6_4" >
             <pose> 3.99 1.71 0.092075 0 0 0 </pose>
             <inertial>
-		<pose>0.1615197161299224 0 0.07451778387007757 0 0 1.570796</pose>		
+		<pose> 0.1615197161299224 0 0.07451778387007757 0 0 1.570796 </pose>		
                 <!-- approximate as uniform box 0.387 x 0.387 x 0.092 m -->
 		<mass>20.0</mass>
                 <inertia>
@@ -2153,10 +2153,10 @@
       
       
 
-          <link name=block_6_5 >
+          <link name="block_6_5" >
             <pose> 4.37 2.09 0.092075 0 0 0 </pose>
             <inertial>
-		<pose>-0.1615197161299224 0 0.07451778387007757 0 0 1.570796</pose>		
+		<pose> -0.1615197161299224 0 0.07451778387007757 0 0 1.570796 </pose>		
                 <!-- approximate as uniform box 0.387 x 0.387 x 0.092 m -->
 		<mass>20.0</mass>
                 <inertia>
