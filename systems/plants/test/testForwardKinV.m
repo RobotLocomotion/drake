@@ -77,10 +77,9 @@ for i = 1 : n_tests
   
   kinsol_options.use_mex = true;
   kinsol_mex = robot.doKinematics(q, [], [], [], kinsol_options);
-%   [x_mex, J_mex, dJ_mex] = robot.forwardKinV(kinsol_mex, end_effector, points, rotation_type, base);
-  [x_mex, J_mex] = robot.forwardKinV(kinsol_mex, end_effector, points, rotation_type, base);
+  [x_mex, J_mex, dJ_mex] = robot.forwardKinV(kinsol_mex, end_effector, points, rotation_type, base);
   valuecheck(x_mex, x);
   valuecheck(J_mex, J);
-%   valuecheck(dJ_mex, dJ);
+  valuecheck(dJ_mex, dJ);
 end
 end
