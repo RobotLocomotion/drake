@@ -1788,6 +1788,7 @@ GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, Eigen::Dynamic> Rigi
   // convert rotation representation
   GradientVar<Scalar, Eigen::Dynamic, 1> qrot = rotmat2Representation(R, rotation_type);
   x.value().bottomRows(qrot.value().rows()).colwise() = qrot.value();
+  x.gradient().value().setZero();
 
   if (gradient_order > 0) {
     std::vector<int> position_rows;
@@ -1800,18 +1801,18 @@ GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, Eigen::Dynamic> Rigi
     for (int i = SPACE_DIMENSION; i < SPACE_DIMENSION + qrot.value().rows(); i++)
       rotation_rows.push_back(i);
 
-    std::vector<int> cols;
-    cols.reserve(1);
-
+    std::vector<int> cols(1);
     for (int i = 0; i < npoints; i++) {
       cols[0] = i;
       const auto& point = points.template middleCols<1>(i);
       auto point_gradient = matGradMult(R.gradient().value(), point).eval();
       point_gradient += p.gradient().value();
+
       setSubMatrixGradient(x.gradient().value(), point_gradient, position_rows, cols, x.value().rows());
       setSubMatrixGradient(x.gradient().value(), qrot.gradient().value(), rotation_rows, cols, x.value().rows());
     }
   }
+
   return x;
 }
 
@@ -1847,20 +1848,7 @@ GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwar
     for (int col = 0; col < J_geometric.value().cols(); col++) {
       auto cols = intRange<1>(col);
       setSubMatrixGradient<Eigen::Dynamic>(Jomega.gradient().value(), getSubMatrixGradient<Eigen::Dynamic>(J_geometric.gradient().value(), rows_omega, cols, J_geometric.value().rows()), rows_omega, cols, Jomega.value().rows());
-      setSubMatrixGradient<Eigen::Dynamic>(Jv.gradient().value(), getSubMatrixGradient<Eigen::Dynamic>(J_geometric.gradient().value(), rows_v, cols, J_geometric.value().rows()), rows_omega, cols, Jomega.value().rows());
-    }
-  }
-
-  // compute position Jacobian
-  GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> Jpos(SPACE_DIMENSION * npoints, J_geometric.value().cols(), nq, gradient_order);
-  for (int i = 0; i < npoints; i++) {
-    const auto& point = x.value().template block<SPACE_DIMENSION, 1>(0, i);
-    Jpos.value().template middleRows<SPACE_DIMENSION>(SPACE_DIMENSION * i) = Jv.value();
-    Jpos.value().template middleRows<SPACE_DIMENSION>(SPACE_DIMENSION * i).noalias() += Jomega.value().colwise().cross(point);
-
-    if (gradient_order > 0) {
-      // TODO: Jpos gradient
-      Jpos.gradient().value().setZero();
+      setSubMatrixGradient<Eigen::Dynamic>(Jv.gradient().value(), getSubMatrixGradient<Eigen::Dynamic>(J_geometric.gradient().value(), rows_v, cols, J_geometric.value().rows()), rows_omega, cols, Jv.value().rows());
     }
   }
 
@@ -1881,7 +1869,7 @@ GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwar
     Jrot.gradient().value() = matGradMultMat(Phi.value(), Jomega.value(), Phi.gradient().value(), Jomega.gradient().value());
   }
 
-  // compute J from JPos and JRot
+  // compute J
   GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> J(x.value().size(), nv, nq, gradient_order);
   J.value().setZero();
   if (gradient_order > 0)
@@ -1891,11 +1879,19 @@ GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwar
   for (int i = 0; i < npoints; i++) {
     // translation part
     int col_start = 0;
+    const auto& point = x.value().template block<SPACE_DIMENSION, 1>(0, i);
     for (std::vector<int>::iterator it = v_indices.begin(); it != v_indices.end(); ++it) {
-      J.value().template block<SPACE_DIMENSION, 1>(row_start, *it) = Jpos.value().template block<SPACE_DIMENSION, 1>(SPACE_DIMENSION * i, col_start);
+      J.value().template block<SPACE_DIMENSION, 1>(row_start, *it) = Jv.value().template middleCols<1>(col_start);
+      const auto& Jomega_col = Jomega.value().template middleCols<1>(col_start);
+      J.value().template block<SPACE_DIMENSION, 1>(row_start, *it).noalias() += Jomega_col.cross(point);
+
       if (gradient_order > 0) {
-        auto J_block_gradient = getSubMatrixGradient<Eigen::Dynamic>(Jpos.gradient().value(), intRange<SPACE_DIMENSION>(SPACE_DIMENSION * i), intRange<1>(col_start), Jpos.value().rows());
-        setSubMatrixGradient<Eigen::Dynamic>(J.gradient().value(), J_block_gradient, intRange<SPACE_DIMENSION>(row_start), intRange<1>(*it), J.value().rows());
+        auto rows = intRange<SPACE_DIMENSION>(0);
+        auto dJpos_col = getSubMatrixGradient<Eigen::Dynamic>(Jv.gradient().value(), rows, intRange<1>(col_start), Jv.value().rows());
+        auto dJomega_col = getSubMatrixGradient<Eigen::Dynamic>(Jomega.gradient().value(), rows, intRange<1>(col_start), Jv.value().rows());
+        auto dpoint = getSubMatrixGradient<Eigen::Dynamic>(x.gradient().value(), rows, intRange<1>(i), x.value().rows());
+        dJpos_col.noalias() += dcrossProduct(Jomega_col, point, dJomega_col, dpoint);
+        setSubMatrixGradient<Eigen::Dynamic>(J.gradient().value(), dJpos_col, intRange<SPACE_DIMENSION>(row_start), intRange<1>(*it), J.value().rows());
       }
       col_start++;
     }
@@ -1906,8 +1902,21 @@ GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwar
       col_start = 0;
       for (std::vector<int>::iterator it = v_indices.begin(); it != v_indices.end(); ++it) {
         J.value().template block<Eigen::Dynamic, 1>(row_start, *it, Jrot.value().rows(), 1) = Jrot.value().template middleCols<1>(col_start);
+
         if (gradient_order > 0) {
-          // TODO: gradient
+          std::vector<int> rows;
+          rows.reserve(Jrot.value().rows());
+          for (int k = 0; k < Jrot.value().rows(); k++)
+            rows.push_back(k);
+          std::vector<int> cols(1);
+          cols[0] = col_start;
+          auto dJrot_col = getSubMatrixGradient(Jrot.gradient().value(), rows, cols, Jrot.value().rows());
+
+          rows.clear();
+          for (int k = row_start; k < row_start + Jrot.value().rows(); k++)
+            rows.push_back(k);
+          cols[0] = *it;
+          setSubMatrixGradient(J.gradient().value(), dJrot_col, rows, cols, J.value().rows());
         }
         col_start++;
       }
