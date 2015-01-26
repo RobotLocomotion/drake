@@ -72,8 +72,10 @@ public:
 
   MatrixXd qdot_to_v;
   MatrixXd dqdot_to_v_dqi;
+  MatrixXd dqdot_to_v_dq;
   MatrixXd v_to_qdot;
   MatrixXd dv_to_qdot_dqi;
+  MatrixXd dv_to_qdot_dq;
 
   Vector6d twist;
   Gradient<Vector6d, Eigen::Dynamic>::type dtwistdq;
