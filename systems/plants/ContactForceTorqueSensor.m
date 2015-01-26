@@ -117,6 +117,8 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensorWithState %& Visu
         tsmanip.LCP_cache.data.contact_data.xB(:,contact_idxB)];
       
       % contact normal and tangential directions in world coordinates
+      % (note that they could be different sizes on different calls, so
+      % check the cache elements to extract the sizes)
       nD = length(tsmanip.LCP_cache.data.contact_data.d);
       nC_body = nA + nB;
       nC = size(tsmanip.LCP_cache.data.contact_data.normal,2);
