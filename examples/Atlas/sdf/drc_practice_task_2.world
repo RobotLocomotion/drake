@@ -255,7 +255,7 @@
    -->
     <model name="red_tape">
       <static>true</static>
-      <pose>9.56 0 0 0 0 0</pose>
+      <pose>9.947 0 0 0 0 0</pose>
       <link name="link">
       <visual name="visual">
         <geometry>
