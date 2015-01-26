@@ -226,33 +226,33 @@
    
    <include>
      <static>true</static>
-    <name>level_block_3</name>
-    <uri>model://block_level_steps_3</uri>
-    <pose>4.9471 -1.012 0 0 0 0</pose>
+    <name>angle_block_2</name>
+    <uri>model://block_angle_steps_1</uri>
+    <pose>4.55974 -1.012 0 0 0 0</pose>
    </include>
-   
+  
    <include>
      <static>true</static>
-    <name>level_block_4</name>
-    <uri>model://block_level_steps_4</uri>
-    <pose>8.399 0.917 0 0 0 3.14159</pose>
+    <name>angle_block_2</name>
+    <uri>model://block_angle_steps_2</uri>
+    <pose>9.56106065 0.917 0 0 0 3.14159</pose>
    </include>
-
+<!-- 
    <include>
      <static>true</static>
-     <name>angle_block_base_1</name>
+     <name>angle_block_steps_1</name>
      <uri>model://block_angle_steps</uri>
      <pose>4.38 -1.212 -.142 0 0 0</pose>
    </include>
-
-   
+-->   
+   <!--
    <include>
      <static>false</static>
      <name>block_cover</name>
      <uri>model://block_cover</uri>
      <pose>2.41 -1.2 0.34 0 0 0</pose>
    </include>
-   
+   -->
     <model name="red_tape">
       <static>true</static>
       <pose>9.56 0 0 0 0 0</pose>
