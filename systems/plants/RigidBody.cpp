@@ -14,8 +14,10 @@ RigidBody::RigidBody(void) :
     dJdq(0, 0),
     qdot_to_v(0, 0),
     dqdot_to_v_dqi(0, 0),
+    dqdot_to_v_dq(0, 0),
     v_to_qdot(0, 0),
     dv_to_qdot_dqi(0, 0),
+    dv_to_qdot_dq(0, 0),
     T_new(Isometry3d::Identity()),
     dTdq_new(HOMOGENEOUS_TRANSFORM_SIZE, 0),
     twist(TWIST_SIZE, 1),
@@ -46,8 +48,11 @@ void RigidBody::setN(int n) {
   dTdq_new.resize(T.size(), n);
   dtwistdq.resize(twist.size(), n);
 
-  dJdotVdq.resize(TWIST_SIZE, n); // TODO: nq
+  dJdotVdq.resize(TWIST_SIZE, n);
   dJdotVdv.resize(TWIST_SIZE, n); // TODO: nv
+
+  dqdot_to_v_dq.resize(Eigen::NoChange, n);
+  dv_to_qdot_dq.resize(Eigen::NoChange, n);
 }
 
 
@@ -60,8 +65,10 @@ void RigidBody::setJoint(std::unique_ptr<DrakeJoint> new_joint)
   J.resize(TWIST_SIZE, joint->getNumVelocities());
   qdot_to_v.resize(joint->getNumVelocities(), joint->getNumPositions()),
   dqdot_to_v_dqi.resize(qdot_to_v.size(), joint->getNumPositions()),
+  dqdot_to_v_dq.resize(qdot_to_v.size(), Eigen::NoChange);
   v_to_qdot.resize(joint->getNumPositions(), joint->getNumVelocities()),
   dv_to_qdot_dqi.resize(v_to_qdot.size(), joint->getNumPositions());
+  dv_to_qdot_dq.resize(v_to_qdot.size(), Eigen::NoChange);
   dSdotVdqi.resize(TWIST_SIZE, joint->getNumPositions());
   dSdotVdvi.resize(TWIST_SIZE, joint->getNumVelocities());
 }

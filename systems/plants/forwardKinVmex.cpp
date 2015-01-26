@@ -66,7 +66,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
   plhs[0] = eigenToMatlab(x.value());
 
   if (nlhs > 1) {
-    auto J = model->forwardJacV(x, body_or_frame_ind, base_or_frame_ind, rotation_type);
+    auto J = model->forwardJacV(x, body_or_frame_ind, base_or_frame_ind, rotation_type, false);
     plhs[1] = eigenToMatlab(J.value());
     if (nlhs > 2) {
       plhs[2] = eigenToMatlab(J.gradient().value());
