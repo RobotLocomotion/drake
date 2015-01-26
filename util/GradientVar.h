@@ -91,6 +91,19 @@ public:
     return hasGradient() ? grad->value().cols() : -1;
   }
 
+  void resize(int rows, int cols, int nq = 0, int order = 0)
+  {
+    val.resize(rows, cols);
+    if (order > 0) {
+      if (hasGradient()) {
+        grad->resize(rows * cols, nq, nq, order - 1);
+      }
+      else {
+        grad = std::move(std::unique_ptr<ChildGradientVarType>(new ChildGradientVarType(rows * cols, nq, nq, order - 1)));
+      }
+    }
+  }
+
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF_VECTORIZABLE_FIXED_SIZE(Scalar, DataType::SizeAtCompileTime)
 };

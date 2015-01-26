@@ -340,21 +340,7 @@ Eigen::Matrix<typename Derived::Scalar, 3, 1> rotmat2rpy(const Eigen::MatrixBase
 template<typename Scalar>
 DLLEXPORT GradientVar<Scalar, Eigen::Dynamic, 1> rotmat2Representation(const GradientVar<Scalar, SPACE_DIMENSION, SPACE_DIMENSION>& R, int rotation_type)
 {
-  int rotation_representation_size;
-  switch (rotation_type) {
-  case 0:
-    rotation_representation_size = 0;
-    break;
-  case 1:
-    rotation_representation_size = 3;
-    break;
-  case 2:
-    rotation_representation_size = 4;
-    break;
-  default:
-    throw std::runtime_error("rotation representation type not recognized");
-  }
-  GradientVar<Scalar, Eigen::Dynamic, 1> ret(rotation_representation_size, 1, R.getNumVariables());
+  GradientVar<Scalar, Eigen::Dynamic, 1> ret(rotationRepresentationSize(rotation_type), 1, R.getNumVariables());
   switch (rotation_type) {
   case 0:
     // empty matrix, already done
@@ -375,6 +361,23 @@ DLLEXPORT GradientVar<Scalar, Eigen::Dynamic, 1> rotmat2Representation(const Gra
     throw std::runtime_error("rotation representation type not recognized");
   }
   return ret;
+}
+
+DLLEXPORT int rotationRepresentationSize(int rotation_type)
+{
+  switch (rotation_type) {
+  case 0:
+    return 0;
+    break;
+  case 1:
+    return 3;
+    break;
+  case 2:
+    return 4;
+    break;
+  default:
+    throw std::runtime_error("rotation representation type not recognized");
+  }
 }
 
 template<typename Derived>
@@ -684,24 +687,9 @@ DLLEXPORT GradientVar<Scalar, Eigen::Dynamic, SPACE_DIMENSION> angularvel2Repres
     int rotation_type,
     GradientVar<Scalar, Eigen::Dynamic, 1> qrot)
 {
-  int rotation_representation_size;
-  switch (rotation_type) {
-  case 0:
-    rotation_representation_size = 0;
-    break;
-  case 1:
-    rotation_representation_size = 3;
-    break;
-  case 2:
-    rotation_representation_size = 4;
-    break;
-  default:
-    throw std::runtime_error("rotation representation type not recognized");
-  }
-
   int nq = qrot.getNumVariables();
   int gradient_order = qrot.maxOrder();
-  GradientVar<Scalar, Eigen::Dynamic, SPACE_DIMENSION> ret(rotation_representation_size, SPACE_DIMENSION, nq, gradient_order);
+  GradientVar<Scalar, Eigen::Dynamic, SPACE_DIMENSION> ret(rotationRepresentationSize(rotation_type), SPACE_DIMENSION, nq, gradient_order);
   switch (rotation_type) {
   case 0:
     // done

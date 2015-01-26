@@ -1,5 +1,6 @@
 #include <mex.h>
 #include <iostream>
+#include <memory>
 #include "drakeUtil.h"
 #include "RigidBodyManipulator.h"
 #include "drakeGeometryUtil.h"
@@ -7,12 +8,6 @@
 
 using namespace Eigen;
 using namespace std;
-
-/*
- * A C version of the geometricJacobian function
- *
- * Call with [J, vIndices] = geometricJacobianmex(model_ptr, base_body_or_frame_ind, end_effector_body_or_frame_ind, expressed_in_body_or_frame_ind);
- */
 
 // TODO: stop copying these functions everywhere and find a good place for them
 template <typename DerivedA>
@@ -47,9 +42,9 @@ Eigen::Matrix<double, RowsAtCompileTime, ColsAtCompileTime> matlabToEigen(const 
   return ret;
 }
 
-void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
+void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
 
-  std::string usage = "Usage [J, dJ] = forwardJacVMex(model_ptr, body_or_frame_ind, points, rotation_type, base_or_frame_ind)";
+  std::string usage = "Usage [x, J, dJ] = forwardKinVMex(model_ptr, body_or_frame_ind, points, rotation_type, base_or_frame_ind)";
   if (nrhs != 5) {
     mexErrMsgIdAndTxt("Drake:geometricJacobianmex:WrongNumberOfInputs", usage.c_str());
   }
@@ -66,13 +61,15 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   int rotation_type = (int) mxGetScalar(prhs[3]);
   int base_or_frame_ind = ((int) mxGetScalar(prhs[4])) - 1; // base 1 to base 0
 
-  int gradient_order = nlhs - 1;
+  int gradient_order = nlhs > 1 ? nlhs - 2 : 0;
+  auto x = model->forwardKinNew(points, body_or_frame_ind, base_or_frame_ind, rotation_type, gradient_order);
+  plhs[0] = eigenToMatlab(x.value());
+
   if (nlhs > 1) {
-    auto J = model->forwardJacV<double>(body_or_frame_ind, points, rotation_type, base_or_frame_ind, gradient_order);
-    plhs[0] = eigenToMatlab(J.value());
-    if (gradient_order > 0) {
-      plhs[1] = eigenToMatlab(J.gradient().value());
+    auto J = model->forwardJacV(x, body_or_frame_ind, base_or_frame_ind, rotation_type);
+    plhs[1] = eigenToMatlab(J.value());
+    if (nlhs > 2) {
+      plhs[2] = eigenToMatlab(J.gradient().value());
     }
   }
-
 }
