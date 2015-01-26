@@ -87,6 +87,8 @@ DLLEXPORT Eigen::Matrix<typename Derived::Scalar, 3, 1> rotmat2rpy(const Eigen::
 template<typename Scalar>
 DLLEXPORT GradientVar<Scalar, Eigen::Dynamic, 1> rotmat2Representation(const GradientVar<Scalar, SPACE_DIMENSION, SPACE_DIMENSION>& R, int rotation_type);
 
+DLLEXPORT int rotationRepresentationSize(int rotation_type);
+
 /*
  * rpy2x
  */

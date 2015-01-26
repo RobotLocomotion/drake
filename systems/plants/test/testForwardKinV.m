@@ -1,10 +1,12 @@
 function testForwardKinV
 
-testAtlas();
+testAtlasGradients();
+testAtlasMex('rpy');
+% testAtlasMex('quat');
 
 end
 
-function testAtlas()
+function testAtlasGradients()
 
 % test only works for rpy parameterized robots, since in this case qdot = v
 robot = createAtlas('rpy');
@@ -15,6 +17,15 @@ if robot.use_new_kinsol
   testGradients(robot, 2);
 end
 
+end
+
+function testAtlasMex(floating_joint_type)
+robot = createAtlas(floating_joint_type);
+if robot.use_new_kinsol
+  checkMex(robot, 0);
+  checkMex(robot, 1);
+  checkMex(robot, 2);
+end
 end
 
 function testGradients(robot, rotation_type)
@@ -43,5 +54,33 @@ while test_number < n_tests
     valuecheck(dJ_geval, dJ, 1e-10);
     test_number = test_number + 1;
   end
+end
+end
+
+function checkMex(robot, rotation_type)
+nb = length(robot.body);
+body_range = [1, nb];
+
+n_tests = 5;
+for i = 1 : n_tests
+  base = 1; randi(body_range);
+  end_effector = randi(body_range);
+  
+  q = getRandomConfiguration(robot);
+  nPoints = randi([1, 10]);
+  points = randn(3, nPoints);
+  
+  kinsol_options.use_mex = false;
+  kinsol_options.compute_gradients = true;
+  kinsol = robot.doKinematics(q, [], [], [], kinsol_options);
+  [x, J, dJ] = robot.forwardKinV(kinsol, end_effector, points, rotation_type, base);
+  
+  kinsol_options.use_mex = true;
+  kinsol_mex = robot.doKinematics(q, [], [], [], kinsol_options);
+%   [x_mex, J_mex, dJ_mex] = robot.forwardKinV(kinsol_mex, end_effector, points, rotation_type, base);
+  [x_mex, J_mex] = robot.forwardKinV(kinsol_mex, end_effector, points, rotation_type, base);
+  valuecheck(x_mex, x);
+  valuecheck(J_mex, J);
+%   valuecheck(dJ_mex, dJ);
 end
 end
