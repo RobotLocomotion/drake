@@ -15,6 +15,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     position_control=false;
     LCP_cache;
     enable_fastqp; % whether we use the active set LCP
+    z_inactive_guess_tol = .01;
   end
 
   methods
@@ -53,6 +54,12 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
           warning('Drake:TimeSteppingRigidBodyManipulator:MissingDependency','You seem to be missing fastQP. Disabling active-set LCP update.')
           obj.enable_fastqp = false;
         end
+      end
+      
+      if isfield(options,'z_inactive_guess_tol')
+        % you might consider setting this if the system consistently 
+        % gives the "ResolvingLCP" warning
+        obj.z_inactive_guess_tol = options.z_inactive_guess_tol;
       end
 
       obj.timestep = timestep;
@@ -236,7 +243,6 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         num_q = obj.manip.num_positions;
         q=x(1:num_q); qd=x(num_q+(1:num_q));
         h = obj.timestep;
-        z_inactive_guess_tol = .01;
 
         if (nargout<5)
           [H,C,B] = manipulatorDynamics(obj.manip,q,qd);
@@ -303,7 +309,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
               [phiL,JL] = obj.manip.jointLimitConstraints(q);
             end
             if isempty(possible_limit_indices)
-              possible_limit_indices = (phiL + h*JL*qd) < z_inactive_guess_tol;
+              possible_limit_indices = (phiL + h*JL*qd) < obj.z_inactive_guess_tol;
             end
             nL = sum(possible_limit_indices);
             
@@ -336,7 +342,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
           end
           
           if isempty(possible_contact_indices)
-            possible_contact_indices = (phiC+h*n*qd) < z_inactive_guess_tol;
+            possible_contact_indices = (phiC+h*n*qd) < obj.z_inactive_guess_tol;
           end
           nC = sum(possible_contact_indices);
           mC = length(D);
