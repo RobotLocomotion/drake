@@ -1,0 +1,29 @@
+<?xml version="1.0" ?>
+
+<robot name="block_hand" xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <link name="block_hand_box">
+    <inertial>
+      <mass value="1.0"/>
+      <origin xyz="0 0 0"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <box size="0.1 0.1 0.1"/>
+      </geometry>
+      <material name="gray">
+        <color rgba="0.5 0.5 .5 1"/>
+      </material>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+    </visual>
+    <collision group="block_hand">
+      <geometry>
+        <box size="0.1 0.1 0.1"/>
+      </geometry>
+      <material name="red">
+        <color rgba="1.0 0.0 .0 1"/>
+      </material>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+    </collision>
+  </link>
+</robot>
