@@ -1093,6 +1093,48 @@ void RigidBodyManipulator::getCMM(double* const q, double* const qd, MatrixBase<
   }
 }
 
+template <typename Scalar>
+GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::centerOfMass(int gradient_order, const std::set<int>& robotnum)
+{
+  if (!use_new_kinsol)
+    throw std::runtime_error("method requires new kinsol format");
+
+  int nq = num_dof;
+  GradientVar<Scalar, Eigen::Dynamic, 1> com(SPACE_DIMENSION, 1, nq, gradient_order);
+  double m = 0.0;
+  double body_mass;
+  com.value().setZero();
+
+  for (int i = 0; i < num_bodies; i++) {
+    std::set<int>::iterator robotnum_it = robotnum.find(bodies[i]->robotnum);
+    if (robotnum_it != robotnum.end())
+    {
+      body_mass = bodies[i]->mass;
+      if (body_mass > 0) {
+        Vector3d body_com_body_frame = (bodies[i]->com.topRows<SPACE_DIMENSION>());
+        auto body_com = forwardKinNew(body_com_body_frame, i, 0, 0, gradient_order);
+        com.value() *= m;
+        com.value().noalias() += body_mass * body_com.value();
+        com.value() /= (m + body_mass);
+
+        if (gradient_order > 0) {
+          com.gradient().value() *= m;
+          com.gradient().value().noalias() += body_mass * body_com.gradient().value();
+          com.gradient().value() /= (m + body_mass);
+        }
+
+        if (gradient_order > 1) {
+          com.gradient().gradient().value() *= m;
+          com.gradient().gradient().value().noalias() += body_mass * body_com.gradient().gradient().value();
+          com.gradient().gradient().value() /= (m + body_mass);
+        }
+
+        m += body_mass;
+      }
+    }
+  }
+  return com;
+}
 
 template <typename Derived>
 void RigidBodyManipulator::getCOM(MatrixBase<Derived> &com, const std::set<int> &robotnum)
@@ -1580,6 +1622,9 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJ
 template<typename Scalar>
 GradientVar<Scalar, SPACE_DIMENSION + 1, SPACE_DIMENSION + 1> RigidBodyManipulator::relativeTransform(int base_or_frame_ind, int body_or_frame_ind, int gradient_order)
 {
+  if (!use_new_kinsol)
+    throw std::runtime_error("method requires new kinsol format");
+
   int nq = num_dof;
   GradientVar<Scalar, SPACE_DIMENSION + 1, SPACE_DIMENSION + 1> ret(SPACE_DIMENSION + 1, SPACE_DIMENSION + 1, nq, gradient_order);
 
@@ -1779,7 +1824,7 @@ void RigidBodyManipulator::forwarddJac(const int body_or_frame_id, const MatrixB
 }
 
 template <typename DerivedPoints>
-GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardKinNew(const MatrixBase<DerivedPoints>& points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type, int gradient_order)
+GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, DerivedPoints::ColsAtCompileTime> RigidBodyManipulator::forwardKinNew(const MatrixBase<DerivedPoints>& points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type, int gradient_order)
 {
   if (gradient_order > 2) {
     throw std::runtime_error("only first and second order gradients are available");
@@ -1848,6 +1893,9 @@ GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, Eigen::Dynamic> Rigi
 template <typename Scalar, int XRows, int XCols>
 GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardJacV(const GradientVar<Scalar, XRows, XCols>& x, int body_or_frame_ind, int base_or_frame_ind, int rotation_type, bool compute_analytic_jacobian, int gradient_order)
 {
+  if (!use_new_kinsol)
+    throw std::runtime_error("method requires new kinsol format");
+
   if (gradient_order > 1) {
     throw std::runtime_error("only first order gradient is available");
   }
@@ -2218,6 +2266,7 @@ std::string RigidBodyManipulator::getBodyOrFrameName(int body_or_frame_id)
 // explicit instantiations (required for linking):
 template DLLEXPORT_RBM void RigidBodyManipulator::getCMM(double * const, double * const, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<MatrixXd> > &);
 template DLLEXPORT_RBM void RigidBodyManipulator::getCMM(double * const, double * const, MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > &);
+template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, 1> RigidBodyManipulator::centerOfMass(int, const std::set<int>&);
 template DLLEXPORT_RBM void RigidBodyManipulator::getCOM(MatrixBase< Map<Vector3d> > &,const set<int> &);
 template DLLEXPORT_RBM void RigidBodyManipulator::getCOM(MatrixBase< Map<MatrixXd> > &,const set<int> &);
 template DLLEXPORT_RBM void RigidBodyManipulator::getCOMJac(MatrixBase< Map<MatrixXd> > &,const set<int> &);
