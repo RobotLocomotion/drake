@@ -118,7 +118,7 @@ else
       [Phi, ~, dPhi, ~] = angularvel2RepresentationDotMatrix(rotation_type, qrot, dqrot);
       dJrot = matGradMultMat(Phi, Jomega, dPhi, dJomega);
     else
-      Phi = angularVel2RepresentationDotMatrix(rotation_type, qrot);
+      Phi = angularvel2RepresentationDotMatrix(rotation_type, qrot);
     end
     Jrot = Phi * Jomega;
     

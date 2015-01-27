@@ -1,4 +1,4 @@
-function [x,J,dJ] = forwardKin(obj,kinsol,body_or_frame_ind,pts,rotation_type)
+function [x,J,dJ] = forwardKin(obj,kinsol,body_or_frame_ind,pts,rotation_type, base_ind)
 % computes the position of pts (given in the body frame) in the global frame
 %
 % @param kinsol solution structure obtained from doKinematics
@@ -28,18 +28,22 @@ function [x,J,dJ] = forwardKin(obj,kinsol,body_or_frame_ind,pts,rotation_type)
 % x will be a 7xm matrix and (following out gradient convention) J will be
 % a ((7xm)*(q)) matrix with [J1;J2;....;Jm] where Ji = dxidq
 
+if nargin<6
+  base_ind = 1
+end
+
 if nargin<5
   rotation_type = 0;
 end
 
 if obj.use_new_kinsol
   if nargout > 2
-    [x, J, dJ] = forwardKinNew(obj, kinsol, body_or_frame_ind, pts, rotation_type);
+    [x, J, dJ] = forwardKinNew(obj, kinsol, body_or_frame_ind, pts, rotation_type, base_ind);
     dJ = reshape(dJ, size(J, 1), []); % convert to strange second derivative output format
   elseif nargout > 1
-    [x, J] = forwardKinNew(obj, kinsol, body_or_frame_ind, pts, rotation_type);
+    [x, J] = forwardKinNew(obj, kinsol, body_or_frame_ind, pts, rotation_type, base_ind);
   else
-    x = forwardKinNew(obj, kinsol, body_or_frame_ind, pts, rotation_type);
+    x = forwardKinNew(obj, kinsol, body_or_frame_ind, pts, rotation_type, base_ind);
   end
 else
   
