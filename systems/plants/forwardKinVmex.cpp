@@ -48,15 +48,26 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
   int base_or_frame_ind = ((int) mxGetScalar(prhs[4])) - 1; // base 1 to base 0
   bool compute_analytic_jacobian = (bool) (mxGetLogicals(prhs[5]))[0];
 
-  int gradient_order = nlhs > 1 ? nlhs - 2 : 0;
-  auto x = model->forwardKinNew(points, body_or_frame_ind, base_or_frame_ind, rotation_type, gradient_order);
-  plhs[0] = eigenToMatlab(x.value());
+  if (compute_analytic_jacobian) {
+    int gradient_order = nlhs - 1; // position gradient order
+    auto x = model->forwardKinNew(points, body_or_frame_ind, base_or_frame_ind, rotation_type, gradient_order);
 
-  if (nlhs > 1) {
-    auto J = model->forwardJacV(x, body_or_frame_ind, base_or_frame_ind, rotation_type, compute_analytic_jacobian);
-    plhs[1] = eigenToMatlab(J.value());
-    if (nlhs > 2) {
-      plhs[2] = eigenToMatlab(J.gradient().value());
+    plhs[0] = eigenToMatlab(x.value());
+    if (gradient_order > 0)
+      plhs[1] = eigenToMatlab(x.gradient().value());
+    if (gradient_order > 1)
+      plhs[2] = eigenToMatlab(x.gradient().gradient().value());
+  }
+  else {
+    int gradient_order = nlhs > 1 ? nlhs - 2 : 0; // Jacobian gradient order
+    auto x = model->forwardKinNew(points, body_or_frame_ind, base_or_frame_ind, rotation_type, gradient_order);
+    plhs[0] = eigenToMatlab(x.value());
+    if (nlhs > 1) {
+      auto J = model->forwardJacV(x, body_or_frame_ind, base_or_frame_ind, rotation_type, compute_analytic_jacobian, gradient_order);
+      plhs[1] = eigenToMatlab(J.value());
+      if (nlhs > 2) {
+        plhs[2] = eigenToMatlab(J.gradient().value());
+      }
     }
   }
 }

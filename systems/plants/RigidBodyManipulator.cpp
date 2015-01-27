@@ -1781,24 +1781,27 @@ void RigidBodyManipulator::forwarddJac(const int body_or_frame_id, const MatrixB
 template <typename DerivedPoints>
 GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardKinNew(const MatrixBase<DerivedPoints>& points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type, int gradient_order)
 {
-  if (gradient_order > 1) {
-    throw std::runtime_error("only first order gradient is available");
+  if (gradient_order > 2) {
+    throw std::runtime_error("only first and second order gradients are available");
   }
+  int x_gradient_order = std::min(gradient_order, 1);
+  int J_gradient_order = gradient_order > 1 ? gradient_order - 1 : 0;
+
   int nq = num_dof;
   int npoints = static_cast<int>(points.cols());
   typedef typename DerivedPoints::Scalar Scalar;
 
   // compute rotation and translation
-  GradientVar<Scalar, SPACE_DIMENSION + 1, SPACE_DIMENSION + 1> T = relativeTransform<Scalar>(new_body_or_frame_ind, current_body_or_frame_ind, gradient_order);
+  GradientVar<Scalar, SPACE_DIMENSION + 1, SPACE_DIMENSION + 1> T = relativeTransform<Scalar>(new_body_or_frame_ind, current_body_or_frame_ind, x_gradient_order);
 
-  GradientVar<Scalar, SPACE_DIMENSION, SPACE_DIMENSION> R(SPACE_DIMENSION, SPACE_DIMENSION, nq, gradient_order);
+  GradientVar<Scalar, SPACE_DIMENSION, SPACE_DIMENSION> R(SPACE_DIMENSION, SPACE_DIMENSION, nq, x_gradient_order);
   R.value() = T.value().template topLeftCorner<SPACE_DIMENSION, SPACE_DIMENSION>();
-  if (gradient_order > 0)
+  if (x_gradient_order > 0)
     R.gradient().value() = getSubMatrixGradient<Eigen::Dynamic>(T.gradient().value(), intRange<SPACE_DIMENSION>(0), intRange<SPACE_DIMENSION>(0), T.value().rows());
 
-  GradientVar<Scalar, SPACE_DIMENSION, 1> p(SPACE_DIMENSION, 1, nq, gradient_order);
+  GradientVar<Scalar, SPACE_DIMENSION, 1> p(SPACE_DIMENSION, 1, nq, x_gradient_order);
   p.value() = T.value().template topRightCorner<SPACE_DIMENSION, 1>();
-  if (gradient_order > 0)
+  if (x_gradient_order > 0)
     p.gradient().value() = getSubMatrixGradient<Eigen::Dynamic>(T.gradient().value(), intRange<SPACE_DIMENSION>(0), intRange<1>(SPACE_DIMENSION), T.value().rows());
 
   // transform points to new frame
@@ -1811,7 +1814,7 @@ GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, Eigen::Dynamic> Rigi
   x.value().bottomRows(qrot.value().rows()).colwise() = qrot.value();
   x.gradient().value().setZero();
 
-  if (gradient_order > 0) {
+  if (x_gradient_order > 0) {
     std::vector<int> position_rows;
     position_rows.reserve(SPACE_DIMENSION);
     for (int i = 0; i < SPACE_DIMENSION; i++)
@@ -1834,13 +1837,17 @@ GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, Eigen::Dynamic> Rigi
     }
   }
 
+  if (gradient_order > 1) {
+    auto J = forwardJacV(x, current_body_or_frame_ind, new_body_or_frame_ind, rotation_type, true, J_gradient_order);
+    x.gradient().gradient().value() = J.gradient().value();
+  }
+
   return x;
 }
 
 template <typename Scalar, int XRows, int XCols>
-GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardJacV(const GradientVar<Scalar, XRows, XCols>& x, int body_or_frame_ind, int base_or_frame_ind, int rotation_type, bool compute_analytic_jacobian)
+GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardJacV(const GradientVar<Scalar, XRows, XCols>& x, int body_or_frame_ind, int base_or_frame_ind, int rotation_type, bool compute_analytic_jacobian, int gradient_order)
 {
-  int gradient_order = x.maxOrder();
   if (gradient_order > 1) {
     throw std::runtime_error("only first order gradient is available");
   }
@@ -1944,6 +1951,7 @@ GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwar
       row_start += Jrot.value().rows();
     }
   }
+
   return J;
 }
 
@@ -2250,7 +2258,7 @@ template DLLEXPORT_RBM void RigidBodyManipulator::bodyKin(const int, const Matri
 template DLLEXPORT_RBM GradientVar<double, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJacobian<double>(int, int, int, int, bool, std::vector<int>*);
 template DLLEXPORT_RBM GradientVar<double, SPACE_DIMENSION + 1, SPACE_DIMENSION + 1> RigidBodyManipulator::relativeTransform(int, int, int);
 template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardKinNew(const MatrixBase< Matrix<double, 3, Eigen::Dynamic> >&, int, int, int, int);
-template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardJacV(const GradientVar<double, Eigen::Dynamic, Eigen::Dynamic>&, int, int, int, bool);
+template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardJacV(const GradientVar<double, Eigen::Dynamic, Eigen::Dynamic>&, int, int, int, bool, int);
 template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardKinPositionGradient(int, int, int, int);
 
 template DLLEXPORT_RBM void RigidBodyManipulator::HandC(double* const, double * const, MatrixBase< Map<MatrixXd> > * const, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<VectorXd> > &, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > * const);
