@@ -781,6 +781,30 @@ typename TransformSpatial<DerivedF>::type transformSpatialForce(
   return ret;
 }
 
+template<typename DerivedI>
+GradientVar<typename DerivedI::Scalar, TWIST_SIZE, TWIST_SIZE> transformSpatialInertia(
+    const Eigen::Transform<typename DerivedI::Scalar, SPACE_DIMENSION, Eigen::Isometry>& T_current_to_new,
+    const typename Gradient<typename Eigen::Transform<typename DerivedI::Scalar, SPACE_DIMENSION, Eigen::Isometry>::MatrixType, Eigen::Dynamic>::type& dT_current_to_new,
+    const Eigen::MatrixBase<DerivedI>& I)
+{
+  int gradient_order = 1;
+  int nq = dT_current_to_new.cols();
+  GradientVar<typename DerivedI::Scalar, TWIST_SIZE, TWIST_SIZE> ret(TWIST_SIZE, TWIST_SIZE, nq, gradient_order);
+
+  auto Tinv = T_current_to_new.inverse();
+  auto I_half_transformed = transformSpatialForce(Tinv, I);
+  ret.value() = transformSpatialForce(Tinv, I_half_transformed.transpose());
+
+  if (gradient_order > 0) {
+    auto dTinv = dHomogTransInv(T_current_to_new, dT_current_to_new).eval();
+    Eigen::Matrix<typename DerivedI::Scalar, DerivedI::SizeAtCompileTime, Eigen::Dynamic> dI(I.size(), nq);
+    dI.setZero();
+    auto dI_half_transformed = dTransformAdjointTranspose(Tinv, I, dTinv, dI);
+    ret.gradient().value() = dTransformAdjointTranspose(Tinv, dI_half_transformed.transpose(), dT_current_to_new, transposeGrad(dI_half_transformed,I_half_transformed.rows()));
+  }
+  return ret;
+}
+
 template<typename DerivedS, typename DerivedQdotToV>
 typename DHomogTrans<DerivedQdotToV>::type dHomogTrans(
     const Eigen::Transform<typename DerivedQdotToV::Scalar, 3, Eigen::Isometry>& T,
@@ -1011,6 +1035,16 @@ template DLLEXPORT TransformSpatial< Matrix<double, TWIST_SIZE, Eigen::Dynamic> 
 template DLLEXPORT TransformSpatial< MatrixXd >::type transformSpatialForce<MatrixXd>(
     const Eigen::Isometry3d&,
     const Eigen::MatrixBase< MatrixXd >&);
+
+template DLLEXPORT GradientVar<double, TWIST_SIZE, TWIST_SIZE> transformSpatialInertia(
+    const Eigen::Transform<double, SPACE_DIMENSION, Eigen::Isometry>& T_current_to_new,
+    const typename Gradient<Eigen::Transform<double, SPACE_DIMENSION, Eigen::Isometry>::MatrixType, Eigen::Dynamic>::type& dT_current_to_new,
+    const Eigen::MatrixBase< Eigen::Matrix<double, TWIST_SIZE, TWIST_SIZE> >& I);
+
+template DLLEXPORT GradientVar<double, TWIST_SIZE, TWIST_SIZE> transformSpatialInertia(
+    const Eigen::Transform<double, SPACE_DIMENSION, Eigen::Isometry>& T_current_to_new,
+    const typename Gradient<Eigen::Transform<double, SPACE_DIMENSION, Eigen::Isometry>::MatrixType, Eigen::Dynamic>::type& dT_current_to_new,
+    const Eigen::MatrixBase< Eigen::MatrixXd >& I);
 
 template DLLEXPORT Gradient<Matrix3d, QUAT_SIZE>::type dquat2rotmat(const Eigen::MatrixBase<Vector4d>&);
 template DLLEXPORT Gradient<Matrix3d, QUAT_SIZE>::type dquat2rotmat(const Eigen::MatrixBase< Map<Vector4d> >&);
