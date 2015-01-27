@@ -38,7 +38,7 @@ if nargin < 5, rotation_type = 0; end
 if nargin < 6, base_or_frame_ind = 1; end
 compute_J = nargout > 1;
 compute_gradient = nargout > 2;
-expressed_in = base_or_frame_ind; % TODO
+expressed_in = base_or_frame_ind;
 
 if (kinsol.mex)
   if (obj.mex_model_ptr==0)

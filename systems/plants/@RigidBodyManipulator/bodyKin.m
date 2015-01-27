@@ -126,6 +126,7 @@ else
   x = forwardKin(obj, kinsol, 1, pts, 0, body_or_frame_ind);
 end
 
+m = size(pts,2);
 if (kinsol.mex)
   if (obj.mex_model_ptr==0)
     error('Drake:RigidBodyManipulator:InvalidKinematics','This kinsol is no longer valid because the mex model ptr has been deleted.');
@@ -133,18 +134,17 @@ if (kinsol.mex)
   if ~isnumeric(pts)
     error('Drake:RigidBodyManipulator:InvalidKinematics','This kinsol is not valid because it was computed via mex, and you are now asking for an evaluation with non-numeric pts.  If you intended to use something like TaylorVar, then you must call doKinematics with use_mex = false');
   end
-  
-  if compute_P
-    P = forwardKinPositionGradientmex(obj.mex_model_ptr, body_or_frame_ind, 1, points);
-  elseif compute_dP
-    [P, dP] = forwardKinPositionGradientmex(obj.mex_model_ptr, body_or_frame_ind, 1, points);
+  if compute_dP
+    [P, dP] = forwardKinPositionGradientmex(obj.mex_model_ptr, m, body_or_frame_ind, 1);
+  elseif compute_P
+    P = forwardKinPositionGradientmex(obj.mex_model_ptr, m, body_or_frame_ind, 1);
   end
 else
   if compute_P
-    m = size(pts,2);
     if compute_dP
       [invT, dinvT] = relativeTransform(obj, kinsol, body_or_frame_ind, 1);
-      dP = zeros((3 * m)^2, (3 * m));
+      nq = size(kinsol.q,1);
+      dP = zeros((3 * m)^2, nq);
     else
       invT = relativeTransform(obj, kinsol, body_or_frame_ind, 1);
     end
@@ -160,6 +160,4 @@ else
     end
   end
 end
-
 end
-

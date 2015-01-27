@@ -63,7 +63,7 @@ body_range = [1, nb];
 
 n_tests = 5;
 for i = 1 : n_tests
-  base = 1; randi(body_range);
+  base = randi(body_range);
   end_effector = randi(body_range);
   
   q = getRandomConfiguration(robot);
