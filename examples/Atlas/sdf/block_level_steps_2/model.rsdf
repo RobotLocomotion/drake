@@ -5,18 +5,16 @@
     # Generate a trapezoidal step shape of cinderblocks
     width  = 5 # x dimension
     height = 2
-    
-    origin_x = 0 # location of first block
-    origin_y = 0 
-    origin_z = 0 
-
-    #block_x = 0.389
-    #block_y = 0.388
-    #block_z = 0.093
 
     block_x = 0.387353556
     block_y = 0.387353556
     block_z = 0.093
+    
+    origin_x = 0 # location of first block
+    origin_y = 0 
+    origin_z = block_z/2.0 
+
+    
   %>
   <model name="block_level_steps">
     <pose><%= origin_x %> <%= origin_y %> <%= origin_z %> 0 0 0</pose>
