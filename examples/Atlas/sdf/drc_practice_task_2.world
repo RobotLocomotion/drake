@@ -195,16 +195,16 @@
     
    <include>
      <static>true</static>
-    <name>level_block_0</name>
-    <uri>model://block_level_steps</uri>
+    <name>level_block_1</name>
+    <uri>model://block_level_steps_1</uri>
     <pose>0.351 -0.949 0 0 0 0</pose>
    </include>
-
+   
    <include>
      <static>true</static>
-    <name>level_block_1</name>
-    <uri>model://block_level_steps</uri>
-    <pose>5.416337 1.350520 0 0 0 3.14159</pose>
+    <name>level_block_2</name>
+    <uri>model://block_level_steps_2</uri>
+    <pose>4.62 0.98 0 0 0 3.14159</pose>
    </include>
 
    <model name="orange_tape">
@@ -223,39 +223,39 @@
      </visual>
      </link>
    </model>
-
+   
    <include>
      <static>true</static>
-     <name>angle_block_base_0</name>
-     <uri>model://block_angle_base</uri>
-     <pose>4.13 -1.012 0 0 0 0</pose>
+    <name>angle_block_2</name>
+    <uri>model://block_angle_steps_1</uri>
+    <pose>4.55974 -1.012 0 0 0 0</pose>
    </include>
-
+  
    <include>
      <static>true</static>
-     <name>angle_block_base_1</name>
-     <uri>model://block_angle_base</uri>
-     <pose>9.25 1.27 0 0 0 3.14159</pose>
-   </include> 
-
+    <name>angle_block_2</name>
+    <uri>model://block_angle_steps_2</uri>
+    <pose>9.56106065 0.917 0 0 0 3.14159</pose>
+   </include>
+<!-- 
    <include>
      <static>true</static>
-     <name>angle_block_0</name>
+     <name>angle_block_steps_1</name>
      <uri>model://block_angle_steps</uri>
-     <pose>4.13 -1.01 0.02 0.07 0 0</pose>
+     <pose>4.38 -1.212 -.142 0 0 0</pose>
    </include>
-
+-->   
+   <!--
    <include>
-     <static>true</static>
-     <name>angle_block_1</name>
-     <uri>model://block_angle_steps</uri>
-     <pose>9.25 1.27 0.02 0 0 3.14159</pose>
+     <static>false</static>
+     <name>block_cover</name>
+     <uri>model://block_cover</uri>
+     <pose>2.41 -1.2 0.34 0 0 0</pose>
    </include>
-
-
+   -->
     <model name="red_tape">
       <static>true</static>
-      <pose>9.56 0 0 0 0 0</pose>
+      <pose>9.947 0 0 0 0 0</pose>
       <link name="link">
       <visual name="visual">
         <geometry>
