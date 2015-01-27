@@ -188,7 +188,11 @@ DLLEXPORT typename TransformSpatial<DerivedF>::type transformSpatialForce(
     const Eigen::Transform<typename DerivedF::Scalar, 3, Eigen::Isometry>& T,
     const Eigen::MatrixBase<DerivedF>& F);
 
-//#if !defined(WIN32) && !defined(WIN64)
+template<typename DerivedI>
+DLLEXPORT GradientVar<typename DerivedI::Scalar, TWIST_SIZE, TWIST_SIZE> transformSpatialInertia(
+    const Eigen::Transform<typename DerivedI::Scalar, SPACE_DIMENSION, Eigen::Isometry>& T_current_to_new,
+    const typename Gradient<typename Eigen::Transform<typename DerivedI::Scalar, SPACE_DIMENSION, Eigen::Isometry>::MatrixType, Eigen::Dynamic>::type& dT_current_to_new,
+    const Eigen::MatrixBase<DerivedI>& I);
 
 /*
  * spatial transform gradient methods
