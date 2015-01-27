@@ -29,7 +29,7 @@ function [x,J,dJ] = forwardKin(obj,kinsol,body_or_frame_ind,pts,rotation_type, b
 % a ((7xm)*(q)) matrix with [J1;J2;....;Jm] where Ji = dxidq
 
 if nargin<6
-  base_ind = 1
+  base_ind = 1;
 end
 
 if nargin<5
@@ -250,12 +250,12 @@ if (kinsol.mex)
     error('Drake:RigidBodyManipulator:InvalidKinematics','This kinsol is no longer valid because the mex model ptr has been deleted.');
   end
   if nargout > 2
-    [x, J, dJ] = forwardKinVmex(obj.mex_model_ptr, body_or_frame_ind, points, rotation_type, 1, true);
+    [x, J, dJ] = forwardKinVmex(obj.mex_model_ptr, body_or_frame_ind, points, rotation_type, base_ind, true);
     dJ = reshape(dJ, size(J, 1), []); % convert to strange second derivative output format
   elseif nargout > 1
-    [x, J] = forwardKinVmex(obj.mex_model_ptr, body_or_frame_ind, points, rotation_type, 1, true);
+    [x, J] = forwardKinVmex(obj.mex_model_ptr, body_or_frame_ind, points, rotation_type, base_ind, true);
   else
-    x = forwardKinVmex(obj.mex_model_ptr, body_or_frame_ind, points, rotation_type, 1, true);
+    x = forwardKinVmex(obj.mex_model_ptr, body_or_frame_ind, points, rotation_type, base_ind, true);
   end
 else
   if compute_jacobian

@@ -61,6 +61,7 @@ body_range = [1, nb];
 n_tests = 5;
 for i = 1 : n_tests
   end_effector = randi(body_range);
+  base = randi(body_range);
   
   q = getRandomConfiguration(robot);
   nPoints = randi([1, 10]);
@@ -69,11 +70,11 @@ for i = 1 : n_tests
   kinsol_options.use_mex = false;
   kinsol_options.compute_gradients = true;
   kinsol = robot.doKinematics(q, [], [], [], kinsol_options);
-  [x, J, dJ] = robot.forwardKin(kinsol, end_effector, points, rotation_type);
+  [x, J, dJ] = robot.forwardKin(kinsol, end_effector, points, rotation_type, base);
   
   kinsol_options.use_mex = true;
   kinsol_mex = robot.doKinematics(q, [], [], [], kinsol_options);
-  [x_mex, J_mex, dJ_mex] = robot.forwardKin(kinsol_mex, end_effector, points, rotation_type);
+  [x_mex, J_mex, dJ_mex] = robot.forwardKin(kinsol_mex, end_effector, points, rotation_type, base);
   valuecheck(x_mex, x);
   valuecheck(J_mex, J);
   valuecheck(dJ_mex, dJ);
