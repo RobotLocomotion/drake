@@ -46,6 +46,9 @@ if obj.use_new_kinsol
     x = forwardKinNew(obj, kinsol, body_or_frame_ind, pts, rotation_type, base_ind);
   end
 else
+  if base_ind ~= 1
+    error('base_ind ~= 1 not supported unless robot.use_new_kinsol is true')
+  end
   
   % todo: zap this after the transition
   if isa(body_or_frame_ind,'RigidBody'), error('support for passing in RigidBody objects has been removed.  please pass in the body index'); end

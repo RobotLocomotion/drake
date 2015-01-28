@@ -70,15 +70,25 @@ for i = 1 : n_tests
   kinsol_options.use_mex = false;
   kinsol_options.compute_gradients = true;
   kinsol = robot.doKinematics(q, [], [], [], kinsol_options);
-  [x, P, J, dP, dJ] = robot.bodyKin(kinsol,body_ind,points);
+  if robot.use_new_kinsol
+    [x, P, J, dP, dJ] = robot.bodyKin(kinsol,body_ind,points);
+  else
+    [x, P, J] = robot.bodyKin(kinsol,body_ind,points);
+  end
   
   kinsol_options.use_mex = true;
   kinsol_mex = robot.doKinematics(q, [], [], [], kinsol_options);
-  [x_mex, P_mex, J_mex, dP_mex, dJ_mex] = robot.bodyKin(kinsol_mex,body_ind,points);
+  if robot.use_new_kinsol
+    [x_mex, P_mex, J_mex, dP_mex, dJ_mex] = robot.bodyKin(kinsol_mex,body_ind,points);
+  else
+    [x_mex, P_mex, J_mex] = robot.bodyKin(kinsol_mex,body_ind,points);
+  end
   valuecheck(x_mex, x);
   valuecheck(P_mex, P);
   valuecheck(J_mex, J);
-  valuecheck(dP_mex, dP);
-  valuecheck(dJ_mex, dJ);
+  if robot.use_new_kinsol
+    valuecheck(dP_mex, dP);
+    valuecheck(dJ_mex, dJ);
+  end
 end
 end
