@@ -86,7 +86,7 @@ for i = 1 : n_tests
   kinsol_mex = robot.doKinematics(q, [], [], [], kinsol_options);
   
   if robot.use_new_kinsol || rotation_type == 0
-    [x, J, dJ] = robot.forwardKin(kinsol, end_effector, points, rotation_type);
+    [x, J, dJ] = robot.forwardKin(kinsol, end_effector, points, rotation_type, base);
     [x_mex, J_mex, dJ_mex] = robot.forwardKin(kinsol_mex, end_effector, points, rotation_type, base);
   else
     [x, J] = robot.forwardKin(kinsol, end_effector, points, rotation_type);

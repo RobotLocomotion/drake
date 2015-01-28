@@ -1,4 +1,4 @@
-function [x,J,dJ] = forwardKin(obj,kinsol,body_or_frame_ind,pts,rotation_type, base_ind)
+function [x,J,dJ] = forwardKin(obj,kinsol,body_or_frame_ind,pts,rotation_type, base_or_frame_ind)
 % computes the position of pts (given in the body frame) in the global frame
 %
 % @param kinsol solution structure obtained from doKinematics
@@ -6,6 +6,10 @@ function [x,J,dJ] = forwardKin(obj,kinsol,body_or_frame_ind,pts,rotation_type, b
 % (obtained via e.g., findLinkId or findFrameInd)
 % @param rotation_type integer flag indicated whether rotations and
 % derivatives should be computed (0 - no rotations, 1 - rpy, 2 - quat)
+% @param base_or_frame_ind an integer ID for a RigidBody or RigidBodyFrame
+% (obtained via e.g., findLinkInd or findFrameInd) specifying the
+% coordinate system in which the output points will be expressed and
+% relative to which rotation output is computed. @default 1 (world).
 % @retval x the position of pts (given in the body frame) in the global
 % frame. If rotation_type, x is 6-by-num_pts where the final 3
 % components are the roll/pitch/yaw of the body frame (same for all points
@@ -28,8 +32,9 @@ function [x,J,dJ] = forwardKin(obj,kinsol,body_or_frame_ind,pts,rotation_type, b
 % x will be a 7xm matrix and (following out gradient convention) J will be
 % a ((7xm)*(q)) matrix with [J1;J2;....;Jm] where Ji = dxidq
 
+
 if nargin<6
-  base_ind = 1;
+  base_or_frame_ind = 1;
 end
 
 if nargin<5
@@ -38,15 +43,15 @@ end
 
 if obj.use_new_kinsol
   if nargout > 2
-    [x, J, dJ] = forwardKinNew(obj, kinsol, body_or_frame_ind, pts, rotation_type, base_ind);
+    [x, J, dJ] = forwardKinNew(obj, kinsol, body_or_frame_ind, pts, rotation_type, base_or_frame_ind);
     dJ = reshape(dJ, size(J, 1), []); % convert to strange second derivative output format
   elseif nargout > 1
-    [x, J] = forwardKinNew(obj, kinsol, body_or_frame_ind, pts, rotation_type, base_ind);
+    [x, J] = forwardKinNew(obj, kinsol, body_or_frame_ind, pts, rotation_type, base_or_frame_ind);
   else
-    x = forwardKinNew(obj, kinsol, body_or_frame_ind, pts, rotation_type, base_ind);
+    x = forwardKinNew(obj, kinsol, body_or_frame_ind, pts, rotation_type, base_or_frame_ind);
   end
 else
-  if base_ind ~= 1
+  if base_or_frame_ind ~= 1
     error('base_ind ~= 1 not supported unless robot.use_new_kinsol is true')
   end
   
@@ -212,7 +217,7 @@ end
 
 end
 
-function [x, J, dJ] = forwardKinNew(obj, kinsol, body_or_frame_ind, points, rotation_type, base_ind)
+function [x, J, dJ] = forwardKinNew(obj, kinsol, body_or_frame_ind, points, rotation_type, base_or_frame_ind)
 % Computes the position of pts (given in the body frame) in base frame
 %
 % @param kinsol solution structure obtained from doKinematics
@@ -223,7 +228,9 @@ function [x, J, dJ] = forwardKinNew(obj, kinsol, body_or_frame_ind, points, rota
 % @param rotation_type integer flag indicated whether rotations and
 % derivatives should be computed (0 - no rotations, 1 - rpy, 2 - quat)
 % @param base_or_frame_ind an integer ID for a RigidBody or RigidBodyFrame
-% (obtained via e.g., findLinkInd or findFrameInd) @default 1 (world)
+% (obtained via e.g., findLinkInd or findFrameInd) specifying the
+% coordinate system in which the output points will be expressed and
+% relative to which rotation output is computed. @default 1 (world).
 %
 % @retval x the position of points (given in the body frame) in the global
 % frame. For rotation output, see below.
@@ -245,7 +252,7 @@ function [x, J, dJ] = forwardKinNew(obj, kinsol, body_or_frame_ind, points, rota
 
 compute_jacobian = nargout > 1;
 compute_gradient = nargout > 2;
-if (nargin<6), base_ind=1; end
+if (nargin<6), base_or_frame_ind=1; end
 if (nargin<5), rotation_type=0; end
 
 if (kinsol.mex)
@@ -253,26 +260,26 @@ if (kinsol.mex)
     error('Drake:RigidBodyManipulator:InvalidKinematics','This kinsol is no longer valid because the mex model ptr has been deleted.');
   end
   if nargout > 2
-    [x, J, dJ] = forwardKinVmex(obj.mex_model_ptr, body_or_frame_ind, points, rotation_type, base_ind, true);
+    [x, J, dJ] = forwardKinVmex(obj.mex_model_ptr, body_or_frame_ind, points, rotation_type, base_or_frame_ind, true);
     dJ = reshape(dJ, size(J, 1), []); % convert to strange second derivative output format
   elseif nargout > 1
-    [x, J] = forwardKinVmex(obj.mex_model_ptr, body_or_frame_ind, points, rotation_type, base_ind, true);
+    [x, J] = forwardKinVmex(obj.mex_model_ptr, body_or_frame_ind, points, rotation_type, base_or_frame_ind, true);
   else
-    x = forwardKinVmex(obj.mex_model_ptr, body_or_frame_ind, points, rotation_type, base_ind, true);
+    x = forwardKinVmex(obj.mex_model_ptr, body_or_frame_ind, points, rotation_type, base_or_frame_ind, true);
   end
 else
   if compute_jacobian
     if compute_gradient
-      [x, Jv, dJv] = forwardKinV(obj, kinsol, body_or_frame_ind, points, rotation_type, base_ind);
+      [x, Jv, dJv] = forwardKinV(obj, kinsol, body_or_frame_ind, points, rotation_type, base_or_frame_ind);
       dJv = reshape(dJv, [], obj.getNumPositions()); % convert to standard derivative format
       dJ = matGradMultMat(Jv, kinsol.qdotToV, dJv, kinsol.dqdotToVdq);
       dJ = reshape(dJ, size(Jv, 1), []); % convert to strange second derivative output format
     else
-      [x, Jv] = forwardKinV(obj, kinsol, body_or_frame_ind, points, rotation_type, base_ind);
+      [x, Jv] = forwardKinV(obj, kinsol, body_or_frame_ind, points, rotation_type, base_or_frame_ind);
     end
     J = Jv * kinsol.qdotToV;
   else
-    x = forwardKinV(obj, kinsol, body_or_frame_ind, points, rotation_type, base_ind);
+    x = forwardKinV(obj, kinsol, body_or_frame_ind, points, rotation_type, base_or_frame_ind);
   end
 end
 
