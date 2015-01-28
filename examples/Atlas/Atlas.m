@@ -77,7 +77,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
         % Sub in handstates for each hand
         % TODO: by name?
         for i=2:obj.getStateFrame().getNumFrames
-          atlas_state_frame = replaceFrameNum(atlas_state_frame,i,atlasFrames.HandState(obj,i,'atlasFrames.HandState'));
+          atlas_state_frame = replaceFrameNum(atlas_state_frame,i,atlasFrames.HandState(obj,i,'HandState'));
         end
       else
         atlas_state_frame = atlasFrames.AtlasState(obj);
@@ -101,7 +101,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
         % Sub in handstates for each hand
         % TODO: by name?
         for i=2:obj.getInputFrame().getNumFrames
-          input_frame = replaceFrameNum(input_frame,i,atlasFrames.HandInput(obj,i,'atlasFrames.HandInput'));
+          input_frame = replaceFrameNum(input_frame,i,atlasFrames.HandInput(obj,i,'HandInput'));
         end
       else
         input_frame = atlasFrames.AtlasInput(obj);

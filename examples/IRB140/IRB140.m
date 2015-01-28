@@ -26,6 +26,8 @@ classdef IRB140 < TimeSteppingRigidBodyManipulator
       obj = obj@TimeSteppingRigidBodyManipulator('',options.dt,options);
       obj.initialized = 1;
       obj = obj.addRobotFromURDF(urdf,options.base_offset,options.base_rpy,options);
+      obj.base_rpy = options.base_rpy;
+      obj.base_offset = options.base_offset;
       
       if (~strcmp(options.hands, 'none'))
         if (strcmp(options.hands, 'robotiq'))
@@ -37,6 +39,10 @@ classdef IRB140 < TimeSteppingRigidBodyManipulator
           % the controllers know what's up
           options_hand.weld_to_link = 7;
           obj = obj.addRobotFromURDF(getFullPathFromRelativePath('../Atlas/urdf/robotiq_box.urdf'), [0.1; 0.0; 0.0], [pi; 0; pi/2], options_hand);
+        elseif (strcmp(options.hands, 'block_hand'))
+          % Box with collision. Good for hitting things with...
+          options_hand.weld_to_link = 7;
+          obj = obj.addRobotFromURDF(getFullPathFromRelativePath('../Atlas/urdf/block_hand.urdf'), [0.1; 0.0; 0.0], [pi; 0; pi/2], options_hand);
         else
           error('unsupported hand type');
         end
@@ -56,11 +62,16 @@ classdef IRB140 < TimeSteppingRigidBodyManipulator
           arm_state_frame = replaceFrameNum(arm_state_frame,1,IRB140State(obj));
           % Sub in handstates for each hand
           % TODO: by name?
-          for i=2:obj.getStateFrame().getNumFrames
+          for i=2:2
             arm_state_frame = replaceFrameNum(arm_state_frame,i,HandState(obj,i,'HandState'));
           end
         else
-          arm_state_frame = IRB140State(obj);
+          arm_state_frame = getStateFrame(obj);
+          if (length(arm_state_frame.coordinates) > length(IRB140State(obj).coordinates))
+            arm_state_frame = replaceFrameNum(arm_state_frame, 1, IRB140State(obj));
+          else
+            arm_state_frame = IRB140State(obj);
+          end
         end
         tsmanip_state_frame = obj.getStateFrame();
         if tsmanip_state_frame.dim>arm_state_frame.dim
@@ -94,5 +105,7 @@ classdef IRB140 < TimeSteppingRigidBodyManipulator
   properties (SetAccess = protected, GetAccess = public)
     hands = 0; % 0, none; 1, Robotiq
     initialized = 0;
+    base_rpy;
+    base_offset;
   end
 end
