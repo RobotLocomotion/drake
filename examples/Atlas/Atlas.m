@@ -236,6 +236,17 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
     end
 
     function collision_model = getFootstepPlanningCollisionModel(obj)
+      % Get a simple collision model for the Atlas robot to enable
+      % (limited) whole-body awareness during footstep planning. The
+      % collision model is represented as a set of points which define
+      % the shape of the foot and a set of slices which define the 
+      % bounding boxes of the legs, torso, and arms. The collision model
+      % of the foot used here may actually be smaller than the robot's
+      % feet in order to allow the toes or heels to hang over edges. 
+      % @retval collision_model an IRIS CollisionModel object with fields
+      %         foot and body. The body field has subfields z and xy, where
+      %         xy is of shape [3, N, length(z)]. Each page of xy(:,:,j)
+      %         represents the bounds of the robot from z(j) to z(j+1) (or inf).
       if isempty(obj.atlas_version) || obj.atlas_version == 3
         collision_model = iris.terrain_grid.CollisionModel(...
             [-0.12, -0.12, 0.13, 0.13;
