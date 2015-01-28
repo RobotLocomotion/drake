@@ -48,9 +48,20 @@ if model.use_new_kinsol
   kinsol = doKinematicsNew(model, q, v, options);
 else
   checkDirty(model);
+  if nargin > 5
+    valuecheck(b_compute_second_derivatives, []);
+    valuecheck(use_mex, []);
+    if isfield(options, 'use_mex')
+      use_mex = true;
+    end
+    if isfield(options, 'compute_gradients')
+      b_compute_second_derivatives = true;
+    end
+  end
+  
   if nargin<5, qd=[]; end
-  if nargin<4, use_mex = true; end
-  if nargin<3, b_compute_second_derivatives=false; end
+  if nargin<4 || isempty(use_mex), use_mex = true; end
+  if nargin<3 || isempty(b_compute_second_derivatives), b_compute_second_derivatives=false; end
   
   kinsol.q = q;
   kinsol.qd = qd;

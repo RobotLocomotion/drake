@@ -13,8 +13,10 @@ for test_case = test_cases
   warning('off','Drake:RigidBodyManipulator:ReplacedCylinder');
   r = RigidBodyManipulator(test_case.urdf,options);
   warning(w);
-%   checkGradients(r);
-  checkMex(r);
+  checkGradients(r);
+  if r.use_new_kinsol
+    checkMex(r);
+  end
 end
 end
 
