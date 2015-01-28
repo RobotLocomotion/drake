@@ -102,7 +102,7 @@
       <include>
         <name>block_0</name>
         <uri>model://cinder_block_2</uri>
-        <pose>4.058409714 0.265174984 0.1 0 0 0.785398163</pose>
+        <pose>4.058409714 0.265174984 0.073 0 0 0.785398163</pose>
       </include>
       <!-- <include>
         <name>block_2</name>

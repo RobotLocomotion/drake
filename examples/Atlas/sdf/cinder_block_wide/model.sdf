@@ -3,7 +3,7 @@
   <model name="cinder_block_wide">
     <link name="link">
       <inertial>
-        <pose>0 0 0.0714375 0 0 0</pose>
+        <pose>0 0  0.146 0 0 0</pose>
         <mass>5</mass>
         <!-- approximate as uniform box 0.387 x 0.387 x 0.092 m -->
         <inertia>
@@ -19,7 +19,7 @@
         <geometry>
           
           <box>
-            <size>0.387353556 0.387353556 0.092075</size>
+            <size>0.387353556 0.387353556 0.146</size>
           </box>
           <!--
           <mesh>
@@ -33,7 +33,7 @@
        <pose>0 0 0 0 0 0</pose>
         <geometry>
           <box>
-            <size>0.387353556 0.387353556 0.092075</size>
+            <size>0.387353556 0.387353556 0.146</size>
           </box>
         </geometry>
         <surface>
