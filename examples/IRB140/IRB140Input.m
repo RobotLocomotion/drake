@@ -11,7 +11,7 @@ classdef IRB140Input < SingletonCoordinateFrame
       input_names = manipInputFrame.coordinates;
       input_names = regexprep(input_names,'_motor',''); % remove motor suffix     
       
-      obj = obj@SingletonCoordinateFrame('IRB140',length(input_names),'x',input_names);
+      obj = obj@SingletonCoordinateFrame('IRB140Input',length(input_names),'x',input_names);
     end
   end
 end
