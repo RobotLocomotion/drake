@@ -60,7 +60,7 @@ classdef RigidBodyManipulator < Manipulator
       obj = setTerrain(obj,options.terrain);
       obj.contact_options = obj.parseContactOptions(options);
 
-      obj.collision_filter_groups=containers.Map('KeyType','char','ValueType','any');
+      obj.collision_filter_groups = PassByValueMap('KeyType','char','ValueType','any');
       obj.collision_filter_groups('no_collision') = CollisionFilterGroup();
 
       if (nargin>0 && ~isempty(filename))
@@ -874,7 +874,7 @@ classdef RigidBodyManipulator < Manipulator
     
     function body_ind = findLinkInd(model,varargin)
       model.warning_manager.warnOnce('Drake:RigidBodyManipulator:finkLinkIndDeprecated','findLinkInd has been replaced with findLinkId.  please update your code');
-      body_ind = findLinkId(model,varargin{:})
+      body_ind = findLinkId(model,varargin{:});
     end
     
     function body_id = findLinkId(model,linkname,robot,error_level)
@@ -1527,6 +1527,36 @@ classdef RigidBodyManipulator < Manipulator
       end
     end
 
+    function [T,U] = energy(model, x)  
+      % @param x the state vector
+      % @retval T the total kinetic energy
+      % @retval U the total potential energy
+      % todo: add support for an optional robotnum argument?
+      q = x(1:getNumPositions(model));
+      v = x(getNumPositions(model)+1:end);
+      H = manipulatorDynamics(model,q,v);
+      T = .5*v'*H*v;
+
+      if nargout>1
+        U = 0;
+        kinsol = doKinematics(model,q);
+        for i=1:length(model.body)
+          if model.body(i).robotnum<1, continue; end % don't include the world
+          mass = model.body(i).mass;
+          if (mass>0)
+            com = forwardKin(model,kinsol,i,model.body(i).com);
+            U = U - mass*model.gravity'*com;
+          end
+        end
+        
+        for i=1:length(model.force)
+          [thisT,thisU] = energy(model.force{i},model,q,v);
+          T = T+thisT;
+          U = U+thisU;
+        end
+      end
+    end
+    
     function body = newBody(model)
       % @ingroup Kinematic Tree
       errorDeprecatedFunction('RigidBody()');  % since it doesn't actually serve any purpose now that planar rigid bodies are rigid bodies.
@@ -2358,7 +2388,7 @@ classdef RigidBodyManipulator < Manipulator
       % In case no robots were loaded from urdf, initialize
       % collision_filter_groups here.
       if isempty(model.collision_filter_groups)
-        model.collision_filter_groups=containers.Map('KeyType','char','ValueType','any');
+        model.collision_filter_groups = PassByValueMap('KeyType','char','ValueType','any');
         model.collision_filter_groups('no_collision') = CollisionFilterGroup();
       end
       if model.contact_options.ignore_self_collisions
