@@ -13,7 +13,7 @@ if exist('data/practice_terrain.mat','file')
   load data/practice_terrain.mat;
 else
   terrain = RigidBodyManipulator(['sdf/drc_practice_task_',num2str(task_number),'.world']);
-  height_map = RigidBodyHeightMapTerrain.constructHeightMapFromRaycast(terrain,[],-3:.02:10,-3:.02:3,10);
+  height_map = RigidBodyHeightMapTerrain.constructHeightMapFromRaycast(terrain,[],-3:.015:10,-2:.015:2,10);
   save data/practice_terrain.mat height_map;
 end
 
@@ -27,7 +27,7 @@ region_server = iris.terrain_grid.Server();
 region_server.addHeightmap(1, options.terrain);
 
 region_args = {r.getFootstepPlanningCollisionModel()};
-seeds = [[-0.6;-0.2;0;0;0;pi/4]];
+seeds = [[-0.55;-0.08;0.15;0;0;-pi/4]];
 i = 1;
 combined_xtraj = [];
 while true
