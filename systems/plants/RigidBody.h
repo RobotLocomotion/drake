@@ -64,6 +64,7 @@ public:
 
   double mass;
   Vector4d com;  // this actually stores [com;1] (because that's what's needed in the kinematics functions)
+  Matrix<double, TWIST_SIZE, TWIST_SIZE> I;
 
   DrakeJoint::MotionSubspaceType S;
   MatrixXd dSdqi;

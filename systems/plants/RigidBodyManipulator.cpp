@@ -330,6 +330,11 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
   else
     num_bodies = num_rigid_body_objects;
 
+  Ic_new.resize(num_bodies);
+  for (int i = 0; i < num_bodies; i++) {
+    Ic_new[i] = Matrix<double, TWIST_SIZE, TWIST_SIZE>::Zero();
+  }
+
   bodies.reserve(num_bodies);
   for (int i = last_num_bodies; i < num_bodies; i++) {
     bodies.push_back(std::unique_ptr<RigidBody>(new RigidBody()));
@@ -355,6 +360,10 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
       dIC[i][j] = MatrixXd::Zero(6,6);
     }
   }
+
+  dIc_new.resize(num_bodies);
+  for (int i = 0; i < num_bodies; i++)
+    dIc_new[i] = MatrixXd::Zero(Ic_new[i].size(), num_dof);
 
   // don't need to resize dcross (it gets resized in dcrm)
 
@@ -382,8 +391,8 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
   dTdTmult = MatrixXd::Zero(3*num_dof,4);
 
   // preallocate for CMM function
-  Ic.resize(NB); // body spatial inertias
-  dIc.resize(NB); // derivative of body spatial inertias
+  Ic.resize(NB); // composite rigid body inertias
+  dIc.resize(NB); // derivative of composite rigid body inertias
   phi.resize(NB); // joint axis vectors
   Xworld.resize(NB); // spatial transforms from world to each body
   dXworld.resize(NB); // dXworld_dq * qd
@@ -1094,13 +1103,75 @@ void RigidBodyManipulator::getCMM(double* const q, double* const qd, MatrixBase<
 }
 
 template <typename Scalar>
-GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::centerOfMass(int gradient_order, const std::set<int>& robotnum)
+GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::centroidalMomentumMatrix(int gradient_order)
+{
+  if (!use_new_kinsol)
+    throw std::runtime_error("method requires new kinsol format");
+
+  if (gradient_order > 1)
+    throw std::runtime_error("only first order gradient is available");
+
+  int nq = num_dof;
+  for (int i = 0; i < num_bodies; i++) {
+    Gradient<Isometry3d::MatrixType, Eigen::Dynamic>::type* dTdq = nullptr;
+    if (gradient_order > 0)
+      dTdq = &(bodies[i]->dTdq_new);
+
+    auto inertia_world = transformSpatialInertia(bodies[i]->T_new, dTdq, bodies[i]->I);
+    Ic_new[i] = inertia_world.value();
+    if (inertia_world.hasGradient()) {
+      dIc_new[i] = inertia_world.gradient().value();
+    }
+  }
+
+  for (int i = num_bodies - 1; i >= 0; i--) {
+    if (bodies[i]->hasParent()) {
+      Ic_new[bodies[i]->parent] += Ic_new[i];
+      if (gradient_order > 0) {
+        dIc_new[bodies[i]->parent] += dIc_new[i];
+      }
+    }
+  }
+
+  auto com = centerOfMass<Scalar>(gradient_order);
+  int nv = num_dof; // FLOATINGBASE TODO: assumes nq = nv
+  GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> ret(TWIST_SIZE, nv, nq, gradient_order);
+  int gradient_row_start = 0;
+  for (int i = 0; i < num_bodies; i++) {
+    RigidBody& body = *bodies[i];
+    if (body.hasParent()) {
+      int nv_joint = body.getJoint().getNumVelocities();
+
+      ret.value().template middleCols(body.dofnum, nv_joint).noalias() = Ic_new[i] * body.J; // FLOATINGBASE TODO: assumes nq = nv
+
+      if (gradient_order > 0) {
+        ret.gradient().value().template middleRows(gradient_row_start, TWIST_SIZE * nv_joint) = matGradMultMat(Ic_new[i], body.J, dIc_new[i], body.dJdq);
+        gradient_row_start += TWIST_SIZE * nv_joint;
+      }
+    }
+  }
+
+  // TODO: could exploit structure of T better in this part
+  Eigen::Transform<Scalar, SPACE_DIMENSION, Eigen::Isometry> T(Translation<Scalar, SPACE_DIMENSION>(-com.value()));
+
+  if (gradient_order > 0) {
+    Eigen::Matrix<double, HOMOGENEOUS_TRANSFORM_SIZE, Eigen::Dynamic> dtransform_world_to_com(HOMOGENEOUS_TRANSFORM_SIZE, nq);
+    dtransform_world_to_com.setZero();
+    setSubMatrixGradient<Eigen::Dynamic>(dtransform_world_to_com, com.gradient().value(), intRange<3>(0), intRange<1>(3), SPACE_DIMENSION + 1);
+    ret.gradient().value() = dTransformAdjointTranspose(T.inverse(), ret.value(), dtransform_world_to_com, ret.gradient().value());
+  }
+  ret.value() = transformSpatialForce(T, ret.value());
+  return ret;
+}
+
+template <typename Scalar>
+GradientVar<Scalar, SPACE_DIMENSION, 1> RigidBodyManipulator::centerOfMass(int gradient_order, const std::set<int>& robotnum)
 {
   if (!use_new_kinsol)
     throw std::runtime_error("method requires new kinsol format");
 
   int nq = num_dof;
-  GradientVar<Scalar, Eigen::Dynamic, 1> com(SPACE_DIMENSION, 1, nq, gradient_order);
+  GradientVar<Scalar, SPACE_DIMENSION, 1> com(SPACE_DIMENSION, 1, nq, gradient_order);
   double m = 0.0;
   double body_mass;
   com.value().setZero();
@@ -2266,7 +2337,6 @@ std::string RigidBodyManipulator::getBodyOrFrameName(int body_or_frame_id)
 // explicit instantiations (required for linking):
 template DLLEXPORT_RBM void RigidBodyManipulator::getCMM(double * const, double * const, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<MatrixXd> > &);
 template DLLEXPORT_RBM void RigidBodyManipulator::getCMM(double * const, double * const, MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > &);
-template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, 1> RigidBodyManipulator::centerOfMass(int, const std::set<int>&);
 template DLLEXPORT_RBM void RigidBodyManipulator::getCOM(MatrixBase< Map<Vector3d> > &,const set<int> &);
 template DLLEXPORT_RBM void RigidBodyManipulator::getCOM(MatrixBase< Map<MatrixXd> > &,const set<int> &);
 template DLLEXPORT_RBM void RigidBodyManipulator::getCOMJac(MatrixBase< Map<MatrixXd> > &,const set<int> &);
@@ -2304,6 +2374,8 @@ template DLLEXPORT_RBM void RigidBodyManipulator::forwardJacDot(const int, const
 template DLLEXPORT_RBM void RigidBodyManipulator::bodyKin(const int, const MatrixBase< MatrixXd >&, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > *);
 template DLLEXPORT_RBM void RigidBodyManipulator::bodyKin(const int, const MatrixBase< MatrixXd >&, MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > *);
 
+template DLLEXPORT_RBM GradientVar<double, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::centroidalMomentumMatrix(int);
+template DLLEXPORT_RBM GradientVar<double, SPACE_DIMENSION, 1> RigidBodyManipulator::centerOfMass(int, const std::set<int>&);
 template DLLEXPORT_RBM GradientVar<double, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJacobian<double>(int, int, int, int, bool, std::vector<int>*);
 template DLLEXPORT_RBM GradientVar<double, SPACE_DIMENSION + 1, SPACE_DIMENSION + 1> RigidBodyManipulator::relativeTransform(int, int, int);
 template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardKinNew(const MatrixBase< Matrix<double, 3, Eigen::Dynamic> >&, int, int, int, int);

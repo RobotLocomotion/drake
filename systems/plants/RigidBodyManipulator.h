@@ -44,11 +44,14 @@ public:
 
   void doKinematicsNew(double* q, bool compute_gradients = false, double* v = nullptr, bool compute_JdotV = false);
 
+  template <typename Scalar>
+  GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> centroidalMomentumMatrix(int gradient_order);
+
   template <typename Derived>
   void getCMM(double* const q, double* const qd, MatrixBase<Derived> &A, MatrixBase<Derived> &Adot);
 
   template <typename Scalar>
-  GradientVar<Scalar, Eigen::Dynamic, 1> centerOfMass(int gradient_order, const std::set<int>& robotnum = RigidBody::defaultRobotNumSet);
+  GradientVar<Scalar, SPACE_DIMENSION, 1> centerOfMass(int gradient_order, const std::set<int>& robotnum = RigidBody::defaultRobotNumSet);
 
   template <typename Derived>
   void getCOM(MatrixBase<Derived> &com,const std::set<int> &robotnum = RigidBody::defaultRobotNumSet);
@@ -215,11 +218,13 @@ private:
   std::vector<VectorXd> avp;
   std::vector<VectorXd> fvp;
   std::vector<MatrixXd> IC;
+  std::vector<Matrix<double, TWIST_SIZE, TWIST_SIZE>> Ic_new;
 
   //Variables for gradient calculations
   MatrixXd dTdTmult;
   std::vector<MatrixXd> dXupdq;
   std::vector<std::vector<MatrixXd>> dIC;
+  std::vector<typename Gradient<Matrix<double, TWIST_SIZE, TWIST_SIZE>, Eigen::Dynamic>::type> dIc_new;
 
   std::vector<MatrixXd> dvdq;
   std::vector<MatrixXd> dvdqd;
@@ -238,8 +243,8 @@ private:
   // preallocate for CMM function
   MatrixXd Xg; // spatial centroidal projection matrix
   MatrixXd dXg;  // dXg_dq * qd  
-  std::vector<MatrixXd> Ic; // body spatial inertias
-  std::vector<MatrixXd> dIc; // derivative of body spatial inertias
+  std::vector<MatrixXd> Ic; // composite rigid body inertias
+  std::vector<MatrixXd> dIc; // derivative of composite rigid body inertias
   std::vector<VectorXd> phi; // joint axis vectors
   std::vector<MatrixXd> Xworld; // spatial transforms from world to each body
   std::vector<MatrixXd> dXworld; // dXworld_dq * qd

@@ -65,6 +65,7 @@ if (eigen3_FOUND)
   add_rbm_mex(forwardKinVmex)
   add_rbm_mex(forwardKinPositionGradientmex)
   add_rbm_mex(centerOfMassmex)
+  add_rbm_mex(centroidalMomentumMatrixmex)
 
   add_library(drakeIKoptions SHARED IKoptions.cpp)
   target_link_libraries(drakeIKoptions drakeRBM drakeUtil)

@@ -122,6 +122,9 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     pm = mxGetProperty(pBodies,i,"com");
     if (!mxIsEmpty(pm)) memcpy(model->bodies[i]->com.data(),mxGetPr(pm),sizeof(double)*3);
 
+    pm = mxGetProperty(pBodies,i,"I");
+    if (!mxIsEmpty(pm)) memcpy(model->bodies[i]->I.data(),mxGetPr(pm),sizeof(double)*6*6);
+
     pm = mxGetProperty(pBodies,i,"position_num");
     model->bodies[i]->dofnum = (int) mxGetScalar(pm) - 1;  //zero-indexed
 
