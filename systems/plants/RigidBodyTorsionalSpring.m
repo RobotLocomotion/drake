@@ -48,6 +48,11 @@ classdef RigidBodyTorsionalSpring < RigidBodyForceElement
         error('removed joint with a torsional spring.  need to handle this case');
       end
     end
+    function [T,U] = energy(obj,manip,q,qd)
+      T=0;
+      theta = q(manip.body(obj.child_body).position_num);
+      U = .5*obj.k*(obj.rest_angle - theta)'*(obj.rest_angle - theta);
+    end
   end
   
   methods (Static)

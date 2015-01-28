@@ -1,4 +1,4 @@
-set(MODEL_NAME block_angle_steps)
+set(MODEL_NAME block_level_steps)
 set (files 
   model.sdf
   model.config

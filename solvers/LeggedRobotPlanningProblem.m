@@ -257,9 +257,6 @@ classdef LeggedRobotPlanningProblem
         Q_comddot, Qv, obj.Q, q_nom, Q_contact_force,contact_wrench_struct, ...
         options);
       
-      % Add support constraints
-      prog = obj.addSupportConstraintsToPlanner(prog);
-      
       % Add collision avoidance constraints
       prog = obj.addCollisionConstraintsToPlanner(prog);
 
@@ -300,8 +297,6 @@ classdef LeggedRobotPlanningProblem
       % Create kinematic planner
       prog = KinematicDirtran(obj.robot,N,durations,varargin{:});
 
-      % Add kinematic constraints for support_struct
-      prog = obj.addSupportConstraintsToPlanner(prog);
 
       % Add collision avoidance constraints
       prog = obj.addCollisionConstraintsToPlanner(prog);
@@ -329,7 +324,7 @@ classdef LeggedRobotPlanningProblem
       Q = kron(eye(prog.N),obj.Q);
       R = 1e0*eye(prog.plant.getNumInputs);
       kT = 1e0;
-      prog = prog.addCost(QuadraticConstraint(-inf,inf,Q,Q*reshape(q_nom,[],1)),prog.q_inds(:));
+      prog = prog.addCost(QuadraticConstraint(-inf,inf,Q,-Q*reshape(q_nom,[],1)),prog.q_inds(:));
       prog = prog.addRunningCost(@(h,x,u)squaredEffort(R,h,x,u));
       prog = prog.addFinalCost(@(h,xf) finalCost(kT,h,xf));
 
