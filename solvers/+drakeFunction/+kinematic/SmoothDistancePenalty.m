@@ -29,12 +29,8 @@ classdef SmoothDistancePenalty < drakeFunction.kinematic.Kinematic
     end
 
     function [f,df] = eval(obj,q)
-      [dist,ddist_dq] = closestDistance(obj.rbm,q,obj.active_collision_options);
-      [scaled_dist,dscaled_dist_ddist] = scaleDistance(obj,dist);
-      [pairwise_costs,dpairwise_cost_dscaled_dist] = penalty(obj,scaled_dist);
-      f = sum(pairwise_costs);
-      dcost_dscaled_dist = sum(dpairwise_cost_dscaled_dist,1);
-      df = dcost_dscaled_dist*dscaled_dist_ddist*ddist_dq;
+      obj.rbm.doKinematics(q);
+      [f,df] = smoothDistancePenaltymex(obj.rbm.mex_model_ptr,obj.min_distance,false,obj.active_collision_options);
     end
   end
 
