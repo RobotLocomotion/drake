@@ -279,6 +279,99 @@ RigidBodyManipulator::~RigidBodyManipulator(void)
   //    delete collision_model;
 }
 
+void RigidBodyManipulator::collisionDetectTerrain(void* const map_ptr, Vector3d const &contact_pos, Vector3d &pos, Vector3d *normal, double terrain_height)
+{
+  if (map_ptr) {
+#ifdef USE_MAPS    
+    Vector3d oNormal;
+    double height;
+    auto state = static_cast<terrainmap::TerrainMap*>(map_ptr);
+    if (state != NULL) {
+      state->getHeightAndNormal(contact_pos(0), contact_pos(1), height, oNormal);
+      pos << contact_pos.topRows(2), height;
+      if (normal) {
+        *normal = oNormal.cast<double>();
+        return;
+      }
+    }
+#endif      
+  } else {
+//    mexPrintf("Warning: using 0,0,1 as normal\n");
+    pos << contact_pos.topRows(2), terrain_height;
+    if (normal) *normal << 0,0,1;
+  }
+}
+
+void RigidBodyManipulator::surfaceTangents(const Vector3d & normal, Matrix<double,3,m_surface_tangents> & d)
+{
+  Vector3d t1,t2;
+  double theta;
+  
+  if (1 - normal(2) < 10e-8) { // handle the unit-normal case (since it's unit length, just check z)
+    t1 << 1,0,0;
+  } else { // now the general case
+    t1 << normal(2), -normal(1), 0; // normal.cross([0;0;1])
+    t1 /= sqrt(normal(1)*normal(1) + normal(2)*normal(2));
+  }
+      
+  t2 = t1.cross(normal);
+      
+  for (int k=0; k<m_surface_tangents; k++) {
+    theta = k*M_PI/m_surface_tangents;
+    d.col(k)=cos(theta)*t1 + sin(theta)*t2;
+  }
+}
+
+int RigidBodyManipulator::contactConstraints(const int nc, std::vector<SupportStateElement> const& supp, const double terrain_height, void* const map_ptr, MatrixXd &n, MatrixXd &D, MatrixXd &Jp, MatrixXd &Jpdot)
+{
+  int j, k=0, nq = num_dof;
+  //m_surface_tangents is the number of friction cone basis vectors over 2
+
+  n.resize(nc,nq);   //n = m x n   Normals in joint coordinates
+  D.resize(nq,nc*2*m_surface_tangents);  //D = n x 2mk friction polyhedron basis vectors in joint coordinates
+  Jp.resize(3*nc,nq);  // 3m x n 
+  Jpdot.resize(3*nc,nq); // 3m x n 
+  
+  Vector3d contact_pos,pos,posB,normal; 
+  Vector4d tmp;
+  
+  MatrixXd J(3,nq);  
+  Matrix<double,3,m_surface_tangents> d;
+
+  for (std::vector<SupportStateElement>::const_iterator iter = supp.begin(); iter!=supp.end(); iter++) { //for each SupportStateElement 
+    std::unique_ptr<RigidBody>& b = bodies[iter->body_idx];  //index into r->bodies to get body B
+    if (nc>0) { //if we have active contact points
+      for (std::set<int>::iterator pt_iter=iter->contact_pt_inds.begin(); pt_iter!=iter->contact_pt_inds.end(); pt_iter++) { 
+        //for each contact point
+        if(*pt_iter < 0 || *pt_iter>=b->contact_pts.cols()) return -1;
+        // if (*pt_iter<0 || *pt_iter>=b->contact_pts.cols()) mexErrMsgIdAndTxt("DRC:ControlUtil:BadInput","requesting contact pt %d but body only has %d pts",*pt_iter,b->contact_pts.cols());
+        //each column in b->contact_pts is a contact point
+        tmp = b->contact_pts.col(*pt_iter); //tmp stores the current contact point
+        forwardKin(iter->body_idx,tmp,0,contact_pos); //get contact_pos 
+        forwardJac(iter->body_idx,tmp,0,J); //get Jacobian of contact_pos?
+
+        collisionDetectTerrain(map_ptr,contact_pos,pos,&normal,terrain_height);  //get collision terrain point and normal
+        surfaceTangents(normal,d); //build friction cone approximation basis vectors in world space
+
+        n.row(k) = normal.transpose()*J;  //kth normal vector in joint coordinates
+        for (j=0; j<m_surface_tangents; j++) {  //for each friction cone basis vector
+          D.col(2*k*m_surface_tangents+j) = J.transpose()*d.col(j);
+          D.col((2*k+1)*m_surface_tangents+j) = -D.col(2*k*m_surface_tangents+j); //transform basis vector into joint coordinates
+        }
+
+        // store away kin sols into Jp and Jpdot
+        // NOTE: I'm cheating and using a slightly different ordering of J and Jdot here
+        Jp.block(3*k,0,3,nq) = J;
+        forwardJacDot(iter->body_idx,tmp,0,J);
+        Jpdot.block(3*k,0,3,nq) = J;
+        
+        k++;
+      }
+    }
+  }
+  
+  return k;
+}
 
 void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num_rigid_body_objects, int num_rigid_body_frames)
 {
