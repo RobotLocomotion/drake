@@ -2,10 +2,10 @@
 #define DRAKE_UTIL_GRADIENTVAR_H_
 
 #include <stdexcept>
-#include <memory>
 #include <Eigen/Core>
 #include "drakeGradientUtil.h"
 #include <iostream>
+#include <cstdint>
 
 
 template <typename Scalar, int Rows, int Cols>
@@ -18,14 +18,14 @@ public:
 
 private:
   DataType val;
-  std::unique_ptr<ChildGradientVarType> grad;
+  ChildGradientVarType* grad;
 
 private:
   GradientVar& operator= (const GradientVar& other); // disallow assignment
 //  GradientVar(const GradientVar& other);
 
 public:
-  GradientVar(int rows, int cols, int nq = 0, int order = 0) :
+  GradientVar(typename DataType::Index rows, typename DataType::Index cols, typename DataType::Index nq = 0, int order = 0) :
     val(rows, cols),
     grad(order > 0 ? new ChildGradientVarType(rows * cols, nq, nq, order - 1) : nullptr)
   {
@@ -44,6 +44,8 @@ public:
 
   virtual ~GradientVar()
   {
+    if (hasGradient())
+      delete grad;
   }
 
   DataType& value()
@@ -58,7 +60,7 @@ public:
 
   bool hasGradient() const
   {
-    return grad.operator bool();
+    return grad != nullptr;
   }
 
   ChildGradientVarType& gradient()
@@ -86,7 +88,7 @@ public:
     return hasGradient() ? 1 + grad->maxOrder() : 0;
   }
 
-  int getNumVariables() const
+  typename DataType::Index getNumVariables() const
   {
     return hasGradient() ? grad->value().cols() : -1;
   }
@@ -99,13 +101,13 @@ public:
         grad->resize(rows * cols, nq, nq, order - 1);
       }
       else {
-        grad = std::move(std::unique_ptr<ChildGradientVarType>(new ChildGradientVarType(rows * cols, nq, nq, order - 1)));
+        grad = new ChildGradientVarType(rows * cols, nq, nq, order - 1);
       }
     }
   }
 
 public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF_VECTORIZABLE_FIXED_SIZE(Scalar, DataType::SizeAtCompileTime)
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF(bool(((DataType::SizeAtCompileTime)!=Eigen::Dynamic) && ((static_cast<int>(sizeof(Scalar))*(DataType::SizeAtCompileTime))%16==0)))
 };
 
 #endif /* DRAKE_UTIL_GRADIENTVAR_H_ */

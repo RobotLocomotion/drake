@@ -982,7 +982,7 @@ void RigidBodyManipulator::doKinematicsNew(double* q, bool compute_gradients, do
             // dJdotvdv
             // TODO: exploit sparsity better
             std::vector<int> v_indices;
-            auto jacobian = geometricJacobian<double>(0, i, 0, 0, &v_indices);
+            auto jacobian = geometricJacobian<double>(0, i, 0, 0, false, &v_indices);
 
             Matrix<double, TWIST_SIZE, Eigen::Dynamic> dtwistdv(TWIST_SIZE, nv);
             dtwistdv.setZero();
@@ -1142,10 +1142,10 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::centroidal
     if (body.hasParent()) {
       int nv_joint = body.getJoint().getNumVelocities();
 
-      ret.value().template middleCols(body.dofnum, nv_joint).noalias() = Ic_new[i] * body.J; // FLOATINGBASE TODO: assumes nq = nv
+      ret.value().middleCols(body.dofnum, nv_joint).noalias() = Ic_new[i] * body.J; // FLOATINGBASE TODO: assumes nq = nv
 
       if (gradient_order > 0) {
-        ret.gradient().value().template middleRows(gradient_row_start, TWIST_SIZE * nv_joint) = matGradMultMat(Ic_new[i], body.J, dIc_new[i], body.dJdq);
+        ret.gradient().value().middleRows(gradient_row_start, TWIST_SIZE * nv_joint) = matGradMultMat(Ic_new[i], body.J, dIc_new[i], body.dJdq);
         gradient_row_start += TWIST_SIZE * nv_joint;
       }
     }
@@ -1584,7 +1584,7 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJ
     auto& J = ret.value();
 
     DrakeJoint::MotionSubspaceType motion_subspace;
-    if (v_or_qdot_indices) {
+    if (v_or_qdot_indices != nullptr) {
       v_or_qdot_indices->clear();
       v_or_qdot_indices->reserve(cols);
     }
@@ -1615,7 +1615,7 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJ
         }
       }
 
-      if (v_or_qdot_indices) {
+      if (v_or_qdot_indices != nullptr) {
         int cols_block_start = body.dofnum; // FLOATINGBASE TODO: assumes qd = v
         for (int j = 0; j < ncols_block; j++) {
           v_or_qdot_indices->push_back(cols_block_start + j);
@@ -2067,7 +2067,7 @@ GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwar
         }
         col_start++;
       }
-      row_start += Jrot.value().rows();
+      row_start += rotation_representation_size;
     }
   }
 

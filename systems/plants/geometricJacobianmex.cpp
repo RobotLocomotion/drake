@@ -67,7 +67,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   int gradient_order = nlhs > 2 ? 1 : 0;
   if (nlhs > 1) {
     std::vector<int> v_indices;
-    auto J_gradientVar = model->geometricJacobian<double>(base_body_or_frame_ind, end_effector_body_or_frame_ind, expressed_in_body_or_frame_ind, gradient_order, &v_indices);
+    auto J_gradientVar = model->geometricJacobian<double>(base_body_or_frame_ind, end_effector_body_or_frame_ind, expressed_in_body_or_frame_ind, gradient_order, false, &v_indices);
     plhs[0] = eigenToMatlab(J_gradientVar.value());
 
     baseZeroToBaseOne(v_indices);
