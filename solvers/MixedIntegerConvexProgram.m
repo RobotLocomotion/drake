@@ -279,6 +279,7 @@ classdef MixedIntegerConvexProgram
     end
 
     function [obj, solvertime, objval] = solveGurobi(obj, params)
+      checkDependency('gurobi');
       if nargin < 2
         params = struct();
       end
@@ -345,6 +346,7 @@ classdef MixedIntegerConvexProgram
     end
 
     function [obj, solvertime, objval] = solveYalmip(obj)
+      checkDependency('gurobi');
       constraints = obj.symbolic_constraints;
       objective = obj.symbolic_objective;
 
