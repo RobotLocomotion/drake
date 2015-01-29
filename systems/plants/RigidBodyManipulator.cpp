@@ -373,6 +373,33 @@ int RigidBodyManipulator::contactConstraints(const int nc, std::vector<SupportSt
   return k;
 }
 
+int RigidBodyManipulator::contactPhi(SupportStateElement const & supp, void* const map_ptr, const double terrain_height, VectorXd &phi)
+{
+  std::unique_ptr<RigidBody>& b = bodies[supp.body_idx];
+  int nc = static_cast<int>(supp.contact_pt_inds.size());
+  phi.resize(nc);
+
+  if (nc<1) return nc;
+
+  Vector3d contact_pos,pos,posB,normal; Vector4d tmp;
+
+  int i=0;
+  for (std::set<int>::iterator pt_iter=supp.contact_pt_inds.begin(); pt_iter!=supp.contact_pt_inds.end(); pt_iter++) {
+    //if (*pt_iter<0 || *pt_iter>=b->contact_pts.cols()) mexErrMsgIdAndTxt("DRC:ControlUtil:BadInput","requesting contact pt %d but body only has %d pts",*pt_iter,b->contact_pts.cols());
+
+    tmp = b->contact_pts.col(*pt_iter);
+    forwardKin(supp.body_idx,tmp,0,contact_pos);
+    collisionDetectTerrain(map_ptr,contact_pos,pos,NULL,terrain_height);
+    pos -= contact_pos;  // now -rel_pos in matlab version
+    
+    phi(i) = pos.norm();
+    if (pos.dot(normal)>0)
+      phi(i)=-phi(i);
+    i++;
+  }
+  return nc;
+}
+
 void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num_rigid_body_objects, int num_rigid_body_frames)
 {
   int last_num_dof = num_dof, last_NB = NB, last_num_bodies = num_bodies;

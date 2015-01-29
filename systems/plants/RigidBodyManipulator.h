@@ -56,6 +56,8 @@ public:
   
   void surfaceTangents(const Vector3d & normal, Matrix<double,3,m_surface_tangents> & d);
 
+  int contactPhi(SupportStateElement const & supp, void* const map_ptr, const double terrain_height, VectorXd &phi);
+  
   void doKinematics(double* q, bool b_compute_second_derivatives=false, double* qd=NULL);
 
   void doKinematicsNew(double* q, bool compute_gradients = false, double* v = nullptr, bool compute_JdotV = false);
