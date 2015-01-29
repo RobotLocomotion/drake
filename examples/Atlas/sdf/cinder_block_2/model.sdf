@@ -3,7 +3,7 @@
   <model name="cinder_block_2">
     <link name="link">
       <inertial>
-        <pose>0 0 0.0714375 0 0 0</pose>
+        <pose>0 0 0.07 0 0 0</pose>
         <!-- volume about 0.0085 m^3, density 2000 kg/m^3 -->
         <mass>5</mass>
         <!-- approximate as uniform box 0.37 x 0.17 x 0.20 m -->
@@ -19,7 +19,7 @@
       <visual name="visual">
         <geometry>
 	  <box>
-		<size>0.396875 0.19368008 0.2</size>
+		<size>0.396875 0.19368008 0.146</size>
 	  </box>
           <!--
           <mesh>
@@ -32,7 +32,7 @@
         <pose>0 0 0 0 0 0</pose>
         <geometry>
           <box>
-            <size>0.396875 0.19368008 0.2</size>
+            <size>0.396875 0.19368008 0.146</size>
           </box>
         </geometry>
         <surface>
