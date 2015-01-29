@@ -74,8 +74,13 @@ for i=1:N
   
 end
 
-xtraj_N = PPTrajectory(foh(ts_N,xpts_N));
-utraj_N = PPTrajectory(foh(ts_N,upts_N));
+qpts_N = xpts_N(1:r.getNumPositions,:);
+qdpts_N = xpts_N(r.getNumPositions+(1:r.getNumVelocities),:);
+
+qtraj_N = PPTrajectory(foh(ts_N,qpts_N));
+qdtraj_N = PPTrajectory(zoh(ts_N,qdpts_N));
+xtraj_N = [qtraj_N;qdtraj_N];
+utraj_N = PPTrajectory(zoh(ts_N,upts_N));
 
 end
 

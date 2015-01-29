@@ -248,8 +248,10 @@ classdef FullStateQPController < DrakeSystem
       % compute foot placement error
       kinsol0 = r.doKinematics(q0);
       xp0 = forwardKin(r,kinsol0,planned_supports(j),xz_pts,0);
-      obj.controller_data.xoffset = mean(xp0(1,:)-xp_j(1,:)); % not quite right, need to take this over all bodies in contact
+      obj.controller_data.xoffset = -1*(mean(xp0(1,:)-xp_j(1,:))); % not quite right, need to take this over all bodies in contact
     end
+    
+    nc
     
     if dim==2
        % delete y rows

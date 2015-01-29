@@ -108,9 +108,9 @@ ctrl_data = FullStateQPControllerData(true,struct(...
 %ctrl_data.mode_data = mode_data;
 
 % instantiate QP controller
-options.cpos_slack_limit = 10;
+options.cpos_slack_limit = inf;
 options.w_cpos_slack = 1.0;
-options.phi_slack_limit = 10;
+options.phi_slack_limit = inf;
 options.w_phi_slack = 0.0;
 options.w_qdd = 0*ones(nq,1);
 options.w_grf = 0;

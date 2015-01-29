@@ -2,12 +2,12 @@ function testFlipLeftRight()
 
 options.twoD = true;
 options.floating = true;
-s = 'urdf/atlas_simple_spring_ankle.urdf';
+s = '../urdf/atlas_simple_planar_contact.urdf';
 dt = 0.001;
 w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
 r = TimeSteppingRigidBodyManipulator(s,dt,options);
 
-load data/atlas_passiveankle_traj_lqr_082914_2.mat
+load data/atlas_lqr.mat
 
 xtraj2 = xtraj;
 utraj2 = utraj;

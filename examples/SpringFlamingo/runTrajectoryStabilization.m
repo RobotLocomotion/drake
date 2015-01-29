@@ -28,14 +28,15 @@ v = r.constructVisualizer;
 v.display_dt = 0.01;
 
 data_dir = fullfile(getDrakePath,'examples','SpringFlamingo','data');
-traj_file = strcat(data_dir,'/traj-08-08-14_newcost.mat');
+traj_file = strcat(data_dir,'/traj-08-06-14.mat');
 % if exist(traj_file, 'file') ~= 2
 %   !wget "http://www.dropbox.com/s/i2g6fz45hl97si4/traj.mat" --no-check-certificate 
 %   system(['mv traj.mat ',data_dir]);
 % end
 load(traj_file);
+xtraj = repeatTraj(r,xtraj,10,true);
 xtraj = xtraj.setOutputFrame(getStateFrame(r));
-% v.playback(xtraj,struct('slider',true));
+ v.playback(xtraj,struct('slider',true));
 
 support_times = zeros(1,length(Straj_full));
 for i=1:length(Straj_full)
