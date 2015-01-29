@@ -2,14 +2,15 @@ classdef QTrajEvalBlock < MIMODrakeSystem
   % passes through the robot state and
   % reads evals qtraj at the current t
   properties
-    robot;
-    controller_data;
-    dt;
-    use_error_integrator;
-    jlmin;
-    jlmax;
-    nq;
-    eta;
+    robot
+    controller_data
+    dt
+    use_error_integrator
+    jlmin
+    jlmax
+    nq
+    eta
+    output_ind
   end
   
   methods
@@ -30,15 +31,33 @@ classdef QTrajEvalBlock < MIMODrakeSystem
       else
         options.use_error_integrator = false;
       end
-      
+
+      if isfield(options,'use_actuator_coordinates')
+        % for using manipulator PD control --- output in the actuated
+        % joints order and drop floating base dofs
+        typecheck(options.use_actuator_coordinates,'logical');
+      else
+        options.use_actuator_coordinates = false;
+      end
+     
       atlas_state = getStateFrame(r);
       input_frame = atlas_state;
-      output_frame = MultiCoordinateFrame({atlasFrames.AtlasCoordinates(r),atlas_state});
+      if options.use_actuator_coordinates
+        output_frame = MultiCoordinateFrame({atlasFrames.AtlasInput(r),atlas_state});
+      else
+        output_frame = MultiCoordinateFrame({atlasFrames.AtlasCoordinates(r),atlas_state});
+      end
       
       obj = obj@MIMODrakeSystem(0,0,input_frame,output_frame,true,true);
       obj = setInputFrame(obj,input_frame);
       obj = setOutputFrame(obj,output_frame);
 
+      if options.use_actuator_coordinates
+        obj.output_ind = getActuatedJoints(r);
+      else
+        obj.output_ind = 1:getNumPositions(r);
+      end
+      
       if isfield(options,'dt')
         typecheck(options.dt,'double');
         sizecheck(options.dt,[1 1]);
@@ -76,6 +95,7 @@ classdef QTrajEvalBlock < MIMODrakeSystem
         qdes = qdes + newintg;
         qdes = max(obj.jlmin-i_clamp,min(obj.jlmax+i_clamp,qdes)); % allow it to go delta above and below jlims
       end
+      qdes = qdes(obj.output_ind);
     end
   end
   
