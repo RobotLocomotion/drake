@@ -82,6 +82,9 @@ classdef FixedModeImplicitTrajectoryOptimization < DirectTrajectoryOptimization
       % set all contact variables to be positive
       obj = obj.addConstraint(BoundingBoxConstraint(zeros(N*obj.nC*(obj.nD+2),1),inf(N*obj.nC*(obj.nD+2),1)),obj.l_inds(:));
       
+      % small min value on h
+      obj = obj.addConstraint(BoundingBoxConstraint(1e-5*ones(obj.N-1,1),inf(obj.N-1,1)),obj.h_inds(:));
+      
       for i=1:obj.N-1,
 %         dyn_inds{i} = [obj.h_inds(i);obj.x_inds(:,i);obj.x_inds(:,i+1);obj.u_inds(:,i);obj.l_inds(:,i);obj.ljl_inds(:,i)];
         dyn_inds{i} = {obj.h_inds(i);obj.x_inds(:,i);obj.x_inds(:,i+1);obj.u_inds(:,i);obj.l_inds(:,i);obj.ljl_inds(:,i)};
@@ -95,11 +98,14 @@ classdef FixedModeImplicitTrajectoryOptimization < DirectTrajectoryOptimization
         Ninactive = length(ind_inactive);
         
         % force phi=gamma=0 for active contacts
-        if i~=obj.N-1
         if Nactive > 0
-          phigamma_cnstr = FunctionHandleConstraint(zeros(Nactive*(obj.nD+1),1),zeros(Nactive*(obj.nD+1),1),nX,@(q,v) obj.phigamma_fun(q,v,ind_active));        
+          phigamma_cnstr = FunctionHandleConstraint(zeros(Nactive*(obj.nD+1),1),zeros(Nactive*(obj.nD+1),1),nX,@(q,v) obj.phigamma_fun(q,v,ind_active));
           obj = obj.addConstraint(phigamma_cnstr,{obj.x_inds(1:nq,i+1),obj.x_inds(nq+1:end,i+1)});
         end
+        
+        if Ninactive > 0
+          phi_cnstr = FunctionHandleConstraint(zeros(Ninactive,1),inf(Ninactive,1),nq,@(q) obj.phi_fun(q,ind_inactive));        
+          obj = obj.addConstraint(phi_cnstr,{obj.x_inds(1:nq,i+1)});
         end
         
         % force lambda_z = 0 for inactive contacts
@@ -132,10 +138,10 @@ classdef FixedModeImplicitTrajectoryOptimization < DirectTrajectoryOptimization
           
           obj = obj.addConstraint(jlcompl_constraints{i},[obj.x_inds(1:nq,i+1);obj.ljl_inds(:,i)]);
         end
-      end     
+      end
     end
     
-    % nonlinear contact constraint, phi=0, D*psi=0
+    % nonlinear contact constraint, phi=0, D*v=0
     % x = [q;v]
     function [f,df] = phigamma_fun(obj,q,v,inds)
       Nactive = length(inds);
@@ -154,6 +160,14 @@ classdef FixedModeImplicitTrajectoryOptimization < DirectTrajectoryOptimization
         ddq = matGradMult(dD{j},v);
         df(1+j:1+obj.nD:end,1:nq) = ddq(inds,:);%d/dq
       end
+    end
+    
+    % nonlinear contact constraint, phi>=0
+    function [f,df] = phi_fun(obj,q,inds)
+      [phi,normal,d,xA,xB,idxA,idxB,mu,n] = obj.plant.contactConstraints(q,false,obj.options.active_collision_options);
+      
+      f = phi(inds);
+      df = n(inds,:);
     end
     
      function [f,df] = dynamics_constraint_fun(obj,h,x0,x1,u,lambda,lambda_jl)

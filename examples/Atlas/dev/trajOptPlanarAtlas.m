@@ -53,7 +53,7 @@ if isfield(options,'xf')
   sizecheck(options.xf,[nx,1]);
   xf = options.xf;
 else
-  xf = xtraj.eval(xtraj.tspan(1));
+  xf = xtraj.eval(xtraj.tspan(2));
 end
 
 if isfield(options,'x0_delta')
@@ -84,8 +84,10 @@ to_options.jlcompl_slack = scale*.0001;
 
 to_options.nlcc_mode = 2;
 to_options.lincc_mode = 1;
-to_options.lambda_mult = p.getMass*9.81*tf0/N/2;
+to_options.lambda_mult = p.getMass*9.81*T_span(2)/N/2;
 to_options.lambda_jl_mult = tf0/N;
+
+to_options.allow_sliding = false;
 
 % to_options.integration_method = ContactImplicitTrajectoryOptimization.MIDPOINT;
 to_options.integration_method = ContactImplicitTrajectoryOptimization.BACKWARD_EULER;
@@ -130,7 +132,7 @@ knee_inds = knee_inds(:);
 knee_constraint = BoundingBoxConstraint(.1*ones(length(knee_inds),1),inf(length(knee_inds),1));
 traj_opt = traj_opt.addBoundingBoxConstraint(knee_constraint,knee_inds);
 
-snprint('snopt.out');
+traj_opt = traj_opt.setSolverOptions('snopt','print','snopt.out');
 traj_opt = traj_opt.setSolverOptions('snopt','MajorIterationsLimit',100);
 traj_opt = traj_opt.setSolverOptions('snopt','MinorIterationsLimit',500000);
 traj_opt = traj_opt.setSolverOptions('snopt','IterationsLimit',500000);

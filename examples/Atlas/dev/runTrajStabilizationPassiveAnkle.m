@@ -31,7 +31,8 @@ v = r.constructVisualizer;
 v.display_dt = 0.01;
 
 %traj_file = 'data/atlas_passiveankle_traj_lqr_090314_zoh.mat';
-traj_file = 'data/atlas_passive_ankle_lqr.mat';
+% traj_file = 'data/atlas_passive_ankle_lqr.mat';
+traj_file = 'data/atlas_passive_ankle_lqr_fm2.mat';
 
 
 load(traj_file);
