@@ -2,6 +2,7 @@ function runDRCPracticeTerrain
 % Plan a walking trajectory over a set of cinderblocks, like those seen at the DRC Trials in 2013. 
 
 checkDependency('iris');
+checkDependency('mosek');
 task_number=2; % consider taking the task number as an input if/when we load the other tasks
 options.atlas_version = 3;
 r = Atlas('urdf/atlas_minimal_contact.urdf',options);
@@ -9,13 +10,9 @@ r = Atlas('urdf/atlas_minimal_contact.urdf',options);
 clear gazeboModelPath;
 setenv('GAZEBO_MODEL_PATH',fullfile(getDrakePath,'examples','Atlas','sdf')); 
 
-if exist('data/practice_terrain.mat','file')
-  load data/practice_terrain.mat;
-else
-  terrain = RigidBodyManipulator(['sdf/drc_practice_task_',num2str(task_number),'.world']);
-  height_map = RigidBodyHeightMapTerrain.constructHeightMapFromRaycast(terrain,[],-3:.015:10,-2:.015:2,10);
-  save data/practice_terrain.mat height_map;
-end
+terrain = RigidBodyManipulator(['sdf/drc_practice_task_',num2str(task_number),'.world']);
+terrain.constructVisualizer();
+height_map = RigidBodyHeightMapTerrain.constructHeightMapFromRaycast(terrain,[],-3:.015:10,-2:.015:2,10);
 
 r = r.setTerrain(height_map).compile();
 options.terrain = height_map;  
@@ -71,4 +68,4 @@ end
 r.constructVisualizer().playback(combined_xtraj, struct('slider', true));
 rangecheck(options.initial_pose(1:2), [4;-1.5], [inf; 1.5]);
 
-%TIMEOUT 1000
+%TIMEOUT 3000
