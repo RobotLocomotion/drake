@@ -1,10 +1,12 @@
 function testForwardKin
 
 testFallingBrick('rpy');
-% testFallingBrick('quat');
-
 testAtlas('rpy');
-% testAtlas('quat');
+
+if RigidBodyManipulator.use_new_kinsol
+  testFallingBrick('quat');
+  testAtlas('quat');
+end
 
 end
 
