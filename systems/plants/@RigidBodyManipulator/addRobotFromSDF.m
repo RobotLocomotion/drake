@@ -379,7 +379,7 @@ end
 childNode = node.getElementsByTagName('child').item(0);
 childname = char(getNodeValue(getFirstChild(childNode)));
 if strfind(childname,'::')
-  part = regexp(childname,'::', 'split');
+  part = regexp(childname,'\:\:', 'split');
   child = findLinkId(model,part{2},part{1},-1);
   if isempty(child), error(['couldn''t find ',childname]); end
   child = child(end);  % take the most recent match
