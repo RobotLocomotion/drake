@@ -45,7 +45,7 @@ if use_symbolic
   if use_symbolic
     fprintf(1, 'yalmip setup: %f\n', toc(t0));
   end
-  [p1, solvertime, objval_nosymb] = p1.solve();
+  [p1, solvertime, objval_symb] = p1.solve();
   if use_symbolic
     fprintf(1, 'yalmip total: %f\n', toc(t0));
   end
@@ -65,7 +65,7 @@ if (use_symbolic == 0 || use_symbolic == 2)
   if use_symbolic == 2
     fprintf(1, 'gurobi setup: %f\n', toc(t0));
   end
-  [p2, solvertime, objval_symb] = p2.solve();
+  [p2, solvertime, objval_nosymb] = p2.solve();
   if use_symbolic == 2
     fprintf(1, 'gurobi total: %f\n', toc(t0));
   end
