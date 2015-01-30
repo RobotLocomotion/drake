@@ -43,7 +43,7 @@ classdef RigidBodyManipulator < Manipulator
   end
   
   properties (Constant)
-    use_new_kinsol = true;
+    use_new_kinsol = false;
   end
 
   methods
