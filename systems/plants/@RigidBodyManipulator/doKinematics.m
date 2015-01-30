@@ -1,4 +1,4 @@
-function kinsol=doKinematics(model,q,b_compute_second_derivatives,use_mex,qd)
+function kinsol=doKinematics(model,q,b_compute_second_derivatives,use_mex,qd,options)
 % kinsol=doKinematics(model,q,b_compute_second_derivatives,use_mex,qd)
 % Computes the (forward) kinematics of the manipulator.
 %
@@ -11,19 +11,57 @@ function kinsol=doKinematics(model,q,b_compute_second_derivatives,use_mex,qd)
 %
 
 if model.use_new_kinsol
-  checkDirty(model);
-  if nargin<5, qd=[]; end
-  if nargin<4, use_mex = true; end
+  checkDirty(model);  
+  if nargin<6
+    options = struct();
+    if nargin > 2
+      options.compute_gradients = b_compute_second_derivatives;
+    end; % approximately the same use case
+    if nargin > 3
+      options.use_mex = use_mex;
+    end;
+  else
+    % if options struct is passed in, make sure that boolean arguments are
+    % empty to avoid conflicts
+    if nargin > 2
+      valuecheck(b_compute_second_derivatives, []);
+    end;
+    if nargin > 3
+      valuecheck(use_mex, []); 
+    end
+  end
+  if nargin > 4
+    v = qd; % TODO: v is what should be passed to doKinematics
+  else
+    v = [];
+  end
+  if ~isfield(options, 'use_mex')
+    options.use_mex = true;
+  end
+  if ~isfield(options, 'compute_gradients')
+    options.compute_gradients = false;
+  end
+  if ~isfield(options, 'compute_JdotV')
+    options.compute_JdotV = isempty(v);
+  end
   
-  compute_gradients = true;
-  v = qd;
-  compute_JdotV = true;
-  kinsol = doKinematicsNew(model, q, compute_gradients, use_mex, v, compute_JdotV);
+  kinsol = doKinematicsNew(model, q, v, options);
 else
   checkDirty(model);
+  if nargin > 5
+    valuecheck(b_compute_second_derivatives, []);
+    valuecheck(use_mex, []);
+    if isfield(options, 'use_mex')
+      use_mex = true;
+    end
+    if isfield(options, 'compute_gradients')
+      b_compute_second_derivatives = true;
+    end
+  end
+  
   if nargin<5, qd=[]; end
-  if nargin<4, use_mex = true; end
-  if nargin<3, b_compute_second_derivatives=false; end
+  if nargin<4 || isempty(use_mex), use_mex = true; end
+  if nargin<3 || isempty(b_compute_second_derivatives), b_compute_second_derivatives=false; end
   
   kinsol.q = q;
   kinsol.qd = qd;
@@ -181,8 +219,8 @@ end
 
 end
 
-function kinsol = doKinematicsNew(model, q, compute_gradients, use_mex, v, compute_JdotV)
-% kinsol=doKinematics(model, q, compute_gradients, use_mex, v, compute_JdotV)
+function kinsol = doKinematicsNew(model, q, v, options)
+% kinsol=doKinematics(model, q, v, options)
 % Computes the (forward) kinematics of the manipulator.
 %
 % @retval kinsol a certificate containing the solution (or information
@@ -197,30 +235,25 @@ function kinsol = doKinematicsNew(model, q, compute_gradients, use_mex, v, compu
 % gradient computations.
 
 checkDirty(model);
-if nargin<5, v=[]; end
-if nargin<6 && ~isempty(v), compute_JdotV=false; end
-if nargin<4, use_mex = true; end
-if nargin<3, compute_gradients = false; end
-
 kinsol.q = q;
 kinsol.v = v;
 
-if (use_mex && model.mex_model_ptr~=0 && isnumeric(q))
-  doKinematicsmex(model.mex_model_ptr,q,compute_gradients,v);
+if (options.use_mex && model.mex_model_ptr~=0 && isnumeric(q))
+  doKinematicsmex(model.mex_model_ptr,q,options.compute_gradients,v);
   kinsol.mex = true;
 else
   kinsol.mex = false;
   
   bodies = model.body;
   kinsol.T = computeTransforms(bodies, q);
-  if compute_gradients
+  if options.compute_gradients
     [S, dSdq] = computeMotionSubspaces(bodies, q);
   else
     S = computeMotionSubspaces(bodies, q);
   end
   kinsol.J = computeJ(kinsol.T, S);
   
-  if compute_gradients
+  if options.compute_gradients
     [kinsol.qdotToV, kinsol.dqdotToVdq] = qdotToV(model, q);
     [kinsol.vToqdot, kinsol.dvToqdotdq] = vToqdot(model, q);
   else
@@ -228,21 +261,21 @@ else
     kinsol.vToqdot = vToqdot(model, q);
   end
   
-  if compute_gradients
+  if options.compute_gradients
     kinsol.dTdq = computeTransformGradients(bodies, kinsol.T, S, kinsol.qdotToV);
     kinsol.dJdq = computedJdq(bodies, kinsol.T, S, kinsol.dTdq, dSdq);
   end
   
   if ~isempty(v)
-    if compute_gradients
+    if options.compute_gradients
       [kinsol.twists, kinsol.dtwistsdq] = computeTwistsInBaseFrame(bodies, kinsol.J, v, kinsol.dJdq);
-      if compute_JdotV
+      if options.compute_JdotV
         [SdotV, dSdotVdq, dSdotVdv] = computeMotionSubspacesDotV(bodies, q, v);
         [kinsol.JdotV, kinsol.dJdotVdq, kinsol.dJdotVidv] = computeJacobianDotV(model, kinsol, SdotV, dSdotVdq, dSdotVdv);
       end
     else
       kinsol.twists = computeTwistsInBaseFrame(bodies, kinsol.J, v);
-      if compute_JdotV
+      if options.compute_JdotV
         SdotV = computeMotionSubspacesDotV(bodies, q, v);
         kinsol.JdotV = computeJacobianDotV(model, kinsol, SdotV);
       end

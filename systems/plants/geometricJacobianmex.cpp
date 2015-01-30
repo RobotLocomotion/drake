@@ -51,7 +51,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
     mexErrMsgIdAndTxt("Drake:geometricJacobianmex:WrongNumberOfInputs", usage.c_str());
   }
 
-  if (nlhs > 2) {
+  if (nlhs > 3) {
     mexErrMsgIdAndTxt("Drake:geometricJacobianmex:WrongNumberOfOutputs", usage.c_str());
   }
 
@@ -64,17 +64,21 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 
   Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic> J(TWIST_SIZE, 1);
 
+  int gradient_order = nlhs > 2 ? 1 : 0;
   if (nlhs > 1) {
     std::vector<int> v_indices;
-    model->geometricJacobian(base_body_or_frame_ind, end_effector_body_or_frame_ind, expressed_in_body_or_frame_ind, J, &v_indices);
+    auto J_gradientVar = model->geometricJacobian<double>(base_body_or_frame_ind, end_effector_body_or_frame_ind, expressed_in_body_or_frame_ind, gradient_order, false, &v_indices);
+    plhs[0] = eigenToMatlab(J_gradientVar.value());
 
     baseZeroToBaseOne(v_indices);
     plhs[1] = stdVectorToMatlab(v_indices);
+    if (nlhs > 2) {
+      plhs[2] = eigenToMatlab(J_gradientVar.gradient().value());
+    }
   }
   else if (nlhs > 0){
-    model->geometricJacobian(base_body_or_frame_ind, end_effector_body_or_frame_ind, expressed_in_body_or_frame_ind, J, nullptr);
+    auto J_gradientVar = model->geometricJacobian<double>(base_body_or_frame_ind, end_effector_body_or_frame_ind, expressed_in_body_or_frame_ind, gradient_order, nullptr);
+    plhs[0] = eigenToMatlab(J_gradientVar.value());
   }
-  if (nlhs > 0) {
-    plhs[0] = eigenToMatlab(J);
-  }
+
 }
