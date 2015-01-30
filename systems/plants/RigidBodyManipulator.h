@@ -218,7 +218,7 @@ private:
   std::vector<VectorXd> avp;
   std::vector<VectorXd> fvp;
   std::vector<MatrixXd> IC;
-  std::vector<Matrix<double, TWIST_SIZE, TWIST_SIZE>> Ic_new;
+  std::vector<Matrix<double, TWIST_SIZE, TWIST_SIZE>, Eigen::aligned_allocator< Matrix<double, TWIST_SIZE, TWIST_SIZE> > > Ic_new;
 
   //Variables for gradient calculations
   MatrixXd dTdTmult;
