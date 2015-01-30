@@ -1,4 +1,4 @@
-function ret = dHomogTrans(T, S, qdotToV)
+function ret = dHomogTrans(T, S, qdot_to_v)
 % Computes the gradient of a homogeneous transform T with respect to
 % the vector of coordinates q that determine T.
 %
@@ -14,36 +14,23 @@ function ret = dHomogTrans(T, S, qdotToV)
 %
 % @retval ret the gradient of T with respect to q
 
-% L = [0     0     0     0     0     0;
-%      0     0     1     0     0     0;
-%      0    -1     0     0     0     0;
-%      0     0     0     0     0     0;
-%      0     0    -1     0     0     0;
-%      0     0     0     0     0     0;
-%      1     0     0     0     0     0;
-%      0     0     0     0     0     0;
-%      0     1     0     0     0     0;
-%     -1     0     0     0     0     0;
-%      0     0     0     0     0     0;
-%      0     0     0     0     0     0;
-%      0     0     0     1     0     0;
-%      0     0     0     0     1     0;
-%      0     0     0     0     0     1;
-%      0     0     0     0     0     0];
+qdot_to_twist = S * qdot_to_v;
 
-i = [7 10 3 9 2 5 13 14 15];
-j = [1 1 2 2 3 3 4 5 6];
-s = [1 -1 -1 1 1 -1 1 1 1];
-L = sparse(i, j, s, 16, 6);
+nq = size(qdot_to_v, 2);
+ret = zeros(numel(T), nq) * T(1); % for TaylorVar
 
-% S in body frame:
-if isnumeric(T)
-  ret = kron(speye(4), sparse(T)) * L * S * qdotToV;
-else
-  ret = kron(eye(4), T) * L * S * qdotToV;
-end
+R = T(1:3, 1:3);
+Rx = R(:, 1);
+Ry = R(:, 2);
+Rz = R(:, 3);
 
-% S in world frame:
-% ret = kron(H', eye(4)) * L * S * qdotToV;
+qdot_to_omega_x = qdot_to_twist(1, :);
+qdot_to_omega_y = qdot_to_twist(2, :);
+qdot_to_omega_z = qdot_to_twist(3, :);
+
+ret(1:3, :) = - Rz * qdot_to_omega_y + Ry * qdot_to_omega_z;
+ret(5:7, :) = Rz * qdot_to_omega_x - Rx * qdot_to_omega_z;
+ret(9:11, :) = -Ry * qdot_to_omega_x + Rx * qdot_to_omega_y;
+ret(13:15, :) = R * qdot_to_twist(4:6, :);
 
 end

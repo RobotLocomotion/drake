@@ -8,6 +8,7 @@
 
 #include "collision/DrakeCollision.h"
 #include "KinematicPath.h"
+#include "GradientVar.h"
 
 #undef DLLEXPORT_RBM
 #if defined(WIN32) || defined(WIN64)
@@ -43,8 +44,14 @@ public:
 
   void doKinematicsNew(double* q, bool compute_gradients = false, double* v = nullptr, bool compute_JdotV = false);
 
+  template <typename Scalar>
+  GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> centroidalMomentumMatrix(int gradient_order);
+
   template <typename Derived>
   void getCMM(double* const q, double* const qd, MatrixBase<Derived> &A, MatrixBase<Derived> &Adot);
+
+  template <typename Scalar>
+  GradientVar<Scalar, SPACE_DIMENSION, 1> centerOfMass(int gradient_order, const std::set<int>& robotnum = RigidBody::defaultRobotNumSet);
 
   template <typename Derived>
   void getCOM(MatrixBase<Derived> &com,const std::set<int> &robotnum = RigidBody::defaultRobotNumSet);
@@ -85,11 +92,23 @@ public:
   template <typename DerivedA, typename DerivedB>
   void forwarddJac(const int body_ind, const MatrixBase<DerivedA>& pts, MatrixBase<DerivedB> &dJ);
 
+  template <typename DerivedPoints>
+  GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, DerivedPoints::ColsAtCompileTime> forwardKinNew(const MatrixBase<DerivedPoints>& points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type, int gradient_order);
+
+  template <typename Scalar, int XRows, int XCols>
+  GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> forwardJacV(const GradientVar<Scalar, XRows, XCols>& x, int body_or_frame_ind, int base_or_frame_ind, int rotation_type, bool compute_analytic_jacobian, int gradient_order);
+
+  template <typename Scalar>
+  GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> forwardKinPositionGradient(int npoints, int current_body_or_frame_ind, int new_body_or_frame_ind, int gradient_order);
+
   template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD>
   void bodyKin(const int body_ind, const MatrixBase<DerivedA>& pts, MatrixBase<DerivedB> &x, MatrixBase<DerivedC> *J=NULL, MatrixBase<DerivedD> *P=NULL);
 
-  template<typename DerivedA>
-  void geometricJacobian(int base_body_or_frame_ind, int end_effector_body_or_frame_ind, int expressed_in_body_or_frame_ind, PlainObjectBase<DerivedA>& J, std::vector<int>* v_indices);
+  template<typename Scalar>
+  GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> geometricJacobian(int base_body_or_frame_ind, int end_effector_body_or_frame_ind, int expressed_in_body_or_frame_ind, int gradient_order, bool in_terms_of_qdot = false, std::vector<int>* v_indices = nullptr);
+
+  template<typename Scalar>
+  GradientVar<Scalar, SPACE_DIMENSION + 1, SPACE_DIMENSION + 1> relativeTransform(int base_or_frame_ind, int body_or_frame_ind, int gradient_order);
 
   template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD, typename DerivedE, typename DerivedF>
   void HandC(double* const q, double * const qd, MatrixBase<DerivedA> * const f_ext, MatrixBase<DerivedB> &H, MatrixBase<DerivedC> &C, MatrixBase<DerivedD> *dH=NULL, MatrixBase<DerivedE> *dC=NULL, MatrixBase<DerivedF> * const df_ext=NULL);
@@ -199,11 +218,13 @@ private:
   std::vector<VectorXd> avp;
   std::vector<VectorXd> fvp;
   std::vector<MatrixXd> IC;
+  std::vector<Matrix<double, TWIST_SIZE, TWIST_SIZE>, Eigen::aligned_allocator< Matrix<double, TWIST_SIZE, TWIST_SIZE> > > Ic_new;
 
   //Variables for gradient calculations
   MatrixXd dTdTmult;
   std::vector<MatrixXd> dXupdq;
   std::vector<std::vector<MatrixXd>> dIC;
+  std::vector<typename Gradient<Matrix<double, TWIST_SIZE, TWIST_SIZE>, Eigen::Dynamic>::type> dIc_new;
 
   std::vector<MatrixXd> dvdq;
   std::vector<MatrixXd> dvdqd;
@@ -222,8 +243,8 @@ private:
   // preallocate for CMM function
   MatrixXd Xg; // spatial centroidal projection matrix
   MatrixXd dXg;  // dXg_dq * qd  
-  std::vector<MatrixXd> Ic; // body spatial inertias
-  std::vector<MatrixXd> dIc; // derivative of body spatial inertias
+  std::vector<MatrixXd> Ic; // composite rigid body inertias
+  std::vector<MatrixXd> dIc; // derivative of composite rigid body inertias
   std::vector<VectorXd> phi; // joint axis vectors
   std::vector<MatrixXd> Xworld; // spatial transforms from world to each body
   std::vector<MatrixXd> dXworld; // dXworld_dq * qd
