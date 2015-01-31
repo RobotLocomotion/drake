@@ -57,7 +57,8 @@ end
 % For now, all coefficients of friction are 1
 mu = ones(nC,1);
 
-d = obj.surfaceTangents(normal);
+d = surfaceTangentsmex(normal);
+
 if compute_first_derivative
   nq = obj.getNumPositions;  
   nk = size(d,2);
