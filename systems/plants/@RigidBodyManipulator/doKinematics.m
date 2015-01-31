@@ -52,7 +52,7 @@ else
     valuecheck(b_compute_second_derivatives, []);
     valuecheck(use_mex, []);
     if isfield(options, 'use_mex')
-      use_mex = true;
+      use_mex = options.use_mex;
     end
     if isfield(options, 'compute_gradients')
       b_compute_second_derivatives = true;
