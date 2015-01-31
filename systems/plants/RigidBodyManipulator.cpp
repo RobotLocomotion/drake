@@ -1175,6 +1175,10 @@ GradientVar<Scalar, SPACE_DIMENSION, 1> RigidBodyManipulator::centerOfMass(int g
   double m = 0.0;
   double body_mass;
   com.value().setZero();
+  if (gradient_order > 0)
+    com.gradient().value().setZero();
+  if (gradient_order > 1)
+    com.gradient().gradient().value().setZero();
 
   for (int i = 0; i < num_bodies; i++) {
     std::set<int>::iterator robotnum_it = robotnum.find(bodies[i]->robotnum);
@@ -1928,9 +1932,9 @@ GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, DerivedPoints::ColsA
   // convert rotation representation
   GradientVar<Scalar, Eigen::Dynamic, 1> qrot = rotmat2Representation(R, rotation_type);
   x.value().bottomRows(qrot.value().rows()).colwise() = qrot.value();
-  x.gradient().value().setZero();
 
   if (x_gradient_order > 0) {
+    x.gradient().value().setZero();
     std::vector<int> position_rows;
     position_rows.reserve(SPACE_DIMENSION);
     for (int i = 0; i < SPACE_DIMENSION; i++)
