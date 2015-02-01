@@ -36,6 +36,7 @@ if (eigen3_FOUND)
     if (NOT MSVC)
     set_target_properties(drakeRBMurdf PROPERTIES COMPILE_FLAGS -fPIC )
     endif()
+    pods_install_headers(URDFRigidBodyManipulator.h DESTINATION drake)
     pods_install_libraries(drakeRBMurdf)
 
     add_subdirectory(urdf_interface)
