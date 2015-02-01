@@ -121,10 +121,10 @@ public:
       std::string parent_link_name = joint->second->parent_link_name;
       std::string child_link_name = joint->second->child_link_name;
 
-      //ROS_DEBUG("build tree: joint: '%s' has parent link '%s' and child  link '%s'", joint->first.c_str(), parent_link_name.c_str(),child_link_name.c_str());
+      ROS_DEBUG("build tree: joint: '%s' has parent link '%s' and child  link '%s'", joint->first.c_str(), parent_link_name.c_str(),child_link_name.c_str());
       if (parent_link_name.empty() || child_link_name.empty())
       {
-        //ROS_ERROR("    Joint %s is missing a parent and/or child link specification.",(joint->second)->name.c_str());
+        ROS_ERROR("    Joint %s is missing a parent and/or child link specification.",(joint->second)->name.c_str());
         return false;
       }
       else
@@ -134,13 +134,13 @@ public:
         this->getLink(child_link_name, child_link);
         if (!child_link)
         {
-          //ROS_ERROR("    child link '%s' of joint '%s' not found", child_link_name.c_str(), joint->first.c_str() );
+          ROS_ERROR("    child link '%s' of joint '%s' not found", child_link_name.c_str(), joint->first.c_str() );
           return false;
         }
         this->getLink(parent_link_name, parent_link);
         if (!parent_link)
         {
-          //ROS_ERROR("    parent link '%s' of joint '%s' not found.  The Boxturtle urdf parser used to automatically add this link for you, but this is not valid according to the URDF spec. Every link you refer to from a joint needs to be explicitly defined in the robot description. To fix this problem you can either remove this joint from your urdf file, or add \"<link name=\"%s\" />\" to your urdf file.", parent_link_name.c_str(), joint->first.c_str(), parent_link_name.c_str() );
+          ROS_ERROR("    parent link '%s' of joint '%s' not found.  The Boxturtle urdf parser used to automatically add this link for you, but this is not valid according to the URDF spec. Every link you refer to from a joint needs to be explicitly defined in the robot description. To fix this problem you can either remove this joint from your urdf file, or add \"<link name=\"%s\" />\" to your urdf file.", parent_link_name.c_str(), joint->first.c_str(), parent_link_name.c_str() );
           return false;
         }
 
@@ -159,7 +159,7 @@ public:
         // fill in child/parent string map
         parent_link_tree[child_link->name] = parent_link_name;
       
-        //ROS_DEBUG("    now Link '%s' has %i children ", parent_link->name.c_str(), (int)parent_link->child_links.size());
+        ROS_DEBUG("    now Link '%s' has %i children ", parent_link->name.c_str(), (int)parent_link->child_links.size());
       }
     }
 
@@ -186,17 +186,17 @@ public:
         }
         // we already found a root link
         else{
-          //ROS_ERROR("Two root links found: '%s' and '%s'", this->root_link_->name.c_str(), l->first.c_str());
+          ROS_ERROR("Two root links found: '%s' and '%s'", this->root_link_->name.c_str(), l->first.c_str());
           return false;
         }
       }
     }
     if (!this->root_link_)
     {
-      //ROS_ERROR("No root link found. The robot xml is not a valid tree.");
+      ROS_ERROR("No root link found. The robot xml is not a valid tree.");
       return false;
     }
-    //ROS_DEBUG("Link '%s' is the root link", this->root_link_->name.c_str());
+    ROS_DEBUG("Link '%s' is the root link", this->root_link_->name.c_str());
 
     return true;
   };
