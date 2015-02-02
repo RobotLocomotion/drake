@@ -1615,7 +1615,7 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJ
           dJ.block(col_start * TWIST_SIZE, 0, J_block.size(), nq).noalias() = (sign * matGradMultMat(body.J, body.qdot_to_v, body.dJdq, body.dqdot_to_v_dq)).eval();
         }
         else {
-          dJ.block(col_start * TWIST_SIZE, 0, J_block.size(), nq).noalias() = (sign * body.dJdq).eval();
+          dJ.block(col_start * TWIST_SIZE, 0, J_block.size(), nq).noalias() = (sign * body.dJdq); //.eval();
         }
       }
 
@@ -1935,25 +1935,20 @@ GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, DerivedPoints::ColsA
 
   if (x_gradient_order > 0) {
     x.gradient().value().setZero();
-    std::vector<int> position_rows;
-    position_rows.reserve(SPACE_DIMENSION);
-    for (int i = 0; i < SPACE_DIMENSION; i++)
-      position_rows.push_back(i);
-
-    std::vector<int> rotation_rows;
-    rotation_rows.reserve(qrot.value().rows());
-    for (int i = SPACE_DIMENSION; i < SPACE_DIMENSION + qrot.value().rows(); i++)
-      rotation_rows.push_back(i);
-
-    std::vector<int> cols(1);
     for (int i = 0; i < npoints; i++) {
-      cols[0] = i;
       const auto& point = points.template middleCols<1>(i);
       auto point_gradient = matGradMult(R.gradient().value(), point).eval();
       point_gradient += p.gradient().value();
 
-      setSubMatrixGradient(x.gradient().value(), point_gradient, position_rows, cols, x.value().rows());
-      setSubMatrixGradient(x.gradient().value(), qrot.gradient().value(), rotation_rows, cols, x.value().rows());
+      // position rows
+      for (int row = 0; row < SPACE_DIMENSION; row++) {
+        setSubMatrixGradient<Eigen::Dynamic>(x.gradient().value(), getSubMatrixGradient<Eigen::Dynamic>(point_gradient, row, 0, point.rows()), row, i, x.value().rows());
+      }
+
+      // rotation rows
+      for (int row = 0; row < qrot.value().rows(); row++) {
+        setSubMatrixGradient<Eigen::Dynamic>(x.gradient().value(), qrot.gradient().value().row(row), row + SPACE_DIMENSION, i, x.value().rows());
+      }
     }
   }
 
@@ -1994,12 +1989,14 @@ GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwar
   Jv.value() = J_geometric.value().template bottomRows<SPACE_DIMENSION>();
 
   if (gradient_order > 0) {
-    auto rows_omega = intRange<SPACE_DIMENSION>(0);
-    auto rows_v = intRange<SPACE_DIMENSION>(SPACE_DIMENSION);
     for (int col = 0; col < J_geometric.value().cols(); col++) {
-      auto cols = intRange<1>(col);
-      setSubMatrixGradient<Eigen::Dynamic>(Jomega.gradient().value(), getSubMatrixGradient<Eigen::Dynamic>(J_geometric.gradient().value(), rows_omega, cols, J_geometric.value().rows()), rows_omega, cols, Jomega.value().rows());
-      setSubMatrixGradient<Eigen::Dynamic>(Jv.gradient().value(), getSubMatrixGradient<Eigen::Dynamic>(J_geometric.gradient().value(), rows_v, cols, J_geometric.value().rows()), rows_omega, cols, Jv.value().rows());
+      for (int row = 0; row < SPACE_DIMENSION; row++) {
+        // Jomega
+        setSubMatrixGradient<Eigen::Dynamic>(Jomega.gradient().value(), getSubMatrixGradient<Eigen::Dynamic>(J_geometric.gradient().value(), row, col, J_geometric.value().rows()), row, col, Jomega.value().rows());
+
+        // Jv
+        setSubMatrixGradient<Eigen::Dynamic>(Jv.gradient().value(), getSubMatrixGradient<Eigen::Dynamic>(J_geometric.gradient().value(), row + SPACE_DIMENSION, col, J_geometric.value().rows()), row, col, Jv.value().rows());
+      }
     }
   }
 
@@ -2055,19 +2052,10 @@ GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwar
         J.value().template block<Eigen::Dynamic, 1>(row_start, *it, Jrot.value().rows(), 1) = Jrot.value().template middleCols<1>(col_start);
 
         if (gradient_order > 0) {
-          std::vector<int> rows;
-          rows.reserve(Jrot.value().rows());
-          for (int k = 0; k < Jrot.value().rows(); k++)
-            rows.push_back(k);
-          std::vector<int> cols(1);
-          cols[0] = col_start;
-          auto dJrot_col = getSubMatrixGradient(Jrot.gradient().value(), rows, cols, Jrot.value().rows());
-
-          rows.clear();
-          for (int k = row_start; k < row_start + Jrot.value().rows(); k++)
-            rows.push_back(k);
-          cols[0] = *it;
-          setSubMatrixGradient(J.gradient().value(), dJrot_col, rows, cols, J.value().rows());
+          for (int row = 0; row < rotation_representation_size; row++) {
+            auto dJrot_element = getSubMatrixGradient<Eigen::Dynamic>(Jrot.gradient().value(), row, col_start, Jrot.value().rows());
+            setSubMatrixGradient<Eigen::Dynamic>(J.gradient().value(), dJrot_element, row_start + row, *it, J.value().rows());
+          }
         }
         col_start++;
       }

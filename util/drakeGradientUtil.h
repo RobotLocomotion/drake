@@ -74,7 +74,7 @@ struct GetSubMatrixGradientArray {
  */
 template<int QSubvectorSize, typename Derived>
 struct GetSubMatrixGradientSingleElement {
-  typedef typename Eigen::Block<const Derived, 1, QSubvectorSize> type;
+  typedef typename Eigen::Block<const Derived, 1, ((QSubvectorSize == Eigen::Dynamic) ? Derived::ColsAtCompileTime : QSubvectorSize)> type;
 };
  
 /*
@@ -125,7 +125,7 @@ DLLEXPORT void setSubMatrixGradient(Eigen::MatrixBase<DerivedA>& dM, const Eigen
     const std::array<int, NRows>& rows, const std::array<int, NCols>& cols, typename DerivedA::Index M_rows, typename DerivedA::Index q_start = 0, typename DerivedA::Index q_subvector_size = QSubvectorSize);
 
 template<int QSubvectorSize, typename DerivedDM, typename DerivedDMSub>
-DLLEXPORT void setSubMatrixGradient(Eigen::MatrixBase<DerivedDM>& dM, const Eigen::MatrixBase<DerivedDMSub> dM_submatrix, int row, int col, typename DerivedDM::Index M_rows,
+DLLEXPORT void setSubMatrixGradient(Eigen::MatrixBase<DerivedDM>& dM, const Eigen::MatrixBase<DerivedDMSub>& dM_submatrix, int row, int col, typename DerivedDM::Index M_rows,
     typename DerivedDM::Index q_start = 0, typename DerivedDM::Index q_subvector_size = QSubvectorSize);
 
 #endif /* DRAKEGRADIENTUTIL_H_ */
