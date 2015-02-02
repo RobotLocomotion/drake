@@ -103,9 +103,11 @@ void surfaceTangents(const Vector3d & normal, Matrix<double,3,m_surface_tangents
   
   if (1 - normal(2) < 10e-8) { // handle the unit-normal case (since it's unit length, just check z)
     t1 << 1,0,0;
-  } else { // now the general case
-    t1 << normal(2), -normal(1), 0; // normal.cross([0;0;1])
-    t1 /= sqrt(normal(1)*normal(1) + normal(2)*normal(2));
+  } else if(1 + normal(2) < 10e-8) {
+    t1 << -1,0,0;  //same for the reflected case
+  } else {// now the general case
+  t1 << normal(1), -normal(0) , 0;
+    t1 /= sqrt(normal(1)*normal(1) + normal(0)*normal(0));
   }
       
   t2 = t1.cross(normal);
@@ -144,35 +146,41 @@ int contactPhi(RigidBodyManipulator* r, SupportStateElement& supp, void *map_ptr
   return nc;
 }
 
-int contactConstraints(RigidBodyManipulator *r, int nc, std::vector<SupportStateElement>& supp, void *map_ptr, MatrixXd &n, MatrixXd &D, MatrixXd &Jp, MatrixXd &Jpdot,double terrain_height)
+int contactConstraints(RigidBodyManipulator *r, const int nc, std::vector<SupportStateElement> const& supp, void *map_ptr, MatrixXd &n, MatrixXd &D, MatrixXd &Jp, MatrixXd &Jpdot,double terrain_height)
 {
   int j, k=0, nq = r->num_dof;
+  //m_surface_tangents is the number of friction cone basis vectors over 2
 
-  n.resize(nc,nq);
-  D.resize(nq,nc*2*m_surface_tangents);
-  Jp.resize(3*nc,nq);
-  Jpdot.resize(3*nc,nq);
+  n.resize(nc,nq);   //n = m x n   Normals in joint coordinates
+  D.resize(nq,nc*2*m_surface_tangents);  //D = n x 2mk friction polyhedron basis vectors in joint coordinates
+  Jp.resize(3*nc,nq);  // 3m x n 
+  Jpdot.resize(3*nc,nq); // 3m x n 
   
-  Vector3d contact_pos,pos,posB,normal; Vector4d tmp;
-  MatrixXd J(3,nq);
+  Vector3d contact_pos,pos,posB,normal; 
+  Vector4d tmp;
+  
+  MatrixXd J(3,nq);  
   Matrix<double,3,m_surface_tangents> d;
-  
-  for (std::vector<SupportStateElement>::iterator iter = supp.begin(); iter!=supp.end(); iter++) {
-    std::unique_ptr<RigidBody>& b = r->bodies[iter->body_idx];
-    if (nc>0) {
-      for (std::set<int>::iterator pt_iter=iter->contact_pt_inds.begin(); pt_iter!=iter->contact_pt_inds.end(); pt_iter++) {
-        if (*pt_iter<0 || *pt_iter>=b->contact_pts.cols()) mexErrMsgIdAndTxt("DRC:ControlUtil:BadInput","requesting contact pt %d but body only has %d pts",*pt_iter,b->contact_pts.cols());
-        tmp = b->contact_pts.col(*pt_iter);
-        r->forwardKin(iter->body_idx,tmp,0,contact_pos);
-        r->forwardJac(iter->body_idx,tmp,0,J);
 
-        collisionDetect(map_ptr,contact_pos,pos,&normal,terrain_height);
-        surfaceTangents(normal,d);
+  for (std::vector<SupportStateElement>::const_iterator iter = supp.begin(); iter!=supp.end(); iter++) { //for each SupportStateElement 
+    std::unique_ptr<RigidBody>& b = r->bodies[iter->body_idx];  //index into r->bodies to get body B
+    if (nc>0) { //if we have active contact points
+      for (std::set<int>::iterator pt_iter=iter->contact_pt_inds.begin(); pt_iter!=iter->contact_pt_inds.end(); pt_iter++) { 
+        //for each contact point
+        if (*pt_iter<0 || *pt_iter>=b->contact_pts.cols()) //make sure collision point index is in bounds
+          mexErrMsgIdAndTxt("DRC:ControlUtil:BadInput","requesting contact pt %d but body only has %d pts",*pt_iter,b->contact_pts.cols());
+        //each column in b->contact_pts is a contact point
+        tmp = b->contact_pts.col(*pt_iter); //tmp stores the current contact point
+        r->forwardKin(iter->body_idx,tmp,0,contact_pos); //get contact_pos 
+        r->forwardJac(iter->body_idx,tmp,0,J); //get Jacobian of contact_pos?
 
-        n.row(k) = normal.transpose()*J;
-        for (j=0; j<m_surface_tangents; j++) {
+        collisionDetect(map_ptr,contact_pos,pos,&normal,terrain_height);  //get collision terrain point and normal
+        surfaceTangents(normal,d); //build friction cone approximation basis vectors in world space
+
+        n.row(k) = normal.transpose()*J;  //kth normal vector in joint coordinates
+        for (j=0; j<m_surface_tangents; j++) {  //for each friction cone basis vector
           D.col(2*k*m_surface_tangents+j) = J.transpose()*d.col(j);
-          D.col((2*k+1)*m_surface_tangents+j) = -D.col(2*k*m_surface_tangents+j);
+          D.col((2*k+1)*m_surface_tangents+j) = -D.col(2*k*m_surface_tangents+j); //transform basis vector into joint coordinates
         }
 
         // store away kin sols into Jp and Jpdot
