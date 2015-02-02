@@ -64,6 +64,7 @@ public:
 
   double mass;
   Vector4d com;  // this actually stores [com;1] (because that's what's needed in the kinematics functions)
+  Matrix<double, TWIST_SIZE, TWIST_SIZE> I;
 
   DrakeJoint::MotionSubspaceType S;
   MatrixXd dSdqi;
@@ -72,8 +73,10 @@ public:
 
   MatrixXd qdot_to_v;
   MatrixXd dqdot_to_v_dqi;
+  MatrixXd dqdot_to_v_dq;
   MatrixXd v_to_qdot;
   MatrixXd dv_to_qdot_dqi;
+  MatrixXd dv_to_qdot_dq;
 
   Vector6d twist;
   Gradient<Vector6d, Eigen::Dynamic>::type dtwistdq;
@@ -86,6 +89,7 @@ public:
   Gradient<Vector6d, Eigen::Dynamic>::type dJdotVdq;
   Gradient<Vector6d, Eigen::Dynamic>::type dJdotVdv;
 
+  Isometry3d T_new;
   Gradient<Isometry3d::MatrixType, Eigen::Dynamic>::type dTdq_new;
 
   friend std::ostream& operator<<( std::ostream &out, const RigidBody &b);

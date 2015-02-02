@@ -32,8 +32,6 @@ classdef RigidBodyManipulator < Manipulator
     robot_state_frames;
     robot_position_frames;
     robot_velocity_frames;
-    
-    use_new_kinsol = false;
   end
 
   properties (Access=public)  % i think these should be private, but probably needed to access them from mex? - Russ
@@ -42,6 +40,10 @@ classdef RigidBodyManipulator < Manipulator
     mex_model_ptr = 0;
     dirty = true;
     collision_filter_groups;  % map of CollisionFilterGroup objects
+  end
+  
+  properties (Constant)
+    use_new_kinsol = false;
   end
 
   methods
@@ -2204,7 +2206,27 @@ classdef RigidBodyManipulator < Manipulator
           m.f_ext_map_to = [m.f_ext_map_to,n+5];
           n=n+6;
         elseif (b.floating==2)
-          error('dynamics for quaternion floating base not implemented yet');
+          if model.use_new_kinsol
+            % quick fix so that quaternion kinematics are usable
+            m.position_num(n+(0:6)) = b.position_num;
+            m.pitch(n+(0:6)) = nan;  % should not be used
+            m.damping(n+(0:6)) = 0;
+            m.coulomb_friction(n+(0:6)) = 0;
+            m.static_friction(n+(0:6)) = 0;
+            m.coulomb_window(n+(0:6)) = eps;
+            m.parent(n+(0:6)) = nan;
+            for j = 0 : 6
+              m.Xtree{n + j} = nan(6, 6);
+            end
+            b.X_joint_to_body = eye(6);
+            for j=0:6
+              m.I{n+j} = zeros(6);
+            end
+            m.f_ext_map_to = [m.f_ext_map_to,n+6];
+            n=n+7;
+          else
+            error('dynamics for quaternion floating base not implemented yet');
+          end
         else
           m.parent(n) = max(model.body(b.parent).position_num);
           m.position_num(n) = b.position_num;  % note: only need this for my floating hack above (remove it when gone)

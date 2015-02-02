@@ -450,6 +450,11 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
   else
     num_bodies = num_rigid_body_objects;
 
+  Ic_new.resize(num_bodies);
+  for (int i = 0; i < num_bodies; i++) {
+    Ic_new[i] = Matrix<double, TWIST_SIZE, TWIST_SIZE>::Zero();
+  }
+
   bodies.reserve(num_bodies);
   for (int i = last_num_bodies; i < num_bodies; i++) {
     bodies.push_back(std::unique_ptr<RigidBody>(new RigidBody()));
@@ -475,6 +480,10 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
       dIC[i][j] = MatrixXd::Zero(6,6);
     }
   }
+
+  dIc_new.resize(num_bodies);
+  for (int i = 0; i < num_bodies; i++)
+    dIc_new[i] = MatrixXd::Zero(Ic_new[i].size(), num_dof);
 
   // don't need to resize dcross (it gets resized in dcrm)
 
@@ -502,8 +511,8 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
   dTdTmult = MatrixXd::Zero(3*num_dof,4);
 
   // preallocate for CMM function
-  Ic.resize(NB); // body spatial inertias
-  dIc.resize(NB); // derivative of body spatial inertias
+  Ic.resize(NB); // composite rigid body inertias
+  dIc.resize(NB); // derivative of composite rigid body inertias
   phi.resize(NB); // joint axis vectors
   Xworld.resize(NB); // spatial transforms from world to each body
   dXworld.resize(NB); // dXworld_dq * qd
@@ -1013,38 +1022,44 @@ void RigidBodyManipulator::doKinematicsNew(double* q, bool compute_gradients, do
       double* q_body = &q[body.dofnum];
 
       // transform
-      Isometry3d T_body_to_parent = Isometry3d(body.Ttree) * body.getJoint().jointTransform(q_body); // TODO: Matrix4d -> Isometry3d conversion
-      Isometry3d T = Isometry3d(bodies[body.parent]->T) * T_body_to_parent;
-      body.T = T.matrix(); // TODO: Isometry3d -> Matrix4d conversion
+      Isometry3d T_body_to_parent = Isometry3d(body.Ttree) * body.getJoint().jointTransform(q_body);
+      body.T_new = bodies[body.parent]->T_new * T_body_to_parent;
 
       // motion subspace in body frame
       Eigen::MatrixXd* dSdq = compute_gradients ? &(body.dSdqi) : nullptr;
       body.getJoint().motionSubspace(q_body, body.S, dSdq);
 
       // motion subspace in world frame
-      body.J = transformSpatialMotion(T, body.S);
+      body.J = transformSpatialMotion(body.T_new, body.S);
 
       // qdot to v
       Eigen::MatrixXd* dqdot_to_v = compute_gradients ? &(body.dqdot_to_v_dqi) : nullptr;
       body.getJoint().qdot2v(q, body.qdot_to_v, dqdot_to_v);
+      if (compute_gradients) {
+        body.dqdot_to_v_dq.setZero();
+        body.dqdot_to_v_dq.middleCols(body.dofnum, body.getJoint().getNumPositions()) = body.dqdot_to_v_dqi;
+      }
 
       // v to qdot
       Eigen::MatrixXd* dv_to_qdot = compute_gradients ? &(body.dv_to_qdot_dqi) : nullptr;
       body.getJoint().v2qdot(q, body.v_to_qdot, dv_to_qdot);
+      if (compute_gradients) {
+        body.dv_to_qdot_dq.setZero();
+        body.dv_to_qdot_dq.middleCols(body.dofnum, body.getJoint().getNumPositions()) = body.dv_to_qdot_dqi;
+      }
 
       if (compute_gradients) {
         // gradient of transform
         auto dT_body_to_parentdqi = dHomogTrans(T_body_to_parent, body.S, body.qdot_to_v).eval();
-        body.dTdq_new.setZero();
         Gradient<Isometry3d::MatrixType, Eigen::Dynamic>::type dT_body_to_parentdq(HOMOGENEOUS_TRANSFORM_SIZE, nq);
         dT_body_to_parentdq.setZero();
         dT_body_to_parentdq.middleCols(body.dofnum, body.getJoint().getNumPositions()) = dT_body_to_parentdqi;
-        body.dTdq_new = matGradMultMat(bodies[body.parent]->T, T_body_to_parent.matrix(), bodies[body.parent]->dTdq_new, dT_body_to_parentdq);
+        body.dTdq_new = matGradMultMat(bodies[body.parent]->T_new.matrix(), T_body_to_parent.matrix(), bodies[body.parent]->dTdq_new, dT_body_to_parentdq);
 
         // gradient of motion subspace in world
         MatrixXd dSdq = MatrixXd::Zero(body.S.size(), nq);
         dSdq.middleCols(body.dofnum, body.getJoint().getNumPositions()) = body.dSdqi;
-        body.dJdq = dTransformAdjoint(T, body.S, body.dTdq_new, dSdq);
+        body.dJdq = dTransformAdjoint(body.T_new, body.S, body.dTdq_new, dSdq);
       }
 
       if (v) {
@@ -1069,7 +1084,7 @@ void RigidBodyManipulator::doKinematicsNew(double* q, bool compute_gradients, do
           body.getJoint().motionSubspaceDotTimesV(q_body, v_body, body.SdotV, dSdotVdqi, dSdotVdvi);
 
           // Jdotv
-          auto joint_accel = (crm(body.twist) * joint_twist + transformSpatialMotion(T, body.SdotV)).eval();
+          auto joint_accel = (crm(body.twist) * joint_twist + transformSpatialMotion(body.T_new, body.SdotV)).eval();
           body.JdotV = bodies[body.parent]->JdotV + joint_accel;
 
           if (compute_gradients) {
@@ -1082,18 +1097,17 @@ void RigidBodyManipulator::doKinematicsNew(double* q, bool compute_gradients, do
             dcrm(body.twist, joint_twist, body.dtwistdq, djoint_twistdq, &dcrm_twist_joint_twistdq); // TODO: make dcrm templated
             body.dJdotVdq = bodies[body.parent]->dJdotVdq
                 + dcrm_twist_joint_twistdq
-                + dTransformAdjoint(T, body.SdotV, body.dTdq_new, dSdotVdq);
+                + dTransformAdjoint(body.T_new, body.SdotV, body.dTdq_new, dSdotVdq);
 
             // dJdotvdv
             // TODO: exploit sparsity better
-            Matrix<double, TWIST_SIZE, Eigen::Dynamic> jacobian(TWIST_SIZE, 0);
             std::vector<int> v_indices;
-            geometricJacobian(0, i, 0, jacobian, &v_indices);
+            auto jacobian = geometricJacobian<double>(0, i, 0, 0, false, &v_indices);
 
             Matrix<double, TWIST_SIZE, Eigen::Dynamic> dtwistdv(TWIST_SIZE, nv);
             dtwistdv.setZero();
             for (int j = 0; j < v_indices.size(); j++) {
-              dtwistdv.col(v_indices[j]) = jacobian.col(j);
+              dtwistdv.col(v_indices[j]) = jacobian.value().col(j);
             }
             Matrix<double, TWIST_SIZE, Eigen::Dynamic> djoint_twistdv(TWIST_SIZE, nv);
             djoint_twistdv.setZero();
@@ -1104,38 +1118,38 @@ void RigidBodyManipulator::doKinematicsNew(double* q, bool compute_gradients, do
             Matrix<double, TWIST_SIZE, Eigen::Dynamic> dSdotVdv(TWIST_SIZE, nv);
             dSdotVdv.setZero();
             dSdotVdv.middleCols(body.dofnum, body.getJoint().getNumVelocities()) = *dSdotVdvi; // FIXME: using dofnum for velocity...
-            djoint_acceldv += transformSpatialMotion(T, dSdotVdv);
+            djoint_acceldv += transformSpatialMotion(body.T_new, dSdotVdv);
             body.dJdotVdv = bodies[body.parent]->dJdotVdv + djoint_acceldv;
           }
         }
       }
-      else {
-        body.T = body.Ttree;
-        // motion subspace in body frame is empty
-        // motion subspace in world frame is empty
-        // qdot to v is empty
-        // v to qdot is empty
+    }
+    else {
+      body.T_new = Isometry3d(body.Ttree);
+      // motion subspace in body frame is empty
+      // motion subspace in world frame is empty
+      // qdot to v is empty
+      // v to qdot is empty
+      if (compute_gradients) {
+        // gradient of transform
+        body.dTdq_new.setZero();
+        // gradient of motion subspace in world is empty
+      }
+      if (v) {
+        body.twist.setZero();
         if (compute_gradients) {
-          // gradient of transform
-          body.dTdq_new.setZero();
-          // gradient of motion subspace in world is empty
+          body.dtwistdq.setZero();
         }
-        if (v) {
-          body.twist.setZero();
+        if (compute_JdotV) {
+          body.SdotV.setZero();
           if (compute_gradients) {
-            body.dtwistdq.setZero();
+            body.dSdotVdqi.setZero();
+            body.dSdotVdvi.setZero();
           }
-          if (compute_JdotV) {
-            body.SdotV.setZero();
-            if (compute_gradients) {
-              body.dSdotVdqi.setZero();
-              body.dSdotVdvi.setZero();
-            }
-            body.JdotV.setZero();
-            if (compute_gradients) {
-              body.dJdotVdq.setZero();
-              body.dJdotVdv.setZero();
-            }
+          body.JdotV.setZero();
+          if (compute_gradients) {
+            body.dJdotVdq.setZero();
+            body.dJdotVdv.setZero();
           }
         }
       }
@@ -1208,6 +1222,110 @@ void RigidBodyManipulator::getCMM(double* const q, double* const qd, MatrixBase<
   }
 }
 
+template <typename Scalar>
+GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::centroidalMomentumMatrix(int gradient_order)
+{
+  if (!use_new_kinsol)
+    throw std::runtime_error("method requires new kinsol format");
+
+  if (gradient_order > 1)
+    throw std::runtime_error("only first order gradient is available");
+
+  int nq = num_dof;
+  for (int i = 0; i < num_bodies; i++) {
+    Gradient<Isometry3d::MatrixType, Eigen::Dynamic>::type* dTdq = nullptr;
+    if (gradient_order > 0)
+      dTdq = &(bodies[i]->dTdq_new);
+
+    auto inertia_world = transformSpatialInertia(bodies[i]->T_new, dTdq, bodies[i]->I);
+    Ic_new[i] = inertia_world.value();
+    if (inertia_world.hasGradient()) {
+      dIc_new[i] = inertia_world.gradient().value();
+    }
+  }
+
+  for (int i = num_bodies - 1; i >= 0; i--) {
+    if (bodies[i]->hasParent()) {
+      Ic_new[bodies[i]->parent] += Ic_new[i];
+      if (gradient_order > 0) {
+        dIc_new[bodies[i]->parent] += dIc_new[i];
+      }
+    }
+  }
+
+  auto com = centerOfMass<Scalar>(gradient_order);
+  int nv = num_dof; // FLOATINGBASE TODO: assumes nq = nv
+  GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> ret(TWIST_SIZE, nv, nq, gradient_order);
+  int gradient_row_start = 0;
+  for (int i = 0; i < num_bodies; i++) {
+    RigidBody& body = *bodies[i];
+    if (body.hasParent()) {
+      int nv_joint = body.getJoint().getNumVelocities();
+
+      ret.value().middleCols(body.dofnum, nv_joint).noalias() = Ic_new[i] * body.J; // FLOATINGBASE TODO: assumes nq = nv
+
+      if (gradient_order > 0) {
+        ret.gradient().value().middleRows(gradient_row_start, TWIST_SIZE * nv_joint) = matGradMultMat(Ic_new[i], body.J, dIc_new[i], body.dJdq);
+        gradient_row_start += TWIST_SIZE * nv_joint;
+      }
+    }
+  }
+
+  // TODO: could exploit structure of T better in this part
+  Eigen::Transform<Scalar, SPACE_DIMENSION, Eigen::Isometry> T(Translation<Scalar, SPACE_DIMENSION>(-com.value()));
+
+  if (gradient_order > 0) {
+    Eigen::Matrix<double, HOMOGENEOUS_TRANSFORM_SIZE, Eigen::Dynamic> dtransform_world_to_com(HOMOGENEOUS_TRANSFORM_SIZE, nq);
+    dtransform_world_to_com.setZero();
+    setSubMatrixGradient<Eigen::Dynamic>(dtransform_world_to_com, com.gradient().value(), intRange<3>(0), intRange<1>(3), SPACE_DIMENSION + 1);
+    ret.gradient().value() = dTransformAdjointTranspose(T.inverse(), ret.value(), dtransform_world_to_com, ret.gradient().value());
+  }
+  ret.value() = transformSpatialForce(T, ret.value());
+  return ret;
+}
+
+template <typename Scalar>
+GradientVar<Scalar, SPACE_DIMENSION, 1> RigidBodyManipulator::centerOfMass(int gradient_order, const std::set<int>& robotnum)
+{
+  if (!use_new_kinsol)
+    throw std::runtime_error("method requires new kinsol format");
+
+  int nq = num_dof;
+  GradientVar<Scalar, SPACE_DIMENSION, 1> com(SPACE_DIMENSION, 1, nq, gradient_order);
+  double m = 0.0;
+  double body_mass;
+  com.value().setZero();
+
+  for (int i = 0; i < num_bodies; i++) {
+    std::set<int>::iterator robotnum_it = robotnum.find(bodies[i]->robotnum);
+    if (robotnum_it != robotnum.end())
+    {
+      body_mass = bodies[i]->mass;
+      if (body_mass > 0) {
+        Vector3d body_com_body_frame = (bodies[i]->com.topRows<SPACE_DIMENSION>());
+        auto body_com = forwardKinNew(body_com_body_frame, i, 0, 0, gradient_order);
+        com.value() *= m;
+        com.value().noalias() += body_mass * body_com.value();
+        com.value() /= (m + body_mass);
+
+        if (gradient_order > 0) {
+          com.gradient().value() *= m;
+          com.gradient().value().noalias() += body_mass * body_com.gradient().value();
+          com.gradient().value() /= (m + body_mass);
+        }
+
+        if (gradient_order > 1) {
+          com.gradient().gradient().value() *= m;
+          com.gradient().gradient().value().noalias() += body_mass * body_com.gradient().gradient().value();
+          com.gradient().gradient().value() /= (m + body_mass);
+        }
+
+        m += body_mass;
+      }
+    }
+  }
+  return com;
+}
 
 template <typename Derived>
 void RigidBodyManipulator::getCOM(MatrixBase<Derived> &com, const std::set<int> &robotnum)
@@ -1559,13 +1677,18 @@ void RigidBodyManipulator::bodyKin(const int body_or_frame_id, const MatrixBase<
 
 }
 
-template<typename DerivedA>
-void RigidBodyManipulator::geometricJacobian(int base_body_or_frame_ind, int end_effector_body_or_frame_ind, int expressed_in_body_or_frame_ind, PlainObjectBase<DerivedA>& J, std::vector<int>* v_indices)
+template<typename Scalar>
+GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJacobian(
+    int base_body_or_frame_ind, int end_effector_body_or_frame_ind, int expressed_in_body_or_frame_ind, int gradient_order, bool in_terms_of_qdot, std::vector<int>* v_or_qdot_indices)
 {
-  // TODO: gradient
   if (use_new_kinsol) {
+    if (gradient_order > 1) {
+      throw std::runtime_error("gradient order not supported");
+    }
+
     KinematicPath kinematic_path;
     findKinematicPath(kinematic_path, base_body_or_frame_ind, end_effector_body_or_frame_ind);
+    int nq = num_dof;
 
     int cols = 0;
     int body_index;
@@ -1573,14 +1696,17 @@ void RigidBodyManipulator::geometricJacobian(int base_body_or_frame_ind, int end
       body_index = kinematic_path.joint_path[i];
       const std::unique_ptr<RigidBody>& body = bodies[body_index];
       const DrakeJoint& joint = body->getJoint();
-      cols += joint.getNumVelocities();
+
+      cols += in_terms_of_qdot ? joint.getNumPositions() : joint.getNumVelocities();
     }
 
-    J.resize(TWIST_SIZE, cols);
+    GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> ret(TWIST_SIZE, cols, nq, gradient_order);
+    auto& J = ret.value();
+
     DrakeJoint::MotionSubspaceType motion_subspace;
-    if (v_indices) {
-      v_indices->clear();
-      v_indices->reserve(cols);
+    if (v_or_qdot_indices != nullptr) {
+      v_or_qdot_indices->clear();
+      v_or_qdot_indices->reserve(cols);
     }
 
     int col_start = 0;
@@ -1589,26 +1715,52 @@ void RigidBodyManipulator::geometricJacobian(int base_body_or_frame_ind, int end
       body_index = kinematic_path.joint_path[i];
       RigidBody& body = *bodies[body_index];
       const DrakeJoint& joint = body.getJoint();
+      int ncols_block = in_terms_of_qdot ? joint.getNumPositions() : joint.getNumVelocities();
       sign = kinematic_path.joint_direction_signs[i];
-      auto block = J.template block<TWIST_SIZE, Dynamic>(0, col_start, TWIST_SIZE, joint.getNumVelocities());
-      block.noalias() = sign * body.J;
+      auto J_block = J.template block<TWIST_SIZE, Dynamic>(0, col_start, TWIST_SIZE, ncols_block);
+      if (in_terms_of_qdot) {
+        J_block.noalias() = sign * body.J * body.qdot_to_v;
+      }
+      else {
+        J_block.noalias() = sign * body.J;
+      }
 
-      if (v_indices) {
-        for (int j = 0; j < joint.getNumVelocities(); j++) {
-          v_indices->push_back(body.dofnum + j); // FLOATINGBASE TODO: assumes qd = v
+      if (gradient_order > 0) {
+        auto& dJ = ret.gradient().value();
+        if (in_terms_of_qdot) {
+          dJ.block(col_start * TWIST_SIZE, 0, J_block.size(), nq).noalias() = (sign * matGradMultMat(body.J, body.qdot_to_v, body.dJdq, body.dqdot_to_v_dq)).eval();
+        }
+        else {
+          dJ.block(col_start * TWIST_SIZE, 0, J_block.size(), nq).noalias() = (sign * body.dJdq).eval();
         }
       }
-      col_start = col_start + joint.getNumVelocities();
+
+      if (v_or_qdot_indices != nullptr) {
+        int cols_block_start = body.dofnum; // FLOATINGBASE TODO: assumes qd = v
+        for (int j = 0; j < ncols_block; j++) {
+          v_or_qdot_indices->push_back(cols_block_start + j);
+        }
+      }
+      col_start += ncols_block;
     }
 
     if (expressed_in_body_or_frame_ind != 0) {
-      Matrix4d Tframe;
-      int expressed_in_body = parseBodyOrFrameID(expressed_in_body_or_frame_ind, &Tframe);
-      Matrix4d T_world_to_frame = (bodies[expressed_in_body]->T * Tframe).inverse();
-      J = transformSpatialMotion(Isometry3d(T_world_to_frame), J);
+      auto T_world_to_frame_gradientvar = relativeTransform<double>(expressed_in_body_or_frame_ind, 0, gradient_order);
+      Isometry3d T_world_to_frame(T_world_to_frame_gradientvar.value());
+
+      if (gradient_order > 0) {
+        auto& dJ = ret.gradient().value();
+        dJ = (dTransformAdjoint(T_world_to_frame, J, T_world_to_frame_gradientvar.gradient().value(), dJ)).eval(); // eval to avoid aliasing
+      }
+      J = transformSpatialMotion(T_world_to_frame, J);
     }
+    return ret;
   }
   else {
+    if (gradient_order > 0) {
+      throw std::runtime_error("gradient order not supported");
+    }
+
     KinematicPath kinematic_path;
     findKinematicPath(kinematic_path, base_body_or_frame_ind, end_effector_body_or_frame_ind);
 
@@ -1625,11 +1777,12 @@ void RigidBodyManipulator::geometricJacobian(int base_body_or_frame_ind, int end
     int expressed_in_body = parseBodyOrFrameID(expressed_in_body_or_frame_ind, &Tframe);
     Matrix4d T_world_to_frame = (bodies[expressed_in_body]->T * Tframe).inverse();
 
-    J.resize(TWIST_SIZE, cols);
+    GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> ret(TWIST_SIZE, cols);
+    auto& J = ret.value();
     DrakeJoint::MotionSubspaceType motion_subspace;
-    if (v_indices) {
-      v_indices->clear();
-      v_indices->reserve(cols);
+    if (v_or_qdot_indices) {
+      v_or_qdot_indices->clear();
+      v_or_qdot_indices->reserve(cols);
     }
 
     int col_start = 0;
@@ -1645,15 +1798,47 @@ void RigidBodyManipulator::geometricJacobian(int base_body_or_frame_ind, int end
       auto block = J.template block<TWIST_SIZE, Dynamic>(0, col_start, TWIST_SIZE, joint.getNumVelocities());
       block.noalias() = sign * transformSpatialMotion(Isometry3d(body->T), motion_subspace);
 
-      if (v_indices) {
+      if (v_or_qdot_indices) {
         for (int j = 0; j < joint.getNumVelocities(); j++) {
-          v_indices->push_back(body->dofnum + j); // FLOATINGBASE TODO: assumes qd = v
+          v_or_qdot_indices->push_back(body->dofnum + j); // FLOATINGBASE TODO: assumes qd = v
         }
       }
       col_start = col_start + joint.getNumVelocities();
     }
     J = transformSpatialMotion(Isometry3d(T_world_to_frame), J);
+    return ret;
   }
+}
+
+template<typename Scalar>
+GradientVar<Scalar, SPACE_DIMENSION + 1, SPACE_DIMENSION + 1> RigidBodyManipulator::relativeTransform(int base_or_frame_ind, int body_or_frame_ind, int gradient_order)
+{
+  if (!use_new_kinsol)
+    throw std::runtime_error("method requires new kinsol format");
+
+  int nq = num_dof;
+  GradientVar<Scalar, SPACE_DIMENSION + 1, SPACE_DIMENSION + 1> ret(SPACE_DIMENSION + 1, SPACE_DIMENSION + 1, nq, gradient_order);
+
+  Matrix4d Tbase_frame;
+  int base_ind = parseBodyOrFrameID(base_or_frame_ind, &Tbase_frame);
+  Matrix4d Tbody_frame;
+  int body_ind = parseBodyOrFrameID(body_or_frame_ind, &Tbody_frame);
+
+  Isometry3d Tbaseframe_to_world = bodies[base_ind]->T_new * Isometry3d(Tbase_frame); // TODO: copy to Isometry3d
+  Isometry3d Tworld_to_baseframe = Tbaseframe_to_world.inverse();
+  Isometry3d Tbodyframe_to_world = bodies[body_ind]->T_new * Isometry3d(Tbody_frame); // TODO: copy to Isometry3d
+  ret.value() = (Tworld_to_baseframe * Tbodyframe_to_world).matrix();
+
+  if (gradient_order > 0) {
+    auto dTbaseframe_to_world = matGradMult(bodies[base_ind]->dTdq_new, Tbase_frame);
+    auto dTworld_to_baseframe = dHomogTransInv(Tbaseframe_to_world, dTbaseframe_to_world);
+    auto dTbodyframe_to_world = matGradMult(bodies[body_ind]->dTdq_new, Tbody_frame);
+    ret.gradient().value() = matGradMultMat(Tworld_to_baseframe.matrix(), Tbodyframe_to_world.matrix(), dTworld_to_baseframe, dTbodyframe_to_world);
+  }
+  if (gradient_order > 1) {
+    throw std::runtime_error("gradient order > 1 not supported");
+  }
+  return ret;
 }
 
 template <typename DerivedA, typename DerivedB>
@@ -1827,6 +2012,216 @@ void RigidBodyManipulator::forwarddJac(const int body_or_frame_id, const MatrixB
   }
   MatrixXd dJ_t = Map<MatrixXd>(dJ_reshaped.data(), num_dof*num_dof, 3*n_pts);
   dJ = dJ_t.transpose();
+}
+
+template <typename DerivedPoints>
+GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, DerivedPoints::ColsAtCompileTime> RigidBodyManipulator::forwardKinNew(const MatrixBase<DerivedPoints>& points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type, int gradient_order)
+{
+  if (gradient_order > 2) {
+    throw std::runtime_error("only first and second order gradients are available");
+  }
+  int x_gradient_order = std::min(gradient_order, 1);
+  int J_gradient_order = gradient_order > 1 ? gradient_order - 1 : 0;
+
+  int nq = num_dof;
+  int npoints = static_cast<int>(points.cols());
+  typedef typename DerivedPoints::Scalar Scalar;
+
+  // compute rotation and translation
+  GradientVar<Scalar, SPACE_DIMENSION + 1, SPACE_DIMENSION + 1> T = relativeTransform<Scalar>(new_body_or_frame_ind, current_body_or_frame_ind, x_gradient_order);
+
+  GradientVar<Scalar, SPACE_DIMENSION, SPACE_DIMENSION> R(SPACE_DIMENSION, SPACE_DIMENSION, nq, x_gradient_order);
+  R.value() = T.value().template topLeftCorner<SPACE_DIMENSION, SPACE_DIMENSION>();
+  if (x_gradient_order > 0)
+    R.gradient().value() = getSubMatrixGradient<Eigen::Dynamic>(T.gradient().value(), intRange<SPACE_DIMENSION>(0), intRange<SPACE_DIMENSION>(0), T.value().rows());
+
+  GradientVar<Scalar, SPACE_DIMENSION, 1> p(SPACE_DIMENSION, 1, nq, x_gradient_order);
+  p.value() = T.value().template topRightCorner<SPACE_DIMENSION, 1>();
+  if (x_gradient_order > 0)
+    p.gradient().value() = getSubMatrixGradient<Eigen::Dynamic>(T.gradient().value(), intRange<SPACE_DIMENSION>(0), intRange<1>(SPACE_DIMENSION), T.value().rows());
+
+  // transform points to new frame
+  GradientVar<Scalar, Eigen::Dynamic, DerivedPoints::ColsAtCompileTime> x(SPACE_DIMENSION + rotationRepresentationSize(rotation_type), npoints, nq, gradient_order);
+  x.value().template topRows<SPACE_DIMENSION>().noalias() = R.value() * points;
+  x.value().template topRows<SPACE_DIMENSION>().colwise() += p.value();
+
+  // convert rotation representation
+  GradientVar<Scalar, Eigen::Dynamic, 1> qrot = rotmat2Representation(R, rotation_type);
+  x.value().bottomRows(qrot.value().rows()).colwise() = qrot.value();
+  x.gradient().value().setZero();
+
+  if (x_gradient_order > 0) {
+    std::vector<int> position_rows;
+    position_rows.reserve(SPACE_DIMENSION);
+    for (int i = 0; i < SPACE_DIMENSION; i++)
+      position_rows.push_back(i);
+
+    std::vector<int> rotation_rows;
+    rotation_rows.reserve(qrot.value().rows());
+    for (int i = SPACE_DIMENSION; i < SPACE_DIMENSION + qrot.value().rows(); i++)
+      rotation_rows.push_back(i);
+
+    std::vector<int> cols(1);
+    for (int i = 0; i < npoints; i++) {
+      cols[0] = i;
+      const auto& point = points.template middleCols<1>(i);
+      auto point_gradient = matGradMult(R.gradient().value(), point).eval();
+      point_gradient += p.gradient().value();
+
+      setSubMatrixGradient(x.gradient().value(), point_gradient, position_rows, cols, x.value().rows());
+      setSubMatrixGradient(x.gradient().value(), qrot.gradient().value(), rotation_rows, cols, x.value().rows());
+    }
+  }
+
+  if (gradient_order > 1) {
+    auto J = forwardJacV(x, current_body_or_frame_ind, new_body_or_frame_ind, rotation_type, true, J_gradient_order);
+    x.gradient().gradient().value() = J.gradient().value();
+  }
+
+  return x;
+}
+
+template <typename Scalar, int XRows, int XCols>
+GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardJacV(const GradientVar<Scalar, XRows, XCols>& x, int body_or_frame_ind, int base_or_frame_ind, int rotation_type, bool compute_analytic_jacobian, int gradient_order)
+{
+  if (!use_new_kinsol)
+    throw std::runtime_error("method requires new kinsol format");
+
+  if (gradient_order > 1) {
+    throw std::runtime_error("only first order gradient is available");
+  }
+
+  int nq = num_dof;
+  int nv = num_dof; // FLOATINGBASE TODO
+  int npoints = static_cast<int>(x.value().cols());
+
+  // compute geometric Jacobian
+  int body_ind = parseBodyOrFrameID(body_or_frame_ind);
+  int base_ind = parseBodyOrFrameID(base_or_frame_ind);
+  int expressed_in = base_ind;
+  std::vector<int> v_or_q_indices;
+  GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> J_geometric = geometricJacobian<Scalar>(base_ind, body_ind, expressed_in, gradient_order, compute_analytic_jacobian, &v_or_q_indices);
+
+  // split up into rotational and translational parts
+  GradientVar<Scalar, SPACE_DIMENSION, Eigen::Dynamic> Jomega(SPACE_DIMENSION, J_geometric.value().cols(), nq, gradient_order);
+  Jomega.value() = J_geometric.value().template topRows<SPACE_DIMENSION>();
+
+  GradientVar<Scalar, SPACE_DIMENSION, Eigen::Dynamic> Jv(SPACE_DIMENSION, J_geometric.value().cols(), nq, gradient_order);
+  Jv.value() = J_geometric.value().template bottomRows<SPACE_DIMENSION>();
+
+  if (gradient_order > 0) {
+    auto rows_omega = intRange<SPACE_DIMENSION>(0);
+    auto rows_v = intRange<SPACE_DIMENSION>(SPACE_DIMENSION);
+    for (int col = 0; col < J_geometric.value().cols(); col++) {
+      auto cols = intRange<1>(col);
+      setSubMatrixGradient<Eigen::Dynamic>(Jomega.gradient().value(), getSubMatrixGradient<Eigen::Dynamic>(J_geometric.gradient().value(), rows_omega, cols, J_geometric.value().rows()), rows_omega, cols, Jomega.value().rows());
+      setSubMatrixGradient<Eigen::Dynamic>(Jv.gradient().value(), getSubMatrixGradient<Eigen::Dynamic>(J_geometric.gradient().value(), rows_v, cols, J_geometric.value().rows()), rows_omega, cols, Jv.value().rows());
+    }
+  }
+
+  // compute rotation Jacobian
+  int rotation_representation_size = rotationRepresentationSize(rotation_type);
+  GradientVar<Scalar, Eigen::Dynamic, 1> qrot(rotation_representation_size, 1, nq, gradient_order);
+  qrot.value() = x.value().template block<Eigen::Dynamic, 1>(SPACE_DIMENSION, 0, x.value().rows() - SPACE_DIMENSION, 1);
+  if (gradient_order > 0) {
+    for (int i = 0; i < rotation_representation_size; i++) {
+      qrot.gradient().value().template middleRows<1>(i) = getSubMatrixGradient(x.gradient().value(), SPACE_DIMENSION + i, 0, x.value().rows());
+    }
+  }
+
+  GradientVar<Scalar, Eigen::Dynamic, SPACE_DIMENSION> Phi = angularvel2RepresentationDotMatrix(rotation_type, qrot);
+  GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> Jrot(Phi.value().rows(), Jomega.value().cols(), nq, gradient_order);
+  Jrot.value() = Phi.value() * Jomega.value();
+  if (gradient_order > 0) {
+    Jrot.gradient().value() = matGradMultMat(Phi.value(), Jomega.value(), Phi.gradient().value(), Jomega.gradient().value());
+  }
+
+  // compute J
+  GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> J(x.value().size(), nv, nq, gradient_order);
+  J.value().setZero();
+  if (gradient_order > 0)
+    J.gradient().value().setZero();
+
+  int row_start = 0;
+  for (int i = 0; i < npoints; i++) {
+    // translation part
+    int col_start = 0;
+    const auto& point = x.value().template block<SPACE_DIMENSION, 1>(0, i);
+    for (std::vector<int>::iterator it = v_or_q_indices.begin(); it != v_or_q_indices.end(); ++it) {
+      J.value().template block<SPACE_DIMENSION, 1>(row_start, *it) = Jv.value().template middleCols<1>(col_start);
+      const auto& Jomega_col = Jomega.value().template middleCols<1>(col_start);
+      J.value().template block<SPACE_DIMENSION, 1>(row_start, *it).noalias() += Jomega_col.cross(point);
+
+      if (gradient_order > 0) {
+        auto rows = intRange<SPACE_DIMENSION>(0);
+        auto dJpos_col = getSubMatrixGradient<Eigen::Dynamic>(Jv.gradient().value(), rows, intRange<1>(col_start), Jv.value().rows());
+        auto dJomega_col = getSubMatrixGradient<Eigen::Dynamic>(Jomega.gradient().value(), rows, intRange<1>(col_start), Jv.value().rows());
+        auto dpoint = getSubMatrixGradient<Eigen::Dynamic>(x.gradient().value(), rows, intRange<1>(i), x.value().rows());
+        dJpos_col.noalias() += dcrossProduct(Jomega_col, point, dJomega_col, dpoint);
+        setSubMatrixGradient<Eigen::Dynamic>(J.gradient().value(), dJpos_col, intRange<SPACE_DIMENSION>(row_start), intRange<1>(*it), J.value().rows());
+      }
+      col_start++;
+    }
+    row_start += SPACE_DIMENSION;
+
+    // rotation part
+    if (Jrot.value().rows() > 0) {
+      col_start = 0;
+      for (std::vector<int>::iterator it = v_or_q_indices.begin(); it != v_or_q_indices.end(); ++it) {
+        J.value().template block<Eigen::Dynamic, 1>(row_start, *it, Jrot.value().rows(), 1) = Jrot.value().template middleCols<1>(col_start);
+
+        if (gradient_order > 0) {
+          std::vector<int> rows;
+          rows.reserve(Jrot.value().rows());
+          for (int k = 0; k < Jrot.value().rows(); k++)
+            rows.push_back(k);
+          std::vector<int> cols(1);
+          cols[0] = col_start;
+          auto dJrot_col = getSubMatrixGradient(Jrot.gradient().value(), rows, cols, Jrot.value().rows());
+
+          rows.clear();
+          for (int k = row_start; k < row_start + Jrot.value().rows(); k++)
+            rows.push_back(k);
+          cols[0] = *it;
+          setSubMatrixGradient(J.gradient().value(), dJrot_col, rows, cols, J.value().rows());
+        }
+        col_start++;
+      }
+      row_start += rotation_representation_size;
+    }
+  }
+
+  return J;
+}
+
+template <typename Scalar>
+GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardKinPositionGradient(int npoints, int current_body_or_frame_ind, int new_body_or_frame_ind, int gradient_order)
+{
+  if (gradient_order > 1)
+    throw std::runtime_error("Only first order gradients supported");
+
+  int nq = num_dof;
+  auto Tinv = relativeTransform<Scalar>(current_body_or_frame_ind, new_body_or_frame_ind, gradient_order);
+  GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> ret(SPACE_DIMENSION * npoints, SPACE_DIMENSION * npoints, nq, gradient_order);
+  ret.value().setZero();
+  for (int i = 0; i < npoints; i++) {
+    ret.value().template block<SPACE_DIMENSION, SPACE_DIMENSION>(SPACE_DIMENSION * i, SPACE_DIMENSION * i) = Tinv.value().template topLeftCorner<SPACE_DIMENSION, SPACE_DIMENSION>();
+  }
+
+  if (gradient_order > 0) {
+    ret.gradient().value().setZero();
+    std::vector<int> rows_cols;
+    rows_cols.reserve(SPACE_DIMENSION);
+    auto Rinv_gradient = getSubMatrixGradient<Eigen::Dynamic>(Tinv.gradient().value(), intRange<SPACE_DIMENSION>(0), intRange<SPACE_DIMENSION>(0), Tinv.value().rows());
+
+    for (int i = 0; i < npoints; i++) {
+      rows_cols.clear();
+      for (int j = 0; j < SPACE_DIMENSION; j++)
+        rows_cols.push_back(SPACE_DIMENSION * i + j);
+      setSubMatrixGradient(ret.gradient().value(), Rinv_gradient, rows_cols, rows_cols, ret.value().rows());
+    }
+  }
+  return ret;
 }
 
 template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD, typename DerivedE, typename DerivedF>
@@ -2099,8 +2494,13 @@ template DLLEXPORT_RBM void RigidBodyManipulator::forwardJacDot(const int, const
 template DLLEXPORT_RBM void RigidBodyManipulator::bodyKin(const int, const MatrixBase< MatrixXd >&, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > *);
 template DLLEXPORT_RBM void RigidBodyManipulator::bodyKin(const int, const MatrixBase< MatrixXd >&, MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > *);
 
-template DLLEXPORT_RBM void RigidBodyManipulator::geometricJacobian(int, int, int, PlainObjectBase< Matrix<double, 6, Dynamic> >&, std::vector<int>*);
-template DLLEXPORT_RBM void RigidBodyManipulator::geometricJacobian(int, int, int, PlainObjectBase< MatrixXd >&, std::vector<int>*);
+template DLLEXPORT_RBM GradientVar<double, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::centroidalMomentumMatrix(int);
+template DLLEXPORT_RBM GradientVar<double, SPACE_DIMENSION, 1> RigidBodyManipulator::centerOfMass(int, const std::set<int>&);
+template DLLEXPORT_RBM GradientVar<double, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJacobian<double>(int, int, int, int, bool, std::vector<int>*);
+template DLLEXPORT_RBM GradientVar<double, SPACE_DIMENSION + 1, SPACE_DIMENSION + 1> RigidBodyManipulator::relativeTransform(int, int, int);
+template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardKinNew(const MatrixBase< Matrix<double, 3, Eigen::Dynamic> >&, int, int, int, int);
+template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardJacV(const GradientVar<double, Eigen::Dynamic, Eigen::Dynamic>&, int, int, int, bool, int);
+template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardKinPositionGradient(int, int, int, int);
 
 template DLLEXPORT_RBM void RigidBodyManipulator::HandC(double* const, double * const, MatrixBase< Map<MatrixXd> > * const, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<VectorXd> > &, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > * const);
 template DLLEXPORT_RBM void RigidBodyManipulator::HandC(double* const, double * const, MatrixBase< MatrixXd > * const, MatrixBase< MatrixXd > &, MatrixBase< VectorXd > &, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > * const);
