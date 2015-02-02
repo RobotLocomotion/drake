@@ -2009,7 +2009,7 @@ GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwar
   qrot.value() = x.value().template block<Eigen::Dynamic, 1>(SPACE_DIMENSION, 0, x.value().rows() - SPACE_DIMENSION, 1);
   if (gradient_order > 0) {
     for (int i = 0; i < rotation_representation_size; i++) {
-      qrot.gradient().value().template middleRows<1>(i) = getSubMatrixGradient(x.gradient().value(), SPACE_DIMENSION + i, 0, x.value().rows());
+      qrot.gradient().value().template middleRows<1>(i) = getSubMatrixGradient<Eigen::Dynamic>(x.gradient().value(), SPACE_DIMENSION + i, 0, x.value().rows());
     }
   }
 

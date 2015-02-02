@@ -492,11 +492,11 @@ typename Gradient<Eigen::Matrix<typename DerivedR::Scalar, RPY_SIZE, 1>, Derived
   typedef typename Gradient<Eigen::Matrix<Scalar, RPY_SIZE, 1>, DerivedDR::ColsAtCompileTime>::type ReturnType;
   ReturnType drpy(RPY_SIZE, nq);
 
-  auto dR11_dq = getSubMatrixGradient(dR, 0, 0, R.rows());
-  auto dR21_dq = getSubMatrixGradient(dR, 1, 0, R.rows());
-  auto dR31_dq = getSubMatrixGradient(dR, 2, 0, R.rows());
-  auto dR32_dq = getSubMatrixGradient(dR, 2, 1, R.rows());
-  auto dR33_dq = getSubMatrixGradient(dR, 2, 2, R.rows());
+  auto dR11_dq = getSubMatrixGradient<DerivedDR::ColsAtCompileTime>(dR, 0, 0, R.rows());
+  auto dR21_dq = getSubMatrixGradient<DerivedDR::ColsAtCompileTime>(dR, 1, 0, R.rows());
+  auto dR31_dq = getSubMatrixGradient<DerivedDR::ColsAtCompileTime>(dR, 2, 0, R.rows());
+  auto dR32_dq = getSubMatrixGradient<DerivedDR::ColsAtCompileTime>(dR, 2, 1, R.rows());
+  auto dR33_dq = getSubMatrixGradient<DerivedDR::ColsAtCompileTime>(dR, 2, 2, R.rows());
 
   Scalar sqterm = R(2,1) * R(2,1) + R(2,2) * R(2,2);
 
@@ -526,15 +526,15 @@ typename Gradient<Eigen::Matrix<typename DerivedR::Scalar, QUAT_SIZE, 1>, Derive
   typedef typename Gradient<Eigen::Matrix<Scalar, QUAT_SIZE, 1>, DerivedDR::ColsAtCompileTime>::type ReturnType;
   typename DerivedDR::Index nq = dR.cols();
 
-  auto dR11_dq = getSubMatrixGradient(dR, 0, 0, R.rows());
-  auto dR12_dq = getSubMatrixGradient(dR, 0, 1, R.rows());
-  auto dR13_dq = getSubMatrixGradient(dR, 0, 2, R.rows());
-  auto dR21_dq = getSubMatrixGradient(dR, 1, 0, R.rows());
-  auto dR22_dq = getSubMatrixGradient(dR, 1, 1, R.rows());
-  auto dR23_dq = getSubMatrixGradient(dR, 1, 2, R.rows());
-  auto dR31_dq = getSubMatrixGradient(dR, 2, 0, R.rows());
-  auto dR32_dq = getSubMatrixGradient(dR, 2, 1, R.rows());
-  auto dR33_dq = getSubMatrixGradient(dR, 2, 2, R.rows());
+  auto dR11_dq = getSubMatrixGradient<DerivedDR::ColsAtCompileTime>(dR, 0, 0, R.rows());
+  auto dR12_dq = getSubMatrixGradient<DerivedDR::ColsAtCompileTime>(dR, 0, 1, R.rows());
+  auto dR13_dq = getSubMatrixGradient<DerivedDR::ColsAtCompileTime>(dR, 0, 2, R.rows());
+  auto dR21_dq = getSubMatrixGradient<DerivedDR::ColsAtCompileTime>(dR, 1, 0, R.rows());
+  auto dR22_dq = getSubMatrixGradient<DerivedDR::ColsAtCompileTime>(dR, 1, 1, R.rows());
+  auto dR23_dq = getSubMatrixGradient<DerivedDR::ColsAtCompileTime>(dR, 1, 2, R.rows());
+  auto dR31_dq = getSubMatrixGradient<DerivedDR::ColsAtCompileTime>(dR, 2, 0, R.rows());
+  auto dR32_dq = getSubMatrixGradient<DerivedDR::ColsAtCompileTime>(dR, 2, 1, R.rows());
+  auto dR33_dq = getSubMatrixGradient<DerivedDR::ColsAtCompileTime>(dR, 2, 2, R.rows());
 
   Matrix<Scalar, 4, 3> A;
   A.row(0) << 1.0, 1.0, 1.0;
