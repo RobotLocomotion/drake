@@ -57,7 +57,16 @@ end
 % For now, all coefficients of friction are 1
 mu = ones(nC,1);
 
-d = obj.surfaceTangents(normal);
+% while surfaceTangentsmex is not explicitly dependent on the the mex_model_ptr, 
+% it may be sufficient to check for the presence of Eigen.
+% This is faster than checking for the presence of files.
+
+if(obj.mex_model_ptr ~= 0) 
+  d = surfaceTangentsmex(normal);
+else
+  d = obj.surfaceTangents(normal);  
+end
+
 if compute_first_derivative
   nq = obj.getNumPositions;  
   nk = size(d,2);
