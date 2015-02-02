@@ -53,6 +53,7 @@ void ROS_ERROR(const char* format, ...) {
 }
 
 void ROS_DEBUG(const char* format, ...) {
+  return; // remove this to see debug spews
   printf("WARNING: ");
   va_list vl;
   va_start(vl, format);
