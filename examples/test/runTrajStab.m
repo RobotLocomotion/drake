@@ -33,8 +33,8 @@ nu = getNumInputs(r);
 v = r.constructVisualizer;
 v.display_dt = 0.01;
 
-% load('data/hopper_traj_lqr_40_knots.mat');
-load('data/hopper_traj_lqr_refined.mat');
+load('data/hopper_traj_lqr_40_knots.mat');
+%load('data/hopper_traj_lqr_refined.mat');
 N_hops = 1;
 
 [xtraj,utraj,Btraj,Straj,Straj_full] = repeatTraj(xtraj,utraj,Btraj,Straj,Straj_full,N_hops-1);
@@ -115,9 +115,10 @@ options.w_phi_slack = 0.0;
 options.w_qdd = 0*ones(nq,1);
 options.w_grf = 0;
 options.Kp_accel = 0;
-options.Kp_phi = 10;
+options.Kp_phi = 0;
 options.contact_threshold = 1e-3;
-qp = FullStateQPController(r,ctrl_data,options);
+options.timestep = 0.002;
+qp = FullStateQPControllerDT(r,ctrl_data,options);
 
 % feedback QP controller with spring flamingo
 sys = feedback(r,qp);
