@@ -47,9 +47,6 @@ drakeControlUtilEXPORT void getCols(std::set<int> &cols, MatrixBase<DerivedA> co
 template <typename DerivedPhi1, typename DerivedPhi2, typename DerivedD>
 drakeControlUtilEXPORT void angleDiff(MatrixBase<DerivedPhi1> const &phi1, MatrixBase<DerivedPhi2> const &phi2, MatrixBase<DerivedD> &d);
 
-template <typename DerivedA>
-drakeControlUtilEXPORT mxArray* eigenToMatlab(const DerivedA &m);
-
 drakeControlUtilEXPORT mxArray* myGetProperty(const mxArray* pobj, const char* propname);
 drakeControlUtilEXPORT mxArray* myGetField(const mxArray* pobj, const char* propname);
 drakeControlUtilEXPORT bool inSupport(std::vector<SupportStateElement> supports, int body_idx);

@@ -13,26 +13,6 @@ using namespace std;
  * Call with findKinematicPathmex(model_ptr, start_body_or_frame_idx, end_body_or_frame_idx);
  */
 
-mxArray* stdVectorToMatlab(const std::vector<int>& vec) {
-//  mxArray* pm = mxCreateNumericMatrix(vec.size(), 1, mxINT32_CLASS, mxREAL);
-//  if (vec.size() > 0) {
-//    memcpy(mxGetPr(pm), vec.data(), sizeof(int) * vec.size());
-//  }
-//  return pm;
-
-  mxArray* pm = mxCreateDoubleMatrix(static_cast<int>(vec.size()), 1, mxREAL);
-  for (int i = 0; i < vec.size(); i++) {
-    mxGetPr(pm)[i] = (double) vec[i];
-  }
-  return pm;
-}
-
-void baseZeroToBaseOne(std::vector<int>& vec) 
-{
-  for (std::vector<int>::iterator iter=vec.begin(); iter!=vec.end(); iter++)
-    (*iter)++;
-}
-
 void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 
   std::string usage = "Usage [body_path, joint_path, signs] = findKinematicPathmex(model_ptr, start_body_or_frame_idx, end_body_or_frame_idx)";
