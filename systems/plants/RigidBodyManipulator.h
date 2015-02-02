@@ -26,7 +26,17 @@
 
 #define INF -2147483648    // this number is only used for checking the pitch to see if it's a revolute joint or a helical joint, and is set to match the value handed to us for inf from matlab.
 
+
 using namespace Eigen;
+
+const int m_surface_tangents = 2;
+
+typedef struct _support_state_element
+{
+  int body_idx;
+  std::set<int> contact_pt_inds;
+  int contact_surface; //is this ever used?
+} SupportStateElement;
 
 //extern std::set<int> emptyIntSet;  // was const std:set<int> emptyIntSet, but valgrind said I was leaking memory
 
@@ -39,6 +49,15 @@ public:
   void resize(int num_dof, int num_featherstone_bodies=-1, int num_rigid_body_objects=-1, int num_rigid_body_frames=0);
 
   void compile(void);  // call me after the model is loaded
+  
+  int contactConstraints(const int nc, std::vector<SupportStateElement> const& supp, const double terrain_height, void * const map_ptr, MatrixXd &n, MatrixXd &D, MatrixXd &Jp, MatrixXd &Jpdot);
+  
+  void collisionDetectTerrain(void* const map_ptr, Vector3d const & contact_pos, Vector3d &pos, Vector3d *normal, double terrain_height);
+  
+  void surfaceTangents(const Vector3d & normal, Matrix<double,3,m_surface_tangents> & d);
+
+  int contactPhi(SupportStateElement const & supp, void* const map_ptr, const double terrain_height, VectorXd &phi);
+  
   void doKinematics(double* q, bool b_compute_second_derivatives=false, double* qd=NULL);
 
   void doKinematicsNew(double* q, bool compute_gradients = false, double* v = nullptr, bool compute_JdotV = false);

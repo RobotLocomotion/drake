@@ -24,17 +24,7 @@
   #define drakeControlUtilEXPORT
 #endif
 
-
-const int m_surface_tangents = 2;  // number of faces in the friction cone approx
-
 typedef Matrix<double, 6,1> Vector6d;
-
-typedef struct _support_state_element
-{
-  int body_idx;
-  std::set<int> contact_pt_inds;
-  int contact_surface;
-} SupportStateElement;
 
 template <typename DerivedA, typename DerivedB>
 drakeControlUtilEXPORT void getRows(std::set<int> &rows, MatrixBase<DerivedA> const &M, MatrixBase<DerivedB> &Msub);
