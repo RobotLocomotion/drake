@@ -1,7 +1,4 @@
-% Note this class is very intertwined with other things, i.e. you need to
-% instantiate some other superclass first that has the
-% addSharedDataFunction method for example. Also you need the
-% constructorHack() if that other superclass doesn't define getXinds();
+
 
 classdef KinematicTrajectoryOptimization
     % Abstract class for kinematic planning
@@ -23,39 +20,21 @@ classdef KinematicTrajectoryOptimization
     end
     
     methods
-        function obj = KinematicTrajectoryOptimization(robot,initialized_flag)
+        function obj = KinematicTrajectoryOptimization(robot,initialize_flag)
             
             if nargin < 2
-                initialized_flag = 1;
+                initialize_flag = 1;
             end
             
             typecheck(robot,{'KinematicDummyPlant','RigidBodyManipulator','TimeSteppingRigidBodyManipulator'})
             obj.robot = robot;
             
-            if initialized_flag
-                obj.N =obj.getN;
-                obj.nq = obj.robot.getNumPositions();
-                x_inds = obj.getXinds();
-                obj.q_inds = x_inds(1:obj.nq,:);
-                obj.qsc_weight_inds = cell(1,obj.N);
-                
-                % Add joint limit constraints
-                [joint_lb,joint_ub] = obj.robot.getJointLimits();
-                obj = obj.addConstraint(BoundingBoxConstraint(reshape(bsxfun(@times,joint_lb,ones(1,obj.getN())),[],1),...
-                    reshape(bsxfun(@times,joint_ub,ones(1,obj.getN())),[],1)),obj.q_inds(:));
-                obj = obj.addConstraint(BoundingBoxConstraint(zeros(obj.getN()-1,1),inf(obj.getN()-1,1)),obj.getHinds());
-                
-                % create shared data functions to calculate kinematics at the knot
-                % points
-                kinsol_dataind = zeros(obj.getN(),1);
-                for i=1:obj.getN(),
-                    [obj,kinsol_dataind(i)] = obj.addSharedDataFunction(@obj.kinematicsData,{obj.q_inds(:,i)});
-                end
-                obj.kinsol_dataind = kinsol_dataind;
+            if initialize_flag
+                obj = obj.initialize();
             end
         end
         
-        function obj = constructorHack(obj)
+        function obj = initialize(obj)
             obj.N =obj.getN;
             obj.nq = obj.robot.getNumPositions();
             x_inds = obj.getXinds();
