@@ -8,42 +8,6 @@
 using namespace Eigen;
 using namespace std;
 
-/*
- * A C version of the geometricJacobian function
- *
- * Call with [J, vIndices] = geometricJacobianmex(model_ptr, base_body_or_frame_ind, end_effector_body_or_frame_ind, expressed_in_body_or_frame_ind);
- */
-
-// TODO: stop copying these functions everywhere and find a good place for them
-template <typename DerivedA>
-mxArray* eigenToMatlab(const DerivedA &m)
-{
- mxArray* pm = mxCreateDoubleMatrix(static_cast<int>(m.rows()),static_cast<int>(m.cols()),mxREAL);
- if (m.rows()*m.cols()>0)
-   memcpy(mxGetPr(pm),m.data(),sizeof(double)*m.rows()*m.cols());
- return pm;
-}
-
-mxArray* stdVectorToMatlab(const std::vector<int>& vec) {
-//  mxArray* pm = mxCreateNumericMatrix(vec.size(), 1, mxINT32_CLASS, mxREAL);
-//  if (vec.size() > 0) {
-//    memcpy(mxGetPr(pm), vec.data(), sizeof(int) * vec.size());
-//  }
-//  return pm;
-
-  mxArray* pm = mxCreateDoubleMatrix(static_cast<int>(vec.size()), 1, mxREAL);
-  for (int i = 0; i < static_cast<int>(vec.size()); i++) {
-    mxGetPr(pm)[i] = (double) vec[i];
-  }
-  return pm;
-}
-
-void baseZeroToBaseOne(std::vector<int>& vec) 
-{
-  for (std::vector<int>::iterator iter=vec.begin(); iter!=vec.end(); iter++)
-	(*iter)++;
-}
-
 void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 
   std::string usage = "Usage [J, vIndices] = geometricJacobianmex(model_ptr, base_body_or_frame_ind, end_effector_body_or_frame_ind, expressed_in_body_or_frame_ind)";
