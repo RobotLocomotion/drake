@@ -42,7 +42,7 @@ if model.use_new_kinsol
     options.compute_gradients = false;
   end
   if ~isfield(options, 'compute_JdotV')
-    options.compute_JdotV = isempty(v);
+    options.compute_JdotV = ~isempty(v);
   end
   
   kinsol = doKinematicsNew(model, q, v, options);
