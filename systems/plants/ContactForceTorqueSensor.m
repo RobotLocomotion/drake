@@ -123,7 +123,7 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensorWithState %& Visu
         nD = length(tsmanip.LCP_cache.data.contact_data.d);
         nC_body = nA + nB;
         nC = size(tsmanip.LCP_cache.data.contact_data.normal,2);
-        nL = manip.getNumJointLimitConstraints;
+        nL = sum(tsmanip.LCP_cache.data.possible_limit_indices);
         nP = 2*manip.num_position_constraints;  % number of position constraints
         
         normal_world = [tsmanip.LCP_cache.data.contact_data.normal(:,contact_idxA)...
