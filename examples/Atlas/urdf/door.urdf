@@ -204,15 +204,14 @@
       </material>
     </visual>       
 <collision>   
-      <origin xyz="-0.1920875 -0.060325 0"
-        rpy="0 0 0" />
+      <origin xyz="-0.1920875 -0.060325 0" rpy="0 0 0" />
       <geometry>
         <box size="0.00953 0.0889 0.0254"/>
       </geometry>
       <material name="">
         <color rgba="0 0 1 1" />
       </material>
-</collision> 
+  </collision> 
   </link>
 
 <joint
@@ -222,6 +221,7 @@
     <child link="Door" />
     <origin xyz="-0.041275 -0.460375 1.029495" />
     <axis xyz="0 0 1" />
+    <limit lower="0" upper="3/4*pi" />
   </joint>
  
 <joint
@@ -240,7 +240,7 @@
     <child link="Knob1" />
     <origin xyz="0.079375 0.8509 -0.102394" />
     <axis xyz="1 0 0" />
-<limit lower="-pi/2" upper="pi/2" />
+    <limit lower="-pi/2" upper="pi/2" />
   </joint>
 
 <joint
