@@ -216,7 +216,7 @@
 
 <joint
     name="hinge"
-    type="continuous">
+    type="revolute">
     <parent link="Left_Jamb" />
     <child link="Door" />
     <origin xyz="-0.041275 -0.460375 1.029495" />
@@ -235,7 +235,7 @@
 
 <joint
     name="handle_turn"
-    type="continuous">
+    type="revolute">
     <parent link="Door" />
     <child link="Knob1" />
     <origin xyz="0.079375 0.8509 -0.102394" />
