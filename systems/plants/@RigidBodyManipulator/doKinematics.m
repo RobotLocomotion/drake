@@ -254,15 +254,15 @@ else
   kinsol.J = computeJ(kinsol.T, S);
   
   if options.compute_gradients
-    [kinsol.qdotToV, kinsol.dqdotToVdq] = qdotToV(model, q);
-    [kinsol.vToqdot, kinsol.dvToqdotdq] = vToqdot(model, q);
+    [kinsol.qdotToV, kinsol.dqdotToVdq] = computeQdotToV(bodies, q);
+    [kinsol.vToqdot, kinsol.dvToqdotdq] = computeVToqdot(bodies, q);
   else
-    kinsol.qdotToV = qdotToV(model, q);
-    kinsol.vToqdot = vToqdot(model, q);
+    kinsol.qdotToV = computeQdotToV(bodies, q);
+    kinsol.vToqdot = computeVToqdot(bodies, q);
   end
   
   if options.compute_gradients
-    kinsol.dTdq = computeTransformGradients(bodies, kinsol.T, S, kinsol.qdotToV);
+    kinsol.dTdq = computeTransformGradients(bodies, kinsol.T, S, kinsol.qdotToV, length(q));
     kinsol.dJdq = computedJdq(bodies, kinsol.T, S, kinsol.dTdq, dSdq);
   end
   
@@ -318,22 +318,20 @@ for i = 2 : nb
 end
 end
 
-function ret = computeTransformGradients(bodies, T, S, qdotToV)
+function ret = computeTransformGradients(bodies, T, S, qdotToV, nq)
 % computes the gradients of T{i} with respect to q
 % makes use of the fact that the gradients of the joint transforms are
 % dT/dq = dTdot/dqdot, where Tdot depends on v through the joint motion
 % subspace S and qdot depends on v via the qdotToV mapping.
 
 nb = length(bodies);
-nq = size(qdotToV, 2);
 ret = cell(1, nb);
 ret{1} = zeros(16, nq);
 for i = 2 : nb
   body = bodies(i);
   T_body_to_parent = T{body.parent} \ T{i};
-  qdotToVi = qdotToV(body.velocity_num, body.position_num);
   
-  dT_body_to_parentdqi = dHomogTrans(T_body_to_parent, S{i}, qdotToVi);
+  dT_body_to_parentdqi = dHomogTrans(T_body_to_parent, S{i}, qdotToV{i});
   dT_body_to_parentdq = zeros(numel(T{i}), nq) * dT_body_to_parentdqi(1); % to make TaylorVar work better
   dT_body_to_parentdq(:, body.position_num) = dT_body_to_parentdqi;
   ret{i} = matGradMultMat(...
@@ -366,6 +364,52 @@ for i = 2 : nb
   dSidq = zeros(numel(Si), nq) * dTdq{i}(1); % to make TaylorVar work better
   dSidq(:, body.position_num) = dSdq{i};
   ret{i} = dTransformAdjoint(T{i}, Si, dTdq{i}, dSidq);
+end
+end
+
+
+function [Vq, dVq] = computeQdotToV(bodies, q)
+compute_gradient = nargout > 1;
+nb = length(bodies);
+Vq = cell(1, nb);
+if compute_gradient
+  dVq = cell(1, nb);
+  nq = length(q);
+end
+
+for i = 2 : nb
+  body = bodies(i);
+  q_body = q(body.position_num);
+  if compute_gradient
+    [Vq{i}, dVq_joint] = jointQdot2v(body, q_body);
+    dVq{i} = zeros(numel(Vq{i}), nq) * q(1);
+    dVq{i}(:, body.position_num) = dVq_joint;
+  else
+    Vq{i} = jointQdot2v(body, q_body);
+  end
+end
+end
+
+function [VqInv, dVqInv] = computeVToqdot(bodies, q)
+compute_gradient = nargout > 1;
+nb = length(bodies);
+nq = length(q);
+VqInv = cell(1, nb);
+if compute_gradient
+  dVqInv = cell(1, nb);
+  nq = length(q);
+end
+
+for i = 2 : nb
+  body = bodies(i);
+  q_body = q(body.position_num);
+  if compute_gradient
+    [VqInv{i}, dVqInv_joint] = jointV2qdot(body, q_body);
+    dVqInv{i} = zeros(numel(VqInv{i}), nq) * q(1);
+    dVqInv{i}(:, body.position_num) = dVqInv_joint;
+  else
+    VqInv{i} = jointV2qdot(body, q_body);
+  end
 end
 end
 

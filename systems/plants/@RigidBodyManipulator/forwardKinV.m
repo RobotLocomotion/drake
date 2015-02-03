@@ -1,4 +1,4 @@
-function [x, J, dJ] = forwardKinV(obj, kinsol, body_or_frame_ind, points, rotation_type, base_or_frame_ind)
+function [x, J, dJ] = forwardKinV(obj, kinsol, body_or_frame_ind, points, rotation_type, base_or_frame_ind, in_terms_of_qdot)
 % Transforms \p points given in a frame identified by \p body_or_frame_ind
 % to a frame identified by \p base_or_frame_ind, and also computes a
 % representation of the relative rotation (of type specified by
@@ -17,6 +17,8 @@ function [x, J, dJ] = forwardKinV(obj, kinsol, body_or_frame_ind, points, rotati
 % 2 - quat).
 % @param base_or_frame_ind an integer ID for a RigidBody or RigidBodyFrame
 % (obtained via e.g., findLinkInd or findFrameInd) @default 1 (world).
+% @param in_terms_of_qdot boolean specifying whether to return the mapping
+% from qdot to xdot (i.e. the gradient dx/dq) or v to xdot.
 %
 % @retval x a matrix with m columns, such that column i is
 % [points_base_i; q_rot], where points_base_i is points(:, i) transformed
@@ -87,9 +89,9 @@ else
     body = extractFrameInfo(obj, body_or_frame_ind);
     base = extractFrameInfo(obj, base_or_frame_ind);
     if compute_gradient
-      [J_geometric, v_indices, dJ_geometric] = geometricJacobian(obj, kinsol, base, body, expressed_in);
+      [J_geometric, v_or_qdot_indices, dJ_geometric] = geometricJacobian(obj, kinsol, base, body, expressed_in, in_terms_of_qdot);
     else
-      [J_geometric, v_indices] = geometricJacobian(obj, kinsol, base, body, expressed_in);
+      [J_geometric, v_or_qdot_indices] = geometricJacobian(obj, kinsol, base, body, expressed_in, in_terms_of_qdot);
     end
     
     % split up into rotational and translational parts
@@ -127,21 +129,25 @@ else
     pos_row_indices = repeatVectorIndices(1 : point_size, x_size, npoints);
     rot_row_indices = repeatVectorIndices(point_size + 1 : x_size, x_size, npoints);
     
-    nv = obj.num_velocities;
-    J = zeros(length(pos_row_indices) + length(rot_row_indices), nv) * kinsol.q(1); % for TaylorVar
-    J(pos_row_indices, v_indices) = Jpos;
+    if in_terms_of_qdot
+      J_cols = nq;
+    else
+      J_cols = nv;
+    end
+    J = zeros(length(pos_row_indices) + length(rot_row_indices), J_cols) * kinsol.q(1); % for TaylorVar
+    J(pos_row_indices, v_or_qdot_indices) = Jpos;
     
     if compute_gradient
       dJ = zeros(numel(J), nq) * kinsol.q(1); % for TaylorVar
-      dJ = setSubMatrixGradient(dJ, dJpos, pos_row_indices, v_indices, size(J));
+      dJ = setSubMatrixGradient(dJ, dJpos, pos_row_indices, v_or_qdot_indices, size(J));
     end
     
     if rotation_type ~= 0
-      J(rot_row_indices, v_indices) = Jrot(reshape(bsxfun(@times,(1:size(Jrot, 1))',ones(1,npoints)), [], 1), :);
+      J(rot_row_indices, v_or_qdot_indices) = Jrot(reshape(bsxfun(@times,(1:size(Jrot, 1))',ones(1,npoints)), [], 1), :);
       if compute_gradient
         block_sizes = repmat(size(Jrot, 1), npoints, 1);
         blocks = repmat({dJrot}, npoints, 1);
-        dJ = setSubMatrixGradient(dJ, interleaveRows(block_sizes, blocks), rot_row_indices, v_indices, size(J));
+        dJ = setSubMatrixGradient(dJ, interleaveRows(block_sizes, blocks), rot_row_indices, v_or_qdot_indices, size(J));
       end
     end
     if compute_gradient
