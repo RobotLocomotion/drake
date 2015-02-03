@@ -43,10 +43,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   if(nlhs > 0) {
   	int k = 0;
-  	const size_t cellDims[] = {1, BASIS_VECTOR_HALF_COUNT};
+  	const mwSize cellDims[] = {1, BASIS_VECTOR_HALF_COUNT};
   	double *cells[BASIS_VECTOR_HALF_COUNT];
 
-  	plhs[0] = mxCreateCellArray(2, (const mwSize*)&cellDims[0]);
+  	plhs[0] = mxCreateCellArray(2, cellDims);
 
     //initialize output cell array
   	for( k = 0 ; k<BASIS_VECTOR_HALF_COUNT ; k++) {
