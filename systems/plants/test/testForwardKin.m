@@ -1,5 +1,4 @@
 function testForwardKin
-
 testFallingBrick('rpy');
 testAtlas('rpy');
 
@@ -52,8 +51,8 @@ while test_number < n_tests
     kinsol_options_geval.use_mex = kinsol_options.use_mex;
     kinsol = robot.doKinematics(q, [], [], [], kinsol_options);
     if robot.use_new_kinsol || rotation_type == 0
-      [~, J, dJ] = robot.forwardKin(kinsol, end_effector, points, rotation_type);
-      [~, J_geval, dJ_geval] = geval(1, @(q) robot.forwardKin(robot.doKinematics(q, [], [], [], kinsol_options_geval), end_effector, points, rotation_type), q, option);
+      [~, J, dJ] = robot.forwardKin(kinsol, end_effector, points, rotation_type, base);
+      [~, J_geval, dJ_geval] = geval(1, @(q) robot.forwardKin(robot.doKinematics(q, [], [], [], kinsol_options_geval), end_effector, points, rotation_type, base), q, option);
       valuecheck(J_geval, J, 1e-10);
       valuecheck(dJ_geval, dJ, 1e-10);
     end

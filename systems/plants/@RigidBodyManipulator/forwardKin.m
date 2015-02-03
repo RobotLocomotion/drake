@@ -270,14 +270,11 @@ if (kinsol.mex)
 else
   if compute_jacobian
     if compute_gradient
-      [x, Jv, dJv] = forwardKinV(obj, kinsol, body_or_frame_ind, points, rotation_type, base_or_frame_ind);
-      dJv = reshape(dJv, [], obj.getNumPositions()); % convert to standard derivative format
-      dJ = matGradMultMat(Jv, kinsol.qdotToV, dJv, kinsol.dqdotToVdq);
-      dJ = reshape(dJ, size(Jv, 1), []); % convert to strange second derivative output format
+      [x, J, dJ] = forwardKinV(obj, kinsol, body_or_frame_ind, points, rotation_type, base_or_frame_ind, true);
+      dJ = reshape(dJ, size(J, 1), []); % convert to strange second derivative output format
     else
-      [x, Jv] = forwardKinV(obj, kinsol, body_or_frame_ind, points, rotation_type, base_or_frame_ind);
+      [x, J] = forwardKinV(obj, kinsol, body_or_frame_ind, points, rotation_type, base_or_frame_ind, true);
     end
-    J = Jv * kinsol.qdotToV;
   else
     x = forwardKinV(obj, kinsol, body_or_frame_ind, points, rotation_type, base_or_frame_ind);
   end
