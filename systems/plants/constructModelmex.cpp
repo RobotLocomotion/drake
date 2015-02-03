@@ -259,7 +259,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
       // Set collision filtering bitmasks
       pm = mxGetProperty(pBodies,i,"collision_filter");
       const uint16_t* group = (uint16_t*)mxGetPr(mxGetField(pm,0,"belongs_to"));
-      const uint16_t* mask = (uint16_t*)mxGetPr(mxGetField(pm,0,"collides_with"));
+      const uint16_t* mask = (uint16_t*)mxGetPr(mxGetField(pm,0,"ignores"));
       //DEBUG
       //cout << "constructModelmex: Group: " << *group << endl;
       //cout << "constructModelmex: Mask " << *mask << endl;
