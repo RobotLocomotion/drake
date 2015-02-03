@@ -43,6 +43,7 @@
 #include "link.h"
 #include "exceptions.h"
 
+
 namespace urdf{
 
 boost::shared_ptr<Geometry> parseGeometry(TiXmlElement *g)
@@ -53,7 +54,7 @@ boost::shared_ptr<Geometry> parseGeometry(TiXmlElement *g)
   TiXmlElement *shape = g->FirstChildElement();
   if (!shape)
   {
-    //ROS_ERROR("Geometry tag contains no child element.");
+    ROS_ERROR("Geometry tag contains no child element.");
     return geom;
   }
 
@@ -68,7 +69,7 @@ boost::shared_ptr<Geometry> parseGeometry(TiXmlElement *g)
     geom.reset(new Mesh);
   else
   {
-    //ROS_ERROR("Unknown geometry type '%s'", type_name.c_str());
+    ROS_ERROR("Unknown geometry type '%s'", type_name.c_str());
     return geom;
   }
 
