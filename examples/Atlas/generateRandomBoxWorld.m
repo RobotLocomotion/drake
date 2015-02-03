@@ -1,4 +1,5 @@
 function generateRandomBoxWorld(num_boxes, max_pose_array, max_size_array)
+%NOTEST
 %max_pose_array = [max_x, max_y] <-- goes from - max_x to + max_x
 %max_size_array = [max_l, max_w, max_h] <-- goes from 0 to max_l
 
