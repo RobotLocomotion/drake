@@ -38,6 +38,7 @@
 #include <stdarg.h>
 #include <sstream>
 #include <boost/lexical_cast.hpp>
+#include <limits>
 
 #include "exceptions.h"
 #include "joint.h"
@@ -49,6 +50,16 @@ void ROS_ERROR(const char* format, ...) {
   va_end(vl);
   printf("\n");
   exit(1);
+}
+
+void ROS_DEBUG(const char* format, ...) {
+  return; // remove this to see debug spews
+  printf("WARNING: ");
+  va_list vl;
+  va_start(vl, format);
+  vprintf(format, vl);
+  va_end(vl);
+  printf("\n");
 }
 
 namespace urdf{
@@ -113,8 +124,8 @@ bool JointLimits::initXml(TiXmlElement* config)
   // Get lower joint limit
   const char* lower_str = config->Attribute("lower");
   if (lower_str == NULL){
-    //ROS_DEBUG("joint limit: no lower, defaults to 0");
-    this->lower = 0;
+    ROS_DEBUG("joint limit: no lower, defaults to -inf");
+    this->lower = std::numeric_limits<double>::min();
   }
   else
   {
@@ -132,8 +143,8 @@ bool JointLimits::initXml(TiXmlElement* config)
   // Get upper joint limit
   const char* upper_str = config->Attribute("upper");
   if (upper_str == NULL){
-    //ROS_DEBUG("joint limit: no upper, , defaults to 0");
-    this->upper = 0;
+    ROS_DEBUG("joint limit: no upper, defaults to inf");
+    this->upper = std::numeric_limits<double>::max();
   }
   else
   {
@@ -151,8 +162,8 @@ bool JointLimits::initXml(TiXmlElement* config)
   // Get joint effort limit
   const char* effort_str = config->Attribute("effort");
   if (effort_str == NULL){
-    ROS_ERROR("joint limit: no effort");
-    return false;
+    ROS_DEBUG("joint limit: no effort, defaults to inf");
+    this->effort = std::numeric_limits<double>::max();
   }
   else
   {
@@ -162,7 +173,7 @@ bool JointLimits::initXml(TiXmlElement* config)
     }
     catch (boost::bad_lexical_cast &e)
     {
-      //ROS_ERROR("effort value (%s) is not a float",effort_str);
+      ROS_ERROR("effort value (%s) is not a float",effort_str);
       return false;
     }
   }
@@ -170,8 +181,8 @@ bool JointLimits::initXml(TiXmlElement* config)
   // Get joint velocity limit
   const char* velocity_str = config->Attribute("velocity");
   if (velocity_str == NULL){
-    ROS_ERROR("joint limit: no velocity");
-    return false;
+    ROS_DEBUG("joint limit: no velocity, defaults to inf");
+    this->velocity = std::numeric_limits<double>::max();
   }
   else
   {
@@ -197,7 +208,7 @@ bool JointSafety::initXml(TiXmlElement* config)
   const char* soft_lower_limit_str = config->Attribute("soft_lower_limit");
   if (soft_lower_limit_str == NULL)
   {
-    //ROS_DEBUG("joint safety: no soft_lower_limit, using default value");
+    ROS_DEBUG("joint safety: no soft_lower_limit, using default value");
     this->soft_lower_limit = 0;
   }
   else
@@ -217,7 +228,7 @@ bool JointSafety::initXml(TiXmlElement* config)
   const char* soft_upper_limit_str = config->Attribute("soft_upper_limit");
   if (soft_upper_limit_str == NULL)
   {
-    //ROS_DEBUG("joint safety: no soft_upper_limit, using default value");
+    ROS_DEBUG("joint safety: no soft_upper_limit, using default value");
     this->soft_upper_limit = 0;
   }
   else
@@ -237,7 +248,7 @@ bool JointSafety::initXml(TiXmlElement* config)
   const char* k_position_str = config->Attribute("k_position");
   if (k_position_str == NULL)
   {
-    //ROS_DEBUG("joint safety: no k_position, using default value");
+    ROS_DEBUG("joint safety: no k_position, using default value");
     this->k_position = 0;
   }
   else
@@ -283,7 +294,7 @@ bool JointCalibration::initXml(TiXmlElement* config)
   const char* rising_position_str = config->Attribute("rising");
   if (rising_position_str == NULL)
   {
-    //ROS_DEBUG("joint calibration: no rising, using default value");
+    ROS_DEBUG("joint calibration: no rising, using default value");
     this->rising.reset();
   }
   else
@@ -303,7 +314,7 @@ bool JointCalibration::initXml(TiXmlElement* config)
   const char* falling_position_str = config->Attribute("falling");
   if (falling_position_str == NULL)
   {
-    //ROS_DEBUG("joint calibration: no falling, using default value");
+    ROS_DEBUG("joint calibration: no falling, using default value");
     this->falling.reset();
   }
   else
@@ -331,8 +342,8 @@ bool JointMimic::initXml(TiXmlElement* config)
 
   if (joint_name_str == NULL)
   {
-    //ROS_ERROR("joint mimic: no mimic joint specified");
-    //return false;
+    ROS_ERROR("joint mimic: no mimic joint specified");
+    return false;
   }
   else
      this->joint_name = joint_name_str;
@@ -342,7 +353,7 @@ bool JointMimic::initXml(TiXmlElement* config)
 
   if (multiplier_str == NULL)
   {
-    //ROS_DEBUG("joint mimic: no multiplier, using default value of 1");
+    ROS_DEBUG("joint mimic: no multiplier, using default value of 1");
     this->multiplier = 1;    
   }
   else
@@ -363,7 +374,7 @@ bool JointMimic::initXml(TiXmlElement* config)
   const char* offset_str = config->Attribute("offset");
   if (offset_str == NULL)
   {
-    //ROS_DEBUG("joint mimic: no offset, using default value of 0");
+    ROS_DEBUG("joint mimic: no offset, using default value of 0");
     this->offset = 0;
   }
   else
@@ -399,7 +410,7 @@ bool Joint::initXml(TiXmlElement* config)
   TiXmlElement *origin_xml = config->FirstChildElement("origin");
   if (!origin_xml)
   {
-    //ROS_DEBUG("Joint '%s' missing origin tag under parent describing transform from Parent Link to Joint Frame, (using Identity transform).", this->name.c_str());
+    ROS_DEBUG("Joint '%s' missing origin tag under parent describing transform from Parent Link to Joint Frame, (using Identity transform).", this->name.c_str());
     this->parent_to_joint_origin_transform.clear();
   }
   else

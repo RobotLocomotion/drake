@@ -24,5 +24,10 @@ namespace urdf{
     protected:
       std::string error_msg_;
   };
+  
 }
+
+extern void ROS_ERROR(const char* format, ...);
+extern void ROS_DEBUG(const char* format, ...);
+
 #endif
