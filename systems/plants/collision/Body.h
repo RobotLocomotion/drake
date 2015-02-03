@@ -110,8 +110,8 @@ namespace DrakeCollision
       {
         return  ( !adjacentTo(other) || (body_idx == 0) || (other.getBodyIdx() == 0) ) &&
                 ( (body_idx == -1) || (other.getBodyIdx() == -1) || body_idx != other.getBodyIdx()) && 
-                (group & other.mask).any() && 
-                (other.group & mask).any();
+                !((group & other.mask).any() || 
+                (other.group & mask).any());
       };
 
     private:
