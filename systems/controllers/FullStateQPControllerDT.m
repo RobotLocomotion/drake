@@ -1,6 +1,6 @@
-classdef FullStateQPController < DrakeSystem
+classdef FullStateQPControllerDT < DrakeSystem
   methods
-  function obj = FullStateQPController(r,controller_data,options)
+  function obj = FullStateQPControllerDT(r,controller_data,options)
     % @param r rigid body manipulator instance
     % @param controller_data FullStateQPControllerData object containing the matrices that
     % @param options structure for specifying objective weights, slack
@@ -35,15 +35,6 @@ classdef FullStateQPController < DrakeSystem
     end
     obj = setSampleTime(obj,[dt;0]); % sets controller update rate
    
-    % weight for the desired qddot objective term
-    if isfield(options,'w_qdd')
-      typecheck(options.w_qdd,'double');
-      sizecheck(options.w_qdd,[obj.numq 1]); % assume diagonal cost
-      obj.w_qdd = options.w_qdd;
-    else
-      obj.w_qdd = 0.1*ones(obj.numq,1);
-    end    
-
     % weight for grf coefficients
     if isfield(options,'w_grf')
       typecheck(options.w_grf,'double');
@@ -69,16 +60,7 @@ classdef FullStateQPController < DrakeSystem
       obj.w_phi_slack = options.w_phi_slack;
     else
       obj.w_phi_slack = 0.001;
-    end       
-
-    % gain for support acceleration constraint: accel=-Kp_accel*vel
-    if isfield(options,'Kp_accel')
-      typecheck(options.Kp_accel,'double');
-      sizecheck(options.Kp_accel,1);
-      obj.Kp_accel = options.Kp_accel;
-    else
-      obj.Kp_accel = 0.0; % default desired acceleration=0
-    end       
+    end        
     
     if isfield(options,'Kp_phi')
       typecheck(options.Kp_phi,'double');
@@ -96,6 +78,17 @@ classdef FullStateQPController < DrakeSystem
       obj.Kd_phi = 2*sqrt(obj.Kp_phi);
     end
 
+    % time-step for control lookahead
+    if isfield(options,'timestep')
+      typecheck(options.timestep,'double');
+      sizecheck(options.timestep,1);
+      obj.timestep = options.timestep;
+    else
+      obj.timestep = 0.01;
+    end    
+    
+    
+    
     % hard bound on cpos_ddot slack variables
     if isfield(options,'cpos_slack_limit')
       typecheck(options.cpos_slack_limit,'double');
@@ -169,6 +162,8 @@ classdef FullStateQPController < DrakeSystem
             
     supp_idx = find(ctrl_data.support_times<=t,1,'last');
 
+    h=obj.timestep;
+
     if ctrl_data.B_is_time_varying
       if isa(ctrl_data.B,'Trajectory')
         B_ls = fasteval(ctrl_data.B,t);
@@ -181,11 +176,11 @@ classdef FullStateQPController < DrakeSystem
     R = ctrl_data.R;
     if (ctrl_data.lqr_is_time_varying)
       if isa(ctrl_data.S,'Trajectory')
-        S = fasteval(ctrl_data.S,t);
+        S = fasteval(ctrl_data.S,t+h);
       else
-        S = fasteval(ctrl_data.S{supp_idx},t);
+        S = fasteval(ctrl_data.S{supp_idx},t+h);
       end
-      x0 = fasteval(ctrl_data.x0,t);
+      x0 = fasteval(ctrl_data.x0,t+h);
       u0 = fasteval(ctrl_data.u0,t);
     else
       S = ctrl_data.S;
@@ -251,8 +246,6 @@ classdef FullStateQPController < DrakeSystem
       obj.controller_data.xoffset = -1*(mean(xp0(1,:)-xp_j(1,:))); % not quite right, need to take this over all bodies in contact
     end
     
-    nc
-    
     if dim==2
        % delete y rows
       yind = 2:3:nc*3;
@@ -277,45 +270,52 @@ classdef FullStateQPController < DrakeSystem
     nu = getNumInputs(r);
     nf = nc*nd; % number of contact force variables
     neta = length(phi_err);
-    nparams = nu+nq+nf+neps+neta;
+    nparams = nu+2*nq+nf+neps+neta;
     Iu = zeros(nu,nparams); Iu(:,1:nu) = eye(nu);
-    Iqdd = zeros(nq,nparams); Iqdd(:,nu+(1:nq)) = eye(nq);
-    Ibeta = zeros(nf,nparams); Ibeta(:,nu+nq+(1:nf)) = eye(nf);
+    Iq = zeros(nq,nparams); Iq(:,nu+(1:nq)) = eye(nq);
+    Iqd = zeros(nq,nparams); Iqd(:,nu+nq+(1:nq)) = eye(nq);
+    Ix = zeros(2*nq,nparams); Ix(:,nu+(1:2*nq)) = eye(2*nq);
+    Ibeta = zeros(nf,nparams); Ibeta(:,nu+2*nq+(1:nf)) = eye(nf);
     Ieps = zeros(neps,nparams); % cpos_ddot slack vars
-    Ieps(:,nu+nq+nf+(1:neps)) = eye(neps);
+    Ieps(:,nu+2*nq+nf+(1:neps)) = eye(neps);
     Ieta = zeros(neta,nparams); % phi_ddot slack vars
-    Ieta(:,nu+nq+nf+neps+(1:neta)) = eye(neta);
+    Ieta(:,nu+2*nq+nf+neps+(1:neta)) = eye(neta);
 
-
+    
     %----------------------------------------------------------------------
     % Set up problem constraints ------------------------------------------
 
-    lb = [r.umin' -inf*ones(1,nq) zeros(1,nf) -obj.cpos_slack_limit*ones(1,neps) -obj.phi_slack_limit*ones(1,neta)]'; % qddot/contact forces/slack vars
-    ub = [r.umax' inf*ones(1,nq) inf*ones(1,nf) obj.cpos_slack_limit*ones(1,neps) obj.phi_slack_limit*ones(1,neta)]';
+    lb = [r.umin' obj.jlmin' -inf*ones(1,nq) zeros(1,nf) -obj.cpos_slack_limit*ones(1,neps) -obj.phi_slack_limit*ones(1,neta)]'; % qddot/contact forces/slack vars
+    ub = [r.umax' obj.jlmax' inf*ones(1,nq) inf*ones(1,nf) obj.cpos_slack_limit*ones(1,neps) obj.phi_slack_limit*ones(1,neta)]';
 
-    Aeq_ = cell(1,3);
+    Aeq_ = cell(1,4);
     beq_ = cell(1,3);
 
     % dynamics constraints
+
+    h_Hinv = h*inv(H);
     if nc>0
-      Aeq_{1} = H*Iqdd - B*Iu - Dbar*Ibeta;
+      Aeq_{1} = Iqd - h_Hinv*B*Iu - h_Hinv*Dbar*Ibeta;
     else
-      Aeq_{1} = H*Iqdd - B*Iu;
+      Aeq_{1} = Iqd - h_Hinv*B*Iu;
     end
-    beq_{1} = -C;
+    beq_{1} = qd - h_Hinv*C;
 
-    if nc > 0
-      % relative acceleration constraint
-      Aeq_{2} = Jp*Iqdd + Ieps;
-      beq_{2} = -Jpdot*qd - obj.Kp_accel*Jp*qd; 
-    end
+    Aeq_{2} = Iq - h*Iqd;
+    beq_{2} = q;%+h*qd;
 
-    if ~isempty(phi_err)
-      phi_ddot_desired = obj.Kp_phi*phi_err - obj.Kd_phi*(Jndot*qd);
-      Aeq_{3} = Jn*Iqdd + Ieta;
-      beq_{3} = -Jndot*qd + phi_ddot_desired; 
-    end
-    
+%     if nc > 0
+%       % relative acceleration constraint
+%       Aeq_{3} = Jp*Iqdd + Ieps;
+%       beq_{3} = -Jpdot*qd - obj.Kp_accel*Jp*qd; 
+%     end
+% 
+%     if ~isempty(phi_err)
+%       phi_ddot_desired = obj.Kp_phi*phi_err - obj.Kd_phi*(Jndot*qd);
+%       Aeq_{3} = Jn*Iqdd + Ieta;
+%       beq_{3} = -Jndot*qd + phi_ddot_desired; 
+%     end
+%     
     % linear equality constraints: Aeq*alpha = beq
     Aeq = sparse(vertcat(Aeq_{:}));
     beq = vertcat(beq_{:});
@@ -328,20 +328,16 @@ classdef FullStateQPController < DrakeSystem
     
     %----------------------------------------------------------------------
     % QP cost function ----------------------------------------------------
-    %
-    % min: ubar*R*ubar + 2*xbar'*S*B*u + w_eps*quad(epsilon) + w_grf*quad(beta) 
-    xbar = x-x0; 
-    Hqp = Iu'*R*Iu;
-    fqp = xbar'*S*B_ls*Iu;
-    fqp = fqp-u0'*R*Iu;
-
-    Hqp(nu+(1:nq),nu+(1:nq)) = diag(obj.w_qdd);
-    if nc > 0
-      Hqp(nu+nq+(1:nf),nu+nq+(1:nf)) = obj.w_grf*eye(nf); 
-      Hqp(nu+nq+nf+(1:neps),nu+nq+nf+(1:neps)) = obj.w_cpos_slack*eye(neps); 
-      Hqp(nu+nq+nf+neps+(1:neta),nu+nq+nf+neps+(1:neta)) = obj.w_phi_slack*eye(neta); 
-    end
     
+    Hqp = Iu'*R*Iu + Ix'*S*Ix;
+    fqp = -x0'*S*Ix - u0'*R*Iu;
+
+%     if nc > 0
+%       Hqp(nu+2*nq+(1:nf),nu+2*nq+(1:nf)) = obj.w_grf*eye(nf); 
+%       Hqp(nu+2*nq+nf+(1:neps),nu+2*nq+nf+(1:neps)) = obj.w_cpos_slack*eye(neps); 
+%       Hqp(nu+2*nq+nf+neps+(1:neta),nu+2*nq+nf+neps+(1:neta)) = obj.w_phi_slack*eye(neta); 
+%     end
+%     
     %----------------------------------------------------------------------
     % Solve QP ------------------------------------------------------------
 
@@ -353,7 +349,7 @@ classdef FullStateQPController < DrakeSystem
     bin_fqp = [-lb(lbind); ub(ubind)];
 
     % call fastQPmex first
-    QblkDiag = {Hqp(1:(nu+nq),1:(nu+nq)) + REG*eye(nu+nq), ...
+    QblkDiag = {Hqp(1:(nu+2*nq),1:(nu+2*nq)) + REG*eye(nu+2*nq), ...
                 obj.w_grf*ones(nf,1) + REG*ones(nf,1), ...
                 obj.w_cpos_slack*ones(neps,1) + REG*ones(neps,1), ...
                 obj.w_phi_slack*ones(neta,1) + REG*ones(neta,1)};
@@ -399,12 +395,10 @@ classdef FullStateQPController < DrakeSystem
     numq;
     controller_data; % shared data handle that holds S, h, foot trajectories, etc.
     w_grf; % scalar ground reaction force weight
-    w_qdd; % qdd objective function weight vector
     w_cpos_slack; % scalar slack var weight
     w_phi_slack; % scalar slack var weight
     cpos_slack_limit; 
     phi_slack_limit; 
-    Kp_accel; % gain for support acceleration constraint: accel=-Kp_accel*vel
     Kp_phi; 
     Kd_phi; 
     gurobi_options = struct();
@@ -416,5 +410,6 @@ classdef FullStateQPController < DrakeSystem
     jlmax;
     contact_threshold;
     offset_x; % whether or not to offset the nominal state in the x-dimension
+    timestep
   end
 end

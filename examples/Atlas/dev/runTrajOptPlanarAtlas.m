@@ -31,7 +31,7 @@ R_periodic(17,17) = 1; % back joint
 R_periodic(2:end,p.getNumStates+2:end) = -eye(p.getNumStates-1);
 options.R_periodic = R_periodic;
 
-N = 20;
+N = 30;
 N1 = floor(N/2);
 N2 = N-N1;
 d = floor(N/8);
