@@ -27,7 +27,7 @@ if nargout > 1
   dv2 = dq2(2:4,:);
 
   dw3 = w2*dw1 + w1*dw2 - v2'*dv1 - v1'*dv2;
-  dv3 = dcross(v1,v2)*[dv1;dv2] + v2*dw1 + w1*dv2 + v1*dw2 + w2*dv1;
+  dv3 = dcross(v1,v2,dv1,dv2) + v2*dw1 + w1*dv2 + v1*dw2 + w2*dv1;
 
   dq3 = [dw3; dv3];
 end
