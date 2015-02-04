@@ -214,7 +214,7 @@ DLLEXPORT typename DHomogTrans<DerivedDT>::type dHomogTransInv(
     const Eigen::MatrixBase<DerivedDT>& dT);
 
 template <typename Scalar, typename DerivedX, typename DerivedDT, typename DerivedDX>
-DLLEXPORT typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime, 1>::type dTransformAdjoint(
+DLLEXPORT typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime, 1>::type dTransformSpatialMotion(
     const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T,
     const Eigen::MatrixBase<DerivedX>& X,
     const Eigen::MatrixBase<DerivedDT>& dT,

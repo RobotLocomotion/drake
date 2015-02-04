@@ -133,7 +133,7 @@ void testDTransformAdjoint(int ntests) {
     auto X = Matrix<double, 6, Dynamic>::Random(6, cols_X).eval();
     auto dX = MatrixXd::Random(X.size(), nq).eval();
 //    auto dX = Matrix<double, X.SizeAtCompileTime, nq>::Random().eval();
-    auto dAdT_times_X = dTransformAdjoint(T, X, dT, dX).eval();
+    auto dAdT_times_X = dTransformSpatialMotion(T, X, dT, dX).eval();
     volatile auto vol = dAdT_times_X;
   }
 }

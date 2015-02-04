@@ -883,7 +883,7 @@ typename DHomogTrans<DerivedDT>::type dHomogTransInv(
 }
 
 template <typename Scalar, typename DerivedX, typename DerivedDT, typename DerivedDX>
-typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime, 1>::type dTransformAdjoint(
+typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime, 1>::type dTransformSpatialMotion(
     const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T,
     const Eigen::MatrixBase<DerivedX>& X,
     const Eigen::MatrixBase<DerivedDT>& dT,
@@ -1093,13 +1093,13 @@ template DLLEXPORT DHomogTrans<Matrix<double, HOMOGENEOUS_TRANSFORM_SIZE, Dynami
     const Isometry3d&,
     const MatrixBase< Matrix<double, HOMOGENEOUS_TRANSFORM_SIZE, Dynamic> >&);
 
-template DLLEXPORT Gradient< Matrix<double, TWIST_SIZE, Dynamic>, Dynamic, 1>::type dTransformAdjoint(
+template DLLEXPORT Gradient< Matrix<double, TWIST_SIZE, Dynamic>, Dynamic, 1>::type dTransformSpatialMotion(
     const Isometry3d&,
     const MatrixBase< Matrix<double, TWIST_SIZE, Dynamic> >&,
     const MatrixBase< Matrix<double, HOMOGENEOUS_TRANSFORM_SIZE, Dynamic> >&,
     const MatrixBase<MatrixXd>&);
 
-template DLLEXPORT Gradient< Matrix<double, TWIST_SIZE, 1>, Dynamic, 1>::type dTransformAdjoint(
+template DLLEXPORT Gradient< Matrix<double, TWIST_SIZE, 1>, Dynamic, 1>::type dTransformSpatialMotion(
     const Isometry3d&,
     const MatrixBase< Matrix<double, TWIST_SIZE, 1> >&,
     const MatrixBase< Matrix<double, HOMOGENEOUS_TRANSFORM_SIZE, Dynamic> >&,
