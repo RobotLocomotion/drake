@@ -1,10 +1,10 @@
-function benchmarkNewKinsol
+function benchmarkRigidBodyManipulator
 %NOTEST
 
 robot = createAtlas('rpy');
 
 kinsol_options.use_mex = true;
-include_gradients = true;
+include_gradients = false;
 
 kinsol_options.compute_gradients = include_gradients;
 iters = 100;
