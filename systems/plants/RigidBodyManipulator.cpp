@@ -939,7 +939,7 @@ void RigidBodyManipulator::doKinematicsNew(double* q, bool compute_gradients, do
         // gradient of motion subspace in world
         MatrixXd dSdq = MatrixXd::Zero(body.S.size(), nq);
         dSdq.middleCols(body.dofnum, body.getJoint().getNumPositions()) = body.dSdqi;
-        body.dJdq = dTransformAdjoint(body.T_new, body.S, body.dTdq_new, dSdq);
+        body.dJdq = dTransformSpatialMotion(body.T_new, body.S, body.dTdq_new, dSdq);
       }
 
       if (v) {
@@ -977,7 +977,7 @@ void RigidBodyManipulator::doKinematicsNew(double* q, bool compute_gradients, do
             dcrm(body.twist, joint_twist, body.dtwistdq, djoint_twistdq, &dcrm_twist_joint_twistdq); // TODO: make dcrm templated
             body.dJdotVdq = bodies[body.parent]->dJdotVdq
                 + dcrm_twist_joint_twistdq
-                + dTransformAdjoint(body.T_new, body.SdotV, body.dTdq_new, dSdotVdq);
+                + dTransformSpatialMotion(body.T_new, body.SdotV, body.dTdq_new, dSdotVdq);
 
             // dJdotvdv
             // TODO: exploit sparsity better
@@ -1634,7 +1634,7 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJ
 
       if (gradient_order > 0) {
         auto& dJ = ret.gradient().value();
-        dJ = (dTransformAdjoint(T_world_to_frame, J, T_world_to_frame_gradientvar.gradient().value(), dJ)).eval(); // eval to avoid aliasing
+        dJ = (dTransformSpatialMotion(T_world_to_frame, J, T_world_to_frame_gradientvar.gradient().value(), dJ)).eval(); // eval to avoid aliasing
       }
       J = transformSpatialMotion(T_world_to_frame, J);
     }

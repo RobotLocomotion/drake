@@ -20,7 +20,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
   auto dT = dHomogTrans(T, S, qdot_to_v).eval();
   auto dTInv = dHomogTransInv(T, dT).eval();
-  auto dAdT = dTransformAdjoint(T, X, dT, dX).eval();
+  auto dAdT = dTransformSpatialMotion(T, X, dT, dX).eval();
   auto dAdT_transpose = dTransformAdjointTranspose(T, X, dT, dX).eval();
 
   Vector4d x_norm;
