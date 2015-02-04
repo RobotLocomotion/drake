@@ -127,7 +127,7 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
               
               if nargout>1
                 dv1 = (dpt1-last_dpt)/r1; dv2 = (last_attachment_dpt-last_dpt)/r1;
-                dc = v2'*dv1+v1'*dv2; dsvec=dcross(v1,v2)*[dv1;dv2]; ds = svec'*dsvec/max(s,eps);
+                dc = v2'*dv1+v1'*dv2; dsvec=dcross(v1,v2,dv1,dv2); ds = svec'*dsvec/max(s,eps);
                 dtheta = -s*dc + c*ds;
                 dlength = dlength + dtheta*r1;
               end
