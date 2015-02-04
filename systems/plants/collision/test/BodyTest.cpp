@@ -39,7 +39,7 @@ BOOST_AUTO_TEST_CASE(ignoreGroup_test)
   Body body1;
   bitmask group; group.set(7);
   body1.ignoreGroup(group);
-  BOOST_CHECK( (body1.getMask() & group) == 0 );
+  BOOST_CHECK( (body1.getMask() & group) != 0 );
 }
 
 BOOST_AUTO_TEST_CASE(collidesWith_test)
