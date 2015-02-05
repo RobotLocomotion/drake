@@ -1157,8 +1157,8 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::centroidal
   if (gradient_order > 0) {
     Eigen::Matrix<double, HOMOGENEOUS_TRANSFORM_SIZE, Eigen::Dynamic> dtransform_world_to_com(HOMOGENEOUS_TRANSFORM_SIZE, nq);
     dtransform_world_to_com.setZero();
-    setSubMatrixGradient<Eigen::Dynamic>(dtransform_world_to_com, com.gradient().value(), intRange<3>(0), intRange<1>(3), SPACE_DIMENSION + 1);
-    ret.gradient().value() = dTransformAdjointTranspose(T.inverse(), ret.value(), dtransform_world_to_com, ret.gradient().value());
+    setSubMatrixGradient<Eigen::Dynamic>(dtransform_world_to_com, (-com.gradient().value()).eval(), intRange<3>(0), intRange<1>(3), SPACE_DIMENSION + 1);
+    ret.gradient().value() = dTransformSpatialForce(T, ret.value(), dtransform_world_to_com, ret.gradient().value());
   }
   ret.value() = transformSpatialForce(T, ret.value());
   return ret;

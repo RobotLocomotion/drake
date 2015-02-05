@@ -138,7 +138,7 @@ if expressed_in ~= 1
   % change frame from world to expressedIn
   if compute_gradient
     [T, dTdq] = relativeTransform(obj, kinsol, expressed_in, 1);
-    dJdq = dTransformAdjoint(T, J, dTdq, dJdq);
+    dJdq = dTransformSpatialMotion(T, J, dTdq, dJdq);
   else
     T = relativeTransform(obj, kinsol, expressed_in, 1);
   end

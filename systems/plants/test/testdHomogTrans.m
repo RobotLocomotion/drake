@@ -1,7 +1,6 @@
 function testdHomogTrans()
 testFallingBrick('rpy');
-%+++FLOATINGBASE FIXME reenable test:
-% testFallingBrick('quat');
+testFallingBrick('quat');
 end
 
 function testFallingBrick(floatingType)
