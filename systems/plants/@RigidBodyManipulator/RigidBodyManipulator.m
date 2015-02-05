@@ -345,14 +345,12 @@ classdef RigidBodyManipulator < Manipulator
       static_friction = zeros(nv, 1);
       coulomb_window = zeros(nv, 1);
 
-      for i = 1 : model.getNumBodies()
+      for i = 2 : model.getNumBodies()
         b = model.body(i);
-        if b.parent > 0
-          damping(b.velocity_num) = b.damping;
-          coulomb_friction(b.velocity_num) = b.coulomb_friction;
-          static_friction(b.velocity_num) = b.static_friction;
-          coulomb_window(b.velocity_num) = b.coulomb_window;
-        end
+        damping(b.velocity_num) = b.damping;
+        coulomb_friction(b.velocity_num) = b.coulomb_friction;
+        static_friction(b.velocity_num) = b.static_friction;
+        coulomb_window(b.velocity_num) = b.coulomb_window;
       end
 
       f_friction = damping .* v;

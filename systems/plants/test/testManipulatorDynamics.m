@@ -1,15 +1,17 @@
 function testManipulatorDynamics
 
-% testBrickQuaternion();
+
 testActuatedPendulum();
 regressionTestAtlasRPY();
-% testAtlasQuat();
-
-% checkGradients(createFallingBrick('quat'));
 checkGradients(createAtlas('rpy'));
-% checkGradients(createAtlas('quat'));
+checkHdotMinus2CoriolisMatrixSkewSymmetricMatrix(createAtlas('rpy'))
 
-% checkHdotMinus2CoriolisMatrixSkewSymmetricMatrix(createAtlas('rpy'))
+if RigidBodyManipulator.use_new_kinsol
+  testBrickQuaternion();
+  testAtlasQuat();
+  checkGradients(createFallingBrick('quat'));
+  checkGradients(createAtlas('quat'));
+end
 end
 
 function robot = createFallingBrick(floating_type)
