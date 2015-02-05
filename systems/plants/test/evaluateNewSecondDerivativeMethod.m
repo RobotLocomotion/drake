@@ -1,5 +1,5 @@
 function evaluateNewSecondDerivativeMethod()
-robot = createAtlas('rpy');
+robot = createAtlas('quat');
 
 nq = robot.getNumPositions();
 nv = robot.getNumVelocities();
@@ -16,7 +16,7 @@ for test = 1 : 50
   end_effector = randi(bodyRange);
   expressed_in = randi(bodyRange);
   
-  q = randn(nq, 1);
+  q = getRandomConfiguration(robot);
   
   tic
   options.use_mex = false;
@@ -33,9 +33,7 @@ for test = 1 : 50
   options.use_mex = false;
   options.compute_gradients = false;
   kinsol = robot.doKinematics(q, [], [], [], options);
-  
   dJ_full = dJNew(robot, kinsol, base, end_effector, expressed_in);
-  
   new_time = new_time + toc;
   
   valuecheck(dJ_full, dJ_full_check);
@@ -47,34 +45,30 @@ function dJ_full = dJNew(robot, kinsol, base, end_effector, expressed_in)
 [~, path, signs] = findKinematicPath(robot, base, end_effector);
 
 nv = robot.getNumVelocities();
-cols = robot.getNumVelocities(); % TODO: make it possible to switch to q
+nq = robot.getNumPositions();
 J_size = [6, nv];
-dJ_full = zeros(prod(J_size), cols);
+dJ_full = zeros(prod(J_size), nq);
 for i = 1 : length(path)
   j = path(i);
   sign = signs(i);
   bodyJ = robot.body(j);
   qj = kinsol.q(bodyJ.position_num);
   Sj = sign * kinsol.J{j};
-  [~, dSjdotDvj] = motionSubspace(bodyJ, qj);
-  dSjdotDvj = sign * dSjdotDvj;
-  % TODO: dSjdotDvj times appropriate vToqdot for gradient output
+  [~, dSjdotdqj] = motionSubspace(bodyJ, qj);
+  dSjdotdqj = sign * dSjdotdqj;
   AdHj = transformAdjoint(robot.relativeTransform(kinsol, expressed_in, j));
   AdH1 = transformAdjoint(robot.relativeTransform(kinsol, expressed_in, 1));
-  [Jj, v_ind_ij] = robot.geometricJacobian(kinsol, expressed_in, j, 1);
-  % TODO: q output for geometricJacobian
+  [Jj, qdot_ind_ij] = robot.geometricJacobian(kinsol, expressed_in, j, 1, true);
   
   for S_col = 1 : size(Sj, 2)
     col = bodyJ.velocity_num(S_col);
     
-    block = AdHj * getSubMatrixGradient(dSjdotDvj, 1:6, S_col, size(Sj));
-    %     block = block + getSubMatrixGradient(dJ_full, 1:6, col, size(J), bodyJ.velocity_num); % TODO: necessary?
-    dJ_full = setSubMatrixGradient(dJ_full, block, 1:6, col, J_size, bodyJ.velocity_num);
+    block = AdHj * getSubMatrixGradient(dSjdotdqj, 1:6, S_col, size(Sj));
+    dJ_full = setSubMatrixGradient(dJ_full, block, 1:6, col, J_size, bodyJ.position_num);
     
-%     block = -AdHj * crm(Sj(:, S_col)) * Jj;
     block = -AdH1 * crm(Sj(:, S_col)) * Jj;
-    block = block + getSubMatrixGradient(dJ_full, 1:6, col, J_size, v_ind_ij);
-    dJ_full = setSubMatrixGradient(dJ_full, block, 1:6, col, J_size, v_ind_ij);
+    block = block + getSubMatrixGradient(dJ_full, 1:6, col, J_size, qdot_ind_ij);
+    dJ_full = setSubMatrixGradient(dJ_full, block, 1:6, col, J_size, qdot_ind_ij);
   end
 end
 end
