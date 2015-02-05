@@ -28,16 +28,22 @@ display('Check if MATLAB and mex are consistent for robot only');
 kinsol = doKinematics(r,q_seed,true,false,qdot);
 [com,J,dJ] = r.getCOM(kinsol);
 [com1,J1,dJ1] = r.getCOM(kinsol,1);
-Jdot = forwardJacDot(r,kinsol,0);
-Jdot1 = forwardJacDot(r,kinsol,0,1);
+if ~r.use_new_kinsol
+  Jdot = forwardJacDot(r,kinsol,0);
+  Jdot1 = forwardJacDot(r,kinsol,0,1);
+end
 valuecheck(com1,com);
 valuecheck(J1,J);
 valuecheck(dJ1,dJ);
-valuecheck(Jdot1,Jdot);
+if ~r.use_new_kinsol
+  valuecheck(Jdot1,Jdot);
+end
 valuecheck(com_mex,com,1e-10);
 valuecheck(J_mex,J,1e-10);
 valuecheck(dJ_mex,dJ,1e-10);
-valuecheck(Jdot_mex,Jdot,1e-10);
+if ~r.use_new_kinsol
+  valuecheck(Jdot_mex,Jdot,1e-10);
+end
 
 xyz = 0.1*randn(3,1)+[1;1;1];
 rpy = 0.1*pi*randn(3,1)+[pi/2;0;0];
@@ -69,10 +75,13 @@ kinsol = doKinematics(r,[q_seed;q_seed_aff],true,false,qdot);
 [com1,J1,dJ1] = r.getCOM(kinsol,1);
 [com2,J2,dJ2] = r.getCOM(kinsol,2);
 [com12,J12,dJ12] = r.getCOM(kinsol,[1,2]);
-Jdot = forwardJacDot(r,kinsol,0);
-Jdot1 = forwardJacDot(r,kinsol,0,1);
-Jdot2 = forwardJacDot(r,kinsol,0,2);
-Jdot12 = forwardJacDot(r,kinsol,0,[1,2]);
+
+if ~r.use_new_kinsol
+  Jdot = forwardJacDot(r,kinsol,0);
+  Jdot1 = forwardJacDot(r,kinsol,0,1);
+  Jdot2 = forwardJacDot(r,kinsol,0,2);
+  Jdot12 = forwardJacDot(r,kinsol,0,[1,2]);
+end
 
 valuecheck(com_mex,com,1e-10);
 valuecheck(com_mex1,com1,1e-10);
@@ -86,9 +95,12 @@ valuecheck(dJ_mex,dJ,1e-10);
 valuecheck(dJ_mex1,dJ1,1e-10);
 valuecheck(dJ_mex2,dJ2,1e-10);
 valuecheck(dJ_mex12,dJ12,1e-10);
-valuecheck(Jdot_mex,Jdot,1e-10);
-valuecheck(Jdot_mex1,Jdot1,1e-10);
-valuecheck(Jdot_mex2,Jdot2,1e-10);
-valuecheck(Jdot_mex12,Jdot12,1e-10);
+
+if ~r.use_new_kinsol
+  valuecheck(Jdot_mex,Jdot,1e-10);
+  valuecheck(Jdot_mex1,Jdot1,1e-10);
+  valuecheck(Jdot_mex2,Jdot2,1e-10);
+  valuecheck(Jdot_mex12,Jdot12,1e-10);
+end
 
 end

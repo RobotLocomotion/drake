@@ -10,6 +10,12 @@ if (eigen3_FOUND)
   target_link_libraries(testDrakeGeometryUtil drakeGeometryUtil drakeGradientUtil)
   include_directories( .. )
   add_test(NAME testDrakeGeometryUtil COMMAND testDrakeGeometryUtil)
+  
+  add_executable(testGradientVar testGradientVar.cpp)
+  target_link_libraries(testGradientVar drakeGradientUtil)
+  include_directories( .. )
+  #set_target_properties(testGradientVar PROPERTIES COMPILE_FLAGS "-g -O0")
+  #add_test(NAME testGradientVar COMMAND testGradientVar)
 
   add_executable(testDrakeGradientUtil testDrakeGradientUtil.cpp)
   target_link_libraries(testDrakeGradientUtil drakeGeometryUtil drakeGradientUtil)

@@ -128,13 +128,8 @@ for f = {'right', 'left'}
   foot_poses = foot_states(1:6,:);
   frame_id = biped.foot_frame_id.(foot);
   body_ind = biped.getFrame(frame_id).body_ind;
-  for j = 4:6
-    % Unwrap rpy angles
-    foot_poses(j,2:end) = foot_poses(j,1:end-1) + angleDiff(foot_poses(j,1:end-1), foot_poses(j,2:end));
-  end
+  foot_poses(4:6,:) = unwrap(foot_poses(4:6,:), [], 2);
   ts = [foot_origin_knots.t];
-  % foot_traj = PPTrajectory(pchip(ts, foot_poses));
-  % dtraj = fnder(foot_traj);
 
   foot_dposes = foot_states(7:12,:);
   % Compute cubic polynomial coefficients to save work in the controller

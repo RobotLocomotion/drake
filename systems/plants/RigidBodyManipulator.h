@@ -8,6 +8,7 @@
 
 #include "collision/DrakeCollision.h"
 #include "KinematicPath.h"
+#include "GradientVar.h"
 
 #undef DLLEXPORT_RBM
 #if defined(WIN32) || defined(WIN64)
@@ -30,7 +31,7 @@ using namespace Eigen;
 
 //extern std::set<int> emptyIntSet;  // was const std:set<int> emptyIntSet, but valgrind said I was leaking memory
 
-class DLLEXPORT_RBM RigidBodyManipulator 
+class DLLEXPORT_RBM RigidBodyManipulator
 {
 public:
   RigidBodyManipulator(int num_dof, int num_featherstone_bodies=-1, int num_rigid_body_objects=-1, int num_rigid_body_frames=0);
@@ -43,8 +44,14 @@ public:
 
   void doKinematicsNew(double* q, bool compute_gradients = false, double* v = nullptr, bool compute_JdotV = false);
 
+  template <typename Scalar>
+  GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> centroidalMomentumMatrix(int gradient_order);
+
   template <typename Derived>
   void getCMM(double* const q, double* const qd, MatrixBase<Derived> &A, MatrixBase<Derived> &Adot);
+
+  template <typename Scalar>
+  GradientVar<Scalar, SPACE_DIMENSION, 1> centerOfMass(int gradient_order, const std::set<int>& robotnum = RigidBody::defaultRobotNumSet);
 
   template <typename Derived>
   void getCOM(MatrixBase<Derived> &com,const std::set<int> &robotnum = RigidBody::defaultRobotNumSet);
@@ -62,10 +69,10 @@ public:
 
   template <typename Derived>
     void getContactPositions(MatrixBase<Derived> &pos, const std::set<int> &body_idx);// = emptyIntSet);
-  
+
   template <typename Derived>
     void getContactPositionsJac(MatrixBase<Derived> &J, const std::set<int> &body_idx);// = emptyIntSet);
-  
+
   template <typename Derived>
     void getContactPositionsJacDot(MatrixBase<Derived> &Jdot, const std::set<int> &body_idx);// = emptyIntSet);
 
@@ -85,11 +92,23 @@ public:
   template <typename DerivedA, typename DerivedB>
   void forwarddJac(const int body_ind, const MatrixBase<DerivedA>& pts, MatrixBase<DerivedB> &dJ);
 
+  template <typename DerivedPoints>
+  GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, DerivedPoints::ColsAtCompileTime> forwardKinNew(const MatrixBase<DerivedPoints>& points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type, int gradient_order);
+
+  template <typename Scalar, int XRows, int XCols>
+  GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> forwardJacV(const GradientVar<Scalar, XRows, XCols>& x, int body_or_frame_ind, int base_or_frame_ind, int rotation_type, bool compute_analytic_jacobian, int gradient_order);
+
+  template <typename Scalar>
+  GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> forwardKinPositionGradient(int npoints, int current_body_or_frame_ind, int new_body_or_frame_ind, int gradient_order);
+
   template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD>
   void bodyKin(const int body_ind, const MatrixBase<DerivedA>& pts, MatrixBase<DerivedB> &x, MatrixBase<DerivedC> *J=NULL, MatrixBase<DerivedD> *P=NULL);
 
-  template<typename DerivedA>
-  void geometricJacobian(int base_body_or_frame_ind, int end_effector_body_or_frame_ind, int expressed_in_body_or_frame_ind, PlainObjectBase<DerivedA>& J, std::vector<int>* v_indices);
+  template<typename Scalar>
+  GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> geometricJacobian(int base_body_or_frame_ind, int end_effector_body_or_frame_ind, int expressed_in_body_or_frame_ind, int gradient_order, bool in_terms_of_qdot = false, std::vector<int>* v_indices = nullptr);
+
+  template<typename Scalar>
+  GradientVar<Scalar, SPACE_DIMENSION + 1, SPACE_DIMENSION + 1> relativeTransform(int base_or_frame_ind, int body_or_frame_ind, int gradient_order);
 
   template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD, typename DerivedE, typename DerivedF>
   void HandC(double* const q, double * const qd, MatrixBase<DerivedA> * const f_ext, MatrixBase<DerivedB> &H, MatrixBase<DerivedC> &C, MatrixBase<DerivedD> *dH=NULL, MatrixBase<DerivedE> *dC=NULL, MatrixBase<DerivedF> * const df_ext=NULL);
@@ -98,7 +117,7 @@ public:
 
   void updateCollisionElements(const int body_ind);
 
-  bool setCollisionFilter(const int body_ind, const uint16_t group, 
+  bool setCollisionFilter(const int body_ind, const uint16_t group,
                           const uint16_t mask);
 
   bool getPairwiseCollision(const int body_indA, const int body_indB, MatrixXd &ptsA, MatrixXd &ptsB, MatrixXd &normals, bool use_margins=true);
@@ -108,54 +127,54 @@ public:
   bool getPointCollision(const int body_ind, const int body_collision_ind, Vector3d &ptA, Vector3d &ptB, Vector3d &normal, bool use_margins=true);
 
   bool getPairwiseClosestPoint(const int body_indA, const int body_indB, Vector3d &ptA, Vector3d &ptB, Vector3d &normal, double &distance, bool use_margins=true);
-  
+
   bool collisionRaycast(const Matrix3Xd &origins, const Matrix3Xd &ray_endpoints, VectorXd &distances, bool use_margins=false);
 
   //bool closestPointsAllBodies( MatrixXd& ptsA, MatrixXd& ptsB,
                                //MatrixXd& normal, VectorXd& distance,
-                               //std::vector<int>& bodyA_idx, 
+                               //std::vector<int>& bodyA_idx,
                                //std::vector<int>& bodyB_idx);
 
-  bool collisionDetect( VectorXd& phi, MatrixXd& normal, 
-                        MatrixXd& xA, MatrixXd& xB, 
-                        std::vector<int>& bodyA_idx, 
+  bool collisionDetect( VectorXd& phi, MatrixXd& normal,
+                        MatrixXd& xA, MatrixXd& xB,
+                        std::vector<int>& bodyA_idx,
                         std::vector<int>& bodyB_idx,
                         const std::vector<int>& bodies_idx,
                         const std::set<std::string>& active_element_groups,
                         bool use_margins = true);
 
-  bool collisionDetect( VectorXd& phi, MatrixXd& normal, 
-                        MatrixXd& xA, MatrixXd& xB, 
-                        std::vector<int>& bodyA_idx, 
+  bool collisionDetect( VectorXd& phi, MatrixXd& normal,
+                        MatrixXd& xA, MatrixXd& xB,
+                        std::vector<int>& bodyA_idx,
                         std::vector<int>& bodyB_idx,
                         const std::vector<int>& bodies_idx,
                         bool use_margins = true);
 
-  bool collisionDetect( VectorXd& phi, MatrixXd& normal, 
-                        MatrixXd& xA, MatrixXd& xB, 
-                        std::vector<int>& bodyA_idx, 
+  bool collisionDetect( VectorXd& phi, MatrixXd& normal,
+                        MatrixXd& xA, MatrixXd& xB,
+                        std::vector<int>& bodyA_idx,
                         std::vector<int>& bodyB_idx,
                         const std::set<std::string>& active_element_groups,
                         bool use_margins = true);
 
-  bool collisionDetect( VectorXd& phi, MatrixXd& normal, 
-                        MatrixXd& xA, MatrixXd& xB, 
-                        std::vector<int>& bodyA_idx, 
+  bool collisionDetect( VectorXd& phi, MatrixXd& normal,
+                        MatrixXd& xA, MatrixXd& xB,
+                        std::vector<int>& bodyA_idx,
                         std::vector<int>& bodyB_idx,
                         bool use_margins = true);
 
 
-  bool allCollisions(std::vector<int>& bodyA_idx, std::vector<int>& bodyB_idx, 
+  bool allCollisions(std::vector<int>& bodyA_idx, std::vector<int>& bodyB_idx,
                      MatrixXd& ptsA, MatrixXd& ptsB,
                         bool use_margins = true);
 
   //bool closestDistanceAllBodies(VectorXd& distance, MatrixXd& Jd);
-  
+
   int findLinkId(std::string linkname, int robot = -1);
   //@param robot   the index of the robot. robot = -1 means to look at all the robots
-  
+
   std::string getBodyOrFrameName(int body_or_frame_id);
-  //@param body_or_frame_id   the index of the body or the id of the frame. 
+  //@param body_or_frame_id   the index of the body or the id of the frame.
 public:
   std::vector<std::string> robot_name;
 
@@ -165,7 +184,7 @@ public:
 
   // Rigid body objects
   int num_bodies;  // rigid body objects
-  std::vector<std::unique_ptr<RigidBody>> bodies;
+  std::vector<std::unique_ptr<RigidBody> > bodies;
 
   // Rigid body frames
   int num_frames;
@@ -199,11 +218,13 @@ private:
   std::vector<VectorXd> avp;
   std::vector<VectorXd> fvp;
   std::vector<MatrixXd> IC;
+  std::vector<Matrix<double, TWIST_SIZE, TWIST_SIZE>, Eigen::aligned_allocator< Matrix<double, TWIST_SIZE, TWIST_SIZE> > > Ic_new;
 
   //Variables for gradient calculations
   MatrixXd dTdTmult;
   std::vector<MatrixXd> dXupdq;
-  std::vector<std::vector<MatrixXd>> dIC;
+  std::vector<std::vector<MatrixXd> > dIC;
+  std::vector<Gradient<Matrix<double, TWIST_SIZE, TWIST_SIZE>, Eigen::Dynamic>::type> dIc_new;
 
   std::vector<MatrixXd> dvdq;
   std::vector<MatrixXd> dvdqd;
@@ -221,15 +242,15 @@ private:
 
   // preallocate for CMM function
   MatrixXd Xg; // spatial centroidal projection matrix
-  MatrixXd dXg;  // dXg_dq * qd  
-  std::vector<MatrixXd> Ic; // body spatial inertias
-  std::vector<MatrixXd> dIc; // derivative of body spatial inertias
+  MatrixXd dXg;  // dXg_dq * qd
+  std::vector<MatrixXd> Ic; // composite rigid body inertias
+  std::vector<MatrixXd> dIc; // derivative of composite rigid body inertias
   std::vector<VectorXd> phi; // joint axis vectors
   std::vector<MatrixXd> Xworld; // spatial transforms from world to each body
   std::vector<MatrixXd> dXworld; // dXworld_dq * qd
-  std::vector<MatrixXd> dXup; // dXup_dq * qd 
+  std::vector<MatrixXd> dXup; // dXup_dq * qd
   MatrixXd Xcom; // spatial transform from centroid to world
-  MatrixXd Jcom; 
+  MatrixXd Jcom;
   MatrixXd dXcom;
   MatrixXd Xi;
   MatrixXd dXidq;
@@ -250,7 +271,7 @@ private:
   // These models are switched between with the use_margins flag
   // to collision-relevant methods of the RBM.
   std::shared_ptr< DrakeCollision::Model > collision_model;
-  std::shared_ptr< DrakeCollision::Model > collision_model_no_margins;  
+  std::shared_ptr< DrakeCollision::Model > collision_model_no_margins;
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 

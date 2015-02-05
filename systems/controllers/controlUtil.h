@@ -27,6 +27,8 @@
 
 const int m_surface_tangents = 2;  // number of faces in the friction cone approx
 
+#define EPSILON 10e-8
+
 typedef Matrix<double, 6,1> Vector6d;
 
 typedef struct _support_state_element

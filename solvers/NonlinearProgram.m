@@ -731,7 +731,7 @@ classdef NonlinearProgram
         end
         obj.solver = solver;
       elseif(strcmp(solver,'default'))
-        if(checkDependency('snopt'))
+        if(checkDependency('snopt') || checkDependency('NonlinearProgramSnoptmex'))
           obj = obj.setSolver('snopt');
         elseif(checkDependency('studentSnopt')&&obj.num_vars<=300 && obj.num_cin+obj.num_ceq+size(obj.Ain,1)+size(obj.Aeq,1)<=300)
           obj = obj.setSolver('studentSnopt');

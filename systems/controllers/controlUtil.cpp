@@ -101,11 +101,13 @@ void surfaceTangents(const Vector3d & normal, Matrix<double,3,m_surface_tangents
   Vector3d t1,t2;
   double theta;
   
-  if (1 - normal(2) < 10e-8) { // handle the unit-normal case (since it's unit length, just check z)
+  if (1 - normal(2) < EPSILON) { // handle the unit-normal case (since it's unit length, just check z)
     t1 << 1,0,0;
-  } else { // now the general case
-    t1 << normal(2), -normal(1), 0; // normal.cross([0;0;1])
-    t1 /= sqrt(normal(1)*normal(1) + normal(2)*normal(2));
+  } else if(1 + normal(2) < EPSILON) {
+    t1 << -1,0,0;  //same for the reflected case
+  } else {// now the general case
+  t1 << normal(1), -normal(0) , 0;
+    t1 /= sqrt(normal(1)*normal(1) + normal(0)*normal(0));
   }
       
   t2 = t1.cross(normal);

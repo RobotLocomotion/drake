@@ -1,13 +1,13 @@
 function testInertiasInWorldFrame()
-%+++FLOATINGBASE FIXME reenable tests. They currently don't work because
-%the format of dTdq in kinsol is nonstandard.
-% testAtlas('rpy');
+testAtlas('rpy');
 % testAtlas('quat');
 end
 
 function testAtlas(floatingJointType)
 robot = createAtlas(floatingJointType);
-checkInertiaGradients(robot);
+if robot.use_new_kinsol
+  checkInertiaGradients(robot);
+end
 end
 
 function checkInertiaGradients(robot)
