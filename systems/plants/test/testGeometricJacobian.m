@@ -1,8 +1,11 @@
 function testGeometricJacobian
 testFallingBrick('rpy');
-% testFallingBrick('quat'); % FLOATINGBASE TODO: reenable
 testAtlas('rpy');
-% testAtlas('quat'); % FLOATINGBASE TODO: reenable
+
+if RigidBodyManipulator.use_new_kinsol
+  testFallingBrick('quat');
+  testAtlas('quat');
+end
 end
 
 function testFallingBrick(floatingType)
@@ -81,8 +84,8 @@ for test = 1 : nTests
     [~, ~, dJdq] = robot.geometricJacobian(kinsol, base, end_effector, expressed_in, in_terms_of_qdot);
     option.grad_method = 'numerical';
     %   option.grad_method = 'taylorvar';
-    [~, dJdq_geval] = geval(1, @(q) gevalFunction(robot, q, base, end_effector, expressed_in), q, option);
-    valuecheck(dJdq_geval, dJdq, 1e-5);
+    [~, dJdq_geval] = geval(1, @(q) gevalFunction(robot, q, base, end_effector, expressed_in, in_terms_of_qdot), q, option);
+    valuecheck(dJdq, dJdq_geval, 1e-5);
   end
 end
 end
@@ -128,9 +131,9 @@ ret = invTBasedot * TBody + TBase \ TBodyDot;
 
 end
 
-function J = gevalFunction(robot, q, base, end_effector, expressed_in)
+function J = gevalFunction(robot, q, base, end_effector, expressed_in, in_terms_of_qdot)
 kinsol = robot.doKinematics(q,false,false);
-J = robot.geometricJacobian(kinsol, base, end_effector, expressed_in);
+J = robot.geometricJacobian(kinsol, base, end_effector, expressed_in, in_terms_of_qdot);
 J = J(:);
 end
 

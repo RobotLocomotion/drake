@@ -1,4 +1,5 @@
 function evaluateNewSecondDerivativeMethod()
+%NOTEST
 robot = createAtlas('quat');
 
 nq = robot.getNumPositions();

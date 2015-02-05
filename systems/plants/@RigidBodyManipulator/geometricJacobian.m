@@ -29,13 +29,8 @@ else
     if in_terms_of_qdot
       error('not implemented when use_new_kinsol is false');
     end
-    
     [~, joint_path, signs] = findKinematicPath(obj, base, end_effector);
-    if in_terms_of_qdot
-      v_or_qdot_indices = vertcat(bodies(jointIndices).velocity_num);
-    else
-      v_or_qdot_indices = vertcat(bodies(jointIndices).position_num);
-    end
+    v_or_qdot_indices = vertcat(obj.body(joint_path).velocity_num);
     if isempty(joint_path)
       J = zeros(6,0);
       return;
