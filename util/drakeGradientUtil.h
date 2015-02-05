@@ -56,9 +56,9 @@ struct MatGradMultMat {
 /*
  * Output type of matGradMult
  */
-template<typename DerivedDA, typename Derivedb>
+template<typename DerivedDA, typename DerivedB>
 struct MatGradMult {
-  typedef typename Eigen::Matrix<typename DerivedDA::Scalar, (DerivedDA::RowsAtCompileTime == Eigen::Dynamic || Derivedb::RowsAtCompileTime == Eigen::Dynamic ? Eigen::Dynamic : DerivedDA::RowsAtCompileTime / Derivedb::RowsAtCompileTime), DerivedDA::ColsAtCompileTime> type;
+  typedef typename Eigen::Matrix<typename DerivedDA::Scalar, (DerivedDA::RowsAtCompileTime == Eigen::Dynamic || DerivedB::ColsAtCompileTime == Eigen::Dynamic ? Eigen::Dynamic : DerivedDA::RowsAtCompileTime / DerivedB::RowsAtCompileTime * DerivedB::ColsAtCompileTime), DerivedDA::ColsAtCompileTime> type;
 };
 
 /*
@@ -94,9 +94,9 @@ matGradMultMat(
     const Eigen::MatrixBase<DerivedDB>& dB);
 
 
-template<typename DerivedDA, typename Derivedb>
-DLLEXPORT typename MatGradMult<DerivedDA, Derivedb>::type
-matGradMult(const Eigen::MatrixBase<DerivedDA>& dA, const Eigen::MatrixBase<Derivedb>& b);
+template<typename DerivedDA, typename DerivedB>
+DLLEXPORT typename MatGradMult<DerivedDA, DerivedB>::type
+matGradMult(const Eigen::MatrixBase<DerivedDA>& dA, const Eigen::MatrixBase<DerivedB>& b);
 
 // TODO: could save copies once http://eigen.tuxfamily.org/bz/show_bug.cgi?id=329 is fixed
 template<typename Derived>

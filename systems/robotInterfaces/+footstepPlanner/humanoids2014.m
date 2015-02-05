@@ -47,7 +47,7 @@ if use_symbolic
   if use_symbolic == 2
     fprintf(1, 'yalmip setup: %f\n', toc(t0));
   end
-  [p1, solvertime] = p1.solve();
+  [p1, solvertime, objval_symb] = p1.solve();
   if use_symbolic == 2
     fprintf(1, 'yalmip total: %f\n', toc(t0));
   end
@@ -69,7 +69,7 @@ if (use_symbolic == 0 || use_symbolic == 2)
   if use_symbolic == 2
     fprintf(1, 'gurobi setup: %f\n', toc(t0));
   end
-  [p2, solvertime] = p2.solve();
+  [p2, solvertime, objval_nosymb] = p2.solve();
   if use_symbolic == 2
     fprintf(1, 'gurobi total: %f\n', toc(t0));
   end
@@ -77,8 +77,13 @@ if (use_symbolic == 0 || use_symbolic == 2)
 end
 
 if use_symbolic == 2
-  valuecheck(p2.vars.footsteps.value(1:3,:), p1.vars.footsteps.value(1:3,:), 1e-2);
-  valuecheck(p2.vars.footsteps.value(4,:), p1.vars.footsteps.value(4,:), pi/64);
+  try
+    valuecheck(p2.vars.footsteps.value(1:3,:), p1.vars.footsteps.value(1:3,:), 1e-2);
+    valuecheck(p2.vars.footsteps.value(4,:), p1.vars.footsteps.value(4,:), pi/64);
+  catch e
+    % sometimes there are multiple solutions with very similar objective values
+    rangecheck(abs(objval_symb - objval_nosymb) / objval_symb, 0, 1e-3);
+  end
   figure(21)
   clf
   hold on

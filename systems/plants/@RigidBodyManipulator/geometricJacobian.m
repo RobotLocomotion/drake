@@ -1,4 +1,4 @@
-function [J, v_indices] = geometricJacobian(obj, kinsol, base, end_effector, expressed_in)
+function [J, v_indices, dJ] = geometricJacobian(obj, kinsol, base, end_effector, expressed_in)
 %GEOMETRICJACOBIAN Computes the geometric Jacobian from base to endEffector
 % expressed in frame attached to expressedIn
 %   The general contract of this method is that for joint velocity vector
@@ -10,22 +10,34 @@ if (kinsol.mex)
   if (obj.mex_model_ptr==0)
     error('Drake:RigidBodyManipulator:InvalidKinematics','This kinsol is no longer valid because the mex model ptr has been deleted.');
   end
-  [J, v_indices] = geometricJacobianmex(obj.mex_model_ptr, base, end_effector, expressed_in);
+  if nargout > 2
+    [J, v_indices, dJ] = geometricJacobianmex(obj.mex_model_ptr, base, end_effector, expressed_in);
+  else
+    [J, v_indices] = geometricJacobianmex(obj.mex_model_ptr, base, end_effector, expressed_in);
+  end
 else
   if obj.use_new_kinsol
-    [J, v_indices] = geometricJacobianNew(obj, kinsol, base, end_effector, expressed_in);
+    if nargout > 2
+      [J, v_indices, dJ] = geometricJacobianNew(obj, kinsol, base, end_effector, expressed_in);
+    else
+      [J, v_indices] = geometricJacobianNew(obj, kinsol, base, end_effector, expressed_in);
+    end
   else
-    [~, jointPath, signs] = findKinematicPath(obj, base, end_effector);
-    v_indices = velocityVectorIndices(obj.body, jointPath);
+    [~, joint_path, signs] = findKinematicPath(obj, base, end_effector);
+    v_indices = velocityVectorIndices(obj.body, joint_path);
+    if isempty(joint_path)
+      J = zeros(6,0);
+      return;
+    end
     
-    motionSubspaces = cell(1, length(jointPath));
-    for i = 1 : length(jointPath)
-      body = obj.body(jointPath(i));
+    motionSubspaces = cell(1, length(joint_path));
+    for i = 1 : length(joint_path)
+      body = obj.body(joint_path(i));
       motionSubspaces{i} = motionSubspace(body, kinsol.q(body.position_num));
     end
     
     transformedMotionSubspaces = cellfun(@transformMotionSubspace, ...
-      kinsol.T(jointPath), motionSubspaces, num2cell(signs'), 'UniformOutput', ...
+      kinsol.T(joint_path), motionSubspaces, num2cell(signs'), 'UniformOutput', ...
       false); % change frame from body to world
     J = cell2mat(transformedMotionSubspaces);
     J = transformTwists(inv(kinsol.T{expressed_in}), J); % change frame from world to expressedIn
@@ -74,11 +86,17 @@ function [J, v_indices, dJdq] = geometricJacobianNew(obj, kinsol, base, end_effe
 compute_gradient = nargout > 2;
 
 [~, joint_path, signs] = findKinematicPath(obj, base, end_effector);
-v_indices = vertcat(obj.body(joint_path).velocity_num);
+if isempty(joint_path)
+  v_indices = zeros(0, 1); % size fix
+else
+  v_indices = vertcat(obj.body(joint_path).velocity_num);
+end
 
 if isempty(joint_path)
   J = zeros(6,0);
-  dJdq = zeros(0, obj.num_positions);
+  if compute_gradient
+    dJdq = zeros(0, obj.num_positions);
+  end
   return;
 end
 
