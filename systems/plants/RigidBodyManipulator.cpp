@@ -1972,6 +1972,7 @@ GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwar
 
   int nq = num_dof;
   int nv = num_dof; // FLOATINGBASE TODO
+  int cols = compute_analytic_jacobian ? nq : nv;
   int npoints = static_cast<int>(x.value().cols());
 
   // compute geometric Jacobian
@@ -2018,7 +2019,7 @@ GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwar
   }
 
   // compute J
-  GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> J(x.value().size(), nv, nq, gradient_order);
+  GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> J(x.value().size(), cols, nq, gradient_order);
   J.value().setZero();
   if (gradient_order > 0)
     J.gradient().value().setZero();

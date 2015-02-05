@@ -1,6 +1,8 @@
 function testdTransformSpatialMotion()
 testFallingBrick('rpy');
-testFallingBrick('quat');
+if RigidBodyManipulator.use_new_kinsol
+  testFallingBrick('quat');
+end
 end
 
 function testFallingBrick(floatingType)

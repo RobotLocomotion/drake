@@ -65,6 +65,7 @@ end
 function checkMex(robot, rotation_type)
 nb = length(robot.body);
 body_range = [1, nb];
+options.rotation_type = rotation_type;
 
 n_tests = 5;
 for i = 1 : n_tests
@@ -72,8 +73,10 @@ for i = 1 : n_tests
 
   if robot.use_new_kinsol
     base = randi(body_range);
+    in_terms_of_qdot_options = [true false];
   else
     base = 1;
+    in_terms_of_qdot_options = true;
   end
   
   q = getRandomConfiguration(robot);
@@ -82,22 +85,25 @@ for i = 1 : n_tests
   
   kinsol_options.use_mex = false;
   kinsol_options.compute_gradients = true;
-  kinsol = robot.doKinematics(q, [], [], [], kinsol_options); 
+  kinsol = robot.doKinematics(q, [], [], [], kinsol_options);
   kinsol_options.use_mex = true;
   kinsol_mex = robot.doKinematics(q, [], [], [], kinsol_options);
   
-  if robot.use_new_kinsol || rotation_type == 0
-    [x, J, dJ] = robot.forwardKin(kinsol, end_effector, points, rotation_type, base);
-    [x_mex, J_mex, dJ_mex] = robot.forwardKin(kinsol_mex, end_effector, points, rotation_type, base);
-  else
-    [x, J] = robot.forwardKin(kinsol, end_effector, points, rotation_type);
-    [x_mex, J_mex] = robot.forwardKin(kinsol_mex, end_effector, points, rotation_type, base);
-  end
-  
-  valuecheck(x_mex, x);
-  valuecheck(J_mex, J);
-  if robot.use_new_kinsol || rotation_type == 0
-    valuecheck(dJ_mex, dJ);
+  for in_terms_of_qdot = in_terms_of_qdot_options
+    options.in_terms_of_qdot = in_terms_of_qdot;
+    if robot.use_new_kinsol || rotation_type == 0
+      [x, J, dJ] = robot.forwardKin(kinsol, end_effector, points, [], base, options);
+      [x_mex, J_mex, dJ_mex] = robot.forwardKin(kinsol_mex, end_effector, points, [], base, options);
+    else
+      [x, J] = robot.forwardKin(kinsol, end_effector, points, rotation_type, base);
+      [x_mex, J_mex] = robot.forwardKin(kinsol_mex, end_effector, points, rotation_type, base);
+    end
+    
+    valuecheck(x_mex, x);
+    valuecheck(J_mex, J);
+    if robot.use_new_kinsol || rotation_type == 0
+      valuecheck(dJ_mex, dJ);
+    end
   end
 end
 end

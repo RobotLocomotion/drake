@@ -1,4 +1,4 @@
-function [x,J,dJ] = forwardKin(obj,kinsol,body_or_frame_ind,pts,rotation_type, base_or_frame_ind)
+function [x,J,dJ] = forwardKin(obj,kinsol,body_or_frame_ind,pts,rotation_type, base_or_frame_ind, options)
 % computes the position of pts (given in the body frame) in the global frame
 %
 % @param kinsol solution structure obtained from doKinematics
@@ -32,27 +32,41 @@ function [x,J,dJ] = forwardKin(obj,kinsol,body_or_frame_ind,pts,rotation_type, b
 % x will be a 7xm matrix and (following out gradient convention) J will be
 % a ((7xm)*(q)) matrix with [J1;J2;....;Jm] where Ji = dxidq
 
+if nargin < 7
+  options = struct();
+  if nargin > 4
+    options.rotation_type = rotation_type;
+  end
+else
+  % if options struct is passed in, make sure that rotation_type argument
+  % is empty to avoid conflicts
+  valuecheck(rotation_type, []);
+end
+if ~isfield(options, 'rotation_type')
+  options.rotation_type = 0;
+end
+if ~isfield(options, 'in_terms_of_qdot')
+  options.in_terms_of_qdot = true;
+end
 
 if nargin<6
   base_or_frame_ind = 1;
 end
 
-if nargin<5
-  rotation_type = 0;
-end
-in_terms_of_qdot = true;
-
 if obj.use_new_kinsol
   if nargout > 2
-    [x, J, dJ] = forwardKinNew(obj, kinsol, body_or_frame_ind, pts, rotation_type, base_or_frame_ind, in_terms_of_qdot);
+    [x, J, dJ] = forwardKinNew(obj, kinsol, body_or_frame_ind, pts, base_or_frame_ind, options);
   elseif nargout > 1
-    [x, J] = forwardKinNew(obj, kinsol, body_or_frame_ind, pts, rotation_type, base_or_frame_ind, in_terms_of_qdot);
+    [x, J] = forwardKinNew(obj, kinsol, body_or_frame_ind, pts, base_or_frame_ind, options);
   else
-    x = forwardKinNew(obj, kinsol, body_or_frame_ind, pts, rotation_type, base_or_frame_ind, in_terms_of_qdot);
+    x = forwardKinNew(obj, kinsol, body_or_frame_ind, pts, base_or_frame_ind, options);
   end
 else
   if base_or_frame_ind ~= 1
-    error('base_ind ~= 1 not supported unless robot.use_new_kinsol is true')
+    error('base_ind ~= 1 not supported unless RigidBodyManipulator.use_new_kinsol is true')
+  end
+  if ~options.in_terms_of_qdot
+    error('output in terms of v not supported unless RigidBodyManipulator.use_new_kinsol is true');
   end
   
   % todo: zap this after the transition
@@ -67,11 +81,11 @@ else
     end
     
     if nargout > 2
-      [x,J,dJ] = forwardKinmex(obj.mex_model_ptr,kinsol.q,body_or_frame_ind,pts,rotation_type);
+      [x,J,dJ] = forwardKinmex(obj.mex_model_ptr,kinsol.q,body_or_frame_ind,pts,options.rotation_type);
     elseif nargout > 1
-      [x,J] = forwardKinmex(obj.mex_model_ptr,kinsol.q,body_or_frame_ind,pts,rotation_type);
+      [x,J] = forwardKinmex(obj.mex_model_ptr,kinsol.q,body_or_frame_ind,pts,options.rotation_type);
     else
-      x = forwardKinmex(obj.mex_model_ptr,kinsol.q,body_or_frame_ind,pts,rotation_type);
+      x = forwardKinmex(obj.mex_model_ptr,kinsol.q,body_or_frame_ind,pts,options.rotation_type);
     end
     
   else
@@ -88,7 +102,7 @@ else
     pts = [pts;ones(1,m)];
     T = kinsol.T{body_ind}*Tframe;
     
-    switch (rotation_type)
+    switch (options.rotation_type)
       case 0
         x = T(1:3,:)*pts;
       case 1
@@ -102,7 +116,7 @@ else
     if (nargout>1)
       nq = obj.num_positions;
       dTdq = kinsol.dTdq{body_ind}*Tframe;
-      if (rotation_type == 1)
+      if (options.rotation_type == 1)
         Jx = reshape(dTdq*pts,nq,[])';
         
         Jr = zeros(3,nq);
@@ -133,9 +147,9 @@ else
         Jtmp = [Jx;Jr];
         Jrow_ind = reshape([reshape(1:3*m,3,m);bsxfun(@times,3*m+(1:3)',ones(1,m))],[],1);
         J = Jtmp(Jrow_ind,:);
-      elseif(rotation_type == 0)
+      elseif(options.rotation_type == 0)
         J = reshape(dTdq*pts,nq,[])';
-      elseif(rotation_type == 2)
+      elseif(options.rotation_type == 2)
         Jx = reshape(dTdq(1:3*nq,:)*pts,nq,[])';
         
         idx = sub2ind(size(dTdq),(1-1)*nq+(1:nq),ones(1,nq));
@@ -202,7 +216,7 @@ else
         
       end
       if (nargout>2)
-        if (rotation_type>0)
+        if (options.rotation_type>0)
           warning('Second derivatives of rotations are not implemented yet.');
         end
         if isempty(kinsol.ddTdqdq{body_ind})
@@ -217,7 +231,7 @@ end
 
 end
 
-function [x, J, dJ] = forwardKinNew(obj, kinsol, body_or_frame_ind, points, rotation_type, base_or_frame_ind, in_terms_of_qdot)
+function [x, J, dJ] = forwardKinNew(obj, kinsol, body_or_frame_ind, points, base_or_frame_ind, options)
 % Transforms \p points given in a frame identified by \p body_or_frame_ind
 % to a frame identified by \p base_or_frame_ind, and also computes a
 % representation of the relative rotation (of type specified by
@@ -255,9 +269,9 @@ if ~obj.use_new_kinsol
   error('method is only for use with new kinsol and will be phased in soon.')
 end
 
-if nargin < 5, rotation_type = 0; end
-if nargin < 6, base_or_frame_ind = 1; end
-if nargin < 7, in_terms_of_qdot = true; end;
+rotation_type = options.rotation_type;
+in_terms_of_qdot = options.in_terms_of_qdot;
+
 compute_J = nargout > 1;
 compute_gradient = nargout > 2;
 expressed_in = base_or_frame_ind;
@@ -276,6 +290,7 @@ if (kinsol.mex)
   end
 else
   nq = obj.getNumPositions();
+  nv = obj.getNumVelocities();
   % transform points to base frame
   if compute_gradient
     [T, dT] = relativeTransform(obj, kinsol, base_or_frame_ind, body_or_frame_ind);
