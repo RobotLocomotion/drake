@@ -335,11 +335,40 @@ classdef RigidBodyManipulator < Manipulator
       g = obj.gravity;
     end
 
-    function f_friction = computeFrictionForce(model,qd)
-      m = model.featherstone;
-      f_friction = m.damping'.*qd;
-      if (m.coulomb_friction)
-        f_friction = f_friction + min(1,max(-1,qd./m.coulomb_window')).*m.coulomb_friction';
+    function [f_friction, df_frictiondv] = computeFrictionForce(model,v)
+      % Note: gradient is with respect to v, not q!
+      compute_gradient = nargout > 1;
+      
+      nv = model.getNumVelocities();
+      damping = zeros(nv, 1);
+      coulomb_friction = zeros(nv, 1);
+      static_friction = zeros(nv, 1);
+      coulomb_window = zeros(nv, 1);
+
+      for i = 1 : model.getNumBodies()
+        b = model.body(i);
+        if b.parent > 0
+          damping(b.velocity_num) = b.damping;
+          coulomb_friction(b.velocity_num) = b.coulomb_friction;
+          static_friction(b.velocity_num) = b.static_friction;
+          coulomb_window(b.velocity_num) = b.coulomb_window;
+        end
+      end
+
+      f_friction = damping .* v;
+      if compute_gradient
+        df_frictiondv = diag(damping);
+      end
+      
+      if any(coulomb_friction)
+        f_friction = f_friction + min(1,max(-1,v./coulomb_window')).*coulomb_friction';
+        if compute_gradient
+          ind = find(abs(v)<coulomb_window');
+          dind = sign(v(ind))./coulomb_window(ind)' .* coulomb_window(ind)';
+          fc_drv = zeros(model.getNumVelocities(),1);
+          fc_drv(ind) = dind;
+          df_frictiondv = df_frictiondv + diag(fc_drv);
+        end
       end
     end
 
