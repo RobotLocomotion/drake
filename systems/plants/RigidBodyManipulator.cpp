@@ -338,7 +338,7 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
   bodies.reserve(num_bodies);
   for (int i = last_num_bodies; i < num_bodies; i++) {
     bodies.push_back(std::unique_ptr<RigidBody>(new RigidBody()));
-    bodies[i]->dofnum = i - 1;
+//    bodies[i]->dofnum = i - 1;
   } // setup default dofnums
 
   for (int i = 0; i < num_bodies; i++) {
@@ -1134,7 +1134,7 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::centroidal
   }
 
   auto com = centerOfMass<Scalar>(gradient_order);
-  int nv = num_dof; // FLOATINGBASE TODO: assumes nq = nv
+  int nv = num_velocities;
   GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> ret(TWIST_SIZE, nv, nq, gradient_order);
   int gradient_row_start = 0;
   for (int i = 0; i < num_bodies; i++) {
@@ -1142,7 +1142,7 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::centroidal
     if (body.hasParent()) {
       int nv_joint = body.getJoint().getNumVelocities();
 
-      ret.value().middleCols(body.dofnum, nv_joint).noalias() = Ic_new[i] * body.J; // FLOATINGBASE TODO: assumes nq = nv
+      ret.value().middleCols(body.velocity_num_start, nv_joint).noalias() = Ic_new[i] * body.J;
 
       if (gradient_order > 0) {
         ret.gradient().value().middleRows(gradient_row_start, TWIST_SIZE * nv_joint) = matGradMultMat(Ic_new[i], body.J, dIc_new[i], body.dJdq);
@@ -1620,7 +1620,7 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJ
       }
 
       if (v_or_qdot_indices != nullptr) {
-        int cols_block_start = body.dofnum; // FLOATINGBASE TODO: assumes qd = v
+        int cols_block_start = in_terms_of_qdot ? body.dofnum : body.velocity_num_start;
         for (int j = 0; j < ncols_block; j++) {
           v_or_qdot_indices->push_back(cols_block_start + j);
         }
@@ -1684,7 +1684,7 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJ
 
       if (v_or_qdot_indices) {
         for (int j = 0; j < joint.getNumVelocities(); j++) {
-          v_or_qdot_indices->push_back(body->dofnum + j); // FLOATINGBASE TODO: assumes qd = v
+          v_or_qdot_indices->push_back(body->dofnum + j); // assumes qd = v
         }
       }
       col_start = col_start + joint.getNumVelocities();
@@ -1971,7 +1971,7 @@ GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwar
   }
 
   int nq = num_dof;
-  int nv = num_dof; // FLOATINGBASE TODO
+  int nv = num_velocities;
   int cols = compute_analytic_jacobian ? nq : nv;
   int npoints = static_cast<int>(x.value().cols());
 

@@ -45,7 +45,8 @@ public:
   static const std::set<int> defaultRobotNumSet;
 // note: it's very ugly, but parent,dofnum,and pitch also exist currently (independently) at the rigidbodymanipulator level to represent the featherstone structure.  this version is for the kinematics.
   int parent;
-  int dofnum;
+  int dofnum; // interpreted as start of position_num from Matlab
+  int velocity_num_start;
   int floating; // FLOATINGBASE TODO: remove
   int pitch; // FLOATINGBASE TODO: remove
   MatrixXd contact_pts;
