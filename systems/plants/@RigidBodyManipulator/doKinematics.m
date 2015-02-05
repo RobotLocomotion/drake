@@ -363,7 +363,7 @@ for i = 2 : nb
   Si = S{i};
   dSidq = zeros(numel(Si), nq) * dTdq{i}(1); % to make TaylorVar work better
   dSidq(:, body.position_num) = dSdq{i};
-  ret{i} = dTransformAdjoint(T{i}, Si, dTdq{i}, dSidq);
+  ret{i} = dTransformSpatialMotion(T{i}, Si, dTdq{i}, dSidq);
 end
 end
 
@@ -510,7 +510,7 @@ for i = 2 : nb
     dSdotVidq = zeros(numel(SdotVi{i}), nq);
     dSdotVidq(:, body.position_num) = dSidotVidqi{i};
     djoint_acceldq = dcrm(twist, joint_twist, dtwistdq, djoint_twistdq)...
-      + dTransformAdjoint(kinsol.T{i}, SdotVi{i}, kinsol.dTdq{i}, dSdotVidq);
+      + dTransformSpatialMotion(kinsol.T{i}, SdotVi{i}, kinsol.dTdq{i}, dSdotVidq);
     dJdotVdq{i} = dJdotVdq{parent} + djoint_acceldq;
     
     % v gradient: dJdot_times_vi/dv
