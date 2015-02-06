@@ -330,8 +330,10 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
   else
     num_bodies = num_rigid_body_objects;
 
+  I_world.resize(num_bodies);
   Ic_new.resize(num_bodies);
   for (int i = 0; i < num_bodies; i++) {
+    I_world[i] = Matrix<double, TWIST_SIZE, TWIST_SIZE>::Zero();
     Ic_new[i] = Matrix<double, TWIST_SIZE, TWIST_SIZE>::Zero();
   }
 
@@ -361,9 +363,12 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
     }
   }
 
+  dI_world.resize(num_bodies);
   dIc_new.resize(num_bodies);
-  for (int i = 0; i < num_bodies; i++)
+  for (int i = 0; i < num_bodies; i++) {
+    dI_world[i] = MatrixXd::Zero(I_world[i].size(), num_dof);
     dIc_new[i] = MatrixXd::Zero(Ic_new[i].size(), num_dof);
+  }
 
   // don't need to resize dcross (it gets resized in dcrm)
 
@@ -1138,8 +1143,10 @@ void RigidBodyManipulator::updateCompositeRigidBodyInertias(int gradient_order) 
       dTdq = &(bodies[i]->dTdq_new);
 
     auto inertia_world = transformSpatialInertia(bodies[i]->T_new, dTdq, bodies[i]->I);
+    I_world[i] = inertia_world.value();
     Ic_new[i] = inertia_world.value();
     if (inertia_world.hasGradient()) {
+      dI_world[i] = inertia_world.gradient().value();
       dIc_new[i] = inertia_world.gradient().value();
     }
   }
@@ -1996,6 +2003,57 @@ GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::massMa
   return ret;
 }
 
+template <typename Scalar>
+GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(const GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic>& f_ext, const GradientVar<Scalar, Eigen::Dynamic, 1>& vd)
+{
+  int gradient_order = f_ext.maxOrder();
+  if (gradient_order > 1) {
+    throw std::runtime_error("only first order gradients are available");
+  }
+
+  updateCompositeRigidBodyInertias(gradient_order);
+
+  int nq = num_dof;
+  int nv = num_velocities;
+
+  Eigen::Matrix<Scalar, TWIST_SIZE, 1> root_accel = -a_grav;
+  GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> net_wrenches(TWIST_SIZE, num_bodies, nq + nv, gradient_order); // gradient w.r.t q and v
+  net_wrenches.value().col(0).setZero();
+  if (gradient_order > 0) {
+    net_wrenches.gradient().value().template topRows<TWIST_SIZE>().setZero();
+  }
+
+  GradientVar<Scalar, TWIST_SIZE, 1> external_wrench(TWIST_SIZE, 1, nq, gradient_order);
+  GradientVar<Scalar, TWIST_SIZE, 1> spatial_accel(TWIST_SIZE, 1, nq, gradient_order);
+  for (int i = 0; i < num_bodies; i++) {
+    RigidBody& body = *bodies[i];
+    if (body.hasParent()) {
+      auto vdJoint = vd.value().middleRows(body.velocity_num_start, body.getJoint().getNumVelocities());
+      spatial_accel.value() = root_accel + body.JdotV;
+      spatial_accel.value().noalias() += body.J * vdJoint;
+      external_wrench.value() = transformSpatialForce(body.T_new, f_ext.value().col(i));
+
+      auto I_times_twist = (I_world[i] * body.twist).eval();
+      net_wrenches.value().col(i).noalias() = I_world[i] * spatial_accel.value();
+      net_wrenches.value().col(i).noalias() += crf(body.twist) * I_times_twist;
+      net_wrenches.value().col(i) -= external_wrench.value();
+    }
+  }
+
+  GradientVar<Scalar, Eigen::Dynamic, 1> ret(num_velocities, 1, nq + nv, gradient_order);
+
+  for (int i = num_bodies - 1; i >= 0; i--) {
+    RigidBody& body = *bodies[i];
+    if (body.hasParent()) {
+      auto joint_wrench = net_wrenches.value().col(i);
+      ret.value().middleRows(body.velocity_num_start, body.getJoint().getNumVelocities()) = body.J.transpose() * joint_wrench;
+      net_wrenches.value().col(body.parent) += joint_wrench;
+    }
+  }
+  return ret;
+}
+
+
 template <typename DerivedPoints>
 GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, DerivedPoints::ColsAtCompileTime> RigidBodyManipulator::forwardKinNew(const MatrixBase<DerivedPoints>& points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type, int gradient_order)
 {
@@ -2473,6 +2531,7 @@ template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> Rigid
 template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardJacV(const GradientVar<double, Eigen::Dynamic, Eigen::Dynamic>&, int, int, int, bool, int);
 template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardKinPositionGradient(int, int, int, int);
 template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::massMatrix(int);
+template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(const GradientVar<double, TWIST_SIZE, Eigen::Dynamic>&, const GradientVar<double, Eigen::Dynamic, 1>&);
 
 template DLLEXPORT_RBM void RigidBodyManipulator::HandC(double* const, double * const, MatrixBase< Map<MatrixXd> > * const, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<VectorXd> > &, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > * const);
 template DLLEXPORT_RBM void RigidBodyManipulator::HandC(double* const, double * const, MatrixBase< MatrixXd > * const, MatrixBase< MatrixXd > &, MatrixBase< VectorXd > &, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > * const);

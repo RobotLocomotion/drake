@@ -1043,6 +1043,10 @@ template DLLEXPORT TransformSpatial< MatrixXd >::type transformSpatialForce<Matr
     const Eigen::Isometry3d&,
     const Eigen::MatrixBase< MatrixXd >&);
 
+template DLLEXPORT TransformSpatial<Eigen::Block<Eigen::Matrix<double, 6, -1, 0, 6, -1> const, 6, 1, true> >::type transformSpatialForce(
+    const Eigen::Transform<Eigen::Block<Eigen::Matrix<double, 6, -1, 0, 6, -1> const, 6, 1, true>::Scalar, 3, 1, 0> &,
+    const Eigen::MatrixBase<Eigen::Block<Eigen::Matrix<double, 6, -1, 0, 6, -1> const, 6, 1, true> > &);
+
 template DLLEXPORT GradientVar<double, TWIST_SIZE, TWIST_SIZE> transformSpatialInertia(
     const Eigen::Transform<double, SPACE_DIMENSION, Eigen::Isometry>& T_current_to_new,
     const Gradient<Eigen::Transform<double, SPACE_DIMENSION, Eigen::Isometry>::MatrixType, Eigen::Dynamic>::type* dT_current_to_new,

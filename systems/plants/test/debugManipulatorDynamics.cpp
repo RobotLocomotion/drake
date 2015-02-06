@@ -14,7 +14,9 @@ int main()
   {
     cerr<<"ERROR: Failed to load model"<<endl;
   }
-  int gradient_order = 1;
+  int gradient_order = 0;
+  int nq = model->num_dof;
+  int nv = model->num_velocities;
 
   std::default_random_engine generator;
   std::uniform_real_distribution<double> uniform;
@@ -34,9 +36,23 @@ int main()
 
   VectorXd q = VectorXd::Random(model->num_dof);
   VectorXd v = VectorXd::Random(model->num_velocities);
-
   model->doKinematicsNew(q.data(), true, v.data(), true);
+
   auto M = model->massMatrix<double>(gradient_order);
-  std::cout << M.value();
+  std::cout << M.value() << std::endl << std::endl;
+
+
+  GradientVar<double, TWIST_SIZE, Eigen::Dynamic> f_ext(TWIST_SIZE, model->num_bodies, nq + nv, gradient_order);
+  f_ext.value().setRandom();
+  if (f_ext.hasGradient())
+    f_ext.gradient().value().setRandom();
+
+  GradientVar<double, Eigen::Dynamic, 1> vd(model->num_velocities, 1, nq + nv, gradient_order);
+  vd.value().setRandom();
+  if (vd.hasGradient())
+    vd.gradient().value().setRandom();
+
+  auto C = model->inverseDynamics(f_ext, vd);
+  std::cout << C.value() << std::endl << std::endl;
   return 0;
 }
