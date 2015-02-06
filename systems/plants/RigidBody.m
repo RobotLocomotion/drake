@@ -50,7 +50,7 @@ classdef RigidBody < RigidBodyElement
 
     % Collision filter properties
     collision_filter = struct('belongs_to',CollisionFilterGroup.DEFAULT_COLLISION_FILTER_GROUP_ID, ...
-                             'collides_with',CollisionFilterGroup.ALL_COLLISION_FILTER_GROUPS);
+                             'ignores',CollisionFilterGroup.NO_COLLISION_FILTER_GROUPS);
   end
   
   methods    
@@ -242,7 +242,7 @@ classdef RigidBody < RigidBodyElement
     end
     
     function body = makeIgnoreNoCollisionFilterGroups(body)
-      body.collision_filter.collides_with = CollisionFilterGroup.ALL_COLLISION_FILTER_GROUPS;
+      body.collision_filter.ignores = CollisionFilterGroup.NO_COLLISION_FILTER_GROUPS;
     end
 
     function body = makeBelongToCollisionFilterGroup(body,collision_fg_id)
@@ -251,11 +251,11 @@ classdef RigidBody < RigidBodyElement
           bitor(body.collision_filter.belongs_to,bitshift(1,id-1));
       end
     end
-
+   
     function body = makeIgnoreCollisionFilterGroup(body,collision_fg_id)
       for id = reshape(collision_fg_id,1,[])
-        body.collision_filter.collides_with = ...
-          bitand(body.collision_filter.collides_with,bitcmp(bitshift(uint16(1),id-1)));
+        body.collision_filter.ignores = ...
+          bitor(body.collision_filter.ignores,bitshift(1,id-1));
       end
     end
 
