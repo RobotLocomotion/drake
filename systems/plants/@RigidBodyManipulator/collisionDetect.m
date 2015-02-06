@@ -136,16 +136,16 @@ if ~isempty(obj.terrain) && ...
 
   if ~isempty(terrain_contact_point_struct)
     xA_new = [terrain_contact_point_struct.pts];
-    idxA_new = cell2mat(arrayfun(@(x)repmat(x.idx,1,size(x.pts,2)), ...
-                                 terrain_contact_point_struct, ...
-                                 'UniformOutput',false));
-
+    
     numStructs = size(terrain_contact_point_struct,2);
-    terrain_pts = [];
-    terrain_idxs = [];
+    k = 1;
     for i = 1:numStructs
-       terrain_pts = [terrain_pts, terrain_contact_point_struct(i).pts];
-       terrain_idxs = [terrain_idxs, terrain_contact_point_struct(i).idx];
+        numPts = size(terrain_contact_point_struct(i).pts,2);
+        for j = 1:numPts
+            terrain_pts(:, k) = terrain_contact_point_struct(i).pts(:, j);
+            terrain_idxs(k) = terrain_contact_point_struct(i).idx;
+            k = k+1;
+        end
     end
     xA_new_in_world = forwardKin(obj, kinsol, terrain_idxs, terrain_pts);
     
@@ -156,7 +156,7 @@ if ~isempty(obj.terrain) && ...
     phi = [phi;phi_new];
     normal = [normal,normal_new];
     xA = [xA,xA_new];
-    idxA = [idxA,idxA_new];
+    idxA = [idxA,terrain_idxs];
     xB = [xB,xB_new];
     idxB = [idxB,idxB_new];
   end
