@@ -97,6 +97,9 @@ public:
   template <typename Scalar>
   GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> massMatrix(int gradient_order);
 
+  template <typename Scalar>
+  GradientVar<Scalar, Eigen::Dynamic, 1> inverseDynamics(const GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic>& f_ext, const GradientVar<Scalar, Eigen::Dynamic, 1>& vd);
+
   template <typename DerivedPoints>
   GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, DerivedPoints::ColsAtCompileTime> forwardKinNew(const MatrixBase<DerivedPoints>& points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type, int gradient_order);
 
@@ -224,12 +227,15 @@ private:
   std::vector<VectorXd> avp;
   std::vector<VectorXd> fvp;
   std::vector<MatrixXd> IC;
+  std::vector<Matrix<double, TWIST_SIZE, TWIST_SIZE>, Eigen::aligned_allocator< Matrix<double, TWIST_SIZE, TWIST_SIZE> > > I_world;
   std::vector<Matrix<double, TWIST_SIZE, TWIST_SIZE>, Eigen::aligned_allocator< Matrix<double, TWIST_SIZE, TWIST_SIZE> > > Ic_new;
+
 
   //Variables for gradient calculations
   MatrixXd dTdTmult;
   std::vector<MatrixXd> dXupdq;
   std::vector<std::vector<MatrixXd> > dIC;
+    std::vector<Gradient<Matrix<double, TWIST_SIZE, TWIST_SIZE>, Eigen::Dynamic>::type> dI_world;
   std::vector<Gradient<Matrix<double, TWIST_SIZE, TWIST_SIZE>, Eigen::Dynamic>::type> dIc_new;
 
   std::vector<MatrixXd> dvdq;
