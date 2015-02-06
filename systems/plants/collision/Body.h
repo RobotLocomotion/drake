@@ -6,7 +6,7 @@ namespace DrakeCollision
   class Body {
     public:
       Body() : body_idx(-1), parent_idx(-1), group(DEFAULT_GROUP), 
-      mask(ALL_MASK), elements() {};
+      mask(NONE_MASK), elements() {};
 
       void addElement(const int body_idx, const int parent_idx, 
                       const Eigen::Matrix4d& T_elem_to_link, Shape shape, 
@@ -88,9 +88,9 @@ namespace DrakeCollision
 
       void addToGroup(const bitmask& group) { this->group |= group; }; 
 
-      void ignoreGroup(const bitmask& group) { this->mask &= ~group; };
+      void ignoreGroup(const bitmask& group) { this->mask |= group; };
 
-      void collideWithGroup(const bitmask& group) { this->mask |= group; };
+      void collideWithGroup(const bitmask& group) { this->mask &= ~group; };
 
       void updateElements(const Eigen::Matrix4d& T_link_to_world)
       {
@@ -110,8 +110,8 @@ namespace DrakeCollision
       {
         return  ( !adjacentTo(other) || (body_idx == 0) || (other.getBodyIdx() == 0) ) &&
                 ( (body_idx == -1) || (other.getBodyIdx() == -1) || body_idx != other.getBodyIdx()) && 
-                (group & other.mask).any() && 
-                (other.group & mask).any();
+                !((group & other.mask).any() || 
+                (other.group & mask).any());
       };
 
     private:
