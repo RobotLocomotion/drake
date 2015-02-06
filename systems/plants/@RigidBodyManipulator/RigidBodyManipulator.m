@@ -1218,7 +1218,7 @@ classdef RigidBodyManipulator < Manipulator
       model.dirty = true;
     end
 
-    function model = removeCollisionGroupsExcept(model,contact_groups,robotnum)
+    function model = removeCollisionGroupsExcept(model,contact_groups,robotnum,body_ids)
       % model = removeCollisionGroups(model,contact_groups,robotnum) returns
       % the model with all contact groups removed except for those specified
       %
@@ -1228,9 +1228,13 @@ classdef RigidBodyManipulator < Manipulator
       % @param robotnum       -- Vector of robot indices to which operation
       %                          will be restricted. Optional.
       %                          @default 1:numel(model.name)
+      % @param body_ids       -- Vector of body indices to which operation 
+      %                          will be restricted. Optional. 
+      %                          @default 1:numel(model.body)
+      if nargin < 4,          body_ids = 1:numel(model.body); end
       if nargin < 3,          robotnum = 1:numel(model.name); end
       if all(robotnum == 0),  robotnum = 0:numel(model.name); end
-      for i=1:length(model.body)
+      for i=body_ids
         if ismember(model.body(i).robotnum,robotnum)
           model.body(i) = removeCollisionGroupsExcept(model.body(i),contact_groups);
         end
