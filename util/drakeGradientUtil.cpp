@@ -215,6 +215,7 @@ MAKE_MATGRADMULTMAT_EXPLICIT_INSTANTIATION(double, 6, 6, Eigen::Dynamic, 36, Eig
         const Eigen::MatrixBase< Eigen::Matrix<Type, DARows, NQ> >&,\
         const Eigen::MatrixBase< Eigen::Matrix<Type, DBRows, NQ> >&);
 MAKE_MATGRADMULTMAT_TRANSPOSE_A_EXPLICIT_INSTANTIATION(double, 3, 3, 4, 9, 12, 4)
+MAKE_MATGRADMULTMAT_TRANSPOSE_A_EXPLICIT_INSTANTIATION(double, Eigen::Dynamic, 6, Eigen::Dynamic, Eigen::Dynamic, Eigen::Dynamic, Eigen::Dynamic)
 #undef MAKE_MATGRADMULTMAT_TRANSPOSE_A_EXPLICIT_INSTANTIATION
 
 #define MAKE_MATGRADMULTMAT_TRANSPOSE_B_EXPLICIT_INSTANTIATION(Type, ARows, ACols, BCols, DARows, DBRows, NQ) \

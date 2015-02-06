@@ -1064,6 +1064,9 @@ template DLLEXPORT Gradient<Vector4d, Dynamic>::type drotmat2quat(
     const Eigen::MatrixBase<Matrix3d>&,
     const Eigen::MatrixBase< Matrix<double, RotmatSize, Dynamic> >&);
 
+template DLLEXPORT
+Eigen::Matrix<double, 3, 3> vectorToSkewSymmetric(const Eigen::MatrixBase<Eigen::Vector3d>&);
+
 template DLLEXPORT Eigen::Matrix<double, 3, Eigen::Dynamic> dcrossProduct(
     const Eigen::MatrixBase<Vector3d>& a,
     const Eigen::MatrixBase<Vector3d>& b,

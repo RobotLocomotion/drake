@@ -44,6 +44,8 @@ public:
 
   void doKinematicsNew(double* q, bool compute_gradients = false, double* v = nullptr, bool compute_JdotV = false);
 
+  void updateCompositeRigidBodyInertias(int gradient_order);
+
   template <typename Scalar>
   GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> centroidalMomentumMatrix(int gradient_order);
 
@@ -91,6 +93,9 @@ public:
 
   template <typename DerivedA, typename DerivedB>
   void forwarddJac(const int body_ind, const MatrixBase<DerivedA>& pts, MatrixBase<DerivedB> &dJ);
+
+  template <typename Scalar>
+  GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> massMatrix(int gradient_order);
 
   template <typename DerivedPoints>
   GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, DerivedPoints::ColsAtCompileTime> forwardKinNew(const MatrixBase<DerivedPoints>& points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type, int gradient_order);
