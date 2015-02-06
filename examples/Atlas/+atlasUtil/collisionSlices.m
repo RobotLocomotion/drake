@@ -17,7 +17,9 @@ end
 
 DEBUG = true;
 
-q(6) = 0; % set yaw to zero
+% ensure that the right foot is at 0 0 0
+feet_pose = obj.getFeetPosition(q);
+q([1,2,3,6]) = q([1,2,3,6]) - feet_pose.right([1,2,3,6]);
 
 % Remove collision groups for the left leg (which will presumably be
 % swinging).
