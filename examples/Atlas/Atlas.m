@@ -66,22 +66,31 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
     function obj = compile(obj)
       obj = compile@TimeSteppingRigidBodyManipulator(obj);
 
-      % Sanity check if we have hands.
+      % Sanity check if we don't have hands.
       if (~isa(obj.manip.getStateFrame().getFrameByNum(1), 'MultiCoordinateFrame'))
         obj.hands = 0;
       end
-      if (obj.hands > 0)
+      % Construct state vector itself
+      if (obj.hands == 0 && ~isa(obj.manip.getStateFrame().getFrameByNum(1), 'MultiCoordinateFrame'))
+        atlas_state_frame = atlasFrames.AtlasState(obj);
+      else
         atlas_state_frame = getStateFrame(obj);
         atlas_state_frame = replaceFrameNum(atlas_state_frame,1,atlasFrames.AtlasState(obj));
-        % Sub in handstates for each hand
-        % TODO: by name?
-        for i=2:obj.getStateFrame().getNumFrames
-          atlas_state_frame = replaceFrameNum(atlas_state_frame,i,atlasFrames.HandState(obj,i,'HandState'));
-        end
-      else
-        atlas_state_frame = atlasFrames.AtlasState(obj);
       end
+      if (obj.hands > 0)
+        % Sub in handstates for the hand (curently assuming just 1)
+        % TODO: by name?
+        for i=2:2
+          atlas_state_frame = replaceFrameNum(atlas_state_frame,i,atlasFrames.HandState(obj,i,'atlasFrames.HandState'));
+        end
+      end
+      
       tsmanip_state_frame = obj.getStateFrame();
+      if (obj.hands == 0 && ~isa(tsmanip_state_frame.getFrameByNum(1), 'MultiCoordinateFrame'))
+        tsmanip_state_frame = atlasFrames.AtlasState(obj);
+      else
+        tsmanip_state_frame = replaceFrameNum(tsmanip_state_frame,1,atlasFrames.AtlasState(obj));
+      end
       if tsmanip_state_frame.dim>atlas_state_frame.dim
         id = findSubFrameEquivalentModuloTransforms(tsmanip_state_frame,atlas_state_frame);
         tsmanip_state_frame.frame{id} = atlas_state_frame;
@@ -90,17 +99,16 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
         state_frame = atlas_state_frame;
       end
       obj.manip = obj.manip.setStateFrame(atlas_state_frame);
-      obj.manip = obj.manip.setOutputFrame(atlas_state_frame);
       obj = obj.setStateFrame(state_frame);
-      obj = obj.setOutputFrame(state_frame);
-
+      
+      % Same bit of complexity for input frame to get hand inputs
       if (obj.hands > 0)
         input_frame = getInputFrame(obj);
         input_frame  = replaceFrameNum(input_frame,1,atlasFrames.AtlasInput(obj));
         % Sub in handstates for each hand
         % TODO: by name?
-        for i=2:obj.getInputFrame().getNumFrames
-          input_frame = replaceFrameNum(input_frame,i,atlasFrames.HandInput(obj,i,'HandInput'));
+        for i=2:2
+          input_frame = replaceFrameNum(input_frame,i,atlasFrames.HandInput(obj,i,'atlasFrames.HandInput'));
         end
       else
         input_frame = atlasFrames.AtlasInput(obj);
@@ -108,6 +116,45 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       obj = obj.setInputFrame(input_frame);
       obj.manip = obj.manip.setInputFrame(input_frame);
       
+      % Construct output frame, which comes from state plus sensor
+      % info
+      atlas_output_frame = atlas_state_frame;
+      if (~isempty(obj.manip.sensor))
+        for i=1:length(obj.manip.sensor)
+          % If it's not a full state feedback sensor (we have already
+          % got the state for that above in the state frame
+          if (~isa(obj.manip.sensor{i}, 'FullStateFeedbackSensor'))
+            if (isa(atlas_output_frame, 'MultiCoordinateFrame'))
+              atlas_output_frame = atlas_output_frame.appendFrame(obj.manip.sensor{i}.constructFrame(obj.manip));
+            else
+              atlas_output_frame = MultiCoordinateFrame({atlas_output_frame, obj.manip.sensor{i}.constructFrame(obj.manip)});
+            end
+          end
+        end
+      end
+      output_frame = atlas_output_frame;
+      % Continuing frame from above...
+      if (~isempty(obj.sensor))
+        for i=1:length(obj.sensor)
+          if (~isa(obj.sensor{i}, 'FullStateFeedbackSensor'))
+            if (isa(output_frame, 'MultiCoordinateFrame'))
+              output_frame = output_frame.appendFrame(obj.sensor{i}.constructFrame(obj));
+            else
+              output_frame = MultiCoordinateFrame({output_frame, obj.sensor{i}.constructFrame(obj)});
+            end
+          end
+        end
+      end
+      
+      if ~isequal_modulo_transforms(atlas_output_frame,getOutputFrame(obj.manip))
+        obj.manip = obj.manip.setNumOutputs(atlas_output_frame.dim);
+        obj.manip = obj.manip.setOutputFrame(atlas_output_frame);
+      end
+      
+      if ~isequal_modulo_transforms(output_frame,getOutputFrame(obj))
+        obj = obj.setNumOutputs(output_frame.dim);
+        obj = obj.setOutputFrame(output_frame);
+      end
     end
 
     function obj = setInitialState(obj,x0)
