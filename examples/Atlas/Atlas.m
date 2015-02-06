@@ -320,7 +320,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
         end
       else
         slice_heights = [0, 0.35, 0.75, 1.15, 2];
-        slices = atlasUtil.collisionSlices(obj, q, slice_heights);
+        slices = atlasUtil.collisionSlices(obj, q, slice_heights, 'margin', [0, 0.05, 0.05, 0.05]);
         % Shift the lowest slice up slightly (to prevent false positive obstacle
         % detections from small terrain height variations). 
         slices.z(1) = slices.z(1) + 0.05;
@@ -336,6 +336,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
             verts = [slices.xy(:,:,j), slices.xy(:,:,j); repmat(slice_heights(j), 1, 4), repmat(slice_heights(j+1), 1, 4)];
             iris.drawing.drawPolyFromVertices(verts, 'b');
           end
+          drawnow();
         end
         collision_model = iris.terrain_grid.CollisionModel(foot_shape, slices);
       end

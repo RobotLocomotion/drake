@@ -7,8 +7,13 @@ p = inputParser();
 p.addRequired('q');
 p.addRequired('slice_heights', @isnumeric);
 p.addParamValue('scan_radius', 3, @isscalar);
+p.addParamValue('margin', 0.05, @isnumeric);
 p.parse(q, slice_heights, varargin{:});
 options = p.Results;
+
+if length(options.margin) == 1
+  options.margin = repmat(options.margin, 1, length(slice_heights)-1);
+end
 
 DEBUG = true;
 
@@ -62,19 +67,19 @@ for j = 1:length(slice_heights)-1
 
   slice_returns = slice_returns(:,~any(isnan(slice_returns), 1));
   
-  x_bounds = [min(slice_returns(1,:)), max(slice_returns(1,:))];
-  y_bounds = [min(slice_returns(2,:)), max(slice_returns(2,:))];
+  lb = min(slice_returns(1:2,:), [], 2);
+  ub = max(slice_returns(1:2,:), [], 2);
+  lb = lb - options.margin(j);
+  ub = ub + options.margin(j);
   if j > 1
     % The planner assumes that the slices are monotonically growing in all
     % dimensions as z increases
-    x_bounds(1) = min([x_bounds(1), slices.xy(1,:,j-1)]);
-    x_bounds(2) = max([x_bounds(2), slices.xy(1,:,j-1)]);
-    y_bounds(1) = min([y_bounds(1), slices.xy(2,:,j-1)]);
-    y_bounds(2) = max([y_bounds(2), slices.xy(2,:,j-1)]);
+    lb = min([lb, slices.xy(:,:,j-1)], [], 2);
+    ub = max([ub, slices.xy(:,:,j-1)], [], 2);
   end
     
-  slices.xy(:,:,j) = [x_bounds, x_bounds;
-                      y_bounds(1), y_bounds(1), y_bounds(2), y_bounds(2)];
+  slices.xy(:,:,j) = [lb(1), ub(1), lb(1), ub(1);
+                      lb(2), lb(2), ub(2), ub(2)];
   
   if DEBUG
     all_returns = [all_returns, slice_returns];
