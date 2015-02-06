@@ -136,13 +136,13 @@ if ~isempty(obj.terrain) && ...
 
   if ~isempty(terrain_contact_point_struct)
     xA_new = [terrain_contact_point_struct.pts];
-    
     numStructs = size(terrain_contact_point_struct,2);
     k = 1;
+    terrain_pts = horzcat(terrain_contact_point_struct.pts);
+    terrain_idxs = zeros(1,size(terrain_pts,2));
     for i = 1:numStructs
         numPts = size(terrain_contact_point_struct(i).pts,2);
         for j = 1:numPts
-            terrain_pts(:, k) = terrain_contact_point_struct(i).pts(:, j);
             terrain_idxs(k) = terrain_contact_point_struct(i).idx;
             k = k+1;
         end
