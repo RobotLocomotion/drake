@@ -140,17 +140,17 @@ if ~isempty(obj.terrain) && ...
                                  terrain_contact_point_struct, ...
                                  'UniformOutput',false));
 
-%    xA_new_in_world = ...
-%      cell2mat(arrayfun(@(x)forwardKin(obj,kinsol,x.idx,x.pts), ...
-%      terrain_contact_point_struct, 'UniformOutput',false));
-
-    % same as above, but also works for TaylorVar kinsols
-    tmp = arrayfun(@(x)forwardKin(obj,kinsol,x.idx,x.pts), ...
-      terrain_contact_point_struct, 'UniformOutput',false);
-    xA_new_in_world = horzcat(tmp{:});
+    numStructs = size(terrain_contact_point_struct,2);
+    terrain_pts = [];
+    terrain_idxs = [];
+    for i = 1:numStructs
+       terrain_pts = [terrain_pts, terrain_contact_point_struct(i).pts];
+       terrain_idxs = [terrain_idxs, terrain_contact_point_struct(i).idx];
+    end
+    xA_new_in_world = forwardKin(obj, kinsol, terrain_idxs, terrain_pts);
     
     % Note: only implements collisions with the obj.terrain so far
-    [phi_new,normal_new,xB_new,idxB_new] = ...
+ [phi_new,normal_new,xB_new,idxB_new] = ...
       collisionDetectTerrain(obj,xA_new_in_world);
 
     phi = [phi;phi_new];
