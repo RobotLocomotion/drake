@@ -1,10 +1,5 @@
 function runHandContactSensorTest(~)
 
-if ~checkDependency('gurobi')
-  warning('Must have gurobi installed to run this example');
-  return;
-end
-
 visualize = true;
 
 % silence some warnings
