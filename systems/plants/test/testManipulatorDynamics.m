@@ -20,7 +20,6 @@ end
 function testBrickQuaternion()
 options.floating = 'quat';
 r = RigidBodyManipulator('FallingBrick.urdf',options);
-nq = r.getNumPositions();
 nv = r.getNumVelocities();
 q = getRandomConfiguration(r);
 v = randn(nv, 1);
@@ -142,6 +141,7 @@ valuecheck(dB_geval, dB, 1e-10);
 end
 
 function checkMex(robot)
+rng(1, 'twister');
 q = getRandomConfiguration(robot);
 v = randn(robot.getNumVelocities(), 1);
 [H, C, B, dH, dC, dB] = manipulatorDynamics(robot, q, v, false);
