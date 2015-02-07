@@ -1,6 +1,4 @@
 function testManipulatorDynamics
-
-
 testActuatedPendulum();
 regressionTestAtlasRPY();
 checkGradients(createAtlas('rpy'));
@@ -48,6 +46,8 @@ H_expected = axis' * I(1:3, 1:3) * axis;
 valuecheck(H_expected, H, 1e-12);
 % TODO: check C
 valuecheck(1, B);
+
+checkMex(m);
 end
 
 function regressionTestAtlasRPY()
@@ -82,12 +82,14 @@ else
   end
   valuecheck(data.B, B);
 end
+checkMex(r);
 
 end
 
 function testAtlasQuat()
 r = createAtlas('quat');
 nv = r.getNumVelocities();
+checkMex(r);
 
 nTests = 5;
 for i = 1 : nTests
@@ -100,7 +102,6 @@ for i = 1 : nTests
   kinetic_energy_via_kinsol = computeKineticEnergy(r, kinsol);
   valuecheck(kinetic_energy_via_kinsol, kinetic_energy, 1e-10);
 end
-
 end
 
 function out = varname(~)
@@ -128,7 +129,21 @@ option.grad_method = 'taylorvar';
 
 valuecheck(dH_geval, dH, 1e-10);
 valuecheck(dC_geval, dC, 1e-10);
-% valuecheck(dB_geval, dB, 1e-10);
+valuecheck(dB_geval, dB, 1e-10);
+end
+
+function checkMex(robot)
+q = getRandomConfiguration(robot);
+v = randn(robot.getNumVelocities(), 1);
+[H, C, B, dH, dC, dB] = manipulatorDynamics(robot, q, v, false);
+[H_mex, C_mex, B_mex, dH_mex, dC_mex, dB_mex] = manipulatorDynamics(robot, q, v, true);
+
+valuecheck(H_mex, H);
+valuecheck(C_mex, C);
+valuecheck(B_mex, B);
+valuecheck(dH_mex, dH);
+valuecheck(dC_mex, dC);
+valuecheck(dB_mex, dB);
 end
 
 function checkHdotMinus2CoriolisMatrixSkewSymmetricMatrix(robot)

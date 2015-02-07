@@ -245,8 +245,12 @@ function [H,C,B,dH,dC,dB] = manipulatorDynamicsNew(obj,q,v,use_mex)
 checkDirty(obj);
 compute_gradients = nargout > 3;
 
+options.use_mex = use_mex;
+options.compute_gradients = compute_gradients;
+options.compute_JdotV = true;
+kinsol = doKinematics(obj, q, [], [], v, options);
+
 % if (nargin<4) use_mex = true; end
-use_mex = false; % for now
 if compute_gradients
   [f_ext, B, df_ext, dB] = computeExternalForcesAndInputMatrix(obj, q, v);
 else
@@ -258,17 +262,17 @@ if (use_mex && obj.mex_model_ptr~=0 && isnumeric(q) && isnumeric(v))
   f_ext = full(f_ext);  % makes the mex implementation simpler (for now)
   if compute_gradients
     df_ext = full(df_ext);
-    % TODO:
-    [H,C,dH,dC] = HandCmex(obj.mex_model_ptr,q,v,f_ext,df_ext);
-    dH = [dH, zeros(NB*NB,NB)];
+    [H, dH] = massMatrixmex(obj.mex_model_ptr);
+    nv = obj.num_velocities;
+    dH = [dH, zeros(numel(H), nv)];
+    [~,C,~,~,dC,~] = manipulatorDynamicsNew(obj,q,v,false);
+%     [C, dC] = inverseDynamicsmex(obj.mex_model_ptr, f_ext, [], df_ext);
   else
-    [H,C] = HandCmex(obj.mex_model_ptr,q,v,f_ext);
+    H = massMatrixmex(obj.mex_model_ptr);
+    [~,C] = manipulatorDynamicsNew(obj,q,v,false);
+%     C = inverseDynamicsmex(obj.mex_model_ptr, f_ext);
   end
 else
-  options.use_mex = use_mex;
-  options.compute_gradients = compute_gradients;
-  options.compute_JdotV = true;
-  kinsol = doKinematics(obj, q, [], [], v, options);
   if compute_gradients
     [inertias_world, dinertias_world] = inertiasInWorldFrame(obj, kinsol);
     [crbs, dcrbs] = compositeRigidBodyInertias(obj, inertias_world, dinertias_world);
@@ -438,11 +442,8 @@ for i = 2 : nBodies
     external_wrench = AdT_world_to_joint' * external_wrench;
     
     if compute_gradient
-      % TODO: inefficient due to zeros in dT_joint_to_body
-      dT_joint_to_body = zeros(numel(T_joint_to_body), nq);
-      dT_joint_to_world = matGradMultMat(kinsol.T{i}, T_joint_to_body, kinsol.dTdq{i}, dT_joint_to_body);
+      dT_joint_to_world = matGradMult(kinsol.dTdq{i}, T_joint_to_body);
       dexternal_wrench = dTransformSpatialForce(T_joint_to_world, external_wrench, dT_joint_to_world, dexternal_wrench);
-      
       dexternal_wrenchdv = AdT_world_to_joint' * dexternal_wrenchdv;
     end
   end

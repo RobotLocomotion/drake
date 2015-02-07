@@ -20,7 +20,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   q = mxGetPr(prhs[1]);
   bool compute_gradients = (bool) (mxGetLogicals(prhs[2]))[0];
   if (mxGetNumberOfElements(prhs[3]) > 0) {
-    if (mxGetNumberOfElements(prhs[1]) != model->num_velocities)
+    if (mxGetNumberOfElements(prhs[3]) != model->num_velocities)
       mexErrMsgIdAndTxt("Drake:doKinematicsmex:BadInputs", "v must be size %d x 1", model->num_velocities);
     v = mxGetPr(prhs[3]);
   }

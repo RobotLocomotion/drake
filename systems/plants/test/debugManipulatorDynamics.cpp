@@ -4,6 +4,7 @@
 #include <iostream>
 #include <cstdlib>
 #include <random>
+#include <memory>
 
 using namespace std;
 using namespace Eigen;
@@ -14,14 +15,14 @@ int main()
   {
     cerr<<"ERROR: Failed to load model"<<endl;
   }
-  int gradient_order = 0;
+  int gradient_order = 1;
   int nq = model->num_dof;
   int nv = model->num_velocities;
 
-  std::default_random_engine generator;
-  std::uniform_real_distribution<double> uniform;
+  default_random_engine generator;
+  uniform_real_distribution<double> uniform;
 
-  for (std::vector<std::unique_ptr<RigidBody> >::const_iterator it = model->bodies.begin(); it != model->bodies.end(); ++it) {
+  for (vector<unique_ptr<RigidBody> >::const_iterator it = model->bodies.begin(); it != model->bodies.end(); ++it) {
     RigidBody& body = **it;
     double mass = uniform(generator);
     Matrix3d moment_of_inertia = Matrix3d::Random();
@@ -39,20 +40,19 @@ int main()
   model->doKinematicsNew(q.data(), true, v.data(), true);
 
   auto M = model->massMatrix<double>(gradient_order);
-  std::cout << M.value() << std::endl << std::endl;
+  cout << M.value() << endl << endl;
 
-
-  GradientVar<double, TWIST_SIZE, Eigen::Dynamic> f_ext(TWIST_SIZE, model->num_bodies, nq + nv, gradient_order);
-  f_ext.value().setRandom();
-  if (f_ext.hasGradient())
-    f_ext.gradient().value().setRandom();
+  map<int, unique_ptr<GradientVar<double, TWIST_SIZE, 1>> > f_ext;
+  f_ext[3] = unique_ptr< GradientVar<double, TWIST_SIZE, 1> >(new GradientVar<double, TWIST_SIZE, 1>(TWIST_SIZE, 1, nq + nv, gradient_order));
+  f_ext[3]->value().setRandom();
+  f_ext[3]->gradient().value().setRandom();
 
   GradientVar<double, Eigen::Dynamic, 1> vd(model->num_velocities, 1, nq + nv, gradient_order);
   vd.value().setRandom();
   if (vd.hasGradient())
     vd.gradient().value().setRandom();
 
-  auto C = model->inverseDynamics(f_ext, vd);
-  std::cout << C.value() << std::endl << std::endl;
+  auto C = model->inverseDynamics(f_ext, &vd, gradient_order);
+  cout << C.value() << endl << endl;
   return 0;
 }

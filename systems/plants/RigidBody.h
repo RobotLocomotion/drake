@@ -30,7 +30,7 @@ private:
 public:
   RigidBody();
 
-  void setN(int n);
+  void setN(int nq, int nv);
   void computeAncestorDOFs(RigidBodyManipulator* model);
 
   void setJoint(std::unique_ptr<DrakeJoint> joint);
