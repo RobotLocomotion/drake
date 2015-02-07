@@ -19,15 +19,24 @@ end
 
 function testBrickQuaternion()
 options.floating = 'quat';
-m = RigidBodyManipulator('FallingBrick.urdf',options);
-nq = m.getNumPositions();
-nv = m.getNumVelocities();
-q = randn(nq, 1);
+r = RigidBodyManipulator('FallingBrick.urdf',options);
+nq = r.getNumPositions();
+nv = r.getNumVelocities();
+q = getRandomConfiguration(r);
 v = randn(nv, 1);
-[H,C,B] = manipulatorDynamics(m,q,v,false);
+[H,C,B] = manipulatorDynamics(r,q,v,false);
 
-valuecheck(H, m.body(2).I, 1e-12);
-%TODO: check C
+valuecheck(H, r.body(2).I, 1e-12);
+% C: Newton-Euler equations:
+twist_omega = v(1:3);
+twist_v = v(4:6);
+m = r.body(2).mass;
+I = r.body(2).inertia;
+gravity_body = quatRotateVec(quatConjugate(q(4:7)), r.gravity);
+C_check = [...
+  cross(twist_omega, I * twist_omega);
+  cross(twist_omega, m * twist_v) - m * gravity_body];
+valuecheck(C, C_check);
 valuecheck([nv 0], size(B));
 end
 
