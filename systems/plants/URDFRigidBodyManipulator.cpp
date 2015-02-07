@@ -213,7 +213,6 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
   bool print_mesh_package_warning(true);
   
   int robotnum = static_cast<int>(this->robot_name.size())-1;
-  num_velocities = 0;
   for (map<string, boost::shared_ptr<urdf::Link> >::iterator l=_urdf_model->links_.begin(); l!=_urdf_model->links_.end(); l++) {
     int index, _dofnum;
     if (l->second->parent_joint) {
@@ -425,20 +424,6 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
         updateCollisionElements(index);  // update static objects only once - right here on load
       }
     }
-  }
-
-  num_velocities = 0;
-  for (auto it = bodies.begin(); it != bodies.end(); ++it) {
-    RigidBody& body = **it;
-    if (body.hasParent()) {
-      body.velocity_num_start = num_velocities;
-      num_velocities += body.getJoint().getNumVelocities();
-    }
-    else {
-      body.velocity_num_start = 0;
-    }
-//    cout << body.jointname << ": " << std::to_string(body.dofnum) << ", " << std::to_string(body.velocity_num_start) << endl;
-
   }
 
   compile();  

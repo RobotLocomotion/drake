@@ -101,7 +101,6 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     memcpy(model->I[i].data(),mxGetPr(pIi),sizeof(double)*6*6);
   }
 
-  int num_velocities = 0;
   for (int i=0; i<model->num_bodies; i++) {
     //DEBUG
     //cout << "constructModelmex: body " << i << endl;
@@ -158,7 +157,6 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 
       if (model->bodies[i]->hasParent()) {
         model->bodies[i]->setJoint(createJoint(jointname, Ttree, floating, joint_axis, pitch));
-        num_velocities += model->bodies[i]->getJoint().getNumVelocities();
 //        mexPrintf((model->bodies[i]->getJoint().getName() + ": " + std::to_string(model->bodies[i]->getJoint().getNumVelocities()) + "\n").c_str());
       }
     }
@@ -273,7 +271,6 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
       model->setCollisionFilter(i,*group,*mask);
     }
   }
-  model->num_velocities = num_velocities;
 
   // THIS IS UGLY: I'm sending the terrain contact points into the
   // contact_pts field of the cpp RigidBody objects

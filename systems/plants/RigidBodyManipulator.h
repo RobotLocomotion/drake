@@ -4,6 +4,7 @@
 #include <Eigen/Dense>
 #include <Eigen/LU>
 #include <set>
+#include <map>
 #include <Eigen/StdVector> //#include <vector>
 
 #include "collision/DrakeCollision.h"
@@ -98,7 +99,7 @@ public:
   GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> massMatrix(int gradient_order);
 
   template <typename Scalar>
-  GradientVar<Scalar, Eigen::Dynamic, 1> inverseDynamics(const GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic>& f_ext, const GradientVar<Scalar, Eigen::Dynamic, 1>& vd);
+  GradientVar<Scalar, Eigen::Dynamic, 1> inverseDynamics(std::map<int, std::unique_ptr< GradientVar<Scalar, TWIST_SIZE, 1> > >& f_ext, GradientVar<Scalar, Eigen::Dynamic, 1>* vd = nullptr, int gradient_order = 0);
 
   template <typename DerivedPoints>
   GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, DerivedPoints::ColsAtCompileTime> forwardKinNew(const MatrixBase<DerivedPoints>& points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type, int gradient_order);
