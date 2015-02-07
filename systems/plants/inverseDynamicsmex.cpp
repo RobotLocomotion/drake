@@ -43,11 +43,11 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
   map<int, unique_ptr<GradientVar<double, TWIST_SIZE, 1> > > f_ext;
   if (f_ext_matlab != nullptr) {
     if (mxIsCell(f_ext_matlab)) {
-      int n = mxGetN(f_ext_matlab);
-      int m = mxGetM(f_ext_matlab);
-      if (n != 1)
+      int rows = mxGetM(f_ext_matlab);
+      int cols = mxGetN(f_ext_matlab);
+      if (rows != 1)
         throw runtime_error("f_ext cell array has number of rows not equal to 1");
-      if (m != model->num_bodies)
+      if (cols != model->num_bodies)
         throw runtime_error("f_ext cell array has number of columns not equal to number of rigid bodies in manipulator");
 
       for (int i = 0; i < model->num_bodies; i++) {
@@ -64,12 +64,13 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
       }
     }
     else if (mxIsNumeric(f_ext_matlab)) {
-      int n = mxGetN(f_ext_matlab);
-      int m = mxGetM(f_ext_matlab);
-      if (n != TWIST_SIZE)
-        throw runtime_error("f_ext cell array has number of rows not equal to 6");
-      if (m != model->num_bodies)
-        throw runtime_error("f_ext cell array has number of columns not equal to number of rigid bodies in manipulator");
+      int rows = mxGetM(f_ext_matlab);
+      int cols = mxGetN(f_ext_matlab);
+
+      if (rows != TWIST_SIZE)
+        throw runtime_error("f_ext matrix has number of rows not equal to 6");
+      if (cols != model->num_bodies)
+        throw runtime_error("f_ext matrix has number of columns not equal to number of rigid bodies in manipulator");
 
 
       GradientVar<double, TWIST_SIZE, Dynamic> f_ext_matrix(TWIST_SIZE, model->num_bodies, nq + nv, gradient_order);
@@ -93,20 +94,22 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
   else
     throw runtime_error("data type of f_ext not recognized");
 
-  GradientVar<double, Eigen::Dynamic, 1>* vd_ptr = nullptr;
+  unique_ptr<GradientVar<double, Eigen::Dynamic, 1> > vd_ptr;
   if (vd_matlab != nullptr) {
-    int nv = model->num_velocities;
-    vd_ptr = new GradientVar<double, Eigen::Dynamic, 1>(nv, 1, nq + nv, gradient_order);
-    vd_ptr->value() = matlabToEigen<Dynamic, 1>(vd_matlab);
-    if (gradient_order > 0) {
-      if (dvd_matlab == nullptr) {
-        throw runtime_error("dvd must be passed in if you pass in vd and want gradient output");
+    if (!mxIsEmpty(vd_matlab)) {
+      int nv = model->num_velocities;
+      vd_ptr = unique_ptr<GradientVar<double, Eigen::Dynamic, 1>>(new GradientVar<double, Eigen::Dynamic, 1>(nv, 1, nq + nv, gradient_order));
+      vd_ptr->value() = matlabToEigen<Dynamic, 1>(vd_matlab);
+      if (gradient_order > 0) {
+        if (dvd_matlab == nullptr) {
+          throw runtime_error("dvd must be passed in if you pass in vd and want gradient output");
+        }
+        vd_ptr->gradient().value() = matlabToEigen<Dynamic, Dynamic>(dvd_matlab);
       }
-      vd_ptr->gradient().value() = matlabToEigen<Dynamic, Dynamic>(dvd_matlab);
     }
   }
 
-  auto ret = model->inverseDynamics(f_ext, vd_ptr, gradient_order);
+  auto ret = model->inverseDynamics(f_ext, vd_ptr.get(), gradient_order);
 
   plhs[0] = eigenToMatlab(ret.value());
   if (gradient_order > 0)

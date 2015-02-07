@@ -2033,6 +2033,7 @@ GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(
   int nv = num_velocities;
 
   typedef typename Eigen::Matrix<Scalar, TWIST_SIZE, 1> Vector6;
+
   Vector6 root_accel = -a_grav;
   GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> net_wrenches(TWIST_SIZE, num_bodies, nq + nv, gradient_order); // gradient w.r.t q and v
   net_wrenches.value().col(0).setZero();
