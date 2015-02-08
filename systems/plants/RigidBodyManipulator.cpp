@@ -1073,6 +1073,7 @@ void RigidBodyManipulator::doKinematicsNew(double* q, bool compute_gradients, do
   }
 
   kinematicsInit = true;
+  computedInertiaGradientOrder = -1;
   for (int i = 0; i < num_dof; i++) {
     cached_q[i] = q[i];
 //    if (qd) cached_qd[i] = qd[i];
@@ -1149,28 +1150,31 @@ void RigidBodyManipulator::updateCompositeRigidBodyInertias(int gradient_order) 
     throw std::runtime_error("only first order gradients are available");
   }
 
-  for (int i = 0; i < num_bodies; i++) {
-    Gradient<Isometry3d::MatrixType, Eigen::Dynamic>::type* dTdq = nullptr;
-    if (gradient_order > 0)
-      dTdq = &(bodies[i]->dTdq_new);
+  if (gradient_order > computedInertiaGradientOrder) {
+    for (int i = 0; i < num_bodies; i++) {
+      Gradient<Isometry3d::MatrixType, Eigen::Dynamic>::type* dTdq = nullptr;
+      if (gradient_order > 0)
+        dTdq = &(bodies[i]->dTdq_new);
 
-    auto inertia_world = transformSpatialInertia(bodies[i]->T_new, dTdq, bodies[i]->I);
-    I_world[i] = inertia_world.value();
-    Ic_new[i] = inertia_world.value();
-    if (inertia_world.hasGradient()) {
-      dI_world[i] = inertia_world.gradient().value();
-      dIc_new[i] = inertia_world.gradient().value();
+      auto inertia_world = transformSpatialInertia(bodies[i]->T_new, dTdq, bodies[i]->I);
+      I_world[i] = inertia_world.value();
+      Ic_new[i] = inertia_world.value();
+      if (inertia_world.hasGradient()) {
+        dI_world[i] = inertia_world.gradient().value();
+        dIc_new[i] = inertia_world.gradient().value();
+      }
     }
-  }
 
-  for (int i = num_bodies - 1; i >= 0; i--) {
-    if (bodies[i]->hasParent()) {
-      Ic_new[bodies[i]->parent] += Ic_new[i];
-      if (gradient_order > 0) {
-        dIc_new[bodies[i]->parent] += dIc_new[i];
+    for (int i = num_bodies - 1; i >= 0; i--) {
+      if (bodies[i]->hasParent()) {
+        Ic_new[bodies[i]->parent] += Ic_new[i];
+        if (gradient_order > 0) {
+          dIc_new[bodies[i]->parent] += dIc_new[i];
+        }
       }
     }
   }
+  computedInertiaGradientOrder = gradient_order;
 }
 
 template <typename Scalar>
