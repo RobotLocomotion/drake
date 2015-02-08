@@ -272,6 +272,7 @@ private:
   bool initialized;
   bool kinematicsInit;
   int secondDerivativesCached;
+  int computedInertiaGradientOrder;
 
   // collision_model and collision_model_no_margins both maintain
   // a collection of the collision geometry in the RBM for use in
