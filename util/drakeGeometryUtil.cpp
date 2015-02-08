@@ -1098,6 +1098,12 @@ template DLLEXPORT GradientVar<double, TWIST_SIZE, TWIST_SIZE> transformSpatialI
     const Gradient<Eigen::Transform<double, SPACE_DIMENSION, Eigen::Isometry>::MatrixType, Eigen::Dynamic>::type* dT_current_to_new,
     const Eigen::MatrixBase< Eigen::MatrixXd >& I);
 
+template DLLEXPORT Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic> dCrossSpatialMotion(
+  const Eigen::MatrixBase<Eigen::Matrix<double, 6, 1, 0, 6, 1> >& a,
+  const Eigen::MatrixBase<Eigen::Matrix<double, 6, 1, 0, 6, 1> >& b,
+  const typename Gradient<Eigen::Matrix<double, 6, 1, 0, 6, 1>, Eigen::Dynamic>::type& da,
+  const typename Gradient<Eigen::Matrix<double, 6, 1, 0, 6, 1>, Eigen::Dynamic>::type& db);
+
 template DLLEXPORT Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic> dCrossSpatialForce(
   const Eigen::MatrixBase<Eigen::Matrix<double, 6, 1, 0, 6, 1> >& a,
   const Eigen::MatrixBase<Eigen::Matrix<double, 6, 1, 0, 6, 1> >& b,

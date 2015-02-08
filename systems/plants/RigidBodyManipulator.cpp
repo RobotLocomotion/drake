@@ -931,7 +931,6 @@ void RigidBodyManipulator::doKinematicsNew(double* q, bool compute_gradients, do
   }
 
   int nq = num_dof;
-  int nv = num_velocities;
 
   // other bodies
   for (int i = 0; i < bodies.size(); i++) {
@@ -1019,26 +1018,24 @@ void RigidBodyManipulator::doKinematicsNew(double* q, bool compute_gradients, do
                 + dTransformSpatialMotion(body.T_new, body.SdotV, body.dTdq_new, dSdotVdq);
 
             // dJdotvdv
-            // TODO: exploit sparsity better
+            int nv_joint = body.getJoint().getNumVelocities();
             std::vector<int> v_indices;
-            auto jacobian = geometricJacobian<double>(0, i, 0, 0, false, &v_indices);
+            auto dtwistdv = geometricJacobian<double>(0, i, 0, 0, false, &v_indices);
+            int nv_branch = v_indices.size();
 
-            Matrix<double, TWIST_SIZE, Eigen::Dynamic> dtwistdv(TWIST_SIZE, nv);
-            dtwistdv.setZero();
-            for (int j = 0; j < v_indices.size(); j++) {
-              dtwistdv.col(v_indices[j]) = jacobian.value().col(j);
-            }
-            Matrix<double, TWIST_SIZE, Eigen::Dynamic> djoint_twistdv(TWIST_SIZE, nv);
+            Matrix<double, TWIST_SIZE, Eigen::Dynamic> djoint_twistdv(TWIST_SIZE, nv_branch);
             djoint_twistdv.setZero();
-            djoint_twistdv.middleCols(body.velocity_num_start, body.getJoint().getNumVelocities()) = body.S;
+            djoint_twistdv.rightCols(nv_joint) = body.J;
 
-            MatrixXd djoint_acceldv(TWIST_SIZE, nv);
-            dcrm(body.twist, joint_twist, dtwistdv, djoint_twistdv, &djoint_acceldv);
-            Matrix<double, TWIST_SIZE, Eigen::Dynamic> dSdotVdv(TWIST_SIZE, nv);
-            dSdotVdv.setZero();
-            dSdotVdv.middleCols(body.velocity_num_start, body.getJoint().getNumVelocities()) = *dSdotVdvi;
-            djoint_acceldv += transformSpatialMotion(body.T_new, dSdotVdv);
-            body.dJdotVdv = bodies[body.parent]->dJdotVdv + djoint_acceldv;
+            Matrix<double, TWIST_SIZE, Eigen::Dynamic> djoint_acceldv(TWIST_SIZE, nv_branch);
+            djoint_acceldv = dCrossSpatialMotion(body.twist, joint_twist, dtwistdv.value(), djoint_twistdv); // TODO: can probably exploit sparsity better
+            djoint_acceldv.rightCols(nv_joint) += transformSpatialMotion(body.T_new, *dSdotVdvi);
+
+            body.dJdotVdv.setZero();
+            for (int j = 0; j < nv_branch; j++) {
+              int v_index = v_indices[j];
+              body.dJdotVdv.col(v_index) = bodies[body.parent]->dJdotVdv.col(v_index) + djoint_acceldv.col(j);
+            }
           }
         }
       }
@@ -2131,6 +2128,7 @@ GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(
       if (gradient_order > 0) {
         auto djoint_wrenchdq = net_wrenches.gradient().value().template block<TWIST_SIZE, Eigen::Dynamic>(TWIST_SIZE * i, 0, TWIST_SIZE, nq);
         auto dCdq_block = ret.gradient().value().block(body.velocity_num_start, 0, nv_joint, nq);
+        dCdq_block = J_transpose * djoint_wrenchdq;
         dCdq_block += matGradMult(transposeGrad(body.dJdq, TWIST_SIZE), joint_wrench);
 
         auto djoint_wrenchdv = net_wrenches.gradient().value().template block<TWIST_SIZE, Eigen::Dynamic>(TWIST_SIZE * i, nq, TWIST_SIZE, nv);
