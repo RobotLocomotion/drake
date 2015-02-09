@@ -48,8 +48,9 @@ if ~isfield(options, 'compute_gradients'), options.compute_gradients = false; en
 if ~isfield(options, 'compute_JdotV'), options.compute_JdotV = ~isempty(v); end
 
 if warn_signature_changed
-  model.warning_manager.warnOnce('Drake:RigidBodyManipulator:doKinematics:method_signature_changed', ...
-    'Called doKinematics using arguments corresponding to the old method signature. This will be phased out; please update your call to match the new signature.');
+  % TODO: turn on warning
+%   model.warning_manager.warnOnce('Drake:RigidBodyManipulator:doKinematics:method_signature_changed', ...
+%     'Called doKinematics using arguments corresponding to the old method signature. This will be phased out; please update your call to match the new signature.');
 end
 
 if model.use_new_kinsol
