@@ -294,7 +294,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       %         foot and body. The body field has subfields z and xy, where
       %         xy is of shape [3, N, length(z)]. Each page of xy(:,:,j)
       %         represents the bounds of the robot from z(j) to z(j+1) (or inf).
-      DEBUG = true;
+      DEBUG = false;
       foot_shape = [-0.12, -0.12, 0.13, 0.13;
                 0.04, -0.04, 0.04, -0.04];
       if nargin < 2 || isempty(q)
@@ -320,7 +320,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
         end
       else
         slice_heights = [0, 0.35, 0.75, 1.15, 2];
-        slices = atlasUtil.collisionSlices(obj, q, slice_heights, 'margin', [0, 0.05, 0.05, 0.05]);
+        slices = atlasUtil.collisionSlices(obj, q, slice_heights, 'margin', [0, 0.05, 0.05, 0.05], 'debug', DEBUG);
         % Shift the lowest slice up slightly (to prevent false positive obstacle
         % detections from small terrain height variations). 
         slices.z(1) = slices.z(1) + 0.05;
