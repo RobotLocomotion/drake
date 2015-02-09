@@ -239,7 +239,6 @@ function kinsol = doKinematicsNew(model, q, v, options)
 % TODO: currently lots of branch-induced sparsity unexploited in
 % gradient computations.
 
-checkDirty(model);
 kinsol.q = q;
 kinsol.v = v;
 

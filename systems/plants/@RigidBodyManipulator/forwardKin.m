@@ -50,11 +50,11 @@ if ~isfield(options, 'base_or_frame_id'), options.base_or_frame_id = 1; end
 
 if obj.use_new_kinsol
   if nargout > 2
-    [x, J, dJ] = forwardKinNew(obj, kinsol, body_or_frame_id, pts, options.base_or_frame_id, options);
+    [x, J, dJ] = forwardKinNew(obj, kinsol, body_or_frame_id, pts, options);
   elseif nargout > 1
-    [x, J] = forwardKinNew(obj, kinsol, body_or_frame_id, pts, options.base_or_frame_id, options);
+    [x, J] = forwardKinNew(obj, kinsol, body_or_frame_id, pts, options);
   else
-    x = forwardKinNew(obj, kinsol, body_or_frame_id, pts, options.base_or_frame_id, options);
+    x = forwardKinNew(obj, kinsol, body_or_frame_id, pts, options);
   end
 else
   if options.base_or_frame_id ~= 1

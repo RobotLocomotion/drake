@@ -118,12 +118,14 @@ compute_J = nargout > 2;
 compute_dP = nargout > 3;
 compute_dJ = nargout > 4;
 
+kin_options.base_or_frame_id = body_or_frame_ind;
+kin_options.rotation_type = 0;
 if compute_dJ
-  [x, J, dJ] = forwardKin(obj, kinsol, 1, pts, 0, body_or_frame_ind);
+  [x, J, dJ] = forwardKin(obj, kinsol, 1, pts, kin_options);
 elseif compute_J
-  [x, J] = forwardKin(obj, kinsol, 1, pts, 0, body_or_frame_ind);
+  [x, J] = forwardKin(obj, kinsol, 1, pts, kin_options);
 else
-  x = forwardKin(obj, kinsol, 1, pts, 0, body_or_frame_ind);
+  x = forwardKin(obj, kinsol, 1, pts, kin_options);
 end
 
 m = size(pts,2);

@@ -43,7 +43,7 @@ for i = 1 : 100
   
   world = 1;
   twists = r.twists(kinsol.T, q, v);
-  body_twist = relativeTwist(kinsol.T, twists, world, body, world);
+  body_twist = relativeTwist(kinsol, world, body, world);
   omega_check = Rframe' * body_twist(1:3);  % TODO: change to use relativeTwist with frame once floatingBase branch is merged in
   valuecheck(omega_check, omega, 1e-10);
 

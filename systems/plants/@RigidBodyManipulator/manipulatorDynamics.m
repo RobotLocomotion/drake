@@ -248,7 +248,7 @@ compute_gradients = nargout > 3;
 options.use_mex = use_mex;
 options.compute_gradients = compute_gradients;
 options.compute_JdotV = true;
-kinsol = doKinematics(obj, q, [], [], v, options);
+kinsol = doKinematics(obj, q, v, options);
 
 % if (nargin<4) use_mex = true; end
 if compute_gradients

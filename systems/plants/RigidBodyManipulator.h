@@ -213,7 +213,7 @@ public:
   std::vector<MatrixXd> I;
   VectorXd a_grav;
 
-  VectorXd cached_q, cached_qd;  // these should be private
+  VectorXd cached_q, cached_v;  // these should be private
 
   bool use_new_kinsol;
 
@@ -272,7 +272,10 @@ private:
   bool initialized;
   bool kinematicsInit;
   int secondDerivativesCached;
-  int computedInertiaGradientOrder;
+  bool gradients_cached;
+  bool velocity_kinematics_cached;
+  bool jdotV_cached;
+  int cached_inertia_gradients_order;
 
   // collision_model and collision_model_no_margins both maintain
   // a collection of the collision geometry in the RBM for use in
