@@ -36,9 +36,10 @@ function [x,J,dJ] = forwardKin(obj, kinsol, body_or_frame_ind, pts, options)
 if nargin < 5
   options = struct();
 elseif isnumeric(options)
-  obj.warning_manager.warnOnce('Drake:RigidBodyManipulator:forwardKin:method_signature_changed', ...
-    'Argument `options` is numeric and will be interpreted as options.rotation_type. This will be phased out; please use an options struct argument instead.');
-  rotation_type = options; % transition from old inputs
+  % TODO: enable warning
+%   obj.warning_manager.warnOnce('Drake:RigidBodyManipulator:forwardKin:method_signature_changed', ...
+%     'Argument `options` is numeric and will be interpreted as options.rotation_type. This will be phased out; please use an options struct argument instead.');
+  rotation_type = options;
   options = struct();
   options.rotation_type = rotation_type;
 end
