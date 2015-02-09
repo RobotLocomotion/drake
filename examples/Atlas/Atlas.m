@@ -290,6 +290,9 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       % bounding boxes of the legs, torso, and arms. The collision model
       % of the foot used here may actually be smaller than the robot's
       % feet in order to allow the toes or heels to hang over edges. 
+      % @param q (optional) if provided, use the given robot configuration 
+      %          to compute the collision volumes. Otherwise use hard-coded
+      %          values derived from a typical walking posture.
       % @retval collision_model an IRIS CollisionModel object with fields
       %         foot and body. The body field has subfields z and xy, where
       %         xy is of shape [3, N, length(z)]. Each page of xy(:,:,j)
@@ -297,6 +300,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       DEBUG = false;
       foot_shape = [-0.12, -0.12, 0.13, 0.13;
                 0.04, -0.04, 0.04, -0.04];
+      checkDependency('iris');
       if nargin < 2 || isempty(q)
         if isempty(obj.atlas_version) || obj.atlas_version == 3
           collision_model = iris.terrain_grid.CollisionModel(...
