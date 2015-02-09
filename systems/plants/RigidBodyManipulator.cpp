@@ -987,6 +987,7 @@ void RigidBodyManipulator::doKinematicsNew(double* q, bool compute_gradients, do
         double* v_body = &v[body.velocity_num_start];
         Map<VectorXd> v_body_map(v_body, body.getJoint().getNumVelocities());
         typedef Matrix<double, TWIST_SIZE, 1> Vector6d;
+        Vector6d joint_twist = body.J * v_body_map;
         body.twist = bodies[body.parent]->twist;
         body.twist.noalias() += body.J * v_body_map;
 
@@ -1004,9 +1005,9 @@ void RigidBodyManipulator::doKinematicsNew(double* q, bool compute_gradients, do
           body.getJoint().motionSubspaceDotTimesV(q_body, v_body, body.SdotV, dSdotVdqi, dSdotVdvi);
 
           // Jdotv
-          body.JdotV = bodies[body.parent]->JdotV;
-          body.JdotV += crossSpatialMotion(body.twist, joint_twist);
-          body.JdotV += transformSpatialMotion(body.T_new, body.SdotV);
+          auto joint_accel = crossSpatialMotion(body.twist, joint_twist);
+          joint_accel += transformSpatialMotion(body.T_new, body.SdotV);
+          body.JdotV = bodies[body.parent]->JdotV + joint_accel;
 
           if (compute_gradients) {
             // dJdotvdq
