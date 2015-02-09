@@ -145,7 +145,6 @@ classdef Biped < LeggedRobot
       % Convenient way to find the poses of the center soles of the feet given a
       % configuration vector q0
 
-      typecheck(q0,'numeric');
       sizecheck(q0,[obj.getNumPositions,1]);
 
       kinsol = doKinematics(obj,q0);
