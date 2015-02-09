@@ -35,10 +35,10 @@
       <origin
         xyz="0 0 0"
         rpy="0 0 0" />
-      <geometry>
+<!--<geometry>
         <mesh
           filename="meshes/base_link_chull.wrl" />
-      </geometry>
+      </geometry>-->
     </collision>
   </link>
   <link
