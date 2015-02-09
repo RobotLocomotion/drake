@@ -1002,7 +1002,8 @@ void RigidBodyManipulator::doKinematicsNew(double* q, bool compute_gradients, do
           body.getJoint().motionSubspaceDotTimesV(q_body, v_body, body.SdotV, dSdotVdqi, dSdotVdvi);
 
           // Jdotv
-          auto joint_accel = (crm(body.twist) * joint_twist + transformSpatialMotion(body.T_new, body.SdotV)).eval();
+          auto joint_accel = (crm(body.twist) * joint_twist).eval();
+          joint_accel += transformSpatialMotion(body.T_new, body.SdotV);
           body.JdotV = bodies[body.parent]->JdotV + joint_accel;
 
           if (compute_gradients) {
