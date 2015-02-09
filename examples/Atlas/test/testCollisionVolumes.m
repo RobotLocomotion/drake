@@ -2,6 +2,7 @@ function testCollisionVolumes()
 
 checkDependency('iris');
 options.atlas_version = 3;
+path_handle = addpathTemporary(fullfile(getDrakePath(), 'examples', 'Atlas'));
 r = Atlas(fullfile(getDrakePath(), 'examples', 'Atlas', 'urdf', 'atlas_convex_hull.urdf'),options);
 load(r.fixed_point_file, 'xstar');
 q0 = xstar(1:r.getNumPositions());
