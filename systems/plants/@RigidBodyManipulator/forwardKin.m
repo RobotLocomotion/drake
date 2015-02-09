@@ -1,8 +1,8 @@
-function [x,J,dJ] = forwardKin(obj, kinsol, body_or_frame_ind, pts, options)
+function [x,J,dJ] = forwardKin(obj, kinsol, body_or_frame_id, pts, options)
 % computes the position of pts (given in the body frame) in the global frame
 %
 % @param kinsol solution structure obtained from doKinematics
-% @param body_or_frame_ind, an integer ID for a RigidBody or RigidBodyFrame
+% @param body_or_frame_id, an integer ID for a RigidBody or RigidBodyFrame
 % (obtained via e.g., findLinkId or findFrameInd)
 % @param rotation_type integer flag indicated whether rotations and
 % derivatives should be computed (0 - no rotations, 1 - rpy, 2 - quat)
@@ -50,11 +50,11 @@ if ~isfield(options, 'base_or_frame_id'), options.base_or_frame_id = 1; end
 
 if obj.use_new_kinsol
   if nargout > 2
-    [x, J, dJ] = forwardKinNew(obj, kinsol, body_or_frame_ind, pts, options.base_or_frame_id, options);
+    [x, J, dJ] = forwardKinNew(obj, kinsol, body_or_frame_id, pts, options.base_or_frame_id, options);
   elseif nargout > 1
-    [x, J] = forwardKinNew(obj, kinsol, body_or_frame_ind, pts, options.base_or_frame_id, options);
+    [x, J] = forwardKinNew(obj, kinsol, body_or_frame_id, pts, options.base_or_frame_id, options);
   else
-    x = forwardKinNew(obj, kinsol, body_or_frame_ind, pts, options.base_or_frame_id, options);
+    x = forwardKinNew(obj, kinsol, body_or_frame_id, pts, options.base_or_frame_id, options);
   end
 else
   if options.base_or_frame_id ~= 1
@@ -65,7 +65,7 @@ else
   end
   
   % todo: zap this after the transition
-  if isa(body_or_frame_ind,'RigidBody'), error('support for passing in RigidBody objects has been removed.  please pass in the body index'); end
+  if isa(body_or_frame_id,'RigidBody'), error('support for passing in RigidBody objects has been removed.  please pass in the body index'); end
   
   if (kinsol.mex)
     if (obj.mex_model_ptr==0)
@@ -76,20 +76,20 @@ else
     end
     
     if nargout > 2
-      [x,J,dJ] = forwardKinmex(obj.mex_model_ptr,kinsol.q,body_or_frame_ind,pts,options.rotation_type);
+      [x,J,dJ] = forwardKinmex(obj.mex_model_ptr,kinsol.q,body_or_frame_id,pts,options.rotation_type);
     elseif nargout > 1
-      [x,J] = forwardKinmex(obj.mex_model_ptr,kinsol.q,body_or_frame_ind,pts,options.rotation_type);
+      [x,J] = forwardKinmex(obj.mex_model_ptr,kinsol.q,body_or_frame_id,pts,options.rotation_type);
     else
-      x = forwardKinmex(obj.mex_model_ptr,kinsol.q,body_or_frame_ind,pts,options.rotation_type);
+      x = forwardKinmex(obj.mex_model_ptr,kinsol.q,body_or_frame_id,pts,options.rotation_type);
     end
     
   else
-    if (body_or_frame_ind < 0)
-      frame = obj.frame(-body_or_frame_ind);
+    if (body_or_frame_id < 0)
+      frame = obj.frame(-body_or_frame_id);
       body_ind = frame.body_ind;
       Tframe = frame.T;
     else
-      body_ind = body_or_frame_ind;
+      body_ind = body_or_frame_id;
       Tframe=eye(4);
     end
     
@@ -226,8 +226,8 @@ end
 
 end
 
-function [x, J, dJ] = forwardKinNew(obj, kinsol, body_or_frame_ind, points, options)
-% Transforms \p points given in a frame identified by \p body_or_frame_ind
+function [x, J, dJ] = forwardKinNew(obj, kinsol, body_or_frame_id, points, options)
+% Transforms \p points given in a frame identified by \p body_or_frame_id
 % to a frame identified by \p options.base_or_frame_id, and also computes a
 % representation of the relative rotation (of type specified by
 % \p rotation_type), stacked in a matrix \p x.
@@ -236,10 +236,10 @@ function [x, J, dJ] = forwardKinNew(obj, kinsol, body_or_frame_ind, points, opti
 % configuration vector q.
 %
 % @param kinsol solution structure obtained from doKinematics
-% @param body_or_frame_ind, an integer ID for a RigidBody or RigidBodyFrame
+% @param body_or_frame_id, an integer ID for a RigidBody or RigidBodyFrame
 % (obtained via e.g., findLinkInd or findFrameInd)
 % @param points a 3 x m matrix where each column represents a point in the
-% frame specified by \p body_or_frame_ind
+% frame specified by \p body_or_frame_id
 % @param rotation_type integer flag indicated whether rotation output
 % should be included in the return values (0 - no rotation, 1 - rpy,
 % 2 - quat).
@@ -250,7 +250,7 @@ function [x, J, dJ] = forwardKinNew(obj, kinsol, body_or_frame_ind, points, opti
 %
 % @retval x a matrix with m columns, such that column i is
 % [points_base_i; q_rot], where points_base_i is points(:, i) transformed
-% to the frame identified by \p body_or_frame_ind, and q_rot is a
+% to the frame identified by \p body_or_frame_id, and q_rot is a
 % representation of the relative rotation (the same for all m columns).
 % That is, if rotation_type = 0 then \p x will be a 3xm matrix with column
 % i equal to [points_base_i]. If rotation_type = 1 \p x will be 6xm, with
@@ -277,21 +277,21 @@ if (kinsol.mex)
     error('Drake:RigidBodyManipulator:InvalidKinematics','This kinsol is no longer valid because the mex model ptr has been deleted.');
   end
   if nargout > 2
-    [x, J, dJ] = forwardKinVmex(obj.mex_model_ptr, body_or_frame_ind, points, rotation_type, base_or_frame_id, in_terms_of_qdot);
+    [x, J, dJ] = forwardKinVmex(obj.mex_model_ptr, body_or_frame_id, points, rotation_type, base_or_frame_id, in_terms_of_qdot);
     dJ = reshape(dJ, size(J, 1), []); % convert to strange second derivative output format
   elseif nargout > 1
-    [x, J] = forwardKinVmex(obj.mex_model_ptr, body_or_frame_ind, points, rotation_type, base_or_frame_id, in_terms_of_qdot);
+    [x, J] = forwardKinVmex(obj.mex_model_ptr, body_or_frame_id, points, rotation_type, base_or_frame_id, in_terms_of_qdot);
   else
-    x = forwardKinVmex(obj.mex_model_ptr, body_or_frame_ind, points, rotation_type, base_or_frame_id, in_terms_of_qdot);
+    x = forwardKinVmex(obj.mex_model_ptr, body_or_frame_id, points, rotation_type, base_or_frame_id, in_terms_of_qdot);
   end
 else
   nq = obj.getNumPositions();
   nv = obj.getNumVelocities();
   % transform points to base frame
   if compute_gradient
-    [T, dT] = relativeTransform(obj, kinsol, base_or_frame_id, body_or_frame_ind);
+    [T, dT] = relativeTransform(obj, kinsol, base_or_frame_id, body_or_frame_id);
   else
-    T = relativeTransform(obj, kinsol, base_or_frame_id, body_or_frame_ind);
+    T = relativeTransform(obj, kinsol, base_or_frame_id, body_or_frame_id);
   end
   
   [point_size, npoints] = size(points);
@@ -317,7 +317,7 @@ else
   
   if compute_J
     % compute geometric Jacobian
-    body = extractFrameInfo(obj, body_or_frame_ind);
+    body = extractFrameInfo(obj, body_or_frame_id);
     base = extractFrameInfo(obj, base_or_frame_id);
     if compute_gradient
       [J_geometric, v_or_qdot_indices, dJ_geometric] = geometricJacobian(obj, kinsol, base, body, expressed_in, in_terms_of_qdot);
