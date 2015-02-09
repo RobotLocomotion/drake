@@ -1,4 +1,5 @@
 function slices = collisionSlices(obj, q, slice_heights, varargin)
+%NOTEST
 % Compute bounding boxes of the robot's geometry at a given configuration
 % @param q the configuration vector
 % @param slice_heights vector of z values (m) providing the limits of the bounding boxes
