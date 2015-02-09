@@ -8,6 +8,7 @@ p.addRequired('q');
 p.addRequired('slice_heights', @isnumeric);
 p.addParamValue('scan_radius', 3, @isscalar);
 p.addParamValue('margin', 0.05, @isnumeric);
+p.addParamValue('debug', false);
 p.parse(q, slice_heights, varargin{:});
 options = p.Results;
 
@@ -15,21 +16,9 @@ if length(options.margin) == 1
   options.margin = repmat(options.margin, 1, length(slice_heights)-1);
 end
 
-DEBUG = true;
-
 % ensure that the right foot is at 0 0 0
-feet_pose = obj.getFeetPosition(q);
+feet_pose = obj.feetPosition(q);
 q([1,2,3,6]) = q([1,2,3,6]) - feet_pose.right([1,2,3,6]);
-
-% Remove collision groups for the left leg (which will presumably be
-% swinging).
-leg_link_names = {'l_foot', 'l_talus', 'l_lleg', 'l_uleg', 'l_lglut', 'l_uglut'};
-leg_body_ids = zeros(1, length(leg_link_names));
-for j = 1:length(leg_link_names)
-  leg_body_ids(j) = obj.findLinkId(leg_link_names{j});
-end
-obj = obj.removeCollisionGroupsExcept({},1,leg_body_ids);
-obj = obj.compile();
 
 scan_center = q(1:2);
 
@@ -37,35 +26,36 @@ kinsol = doKinematics(obj, q);
 
 slices = struct('z', slice_heights(1:end-1),...
                 'xy', zeros([2, 4, length(slice_heights)]));
+nslices = length(slice_heights)-1;
               
+num_ths = 50;
+ths = linspace(-pi, pi, num_ths);
+num_zs_per_slice = 10;
+zs = zeros(1, num_zs_per_slice * nslices);
+for j = 1:nslices
+  zs((j-1)*num_zs_per_slice+(1:num_zs_per_slice)) = linspace(slice_heights(j), slice_heights(j+1), num_zs_per_slice);
+end
+num_returns_per_slice = num_ths * num_zs_per_slice;
 
-ths = linspace(-pi, pi);
+[Z, TH] = meshgrid(zs, ths);
+origin_X = scan_center(1) + options.scan_radius * cos(TH);
+origin_Y = scan_center(2) + options.scan_radius * sin(TH);
+target_X = scan_center(1) + zeros(size(TH));
+target_Y = scan_center(2) + zeros(size(TH));
+origins = [reshape(origin_X, 1, []); reshape(origin_Y, 1, []); reshape(Z, 1, [])];
+targets = [reshape(target_X, 1, []); reshape(target_Y, 1, []); reshape(Z, 1, [])];
+distances = collisionRaycast(obj, kinsol, origins, targets, false);
+distances(distances <= 0) = nan;
 
-if DEBUG
+normals = bsxfun(@rdivide, targets - origins, sqrt(sum((targets - origins).^2, 1)));
+returns = origins + bsxfun(@times, normals, distances');
+
+
+if options.debug
   all_returns = zeros(3, 0);
 end
-for j = 1:length(slice_heights)-1
-  zmin = slice_heights(j);
-  zmax = slice_heights(j+1);
-  zs = linspace(zmin, zmax, 10);
-  slice_returns = zeros(3, length(zs) * length(ths));
-
-
-  offset = 0;
-
-  for th_ind = 1:length(ths)
-    th = ths(th_ind);
-    xy = scan_center + options.scan_radius * [cos(th); sin(th)];
-    origins = [repmat(xy, 1, length(zs)); zs];
-    targets = [repmat(scan_center, 1, length(zs)); zs];
-    distances = collisionRaycast(obj, kinsol, origins, targets, false);
-    distances(distances <= 0) = nan;
-
-    normals = bsxfun(@rdivide, targets - origins, sqrt(sum((targets - origins).^2, 1)));
-    returns = origins + bsxfun(@times, normals, distances');
-    slice_returns(:,offset+(1:length(zs))) = returns;
-    offset = offset + length(zs);
-  end
+for j = 1:nslices
+  slice_returns = returns(:,(j-1)*num_returns_per_slice+(1:num_returns_per_slice));
 
   slice_returns = slice_returns(:,~any(isnan(slice_returns), 1));
   
@@ -83,12 +73,12 @@ for j = 1:length(slice_heights)-1
   slices.xy(:,:,j) = [lb(1), ub(1), lb(1), ub(1);
                       lb(2), lb(2), ub(2), ub(2)];
   
-  if DEBUG
+  if options.debug
     all_returns = [all_returns, slice_returns];
   end
 end
   
-if DEBUG
+if options.debug
   figure(105)
   clf
   hold on
