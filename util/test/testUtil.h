@@ -37,7 +37,7 @@ void valuecheck(const Eigen::DenseBase<DerivedA>& a, const Eigen::DenseBase<Deri
 {
   if (!a.isApprox(b)) {
     std::ostringstream stream;
-    stream << "Expected:\n" << a << "\nbut got:" << b << "\n";
+    stream << "Expected:\n" << a << "\nbut got:\n" << b << "\n";
     throw std::runtime_error(stream.str());
   }
 }

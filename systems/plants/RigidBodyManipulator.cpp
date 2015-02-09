@@ -421,8 +421,6 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
 
   initialized = false;
   kinematicsInit = false;
-  cached_q.resize(num_dof);
-  cached_qd.resize(num_dof);
   secondDerivativesCached = 0;
 }
 
@@ -448,6 +446,8 @@ void RigidBodyManipulator::compile(void)
     // precompute sparsity pattern for each rigid body
     bodies[i]->computeAncestorDOFs(this);
   }
+  cached_q.resize(num_dof);
+  cached_v.resize(num_velocities);
 
   initialized=true;
 }
@@ -900,7 +900,7 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
   kinematicsInit = true;
   for (i = 0; i < num_dof; i++) {
     cached_q[i] = q[i];
-    if (qd) cached_qd[i] = qd[i];
+    if (qd) cached_v[i] = qd[i];
   }
   secondDerivativesCached = b_compute_second_derivatives;
   //DEBUG
@@ -915,10 +915,12 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
 void RigidBodyManipulator::doKinematicsNew(double* q, bool compute_gradients, double* v, bool compute_JdotV) {
   if (kinematicsInit) {
     bool skip = true;
-    if (compute_gradients) // && !secondDerivativesCached)
-      skip = false; // TODO
-    if (v)
-      skip = false; // TODO
+    if (compute_gradients && !gradients_cached)
+      skip = false;
+    if (v && !velocity_kinematics_cached)
+      skip = false;
+    if (compute_JdotV && !jdotV_cached)
+      skip = false;
     for (int i = 0; i < num_dof; i++) {
       if (q[i] != cached_q[i] || q[i] != cached_q[i]) {
         skip = false;
@@ -985,8 +987,8 @@ void RigidBodyManipulator::doKinematicsNew(double* q, bool compute_gradients, do
         double* v_body = &v[body.velocity_num_start];
         Map<VectorXd> v_body_map(v_body, body.getJoint().getNumVelocities());
         typedef Matrix<double, TWIST_SIZE, 1> Vector6d;
-        Vector6d joint_twist = body.J * v_body_map;
-        body.twist = bodies[body.parent]->twist + joint_twist;
+        body.twist = bodies[body.parent]->twist;
+        body.twist.noalias() += body.J * v_body_map;
 
         Gradient<Vector6d, Eigen::Dynamic>::type djoint_twistdq(TWIST_SIZE, nq);
         if (compute_gradients) {
@@ -1002,9 +1004,9 @@ void RigidBodyManipulator::doKinematicsNew(double* q, bool compute_gradients, do
           body.getJoint().motionSubspaceDotTimesV(q_body, v_body, body.SdotV, dSdotVdqi, dSdotVdvi);
 
           // Jdotv
-          auto joint_accel = (crm(body.twist) * joint_twist).eval();
-          joint_accel += transformSpatialMotion(body.T_new, body.SdotV);
-          body.JdotV = bodies[body.parent]->JdotV + joint_accel;
+          body.JdotV = bodies[body.parent]->JdotV;
+          body.JdotV += crossSpatialMotion(body.twist, joint_twist);
+          body.JdotV += transformSpatialMotion(body.T_new, body.SdotV);
 
           if (compute_gradients) {
             // dJdotvdq
@@ -1074,10 +1076,13 @@ void RigidBodyManipulator::doKinematicsNew(double* q, bool compute_gradients, do
   }
 
   kinematicsInit = true;
-  computedInertiaGradientOrder = -1;
+  cached_inertia_gradients_order = -1;
+  gradients_cached = compute_gradients;
+  velocity_kinematics_cached = v != nullptr;
+  jdotV_cached = compute_JdotV && velocity_kinematics_cached;
   for (int i = 0; i < num_dof; i++) {
     cached_q[i] = q[i];
-//    if (qd) cached_qd[i] = qd[i];
+    if (v != nullptr) cached_v[i] = v[i];
   }
 }
 
@@ -1151,7 +1156,7 @@ void RigidBodyManipulator::updateCompositeRigidBodyInertias(int gradient_order) 
     throw std::runtime_error("only first order gradients are available");
   }
 
-  if (gradient_order > computedInertiaGradientOrder) {
+  if (gradient_order > cached_inertia_gradients_order) {
     for (int i = 0; i < num_bodies; i++) {
       Gradient<Isometry3d::MatrixType, Eigen::Dynamic>::type* dTdq = nullptr;
       if (gradient_order > 0)
@@ -1175,7 +1180,7 @@ void RigidBodyManipulator::updateCompositeRigidBodyInertias(int gradient_order) 
       }
     }
   }
-  computedInertiaGradientOrder = gradient_order;
+  cached_inertia_gradients_order = gradient_order;
 }
 
 template <typename Scalar>

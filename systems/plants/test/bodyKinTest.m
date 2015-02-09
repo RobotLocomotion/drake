@@ -23,7 +23,7 @@ if r.use_new_kinsol
   if nargout > 2
     kinsol_options.compute_gradients = true;
   end
-  kinsol = r.doKinematics(q, [], [], [], kinsol_options);
+  kinsol = r.doKinematics(q, [], kinsol_options);
 else
   kinsol = r.doKinematics(q,true,false);
 end
@@ -43,7 +43,7 @@ if r.use_new_kinsol
   if nargout > 1
     kinsol_options.compute_gradients = true;
   end
-  kinsol = r.doKinematics(q, [], [], [], kinsol_options);
+  kinsol = r.doKinematics(q, [], kinsol_options);
 else
   kinsol = r.doKinematics(q,true,false);
 end

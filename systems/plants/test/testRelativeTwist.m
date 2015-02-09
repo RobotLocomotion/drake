@@ -22,7 +22,7 @@ while test_number < nTests
   q = getRandomConfiguration(robot);
   v = randn(robot.getNumVelocities(), 1);
   options.use_mex = false;
-  kinsol = robot.doKinematics(q, [], [], v, options);
+  kinsol = robot.doKinematics(q, v, options);
   base = randi(bodyRange);
   end_effector = randi(bodyRange);
   expressed_in = randi(bodyRange);
@@ -53,7 +53,7 @@ while test_number < nTests
     v = randn(robot.getNumVelocities());
     options.use_mex = false;
     options.compute_gradients = true;
-    kinsol = robot.doKinematics(q, [], [], v, options);
+    kinsol = robot.doKinematics(q, v, options);
     [~, dtwist] = relativeTwist(kinsol, base, end_effector, expressed_in);
 
     option.grad_method = 'taylorvar';
@@ -67,6 +67,6 @@ end
 
 function ret = gevalFunction(robot, q, v, base, end_effector, expressed_in)
 options.use_mex = false;
-kinsol = robot.doKinematics(q, [], [], v, options);
+kinsol = robot.doKinematics(q, v, options);
 ret = relativeTwist(kinsol, base, end_effector, expressed_in);
 end
