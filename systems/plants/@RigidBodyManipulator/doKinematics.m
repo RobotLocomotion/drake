@@ -1,4 +1,4 @@
-function kinsol=doKinematics(model,q,b_compute_second_derivatives,use_mex,qd,options)
+function kinsol = doKinematics(model, q, v, options, qd_old)
 % kinsol=doKinematics(model,q,b_compute_second_derivatives,use_mex,qd)
 % Computes the (forward) kinematics of the manipulator.
 %
@@ -10,64 +10,56 @@ function kinsol=doKinematics(model,q,b_compute_second_derivatives,use_mex,qd,opt
 % the answer).
 %
 
-if model.use_new_kinsol
-  checkDirty(model);  
-  if nargin<6
+checkDirty(model);
+
+% method signature transition
+if nargin > 3
+  options_copy = options;
+end
+warn_signature_changed = false;
+if nargin == 5
+  warn_signature_changed = true;
+  options = struct();
+  options.compute_gradients = v;
+  options.use_mex = options_copy;
+  v = qd_old;
+elseif nargin == 4
+  if islogical(options)
+    warn_signature_changed = true;
     options = struct();
-    if nargin > 2
-      options.compute_gradients = b_compute_second_derivatives;
-    end; % approximately the same use case
-    if nargin > 3
-      options.use_mex = use_mex;
-    end;
-  else
-    % if options struct is passed in, make sure that boolean arguments are
-    % empty to avoid conflicts
-    if nargin > 2
-      valuecheck(b_compute_second_derivatives, []);
-    end;
-    if nargin > 3
-      valuecheck(use_mex, []); 
-    end
-  end
-  if nargin > 4
-    v = qd; % TODO: v is what should be passed to doKinematics
-  else
+    options.compute_gradients = v;
+    options.use_mex = options_copy;
     v = [];
   end
-  if ~isfield(options, 'use_mex')
-    options.use_mex = true;
+elseif nargin == 3
+  options = struct();
+  if islogical(v)
+    warn_signature_changed = true;
+    options.compute_gradients = v;
+    v = [];
   end
-  if ~isfield(options, 'compute_gradients')
-    options.compute_gradients = false;
-  end
-  if ~isfield(options, 'compute_JdotV')
-    options.compute_JdotV = ~isempty(v);
-  end
-  
-  kinsol = doKinematicsNew(model, q, v, options);
 else
-  checkDirty(model);
-  if nargin > 5
-    valuecheck(b_compute_second_derivatives, []);
-    valuecheck(use_mex, []);
-    if isfield(options, 'use_mex')
-      use_mex = options.use_mex;
-    end
-    if isfield(options, 'compute_gradients')
-      b_compute_second_derivatives = true;
-    end
-  end
-  
-  if nargin<5, qd=[]; end
-  if nargin<4 || isempty(use_mex), use_mex = true; end
-  if nargin<3 || isempty(b_compute_second_derivatives), b_compute_second_derivatives=false; end
-  
+  options = struct();
+  v = [];
+end
+
+if ~isfield(options, 'use_mex'), options.use_mex = true; end
+if ~isfield(options, 'compute_gradients'), options.compute_gradients = false; end
+if ~isfield(options, 'compute_JdotV'), options.compute_JdotV = ~isempty(v); end
+
+if warn_signature_changed
+  model.warning_manager.warnOnce('Drake:RigidBodyManipulator:doKinematics:method_signature_changed', ...
+    'Called doKinematics using arguments corresponding to the old method signature. This will be phased out; please update your call to match the new signature.');
+end
+
+if model.use_new_kinsol
+  kinsol = doKinematicsNew(model, q, v, options);
+else  
   kinsol.q = q;
-  kinsol.qd = qd;
+  kinsol.qd = v;
   
-  if (use_mex && model.mex_model_ptr~=0 && isnumeric(q))
-    doKinematicsmex(model.mex_model_ptr,q,b_compute_second_derivatives,qd);
+  if (options.use_mex && model.mex_model_ptr~=0 && isnumeric(q))
+    doKinematicsmex(model.mex_model_ptr,q,options.compute_gradients,v);
     kinsol.mex = true;
   else
     kinsol.mex = false;
@@ -84,11 +76,11 @@ else
       if body.parent<1
         kinsol.T{i} = body.Ttree;
         kinsol.dTdq{i} = sparse(3*nq,4);
-        if ~isempty(qd)
+        if ~isempty(v)
           kinsol.Tdot{i} = zeros(4);
           kinsol.dTdqdot{i} = sparse(3*nq,4);
         end
-        if (b_compute_second_derivatives)
+        if (options.compute_gradients)
           kinsol.ddTdqdq{i} = sparse(3*nq*nq,4);
         end
       elseif body.floating==1
@@ -113,7 +105,7 @@ else
           kinsol.dTdq{i}(this_dof_ind,:) = kinsol.dTdq{i}(this_dof_ind,:) + kinsol.T{body.parent}(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*dTJ{j}*body.T_body_to_joint;
         end
         
-        if (b_compute_second_derivatives)
+        if (options.compute_gradients)
           ddTJ = cell(6,6);
           % if j<=3 or k<=3, then ddTJ{j,k} = zeros(4); so I've left them out
           ddTJ{4,4} = [rz*ry*ddrx,zeros(3,1); zeros(1,4)];
@@ -147,11 +139,11 @@ else
           kinsol.ddTdqdq{i} = [];
         end
         
-        if isempty(qd)
+        if isempty(v)
           kinsol.Tdot{i} = [];
           kinsol.dTdqdot{i} = [];
         else
-          qdi = qd(body.position_num);
+          qdi = v(body.position_num);
           TJdot = zeros(4);
           dTJdot{1} = zeros(4);
           dTJdot{2} = zeros(4);
@@ -189,7 +181,7 @@ else
         this_dof_ind = body.position_num+0:nq:3*nq;
         kinsol.dTdq{i}(this_dof_ind,:) = kinsol.dTdq{i}(this_dof_ind,:) + kinsol.T{body.parent}(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*dTJ*body.T_body_to_joint;
         
-        if (b_compute_second_derivatives)
+        if (options.compute_gradients)
           % ddTdqdq = [d(dTdq)dq1; d(dTdq)dq2; ...]
           kinsol.ddTdqdq{i} = kinsol.ddTdqdq{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint;
           
@@ -204,8 +196,8 @@ else
           kinsol.ddTdqdq{i}(ind,:) = kinsol.ddTdqdq{i}(ind,:) + kinsol.T{body.parent}(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*ddTJ*body.T_body_to_joint;  % body.jsign^2 is there, but unnecessary (since it's always 1)
         end
         
-        if ~isempty(qd)
-          qdi = qd(body.position_num);
+        if ~isempty(v)
+          qdi = v(body.position_num);
           TJdot = dTJ*qdi;
           dTJdot = ddTjcalc(body.pitch,qi)*qdi;
           kinsol.Tdot{i} = kinsol.Tdot{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint + kinsol.T{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJdot*body.T_body_to_joint;
