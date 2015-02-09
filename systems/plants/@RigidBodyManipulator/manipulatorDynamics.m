@@ -242,7 +242,6 @@ function [H,C,B,dH,dC,dB] = manipulatorDynamicsNew(obj,q,v,use_mex)
 %
 % Algorithm: recursive Newton-Euler for C, and Composite-Rigid-Body for H.
 
-checkDirty(obj);
 compute_gradients = nargout > 3;
 
 options.use_mex = use_mex;
@@ -298,16 +297,16 @@ end
 function [f_ext, B, df_ext, dB] = computeExternalForcesAndInputMatrix(obj, q, v)
 compute_gradients = nargout > 2;
 
-nq = size(q,1);
-nv = size(v,1);
+nq = length(q);
+nv = length(v);
 
 B = obj.B;
-NB = obj.getNumBodies();
 if compute_gradients
   dB = zeros(numel(B), nq + nv);
 end
 
 if ~isempty(obj.force)
+  NB = obj.getNumBodies();
   f_ext = zeros(6,NB);
   if compute_gradients
     df_ext = zeros(numel(f_ext), nq + nv);
@@ -337,9 +336,9 @@ if ~isempty(obj.force)
     end
   end
 else
-  f_ext=sparse(6,NB);
+  f_ext = [];
   if compute_gradients
-    df_ext = sparse(numel(f_ext), nq + nv);
+    df_ext = [];
   end
 end
 end
@@ -425,21 +424,38 @@ end
 for i = 2 : nBodies
   twist = kinsol.twists{i};
   spatial_accel = root_accel + JdotV{i};
-  external_wrench = f_ext(:, i);
   
   if compute_gradient
     dtwist = kinsol.dtwistsdq{i};
     dspatial_accel = dJdotV{i};
-    dexternal_wrench = getSubMatrixGradient(df_ext,1:twist_size,i,size(f_ext),1:nq);
     
     dtwistdv = zeros(twist_size, nv);
     [J, v_indices] = geometricJacobian(manipulator, kinsol, world, i, world);
     dtwistdv(:, v_indices) = J;
     dspatial_acceldv = kinsol.dJdotVidv{i};
-    dexternal_wrenchdv = getSubMatrixGradient(df_ext,1:twist_size,i,size(f_ext),nq+(1:nv));
   end
   
-  if any(external_wrench)
+  I = inertias_world{i};
+  I_times_twist = I * twist;
+  net_wrenches{i} = I * spatial_accel + crf(twist) * I_times_twist;
+  
+  if compute_gradient
+    dI = dinertias_world{i};
+    dI_times_twist = I * dtwist + matGradMult(dI, twist);
+    dnet_wrenches{i} = ...
+      I * dspatial_accel + matGradMult(dI, spatial_accel) ...
+      + dcrf(twist, I_times_twist, dtwist, dI_times_twist);
+    
+    dI_times_twistdv = I * dtwistdv;
+    dnet_wrenchesdv{i} = ...
+      I * dspatial_acceldv ...
+      + dcrf(twist, I_times_twist, dtwistdv, dI_times_twistdv);
+  end
+  
+  if ~isempty(f_ext)
+    external_wrench = f_ext(:, i);
+    dexternal_wrench = getSubMatrixGradient(df_ext,1:twist_size,i,size(f_ext),1:nq);
+    
     % external wrenches are expressed in 'joint' frame. Transform from
     % joint to world:
     T_joint_to_body = homogTransInv(manipulator.body(i).T_body_to_joint);
@@ -447,30 +463,17 @@ for i = 2 : nBodies
     T_world_to_joint = homogTransInv(T_joint_to_world);
     AdT_world_to_joint = transformAdjoint(T_world_to_joint);
     external_wrench = AdT_world_to_joint' * external_wrench;
+    net_wrenches{i} = net_wrenches{i} - external_wrench;
     
     if compute_gradient
       dT_joint_to_world = matGradMult(kinsol.dTdq{i}, T_joint_to_body);
       dexternal_wrench = dTransformSpatialForce(T_joint_to_world, external_wrench, dT_joint_to_world, dexternal_wrench);
+      dnet_wrenches{i} = dnet_wrenches{i} - dexternal_wrench;
+      
+      dexternal_wrenchdv = getSubMatrixGradient(df_ext,1:twist_size,i,size(f_ext),nq+(1:nv));
       dexternal_wrenchdv = AdT_world_to_joint' * dexternal_wrenchdv;
+      dnet_wrenchesdv{i} = dnet_wrenchesdv{i} - dexternal_wrenchdv;
     end
-  end
-  I = inertias_world{i};
-  I_times_twist = I * twist;
-  net_wrenches{i} = I * spatial_accel + crf(twist) * I_times_twist - external_wrench;
-  
-  if compute_gradient
-    dI = dinertias_world{i};
-    dI_times_twist = I * dtwist + matGradMult(dI, twist);
-    dnet_wrenches{i} = ...
-      I * dspatial_accel + matGradMult(dI, spatial_accel) ...
-      + dcrf(twist, I_times_twist, dtwist, dI_times_twist) ...
-      - dexternal_wrench;
-    
-    dI_times_twistdv = I * dtwistdv;
-    dnet_wrenchesdv{i} = ...
-      I * dspatial_acceldv ...
-      + dcrf(twist, I_times_twist, dtwistdv, dI_times_twistdv) ...
-      - dexternal_wrenchdv;
   end
 end
 
