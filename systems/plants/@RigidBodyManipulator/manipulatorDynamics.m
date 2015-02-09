@@ -265,22 +265,20 @@ if (use_mex && obj.mex_model_ptr~=0 && isnumeric(q) && isnumeric(v))
     [H, dH] = massMatrixmex(obj.mex_model_ptr);
     nv = obj.num_velocities;
     dH = [dH, zeros(numel(H), nv)];
-%     [~,C,~,~,dC,~] = manipulatorDynamicsNew(obj,q,v,false);
     [C, dC] = inverseDynamicsmex(obj.mex_model_ptr, f_ext, [], df_ext);
   else
     H = massMatrixmex(obj.mex_model_ptr);
-%     [~,C] = manipulatorDynamicsNew(obj,q,v,false);
     C = inverseDynamicsmex(obj.mex_model_ptr, f_ext);
   end
   % TODO: move to a better place
-  if compute_gradients
-    [tau_friction, dtau_frictiondv] = computeFrictionForce(obj, kinsol.v);
-    nq = obj.num_positions; nv = obj.num_velocities;
-    dC(:, nq + (1:nv)) = dC(:, nq + (1:nv)) + dtau_frictiondv;
-  else
-    tau_friction = computeFrictionForce(obj, kinsol.v);
-  end
-  C = C + tau_friction;
+%   if compute_gradients
+%     [tau_friction, dtau_frictiondv] = computeFrictionForce(obj, kinsol.v);
+%     nq = obj.num_positions; nv = obj.num_velocities;
+%     dC(:, nq + (1:nv)) = dC(:, nq + (1:nv)) + dtau_frictiondv;
+%   else
+%     tau_friction = computeFrictionForce(obj, kinsol.v);
+%   end
+%   C = C + tau_friction;
 else
   if compute_gradients
     [inertias_world, dinertias_world] = inertiasInWorldFrame(obj, kinsol);
