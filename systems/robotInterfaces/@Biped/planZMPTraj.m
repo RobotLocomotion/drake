@@ -130,8 +130,6 @@ for f = {'right', 'left'}
   body_ind = biped.getFrame(frame_id).body_ind;
   foot_poses(4:6,:) = unwrap(foot_poses(4:6,:), [], 2);
   ts = [foot_origin_knots.t];
-  % foot_traj = PPTrajectory(pchip(ts, foot_poses));
-  % dtraj = fnder(foot_traj);
 
   foot_dposes = foot_states(7:12,:);
   % Compute cubic polynomial coefficients to save work in the controller
