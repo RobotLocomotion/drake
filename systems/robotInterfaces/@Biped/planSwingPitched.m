@@ -184,8 +184,8 @@ function add_foot_origin_knot(swing_pose, speed)
   cartesian_distance = norm(foot_origin_knots(end).(swing_foot_name)(1:3) - foot_origin_knots(end-1).(swing_foot_name)(1:3));
   sole1 = rotmat2rpy(rpy2rotmat(foot_origin_knots(end-1).(swing_foot_name)(4:6)) * T_sole_to_foot(1:3,1:3));
   sole2 = rotmat2rpy(rpy2rotmat(foot_origin_knots(end).(swing_foot_name)(4:6)) * T_sole_to_foot(1:3,1:3));
-  yaw_distance = abs(angleDiff(sole2(3), sole1(3)));
-  pitch_distance = abs(angleDiff(sole2(2), sole1(2)));
+  yaw_distance = abs(angleDiff(sole1(3), sole2(3)));
+  pitch_distance = abs(angleDiff(sole1(2), sole2(2)));
   dt = max([cartesian_distance / speed,...
             yaw_distance / FOOT_YAW_RATE,...
             pitch_distance / FOOT_PITCH_RATE]);
@@ -221,8 +221,9 @@ add_foot_origin_knot(pose);
 foot_origin_knots(end).(swing_foot_name)(7:9) = (foot_origin_knots(end).(swing_foot_name)(1:3) - foot_origin_knots(end-1).(swing_foot_name)(1:3)) / (foot_origin_knots(end).t - foot_origin_knots(end-1).t);
 foot_origin_knots(end-1).(swing_foot_name)(7:9) = (foot_origin_knots(end).(swing_foot_name)(1:3) - foot_origin_knots(end-1).(swing_foot_name)(1:3)) / (foot_origin_knots(end).t - foot_origin_knots(end-1).t);
 % angles require unwrapping to get the correct velocities
-foot_origin_knots(end).(swing_foot_name)(10:12) = angleDiff(foot_origin_knots(end).(swing_foot_name)(4:6), foot_origin_knots(end-1).(swing_foot_name)(4:6)) / (foot_origin_knots(end).t - foot_origin_knots(end-1).t);
-foot_origin_knots(end-1).(swing_foot_name)(10:12) = angleDiff(foot_origin_knots(end).(swing_foot_name)(4:6), foot_origin_knots(end-1).(swing_foot_name)(4:6)) / (foot_origin_knots(end).t - foot_origin_knots(end-1).t);
+foot_origin_knots(end).(swing_foot_name)(10:12) = angleDiff(foot_origin_knots(end-1).(swing_foot_name)(4:6), foot_origin_knots(end).(swing_foot_name)(4:6)) / (foot_origin_knots(end).t - foot_origin_knots(end-1).t);
+foot_origin_knots(end-1).(swing_foot_name)(10:12) = angleDiff(foot_origin_knots(end-1).(swing_foot_name)(4:6), foot_origin_knots(end).(swing_foot_name)(4:6)) / (foot_origin_knots(end).t - foot_origin_knots(end-1).t);
+
 
 % Landing knot
 add_foot_origin_knot(swing2_origin_pose, min(params.step_speed, MAX_LANDING_SPEED)/2);
