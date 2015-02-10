@@ -159,6 +159,3 @@ plot(zmpdes(1,:),zmpdes(2,:),'b','LineWidth',3);
 plot(zmpact(1,:),zmpact(2,:),'r.-','LineWidth',1);
 
 axis equal;
-
-figure()
-plot(ts, rfoot_pos(4,:))
