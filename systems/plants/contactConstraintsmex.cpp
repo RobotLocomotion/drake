@@ -9,9 +9,25 @@ using namespace Eigen;
 using namespace std;
 
 /*
- * mex interface for contact Constraints
+ * Mex interface for contactConstraints
+ * MATLAB signature: [n, D, dn, dD] = contactConstraintsmex(model_ptr, idxA, idxB, xA, xB, normal, d)
  * 
-*/
+ * Inputs:
+ *  model_ptr = mex_model_ptr to the RBM
+ *  idxA = 1-based body indexes of body A for m possible contacts
+ *  idxB = 1-based body indexes of body B for m possible contacts
+ *  xA = (3xm) matrix of contact positions in body A space
+ *  xB = (3xm) matrix of contact positions in body B space
+ *  normal = (3xm) contact normals (from B to A) for each of m possible contacts in world space
+ *  d = {k}(3xm) surface tangent basis vectors for the friction cone approximation in world space
+ *     **NOTE** k represents the half-count for basis vectors. (e.g. k = 2 means 4 basis vectors)
+ * Outputs:
+ *   n = dphi/dq normal vectors in joint coordinates
+ *   D = dD/dq surface tangent basis vectors in joint coordinates
+ *   dn = dn/dq second derivative of contact distances with respect to state
+ *   dD = dD/dq second derivate of basis vectors with respect to state
+ */
+
 typedef Matrix<double, 3, Dynamic> Matrix3xd;
 
 inline void getUniqueBodiesSorted(VectorXi const & idxA, VectorXi const & idxB, vector<int> & bodyIndsSorted)
@@ -138,6 +154,22 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 
   if(!mxIsCell(prhs[6])) {
     mexErrMsgIdAndTxt("Drake:contactConstraintsmex:InvalidBasisVectors", "d must be a cell array");
+  }
+
+  if(mxGetN(prhs[1]) != mxGetN(prhs[2])) {
+    mexErrMsgIdAndTxt("Drake:contactConstraintsmex:InvalidBodyIndexes", "idxA and idxB must be the same size");
+  }
+
+  if(mxGetN(prhs[3]) != mxGetN(prhs[4])) {
+    mexErrMsgIdAndTxt("Drake:contactConstraintsmex:InvalidBodyPoints", "xA and xB must be the same size");
+  }
+
+  if(mxGetM(prhs[3]) != 3 || mxGetM(prhs[4]) != 3) {
+    mexErrMsgIdAndTxt("Drake:contactConstraintsmex:InvalidBodyPointsDimension", "body points xA and xB must be 3 dimensional");
+  }
+
+  if(mxGetN(prhs[3]) != mxGetN(prhs[5])) {
+    mexErrMsgIdAndTxt("Drake:contactConstraintsmex:InvalidBodyPointsDimension", "normals must match the number of contact points");
   }
 
   RigidBodyManipulator *model= (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
