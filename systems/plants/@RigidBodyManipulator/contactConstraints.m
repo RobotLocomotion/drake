@@ -64,20 +64,28 @@ mu = ones(nC,1);
 if(obj.mex_model_ptr ~= 0) 
   d = surfaceTangentsmex(normal);
 else
-  d = obj.surfaceTangents(normal);  
+  d = obj.surfaceTangents(normal);
 end
 
 if compute_first_derivative
+  if(obj.mex_model_ptr ~= 0)
+    if(~compute_second_derivative)
+      [n, D] = contactConstraintsmex(obj.mex_model_ptr, int32(idxA), int32(idxB), xA, xB, normal, d);
+    else
+      [n, D, dn, dD] = contactConstraintsmex(obj.mex_model_ptr, int32(idxA), int32(idxB), xA, xB, normal, d);
+    end
+  else
+    
   nq = obj.getNumPositions;  
   nk = size(d,2);
   
   J = zeros(3*nC,nq)*kinsol.q(1);
   if compute_second_derivative,
-    dJ = zeros(3*nC,nq*nq)*kinsol.q(1);;
+    dJ = zeros(3*nC,nq*nq)*kinsol.q(1);
   end
+  %[mex_n, mex_D, mex_dn, mex_dD] = contactConstraintsmex(obj.mex_model_ptr, int32(idxA), int32(idxB), xA, xB, normal, d);
   
-%   assert(isequal(idxA,sort(idxA)))
-  
+  %assert(isequal(idxA,sort(idxA)))
   body_inds = unique([idxA(idxA>1);idxB(idxB>1)]);
   
   % Cache the results of a kron and repmat, since this was taking a ton of
@@ -85,14 +93,12 @@ if compute_first_derivative
   tmp_vec = repmat([-2;-1;0],nC,1);
   tmp_kron = kron(eye(nC),3*ones(3,1));
   
-  
   % loop over the bodies with contact points, instead of number of contacts
   % reduces the calls to forwardKin from n^2 to n
   for i=1:length(body_inds),
     % The contact indices related to this body, on idxA and idxB
     cindA = find(idxA == body_inds(i));
     cindB = find(idxB == body_inds(i));
-    
     % Vectorized calculation of Jacobian indices related to this contact
     % for contact i, this is (1:3) + (i-1)*3
     if ~isempty(cindA)
@@ -105,46 +111,19 @@ if compute_first_derivative
     else
       JindB = [];
     end
-    if compute_second_derivative,
-      [~,J_tmp,dJ_tmp] = obj.forwardKin(kinsol,body_inds(i),[xA(:,cindA) xB(:,cindB)]);
+    if compute_second_derivative
+      [~,J_tmp,dJ_tmp] = obj.forwardKin(kinsol,body_inds(i), [xA(:,cindA) xB(:,cindB)]);
       dJ(JindA,:) = dJ(JindA,:) + dJ_tmp(1:3*length(cindA),:);
       dJ(JindB,:) = dJ(JindB,:) - dJ_tmp(3*length(cindA)+1:end,:);
     else
-      [~,J_tmp] = obj.forwardKin(kinsol,body_inds(i),[xA(:,cindA) xB(:,cindB)]);
+      [~,J_tmp] = obj.forwardKin(kinsol, body_inds(i),  [xA(:,cindA) xB(:,cindB)]);
     end
     J(JindA,:) = J(JindA,:) + J_tmp(1:3*length(cindA),:);
     J(JindB,:) = J(JindB,:) - J_tmp(3*length(cindA)+1:end,:);
   end
-  
-%   for i=1:nC,
-% %     imax = find(idxA == idxA(i),1,'last');
-%     I = (1:3) + (i-1)*3;
-% %     I = (i-1)*3 + 1: 3*imax;
-%     
-%     % For each of the two bodies, if it is a real body (i.e. idx != 0),
-%     % then add compute the relevent jacobians in joint coordinates
-%     if idxA(i) ~= 1,
-%       if compute_second_derivative,
-%         [~,J(I,:),dJ(I,:)] = obj.forwardKin(kinsol,idxA(i),xA(:,i));
-%       else
-%         [~,J(I,:)] = obj.forwardKin(kinsol,idxA(i),xA(:,i));
-%       end
-%     end
-%     
-%     if idxB(i) ~= 1,
-%       if compute_second_derivative,
-%         [~,Jtmp,dJtmp] = obj.forwardKin(kinsol,idxB(i),xB(:,i));
-%         J(I,:) = J(I,:) - Jtmp;
-%         dJ(I,:) = dJ(I,:) - dJtmp;
-%       else
-%         [~,Jtmp] = obj.forwardKin(kinsol,idxB(i),xB(:,i));
-%         J(I,:) = J(I,:) - Jtmp;
-%       end
-%     end
-%   end
-  
   indmat = repmat(1:nC,3,1);
   n = sparse(indmat,1:3*nC,normal(:))*J;
+ 
   D = cell(1,nk);
   dD = cell(1,nk);
   for k=1:nk,
@@ -154,6 +133,7 @@ if compute_first_derivative
       dD{k} = reshape(sparse(indmat,1:3*nC,d{k}(:))*dJ,numel(n),nq);
     end
   end
+  
   for k=(nk+1):2*nk
     D{k} = -D{k-nk};
     if compute_second_derivative
@@ -163,6 +143,8 @@ if compute_first_derivative
   
   if compute_second_derivative
     dn = reshape(sparse(indmat,1:3*nC,normal(:))*dJ,numel(n),nq);
+  end
+  
   end
 end
 end
