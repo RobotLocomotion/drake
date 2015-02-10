@@ -201,6 +201,7 @@ classdef FootContactBlock < MIMODrakeSystem
             obj.controller_data.link_constraints(ind).ts(break_ind) = t;
             tf = ctrl_data.link_constraints(ind).ts(break_ind+1);
             pf = ctrl_data.link_constraints(ind).poses(:,break_ind+1);
+            pf(4:6) = p(4:6) + angleDiff(p(4:6), pf(4:6));
             pfdot = ctrl_data.link_constraints(ind).dposes(:,break_ind+1);
             [a0, a1, a2, a3] = cubicSplineCoefficients(tf-t, p, pf, pdot, pfdot);
             obj.controller_data.link_constraints(ind).poses(:,break_ind) = p;
@@ -227,6 +228,7 @@ classdef FootContactBlock < MIMODrakeSystem
             obj.controller_data.link_constraints(ind).ts(break_ind) = t;
             tf = ctrl_data.link_constraints(ind).ts(break_ind+1);
             pf = ctrl_data.link_constraints(ind).poses(:,break_ind+1);
+            pf(4:6) = p(4:6) + angleDiff(p(4:6), pf(4:6));
             pfdot = ctrl_data.link_constraints(ind).dposes(:,break_ind+1);
             [a0, a1, a2, a3] = cubicSplineCoefficients(tf-t, p, pf, pdot, pfdot);
             obj.controller_data.link_constraints(ind).poses(:,break_ind) = p;
