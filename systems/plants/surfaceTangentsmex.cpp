@@ -19,6 +19,7 @@ using namespace std;
 
 #define BASIS_VECTOR_HALF_COUNT 2  //number of basis vectors over 2 (i.e. 4 basis vectors in this case)
 #define NORMAL_DIMENSION 3
+#define EPSILON 10e-8
 
 typedef Matrix<double, NORMAL_DIMENSION, Dynamic> Matrix3xd;
 typedef Matrix<double, NORMAL_DIMENSION, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
@@ -76,9 +77,9 @@ inline void surfaceTangents(const Vector3d & normal, Matrix3kd & d)
   Vector3d t1,t2;
   double theta;
 
-  if (1 - normal(2) < 10e-8) { // handle the unit-normal case (since it's unit length, just check z)
+  if (1 - normal(2) < EPSILON) { // handle the unit-normal case (since it's unit length, just check z)
   	t1 << 1,0,0;
-  } else if(1 + normal(2) < 10e-8) {
+  } else if(1 + normal(2) < EPSILON) {
     t1 << -1,0,0;  //same for the reflected case
   } else {// now the general case
  	t1 << normal(1), -normal(0) , 0;
