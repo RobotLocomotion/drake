@@ -132,8 +132,12 @@ inline void buildSparseMatrix(Matrix3xd const & pts, SparseMatrix<double> & spar
 
 void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 
-  if (nrhs < 1) {
+  if (nrhs < 7) {
     mexErrMsgIdAndTxt("Drake:contactConstraintsmex:NotEnoughInputs","Usage [n, D, dn, dD] = contactConstraintsmex(model_ptr, idxA, idxB, xA, xB, normal, d)");
+  }
+
+  if(!mxIsCell(prhs[6])) {
+    mexErrMsgIdAndTxt("Drake:contactConstraintsmex:InvalidBasisVectors", "d must be a cell array");
   }
 
   RigidBodyManipulator *model= (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
