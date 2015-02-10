@@ -18,9 +18,9 @@ function [phi,normal,d,xA,xB,idxA,idxB,mu,n,D,dn,dD] = contactConstraints(obj,ki
 % @retval idxB (m x 1) The index of body B. 0 is the special case for the environment/terrain
 % @retval mu (m x 1) Coefficients of friction
 % @retval n (m x n) normal vector in joint coordinates, state vector length n
-% @retval D {k}(m x n) friction cone basis in joint coordinates, for k directions
+% @retval D {2k}(m x n) friction cone basis in joint coordinates, for k directions
 % @retval dn (mn x n) dn/dq derivative
-% @retval dD {k}(mn x n) dD/dq derivative
+% @retval dD {2k}(mn x n) dD/dq derivative
 
 compute_first_derivative = nargout > 8;
 compute_second_derivative = nargout > 10;
@@ -83,9 +83,7 @@ if compute_first_derivative
   if compute_second_derivative,
     dJ = zeros(3*nC,nq*nq)*kinsol.q(1);
   end
-  %[mex_n, mex_D, mex_dn, mex_dD] = contactConstraintsmex(obj.mex_model_ptr, int32(idxA), int32(idxB), xA, xB, normal, d);
   
-  %assert(isequal(idxA,sort(idxA)))
   body_inds = unique([idxA(idxA>1);idxB(idxB>1)]);
   
   % Cache the results of a kron and repmat, since this was taking a ton of
