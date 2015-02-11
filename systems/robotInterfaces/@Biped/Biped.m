@@ -276,7 +276,7 @@ classdef Biped < LeggedRobot
       end
     end
 
-    function slices = getBodyCollisionSlices(obj, q, varargin)
+    function slices = getBodyCollisionSlices(obj, varargin)
       % Get a simple collision model for the biped robot to enable
       % (limited) whole-body awareness during footstep planning. The
       % collision model is represented as a set of slices which define the 
@@ -297,7 +297,8 @@ classdef Biped < LeggedRobot
                                                               % terrain height variations. 
       p.addParamValue('padding_margin', [0, 0.05, 0.05, 0.05], @isnumeric) % padding for each slice in all directions
       p.addParamValue('debug', false, @isnumeric);
-      p.parse(q, varargin{:});
+      p.parse(varargin{:});
+      q = p.Results.q;
       options = p.Results;
 
       if nargin < 2 || isempty(q) || ~any(ismember(obj.getCollisionGeometryGroupNames, 'default'))
