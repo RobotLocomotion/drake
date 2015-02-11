@@ -1062,8 +1062,8 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       obj.manip = removeCollisionGroups(obj.manip,contact_groups);
     end
 
-    function obj = removeCollisionGroupsExcept(obj,contact_groups)
-      obj.manip = removeCollisionGroupsExcept(obj.manip,contact_groups);
+    function obj = removeCollisionGroupsExcept(obj,varargin)
+      obj.manip = removeCollisionGroupsExcept(obj.manip,varargin{:});
     end
 
     function str = getLinkName(obj,body_ind)
