@@ -15,6 +15,8 @@ classdef MotionPlanningProblem
     constraints={};  % a cell array of Constraint objects
     % todo: add differential constraints?  control affine only?
     % todo: add objectives?
+    x_inds={}; % a cell array of indices into the search space. obj.constraints{i}
+               % takes x(obj.x_inds{i}) as its input
   end
 
   methods
@@ -26,7 +28,7 @@ classdef MotionPlanningProblem
       if(nargin<2)
         var_names = cellfun(@(i) sprintf('x%d',i),num2cell((1:obj.num_vars)'),'UniformOutput',false);
       else
-        if(~iscellstr(var_names) || numel(var_names) ~= obj.num_vars)
+        if(~iscellstr(var_names) || numel(var_names) ~= num_vars)
           error('Drake:MotionPlanningProblem:InvalidArgument','Argument x_name should be a cell containing %d strings',obj.num_vars);
         end
         var_names = var_names(:);
@@ -139,13 +141,14 @@ classdef MotionPlanningProblem
       if nargin<3, x_inds = 1:obj.num_vars; end
       sizecheck(x_inds,constraint.xdim);
 
+      obj.x_inds{end+1} = x_inds;
       obj.constraints = vertcat(obj.constraints,{constraint});
     end
 
     function valid = checkConstraints(obj,x,varargin)
       valid = true;
       for i=1:length(obj.constraints)
-        y = eval(obj.constraints{i},x,varargin{:});
+        y = eval(obj.constraints{i},x(obj.x_inds{i}),varargin{:});
         if any(y<obj.constraints{i}.lb) || any(y>obj.constraints{i}.ub)
           valid = false;
           return;
