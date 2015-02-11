@@ -4,7 +4,7 @@
   <link name="box_hand_1">
     <inertial>
       <!-- Total mass of robotiq hand from the associated urdf -->
-      <mass value="1.3002"/>
+      <mass value="1.2002"/>
       <origin xyz="0 0 0"/>
       <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
     </inertial>
