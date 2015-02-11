@@ -1,14 +1,37 @@
 function kinsol = doKinematics(model, q, v, options, qd_old)
-% kinsol=doKinematics(model,q,b_compute_second_derivatives,use_mex,qd)
-% Computes the (forward) kinematics of the manipulator.
+% kinsol=doKinematics(model, q, v, options, qd_old)
+% Precomputes information necessary to compute kinematic and dynamic
+% quantities such as Jacobians (@see forwardKin, @see geometricJacobian),
+% mass matrix and dynamics bias (@see manipulatorDynamics), and other
+% biases, e.g. Jdot * v (@see geometricJacobianDotTimesV).
+% 
+% @param q joint position vector. Must be model.getNumPositions() x 1
+% @param v joint velocity vector. Must be model.getNumVelocities() x 1 or
+% empty
+% @param options options struct. Fields:
+% use_mex: whether or not to use the mex implementation. @default true
+% compute_gradients: boolean, if true: additionally precompute
+%   gradients of all quantities in doKinematics that are precomputed when
+%   compute_gradients is false. Set options.compute_gradients to true if
+%   gradients of Jacobians or dynamics are required. If only Jacobians
+%   (geometric or from forwardKin) are required, setting compute_gradients
+%   to true is *not* required. @default false
+% compute_JdotV: whether or not to precompute quantities necessary to
+% compute biases such as Jdot * v and the C term in manipulatorDynamics
+% @default true if v is passed in and not empty.
 %
-% @retval kinsol a certificate containing the solution (or information
-% about the solution) that must be passed to model.forwardKin() in order to
-% be evaluated.  Note: the contents of kinsol may change with
-% implementation details - do not attempt to use kinsol directly (our
-% contract is simply that it can always be passed to forwardKin to retrieve
-% the answer).
+% @retval kinsol a structure containing the precomputed information
+% (non-mex case) or a certificate of having precomputed this information
+% (mex case)
 %
+% Note: the contents of kinsol may change with implementation details - do
+% not attempt to use kinsol directly (our contract is simply that it can
+% always be used by other kinematics and dynamics methods in Drake.
+%
+% Note: old method signature: 
+% kinsol = doKinematics(model,q,b_compute_second_derivatives,use_mex,qd)
+% This method signature is deprecated, please transition to using the
+% options struct. Using the old signature is supported for now.
 
 checkDirty(model);
 
@@ -213,17 +236,6 @@ end
 end
 
 function kinsol = doKinematicsNew(model, q, v, options)
-% kinsol=doKinematics(model, q, v, options)
-% Computes the (forward) kinematics of the manipulator.
-%
-% @retval kinsol a certificate containing the solution (or information
-% about the solution) that must be passed to model.forwardKin() in order to
-% be evaluated.  Note: the contents of kinsol may change with
-% implementation details - do not attempt to use kinsol directly (our
-% contract is simply that it can always be passed to forwardKin to retrieve
-% the answer).
-%
-
 % TODO: currently lots of branch-induced sparsity unexploited in
 % gradient computations.
 
