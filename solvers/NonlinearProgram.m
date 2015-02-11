@@ -941,15 +941,22 @@ classdef NonlinearProgram
       % When using fmincon, if the algorithm is not specified through
       % setSolverOptions('fmincon','Algorithm',ALGORITHM), then it will
       % iterate all possible algorithms in fmincon to search for a solution.
-      switch lower(obj.solver)
-        case 'snopt'
-          [x,objval,exitflag,infeasible_constraint_name] = snopt(obj,x0);
-        case 'fmincon'
-          [x,objval,exitflag,infeasible_constraint_name] = fmincon(obj,x0);
-        case 'ipopt'
-          [x,objval,exitflag,infeasible_constraint_name] = ipopt(obj,x0);
-        otherwise
-          error('Drake:NonlinearProgram:UnknownSolver',['The requested solver, ',obj.solver,' is not known, or not currently supported']);
+      if(obj.num_vars == 0)
+        x = [];
+        objval = 0;
+        exitflag = 1;
+        infeasible_constraint_name = {};
+      else
+        switch lower(obj.solver)
+          case 'snopt'
+            [x,objval,exitflag,infeasible_constraint_name] = snopt(obj,x0);
+          case 'fmincon'
+            [x,objval,exitflag,infeasible_constraint_name] = fmincon(obj,x0);
+          case 'ipopt'
+            [x,objval,exitflag,infeasible_constraint_name] = ipopt(obj,x0);
+          otherwise
+            error('Drake:NonlinearProgram:UnknownSolver',['The requested solver, ',obj.solver,' is not known, or not currently supported']);
+        end
       end
     end
     
