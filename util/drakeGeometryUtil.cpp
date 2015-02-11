@@ -492,11 +492,11 @@ typename Gradient<Eigen::Matrix<typename DerivedR::Scalar, RPY_SIZE, 1>, Derived
   typedef typename Gradient<Eigen::Matrix<Scalar, RPY_SIZE, 1>, DerivedDR::ColsAtCompileTime>::type ReturnType;
   ReturnType drpy(RPY_SIZE, nq);
 
-  auto dR11_dq = getSubMatrixGradient(dR, 0, 0, R.rows());
-  auto dR21_dq = getSubMatrixGradient(dR, 1, 0, R.rows());
-  auto dR31_dq = getSubMatrixGradient(dR, 2, 0, R.rows());
-  auto dR32_dq = getSubMatrixGradient(dR, 2, 1, R.rows());
-  auto dR33_dq = getSubMatrixGradient(dR, 2, 2, R.rows());
+  auto dR11_dq = getSubMatrixGradient<DerivedDR::ColsAtCompileTime>(dR, 0, 0, R.rows());
+  auto dR21_dq = getSubMatrixGradient<DerivedDR::ColsAtCompileTime>(dR, 1, 0, R.rows());
+  auto dR31_dq = getSubMatrixGradient<DerivedDR::ColsAtCompileTime>(dR, 2, 0, R.rows());
+  auto dR32_dq = getSubMatrixGradient<DerivedDR::ColsAtCompileTime>(dR, 2, 1, R.rows());
+  auto dR33_dq = getSubMatrixGradient<DerivedDR::ColsAtCompileTime>(dR, 2, 2, R.rows());
 
   Scalar sqterm = R(2,1) * R(2,1) + R(2,2) * R(2,2);
 
@@ -526,15 +526,15 @@ typename Gradient<Eigen::Matrix<typename DerivedR::Scalar, QUAT_SIZE, 1>, Derive
   typedef typename Gradient<Eigen::Matrix<Scalar, QUAT_SIZE, 1>, DerivedDR::ColsAtCompileTime>::type ReturnType;
   typename DerivedDR::Index nq = dR.cols();
 
-  auto dR11_dq = getSubMatrixGradient(dR, 0, 0, R.rows());
-  auto dR12_dq = getSubMatrixGradient(dR, 0, 1, R.rows());
-  auto dR13_dq = getSubMatrixGradient(dR, 0, 2, R.rows());
-  auto dR21_dq = getSubMatrixGradient(dR, 1, 0, R.rows());
-  auto dR22_dq = getSubMatrixGradient(dR, 1, 1, R.rows());
-  auto dR23_dq = getSubMatrixGradient(dR, 1, 2, R.rows());
-  auto dR31_dq = getSubMatrixGradient(dR, 2, 0, R.rows());
-  auto dR32_dq = getSubMatrixGradient(dR, 2, 1, R.rows());
-  auto dR33_dq = getSubMatrixGradient(dR, 2, 2, R.rows());
+  auto dR11_dq = getSubMatrixGradient<DerivedDR::ColsAtCompileTime>(dR, 0, 0, R.rows());
+  auto dR12_dq = getSubMatrixGradient<DerivedDR::ColsAtCompileTime>(dR, 0, 1, R.rows());
+  auto dR13_dq = getSubMatrixGradient<DerivedDR::ColsAtCompileTime>(dR, 0, 2, R.rows());
+  auto dR21_dq = getSubMatrixGradient<DerivedDR::ColsAtCompileTime>(dR, 1, 0, R.rows());
+  auto dR22_dq = getSubMatrixGradient<DerivedDR::ColsAtCompileTime>(dR, 1, 1, R.rows());
+  auto dR23_dq = getSubMatrixGradient<DerivedDR::ColsAtCompileTime>(dR, 1, 2, R.rows());
+  auto dR31_dq = getSubMatrixGradient<DerivedDR::ColsAtCompileTime>(dR, 2, 0, R.rows());
+  auto dR32_dq = getSubMatrixGradient<DerivedDR::ColsAtCompileTime>(dR, 2, 1, R.rows());
+  auto dR33_dq = getSubMatrixGradient<DerivedDR::ColsAtCompileTime>(dR, 2, 2, R.rows());
 
   Matrix<Scalar, 4, 3> A;
   A.row(0) << 1.0, 1.0, 1.0;
@@ -804,12 +804,10 @@ GradientVar<typename DerivedI::Scalar, TWIST_SIZE, TWIST_SIZE> transformSpatialI
   ret.value() = transformSpatialForce(T_current_to_new, I_half_transformed.transpose());
 
   if (gradient_order > 0) {
-    auto T_new_to_current = T_current_to_new.inverse();
-    auto dT_new_to_current = dHomogTransInv(T_current_to_new, *dT_current_to_new);
     auto dI = Eigen::Matrix<typename DerivedI::Scalar, DerivedI::SizeAtCompileTime, Eigen::Dynamic>::Zero(I.size(), nq).eval(); // TODO: would be better not to evaluate and make another explicit instantiation
-    auto dI_half_transformed = dTransformAdjointTranspose(T_new_to_current, I, dT_new_to_current, dI);
+    auto dI_half_transformed = dTransformSpatialForce(T_current_to_new, I, *dT_current_to_new, dI);
     auto dI_half_transformed_transpose = transposeGrad(dI_half_transformed, I_half_transformed.rows());
-    ret.gradient().value() = dTransformAdjointTranspose(T_new_to_current, I_half_transformed.transpose(), dT_new_to_current, dI_half_transformed_transpose);
+    ret.gradient().value() = dTransformSpatialForce(T_current_to_new, I_half_transformed.transpose(), *dT_current_to_new, dI_half_transformed_transpose);
   }
   return ret;
 }
@@ -883,7 +881,7 @@ typename DHomogTrans<DerivedDT>::type dHomogTransInv(
 }
 
 template <typename Scalar, typename DerivedX, typename DerivedDT, typename DerivedDX>
-typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime, 1>::type dTransformAdjoint(
+typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime, 1>::type dTransformSpatialMotion(
     const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T,
     const Eigen::MatrixBase<DerivedX>& X,
     const Eigen::MatrixBase<DerivedDT>& dT,
@@ -914,20 +912,19 @@ typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime, 1>::type dTransformAdj
     auto dXomega_col = getSubMatrixGradient<Eigen::Dynamic>(dX, Xomega_rows, col_array, X.rows());
     auto dXv_col = getSubMatrixGradient<Eigen::Dynamic>(dX, Xv_rows, col_array, X.rows());
 
-    auto dRXomega_col = (R * dXomega_col + matGradMult(dR, Xomega_col)).eval();
-    auto dRXv_col = (R * dXv_col + matGradMult(dR, Xv_col)).eval();
+    auto domega_part_col = (R * dXomega_col + matGradMult(dR, Xomega_col)).eval();
+    auto dv_part_col = (R * dXv_col + matGradMult(dR, Xv_col)).eval();
+    dv_part_col += dp.colwise().cross(RXomega_col);
+    dv_part_col -= domega_part_col.colwise().cross(p);
 
-    auto dp_hatRXomega_col = ((dp.colwise().cross(RXomega_col) - dRXomega_col.colwise().cross(p)).eval()).eval();
-    auto Xv_part = (dp_hatRXomega_col + dRXv_col).eval();
-
-    setSubMatrixGradient<Eigen::Dynamic>(ret, dRXomega_col, Xomega_rows, col_array, X.rows());
-    setSubMatrixGradient<Eigen::Dynamic>(ret, Xv_part, Xv_rows, col_array, X.rows());
+    setSubMatrixGradient<Eigen::Dynamic>(ret, domega_part_col, Xomega_rows, col_array, X.rows());
+    setSubMatrixGradient<Eigen::Dynamic>(ret, dv_part_col, Xv_rows, col_array, X.rows());
   }
   return ret;
 }
 
 template <typename Scalar, typename DerivedX, typename DerivedDT, typename DerivedDX>
-typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime>::type dTransformAdjointTranspose(
+typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime>::type dTransformSpatialForce(
     const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T,
     const Eigen::MatrixBase<DerivedX>& X,
     const Eigen::MatrixBase<DerivedDT>& dT,
@@ -945,9 +942,6 @@ typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime>::type dTransformAdjoin
   auto dR = getSubMatrixGradient<Eigen::Dynamic>(dT, rows, R_cols, T.Rows);
   auto dp = getSubMatrixGradient<Eigen::Dynamic>(dT, rows, p_cols, T.Rows);
 
-  auto Rtranspose = R.transpose();
-  auto dRtranspose = transposeGrad(dR, R.rows());
-
   typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime>::type ret(X.size(), nq);
   std::array<int, 3> Xomega_rows = {0, 1, 2};
   std::array<int, 3> Xv_rows = {3, 4, 5};
@@ -955,17 +949,21 @@ typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime>::type dTransformAdjoin
     auto Xomega_col = X.template block<3, 1>(0, col);
     auto Xv_col = X.template block<3, 1>(3, col);
 
+    auto RXv_col = (R * Xv_col).eval();
+
     std::array<int, 1> col_array = {col};
     auto dXomega_col = getSubMatrixGradient<Eigen::Dynamic>(dX, Xomega_rows, col_array, X.rows());
     auto dXv_col = getSubMatrixGradient<Eigen::Dynamic>(dX, Xv_rows, col_array, X.rows());
 
-    auto dp_hatXv_col = (dp.colwise().cross(Xv_col) - dXv_col.colwise().cross(p)).eval();
-    auto Xomega_col_minus_p_cross_Xv_col = (Xomega_col - p.cross(Xv_col)).eval();
-    auto dXomega_transformed_col = (Rtranspose * (dXomega_col - dp_hatXv_col) + matGradMult(dRtranspose, Xomega_col_minus_p_cross_Xv_col)).eval();
-    auto dRtransposeXv_col = (Rtranspose * dXv_col + matGradMult(dRtranspose, Xv_col)).eval();
+    auto domega_part_col = (R * dXomega_col).eval();
+    domega_part_col += matGradMult(dR, Xomega_col);
+    auto dv_part_col = (R * dXv_col).eval();
+    dv_part_col += matGradMult(dR, Xv_col);
+    domega_part_col += dp.colwise().cross(RXv_col);
+    domega_part_col -= dv_part_col.colwise().cross(p);
 
-    setSubMatrixGradient<Eigen::Dynamic>(ret, dXomega_transformed_col, Xomega_rows, col_array, X.rows());
-    setSubMatrixGradient<Eigen::Dynamic>(ret, dRtransposeXv_col, Xv_rows, col_array, X.rows());
+    setSubMatrixGradient<Eigen::Dynamic>(ret, domega_part_col, Xomega_rows, col_array, X.rows());
+    setSubMatrixGradient<Eigen::Dynamic>(ret, dv_part_col, Xv_rows, col_array, X.rows());
   }
   return ret;
 }
@@ -1093,25 +1091,25 @@ template DLLEXPORT DHomogTrans<Matrix<double, HOMOGENEOUS_TRANSFORM_SIZE, Dynami
     const Isometry3d&,
     const MatrixBase< Matrix<double, HOMOGENEOUS_TRANSFORM_SIZE, Dynamic> >&);
 
-template DLLEXPORT Gradient< Matrix<double, TWIST_SIZE, Dynamic>, Dynamic, 1>::type dTransformAdjoint(
+template DLLEXPORT Gradient< Matrix<double, TWIST_SIZE, Dynamic>, Dynamic, 1>::type dTransformSpatialMotion(
     const Isometry3d&,
     const MatrixBase< Matrix<double, TWIST_SIZE, Dynamic> >&,
     const MatrixBase< Matrix<double, HOMOGENEOUS_TRANSFORM_SIZE, Dynamic> >&,
     const MatrixBase<MatrixXd>&);
 
-template DLLEXPORT Gradient< Matrix<double, TWIST_SIZE, 1>, Dynamic, 1>::type dTransformAdjoint(
+template DLLEXPORT Gradient< Matrix<double, TWIST_SIZE, 1>, Dynamic, 1>::type dTransformSpatialMotion(
     const Isometry3d&,
     const MatrixBase< Matrix<double, TWIST_SIZE, 1> >&,
     const MatrixBase< Matrix<double, HOMOGENEOUS_TRANSFORM_SIZE, Dynamic> >&,
     const MatrixBase< Matrix<double, TWIST_SIZE, Eigen::Dynamic> >&);
 
-template DLLEXPORT Gradient< Matrix<double, TWIST_SIZE, Dynamic>, Dynamic, 1>::type dTransformAdjointTranspose(
+template DLLEXPORT Gradient< Matrix<double, TWIST_SIZE, Dynamic>, Dynamic, 1>::type dTransformSpatialForce(
     const Isometry3d&,
     const MatrixBase< Matrix<double, TWIST_SIZE, Dynamic> >&,
     const MatrixBase< Matrix<double, HOMOGENEOUS_TRANSFORM_SIZE, Dynamic> >&,
     const MatrixBase<MatrixXd>&);
 
-template DLLEXPORT Gradient< Matrix<double, TWIST_SIZE, Dynamic>, Dynamic, 1>::type dTransformAdjointTranspose(
+template DLLEXPORT Gradient< Matrix<double, TWIST_SIZE, Dynamic>, Dynamic, 1>::type dTransformSpatialForce(
     const Isometry3d&,
     const MatrixBase< Matrix<double, TWIST_SIZE, Dynamic> >&,
     const MatrixBase<MatrixXd>&,

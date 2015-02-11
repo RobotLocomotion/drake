@@ -20,8 +20,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
   auto dT = dHomogTrans(T, S, qdot_to_v).eval();
   auto dTInv = dHomogTransInv(T, dT).eval();
-  auto dAdT = dTransformAdjoint(T, X, dT, dX).eval();
-  auto dAdT_transpose = dTransformAdjointTranspose(T, X, dT, dX).eval();
+  auto dAdT = dTransformSpatialMotion(T, X, dT, dX).eval();
+  auto dAdTInv_transpose = dTransformSpatialForce(T, X, dT, dX).eval();
 
   Vector4d x_norm;
   Gradient<Vector4d, 4, 1>::type dx_norm;
@@ -32,7 +32,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   plhs[outnum++] = eigenToMatlab(dT);
   plhs[outnum++] = eigenToMatlab(dTInv);
   plhs[outnum++] = eigenToMatlab(dAdT);
-  plhs[outnum++] = eigenToMatlab(dAdT_transpose);
+  plhs[outnum++] = eigenToMatlab(dAdTInv_transpose);
   plhs[outnum++] = eigenToMatlab(x_norm);
   plhs[outnum++] = eigenToMatlab(dx_norm);
   plhs[outnum++] = eigenToMatlab(ddx_norm);

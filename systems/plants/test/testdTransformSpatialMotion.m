@@ -1,7 +1,8 @@
-function testdTransformAdjoint()
+function testdTransformSpatialMotion()
 testFallingBrick('rpy');
-%+++FLOATINGBASE FIXME reenable test:
-% testFallingBrick('quat');
+if RigidBodyManipulator.use_new_kinsol
+  testFallingBrick('quat');
+end
 end
 
 function testFallingBrick(floatingType)
@@ -17,7 +18,7 @@ qdotToV = jointQdot2v(m.getBody(2), q);
 dHdqVec = dHomogTrans(H, S, qdotToV);
 X = randn(6, 4);
 dXdq = zeros(numel(X), nq);
-dAdH_times_X_1 = dTransformAdjoint(H, X, dHdqVec, dXdq);
+dAdH_times_X_1 = dTransformSpatialMotion(H, X, dHdqVec, dXdq);
 
 delta = 1e-7;
 for i = 1 : nq

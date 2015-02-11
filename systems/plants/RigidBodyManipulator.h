@@ -179,6 +179,7 @@ public:
   std::vector<std::string> robot_name;
 
   int num_dof; // treated as nq now; TODO: rename to nq
+  int num_velocities;
   VectorXd joint_limit_min;
   VectorXd joint_limit_max;
 

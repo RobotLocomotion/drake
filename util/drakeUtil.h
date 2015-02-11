@@ -6,6 +6,7 @@
  */
 
 #include "mex.h"
+#include <vector>
 #include <utility>
 #include <Eigen/Core>
 
@@ -45,6 +46,45 @@ template <typename Derived> inline void destroyDrakeMexPointer(const mxArray* mx
 //  mexPrintf(mexIsLocked() ? "mex file is locked\n" : "mex file is unlocked\n");
 }
 
+template <typename DerivedA>
+mxArray* eigenToMatlab(const DerivedA &m)
+{
+  // this avoids zero initialization that would occur using mxCreateDoubleMatrix with nonzero dimensions.
+  // see https://classes.soe.ucsc.edu/ee264/Fall11/cmex.pdf, page 8
+  mxArray* pm = mxCreateDoubleMatrix(0, 0, mxREAL);
+  int rows = static_cast<int>(m.rows());
+  int cols = static_cast<int>(m.cols());
+  int numel = rows * cols;
+  mxSetM(pm, rows);
+  mxSetN(pm, cols);
+  if (numel)
+    mxSetData(pm, mxMalloc(sizeof(double) * numel));
+  memcpy(mxGetPr(pm), m.data(), sizeof(double)* numel);
+  return pm;
+}
+
+template<int RowsAtCompileTime, int ColsAtCompileTime>
+Eigen::Matrix<double, RowsAtCompileTime, ColsAtCompileTime> matlabToEigen(const mxArray* matlab_array)
+{
+  const mwSize* size_array = mxGetDimensions(matlab_array);
+  Eigen::Matrix<double, RowsAtCompileTime, ColsAtCompileTime> ret(size_array[0], size_array[1]);
+  memcpy(ret.data(), mxGetPr(matlab_array), sizeof(double) * ret.size());
+  return ret;
+}
+
+mxArray* stdVectorToMatlab(const std::vector<int>& vec) {
+  mxArray* pm = mxCreateDoubleMatrix(static_cast<int>(vec.size()), 1, mxREAL);
+  for (int i = 0; i < static_cast<int>(vec.size()); i++) {
+    mxGetPr(pm)[i] = (double) vec[i];
+  }
+  return pm;
+}
+
+void baseZeroToBaseOne(std::vector<int>& vec)
+{
+  for (std::vector<int>::iterator iter=vec.begin(); iter!=vec.end(); iter++)
+    (*iter)++;
+}
 
 DLLEXPORT double angleAverage(double theta1, double theta2);
 
