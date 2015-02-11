@@ -25,7 +25,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       obj = obj@TimeSteppingRigidBodyManipulator(urdf,options.dt,options);
       obj = obj@Biped('r_foot_sole', 'l_foot_sole');
       warning(w);
-
+      
       if (~strcmp(options.hands, 'none'))
         if (strcmp(options.hands, 'robotiq'))
           options_hand.weld_to_link = findLinkId(obj,'r_hand');
@@ -41,7 +41,6 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
         end
       end
 
-      
       if options.floating
         % could also do fixed point search here
         obj = obj.setInitialState(obj.resolveConstraints(zeros(obj.getNumStates(),1)));
