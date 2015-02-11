@@ -102,7 +102,7 @@ else % otherwise set up the LCM blocks and run simulink.
   pstruct.StopTime = num2str(options.tspan(2));
 
   if (~isempty(x0)) % handle initial conditions
-    x0 = obj.stateVectorToStructure(x0,mdl);
+    x0 = obj.stateVectorToStructure(double(x0),mdl);
     assignin('base',[mdl,'_x0'],x0);
     pstruct.InitialState = [mdl,'_x0'];
     pstruct.LoadInitialState = 'on';
