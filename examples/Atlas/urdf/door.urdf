@@ -222,6 +222,7 @@
     <origin xyz="-0.041275 -0.460375 1.029495" />
     <axis xyz="0 0 1" />
     <limit lower="0" upper="3/4*pi" />
+    <dynamics friction="1" damping="1" />
   </joint>
  
 <joint
@@ -241,7 +242,14 @@
     <origin xyz="0.079375 0.8509 -0.102394" />
     <axis xyz="1 0 0" />
     <limit lower="-pi/2" upper="pi/2" />
+    <dynamics friction="0.1" damping="0.1" />
   </joint>
+
+  <force_element name="spring">
+    <torsional_spring stiffness="1" rest_angle="0">
+      <joint name="handle_turn" />
+    </torsional_spring>
+  </force_element>
 
 <joint
     name="handle"

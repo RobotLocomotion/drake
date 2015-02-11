@@ -1,4 +1,9 @@
 function testNLP
+nlp0 = NonlinearProgram(0);
+sol = nlp0.solve([]);
+if(~isempty(sol))
+  error('Solution should be empty for this problem');
+end
 nlp1 = NonlinearProgram(3);
 nlp1 = nlp1.setCheckGrad(true);
 warning('Off','optimlib:fmincon:WillRunDiffAlg');
