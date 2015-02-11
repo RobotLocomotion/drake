@@ -13,6 +13,9 @@ classdef Biped < LeggedRobot
   properties
     foot_body_id
     foot_frame_id
+    inner_foot_shape % see getInnerFootShape() below
+    default_body_collision_slices % see getBodyCollisionSlices() below
+    body_collision_slice_heights % see getBodyCollisionSlices() below
   end
 
   properties(Abstract, SetAccess = protected, GetAccess = public)
@@ -145,7 +148,6 @@ classdef Biped < LeggedRobot
       % Convenient way to find the poses of the center soles of the feet given a
       % configuration vector q0
 
-      typecheck(q0,'numeric');
       sizecheck(q0,[obj.getNumPositions,1]);
 
       kinsol = doKinematics(obj,q0);
@@ -241,6 +243,116 @@ classdef Biped < LeggedRobot
       fc = any(bsxfun(@eq, contact_pairs(:), foot_indices),1)';
     end
 
+    function collision_model = getFootstepPlanningCollisionModel(obj, varargin)
+      % Get a simple collision model for the Atlas robot to enable
+      % (limited) whole-body awareness during footstep planning. The
+      % collision model is represented as a set of points which define
+      % the shape of the foot and a set of slices which define the 
+      % bounding boxes of the legs, torso, and arms. The collision model
+      % of the foot used here may actually be smaller than the robot's
+      % feet in order to allow the toes or heels to hang over edges. 
+      % @param q (optional) if provided, use the given robot configuration 
+      %          to compute the collision volumes. Otherwise use hard-coded
+      %          values derived from a typical walking posture.
+      % @retval collision_model an IRIS CollisionModel object with fields
+      %         foot and body. The body field has subfields z and xy, where
+      %         xy is of shape [3, N, length(z)]. Each page of xy(:,:,j)
+      %         represents the bounds of the robot from z(j) to z(j+1) (or inf).
+      checkDependency('iris');
+      foot_shape = obj.getInnerFootShape();
+      slices = obj.getBodyCollisionSlices(varargin{:});
+      collision_model = iris.terrain_grid.CollisionModel(foot_shape, slices);
+    end
+
+    function shape = getInnerFootShape(obj)
+      % Get an inner approximation of the foot shape as a set of points in xy. The convention here is that this entire shape must be supported by the terrain. So, making this shape smaller than the actual foot will allow the edge of the foot to hang over edges when the footstep planner is run. 
+      % By convention, x points forward (from heel to toe), y points left, and the foot shape is symmetric about y=0.
+      if ~isempty(obj.inner_foot_shape)
+        shape = obj.inner_foot_shape;
+      else
+        obj.warnAboutAtlasDefault('inner_foot_shape');
+        shape = [-0.12, -0.12, 0.13, 0.13;
+                0.04, -0.04, 0.04, -0.04];
+      end
+    end
+
+    function slices = getBodyCollisionSlices(obj, varargin)
+      % Get a simple collision model for the biped robot to enable
+      % (limited) whole-body awareness during footstep planning. The
+      % collision model is represented as a set of slices which define the 
+      % bounding boxes of the legs, torso, and arms. The slices are taken at
+      % z values which can be specified in obj.body_collision_slice_heights
+      % and which are measured in meters up from the sole of the robot's feet
+      % @param q (optional) if provided, use the given robot configuration 
+      %          to compute the collision volumes. Otherwise use hard-coded
+      %          values derived from a typical walking posture.
+      % @retval slices a struct with fields z and xy, where
+      %         xy is of shape [3, N, length(z)]. Each page of xy(:,:,j)
+      %         represents the bounds of the robot from z(j) to z(j+1) (or inf).
+      p = inputParser();
+      p.addOptional('q', []);
+      p.addParamValue('bottom_slice_shift', 0.05, @isscalar); % amount to shift the lowest collision 
+                                                              % slice upward (in m) to prevent false 
+                                                              % positive obstacle detections from small 
+                                                              % terrain height variations. 
+      p.addParamValue('padding_margin', [0, 0.05, 0.05, 0.05], @isnumeric) % padding for each slice in all directions
+      p.addParamValue('debug', false, @isnumeric);
+      p.parse(varargin{:});
+      q = p.Results.q;
+      options = p.Results;
+
+      if nargin < 2 || isempty(q) || ~any(ismember(obj.getCollisionGeometryGroupNames, 'default'))
+        if ~any(ismember(obj.getCollisionGeometryGroupNames, 'default'))
+          warning('Drake:Biped:MayBeMissingCollisionGeometry', 'This biped may not have any collision geometry, so computing an upper body collision model from a configuration may not be possible. Using the default model instead.')
+        end
+        if ~isempty(obj.default_body_collision_slices)
+          slices = obj.default_body_collision_slices;
+        else
+          obj.warnAboutAtlasDefault('default_body_collision_slices');
+          slices = struct('z', [0.05, 0.35, 0.75, 1.15],...
+                     'xy', cat(3, ...
+                         [-0.17, -0.17, 0.17, 0.17; 0.07, -0.07, 0.07, -0.07],...
+                         [-0.17, -0.17, 0.25, 0.25; .25, -.25, .25, -.25],...
+                         [-0.2, -0.2, 0.25, 0.25; .4, -.4, .4, -.4],...
+                         [-0.4, -0.4, 0.3, 0.3; .45, -.45, .45, -.45]));
+        end
+      else
+        if ~isempty(obj.body_collision_slice_heights)
+          slice_heights = obj.body_collision_slice_heights;
+        else
+          obj.warnAboutAtlasDefault('body_collision_slice_heights');
+          slice_heights = [0, 0.35, 0.75, 1.15, 2];
+        end
+        if isscalar(options.padding_margin)
+          options.padding_margin = options.padding_margin + zeros(size(slice_heights));
+        end
+        slices = obj.collisionSlices(q, slice_heights, 'margin', options.padding_margin, 'debug', options.debug);
+        % Shift the lowest slice up slightly (to prevent false positive obstacle
+        % detections from small terrain height variations). 
+        slices.z(1) = slices.z(1) + options.bottom_slice_shift;
+
+        % Center and average the slices in y to simulate putting the center of mass above one foot
+        for j = 1:length(slices.z)
+          slices.xy(2,:,j) = slices.xy(2,:,j) - mean(slices.xy(2,:,j));
+        end
+
+        if options.debug
+          checkDependency('iris');
+          figure(105)
+          for j = 1:length(slice_heights)-1
+            verts = [slices.xy(:,:,j), slices.xy(:,:,j); repmat(slice_heights(j), 1, 4), repmat(slice_heights(j+1), 1, 4)];
+            iris.drawing.drawPolyFromVertices(verts, 'b');
+          end
+          drawnow();
+        end
+      end
+    end
+
+    function warnAboutAtlasDefault(obj, field_name)
+      if ~isa(obj, 'Atlas')
+        warning('Drake:Biped:UsingAtlasDefaults', 'Using default value from Atlas for the following value: ''%s''. You may want to override that value in your particular Biped subclass', field_name)
+      end
+    end
   end
 end
 
