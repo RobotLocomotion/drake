@@ -30,7 +30,7 @@ for i = 2 : NB
   if compute_gradients
     dbody_to_world = kinsol.dTdq{i};
     dbody_to_world = dHomogTransInv(body_to_world, dbody_to_world);
-    dAd_world_to_body = dTransformAdjoint(world_to_body, eye(6), dbody_to_world, zeros(numel(Ad_world_to_body), nq));
+    dAd_world_to_body = dTransformSpatialMotion(world_to_body, eye(6), dbody_to_world, zeros(numel(Ad_world_to_body), nq));
     dinertias{i} = quadFormGrad(Ad_world_to_body, body.I, dAd_world_to_body);
   end
 end

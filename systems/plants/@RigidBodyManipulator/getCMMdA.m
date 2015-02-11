@@ -161,7 +161,7 @@ else
     dA = vertcat(dABlocks{:});
     dtransform_com_to_world = zeros(numel(transform_com_to_world), nq);
     dtransform_com_to_world = setSubMatrixGradient(dtransform_com_to_world, dcom, 1:3, 4, size(transform_com_to_world));
-    dA = dTransformAdjointTranspose(transform_com_to_world, A, dtransform_com_to_world, dA);
+    dA = dTransformSpatialForce(inv(transform_com_to_world), A, -dtransform_com_to_world, dA);
   end
 end
 

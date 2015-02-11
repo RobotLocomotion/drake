@@ -1,7 +1,8 @@
 function testdHomogTrans()
 testFallingBrick('rpy');
-%+++FLOATINGBASE FIXME reenable test:
-% testFallingBrick('quat');
+if RigidBodyManipulator.use_new_kinsol
+  testFallingBrick('quat');
+end
 end
 
 function testFallingBrick(floatingType)

@@ -338,7 +338,7 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
   bodies.reserve(num_bodies);
   for (int i = last_num_bodies; i < num_bodies; i++) {
     bodies.push_back(std::unique_ptr<RigidBody>(new RigidBody()));
-    bodies[i]->dofnum = i - 1;
+//    bodies[i]->dofnum = i - 1;
   } // setup default dofnums
 
   for (int i = 0; i < num_bodies; i++) {
@@ -939,7 +939,7 @@ void RigidBodyManipulator::doKinematicsNew(double* q, bool compute_gradients, do
         // gradient of motion subspace in world
         MatrixXd dSdq = MatrixXd::Zero(body.S.size(), nq);
         dSdq.middleCols(body.dofnum, body.getJoint().getNumPositions()) = body.dSdqi;
-        body.dJdq = dTransformAdjoint(body.T_new, body.S, body.dTdq_new, dSdq);
+        body.dJdq = dTransformSpatialMotion(body.T_new, body.S, body.dTdq_new, dSdq);
       }
 
       if (v) {
@@ -977,7 +977,7 @@ void RigidBodyManipulator::doKinematicsNew(double* q, bool compute_gradients, do
             dcrm(body.twist, joint_twist, body.dtwistdq, djoint_twistdq, &dcrm_twist_joint_twistdq); // TODO: make dcrm templated
             body.dJdotVdq = bodies[body.parent]->dJdotVdq
                 + dcrm_twist_joint_twistdq
-                + dTransformAdjoint(body.T_new, body.SdotV, body.dTdq_new, dSdotVdq);
+                + dTransformSpatialMotion(body.T_new, body.SdotV, body.dTdq_new, dSdotVdq);
 
             // dJdotvdv
             // TODO: exploit sparsity better
@@ -1134,7 +1134,7 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::centroidal
   }
 
   auto com = centerOfMass<Scalar>(gradient_order);
-  int nv = num_dof; // FLOATINGBASE TODO: assumes nq = nv
+  int nv = num_velocities;
   GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> ret(TWIST_SIZE, nv, nq, gradient_order);
   int gradient_row_start = 0;
   for (int i = 0; i < num_bodies; i++) {
@@ -1142,7 +1142,7 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::centroidal
     if (body.hasParent()) {
       int nv_joint = body.getJoint().getNumVelocities();
 
-      ret.value().middleCols(body.dofnum, nv_joint).noalias() = Ic_new[i] * body.J; // FLOATINGBASE TODO: assumes nq = nv
+      ret.value().middleCols(body.velocity_num_start, nv_joint).noalias() = Ic_new[i] * body.J;
 
       if (gradient_order > 0) {
         ret.gradient().value().middleRows(gradient_row_start, TWIST_SIZE * nv_joint) = matGradMultMat(Ic_new[i], body.J, dIc_new[i], body.dJdq);
@@ -1157,8 +1157,8 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::centroidal
   if (gradient_order > 0) {
     Eigen::Matrix<double, HOMOGENEOUS_TRANSFORM_SIZE, Eigen::Dynamic> dtransform_world_to_com(HOMOGENEOUS_TRANSFORM_SIZE, nq);
     dtransform_world_to_com.setZero();
-    setSubMatrixGradient<Eigen::Dynamic>(dtransform_world_to_com, com.gradient().value(), intRange<3>(0), intRange<1>(3), SPACE_DIMENSION + 1);
-    ret.gradient().value() = dTransformAdjointTranspose(T.inverse(), ret.value(), dtransform_world_to_com, ret.gradient().value());
+    setSubMatrixGradient<Eigen::Dynamic>(dtransform_world_to_com, (-com.gradient().value()).eval(), intRange<3>(0), intRange<1>(3), SPACE_DIMENSION + 1);
+    ret.gradient().value() = dTransformSpatialForce(T, ret.value(), dtransform_world_to_com, ret.gradient().value());
   }
   ret.value() = transformSpatialForce(T, ret.value());
   return ret;
@@ -1175,6 +1175,10 @@ GradientVar<Scalar, SPACE_DIMENSION, 1> RigidBodyManipulator::centerOfMass(int g
   double m = 0.0;
   double body_mass;
   com.value().setZero();
+  if (gradient_order > 0)
+    com.gradient().value().setZero();
+  if (gradient_order > 1)
+    com.gradient().gradient().value().setZero();
 
   for (int i = 0; i < num_bodies; i++) {
     std::set<int>::iterator robotnum_it = robotnum.find(bodies[i]->robotnum);
@@ -1611,12 +1615,12 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJ
           dJ.block(col_start * TWIST_SIZE, 0, J_block.size(), nq).noalias() = (sign * matGradMultMat(body.J, body.qdot_to_v, body.dJdq, body.dqdot_to_v_dq)).eval();
         }
         else {
-          dJ.block(col_start * TWIST_SIZE, 0, J_block.size(), nq).noalias() = (sign * body.dJdq).eval();
+          dJ.block(col_start * TWIST_SIZE, 0, J_block.size(), nq).noalias() = (sign * body.dJdq); //.eval();
         }
       }
 
       if (v_or_qdot_indices != nullptr) {
-        int cols_block_start = body.dofnum; // FLOATINGBASE TODO: assumes qd = v
+        int cols_block_start = in_terms_of_qdot ? body.dofnum : body.velocity_num_start;
         for (int j = 0; j < ncols_block; j++) {
           v_or_qdot_indices->push_back(cols_block_start + j);
         }
@@ -1630,7 +1634,7 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJ
 
       if (gradient_order > 0) {
         auto& dJ = ret.gradient().value();
-        dJ = (dTransformAdjoint(T_world_to_frame, J, T_world_to_frame_gradientvar.gradient().value(), dJ)).eval(); // eval to avoid aliasing
+        dJ = (dTransformSpatialMotion(T_world_to_frame, J, T_world_to_frame_gradientvar.gradient().value(), dJ)).eval(); // eval to avoid aliasing
       }
       J = transformSpatialMotion(T_world_to_frame, J);
     }
@@ -1680,7 +1684,7 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJ
 
       if (v_or_qdot_indices) {
         for (int j = 0; j < joint.getNumVelocities(); j++) {
-          v_or_qdot_indices->push_back(body->dofnum + j); // FLOATINGBASE TODO: assumes qd = v
+          v_or_qdot_indices->push_back(body->dofnum + j); // assumes qd = v
         }
       }
       col_start = col_start + joint.getNumVelocities();
@@ -1928,28 +1932,23 @@ GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, DerivedPoints::ColsA
   // convert rotation representation
   GradientVar<Scalar, Eigen::Dynamic, 1> qrot = rotmat2Representation(R, rotation_type);
   x.value().bottomRows(qrot.value().rows()).colwise() = qrot.value();
-  x.gradient().value().setZero();
 
   if (x_gradient_order > 0) {
-    std::vector<int> position_rows;
-    position_rows.reserve(SPACE_DIMENSION);
-    for (int i = 0; i < SPACE_DIMENSION; i++)
-      position_rows.push_back(i);
-
-    std::vector<int> rotation_rows;
-    rotation_rows.reserve(qrot.value().rows());
-    for (int i = SPACE_DIMENSION; i < SPACE_DIMENSION + qrot.value().rows(); i++)
-      rotation_rows.push_back(i);
-
-    std::vector<int> cols(1);
+    x.gradient().value().setZero();
     for (int i = 0; i < npoints; i++) {
-      cols[0] = i;
       const auto& point = points.template middleCols<1>(i);
       auto point_gradient = matGradMult(R.gradient().value(), point).eval();
       point_gradient += p.gradient().value();
 
-      setSubMatrixGradient(x.gradient().value(), point_gradient, position_rows, cols, x.value().rows());
-      setSubMatrixGradient(x.gradient().value(), qrot.gradient().value(), rotation_rows, cols, x.value().rows());
+      // position rows
+      for (int row = 0; row < SPACE_DIMENSION; row++) {
+        setSubMatrixGradient<Eigen::Dynamic>(x.gradient().value(), getSubMatrixGradient<Eigen::Dynamic>(point_gradient, row, 0, point.rows()), row, i, x.value().rows());
+      }
+
+      // rotation rows
+      for (int row = 0; row < qrot.value().rows(); row++) {
+        setSubMatrixGradient<Eigen::Dynamic>(x.gradient().value(), qrot.gradient().value().row(row), row + SPACE_DIMENSION, i, x.value().rows());
+      }
     }
   }
 
@@ -1972,7 +1971,8 @@ GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwar
   }
 
   int nq = num_dof;
-  int nv = num_dof; // FLOATINGBASE TODO
+  int nv = num_velocities;
+  int cols = compute_analytic_jacobian ? nq : nv;
   int npoints = static_cast<int>(x.value().cols());
 
   // compute geometric Jacobian
@@ -1990,12 +1990,14 @@ GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwar
   Jv.value() = J_geometric.value().template bottomRows<SPACE_DIMENSION>();
 
   if (gradient_order > 0) {
-    auto rows_omega = intRange<SPACE_DIMENSION>(0);
-    auto rows_v = intRange<SPACE_DIMENSION>(SPACE_DIMENSION);
     for (int col = 0; col < J_geometric.value().cols(); col++) {
-      auto cols = intRange<1>(col);
-      setSubMatrixGradient<Eigen::Dynamic>(Jomega.gradient().value(), getSubMatrixGradient<Eigen::Dynamic>(J_geometric.gradient().value(), rows_omega, cols, J_geometric.value().rows()), rows_omega, cols, Jomega.value().rows());
-      setSubMatrixGradient<Eigen::Dynamic>(Jv.gradient().value(), getSubMatrixGradient<Eigen::Dynamic>(J_geometric.gradient().value(), rows_v, cols, J_geometric.value().rows()), rows_omega, cols, Jv.value().rows());
+      for (int row = 0; row < SPACE_DIMENSION; row++) {
+        // Jomega
+        setSubMatrixGradient<Eigen::Dynamic>(Jomega.gradient().value(), getSubMatrixGradient<Eigen::Dynamic>(J_geometric.gradient().value(), row, col, J_geometric.value().rows()), row, col, Jomega.value().rows());
+
+        // Jv
+        setSubMatrixGradient<Eigen::Dynamic>(Jv.gradient().value(), getSubMatrixGradient<Eigen::Dynamic>(J_geometric.gradient().value(), row + SPACE_DIMENSION, col, J_geometric.value().rows()), row, col, Jv.value().rows());
+      }
     }
   }
 
@@ -2005,7 +2007,7 @@ GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwar
   qrot.value() = x.value().template block<Eigen::Dynamic, 1>(SPACE_DIMENSION, 0, x.value().rows() - SPACE_DIMENSION, 1);
   if (gradient_order > 0) {
     for (int i = 0; i < rotation_representation_size; i++) {
-      qrot.gradient().value().template middleRows<1>(i) = getSubMatrixGradient(x.gradient().value(), SPACE_DIMENSION + i, 0, x.value().rows());
+      qrot.gradient().value().template middleRows<1>(i) = getSubMatrixGradient<Eigen::Dynamic>(x.gradient().value(), SPACE_DIMENSION + i, 0, x.value().rows());
     }
   }
 
@@ -2017,7 +2019,7 @@ GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwar
   }
 
   // compute J
-  GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> J(x.value().size(), nv, nq, gradient_order);
+  GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> J(x.value().size(), cols, nq, gradient_order);
   J.value().setZero();
   if (gradient_order > 0)
     J.gradient().value().setZero();
@@ -2051,19 +2053,10 @@ GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwar
         J.value().template block<Eigen::Dynamic, 1>(row_start, *it, Jrot.value().rows(), 1) = Jrot.value().template middleCols<1>(col_start);
 
         if (gradient_order > 0) {
-          std::vector<int> rows;
-          rows.reserve(Jrot.value().rows());
-          for (int k = 0; k < Jrot.value().rows(); k++)
-            rows.push_back(k);
-          std::vector<int> cols(1);
-          cols[0] = col_start;
-          auto dJrot_col = getSubMatrixGradient(Jrot.gradient().value(), rows, cols, Jrot.value().rows());
-
-          rows.clear();
-          for (int k = row_start; k < row_start + Jrot.value().rows(); k++)
-            rows.push_back(k);
-          cols[0] = *it;
-          setSubMatrixGradient(J.gradient().value(), dJrot_col, rows, cols, J.value().rows());
+          for (int row = 0; row < rotation_representation_size; row++) {
+            auto dJrot_element = getSubMatrixGradient<Eigen::Dynamic>(Jrot.gradient().value(), row, col_start, Jrot.value().rows());
+            setSubMatrixGradient<Eigen::Dynamic>(J.gradient().value(), dJrot_element, row_start + row, *it, J.value().rows());
+          }
         }
         col_start++;
       }

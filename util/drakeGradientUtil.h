@@ -72,9 +72,9 @@ struct GetSubMatrixGradientArray {
 /*
  * Output type of getSubMatrixGradient for a single element of the input matrix
  */
-template<typename Derived>
+template<int QSubvectorSize, typename Derived>
 struct GetSubMatrixGradientSingleElement {
-  typedef typename Eigen::Matrix<typename Derived::Scalar, 1, Derived::ColsAtCompileTime> type;
+  typedef typename Eigen::Block<const Derived, 1, ((QSubvectorSize == Eigen::Dynamic) ? Derived::ColsAtCompileTime : QSubvectorSize)> type;
 };
  
 /*
@@ -111,9 +111,10 @@ getSubMatrixGradient(const Eigen::MatrixBase<Derived>& dM,
   const std::array<int, NCols>& cols,
   typename Derived::Index M_rows, int q_start = 0, typename Derived::Index q_subvector_size = QSubvectorSize);
 
-template<typename Derived>
-DLLEXPORT typename GetSubMatrixGradientSingleElement<Derived>::type
-getSubMatrixGradient(const Eigen::MatrixBase<Derived>& dM, int row, int col, typename Derived::Index M_rows);
+template<int QSubvectorSize, typename Derived>
+DLLEXPORT typename GetSubMatrixGradientSingleElement<QSubvectorSize, Derived>::type
+getSubMatrixGradient(const Eigen::MatrixBase<Derived>& dM, int row, int col, typename Derived::Index M_rows,
+    typename Derived::Index q_start = 0, typename Derived::Index q_subvector_size = QSubvectorSize);
 
 template<typename DerivedA, typename DerivedB>
 DLLEXPORT void setSubMatrixGradient(Eigen::MatrixBase<DerivedA>& dM, const Eigen::MatrixBase<DerivedB>& dM_submatrix,
@@ -122,5 +123,9 @@ DLLEXPORT void setSubMatrixGradient(Eigen::MatrixBase<DerivedA>& dM, const Eigen
 template<int QSubvectorSize, typename DerivedA, typename DerivedB, std::size_t NRows, std::size_t NCols>
 DLLEXPORT void setSubMatrixGradient(Eigen::MatrixBase<DerivedA>& dM, const Eigen::MatrixBase<DerivedB>& dM_submatrix,
     const std::array<int, NRows>& rows, const std::array<int, NCols>& cols, typename DerivedA::Index M_rows, typename DerivedA::Index q_start = 0, typename DerivedA::Index q_subvector_size = QSubvectorSize);
+
+template<int QSubvectorSize, typename DerivedDM, typename DerivedDMSub>
+DLLEXPORT void setSubMatrixGradient(Eigen::MatrixBase<DerivedDM>& dM, const Eigen::MatrixBase<DerivedDMSub>& dM_submatrix, int row, int col, typename DerivedDM::Index M_rows,
+    typename DerivedDM::Index q_start = 0, typename DerivedDM::Index q_subvector_size = QSubvectorSize);
 
 #endif /* DRAKEGRADIENTUTIL_H_ */
