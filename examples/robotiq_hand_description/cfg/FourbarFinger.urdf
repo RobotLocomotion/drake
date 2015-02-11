@@ -1,0 +1,427 @@
+<?xml version="1.0"?>
+<robot xmlns="http://drake.mit.edu"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://drake.mit.edu ../../doc/drakeURDF.xsd" name="FourBar">
+  <link name="finger_1_link_0">
+    <visual>
+      <origin rpy="0 0 0" xyz="0.020 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/s-model_articulated/visual/link_0.STL"/>
+      </geometry>
+      <material name="black">
+        <color rgba=".2 .2 .2 1"/>
+      </material>
+    </visual>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="0.05"/>
+      <inertia ixx="0.01" ixy="-0.00002" ixz="0.00001" iyy="0.0008" iyz="0" izz="0.001"/>
+    </inertial>
+  </link>
+  <link name="finger_1_link_1">
+    <visual>
+      <origin rpy="0 0 -0.52" xyz="0.050 -.028 0"/>
+      <geometry>
+        <mesh filename="../meshes/s-model_articulated/visual/link_1.STL"/>
+      </geometry>
+      <material name="black">
+        <color rgba=".2 .2 .2 1"/>
+      </material>
+    </visual>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="0.15"/>
+      <inertia ixx="0.001859" ixy="-0.000376" ixz="0.000028" iyy="0.012756" iyz="0" izz="0.0024"/>
+    </inertial>
+  </link>
+  <link name="finger_1_link_2">
+    <visual>
+      <origin rpy="0 0 0" xyz="0.039 0 0.0075"/>
+      <geometry>
+        <mesh filename="../meshes/s-model_articulated/visual/link_2.STL"/>
+      </geometry>
+      <material name="black"/>
+    </visual>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="0.15"/>
+      <inertia ixx="0.001859" ixy="-0.000376" ixz="0.000028" iyy="0.012756" iyz="0" izz="0.0024"/>
+    </inertial>
+  </link>
+  <link name="finger_1_link_3">
+    <visual>
+      <origin rpy="0 0 0.52" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/s-model_articulated/visual/link_3.STL"/>
+      </geometry>
+      <material name="black"/>
+    </visual>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="0.05"/>
+      <inertia ixx="0.001239" ixy="-0.000251" ixz="0.000019" iyy="0.00085" iyz="0" izz="0.001632"/>
+    </inertial>
+  </link>
+
+  <link name="fourbar_0_link_1">
+    <inertial>
+        <mass value="0.00001"/>
+        <inertia ixx="0.00001"  ixy="0"  ixz="0" iyy="0.00001" iyz="0" izz="0.00001" />
+    </inertial>
+    <visual>
+      <origin xyz=".01429 0 0" rpy="0 1.57 0"/>
+      <geometry>
+        <cylinder length=".02858" radius="0.001"/>
+      </geometry>
+      <material>
+        <color rgba=".6353 .6353 .6353 1"/>
+      </material>
+    </visual>
+  </link>
+
+  <link name="fourbar_0_link_2">
+    <inertial>
+        <mass value="0.00001"/>
+        <inertia ixx="0.00001"  ixy="0"  ixz="0" iyy="0.00001" iyz="0" izz="0.00001" />
+    </inertial>
+    <visual>
+      <origin xyz=".02699 0 0" rpy="0 1.57 0"/>
+      <geometry>
+        <cylinder length=".05398" radius="0.001"/>
+      </geometry>
+      <material>
+        <color rgba=".6353 .6353 .6353 1"/>
+      </material>
+    </visual>
+  </link>
+
+  <link name="fourbar_0_link_3">
+    <inertial>
+        <mass value="0.00001"/>
+        <inertia ixx="0.00001"  ixy="0"  ixz="0" iyy="0.00001" iyz="0" izz="0.00001" />
+    </inertial>
+    <visual>
+      <origin xyz=".007365 0 0" rpy="0 1.57 0"/>
+      <geometry>
+        <cylinder length=".01473" radius="0.001"/>
+      </geometry>
+      <material>
+        <color rgba=".6353 .6353 .6353 1"/>
+      </material>
+    </visual>
+  </link>
+<!--
+  <link name="fourbar_1_link_1">
+    <inertial>
+        <mass value="0.00001"/>
+        <inertia ixx="0.00001"  ixy="0"  ixz="0" iyy="0.00001" iyz="0" izz="0.00001" />
+    </inertial>
+    <visual>
+      <origin xyz=".01143 0 0" rpy="0 1.57 0"/>
+      <geometry>
+        <cylinder length=".02286" radius="0.001"/>
+      </geometry>
+      <material>
+        <color rgba=".6353 .6353 .6353 1"/>
+      </material>
+    </visual>
+  </link>
+
+  <link name="fourbar_1_link_2">
+    <inertial>
+        <mass value="0.00001"/>
+        <inertia ixx="0.00001"  ixy="0"  ixz="0" iyy="0.00001" iyz="0" izz="0.00001" />
+    </inertial>
+    <visual>
+      <origin xyz=".02885 0 0" rpy="0 1.57 0"/>
+      <geometry>
+        <cylinder length=".05770" radius="0.001"/>
+      </geometry>
+      <material>
+        <color rgba=".6353 .6353 .6353 1"/>
+      </material>
+    </visual>
+  </link>
+
+  <link name="fourbar_1_link_3">
+    <inertial>
+        <mass value="0.00001"/>
+        <inertia ixx="0.00001"  ixy="0"  ixz="0" iyy="0.00001" iyz="0" izz="0.00001" />
+    </inertial>
+    <visual>
+      <origin xyz=".01143 0 0" rpy="0 1.57 0"/>
+      <geometry>
+        <cylinder length=".02286" radius="0.001"/>
+      </geometry>
+      <material>
+        <color rgba=".6353 .6353 .6353 1"/>
+      </material>
+    </visual>
+  </link>
+
+  <link name="fourbar_2_link_2">
+    <inertial>
+        <mass value="0.00001"/>
+        <inertia ixx="0.00001"  ixy="0"  ixz="0" iyy="0.00001" iyz="0" izz="0.00001" />
+    </inertial>
+    <visual>
+      <origin xyz=".01905 0 0" rpy="0 1.57 0"/>
+      <geometry>
+        <cylinder length=".03810" radius="0.001"/>
+      </geometry>
+      <material>
+        <color rgba=".6353 .6353 .6353 1"/>
+      </material>
+    </visual>
+  </link>
+
+  <link name="fourbar_2_link_3">
+    <inertial>
+        <mass value="0.00001"/>
+        <inertia ixx="0.00001"  ixy="0"  ixz="0" iyy="0.00001" iyz="0" izz="0.00001" />
+    </inertial>
+    <visual>
+      <origin xyz=".00635 0 0" rpy="0 1.57 0"/>
+      <geometry>
+        <cylinder length=".01270" radius="0.001"/>
+      </geometry>
+      <material>
+        <color rgba=".6353 .6353 .6353 1"/>
+      </material>
+    </visual>
+  </link>
+-->
+  <link name="fourbar_3_link_1">
+    <inertial>
+        <mass value="0.00001"/>
+        <inertia ixx="0.00001"  ixy="0"  ixz="0" iyy="0.00001" iyz="0" izz="0.00001" />
+    </inertial>
+    <visual>
+      <origin xyz=".01111 0 0" rpy="0 1.57 0"/>
+      <geometry>
+        <cylinder length=".02222" radius="0.001"/>
+      </geometry>
+      <material>
+        <color rgba=".6353 .6353 .6353 1"/>
+      </material>
+    </visual>
+  </link>
+
+  <link name="fourbar_3_link_2">
+    <inertial>
+        <mass value="0.00001"/>
+        <inertia ixx="0.00001"  ixy="0"  ixz="0" iyy="0.00001" iyz="0" izz="0.00001" />
+    </inertial>
+    <visual>
+      <origin xyz=".01905 0 0" rpy="0 1.57 0"/>
+      <geometry>
+        <cylinder length=".03810" radius="0.001"/>
+      </geometry>
+      <material>
+        <color rgba=".6353 .6353 .6353 1"/>
+      </material>
+    </visual>
+  </link>
+
+  <link name="fourbar_3_link_3">
+    <inertial>
+        <mass value="0.00001"/>
+        <inertia ixx="0.00001"  ixy="0"  ixz="0" iyy="0.00001" iyz="0" izz="0.00001" />
+    </inertial>
+    <visual>
+      <origin xyz=".00635 0 0" rpy="0 1.57 0"/>
+      <geometry>
+        <cylinder length=".01270" radius="0.001"/>
+      </geometry>
+      <material>
+        <color rgba=".6353 .6353 .6353 1"/>
+      </material>
+    </visual>
+  </link>
+
+  <link name="fourbar_linkage">
+    <inertial>
+        <mass value="0.00001"/>
+        <inertia ixx="0.00001"  ixy="0"  ixz="0" iyy="0.00001" iyz="0" izz="0.00001" />
+    </inertial>
+    <visual>
+      <origin xyz=".007618 0 0" rpy="0 1.57 0"/>
+      <geometry>
+        <cylinder length=".015236" radius="0.001"/>
+      </geometry>
+      <material>
+        <color rgba=".6353 .6353 .6353 1"/>
+      </material>
+    </visual>
+  </link>
+
+  <joint name="finger_1_joint_0" type="revolute">
+    <parent link="finger_1_link_0"/>
+    <child link="finger_1_link_1"/>
+    <axis xyz="0 0 1"/>
+    <origin rpy="0 0 0" xyz="0.020 0 0"/>
+    <limit effort="100" lower="0" upper="1.055" velocity="100"/>
+  </joint>
+<!--
+  <force_element name="finger_1_spring_0">
+    <torsional_spring rest_angle="1.57" stiffness="10000">
+        <joint name="finger_1_joint_0"/>
+    </torsional_spring>
+  </force_element>
+-->
+  <joint name="finger_1_joint_1" type="revolute">
+    <parent link="finger_1_link_1"/>
+    <child link="finger_1_link_2"/>
+    <axis xyz="0 0 1"/>
+    <origin rpy="0 0 -0.52" xyz="0.050 -.028 0"/>
+    <limit effort="100" lower="0" upper="1.5708" velocity="100"/>
+  </joint>
+ 
+  <joint name="finger_1_joint_2" type="revolute">
+    <parent link="finger_1_link_2"/>
+    <child link="finger_1_link_3"/>
+    <axis xyz="0 0 1"/>
+    <origin rpy="0 0 0" xyz="0.039 0 0"/>
+    <limit effort="100" lower="-0.7854" upper="3.1416" velocity="100"/>
+  </joint>
+
+  <joint name="fourbar_0_joint_0" type="revolute">
+    <axis xyz="0 0 1"/>
+    <parent link="finger_1_link_0"/>
+    <child link="fourbar_0_link_1"/>
+    <origin rpy="0 0 0" xyz="0.020 0 0"/>
+    <limit effort="100" lower="-2.10" upper="-0.255" velocity="100"/>     
+  </joint>
+
+  <!--<joint name="fourbar_0_joint_0" type="revolute">
+    <axis xyz="0 0 1"/>
+    <parent link="finger_1_link_1"/>
+    <child link="fourbar_0_link_1"/>
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <limit effort="100" lower="-2.10" upper="-0.255" velocity="100"/>     
+  </joint>-->
+
+  <joint name="fourbar_0_joint_1" type="continuous">
+    <axis xyz="0 0 1"/>
+    <parent link="fourbar_0_link_1"/>
+    <child link="fourbar_0_link_2"/>
+    <origin rpy="0 0 0" xyz=".02858 0 0"/>
+    <limit effort="100" lower="1.092" upper="1.940" velocity="100"/>
+  </joint>
+
+  <joint name="fourbar_0_joint_2" type="continuous">
+    <axis xyz="0 0 1"/>
+    <parent link="finger_1_link_1"/>
+    <child link="fourbar_0_link_3"/>
+    <origin rpy="0 0 -0.52" xyz="0.050 -.028 0"/>
+    <limit effort="100" lower="-2.111" upper="-0.199" velocity="100"/>     
+  </joint>
+
+  <loop_joint name="fourbar_0_joint_3" type="continuous">
+    <axis xyz="0 0 1"/>
+    <link1 link="fourbar_0_link_2" rpy="0 0 0" xyz=".05398 0 0"/>
+    <link2 link="fourbar_0_link_3" rpy="0 0 0" xyz=".01473 0 0"/>
+  </loop_joint>
+<!--
+  <joint name="fourbar_1_joint_0" type="continuous">
+    <axis xyz="0 0 1"/>
+    <parent link="finger_1_link_1"/>
+    <child link="fourbar_1_link_1"/>
+    <origin rpy="0 0 0" xyz="0 0 0"/>   
+    <limit effort="100" lower="-1.970" upper="-1.520" velocity="100"/> 
+  </joint>
+
+  <joint name="fourbar_1_joint_1" type="continuous">
+    <axis xyz="0 0 1"/>
+    <parent link="fourbar_1_link_1"/>
+    <child link="fourbar_1_link_2"/>
+    <origin rpy="0 0 0" xyz=".02286 0 0"/> 
+    <limit effort="100" lower="1.00" upper="1.50" velocity="100"/> 
+  </joint>
+
+  <joint name="fourbar_1_joint_2" type="continuous">
+    <axis xyz="0 0 1"/>
+    <parent link="finger_1_link_1"/>
+    <child link="fourbar_1_link_3"/>
+    <origin rpy="0 0 -0.52" xyz="0.050 -.028 0"/>
+    <limit effort="100" lower="-1.450" upper="-0.970" velocity="100"/> 
+  </joint>
+
+  <loop_joint name="fourbar_1_joint_3" type="continuous">
+    <axis xyz="0 0 1"/>
+    <link1 link="fourbar_1_link_2" rpy="0 0 0" xyz=".05770 0 0"/>
+    <link2 link="fourbar_1_link_3" rpy="0 0 -0.52" xyz=".02286 0 0"/>
+  </loop_joint>
+
+  <joint name="fourbar_2_joint_0" type="continuous">
+    <axis xyz="0 0 1"/>
+    <parent link="fourbar_1_link_3"/>
+    <child link="fourbar_2_link_2"/>
+    <origin rpy="0 0 0" xyz="0.01227 0.00329 0"/>
+  </joint>
+
+  <joint name="fourbar_2_joint_1" type="continuous">
+    <axis xyz="0 0 1"/>
+    <parent link="finger_1_link_3"/>
+    <child link="fourbar_2_link_3"/>
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <limit effort="100" lower="-2.322" upper="-1.45" velocity="100"/> 
+  </joint>
+
+  <loop_joint name="fourbar_2_joint_2" type="continuous">
+    <axis xyz="0 0 1"/>
+    <link1 link="fourbar_2_link_2" rpy="0 0 0" xyz=".03810 0 0"/>
+    <link2 link="fourbar_2_link_3" rpy="0 0 0" xyz=".01270 0 0"/>
+  </loop_joint>
+-->
+  <joint name="fourbar_3_joint_0" type="continuous">
+    <axis xyz="0 0 1"/>
+    <parent link="finger_1_link_2"/>
+    <child link="fourbar_3_link_1"/>
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <limit effort="100" lower="-1.367" upper="-0.945" velocity="100"/>  
+  </joint>  
+
+  <joint name="fourbar_3_joint_1" type="continuous">
+    <axis xyz="0 0 1"/>
+    <parent link="fourbar_3_link_1"/>
+    <child link="fourbar_3_link_2"/>
+    <origin rpy="0 0 0" xyz="0.02222 0 0"/>
+    <limit effort="100" lower="1.235" upper="1.613" velocity="100"/>  
+  </joint>
+
+  <joint name="fourbar_3_joint_2" type="continuous">
+    <axis xyz="0 0 1"/>
+    <parent link="finger_1_link_3"/>
+    <child link="fourbar_3_link_3"/>
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <limit effort="100" lower="-1.367" upper="-0.995" velocity="100"/>
+  </joint>
+
+  <loop_joint name="fourbar_3_joint_3" type="continuous">
+    <axis xyz="0 0 1"/>
+    <link1 link="fourbar_3_link_3" rpy="0 0 0" xyz="0.01270 0 0"/>
+    <link2 link="fourbar_3_link_2" rpy="0 0 0" xyz="0.03810 0 0"/>
+  </loop_joint>
+
+  <joint name="fourbar_linkage_joint_0" type="continuous">
+    <axis xyz="0 0 1"/>
+    <parent link="fourbar_0_link_3"/>
+    <child link="fourbar_linkage"/>
+    <origin rpy="0 0 0" xyz=".01473 0 0"/>
+    <limit effort="100" lower="1.4" upper="1.5" velocity="100"/>
+  </joint>
+
+  <loop_joint name="fourbar_linkage_joint_1" type="continuous">
+    <axis xyz="0 0 1"/>
+    <link1 link="fourbar_linkage" rpy="0 0 0" xyz=".015236 0 0"/>
+    <link2 link="fourbar_3_link_1" rpy="0 0 0" xyz=".02222 0 0"/>
+  </loop_joint>
+
+  <transmission type="SimpleTransmission" name="finger_1_joint_0_trans">
+    <actuator name="control_torque" />
+    <joint name="finger_1_joint_0" />
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+
+</robot>
