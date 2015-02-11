@@ -15,7 +15,7 @@ BOOST_AUTO_TEST_CASE(constructor_test)
   BOOST_CHECK_EQUAL(body1.getBodyIdx(), -1);
   BOOST_CHECK_EQUAL(body1.getParentIdx(), -1);
   BOOST_CHECK_EQUAL(body1.getGroup(), DEFAULT_GROUP);
-  BOOST_CHECK_EQUAL(body1.getMask(), ALL_MASK);
+  BOOST_CHECK_EQUAL(body1.getMask(), NONE_MASK);
 }
 
 BOOST_AUTO_TEST_CASE(setGroup_test)
@@ -39,7 +39,7 @@ BOOST_AUTO_TEST_CASE(ignoreGroup_test)
   Body body1;
   bitmask group; group.set(7);
   body1.ignoreGroup(group);
-  BOOST_CHECK( (body1.getMask() & group) == 0 );
+  BOOST_CHECK( (body1.getMask() & group) != 0 );
 }
 
 BOOST_AUTO_TEST_CASE(collidesWith_test)
