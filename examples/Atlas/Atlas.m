@@ -67,22 +67,31 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
     function obj = compile(obj)
       obj = compile@TimeSteppingRigidBodyManipulator(obj);
 
-      % Sanity check if we have hands.
+      % Sanity check if we don't have hands.
       if (~isa(obj.manip.getStateFrame().getFrameByNum(1), 'MultiCoordinateFrame'))
         obj.hands = 0;
       end
-      if (obj.hands > 0)
+      % Construct state vector itself
+      if (obj.hands == 0 && ~isa(obj.manip.getStateFrame().getFrameByNum(1), 'MultiCoordinateFrame'))
+        atlas_state_frame = atlasFrames.AtlasState(obj);
+      else
         atlas_state_frame = getStateFrame(obj);
         atlas_state_frame = replaceFrameNum(atlas_state_frame,1,atlasFrames.AtlasState(obj));
-        % Sub in handstates for each hand
-        % TODO: by name?
-        for i=2:obj.getStateFrame().getNumFrames
-          atlas_state_frame = replaceFrameNum(atlas_state_frame,i,atlasFrames.HandState(obj,i,'HandState'));
-        end
-      else
-        atlas_state_frame = atlasFrames.AtlasState(obj);
       end
+      if (obj.hands > 0)
+        % Sub in handstates for the hand (curently assuming just 1)
+        % TODO: by name?
+        for i=2:2
+          atlas_state_frame = replaceFrameNum(atlas_state_frame,i,atlasFrames.HandState(obj,i,'atlasFrames.HandState'));
+        end
+      end
+      
       tsmanip_state_frame = obj.getStateFrame();
+      if (obj.hands == 0 && ~isa(tsmanip_state_frame.getFrameByNum(1), 'MultiCoordinateFrame'))
+        tsmanip_state_frame = atlasFrames.AtlasState(obj);
+      else
+        tsmanip_state_frame = replaceFrameNum(tsmanip_state_frame,1,atlasFrames.AtlasState(obj));
+      end
       if tsmanip_state_frame.dim>atlas_state_frame.dim
         id = findSubFrameEquivalentModuloTransforms(tsmanip_state_frame,atlas_state_frame);
         tsmanip_state_frame.frame{id} = atlas_state_frame;
@@ -91,17 +100,16 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
         state_frame = atlas_state_frame;
       end
       obj.manip = obj.manip.setStateFrame(atlas_state_frame);
-      obj.manip = obj.manip.setOutputFrame(atlas_state_frame);
       obj = obj.setStateFrame(state_frame);
-      obj = obj.setOutputFrame(state_frame);
-
+      
+      % Same bit of complexity for input frame to get hand inputs
       if (obj.hands > 0)
         input_frame = getInputFrame(obj);
         input_frame  = replaceFrameNum(input_frame,1,atlasFrames.AtlasInput(obj));
         % Sub in handstates for each hand
         % TODO: by name?
-        for i=2:obj.getInputFrame().getNumFrames
-          input_frame = replaceFrameNum(input_frame,i,atlasFrames.HandInput(obj,i,'HandInput'));
+        for i=2:2
+          input_frame = replaceFrameNum(input_frame,i,atlasFrames.HandInput(obj,i,'atlasFrames.HandInput'));
         end
       else
         input_frame = atlasFrames.AtlasInput(obj);
@@ -109,6 +117,45 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       obj = obj.setInputFrame(input_frame);
       obj.manip = obj.manip.setInputFrame(input_frame);
       
+      % Construct output frame, which comes from state plus sensor
+      % info
+      atlas_output_frame = atlas_state_frame;
+      if (~isempty(obj.manip.sensor))
+        for i=1:length(obj.manip.sensor)
+          % If it's not a full state feedback sensor (we have already
+          % got the state for that above in the state frame
+          if (~isa(obj.manip.sensor{i}, 'FullStateFeedbackSensor'))
+            if (isa(atlas_output_frame, 'MultiCoordinateFrame'))
+              atlas_output_frame = atlas_output_frame.appendFrame(obj.manip.sensor{i}.constructFrame(obj.manip));
+            else
+              atlas_output_frame = MultiCoordinateFrame({atlas_output_frame, obj.manip.sensor{i}.constructFrame(obj.manip)});
+            end
+          end
+        end
+      end
+      output_frame = atlas_output_frame;
+      % Continuing frame from above...
+      if (~isempty(obj.sensor))
+        for i=1:length(obj.sensor)
+          if (~isa(obj.sensor{i}, 'FullStateFeedbackSensor'))
+            if (isa(output_frame, 'MultiCoordinateFrame'))
+              output_frame = output_frame.appendFrame(obj.sensor{i}.constructFrame(obj));
+            else
+              output_frame = MultiCoordinateFrame({output_frame, obj.sensor{i}.constructFrame(obj)});
+            end
+          end
+        end
+      end
+      
+      if ~isequal_modulo_transforms(atlas_output_frame,getOutputFrame(obj.manip))
+        obj.manip = obj.manip.setNumOutputs(atlas_output_frame.dim);
+        obj.manip = obj.manip.setOutputFrame(atlas_output_frame);
+      end
+      
+      if ~isequal_modulo_transforms(output_frame,getOutputFrame(obj))
+        obj = obj.setNumOutputs(output_frame.dim);
+        obj = obj.setOutputFrame(output_frame);
+      end
     end
 
     function obj = setInitialState(obj,x0)
@@ -234,42 +281,6 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       options.Kd = getDampingGain(options.Kp,options.q_damping_ratio);
       pd = IKPDBlock(obj,controller_data,options);
     end
-
-    function collision_model = getFootstepPlanningCollisionModel(obj)
-      % Get a simple collision model for the Atlas robot to enable
-      % (limited) whole-body awareness during footstep planning. The
-      % collision model is represented as a set of points which define
-      % the shape of the foot and a set of slices which define the 
-      % bounding boxes of the legs, torso, and arms. The collision model
-      % of the foot used here may actually be smaller than the robot's
-      % feet in order to allow the toes or heels to hang over edges. 
-      % @retval collision_model an IRIS CollisionModel object with fields
-      %         foot and body. The body field has subfields z and xy, where
-      %         xy is of shape [3, N, length(z)]. Each page of xy(:,:,j)
-      %         represents the bounds of the robot from z(j) to z(j+1) (or inf).
-      if isempty(obj.atlas_version) || obj.atlas_version == 3
-        collision_model = iris.terrain_grid.CollisionModel(...
-            [-0.12, -0.12, 0.13, 0.13;
-              0.04, -0.04, 0.04, -0.04],...
-            struct('z', [0.05, 0.35, 0.75, 1.15],...
-                   'xy', cat(3, ...
-             [-0.17, -0.17, 0.17, 0.17; 0.07, -0.07, 0.07, -0.07],...
-             [-0.17, -0.17, 0.25, 0.25; .25, -.25, .25, -.25],...
-             [-0.2, -0.2, 0.25, 0.25; .4, -.4, .4, -.4],...
-             [-0.4, -0.4, 0.3, 0.3; .45, -.45, .45, -.45])));
-      elseif obj.atlas_version == 4 || obj.atlas_version == 5
-        collision_model = iris.terrain_grid.CollisionModel(...
-            [-0.12, -0.12, 0.13, 0.13;
-              0.04, -0.04, 0.04, -0.04],...
-            struct('z', [0.05, 0.35, 0.75, 1.05],...
-                   'xy', cat(3, ...
-             [-0.17, -0.17, 0.17, 0.17; 0.07, -0.07, 0.07, -0.07],...
-             [-0.17, -0.17, 0.25, 0.25; .25, -.25, .25, -.25],...
-             [-0.2, -0.2, 0.25, 0.25; .4, -.4, .4, -.4],...
-             [-0.4, -0.4, 0.3, 0.3; .45, -.45, .45, -.45])));
-      end
-    end
-
   end
 
   properties (SetAccess = protected, GetAccess = public)

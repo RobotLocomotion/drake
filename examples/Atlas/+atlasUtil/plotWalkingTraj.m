@@ -34,7 +34,6 @@ rfoottraj = PPTrajectory(pchip(walking_plan_data.link_constraints(1).ts,...
 lfoottraj = PPTrajectory(pchip(walking_plan_data.link_constraints(2).ts,...
                                walking_plan_data.link_constraints(2).poses));
 
-
 for i=1:length(ts)
   % ts is from the walking plan, but traj is only defined at the dt
   % intervals
@@ -61,7 +60,7 @@ for i=1:length(ts)
   rfoot_p = forwardKin(r,kinsol,rfoot,[0;0;0],1);
 
   lfoot_pos(:,i) = lfoot_p;
-  rfoot_pos(:,i) = lfoot_p;
+  rfoot_pos(:,i) = rfoot_p;
 
   if any(lfoot_cpos(3,:) < 1e-4)
     lstep_counter=lstep_counter+1;
