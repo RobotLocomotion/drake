@@ -1,0 +1,93 @@
+
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+	<xacro:macro name="s-model_finger_fourbar" params="prefix parent0 parent1 link_0_len link_1_len link_2_len">
+        <!-- link list -->
+        <link name="${prefix}link_0">
+            <inertial>
+                <mass value="0.000001"/>
+                <inertia ixx="0.00000000001"  ixy="0"  ixz="0" iyy="0.00000000001" iyz="0" izz="0.00000000001" />
+            </inertial>
+            <visual>
+                <origin xyz="${link_0_len/2} 0 0" rpy="0 1.57 0"/>
+                <geometry>
+                    <cylinder length="${link_0_len}" radius="0.01"/>
+                </geometry>
+            </visual>
+        </link>
+        <link name="${prefix}link_1">
+            <inertial>
+                <mass value="0.000001"/>
+                <inertia ixx="0.00000000001"  ixy="0"  ixz="0" iyy="0.00000000001" iyz="0" izz="0.00000000001" />
+            </inertial>
+            <visual>
+                <origin xyz="${link_1_len/2} 0 0" rpy="0 1.57 0"/>
+                <geometry>
+                    <cylinder length="${link_1_len}" radius="0.01"/>
+                </geometry>
+            </visual>
+        </link>
+        <link name="${prefix}link_2">
+            <inertial>
+                <mass value="0.000001"/>
+                <inertia ixx="0.00000000001"  ixy="0"  ixz="0" iyy="0.00000000001" iyz="0" izz="0.00000000001" />
+            </inertial>
+            <visual>
+                <origin xyz="${link_2_len/2} 0 0" rpy="0 1.57 0"/>
+                <geometry>
+                    <cylinder length="${link_2_len}" radius="0.01"/>
+                </geometry>
+            </visual>
+        </link>
+        <!-- end of link list -->
+
+        <!-- joint list -->
+        <joint name="${prefix}joint_1" type="continuous">
+            <parent link="${parent0}"/>
+            <child link="${prefix}link_0"/>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <axis xyz="0 0 1"/>
+        </joint>
+
+        <joint name="${prefix}joint_2" type="continuous">
+            <parent link="${prefix}link_0"/>
+            <child link="${prefix}link_1"/>
+            <origin xyz="${link_0_len} 0 0" rpy="0 0 0"/>
+            <axis xyz="0 0 1"/>
+        </joint>
+
+        <joint name="${prefix}joint_3" type="continuous">
+            <parent link="${prefix}link_1"/>
+            <child link="${prefix}link_2"/>
+            <origin xyz="${link_1_len} 0 0" rpy="0 0 0"/>
+            <axis xyz="0 0 1"/>
+        </joint>
+
+        <!--<joint name="${prefix}joint_1" type="continuous">
+            <parent link="${prefix}link_1"/>
+            <child link="${prefix}link_0"/>
+            <origin xyz="${link_1_len} 0 0" rpy="0 0 0"/>
+            <axis xyz="0 0 1"/>
+        </joint>
+
+        <joint name="${prefix}joint_2" type="continuous">
+            <parent link="${prefix}link_2"/>
+            <child link="${prefix}link_1"/>
+            <origin xyz="${link_2_len} 0 0" rpy="0 0 0"/>
+            <axis xyz="0 0 1"/>
+        </joint>
+
+        <joint name="${prefix}joint_3" type="continuous">
+            <parent link="${parent1}"/>
+            <child link="${prefix}link_2"/>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <axis xyz="0 0 1"/>
+        </joint>-->
+
+        <loop_joint name="${prefix}joint_4" type="continuous">
+            <link1 link="${prefix}link_1" xyz="0 0 0" rpy="0 0 0"  />
+            <link2 link="${parent1}" xyz="0 0 0" rpy="0 0 0" />
+            <axis xyz="0 0 1"/>
+        </loop_joint>-
+        <!-- end of joint list -->
+	</xacro:macro>
+</robot>

@@ -1,0 +1,16 @@
+<package>
+  <description brief="robotiq_hand_description">
+
+     robotiq_hand_description
+
+  </description>
+  <author>drc</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/robotiq_hand_description</url>
+  <depend package="urdf"/>
+  <depend package="xacro"/>
+
+</package>
+
+
