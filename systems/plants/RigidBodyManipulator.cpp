@@ -1025,7 +1025,7 @@ void RigidBodyManipulator::doKinematicsNew(double* q, bool compute_gradients, do
             int nv_joint = body.getJoint().getNumVelocities();
             std::vector<int> v_indices;
             auto dtwistdv = geometricJacobian<double>(0, i, 0, 0, false, &v_indices);
-            int nv_branch = v_indices.size();
+            std::size_t nv_branch = v_indices.size();
 
             Matrix<double, TWIST_SIZE, Eigen::Dynamic> djoint_twistdv(TWIST_SIZE, nv_branch);
             djoint_twistdv.setZero();
