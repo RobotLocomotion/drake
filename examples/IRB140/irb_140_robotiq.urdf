@@ -360,54 +360,9 @@
     <mechanicalReduction>1</mechanicalReduction>
   </transmission>
 
-  <joint name="ATI_sensor_joint" type="fixed">
-    <origin rpy="0.0 0.0 -1.57079" xyz="0.05 0.0 0.0"/>
-    <parent link="link_6"/>
-    <child link="ATI_sensor"/>
-  </joint>
-<link
-    name="ATI_sensor">
-    <inertial>
-      <origin
-        xyz="-0.0064062 0.01873 0.011887"
-        rpy="0 0 0" />
-      <mass
-        value="0.68252" />
-      <inertia
-        ixx="0.000615295062479599"
-        ixy="-0.000155498855912512"
-        ixz="4.23692762827157E-06"
-        iyy="8.42227283334224E-06"
-        iyz="-0.000848389613222753"
-        izz="-8.42227283334216E-06" />
-    </inertial>
-    <!--<visual>
-      <origin
-        xyz="1.5707963267949 0 0"
-        rpy="0 0 0" />
-      <geometry>
-        <mesh
-          filename="meshes/ATI_sensor.stl" />
-      </geometry>
-      <material
-        name="">
-        <color
-          rgba="0.75294 0.75294 0.75294 1" />
-      </material>
-    </visual>
-    <collision>
-      <origin
-        xyz="0 0 0"
-        rpy="1.5707963267949 0 0" />
-      <geometry>
-        <mesh
-          filename="meshes/ATI_sensor.stl" />
-      </geometry>
-    </collision>-->
-  </link>
 <joint name="robotiq_hand_joint" type="fixed">
-    <origin rpy="0.0 0.0 0" xyz="0.0 0.07459 0.0"/>
-    <parent link="ATI_sensor"/>
+    <origin rpy="0.0 0.0 -1.57079" xyz="0.11904 0 0"/>
+    <parent link="link_6"/>
     <child link="palm"/>
   </joint>
   <link name="finger_1_link_0">
