@@ -22,7 +22,7 @@ end
 
 typecheck(tspan,'double');
 if (length(tspan)<2) error('length(tspan) must be > 1'); end
-if (nargin<4) options=struct([]); end
+if (nargin<4) options=struct(); end
 mdl = getModel(obj);
 
 if (strcmp(get_param(mdl,'SimulationStatus'),'paused'))
