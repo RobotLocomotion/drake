@@ -12,8 +12,8 @@ end
 
 function testVersusNumericalDifferentiation(robot)
 dt = 1e-8;
-nq = robot.getNumStates() / 2; % TODO
-nv = robot.getNumStates() / 2; % TODO
+nq = robot.getNumPositions();
+nv = robot.getNumVelocities();
 
 nTests = 50;
 nBodies = length(robot.body);
@@ -30,9 +30,9 @@ while testNumber <= nTests
     
     % compute Jacobian, JDotV
     kinsol = robot.doKinematics(q, false, false, v);
-    twists = robot.twists(kinsol.T, q, v);
+    kinsol.twists = robot.twists(kinsol.T, q, v);
     [J0, vIndices] = robot.geometricJacobian(kinsol, base, endEffector, expressedIn);
-    JDotV = robot.geometricJacobianDotV(kinsol, twists, base, endEffector, expressedIn);
+    JDotV = robot.geometricJacobianDotV(kinsol, base, endEffector, expressedIn);
     
     % integrate
     q = q + v * dt;

@@ -36,11 +36,11 @@ q = rand(nq,1);
 
 kinsol_options.use_mex = false;
 kinsol_options.compute_gradients = true;
-kinsol = r.doKinematics(q, [], [], [], kinsol_options);
+kinsol = r.doKinematics(q, [], kinsol_options);
 [A, dA] = r.getCMMdA(kinsol);
 
 kinsol_options.use_mex = true;
-kinsol = r.doKinematics(q, [], [], [], kinsol_options);
+kinsol = r.doKinematics(q, [], kinsol_options);
 [A_mex, dA_mex] = r.getCMMdA(kinsol);
 valuecheck(A_mex, A);
 valuecheck(dA_mex, dA);
