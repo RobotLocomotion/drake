@@ -44,21 +44,21 @@ for i = 1 : 100
   valuecheck(0, angle_difference, 1e-10);
   
   world = 1;
-  body_twist = relativeTwist(kinsol, world, body, world);
-  omega_check = Rframe' * body_twist(1:3);  % TODO: change to use relativeTwist with frame once floatingBase branch is merged in
+  body_twist_in_world = relativeTwist(kinsol, world, body, world);
+  omega_check = Rframe' * body_twist_in_world(1:3);  % TODO: change to use relativeTwist with frame once floatingBase branch is merged in
   valuecheck(omega_check, omega, 1e-10);
 
   xdot = r.dynamics(t, x, u);
   vd = xdot(nq + 1 : end);
   spatial_accels = r.spatialAccelerations(kinsol, vd);
-  body_spatial_accel = transformSpatialAcceleration(kinsol, world, body, body, world, spatial_accels{body});
+  body_spatial_accel_in_world = spatial_accels{body};
   
   % TODO: extract this out into a method of its own:
   p = r.forwardKin(kinsol, body, xyz, 0);
-  omega_body = body_twist(1:3);
-  v_body = body_twist(4:6);
-  omegad_body = body_spatial_accel(1:3);
-  vd_body = body_spatial_accel(4:6);
+  omega_body = body_twist_in_world(1:3);
+  v_body = body_twist_in_world(4:6);
+  omegad_body = body_spatial_accel_in_world(1:3);
+  vd_body = body_spatial_accel_in_world(4:6);
   accel_check_world = cross(omegad_body, p) + vd_body + cross(omega_body, cross(omega_body, p) + v_body);
   accel_check_body = Rframe' * accel_check_world;
   valuecheck(accel_check_body, accel, 1e-10);
