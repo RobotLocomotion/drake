@@ -195,24 +195,24 @@ DLLEXPORT GradientVar<typename DerivedI::Scalar, TWIST_SIZE, TWIST_SIZE> transfo
     const Eigen::MatrixBase<DerivedI>& I);
 
 template<typename DerivedA, typename DerivedB>
-Eigen::Matrix<typename DerivedA::Scalar, TWIST_SIZE, DerivedB::ColsAtCompileTime> crossSpatialMotion(
+DLLEXPORT Eigen::PlainObjectBase<DerivedB> crossSpatialMotion(
   const Eigen::MatrixBase<DerivedA>& a,
   const Eigen::MatrixBase<DerivedB>& b);
 
 template<typename DerivedA, typename DerivedB>
-Eigen::Matrix<typename DerivedA::Scalar, TWIST_SIZE, DerivedB::ColsAtCompileTime> crossSpatialForce(
+DLLEXPORT Eigen::PlainObjectBase<DerivedB> crossSpatialForce(
   const Eigen::MatrixBase<DerivedA>& a,
   const Eigen::MatrixBase<DerivedB>& b);
 
 template<typename DerivedA, typename DerivedB>
-Eigen::Matrix<typename DerivedA::Scalar, TWIST_SIZE, Eigen::Dynamic> dCrossSpatialMotion(
+DLLEXPORT Eigen::Matrix<typename DerivedA::Scalar, TWIST_SIZE, Eigen::Dynamic> dCrossSpatialMotion(
   const Eigen::MatrixBase<DerivedA>& a,
   const Eigen::MatrixBase<DerivedB>& b,
   const typename Gradient<DerivedA, Eigen::Dynamic>::type& da,
   const typename Gradient<DerivedB, Eigen::Dynamic>::type& db);
 
 template<typename DerivedA, typename DerivedB>
-Eigen::Matrix<typename DerivedA::Scalar, TWIST_SIZE, Eigen::Dynamic> dCrossSpatialForce(
+DLLEXPORT Eigen::Matrix<typename DerivedA::Scalar, TWIST_SIZE, Eigen::Dynamic> dCrossSpatialForce(
   const Eigen::MatrixBase<DerivedA>& a,
   const Eigen::MatrixBase<DerivedB>& b,
   const typename Gradient<DerivedA, Eigen::Dynamic>::type& da,
