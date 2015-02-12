@@ -1,6 +1,6 @@
 function testRelativeTwist()
-testAtlas('rpy');
 if RigidBodyManipulator.use_new_kinsol
+  testAtlas('rpy');
   testAtlas('quat');
 end
 end
@@ -9,7 +9,9 @@ function testAtlas(floatingJointType)
 robot = createAtlas(floatingJointType);
 
 checkAgainstJacobianTimesJointVelocities(robot);
-checkGradients(robot);
+if RigidBodyManipulator.use_new_kinsol
+  checkGradients(robot);
+end
 end
 
 function checkAgainstJacobianTimesJointVelocities(robot)
@@ -23,6 +25,7 @@ while test_number < nTests
   v = randn(robot.getNumVelocities(), 1);
   options.use_mex = false;
   kinsol = robot.doKinematics(q, v, options);
+  
   base = randi(bodyRange);
   end_effector = randi(bodyRange);
   expressed_in = randi(bodyRange);
@@ -55,10 +58,10 @@ while test_number < nTests
     options.compute_gradients = true;
     kinsol = robot.doKinematics(q, v, options);
     [~, dtwist] = relativeTwist(kinsol, base, end_effector, expressed_in);
-
+    
     option.grad_method = 'taylorvar';
     [~, dtwistCheck] = geval(1, @(q) gevalFunction(robot, q, v, base, end_effector, expressed_in), q, option);
-
+    
     valuecheck(dtwistCheck, dtwist, 1e-12);
     test_number = test_number + 1;
   end

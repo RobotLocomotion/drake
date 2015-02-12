@@ -32,6 +32,8 @@ for i = 1 : 100
   accel = y(8:10);
   
   kinsol = r.doKinematics(q, false, false, v);
+  kinsol.twists = r.twists(kinsol.T, q, v);
+  kinsol.v = v;
   Tbody = kinsol.T{body};
   Rframe = Tbody(1:3, 1:3) * rpy2rotmat(rpy);
   quat_check = rotmat2quat(Rframe);
@@ -42,15 +44,14 @@ for i = 1 : 100
   valuecheck(0, angle_difference, 1e-10);
   
   world = 1;
-  twists = r.twists(kinsol.T, q, v);
   body_twist = relativeTwist(kinsol, world, body, world);
   omega_check = Rframe' * body_twist(1:3);  % TODO: change to use relativeTwist with frame once floatingBase branch is merged in
   valuecheck(omega_check, omega, 1e-10);
 
   xdot = r.dynamics(t, x, u);
   vd = xdot(nq + 1 : end);
-  spatial_accels = r.spatialAccelerations(kinsol.T, twists, q, v, vd);
-  body_spatial_accel = transformSpatialAcceleration(spatial_accels{body}, kinsol.T, twists, world, body, body, world); % TODO: update once floatingBase branch is merged in: output of spatialAccelerations changed from body frame to world frame
+  spatial_accels = r.spatialAccelerations(kinsol, vd);
+  body_spatial_accel = transformSpatialAcceleration(kinsol, world, body, body, world, spatial_accels{body});
   
   % TODO: extract this out into a method of its own:
   p = r.forwardKin(kinsol, body, xyz, 0);

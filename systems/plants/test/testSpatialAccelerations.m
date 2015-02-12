@@ -20,6 +20,8 @@ for i = 1 : nTests
   v = randn(nv, 1);
   options.use_mex = false;
   kinsol = robot.doKinematics(q, v, options);
+  kinsol.twists = robot.twists(kinsol.T, q, v);
+  kinsol.v = v;
   twists = kinsol.twists;
   
   vd = randn(nv, 1);
@@ -27,8 +29,10 @@ for i = 1 : nTests
 
   q = q + v * dt;
   v = v + vd * dt;
-  kinsolNew = robot.doKinematics(q, v, options);
-  twistsNew = kinsolNew.twists;
+  kinsol_new = robot.doKinematics(q, v, options);
+  kinsol_new.twists = robot.twists(kinsol_new.T, q, v);
+  kinsol_new.v = v;
+  twistsNew = kinsol_new.twists;
   
   for j = 1 : nBodies
     spatialAccelerationNumericalDiff = (twistsNew{j} - twists{j}) / dt;

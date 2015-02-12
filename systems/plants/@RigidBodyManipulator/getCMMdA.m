@@ -11,7 +11,7 @@ if model.use_new_kinsol
     q = kinsol;
     kinsol_options.use_mex = false;
     kinsol_options.compute_gradients = nargout > 1;
-    kinsol = model.doKinematics(q, [], [], [], kinsol_options);
+    kinsol = model.doKinematics(q, [], kinsol_options);
   end
   
   if nargout > 1
