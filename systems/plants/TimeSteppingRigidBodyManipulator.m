@@ -659,15 +659,6 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
             lcmgl.drawVector3d(point,obj.lcmgl_contact_forces_scale*cartesian_force(:,j));
           end
           lcmgl.switchBuffers();
-          
-%          contact_data.normal = normal(:,possible_contact_indices);
-%          for i=1:length(d)
-%            contact_data.d{i} = d{i}(:,possible_contact_indices);
-%          end
-%          contact_data.xA = xA(:,possible_contact_indices);
-%          contact_data.xB = xB(:,possible_contact_indices);
-%          contact_data.idxA = idxA(possible_contact_indices);
-%          contact_data.idxB = idxB(possible_contact_indices);
         end
         
 
