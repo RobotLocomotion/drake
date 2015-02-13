@@ -13,7 +13,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/l_clav.wrl" scale="1 1 1"/>
+        <mesh filename="package://Atlas/urdf/meshes/l_clav.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
   </link>
@@ -26,7 +26,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/l_farm.wrl" scale="1 1 1"/>
+        <mesh filename="package://Atlas/urdf/meshes/l_farm.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
   </link>
@@ -39,7 +39,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/l_foot.wrl" scale="1 1 1"/>
+        <mesh filename="package://Atlas/urdf/meshes/l_foot.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
     <collision group="heel">
@@ -101,7 +101,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/l_hand.wrl" scale="1 1 1"/>
+        <mesh filename="package://Atlas/urdf/meshes/l_hand.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
     <collision group="default">
@@ -138,7 +138,7 @@
     <visual>
       <origin rpy="0 3.14159 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/l_elbow_rx.wrl" scale="1 1 1"/>
+        <mesh filename="package://Atlas/urdf/meshes/l_elbow_rx.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
   </link>
@@ -151,7 +151,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/l_lglut.wrl" scale="1 1 1"/>
+        <mesh filename="package://Atlas/urdf/meshes/l_lglut.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
   </link>
@@ -164,7 +164,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/l_lleg.wrl" scale="1 1 1"/>
+        <mesh filename="package://Atlas/urdf/meshes/l_lleg.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
     <collision group="knee">
@@ -189,7 +189,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/l_sh_rx.wrl" scale="1 1 1"/>
+        <mesh filename="package://Atlas/urdf/meshes/l_sh_rx.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
   </link>
@@ -202,7 +202,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/l_talus.wrl" scale="1 1 1"/>
+        <mesh filename="package://Atlas/urdf/meshes/l_talus.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
   </link>
@@ -215,7 +215,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/l_elbow_ry.wrl" scale="1 1 1"/>
+        <mesh filename="package://Atlas/urdf/meshes/l_elbow_ry.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
   </link>
@@ -228,7 +228,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/l_uglut.wrl" scale="1 1 1"/>
+        <mesh filename="package://Atlas/urdf/meshes/l_uglut.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
   </link>
@@ -241,7 +241,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/l_uleg.wrl" scale="1 1 1"/>
+        <mesh filename="package://Atlas/urdf/meshes/l_uleg.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
     <collision group="hamstring">
@@ -278,7 +278,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/ltorso.wrl" scale="1 1 1"/>
+        <mesh filename="package://Atlas/urdf/meshes/ltorso.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
   </link>
@@ -291,7 +291,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/mtorso.wrl" scale="1 1 1"/>
+        <mesh filename="package://Atlas/urdf/meshes/mtorso.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
   </link>
@@ -304,7 +304,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/pelvis.wrl" scale="1 1 1"/>
+        <mesh filename="package://Atlas/urdf/meshes/pelvis.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
     <collision group="front">
@@ -437,7 +437,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/r_clav.wrl" scale="1 1 1"/>
+        <mesh filename="package://Atlas/urdf/meshes/r_clav.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
   </link>
@@ -450,7 +450,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/r_farm.wrl" scale="1 1 1"/>
+        <mesh filename="package://Atlas/urdf/meshes/r_farm.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
   </link>
@@ -463,7 +463,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/r_foot.wrl" scale="1 1 1"/>
+        <mesh filename="package://Atlas/urdf/meshes/r_foot.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
     <collision group="heel">
@@ -531,7 +531,7 @@
     <visual>
       <origin rpy="0 3.14159 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/r_hand.wrl" scale="1 1 1"/>
+        <mesh filename="package://Atlas/urdf/meshes/r_hand.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
     <collision group="palm">
@@ -568,7 +568,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/r_elbow_rx.wrl" scale="1 1 1"/>
+        <mesh filename="package://Atlas/urdf/meshes/r_elbow_rx.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
   </link>
@@ -581,7 +581,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/r_lglut.wrl" scale="1 1 1"/>
+        <mesh filename="package://Atlas/urdf/meshes/r_lglut.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
   </link>
@@ -594,7 +594,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/r_lleg.wrl" scale="1 1 1"/>
+        <mesh filename="package://Atlas/urdf/meshes/r_lleg.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
     <collision group="knee">
@@ -619,7 +619,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/r_sh_rx.wrl" scale="1 1 1"/>
+        <mesh filename="package://Atlas/urdf/meshes/r_sh_rx.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
   </link>
@@ -632,7 +632,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/r_talus.wrl" scale="1 1 1"/>
+        <mesh filename="package://Atlas/urdf/meshes/r_talus.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
   </link>
@@ -645,7 +645,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/r_elbow_ry.wrl" scale="1 1 1"/>
+        <mesh filename="package://Atlas/urdf/meshes/r_elbow_ry.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
   </link>
@@ -658,7 +658,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/r_uglut.wrl" scale="1 1 1"/>
+        <mesh filename="package://Atlas/urdf/meshes/r_uglut.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
   </link>
@@ -671,7 +671,7 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/r_uleg.wrl" scale="1 1 1"/>
+        <mesh filename="package://Atlas/urdf/meshes/r_uleg.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
     <collision group="hamstring">
@@ -708,13 +708,13 @@
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/utorso.wrl" scale="1 1 1"/>
+        <mesh filename="package://Atlas/urdf/meshes/utorso.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
     <visual>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/utorso_pack.wrl" scale="1 1 1"/>
+        <mesh filename="package://Atlas/urdf/meshes/utorso_pack.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
     <collision group="front">
@@ -1216,7 +1216,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/head.wrl"/>
+        <mesh filename="package://Atlas/urdf/meshes/head.wrl"/>
       </geometry>
       <material name="">
         <color rgba="0.9098 0.44314 0.031373 1"/>
