@@ -194,6 +194,37 @@ classdef FootstepPlan
 
       obj = obj.slice(~(trim_init | trim_final));
     end
+
+    function obj = applyTransform(obj, T)
+      % Apply a transform to every footstep and safe region, returning a new FootstepPlan
+      % @param T a homogeneous transformation matrix (4x4)
+
+      for j = 1:length(obj.footsteps)
+        pos = obj.footsteps(j).pos;
+        R = rpy2rotmat(pos(4:6));
+        H = [R, pos(1:3); zeros(1,3), 1];
+        Hprime = T * H;
+        obj.footsteps(j).pos = [Hprime(1:3,4); rotmat2rpy(Hprime(1:3,1:3))];
+      end
+
+      rpy = rotmat2rpy(T(1:3,1:3))
+      assert(all(abs(rpy(1:2) <= 1e-3)), 'Safe region transformation has not been implemented for rotations which are not pure yaw');
+      delta = [T(1:2,4); rpy(3)]
+      for j = 1:length(obj.safe_regions)
+        % we have Ax <= b
+        % we want A*T*x <= b
+        % where T*x = [R*x(1:2) + T(1:2,4); x(3) + rpy(3)]
+        % A = A * [T(1:2,1:2), 0; 0, 0, 1]
+        % b = b - A * [T(1:2,4); rpy(3)]
+
+        obj.safe_regions(j).b = obj.safe_regions(j).b - obj.safe_regions(j).A * delta;
+        obj.safe_regions(j).A = obj.safe_regions(j).A * [T(1:2,1:2), [0;0]; 0, 0, 1];
+        p = T * [obj.safe_regions(j).point; 1];
+        n = T * [obj.safe_regions(j).normal; 0];
+        obj.safe_regions(j).point = p(1:3);
+        obj.safe_regions(j).normal = n(1:3);
+      end
+    end
   end
 
   methods(Static=true)
