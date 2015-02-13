@@ -305,6 +305,9 @@ classdef DynamicalSystem
       % solver
 
       if nargin<3, v=[]; end
+      if getNumStates(obj)<1, 
+        x=Point(obj.getStateFrame); success=true; prog=[]; return;
+      end
       if isa(x0,'Point')
         x0 = double(x0.inFrame(obj.getStateFrame));
       end

@@ -219,7 +219,7 @@ classdef BotVisualizer < RigidBodyVisualizer
       lc.publish('DRAKE_VIEWER_COMMAND',vc);
     end
     
-    function playbackMovie(obj,xtraj,filename)
+    function playbackMovie(obj,xtraj,filename,options)
       ffmpeg = getCMakeParam('ffmpeg');
       if isempty(ffmpeg)
         error('need ffmpeg.  rerun make configure from the prompt to help find it');
@@ -242,7 +242,7 @@ classdef BotVisualizer < RigidBodyVisualizer
       lc = lcm.lcm.LCM.getSingleton();
       lc.publish('DRAKE_VIEWER_COMMAND',vc);
 
-      playback(obj,xtraj);
+      playback(obj,xtraj,options);
       
       vc.command_type = vc.STOP_RECORDING;
       lc.publish('DRAKE_VIEWER_COMMAND',vc);

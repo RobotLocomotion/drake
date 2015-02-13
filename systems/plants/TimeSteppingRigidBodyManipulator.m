@@ -15,6 +15,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     position_control=false;
     LCP_cache;
     enable_fastqp; % whether we use the active set LCP
+    lcmgl_contact_forces_scale = 0;  % <=0 implies no lcmgl
     z_inactive_guess_tol = .01;
   end
 
@@ -60,6 +61,13 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         % you might consider setting this if the system consistently 
         % gives the "ResolvingLCP" warning
         obj.z_inactive_guess_tol = options.z_inactive_guess_tol;
+      end
+      
+      if isfield(options,'lcmgl_contact_forces_scale')
+        obj.lcmgl_contact_forces_scale = options.lcmgl_contact_forces_scale;
+        if obj.lcmgl_contact_forces_scale>0,
+          checkDependency('lcmgl');
+        end
       end
 
       obj.timestep = timestep;
@@ -244,6 +252,8 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         q=x(1:num_q); qd=x(num_q+(1:num_q));
         h = obj.timestep;
 
+        kinsol = doKinematics(obj,q);
+        
         if (nargout<5)
           [H,C,B] = manipulatorDynamics(obj.manip,q,qd);
           if (obj.num_u>0 && ~obj.position_control) 
@@ -336,9 +346,9 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         
         if (nContactPairs > 0)
           if (nargout>4)
-            [phiC,normal,d,xA,xB,idxA,idxB,mu,n,D,dn,dD] = obj.manip.contactConstraints(q,true);
+            [phiC,normal,d,xA,xB,idxA,idxB,mu,n,D,dn,dD] = obj.manip.contactConstraints(kinsol,true);
           else
-            [phiC,normal,d,xA,xB,idxA,idxB,mu,n,D] = obj.manip.contactConstraints(q,true);
+            [phiC,normal,d,xA,xB,idxA,idxB,mu,n,D] = obj.manip.contactConstraints(kinsol,true);
           end
           
           if isempty(possible_contact_indices)
@@ -629,6 +639,28 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
 %        assert(all(M*z+w>=-path_convergence_tolerance));
 %        valuecheck(z'*(M*z+w),0,path_convergence_tolerance);
         % end more debugging
+        
+        if obj.lcmgl_contact_forces_scale>0
+          cN = z(nL+nP+(1:nC));
+          cartesian_force = repmat(cN',3,1).*contact_data.normal;
+          for i=1:mC/2  % d is mirrored in contactConstraints
+            beta = z(nL+nP+i*nC+(1:nC));
+            cartesian_force = cartesian_force + repmat(beta',3,1).*contact_data.d{i};
+            beta = z(nL+nP+(mC/2+i)*nC+(1:nC));
+            cartesian_force = cartesian_force - repmat(beta',3,1).*contact_data.d{i};
+          end
+          
+          lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton,'LCP contact forces');
+          for j=1:nC
+            point = forwardKin(obj.manip,kinsol,contact_data.idxA(j),contact_data.xA(:,j));
+            lcmgl.glColor3f(.4,.2,.4);
+            lcmgl.drawVector3d(point,-obj.lcmgl_contact_forces_scale*cartesian_force(:,j));
+            lcmgl.glColor3f(.2,.4,.2);
+            lcmgl.drawVector3d(point,obj.lcmgl_contact_forces_scale*cartesian_force(:,j));
+          end
+          lcmgl.switchBuffers();
+        end
+        
 
         obj.LCP_cache.data.z = z;
         obj.LCP_cache.data.Mqdn = Mqdn;
