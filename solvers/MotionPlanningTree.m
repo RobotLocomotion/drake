@@ -32,6 +32,7 @@ classdef MotionPlanningTree
       defaultOptions.display_after_every = 50;
       defaultOptions.goal_bias = .05;
       defaultOptions.N = 1e4;
+      defaultOptions.visualize = false;
       options = applyDefaults(options, defaultOptions);
       obj = obj.init(x_start);
       assert(obj.isValidConfiguration(x_start))
@@ -45,7 +46,7 @@ classdef MotionPlanningTree
           x_sample = obj.randomConfig();
         end
         [obj, status] = extend(obj, x_sample);
-        if mod(obj.n,options.display_after_every)==0 || (try_goal && status == obj.REACHED)
+        if options.visualize && (mod(obj.n,options.display_after_every)==0 || (try_goal && status == obj.REACHED))
           obj = obj.drawTree(last_drawn_edge_num);
           last_drawn_edge_num = obj.n-1;
         end
@@ -53,7 +54,9 @@ classdef MotionPlanningTree
         if try_goal && status == obj.REACHED
           info = 1;
           path_ids = obj.getPathToVertex(obj.n);
-          drawPath(obj, path_ids);
+          if options.visualize
+            drawPath(obj, path_ids);
+          end
           break;
         end
       end
@@ -62,11 +65,11 @@ classdef MotionPlanningTree
 
     function [TA, TB,  path_ids_A, path_ids_B, info] = rrtConnect(TA, x_start, x_goal, TB, options)
       if nargin < 5, options = struct(); end
-      defaultOptions.display_fcn = @MotionPlanningProblem.drawFirstTwoCoordinates;
       defaultOptions.display_after_every = 50;
       defaultOptions.max_length_between_constraint_checks = 0.001;
       defaultOptions.goal_bias = .05;
       defaultOptions.N = 10000;
+      defaultOptions.visualize = false;
       options = applyDefaults(options, defaultOptions);
       assert(TA.isValidConfiguration(x_start))
       TA = TA.init(x_start);
@@ -88,7 +91,7 @@ classdef MotionPlanningTree
         else
           [TB, TA, path_ids_B, path_ids_A] = rrtConnectIteration(TB, TA, options.goal_bias);
         end
-        if TA.n + TB.n - last_drawn_edge_num_A - last_drawn_edge_num_B > options.display_after_every || ~isempty(path_ids_A)
+        if options.visualize && (TA.n + TB.n - last_drawn_edge_num_A - last_drawn_edge_num_B > options.display_after_every || ~isempty(path_ids_A))
           TA = TA.drawTree(last_drawn_edge_num_A);
           TB = TB.drawTree(last_drawn_edge_num_B);
           drawnow
@@ -98,7 +101,9 @@ classdef MotionPlanningTree
         if ~isempty(path_ids_A)
           assert(~isempty(path_ids_B))
           info = 1;
-          drawPath(TA, path_ids_A, TB, path_ids_B);
+          if options.visualize
+            drawPath(TA, path_ids_A, TB, path_ids_B);
+          end
           break;
         end
       end
@@ -195,7 +200,8 @@ classdef MotionPlanningTree
     end
 
 
-    function [obj_new, id_last] = recursiveConnectSmoothing(obj, path_ids, n_iterations)
+    function [obj_new, id_last] = recursiveConnectSmoothing(obj, path_ids, n_iterations, visualize)
+      if nargin < 4 || isempty(visualize), visualize = false; end
       if nargin < 3
         path_length = numel(path_ids);
         [obj_start, id_last] = obj.init(obj.getVertex(path_ids(1)));
@@ -218,7 +224,9 @@ classdef MotionPlanningTree
         for i = 1:n_iterations
           [obj, id_last] = recursiveConnectSmoothing(obj, path_ids);
           path_ids = obj.getPathToVertex(id_last);
-          obj.drawPath(path_ids);
+          if visualize
+            obj.drawPath(path_ids);
+          end
         end
         obj_new = obj;
       end
