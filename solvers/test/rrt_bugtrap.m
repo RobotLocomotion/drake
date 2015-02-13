@@ -25,7 +25,7 @@ switch planning_mode
   case 'rrt_connect'
     [TA, TB,  path_ids_A, path_ids_B, info] = prob.rrtConnect(x_start, x_goal, [], options);
     if info == 1
-      [TA, id_last] = TA.addPath(TB.extractPath(fliplr(path_ids_B(1:end-1))), path_ids_A(end));
+      [TA, id_last] = TA.addPath(TB, fliplr(path_ids_B(1:end-1)), path_ids_A(end));
       path_ids_A = TA.getPathToVertex(id_last);
     end
 end
