@@ -1,5 +1,6 @@
 function [xtraj,info,v] = testTaskSpaceRRT(options, rng_seed)
 % TIMEOUT 600
+if nargin < 1 || isempty(options), options = struct(); end
 if nargin < 2, rng; else rng(rng_seed); end
 w = warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
 warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
@@ -112,6 +113,8 @@ ref_frame = [0.10040853387866658, 0.30507204666777654, 0.94702121025152886, 0.19
 lower_bounds = [0.0; 0.0; 0.0] + [-0; -0; -0];
 upper_bounds = [0.0; 0.0; 0.0] + [0.0; 0.0; 0.0];
 position_constraint_7 = WorldPositionInFrameConstraint(r, l_hand, point_in_link_frame, ref_frame, lower_bounds, upper_bounds, [1.0, 1.0]);
+%ref_frame = inv(ref_frame);
+%position_constraint_7 = WorldPositionConstraint(r, l_hand, ref_frame(1:3,:)*[point_in_link_frame;1], lower_bounds, upper_bounds, [1.0, 1.0]);
 
 l_hand_initial_position_constraint = WorldPositionConstraint(r, l_hand, [0;0;0], xyz_quat_start(1:3), xyz_quat_start(1:3));
 point_in_link_frame = [0.9; 0.24449999999999988; 0.011200000000000071];
@@ -126,11 +129,10 @@ min_distance = 0.01;
 active_collision_options.body_idx = setdiff(1:r.getNumBodies(),[l_foot,r_foot]);
 
 options.display_after_every = 100;
-options.goal_bias = goal_bias;
 
 TA = TaskSpaceMotionPlanningTree(r, 'l_hand', point_in_link_frame);
 TA  = TA.setMinDistance(min_distance);
-TA  = TA.setOrientationWeight(2);
+TA  = TA.setOrientationWeight(1);
 TA.max_edge_length = 0.05;
 TA.max_length_between_constraint_checks = TA.max_edge_length;
 TA.angle_tol = 1*pi/180;
@@ -179,6 +181,8 @@ active_constraints = [base_constraints, {position_constraint_7,quat_constraint_8
 if options.visualize
   v.draw(0,q_end);
 end
+kinsol = r.doKinematics(q_start);
+xyz_quat_start = r.forwardKin(kinsol,l_hand,point_in_link_frame,2);
 kinsol = r.doKinematics(q_end);
 xyz_quat_goal = r.forwardKin(kinsol,l_hand,point_in_link_frame,2);
 if options.visualize
@@ -281,4 +285,5 @@ t_scaled = tf*(-real(acos(2*t_scaled/tf-1)+pi)/2);
 xtraj = PPTrajectory(pchip(t_scaled,[q_path(:,idx_unique); zeros(r.getNumVelocities(),numel(t_scaled))]));
 xtraj = xtraj.setOutputFrame(r.getStateFrame());
 end
+
 
