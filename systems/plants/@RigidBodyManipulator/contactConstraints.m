@@ -26,16 +26,16 @@ compute_first_derivative = nargout > 8;
 compute_second_derivative = nargout > 10;
 
 if nargin<3,
-  allow_multiple_contacts = false;
+    allow_multiple_contacts = false;
 end
 
 if nargin<4,
-  active_collision_options = struct();
+    active_collision_options = struct();
 end
 
-if ~isstruct(kinsol)  
-  % treat input as contactPositions(obj,q)
-  kinsol = doKinematics(obj,kinsol,compute_second_derivative);
+if ~isstruct(kinsol)
+    % treat input as contactPositions(obj,q)
+    kinsol = doKinematics(obj,kinsol,compute_second_derivative);
 end
 
 [phi,normal,xA,xB,idxA,idxB] = collisionDetect(obj,kinsol,allow_multiple_contacts,active_collision_options);
@@ -45,104 +45,33 @@ nC = numel(phi);
 
 % If there are no potential collisions, return empty
 if nC == 0
-  d = [];
-  mu = [];
-  n = [];
-  D = [];
-  dn = [];
-  dD = [];
-  return;
+    d = [];
+    mu = [];
+    n = [];
+    D = [];
+    dn = [];
+    dD = [];
+    return;
 end
 
 % For now, all coefficients of friction are 1
 mu = ones(nC,1);
 
-% while surfaceTangentsmex is not explicitly dependent on the the mex_model_ptr, 
+% while surfaceTangentsmex is not explicitly dependent on the the mex_model_ptr,
 % it may be sufficient to check for the presence of Eigen.
 % This is faster than checking for the presence of files.
-
-if(obj.mex_model_ptr ~= 0) 
-  d = surfaceTangentsmex(normal);
+if(obj.mex_model_ptr ~= 0)
+    d = surfaceTangentsmex(normal);
 else
-  d = obj.surfaceTangents(normal);
+    d = obj.surfaceTangents(normal);
 end
 
 if compute_first_derivative
-  if(obj.mex_model_ptr ~= 0)
     if(~compute_second_derivative)
-      [n, D] = contactConstraintsmex(obj.mex_model_ptr, int32(idxA), int32(idxB), xA, xB, normal, d);
+        [n, D] = contactConstraintDerivatives(obj, kinsol, idxA, idxB, xA, xB, normal, d, obj.mex_model_ptr~=0);
     else
-      [n, D, dn, dD] = contactConstraintsmex(obj.mex_model_ptr, int32(idxA), int32(idxB), xA, xB, normal, d);
+        [n, D, dn, dD] = contactConstraintDerivatives(obj, kinsol, idxA, idxB, xA, xB, normal, d, obj.mex_model_ptr~=0);
     end
-  else
-    
-  nq = obj.getNumPositions;  
-  nk = size(d,2);
-  
-  J = zeros(3*nC,nq)*kinsol.q(1);
-  if compute_second_derivative,
-    dJ = zeros(3*nC,nq*nq)*kinsol.q(1);
-  end
-  
-  body_inds = unique([idxA(idxA>1);idxB(idxB>1)]);
-  
-  % Cache the results of a kron and repmat, since this was taking a ton of
-  % time
-  tmp_vec = repmat([-2;-1;0],nC,1);
-  tmp_kron = kron(eye(nC),3*ones(3,1));
-  
-  % loop over the bodies with contact points, instead of number of contacts
-  % reduces the calls to forwardKin from n^2 to n
-  for i=1:length(body_inds),
-    % The contact indices related to this body, on idxA and idxB
-    cindA = find(idxA == body_inds(i));
-    cindB = find(idxB == body_inds(i));
-    % Vectorized calculation of Jacobian indices related to this contact
-    % for contact i, this is (1:3) + (i-1)*3
-    if ~isempty(cindA)
-      JindA = tmp_kron(1:3*length(cindA),1:length(cindA))*cindA + tmp_vec(1:3*length(cindA));
-    else
-      JindA = [];
-    end
-    if ~isempty(cindB)
-      JindB = tmp_kron(1:3*length(cindB),1:length(cindB))*cindB + tmp_vec(1:3*length(cindB));
-    else
-      JindB = [];
-    end
-    if compute_second_derivative
-      [~,J_tmp,dJ_tmp] = obj.forwardKin(kinsol,body_inds(i), [xA(:,cindA) xB(:,cindB)]);
-      dJ(JindA,:) = dJ(JindA,:) + dJ_tmp(1:3*length(cindA),:);
-      dJ(JindB,:) = dJ(JindB,:) - dJ_tmp(3*length(cindA)+1:end,:);
-    else
-      [~,J_tmp] = obj.forwardKin(kinsol, body_inds(i),  [xA(:,cindA) xB(:,cindB)]);
-    end
-    J(JindA,:) = J(JindA,:) + J_tmp(1:3*length(cindA),:);
-    J(JindB,:) = J(JindB,:) - J_tmp(3*length(cindA)+1:end,:);
-  end
-  indmat = repmat(1:nC,3,1);
-  n = sparse(indmat,1:3*nC,normal(:))*J;
- 
-  D = cell(1,nk);
-  dD = cell(1,nk);
-  for k=1:nk,
-    D{k} = sparse(indmat,1:3*nC,d{k}(:))*J;
-    if compute_second_derivative
-      % note: this temporarily assumes that the normal does not change with contact_pos
-      dD{k} = reshape(sparse(indmat,1:3*nC,d{k}(:))*dJ,numel(n),nq);
-    end
-  end
-  
-  for k=(nk+1):2*nk
-    D{k} = -D{k-nk};
-    if compute_second_derivative
-      dD{k} = -dD{k-nk};
-    end
-  end
-  
-  if compute_second_derivative
-    dn = reshape(sparse(indmat,1:3*nC,normal(:))*dJ,numel(n),nq);
-  end
-  
-  end
 end
 end
+
