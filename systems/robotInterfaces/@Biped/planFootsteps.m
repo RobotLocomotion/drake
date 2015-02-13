@@ -68,6 +68,8 @@ for j = 1:length(safe_regions)
   end
 end
 
+
+
 if options.step_params.leading_foot == 0 % lead left
   foot1 = 'left';
   foot2 = 'right';
@@ -91,6 +93,39 @@ start_pos.left(4:5) = 0;
 
 weights = getFootstepOptimizationWeights(obj);
 
+safe_regions = plan.safe_regions;
+figure(15)
+clf
+hold on
+for j = 1:length(safe_regions)
+  iris.drawing.drawPolyFromVertices(iris.thirdParty.polytopes.lcon2vert(safe_regions(j).A, safe_regions(j).b)', 'r');
+end
+view(-43,28)
+drawnow
+
+% Shift the problem to always start from x,y,z,yaw = 0;
+T = makehgtform('zrotate', -start_pos.right(6), 'translate', -start_pos.right(1:3));
+plan = plan.applyTransform(T);
+for f = fieldnames(goal_pos)'
+  field = f{1};
+  goal_pos.(field)([1,2,3,6]) = goal_pos.(field)([1,2,3,6]) - start_pos.right([1,2,3,6]);
+end
+
+safe_regions = plan.safe_regions;
+figure(16)
+clf
+hold on
+for j = 1:length(safe_regions)
+  iris.drawing.drawPolyFromVertices(iris.thirdParty.polytopes.lcon2vert(safe_regions(j).A, safe_regions(j).b)', 'r');
+end
+view(-43,28)
+drawnow
+
+[plan.footsteps(1:2).pos]
+goal_pos.center
+goal_pos.right
+goal_pos.left
+
 try
   [plan, solvertime] = options.method_handle(obj, plan, weights, goal_pos);
 catch e
@@ -102,6 +137,8 @@ catch e
     rethrow(e);
   end
 end
+
+plan = plan.applyTransform(inv(T));
 
 end
 
