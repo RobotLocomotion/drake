@@ -30,8 +30,8 @@ function rrt_piano_mover_rotation(n_obstacles, planning_mode, n_smoothing_passes
     obstacle = RigidBodyBox(box_size, xyz, rpy);
     r_new = r.addGeometryToBody('world', obstacle);
     r_new = r_new.compile();
-    if (collisionConstraint(r_new, q0) > min_distance) && ...
-       (collisionConstraint(r_new, qf) > min_distance)
+    if all(collisionConstraint(r_new, q0) > min_distance) && ...
+       all(collisionConstraint(r_new, qf) > min_distance)
       r = r_new;
       i = i + 1;
     end
