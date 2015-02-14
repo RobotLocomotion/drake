@@ -8,10 +8,10 @@ options.base_rpy = [-pi/2, 0, 0]';
 options.ignore_self_collisions = true;
 options.collision = false;
 options.hands = 'none';
-r = IRB140('irb_140.urdf', options);
+r = IRB140('urdf/irb_140.urdf', options);
 options_hand = options;
 options_hand.hands = 'robotiq';
-r_hand = IRB140('irb_140.urdf', options_hand);
+r_hand = IRB140('urdf/irb_140.urdf', options_hand);
 
 r_hand = r_hand.removeCollisionGroupsExcept({'palm', 'knuckle'});
 r_hand = r_hand.compile();
