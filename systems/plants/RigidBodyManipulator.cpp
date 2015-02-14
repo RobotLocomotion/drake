@@ -915,14 +915,24 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
 void RigidBodyManipulator::doKinematicsNew(double* q, bool compute_gradients, double* v, bool compute_JdotV) {
   if (kinematicsInit) {
     bool skip = true;
-    if (compute_gradients && !gradients_cached)
+    if (compute_gradients && !gradients_cached) {
       skip = false;
-    if (v && !velocity_kinematics_cached)
-      skip = false;
+    }
+    if (v != nullptr) {
+      if (!velocity_kinematics_cached) {
+        skip = false;
+      }
+      for (int i = 0; i < num_velocities; i++) {
+        if (v[i] != cached_v[i]) {
+          skip = false;
+          break;
+        }
+      }
+    }
     if (compute_JdotV && !jdotV_cached)
       skip = false;
     for (int i = 0; i < num_dof; i++) {
-      if (q[i] != cached_q[i] || q[i] != cached_q[i]) {
+      if (q[i] != cached_q[i]) {
         skip = false;
         break;
       }
