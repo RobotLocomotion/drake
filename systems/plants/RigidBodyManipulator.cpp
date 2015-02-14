@@ -2026,6 +2026,13 @@ GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::massMa
   return ret;
 }
 
+/**
+ * Note that this inverse dynamics algorithm can be used to compute the 'C' dynamics bias term by setting
+ * the joint acceleration vector to zero (or just passing in a nullptr for vd).
+ * This algorithm can also be used to compute the gravitational term only by passing in nullptr for vd and
+ * additionally calling doKinematics with a zero joint velocity vector.
+ * To compute only the Coriolis term, pass in nullptr for vd and set gravity to zero.
+ */
 template <typename Scalar>
 GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(
     std::map<int, std::unique_ptr<GradientVar<Scalar, TWIST_SIZE, 1> > >& f_ext,
