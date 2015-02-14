@@ -1,5 +1,7 @@
 function testContactConstraintsMex
 
+checkDependency('bullet');
+
 %build an atlas model 
 p = RigidBodyManipulator(fullfile('../../../examples/Atlas/urdf/atlas_minimal_contact.urdf'));
 if(p.mex_model_ptr == 0)
