@@ -348,20 +348,19 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
       I3d << inertial->ixx, inertial->ixy, inertial->ixz,
              inertial->ixy, inertial->iyy, inertial->iyz,
              inertial->ixz, inertial->iyz, inertial->izz;
-      Vector4d quat;
-      quat << inertial->origin.rotation.w, inertial->origin.rotation.x, inertial->origin.rotation.y, inertial->origin.rotation.z;
-      auto R = quat2rotmat(quat);
-      I3d = R*I3d*R.transpose();
 
       // from mcI.m
-      Matrix3d C;
-      C <<  0,                     -bodies[index]->com(2),   bodies[index]->com(1),
-            bodies[index]->com(2), 0,                       -bodies[index]->com(0),
-           -bodies[index]->com(1), bodies[index]->com(0),   0 ;
+      Vector3d com = bodies[index]->com.head(3);
+      Matrix3d C = vectorToSkewSymmetric(com);
       bodies[index]->I.block(0,0,3,3) << I3d + bodies[index]->mass*C*C.transpose();
       bodies[index]->I.block(0,3,3,3) << bodies[index]->mass*C;
       bodies[index]->I.block(3,0,3,3) << bodies[index]->mass*C.transpose();
       bodies[index]->I.block(3,3,3,3) << bodies[index]->mass*Matrix3d::Identity();
+
+      Matrix4d T;
+      poseToTransform(inertial->origin,T);
+      Transform<double,3,Eigen::Isometry> TT(T);
+      transformSpatialInertia(TT,NULL,bodies[index]->I);
     }
 
     if (!l->second->collision_groups.empty()) { // then at least one collision element exists

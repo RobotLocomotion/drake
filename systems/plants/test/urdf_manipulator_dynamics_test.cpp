@@ -1,5 +1,4 @@
 
-
 #include <iostream>
 #include <Eigen/Dense>
 #include "URDFRigidBodyManipulator.h"
@@ -8,43 +7,43 @@ using namespace std;
 
 int main(int argc, char* argv[])
 {
-	if (argc<2) {
-		cerr << "Usage: urdf_kin_test urdf_filename" << endl;
-		exit(-1);
-	}
+  if (argc < 2) {
+    cerr << "Usage: urdf_kin_test urdf_filename" << endl;
+    exit(-1);
+  }
   URDFRigidBodyManipulator* model = loadURDFfromFile(argv[1]);
 
 //  URDFRigidBodyManipulator* model = loadURDFfromFile("/Users/russt/drc/software/models/mit_gazebo_models/mit_robot/model.urdf");
   if (!model) {
-  	cerr << "ERROR: Failed to load model from " << argv[1] << endl;
-  	return -1;
+    cerr << "ERROR: Failed to load model from " << argv[1] << endl;
+    return -1;
   }
 
   // the order of the bodies may be different in matlab, so print it out once here
   cout << model->num_bodies << endl;
-  for (int i=0; i<model->num_bodies; i++) {
+  for (int i = 0; i < model->num_bodies; i++) {
     cout << model->bodies[i]->linkname << endl;
   }
 
   // run kinematics with second derivatives 100 times
   VectorXd q = VectorXd::Zero(model->num_dof);
-	VectorXd v = VectorXd::Zero(model->num_velocities);
-	int i;
+  VectorXd v = VectorXd::Zero(model->num_velocities);
+  int i;
 
-  if (argc>=2+model->num_dof) {
-  	for (i=0; i<model->num_dof; i++)
-  		sscanf(argv[2+i],"%lf",&q(i));
+  if (argc >= 2 + model->num_dof) {
+    for (i = 0; i < model->num_dof; i++)
+      sscanf(argv[2 + i], "%lf", &q(i));
   }
 
-	if (argc>=2+model->num_dof+model->num_velocities) {
-		for (i=0; i<model->num_velocities; i++)
-			sscanf(argv[2+model->num_dof+i],"%lf",&v(i));
+  if (argc >= 2 + model->num_dof + model->num_velocities) {
+    for (i = 0; i < model->num_velocities; i++)
+      sscanf(argv[2 + model->num_dof + i], "%lf", &v(i));
   }
 
   model->doKinematicsNew(q.data(), true, v.data(), true);
 
   auto H = model->massMatrix<double>();
-	cout << H.value() << endl;
+  cout << H.value() << endl;
 
   map<int, unique_ptr<GradientVar<double, TWIST_SIZE, 1>> > f_ext;
   auto C = model->inverseDynamics(f_ext);
