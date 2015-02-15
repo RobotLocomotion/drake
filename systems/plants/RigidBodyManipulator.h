@@ -4,6 +4,7 @@
 #include <Eigen/Dense>
 #include <Eigen/LU>
 #include <set>
+#include <map>
 #include <Eigen/StdVector> //#include <vector>
 
 #include "collision/DrakeCollision.h"
@@ -43,6 +44,8 @@ public:
   void doKinematics(double* q, bool b_compute_second_derivatives=false, double* qd=NULL);
 
   void doKinematicsNew(double* q, bool compute_gradients = false, double* v = nullptr, bool compute_JdotV = false);
+
+  void updateCompositeRigidBodyInertias(int gradient_order);
 
   template <typename Scalar>
   GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> centroidalMomentumMatrix(int gradient_order);
@@ -91,6 +94,12 @@ public:
 
   template <typename DerivedA, typename DerivedB>
   void forwarddJac(const int body_ind, const MatrixBase<DerivedA>& pts, MatrixBase<DerivedB> &dJ);
+
+  template <typename Scalar>
+  GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> massMatrix(int gradient_order);
+
+  template <typename Scalar>
+  GradientVar<Scalar, Eigen::Dynamic, 1> inverseDynamics(std::map<int, std::unique_ptr< GradientVar<Scalar, TWIST_SIZE, 1> > >& f_ext, GradientVar<Scalar, Eigen::Dynamic, 1>* vd = nullptr, int gradient_order = 0);
 
   template <typename DerivedPoints>
   GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, DerivedPoints::ColsAtCompileTime> forwardKinNew(const MatrixBase<DerivedPoints>& points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type, int gradient_order);
@@ -204,7 +213,7 @@ public:
   std::vector<MatrixXd> I;
   VectorXd a_grav;
 
-  VectorXd cached_q, cached_qd;  // these should be private
+  VectorXd cached_q, cached_v;  // these should be private
 
   bool use_new_kinsol;
 
@@ -219,12 +228,15 @@ private:
   std::vector<VectorXd> avp;
   std::vector<VectorXd> fvp;
   std::vector<MatrixXd> IC;
+  std::vector<Matrix<double, TWIST_SIZE, TWIST_SIZE>, Eigen::aligned_allocator< Matrix<double, TWIST_SIZE, TWIST_SIZE> > > I_world;
   std::vector<Matrix<double, TWIST_SIZE, TWIST_SIZE>, Eigen::aligned_allocator< Matrix<double, TWIST_SIZE, TWIST_SIZE> > > Ic_new;
+
 
   //Variables for gradient calculations
   MatrixXd dTdTmult;
   std::vector<MatrixXd> dXupdq;
   std::vector<std::vector<MatrixXd> > dIC;
+    std::vector<Gradient<Matrix<double, TWIST_SIZE, TWIST_SIZE>, Eigen::Dynamic>::type> dI_world;
   std::vector<Gradient<Matrix<double, TWIST_SIZE, TWIST_SIZE>, Eigen::Dynamic>::type> dIc_new;
 
   std::vector<MatrixXd> dvdq;
@@ -260,6 +272,10 @@ private:
   bool initialized;
   bool kinematicsInit;
   int secondDerivativesCached;
+  bool gradients_cached;
+  bool velocity_kinematics_cached;
+  bool jdotV_cached;
+  int cached_inertia_gradients_order;
 
   // collision_model and collision_model_no_margins both maintain
   // a collection of the collision geometry in the RBM for use in

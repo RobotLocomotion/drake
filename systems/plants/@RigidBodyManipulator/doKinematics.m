@@ -239,12 +239,11 @@ function kinsol = doKinematicsNew(model, q, v, options)
 % TODO: currently lots of branch-induced sparsity unexploited in
 % gradient computations.
 
-checkDirty(model);
 kinsol.q = q;
 kinsol.v = v;
 
 if (options.use_mex && model.mex_model_ptr~=0 && isnumeric(q))
-  doKinematicsmex(model.mex_model_ptr,q,options.compute_gradients,v);
+  doKinematicsNewmex(model.mex_model_ptr,q,options.compute_gradients,v,options.compute_JdotV);
   kinsol.mex = true;
 else
   kinsol.mex = false;

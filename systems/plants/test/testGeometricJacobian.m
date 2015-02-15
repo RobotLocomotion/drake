@@ -105,10 +105,10 @@ for test = 1 : nTests
   
   options.use_mex = false;
   options.compute_gradients = true;
-  kinsol = robot.doKinematics(q, [], [], [], options);
+  kinsol = robot.doKinematics(q, [], options);
   
   options.use_mex = true;
-  kinsol_mex = robot.doKinematics(q, [], [], [], options);
+  kinsol_mex = robot.doKinematics(q, [], options);
   
   for in_terms_of_qdot = [false, true]
     [J, v_indices, dJdq] = robot.geometricJacobian(kinsol, base, end_effector, expressed_in, in_terms_of_qdot);
