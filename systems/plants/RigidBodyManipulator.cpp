@@ -1912,7 +1912,7 @@ void RigidBodyManipulator::forwardJacDot(const int body_or_frame_id, const Matri
 
 	MatrixXd tmp = bodies[body_ind]->dTdqdot*Tframe*pts;
 	MatrixXd Jdott = Map<MatrixXd>(tmp.data(),num_dof,3*n_pts);
-	Jdot = Jdott.transpose();
+	Jdot.block(0,0,3*n_pts,num_dof) = Jdott.transpose();
 
 	if (rotation_type==1) {
 
