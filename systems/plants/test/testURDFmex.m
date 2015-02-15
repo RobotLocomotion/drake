@@ -1,8 +1,10 @@
 function testURDFmex
 
 urdf_kin_test = '../../../pod-build/bin/urdf_kin_test';
+urdf_manipulator_dynamics_test = '../../../pod-build/bin/urdf_manipulator_dynamics_test';
 if ispc
   urdf_kin_test = [urdf_kin_test,'.exe'];
+  urdf_manipulator_dynamics_test = [urdf_manipulator_dynamics_test,'.exe'];
 end
 
 if (~exist(urdf_kin_test,'file'))
@@ -32,6 +34,17 @@ for urdf = {'./FallingBrick.urdf',...
     x = forwardKin(r,kinsol,b,zeros(3,1),1);
     valuecheck(pt,x,tol);  
   end
+  
+  %% test manipulator dynamics
+  v = 0*rand(getNumVelocities(r),1);
+  
+  [retval,outstr] = systemWCMakeEnv([urdf_manipulator_dynamics_test,' ',urdffile,sprintf(' %f',q),' 2> /dev/null']);
+  valuecheck(retval,0);
+  out = textscan(outstr,'%f');%,'delimiter',',');
+  Hcpp = reshape(out{1},getNumVelocities(r),getNumVelocities(r));
+  H = manipulatorDynamics(r,q,v);
+  
+  valuecheck(Hcpp,H);
   
 end
 
