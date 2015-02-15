@@ -11,6 +11,9 @@ if (eigen3_FOUND AND Boost_FOUND)
     include_directories( .. )
     target_link_libraries(urdf_collision_test drakeRBMurdf drakeURDFinterface)
   endif()
+
+  add_executable(urdf_manipulator_dynamics_test urdf_manipulator_dynamics_test.cpp)
+  target_link_libraries(urdf_manipulator_dynamics_test drakeRBMurdf drakeURDFinterface)
 endif()
 
 macro(add_ik_cpp)
