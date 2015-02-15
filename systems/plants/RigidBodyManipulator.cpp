@@ -1091,10 +1091,8 @@ void RigidBodyManipulator::doKinematicsNew(double* q, bool compute_gradients, do
   gradients_cached = compute_gradients;
   velocity_kinematics_cached = v != nullptr;
   jdotV_cached = compute_JdotV && velocity_kinematics_cached;
-  for (int i = 0; i < num_dof; i++) {
-    cached_q[i] = q[i];
-    if (v != nullptr) cached_v[i] = v[i];
-  }
+  for (int i = 0; i < num_dof; i++) cached_q[i] = q[i];
+  if (v!=nullptr) for (int i = 0; i < num_velocities; i++) cached_v[i] = v[i];
 }
 
 template <typename Derived>
