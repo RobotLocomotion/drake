@@ -1,25 +1,27 @@
 function testManipulatorDynamics
 testActuatedPendulum();
-regressionTestAtlasRPY();
+testAtlasRPY();
 checkGradients(createAtlas('rpy'));
 checkHdotMinus2CoriolisMatrixSkewSymmetricMatrix(createAtlas('rpy'))
 
-if RigidBodyManipulator.use_new_kinsol
-  testBrickQuaternion();
-  testAtlasQuat();
-  checkGradients(createFallingBrick('quat'));
-  checkGradients(createAtlas('quat'));
-end
+testBrickQuaternion();
+testAtlasQuat();
+checkGradients(createFallingBrick('quat'));
+checkGradients(createAtlas('quat'));
+
 end
 
 function robot = createFallingBrick(floating_type)
 options.floating = floating_type;
+options.use_new_kinsol = true;
 robot = RigidBodyManipulator('FallingBrick.urdf',options);
 end
 
 function testBrickQuaternion()
 options.floating = 'quat';
+options.use_new_kinsol = true;
 r = RigidBodyManipulator('FallingBrick.urdf',options);
+
 nv = r.getNumVelocities();
 q = getRandomConfiguration(r);
 v = randn(nv, 1);
@@ -58,44 +60,32 @@ valuecheck(1, B);
 checkMex(m);
 end
 
-function regressionTestAtlasRPY()
-replaceMatFile = false;
-
-rng(23415, 'twister');
+function testAtlasRPY()
 
 r = createAtlas('rpy');
+r_newkinsol = setNewKinsolFlag(r,true);
 nq = r.getNumPositions();
 nv = r.getNumVelocities();
 
 nTests = 5;
-Hs = cell(nTests, 1);
-Cs = cell(nTests, 1);
-
 for i = 1 : nTests
   q = randn(nq, 1);
   v = randn(nv, 1);
   [H, C, B] = manipulatorDynamics(r, q, v, false);
-  Hs{i} = H;
-  Cs{i} = C;
+  [H_new, C_new, B_new] = manipulatorDynamics(r_newkinsol, q, v, false);
+
+  valuecheck(H_new,H);
+  valuecheck(C_new,C);
+  valuecheck(B_new,B);
 end
 
-filename = 'regressionTestAtlasManipulatorDynamics.mat';
-if replaceMatFile
-  save(filename, varname(Hs), varname(Cs), varname(B));
-else
-  data = load(filename);
-  for i = 1 : nTests
-    valuecheck(data.Hs{i}, Hs{i}, 1e-10);
-    valuecheck(data.Cs{i}, Cs{i}, 1e-10);
-  end
-  valuecheck(data.B, B);
-end
 checkMex(r);
 
 end
 
 function testAtlasQuat()
-r = createAtlas('quat');
+options.use_new_kinsol = true;
+r = createAtlas('quat',options);
 nv = r.getNumVelocities();
 checkMex(r);
 
@@ -105,7 +95,7 @@ for i = 1 : nTests
   v = randn(nv, 1);
   [H, C, B] = manipulatorDynamics(r, q, v, false);
   kinetic_energy = 1/2 * v' * H * v;
-  
+
   kinsol = r.doKinematics(q, false, false, v);
   kinetic_energy_via_kinsol = computeKineticEnergy(r, kinsol);
   valuecheck(kinetic_energy_via_kinsol, kinetic_energy, 1e-10);
@@ -141,7 +131,6 @@ valuecheck(dB_geval, dB, 1e-10);
 end
 
 function checkMex(robot)
-rng(1, 'twister');
 q = getRandomConfiguration(robot);
 v = randn(robot.getNumVelocities(), 1);
 [H, C, B, dH, dC, dB] = manipulatorDynamics(robot, q, v, false);
