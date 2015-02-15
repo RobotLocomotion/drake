@@ -6,6 +6,7 @@
 #include <map>
 
 #include "URDFRigidBodyManipulator.h"
+#include "drakeGeometryUtil.h"
 #include "urdf_interface/model.h"
 
 #include <boost/shared_ptr.hpp>
@@ -215,6 +216,7 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
   int robotnum = static_cast<int>(this->robot_name.size())-1;
   for (map<string, boost::shared_ptr<urdf::Link> >::iterator l=_urdf_model->links_.begin(); l!=_urdf_model->links_.end(); l++) {
     int index, _dofnum;
+
     if (l->second->parent_joint) {
     	boost::shared_ptr<urdf::Joint> j = l->second->parent_joint;
     	map<string, int>::const_iterator jn=findWithSuffix(jointname_to_jointnum,j->name);
@@ -345,6 +347,31 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
       dofnum[index-1] = _dofnum;
     }
 
+
+    if (l->second->inertial) { // parse inertial parameters
+      boost::shared_ptr<urdf::Inertial> inertial = l->second->inertial;
+      bodies[index]->mass = inertial->mass;
+      bodies[index]->com << inertial->origin.position.x, inertial->origin.position.y, inertial->origin.position.z, 1.0;
+      Matrix3d I3d;
+      I3d << inertial->ixx, inertial->ixy, inertial->ixz,
+             inertial->ixy, inertial->iyy, inertial->iyz,
+             inertial->ixz, inertial->iyz, inertial->izz;
+      Vector4d quat;
+      quat << inertial->origin.rotation.w, inertial->origin.rotation.x, inertial->origin.rotation.y, inertial->origin.rotation.z;
+      auto R = quat2rotmat(quat);
+      I3d = R*I3d*R.transpose();
+
+      // from mcI.m
+      Matrix3d C;
+      C <<  0,                     -bodies[index]->com(2),   bodies[index]->com(1),
+            bodies[index]->com(2), 0,                       -bodies[index]->com(0),
+           -bodies[index]->com(1), bodies[index]->com(0),   0 ;
+      bodies[index]->I.block(0,0,3,3) << I3d + bodies[index]->mass*C*C.transpose();
+      bodies[index]->I.block(0,3,3,3) << bodies[index]->mass*C;
+      bodies[index]->I.block(3,0,3,3) << bodies[index]->mass*C.transpose();
+      bodies[index]->I.block(3,3,3,3) << bodies[index]->mass*Matrix3d::Identity();
+    }
+
     if (!l->second->collision_groups.empty()) { // then at least one collision element exists
       // todo: keep track of which collision elements belong to which groups
       for ( auto c_grp_it = l->second->collision_groups.begin()
@@ -424,6 +451,7 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
         updateCollisionElements(index);  // update static objects only once - right here on load
       }
     }
+
   }
 
   compile();  
