@@ -357,10 +357,9 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
       bodies[index]->I.block(3,0,3,3) << bodies[index]->mass*C.transpose();
       bodies[index]->I.block(3,3,3,3) << bodies[index]->mass*Matrix3d::Identity();
 
-      Matrix4d T;
-      poseToTransform(inertial->origin,T);
-      Transform<double,3,Eigen::Isometry> TT(T);
-      transformSpatialInertia(TT,NULL,bodies[index]->I);
+      Isometry3d T;
+      poseToTransform(inertial->origin,T.matrix());
+      transformSpatialInertia(T,NULL,bodies[index]->I);
     }
 
     if (!l->second->collision_groups.empty()) { // then at least one collision element exists
