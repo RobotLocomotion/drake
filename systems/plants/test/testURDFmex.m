@@ -20,7 +20,7 @@ for urdf = {'./FallingBrick.urdf',...
   urdffile = GetFullPath(urdf{1});
   fprintf(1,'testing %s\n', urdffile);
   r = RigidBodyManipulator(urdffile,struct('floating',true));
-  
+    
   q = 0*rand(getNumPositions(r),1);
   kinsol = doKinematics(r,q);
   
@@ -40,11 +40,32 @@ for urdf = {'./FallingBrick.urdf',...
   
   [retval,outstr] = systemWCMakeEnv([urdf_manipulator_dynamics_test,' ',urdffile,sprintf(' %f',q),' 2> /dev/null']);
   valuecheck(retval,0);
-  out = textscan(outstr,'%f');%,'delimiter',',');
-  Hcpp = reshape(out{1},getNumVelocities(r),getNumVelocities(r));
-  H = manipulatorDynamics(r,q,v);
   
-  valuecheck(Hcpp,H);
+  num_bodies = textscan(outstr,'%d',1); num_bodies=num_bodies{1};
+  linknames = textscan(outstr,'%s',num_bodies,'HeaderLines',1); linknames = linknames{1};
+
+  num_v = getNumVelocities(r);
+  map = [];
+  for i=1:num_bodies
+    inds = r.body(r.findLinkId(linknames{i})).position_num;
+    if any(inds>0)
+      map = [map;inds];
+    end
+  end
+  P = sparse(1:num_v,map,ones(num_v,1),num_v,num_v);
+  
+  Hcpp = textscan(outstr,'%f','HeaderLines',1+num_bodies);
+  Ccpp = reshape(Hcpp{1}(num_v^2+(1:num_v)),[],1);
+  Hcpp = reshape(Hcpp{1}(1:num_v^2),getNumVelocities(r),getNumVelocities(r));
+  Hcpp = P'*Hcpp*P;
+  
+  Ccpp = P'*Ccpp;
+  
+  [H,C] = manipulatorDynamics(r,q,v);
+  
+  % low tolerance because i'm just parsing the ascii printouts
+  valuecheck(Hcpp,H,1e-2); 
+  valuecheck(Ccpp,C,1e-2);  
   
 end
 
