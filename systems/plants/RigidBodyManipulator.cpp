@@ -674,7 +674,7 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
     if (b_compute_second_derivatives && !secondDerivativesCached)
       skip = false;
     for (i = 0; i < num_dof; i++) {
-      if (q[i] != cached_q[i] || q[i] != cached_q[i]) {
+      if (q[i] != cached_q[i] || (qd && qd[i] != cached_v[i])) {
         skip = false;
         break;
       }
