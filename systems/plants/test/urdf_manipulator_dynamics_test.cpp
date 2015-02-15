@@ -20,6 +20,12 @@ int main(int argc, char* argv[])
   	return -1;
   }
 
+  // the order of the bodies may be different in matlab, so print it out once here
+  cout << model->num_bodies << endl;
+  for (int i=0; i<model->num_bodies; i++) {
+    cout << model->bodies[i]->linkname << endl;
+  }
+
   // run kinematics with second derivatives 100 times
   VectorXd q = VectorXd::Zero(model->num_dof);
 	VectorXd v = VectorXd::Zero(model->num_velocities);
@@ -38,8 +44,11 @@ int main(int argc, char* argv[])
   model->doKinematicsNew(q.data(), true, v.data(), true);
 
   auto H = model->massMatrix<double>();
-
 	cout << H.value() << endl;
+
+  map<int, unique_ptr<GradientVar<double, TWIST_SIZE, 1>> > f_ext;
+  auto C = model->inverseDynamics(f_ext);
+  cout << C.value() << endl << endl;
 
   delete model;
   return 0;

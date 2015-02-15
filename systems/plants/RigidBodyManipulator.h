@@ -211,7 +211,7 @@ public:
   VectorXd static_friction;
   std::vector<MatrixXd> Xtree;
   std::vector<MatrixXd> I;
-  VectorXd a_grav;
+  Matrix<double,6,1> a_grav;
 
   VectorXd cached_q, cached_v;  // these should be private
 
