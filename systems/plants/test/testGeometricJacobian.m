@@ -1,14 +1,16 @@
 function testGeometricJacobian
+
 testFallingBrick('rpy');
 testAtlas('rpy');
 
-if RigidBodyManipulator.use_new_kinsol
-  testFallingBrick('quat');
-  testAtlas('quat');
-end
+options.use_new_kinsol = true;
+testFallingBrick('rpy',options);
+testAtlas('rpy',options);
+testFallingBrick('quat',options);
+testAtlas('quat',options);
 end
 
-function testFallingBrick(floatingType)
+function testFallingBrick(floatingType,options)
 options.floating = floatingType;
 robot = RigidBodyManipulator('FallingBrick.urdf',options);
 checkTransformDerivatives(robot);
@@ -18,8 +20,9 @@ if robot.use_new_kinsol
 end
 end
 
-function testAtlas(floatingJointType)
-robot = createAtlas(floatingJointType);
+function testAtlas(floatingJointType,options)
+if nargin<2, options=struct(); end
+robot = createAtlas(floatingJointType,options);
 checkTransformDerivatives(robot);
 if robot.use_new_kinsol
   checkJacobianGradients(robot);
@@ -37,18 +40,18 @@ for i = 1 : nTests
   q = getRandomConfiguration(robot);
   v = randn(nv, 1);
   kinsol = robot.doKinematics(q,false,false, v);
-  
+
   base = randi(bodyRange);
   endEffector = randi(bodyRange);
   expressedIn = base;
-  
+
   [J, vIndices] = robot.geometricJacobian(kinsol, base, endEffector, expressedIn);
   if base == endEffector
     twist = J * zeros(0, 1);
   else
     twist = J * (v(vIndices));
   end
-  
+
   HBase = kinsol.T{base};
   HBody = kinsol.T{endEffector};
   if robot.use_new_kinsol
@@ -58,7 +61,7 @@ for i = 1 : nTests
   end
   HBaseDot = Tdot{base};
   HBodyDot = Tdot{endEffector};
-  
+
   HBodyToBase = HBase \ HBody;
   transformDot = twistToTildeForm(twist) * HBodyToBase;
   transformDotForwardKin = relativeTdot(HBase, HBody, HBaseDot, HBodyDot);
@@ -74,11 +77,11 @@ nTests = 5;
 
 for test = 1 : nTests
   q = getRandomConfiguration(robot);
-  
+
   base = randi(bodyRange);
   end_effector = randi(bodyRange);
   expressed_in = randi(bodyRange);
-  
+
   kinsol = robot.doKinematics(q,true,false);
   for in_terms_of_qdot = [false, true]
     [~, ~, dJdq] = robot.geometricJacobian(kinsol, base, end_effector, expressed_in, in_terms_of_qdot);
@@ -98,22 +101,22 @@ nTests = 5;
 
 for test = 1 : nTests
   q = getRandomConfiguration(robot);
-  
+
   base = randi(bodyRange);
   end_effector = randi(bodyRange);
   expressed_in = randi(bodyRange);
-  
+
   options.use_mex = false;
   options.compute_gradients = true;
   kinsol = robot.doKinematics(q, [], options);
-  
+
   options.use_mex = true;
   kinsol_mex = robot.doKinematics(q, [], options);
-  
+
   for in_terms_of_qdot = [false, true]
     [J, v_indices, dJdq] = robot.geometricJacobian(kinsol, base, end_effector, expressed_in, in_terms_of_qdot);
     [J_mex, v_indices_mex, dJdq_mex] = robot.geometricJacobian(kinsol_mex, base, end_effector, expressed_in, in_terms_of_qdot);
-    
+
     valuecheck(J, J_mex);
     valuecheck(v_indices, v_indices_mex);
     valuecheck(dJdq, dJdq_mex);

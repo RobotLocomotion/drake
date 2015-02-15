@@ -1,15 +1,17 @@
 function testForwardKin
+
 testFallingBrick('rpy');
 testAtlas('rpy');
 
-if RigidBodyManipulator.use_new_kinsol
-  testFallingBrick('quat');
-  testAtlas('quat');
-end
+options.use_new_kinsol = true;
+testFallingBrick('rpy',options);
+testAtlas('rpy',options);
+testFallingBrick('quat',options);
+testAtlas('quat',options);
 
 end
 
-function testFallingBrick(floatingJointType)
+function testFallingBrick(floatingJointType,options)
 options.floating = floatingJointType;
 robot = RigidBodyManipulator('FallingBrick.urdf',options);
 for rotation_type = 0 : 2
@@ -18,8 +20,9 @@ for rotation_type = 0 : 2
 end
 end
 
-function testAtlas(floatingJointType)
-robot = createAtlas(floatingJointType);
+function testAtlas(floatingJointType,options)
+if nargin<2, options=struct(); end
+robot = createAtlas(floatingJointType,options);
 for rotation_type = 0 : 2
   checkGradients(robot, rotation_type);  
   checkMex(robot, rotation_type);
