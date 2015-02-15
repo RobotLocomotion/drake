@@ -228,17 +228,9 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
 
     	bodies[index]->linkname = l->first;
     	bodies[index]->jointname = j->name;
-        if(l->second->inertial == nullptr)
-        {
-          bodies[index]->mass = 0.0;
-        }
-        else
-        {
-          bodies[index]->mass = l->second->inertial->mass;
-        }
-//    	cout << "body[" << index << "] linkname: " << bodies[index]->linkname << ", jointname: " << bodies[index]->jointname << endl;
+//    	cout << "body[" << index << "] linkname: " << bodies[index]->linkname << "(mass: " << bodies[index]->mass << "), jointname: " << bodies[index]->jointname << endl;
 
-        bodies[index]->robotnum = robotnum;
+      bodies[index]->robotnum = robotnum;
 
     	{ // set up parent
     		map<string, boost::shared_ptr<urdf::Link> >::iterator pl=_urdf_model->links_.find(j->parent_link_name);
@@ -347,8 +339,8 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
       dofnum[index-1] = _dofnum;
     }
 
-
-    if (l->second->inertial) { // parse inertial parameters
+    if(l->second->inertial != nullptr)
+    {
       boost::shared_ptr<urdf::Inertial> inertial = l->second->inertial;
       bodies[index]->mass = inertial->mass;
       bodies[index]->com << inertial->origin.position.x, inertial->origin.position.y, inertial->origin.position.z, 1.0;
