@@ -14,20 +14,6 @@ int main(int argc, char* argv[])
 	}
   URDFRigidBodyManipulator* model = loadURDFfromFile(argv[1]);
 
-  for (vector<unique_ptr<RigidBody> >::const_iterator it = model->bodies.begin(); it != model->bodies.end(); ++it) {
-    RigidBody& body = **it;
-    double mass = 1.0;
-    Matrix3d moment_of_inertia = Matrix3d::Random();
-    moment_of_inertia *= moment_of_inertia;
-    Vector3d com = Vector3d::Random();
-
-    body.I.topLeftCorner<3, 3>() = moment_of_inertia;
-    body.I.bottomRightCorner<3, 3>() = mass * Matrix3d::Identity();
-    body.I.topRightCorner<3, 3>() = vectorToSkewSymmetric((mass * com).eval());
-    body.I.bottomLeftCorner<3, 3>() = vectorToSkewSymmetric((-mass * com).eval());
-  }
-
-
 //  URDFRigidBodyManipulator* model = loadURDFfromFile("/Users/russt/drc/software/models/mit_gazebo_models/mit_robot/model.urdf");
   if (!model) {
   	cerr << "ERROR: Failed to load model from " << argv[1] << endl;
