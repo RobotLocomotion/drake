@@ -181,6 +181,15 @@ void testNormalizeVec(int ntests) {
   }
 }
 
+void testSpatialCrossProduct()
+{
+  auto a = (Matrix<double, TWIST_SIZE, 1>::Random()).eval();
+  auto b = (Matrix<double, TWIST_SIZE, TWIST_SIZE>::Identity()).eval();
+  auto a_crm_b = crossSpatialMotion(a, b);
+  auto a_crf_b = crossSpatialForce(a, b);
+  valuecheck(a_crf_b, -a_crm_b.transpose());
+}
+
 int main(int argc, char **argv)
 {
   testRotationConversionFunctions();
@@ -193,6 +202,7 @@ int main(int argc, char **argv)
   std::cout << "testNormalizeVec elapsed time: " << measure<>::execution(testNormalizeVec, ntests) << std::endl;
 
   testDHomogTransInv(1000, true);
+  testSpatialCrossProduct();
 
   return 0;
 }
