@@ -1,11 +1,12 @@
 function testdTransformSpatialMotion()
 testFallingBrick('rpy');
-if RigidBodyManipulator.use_new_kinsol
-  testFallingBrick('quat');
-end
+
+options.use_new_kinsol = true;
+testFallingBrick('rpy',options);
+testFallingBrick('quat',options);
 end
 
-function testFallingBrick(floatingType)
+function testFallingBrick(floatingType,options)
 options.floating = floatingType;
 m = RigidBodyManipulator('FallingBrick.urdf',options);
 nq = m.getNumPositions();
