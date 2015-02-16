@@ -1096,9 +1096,8 @@ void RigidBodyManipulator::doKinematicsNew(double* q, bool compute_gradients, do
     if (v != nullptr) cached_v[i] = v[i];
   }
 }
-
-template <typename Derived>
-void RigidBodyManipulator::getCMM(double* const q, double* const qd, MatrixBase<Derived> &A, MatrixBase<Derived> &Adot)
+template <typename DerivedA, typename DerivedB>
+void RigidBodyManipulator::getCMM(MatrixBase<DerivedA> const & q, MatrixBase<DerivedA> const & qd, MatrixBase<DerivedB> &A, MatrixBase<DerivedB> &Adot)
 {
   // returns the centroidal momentum matrix as described in Orin & Goswami 2008
   //
@@ -1109,8 +1108,7 @@ void RigidBodyManipulator::getCMM(double* const q, double* const qd, MatrixBase<
   Xtrans(-com,&Xcom);
 
   getCOMJac(Jcom);
-  Map<VectorXd> qdvec(qd,num_dof);
-  Vector3d com_dot = Jcom*qdvec;
+  Vector3d com_dot = Jcom*qd;
   dXcom = MatrixXd::Zero(6,6);
   dXcom(5,1) = 1*com_dot(0);
   dXcom(4,2) = -1*com_dot(0);
@@ -2374,8 +2372,8 @@ GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwar
   return ret;
 }
 
-template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD, typename DerivedE, typename DerivedF>
-void RigidBodyManipulator::HandC(double * const q, double * const qd, MatrixBase<DerivedA> * const f_ext, MatrixBase<DerivedB> &H, MatrixBase<DerivedC> &C, MatrixBase<DerivedD> *dH, MatrixBase<DerivedE> *dC, MatrixBase<DerivedF> * const df_ext)
+template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD, typename DerivedE, typename DerivedF, typename DerivedG>
+void RigidBodyManipulator::HandC(MatrixBase<DerivedG> const & q, MatrixBase<DerivedG> const & qd, MatrixBase<DerivedA> * const f_ext, MatrixBase<DerivedB> &H, MatrixBase<DerivedC> &C, MatrixBase<DerivedD> *dH, MatrixBase<DerivedE> *dC, MatrixBase<DerivedF> * const df_ext)
 {
   H = MatrixXd::Zero(num_dof,num_dof);
   if (dH) *dH = MatrixXd::Zero(num_dof*num_dof,num_dof);
@@ -2605,8 +2603,12 @@ std::string RigidBodyManipulator::getBodyOrFrameName(int body_or_frame_id)
 
 
 // explicit instantiations (required for linking):
-template DLLEXPORT_RBM void RigidBodyManipulator::getCMM(double * const, double * const, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<MatrixXd> > &);
-template DLLEXPORT_RBM void RigidBodyManipulator::getCMM(double * const, double * const, MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > &);
+template DLLEXPORT_RBM void RigidBodyManipulator::getCMM(MatrixBase<VectorXd> const &, MatrixBase<VectorXd> const &, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<MatrixXd> > &);
+template DLLEXPORT_RBM void RigidBodyManipulator::getCMM(MatrixBase<VectorXd> const &, MatrixBase<VectorXd> const &, MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > &);
+template DLLEXPORT_RBM void RigidBodyManipulator::getCMM(MatrixBase< Map<VectorXd> > const &, MatrixBase< Map<VectorXd> > const &, MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > &);
+template DLLEXPORT_RBM void RigidBodyManipulator::getCMM(MatrixBase< Map<VectorXd> > const &, MatrixBase< Map<VectorXd> > const &, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<MatrixXd> > &);
+
+
 template DLLEXPORT_RBM void RigidBodyManipulator::getCOM(MatrixBase< Map<Vector3d> > &,const set<int> &);
 template DLLEXPORT_RBM void RigidBodyManipulator::getCOM(MatrixBase< Map<MatrixXd> > &,const set<int> &);
 template DLLEXPORT_RBM void RigidBodyManipulator::getCOMJac(MatrixBase< Map<MatrixXd> > &,const set<int> &);
@@ -2654,6 +2656,8 @@ template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> Rigid
 template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::massMatrix(int);
 template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(std::map<int, std::unique_ptr<GradientVar<double, TWIST_SIZE, 1> > >& f_ext, GradientVar<double, Eigen::Dynamic, 1>* vd, int);
 
-template DLLEXPORT_RBM void RigidBodyManipulator::HandC(double* const, double * const, MatrixBase< Map<MatrixXd> > * const, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<VectorXd> > &, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > * const);
-template DLLEXPORT_RBM void RigidBodyManipulator::HandC(double* const, double * const, MatrixBase< MatrixXd > * const, MatrixBase< MatrixXd > &, MatrixBase< VectorXd > &, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > * const);
+template DLLEXPORT_RBM void RigidBodyManipulator::HandC(MatrixBase<VectorXd> const &, MatrixBase<VectorXd> const &, MatrixBase< Map<MatrixXd> > * const, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<VectorXd> > &, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > * const);
+template DLLEXPORT_RBM void RigidBodyManipulator::HandC(MatrixBase<VectorXd> const &, MatrixBase<VectorXd> const &, MatrixBase< MatrixXd > * const, MatrixBase< MatrixXd > &, MatrixBase< VectorXd > &, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > * const);
+template DLLEXPORT_RBM void RigidBodyManipulator::HandC(MatrixBase< Map<VectorXd> > const &, MatrixBase< Map<VectorXd> > const &, MatrixBase< Map<MatrixXd> > * const, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<VectorXd> > &, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > * const);
+template DLLEXPORT_RBM void RigidBodyManipulator::HandC(MatrixBase< Map<VectorXd> > const &, MatrixBase< Map<VectorXd> > const &, MatrixBase< MatrixXd > * const, MatrixBase< MatrixXd > &, MatrixBase< VectorXd > &, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > * const);
 

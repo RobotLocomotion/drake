@@ -190,8 +190,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   
   Map< VectorXd > qddot_des(mxGetPr(prhs[narg++]),nq);
   
-  double *q = mxGetPr(prhs[narg++]);
-  double *qd = &q[nq];
+  Map<VectorXd> q(mxGetPr(prhs[narg++]), nq);
+  Map<VectorXd> qd(&q[nq], nq);
+  double *q_double = mxGetPr(prhs[narg++]);
+  double *qd_double = &q[nq];
 
   vector<VectorXd,aligned_allocator<VectorXd>> body_accel_inputs;
   for (int i=0; i<pdata->n_body_accel_inputs; i++) {
@@ -239,7 +241,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   MatrixXd R_DQyD_ls = R_ls + D_ls.transpose()*Qy*D_ls;
 
-  pdata->r->doKinematics(q,false,qd);
+  pdata->r->doKinematics(q_double,false,qd_double);
 
   //---------------------------------------------------------------------
   // Compute active support from desired supports -----------------------
@@ -310,8 +312,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     Jcom = pdata->J_xy;
     Jcomdot = pdata->Jdot_xy;
   }
-  Map<VectorXd> qdvec(qd,nq);
-  
+
   MatrixXd B,JB,Jp,Jpdot,normals;
   int nc = contactConstraintsBV(pdata->r,num_active_contact_pts,mu,active_supports,pdata->map_ptr,B,JB,Jp,Jpdot,normals,terrain_height);
   int neps = nc*dim;
@@ -323,12 +324,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       // x,y,z com 
       xlimp.resize(6); 
       xlimp.topRows(3) = xcom;
-      xlimp.bottomRows(3) = Jcom*qdvec;
+      xlimp.bottomRows(3) = Jcom*qd;
     }
     else {
       xlimp.resize(4); 
       xlimp.topRows(2) = xcom.topRows(2);
-      xlimp.bottomRows(2) = Jcom*qdvec;
+      xlimp.bottomRows(2) = Jcom*qd;
     }
     x_bar = xlimp-x0;
 
@@ -341,7 +342,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   Vector3d kdot_des; 
   if (include_angular_momentum) {
-    VectorXd k = pdata->Ak*qdvec;
+    VectorXd k = pdata->Ak*qd;
     kdot_des = -pdata->Kp_ang*k; // TODO: parameterize
   }
   
@@ -356,7 +357,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     if (nc > 0) {
       // NOTE: moved Hqp calcs below, because I compute the inverse directly for FastQP (and sparse Hqp for gurobi)
       VectorXd tmp = C_ls*xlimp;
-      VectorXd tmp1 = Jcomdot*qdvec;
+      VectorXd tmp1 = Jcomdot*qd;
       MatrixXd tmp2 = R_DQyD_ls*Jcom;
 
       pdata->fqp = tmp.transpose()*Qy*D_ls*Jcom;
@@ -366,7 +367,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       pdata->fqp -= y0.transpose()*Qy*D_ls*Jcom;
       pdata->fqp -= (pdata->w_qdd.array()*qddot_des.array()).matrix().transpose();
       if (include_angular_momentum) {
-        pdata->fqp += qdvec.transpose()*pdata->Akdot.transpose()*pdata->W_kdot*pdata->Ak;
+        pdata->fqp += qd.transpose()*pdata->Akdot.transpose()*pdata->W_kdot*pdata->Ak;
         pdata->fqp -= kdot_des.transpose()*pdata->W_kdot*pdata->Ak;
       }
       f.head(nq) = pdata->fqp.transpose();
@@ -394,7 +395,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     Aeq.block(6,0,neps,nq) = Jp;
     Aeq.block(6,nq,neps,nf) = MatrixXd::Zero(neps,nf);  // note: obvious sparsity here
     Aeq.block(6,nq+nf,neps,neps) = MatrixXd::Identity(neps,neps);             // note: obvious sparsity here
-    beq.segment(6,neps) = (-Jpdot -pdata->Kp_accel*Jp)*qdvec; 
+    beq.segment(6,neps) = (-Jpdot -pdata->Kp_accel*Jp)*qd; 
   }    
   
   // add in body spatial equality constraints
@@ -418,7 +419,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         for (int j=0; j<6; j++) {
           if (!std::isnan(body_vdot[j])) {
             Aeq.block(equality_ind,0,1,nq) = Jb.row(j);
-            beq[equality_ind++] = -Jbdot.row(j)*qdvec + body_vdot[j];
+            beq[equality_ind++] = -Jbdot.row(j)*qd + body_vdot[j];
           }
         }
       }
@@ -454,10 +455,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     pdata->r->forwardJac(body_index,orig,1,Jb);
     pdata->r->forwardJacDot(body_index,orig,1,Jbdot);
     Ain.block(constraint_start_index,0,6,pdata->r->num_dof) = Jb;
-    bin.segment(constraint_start_index,6) = -Jbdot*qdvec + pdata->max_body_acceleration[i];
+    bin.segment(constraint_start_index,6) = -Jbdot*qd + pdata->max_body_acceleration[i];
     constraint_start_index += 6;
     Ain.block(constraint_start_index,0,6,pdata->r->num_dof) = -Jb;
-    bin.segment(constraint_start_index,6) = Jbdot*qdvec - pdata->min_body_acceleration[i];
+    bin.segment(constraint_start_index,6) = Jbdot*qd - pdata->min_body_acceleration[i];
     constraint_start_index += 6;
   }
        
@@ -566,7 +567,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           for (int j=0; j<6; j++) {
             if (!std::isnan(body_vdot[j])) {
               pdata->Hqp += w_i*(Jb.row(j)).transpose()*Jb.row(j);
-              f.head(nq) += w_i*(qdvec.transpose()*Jbdot.row(j).transpose() - body_vdot[j])*Jb.row(j).transpose();
+              f.head(nq) += w_i*(qd.transpose()*Jbdot.row(j).transpose() - body_vdot[j])*Jb.row(j).transpose();
             }
           }
         }
@@ -686,7 +687,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     double Vdot;
     if (nc>0) 
       // note: Sdot is 0 for ZMP/double integrator dynamics, so we omit that term here
-      Vdot = ((2*x_bar.transpose()*S + s1.transpose())*(A_ls*x_bar + B_ls*(Jcomdot*qdvec + Jcom*qdd)) + s1dot.transpose()*x_bar)(0) + s2dot;
+      Vdot = ((2*x_bar.transpose()*S + s1.transpose())*(A_ls*x_bar + B_ls*(Jcomdot*qd + Jcom*qdd)) + s1dot.transpose()*x_bar)(0) + s2dot;
     else
       Vdot = 0;
     plhs[13] = mxCreateDoubleScalar(Vdot);
