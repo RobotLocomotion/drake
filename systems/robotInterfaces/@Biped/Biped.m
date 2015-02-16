@@ -230,7 +230,7 @@ classdef Biped < LeggedRobot
       % @param q a robot configuration vector
       % @retval fc a logical vector of length 2. If fc(1) is true, then the right
       %            foot is in contact. If fc(2) is true, then the left foot is in
-      %            contact. 
+      %            contact.
       [phiC,~,~,~,idxA,idxB] = obj.collisionDetect(q,false);
       within_thresh = phiC < 0.002;
       contact_pairs = [idxA(within_thresh); idxB(within_thresh)];
@@ -355,4 +355,3 @@ classdef Biped < LeggedRobot
     end
   end
 end
-

@@ -194,6 +194,59 @@ classdef FootstepPlan
 
       obj = obj.slice(~(trim_init | trim_final));
     end
+
+    function obj = applyTransform(obj, T)
+      % Apply a transform to every footstep and safe region, returning a new FootstepPlan
+      % @param T a homogeneous transformation matrix (4x4)
+
+      % Convert each existing footstep using the homogeneous transform
+      for j = 1:length(obj.footsteps)
+        obj.footsteps(j).pos = tform2poseRPY(T * poseRPY2tform(obj.footsteps(j).pos));
+      end
+
+      % Now convert the safe regions. Since these regions are expressed as a polytope in 
+      % x,y,yaw and a point and normal in x,y,z, the conversion is a bit more complicated.
+
+      % To find the xyz delta, we have to remove the rotation component of T. We do this by
+      % pre-multiplying by the inverse of its rotation:
+      R = T(1:3,1:3);
+      Ri = inv(R);
+      Ti = [Ri, [0;0;0]; [0,0,0,1]];
+      T2 = Ti * T;
+      delta_xyz = T2(1:3,4);
+
+      rpy = rotmat2rpy(T(1:3,1:3));
+      assert(all(abs(rpy(1:2) <= 1e-3)), 'Safe region transformation has not been implemented for rotations which are not pure yaw');
+      delta_yaw = rpy(3);
+
+      % we have Ax <= b
+      % we want A2 * x' <= b2
+      % where x' = [R(1:2,1:2) * (x(1:2) + delta_xyz(1:2)); x(3) + delta_yaw]
+      % H = [R(1:2,1:2), [0;0], [0,0,1]];
+      % d = [delta_xyz(1:2); delta_yaw];
+      % x' = H * (x + d)
+      % A2 * (H*(x + d)) <= b2
+      % A2*H*x <= b2 - A2*H*d
+      % A2*H = A
+      % b2 - A2*H*d = b;
+      % A2 = A * Hi
+      % b2 = b + A2*H*d = b + A*d
+
+      H = [T(1:2,1:2), [0;0]; [0,0,1]];
+      d = [delta_xyz(1:2); delta_yaw];
+      for j = 1:length(obj.safe_regions)
+        A = obj.safe_regions(j).A;
+        b = obj.safe_regions(j).b;
+        A2 = A / H;
+        b2 = b + A * d;
+        obj.safe_regions(j).A = A2;
+        obj.safe_regions(j).b = b2;
+        p = T * [obj.safe_regions(j).point; 1];
+        n = T * [obj.safe_regions(j).normal; 0];
+        obj.safe_regions(j).point = p(1:3);
+        obj.safe_regions(j).normal = n(1:3);
+      end
+    end
   end
 
   methods(Static=true)

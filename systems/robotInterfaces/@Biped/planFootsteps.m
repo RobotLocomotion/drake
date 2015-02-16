@@ -91,6 +91,15 @@ start_pos.left(4:5) = 0;
 
 weights = getFootstepOptimizationWeights(obj);
 
+% Shift the problem to always start from x,y,z,yaw = 0;
+T = makehgtform('zrotate', -start_pos.right(6), 'translate', -start_pos.right(1:3));
+plan = plan.applyTransform(T);
+for f = fieldnames(goal_pos)'
+  field = f{1};
+  G = poseRPY2tform(goal_pos.(field));
+  goal_pos.(field) = tform2poseRPY(T * G);
+end
+
 try
   [plan, solvertime] = options.method_handle(obj, plan, weights, goal_pos);
 catch e
@@ -102,6 +111,8 @@ catch e
     rethrow(e);
   end
 end
+
+plan = plan.applyTransform(inv(T));
 
 end
 
