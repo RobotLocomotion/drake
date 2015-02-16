@@ -93,16 +93,6 @@ start_pos.left(4:5) = 0;
 
 weights = getFootstepOptimizationWeights(obj);
 
-safe_regions = plan.safe_regions;
-figure(15)
-clf
-hold on
-for j = 1:length(safe_regions)
-  iris.drawing.drawPolyFromVertices(iris.thirdParty.polytopes.lcon2vert(safe_regions(j).A, safe_regions(j).b)', 'r');
-end
-view(-43,28)
-drawnow
-
 % Shift the problem to always start from x,y,z,yaw = 0;
 T = makehgtform('zrotate', -start_pos.right(6), 'translate', -start_pos.right(1:3));
 plan = plan.applyTransform(T);
@@ -111,16 +101,6 @@ for f = fieldnames(goal_pos)'
   G = poseRPY2tform(goal_pos.(field));
   goal_pos.(field) = tform2poseRPY(T * G);
 end
-
-safe_regions = plan.safe_regions;
-figure(16)
-clf
-hold on
-for j = 1:length(safe_regions)
-  iris.drawing.drawPolyFromVertices(iris.thirdParty.polytopes.lcon2vert(safe_regions(j).A, safe_regions(j).b)', 'r');
-end
-view(-43,28)
-drawnow
 
 try
   [plan, solvertime] = options.method_handle(obj, plan, weights, goal_pos);

@@ -42,6 +42,7 @@ cost = double(cost);
 ikoptions = IKoptions(obj);
 ikoptions = ikoptions.setQ(diag(cost(1:obj.getNumPositions)));
 
+q = zeros(obj.getNumPositions(), length(ts));
 htraj = [];
 full_IK_calls = 0;
 for i=1:length(ts)
