@@ -32,6 +32,19 @@ using namespace Eigen;
 
 //extern std::set<int> emptyIntSet;  // was const std:set<int> emptyIntSet, but valgrind said I was leaking memory
 
+class DLLEXPORT_RBM RigidBodyLoop
+{
+public:
+  RigidBodyLoop(int _bodyA, Vector3d _ptA, int _bodyB, Vector3d _ptB) :
+    bodyA(_bodyA), bodyB(_bodyB), ptA(_ptA), ptB(_ptB) {};
+
+  int bodyA, bodyB;
+  Vector3d ptA, ptB;
+
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+};
+
 class DLLEXPORT_RBM RigidBodyManipulator
 {
 public:
@@ -96,7 +109,7 @@ public:
   void forwarddJac(const int body_ind, const MatrixBase<DerivedA>& pts, MatrixBase<DerivedB> &dJ);
 
   template <typename Scalar>
-  GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> massMatrix(int gradient_order);
+  GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> massMatrix(int gradient_order = 0);
 
   template <typename Scalar>
   GradientVar<Scalar, Eigen::Dynamic, 1> inverseDynamics(std::map<int, std::unique_ptr< GradientVar<Scalar, TWIST_SIZE, 1> > >& f_ext, GradientVar<Scalar, Eigen::Dynamic, 1>* vd = nullptr, int gradient_order = 0);
@@ -184,6 +197,10 @@ public:
 
   std::string getBodyOrFrameName(int body_or_frame_id);
   //@param body_or_frame_id   the index of the body or the id of the frame.
+
+  template <typename Scalar>
+  GradientVar<Scalar, Eigen::Dynamic, 1> positionConstraints(int gradient_order);
+
 public:
   std::vector<std::string> robot_name;
 
@@ -200,6 +217,8 @@ public:
   int num_frames;
   std::vector<RigidBodyFrame,Eigen::aligned_allocator<RigidBodyFrame> > frames;
 
+  std::vector<RigidBodyLoop,Eigen::aligned_allocator<RigidBodyLoop> > loops;
+
   // featherstone data structure
   int NB;  // featherstone bodies
   VectorXi pitch;
@@ -211,12 +230,12 @@ public:
   VectorXd static_friction;
   std::vector<MatrixXd> Xtree;
   std::vector<MatrixXd> I;
-  VectorXd a_grav;
+  Matrix<double,TWIST_SIZE,1> a_grav;
+  MatrixXd B;  // the B matrix maps inputs into joint-space forces
 
   VectorXd cached_q, cached_v;  // these should be private
 
   bool use_new_kinsol;
-
 
 private:
   int parseBodyOrFrameID(const int body_or_frame_id, Matrix4d* Tframe = nullptr);

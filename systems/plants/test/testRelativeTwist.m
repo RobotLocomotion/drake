@@ -1,17 +1,15 @@
 function testRelativeTwist()
-if RigidBodyManipulator.use_new_kinsol
-  testAtlas('rpy');
-  testAtlas('quat');
-end
+
+testAtlas('rpy');
+testAtlas('quat');
 end
 
 function testAtlas(floatingJointType)
-robot = createAtlas(floatingJointType);
+options.use_new_kinsol = true;
+robot = createAtlas(floatingJointType,options);
 
 checkAgainstJacobianTimesJointVelocities(robot);
-if RigidBodyManipulator.use_new_kinsol
-  checkGradients(robot);
-end
+checkGradients(robot);
 end
 
 function checkAgainstJacobianTimesJointVelocities(robot)

@@ -34,6 +34,7 @@ RigidBody::RigidBody(void) :
 	mass = 0.0;
 	floating = 0;
 	com << Vector3d::Zero(), 1;
+	I << Matrix<double, TWIST_SIZE, TWIST_SIZE>::Zero();
 	T = Matrix4d::Identity();
 	Tdot = Matrix4d::Zero();
 	Ttree = Matrix4d::Identity();
