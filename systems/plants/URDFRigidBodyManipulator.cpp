@@ -477,6 +477,37 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
     B.rightCols(1) = B_col;
   }
 
+  for (TiXmlElement* loop_xml = robot_xml->FirstChildElement("loop_joint"); loop_xml; loop_xml = loop_xml->NextSiblingElement("loop_joint"))
+  { // note: pushing this in without all of the surrounding drakeFunction logic just to get things moving.  this one needs to be fast.
+    urdf::Vector3 pt;
+    TiXmlElement* node = loop_xml->FirstChildElement("link1");
+    int bodyA=-1,bodyB=-1;
+
+    string linkname = node->Attribute("link");
+    for (int i=0; i<num_bodies; i++)
+      if (linkname==bodies[i]->linkname) {
+        bodyA=i;
+        break;
+      }
+    if (bodyA<0) ROS_ERROR("couldn't find link referenced in loop joint");
+    pt.init(node->Attribute("xyz"));
+    Vector3d ptA;  ptA << pt.x, pt.y, pt.z;
+
+    node = loop_xml->FirstChildElement("link2");
+    linkname = node->Attribute("link");
+    for (int i=0; i<num_bodies; i++)
+      if (linkname==bodies[i]->linkname) {
+        bodyB=i;
+        break;
+      }
+    if (bodyB<0) ROS_ERROR("couldn't find link referenced in loop joint");
+    pt.init(node->Attribute("xyz"));
+    Vector3d ptB;  ptB << pt.x, pt.y, pt.z;
+
+    RigidBodyLoop l(bodyA,ptA,bodyB,ptB);
+    loops.push_back(l);
+  }
+
   return true;
 }
 
