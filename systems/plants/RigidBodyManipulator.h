@@ -212,11 +212,11 @@ public:
   std::vector<MatrixXd> Xtree;
   std::vector<MatrixXd> I;
   Matrix<double,6,1> a_grav;
+  MatrixXd B;  // the B matrix maps inputs into joint-space forces
 
   VectorXd cached_q, cached_v;  // these should be private
 
   bool use_new_kinsol;
-
 
 private:
   int parseBodyOrFrameID(const int body_or_frame_id, Matrix4d* Tframe = nullptr);

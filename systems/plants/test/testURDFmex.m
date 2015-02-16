@@ -56,16 +56,19 @@ for urdf = {'./FallingBrick.urdf',...
   
   Hcpp = textscan(outstr,'%f','HeaderLines',1+num_bodies);
   Ccpp = reshape(Hcpp{1}(num_v^2+(1:num_v)),[],1);
-  Hcpp = reshape(Hcpp{1}(1:num_v^2),getNumVelocities(r),getNumVelocities(r));
+  Bcpp = reshape(Hcpp{1}(num_v^2+num_v+1:end),getNumInputs(r),num_v)';
+  Hcpp = reshape(Hcpp{1}(1:num_v^2),num_v,num_v);
   Hcpp = P'*Hcpp*P;
   
   Ccpp = P'*Ccpp;
+  Bcpp = P'*Bcpp;
   
-  [H,C] = manipulatorDynamics(r,q,v);
+  [H,C,B] = manipulatorDynamics(r,q,v);
   
   % low tolerance because i'm just parsing the ascii printouts
   valuecheck(Hcpp,H,1e-2); 
   valuecheck(Ccpp,C,1e-2);  
+  valuecheck(Bcpp,B,1e-2);
   
 end
 

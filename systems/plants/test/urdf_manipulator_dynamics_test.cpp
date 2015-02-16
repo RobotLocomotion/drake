@@ -47,7 +47,9 @@ int main(int argc, char* argv[])
 
   map<int, unique_ptr<GradientVar<double, TWIST_SIZE, 1>> > f_ext;
   auto C = model->inverseDynamics(f_ext);
-  cout << C.value() << endl << endl;
+  cout << C.value() << endl;
+
+  cout << model->B << endl;
 
   delete model;
   return 0;
