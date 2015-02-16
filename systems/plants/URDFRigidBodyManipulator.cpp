@@ -344,22 +344,16 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
       boost::shared_ptr<urdf::Inertial> inertial = l->second->inertial;
       bodies[index]->mass = inertial->mass;
       bodies[index]->com << inertial->origin.position.x, inertial->origin.position.y, inertial->origin.position.z, 1.0;
-      Matrix3d I3d;
-      I3d << inertial->ixx, inertial->ixy, inertial->ixz,
-             inertial->ixy, inertial->iyy, inertial->iyz,
-             inertial->ixz, inertial->iyz, inertial->izz;
 
-      // from mcI.m
-      Vector3d com = bodies[index]->com.head(3);
-      Matrix3d C = vectorToSkewSymmetric(com);
-      bodies[index]->I.block(0,0,3,3) << I3d + bodies[index]->mass*C*C.transpose();
-      bodies[index]->I.block(0,3,3,3) << bodies[index]->mass*C;
-      bodies[index]->I.block(3,0,3,3) << bodies[index]->mass*C.transpose();
-      bodies[index]->I.block(3,3,3,3) << bodies[index]->mass*Matrix3d::Identity();
+      bodies[index]->I = bodies[index]->mass*Matrix<double,TWIST_SIZE,TWIST_SIZE>::Identity();
+      bodies[index]->I.block(0,0,3,3) << inertial->ixx, inertial->ixy, inertial->ixz,
+                                         inertial->ixy, inertial->iyy, inertial->iyz,
+                                         inertial->ixz, inertial->iyz, inertial->izz;
 
       Transform<double, 3, 1> T;
       poseToTransform(inertial->origin,T.matrix());
-      transformSpatialInertia(T,static_cast<  Gradient<Isometry3d::MatrixType, Eigen::Dynamic>::type* >(NULL),bodies[index]->I);
+      auto I = transformSpatialInertia(T,static_cast<  Gradient<Isometry3d::MatrixType, Eigen::Dynamic>::type* >(NULL),bodies[index]->I);
+      bodies[index]->I = I.value();
     }
 
     if (!l->second->collision_groups.empty()) { // then at least one collision element exists

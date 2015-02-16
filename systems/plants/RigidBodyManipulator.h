@@ -230,7 +230,7 @@ public:
   VectorXd static_friction;
   std::vector<MatrixXd> Xtree;
   std::vector<MatrixXd> I;
-  Matrix<double,6,1> a_grav;
+  Matrix<double,TWIST_SIZE,1> a_grav;
   MatrixXd B;  // the B matrix maps inputs into joint-space forces
 
   VectorXd cached_q, cached_v;  // these should be private

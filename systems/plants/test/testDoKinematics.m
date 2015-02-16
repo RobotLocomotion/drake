@@ -17,7 +17,7 @@ nv = robot.getNumStates() / 2;
 
 nTests = 5;
 for i = 1 : nTests
-  q = zeros(nq, 1); %randn(nq, 1);
+  q = getRandomConfiguration(robot);
   v = randn(nv, 1);
   kinsol = robot.doKinematics(q, true, false, v);
   kinsol_new = robot_new_kinsol.doKinematics(q,true,false,v);
