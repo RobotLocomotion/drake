@@ -56,5 +56,13 @@ classdef VertexArrayMotionPlanningTree < MotionPlanningTree & MotionPlanningProb
     function valid = isValid(obj, q)
       valid = obj.checkConstraints(q);
     end
+
+    function q = indexIntoArrayOfPoints(obj, q_array, index)
+      % q = indexIntoArrayOfPoints(obj, q_array, index) returns the index-th point
+      %   in the array of points q_array. This method exists to allow the
+      %   MotionPlanningTree interface to be agnostic as to how its
+      %   child-classes represent the points in their search spaces.
+      q = q_array(:,index);
+    end
   end
 end

@@ -21,6 +21,7 @@ classdef MotionPlanningTree
     q = getVertex(obj, id);
     q = interpolate(obj, q1, q2, interpolation_factors);
     id_parent = getParentId(obj, id)
+    q = indexIntoArrayOfPoints(obj, q_array, index);
   end
 
   methods
@@ -212,9 +213,9 @@ classdef MotionPlanningTree
         interpolation_factors = linspace(0, 1, num_interpolated_checks);
         q_interp_array = obj.interpolate(obj.getVertex(id_near), q_new, interpolation_factors);
         for i=2:num_interpolated_checks-1
-          valid = obj.isValid(q_interp_array(:,i));
+          valid = obj.isValid(obj.indexIntoArrayOfPoints(q_interp_array, i));
           if ~valid
-            [q_interp_array(:,i), valid] = obj.attemptToMakeValid(q_interp_array(:,i), valid);
+            [~, valid] = obj.attemptToMakeValid(obj.indexIntoArrayOfPoints(q_interp_array, i), valid);
           end
           if ~valid, break; end
         end
