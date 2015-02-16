@@ -13,7 +13,6 @@ int main(int argc, char* argv[])
   }
   URDFRigidBodyManipulator* model = loadURDFfromFile(argv[1]);
 
-//  URDFRigidBodyManipulator* model = loadURDFfromFile("/Users/russt/drc/software/models/mit_gazebo_models/mit_robot/model.urdf");
   if (!model) {
     cerr << "ERROR: Failed to load model from " << argv[1] << endl;
     return -1;
@@ -26,7 +25,6 @@ int main(int argc, char* argv[])
     cout << model->bodies[i]->linkname << endl;
   }
 
-  // run kinematics with second derivatives 100 times
   VectorXd q = VectorXd::Zero(model->num_dof);
   VectorXd v = VectorXd::Zero(model->num_velocities);
   int i;
