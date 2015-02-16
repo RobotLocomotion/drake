@@ -18,8 +18,8 @@
     </inertial>
     <visual>
       <origin
-        xyz="1.5707963267949 0 0"
-        rpy="0 0 0" />
+        xyz="0 0 0"
+        rpy="1.5707963267949 0 0" />
       <geometry>
         <mesh
           filename="package://IRB140/urdf/meshes/ATI_sensor.STL" />
