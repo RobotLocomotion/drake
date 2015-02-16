@@ -357,7 +357,7 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
       bodies[index]->I.block(3,0,3,3) << bodies[index]->mass*C.transpose();
       bodies[index]->I.block(3,3,3,3) << bodies[index]->mass*Matrix3d::Identity();
 
-      Isometry3d T;
+      Transform<double, 3, 1> T;
       poseToTransform(inertial->origin,T.matrix());
       transformSpatialInertia(T,NULL,bodies[index]->I);
     }
