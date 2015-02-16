@@ -55,6 +55,7 @@ for urdf = {'./FallingBrick.urdf',...
   num_bodies = textscan(outstr,'%d',1); num_bodies=num_bodies{1};
   linknames = textscan(outstr,'%s',num_bodies,'HeaderLines',1); linknames = linknames{1};
 
+  num_q = getNumPositions(r);
   num_v = getNumVelocities(r);
   P = sparse(0,num_v); 
   for i=1:num_bodies
@@ -72,6 +73,7 @@ for urdf = {'./FallingBrick.urdf',...
       end
     end
   end
+  num_qc = size(P,1);  % todo: update this when num_q ~= num_v
   num_vc = size(P,1);
   
   Hcpp = textscan(outstr,'%f','HeaderLines',1+num_bodies);
@@ -80,23 +82,26 @@ for urdf = {'./FallingBrick.urdf',...
   index = index + num_vc;
   Bcpp = reshape(Hcpp{1}(index+(1:getNumInputs(r)*num_vc)),getNumInputs(r),num_vc)';
   index = index + numel(Bcpp);
-  phicpp = reshape(Hcpp{1}(index+(1:3*length(r.loop))),3*length(r.loop),1);
-  index = index + 3*length(r.loop);
+  num_phi = 3*length(r.loop);
+  phicpp = reshape(Hcpp{1}(index+(1:num_phi)),num_phi,1);
+  index = index + num_phi;
+  Jcpp = reshape(Hcpp{1}(index+(1:num_phi*num_qc)),num_phi,num_qc);
   Hcpp = reshape(Hcpp{1}(1:num_vc^2),num_vc,num_vc);
+
   Hcpp = P'*Hcpp*P;
-  
   Ccpp = P'*Ccpp;
   Bcpp = P'*Bcpp;
-  
   [H,C,B] = manipulatorDynamics(r,q,v);
-  phi = positionConstraints(r,q);
   
   % low tolerance because i'm just parsing the ascii printouts
   valuecheck(Hcpp,H,tol); 
   valuecheck(Ccpp,C,tol);  
   valuecheck(Bcpp,B,tol);
-  if length(phi>0)
+  if num_phi>0
+    [phi,J] = positionConstraints(r,q);
+    Jcpp = Jcpp*P;
     valuecheck(phicpp,phi,tol);
+    valuecheck(Jcpp,J,tol);
   end
 end
 

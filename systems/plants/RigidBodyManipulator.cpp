@@ -2606,16 +2606,16 @@ GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::positionConstraints
 {
   if (!use_new_kinsol)
     throw std::runtime_error("method requires new kinsol format");
-  if (gradient_order > 2)
+  if (gradient_order > 1)
     throw std::runtime_error("only first order gradients are implemented so far (it's trivial to add more)");
 
-  GradientVar<Scalar, Eigen::Dynamic, 1> ret(3*loops.size(), 1, gradient_order);
+  GradientVar<Scalar, Eigen::Dynamic, 1> ret(3*loops.size(), 1, num_dof, gradient_order);
   for (int i = 0; i < loops.size(); i++) {
     auto ptA_in_B = forwardKinNew(loops[i].ptA,loops[i].bodyA,loops[i].bodyB,0,gradient_order);
 
     ret.value().middleRows(3*i,3) = ptA_in_B.value() - loops[i].ptB;
 
-    if (gradient_order > 1) {
+    if (gradient_order > 0) {
       ret.gradient().value().middleRows(3*i, 3) = ptA_in_B.gradient().value();
     }
   }
