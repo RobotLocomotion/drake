@@ -24,7 +24,7 @@ classdef MinDistanceConstraint < SingleTimeKinematicConstraint
       if ~isstruct(q_or_kinsol)
         kinsol = obj.robot.doKinematics(q_or_kinsol);
       end
-      [c,dc] = rigidBodyManipulator(7,obj.robot.mex_model_ptr,obj.min_distance,false,obj.active_collision_options);
+      [c,dc] = rigidBodyManipulatormex(obj.robot.SMOOTH_DISTANCE_PENALTY_COMMAND,obj.robot.mex_model_ptr,obj.min_distance,false,obj.active_collision_options);
     end
   end
 

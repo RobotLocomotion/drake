@@ -10,8 +10,37 @@
 using namespace Eigen;
 using namespace std;
 
-/* This file contains the mex wrappers for the primary RigidBodyManipulator class methods, and
- * rigidBodyManipulatormex(command,...) provides a single entry point into all of the routines. */
+
+/************************************************************************************************
+ * This file contains the mex wrappers for the primary RigidBodyManipulator class methods, and
+ * rigidBodyManipulatormex(command,...) provides a single entry point into all of the routines.
+ *
+ * TODO: Consider making this a derived class from RigidBodyManipulator, with the methods below
+ * simply overloading the primary methods but accepting the mex i/o arguments.
+ ************************************************************************************************/
+
+enum Command { // note: you should be able to copy and paste the lines below into RigidBodyManipulator.m to make sure everything stays in sync
+  DELETE_MODEL_COMMAND = 0,
+  CONSTRUCT_MODEL_COMMAND = 1,
+  H_AND_C_COMMAND = 2,
+  DO_KINEMATICS_COMMAND = 3,
+  FORWARD_KIN_COMMAND = 4,
+  BODY_KIN_COMMAND = 5,
+  COLLISION_DETECT_COMMAND = 6,
+  SMOOTH_DISTANCE_PENALTY_COMMAND = 7,
+  COLLISION_RAYCAST_COMMAND = 8,
+  ALL_COLLISIONS_COMMAND = 9,
+  GET_CMM_COMMAND = 10,
+  FIND_KINEMATIC_PATH_COMMAND = 11,
+  GEOMETRIC_JACOBIAN_COMMAND = 12,
+  DO_KINEMATICS_NEW_COMMAND = 13,
+  FORWARD_KIN_V_COMMAND = 14,
+  FORWARD_KIN_POSITION_GRADIENT_COMMAND = 15,
+  CENTER_OF_MASS_COMMAND = 16,
+  CENTROIDAL_MOMENTUM_MATRIX_COMMAND = 17,
+  MASS_MATRIX_COMMAND = 18,
+  INVERSE_DYNAMICS_COMMAND = 19
+};
 
 // convert Matlab cell array of strings into a C++ vector of strings
 vector<string> get_strings(const mxArray *rhs) {
@@ -39,12 +68,7 @@ void constructModel( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] 
   mxArray *pm;
 
   if (nrhs!=1) {
-    mexErrMsgIdAndTxt("Drake:rigidBodyManipulatormex:constructModel:BadInputs","Usage model_ptr = rigidBodyManipulatormex(1,obj)");
-  }
-
-  if (isa(prhs[0],"DrakeMexPointer")) {  // then it's calling the destructor
-    destroyDrakeMexPointer<RigidBodyManipulator*>(prhs[0]);
-    return;
+    mexErrMsgIdAndTxt("Drake:rigidBodyManipulatormex:constructModel:BadInputs","Usage model_ptr = rigidBodyManipulatormex(CONSTRUCT_MODEL_COMMAND,obj)");
   }
 
   const mxArray* pRBM = prhs[0];
@@ -377,12 +401,13 @@ void constructModel( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] 
 
   model->compile();
 
-  plhs[0] = createDrakeMexPointer((void*)model,"RigidBodyManipulator");
+  mxArray* args[1];  args[0]=mxCreateDoubleScalar(DELETE_MODEL_COMMAND);
+  plhs[0] = createDrakeMexPointer((void*)model,"RigidBodyManipulator",1,args);
 }
 
 void HandC( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
   if (nrhs<1) {
-    mexErrMsgIdAndTxt("Drake:rigidBodyManipulatormex:HandC:NotEnoughInputs","Usage [H,C,dH,dC] = rigidBodyManipulatormex:HandC(model_ptr,q,qd[,f_ext,df_ext]).");
+    mexErrMsgIdAndTxt("Drake:rigidBodyManipulatormex:HandC:NotEnoughInputs","Usage [H,C,dH,dC] = rigidBodyManipulatormex(H_AND_C_COMMAND,model_ptr,q,qd[,f_ext,df_ext]).");
   }
 
   if (nrhs==4 && nlhs>2) {
@@ -438,7 +463,7 @@ void HandC( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
 
 void doKinematics( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
   if (nrhs != 4) {
-    mexErrMsgIdAndTxt("Drake:rigidBodyManipulatormex:doKinematics:NotEnoughInputs", "Usage rigidBodyManipulatormex(3,model_ptr,q,b_compute_second_derivatives,qd)");
+    mexErrMsgIdAndTxt("Drake:rigidBodyManipulatormex:doKinematics:NotEnoughInputs", "Usage rigidBodyManipulatormex(DO_KINEMATICS_COMMAND,model_ptr,q,b_compute_second_derivatives,qd)");
   }
 
   // first get the model_ptr back from matlab
@@ -458,7 +483,7 @@ void doKinematics( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) 
 void forwardKin( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 
   if (nrhs < 5) {
-    mexErrMsgIdAndTxt("Drake:rigidBodyManipulatormex:forwardKin:NotEnoughInputs","Usage rigidBodyManipulatormex(4,model_ptr,q_cache,0,robotnum,b_jacdot) for center of mass, or rigidBodyManipulatormex(4,model_pts,q_cache,body_ind,pts,rotation_type,b_jacdot)");
+    mexErrMsgIdAndTxt("Drake:rigidBodyManipulatormex:forwardKin:NotEnoughInputs","Usage rigidBodyManipulatormex(FORWARD_KIN_COMMAND,model_ptr,q_cache,0,robotnum,b_jacdot) for center of mass, or rigidBodyManipulatormex(4,model_pts,q_cache,body_ind,pts,rotation_type,b_jacdot)");
   }
 
   // first get the model_ptr back from matlab
@@ -570,7 +595,7 @@ void forwardKin( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 void bodyKin( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 
   if (nrhs < 3) {
-    mexErrMsgIdAndTxt("Drake:rigidBodyManipulatormex:bodyKin:NotEnoughInputs","Usage [x,J,P]=rigidBodyManupulatormex(5,model_ptr,q_cache,body_ind,pts)");
+    mexErrMsgIdAndTxt("Drake:rigidBodyManipulatormex:bodyKin:NotEnoughInputs","Usage [x,J,P]=rigidBodyManupulatormex(BODY_KIN_COMMAND,model_ptr,q_cache,body_ind,pts)");
   }
 
   // first get the model_ptr back from matlab
@@ -623,7 +648,7 @@ void bodyKin( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 void collisionDetect( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
 {
   if (nrhs < 1) {
-    mexErrMsgIdAndTxt("Drake:rigidBodyManipulatormex:collisionDetect:NotEnoughInputs","Usage rigidBodyManipulatormex(6,model_ptr)");
+    mexErrMsgIdAndTxt("Drake:rigidBodyManipulatormex:collisionDetect:NotEnoughInputs","Usage rigidBodyManipulatormex(COLLISION_DETECT_COMMAND,model_ptr)");
   }
 
   // first get the model_ptr back from matlab
@@ -847,7 +872,7 @@ smoothDistancePenalty(double& c, MatrixXd& dc,
 void smoothDistancePenalty( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 
   if (nrhs < 2) {
-    mexErrMsgIdAndTxt("Drake:rigidBodyManipulatormex:smoothDistancePenalty:NotEnoughInputs","Usage rigidBodyManipulatormex(7,model_ptr,min_distance)");
+    mexErrMsgIdAndTxt("Drake:rigidBodyManipulatormex:smoothDistancePenalty:NotEnoughInputs","Usage rigidBodyManipulatormex(SMOOTH_DISTANCE_PENALTY_COMMAND,model_ptr,min_distance)");
   }
 
   // first get the model_ptr back from matlab
@@ -937,7 +962,7 @@ void smoothDistancePenalty( int nlhs, mxArray *plhs[],int nrhs, const mxArray *p
 void collisionRaycast( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 
   if (nrhs < 1) {
-    mexErrMsgIdAndTxt("Drake:rigidBodyManipulatormex:collisionRaycast:NotEnoughInputs","Usage rigidBodyManipulatormex(8,model_ptr, origin_vector, ray_endpoint)");
+    mexErrMsgIdAndTxt("Drake:rigidBodyManipulatormex:collisionRaycast:NotEnoughInputs","Usage rigidBodyManipulatormex(COLLISION_RAYCAST_COMMAND,model_ptr, origin_vector, ray_endpoint)");
   }
 
   // first get the model_ptr back from matlab
@@ -978,39 +1003,527 @@ void collisionRaycast( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]
 
 }
 
+void allCollisions( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
+{
+  if (nrhs < 1) {
+    mexErrMsgIdAndTxt("Drake:rigidBodyManipulatormex:allCollisions:NotEnoughInputs","Usage rigidBodyManipulatormex(ALL_COLLISIONS_COMMAND,model_ptr)");
+  }
+
+  // first get the model_ptr back from matlab
+  RigidBodyManipulator *model= (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
+
+  // Now get the list of body indices for which to compute distances
+  vector<int> active_bodies_idx;
+  const mxArray* active_collision_options = prhs[2];
+  //DEBUG
+  //cout << "collisionDetectmex: Num fields in active_collision_options" << mxGetNumberOfFields(active_collision_options) << endl;
+  //for (int i = 0; i < mxGetNumberOfFields(active_collision_options); ++i) {
+    //const char* fieldname;
+    //fieldname = mxGetFieldNameByNumber(active_collision_options,i);
+    //cout << *fieldname << endl;
+  //}
+  //END_DEBUG
+  const mxArray* body_idx = mxGetField(active_collision_options,0,"body_idx");
+  if (body_idx != NULL) {
+    //DEBUG
+    //cout << "collisionDetectmex: Received body_idx" << endl;
+    //END_DEBUG
+    int n_active_bodies = mxGetNumberOfElements(body_idx);
+    //DEBUG
+    //cout << "collisionDetectmex: n_active_bodies = " << n_active_bodies << endl;
+    //END_DEBUG
+    active_bodies_idx.resize(n_active_bodies);
+    memcpy(active_bodies_idx.data(),(int*) mxGetData(body_idx),sizeof(int)*n_active_bodies);
+    transform(active_bodies_idx.begin(),active_bodies_idx.end(),active_bodies_idx.begin(),
+        [](int i){return --i;});
+  }
+
+  vector<int> bodyA_idx, bodyB_idx;
+  MatrixXd ptsA, ptsB;
+  model->allCollisions(bodyA_idx,bodyB_idx,ptsA,ptsB);
+  vector<int32_T> idxA(bodyA_idx.size());
+  transform(bodyA_idx.begin(),bodyA_idx.end(),idxA.begin(),
+      [](int i){return ++i;});
+  vector<int32_T> idxB(bodyB_idx.size());
+  transform(bodyB_idx.begin(),bodyB_idx.end(),idxB.begin(),
+      [](int i){return ++i;});
+
+  if (nlhs>0) {
+    plhs[0] = mxCreateDoubleMatrix(3,ptsA.cols(),mxREAL);
+    memcpy(mxGetPr(plhs[0]),ptsA.data(),sizeof(double)*3*ptsA.cols());
+  }
+  if (nlhs>1) {
+    plhs[1] = mxCreateDoubleMatrix(3,ptsB.cols(),mxREAL);
+    memcpy(mxGetPr(plhs[1]),ptsB.data(),sizeof(double)*3*ptsB.cols());
+  }
+  if (nlhs>2) {
+    plhs[2] = mxCreateNumericMatrix(1,idxA.size(),mxINT32_CLASS,mxREAL);
+    memcpy(mxGetPr(plhs[2]),idxA.data(),sizeof(int32_T)*idxA.size());
+  }
+  if (nlhs>3) {
+    plhs[3] = mxCreateNumericMatrix(1,idxB.size(),mxINT32_CLASS,mxREAL);
+    memcpy(mxGetPr(plhs[3]),idxB.data(),sizeof(int32_T)*idxB.size());
+  }
+}
+
+void getCMM( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
+{
+  if (nrhs < 2) {
+    mexErrMsgIdAndTxt("Drake:rigidBodyManipulatormex:getCMM:NotEnoughInputs","Usage rigidBodyManipulatormex(GET_CMM_COMMAND,model_ptr,q_cache) or rigidBodyManipulatormex(GET_CMM_COMMAND,model_ptr,q_cache,qd)");
+  }
+
+  // first get the model_ptr back from matlab
+  RigidBodyManipulator *model= (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
+
+  double* q = mxGetPr(prhs[1]);
+  for (int i = 0; i < model->num_dof; i++) {
+    if (q[i] - model->cached_q[i] > 1e-8 || q[i] - model->cached_q[i] < -1e-8) {
+      mexErrMsgIdAndTxt("Drake:rigidBodyManipulatormex:getCMM:InvalidKinematics","This kinsol is no longer valid.  Somebody has called doKinematics with a different q since the solution was computed.");
+    }
+  }
+
+  plhs[0] = mxCreateDoubleMatrix(6,model->num_dof,mxREAL);
+  Map<MatrixXd> A(mxGetPr(plhs[0]),6,model->num_dof);
+  plhs[1] = mxCreateDoubleMatrix(6,model->num_dof,mxREAL);
+  Map<MatrixXd> Adot(mxGetPr(plhs[1]),6,model->num_dof);
+
+  double* qd;
+  if (nrhs > 2) {
+    qd = mxGetPr(prhs[2]);
+  }
+  else {
+    qd = new double[model->num_dof];
+    for (int i = 0; i < model->num_dof; i++) {
+      qd[i] = 0;
+    }
+  }
+
+  model->getCMM(q,qd,A,Adot);
+  return;
+}
+
+void findKinematicPath( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
+{
+  std::string usage = "Usage [body_path, joint_path, signs] = rigidBodyManipulator(FIND_KINEMATIC_PATH_COMMAND,model_ptr, start_body_or_frame_idx, end_body_or_frame_idx)";
+  if (nrhs != 3) {
+    mexErrMsgIdAndTxt("Drake:rigidBodyManipulatormex:findKinematicPath:WrongNumberOfInputs", usage.c_str());
+  }
+
+  if (nlhs > 3) {
+    mexErrMsgIdAndTxt("Drake:rigidBodyManipulatormex:findKinematicPath:WrongNumberOfOutputs", usage.c_str());
+  }
+
+  // first get the model_ptr back from matlab
+  RigidBodyManipulator *model= (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
+
+  int start_body_or_frame_idx = ((int) mxGetScalar(prhs[1])) - 1; // base 1 to base 0
+  int end_body_or_frame_idx = ((int) mxGetScalar(prhs[2])) - 1; // base 1 to base 0
+
+  KinematicPath path;
+  model->findKinematicPath(path, start_body_or_frame_idx, end_body_or_frame_idx);
+
+  if (nlhs > 0) {
+    baseZeroToBaseOne(path.body_path);
+    plhs[0] = stdVectorToMatlab(path.body_path);
+  }
+  if (nlhs > 1) {
+    baseZeroToBaseOne(path.joint_path);
+    plhs[1] = stdVectorToMatlab(path.joint_path);
+  }
+  if (nlhs > 2) {
+    plhs[2] = stdVectorToMatlab(path.joint_direction_signs);
+  }
+}
+
+void geometricJacobian( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
+{
+
+  std::string usage = "Usage [J, vIndices] = rigidBodyManipulatormex(GEOMETRIC_JACOBIAN_COMMAND,model_ptr, base_body_or_frame_ind, end_effector_body_or_frame_ind, expressed_in_body_or_frame_ind, in_terms_of_qdot)";
+  if (nrhs != 5) {
+    mexErrMsgIdAndTxt("Drake:rigidBodyManipulatormex:geometricJacobian:WrongNumberOfInputs", usage.c_str());
+  }
+
+  if (nlhs > 3) {
+    mexErrMsgIdAndTxt("Drake:rigidBodyManipulatormex:geometricJacobian:WrongNumberOfOutputs", usage.c_str());
+  }
+
+  // first get the model_ptr back from matlab
+  RigidBodyManipulator *model= (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
+
+  int base_body_or_frame_ind = ((int) mxGetScalar(prhs[1])) - 1; // base 1 to base 0
+  int end_effector_body_or_frame_ind = ((int) mxGetScalar(prhs[2])) - 1; // base 1 to base 0
+  int expressed_in_body_or_frame_ind = ((int) mxGetScalar(prhs[3])) - 1; // base 1 to base 0
+  bool in_terms_of_qdot = (bool) (mxGetLogicals(prhs[4]))[0];
+
+  Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic> J(TWIST_SIZE, 1);
+
+  int gradient_order = nlhs > 2 ? 1 : 0;
+  if (nlhs > 1) {
+    std::vector<int> v_indices;
+    auto J_gradientVar = model->geometricJacobian<double>(base_body_or_frame_ind, end_effector_body_or_frame_ind, expressed_in_body_or_frame_ind, gradient_order, in_terms_of_qdot, &v_indices);
+    plhs[0] = eigenToMatlab(J_gradientVar.value());
+
+    baseZeroToBaseOne(v_indices);
+    plhs[1] = stdVectorToMatlab(v_indices);
+    if (nlhs > 2) {
+      plhs[2] = eigenToMatlab(J_gradientVar.gradient().value());
+    }
+  }
+  else if (nlhs > 0){
+    auto J_gradientVar = model->geometricJacobian<double>(base_body_or_frame_ind, end_effector_body_or_frame_ind, expressed_in_body_or_frame_ind, gradient_order, in_terms_of_qdot, nullptr);
+    plhs[0] = eigenToMatlab(J_gradientVar.value());
+  }
+
+}
+
+void doKinematicsNew(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
+{
+  if (nrhs != 5) {
+    mexErrMsgIdAndTxt("Drake:rigidBodyManipulatormex:doKinematicsNew:NotEnoughInputs", "Usage rigidBodyManipulatormex(DO_KINEMATICS_NEW_COMMAND,model_ptr,q,compute_gradients,v,compute_JdotV)");
+  }
+
+  // first get the model_ptr back from matlab
+  RigidBodyManipulator *model = (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
+
+  double *q, *v = nullptr;
+  if (mxGetNumberOfElements(prhs[1]) != model->num_dof)
+    mexErrMsgIdAndTxt("Drake:rigidBodyManipulatormex:doKinematicsNew:BadInputs", "q must be size %d x 1", model->num_dof);
+  q = mxGetPr(prhs[1]);
+  bool compute_gradients = (bool) (mxGetLogicals(prhs[2]))[0];
+  if (mxGetNumberOfElements(prhs[3]) > 0) {
+    if (mxGetNumberOfElements(prhs[3]) != model->num_velocities)
+      mexErrMsgIdAndTxt("Drake:rigidBodyManipulatormex:doKinematicsNew:BadInputs", "v must be size %d x 1", model->num_velocities);
+    v = mxGetPr(prhs[3]);
+  }
+  bool compute_Jdotv = (bool) (mxGetLogicals(prhs[4]))[0];
+
+  model->doKinematicsNew(q, compute_gradients, v, compute_Jdotv);
+}
+
+void forwardKinV(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
+
+  std::string usage = "Usage [x, J, dJ] = rigidBodyManipulatormex(FORWARD_KIN_V_COMMAND,model_ptr, body_or_frame_ind, points, rotation_type, base_or_frame_ind, compute_analytic_jacobian)";
+  if (nrhs != 6) {
+    mexErrMsgIdAndTxt("Drake:rigidBodyManipulator:forwardKinV:WrongNumberOfInputs", usage.c_str());
+  }
+
+  if (nlhs > 3) {
+    mexErrMsgIdAndTxt("Drake:rigidBodyManipulator:forwardKinV:WrongNumberOfOutputs", usage.c_str());
+  }
+
+  // first get the model_ptr back from matlab
+  RigidBodyManipulator *model= (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
+
+  int body_or_frame_ind = ((int) mxGetScalar(prhs[1])) - 1; // base 1 to base 0
+  auto points = matlabToEigen<SPACE_DIMENSION, Eigen::Dynamic>(prhs[2]);
+  int rotation_type = (int) mxGetScalar(prhs[3]);
+  int base_or_frame_ind = ((int) mxGetScalar(prhs[4])) - 1; // base 1 to base 0
+  bool compute_analytic_jacobian = (bool) (mxGetLogicals(prhs[5]))[0];
+
+  if (compute_analytic_jacobian) {
+    int gradient_order = nlhs - 1; // position gradient order
+    auto x = model->forwardKinNew(points, body_or_frame_ind, base_or_frame_ind, rotation_type, gradient_order);
+
+    plhs[0] = eigenToMatlab(x.value());
+    if (gradient_order > 0)
+      plhs[1] = eigenToMatlab(x.gradient().value());
+    if (gradient_order > 1)
+      plhs[2] = eigenToMatlab(x.gradient().gradient().value());
+  }
+  else {
+    int gradient_order = nlhs > 1 ? nlhs - 2 : 0; // Jacobian gradient order
+    auto x = model->forwardKinNew(points, body_or_frame_ind, base_or_frame_ind, rotation_type, gradient_order);
+    plhs[0] = eigenToMatlab(x.value());
+    if (nlhs > 1) {
+      auto J = model->forwardJacV(x, body_or_frame_ind, base_or_frame_ind, rotation_type, compute_analytic_jacobian, gradient_order);
+      plhs[1] = eigenToMatlab(J.value());
+      if (nlhs > 2) {
+        plhs[2] = eigenToMatlab(J.gradient().value());
+      }
+    }
+  }
+}
+
+void forwardKinPositionGradient(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
+{
+  std::string usage = "Usage [P, dP] = rigidBodyManipulatormex(FORWARD_KIN_POSITION_GRADIENT_COMMAND,model_ptr, npoints, current_body_or_frame_ind, new_body_or_frame_ind)";
+  if (nrhs != 4) {
+    mexErrMsgIdAndTxt("Drake:rigidBodyManipulatormex:forwardKinPositionGradient:WrongNumberOfInputs", usage.c_str());
+  }
+
+  if (nlhs > 2) {
+    mexErrMsgIdAndTxt("Drake:rigidBodyManipulatormex:forwardKinPositionGradient:WrongNumberOfOutputs", usage.c_str());
+  }
+
+  // first get the model_ptr back from matlab
+  RigidBodyManipulator *model= (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
+
+  int npoints =  ((int) mxGetScalar(prhs[1]));
+  int current_body_or_frame_ind = ((int) mxGetScalar(prhs[2])) - 1; // base 1 to base 0
+  int new_body_or_frame_ind = ((int) mxGetScalar(prhs[3])) - 1; // base 1 to base 0
+  int gradient_order = nlhs - 1;
+  auto P = model->forwardKinPositionGradient<double>(npoints, current_body_or_frame_ind, new_body_or_frame_ind, gradient_order);
+  plhs[0] = eigenToMatlab(P.value());
+
+  if (P.hasGradient()) {
+    plhs[1] = eigenToMatlab(P.gradient().value());
+  }
+}
+
+void centerOfMass(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
+{
+  std::string usage = "Usage [x, J, dJ] = rigidBodyManipulatormex(CENTER_OF_MASS_COMMAND,robotnum)";
+  if (nrhs != 2) {
+    mexErrMsgIdAndTxt("Drake:rigidBodyManipulatormex:centerOfMass:WrongNumberOfInputs", usage.c_str());
+  }
+
+  if (nlhs > 3) {
+    mexErrMsgIdAndTxt("Drake:rigidBodyManipulatormex:centerOfMass:WrongNumberOfOutputs", usage.c_str());
+  }
+
+  RigidBodyManipulator *model = (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
+
+  set<int> robotnum_set;
+  int num_robot = static_cast<int>(mxGetNumberOfElements(prhs[1]));
+  double* robotnum = mxGetPr(prhs[1]);
+  for (int i = 0; i < num_robot; i++) {
+    robotnum_set.insert((int) robotnum[i] - 1);
+  }
+  int gradient_order = nlhs - 1;
+  auto x = model->centerOfMass<double>(gradient_order, robotnum_set);
+
+  plhs[0] = eigenToMatlab(x.value());
+  if (gradient_order > 0)
+    plhs[1] = eigenToMatlab(x.gradient().value());
+  if (gradient_order > 1)
+    plhs[2] = eigenToMatlab(x.gradient().gradient().value());
+}
+
+void centroidalMomentumMatrix(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
+{
+  std::string usage = "Usage [A, dA] = rigidBodyManipulatormex(CENTROIDAL_MOMENTUM_MATRIX_COMMAND)";
+  if (nrhs != 1) {
+    mexErrMsgIdAndTxt("Drake:rigidBodyManipulatormex:centroidalMomentumMatrix:WrongNumberOfInputs", usage.c_str());
+  }
+
+  if (nlhs > 2) {
+    mexErrMsgIdAndTxt("Drake:rigidBodyManipulatormex:centroidalMomentumMatrix:WrongNumberOfOutputs", usage.c_str());
+  }
+
+  RigidBodyManipulator *model = (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
+
+  int gradient_order = nlhs - 1;
+  auto A = model->centroidalMomentumMatrix<double>(gradient_order);
+
+  plhs[0] = eigenToMatlab(A.value());
+  if (gradient_order > 0)
+    plhs[1] = eigenToMatlab(A.gradient().value());
+}
+
+void massMatrix(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
+{
+  string usage = "Usage [M, dM] = rigidBodyManipulatormex(MASS_MATRIX_COMMAND,model_ptr)";
+  if (nrhs != 1) {
+    mexErrMsgIdAndTxt("Drake:rigidBodyManipulatormex:massMatrix:WrongNumberOfInputs", usage.c_str());
+  }
+
+  if (nlhs > 2) {
+    mexErrMsgIdAndTxt("Drake:rigidBodyManipulatormex:massMatrix:WrongNumberOfOutputs", usage.c_str());
+  }
+
+  int gradient_order = nlhs - 1;
+
+
+  RigidBodyManipulator *model = (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
+  auto ret = model->massMatrix<double>(gradient_order);
+
+  plhs[0] = eigenToMatlab(ret.value());
+  if (gradient_order > 0)
+    plhs[1] = eigenToMatlab(ret.gradient().value());
+}
+
+void inverseDynamics(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
+{
+  string usage = "Usage [C, dC] = rigidBodyDynamicsmex(INVERSE_DYNAMICS_COMMAND,model_ptr, f_ext, vd, df_ext, dvd)";
+  if (nrhs < 1 || nrhs > 5) {
+    mexErrMsgIdAndTxt("Drake:rigidBodyDynamicsmex:inverseDynamics:WrongNumberOfInputs", usage.c_str());
+  }
+
+  if (nlhs > 2) {
+    mexErrMsgIdAndTxt("Drake:rigidBodyDynamicsmex:inverseDynamics:WrongNumberOfOutputs", usage.c_str());
+  }
+
+  int gradient_order = nlhs - 1;
+
+
+  RigidBodyManipulator *model = (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
+  int nq = model->num_dof;
+  int nv = model->num_velocities;
+  const mxArray* f_ext_matlab = nullptr;
+  const mxArray* vd_matlab = nullptr;
+  const mxArray* df_ext_matlab = nullptr;
+  const mxArray* dvd_matlab = nullptr;
+  if (nrhs > 1)
+    f_ext_matlab = prhs[1];
+  if (nrhs > 2)
+    vd_matlab = prhs[2];
+  if (nrhs > 3)
+    df_ext_matlab = prhs[3];
+  if (nrhs > 4)
+    dvd_matlab = prhs[4];
+
+  map<int, unique_ptr<GradientVar<double, TWIST_SIZE, 1> > > f_ext;
+  if (f_ext_matlab != nullptr) {
+    if (!mxIsEmpty(f_ext_matlab)) {
+      if (mxIsCell(f_ext_matlab)) {
+        int rows = mxGetM(f_ext_matlab);
+        int cols = mxGetN(f_ext_matlab);
+        if (rows != 1)
+          throw runtime_error("f_ext cell array has number of rows not equal to 1");
+        if (cols != model->num_bodies)
+          throw runtime_error("f_ext cell array has number of columns not equal to number of rigid bodies in manipulator");
+
+        for (int i = 0; i < model->num_bodies; i++) {
+          mxArray* f_ext_cell = mxGetCell(f_ext_matlab, i);
+          if (!mxIsEmpty(f_ext_cell)) {
+            f_ext[i] = unique_ptr< GradientVar<double, TWIST_SIZE, 1> >(new GradientVar<double, TWIST_SIZE, 1>(TWIST_SIZE, 1, nq + nv, gradient_order));
+            // TODO: could save a copy with a two-argument matlabToEigen.
+            f_ext[i]->value() = matlabToEigen<TWIST_SIZE, Dynamic>(f_ext_cell);
+            if (gradient_order > 0 && df_ext_matlab != nullptr) {
+              mxArray* df_ext_cell = mxGetCell(df_ext_matlab, i);
+              f_ext[i]->gradient().value() = matlabToEigen<Dynamic, Dynamic>(df_ext_cell);
+            }
+          }
+        }
+      }
+      else if (mxIsNumeric(f_ext_matlab)) {
+        int rows = mxGetM(f_ext_matlab);
+        int cols = mxGetN(f_ext_matlab);
+
+        if (rows != TWIST_SIZE)
+          throw runtime_error("f_ext matrix has number of rows not equal to 6");
+        if (cols != model->num_bodies)
+          throw runtime_error("f_ext matrix has number of columns not equal to number of rigid bodies in manipulator");
+
+
+        GradientVar<double, TWIST_SIZE, Dynamic> f_ext_matrix(TWIST_SIZE, model->num_bodies, nq + nv, gradient_order);
+        f_ext_matrix.value() = matlabToEigen<TWIST_SIZE, Dynamic>(f_ext_matlab);
+        if (gradient_order > 0) {
+          if (df_ext_matlab == nullptr) {
+            throw runtime_error("df_ext must be passed in if you pass in f_ext and want gradient output");
+          }
+          f_ext_matrix.gradient().value() = matlabToEigen<Dynamic, Dynamic>(df_ext_matlab);
+        }
+
+        for (int i = 0; i < model->num_bodies; i++) {
+          f_ext[i] = unique_ptr< GradientVar<double, TWIST_SIZE, 1> >(new GradientVar<double, TWIST_SIZE, 1>(TWIST_SIZE, 1, nq + nv, gradient_order));
+          f_ext[i]->value() = f_ext_matrix.value().col(i);
+          if (f_ext_matrix.hasGradient()) {
+            f_ext[i]->gradient().value() = f_ext_matrix.gradient().value().middleRows<TWIST_SIZE>(TWIST_SIZE * i);
+          }
+        }
+      }
+    }
+  }
+  else
+    throw runtime_error("data type of f_ext not recognized");
+
+  unique_ptr<GradientVar<double, Eigen::Dynamic, 1> > vd_ptr;
+  if (vd_matlab != nullptr) {
+    if (!mxIsEmpty(vd_matlab)) {
+      int nv = model->num_velocities;
+      vd_ptr = unique_ptr<GradientVar<double, Eigen::Dynamic, 1>>(new GradientVar<double, Eigen::Dynamic, 1>(nv, 1, nq + nv, gradient_order));
+      vd_ptr->value() = matlabToEigen<Dynamic, 1>(vd_matlab);
+      if (gradient_order > 0) {
+        if (dvd_matlab == nullptr) {
+          throw runtime_error("dvd must be passed in if you pass in vd and want gradient output");
+        }
+        vd_ptr->gradient().value() = matlabToEigen<Dynamic, Dynamic>(dvd_matlab);
+      }
+    }
+  }
+
+  auto ret = model->inverseDynamics(f_ext, vd_ptr.get(), gradient_order);
+
+  plhs[0] = eigenToMatlab(ret.value());
+  if (gradient_order > 0)
+    plhs[1] = eigenToMatlab(ret.gradient().value());
+}
+
 void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 {
   if (nrhs<1) {
     mexErrMsgIdAndTxt("Drake:rigidBodyManipulatormex:BadInputs","Usage RigidBodyManipulatormex(command,...)");
   }
 
+  if (isa(prhs[0],"DrakeMexPointer")) {  // then it's calling the destructor
+    destroyDrakeMexPointer<RigidBodyManipulator*>(prhs[0]);
+    return;
+  }
+
   int command = mxGetScalar(prhs[0]);
   nrhs--; prhs++;  // remove command from the inputs before passing to the sub-methods
 
   switch (command) {
-    case 1:
+    case DELETE_MODEL_COMMAND:
+      destroyDrakeMexPointer<RigidBodyManipulator*>(prhs[0]);
+      break;
+    case CONSTRUCT_MODEL_COMMAND:
       constructModel(nlhs,plhs,nrhs,prhs);
       break;
-    case 2:
+    case H_AND_C_COMMAND:
       HandC(nlhs,plhs,nrhs,prhs);
       break;
-    case 3:
+    case DO_KINEMATICS_COMMAND:
       doKinematics(nlhs,plhs,nrhs,prhs);
       break;
-    case 4:
+    case FORWARD_KIN_COMMAND:
       forwardKin(nlhs,plhs,nrhs,prhs);
       break;
-    case 5:
+    case BODY_KIN_COMMAND:
       bodyKin(nlhs,plhs,nrhs,prhs);
       break;
-    case 6:
+    case COLLISION_DETECT_COMMAND:
       collisionDetect(nlhs,plhs,nrhs,prhs);
       break;
-    case 7:
+    case SMOOTH_DISTANCE_PENALTY_COMMAND:
       smoothDistancePenalty(nlhs,plhs,nrhs,prhs);
       break;
-    case 8:
-      collisionRaycast(nlhs,plsh,nrhs,prhs);
+    case COLLISION_RAYCAST_COMMAND:
+      collisionRaycast(nlhs,plhs,nrhs,prhs);
+      break;
+    case ALL_COLLISIONS_COMMAND:
+      allCollisions(nlhs,plhs,nrhs,prhs);
+      break;
+    case GET_CMM_COMMAND:
+      getCMM(nlhs,plhs,nrhs,prhs);
+      break;
+    case FIND_KINEMATIC_PATH_COMMAND:
+      findKinematicPath(nlhs,plhs,nrhs,prhs);
+      break;
+    case GEOMETRIC_JACOBIAN_COMMAND:
+      geometricJacobian(nlhs,plhs,nrhs,prhs);
+      break;
+    case DO_KINEMATICS_NEW_COMMAND:
+      doKinematicsNew(nlhs,plhs,nrhs,prhs);
+      break;
+    case FORWARD_KIN_V_COMMAND:
+      forwardKinV(nlhs,plhs,nrhs,prhs);
+      break;
+    case FORWARD_KIN_POSITION_GRADIENT_COMMAND:
+      forwardKinPositionGradient(nlhs,plhs,nrhs,prhs);
+      break;
+    case CENTER_OF_MASS_COMMAND:
+      centerOfMass(nlhs,plhs,nrhs,prhs);
+      break;
+    case CENTROIDAL_MOMENTUM_MATRIX_COMMAND:
+      centroidalMomentumMatrix(nlhs,plhs,nrhs,prhs);
+      break;
+    case MASS_MATRIX_COMMAND:
+      massMatrix(nlhs,plhs,nrhs,prhs);
+      break;
+    case INVERSE_DYNAMICS_COMMAND:
+      inverseDynamics(nlhs,plhs,nrhs,prhs);
       break;
     default:
       mexErrMsgIdAndTxt("Drake:rigidBodyManipulatormex:UnrecognizedCommand","unknown command");

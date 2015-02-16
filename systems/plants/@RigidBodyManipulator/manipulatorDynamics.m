@@ -66,10 +66,10 @@ else
     f_ext = full(f_ext);  % makes the mex implementation simpler (for now)
     if (nargout>3)
       df_ext = full(df_ext);
-      [H,C,dH,dC] = rigidBodyManipulatormex(2,obj.mex_model_ptr,q,qd,f_ext,df_ext);
+      [H,C,dH,dC] = rigidBodyManipulatormex(obj.H_AND_C_COMMAND,obj.mex_model_ptr,q,qd,f_ext,df_ext);
       dH = [dH, zeros(m.NB*m.NB,m.NB)];
     else
-      [H,C] = rigidBodyManipulatormex(2,obj.mex_model_ptr,q,qd,f_ext);
+      [H,C] = rigidBodyManipulatormex(obj.H_AND_C_COMMAND,obj.mex_model_ptr,q,qd,f_ext);
     end
   else
     if (nargout>3)
@@ -261,13 +261,13 @@ if (use_mex && obj.mex_model_ptr~=0 && isnumeric(q) && isnumeric(v))
   f_ext = full(f_ext);  % makes the mex implementation simpler (for now)
   if compute_gradients
     df_ext = full(df_ext);
-    [H, dH] = massMatrixmex(obj.mex_model_ptr);
+    [H, dH] = rigidBodyManipulatormex(obj.MASS_MATRIX_COMMAND,obj.mex_model_ptr);
     nv = obj.num_velocities;
     dH = [dH, zeros(numel(H), nv)];
-    [C, dC] = inverseDynamicsmex(obj.mex_model_ptr, f_ext, [], df_ext);
+    [C, dC] = rigidBodyManipulatormex(obj.INVERSE_DYNAMICS_COMMAND,obj.mex_model_ptr, f_ext, [], df_ext);
   else
-    H = massMatrixmex(obj.mex_model_ptr);
-    C = inverseDynamicsmex(obj.mex_model_ptr, f_ext);
+    H = rigidBodyManipulatormex(obj.MASS_MATRIX_COMMAND,obj.mex_model_ptr);
+    C = rigidBodyManipulatormex(obj.INVERSE_DYNAMICS_COMMAND,obj.mex_model_ptr, f_ext);
   end
   % TODO: implement in mex
   if compute_gradients

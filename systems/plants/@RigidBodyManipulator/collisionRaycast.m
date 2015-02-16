@@ -41,4 +41,4 @@ if (kinsol.mex ~= true)
     'Call doKinematics using mex before proceeding (got kinsol.mex ~= true).');
 end
 
-distance = rigidBodyManipulator(8,obj.mex_model_ptr, origins, ray_endpoints, use_margins);
+distance = rigidBodyManipulatormex(obj.COLLISION_RAYCAST_COMMAND,obj.mex_model_ptr, origins, ray_endpoints, use_margins);

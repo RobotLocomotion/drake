@@ -19,9 +19,9 @@ if (kinsol.mex)
     error('RigidBodyManipulator:getCMM:InvalidKinematics','This kinsol is no longer valid because the mex model ptr has been deleted.');
   end
   if nargout > 1
-    [A,Adot] = getCMMmex(model.mex_model_ptr,kinsol.q,qd);
+    [A,Adot] = rigidBodyManipulatormex(model.GET_CMM_COMMAND,model.mex_model_ptr,kinsol.q,qd);
 	else
-		A = getCMMmex(model.mex_model_ptr,kinsol.q);
+		A = rigidBodyManipulatormex(model.GET_CMM_COMMAND,model.mex_model_ptr,kinsol.q);
 	end
 else
   q = kinsol.q;
