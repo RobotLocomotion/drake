@@ -68,8 +68,6 @@ for j = 1:length(safe_regions)
   end
 end
 
-
-
 if options.step_params.leading_foot == 0 % lead left
   foot1 = 'left';
   foot2 = 'right';
