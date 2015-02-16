@@ -2090,7 +2090,7 @@ classdef RigidBodyManipulator < Manipulator
     function obj = createMexPointer(obj)
       if (exist('constructModelmex')==3)
 %        obj.mex_model_ptr = debugMexEval('constructModelmex',obj);
-        obj.mex_model_ptr = constructModelmex(obj);
+        obj.mex_model_ptr = rigidBodyManipulatormex(1,obj);
       end
     end
 

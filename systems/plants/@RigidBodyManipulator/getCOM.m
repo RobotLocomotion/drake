@@ -32,11 +32,11 @@ if (kinsol.mex)
     end
   else
     if nargout > 2
-      [com,J,dJ] = forwardKinmex(model.mex_model_ptr,kinsol.q,0,robotnum,false);
+      [com,J,dJ] = rigidBodyManipulatormex(4,model.mex_model_ptr,kinsol.q,0,robotnum,false);
     elseif nargout > 1
-      [com,J] = forwardKinmex(model.mex_model_ptr,kinsol.q,0,robotnum,false);
+      [com,J] = rigidBodyManipulatormex(4,model.mex_model_ptr,kinsol.q,0,robotnum,false);
     else
-      com = forwardKinmex(model.mex_model_ptr,kinsol.q,0,robotnum,false);
+      com = rigidBodyManipulatormex(4,model.mex_model_ptr,kinsol.q,0,robotnum,false);
     end
   end
 else

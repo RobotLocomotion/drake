@@ -8,7 +8,7 @@ using namespace std;
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
   if (nrhs != 5) {
-    mexErrMsgIdAndTxt("Drake:doKinematicsmex:NotEnoughInputs", "Usage doKinematicsmex(model_ptr,q,compute_gradients,v,compute_JdotV)");
+    mexErrMsgIdAndTxt("Drake:doKinematicsmex:NotEnoughInputs", "Usage rigidBodyManipulatormex(3,model_ptr,q,compute_gradients,v,compute_JdotV)");
   }
 
   // first get the model_ptr back from matlab

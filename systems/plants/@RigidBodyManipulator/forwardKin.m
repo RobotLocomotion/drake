@@ -76,11 +76,11 @@ else
     end
     
     if nargout > 2
-      [x,J,dJ] = forwardKinmex(obj.mex_model_ptr,kinsol.q,body_or_frame_id,pts,options.rotation_type);
+      [x,J,dJ] = rigidBodyManipulatormex(4,obj.mex_model_ptr,kinsol.q,body_or_frame_id,pts,options.rotation_type);
     elseif nargout > 1
-      [x,J] = forwardKinmex(obj.mex_model_ptr,kinsol.q,body_or_frame_id,pts,options.rotation_type);
+      [x,J] = rigidBodyManipulatormex(4,obj.mex_model_ptr,kinsol.q,body_or_frame_id,pts,options.rotation_type);
     else
-      x = forwardKinmex(obj.mex_model_ptr,kinsol.q,body_or_frame_id,pts,options.rotation_type);
+      x = rigidBodyManipulatormex(4,obj.mex_model_ptr,kinsol.q,body_or_frame_id,pts,options.rotation_type);
     end
     
   else

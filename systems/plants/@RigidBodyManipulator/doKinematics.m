@@ -83,7 +83,7 @@ else
   kinsol.qd = v;
   
   if (options.use_mex && model.mex_model_ptr~=0 && isnumeric(q))
-    doKinematicsmex(model.mex_model_ptr,q,options.compute_gradients,v);
+    rigidBodyManipulatormex(3,model.mex_model_ptr,q,options.compute_gradients,v);
     kinsol.mex = true;
   else
     kinsol.mex = false;

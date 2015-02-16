@@ -15,7 +15,7 @@ using namespace std;
 void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 
   if (nrhs < 1) {
-    mexErrMsgIdAndTxt("Drake:collisionDetectmex:NotEnoughInputs","Usage collisionDetectmex(model_ptr)");
+    mexErrMsgIdAndTxt("Drake:collisionDetectmex:NotEnoughInputs","Usage rigidBodyManipulator(6,model_ptr)");
   }
 
   // first get the model_ptr back from matlab
