@@ -197,6 +197,10 @@ public:
 
   std::string getBodyOrFrameName(int body_or_frame_id);
   //@param body_or_frame_id   the index of the body or the id of the frame.
+
+  template <typename Scalar>
+  GradientVar<Scalar, Eigen::Dynamic, 1> positionConstraints(int gradient_order);
+
 public:
   std::vector<std::string> robot_name;
 

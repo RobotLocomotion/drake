@@ -2601,6 +2601,28 @@ std::string RigidBodyManipulator::getBodyOrFrameName(int body_or_frame_id)
   }
 }
 
+template <typename Scalar>
+GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::positionConstraints(int gradient_order)
+{
+  if (!use_new_kinsol)
+    throw std::runtime_error("method requires new kinsol format");
+  if (gradient_order > 2)
+    throw std::runtime_error("only first order gradients are implemented so far (it's trivial to add more)");
+
+  GradientVar<Scalar, Eigen::Dynamic, 1> ret(3*loops.size(), 1, gradient_order);
+  for (int i = 0; i < loops.size(); i++) {
+    auto ptA_in_B = forwardKinNew(loops[i].ptA,loops[i].bodyA,loops[i].bodyB,0,gradient_order);
+
+    ret.value().middleRows(3*i,3) = ptA_in_B.value() - loops[i].ptB;
+
+    if (gradient_order > 1) {
+      ret.gradient().value().middleRows(3*i, 3) = ptA_in_B.gradient().value();
+    }
+  }
+  return ret;
+}
+
+
 
 // explicit instantiations (required for linking):
 template DLLEXPORT_RBM void RigidBodyManipulator::getCMM(double * const, double * const, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<MatrixXd> > &);
@@ -2655,3 +2677,4 @@ template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, 1> RigidBodyManipulat
 template DLLEXPORT_RBM void RigidBodyManipulator::HandC(double* const, double * const, MatrixBase< Map<MatrixXd> > * const, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<VectorXd> > &, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > * const);
 template DLLEXPORT_RBM void RigidBodyManipulator::HandC(double* const, double * const, MatrixBase< MatrixXd > * const, MatrixBase< MatrixXd > &, MatrixBase< VectorXd > &, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > * const);
 
+template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, 1> RigidBodyManipulator::positionConstraints(int);

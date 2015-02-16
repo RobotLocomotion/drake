@@ -20,7 +20,7 @@ for urdf = {'./FallingBrick.urdf',...
 
   urdffile = GetFullPath(urdf{1});
   fprintf(1,'testing %s\n', urdffile);
-  r = RigidBodyManipulator(urdffile,struct('floating',true));
+  r = RigidBodyManipulator(urdffile,struct('floating',true,'use_new_kinsol',true));
     
   q = 0*rand(getNumPositions(r),1);
   kinsol = doKinematics(r,q);
@@ -75,8 +75,13 @@ for urdf = {'./FallingBrick.urdf',...
   num_vc = size(P,1);
   
   Hcpp = textscan(outstr,'%f','HeaderLines',1+num_bodies);
-  Ccpp = reshape(Hcpp{1}(num_vc^2+(1:num_vc)),[],1);
-  Bcpp = reshape(Hcpp{1}(num_vc^2+num_vc+1:end),getNumInputs(r),num_vc)';
+  index = num_vc^2;
+  Ccpp = reshape(Hcpp{1}(index+(1:num_vc)),num_vc,1);
+  index = index + num_vc;
+  Bcpp = reshape(Hcpp{1}(index+(1:getNumInputs(r)*num_vc)),getNumInputs(r),num_vc)';
+  index = index + numel(Bcpp);
+  phicpp = reshape(Hcpp{1}(index+(1:3*length(r.loop))),3*length(r.loop),1);
+  index = index + 3*length(r.loop);
   Hcpp = reshape(Hcpp{1}(1:num_vc^2),num_vc,num_vc);
   Hcpp = P'*Hcpp*P;
   
@@ -84,12 +89,15 @@ for urdf = {'./FallingBrick.urdf',...
   Bcpp = P'*Bcpp;
   
   [H,C,B] = manipulatorDynamics(r,q,v);
+  phi = positionConstraints(r,q);
   
   % low tolerance because i'm just parsing the ascii printouts
   valuecheck(Hcpp,H,tol); 
   valuecheck(Ccpp,C,tol);  
   valuecheck(Bcpp,B,tol);
-  
+  if length(phi>0)
+    valuecheck(phicpp,phi,tol);
+  end
 end
 
 end
