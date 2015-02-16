@@ -187,7 +187,7 @@ URDFRigidBodyManipulator::URDFRigidBodyManipulator(void)
 
 void setJointLimits(boost::shared_ptr<urdf::ModelInterface> urdf_model, boost::shared_ptr<urdf::Joint> j, const map<string, int> &dofname_to_dofnum, VectorXd& joint_limit_min, VectorXd& joint_limit_max);
 
-bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _urdf_model, map<string, int> jointname_to_jointnum, map<string,int> dofname_to_dofnum, const string & root_dir)
+bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _urdf_model, map<string, int> jointname_to_jointnum, map<string,int> dofname_to_dofnum, const string& xml_string, const string & root_dir)
 {
   robot_map.insert(make_pair(_urdf_model->getName(),(int)robot_name.size()));
   robot_name.push_back(_urdf_model->getName());
@@ -444,7 +444,39 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
 
   }
 
-  compile();  
+  compile();
+
+  // parse extra tags supported by drake
+
+  TiXmlDocument xml_doc;
+  xml_doc.Parse(xml_string.c_str());  // a little inefficient to parse a second time, but ok for now
+  // eventually, we'll probably just crop out the ros urdf parser completely.
+
+  TiXmlElement *robot_xml = xml_doc.FirstChildElement("robot");
+
+  // parse transmission elements
+  for (TiXmlElement* transmission_xml = robot_xml->FirstChildElement("transmission"); transmission_xml; transmission_xml = transmission_xml->NextSiblingElement("transmission"))
+  {
+    TiXmlElement* node = transmission_xml->FirstChildElement("joint");
+    if (!node) continue;
+
+    int _dofnum;
+    map<string, int>::const_iterator dn=findWithSuffix(dofname_to_dofnum,node->Attribute("name"));
+    if (dn == dofname_to_dofnum.end()) ROS_ERROR("can't find joint %s for transmission element.  this shouldn't happen");
+    _dofnum = dn->second;
+  //  cout << "adding actuator to joint " << node->Attribute("name") << " (dof: " << _dofnum << ")" << endl;
+
+    node = transmission_xml->FirstChildElement("mechanicalReduction");
+    double gain = 1.0;
+    if (node) sscanf(node->Value(),"%lf",&gain);
+
+    VectorXd B_col = VectorXd::Zero(num_velocities);
+    B_col(_dofnum) = gain;
+
+    B.conservativeResize(num_velocities, B.cols()+1);
+    B.rightCols(1) = B_col;
+  }
+
   return true;
 }
 
@@ -619,7 +651,7 @@ boost::shared_ptr<ModelInterface> parseURDF(const string &xml_string)
     model.reset();
     return model;
   }
- 
+
   return model;
 }
 
@@ -792,7 +824,7 @@ bool URDFRigidBodyManipulator::addURDFfromXML(const string &xml_string, const st
   }
   
   // now populate my model class
-  addURDF(_urdf_model,jointname_to_jointnum,dofname_to_dofnum,root_dir);
+  addURDF(_urdf_model,jointname_to_jointnum,dofname_to_dofnum,xml_string,root_dir);
   return true;
 }
 
