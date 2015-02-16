@@ -56,9 +56,9 @@ classdef SE3MotionPlanningTree < CompositeVertexArrayTree
       obj.weights(2) = orientation_weight;
     end
 
-    function obj = setTranslationBounds(obj, lb, ub)
-      obj.trees{1}.lb = lb;
-      obj.trees{1}.ub = ub;
+    function obj = setTranslationSamplingBounds(obj, lb, ub)
+      obj.trees{1}.sampling_lb = lb;
+      obj.trees{1}.sampling_ub = ub;
     end
 
     function obj = setLCMGL(obj, varargin)

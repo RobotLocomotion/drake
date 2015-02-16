@@ -203,8 +203,8 @@ xyz_box_edge_length = 2;
 xyz_min = min(xyz_quat_start(1:3),xyz_quat_goal(1:3)) - xyz_box_edge_length/2;
 xyz_max = max(xyz_quat_start(1:3),xyz_quat_goal(1:3)) + xyz_box_edge_length/2;
 
-TA = TA.setTranslationBounds(xyz_min, xyz_max);
-TA = TA.addIKConstraint(base_constraints{:});
+TA = TA.setTranslationSamplingBounds(xyz_min, xyz_max);
+TA = TA.addKinematicConstraint(base_constraints{:});
 TA = TA.setNominalConfiguration(q_nom);
 
 TA = TA.compile();
@@ -226,14 +226,10 @@ rrt_timer = tic;
 display('About to plan ...')
 switch options.planning_mode
   case 'rrt'
-    [TA, path_ids_A, info] = TA.rrtNew(x_start, x_goal, TA, options);
+    [TA, path_ids_A, info] = TA.rrt(x_start, x_goal, TA, options);
   case 'rrt_connect'
     display('Running RRTConnect')
-    [TA, TB,  path_ids_A, path_ids_B, info] = TA.rrtConnect(x_start, x_goal, TB, options);
-    if info == 1
-      [TA, id_last] = TA.addPath(TB,fliplr(path_ids_B(1:end-1)), path_ids_A(end));
-      path_ids_A = TA.getPathToVertex(id_last);
-    end
+    [TA, path_ids_A, info, TB] = TA.rrtConnect(x_start, x_goal, TB, options);
 end
 rrt_time = toc(rrt_timer);
 fprintf('Timing:\n');

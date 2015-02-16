@@ -55,16 +55,13 @@ function rrt_piano_mover_rotation(n_obstacles, planning_mode, n_smoothing_passes
 
 
   options.display_after_every = 100;
+  options.visualize = true;
   rrt_timer = tic;
   switch planning_mode
     case 'rrt'
-      [TA, path_ids_A, info] = TA.rrtNew(q0, qf, options);
+      [TA, path_ids_A, info] = TA.rrt(q0, qf, options);
     case 'rrt_connect'
-      [TA, TB,  path_ids_A, path_ids_B, info] = TA.rrtConnect(q0, qf, TB, options);
-      if info == 1
-        [TA, id_last] = TA.addPath(TB, fliplr(path_ids_B(1:end-1)), path_ids_A(end));
-        path_ids_A = TA.getPathToVertex(id_last);
-      end
+      [TA, path_ids_A, info] = TA.rrtConnect(q0, qf, TB, options);
   end
   rrt_time = toc(rrt_timer);
   fprintf('Timing:\n');

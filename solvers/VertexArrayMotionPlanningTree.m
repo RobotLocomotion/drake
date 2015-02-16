@@ -3,8 +3,10 @@ classdef VertexArrayMotionPlanningTree < MotionPlanningTree & MotionPlanningProb
   % "checkConstraints" functionality of MotionPlanningProblem and stores the
   % vertices of the tree in a num_vars-by-n array.
   properties
-    lb
-    ub
+    % The default sampling for this class draws from a uniform distribution
+    % whose lower and upper bounds for each element of the sampling_lb and sampling_ub.
+    sampling_lb
+    sampling_ub
   end
 
   properties (Access = protected)
@@ -21,8 +23,8 @@ classdef VertexArrayMotionPlanningTree < MotionPlanningTree & MotionPlanningProb
     function obj = VertexArrayMotionPlanningTree(num_vars)
       obj = obj@MotionPlanningTree();
       obj = obj@MotionPlanningProblem(num_vars);
-      obj.lb = zeros(num_vars, 1);
-      obj.ub = ones(num_vars, 1);
+      obj.sampling_lb = zeros(num_vars, 1);
+      obj.sampling_ub = ones(num_vars, 1);
     end
 
     function [obj, id_last] = init(obj, q_init)
@@ -33,8 +35,8 @@ classdef VertexArrayMotionPlanningTree < MotionPlanningTree & MotionPlanningProb
       [obj,id_last] = obj.addVertex(q_init, 1);
     end
 
-    function q = randomConfig(obj)
-      q = obj.lb + (obj.ub-obj.lb).*rand(obj.num_vars,1);
+    function q = randomSample(obj)
+      q = obj.sampling_lb + (obj.sampling_ub-obj.sampling_lb).*rand(obj.num_vars,1);
     end
 
     function [obj, id] = addVertex(obj, q, id_parent)
@@ -51,9 +53,8 @@ classdef VertexArrayMotionPlanningTree < MotionPlanningTree & MotionPlanningProb
       id_parent = obj.parent(id);
     end
 
-    function valid = isValidConfiguration(obj, q)
-      valid = sizecheck(q, [obj.num_vars, 1]);
-      valid = valid && obj.checkConstraints(q);
+    function valid = isValid(obj, q)
+      valid = obj.checkConstraints(q);
     end
   end
 end
