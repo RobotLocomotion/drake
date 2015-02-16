@@ -941,7 +941,11 @@ classdef RigidBodyManipulator < Manipulator
               ind(i)=[]; % not actually a match
               i=i-1;
             elseif subind>1
-              warning('Drake:RigidBodyManipulator:WeldedLinkInd',['found ', linkname,' but it has been welded to it''s parent link (and the link''s coordinate frame may have changed).']);
+              if nargin>3 && error_level>0
+                error('Drake:RigidBodyManipulator:WeldedLinkInd',['found ', linkname,' but it has been welded to it''s parent link (and the link''s coordinate frame may have changed).']);
+              else
+                warning('Drake:RigidBodyManipulator:WeldedLinkInd',['found ', linkname,' but it has been welded to it''s parent link (and the link''s coordinate frame may have changed).']);
+              end
             end
           end
           i=i+1;
