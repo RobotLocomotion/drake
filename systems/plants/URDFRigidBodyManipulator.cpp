@@ -359,7 +359,7 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
 
       Transform<double, 3, 1> T;
       poseToTransform(inertial->origin,T.matrix());
-      transformSpatialInertia(T,NULL,bodies[index]->I);
+      transformSpatialInertia(T,static_cast<  Gradient<Isometry3d::MatrixType, Eigen::Dynamic>::type* >(NULL),bodies[index]->I);
     }
 
     if (!l->second->collision_groups.empty()) { // then at least one collision element exists
