@@ -284,11 +284,8 @@ classdef MixedIntegerConvexProgram
         params = struct();
       end
       params = applyDefaults(params, struct('outputflag', 0));
-
       model = obj.getGurobiModel();
-      
       result = gurobi(model, params);
-      
       ok = ~(strcmp(result.status, 'INFEASIBLE') || strcmp(result.status, 'INF_OR_UNBD'));
       if ~ok
         error('Drake:MixedIntegerConvexProgram:InfeasibleProblem', 'The mixed-integer problem is infeasible.');
