@@ -1,4 +1,4 @@
-function rrt_piano_mover(n_obstacles, planning_mode, n_smoothing_passes)
+function rrt_piano_mover(n_obstacles, planning_mode, n_smoothing_passes, visualize)
   w = warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
   %rng(2)
   if nargin < 1 || isempty(n_obstacles)
@@ -6,6 +6,7 @@ function rrt_piano_mover(n_obstacles, planning_mode, n_smoothing_passes)
   end
   if nargin < 2 || isempty(planning_mode), planning_mode = 'rrt'; end
   if nargin < 3 || isempty(n_smoothing_passes), n_smoothing_passes = 10; end
+  if nargin < 4 || isempty(visualize), visualize = false; end
   urdf = fullfile(getDrakePath, 'systems', 'plants', 'test', 'FallingBrick.urdf');
   options.floating = true;
   xyz0 = [0; 0; -2];
@@ -25,7 +26,7 @@ function rrt_piano_mover(n_obstacles, planning_mode, n_smoothing_passes)
   TA.max_edge_length = 0.5;
   TA.max_length_between_constraint_checks = 0.1;
   TA = TA.setOrientationWeight(1);
-  TA = TA.setTranslationBounds([-5; -5; -2], [5; 5; 12]);
+  TA = TA.setTranslationSamplingBounds([-5; -5; -2], [5; 5; 12]);
 
   box_size = [1;1;1];
   xyz_min = [-10; -10; 0];
@@ -51,16 +52,13 @@ function rrt_piano_mover(n_obstacles, planning_mode, n_smoothing_passes)
   v.draw(0,[xyz0; rpy0]);
 
   options.display_after_every = 100;
+  options.visualize = visualize;
   rrt_timer = tic;
   switch planning_mode
     case 'rrt'
-      [TA, path_ids_A, info] = TA.rrtNew(q0, qf, options);
+      [TA, path_ids_A, info] = TA.rrt(q0, qf, options);
     case 'rrt_connect'
-      [TA, TB,  path_ids_A, path_ids_B, info] = TA.rrtConnect(q0, qf, TB, options);
-      if info == 1
-        [TA, id_last] = TA.addPath(TB, fliplr(path_ids_B(1:end-1)), path_ids_A(end));
-        path_ids_A = TA.getPathToVertex(id_last);
-      end
+      [TA, path_ids_A, info] = TA.rrtConnect(q0, qf, TB, options);
   end
   rrt_time = toc(rrt_timer);
   fprintf('Timing:\n');

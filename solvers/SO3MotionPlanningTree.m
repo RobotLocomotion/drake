@@ -10,7 +10,7 @@ classdef SO3MotionPlanningTree < VertexArrayMotionPlanningTree
       obj = obj@VertexArrayMotionPlanningTree(4);
     end
 
-    function q = randomConfig(obj)
+    function q = randomSample(obj)
       q = uniformlyRandomQuat();
     end
 
@@ -18,8 +18,8 @@ classdef SO3MotionPlanningTree < VertexArrayMotionPlanningTree
       d = quaternionDistance(quat1, quat2);
     end
 
-    function q = interpolate(obj, q1, q2, f)
-      q = slerp(q1, q2, f);
+    function q = interpolate(obj, q1, q2, interpolation_parameter)
+      q = slerp(q1, q2, interpolation_parameter);
     end
 
     function obj = drawTree(obj, ~, draw_now)

@@ -7,7 +7,7 @@ plot(x_start(1),x_start(2),'bx',x_goal(1),x_goal(2),'gx','MarkerSize',20,'LineWi
 
 T = CartesianMotionPlanningTree(2);
 T.max_edge_length = .1;
-options = struct();
-[T, path_ids, info] = T.rrtNew(x_start, x_goal, options);
+options.visualize = true;
+[T, path_ids, info] = T.rrt(x_start, x_goal, options);
 T.drawPath(path_ids);
 end

@@ -12,7 +12,7 @@ classdef TaskSpaceMotionPlanningTree < CompositeVertexArrayTree
   methods
     function obj = TaskSpaceMotionPlanningTree(r, end_effector_id, end_effector_pt)
       obj = obj@CompositeVertexArrayTree({SE3MotionPlanningTree(), ...
-                                          ConfigurationSpaceMotionPlanningTree(r)}, ...
+                                          JointSpaceMotionPlanningTree(r)}, ...
                                          {'end_effector_pose','robot_posture'}, ...
                                          [1, 0]);
       obj.end_effector_id = r.parseBodyOrFrameID(end_effector_id);
@@ -55,8 +55,8 @@ classdef TaskSpaceMotionPlanningTree < CompositeVertexArrayTree
       end
     end
 
-    function valid = isValidConfiguration(obj, x)
-      valid = isValidConfiguration@CompositeVertexArrayTree(obj, x);
+    function valid = isValid(obj, x)
+      valid = isValid@CompositeVertexArrayTree(obj, x);
       tol = 1e-3;
       if valid
         kinsol = obj.getRobot().doKinematics(x(obj.idx{obj.cspace_idx}));
@@ -69,15 +69,15 @@ classdef TaskSpaceMotionPlanningTree < CompositeVertexArrayTree
       end
     end
     
-    function [x, valid] = attemptToMakeValidConfiguration(obj, x, valid)
-      if obj.trees{obj.tspace_idx}.isValidConfiguration(x(obj.idx{obj.tspace_idx}));
+    function [x, valid] = attemptToMakeValid(obj, x, valid)
+      if obj.trees{obj.tspace_idx}.isValid(x(obj.idx{obj.tspace_idx}));
         [x(obj.idx{obj.cspace_idx}), valid] = obj.trees{obj.cspace_idx}.solveIK([], [], obj.generateEndEffectorConstraints(x));
         valid = valid && obj.trees{obj.cspace_idx}.checkConstraints(x(obj.idx{obj.cspace_idx}));
       end
     end
 
-    function obj = addIKConstraint(obj, varargin)
-      obj.trees{obj.cspace_idx} = obj.trees{obj.cspace_idx}.addIKConstraint(varargin{:});
+    function obj = addKinematicConstraint(obj, varargin)
+      obj.trees{obj.cspace_idx} = obj.trees{obj.cspace_idx}.addKinematicConstraint(varargin{:});
     end
 
     function ee_constraints = generateEndEffectorConstraints(obj, x)
@@ -104,9 +104,9 @@ classdef TaskSpaceMotionPlanningTree < CompositeVertexArrayTree
       obj.trees{obj.tspace_idx}.drawTree(varargin{:});
     end
 
-    function obj = setTranslationBounds(obj, lb, ub)
+    function obj = setTranslationSamplingBounds(obj, lb, ub)
       obj.trees{obj.tspace_idx} = ...
-        obj.trees{obj.tspace_idx}.setTranslationBounds(lb, ub);
+        obj.trees{obj.tspace_idx}.setTranslationSamplingBounds(lb, ub);
     end
 
     function drawPath(objA, path_ids_A, objB, path_ids_B)

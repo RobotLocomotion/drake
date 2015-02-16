@@ -1,4 +1,7 @@
 classdef CompositeVertexArrayTree < VertexArrayMotionPlanningTree
+  % Concrete impmlementation of the MotionPlanningTree interface which
+  % represents a tree composed of multiple trees, each in its own space. See
+  % SE3MotionPlanningTree for an example of this.
   properties
     num_trees     % number of contained trees
 
@@ -64,10 +67,10 @@ classdef CompositeVertexArrayTree < VertexArrayMotionPlanningTree
       end
     end
 
-    function valid = isValidConfiguration(obj, q)
-      valid = isValidConfiguration@VertexArrayMotionPlanningTree(obj, q);
+    function valid = isValid(obj, q)
+      valid = isValid@VertexArrayMotionPlanningTree(obj, q);
       for i = 1:obj.num_trees
-        valid = valid && obj.trees{i}.isValidConfiguration(q(obj.idx{i}));
+        valid = valid && obj.trees{i}.isValid(q(obj.idx{i}));
       end
     end
 
@@ -79,10 +82,10 @@ classdef CompositeVertexArrayTree < VertexArrayMotionPlanningTree
       end
     end
 
-    function q = randomConfig(obj)
+    function q = randomSample(obj)
       q = zeros(obj.num_vars, 1);
       for i = 1:obj.num_trees
-        q(obj.idx{i}) = obj.trees{i}.randomConfig();
+        q(obj.idx{i}) = obj.trees{i}.randomSample();
       end
     end
   end

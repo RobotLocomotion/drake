@@ -17,17 +17,14 @@ prob = CartesianMotionPlanningTree(2);
 prob = addConstraint(prob,FunctionHandleConstraint(0,0,2,@(x)inpolygon(x(1),x(2),bugtrap(1,:),bugtrap(2,:)),-2));
 
 options = struct();
+options.visualize = true;
 prob.max_edge_length = .1;
 prob.max_length_between_constraint_checks = .005;
 switch planning_mode
   case 'rrt'
-    [TA, path_ids_A, info] = prob.rrtNew(x_start, x_goal, options);
+    [TA, path_ids_A, info] = prob.rrt(x_start, x_goal, options);
   case 'rrt_connect'
-    [TA, TB,  path_ids_A, path_ids_B, info] = prob.rrtConnect(x_start, x_goal, [], options);
-    if info == 1
-      [TA, id_last] = TA.addPath(TB, fliplr(path_ids_B(1:end-1)), path_ids_A(end));
-      path_ids_A = TA.getPathToVertex(id_last);
-    end
+    [TA, path_ids_A, info] = prob.rrtConnect(x_start, x_goal, [], options);
 end
 
 TA.drawPath(path_ids_A);

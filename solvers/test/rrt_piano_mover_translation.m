@@ -34,8 +34,8 @@ function rrt_piano_mover_translation(n_obstacles, planning_mode, n_smoothing_pas
   v.draw(0,[q0; zeros(3,1)]);
   TA.max_edge_length = 0.5;
   TA.max_length_between_constraint_checks = 0.1;
-  TA.lb = [-5; -5; -2];
-  TA.ub = [5; 5; 12];
+  TA.sampling_lb = [-5; -5; -2];
+  TA.sampling_ub = [5; 5; 12];
 
   TB = TA;
 
@@ -47,13 +47,9 @@ function rrt_piano_mover_translation(n_obstacles, planning_mode, n_smoothing_pas
   rrt_timer = tic;
   switch planning_mode
     case 'rrt'
-      [TA, path_ids_A, info] = TA.rrtNew(q0, qf, options);
+      [TA, path_ids_A, info] = TA.rrt(q0, qf, options);
     case 'rrt_connect'
-      [TA, TB,  path_ids_A, path_ids_B, info] = TA.rrtConnect(q0, qf, TB, options);
-      if info == 1
-        [TA, id_last] = TA.addPath(TB, fliplr(path_ids_B(1:end-1)), path_ids_A(end));
-        path_ids_A = TA.getPathToVertex(id_last);
-      end
+      [TA, path_ids_A, info] = TA.rrtConnect(q0, qf, TB, options);
   end
   rrt_time = toc(rrt_timer);
   fprintf('Timing:\n');

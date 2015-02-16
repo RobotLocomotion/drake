@@ -1,4 +1,4 @@
-classdef ConfigurationSpaceMotionPlanningTree < CartesianMotionPlanningTree
+classdef JointSpaceMotionPlanningTree < CartesianMotionPlanningTree
   properties
     rbm
     visualization_point = struct('body', 1, 'pt', [0;0;0]);
@@ -6,17 +6,17 @@ classdef ConfigurationSpaceMotionPlanningTree < CartesianMotionPlanningTree
     active_collision_options = struct();
     v
     xyz_vis
-    ik_constraints = {};
+    kinematic_constraints = {};
     ikoptions;
     q_nom
   end
   methods
-    function obj = ConfigurationSpaceMotionPlanningTree(rbm)
+    function obj = JointSpaceMotionPlanningTree(rbm)
       obj = obj@CartesianMotionPlanningTree(rbm.getNumPositions());
       obj.rbm = rbm;
-      [obj.lb, obj.ub] = rbm.getJointLimits();
-      obj.lb(isinf(obj.lb)) = -10;
-      obj.ub(isinf(obj.ub)) = 10;
+      [obj.sampling_lb, obj.sampling_ub] = rbm.getJointLimits();
+      obj.sampling_lb(isinf(obj.sampling_lb)) = -10;
+      obj.sampling_ub(isinf(obj.sampling_ub)) = 10;
       %obj.v = obj.rbm.constructVisualizer(struct('use_collision_geometry',true));
       obj.ikoptions = IKoptions(rbm);
       obj.q_nom = zeros(obj.rbm.getNumPositions(),1);
@@ -24,18 +24,18 @@ classdef ConfigurationSpaceMotionPlanningTree < CartesianMotionPlanningTree
 
     function obj = compile(obj)
       obj.ikoptions = obj.ikoptions.updateRobot(obj.rbm);
-      for i = 1:numel(obj.ik_constraints)
-        if obj.rbm.getMexModelPtr ~= obj.ik_constraints{i}.robot.getMexModelPtr()
-          obj.ik_constraints{i} = obj.ik_constraints{i}.updateRobot(obj.rbm);
+      for i = 1:numel(obj.kinematic_constraints)
+        if obj.rbm.getMexModelPtr ~= obj.kinematic_constraints{i}.robot.getMexModelPtr()
+          obj.kinematic_constraints{i} = obj.kinematic_constraints{i}.updateRobot(obj.rbm);
         end
       end
       obj.xyz_vis = NaN(3, obj.N);
     end
 
-    function obj = addIKConstraint(obj, varargin)
+    function obj = addKinematicConstraint(obj, varargin)
       for i = 1:numel(varargin)
         typecheck(varargin{i}, 'RigidBodyConstraint');
-        obj.ik_constraints(end+1) = varargin(i);
+        obj.kinematic_constraints(end+1) = varargin(i);
       end
     end
     
@@ -50,24 +50,24 @@ classdef ConfigurationSpaceMotionPlanningTree < CartesianMotionPlanningTree
       if nargin < 4 || isempty(additional_constraints)
         additional_constraints = {};
       end
-      [q, info] = inverseKin(obj.rbm, q_nom, q_seed, obj.ik_constraints{:}, additional_constraints{:}, obj.ikoptions);
+      [q, info] = inverseKin(obj.rbm, q_nom, q_seed, obj.kinematic_constraints{:}, additional_constraints{:}, obj.ikoptions);
       valid = (info < 10);
     end
 
-    function valid = checkIKConstraints(obj, q)
+    function valid = checkKinematicConstraints(obj, q)
       valid = true;
       kinsol = obj.rbm.doKinematics(q);
       tol = 1e-3;
-      for i = 1:numel(obj.ik_constraints)
-        if isa(obj.ik_constraints{i}, 'QuasiStaticConstraint')
-          valid = valid && obj.ik_constraints{i}.checkConstraint(kinsol);
+      for i = 1:numel(obj.kinematic_constraints)
+        if isa(obj.kinematic_constraints{i}, 'QuasiStaticConstraint')
+          valid = valid && obj.kinematic_constraints{i}.checkConstraint(kinsol);
         else
           if valid
-            [lb, ub] = obj.ik_constraints{i}.bounds(0);
-            if isa(obj.ik_constraints{i}, 'PostureConstraint')
+            [lb, ub] = obj.kinematic_constraints{i}.bounds(0);
+            if isa(obj.kinematic_constraints{i}, 'PostureConstraint')
               y = q;
             else
-              y = eval(obj.ik_constraints{i}, 0, kinsol);
+              y = eval(obj.kinematic_constraints{i}, 0, kinsol);
             end
             valid = all(y - lb > -tol) && all(ub - y > -tol);
           end
@@ -77,7 +77,7 @@ classdef ConfigurationSpaceMotionPlanningTree < CartesianMotionPlanningTree
 
     function valid = checkConstraints(obj, q)
       valid = checkConstraints@CartesianMotionPlanningTree(obj, q);
-      valid = valid && obj.checkIKConstraints(q);
+      valid = valid && obj.checkKinematicConstraints(q);
       valid = valid && obj.isCollisionFree(q);
     end
 
