@@ -53,8 +53,9 @@ int main(int argc, char* argv[])
   cout << model->B << endl;
 
   if (model->loops.size()>0) {
-    auto phi = model->positionConstraints<double>(0);
+    auto phi = model->positionConstraints<double>(1);
     cout << phi.value() << endl;
+    cout << phi.gradient().value() << endl;
   }
 
   delete model;
