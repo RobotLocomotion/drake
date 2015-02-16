@@ -65,6 +65,8 @@ classdef SimulationControlBlock < DrakeSystem
             case msg.STOP
               disp('Received STOP LCM simulation command.');
               set_param(bdroot(), 'SimulationCommand', 'stop');
+            otherwise
+              disp(['Received unsupported LCM simulation command:',num2str(msg.command_type)]);
           end
         end
       end
