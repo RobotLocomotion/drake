@@ -108,7 +108,8 @@ T = makehgtform('zrotate', -start_pos.right(6), 'translate', -start_pos.right(1:
 plan = plan.applyTransform(T);
 for f = fieldnames(goal_pos)'
   field = f{1};
-  goal_pos.(field)([1,2,3,6]) = goal_pos.(field)([1,2,3,6]) - start_pos.right([1,2,3,6]);
+  G = poseRPY2tform(goal_pos.(field));
+  goal_pos.(field) = tform2poseRPY(T * G);
 end
 
 safe_regions = plan.safe_regions;
@@ -120,11 +121,6 @@ for j = 1:length(safe_regions)
 end
 view(-43,28)
 drawnow
-
-[plan.footsteps(1:2).pos]
-goal_pos.center
-goal_pos.right
-goal_pos.left
 
 try
   [plan, solvertime] = options.method_handle(obj, plan, weights, goal_pos);
