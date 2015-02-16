@@ -269,7 +269,7 @@ RigidBodyManipulator::RigidBodyManipulator(int ndof, int num_featherstone_bodies
 {
   use_new_kinsol = false;
   num_dof=0; NB=0; num_bodies=0; num_frames=0;
-  a_grav = VectorXd::Zero(6);
+  a_grav << 0,0,0,0,0,-9.81;
   resize(ndof,num_featherstone_bodies,num_rigid_body_objects,num_rigid_body_frames);
 }
 
@@ -674,7 +674,7 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
     if (b_compute_second_derivatives && !secondDerivativesCached)
       skip = false;
     for (i = 0; i < num_dof; i++) {
-      if (q[i] != cached_q[i] || q[i] != cached_q[i]) {
+      if (q[i] != cached_q[i] || (qd && qd[i] != cached_v[i])) {
         skip = false;
         break;
       }
@@ -1091,10 +1091,8 @@ void RigidBodyManipulator::doKinematicsNew(double* q, bool compute_gradients, do
   gradients_cached = compute_gradients;
   velocity_kinematics_cached = v != nullptr;
   jdotV_cached = compute_JdotV && velocity_kinematics_cached;
-  for (int i = 0; i < num_dof; i++) {
-    cached_q[i] = q[i];
-    if (v != nullptr) cached_v[i] = v[i];
-  }
+  for (int i = 0; i < num_dof; i++) cached_q[i] = q[i];
+  if (v!=nullptr) for (int i = 0; i < num_velocities; i++) cached_v[i] = v[i];
 }
 
 template <typename Derived>
@@ -1914,7 +1912,7 @@ void RigidBodyManipulator::forwardJacDot(const int body_or_frame_id, const Matri
 
 	MatrixXd tmp = bodies[body_ind]->dTdqdot*Tframe*pts;
 	MatrixXd Jdott = Map<MatrixXd>(tmp.data(),num_dof,3*n_pts);
-	Jdot = Jdott.transpose();
+	Jdot.block(0,0,3*n_pts,num_dof) = Jdott.transpose();
 
 	if (rotation_type==1) {
 
@@ -2603,6 +2601,28 @@ std::string RigidBodyManipulator::getBodyOrFrameName(int body_or_frame_id)
   }
 }
 
+template <typename Scalar>
+GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::positionConstraints(int gradient_order)
+{
+  if (!use_new_kinsol)
+    throw std::runtime_error("method requires new kinsol format");
+  if (gradient_order > 1)
+    throw std::runtime_error("only first order gradients are implemented so far (it's trivial to add more)");
+
+  GradientVar<Scalar, Eigen::Dynamic, 1> ret(3*loops.size(), 1, num_dof, gradient_order);
+  for (int i = 0; i < loops.size(); i++) {
+    auto ptA_in_B = forwardKinNew(loops[i].ptA,loops[i].bodyA,loops[i].bodyB,0,gradient_order);
+
+    ret.value().middleRows(3*i,3) = ptA_in_B.value() - loops[i].ptB;
+
+    if (gradient_order > 0) {
+      ret.gradient().value().middleRows(3*i, 3) = ptA_in_B.gradient().value();
+    }
+  }
+  return ret;
+}
+
+
 
 // explicit instantiations (required for linking):
 template DLLEXPORT_RBM void RigidBodyManipulator::getCMM(double * const, double * const, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<MatrixXd> > &);
@@ -2657,3 +2677,4 @@ template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, 1> RigidBodyManipulat
 template DLLEXPORT_RBM void RigidBodyManipulator::HandC(double* const, double * const, MatrixBase< Map<MatrixXd> > * const, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<VectorXd> > &, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > * const);
 template DLLEXPORT_RBM void RigidBodyManipulator::HandC(double* const, double * const, MatrixBase< MatrixXd > * const, MatrixBase< MatrixXd > &, MatrixBase< VectorXd > &, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > * const);
 
+template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, 1> RigidBodyManipulator::positionConstraints(int);

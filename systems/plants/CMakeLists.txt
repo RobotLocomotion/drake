@@ -32,7 +32,7 @@ if (eigen3_FOUND)
 
   if (Boost_FOUND)
     add_library(drakeRBMurdf URDFRigidBodyManipulator.cpp)
-    target_link_libraries(drakeRBMurdf drakeRBM drakeURDFinterface ${Boost_LIBRARIES})
+    target_link_libraries(drakeRBMurdf drakeRBM drakeGeometryUtil drakeURDFinterface ${Boost_LIBRARIES})
     if (NOT MSVC)
     set_target_properties(drakeRBMurdf PROPERTIES COMPILE_FLAGS -fPIC )
     endif()
@@ -72,7 +72,7 @@ if (eigen3_FOUND)
   add_rbm_mex(inverseDynamicsmex)
 
   add_mex(surfaceTangentsmex surfaceTangentsmex.cpp)
-  
+
   add_library(drakeIKoptions SHARED IKoptions.cpp)
   target_link_libraries(drakeIKoptions drakeRBM drakeUtil)
   macro(add_ikoptions_mex)

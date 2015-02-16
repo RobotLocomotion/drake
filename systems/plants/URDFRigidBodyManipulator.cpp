@@ -6,6 +6,7 @@
 #include <map>
 
 #include "URDFRigidBodyManipulator.h"
+#include "drakeGeometryUtil.h"
 #include "urdf_interface/model.h"
 
 #include <boost/shared_ptr.hpp>
@@ -186,7 +187,7 @@ URDFRigidBodyManipulator::URDFRigidBodyManipulator(void)
 
 void setJointLimits(boost::shared_ptr<urdf::ModelInterface> urdf_model, boost::shared_ptr<urdf::Joint> j, const map<string, int> &dofname_to_dofnum, VectorXd& joint_limit_min, VectorXd& joint_limit_max);
 
-bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _urdf_model, map<string, int> jointname_to_jointnum, map<string,int> dofname_to_dofnum, const string & root_dir)
+bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _urdf_model, map<string, int> jointname_to_jointnum, map<string,int> dofname_to_dofnum, const string& xml_string, const string & root_dir)
 {
   robot_map.insert(make_pair(_urdf_model->getName(),(int)robot_name.size()));
   robot_name.push_back(_urdf_model->getName());
@@ -215,6 +216,7 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
   int robotnum = static_cast<int>(this->robot_name.size())-1;
   for (map<string, boost::shared_ptr<urdf::Link> >::iterator l=_urdf_model->links_.begin(); l!=_urdf_model->links_.end(); l++) {
     int index, _dofnum;
+
     if (l->second->parent_joint) {
     	boost::shared_ptr<urdf::Joint> j = l->second->parent_joint;
     	map<string, int>::const_iterator jn=findWithSuffix(jointname_to_jointnum,j->name);
@@ -226,17 +228,9 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
 
     	bodies[index]->linkname = l->first;
     	bodies[index]->jointname = j->name;
-        if(l->second->inertial == nullptr)
-        {
-          bodies[index]->mass = 0.0;
-        }
-        else
-        {
-          bodies[index]->mass = l->second->inertial->mass;
-        }
-//    	cout << "body[" << index << "] linkname: " << bodies[index]->linkname << ", jointname: " << bodies[index]->jointname << endl;
+//    	cout << "body[" << index << "] linkname: " << bodies[index]->linkname << "(mass: " << bodies[index]->mass << "), jointname: " << bodies[index]->jointname << endl;
 
-        bodies[index]->robotnum = robotnum;
+      bodies[index]->robotnum = robotnum;
 
     	{ // set up parent
     		map<string, boost::shared_ptr<urdf::Link> >::iterator pl=_urdf_model->links_.find(j->parent_link_name);
@@ -345,6 +339,23 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
       dofnum[index-1] = _dofnum;
     }
 
+    if(l->second->inertial != nullptr)
+    {
+      boost::shared_ptr<urdf::Inertial> inertial = l->second->inertial;
+      bodies[index]->mass = inertial->mass;
+      bodies[index]->com << inertial->origin.position.x, inertial->origin.position.y, inertial->origin.position.z, 1.0;
+
+      bodies[index]->I = bodies[index]->mass*Matrix<double,TWIST_SIZE,TWIST_SIZE>::Identity();
+      bodies[index]->I.block(0,0,3,3) << inertial->ixx, inertial->ixy, inertial->ixz,
+                                         inertial->ixy, inertial->iyy, inertial->iyz,
+                                         inertial->ixz, inertial->iyz, inertial->izz;
+
+      Transform<double, 3, 1> T;
+      poseToTransform(inertial->origin,T.matrix());
+      auto I = transformSpatialInertia(T,static_cast<  Gradient<Isometry3d::MatrixType, Eigen::Dynamic>::type* >(NULL),bodies[index]->I);
+      bodies[index]->I = I.value();
+    }
+
     if (!l->second->collision_groups.empty()) { // then at least one collision element exists
       // todo: keep track of which collision elements belong to which groups
       for ( auto c_grp_it = l->second->collision_groups.begin()
@@ -424,9 +435,73 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
         updateCollisionElements(index);  // update static objects only once - right here on load
       }
     }
+
   }
 
-  compile();  
+  compile();
+
+  // parse extra tags supported by drake
+
+  TiXmlDocument xml_doc;
+  xml_doc.Parse(xml_string.c_str());  // a little inefficient to parse a second time, but ok for now
+  // eventually, we'll probably just crop out the ros urdf parser completely.
+
+  TiXmlElement *robot_xml = xml_doc.FirstChildElement("robot");
+
+  // parse transmission elements
+  for (TiXmlElement* transmission_xml = robot_xml->FirstChildElement("transmission"); transmission_xml; transmission_xml = transmission_xml->NextSiblingElement("transmission"))
+  {
+    TiXmlElement* node = transmission_xml->FirstChildElement("joint");
+    if (!node) continue;
+
+    int _dofnum;
+    map<string, int>::const_iterator dn=findWithSuffix(dofname_to_dofnum,node->Attribute("name"));
+    if (dn == dofname_to_dofnum.end()) ROS_ERROR("can't find joint %s for transmission element.  this shouldn't happen");
+    _dofnum = dn->second;
+  //  cout << "adding actuator to joint " << node->Attribute("name") << " (dof: " << _dofnum << ")" << endl;
+
+    node = transmission_xml->FirstChildElement("mechanicalReduction");
+    double gain = 1.0;
+    if (node) sscanf(node->Value(),"%lf",&gain);
+
+    VectorXd B_col = VectorXd::Zero(num_velocities);
+    B_col(_dofnum) = gain;
+
+    B.conservativeResize(num_velocities, B.cols()+1);
+    B.rightCols(1) = B_col;
+  }
+
+  for (TiXmlElement* loop_xml = robot_xml->FirstChildElement("loop_joint"); loop_xml; loop_xml = loop_xml->NextSiblingElement("loop_joint"))
+  { // note: pushing this in without all of the surrounding drakeFunction logic just to get things moving.  this one needs to be fast.
+    urdf::Vector3 pt;
+    TiXmlElement* node = loop_xml->FirstChildElement("link1");
+    int bodyA=-1,bodyB=-1;
+
+    string linkname = node->Attribute("link");
+    for (int i=0; i<num_bodies; i++)
+      if (linkname==bodies[i]->linkname) {
+        bodyA=i;
+        break;
+      }
+    if (bodyA<0) ROS_ERROR("couldn't find link referenced in loop joint");
+    pt.init(node->Attribute("xyz"));
+    Vector3d ptA;  ptA << pt.x, pt.y, pt.z;
+
+    node = loop_xml->FirstChildElement("link2");
+    linkname = node->Attribute("link");
+    for (int i=0; i<num_bodies; i++)
+      if (linkname==bodies[i]->linkname) {
+        bodyB=i;
+        break;
+      }
+    if (bodyB<0) ROS_ERROR("couldn't find link referenced in loop joint");
+    pt.init(node->Attribute("xyz"));
+    Vector3d ptB;  ptB << pt.x, pt.y, pt.z;
+
+    RigidBodyLoop l(bodyA,ptA,bodyB,ptB);
+    loops.push_back(l);
+  }
+
   return true;
 }
 
@@ -601,7 +676,7 @@ boost::shared_ptr<ModelInterface> parseURDF(const string &xml_string)
     model.reset();
     return model;
   }
- 
+
   return model;
 }
 
@@ -774,7 +849,7 @@ bool URDFRigidBodyManipulator::addURDFfromXML(const string &xml_string, const st
   }
   
   // now populate my model class
-  addURDF(_urdf_model,jointname_to_jointnum,dofname_to_dofnum,root_dir);
+  addURDF(_urdf_model,jointname_to_jointnum,dofname_to_dofnum,xml_string,root_dir);
   return true;
 }
 

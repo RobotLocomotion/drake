@@ -111,7 +111,7 @@ s-model_articulated - articulated version of the robotiq s-model,
       <geometry>
         <cylinder length=".02858" radius="0.001"/>
       </geometry>
-      <material>
+      <material name="fourbar"> 
         <color rgba=".6353 .6353 .6353 1"/>
       </material>
     </visual>
@@ -126,7 +126,7 @@ s-model_articulated - articulated version of the robotiq s-model,
       <geometry>
         <cylinder length=".05398" radius="0.001"/>
       </geometry>
-      <material>
+      <material name="fourbar"> 
         <color rgba=".6353 .6353 .6353 1"/>
       </material>
     </visual>
@@ -141,7 +141,7 @@ s-model_articulated - articulated version of the robotiq s-model,
       <geometry>
         <cylinder length=".01473" radius="0.001"/>
       </geometry>
-      <material>
+      <material name="fourbar"> 
         <color rgba=".6353 .6353 .6353 1"/>
       </material>
     </visual>
@@ -156,7 +156,7 @@ s-model_articulated - articulated version of the robotiq s-model,
       <geometry>
         <cylinder length=".02222" radius="0.001"/>
       </geometry>
-      <material>
+      <material name="fourbar"> 
         <color rgba=".6353 .6353 .6353 1"/>
       </material>
     </visual>
@@ -171,7 +171,7 @@ s-model_articulated - articulated version of the robotiq s-model,
       <geometry>
         <cylinder length=".03810" radius="0.001"/>
       </geometry>
-      <material>
+      <material name="fourbar"> 
         <color rgba=".6353 .6353 .6353 1"/>
       </material>
     </visual>
@@ -186,7 +186,7 @@ s-model_articulated - articulated version of the robotiq s-model,
       <geometry>
         <cylinder length=".01270" radius="0.001"/>
       </geometry>
-      <material>
+      <material name="fourbar"> 
         <color rgba=".6353 .6353 .6353 1"/>
       </material>
     </visual>
@@ -201,7 +201,7 @@ s-model_articulated - articulated version of the robotiq s-model,
       <geometry>
         <cylinder length=".015236" radius="0.001"/>
       </geometry>
-      <material>
+      <material name="fourbar"> 
         <color rgba=".6353 .6353 .6353 1"/>
       </material>
     </visual>
@@ -443,7 +443,7 @@ s-model_articulated - articulated version of the robotiq s-model,
       <geometry>
         <cylinder length=".02858" radius="0.001"/>
       </geometry>
-      <material>
+      <material name="fourbar">
         <color rgba=".6353 .6353 .6353 1"/>
       </material>
     </visual>
@@ -458,7 +458,7 @@ s-model_articulated - articulated version of the robotiq s-model,
       <geometry>
         <cylinder length=".05398" radius="0.001"/>
       </geometry>
-      <material>
+      <material name="fourbar">
         <color rgba=".6353 .6353 .6353 1"/>
       </material>
     </visual>
@@ -473,7 +473,7 @@ s-model_articulated - articulated version of the robotiq s-model,
       <geometry>
         <cylinder length=".01473" radius="0.001"/>
       </geometry>
-      <material>
+      <material name="fourbar">
         <color rgba=".6353 .6353 .6353 1"/>
       </material>
     </visual>
@@ -488,7 +488,7 @@ s-model_articulated - articulated version of the robotiq s-model,
       <geometry>
         <cylinder length=".02222" radius="0.001"/>
       </geometry>
-      <material>
+      <material name="fourbar">
         <color rgba=".6353 .6353 .6353 1"/>
       </material>
     </visual>
@@ -503,7 +503,7 @@ s-model_articulated - articulated version of the robotiq s-model,
       <geometry>
         <cylinder length=".03810" radius="0.001"/>
       </geometry>
-      <material>
+      <material name="fourbar">
         <color rgba=".6353 .6353 .6353 1"/>
       </material>
     </visual>
@@ -518,7 +518,7 @@ s-model_articulated - articulated version of the robotiq s-model,
       <geometry>
         <cylinder length=".01270" radius="0.001"/>
       </geometry>
-      <material>
+      <material name="fourbar">
         <color rgba=".6353 .6353 .6353 1"/>
       </material>
     </visual>
@@ -533,7 +533,7 @@ s-model_articulated - articulated version of the robotiq s-model,
       <geometry>
         <cylinder length=".015236" radius="0.001"/>
       </geometry>
-      <material>
+      <material name="fourbar">
         <color rgba=".6353 .6353 .6353 1"/>
       </material>
     </visual>
@@ -775,7 +775,7 @@ s-model_articulated - articulated version of the robotiq s-model,
       <geometry>
         <cylinder length=".02858" radius="0.001"/>
       </geometry>
-      <material>
+      <material name="fourbar"> 
         <color rgba=".6353 .6353 .6353 1"/>
       </material>
     </visual>
@@ -790,7 +790,7 @@ s-model_articulated - articulated version of the robotiq s-model,
       <geometry>
         <cylinder length=".05398" radius="0.001"/>
       </geometry>
-      <material>
+      <material name="fourbar"> 
         <color rgba=".6353 .6353 .6353 1"/>
       </material>
     </visual>
@@ -805,7 +805,7 @@ s-model_articulated - articulated version of the robotiq s-model,
       <geometry>
         <cylinder length=".01473" radius="0.001"/>
       </geometry>
-      <material>
+      <material name="fourbar"> 
         <color rgba=".6353 .6353 .6353 1"/>
       </material>
     </visual>
@@ -820,7 +820,7 @@ s-model_articulated - articulated version of the robotiq s-model,
       <geometry>
         <cylinder length=".02222" radius="0.001"/>
       </geometry>
-      <material>
+      <material name="fourbar"> 
         <color rgba=".6353 .6353 .6353 1"/>
       </material>
     </visual>
@@ -835,7 +835,7 @@ s-model_articulated - articulated version of the robotiq s-model,
       <geometry>
         <cylinder length=".03810" radius="0.001"/>
       </geometry>
-      <material>
+      <material name="fourbar"> 
         <color rgba=".6353 .6353 .6353 1"/>
       </material>
     </visual>
@@ -850,7 +850,7 @@ s-model_articulated - articulated version of the robotiq s-model,
       <geometry>
         <cylinder length=".01270" radius="0.001"/>
       </geometry>
-      <material>
+      <material name="fourbar"> 
         <color rgba=".6353 .6353 .6353 1"/>
       </material>
     </visual>
@@ -865,7 +865,7 @@ s-model_articulated - articulated version of the robotiq s-model,
       <geometry>
         <cylinder length=".015236" radius="0.001"/>
       </geometry>
-      <material>
+      <material name="fourbar"> 
         <color rgba=".6353 .6353 .6353 1"/>
       </material>
     </visual>
