@@ -26,13 +26,13 @@ classdef RigidBodyManipulator < Manipulator
     % That output does not change between compilations, and is requested
     % at every simulation dt, so storing it can speed things up.
     cached_terrain_contact_points_struct=[];
-                                            
+
     frame = [];     % array of RigidBodyFrame objects
 
     robot_state_frames;
     robot_position_frames;
     robot_velocity_frames;
-    
+
     use_new_kinsol = false;
   end
 
@@ -43,7 +43,29 @@ classdef RigidBodyManipulator < Manipulator
     dirty = true;
     collision_filter_groups;  % map of CollisionFilterGroup objects
   end
-  
+
+  properties (Constant) % mex interface commands.  copy and paste this from rigidBodyManipulatormex.cpp
+    CONSTRUCT_MODEL_COMMAND = 1,
+    H_AND_C_COMMAND = 2,
+    DO_KINEMATICS_COMMAND = 3,
+    FORWARD_KIN_COMMAND = 4,
+    BODY_KIN_COMMAND = 5,
+    COLLISION_DETECT_COMMAND = 6,
+    SMOOTH_DISTANCE_PENALTY_COMMAND = 7,
+    COLLISION_RAYCAST_COMMAND = 8,
+    ALL_COLLISIONS_COMMAND = 9,
+    GET_CMM_COMMAND = 10,
+    FIND_KINEMATIC_PATH_COMMAND = 11,
+    GEOMETRIC_JACOBIAN_COMMAND = 12,
+    DO_KINEMATICS_NEW_COMMAND = 13,
+    FORWARD_KIN_V_COMMAND = 14,
+    FORWARD_KIN_POSITION_GRADIENT_COMMAND = 15,
+    CENTER_OF_MASS_COMMAND = 16,
+    CENTROIDAL_MOMENTUM_MATRIX_COMMAND = 17,
+    MASS_MATRIX_COMMAND = 18,
+    INVERSE_DYNAMICS_COMMAND = 19
+  end
+
   methods
     function obj = RigidBodyManipulator(filename,options)
       % Construct a new rigid body manipulator object with a single (empty)
@@ -66,7 +88,7 @@ classdef RigidBodyManipulator < Manipulator
       if isfield(options,'use_new_kinsol')
         obj.use_new_kinsol = options.use_new_kinsol;
       end
-      
+
       if (nargin>0 && ~isempty(filename))
         [path,name,ext]=fileparts(filename);
         if strcmpi(ext,'.urdf')
@@ -75,7 +97,7 @@ classdef RigidBodyManipulator < Manipulator
           obj = addRobotFromSDF(obj,filename,zeros(3,1),zeros(3,1),options);
         else
           error('Drake:RigidBodyManipulator:UnsupportedFileExtension','Unrecognized file extension: %s',ext);
-        end          
+        end
       end
     end
   end
@@ -132,7 +154,7 @@ classdef RigidBodyManipulator < Manipulator
       obj.use_new_kinsol = flag;
       obj = compile(obj);
     end
-    
+
     function [Vq, dVq] = qdotToV(obj, q)
       compute_gradient = nargout > 1;
 
@@ -220,7 +242,7 @@ classdef RigidBodyManipulator < Manipulator
     function obj = addTerrainGeometries(varargin)
       errorDeprecatedFunction('addTerrainGeometry')
     end
-    
+
     function obj = addTerrainGeometry(obj)
       if ~isempty(obj.terrain)
         geom = obj.terrain.getCollisionGeometry();
@@ -245,7 +267,7 @@ classdef RigidBodyManipulator < Manipulator
         end
       end
     end
-    
+
     function obj = removeTerrainGeometries(varargin)
       errorDeprecatedFunction('removeTerrainGeometry');
     end
@@ -259,7 +281,7 @@ classdef RigidBodyManipulator < Manipulator
         geom = obj.terrain.getVisualGeometry();
         geom_visual_idx = cellfun(@(geometry) isequal(geom,geometry),obj.body(1).visual_geometry);
         obj.body(1).visual_geometry(geom_visual_idx) = [];
-        
+
         obj.dirty = true;
       end
     end
@@ -345,7 +367,7 @@ classdef RigidBodyManipulator < Manipulator
     function [f_friction, df_frictiondv] = computeFrictionForce(model,v)
       % Note: gradient is with respect to v, not q!
       compute_gradient = nargout > 1;
-      
+
       nv = model.getNumVelocities();
       damping = zeros(nv, 1);
       coulomb_friction = zeros(nv, 1);
@@ -364,7 +386,7 @@ classdef RigidBodyManipulator < Manipulator
       if compute_gradient
         df_frictiondv = diag(damping);
       end
-      
+
       if any(coulomb_friction)
         f_friction = f_friction + min(1,max(-1,v./coulomb_window')).*coulomb_friction';
         if compute_gradient
@@ -421,7 +443,7 @@ classdef RigidBodyManipulator < Manipulator
       id = length(model.body);
       model.dirty = true;
     end
-    
+
     function model=addJoint(model,name,type,parent_ind,child_ind,xyz,rpy,axis,damping,coulomb_friction,static_friction,coulomb_window,limits)
       % @ingroup Kinematic Tree
       typecheck(parent_ind,'double');
@@ -653,7 +675,7 @@ classdef RigidBodyManipulator < Manipulator
       % @param sensor sensor to add
       %
       % @retval new RigidBodyManipulator with the sensor added.
-      
+
       typecheck(sensor,'RigidBodySensor');
       model.sensor{end+1}=sensor;
       model.dirty = true;
@@ -682,7 +704,7 @@ classdef RigidBodyManipulator < Manipulator
         end
         i=i+1;
       end
-      
+
       %% update RigidBodyElements
       % todo: use applyToAllRigidBodyElements (but will have to generalize
       % it to take multiple outputs, or make sure onCompile doesn't have to
@@ -812,7 +834,7 @@ classdef RigidBodyManipulator < Manipulator
       if getNumPositions(model)>0
         model = model.setJointLimits([model.body.joint_limit_min]',[model.body.joint_limit_max]');
       end
-      
+
       model = model.setInputLimits(u_limit(:,1),u_limit(:,2));
 
       %% check basic assumption from kinematics:
@@ -837,10 +859,10 @@ classdef RigidBodyManipulator < Manipulator
 
       % cache the full set of terrain contact points
       model.cached_terrain_contact_points_struct = model.getTerrainContactPoints();
-      
+
       % can't really add the full complementarity constraints here,
-      % since the state constraints only take x as the input.  so 
-      % just adding the non-penetration constraints 
+      % since the state constraints only take x as the input.  so
+      % just adding the non-penetration constraints
       function [phi,dphi,ddphi] = nonpenetrationConstraint(q)
         kinsol = doKinematics(model,q);
         if nargout>2
@@ -851,7 +873,7 @@ classdef RigidBodyManipulator < Manipulator
           phi = contactConstraints(model,kinsol,false,model.contact_options);
         end
       end
-      
+
       if (model.num_contact_pairs>0)
         nonpenetration_constraint = FunctionHandleConstraint(zeros(model.num_contact_pairs,1),inf(model.num_contact_pairs,1),model.getNumPositions,@nonpenetrationConstraint,2);
         nonpenetration_constraint = nonpenetration_constraint.setName(cellstr(num2str([idxA;idxB]','non-penetration: body %d <-> body %d')));
@@ -864,7 +886,7 @@ classdef RigidBodyManipulator < Manipulator
       elseif ~isempty(model.contact_constraint_id)
         model = updateStateConstraint(model,model.contact_constraint_id,NullConstraint(model.getNumPositions),1:model.getNumPositions);
       end
-      
+
       for j=1:length(model.loop)
         [loop,model] = updateConstraints(model.loop(j),model);
         model.loop(j) = loop;
@@ -877,7 +899,7 @@ classdef RigidBodyManipulator < Manipulator
           model = updatePositionEqualityConstraint(model,j,DrakeFunctionConstraint(model.position_constraints{j}.lb,model.position_constraints{j}.ub,setRigidBodyManipulator(model.position_constraints{j}.fcn,model)));
         end
       end
-      
+
       if (model.num_contact_pairs>0)
         warning('Drake:RigidBodyManipulator:UnsupportedContactPoints','Contact is not supported by the dynamics methods of this class.  Consider using TimeSteppingRigidBodyManipulator or HybridPlanarRigidBodyManipulator');
       end
@@ -891,8 +913,8 @@ classdef RigidBodyManipulator < Manipulator
     function indices = findJointIndices(model, str)
       model.warning_manager.warnOnce('Drake:RigidBodyManipulator:findJointIndicesDeprecated','findJointIndices has been replaced with findPositionIndices.  please update your code');
       indiced = findPositionIndices(model,str);
-    end    
-    
+    end
+
     function indices = findPositionIndices(model, str)
       %findPositionIndices Returns position indices in the state vector for joints whose
       % name contains a specified string.
@@ -908,13 +930,13 @@ classdef RigidBodyManipulator < Manipulator
       %   @retvall indices array of indices into state vector
       indices = find(~cellfun('isempty',strfind(model.getStateFrame().coordinates((getNumPositions(model)+1):end),str)));
     end
-    
-    
+
+
     function body_ind = findLinkInd(model,varargin)
       model.warning_manager.warnOnce('Drake:RigidBodyManipulator:finkLinkIndDeprecated','findLinkInd has been replaced with findLinkId.  please update your code');
       body_ind = findLinkId(model,varargin{:});
     end
-    
+
     function body_id = findLinkId(model,linkname,robot,error_level)
       % @param robot can be the robot number or the name of a robot
       % robot=0 means look at all robots
@@ -924,8 +946,8 @@ classdef RigidBodyManipulator < Manipulator
       linkname = lower(linkname);
       linkname=regexprep(linkname, '[\[\]\\\/\.]+', '_', 'preservecase');
 
-      if ischar(robot) 
-        robot = strmatch(lower(robot),lower(model.name)); 
+      if ischar(robot)
+        robot = strmatch(lower(robot),lower(model.name));
       end
       items = strfind(lower({model.body.linkname}),linkname);
       ind = find(~cellfun(@isempty,items));
@@ -980,7 +1002,7 @@ classdef RigidBodyManipulator < Manipulator
     function is_valid = isValidLinkIndex(obj,idx)
       model.warning_manager.warnOnce('Drake:RigidBodyManipulator:isValidLinkIndexDeprecated','isValidLinkIndex has been replaced with isValidLinkId.  please update your code');
     end
-    
+
     function is_valid = isValidLinkId(obj,id)
       % @ingroup Kinematic Tree
       if ~isnumeric(id)
@@ -1027,7 +1049,7 @@ classdef RigidBodyManipulator < Manipulator
       model.force{force_ind} = force;
       model.dirty = true;
     end
-    
+
     function [model,frame_id] = addFrame(model,frame)
       % @ingroup Kinematic Tree
       typecheck(frame,'RigidBodyFrame');
@@ -1073,7 +1095,7 @@ classdef RigidBodyManipulator < Manipulator
           k=k+1;
         end
       end
-      
+
       model = applyToAllRigidBodyElements(model,'updateParams',fr.getPoly,p);
 
       model = compile(model);
@@ -1104,7 +1126,7 @@ classdef RigidBodyManipulator < Manipulator
       model.body(body_ind_or_joint_name).pitch = nan;
       model.dirty = true;
     end
-    
+
     function body_ind = findJointInd(model,varargin)
       model.warning_manager.warnOnce('Drake:RigidBodyManipulator:finkJointIndDeprecated','findJointInd has been replaced with findJointId.  please update your code');
       body_ind = findJointId(model,varargin{:});
@@ -1227,7 +1249,7 @@ classdef RigidBodyManipulator < Manipulator
     function varargout = getContactShapeGroupNames(varargin)
       errorDeprecatedFunction('getCollisionGeometryGroupNames');
     end
-    
+
     function groups = getCollisionGeometryGroupNames(model)
       groups = {};
       for i=1:length(model.body)
@@ -1266,8 +1288,8 @@ classdef RigidBodyManipulator < Manipulator
       % @param robotnum       -- Vector of robot indices to which operation
       %                          will be restricted. Optional.
       %                          @default 1:numel(model.name)
-      % @param body_ids       -- Vector of body indices to which operation 
-      %                          will be restricted. Optional. 
+      % @param body_ids       -- Vector of body indices to which operation
+      %                          will be restricted. Optional.
       %                          @default 1:numel(model.body)
       if nargin < 4,          body_ids = 1:numel(model.body); end
       if nargin < 3,          robotnum = 1:numel(model.name); end
@@ -1323,7 +1345,7 @@ classdef RigidBodyManipulator < Manipulator
         end
       end
     end
-    
+
     function obj = addContactShapeToBody(varargin)
       errorDeprecatedFunction('addCollisionGeometryToBody');
     end
@@ -1343,7 +1365,7 @@ classdef RigidBodyManipulator < Manipulator
       obj.body(body_idx) = obj.body(body_idx).addCollisionGeometry(geometry, varargin{:});
       obj.dirty = true;
     end
-    
+
     function varargout = addVisualShapeToBody(varargin)
       errorDeprecatedFunction('addVisualGeometryToBody');
     end
@@ -1357,7 +1379,7 @@ classdef RigidBodyManipulator < Manipulator
       body_idx = obj.parseBodyOrFrameID(body_id);
       obj.body(body_idx).visual_geometry{end+1} = geometry;
     end
-    
+
     function varargout = addShapeToBody(varargin)
       errorDeprecatedFunction('addGeometryToBody');
     end
@@ -1373,11 +1395,11 @@ classdef RigidBodyManipulator < Manipulator
       obj = obj.addVisualGeometryToBody(body_id,geometry);
       obj = obj.addCollisionGeometryToBody(body_id,geometry,varargin{:});
     end
-    
+
     function varargout = removeShapeFromBody(varargin)
       errorDeprecatedFunction('removeVisualGeometryFromBody');
     end
-    
+
     function obj = removeVisualGeometryFromBody(obj, body_id, geometry_name)
       % Removes all geometry from a given body that match a name
       %
@@ -1385,25 +1407,25 @@ classdef RigidBodyManipulator < Manipulator
       % @param geometry_name name to match (will remove the first match)
       %
       % @retval obj updated object
-      
+
       body_idx = obj.parseBodyOrFrameID(body_id);
-      
+
       removed_count = 0;
-      
+
       for i = 1:length(obj.body(body_idx).visual_geometry)
 
         index = i - removed_count;
-        
+
         if strcmp(obj.body(body_idx).visual_geometry{index}.name, geometry_name) == true
 
           % remove this geometry
           obj.body(body_idx).visual_geometry(index) = [];
           removed_count = removed_count + 1;
-          
+
         end
       end
     end
-    
+
     function varargout = replaceContactShapesWithCHull(varargin)
       errorDeprecatedFunction('replaceCollisionGeometryWithConvexHull');
     end
@@ -1573,7 +1595,7 @@ classdef RigidBodyManipulator < Manipulator
       end
     end
 
-    function [T,U] = energy(model, x)  
+    function [T,U] = energy(model, x)
       % @param x the state vector
       % @retval T the total kinetic energy
       % @retval U the total potential energy
@@ -1594,7 +1616,7 @@ classdef RigidBodyManipulator < Manipulator
             U = U - mass*model.gravity'*com;
           end
         end
-        
+
         for i=1:length(model.force)
           [thisT,thisU] = energy(model.force{i},model,q,v);
           T = T+thisT;
@@ -1602,7 +1624,7 @@ classdef RigidBodyManipulator < Manipulator
         end
       end
     end
-    
+
     function body = newBody(model)
       % @ingroup Kinematic Tree
       errorDeprecatedFunction('RigidBody()');  % since it doesn't actually serve any purpose now that planar rigid bodies are rigid bodies.
@@ -1920,7 +1942,7 @@ classdef RigidBodyManipulator < Manipulator
       % Parses parameter strings from URDFs and returns either the value or
       % a msspoly expression for later use with
       % RigidBodyElement.bindParams().
-      % 
+      %
       % @ingroup URDF Parsing
       %
       % @param model model we are building from a URDF
@@ -1945,7 +1967,7 @@ classdef RigidBodyManipulator < Manipulator
         % get the default value
         pstr2 = regexprep(str,'\$(\w+)','model.param_db{robotnum}.(''$1'').value');
         default_value = eval(['[',pstr2,']']);
-        
+
       end
     end
 
@@ -2036,12 +2058,12 @@ classdef RigidBodyManipulator < Manipulator
     function fr = getPositionFrame(obj,robotnum)
       % if robotnum is not specified, then it returns a position frame
       % including all position variables (for all robots)
-      if getNumPositions(obj)<1, 
-        fr = CoordinateFrame('JointPositions',0); 
+      if getNumPositions(obj)<1,
+        fr = CoordinateFrame('JointPositions',0);
         return;
       end
-      
-      if nargin<2, 
+
+      if nargin<2,
         fr = MultiCoordinateFrame.constructFrame(obj.robot_position_frames,[],true);
       else
         fr = obj.robot_position_frames{robotnum};
@@ -2051,18 +2073,18 @@ classdef RigidBodyManipulator < Manipulator
     function fr = getVelocityFrame(obj,robotnum)
       % if robotnum is not specified, then it returns a velocity frame
       % including all velocity variables (for all robots)
-      if getNumVelocities(obj)<1, 
-        fr = CoordinateFrame('JointVelocities',0); 
+      if getNumVelocities(obj)<1,
+        fr = CoordinateFrame('JointVelocities',0);
         return;
       end
-      
+
       if nargin<2,
         fr = MultiCoordinateFrame.constructFrame(obj.robot_velocity_frames,[],true);
       else
         fr = obj.robot_velocity_frames{robotnum};
       end
     end
-    
+
     function fr = getStateFrame(obj,robotnum)
       % if robotnum is not specified, then it returns a state frame
       % including all state variables (for all robots)
@@ -2088,9 +2110,9 @@ classdef RigidBodyManipulator < Manipulator
     end
 
     function obj = createMexPointer(obj)
-      if (exist('constructModelmex')==3)
+      if (exist('rigidBodyManipulatormex')==3)
 %        obj.mex_model_ptr = debugMexEval('constructModelmex',obj);
-        obj.mex_model_ptr = constructModelmex(obj);
+        obj.mex_model_ptr = rigidBodyManipulatormex(obj.CONSTRUCT_MODEL_COMMAND,obj);
       end
     end
 
@@ -2173,7 +2195,7 @@ classdef RigidBodyManipulator < Manipulator
           inputparents = [inputparents model.body(frame.body_ind)];
           inputnames{end+1} = model.force{i}.name;
         end
-        
+
       end
       for i=1:length(model.name)
         robot_inputs = [inputparents.robotnum]==i;
@@ -2546,10 +2568,10 @@ classdef RigidBodyManipulator < Manipulator
       map(map_from_new_to_old) = 1:length(model.body);
       map = [0,map];
       mapfun = @(i) map(i+1);
-      
+
       model = applyToAllRigidBodyElements(model,'updateBodyIndices',mapfun);
     end
-    
+
     function model = applyToAllRigidBodyElements(model,fcn,varargin)
       for i=1:length(model.body)
         model.body(i) = feval(fcn,model.body(i),varargin{:});

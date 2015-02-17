@@ -4,7 +4,7 @@ function kinsol = doKinematics(model, q, v, options, qd_old)
 % quantities such as Jacobians (@see forwardKin, @see geometricJacobian),
 % mass matrix and dynamics bias (@see manipulatorDynamics), and other
 % biases, e.g. Jdot * v (@see geometricJacobianDotTimesV).
-% 
+%
 % @param q joint position vector. Must be model.getNumPositions() x 1
 % @param v joint velocity vector. Must be model.getNumVelocities() x 1 or
 % empty
@@ -28,7 +28,7 @@ function kinsol = doKinematics(model, q, v, options, qd_old)
 % not attempt to use kinsol directly (our contract is simply that it can
 % always be used by other kinematics and dynamics methods in Drake.
 %
-% Note: old method signature: 
+% Note: old method signature:
 % kinsol = doKinematics(model,q,b_compute_second_derivatives,use_mex,qd)
 % This method signature is deprecated, please transition to using the
 % options struct. Using the old signature is supported for now.
@@ -78,16 +78,16 @@ end
 
 if model.use_new_kinsol
   kinsol = doKinematicsNew(model, q, v, options);
-else  
+else
   kinsol.q = q;
   kinsol.qd = v;
-  
+
   if (options.use_mex && model.mex_model_ptr~=0 && isnumeric(q))
-    doKinematicsmex(model.mex_model_ptr,q,options.compute_gradients,v);
+    rigidBodyManipulatormex(model.DO_KINEMATICS_COMMAND,model.mex_model_ptr,q,options.compute_gradients,v);
     kinsol.mex = true;
   else
     kinsol.mex = false;
-    
+
     nq = getNumPositions(model);
     nb = length(model.body);
     kinsol.T = cell(1,nb);
@@ -112,10 +112,10 @@ else
         [rx,drx,ddrx] = rotx(qi(4)); [ry,dry,ddry] = roty(qi(5)); [rz,drz,ddrz] = rotz(qi(6));
         TJ = [rz*ry*rx,qi(1:3);zeros(1,3),1];
         kinsol.T{i}=kinsol.T{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint;
-        
+
         % see notes below
         kinsol.dTdq{i} = kinsol.dTdq{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint;
-        
+
         dTJ = cell(6,1);
         dTJ{1} = sparse(1,4,1,4,4);
         dTJ{2} = sparse(2,4,1,4,4);
@@ -123,12 +123,12 @@ else
         dTJ{4} = [rz*ry*drx,zeros(3,1); zeros(1,4)];
         dTJ{5} = [rz*dry*rx,zeros(3,1); zeros(1,4)];
         dTJ{6} = [drz*ry*rx,zeros(3,1); zeros(1,4)];
-        
+
         for j=1:6
           this_dof_ind = body.position_num(j)+0:nq:3*nq;
           kinsol.dTdq{i}(this_dof_ind,:) = kinsol.dTdq{i}(this_dof_ind,:) + kinsol.T{body.parent}(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*dTJ{j}*body.T_body_to_joint;
         end
-        
+
         if (options.compute_gradients)
           ddTJ = cell(6,6);
           % if j<=3 or k<=3, then ddTJ{j,k} = zeros(4); so I've left them out
@@ -141,16 +141,16 @@ else
           ddTJ{6,4} = [drz*ry*drx,zeros(3,1); zeros(1,4)];
           ddTJ{6,5} = [drz*dry*rx,zeros(3,1); zeros(1,4)];
           ddTJ{6,6} = [ddrz*ry*rx,zeros(3,1); zeros(1,4)];
-          
+
           % ddTdqdq = [d(dTdq)dq1; d(dTdq)dq2; ...]
           kinsol.ddTdqdq{i} = kinsol.ddTdqdq{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint;
           for j = 1:6
             ind = 3*nq*(body.position_num(j)-1) + (1:3*nq); %ddTdqdqj
             kinsol.ddTdqdq{i}(ind,:) = kinsol.ddTdqdq{i}(ind,:) + kinsol.dTdq{body.parent}*body.Ttree*inv(body.T_body_to_joint)*dTJ{j}*body.T_body_to_joint;
-            
+
             ind = reshape(reshape(body.position_num(j)+0:nq:3*nq*nq,3,[])',[],1); %ddTdqjdq
             kinsol.ddTdqdq{i}(ind,:) = kinsol.ddTdqdq{i}(ind,:) + kinsol.dTdq{body.parent}*body.Ttree*inv(body.T_body_to_joint)*dTJ{j}*body.T_body_to_joint;
-            
+
             if (j>=4)
               for k = 4:6
                 ind = 3*nq*(body.position_num(k)-1) + (body.position_num(j)+0:nq:3*nq);  % ddTdqjdqk
@@ -158,11 +158,11 @@ else
               end
             end
           end
-          
+
         else
           kinsol.ddTdqdq{i} = [];
         end
-        
+
         if isempty(v)
           kinsol.Tdot{i} = [];
           kinsol.dTdqdot{i} = [];
@@ -178,7 +178,7 @@ else
           for j=1:6
             TJdot = TJdot+dTJ{j}*qdi(j);
           end
-          
+
           kinsol.Tdot{i} = kinsol.Tdot{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint + kinsol.T{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJdot*body.T_body_to_joint;
           kinsol.dTdqdot{i} = kinsol.dTdqdot{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint + kinsol.dTdq{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJdot*body.T_body_to_joint;
           for j=1:6
@@ -190,36 +190,36 @@ else
         qi = q(body.position_num);  % qi is 7x1
         TJ = [quat2rotmat(qi(4:7)),qi(1:3);zeros(1,3),1];
         kinsol.T{i}=kinsol.T{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint;
-        
+
         warning('first derivatives of quaternion floating base not implemented yet');
       else
         qi = q(body.position_num);
-        
+
         TJ = Tjcalc(body.pitch,qi);
         kinsol.T{i}=kinsol.T{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint;
-        
+
         % note the unusual format of dTdq (chosen for efficiently calculating jacobians from many pts)
         % dTdq = [dT(1,:)dq1; dT(1,:)dq2; ...; dT(1,:)dqN; dT(2,:),dq1 ...]
         dTJ = dTjcalc(body.pitch,qi);
         kinsol.dTdq{i} = kinsol.dTdq{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint;
         this_dof_ind = body.position_num+0:nq:3*nq;
         kinsol.dTdq{i}(this_dof_ind,:) = kinsol.dTdq{i}(this_dof_ind,:) + kinsol.T{body.parent}(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*dTJ*body.T_body_to_joint;
-        
+
         if (options.compute_gradients)
           % ddTdqdq = [d(dTdq)dq1; d(dTdq)dq2; ...]
           kinsol.ddTdqdq{i} = kinsol.ddTdqdq{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint;
-          
+
           ind = 3*nq*(body.position_num-1) + (1:3*nq);  %ddTdqdqi
           kinsol.ddTdqdq{i}(ind,:) = kinsol.ddTdqdq{i}(ind,:) + kinsol.dTdq{body.parent}*body.Ttree*inv(body.T_body_to_joint)*dTJ*body.T_body_to_joint;
-          
+
           ind = reshape(reshape(body.position_num+0:nq:3*nq*nq,3,[])',[],1); % ddTdqidq
           kinsol.ddTdqdq{i}(ind,:) = kinsol.ddTdqdq{i}(ind,:) + kinsol.dTdq{body.parent}*body.Ttree*inv(body.T_body_to_joint)*dTJ*body.T_body_to_joint;
-          
+
           ddTJ = ddTjcalc(body.pitch,qi);
           ind = 3*nq*(body.position_num-1) + this_dof_ind;  % ddTdqidqi
           kinsol.ddTdqdq{i}(ind,:) = kinsol.ddTdqdq{i}(ind,:) + kinsol.T{body.parent}(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*ddTJ*body.T_body_to_joint;  % body.jsign^2 is there, but unnecessary (since it's always 1)
         end
-        
+
         if ~isempty(v)
           qdi = v(body.position_num);
           TJdot = dTJ*qdi;
@@ -243,11 +243,11 @@ kinsol.q = q;
 kinsol.v = v;
 
 if (options.use_mex && model.mex_model_ptr~=0 && isnumeric(q))
-  doKinematicsNewmex(model.mex_model_ptr,q,options.compute_gradients,v,options.compute_JdotV);
+  rigidBodyManipulatormex(model.DO_KINEMATICS_NEW_COMMAND,model.mex_model_ptr,q,options.compute_gradients,v,options.compute_JdotV);
   kinsol.mex = true;
 else
   kinsol.mex = false;
-  
+
   bodies = model.body;
   kinsol.T = computeTransforms(bodies, q);
   if options.compute_gradients
@@ -256,7 +256,7 @@ else
     S = computeMotionSubspaces(bodies, q);
   end
   kinsol.J = computeJ(kinsol.T, S);
-  
+
   if options.compute_gradients
     [kinsol.qdotToV, kinsol.dqdotToVdq] = computeQdotToV(bodies, q);
     [kinsol.vToqdot, kinsol.dvToqdotdq] = computeVToqdot(bodies, q);
@@ -264,12 +264,12 @@ else
     kinsol.qdotToV = computeQdotToV(bodies, q);
     kinsol.vToqdot = computeVToqdot(bodies, q);
   end
-  
+
   if options.compute_gradients
     kinsol.dTdq = computeTransformGradients(bodies, kinsol.T, S, kinsol.qdotToV, length(q));
     kinsol.dJdq = computedJdq(bodies, kinsol.T, S, kinsol.dTdq, dSdq);
   end
-  
+
   if ~isempty(v)
     if options.compute_gradients
       [kinsol.twists, kinsol.dtwistsdq] = computeTwistsInBaseFrame(bodies, kinsol.J, v, kinsol.dJdq);
@@ -334,7 +334,7 @@ ret{1} = zeros(16, nq);
 for i = 2 : nb
   body = bodies(i);
   T_body_to_parent = T{body.parent} \ T{i};
-  
+
   dT_body_to_parentdqi = dHomogTrans(T_body_to_parent, S{i}, qdotToV{i});
   dT_body_to_parentdq = zeros(numel(T{i}), nq) * dT_body_to_parentdqi(1); % to make TaylorVar work better
   dT_body_to_parentdq(:, body.position_num) = dT_body_to_parentdqi;
@@ -440,11 +440,11 @@ end
 for i = 2 : nb
   body = bodies(i);
   vBody = v(body.velocity_num);
-  
+
   parentTwist = twists{body.parent};
   jointTwist = J{i} * vBody;
   twists{i} = parentTwist + jointTwist;
-  
+
   if compute_gradient
     dparentTwist = dtwistsdq{body.parent};
     dJointTwist = matGradMult(dJdq{i}, vBody);
@@ -499,14 +499,14 @@ end
 for i = 2 : nb
   body = bodies(i);
   parent = body.parent;
-  
+
   % joint_accel = transformSpatialAcceleration(kinsol, parent, i, i, world, SdotV{i});
   % faster in this case, and easier to derive gradients:
   twist = kinsol.twists{i};
   joint_twist = kinsol.twists{i} - kinsol.twists{parent};
   joint_accel = crm(twist) * joint_twist + transformAdjoint(kinsol.T{i}) * SdotVi{i};
   JdotV{i} = JdotV{parent} + joint_accel;
-  
+
   if compute_gradients
     % q gradient
     dtwistdq = kinsol.dtwistsdq{i};
@@ -516,7 +516,7 @@ for i = 2 : nb
     djoint_acceldq = dcrm(twist, joint_twist, dtwistdq, djoint_twistdq)...
       + dTransformSpatialMotion(kinsol.T{i}, SdotVi{i}, kinsol.dTdq{i}, dSdotVidq);
     dJdotVdq{i} = dJdotVdq{parent} + djoint_acceldq;
-    
+
     % v gradient: dJdot_times_vi/dv
     [dtwistdv, v_indices] = geometricJacobian(model, kinsol, world, i, world);
     %     dtwistdv = zeros(6, nv);

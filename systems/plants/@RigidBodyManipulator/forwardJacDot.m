@@ -18,23 +18,23 @@ if (kinsol.mex)
     error('Drake:RigidBodyManipulator:InvalidKinematics','This kinsol is not valid because it was computed via mex, and you are now asking for an evaluation with non-numeric pts.  If you intended to use something like TaylorVar, then you must call doKinematics with use_mex = false');
   end
   if(body_or_frame_ind == 0)
-    Jdot = forwardKinmex(obj.mex_model_ptr,kinsol.q,0,robotnum,true);
+    Jdot = rigidBodyManipulatormex(obj.FORWARD_KIN_COMMAND,obj.mex_model_ptr,kinsol.q,0,robotnum,true);
   else
-    Jdot = forwardKinmex(obj.mex_model_ptr,kinsol.q,body_or_frame_ind,pts,rotation_type,true);
+    Jdot = rigidBodyManipulatormex(obj.FORWARD_KIN_COMMAND,obj.mex_model_ptr,kinsol.q,body_or_frame_ind,pts,rotation_type,true);
   end
 else
-  
+
   if isempty(kinsol.dTdqdot{1})
     error('Drake:RigidBodyManipulator:MissingDerivatives','This kinsol does not have dTdqdot.  You must pass qd into doKinematics before using this method');
   end
-  
-  if (body_or_frame_ind == 0) 
+
+  if (body_or_frame_ind == 0)
     nq=getNumPositions(obj);
-    
+
     % return center of mass for the entire model
     m=0;
     Jdot = zeros(3,nq);
-    
+
     for i=1:length(obj.body)
       if(any(obj.body(i).robotnum == robotnum))
         bm = obj.body(i).mass;
@@ -55,10 +55,10 @@ else
       body_ind = body_or_frame_ind;
       Tframe=eye(4);
     end
-  
+
     m = size(pts,2);
     pts = [pts;ones(1,m)];
-    
+
     if rotation_type==0
       Jdot = reshape(kinsol.dTdqdot{body_ind}*Tframe*pts,obj.getNumPositions,[])';
     elseif rotation_type==1
@@ -69,9 +69,9 @@ else
       Jx = reshape(dTdqdot*pts,nq,[])';
 
       Jr = zeros(3,nq);
-      % note the unusual format of dTdq 
+      % note the unusual format of dTdq
       % dTdq = [dT(1,:)dq1; dT(1,:)dq2; ...; dT(1,:)dqN; dT(2,dq1) ...]
-    
+
       % droll_dqdot
       idx = sub2ind(size(dTdqdot),(3-1)*nq+(1:nq),2*ones(1,nq));
       dR32_dqdot = dTdqdot(idx);
@@ -100,5 +100,5 @@ else
       error('forwardJacDot: quaternions not yet supported');
     end
   end
-  
+
 end

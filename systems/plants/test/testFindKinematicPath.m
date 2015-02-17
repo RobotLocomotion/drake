@@ -18,7 +18,7 @@ end
 
 function testAllPaths(robot)
 
-compare_to_mex = exist('findKinematicPathmex','file') == 3;
+compare_to_mex = exist('rigidBodyManipulatormex','file') == 3;
 
 num_bodies = robot.getNumBodies();
 for i = 1 : num_bodies

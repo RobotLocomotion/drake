@@ -130,9 +130,9 @@ compute_gradients = nargout > 1;
 
 if kinsol.mex
   if compute_gradients
-    [A, dA] = centroidalMomentumMatrixmex(robot.mex_model_ptr);
+    [A, dA] = rigidBodyManipulatormex(robot.CENTROIDAL_MOMENTUM_MATRIX_COMMAND,robot.mex_model_ptr);
   else
-    A = centroidalMomentumMatrixmex(robot.mex_model_ptr);
+    A = rigidBodyManipulatormex(robot.CENTROIDAL_MOMENTUM_MATRIX_COMMAND,robot.mex_model_ptr);
   end
 else
   if compute_gradients

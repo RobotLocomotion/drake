@@ -20,7 +20,7 @@ if nargin < 4
 end
 
 if use_mex
-  [body_path, joint_path, signs] = findKinematicPathmex(obj.mex_model_ptr, start_body, end_body);
+  [body_path, joint_path, signs] = rigidBodyManipulatormex(obj.FIND_KINEMATIC_PATH_COMMAND,obj.mex_model_ptr, start_body, end_body);
 else
   if (start_body < 0)
     fr = getFrame(obj,start_body);

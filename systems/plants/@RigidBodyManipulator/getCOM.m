@@ -1,6 +1,6 @@
 function [com,J,dJ] = getCOM(model,kinsol,robotnum)
 % @param robotnum              -- An int array. Default is 1
-%                              - Not given, the COM of the whole model is computed. 
+%                              - Not given, the COM of the whole model is computed.
 %                              - Otherwise, the bodies that belong to robot(robotnum) is
 %                                computed
 % note: for Jdot, call forwardJacDot with body_ind = 0
@@ -8,7 +8,7 @@ function [com,J,dJ] = getCOM(model,kinsol,robotnum)
 if(nargin == 2)
   robotnum = 1;
 end
-if ~isstruct(kinsol)  
+if ~isstruct(kinsol)
   % treat input as getCOM(model,q)
   kinsol = doKinematics(model,kinsol,nargout>2);
 end
@@ -20,23 +20,23 @@ if (kinsol.mex)
   if (model.mex_model_ptr==0)
     error('Drake:RigidBodyManipulator:InvalidKinematics','This kinsol is no longer valid because the mex model ptr has been deleted.');
   end
-  
+
   if model.use_new_kinsol
     if nargout > 2
-      [com,J,dJ] = centerOfMassmex(model.mex_model_ptr, robotnum);
+      [com,J,dJ] = rigidBodyManipulatormex(model.CENTER_OF_MASS_COMMAND,model.mex_model_ptr, robotnum);
       dJ = reshape(dJ, size(J, 1), []); % convert to strange second derivative output format
     elseif nargout > 1
-      [com,J] = centerOfMassmex(model.mex_model_ptr, robotnum);
+      [com,J] = rigidBodyManipulatormex(model.CENTER_OF_MASS_COMMAND,model.mex_model_ptr, robotnum);
     else
-      com = centerOfMassmex(model.mex_model_ptr, robotnum);
+      com = rigidBodyManipulatormex(model.CENTER_OF_MASS_COMMAND,model.mex_model_ptr, robotnum);
     end
   else
     if nargout > 2
-      [com,J,dJ] = forwardKinmex(model.mex_model_ptr,kinsol.q,0,robotnum,false);
+      [com,J,dJ] = rigidBodyManipulatormex(model.FORWARD_KIN_COMMAND,model.mex_model_ptr,kinsol.q,0,robotnum,false);
     elseif nargout > 1
-      [com,J] = forwardKinmex(model.mex_model_ptr,kinsol.q,0,robotnum,false);
+      [com,J] = rigidBodyManipulatormex(model.FORWARD_KIN_COMMAND,model.mex_model_ptr,kinsol.q,0,robotnum,false);
     else
-      com = forwardKinmex(model.mex_model_ptr,kinsol.q,0,robotnum,false);
+      com = rigidBodyManipulatormex(model.FORWARD_KIN_COMMAND,model.mex_model_ptr,kinsol.q,0,robotnum,false);
     end
   end
 else
@@ -49,7 +49,7 @@ else
   if (nargout>1)
     J = zeros(d,nq);
   end
-  
+
   dJ = zeros(d,nq^2);
   for i=1:length(model.body)
     if(any(model.body(i).robotnum == robotnum))

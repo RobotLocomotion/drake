@@ -224,14 +224,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   Map<MatrixXd> D_ls(mxGetPr(prhs[narg]),mxGetM(prhs[narg]),mxGetN(prhs[narg])); narg++;
   Map<MatrixXd> S   (mxGetPr(prhs[narg]),mxGetM(prhs[narg]),mxGetN(prhs[narg])); narg++;
 
-  Map<VectorXd> s1(mxGetPr(prhs[narg]),mxGetM(prhs[narg])); narg++;
-  Map<VectorXd> s1dot(mxGetPr(prhs[narg]),mxGetM(prhs[narg])); narg++;
+  Map<VectorXd> s1(mxGetPr(prhs[narg]),mxGetNumberOfElements(prhs[narg])); narg++;
+  Map<VectorXd> s1dot(mxGetPr(prhs[narg]),mxGetNumberOfElements(prhs[narg])); narg++;
   double s2dot = mxGetScalar(prhs[narg++]);
-  Map<VectorXd> x0(mxGetPr(prhs[narg]),mxGetM(prhs[narg])); narg++;
-  Map<VectorXd> u0(mxGetPr(prhs[narg]),mxGetM(prhs[narg])); narg++;
-  Map<VectorXd> y0(mxGetPr(prhs[narg]),mxGetM(prhs[narg])); narg++;
-  Map<VectorXd> qdd_lb(mxGetPr(prhs[narg]),mxGetM(prhs[narg])); narg++;
-  Map<VectorXd> qdd_ub(mxGetPr(prhs[narg]),mxGetM(prhs[narg])); narg++;
+  Map<VectorXd> x0(mxGetPr(prhs[narg]),mxGetNumberOfElements(prhs[narg])); narg++;
+  Map<VectorXd> u0(mxGetPr(prhs[narg]),mxGetNumberOfElements(prhs[narg])); narg++;
+  Map<VectorXd> y0(mxGetPr(prhs[narg]),mxGetNumberOfElements(prhs[narg])); narg++;
+  Map<VectorXd> qdd_lb(mxGetPr(prhs[narg]),mxGetNumberOfElements(prhs[narg])); narg++;
+  Map<VectorXd> qdd_ub(mxGetPr(prhs[narg]),mxGetNumberOfElements(prhs[narg])); narg++;
   memcpy(pdata->w_qdd.data(),mxGetPr(prhs[narg++]),sizeof(double)*nq); 
   
   double mu = mxGetScalar(prhs[narg++]);
