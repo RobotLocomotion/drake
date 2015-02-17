@@ -21,10 +21,10 @@
       <origin
         xyz="0 0 0"
         rpy="0 0 0" />
-<!--<geometry>
+      <geometry>
         <mesh
           filename="package://IRB140/urdf/meshes/base_link.stl" />
-      </geometry>-->
+      </geometry>
       <material
         name="">
         <color
@@ -35,10 +35,10 @@
       <origin
         xyz="0 0 0"
         rpy="0 0 0" />
-      <geometry>
+<!--<geometry>
         <mesh
           filename="package://IRB140/urdf/meshes/base_link.stl" />
-      </geometry>
+      </geometry>-->
     </collision>
   </link>
   <link
