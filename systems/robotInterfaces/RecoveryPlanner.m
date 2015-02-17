@@ -19,6 +19,7 @@ classdef RecoveryPlanner < MixedIntegerConvexProgram
       end
 
       checkDependency('gurobi');
+      checkDependency('yalmip');
       x0
       xd0
       qcop
@@ -64,6 +65,7 @@ classdef RecoveryPlanner < MixedIntegerConvexProgram
 
   methods
     function obj = RecoveryPlanner(start, omega, nsteps, dt)
+      checkDependency('yalmip');
       yalmip('clear');
       obj = obj@MixedIntegerConvexProgram(true);
       obj.start = start;

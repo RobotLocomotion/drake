@@ -6,6 +6,9 @@ function walking_plan_data = planWalkingZMP(obj, x0, footstep_plan)
 path_handle = addpathTemporary(fullfile(getDrakePath(), 'examples', 'ZMP'));
 
 nq = getNumPositions(obj);
+if length(x0) == nq
+  x0 = [x0; zeros(obj.getNumVelocities(), 1)];
+end
 q0 = x0(1:nq);
 
 if isa(footstep_plan, 'FootstepPlan')
@@ -30,11 +33,9 @@ else
 end
 
 link_constraints = dynamic_footstep_plan.buildLinkConstraints();
-% link_constraints(1).pelvis_reference_height
-% link_constraints(2).pelvis_reference_height
-warning('pelvis reference height forced to zero');
-link_constraints(1).pelvis_reference_height = zeros(1, length(link_constraints(1).ts));
-link_constraints(2).pelvis_reference_height = zeros(1, length(link_constraints(1).ts));
+% warning('pelvis reference height forced to zero');
+link_constraints(1).pelvis_reference_height = 0.0811 + zeros(1, length(link_constraints(1).ts));
+link_constraints(2).pelvis_reference_height = 0.0811 + zeros(1, length(link_constraints(1).ts));
 
 zmptraj = dynamic_footstep_plan.getZMPTraj();
 
