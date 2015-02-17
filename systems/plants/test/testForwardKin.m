@@ -17,15 +17,18 @@ robot = RigidBodyManipulator('FallingBrick.urdf',options);
 for rotation_type = 0 : 2
   checkGradients(robot, rotation_type);  
   checkMex(robot, rotation_type);
+  checkJacobianWithAndWithoutGradients(robot, rotation_type);
 end
 end
 
 function testAtlas(floatingJointType,options)
 if nargin<2, options=struct(); end
 robot = createAtlas(floatingJointType,options);
+
 for rotation_type = 0 : 2
   checkGradients(robot, rotation_type);  
   checkMex(robot, rotation_type);
+  checkJacobianWithAndWithoutGradients(robot, rotation_type);
 end
 end
 
@@ -114,4 +117,45 @@ for i = 1 : n_tests
     end
   end
 end
+end
+
+function checkJacobianWithAndWithoutGradients(robot, rotation_type)
+nb = length(robot.body);
+body_range = [1, nb];
+options.rotation_type = rotation_type;
+
+n_tests = 5;
+for i = 1 : n_tests
+  end_effector = randi(body_range);
+
+  if robot.use_new_kinsol
+    base = randi(body_range);
+    in_terms_of_qdot_options = [true false];
+  else
+    base = 1;
+    in_terms_of_qdot_options = true;
+  end
+  
+  q = getRandomConfiguration(robot);
+  nPoints = randi([1, 10]);
+  points = randn(3, nPoints);
+  kinsol_options.use_mex = true;
+
+  for in_terms_of_qdot = in_terms_of_qdot_options
+    options.in_terms_of_qdot = in_terms_of_qdot;
+    options.base_or_frame_id = base;
+    
+    kinsol_options.compute_gradients = false;
+    kinsol = robot.doKinematics(q, [], kinsol_options);
+    [x, J] = robot.forwardKin(kinsol, end_effector, points, options);
+    
+    kinsol_options.compute_gradients = true;
+    kinsol_with_gradients = robot.doKinematics(q, [], kinsol_options);
+    [x_with_gradients, J_with_gradients] = robot.forwardKin(kinsol_with_gradients, end_effector, points, options);
+    
+    valuecheck(x_with_gradients, x);
+    valuecheck(J_with_gradients, J);
+  end
+end
+
 end

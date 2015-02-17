@@ -2179,7 +2179,12 @@ GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, DerivedPoints::ColsA
   if (gradient_order > 2) {
     throw std::runtime_error("only first and second order gradients are available");
   }
-  int x_gradient_order = std::min(gradient_order, 1);
+  if (gradient_order > 1 && !gradients_cached) {
+    throw std::runtime_error("must call doKinematics with compute_gradients set to true to compute forwardKin second derivatives");
+  }
+
+  bool compute_jacobian_without_transform_gradients = gradient_order > 0 && !gradients_cached;
+  int x_gradient_order = compute_jacobian_without_transform_gradients ? 0 : std::min(gradient_order, 1);
   int J_gradient_order = gradient_order > 1 ? gradient_order - 1 : 0;
 
   int nq = num_dof;
@@ -2227,9 +2232,14 @@ GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, DerivedPoints::ColsA
     }
   }
 
-  if (gradient_order > 1) {
+  if (gradient_order > 1 || compute_jacobian_without_transform_gradients) {
     auto J = forwardJacV(x, current_body_or_frame_ind, new_body_or_frame_ind, rotation_type, true, J_gradient_order);
-    x.gradient().gradient().value() = J.gradient().value();
+    if (compute_jacobian_without_transform_gradients) {
+      x.gradient().value() = J.value();
+    }
+    else {
+      x.gradient().gradient().value() = J.gradient().value();
+    }
   }
 
   return x;
