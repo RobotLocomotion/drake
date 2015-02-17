@@ -58,8 +58,6 @@ if use_angular_momentum
   options.W_kdot = 1e-5*eye(3); % angular momentum weight
 end
 
-haltBlock = HaltSimulationBlock(r.getOutputFrame(), draw_button, ~draw_button);
-
 if (use_ik)
   options.w_qdd = 0.001*ones(nq,1);
   % instantiate QP controller
@@ -115,8 +113,7 @@ else
   ins(5).input = 6;
   outs(1).system = 2;
   outs(1).output = 1;
-  % sys = mimoFeedback(qp,r,[],[],ins,outs);
-  sys = mimoFeedback(qp,cascade(r, haltBlock), [], [], ins, outs);
+  sys = mimoFeedback(qp,r,[],[],ins,outs);
   clear ins outs;
   
   % feedback foot contact detector with QP/atlas
@@ -188,6 +185,6 @@ output_select(1).system=1;
 output_select(1).output=1;
 sys = mimoCascade(sys,v,[],[],output_select);
 warning(S);
-traj = simulate(sys,[0 T],x0);
+traj = simulate(sys,[0 T],x0,struct('gui_control_interface',true));
 
 end

@@ -194,6 +194,30 @@ DLLEXPORT GradientVar<typename DerivedI::Scalar, TWIST_SIZE, TWIST_SIZE> transfo
     const typename Gradient<typename Eigen::Transform<typename DerivedI::Scalar, SPACE_DIMENSION, Eigen::Isometry>::MatrixType, Eigen::Dynamic>::type* dT_current_to_new,
     const Eigen::MatrixBase<DerivedI>& I);
 
+template<typename DerivedA, typename DerivedB>
+DLLEXPORT Eigen::PlainObjectBase<DerivedB> crossSpatialMotion(
+  const Eigen::MatrixBase<DerivedA>& a,
+  const Eigen::MatrixBase<DerivedB>& b);
+
+template<typename DerivedA, typename DerivedB>
+DLLEXPORT Eigen::PlainObjectBase<DerivedB> crossSpatialForce(
+  const Eigen::MatrixBase<DerivedA>& a,
+  const Eigen::MatrixBase<DerivedB>& b);
+
+template<typename DerivedA, typename DerivedB>
+DLLEXPORT Eigen::Matrix<typename DerivedA::Scalar, TWIST_SIZE, Eigen::Dynamic> dCrossSpatialMotion(
+  const Eigen::MatrixBase<DerivedA>& a,
+  const Eigen::MatrixBase<DerivedB>& b,
+  const typename Gradient<DerivedA, Eigen::Dynamic>::type& da,
+  const typename Gradient<DerivedB, Eigen::Dynamic>::type& db);
+
+template<typename DerivedA, typename DerivedB>
+DLLEXPORT Eigen::Matrix<typename DerivedA::Scalar, TWIST_SIZE, Eigen::Dynamic> dCrossSpatialForce(
+  const Eigen::MatrixBase<DerivedA>& a,
+  const Eigen::MatrixBase<DerivedB>& b,
+  const typename Gradient<DerivedA, Eigen::Dynamic>::type& da,
+  const typename Gradient<DerivedB, Eigen::Dynamic>::type& db);
+
 /*
  * spatial transform gradient methods
  */
@@ -214,14 +238,14 @@ DLLEXPORT typename DHomogTrans<DerivedDT>::type dHomogTransInv(
     const Eigen::MatrixBase<DerivedDT>& dT);
 
 template <typename Scalar, typename DerivedX, typename DerivedDT, typename DerivedDX>
-DLLEXPORT typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime, 1>::type dTransformAdjoint(
+DLLEXPORT typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime, 1>::type dTransformSpatialMotion(
     const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T,
     const Eigen::MatrixBase<DerivedX>& X,
     const Eigen::MatrixBase<DerivedDT>& dT,
     const Eigen::MatrixBase<DerivedDX>& dX);
 
 template <typename Scalar, typename DerivedX, typename DerivedDT, typename DerivedDX>
-DLLEXPORT typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime>::type dTransformAdjointTranspose(
+DLLEXPORT typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime>::type dTransformSpatialForce(
     const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T,
     const Eigen::MatrixBase<DerivedX>& X,
     const Eigen::MatrixBase<DerivedDT>& dT,

@@ -11,7 +11,7 @@ if model.use_new_kinsol
     q = kinsol;
     kinsol_options.use_mex = false;
     kinsol_options.compute_gradients = nargout > 1;
-    kinsol = model.doKinematics(q, [], [], [], kinsol_options);
+    kinsol = model.doKinematics(q, [], kinsol_options);
   end
   
   if nargout > 1
@@ -161,7 +161,7 @@ else
     dA = vertcat(dABlocks{:});
     dtransform_com_to_world = zeros(numel(transform_com_to_world), nq);
     dtransform_com_to_world = setSubMatrixGradient(dtransform_com_to_world, dcom, 1:3, 4, size(transform_com_to_world));
-    dA = dTransformAdjointTranspose(transform_com_to_world, A, dtransform_com_to_world, dA);
+    dA = dTransformSpatialForce(inv(transform_com_to_world), A, -dtransform_com_to_world, dA);
   end
 end
 

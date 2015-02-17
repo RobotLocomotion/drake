@@ -152,8 +152,8 @@ classdef Biped < LeggedRobot
 
       kinsol = doKinematics(obj,q0);
 
-      rfoot0 = forwardKin(obj,kinsol,obj.foot_frame_id.right,[0;0;0],true);
-      lfoot0 = forwardKin(obj,kinsol,obj.foot_frame_id.left,[0;0;0],true);
+      rfoot0 = forwardKin(obj,kinsol,obj.foot_frame_id.right,[0;0;0], 1);
+      lfoot0 = forwardKin(obj,kinsol,obj.foot_frame_id.left,[0;0;0], 1);
 
       foot_center = struct('right', rfoot0, 'left', lfoot0);
     end

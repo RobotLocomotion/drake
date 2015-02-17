@@ -23,7 +23,7 @@ if r.use_new_kinsol
   if nargout > 2
     kinsol_options.compute_gradients = true;
   end
-  kinsol = r.doKinematics(q, [], [], [], kinsol_options);
+  kinsol = r.doKinematics(q, [], kinsol_options);
 else
   kinsol = r.doKinematics(q,true,false);
 end
@@ -43,7 +43,7 @@ if r.use_new_kinsol
   if nargout > 1
     kinsol_options.compute_gradients = true;
   end
-  kinsol = r.doKinematics(q, [], [], [], kinsol_options);
+  kinsol = r.doKinematics(q, [], kinsol_options);
 else
   kinsol = r.doKinematics(q,true,false);
 end
@@ -69,7 +69,7 @@ for i = 1 : n_tests
   
   kinsol_options.use_mex = false;
   kinsol_options.compute_gradients = true;
-  kinsol = robot.doKinematics(q, [], [], [], kinsol_options);
+  kinsol = robot.doKinematics(q, [], kinsol_options);
   if robot.use_new_kinsol
     [x, P, J, dP, dJ] = robot.bodyKin(kinsol,body_ind,points);
   else
@@ -77,7 +77,7 @@ for i = 1 : n_tests
   end
   
   kinsol_options.use_mex = true;
-  kinsol_mex = robot.doKinematics(q, [], [], [], kinsol_options);
+  kinsol_mex = robot.doKinematics(q, [], kinsol_options);
   if robot.use_new_kinsol
     [x_mex, P_mex, J_mex, dP_mex, dJ_mex] = robot.bodyKin(kinsol_mex,body_ind,points);
   else

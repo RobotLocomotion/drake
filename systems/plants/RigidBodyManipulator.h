@@ -4,6 +4,7 @@
 #include <Eigen/Dense>
 #include <Eigen/LU>
 #include <set>
+#include <map>
 #include <Eigen/StdVector> //#include <vector>
 
 #include "collision/DrakeCollision.h"
@@ -31,6 +32,19 @@ using namespace Eigen;
 
 //extern std::set<int> emptyIntSet;  // was const std:set<int> emptyIntSet, but valgrind said I was leaking memory
 
+class DLLEXPORT_RBM RigidBodyLoop
+{
+public:
+  RigidBodyLoop(int _bodyA, Vector3d _ptA, int _bodyB, Vector3d _ptB) :
+    bodyA(_bodyA), bodyB(_bodyB), ptA(_ptA), ptB(_ptB) {};
+
+  int bodyA, bodyB;
+  Vector3d ptA, ptB;
+
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+};
+
 class DLLEXPORT_RBM RigidBodyManipulator
 {
 public:
@@ -43,6 +57,8 @@ public:
   void doKinematics(double* q, bool b_compute_second_derivatives=false, double* qd=NULL);
 
   void doKinematicsNew(double* q, bool compute_gradients = false, double* v = nullptr, bool compute_JdotV = false);
+
+  void updateCompositeRigidBodyInertias(int gradient_order);
 
   template <typename Scalar>
   GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> centroidalMomentumMatrix(int gradient_order);
@@ -91,6 +107,12 @@ public:
 
   template <typename DerivedA, typename DerivedB>
   void forwarddJac(const int body_ind, const MatrixBase<DerivedA>& pts, MatrixBase<DerivedB> &dJ);
+
+  template <typename Scalar>
+  GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> massMatrix(int gradient_order = 0);
+
+  template <typename Scalar>
+  GradientVar<Scalar, Eigen::Dynamic, 1> inverseDynamics(std::map<int, std::unique_ptr< GradientVar<Scalar, TWIST_SIZE, 1> > >& f_ext, GradientVar<Scalar, Eigen::Dynamic, 1>* vd = nullptr, int gradient_order = 0);
 
   template <typename DerivedPoints>
   GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, DerivedPoints::ColsAtCompileTime> forwardKinNew(const MatrixBase<DerivedPoints>& points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type, int gradient_order);
@@ -175,10 +197,15 @@ public:
 
   std::string getBodyOrFrameName(int body_or_frame_id);
   //@param body_or_frame_id   the index of the body or the id of the frame.
+
+  template <typename Scalar>
+  GradientVar<Scalar, Eigen::Dynamic, 1> positionConstraints(int gradient_order);
+
 public:
   std::vector<std::string> robot_name;
 
   int num_dof; // treated as nq now; TODO: rename to nq
+  int num_velocities;
   VectorXd joint_limit_min;
   VectorXd joint_limit_max;
 
@@ -189,6 +216,8 @@ public:
   // Rigid body frames
   int num_frames;
   std::vector<RigidBodyFrame,Eigen::aligned_allocator<RigidBodyFrame> > frames;
+
+  std::vector<RigidBodyLoop,Eigen::aligned_allocator<RigidBodyLoop> > loops;
 
   // featherstone data structure
   int NB;  // featherstone bodies
@@ -201,12 +230,12 @@ public:
   VectorXd static_friction;
   std::vector<MatrixXd> Xtree;
   std::vector<MatrixXd> I;
-  VectorXd a_grav;
+  Matrix<double,TWIST_SIZE,1> a_grav;
+  MatrixXd B;  // the B matrix maps inputs into joint-space forces
 
-  VectorXd cached_q, cached_qd;  // these should be private
+  VectorXd cached_q, cached_v;  // these should be private
 
   bool use_new_kinsol;
-
 
 private:
   int parseBodyOrFrameID(const int body_or_frame_id, Matrix4d* Tframe = nullptr);
@@ -218,12 +247,15 @@ private:
   std::vector<VectorXd> avp;
   std::vector<VectorXd> fvp;
   std::vector<MatrixXd> IC;
+  std::vector<Matrix<double, TWIST_SIZE, TWIST_SIZE>, Eigen::aligned_allocator< Matrix<double, TWIST_SIZE, TWIST_SIZE> > > I_world;
   std::vector<Matrix<double, TWIST_SIZE, TWIST_SIZE>, Eigen::aligned_allocator< Matrix<double, TWIST_SIZE, TWIST_SIZE> > > Ic_new;
+
 
   //Variables for gradient calculations
   MatrixXd dTdTmult;
   std::vector<MatrixXd> dXupdq;
   std::vector<std::vector<MatrixXd> > dIC;
+    std::vector<Gradient<Matrix<double, TWIST_SIZE, TWIST_SIZE>, Eigen::Dynamic>::type> dI_world;
   std::vector<Gradient<Matrix<double, TWIST_SIZE, TWIST_SIZE>, Eigen::Dynamic>::type> dIc_new;
 
   std::vector<MatrixXd> dvdq;
@@ -259,6 +291,10 @@ private:
   bool initialized;
   bool kinematicsInit;
   int secondDerivativesCached;
+  bool gradients_cached;
+  bool velocity_kinematics_cached;
+  bool jdotV_cached;
+  int cached_inertia_gradients_order;
 
   // collision_model and collision_model_no_margins both maintain
   // a collection of the collision geometry in the RBM for use in

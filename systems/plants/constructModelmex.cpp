@@ -128,6 +128,14 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     pm = mxGetProperty(pBodies,i,"position_num");
     model->bodies[i]->dofnum = (int) mxGetScalar(pm) - 1;  //zero-indexed
 
+    pm = mxGetProperty(pBodies,i,"velocity_num");
+    model->bodies[i]->velocity_num_start = (int) mxGetScalar(pm) - 1;  //zero-indexed
+
+    pm = mxGetProperty(pBodies,i,"parent");
+    if (!pm || mxIsEmpty(pm))
+      model->bodies[i]->parent = -1;
+    else
+      model->bodies[i]->parent = static_cast<int>(mxGetScalar(pm)) - 1;
 
     {
       mxGetString(mxGetProperty(pBodies, i, "jointname"), buf, 100);
@@ -147,8 +155,10 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 
       double pitch = mxGetScalar(mxGetProperty(pBodies, i, "pitch"));
 
-      model->bodies[i]->setJoint(createJoint(jointname, Ttree, floating, joint_axis, pitch));
-//      mexPrintf((model->bodies[i]->getJoint().getName() + "\n").c_str());
+      if (model->bodies[i]->hasParent()) {
+        model->bodies[i]->setJoint(createJoint(jointname, Ttree, floating, joint_axis, pitch));
+//        mexPrintf((model->bodies[i]->getJoint().getName() + ": " + std::to_string(model->bodies[i]->getJoint().getNumVelocities()) + "\n").c_str());
+      }
     }
     {
       pm = mxGetProperty(pBodies,i,"jointname");
@@ -165,12 +175,6 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
       pm = mxGetProperty(pBodies,i,"pitch");
       model->bodies[i]->pitch = (int) mxGetScalar(pm);
     }
-
-    pm = mxGetProperty(pBodies,i,"parent");
-    if (!pm || mxIsEmpty(pm))
-    	model->bodies[i]->parent = -1;
-    else
-    	model->bodies[i]->parent = static_cast<int>(mxGetScalar(pm)) - 1;
 
     if (model->bodies[i]->dofnum>=0) {
        pm = mxGetProperty(pBodies,i,"joint_limit_min");

@@ -32,6 +32,8 @@ classdef RigidBodyManipulator < Manipulator
     robot_state_frames;
     robot_position_frames;
     robot_velocity_frames;
+    
+    use_new_kinsol = false;
   end
 
   properties (Access=public)  % i think these should be private, but probably needed to access them from mex? - Russ
@@ -42,10 +44,6 @@ classdef RigidBodyManipulator < Manipulator
     collision_filter_groups;  % map of CollisionFilterGroup objects
   end
   
-  properties (Constant)
-    use_new_kinsol = false;
-  end
-
   methods
     function obj = RigidBodyManipulator(filename,options)
       % Construct a new rigid body manipulator object with a single (empty)
@@ -65,6 +63,10 @@ classdef RigidBodyManipulator < Manipulator
       obj.collision_filter_groups = PassByValueMap('KeyType','char','ValueType','any');
       obj.collision_filter_groups('no_collision') = CollisionFilterGroup();
 
+      if isfield(options,'use_new_kinsol')
+        obj.use_new_kinsol = options.use_new_kinsol;
+      end
+      
       if (nargin>0 && ~isempty(filename))
         [path,name,ext]=fileparts(filename);
         if strcmpi(ext,'.urdf')
@@ -126,6 +128,11 @@ classdef RigidBodyManipulator < Manipulator
   end
 
   methods
+    function obj = setNewKinsolFlag(obj,flag)
+      obj.use_new_kinsol = flag;
+      obj = compile(obj);
+    end
+    
     function [Vq, dVq] = qdotToV(obj, q)
       compute_gradient = nargout > 1;
 
@@ -335,11 +342,38 @@ classdef RigidBodyManipulator < Manipulator
       g = obj.gravity;
     end
 
-    function f_friction = computeFrictionForce(model,qd)
-      m = model.featherstone;
-      f_friction = m.damping'.*qd;
-      if (m.coulomb_friction)
-        f_friction = f_friction + min(1,max(-1,qd./m.coulomb_window')).*m.coulomb_friction';
+    function [f_friction, df_frictiondv] = computeFrictionForce(model,v)
+      % Note: gradient is with respect to v, not q!
+      compute_gradient = nargout > 1;
+      
+      nv = model.getNumVelocities();
+      damping = zeros(nv, 1);
+      coulomb_friction = zeros(nv, 1);
+      static_friction = zeros(nv, 1);
+      coulomb_window = zeros(nv, 1);
+
+      for i = 2 : model.getNumBodies()
+        b = model.body(i);
+        damping(b.velocity_num) = b.damping;
+        coulomb_friction(b.velocity_num) = b.coulomb_friction;
+        static_friction(b.velocity_num) = b.static_friction;
+        coulomb_window(b.velocity_num) = b.coulomb_window;
+      end
+
+      f_friction = damping .* v;
+      if compute_gradient
+        df_frictiondv = diag(damping);
+      end
+      
+      if any(coulomb_friction)
+        f_friction = f_friction + min(1,max(-1,v./coulomb_window')).*coulomb_friction';
+        if compute_gradient
+          ind = find(abs(v)<coulomb_window');
+          dind = sign(v(ind))./coulomb_window(ind)' .* coulomb_window(ind)';
+          fc_drv = zeros(model.getNumVelocities(),1);
+          fc_drv(ind) = dind;
+          df_frictiondv = df_frictiondv + diag(fc_drv);
+        end
       end
     end
 
@@ -907,7 +941,11 @@ classdef RigidBodyManipulator < Manipulator
               ind(i)=[]; % not actually a match
               i=i-1;
             elseif subind>1
-              warning('Drake:RigidBodyManipulator:WeldedLinkInd',['found ', linkname,' but it has been welded to it''s parent link (and the link''s coordinate frame may have changed).']);
+              if nargin>3 && error_level>0
+                error('Drake:RigidBodyManipulator:WeldedLinkInd',['found ', linkname,' but it has been welded to it''s parent link (and the link''s coordinate frame may have changed).']);
+              else
+                warning('Drake:RigidBodyManipulator:WeldedLinkInd',['found ', linkname,' but it has been welded to it''s parent link (and the link''s coordinate frame may have changed).']);
+              end
             end
           end
           i=i+1;

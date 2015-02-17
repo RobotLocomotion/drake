@@ -29,30 +29,32 @@ RigidBody::RigidBody(void) :
     dJdotVdq(TWIST_SIZE, 0),
     dJdotVdv(TWIST_SIZE, 0)
 {
-	dofnum=0;
+	dofnum = 0;
+	velocity_num_start = 0;
 	mass = 0.0;
 	floating = 0;
 	com << Vector3d::Zero(), 1;
+	I << Matrix<double, TWIST_SIZE, TWIST_SIZE>::Zero();
 	T = Matrix4d::Identity();
 	Tdot = Matrix4d::Zero();
 	Ttree = Matrix4d::Identity();
 	T_body_to_joint = Matrix4d::Identity();
 }
 
-void RigidBody::setN(int n) {
-  dTdq = MatrixXd::Zero(3*n,4);
-  dTdqdot = MatrixXd::Zero(3*n,4);
-  ddTdqdq = MatrixXd::Zero(3*n*n,4);
+void RigidBody::setN(int nq, int nv) {
+  dTdq = MatrixXd::Zero(3*nq,4);
+  dTdqdot = MatrixXd::Zero(3*nq,4);
+  ddTdqdq = MatrixXd::Zero(3*nq*nq,4);
 
-  dJdq.resize(J.size(), n);
-  dTdq_new.resize(T.size(), n);
-  dtwistdq.resize(twist.size(), n);
+  dJdq.resize(J.size(), nq);
+  dTdq_new.resize(T.size(), nq);
+  dtwistdq.resize(twist.size(), nq);
 
-  dJdotVdq.resize(TWIST_SIZE, n);
-  dJdotVdv.resize(TWIST_SIZE, n); // TODO: nv
+  dJdotVdq.resize(TWIST_SIZE, nq);
+  dJdotVdv.resize(TWIST_SIZE, nv);
 
-  dqdot_to_v_dq.resize(Eigen::NoChange, n);
-  dv_to_qdot_dq.resize(Eigen::NoChange, n);
+  dqdot_to_v_dq.resize(Eigen::NoChange, nq);
+  dv_to_qdot_dq.resize(Eigen::NoChange, nq);
 }
 
 
