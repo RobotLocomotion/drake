@@ -190,7 +190,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   
   Map< VectorXd > qddot_des(mxGetPr(prhs[narg++]),nq);
   
-  Map<VectorXd> q(mxGetPr(prhs[narg++]), nq);
+  Map<VectorXd> q(mxGetPr(prhs[narg]), nq);
   Map<VectorXd> qd(&q[nq], nq);
   double *q_double = mxGetPr(prhs[narg++]);
   double *qd_double = &q[nq];
