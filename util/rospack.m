@@ -25,6 +25,10 @@ if isempty(packages)  % cache packages
   for i=1:length(package_paths)
     [~,packages{i}]=fileparts(package_paths{i});
   end
+  packages{end+1} = 'Atlas';
+  package_paths{end+1} = [getDrakePath,'/examples/Atlas'];
+  packages{end+1} = 'IRB140';
+  package_paths{end+1} = [getDrakePath,'/examples/IRB140'];
 end
 
 if strcmp(package,'-list')
