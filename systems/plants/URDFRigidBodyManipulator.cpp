@@ -483,7 +483,7 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
         bodyA=i;
         break;
       }
-    if (bodyA<0) ROS_ERROR("couldn't find link referenced in loop joint");
+    if (bodyA<0) ROS_ERROR("couldn't find link %s referenced in loop joint",linkname.c_str());
     pt.init(node->Attribute("xyz"));
     Vector3d ptA;  ptA << pt.x, pt.y, pt.z;
 
@@ -494,7 +494,7 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
         bodyB=i;
         break;
       }
-    if (bodyB<0) ROS_ERROR("couldn't find link referenced in loop joint");
+    if (bodyB<0) ROS_ERROR("couldn't find link %s referenced in loop joint",linkname.c_str());
     pt.init(node->Attribute("xyz"));
     Vector3d ptB;  ptB << pt.x, pt.y, pt.z;
 
@@ -853,18 +853,8 @@ bool URDFRigidBodyManipulator::addURDFfromXML(const string &xml_string, const st
   return true;
 }
 
-URDFRigidBodyManipulator* loadURDFfromXML(const string &xml_string, const string &root_dir)
+bool URDFRigidBodyManipulator::addURDFfromFile(const string &urdf_filename)
 {
-  URDFRigidBodyManipulator* model = new URDFRigidBodyManipulator();
-  model->addURDFfromXML(xml_string,root_dir);
-  return model;
-}
-
-URDFRigidBodyManipulator* loadURDFfromFile(const string &urdf_filename)
-{
-	// urdf_filename can be a list of urdf files seperated by a :
-  URDFRigidBodyManipulator* model = new URDFRigidBodyManipulator();
-
   string token;
   istringstream iss(urdf_filename);
   
@@ -880,7 +870,7 @@ URDFRigidBodyManipulator* loadURDFfromFile(const string &urdf_filename)
     	xml_file.close();
     } else {
     	cerr << "Could not open file ["<<urdf_filename.c_str()<<"] for parsing."<< endl;
-    	return NULL;
+    	return false;
     }
 
     string pathname="";
@@ -894,8 +884,23 @@ URDFRigidBodyManipulator* loadURDFfromFile(const string &urdf_filename)
     }
     
     // parse URDF to get model
-    model->addURDFfromXML(xml_string,pathname);
+    addURDFfromXML(xml_string,pathname);
   }
   
+  return true;
+}
+
+URDFRigidBodyManipulator* loadURDFfromXML(const string &xml_string, const string &root_dir)
+{
+  URDFRigidBodyManipulator* model = new URDFRigidBodyManipulator();
+  model->addURDFfromXML(xml_string,root_dir);
+  return model;
+}
+
+URDFRigidBodyManipulator* loadURDFfromFile(const string &urdf_filename)
+{
+	// urdf_filename can be a list of urdf files seperated by a :
+  URDFRigidBodyManipulator* model = new URDFRigidBodyManipulator();
+  model->addURDFfromFile(urdf_filename);
   return model;
 }
