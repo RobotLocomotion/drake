@@ -22,7 +22,7 @@ if ~isfield(options,'base_rpy')
 end
 
 r=RigidBodyManipulator();
-r = addRobotFromURDF(r,'irb_140.urdf',options.base_offset,options.base_rpy);
+r = addRobotFromURDF(r,'urdf/irb_140.urdf',options.base_offset,options.base_rpy);
 if (options.visualize)
   v=r.constructVisualizer();
 end

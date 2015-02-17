@@ -1,3 +1,4 @@
+<?xml version="1.0" ?>
 <robot
   name="IRB140_-_M2004C_Complete_base.SLDASM">
   <link
@@ -20,10 +21,10 @@
       <origin
         xyz="0 0 0"
         rpy="0 0 0" />
-      <geometry>
+<!--<geometry>
         <mesh
-          filename="meshes/base_link.stl" />
-      </geometry>
+          filename="package://IRB140/urdf/meshes/base_link.stl" />
+      </geometry>-->
       <material
         name="">
         <color
@@ -36,7 +37,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="meshes/base_link.stl" />
+          filename="package://IRB140/urdf/meshes/base_link.stl" />
       </geometry>
     </collision>
   </link>
@@ -62,7 +63,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="meshes/link1.stl" />
+          filename="package://IRB140/urdf/meshes/link1.stl" />
       </geometry>
       <material
         name="">
@@ -76,7 +77,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="meshes/link1.stl" />
+          filename="package://IRB140/urdf/meshes/link1.stl" />
       </geometry>
     </collision>
   </link>
@@ -102,7 +103,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="meshes/link2.stl" />
+          filename="package://IRB140/urdf/meshes/link2.stl" />
       </geometry>
       <material
         name="">
@@ -116,7 +117,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="meshes/link2.stl" />
+          filename="package://IRB140/urdf/meshes/link2.stl" />
       </geometry>
     </collision>
   </link>
@@ -142,7 +143,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="meshes/link3.stl" />
+          filename="package://IRB140/urdf/meshes/link3.stl" />
       </geometry>
       <material
         name="">
@@ -156,7 +157,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="meshes/link3.stl" />
+          filename="package://IRB140/urdf/meshes/link3.stl" />
       </geometry>
     </collision>
   </link>
@@ -182,7 +183,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="meshes/link4.stl" />
+          filename="package://IRB140/urdf/meshes/link4.stl" />
       </geometry>
       <material
         name="">
@@ -196,7 +197,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="meshes/link4.stl" />
+          filename="package://IRB140/urdf/meshes/link4.stl" />
       </geometry>
     </collision>
   </link>
@@ -222,7 +223,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="meshes/link5.stl" />
+          filename="package://IRB140/urdf/meshes/link5.stl" />
       </geometry>
       <material
         name="">
@@ -236,7 +237,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="meshes/link5.stl" />
+          filename="package://IRB140/urdf/meshes/link5.stl" />
       </geometry>
     </collision>
   </link>
@@ -262,7 +263,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="meshes/link6.stl" />
+          filename="package://IRB140/urdf/meshes/link6.stl" />
       </geometry>
       <material
         name="">
@@ -276,7 +277,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="meshes/link6.stl" />
+          filename="package://IRB140/urdf/meshes/link6.stl" />
       </geometry>
     </collision>
   </link>
@@ -284,7 +285,7 @@
     <parent link="base_link"/>
     <child link="link_1"/>
     <limit effort="300" lower="-3.14159265359" upper="3.14159265359" velocity="4.36"/>
-    <axis xyz="0 1 0"/>
+    <axis xyz="0 -1 0"/>
     <origin rpy="0 0 0" xyz="0 -0.1095 0"/>
   </joint>
   <joint name="joint2" type="revolute">
@@ -298,7 +299,7 @@
     <parent link="link_2"/>
     <child link="link_3"/>
     <limit effort="300" lower="-4.01425728" upper="0.87266463" velocity="4.36"/>
-    <axis xyz="0 0 -1"/>
+    <axis xyz="0 0 1"/>
     <origin rpy="0 0 0" xyz="0 -0.360 0"/>
   </joint>
   <joint name="joint4" type="revolute">
