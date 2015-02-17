@@ -28,7 +28,7 @@ T = walking_plan_data.comtraj.tspan(2)-0.001;
 
 ctrl_data = QPControllerData(true,struct(...
   'acceleration_input_frame',atlasFrames.AtlasCoordinates(r),...
-  'D',-0.89/9.81*eye(2),... % assumed COM height
+  'D',-0.94/9.81*eye(2),... % assumed COM height
   'Qy',eye(2),...
   'S',walking_plan_data.V.S,... % always a constant
   's1',walking_plan_data.V.s1,...
@@ -96,6 +96,9 @@ else
   options.pelvis_damping_ratio = 0.6;
   options.Kp_q = 150.0*ones(r.getNumPositions(),1);
   options.q_damping_ratio = 0.6;
+
+  options.body_accel_input_weights = [.001 .001 .001];
+  options.use_walking_pelvis_block = true;
 
   % construct QP controller and related control blocks
   [qp,lfoot_controller,rfoot_controller,pelvis_controller,pd,options] = constructQPWalkingController(r,ctrl_data,options);
