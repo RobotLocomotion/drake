@@ -154,14 +154,10 @@ foot_origin_knots = struct('t', zmp_knots(end).t, ...
                            'toe_off_allowed', struct(swing_foot_name, swing_distance_in_local >= MIN_DIST_FOR_TOE_OFF, stance_foot_name, false));
 
 function [pose, q0] = solve_for_pose(constraints, q0)
-  constraint_ptrs = {};
-  for k = 1:length(constraints)
-    constraint_ptrs{end+1} = constraints{k}.mex_ptr;
-  end
-  [q0, info] = inverseKin(biped,q0,q0,constraint_ptrs{:},ikoptions);
+  [q0, info] = inverseKin(biped,q0,q0,constraints{:},ikoptions);
   if info >= 10
     % try again?
-    [q0, info] = inverseKin(biped,q0,q0,constraint_ptrs{:},ikoptions);
+    [q0, info] = inverseKin(biped,q0,q0,constraints{:},ikoptions);
     if info < 10
       warning('Whoa...tried inverseKin again and got a different result...');
     else
