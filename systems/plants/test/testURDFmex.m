@@ -85,7 +85,7 @@ for urdf = {'./FallingBrick.urdf',...
   num_phi = 3*length(r.loop);
   phicpp = reshape(Hcpp{1}(index+(1:num_phi)),num_phi,1);
   index = index + num_phi;
-  Jcpp = reshape(Hcpp{1}(index+(1:num_phi*num_qc)),num_phi,num_qc);
+  Jcpp = reshape(Hcpp{1}(index+(1:num_phi*num_qc)),num_qc,num_phi)';
   Hcpp = reshape(Hcpp{1}(1:num_vc^2),num_vc,num_vc);
 
   Hcpp = P'*Hcpp*P;
