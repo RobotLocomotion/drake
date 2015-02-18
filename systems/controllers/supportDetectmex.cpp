@@ -56,6 +56,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   double *q = mxGetPr(prhs[narg++]);
   double *qd = &q[nq];
   
+  Map<VectorXd> qvec(q,nq);
+  Map<VectorXd> qdvec(qd, nq);
+
   int desired_support_argid = narg++;
 
   double* double_contact_sensor = mxGetPr(prhs[narg]); int len = static_cast<int>(mxGetNumberOfElements(prhs[narg++]));
@@ -67,7 +70,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   
   int contact_logic_AND = (int) mxGetScalar(prhs[narg++]); // true if we should AND plan and sensor, false if we should OR them
 
-  pdata->r->doKinematics(q,false,qd);
+  pdata->r->doKinematics(qvec,false,qdvec);
 
   //---------------------------------------------------------------------
   // Compute active support from desired supports -----------------------

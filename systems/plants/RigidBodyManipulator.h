@@ -59,7 +59,12 @@ public:
   void resize(int num_dof, int num_featherstone_bodies=-1, int num_rigid_body_objects=-1, int num_rigid_body_frames=0);
 
   void compile(void);  // call me after the model is loaded
-  void doKinematics(double* q, bool b_compute_second_derivatives=false, double* qd=NULL);
+  
+  template <typename Derived>
+  void doKinematics(MatrixBase<Derived> & q, bool b_compute_second_derivatives = false);
+
+  template <typename Derived>
+  void doKinematics(MatrixBase<Derived> & q, bool b_compute_second_derivatives, MatrixBase<Derived> & qd);
 
   void doKinematicsNew(double* q, bool compute_gradients = false, double* v = nullptr, bool compute_JdotV = false);
 
@@ -247,6 +252,7 @@ public:
   bool use_new_kinsol;
 
 private:
+
   //helper functions for contactConstraints
   void surfaceTangentsSingle(Vector3d const & normal, Matrix3kd & d);
   void getUniqueBodiesSorted(VectorXi const & idxA, VectorXi const & idxB, std::vector<int> & bodyIndsSorted);
@@ -255,6 +261,8 @@ private:
   void accumulateJacobian(const int bodyInd, MatrixXd const & bodyPoints, std::vector<int> const & cindA, std::vector<int> const & cindB, MatrixXd & J);
   void accumulateSecondOrderJacobian(const int bodyInd, MatrixXd const & bodyPoints, std::vector<int> const & cindA, std::vector<int> const & cindB, MatrixXd & dJ);
   
+
+  void doKinematics(double* q, bool b_compute_second_derivatives=false, double* qd=NULL);
   int parseBodyOrFrameID(const int body_or_frame_id, Matrix4d* Tframe = nullptr);
 
   // variables for featherstone dynamics

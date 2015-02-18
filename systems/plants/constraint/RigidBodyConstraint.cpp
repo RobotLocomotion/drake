@@ -1964,7 +1964,8 @@ void WorldFixedPositionConstraint::eval_valid(const double* valid_t, int num_val
   MatrixXd *dpos = new MatrixXd[num_valid_t];
   for(int i = 0;i<num_valid_t;i++)
   {
-    this->robot->doKinematics((double*) valid_q.data()+i*nq);
+    Map<VectorXd> qvec((double*) valid_q.data()+i*nq, nq);
+    this->robot->doKinematics(qvec);
     pos[i].resize(3,n_pts);
     this->robot->forwardKin(this->body,this->pts,0,pos[i]);
     dpos[i].resize(3*n_pts,nq);
@@ -2058,7 +2059,8 @@ void WorldFixedOrientConstraint::eval_valid(const double* valid_t, int num_valid
   origin_pt<<0.0,0.0,0.0,1.0;
   for(int i = 0;i<num_valid_t;i++)
   {
-    this->robot->doKinematics((double*) valid_q.data()+i*nq);
+    Map<VectorXd> qvec((double*) valid_q.data()+i*nq, nq);
+    this->robot->doKinematics(qvec);
     Matrix<double,7,1> tmp_pos;
     MatrixXd dtmp_pos(7,nq);
     this->robot->forwardKin(this->body,origin_pt,2,tmp_pos);
@@ -2151,7 +2153,8 @@ void WorldFixedBodyPoseConstraint::eval_valid(const double* valid_t, int num_val
   origin_pt<< 0.0,0.0,0.0,1.0;
   for(int i = 0;i<num_valid_t;i++)
   {
-    this->robot->doKinematics((double*) valid_q.data()+i*nq);
+    Map<VectorXd> qvec((double*) valid_q.data()+i*nq, nq);
+    this->robot->doKinematics(qvec);
     Matrix<double,7,1> pos_tmp;
     this->robot->forwardKin(this->body,origin_pt,2,pos_tmp);
     pos[i] = pos_tmp.head(3);
