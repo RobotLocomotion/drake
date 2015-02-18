@@ -27,12 +27,12 @@ environment/project/cdt.managedbuild.toolchain.llvm.clang.macosx.base.970840552.
 environment/project/cdt.managedbuild.toolchain.llvm.clang.macosx.base.970840552.1256585170/PKG_CONFIG_PATH/value=/opt/X11/lib/pkgconfig
 environment/project/cdt.managedbuild.toolchain.llvm.clang.macosx.base.970840552.1256585170/append=true
 environment/project/cdt.managedbuild.toolchain.llvm.clang.macosx.base.970840552.1256585170/appendContributed=true
-indexer/indexAllFiles=true
+indexer/indexAllFiles=false
 indexer/indexAllHeaderVersions=false
 indexer/indexAllVersionsSpecificHeaders=
 indexer/indexOnOpen=false
 indexer/indexUnusedHeadersWithAlternateLang=false
-indexer/indexUnusedHeadersWithDefaultLang=true
+indexer/indexUnusedHeadersWithDefaultLang=false
 indexer/indexerId=org.eclipse.cdt.core.fastIndexer
 indexer/skipFilesLargerThanMB=8
 indexer/skipImplicitReferences=false
