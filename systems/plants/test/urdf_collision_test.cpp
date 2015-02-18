@@ -30,7 +30,7 @@ int main(int argc, char* argv[])
   
 // for (i=0; i<model->num_dof; i++)
 // 	 q(i)=(double)rand() / RAND_MAX;
-    model->doKinematics(q.data(),false);
+    model->doKinematics(q,false);
 //  }
   
   VectorXd phi;

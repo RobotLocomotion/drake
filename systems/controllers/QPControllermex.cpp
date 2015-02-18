@@ -190,10 +190,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   
   Map< VectorXd > qddot_des(mxGetPr(prhs[narg++]),nq);
   
-  Map<VectorXd> q(mxGetPr(prhs[narg]), nq);
-  Map<VectorXd> qd(&q[nq], nq);
-  double *q_double = mxGetPr(prhs[narg++]);
-  double *qd_double = &q[nq];
+  Map<VectorXd> q(mxGetPr(prhs[narg++]), nq);
+  Map<VectorXd> qd(&q[nq], nq);  
 
   vector<VectorXd,aligned_allocator<VectorXd>> body_accel_inputs;
   for (int i=0; i<pdata->n_body_accel_inputs; i++) {
@@ -241,7 +239,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   MatrixXd R_DQyD_ls = R_ls + D_ls.transpose()*Qy*D_ls;
 
-  pdata->r->doKinematics(q_double,false,qd_double);
+  pdata->r->doKinematics(q,false,qd);
 
   //---------------------------------------------------------------------
   // Compute active support from desired supports -----------------------

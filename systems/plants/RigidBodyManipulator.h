@@ -41,7 +41,12 @@ public:
   void resize(int num_dof, int num_featherstone_bodies=-1, int num_rigid_body_objects=-1, int num_rigid_body_frames=0);
 
   void compile(void);  // call me after the model is loaded
-  void doKinematics(double* q, bool b_compute_second_derivatives=false, double* qd=NULL);
+  
+  template <typename Derived>
+  void doKinematics(MatrixBase<Derived> & q, bool b_compute_second_derivatives = false);
+
+  template <typename Derived>
+  void doKinematics(MatrixBase<Derived> & q, bool b_compute_second_derivatives, MatrixBase<Derived> & qd);
 
   void doKinematicsNew(double* q, bool compute_gradients = false, double* v = nullptr, bool compute_JdotV = false);
 
@@ -219,6 +224,7 @@ public:
 
 
 private:
+  void doKinematics(double* q, bool b_compute_second_derivatives=false, double* qd=NULL);
   int parseBodyOrFrameID(const int body_or_frame_id, Matrix4d* Tframe = nullptr);
 
   // variables for featherstone dynamics
