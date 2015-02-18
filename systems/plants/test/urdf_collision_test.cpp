@@ -20,11 +20,11 @@ int main(int argc, char* argv[])
   }
   
   // run kinematics with second derivatives 100 times
-  VectorXd q = VectorXd::Zero(model->num_dof);
+  VectorXd q = VectorXd::Zero(model->num_positions);
   int i;
 
-  if (argc>=2+model->num_dof) {
-  	for (i=0; i<model->num_dof; i++)
+  if (argc>=2+model->num_positions) {
+  	for (i=0; i<model->num_positions; i++)
   		sscanf(argv[2+i],"%lf",&q(i));
   }
   

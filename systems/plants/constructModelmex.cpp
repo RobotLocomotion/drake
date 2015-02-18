@@ -126,7 +126,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     if (!mxIsEmpty(pm)) memcpy(model->bodies[i]->I.data(),mxGetPr(pm),sizeof(double)*6*6);
 
     pm = mxGetProperty(pBodies,i,"position_num");
-    model->bodies[i]->dofnum = (int) mxGetScalar(pm) - 1;  //zero-indexed
+    model->bodies[i]->position_num_start = (int) mxGetScalar(pm) - 1;  //zero-indexed
 
     pm = mxGetProperty(pBodies,i,"velocity_num");
     model->bodies[i]->velocity_num_start = (int) mxGetScalar(pm) - 1;  //zero-indexed
@@ -176,11 +176,11 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
       model->bodies[i]->pitch = (int) mxGetScalar(pm);
     }
 
-    if (model->bodies[i]->dofnum>=0) {
+    if (model->bodies[i]->position_num_start>=0) {
        pm = mxGetProperty(pBodies,i,"joint_limit_min");
-       model->joint_limit_min[model->bodies[i]->dofnum] = mxGetScalar(pm);
+       model->joint_limit_min[model->bodies[i]->position_num_start] = mxGetScalar(pm);
        pm = mxGetProperty(pBodies,i,"joint_limit_max");
-       model->joint_limit_max[model->bodies[i]->dofnum] = mxGetScalar(pm);
+       model->joint_limit_max[model->bodies[i]->position_num_start] = mxGetScalar(pm);
     }
 
     pm = mxGetProperty(pBodies,i,"T_body_to_joint");
@@ -339,8 +339,8 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   }
 
 
-  memcpy(model->joint_limit_min.data(), mxGetPr(mxGetProperty(pRBM,0,"joint_limit_min")), sizeof(double)*model->num_dof);
-  memcpy(model->joint_limit_max.data(), mxGetPr(mxGetProperty(pRBM,0,"joint_limit_max")), sizeof(double)*model->num_dof);
+  memcpy(model->joint_limit_min.data(), mxGetPr(mxGetProperty(pRBM,0,"joint_limit_min")), sizeof(double)*model->num_positions);
+  memcpy(model->joint_limit_max.data(), mxGetPr(mxGetProperty(pRBM,0,"joint_limit_max")), sizeof(double)*model->num_positions);
 
   const mxArray* a_grav_array = mxGetProperty(pRBM,0,"gravity");
   if (a_grav_array && mxGetNumberOfElements(a_grav_array)==3) {

@@ -39,7 +39,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   QuasiStaticConstraint* qsc = (QuasiStaticConstraint*) getDrakeMexPointer(prhs[0]);
   bool active = qsc->isActive();
   RigidBodyManipulator* model = qsc->getRobotPointer();
-  int nq = model->num_dof;
+  int nq = model->num_positions;
   double *q = new double[nq];
   memcpy(q,mxGetPr(prhs[1]),sizeof(double)*nq);
   int num_weights = qsc->getNumWeights();
