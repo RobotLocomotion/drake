@@ -264,6 +264,7 @@ else
     kinsol.qdotToV = computeQdotToV(bodies, q);
     kinsol.vToqdot = computeVToqdot(bodies, q);
   end
+  kinsol.qdot = computeQdot(bodies, kinsol.vToqdot, v, length(q));
   
   if options.compute_gradients
     kinsol.dTdq = computeTransformGradients(bodies, kinsol.T, S, kinsol.qdotToV, length(q));
@@ -414,6 +415,14 @@ for i = 2 : nb
   else
     VqInv{i} = jointV2qdot(body, q_body);
   end
+end
+end
+
+function qdot = computeQdot(bodies, vToqdot, v, nq)
+qdot = zeros(nq, 1) * vToqdot{2}(1);
+for i = 2 : length(bodies)
+  body = bodies(i);
+  qdot(body.position_num) = vToqdot{i} * v(body.velocity_num);
 end
 end
 
