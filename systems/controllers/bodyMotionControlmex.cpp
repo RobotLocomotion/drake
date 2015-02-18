@@ -56,7 +56,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   int nq = pdata->r->num_dof;
 
   int narg = 1;
-  double *q = mxGetPr(prhs[narg++]);
+  
+  Map<VectorXd> q(mxGetPr(prhs[narg++]), nq);
   double *qd = &q[nq];
   Map< VectorXd > qdvec(qd,nq);
 
@@ -69,7 +70,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   assert(mxGetM(prhs[narg])==6); assert(mxGetN(prhs[narg])==1);
   Map< Vector6d > body_vdot_des(mxGetPr(prhs[narg++]));
 
-  pdata->r->doKinematics(q,false,qd);
+  pdata->r->doKinematics(q,false,qdvec);
 
   // TODO: this must be updated to use quaternions/spatial velocity
   Vector6d body_pose;

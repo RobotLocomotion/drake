@@ -109,7 +109,7 @@ void approximateIK(RigidBodyManipulator* model, const MatrixBase<DerivedA> &q_se
     allIndsData[j] = j;
   }  
   VectorXd q_seed_data(q_seed);
-  model->doKinematics(const_cast<double*>(q_seed_data.data()));
+  model->doKinematics(q_seed_data);
   int kc_idx,c_idx;
   for(kc_idx = 0;kc_idx<num_kc;kc_idx++)
   {
