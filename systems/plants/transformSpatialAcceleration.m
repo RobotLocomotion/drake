@@ -51,6 +51,6 @@ if compute_gradient
   dT_old_to_new = matGradMultMat(T_new_inv, T_old, dHomogTransInv(T_new, dT_new), dT_old);
   
   dspatial_accel_temp = dcrm(twist_of_old_wrt_new, twist_of_body_wrt_base, dtwist_of_old_wrt_new, dtwist_of_body_wrt_base) + dspatial_accel;
-  dspatial_accel = dTransformAdjoint(T_old_to_new, spatial_accel_temp, dT_old_to_new, dspatial_accel_temp);
+  dspatial_accel = dTransformSpatialMotion(T_old_to_new, spatial_accel_temp, dT_old_to_new, dspatial_accel_temp);
 end
 end
