@@ -464,6 +464,7 @@ void setJointLimits(boost::shared_ptr<urdf::ModelInterface> urdf_model, boost::s
     case urdf::Joint::FIXED:
       joint_limit_min[dofname_to_dofnum.at(j->name)] = j->limits->lower;
       joint_limit_max[dofname_to_dofnum.at(j->name)] = j->limits->upper;
+//      cout << j->limits->lower << " <= q(" << dofname_to_dofnum.at(j->name) << ") <= " << j->limits->upper << endl;
       break;
     case urdf::Joint::FLOATING:
       joint_limit_min[dofname_to_dofnum.at(j->name)] = -1.0/0.0;
@@ -798,7 +799,7 @@ bool URDFRigidBodyManipulator::addURDFfromXML(const string &xml_string, const st
     map<string, int>::const_iterator dn=findWithSuffix(dofname_to_dofnum,node->Attribute("name"));
     if (dn == dofname_to_dofnum.end()) ROS_ERROR("can't find joint %s for transmission element.  this shouldn't happen");
     _dofnum = dn->second;
-  //  cout << "adding actuator to joint " << node->Attribute("name") << " (dof: " << _dofnum << ")" << endl;
+//    cout << "adding actuator to joint " << node->Attribute("name") << " (dof: " << _dofnum << ")" << endl;
 
     node = transmission_xml->FirstChildElement("mechanicalReduction");
     double gain = 1.0;
