@@ -2553,9 +2553,11 @@ int RigidBodyManipulator::findLinkId(string linkname, int robot)
   //std::regex linkname_connector("[abc]");
   //cout<<"get linkname_connector"<<endl;
   //linkname = std::regex_replace(linkname,linkname_connector,string("_"));
-  bool* name_match = new bool[this->num_bodies];
+  vector<bool> name_match;
+  name_match.resize(this->num_bodies);
   for(int i = 0;i<this->num_bodies;i++)
   {
+
     string lower_linkname = this->bodies[i]->linkname;
     std::transform(lower_linkname.begin(), lower_linkname.end(), lower_linkname.begin(), ::tolower); // convert to lower case
     if(lower_linkname.find(linkname) != string::npos)
@@ -2597,7 +2599,6 @@ int RigidBodyManipulator::findLinkId(string linkname, int robot)
   {
     return ind_match;
   }
-  delete[] name_match;
 }
 
 std::string RigidBodyManipulator::getBodyOrFrameName(int body_or_frame_id)
