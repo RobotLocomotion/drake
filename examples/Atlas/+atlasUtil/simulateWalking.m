@@ -46,7 +46,7 @@ ctrl_data = QPControllerData(true,struct(...
   'ignore_terrain',false,...
   'y0',walking_plan_data.zmptraj,...
   'plan_shift',zeros(3,1),...
-  'constrained_dofs',[findPositionIndices(r,'arm');findPositionIndices(r,'back');findPositionIndices(r,'neck')]));
+  'constrained_dofs',[findPositionIndices(r,'neck')]));
 
 options.dt = 0.003;
 options.use_bullet = use_bullet;
@@ -90,12 +90,16 @@ if (use_ik)
 
 else
   
-  options.Kp_foot = [100; 100; 100; 150; 150; 150];
+  options.Kp_foot = 10*[100; 100; 100; 150; 150; 150];
   options.foot_damping_ratio = 0.5;
   options.Kp_pelvis = [0; 0; 150; 200; 200; 200];
   options.pelvis_damping_ratio = 0.6;
   options.Kp_q = 150.0*ones(r.getNumPositions(),1);
   options.q_damping_ratio = 0.6;
+  w_qdd = zeros(nq, 1);
+  w_qdd(findPositionIndices(r, 'arm')) = .0001;
+  w_qdd(findPositionIndices(r, 'back')) = .0001;
+  options.w_qdd = w_qdd;
 
   options.body_accel_input_weights = [.001 .001 .001];
   options.use_walking_pelvis_block = true;
