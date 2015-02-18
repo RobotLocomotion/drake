@@ -17,7 +17,7 @@ int main()
   }
   Vector2d tspan;
   tspan<<0,1;
-  VectorXd q0 = VectorXd::Zero(model->num_dof);
+  VectorXd q0 = VectorXd::Zero(model->num_positions);
   q0(3) = 0.8;
   Vector3d com_des = Vector3d::Zero();
   com_des(2) = nan("");
@@ -26,7 +26,7 @@ int main()
   RigidBodyConstraint** constraint_array = new RigidBodyConstraint*[num_constraints];
   constraint_array[0] = com_kc;
   IKoptions ikoptions(model);
-  VectorXd q_sol(model->num_dof);
+  VectorXd q_sol(model->num_positions);
   int info;
   approximateIK(model,q0,q0,num_constraints,constraint_array,q_sol,info,ikoptions);
   printf("INFO = %d\n",info);
