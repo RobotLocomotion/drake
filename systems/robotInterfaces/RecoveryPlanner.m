@@ -1,96 +1,153 @@
 classdef RecoveryPlanner < MixedIntegerConvexProgram
 	properties
+    has_setup = false;
     start
     omega
-    nsteps
-    dt
+    nsteps = 15;
+    dt = 0.05;
     max_foot_velocity = 2; % m / s
     STANCE_UPPER_BOUND = 2; % m, an upper bound on the width of the robot's stance, for mixed-integer constraint formulation
   end
 
   methods(Static)
-    function obj = run(x0, xd0, qcop, qr, ql, contact)
-      if nargin == 0
-        x0 = [0;0;1];
-        xd0 = [0.4;0.2;0];
-        qr = [0;-0.1];
-        ql = [0; 0.1];
-        contact = [1;1];
-      end
+    % function obj = run(x0, xd0, qcop, qr, ql, contact)
+    %   if nargin == 0
+    %     x0 = [0;0;1];
+    %     xd0 = [0.4;0.2;0];
+    %     qr = [0;-0.1];
+    %     ql = [0; 0.1];
+    %     contact = [1;1];
+    %   end
 
-      checkDependency('gurobi');
-      checkDependency('yalmip');
-      x0
-      xd0
-      qcop
-      qr
-      ql
-      % qr = [0; qr(2)]
-      % ql = [0; ql(2)]
-      contact
+    %   checkDependency('gurobi');
+    %   checkDependency('yalmip');
+    %   x0
+    %   xd0
+    %   qcop
+    %   qr
+    %   ql
+    %   % qr = [0; qr(2)]
+    %   % ql = [0; ql(2)]
+    %   contact
 
-      warning('assuming ground at z=0')
+    %   warning('assuming ground at z=0')
 
-      start = struct('xcom', [x0(1:2); xd0(1:2)],...
-                     'qcop', qcop,...
-                     'qr', qr,...
-                     'ql', ql,...
-                     'contact', contact);
+    %   start = struct('xcom', [x0(1:2); xd0(1:2)],...
+    %                  'qcop', qcop,...
+    %                  'qr', qr,...
+    %                  'ql', ql,...
+    %                  'contact', contact);
 
-      omega = sqrt(9.81 / x0(3));
-      obj = RecoveryPlanner(start, omega, 15, 0.05);
-      obj.max_foot_velocity = 2;
-      obj = obj.setup();
-      obj = obj.solveYalmip(sdpsettings('solver', 'gurobi', 'verbose', 1));
+    %   omega = sqrt(9.81 / x0(3));
+    %   obj = RecoveryPlanner();
+    %   obj = obj.setup(start, omega, 15, 0.05);
+    %   obj = obj.solveYalmip(sdpsettings('solver', 'gurobi', 'verbose', 1));
 
-      utraj = obj.getUtraj();
+    %   utraj = obj.getUtraj();
 
-      breaks = utraj.getBreaks();
+    %   breaks = utraj.getBreaks();
 
-      ts = linspace(breaks(1), breaks(end));
+    %   ts = linspace(breaks(1), breaks(end));
 
-      r = PointMassBiped(omega);
-      v = r.constructVisualizer();
-      sys = cascade(utraj, r);
-      ytraj = sys.simulate([breaks(1), breaks(end)], start.xcom);
-      v.playback(ytraj, struct('slider', true));
+    %   r = PointMassBiped(omega);
+    %   v = r.constructVisualizer();
+    %   sys = cascade(utraj, r);
+    %   ytraj = sys.simulate([breaks(1), breaks(end)], start.xcom);
+    %   v.playback(ytraj, struct('slider', true));
 
-      ys_sim = ytraj.eval(ts);
-      xcom_sim = ys_sim(1:2,:);
+    %   ys_sim = ytraj.eval(ts);
+    %   xcom_sim = ys_sim(1:2,:);
 
-      us = utraj.eval(ts);
-      xcom_des = us(end-1:end,:);
-    end
+    %   us = utraj.eval(ts);
+    %   xcom_des = us(end-1:end,:);
+    % end
   end
 
   methods
-    function obj = RecoveryPlanner(start, omega, nsteps, dt)
+    function obj = RecoveryPlanner(nsteps, dt)
       checkDependency('yalmip');
       yalmip('clear');
       obj = obj@MixedIntegerConvexProgram(true);
+
+      if ~isempty(nsteps)
+        obj.nsteps = nsteps;
+      end
+      if ~isempty(dt)
+        obj.dt = dt;
+      end
+
+      obj = obj.addVariable('xcom', 'C', [4, obj.nsteps], -1, 1);
+      obj = obj.addVariable('qcop', 'C', [2, obj.nsteps], -1, 1);
+      obj = obj.addVariable('qr', 'C', [2, obj.nsteps], -1, 1);
+      obj = obj.addVariable('ql', 'C', [2, obj.nsteps], -1, 1);
+      obj = obj.addVariable('contained', 'B', [2, obj.nsteps], 0, 1);
+
+
+      obj = obj.addSymbolicConstraints([...
+        obj.vars.qr.symb(:,end-1) == obj.vars.qr.symb(:,end),...
+        obj.vars.ql.symb(:,end-1) == obj.vars.ql.symb(:,end),...
+        ]);
+
+    end
+
+    function sol = solveBipedProblem(obj, biped, x0, zmp0)
+      typecheck(biped, 'Biped')
+      nq = biped.getNumPositions();
+      q0 = x0(1:nq);
+      feet_position = biped.feetPosition(q0);
+
+      warning('Assuming ground is at 0 here')
+      contact = [feet_position.right(3) < 0.01; feet_position.left(3) < 0.01];
+
+      cop0 = mean([feet_position.right(1:2), feet_position.left(1:2)], 2);
+      if isempty(zmp0)
+        feet = [feet_position.right(1:2), feet_position.left(1:2)];
+        cop0 = mean(feet(:,contact'), 2);
+      else
+        cop0 = zmp0(:,end);
+      end
+
+      kinsol = biped.doKinematics(q0);
+      [qcom, J] = biped.getCOM(kinsol);
+      qcomdot = J * x0((biped.getNumPositions()+1):end);
+
+      start = struct('xcom', [qcom(1:2); qcomdot(1:2)],...
+                     'qcop', cop0,...
+                     'qr', feet_position.right(1:2),...
+                     'ql', feet_position.left(1:2),...
+                     'contact', contact);
+
+      warning('another z = 0 assumption here');
+      omega = sqrt(9.81 / qcom(3));
+      sol = obj.solveBaseProblem(start, omega);
+    end
+
+    function sol = solveBaseProblem(obj, start, omega)
+      if obj.has_setup
+        error('Drake:RecoveryPlanner:DuplicateSetup', 'Cannot call setup twice on the same recovery planner instance');
+      end
+      obj.has_setup = true;
       obj.start = start;
       obj.omega = omega;
-      obj.nsteps = nsteps;
-      obj.dt = dt;
 
       x_lb = [repmat(obj.start.xcom(1:2) - 30, 1, obj.nsteps);
               -10 + zeros(2, obj.nsteps)];
       x_ub = [repmat(obj.start.xcom(1:2) + 30, 1, obj.nsteps);
               10 + zeros(2, obj.nsteps)];
-      obj = obj.addVariable('xcom', 'C', [4, obj.nsteps], x_lb, x_ub);
-      obj = obj.addVariable('qcop', 'C', [2, obj.nsteps], x_lb(1:2,:), x_ub(1:2,:));
-      obj = obj.addVariable('qr', 'C', [2, obj.nsteps], x_lb(1:2,:), x_ub(1:2,:));
-      obj = obj.addVariable('ql', 'C', [2, obj.nsteps], x_lb(1:2,:), x_ub(1:2,:));
-      obj = obj.addVariable('contained', 'B', [2, obj.nsteps], 0, 1);
+      obj.vars.xcom.lb = x_lb;
+      obj.vars.xcom.ub = x_ub;
+      obj.vars.qcop.lb = x_lb(1:2,:);
+      obj.vars.qcop.ub = x_ub(1:2,:);
+      obj.vars.qr.lb = x_lb(1:2,:);
+      obj.vars.qr.ub = x_ub(1:2,:);
+      obj.vars.ql.lb = x_lb(1:2,:);
+      obj.vars.ql.ub = x_ub(1:2,:);
 
       for v = {'xcom', 'qr', 'ql', 'qcop'}
         name = v{1};
         obj.vars.(name).lb(:,1) = obj.start.(name)(1:obj.vars.(name).size(1));
         obj.vars.(name).ub(:,1) = obj.start.(name)(1:obj.vars.(name).size(1));
       end
-
-      % obj.vars.contained.lb(:,1) = obj.start.contact;
-      % obj.vars.contained.ub(:,1) = obj.start.contact;
 
       if start.contact(1)
         obj = obj.addSymbolicConstraints([...
@@ -102,14 +159,7 @@ classdef RecoveryPlanner < MixedIntegerConvexProgram
           obj.vars.ql.symb(:,2) == obj.vars.ql.symb(:,1),...
           ]);
       end
-      obj = obj.addSymbolicConstraints([...
-        obj.vars.qr.symb(:,end-1) == obj.vars.qr.symb(:,end),...
-        obj.vars.ql.symb(:,end-1) == obj.vars.ql.symb(:,end),...
-        ]);
 
-    end
-
-    function obj = setup(obj)
       obj = obj.addDiscreteLinearDynamics();
       obj = obj.addReachability();
       obj = obj.addContactConstraints();
@@ -122,6 +172,21 @@ classdef RecoveryPlanner < MixedIntegerConvexProgram
 
       % obj = obj.addSymbolicObjective(-.05 * sum(sum(obj.vars.contact.symb)));
 
+      obj = obj.solveYalmip(sdpsettings('solver', 'gurobi', 'verbose', 1));
+
+      sol = PointMassBipedPlan();
+      sol.ts = obj.dt * (0:(obj.nsteps-1));
+      sol.xcom = obj.vars.xcom.value;
+      sol.qr = obj.vars.qr.value;
+      sol.ql = obj.vars.ql.value;
+      sol.qcop = obj.vars.qcop.value;
+      motion = [any(abs(diff(obj.vars.qr.value, 1, 2)) >= 0.005), false;
+                any(abs(diff(obj.vars.ql.value, 1, 2)) >= 0.005), false];
+      support = ~(motion | [[false; false], motion(:,1:end-1)] | [motion(:,2:end), [false; false]]);
+      support(:,1) = support(:,1) & obj.start.contact;
+      sol.support = support;
+      sol.omega = obj.omega;
+      sol.nsteps = obj.nsteps;
     end
 
     function obj = addDiscreteLinearDynamics(obj)
@@ -254,85 +319,6 @@ classdef RecoveryPlanner < MixedIntegerConvexProgram
       end
     end
 
-    function utraj = getUtraj(obj)
-      r = PointMassBiped(obj.omega);
 
-      breaks = (0:(obj.nsteps-1)) * obj.dt;
-      traj = PPTrajectory(foh(breaks, obj.vars.qcop.value));
-      traj = traj.vertcat(PPTrajectory(foh(breaks, obj.vars.qr.value)));
-      traj = traj.vertcat(PPTrajectory(foh(breaks, obj.vars.ql.value)));
-      contact = obj.getContactSequence();
-      traj = traj.vertcat(PPTrajectory(zoh(breaks, contact)));
-      traj = traj.vertcat(PPTrajectory(pchipDeriv(breaks, obj.vars.xcom.value(1:2,:), obj.vars.xcom.value(3:4,:))));
-
-      utraj = traj.setOutputFrame(r.getInputFrame());
-
-    end
-    
-    function contact = getContactSequence(obj)
-      motion = [any(abs(diff(obj.vars.qr.value, 1, 2)) >= 0.005), false;
-                any(abs(diff(obj.vars.ql.value, 1, 2)) >= 0.005), false];
-      % contact = ~(motion | [[false; false], motion(:,1:end-1)] | [motion(:,2:end), [false; false]]);
-      contact = ~motion;
-    end
-
-    function walking_plan = getWalkingPlan(obj, biped, x0)
-      typecheck(biped, 'Biped');
-      foot_start = biped.feetPosition(x0(1:biped.getNumPositions()));
-      motion = [any(abs(diff(obj.vars.qr.value, 1, 2)) >= 0.005), false;
-                any(abs(diff(obj.vars.ql.value, 1, 2)) >= 0.005), false];
-      support = ~(motion | [[false; false], motion(:,1:end-1)] | [motion(:,2:end), [false; false]]);
-      support(:,1) = support(:,1) & obj.start.contact;
-      % contact = obj.getContactSequence();
-      % contained = obj.vars.contained.value;
-      body_ind = struct('right', biped.getFrame(biped.foot_frame_id.right).body_ind,...
-                        'left', biped.getFrame(biped.foot_frame_id.left).body_ind);
-      body_ind_list = [body_ind.right, body_ind.left];
-      initial_supports = RigidBodySupportState(biped, body_ind_list(support(:,1)));
-      zmp_knots = struct('t', 0, 'zmp', obj.vars.qcop.value(:,1), 'supp', initial_supports);
-
-      offset = [-0.048; 0; 0.0811; 0;0;0];
-      foot_origin_knots = struct('t', 0,...
-                                 'right', foot_start.right + offset,...
-                                 'left', foot_start.left + offset,...
-                                 'is_liftoff', false,...
-                                 'is_landing', false,...
-                                 'toe_off_allowed', struct('right', false, 'left', false));
-      warning('ignoring roll and pitch')
-      for j = 2:obj.nsteps
-        foot_origin_knots(end+1).t = foot_origin_knots(end).t + obj.dt;
-        if motion(1,j) || motion(1,j-1)
-          zr = 0.025;
-        else
-          zr = 0;
-        end
-        if motion(2,j) || motion(2, j-1)
-          zl = 0.025;
-        else
-          zl = 0;
-        end
-        foot_origin_knots(end).right = [obj.vars.qr.value(:,j); zr; 0; 0; foot_start.right(6)] + offset;
-        foot_origin_knots(end).left = [obj.vars.ql.value(:,j); zl; 0; 0; foot_start.left(6)] + offset;
-        foot_origin_knots(end).is_liftoff = any(support(:,j) < support(:,j-1));
-        if j > 2
-          foot_origin_knots(end).is_landing = any(support(:,j) > support(:,j-1));
-        else
-          foot_origin_knots(end).is_landing = false;
-        end
-        foot_origin_knots(end).toe_off_allowed = struct('right', false, 'left', false);
-
-        zmp_knots(end+1).t = zmp_knots(end).t + obj.dt;
-        zmp_knots(end).zmp = obj.vars.qcop.value(:,j);
-        zmp_knots(end).supp = RigidBodySupportState(biped, body_ind_list(support(:,j)));
-      end
-
-      foot_origin_knots(end+1) = foot_origin_knots(end);
-      foot_origin_knots(end).t = foot_origin_knots(end-1).t + obj.dt
-
-      zmp_knots(end+1) = zmp_knots(end);
-      zmp_knots(end).t = zmp_knots(end).t + obj.dt;
-
-      walking_plan = WalkingPlanData.from_biped_foot_and_zmp_knots(foot_origin_knots, zmp_knots, biped, x0);
-    end
   end
 end

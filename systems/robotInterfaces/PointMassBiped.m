@@ -2,6 +2,17 @@ classdef PointMassBiped < LinearSystem
   properties
     omega
   end
+  methods(Static)
+    function frame = constructStateFrame()
+      state_coords = {'com_x', 'com_y', 'com_xdot', 'com_ydot'};
+      frame = SingletonCoordinateFrame('PointMassBipedState', length(state_coords), 'x', state_coords);
+    end
+
+    function frame = constructInputFrame()
+      input_coords = {'cop_x', 'cop_y', 'rfoot_x', 'rfoot_y', 'lfoot_x', 'lfoot_y', 'rfoot_contact', 'lfoot_contact', 'com_des_x', 'com_des_y'};
+      frame = SingletonCoordinateFrame('PointMassBipedInput', length(input_coords), 'u', input_coords);
+    end
+  end
 
   methods
     function obj = PointMassBiped(omega)
@@ -18,11 +29,9 @@ classdef PointMassBiped < LinearSystem
       obj = obj@LinearSystem(Ac, Bc, [], [], C, D);
       obj.omega = omega;
 
-      state_coords = {'com_x', 'com_y', 'com_xdot', 'com_ydot'};
-      obj = obj.setStateFrame(SingletonCoordinateFrame('PointMassBipedState', length(state_coords), 'x', state_coords));
+      obj = obj.setStateFrame(PointMassBiped.constructStateFrame());
 
-      input_coords = {'cop_x', 'cop_y', 'rfoot_x', 'rfoot_y', 'lfoot_x', 'lfoot_y', 'rfoot_contact', 'lfoot_contact', 'com_des_x', 'com_des_y'};
-      obj = obj.setInputFrame(SingletonCoordinateFrame('PointMassBipedInput', length(input_coords), 'u', input_coords));
+      obj = obj.setInputFrame(PointMassBiped.constructInputFrame());
       
       obj = obj.setOutputFrame(MultiCoordinateFrame({obj.getStateFrame(), obj.getInputFrame()}));
     end
