@@ -1,6 +1,7 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include <string.h>
 #include <fstream>
 #include <sstream>
 #include <map>
@@ -182,7 +183,8 @@ URDFRigidBodyManipulator::URDFRigidBodyManipulator(void)
 {
 	bodies[0]->linkname = "world";
 	bodies[0]->parent = -1;
-        bodies[0]->robotnum = 0;
+	bodies[0]->robotnum = 0;
+	use_new_kinsol = true; // assuming new kinsol in the updated logic below
 }
 
 void setJointLimits(boost::shared_ptr<urdf::ModelInterface> urdf_model, boost::shared_ptr<urdf::Joint> j, const map<string, int> &dofname_to_dofnum, VectorXd& joint_limit_min, VectorXd& joint_limit_max);
@@ -476,20 +478,63 @@ void setJointLimits(boost::shared_ptr<urdf::ModelInterface> urdf_model, boost::s
   }
 }
 
+bool parseInertial(RigidBody* body, TiXmlElement* node, URDFRigidBodyManipulator* model)
+{
+  return true;
+}
+
+bool parseLink(URDFRigidBodyManipulator* model, TiXmlElement* node, int robotnum)
+{
+  if (strcmp(node->Attribute("drake_ignore"),"true")==0) return true;
+  RigidBody* body = new RigidBody();
+
+  body->linkname = node->Attribute("name");
+
+  TiXmlElement* inertial_node = node->FirstChildElement("inertial");
+  if (inertial_node) if (!parseInertial(body,inertial_node,model)) return false;
+
+  model->bodies.push_back(std::unique_ptr<RigidBody>(body));
+  return true;
+}
+
+bool parseRobot(URDFRigidBodyManipulator* model, TiXmlElement* node, const string &root_dir)
+{
+  string robotname = node->Attribute("name");
+  int robotnum = (int)model->name_map.size();
+  model->name_map.insert(make_pair(robotname,robotnum));
+
+  // todo: parse materials
+
+  // todo (maybe): parse parameters
+
+  // parse link elements
+  for (TiXmlElement* link_node = node->FirstChildElement("link"); link_node; link_node = link_node->NextSiblingElement("link"))
+    if (!parseLink(model,link_node,robotnum)) return false;
+
+  return true;
+}
+
+
 bool URDFRigidBodyManipulator::addRobotFromURDFString(const string &xml_string, const string &root_dir)
 {
-  // call ROS urdf parsing
-	boost::shared_ptr<urdf::ModelInterface> _urdf_model;
-	try {
-		 _urdf_model = urdf::parseURDF(xml_string);
-  } catch (urdf::ParseError &e) {
-  	cerr << e.what() << endl;
-  	return false;
-  } catch (urdf::ParseError *e) {
-  	cerr << e->what() << endl;
-  	return false;
+  TiXmlDocument xml_doc;
+  xml_doc.Parse(xml_string.c_str());  // a little inefficient to parse a second time, but ok for now
+  // eventually, we'll probably just crop out the ros urdf parser completely.
+
+  TiXmlElement *node = xml_doc.FirstChildElement("robot");
+  if (!node) {
+    cerr << "ERROR: This urdf does not contain a robot tag" << endl;
+    return false;
   }
 
+  if (!parseRobot(this, node, root_dir))
+    return false;
+
+  compile();
+  return true;
+}
+
+/*
   // produce a joint number for each joint where the parent has a
   // lower number than all of it's children.
   // NOTE:  The joint number does not necessarily match the number in
@@ -783,12 +828,6 @@ bool URDFRigidBodyManipulator::addRobotFromURDFString(const string &xml_string, 
 
   // parse extra tags supported by drake
 
-  TiXmlDocument xml_doc;
-  xml_doc.Parse(xml_string.c_str());  // a little inefficient to parse a second time, but ok for now
-  // eventually, we'll probably just crop out the ros urdf parser completely.
-
-  TiXmlElement *robot_xml = xml_doc.FirstChildElement("robot");
-
   // parse transmission elements
   for (TiXmlElement* transmission_xml = robot_xml->FirstChildElement("transmission"); transmission_xml; transmission_xml = transmission_xml->NextSiblingElement("transmission"))
   {
@@ -845,6 +884,7 @@ bool URDFRigidBodyManipulator::addRobotFromURDFString(const string &xml_string, 
 
   return true;
 }
+*/
 
 bool URDFRigidBodyManipulator::addRobotFromURDF(const string &urdf_filename)
 {
@@ -897,3 +937,6 @@ URDFRigidBodyManipulator* loadURDFfromFile(const string &urdf_filename)
   model->addRobotFromURDF(urdf_filename);
   return model;
 }
+
+
+
