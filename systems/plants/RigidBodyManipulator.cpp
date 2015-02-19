@@ -1053,6 +1053,10 @@ void RigidBodyManipulator::doKinematicsNew(double* q, bool compute_gradients, do
           }
         }
       }
+
+      // Update collision geometries
+      collision_model->updateElementsForBody(i,body.T_new.matrix());
+      collision_model_no_margins->updateElementsForBody(i,body.T_new.matrix());
     }
     else {
       body.T_new = Isometry3d(body.Ttree);
