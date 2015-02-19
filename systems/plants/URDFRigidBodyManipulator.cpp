@@ -187,325 +187,6 @@ URDFRigidBodyManipulator::URDFRigidBodyManipulator(void)
 
 void setJointLimits(boost::shared_ptr<urdf::ModelInterface> urdf_model, boost::shared_ptr<urdf::Joint> j, const map<string, int> &dofname_to_dofnum, VectorXd& joint_limit_min, VectorXd& joint_limit_max);
 
-bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _urdf_model, map<string, int> jointname_to_jointnum, map<string,int> dofname_to_dofnum, const string& xml_string, const string & root_dir)
-{
-  robot_map.insert(make_pair(_urdf_model->getName(),(int)robot_name.size()));
-  robot_name.push_back(_urdf_model->getName());
-  resize(num_dof + (int)dofname_to_dofnum.size(),-1,num_bodies + (int)jointname_to_jointnum.size());
-  for (map<string, boost::shared_ptr<urdf::Joint> >::iterator j=_urdf_model->joints_.begin(); j!=_urdf_model->joints_.end(); j++)
-  {
-    setJointLimits(_urdf_model,j->second,dofname_to_dofnum,this->joint_limit_min,this->joint_limit_max);
-  }
-  this->joint_limit_min[dofname_to_dofnum.at("base_x")] = -1.0/0.0;
-  this->joint_limit_max[dofname_to_dofnum.at("base_x")] = 1.0/0.0;
-  this->joint_limit_min[dofname_to_dofnum.at("base_y")] = -1.0/0.0;
-  this->joint_limit_max[dofname_to_dofnum.at("base_y")] = 1.0/0.0;
-  this->joint_limit_min[dofname_to_dofnum.at("base_z")] = -1.0/0.0;
-  this->joint_limit_max[dofname_to_dofnum.at("base_z")] = 1.0/0.0;
-  this->joint_limit_min[dofname_to_dofnum.at("base_roll")] = -1.0/0.0;
-  this->joint_limit_max[dofname_to_dofnum.at("base_roll")] = 1.0/0.0;
-  this->joint_limit_min[dofname_to_dofnum.at("base_pitch")] = -1.0/0.0;
-  this->joint_limit_max[dofname_to_dofnum.at("base_pitch")] = 1.0/0.0;
-  this->joint_limit_min[dofname_to_dofnum.at("base_yaw")] = -1.0/0.0;
-  this->joint_limit_max[dofname_to_dofnum.at("base_yaw")] = 1.0/0.0;
-  joint_map.push_back(jointname_to_jointnum);
-  dof_map.push_back(dofname_to_dofnum);
-  urdf_model.push_back(_urdf_model);
-  bool print_mesh_package_warning(true);
-  
-  int robotnum = static_cast<int>(this->robot_name.size())-1;
-  for (map<string, boost::shared_ptr<urdf::Link> >::iterator l=_urdf_model->links_.begin(); l!=_urdf_model->links_.end(); l++) {
-    int index, _dofnum;
-
-    if (l->second->parent_joint) {
-    	boost::shared_ptr<urdf::Joint> j = l->second->parent_joint;
-    	map<string, int>::const_iterator jn=findWithSuffix(jointname_to_jointnum,j->name);
-    	if (jn == jointname_to_jointnum.end()) ROS_ERROR("can't find joint %s.  this shouldn't happen", j->name.c_str());
-    	index = jn->second;
-      map<string, int>::const_iterator dn=findWithSuffix(dofname_to_dofnum,j->name);
-      if (dn == dofname_to_dofnum.end()) ROS_ERROR("can't find joint %s.  this shouldn't happen", j->name.c_str());
-      _dofnum = dn->second;
-
-    	bodies[index]->linkname = l->first;
-    	bodies[index]->jointname = j->name;
-//    	cout << "body[" << index << "] linkname: " << bodies[index]->linkname << "(mass: " << bodies[index]->mass << "), jointname: " << bodies[index]->jointname << endl;
-
-      bodies[index]->robotnum = robotnum;
-
-    	{ // set up parent
-    		map<string, boost::shared_ptr<urdf::Link> >::iterator pl=_urdf_model->links_.find(j->parent_link_name);
-    		if (pl == _urdf_model->links_.end()) ROS_ERROR("can't find link %s.  this shouldn't happen", j->parent_link_name.c_str());
-
-    		if (pl->second->parent_joint) {
-    			boost::shared_ptr<urdf::Joint> pj = pl->second->parent_joint;
-    			map<string, int>::iterator pjn=jointname_to_jointnum.find(pj->name);
-    			if (pjn == jointname_to_jointnum.end()) ROS_ERROR("can't find joint %s.  this shouldn't happen", pj->name.c_str());
-
-    			bodies[index]->parent = pjn->second;
-    			parent[index-1] = pjn->second-1;
-    		} else { // the parent body is the floating base
-            	string jointname="base";
-                map<string, int>::iterator jn=jointname_to_jointnum.find(jointname);
-                if (jn == jointname_to_jointnum.end()) ROS_ERROR("can't find joint %s.  this shouldn't happen",jointname.c_str());
-                bodies[index]->parent = jn->second;
-    		}
-    	}
-
-    	bodies[index]->dofnum = _dofnum;
-    	dofnum[index-1] = _dofnum;
-
-    	// set pitch and floating
-    	switch (j->type) {
-    	case urdf::Joint::PRISMATIC:
-    		pitch[index-1] = INF;
-    		bodies[index]->pitch = INF;
-    		bodies[index]->floating=0;
-    		break;
-      default:  // continuous, rotary, fixed, ...
-      	pitch[index-1] = 0.0;
-      	bodies[index]->pitch = 0.0;
-      	bodies[index]->floating=0;
-      	break;
-      }
-
-      // setup kinematic tree
-      {
-      	poseToTransform(j->parent_to_joint_origin_transform,bodies[index]->Ttree);
-
-        Vector3d zvec; zvec << 0,0,1;
-        Vector3d joint_axis; joint_axis << j->axis.x, j->axis.y, j->axis.z;
-        Vector3d axis = joint_axis.cross(zvec);
-        double angle = acos(joint_axis.dot(zvec));
-        double qx,qy,qz,qw;
-        if (axis.squaredNorm()<.0001) //  then it's a scaling of the z axis.
-          axis << 0,1,0;
-        axis.normalize();
-        qw=cos(angle/2.0);
-        qx=axis(0)*sin(angle/2.0);
-        qy=axis(1)*sin(angle/2.0);
-        qz=axis(2)*sin(angle/2.0);
-
-        bodies[index]->T_body_to_joint <<
-                qw*qw + qx*qx - qy*qy - qz*qz, 2*qx*qy - 2*qw*qz, 2*qx*qz + 2*qw*qy, 0,
-                2*qx*qy + 2*qw*qz,  qw*qw + qy*qy - qx*qx - qz*qz, 2*qy*qz - 2*qw*qx, 0,
-                2*qx*qz - 2*qw*qy, 2*qy*qz + 2*qw*qx, qw*qw + qz*qz - qx*qx - qy*qy, 0,
-                0, 0, 0, 1;
-      }
-      {
-        // set DrakeJoint
-        // FIXME creating joint based on bodies[index]->floating and bodies[index]->pitch to match the switch (j->type) above.
-        // This switch doesn't handle floating joints however...
-        // Best not to change functionality at this point.
-        Vector3d joint_axis;
-        joint_axis << j->axis.x, j->axis.y, j->axis.z;
-        Isometry3d transform_to_parent_body;
-        poseToTransform(j->parent_to_joint_origin_transform,transform_to_parent_body.matrix());
-        bodies[index]->setJoint(createJoint(j->name, transform_to_parent_body, bodies[index]->floating, joint_axis, bodies[index]->pitch));
-      }
-
-    } else { // no joint, this link is attached directly to the floating base
-    	string jointname="base";
-      map<string, int>::const_iterator jn=findWithSuffix(jointname_to_jointnum,jointname);
-      //DEBUG
-      //if (jn == jointname_to_jointnum.end()) {
-        //for (auto p : jointname_to_jointnum) {
-          //cout << p.first << endl;
-        //}
-      //}
-      //END_DEBUG
-    	if (jn == jointname_to_jointnum.end()) ROS_ERROR("can't find joint %s.  this shouldn't happen",jointname.c_str());
-    	index = jn->second;
-      map<string, int>::const_iterator dn=findWithSuffix(dofname_to_dofnum,"base_x");
-      if (dn == dofname_to_dofnum.end()) ROS_ERROR("can't find dof base_x.  this shouldn't happen");
-      _dofnum = dn->second;
-
-    	// set up RigidBody (kinematics)
-    	bodies[index]->linkname = l->first;
-    	bodies[index]->jointname = jointname;
-        bodies[index]->robotnum = robotnum;
-
-//    	cout << "body[" << index << "] linkname: " << bodies[index]->linkname << ", jointname: " << bodies[index]->jointname << endl;
-
-    	bodies[index]->parent = 0;
-    	bodies[index]->dofnum = _dofnum;
-      bodies[index]->floating = 1;
-      // pitch is irrelevant
-      bodies[index]->Ttree = Matrix4d::Identity();
-      bodies[index]->T_body_to_joint = Matrix4d::Identity();
-      bodies[index]->setJoint(std::unique_ptr<RollPitchYawFloatingJoint>(new RollPitchYawFloatingJoint(jointname, Isometry3d::Identity())));
-
-      // todo: set up featherstone structure (dynamics)
-      parent[index-1] = -1;
-      dofnum[index-1] = _dofnum;
-    }
-
-    if(l->second->inertial != nullptr)
-    {
-      boost::shared_ptr<urdf::Inertial> inertial = l->second->inertial;
-      bodies[index]->mass = inertial->mass;
-      bodies[index]->com << inertial->origin.position.x, inertial->origin.position.y, inertial->origin.position.z, 1.0;
-
-      bodies[index]->I = bodies[index]->mass*Matrix<double,TWIST_SIZE,TWIST_SIZE>::Identity();
-      bodies[index]->I.block(0,0,3,3) << inertial->ixx, inertial->ixy, inertial->ixz,
-                                         inertial->ixy, inertial->iyy, inertial->iyz,
-                                         inertial->ixz, inertial->iyz, inertial->izz;
-
-      Transform<double, 3, 1> T;
-      poseToTransform(inertial->origin,T.matrix());
-      auto I = transformSpatialInertia(T,static_cast<  Gradient<Isometry3d::MatrixType, Eigen::Dynamic>::type* >(NULL),bodies[index]->I);
-      bodies[index]->I = I.value();
-    }
-
-    if (!l->second->collision_groups.empty()) { // then at least one collision element exists
-      // todo: keep track of which collision elements belong to which groups
-      for ( auto c_grp_it = l->second->collision_groups.begin()
-          ; c_grp_it != l->second->collision_groups.end()
-          ; ++c_grp_it)
-      {
-        vector<boost::shared_ptr<urdf::Collision> > *collisions = c_grp_it->second.get();
-        for (vector<boost::shared_ptr<urdf::Collision> >::iterator citer = collisions->begin(); citer!=collisions->end(); citer++)
-        {
-          bool create_collision_element(true);
-          urdf::Collision * cptr = citer->get();
-          if (!cptr) continue;
-
-          Matrix4d T;
-          poseToTransform(cptr->origin,T);
-          DrakeCollision::Shape shape = DrakeCollision::Shape::UNKNOWN;
-
-          int type = cptr->geometry->type;
-          vector<double> params;
-        	switch (type) {
-        	case urdf::Geometry::BOX:
-            {
-          	  boost::shared_ptr<urdf::Box> box(boost::dynamic_pointer_cast<urdf::Box>(cptr->geometry));
-              params.push_back(box->dim.x);
-              params.push_back(box->dim.y);
-              params.push_back(box->dim.z);
-              shape = DrakeCollision::Shape::BOX;
-            }
-        		break;
-        	case urdf::Geometry::SPHERE:
-           	{
-          		boost::shared_ptr<urdf::Sphere> sphere(boost::dynamic_pointer_cast<urdf::Sphere>(cptr->geometry));
-              params.push_back(sphere->radius);
-              shape = DrakeCollision::Shape::SPHERE;
-          	}
-        		break;
-        	case urdf::Geometry::CYLINDER:
-          	{
-          		boost::shared_ptr<urdf::Cylinder> cyl(boost::dynamic_pointer_cast<urdf::Cylinder>(cptr->geometry));
-              params.push_back(cyl->radius);
-              params.push_back(cyl->length);
-              shape = DrakeCollision::CYLINDER;
-          	}
-        		break;
-        	case urdf::Geometry::MESH:
-          	{
-              boost::shared_ptr<urdf::Mesh> mesh(boost::dynamic_pointer_cast<urdf::Mesh>(cptr->geometry));
-              boost::filesystem::path mesh_filename(root_dir);
-              boost::regex package(".*package://.*");
-              if (!boost::regex_match(mesh->filename, package)) {
-                mesh_filename /= mesh->filename;
-                readObjFile(mesh_filename,params);
-              } else {
-                create_collision_element = false;
-                if (print_mesh_package_warning) {
-                  cerr << "Warning: The robot '" << _urdf_model->getName()
-                       << "' contains collision geometries that specify mesh "
-                       << "files with the 'package://' syntax, which "
-                       << "URDFRigidBodyManipulator does not support. These "
-                       << "collision geometries will be ignored." << endl;
-                  print_mesh_package_warning = false;
-                }
-              }
-              shape = DrakeCollision::Shape::MESH;
-          	}
-        		break;
-        	default:
-        		cerr << "Link " << l->first << " has a collision element with an unknown type " << type << endl;
-        		break;
-          }
-          if (create_collision_element){
-            addCollisionElement(index,T,shape,params);
-          }
-        }
-      }
-      if (bodies[index]->parent<0) {
-        updateCollisionElements(index);  // update static objects only once - right here on load
-      }
-    }
-
-  }
-
-  compile();
-
-  // parse extra tags supported by drake
-
-  TiXmlDocument xml_doc;
-  xml_doc.Parse(xml_string.c_str());  // a little inefficient to parse a second time, but ok for now
-  // eventually, we'll probably just crop out the ros urdf parser completely.
-
-  TiXmlElement *robot_xml = xml_doc.FirstChildElement("robot");
-
-  // parse transmission elements
-  for (TiXmlElement* transmission_xml = robot_xml->FirstChildElement("transmission"); transmission_xml; transmission_xml = transmission_xml->NextSiblingElement("transmission"))
-  {
-    TiXmlElement* node = transmission_xml->FirstChildElement("joint");
-    if (!node) continue;
-
-    int _dofnum;
-    map<string, int>::const_iterator dn=findWithSuffix(dofname_to_dofnum,node->Attribute("name"));
-    if (dn == dofname_to_dofnum.end()) ROS_ERROR("can't find joint %s for transmission element.  this shouldn't happen");
-    _dofnum = dn->second;
-  //  cout << "adding actuator to joint " << node->Attribute("name") << " (dof: " << _dofnum << ")" << endl;
-
-    node = transmission_xml->FirstChildElement("mechanicalReduction");
-    double gain = 1.0;
-    if (node) sscanf(node->Value(),"%lf",&gain);
-
-    VectorXd B_col = VectorXd::Zero(num_velocities);
-    B_col(_dofnum) = gain;
-
-    B.conservativeResize(num_velocities, B.cols()+1);
-    B.rightCols(1) = B_col;
-  }
-
-  for (TiXmlElement* loop_xml = robot_xml->FirstChildElement("loop_joint"); loop_xml; loop_xml = loop_xml->NextSiblingElement("loop_joint"))
-  { // note: pushing this in without all of the surrounding drakeFunction logic just to get things moving.  this one needs to be fast.
-    urdf::Vector3 pt;
-    TiXmlElement* node = loop_xml->FirstChildElement("link1");
-    int bodyA=-1,bodyB=-1;
-
-    string linkname = node->Attribute("link");
-    for (int i=0; i<num_bodies; i++)
-      if (linkname==bodies[i]->linkname) {
-        bodyA=i;
-        break;
-      }
-    if (bodyA<0) ROS_ERROR("couldn't find link referenced in loop joint");
-    pt.init(node->Attribute("xyz"));
-    Vector3d ptA;  ptA << pt.x, pt.y, pt.z;
-
-    node = loop_xml->FirstChildElement("link2");
-    linkname = node->Attribute("link");
-    for (int i=0; i<num_bodies; i++)
-      if (linkname==bodies[i]->linkname) {
-        bodyB=i;
-        break;
-      }
-    if (bodyB<0) ROS_ERROR("couldn't find link referenced in loop joint");
-    pt.init(node->Attribute("xyz"));
-    Vector3d ptB;  ptB << pt.x, pt.y, pt.z;
-
-    RigidBodyLoop l(bodyA,ptA,bodyB,ptB);
-    loops.push_back(l);
-  }
-
-  return true;
-}
-
-
 URDFRigidBodyManipulator::~URDFRigidBodyManipulator(void)
 {}
 
@@ -783,6 +464,7 @@ void setJointLimits(boost::shared_ptr<urdf::ModelInterface> urdf_model, boost::s
     case urdf::Joint::FIXED:
       joint_limit_min[dofname_to_dofnum.at(j->name)] = j->limits->lower;
       joint_limit_max[dofname_to_dofnum.at(j->name)] = j->limits->upper;
+//      cout << j->limits->lower << " <= q(" << dofname_to_dofnum.at(j->name) << ") <= " << j->limits->upper << endl;
       break;
     case urdf::Joint::FLOATING:
       joint_limit_min[dofname_to_dofnum.at(j->name)] = -1.0/0.0;
@@ -849,22 +531,323 @@ bool URDFRigidBodyManipulator::addURDFfromXML(const string &xml_string, const st
   }
   
   // now populate my model class
-  addURDF(_urdf_model,jointname_to_jointnum,dofname_to_dofnum,xml_string,root_dir);
+  robot_map.insert(make_pair(_urdf_model->getName(),(int)robot_name.size()));
+  robot_name.push_back(_urdf_model->getName());
+  resize(num_dof + (int)dofname_to_dofnum.size(),-1,num_bodies + (int)jointname_to_jointnum.size());
+  for (map<string, boost::shared_ptr<urdf::Joint> >::iterator j=_urdf_model->joints_.begin(); j!=_urdf_model->joints_.end(); j++)
+  {
+    setJointLimits(_urdf_model,j->second,dofname_to_dofnum,this->joint_limit_min,this->joint_limit_max);
+  }
+  this->joint_limit_min[dofname_to_dofnum.at("base_x")] = -1.0/0.0;
+  this->joint_limit_max[dofname_to_dofnum.at("base_x")] = 1.0/0.0;
+  this->joint_limit_min[dofname_to_dofnum.at("base_y")] = -1.0/0.0;
+  this->joint_limit_max[dofname_to_dofnum.at("base_y")] = 1.0/0.0;
+  this->joint_limit_min[dofname_to_dofnum.at("base_z")] = -1.0/0.0;
+  this->joint_limit_max[dofname_to_dofnum.at("base_z")] = 1.0/0.0;
+  this->joint_limit_min[dofname_to_dofnum.at("base_roll")] = -1.0/0.0;
+  this->joint_limit_max[dofname_to_dofnum.at("base_roll")] = 1.0/0.0;
+  this->joint_limit_min[dofname_to_dofnum.at("base_pitch")] = -1.0/0.0;
+  this->joint_limit_max[dofname_to_dofnum.at("base_pitch")] = 1.0/0.0;
+  this->joint_limit_min[dofname_to_dofnum.at("base_yaw")] = -1.0/0.0;
+  this->joint_limit_max[dofname_to_dofnum.at("base_yaw")] = 1.0/0.0;
+  joint_map.push_back(jointname_to_jointnum);
+  dof_map.push_back(dofname_to_dofnum);
+  bool print_mesh_package_warning(true);
+
+  int robotnum = static_cast<int>(this->robot_name.size())-1;
+  for (map<string, boost::shared_ptr<urdf::Link> >::iterator l=_urdf_model->links_.begin(); l!=_urdf_model->links_.end(); l++) {
+    int index, _dofnum;
+
+    if (l->second->parent_joint) {
+    	boost::shared_ptr<urdf::Joint> j = l->second->parent_joint;
+    	map<string, int>::const_iterator jn=findWithSuffix(jointname_to_jointnum,j->name);
+    	if (jn == jointname_to_jointnum.end()) ROS_ERROR("can't find joint %s.  this shouldn't happen", j->name.c_str());
+    	index = jn->second;
+      map<string, int>::const_iterator dn=findWithSuffix(dofname_to_dofnum,j->name);
+      if (dn == dofname_to_dofnum.end()) ROS_ERROR("can't find joint %s.  this shouldn't happen", j->name.c_str());
+      _dofnum = dn->second;
+
+    	bodies[index]->linkname = l->first;
+    	bodies[index]->jointname = j->name;
+//    	cout << "body[" << index << "] linkname: " << bodies[index]->linkname << "(mass: " << bodies[index]->mass << "), jointname: " << bodies[index]->jointname << endl;
+
+      bodies[index]->robotnum = robotnum;
+
+    	{ // set up parent
+    		map<string, boost::shared_ptr<urdf::Link> >::iterator pl=_urdf_model->links_.find(j->parent_link_name);
+    		if (pl == _urdf_model->links_.end()) ROS_ERROR("can't find link %s.  this shouldn't happen", j->parent_link_name.c_str());
+
+    		if (pl->second->parent_joint) {
+    			boost::shared_ptr<urdf::Joint> pj = pl->second->parent_joint;
+    			map<string, int>::iterator pjn=jointname_to_jointnum.find(pj->name);
+    			if (pjn == jointname_to_jointnum.end()) ROS_ERROR("can't find joint %s.  this shouldn't happen", pj->name.c_str());
+
+    			bodies[index]->parent = pjn->second;
+    			parent[index-1] = pjn->second-1;
+    		} else { // the parent body is the floating base
+            	string jointname="base";
+                map<string, int>::iterator jn=jointname_to_jointnum.find(jointname);
+                if (jn == jointname_to_jointnum.end()) ROS_ERROR("can't find joint %s.  this shouldn't happen",jointname.c_str());
+                bodies[index]->parent = jn->second;
+    		}
+    	}
+
+    	bodies[index]->dofnum = _dofnum;
+    	dofnum[index-1] = _dofnum;
+
+    	// set pitch and floating
+    	switch (j->type) {
+    	case urdf::Joint::PRISMATIC:
+    		pitch[index-1] = INF;
+    		bodies[index]->pitch = INF;
+    		bodies[index]->floating=0;
+    		break;
+      default:  // continuous, rotary, fixed, ...
+      	pitch[index-1] = 0.0;
+      	bodies[index]->pitch = 0.0;
+      	bodies[index]->floating=0;
+      	break;
+      }
+
+      // setup kinematic tree
+      {
+      	poseToTransform(j->parent_to_joint_origin_transform,bodies[index]->Ttree);
+
+        Vector3d zvec; zvec << 0,0,1;
+        Vector3d joint_axis; joint_axis << j->axis.x, j->axis.y, j->axis.z;
+        Vector3d axis = joint_axis.cross(zvec);
+        double angle = acos(joint_axis.dot(zvec));
+        double qx,qy,qz,qw;
+        if (axis.squaredNorm()<.0001) //  then it's a scaling of the z axis.
+          axis << 0,1,0;
+        axis.normalize();
+        qw=cos(angle/2.0);
+        qx=axis(0)*sin(angle/2.0);
+        qy=axis(1)*sin(angle/2.0);
+        qz=axis(2)*sin(angle/2.0);
+
+        bodies[index]->T_body_to_joint <<
+                qw*qw + qx*qx - qy*qy - qz*qz, 2*qx*qy - 2*qw*qz, 2*qx*qz + 2*qw*qy, 0,
+                2*qx*qy + 2*qw*qz,  qw*qw + qy*qy - qx*qx - qz*qz, 2*qy*qz - 2*qw*qx, 0,
+                2*qx*qz - 2*qw*qy, 2*qy*qz + 2*qw*qx, qw*qw + qz*qz - qx*qx - qy*qy, 0,
+                0, 0, 0, 1;
+      }
+      {
+        // set DrakeJoint
+        // FIXME creating joint based on bodies[index]->floating and bodies[index]->pitch to match the switch (j->type) above.
+        // This switch doesn't handle floating joints however...
+        // Best not to change functionality at this point.
+        Vector3d joint_axis;
+        joint_axis << j->axis.x, j->axis.y, j->axis.z;
+        Isometry3d transform_to_parent_body;
+        poseToTransform(j->parent_to_joint_origin_transform,transform_to_parent_body.matrix());
+        bodies[index]->setJoint(createJoint(j->name, transform_to_parent_body, bodies[index]->floating, joint_axis, bodies[index]->pitch));
+      }
+
+    } else { // no joint, this link is attached directly to the floating base
+    	string jointname="base";
+      map<string, int>::const_iterator jn=findWithSuffix(jointname_to_jointnum,jointname);
+      //DEBUG
+      //if (jn == jointname_to_jointnum.end()) {
+        //for (auto p : jointname_to_jointnum) {
+          //cout << p.first << endl;
+        //}
+      //}
+      //END_DEBUG
+    	if (jn == jointname_to_jointnum.end()) ROS_ERROR("can't find joint %s.  this shouldn't happen",jointname.c_str());
+    	index = jn->second;
+      map<string, int>::const_iterator dn=findWithSuffix(dofname_to_dofnum,"base_x");
+      if (dn == dofname_to_dofnum.end()) ROS_ERROR("can't find dof base_x.  this shouldn't happen");
+      _dofnum = dn->second;
+
+    	// set up RigidBody (kinematics)
+    	bodies[index]->linkname = l->first;
+    	bodies[index]->jointname = jointname;
+        bodies[index]->robotnum = robotnum;
+
+//    	cout << "body[" << index << "] linkname: " << bodies[index]->linkname << ", jointname: " << bodies[index]->jointname << endl;
+
+    	bodies[index]->parent = 0;
+    	bodies[index]->dofnum = _dofnum;
+      bodies[index]->floating = 1;
+      // pitch is irrelevant
+      bodies[index]->Ttree = Matrix4d::Identity();
+      bodies[index]->T_body_to_joint = Matrix4d::Identity();
+      bodies[index]->setJoint(std::unique_ptr<RollPitchYawFloatingJoint>(new RollPitchYawFloatingJoint(jointname, Isometry3d::Identity())));
+
+      // todo: set up featherstone structure (dynamics)
+      parent[index-1] = -1;
+      dofnum[index-1] = _dofnum;
+    }
+
+    if(l->second->inertial != nullptr)
+    {
+      boost::shared_ptr<urdf::Inertial> inertial = l->second->inertial;
+      bodies[index]->mass = inertial->mass;
+      bodies[index]->com << inertial->origin.position.x, inertial->origin.position.y, inertial->origin.position.z, 1.0;
+
+      bodies[index]->I = bodies[index]->mass*Matrix<double,TWIST_SIZE,TWIST_SIZE>::Identity();
+      bodies[index]->I.block(0,0,3,3) << inertial->ixx, inertial->ixy, inertial->ixz,
+                                         inertial->ixy, inertial->iyy, inertial->iyz,
+                                         inertial->ixz, inertial->iyz, inertial->izz;
+
+      Transform<double, 3, 1> T;
+      poseToTransform(inertial->origin,T.matrix());
+      auto I = transformSpatialInertia(T,static_cast<  Gradient<Isometry3d::MatrixType, Eigen::Dynamic>::type* >(NULL),bodies[index]->I);
+      bodies[index]->I = I.value();
+    }
+
+    if (!l->second->collision_groups.empty()) { // then at least one collision element exists
+      // todo: keep track of which collision elements belong to which groups
+      for ( auto c_grp_it = l->second->collision_groups.begin()
+          ; c_grp_it != l->second->collision_groups.end()
+          ; ++c_grp_it)
+      {
+        vector<boost::shared_ptr<urdf::Collision> > *collisions = c_grp_it->second.get();
+        for (vector<boost::shared_ptr<urdf::Collision> >::iterator citer = collisions->begin(); citer!=collisions->end(); citer++)
+        {
+          bool create_collision_element(true);
+          urdf::Collision * cptr = citer->get();
+          if (!cptr) continue;
+
+          Matrix4d T;
+          poseToTransform(cptr->origin,T);
+          DrakeCollision::Shape shape = DrakeCollision::Shape::UNKNOWN;
+
+          int type = cptr->geometry->type;
+          vector<double> params;
+        	switch (type) {
+        	case urdf::Geometry::BOX:
+            {
+          	  boost::shared_ptr<urdf::Box> box(boost::dynamic_pointer_cast<urdf::Box>(cptr->geometry));
+              params.push_back(box->dim.x);
+              params.push_back(box->dim.y);
+              params.push_back(box->dim.z);
+              shape = DrakeCollision::Shape::BOX;
+            }
+        		break;
+        	case urdf::Geometry::SPHERE:
+           	{
+          		boost::shared_ptr<urdf::Sphere> sphere(boost::dynamic_pointer_cast<urdf::Sphere>(cptr->geometry));
+              params.push_back(sphere->radius);
+              shape = DrakeCollision::Shape::SPHERE;
+          	}
+        		break;
+        	case urdf::Geometry::CYLINDER:
+          	{
+          		boost::shared_ptr<urdf::Cylinder> cyl(boost::dynamic_pointer_cast<urdf::Cylinder>(cptr->geometry));
+              params.push_back(cyl->radius);
+              params.push_back(cyl->length);
+              shape = DrakeCollision::CYLINDER;
+          	}
+        		break;
+        	case urdf::Geometry::MESH:
+          	{
+              boost::shared_ptr<urdf::Mesh> mesh(boost::dynamic_pointer_cast<urdf::Mesh>(cptr->geometry));
+              boost::filesystem::path mesh_filename(root_dir);
+              boost::regex package(".*package://.*");
+              if (!boost::regex_match(mesh->filename, package)) {
+                mesh_filename /= mesh->filename;
+                readObjFile(mesh_filename,params);
+              } else {
+                create_collision_element = false;
+                if (print_mesh_package_warning) {
+                  cerr << "Warning: The robot '" << _urdf_model->getName()
+                       << "' contains collision geometries that specify mesh "
+                       << "files with the 'package://' syntax, which "
+                       << "URDFRigidBodyManipulator does not support. These "
+                       << "collision geometries will be ignored." << endl;
+                  print_mesh_package_warning = false;
+                }
+              }
+              shape = DrakeCollision::Shape::MESH;
+          	}
+        		break;
+        	default:
+        		cerr << "Link " << l->first << " has a collision element with an unknown type " << type << endl;
+        		break;
+          }
+          if (create_collision_element){
+            addCollisionElement(index,T,shape,params);
+          }
+        }
+      }
+      if (bodies[index]->parent<0) {
+        updateCollisionElements(index);  // update static objects only once - right here on load
+      }
+    }
+
+  }
+
+  compile();
+
+  // parse extra tags supported by drake
+
+  TiXmlDocument xml_doc;
+  xml_doc.Parse(xml_string.c_str());  // a little inefficient to parse a second time, but ok for now
+  // eventually, we'll probably just crop out the ros urdf parser completely.
+
+  TiXmlElement *robot_xml = xml_doc.FirstChildElement("robot");
+
+  // parse transmission elements
+  for (TiXmlElement* transmission_xml = robot_xml->FirstChildElement("transmission"); transmission_xml; transmission_xml = transmission_xml->NextSiblingElement("transmission"))
+  {
+    TiXmlElement* node = transmission_xml->FirstChildElement("joint");
+    if (!node) continue;
+
+    int _dofnum;
+    map<string, int>::const_iterator dn=findWithSuffix(dofname_to_dofnum,node->Attribute("name"));
+    if (dn == dofname_to_dofnum.end()) ROS_ERROR("can't find joint %s for transmission element.  this shouldn't happen");
+    _dofnum = dn->second;
+//    cout << "adding actuator to joint " << node->Attribute("name") << " (dof: " << _dofnum << ")" << endl;
+
+    node = transmission_xml->FirstChildElement("mechanicalReduction");
+    double gain = 1.0;
+    if (node) sscanf(node->Value(),"%lf",&gain);
+
+    VectorXd B_col = VectorXd::Zero(num_velocities);
+    B_col(_dofnum) = gain;
+
+    B.conservativeResize(num_velocities, B.cols()+1);
+    B.rightCols(1) = B_col;
+  }
+
+  for (TiXmlElement* loop_xml = robot_xml->FirstChildElement("loop_joint"); loop_xml; loop_xml = loop_xml->NextSiblingElement("loop_joint"))
+  { // note: pushing this in without all of the surrounding drakeFunction logic just to get things moving.  this one needs to be fast.
+    urdf::Vector3 pt;
+    TiXmlElement* node = loop_xml->FirstChildElement("link1");
+    int bodyA=-1,bodyB=-1;
+
+    string linkname = node->Attribute("link");
+    for (int i=0; i<num_bodies; i++)
+      if (linkname==bodies[i]->linkname) {
+        bodyA=i;
+        break;
+      }
+    if (bodyA<0) ROS_ERROR("couldn't find link %s referenced in loop joint",linkname.c_str());
+    pt.init(node->Attribute("xyz"));
+    Vector3d ptA;  ptA << pt.x, pt.y, pt.z;
+
+    node = loop_xml->FirstChildElement("link2");
+    linkname = node->Attribute("link");
+    for (int i=0; i<num_bodies; i++)
+      if (linkname==bodies[i]->linkname) {
+        bodyB=i;
+        break;
+      }
+    if (bodyB<0) ROS_ERROR("couldn't find link %s referenced in loop joint",linkname.c_str());
+    pt.init(node->Attribute("xyz"));
+    Vector3d ptB;  ptB << pt.x, pt.y, pt.z;
+
+    RigidBodyLoop l(bodyA,ptA,bodyB,ptB);
+    loops.push_back(l);
+  }
+
   return true;
 }
 
-URDFRigidBodyManipulator* loadURDFfromXML(const string &xml_string, const string &root_dir)
+bool URDFRigidBodyManipulator::addURDFfromFile(const string &urdf_filename)
 {
-  URDFRigidBodyManipulator* model = new URDFRigidBodyManipulator();
-  model->addURDFfromXML(xml_string,root_dir);
-  return model;
-}
-
-URDFRigidBodyManipulator* loadURDFfromFile(const string &urdf_filename)
-{
-	// urdf_filename can be a list of urdf files seperated by a :
-  URDFRigidBodyManipulator* model = new URDFRigidBodyManipulator();
-
   string token;
   istringstream iss(urdf_filename);
   
@@ -880,7 +863,7 @@ URDFRigidBodyManipulator* loadURDFfromFile(const string &urdf_filename)
     	xml_file.close();
     } else {
     	cerr << "Could not open file ["<<urdf_filename.c_str()<<"] for parsing."<< endl;
-    	return NULL;
+    	return false;
     }
 
     string pathname="";
@@ -894,8 +877,23 @@ URDFRigidBodyManipulator* loadURDFfromFile(const string &urdf_filename)
     }
     
     // parse URDF to get model
-    model->addURDFfromXML(xml_string,pathname);
+    addURDFfromXML(xml_string,pathname);
   }
   
+  return true;
+}
+
+URDFRigidBodyManipulator* loadURDFfromXML(const string &xml_string, const string &root_dir)
+{
+  URDFRigidBodyManipulator* model = new URDFRigidBodyManipulator();
+  model->addURDFfromXML(xml_string,root_dir);
+  return model;
+}
+
+URDFRigidBodyManipulator* loadURDFfromFile(const string &urdf_filename)
+{
+	// urdf_filename can be a list of urdf files seperated by a :
+  URDFRigidBodyManipulator* model = new URDFRigidBodyManipulator();
+  model->addURDFfromFile(urdf_filename);
   return model;
 }
