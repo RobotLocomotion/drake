@@ -38,44 +38,35 @@ r = compile(r);
 % set initial state to fixed point
 load(fullfile(getDrakePath,'examples','Atlas','data','atlas_fp.mat'));
 % xstar(r.getNumPositions() + (1:2)) = [0.3; 0.3];
-% xstar = Point(r.getStateFrame(), xstar);
+xstar = Point(r.getStateFrame(), xstar);
 % xstar.r_leg_hpy = -0.9;
 % xstar.r_leg_kny = 1.7;
 % xstar = double(xstar);
-xstar(r.getNumPositions() + (1:2)) = xstar(r.getNumPositions() + (1:2)) + perturbation;
+x0 = xstar;
+nq = r.getNumPositions();
+x0(nq + (1:2)) = x0(nq + (1:2)) + perturbation;
 
 v = r.constructVisualizer;
-v.display_dt = 0.03;
+v.display_dt = 0.001;
 
-nq = getNumPositions(r);
+recovery_planner = RecoveryPlanner([], []);
 
 zmpact = [];
 
 combined_xtraj = [];
 
 for iter = 1:3
-  x0 = xstar;
-  r = r.setInitialState(xstar);
-  v.draw(0, xstar)
-  q0 = x0(1:nq);
+  r = r.setInitialState(x0);
+  v.draw(0, x0)
 
-  feet_position = r.feetPosition(q0);
-  contact = [feet_position.right(3) < 0.01; feet_position.left(3) < 0.01];
-  cop0 = mean([feet_position.right(1:2), feet_position.left(1:2)], 2);
-  if isempty(zmpact)
-    feet = [feet_position.right(1:2), feet_position.left(1:2)];
-    cop0 = mean(feet(:,contact'), 2);
-  else
-    cop0 = zmpact(:,end);
-  end
-  kinsol = r.doKinematics(q0);
-  [qcom, J] = r.getCOM(kinsol);
-  qcomdot = J * x0((r.getNumPositions()+1):end);
-  % qcom = qcom - [0.1; 0; 0]
-  qcom
-  qcomdot
-  recovery_planner = RecoveryPlanner.run(qcom, qcomdot, cop0, feet_position.right(1:2), feet_position.left(1:2), contact);
-  walking_plan_data = recovery_planner.getWalkingPlan(r, x0);
+  plan = recovery_planner.solveBipedProblem(r, x0, zmpact);
+  walking_plan_data = WalkingPlanData.from_point_mass_biped_plan(plan, r, x0);
+
+  pm_biped = PointMassBiped(plan.omega);
+  [pm_traj, pm_v] = walking_plan_data.simulatePointMassBiped(pm_biped);
+  pm_v.playback(pm_traj, struct('slider', true));
+
+  walking_plan_data.qstar = xstar(1:nq);
 
   ts = walking_plan_data.zmptraj.getBreaks();
   T = ts(end);
@@ -92,9 +83,13 @@ for iter = 1:3
   lcmgl.switchBuffers();
   % keyboard()
 
-  traj = atlasUtil.simulateWalking(r, walking_plan_data, example_options.use_mex, false, example_options.use_bullet, example_options.use_angular_momentum, true);
-
-
+  sim_opts = struct('use_mex', example_options.use_mex,...
+                    'use_ik', false,...
+                    'use_bullet', example_options.use_bullet,...
+                    'use_angular_momentum', example_options.use_angular_momentum,...
+                    'draw_button', true,...
+                    'v', v);
+  traj = atlasUtil.simulateWalking(r, walking_plan_data, sim_opts);
 
   % ctrl_data = QPControllerData(true,struct(...
   %   'acceleration_input_frame',AtlasCoordinates(r),...
@@ -164,7 +159,7 @@ for iter = 1:3
   plot(tsample, lsole(3,:), 'g.-')
   xlim([0, T]);
 
-  xstar = traj.eval(tsample(end));
+  x0 = traj.eval(tsample(end));
 
   atlasUtil.plotWalkingTraj(r, traj, walking_plan_data);
 
@@ -181,6 +176,7 @@ for iter = 1:3
   end
 end
 
+combined_xtraj = combined_xtraj.setOutputFrame(r.getStateFrame());
 v.playback(combined_xtraj, struct('slider', true));
 
 
