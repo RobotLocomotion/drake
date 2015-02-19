@@ -476,7 +476,7 @@ void setJointLimits(boost::shared_ptr<urdf::ModelInterface> urdf_model, boost::s
   }
 }
 
-bool URDFRigidBodyManipulator::addURDFfromXML(const string &xml_string, const string &root_dir)
+bool URDFRigidBodyManipulator::addRobotFromURDFString(const string &xml_string, const string &root_dir)
 {
   // call ROS urdf parsing
 	boost::shared_ptr<urdf::ModelInterface> _urdf_model;
@@ -846,7 +846,7 @@ bool URDFRigidBodyManipulator::addURDFfromXML(const string &xml_string, const st
   return true;
 }
 
-bool URDFRigidBodyManipulator::addURDFfromFile(const string &urdf_filename)
+bool URDFRigidBodyManipulator::addRobotFromURDF(const string &urdf_filename)
 {
   string token;
   istringstream iss(urdf_filename);
@@ -877,7 +877,7 @@ bool URDFRigidBodyManipulator::addURDFfromFile(const string &urdf_filename)
     }
     
     // parse URDF to get model
-    addURDFfromXML(xml_string,pathname);
+    addRobotFromURDFString(xml_string,pathname);
   }
   
   return true;
@@ -886,7 +886,7 @@ bool URDFRigidBodyManipulator::addURDFfromFile(const string &urdf_filename)
 URDFRigidBodyManipulator* loadURDFfromXML(const string &xml_string, const string &root_dir)
 {
   URDFRigidBodyManipulator* model = new URDFRigidBodyManipulator();
-  model->addURDFfromXML(xml_string,root_dir);
+  model->addRobotFromURDFString(xml_string,root_dir);
   return model;
 }
 
@@ -894,6 +894,6 @@ URDFRigidBodyManipulator* loadURDFfromFile(const string &urdf_filename)
 {
 	// urdf_filename can be a list of urdf files seperated by a :
   URDFRigidBodyManipulator* model = new URDFRigidBodyManipulator();
-  model->addURDFfromFile(urdf_filename);
+  model->addRobotFromURDF(urdf_filename);
   return model;
 }
