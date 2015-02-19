@@ -656,11 +656,11 @@ void RigidBodyManipulator::doKinematics(MatrixBase<Derived> & q, bool b_compute_
    doKinematics(&q[0], b_compute_second_derivatives);
 }
 
-template <typename Derived>
-void RigidBodyManipulator::doKinematics(MatrixBase<Derived>  & q, bool b_compute_second_derivatives, MatrixBase<Derived>  & qd)
+template <typename DerivedA, typename DerivedB>
+void RigidBodyManipulator::doKinematics(MatrixBase<DerivedA>  & q, bool b_compute_second_derivatives, MatrixBase<DerivedB>  & v)
 {
   
-  doKinematics(&q[0], b_compute_second_derivatives, &qd[0]);
+  doKinematics(&q[0], b_compute_second_derivatives, &v[0]);
 }
 
 void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivatives, double* qd)
