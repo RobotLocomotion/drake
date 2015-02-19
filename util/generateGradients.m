@@ -106,19 +106,42 @@ end
 
 % now call the actual function
 f = feval(fun,a{:});
-if (options.simplify) f = simple(f); end
-
+% simplify
+if (options.simplify)
+    if( verLessThan('symbolic','6.2') )
+        f = simple(f); 
+    else
+        f = simplify(f); % newest Matlab version (R2015a)
+    end
+end
 m = prod(size(f));
 n = length(s);
 
 % differentiate dynamics symbolically
 disp('Generating order 1 gradients...');
 df{1} = jacobian(reshape(f,m,1),s);
-if (options.simplify) df{1} = simple(df{1}); end
+
+if (options.simplify)
+    if( verLessThan('symbolic','6.2') )
+        df{1} = simple(df{1});
+    else
+        df{1} = simplify(df{1}); % newest Matlab version (R2015a)
+    end
+end    
+
 for o=2:order
   disp(['Generating order ',num2str(o),' gradients...']);
   df{o} = reshape(jacobian(reshape(df{o-1},m*n^(o-1),1),s),m,n^o);
-  if (options.simplify) df{o} = simple(df{o}); end
+  
+  
+if (options.simplify)
+    if( verLessThan('symbolic','6.2') )
+        df{o} = simple(df{o});
+    else
+        df{o} = simplify(df{o}); % newest Matlab version (R2015a)
+    end
+end        
+      
 end
 disp('Writing gradients to file...');
 
