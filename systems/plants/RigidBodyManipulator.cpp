@@ -280,6 +280,7 @@ RigidBodyManipulator::~RigidBodyManipulator(void)
 }
 
 
+// Note:  this method is gross and should be scheduled for deletion upon switching to the new kinsol
 void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num_rigid_body_objects, int num_rigid_body_frames)
 {
   int last_num_dof = num_dof, last_NB = NB, last_num_bodies = num_bodies;
