@@ -45,8 +45,8 @@ public:
   template <typename Derived>
   void doKinematics(MatrixBase<Derived> & q, bool b_compute_second_derivatives = false);
 
-  template <typename Derived>
-  void doKinematics(MatrixBase<Derived> & q, bool b_compute_second_derivatives, MatrixBase<Derived> & qd);
+  template <typename DerivedA, typename DerivedB>
+  void doKinematics(MatrixBase<DerivedA> & q, bool b_compute_second_derivatives, MatrixBase<DerivedB> & v);
 
   void doKinematicsNew(double* q, bool compute_gradients = false, double* v = nullptr, bool compute_JdotV = false);
 
