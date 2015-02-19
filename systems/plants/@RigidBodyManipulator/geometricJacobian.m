@@ -124,6 +124,7 @@ if compute_gradient
   dJdq = zeros(numel(J), obj.num_positions);
   J_size = [6, length(v_or_qdot_indices)];
   col = 1;
+  AdH1 = transformAdjoint(obj.relativeTransform(kinsol, expressed_in, 1));
   for i = 1 : length(joint_path)
     j = joint_path(i);
     sign = signs(i);
@@ -135,19 +136,16 @@ if compute_gradient
     
     dSjdqj = sign * kinsol.dSdq{j};
     if in_terms_of_qdot
-      Sj = kinsol.S{j};
-      dqdotToVdqj = kinsol.dqdotToVdq{j};
-      dSjdqj = matGradMultMat(sign * Sj, kinsol.qdotToV{j}, dSjdqj, dqdotToVdqj);
+      dSjdqj = matGradMultMat(sign * kinsol.S{j}, kinsol.qdotToV{j}, dSjdqj, kinsol.dqdotToVdq{j});
     end
     AdHj = transformAdjoint(obj.relativeTransform(kinsol, expressed_in, j));
-    AdH1 = transformAdjoint(obj.relativeTransform(kinsol, expressed_in, 1));
     [Jj1, qdot_ind_ij] = obj.geometricJacobian(kinsol, expressed_in, j, 1, true);
     
-    for S_col = 1 : size(Jj, 2)
-      block = AdHj * getSubMatrixGradient(dSjdqj, 1:6, S_col, size(Jj));
+    for Jj_col = 1 : size(Jj, 2)
+      block = AdHj * getSubMatrixGradient(dSjdqj, 1:6, Jj_col, size(Jj));
       dJdq = setSubMatrixGradient(dJdq, block, 1:6, col, J_size, bodyJ.position_num);
       
-      block = -AdH1 * crm(Jj(:, S_col)) * Jj1;
+      block = -AdH1 * crm(Jj(:, Jj_col)) * Jj1;
       block = block + getSubMatrixGradient(dJdq, 1:6, col, J_size, qdot_ind_ij);
       dJdq = setSubMatrixGradient(dJdq, block, 1:6, col, J_size, qdot_ind_ij);
       col = col + 1;

@@ -1666,7 +1666,6 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJ
       body_index = kinematic_path.joint_path[i];
       const std::unique_ptr<RigidBody>& body = bodies[body_index];
       const DrakeJoint& joint = body->getJoint();
-
       cols += in_terms_of_qdot ? joint.getNumPositions() : joint.getNumVelocities();
     }
 
@@ -1680,29 +1679,18 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJ
     }
 
     int col_start = 0;
-    int sign;
     for (int i = 0; i < kinematic_path.joint_path.size(); i++) {
       body_index = kinematic_path.joint_path[i];
       RigidBody& body = *bodies[body_index];
       const DrakeJoint& joint = body.getJoint();
       int ncols_block = in_terms_of_qdot ? joint.getNumPositions() : joint.getNumVelocities();
-      sign = kinematic_path.joint_direction_signs[i];
+      int sign = kinematic_path.joint_direction_signs[i];
       auto J_block = J.template block<TWIST_SIZE, Dynamic>(0, col_start, TWIST_SIZE, ncols_block);
       if (in_terms_of_qdot) {
         J_block.noalias() = sign * body.J * body.qdot_to_v;
       }
       else {
         J_block.noalias() = sign * body.J;
-      }
-
-      if (gradient_order > 0) {
-        auto& dJ = ret.gradient().value();
-        if (in_terms_of_qdot) {
-          dJ.block(col_start * TWIST_SIZE, 0, J_block.size(), nq).noalias() = (sign * matGradMultMat(body.J, body.qdot_to_v, body.dJdq, body.dqdot_to_v_dq)).eval();
-        }
-        else {
-          dJ.block(col_start * TWIST_SIZE, 0, J_block.size(), nq).noalias() = (sign * body.dJdq); //.eval();
-        }
       }
 
       if (v_or_qdot_indices != nullptr) {
@@ -1714,15 +1702,47 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJ
       col_start += ncols_block;
     }
 
+    auto T_world_to_frame = relativeTransform<double>(expressed_in_body_or_frame_ind, 0, 0);
+    Isometry3d H0(T_world_to_frame.value());
     if (expressed_in_body_or_frame_ind != 0) {
-      auto T_world_to_frame_gradientvar = relativeTransform<double>(expressed_in_body_or_frame_ind, 0, gradient_order);
-      Isometry3d T_world_to_frame(T_world_to_frame_gradientvar.value());
+      J = transformSpatialMotion(H0, J);
+    }
 
-      if (gradient_order > 0) {
-        auto& dJ = ret.gradient().value();
-        dJ = (dTransformSpatialMotion(T_world_to_frame, J, T_world_to_frame_gradientvar.gradient().value(), dJ)).eval(); // eval to avoid aliasing
+    if (gradient_order > 0) {
+      auto& dJdq = ret.gradient().value();
+      dJdq.setZero();
+      int col = 0;
+      std::vector<int> qdot_ind_ij;
+      auto rows = intRange<TWIST_SIZE>(0);
+      for (int i = 0; i < kinematic_path.joint_path.size(); i++) {
+        int j = kinematic_path.joint_path[i];
+        int sign = kinematic_path.joint_direction_signs[i];
+        RigidBody& bodyJ = *bodies[j];
+        auto Jj = (sign * bodyJ.J).eval();
+        if (in_terms_of_qdot) {
+          Jj *= bodyJ.qdot_to_v;
+        }
+
+        auto dSjdqj = (sign * bodyJ.dSdqi).eval();
+        if (in_terms_of_qdot) {
+          dSjdqj = matGradMultMat((sign * bodyJ.S).eval(), bodyJ.qdot_to_v, dSjdqj, bodyJ.dqdot_to_v_dqi);
+        }
+        auto Hj_gradientvar = relativeTransform<double>(expressed_in_body_or_frame_ind, j, 0);
+        Isometry3d Hj(Hj_gradientvar.value());
+        auto Jj0_gradientvar = geometricJacobian<double>(expressed_in_body_or_frame_ind, j, 0, 0, true, &qdot_ind_ij);
+
+        for (int Jj_col = 0; Jj_col < Jj.cols(); Jj_col++) {
+          auto dSjdqj_block = transformSpatialMotion(Hj, dSjdqj.middleRows<TWIST_SIZE>(Jj_col * TWIST_SIZE)).eval();
+          setSubMatrixGradient<Eigen::Dynamic>(dJdq, dSjdqj_block, rows, intRange<1>(col), TWIST_SIZE, bodyJ.position_num_start, bodyJ.getJoint().getNumPositions());
+          auto crm_block = transformSpatialMotion(H0, crossSpatialMotion((-Jj.col(Jj_col)).eval(), Jj0_gradientvar.value()));
+          int crm_block_col = 0;
+          for (std::vector<int>::iterator it = qdot_ind_ij.begin(); it != qdot_ind_ij.end(); ++it) {
+            dJdq.template block<TWIST_SIZE, 1>(TWIST_SIZE * col, *it) += crm_block.col(crm_block_col);
+            crm_block_col++;
+          }
+          col++;
+        }
       }
-      J = transformSpatialMotion(T_world_to_frame, J);
     }
     return ret;
   }
