@@ -2,33 +2,65 @@ classdef WalkingPlanData
 % Container for the results of the ZMP walking planning, which can be consumed by planWalkingStateTraj
 % to generate the full walking motion.
   properties
-    q0
+    biped
+    x0
     support_times
     supports
     link_constraints
     zmptraj
     V
-    c
+    qstar = [];
+    c = [];
     comtraj
-    mu
+    mu=1;
+    t_offset=0;
+    ignore_terrain=false;
   end
 
-  methods
-    function obj = WalkingPlanData(q0, support_times, supports, link_constraints, zmptraj, V, c, comtraj, mu)
-      obj.q0 = q0;
+  methods(Static)
+    function obj = from_biped_footstep_plan(footstep_plan, biped, x0, zmp_options)
+      if nargin < 4
+        zmp_options = struct();
+      end
+      for j = 1:length(footstep_plan.footsteps)
+        footstep_plan.footsteps(j).walking_params = applyDefaults(struct(footstep_plan.footsteps(j).walking_params),...
+          biped.default_walking_params);
+      end
+      [zmp_knots, foot_origin_knots] = biped.planZMPTraj(x0(1:biped.getNumPositions()), footstep_plan.footsteps, zmp_options);
+      obj = WalkingPlanData.from_biped_foot_and_zmp_knots(foot_origin_knots, zmp_knots, biped, x0);
+    end
+
+    function obj = from_biped_foot_and_zmp_knots(foot_origin_knots, zmp_knots, biped, x0)
+      [supports, support_times] = WalkingPlanData.getSupports(zmp_knots);
+      zmptraj = WalkingPlanData.getZMPTraj(zmp_knots);
+      link_constraints = biped.getLinkConstraints(foot_origin_knots, zmptraj, supports, support_times);
+      [c, V, comtraj] = biped.planZMPController(zmptraj, x0);
+
+      obj = WalkingPlanData();
+      obj.biped = biped;
+      obj.x0 = x0;
       obj.support_times = support_times;
       obj.supports = supports;
-
-
       obj.link_constraints = link_constraints;
-
       obj.zmptraj = zmptraj;
       obj.V = V;
       obj.c = c;
       obj.comtraj = comtraj;
-      obj.mu = mu;
     end
 
+    function [supports, support_times] = getSupports(zmp_knots)
+      supports = [zmp_knots.supp];
+      support_times = [zmp_knots.t];
+    end
+
+    function zmptraj = getZMPTraj(zmp_knots)
+      zmptraj = PPTrajectory(foh([zmp_knots.t], [zmp_knots.zmp]));
+      zmptraj = setOutputFrame(zmptraj, SingletonCoordinateFrame('desiredZMP',2,'z',{'x_zmp','y_zmp'}));
+    end
+  end
+
+
+  methods
     function obj = fix_link(obj, biped, kinsol, link, pt, tolerance_xyz, tolerance_rpy)
       % Add a new link constraint which fixes the point pt on the given link to its
       % pose as given in kinsol, within the tolerance specified.
