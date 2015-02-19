@@ -75,10 +75,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   memcpy(&pdata,mxGetData(prhs[0]),sizeof(pdata));
 
   int nq = pdata->r->num_dof;
+  int nv = pdata->r->num_velocities;
+
   int narg = 1;
   Map<VectorXd> q(mxGetPr(prhs[narg++]), nq);
   double *qd = &q[nq];
-  Map<VectorXd> qdvec(qd,nq);
+  Map<VectorXd> qdvec(qd, nv);
   double lfoot_yaw = mxGetScalar(prhs[narg++]);
   double rfoot_yaw = mxGetScalar(prhs[narg++]);
   double foot_z = mxGetScalar(prhs[narg++]);
