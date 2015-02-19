@@ -34,12 +34,12 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 
   
   if (nrhs > 2) {
-    Map<VectorXd> qd(mxGetPr(prhs[2]), model->num_dof);
+    Map<VectorXd> qd(mxGetPr(prhs[2]), model->num_velocities);
     model->getCMM(q,qd,A,Adot);
   }
   else {
     VectorXd zeros = VectorXd::Zero(model->num_dof);
-    Map<VectorXd> qd(zeros.data(), model->num_dof);
+    Map<VectorXd> qd(zeros.data(), model->num_velocities);
     model->getCMM(q,qd,A,Adot);
   }
 }
