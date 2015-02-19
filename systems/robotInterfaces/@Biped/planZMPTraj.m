@@ -1,4 +1,4 @@
-function [dynamic_footstep_plan] = planZMPTraj(biped, q0, footsteps, options)
+function [zmp_knots, foot_origin_knots] = planZMPTraj(biped, q0, footsteps, options)
 % function [zmptraj, link_constraints, support_times, supports] = planZMPTraj(biped, q0, footsteps, options)
 % Plan the trajectories of the ZMP and the feet in order to follow the given footsteps
 % @param q0 the initial configuration vector
@@ -121,5 +121,5 @@ zmpf = mean([steps.right(end).pos(1:2), steps.left(end).pos(1:2)], 2);
 zmp_knots(end+1) =  struct('t', foot_origin_knots(end-1).t, 'zmp', zmpf, 'supp', RigidBodySupportState(biped, [rfoot_body_idx, lfoot_body_idx]));
 zmp_knots(end+1) =  struct('t', foot_origin_knots(end).t, 'zmp', zmpf, 'supp', RigidBodySupportState(biped, [rfoot_body_idx, lfoot_body_idx]));
 
-dynamic_footstep_plan = DynamicFootstepPlan(biped, zmp_knots, foot_origin_knots);
+% dynamic_footstep_plan = DynamicFootstepPlan(biped, zmp_knots, foot_origin_knots);
 end

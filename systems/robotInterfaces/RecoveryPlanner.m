@@ -276,8 +276,9 @@ classdef RecoveryPlanner < MixedIntegerConvexProgram
       contact = ~motion;
     end
 
-    function dynamic_footstep_plan = getDynamicFootstepPlan(obj, biped, foot_start)
+    function walking_plan = getWalkingPlan(obj, biped, x0)
       typecheck(biped, 'Biped');
+      foot_start = biped.feetPosition(x0(1:biped.getNumPositions()));
       motion = [any(abs(diff(obj.vars.qr.value, 1, 2)) >= 0.005), false;
                 any(abs(diff(obj.vars.ql.value, 1, 2)) >= 0.005), false];
       support = ~(motion | [[false; false], motion(:,1:end-1)] | [motion(:,2:end), [false; false]]);
@@ -331,7 +332,7 @@ classdef RecoveryPlanner < MixedIntegerConvexProgram
       zmp_knots(end+1) = zmp_knots(end);
       zmp_knots(end).t = zmp_knots(end).t + obj.dt;
 
-      dynamic_footstep_plan = DynamicFootstepPlan(biped, zmp_knots, foot_origin_knots);
+      walking_plan = WalkingPlanData.from_biped_foot_and_zmp_knots(foot_origin_knots, zmp_knots, biped, x0);
     end
   end
 end

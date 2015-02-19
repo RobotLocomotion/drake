@@ -73,9 +73,7 @@ qcomdot = J * x0((r.getNumPositions()+1):end);
 qcom
 qcomdot
 recovery_planner = RecoveryPlanner.run(qcom, qcomdot, cop0, feet_position.right(1:2), feet_position.left(1:2), contact);
-dynamic_footstep_plan = recovery_planner.getDynamicFootstepPlan(r, r.feetPosition(q0));
-
-walking_plan_data = r.planWalkingZMP(x0, dynamic_footstep_plan);
+walking_plan_data = recovery_planner.getWalkingPlan(r, x0);
 
 ts = walking_plan_data.zmptraj.getBreaks();
 T = ts(end);
