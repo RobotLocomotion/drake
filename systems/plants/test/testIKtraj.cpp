@@ -62,7 +62,7 @@ int main()
     t[i] = dt*i;
   }
   MatrixXd q0 = qstar.replicate(1,nT);
-  VectorXd qdot0 = VectorXd::Zero(model->num_dof);
+  VectorXd qdot0 = VectorXd::Zero(model->num_velocities);
   Vector3d com_lb = com0;
   com_lb(0) = nan("");;
   com_lb(1) = nan("");
@@ -86,7 +86,7 @@ int main()
   constraint_array[1] = kc_rhand;
   IKoptions ikoptions(model);
   MatrixXd q_sol(model->num_dof,nT);
-  MatrixXd qdot_sol(model->num_dof,nT);
+  MatrixXd qdot_sol(model->num_velocities,nT);
   MatrixXd qddot_sol(model->num_dof,nT);
   int info = 0;
   vector<string> infeasible_constraint;
