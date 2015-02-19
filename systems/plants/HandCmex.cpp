@@ -34,7 +34,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
   if (static_cast<int>(mxGetNumberOfElements(prhs[1]))!=model->num_dof || static_cast<int>(mxGetNumberOfElements(prhs[2]))!=model->num_dof)
     mexErrMsgIdAndTxt("Drake:HandCmex:BadInputs","q and qd must be size %d x 1",model->num_dof);
   Map<VectorXd> q(mxGetPr(prhs[1]), model->num_dof);
-  Map<VectorXd> qd(mxGetPr(prhs[2]), model->num_dof);
+  Map<VectorXd> qd(mxGetPr(prhs[2]), model->num_velocities);
   
   if (nrhs>3) {
     if (!mxIsEmpty(prhs[3])) {
