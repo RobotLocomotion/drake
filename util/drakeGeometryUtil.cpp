@@ -813,7 +813,7 @@ GradientVar<typename DerivedI::Scalar, TWIST_SIZE, TWIST_SIZE> transformSpatialI
 }
 
 template<typename DerivedA, typename DerivedB>
-Eigen::PlainObjectBase<DerivedB> crossSpatialMotion(
+Eigen::Matrix<typename DerivedB::Scalar, DerivedB::RowsAtCompileTime, DerivedB::ColsAtCompileTime> crossSpatialMotion(
   const Eigen::MatrixBase<DerivedA>& a,
   const Eigen::MatrixBase<DerivedB>& b) {
   Eigen::Matrix<typename DerivedB::Scalar, DerivedB::RowsAtCompileTime, DerivedB::ColsAtCompileTime> ret(TWIST_SIZE, b.cols());
@@ -824,7 +824,7 @@ Eigen::PlainObjectBase<DerivedB> crossSpatialMotion(
 }
 
 template<typename DerivedA, typename DerivedB>
-Eigen::PlainObjectBase<DerivedB> crossSpatialForce(
+Eigen::Matrix<typename DerivedB::Scalar, DerivedB::RowsAtCompileTime, DerivedB::ColsAtCompileTime> crossSpatialForce(
   const Eigen::MatrixBase<DerivedA>& a,
   const Eigen::MatrixBase<DerivedB>& b) {
   Eigen::Matrix<typename DerivedB::Scalar, DerivedB::RowsAtCompileTime, DerivedB::ColsAtCompileTime> ret(TWIST_SIZE, b.cols());
@@ -1090,6 +1090,10 @@ template DLLEXPORT TransformSpatial< MatrixXd >::type transformSpatialMotion<Mat
     const Eigen::Isometry3d&,
     const Eigen::MatrixBase< MatrixXd >&);
 
+template DLLEXPORT TransformSpatial<Eigen::Block<Eigen::Matrix<double, -1, -1, 0, -1, -1>, 6, -1, false> >::type transformSpatialMotion(
+    const Eigen::Isometry3d& T,
+    const Eigen::MatrixBase<Eigen::Block<Eigen::Matrix<double, -1, -1, 0, -1, -1>, 6, -1, false> >& M);
+
 template DLLEXPORT TransformSpatial< Matrix<double, TWIST_SIZE, Eigen::Dynamic> >::type transformSpatialForce<Matrix<double, TWIST_SIZE, Eigen::Dynamic>>(
     const Eigen::Isometry3d&,
     const Eigen::MatrixBase< Matrix<double, TWIST_SIZE, Eigen::Dynamic> >&);
@@ -1185,19 +1189,23 @@ template DLLEXPORT Gradient< Matrix<double, TWIST_SIZE, 1>, Dynamic, 1>::type dT
     const MatrixBase< Matrix<double, HOMOGENEOUS_TRANSFORM_SIZE, Dynamic> >&,
     const MatrixBase< Matrix<double, TWIST_SIZE, Eigen::Dynamic> >&);
 
-template DLLEXPORT Eigen::PlainObjectBase<Eigen::Matrix<double, TWIST_SIZE, 1> > crossSpatialMotion(
+template DLLEXPORT Eigen::Matrix<double, TWIST_SIZE, 1> crossSpatialMotion(
   const Eigen::MatrixBase<Eigen::Matrix<double, TWIST_SIZE, 1> >& a,
   const Eigen::MatrixBase<Eigen::Matrix<double, TWIST_SIZE, 1> >& b);
 
-template DLLEXPORT Eigen::PlainObjectBase<Eigen::Matrix<double, TWIST_SIZE, TWIST_SIZE> > crossSpatialMotion(
+template DLLEXPORT Eigen::Matrix<double, TWIST_SIZE, TWIST_SIZE> crossSpatialMotion(
   const Eigen::MatrixBase<Eigen::Matrix<double, TWIST_SIZE, 1> >& a,
   const Eigen::MatrixBase<Eigen::Matrix<double, TWIST_SIZE, TWIST_SIZE> >& b);
 
-template DLLEXPORT Eigen::PlainObjectBase<Eigen::Matrix<double, TWIST_SIZE, 1> > crossSpatialForce(
+template DLLEXPORT Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic> crossSpatialMotion(
+  const Eigen::MatrixBase<Eigen::Matrix<double, TWIST_SIZE, 1> >& a,
+  const Eigen::MatrixBase<Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic> >& b);
+
+template DLLEXPORT Eigen::Matrix<double, TWIST_SIZE, 1> crossSpatialForce(
   const Eigen::MatrixBase<Eigen::Matrix<double, TWIST_SIZE, 1> >& a,
   const Eigen::MatrixBase<Eigen::Matrix<double, TWIST_SIZE, 1> >& b);
 
-template DLLEXPORT Eigen::PlainObjectBase<Eigen::Matrix<double, TWIST_SIZE, TWIST_SIZE> > crossSpatialForce(
+template DLLEXPORT Eigen::Matrix<double, TWIST_SIZE, TWIST_SIZE> crossSpatialForce(
   const Eigen::MatrixBase<Eigen::Matrix<double, TWIST_SIZE, 1> >& a,
   const Eigen::MatrixBase<Eigen::Matrix<double, TWIST_SIZE, TWIST_SIZE> >& b);
 
