@@ -7,7 +7,7 @@ function model=addRobotFromSDF(model,sdf_filename,xyz,rpy,options)
 %
 % @options floating boolean where true means that a floating joint is
 % automatically added to the root. (note that the default is different than for urdf)
-% @default true 
+% @default true
 % @options inertial boolean where true means parse dynamics parameters,
 % false means skip them. @default true
 % @options visual boolean where true means parse graphics parameters, false
@@ -34,7 +34,7 @@ if (~isfield(options,'collision_meshes')), options.collision_meshes = true; end
 if (~isfield(options,'nameprefix')), options.nameprefix = ''; end
 if (~isfield(options,'namesuffix')), options.namesuffix = ''; end
 if (~isfield(options,'compile')) options.compile = true; end
-if (~isfield(options,'weld_to_link')) options.weld_to_link = 1; end % world link 
+if (~isfield(options,'weld_to_link')) options.weld_to_link = 1; end % world link
 
 sdf = xmlread(sdf_filename);
 sdf = sdf.getElementsByTagName('sdf').item(0);
@@ -110,7 +110,7 @@ else
 end
 
 posenode = getFirstChildByTagName(node,'pose');
-if ~isempty(posenode) 
+if ~isempty(posenode)
   pose = parseParamString(model,robotnum,char(getNodeValue(getFirstChild(posenode))));
   pose = pose(:);
   xyz = xyz + rpy2rotmat(rpy)*pose(1:3); rpy = rotmat2rpy(rpy2rotmat(rpy)*rpy2rotmat(pose(4:6)));
@@ -180,7 +180,7 @@ filename = char(getNodeValue(getFirstChild(uriNode)));
 % parse strings with forward and backward slashes
 filename = strrep(filename,'/',filesep);
 filename = strrep(filename,'\',filesep);
-            
+
 if ~isempty(strfind(filename,['model:',filesep,filesep]))
   filename=strrep(filename,['model:',filesep,filesep],'');
   [gazebo_model,filename]=strtok(filename,filesep);
@@ -197,7 +197,7 @@ else
   end
   filename = fullfile(path,[name,ext]);
 end
-            
+
 options.compile = false;
 model = addRobotFromSDF(model,filename,xyz,rpy,options);
 
@@ -205,7 +205,7 @@ end
 
 function model=parseLink(model,robotnum,node,xyz,rpy,options)
 
-ignore = char(node.getAttribute('drakeIgnore'));
+ignore = char(node.getAttribute('drake_ignore'));
 if strcmp(lower(ignore),'true')
   return;
 end
@@ -291,38 +291,38 @@ end
         if ~isempty(ii), izz = parseParamString(model,body.robotnum,char(getNodeValue(getFirstChild(ii)))); else izz=0; end
         inertia = [ixx, ixy, ixz; ixy, iyy, iyz; ixz, iyz, izz];
       end
-      
+
       if any(rpy)
         % transform inertia back into body coordinates
         R = rpy2rotmat(rpy);
         inertia = R*inertia*R';
       end
-      
+
       % add to existing mass/inertia (especially to support static objects)
       if ~isempty(body.com)
         xyz = (body.com*body.mass + xyz*mass)/(body.mass+mass);
         inertia = body.inertia + inertia; % should already be in the same frame
         mass = body.mass + mass;
       end
-      
+
       body = setInertial(body,mass,xyz,inertia);
     end
-    
+
     function body = parseVisual(body,node,model,xyz,rpy,options)
       c = .7*[1 1 1];
-      
+
       posenode = node.getElementsByTagName('pose').item(0);  % seems to be ok, even if pose tag doesn't exist
       if ~isempty(posenode)
         pose = parseParamString(model,body.robotnum,char(getNodeValue(getFirstChild(posenode))));
         pose = pose(:);
         xyz = xyz + rpy2rotmat(rpy)*pose(1:3); rpy = rotmat2rpy(rpy2rotmat(rpy)*rpy2rotmat(pose(4:6)));
       end
-        
+
       matnode = node.getElementsByTagName('material').item(0);
       if ~isempty(matnode)
         model.warning_manager.warnOnce('Drake:RigidBodyManipulator:addRobotfromSDF:NoMaterials','materials not implemented yet');
       end
-      
+
       geomnode = node.getElementsByTagName('geometry').item(0);
       if ~isempty(geomnode)
         if (options.visual || options.visual_geometry)
@@ -335,9 +335,9 @@ end
            body.visual_geometry = {body.visual_geometry{:},geometry};
          end
         end
-      end        
+      end
     end
-    
+
     function body = parseCollision(body,node,model,xyz,rpy,options)
       posenode = node.getElementsByTagName('pose').item(0);  % seems to be ok, even if pose tag doesn't exist
       if ~isempty(posenode)
@@ -345,7 +345,7 @@ end
         pose = pose(:);
         xyz = xyz + rpy2rotmat(rpy)*pose(1:3); rpy = rotmat2rpy(rpy2rotmat(rpy)*rpy2rotmat(pose(4:6)));
       end
-            
+
       geomnode = node.getElementsByTagName('geometry').item(0);
       if ~isempty(geomnode)
         geometry = RigidBodyGeometry.parseSDFNode(geomnode,xyz,rpy,model,body.robotnum,options);
@@ -358,11 +358,11 @@ end
           body = addCollisionGeometry(body,geometry);
         end
       end
-    end 
-    
+    end
+
 function model=parseJoint(model,robotnum,node,options)
 
-ignore = char(node.getAttribute('drakeIgnore'));
+ignore = char(node.getAttribute('drake_ignore'));
 if strcmp(lower(ignore),'true')
   return;
 end
@@ -406,7 +406,7 @@ effort_min=-inf;
 effort_max=inf;
 velocity_limit=inf;
 
-axisNode = node.getElementsByTagName('axis').item(0);  
+axisNode = node.getElementsByTagName('axis').item(0);
 if ~isempty(axisNode)
   xyzNode = axisNode.getElementsByTagName('xyz').item(0);
   if ~isempty(xyzNode)
@@ -457,7 +457,7 @@ limitsNode.velocity_limit = velocity_limit;
 name=regexprep(name, '\.', '_', 'preservecase');
 model = addJoint(model,name,type,parent,child,xyz,rpy,axis,damping,[],[],[],limitsNode);
 
-end    
+end
 
 function childnode = getFirstChildByTagName(node,tag)
 % just like getElementsByTagName(tag).item(0) but the search is restricted
