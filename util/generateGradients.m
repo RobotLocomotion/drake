@@ -107,13 +107,8 @@ end
 % now call the actual function
 f = feval(fun,a{:});
 % simplify
-if (options.simplify)
-    if( verLessThan('symbolic','6.1') )
-        f = simple(f); 
-    else
-        f = simplify(f); % newest Matlab version (R2015a) no longer supports simple()
-    end
-end
+if (options.simplify) f = simplify(f); end
+
 m = prod(size(f));
 n = length(s);
 
@@ -121,26 +116,14 @@ n = length(s);
 disp('Generating order 1 gradients...');
 df{1} = jacobian(reshape(f,m,1),s);
 
-if (options.simplify)
-    if( verLessThan('symbolic','6.1') )
-        df{1} = simple(df{1});
-    else
-        df{1} = simplify(df{1});
-    end
-end    
+if (options.simplify) df{1} = simplify(df{1}); end    
 
 for o=2:order
   disp(['Generating order ',num2str(o),' gradients...']);
   df{o} = reshape(jacobian(reshape(df{o-1},m*n^(o-1),1),s),m,n^o);
   
   
-if (options.simplify)
-    if( verLessThan('symbolic','6.1') )
-        df{o} = simple(df{o});
-    else
-        df{o} = simplify(df{o});
-    end
-end        
+if (options.simplify) df{o} = simplify(df{o}); end        
       
 end
 disp('Writing gradients to file...');
