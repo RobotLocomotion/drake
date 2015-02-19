@@ -108,10 +108,10 @@ end
 f = feval(fun,a{:});
 % simplify
 if (options.simplify)
-    if( verLessThan('symbolic','6.2') )
+    if( verLessThan('symbolic','6.1') )
         f = simple(f); 
     else
-        f = simplify(f); % newest Matlab version (R2015a)
+        f = simplify(f); % newest Matlab version (R2015a) no longer supports simple()
     end
 end
 m = prod(size(f));
@@ -122,10 +122,10 @@ disp('Generating order 1 gradients...');
 df{1} = jacobian(reshape(f,m,1),s);
 
 if (options.simplify)
-    if( verLessThan('symbolic','6.2') )
+    if( verLessThan('symbolic','6.1') )
         df{1} = simple(df{1});
     else
-        df{1} = simplify(df{1}); % newest Matlab version (R2015a)
+        df{1} = simplify(df{1});
     end
 end    
 
@@ -135,10 +135,10 @@ for o=2:order
   
   
 if (options.simplify)
-    if( verLessThan('symbolic','6.2') )
+    if( verLessThan('symbolic','6.1') )
         df{o} = simple(df{o});
     else
-        df{o} = simplify(df{o}); % newest Matlab version (R2015a)
+        df{o} = simplify(df{o});
     end
 end        
       
