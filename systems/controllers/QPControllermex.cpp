@@ -178,7 +178,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 //  for (i=0; i<pdata->r->num_bodies; i++)
 //    mexPrintf("body %d (%s) has %d contact points\n", i, pdata->r->bodies[i].linkname.c_str(), pdata->r->bodies[i].contact_pts.cols());
 
-  int nu = pdata->B.cols(), nq = pdata->r->num_dof;
+  int nu = pdata->B.cols(), nq = pdata->r->num_dof, nv = pdata->r->num_velocities;
   const int dim = 3, // 3D
   nd = 2*m_surface_tangents; // for friction cone approx, hard coded for now
   
@@ -191,7 +191,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   Map< VectorXd > qddot_des(mxGetPr(prhs[narg++]),nq);
   
   Map<VectorXd> q(mxGetPr(prhs[narg++]), nq);
-  Map<VectorXd> qd(&q[nq], nq);  
+  Map<VectorXd> qd(&q[nq], nv);  
 
   vector<VectorXd,aligned_allocator<VectorXd>> body_accel_inputs;
   for (int i=0; i<pdata->n_body_accel_inputs; i++) {
