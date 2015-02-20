@@ -273,6 +273,16 @@ RigidBodyManipulator::RigidBodyManipulator(int ndof, int num_featherstone_bodies
   resize(ndof,num_featherstone_bodies,num_rigid_body_objects,num_rigid_body_frames);
 }
 
+RigidBodyManipulator::RigidBodyManipulator(const std::string &urdf_filename)
+  :  RigidBodyManipulator(0,0,1)
+{
+  bodies[0]->linkname = "world";
+  bodies[0]->parent = -1;
+  bodies[0]->robotnum = 0;
+  use_new_kinsol = true; // assuming new kinsol in the updated logic below
+  addRobotFromURDF(urdf_filename);
+}
+
 RigidBodyManipulator::~RigidBodyManipulator(void)
 {
   //  if (collision_model)
