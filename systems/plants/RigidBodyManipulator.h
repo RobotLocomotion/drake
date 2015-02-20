@@ -54,7 +54,12 @@ public:
   void resize(int num_dof, int num_featherstone_bodies=-1, int num_rigid_body_objects=-1, int num_rigid_body_frames=0);
 
   void compile(void);  // call me after the model is loaded
-  void doKinematics(double* q, bool b_compute_second_derivatives=false, double* qd=NULL);
+  
+  template <typename Derived>
+  void doKinematics(MatrixBase<Derived> & q, bool b_compute_second_derivatives = false);
+
+  template <typename DerivedA, typename DerivedB>
+  void doKinematics(MatrixBase<DerivedA> & q, bool b_compute_second_derivatives, MatrixBase<DerivedB> & v);
 
   void doKinematicsNew(double* q, bool compute_gradients = false, double* v = nullptr, bool compute_JdotV = false);
 
@@ -63,8 +68,8 @@ public:
   template <typename Scalar>
   GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> centroidalMomentumMatrix(int gradient_order);
 
-  template <typename Derived>
-  void getCMM(double* const q, double* const qd, MatrixBase<Derived> &A, MatrixBase<Derived> &Adot);
+  template <typename DerivedA, typename DerivedB>
+  void getCMM(MatrixBase<DerivedA> const & q, MatrixBase<DerivedA> const & qd, MatrixBase<DerivedB> &A, MatrixBase<DerivedB> &Adot);
 
   template <typename Scalar>
   GradientVar<Scalar, SPACE_DIMENSION, 1> centerOfMass(int gradient_order, const std::set<int>& robotnum = RigidBody::defaultRobotNumSet);
@@ -132,8 +137,8 @@ public:
   template<typename Scalar>
   GradientVar<Scalar, SPACE_DIMENSION + 1, SPACE_DIMENSION + 1> relativeTransform(int base_or_frame_ind, int body_or_frame_ind, int gradient_order);
 
-  template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD, typename DerivedE, typename DerivedF>
-  void HandC(double* const q, double * const qd, MatrixBase<DerivedA> * const f_ext, MatrixBase<DerivedB> &H, MatrixBase<DerivedC> &C, MatrixBase<DerivedD> *dH=NULL, MatrixBase<DerivedE> *dC=NULL, MatrixBase<DerivedF> * const df_ext=NULL);
+  template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD, typename DerivedE, typename DerivedF, typename DerivedG>
+  void HandC(MatrixBase<DerivedG> const & q, MatrixBase<DerivedG> const & qd, MatrixBase<DerivedA> * const f_ext, MatrixBase<DerivedB> &H, MatrixBase<DerivedC> &C, MatrixBase<DerivedD> *dH=NULL, MatrixBase<DerivedE> *dC=NULL, MatrixBase<DerivedF> * const df_ext=NULL);
 
   void addCollisionElement(const int body_ind, const Matrix4d &T_elem_to_lnk, DrakeCollision::Shape shape, std::vector<double> params, std::string group_name = "default");
 
@@ -238,6 +243,7 @@ public:
   bool use_new_kinsol;
 
 private:
+  void doKinematics(double* q, bool b_compute_second_derivatives=false, double* qd=NULL);
   int parseBodyOrFrameID(const int body_or_frame_id, Matrix4d* Tframe = nullptr);
 
   // variables for featherstone dynamics
