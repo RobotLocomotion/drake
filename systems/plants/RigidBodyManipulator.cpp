@@ -438,14 +438,22 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
 
 void RigidBodyManipulator::compile(void)
 {
+  /* todo:
+   - set joint limits (from drakejoint to rbm)
+   */
+  num_bodies = bodies.size();
+  num_dof = 0;
   num_velocities = 0;
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
     RigidBody& body = **it;
     if (body.hasParent()) {
+      body.dofnum = num_dof;
+      num_dof += body.getJoint().getNumPositions();
       body.velocity_num_start = num_velocities;
       num_velocities += body.getJoint().getNumVelocities();
     }
     else {
+      body.dofnum = 0;
       body.velocity_num_start = 0;
     }
   }
