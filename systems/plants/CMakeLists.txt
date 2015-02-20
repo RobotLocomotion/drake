@@ -1,20 +1,21 @@
 
+
+include_directories (${CMAKE_SOURCE_DIR}/util tinyxml)
+
 # IMPORTANT NOTE!!
 # matlab has it's own boost libraries.  DO NOT let any mex file depend
 # on the system boost (directly nor indirectly), or you're asking for trouble.
 find_package( Boost COMPONENTS filesystem system regex)
 
-include_directories (${CMAKE_SOURCE_DIR}/util )
-
 if (Boost_FOUND)
-  include_directories ( ${Boost_INCLUDE_DIR} tinyxml )
+  include_directories ( ${Boost_INCLUDE_DIR} )
   link_directories( ${Boost_LIBRARY_DIRS} )
 endif()
 
 
 if (eigen3_FOUND)
   # todo: check eigen version.  3.1.0 didn't work for clang.  3.2.0 did.
- add_library(drakeRBM SHARED RigidBodyManipulator.cpp RigidBody.cpp)
+ add_library(drakeRBM SHARED RigidBodyManipulator.cpp RigidBody.cpp RigidBodyManipulatorURDF.cpp tinyxml/tinyxml.cpp tinyxml/tinyxmlparser.cpp tinyxml/tinyxmlerror.cpp)
  target_link_libraries(drakeRBM drakeCollision)
  include_directories( joints )
  target_link_libraries(drakeRBM drakeJoints)
@@ -31,15 +32,6 @@ if (eigen3_FOUND)
   add_subdirectory(joints)
 
   if (Boost_FOUND)
-    add_library(drakeRBMurdf URDFRigidBodyManipulator.cpp)
-    target_link_libraries(drakeRBMurdf drakeRBM drakeGeometryUtil drakeURDFinterface ${Boost_LIBRARIES})
-    if (NOT MSVC)
-    set_target_properties(drakeRBMurdf PROPERTIES COMPILE_FLAGS -fPIC )
-    endif()
-    pods_install_headers(URDFRigidBodyManipulator.h DESTINATION drake)
-    pods_install_libraries(drakeRBMurdf)
-
-    add_subdirectory(urdf_interface)
     add_subdirectory(viewer)
   endif(Boost_FOUND)
 
