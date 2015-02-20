@@ -49,7 +49,11 @@ class DLLEXPORT_RBM RigidBodyManipulator
 {
 public:
   RigidBodyManipulator(int num_dof, int num_featherstone_bodies=-1, int num_rigid_body_objects=-1, int num_rigid_body_frames=0);
+  RigidBodyManipulator(const std::string &urdf_filename);
   virtual ~RigidBodyManipulator(void);
+
+  bool addRobotFromURDFString(const std::string &xml_string, const std::string &root_dir = ".");
+  bool addRobotFromURDF(const std::string &urdf_filename);
 
   void resize(int num_dof, int num_featherstone_bodies=-1, int num_rigid_body_objects=-1, int num_rigid_body_frames=0);
 
