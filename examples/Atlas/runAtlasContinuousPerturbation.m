@@ -59,14 +59,16 @@ for iter = 1:3
   r = r.setInitialState(x0);
   v.draw(0, x0)
 
-  plan = recovery_planner.solveBipedProblem(r, x0, zmpact);
-  walking_plan_data = WalkingPlanData.from_point_mass_biped_plan(plan, r, x0);
+  profile on
+  [walking_plan_data, plan] = planning_pipeline(recovery_planner, r, x0, zmpact, xstar, nq);
+  profile viewer
+
+  walking_plan_data.robot = r;
 
   pm_biped = PointMassBiped(plan.omega);
   [pm_traj, pm_v] = walking_plan_data.simulatePointMassBiped(pm_biped);
   pm_v.playback(pm_traj, struct('slider', true));
 
-  walking_plan_data.qstar = xstar(1:nq);
 
   ts = walking_plan_data.zmptraj.getBreaks();
   T = ts(end);
@@ -81,7 +83,7 @@ for iter = 1:3
     lcmgl.sphere([walking_plan_data.zmptraj.eval(ts(i));0], 0.01, 20, 20);
   end
   lcmgl.switchBuffers();
-  % keyboard()
+  keyboard()
 
   sim_opts = struct('use_mex', example_options.use_mex,...
                     'use_ik', false,...
@@ -181,3 +183,12 @@ v.playback(combined_xtraj, struct('slider', true));
 
 
 % TIMEOUT 1500
+
+end
+
+function [walking_plan_data, plan] = planning_pipeline(recovery_planner, r, x0, zmpact, xstar, nq)
+  plan = recovery_planner.solveBipedProblem(r, x0, zmpact);
+  walking_plan_data = DRCWalkingPlanData(WalkingPlanData.from_point_mass_biped_plan(plan, r, x0));
+  walking_plan_data.qstar = xstar(1:nq);
+  walking_plan_data = DRCWalkingPlanData.from_walking_plan_t(walking_plan_data.to_walking_plan_t()); 
+end

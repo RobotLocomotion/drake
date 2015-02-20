@@ -7,7 +7,6 @@ classdef PointMassBipedPlan
     qcop;
     support;
     omega;
-    nsteps;
   end
 
   methods
