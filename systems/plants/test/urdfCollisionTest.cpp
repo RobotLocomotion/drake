@@ -9,7 +9,7 @@ using namespace std;
 int main(int argc, char* argv[])
 {
 	if (argc<2) {
-		cerr << "Usage: urdf_collision_test urdf_filename" << endl;
+		cerr << "Usage: urdfCollisionTest urdf_filename" << endl;
 		exit(-1);
 	}
   URDFRigidBodyManipulator* model = loadURDFfromFile(argv[1]);
@@ -18,7 +18,7 @@ int main(int argc, char* argv[])
   	cerr << "ERROR: Failed to load model from " << argv[1] << endl;
   	return -1;
   }
-  
+
   // run kinematics with second derivatives 100 times
   VectorXd q = VectorXd::Zero(model->num_dof);
   int i;
@@ -27,16 +27,16 @@ int main(int argc, char* argv[])
   	for (i=0; i<model->num_dof; i++)
   		sscanf(argv[2+i],"%lf",&q(i));
   }
-  
+
 // for (i=0; i<model->num_dof; i++)
 // 	 q(i)=(double)rand() / RAND_MAX;
     model->doKinematics(q.data(),false);
 //  }
-  
+
   VectorXd phi;
   MatrixXd normal, xA, xB;
   vector<int> bodyA_idx, bodyB_idx, bodies_idx;
-  
+
   model->collisionDetect(phi,normal,xA,xB,bodyA_idx,bodyB_idx,bodies_idx);
 
   for (int j=0; j<phi.rows(); ++j) {
@@ -53,7 +53,7 @@ int main(int argc, char* argv[])
     cout << model->bodies[bodyA_idx.at(j)]->linkname << " ";
     cout << model->bodies[bodyB_idx.at(j)]->linkname << endl;
   }
-  
+
   delete model;
   return 0;
 }
