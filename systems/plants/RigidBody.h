@@ -50,17 +50,17 @@ public:
   int floating; // FLOATINGBASE TODO: remove
   int pitch; // FLOATINGBASE TODO: remove
   MatrixXd contact_pts;
-  Matrix4d Ttree;
-  Matrix4d T_body_to_joint;
+  Matrix4d Ttree;  // floatingbase TODO: replace with Isometry3d?
+  Matrix4d T_body_to_joint;  // floatingbase TODO: replace with Isometry3d?
 
   std::set<int> ancestor_dofs;
   std::set<int> ddTdqdq_nonzero_rows;
   std::set<IndexRange> ddTdqdq_nonzero_rows_grouped;
 
-  Matrix4d T;
+  Matrix4d T;    // floatingbase TODO: replace with Isometry3d?
   MatrixXd dTdq; // floatingbase TODO: replace with dTdq_new
   MatrixXd dTdqdot;
-  Matrix4d Tdot;
+  Matrix4d Tdot; // floatingbase TODO: replace with Isometry3d?
   MatrixXd ddTdqdq;
 
   double mass;
