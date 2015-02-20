@@ -271,9 +271,7 @@ bool parseJoint(RigidBodyManipulator* model, TiXmlElement* node)
     return false;
   }
 
-  Isometry3d T = Isometry3d::Identity();
-  TiXmlElement* origin = node->FirstChildElement("origin");
-  if (origin) poseAttributesToTransform(origin,T.matrix());
+  Isometry3d T_body_to_joint = Isometry3d::Identity();
 
   Vector3d axis;  axis << 1,0,0;
   TiXmlElement* axis_node = node->FirstChildElement("axis");
@@ -293,16 +291,16 @@ bool parseJoint(RigidBodyManipulator* model, TiXmlElement* node)
   // now construct the actual joint (based on it's type)
   DrakeJoint* joint = NULL;
   if (type.compare("revolute")==0 || type.compare("continuous")==0) {
-    joint = new RevoluteJoint(name, T, axis);
+    joint = new RevoluteJoint(name, T_body_to_joint, axis);
   } else if (type.compare("fixed")==0) {
     // FIXME: implement a fixed joint class
-    RevoluteJoint* rj = new RevoluteJoint(name, T, axis);
+    RevoluteJoint* rj = new RevoluteJoint(name, T_body_to_joint, axis);
     rj->setJointLimits(0,0);
     joint = rj;
   } else if (type.compare("prismatic")==0) {
-    joint = new PrismaticJoint(name, T, axis);
+    joint = new PrismaticJoint(name, T_body_to_joint, axis);
   } else if (type.compare("floating")==0) {
-    joint = new RollPitchYawFloatingJoint(name, T);
+    joint = new RollPitchYawFloatingJoint(name, T_body_to_joint);
   } else {
     cerr << "ERROR: Unrecognized joint type: " << type << endl;
     return false;
@@ -310,6 +308,9 @@ bool parseJoint(RigidBodyManipulator* model, TiXmlElement* node)
 
   model->bodies[child_index]->setJoint(std::unique_ptr<DrakeJoint>(joint));
   model->bodies[child_index]->parent = parent_index;
+
+  TiXmlElement* origin = node->FirstChildElement("origin");
+  if (origin) poseAttributesToTransform(origin,model->bodies[child_index]->Ttree);
 
   return true;
 }
