@@ -32,6 +32,15 @@ if (eigen3_FOUND)
   add_subdirectory(joints)
 
   if (Boost_FOUND)
+    add_library(drakeRBMurdf URDFRigidBodyManipulator.cpp)
+    target_link_libraries(drakeRBMurdf drakeRBM drakeGeometryUtil drakeURDFinterface ${Boost_LIBRARIES})
+    if (NOT MSVC)
+    set_target_properties(drakeRBMurdf PROPERTIES COMPILE_FLAGS -fPIC )
+    endif()
+    pods_install_headers(URDFRigidBodyManipulator.h DESTINATION drake)
+    pods_install_libraries(drakeRBMurdf)
+
+    add_subdirectory(urdf_interface)
     add_subdirectory(viewer)
   endif(Boost_FOUND)
 
