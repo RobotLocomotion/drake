@@ -1,13 +1,25 @@
-function [n, D, dn, dD] = contactConstraintDerivatives(obj, kinsol, idxA, idxB, xA, xB, normal, d, use_mex)
- compute_second_derivative = nargout > 2;
- 
+function [d, n, D, dn, dD] = contactConstraintDerivatives(use_mex, obj, normal, kinsol, idxA, idxB, xA, xB)
+ compute_second_derivative = nargout > 3;
+ tangents_only = (nargout == 1);
+
   if(use_mex)
+    if(tangents_only) 
+      d = contactConstraintsmex(normal);
+      return;
+    end
+
     if(~compute_second_derivative)
-      [n, D] = contactConstraintsmex(obj.mex_model_ptr, int32(idxA), int32(idxB), xA, xB, normal, d);
+      [d, n, D] = contactConstraintsmex(normal, obj.mex_model_ptr, int32(idxA), int32(idxB), xA, xB);
     else
-      [n, D, dn, dD] = contactConstraintsmex(obj.mex_model_ptr, int32(idxA), int32(idxB), xA, xB, normal, d);
+      [d, n, D, dn, dD] = contactConstraintsmex(normal, obj.mex_model_ptr, int32(idxA), int32(idxB), xA, xB);
     end
   else
+  d = obj.surfaceTangents(normal);
+
+  if(tangents_only) 
+    return;
+  end
+
   nq = obj.getNumPositions;  
   nk = size(d,2);
   nC = numel(idxA);

@@ -18,13 +18,18 @@ kinsol = p.doKinematics(q0);
 [~,normal,xA,xB,idxA,idxB] = p.collisionDetect(kinsol);
 idxA = idxA';
 idxB = idxB';
-d = p.surfaceTangents(normal);
 
 %get the results from the mexed version
-[n_mex, D_mex, dn_mex, dD_mex] = contactConstraintDerivatives(p, kinsol, idxA, idxB, xA, xB, normal, d, true);
+[d_mex, n_mex, D_mex, dn_mex, dD_mex] = contactConstraintDerivatives(true, p, normal, kinsol, idxA, idxB, xA, xB);
 
 %get the results from the matlab version
-[n, D, dn, dD] = contactConstraintDerivatives(p, kinsol, idxA, idxB, xA, xB, normal, d, false);
+[d, n, D, dn, dD] = contactConstraintDerivatives(false, p, normal, kinsol, idxA, idxB, xA, xB);
+
+
+%compare d
+for i = 1:size(d,2)
+    assert(norm(d_mex{i} - d{i}) < 1e-6)
+end
 
 %compare n
 assert(norm(n_mex - n) < 1e-6)
