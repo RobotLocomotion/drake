@@ -71,7 +71,7 @@ classdef WalkingPlanData
       motion = [any(abs(diff(plan.qr, 1, 2)) >= 0.005), false;
                 any(abs(diff(plan.ql, 1, 2)) >= 0.005), false];
       warning('ignoring roll and pitch')
-      for j = 2:plan.nsteps
+      for j = 2:length(plan.ts)
         foot_origin_knots(end+1).t = plan.ts(j);
         if motion(1,j) || motion(1,j-1)
           zr = 0.025;
