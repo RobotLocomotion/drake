@@ -17,7 +17,6 @@ int main(int argc, char* argv[])
   	cerr << "ERROR: Failed to load model from " << argv[1] << endl;
   	return -1;
   }
-  return 0;
 
   // run kinematics with second derivatives 100 times
   VectorXd q = VectorXd::Zero(model->num_dof);

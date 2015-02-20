@@ -5,8 +5,39 @@
 
 #include "tinyxml.h"
 #include "RigidBodyManipulator.h"
+#include "joints/drakeJointUtil.h"
+#include "joints/HelicalJoint.h"
+#include "joints/PrismaticJoint.h"
+#include "joints/RevoluteJoint.h"
+#include "joints/QuaternionFloatingJoint.h"
+#include "joints/RollPitchYawFloatingJoint.h"
 
 using namespace std;
+
+// todo: rectify this with findLinkId in the class (which makes more assumptions)
+int findLinkIndex(RigidBodyManipulator* model, string linkname)
+{
+  int index = -1;
+  for (int i=0; i<model->bodies.size(); i++) {
+    if (linkname.compare(model->bodies[i]->linkname)==0) {
+      index = i;
+      break;
+    }
+  }
+  return index;
+}
+
+// only writes values if they exist
+bool parseVectorAttribute(TiXmlElement* node, const string attribute_name, Vector3d &val)
+{
+  const char* attr = node->Attribute(attribute_name.c_str());
+  if (attr) {
+    stringstream s(attr);
+    s >> val(0) >> val(1) >> val(2);
+    return true;
+  }
+  return false;
+}
 
 void poseAttributesToTransform(TiXmlElement* node, Matrix4d& T)
 {
@@ -57,8 +88,6 @@ bool parseInertial(RigidBody* body, TiXmlElement* node, RigidBodyManipulator* mo
 
   auto bodyI = transformSpatialInertia(T,static_cast<  Gradient<Isometry3d::MatrixType, Eigen::Dynamic>::type* >(NULL),I);
   body->I = bodyI.value();
-
-  cout << "I = " << body->I << endl;
 
   return true;
 }
@@ -160,6 +189,7 @@ bool parseLink(RigidBodyManipulator* model, TiXmlElement* node)
   attr = node->Attribute("name");
   if (!attr) {
     cerr << "ERROR: link tag is missing name attribute" << endl;
+    delete body;
     return false;
   }
   body->linkname = attr;
@@ -168,7 +198,10 @@ bool parseLink(RigidBodyManipulator* model, TiXmlElement* node)
   if (inertial_node) if (!parseInertial(body,inertial_node,model)) return false;
 
   for (TiXmlElement* visual_node = node->FirstChildElement("visual"); visual_node; visual_node = visual_node->NextSiblingElement("visual")) {
-    if (!parseVisual(body,visual_node,model)) return false;
+    if (!parseVisual(body,visual_node,model)) {
+      delete body;
+      return false;
+    }
   }
 
   model->bodies.push_back(std::unique_ptr<RigidBody>(body));
@@ -181,38 +214,109 @@ bool parseLink(RigidBodyManipulator* model, TiXmlElement* node)
   return true;
 }
 
-bool parseJoint()
+bool parseJoint(RigidBodyManipulator* model, TiXmlElement* node)
 {
+  const char* attr = node->Attribute("drake_ignore");
+  if (attr && strcmp(attr,"true")==0) return true;
+
+  attr = node->Attribute("name");
+  if (!attr) {
+    cerr << "ERROR: joint tag is missing name attribute" << endl;
+    return false;
+  }
+  string name(attr);
+
+  attr = node->Attribute("type");
+  if (!attr) {
+    cerr << "ERROR: joint " << name << " is missing the type attribute" << endl;
+    return false;
+  }
+  string type(attr);
+
+  // parse parent
+  TiXmlElement* parent_node = node->FirstChildElement("parent");
+  if (!parent_node) {
+    cerr << "ERROR: joint " << name << " doesn't have a parent node" << endl;
+    return false;
+  }
+  attr = parent_node->Attribute("link");
+  if (!attr) {
+    cerr << "ERROR: joint " << name << " parent does not have a link attribute" << endl;
+    return false;
+  }
+  string parent_name(attr);
+
+  int parent_index = findLinkIndex(model,parent_name);
+  if (parent_index<0) {
+    cerr << "ERROR: could not find parent link named " << parent_name << endl;
+    return false;
+  }
+
+  // parse child
+  TiXmlElement* child_node = node->FirstChildElement("child");
+  if (!child_node) {
+    cerr << "ERROR: joint " << name << " doesn't have a child node" << endl;
+    return false;
+  }
+  attr = child_node->Attribute("link");
+  if (!attr) {
+    cerr << "ERROR: joint " << name << " child does not have a link attribute" << endl;
+    return false;
+  }
+  string child_name(attr);
+
+  int child_index = findLinkIndex(model,child_name);
+  if (child_index<0) {
+    cerr << "ERROR: could not find child link named " << child_name << endl;
+    return false;
+  }
+
+  Isometry3d T = Isometry3d::Identity();
+  TiXmlElement* origin = node->FirstChildElement("origin");
+  if (origin) poseAttributesToTransform(origin,T.matrix());
+
+  Vector3d axis;  axis << 1,0,0;
+  TiXmlElement* axis_node = node->FirstChildElement("axis");
+  if (axis_node) {
+    parseVectorAttribute(node,"xyz",axis);
+    axis.normalize();
+  }
+
+  // todo: add damping, etc?
+
+  TiXmlElement* limit_node = node->FirstChildElement("limit");
+  if (limit_node) {
+    cerr << "Warning: joint limits not (re-)implemented yet; they will be ignored." << endl;
+  }
+
+
+  // now construct the actual joint (based on it's type)
+  DrakeJoint* joint = NULL;
+  if (type.compare("revolute")==0 || type.compare("continuous")==0) {
+    joint = new RevoluteJoint(name, T, axis);
+  } else if (type.compare("fixed")==0) {
+    // FIXME: implement a fixed joint class
+    RevoluteJoint* rj = new RevoluteJoint(name, T, axis);
+    rj->setJointLimits(0,0);
+    joint = rj;
+  } else if (type.compare("prismatic")==0) {
+    joint = new PrismaticJoint(name, T, axis);
+  } else if (type.compare("floating")==0) {
+    joint = new RollPitchYawFloatingJoint(name, T);
+  } else {
+    cerr << "ERROR: Unrecognized joint type: " << type << endl;
+    return false;
+  }
+
+  model->bodies[child_index]->setJoint(std::unique_ptr<DrakeJoint>(joint));
+  model->bodies[child_index]->parent = parent_index;
+
   return true;
 }
 
-bool parseTransmission()
+bool parseTransmission(RigidBodyManipulator* model, TiXmlElement* node)
 {
-  return true;
-}
-
-bool parseLoop()
-{
-  return true;
-}
-
-bool parseRobot(RigidBodyManipulator* model, TiXmlElement* node, const string &root_dir)
-{
-  string robotname = node->Attribute("name");
-
-  // parse link elements
-  for (TiXmlElement* link_node = node->FirstChildElement("link"); link_node; link_node = link_node->NextSiblingElement("link"))
-    if (!parseLink(model,link_node)) return false;
-
-  // todo: parse collision filter groups
-
-  // parse joints
-
-
-  // parse transmission elements
 /*
-  for (TiXmlElement* transmission_xml = node->FirstChildElement("transmission"); transmission_xml; transmission_xml = transmission_xml->NextSiblingElement("transmission"))
-  {
     TiXmlElement* node = transmission_xml->FirstChildElement("joint");
     if (!node) continue;
 
@@ -232,10 +336,13 @@ bool parseRobot(RigidBodyManipulator* model, TiXmlElement* node, const string &r
     B.conservativeResize(num_velocities, B.cols()+1);
     B.rightCols(1) = B_col;
   }
+  */
+  return true;
+}
 
-  // parse loop joints
-  for (TiXmlElement* loop_xml = robot_xml->FirstChildElement("loop_joint"); loop_xml; loop_xml = loop_xml->NextSiblingElement("loop_joint"))
-  { // note: pushing this in without all of the surrounding drakeFunction logic just to get things moving.  this one needs to be fast.
+bool parseLoop(RigidBodyManipulator* model, TiXmlElement* node)
+{
+/*
     urdf::Vector3 pt;
     TiXmlElement* node = loop_xml->FirstChildElement("link1");
     int bodyA=-1,bodyB=-1;
@@ -263,9 +370,38 @@ bool parseRobot(RigidBodyManipulator* model, TiXmlElement* node, const string &r
 
     RigidBodyLoop l(bodyA,ptA,bodyB,ptB);
     loops.push_back(l);
-  }
-  */
+ */
+  return true;
+}
 
+bool parseRobot(RigidBodyManipulator* model, TiXmlElement* node, const string &root_dir)
+{
+  string robotname = node->Attribute("name");
+
+  // parse link elements
+  for (TiXmlElement* link_node = node->FirstChildElement("link"); link_node; link_node = link_node->NextSiblingElement("link"))
+    if (!parseLink(model,link_node)) return false;
+
+  // todo: parse collision filter groups
+
+  // parse joints
+  for (TiXmlElement* joint_node = node->FirstChildElement("joint"); joint_node; joint_node = joint_node->NextSiblingElement("joint"))
+    if (!parseJoint(model,joint_node)) return false;
+
+  // parse transmission elements
+  for (TiXmlElement* transmission_node = node->FirstChildElement("transmission"); transmission_node; transmission_node = transmission_node->NextSiblingElement("transmission"))
+    if (!parseTransmission(model,transmission_node)) return false;
+
+  // parse loop joints
+  for (TiXmlElement* loop_node = node->FirstChildElement("loop_joint"); loop_node; loop_node = loop_node->NextSiblingElement("loop_joint"))
+    if (!parseLoop(model,loop_node)) return false;
+
+  for (int i=1; i<model->bodies.size(); i++) {
+    if (model->bodies[i]->parent<0) {  // attach the root nodes to the world with a floating base joint
+      model->bodies[i]->parent = 0;
+      model->bodies[i]->setJoint(std::unique_ptr<DrakeJoint>(new RollPitchYawFloatingJoint("floating_rpy", Isometry3d::Identity())));
+    }
+  }
   return true;
 }
 
