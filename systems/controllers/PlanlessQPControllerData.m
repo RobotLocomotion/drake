@@ -1,4 +1,4 @@
-classdef QPControllerData < ControllerData
+classdef PlanlessQPControllerData < ControllerData
   % Class that contains data needed by the QPController and cascaded modules.
 
   % properties that change infrequently or never
@@ -8,11 +8,6 @@ classdef QPControllerData < ControllerData
     B = [zeros(2); eye(2)] % COM input map
     C = [eye(2),zeros(2)] % ZMP state-output map
     D % ZMP input-output map
-
-    A_is_time_varying=false 
-    B_is_time_varying=false 
-    C_is_time_varying=false 
-    D_is_time_varying=false 
   end
   
   % properties that can be modified 'on the fly'
@@ -36,28 +31,21 @@ classdef QPControllerData < ControllerData
     lqr_is_time_varying % true if TVLQR, false if TILQR
 
     % whole-body stuff -----------------------------------------------------------
-    qtraj % generalize configuration vector or trajectory 
-    % note that qtraj can be time-varying, even if LQR system is not
-    comtraj % COM state trajectory
-    support_times % vector of contact transition times
-    supports % (array of) RigidBodySupportState object(s)
-    ignore_terrain 
-    link_constraints=[] % structure of link motion constraints, see Biped class
-    constrained_dofs=[] % array of joint indices
-    acceleration_input_frame; % input coordinate frame for desired 
-    % generalized accelerations
-    plan_shift % linear offset to be applied to x0
-    pelvis_z_prev 
-    
+    qdes;
+    support;
+
+    constrained_dofs
+    body_motion_desired;
     left_toe_off = false;
     right_toe_off = false;
-    pelvis_foot_height_reference = 0;
+    toe_off_allowed = false;
+
     % dynamics related -----------------------------------------------------------
     mu % friction coefficient    
   end
   
   methods 
-    function obj = QPControllerData(lqr_is_time_varying,data)
+    function obj = PlanlessQPControllerData(lqr_is_time_varying,data)
       typecheck(lqr_is_time_varying,'logical');
       typecheck(data,'struct');
       data.lqr_is_time_varying = lqr_is_time_varying; % true if LQR problem is tv
@@ -120,7 +108,6 @@ classdef QPControllerData < ControllerData
     end
         
     function updateControllerData(obj,data)
-      updateControllerData@ControllerData(obj,data);
       if isfield(data,'A')
         if isa(data.A,'Trajectory')
           obj.A_is_time_varying = true;

@@ -22,8 +22,8 @@ if ~isfield(options, 'v') || isempty(options.v)
   v.display_dt = 0.05;
 else
   v = options.v;
+  rmfield(options, 'v'); % don't pass the vis down to the controllers
 end
-rmfield(options, 'v'); % don't pass the vis down to the controllers
 
 x0 = r.getInitialState();
 nq = getNumPositions(r);
