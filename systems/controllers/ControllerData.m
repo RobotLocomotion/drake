@@ -25,7 +25,13 @@ classdef ControllerData < SharedDataHandle
   methods (Abstract)
     % asserts existence and type of properties contained in 'data'
     verifyControllerData(obj,data);
-    % sets class properties using values contained in 'data'
-    updateControllerData(obj,data);
   end
+
+  methods
+    function updateControllerData(obj, data)
+      % sets class properties using values contained in 'data'
+      for f = fieldnames(data)'
+        obj.(f) = data.(f);
+      end
+    end
 end

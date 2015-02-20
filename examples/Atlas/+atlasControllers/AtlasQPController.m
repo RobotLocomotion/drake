@@ -237,13 +237,11 @@ classdef AtlasQPController < QPController
 
       if ~isempty(active_supports)
         nc = sum(num_active_contacts);
-        c_pre = 0;
         Dbar = [];
         for j=1:length(active_supports)
           [~,~,JB] = contactConstraintsBV(r,kinsol,false,struct('terrain_only',~obj.use_bullet,...
             'body_idx',[1,active_supports(j)],'collision_groups',active_contact_groups(j)));
           Dbar = [Dbar, vertcat(JB{:})']; % because contact constraints seems to ignore the collision_groups option
-          c_pre = c_pre + length(active_contact_pts{j});
         end
 
         Dbar_float = Dbar(float_idx,:);
