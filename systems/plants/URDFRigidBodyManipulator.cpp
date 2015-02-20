@@ -653,19 +653,91 @@ bool parseLink(URDFRigidBodyManipulator* model, TiXmlElement* node, int robotnum
   return true;
 }
 
+bool parseJoint()
+{
+  return true;
+}
+
+bool parseTransmission()
+{
+  return true;
+}
+
+bool parseLoop()
+{
+  return true;
+}
+
 bool parseRobot(URDFRigidBodyManipulator* model, TiXmlElement* node, const string &root_dir)
 {
   string robotname = node->Attribute("name");
   int robotnum = (int)model->name_map.size();
   model->name_map.insert(make_pair(robotname,robotnum));
 
-  // todo: parse materials
-
-  // todo (maybe): parse parameters
-
   // parse link elements
   for (TiXmlElement* link_node = node->FirstChildElement("link"); link_node; link_node = link_node->NextSiblingElement("link"))
     if (!parseLink(model,link_node,robotnum)) return false;
+
+  // todo: parse collision filter groups
+
+  // parse joints
+
+
+  // parse transmission elements
+  // NOTE: I need to know the number of velocities to do this
+  for (TiXmlElement* transmission_xml = robot_xml->FirstChildElement("transmission"); transmission_xml; transmission_xml = transmission_xml->NextSiblingElement("transmission"))
+  {
+    TiXmlElement* node = transmission_xml->FirstChildElement("joint");
+    if (!node) continue;
+
+    int _dofnum;
+    map<string, int>::const_iterator dn=findWithSuffix(dofname_to_dofnum,node->Attribute("name"));
+    if (dn == dofname_to_dofnum.end()) ROS_ERROR("can't find joint %s for transmission element.  this shouldn't happen");
+    _dofnum = dn->second;
+//    cout << "adding actuator to joint " << node->Attribute("name") << " (dof: " << _dofnum << ")" << endl;
+
+    node = transmission_xml->FirstChildElement("mechanicalReduction");
+    double gain = 1.0;
+    if (node) sscanf(node->Value(),"%lf",&gain);
+
+    VectorXd B_col = VectorXd::Zero(num_velocities);
+    B_col(_dofnum) = gain;
+
+    B.conservativeResize(num_velocities, B.cols()+1);
+    B.rightCols(1) = B_col;
+  }
+
+  // parse loop joints
+  for (TiXmlElement* loop_xml = robot_xml->FirstChildElement("loop_joint"); loop_xml; loop_xml = loop_xml->NextSiblingElement("loop_joint"))
+  { // note: pushing this in without all of the surrounding drakeFunction logic just to get things moving.  this one needs to be fast.
+    urdf::Vector3 pt;
+    TiXmlElement* node = loop_xml->FirstChildElement("link1");
+    int bodyA=-1,bodyB=-1;
+
+    string linkname = node->Attribute("link");
+    for (int i=0; i<num_bodies; i++)
+      if (linkname==bodies[i]->linkname) {
+        bodyA=i;
+        break;
+      }
+    if (bodyA<0) ROS_ERROR("couldn't find link %s referenced in loop joint",linkname.c_str());
+    pt.init(node->Attribute("xyz"));
+    Vector3d ptA;  ptA << pt.x, pt.y, pt.z;
+
+    node = loop_xml->FirstChildElement("link2");
+    linkname = node->Attribute("link");
+    for (int i=0; i<num_bodies; i++)
+      if (linkname==bodies[i]->linkname) {
+        bodyB=i;
+        break;
+      }
+    if (bodyB<0) ROS_ERROR("couldn't find link %s referenced in loop joint",linkname.c_str());
+    pt.init(node->Attribute("xyz"));
+    Vector3d ptB;  ptB << pt.x, pt.y, pt.z;
+
+    RigidBodyLoop l(bodyA,ptA,bodyB,ptB);
+    loops.push_back(l);
+  }
 
   return true;
 }

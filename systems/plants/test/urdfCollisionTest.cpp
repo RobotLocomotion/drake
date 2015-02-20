@@ -2,7 +2,7 @@
 
 #include <iostream>
 #include <cstdlib>
-#include "URDFRigidBodyManipulator.h"
+#include "RigidBodyManipulator.h"
 
 using namespace std;
 
@@ -12,8 +12,7 @@ int main(int argc, char* argv[])
 		cerr << "Usage: urdfCollisionTest urdf_filename" << endl;
 		exit(-1);
 	}
-  URDFRigidBodyManipulator* model = loadURDFfromFile(argv[1]);
-//  URDFRigidBodyManipulator* model = loadURDFfromFile("/Users/russt/drc/software/models/mit_gazebo_models/mit_robot/model.urdf");
+  RigidBodyManipulator* model = new RigidBodyManipulator(argv[1]);
   if (!model) {
   	cerr << "ERROR: Failed to load model from " << argv[1] << endl;
   	return -1;
