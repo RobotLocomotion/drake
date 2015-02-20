@@ -56,22 +56,19 @@ end
 
 % For now, all coefficients of friction are 1
 mu = ones(nC,1);
-
-% while surfaceTangentsmex is not explicitly dependent on the the mex_model_ptr,
-% it may be sufficient to check for the presence of Eigen.
-% This is faster than checking for the presence of files.
-if(obj.mex_model_ptr ~= 0)
-    d = surfaceTangentsmex(normal);
-else
-    d = obj.surfaceTangents(normal);
-end
+use_mex = obj.mex_model_ptr ~= 0;
 
 if compute_first_derivative
-    if(~compute_second_derivative)
-        [n, D] = contactConstraintDerivatives(obj, kinsol, idxA, idxB, xA, xB, normal, d, obj.mex_model_ptr~=0);
+    if(compute_second_derivative)
+        %second and first derivatives
+        [d, n, D, dn, dD] = contactConstraintDerivatives(use_mex, obj, normal, kinsol, idxA, idxB, xA, xB);
     else
-        [n, D, dn, dD] = contactConstraintDerivatives(obj, kinsol, idxA, idxB, xA, xB, normal, d, obj.mex_model_ptr~=0);
+        %just first derivativves
+        [d, n, D] = contactConstraintDerivatives(use_mex, obj, normal, kinsol, idxA, idxB, xA, xB);
     end
+else
+    %just tangents
+    d = contactConstraintDerivatives(use_mex, obj, normal);
 end
 end
 
