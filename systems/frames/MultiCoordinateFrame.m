@@ -317,8 +317,10 @@ classdef MultiCoordinateFrame < CoordinateFrame
     end
     
     function id = getFrameNumByNameRecursive(obj,name)
-      % Returns list of subframe ids to get to the supplied
-      % frame from the root.
+      % Returns vector of subframe ids to get to the supplied
+      % frame from the root. The first elem in the vec is
+      % the root level subframe -- each sequential item in
+      % the vec is the index into the next subframe down.
       to_search = obj.frame;
       frame_locations = num2cell(1:length(to_search));
       i = 1;
