@@ -29,6 +29,7 @@ RigidBody::RigidBody(void) :
     dJdotVdq(TWIST_SIZE, 0),
     dJdotVdv(TWIST_SIZE, 0)
 {
+  parent = -1;
 	dofnum = 0;
 	velocity_num_start = 0;
 	mass = 0.0;
