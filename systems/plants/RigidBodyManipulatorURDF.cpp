@@ -28,9 +28,9 @@ int findLinkIndex(RigidBodyManipulator* model, string linkname)
 }
 
 // only writes values if they exist
-bool parseVectorAttribute(TiXmlElement* node, const string attribute_name, Vector3d &val)
+bool parseVectorAttribute(TiXmlElement* node, const char* attribute_name, Vector3d &val)
 {
-  const char* attr = node->Attribute(attribute_name.c_str());
+  const char* attr = node->Attribute(attribute_name);
   if (attr) {
     stringstream s(attr);
     s >> val(0) >> val(1) >> val(2);
@@ -278,7 +278,7 @@ bool parseJoint(RigidBodyManipulator* model, TiXmlElement* node)
   Vector3d axis;  axis << 1,0,0;
   TiXmlElement* axis_node = node->FirstChildElement("axis");
   if (axis_node) {
-    parseVectorAttribute(node,"xyz",axis);
+    parseVectorAttribute(axis_node,"xyz",axis);
     axis.normalize();
   }
 
