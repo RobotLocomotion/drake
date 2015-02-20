@@ -9,60 +9,6 @@ classdef RecoveryPlanner < MixedIntegerConvexProgram
     STANCE_UPPER_BOUND = 2; % m, an upper bound on the width of the robot's stance, for mixed-integer constraint formulation
   end
 
-  methods(Static)
-    % function obj = run(x0, xd0, qcop, qr, ql, contact)
-    %   if nargin == 0
-    %     x0 = [0;0;1];
-    %     xd0 = [0.4;0.2;0];
-    %     qr = [0;-0.1];
-    %     ql = [0; 0.1];
-    %     contact = [1;1];
-    %   end
-
-    %   checkDependency('gurobi');
-    %   checkDependency('yalmip');
-    %   x0
-    %   xd0
-    %   qcop
-    %   qr
-    %   ql
-    %   % qr = [0; qr(2)]
-    %   % ql = [0; ql(2)]
-    %   contact
-
-    %   warning('assuming ground at z=0')
-
-    %   start = struct('xcom', [x0(1:2); xd0(1:2)],...
-    %                  'qcop', qcop,...
-    %                  'qr', qr,...
-    %                  'ql', ql,...
-    %                  'contact', contact);
-
-    %   omega = sqrt(9.81 / x0(3));
-    %   obj = RecoveryPlanner();
-    %   obj = obj.setup(start, omega, 15, 0.05);
-    %   obj = obj.solveYalmip(sdpsettings('solver', 'gurobi', 'verbose', 1));
-
-    %   utraj = obj.getUtraj();
-
-    %   breaks = utraj.getBreaks();
-
-    %   ts = linspace(breaks(1), breaks(end));
-
-    %   r = PointMassBiped(omega);
-    %   v = r.constructVisualizer();
-    %   sys = cascade(utraj, r);
-    %   ytraj = sys.simulate([breaks(1), breaks(end)], start.xcom);
-    %   v.playback(ytraj, struct('slider', true));
-
-    %   ys_sim = ytraj.eval(ts);
-    %   xcom_sim = ys_sim(1:2,:);
-
-    %   us = utraj.eval(ts);
-    %   xcom_des = us(end-1:end,:);
-    % end
-  end
-
   methods
     function obj = RecoveryPlanner(nsteps, dt)
       checkDependency('yalmip');
@@ -186,7 +132,6 @@ classdef RecoveryPlanner < MixedIntegerConvexProgram
       support(:,1) = support(:,1) & obj.start.contact;
       sol.support = support;
       sol.omega = obj.omega;
-      sol.nsteps = obj.nsteps;
     end
 
     function obj = addDiscreteLinearDynamics(obj)
@@ -223,15 +168,18 @@ classdef RecoveryPlanner < MixedIntegerConvexProgram
       min_backward_step = min([-0.15, initial_deltas(1,:)]);
 
       [Ar, br] = poly2lincon([min_backward_step, max_forward_step, max_forward_step, min_backward_step],...
-                             [0, 0, -0.25, -0.25]);
+                             [0.1, 0.1, -0.25, -0.25]);
       [Al, bl] = poly2lincon([min_backward_step, max_forward_step, max_forward_step, min_backward_step],...
-                             [0, 0, 0.25, 0.25]);
+                             [-0.1, -0.1, 0.25, 0.25]);
+      A_l_minus_r = [0, 1; 0, -1];
+      b_l_minus_r = [0.45; -0.16];
       warning('not handling orientation')
       for j = 2:obj.nsteps
         obj = obj.addSymbolicConstraints([...
           Ar * (obj.vars.qr.symb(1:2,j) - obj.vars.xcom.symb(1:2,j)) <= br,...
           Al * (obj.vars.ql.symb(1:2,j) - obj.vars.xcom.symb(1:2,j)) <= bl,...
           obj.vars.ql.symb(2,j) - obj.vars.qr.symb(2,j) >= 0.15,...
+          A_l_minus_r * (obj.vars.ql.symb(1:2,j) - obj.vars.qr.symb(1:2,j)) <= b_l_minus_r,...
           ]);
       end
     end
