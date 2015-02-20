@@ -23,7 +23,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://IRB140/urdf/meshes/base_link_chull.wrl" />
+          filename="package://IRB140/urdf/meshes/base_link_chull.stl" />
       </geometry>
       <material
         name="">
@@ -35,12 +35,18 @@
       <origin
         xyz="0 0 0"
         rpy="0 0 0" />
-<!--<geometry>
+      <geometry>
         <mesh
-          filename="package://IRB140/urdf/meshes/base_link_chull.wrl" />
-      </geometry>-->
+          filename="package://IRB140/urdf/meshes/base_link_chull.stl" />
+      </geometry>
     </collision>
   </link>
+  <collision_filter_group name="base">
+	  <member link="base_link"/>
+  </collision_filter_group>
+  <collision_filter_group name="ignore_base">
+	  <member link="link_1"/>
+  </collision_filter_group>
   <link
     name="link_1">
     <inertial>
@@ -63,7 +69,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://IRB140/urdf/meshes/link1_chull.wrl" />
+          filename="package://IRB140/urdf/meshes/link1_chull.stl" />
       </geometry>
       <material
         name="">
@@ -77,7 +83,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://IRB140/urdf/meshes/link1_chull.wrl" />
+          filename="package://IRB140/urdf/meshes/link1_chull.stl" />
       </geometry>
     </collision>
   </link>
@@ -103,7 +109,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://IRB140/urdf/meshes/link2_chull.wrl" />
+          filename="package://IRB140/urdf/meshes/link2_chull.stl" />
       </geometry>
       <material
         name="">
@@ -117,7 +123,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://IRB140/urdf/meshes/link2_chull.wrl" />
+          filename="package://IRB140/urdf/meshes/link2_chull.stl" />
       </geometry>
     </collision>
   </link>
@@ -143,7 +149,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://IRB140/urdf/meshes/link3_chull.wrl" />
+          filename="package://IRB140/urdf/meshes/link3_chull.stl" />
       </geometry>
       <material
         name="">
@@ -157,7 +163,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://IRB140/urdf/meshes/link3_chull.wrl" />
+          filename="package://IRB140/urdf/meshes/link3_chull.stl" />
       </geometry>
     </collision>
   </link>
@@ -183,7 +189,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://IRB140/urdf/meshes/link4_chull.wrl" />
+          filename="package://IRB140/urdf/meshes/link4_chull.stl" />
       </geometry>
       <material
         name="">
@@ -197,7 +203,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://IRB140/urdf/meshes/link4_chull.wrl" />
+          filename="package://IRB140/urdf/meshes/link4_chull.stl" />
       </geometry>
     </collision>
   </link>
@@ -223,7 +229,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://IRB140/urdf/meshes/link5_chull.wrl" />
+          filename="package://IRB140/urdf/meshes/link5_chull.stl" />
       </geometry>
       <material
         name="">
@@ -237,7 +243,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://IRB140/urdf/meshes/link5_chull.wrl" />
+          filename="package://IRB140/urdf/meshes/link5_chull.stl" />
       </geometry>
     </collision>
   </link>
@@ -263,7 +269,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://IRB140/urdf/meshes/link6_chull.wrl" />
+          filename="package://IRB140/urdf/meshes/link6_chull.stl" />
       </geometry>
       <material
         name="">
@@ -277,7 +283,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://IRB140/urdf/meshes/link6_chull.wrl" />
+          filename="package://IRB140/urdf/meshes/link6_chull.stl" />
       </geometry>
     </collision>
   </link>
@@ -319,7 +325,7 @@
   <joint name="joint6" type="revolute">
     <parent link="link_5"/>
     <child link="link_6"/>
-    <limit effort="300" lower="-6.98131701" upper="-6.98131701" velocity="7.33"/>
+    <limit effort="300" lower="-6.98131701" upper="6.98131701" velocity="7.33"/>
     <axis xyz="1 0 0"/>
     <origin rpy="0 0 0" xyz="0.065 0 0"/>
   </joint>
