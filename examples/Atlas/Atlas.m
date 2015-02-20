@@ -67,34 +67,25 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
     function obj = compile(obj)
       obj = compile@TimeSteppingRigidBodyManipulator(obj);
 
-      % Sanity check if we don't have hands.
-      if (~isa(obj.manip.getStateFrame().getFrameByNum(1), 'MultiCoordinateFrame'))
-        obj.hands = 0;
-      end
-      % Construct state vector itself
-      if (obj.hands == 0 && ~isa(obj.manip.getStateFrame().getFrameByNum(1), 'MultiCoordinateFrame'))
+      % Construct state vector itself -- start by replacing the
+      % atlasPosition and atlasVelocity frames with a single
+      % larger state frame
+      if (strcmp(obj.manip.getStateFrame().getFrameByNum(1).name, 'atlasPosition'))
         atlas_state_frame = atlasFrames.AtlasState(obj);
       else
-        atlas_state_frame = getStateFrame(obj);
+        atlas_state_frame = obj.manip.getStateFrame();
         atlas_state_frame = replaceFrameNum(atlas_state_frame,1,atlasFrames.AtlasState(obj));
       end
       if (obj.hands > 0)
-        % Sub in handstates for the hand (curently assuming just 1)
-        % TODO: by name?
-        for i=2:2
-          atlas_state_frame = replaceFrameNum(atlas_state_frame,i,atlasFrames.HandState(obj,i,'atlasFrames.HandState'));
-        end
+        % Sub in handstates for the hands
+        % TODO: handle more than 1 hand?
+        id = atlas_state_frame.getFrameNumByName('s-model_articulatedPosition+s-model_articulatedVelocity');
+        atlas_state_frame = replaceFrameNum(atlas_state_frame,id,atlasFrames.HandState(obj,id,'atlasFrames.HandState'));
       end
       
       tsmanip_state_frame = obj.getStateFrame();
-      if (obj.hands == 0 && ~isa(tsmanip_state_frame.getFrameByNum(1), 'MultiCoordinateFrame'))
-        tsmanip_state_frame = atlasFrames.AtlasState(obj);
-      else
-        tsmanip_state_frame = replaceFrameNum(tsmanip_state_frame,1,atlasFrames.AtlasState(obj));
-      end
       if tsmanip_state_frame.dim>atlas_state_frame.dim
-        id = findSubFrameEquivalentModuloTransforms(tsmanip_state_frame,atlas_state_frame);
-        tsmanip_state_frame.frame{id} = atlas_state_frame;
+        tsmanip_state_frame.frame{1} = atlas_state_frame;
         state_frame = tsmanip_state_frame;
       else
         state_frame = atlas_state_frame;
@@ -106,11 +97,10 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       if (obj.hands > 0)
         input_frame = getInputFrame(obj);
         input_frame  = replaceFrameNum(input_frame,1,atlasFrames.AtlasInput(obj));
-        % Sub in handstates for each hand
-        % TODO: by name?
-        for i=2:2
-          input_frame = replaceFrameNum(input_frame,i,atlasFrames.HandInput(obj,i,'atlasFrames.HandInput'));
-        end
+        % Sub in handstates for the hand
+        % TODO: handle more than 1 hand?
+        id = input_frame.getFrameNumByName('s-model_articulatedInput');
+        input_frame = replaceFrameNum(input_frame,id,atlasFrames.HandInput(obj,id,'atlasFrames.HandInput'));
       else
         input_frame = atlasFrames.AtlasInput(obj);
       end
@@ -133,8 +123,9 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
           end
         end
       end
+      % The output function of a TSRBM appends the TS sensors to the
+      % output of the RBM. So get ready for that:
       output_frame = atlas_output_frame;
-      % Continuing frame from above...
       if (~isempty(obj.sensor))
         for i=1:length(obj.sensor)
           if (~isa(obj.sensor{i}, 'FullStateFeedbackSensor'))
