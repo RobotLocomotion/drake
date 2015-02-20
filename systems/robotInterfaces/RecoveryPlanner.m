@@ -145,15 +145,14 @@ classdef RecoveryPlanner < MixedIntegerConvexProgram
            0 0;
            -obj.omega^2, 0;
            0, -obj.omega^2];
+      Ai = inv(A);
       for j = 1:obj.nsteps-1
         beta = qcop(:,j);
         alpha = (qcop(:,j+1) - qcop(:,j)) / obj.dt;
-        Ai = inv(A);
         T = -Ai * B * beta - Ai*Ai*B*alpha;
         S = -Ai * B * alpha;
         Q = xcom(:,j) + Ai * B * beta + Ai * Ai * B * alpha;
         obj = obj.addSymbolicConstraints(xcom(:,j+1) == expm(A*obj.dt) * Q + S * obj.dt + T);
-%         obj = obj.addSymbolicConstraints(xcom(:,j+1) - [qcop(:,j); 0; 0] == expm(obj.dt * A) * (xcom(:,j) - [qcop(:,j); 0; 0]));
       end
 
       obj = obj.addSymbolicConstraints([...
