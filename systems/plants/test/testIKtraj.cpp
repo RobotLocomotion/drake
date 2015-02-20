@@ -10,8 +10,7 @@ using namespace std;
 using namespace Eigen;
 int main()
 {
-  RigidBodyManipulator* model = new RigidBodyManipulator("examples/Atlas/urdf/atlas_minimal_contact.urdf");
-  model->use_new_kinsol = false;
+  URDFRigidBodyManipulator* model = loadURDFfromFile("examples/Atlas/urdf/atlas_minimal_contact.urdf");
   if(!model)
   {
     cerr<<"ERROR: Failed to load model"<<endl;
