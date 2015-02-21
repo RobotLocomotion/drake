@@ -27,11 +27,11 @@ for urdf = allURDFs()'
   [retval,outstr] = systemWCMakeEnv([urdf_kin_test,' ',urdffile,sprintf(' %f',q),' 2> /dev/null']);
   valuecheck(retval,0);
   out = textscan(outstr,'%s %f %f %f %f %f %f');%,'delimiter',',');
-
+  
   for i=1:getNumBodies(r)
     try
       b = findLinkId(r,out{1}{i},0,1);
-    catch
+    catch ex
       % skip welded cases (at least until we implement
       % https://github.com/RobotLocomotion/drake/issues/687
       disp(['skipping ',out{1}{i},' because it''s been welded']);
