@@ -181,8 +181,7 @@ URDFRigidBodyManipulator::URDFRigidBodyManipulator(void)
   RigidBodyManipulator(0,0,1)
 {
 	bodies[0]->linkname = "world";
-	bodies[0]->parent = -1;
-        bodies[0]->robotnum = 0;
+	bodies[0]->robotnum = 0;
 }
 
 void setJointLimits(boost::shared_ptr<urdf::ModelInterface> urdf_model, boost::shared_ptr<urdf::Joint> j, const map<string, int> &dofname_to_dofnum, VectorXd& joint_limit_min, VectorXd& joint_limit_max);
@@ -582,13 +581,13 @@ bool URDFRigidBodyManipulator::addRobotFromURDFString(const string &xml_string, 
     			map<string, int>::iterator pjn=jointname_to_jointnum.find(pj->name);
     			if (pjn == jointname_to_jointnum.end()) ROS_ERROR("can't find joint %s.  this shouldn't happen", pj->name.c_str());
 
-    			bodies[index]->parent = pjn->second;
+    			bodies[index]->parent = bodies[pjn->second];
     			parent[index-1] = pjn->second-1;
     		} else { // the parent body is the floating base
             	string jointname="base";
                 map<string, int>::iterator jn=jointname_to_jointnum.find(jointname);
                 if (jn == jointname_to_jointnum.end()) ROS_ERROR("can't find joint %s.  this shouldn't happen",jointname.c_str());
-                bodies[index]->parent = jn->second;
+                bodies[index]->parent = bodies[jn->second];
     		}
     	}
 

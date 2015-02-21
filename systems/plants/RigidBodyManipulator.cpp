@@ -277,8 +277,8 @@ RigidBodyManipulator::RigidBodyManipulator(const std::string &urdf_filename)
   :  RigidBodyManipulator(0,0,1)
 {
   bodies[0]->linkname = "world";
-  bodies[0]->parent = -1;
   bodies[0]->robotnum = 0;
+  bodies[0]->body_index = 0;
   use_new_kinsol = true; // assuming new kinsol in the updated logic below
   addRobotFromURDF(urdf_filename);
 }
@@ -299,8 +299,8 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
   joint_limit_min.conservativeResize(num_dof);
   joint_limit_max.conservativeResize(num_dof);
   for (int i=last_num_dof; i<num_dof; i++) {
-    joint_limit_min[i] = -std::numeric_limits<double>::infinity(); 
-    joint_limit_max[i] = std::numeric_limits<double>::infinity(); 
+    joint_limit_min[i] = -std::numeric_limits<double>::infinity();
+    joint_limit_max[i] = std::numeric_limits<double>::infinity();
   }
 
   if (num_featherstone_bodies<0)
@@ -350,7 +350,7 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
 
   bodies.reserve(num_bodies);
   for (int i = last_num_bodies; i < num_bodies; i++) {
-    bodies.push_back(std::unique_ptr<RigidBody>(new RigidBody()));
+    bodies.push_back(std::shared_ptr<RigidBody>(new RigidBody()));
 //    bodies[i]->dofnum = i - 1;
   } // setup default dofnums
 
@@ -440,7 +440,18 @@ void RigidBodyManipulator::compile(void)
 {
   /* todo:
    - set joint limits (from drakejoint to rbm)
+   - add collision elements (and don't add them before, e.g. in constructModelmex)
    */
+
+  // reorder body list to make sure that parents before children in the list
+  for (int i=0; i<bodies.size(); i++) {
+    while (bodies[i]->hasParent()) {
+      auto iter = find(bodies.begin()+i+1,bodies.end(),bodies[i]->parent);
+      if (iter==bodies.end()) break;
+      bodies[i].swap(*iter);
+    }
+  }
+
   num_bodies = bodies.size();
   num_dof = 0;
   num_velocities = 0;
@@ -458,6 +469,7 @@ void RigidBodyManipulator::compile(void)
     }
   }
   for (int i = 0; i < num_bodies; i++) {
+    bodies[i]->body_index = i;
     bodies[i]->setN(num_dof, num_velocities);
   }
 
@@ -473,9 +485,9 @@ void RigidBodyManipulator::compile(void)
 
 void RigidBodyManipulator::addCollisionElement(const int body_ind, const Matrix4d & T_elem_to_lnk, DrakeCollision::Shape shape, vector<double> params, string group_name)
 {
-  bool is_static = (bodies[body_ind]->parent==0);
-  collision_model->addElement(body_ind,bodies[body_ind]->parent,T_elem_to_lnk,shape,params,group_name,is_static, true);
-  collision_model_no_margins->addElement(body_ind,bodies[body_ind]->parent,T_elem_to_lnk,shape,params,group_name,is_static, false);
+  bool is_static = (bodies[body_ind]->parent->body_index==0);
+  collision_model->addElement(body_ind,bodies[body_ind]->parent->body_index,T_elem_to_lnk,shape,params,group_name,is_static, true);
+  collision_model_no_margins->addElement(body_ind,bodies[body_ind]->parent->body_index,T_elem_to_lnk,shape,params,group_name,is_static, false);
 }
 
 void RigidBodyManipulator::updateCollisionElements(const int body_ind)
@@ -498,7 +510,7 @@ bool RigidBodyManipulator::setCollisionFilter(const int body_ind,
   return status_one && status_two;
 }
 
-bool RigidBodyManipulator::getPairwiseCollision(const int body_indA, const int body_indB, 
+bool RigidBodyManipulator::getPairwiseCollision(const int body_indA, const int body_indB,
         MatrixXd &ptsA, MatrixXd &ptsB, MatrixXd &normals, bool use_margins)
 {
   if (use_margins)
@@ -512,12 +524,12 @@ bool RigidBodyManipulator::getPairwisePointCollision(const int body_indA,
                                                      const int body_collision_indA,
                                                      Vector3d &ptA,
                                                      Vector3d &ptB,
-                                                     Vector3d &normal, 
+                                                     Vector3d &normal,
                                                      bool use_margins)
 {
   if ( (use_margins && collision_model->getPairwisePointCollision(body_indA, body_indB,
           body_collision_indA,
-          ptA,ptB,normal)) 
+          ptA,ptB,normal))
        ||
        (!use_margins && collision_model_no_margins->getPairwisePointCollision(body_indA, body_indB,
           body_collision_indA,
@@ -535,14 +547,14 @@ bool RigidBodyManipulator::getPairwisePointCollision(const int body_indA,
 bool RigidBodyManipulator::getPointCollision(const int body_ind,
                                              const int body_collision_ind,
                                              Vector3d &ptA, Vector3d &ptB,
-                                             Vector3d &normal, 
+                                             Vector3d &normal,
                                              bool use_margins)
 {
-  if ( (use_margins && 
+  if ( (use_margins &&
           collision_model->getPointCollision(body_ind, body_collision_ind, ptA,ptB,
           normal))
        ||
-       (!use_margins && 
+       (!use_margins &&
           collision_model_no_margins->getPointCollision(body_ind, body_collision_ind, ptA,ptB,
           normal))
      ){
@@ -555,11 +567,11 @@ bool RigidBodyManipulator::getPointCollision(const int body_ind,
   }
 };
 
-bool RigidBodyManipulator::getPairwiseClosestPoint(const int body_indA, 
-                                             const int body_indB, 
+bool RigidBodyManipulator::getPairwiseClosestPoint(const int body_indA,
+                                             const int body_indB,
                                              Vector3d &ptA, Vector3d &ptB,
-                                             Vector3d &normal, 
-                                             double &distance, 
+                                             Vector3d &normal,
+                                             double &distance,
                                              bool use_margins)
 {
   if (use_margins)
@@ -568,9 +580,9 @@ bool RigidBodyManipulator::getPairwiseClosestPoint(const int body_indA,
     return collision_model_no_margins->getClosestPoints(body_indA,body_indB,ptA,ptB,normal,distance);
 };
 
-bool RigidBodyManipulator::collisionRaycast(const Matrix3Xd &origins, 
-                                            const Matrix3Xd &ray_endpoints, 
-                                            VectorXd &distances, 
+bool RigidBodyManipulator::collisionRaycast(const Matrix3Xd &origins,
+                                            const Matrix3Xd &ray_endpoints,
+                                            VectorXd &distances,
                                             bool use_margins )
 {
   if (use_margins)
@@ -598,10 +610,10 @@ bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
 }
 
 bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
-                                            MatrixXd& normal, 
-                                            MatrixXd& xA, 
+                                            MatrixXd& normal,
+                                            MatrixXd& xA,
                                             MatrixXd& xB,
-                                            vector<int>& bodyA_idx, 
+                                            vector<int>& bodyA_idx,
                                             vector<int>& bodyB_idx,
                                             const vector<int>& bodies_idx,
                                             bool use_margins)
@@ -615,10 +627,10 @@ bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
 }
 
 bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
-                                            MatrixXd& normal, 
-                                            MatrixXd& xA, 
+                                            MatrixXd& normal,
+                                            MatrixXd& xA,
                                             MatrixXd& xB,
-                                            vector<int>& bodyA_idx, 
+                                            vector<int>& bodyA_idx,
                                             vector<int>& bodyB_idx,
                                             const set<string>& active_element_groups,
                                             bool use_margins)
@@ -632,10 +644,10 @@ bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
 }
 
 bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
-                                            MatrixXd& normal, 
-                                            MatrixXd& xA, 
+                                            MatrixXd& normal,
+                                            MatrixXd& xA,
                                             MatrixXd& xB,
-                                            vector<int>& bodyA_idx, 
+                                            vector<int>& bodyA_idx,
                                             vector<int>& bodyB_idx,
                                             bool use_margins)
 {
@@ -711,7 +723,7 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
   Matrix3d rx,drx,ddrx,ry,dry,ddry,rz,drz,ddrz;
 
   for (i = 0; i < num_bodies; i++) {
-    int parent = bodies[i]->parent;
+    int parent = bodies[i]->parent->body_index;
     if (parent < 0) {
       bodies[i]->T = bodies[i]->Ttree;
       //dTdq, ddTdqdq initialized as all zeros
@@ -974,7 +986,7 @@ void RigidBodyManipulator::doKinematicsNew(double* q, bool compute_gradients, do
 
       // transform
       Isometry3d T_body_to_parent = Isometry3d(body.Ttree) * body.getJoint().jointTransform(q_body);
-      body.T_new = bodies[body.parent]->T_new * T_body_to_parent;
+      body.T_new = body.parent->T_new * T_body_to_parent;
 
       // motion subspace in body frame
       Eigen::MatrixXd* dSdq = compute_gradients ? &(body.dSdqi) : nullptr;
@@ -1005,7 +1017,7 @@ void RigidBodyManipulator::doKinematicsNew(double* q, bool compute_gradients, do
         Gradient<Isometry3d::MatrixType, Eigen::Dynamic>::type dT_body_to_parentdq(HOMOGENEOUS_TRANSFORM_SIZE, nq);
         dT_body_to_parentdq.setZero();
         dT_body_to_parentdq.middleCols(body.dofnum, body.getJoint().getNumPositions()) = dT_body_to_parentdqi;
-        body.dTdq_new = matGradMultMat(bodies[body.parent]->T_new.matrix(), T_body_to_parent.matrix(), bodies[body.parent]->dTdq_new, dT_body_to_parentdq);
+        body.dTdq_new = matGradMultMat(body.parent->T_new.matrix(), T_body_to_parent.matrix(), body.parent->dTdq_new, dT_body_to_parentdq);
 
         // gradient of motion subspace in world
         MatrixXd dSdq = MatrixXd::Zero(body.S.size(), nq);
@@ -1018,13 +1030,13 @@ void RigidBodyManipulator::doKinematicsNew(double* q, bool compute_gradients, do
         double* v_body = &v[body.velocity_num_start];
         Map<VectorXd> v_body_map(v_body, body.getJoint().getNumVelocities());
         joint_twist.value() = body.J * v_body_map;
-        body.twist = bodies[body.parent]->twist;
+        body.twist = body.parent->twist;
         body.twist += joint_twist.value();
 
         if (compute_gradients) {
           // dtwistdq
           joint_twist.gradient().value() = matGradMult(body.dJdq, v_body_map);
-          body.dtwistdq = bodies[body.parent]->dtwistdq + joint_twist.gradient().value();
+          body.dtwistdq = body.parent->dtwistdq + joint_twist.gradient().value();
         }
 
         if (compute_JdotV) {
@@ -1036,7 +1048,7 @@ void RigidBodyManipulator::doKinematicsNew(double* q, bool compute_gradients, do
           // Jdotv
           auto joint_accel = crossSpatialMotion(body.twist, joint_twist.value());
           joint_accel += transformSpatialMotion(body.T_new, body.SdotV);
-          body.JdotV = bodies[body.parent]->JdotV + joint_accel;
+          body.JdotV = body.parent->JdotV + joint_accel;
 
           if (compute_gradients) {
             // dJdotvdq
@@ -1046,7 +1058,7 @@ void RigidBodyManipulator::doKinematicsNew(double* q, bool compute_gradients, do
             dSdotVdq.middleCols(body.dofnum, body.getJoint().getNumPositions()) = body.dSdotVdqi;
             MatrixXd dcrm_twist_joint_twistdq(TWIST_SIZE, nq);
             dcrm(body.twist, joint_twist.value(), body.dtwistdq, joint_twist.gradient().value(), &dcrm_twist_joint_twistdq); // TODO: make dcrm templated
-            body.dJdotVdq = bodies[body.parent]->dJdotVdq
+            body.dJdotVdq = body.parent->dJdotVdq
                 + dcrm_twist_joint_twistdq
                 + dTransformSpatialMotion(body.T_new, body.SdotV, body.dTdq_new, dSdotVdq);
 
@@ -1067,7 +1079,7 @@ void RigidBodyManipulator::doKinematicsNew(double* q, bool compute_gradients, do
             body.dJdotVdv.setZero();
             for (int j = 0; j < nv_branch; j++) {
               int v_index = v_indices[j];
-              body.dJdotVdv.col(v_index) = bodies[body.parent]->dJdotVdv.col(v_index) + djoint_acceldv.col(j);
+              body.dJdotVdv.col(v_index) = body.parent->dJdotVdv.col(v_index) + djoint_acceldv.col(j);
             }
           }
         }
@@ -1201,9 +1213,9 @@ void RigidBodyManipulator::updateCompositeRigidBodyInertias(int gradient_order) 
 
     for (int i = num_bodies - 1; i >= 0; i--) {
       if (bodies[i]->hasParent()) {
-        Ic_new[bodies[i]->parent] += Ic_new[i];
+        Ic_new[bodies[i]->parent->body_index] += Ic_new[i];
         if (gradient_order > 0) {
-          dIc_new[bodies[i]->parent] += dIc_new[i];
+          dIc_new[bodies[i]->parent->body_index] += dIc_new[i];
         }
       }
     }
@@ -1484,10 +1496,10 @@ int RigidBodyManipulator::parseBodyOrFrameID(const int body_or_frame_id, Matrix4
 void RigidBodyManipulator::findAncestorBodies(std::vector<int>& ancestor_bodies, int body_idx)
 {
   const RigidBody* current_body = bodies[body_idx].get();
-  while (current_body->parent != -1)
+  while (current_body->parent != nullptr)
   {
-    ancestor_bodies.push_back(current_body->parent);
-    current_body = bodies[current_body->parent].get();
+    ancestor_bodies.push_back(current_body->parent->body_index);
+    current_body = current_body->parent.get();
   }
 }
 
@@ -1668,7 +1680,7 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJ
     int body_index;
     for (int i = 0; i < kinematic_path.joint_path.size(); i++) {
       body_index = kinematic_path.joint_path[i];
-      const std::unique_ptr<RigidBody>& body = bodies[body_index];
+      const std::shared_ptr<RigidBody>& body = bodies[body_index];
       const DrakeJoint& joint = body->getJoint();
 
       cols += in_terms_of_qdot ? joint.getNumPositions() : joint.getNumVelocities();
@@ -1742,7 +1754,7 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJ
     int body_index;
     for (int i = 0; i < kinematic_path.joint_path.size(); i++) {
       body_index = kinematic_path.joint_path[i];
-      const std::unique_ptr<RigidBody>& body = bodies[body_index];
+      const std::shared_ptr<RigidBody>& body = bodies[body_index];
       const DrakeJoint& joint = body->getJoint();
       cols += joint.getNumVelocities();
     }
@@ -1763,7 +1775,7 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJ
     int sign;
     for (int i = 0; i < kinematic_path.joint_path.size(); i++) {
       body_index = kinematic_path.joint_path[i];
-      const std::unique_ptr<RigidBody>& body = bodies[body_index];
+      const std::shared_ptr<RigidBody>& body = bodies[body_index];
       const DrakeJoint& joint = body->getJoint();
 
       joint.motionSubspace(cached_q.data() + body->dofnum, motion_subspace); // TODO: should just let DrakeJoints work with VectorXds
@@ -2026,17 +2038,16 @@ GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::massMa
       }
 
       // Hij
-      int j = body_i.parent;
-      while (bodies[j]->hasParent()) {
-        RigidBody& body_j = *bodies[j];
-        int v_start_j = body_j.velocity_num_start;
-        int nv_j = body_j.getJoint().getNumVelocities();
-        auto Hji = (body_j.J.transpose() * F.value()).eval();
+      shared_ptr<RigidBody> body_j(body_i.parent);
+      while (body_j) {
+        int v_start_j = body_j->velocity_num_start;
+        int nv_j = body_j->getJoint().getNumVelocities();
+        auto Hji = (body_j->J.transpose() * F.value()).eval();
         ret.value().block(v_start_j, v_start_i, nv_j, nv_i) = Hji;
         ret.value().block(v_start_i, v_start_j, nv_i, nv_j) = Hji.transpose();
 
         if (gradient_order > 0) {
-          auto dHji = matGradMultMat(body_j.J.transpose(), F.value(), transposeGrad(body_j.dJdq, TWIST_SIZE), F.gradient().value());
+          auto dHji = matGradMultMat(body_j->J.transpose(), F.value(), transposeGrad(body_j->dJdq, TWIST_SIZE), F.gradient().value());
           for (int row = 0; row < Hji.rows(); row++) {
             for (int col = 0; col < Hji.cols(); col++) {
               auto dHji_element = getSubMatrixGradient<Eigen::Dynamic>(dHji, row, col, Hji.rows());
@@ -2045,8 +2056,9 @@ GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::massMa
             }
           }
         }
-        j = bodies[j]->parent;
+        body_j = body_j->parent;
       }
+
     }
   }
 
@@ -2167,7 +2179,7 @@ GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(
       int nv_joint = body.getJoint().getNumVelocities();
       auto J_transpose = body.J.transpose();
       ret.value().middleRows(body.velocity_num_start, nv_joint).noalias() = J_transpose * joint_wrench;
-      auto parent_net_wrench = net_wrenches.value().col(body.parent);
+      auto parent_net_wrench = net_wrenches.value().col(body.parent->body_index);
       parent_net_wrench += joint_wrench;
 
       if (gradient_order > 0) {
@@ -2180,10 +2192,10 @@ GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(
         auto dCdv_block = ret.gradient().value().block(body.velocity_num_start, nq, nv_joint, nv);
         dCdv_block.noalias() = J_transpose * djoint_wrenchdv;
 
-        auto dparent_net_wrenchdq = net_wrenches.gradient().value().template block<TWIST_SIZE, Eigen::Dynamic>(TWIST_SIZE * body.parent, 0, TWIST_SIZE, nq);
+        auto dparent_net_wrenchdq = net_wrenches.gradient().value().template block<TWIST_SIZE, Eigen::Dynamic>(TWIST_SIZE * body.parent->body_index, 0, TWIST_SIZE, nq);
         dparent_net_wrenchdq += djoint_wrenchdq;
 
-        auto dparent_net_wrenchdv = net_wrenches.gradient().value().template block<TWIST_SIZE, Eigen::Dynamic>(TWIST_SIZE * body.parent, nq, TWIST_SIZE, nv);
+        auto dparent_net_wrenchdv = net_wrenches.gradient().value().template block<TWIST_SIZE, Eigen::Dynamic>(TWIST_SIZE * body.parent->body_index, nq, TWIST_SIZE, nv);
         dparent_net_wrenchdv += djoint_wrenchdv;
       }
     }
@@ -2699,6 +2711,7 @@ template DLLEXPORT_RBM GradientVar<double, SPACE_DIMENSION, 1> RigidBodyManipula
 template DLLEXPORT_RBM GradientVar<double, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJacobian<double>(int, int, int, int, bool, std::vector<int>*);
 template DLLEXPORT_RBM GradientVar<double, SPACE_DIMENSION + 1, SPACE_DIMENSION + 1> RigidBodyManipulator::relativeTransform(int, int, int);
 template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardKinNew(const MatrixBase< Matrix<double, 3, Eigen::Dynamic> >&, int, int, int, int);
+template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, 1> RigidBodyManipulator::forwardKinNew(const MatrixBase< Matrix<double, 3, 1 > >&, int, int, int, int);
 template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardJacV(const GradientVar<double, Eigen::Dynamic, Eigen::Dynamic>&, int, int, int, bool, int);
 template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardKinPositionGradient(int, int, int, int);
 template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::massMatrix(int);
