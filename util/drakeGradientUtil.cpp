@@ -210,6 +210,7 @@ MAKE_MATGRADMULTMAT_EXPLICIT_INSTANTIATION(double, 4, 4, 4, 16, 16, Eigen::Dynam
 MAKE_MATGRADMULTMAT_EXPLICIT_INSTANTIATION(double, Eigen::Dynamic, 3, Eigen::Dynamic, Eigen::Dynamic, Eigen::Dynamic, Eigen::Dynamic)
 MAKE_MATGRADMULTMAT_EXPLICIT_INSTANTIATION(double, 6, Eigen::Dynamic, Eigen::Dynamic, Eigen::Dynamic, Eigen::Dynamic, Eigen::Dynamic)
 MAKE_MATGRADMULTMAT_EXPLICIT_INSTANTIATION(double, 6, 6, Eigen::Dynamic, 36, Eigen::Dynamic, Eigen::Dynamic)
+MAKE_MATGRADMULTMAT_EXPLICIT_INSTANTIATION(double, 6, 6, 1, 36, 6, Eigen::Dynamic)
 #undef MAKE_MATGRADMULTMAT_EXPLICIT_INSTANTIATION
 
 #define MAKE_MATGRADMULTMAT_TRANSPOSE_A_EXPLICIT_INSTANTIATION(Type, ARows, ACols, BCols, DARows, DBRows, NQ) \
