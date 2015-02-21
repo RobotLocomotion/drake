@@ -8,6 +8,7 @@ const int defaultRobotNum[1] = {0};
 const set<int> RigidBody::defaultRobotNumSet(defaultRobotNum,defaultRobotNum+1);
 
 RigidBody::RigidBody(void) :
+    parent(nullptr),
     S(TWIST_SIZE, 0),
     dSdqi(0, 0),
     J(TWIST_SIZE, 0),
@@ -29,7 +30,7 @@ RigidBody::RigidBody(void) :
     dJdotVdq(TWIST_SIZE, 0),
     dJdotVdv(TWIST_SIZE, 0)
 {
-  parent = -1;
+  robotnum = 0;
 	dofnum = 0;
 	velocity_num_start = 0;
 	mass = 0.0;
@@ -90,9 +91,9 @@ void RigidBody::computeAncestorDOFs(RigidBodyManipulator* model)
 {
   if (dofnum>=0) {
     int i,j;
-    if (parent>=0) {
-      ancestor_dofs = model->bodies[parent]->ancestor_dofs;
-      ddTdqdq_nonzero_rows = model->bodies[parent]->ddTdqdq_nonzero_rows;
+    if (parent!=nullptr) {
+      ancestor_dofs = parent->ancestor_dofs;
+      ddTdqdq_nonzero_rows = parent->ddTdqdq_nonzero_rows;
     }
 
     if (floating==1) {
@@ -142,7 +143,7 @@ void RigidBody::computeAncestorDOFs(RigidBodyManipulator* model)
 }
 
 bool RigidBody::hasParent() const {
-  return parent >= 0;
+  return parent !=nullptr;
 }
 
 ostream &operator<<( ostream &out, const RigidBody &b)
@@ -150,6 +151,3 @@ ostream &operator<<( ostream &out, const RigidBody &b)
 	out << "RigidBody(" << b.linkname << "," << b.jointname << ")";
 	return out;
 }
-
-
-

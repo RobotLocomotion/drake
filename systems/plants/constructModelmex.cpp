@@ -31,6 +31,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   RigidBodyManipulator *model=NULL;
 
 //  model->robot_name = get_strings(mxGetProperty(pRBM,0,"name"));
+  cout << "constructing new model" << endl;
 
   const mxArray* featherstone = mxGetProperty(pRBM,0,"featherstone");
   if (!featherstone) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs", "the featherstone array is invalid");
@@ -101,10 +102,14 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     memcpy(model->I[i].data(),mxGetPr(pIi),sizeof(double)*6*6);
   }
 
+  cout << "constructModelMex: got here" << endl;
+
   for (int i=0; i<model->num_bodies; i++) {
     //DEBUG
     //cout << "constructModelmex: body " << i << endl;
     //END_DEBUG
+    model->bodies[i]->body_index = i;
+
     pm = mxGetProperty(pBodies,i,"linkname");
     mxGetString(pm,buf,100);
     model->bodies[i]->linkname.assign(buf,strlen(buf));
@@ -133,9 +138,14 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 
     pm = mxGetProperty(pBodies,i,"parent");
     if (!pm || mxIsEmpty(pm))
-      model->bodies[i]->parent = -1;
-    else
-      model->bodies[i]->parent = static_cast<int>(mxGetScalar(pm)) - 1;
+      model->bodies[i]->parent = nullptr;
+    else {
+      int parent_ind = static_cast<int>(mxGetScalar(pm))-1;
+      if (parent_ind >= static_cast<int>(model->bodies.size()))
+        mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","bad body.parent %d (only have %d bodies)",parent_ind,model->bodies.size());
+      if (parent_ind>=0)
+        model->bodies[i]->parent = model->bodies[parent_ind];
+    }
 
     {
       mxGetString(mxGetProperty(pBodies, i, "jointname"), buf, 100);
@@ -185,6 +195,8 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 
     pm = mxGetProperty(pBodies,i,"T_body_to_joint");
     memcpy(model->bodies[i]->T_body_to_joint.data(),mxGetPr(pm),sizeof(double)*4*4);
+
+    cout << "constructModelMex: got here" << endl;
 
     //DEBUG
     //cout << "constructModelmex: About to parse collision geometry"  << endl;
@@ -253,10 +265,12 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
             // intentionally do nothing..
             break;
         }
+/*
         model->addCollisionElement(i,T,shape,params_vec,group_name);
         if (model->bodies[i]->parent<0) {
           model->updateCollisionElements(i);  // update static objects only once - right here on load
         }
+        */
       }
 
 
@@ -268,7 +282,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
       //cout << "constructModelmex: Group: " << *group << endl;
       //cout << "constructModelmex: Mask " << *mask << endl;
       //END_DEBUG
-      model->setCollisionFilter(i,*group,*mask);
+//      model->setCollisionFilter(i,*group,*mask);
     }
   }
 
@@ -354,6 +368,8 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 
   mxLogical* use_new_kinsol = mxGetLogicals(mxGetProperty(pRBM,0,"use_new_kinsol"));
   model->use_new_kinsol = (bool) use_new_kinsol[0];
+
+  cout << "constructModelMex: got here" << endl;
 
   model->compile();
 

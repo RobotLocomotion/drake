@@ -7,7 +7,7 @@ function urdfs = allURDFs(rootdir)
 if nargin<1, rootdir = getDrakePath(); end
 
 urdfs = {};
-[info,p] = system(['find -L ',rootdir,' -iname "*.urdf"']);
+[info,p] = system(['find -L ',rootdir,' -iname "*.urdf" | grep -v "/dev/"']);
 
 if info==0
   while ~isempty(p)
