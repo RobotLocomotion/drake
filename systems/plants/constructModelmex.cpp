@@ -31,7 +31,6 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   RigidBodyManipulator *model=NULL;
 
 //  model->robot_name = get_strings(mxGetProperty(pRBM,0,"name"));
-  cout << "constructing new model" << endl;
 
   const mxArray* featherstone = mxGetProperty(pRBM,0,"featherstone");
   if (!featherstone) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs", "the featherstone array is invalid");
@@ -101,8 +100,6 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     // todo: check that the size is 6x6
     memcpy(model->I[i].data(),mxGetPr(pIi),sizeof(double)*6*6);
   }
-
-  cout << "constructModelMex: got here" << endl;
 
   for (int i=0; i<model->num_bodies; i++) {
     //DEBUG
@@ -195,8 +192,6 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 
     pm = mxGetProperty(pBodies,i,"T_body_to_joint");
     memcpy(model->bodies[i]->T_body_to_joint.data(),mxGetPr(pm),sizeof(double)*4*4);
-
-    cout << "constructModelMex: got here" << endl;
 
     //DEBUG
     //cout << "constructModelmex: About to parse collision geometry"  << endl;
@@ -368,8 +363,6 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 
   mxLogical* use_new_kinsol = mxGetLogicals(mxGetProperty(pRBM,0,"use_new_kinsol"));
   model->use_new_kinsol = (bool) use_new_kinsol[0];
-
-  cout << "constructModelMex: got here" << endl;
 
   model->compile();
 
