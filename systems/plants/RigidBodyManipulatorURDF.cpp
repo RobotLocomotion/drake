@@ -148,6 +148,21 @@ bool parseCollision(int body_index, TiXmlElement* node, RigidBodyManipulator* mo
     }
     ce.params.push_back(r);
     ce.params.push_back(l);
+  } else if ((shape_node = geometry_node->FirstChildElement("capsule"))) {
+    ce.shape = DrakeCollision::CAPSULE;
+    double r=0,l=0;
+    attr = shape_node->Attribute("radius");
+    if (attr) {
+      stringstream s(attr);
+      s >> r;
+    }
+    attr = shape_node->Attribute("length");
+    if (attr) {
+      stringstream s(attr);
+      s >> l;
+    }
+    ce.params.push_back(r);
+    ce.params.push_back(l);
   } else if ((shape_node = geometry_node->FirstChildElement("mesh"))) {
     ce.shape = DrakeCollision::Shape::MESH;
     cerr << "Warning: mesh collision elements will be ignored (until I re-implement the logic below sans boost)" << endl;
