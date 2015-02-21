@@ -32,17 +32,18 @@ int main(int argc, char* argv[])
     model->doKinematics(q,false);
 //  }
 
-  const Vector4d zero(0,0,0,1);
-//  Vector3d pt;
+//  const Vector4d zero(0,0,0,1);
+  Vector3d zero = Vector3d::Zero();
   Matrix<double,6,1> pt;
 
   for (i=0; i<model->num_bodies; i++) {
-    model->forwardKin(i,zero,1,pt);
+//    model->forwardKinNew(i,zero,1,pt);
+		auto pt = model->forwardKinNew(zero, i, 0, 1, 0);
 //    cout << i << ": forward kin: " << model->bodies[i].linkname << " is at " << pt.transpose() << endl;
     cout << model->bodies[i]->linkname << " ";
-    for (int j=0; j<pt.size(); j++)
-    	cout << pt(j) << " ";
-    cout << endl;
+		cout << pt.value().transpose() << endl;
+//    for (int j=0; j<pt.size(); j++)
+//    	cout << pt(j) << " ";
   }
 
   delete model;

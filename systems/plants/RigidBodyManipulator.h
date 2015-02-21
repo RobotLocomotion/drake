@@ -220,7 +220,7 @@ public:
 
   // Rigid body objects
   int num_bodies;  // rigid body objects
-  std::vector<std::unique_ptr<RigidBody> > bodies;
+  std::vector<std::shared_ptr<RigidBody> > bodies;
 
   // Rigid body frames
   int num_frames;
