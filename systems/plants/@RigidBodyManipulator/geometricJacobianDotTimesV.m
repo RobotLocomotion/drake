@@ -13,6 +13,9 @@ function [Jdot_times_v, dJdot_times_v] = geometricJacobianDotTimesV(obj, kinsol,
 compute_gradient = nargout > 1;
 
 if kinsol.mex
+  if (obj.mex_model_ptr==0)
+    error('Drake:RigidBodyManipulator:InvalidKinematics','This kinsol is no longer valid because the mex model ptr has been deleted.');
+  end
   if compute_gradient
     [Jdot_times_v, dJdot_times_v] = geometricJacobianDotTimesVmex(obj.mex_model_ptr, base, end_effector, expressed_in);
   else

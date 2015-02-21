@@ -68,6 +68,9 @@ public:
   template <typename Scalar>
   GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> centroidalMomentumMatrix(int gradient_order);
 
+  template <typename Scalar>
+  GradientVar<Scalar, TWIST_SIZE, 1> centroidalMomentumMatrixDotTimesV(int gradient_order);
+
   template <typename DerivedA, typename DerivedB>
   void getCMM(MatrixBase<DerivedA> const & q, MatrixBase<DerivedA> const & qd, MatrixBase<DerivedB> &A, MatrixBase<DerivedB> &Adot);
 
