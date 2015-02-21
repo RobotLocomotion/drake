@@ -1,5 +1,5 @@
 function [com_Jacobian_dot_times_v, dcom_Jacobian_dot_times_v] = ...
-  centerOfMassJacobianDotTimesV(model,kinsol,robotnum)
+  centerOfMassJacobianDotTimesV(obj,kinsol,robotnum)
 % computes the quantity Jd * v == d(dcom/dq) * qd, where J is the
 % second output of centerOfMassJacobianV.
 %
@@ -12,47 +12,60 @@ function [com_Jacobian_dot_times_v, dcom_Jacobian_dot_times_v] = ...
 % change are link COM acceleration times link mass.
 %
 % @param kinsol solution structure obtained from doKinematics
-% @param robotnum an int array. Jdot * v for the bodies that belong to 
+% @param robotnum an int array. Jdot * v for the bodies that belong to
 % robot(robotnum) is computed. Default is 1.
 %
 % @retval com_Jacobian_dot_times_v Jdot * v == d(dcom/dq) * qdot
 % @retval dcom_Jacobian_dot_times_v gradient with respect to q
 
-
-compute_gradient = nargout > 1;
+compute_gradients = nargout > 1;
 if(nargin < 3)
   robotnum = 1;
 end
 
-com_Jacobian_dot_times_v = zeros(3, 1) * kinsol.q(1);
-if compute_gradient
-  nq = model.getNumPositions();
-  dcom_Jacobian_dot_times_v = zeros(numel(com_Jacobian_dot_times_v), nq);
-end
-
-total_mass = 0;
-for i = 2 : model.getNumBodies()
-  body = model.body(i);
-  if any(body.robotnum == robotnum)
-    body_mass = body.mass;
-    body_com = body.com;
-    
-    if compute_gradient
-      [body_comdd, dbody_comdd] = pointAcceleration(kinsol, i, body_com);
-      dbody_linear_momentum_dot = body_mass * dbody_comdd;
-      dcom_Jacobian_dot_times_v = dcom_Jacobian_dot_times_v + dbody_linear_momentum_dot;
-    else
-      body_comdd = pointAcceleration(kinsol, i, body_com);
-    end
-    body_linear_momentum_dot = body_mass * body_comdd;
-    com_Jacobian_dot_times_v = com_Jacobian_dot_times_v + body_linear_momentum_dot;
-    
-    total_mass = total_mass + body_mass;
+if (kinsol.mex)
+  if robotnum ~= 1
+    error('not yet implemented');
   end
-end
-com_Jacobian_dot_times_v = com_Jacobian_dot_times_v / total_mass;
-if compute_gradient
-  dcom_Jacobian_dot_times_v = dcom_Jacobian_dot_times_v / total_mass;
+  if (obj.mex_model_ptr==0)
+    error('Drake:RigidBodyManipulator:InvalidKinematics','This kinsol is no longer valid because the mex model ptr has been deleted.');
+  end
+  if compute_gradients
+    [com_Jacobian_dot_times_v, dcom_Jacobian_dot_times_v] = centerOfMassJacobianDotTimesVmex(obj.mex_model_ptr);
+  else
+    [com_Jacobian_dot_times_v] = centerOfMassJacobianDotTimesVmex(obj.mex_model_ptr);
+  end
+else
+  com_Jacobian_dot_times_v = zeros(3, 1) * kinsol.q(1);
+  if compute_gradients
+    nq = obj.getNumPositions();
+    dcom_Jacobian_dot_times_v = zeros(numel(com_Jacobian_dot_times_v), nq);
+  end
+  
+  total_mass = 0;
+  for i = 2 : obj.getNumBodies()
+    body = obj.body(i);
+    if any(body.robotnum == robotnum)
+      body_mass = body.mass;
+      body_com = body.com;
+      
+      if compute_gradients
+        [body_comdd, dbody_comdd] = pointAcceleration(kinsol, i, body_com);
+        dbody_linear_momentum_dot = body_mass * dbody_comdd;
+        dcom_Jacobian_dot_times_v = dcom_Jacobian_dot_times_v + dbody_linear_momentum_dot;
+      else
+        body_comdd = pointAcceleration(kinsol, i, body_com);
+      end
+      body_linear_momentum_dot = body_mass * body_comdd;
+      com_Jacobian_dot_times_v = com_Jacobian_dot_times_v + body_linear_momentum_dot;
+      
+      total_mass = total_mass + body_mass;
+    end
+  end
+  com_Jacobian_dot_times_v = com_Jacobian_dot_times_v / total_mass;
+  if compute_gradients
+    dcom_Jacobian_dot_times_v = dcom_Jacobian_dot_times_v / total_mass;
+  end
 end
 end
 
@@ -79,7 +92,7 @@ point_base = R * point + p;
 point_vel = cross(omega, point_base) + v;
 point_accel = cross(omegad, point_base) + vd + cross(omega, point_vel);
 
-if compute_gradient 
+if compute_gradient
   dtwist = kinsol.dtwistsdq{body_index};
   domega = dtwist(1:3, :);
   dv = dtwist(4:6, :);

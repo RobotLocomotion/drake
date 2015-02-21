@@ -6,6 +6,7 @@ for parameterization = floatingBaseParameterizations
   robot = createAtlas(parameterization{:}, options);
   testAgainstJdotFromGradient(robot);
   testGradients(robot);
+  checkMex(robot);
 end
 end
 
@@ -51,4 +52,22 @@ for i = 1 : nTests
   [~, dJdot_times_v_geval] = geval(1, @(q) robot.centerOfMassJacobianDotTimesV(robot.doKinematics(q, v, options)), q, option);
   valuecheck(dJdot_times_v_geval, dJdot_times_v, 1e-10);
 end
+end
+
+function checkMex(robot)
+options.compute_gradients = true;
+
+q = getRandomConfiguration(robot);
+v = randn(robot.getNumVelocities(), 1);
+
+options.use_mex = false;
+kinsol = robot.doKinematics(q, v, options);
+[Jdot_times_v, dJdot_times_v] = robot.centerOfMassJacobianDotTimesV(kinsol);
+
+options.use_mex = true;
+kinsol = robot.doKinematics(q, v, options);
+[Jdot_times_v_mex, dJdot_times_v_mex] = robot.centerOfMassJacobianDotTimesV(kinsol);
+
+valuecheck(Jdot_times_v, Jdot_times_v_mex);
+valuecheck(dJdot_times_v, dJdot_times_v_mex);
 end
