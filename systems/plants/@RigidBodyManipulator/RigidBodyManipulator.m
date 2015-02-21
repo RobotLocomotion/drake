@@ -917,10 +917,10 @@ classdef RigidBodyManipulator < Manipulator
     
     function body_id = findLinkId(model,linkname,robot,error_level)
       % @param robot can be the robot number or the name of a robot
-      % robot=0 means look at all robots
+      % robot<0 means look at all robots
       % @param error_level >0 for throw error, 0 for throw warning, <0 for do nothing. @default throw error
       % @ingroup Kinematic Tree
-      if nargin<3 || isempty(robot), robot=0; end
+      if nargin<3 || isempty(robot), robot=-1; end
       linkname = lower(linkname);
       linkname=regexprep(linkname, '[\[\]\\\/\.]+', '_', 'preservecase');
 
@@ -929,7 +929,7 @@ classdef RigidBodyManipulator < Manipulator
       end
       items = strfind(lower({model.body.linkname}),linkname);
       ind = find(~cellfun(@isempty,items));
-      if (robot~=0), ind = ind(ismember([model.body(ind).robotnum],robot)); end
+      if (robot>=0), ind = ind(ismember([model.body(ind).robotnum],robot)); end
       if (length(ind)>0) % then handle removed fixed joints
         i=1;
         while i<=length(ind)
@@ -953,7 +953,7 @@ classdef RigidBodyManipulator < Manipulator
       end
       if (length(ind)~=1)
         if (nargin<4 || error_level>0)
-          if robot == 0
+          if robot < 0
             error('Drake:RigidBodyManipulator:UniqueLinkNotFound', ...
               'couldn''t find unique link %s.',linkname);
           else
@@ -1112,13 +1112,13 @@ classdef RigidBodyManipulator < Manipulator
 
     function body_id = findJointId(model,jointname,robot_num,error_level)
       % @param robot_num can be the robot number or the name of a robot
-      % robot_num=0 means look at all robots
+      % robot_num<0 means look at all robots
       % @ingroup Kinematic Tree
-      if nargin<3 || isempty(robot_num), robot_num=0; end
+      if nargin<3 || isempty(robot_num), robot_num=-1; end
       jointname = lower(jointname);
       if ischar(robot_num) robot_num = strmatch(lower(robot_num),lower({model.name})); end
       ind = find(strcmp(jointname,lower({model.body.jointname})));
-      if (robot_num~=0), ind = ind([model.body(ind).robotnum]==robot_num); end
+      if (robot_num>=0), ind = ind([model.body(ind).robotnum]==robot_num); end
       if (length(ind)~=1)
         if (nargin<4 || error_level>0)
           error('Drake:RigidBodyManipulator:UniqueJointNotFound',['couldn''t find unique joint ' ,jointname]);
