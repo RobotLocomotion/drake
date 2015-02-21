@@ -12,12 +12,20 @@ function [Jdot_times_v, dJdot_times_v] = geometricJacobianDotTimesV(obj, kinsol,
 
 compute_gradient = nargout > 1;
 
-Jdot_times_v = kinsol.JdotV{end_effector} - kinsol.JdotV{base};
-if compute_gradient
-  dJdot_times_v = kinsol.dJdotVdq{end_effector} - kinsol.dJdotVdq{base};
-  [Jdot_times_v, dJdot_times_v] = transformSpatialAcceleration(kinsol, base, end_effector, 1, expressed_in, Jdot_times_v, dJdot_times_v);
+if kinsol.mex
+  if compute_gradient
+    [Jdot_times_v, dJdot_times_v] = geometricJacobianDotTimesVmex(obj.mex_model_ptr, base, end_effector, expressed_in);
+  else
+    Jdot_times_v = geometricJacobianDotTimesVmex(obj.mex_model_ptr, base, end_effector_expressed_in);
+  end
 else
-  Jdot_times_v = transformSpatialAcceleration(kinsol, base, end_effector, 1, expressed_in, Jdot_times_v);
-end
+  Jdot_times_v = kinsol.JdotV{end_effector} - kinsol.JdotV{base};
+  if compute_gradient
+    dJdot_times_v = kinsol.dJdotVdq{end_effector} - kinsol.dJdotVdq{base};
+    [Jdot_times_v, dJdot_times_v] = transformSpatialAcceleration(kinsol, base, end_effector, 1, expressed_in, Jdot_times_v, dJdot_times_v);
+  else
+    Jdot_times_v = transformSpatialAcceleration(kinsol, base, end_effector, 1, expressed_in, Jdot_times_v);
+  end
 
+end
 end
