@@ -7,7 +7,7 @@ function urdfs = allURDFs(rootdir)
 if nargin<1, rootdir = getDrakePath(); end
 
 urdfs = {};
-[info,p] = system(['find -L ',rootdir,' -iname "*.urdf" | grep -v "/dev/"']);
+[info,p] = system(['find -L ',rootdir,' -iname "*.urdf" | grep -v "/dev/" | grep -v "irb_140_convhull"']);
 
 if info==0
   while ~isempty(p)
@@ -19,3 +19,4 @@ if info==0
 else  % if find fails for some reason (windows?), then do it the hard way...
   error('Drake:MissingDependency:find','still need to implement a version that works without find');
 end
+
