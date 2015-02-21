@@ -10,7 +10,7 @@ using namespace std;
 
 void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
 
-  std::string usage = "Usage [Jdot_times_v, dJdot_times_v] = geometricJacobianDotTimesVmex(base, end_effector, expressed_in)";
+  std::string usage = "Usage [Jdot_times_v, dJdot_times_v] = geometricJacobianDotTimesVmex(model_ptr, base, end_effector, expressed_in)";
   if (nrhs != 4) {
     mexErrMsgIdAndTxt("Drake:geometricJacobianDotTimesVmex:WrongNumberOfInputs", usage.c_str());
   }

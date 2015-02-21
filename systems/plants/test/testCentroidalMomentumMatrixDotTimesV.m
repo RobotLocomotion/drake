@@ -6,6 +6,7 @@ for parameterization = floatingBaseParameterizations
   robot = createAtlas(parameterization{:}, options);
   testAtlasExternalWrenchVersusMassMatrix(robot);
   testGradients(robot);
+  checkMex(robot);
 end
 
 end
@@ -20,13 +21,12 @@ function testAtlasExternalWrenchVersusMassMatrix(robot)
 
 robot = robot.setGravity(zeros(3, 1));
 robot = compile(robot);
-nq = robot.getNumPositions();
 nv = robot.getNumVelocities();
 nActuators = robot.getNumInputs();
 
 nTests = 50;
 for i = 1 : nTests
-  q = randn(nq, 1);
+  q = getRandomConfiguration(robot);
   v = randn(nv, 1);
   tau = randn(nActuators, 1);
   
@@ -43,10 +43,9 @@ end
 end
 
 function testGradients(robot)
-nq = robot.getNumPositions();
 nv = robot.getNumVelocities();
 
-q = randn(nq, 1);
+q = getRandomConfiguration(robot);
 v = randn(nv, 1);
 options.use_mex = false;
 options.compute_gradients = true;
@@ -58,3 +57,24 @@ options.compute_gradients = false;
 [~, dAdot_times_v_geval] = geval(1, @(q) robot.centroidalMomentumMatrixDotTimesV(robot.doKinematics(q, v, options)), q, taylorvar_options);
 valuecheck(dAdot_times_v_geval, dAdot_times_v, 1e-10);
 end
+
+function checkMex(robot)
+nv = robot.getNumVelocities();
+options.compute_gradients = true;
+
+q = getRandomConfiguration(robot);
+v = randn(nv, 1);
+options.use_mex = false;
+
+kinsol = robot.doKinematics(q, v, options);
+[Adot_times_v, dAdot_times_v] = centroidalMomentumMatrixDotTimesV(robot, kinsol);
+
+options.use_mex = true;
+kinsol = robot.doKinematics(q, v, options);
+[Adot_times_v_mex, dAdot_times_v_mex] = centroidalMomentumMatrixDotTimesV(robot, kinsol);
+
+valuecheck(Adot_times_v, Adot_times_v_mex);
+valuecheck(dAdot_times_v, dAdot_times_v_mex);
+
+end
+

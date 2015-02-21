@@ -1227,6 +1227,12 @@ template DLLEXPORT Gradient<Eigen::Matrix<double, 6, 1, 0, 6, 1>, Eigen::Block<E
     const Eigen::MatrixBase<Eigen::Matrix<double, 16, -1, 0, 16, -1> >& dT,
     const Eigen::MatrixBase<Eigen::Block<Eigen::Matrix<double, 6, -1, 0, 6, -1>, 6, -1, true> >& dX);
 
+template DLLEXPORT Gradient<Eigen::Matrix<double, 6, 1, 0, 6, 1>, Eigen::Matrix<double, 6, -1, 0, 6, -1>::ColsAtCompileTime>::type dTransformSpatialForce(
+    const Isometry3d& T,
+    const Eigen::MatrixBase<Eigen::Matrix<double, 6, 1, 0, 6, 1>>& X,
+    const Eigen::MatrixBase<Eigen::Matrix<double, 16, -1, 0, 16, -1>>& dT,
+    const Eigen::MatrixBase<Eigen::Matrix<double, 6, -1, 0, 6, -1>>& dX);
+
 template DLLEXPORT void angularvel2quatdotMatrix(const Eigen::MatrixBase<Vector4d>& q,
     Eigen::MatrixBase< Matrix<double, QUAT_SIZE, SPACE_DIMENSION> >& M,
     Gradient<Matrix<double, QUAT_SIZE, SPACE_DIMENSION>, QUAT_SIZE, 1>::type* dM);
