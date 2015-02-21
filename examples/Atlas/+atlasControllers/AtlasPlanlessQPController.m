@@ -1,12 +1,30 @@
-classdef AtlasPlanlessQPController < QPController
+classdef AtlasPlanlessQPController < MIMODrakeSystem
   % A QP-based balancing and walking controller that exploits TV-LQR solutions
   % for (time-varing) linear COM/ZMP dynamics. Includes logic specific to
   % atlas/bipeds for raising the heel while walking.
-  methods
-  function obj = AtlasPlanlessQPController(r,body_accel_input_frames,controller_data,options)
+  properties(SetAccess=private, GetAccess=public);
+    qpd;
+    debug;
+    debug_pub;
+    robot;
+    all_contacts = struct('groups', {}, ... % convenience for indexing into contact groups
+                          'point_ind', {}, ...
+                          'num_points', {}, ...
+                          'bodies', {});
+    controller_data
+  end
 
-    obj = obj@QPController(r,body_accel_input_frames,controller_data,options);
-    
+  methods
+  function obj = AtlasPlanlessQPController(r, options)
+    options = applyDefaults(options,...
+      struct('debug', 1,...
+             'min_knee_angle', 0.0,...
+             'qddot_range', [-100, 100]));
+
+    obj.robot = r;
+    import atlasController.*;
+    obj.qpd = QPDMixin(options.qddot_range);
+
     if isfield(options,'debug')
       typecheck(options.debug,'logical');
       sizecheck(options.debug,1);
@@ -18,20 +36,98 @@ classdef AtlasPlanlessQPController < QPController
     if obj.debug
       obj.debug_pub = ControllerDebugPublisher('CONTROLLER_DEBUG');
     end
-    
-    obj.r_knee_idx = r.findPositionIndices('r_leg_kny');
-    obj.l_knee_idx = r.findPositionIndices('l_leg_kny');
-    if isfield(options,'min_knee_angle')
-      sizecheck(options.min_knee_angle,1);
-      typecheck(options.min_knee_angle,'double');
-      obj.min_knee_angle = options.min_knee_angle;
-    else
-      obj.min_knee_angle = 0.0;
-    end
 
-    obj.controller_data.left_toe_off = false;
-    obj.controller_data.right_toe_off = false;
+    obj.all_contacts.groups = cell(PlanlessQPInput2D.num_support_bodies, PlanlessQPInput2D.contact_groups_per_body);
+    obj.all_contacts.num_points = zeros(PlanlessQPInput2D.num_support_bodies, PlanlessQPInput2D.contact_groups_per_body);
+    obj.all_contacts.point_ind = cell(PlanlessQPInput2D.num_support_bodies, PlanlessQPInput2D.contact_groups_per_body);
+    obj.all_contacts.bodies = PlanlessQPInput2D.support_body_ids
+    for j = 1:size(obj.all_contacts.groups, 1)
+      body_id = PlanlessQPInput2D.support_body_ids(j);
+      contact_groups = r.getBody(body_id).collision_geometry_group_names;
+      for k = 1:size(obj.all_contact_groups, 2)
+        if k <= length(contact_groups)
+          obj.all_contacts.groups{j,k} = contact_groups{k};
+          obj.all_contacts.point_ind{j,k} = r.getBody(body_id).collision_geometry_group_indices{k};
+          obj.all_contacts.num_points(j,k) = length(obj.all_contacts.point_ind{j,k});
+        end
+      end
+    end
   end
+
+  function supp = getPlannedSupports(obj, group_mask)
+    support_body_mask = any(group_mask, 2);
+    active_rows = find(support_body_mask);
+    bodies = obj.all_contacts.bodies(support_body_mask);
+
+    contact_pts = cell(1, length(bodies));
+    contact_groups = cell(1, length(bodies));
+    num_contact_pts = cell(1, length(bodies));
+    for j = 1:length(contact_pts)
+      contact_pts{j} = [obj.all_contacts.point_ind{active_rows(j),group_mask(active_rows(j),:)}];
+      contact_groups{j} = obj.all_contacts.groups(active_rows(j),group_mask(active_rows(j),:));
+      num_contact_pts{j} = sum(obj.all_contacts.num_points(active_rows(j),:));
+    end
+    supp = struct('bodies', {bodies},...
+                  'contact_pts', {contact_pts},...
+                  'contact_groups', {contact_groups},...
+                  'num_contact_pts', {num_contact_pts},...
+                  'contact_surfaces', {0*support_bodies});
+  end
+
+  function supp = getActiveSupports(obj, supp, contact_sensor)
+    mask = true(1, length(supp.bodies));
+    if contact_sensor(1) == 0
+      mask = mask & (~(supp.bodies == obj.robot.foot_body_id.left));
+    end
+    if contact_sensor(2) == 0
+      mask = mask & (~(supp.bodies == obj.robot.foot_body_id.right));
+    end
+    if ~all(mask)
+      supp.bodies = supp.bodies(mask);
+      supp.contact_pts = supp.contact_pts(mask);
+      supp.contact_groups = supp.contact_groups(mask);
+      supp.num_contact_pts = supp.num_contact_pts(mask);
+      supp([supp.bodies] == obj.robot.foot_body_id.left) = [];
+    end
+  end
+
+  function [y, qdd] = controllerTick(obj, t, x, qp_input, contact_sensor)
+    % Unpack variable names (just to make our code a bit easier to read)
+    A_ls = qp_input.zmp_data.A;
+    B_ls = qp_input.zmp_data.B;
+    C_ls = qp_input.zmp_data.C;
+    D_ls = qp_input.zmp_data.D;
+    Qy = qp_input.zmp_data.Qy;
+    R_ls = qp_input.zmp_data.R;
+    S = qp_input.zmp_data.S;
+    s1 = qp_input.zmp_data.s1;
+    s1dot = 0;
+    s2 = 0;
+    s2dot = 0;
+    x0 = qp_input.zmp_data.x0;
+    y0 = qp_input.zmp_data.y0;
+    u0 = qp_input.zmp_data.u0;
+
+    R_DQyD_ls = R_ls + D_ls'*Qy*D_ls;
+
+    q = x(1:obj.numq);
+    qd = x(obj.numq+(1:obj.numv));
+    mu = qp_input.support_data.mu;
+    condof = qp_input.whole_body_data.constrained_dof_mask;
+
+    % Run PD on the desired configuration
+    qddot_des = obj.qpd.getQddot_des(q, qd,...
+                        qp_input.whole_body_data.q_des,...
+                        qp_input.whole_body_data.Kp,...
+                        qp_input.whole_body_data.Kd);
+
+
+    supp = obj.getPlannedSupports(qp_input.support_data.group_mask);
+    supp = obj.getActiveSupports(supp, contact_sensor);
+
+
+    
+
 
   function varargout=mimoOutput(obj,t,~,varargin)
     %out_tic = tic;

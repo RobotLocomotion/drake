@@ -258,7 +258,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       options.Kd = getDampingGain(options.Kp,options.pelvis_damping_ratio);
       if isfield(options,'use_walking_pelvis_block') && options.use_walking_pelvis_block
         pelvis_control_block = PelvisMotionControlBlock(obj,'pelvis',controller_data,options);
-        pelvis_control_block.nominal_pelvis_height = 0.87
+        pelvis_control_block.nominal_pelvis_height = 0.87;
       else
         pelvis_control_block = BodyMotionControlBlock(obj,'pelvis',controller_data,options);
       end
