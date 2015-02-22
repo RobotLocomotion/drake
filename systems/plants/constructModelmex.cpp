@@ -260,12 +260,12 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
             // intentionally do nothing..
             break;
         }
-/*
+
         model->addCollisionElement(i,T,shape,params_vec,group_name);
         if (model->bodies[i]->parent<0) {
           model->updateCollisionElements(i);  // update static objects only once - right here on load
         }
-        */
+
       }
 
 
@@ -277,7 +277,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
       //cout << "constructModelmex: Group: " << *group << endl;
       //cout << "constructModelmex: Mask " << *mask << endl;
       //END_DEBUG
-//      model->setCollisionFilter(i,*group,*mask);
+      model->setCollisionFilter(i,*group,*mask);
     }
   }
 
