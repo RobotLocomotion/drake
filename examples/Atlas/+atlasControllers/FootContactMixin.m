@@ -24,13 +24,19 @@ classdef FootContactMixin
       obj.mex_ptr = SharedDataHandle(supportDetectmex(0,r.getMexModelPtr.ptr,terrain_map_ptr));
     end
 
-    function supp = getActiveSupports(obj, supp, contact_sensor)
+    function supp = getActiveSupports(obj, x, supp, contact_sensor)
+      warning('not considering breaking contact')
+      contact_logic_AND = true;
+      
       if ~obj.using_flat_terrain
         height = getTerrainHeight(obj.robot,[0;0]); % get height from DRCFlatTerrainMap
       else
         height = 0;
       end
-      active_supports = supportDetectmex(obj.mex_ptr.data,x,planned_supp,contact_sensor,contact_thresh,height,contact_logic_AND);
+
+      warning('creating a useless object just because we cannot pass in a struct');
+      supp_state = RigidBodySupportState(supp);
+      active_supports = supportDetectmex(obj.mex_ptr.data,x,supp_state,contact_sensor,obj.contact_threshold,height,contact_logic_AND);
       fc = [1.0*any(active_supports==obj.robot.foot_body_id.left); 1.0*any(active_supports==obj.robot.foot_body_id.right)];
 
       mask = true(1, length(supp.bodies));
