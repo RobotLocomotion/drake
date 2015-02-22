@@ -35,8 +35,7 @@ classdef FootContactMixin
       end
 
       obj.robot.warning_manager.warnOnce('Drake:UselessObject', 'creating a useless object just because we cannot pass in a struct');
-      supp_state = RigidBodySupportState(supp);
-      active_supports = supportDetectmex(obj.mex_ptr.data,x,supp_state,contact_sensor,obj.contact_threshold,height,contact_logic_AND);
+      active_supports = supportDetectmex(obj.mex_ptr.data,x,supp,contact_sensor,obj.contact_threshold,height,contact_logic_AND);
       fc = [1.0*any(active_supports==obj.robot.foot_body_id.left); 1.0*any(active_supports==obj.robot.foot_body_id.right)];
 
       mask = true(1, length(supp.bodies));

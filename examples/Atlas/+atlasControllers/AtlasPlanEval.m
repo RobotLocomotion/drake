@@ -2,6 +2,7 @@ classdef AtlasPlanEval
   properties
     plan_data;
     pelvis_body_id;
+    neck_id
     robot
     default_input;
   end
@@ -18,6 +19,7 @@ classdef AtlasPlanEval
         obj.plan_data.V.S = obj.plan_data.V.S.eval(0);
       end
       obj.pelvis_body_id = obj.robot.findLinkId('pelvis');
+      obj.neck_id = obj.robot.findPositionIndices('neck');
       import atlasControllers.PlanlessQPInput2D;
       obj.default_input = PlanlessQPInput2D();
     end
@@ -32,7 +34,7 @@ classdef AtlasPlanEval
       qp_input.zmp_data.x0 = [fasteval(pdata.zmptraj, T); 0;0];
       qp_input.zmp_data.y0 = fasteval(pdata.zmptraj, t);
       qp_input.zmp_data.S = pdata.V.S;
-      qp_input.zmp_data.s1 = pdata.V.s1.eval(t);
+      qp_input.zmp_data.s1 = fasteval(pdata.V.s1,t);
 
       supp_idx = find(pdata.support_times<=t,1,'last');
       supp = pdata.supports(supp_idx);
@@ -47,7 +49,7 @@ classdef AtlasPlanEval
       end
 
       qp_input.whole_body_data.q_des = pdata.qstar;
-      qp_input.whole_body_data.constrained_dof_mask(r.findPositionIndices('neck')) = true;
+      qp_input.whole_body_data.constrained_dof_mask(obj.neck_id) = true;
 
       feet_poses = zeros(6,2);
       i = 1;
@@ -70,14 +72,12 @@ classdef AtlasPlanEval
 
       r.warning_manager.warnOnce('Drake:HardCodedPelvisheight', 'hard-coding pelvis height');
       r.warning_manager.warnOnce('Drake:NoPelvisHeightLogic', 'not using pelvis height logic');
-      mean_feet_pose = [mean(feet_poses(1:3,:), 2); angleAverage(feet_poses(4:6,1), feet_poses(4:6,2))];
-      pelvis_target = [mean_feet_pose(1:2); min(feet_poses(3,:)) + 0.74; 0; 0; mean_feet_pose(6)];
+      pelvis_target = [mean(feet_poses(1:2,:), 2); min(feet_poses(3,:)) + 0.74; 0; 0; angleAverage(feet_poses(6,1), feet_poses(6,2))];
       coefs = reshape(pelvis_target, [6, 1, 1]);
       coefs = cat(3, zeros(6, 1, 3), coefs);
       qp_input.bodies_data(tracked_bodies+1).body_id = obj.pelvis_body_id;
       qp_input.bodies_data(tracked_bodies+1).ts = [t, t];
       qp_input.bodies_data(tracked_bodies+1).coefs = coefs;
-      r.warning_manager.warnOnce('Drake:HardCodedPelvisAccelWeight', 'hard-coding pelvis weight');
       
       qp_input.param_set_name = 'walking';
 
