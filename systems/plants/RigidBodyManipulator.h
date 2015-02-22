@@ -49,10 +49,10 @@ public:
 class DLLEXPORT_RBM RigidBodyLoop
 {
 public:
-  RigidBodyLoop(int _bodyA, Vector3d _ptA, int _bodyB, Vector3d _ptB) :
+  RigidBodyLoop(std::shared_ptr<RigidBody> _bodyA, Vector3d _ptA, std::shared_ptr<RigidBody> _bodyB, Vector3d _ptB) :
     bodyA(_bodyA), bodyB(_bodyB), ptA(_ptA), ptB(_ptB) {};
 
-  int bodyA, bodyB;
+  std::shared_ptr<RigidBody> bodyA, bodyB;
   Vector3d ptA, ptB;
 
 public:
