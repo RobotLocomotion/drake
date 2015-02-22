@@ -13,54 +13,43 @@ classdef RigidBodySupportState
   end
 
   methods
-    function obj = RigidBodySupportState(varargin)
-      if nargin == 1
-        supp = varargin{1};
-        for f = {'bodies', 'contact_pts', 'contact_groups', 'num_contact_pts', 'contact_surfaces'}
-          obj.(f{1}) = supp.(f{1});
-        end
-      elseif nargin > 1
-        r = varargin{1};
-        bodies = varargin{2};
-        typecheck(r,'Biped');
-        typecheck(bodies,'double');
-        obj.bodies = bodies(bodies~=0);
+    function obj = RigidBodySupportState(r,bodies,contact_groups,contact_surfaces)
+      typecheck(r,'Biped');
+      typecheck(bodies,'double');
+      obj.bodies = bodies(bodies~=0);
 
-        obj.num_contact_pts=zeros(length(obj.bodies),1);
-        obj.contact_pts = cell(1,length(obj.bodies));
-        obj.contact_groups = {};
-        if nargin>2
-          contact_groups = varargin{3};
-          typecheck(contact_groups,'cell');
-          sizecheck(contact_groups,length(obj.bodies));
-          for i=1:length(obj.bodies)
-            body = r.getBody(obj.bodies(i));
-            body_groups = contact_groups{i};
-            body_points = [];
-            for j=1:length(body_groups)
-              group_pts = body.collision_geometry_group_indices{strcmp(body.collision_geometry_group_names,body_groups{j})};
-              body_points = [body_points,group_pts];
-            end
-            obj.contact_pts{i} = body_points;
-            obj.contact_groups{i} = contact_groups{i};
-            obj.num_contact_pts(i)=length(body_points);
+      obj.num_contact_pts=zeros(length(obj.bodies),1);
+      obj.contact_pts = cell(1,length(obj.bodies));
+      obj.contact_groups = {};
+      if nargin>2
+        typecheck(contact_groups,'cell');
+        sizecheck(contact_groups,length(obj.bodies));
+        for i=1:length(obj.bodies)
+          body = r.getBody(obj.bodies(i));
+          body_groups = contact_groups{i};
+          body_points = [];
+          for j=1:length(body_groups)
+            group_pts = body.collision_geometry_group_indices{strcmp(body.collision_geometry_group_names,body_groups{j})};
+            body_points = [body_points,group_pts];
           end
-        else
-          % use all points on body
-          for i=1:length(obj.bodies)
-            terrain_contact_point_struct = getTerrainContactPoints(r,obj.bodies(i));
-            obj.contact_pts{i} = 1:size(terrain_contact_point_struct.pts,2);
-            obj.contact_groups{i} = r.getBody(obj.bodies(i)).collision_geometry_group_names;
-            obj.num_contact_pts(i)=length(obj.contact_pts{i});
-          end
+          obj.contact_pts{i} = body_points;
+          obj.contact_groups{i} = contact_groups{i};
+          obj.num_contact_pts(i)=length(body_points);
         end
+      else
+        % use all points on body
+        for i=1:length(obj.bodies)
+          terrain_contact_point_struct = getTerrainContactPoints(r,obj.bodies(i));
+          obj.contact_pts{i} = 1:size(terrain_contact_point_struct.pts,2);
+          obj.contact_groups{i} = r.getBody(obj.bodies(i)).collision_geometry_group_names;
+          obj.num_contact_pts(i)=length(obj.contact_pts{i});
+        end
+      end
 
-        if nargin>3
-          contact_surfaces = varargin{4};
-          obj = setContactSurfaces(obj,contact_surfaces);
-        else
-          obj.contact_surfaces = zeros(length(obj.bodies),1);
-        end
+      if nargin>3
+        obj = setContactSurfaces(obj,contact_surfaces);
+      else
+        obj.contact_surfaces = zeros(length(obj.bodies),1);
       end
     end
 
