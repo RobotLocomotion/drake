@@ -13,7 +13,7 @@
     <color rgba="0 0 1 1" />
   </material>
 
-  <link name="world">
+  <link name="world" drake_ignore="true">
     <inertial> <!-- drc-viewer needs this to have inertia to parse properly.  remove it when that bug is fixed -->
       <origin xyz="0 0 0" />
       <mass value="0.01" />
@@ -34,7 +34,7 @@
       <material name="green" />
     </visual>
   </link>
-  <joint name="base_weld" type="fixed">
+  <joint name="base_weld" type="fixed" drake_ignore="true">
     <parent link="world" />
     <child link="base_part2" />
     <origin xyz="0 0 1" />

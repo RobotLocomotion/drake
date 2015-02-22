@@ -359,6 +359,17 @@ bool parseJoint(RigidBodyManipulator* model, TiXmlElement* node)
 
 bool parseTransmission(RigidBodyManipulator* model, TiXmlElement* node)
 {
+  const char* attr = node->Attribute("type");
+  if (!attr) {
+    cerr << "ERROR: transmission element is missing the type attribute" << endl;
+    return false;
+  }
+  string type(attr);
+  if (type.find("SimpleTransmission")==string::npos) {
+    cerr << "WARNING: only SimpleTransmissions are supported right now.  this element will be skipped." << endl;
+    return true;
+  }
+
   TiXmlElement* joint_node = node->FirstChildElement("joint");
   if (!joint_node || !joint_node->Attribute("name"))  {
     cerr << "ERROR: transmission is missing a joint element" << endl;
