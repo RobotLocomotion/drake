@@ -23,7 +23,7 @@ classdef AtlasSplitQPController < DrakeSystem
       t0 = tic();
       y = obj.control.tick(t, x, qp_input, [-1;-1]);
       ctime = toc(t0);
-      fprintf(1, 'plan eval: %f, control: %f', ptime, ctime);
+%       fprintf(1, 'plan eval: %f, control: %f', ptime, ctime);
     end
   end
 end

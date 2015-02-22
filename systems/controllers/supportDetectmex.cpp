@@ -77,12 +77,19 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   int num_active_contact_pts=0;
   if (!mxIsEmpty(prhs[desired_support_argid])) {
     VectorXd phi;
-    mxArray* mxBodies = mxGetProperty(prhs[desired_support_argid],0,"bodies");
+    mxArray* mxBodies;
+    mxBodies = mxGetProperty(prhs[desired_support_argid],0,"bodies");
+    if (!mxBodies) mxBodies = mxGetField(prhs[desired_support_argid],0,"bodies");
     if (!mxBodies) mexErrMsgTxt("couldn't get bodies");
     double* pBodies = mxGetPr(mxBodies);
-    mxArray* mxContactPts = mxGetProperty(prhs[desired_support_argid],0,"contact_pts");
+
+    mxArray* mxContactPts;
+    mxContactPts = mxGetProperty(prhs[desired_support_argid],0,"contact_pts");
+    if (!mxContactPts) mxContactPts = mxGetField(prhs[desired_support_argid],0,"contact_pts");
     if (!mxContactPts) mexErrMsgTxt("couldn't get contact points");
-    mxArray* mxContactSurfaces = mxGetProperty(prhs[desired_support_argid],0,"contact_surfaces");
+    mxArray* mxContactSurfaces;
+    mxContactSurfaces = mxGetProperty(prhs[desired_support_argid],0,"contact_surfaces");
+    if (!mxContactSurfaces) mxContactSurfaces = mxGetField(prhs[desired_support_argid],0,"contact_surfaces");
     if (!mxContactSurfaces) mexErrMsgTxt("couldn't get contact surfaces");
     double* pContactSurfaces = mxGetPr(mxContactSurfaces);
     
