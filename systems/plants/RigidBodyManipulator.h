@@ -32,6 +32,20 @@ using namespace Eigen;
 
 //extern std::set<int> emptyIntSet;  // was const std:set<int> emptyIntSet, but valgrind said I was leaking memory
 
+class DLLEXPORT_RBM RigidBodyActuator
+{
+public:
+  RigidBodyActuator(std::string _name, std::shared_ptr<RigidBody> _body, double _reduction = 1.0) :
+    name(_name), body(_body), reduction(_reduction) {};
+
+  std::string name;
+  std::shared_ptr<RigidBody> body;
+  double reduction;
+
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+};
+
 class DLLEXPORT_RBM RigidBodyLoop
 {
 public:
@@ -221,6 +235,10 @@ public:
   int num_frames;
   std::vector<RigidBodyFrame,Eigen::aligned_allocator<RigidBodyFrame> > frames;
 
+  // Rigid body actuators
+  std::vector<RigidBodyActuator,Eigen::aligned_allocator<RigidBodyActuator> > actuators;
+
+  // Rigid body loops
   std::vector<RigidBodyLoop,Eigen::aligned_allocator<RigidBodyLoop> > loops;
 
   // featherstone data structure

@@ -468,15 +468,24 @@ void RigidBodyManipulator::compile(void)
       body.velocity_num_start = 0;
     }
   }
-  for (int i = 0; i < num_bodies; i++) {
+  for (int i=0; i<num_bodies; i++) {
     bodies[i]->body_index = i;
     bodies[i]->setN(num_dof, num_velocities);
   }
+
+  B.resize(num_velocities,actuators.size());
+  B = MatrixXd::Zero(num_velocities,actuators.size());
+  for (int ia=0; ia<actuators.size(); ia++)
+    for (int i=0; i<actuators[ia].body->getJoint().getNumVelocities(); i++)
+      B(actuators[ia].body->velocity_num_start+i,ia) = actuators[ia].reduction;
+
+  resize(num_dof, NB, num_bodies, num_frames);
 
   for (int i=0; i<num_bodies; i++) {
     // precompute sparsity pattern for each rigid body
     bodies[i]->computeAncestorDOFs(this);
   }
+
   cached_q.resize(num_dof);
   cached_v.resize(num_velocities);
 
@@ -2039,7 +2048,7 @@ GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::massMa
 
       // Hij
       shared_ptr<RigidBody> body_j(body_i.parent);
-      while (body_j) {
+      while (body_j->hasParent()) {
         int v_start_j = body_j->velocity_num_start;
         int nv_j = body_j->getJoint().getNumVelocities();
         auto Hji = (body_j->J.transpose() * F.value()).eval();
