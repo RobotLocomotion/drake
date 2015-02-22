@@ -21,6 +21,10 @@ for urdf = allURDFs()'
   fprintf(1,'testing %s\n', urdffile);
   r = RigidBodyManipulator(urdffile,struct('floating',true,'use_new_kinsol',true));
 
+  if ~isempty(r.param_db)
+    disp(' this model has parameters (not implemented in c++ yet), so will be skipped');
+    continue;
+  end
   q = 0*rand(getNumPositions(r),1);
   kinsol = doKinematics(r,q);
 
@@ -30,7 +34,7 @@ for urdf = allURDFs()'
   
   for i=1:getNumBodies(r)
     try
-      b = findLinkId(r,out{1}{i},0,1);
+      b = findLinkId(r,out{1}{i},-1,1);
     catch ex
       % skip welded cases (at least until we implement
       % https://github.com/RobotLocomotion/drake/issues/687
@@ -45,8 +49,6 @@ for urdf = allURDFs()'
     valuecheck(pt,x,tol);
   end
 
-  continue;
-  
   %% test manipulator dynamics
   v = 0*rand(getNumVelocities(r),1);
 
@@ -61,7 +63,7 @@ for urdf = allURDFs()'
   P = sparse(0,num_v);
   for i=1:num_bodies
     try
-      bi = findLinkId(r,linknames{i},0,1);
+      bi = findLinkId(r,linknames{i},-1,1);
     catch
       % welded case
       P(end+1,1)=0;
