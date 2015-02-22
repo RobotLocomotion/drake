@@ -18,9 +18,9 @@ classdef QPDMixin
       end
     end
 
-    function qddot_des = getQddot_des(obj, q, qd, q_des, Kp, Kd)
+    function qddot_des = getQddot_des(obj, q, qd, q_des, params)
       err_q = [q_des(1:3) - q(1:3); angleDiff(q(4:end), q_des(4:end))];
-      qddot_des = Kp .* err_q - Kd .* qd;
+      qddot_des = params.Kp .* err_q - params.Kd .* qd;
       qddot_des = max(obj.qddot_des_min,...
                       min(obj.qddot_des_max, qddot_des));
     end

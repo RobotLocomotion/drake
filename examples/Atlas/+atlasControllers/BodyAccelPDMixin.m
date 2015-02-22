@@ -20,7 +20,7 @@ classdef BodyAccelPDMixin
       obj.numq = obj.robot.getNumPositions();
     end
 
-    function body_vdot = getBodyVdot(obj, t, x, body_data)
+    function body_vdot = getBodyVdot(obj, t, x, body_data, params)
 
       if t < body_data.ts(1)
         t = body_data.ts(1);
@@ -44,14 +44,14 @@ classdef BodyAccelPDMixin
 
         err = [body_des(1:3)-p(1:3);angleDiff(p(4:end),body_des(4:end))];
 
-        body_vdot = body_data.Kp.*err + body_data.Kd.*(body_v_des-J*qd) + body_vdot_des; 
+        body_vdot = params.Kp.*err + params.Kd.*(body_v_des-J*qd) + body_vdot_des; 
         if obj.use_mex == 2
           % check that matlab/mex agree
-          body_vdot_mex = statelessBodyMotionControlmex(obj.robot.getMexModelPtr.ptr,x,body_data.body_id,body_des,body_v_des,body_vdot_des,body_data.Kp,body_data.Kd);  
+          body_vdot_mex = statelessBodyMotionControlmex(obj.robot.getMexModelPtr.ptr,x,body_data.body_id,body_des,body_v_des,body_vdot_des,params.Kp,params.Kd);  
           valuecheck(body_vdot_mex,body_vdot);
         end
       else
-        body_vdot = statelessBodyMotionControlmex(obj.robot.getMexModelPtr.ptr,x,body_data.body_id,body_des,body_v_des,body_vdot_des,body_data.Kp,body_data.Kd);    
+        body_vdot = statelessBodyMotionControlmex(obj.robot.getMexModelPtr.ptr,x,body_data.body_id,body_des,body_v_des,body_vdot_des,params.Kp,params.Kd);    
       end
     end
   end
