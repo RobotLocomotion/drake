@@ -838,7 +838,7 @@ bool URDFRigidBodyManipulator::addRobotFromURDFString(const string &xml_string, 
     pt.init(node->Attribute("xyz"));
     Vector3d ptB;  ptB << pt.x, pt.y, pt.z;
 
-    RigidBodyLoop l(bodyA,ptA,bodyB,ptB);
+    RigidBodyLoop l(bodies[bodyA],ptA,bodies[bodyB],ptB);
     loops.push_back(l);
   }
 

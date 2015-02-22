@@ -1214,6 +1214,7 @@ void RigidBodyManipulator::updateCompositeRigidBodyInertias(int gradient_order) 
       auto inertia_world = transformSpatialInertia(bodies[i]->T_new, dTdq, bodies[i]->I);
       I_world[i] = inertia_world.value();
       Ic_new[i] = inertia_world.value();
+
       if (inertia_world.hasGradient()) {
         dI_world[i] = inertia_world.gradient().value();
         dIc_new[i] = inertia_world.gradient().value();
@@ -2662,7 +2663,7 @@ GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::positionConstraints
 
   GradientVar<Scalar, Eigen::Dynamic, 1> ret(3*loops.size(), 1, num_dof, gradient_order);
   for (int i = 0; i < loops.size(); i++) {
-    auto ptA_in_B = forwardKinNew(loops[i].ptA,loops[i].bodyA,loops[i].bodyB,0,gradient_order);
+    auto ptA_in_B = forwardKinNew(loops[i].ptA,loops[i].bodyA->body_index,loops[i].bodyB->body_index,0,gradient_order);
 
     ret.value().middleRows(3*i,3) = ptA_in_B.value() - loops[i].ptB;
 
