@@ -31,7 +31,7 @@ classdef ControllerData < SharedDataHandle
     function updateControllerData(obj, data)
       % sets class properties using values contained in 'data'
       for f = fieldnames(data)'
-        obj.(f) = data.(f);
+        obj.(f{1}) = data.(f{1});
       end
     end
   end

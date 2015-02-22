@@ -6,30 +6,45 @@ classdef AtlasPlanlessQPController
     debug;
     debug_pub;
     robot;
-    all_contacts = struct('groups', {}, ... % convenience for indexing into contact groups
-                          'point_ind', {}, ...
-                          'num_points', {}, ...
-                          'bodies', {});
+    numq;
+    numv;
+    all_contacts = struct('groups', {{}}, ... % convenience for indexing into contact groups
+                          'point_ind', {{}}, ...
+                          'num_points', {{}}, ...
+                          'bodies', {{}});
     controller_data
     knee_ind;
     min_knee_angle;
     use_mex;
+    use_bullet = false;
+    slack_limit = 30;
+    w_grf = 0.0;
+    w_slack = 0.05;
+    body_accel_bounds;
+    eq_array = repmat('=',100,1); % so we can avoid using repmat in the loop
+    ineq_array = repmat('<',100,1); % so we can avoid using repmat in the loop
+    gurobi_options = struct();
+    solver = 0;
   end
 
   methods
     function obj = AtlasPlanlessQPController(r, qpd, foot_contact, body_accel_pd, options)
       options = applyDefaults(options,...
-        struct('debug', true,...
+        struct('debug', false,...
                'min_knee_angle', 0.0,...
-               'use_mex', 0),...
+               'use_mex', 0, ...
+               'solver', 0),...
         struct('debug', @(x) typecheck(x, 'logical') && sizecheck(x, 1),...
                'min_knee_angle', @isscalar,...
-               'use_mex', @isscalar));
+               'use_mex', @isscalar, ...
+               'solver', @(x) x == 0 || x == 1));
       for f = fieldnames(options)'
         obj.(f{1}) = options.(f{1});
       end
 
       obj.robot = r;
+      obj.numq = r.getNumPositions();
+      obj.numv = r.getNumVelocities();
       import atlasController.*;
       import atlasFrames.*;
       obj.qpd = qpd;
@@ -45,7 +60,17 @@ classdef AtlasPlanlessQPController
 
       obj.controller_data = PlanlessQPControllerData(struct('infocount', 0,...
                                                      'qp_active_set', []));
+                                          
+      acc_limit = [100;100;100;50;50;50];
+      body_accel_bounds(1).body_idx = obj.robot.foot_body_id.right;
+      body_accel_bounds(1).min_acceleration = -acc_limit;
+      body_accel_bounds(1).max_acceleration = acc_limit;
+      body_accel_bounds(2).body_idx = obj.robot.foot_body_id.left;
+      body_accel_bounds(2).min_acceleration = -acc_limit;
+      body_accel_bounds(2).max_acceleration = acc_limit;
+      obj.body_accel_bounds = body_accel_bounds;
 
+      import atlasControllers.PlanlessQPInput2D;
       obj.all_contacts.groups = cell(PlanlessQPInput2D.num_support_bodies, PlanlessQPInput2D.contact_groups_per_body);
       obj.all_contacts.num_points = zeros(PlanlessQPInput2D.num_support_bodies, PlanlessQPInput2D.contact_groups_per_body);
       obj.all_contacts.point_ind = cell(PlanlessQPInput2D.num_support_bodies, PlanlessQPInput2D.contact_groups_per_body);
@@ -53,7 +78,7 @@ classdef AtlasPlanlessQPController
       for j = 1:size(obj.all_contacts.groups, 1)
         body_id = PlanlessQPInput2D.support_body_ids(j);
         contact_groups = r.getBody(body_id).collision_geometry_group_names;
-        for k = 1:size(obj.all_contact_groups, 2)
+        for k = 1:size(obj.all_contacts.groups, 2)
           if k <= length(contact_groups)
             obj.all_contacts.groups{j,k} = contact_groups{k};
             obj.all_contacts.point_ind{j,k} = r.getBody(body_id).collision_geometry_group_indices{k};
@@ -61,6 +86,22 @@ classdef AtlasPlanlessQPController
           end
         end
       end
+
+      obj.gurobi_options.outputflag = 0; % not verbose
+      if obj.solver==0
+        obj.gurobi_options.method = 2; % -1=automatic, 0=primal simplex, 1=dual simplex, 2=barrier
+      else
+        obj.gurobi_options.method = 0; % -1=automatic, 0=primal simplex, 1=dual simplex, 2=barrier
+      end
+      obj.gurobi_options.presolve = 0;
+      % obj.gurobi_options.prepasses = 1;
+
+      if obj.gurobi_options.method == 2
+        obj.gurobi_options.bariterlimit = 20; % iteration limit
+        obj.gurobi_options.barhomogeneous = 0; % 0 off, 1 on
+        obj.gurobi_options.barconvtol = 5e-4;
+      end
+
     end
 
     function supp = getPlannedSupports(obj, group_mask)
@@ -70,30 +111,30 @@ classdef AtlasPlanlessQPController
 
       contact_pts = cell(1, length(bodies));
       contact_groups = cell(1, length(bodies));
-      num_contact_pts = cell(1, length(bodies));
+      num_contact_pts = zeros(1, length(bodies));
       for j = 1:length(contact_pts)
         contact_pts{j} = [obj.all_contacts.point_ind{active_rows(j),group_mask(active_rows(j),:)}];
         contact_groups{j} = obj.all_contacts.groups(active_rows(j),group_mask(active_rows(j),:));
-        num_contact_pts{j} = sum(obj.all_contacts.num_points(active_rows(j),:));
+        num_contact_pts(j) = sum(obj.all_contacts.num_points(active_rows(j),:));
       end
       supp = struct('bodies', {bodies},...
                     'contact_pts', {contact_pts},...
                     'contact_groups', {contact_groups},...
                     'num_contact_pts', {num_contact_pts},...
-                    'contact_surfaces', {0*support_bodies});
+                    'contact_surfaces', {0*bodies});
     end
 
-    function [w_qdd, qddot_des] = kneePD(obj, q, qd, w_qdd, qddot_des)
+    function [w_qdd, qddot_des] = kneePD(obj, q, qd, w_qdd, qddot_des, toe_off)
       kp = 40;
       kd = 4;
-      if qp_input.support_data.right_toe_off
+      if toe_off.right
         r_kny_qdd_des = kp*(obj.min_knee_angle-q(obj.knee_ind.right)) - kd*qd(obj.knee_ind.right);
         qddot_des(obj.knee_ind.right) = r_kny_qdd_des;
         w_qdd(obj.knee_ind.right) = 1;
       elseif q(obj.knee_ind.right) < obj.min_knee_angle
         w_qdd(obj.knee_ind.right) = 1e-4;
       end
-      if qp_input.support_data.left_toe_off
+      if toe_off.left
         l_kny_qdd_des = kp*(obj.min_knee_angle-q(obj.knee_ind.left)) - kd*qd(obj.knee_ind.left);
         qddot_des(obj.knee_ind.left) = l_kny_qdd_des;
         w_qdd(obj.knee_ind.left) = 1;
@@ -119,7 +160,9 @@ classdef AtlasPlanlessQPController
       u0 = qp_input.zmp_data.u0;
       w_qdd = qp_input.whole_body_data.w_qdd;
       ctrl_data = obj.controller_data;
-
+      r = obj.robot;
+      nq = obj.numq;
+      
       R_DQyD_ls = R_ls + D_ls'*Qy*D_ls;
 
       q = x(1:obj.numq);
@@ -135,23 +178,18 @@ classdef AtlasPlanlessQPController
 
 
       supp = obj.getPlannedSupports(qp_input.support_data.group_mask);
-      supp = obj.foot_contact.getActiveSupports(supp, contact_sensor);
+      supp = obj.foot_contact.getActiveSupports(x, supp, contact_sensor);
 
-      [w_qdd, qddot_des] = obj.kneePD(q, qd, w_qdd, qddot_des);
+      [w_qdd, qddot_des] = obj.kneePD(q, qd, w_qdd, qddot_des, qp_input.support_data.toe_off);
 
-      all_bodies_vdot = cell(1,length(qp_input.bodies_data)+1);
-      num_controlled_bodies = 0;
-      for j = 1:length(all_bodies_vdot)
-        if qp_input.bodies_data(j).body_id ~= 0
-          num_controlled_bodies = num_controlled_bodies + 1;
-        end
+      all_bodies_vdot = cell(1,length(qp_input.bodies_data));
+      for j = 1:length(qp_input.bodies_data)
         body_vdot = obj.body_accel_pd.getBodyVdot(t, x, qp_input.bodies_data(j));
-        all_bodies_vdot{num_controlled_bodies} = [qp_input.bodies_data(j).body_id; body_vdot];
+        all_bodies_vdot{j} = [qp_input.bodies_data(j).body_id; body_vdot];
       end
-      all_bodies_vdot = all_bodies_vdot(1:num_controlled_bodies);
 
-      qdd_lb =-500*ones(1,nq);
-      qdd_ub = 500*ones(1,nq);
+      qdd_lb =-500*ones(1,obj.numq);
+      qdd_ub = 500*ones(1,obj.numq);
 
       if (obj.use_mex==0 || obj.use_mex==2)
         kinsol = doKinematics(r,q,false,true,qd);
@@ -181,7 +219,9 @@ classdef AtlasPlanlessQPController
         lcmgl.switchBuffers();
 
 
-        include_angular_momentum = any(any(obj.W_kdot));
+% include_angular_momentum = any(any(obj.W_kdot));
+        include_angular_momentum = false;
+        warning('not including angular momentum');
 
         if include_angular_momentum
           [A,Adot] = getCMM(r,kinsol,qd);
@@ -265,7 +305,7 @@ classdef AtlasPlanlessQPController
         bin_{2} = B_act'*C_act - r.umin;
 
         constraint_index = 3;
-        for ii=1:obj.n_body_accel_bounds
+        for ii=1:length(obj.body_accel_bounds)
           body_idx = obj.body_accel_bounds(ii).body_idx;
           [~,Jb] = forwardKin(r,kinsol,body_idx,[0;0;0],1);
           Jbdot = forwardJacDot(r,kinsol,body_idx,[0;0;0],1);
@@ -280,13 +320,13 @@ classdef AtlasPlanlessQPController
         if nc > 0
           % relative acceleration constraint
           Aeq_{2} = Jp*Iqdd + Ieps;
-          beq_{2} = -Jpdot*qd - obj.Kp_accel*Jp*qd;
+          beq_{2} = -Jpdot*qd - qp_input.whole_body_data.Kp_accel*Jp*qd;
         end
 
         eq_count=3;
 
-        for ii=1:obj.n_body_accel_inputs
-          if qp_input.bodies_data.weight(ii) < 0
+        for ii=1:length(qp_input.bodies_data)
+          if qp_input.bodies_data(ii).weight < 0
             body_input = all_bodies_vdot{ii};
             body_ind = body_input(1);
             body_vdot = body_input(2:7);
@@ -357,8 +397,8 @@ classdef AtlasPlanlessQPController
           fqp = -qddot_des'*Iqdd;
         end
 
-        for ii=1:obj.n_body_accel_inputs
-          w = qp_input.bodies_data.weight(ii);
+        for ii=1:length(qp_input.bodies_data)
+          w = qp_input.bodies_data(ii).weight;
           if w>0
             body_input = all_bodies_vdot{ii};
             body_ind = body_input(1);
@@ -531,7 +571,7 @@ classdef AtlasPlanlessQPController
         end
         debug_data.r_foot_contact = any(r.foot_body_id.right==active_supports);
         debug_data.l_foot_contact = any(r.foot_body_id.left==active_supports);
-        if obj.n_body_accel_inputs > 0
+        if ~isempty(all_bodies_vdot)
           acc_mat = [all_bodies_vdot{:}];
           debug_data.body_acc_des = reshape(acc_mat,numel(acc_mat),1);
         else

@@ -6,9 +6,10 @@ classdef AtlasSplitQPController < DrakeSystem
 
   methods
     function obj = AtlasSplitQPController(r, control, plan_eval)
+      checkDependency('lcmgl');
       input_frame = r.getStateFrame();
       output_frame = r.getInputFrame();
-      obj = obj@DrakeSystem(0,0,numel(input_frame),numel(output_frame),true,true);
+      obj = obj@DrakeSystem(0,0,numel(input_frame.coordinates),numel(output_frame.coordinates),true,true);
       obj = obj.setInputFrame(input_frame);
       obj = obj.setOutputFrame(output_frame);
       obj.control = control;

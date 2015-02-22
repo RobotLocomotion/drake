@@ -44,7 +44,7 @@ xstar = r.resolveConstraints(xstar);
 r = r.setInitialState(xstar);
 
 v = r.constructVisualizer;
-v.display_dt = 0.03;
+v.display_dt = 0.001;
 
 nq = getNumPositions(r);
 
@@ -74,7 +74,8 @@ control = AtlasPlanlessQPController(r, qpd, foot_contact, body_accel_pd, struct(
 planeval = AtlasPlanEval(r, walking_plan_data);
 plancontroller = AtlasSplitQPController(r, control, planeval);
 
-sys = feedback(plancontroller, r);
+sys = feedback(r, plancontroller);
+sys = cascade(sys, v);
 
 
 T = walking_plan_data.comtraj.tspan(2)-0.001;
