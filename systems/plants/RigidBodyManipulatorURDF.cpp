@@ -374,35 +374,34 @@ bool parseTransmission(RigidBodyManipulator* model, TiXmlElement* node)
 
 bool parseLoop(RigidBodyManipulator* model, TiXmlElement* node)
 {
-  /*
-   urdf::Vector3 pt;
-   TiXmlElement* node = loop_xml->FirstChildElement("link1");
-   int bodyA=-1,bodyB=-1;
+  Vector3d ptA,ptB;
 
-   string linkname = node->Attribute("link");
-   for (int i=0; i<num_bodies; i++)
-   if (linkname==bodies[i]->linkname) {
-   bodyA=i;
-   break;
-   }
-   if (bodyA<0) ROS_ERROR("couldn't find link %s referenced in loop joint",linkname.c_str());
-   pt.init(node->Attribute("xyz"));
-   Vector3d ptA;  ptA << pt.x, pt.y, pt.z;
+  TiXmlElement* link_node = node->FirstChildElement("link1");
+  string linkname = link_node->Attribute("link");
+  int bodyA = findLinkIndex(model,linkname);
+  if (bodyA<0) {
+    cerr << "couldn't find link %s referenced in loop joint " << linkname << endl;
+    return false;
+  }
+  if (!parseVectorAttribute(link_node, "xyz", ptA)) {
+    cerr << "ERROR parsing loop joint xyz" << endl;
+    return false;
+  }
 
-   node = loop_xml->FirstChildElement("link2");
-   linkname = node->Attribute("link");
-   for (int i=0; i<num_bodies; i++)
-   if (linkname==bodies[i]->linkname) {
-   bodyB=i;
-   break;
-   }
-   if (bodyB<0) ROS_ERROR("couldn't find link %s referenced in loop joint",linkname.c_str());
-   pt.init(node->Attribute("xyz"));
-   Vector3d ptB;  ptB << pt.x, pt.y, pt.z;
+  link_node = node->FirstChildElement("link2");
+  linkname = link_node->Attribute("link");
+  int bodyB = findLinkIndex(model,linkname);
+  if (bodyB<0) {
+    cerr << "couldn't find link %s referenced in loop joint " << linkname << endl;
+    return false;
+  }
+  if (!parseVectorAttribute(link_node, "xyz", ptB)) {
+    cerr << "ERROR parsing loop joint xyz" << endl;
+    return false;
+  }
 
-   RigidBodyLoop l(bodyA,ptA,bodyB,ptB);
-   loops.push_back(l);
-   */
+  RigidBodyLoop l(bodyA,ptA,bodyB,ptB);
+  model->loops.push_back(l);
   return true;
 }
 
