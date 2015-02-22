@@ -163,6 +163,11 @@ classdef AtlasPlanlessQPController
       ctrl_data = obj.controller_data;
       r = obj.robot;
       nq = obj.numq;
+
+      lcmgl = LCMGLClient('desired zmp');
+      lcmgl.glColor3f(0, 0.7, 1.0);
+      lcmgl.sphere([y0; 0], 0.02, 20, 20);
+      lcmgl.switchBuffers();
       
       R_DQyD_ls = R_ls + D_ls'*Qy*D_ls;
 
@@ -188,7 +193,7 @@ classdef AtlasPlanlessQPController
         body_vdot = obj.body_accel_pd.getBodyVdot(t, x, qp_input.bodies_data(j));
         all_bodies_vdot{j} = [qp_input.bodies_data(j).body_id; body_vdot];
       end
-      [all_bodies_vdot{:}]
+      % [all_bodies_vdot{:}]
 
       qdd_lb =-500*ones(1,obj.numq);
       qdd_ub = 500*ones(1,obj.numq);
