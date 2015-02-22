@@ -28,7 +28,8 @@ classdef AtlasPlanEval
 
       import atlasControllers.PlanlessQPInput2D;
       qp_input = PlanlessQPInput2D();
-      qp_input.zmp_data.x0 = [pdata.zmptraj.eval(T); 0;0];
+      qp_input.zmp_data.x0 = [fasteval(pdata.zmptraj, T); 0;0];
+      qp_input.zmp_data.y0 = fasteval(pdata.zmptraj, t);
       qp_input.zmp_data.S = pdata.V.S;
       qp_input.zmp_data.s1 = pdata.V.s1.eval(t);
 
@@ -36,11 +37,11 @@ classdef AtlasPlanEval
       supp = pdata.supports(supp_idx);
 
       if any(supp.bodies==r.foot_body_id.right)
-        warning('hard-coded for heel+toe support')
+        r.warning_manager.warnOnce('Drake:HardCodedSupport', 'hard-coded for heel+toe support');
         qp_input.support_data.group_mask(qp_input.support_body_ids == r.foot_body_id.right,1:2) = true;
       end
       if any(supp.bodies==r.foot_body_id.left)
-        warning('hard-coded for heel+toe support')
+        r.warning_manager.warnOnce('Drake:HardCodedSupport', 'hard-coded for heel+toe support');
         qp_input.support_data.group_mask(qp_input.support_body_ids == r.foot_body_id.left,1:2) = true;
       end
 
@@ -71,7 +72,7 @@ classdef AtlasPlanEval
         end
         qp_input.bodies_data(j).Kp = [12; 12; 12; 12; 12; 12];
         qp_input.bodies_data(j).Kd = getDampingGain(qp_input.bodies_data(j).Kp, 0.7);
-        warning('using same weight for all bodies')
+        r.warning_manager.warnOnce('Drake:SameBodyWeight', 'using same weight for all bodies');
         qp_input.bodies_data(j).weight = obj.body_accel_input_weights(j);
         tracked_bodies = tracked_bodies + 1;
       end
@@ -79,13 +80,13 @@ classdef AtlasPlanEval
       r.warning_manager.warnOnce('Drake:HardCodedPelvisheight', 'hard-coding pelvis height');
       r.warning_manager.warnOnce('Drake:NoPelvisHeightLogic', 'not using pelvis height logic');
       mean_feet_pose = [mean(feet_poses(1:3,:), 2); angleAverage(feet_poses(4:6,1), feet_poses(4:6,2))];
-      pelvis_target = [mean_feet_pose(1:2); mean_feet_pose(3) + 0.74; mean_feet_pose(4:6)];
+      pelvis_target = [mean_feet_pose(1:2); min(feet_poses(3,:)) + 0.74; mean_feet_pose(4:6)];
       coefs = reshape(pelvis_target, [6, 1, 1]);
       coefs = cat(3, zeros(6, 1, 3), coefs);
       qp_input.bodies_data(tracked_bodies+1).body_id = obj.pelvis_body_id;
       qp_input.bodies_data(tracked_bodies+1).ts = [t, t];
       qp_input.bodies_data(tracked_bodies+1).coefs = coefs;
-      warning('hard-coding pelvis weight')
+      r.warning_manager.warnOnce('Drake:HardCodedPelvisAccelWeight', 'hard-coding pelvis weight');
       qp_input.bodies_data(tracked_bodies+1).Kp = [nan; nan; 20; 20; 20; 20];
       qp_input.bodies_data(tracked_bodies+1).Kd = getDampingGain(qp_input.bodies_data(tracked_bodies+1).Kp, 0.5);
       qp_input.bodies_data(tracked_bodies+1).weight = obj.body_accel_input_weights(tracked_bodies+1);
