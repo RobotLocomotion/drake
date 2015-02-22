@@ -315,6 +315,10 @@ bool parseJoint(RigidBodyManipulator* model, TiXmlElement* node)
   TiXmlElement* axis_node = node->FirstChildElement("axis");
   if (axis_node) {
     parseVectorAttribute(axis_node, "xyz", axis);
+    if (axis.norm()<1e-8) {
+      cerr << "ERROR: axis is zero.  don't do that" << endl;
+      return false;
+    }
     axis.normalize();
   }
 
@@ -400,7 +404,7 @@ bool parseLoop(RigidBodyManipulator* model, TiXmlElement* node)
     return false;
   }
 
-  RigidBodyLoop l(bodyA,ptA,bodyB,ptB);
+  RigidBodyLoop l(model->bodies[bodyA],ptA,model->bodies[bodyB],ptB);
   model->loops.push_back(l);
   return true;
 }
