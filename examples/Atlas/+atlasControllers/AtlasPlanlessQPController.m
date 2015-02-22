@@ -20,6 +20,7 @@ classdef AtlasPlanlessQPController
     slack_limit = 30;
     w_grf = 0.0;
     w_slack = 0.05;
+    W_kdot = zeros(3);
     body_accel_bounds;
     eq_array = repmat('=',100,1); % so we can avoid using repmat in the loop
     ineq_array = repmat('<',100,1); % so we can avoid using repmat in the loop
@@ -187,6 +188,7 @@ classdef AtlasPlanlessQPController
         body_vdot = obj.body_accel_pd.getBodyVdot(t, x, qp_input.bodies_data(j));
         all_bodies_vdot{j} = [qp_input.bodies_data(j).body_id; body_vdot];
       end
+      [all_bodies_vdot{:}]
 
       qdd_lb =-500*ones(1,obj.numq);
       qdd_ub = 500*ones(1,obj.numq);
@@ -219,9 +221,7 @@ classdef AtlasPlanlessQPController
         lcmgl.switchBuffers();
 
 
-% include_angular_momentum = any(any(obj.W_kdot));
-        include_angular_momentum = false;
-        warning('not including angular momentum');
+        include_angular_momentum = any(any(obj.W_kdot));
 
         if include_angular_momentum
           [A,Adot] = getCMM(r,kinsol,qd);

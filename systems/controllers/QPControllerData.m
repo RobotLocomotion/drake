@@ -120,7 +120,9 @@ classdef QPControllerData < ControllerData
     end
         
     function updateControllerData(obj,data)
-      updateControllerData@ControllerData(obj,data);
+      for f = fieldnames(data)'
+        obj.(f{1}) = data.(f{1});
+      end
       if isfield(data,'A')
         if isa(data.A,'Trajectory')
           obj.A_is_time_varying = true;
