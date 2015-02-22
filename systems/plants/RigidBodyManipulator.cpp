@@ -492,11 +492,14 @@ void RigidBodyManipulator::compile(void)
   initialized=true;
 }
 
-void RigidBodyManipulator::addCollisionElement(const int body_ind, const Matrix4d & T_elem_to_lnk, DrakeCollision::Shape shape, vector<double> params, string group_name)
+void RigidBodyManipulator::addCollisionElement(const int body_index, const Matrix4d & T_elem_to_lnk, DrakeCollision::Shape shape, vector<double> params, string group_name)
 {
-  bool is_static = (bodies[body_ind]->parent->body_index==0);
-  collision_model->addElement(body_ind,bodies[body_ind]->parent->body_index,T_elem_to_lnk,shape,params,group_name,is_static, true);
-  collision_model_no_margins->addElement(body_ind,bodies[body_ind]->parent->body_index,T_elem_to_lnk,shape,params,group_name,is_static, false);
+  bool is_static = (body_index==0);
+  int parent_index = -1;
+  if (bodies[body_index]->hasParent()) parent_index = bodies[body_index]->parent->body_index;
+
+  collision_model->addElement(body_index,parent_index,T_elem_to_lnk,shape,params,group_name,is_static, true);
+  collision_model_no_margins->addElement(body_index,parent_index,T_elem_to_lnk,shape,params,group_name,is_static, false);
 }
 
 void RigidBodyManipulator::updateCollisionElements(const int body_ind)
