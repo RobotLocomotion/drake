@@ -51,7 +51,7 @@ classdef FootContactMixin
         supp.contact_pts = supp.contact_pts(mask);
         supp.contact_groups = supp.contact_groups(mask);
         supp.num_contact_pts = supp.num_contact_pts(mask);
-        supp([supp.bodies] == obj.robot.foot_body_id.left) = [];
+        supp.contact_surfaces = supp.contact_surfaces(mask);
       end
     end
   end

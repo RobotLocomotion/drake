@@ -69,7 +69,7 @@ walking_plan_data = r.planWalkingZMP(x0(1:r.getNumPositions()), footstep_plan);
 import atlasControllers.*;
 qpd = QPDMixin(r,[-100,100]);
 foot_contact = FootContactMixin(r, struct());
-body_accel_pd = BodyAccelPDMixin(r, struct('use_mex', 2));
+body_accel_pd = BodyAccelPDMixin(r, struct('use_mex', 1));
 
 param_sets = atlasParams.getDefaults(r);
 control = AtlasPlanlessQPController(r, qpd, foot_contact, body_accel_pd, param_sets, struct());
