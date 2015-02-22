@@ -12,6 +12,7 @@ function runAtlasWalking(example_options)
 % 
 
 checkDependency('gurobi');
+checkDependency('lcmgl');
 
 if nargin<1, example_options=struct(); end
 if ~isfield(example_options,'use_mex'), example_options.use_mex = true; end
@@ -19,7 +20,7 @@ if ~isfield(example_options,'use_bullet') example_options.use_bullet = false; en
 if ~isfield(example_options,'use_angular_momentum') example_options.use_angular_momentum = false; end
 if ~isfield(example_options,'navgoal')
 %  navgoal = [2*rand();0.25*randn();0;0;0;0];
-  example_options.navgoal = [1.5;0;0;0;0;0];
+  example_options.navgoal = [0.5;0;0;0;0;0];
 end
 if ~isfield(example_options,'terrain'), example_options.terrain = RigidBodyFlatTerrain; end
 
@@ -44,7 +45,7 @@ xstar = r.resolveConstraints(xstar);
 r = r.setInitialState(xstar);
 
 v = r.constructVisualizer;
-v.display_dt = 0.001;
+v.display_dt = 0.01;
 
 nq = getNumPositions(r);
 
@@ -61,7 +62,7 @@ lfoot_navgoal(1:3) = lfoot_navgoal(1:3) + R*[0;0.13;0];
 
 % Plan footsteps to the goal
 goal_pos = struct('right', rfoot_navgoal, 'left', lfoot_navgoal);
-footstep_plan = r.planFootsteps(x0(1:nq), goal_pos);
+footstep_plan = r.planFootsteps(x0(1:nq), goal_pos, [], struct('step_params', struct('max_num_steps', 4)));
 
 walking_plan_data = r.planWalkingZMP(x0(1:r.getNumPositions()), footstep_plan);
 
@@ -70,12 +71,15 @@ qpd = QPDMixin(r,[-100,100]);
 foot_contact = FootContactMixin(r, struct());
 body_accel_pd = BodyAccelPDMixin(r, struct('use_mex', 2));
 
-control = AtlasPlanlessQPController(r, qpd, foot_contact, body_accel_pd, struct());
+param_sets = atlasParams.getDefaults(r);
+control = AtlasPlanlessQPController(r, qpd, foot_contact, body_accel_pd, param_sets, struct());
 planeval = AtlasPlanEval(r, walking_plan_data);
 plancontroller = AtlasSplitQPController(r, control, planeval);
 
 sys = feedback(r, plancontroller);
-sys = cascade(sys, v);
+output_select(1).system=1;
+output_select(1).output=1;
+sys = mimoCascade(sys,v,[],[],output_select);
 
 
 T = walking_plan_data.comtraj.tspan(2)-0.001;

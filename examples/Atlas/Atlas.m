@@ -221,7 +221,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       body_accel_bounds(2).body_idx = obj.foot_body_id.left;
       body_accel_bounds(2).min_acceleration = -acc_limit;
       body_accel_bounds(2).max_acceleration = acc_limit;
-      if ~isfield(options, 'boddy_accel_bounds'); options.body_accel_bounds = body_accel_bounds; end;
+      if ~isfield(options, 'body_accel_bounds'); options.body_accel_bounds = body_accel_bounds; end;
       
       [qp,lfoot_control_block,rfoot_control_block,pelvis_control_block,pd,options] = ...
         constructQPBalancingController(obj,controller_data,options);

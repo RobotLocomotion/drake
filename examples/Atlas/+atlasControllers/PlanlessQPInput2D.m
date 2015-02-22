@@ -13,6 +13,7 @@ classdef PlanlessQPInput2D
     support_data 
     bodies_data 
     whole_body_data 
+    param_set_name
   end
 
   methods
@@ -38,16 +39,10 @@ classdef PlanlessQPInput2D
       
       obj.bodies_data = struct('body_id', cell(1, PlanlessQPInput2D.num_tracked_bodies),... % 3 d
                             'ts', cell(1, PlanlessQPInput2D.num_tracked_bodies),... % 6 d
-                            'coefs', cell(1, PlanlessQPInput2D.num_tracked_bodies),... % 4 * 6 * 3 d
-                            'Kp', cell(1, PlanlessQPInput2D.num_tracked_bodies),... % 6 * 3 d
-                            'Kd', cell(1, PlanlessQPInput2D.num_tracked_bodies),...
-                            'weight', ones(1, PlanlessQPInput2D.num_tracked_bodies)); % 6 * 3 d
+                            'coefs', cell(1, PlanlessQPInput2D.num_tracked_bodies)); % 4 * 6 * 3 d
       obj.whole_body_data = struct('q_des', zeros(PlanlessQPInput2D.num_positions, 1),... % 34 d
-                               'w_qdd', zeros(PlanlessQPInput2D.num_velocities, 1),...
-                               'Kp', zeros(PlanlessQPInput2D.num_positions, 1),...
-                               'Kd', zeros(PlanlessQPInput2D.num_positions, 1),...
-                               'Kp_accel', 0,...
                                'constrained_dof_mask', false(PlanlessQPInput2D.num_positions, 1)); % 34 b
+      obj.param_set_name = 'walking';
     end
   end
 end
