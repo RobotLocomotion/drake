@@ -366,7 +366,7 @@ classdef RigidBodyManipulator < Manipulator
       end
       
       if any(coulomb_friction)
-        f_friction = f_friction + min(1,max(-1,v./coulomb_window')).*coulomb_friction';
+        f_friction = f_friction + min(1,max(-1,v./coulomb_window)).*coulomb_friction;
         if compute_gradient
           ind = find(abs(v)<coulomb_window');
           dind = sign(v(ind))./coulomb_window(ind)' .* coulomb_window(ind)';
