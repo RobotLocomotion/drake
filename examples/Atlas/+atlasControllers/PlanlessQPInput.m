@@ -4,7 +4,8 @@ classdef PlanlessQPInput2D
     support_body_ids = 1:30;
     contact_groups_per_body = 4;
     num_positions = 34;
-    num_body_motions = 3;
+    num_velocities = 34;
+    num_body_motions = 2;
   end
 
   properties
@@ -31,8 +32,10 @@ classdef PlanlessQPInput2D
                           'ts', cell(1, PlanlessQPInput2D.num_body_motions),... % 6 d
                           'coefs', cell(1, PlanlessQPInput2D.num_body_motions),... % 4 * 6 * 3 d
                           'Kp', cell(1, PlanlessQPInput2D.num_body_motions),... % 6 * 3 d
-                          'Kd', cell(1, PlanlessQPInput2D.num_body_motions)); % 6 * 3 d
+                          'Kd', cell(1, PlanlessQPInput2D.num_body_motions),...
+                          'weight', ones(1, PlanlessQPInput2D.num_body_motions)); % 6 * 3 d
     whole_body_data = struct('q_des', zeros(PlanlessQPInput2D.num_positions, 1),... % 34 d
+                             'w_qdd', zeros(PlanlessQPInput2D.num_velocities, 1),...
                              'Kp', zeros(PlanlessQPInput2D.num_positions, 1),...
                              'Kd', zeros(PlanlessQPInput2D.num_positions, 1),...
                              'constrained_dof_mask', false(PlanlessQPInput2D.num_positions, 1)); % 34 b
