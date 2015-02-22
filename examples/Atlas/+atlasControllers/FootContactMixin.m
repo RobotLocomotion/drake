@@ -24,7 +24,7 @@ classdef FootContactMixin
       obj.mex_ptr = SharedDataHandle(supportDetectmex(0,r.getMexModelPtr.ptr,terrain_map_ptr));
     end
 
-    function fc = getFC(obj, x, planned_supp, contact_sensor)
+    function supp = getActiveSupports(obj, supp, contact_sensor)
       if ~obj.using_flat_terrain
         height = getTerrainHeight(obj.robot,[0;0]); % get height from DRCFlatTerrainMap
       else
@@ -32,6 +32,21 @@ classdef FootContactMixin
       end
       active_supports = supportDetectmex(obj.mex_ptr.data,x,planned_supp,contact_sensor,contact_thresh,height,contact_logic_AND);
       fc = [1.0*any(active_supports==obj.robot.foot_body_id.left); 1.0*any(active_supports==obj.robot.foot_body_id.right)];
+
+      mask = true(1, length(supp.bodies));
+      if ~fc(1)
+        mask = mask & (~(supp.bodies == obj.robot.foot_body_id.left));
+      end
+      if ~fc(2)
+        mask = mask & (~(supp.bodies == obj.robot.foot_body_id.right));
+      end
+      if ~all(mask)
+        supp.bodies = supp.bodies(mask);
+        supp.contact_pts = supp.contact_pts(mask);
+        supp.contact_groups = supp.contact_groups(mask);
+        supp.num_contact_pts = supp.num_contact_pts(mask);
+        supp([supp.bodies] == obj.robot.foot_body_id.left) = [];
+      end
     end
   end
 end

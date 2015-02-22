@@ -34,4 +34,5 @@ classdef ControllerData < SharedDataHandle
         obj.(f) = data.(f);
       end
     end
+  end
 end

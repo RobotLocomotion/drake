@@ -26,6 +26,9 @@ if (eigen3_FOUND)
   add_mex(bodyMotionControlmex bodyMotionControlmex.cpp)
   target_link_libraries(bodyMotionControlmex drakeRBM drakeControlUtil)
 
+  add_mex(statelessBodyMotionControlmex statelessBodyMotionControlmex.cpp)
+  target_link_libraries(statelessBodyMotionControlmex drakeRBM drakeControlUtil)
+
   add_mex(pelvisMotionControlmex pelvisMotionControlmex.cpp)
   target_link_libraries(pelvisMotionControlmex drakeRBM drakeUtil drakeControlUtil)
 
