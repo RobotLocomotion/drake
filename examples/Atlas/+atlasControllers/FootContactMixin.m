@@ -26,7 +26,7 @@ classdef FootContactMixin
 
     function supp = getActiveSupports(obj, x, supp, contact_sensor)
       obj.robot.warning_manager.warnOnce('Drake:NotConsideringContactBreak', 'not considering breaking contact');
-      contact_logic_AND = true;
+      contact_logic_AND = false;
       
       if ~obj.using_flat_terrain
         height = getTerrainHeight(obj.robot,[0;0]); % get height from DRCFlatTerrainMap
@@ -34,7 +34,6 @@ classdef FootContactMixin
         height = 0;
       end
 
-      obj.robot.warning_manager.warnOnce('Drake:UselessObject', 'creating a useless object just because we cannot pass in a struct');
       active_supports = supportDetectmex(obj.mex_ptr.data,x,supp,contact_sensor,obj.contact_threshold,height,contact_logic_AND);
       fc = [1.0*any(active_supports==obj.robot.foot_body_id.left); 1.0*any(active_supports==obj.robot.foot_body_id.right)];
 
@@ -52,6 +51,7 @@ classdef FootContactMixin
         supp.num_contact_pts = supp.num_contact_pts(mask);
         supp.contact_surfaces = supp.contact_surfaces(mask);
       end
+      supp.bodies
     end
   end
 end

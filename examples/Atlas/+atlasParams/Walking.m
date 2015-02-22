@@ -3,7 +3,9 @@ classdef Walking < atlasParams.Base
     function obj = Walking(r)
       typecheck(r, 'Atlas');
       obj = obj@atlasParams.Base(r);
-      obj.whole_body.w_qdd = 1e-4 * ones(r.getNumVelocities(), 1);
+      obj.whole_body.w_qdd = zeros(r.getNumVelocities(), 1);
+      obj.whole_body.w_qdd(findPositionIndices(r, 'arm')) = .0001;
+      obj.whole_body.w_qdd(findPositionIndices(r, 'back')) = .0001;
       obj.whole_body.w_qdd(r.findPositionIndices('back_bkx')) = 0.1;
       obj.whole_body.damping_ratio = 0.5;
       obj.body_motion(r.findLinkId('pelvis')).Kp = [nan; nan; 20; 20; 20; 20];
