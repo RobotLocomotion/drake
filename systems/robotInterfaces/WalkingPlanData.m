@@ -52,6 +52,13 @@ classdef WalkingPlanData
       link_constraints(2).pt = [0;0;0];
       link_constraints(2).ts = [0, inf];
       link_constraints(2).coefs = cat(3, zeros(6,1,3),reshape(forwardKin(obj.robot,kinsol,obj.robot.foot_body_id.left,[0;0;0],1),[6,1,1]));
+      pelvis_id = obj.robot.findLinkId('pelvis');
+      link_constraints(3).link_ndx = pelvis_id;
+      link_constraints(3).pt = [0;0;0];
+      link_constraints(3).ts = [0, inf];
+      pelvis_current = forwardKin(obj.robot,kinsol,pelvis_id,[0;0;0],1);
+      pelvis_target = [mean(foot_pos(1:2,:), 2); pelvis_current(3:6)];
+      link_constraints(3).coefs = cat(3, zeros(6,1,3),reshape(pelvis_target,[6,1,1,]));
       obj.link_constraints = link_constraints;
 
       obj.zmp_final = comgoal;
