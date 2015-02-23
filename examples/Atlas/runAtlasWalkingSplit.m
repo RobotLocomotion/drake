@@ -20,7 +20,7 @@ if ~isfield(example_options,'use_bullet') example_options.use_bullet = false; en
 if ~isfield(example_options,'use_angular_momentum') example_options.use_angular_momentum = false; end
 if ~isfield(example_options,'navgoal')
 %  navgoal = [2*rand();0.25*randn();0;0;0;0];
-  example_options.navgoal = [0.2;0;0;0;0;0];
+  example_options.navgoal = [0.5;0;0;0;0;0];
 end
 if ~isfield(example_options,'terrain'), example_options.terrain = RigidBodyFlatTerrain; end
 
@@ -62,7 +62,7 @@ lfoot_navgoal(1:3) = lfoot_navgoal(1:3) + R*[0;0.13;0];
 
 % Plan footsteps to the goal
 goal_pos = struct('right', rfoot_navgoal, 'left', lfoot_navgoal);
-footstep_plan = r.planFootsteps(x0(1:nq), goal_pos, [], struct('step_params', struct('max_num_steps', 1)));
+footstep_plan = r.planFootsteps(x0(1:nq), goal_pos, [], struct('step_params', struct('max_num_steps', 4)));
 
 walking_plan_data = r.planWalkingZMP(x0(1:r.getNumPositions()), footstep_plan);
 

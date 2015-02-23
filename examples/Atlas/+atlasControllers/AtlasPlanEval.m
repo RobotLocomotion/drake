@@ -40,7 +40,7 @@ classdef AtlasPlanEval
     end
 
     function qp_input = tick(obj, t, x)
-%       persistent last_qp_input
+      % persistent last_qp_input
 
       plan_control = obj.plan_data;
       while true
@@ -132,7 +132,7 @@ classdef AtlasPlanEval
       end
       
       qp_input.param_set_name = pdata.gain_set;
-      last_qp_input = qp_input;
+      % last_qp_input = qp_input;
 
     end
   end
