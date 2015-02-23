@@ -20,10 +20,10 @@ idxA = idxA';
 idxB = idxB';
 
 %get the results from the mexed version
-[d_mex, n_mex, D_mex, dn_mex, dD_mex] = contactConstraintDerivatives(true, p, normal, kinsol, idxA, idxB, xA, xB);
+[d_mex, n_mex, D_mex, dn_mex, dD_mex] = contactConstraintDerivatives(p, true, normal, kinsol, idxA, idxB, xA, xB);
 
 %get the results from the matlab version
-[d, n, D, dn, dD] = contactConstraintDerivatives(false, p, normal, kinsol, idxA, idxB, xA, xB);
+[d, n, D, dn, dD] = contactConstraintDerivatives(p, false, normal, kinsol, idxA, idxB, xA, xB);
 
 
 %compare d

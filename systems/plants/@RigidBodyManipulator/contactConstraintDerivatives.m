@@ -1,19 +1,23 @@
-function [d, n, D, dn, dD] = contactConstraintDerivatives(use_mex, obj, normal, kinsol, idxA, idxB, xA, xB)
+function [d, n, D, dn, dD] = contactConstraintDerivatives(obj, use_mex, normal, kinsol, idxA, idxB, xA, xB)
  compute_second_derivative = nargout > 3;
  tangents_only = (nargout == 1);
 
-  if(use_mex)
+  if(use_mex)  %MEX implementation
+
     if(tangents_only) 
-      d = contactConstraintsmex(normal);
+      %just compute surface tangents (the mex_model_ptr is not required for this)
+      d = contactConstraintsmex(obj.mex_model_ptr, normal);  
       return;
     end
-
     if(~compute_second_derivative)
-      [d, n, D] = contactConstraintsmex(normal, obj.mex_model_ptr, int32(idxA), int32(idxB), xA, xB);
+      %compute tangents and first derivatives
+      [d, n, D] = contactConstraintsmex(obj.mex_model_ptr, normal, int32(idxA), int32(idxB), xA, xB); %tangents + first derivatives
     else
-      [d, n, D, dn, dD] = contactConstraintsmex(normal, obj.mex_model_ptr, int32(idxA), int32(idxB), xA, xB);
+      %compute tangents, first derivatives, and second derivatives
+      [d, n, D, dn, dD] = contactConstraintsmex(obj.mex_model_ptr, normal, int32(idxA), int32(idxB), xA, xB);
     end
-  else
+  
+  else %MATLAB implementation
   d = obj.surfaceTangents(normal);
 
   if(tangents_only) 
