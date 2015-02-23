@@ -4,6 +4,7 @@ robot = createAtlas('rpy', options);
 
 for rotation_type = 0 : 2
   compareToJacobianGradientMethod(robot, rotation_type);
+  testJdotTimesVGradient(robot, rotation_type);
   checkMex(robot, rotation_type);
 end
 
@@ -93,9 +94,8 @@ nv = robot.getNumVelocities();
 nb = length(robot.body);
 body_range = [1, nb];
 
-kinematics_options.compute_gradients = false; % TODO
+kinematics_options.compute_gradients = true;
 
-rng(125, 'twister')
 n_tests = 5;
 test_number = 1;
 while test_number < n_tests
@@ -110,12 +110,13 @@ while test_number < n_tests
     
     kinematics_options.use_mex = false;
     kinsol = robot.doKinematics(q, v, kinematics_options);
-    Jdot_times_v = robot.forwardJacDotTimesV(kinsol, end_effector, points, rotation_type, base); % TODO: gradient
+    [Jdot_times_v, dJdot_times_v] = robot.forwardJacDotTimesV(kinsol, end_effector, points, rotation_type, base);
     
     kinematics_options.use_mex = true;
     kinsol = robot.doKinematics(q, v, kinematics_options);
-    Jdot_times_v_mex = robot.forwardJacDotTimesV(kinsol, end_effector, points, rotation_type, base); % TODO: gradient
+    [Jdot_times_v_mex, dJdot_times_v_mex] = robot.forwardJacDotTimesV(kinsol, end_effector, points, rotation_type, base); % TODO: gradient
     valuecheck(Jdot_times_v_mex, Jdot_times_v, 1e-10);
+    valuecheck(dJdot_times_v_mex, dJdot_times_v, 1e-10);
     test_number = test_number + 1;
   end
 end

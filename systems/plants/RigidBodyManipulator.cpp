@@ -2565,7 +2565,7 @@ GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, 1> RigidBodyManipula
 
   int expressed_in = base_or_frame_ind;
   const auto twist = relativeTwist<Scalar>(base_or_frame_ind, body_or_frame_ind, expressed_in, gradient_order);
-  auto J_geometric_dot_times_v = geometricJacobianDotTimesV<Scalar>(base_or_frame_ind, body_or_frame_ind, expressed_in, gradient_order);
+  const auto J_geometric_dot_times_v = geometricJacobianDotTimesV<Scalar>(base_or_frame_ind, body_or_frame_ind, expressed_in, gradient_order);
 
   auto omega_twist = twist.value().template topRows<SPACE_DIMENSION>();
   auto v_twist = twist.value().template bottomRows<SPACE_DIMENSION>();
@@ -2576,11 +2576,7 @@ GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, 1> RigidBodyManipula
   GradientVar<Scalar, Eigen::Dynamic, 1> Jrotdot_times_v(Phid.rows(), 1, num_positions, gradient_order);
   Jrotdot_times_v.value().noalias() = (Phid * omega_twist).eval();
   Jrotdot_times_v.value().noalias() += Phi.value() * J_geometric_dot_times_v.value().template topRows<SPACE_DIMENSION>();
-  if (gradient_order > 0) {
-    auto domega = twist.gradient().value().template topRows<SPACE_DIMENSION>();
-    auto dqrotdot = matGradMult(Phi.gradient().value(), omega_twist);
-    dqrotdot.noalias() += Phi.value() * domega;
-  }
+
   auto rdots = (-r.colwise().cross(omega_twist)).eval();
   rdots.colwise() += v_twist;
   auto Jposdot_times_v_mat = (-rdots.colwise().cross(omega_twist)).eval();
@@ -2597,9 +2593,40 @@ GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, 1> RigidBodyManipula
     row_start += Jrotdot_times_v.value().rows();
   }
 
-  // TODO: gradient
-  if (gradient_order > 0)
-    throw runtime_error("not yet implemented");
+  if (gradient_order > 0) {
+    auto dqrot = x.gradient().value().middleRows(SPACE_DIMENSION, qrot.rows());
+    auto domega_twist = twist.gradient().value().template topRows<SPACE_DIMENSION>();
+    auto dv_twist = twist.gradient().value().template bottomRows<SPACE_DIMENSION>();
+    auto dPhi = (Phi.gradient().value() * dqrot).eval();
+    auto dqrotdot = matGradMult(dPhi, omega_twist);
+    dqrotdot.noalias() += Phi.value() * domega_twist;
+    auto ddPhidqrotdq = (Phi.gradient().gradient().value() * dqrot).eval();
+    auto dPhid = matGradMult(ddPhidqrotdq, qrotdot);
+    dPhid.noalias() += (Phi.gradient().value() * dqrotdot).eval();
+
+    auto dJrotdot_times_v = (matGradMult(dPhid, omega_twist)).eval();
+    dJrotdot_times_v.noalias() += Phid * domega_twist;
+    dJrotdot_times_v.noalias() += matGradMult(dPhi, J_geometric_dot_times_v.value().template topRows<SPACE_DIMENSION>());
+    dJrotdot_times_v.noalias() += Phi.value() * J_geometric_dot_times_v.gradient().value().template topRows<SPACE_DIMENSION>();
+
+    row_start = 0;
+    auto pos_rows = intRange<SPACE_DIMENSION>(0);
+    for (int i = 0; i < npoints; i++) {
+      auto r_col = r.col(i);
+      auto rdot = rdots.col(i);
+      auto dr_col = getSubMatrixGradient<Eigen::Dynamic>(x.gradient().value(), pos_rows, intRange<1>(i), x.value().rows());
+      auto drdot = dcrossProduct(omega_twist, r_col, domega_twist, dr_col);
+      drdot += dv_twist;
+      auto dJpos_dot_times_v = ret.gradient().value().template middleRows<SPACE_DIMENSION>(row_start);
+      dJpos_dot_times_v.noalias() = dcrossProduct(omega_twist, rdot, domega_twist, drdot);
+      dJpos_dot_times_v.noalias() += dcrossProduct(J_geometric_dot_times_v.value().template topRows<SPACE_DIMENSION>(), r_col, J_geometric_dot_times_v.gradient().value().template topRows<SPACE_DIMENSION>(), dr_col);
+      dJpos_dot_times_v += J_geometric_dot_times_v.gradient().value().template bottomRows<SPACE_DIMENSION>();
+      row_start += SPACE_DIMENSION;
+
+      ret.gradient().value().middleRows(row_start, Jrotdot_times_v.value().rows()) = dJrotdot_times_v;
+      row_start += Jrotdot_times_v.value().rows();
+    }
+  }
 
   return ret;
 }
