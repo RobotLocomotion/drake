@@ -45,7 +45,7 @@ int main()
   int body_or_frame_ind = 8;
   int base_or_frame_ind = 0;
   int rotation_type = 0;
-  model->forwardJacDotTimesV(points, body_or_frame_ind, base_or_frame_ind, rotation_type, 0);
+  model->forwardJacDotTimesV(points, body_or_frame_ind, base_or_frame_ind, rotation_type, gradient_order);
 
   auto M = model->massMatrix<double>(gradient_order);
   cout << M.value() << endl << endl;

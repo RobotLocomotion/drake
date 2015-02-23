@@ -1167,6 +1167,18 @@ template DLLEXPORT Eigen::Matrix<double, 3, Eigen::Dynamic> dcrossProduct(
     const Gradient< Eigen::Block<Eigen::Matrix<double, 3, -1, 0, 3, -1>, 3, 1, true>, Eigen::Dynamic>::type& da,
     const Gradient< Eigen::Block<Eigen::Matrix<double, -1, -1, 0, -1, -1> const, 3, 1, false>, Eigen::Dynamic>::type& db);
 
+template DLLEXPORT Eigen::Matrix<double, 3, Eigen::Dynamic> dcrossProduct(
+    const Eigen::MatrixBase<Eigen::Block<Eigen::Matrix<double, 6, 1, 0, 6, 1> const, 3, 1, false>>& a,
+    const Eigen::MatrixBase<Eigen::Block<Eigen::Block<Eigen::Matrix<double, -1, -1, 0, -1, -1>, 3, -1, false>, 3, 1, true>>& b,
+    const Gradient<Eigen::Block<Eigen::Matrix<double, 6, 1, 0, 6, 1> const, 3, 1, false>, Eigen::Dynamic>::type& da,
+    const Gradient<Eigen::Block<Eigen::Block<Eigen::Matrix<double, -1, -1, 0, -1, -1>, 3, -1, false>, 3, 1, true>, Eigen::Dynamic>::type& db);
+
+template DLLEXPORT Eigen::Matrix<double, 3, Eigen::Dynamic> dcrossProduct(
+    const Eigen::MatrixBase<Eigen::Block<Eigen::Matrix<double, 6, 1, 0, 6, 1> const, 3, 1, false>>& a,
+    const Eigen::MatrixBase<Eigen::Block<Eigen::Matrix<double, 3, -1, 0, 3, -1>, 3, 1, true>>& b,
+    const Gradient<Eigen::Block<Eigen::Matrix<double, 6, 1, 0, 6, 1> const, 3, 1, false>, Eigen::Dynamic>::type& da,
+    const Gradient<Eigen::Block<Eigen::Matrix<double, 3, -1, 0, 3, -1>, 3, 1, true>, Eigen::Dynamic>::type& db);
+
 template DLLEXPORT DHomogTrans<MatrixXd>::type dHomogTrans(
     const Isometry3d&,
     const MatrixBase< Matrix<double, TWIST_SIZE, Dynamic> >&,
