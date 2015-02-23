@@ -2,7 +2,7 @@ classdef PlanEvalData < ControllerData
   properties
     available_plans
     plan_id_queue
-    default_plan
+    default_plan_id
   end
 
   methods

@@ -15,7 +15,10 @@ classdef AtlasPlanEval
       options = applyDefaults(options, struct(...
         'available_plans', struct(),...
         'plan_id_queue', {{}},...
-        'default_plan', WalkingPlanData.from_standing_state(xstar, obj.robot)));
+        'default_plan_id', 'default'));
+      if ~isfield(options, options.default_plan_id)
+        options.available_plans.(options.default_plan_id) = WalkingPlanData.from_standing_state(xstar, obj.robot);
+      end
       if ~iscell(options.plan_id_queue)
         options.plan_id_queue = {options.plan_id_queue};
       end
@@ -40,9 +43,10 @@ classdef AtlasPlanEval
       plan_control = obj.plan_data;
       while true
         if isempty(plan_control.plan_id_queue)
-          pdata = plan_control.default_plan;
+          pdata = plan_control.available_plans.(plan_control.default_plan_id);
           pdata.xyz_shift = x(1:3) - pdata.x0(1:3);
           pdata.qstar = x(1:obj.numq);
+          plan_control.plan_id_queue = {plan_control.default_plan_id};
           break
         else
           pdata = plan_control.available_plans.(plan_control.plan_id_queue{1});

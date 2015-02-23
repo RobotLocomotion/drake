@@ -182,7 +182,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       pdata->n_body_accel_eq_constraints++;
   }
 
-  
   int num_condof;
   VectorXd condof;
   if (!mxIsEmpty(prhs[narg])) {
