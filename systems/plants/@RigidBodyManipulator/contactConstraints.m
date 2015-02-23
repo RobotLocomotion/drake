@@ -61,14 +61,14 @@ use_mex = obj.mex_model_ptr ~= 0;
 if compute_first_derivative
     if(compute_second_derivative)
         %second and first derivatives
-        [d, n, D, dn, dD] = contactConstraintDerivatives(use_mex, obj, normal, kinsol, idxA, idxB, xA, xB);
+        [d, n, D, dn, dD] = contactConstraintDerivatives(obj, use_mex, normal, kinsol, idxA, idxB, xA, xB);
     else
         %just first derivativves
-        [d, n, D] = contactConstraintDerivatives(use_mex, obj, normal, kinsol, idxA, idxB, xA, xB);
+        [d, n, D] = contactConstraintDerivatives(obj, use_mex, normal, kinsol, idxA, idxB, xA, xB);
     end
 else
     %just tangents
-    d = contactConstraintDerivatives(use_mex, obj, normal);
+    d = contactConstraintDerivatives(obj, use_mex, normal);
 end
 end
 

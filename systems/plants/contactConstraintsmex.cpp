@@ -9,11 +9,11 @@ using namespace Eigen;
 using namespace std;
 
 /*
- * MATLAB signature: [d, n, D, dn, dD] = contactConstraintsmex(normal, model_ptr, idxA, idxB, xA, xB)
+ * MATLAB signature: [d, n, D, dn, dD] = contactConstraintsmex(model_ptr, normals, idxA, idxB, xA, xB)
  * 
  * Inputs:
- *  normals = (3xm) contact normals (from B to A) for each of m possible contacts in world space
  *  model_ptr = mex_model_ptr to the RBM
+ *  normals = (3xm) contact normals (from B to A) for each of m possible contacts in world space
  *  idxA = 1-based body indexes of body A for m possible contacts
  *  idxB = 1-based body indexes of body B for m possible contacts
  *  xA = (3xm) matrix of contact positions in body A space
@@ -193,12 +193,12 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 		mexErrMsgIdAndTxt("Drake:contactConstraintsmex:InvalidBodyPointsDimension", "body points xA and xB must be 3 dimensional");
 	}
 
-	if(nrhs >= 5 && mxGetN(prhs[0]) != mxGetN(prhs[4])) {
+	if(nrhs >= 5 && mxGetN(prhs[1]) != mxGetN(prhs[4])) {
 		mexErrMsgIdAndTxt("Drake:contactConstraintsmex:InvalidBodyPointsDimension", "normals must match the number of contact points");
 	}
 
-	const int numContactPairs = mxGetN(prhs[0]);
-	const Map<Matrix3xd> normals(mxGetPr(prhs[0]), 3, numContactPairs); //contact normals in world space
+	const int numContactPairs = mxGetN(prhs[1]);
+	const Map<Matrix3xd> normals(mxGetPr(prhs[1]), 3, numContactPairs); //contact normals in world space
 	
   const bool compute_second_derivatives = nlhs > 3;
 
@@ -236,7 +236,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 	const Map<Matrix3xd> xA(mxGetPr(prhs[4]), 3, numContactPairs); //contact point in body A space
 	const Map<Matrix3xd> xB(mxGetPr(prhs[5]), 3, numContactPairs); //contact point in body B space
 
-	RigidBodyManipulator *model= (RigidBodyManipulator*) getDrakeMexPointer(prhs[1]);
+	RigidBodyManipulator *model= (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
 
 	if(model != NULL) {
 		const int nq = model->num_dof;
