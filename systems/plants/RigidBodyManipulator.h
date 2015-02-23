@@ -140,6 +140,8 @@ public:
   template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD, typename DerivedE, typename DerivedF>
   void HandC(double* const q, double * const qd, MatrixBase<DerivedA> * const f_ext, MatrixBase<DerivedB> &H, MatrixBase<DerivedC> &C, MatrixBase<DerivedD> *dH=NULL, MatrixBase<DerivedE> *dC=NULL, MatrixBase<DerivedF> * const df_ext=NULL);
 
+  void computeContactJacobians(Map<VectorXi> const & idxA, Map<VectorXi> const & idxB, Map<Matrix3xd> const & xA, Map<Matrix3xd> const & xB, const bool compute_second_derivatives, MatrixXd & J, MatrixXd & dJ);
+
   void surfaceTangents(Map<Matrix3xd> const & normals, std::vector< Map<Matrix3xd> > & tangents);
 
   void addCollisionElement(const int body_ind, const Matrix4d &T_elem_to_lnk, DrakeCollision::Shape shape, std::vector<double> params, std::string group_name = "default");
@@ -245,8 +247,14 @@ public:
   bool use_new_kinsol;
 
 private:
+  //helper functions for contactConstraints
   void surfaceTangentsSingle(Vector3d const & normal, Matrix3kd & d);
-
+  void getUniqueBodiesSorted(VectorXi const & idxA, VectorXi const & idxB, std::vector<int> & bodyIndsSorted);
+  void findContactIndexes(VectorXi const & idxList, const int bodyIdx, std::vector<int> & contactIdx);
+  void getBodyPoints(std::vector<int> const & cindA, std::vector<int> const & cindB, Matrix3xd const & xA, Matrix3xd const & xB, MatrixXd & bodyPoints);
+  void accumulateJacobian(const int bodyInd, MatrixXd const & bodyPoints, std::vector<int> const & cindA, std::vector<int> const & cindB, MatrixXd & J);
+  void accumulateSecondOrderJacobian(const int bodyInd, MatrixXd const & bodyPoints, std::vector<int> const & cindA, std::vector<int> const & cindB, MatrixXd & dJ);
+  
   int parseBodyOrFrameID(const int body_or_frame_id, Matrix4d* Tframe = nullptr);
 
   // variables for featherstone dynamics

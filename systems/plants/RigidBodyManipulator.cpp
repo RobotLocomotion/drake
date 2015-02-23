@@ -2589,6 +2589,133 @@ void RigidBodyManipulator::surfaceTangentsSingle(Vector3d const & normal, Matrix
   }
 }
 
+void RigidBodyManipulator::getUniqueBodiesSorted(VectorXi const & idxA, VectorXi const & idxB, std::vector<int> & bodyIndsSorted)
+{
+  size_t m = idxA.size();
+  std::set<int> bodyInds;
+
+  for(int i = 0 ; i < m ; i++)
+  {  
+    bodyInds.insert(idxA[i]);
+    bodyInds.insert(idxB[i]);
+  }
+
+  bodyIndsSorted.clear();
+
+  for(std::set<int>::const_iterator citer = bodyInds.begin() ; citer != bodyInds.end() ; citer++)
+  {
+    if( *citer > 1 )
+    {
+      bodyIndsSorted.push_back(*citer);
+    }
+  }
+
+  sort(bodyIndsSorted.begin(), bodyIndsSorted.end());
+}
+
+void RigidBodyManipulator::findContactIndexes(VectorXi const & idxList, const int bodyIdx, std::vector<int> & contactIdx)
+{
+  int m = idxList.size();
+  contactIdx.clear();
+  for(int i = 0 ; i < m ; i++) {
+    if(idxList[i] == bodyIdx) {
+      contactIdx.push_back(i); //zero-based index 
+    }
+  }
+}
+
+void RigidBodyManipulator::getBodyPoints(std::vector<int> const & cindA, std::vector<int> const & cindB, Matrix3xd const & xA, Matrix3xd const & xB, MatrixXd & bodyPoints)
+{
+  int i = 0;
+  int numPtsA = cindA.size();
+  int numPtsB = cindB.size();
+
+  bodyPoints.resize(4, numPtsA + numPtsB);
+
+  for(i = 0 ; i < numPtsA ; i++ ) {
+    bodyPoints.col(i) << xA.col(cindA[i]) , 1; //homogeneous coordinates
+  }
+
+  for(i = 0 ; i < numPtsB ; i++ ) {
+    bodyPoints.col(numPtsA + i) << xB.col(cindB[i]), 1;
+  }
+}
+
+void RigidBodyManipulator::accumulateJacobian(const int bodyInd, MatrixXd const & bodyPoints, std::vector<int> const & cindA, std::vector<int> const & cindB, MatrixXd & J)
+{
+  const int nq = J.cols();
+  const int numPts = bodyPoints.cols();
+  const size_t numCA = cindA.size();
+  const size_t numCB = cindB.size();
+  const size_t offset = 3*numCA;
+
+  MatrixXd J_tmp(3*numPts, nq);
+  forwardJac(bodyInd - 1, bodyPoints, 0, J_tmp);
+
+  //add contributions from points in xA
+  for(int x = 0 ; x < numCA ; x++)
+  {
+    J.block(3*cindA[x], 0, 3, nq) += J_tmp.block(3*x, 0, 3, nq);
+  }
+
+  //subtract contributions from points in xB
+  for(int x = 0 ; x < numCB ; x++)
+  {
+    J.block(3*cindB[x], 0, 3, nq) -= J_tmp.block(offset + 3*x, 0, 3, nq);
+  }
+}
+
+void RigidBodyManipulator::accumulateSecondOrderJacobian(const int bodyInd, MatrixXd const & bodyPoints, std::vector<int> const & cindA, std::vector<int> const & cindB, MatrixXd & dJ)
+{
+  const int dJCols = dJ.cols(); //nq^2 instead of nq
+  const int numPts = bodyPoints.cols();
+  const size_t numCA = cindA.size();
+  const size_t numCB = cindB.size();
+  const size_t offset = 3*numCA;
+  MatrixXd dJ_tmp(3*numPts, dJCols);
+  forwarddJac(bodyInd - 1, bodyPoints, dJ_tmp); //dJac instead of Jac
+
+  //add contributions from points in xA
+  for(int x = 0 ; x < numCA ; x++)
+  {
+    dJ.block(3*cindA[x], 0, 3, dJCols) += dJ_tmp.block(3*x, 0, 3, dJCols);
+  }
+
+  //subtract contributions from points in xB
+  for(int x = 0 ; x < numCB ; x++)
+  {
+    dJ.block(3*cindB[x], 0, 3, dJCols) -= dJ_tmp.block(offset + 3*x, 0, 3, dJCols);
+  }  
+}
+
+void RigidBodyManipulator::computeContactJacobians(Map<VectorXi> const & idxA, Map<VectorXi> const & idxB, Map<Matrix3xd> const & xA, Map<Matrix3xd> const & xB, const bool compute_second_derivatives, MatrixXd & J, MatrixXd & dJ)
+{
+  std::vector<int> bodyInds;
+  const int nq = num_dof;
+  const int numContactPairs = xA.cols();
+
+  J = MatrixXd::Zero(3*numContactPairs, nq);
+  dJ = MatrixXd::Zero(3*numContactPairs, nq*nq);
+  
+  getUniqueBodiesSorted(idxA, idxB, bodyInds);
+  
+  const int numUniqueBodies = bodyInds.size();
+
+  for(int i = 0; i < numUniqueBodies ; i++) {
+    const int bodyInd = bodyInds[i];
+    vector<int> cindA, cindB;
+    MatrixXd bodyPoints;
+    findContactIndexes(idxA, bodyInd, cindA);
+    findContactIndexes(idxB, bodyInd, cindB);
+    getBodyPoints(cindA, cindB, xA, xB, bodyPoints);
+    accumulateJacobian(bodyInd, bodyPoints, cindA, cindB, J);
+    if(compute_second_derivatives)
+    {
+      accumulateSecondOrderJacobian(bodyInd, bodyPoints, cindA, cindB, dJ);
+    }
+  } 
+}
+
 int RigidBodyManipulator::findLinkId(string linkname, int robot)
 {
   std::transform(linkname.begin(), linkname.end(), linkname.begin(), ::tolower); // convert to lower case
