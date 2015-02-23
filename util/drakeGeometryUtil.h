@@ -194,12 +194,12 @@ DLLEXPORT GradientVar<typename DerivedI::Scalar, TWIST_SIZE, TWIST_SIZE> transfo
     const Eigen::MatrixBase<DerivedI>& I);
 
 template<typename DerivedA, typename DerivedB>
-DLLEXPORT Eigen::Matrix<typename DerivedB::Scalar, DerivedB::RowsAtCompileTime, DerivedB::ColsAtCompileTime> crossSpatialMotion(
+DLLEXPORT typename TransformSpatial<DerivedB>::type crossSpatialMotion(
   const Eigen::MatrixBase<DerivedA>& a,
   const Eigen::MatrixBase<DerivedB>& b);
 
 template<typename DerivedA, typename DerivedB>
-DLLEXPORT Eigen::Matrix<typename DerivedB::Scalar, DerivedB::RowsAtCompileTime, DerivedB::ColsAtCompileTime> crossSpatialForce(
+typename TransformSpatial<DerivedB>::type crossSpatialForce(
   const Eigen::MatrixBase<DerivedA>& a,
   const Eigen::MatrixBase<DerivedB>& b);
 
