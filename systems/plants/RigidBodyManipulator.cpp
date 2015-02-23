@@ -2827,6 +2827,17 @@ template DLLEXPORT_RBM void RigidBodyManipulator::getCMM(MatrixBase< Map<VectorX
 template DLLEXPORT_RBM void RigidBodyManipulator::getCMM(MatrixBase< Map<VectorXd> > const &, MatrixBase< Map<VectorXd> > const &, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<MatrixXd> > &);
 
 
+template DLLEXPORT_RBM void RigidBodyManipulator::doKinematics(MatrixBase<VectorXd>  &, bool);
+template DLLEXPORT_RBM void RigidBodyManipulator::doKinematics(MatrixBase< Map<VectorXd> >  &, bool);
+
+template DLLEXPORT_RBM void RigidBodyManipulator::doKinematics(MatrixBase<VectorXd>  &, bool, MatrixBase<VectorXd>  &);
+template DLLEXPORT_RBM void RigidBodyManipulator::doKinematics(MatrixBase< Map<VectorXd> >  &, bool, MatrixBase< Map<VectorXd> >  &);
+
+template DLLEXPORT_RBM void RigidBodyManipulator::getCMM(MatrixBase<VectorXd> const &, MatrixBase<VectorXd> const &, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<MatrixXd> > &);
+template DLLEXPORT_RBM void RigidBodyManipulator::getCMM(MatrixBase<VectorXd> const &, MatrixBase<VectorXd> const &, MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > &);
+template DLLEXPORT_RBM void RigidBodyManipulator::getCMM(MatrixBase< Map<VectorXd> > const &, MatrixBase< Map<VectorXd> > const &, MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > &);
+template DLLEXPORT_RBM void RigidBodyManipulator::getCMM(MatrixBase< Map<VectorXd> > const &, MatrixBase< Map<VectorXd> > const &, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<MatrixXd> > &);
+
 template DLLEXPORT_RBM void RigidBodyManipulator::getCOM(MatrixBase< Map<Vector3d> > &,const set<int> &);
 template DLLEXPORT_RBM void RigidBodyManipulator::getCOM(MatrixBase< Map<MatrixXd> > &,const set<int> &);
 template DLLEXPORT_RBM void RigidBodyManipulator::getCOMJac(MatrixBase< Map<MatrixXd> > &,const set<int> &);
