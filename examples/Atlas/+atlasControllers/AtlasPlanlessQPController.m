@@ -15,6 +15,7 @@ classdef AtlasPlanlessQPController
     controller_data
     knee_ind;
     use_mex;
+    mex_ptr;
     use_bullet = false;
 
     param_sets
@@ -30,7 +31,7 @@ classdef AtlasPlanlessQPController
     function obj = AtlasPlanlessQPController(r, qpd, foot_contact, body_accel_pd, param_sets, options)
       options = applyDefaults(options,...
         struct('debug', false,...
-               'use_mex', 0, ...
+               'use_mex', 1, ...
                'solver', 0),...
         struct('debug', @(x) typecheck(x, 'logical') && sizecheck(x, 1),...
                'use_mex', @isscalar, ...
@@ -89,6 +90,16 @@ classdef AtlasPlanlessQPController
         obj.gurobi_options.bariterlimit = 20; % iteration limit
         obj.gurobi_options.barhomogeneous = 0; % 0 off, 1 on
         obj.gurobi_options.barconvtol = 5e-4;
+      end
+
+      if (obj.use_mex>0)
+        terrain = getTerrain(r);
+        if isa(terrain,'DRCTerrainMap')
+          terrain_map_ptr = terrain.map_handle.getPointerForMex();
+        else
+          terrain_map_ptr = 0;
+        end
+        obj.mex_ptr = SharedDataHandle(statelessQPControllermex(0,obj,obj.robot.getMexModelPtr.ptr,getB(obj.robot),r.umin,r.umax,terrain_map_ptr));
       end
 
     end
@@ -156,10 +167,10 @@ classdef AtlasPlanlessQPController
       params = obj.param_sets.(qp_input.param_set_name);
       w_qdd = params.whole_body.w_qdd;
 
-      lcmgl = LCMGLClient('desired zmp');
-      lcmgl.glColor3f(0, 0.7, 1.0);
-      lcmgl.sphere([y0; 0], 0.02, 20, 20);
-      lcmgl.switchBuffers();
+      % lcmgl = LCMGLClient('desired zmp');
+      % lcmgl.glColor3f(0, 0.7, 1.0);
+      % lcmgl.sphere([y0; 0], 0.02, 20, 20);
+      % lcmgl.switchBuffers();
       
       R_DQyD_ls = R_ls + D_ls'*Qy*D_ls;
 
@@ -178,13 +189,17 @@ classdef AtlasPlanlessQPController
 
       [w_qdd, qddot_des] = obj.kneePD(q, qd, w_qdd, qddot_des, qp_input.support_data.toe_off, params.min_knee_angle);
 
-      all_bodies_vdot = cell(1,length(qp_input.bodies_data));
+      all_bodies_vdot = struct('body_id', cell(1,length(qp_input.bodies_data)),...
+                               'body_vdot', cell(1,length(qp_input.bodies_data)),...
+                               'params', cell(1,length(qp_input.bodies_data)));
       num_tracked_bodies = 0;
       for j = 1:length(qp_input.bodies_data)
         body_id = qp_input.bodies_data(j).body_id;
         if ~isempty(body_id) && params.body_motion(body_id).weight ~= 0
           body_vdot = obj.body_accel_pd.getBodyVdot(t, x, qp_input.bodies_data(j), params.body_motion(body_id));
-          all_bodies_vdot{num_tracked_bodies+1} = [body_id; body_vdot];
+          all_bodies_vdot(j).body_id = body_id; 
+          all_bodies_vdot(j).body_vdot = body_vdot;
+          all_bodies_vdot(j).params = params.body_motion(body_id);
           num_tracked_bodies = num_tracked_bodies + 1;
         end
       end
@@ -220,10 +235,10 @@ classdef AtlasPlanlessQPController
         B_act = B(act_idx,:);
 
         [xcom,Jcom] = getCOM(r,kinsol);
-        lcmgl = LCMGLClient('actual com');
-        lcmgl.glColor3f(0.8, 1, 0);
-        lcmgl.sphere([xcom(1:2); 0], 0.02, 20, 20);
-        lcmgl.switchBuffers();
+        % lcmgl = LCMGLClient('actual com');
+        % lcmgl.glColor3f(0.8, 1, 0);
+        % lcmgl.sphere([xcom(1:2); 0], 0.02, 20, 20);
+        % lcmgl.switchBuffers();
 
 
         include_angular_momentum = any(any(params.W_kdot));
@@ -311,7 +326,7 @@ classdef AtlasPlanlessQPController
 
         constraint_index = 3;
         for ii=1:length(all_bodies_vdot)
-          body_id = all_bodies_vdot{ii}(1);
+          body_id = all_bodies_vdot(ii).body_id;
           [~,Jb] = forwardKin(r,kinsol,body_id,[0;0;0],1);
           Jbdot = forwardJacDot(r,kinsol,body_id,[0;0;0],1);
           Ain_{constraint_index} = Jb*Iqdd;
@@ -331,10 +346,9 @@ classdef AtlasPlanlessQPController
         eq_count=3;
 
         for ii=1:length(all_bodies_vdot)
-          body_input = all_bodies_vdot{ii};
-          body_id = body_input(1);
-          if params.body_motion(body_id).weight < 0
-            body_vdot = body_input(2:7);
+          body_id = all_bodies_vdot(ii).body_id;
+          if all_bodies_vdot(ii).params.weight < 0
+            body_vdot = all_bodies_vdot(ii).body_vdot;
             if ~any(active_supports==body_id)
               [~,J] = forwardKin(r,kinsol,body_id,[0;0;0],1);
               Jdot = forwardJacDot(r,kinsol,body_id,[0;0;0],1);
@@ -403,11 +417,10 @@ classdef AtlasPlanlessQPController
         end
 
         for ii=1:length(all_bodies_vdot)
-          body_input = all_bodies_vdot{ii};
-          body_id = body_input(1);
-          w = params.body_motion(body_id).weight;
+          body_id = all_bodies_vdot(ii).body_id;
+          w = all_bodies_vdot(ii).params.weight;
           if w>0
-            body_vdot = body_input(2:7);
+            body_vdot = all_bodies_vdot(ii).body_vdot;
             if ~any(active_supports==body_id)
               [~,J] = forwardKin(r,kinsol,body_id,[0;0;0],1);
               Jdot = forwardJacDot(r,kinsol,body_id,[0;0;0],1);
@@ -494,15 +507,15 @@ classdef AtlasPlanlessQPController
 
 
       if (obj.use_mex==1 || obj.use_mex==2)
-        if obj.using_flat_terrain
+        if obj.foot_contact.using_flat_terrain
           height = getTerrainHeight(r,[0;0]); % get height from DRCFlatTerrainMap
         else
           height = 0;
         end
 
         if (obj.use_mex==1)
-          [y,qdd,info_fqp,active_supports,alpha] = QPControllermex(obj.mex_ptr.data,obj.solver==0,qddot_des,x,...
-              varargin{4:end},condof,supp,A_ls,B_ls,Qy,R_ls,C_ls,D_ls,...
+          [y,qdd,info_fqp,active_supports,alpha] = statelessQPControllermex(obj.mex_ptr.data,params,obj.solver==0,qddot_des,x,...
+              all_bodies_vdot,condof,supp,A_ls,B_ls,Qy,R_ls,C_ls,D_ls,...
               S,s1,s1dot,s2dot,x0,u0,y0,qdd_lb,qdd_ub,w_qdd,mu,height);
 
           if info_fqp < 0
@@ -522,8 +535,8 @@ classdef AtlasPlanlessQPController
         else
           [y_mex,mex_qdd,info_mex,active_supports_mex,~,Hqp_mex,fqp_mex,...
             Aeq_mex,beq_mex,Ain_mex,bin_mex,Qf,Qeps] = ...
-            QPControllermex(obj.mex_ptr.data,obj.solver==0,qddot_des,x,...
-            varargin{4:end},condof,supp,A_ls,B_ls,Qy,R_ls,C_ls,D_ls,S,s1,...
+            statelessQPControllermex(obj.mex_ptr.data,params,obj.solver==0,qddot_des,x,...
+            all_bodies_vdot,condof,supp,A_ls,B_ls,Qy,R_ls,C_ls,D_ls,S,s1,...
             s1dot,s2dot,x0,u0,y0,qdd_lb,qdd_ub,w_qdd,mu,height);
 
           if (nc>0)
@@ -577,7 +590,7 @@ classdef AtlasPlanlessQPController
         debug_data.r_foot_contact = any(r.foot_body_id.right==active_supports);
         debug_data.l_foot_contact = any(r.foot_body_id.left==active_supports);
         if ~isempty(all_bodies_vdot)
-          acc_mat = [all_bodies_vdot{:}];
+          acc_mat = [[all_bodies_vdot.body_id]; all_bodies_vdot.body_vdot];
           debug_data.body_acc_des = reshape(acc_mat,numel(acc_mat),1);
         else
           debug_data.body_acc_des = [];

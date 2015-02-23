@@ -5,6 +5,7 @@ classdef AtlasPlanEval
     neck_id
     robot
     default_input;
+    numq;
   end
 
   methods
@@ -30,6 +31,7 @@ classdef AtlasPlanEval
       end
       obj.pelvis_body_id = obj.robot.findLinkId('pelvis');
       obj.neck_id = obj.robot.findPositionIndices('neck');
+      obj.numq = obj.robot.getNumPositions();
       import atlasControllers.PlanlessQPInput2D;
       obj.default_input = PlanlessQPInput2D();
     end
@@ -39,6 +41,8 @@ classdef AtlasPlanEval
       while true
         if isempty(plan_control.plan_id_queue)
           pdata = plan_control.default_plan;
+          pdata.xyz_shift = x(1:3) - pdata.x0(1:3);
+          pdata.qstar = x(1:obj.numq);
           break
         else
           pdata = plan_control.available_plans.(plan_control.plan_id_queue{1});
@@ -56,11 +60,11 @@ classdef AtlasPlanEval
       t = min([t, T]);
 
       qp_input = obj.default_input;
-      qp_input.zmp_data.x0 = [pdata.zmp_final; 0;0];
+      qp_input.zmp_data.x0 = [pdata.zmp_final + pdata.xyz_shift(1:2); 0;0];
       if isnumeric(pdata.zmptraj)
-        qp_input.zmp_data.y0 = pdata.zmptraj;
+        qp_input.zmp_data.y0 = pdata.zmptraj + pdata.xyz_shift(1:2);
       else
-        qp_input.zmp_data.y0 = fasteval(pdata.zmptraj, t);
+        qp_input.zmp_data.y0 = fasteval(pdata.zmptraj, t) + pdata.xyz_shift(1:2);
       end
       qp_input.zmp_data.S = pdata.V.S;
       if isnumeric(pdata.V.s1)
@@ -96,6 +100,7 @@ classdef AtlasPlanEval
           qp_input.bodies_data(j).ts = pdata.link_constraints(j).ts([body_t_ind,body_t_ind]);
         end
         qp_input.bodies_data(j).coefs = pdata.link_constraints(j).coefs(:,body_t_ind,:);
+        qp_input.bodies_data(j).coefs(1:3,1,end) = qp_input.bodies_data(j).coefs(1:3,1,end) + pdata.xyz_shift;
         if any(qp_input.bodies_data(j).body_id == [r.foot_body_id.right, r.foot_body_id.left])
           feet_poses(:,i) = evalCubicSplineSegment(t - qp_input.bodies_data(j).ts(1), qp_input.bodies_data(j).coefs);
           i = i + 1;

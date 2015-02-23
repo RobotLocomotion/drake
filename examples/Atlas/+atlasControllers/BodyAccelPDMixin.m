@@ -30,9 +30,9 @@ classdef BodyAccelPDMixin
       end
       [body_des, body_v_des, body_vdot_des] = evalCubicSplineSegment(t - body_data.ts(1), body_data.coefs);
 
-      lcmgl = LCMGLClient(sprintf('link_%d_desired', body_data.body_id));
-      lcmgl.sphere(body_des(1:3), 0.03, 20, 20);
-      lcmgl.switchBuffers();
+      % lcmgl = LCMGLClient(sprintf('link_%d_desired', body_data.body_id));
+      % lcmgl.sphere(body_des(1:3), 0.03, 20, 20);
+      % lcmgl.switchBuffers();
 
       if (obj.use_mex == 0 || obj.use_mex==2)
         q = x(1:obj.numq);

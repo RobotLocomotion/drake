@@ -17,6 +17,7 @@ classdef WalkingPlanData
     t_offset=0;
     ignore_terrain=false;
     gain_set='walking';
+    xyz_shift=[0;0;0]; 
   end
 
   methods(Static)

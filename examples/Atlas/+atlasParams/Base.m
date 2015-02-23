@@ -7,6 +7,7 @@ classdef Base
     body_motion
     whole_body
     W_kdot = zeros(3);
+    Kp_ang = 0;
     w_slack = 0.05;
     slack_limit = 30;
     w_grf = 0.0;
