@@ -72,7 +72,7 @@ foot_contact = FootContactMixin(r, struct());
 body_accel_pd = BodyAccelPDMixin(r, struct('use_mex', 1));
 
 param_sets = atlasParams.getDefaults(r);
-control = AtlasPlanlessQPController(r, qpd, foot_contact, body_accel_pd, param_sets, struct());
+control = AtlasPlanlessQPController(r, qpd, foot_contact, body_accel_pd, param_sets, struct('use_mex', 1));
 planeval = AtlasPlanEval(r, struct('available_plans', struct('walking', walking_plan_data),...
                                    'plan_id_queue', {{'walking'}}));
 plancontroller = AtlasSplitQPController(r, control, planeval);

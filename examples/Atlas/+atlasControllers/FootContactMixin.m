@@ -51,7 +51,7 @@ classdef FootContactMixin
         supp.num_contact_pts = supp.num_contact_pts(mask);
         supp.contact_surfaces = supp.contact_surfaces(mask);
       end
-      supp.bodies
+      % supp.bodies
     end
   end
 end
