@@ -31,6 +31,11 @@
 using namespace Eigen;
 
 //extern std::set<int> emptyIntSet;  // was const std:set<int> emptyIntSet, but valgrind said I was leaking memory
+#define BASIS_VECTOR_HALF_COUNT 2  //number of basis vectors over 2 (i.e. 4 basis vectors in this case)
+#define EPSILON 10e-8
+
+typedef Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
+typedef Matrix<double, 3, Dynamic> Matrix3xd;
 
 class DLLEXPORT_RBM RigidBodyLoop
 {
@@ -135,6 +140,8 @@ public:
   template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD, typename DerivedE, typename DerivedF>
   void HandC(double* const q, double * const qd, MatrixBase<DerivedA> * const f_ext, MatrixBase<DerivedB> &H, MatrixBase<DerivedC> &C, MatrixBase<DerivedD> *dH=NULL, MatrixBase<DerivedE> *dC=NULL, MatrixBase<DerivedF> * const df_ext=NULL);
 
+  void surfaceTangents(Map<Matrix3xd> const & normals, std::vector< Map<Matrix3xd> > & tangents);
+
   void addCollisionElement(const int body_ind, const Matrix4d &T_elem_to_lnk, DrakeCollision::Shape shape, std::vector<double> params, std::string group_name = "default");
 
   void updateCollisionElements(const int body_ind);
@@ -238,6 +245,8 @@ public:
   bool use_new_kinsol;
 
 private:
+  void surfaceTangentsSingle(Vector3d const & normal, Matrix3kd & d);
+
   int parseBodyOrFrameID(const int body_or_frame_id, Matrix4d* Tframe = nullptr);
 
   // variables for featherstone dynamics

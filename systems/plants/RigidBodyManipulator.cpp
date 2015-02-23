@@ -2550,6 +2550,45 @@ void RigidBodyManipulator::HandC(double * const q, double * const qd, MatrixBase
   }
 }
 
+//computes surface tangent vectors for many normal vectors at once
+void RigidBodyManipulator::surfaceTangents(Map<Matrix3xd> const & normals, std::vector< Map<Matrix3xd> > & tangents)
+{
+  const int numContactPairs = normals.cols();
+
+  for(int curNormal = 0 ; curNormal < numContactPairs; curNormal++)
+  {
+    Matrix3kd d;
+    surfaceTangentsSingle(normals.col(curNormal), d);
+    for(int k = 0 ; k < BASIS_VECTOR_HALF_COUNT ; k++)
+    {
+      tangents[k].col(curNormal) = d.col(k);
+    }
+  }
+}
+
+//computes surface tangent vectors for a single normal vector
+void RigidBodyManipulator::surfaceTangentsSingle(Vector3d const & normal, Matrix3kd & d)
+{
+  Vector3d t1,t2;
+  double theta;
+
+  if (1 - normal(2) < EPSILON) { // handle the unit-normal case (since it's unit length, just check z)
+    t1 << 1,0,0;
+  } else if(1 + normal(2) < EPSILON) {
+    t1 << -1,0,0;  //same for the reflected case
+  } else {// now the general case
+    t1 << normal(1), -normal(0) , 0;
+    t1 /= sqrt(normal(1)*normal(1) + normal(0)*normal(0));
+  }
+
+  t2 = t1.cross(normal);
+
+  for (int k=0; k<BASIS_VECTOR_HALF_COUNT; k++) {
+    theta = k*M_PI/BASIS_VECTOR_HALF_COUNT;
+    d.col(k)=cos(theta)*t1 + sin(theta)*t2;
+  }
+}
+
 int RigidBodyManipulator::findLinkId(string linkname, int robot)
 {
   std::transform(linkname.begin(), linkname.end(), linkname.begin(), ::tolower); // convert to lower case
@@ -2636,8 +2675,6 @@ GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::positionConstraints
   }
   return ret;
 }
-
-
 
 // explicit instantiations (required for linking):
 template DLLEXPORT_RBM void RigidBodyManipulator::getCMM(double * const, double * const, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<MatrixXd> > &);
