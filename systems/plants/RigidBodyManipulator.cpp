@@ -274,8 +274,11 @@ RigidBodyManipulator::RigidBodyManipulator(int ndof, int num_featherstone_bodies
 }
 
 RigidBodyManipulator::RigidBodyManipulator(const std::string &urdf_filename)
-  :  RigidBodyManipulator(0,0,1)
+  :  collision_model(DrakeCollision::newModel()), collision_model_no_margins(DrakeCollision::newModel())
 {
+  num_dof=0; NB=0; num_bodies=1; num_frames=0;
+  a_grav << 0,0,0,0,0,-9.81;
+  resize(num_dof,NB,num_bodies,num_frames);
   bodies[0]->linkname = "world";
   bodies[0]->robotnum = 0;
   bodies[0]->body_index = 0;
@@ -482,6 +485,9 @@ void RigidBodyManipulator::compile(void)
   resize(num_dof, NB, num_bodies, num_frames);
 
   for (int i=0; i<num_bodies; i++) {
+    if (bodies[i]->parent!=nullptr)
+      updateCollisionElements(i);  // update static objects (not done in the kinematics loop)
+
     // precompute sparsity pattern for each rigid body
     bodies[i]->computeAncestorDOFs(this);
   }
@@ -941,7 +947,7 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
       }
     }
 
-    if (bodies[i]->parent>=0) {
+    if (bodies[i]->parent!=nullptr) {
       //DEBUG
       //cout << "RigidBodyManipulator::doKinematics: updating body " << i << " ..." << endl;
       //END_DEBUG

@@ -771,7 +771,7 @@ bool URDFRigidBodyManipulator::addRobotFromURDFString(const string &xml_string, 
           }
         }
       }
-      if (bodies[index]->parent<0) {
+      if (bodies[index]->parent!=nullptr) {
         updateCollisionElements(index);  // update static objects only once - right here on load
       }
     }
