@@ -27,110 +27,11 @@ using namespace std;
  *   dD = {2k} m*num_dof x numdof dD/dq second derivate of basis vectors with respect to state
  */
 
-#define BASIS_VECTOR_HALF_COUNT 2  //number of basis vectors over 2 (i.e. 4 basis vectors in this case)
-#define EPSILON 10e-8
+// #define BASIS_VECTOR_HALF_COUNT 2  //number of basis vectors over 2 (i.e. 4 basis vectors in this case)
+// #define EPSILON 10e-8
 
-typedef Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
-typedef Matrix<double, 3, Dynamic> Matrix3xd;
-
-inline void getUniqueBodiesSorted(VectorXi const & idxA, VectorXi const & idxB, vector<int> & bodyIndsSorted)
-{
-	size_t m = idxA.size();
-	set<int> bodyInds;
-
-	for(int i = 0 ; i < m ; i++)
-	{  
-		bodyInds.insert(idxA[i]);
-		bodyInds.insert(idxB[i]);
-	}
-
-	bodyIndsSorted.clear();
-
-	for(set<int>::const_iterator citer = bodyInds.begin() ; citer != bodyInds.end() ; citer++)
-	{
-		if( *citer > 1 )
-		{
-			bodyIndsSorted.push_back(*citer);
-		}
-	}
-
-	sort(bodyIndsSorted.begin(), bodyIndsSorted.end());
-}
-
-inline void getBodyPoints(vector<int> const & cindA, vector<int> const & cindB, Matrix3xd const & xA, Matrix3xd const & xB, const int num_dof, MatrixXd & bodyPoints)
-{
-	int i = 0;
-	int numPtsA = cindA.size();
-	int numPtsB = cindB.size();
-
-	bodyPoints.resize(4, numPtsA + numPtsB);
-
-	for(i = 0 ; i < numPtsA ; i++ ) {
-		bodyPoints.col(i) << xA.col(cindA[i]) , 1; //homogeneous coordinates
-	}
-
-	for(i = 0 ; i < numPtsB ; i++ ) {
-		bodyPoints.col(numPtsA + i) << xB.col(cindB[i]), 1;
-	}
-}
-
-inline void findContactIndexes(VectorXi const & idxList, const int bodyIdx, vector<int> & contactIdx)
-{
-	int m = idxList.size();
-	contactIdx.clear();
-	for(int i = 0 ; i < m ; i++) {
-		if(idxList[i] == bodyIdx) {
-			contactIdx.push_back(i); //zero-based index 
-		}
-	}
-}
-
-inline void accumulateJacobian(RigidBodyManipulator *model, const int bodyInd, MatrixXd const & bodyPoints, vector<int> const & cindA, vector<int> const & cindB, MatrixXd & J)
-{
-	const int nq = J.cols();
-	const int numPts = bodyPoints.cols();
-	const size_t numCA = cindA.size();
-	const size_t numCB = cindB.size();
-	const size_t offset = 3*numCA;
-
-	MatrixXd J_tmp(3*numPts, nq);
-	model->forwardJac(bodyInd - 1, bodyPoints, 0, J_tmp);
-
-	//add contributions from points in xA
-	for(int x = 0 ; x < numCA ; x++)
-	{
-		J.block(3*cindA[x], 0, 3, nq) += J_tmp.block(3*x, 0, 3, nq);
-	}
-
-	//subtract contributions from points in xB
-	for(int x = 0 ; x < numCB ; x++)
-	{
-		J.block(3*cindB[x], 0, 3, nq) -= J_tmp.block(offset + 3*x, 0, 3, nq);
-	}
-}
-
-inline void accumulateSecondOrderJacobian(RigidBodyManipulator *model, const int bodyInd, MatrixXd const & bodyPoints, vector<int> const & cindA, vector<int> const & cindB, MatrixXd & dJ)
-{
-	const int dJCols = dJ.cols(); //nq^2 instead of nq
-	const int numPts = bodyPoints.cols();
-	const size_t numCA = cindA.size();
-	const size_t numCB = cindB.size();
-	const size_t offset = 3*numCA;
-	MatrixXd dJ_tmp(3*numPts, dJCols);
-	model->forwarddJac(bodyInd - 1, bodyPoints, dJ_tmp); //dJac instead of Jac
-
-	//add contributions from points in xA
-	for(int x = 0 ; x < numCA ; x++)
-	{
-		dJ.block(3*cindA[x], 0, 3, dJCols) += dJ_tmp.block(3*x, 0, 3, dJCols);
-	}
-
-	//subtract contributions from points in xB
-	for(int x = 0 ; x < numCB ; x++)
-	{
-		dJ.block(3*cindB[x], 0, 3, dJCols) -= dJ_tmp.block(offset + 3*x, 0, 3, dJCols);
-	}
-}
+// typedef Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
+// typedef Matrix<double, 3, Dynamic> Matrix3xd;
 
 inline void buildSparseMatrix(Matrix3xd const & pts, SparseMatrix<double> & sparse)
 {
@@ -147,34 +48,6 @@ inline void buildSparseMatrix(Matrix3xd const & pts, SparseMatrix<double> & spar
 			j++;
 		}
 	}
-}
-
-void computeContactJacobians(RigidBodyManipulator * const model, Map<VectorXi> const & idxA, Map<VectorXi> const & idxB, Map<Matrix3xd> const & xA, Map<Matrix3xd> const & xB, const bool compute_second_derivatives, MatrixXd & J, MatrixXd & dJ)
-{
-	vector<int> bodyInds;
-	const int nq = model->num_dof;
-	const int numContactPairs = xA.cols();
-
-	J = MatrixXd::Zero(3*numContactPairs, nq);
- 	dJ = MatrixXd::Zero(3*numContactPairs, nq*nq);
-	
-	getUniqueBodiesSorted(idxA, idxB, bodyInds);
-	
-	const int numUniqueBodies = bodyInds.size();
-
-	for(int i = 0; i < numUniqueBodies ; i++) {
-		const int bodyInd = bodyInds[i];
-		vector<int> cindA, cindB;
-		MatrixXd bodyPoints;
-		findContactIndexes(idxA, bodyInd, cindA);
-		findContactIndexes(idxB, bodyInd, cindB);
-		getBodyPoints(cindA, cindB, xA, xB, nq, bodyPoints);
-		accumulateJacobian(model, bodyInd, bodyPoints, cindA, cindB, J);
-		if(compute_second_derivatives)
-		{
-			accumulateSecondOrderJacobian(model, bodyInd, bodyPoints, cindA, cindB, dJ);
-		}
-	} 
 }
 
 //forms a mex cell array and computes the surface tangents in-place using maps
@@ -254,7 +127,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 			vector<int> bodyInds;
 			SparseMatrix<double> sparseNormals;
 
-			computeContactJacobians(model, idxA, idxB, xA, xB, compute_second_derivatives, J, dJ);			
+			model->computeContactJacobians(idxA, idxB, xA, xB, compute_second_derivatives, J, dJ);			
 			buildSparseMatrix(normals, sparseNormals);
 
 			plhs[1] = mxCreateDoubleMatrix(numContactPairs, nq, mxREAL);
