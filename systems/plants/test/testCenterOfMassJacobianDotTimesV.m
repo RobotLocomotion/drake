@@ -1,6 +1,8 @@
 function testCenterOfMassJacobianDotTimesV()
 options.use_new_kinsol = true;
-floatingBaseParameterizations = {'rpy', 'quat'};
+floatingBaseParameterizations = {'rpy'}; % TODO: reenable, 'quat'};
+% the only issue with quat is that currently it is not possible to get a
+% center of mass Jacobian that is in terms of v for this test.
 
 for parameterization = floatingBaseParameterizations
   robot = createAtlas(parameterization{:}, options);
