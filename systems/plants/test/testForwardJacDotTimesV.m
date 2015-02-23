@@ -1,17 +1,19 @@
 function testForwardJacDotTimesV
-% tests only meaningful for rpy parameterization (derivative of
-% kinsol.vToqdot needs to be zero)
 options.use_new_kinsol = true;
 robot = createAtlas('rpy', options);
 
-compareToJacobianGradientMethod(robot, 0);
-compareToJacobianGradientMethod(robot, 1);
-compareToJacobianGradientMethod(robot, 2);
+for rotation_type = 0 : 2
+  compareToJacobianGradientMethod(robot, rotation_type);
+  checkMex(robot, rotation_type);
+end
 
-testJdotTimesVGradient(robot, 0);
-testJdotTimesVGradient(robot, 1);
-testJdotTimesVGradient(robot, 2);
-
+robot = createAtlas('quat', options);
+for rotation_type = 0 : 2
+  % comparison to Jacobian gradient method is only meaningful for rpy
+  % parameterization (derivative of vToqdot needs to be zero)
+  testJdotTimesVGradient(robot, rotation_type);
+  checkMex(robot, rotation_type);
+end
 end
 
 function compareToJacobianGradientMethod(robot, rotation_type)
@@ -45,7 +47,7 @@ while test_number < n_tests
     Jdot = reshape(reshape(dJ, numel(J), []) * kinsol.qdot, size(J));
     Jvdot_times_v = robot.forwardJacDotTimesV(kinsol, end_effector, points, rotation_type, base);
     
-%     valuecheck(Jdot * qdot, Jvdot_times_v, epsilon);
+    %     valuecheck(Jdot * qdot, Jvdot_times_v, epsilon);
     valuecheck(Jdot * kinsol.qdot - Jvdot_times_v, zeros(size(Jdot, 1), 1), epsilon);
     
     test_number = test_number + 1;
@@ -67,7 +69,7 @@ test_number = 1;
 while test_number < n_tests
   base = randi(body_range);
   end_effector = randi(body_range);
-
+  
   if base ~= end_effector
     q = getRandomConfiguration(robot);
     v = randn(nv, 1);
@@ -85,3 +87,37 @@ while test_number < n_tests
 end
 
 end
+
+function checkMex(robot, rotation_type)
+nv = robot.getNumVelocities();
+nb = length(robot.body);
+body_range = [1, nb];
+
+kinematics_options.compute_gradients = false; % TODO
+
+rng(125, 'twister')
+n_tests = 5;
+test_number = 1;
+while test_number < n_tests
+  base = randi(body_range);
+  end_effector = randi(body_range);
+  
+  if base ~= end_effector
+    q = getRandomConfiguration(robot);
+    v = randn(nv, 1);
+    nPoints = randi([1, 10]);
+    points = randn(3, nPoints);
+    
+    kinematics_options.use_mex = false;
+    kinsol = robot.doKinematics(q, v, kinematics_options);
+    Jdot_times_v = robot.forwardJacDotTimesV(kinsol, end_effector, points, rotation_type, base); % TODO: gradient
+    
+    kinematics_options.use_mex = true;
+    kinsol = robot.doKinematics(q, v, kinematics_options);
+    Jdot_times_v_mex = robot.forwardJacDotTimesV(kinsol, end_effector, points, rotation_type, base); % TODO: gradient
+    valuecheck(Jdot_times_v_mex, Jdot_times_v, 1e-10);
+    test_number = test_number + 1;
+  end
+end
+end
+
