@@ -40,7 +40,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   if (nrhs < 2) {
     mexErrMsgIdAndTxt("Drake:surfaceTangentsmex:NotEnoughInputs","Usage: [d] = surfaceTangentsmex(mex_model_ptr, normals)");
   }
-  
   RigidBodyManipulator *model= (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
 
   const unsigned int numNormals = mxGetN(prhs[1]);  //number of normal vectors
@@ -51,7 +50,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   }
 
   //Mapping Eigen Matrix to existing memory to avoid copy overhead
-  Map<Matrix3xd> normals(mxGetPr(prhs[0]), 3, numNormals); 
+  Map<Matrix3xd> normals(mxGetPr(prhs[1]), 3, numNormals); 
 
   if(nlhs > 0) {
     plhs[0] = getTangentsArray(model, normals);
