@@ -149,7 +149,36 @@ inline void buildSparseMatrix(Matrix3xd const & pts, SparseMatrix<double> & spar
 	}
 }
 
-inline void surfaceTangents(const Vector3d & normal, Matrix3kd & d)
+void computeContactJacobians(RigidBodyManipulator * const model, Map<VectorXi> const & idxA, Map<VectorXi> const & idxB, Map<Matrix3xd> const & xA, Map<Matrix3xd> const & xB, const bool compute_second_derivatives, MatrixXd & J, MatrixXd & dJ)
+{
+	vector<int> bodyInds;
+	const int nq = model->num_dof;
+	const int numContactPairs = xA.cols();
+
+	J = MatrixXd::Zero(3*numContactPairs, nq);
+ 	dJ = MatrixXd::Zero(3*numContactPairs, nq*nq);
+	
+	getUniqueBodiesSorted(idxA, idxB, bodyInds);
+	
+	const int numUniqueBodies = bodyInds.size();
+
+	for(int i = 0; i < numUniqueBodies ; i++) {
+		const int bodyInd = bodyInds[i];
+		vector<int> cindA, cindB;
+		MatrixXd bodyPoints;
+		findContactIndexes(idxA, bodyInd, cindA);
+		findContactIndexes(idxB, bodyInd, cindB);
+		getBodyPoints(cindA, cindB, xA, xB, nq, bodyPoints);
+		accumulateJacobian(model, bodyInd, bodyPoints, cindA, cindB, J);
+		if(compute_second_derivatives)
+		{
+			accumulateSecondOrderJacobian(model, bodyInd, bodyPoints, cindA, cindB, dJ);
+		}
+	} 
+}
+
+//computes surface tangent vectors for a single normal
+inline void surfaceTangents(Vector3d const & normal, Matrix3kd & d)
 {
 	Vector3d t1,t2;
 	double theta;
@@ -171,8 +200,44 @@ inline void surfaceTangents(const Vector3d & normal, Matrix3kd & d)
 	}
 }
 
-void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 
+//computes surface tangent vectors for many normals at once
+inline void surfaceTangents(Map<Matrix3xd> const & normals, vector< Map<Matrix3xd> > & tangents)
+{
+	const int numContactPairs = normals.cols();
+
+	for(int curNormal = 0 ; curNormal < numContactPairs; curNormal++)
+	{
+		Matrix3kd d;
+		surfaceTangents(normals.col(curNormal), d);
+		for(int k = 0 ; k < BASIS_VECTOR_HALF_COUNT ; k++)
+		{
+			tangents[k].col(curNormal) = d.col(k);
+		}
+	}
+}
+
+//forms a mex cell array and computes the surface tangents in-place using maps
+inline mxArray* getTangentsArray(Map<Matrix3xd> normals)
+{
+	const int numContactPairs = normals.cols();
+	const mwSize cellDims[] = {1, BASIS_VECTOR_HALF_COUNT};
+	mxArray* tangentCells = mxCreateCellArray(2, cellDims);
+	
+	vector< Map<Matrix3xd> > tangents;
+	for(int k = 0 ; k < BASIS_VECTOR_HALF_COUNT ; k++)
+	{
+		mxArray *cell = mxCreateDoubleMatrix(3, numContactPairs, mxREAL );		
+		tangents.push_back(Map<Matrix3xd>(mxGetPr(cell), 3, numContactPairs));
+		mxSetCell(tangentCells, k, cell);
+	}
+
+	surfaceTangents(normals, tangents);
+
+	return tangentCells;
+}
+
+void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 	//valid usage modes: 
   // 1 input + 1 output tangents only mode
   // 6 inputs + 3 outputs tangents and first derivatives
@@ -200,30 +265,10 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 	const int numContactPairs = mxGetN(prhs[1]);
 	const Map<Matrix3xd> normals(mxGetPr(prhs[1]), 3, numContactPairs); //contact normals in world space
 	
-  const bool compute_second_derivatives = nlhs > 3;
+  	const bool compute_second_derivatives = nlhs > 3;
 
 	if(nlhs > 0) {
-		int k = 0;
-		const mwSize cellDims[] = {1, BASIS_VECTOR_HALF_COUNT};
-		double *cells[BASIS_VECTOR_HALF_COUNT];
-		plhs[0] = mxCreateCellArray(2, cellDims);
-
-		//initialize output cell array
-		for( k = 0 ; k < BASIS_VECTOR_HALF_COUNT ; k++) {
-			mxArray* mxCell = mxCreateDoubleMatrix(3, numContactPairs, mxREAL);
-			cells[k] = mxGetPr(mxCell);
-			mxSetCell(plhs[0], k, mxCell);
-		}
-
-		//fill in cell array with surface tangents
-		for(int curNormal = 0; curNormal < numContactPairs; curNormal++) {
-			Matrix3kd d;
-			surfaceTangents(normals.col(curNormal), d);
-			for( k = 0; k < BASIS_VECTOR_HALF_COUNT ; k++) {
-				Map<Matrix3xd> eigenCell(cells[k], 3, numContactPairs);
-				eigenCell.col(curNormal) = d.col(k); 
-			}
-		}
+		plhs[0] = getTangentsArray(normals);
 	}
 
 	if(nrhs < 2) 
@@ -242,31 +287,15 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 		const int nq = model->num_dof;
 		if(nlhs > 1) {
 
-			MatrixXd J = MatrixXd::Zero(3*numContactPairs, nq);
-			MatrixXd dJ = MatrixXd::Zero(3*numContactPairs, nq*nq);
+			MatrixXd J; 
+			MatrixXd dJ;
 			vector<int> bodyInds;
-
-			getUniqueBodiesSorted(idxA, idxB, bodyInds);
-
-			for(vector<int>::const_iterator citer = bodyInds.begin() ; citer != bodyInds.end() ; citer++) {
-				const int bodyInd = *citer;
-				vector<int> cindA, cindB;
-				MatrixXd bodyPoints;
-				findContactIndexes(idxA, bodyInd, cindA);
-				findContactIndexes(idxB, bodyInd, cindB);
-				getBodyPoints(cindA, cindB, xA, xB, nq, bodyPoints);
-				accumulateJacobian(model, bodyInd, bodyPoints, cindA, cindB, J);
-				if(compute_second_derivatives)
-				{
-					accumulateSecondOrderJacobian(model, bodyInd, bodyPoints, cindA, cindB, dJ);
-				}
-			}    
-
 			SparseMatrix<double> sparseNormals;
+
+			computeContactJacobians(model, idxA, idxB, xA, xB, compute_second_derivatives, J, dJ);			
 			buildSparseMatrix(normals, sparseNormals);
 
-
-			plhs[1] = mxCreateDoubleMatrix(numContactPairs, nq, mxREAL); //
+			plhs[1] = mxCreateDoubleMatrix(numContactPairs, nq, mxREAL);
 			Map<MatrixXd> n(mxGetPr(plhs[1]), numContactPairs, nq);
 			n = sparseNormals * J; //dphi/dq
 
@@ -278,7 +307,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 				if(nlhs > 4) {
 					plhs[4] = mxCreateCellArray(2, cellDims);
 				}
-
+				
 				for(int k = 0 ; k < BASIS_VECTOR_HALF_COUNT ; k++) { //for each friction cone basis vector
 					Map<Matrix3xd> dk(mxGetPr(mxGetCell(plhs[0], k)), 3, numContactPairs);
 					SparseMatrix<double> sparseTangents;
