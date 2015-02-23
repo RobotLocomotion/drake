@@ -329,8 +329,8 @@ classdef FullStateQPControllerDT < DrakeSystem
     %----------------------------------------------------------------------
     % QP cost function ----------------------------------------------------
     
-    Hqp = Iu'*R*Iu + Ix'*S*Ix;
-    fqp = -x0'*S*Ix - u0'*R*Iu;
+    Hqp = Iu'*h*R*Iu + Ix'*S*Ix;
+    fqp = -x0'*S*Ix - u0'*h*R*Iu;
 
 %     if nc > 0
 %       Hqp(nu+2*nq+(1:nf),nu+2*nq+(1:nf)) = obj.w_grf*eye(nf); 
