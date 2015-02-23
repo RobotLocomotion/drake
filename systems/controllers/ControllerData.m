@@ -11,7 +11,6 @@ classdef ControllerData < SharedDataHandle
   
   % optional: for properties that can be modified 'on the fly'
   properties (SetAccess=public,GetAccess=public)
-  
   end
 
   methods

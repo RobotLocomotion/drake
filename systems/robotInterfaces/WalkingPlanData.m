@@ -8,6 +8,7 @@ classdef WalkingPlanData
     supports
     link_constraints
     zmptraj
+    zmp_final
     V
     qstar = [];
     c = [];
@@ -15,9 +16,39 @@ classdef WalkingPlanData
     mu=1;
     t_offset=0;
     ignore_terrain=false;
+    gain_set='walking';
   end
 
   methods(Static)
+    function obj = from_standing_state(x0, biped, support_state)
+
+      fidx = [biped.findLinkId('r_foot'),biped.findLinkId('l_foot')];
+      if nargin < 3
+        support_state = RigidBodySupportState(biped, fidx);
+      end
+
+      obj = WalkingPlanData();
+      obj.robot = biped;
+      obj.x0 = x0;
+      obj.support_times = [0, 0];
+      obj.supports = [support_state, support_state];
+
+      nq = obj.robot.getNumPositions();
+      q0 = x0(1:nq);
+      kinsol = doKinematics(obj.robot, q0);
+
+      foot_pos = obj.robot.forwardKin(kinsol, [obj.robot.foot_frame_id.right, obj.robot.foot_frame_id.left], [0;0;0]);
+      comgoal = mean(foot_pos(1:2,:), 2);
+
+      obj.zmptraj = comgoal;
+      [~, obj.V, obj.comtraj] = obj.robot.planZMPController(comgoal, q0);
+
+      obj.zmp_final = comgoal;
+      obj.qstar = x0(1:nq);
+      obj.comtraj = comgoal;
+      obj.gain_set = 'standing';
+    end
+
     function obj = from_biped_footstep_plan(footstep_plan, biped, x0, zmp_options)
       if nargin < 4
         zmp_options = struct();
@@ -43,6 +74,7 @@ classdef WalkingPlanData
       obj.supports = supports;
       obj.link_constraints = link_constraints;
       obj.zmptraj = zmptraj;
+      obj.zmp_final = zmptraj.eval(zmptraj.tspan(end));
       obj.V = V;
       obj.c = c;
       obj.comtraj = comtraj;

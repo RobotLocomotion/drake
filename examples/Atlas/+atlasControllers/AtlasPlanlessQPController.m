@@ -179,11 +179,16 @@ classdef AtlasPlanlessQPController
       [w_qdd, qddot_des] = obj.kneePD(q, qd, w_qdd, qddot_des, qp_input.support_data.toe_off, params.min_knee_angle);
 
       all_bodies_vdot = cell(1,length(qp_input.bodies_data));
+      num_tracked_bodies = 0;
       for j = 1:length(qp_input.bodies_data)
         body_id = qp_input.bodies_data(j).body_id;
-        body_vdot = obj.body_accel_pd.getBodyVdot(t, x, qp_input.bodies_data(j), params.body_motion(body_id));
-        all_bodies_vdot{j} = [body_id; body_vdot];
+        if ~isempty(body_id) && params.body_motion(body_id).weight ~= 0
+          body_vdot = obj.body_accel_pd.getBodyVdot(t, x, qp_input.bodies_data(j), params.body_motion(body_id));
+          all_bodies_vdot{num_tracked_bodies+1} = [body_id; body_vdot];
+          num_tracked_bodies = num_tracked_bodies + 1;
+        end
       end
+      all_bodies_vdot = all_bodies_vdot(1:num_tracked_bodies);
 
       qdd_lb =-500*ones(1,obj.numq);
       qdd_ub = 500*ones(1,obj.numq);
