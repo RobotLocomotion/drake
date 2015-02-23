@@ -196,11 +196,11 @@ classdef AtlasPlanlessQPController
       for j = 1:length(qp_input.bodies_data)
         body_id = qp_input.bodies_data(j).body_id;
         if ~isempty(body_id) && params.body_motion(body_id).weight ~= 0
-          body_vdot = obj.body_accel_pd.getBodyVdot(t, x, qp_input.bodies_data(j), params.body_motion(body_id));
-          all_bodies_vdot(j).body_id = body_id; 
-          all_bodies_vdot(j).body_vdot = body_vdot;
-          all_bodies_vdot(j).params = params.body_motion(body_id);
           num_tracked_bodies = num_tracked_bodies + 1;
+          body_vdot = obj.body_accel_pd.getBodyVdot(t, x, qp_input.bodies_data(j), params.body_motion(body_id));
+          all_bodies_vdot(num_tracked_bodies).body_id = body_id; 
+          all_bodies_vdot(num_tracked_bodies).body_vdot = body_vdot;
+          all_bodies_vdot(num_tracked_bodies).params = params.body_motion(body_id);
         end
       end
       all_bodies_vdot = all_bodies_vdot(1:num_tracked_bodies);
@@ -208,7 +208,7 @@ classdef AtlasPlanlessQPController
       qdd_lb =-500*ones(1,obj.numq);
       qdd_ub = 500*ones(1,obj.numq);
 
-%       fprintf(1, ' non_mex: %f\n', toc(t0));
+      % fprintf(1, ' non_mex: %f\n', toc(t0));
 
       if (obj.use_mex==0 || obj.use_mex==2)
         kinsol = doKinematics(r,q,false,true,qd);
