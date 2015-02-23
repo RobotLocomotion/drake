@@ -252,7 +252,6 @@ public:
   bool use_new_kinsol;
 
 private:
-
   //helper functions for contactConstraints
   void surfaceTangentsSingle(Vector3d const & normal, Matrix3kd & d);
   void getUniqueBodiesSorted(VectorXi const & idxA, VectorXi const & idxB, std::vector<int> & bodyIndsSorted);
@@ -261,7 +260,6 @@ private:
   void accumulateJacobian(const int bodyInd, MatrixXd const & bodyPoints, std::vector<int> const & cindA, std::vector<int> const & cindB, MatrixXd & J);
   void accumulateSecondOrderJacobian(const int bodyInd, MatrixXd const & bodyPoints, std::vector<int> const & cindA, std::vector<int> const & cindB, MatrixXd & dJ);
   
-
   void doKinematics(double* q, bool b_compute_second_derivatives=false, double* qd=NULL);
   int parseBodyOrFrameID(const int body_or_frame_id, Matrix4d* Tframe = nullptr);
 
