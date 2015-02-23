@@ -40,13 +40,19 @@ classdef AtlasPlanEval
     end
 
     function qp_input = tick(obj, t, x)
+%       persistent last_qp_input
+
       plan_control = obj.plan_data;
       while true
         if isempty(plan_control.plan_id_queue)
-          pdata = plan_control.available_plans.(plan_control.default_plan_id);
-          pdata.xyz_shift = x(1:3) - pdata.x0(1:3);
-          pdata.qstar = x(1:obj.numq);
+          % qp_input = last_qp_input;
+          % return
+
+          t0=tic();
+          plan_control.available_plans.(plan_control.default_plan_id) = WalkingPlanData.from_standing_state(x, obj.robot);
           plan_control.plan_id_queue = {plan_control.default_plan_id};
+          pdata = plan_control.available_plans.(plan_control.default_plan_id);
+          toc(t0);
           break
         else
           pdata = plan_control.available_plans.(plan_control.plan_id_queue{1});
@@ -112,16 +118,21 @@ classdef AtlasPlanEval
         tracked_bodies = tracked_bodies + 1;
       end
 
-      r.warning_manager.warnOnce('Drake:HardCodedPelvisheight', 'hard-coding pelvis height');
-      r.warning_manager.warnOnce('Drake:NoPelvisHeightLogic', 'not using pelvis height logic');
-      pelvis_target = [mean(feet_poses(1:2,:), 2); min(feet_poses(3,:)) + 0.74; 0; 0; angleAverage(feet_poses(6,1), feet_poses(6,2))];
-      coefs = reshape(pelvis_target, [6, 1, 1]);
-      coefs = cat(3, zeros(6, 1, 3), coefs);
-      qp_input.bodies_data(tracked_bodies+1).body_id = obj.pelvis_body_id;
-      qp_input.bodies_data(tracked_bodies+1).ts = [t, t];
-      qp_input.bodies_data(tracked_bodies+1).coefs = coefs;
+      if tracked_bodies == 2
+        r.warning_manager.warnOnce('Drake:HardCodedPelvisheight', 'hard-coding pelvis height');
+        r.warning_manager.warnOnce('Drake:NoPelvisHeightLogic', 'not using pelvis height logic');
+        pelvis_target = [mean(feet_poses(1:2,:), 2); min(feet_poses(3,:)) + 0.79; 0; 0; angleAverage(feet_poses(6,1), feet_poses(6,2))];
+        coefs = reshape(pelvis_target, [6, 1, 1]);
+        coefs = cat(3, zeros(6, 1, 3), coefs);
+        qp_input.bodies_data(tracked_bodies+1).body_id = obj.pelvis_body_id;
+        qp_input.bodies_data(tracked_bodies+1).ts = [t, t];
+        qp_input.bodies_data(tracked_bodies+1).coefs = coefs;
+      else
+        assert(tracked_bodies == 3, 'expecting 2 or 3 tracked bodies here');
+      end
       
       qp_input.param_set_name = pdata.gain_set;
+      last_qp_input = qp_input;
 
     end
   end
