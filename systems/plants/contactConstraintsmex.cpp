@@ -27,12 +27,6 @@ using namespace std;
  *   dD = {2k} m*num_dof x numdof dD/dq second derivate of basis vectors with respect to state
  */
 
-// #define BASIS_VECTOR_HALF_COUNT 2  //number of basis vectors over 2 (i.e. 4 basis vectors in this case)
-// #define EPSILON 10e-8
-
-// typedef Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
-// typedef Matrix<double, 3, Dynamic> Matrix3xd;
-
 inline void buildSparseMatrix(Matrix3xd const & pts, SparseMatrix<double> & sparse)
 {
 	const int m = pts.cols();
@@ -71,12 +65,10 @@ inline mxArray* getTangentsArray(RigidBodyManipulator * const model, Map<Matrix3
 }
 
 void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
-	//valid usage modes: 
-  // 1 input + 1 output tangents only mode
-  // 6 inputs + 3 outputs tangents and first derivatives
-  // 6 inputs + 5 outputs tangents, first + second derivatives
-  if (!((nrhs == 1 && nlhs == 1) || (nrhs == 6 && nlhs == 3) || (nrhs == 6 && nlhs == 5))) {
-		mexErrMsgIdAndTxt("Drake:contactConstraintsmex:NotEnoughInputs","Usage: \nd = contactConstraintsmex(normal)\n[d, n, D] = contactConstraintsmex(normal, model_ptr, idxA, idxB, xA, xB)\n[d, n, D, dn, dD] = contactConstraintsmex(normal, model_ptr, idxA, idxB, xA, xB)");
+	
+  
+  if (nrhs < 6) {
+		mexErrMsgIdAndTxt("Drake:contactConstraintsmex:NotEnoughInputs","Usage: \n[d, n, D] = contactConstraintsmex(normal, model_ptr, idxA, idxB, xA, xB)\n[d, n, D, dn, dD] = contactConstraintsmex(normal, model_ptr, idxA, idxB, xA, xB)");
 	}
 
 	if(nrhs >= 4 && mxGetN(prhs[2]) != mxGetN(prhs[3])) {
@@ -109,11 +101,6 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 			plhs[0] = getTangentsArray(model, normals);
 		}
 
-		if(nrhs < 2) 
-		{
-			return; // just return tangents
-		}
-
 		const Map<VectorXi> idxA((int*)mxGetData(prhs[2]), numContactPairs); //collision pairs index of body A
 		const Map<VectorXi> idxB((int*)mxGetData(prhs[3]), numContactPairs); //collision pairs index of body B
 		const Map<Matrix3xd> xA(mxGetPr(prhs[4]), 3, numContactPairs); //contact point in body A space
@@ -134,8 +121,8 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 			Map<MatrixXd> n(mxGetPr(plhs[1]), numContactPairs, nq);
 			n = sparseNormals * J; //dphi/dq
 
-
 			if(nlhs > 2) {
+
 				const mwSize cellDims[] = {1, 2*BASIS_VECTOR_HALF_COUNT};
 				plhs[2] = mxCreateCellArray(2, cellDims);
 
