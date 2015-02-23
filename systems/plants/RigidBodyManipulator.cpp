@@ -2456,11 +2456,12 @@ GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwar
     }
   }
 
-  GradientVar<Scalar, Eigen::Dynamic, SPACE_DIMENSION> Phi = angularvel2RepresentationDotMatrix(rotation_type, qrot);
+  GradientVar<Scalar, Eigen::Dynamic, SPACE_DIMENSION> Phi = angularvel2RepresentationDotMatrix(rotation_type, qrot.value(), gradient_order);
   GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> Jrot(Phi.value().rows(), Jomega.value().cols(), nq, gradient_order);
   Jrot.value() = Phi.value() * Jomega.value();
   if (gradient_order > 0) {
-    Jrot.gradient().value() = matGradMultMat(Phi.value(), Jomega.value(), Phi.gradient().value(), Jomega.gradient().value());
+    auto dPhidq = (Phi.gradient().value() * qrot.gradient().value()).eval();
+    Jrot.gradient().value() = matGradMultMat(Phi.value(), Jomega.value(), dPhidq, Jomega.gradient().value());
   }
 
   // compute J
