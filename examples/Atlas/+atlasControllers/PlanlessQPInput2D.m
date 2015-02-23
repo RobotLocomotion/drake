@@ -22,7 +22,7 @@ classdef PlanlessQPInput2D
       obj.zmp_data = struct('A',  [zeros(2),eye(2); zeros(2,4)],... % COM state map % 16 d
                         'B', [zeros(2); eye(2)],... % COM input map % 4 d
                         'C', [eye(2),zeros(2)],... % ZMP state-output map % 4 d
-                        'D', -0.94/9.81*eye(2),... % ZMP input-output map % 2 d
+                        'D', -0.89/9.81*eye(2),... % ZMP input-output map % 2 d
                         'x0', zeros(4,1),... % nominal state % 4 d
                         'y0', zeros(2,1),... % nominal output % 2 d
                         'u0', zeros(2,1),... % nominal input % 2 d

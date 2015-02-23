@@ -8,15 +8,25 @@ classdef AtlasPlanEval
   end
 
   methods
-    function obj = AtlasPlanEval(r, walking_plan)
+    function obj = AtlasPlanEval(r, options)
       obj.robot = r;
-      obj.plan_data = walking_plan;
-      if isempty(obj.plan_data.qstar)
-        load(obj.robot.fixed_point_file, 'xstar')
-        obj.plan_data.qstar = xstar(1:obj.robot.getNumPositions());
+      load(obj.robot.fixed_point_file, 'xstar');
+      options = applyDefaults(options, struct(...
+        'available_plans', struct(),...
+        'plan_id_queue', {{}},...
+        'default_plan', WalkingPlanData.from_standing_state(xstar, obj.robot)));
+      if ~iscell(options.plan_id_queue)
+        options.plan_id_queue = {options.plan_id_queue};
       end
-      if isa(obj.plan_data.V.S, 'ConstantTrajectory')
-        obj.plan_data.V.S = obj.plan_data.V.S.eval(0);
+      obj.plan_data = PlanEvalData(options);
+
+      for f = fieldnames(obj.plan_data.available_plans)'
+        if isempty(obj.plan_data.available_plans.(f{1}).qstar)
+          obj.plan_data.available_plans.(f{1}).qstar = xstar(1:obj.robot.getNumPositions());
+        end
+        if isa(obj.plan_data.available_plans.(f{1}).V.S, 'ConstantTrajectory')
+          obj.plan_data.available_plans.(f{1}).V.S = obj.plan_data.available_plans.(f{1}).V.S.eval(0);
+        end
       end
       obj.pelvis_body_id = obj.robot.findLinkId('pelvis');
       obj.neck_id = obj.robot.findPositionIndices('neck');
@@ -25,16 +35,39 @@ classdef AtlasPlanEval
     end
 
     function qp_input = tick(obj, t, x)
-      pdata = obj.plan_data;
+      plan_control = obj.plan_data;
+      while true
+        if isempty(plan_control.plan_id_queue)
+          pdata = plan_control.default_plan;
+          break
+        else
+          pdata = plan_control.available_plans.(plan_control.plan_id_queue{1});
+          if t > pdata.support_times(end)
+            plan_control.plan_id_queue(1) = [];
+          else
+            break
+          end
+        end
+      end
+
       r = obj.robot;
 
-      T = pdata.comtraj.tspan(2)-0.001;
+      T = pdata.support_times(end);
+      t = min([t, T]);
 
       qp_input = obj.default_input;
-      qp_input.zmp_data.x0 = [fasteval(pdata.zmptraj, T); 0;0];
-      qp_input.zmp_data.y0 = fasteval(pdata.zmptraj, t);
+      qp_input.zmp_data.x0 = [pdata.zmp_final; 0;0];
+      if isnumeric(pdata.zmptraj)
+        qp_input.zmp_data.y0 = pdata.zmptraj;
+      else
+        qp_input.zmp_data.y0 = fasteval(pdata.zmptraj, t);
+      end
       qp_input.zmp_data.S = pdata.V.S;
-      qp_input.zmp_data.s1 = fasteval(pdata.V.s1,t);
+      if isnumeric(pdata.V.s1)
+        qp_input.zmp_data.s1 = pdata.V.s1;
+      else
+        qp_input.zmp_data.s1 = fasteval(pdata.V.s1,t);
+      end
 
       supp_idx = find(pdata.support_times<=t,1,'last');
       supp = pdata.supports(supp_idx);
@@ -79,7 +112,7 @@ classdef AtlasPlanEval
       qp_input.bodies_data(tracked_bodies+1).ts = [t, t];
       qp_input.bodies_data(tracked_bodies+1).coefs = coefs;
       
-      qp_input.param_set_name = 'walking';
+      qp_input.param_set_name = pdata.gain_set;
 
     end
   end
