@@ -5,10 +5,10 @@ function [d, n, D, dn, dD] = contactConstraintDerivatives(obj, use_mex, normal, 
   if(use_mex)  %MEX implementation
 
     if(tangents_only) 
-      %just compute surface tangents (the mex_model_ptr is not required for this)
-      d = contactConstraintsmex(obj.mex_model_ptr, normal);  
+        d = surfaceTangentsmex(obj.mex_model_ptr, normal);  
       return;
     end
+    
     if(~compute_second_derivative)
       %compute tangents and first derivatives
       [d, n, D] = contactConstraintsmex(obj.mex_model_ptr, normal, int32(idxA), int32(idxB), xA, xB); %tangents + first derivatives
