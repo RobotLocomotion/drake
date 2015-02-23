@@ -2565,7 +2565,7 @@ GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, 1> RigidBodyManipula
   }
 
   typedef typename DerivedPoints::Scalar Scalar;
-  int npoints = points.cols();
+  int npoints = static_cast<int>(points.cols());
 
   auto x = forwardKinNew(points, body_or_frame_ind, base_or_frame_ind, rotation_type, gradient_order);
   auto r = x.value().template topRows<SPACE_DIMENSION>();
