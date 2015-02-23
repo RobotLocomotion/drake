@@ -1,4 +1,4 @@
-function [Jdot_times_v, dJdot_times_v] = forwardJacDotTimesV(obj, kinsol, body_or_frame_ind, points, rotation_type, base_or_frame_ind)
+function [Jdot_times_v, dJdot_times_v] = forwardJacDotTimesV(obj, kinsol, body_or_frame_id, points, rotation_type, base_or_frame_id)
 % Computes Jd * v, where J is a matrix that maps from the joint velocity
 % vector v to the time derivative of x (x and J of format specified in
 % forwardKinV). Gradient output is also available.
@@ -16,7 +16,7 @@ function [Jdot_times_v, dJdot_times_v] = forwardJacDotTimesV(obj, kinsol, body_o
 %
 % @see forwardKin
 
-if (nargin<6), base_or_frame_ind=1; end
+if (nargin<6), base_or_frame_id=1; end
 if (nargin<5), rotation_type=0; end
 compute_gradient = nargout > 1;
 
@@ -25,48 +25,42 @@ if kinsol.mex
     error('Drake:RigidBodyManipulator:InvalidKinematics','This kinsol is no longer valid because the mex model ptr has been deleted.');
   end
   if compute_gradient
-    [Jdot_times_v, dJdot_times_v] = forwardJacDotTimesVmex(obj.mex_model_ptr, body_or_frame_ind, points, rotation_type, base_or_frame_ind);
+    [Jdot_times_v, dJdot_times_v] = forwardJacDotTimesVmex(obj.mex_model_ptr, body_or_frame_id, points, rotation_type, base_or_frame_id);
   else
-    Jdot_times_v = forwardJacDotTimesVmex(obj.mex_model_ptr, body_or_frame_ind, points, rotation_type, base_or_frame_ind);
+    Jdot_times_v = forwardJacDotTimesVmex(obj.mex_model_ptr, body_or_frame_id, points, rotation_type, base_or_frame_id);
   end
 else
-  % BEGIN REPEATED COMPUTATION FROM FORWARDKINV
-  expressed_in = base_or_frame_ind; % TODO
-  
-  % transform points to base frame
-  if compute_gradient
-    [T, dT] = relativeTransform(obj, kinsol, base_or_frame_ind, body_or_frame_ind);
-  else
-    T = relativeTransform(obj, kinsol, base_or_frame_ind, body_or_frame_ind);
-  end
-  
   [point_size, npoints] = size(points);
-  R = T(1:3, 1:3);
-  p = T(1:3, 4);
-  points_base = R * points + repmat(p, 1, npoints);
-  if compute_gradient
-    dR = getSubMatrixGradient(dT, 1:3, 1:3, size(T));
-    dp = getSubMatrixGradient(dT, 1:3, 4, size(T));
-    dpoints_base = matGradMult(dR, points) + repmat(dp, [npoints, 1]);
-  end
+  
+  forwardkin_options.rotation_type = rotation_type;
+  forwardkin_options.in_terms_of_qdot = true;
+  forwardkin_options.base_or_frame_id = base_or_frame_id;
   
   if compute_gradient
+    [x, dx] = forwardKin(obj, kinsol, body_or_frame_id, points, forwardkin_options);
+  else
+    x = forwardKin(obj, kinsol, body_or_frame_id, points, forwardkin_options);
+  end
+  points_base = x(1 : point_size, :);
+  qrot = x(point_size + 1 : end, 1);
+  if compute_gradient
+    x_size = size(x);
+    dpoints_base = getSubMatrixGradient(dx, 1 : 3, 1 : npoints, x_size);
+    dqrot = getSubMatrixGradient(dx, point_size + 1 : point_size + length(qrot), 1, x_size);
     [r_hats, dr_hats] = vectorToSkewSymmetric(points_base, dpoints_base);
-    [qrot, dqrot] = rotmat2Representation(rotation_type, R, dR);
     [Phi, dPhidqrot, dPhi, ddPhidqrotdq] = angularvel2RepresentationDotMatrix(rotation_type, qrot, dqrot);
   else
     r_hats = vectorToSkewSymmetric(points_base);
-    qrot = rotmat2Representation(rotation_type, R);
     [Phi, dPhidqrot] = angularvel2RepresentationDotMatrix(rotation_type, qrot);
   end
-  % END REPEATED COMPUTATION FROM FORWARDKINV
-  
+
+  expressed_in = base_or_frame_id;
   if compute_gradient
-    [twist, dtwist] = relativeTwist(kinsol, base_or_frame_ind, body_or_frame_ind, expressed_in);
-    [J_geometric_dot_v, dJ_geometric_dot_v] = geometricJacobianDotTimesV(obj, kinsol, base_or_frame_ind, body_or_frame_ind, expressed_in);
+    [twist, dtwist] = relativeTwist(kinsol, base_or_frame_id, body_or_frame_id, expressed_in);
+    [J_geometric_dot_v, dJ_geometric_dot_v] = geometricJacobianDotTimesV(obj, kinsol, base_or_frame_id, body_or_frame_id, expressed_in);
   else
-    twist = relativeTwist(kinsol, base_or_frame_ind, body_or_frame_ind, expressed_in);
-    J_geometric_dot_v = geometricJacobianDotTimesV(obj, kinsol, base_or_frame_ind, body_or_frame_ind, expressed_in);
+    twist = relativeTwist(kinsol, base_or_frame_id, body_or_frame_id, expressed_in);
+    J_geometric_dot_v = geometricJacobianDotTimesV(obj, kinsol, base_or_frame_id, body_or_frame_id, expressed_in);
   end
   
   omega = twist(1 : 3);
