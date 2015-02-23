@@ -186,6 +186,7 @@ MAKE_MATGRADMULT_BLOCK_B_EXPLICIT_INSTANTIATION(double, 9, Eigen::Dynamic, 6, 6,
 MAKE_MATGRADMULT_BLOCK_B_EXPLICIT_INSTANTIATION(double, 6, Eigen::Dynamic, Eigen::Dynamic, 1, Eigen::Dynamic, 1, false)
 MAKE_MATGRADMULT_BLOCK_B_EXPLICIT_INSTANTIATION(double, Eigen::Dynamic, Eigen::Dynamic, 6, Eigen::Dynamic, 6, 1, true)
 MAKE_MATGRADMULT_BLOCK_B_EXPLICIT_INSTANTIATION(double, Eigen::Dynamic, Eigen::Dynamic, Eigen::Dynamic, 1, Eigen::Dynamic, 1, false)
+MAKE_MATGRADMULT_BLOCK_B_EXPLICIT_INSTANTIATION(double, Eigen::Dynamic, Eigen::Dynamic, 6, 1, 3, 1, false)
 #undef MAKE_MATGRADMULT_EXPLICIT_INSTANTIATION
 
 #define MAKE_MATGRADMULT_TRANSPOSE_BLOCK_B_EXPLICIT_INSTANTIATION(Type, DARows, DACols, BRows, BCols, BBlockRows, BBlockCols, InnerPanel) \

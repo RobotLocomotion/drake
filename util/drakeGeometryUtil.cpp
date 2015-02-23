@@ -1258,6 +1258,8 @@ template DLLEXPORT void rpydot2angularvelMatrix(const Eigen::MatrixBase<Map<Vect
 
 template DLLEXPORT GradientVar<double, Eigen::Dynamic, SPACE_DIMENSION> angularvel2RepresentationDotMatrix(
     int rotation_type, const Eigen::MatrixBase<VectorXd>& qrot, int gradient_order);
+template DLLEXPORT GradientVar<double, Eigen::Dynamic, SPACE_DIMENSION> angularvel2RepresentationDotMatrix(
+    int rotation_type, const Eigen::MatrixBase< Eigen::Block<Eigen::Matrix<double, -1, -1, 0, -1, -1>, -1, 1, false> >& qrot, int gradient_order);
 
 template DLLEXPORT void quatdot2angularvelMatrix(const Eigen::MatrixBase<Vector4d>& q,
     Eigen::MatrixBase< Matrix<double, SPACE_DIMENSION, QUAT_SIZE> >& M,
