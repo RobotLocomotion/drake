@@ -53,8 +53,8 @@ matGradMultMat(
 template<typename DerivedDA, typename DerivedB>
 typename MatGradMult<DerivedDA, DerivedB>::type
 matGradMult(const Eigen::MatrixBase<DerivedDA>& dA, const Eigen::MatrixBase<DerivedB>& B) {
-  assert(dA.rows() % B.rows() == 0);
-  typename DerivedDA::Index A_rows = dA.rows() / B.rows();
+  assert(B.rows() == 0 ? dA.rows() == 0 : dA.rows() % B.rows() == 0);
+  typename DerivedDA::Index A_rows = B.rows() == 0 ? 0 : dA.rows() / B.rows();
   const int A_rows_at_compile_time = (DerivedDA::RowsAtCompileTime == Eigen::Dynamic || DerivedB::RowsAtCompileTime == Eigen::Dynamic) ?
       Eigen::Dynamic :
       static_cast<int>(DerivedDA::RowsAtCompileTime / DerivedB::RowsAtCompileTime);
@@ -165,6 +165,7 @@ MAKE_MATGRADMULT_EXPLICIT_INSTANTIATION(double, Eigen::Dynamic, Eigen::Dynamic, 
 MAKE_MATGRADMULT_EXPLICIT_INSTANTIATION(double, 16, Eigen::Dynamic, 4, 4)
 MAKE_MATGRADMULT_EXPLICIT_INSTANTIATION(double, 9, Eigen::Dynamic, 3, Eigen::Dynamic)
 MAKE_MATGRADMULT_EXPLICIT_INSTANTIATION(double, 36, Eigen::Dynamic, 6, 1)
+MAKE_MATGRADMULT_EXPLICIT_INSTANTIATION(double, Eigen::Dynamic, Eigen::Dynamic, Eigen::Dynamic, 1)
 #undef MAKE_MATGRADMULT_EXPLICIT_INSTANTIATION
 
 #define MAKE_MATGRADMULT_MAP_B_EXPLICIT_INSTANTIATION(Type, DARows, DACols, BRows) \
