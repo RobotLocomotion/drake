@@ -177,48 +177,8 @@ void computeContactJacobians(RigidBodyManipulator * const model, Map<VectorXi> c
 	} 
 }
 
-//computes surface tangent vectors for a single normal
-inline void surfaceTangents(Vector3d const & normal, Matrix3kd & d)
-{
-	Vector3d t1,t2;
-	double theta;
-
-	if (1 - normal(2) < EPSILON) { // handle the unit-normal case (since it's unit length, just check z)
-		t1 << 1,0,0;
-	} else if(1 + normal(2) < EPSILON) {
-		t1 << -1,0,0;  //same for the reflected case
-	} else {// now the general case
-		t1 << normal(1), -normal(0) , 0;
-		t1 /= sqrt(normal(1)*normal(1) + normal(0)*normal(0));
-	}
-
-	t2 = t1.cross(normal);
-
-	for (int k=0; k<BASIS_VECTOR_HALF_COUNT; k++) {
-		theta = k*M_PI/BASIS_VECTOR_HALF_COUNT;
-		d.col(k)=cos(theta)*t1 + sin(theta)*t2;
-	}
-}
-
-
-//computes surface tangent vectors for many normals at once
-inline void surfaceTangents(Map<Matrix3xd> const & normals, vector< Map<Matrix3xd> > & tangents)
-{
-	const int numContactPairs = normals.cols();
-
-	for(int curNormal = 0 ; curNormal < numContactPairs; curNormal++)
-	{
-		Matrix3kd d;
-		surfaceTangents(normals.col(curNormal), d);
-		for(int k = 0 ; k < BASIS_VECTOR_HALF_COUNT ; k++)
-		{
-			tangents[k].col(curNormal) = d.col(k);
-		}
-	}
-}
-
 //forms a mex cell array and computes the surface tangents in-place using maps
-inline mxArray* getTangentsArray(Map<Matrix3xd> normals)
+inline mxArray* getTangentsArray(RigidBodyManipulator * const model, Map<Matrix3xd> const & normals)
 {
 	const int numContactPairs = normals.cols();
 	const mwSize cellDims[] = {1, BASIS_VECTOR_HALF_COUNT};
@@ -232,7 +192,7 @@ inline mxArray* getTangentsArray(Map<Matrix3xd> normals)
 		mxSetCell(tangentCells, k, cell);
 	}
 
-	surfaceTangents(normals, tangents);
+	model->surfaceTangents(normals, tangents);
 
 	return tangentCells;
 }
@@ -267,23 +227,25 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 	
   	const bool compute_second_derivatives = nlhs > 3;
 
-	if(nlhs > 0) {
-		plhs[0] = getTangentsArray(normals);
-	}
-
-	if(nrhs < 2) 
-	{
-		return; // just return tangents
-	}
-
-	const Map<VectorXi> idxA((int*)mxGetData(prhs[2]), numContactPairs); //collision pairs index of body A
-	const Map<VectorXi> idxB((int*)mxGetData(prhs[3]), numContactPairs); //collision pairs index of body B
-	const Map<Matrix3xd> xA(mxGetPr(prhs[4]), 3, numContactPairs); //contact point in body A space
-	const Map<Matrix3xd> xB(mxGetPr(prhs[5]), 3, numContactPairs); //contact point in body B space
 
 	RigidBodyManipulator *model= (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
 
 	if(model != NULL) {
+
+		if(nlhs > 0) {
+			plhs[0] = getTangentsArray(model, normals);
+		}
+
+		if(nrhs < 2) 
+		{
+			return; // just return tangents
+		}
+
+		const Map<VectorXi> idxA((int*)mxGetData(prhs[2]), numContactPairs); //collision pairs index of body A
+		const Map<VectorXi> idxB((int*)mxGetData(prhs[3]), numContactPairs); //collision pairs index of body B
+		const Map<Matrix3xd> xA(mxGetPr(prhs[4]), 3, numContactPairs); //contact point in body A space
+		const Map<Matrix3xd> xB(mxGetPr(prhs[5]), 3, numContactPairs); //contact point in body B space
+		
 		const int nq = model->num_dof;
 		if(nlhs > 1) {
 
@@ -307,7 +269,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 				if(nlhs > 4) {
 					plhs[4] = mxCreateCellArray(2, cellDims);
 				}
-				
+
 				for(int k = 0 ; k < BASIS_VECTOR_HALF_COUNT ; k++) { //for each friction cone basis vector
 					Map<Matrix3xd> dk(mxGetPr(mxGetCell(plhs[0], k)), 3, numContactPairs);
 					SparseMatrix<double> sparseTangents;
