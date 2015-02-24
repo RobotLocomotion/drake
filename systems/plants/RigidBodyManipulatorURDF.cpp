@@ -461,6 +461,7 @@ bool RigidBodyManipulator::addRobotFromURDFString(const string &xml_string, cons
   xml_doc.Parse(xml_string.c_str());  // a little inefficient to parse a second time, but ok for now
   // eventually, we'll probably just crop out the ros urdf parser completely.
 
+
   TiXmlElement *node = xml_doc.FirstChildElement("robot");
   if (!node) {
     cerr << "ERROR: This urdf does not contain a robot tag" << endl;
