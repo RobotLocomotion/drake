@@ -72,8 +72,9 @@ foot_contact = FootContactMixin(r, struct());
 
 param_sets = atlasParams.getDefaults(r);
 control = AtlasPlanlessQPController(r, qpd, foot_contact,...
-                                    fcompare(@statelessBodyMotionControl,@statelessBodyMotionControlmex),...
+                                    @statelessBodyMotionControlmex,...
                                     param_sets, struct('use_mex', 1));
+                                    % fcompare(@statelessBodyMotionControl,@statelessBodyMotionControlmex),...
 planeval = AtlasPlanEval(r, struct('available_plans', struct('walking', walking_plan_data),...
                                    'plan_id_queue', {{'walking'}}));
 plancontroller = AtlasSplitQPController(r, control, planeval);
@@ -86,9 +87,9 @@ sys = mimoCascade(sys,v,[],[],output_select);
 
 T = walking_plan_data.comtraj.tspan(2)-0.001;
 
-% profile on
-ytraj = simulate(sys, [0, T + 2], x0, struct('gui_control_interface', true));
-% profile viewer
+profile on
+ytraj = simulate(sys, [0, 0.5], x0, struct('gui_control_interface', true));
+profile viewer
 
 v.playback(ytraj, struct('slider', true));
 

@@ -111,21 +111,17 @@ void surfaceTangents(const Vector3d & normal, Matrix<double,3,m_surface_tangents
 
 int contactPhi(RigidBodyManipulator* r, SupportStateElement& supp, void *map_ptr, VectorXd &phi, double terrain_height)
 {
-  std::unique_ptr<RigidBody>& b = r->bodies[supp.body_idx];
-  int nc = static_cast<int>(supp.contact_pt_inds.size());
+  int nc = static_cast<int>(supp.contact_pts.size());
   phi.resize(nc);
 
   if (nc<1) return nc;
 
-  Vector3d contact_pos,pos,posB,normal; Vector4d tmp;
+  Vector3d contact_pos,pos,posB,normal;
 
   int i=0;
-  for (std::set<int>::iterator pt_iter=supp.contact_pt_inds.begin(); pt_iter!=supp.contact_pt_inds.end(); pt_iter++) {
-    if (*pt_iter<0 || *pt_iter>=b->contact_pts.cols()) 
-      mexErrMsgIdAndTxt("DRC:ControlUtil:BadInput","requesting contact pt %d but body only has %d pts",*pt_iter,b->contact_pts.cols());
+  for (std::vector<Vector4d>::iterator pt_iter=supp.contact_pts.begin(); pt_iter!=supp.contact_pts.end(); pt_iter++) {
     
-    tmp = b->contact_pts.col(*pt_iter);
-    r->forwardKin(supp.body_idx,tmp,0,contact_pos);
+    r->forwardKin(supp.body_idx,*pt_iter,0,contact_pos);
     collisionDetect(map_ptr,contact_pos,pos,NULL,terrain_height);
     pos -= contact_pos;  // now -rel_pos in matlab version
     
@@ -146,18 +142,15 @@ int contactConstraints(RigidBodyManipulator *r, int nc, std::vector<SupportState
   Jp.resize(3*nc,nq);
   Jpdot.resize(3*nc,nq);
   
-  Vector3d contact_pos,pos,posB,normal; Vector4d tmp;
+  Vector3d contact_pos,pos,posB,normal;
   MatrixXd J(3,nq);
   Matrix<double,3,m_surface_tangents> d;
   
   for (std::vector<SupportStateElement>::iterator iter = supp.begin(); iter!=supp.end(); iter++) {
-    std::unique_ptr<RigidBody>& b = r->bodies[iter->body_idx];
     if (nc>0) {
-      for (std::set<int>::iterator pt_iter=iter->contact_pt_inds.begin(); pt_iter!=iter->contact_pt_inds.end(); pt_iter++) {
-        if (*pt_iter<0 || *pt_iter>=b->contact_pts.cols()) mexErrMsgIdAndTxt("DRC:ControlUtil:BadInput","requesting contact pt %d but body only has %d pts",*pt_iter,b->contact_pts.cols());
-        tmp = b->contact_pts.col(*pt_iter);
-        r->forwardKin(iter->body_idx,tmp,0,contact_pos);
-        r->forwardJac(iter->body_idx,tmp,0,J);
+      for (std::vector<Vector4d>::iterator pt_iter=iter->contact_pts.begin(); pt_iter!=iter->contact_pts.end(); pt_iter++) {
+        r->forwardKin(iter->body_idx,*pt_iter,0,contact_pos);
+        r->forwardJac(iter->body_idx,*pt_iter,0,J);
 
         collisionDetect(map_ptr,contact_pos,pos,&normal,terrain_height);
         surfaceTangents(normal,d);
@@ -171,7 +164,7 @@ int contactConstraints(RigidBodyManipulator *r, int nc, std::vector<SupportState
         // store away kin sols into Jp and Jpdot
         // NOTE: I'm cheating and using a slightly different ordering of J and Jdot here
         Jp.block(3*k,0,3,nq) = J;
-        r->forwardJacDot(iter->body_idx,tmp,0,J);
+        r->forwardJacDot(iter->body_idx,*pt_iter,0,J);
         Jpdot.block(3*k,0,3,nq) = J;
         
         k++;
@@ -193,19 +186,16 @@ int contactConstraintsBV(RigidBodyManipulator *r, int nc, double mu, std::vector
   Jpdot.resize(3*nc,nq);
   normals.resize(3, nc);
   
-  Vector3d contact_pos,pos,posB,normal; Vector4d tmp;
+  Vector3d contact_pos,pos,posB,normal; 
   MatrixXd J(3,nq);
   Matrix<double,3,m_surface_tangents> d;
   double norm = sqrt(1+mu*mu); // because normals and ds are orthogonal, the norm has a simple form
   
   for (std::vector<SupportStateElement>::iterator iter = supp.begin(); iter!=supp.end(); iter++) {
-    std::unique_ptr<RigidBody>& b = r->bodies[iter->body_idx];
     if (nc>0) {
-      for (std::set<int>::iterator pt_iter=iter->contact_pt_inds.begin(); pt_iter!=iter->contact_pt_inds.end(); pt_iter++) {
-        if (*pt_iter<0 || *pt_iter>=b->contact_pts.cols()) mexErrMsgIdAndTxt("DRC:ControlUtil:BadInput","requesting contact pt %d but body only has %d pts",*pt_iter,b->contact_pts.cols());
-        tmp = b->contact_pts.col(*pt_iter);
-        r->forwardKin(iter->body_idx,tmp,0,contact_pos);
-        r->forwardJac(iter->body_idx,tmp,0,J);
+      for (std::vector<Vector4d>::iterator pt_iter=iter->contact_pts.begin(); pt_iter!=iter->contact_pts.end(); pt_iter++) {
+        r->forwardKin(iter->body_idx,*pt_iter,0,contact_pos);
+        r->forwardJac(iter->body_idx,*pt_iter,0,J);
 
         collisionDetect(map_ptr,contact_pos,pos,&normal,terrain_height);
         surfaceTangents(normal,d);
@@ -220,7 +210,7 @@ int contactConstraintsBV(RigidBodyManipulator *r, int nc, double mu, std::vector
         // store away kin sols into Jp and Jpdot
         // NOTE: I'm cheating and using a slightly different ordering of J and Jdot here
         Jp.block(3*k,0,3,nq) = J;
-        r->forwardJacDot(iter->body_idx,tmp,0,J);
+        r->forwardJacDot(iter->body_idx,*pt_iter,0,J);
         Jpdot.block(3*k,0,3,nq) = J;
         normals.col(k) = normal;
         
@@ -246,9 +236,9 @@ MatrixXd individualSupportCOPs(RigidBodyManipulator* r, const std::vector<Suppor
 
   for (int j = 0; j < active_supports.size(); j++) {
     auto active_support = active_supports[j];
-    auto contact_pt_inds = active_support.contact_pt_inds;
+    auto contact_pts = active_support.contact_pts;
 
-    int ncj = static_cast<int>(contact_pt_inds.size());
+    int ncj = static_cast<int>(contact_pts.size());
     int active_support_length = n_basis_vectors_per_contact * ncj;
     auto normalsj = normals.middleCols(normals_start, ncj);
     Vector3d normal = normalsj.col(0);
@@ -262,13 +252,14 @@ MatrixXd individualSupportCOPs(RigidBodyManipulator* r, const std::vector<Suppor
       Vector3d force = Vector3d::Zero();
       Vector3d torque = Vector3d::Zero();
 
-      for (auto k = contact_pt_inds.begin(); k!= contact_pt_inds.end(); k++) { 
-        const auto& Bblock = Bj.middleCols(*k * n_basis_vectors_per_contact, n_basis_vectors_per_contact);
-        const auto& betablock = betaj.segment(*k * n_basis_vectors_per_contact, n_basis_vectors_per_contact);
-        Vector3d contact_position = contact_positions.col(*k);
+      for (int k = 0; k < contact_pts.size(); k++) {
+      // for (auto k = contact_pts.begin(); k!= contact_pts.end(); k++) { 
+        const auto& Bblock = Bj.middleCols(k * n_basis_vectors_per_contact, n_basis_vectors_per_contact);
+        const auto& betablock = betaj.segment(k * n_basis_vectors_per_contact, n_basis_vectors_per_contact);
         Vector3d point_force = Bblock * betablock;
         force += point_force;
-        auto torquejk = contact_position.cross(point_force);
+        Vector3d contact_pt = contact_pts[k].head(3);
+        auto torquejk = contact_pt.cross(point_force);
         torque += torquejk;
       }
 
