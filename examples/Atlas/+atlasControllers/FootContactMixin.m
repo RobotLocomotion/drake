@@ -25,33 +25,28 @@ classdef FootContactMixin
     end
 
     function supp = getActiveSupports(obj, x, supp, contact_sensor, breaking_contact)
-      obj.robot.warning_manager.warnOnce('Drake:NotConsideringContactBreak', 'not considering breaking contact');
-      contact_logic_AND = breaking_contact
+      contact_logic_AND = breaking_contact;
       
       if ~obj.using_flat_terrain
-        height = getTerrainHeight(obj.robot,[0;0]); % get height from DRCFlatTerrainMap
+        height = getTerrainHeight(obj.robot,[0;0]);
       else
         height = 0;
       end
 
-      active_supports = supportDetectmex(obj.mex_ptr.data,x,supp,contact_sensor,obj.contact_threshold,height,contact_logic_AND);
+      % Messy reorganization for compatibility with supportDetectMex
+      supp_state = struct('bodies', {supp.bodies}, 'contact_pts', {supp.contact_pts}, 'contact_surfaces', {supp.contact_surfaces});
+
+      active_supports = supportDetectmex(obj.mex_ptr.data,x,supp_state,contact_sensor,obj.contact_threshold,height,contact_logic_AND);
       fc = [1.0*any(active_supports==obj.robot.foot_body_id.left); 1.0*any(active_supports==obj.robot.foot_body_id.right)];
 
-      mask = true(1, length(supp.bodies));
+      mask = true(1:length(supp));
       if ~fc(1)
-        mask = mask & (~(supp.bodies == obj.robot.foot_body_id.left));
+        mask = mask & (~([supp.body_id] == obj.robot.foot_body_id.left));
       end
       if ~fc(2)
-        mask = mask & (~(supp.bodies == obj.robot.foot_body_id.right));
+        mask = mask & (~([supp.body_id] == obj.robot.foot_body_id.right));
       end
-      if ~all(mask)
-        supp.bodies = supp.bodies(mask);
-        supp.contact_pts = supp.contact_pts(mask);
-        supp.contact_groups = supp.contact_groups(mask);
-        supp.num_contact_pts = supp.num_contact_pts(mask);
-        supp.contact_surfaces = supp.contact_surfaces(mask);
-      end
-      % supp.bodies
+      supp = supp(mask);
     end
   end
 end
