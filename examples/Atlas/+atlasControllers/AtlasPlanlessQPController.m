@@ -8,10 +8,10 @@ classdef AtlasPlanlessQPController
     robot;
     numq;
     numv;
-    all_contacts = struct('groups', {{}}, ... % convenience for indexing into contact groups
-                          'point_ind', {{}}, ...
-                          'num_points', {{}}, ...
-                          'bodies', {{}});
+    % all_contacts = struct('groups', {{}}, ... % convenience for indexing into contact groups
+    %                       'point_ind', {{}}, ...
+    %                       'num_points', {{}}, ...
+    %                       'bodies', {{}});
     controller_data
     knee_ind;
     use_mex;
@@ -60,22 +60,22 @@ classdef AtlasPlanlessQPController
       obj.controller_data = PlanlessQPControllerData(struct('infocount', 0,...
                                                      'qp_active_set', []));
 
-      import atlasControllers.PlanlessQPInput2D;
-      obj.all_contacts.groups = cell(PlanlessQPInput2D.num_support_bodies, PlanlessQPInput2D.contact_groups_per_body);
-      obj.all_contacts.num_points = zeros(PlanlessQPInput2D.num_support_bodies, PlanlessQPInput2D.contact_groups_per_body);
-      obj.all_contacts.point_ind = cell(PlanlessQPInput2D.num_support_bodies, PlanlessQPInput2D.contact_groups_per_body);
-      obj.all_contacts.bodies = PlanlessQPInput2D.support_body_ids;
-      for j = 1:size(obj.all_contacts.groups, 1)
-        body_id = PlanlessQPInput2D.support_body_ids(j);
-        contact_groups = r.getBody(body_id).collision_geometry_group_names;
-        for k = 1:size(obj.all_contacts.groups, 2)
-          if k <= length(contact_groups)
-            obj.all_contacts.groups{j,k} = contact_groups{k};
-            obj.all_contacts.point_ind{j,k} = r.getBody(body_id).collision_geometry_group_indices{k};
-            obj.all_contacts.num_points(j,k) = length(obj.all_contacts.point_ind{j,k});
-          end
-        end
-      end
+      % import atlasControllers.PlanlessQPInput2D;
+      % obj.all_contacts.groups = cell(PlanlessQPInput2D.num_support_bodies, PlanlessQPInput2D.contact_groups_per_body);
+      % obj.all_contacts.num_points = zeros(PlanlessQPInput2D.num_support_bodies, PlanlessQPInput2D.contact_groups_per_body);
+      % obj.all_contacts.point_ind = cell(PlanlessQPInput2D.num_support_bodies, PlanlessQPInput2D.contact_groups_per_body);
+      % obj.all_contacts.bodies = PlanlessQPInput2D.support_body_ids;
+      % for j = 1:size(obj.all_contacts.groups, 1)
+      %   body_id = PlanlessQPInput2D.support_body_ids(j);
+      %   contact_groups = r.getBody(body_id).collision_geometry_group_names;
+      %   for k = 1:size(obj.all_contacts.groups, 2)
+      %     if k <= length(contact_groups)
+      %       obj.all_contacts.groups{j,k} = contact_groups{k};
+      %       obj.all_contacts.point_ind{j,k} = r.getBody(body_id).collision_geometry_group_indices{k};
+      %       obj.all_contacts.num_points(j,k) = length(obj.all_contacts.point_ind{j,k});
+      %     end
+      %   end
+      % end
 
       obj.gurobi_options.outputflag = 0; % not verbose
       if obj.solver==0
@@ -104,24 +104,12 @@ classdef AtlasPlanlessQPController
 
     end
 
-    function supp = getPlannedSupports(obj, group_mask)
-      support_body_mask = any(group_mask, 2);
-      active_rows = find(support_body_mask);
-      bodies = obj.all_contacts.bodies(support_body_mask);
-
-      contact_pts = cell(1, length(bodies));
-      contact_groups = cell(1, length(bodies));
-      num_contact_pts = zeros(1, length(bodies));
-      for j = 1:length(contact_pts)
-        contact_pts{j} = [obj.all_contacts.point_ind{active_rows(j),group_mask(active_rows(j),:)}];
-        contact_groups{j} = obj.all_contacts.groups(active_rows(j),group_mask(active_rows(j),:));
-        num_contact_pts(j) = sum(obj.all_contacts.num_points(active_rows(j),:));
+    function supp = getPlannedSupports(obj, active_supports)
+      supp = active_supports;
+      for j = 1:length(supp)
+        supp(j).num_contact_pts = size(supp(j).contact_pts, 2);
+        supp(j).contact_surfaces = 0;
       end
-      supp = struct('bodies', {bodies},...
-                    'contact_pts', {contact_pts},...
-                    'contact_groups', {contact_groups},...
-                    'num_contact_pts', {num_contact_pts},...
-                    'contact_surfaces', {0*bodies});
     end
 
     function [w_qdd, qddot_des] = kneePD(obj, q, qd, w_qdd, qddot_des, toe_off, min_knee_angle)
@@ -184,7 +172,7 @@ classdef AtlasPlanlessQPController
                           qp_input.whole_body_data.q_des,...
                           params.whole_body);
 
-      supp = obj.getPlannedSupports(qp_input.support_data.group_mask);
+      supp = obj.getPlannedSupports(qp_input.support_data.active_supports);
       supp = obj.foot_contact.getActiveSupports(x, supp, contact_sensor,...
         qp_input.support_data.breaking_contact);
 

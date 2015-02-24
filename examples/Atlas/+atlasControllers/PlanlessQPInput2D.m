@@ -33,7 +33,7 @@ classdef PlanlessQPInput2D
                         's1dot', zeros(4,1),... % 4 d
                         's2', 0,... % 1 d
                         's2dot', 0); % 1 d
-      obj.support_data = struct('group_mask', false(PlanlessQPInput2D.num_support_bodies, PlanlessQPInput2D.contact_groups_per_body), ... % 28 * 4 b
+      obj.support_data = struct('active_supports', struct('body_id', {}, 'contact_pts', {}) , ... % 28 * 4 b
                             'breaking_contact', false,...
                             'toe_off', struct('right', false, 'left', false),...
                             'mu', 1); % 1 d

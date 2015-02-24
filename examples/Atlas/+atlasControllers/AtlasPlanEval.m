@@ -89,7 +89,8 @@ classdef AtlasPlanEval
 
       if any(supp.bodies==r.foot_body_id.right)
         r.warning_manager.warnOnce('Drake:HardCodedSupport', 'hard-coded for heel+toe support');
-        qp_input.support_data.group_mask(qp_input.support_body_ids == r.foot_body_id.right,1:2) = true;
+        qp_input.support_data.active_groups(end+1).body_id = r.foot_body_id.right;
+        qp_input.support_data.active_groups(end).contact_pts = r.getBody(r.foot_body_id.right).getTerrainContactPoint({'heel', 'toe'});
       else
         if supp_idx > 1 && any(pdata.supports(supp_idx-1).bodies==r.foot_body_id.right)
           if t - pdata.support_times(supp_idx) <= obj.breaking_contact_max_time
@@ -99,7 +100,8 @@ classdef AtlasPlanEval
       end
       if any(supp.bodies==r.foot_body_id.left)
         r.warning_manager.warnOnce('Drake:HardCodedSupport', 'hard-coded for heel+toe support');
-        qp_input.support_data.group_mask(qp_input.support_body_ids == r.foot_body_id.left,1:2) = true;
+        qp_input.support_data.active_groups(end+1).body_id = r.foot_body_id.left;
+        qp_input.support_data.active_groups(end).contact_pts = r.getBody(r.foot_body_id.left).getTerrainContactPoint({'heel', 'toe'});
       else
         if supp_idx > 1 && any(pdata.supports(supp_idx-1).bodies==r.foot_body_id.left)
           if t - pdata.support_times(supp_idx) <= obj.breaking_contact_max_time
