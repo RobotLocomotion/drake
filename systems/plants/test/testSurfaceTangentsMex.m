@@ -4,7 +4,7 @@ checkDependency('bullet');
 
 %build an atlas model 
 robot = createAtlas('rpy');
-if(robot.mex_model_ptr == 0)
+if robot.mex_model_ptr == 0
   disp('testContactConstraintsMex: no mex model pointer... nothing to test');
   return;
 end
