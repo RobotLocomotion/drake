@@ -778,8 +778,6 @@ bool URDFRigidBodyManipulator::addRobotFromURDFString(const string &xml_string, 
 
   }
 
-  cout << "addRobotFromURDFString: got here" << endl;
-
   compile();
 
   return true;
