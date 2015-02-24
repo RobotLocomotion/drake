@@ -19,10 +19,10 @@ idxA = idxA';
 idxB = idxB';
 
 %get the results from the mexed version
-[d_mex, n_mex, D_mex, dn_mex, dD_mex] = robot.contactConstraintDerivatives(true, normal, kinsol, idxA, idxB, xA, xB);
+[d_mex, n_mex, D_mex, dn_mex, dD_mex] =  contactConstraintsmex(robot.mex_model_ptr, normal, int32(idxA), int32(idxB), xA, xB);
 
 %get the results from the matlab version
-[d, n, D, dn, dD] = robot.contactConstraintDerivatives(false, normal, kinsol, idxA, idxB, xA, xB);
+[d, n, D, dn, dD] = robot.contactConstraintDerivatives(normal, kinsol, idxA, idxB, xA, xB);
 
 %compare d
 for i = 1:size(d,2)
