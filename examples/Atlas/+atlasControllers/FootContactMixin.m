@@ -24,9 +24,9 @@ classdef FootContactMixin
       obj.mex_ptr = SharedDataHandle(supportDetectmex(0,r.getMexModelPtr.ptr,terrain_map_ptr));
     end
 
-    function supp = getActiveSupports(obj, x, supp, contact_sensor)
+    function supp = getActiveSupports(obj, x, supp, contact_sensor, breaking_contact)
       obj.robot.warning_manager.warnOnce('Drake:NotConsideringContactBreak', 'not considering breaking contact');
-      contact_logic_AND = false;
+      contact_logic_AND = breaking_contact
       
       if ~obj.using_flat_terrain
         height = getTerrainHeight(obj.robot,[0;0]); % get height from DRCFlatTerrainMap
