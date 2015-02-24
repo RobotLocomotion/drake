@@ -778,69 +778,9 @@ bool URDFRigidBodyManipulator::addRobotFromURDFString(const string &xml_string, 
 
   }
 
+  cout << "addRobotFromURDFString: got here" << endl;
+
   compile();
-
-  // parse extra tags supported by drake
-
-  TiXmlDocument xml_doc;
-  xml_doc.Parse(xml_string.c_str());  // a little inefficient to parse a second time, but ok for now
-  // eventually, we'll probably just crop out the ros urdf parser completely.
-
-  TiXmlElement *robot_xml = xml_doc.FirstChildElement("robot");
-
-  // parse transmission elements
-  for (TiXmlElement* transmission_xml = robot_xml->FirstChildElement("transmission"); transmission_xml; transmission_xml = transmission_xml->NextSiblingElement("transmission"))
-  {
-    TiXmlElement* node = transmission_xml->FirstChildElement("joint");
-    if (!node) continue;
-
-    int _dofnum;
-    map<string, int>::const_iterator dn=findWithSuffix(dofname_to_dofnum,node->Attribute("name"));
-    if (dn == dofname_to_dofnum.end()) ROS_ERROR("can't find joint %s for transmission element.  this shouldn't happen");
-    _dofnum = dn->second;
-//    cout << "adding actuator to joint " << node->Attribute("name") << " (dof: " << _dofnum << ")" << endl;
-
-    node = transmission_xml->FirstChildElement("mechanicalReduction");
-    double gain = 1.0;
-    if (node) sscanf(node->Value(),"%lf",&gain);
-
-    VectorXd B_col = VectorXd::Zero(num_velocities);
-    B_col(_dofnum) = gain;
-
-    B.conservativeResize(num_velocities, B.cols()+1);
-    B.rightCols(1) = B_col;
-  }
-
-  for (TiXmlElement* loop_xml = robot_xml->FirstChildElement("loop_joint"); loop_xml; loop_xml = loop_xml->NextSiblingElement("loop_joint"))
-  { // note: pushing this in without all of the surrounding drakeFunction logic just to get things moving.  this one needs to be fast.
-    urdf::Vector3 pt;
-    TiXmlElement* node = loop_xml->FirstChildElement("link1");
-    int bodyA=-1,bodyB=-1;
-
-    string linkname = node->Attribute("link");
-    for (int i=0; i<num_bodies; i++)
-      if (linkname==bodies[i]->linkname) {
-        bodyA=i;
-        break;
-      }
-    if (bodyA<0) ROS_ERROR("couldn't find link %s referenced in loop joint",linkname.c_str());
-    pt.init(node->Attribute("xyz"));
-    Vector3d ptA;  ptA << pt.x, pt.y, pt.z;
-
-    node = loop_xml->FirstChildElement("link2");
-    linkname = node->Attribute("link");
-    for (int i=0; i<num_bodies; i++)
-      if (linkname==bodies[i]->linkname) {
-        bodyB=i;
-        break;
-      }
-    if (bodyB<0) ROS_ERROR("couldn't find link %s referenced in loop joint",linkname.c_str());
-    pt.init(node->Attribute("xyz"));
-    Vector3d ptB;  ptB << pt.x, pt.y, pt.z;
-
-    RigidBodyLoop l(bodies[bodyA],ptA,bodies[bodyB],ptB);
-    loops.push_back(l);
-  }
 
   return true;
 }
