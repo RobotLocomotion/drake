@@ -17,10 +17,11 @@ kinsol = robot.doKinematics(q);
 [~,normal,~,~,~,~] = robot.collisionDetect(kinsol);
 
 %get the results from the mexed version
-d_mex  = robot.contactConstraintDerivatives(true, normal);
+
+d_mex  = surfaceTangentsmex(robot.mex_model_ptr, normal);
 
 %get the results from the matlab version
-d = robot.contactConstraintDerivatives(false, normal);
+d = robot.surfaceTangents(normal);
 
 %compare d
 for i = 1:size(d,2)
