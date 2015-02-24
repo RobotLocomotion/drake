@@ -175,6 +175,8 @@ classdef AtlasPlanlessQPController
       supp = obj.getPlannedSupports(qp_input.support_data.active_supports);
       supp = obj.foot_contact.getActiveSupports(x, supp, contact_sensor,...
         qp_input.support_data.breaking_contact);
+      % Messy reorganization for compatibility with supportDetectMex
+      supp = struct('bodies', {[supp.body_id]}, 'contact_pts', {{supp.contact_pts}}, 'contact_surfaces', {{supp.contact_surfaces}});
 
       [w_qdd, qddot_des] = obj.kneePD(q, qd, w_qdd, qddot_des, qp_input.support_data.toe_off, params.min_knee_angle);
 
@@ -204,9 +206,6 @@ classdef AtlasPlanlessQPController
       if (obj.use_mex==0 || obj.use_mex==2)
         kinsol = doKinematics(r,q,false,true,qd);
 
-        if length(supp) < 1
-          keyboard();
-        end
         active_supports = supp.bodies;
         active_contact_groups = supp.contact_groups;
         num_active_contacts = supp.num_contact_pts;

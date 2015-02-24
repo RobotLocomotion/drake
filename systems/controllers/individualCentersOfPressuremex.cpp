@@ -15,6 +15,10 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
   RigidBodyManipulator* r = (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
 
+  MatrixXd all_body_contact_pts;
+  Vector4d contact_pt = Vector4d::Zero();
+  contact_pt(3) = 1.0;
+
   int desired_support_argid = 1;
   vector<SupportStateElement> active_supports;
   int num_active_contact_pts = 0;
@@ -34,16 +38,20 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     double* pContactSurfaces = mxGetPr(mxContactSurfaces);
 
     for (int i = 0; i < mxGetNumberOfElements(mxBodies); i++) {
-      mxArray* mxBodyContactPts = mxGetCell(mxContactPts, i);
-      int nc = static_cast<int>(mxGetNumberOfElements(mxBodyContactPts));
-      if (nc < 1)
-        continue;
+      mxArray* mxBodyContactPts = mxGetCell(mxContactPts,i);
+      assert(mxGetM(mxBodyContactPts) == 3);
+      int nc = static_cast<int>(mxGetN(mxBodyContactPts));
+      if (nc<1) continue;
+      
+      all_body_contact_pts.resize(mxGetM(mxBodyContactPts),mxGetN(mxBodyContactPts));
+      double* pr = mxGetPr(mxBodyContactPts); 
+      memcpy(all_body_contact_pts.data(),pr,sizeof(double)*mxGetM(mxBodyContactPts)*mxGetN(mxBodyContactPts));
 
       SupportStateElement se;
-      se.body_idx = (int) pBodies[i] - 1;
-      double* pr = mxGetPr(mxBodyContactPts);
-      for (int j = 0; j < nc; j++) {
-        se.contact_pt_inds.insert((int) pr[j] - 1);
+      se.body_idx = (int) pBodies[i]-1;
+      for (int j=0; j<nc; j++) {
+        contact_pt.head(3) = all_body_contact_pts.col(j);
+        se.contact_pts.push_back(contact_pt);
       }
       se.contact_surface = (int) pContactSurfaces[i] - 1;
 

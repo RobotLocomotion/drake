@@ -243,6 +243,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   //---------------------------------------------------------------------
   // Compute active support from desired supports -----------------------
+  MatrixXd all_body_contact_pts;
+  Vector4d contact_pt = Vector4d::Zero();
+  contact_pt(3) = 1.0;
 
   vector<SupportStateElement> active_supports;
   set<int> contact_bodies; // redundant, clean up later
@@ -260,14 +263,19 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     
     for (i=0; i<mxGetNumberOfElements(mxBodies);i++) {
       mxArray* mxBodyContactPts = mxGetCell(mxContactPts,i);
-      int nc = mxGetNumberOfElements(mxBodyContactPts);
+      assert(mxGetM(mxBodyContactPts) == 3);
+      int nc = static_cast<int>(mxGetN(mxBodyContactPts));
       if (nc<1) continue;
       
+      all_body_contact_pts.resize(mxGetM(mxBodyContactPts),mxGetN(mxBodyContactPts));
+      pr = mxGetPr(mxBodyContactPts); 
+      memcpy(all_body_contact_pts.data(),pr,sizeof(double)*mxGetM(mxBodyContactPts)*mxGetN(mxBodyContactPts));
+
       SupportStateElement se;
       se.body_idx = (int) pBodies[i]-1;
-      pr = mxGetPr(mxBodyContactPts); 
       for (j=0; j<nc; j++) {
-        se.contact_pt_inds.insert((int)pr[j]-1);
+        contact_pt.head(3) = all_body_contact_pts.col(j);
+        se.contact_pts.push_back(contact_pt);
       }
       se.contact_surface = (int) pContactSurfaces[i]-1;
       

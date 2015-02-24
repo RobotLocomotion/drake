@@ -34,7 +34,7 @@ classdef FootContactMixin
       end
 
       % Messy reorganization for compatibility with supportDetectMex
-      supp_state = struct('bodies', {supp.bodies}, 'contact_pts', {supp.contact_pts}, 'contact_surfaces', {supp.contact_surfaces});
+      supp_state = struct('bodies', {[supp.body_id]}, 'contact_pts', {{supp.contact_pts}}, 'contact_surfaces', {{supp.contact_surfaces}});
 
       active_supports = supportDetectmex(obj.mex_ptr.data,x,supp_state,contact_sensor,obj.contact_threshold,height,contact_logic_AND);
       fc = [1.0*any(active_supports==obj.robot.foot_body_id.left); 1.0*any(active_supports==obj.robot.foot_body_id.right)];
