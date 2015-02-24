@@ -994,11 +994,11 @@ classdef RigidBodyManipulator < Manipulator
       % @param name is the string name to search for
       % @param robotnum if specified restricts the search to a particular
       % robot
-      if nargin<3, robotnum=0; end
+      if nargin<3, robotnum=-1; end
       if ~isempty(model.frame)
         items = strfind(lower({model.frame.name}),lower(name));
         ind = find(~cellfun(@isempty,items));
-        if (robotnum~=0), ind = ind([model.body(model.frame(ind).body_ind).robotnum]==robotnum); end
+        if (robotnum~=-1), ind = ind([model.body(model.frame(ind).body_ind).robotnum]==robotnum); end
       else
         ind = [];
       end
@@ -1247,7 +1247,7 @@ classdef RigidBodyManipulator < Manipulator
       %                          will be restricted. Optional.
       %                          @default 1:numel(model.name)
       if nargin < 3,          robotnum = 1:numel(model.name); end
-      if all(robotnum == 0),  robotnum = 0:numel(model.name); end
+      if all(robotnum == -1),  robotnum = 0:numel(model.name); end
       for i=1:length(model.body)
         if ismember(model.body(i).robotnum,robotnum)
           model.body(i) = removeCollisionGroups(model.body(i),contact_groups);
@@ -1271,7 +1271,7 @@ classdef RigidBodyManipulator < Manipulator
       %                          @default 1:numel(model.body)
       if nargin < 4,          body_ids = 1:numel(model.body); end
       if nargin < 3,          robotnum = 1:numel(model.name); end
-      if all(robotnum == 0),  robotnum = 0:numel(model.name); end
+      if all(robotnum == -1),  robotnum = 0:numel(model.name); end
       for i=body_ids
         if ismember(model.body(i).robotnum,robotnum)
           model.body(i) = removeCollisionGroupsExcept(model.body(i),contact_groups);
@@ -1292,7 +1292,7 @@ classdef RigidBodyManipulator < Manipulator
       %
       % @retval body_idx_or_frame_id  -- Numeric body index or frame id
       typecheck(body_or_frame,{'numeric','char'});
-      if nargin < 3, robotnum = 0; end
+      if nargin < 3, robotnum = -1; end
       if isnumeric(body_or_frame)
         sizecheck(body_or_frame,[1,1]);
         body_idx_or_frame_id = body_or_frame;
@@ -1305,7 +1305,7 @@ classdef RigidBodyManipulator < Manipulator
               body_idx_or_frame_id = findFrameId(obj,body_or_frame,robotnum);
             catch ex2
               if strcmp(ex.identifier,'Drake:RigidBodyManipulator:UniqueLinkNotFound')
-                if robotnum == 0
+                if robotnum == -1
                   error('Drake:RigidBodyManipulator:UniqueFrameOrLinkNotFound', ...
                     'Cannot find unique link or frame named %s',body_or_frame);
                 else
@@ -1561,12 +1561,12 @@ classdef RigidBodyManipulator < Manipulator
       % looping every time (since the result is a constant between
       % compiles)
       if nargin < 2
-        robotnum = 0; % robot num of 0 means all robots
+        robotnum = -1; % robot num of -1 means all robots
       end
 
       m = 0;
       for i=1:length(model.body)
-        if robotnum == 0 || model.body(i).robotnum == robotnum
+        if robotnum == -1 || model.body(i).robotnum == robotnum
           bm = model.body(i).mass;
           m = m + bm;
         end
