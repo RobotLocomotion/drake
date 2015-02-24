@@ -23,7 +23,7 @@ inline mxArray* getTangentsArray(RigidBodyManipulator * const model, Map<Matrix3
   mxArray* tangentCells = mxCreateCellArray(2, cellDims);
   
   vector< Map<Matrix3xd> > tangents;
-  for(int k = 0 ; k < BASIS_VECTOR_HALF_COUNT ; k++)
+  for (int k = 0 ; k < BASIS_VECTOR_HALF_COUNT ; k++)
   {
     mxArray *cell = mxCreateDoubleMatrix(3, numContactPairs, mxREAL );    
     tangents.push_back(Map<Matrix3xd>(mxGetPr(cell), 3, numContactPairs));
@@ -45,14 +45,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   const unsigned int numNormals = mxGetN(prhs[1]);  //number of normal vectors
   const unsigned int dimNormals = mxGetM(prhs[1]);  //dimension of each normal vector
   
-  if(dimNormals != 3) {
+  if (dimNormals != 3) {
   	mexErrMsgIdAndTxt("Drake:surfaceTangentsmex:InvalidNormalDimensions","Normals must be 3-Dimensional");	
   }
 
   //Mapping Eigen Matrix to existing memory to avoid copy overhead
   Map<Matrix3xd> normals(mxGetPr(prhs[1]), 3, numNormals); 
 
-  if(nlhs > 0) {
+  if (nlhs > 0) {
     plhs[0] = getTangentsArray(model, normals);
   } else {
     mexErrMsgIdAndTxt("Drake:surfaceTangentsmex:NotEnoughOutputs","Please take at least one output");	

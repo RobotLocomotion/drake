@@ -27,168 +27,168 @@ bool isnotnan(const MatrixBase<Derived>& x)
 }
 
 void Xrotz(double theta, MatrixXd* X) {
-	double c = cos(theta);
-	double s = sin(theta);
+  double c = cos(theta);
+  double s = sin(theta);
 
-	(*X).resize(6,6);
-	*X <<  c, s, 0, 0, 0, 0,
-		  -s, c, 0, 0, 0, 0,
-		   0, 0, 1, 0, 0, 0,
-		   0, 0, 0, c, s, 0,
-		   0, 0, 0,-s, c, 0,
-		   0, 0, 0, 0, 0, 1;
+  (*X).resize(6,6);
+  *X <<  c, s, 0, 0, 0, 0,
+      -s, c, 0, 0, 0, 0,
+       0, 0, 1, 0, 0, 0,
+       0, 0, 0, c, s, 0,
+       0, 0, 0,-s, c, 0,
+       0, 0, 0, 0, 0, 1;
 }
 
 void dXrotz(double theta, MatrixXd* dX) {
-	double dc = -sin(theta);
-	double ds = cos(theta);
+  double dc = -sin(theta);
+  double ds = cos(theta);
 
-	(*dX).resize(6,6);
-	*dX << dc, ds, 0, 0, 0, 0,
-      	  -ds, dc, 0, 0, 0, 0,
-       		0, 0, 0, 0, 0, 0,
-       		0, 0, 0, dc, ds, 0,
-       		0, 0, 0,-ds, dc, 0,
-       		0, 0, 0, 0, 0, 0;
+  (*dX).resize(6,6);
+  *dX << dc, ds, 0, 0, 0, 0,
+          -ds, dc, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0,
+          0, 0, 0, dc, ds, 0,
+          0, 0, 0,-ds, dc, 0,
+          0, 0, 0, 0, 0, 0;
 }
 
 void Xtrans(Vector3d r, MatrixXd* X) {
-	(*X).resize(6,6);
-	*X <<  	1, 0, 0, 0, 0, 0,
-		   	0, 1, 0, 0, 0, 0,
-		   	0, 0, 1, 0, 0, 0,
-           	0, r[2],-r[1], 1, 0, 0,
-		   -r[2], 0, r[0], 0, 1, 0,
-          	r[1],-r[0], 0, 0, 0, 1;
+  (*X).resize(6,6);
+  *X <<   1, 0, 0, 0, 0, 0,
+        0, 1, 0, 0, 0, 0,
+        0, 0, 1, 0, 0, 0,
+            0, r[2],-r[1], 1, 0, 0,
+       -r[2], 0, r[0], 0, 1, 0,
+            r[1],-r[0], 0, 0, 0, 1;
 }
 
 void dXtrans(MatrixXd* dX) {
- 	(*dX).resize(36,3);
-	(*dX)(4,2) = -1;
-	(*dX)(5,1) = 1;
-	(*dX)(9,2) = 1;
-	(*dX)(11,0) = -1;
-	(*dX)(15,1) = -1;
-	(*dX)(16,0) = 1;
+  (*dX).resize(36,3);
+  (*dX)(4,2) = -1;
+  (*dX)(5,1) = 1;
+  (*dX)(9,2) = 1;
+  (*dX)(11,0) = -1;
+  (*dX)(15,1) = -1;
+  (*dX)(16,0) = 1;
 }
 
 void dXtransPitch(MatrixXd* dX) {
-	(*dX).resize(6,6);
-	*dX << 0, 0, 0, 0, 0, 0,
+  (*dX).resize(6,6);
+  *dX << 0, 0, 0, 0, 0, 0,
            0, 0, 0, 0, 0, 0,
            0, 0, 0, 0, 0, 0,
-   		   0, 1, 0, 0, 0, 0,
-       	  -1, 0, 0, 0, 0, 0,
+         0, 1, 0, 0, 0, 0,
+          -1, 0, 0, 0, 0, 0,
            0, 0, 0, 0, 0, 0;
 }
 
 
 void jcalc(int pitch, double q, MatrixXd* Xj, VectorXd* S) {
-	(*Xj).resize(6,6);
-	(*S).resize(6);
+  (*Xj).resize(6,6);
+  (*S).resize(6);
 
-	if (pitch == 0) { // revolute joint
-	  	Xrotz(q,Xj);
-	    *S << 0,0,1,0,0,0;
-	}
-	else if (pitch == INF) { // prismatic joint
-  		Xtrans(Vector3d(0.0,0.0,q),Xj);
-  		*S << 0,0,0,0,0,1;
-	}
-	else { // helical joint
-		MatrixXd A(6,6);
-		MatrixXd B(6,6);
-		Xrotz(q,&A);
-	    Xtrans(Vector3d(0.0,0.0,q*pitch),&B);
-		*Xj = A*B;
-  		*S << 0,0,1,0,0,pitch;
-	}
+  if (pitch == 0) { // revolute joint
+      Xrotz(q,Xj);
+      *S << 0,0,1,0,0,0;
+  }
+  else if (pitch == INF) { // prismatic joint
+      Xtrans(Vector3d(0.0,0.0,q),Xj);
+      *S << 0,0,0,0,0,1;
+  }
+  else { // helical joint
+    MatrixXd A(6,6);
+    MatrixXd B(6,6);
+    Xrotz(q,&A);
+      Xtrans(Vector3d(0.0,0.0,q*pitch),&B);
+    *Xj = A*B;
+      *S << 0,0,1,0,0,pitch;
+  }
 }
 
 void djcalc(int pitch, double q, MatrixXd* dXj) {
-	(*dXj).resize(6,6);
+  (*dXj).resize(6,6);
 
-	if (pitch == 0) { // revolute joint
-  		dXrotz(q,dXj);
-	}
-	else if (pitch == INF) { // prismatic joint
-  		dXtransPitch(dXj);
+  if (pitch == 0) { // revolute joint
+      dXrotz(q,dXj);
+  }
+  else if (pitch == INF) { // prismatic joint
+      dXtransPitch(dXj);
     }
-	else { // helical joint
-	    MatrixXd X(6,6),Xj(6,6),dXrz(6,6),dXjp(6,6);
-	    Xrotz(q,&Xj);
-	    dXrotz(q,&dXrz);
-	    Xtrans(Vector3d(0.0,0.0,q*pitch),&X);
-	    dXtransPitch(&dXjp);
-		*dXj = Xj * dXjp * pitch + dXrz * X;
-	}
+  else { // helical joint
+      MatrixXd X(6,6),Xj(6,6),dXrz(6,6),dXjp(6,6);
+      Xrotz(q,&Xj);
+      dXrotz(q,&dXrz);
+      Xtrans(Vector3d(0.0,0.0,q*pitch),&X);
+      dXtransPitch(&dXjp);
+    *dXj = Xj * dXjp * pitch + dXrz * X;
+  }
 }
 
 MatrixXd crm(VectorXd v)
 {
-  	MatrixXd vcross(6,6);
-  	vcross << 0, -v[2], v[1], 0, 0, 0,
-	    	v[2], 0,-v[0], 0, 0, 0,
-	   	   -v[1], v[0], 0, 0, 0, 0,
-	    	0, -v[5], v[4], 0, -v[2], v[1],
-	    	v[5], 0,-v[3], v[2], 0, -v[0],
-	   	   -v[4], v[3], 0,-v[1], v[0], 0;
-  	return vcross;
+    MatrixXd vcross(6,6);
+    vcross << 0, -v[2], v[1], 0, 0, 0,
+        v[2], 0,-v[0], 0, 0, 0,
+         -v[1], v[0], 0, 0, 0, 0,
+        0, -v[5], v[4], 0, -v[2], v[1],
+        v[5], 0,-v[3], v[2], 0, -v[0],
+         -v[4], v[3], 0,-v[1], v[0], 0;
+    return vcross;
 }
 
 MatrixXd crf(VectorXd v)
 {
- 	MatrixXd vcross(6,6);
- 	vcross << 0,-v[2], v[1], 0,-v[5], v[4],
-	    	v[2], 0,-v[0], v[5], 0,-v[3],
-	   	   -v[1], v[0], 0,-v[4], v[3], 0,
-	    	0, 0, 0, 0,-v[2], v[1],
-	    	0, 0, 0, v[2], 0,-v[0],
-	    	0, 0, 0,-v[1], v[0], 0;
- 	return vcross;
+  MatrixXd vcross(6,6);
+  vcross << 0,-v[2], v[1], 0,-v[5], v[4],
+        v[2], 0,-v[0], v[5], 0,-v[3],
+         -v[1], v[0], 0,-v[4], v[3], 0,
+        0, 0, 0, 0,-v[2], v[1],
+        0, 0, 0, v[2], 0,-v[0],
+        0, 0, 0,-v[1], v[0], 0;
+  return vcross;
 }
 
 void dcrm(VectorXd v, VectorXd x, MatrixXd dv, MatrixXd dx, MatrixXd* dvcross) {
- 	(*dvcross).resize(6,dv.cols());
- 	(*dvcross).row(0) = -dv.row(2)*x[1] + dv.row(1)*x[2] - v[2]*dx.row(1) + v[1]*dx.row(2);
-	(*dvcross).row(1) =  dv.row(2)*x[0] - dv.row(0)*x[2] + v[2]*dx.row(0) - v[0]*dx.row(2);
-  	(*dvcross).row(2) = -dv.row(1)*x[0] + dv.row(0)*x[1] - v[1]*dx.row(0) + v[0]*dx.row(1);
-  	(*dvcross).row(3) = -dv.row(5)*x[1] + dv.row(4)*x[2] - dv.row(2)*x[4] + dv.row(1)*x[5] - v[5]*dx.row(1) + v[4]*dx.row(2) - v[2]*dx.row(4) + v[1]*dx.row(5);
-  	(*dvcross).row(4) =  dv.row(5)*x[0] - dv.row(3)*x[2] + dv.row(2)*x[3] - dv.row(0)*x[5] + v[5]*dx.row(0) - v[3]*dx.row(2) + v[2]*dx.row(3) - v[0]*dx.row(5);
-  	(*dvcross).row(5) = -dv.row(4)*x[0] + dv.row(3)*x[1] - dv.row(1)*x[3] + dv.row(0)*x[4] - v[4]*dx.row(0) + v[3]*dx.row(1) - v[1]*dx.row(3) + v[0]*dx.row(4);
+  (*dvcross).resize(6,dv.cols());
+  (*dvcross).row(0) = -dv.row(2)*x[1] + dv.row(1)*x[2] - v[2]*dx.row(1) + v[1]*dx.row(2);
+  (*dvcross).row(1) =  dv.row(2)*x[0] - dv.row(0)*x[2] + v[2]*dx.row(0) - v[0]*dx.row(2);
+    (*dvcross).row(2) = -dv.row(1)*x[0] + dv.row(0)*x[1] - v[1]*dx.row(0) + v[0]*dx.row(1);
+    (*dvcross).row(3) = -dv.row(5)*x[1] + dv.row(4)*x[2] - dv.row(2)*x[4] + dv.row(1)*x[5] - v[5]*dx.row(1) + v[4]*dx.row(2) - v[2]*dx.row(4) + v[1]*dx.row(5);
+    (*dvcross).row(4) =  dv.row(5)*x[0] - dv.row(3)*x[2] + dv.row(2)*x[3] - dv.row(0)*x[5] + v[5]*dx.row(0) - v[3]*dx.row(2) + v[2]*dx.row(3) - v[0]*dx.row(5);
+    (*dvcross).row(5) = -dv.row(4)*x[0] + dv.row(3)*x[1] - dv.row(1)*x[3] + dv.row(0)*x[4] - v[4]*dx.row(0) + v[3]*dx.row(1) - v[1]*dx.row(3) + v[0]*dx.row(4);
 }
 
 void dcrf(VectorXd v, VectorXd x, MatrixXd dv, MatrixXd dx, MatrixXd* dvcross) {
- 	(*dvcross).resize(6,dv.cols());
- 	(*dvcross).row(0) =  dv.row(2)*x[1] - dv.row(1)*x[2] + dv.row(5)*x[4] - dv.row(4)*x[5] + v[2]*dx.row(1) - v[1]*dx.row(2) + v[5]*dx.row(4) - v[4]*dx.row(5);
-  	(*dvcross).row(1) = -dv.row(2)*x[0] + dv.row(0)*x[2] - dv.row(5)*x[3] + dv.row(3)*x[5] - v[2]*dx.row(0) + v[0]*dx.row(2) - v[5]*dx.row(3) + v[3]*dx.row(5);
- 	(*dvcross).row(2) =  dv.row(1)*x[0] - dv.row(0)*x[1] + dv.row(4)*x[3] - dv.row(3)*x[4] + v[1]*dx.row(0) - v[0]*dx.row(1) + v[4]*dx.row(3) - v[3]*dx.row(4);
-  	(*dvcross).row(3) =  dv.row(2)*x[4] - dv.row(1)*x[5] + v[2]*dx.row(4) - v[1]*dx.row(5);
-  	(*dvcross).row(4) = -dv.row(2)*x[3] + dv.row(0)*x[5] - v[2]*dx.row(3) + v[0]*dx.row(5);
-  	(*dvcross).row(5) =  dv.row(1)*x[3] - dv.row(0)*x[4] + v[1]*dx.row(3) - v[0]*dx.row(4);
-	*dvcross = -(*dvcross);
+  (*dvcross).resize(6,dv.cols());
+  (*dvcross).row(0) =  dv.row(2)*x[1] - dv.row(1)*x[2] + dv.row(5)*x[4] - dv.row(4)*x[5] + v[2]*dx.row(1) - v[1]*dx.row(2) + v[5]*dx.row(4) - v[4]*dx.row(5);
+    (*dvcross).row(1) = -dv.row(2)*x[0] + dv.row(0)*x[2] - dv.row(5)*x[3] + dv.row(3)*x[5] - v[2]*dx.row(0) + v[0]*dx.row(2) - v[5]*dx.row(3) + v[3]*dx.row(5);
+  (*dvcross).row(2) =  dv.row(1)*x[0] - dv.row(0)*x[1] + dv.row(4)*x[3] - dv.row(3)*x[4] + v[1]*dx.row(0) - v[0]*dx.row(1) + v[4]*dx.row(3) - v[3]*dx.row(4);
+    (*dvcross).row(3) =  dv.row(2)*x[4] - dv.row(1)*x[5] + v[2]*dx.row(4) - v[1]*dx.row(5);
+    (*dvcross).row(4) = -dv.row(2)*x[3] + dv.row(0)*x[5] - v[2]*dx.row(3) + v[0]*dx.row(5);
+    (*dvcross).row(5) =  dv.row(1)*x[3] - dv.row(0)*x[4] + v[1]*dx.row(3) - v[0]*dx.row(4);
+  *dvcross = -(*dvcross);
 }
 
 Matrix3d rotz(double theta) {
-	// returns 3D rotation matrix (about the z axis)
-	Matrix3d M;
-	double c=cos(theta);
-	double s=sin(theta);
-	M << c,-s, 0,
-		 s, c, 0,
-		 0, 0, 1;
-	return M;
+  // returns 3D rotation matrix (about the z axis)
+  Matrix3d M;
+  double c=cos(theta);
+  double s=sin(theta);
+  M << c,-s, 0,
+     s, c, 0,
+     0, 0, 1;
+  return M;
 }
 
 void Tjcalc(int pitch, double q, Matrix4d* TJ)
 {
-	*TJ = Matrix4d::Identity();
+  *TJ = Matrix4d::Identity();
 
   if (pitch==0) { // revolute joint
     (*TJ).topLeftCorner(3,3) = rotz(q);
   } else if (pitch == INF) { // prismatic joint
     (*TJ)(2,3) = q;
-	}	else { // helical joint
+  } else { // helical joint
     (*TJ).topLeftCorner(3,3) = rotz(q);
     (*TJ)(2,3) = q*pitch;
   }
@@ -196,37 +196,37 @@ void Tjcalc(int pitch, double q, Matrix4d* TJ)
 
 void dTjcalc(int pitch, double q, Matrix4d* dTJ)
 {
-	double s=sin(q);
-	double c=cos(q);
-  	if (pitch==0) { // revolute joint
-  		*dTJ << -s,-c, 0, 0,
-  				 c,-s, 0, 0,
-  				 0, 0, 0, 0,
-  				 0, 0, 0, 0;
-  	} else if (pitch == INF) { // prismatic joint
-  		*dTJ <<  0, 0, 0, 0,
-  				 0, 0, 0, 0,
-  				 0, 0, 0, 1,
-  				 0, 0, 0, 0;
+  double s=sin(q);
+  double c=cos(q);
+    if (pitch==0) { // revolute joint
+      *dTJ << -s,-c, 0, 0,
+           c,-s, 0, 0,
+           0, 0, 0, 0,
+           0, 0, 0, 0;
+    } else if (pitch == INF) { // prismatic joint
+      *dTJ <<  0, 0, 0, 0,
+           0, 0, 0, 0,
+           0, 0, 0, 1,
+           0, 0, 0, 0;
     } else { // helical joint
-  		*dTJ << -s,-c, 0, 0,
-  				 c,-s, 0, 0,
-  				 0, 0, 0, pitch,
-  				 0, 0, 0, 0;
-  	}
+      *dTJ << -s,-c, 0, 0,
+           c,-s, 0, 0,
+           0, 0, 0, pitch,
+           0, 0, 0, 0;
+    }
 }
 
 void ddTjcalc(int pitch, double q, Matrix4d* ddTJ)
 {
-  	double c = cos(q);
-  	double s = sin(q);
+    double c = cos(q);
+    double s = sin(q);
 
-  	if (pitch==0) { // revolute joint
-  		*ddTJ << -c, s, 0, 0,
-  				 -s,-c, 0, 0,
-  				  0, 0, 0, 0,
-  				  0, 0, 0, 0;
-  	} else if (pitch == INF) { // prismatic joint
+    if (pitch==0) { // revolute joint
+      *ddTJ << -c, s, 0, 0,
+           -s,-c, 0, 0,
+            0, 0, 0, 0,
+            0, 0, 0, 0;
+    } else if (pitch == INF) { // prismatic joint
       *ddTJ = Matrix4d::Zero();
     } else { // helical joint
       *ddTJ << -c, s, 0, 0,
@@ -506,9 +506,9 @@ bool RigidBodyManipulator::getPairwisePointCollision(const int body_indA,
      ) {
     return true;
   } else {
-		ptA << 1,1,1;
-		ptB << -1,-1,-1;
-		normal << 0,0,1;
+    ptA << 1,1,1;
+    ptB << -1,-1,-1;
+    normal << 0,0,1;
     return false;
   }
 };
@@ -782,12 +782,12 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
           }
 
           if (j>=3) {
-          	for (k=3; k<6; k++) {
+            for (k=3; k<6; k++) {
               TddTmult = bodies[parent]->T*bodies[i]->Ttree * Tbinv * fb_ddTJ[j-3][k-3] * Tb;
               bodies[i]->ddTdqdq.row(3*num_dof*(bodies[i]->dofnum+k) + bodies[i]->dofnum+j) += TddTmult.row(0);
               bodies[i]->ddTdqdq.row(3*num_dof*(bodies[i]->dofnum+k) + bodies[i]->dofnum+j + num_dof) += TddTmult.row(1);
               bodies[i]->ddTdqdq.row(3*num_dof*(bodies[i]->dofnum+k) + bodies[i]->dofnum+j + 2*num_dof) += TddTmult.row(2);
-          	}
+            }
           }
         }
       }
@@ -849,7 +849,7 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
 
       if (b_compute_second_derivatives) {
         //ddTdqdq = [d(dTdq)dq1; d(dTdq)dq2; ...]
-        //	bodies[i]->ddTdqdq = bodies[parent]->ddTdqdq * Tmult; // pushed this into the loop below to exploit the sparsity
+        //  bodies[i]->ddTdqdq = bodies[parent]->ddTdqdq * Tmult; // pushed this into the loop below to exploit the sparsity
         for (set<IndexRange>::iterator iter = bodies[parent]->ddTdqdq_nonzero_rows_grouped.begin(); iter != bodies[parent]->ddTdqdq_nonzero_rows_grouped.end(); iter++) {
           bodies[i]->ddTdqdq.block(iter->start,0,iter->length,4) = bodies[parent]->ddTdqdq.block(iter->start,0,iter->length,4) * Tmult;
         }
@@ -1547,8 +1547,8 @@ void RigidBodyManipulator::findKinematicPath(KinematicPath& path, int start_body
 
 /*
  * rotation_type  0, no rotation
- * 		  1, output Euler angles
- * 		  2, output quaternion [w,x,y,z], with w>=0
+ *      1, output Euler angles
+ *      2, output quaternion [w,x,y,z], with w>=0
  */
 
 template <typename DerivedA, typename DerivedB>
@@ -1868,52 +1868,52 @@ void RigidBodyManipulator::forwardJac(const int body_or_frame_id, const MatrixBa
       dR12_dq(i) = dTdq(num_dof+i,2);
     }
 
-  	Vector4d case_check;
-  	case_check << R(0,0)+R(1,1)+R(2,2), R(0,0)-R(1,1)-R(2,2), -R(0,0)+R(1,1)-R(2,2), -R(0,0)-R(1,1)+R(2,2);
-  	int ind; double val = case_check.maxCoeff(&ind);
+    Vector4d case_check;
+    case_check << R(0,0)+R(1,1)+R(2,2), R(0,0)-R(1,1)-R(2,2), -R(0,0)+R(1,1)-R(2,2), -R(0,0)-R(1,1)+R(2,2);
+    int ind; double val = case_check.maxCoeff(&ind);
 
     MatrixXd Jq = MatrixXd::Zero(4,num_dof);
-  	switch(ind) {
-  	case 0: { // val = trace(M)
-  			double qw = sqrt(1+val)/2.0;
-  			VectorXd dqwdq = (dR00_dq+dR11_dq+dR22_dq)/(4*sqrt(1+val));
-  			double wsquare4 = 4*qw*qw;
-  			Jq.block(0,0,1,num_dof) = dqwdq.transpose();
-  			Jq.block(1,0,1,num_dof) = (((dR21_dq-dR12_dq)*qw-(R(2,1)-R(1,2))*dqwdq).transpose())/wsquare4;
-  			Jq.block(2,0,1,num_dof) = (((dR02_dq-dR20_dq)*qw-(R(0,2)-R(2,0))*dqwdq).transpose())/wsquare4;
-  			Jq.block(3,0,1,num_dof) = (((dR10_dq-dR01_dq)*qw-(R(1,0)-R(0,1))*dqwdq).transpose())/wsquare4;
-  		} break;
+    switch(ind) {
+    case 0: { // val = trace(M)
+        double qw = sqrt(1+val)/2.0;
+        VectorXd dqwdq = (dR00_dq+dR11_dq+dR22_dq)/(4*sqrt(1+val));
+        double wsquare4 = 4*qw*qw;
+        Jq.block(0,0,1,num_dof) = dqwdq.transpose();
+        Jq.block(1,0,1,num_dof) = (((dR21_dq-dR12_dq)*qw-(R(2,1)-R(1,2))*dqwdq).transpose())/wsquare4;
+        Jq.block(2,0,1,num_dof) = (((dR02_dq-dR20_dq)*qw-(R(0,2)-R(2,0))*dqwdq).transpose())/wsquare4;
+        Jq.block(3,0,1,num_dof) = (((dR10_dq-dR01_dq)*qw-(R(1,0)-R(0,1))*dqwdq).transpose())/wsquare4;
+      } break;
     case 1: { // val = M(1,1) - M(2,2) - M(3,3)
-      	double s = 2*sqrt(1+val); double ssquare = s*s;
-      	VectorXd dsdq = (dR00_dq - dR11_dq - dR22_dq)/sqrt(1+val);
-      	Jq.block(0,0,1,num_dof) = (((dR21_dq-dR12_dq)*s - (R(2,1)-R(1,2))*dsdq).transpose())/ssquare;
-      	Jq.block(1,0,1,num_dof) = .25*dsdq.transpose();
-      	Jq.block(2,0,1,num_dof) = (((dR01_dq+dR10_dq)*s - (R(0,1)+R(1,0))*dsdq).transpose())/ssquare;
-      	Jq.block(3,0,1,num_dof) = (((dR02_dq+dR20_dq)*s - (R(0,2)+R(2,0))*dsdq).transpose())/ssquare;
-    	} break;
+        double s = 2*sqrt(1+val); double ssquare = s*s;
+        VectorXd dsdq = (dR00_dq - dR11_dq - dR22_dq)/sqrt(1+val);
+        Jq.block(0,0,1,num_dof) = (((dR21_dq-dR12_dq)*s - (R(2,1)-R(1,2))*dsdq).transpose())/ssquare;
+        Jq.block(1,0,1,num_dof) = .25*dsdq.transpose();
+        Jq.block(2,0,1,num_dof) = (((dR01_dq+dR10_dq)*s - (R(0,1)+R(1,0))*dsdq).transpose())/ssquare;
+        Jq.block(3,0,1,num_dof) = (((dR02_dq+dR20_dq)*s - (R(0,2)+R(2,0))*dsdq).transpose())/ssquare;
+      } break;
     case 2: { // val = M(2,2) - M(1,1) - M(3,3)
-    		double s = 2*sqrt(1+val); double ssquare = s*s;
-    		VectorXd dsdq = (-dR00_dq + dR11_dq - dR22_dq)/sqrt(1+val);
-    		Jq.block(0,0,1,num_dof) = (((dR02_dq-dR20_dq)*s - (R(0,2)-R(2,0))*dsdq).transpose())/ssquare;
-    		Jq.block(1,0,1,num_dof) = (((dR01_dq+dR10_dq)*s - (R(0,1)+R(1,0))*dsdq).transpose())/ssquare;
-    		Jq.block(2,0,1,num_dof) = .25*dsdq.transpose();
-    		Jq.block(3,0,1,num_dof) = (((dR12_dq+dR21_dq)*s - (R(1,2)+R(2,1))*dsdq).transpose())/ssquare;
-    	} break;
+        double s = 2*sqrt(1+val); double ssquare = s*s;
+        VectorXd dsdq = (-dR00_dq + dR11_dq - dR22_dq)/sqrt(1+val);
+        Jq.block(0,0,1,num_dof) = (((dR02_dq-dR20_dq)*s - (R(0,2)-R(2,0))*dsdq).transpose())/ssquare;
+        Jq.block(1,0,1,num_dof) = (((dR01_dq+dR10_dq)*s - (R(0,1)+R(1,0))*dsdq).transpose())/ssquare;
+        Jq.block(2,0,1,num_dof) = .25*dsdq.transpose();
+        Jq.block(3,0,1,num_dof) = (((dR12_dq+dR21_dq)*s - (R(1,2)+R(2,1))*dsdq).transpose())/ssquare;
+      } break;
     default: { // val = M(3,3) - M(2,2) - M(1,1)
-    		double s = 2*sqrt(1+val); double ssquare = s*s;
-    		VectorXd dsdq = (-dR00_dq - dR11_dq + dR22_dq)/sqrt(1+val);
-    		Jq.block(0,0,1,num_dof) = (((dR10_dq-dR01_dq)*s - (R(1,0)-R(0,1))*dsdq).transpose())/ssquare;
-    		Jq.block(1,0,1,num_dof) = (((dR02_dq+dR20_dq)*s - (R(0,2)+R(2,0))*dsdq).transpose())/ssquare;
-    		Jq.block(2,0,1,num_dof) = (((dR12_dq+dR21_dq)*s - (R(1,2)+R(2,1))*dsdq).transpose())/ssquare;
-    		Jq.block(3,0,1,num_dof) = .25*dsdq.transpose();
-    	} break;
-  	}
+        double s = 2*sqrt(1+val); double ssquare = s*s;
+        VectorXd dsdq = (-dR00_dq - dR11_dq + dR22_dq)/sqrt(1+val);
+        Jq.block(0,0,1,num_dof) = (((dR10_dq-dR01_dq)*s - (R(1,0)-R(0,1))*dsdq).transpose())/ssquare;
+        Jq.block(1,0,1,num_dof) = (((dR02_dq+dR20_dq)*s - (R(0,2)+R(2,0))*dsdq).transpose())/ssquare;
+        Jq.block(2,0,1,num_dof) = (((dR12_dq+dR21_dq)*s - (R(1,2)+R(2,1))*dsdq).transpose())/ssquare;
+        Jq.block(3,0,1,num_dof) = .25*dsdq.transpose();
+      } break;
+    }
 
     MatrixXd Jfull = MatrixXd::Zero(7*n_pts,num_dof);
     for (int i=0;i<n_pts;i++)
     {
-	    Jfull.block(i*7,0,3,num_dof) = J.block(i*3,0,3,num_dof);
-	    Jfull.block(i*7+3,0,4,num_dof) = Jq;
+      Jfull.block(i*7,0,3,num_dof) = J.block(i*3,0,3,num_dof);
+      Jfull.block(i*7+3,0,4,num_dof) = Jq;
     }
     J =  Jfull;
   }
@@ -1925,43 +1925,43 @@ void RigidBodyManipulator::forwardJacDot(const int body_or_frame_id, const Matri
   int n_pts = static_cast<int>(pts.cols()); Matrix4d Tframe;
   int body_ind = parseBodyOrFrameID(body_or_frame_id, &Tframe);
 
-	MatrixXd tmp = bodies[body_ind]->dTdqdot*Tframe*pts;
-	MatrixXd Jdott = Map<MatrixXd>(tmp.data(),num_dof,3*n_pts);
-	Jdot.block(0,0,3*n_pts,num_dof) = Jdott.transpose();
+  MatrixXd tmp = bodies[body_ind]->dTdqdot*Tframe*pts;
+  MatrixXd Jdott = Map<MatrixXd>(tmp.data(),num_dof,3*n_pts);
+  Jdot.block(0,0,3*n_pts,num_dof) = Jdott.transpose();
 
-	if (rotation_type==1) {
+  if (rotation_type==1) {
 
-		MatrixXd dTdqdot =  bodies[body_ind]->dTdqdot*Tframe;
-		Matrix3d R = (bodies[body_ind]->T*Tframe).topLeftCorner(3,3);
-		/*
-		 * note the unusual format of dTdq(chosen for efficiently calculating jacobians from many pts)
-		 * dTdq = [dT(1,:)dq1; dT(1,:)dq2; ...; dT(1,:)dqN; dT(2,dq1) ...]
-		 */
+    MatrixXd dTdqdot =  bodies[body_ind]->dTdqdot*Tframe;
+    Matrix3d R = (bodies[body_ind]->T*Tframe).topLeftCorner(3,3);
+    /*
+     * note the unusual format of dTdq(chosen for efficiently calculating jacobians from many pts)
+     * dTdq = [dT(1,:)dq1; dT(1,:)dq2; ...; dT(1,:)dqN; dT(2,dq1) ...]
+     */
 
-		VectorXd dR21_dq(num_dof),dR22_dq(num_dof),dR20_dq(num_dof),dR00_dq(num_dof),dR10_dq(num_dof);
-		for (int i=0; i<num_dof; i++) {
-			dR21_dq(i) = dTdqdot(2*num_dof+i,1);
-			dR22_dq(i) = dTdqdot(2*num_dof+i,2);
-			dR20_dq(i) = dTdqdot(2*num_dof+i,0);
-			dR00_dq(i) = dTdqdot(i,0);
-			dR10_dq(i) = dTdqdot(num_dof+i,0);
-		}
-		double sqterm1 = R(2,1)*R(2,1) + R(2,2)*R(2,2);
-		double sqterm2 = R(0,0)*R(0,0) + R(1,0)*R(1,0);
+    VectorXd dR21_dq(num_dof),dR22_dq(num_dof),dR20_dq(num_dof),dR00_dq(num_dof),dR10_dq(num_dof);
+    for (int i=0; i<num_dof; i++) {
+      dR21_dq(i) = dTdqdot(2*num_dof+i,1);
+      dR22_dq(i) = dTdqdot(2*num_dof+i,2);
+      dR20_dq(i) = dTdqdot(2*num_dof+i,0);
+      dR00_dq(i) = dTdqdot(i,0);
+      dR10_dq(i) = dTdqdot(num_dof+i,0);
+    }
+    double sqterm1 = R(2,1)*R(2,1) + R(2,2)*R(2,2);
+    double sqterm2 = R(0,0)*R(0,0) + R(1,0)*R(1,0);
 
-		MatrixXd Jr = MatrixXd::Zero(3,num_dof);
+    MatrixXd Jr = MatrixXd::Zero(3,num_dof);
 
-		Jr.block(0,0,1,num_dof) = ((R(2,2)*dR21_dq - R(2,1)*dR22_dq)/sqterm1).transpose();
-		Jr.block(1,0,1,num_dof) = ((-sqrt(sqterm1)*dR20_dq + R(2,0)/sqrt(sqterm1)*(R(2,1)*dR21_dq + R(2,2)*dR22_dq) )/(R(2,0)*R(2,0) + R(2,1)*R(2,1) + R(2,2)*R(2,2))).transpose();
-		Jr.block(2,0,1,num_dof)= ((R(0,0)*dR10_dq - R(1,0)*dR00_dq)/sqterm2).transpose();
+    Jr.block(0,0,1,num_dof) = ((R(2,2)*dR21_dq - R(2,1)*dR22_dq)/sqterm1).transpose();
+    Jr.block(1,0,1,num_dof) = ((-sqrt(sqterm1)*dR20_dq + R(2,0)/sqrt(sqterm1)*(R(2,1)*dR21_dq + R(2,2)*dR22_dq) )/(R(2,0)*R(2,0) + R(2,1)*R(2,1) + R(2,2)*R(2,2))).transpose();
+    Jr.block(2,0,1,num_dof)= ((R(0,0)*dR10_dq - R(1,0)*dR00_dq)/sqterm2).transpose();
 
-		MatrixXd Jfull = MatrixXd::Zero(2*3*n_pts,num_dof);
-		for (int i=0; i<n_pts; i++) {
-			Jfull.block(i*6,0,3,num_dof) = Jdot.block(i*3,0,3,num_dof);
-			Jfull.block(i*6+3,0,3,num_dof) = Jr;
-		}
-		Jdot=Jfull;
-	}
+    MatrixXd Jfull = MatrixXd::Zero(2*3*n_pts,num_dof);
+    for (int i=0; i<n_pts; i++) {
+      Jfull.block(i*6,0,3,num_dof) = Jdot.block(i*3,0,3,num_dof);
+      Jfull.block(i*6+3,0,3,num_dof) = Jr;
+    }
+    Jdot=Jfull;
+  }
 }
 
 template <typename DerivedA, typename DerivedB>
@@ -2466,8 +2466,8 @@ void RigidBodyManipulator::HandC(MatrixBase<DerivedG> const & q, MatrixBase<Deri
       dcrf(v[i],I[i]*v[i],dvdqd[i],I[i]*dvdqd[i],&(dcross));
       dfvpdqd[i] = I[i]*davpdqd[i] + dcross;
       if (df_ext) {
-	dfvpdq[i] = dfvpdq[i] - df_ext->block(i*6,0,6,num_dof);
-	dfvpdqd[i] = dfvpdqd[i] - df_ext->block(i*6,num_dof,6,num_dof);
+  dfvpdq[i] = dfvpdq[i] - df_ext->block(i*6,0,6,num_dof);
+  dfvpdqd[i] = dfvpdqd[i] - df_ext->block(i*6,num_dof,6,num_dof);
       }
 
     }
@@ -2565,13 +2565,10 @@ void RigidBodyManipulator::HandC(MatrixBase<DerivedG> const & q, MatrixBase<Deri
 void RigidBodyManipulator::surfaceTangents(Map<Matrix3xd> const & normals, std::vector< Map<Matrix3xd> > & tangents)
 {
   const int numContactPairs = normals.cols();
-
-  for(int curNormal = 0 ; curNormal < numContactPairs; curNormal++)
-  {
+  for (int curNormal = 0 ; curNormal < numContactPairs; curNormal++) {
     Matrix3kd d;
     surfaceTangentsSingle(normals.col(curNormal), d);
-    for(int k = 0 ; k < BASIS_VECTOR_HALF_COUNT ; k++)
-    {
+    for (int k = 0 ; k < BASIS_VECTOR_HALF_COUNT ; k++) {
       tangents[k].col(curNormal) = d.col(k);
     }
   }
@@ -2582,19 +2579,19 @@ void RigidBodyManipulator::surfaceTangentsSingle(Vector3d const & normal, Matrix
 {
   Vector3d t1,t2;
   double theta;
-
-  if (1 - normal(2) < EPSILON) { // handle the unit-normal case (since it's unit length, just check z)
-    t1 << 1,0,0;
-  } else if(1 + normal(2) < EPSILON) {
-    t1 << -1,0,0;  //same for the reflected case
+  
+  if (1.0 - normal(2) < EPSILON) { // handle the unit-normal case (since it's unit length, just check z)
+    t1 << 1.0, 0.0, 0.0;
+  } else if (1 + normal(2) < EPSILON) {
+    t1 << -1.0, 0.0, 0.0;  //same for the reflected case
   } else {// now the general case
-    t1 << normal(1), -normal(0) , 0;
+    t1 << normal(1), -normal(0), 0.0;
     t1 /= sqrt(normal(1)*normal(1) + normal(0)*normal(0));
   }
-
+  
   t2 = t1.cross(normal);
 
-  for (int k=0; k<BASIS_VECTOR_HALF_COUNT; k++) {
+  for (int k = 0 ; k < BASIS_VECTOR_HALF_COUNT ; k++) {
     theta = k*M_PI/BASIS_VECTOR_HALF_COUNT;
     d.col(k)=cos(theta)*t1 + sin(theta)*t2;
   }
@@ -2604,23 +2601,20 @@ void RigidBodyManipulator::getUniqueBodiesSorted(VectorXi const & idxA, VectorXi
 {
   size_t m = idxA.size();
   std::set<int> bodyInds;
-
-  for(int i = 0 ; i < m ; i++)
-  {  
+  
+  for (int i = 0 ; i < m ; i++) {  
     bodyInds.insert(idxA[i]);
     bodyInds.insert(idxB[i]);
   }
-
+  
   bodyIndsSorted.clear();
 
-  for(std::set<int>::const_iterator citer = bodyInds.begin() ; citer != bodyInds.end() ; citer++)
-  {
-    if( *citer > 1 )
-    {
+  for (std::set<int>::const_iterator citer = bodyInds.begin() ; citer != bodyInds.end() ; citer++) {
+    if ( *citer > 1 ) {
       bodyIndsSorted.push_back(*citer);
     }
   }
-
+  
   sort(bodyIndsSorted.begin(), bodyIndsSorted.end());
 }
 
@@ -2628,8 +2622,8 @@ void RigidBodyManipulator::findContactIndexes(VectorXi const & idxList, const in
 {
   int m = idxList.size();
   contactIdx.clear();
-  for(int i = 0 ; i < m ; i++) {
-    if(idxList[i] == bodyIdx) {
+  for (int i = 0 ; i < m ; i++) {
+    if (idxList[i] == bodyIdx) {
       contactIdx.push_back(i); //zero-based index 
     }
   }
@@ -2643,12 +2637,12 @@ void RigidBodyManipulator::getBodyPoints(std::vector<int> const & cindA, std::ve
 
   bodyPoints.resize(4, numPtsA + numPtsB);
 
-  for(i = 0 ; i < numPtsA ; i++ ) {
-    bodyPoints.col(i) << xA.col(cindA[i]) , 1; //homogeneous coordinates
+  for (i = 0 ; i < numPtsA ; i++ ) {
+    bodyPoints.col(i) << xA.col(cindA[i]), 1.0; //homogeneous coordinates
   }
 
-  for(i = 0 ; i < numPtsB ; i++ ) {
-    bodyPoints.col(numPtsA + i) << xB.col(cindB[i]), 1;
+  for (i = 0 ; i < numPtsB ; i++ ) {
+    bodyPoints.col(numPtsA + i) << xB.col(cindB[i]), 1.0;
   }
 }
 
@@ -2664,14 +2658,12 @@ void RigidBodyManipulator::accumulateJacobian(const int bodyInd, MatrixXd const 
   forwardJac(bodyInd - 1, bodyPoints, 0, J_tmp);
 
   //add contributions from points in xA
-  for(int x = 0 ; x < numCA ; x++)
-  {
+  for (int x = 0 ; x < numCA ; x++) {
     J.block(3*cindA[x], 0, 3, nq) += J_tmp.block(3*x, 0, 3, nq);
   }
 
   //subtract contributions from points in xB
-  for(int x = 0 ; x < numCB ; x++)
-  {
+  for (int x = 0 ; x < numCB ; x++) {
     J.block(3*cindB[x], 0, 3, nq) -= J_tmp.block(offset + 3*x, 0, 3, nq);
   }
 }
@@ -2687,14 +2679,12 @@ void RigidBodyManipulator::accumulateSecondOrderJacobian(const int bodyInd, Matr
   forwarddJac(bodyInd - 1, bodyPoints, dJ_tmp); //dJac instead of Jac
 
   //add contributions from points in xA
-  for(int x = 0 ; x < numCA ; x++)
-  {
+  for (int x = 0 ; x < numCA ; x++) {
     dJ.block(3*cindA[x], 0, 3, dJCols) += dJ_tmp.block(3*x, 0, 3, dJCols);
   }
 
   //subtract contributions from points in xB
-  for(int x = 0 ; x < numCB ; x++)
-  {
+  for (int x = 0 ; x < numCB ; x++) {
     dJ.block(3*cindB[x], 0, 3, dJCols) -= dJ_tmp.block(offset + 3*x, 0, 3, dJCols);
   }  
 }
@@ -2712,7 +2702,7 @@ void RigidBodyManipulator::computeContactJacobians(Map<VectorXi> const & idxA, M
   
   const int numUniqueBodies = bodyInds.size();
 
-  for(int i = 0; i < numUniqueBodies ; i++) {
+  for (int i = 0; i < numUniqueBodies ; i++) {
     const int bodyInd = bodyInds[i];
     vector<int> cindA, cindB;
     MatrixXd bodyPoints;
@@ -2720,8 +2710,7 @@ void RigidBodyManipulator::computeContactJacobians(Map<VectorXi> const & idxA, M
     findContactIndexes(idxB, bodyInd, cindB);
     getBodyPoints(cindA, cindB, xA, xB, bodyPoints);
     accumulateJacobian(bodyInd, bodyPoints, cindA, cindB, J);
-    if(compute_second_derivatives)
-    {
+    if (compute_second_derivatives) {
       accumulateSecondOrderJacobian(bodyInd, bodyPoints, cindA, cindB, dJ);
     }
   } 

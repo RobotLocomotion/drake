@@ -26,16 +26,16 @@ compute_first_derivative = nargout > 8;
 compute_second_derivative = nargout > 10;
 
 if nargin<3,
-    allow_multiple_contacts = false;
+  allow_multiple_contacts = false;
 end
 
 if nargin<4,
-    active_collision_options = struct();
+  active_collision_options = struct();
 end
 
 if ~isstruct(kinsol)
-    % treat input as contactPositions(obj,q)
-    kinsol = doKinematics(obj,kinsol,compute_second_derivative);
+  % treat input as contactPositions(obj,q)
+  kinsol = doKinematics(obj,kinsol,compute_second_derivative);
 end
 
 [phi,normal,xA,xB,idxA,idxB] = collisionDetect(obj,kinsol,allow_multiple_contacts,active_collision_options);
@@ -45,13 +45,13 @@ nC = numel(phi);
 
 % If there are no potential collisions, return empty
 if nC == 0
-    d = [];
-    mu = [];
-    n = [];
-    D = [];
-    dn = [];
-    dD = [];
-    return;
+  d = [];
+  mu = [];
+  n = [];
+  D = [];
+  dn = [];
+  dD = [];
+  return;
 end
 
 % For now, all coefficients of friction are 1
@@ -59,16 +59,16 @@ mu = ones(nC,1);
 use_mex = obj.mex_model_ptr ~= 0;
 
 if compute_first_derivative
-    if(compute_second_derivative)
-        %second and first derivatives
-        [d, n, D, dn, dD] = contactConstraintDerivatives(obj, use_mex, normal, kinsol, idxA, idxB, xA, xB);
-    else
-        %just first derivativves
-        [d, n, D] = contactConstraintDerivatives(obj, use_mex, normal, kinsol, idxA, idxB, xA, xB);
-    end
+  if(compute_second_derivative)
+    %second and first derivatives
+    [d, n, D, dn, dD] = contactConstraintDerivatives(obj, use_mex, normal, kinsol, idxA, idxB, xA, xB);
+  else
+    %just first derivativves
+    [d, n, D] = contactConstraintDerivatives(obj, use_mex, normal, kinsol, idxA, idxB, xA, xB);
+  end
 else
-    %just tangents
-    d = contactConstraintDerivatives(obj, use_mex, normal);
+  %just tangents
+  d = contactConstraintDerivatives(obj, use_mex, normal);
 end
 end
 

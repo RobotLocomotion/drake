@@ -3,29 +3,28 @@ function testSurfaceTangentsMex
 checkDependency('bullet');
 
 %build an atlas model 
-p = RigidBodyManipulator(fullfile('../../../examples/Atlas/urdf/atlas_minimal_contact.urdf'));
-if(p.mex_model_ptr == 0)
-    disp('testSurfaceTangentsMex: no mex model pointer... nothing to test');
-    return;
+robot = createAtlas('rpy');
+if(robot.mex_model_ptr == 0)
+  disp('testContactConstraintsMex: no mex model pointer... nothing to test');
+  return;
 end
 
 %random initial pose
-nq = p.getNumPositions();
-q0 = randn(nq, 1); 
-kinsol = p.doKinematics(q0);
+q = getRandomConfiguration(robot);
+kinsol = robot.doKinematics(q);
 
-%get collision data
-[~,normal,~,~,~,~] = p.collisionDetect(kinsol);
+%get collision normals
+[~,normal,~,~,~,~] = robot.collisionDetect(kinsol);
 
 %get the results from the mexed version
-d_mex  = contactConstraintDerivatives(p, true, normal);
+d_mex  = robot.contactConstraintDerivatives(true, normal);
 
 %get the results from the matlab version
-d = contactConstraintDerivatives(p, false, normal);
+d = robot.contactConstraintDerivatives(false, normal);
 
 %compare d
 for i = 1:size(d,2)
-    assert(norm(d_mex{i} - d{i}) < 1e-6)
+    valuecheck(d_mex{i}, d{i});
 end
 
 end
