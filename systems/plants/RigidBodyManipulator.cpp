@@ -276,13 +276,14 @@ RigidBodyManipulator::RigidBodyManipulator(int ndof, int num_featherstone_bodies
 RigidBodyManipulator::RigidBodyManipulator(const std::string &urdf_filename)
   :  collision_model(DrakeCollision::newModel()), collision_model_no_margins(DrakeCollision::newModel())
 {
-  num_dof=0; NB=0; num_bodies=1; num_frames=0;
+  num_dof=0; NB=0; num_bodies=0; num_frames=0;
   a_grav << 0,0,0,0,0,-9.81;
-  resize(num_dof,NB,num_bodies,num_frames);
+  resize(num_dof,NB,1,num_frames);
   bodies[0]->linkname = "world";
   bodies[0]->robotnum = 0;
   bodies[0]->body_index = 0;
   use_new_kinsol = true; // assuming new kinsol in the updated logic below
+
   addRobotFromURDF(urdf_filename);
 }
 
@@ -700,7 +701,7 @@ bool RigidBodyManipulator::allCollisions(vector<int>& bodyA_idx,
 //};
 
 template <typename Derived>
-void RigidBodyManipulator::doKinematics(MatrixBase<Derived> & q, bool b_compute_second_derivatives) 
+void RigidBodyManipulator::doKinematics(MatrixBase<Derived> & q, bool b_compute_second_derivatives)
 {
    doKinematics(&q[0], b_compute_second_derivatives);
 }
@@ -708,7 +709,7 @@ void RigidBodyManipulator::doKinematics(MatrixBase<Derived> & q, bool b_compute_
 template <typename DerivedA, typename DerivedB>
 void RigidBodyManipulator::doKinematics(MatrixBase<DerivedA>  & q, bool b_compute_second_derivatives, MatrixBase<DerivedB>  & v)
 {
-  
+
   doKinematics(&q[0], b_compute_second_derivatives, &v[0]);
 }
 
