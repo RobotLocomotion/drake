@@ -4,21 +4,21 @@
 #include "controlUtil.h"
 #include "drakeUtil.h"
 
-RigidBodyManipulator* r;
-int body_index;
-
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
-  if (nrhs<1) mexErrMsgTxt("usage: y=statelessBodyMotionControlmex(ptr,x,body_ind,body_pose_des,body_v_des,body_vdot_des,Kp,Kd)");
+  if (nrhs<1) mexErrMsgTxt("usage: y=statelessBodyMotionControlmex(robot,x,body_ind,body_pose_des,body_v_des,body_vdot_des,params)");
   if (nlhs<1) mexErrMsgTxt("take at least one output... please.");
   
   // first get the ptr back from matlab
-  if (!mxIsNumeric(prhs[0]) || mxGetNumberOfElements(prhs[0])!=1)
-    mexErrMsgIdAndTxt("DRC:bodyMotionControlmex:BadInputs","the first argument should be the ptr");
+  if (mxGetNumberOfElements(prhs[0])!=1)
+    mexErrMsgIdAndTxt("DRC:bodyMotionControlmex:BadInputs","the first argument should be the robot");
 
-  memcpy(&r,mxGetData(prhs[0]),sizeof(r));
+  RigidBodyManipulator* r;
+  mxArray* pm;
+  int body_index;
 
+  memcpy(&r,mxGetData(myGetProperty(myGetProperty(prhs[0],"mex_model_ptr"),"ptr")),sizeof(r));
 
   int nq = r->num_dof;
 
@@ -38,11 +38,17 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   assert(mxGetM(prhs[narg])==6); assert(mxGetN(prhs[narg])==1);
   Map< Vector6d > body_vdot_des(mxGetPr(prhs[narg++]));
 
-  assert(mxGetM(prhs[narg])==6); assert(mxGetN(prgs[narg])==1);
-  Map< Vector6d > Kp(mxGetPr(prhs[narg++]));
+  pm = mxGetField(prhs[narg], 0, "Kp");
+  assert(mxGetM(pm)==6); assert(mxGetN(pm) == 1);
+  Map< Vector6d > Kp(mxGetPr(pm));
+  // assert(mxGetM(mxGetField(prhs[narg]),0,"Kp"))==6); assert(mxGetN(prgs[narg])==1);
+  // Map< Vector6d > Kp(mxGetPr(prhs[narg++]));
 
-  assert(mxGetM(prhs[narg])==6); assert(mxGetN(prgs[narg])==1);
-  Map< Vector6d > Kd(mxGetPr(prhs[narg++]));
+  pm = mxGetField(prhs[narg], 0, "Kd");
+  assert(mxGetM(pm)==6); assert(mxGetN(pm) == 1);
+  Map< Vector6d > Kd(mxGetPr(pm));
+  // assert(mxGetM(prhs[narg])==6); assert(mxGetN(prgs[narg])==1);
+  // Map< Vector6d > Kd(mxGetPr(prhs[narg++]));
 
   r->doKinematics(q,false,qd);
 

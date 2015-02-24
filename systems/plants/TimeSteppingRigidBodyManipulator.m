@@ -17,6 +17,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     enable_fastqp; % whether we use the active set LCP
     lcmgl_contact_forces_scale = 0;  % <=0 implies no lcmgl
     z_inactive_guess_tol = .01;
+    mex_model_ptr = 0; % needed for access from mex functions
   end
 
   methods
@@ -167,6 +168,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       model.LCP_cache.data.x = NaN(model.getNumStates(),1);
       model.LCP_cache.data.u = NaN(model.getNumInputs(),1);
       model.LCP_cache.data.nargout = NaN;
+      model.mex_model_ptr = model.manip.getMexModelPtr();
       model.dirty = false;
     end
 
@@ -1129,7 +1131,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     end
 
     function ptr = getMexModelPtr(obj)
-      ptr = getMexModelPtr(obj.manip);
+      ptr = obj.mex_model_ptr;
     end
 
     function [phi,Jphi] = closestDistance(obj,varargin)

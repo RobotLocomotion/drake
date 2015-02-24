@@ -198,7 +198,9 @@ classdef AtlasPlanlessQPController
         body_id = qp_input.bodies_data(j).body_id;
         if ~isempty(body_id) && params.body_motion(body_id).weight ~= 0
           num_tracked_bodies = num_tracked_bodies + 1;
-          body_vdot = obj.body_accel_pd.getBodyVdot(t, x, qp_input.bodies_data(j), params.body_motion(body_id));
+          [body_des, body_v_des, body_vdot_des] = evalCubicSplineSegment(t - qp_input.bodies_data(j).ts(1), qp_input.bodies_data(j).coefs);
+          body_vdot = obj.body_accel_pd(r, x, body_id,...
+                                        body_des, body_v_des, body_vdot_des, params.body_motion(body_id));
           all_bodies_vdot(num_tracked_bodies).body_id = body_id; 
           all_bodies_vdot(num_tracked_bodies).body_vdot = body_vdot;
           all_bodies_vdot(num_tracked_bodies).params = params.body_motion(body_id);
