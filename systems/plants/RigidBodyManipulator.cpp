@@ -443,7 +443,7 @@ void RigidBodyManipulator::compile(void)
 {
   /* todo:
    - set joint limits (from drakejoint to rbm)
-   - add collision elements (and don't add them before, e.g. in constructModelmex)
+   - add collision elements (and don't add them before, e.g. in constructModelmex).. or update them here
    */
 
   // reorder body list to make sure that parents before children in the list
@@ -754,11 +754,11 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
   Matrix3d rx,drx,ddrx,ry,dry,ddry,rz,drz,ddrz;
 
   for (i = 0; i < num_bodies; i++) {
-    int parent = bodies[i]->parent->body_index;
-    if (parent < 0) {
+    if (!bodies[i]->hasParent()) {
       bodies[i]->T = bodies[i]->Ttree;
       //dTdq, ddTdqdq initialized as all zeros
     } else if (bodies[i]->floating == 1) {
+      shared_ptr<RigidBody> parent = bodies[i]->parent;
       double qi[6];
       for (j=0; j<6; j++) qi[j] = q[bodies[i]->dofnum+j];
 
@@ -772,12 +772,12 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
       TJ = Matrix4d::Identity();  TJ.block<3,3>(0,0) = rz*ry*rx;  TJ(0,3)=qi[0]; TJ(1,3)=qi[1]; TJ(2,3)=qi[2];
 
       Tmult = bodies[i]->Ttree * Tbinv * TJ * Tb;
-      bodies[i]->T = bodies[parent]->T * Tmult;
+      bodies[i]->T = parent->T * Tmult;
 
       // see notes below
-      bodies[i]->dTdq = bodies[parent]->dTdq * Tmult;
+      bodies[i]->dTdq = parent->dTdq * Tmult;
       dTmult = bodies[i]->Ttree * Tbinv * dTJ * Tb;
-      TdTmult = bodies[parent]->T * dTmult;
+      TdTmult = parent->T * dTmult;
 
       fb_dTJ[0] << 0,0,0,1, 0,0,0,0, 0,0,0,0, 0,0,0,0;
       fb_dTJ[1] << 0,0,0,0, 0,0,0,1, 0,0,0,0, 0,0,0,0;
@@ -788,7 +788,7 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
 
       for (j=0; j<6; j++) {
         fb_dTmult[j] = bodies[i]->Ttree * Tbinv * fb_dTJ[j] * Tb;
-        TdTmult = bodies[parent]->T * fb_dTmult[j];
+        TdTmult = parent->T * fb_dTmult[j];
         bodies[i]->dTdq.row(bodies[i]->dofnum + j) += TdTmult.row(0);
         bodies[i]->dTdq.row(bodies[i]->dofnum + j + num_dof) += TdTmult.row(1);
         bodies[i]->dTdq.row(bodies[i]->dofnum + j + 2*num_dof) += TdTmult.row(2);
@@ -808,14 +808,14 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
         // ddTdqdq = [d(dTdq)dq1; d(dTdq)dq2; ...]
         bodies[i]->ddTdqdq = MatrixXd::Zero(3*num_dof*num_dof,4);  // note: could be faster if I skipped this (like I do for floating == 0 below)
 
-        //        bodies[i]->ddTdqdq = bodies[parent]->ddTdqdq * Tmult;
-        for (set<IndexRange>::iterator iter = bodies[parent]->ddTdqdq_nonzero_rows_grouped.begin(); iter != bodies[parent]->ddTdqdq_nonzero_rows_grouped.end(); iter++) {
-          bodies[i]->ddTdqdq.block(iter->start,0,iter->length,4) = bodies[parent]->ddTdqdq.block(iter->start,0,iter->length,4) * Tmult;
+        //        bodies[i]->ddTdqdq = parent->ddTdqdq * Tmult;
+        for (set<IndexRange>::iterator iter = parent->ddTdqdq_nonzero_rows_grouped.begin(); iter != parent->ddTdqdq_nonzero_rows_grouped.end(); iter++) {
+          bodies[i]->ddTdqdq.block(iter->start,0,iter->length,4) = parent->ddTdqdq.block(iter->start,0,iter->length,4) * Tmult;
         }
 
         for (j=0; j<6; j++) {
           dTmult = bodies[i]->Ttree * Tbinv * fb_dTJ[j] * Tb;
-          dTdTmult = bodies[parent]->dTdq * dTmult;
+          dTdTmult = parent->dTdq * dTmult;
           for (k=0; k<3*num_dof; k++) {
             bodies[i]->ddTdqdq.row(3*num_dof*(bodies[i]->dofnum+j) + k) += dTdTmult.row(k);
           }
@@ -832,7 +832,7 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
 
           if (j>=3) {
           	for (k=3; k<6; k++) {
-              TddTmult = bodies[parent]->T*bodies[i]->Ttree * Tbinv * fb_ddTJ[j-3][k-3] * Tb;
+              TddTmult = parent->T*bodies[i]->Ttree * Tbinv * fb_ddTJ[j-3][k-3] * Tb;
               bodies[i]->ddTdqdq.row(3*num_dof*(bodies[i]->dofnum+k) + bodies[i]->dofnum+j) += TddTmult.row(0);
               bodies[i]->ddTdqdq.row(3*num_dof*(bodies[i]->dofnum+k) + bodies[i]->dofnum+j + num_dof) += TddTmult.row(1);
               bodies[i]->ddTdqdq.row(3*num_dof*(bodies[i]->dofnum+k) + bodies[i]->dofnum+j + 2*num_dof) += TddTmult.row(2);
@@ -857,12 +857,12 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
         fb_dTJdot[5] = Matrix4d::Zero();  fb_dTJdot[5].block<3,3>(0,0) = (ddrz*qdi[5])*ry*rx + drz*(dry*qdi[4])*rx + drz*ry*(drx*qdi[3]);
 
         dTdotmult = bodies[i]->Ttree * Tbinv * TJdot * Tb;
-        bodies[i]->Tdot = bodies[parent]->Tdot*Tmult + bodies[parent]->T * dTdotmult;
+        bodies[i]->Tdot = parent->Tdot*Tmult + parent->T * dTdotmult;
 
-        bodies[i]->dTdqdot = bodies[parent]->dTdqdot* Tmult + bodies[parent]->dTdq * dTdotmult;
+        bodies[i]->dTdqdot = parent->dTdqdot* Tmult + parent->dTdq * dTdotmult;
 
         for (int j=0; j<6; j++) {
-          dTdotmult = bodies[parent]->Tdot*fb_dTmult[j] + bodies[parent]->T*bodies[i]->Ttree*Tbinv*fb_dTJdot[j]*Tb;
+          dTdotmult = parent->Tdot*fb_dTmult[j] + parent->T*bodies[i]->Ttree*Tbinv*fb_dTJdot[j]*Tb;
           bodies[i]->dTdqdot.row(bodies[i]->dofnum + j) += dTdotmult.row(0);
           bodies[i]->dTdqdot.row(bodies[i]->dofnum + j + num_dof) += dTdotmult.row(1);
           bodies[i]->dTdqdot.row(bodies[i]->dofnum + j + 2*num_dof) += dTdotmult.row(2);
@@ -872,6 +872,7 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
     } else if (bodies[i]->floating == 2) {
       cerr << "mex kinematics for quaternion floating bases are not implemented yet" << endl;
     } else {
+      shared_ptr<RigidBody> parent = bodies[i]->parent;
       double qi = q[bodies[i]->dofnum];
       Tjcalc(bodies[i]->pitch,qi,&TJ);
       dTjcalc(bodies[i]->pitch,qi,&dTJ);
@@ -881,29 +882,29 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
 
       Tmult = bodies[i]->Ttree * Tbinv * TJ * Tb;
 
-      bodies[i]->T = bodies[parent]->T * Tmult;
+      bodies[i]->T = parent->T * Tmult;
 
       /*
        * note the unusual format of dTdq(chosen for efficiently calculating jacobians from many pts)
        * dTdq = [dT(1,:)dq1; dT(1,:)dq2; ...; dT(1,:)dqN; dT(2,dq1) ...]
        */
 
-      bodies[i]->dTdq = bodies[parent]->dTdq * Tmult;  // note: could only compute non-zero entries here
+      bodies[i]->dTdq = parent->dTdq * Tmult;  // note: could only compute non-zero entries here
 
       dTmult = bodies[i]->Ttree * Tbinv * dTJ * Tb;
-      TdTmult = bodies[parent]->T * dTmult;
+      TdTmult = parent->T * dTmult;
       bodies[i]->dTdq.row(bodies[i]->dofnum) += TdTmult.row(0);
       bodies[i]->dTdq.row(bodies[i]->dofnum + num_dof) += TdTmult.row(1);
       bodies[i]->dTdq.row(bodies[i]->dofnum + 2*num_dof) += TdTmult.row(2);
 
       if (b_compute_second_derivatives) {
         //ddTdqdq = [d(dTdq)dq1; d(dTdq)dq2; ...]
-        //	bodies[i]->ddTdqdq = bodies[parent]->ddTdqdq * Tmult; // pushed this into the loop below to exploit the sparsity
-        for (set<IndexRange>::iterator iter = bodies[parent]->ddTdqdq_nonzero_rows_grouped.begin(); iter != bodies[parent]->ddTdqdq_nonzero_rows_grouped.end(); iter++) {
-          bodies[i]->ddTdqdq.block(iter->start,0,iter->length,4) = bodies[parent]->ddTdqdq.block(iter->start,0,iter->length,4) * Tmult;
+        //	bodies[i]->ddTdqdq = parent->ddTdqdq * Tmult; // pushed this into the loop below to exploit the sparsity
+        for (set<IndexRange>::iterator iter = parent->ddTdqdq_nonzero_rows_grouped.begin(); iter != parent->ddTdqdq_nonzero_rows_grouped.end(); iter++) {
+          bodies[i]->ddTdqdq.block(iter->start,0,iter->length,4) = parent->ddTdqdq.block(iter->start,0,iter->length,4) * Tmult;
         }
 
-        dTdTmult = bodies[parent]->dTdq * dTmult;
+        dTdTmult = parent->dTdq * dTmult;
         for (j = 0; j < 3*num_dof; j++) {
           bodies[i]->ddTdqdq.row(3*num_dof*(bodies[i]->dofnum) + j) = dTdTmult.row(j);
         }
@@ -920,7 +921,7 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
         }
 
         ddTjcalc(bodies[i]->pitch,qi,&ddTJ);
-        TddTmult = bodies[parent]->T*bodies[i]->Ttree * Tbinv * ddTJ * Tb;
+        TddTmult = parent->T*bodies[i]->Ttree * Tbinv * ddTJ * Tb;
 
         bodies[i]->ddTdqdq.row(3*num_dof*(bodies[i]->dofnum) + bodies[i]->dofnum) += TddTmult.row(0);
         bodies[i]->ddTdqdq.row(3*num_dof*(bodies[i]->dofnum) + bodies[i]->dofnum + num_dof) += TddTmult.row(1);
@@ -935,12 +936,12 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
 
 //        body.Tdot = body.parent.Tdot*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint + body.parent.T*body.Ttree*inv(body.T_body_to_joint)*TJdot*body.T_body_to_joint;
         dTdotmult = bodies[i]->Ttree * Tbinv * TJdot * Tb;
-        bodies[i]->Tdot = bodies[parent]->Tdot*Tmult + bodies[parent]->T * dTdotmult;
+        bodies[i]->Tdot = parent->Tdot*Tmult + parent->T * dTdotmult;
 //        body.dTdqdot = body.parent.dTdqdot*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint + body.parent.dTdq*body.Ttree*inv(body.T_body_to_joint)*TJdot*body.T_body_to_joint;
-        bodies[i]->dTdqdot = bodies[parent]->dTdqdot* Tmult + bodies[parent]->dTdq * dTdotmult;
+        bodies[i]->dTdqdot = parent->dTdqdot* Tmult + parent->dTdq * dTdotmult;
 
 //        body.dTdqdot(this_dof_ind,:) = body.dTdqdot(this_dof_ind,:) + body.parent.Tdot(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*dTJ*body.T_body_to_joint + body.parent.T(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*dTJdot*body.T_body_to_joint;
-        dTdotmult = bodies[parent]->Tdot*dTmult + bodies[parent]->T*bodies[i]->Ttree*Tbinv*dTJdot*Tb;
+        dTdotmult = parent->Tdot*dTmult + parent->T*bodies[i]->Ttree*Tbinv*dTJdot*Tb;
         bodies[i]->dTdqdot.row(bodies[i]->dofnum) += dTdotmult.row(0);
         bodies[i]->dTdqdot.row(bodies[i]->dofnum + num_dof) += dTdotmult.row(1);
         bodies[i]->dTdqdot.row(bodies[i]->dofnum + 2*num_dof) += dTdotmult.row(2);
