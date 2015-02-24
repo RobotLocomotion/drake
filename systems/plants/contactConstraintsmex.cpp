@@ -177,7 +177,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   if(model != NULL) {
 
     const int numContactPairs = mxGetNumberOfElements(prhs[1]);
-    const int nq = model->num_dof;
+    const int nq = model->num_positions;
     const int nk = mxGetN(prhs[6]); //half the number of friction cone basis vectors
     const Map<VectorXi> idxA((int*)mxGetData(prhs[1]), numContactPairs); //collision pairs index of body A
     const Map<VectorXi> idxB((int*)mxGetData(prhs[2]), numContactPairs); //collision pairs index of body B

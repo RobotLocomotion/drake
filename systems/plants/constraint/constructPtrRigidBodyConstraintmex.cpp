@@ -933,7 +933,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         for(int i = 0;i<num_joints;i++)
         {
           joint_ind(i) = (int) joint_ind_tmp(i)-1;
-          if(joint_ind(i)<0 || joint_ind(i)>=model->num_dof)
+          if(joint_ind(i)<0 || joint_ind(i)>=model->num_positions)
           {
             mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","joint_ind must be within [1,nq]");
           }

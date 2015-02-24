@@ -39,7 +39,7 @@ IKoptions::~IKoptions()
 void IKoptions::setDefaultParams(RigidBodyManipulator* robot)
 {
   this->robot = robot;
-  this->nq = this->robot->num_dof;
+  this->nq = this->robot->num_positions;
   this->Q = MatrixXd::Identity(this->nq,this->nq);
   this->Qa = 0.1*MatrixXd::Identity(this->nq,this->nq);
   this->Qv = MatrixXd::Zero(this->nq,this->nq);
@@ -332,7 +332,7 @@ void IKoptions::updateRobot(RigidBodyManipulator* new_robot)
 {
   this->robot = new_robot;
   int nq_cache = this->nq;
-  this->nq = this->robot->num_dof;
+  this->nq = this->robot->num_positions;
   if(nq_cache != nq)
   {
     this->setDefaultParams(new_robot);

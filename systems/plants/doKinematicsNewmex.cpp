@@ -15,8 +15,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   RigidBodyManipulator *model = (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
 
   double *q, *v = nullptr;
-  if (mxGetNumberOfElements(prhs[1]) != model->num_dof)
-    mexErrMsgIdAndTxt("Drake:doKinematicsmex:BadInputs", "q must be size %d x 1", model->num_dof);
+  if (mxGetNumberOfElements(prhs[1]) != model->num_positions)
+    mexErrMsgIdAndTxt("Drake:doKinematicsmex:BadInputs", "q must be size %d x 1", model->num_positions);
   q = mxGetPr(prhs[1]);
   bool compute_gradients = (bool) (mxGetLogicals(prhs[2]))[0];
   if (mxGetNumberOfElements(prhs[3]) > 0) {
