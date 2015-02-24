@@ -29,7 +29,7 @@ RigidBody::RigidBody(void) :
     dJdotVdq(TWIST_SIZE, 0),
     dJdotVdv(TWIST_SIZE, 0)
 {
-	dofnum = 0;
+	position_num_start = 0;
 	velocity_num_start = 0;
 	mass = 0.0;
 	floating = 0;
@@ -87,7 +87,7 @@ const DrakeJoint& RigidBody::getJoint() const
 
 void RigidBody::computeAncestorDOFs(RigidBodyManipulator* model)
 {
-  if (dofnum>=0) {
+  if (position_num_start>=0) {
     int i,j;
     if (parent>=0) {
       ancestor_dofs = model->bodies[parent]->ancestor_dofs;
@@ -96,26 +96,26 @@ void RigidBody::computeAncestorDOFs(RigidBodyManipulator* model)
 
     if (floating==1) {
     	for (j=0; j<6; j++) {
-    		ancestor_dofs.insert(dofnum+j);
+    		ancestor_dofs.insert(position_num_start+j);
     		for (i=0; i<3*model->NB; i++) {
-    			ddTdqdq_nonzero_rows.insert(i*model->NB + dofnum + j);
-    			ddTdqdq_nonzero_rows.insert(3*model->NB*dofnum + i + j);
+    			ddTdqdq_nonzero_rows.insert(i*model->NB + position_num_start + j);
+    			ddTdqdq_nonzero_rows.insert(3*model->NB*position_num_start + i + j);
     		}
     	}
     } else if (floating==2) {
     	for (j=0; j<7; j++) {
-    		ancestor_dofs.insert(dofnum+j);
+    		ancestor_dofs.insert(position_num_start+j);
     		for (i=0; i<3*model->NB; i++) {
-    			ddTdqdq_nonzero_rows.insert(i*model->NB + dofnum + j);
-    			ddTdqdq_nonzero_rows.insert(3*model->NB*dofnum + i + j);
+    			ddTdqdq_nonzero_rows.insert(i*model->NB + position_num_start + j);
+    			ddTdqdq_nonzero_rows.insert(3*model->NB*position_num_start + i + j);
     		}
     	}
     }
     else {
-    	ancestor_dofs.insert(dofnum);
+    	ancestor_dofs.insert(position_num_start);
     	for (i=0; i<3*model->NB; i++) {
-    		ddTdqdq_nonzero_rows.insert(i*model->NB + dofnum);
-    		ddTdqdq_nonzero_rows.insert(3*model->NB*dofnum + i);
+    		ddTdqdq_nonzero_rows.insert(i*model->NB + position_num_start);
+    		ddTdqdq_nonzero_rows.insert(3*model->NB*position_num_start + i);
     	}
     }
 

@@ -53,7 +53,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   memcpy(&pdata,mxGetData(prhs[0]),sizeof(pdata));
 
-  int nq = pdata->r->num_dof;
+  int nq = pdata->r->num_positions;
   int nv = pdata->r->num_velocities;
 
   int narg = 1;
@@ -75,7 +75,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   // TODO: this must be updated to use quaternions/spatial velocity
   Vector6d body_pose;
-  MatrixXd J = MatrixXd::Zero(6,pdata->r->num_dof);
+  MatrixXd J = MatrixXd::Zero(6,pdata->r->num_positions);
   Vector4d zero = Vector4d::Zero();
   zero(3) = 1.0;
   pdata->r->forwardKin(pdata->body_index,zero,1,body_pose);

@@ -47,7 +47,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   int type = cnst->getType();
   int num_cnst = cnst->getNumConstraint(t_ptr);
   //mexPrintf("num_cnst = %d\n",num_cnst);
-  int nq = cnst->getRobotPointer()->num_dof;
+  int nq = cnst->getRobotPointer()->num_positions;
   Map<VectorXd> q(mxGetPr(prhs[1]), nq);
   cnst->getRobotPointer()->doKinematics(q);
   VectorXd c(num_cnst);

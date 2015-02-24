@@ -74,7 +74,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     mexErrMsgIdAndTxt("DRC:pelvisMotionControlmex:BadInputs","the first argument should be the ptr");
   memcpy(&pdata,mxGetData(prhs[0]),sizeof(pdata));
 
-  int nq = pdata->r->num_dof;
+  int nq = pdata->r->num_positions;
   int nv = pdata->r->num_velocities;
 
   int narg = 1;
@@ -89,7 +89,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   // TODO: this must be updated to use quaternions/spatial velocity
   Vector6d pelvis_pose;
-  MatrixXd Jpelvis = MatrixXd::Zero(6,pdata->r->num_dof);
+  MatrixXd Jpelvis = MatrixXd::Zero(6,pdata->r->num_positions);
   Vector4d zero = Vector4d::Zero();
   zero(3) = 1.0;
   pdata->r->forwardKin(pdata->pelvis_body_index,zero,1,pelvis_pose);

@@ -16,7 +16,7 @@ int main()
     cerr<<"ERROR: Failed to load model"<<endl;
   }
   int gradient_order = 1;
-  int nq = model->num_dof;
+  int nq = model->num_positions;
   int nv = model->num_velocities;
 
   default_random_engine generator;
@@ -35,7 +35,7 @@ int main()
     body.I.bottomLeftCorner<3, 3>() = vectorToSkewSymmetric((-mass * com).eval());
   }
 
-  VectorXd q = VectorXd::Random(model->num_dof);
+  VectorXd q = VectorXd::Random(model->num_positions);
   VectorXd v = VectorXd::Random(model->num_velocities);
   model->doKinematicsNew(q.data(), true, v.data(), true);
 
