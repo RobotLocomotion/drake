@@ -647,6 +647,8 @@ classdef AtlasQPController < QPController
     else
       varargout = {y};
     end
+    global qtraj_eval_start_time;
+    toc(qtraj_eval_start_time)
   end
   end
 
