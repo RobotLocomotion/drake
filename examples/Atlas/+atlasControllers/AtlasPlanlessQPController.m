@@ -185,7 +185,8 @@ classdef AtlasPlanlessQPController
                           params.whole_body);
 
       supp = obj.getPlannedSupports(qp_input.support_data.group_mask);
-      supp = obj.foot_contact.getActiveSupports(x, supp, contact_sensor);
+      supp = obj.foot_contact.getActiveSupports(x, supp, contact_sensor,...
+        qp_input.support_data.breaking_contact);
 
       [w_qdd, qddot_des] = obj.kneePD(q, qd, w_qdd, qddot_des, qp_input.support_data.toe_off, params.min_knee_angle);
 
