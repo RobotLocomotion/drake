@@ -111,10 +111,10 @@ classdef AtlasQPController < QPController
     x0 = x0 - [ctrl_data.plan_shift(1:2);0;0];
     y0 = y0 - ctrl_data.plan_shift(1:2);
 
-    lcmgl = LCMGLClient('desired zmp');
-    lcmgl.glColor3f(0, 0.7, 1.0);
-    lcmgl.sphere([y0; 0], 0.02, 20, 20);
-    lcmgl.switchBuffers();
+    % lcmgl = LCMGLClient('desired zmp');
+    % lcmgl.glColor3f(0, 0.7, 1.0);
+    % lcmgl.sphere([y0; 0], 0.02, 20, 20);
+    % lcmgl.switchBuffers();
     
     mu = ctrl_data.mu;
     R_DQyD_ls = R_ls + D_ls'*Qy*D_ls;
@@ -217,10 +217,10 @@ classdef AtlasQPController < QPController
       B_act = B(act_idx,:);
 
       [xcom,Jcom] = getCOM(r,kinsol);
-      lcmgl = LCMGLClient('actual com');
-      lcmgl.glColor3f(0.8, 1, 0);
-      lcmgl.sphere([xcom(1:2); 0], 0.02, 20, 20);
-      lcmgl.switchBuffers();
+      % lcmgl = LCMGLClient('actual com');
+      % lcmgl.glColor3f(0.8, 1, 0);
+      % lcmgl.sphere([xcom(1:2); 0], 0.02, 20, 20);
+      % lcmgl.switchBuffers();
 
 
       include_angular_momentum = any(any(obj.W_kdot));
