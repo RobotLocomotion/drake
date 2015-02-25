@@ -653,14 +653,22 @@ bool RigidBodyManipulator::allCollisions(vector<int>& bodyA_idx,
 template <typename Derived>
 void RigidBodyManipulator::doKinematics(MatrixBase<Derived> & q, bool b_compute_second_derivatives) 
 {
-   doKinematics(&q[0], b_compute_second_derivatives);
+  double* q_ptr = nullptr;
+  if (q.size() > 0)
+    q_ptr = &q[0];
+  doKinematics(q_ptr, b_compute_second_derivatives);
 }
 
 template <typename DerivedA, typename DerivedB>
 void RigidBodyManipulator::doKinematics(MatrixBase<DerivedA>  & q, bool b_compute_second_derivatives, MatrixBase<DerivedB>  & v)
 {
-  
-  doKinematics(&q[0], b_compute_second_derivatives, &v[0]);
+  double* q_ptr = nullptr;
+  if (q.size() > 0)
+    q_ptr = &q[0];
+  double* v_ptr = nullptr;
+  if (v.size() > 0)
+    v_ptr = &v[0];
+  doKinematics(q_ptr, b_compute_second_derivatives, v_ptr);
 }
 
 void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivatives, double* qd)
