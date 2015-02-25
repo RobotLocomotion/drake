@@ -25,18 +25,18 @@ int main(int argc, char* argv[])
     cout << model->bodies[i]->linkname << endl;
   }
 
-  VectorXd q = VectorXd::Zero(model->num_dof);
+  VectorXd q = VectorXd::Zero(model->num_positions);
   VectorXd v = VectorXd::Zero(model->num_velocities);
   int i;
 
-  if (argc >= 2 + model->num_dof) {
-    for (i = 0; i < model->num_dof; i++)
+  if (argc >= 2 + model->num_positions) {
+    for (i = 0; i < model->num_positions; i++)
       sscanf(argv[2 + i], "%lf", &q(i));
   }
 
-  if (argc >= 2 + model->num_dof + model->num_velocities) {
+  if (argc >= 2 + model->num_positions + model->num_velocities) {
     for (i = 0; i < model->num_velocities; i++)
-      sscanf(argv[2 + model->num_dof + i], "%lf", &v(i));
+      sscanf(argv[2 + model->num_positions + i], "%lf", &v(i));
   }
 
   model->doKinematicsNew(q.data(), true, v.data(), true);

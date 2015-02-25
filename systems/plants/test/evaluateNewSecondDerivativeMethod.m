@@ -22,7 +22,7 @@ for test = 1 : 50
   tic
   options.use_mex = false;
   options.compute_gradients = true;
-  kinsol = robot.doKinematics(q, [], [], [], options);
+  kinsol = robot.doKinematics(q, [], options);
   [J, v_indices, dJ] = robot.geometricJacobian(kinsol, base, end_effector, expressed_in);
   J_full = zeros(6, nv);
   J_full(:, v_indices) = J;
@@ -33,7 +33,7 @@ for test = 1 : 50
   tic
   options.use_mex = false;
   options.compute_gradients = false;
-  kinsol = robot.doKinematics(q, [], [], [], options);
+  kinsol = robot.doKinematics(q, [], options);
   dJ_full = dJNew(robot, kinsol, base, end_effector, expressed_in);
   new_time = new_time + toc;
   

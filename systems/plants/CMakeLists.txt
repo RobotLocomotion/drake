@@ -70,8 +70,11 @@ if (eigen3_FOUND)
   add_rbm_mex(centroidalMomentumMatrixmex)
   add_rbm_mex(massMatrixmex)
   add_rbm_mex(inverseDynamicsmex)
+  add_rbm_mex(geometricJacobianDotTimesVmex)
+  add_rbm_mex(centroidalMomentumMatrixDotTimesVmex)
+  add_rbm_mex(centerOfMassJacobianDotTimesVmex)
+  add_rbm_mex(forwardJacDotTimesVmex)
   add_rbm_mex(contactConstraintsmex)
-  
   add_mex(surfaceTangentsmex surfaceTangentsmex.cpp)
 
   include_directories( constraint )

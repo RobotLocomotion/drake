@@ -68,11 +68,17 @@ public:
   template <typename Scalar>
   GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> centroidalMomentumMatrix(int gradient_order);
 
+  template <typename Scalar>
+  GradientVar<Scalar, TWIST_SIZE, 1> centroidalMomentumMatrixDotTimesV(int gradient_order);
+
   template <typename DerivedA, typename DerivedB>
   void getCMM(MatrixBase<DerivedA> const & q, MatrixBase<DerivedA> const & qd, MatrixBase<DerivedB> &A, MatrixBase<DerivedB> &Adot);
 
   template <typename Scalar>
   GradientVar<Scalar, SPACE_DIMENSION, 1> centerOfMass(int gradient_order, const std::set<int>& robotnum = RigidBody::defaultRobotNumSet);
+
+  template <typename Scalar>
+  GradientVar<Scalar, SPACE_DIMENSION, 1> centerOfMassJacobianDotTimesV(int gradient_order);
 
   template <typename Derived>
   void getCOM(MatrixBase<Derived> &com,const std::set<int> &robotnum = RigidBody::defaultRobotNumSet);
@@ -128,11 +134,23 @@ public:
   template <typename Scalar>
   GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> forwardKinPositionGradient(int npoints, int current_body_or_frame_ind, int new_body_or_frame_ind, int gradient_order);
 
+  template <typename DerivedPoints>
+  GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, 1> forwardJacDotTimesV(const MatrixBase<DerivedPoints>& points, int body_or_frame_ind, int base_or_frame_ind, int rotation_type, int gradient_order);
+
   template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD>
   void bodyKin(const int body_ind, const MatrixBase<DerivedA>& pts, MatrixBase<DerivedB> &x, MatrixBase<DerivedC> *J=NULL, MatrixBase<DerivedD> *P=NULL);
 
   template<typename Scalar>
   GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> geometricJacobian(int base_body_or_frame_ind, int end_effector_body_or_frame_ind, int expressed_in_body_or_frame_ind, int gradient_order, bool in_terms_of_qdot = false, std::vector<int>* v_indices = nullptr);
+
+  template <typename Scalar>
+  GradientVar<Scalar, TWIST_SIZE, 1> geometricJacobianDotTimesV(int base_body_or_frame_ind, int end_effector_body_or_frame_ind, int expressed_in_body_or_frame_ind, int gradient_order);
+
+  template <typename Scalar>
+  GradientVar<Scalar, TWIST_SIZE, 1> relativeTwist(int base_or_frame_ind, int body_or_frame_ind, int expressed_in_body_or_frame_ind, int gradient_order);
+
+  template <typename Scalar>
+  GradientVar<Scalar, TWIST_SIZE, 1> transformSpatialAcceleration(const GradientVar<Scalar, TWIST_SIZE, 1>& spatial_acceleration, int base_or_frame_ind, int body_or_frame_ind, int old_body_or_frame_ind, int new_body_or_frame_ind);
 
   template<typename Scalar>
   GradientVar<Scalar, SPACE_DIMENSION + 1, SPACE_DIMENSION + 1> relativeTransform(int base_or_frame_ind, int body_or_frame_ind, int gradient_order);
@@ -209,7 +227,7 @@ public:
 public:
   std::vector<std::string> robot_name;
 
-  int num_dof; // treated as nq now; TODO: rename to nq
+  int num_positions; // treated as nq now; TODO: rename to nq
   int num_velocities;
   VectorXd joint_limit_min;
   VectorXd joint_limit_max;
