@@ -1,4 +1,4 @@
-classdef AtlasPlanEval < PlanEval
+classdef AtlasPlanEval < atlasControllers.PlanEval
   properties  
     robot_property_cache
     robot
@@ -6,11 +6,12 @@ classdef AtlasPlanEval < PlanEval
 
   methods
     function obj = AtlasPlanEval(r, varargin)
-      obj = obj@PlanEval(varargin{:});
+      obj = obj@atlasControllers.PlanEval(varargin{:});
       obj.robot = r;
 
       % getTerrainContactPoints is pretty expensive, so we'll just call it
       % for all the bodies and cache the results
+      nbod = length(obj.robot.getManipulator().body);
       contact_group_cache = cell(1, nbod);
       for j = 1:nbod
         contact_group_cache{j} = struct();
@@ -22,11 +23,11 @@ classdef AtlasPlanEval < PlanEval
       obj.robot_property_cache = struct('pelvis_body_id', obj.robot.findLinkId('pelvis'),...
                                         'neck_id', obj.robot.findPositionIndices('neck'),...
                                         'numq', obj.robot.getNumPositions(),...
-                                        'contact_group_cache', contact_group_cache);
+                                        'contact_groups', {contact_group_cache});
     end
 
     function qp_input = getQPControllerInput(obj, t, x)
-      plan = obj.getCurrentPlan();
+      plan = obj.getCurrentPlan(t);
       qp_input = plan.getQPControllerInput(t, x, obj.robot_property_cache);
     end
   end
