@@ -16,7 +16,7 @@ int main()
     cerr<<"ERROR: Failed to load model"<<endl;
   }
   int gradient_order = 1;
-  int nq = model->num_dof;
+  int nq = model->num_positions;
   int nv = model->num_velocities;
 
   default_random_engine generator;
@@ -35,9 +35,17 @@ int main()
     body.I.bottomLeftCorner<3, 3>() = vectorToSkewSymmetric((-mass * com).eval());
   }
 
-  VectorXd q = VectorXd::Random(model->num_dof);
+  VectorXd q = VectorXd::Random(model->num_positions);
   VectorXd v = VectorXd::Random(model->num_velocities);
+  model->use_new_kinsol = true;
   model->doKinematicsNew(q.data(), true, v.data(), true);
+
+
+  auto points = Matrix<double, 3, Eigen::Dynamic>::Random(3, 5).eval();
+  int body_or_frame_ind = 8;
+  int base_or_frame_ind = 0;
+  int rotation_type = 0;
+  model->forwardJacDotTimesV(points, body_or_frame_ind, base_or_frame_ind, rotation_type, gradient_order);
 
   auto M = model->massMatrix<double>(gradient_order);
   cout << M.value() << endl << endl;

@@ -120,7 +120,7 @@ void QuaternionFloatingJoint::v2qdot(double* q, Eigen::MatrixXd& v_to_qdot, Eige
     setSubMatrixGradient<4>(*dv_to_qdot, dMR, intRange<4>(3), intRange<3>(0), v_to_qdot.rows(), 3);
   }
   else {
-    angularvel2quatdotMatrix(quat, M);
+    angularvel2quatdotMatrix(quat, M, (Gradient<decltype(M), QUAT_SIZE, 1>::type*) nullptr);
   }
 
   v_to_qdot.block<3, 3>(0, 0).setZero();
