@@ -67,11 +67,10 @@ footstep_plan = r.planFootsteps(x0(1:nq), goal_pos, [], struct('step_params', st
 walking_plan_data = r.planWalkingZMP(x0(1:r.getNumPositions()), footstep_plan);
 
 import atlasControllers.*;
-qpd = QPDMixin(r,[-100,100]);
 foot_contact = FootContactMixin(r, struct());
 
 param_sets = atlasParams.getDefaults(r);
-control = AtlasPlanlessQPController(r, qpd, foot_contact,...
+control = AtlasPlanlessQPController(r, foot_contact,...
                                     fcompare(@statelessBodyMotionControl,@statelessBodyMotionControlmex),...
                                     param_sets, struct('use_mex', 2));
                                     % @statelessBodyMotionControlmex,...
@@ -87,9 +86,9 @@ sys = mimoCascade(sys,v,[],[],output_select);
 
 T = walking_plan_data.comtraj.tspan(2)-0.001;
 
-profile on
+% profile on
 ytraj = simulate(sys, [0, T + 0.5], x0, struct('gui_control_interface', true));
-profile viewer
+% profile viewer
 
 v.playback(ytraj, struct('slider', true));
 

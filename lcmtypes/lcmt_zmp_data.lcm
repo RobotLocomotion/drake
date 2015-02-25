@@ -1,0 +1,21 @@
+package drake;
+
+struct lcmt_zmp_data
+{
+	int64_t timestamp;
+
+	double A[4][4];
+	double B[2][2];
+	double C[2][2];
+	double D[2][2];
+	double x0[4];
+	double y0[2];
+	double u0[2];
+	double R[2][2];
+	double Qy[2][2];
+	double S[4][4];
+	double s1[4];
+	double s1dot[4];
+	double s2;
+	double s2dot;
+}
