@@ -258,8 +258,8 @@ else
   kinsol.J = computeJ(kinsol.T, kinsol.S);
   
   if options.compute_gradients
-    [kinsol.qdotToV, kinsol.dqdotToVdq] = computeQdotToV(bodies, q);
-    [kinsol.vToqdot, kinsol.dvToqdotdq] = computeVToqdot(bodies, q);
+    [kinsol.qdotToV, kinsol.dqdotToVdqi, kinsol.dqdotToVdq] = computeQdotToV(bodies, q);
+    [kinsol.vToqdot, kinsol.dvToqdotdqi, kinsol.dvToqdotdq] = computeVToqdot(bodies, q);
   else
     kinsol.qdotToV = computeQdotToV(bodies, q);
     kinsol.vToqdot = computeVToqdot(bodies, q);
@@ -374,38 +374,46 @@ for i = 2 : nb
 end
 end
 
-function [Vq, dVq] = computeQdotToV(bodies, q)
+function [Vq, dVqdqi, dVqdq] = computeQdotToV(bodies, q)
 compute_gradient = nargout > 1;
 nb = length(bodies);
 Vq = cell(1, nb);
 if compute_gradient
-  dVq = cell(1, nb);
+  dVqdqi = cell(1, nb);
+  dVqdq = cell(1, nb);
 end
+nq = length(q);
 
 for i = 2 : nb
   body = bodies(i);
   q_body = q(body.position_num);
   if compute_gradient
-    [Vq{i}, dVq{i}] = jointQdot2v(body, q_body);
+    [Vq{i}, dVqdqi{i}] = jointQdot2v(body, q_body);
+    dVqdq{i} = zeros(numel(Vq{i}), nq);
+    dVqdq{i}(:, body.position_num) = dVqdqi{i};
   else
     Vq{i} = jointQdot2v(body, q_body);
   end
 end
 end
 
-function [VqInv, dVqInv] = computeVToqdot(bodies, q)
+function [VqInv, dVqInvdqi, dVqInvdq] = computeVToqdot(bodies, q)
 compute_gradient = nargout > 1;
 nb = length(bodies);
 VqInv = cell(1, nb);
 if compute_gradient
-  dVqInv = cell(1, nb);
+  dVqInvdqi = cell(1, nb);
+  dVqInvdq = cell(1, nb);
 end
+nq = length(q);
 
 for i = 2 : nb
   body = bodies(i);
   q_body = q(body.position_num);
   if compute_gradient
-    [VqInv{i}, dVqInv{i}] = jointV2qdot(body, q_body);
+    [VqInv{i}, dVqInvdqi{i}] = jointV2qdot(body, q_body);
+    dVqInvdq{i} = zeros(numel(VqInv{i}), nq);
+    dVqInvdq{i}(:, body.position_num) = dVqInvdqi{i};
   else
     VqInv{i} = jointV2qdot(body, q_body);
   end

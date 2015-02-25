@@ -181,26 +181,35 @@ else
   crbs_world = compositeRigidBodyInertias(robot, inertias_world);
 end
 
-mask = false(length(robot.body), 1);
+if in_terms_of_qdot
+  ncols = robot.getNumPositions();
+else
+  ncols = robot.getNumVelocities();
+end
+
+size_A = [6, ncols];
+A = zeros(size_A);
+if compute_gradients
+  dA = zeros(prod(size_A), robot.getNumPositions());
+end
+
 for i = 2 : length(robot.body)
   if any(robot.body(i).robotnum == robotnum)
-    mask(i) = true;
+    if in_terms_of_qdot
+      IcJ = crbs_world{i} * kinsol.J{i};
+      cols_joint = robot.body(i).position_num;
+      A(:, cols_joint) = IcJ * kinsol.qdotToV{i};
+      if compute_gradients
+        dIcJ = matGradMultMat(crbs_world{i}, kinsol.J{i}, dcrbs_world{i}, kinsol.dJdq{i});
+        dA = setSubMatrixGradient(dA, matGradMultMat(IcJ, kinsol.qdotToV{i}, dIcJ, kinsol.dqdotToVdq{i}), 1:6, cols_joint, size_A);
+      end
+    else
+      cols_joint = robot.body(i).velocity_num;
+      A(:, cols_joint) = crbs_world{i} * kinsol.J{i};
+      if compute_gradients
+        dA = setSubMatrixGradient(dA, matGradMultMat(crbs_world{i}, kinsol.J{i}, dcrbs_world{i}, kinsol.dJdq{i}), 1:6, cols_joint, size_A);
+      end
+    end
   end
-end
-
-ABlocks = cellfun(@mtimes, crbs_world(mask), kinsol.J(mask), 'UniformOutput', false);
-if compute_gradients
-  dABlocks = cellfun(@matGradMultMat, crbs_world(mask), kinsol.J(mask), dcrbs_world(mask), kinsol.dJdq(mask), 'UniformOutput', false);
-end
-if in_terms_of_qdot
-  if compute_gradients
-    dABlocks = cellfun(@matGradMultMat, ABlocks, kinsol.qdotToV(mask), dABlocks, kinsol.dqdotToVdq(mask), 'UniformOutput', false);
-  end
-  ABlocks = cellfun(@mtimes, ABlocks, kinsol.qdotToV(mask), 'UniformOutput', false);
-end
-
-A = [ABlocks{:}];
-if compute_gradients
-  dA = vertcat(dABlocks{:});
 end
 end

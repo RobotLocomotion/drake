@@ -10,8 +10,8 @@ using namespace std;
 
 void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
 
-  std::string usage = "Usage [Jdot_times_v, dJdot_times_v] = centerOfMassJacobianDotTimesVmex(model_ptr)";
-  if (nrhs != 1) {
+  std::string usage = "Usage [Jdot_times_v, dJdot_times_v] = centerOfMassJacobianDotTimesVmex(model_ptr, robotnum)";
+  if (nrhs != 2) {
     mexErrMsgIdAndTxt("Drake:centerOfMassJacobianDotTimesVmex:WrongNumberOfInputs", usage.c_str());
   }
 
@@ -20,6 +20,12 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
   }
 
   RigidBodyManipulator *model = (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
+  set<int> robotnum_set;
+  int num_robot = static_cast<int>(mxGetNumberOfElements(prhs[1]));
+  double* robotnum = mxGetPr(prhs[1]);
+  for (int i = 0; i < num_robot; i++) {
+    robotnum_set.insert((int) robotnum[i] - 1);
+  }
   int gradient_order = nlhs - 1;
   auto ret = model->centerOfMassJacobianDotTimesV<double>(gradient_order);
 

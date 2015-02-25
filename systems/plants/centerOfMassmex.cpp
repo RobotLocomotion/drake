@@ -10,8 +10,8 @@ using namespace std;
 
 void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
 
-  std::string usage = "Usage [x, J, dJ] = centerOfMassmex(robotnum, in_terms_of_qdot)";
-  if (nrhs != 2) {
+  std::string usage = "Usage [x, J, dJ] = centerOfMassmex(model_ptr, robotnum, in_terms_of_qdot)";
+  if (nrhs != 3) {
     mexErrMsgIdAndTxt("Drake:centerOfMassmex:WrongNumberOfInputs", usage.c_str());
   }
 
