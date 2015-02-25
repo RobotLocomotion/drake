@@ -87,7 +87,6 @@ function [J, v_or_qdot_indices, dJdq] = geometricJacobianNew(obj, kinsol, base, 
 % body.velocity_num/body.position_num.
 % @retval dJdq gradient of J with respect to joint configuration vector q
 
-
 compute_gradient = nargout > 2;
 
 [~, joint_path, signs] = findKinematicPath(obj, base, end_effector);
@@ -104,40 +103,53 @@ end
 if isempty(joint_path)
   J = zeros(6,0);
   if compute_gradient
-    dJdq = zeros(0, obj.num_positions);
+    dJdq = zeros(0, obj.getNumPositions());
   end
   return;
 end
 
-% mtimes to please MSSPoly for TrigPoly
 if in_terms_of_qdot
   JBlocks = cellfun(@(x, y, z) x * y * z, num2cell(signs'), kinsol.J(joint_path), kinsol.qdotToV(joint_path), 'UniformOutput', false);
 else
   JBlocks = cellfun(@mtimes, kinsol.J(joint_path), num2cell(signs'), 'UniformOutput', false);
 end
 J = [JBlocks{:}];
-% J = cell2mat(JBlocks); % doesn't work with TaylorVar
-
-if compute_gradient
-  if in_terms_of_qdot
-    dJdqBlocks = cellfun(@(sign, a, b, da, db) sign * matGradMultMat(a, b, da, db), ...
-      num2cell(signs'), kinsol.J(joint_path), kinsol.qdotToV(joint_path), kinsol.dJdq(joint_path), kinsol.dqdotToVdq(joint_path),...
-      'UniformOutput', false);
-  else
-    dJdqBlocks = cellfun(@times, kinsol.dJdq(joint_path), num2cell(signs'), 'UniformOutput', false);
-  end
-  dJdq = vertcat(dJdqBlocks{:});
-end
 
 if expressed_in ~= 1
-  % change frame from world to expressedIn
-  if compute_gradient
-    [T, dTdq] = relativeTransform(obj, kinsol, expressed_in, 1);
-    dJdq = dTransformSpatialMotion(T, J, dTdq, dJdq);
-  else
-    T = relativeTransform(obj, kinsol, expressed_in, 1);
-  end
+  T = relativeTransform(obj, kinsol, expressed_in, 1);
   J = transformAdjoint(T) * J;
 end
 
+if compute_gradient
+  dJdq = zeros(numel(J), obj.num_positions);
+  J_size = [6, length(v_or_qdot_indices)];
+  col = 1;
+  AdH1 = transformAdjoint(obj.relativeTransform(kinsol, expressed_in, 1));
+  for i = 1 : length(joint_path)
+    j = joint_path(i);
+    sign = signs(i);
+    bodyJ = obj.body(j);
+    Jj = sign * kinsol.J{j};
+    if in_terms_of_qdot
+      Jj = Jj * kinsol.qdotToV{j};
+    end
+    
+    dSjdqj = sign * kinsol.dSdq{j};
+    if in_terms_of_qdot
+      dSjdqj = matGradMultMat(sign * kinsol.S{j}, kinsol.qdotToV{j}, dSjdqj, kinsol.dqdotToVdq{j});
+    end
+    AdHj = transformAdjoint(obj.relativeTransform(kinsol, expressed_in, j));
+    [Jj1, qdot_ind_ij] = obj.geometricJacobian(kinsol, expressed_in, j, 1, true);
+    
+    for Jj_col = 1 : size(Jj, 2)
+      block = AdHj * getSubMatrixGradient(dSjdqj, 1:6, Jj_col, size(Jj));
+      dJdq = setSubMatrixGradient(dJdq, block, 1:6, col, J_size, bodyJ.position_num);
+      
+      block = -AdH1 * crm(Jj(:, Jj_col)) * Jj1;
+      block = block + getSubMatrixGradient(dJdq, 1:6, col, J_size, qdot_ind_ij);
+      dJdq = setSubMatrixGradient(dJdq, block, 1:6, col, J_size, qdot_ind_ij);
+      col = col + 1;
+    end
+  end
+end
 end

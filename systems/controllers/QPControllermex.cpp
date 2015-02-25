@@ -96,7 +96,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     pdata->B.resize(mxGetM(prhs[3]),mxGetN(prhs[3]));
     memcpy(pdata->B.data(),mxGetPr(prhs[3]),sizeof(double)*mxGetM(prhs[3])*mxGetN(prhs[3]));
 
-    int nq = pdata->r->num_dof, nu = pdata->B.cols();
+    int nq = pdata->r->num_positions, nu = pdata->B.cols();
     
     pm = myGetProperty(pobj,"w_qdd");
     pdata->w_qdd.resize(nq);
@@ -178,7 +178,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 //  for (i=0; i<pdata->r->num_bodies; i++)
 //    mexPrintf("body %d (%s) has %d contact points\n", i, pdata->r->bodies[i].linkname.c_str(), pdata->r->bodies[i].contact_pts.cols());
 
-  int nu = pdata->B.cols(), nq = pdata->r->num_dof, nv = pdata->r->num_velocities;
+  int nu = pdata->B.cols(), nq = pdata->r->num_positions, nv = pdata->r->num_velocities;
   const int dim = 3, // 3D
   nd = 2*m_surface_tangents; // for friction cone approx, hard coded for now
   
@@ -452,10 +452,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     body_index = pdata->accel_bound_body_idx[i];
     pdata->r->forwardJac(body_index,orig,1,Jb);
     pdata->r->forwardJacDot(body_index,orig,1,Jbdot);
-    Ain.block(constraint_start_index,0,6,pdata->r->num_dof) = Jb;
+    Ain.block(constraint_start_index,0,6,pdata->r->num_positions) = Jb;
     bin.segment(constraint_start_index,6) = -Jbdot*qd + pdata->max_body_acceleration[i];
     constraint_start_index += 6;
-    Ain.block(constraint_start_index,0,6,pdata->r->num_dof) = -Jb;
+    Ain.block(constraint_start_index,0,6,pdata->r->num_positions) = -Jb;
     bin.segment(constraint_start_index,6) = Jbdot*qd - pdata->min_body_acceleration[i];
     constraint_start_index += 6;
   }

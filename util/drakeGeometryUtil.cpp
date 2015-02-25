@@ -622,14 +622,13 @@ Eigen::Matrix<typename DerivedA::Scalar, 3, Eigen::Dynamic> dcrossProduct(
   return ret;
 }
 
-template <typename DerivedQ, typename DerivedM>
+template <typename DerivedQ, typename DerivedM, typename DerivedDM>
 void angularvel2quatdotMatrix(const Eigen::MatrixBase<DerivedQ>& q,
     Eigen::MatrixBase<DerivedM>& M,
-    typename Gradient<DerivedM, QUAT_SIZE, 1>::type* dM)
+    Eigen::MatrixBase<DerivedDM>* dM)
 {
   // note: not normalizing to match MATLAB implementation
-//  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedQ>, QUAT_SIZE);
-//  EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedM>, QUAT_SIZE, SPACE_DIMENSION);
+  M.resize(QUAT_SIZE, SPACE_DIMENSION);
   M.row(0) << -q(1), -q(2), -q(3);
   M.row(1) << q(0), q(3), -q(2);
   M.row(2) << -q(3), q(0), q(1);
@@ -637,8 +636,8 @@ void angularvel2quatdotMatrix(const Eigen::MatrixBase<DerivedQ>& q,
   M *= 0.5;
 
   if (dM) {
-  (*dM) << 0.0, -0.5, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.5, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, -0.5, 0.0, 0.0, 0.0, 0.0, 0.5, 0.5, 0.0, 0.0, 0.0, 0.0, -0.5, 0.0, 0.0, 0.0, 0.0, 0.0, -0.5, 0.0, 0.0, -0.5, 0.0, 0.0, 0.5, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0;
- }
+    (*dM) << 0.0, -0.5, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.5, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, -0.5, 0.0, 0.0, 0.0, 0.0, 0.5, 0.5, 0.0, 0.0, 0.0, 0.0, -0.5, 0.0, 0.0, 0.0, 0.0, 0.0, -0.5, 0.0, 0.0, -0.5, 0.0, 0.0, 0.5, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0;
+  }
 }
 
 template<typename DerivedQ, typename DerivedM>
@@ -660,11 +659,11 @@ void quatdot2angularvelMatrix(const Eigen::MatrixBase<DerivedQ>& q, Eigen::Matri
   M *= 2.0;
 }
 
-template<typename DerivedRPY, typename DerivedPhi>
+template<typename DerivedRPY, typename DerivedPhi, typename DerivedDPhi, typename DerivedDDPhi>
 void angularvel2rpydotMatrix(const Eigen::MatrixBase<DerivedRPY>& rpy,
     typename Eigen::MatrixBase<DerivedPhi>& phi,
-    typename Gradient<DerivedPhi, RPY_SIZE, 1>::type* dphi,
-    typename Gradient<DerivedPhi, RPY_SIZE, 2>::type* ddphi)
+    typename Eigen::MatrixBase<DerivedDPhi>* dphi,
+    typename Eigen::MatrixBase<DerivedDDPhi>* ddphi)
 {
   phi.resize(RPY_SIZE, SPACE_DIMENSION);
 
@@ -696,37 +695,37 @@ void angularvel2rpydotMatrix(const Eigen::MatrixBase<DerivedRPY>& rpy,
   }
 }
 
-template<typename Scalar>
-DLLEXPORT GradientVar<Scalar, Eigen::Dynamic, SPACE_DIMENSION> angularvel2RepresentationDotMatrix(
-    int rotation_type,
-    GradientVar<Scalar, Eigen::Dynamic, 1> qrot)
+template<typename Derived>
+DLLEXPORT GradientVar<typename Derived::Scalar, Eigen::Dynamic, SPACE_DIMENSION> angularvel2RepresentationDotMatrix(
+    int rotation_type, const Eigen::MatrixBase<Derived>& qrot, int gradient_order)
 {
-  typename GradientVar<Scalar, Eigen::Dynamic, 1>::DataType::Index nq = qrot.getNumVariables();
-  int gradient_order = qrot.maxOrder();
-  GradientVar<Scalar, Eigen::Dynamic, SPACE_DIMENSION> ret(rotationRepresentationSize(rotation_type), SPACE_DIMENSION, nq, gradient_order);
+  // note: gradients w.r.t. qrot
+  GradientVar<typename Derived::Scalar, Eigen::Dynamic, SPACE_DIMENSION> ret(qrot.rows(), SPACE_DIMENSION, qrot.rows(), gradient_order);
   switch (rotation_type) {
   case 0:
     // done
     break;
   case 1: {
-    if (gradient_order > 0) {
-      typename Gradient<Eigen::Matrix<Scalar, Eigen::Dynamic, SPACE_DIMENSION>, RPY_SIZE>::type dPhidqrot(RPY_SIZE, SPACE_DIMENSION);
-      angularvel2rpydotMatrix(qrot.value(), ret.value(), &dPhidqrot);
-      ret.gradient().value() = dPhidqrot * qrot.gradient().value();
+    if (gradient_order > 1) {
+      angularvel2rpydotMatrix(qrot, ret.value(), &ret.gradient().value(), &ret.gradient().gradient().value());
+    }
+    else if (gradient_order > 0) {
+      angularvel2rpydotMatrix(qrot, ret.value(), &ret.gradient().value(), (MatrixXd*) nullptr);
     }
     else {
-      angularvel2rpydotMatrix(qrot.value(), ret.value());
+      angularvel2rpydotMatrix(qrot, ret.value(), (MatrixXd*) nullptr, (MatrixXd*) nullptr);
     }
     break;
   }
   case 2: {
+    if (gradient_order > 1) {
+      ret.gradient().gradient().value().setZero();
+    }
     if (gradient_order > 0) {
-      typename Gradient<Eigen::Matrix<Scalar, Eigen::Dynamic, SPACE_DIMENSION>, QUAT_SIZE>::type dPhidqrot(SPACE_DIMENSION * QUAT_SIZE, QUAT_SIZE);
-      angularvel2quatdotMatrix(qrot.value(), ret.value(), &dPhidqrot);
-      ret.gradient().value() = dPhidqrot * qrot.gradient().value();
+      angularvel2quatdotMatrix(qrot, ret.value(), &ret.gradient().value());
     }
     else {
-      angularvel2quatdotMatrix(qrot.value(), ret.value());
+      angularvel2quatdotMatrix(qrot, ret.value(), (MatrixXd*) nullptr);
     }
     break;
   }
@@ -813,10 +812,10 @@ GradientVar<typename DerivedI::Scalar, TWIST_SIZE, TWIST_SIZE> transformSpatialI
 }
 
 template<typename DerivedA, typename DerivedB>
-Eigen::PlainObjectBase<DerivedB> crossSpatialMotion(
+typename TransformSpatial<DerivedB>::type crossSpatialMotion(
   const Eigen::MatrixBase<DerivedA>& a,
   const Eigen::MatrixBase<DerivedB>& b) {
-  Eigen::Matrix<typename DerivedB::Scalar, DerivedB::RowsAtCompileTime, DerivedB::ColsAtCompileTime> ret(TWIST_SIZE, b.cols());
+  typename TransformSpatial<DerivedB>::type ret(TWIST_SIZE, b.cols());
   ret.template topRows<3>() = -b.template topRows<3>().colwise().cross(a.template topRows<3>());
   ret.template bottomRows<3>() = -b.template topRows<3>().colwise().cross(a.template bottomRows<3>());
   ret.template bottomRows<3>() -= b.template bottomRows<3>().colwise().cross(a.template topRows<3>());
@@ -824,10 +823,10 @@ Eigen::PlainObjectBase<DerivedB> crossSpatialMotion(
 }
 
 template<typename DerivedA, typename DerivedB>
-Eigen::PlainObjectBase<DerivedB> crossSpatialForce(
+typename TransformSpatial<DerivedB>::type crossSpatialForce(
   const Eigen::MatrixBase<DerivedA>& a,
   const Eigen::MatrixBase<DerivedB>& b) {
-  Eigen::Matrix<typename DerivedB::Scalar, DerivedB::RowsAtCompileTime, DerivedB::ColsAtCompileTime> ret(TWIST_SIZE, b.cols());
+  typename TransformSpatial<DerivedB>::type ret(TWIST_SIZE, b.cols());
   ret.template topRows<3>() = -b.template topRows<3>().colwise().cross(a.template topRows<3>());
   ret.template topRows<3>() -= b.template bottomRows<3>().colwise().cross(a.template bottomRows<3>());
   ret.template bottomRows<3>() = -b.template bottomRows<3>().colwise().cross(a.template topRows<3>());
@@ -1090,6 +1089,10 @@ template DLLEXPORT TransformSpatial< MatrixXd >::type transformSpatialMotion<Mat
     const Eigen::Isometry3d&,
     const Eigen::MatrixBase< MatrixXd >&);
 
+template DLLEXPORT TransformSpatial<Eigen::Block<Eigen::Matrix<double, -1, -1, 0, -1, -1>, 6, -1, false> >::type transformSpatialMotion(
+    const Eigen::Isometry3d& T,
+    const Eigen::MatrixBase<Eigen::Block<Eigen::Matrix<double, -1, -1, 0, -1, -1>, 6, -1, false> >& M);
+
 template DLLEXPORT TransformSpatial< Matrix<double, TWIST_SIZE, Eigen::Dynamic> >::type transformSpatialForce<Matrix<double, TWIST_SIZE, Eigen::Dynamic>>(
     const Eigen::Isometry3d&,
     const Eigen::MatrixBase< Matrix<double, TWIST_SIZE, Eigen::Dynamic> >&);
@@ -1164,6 +1167,18 @@ template DLLEXPORT Eigen::Matrix<double, 3, Eigen::Dynamic> dcrossProduct(
     const Gradient< Eigen::Block<Eigen::Matrix<double, 3, -1, 0, 3, -1>, 3, 1, true>, Eigen::Dynamic>::type& da,
     const Gradient< Eigen::Block<Eigen::Matrix<double, -1, -1, 0, -1, -1> const, 3, 1, false>, Eigen::Dynamic>::type& db);
 
+template DLLEXPORT Eigen::Matrix<double, 3, Eigen::Dynamic> dcrossProduct(
+    const Eigen::MatrixBase<Eigen::Block<Eigen::Matrix<double, 6, 1, 0, 6, 1> const, 3, 1, false>>& a,
+    const Eigen::MatrixBase<Eigen::Block<Eigen::Block<Eigen::Matrix<double, -1, -1, 0, -1, -1>, 3, -1, false>, 3, 1, true>>& b,
+    const Gradient<Eigen::Block<Eigen::Matrix<double, 6, 1, 0, 6, 1> const, 3, 1, false>, Eigen::Dynamic>::type& da,
+    const Gradient<Eigen::Block<Eigen::Block<Eigen::Matrix<double, -1, -1, 0, -1, -1>, 3, -1, false>, 3, 1, true>, Eigen::Dynamic>::type& db);
+
+template DLLEXPORT Eigen::Matrix<double, 3, Eigen::Dynamic> dcrossProduct(
+    const Eigen::MatrixBase<Eigen::Block<Eigen::Matrix<double, 6, 1, 0, 6, 1> const, 3, 1, false>>& a,
+    const Eigen::MatrixBase<Eigen::Block<Eigen::Matrix<double, 3, -1, 0, 3, -1>, 3, 1, true>>& b,
+    const Gradient<Eigen::Block<Eigen::Matrix<double, 6, 1, 0, 6, 1> const, 3, 1, false>, Eigen::Dynamic>::type& da,
+    const Gradient<Eigen::Block<Eigen::Matrix<double, 3, -1, 0, 3, -1>, 3, 1, true>, Eigen::Dynamic>::type& db);
+
 template DLLEXPORT DHomogTrans<MatrixXd>::type dHomogTrans(
     const Isometry3d&,
     const MatrixBase< Matrix<double, TWIST_SIZE, Dynamic> >&,
@@ -1185,19 +1200,23 @@ template DLLEXPORT Gradient< Matrix<double, TWIST_SIZE, 1>, Dynamic, 1>::type dT
     const MatrixBase< Matrix<double, HOMOGENEOUS_TRANSFORM_SIZE, Dynamic> >&,
     const MatrixBase< Matrix<double, TWIST_SIZE, Eigen::Dynamic> >&);
 
-template DLLEXPORT Eigen::PlainObjectBase<Eigen::Matrix<double, TWIST_SIZE, 1> > crossSpatialMotion(
+template DLLEXPORT TransformSpatial<Eigen::Matrix<double, TWIST_SIZE, 1>>::type crossSpatialMotion(
   const Eigen::MatrixBase<Eigen::Matrix<double, TWIST_SIZE, 1> >& a,
   const Eigen::MatrixBase<Eigen::Matrix<double, TWIST_SIZE, 1> >& b);
 
-template DLLEXPORT Eigen::PlainObjectBase<Eigen::Matrix<double, TWIST_SIZE, TWIST_SIZE> > crossSpatialMotion(
+template DLLEXPORT TransformSpatial<Eigen::Matrix<double, TWIST_SIZE, TWIST_SIZE>>::type crossSpatialMotion(
   const Eigen::MatrixBase<Eigen::Matrix<double, TWIST_SIZE, 1> >& a,
   const Eigen::MatrixBase<Eigen::Matrix<double, TWIST_SIZE, TWIST_SIZE> >& b);
 
-template DLLEXPORT Eigen::PlainObjectBase<Eigen::Matrix<double, TWIST_SIZE, 1> > crossSpatialForce(
+template DLLEXPORT TransformSpatial<Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic>>::type crossSpatialMotion(
+  const Eigen::MatrixBase<Eigen::Matrix<double, TWIST_SIZE, 1> >& a,
+  const Eigen::MatrixBase<Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic> >& b);
+
+template DLLEXPORT TransformSpatial<Eigen::Matrix<double, TWIST_SIZE, 1>>::type crossSpatialForce(
   const Eigen::MatrixBase<Eigen::Matrix<double, TWIST_SIZE, 1> >& a,
   const Eigen::MatrixBase<Eigen::Matrix<double, TWIST_SIZE, 1> >& b);
 
-template DLLEXPORT Eigen::PlainObjectBase<Eigen::Matrix<double, TWIST_SIZE, TWIST_SIZE> > crossSpatialForce(
+template DLLEXPORT TransformSpatial<Eigen::Matrix<double, TWIST_SIZE, TWIST_SIZE>>::type crossSpatialForce(
   const Eigen::MatrixBase<Eigen::Matrix<double, TWIST_SIZE, 1> >& a,
   const Eigen::MatrixBase<Eigen::Matrix<double, TWIST_SIZE, TWIST_SIZE> >& b);
 
@@ -1219,22 +1238,28 @@ template DLLEXPORT Gradient<Eigen::Matrix<double, 6, 1, 0, 6, 1>, Eigen::Block<E
     const Eigen::MatrixBase<Eigen::Matrix<double, 16, -1, 0, 16, -1> >& dT,
     const Eigen::MatrixBase<Eigen::Block<Eigen::Matrix<double, 6, -1, 0, 6, -1>, 6, -1, true> >& dX);
 
+template DLLEXPORT Gradient<Eigen::Matrix<double, 6, 1, 0, 6, 1>, Eigen::Matrix<double, 6, -1, 0, 6, -1>::ColsAtCompileTime>::type dTransformSpatialForce(
+    const Isometry3d& T,
+    const Eigen::MatrixBase<Eigen::Matrix<double, 6, 1, 0, 6, 1>>& X,
+    const Eigen::MatrixBase<Eigen::Matrix<double, 16, -1, 0, 16, -1>>& dT,
+    const Eigen::MatrixBase<Eigen::Matrix<double, 6, -1, 0, 6, -1>>& dX);
+
 template DLLEXPORT void angularvel2quatdotMatrix(const Eigen::MatrixBase<Vector4d>& q,
     Eigen::MatrixBase< Matrix<double, QUAT_SIZE, SPACE_DIMENSION> >& M,
-    Gradient<Matrix<double, QUAT_SIZE, SPACE_DIMENSION>, QUAT_SIZE, 1>::type* dM);
+    Eigen::MatrixBase< Gradient<Matrix<double, QUAT_SIZE, SPACE_DIMENSION>, QUAT_SIZE, 1>::type>* dM);
 template DLLEXPORT void angularvel2quatdotMatrix(const Eigen::MatrixBase<Map<Vector4d>>& q,
     Eigen::MatrixBase< Matrix<double, QUAT_SIZE, SPACE_DIMENSION> >& M,
-    Gradient<Matrix<double, QUAT_SIZE, SPACE_DIMENSION>, QUAT_SIZE, 1>::type* dM);
+    Eigen::MatrixBase< Gradient<Matrix<double, QUAT_SIZE, SPACE_DIMENSION>, QUAT_SIZE, 1>::type>* dM);
 
 template DLLEXPORT void angularvel2rpydotMatrix(const Eigen::MatrixBase<Vector3d>& rpy,
     Eigen::MatrixBase< Matrix<double, RPY_SIZE, SPACE_DIMENSION> >& phi,
-    Gradient<Matrix<double, RPY_SIZE, SPACE_DIMENSION>, RPY_SIZE, 1>::type* dphi,
-    Gradient<Matrix<double, RPY_SIZE, SPACE_DIMENSION>, RPY_SIZE, 2>::type* ddphi);
+    Eigen::MatrixBase< Gradient<Matrix<double, RPY_SIZE, SPACE_DIMENSION>, RPY_SIZE, 1>::type>* dphi,
+    Eigen::MatrixBase< Gradient<Matrix<double, RPY_SIZE, SPACE_DIMENSION>, RPY_SIZE, 2>::type>* ddphi);
 
-//template DLLEXPORT void angularvel2rpydotMatrix(const Eigen::MatrixBase<VectorXd>& rpy,
-//    Eigen::MatrixBase< Matrix<double, Eigen::Dynamic, SPACE_DIMENSION> >& phi,
-//    Gradient<Matrix<double, Eigen::Dynamic, SPACE_DIMENSION>, VectorXd::ColsAtCompileTime, 1>::type* dphi,
-//    Gradient<Matrix<double, Eigen::Dynamic, SPACE_DIMENSION>, VectorXd::ColsAtCompileTime, 2>::type* ddphi);
+template DLLEXPORT void angularvel2rpydotMatrix(const Eigen::MatrixBase<Vector3d>& rpy,
+    Eigen::MatrixBase< Matrix<double, RPY_SIZE, SPACE_DIMENSION> >& phi,
+    Eigen::MatrixBase< Matrix<double, Eigen::Dynamic, Eigen::Dynamic> >* dphi,
+    Eigen::MatrixBase< Matrix<double, Eigen::Dynamic, Eigen::Dynamic> >* ddphi);
 
 template DLLEXPORT void rpydot2angularvelMatrix(const Eigen::MatrixBase<Vector3d>& rpy,
     Eigen::MatrixBase<Eigen::Matrix<double, SPACE_DIMENSION, RPY_SIZE> >& E,
@@ -1242,10 +1267,11 @@ template DLLEXPORT void rpydot2angularvelMatrix(const Eigen::MatrixBase<Vector3d
 template DLLEXPORT void rpydot2angularvelMatrix(const Eigen::MatrixBase<Map<Vector3d>>& rpy,
     Eigen::MatrixBase<Eigen::Matrix<double, SPACE_DIMENSION, RPY_SIZE> >& E,
     Gradient<Matrix<double,SPACE_DIMENSION,RPY_SIZE>,RPY_SIZE,1>::type* dE);
-template DLLEXPORT GradientVar<double, Eigen::Dynamic, SPACE_DIMENSION> angularvel2RepresentationDotMatrix(
-    int rotation_type,
-    GradientVar<double, Eigen::Dynamic, 1> qrot);
 
+template DLLEXPORT GradientVar<double, Eigen::Dynamic, SPACE_DIMENSION> angularvel2RepresentationDotMatrix(
+    int rotation_type, const Eigen::MatrixBase<VectorXd>& qrot, int gradient_order);
+template DLLEXPORT GradientVar<double, Eigen::Dynamic, SPACE_DIMENSION> angularvel2RepresentationDotMatrix(
+    int rotation_type, const Eigen::MatrixBase< Eigen::Block<Eigen::Matrix<double, -1, -1, 0, -1, -1>, -1, 1, false> >& qrot, int gradient_order);
 
 template DLLEXPORT void quatdot2angularvelMatrix(const Eigen::MatrixBase<Vector4d>& q,
     Eigen::MatrixBase< Matrix<double, SPACE_DIMENSION, QUAT_SIZE> >& M,

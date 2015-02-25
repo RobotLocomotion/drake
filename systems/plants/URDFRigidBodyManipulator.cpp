@@ -502,7 +502,7 @@ bool URDFRigidBodyManipulator::addRobotFromURDFString(const string &xml_string, 
     // note: i see no harm in adding the floating base here (even if the drake version does not have one)
     // because the base will be set to 0 and it adds minimal expense to the kinematic calculations
   {  
-    int dofnum=num_dof;
+    int dofnum=num_positions;
     int jointnum = num_bodies;
     string joint_name("base");
     makeNameUnique(joint_name,joint_name_set);
@@ -532,7 +532,7 @@ bool URDFRigidBodyManipulator::addRobotFromURDFString(const string &xml_string, 
   // now populate my model class
   robot_map.insert(make_pair(_urdf_model->getName(),(int)robot_name.size()));
   robot_name.push_back(_urdf_model->getName());
-  resize(num_dof + (int)dofname_to_dofnum.size(),-1,num_bodies + (int)jointname_to_jointnum.size());
+  resize(num_positions + (int)dofname_to_dofnum.size(),-1,num_bodies + (int)jointname_to_jointnum.size());
   for (map<string, boost::shared_ptr<urdf::Joint> >::iterator j=_urdf_model->joints_.begin(); j!=_urdf_model->joints_.end(); j++)
   {
     setJointLimits(_urdf_model,j->second,dofname_to_dofnum,this->joint_limit_min,this->joint_limit_max);
@@ -591,7 +591,7 @@ bool URDFRigidBodyManipulator::addRobotFromURDFString(const string &xml_string, 
     		}
     	}
 
-    	bodies[index]->dofnum = _dofnum;
+    	bodies[index]->position_num_start = _dofnum;
     	dofnum[index-1] = _dofnum;
 
     	// set pitch and floating
@@ -667,7 +667,7 @@ bool URDFRigidBodyManipulator::addRobotFromURDFString(const string &xml_string, 
 //    	cout << "body[" << index << "] linkname: " << bodies[index]->linkname << ", jointname: " << bodies[index]->jointname << endl;
 
     	bodies[index]->parent = 0;
-    	bodies[index]->dofnum = _dofnum;
+    	bodies[index]->position_num_start = _dofnum;
       bodies[index]->floating = 1;
       // pitch is irrelevant
       bodies[index]->Ttree = Matrix4d::Identity();
