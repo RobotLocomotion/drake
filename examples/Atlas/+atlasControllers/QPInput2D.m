@@ -1,4 +1,4 @@
-classdef PlanlessQPInput2D
+classdef QPInput2D
   properties(Constant)
   end
 
@@ -12,7 +12,7 @@ classdef PlanlessQPInput2D
   end
 
   methods
-    function obj = PlanlessQPInput2D()
+    function obj = QPInput2D()
       obj.timestamp = 0;
       obj.zmp_data = struct('A',  [zeros(2),eye(2); zeros(2,4)],... % COM state map % 16 d
                         'B', [zeros(2); eye(2)],... % COM input map % 4 d
@@ -28,7 +28,7 @@ classdef PlanlessQPInput2D
                         's1dot', zeros(4,1),... % 4 d
                         's2', 0,... % 1 d
                         's2dot', 0); % 1 d
-      
+
       % support_logic_map lets us specify the way the various forms of contact detection are combined. 
       % We do this by enumerating all possible binary inputs from the force sensor and the kinematic
       % contact detector. Then we have the following table:
@@ -45,7 +45,7 @@ classdef PlanlessQPInput2D
       % To allow support only if the force sensor is TRUE, we would say:
       % support_logic_map = [0;0;1;1];
       %
-      obj.support_data = struct('body_id', {}, 'contact_pts', {}, 'support_logic_map', {}, 'mu', {});
+      obj.support_data = struct('body_id', {}, 'contact_pts', {}, 'support_logic_map', {}, 'mu', {}, 'contact_surfaces', {});
       
       obj.body_motion_data = struct('body_id', {},... % 3 d
                             'ts', {},... % 6 d

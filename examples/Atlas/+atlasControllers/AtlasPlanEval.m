@@ -5,8 +5,8 @@ classdef AtlasPlanEval < PlanEval
   end
 
   methods
-    function obj = AtlasPlanEval(r)
-      obj = obj@PlanEval();
+    function obj = AtlasPlanEval(r, varargin)
+      obj = obj@PlanEval(varargin{:});
       obj.robot = r;
 
       % getTerrainContactPoints is pretty expensive, so we'll just call it
@@ -23,6 +23,11 @@ classdef AtlasPlanEval < PlanEval
                                         'neck_id', obj.robot.findPositionIndices('neck'),...
                                         'numq', obj.robot.getNumPositions(),...
                                         'contact_group_cache', contact_group_cache);
+    end
+
+    function qp_input = getQPControllerInput(obj, t, x)
+      plan = obj.getCurrentPlan();
+      qp_input = plan.getQPControllerInput(t, x, obj.robot_property_cache);
     end
   end
 end
