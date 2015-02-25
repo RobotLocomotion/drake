@@ -7,6 +7,7 @@ classdef AtlasPlanlessQPController
     robot;
     numq;
     numv;
+    numbod;
     % all_contacts = struct('groups', {{}}, ... % convenience for indexing into contact groups
     %                       'point_ind', {{}}, ...
     %                       'num_points', {{}}, ...
@@ -51,6 +52,7 @@ classdef AtlasPlanlessQPController
       [obj.joint_limits.min, obj.joint_limits.max] = r.getJointLimits();
       obj.numq = r.getNumPositions();
       obj.numv = r.getNumVelocities();
+      obj.numbod = length(r.getManipulator().body);
       obj.ankle_inds = struct('right', r.findPositionIndices('r_leg_ak'),...
                               'left', r.findPositionIndices('l_leg_ak'));
       obj.leg_inds = struct('right', r.findPositionIndices('r_leg'),...
@@ -100,10 +102,34 @@ classdef AtlasPlanlessQPController
           terrain_map_ptr, obj.gurobi_options));
       end
 
+      if exist('supportDetectmex','file')~=3
+        error('can''t find supportDetectmex.  did you build it?');
+      end      
+      obj.support_detect_mex_ptr = SharedDataHandle(supportDetectmex(0,obj.robot.getMexModelPtr.ptr,terrain_map_ptr));
+
     end
 
-    function supp = getPlannedSupports(obj, active_supports)
-      supp = struct(active_supports);
+    function supp = getActiveSupports(obj, support_data, contact_sensor, contact_threshold)
+      % Combine information from the plan, the kinematic sensors, and the force sensors (if available)
+      % to decide which bodies are in active support right now. 
+
+      % first, figure out which bodies need to be checked for kinematic contact
+      % We'll do this by reading out the contact logic maps for each body. For
+      % a description of what these do, see QPInput2D.m
+      logic_maps = [support_data.support_logic_map];
+      % we only need to check kinematic contact if it would affect our decision about
+      % whether or not the body is in contact. 
+      needs_kin_check = ((logic_maps(2,:) ~= logic_maps(1,:)) & (~contact_sensor)) | ...
+                        ((logic_maps(4,:) ~= logic_maps(3,:)) & contact_sensor);
+
+
+      obj.robot.warning_manager.warnOnce('Drake:NotDoingSupportDetect', 'support detect not implemented here');
+      kin_sensor = false(obj.numbod, 1);
+      kin_sensor(needs_kin_check) = true;
+
+      active_support_mask = obj.applyContactLogic(logic_maps, contact_sensor, kin_sensor);
+      supp = support_data(active_support_mask);
+
       for j = 1:length(supp)
         supp(j).num_contact_pts = size(supp(j).contact_pts, 2);
         supp(j).contact_surfaces = 0;
@@ -151,9 +177,9 @@ classdef AtlasPlanlessQPController
       end
     end
 
-    function v_ref = velocityReference(obj, t, q, qd, qdd, contact_sensor, params)
-      fc = struct('right', contact_sensor(2) > 0.5,...
-                            'left', contact_sensor(1) > 0.5);
+    function v_ref = velocityReference(obj, t, q, qd, qdd, foot_contact_sensor, params)
+      fc = struct('right', foot_contact_sensor(2) > 0.5,...
+                            'left', foot_contact_sensor(1) > 0.5);
 
       if isnan(obj.vref_integrator_data.t_prev)
         obj.vref_integrator_data.t_prev = t;
@@ -197,7 +223,7 @@ classdef AtlasPlanlessQPController
       v_ref = max(-delta_max,min(delta_max,qd_err(obj.actuated_inds)));
     end
 
-    function [y, v_ref] = tick(obj, t, x, qp_input, contact_sensor)
+    function [y, v_ref] = tick(obj, t, x, qp_input, foot_contact_sensor)
       t0 = tic();
 
       % Unpack variable names (just to make our code a bit easier to read)
@@ -234,9 +260,14 @@ classdef AtlasPlanlessQPController
       % Run PD on the desired configuration
       qddot_des = obj.wholeBodyPID(t, q, qd, qp_input.whole_body_data.q_des, params.whole_body);
 
-      supp = obj.getPlannedSupports(qp_input.support_data.active_supports);
-      supp = obj.foot_contact.getActiveSupports(x, supp, contact_sensor,...
-        qp_input.support_data.breaking_contact);
+      contact_sensor = zeros(obj.numbod, 1);
+      if foot_contact_sensor(1) > 0.5
+        contact_sensor(obj.foot_body_id.left) = 1;
+      end
+      if foot_contact_sensor(2) > 0.5
+        contact_sensor(obj.foot_body_id.right) = 1;
+      end
+      supp = obj.getActiveSupports(qp_input.support_data, contact_sensor, params.contact_threshold);
       % Messy reorganization for compatibility with supportDetectMex
       supp = struct('bodies', {[supp.body_id]}, 'contact_pts', {{supp.contact_pts}}, 'contact_surfaces', {{supp.contact_surfaces}});
 
@@ -354,7 +385,7 @@ classdef AtlasPlanlessQPController
       end
 
       if nargout >= 2
-        v_ref = obj.velocityReference(t, q, qd, qdd, contact_sensor, params.vref_integrator);
+        v_ref = obj.velocityReference(t, q, qd, qdd, foot_contact_sensor, params.vref_integrator);
       end
 
       if obj.debug
