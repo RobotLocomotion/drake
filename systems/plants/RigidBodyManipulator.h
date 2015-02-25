@@ -95,7 +95,10 @@ public:
   void updateCompositeRigidBodyInertias(int gradient_order);
 
   template <typename Scalar>
-  GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> centroidalMomentumMatrix(int gradient_order);
+  GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> worldMomentumMatrix(int gradient_order, bool in_terms_of_qdot = false);
+
+  template <typename Scalar>
+  GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> centroidalMomentumMatrix(int gradient_order, bool in_terms_of_qdot = false);
 
   template <typename Scalar>
   GradientVar<Scalar, TWIST_SIZE, 1> centroidalMomentumMatrixDotTimesV(int gradient_order);
@@ -260,11 +263,20 @@ public:
 
   size_t getNumPositionConstraints() const;
 
+  template <typename Derived>
+  Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> transformVelocityMappingToPositionDotMapping(
+      const Eigen::MatrixBase<Derived>& mat, const std::vector<int>& joint_path);
+
+  template <typename Derived>
+  Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> compactToFull(
+      const Eigen::MatrixBase<Derived>& compact, const std::vector<int>& joint_path, bool in_terms_of_qdot);
+
 public:
   std::vector<std::string> robot_name;
 
   int num_positions;
   int num_velocities;
+  double total_mass;
   VectorXd joint_limit_min;
   VectorXd joint_limit_max;
 
