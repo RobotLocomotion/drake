@@ -103,16 +103,19 @@ public:
   GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> worldMomentumMatrix(int gradient_order, const std::set<int>& robotnum = RigidBody::defaultRobotNumSet, bool in_terms_of_qdot = false);
 
   template <typename Scalar>
-  GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> centroidalMomentumMatrix(int gradient_order, bool in_terms_of_qdot = false);
+  GradientVar<Scalar, TWIST_SIZE, 1> worldMomentumMatrixDotTimesV(int gradient_order, const std::set<int>& robotnum = RigidBody::defaultRobotNumSet);
 
   template <typename Scalar>
-  GradientVar<Scalar, TWIST_SIZE, 1> centroidalMomentumMatrixDotTimesV(int gradient_order);
+  GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> centroidalMomentumMatrix(int gradient_order, const std::set<int>& robotnum = RigidBody::defaultRobotNumSet, bool in_terms_of_qdot = false);
+
+  template <typename Scalar>
+  GradientVar<Scalar, TWIST_SIZE, 1> centroidalMomentumMatrixDotTimesV(int gradient_order, const std::set<int>& robotnum = RigidBody::defaultRobotNumSet);
 
   template <typename Scalar>
   GradientVar<Scalar, SPACE_DIMENSION, Eigen::Dynamic> centerOfMassJacobian(int gradient_order, const std::set<int>& robotnum = RigidBody::defaultRobotNumSet, bool in_terms_of_qdot = false);
 
   template <typename Scalar>
-  GradientVar<Scalar, SPACE_DIMENSION, 1> centerOfMassJacobianDotTimesV(int gradient_order);
+  GradientVar<Scalar, SPACE_DIMENSION, 1> centerOfMassJacobianDotTimesV(int gradient_order, const std::set<int>& robotnum = RigidBody::defaultRobotNumSet);
 
   template <typename DerivedA, typename DerivedB>
   void getCMM(MatrixBase<DerivedA> const & q, MatrixBase<DerivedA> const & qd, MatrixBase<DerivedB> &A, MatrixBase<DerivedB> &Adot);
