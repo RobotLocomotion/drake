@@ -975,7 +975,7 @@ void RigidBodyManipulator::doKinematicsNew(double* q, bool compute_gradients, do
       double* q_body = &q[body.dofnum];
 
       // transform
-      Isometry3d T_body_to_parent = Isometry3d(body.Ttree) * body.getJoint().jointTransform(q_body);
+      Isometry3d T_body_to_parent = body.getJoint().getTransformToParentBody() * body.getJoint().jointTransform(q_body);
       body.T_new = bodies[body.parent]->T_new * T_body_to_parent;
 
       // motion subspace in body frame
@@ -987,7 +987,7 @@ void RigidBodyManipulator::doKinematicsNew(double* q, bool compute_gradients, do
 
       // qdot to v
       Eigen::MatrixXd* dqdot_to_v = compute_gradients ? &(body.dqdot_to_v_dqi) : nullptr;
-      body.getJoint().qdot2v(q, body.qdot_to_v, dqdot_to_v);
+      body.getJoint().qdot2v(q_body, body.qdot_to_v, dqdot_to_v);
       if (compute_gradients) {
         body.dqdot_to_v_dq.setZero();
         body.dqdot_to_v_dq.middleCols(body.dofnum, body.getJoint().getNumPositions()) = body.dqdot_to_v_dqi;
@@ -995,7 +995,7 @@ void RigidBodyManipulator::doKinematicsNew(double* q, bool compute_gradients, do
 
       // v to qdot
       Eigen::MatrixXd* dv_to_qdot = compute_gradients ? &(body.dv_to_qdot_dqi) : nullptr;
-      body.getJoint().v2qdot(q, body.v_to_qdot, dv_to_qdot);
+      body.getJoint().v2qdot(q_body, body.v_to_qdot, dv_to_qdot);
       if (compute_gradients) {
         body.dv_to_qdot_dq.setZero();
         body.dv_to_qdot_dq.middleCols(body.dofnum, body.getJoint().getNumPositions()) = body.dv_to_qdot_dqi;

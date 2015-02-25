@@ -1,19 +1,20 @@
 function testForwardKin
 
-testFallingBrick('rpy');
+testTwoFallingBricks('rpy');
 testAtlas('rpy');
 
 options.use_new_kinsol = true;
-testFallingBrick('rpy',options);
+testTwoFallingBricks('rpy',options);
 testAtlas('rpy',options);
-testFallingBrick('quat',options);
+testTwoFallingBricks('quat',options);
 testAtlas('quat',options);
 
 end
 
-function testFallingBrick(floatingJointType,options)
+function testTwoFallingBricks(floatingJointType,options)
 options.floating = floatingJointType;
 robot = RigidBodyManipulator('FallingBrick.urdf',options);
+robot = robot.addRobotFromURDF('FallingBrick.urdf', [], [], options);
 for rotation_type = 0 : 2
   checkGradients(robot, rotation_type);  
   checkMex(robot, rotation_type);
