@@ -6,7 +6,7 @@ classdef QPInput2D
     timestamp
     zmp_data
     support_data 
-    bodies_data 
+    body_motion_data 
     whole_body_data 
     param_set_name
   end
@@ -56,41 +56,32 @@ classdef QPInput2D
     end
 
     function msg = to_lcm(obj)
-      msg = drake.lcmt_walking_qp_input();
+      msg = drake.lcmt_qp_controller_input();
       msg.timestamp = obj.timestamp;
       msg.zmp_data = drake.lcmt_zmp_data();
       for f = fieldnames(obj.zmp_data)'
         msg.zmp_data.(f{1}) = obj.zmp_data.(f{1});
       end
-      nsupp = length(obj.support_data)
+      nsupp = length(obj.support_data);
       msg.support_data = javaArray('drake.lcmt_support_data', nsupp);
       for j = 1:nsupp
-        
-
-
-      msg.support_data = drake.lcmt_support_data();
-      msg.support_data.body_support_logic_map = obj.support_data.body_support_logic_map;
-      msg.support_data.mu = obj.support_data.mu;
-      msg.support_data.toe_off = drake.lcmt_foot_flag();
-      msg.support_data.toe_off.right = obj.support_data.toe_off.right;
-      msg.support_data.toe_off.left = obj.support_data.toe_off.left;
-      nsupp = length(obj.support_data.active_supports);
-      msg.support_data.active_supports = javaArray('drake.lcmt_active_support', nsupp);
-      for j = 1:nsupp
-        msg.support_data.active_supports(j) = drake.lcmt_active_support();
-        msg.support_data.active_supports(j).body_id = obj.support_data.active_supports(j).body_id;
-        msg.support_data.active_supports(j).num_contact_pts = size(obj.support_data.active_supports(j).contact_pts,2);
-        msg.support_data.active_supports(j).contact_pts = obj.support_data.active_supports(j).contact_pts;
+        msg.support_data(j) = drake.lcmt_support_data();
+        msg.support_data(j).body_id = obj.support_data(j).body_id;
+        msg.support_data(j).num_contact_pts = size(obj.support_data(j).contact_pts, 2);
+        msg.support_data(j).contact_pts = obj.support_data(j).contact_pts;
+        msg.support_data(j).support_logic_map = obj.support_data(j).support_logic_map;
+        msg.support_data(j).mu = obj.support_data(j).mu;
+        msg.support_data(j).contact_surfaces = obj.support_data(j).contact_surfaces;
       end
 
-      nbod = length(obj.bodies_data);
+      nbod = length(obj.body_motion_data);
       msg.num_tracked_bodies = nbod;
-      msg.bodies_data = javaArray('drake.lcmt_body_motion_data', nbod);
+      msg.body_motion_data = javaArray('drake.lcmt_body_motion_data', nbod);
       for j = 1:nbod
-        msg.bodies_data(j) = drake.lcmt_body_motion_data();
-        msg.bodies_data(j).body_id = obj.bodies_data(j).body_id;
-        msg.bodies_data(j).ts = obj.bodies_data(j).ts;
-        msg.bodies_data(j).coefs = obj.bodies_data(j).coefs;
+        msg.body_motion_data(j) = drake.lcmt_body_motion_data();
+        msg.body_motion_data(j).body_id = obj.body_motion_data(j).body_id;
+        msg.body_motion_data(j).ts = obj.body_motion_data(j).ts;
+        msg.body_motion_data(j).coefs = obj.body_motion_data(j).coefs;
       end
       
       msg.whole_body_data = drake.lcmt_whole_body_data();
