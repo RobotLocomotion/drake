@@ -2,7 +2,7 @@ cmake_minimum_required (VERSION 2.6)
 
 pods_find_pkg_config(bullet)
 
-if (eigen3_FOUND AND Boost_FOUND)
+if (eigen3_FOUND)
   add_executable(urdfKinTest urdfKinTest.cpp)
   include_directories( .. )
   target_link_libraries(urdfKinTest drakeRBM)
