@@ -1,10 +1,12 @@
-function [com,J,dJ] = getCOM(model,kinsol,robotnum)
+function [com,J,dJ] = getCOM(model,kinsol,robotnum,in_terms_of_qdot)
 % @param robotnum              -- An int array. Default is 1
 %                              - Not given, the COM of the whole model is computed. 
 %                              - Otherwise, the bodies that belong to robot(robotnum) is
 %                                computed
 % note: for Jdot, call forwardJacDot with body_ind = 0
-
+if nargin < 4
+  in_terms_of_qdot = true;
+end
 if(nargin == 2)
   robotnum = 1;
 elseif robotnum<0 % then do all robots (and the world)
@@ -13,6 +15,10 @@ end
 if ~isstruct(kinsol)  
   % treat input as getCOM(model,q)
   kinsol = doKinematics(model,kinsol,nargout>2);
+end
+
+if ~model.use_new_kinsol && ~in_terms_of_qdot
+  error('only implemented when use_new_kinsol = true');
 end
 
 if (kinsol.mex)
@@ -25,12 +31,12 @@ if (kinsol.mex)
   
   if model.use_new_kinsol
     if nargout > 2
-      [com,J,dJ] = centerOfMassmex(model.mex_model_ptr, robotnum);
+      [com,J,dJ] = centerOfMassmex(model.mex_model_ptr, robotnum, in_terms_of_qdot);
       dJ = reshape(dJ, size(J, 1), []); % convert to strange second derivative output format
     elseif nargout > 1
-      [com,J] = centerOfMassmex(model.mex_model_ptr, robotnum);
+      [com,J] = centerOfMassmex(model.mex_model_ptr, robotnum, in_terms_of_qdot);
     else
-      com = centerOfMassmex(model.mex_model_ptr, robotnum);
+      com = centerOfMassmex(model.mex_model_ptr, robotnum, in_terms_of_qdot);
     end
   else
     if nargout > 2

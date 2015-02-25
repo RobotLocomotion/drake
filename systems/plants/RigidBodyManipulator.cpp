@@ -1308,7 +1308,7 @@ void RigidBodyManipulator::updateCompositeRigidBodyInertias(int gradient_order) 
 }
 
 template <typename Scalar>
-GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::worldMomentumMatrix(int gradient_order, bool in_terms_of_qdot, const std::set<int>& robotnum)
+GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::worldMomentumMatrix(int gradient_order, const std::set<int>& robotnum, bool in_terms_of_qdot)
 {
   if (!use_new_kinsol)
     throw std::runtime_error("method requires new kinsol format");
@@ -1360,7 +1360,7 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::worldMomen
 template <typename Scalar>
 GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::centroidalMomentumMatrix(int gradient_order, bool in_terms_of_qdot)
 {
-  auto ret = worldMomentumMatrix<Scalar>(gradient_order, in_terms_of_qdot);
+  auto ret = worldMomentumMatrix<Scalar>(gradient_order, RigidBody::defaultRobotNumSet, in_terms_of_qdot);
   Matrix<Scalar, SPACE_DIMENSION, 1> com = centerOfMass<Scalar>(0).value();
 
   // transform from world frame to COM frame
@@ -1487,7 +1487,7 @@ GradientVar<Scalar, SPACE_DIMENSION, 1> RigidBodyManipulator::centerOfMass(int g
   }
 
   if (gradient_order > 0) {
-    auto J_com = centerOfMassJacobian<Scalar>(gradient_order - 1, true, robotnum);
+    auto J_com = centerOfMassJacobian<Scalar>(gradient_order - 1, robotnum, true);
     com.gradient().value() = J_com.value();
     if (gradient_order > 1)
       com.gradient().gradient().value() = J_com.gradient().value();
@@ -1497,9 +1497,9 @@ GradientVar<Scalar, SPACE_DIMENSION, 1> RigidBodyManipulator::centerOfMass(int g
 }
 
 template <typename Scalar>
-GradientVar<Scalar, SPACE_DIMENSION, Eigen::Dynamic> RigidBodyManipulator::centerOfMassJacobian(int gradient_order, bool in_terms_of_qdot, const std::set<int>& robotnum)
+GradientVar<Scalar, SPACE_DIMENSION, Eigen::Dynamic> RigidBodyManipulator::centerOfMassJacobian(int gradient_order, const std::set<int>& robotnum, bool in_terms_of_qdot)
 {
-  auto A = worldMomentumMatrix<Scalar>(gradient_order, in_terms_of_qdot, robotnum);
+  auto A = worldMomentumMatrix<Scalar>(gradient_order, robotnum, in_terms_of_qdot);
   GradientVar<Scalar, SPACE_DIMENSION, Eigen::Dynamic> ret(SPACE_DIMENSION, A.value().cols(), num_positions, gradient_order);
   double total_mass = totalMass(robotnum);
   ret.value() = A.value().template bottomRows<SPACE_DIMENSION>() / total_mass;
@@ -3242,6 +3242,7 @@ template DLLEXPORT_RBM void RigidBodyManipulator::bodyKin(const int, const Matri
 template DLLEXPORT_RBM GradientVar<double, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::centroidalMomentumMatrix(int, bool);
 template DLLEXPORT_RBM GradientVar<double, TWIST_SIZE, 1> RigidBodyManipulator::centroidalMomentumMatrixDotTimesV(int);
 template DLLEXPORT_RBM GradientVar<double, SPACE_DIMENSION, 1> RigidBodyManipulator::centerOfMass(int, const std::set<int>&);
+template DLLEXPORT_RBM GradientVar<double, SPACE_DIMENSION, Eigen::Dynamic> RigidBodyManipulator::centerOfMassJacobian(int, const std::set<int>&, bool);
 template DLLEXPORT_RBM GradientVar<double, SPACE_DIMENSION, 1> RigidBodyManipulator::centerOfMassJacobianDotTimesV(int);
 template DLLEXPORT_RBM GradientVar<double, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJacobian<double>(int, int, int, int, bool, std::vector<int>*);
 template DLLEXPORT_RBM GradientVar<double, TWIST_SIZE, 1> RigidBodyManipulator::geometricJacobianDotTimesV(int, int, int, int);
