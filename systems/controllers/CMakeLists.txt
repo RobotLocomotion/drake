@@ -25,6 +25,10 @@ if (eigen3_FOUND)
     add_mex(statelessQPControllermex statelessQPControllermex.cpp)
     target_link_libraries(statelessQPControllermex drakeQP drakeControlUtil)
     pods_use_pkg_config_packages(statelessQPControllermex gurobi)
+
+    add_mex(constructQPDataPointer constructQPDataPointer.cpp)
+    target_link_libraries(constructQPDataPointer drakeQP drakeControlUtil)
+    pods_use_pkg_config_packages(constructQPDataPointer gurobi)
   endif()
 
   add_mex(bodyMotionControlmex bodyMotionControlmex.cpp)

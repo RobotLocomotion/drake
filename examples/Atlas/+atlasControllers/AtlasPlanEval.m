@@ -7,6 +7,7 @@ classdef AtlasPlanEval
     default_input;
     numq;
     breaking_contact_max_time = 0.25; % seconds after breaking contact during which we send the breaking_contact flag
+    contact_group_cache;
   end
 
   methods
@@ -38,6 +39,18 @@ classdef AtlasPlanEval
       obj.numq = obj.robot.getNumPositions();
       import atlasControllers.PlanlessQPInput2D;
       obj.default_input = PlanlessQPInput2D();
+
+      nbod = length(obj.robot.getManipulator().body);
+      % getTerrainContactPoints is pretty expensive, so we'll just call it
+      % for all the bodies and cache the results
+      obj.contact_group_cache = cell(1, nbod);
+      for j = 1:nbod
+        obj.contact_group_cache{j} = struct();
+        for f = 1:length(obj.robot.getBody(j).collision_geometry_group_names)
+          name = obj.robot.getBody(j).collision_geometry_group_names{f};
+          obj.contact_group_cache{j}.(name) = obj.robot.getBody(j).getTerrainContactPoints(name);
+        end
+      end
     end
 
     function qp_input = tick(obj, t, x)
@@ -90,7 +103,9 @@ classdef AtlasPlanEval
       if any(supp.bodies==r.foot_body_id.right)
         r.warning_manager.warnOnce('Drake:HardCodedSupport', 'hard-coded for heel+toe support');
         qp_input.support_data.active_supports(end+1).body_id = r.foot_body_id.right;
-        qp_input.support_data.active_supports(end).contact_pts = r.getBody(r.foot_body_id.right).getTerrainContactPoints({'heel', 'toe'});
+        qp_input.support_data.active_supports(end).contact_pts = [...
+          obj.contact_group_cache{r.foot_body_id.right}.heel, ...
+          obj.contact_group_cache{r.foot_body_id.right}.toe];
       else
         if supp_idx > 1 && any(pdata.supports(supp_idx-1).bodies==r.foot_body_id.right)
           if t - pdata.support_times(supp_idx) <= obj.breaking_contact_max_time
@@ -101,7 +116,9 @@ classdef AtlasPlanEval
       if any(supp.bodies==r.foot_body_id.left)
         r.warning_manager.warnOnce('Drake:HardCodedSupport', 'hard-coded for heel+toe support');
         qp_input.support_data.active_supports(end+1).body_id = r.foot_body_id.left;
-        qp_input.support_data.active_supports(end).contact_pts = r.getBody(r.foot_body_id.left).getTerrainContactPoints({'heel', 'toe'});
+        qp_input.support_data.active_supports(end).contact_pts = [...
+          obj.contact_group_cache{r.foot_body_id.right}.heel, ...
+          obj.contact_group_cache{r.foot_body_id.right}.toe];
       else
         if supp_idx > 1 && any(pdata.supports(supp_idx-1).bodies==r.foot_body_id.left)
           if t - pdata.support_times(supp_idx) <= obj.breaking_contact_max_time
@@ -136,7 +153,7 @@ classdef AtlasPlanEval
       if tracked_bodies == 2
         r.warning_manager.warnOnce('Drake:HardCodedPelvisheight', 'hard-coding pelvis height');
         r.warning_manager.warnOnce('Drake:NoPelvisHeightLogic', 'not using pelvis height logic');
-        pelvis_target = [mean(feet_poses(1:2,:), 2); min(feet_poses(3,:)) + 0.79; 0; 0; angleAverage(feet_poses(6,1), feet_poses(6,2))];
+        pelvis_target = [mean(feet_poses(1:2,:), 2); min(feet_poses(3,:)) + 0.74; 0; 0; angleAverage(feet_poses(6,1), feet_poses(6,2))];
         coefs = reshape(pelvis_target, [6, 1, 1]);
         coefs = cat(3, zeros(6, 1, 3), coefs);
         qp_input.bodies_data(tracked_bodies+1).body_id = obj.pelvis_body_id;

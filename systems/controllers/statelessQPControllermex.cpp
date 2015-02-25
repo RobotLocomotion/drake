@@ -23,96 +23,13 @@ using namespace std;
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
   int error;
-  if (nrhs<1) mexErrMsgTxt("usage: ptr = QPControllermex(ptr,control_obj,robot_obj,...); alpha=QPControllermex(ptr,params_obj...,...)");
+  if (nrhs<1) mexErrMsgTxt("usage: alpha=QPControllermex(ptr,params_obj...,...)");
   if (nlhs<1) mexErrMsgTxt("take at least one output... please.");
 
   struct QPControllerData* pdata;
   mxArray* pm;
   double* pr;
   int i,j;
-
-  if (mxGetScalar(prhs[0])==0) { // then construct the data object and return
-    pdata = new struct QPControllerData;
-
-    // get control object properties
-    const mxArray* pobj = prhs[1];
-
-    // get robot mex model ptr
-    if (!mxIsNumeric(prhs[2]) || mxGetNumberOfElements(prhs[2])!=1)
-      mexErrMsgIdAndTxt("Drake:QPControllermex:BadInputs","the third argument should be the robot mex ptr");
-    memcpy(&(pdata->r),mxGetData(prhs[2]),sizeof(pdata->r));
-
-    pdata->B.resize(mxGetM(prhs[3]),mxGetN(prhs[3]));
-    memcpy(pdata->B.data(),mxGetPr(prhs[3]),sizeof(double)*mxGetM(prhs[3])*mxGetN(prhs[3]));
-
-    int nq = pdata->r->num_dof, nu = pdata->B.cols();
-
-    pdata->umin.resize(nu);
-    pdata->umax.resize(nu);
-    memcpy(pdata->umin.data(),mxGetPr(prhs[4]),sizeof(double)*nu);
-    memcpy(pdata->umax.data(),mxGetPr(prhs[5]),sizeof(double)*nu);
-
-    pdata->B_act.resize(nu,nu);
-    pdata->B_act = pdata->B.bottomRows(nu);
-
-     // get the map ptr back from matlab
-     if (!mxIsNumeric(prhs[6]) || mxGetNumberOfElements(prhs[6])!=1)
-     mexErrMsgIdAndTxt("Drake:QPControllermex:BadInputs","the seventh argument should be the map ptr");
-     memcpy(&pdata->map_ptr,mxGetPr(prhs[6]),sizeof(pdata->map_ptr));
-
-    if (!pdata->map_ptr)
-      mexWarnMsgTxt("Map ptr is NULL.  Assuming flat terrain at z=0");
-    
-    // create gurobi environment
-    error = GRBloadenv(&(pdata->env),NULL);
-
-    // set solver params (http://www.gurobi.com/documentation/5.5/reference-manual/node798#sec:Parameters)
-    mxArray* psolveropts = myGetProperty(pobj,"gurobi_options");
-    int method = (int) mxGetScalar(myGetField(psolveropts,"method"));
-    CGE ( GRBsetintparam(pdata->env,"outputflag",0), pdata->env );
-    CGE ( GRBsetintparam(pdata->env,"method",method), pdata->env );
-    // CGE ( GRBsetintparam(pdata->env,"method",method), pdata->env );
-    CGE ( GRBsetintparam(pdata->env,"presolve",0), pdata->env );
-    if (method==2) {
-      CGE ( GRBsetintparam(pdata->env,"bariterlimit",20), pdata->env );
-      CGE ( GRBsetintparam(pdata->env,"barhomogeneous",0), pdata->env );
-      CGE ( GRBsetdblparam(pdata->env,"barconvtol",0.0005), pdata->env );
-    }
-
-    mxClassID cid;
-    if (sizeof(pdata)==4) cid = mxUINT32_CLASS;
-    else if (sizeof(pdata)==8) cid = mxUINT64_CLASS;
-    else mexErrMsgIdAndTxt("Drake:constructModelmex:PointerSize","Are you on a 32-bit machine or 64-bit machine??");
-    
-    plhs[0] = mxCreateNumericMatrix(1,1,cid,mxREAL);
-    memcpy(mxGetData(plhs[0]),&pdata,sizeof(pdata));
-    
-    // preallocate some memory
-    pdata->H.resize(nq,nq);
-    pdata->H_float.resize(6,nq);
-    pdata->H_act.resize(nu,nq);
-
-    pdata->C.resize(nq);
-    pdata->C_float.resize(6);
-    pdata->C_act.resize(nu);
-
-    pdata->J.resize(3,nq);
-    pdata->Jdot.resize(3,nq);
-    pdata->J_xy.resize(2,nq);
-    pdata->Jdot_xy.resize(2,nq);
-    pdata->Hqp.resize(nq,nq);
-    pdata->fqp.resize(nq);
-    pdata->Ag.resize(6,nq);
-    pdata->Agdot.resize(6,nq);
-    pdata->Ak.resize(3,nq);
-    pdata->Akdot.resize(3,nq);
-
-    pdata->vbasis_len = 0;
-    pdata->cbasis_len = 0;
-    pdata->vbasis = NULL;
-    pdata->cbasis = NULL;
-    return;
-  }
 
   // first get the ptr back from matlab
   if (!mxIsNumeric(prhs[0]) || mxGetNumberOfElements(prhs[0])!=1)
