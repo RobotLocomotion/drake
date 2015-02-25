@@ -12,11 +12,11 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
 
   std::string usage = "Usage [A, dA] = centroidalMomentumMatrixmex(mex_model_ptr, robotnum, in_terms_of_qdot)";
   if (nrhs != 3) {
-    mexErrMsgIdAndTxt("Drake:geometricJacobianmex:WrongNumberOfInputs", usage.c_str());
+    mexErrMsgIdAndTxt("Drake:centroidalMomentumMatrixmex:WrongNumberOfInputs", usage.c_str());
   }
 
   if (nlhs > 2) {
-    mexErrMsgIdAndTxt("Drake:geometricJacobianmex:WrongNumberOfOutputs", usage.c_str());
+    mexErrMsgIdAndTxt("Drake:centroidalMomentumMatrixmex:WrongNumberOfOutputs", usage.c_str());
   }
 
   RigidBodyManipulator *model = (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
