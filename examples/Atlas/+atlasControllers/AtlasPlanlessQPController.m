@@ -26,7 +26,6 @@ classdef AtlasPlanlessQPController
     param_sets
 
     joint_limits = struct('min', [], 'max', []);
-    dt;
 
 
     gurobi_options = struct();
@@ -38,8 +37,7 @@ classdef AtlasPlanlessQPController
       options = applyDefaults(options,...
         struct('debug', false,...
                'use_mex', 1, ...
-               'solver', 0,...
-               'dt', 0.001),...
+               'solver', 0),...
         struct('debug', @(x) typecheck(x, 'logical') && sizecheck(x, 1),...
                'use_mex', @isscalar, ...
                'solver', @(x) x == 0 || x == 1));
@@ -116,18 +114,26 @@ classdef AtlasPlanlessQPController
       % first, figure out which bodies need to be checked for kinematic contact
       % We'll do this by reading out the contact logic maps for each body. For
       % a description of what these do, see QPInput2D.m
-      logic_maps = [support_data.support_logic_map];
       % we only need to check kinematic contact if it would affect our decision about
       % whether or not the body is in contact. 
-      needs_kin_check = ((logic_maps(2,:) ~= logic_maps(1,:)) & (~contact_sensor)) | ...
-                        ((logic_maps(4,:) ~= logic_maps(3,:)) & contact_sensor);
-
+      needs_kin_check = false(obj.numbod, 1);
+      for j = 1:length(support_data)
+        body_id = support_data(j).body_id;
+        if ((support_data(j).support_logic_map(2) ~= support_data(j).support_logic_map(1)) && (~contact_sensor(body_id))) || ...
+           ((support_data(j).support_logic_map(4) ~= support_data(j).support_logic_map(3)) && (contact_sensor(body_id)))
+          needs_kin_check(body_id) = true;
+        end
+      end
 
       obj.robot.warning_manager.warnOnce('Drake:NotDoingSupportDetect', 'support detect not implemented here');
       kin_sensor = false(obj.numbod, 1);
       kin_sensor(needs_kin_check) = true;
 
-      active_support_mask = obj.applyContactLogic(logic_maps, contact_sensor, kin_sensor);
+      active_support_mask = false(length(support_data), 1);
+      for j = 1:length(support_data)
+        body_id = support_data(j).body_id;
+        active_support_mask(j) = obj.applyContactLogic(support_data(j).support_logic_map, contact_sensor(body_id), kin_sensor(body_id));
+      end
       supp = support_data(active_support_mask);
 
       for j = 1:length(supp)
@@ -136,13 +142,17 @@ classdef AtlasPlanlessQPController
       end
     end
 
+    function tf = applyContactLogic(support_logic_map, body_force_sensor, body_kin_sensor)
+      tf = support_logic_map(2*logical(body_force_sensor) + logical(body_kin_sensor));
+    end
+
     function qddot_des = wholeBodyPID(obj, t, q, qd, q_des, params)
       if isnan(obj.q_integrator_data.t_prev)
         obj.q_integrator_data.t_prev = t;
       end
       dt = t - obj.q_integrator_data.t_prev;
       obj.q_integrator_data.t_prev = t;
-      new_int_state = params.integrator.eta * obj.q_integrator_data.state + params.integrator.gains .* (q_des - q) * obj.dt;
+      new_int_state = params.integrator.eta * obj.q_integrator_data.state + params.integrator.gains .* (q_des - q) * dt;
       if any(new_int_state)
         new_int_state = max(-params.integrator.clamp, min(params.integrator.clamp, new_int_state));
         q_des = q_des + new_int_state;

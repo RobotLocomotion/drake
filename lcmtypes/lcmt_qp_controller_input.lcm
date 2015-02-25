@@ -6,8 +6,8 @@ struct lcmt_qp_controller_input
 
 	lcmt_zmp_data zmp_data;
 
-	int32_t num_bodies;
-	lcmt_support_data support_data[num_bodies];
+	int32_t num_support_data;
+	lcmt_support_data support_data[num_support_data];
 
 	int32_t num_tracked_bodies;
 	lcmt_body_motion_data bodies_data[num_tracked_bodies];
