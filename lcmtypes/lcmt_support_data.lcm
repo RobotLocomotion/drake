@@ -1,0 +1,18 @@
+package drake;
+
+struct lcmt_support_data
+{
+	int64_t timestamp;
+
+	lcmt_foot_flag toe_off;
+
+	boolean breaking_contact;
+
+	int32_t num_active_supports;
+	lcmt_active_support active_supports[num_active_supports];
+
+	int32_t num_bodies;
+	boolean body_contact_logic_map[4][num_bodies];
+
+	double mu;
+}

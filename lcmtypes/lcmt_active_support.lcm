@@ -1,0 +1,11 @@
+package drake;
+
+struct lcmt_active_support
+{
+	int64_t timestamp;
+
+	int32_t body_id;
+	int32_t num_contact_pts;
+	double contact_pts[6][num_contact_pts];
+}
+

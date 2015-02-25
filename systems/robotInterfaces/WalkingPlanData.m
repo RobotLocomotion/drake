@@ -230,6 +230,10 @@ classdef WalkingPlanData
       end
     end
 
+    function next_plan = getSuccessor(obj, t, x)
+      next_plan = WalkingPlanData.from_standing_state(x, obj.robot);
+    end
+
     function obj = fix_link(obj, biped, kinsol, link, pt, tolerance_xyz, tolerance_rpy)
       % Add a new link constraint which fixes the point pt on the given link to its
       % pose as given in kinsol, within the tolerance specified.

@@ -1,6 +1,5 @@
 classdef AtlasPlanlessQPController 
   properties(SetAccess=private, GetAccess=public);
-    qpd;
     foot_contact;
     body_accel_pd;
     debug;
@@ -13,26 +12,33 @@ classdef AtlasPlanlessQPController
     %                       'num_points', {{}}, ...
     %                       'bodies', {{}});
     controller_data
+    q_integrator_data
+    vref_integrator_data
     knee_ind;
+    ankle_inds;
+    leg_inds;
+    actuated_inds;
     use_mex;
     mex_ptr;
     use_bullet = false;
 
     param_sets
 
+    joint_limits = struct('min', [], 'max', []);
+    dt;
 
-    eq_array = repmat('=',100,1); % so we can avoid using repmat in the loop
-    ineq_array = repmat('<',100,1); % so we can avoid using repmat in the loop
+
     gurobi_options = struct();
     solver = 0;
   end
 
   methods
-    function obj = AtlasPlanlessQPController(r, qpd, foot_contact, body_accel_pd, param_sets, options)
+    function obj = AtlasPlanlessQPController(r, foot_contact, body_accel_pd, param_sets, options)
       options = applyDefaults(options,...
         struct('debug', false,...
                'use_mex', 1, ...
-               'solver', 0),...
+               'solver', 0,...
+               'dt', 0.001),...
         struct('debug', @(x) typecheck(x, 'logical') && sizecheck(x, 1),...
                'use_mex', @isscalar, ...
                'solver', @(x) x == 0 || x == 1));
@@ -42,11 +48,16 @@ classdef AtlasPlanlessQPController
 
       obj.robot = r;
       obj.param_sets = param_sets;
+      [obj.joint_limits.min, obj.joint_limits.max] = r.getJointLimits();
       obj.numq = r.getNumPositions();
       obj.numv = r.getNumVelocities();
-      import atlasController.*;
+      obj.ankle_inds = struct('right', r.findPositionIndices('r_leg_ak'),...
+                              'left', r.findPositionIndices('l_leg_ak'));
+      obj.leg_inds = struct('right', r.findPositionIndices('r_leg'),...
+                            'left', r.findPositionIndices('l_leg'));
+      obj.actuated_inds = r.getActuatedJoints();
+      import atlasControllers.*;
       import atlasFrames.*;
-      obj.qpd = qpd;
       obj.foot_contact = foot_contact;
       obj.body_accel_pd = body_accel_pd;
 
@@ -59,23 +70,8 @@ classdef AtlasPlanlessQPController
 
       obj.controller_data = PlanlessQPControllerData(struct('infocount', 0,...
                                                      'qp_active_set', []));
-
-      % import atlasControllers.PlanlessQPInput2D;
-      % obj.all_contacts.groups = cell(PlanlessQPInput2D.num_support_bodies, PlanlessQPInput2D.contact_groups_per_body);
-      % obj.all_contacts.num_points = zeros(PlanlessQPInput2D.num_support_bodies, PlanlessQPInput2D.contact_groups_per_body);
-      % obj.all_contacts.point_ind = cell(PlanlessQPInput2D.num_support_bodies, PlanlessQPInput2D.contact_groups_per_body);
-      % obj.all_contacts.bodies = PlanlessQPInput2D.support_body_ids;
-      % for j = 1:size(obj.all_contacts.groups, 1)
-      %   body_id = PlanlessQPInput2D.support_body_ids(j);
-      %   contact_groups = r.getBody(body_id).collision_geometry_group_names;
-      %   for k = 1:size(obj.all_contacts.groups, 2)
-      %     if k <= length(contact_groups)
-      %       obj.all_contacts.groups{j,k} = contact_groups{k};
-      %       obj.all_contacts.point_ind{j,k} = r.getBody(body_id).collision_geometry_group_indices{k};
-      %       obj.all_contacts.num_points(j,k) = length(obj.all_contacts.point_ind{j,k});
-      %     end
-      %   end
-      % end
+      obj.q_integrator_data = IntegratorData(r);
+      obj.vref_integrator_data = VRefIntegratorData(r);
 
       obj.gurobi_options.outputflag = 0; % not verbose
       if obj.solver==0
@@ -107,12 +103,34 @@ classdef AtlasPlanlessQPController
     end
 
     function supp = getPlannedSupports(obj, active_supports)
-      supp = active_supports;
+      supp = struct(active_supports);
       for j = 1:length(supp)
         supp(j).num_contact_pts = size(supp(j).contact_pts, 2);
         supp(j).contact_surfaces = 0;
       end
     end
+
+    function qddot_des = wholeBodyPID(obj, t, q, qd, q_des, params)
+      if isnan(obj.q_integrator_data.t_prev)
+        obj.q_integrator_data.t_prev = t;
+      end
+      dt = t - obj.q_integrator_data.t_prev;
+      obj.q_integrator_data.t_prev = t;
+      new_int_state = params.integrator.eta * obj.q_integrator_data.state + params.integrator.gains .* (q_des - q) * obj.dt;
+      if any(new_int_state)
+        new_int_state = max(-params.integrator.clamp, min(params.integrator.clamp, new_int_state));
+        q_des = q_des + new_int_state;
+        q_des = max(obj.joint_limits.min - params.integrator.clamp,...
+                    min(obj.joint_limits.max + params.integrator.clamp, q_des)); % allow it to go delta above and below jlims
+      end
+      obj.q_integrator_data.state = max(-params.integrator.clamps, min(params.integrator.clamps, new_int_state));
+
+      err_q = [q_des(1:3) - q(1:3); angleDiff(q(4:end), q_des(4:end))];
+      qddot_des = params.Kp .* err_q - params.Kd .* qd;
+      qddot_des = max(params.qdd_bounds.min,...
+                      min(params.qdd_bounds.max, qddot_des));
+    end
+
 
     function [w_qdd, qddot_des] = kneePD(obj, q, qd, w_qdd, qddot_des, toe_off, min_knee_angle)
       kp = 40;
@@ -133,7 +151,53 @@ classdef AtlasPlanlessQPController
       end
     end
 
-    function [y, qdd] = tick(obj, t, x, qp_input, contact_sensor)
+    function v_ref = velocityReference(obj, t, q, qd, qdd, contact_sensor, params)
+      fc = struct('right', contact_sensor(2) > 0.5,...
+                            'left', contact_sensor(1) > 0.5);
+
+      if isnan(obj.vref_integrator_data.t_prev)
+        obj.vref_integrator_data.t_prev = t;
+      end
+      dt = t - obj.vref_integrator_data.t_prev;
+      obj.vref_integrator_data.t_prev = t;
+
+      qd_int = obj.vref_integrator_data.state;
+      qd_int = (1-params.eta)*qd_int + params.eta*qd + qdd*dt;
+
+      if params.zero_ankles_on_contact && fc.left
+        qd_int(obj.ankle_inds.left) = 0;
+      end
+      if params.zero_ankles_on_contact && fc.right
+        qd_int(obj.ankle_inds.right) = 0;
+      end
+
+      fc_prev = obj.vref_integrator_data.fc_prev;
+      if fc_prev.right ~= fc.right
+        % contact state changed, reset integrated velocities
+        qd_int(obj.leg_inds.right) = qd(obj.leg_inds.right);
+      end
+      if fc_prev.left ~= fc.left
+        qd_int(obj.leg_inds.left) = qd(obj.leg_inds.left);
+      end
+
+      obj.vref_integrator_data.fc_prev = fc;
+      obj.vref_integrator_data.state = qd_int;
+
+      qd_err = qd_int - qd;
+
+      % do not velocity control ankles when in contact
+      if params.zero_ankles_on_contact && fc.left
+        qd_err(obj.ankle_inds.left) = 0;
+      end
+      if params.zero_ankles_on_contact && fc.right
+        qd_err(obj.ankle_inds.right) = 0;
+      end
+
+      delta_max = 1.0;
+      v_ref = max(-delta_max,min(delta_max,qd_err(obj.actuated_inds)));
+    end
+
+    function [y, v_ref] = tick(obj, t, x, qp_input, contact_sensor)
       t0 = tic();
 
       % Unpack variable names (just to make our code a bit easier to read)
@@ -154,7 +218,7 @@ classdef AtlasPlanlessQPController
       r = obj.robot;
       nq = obj.numq;
 
-      params = obj.param_sets.(qp_input.param_set_name);
+      params = obj.param_sets.(char(qp_input.param_set_name));
       w_qdd = params.whole_body.w_qdd;
 
       % lcmgl = LCMGLClient('desired zmp');
@@ -168,9 +232,7 @@ classdef AtlasPlanlessQPController
       condof = params.whole_body.constrained_dofs;
 
       % Run PD on the desired configuration
-      qddot_des = obj.qpd.getQddot_des(q, qd,...
-                          qp_input.whole_body_data.q_des,...
-                          params.whole_body);
+      qddot_des = obj.wholeBodyPID(t, q, qd, qp_input.whole_body_data.q_des, params.whole_body);
 
       supp = obj.getPlannedSupports(qp_input.support_data.active_supports);
       supp = obj.foot_contact.getActiveSupports(x, supp, contact_sensor,...
@@ -289,6 +351,10 @@ classdef AtlasPlanlessQPController
             %valuecheck(qdd,mex_qdd,1e-3);
           end
         end
+      end
+
+      if nargout >= 2
+        v_ref = obj.velocityReference(t, q, qd, qdd, contact_sensor, params.vref_integrator);
       end
 
       if obj.debug

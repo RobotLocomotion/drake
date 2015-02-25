@@ -1,0 +1,11 @@
+package drake;
+
+struct lcmt_whole_body_data
+{
+	int64_t timestamp;
+
+	int32_t num_positions;
+
+	double q_des[num_positions];
+	boolean constrained_dof_mask[num_positions];
+}

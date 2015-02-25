@@ -22,8 +22,8 @@ classdef PlanlessQPControllerData < ControllerData
     function data=verifyControllerData(~,data)
     end
         
-    function updateControllerData(obj,data)
-      updateControllerData@ControllerData(obj,data);
-    end
+  %   function updateControllerData(obj,data)
+  %     updateControllerData@ControllerData(obj,data);
+  %   end
   end
 end
