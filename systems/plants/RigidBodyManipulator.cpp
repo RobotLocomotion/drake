@@ -471,7 +471,6 @@ void RigidBodyManipulator::compile(void)
   num_bodies = static_cast<int>(bodies.size());
   int _num_positions = 0;
   num_velocities = 0;
-  total_mass = 0.0;
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
     RigidBody& body = **it;
     if (body.hasParent()) {
@@ -479,7 +478,6 @@ void RigidBodyManipulator::compile(void)
       _num_positions += body.getJoint().getNumPositions();
       body.velocity_num_start = num_velocities;
       num_velocities += body.getJoint().getNumVelocities();
-      total_mass += body.mass;
     }
     else {
       body.position_num_start = 0;
@@ -1310,7 +1308,7 @@ void RigidBodyManipulator::updateCompositeRigidBodyInertias(int gradient_order) 
 }
 
 template <typename Scalar>
-GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::worldMomentumMatrix(int gradient_order, bool in_terms_of_qdot)
+GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::worldMomentumMatrix(int gradient_order, bool in_terms_of_qdot, const std::set<int>& robotnum)
 {
   if (!use_new_kinsol)
     throw std::runtime_error("method requires new kinsol format");
@@ -1323,26 +1321,34 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::worldMomen
   int nv = num_velocities;
   int ncols = in_terms_of_qdot ? nq : nv;
   GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> ret(TWIST_SIZE, ncols, nq, gradient_order);
+  ret.value().setZero();
+  if (gradient_order > 0)
+    ret.gradient().value().setZero();
   int gradient_row_start = 0;
   for (int i = 0; i < num_bodies; i++) {
     RigidBody& body = *bodies[i];
+
     if (body.hasParent()) {
       const DrakeJoint& joint = body.getJoint();
-      int start = in_terms_of_qdot ? body.position_num_start : body.velocity_num_start;
       int ncols_joint = in_terms_of_qdot ? joint.getNumPositions() : joint.getNumVelocities();
+      std::set<int>::iterator robotnum_it = robotnum.find(body.robotnum);
+      if (robotnum_it != robotnum.end())
+      {
+        int start = in_terms_of_qdot ? body.position_num_start : body.velocity_num_start;
 
-      if (in_terms_of_qdot) {
-        auto IcJ = (Ic_new[i] * body.J).eval();
-        ret.value().middleCols(start, ncols_joint).noalias() = IcJ * body.qdot_to_v;
-        if (gradient_order > 0) {
-          auto dIcJ = matGradMultMat(Ic_new[i], body.J, dIc_new[i], body.dJdq);
-          ret.gradient().value().middleRows(gradient_row_start, TWIST_SIZE * ncols_joint) = matGradMultMat(IcJ, body.qdot_to_v, dIcJ, body.dqdot_to_v_dq);
+        if (in_terms_of_qdot) {
+          auto IcJ = (Ic_new[i] * body.J).eval();
+          ret.value().middleCols(start, ncols_joint).noalias() = IcJ * body.qdot_to_v;
+          if (gradient_order > 0) {
+            auto dIcJ = matGradMultMat(Ic_new[i], body.J, dIc_new[i], body.dJdq);
+            ret.gradient().value().middleRows(gradient_row_start, TWIST_SIZE * ncols_joint) = matGradMultMat(IcJ, body.qdot_to_v, dIcJ, body.dqdot_to_v_dq);
+          }
         }
-      }
-      else {
-        ret.value().middleCols(start, ncols_joint).noalias() = Ic_new[i] * body.J;
-        if (gradient_order > 0) {
-          ret.gradient().value().middleRows(gradient_row_start, TWIST_SIZE * ncols_joint) = matGradMultMat(Ic_new[i], body.J, dIc_new[i], body.dJdq);
+        else {
+          ret.value().middleCols(start, ncols_joint).noalias() = Ic_new[i] * body.J;
+          if (gradient_order > 0) {
+            ret.gradient().value().middleRows(gradient_row_start, TWIST_SIZE * ncols_joint) = matGradMultMat(Ic_new[i], body.J, dIc_new[i], body.dJdq);
+          }
         }
       }
       gradient_row_start += TWIST_SIZE * ncols_joint;
@@ -1378,7 +1384,7 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::centroidal
         }
       }
     }
-    dcom /= total_mass;
+    dcom /= totalMass();
 
     // unfortunately we don't yet have anything more convenient for taking the gradient of a.colwise().cross(b)
     int ncols = ret.value().cols();
@@ -1439,6 +1445,19 @@ GradientVar<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::centroidalMomentumMatri
   return ret;
 }
 
+double RigidBodyManipulator::totalMass(const std::set<int>& robotnum)
+{
+  double total_mass = 0.0;
+  for (int i = 0; i < num_bodies; i++) {
+    std::set<int>::iterator robotnum_it = robotnum.find(bodies[i]->robotnum);
+    if (robotnum_it != robotnum.end())
+    {
+      total_mass += bodies[i]->mass;
+    }
+  }
+  return total_mass;
+}
+
 template <typename Scalar>
 GradientVar<Scalar, SPACE_DIMENSION, 1> RigidBodyManipulator::centerOfMass(int gradient_order, const std::set<int>& robotnum)
 {
@@ -1450,10 +1469,6 @@ GradientVar<Scalar, SPACE_DIMENSION, 1> RigidBodyManipulator::centerOfMass(int g
   double m = 0.0;
   double body_mass;
   com.value().setZero();
-  if (gradient_order > 0)
-    com.gradient().value().setZero();
-  if (gradient_order > 1)
-    com.gradient().gradient().value().setZero();
 
   for (int i = 0; i < num_bodies; i++) {
     std::set<int>::iterator robotnum_it = robotnum.find(bodies[i]->robotnum);
@@ -1466,24 +1481,34 @@ GradientVar<Scalar, SPACE_DIMENSION, 1> RigidBodyManipulator::centerOfMass(int g
         com.value() *= m;
         com.value().noalias() += body_mass * body_com.value();
         com.value() /= (m + body_mass);
-
-        if (gradient_order > 0) {
-          com.gradient().value() *= m;
-          com.gradient().value().noalias() += body_mass * body_com.gradient().value();
-          com.gradient().value() /= (m + body_mass);
-        }
-
-        if (gradient_order > 1) {
-          com.gradient().gradient().value() *= m;
-          com.gradient().gradient().value().noalias() += body_mass * body_com.gradient().gradient().value();
-          com.gradient().gradient().value() /= (m + body_mass);
-        }
-
-        m += body_mass;
       }
+      m += body_mass;
     }
   }
+
+  if (gradient_order > 0) {
+    auto J_com = centerOfMassJacobian<Scalar>(gradient_order - 1, true, robotnum);
+    com.gradient().value() = J_com.value();
+    if (gradient_order > 1)
+      com.gradient().gradient().value() = J_com.gradient().value();
+  }
+
   return com;
+}
+
+template <typename Scalar>
+GradientVar<Scalar, SPACE_DIMENSION, Eigen::Dynamic> RigidBodyManipulator::centerOfMassJacobian(int gradient_order, bool in_terms_of_qdot, const std::set<int>& robotnum)
+{
+  auto A = worldMomentumMatrix<Scalar>(gradient_order, in_terms_of_qdot, robotnum);
+  GradientVar<Scalar, SPACE_DIMENSION, Eigen::Dynamic> ret(SPACE_DIMENSION, A.value().cols(), num_positions, gradient_order);
+  double total_mass = totalMass(robotnum);
+  ret.value() = A.value().template bottomRows<SPACE_DIMENSION>() / total_mass;
+  if (gradient_order > 0) {
+    for (int col = 0; col < A.value().cols(); col++) {
+      ret.gradient().value().template middleRows<SPACE_DIMENSION>(col * SPACE_DIMENSION) = A.gradient().value().template middleRows<SPACE_DIMENSION>(col * A.value().rows() + SPACE_DIMENSION) / total_mass;
+    }
+  }
+  return ret;
 }
 
 template <typename Scalar>
@@ -1491,14 +1516,7 @@ GradientVar<Scalar, SPACE_DIMENSION, 1> RigidBodyManipulator::centerOfMassJacobi
 {
   auto cmm_dot_times_v = centroidalMomentumMatrixDotTimesV<Scalar>(gradient_order);
   GradientVar<Scalar, SPACE_DIMENSION, 1> ret(SPACE_DIMENSION, 1, num_positions, gradient_order);
-
-  double total_mass = 0.0;
-  for (int i = 0; i < num_bodies; i++) {
-    if (bodies[i]->hasParent()) {
-      total_mass += bodies[i]->mass;
-    }
-  }
-
+  double total_mass = totalMass();
   ret.value().noalias() = cmm_dot_times_v.value().template bottomRows<SPACE_DIMENSION>() / total_mass;
   if (gradient_order > 0) {
     ret.gradient().value().noalias() = cmm_dot_times_v.gradient().value().template bottomRows<SPACE_DIMENSION>() / total_mass;
