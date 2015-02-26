@@ -50,7 +50,6 @@ classdef AtlasSplitQPController < DrakeSystem
       if ~isempty(obj.control)
         t0 = tic();
         [y, v_ref] = obj.control.tick(t, x, qp_input, [-1;-1]);
-        lcm_time = 0;
         ctime = toc(t0);
         fprintf(1, 'control: %f\n', ctime);
       else
