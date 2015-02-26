@@ -17,7 +17,7 @@ classdef PlanEval
       end
     end
 
-    function current_plan = getCurrentPlan(obj, t)
+    function current_plan = getCurrentPlan(obj, t, x)
       while true
         current_plan = obj.data.plan_queue{1};
         if (t - current_plan.start_time) < current_plan.duration
@@ -33,7 +33,7 @@ classdef PlanEval
     end
 
     function qp_input = getQPControllerInput(obj, t, x)
-      current_plan = obj.getCurrentPlan(t);
+      current_plan = obj.getCurrentPlan(t, x);
       qp_input = current_plan.getQPControllerInput(t, x);
     end
 
