@@ -20,7 +20,7 @@ if ~isfield(example_options,'use_bullet') example_options.use_bullet = false; en
 if ~isfield(example_options,'use_angular_momentum') example_options.use_angular_momentum = false; end
 if ~isfield(example_options,'navgoal')
 %  navgoal = [2*rand();0.25*randn();0;0;0;0];
-  example_options.navgoal = [0.5;0;0;0;0;0];
+  example_options.navgoal = [0.2;0;0;0;0;0];
 end
 if ~isfield(example_options,'terrain'), example_options.terrain = RigidBodyFlatTerrain; end
 
@@ -62,12 +62,11 @@ lfoot_navgoal(1:3) = lfoot_navgoal(1:3) + R*[0;0.13;0];
 
 % Plan footsteps to the goal
 goal_pos = struct('right', rfoot_navgoal, 'left', lfoot_navgoal);
-footstep_plan = r.planFootsteps(x0(1:nq), goal_pos, [], struct('step_params', struct('max_num_steps', 4)));
+footstep_plan = r.planFootsteps(x0(1:nq), goal_pos, [], struct('step_params', struct('max_num_steps', 1)));
 
 walking_plan_data = r.planWalkingZMP(x0(1:r.getNumPositions()), footstep_plan);
 
 import atlasControllers.*;
-foot_contact = FootContactMixin(r, struct());
 
 param_sets = atlasParams.getDefaults(r);
 control = AtlasPlanlessQPController(r,...
@@ -76,7 +75,11 @@ control = AtlasPlanlessQPController(r,...
                                     % @statelessBodyMotionControlmex,...
 
 planeval = AtlasPlanEval(r, walking_plan_data);
-plancontroller = AtlasSplitQPController(r, control, planeval);
+% plancontroller = AtlasSplitQPController(r, control, planeval);
+plan_node = AtlasSplitQPController(r, [], planeval);
+control_node = AtlasSplitQPController(r, control, []);
+
+plancontroller = cascade(plan_node, control_node);
 
 sys = feedback(r, plancontroller);
 output_select(1).system=1;
