@@ -1030,8 +1030,8 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
 
     function v = constructVisualizer(obj,varargin)
       v = constructVisualizer(obj.manip,varargin{:});
-      v = v.setNumInputs(obj.getNumStates());
-      v = setInputFrame(v,obj.getStateFrame());
+      v = v.setNumInputs(obj.getNumOutputs());
+      v = setInputFrame(v,obj.getOutputFrame());
     end
 
     function getNumContacts(~)
