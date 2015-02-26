@@ -21,8 +21,8 @@ classdef AtlasSplitQPController < DrakeSystem
       obj.control = control;
       obj.plan_eval = plan_eval;
 
+      obj.lc = lcm.lcm.LCM.getSingleton();
       if isempty(obj.plan_eval) || isempty(obj.control)
-        obj.lc = lcm.lcm.LCM.getSingleton();
         if isempty(obj.plan_eval)
           obj.monitor = drake.util.MessageMonitor(drake.lcmt_qp_controller_input, 'timestamp');
           obj.lc.subscribe('QP_CONTROLLER_INPUT', obj.monitor);
@@ -44,16 +44,15 @@ classdef AtlasSplitQPController < DrakeSystem
       ptime = toc(t0);
 
       t0 = tic();
-      if isempty(obj.control)
-        qp_input_msg = qp_input.to_lcm();
-      end
-      lcm_time = toc(t0);
-
-      t0 = tic();
       if ~isempty(obj.control)
         [y, v_ref] = obj.control.tick(t, x, qp_input, [-1;-1]);
+        lcm_time = 0;
       else
+        t0 = tic();
+        qp_input_msg = qp_input.to_lcm();
+        compareLCMMsgs(qp_input_msg, qp_input_msg.copy());
         obj.lc.publish('QP_CONTROLLER_INPUT', qp_input_msg);
+        lcm_time = toc(t0);
         y = x;
       end
       ctime = toc(t0);

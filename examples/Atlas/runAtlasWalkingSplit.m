@@ -76,9 +76,9 @@ control = AtlasPlanlessQPController(r,...
 
 planeval = AtlasPlanEval(r, walking_plan_data);
 % plancontroller = AtlasSplitQPController(r, control, planeval);
+
 plan_node = AtlasSplitQPController(r, [], planeval);
 control_node = AtlasSplitQPController(r, control, []);
-
 plancontroller = cascade(plan_node, control_node);
 
 sys = feedback(r, plancontroller);
