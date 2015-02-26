@@ -9,7 +9,7 @@ classdef StandingPlan < WalkingPlan
       obj = StandingPlan(biped);
       obj.x0 = x0;
       obj.support_times = [0, inf];
-      obj.end_time = inf;
+      obj.duration = inf;
       obj.supports = [support_state, support_state];
 
       nq = obj.robot.getNumPositions();
