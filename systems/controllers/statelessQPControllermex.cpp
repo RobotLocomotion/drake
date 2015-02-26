@@ -22,7 +22,6 @@ using namespace std;
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
-  int error;
   if (nrhs<1) mexErrMsgTxt("usage: alpha=QPControllermex(ptr,params_obj...,...)");
   if (nlhs<1) mexErrMsgTxt("take at least one output... please.");
 
@@ -114,20 +113,34 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   int desired_support_argid = narg++;
 
-  Map<MatrixXd> A_ls(mxGetPr(prhs[narg]),mxGetM(prhs[narg]),mxGetN(prhs[narg])); narg++;
-  Map<MatrixXd> B_ls(mxGetPr(prhs[narg]),mxGetM(prhs[narg]),mxGetN(prhs[narg])); narg++;
-  Map<MatrixXd> Qy  (mxGetPr(prhs[narg]),mxGetM(prhs[narg]),mxGetN(prhs[narg])); narg++;
-  Map<MatrixXd> R_ls(mxGetPr(prhs[narg]),mxGetM(prhs[narg]),mxGetN(prhs[narg])); narg++;
-  Map<MatrixXd> C_ls(mxGetPr(prhs[narg]),mxGetM(prhs[narg]),mxGetN(prhs[narg])); narg++;
-  Map<MatrixXd> D_ls(mxGetPr(prhs[narg]),mxGetM(prhs[narg]),mxGetN(prhs[narg])); narg++;
-  Map<MatrixXd> S   (mxGetPr(prhs[narg]),mxGetM(prhs[narg]),mxGetN(prhs[narg])); narg++;
+  pobj = mxGetField(prhs[narg],0,"A");
+  Map<MatrixXd> A_ls(mxGetPr(pobj), mxGetM(pobj), mxGetN(pobj));
+  pobj = mxGetField(prhs[narg],0,"B");
+  Map<MatrixXd> B_ls(mxGetPr(pobj), mxGetM(pobj), mxGetN(pobj));
+  pobj = mxGetField(prhs[narg],0,"C");
+  Map<MatrixXd> C_ls(mxGetPr(pobj), mxGetM(pobj), mxGetN(pobj));
+  pobj = mxGetField(prhs[narg],0,"D");
+  Map<MatrixXd> D_ls(mxGetPr(pobj), mxGetM(pobj), mxGetN(pobj));
+  pobj = mxGetField(prhs[narg],0,"Qy");
+  Map<MatrixXd> Qy(mxGetPr(pobj), mxGetM(pobj), mxGetN(pobj));
+  pobj = mxGetField(prhs[narg],0,"R");
+  Map<MatrixXd> R_ls(mxGetPr(pobj), mxGetM(pobj), mxGetN(pobj));
+  pobj = mxGetField(prhs[narg],0,"S");
+  Map<MatrixXd> S(mxGetPr(pobj), mxGetM(pobj), mxGetN(pobj));
+  pobj = mxGetField(prhs[narg],0,"s1");
+  Map<MatrixXd> s1(mxGetPr(pobj), mxGetM(pobj), mxGetN(pobj));
+  pobj = mxGetField(prhs[narg],0,"s1dot");
+  Map<MatrixXd> s1dot(mxGetPr(pobj), mxGetM(pobj), mxGetN(pobj));
+  pobj = mxGetField(prhs[narg],0,"s2dot");
+  double s2dot = mxGetScalar(pobj);
+  pobj = mxGetField(prhs[narg],0,"x0");
+  Map<MatrixXd> x0(mxGetPr(pobj), mxGetM(pobj), mxGetN(pobj));
+  pobj = mxGetField(prhs[narg],0,"u0");
+  Map<MatrixXd> u0(mxGetPr(pobj), mxGetM(pobj), mxGetN(pobj));
+  pobj = mxGetField(prhs[narg],0,"y0");
+  Map<MatrixXd> y0(mxGetPr(pobj), mxGetM(pobj), mxGetN(pobj));
+  narg++;
 
-  Map<VectorXd> s1(mxGetPr(prhs[narg]),mxGetM(prhs[narg])); narg++;
-  Map<VectorXd> s1dot(mxGetPr(prhs[narg]),mxGetM(prhs[narg])); narg++;
-  double s2dot = mxGetScalar(prhs[narg++]);
-  Map<VectorXd> x0(mxGetPr(prhs[narg]),mxGetM(prhs[narg])); narg++;
-  Map<VectorXd> u0(mxGetPr(prhs[narg]),mxGetM(prhs[narg])); narg++;
-  Map<VectorXd> y0(mxGetPr(prhs[narg]),mxGetM(prhs[narg])); narg++;
   Map<VectorXd> qdd_lb(mxGetPr(prhs[narg]),mxGetM(prhs[narg])); narg++;
   Map<VectorXd> qdd_ub(mxGetPr(prhs[narg]),mxGetM(prhs[narg])); narg++;
   memcpy(pdata->w_qdd.data(),mxGetPr(prhs[narg++]),sizeof(double)*nq); 
