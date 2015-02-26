@@ -431,7 +431,7 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
   model = model_input;
   nT = nT_input;
   t = const_cast<double*>(t_input);
-  nq = model->num_dof;
+  nq = model->num_positions;
   q_nom = q_nom_input;
   if(q_seed.rows() != nq || q_seed.cols() != nT || q_nom.rows() != nq || q_nom.cols() != nT)
   {
