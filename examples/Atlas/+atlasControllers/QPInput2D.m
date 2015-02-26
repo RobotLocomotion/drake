@@ -63,6 +63,7 @@ classdef QPInput2D
         msg.zmp_data.(f{1}) = obj.zmp_data.(f{1});
       end
       nsupp = length(obj.support_data);
+      msg.num_support_data = nsupp;
       msg.support_data = javaArray('drake.lcmt_support_data', nsupp);
       for j = 1:nsupp
         msg.support_data(j) = drake.lcmt_support_data();

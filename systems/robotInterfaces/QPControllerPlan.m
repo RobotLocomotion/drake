@@ -9,7 +9,7 @@ classdef QPControllerPlan
                                 'only_if_kinematic', logical([0;1;0;1]),...
                                 'kinematic_or_sensed', logical([0;1;1;1]),...
                                 'prevent_support', false(4,1));
-    end_time;
+    duration;
     start_time = 0;
     default_qp_input = atlasControllers.QPInput2D;
   end

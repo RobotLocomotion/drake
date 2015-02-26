@@ -18,15 +18,17 @@ classdef PlanEval
     end
 
     function current_plan = getCurrentPlan(obj, t)
-      current_plan = obj.data.plan_queue{1};
-      while t > current_plan.end_time
+      while true
+        current_plan = obj.data.plan_queue{1};
+        if (t - current_plan.start_time) < current_plan.duration
+          break
+        end
         if length(obj.data.plan_queue) == 1
           obj.data.plan_queue{1} = current_plan.getSuccessor(t, x);
         else
           obj.data.plan_queue(1) = [];
-          obj.data.plan_queue{1}.start_time = t;
-          current_plan = obj.data.plan_queue{1};
         end
+        obj.data.plan_queue{1}.start_time = t;
       end
     end
 
