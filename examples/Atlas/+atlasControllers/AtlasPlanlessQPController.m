@@ -1,6 +1,5 @@
 classdef AtlasPlanlessQPController 
   properties(SetAccess=private, GetAccess=public);
-    foot_contact;
     body_accel_pd;
     debug;
     debug_pub;
@@ -23,6 +22,7 @@ classdef AtlasPlanlessQPController
     mex_ptr;
     support_detect_mex_ptr;
     use_bullet = false;
+    using_flat_terrain;
 
     param_sets
 
@@ -34,7 +34,7 @@ classdef AtlasPlanlessQPController
   end
 
   methods
-    function obj = AtlasPlanlessQPController(r, foot_contact, body_accel_pd, param_sets, options)
+    function obj = AtlasPlanlessQPController(r, body_accel_pd, param_sets, options)
       options = applyDefaults(options,...
         struct('debug', false,...
                'use_mex', 1, ...
@@ -59,7 +59,6 @@ classdef AtlasPlanlessQPController
       obj.actuated_inds = r.getActuatedJoints();
       import atlasControllers.*;
       import atlasFrames.*;
-      obj.foot_contact = foot_contact;
       obj.body_accel_pd = body_accel_pd;
 
       obj.knee_ind = struct('right', r.findPositionIndices('r_leg_kny'),...
@@ -93,8 +92,10 @@ classdef AtlasPlanlessQPController
         terrain = getTerrain(r);
         if isa(terrain,'DRCTerrainMap')
           terrain_map_ptr = terrain.map_handle.getPointerForMex();
+          obj.using_flat_terrain = false;
         else
           terrain_map_ptr = 0;
+          obj.using_flat_terrain = true;
         end
         obj.mex_ptr = SharedDataHandle(constructQPDataPointer(obj.robot.getMexModelPtr.ptr,...
           obj.robot.getB(), obj.robot.umin, obj.robot.umax,...
@@ -314,7 +315,7 @@ classdef AtlasPlanlessQPController
 
       use_fastqp = obj.solver == 0;
 
-      if obj.foot_contact.using_flat_terrain
+      if obj.using_flat_terrain
         height = getTerrainHeight(r,[0;0]); % get height from DRCFlatTerrainMap
       else
         height = 0;
