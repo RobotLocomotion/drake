@@ -235,19 +235,6 @@ classdef AtlasPlanlessQPController
       t0 = tic();
 
       % Unpack variable names (just to make our code a bit easier to read)
-      A_ls = qp_input.zmp_data.A;
-      B_ls = qp_input.zmp_data.B;
-      C_ls = qp_input.zmp_data.C;
-      D_ls = qp_input.zmp_data.D;
-      Qy = qp_input.zmp_data.Qy;
-      R_ls = qp_input.zmp_data.R;
-      S = qp_input.zmp_data.S;
-      s1 = qp_input.zmp_data.s1;
-      s1dot = 0;
-      s2dot = 0;
-      x0 = qp_input.zmp_data.x0;
-      y0 = qp_input.zmp_data.y0;
-      u0 = qp_input.zmp_data.u0;
       ctrl_data = obj.controller_data;
       r = obj.robot;
       nq = obj.numq;
@@ -325,9 +312,7 @@ classdef AtlasPlanlessQPController
         [y, qdd, info_fqp, active_supports,...
           alpha, Hqp, fqp, Aeq, beq, Ain, bin,lb,ub] = atlasControllers.setupAndSolveQP(r, params, use_fastqp,...
                                              qddot_des, x, all_bodies_vdot,...
-                                             condof, supp, A_ls, B_ls, Qy,...
-                                             R_ls, C_ls, D_ls, S, s1,...
-                                             s1dot, s2dot, x0, u0, y0, ...
+                                             condof, supp, qp_input.zmp_data, ...
                                              qdd_lb, qdd_ub, w_qdd, ...
                                              mu, height,obj.use_bullet,...
                                              ctrl_data, obj.gurobi_options);
@@ -337,8 +322,7 @@ classdef AtlasPlanlessQPController
 
         if (obj.use_mex==1)
           [y,qdd,info_fqp,active_supports,alpha] = statelessQPControllermex(obj.mex_ptr.data,params,use_fastqp,qddot_des,x,...
-              all_bodies_vdot,condof,supp,A_ls,B_ls,Qy,R_ls,C_ls,D_ls,...
-              S,s1,s1dot,s2dot,x0,u0,y0,qdd_lb,qdd_ub,w_qdd,mu,height);
+              all_bodies_vdot,condof,supp,struct(qp_input.zmp_data),qdd_lb,qdd_ub,w_qdd,mu,height);
 
           if info_fqp < 0
             ctrl_data.infocount = ctrl_data.infocount+1;
@@ -358,8 +342,7 @@ classdef AtlasPlanlessQPController
           [y_mex,mex_qdd,info_mex,active_supports_mex,~,Hqp_mex,fqp_mex,...
             Aeq_mex,beq_mex,Ain_mex,bin_mex,Qf,Qeps] = ...
             statelessQPControllermex(obj.mex_ptr.data,params,use_fastqp,qddot_des,x,...
-            all_bodies_vdot,condof,supp,A_ls,B_ls,Qy,R_ls,C_ls,D_ls,S,s1,...
-            s1dot,s2dot,x0,u0,y0,qdd_lb,qdd_ub,w_qdd,mu,height);
+            all_bodies_vdot,condof,supp,struct(qp_input.zmp_data),qdd_lb,qdd_ub,w_qdd,mu,height);
 
           num_active_contacts = zeros(1, length(supp.bodies));
           for j = 1:length(supp.contact_pts)
