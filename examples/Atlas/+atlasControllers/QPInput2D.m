@@ -69,7 +69,7 @@ classdef QPInput2D
         msg.support_data(j).body_id = obj.support_data(j).body_id;
         msg.support_data(j).num_contact_pts = size(obj.support_data(j).contact_pts, 2);
         msg.support_data(j).contact_pts = obj.support_data(j).contact_pts;
-        msg.support_data(j).support_logic_map = obj.support_data(j).support_logic_map;
+        msg.support_data(j).support_logic_map = logical(obj.support_data(j).support_logic_map);
         msg.support_data(j).mu = obj.support_data(j).mu;
         msg.support_data(j).contact_surfaces = obj.support_data(j).contact_surfaces;
       end
