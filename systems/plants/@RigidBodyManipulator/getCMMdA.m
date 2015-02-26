@@ -188,7 +188,7 @@ else
 end
 
 size_A = [6, ncols];
-A = zeros(size_A);
+A = zeros(size_A) * kinsol.q(1);
 if compute_gradients
   dA = zeros(prod(size_A), robot.getNumPositions());
 end
