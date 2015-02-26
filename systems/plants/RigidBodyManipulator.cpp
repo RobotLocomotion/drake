@@ -486,7 +486,7 @@ void RigidBodyManipulator::compile(void)
   resize(_num_positions, NB, num_bodies, num_frames);
 
   for (int i=0; i<num_bodies; i++) {
-    if (bodies[i]->parent!=nullptr)
+    if (!bodies[i]->hasParent())
       updateCollisionElements(i);  // update static objects (not done in the kinematics loop)
 
     // precompute sparsity pattern for each rigid body
