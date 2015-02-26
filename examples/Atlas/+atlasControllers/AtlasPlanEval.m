@@ -27,7 +27,7 @@ classdef AtlasPlanEval < atlasControllers.PlanEval
     end
 
     function qp_input = getQPControllerInput(obj, t, x)
-      plan = obj.getCurrentPlan(t);
+      plan = obj.getCurrentPlan(t, x);
       qp_input = plan.getQPControllerInput(t, x, obj.robot_property_cache);
     end
   end
