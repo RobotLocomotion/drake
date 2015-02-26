@@ -70,7 +70,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   // first get the model_ptr back from matlab
   RigidBodyManipulator *model= (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
 
-  int i, j, error, nq = model->num_dof;
+  int i, j, error, nq = model->num_positions;
   
   static RigidBodyManipulator* lastModel=NULL;
   static int lastNumJointLimits = 0;

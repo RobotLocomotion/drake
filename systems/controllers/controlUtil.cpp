@@ -139,7 +139,7 @@ int contactPhi(RigidBodyManipulator* r, SupportStateElement& supp, void *map_ptr
 
 int contactConstraints(RigidBodyManipulator *r, int nc, std::vector<SupportStateElement>& supp, void *map_ptr, MatrixXd &n, MatrixXd &D, MatrixXd &Jp, MatrixXd &Jpdot,double terrain_height)
 {
-  int j, k=0, nq = r->num_dof;
+  int j, k=0, nq = r->num_positions;
 
   n.resize(nc,nq);
   D.resize(nq,nc*2*m_surface_tangents);
@@ -185,7 +185,7 @@ int contactConstraints(RigidBodyManipulator *r, int nc, std::vector<SupportState
 
 int contactConstraintsBV(RigidBodyManipulator *r, int nc, double mu, std::vector<SupportStateElement>& supp, void *map_ptr, MatrixXd &B, MatrixXd &JB, MatrixXd &Jp, MatrixXd &Jpdot, MatrixXd &normals, double terrain_height)
 {
-  int j, k=0, nq = r->num_dof;
+  int j, k=0, nq = r->num_positions;
 
   B.resize(3,nc*2*m_surface_tangents);
   JB.resize(nq,nc*2*m_surface_tangents);

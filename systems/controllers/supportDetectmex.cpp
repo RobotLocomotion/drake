@@ -50,7 +50,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     mexErrMsgIdAndTxt("DRC:supportDetectmex:BadInputs","the first argument should be the ptr");
   memcpy(&pdata,mxGetData(prhs[0]),sizeof(pdata));
 
-  int nq = pdata->r->num_dof;
+  int nq = pdata->r->num_positions;
   int nv = pdata->r->num_velocities;
 
   int narg=1;  
