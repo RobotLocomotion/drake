@@ -63,6 +63,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   pdata->w_qdd.resize(nq);
   memcpy(pdata->w_qdd.data(),mxGetPr(pm),sizeof(double)*nq);
 
+  double contact_threshold = mxGetScalar(myGetProperty(pobj,"contact_threshold"));
+
   const int dim = 3, // 3D
   nd = 2*m_surface_tangents; // for friction cone approx, hard coded for now
   
@@ -112,6 +114,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   int desired_support_argid = narg++;
 
+  pobj = prhs[narg];
+  Map<VectorXd> contact_force_detected(mxGetPr(pobj), mxGetNumberOfElements(pobj), 1);
+  Matrix<bool, Dynamic, 1> b_contact_force = Matrix<bool, Dynamic, 1>::Zero(contact_force_detected.size());
+  for (int i=0; i < b_contact_force.size(); i++) {
+    b_contact_force(i) = (contact_force_detected(i) != 0);
+  }
+  narg++;
+
   pobj = mxGetField(prhs[narg],0,"A");
   Map<MatrixXd> A_ls(mxGetPr(pobj), mxGetM(pobj), mxGetN(pobj));
   pobj = mxGetField(prhs[narg],0,"B");
@@ -154,7 +164,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   //---------------------------------------------------------------------
 
   int num_active_contact_pts=0;
-  vector<SupportStateElement> active_supports = parseSupportData(prhs[desired_support_argid]);
+  vector<SupportStateElement> available_supports = parseSupportData(prhs[desired_support_argid]);
+  vector<SupportStateElement> active_supports = getActiveSupports(pdata->r, pdata->map_ptr, q, qd, available_supports, b_contact_force, contact_threshold, terrain_height);
 
   for (vector<SupportStateElement>::iterator iter = active_supports.begin(); iter!=active_supports.end(); iter++) {
     num_active_contact_pts += iter->contact_pts.size();
