@@ -65,7 +65,6 @@ goal_pos = struct('right', rfoot_navgoal, 'left', lfoot_navgoal);
 footstep_plan = r.planFootsteps(x0(1:nq), goal_pos, [], struct('step_params', struct('max_num_steps', 1)));
 
 walking_plan_data = r.planWalkingZMP(x0(1:r.getNumPositions()), footstep_plan);
-walking_plan_data.duration = 0.1;
 
 import atlasControllers.*;
 
