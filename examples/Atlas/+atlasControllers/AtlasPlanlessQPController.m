@@ -286,6 +286,9 @@ classdef AtlasPlanlessQPController
       use_fastqp = obj.solver == 0;
 
       if (obj.use_mex==0 || obj.use_mex==2)
+        % if t >= 0.1
+        %   keyboard();
+        % end
         mask = getActiveSupportsmex(obj.mex_ptr.data, x, available_supports, contact_sensor, params.contact_threshold, height);
         supp = available_supports(logical(mask));
         [y, qdd, info_fqp, active_supports,...
@@ -339,6 +342,9 @@ classdef AtlasPlanlessQPController
             Hqp_mex=Hqp_mex*2;
             Qf=Qf*2;
             Qeps=Qeps*2;
+          end
+          if ~valuecheck(Hqp,blkdiag(Hqp_mex,diag(Qf),diag(Qeps)),1e-6);
+            keyboard();
           end
           valuecheck(Hqp,blkdiag(Hqp_mex,diag(Qf),diag(Qeps)),1e-6);
           valuecheck(fqp',fqp_mex,1e-6);

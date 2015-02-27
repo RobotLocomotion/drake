@@ -59,10 +59,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   pm = myGetProperty(pobj,"Kp_accel");
   pdata->Kp_accel = mxGetScalar(pm);
 
-  pm = mxGetField(myGetProperty(pobj,"whole_body"), 0, "w_qdd");
-  pdata->w_qdd.resize(nq);
-  memcpy(pdata->w_qdd.data(),mxGetPr(pm),sizeof(double)*nq);
-
   double contact_threshold = mxGetScalar(myGetProperty(pobj,"contact_threshold"));
 
   const int dim = 3, // 3D
@@ -81,16 +77,19 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   pdata->n_body_accel_inputs = (int) mxGetN(acc_obj);
   pdata->n_body_accel_bounds = (int) mxGetN(acc_obj);
   pdata->body_accel_input_weights.resize(pdata->n_body_accel_inputs);
+  pdata->accel_bound_body_idx.resize(pdata->n_body_accel_inputs);
+  pdata->min_body_acceleration.resize(pdata->n_body_accel_inputs);
+  pdata->max_body_acceleration.resize(pdata->n_body_accel_inputs);
 
   vector<Vector6d,aligned_allocator<Vector6d>> body_accel_inputs;
   for (int i=0; i<pdata->n_body_accel_inputs; i++) {
-    pdata->accel_bound_body_idx.push_back((int) mxGetScalar(mxGetField(acc_obj, i, "body_id"))-1);
+    pdata->accel_bound_body_idx[i] = ((int) mxGetScalar(mxGetField(acc_obj, i, "body_id"))) - 1;
 
     body_accel_inputs.push_back(matlabToEigen<6, 1>(mxGetField(acc_obj, i, "body_vdot")));
     pm = mxGetField(mxGetField(acc_obj, i, "params"), 0, "accel_bounds");
-    pdata->min_body_acceleration.push_back(matlabToEigen<6, 1>(mxGetField(pm, 0, "min")));
-    pdata->max_body_acceleration.push_back(matlabToEigen<6, 1>(mxGetField(pm, 0, "max")));
-    pdata->body_accel_input_weights[i] = mxGetScalar(mxGetField(mxGetField(acc_obj, i, "params"), 0, "weight"));
+    pdata->min_body_acceleration[i] = matlabToEigen<6, 1>(mxGetField(pm, 0, "min"));
+    pdata->max_body_acceleration[i] = matlabToEigen<6, 1>(mxGetField(pm, 0, "max"));
+    pdata->body_accel_input_weights(i) = mxGetScalar(mxGetField(mxGetField(acc_obj, i, "params"), 0, "weight"));
   }
 
   pdata->n_body_accel_eq_constraints = 0;
@@ -152,6 +151,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   Map<VectorXd> qdd_lb(mxGetPr(prhs[narg]),mxGetM(prhs[narg])); narg++;
   Map<VectorXd> qdd_ub(mxGetPr(prhs[narg]),mxGetM(prhs[narg])); narg++;
+  pdata->w_qdd.resize(nq);
   memcpy(pdata->w_qdd.data(),mxGetPr(prhs[narg++]),sizeof(double)*nq); 
   
   double mu = mxGetScalar(prhs[narg++]);
