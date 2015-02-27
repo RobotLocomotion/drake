@@ -45,3 +45,4 @@ struct QPControllerData {
   int vbasis_len;
   int cbasis_len;
 };
+
