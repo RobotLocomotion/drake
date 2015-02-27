@@ -56,6 +56,8 @@ classdef QPInput2D
     end
 
     function msg = to_lcm(obj)
+      encodeQPInputLCMMex(obj, 0);
+
       msg = drake.lcmt_qp_controller_input();
       msg.timestamp = obj.timestamp;
       msg.zmp_data = drake.lcmt_zmp_data();

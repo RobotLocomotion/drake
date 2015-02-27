@@ -4,6 +4,8 @@ if (eigen3_FOUND)
 
   pods_find_pkg_config(terrain-map)
 
+  pods_find_pkg_config(lcm)
+
   add_mex(drakeControlUtil SHARED controlUtil.cpp)
   if (terrain-map_FOUND)
     pods_use_pkg_config_packages(drakeControlUtil terrain-map)
@@ -49,6 +51,13 @@ if (eigen3_FOUND)
   add_mex(individualCentersOfPressuremex individualCentersOfPressuremex.cpp)
   include_directories (${CMAKE_SOURCE_DIR}/util )
   target_link_libraries(individualCentersOfPressuremex drakeRBM drakeUtil drakeControlUtil)
+
+  if (lcm_FOUND)
+    include_directories (${CMAKE_BINARY_DIR}/lcmgen/lcmtypes )
+    message(${CMAKE_BINARY_DIR}/lcmgen/lcmtypes )
+    add_mex(encodeQPInputLCMMex encodeQPInputLCMMex.cpp)
+    target_link_libraries(encodeQPInputLCMMex lcm drakeControlUtil)
+  endif()
 
 endif(eigen3_FOUND)
 

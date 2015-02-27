@@ -58,6 +58,7 @@ drakeControlUtilEXPORT void angleDiff(MatrixBase<DerivedPhi1> const &phi1, Matri
 
 drakeControlUtilEXPORT mxArray* myGetProperty(const mxArray* pobj, const char* propname);
 drakeControlUtilEXPORT mxArray* myGetField(const mxArray* pobj, const char* propname);
+drakeControlUtilEXPORT mxArray* myGetField(const mxArray* pobj, const int idx, const char* propname);
 drakeControlUtilEXPORT bool inSupport(std::vector<SupportStateElement> supports, int body_idx);
 drakeControlUtilEXPORT void collisionDetect(void* map_ptr, Vector3d const & contact_pos, Vector3d &pos, Vector3d *normal, double terrain_height);
 drakeControlUtilEXPORT void surfaceTangents(const Vector3d & normal, Matrix<double,3,m_surface_tangents> & d);
@@ -66,5 +67,6 @@ drakeControlUtilEXPORT int contactConstraints(RigidBodyManipulator *r, int nc, s
 drakeControlUtilEXPORT int contactConstraintsBV(RigidBodyManipulator *r, int nc, double mu, std::vector<SupportStateElement>& supp, void *map_ptr, MatrixXd &B, MatrixXd &JB, MatrixXd &Jp, MatrixXd &Jpdot, MatrixXd &normals, double terrain_height);
 drakeControlUtilEXPORT MatrixXd individualSupportCOPs(RigidBodyManipulator* r, const std::vector<SupportStateElement>& active_supports, const MatrixXd& normals, const MatrixXd& B, const VectorXd& beta);
 
+drakeControlUtilEXPORT void sizecheck(const mxArray* mat, int M, int N);
 
 #endif
