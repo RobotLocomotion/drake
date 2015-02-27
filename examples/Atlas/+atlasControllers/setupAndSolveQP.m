@@ -18,6 +18,7 @@ x0 = zmp_data.x0;
 y0 = zmp_data.y0;
 u0 = zmp_data.u0;
 
+
 nq = r.getNumPositions();                                           
 q = x(1:nq);
 qd = x(nq+1:end);
