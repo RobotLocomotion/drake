@@ -119,6 +119,18 @@ classdef WorldFixedPositionConstraint < MultipleTimeKinematicConstraint
     
     % set the tolerance for the constraint, default is 0.
     function obj = setTol(obj,tol)
+      if ~isnumeric(tol)
+        error('Drake:WorldFixedPositionConstraint:TypeError','tol must be a numeric type');
+      end
+
+      if ~isscalar(tol)
+        error('Drake:WorldFixedPositionConstraint:SizeError','tol must be a scalar');
+      end
+
+      if tol < 0
+        error('Drake:WorldFixedPositionConstraint:SignError','tol must be >= 0');
+      end
+      
        obj.tol = tol; 
     end
     
