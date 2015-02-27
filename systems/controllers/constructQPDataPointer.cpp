@@ -30,6 +30,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   pdata->umin.resize(nu);
   pdata->umax.resize(nu);
+
+  // pdata->contact_force_detected.resize(pdata->r->num_bodies);
   memcpy(pdata->umin.data(),mxGetPr(prhs[narg++]),sizeof(double)*nu);
   memcpy(pdata->umax.data(),mxGetPr(prhs[narg++]),sizeof(double)*nu);
 

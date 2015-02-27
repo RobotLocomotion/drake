@@ -29,6 +29,9 @@ if (eigen3_FOUND)
     add_mex(constructQPDataPointer constructQPDataPointer.cpp)
     target_link_libraries(constructQPDataPointer drakeQP drakeControlUtil)
     pods_use_pkg_config_packages(constructQPDataPointer gurobi)
+
+    add_mex(getActiveSupportsmex getActiveSupportsmex.cpp)
+    target_link_libraries(getActiveSupportsmex drakeQP drakeControlUtil)
   endif()
 
   add_mex(bodyMotionControlmex bodyMotionControlmex.cpp)

@@ -109,39 +109,12 @@ classdef AtlasPlanlessQPController
 
     end
 
-    function supp = getActiveSupports(obj, support_data, contact_sensor, contact_threshold)
+    function supp = getActiveSupports(obj, support_data, contact_sensor, contact_threshold, terrain_height)
       % Combine information from the plan, the kinematic sensors, and the force sensors (if available)
       % to decide which bodies are in active support right now. 
 
-      % first, figure out which bodies need to be checked for kinematic contact
-      % We'll do this by reading out the contact logic maps for each body. For
-      % a description of what these do, see QPInput2D.m
-      % we only need to check kinematic contact if it would affect our decision about
-      % whether or not the body is in contact. 
-      needs_kin_check = false(obj.numbod, 1);
-      for j = 1:length(support_data)
-        body_id = support_data(j).body_id;
-        if ((support_data(j).support_logic_map(2) ~= support_data(j).support_logic_map(1)) && (~contact_sensor(body_id))) || ...
-           ((support_data(j).support_logic_map(4) ~= support_data(j).support_logic_map(3)) && (contact_sensor(body_id)))
-          needs_kin_check(body_id) = true;
-        end
-      end
-
-      obj.robot.warning_manager.warnOnce('Drake:NotDoingSupportDetect', 'support detect not implemented here');
-      kin_sensor = false(obj.numbod, 1);
-      kin_sensor(needs_kin_check) = true;
-
-      active_support_mask = false(length(support_data), 1);
-      for j = 1:length(support_data)
-        body_id = support_data(j).body_id;
-        active_support_mask(j) = obj.applyContactLogic(support_data(j).support_logic_map, contact_sensor(body_id), kin_sensor(body_id));
-      end
-      supp = support_data(active_support_mask);
-
-      for j = 1:length(supp)
-        supp(j).num_contact_pts = size(supp(j).contact_pts, 2);
-        supp(j).contact_surfaces = 0;
-      end
+      mask = getActiveSupportsmex(obj.mex_ptr.data, support_data, contact_sensor, contact_threshold, terrain_height);
+      supp = support_data(logical(mask));
     end
 
     function qddot_des = wholeBodyPID(obj, t, q, qd, q_des, params)
@@ -263,7 +236,35 @@ classdef AtlasPlanlessQPController
       if foot_contact_sensor(2) > 0.5
         contact_sensor(obj.foot_body_id.right) = 1;
       end
-      supp = obj.getActiveSupports(qp_input.support_data, contact_sensor, params.contact_threshold);
+      if isjava(qp_input.support_data)
+        % Reconstruct the support data as a matlab struct for mex
+        % compatibility
+        available_supports = struct('body_id', cell(1, length(qp_input.support_data)),...
+                                    'contact_pts', cell(1, length(qp_input.support_data)),...
+                                    'support_logic_map', cell(1, length(qp_input.support_data)),...
+                                    'mu', cell(1, length(qp_input.support_data)),...
+                                    'contact_surfaces', cell(1, length(qp_input.support_data)));
+        for j = 1:length(qp_input.support_data)
+          available_supports(j).body_id = qp_input.support_data(j).body_id;
+          available_supports(j).contact_pts = qp_input.support_data(j).contact_pts;
+          available_supports(j).support_logic_map = qp_input.support_data(j).support_logic_map;
+          available_supports(j).mu = qp_input.support_data(j).mu;
+          available_supports(j).contact_surfaces = qp_input.support_data(j).contact_surfaces;
+        end
+      else
+        available_supports = qp_input.support_data;
+      end
+      for j = 1:length(available_supports)
+        % it's a pain to handle mxLogicals on the c++ side
+        available_supports(j).support_logic_map = double(available_supports(j).support_logic_map);
+      end
+
+      if obj.using_flat_terrain
+        height = getTerrainHeight(r,[0;0]); % get height from DRCFlatTerrainMap
+      else
+        height = 0;
+      end
+      supp = obj.getActiveSupports(available_supports, contact_sensor, params.contact_threshold, height);
       % Messy reorganization for compatibility with supportDetectMex
       bods = zeros(1, length(supp));
       pts = cell(1, length(supp));
@@ -301,12 +302,6 @@ classdef AtlasPlanlessQPController
       % fprintf(1, ' non_mex: %f\n', toc(t0));
 
       use_fastqp = obj.solver == 0;
-
-      if obj.using_flat_terrain
-        height = getTerrainHeight(r,[0;0]); % get height from DRCFlatTerrainMap
-      else
-        height = 0;
-      end
 
       if (obj.use_mex==0 || obj.use_mex==2)
         [y, qdd, info_fqp, active_supports,...
