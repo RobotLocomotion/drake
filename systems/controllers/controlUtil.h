@@ -36,7 +36,10 @@ typedef struct _support_state_element
   int body_idx;
   std::vector<Vector4d> contact_pts;
   int contact_surface;
+  bool support_logic_map[4];
 } SupportStateElement;
+
+drakeControlUtilEXPORT std::vector<SupportStateElement> parseSupportData(const mxArray* supp_data);
 
 template <typename DerivedA, typename DerivedB>
 drakeControlUtilEXPORT void getRows(std::set<int> &rows, MatrixBase<DerivedA> const &M, MatrixBase<DerivedB> &Msub);

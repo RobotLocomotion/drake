@@ -28,7 +28,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   struct QPControllerData* pdata;
   mxArray* pm;
   double* pr;
-  int i,j;
 
   // first get the ptr back from matlab
   if (!mxIsNumeric(prhs[0]) || mxGetNumberOfElements(prhs[0])!=1)
@@ -153,47 +152,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   pdata->r->doKinematics(q,false,qd);
 
   //---------------------------------------------------------------------
-  // Compute active support from desired supports -----------------------
-  MatrixXd all_body_contact_pts;
-  Vector4d contact_pt = Vector4d::Zero();
-  contact_pt(3) = 1.0;
 
-  vector<SupportStateElement> active_supports;
-  set<int> contact_bodies; // redundant, clean up later
   int num_active_contact_pts=0;
-  if (!mxIsEmpty(prhs[desired_support_argid])) {
-    VectorXd phi;
-    mxArray* mxBodies = myGetField(prhs[desired_support_argid],"bodies");
-    if (!mxBodies) mexErrMsgTxt("couldn't get bodies");
-    double* pBodies = mxGetPr(mxBodies);
-    mxArray* mxContactPts = myGetField(prhs[desired_support_argid],"contact_pts");
-    if (!mxContactPts) mexErrMsgTxt("couldn't get contact points");
-    mxArray* mxContactSurfaces = myGetField(prhs[desired_support_argid],"contact_surfaces");
-    if (!mxContactSurfaces) mexErrMsgTxt("couldn't get contact surfaces");
-    double* pContactSurfaces = mxGetPr(mxContactSurfaces);
-    
-    for (i=0; i<mxGetNumberOfElements(mxBodies);i++) {
-      mxArray* mxBodyContactPts = mxGetCell(mxContactPts,i);
-      assert(mxGetM(mxBodyContactPts) == 3);
-      int nc = static_cast<int>(mxGetN(mxBodyContactPts));
-      if (nc<1) continue;
-      
-      all_body_contact_pts.resize(mxGetM(mxBodyContactPts),mxGetN(mxBodyContactPts));
-      pr = mxGetPr(mxBodyContactPts); 
-      memcpy(all_body_contact_pts.data(),pr,sizeof(double)*mxGetM(mxBodyContactPts)*mxGetN(mxBodyContactPts));
+  vector<SupportStateElement> active_supports = parseSupportData(prhs[desired_support_argid]);
 
-      SupportStateElement se;
-      se.body_idx = (int) pBodies[i]-1;
-      for (j=0; j<nc; j++) {
-        contact_pt.head(3) = all_body_contact_pts.col(j);
-        se.contact_pts.push_back(contact_pt);
-      }
-      se.contact_surface = (int) pContactSurfaces[i]-1;
-      
-      active_supports.push_back(se);
-      num_active_contact_pts += nc;
-      contact_bodies.insert((int)se.body_idx); 
-    }
+  for (vector<SupportStateElement>::iterator iter = active_supports.begin(); iter!=active_supports.end(); iter++) {
+    num_active_contact_pts += iter->contact_pts.size();
   }
 
   pdata->r->HandC(q,qd,(MatrixXd*)NULL,pdata->H,pdata->C,(MatrixXd*)NULL,(MatrixXd*)NULL,(MatrixXd*)NULL);

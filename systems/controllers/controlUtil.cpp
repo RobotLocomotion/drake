@@ -278,6 +278,51 @@ MatrixXd individualSupportCOPs(RigidBodyManipulator* r, const std::vector<Suppor
   return individual_cops;
 }
 
+std::vector<SupportStateElement> parseSupportData(const mxArray* supp_data) {
+  double *logic_map_double;
+  int nsupp = mxGetN(supp_data);
+  if (mxGetM(supp_data) != 1) {
+    mexErrMsgIdAndTxt("Drake:parseSupportData:BadInputs", "the support data should be a 1xN struct array");
+  }
+  int i, j;
+  MatrixXd contact_pts;
+  Vector4d contact_pt = Vector4d::Zero();
+  contact_pt(3) = 1.0;
+  int num_pts;
+  std::vector<SupportStateElement> supports;
+  const mxArray* pm;
+
+  for (i = 0; i < nsupp; i++) {
+    SupportStateElement se;
+
+    se.body_idx = ((int) mxGetScalar(mxGetField(supp_data, i, "body_id"))) - 1;
+
+    num_pts = mxGetN(mxGetField(supp_data, i, "contact_pts"));
+    pm = mxGetField(supp_data, i, "support_logic_map");
+    if (mxIsDouble(pm)) {
+      logic_map_double = mxGetPr(pm);
+      for (j = 0; j < 4; j++) {
+        se.support_logic_map[j] = logic_map_double[j] != 0;
+      }
+    } else {
+      mexErrMsgTxt("Please convert support_logic_map to double");
+    }
+    pm = mxGetField(supp_data, i, "contact_pts");
+    contact_pts.resize(mxGetM(pm), mxGetN(pm));
+    memcpy(contact_pts.data(), mxGetPr(pm), sizeof(double)*mxGetNumberOfElements(pm));
+
+    for (j = 0; j < num_pts; j++) {
+      contact_pt.head(3) = contact_pts.col(j);
+      se.contact_pts.push_back(contact_pt);
+    }
+    se.contact_surface = ((int) mxGetScalar(mxGetField(supp_data, i, "contact_surfaces"))) - 1;
+    supports.push_back(se);
+  }
+  return supports;
+}
+
+
+
 template drakeControlUtilEXPORT void getRows(std::set<int> &, const MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > &);
 template drakeControlUtilEXPORT void getCols(std::set<int> &, const MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > &);
 template drakeControlUtilEXPORT void angleDiff(const MatrixBase<MatrixXd> &, const MatrixBase<MatrixXd> &, MatrixBase<MatrixXd> &);

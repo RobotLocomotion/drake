@@ -25,11 +25,10 @@ kinsol = doKinematics(r,q,false,true,qd);
 
 R_DQyD_ls = R_ls + D_ls'*Qy*D_ls;
 
-active_supports = supp.bodies;
-num_active_contacts = zeros(1, length(supp.bodies));
-for j = 1:length(supp.contact_pts)
-  num_active_contacts(j) = size(supp.contact_pts{j}, 2);
+for j = 1:length(supp)
+  supp(j).num_contact_pts = size(supp(j).contact_pts, 2);
 end
+active_supports = [supp.body_id];
 
 dim = 3; % 3D
 nd = 4; % for friction cone approx, hard coded for now
@@ -64,21 +63,20 @@ if length(x0)==4
  Jcomdot = Jcomdot(1:2,:);
 end
 
-if ~isempty(active_supports)
-  nc = sum(num_active_contacts);
+if ~isempty(supp)
+  nc = sum([supp.num_contact_pts]);
   Dbar = [];
-  for j=1:length(active_supports)
+  for j=1:length(supp)
     [~,~,JB] = contactConstraintsBV(r,kinsol,false,struct('terrain_only',~use_bullet,...
-      'body_idx',[1,active_supports(j)]));
+      'body_idx',[1,supp(j).body_id]));
     Dbar = [Dbar, vertcat(JB{:})']; % because contact constraints seems to ignore the collision_groups option
   end
 
   Dbar_float = Dbar(float_idx,:);
   Dbar_act = Dbar(act_idx,:);
 
-  terrain_pts = struct('idx', num2cell(active_supports),...
-                       'pts', supp.contact_pts);
-%   terrain_pts = getTerrainContactPoints(r,active_supports,active_contact_groups);
+  terrain_pts = struct('idx', {supp.body_id},...
+                       'pts', {supp.contact_pts});
   [~,Jp,Jpdot] = terrainContactPositions(r,kinsol,terrain_pts,true);
   Jp = sparse(Jp);
   Jpdot = sparse(Jpdot);
@@ -162,7 +160,7 @@ for ii=1:length(all_bodies_vdot)
   body_id = all_bodies_vdot(ii).body_id;
   if all_bodies_vdot(ii).params.weight < 0
     body_vdot = all_bodies_vdot(ii).body_vdot;
-    if ~any(active_supports==body_id)
+    if ~any([supp.body_id]==body_id)
       [~,J] = forwardKin(r,kinsol,body_id,[0;0;0],1);
       Jdot = forwardJacDot(r,kinsol,body_id,[0;0;0],1);
       cidx = ~isnan(body_vdot);
@@ -234,7 +232,7 @@ for ii=1:length(all_bodies_vdot)
   w = all_bodies_vdot(ii).params.weight;
   if w>0
     body_vdot = all_bodies_vdot(ii).body_vdot;
-    if ~any(active_supports==body_id)
+    if ~any([supp.body_id]==body_id)
       [~,J] = forwardKin(r,kinsol,body_id,[0;0;0],1);
       Jdot = forwardJacDot(r,kinsol,body_id,[0;0;0],1);
       cidx = ~isnan(body_vdot);
