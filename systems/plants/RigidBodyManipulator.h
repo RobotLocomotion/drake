@@ -61,7 +61,8 @@ public:
   template <typename DerivedA, typename DerivedB>
   void doKinematics(MatrixBase<DerivedA> & q, bool b_compute_second_derivatives, MatrixBase<DerivedB> & v);
 
-  void doKinematicsNew(double* q, bool compute_gradients = false, double* v = nullptr, bool compute_JdotV = false);
+  template <typename DerivedQ, typename DerivedV>
+  void doKinematicsNew(const MatrixBase<DerivedQ>& q, const MatrixBase<DerivedV>& v, bool compute_gradients = false, bool compute_JdotV = false);
 
   void updateCompositeRigidBodyInertias(int gradient_order);
 
