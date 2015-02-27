@@ -13,7 +13,7 @@ RevoluteJoint::~RevoluteJoint()
   // empty
 }
 
-Isometry3d RevoluteJoint::jointTransform(double* const q) const
+Isometry3d RevoluteJoint::jointTransform(const Eigen::Ref<const VectorXd>& q) const
 {
   Isometry3d ret(AngleAxisd(q[0], rotation_axis));
   ret.makeAffine();
