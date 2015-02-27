@@ -41,6 +41,12 @@ typedef struct _support_state_element
 
 drakeControlUtilEXPORT std::vector<SupportStateElement> parseSupportData(const mxArray* supp_data);
 
+drakeControlUtilEXPORT bool isSupportElementActive(SupportStateElement* se, bool contact_force_detected, bool kinematic_contact_detected);
+
+drakeControlUtilEXPORT Matrix<bool, Dynamic, 1> getActiveSupportMask(RigidBodyManipulator* r, void* map_ptr, double* q, double* qd, std::vector<SupportStateElement> available_supports, Matrix<bool, Dynamic, 1> contact_force_detected, double contact_threshold, double terrain_height);
+
+drakeControlUtilEXPORT std::vector<SupportStateElement> getActiveSupports(RigidBodyManipulator* r, void* map_ptr, double* q, double* qd, std::vector<SupportStateElement> available_supports, Matrix<bool, Dynamic, 1> contact_force_detected, double contact_threshold, double terrain_height);
+
 template <typename DerivedA, typename DerivedB>
 drakeControlUtilEXPORT void getRows(std::set<int> &rows, MatrixBase<DerivedA> const &M, MatrixBase<DerivedB> &Msub);
 
