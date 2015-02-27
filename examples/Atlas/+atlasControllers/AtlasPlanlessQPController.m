@@ -216,7 +216,7 @@ classdef AtlasPlanlessQPController
       qd = x(obj.numq+(1:obj.numv));
       
       mu = qp_input.support_data(1).mu;
-      condof = params.whole_body.constrained_dofs;
+      condof = qp_input.whole_body_data.constrained_dofs;
 
       % Run PD on the desired configuration
       qddot_des = obj.wholeBodyPID(t, q, qd, qp_input.whole_body_data.q_des, params.whole_body);

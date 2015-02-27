@@ -136,7 +136,7 @@ classdef WalkingPlan < QPControllerPlan
       obj.qstar = S.xstar(1:obj.robot.getNumPositions());
       obj.default_qp_input = atlasControllers.QPInput2D();
       obj.default_qp_input.whole_body_data.q_des = zeros(obj.robot.getNumPositions(), 1);
-      obj.default_qp_input.whole_body_data.constrained_dof_mask = false(obj.robot.getNumPositions(), 1);
+      obj.default_qp_input.whole_body_data.constrained_dofs = [findPositionIndices(obj.robot,'arm');findPositionIndices(obj.robot,'neck');findPositionIndices(obj.robot,'back_bkz');findPositionIndices(obj.robot,'back_bky')];
     end
 
     function obj = buildLinkTrajectories(obj)
@@ -263,7 +263,6 @@ classdef WalkingPlan < QPControllerPlan
       end
 
       qp_input.whole_body_data.q_des = obj.qstar;
-      qp_input.whole_body_data.constrained_dof_mask(rpc.neck_id) = true;
 
       feet_poses = zeros(6,2);
       i = 1;

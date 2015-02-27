@@ -51,7 +51,7 @@ classdef QPInput2D
                             'ts', {},... % 6 d
                             'coefs', {}); % 4 * 6 * 3 d
       obj.whole_body_data = struct('q_des', [],... % 34 d
-                               'constrained_dof_mask', []); % 34 b
+                               'constrained_dofs', []); % 34 b
       obj.param_set_name = 'walking';
     end
 
@@ -90,7 +90,8 @@ classdef QPInput2D
       msg.whole_body_data = drake.lcmt_whole_body_data();
       msg.whole_body_data.num_positions = numel(obj.whole_body_data.q_des);
       msg.whole_body_data.q_des = obj.whole_body_data.q_des;
-      msg.whole_body_data.constrained_dof_mask = obj.whole_body_data.constrained_dof_mask;
+      msg.whole_body_data.num_constrained_dofs = length(obj.whole_body_data.constrained_dofs);
+      msg.whole_body_data.constrained_dofs = obj.whole_body_data.constrained_dofs;
       msg.param_set_name = obj.param_set_name;
     end
   end

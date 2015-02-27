@@ -7,5 +7,6 @@ struct lcmt_whole_body_data
 	int32_t num_positions;
 
 	double q_des[num_positions];
-	boolean constrained_dof_mask[num_positions];
+	int32_t num_constrained_dofs;
+	double constrained_dofs[num_constrained_dofs];
 }
