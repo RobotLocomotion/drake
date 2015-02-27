@@ -49,10 +49,16 @@ mxArray* myGetProperty(const mxArray* pobj, const char* propname)
   return pm;
 }
 
+mxArray* myGetField(const mxArray* pobj, const int idx, const char* propname)
+{
+  mxArray* pm = mxGetField(pobj,idx,propname);
+  if (!pm) mexErrMsgIdAndTxt("DRC:ControlUtil:BadInput","ControlUtil is trying to load object field '%s', but failed.", propname);
+  return pm;
+}
+
 mxArray* myGetField(const mxArray* pobj, const char* propname)
 {
-  mxArray* pm = mxGetField(pobj,0,propname);
-  if (!pm) mexErrMsgIdAndTxt("DRC:ControlUtil:BadInput","ControlUtil is trying to load object field '%s', but failed.", propname);
+  mxArray* pm = myGetField(pobj, 0, propname);
   return pm;
 }
 
@@ -388,6 +394,16 @@ std::vector<SupportStateElement> getActiveSupports(RigidBodyManipulator* r, void
     }
   }
   return active_supports;
+}
+
+void sizecheck(const mxArray* mat, int M, int N) {
+  if (mxGetM(mat) != M) {
+    mexErrMsgIdAndTxt("Drake:WrongSize", "wrong number of rows. Expected: %d but got: %d", M, mxGetM(mat));
+  }
+  if (mxGetN(mat) != N) {
+    mexErrMsgIdAndTxt("Drake:WrongSize", "wrong number of columns. Expected: %d but got: %d", N, mxGetN(mat));
+  }
+  return;
 }
 
 template drakeControlUtilEXPORT void getRows(std::set<int> &, const MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > &);

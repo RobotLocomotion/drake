@@ -9,7 +9,7 @@ struct lcmt_support_data
 	int32_t num_contact_pts;
 	double contact_pts[3][num_contact_pts];
 
-	boolean support_logic_map[4];
+	boolean support_logic_map[4][1];
 
 	double mu;
 
