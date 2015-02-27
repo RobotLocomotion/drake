@@ -68,35 +68,83 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   }
   int nsupp = mxGetN(support_data);
 
-  msg.num_support_data = (int32_t) nsupp;
-  drake::lcmt_support_data supp_msg;
-  double double_logic_map[4][1];
-  for (int i=0; i < nsupp; i++) {
-    supp_msg.body_id = (int32_t) mxGetScalar(mxGetField(support_data, i, "body_id"));
 
-    // const mxArray *contact_pts = mxGetField(support_data, i, "contact_pts");
-    // if (!contact_pts) mexErrMsgTxt("couldn't get points");
-    // supp_msg.num_contact_pts = (int32_t) mxGetN(contact_pts);
-    // supp_msg.contact_pts.resize(3);
-    // for (int j=0; j < 3; j++) {
-    //   supp_msg.contact_pts[j].resize(supp_msg.num_contact_pts);
-    //   for (int k=0; k < supp_msg.num_contact_pts; k++) {
-    //     supp_msg.contact_pts[j][k] = contact_pts_mat(j, k);
-    //   }
-    // }
+  msg.num_support_data = (int32_t) nsupp;
+  double double_logic_map[4][1];
+  msg.support_data.resize(nsupp);
+  for (int i=0; i < nsupp; i++) {
+    msg.support_data[i].body_id = (int32_t) mxGetScalar(myGetField(support_data, i, "body_id"));
+
+    const mxArray *contact_pts = myGetField(support_data, i, "contact_pts");
+    if (!contact_pts) mexErrMsgTxt("couldn't get points");
+    Map<MatrixXd>contact_pts_mat(mxGetPr(contact_pts), mxGetM(contact_pts), mxGetN(contact_pts));
+    msg.support_data[i].num_contact_pts = (int32_t) mxGetN(contact_pts);
+    msg.support_data[i].contact_pts.resize(3);
+    for (int j=0; j < 3; j++) {
+      msg.support_data[i].contact_pts[j].resize(msg.support_data[i].num_contact_pts);
+      for (int k=0; k < msg.support_data[i].num_contact_pts; k++) {
+        msg.support_data[i].contact_pts[j][k] = contact_pts_mat(j, k);
+      }
+    }
 
     checkAndCopy<4, 1>(support_data, i, "support_logic_map", &double_logic_map[0][0]);
     for (int j=0; j < 4; j++) {
-      supp_msg.support_logic_map[j][0] = (int8_t) (double_logic_map[j][0] != 0);
+      msg.support_data[i].support_logic_map[j][0] = (int8_t) (double_logic_map[j][0] != 0);
     }
-    supp_msg.mu = mxGetScalar(mxGetField(support_data, i, "mu"));
-    supp_msg.contact_surfaces = (int32_t) mxGetScalar(mxGetField(support_data, i, "contact_surfaces"));
+    msg.support_data[i].mu = mxGetScalar(myGetField(support_data, i, "mu"));
+    msg.support_data[i].contact_surfaces = (int32_t) mxGetScalar(myGetField(support_data, i, "contact_surfaces"));
   }
 
-  msg.num_tracked_bodies = 0;
-  msg.whole_body_data.num_positions = 0;
-  msg.param_set_name = "walking";
-  mexPrintf("debug_fields ");
+  const mxArray* body_motion_data = myGetProperty(qp_input, "body_motion_data");
+  if (mxGetM(body_motion_data) != 1) {
+    mexErrMsgTxt("body motion data should be a 1xN struct array");
+  }
+
+  const int nbod = mxGetN(body_motion_data);
+  msg.num_tracked_bodies = nbod;
+  msg.body_motion_data.resize(nbod);
+  for (int i=0; i < nbod; i++) {
+    msg.body_motion_data[i].body_id = (int32_t) mxGetScalar(myGetField(body_motion_data, i, "body_id"));
+    memcpy(msg.body_motion_data[i].ts, mxGetPr(myGetField(body_motion_data, i, "ts")), 2*sizeof(double));
+    const mxArray* coefs = myGetField(body_motion_data, i, "coefs");
+    double *coefs_ptr = mxGetPr(coefs);
+    if (mxGetNumberOfDimensions(coefs) != 3) mexErrMsgTxt("coefs should be a dimension-3 array");
+    const int *dim = mxGetDimensions(coefs);
+    if (dim[0] != 6.0 || dim[1] != 1.0 || dim[2] != 4.0) mexErrMsgTxt("coefs should be size 6x1x4");
+    for (int j=0; j < dim[0]; j++) {
+      for (int k=0; k < dim[1]; k++) {
+        for (int l=0; l < dim[2]; l++) {
+          msg.body_motion_data[i].coefs[j][k][l] = coefs_ptr[l*dim[1]*dim[0]+k*dim[0]+j];
+        }
+      }
+    }
+  }
+
+  const mxArray* whole_body_data = myGetProperty(qp_input, "whole_body_data");
+  if (mxGetN(whole_body_data) != 1 || mxGetM(whole_body_data) != 1) mexErrMsgTxt("whole_body_data should be a 1x1 struct");
+  const mxArray* q_des = myGetField(whole_body_data, "q_des");
+  if (mxGetN(q_des) != 1) mexErrMsgTxt("q_des should be a column vector");
+  const int npos = mxGetM(q_des);
+  msg.whole_body_data.num_positions = npos;
+  Map<VectorXd>q_des_vec(mxGetPr(q_des), npos);
+  msg.whole_body_data.q_des.resize(npos);
+
+  for (int i=0; i < npos; i++) {
+    msg.whole_body_data.q_des[i] = q_des_vec(i);
+  }
+
+  const mxArray* condof = myGetField(whole_body_data, "constrained_dofs");
+  if (mxGetN(condof) != 1) mexErrMsgTxt("constrained dofs should be a column vector");
+  const int ncons = mxGetM(condof);
+  Map<VectorXd>condof_vec(mxGetPr(condof), ncons);
+  msg.whole_body_data.num_constrained_dofs = ncons;
+  msg.whole_body_data.constrained_dofs.resize(ncons);
+
+  for (int i=0; i < ncons; i++) {
+    msg.whole_body_data.constrained_dofs[i] = condof_vec(i);
+  }
+
+  msg.param_set_name = mxArrayToString(myGetProperty(qp_input, "param_set_name"));
 
 	// field = myGetField(zmp_data, "A");
 	// if (mxGetNumberOfElements(field) != 16) {
