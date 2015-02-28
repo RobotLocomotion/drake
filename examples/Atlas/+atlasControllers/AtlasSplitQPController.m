@@ -4,6 +4,7 @@ classdef AtlasSplitQPController < DrakeSystem
     plan_eval;
     lc
     monitor
+    debug_monitor
   end
 
   methods
@@ -25,7 +26,9 @@ classdef AtlasSplitQPController < DrakeSystem
       if isempty(obj.plan_eval) || isempty(obj.control)
         if isempty(obj.plan_eval)
           obj.monitor = drake.util.MessageMonitor(drake.lcmt_qp_controller_input, 'timestamp');
+          obj.debug_monitor = drake.util.MessageMonitor(drake.lcmt_qp_controller_input, 'timestamp');
           obj.lc.subscribe('QP_CONTROLLER_INPUT', obj.monitor);
+          obj.lc.subscribe('QP_CONTROLLER_INPUT_DEBUG', obj.debug_monitor);
         end
       end
     end
@@ -43,6 +46,20 @@ classdef AtlasSplitQPController < DrakeSystem
           qp_input = obj.monitor.getMessage();
         end
         qp_input = drake.lcmt_qp_controller_input(qp_input);
+
+        qp_input_debug = [];
+        while isempty(qp_input_debug)
+          qp_input_debug = obj.debug_monitor.getMessage();
+        end
+        qp_input_debug = drake.lcmt_qp_controller_input(qp_input_debug);
+
+        try
+          compareLCMMsgs(qp_input, qp_input_debug);
+        catch e
+          e.getReport()
+          keyboard();
+        end
+
         lcm_time = toc(t0);
         fprintf(1, 'lcm receive: %f, ', lcm_time);
       end
@@ -54,8 +71,9 @@ classdef AtlasSplitQPController < DrakeSystem
         fprintf(1, 'control: %f\n', ctime);
       else
         t0 = tic();
+        encodeQPInputLCMMex(qp_input);
         qp_input_msg = qp_input.to_lcm();
-        obj.lc.publish('QP_CONTROLLER_INPUT', qp_input_msg);
+        obj.lc.publish('QP_CONTROLLER_INPUT_DEBUG', qp_input_msg);
         lcm_time = toc(t0);
         y = x;
         fprintf(1, 'lcm_serialize: %f, ', lcm_time);

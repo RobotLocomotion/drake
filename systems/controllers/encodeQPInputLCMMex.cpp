@@ -9,15 +9,17 @@ void checkAndCopy(const mxArray *source, const int idx, const char *fieldname, d
 	const mxArray *field = myGetField(source, idx, fieldname);
   sizecheck(field, M, N);
 	Map<Matrix<double, M, N>>A(mxGetPr(field));
-  memcpy(destination, A.data(), sizeof(double)*M*N);
+  // C is row-major, matlab is column-major
+  Matrix<double, N, M> A_t = A.transpose();
+  memcpy(destination, A_t.data(), sizeof(double)*M*N);
 	return;
 }
 
 
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
-	if (nrhs < 2) {
-		mexErrMsgTxt("usage: msg_ptr=encodeQPInputLCMMex(qp_input, t)");
+	if (nrhs < 1) {
+		mexErrMsgTxt("usage: msg_ptr=encodeQPInputLCMMex(qp_input)");
 	}
 	// if (nlhs < 1) {
 	// 	mexErrMsgTxt("please take one output");
@@ -33,15 +35,9 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 	const mxArray* qp_input = prhs[narg];
 	narg++;
 
-	double t = mxGetScalar(prhs[narg]);
-	narg++;
-
 	drake::lcmt_qp_controller_input msg;
 
-	msg.timestamp = (int64_t) t * 1000000;
-
-  mexPrintf("timestamp ");
-
+	msg.timestamp = (int64_t) (mxGetScalar(myGetProperty(qp_input, "timestamp")) * 1000000);
 
 	const mxArray* zmp_data = myGetProperty(qp_input, "zmp_data");
 
@@ -59,8 +55,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   checkAndCopy<4, 1>(zmp_data, 0, "s1dot", &msg.zmp_data.s1dot[0][0]);
   msg.zmp_data.s2 = mxGetScalar(myGetField(zmp_data, "s2"));
   msg.zmp_data.s2dot = mxGetScalar(myGetField(zmp_data, "s2dot"));
+  msg.zmp_data.timestamp = msg.timestamp;
 
-  mexPrintf("copy ");
 
   const mxArray* support_data = myGetProperty(qp_input, "support_data");
   if (mxGetM(support_data) != 1) {
@@ -73,6 +69,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   double double_logic_map[4][1];
   msg.support_data.resize(nsupp);
   for (int i=0; i < nsupp; i++) {
+    msg.support_data[i].timestamp = msg.timestamp;
     msg.support_data[i].body_id = (int32_t) mxGetScalar(myGetField(support_data, i, "body_id"));
 
     const mxArray *contact_pts = myGetField(support_data, i, "contact_pts");
@@ -89,7 +86,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
     checkAndCopy<4, 1>(support_data, i, "support_logic_map", &double_logic_map[0][0]);
     for (int j=0; j < 4; j++) {
-      msg.support_data[i].support_logic_map[j][0] = (int8_t) (double_logic_map[j][0] != 0);
+      msg.support_data[i].support_logic_map[j] = (double_logic_map[j][0] != 0);
     }
     msg.support_data[i].mu = mxGetScalar(myGetField(support_data, i, "mu"));
     msg.support_data[i].contact_surfaces = (int32_t) mxGetScalar(myGetField(support_data, i, "contact_surfaces"));
@@ -104,6 +101,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   msg.num_tracked_bodies = nbod;
   msg.body_motion_data.resize(nbod);
   for (int i=0; i < nbod; i++) {
+    msg.body_motion_data[i].timestamp = msg.timestamp;
     msg.body_motion_data[i].body_id = (int32_t) mxGetScalar(myGetField(body_motion_data, i, "body_id"));
     memcpy(msg.body_motion_data[i].ts, mxGetPr(myGetField(body_motion_data, i, "ts")), 2*sizeof(double));
     const mxArray* coefs = myGetField(body_motion_data, i, "coefs");
@@ -125,6 +123,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   const mxArray* q_des = myGetField(whole_body_data, "q_des");
   if (mxGetN(q_des) != 1) mexErrMsgTxt("q_des should be a column vector");
   const int npos = mxGetM(q_des);
+  msg.whole_body_data.timestamp = msg.timestamp;
   msg.whole_body_data.num_positions = npos;
   Map<VectorXd>q_des_vec(mxGetPr(q_des), npos);
   msg.whole_body_data.q_des.resize(npos);
@@ -146,17 +145,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
   msg.param_set_name = mxArrayToString(myGetProperty(qp_input, "param_set_name"));
 
-	// field = myGetField(zmp_data, "A");
-	// if (mxGetNumberOfElements(field) != 16) {
-	// 	mexErrMsgTxt("Expected A to be 4x4. We'll have to reimplment this for the 3D ZMP case");
-	// }
-	// Map<Matrix4d>A(mxGetPr(field));
-	// memcpy(msg.zmp_data.A, A.data(), sizeof(double)*mxGetNumberOfElements(field));
-
-
-
-	lcm.publish("QPINPUT_DEBUG", &msg);
-  mexPrintf("publish ");
+	lcm.publish("QP_CONTROLLER_INPUT", &msg);
 
 	// drake::lcmt_qp_controller_input* msg_ptr = &msg;
 
