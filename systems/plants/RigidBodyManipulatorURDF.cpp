@@ -455,59 +455,41 @@ bool parseRobot(RigidBodyManipulator* model, TiXmlElement* node, const string &r
   return true;
 }
 
-bool RigidBodyManipulator::addRobotFromURDFString(const string &xml_string, const string &root_dir)
+bool parseURDF(RigidBodyManipulator* model, TiXmlDocument * xml_doc, const string &root_dir)
 {
-  TiXmlDocument xml_doc;
-  xml_doc.Parse(xml_string.c_str());  // a little inefficient to parse a second time, but ok for now
-  // eventually, we'll probably just crop out the ros urdf parser completely.
-
-
-  TiXmlElement *node = xml_doc.FirstChildElement("robot");
+  TiXmlElement *node = xml_doc->FirstChildElement("robot");
   if (!node) {
     cerr << "ERROR: This urdf does not contain a robot tag" << endl;
     return false;
   }
 
-  if (!parseRobot(this, node, root_dir))
+  if (!parseRobot(model, node, root_dir))
     return false;
 
-  compile();
+  model->compile();
   return true;
+}
+
+bool RigidBodyManipulator::addRobotFromURDFString(const string &xml_string, const string &root_dir)
+{
+  TiXmlDocument xml_doc;
+  xml_doc.Parse(xml_string.c_str());
+  return parseURDF(this,&xml_doc,root_dir);
 }
 
 bool RigidBodyManipulator::addRobotFromURDF(const string &urdf_filename)
 {
-  string token;
-  istringstream iss(urdf_filename);
-
-  while (getline(iss, token, ':')) {
-    fstream xml_file(token.c_str(), fstream::in);
-    string xml_string;
-    if (xml_file.is_open()) {
-      while (xml_file.good()) {
-        string line;
-        getline(xml_file, line);
-        xml_string += (line + "\n");
-      }
-      xml_file.close();
-    } else {
-      cerr << "Could not open file [" << urdf_filename.c_str() << "] for parsing." << endl;
-      return false;
-    }
-
-    string pathname = "";
-//    boost::filesystem::path mypath(urdf_filename);
-//    if (!mypath.empty() && mypath.has_parent_path())    // note: if you see a segfault on has_parent_path(), then you probably tried to load the model without a parent path. (it shouldn't segfault, but a workaround is to load the model with a parent path, e.g. ./FallingBrick.urdf instead of FallingBrick.urdf)
-//      pathname = mypath.parent_path().string();
-    // I got too many segfaults with boost.  Doing it the old school way...
-    size_t found = urdf_filename.find_last_of("/\\");
-    if (found != string::npos) {
-      pathname = urdf_filename.substr(0, found);
-    }
-
-    // parse URDF to get model
-    addRobotFromURDFString(xml_string, pathname);
+  TiXmlDocument xml_doc(urdf_filename);
+  if (!xml_doc.LoadFile()) {
+    cerr << "ERROR: failed to load file " << urdf_filename << endl;
+    return false;
   }
 
-  return true;
+  string root_dir="";
+  size_t found = urdf_filename.find_last_of("/\\");
+  if (found != string::npos) {
+    root_dir = urdf_filename.substr(0, found);
+  }
+
+  return parseURDF(this,&xml_doc,root_dir);
 }
