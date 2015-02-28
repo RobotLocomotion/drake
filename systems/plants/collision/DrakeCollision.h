@@ -57,24 +57,6 @@ namespace DrakeCollision
     virtual bool setCollisionFilter(const int body_idx, const uint16_t group, 
 				    const uint16_t mask) { return false; };
 
-    virtual bool getPointCollision(const int body_idx, 
-				   const int body_collision_idx, 
-				   Eigen::Vector3d &ptA, Eigen::Vector3d &ptB, 
-				   Eigen::Vector3d &normal) { return false; };
-
-    virtual bool getPairwiseCollision(const int bodyA_idx, const int bodyB_idx, 
-				      Eigen::MatrixXd& ptsA, Eigen::MatrixXd& ptsB, 
-				      Eigen::MatrixXd& normals) { return false; };
-
-    virtual bool getPairwisePointCollision(const int bodyA_idx, const int bodyB_idx, 
-					   const int body_collisionA_idx, 
-					   Eigen::Vector3d &ptA, Eigen::Vector3d &ptB, 
-					   Eigen::Vector3d &normal) { return false; };
-
-    virtual bool getClosestPoints(const int bodyA_idx, const int bodyB_idx,
-				  Eigen::Vector3d& ptA, Eigen::Vector3d& ptB, Eigen::Vector3d& normal,
-				  double& distance) { return false; };
-
     virtual bool closestPointsAllBodies(std::vector<int>& bodyA_idx, 
 					std::vector<int>& bodyB_idx, 
 					Eigen::MatrixXd& ptsA, Eigen::MatrixXd& ptsB,

@@ -71,26 +71,6 @@ namespace DrakeCollision
                                                   const BulletElement& elemB, 
                                                   const ResultCollShPtr& c);
 
-      virtual bool getPointCollision(const int body_idx, 
-                                      const int body_collision_idx, 
-                                      Eigen::Vector3d &ptA, Eigen::Vector3d &ptB, 
-                                      Eigen::Vector3d &normal);
-
-      virtual bool getPairwiseCollision(const int bodyA_idx, 
-                                               const int bodyB_idx, 
-                                               Eigen::MatrixXd& ptsA, Eigen::MatrixXd& ptsB, 
-                                               Eigen::MatrixXd& normals);
-      
-      virtual bool getPairwisePointCollision(const int bodyA_idx,
-                                                  const int bodyB_idx, 
-                                                  const int bodyA_collision_idx,
-                                                  Eigen::Vector3d &ptA, Eigen::Vector3d &ptB, 
-                                                  Eigen::Vector3d &normal);
-
-      virtual bool getClosestPoints(const int bodyA_idx, const int bodyB_idx,
-          Eigen::Vector3d& ptA, Eigen::Vector3d& ptB, Eigen::Vector3d& normal,
-          double& distance);
-
       /* 
        * Returns one pair of points for each body that has collision elements.
        */
@@ -114,11 +94,6 @@ namespace DrakeCollision
       
       virtual bool collisionRaycast(const Eigen::Matrix3Xd &origins, 
               const Eigen::Matrix3Xd &ray_endpoints, Eigen::VectorXd &distances);
-      
-      // For getClosestPoints
-      //btGjkEpaPenetrationDepthSolver epa;
-      //btVoronoiSimplexSolver sGjkSimplexSolver;
-      //TestbtCollisionWorld test;
       
     protected:
       virtual void updateElement(BulletElement& elem, 

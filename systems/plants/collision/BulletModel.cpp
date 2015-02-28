@@ -227,66 +227,6 @@ namespace DrakeCollision
 
     return (c->pts.size() > 0);
   }
-
-  bool BulletModel::getPointCollision(const int body_idx, 
-                                      const int body_collision_idx, 
-                                      Vector3d& ptA, Vector3d& ptB, 
-                                      Vector3d& normal)
-  {
-    ResultCollShPtr c = ResultCollShPtr(new BulletResultCollector());
-    const BulletElement& elem = bodies.at(body_idx).at(body_collision_idx);
-
-    bt_collision_world->contactTest(elem.bt_obj.get(),
-            *static_pointer_cast<BulletResultCollector>(c)->getBtPtr());
-
-    c->getResults(ptA,ptB,normal);
-
-    return (c->pts.size() > 0);
-  };
-  
-  bool BulletModel::getPairwiseCollision(const int bodyA_idx, 
-          const int bodyB_idx,
-          MatrixXd& ptsA, MatrixXd& ptsB,
-          MatrixXd& normals)
-  {
-    //DEBUG
-    //try {
-    //END_DEBUG
-    ResultCollShPtr c = ResultCollShPtr(new BulletResultCollector());
-    findCollisionPointsBtwBodies(bodyA_idx,bodyB_idx,c);
-    c->getResults(ptsA,ptsB,normals);
-    
-    return (c->pts.size() > 0);
-    //DEBUG
-    //} catch (const std::out_of_range& oor) {
-    //std::string msg("In ModelTemplate::getPairwiseCollision:\n");
-    //throw std::out_of_range(msg + oor.what());
-    //}
-    //END_DEBUG
-  };
-
-  bool BulletModel::getPairwisePointCollision(const int bodyA_idx,
-          const int bodyB_idx,
-          const int bodyA_collision_idx,
-          Vector3d &ptA, Vector3d &ptB,
-          Vector3d &normal)
-  {
-    //DEBUG
-    //try {
-    //END_DEBUG
-    ResultCollShPtr c = ResultCollShPtr(new BulletResultCollector());
-    const BulletElement& elemA = bodies.at(bodyA_idx).at(bodyA_collision_idx);
-    findCollisionPointsBtwElements(bodyA_idx,bodyB_idx,elemA,bodies[bodyB_idx].getElements(),c);
-    c->getResults(ptA,ptB,normal);
-    
-    return (c->pts.size() > 0);
-    //DEBUG
-    //} catch (const std::out_of_range& oor) {
-    //std::string msg("In ModelTemplate::getPairwisePointCollision:\n");
-    //throw std::out_of_range(msg + oor.what());
-    //}
-    //END_DEBUG
-  };
   
   bool BulletModel::collisionRaycast(const Matrix3Xd &origins, const Matrix3Xd &ray_endpoints, VectorXd &distances)
   {
