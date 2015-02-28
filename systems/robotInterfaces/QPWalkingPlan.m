@@ -1,4 +1,4 @@
-classdef WalkingPlan < QPControllerPlan
+classdef QPWalkingPlan < QPControllerPlan
 % Container for the results of the ZMP walking planning, which can be consumed by planWalkingStateTraj
 % to generate the full walking motion.
   properties
@@ -31,16 +31,16 @@ classdef WalkingPlan < QPControllerPlan
           biped.default_walking_params);
       end
       [zmp_knots, foot_origin_knots] = biped.planZMPTraj(x0(1:biped.getNumPositions()), footstep_plan.footsteps, zmp_options);
-      obj = WalkingPlan.from_biped_foot_and_zmp_knots(foot_origin_knots, zmp_knots, biped, x0);
+      obj = QPWalkingPlan.from_biped_foot_and_zmp_knots(foot_origin_knots, zmp_knots, biped, x0);
     end
 
     function obj = from_biped_foot_and_zmp_knots(foot_origin_knots, zmp_knots, biped, x0)
-      [supports, support_times] = WalkingPlan.getSupports(zmp_knots);
-      zmptraj = WalkingPlan.getZMPTraj(zmp_knots);
+      [supports, support_times] = QPWalkingPlan.getSupports(zmp_knots);
+      zmptraj = QPWalkingPlan.getZMPTraj(zmp_knots);
       link_constraints = biped.getLinkConstraints(foot_origin_knots, zmptraj, supports, support_times);
       [c, V, comtraj] = biped.planZMPController(zmptraj, x0);
 
-      obj = WalkingPlan(biped);
+      obj = QPWalkingPlan(biped);
       obj.x0 = x0;
       obj.support_times = support_times;
       obj.duration = support_times(end)-support_times(1)-0.001;
@@ -112,7 +112,7 @@ classdef WalkingPlan < QPControllerPlan
       zmp_knots(end+1) = zmp_knots(end);
       zmp_knots(end).t = zmp_knots(end).t + (plan.ts(end)-plan.ts(end-1));
 
-      obj = WalkingPlan.from_biped_foot_and_zmp_knots(foot_origin_knots, zmp_knots, biped, x0);
+      obj = QPWalkingPlan.from_biped_foot_and_zmp_knots(foot_origin_knots, zmp_knots, biped, x0);
     end
 
 
@@ -129,7 +129,7 @@ classdef WalkingPlan < QPControllerPlan
 
 
   methods
-    function obj = WalkingPlan(robot)
+    function obj = QPWalkingPlan(robot)
       obj = obj@QPControllerPlan();
       obj.robot = robot;
       S = load(obj.robot.fixed_point_file);
@@ -141,7 +141,7 @@ classdef WalkingPlan < QPControllerPlan
 
     function obj = buildLinkTrajectories(obj)
       % By default, link_constraints just stores polynomial coefficients, rather than full trajectories.
-      % This function returns a new WalkingPlan with link_constraints augmented to contain a traj
+      % This function returns a new QPWalkingPlan with link_constraints augmented to contain a traj
       % field, which holds a PPTrajectory of that link's motion.
       for j = 1:length(obj.link_constraints)
         obj.link_constraints(j).traj = PPTrajectory(mkpp(obj.link_constraints(j).ts, obj.link_constraints(j).coefs, size(obj.link_constraints(j).coefs, 1)));
