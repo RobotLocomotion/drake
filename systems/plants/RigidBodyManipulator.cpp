@@ -957,7 +957,7 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
       }
     }
 
-    if (bodies[i]->parent!=nullptr) {
+    if (bodies[i]->hasParent()) {
       //DEBUG
       //cout << "RigidBodyManipulator::doKinematics: updating body " << i << " ..." << endl;
       //END_DEBUG
@@ -1605,7 +1605,7 @@ int RigidBodyManipulator::parseBodyOrFrameID(const int body_or_frame_id, Matrix4
 void RigidBodyManipulator::findAncestorBodies(std::vector<int>& ancestor_bodies, int body_idx)
 {
   const RigidBody* current_body = bodies[body_idx].get();
-  while (current_body->parent != nullptr)
+  while (current_body->hasParent())
   {
     ancestor_bodies.push_back(current_body->parent->body_index);
     current_body = current_body->parent.get();

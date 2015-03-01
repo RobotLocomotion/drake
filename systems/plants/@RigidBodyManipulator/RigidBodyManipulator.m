@@ -1288,7 +1288,7 @@ classdef RigidBodyManipulator < Manipulator
       %                           * Numeric body index or frame id
       %                           * String containing body or frame name
       % @param robotnum       -- Scalar restricting the search to a particular
-      %                          robot. Optional. @default 0 (all robots)
+      %                          robot. Optional. @default -1 (all robots)
       %
       % @retval body_idx_or_frame_id  -- Numeric body index or frame id
       typecheck(body_or_frame,{'numeric','char'});
