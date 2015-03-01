@@ -10,7 +10,6 @@ classdef PlanlessQPControllerData < ControllerData
     % solver related -------------------------------------------------------------
     infocount=0 % number of consecutive iterations with solver info < 0
     qp_active_set=[]% active set of inequality constraints from pervious iteration
-    last_param_set_name = '';
   end
   
   methods 
