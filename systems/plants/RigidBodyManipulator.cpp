@@ -458,14 +458,14 @@ void RigidBodyManipulator::compile(void)
 
   num_bodies = bodies.size();
   int _num_positions = 0;
-  int _num_velocities = 0;
+  int num_velocities = 0;
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
     RigidBody& body = **it;
     if (body.hasParent()) {
       body.position_num_start = _num_positions;
       _num_positions += body.getJoint().getNumPositions();
-      body.velocity_num_start = _num_velocities;
-      _num_velocities += body.getJoint().getNumVelocities();
+      body.velocity_num_start = num_velocities;
+      num_velocities += body.getJoint().getNumVelocities();
     }
     else {
       body.position_num_start = 0;
@@ -474,7 +474,7 @@ void RigidBodyManipulator::compile(void)
   }
   for (int i=0; i<num_bodies; i++) {
     bodies[i]->body_index = i;
-    bodies[i]->setN(_num_positions, _num_velocities);
+    bodies[i]->setN(_num_positions, num_velocities);
   }
 
   B.resize(num_velocities,actuators.size());
@@ -483,7 +483,7 @@ void RigidBodyManipulator::compile(void)
     for (int i=0; i<actuators[ia].body->getJoint().getNumVelocities(); i++)
       B(actuators[ia].body->velocity_num_start+i,ia) = actuators[ia].reduction;
 
-  resize(_num_positions, NB, num_bodies, num_frames);
+  resize(_num_positions, NB, num_bodies, num_frames); // todo: change _num_positions to num_positions above after removing this
 
   for (int i=0; i<num_bodies; i++) {
     if (!bodies[i]->hasParent())
