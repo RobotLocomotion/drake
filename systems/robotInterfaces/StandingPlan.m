@@ -1,4 +1,4 @@
-classdef StandingPlan < WalkingPlan
+classdef StandingPlan < QPWalkingPlan
   methods(Static)
     function obj = from_standing_state(x0, biped, support_state)
 
@@ -49,7 +49,7 @@ classdef StandingPlan < WalkingPlan
 
   methods
     function obj = StandingPlan(robot)
-      obj = obj@WalkingPlan(robot);
+      obj = obj@QPWalkingPlan(robot);
     end
   end
 end

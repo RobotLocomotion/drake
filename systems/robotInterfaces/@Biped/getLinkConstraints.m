@@ -1,10 +1,17 @@
-function link_constraints = getLinkConstraints(obj, foot_origin_knots, zmptraj, supports, support_times)
+function link_constraints = getLinkConstraints(obj, foot_origin_knots, zmptraj, supports, support_times, options)
+
+if nargin < 6
+  options = struct();
+end
+options = applyDefaults(options, struct('pelvis_height_above_foot_origin', 0.76));
 
 link_constraints = struct('link_ndx',{}, 'pt', {}, 'ts', {}, 'poses', {}, 'dposes', {}, 'contact_break_indices', {}, 'coefs', {}, 'toe_off_allowed', {});
 figure(321)
 clf
 subplot 211
 hold on
+
+foot_pp = struct('right', {[]}, 'left', {[]});
 
 for f = {'right', 'left'}
   foot = f{1};
@@ -16,21 +23,21 @@ for f = {'right', 'left'}
   ts = [foot_origin_knots.t];
 
   if size(foot_states, 1) == 6
-    foot_pp = pchip(ts, foot_poses);
-    foot_dposes = ppval(fnder(foot_pp, 1), ts);
+    foot_pp.(foot) = pchip(ts, foot_poses);
+    foot_dposes = ppval(fnder(foot_pp.(foot), 1), ts);
   elseif size(foot_states, 1) == 12
     foot_dposes = foot_states(7:12,:);
-    foot_pp = pchipDeriv(ts, foot_poses, foot_dposes);
+    foot_pp.(foot) = pchipDeriv(ts, foot_poses, foot_dposes);
   end
 
   tsample = linspace(ts(1), ts(end), 200);
-  xs = ppval(foot_pp, tsample);
+  xs = ppval(foot_pp.(foot), tsample);
   figure(321)
   plot(tsample, xs(3,:), 'b.-')
   xlim([0, ts(end)])
 
   % Compute cubic polynomial coefficients to save work in the controller
-  [~, coefs, l, k, d] = unmkpp(foot_pp);
+  [~, coefs, l, k, d] = unmkpp(foot_pp.(foot));
   coefs = reshape(coefs, [d, l, k]);
   assert(k == 4, 'expected a piecewise cubic polynomial');
   toe_off_allowed = [foot_origin_knots.toe_off_allowed];
@@ -41,13 +48,12 @@ zmps = zmptraj.eval(tsample);
 plot(tsample, zmps(2,:), 'm.-');
 
 pelvis_reference_height = zeros(1,length(support_times));
-      
+
 lfoot_link_con_ind = [link_constraints.link_ndx]==obj.foot_body_id.left;
 rfoot_link_con_ind = [link_constraints.link_ndx]==obj.foot_body_id.right;
 lfoot_des = evaluateSplineInLinkConstraints(0,link_constraints,lfoot_link_con_ind);
 rfoot_des = evaluateSplineInLinkConstraints(0,link_constraints,rfoot_link_con_ind);
 pelvis_reference_height(1) = min(lfoot_des(3),rfoot_des(3));
-
 
 for i=1:length(support_times)-1
   isDoubleSupport = any(supports(i).bodies==obj.foot_body_id.left) && any(supports(i).bodies==obj.foot_body_id.right);
@@ -89,4 +95,22 @@ for i=1:length(support_times)-1
     end
   end
 end
-link_constraints(1).pelvis_reference_height = pelvis_reference_height;
+
+% Now set the pelvis reference
+pelvis_body = obj.findLinkId('pelvis');
+pelvis_ts = support_times;
+rpos = ppval(foot_pp.right, pelvis_ts);
+lpos = ppval(foot_pp.left, pelvis_ts);
+pelvis_poses = [mean(cat(3, rpos(1:2,:), lpos(1:2,:)), 3);
+                pelvis_reference_height + options.pelvis_height_above_foot_origin;
+                zeros(2,size(rpos, 2));
+                angleAverage(rpos(6,:)', lpos(6,:)')'];
+pp = foh(pelvis_ts, pelvis_poses);
+[~,coefs, l, k, d] = unmkpp(pp);
+coefs = reshape(coefs, d, l, k);
+coefs = cat(3, zeros(6, size(coefs, 2), 2), coefs);
+link_constraints(end+1).link_ndx = pelvis_body;
+link_constraints(end).pt = [0;0;0];
+link_constraints(end).ts = pelvis_ts;
+link_constraints(end).poses = pelvis_poses;
+link_constraints(end).coefs = coefs;
