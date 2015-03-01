@@ -67,7 +67,7 @@ void QuaternionFloatingJoint::qdot2v(const Eigen::Ref<const VectorXd>& q, Eigen:
 {
   qdot_to_v.resize(getNumVelocities(), getNumPositions());
 
-  auto quat = q.template middleRows<QUAT_SIZE>(SPACE_DIMENSION);
+  auto quat = q.middleRows<QUAT_SIZE>(SPACE_DIMENSION);
   Matrix3d R = quat2rotmat(quat);
 
   Vector4d quattilde;
@@ -104,7 +104,7 @@ void QuaternionFloatingJoint::v2qdot(const Eigen::Ref<const VectorXd>& q, Eigen:
 {
   v_to_qdot.resize(getNumPositions(), getNumVelocities());
 
-  auto quat = q.template middleRows<QUAT_SIZE>(SPACE_DIMENSION);
+  auto quat = q.middleRows<QUAT_SIZE>(SPACE_DIMENSION);
   Matrix3d R = quat2rotmat(quat);
 
   Matrix<double, QUAT_SIZE, SPACE_DIMENSION> M;
