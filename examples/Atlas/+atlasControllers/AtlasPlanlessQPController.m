@@ -197,6 +197,10 @@ classdef AtlasPlanlessQPController
     end
 
     function [y, v_ref] = tick(obj, t, x, qp_input, foot_contact_sensor)
+
+      % obj.robot.warning_manager.warnOnce('Drake:FakeStateDrift', 'Faking state drift');
+      % x(1) = x(1) + 0.1*t;
+
       t0 = tic();
 
       % Unpack variable names (just to make our code a bit easier to read)
@@ -220,6 +224,7 @@ classdef AtlasPlanlessQPController
 
       % Run PD on the desired configuration
       qddot_des = obj.wholeBodyPID(t, q, qd, qp_input.whole_body_data.q_des, params.whole_body);
+
 
       contact_sensor = zeros(obj.numbod, 1);
       if foot_contact_sensor(1) > 0.5
@@ -250,7 +255,6 @@ classdef AtlasPlanlessQPController
         % it's a pain to handle mxLogicals on the c++ side
         available_supports(j).support_logic_map = double(available_supports(j).support_logic_map);
       end
-
 
       if obj.using_flat_terrain
         height = getTerrainHeight(r,[0;0]); % get height from DRCFlatTerrainMap
