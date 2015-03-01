@@ -20,7 +20,7 @@ if ~isfield(example_options,'use_bullet') example_options.use_bullet = false; en
 if ~isfield(example_options,'use_angular_momentum') example_options.use_angular_momentum = false; end
 if ~isfield(example_options,'navgoal')
 %  navgoal = [2*rand();0.25*randn();0;0;0;0];
-  example_options.navgoal = [0.2;0;0;0;0;0];
+  example_options.navgoal = [0.5;0;0;0;0;0];
 end
 if ~isfield(example_options,'terrain'), example_options.terrain = RigidBodyFlatTerrain; end
 
@@ -62,17 +62,17 @@ lfoot_navgoal(1:3) = lfoot_navgoal(1:3) + R*[0;0.13;0];
 
 % Plan footsteps to the goal
 goal_pos = struct('right', rfoot_navgoal, 'left', lfoot_navgoal);
-footstep_plan = r.planFootsteps(x0(1:nq), goal_pos, [], struct('step_params', struct('max_num_steps', 1)));
+footstep_plan = r.planFootsteps(x0(1:nq), goal_pos, [], struct('step_params', struct('max_num_steps', 4)));
 
-walking_plan_data = r.planWalkingZMP(x0(1:r.getNumPositions()), footstep_plan);
-% walking_plan_data = StandingPlan.from_standing_state(x0, r);
+% walking_plan_data = r.planWalkingZMP(x0(1:r.getNumPositions()), footstep_plan);
+walking_plan_data = StandingPlan.from_standing_state(x0, r);
 
 import atlasControllers.*;
 
 param_sets = atlasParams.getDefaults(r);
 control = AtlasPlanlessQPController(r,...
                                     @statelessBodyMotionControlmex,...
-                                    param_sets, struct('use_mex', 2));
+                                    param_sets, struct('use_mex', 1));
                                     % fcompare(@statelessBodyMotionControl,@statelessBodyMotionControlmex),...
 
 planeval = AtlasPlanEval(r, walking_plan_data);
@@ -88,10 +88,10 @@ output_select(1).output=1;
 sys = mimoCascade(sys,v,[],[],output_select);
 
 
-T = walking_plan_data.duration-0.001;
+T = min(walking_plan_data.duration + 0.5, 10);
 
 % profile on
-ytraj = simulate(sys, [0, T + 0.5], x0, struct('gui_control_interface', true));
+ytraj = simulate(sys, [0, T], x0, struct('gui_control_interface', true));
 % profile viewer
 
 v.playback(ytraj, struct('slider', true));

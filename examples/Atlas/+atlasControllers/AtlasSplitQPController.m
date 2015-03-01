@@ -5,11 +5,17 @@ classdef AtlasSplitQPController < DrakeSystem
     lc
     monitor
     debug_monitor
+    options;
   end
 
   methods
-    function obj = AtlasSplitQPController(r, control, plan_eval)
+    function obj = AtlasSplitQPController(r, control, plan_eval, options)
       checkDependency('lcmgl');
+      if nargin < 4
+        options = struct();
+      end
+      options = applyDefaults(options, struct('debug_lcm', false));
+      
       input_frame = r.getStateFrame();
       if isempty(control)
         output_frame = input_frame;
@@ -21,6 +27,7 @@ classdef AtlasSplitQPController < DrakeSystem
       obj = obj.setOutputFrame(output_frame);
       obj.control = control;
       obj.plan_eval = plan_eval;
+      obj.options = options;
 
       obj.lc = lcm.lcm.LCM.getSingleton();
       if isempty(obj.plan_eval) || isempty(obj.control)
@@ -47,17 +54,19 @@ classdef AtlasSplitQPController < DrakeSystem
         end
         qp_input = drake.lcmt_qp_controller_input(qp_input);
 
-        qp_input_debug = [];
-        while isempty(qp_input_debug)
-          qp_input_debug = obj.debug_monitor.getMessage();
-        end
-        qp_input_debug = drake.lcmt_qp_controller_input(qp_input_debug);
+        if obj.options.debug_lcm
+          qp_input_debug = [];
+          while isempty(qp_input_debug)
+            qp_input_debug = obj.debug_monitor.getMessage();
+          end
+          qp_input_debug = drake.lcmt_qp_controller_input(qp_input_debug);
 
-        try
-          compareLCMMsgs(qp_input, qp_input_debug);
-        catch e
-          e.getReport()
-          keyboard();
+          try
+            compareLCMMsgs(qp_input, qp_input_debug);
+          catch e
+            e.getReport()
+            keyboard();
+          end
         end
 
         lcm_time = toc(t0);
@@ -72,8 +81,10 @@ classdef AtlasSplitQPController < DrakeSystem
       else
         t0 = tic();
         encodeQPInputLCMMex(qp_input);
-        qp_input_msg = qp_input.to_lcm();
-        obj.lc.publish('QP_CONTROLLER_INPUT_DEBUG', qp_input_msg);
+        if obj.options.debug_lcm
+          qp_input_msg = qp_input.to_lcm();
+          obj.lc.publish('QP_CONTROLLER_INPUT_DEBUG', qp_input_msg);
+        end
         lcm_time = toc(t0);
         y = x;
         fprintf(1, 'lcm_serialize: %f, ', lcm_time);
