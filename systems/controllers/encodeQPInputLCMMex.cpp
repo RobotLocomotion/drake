@@ -59,60 +59,61 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
 
   const mxArray* support_data = myGetProperty(qp_input, "support_data");
-  if (mxGetM(support_data) != 1) {
-    mexErrMsgTxt("support data should be a struct array with M=1");
-  }
   int nsupp = mxGetN(support_data);
-
-
   msg.num_support_data = (int32_t) nsupp;
   double double_logic_map[4][1];
   msg.support_data.resize(nsupp);
-  for (int i=0; i < nsupp; i++) {
-    msg.support_data[i].timestamp = msg.timestamp;
-    msg.support_data[i].body_id = (int32_t) mxGetScalar(myGetField(support_data, i, "body_id"));
+  if (nsupp > 0) {
+    if (mxGetM(support_data) != 1) {
+      mexErrMsgTxt("support data should be a struct array with M=1");
+    }
+    for (int i=0; i < nsupp; i++) {
+      msg.support_data[i].timestamp = msg.timestamp;
+      msg.support_data[i].body_id = (int32_t) mxGetScalar(myGetField(support_data, i, "body_id"));
 
-    const mxArray *contact_pts = myGetField(support_data, i, "contact_pts");
-    if (!contact_pts) mexErrMsgTxt("couldn't get points");
-    Map<MatrixXd>contact_pts_mat(mxGetPr(contact_pts), mxGetM(contact_pts), mxGetN(contact_pts));
-    msg.support_data[i].num_contact_pts = (int32_t) mxGetN(contact_pts);
-    msg.support_data[i].contact_pts.resize(3);
-    for (int j=0; j < 3; j++) {
-      msg.support_data[i].contact_pts[j].resize(msg.support_data[i].num_contact_pts);
-      for (int k=0; k < msg.support_data[i].num_contact_pts; k++) {
-        msg.support_data[i].contact_pts[j][k] = contact_pts_mat(j, k);
+      const mxArray *contact_pts = myGetField(support_data, i, "contact_pts");
+      if (!contact_pts) mexErrMsgTxt("couldn't get points");
+      Map<MatrixXd>contact_pts_mat(mxGetPr(contact_pts), mxGetM(contact_pts), mxGetN(contact_pts));
+      msg.support_data[i].num_contact_pts = (int32_t) mxGetN(contact_pts);
+      msg.support_data[i].contact_pts.resize(3);
+      for (int j=0; j < 3; j++) {
+        msg.support_data[i].contact_pts[j].resize(msg.support_data[i].num_contact_pts);
+        for (int k=0; k < msg.support_data[i].num_contact_pts; k++) {
+          msg.support_data[i].contact_pts[j][k] = contact_pts_mat(j, k);
+        }
       }
-    }
 
-    checkAndCopy<4, 1>(support_data, i, "support_logic_map", &double_logic_map[0][0]);
-    for (int j=0; j < 4; j++) {
-      msg.support_data[i].support_logic_map[j] = (double_logic_map[j][0] != 0);
+      checkAndCopy<4, 1>(support_data, i, "support_logic_map", &double_logic_map[0][0]);
+      for (int j=0; j < 4; j++) {
+        msg.support_data[i].support_logic_map[j] = (double_logic_map[j][0] != 0);
+      }
+      msg.support_data[i].mu = mxGetScalar(myGetField(support_data, i, "mu"));
+      msg.support_data[i].contact_surfaces = (int32_t) mxGetScalar(myGetField(support_data, i, "contact_surfaces"));
     }
-    msg.support_data[i].mu = mxGetScalar(myGetField(support_data, i, "mu"));
-    msg.support_data[i].contact_surfaces = (int32_t) mxGetScalar(myGetField(support_data, i, "contact_surfaces"));
   }
 
   const mxArray* body_motion_data = myGetProperty(qp_input, "body_motion_data");
-  if (mxGetM(body_motion_data) != 1) {
-    mexErrMsgTxt("body motion data should be a 1xN struct array");
-  }
-
   const int nbod = mxGetN(body_motion_data);
   msg.num_tracked_bodies = nbod;
   msg.body_motion_data.resize(nbod);
-  for (int i=0; i < nbod; i++) {
-    msg.body_motion_data[i].timestamp = msg.timestamp;
-    msg.body_motion_data[i].body_id = (int32_t) mxGetScalar(myGetField(body_motion_data, i, "body_id"));
-    memcpy(msg.body_motion_data[i].ts, mxGetPr(myGetField(body_motion_data, i, "ts")), 2*sizeof(double));
-    const mxArray* coefs = myGetField(body_motion_data, i, "coefs");
-    double *coefs_ptr = mxGetPr(coefs);
-    if (mxGetNumberOfDimensions(coefs) != 3) mexErrMsgTxt("coefs should be a dimension-3 array");
-    const int *dim = mxGetDimensions(coefs);
-    if (dim[0] != 6.0 || dim[1] != 1.0 || dim[2] != 4.0) mexErrMsgTxt("coefs should be size 6x1x4");
-    for (int j=0; j < dim[0]; j++) {
-      for (int k=0; k < dim[1]; k++) {
-        for (int l=0; l < dim[2]; l++) {
-          msg.body_motion_data[i].coefs[j][k][l] = coefs_ptr[l*dim[1]*dim[0]+k*dim[0]+j];
+  if (nbod > 0) {
+    if (mxGetM(body_motion_data) != 1) {
+      mexErrMsgTxt("body motion data should be a 1xN struct array");
+    }
+    for (int i=0; i < nbod; i++) {
+      msg.body_motion_data[i].timestamp = msg.timestamp;
+      msg.body_motion_data[i].body_id = (int32_t) mxGetScalar(myGetField(body_motion_data, i, "body_id"));
+      memcpy(msg.body_motion_data[i].ts, mxGetPr(myGetField(body_motion_data, i, "ts")), 2*sizeof(double));
+      const mxArray* coefs = myGetField(body_motion_data, i, "coefs");
+      double *coefs_ptr = mxGetPr(coefs);
+      if (mxGetNumberOfDimensions(coefs) != 3) mexErrMsgTxt("coefs should be a dimension-3 array");
+      const int *dim = mxGetDimensions(coefs);
+      if (dim[0] != 6.0 || dim[1] != 1.0 || dim[2] != 4.0) mexErrMsgTxt("coefs should be size 6x1x4");
+      for (int j=0; j < dim[0]; j++) {
+        for (int k=0; k < dim[1]; k++) {
+          for (int l=0; l < dim[2]; l++) {
+            msg.body_motion_data[i].coefs[j][k][l] = coefs_ptr[l*dim[1]*dim[0]+k*dim[0]+j];
+          }
         }
       }
     }
@@ -133,14 +134,16 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   }
 
   const mxArray* condof = myGetField(whole_body_data, "constrained_dofs");
-  if (mxGetN(condof) != 1) mexErrMsgTxt("constrained dofs should be a column vector");
   const int ncons = mxGetM(condof);
-  Map<VectorXd>condof_vec(mxGetPr(condof), ncons);
   msg.whole_body_data.num_constrained_dofs = ncons;
   msg.whole_body_data.constrained_dofs.resize(ncons);
+  if (ncons > 0) {
+    if (mxGetN(condof) != 1) mexErrMsgTxt("constrained dofs should be a column vector");
+    Map<VectorXd>condof_vec(mxGetPr(condof), ncons);
 
-  for (int i=0; i < ncons; i++) {
-    msg.whole_body_data.constrained_dofs[i] = condof_vec(i);
+    for (int i=0; i < ncons; i++) {
+      msg.whole_body_data.constrained_dofs[i] = condof_vec(i);
+    }
   }
 
   msg.param_set_name = mxArrayToString(myGetProperty(qp_input, "param_set_name"));
