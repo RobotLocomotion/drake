@@ -458,7 +458,7 @@ void RigidBodyManipulator::compile(void)
 
   num_bodies = bodies.size();
   int _num_positions = 0;
-  int num_velocities = 0;
+  num_velocities = 0;
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
     RigidBody& body = **it;
     if (body.hasParent()) {
@@ -483,14 +483,14 @@ void RigidBodyManipulator::compile(void)
     for (int i=0; i<actuators[ia].body->getJoint().getNumVelocities(); i++)
       B(actuators[ia].body->velocity_num_start+i,ia) = actuators[ia].reduction;
 
-  resize(_num_positions, NB, num_bodies, num_frames); // todo: change _num_positions to num_positions above after removing this
+  resize(_num_positions, NB, num_bodies, num_frames); // TODO: change _num_positions to num_positions above after removing this
 
   for (int i=0; i<num_bodies; i++) {
     if (!bodies[i]->hasParent())
       updateCollisionElements(i);  // update static objects (not done in the kinematics loop)
 
     // precompute sparsity pattern for each rigid body
-    bodies[i]->computeAncestorDOFs(this);
+    bodies[i]->computeAncestorDOFs(this); // TODO floating base : remove this
   }
 
   cached_q.resize(num_positions);
