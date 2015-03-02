@@ -262,7 +262,7 @@ classdef AtlasPlanlessQPController
         fun = fcompare(@atlasControllers.statelessBodyMotionControl,@statelessBodyMotionControlmex);
         for j = 1:length(body_motion_data)
           body_id = body_motion_data(j).body_id;
-          if ~isempty(body_id) && params.body_motion(body_id).weight ~= 0
+          if ~isempty(body_id)
             num_tracked_bodies = num_tracked_bodies + 1;
             [body_des, body_v_des, body_vdot_des] = evalCubicSplineSegment(t - body_motion_data(j).ts(1), body_motion_data(j).coefs);
             body_vdot = fun(r, x, body_id,...
