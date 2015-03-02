@@ -25,31 +25,38 @@ void parseWholeBodyParams(const mxArray* params_obj, RigidBodyManipulator *r, Wh
   int nq = r->num_dof;
   int nv = r->num_velocities;
   if (mxGetNumberOfElements(myGetField(wb_obj, "Kp")) != nq) mexErrMsgTxt("Kp should be of size nq");
-  new (&params->Kp) Map<VectorXd>(mxGetPr(myGetField(wb_obj, "Kp")), nq);
+  Map<VectorXd>Kp(mxGetPr(myGetField(wb_obj, "Kp")), nq);
+  params->Kp = Kp;
 
   params->damping_ratio = mxGetScalar(myGetField(wb_obj, "damping_ratio"));
 
   if (mxGetNumberOfElements(myGetField(wb_obj, "Kd")) != nq) mexErrMsgTxt("Kd should be of size nq");
-  new (&params->Kd) Map<VectorXd>(mxGetPr(myGetField(wb_obj, "Kd")), nq);
+  Map<VectorXd>Kd(mxGetPr(myGetField(wb_obj, "Kd")), nq);
+  params->Kd = Kd;
 
   if (mxGetNumberOfElements(myGetField(wb_obj, "w_qdd")) != nv) mexErrMsgTxt("w_qdd should be of size nv");
-  new (&params->w_qdd) Map<VectorXd>(mxGetPr(myGetField(wb_obj, "w_qdd")), nv);
+  Map<VectorXd>w_qdd(mxGetPr(myGetField(wb_obj, "w_qdd")), nv);
+  params->w_qdd = w_qdd;
 
   const mxArray *int_obj = myGetField(wb_obj, "integrator");
   if (mxGetNumberOfElements(myGetField(int_obj, "gains")) != nq) mexErrMsgTxt("gains should be of size nq");
-  new (&params->integrator->gains) Map<VectorXd>(mxGetPr(myGetField(int_obj, "gains")), nq);
+  Map<VectorXd>gains(mxGetPr(myGetField(int_obj, "gains")), nq);
+  params->integrator->gains = gains;
 
   if (mxGetNumberOfElements(myGetField(int_obj, "clamps")) != nq) mexErrMsgTxt("clamps should be of size nq");
-  new (&params->integrator->clamps) Map<VectorXd>(mxGetPr(myGetField(int_obj, "clamps")), nq);
+  Map<VectorXd>clamps(mxGetPr(myGetField(int_obj, "clamps")), nq);
+  params->integrator->clamps = clamps;
 
   params->integrator->eta = mxGetScalar(myGetField(int_obj, "eta"));
 
   const mxArray *qddbound_obj = myGetField(wb_obj, "qdd_bounds");
   if (mxGetNumberOfElements(myGetField(qddbound_obj, "min")) != nv) mexErrMsgTxt("qdd min should be of size nv");
-  new (&params->qdd_bounds->min) Map<VectorXd>(mxGetPr(myGetField(qddbound_obj, "min")), nv);
+  Map<VectorXd>min(mxGetPr(myGetField(qddbound_obj, "min")), nv);
+  params->qdd_bounds->min = min;
 
   if (mxGetNumberOfElements(myGetField(qddbound_obj, "max")) != nv) mexErrMsgTxt("qdd max should be of size nv");
-  new (&params->qdd_bounds->max) Map<VectorXd>(mxGetPr(myGetField(qddbound_obj, "max")), nv);
+  Map<VectorXd>max(mxGetPr(myGetField(qddbound_obj, "max")), nv);
+  params->qdd_bounds->max = max;
   return;
 }
 
@@ -155,12 +162,15 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   pobj = prhs[narg];
   Map<VectorXd> q_des(mxGetPr(myGetField(pobj, "q_des")), nq);
   int num_condof;
-  if (!mxIsEmpty(myGetField(pobj, "constrained_dofs"))) {
+  pobj = myGetField(pobj, "constrained_dofs");
+  if (!mxIsEmpty(pobj)) {
     assert(mxGetN(pobj)==1);
   }
   num_condof=mxGetNumberOfElements(pobj);
-  Map<VectorXd> condof(mexGetPr(myGetField(pobj, "constrained_dofs")), num_condof);
+  Map<VectorXd> condof(mxGetPr(pobj), num_condof);
   narg++;
+
+  // mexPrintf("num condof: %d\n", num_condof);
 
   // body_motion_data
   const mxArray* acc_obj = prhs[narg];
@@ -172,7 +182,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   // int desired_support_argid = narg++;
 
   // contact_sensor
-  const mxArray *pobj = prhs[narg];
+  pobj = prhs[narg];
   Map<VectorXd> contact_force_detected(mxGetPr(pobj), mxGetNumberOfElements(pobj), 1);
   Matrix<bool, Dynamic, 1> b_contact_force = Matrix<bool, Dynamic, 1>::Zero(contact_force_detected.size());
   for (int i=0; i < b_contact_force.size(); i++) {
@@ -200,6 +210,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   const mxArray* params_obj = prhs[narg++];
   WholeBodyParams *whole_body_params;
   whole_body_params = new struct WholeBodyParams;
+  whole_body_params->integrator = new struct IntegratorParams;
+  whole_body_params->qdd_bounds = new struct QDDBounds;
   parseWholeBodyParams(params_obj, pdata->r, whole_body_params);
 
   pm = myGetProperty(params_obj,"slack_limit");
@@ -267,7 +279,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
     pdata->min_body_acceleration[i] = matlabToEigen<6, 1>(myGetField(myGetField(myGetProperty(params_obj, "body_motion"), body_id, "accel_bounds"), "min"));
     pdata->max_body_acceleration[i] = matlabToEigen<6, 1>(myGetField(myGetField(myGetProperty(params_obj, "body_motion"), body_id, "accel_bounds"), "max"));
-    pdata->body_accel_input_weights(i) = mxGetScalar(myGetField(myGetProperty(params_obj, "body_motion"), body_id, "weight"));
+    pdata->body_accel_input_weights[i] = mxGetScalar(myGetField(myGetProperty(params_obj, "body_motion"), body_id, "weight"));
   }
 
   pdata->n_body_accel_eq_constraints = 0;
