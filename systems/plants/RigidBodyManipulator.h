@@ -10,6 +10,7 @@
 #include "collision/DrakeCollision.h"
 #include "KinematicPath.h"
 #include "GradientVar.h"
+#include "drakeContactConstraintsUtil.h"
 
 #undef DLLEXPORT_RBM
 #if defined(WIN32) || defined(WIN64)
@@ -31,11 +32,6 @@
 using namespace Eigen;
 
 //extern std::set<int> emptyIntSet;  // was const std:set<int> emptyIntSet, but valgrind said I was leaking memory
-#define BASIS_VECTOR_HALF_COUNT 2  //number of basis vectors over 2 (i.e. 4 basis vectors in this case)
-#define EPSILON 10e-8
-
-typedef Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
-typedef Matrix<double, 3, Dynamic> Matrix3xd;
 
 class DLLEXPORT_RBM RigidBodyLoop
 {
@@ -165,8 +161,6 @@ public:
 
   void computeContactJacobians(Map<VectorXi> const & idxA, Map<VectorXi> const & idxB, Map<Matrix3xd> const & xA, Map<Matrix3xd> const & xB, const bool compute_second_derivatives, MatrixXd & J, MatrixXd & dJ);
 
-  void surfaceTangents(Map<Matrix3xd> const & normals, std::vector< Map<Matrix3xd> > & tangents);
-
   void addCollisionElement(const int body_ind, const Matrix4d &T_elem_to_lnk, DrakeCollision::Shape shape, std::vector<double> params, std::string group_name = "default");
 
   void updateCollisionElements(const int body_ind);
@@ -273,12 +267,8 @@ private:
   void doKinematics(double* q, bool b_compute_second_derivatives=false, double* qd=NULL);
   
   //helper functions for contactConstraints
-  void surfaceTangentsSingle(Vector3d const & normal, Matrix3kd & d);
-  void getUniqueBodiesSorted(VectorXi const & idxA, VectorXi const & idxB, std::vector<int> & bodyIndsSorted);
-  void findContactIndexes(VectorXi const & idxList, const int bodyIdx, std::vector<int> & contactIdx);
-  void getBodyPoints(std::vector<int> const & cindA, std::vector<int> const & cindB, Matrix3xd const & xA, Matrix3xd const & xB, MatrixXd & bodyPoints);
-  void accumulateJacobian(const int bodyInd, MatrixXd const & bodyPoints, std::vector<int> const & cindA, std::vector<int> const & cindB, MatrixXd & J);
-  void accumulateSecondOrderJacobian(const int bodyInd, MatrixXd const & bodyPoints, std::vector<int> const & cindA, std::vector<int> const & cindB, MatrixXd & dJ);
+  void accumulateContactJacobian(const int bodyInd, MatrixXd const & bodyPoints, std::vector<int> const & cindA, std::vector<int> const & cindB, MatrixXd & J);
+  void accumulateSecondOrderContactJacobian(const int bodyInd, MatrixXd const & bodyPoints, std::vector<int> const & cindA, std::vector<int> const & cindB, MatrixXd & dJ);
 
   int parseBodyOrFrameID(const int body_or_frame_id, Matrix4d* Tframe = nullptr);
 
