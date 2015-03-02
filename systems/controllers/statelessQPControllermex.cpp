@@ -248,7 +248,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   narg++;
 
   // mexPrintf("map test\n");
-  MapTest map_test(mxGetPr(pobj), mxGetNumberOfElements(pobj));
+  // MapTest map_test(mxGetPr(pobj), mxGetNumberOfElements(pobj));
   // map_test.A_data = mxGetPr(pobj);
   // Map<VectorXd>A_local(map_test.A_data, mxGetNumberOfElements(pobj));
   // map_test = new struct MapTest;
@@ -293,35 +293,27 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   int use_fast_qp = (int) mxGetScalar(prhs[narg]);
   narg++;
 
-  // // qdd_lb
-  // Map<VectorXd> qdd_lb(mxGetPr(prhs[narg]),mxGetM(prhs[narg])); narg++;
-
-  // // qdd_ub
-  // Map<VectorXd> qdd_ub(mxGetPr(prhs[narg]),mxGetM(prhs[narg])); narg++;
-
   // mu
   double mu = mxGetScalar(prhs[narg++]);
 
   // height
   double terrain_height = mxGetScalar(prhs[narg++]); // nonzero if we're using DRCFlatTerrainMap
 
-  // // robot_property_cache
-  // shared_ptr<RobotPropertyCache> rpc = parseRobotPropertyCache(prhs[narg]);
-  // narg++;
-
   // params set name
   string param_set_name = mxArrayToString(prhs[narg]);
   AtlasParams *params; 
-  if (!param_set_name.compare("walking")) {
-    params = &(pdata->param_sets.walking);
-  } else if (!param_set_name.compare("standing")) {
-    params = &(pdata->param_sets.standing);
-  } else if (!param_set_name.compare("kinematic")) {
-    params = &(pdata->param_sets.kinematic);
-  } else {
-    params = &(pdata->param_sets.standing); // just so we don't get a compiler warning
+  map<string,AtlasParams>::iterator it;
+  it = pdata->param_sets.find(param_set_name);
+  if (it == pdata->param_sets.end()) {
     mexWarnMsgTxt("Got a param set I don't recognize! Using standing params instead");
+    it = pdata->param_sets.find("standing");
+    if (it == pdata->param_sets.end()) {
+      mexErrMsgTxt("Could not fall back to standing parameters either. I have to give up here.");
+      return; // to avoid a compiler warning
+    }
   }
+  cout << "using params set: " + it->first + ", ";
+  params = &(it->second);
   narg++;
 
   const int dim = 3, // 3D
