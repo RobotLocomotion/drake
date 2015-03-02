@@ -448,7 +448,7 @@ void RigidBodyManipulator::compile(void)
    */
 
   // reorder body list to make sure that parents before children in the list
-  for (int i=0; i<bodies.size(); i++) {
+  for (size_t i=0; i<bodies.size(); i++) {
     while (bodies[i]->hasParent()) {
       auto iter = find(bodies.begin()+i+1,bodies.end(),bodies[i]->parent);
       if (iter==bodies.end()) break;
@@ -456,7 +456,7 @@ void RigidBodyManipulator::compile(void)
     }
   }
 
-  num_bodies = bodies.size();
+  num_bodies = static_cast<int>(bodies.size());
   int _num_positions = 0;
   num_velocities = 0;
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
@@ -479,7 +479,7 @@ void RigidBodyManipulator::compile(void)
 
   B.resize(num_velocities,actuators.size());
   B = MatrixXd::Zero(num_velocities,actuators.size());
-  for (int ia=0; ia<actuators.size(); ia++)
+  for (size_t ia=0; ia<actuators.size(); ia++)
     for (int i=0; i<actuators[ia].body->getJoint().getNumVelocities(); i++)
       B(actuators[ia].body->velocity_num_start+i,ia) = actuators[ia].reduction;
 
@@ -1019,7 +1019,7 @@ void RigidBodyManipulator::doKinematicsNew(double* q, bool compute_gradients, do
   GradientVar<double, TWIST_SIZE, 1> joint_twist(TWIST_SIZE, 1, nq, gradient_order);
 
   // other bodies
-  for (int i = 0; i < bodies.size(); i++) {
+  for (size_t i = 0; i < bodies.size(); i++) {
     RigidBody& body = *bodies[i];
 
     if (body.hasParent()) {
@@ -1107,7 +1107,7 @@ void RigidBodyManipulator::doKinematicsNew(double* q, bool compute_gradients, do
             int nv_joint = body.getJoint().getNumVelocities();
             std::vector<int> v_indices;
             auto dtwistdv = geometricJacobian<double>(0, i, 0, 0, false, &v_indices);
-            std::size_t nv_branch = v_indices.size();
+            int nv_branch = static_cast<int>(v_indices.size());
 
             Matrix<double, TWIST_SIZE, Eigen::Dynamic> djoint_twistdv(TWIST_SIZE, nv_branch);
             djoint_twistdv.setZero();
@@ -1787,7 +1787,7 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJ
 
     int cols = 0;
     int body_index;
-    for (int i = 0; i < kinematic_path.joint_path.size(); i++) {
+    for (size_t i = 0; i < kinematic_path.joint_path.size(); i++) {
       body_index = kinematic_path.joint_path[i];
       const std::shared_ptr<RigidBody>& body = bodies[body_index];
       const DrakeJoint& joint = body->getJoint();
@@ -1804,7 +1804,7 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJ
     }
 
     int col_start = 0;
-    for (int i = 0; i < kinematic_path.joint_path.size(); i++) {
+    for (size_t i = 0; i < kinematic_path.joint_path.size(); i++) {
       body_index = kinematic_path.joint_path[i];
       RigidBody& body = *bodies[body_index];
       const DrakeJoint& joint = body.getJoint();
@@ -1839,7 +1839,7 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJ
       int col = 0;
       std::vector<int> qdot_ind_ij;
       auto rows = intRange<TWIST_SIZE>(0);
-      for (int i = 0; i < kinematic_path.joint_path.size(); i++) {
+      for (size_t i = 0; i < kinematic_path.joint_path.size(); i++) {
         int j = kinematic_path.joint_path[i];
         int sign = kinematic_path.joint_direction_signs[i];
         RigidBody& bodyJ = *bodies[j];
@@ -1881,7 +1881,7 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJ
 
     int cols = 0;
     int body_index;
-    for (int i = 0; i < kinematic_path.joint_path.size(); i++) {
+    for (size_t i = 0; i < kinematic_path.joint_path.size(); i++) {
       body_index = kinematic_path.joint_path[i];
       const std::shared_ptr<RigidBody>& body = bodies[body_index];
       const DrakeJoint& joint = body->getJoint();
@@ -1902,7 +1902,7 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJ
 
     int col_start = 0;
     int sign;
-    for (int i = 0; i < kinematic_path.joint_path.size(); i++) {
+    for (size_t i = 0; i < kinematic_path.joint_path.size(); i++) {
       body_index = kinematic_path.joint_path[i];
       const std::shared_ptr<RigidBody>& body = bodies[body_index];
       const DrakeJoint& joint = body->getJoint();
@@ -2334,7 +2334,7 @@ GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(
         typename Gradient<Vector6, Eigen::Dynamic>::type dI_times_twistdv(TWIST_SIZE, nv);
         dI_times_twistdv.setZero();
         auto dI_times_twist_dvsubvector = I_world[i] * dtwist_dvsubvector.value();
-        for (int col = 0; col < v_indices.size(); col++) {
+        for (size_t col = 0; col < v_indices.size(); col++) {
           dtwistdv.col(v_indices[col]) = dtwist_dvsubvector.value().col(col);
           dI_times_twistdv.col(v_indices[col]) = dI_times_twist_dvsubvector.col(col);
         }
@@ -2939,7 +2939,7 @@ GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::positionConstraints
     throw std::runtime_error("only first order gradients are implemented so far (it's trivial to add more)");
 
   GradientVar<Scalar, Eigen::Dynamic, 1> ret(3*loops.size(), 1, num_positions, gradient_order);
-  for (int i = 0; i < loops.size(); i++) {
+  for (size_t i = 0; i < loops.size(); i++) {
     auto ptA_in_B = forwardKinNew(loops[i].ptA,loops[i].bodyA->body_index,loops[i].bodyB->body_index,0,gradient_order);
 
     ret.value().middleRows(3*i,3) = ptA_in_B.value() - loops[i].ptB;

@@ -17,7 +17,7 @@ using namespace std;
 int findLinkIndex(RigidBodyManipulator* model, string linkname)
 {
   int index = -1;
-  for (int i = 0; i < model->bodies.size(); i++) {
+  for (unsigned int i = 0; i < model->bodies.size(); i++) {
     if (linkname.compare(model->bodies[i]->linkname) == 0) {
       index = i;
       break;
@@ -29,7 +29,7 @@ int findLinkIndex(RigidBodyManipulator* model, string linkname)
 int findLinkIndexByJointName(RigidBodyManipulator* model, string jointname)
 {
   int index = -1;
-  for (int i = 0; i < model->bodies.size(); i++) {
+  for (unsigned int i = 0; i < model->bodies.size(); i++) {
     if (model->bodies[i]->hasParent() && jointname.compare(model->bodies[i]->getJoint().getName())==0) {
       index = i;
       break;
@@ -114,15 +114,15 @@ bool parseVisual(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyManipu
 
 bool parseCollision(int body_index, TiXmlElement* node, RigidBodyManipulator* model)
 {
-  RigidBody::CollisionElement ce;
-  ce.T = Isometry3d::Identity();
+  Isometry3d T = Isometry3d::Identity();
   TiXmlElement* origin = node->FirstChildElement("origin");
   if (origin)
-    poseAttributesToTransform(origin, ce.T.matrix());
+    poseAttributesToTransform(origin, T.matrix());
 
   bool create_collision_element(true);
   const char* attr;
-  ce.shape = DrakeCollision::Shape::UNKNOWN;
+  DrakeCollision::Shape shape = DrakeCollision::UNKNOWN;
+  vector<double> params;
 
   TiXmlElement* geometry_node = node->FirstChildElement("geometry");
   if (!geometry_node)
@@ -130,27 +130,27 @@ bool parseCollision(int body_index, TiXmlElement* node, RigidBodyManipulator* mo
 
   TiXmlElement* shape_node;
   if ((shape_node = geometry_node->FirstChildElement("box"))) {
-    ce.shape = DrakeCollision::Shape::BOX;
+    shape = DrakeCollision::BOX;
     double x = 0, y = 0, z = 0;
     attr = shape_node->Attribute("size");
     if (attr) {
       stringstream s(attr);
       s >> x >> y >> z;
     }
-    ce.params.push_back(x);
-    ce.params.push_back(y);
-    ce.params.push_back(z);
+    params.push_back(x);
+    params.push_back(y);
+    params.push_back(z);
   } else if ((shape_node = geometry_node->FirstChildElement("sphere"))) {
-    ce.shape = DrakeCollision::Shape::SPHERE;
+    shape = DrakeCollision::SPHERE;
     double r = 0;
     attr = shape_node->Attribute("radius");
     if (attr) {
       stringstream s(attr);
       s >> r;
     }
-    ce.params.push_back(r);
+    params.push_back(r);
   } else if ((shape_node = geometry_node->FirstChildElement("cylinder"))) {
-    ce.shape = DrakeCollision::CYLINDER;
+    shape = DrakeCollision::CYLINDER;
     double r = 0, l = 0;
     attr = shape_node->Attribute("radius");
     if (attr) {
@@ -162,10 +162,10 @@ bool parseCollision(int body_index, TiXmlElement* node, RigidBodyManipulator* mo
       stringstream s(attr);
       s >> l;
     }
-    ce.params.push_back(r);
-    ce.params.push_back(l);
+    params.push_back(r);
+    params.push_back(l);
   } else if ((shape_node = geometry_node->FirstChildElement("capsule"))) {
-    ce.shape = DrakeCollision::CAPSULE;
+    shape = DrakeCollision::CAPSULE;
     double r = 0, l = 0;
     attr = shape_node->Attribute("radius");
     if (attr) {
@@ -177,10 +177,10 @@ bool parseCollision(int body_index, TiXmlElement* node, RigidBodyManipulator* mo
       stringstream s(attr);
       s >> l;
     }
-    ce.params.push_back(r);
-    ce.params.push_back(l);
+    params.push_back(r);
+    params.push_back(l);
   } else if ((shape_node = geometry_node->FirstChildElement("mesh"))) {
-    ce.shape = DrakeCollision::Shape::MESH;
+    shape = DrakeCollision::MESH;
     cerr << "Warning: mesh collision elements will be ignored (until I re-implement the logic below sans boost)" << endl;
     create_collision_element = false;
     /*
@@ -208,7 +208,7 @@ bool parseCollision(int body_index, TiXmlElement* node, RigidBodyManipulator* mo
   }
 
   if (create_collision_element) {
-    model->bodies[body_index]->collision_elements.push_back(ce);
+    model->addCollisionElement(body_index,T.matrix(),shape,params);
   }
 
   return true;
@@ -447,7 +447,7 @@ bool parseRobot(RigidBodyManipulator* model, TiXmlElement* node, const string &r
     if (!parseLoop(model, loop_node))
       return false;
 
-  for (int i = 1; i < model->bodies.size(); i++) {
+  for (unsigned int i = 1; i < model->bodies.size(); i++) {
     if (model->bodies[i]->parent == nullptr) {  // attach the root nodes to the world with a floating base joint
       model->bodies[i]->parent = model->bodies[0];
       model->bodies[i]->setJoint(std::unique_ptr<DrakeJoint>(new RollPitchYawFloatingJoint("floating_rpy", Isometry3d::Identity())));
