@@ -313,13 +313,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   string param_set_name = mxArrayToString(prhs[narg]);
   AtlasParams *params; 
   if (!param_set_name.compare("walking")) {
-    mexPrintf("got param set 'walking'\n");
     params = &(pdata->param_sets.walking);
   } else if (!param_set_name.compare("standing")) {
-    mexPrintf("got param set 'standing'\n");
     params = &(pdata->param_sets.standing);
   } else if (!param_set_name.compare("kinematic")) {
-    mexPrintf("got param set 'kinematic'\n");
     params = &(pdata->param_sets.kinematic);
   } else {
     params = &(pdata->param_sets.standing); // just so we don't get a compiler warning
