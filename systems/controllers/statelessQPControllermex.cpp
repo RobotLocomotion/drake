@@ -314,6 +314,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   }
   cout << "using params set: " + it->first + ", ";
   params = &(it->second);
+  mexPrintf("Kp_accel: %f, ", params->Kp_accel);
   narg++;
 
   const int dim = 3, // 3D
