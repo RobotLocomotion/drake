@@ -47,23 +47,23 @@ struct QPControllerData {
 };
 
 struct WholeBodyParams {
-  Map<VectorXd> Kp;
+  VectorXd Kp;
   double damping_ratio;
-  Map<VectorXd> Kd;
-  Map<VectorXd> w_qdd;
+  VectorXd Kd;
+  VectorXd w_qdd;
   struct IntegratorParams *integrator;
   struct QDDBounds *qdd_bounds;
 };
 
 struct IntegratorParams {
-  Map<VectorXd> gains;
-  Map<VectorXd> clamps;
+  VectorXd gains;
+  VectorXd clamps;
   double eta;
 };
 
 struct QDDBounds {
-  Map<VectorXd> min;
-  Map<VectorXd> max;
+  VectorXd min;
+  VectorXd max;
 };
 
 struct QPControllerState {
