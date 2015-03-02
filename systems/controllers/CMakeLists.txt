@@ -32,10 +32,6 @@ if (eigen3_FOUND)
     target_link_libraries(constructQPDataPointerMex drakeQP drakeControlUtil)
     pods_use_pkg_config_packages(constructQPDataPointerMex gurobi)
 
-    add_mex(constructQPStatePointerMex constructQPStatePointerMex.cpp)
-    target_link_libraries(constructQPStatePointerMex drakeQP drakeControlUtil)
-    pods_use_pkg_config_packages(constructQPStatePointerMex gurobi)
-
     add_mex(getActiveSupportsmex getActiveSupportsmex.cpp)
     target_link_libraries(getActiveSupportsmex drakeQP drakeControlUtil)
   endif()
