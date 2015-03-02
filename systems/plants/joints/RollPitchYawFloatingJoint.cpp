@@ -18,8 +18,8 @@ RollPitchYawFloatingJoint::~RollPitchYawFloatingJoint()
 Isometry3d RollPitchYawFloatingJoint::jointTransform(const Eigen::Ref<const VectorXd>& q) const
 {
   Isometry3d ret;
-  auto pos = q.template middleRows<SPACE_DIMENSION>(0);
-  auto rpy = q.template middleRows<RPY_SIZE>(SPACE_DIMENSION);
+  auto pos = q.middleRows<SPACE_DIMENSION>(0);
+  auto rpy = q.middleRows<RPY_SIZE>(SPACE_DIMENSION);
   ret.linear() = rpy2rotmat(rpy);
   ret.translation() = pos;
   ret.makeAffine();
@@ -29,7 +29,7 @@ Isometry3d RollPitchYawFloatingJoint::jointTransform(const Eigen::Ref<const Vect
 void RollPitchYawFloatingJoint::motionSubspace(const Eigen::Ref<const VectorXd>& q, MotionSubspaceType& motion_subspace, MatrixXd* dmotion_subspace) const
 {
   motion_subspace.resize(TWIST_SIZE, getNumVelocities());
-  auto rpy = q.template middleRows<RPY_SIZE>(SPACE_DIMENSION);
+  auto rpy = q.middleRows<RPY_SIZE>(SPACE_DIMENSION);
   Matrix<double,SPACE_DIMENSION,RPY_SIZE> E;
   rpydot2angularvelMatrix(rpy,E);
   auto R = rpy2rotmat(rpy);
@@ -65,17 +65,17 @@ void RollPitchYawFloatingJoint::motionSubspaceDotTimesV(const Eigen::Ref<const V
     Gradient<Vector6d, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdv) const
 {
   motion_subspace_dot_times_v.resize(TWIST_SIZE, 1);
-  auto rpy = q.template middleRows<RPY_SIZE>(SPACE_DIMENSION);
+  auto rpy = q.middleRows<RPY_SIZE>(SPACE_DIMENSION);
   double roll = rpy(0);
   double pitch = rpy(1);
   double yaw = rpy(2);
 
-  auto pd = v.template middleRows<SPACE_DIMENSION>(0);
+  auto pd = v.middleRows<SPACE_DIMENSION>(0);
   double xd = pd(0);
   double yd = pd(1);
   double zd = pd(2);
 
-  auto rpyd = v.template middleRows<RPY_SIZE>(SPACE_DIMENSION);
+  auto rpyd = v.middleRows<RPY_SIZE>(SPACE_DIMENSION);
   double rolld = rpyd(0);
   double pitchd = rpyd(1);
   double yawd = rpyd(2);
