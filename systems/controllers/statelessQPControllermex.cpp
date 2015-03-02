@@ -293,11 +293,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   int use_fast_qp = (int) mxGetScalar(prhs[narg]);
   narg++;
 
-  // qdd_lb
-  Map<VectorXd> qdd_lb(mxGetPr(prhs[narg]),mxGetM(prhs[narg])); narg++;
+  // // qdd_lb
+  // Map<VectorXd> qdd_lb(mxGetPr(prhs[narg]),mxGetM(prhs[narg])); narg++;
 
-  // qdd_ub
-  Map<VectorXd> qdd_ub(mxGetPr(prhs[narg]),mxGetM(prhs[narg])); narg++;
+  // // qdd_ub
+  // Map<VectorXd> qdd_ub(mxGetPr(prhs[narg]),mxGetM(prhs[narg])); narg++;
 
   // mu
   double mu = mxGetScalar(prhs[narg++]);
@@ -589,8 +589,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   
   // set obj,lb,up
   VectorXd lb(nparams), ub(nparams);
-  lb.head(nq) = qdd_lb;
-  ub.head(nq) = qdd_ub;
+  lb.head(nq) = pdata->qdd_lb;
+  ub.head(nq) = pdata->qdd_ub;
   lb.segment(nq,nf) = VectorXd::Zero(nf);
   ub.segment(nq,nf) = 1e3*VectorXd::Ones(nf);
   lb.tail(neps) = -params->slack_limit*VectorXd::Ones(neps);
