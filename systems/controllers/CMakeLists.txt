@@ -28,9 +28,13 @@ if (eigen3_FOUND)
     target_link_libraries(statelessQPControllermex drakeQP drakeControlUtil)
     pods_use_pkg_config_packages(statelessQPControllermex gurobi)
 
-    add_mex(constructQPDataPointer constructQPDataPointer.cpp)
-    target_link_libraries(constructQPDataPointer drakeQP drakeControlUtil)
-    pods_use_pkg_config_packages(constructQPDataPointer gurobi)
+    add_mex(constructQPDataPointerMex constructQPDataPointerMex.cpp)
+    target_link_libraries(constructQPDataPointerMex drakeQP drakeControlUtil)
+    pods_use_pkg_config_packages(constructQPDataPointerMex gurobi)
+
+    add_mex(constructQPStatePointerMex constructQPStatePointerMex.cpp)
+    target_link_libraries(constructQPStatePointerMex drakeQP drakeControlUtil)
+    pods_use_pkg_config_packages(constructQPStatePointerMex gurobi)
 
     add_mex(getActiveSupportsmex getActiveSupportsmex.cpp)
     target_link_libraries(getActiveSupportsmex drakeQP drakeControlUtil)

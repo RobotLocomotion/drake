@@ -46,3 +46,31 @@ struct QPControllerData {
   int cbasis_len;
 };
 
+struct WholeBodyParams {
+  Map<VectorXd> Kp;
+  double damping_ratio;
+  Map<VectorXd> Kd;
+  Map<VectorXd> w_qdd;
+  struct IntegratorParams *integrator;
+  struct QDDBounds *qdd_bounds;
+};
+
+struct IntegratorParams {
+  Map<VectorXd> gains;
+  Map<VectorXd> clamps;
+  double eta;
+};
+
+struct QDDBounds {
+  Map<VectorXd> min;
+  Map<VectorXd> max;
+};
+
+struct QPControllerState {
+  double t_prev;
+  bool foot_contact_prev[2];
+  VectorXd vref_integrator_state;
+  VectorXd q_integrator_state;
+};
+   
+
