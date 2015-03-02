@@ -234,6 +234,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   if (!pdata->map_ptr) mexWarnMsgTxt("Map ptr is NULL. Assuming flat ground.");
   narg++;
 
+  // default_terrain_height
+  pdata->default_terrain_height = mxGetScalar(prhs[narg]);
+  narg++;
+
   // gurobi_opts
   const mxArray* psolveropts = prhs[narg];
 

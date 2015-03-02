@@ -11,7 +11,7 @@ classdef AtlasPlanlessQPController
     mex_ptr;
     support_detect_mex_ptr;
     use_bullet = false;
-    using_flat_terrain;
+    default_terrain_height = 0;
     param_sets
     gurobi_options = struct();
     solver = 0;
@@ -61,13 +61,13 @@ classdef AtlasPlanlessQPController
       end
 
       terrain = getTerrain(r);
+      obj.default_terrain_height = r.getTerrainHeight([0;0]);
       if isa(terrain,'DRCTerrainMap')
         terrain_map_ptr = terrain.map_handle.getPointerForMex();
-        obj.using_flat_terrain = false;
       else
         terrain_map_ptr = 0;
-        obj.using_flat_terrain = true;
       end
+
       obj.mex_ptr = SharedDataHandle(constructQPDataPointerMex(obj.robot.getMexModelPtr.ptr,...
                                                                obj.param_sets,...
                                                                obj.robot_property_cache,...
@@ -75,6 +75,7 @@ classdef AtlasPlanlessQPController
                                                                obj.robot.umin,...
                                                                obj.robot.umax,...
                                                                terrain_map_ptr,...
+                                                               obj.default_terrain_height,...
                                                                obj.gurobi_options));
     end
 
@@ -235,12 +236,6 @@ classdef AtlasPlanlessQPController
         available_supports(j).support_logic_map = double(available_supports(j).support_logic_map);
       end
 
-      if obj.using_flat_terrain
-        height = getTerrainHeight(r,[0;0]); % get height from DRCFlatTerrainMap
-      else
-        height = 0;
-      end
-
       % [w_qdd, qddot_des] = obj.kneePD(q, qd, w_qdd, qddot_des, struct('right', false, 'left', false), params.min_knee_angle);
 
 
@@ -273,7 +268,7 @@ classdef AtlasPlanlessQPController
           end
         end
         all_bodies_vdot = all_bodies_vdot(1:num_tracked_bodies);
-        mask = getActiveSupportsmex(obj.mex_ptr.data, x, available_supports, contact_sensor, params.contact_threshold, height);
+        mask = getActiveSupportsmex(obj.mex_ptr.data, x, available_supports, contact_sensor, params.contact_threshold, obj.default_terrain_height);
         supp = available_supports(logical(mask));
 
         % Run PD on the desired configuration
@@ -285,7 +280,7 @@ classdef AtlasPlanlessQPController
           alpha, Hqp, fqp, Aeq, beq, Ain, bin,lb,ub] = atlasControllers.setupAndSolveQP(r, params, use_fastqp,...
                                              qddot_des, x, all_bodies_vdot,...
                                              condof, supp, qp_input.zmp_data, ...
-                                             mu, height,obj.use_bullet,...
+                                             mu, obj.default_terrain_height,obj.use_bullet,...
                                              ctrl_data, obj.gurobi_options);
         if nargout >= 2
           v_ref = obj.velocityReference(t, q, qd, qdd, foot_contact_sensor, params.vref_integrator);
@@ -307,7 +302,6 @@ classdef AtlasPlanlessQPController
                       contact_sensor,...
                       use_fastqp,...
                       mu,...
-                      height,...
                       param_set_name);
           fprintf(1, 'mex: %f, ', toc(t0));
 
@@ -339,7 +333,6 @@ classdef AtlasPlanlessQPController
                                         contact_sensor,...
                                         use_fastqp,...
                                         mu,...
-                                        height,...
                                         param_set_name);
           fprintf(1, 'mex: %f, ', toc(t0));
 

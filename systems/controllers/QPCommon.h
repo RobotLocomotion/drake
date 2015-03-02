@@ -139,6 +139,7 @@ struct NewQPControllerData {
   std::map<std::string,AtlasParams> param_sets;
   RobotPropertyCache rpc;
   void* map_ptr;
+  double default_terrain_height;
   VectorXd umin,umax;
 
   // preallocate memory

@@ -297,7 +297,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   double mu = mxGetScalar(prhs[narg++]);
 
   // height
-  double terrain_height = mxGetScalar(prhs[narg++]); // nonzero if we're using DRCFlatTerrainMap
+  // double terrain_height = mxGetScalar(prhs[narg++]); // nonzero if we're using DRCFlatTerrainMap
 
   // params set name
   string param_set_name = mxArrayToString(prhs[narg]);
@@ -376,7 +376,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   int num_active_contact_pts=0;
   vector<SupportStateElement> available_supports = parseSupportData(available_supp_obj);
-  vector<SupportStateElement> active_supports = getActiveSupports(pdata->r, pdata->map_ptr, q, qd, available_supports, b_contact_force, params->contact_threshold, terrain_height);
+  vector<SupportStateElement> active_supports = getActiveSupports(pdata->r, pdata->map_ptr, q, qd, available_supports, b_contact_force, params->contact_threshold, pdata->default_terrain_height);
 
   for (vector<SupportStateElement>::iterator iter = active_supports.begin(); iter!=active_supports.end(); iter++) {
     num_active_contact_pts += iter->contact_pts.size();
@@ -418,7 +418,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   Map<VectorXd> qdvec(qd,nq);
   
   MatrixXd B,JB,Jp,Jpdot,normals;
-  int nc = contactConstraintsBV(pdata->r,num_active_contact_pts,mu,active_supports,pdata->map_ptr,B,JB,Jp,Jpdot,normals,terrain_height);
+  int nc = contactConstraintsBV(pdata->r,num_active_contact_pts,mu,active_supports,pdata->map_ptr,B,JB,Jp,Jpdot,normals,pdata->default_terrain_height);
   int neps = nc*dim;
 
   VectorXd x_bar,xlimp;
