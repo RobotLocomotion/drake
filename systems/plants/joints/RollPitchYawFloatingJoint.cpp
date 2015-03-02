@@ -15,21 +15,21 @@ RollPitchYawFloatingJoint::~RollPitchYawFloatingJoint()
   // empty
 }
 
-Isometry3d RollPitchYawFloatingJoint::jointTransform(double* const q) const
+Isometry3d RollPitchYawFloatingJoint::jointTransform(const Eigen::Ref<const VectorXd>& q) const
 {
   Isometry3d ret;
-  Map<Vector3d> pos(&q[0]);
-  Map<Vector3d> rpy(&q[3]);
+  auto pos = q.middleRows<SPACE_DIMENSION>(0);
+  auto rpy = q.middleRows<RPY_SIZE>(SPACE_DIMENSION);
   ret.linear() = rpy2rotmat(rpy);
   ret.translation() = pos;
   ret.makeAffine();
   return ret;
 }
 
-void RollPitchYawFloatingJoint::motionSubspace(double* const q, MotionSubspaceType& motion_subspace, MatrixXd* dmotion_subspace) const
+void RollPitchYawFloatingJoint::motionSubspace(const Eigen::Ref<const VectorXd>& q, MotionSubspaceType& motion_subspace, MatrixXd* dmotion_subspace) const
 {
   motion_subspace.resize(TWIST_SIZE, getNumVelocities());
-  Map<Vector3d> rpy(&q[3]);
+  auto rpy = q.middleRows<RPY_SIZE>(SPACE_DIMENSION);
   Matrix<double,SPACE_DIMENSION,RPY_SIZE> E;
   rpydot2angularvelMatrix(rpy,E);
   auto R = rpy2rotmat(rpy);
@@ -41,7 +41,6 @@ void RollPitchYawFloatingJoint::motionSubspace(double* const q, MotionSubspaceTy
   if (dmotion_subspace) {
     dmotion_subspace->resize(motion_subspace.size(), getNumPositions());
 
-    // TODO: would be nicer to use setSubMatrixGradient etc. Need rpy2rotmat gradient output for that
     using namespace std;
     double roll = rpy(0);
     double pitch = rpy(1);
@@ -60,23 +59,23 @@ void RollPitchYawFloatingJoint::motionSubspace(double* const q, MotionSubspaceTy
   }
 }
 
-void RollPitchYawFloatingJoint::motionSubspaceDotTimesV(double* const q, double* const v,
+void RollPitchYawFloatingJoint::motionSubspaceDotTimesV(const Eigen::Ref<const VectorXd>& q, const Eigen::Ref<const VectorXd>& v,
     Vector6d& motion_subspace_dot_times_v,
     Gradient<Vector6d, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdq,
     Gradient<Vector6d, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdv) const
 {
   motion_subspace_dot_times_v.resize(TWIST_SIZE, 1);
-  Map<Vector3d> rpy(&q[3]);
+  auto rpy = q.middleRows<RPY_SIZE>(SPACE_DIMENSION);
   double roll = rpy(0);
   double pitch = rpy(1);
   double yaw = rpy(2);
 
-  Map<Vector3d> pd(&v[0]);
+  auto pd = v.middleRows<SPACE_DIMENSION>(0);
   double xd = pd(0);
   double yd = pd(1);
   double zd = pd(2);
 
-  Map<Vector3d> rpyd(&v[3]);
+  auto rpyd = v.middleRows<RPY_SIZE>(SPACE_DIMENSION);
   double rolld = rpyd(0);
   double pitchd = rpyd(1);
   double yawd = rpyd(2);
@@ -114,7 +113,7 @@ void RollPitchYawFloatingJoint::motionSubspaceDotTimesV(double* const q, double*
   }
 }
 
-void RollPitchYawFloatingJoint::randomConfiguration(double* q, std::default_random_engine& generator) const
+void RollPitchYawFloatingJoint::randomConfiguration(Eigen::Ref<VectorXd>& q, std::default_random_engine& generator) const
 {
   std::normal_distribution<double> normal;
 
@@ -127,7 +126,7 @@ void RollPitchYawFloatingJoint::randomConfiguration(double* q, std::default_rand
   rpy = uniformlyRandomRPY(generator);
 }
 
-void RollPitchYawFloatingJoint::qdot2v(double* q, Eigen::MatrixXd& qdot_to_v, Eigen::MatrixXd* dqdot_to_v) const
+void RollPitchYawFloatingJoint::qdot2v(const Eigen::Ref<const VectorXd>& q, Eigen::MatrixXd& qdot_to_v, Eigen::MatrixXd* dqdot_to_v) const
 {
   qdot_to_v.setIdentity(getNumVelocities(), getNumPositions());
 
@@ -136,7 +135,7 @@ void RollPitchYawFloatingJoint::qdot2v(double* q, Eigen::MatrixXd& qdot_to_v, Ei
   }
 }
 
-void RollPitchYawFloatingJoint::v2qdot(double* q, Eigen::MatrixXd& v_to_qdot, Eigen::MatrixXd* dv_to_qdot) const
+void RollPitchYawFloatingJoint::v2qdot(const Eigen::Ref<const VectorXd>& q, Eigen::MatrixXd& v_to_qdot, Eigen::MatrixXd* dv_to_qdot) const
 {
   v_to_qdot.setIdentity(getNumPositions(), getNumVelocities());
 

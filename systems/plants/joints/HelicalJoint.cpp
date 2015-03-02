@@ -12,7 +12,7 @@ HelicalJoint::~HelicalJoint()
   // empty
 }
 
-Isometry3d HelicalJoint::jointTransform(double* const q) const
+Isometry3d HelicalJoint::jointTransform(const Eigen::Ref<const VectorXd>& q) const
 {
   Isometry3d ret;
   ret = AngleAxisd(q[0], axis) * Translation3d(q[0] * pitch * axis);
