@@ -1,41 +1,25 @@
 classdef AtlasPlanlessQPController 
   properties(SetAccess=private, GetAccess=public);
-    body_accel_pd;
     debug;
     debug_pub;
     robot;
-    numq;
-    numv;
-    numbod;
-    % all_contacts = struct('groups', {{}}, ... % convenience for indexing into contact groups
-    %                       'point_ind', {{}}, ...
-    %                       'num_points', {{}}, ...
-    %                       'bodies', {{}});
     controller_data
     q_integrator_data
     vref_integrator_data
-    knee_ind;
-    ankle_inds;
-    leg_inds;
-    actuated_inds;
+    robot_property_cache
     use_mex;
     mex_ptr;
     mex_state_ptr;
     support_detect_mex_ptr;
     use_bullet = false;
     using_flat_terrain;
-
     param_sets
-
-    joint_limits = struct('min', [], 'max', []);
-
-
     gurobi_options = struct();
     solver = 0;
   end
 
   methods
-    function obj = AtlasPlanlessQPController(r, body_accel_pd, param_sets, options)
+    function obj = AtlasPlanlessQPController(r, param_sets, options)
       options = applyDefaults(options,...
         struct('debug', false,...
                'use_mex', 1, ...
@@ -49,21 +33,9 @@ classdef AtlasPlanlessQPController
 
       obj.robot = r;
       obj.param_sets = param_sets;
-      [obj.joint_limits.min, obj.joint_limits.max] = r.getJointLimits();
-      obj.numq = r.getNumPositions();
-      obj.numv = r.getNumVelocities();
-      obj.numbod = length(r.getManipulator().body);
-      obj.ankle_inds = struct('right', r.findPositionIndices('r_leg_ak'),...
-                              'left', r.findPositionIndices('l_leg_ak'));
-      obj.leg_inds = struct('right', r.findPositionIndices('r_leg'),...
-                            'left', r.findPositionIndices('l_leg'));
-      obj.actuated_inds = r.getActuatedJoints();
+      obj.robot_property_cache = atlasUtil.propertyCache(r);
       import atlasControllers.*;
       import atlasFrames.*;
-      obj.body_accel_pd = body_accel_pd;
-
-      obj.knee_ind = struct('right', r.findPositionIndices('r_leg_kny'),...
-                            'left', r.findPositionIndices('l_leg_kny'));
 
       if obj.debug
         obj.debug_pub = ControllerDebugPublisher('CONTROLLER_DEBUG');
@@ -89,26 +61,18 @@ classdef AtlasPlanlessQPController
         obj.gurobi_options.barconvtol = 5e-4;
       end
 
-      if (obj.use_mex>0)
-        terrain = getTerrain(r);
-        if isa(terrain,'DRCTerrainMap')
-          terrain_map_ptr = terrain.map_handle.getPointerForMex();
-          obj.using_flat_terrain = false;
-        else
-          terrain_map_ptr = 0;
-          obj.using_flat_terrain = true;
-        end
-        obj.mex_ptr = SharedDataHandle(constructQPDataPointerMex(obj.robot.getMexModelPtr.ptr,...
-          obj.robot.getB(), obj.robot.umin, obj.robot.umax,...
-          terrain_map_ptr, obj.gurobi_options));
-        obj.mex_state_ptr = SharedDataHandle(constructQPStatePointerMex(obj.robot.getMexModelPtr.ptr));
+      terrain = getTerrain(r);
+      if isa(terrain,'DRCTerrainMap')
+        terrain_map_ptr = terrain.map_handle.getPointerForMex();
+        obj.using_flat_terrain = false;
+      else
+        terrain_map_ptr = 0;
+        obj.using_flat_terrain = true;
       end
-
-      if exist('supportDetectmex','file')~=3
-        error('can''t find supportDetectmex.  did you build it?');
-      end      
-      obj.support_detect_mex_ptr = SharedDataHandle(supportDetectmex(0,obj.robot.getMexModelPtr.ptr,terrain_map_ptr));
-
+      obj.mex_ptr = SharedDataHandle(constructQPDataPointerMex(obj.robot.getMexModelPtr.ptr,...
+        obj.robot.getB(), obj.robot.umin, obj.robot.umax,...
+        terrain_map_ptr, obj.gurobi_options));
+      obj.mex_state_ptr = SharedDataHandle(constructQPStatePointerMex(obj.robot.getMexModelPtr.ptr));
     end
 
     function qddot_des = wholeBodyPID(obj, t, q, qd, q_des, params)
@@ -118,11 +82,13 @@ classdef AtlasPlanlessQPController
       dt = t - obj.q_integrator_data.t_prev;
       obj.q_integrator_data.t_prev = t;
       new_int_state = params.integrator.eta * obj.q_integrator_data.state + params.integrator.gains .* (q_des - q) * dt;
+
       if any(new_int_state)
+        [joint_limits_min, joint_limits_max] = r.getJointLimits();
         new_int_state = max(-params.integrator.clamps, min(params.integrator.clamps, new_int_state));
         q_des = q_des + new_int_state;
-        q_des = max(obj.joint_limits.min - params.integrator.clamps,...
-                    min(obj.joint_limits.max + params.integrator.clamps, q_des)); % allow it to go delta above and below jlims
+        q_des = max(joint_limits_min - params.integrator.clamps,...
+                    min(joint_limits_max + params.integrator.clamps, q_des)); % allow it to go delta above and below jlims
       end
       obj.q_integrator_data.state = max(-params.integrator.clamps, min(params.integrator.clamps, new_int_state));
 
@@ -136,19 +102,21 @@ classdef AtlasPlanlessQPController
     function [w_qdd, qddot_des] = kneePD(obj, q, qd, w_qdd, qddot_des, toe_off, min_knee_angle)
       kp = 40;
       kd = 4;
+      r_knee_inds = obj.robot_property_cache.position_indices.r_leg_kny;
+      l_knee_inds = obj.robot_property_cache.position_indices.l_leg_kny;
       if toe_off.right
-        r_kny_qdd_des = kp*(min_knee_angle-q(obj.knee_ind.right)) - kd*qd(obj.knee_ind.right);
-        qddot_des(obj.knee_ind.right) = r_kny_qdd_des;
-        w_qdd(obj.knee_ind.right) = 1;
-      elseif q(obj.knee_ind.right) < min_knee_angle
-        w_qdd(obj.knee_ind.right) = 1e-4;
+        r_kny_qdd_des = kp*(min_knee_angle-q(r_knee_inds)) - kd*qd(r_knee_inds);
+        qddot_des(r_knee_inds) = r_kny_qdd_des;
+        w_qdd(r_knee_inds) = 1;
+      elseif q(r_knee_inds) < min_knee_angle
+        w_qdd(r_knee_inds) = 1e-4;
       end
       if toe_off.left
-        l_kny_qdd_des = kp*(min_knee_angle-q(obj.knee_ind.left)) - kd*qd(obj.knee_ind.left);
-        qddot_des(obj.knee_ind.left) = l_kny_qdd_des;
-        w_qdd(obj.knee_ind.left) = 1;
-      elseif q(obj.knee_ind.left) < min_knee_angle
-        w_qdd(obj.knee_ind.left) = 1e-4;
+        l_kny_qdd_des = kp*(min_knee_angle-q(l_knee_inds)) - kd*qd(l_knee_inds);
+        qddot_des(l_knee_inds) = l_kny_qdd_des;
+        w_qdd(l_knee_inds) = 1;
+      elseif q(l_knee_inds) < min_knee_angle
+        w_qdd(l_knee_inds) = 1e-4;
       end
     end
 
@@ -166,19 +134,19 @@ classdef AtlasPlanlessQPController
       qd_int = (1-params.eta)*qd_int + params.eta*qd + qdd*dt;
 
       if params.zero_ankles_on_contact && fc.left
-        qd_int(obj.ankle_inds.left) = 0;
+        qd_int(obj.robot_property_cache.position_indices.l_leg_ak) = 0;
       end
       if params.zero_ankles_on_contact && fc.right
-        qd_int(obj.ankle_inds.right) = 0;
+        qd_int(obj.robot_property_cache.position_indices.r_leg_ak) = 0;
       end
 
       fc_prev = obj.vref_integrator_data.fc_prev;
-      if fc_prev.right ~= fc.right
-        % contact state changed, reset integrated velocities
-        qd_int(obj.leg_inds.right) = qd(obj.leg_inds.right);
-      end
       if fc_prev.left ~= fc.left
-        qd_int(obj.leg_inds.left) = qd(obj.leg_inds.left);
+        % contact state changed, reset integrated velocities
+        qd_int(obj.robot_property_cache.position_indices.l_leg) = qd(obj.robot_property_cache.position_indices.l_leg);
+      end
+      if fc_prev.right ~= fc.right
+        qd_int(obj.robot_property_cache.position_indices.r_leg) = qd(obj.robot_property_cache.position_indices.r_leg);
       end
 
       obj.vref_integrator_data.fc_prev = fc;
@@ -188,14 +156,14 @@ classdef AtlasPlanlessQPController
 
       % do not velocity control ankles when in contact
       if params.zero_ankles_on_contact && fc.left
-        qd_err(obj.ankle_inds.left) = 0;
+        qd_err(obj.robot_property_cache.position_indices.l_leg_ak) = 0;
       end
       if params.zero_ankles_on_contact && fc.right
-        qd_err(obj.ankle_inds.right) = 0;
+        qd_err(obj.robot_property_cache.position_indices.r_leg_ak) = 0;
       end
 
       delta_max = 1.0;
-      v_ref = max(-delta_max,min(delta_max,qd_err(obj.actuated_inds)));
+      v_ref = max(-delta_max,min(delta_max,qd_err(obj.robot_property_cache.actuated_indices)));
     end
 
     function [y, v_ref] = tick(obj, t, x, qp_input, foot_contact_sensor)
@@ -208,7 +176,8 @@ classdef AtlasPlanlessQPController
       % Unpack variable names (just to make our code a bit easier to read)
       ctrl_data = obj.controller_data;
       r = obj.robot;
-      nq = obj.numq;
+      nq = obj.robot_property_cache.nq;
+      nv = obj.robot_property_cache.nv;
 
       params = obj.param_sets.(char(qp_input.param_set_name));
 
@@ -227,12 +196,12 @@ classdef AtlasPlanlessQPController
       % lcmgl.sphere([y0; 0], 0.02, 20, 20);
       % lcmgl.switchBuffers();
       
-      q = x(1:obj.numq);
-      qd = x(obj.numq+(1:obj.numv));
+      q = x(1:nq);
+      qd = x(nq+(1:nv));
       
       mu = qp_input.support_data(1).mu;
 
-      contact_sensor = zeros(obj.numbod, 1);
+      contact_sensor = zeros(obj.robot_property_cache.num_bodies, 1);
       if foot_contact_sensor(1) > 0.5
         contact_sensor(obj.foot_body_id.left) = 1;
       end
@@ -271,8 +240,8 @@ classdef AtlasPlanlessQPController
       % [w_qdd, qddot_des] = obj.kneePD(q, qd, w_qdd, qddot_des, struct('right', false, 'left', false), params.min_knee_angle);
 
 
-      qdd_lb =-500*ones(1,obj.numq);
-      qdd_ub = 500*ones(1,obj.numq);
+      qdd_lb =-500*ones(1,nq);
+      qdd_ub = 500*ones(1,nq);
 
       % fprintf(1, ' non_mex: %f\n', toc(t0));
 
@@ -286,13 +255,15 @@ classdef AtlasPlanlessQPController
                                  'body_vdot', cell(1,length(body_motion_data)),...
                                  'params', cell(1,length(body_motion_data)));
         num_tracked_bodies = 0;
+        fun = fcompare(@statelessBodyMotionControl,@statelessBodyMotionControlmex);
         for j = 1:length(body_motion_data)
           body_id = body_motion_data(j).body_id;
           if ~isempty(body_id) && params.body_motion(body_id).weight ~= 0
             num_tracked_bodies = num_tracked_bodies + 1;
             [body_des, body_v_des, body_vdot_des] = evalCubicSplineSegment(t - body_motion_data(j).ts(1), body_motion_data(j).coefs);
-            body_vdot = obj.body_accel_pd(r, x, body_id,...
+            body_vdot = fun(r, x, body_id,...
                                           body_des, body_v_des, body_vdot_des, params.body_motion(body_id));
+            valuecheck(body_vdot, body_vdot_mex);
             all_bodies_vdot(num_tracked_bodies).body_id = body_id; 
             all_bodies_vdot(num_tracked_bodies).body_vdot = body_vdot;
             all_bodies_vdot(num_tracked_bodies).params = params.body_motion(body_id);
@@ -322,6 +293,7 @@ classdef AtlasPlanlessQPController
       if (obj.use_mex==1 || obj.use_mex==2)
 
         if (obj.use_mex==1)
+          t0 = tic();
           [y,qdd,v_ref,info_fqp,active_supports,alpha] = ...
                       statelessQPControllermex(obj.mex_ptr.data,...
                       obj.mex_state_ptr.data,...
@@ -337,8 +309,9 @@ classdef AtlasPlanlessQPController
                       qdd_ub,...
                       mu,...
                       height,...
-                      obj.ankle_inds,...
+                      obj.robot_property_cache,...
                       params);
+          fprintf(1, 'mex: %f ,', toc(t0));
 
           if info_fqp < 0
             ctrl_data.infocount = ctrl_data.infocount+1;
@@ -355,6 +328,7 @@ classdef AtlasPlanlessQPController
           end
 
         else
+          t0 = tic();
           [y_mex,mex_qdd,vref_mex,info_mex,active_supports_mex,~,Hqp_mex,fqp_mex,...
             Aeq_mex,beq_mex,Ain_mex,bin_mex,Qf,Qeps] = ...
                statelessQPControllermex(obj.mex_ptr.data,...
@@ -371,8 +345,9 @@ classdef AtlasPlanlessQPController
                                         qdd_ub,...
                                         mu,...
                                         height,...
-                                        obj.ankle_inds,...
+                                        obj.robot_property_cache,...
                                         params);
+          fprintf(1, 'mex: %f ,', toc(t0));
 
           num_active_contacts = zeros(1, length(supp));
           for j = 1:length(supp)

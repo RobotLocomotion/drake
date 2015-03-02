@@ -71,9 +71,7 @@ import atlasControllers.*;
 
 param_sets = atlasParams.getDefaults(r);
 control = AtlasPlanlessQPController(r,...
-                                    @statelessBodyMotionControlmex,...
                                     param_sets, struct('use_mex', 1));
-                                    % fcompare(@statelessBodyMotionControl,@statelessBodyMotionControlmex),...
 
 planeval = AtlasPlanEval(r, walking_plan_data);
 % plancontroller = AtlasSplitQPController(r, control, planeval);
@@ -90,9 +88,9 @@ sys = mimoCascade(sys,v,[],[],output_select);
 
 T = min(walking_plan_data.duration + 0.5, 30);
 
-profile on
+% profile on
 ytraj = simulate(sys, [0, T], x0, struct('gui_control_interface', true));
-profile viewer
+% profile viewer
 
 v.playback(ytraj, struct('slider', true));
 
