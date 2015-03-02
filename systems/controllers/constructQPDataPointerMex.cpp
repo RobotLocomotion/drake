@@ -137,10 +137,17 @@ void parseAtlasParams(const mxArray *params_obj, RigidBodyManipulator *r, AtlasP
   return;
 }
 
-void parseAtlasParamSets(const mxArray *pobj, RigidBodyManipulator *r, AtlasParamSets *param_sets) {
-  parseAtlasParams(myGetField(pobj, "walking"), r, &(param_sets->walking));
-  parseAtlasParams(myGetField(pobj, "standing"), r, &(param_sets->standing));
-  parseAtlasParams(myGetField(pobj, "kinematic"), r, &(param_sets->kinematic));
+void parseAtlasParamSets(const mxArray *pobj, RigidBodyManipulator *r, map<string,AtlasParams> *param_sets) {
+  int num_fields = mxGetNumberOfFields(pobj);
+  if (num_fields == 0) mexErrMsgTxt("could not get any field names from the param_sets object\n"); 
+
+  AtlasParams params;
+  const char* fieldname;
+  for (int i=0; i < num_fields; i++) {
+    fieldname = mxGetFieldNameByNumber(pobj, i);
+    parseAtlasParams(myGetField(pobj, fieldname), r, &params);
+    param_sets->insert(pair<string,AtlasParams>(string(fieldname), params));
+  }
 
   return;
 }

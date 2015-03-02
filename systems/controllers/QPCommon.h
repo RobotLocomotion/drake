@@ -81,10 +81,10 @@ struct RobotPropertyCache {
   VectorXi actuated_indices;
 };
 
-struct MapTest {
-  MapTest (double *A_data, size_t A_size): A(A_data, A_size) {};
-  Map<VectorXd> A;
-};
+// struct MapTest {
+//   MapTest (double *A_data, size_t A_size): A(A_data, A_size) {};
+//   Map<VectorXd> A;
+// };
 
 struct VRefIntegratorParams {
   bool zero_ankles_on_contact;
@@ -133,16 +133,10 @@ struct AtlasParams {
   double min_knee_angle;
 };
 
-struct AtlasParamSets {
-  AtlasParams walking;
-  AtlasParams standing;
-  AtlasParams kinematic;
-};
-
 struct NewQPControllerData {
   GRBenv *env;
   RigidBodyManipulator* r;
-  AtlasParamSets param_sets;
+  std::map<std::string,AtlasParams> param_sets;
   RobotPropertyCache rpc;
   void* map_ptr;
   VectorXd umin,umax;
