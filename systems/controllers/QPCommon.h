@@ -46,26 +46,6 @@ struct QPControllerData {
   int cbasis_len;
 };
 
-struct WholeBodyParams {
-  VectorXd Kp;
-  double damping_ratio;
-  VectorXd Kd;
-  VectorXd w_qdd;
-  struct IntegratorParams *integrator;
-  struct QDDBounds *qdd_bounds;
-};
-
-struct IntegratorParams {
-  VectorXd gains;
-  VectorXd clamps;
-  double eta;
-};
-
-struct QDDBounds {
-  VectorXd min;
-  VectorXd max;
-};
-
 struct QPControllerState {
   double t_prev;
   bool foot_contact_prev[2];
@@ -73,9 +53,81 @@ struct QPControllerState {
   VectorXd q_integrator_state;
 };
 
+struct PositionIndicesCache {
+  VectorXi r_leg_kny;
+  VectorXi l_leg_kny;
+  VectorXi r_leg;
+  VectorXi l_leg;
+  VectorXi r_leg_ak;
+  VectorXi l_leg_ak;
+};
+
+struct BodyIdsCache {
+  int r_foot;
+  int l_foot;
+  int pelvis;
+};
+   
+struct RobotPropertyCache {
+  PositionIndicesCache position_indices;
+  BodyIdsCache body_ids;
+  VectorXi actuated_indices;
+};
+
+struct MapTest {
+  MapTest (double *A_data, size_t A_size): A(A_data, A_size) {};
+  Map<VectorXd> A;
+};
+
 struct VRefIntegratorParams {
   bool zero_ankles_on_contact;
   double eta;
 };
-   
+
+struct IntegratorParams {
+  IntegratorParams (double *gains_data, size_t gains_size,
+                    double *clamps_data, size_t clamps_size):
+    gains(gains_data, gains_size),
+    clamps(clamps_data, clamps_size)
+    {}
+  Map<VectorXd> gains;
+  Map<VectorXd> clamps;
+  double eta;
+};
+
+struct QDDBounds {
+  QDDBounds (double *min_data, size_t min_size,
+             double *max_data, size_t max_size):
+    min(min_data, min_size),
+    max(max_data, max_size)
+    {}
+  Map<VectorXd> min;
+  Map<VectorXd> max;
+};
+
+struct WholeBodyParams {
+  WholeBodyParams (double *Kp_data, size_t Kp_size,
+                   double *Kd_data, size_t Kd_size,
+                   double *w_qdd_data, size_t w_qdd_size,
+                   double *gains_data, size_t gains_size,
+                   double *clamps_data, size_t clamps_size,
+                   double *qdd_min_data, size_t qdd_min_size,
+                   double *qdd_max_data, size_t qdd_max_size
+                   ):
+    Kp(Kp_data, Kp_size),
+    Kd(Kd_data, Kd_size),
+    w_qdd(w_qdd_data, w_qdd_size),
+    integrator(gains_data, gains_size,
+               clamps_data, clamps_size),
+    qdd_bounds(qdd_min_data, qdd_min_size, 
+               qdd_max_data, qdd_max_size)
+    {};
+  Map<VectorXd> Kp;
+  Map<VectorXd> Kd;
+  Map<VectorXd> w_qdd;
+
+  double damping_ratio;
+  IntegratorParams integrator;
+  QDDBounds qdd_bounds;
+};
 

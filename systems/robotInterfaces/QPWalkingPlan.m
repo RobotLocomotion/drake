@@ -263,7 +263,7 @@ classdef QPWalkingPlan < QPControllerPlan
       pelvis_has_tracking = false;
       for j = 1:length(obj.link_constraints)
         qp_input.body_motion_data(j).body_id = obj.link_constraints(j).link_ndx;
-        if qp_input.body_motion_data(j).body_id == rpc.pelvis_body_id
+        if qp_input.body_motion_data(j).body_id == rpc.body_ids.pelvis
           pelvis_has_tracking = true;
         end
         body_t_ind = find(obj.link_constraints(j).ts<=t,1,'last');
