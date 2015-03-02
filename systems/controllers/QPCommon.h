@@ -155,6 +155,8 @@ struct NewQPControllerData {
   MatrixXd J_xy, Jdot_xy;
   MatrixXd Hqp;
   RowVectorXd fqp;
+  VectorXd qdd_lb;
+  VectorXd qdd_ub;
   
   // momentum controller-specific
   MatrixXd Ag, Agdot; // centroidal momentum matrix

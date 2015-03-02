@@ -10,7 +10,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	if (nrhs<1) mexErrMsgTxt("usage: mask=getActiveSupportsmex(ptr,x,support_data,contact_sensor,contact_threshold,terrain_height))");
 	if (nlhs<1) mexErrMsgTxt("please take at least one output");
 
-	struct QPControllerData* pdata;
+	struct NewQPControllerData* pdata;
 	const mxArray* pm;
 
 	// first get the ptr back from matlab
