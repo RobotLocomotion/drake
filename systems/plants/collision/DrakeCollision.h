@@ -1,6 +1,7 @@
 #ifndef __DrakeCollision_H__
 #define __DrakeCollision_H__
 
+#include <map>
 #include <memory>
 #include <set>
 #include <Eigen/Dense>
@@ -40,55 +41,157 @@ namespace DrakeCollision
     BULLET
   };
 
+  class DLLEXPORT Geometry {
+    public:
+      const Shape getShape() const;
+    protected:
+      Geometry(Shape shape) : shape(shape) {};
+      const Shape shape;
+  };
+
+  class DLLEXPORT Sphere: public Geometry {
+    public:
+      Sphere(double radius);
+      double radius;
+  };
+
+  class DLLEXPORT Box : public Geometry {
+    public:
+      Box(const Eigen::Vector3d& size);
+      Eigen::Vector3d size;
+  };
+
+  class DLLEXPORT Cylinder : public Geometry {
+    public:
+      Cylinder(double radius, double length);
+      double radius;
+      double length;
+  };
+
+  class DLLEXPORT Capsule : public Geometry {
+    public:
+      Capsule(double radius, double length);
+      double radius;
+      double length;
+  };
+
+  class DLLEXPORT Mesh : public Geometry {
+    public:
+      Mesh(const Eigen::Matrix3Xd& points);
+      Eigen::Matrix3Xd points;
+  };
+
+  typedef uintptr_t ElementId;
+  typedef std::pair<ElementId, ElementId> ElementIdPair;
+
+  class DLLEXPORT PointPair {
+    public:
+      PointPair(const ElementId idA, const ElementId idB,
+                const Eigen::Vector3d ptA, const Eigen::Vector3d ptB,
+                const Eigen::Vector3d normal, double distance)
+      : idA(idA), idB(idB), ptA(ptA),
+        ptB(ptB), normal(normal),
+        distance(distance)
+      {}
+
+      const ElementId idA;
+      const ElementId idB;
+      const Eigen::Vector3d ptA;
+      const Eigen::Vector3d ptB;
+      const Eigen::Vector3d normal;
+      double distance;
+
+      void getResults(Eigen::Vector3d& ptA, Eigen::Vector3d& ptB, Eigen::Vector3d& normal);
+      void getResults(Eigen::Vector3d& ptA, Eigen::Vector3d& ptB, Eigen::Vector3d& normal, double& distance);
+
+      bool operator < (const PointPair& pt) const
+      {
+        return (distance < pt.distance);
+      }
+
+      bool operator == (const PointPair& pt) const
+      {
+        return (distance == pt.distance);
+      }
+
+      bool operator != (const PointPair& pt) const
+      {
+        return (distance != pt.distance);
+      }
+
+      bool operator <= (const PointPair& pt) const
+      {
+        return (distance <= pt.distance);
+      }
+
+      bool operator > (const PointPair& pt) const
+      {
+        return (distance > pt.distance);
+      }
+
+      bool operator >= (const PointPair& pt) const
+      {
+        return (distance >= pt.distance);
+      }
+  };
+
+  class DLLEXPORT Element {
+    public:
+      Element(std::unique_ptr<Geometry> geometry, const Eigen::Matrix4d T_element_to_local = Eigen::Matrix4d::Identity());
+
+      const Eigen::Matrix4d& getWorldTransform() const; 
+
+      const Eigen::Matrix4d& getLocalTransform() const; 
+
+      virtual void updateWorldTransform(const Eigen::Matrix4d& T_local_to_world);
+
+      const Shape getShape() const;
+
+      ElementId getId() const;
+
+      const Geometry* getGeometry() const;
+
+      virtual bool isStatic() const { return false; };
+
+      virtual bool collidesWith( const Element* other) const { return true; };
+
+    protected:
+
+      virtual void setWorldTransform(const Eigen::Matrix4d& T_elem_to_world);
+      Eigen::Matrix4d T_element_to_world;
+      const Eigen::Matrix4d T_element_to_local;
+      std::unique_ptr<Geometry> geometry;
+      const ElementId id;
+
+    public:
+      EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  };
+
   class DLLEXPORT Model {
   public:
-    virtual void resize(int num_bodies) {};
     
-    virtual void addElement(const int body_idx, const int parent_idx, 
-			    const Eigen::Matrix4d& T_element_to_link, Shape shape, 
-			    const std::vector<double>& params, 
-          const std::string& group_name,
-			    bool is_static,
-          bool use_margins = true) {};
+    virtual ElementId addElement(std::unique_ptr<Element> element);
 
-    virtual bool updateElementsForBody(const int body_idx, 
-				       const Eigen::Matrix4d& T_link_to_world) { return false; };
-      
-    virtual bool setCollisionFilter(const int body_idx, const uint16_t group, 
-				    const uint16_t mask) { return false; };
+    virtual const Element* readElement(ElementId id);
 
-    virtual bool closestPointsAllBodies(std::vector<int>& bodyA_idx, 
-					std::vector<int>& bodyB_idx, 
-					Eigen::MatrixXd& ptsA, Eigen::MatrixXd& ptsB,
-					Eigen::MatrixXd& normal, 
-					Eigen::VectorXd& distance,
-					const std::vector<int>& bodies_idx,
-          const std::set<std::string>& active_element_groups) { return false; };
+    virtual void updateModel() {};
 
-    bool closestPointsAllBodies(std::vector<int>& bodyA_idx, 
-        std::vector<int>& bodyB_idx, 
-        Eigen::MatrixXd& ptsA, Eigen::MatrixXd& ptsB,
-        Eigen::MatrixXd& normal, 
-        Eigen::VectorXd& distance,
-        const std::set<std::string>& active_element_groups);
+    virtual bool updateElementWorldTransform(const ElementId id, 
+                                             const Eigen::Matrix4d& T_local_to_world);
 
-    bool closestPointsAllBodies(std::vector<int>& bodyA_idx, 
-        std::vector<int>& bodyB_idx, 
-        Eigen::MatrixXd& ptsA, Eigen::MatrixXd& ptsB,
-        Eigen::MatrixXd& normal, 
-        Eigen::VectorXd& distance,
-        const std::vector<int>& bodies_idx);
+    virtual bool closestPointsAllToAll(const std::vector<ElementId>& ids_to_check, 
+                                       const bool use_margins,
+                                       std::vector<PointPair>& closest_points)
+    { return false; };
 
-    bool closestPointsAllBodies(std::vector<int>& bodyA_idx, 
-        std::vector<int>& bodyB_idx, 
-        Eigen::MatrixXd& ptsA, Eigen::MatrixXd& ptsB,
-        Eigen::MatrixXd& normal, 
-        Eigen::VectorXd& distance);
+    virtual bool collisionPointsAllToAll(const bool use_margins,
+                                         std::vector<PointPair>& points)
+    { return false; };
 
-    virtual bool allCollisions(std::vector<int>& bodyA_idx, 
-			       std::vector<int>& bodyB_idx, 
-			       Eigen::MatrixXd& ptsA, Eigen::MatrixXd& ptsB) { return false; };
-                                  
+    virtual bool closestPointsPairwise(const std::vector<ElementIdPair>& id_pairs, 
+                                       const bool use_margins,
+                                       std::vector<PointPair>& closest_points)
+    { return false; };
     //
     // Performs raycasting collision detecting (like a LIDAR / laser rangefinder)
     //
@@ -96,18 +199,15 @@ namespace DrakeCollision
     // @param ray_endpoint Vector3d specifying a second point on the ray in world coordinates
     // @param distance to the first collision, or -1 on no collision
     //
-    virtual bool collisionRaycast(const Eigen::Matrix3Xd &origin, const Eigen::Matrix3Xd &ray_endpoint, Eigen::VectorXd &distances) { return false; };
+    virtual bool collisionRaycast(const Eigen::Matrix3Xd &origin, const Eigen::Matrix3Xd &ray_endpoint, bool use_margins, Eigen::VectorXd &distances) { return false; };
 
     protected:
-      virtual const std::vector<int> bodyIndices() const;
-      virtual const std::set<std::string> elementGroupNames() const;
+      std::map< ElementId, std::unique_ptr<Element> >  elements;
   };
 
-  DLLEXPORT std::shared_ptr<Model> newModel();
+  DLLEXPORT std::unique_ptr<Model> newModel();
 
-  DLLEXPORT std::shared_ptr<Model> newModel(ModelType model_type);
-
-
+  DLLEXPORT std::unique_ptr<Model> newModel(ModelType model_type);
   
   typedef std::bitset<16> bitmask;
   // Constants

@@ -114,43 +114,45 @@ bool parseVisual(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyManipu
 
 bool parseCollision(int body_index, TiXmlElement* node, RigidBodyManipulator* model)
 {
-  Isometry3d T = Isometry3d::Identity();
+  Matrix4d T_element_to_link = Matrix4d::Identity();
   TiXmlElement* origin = node->FirstChildElement("origin");
   if (origin)
-    poseAttributesToTransform(origin, T.matrix());
+    poseAttributesToTransform(origin, T_element_to_link);
 
   bool create_collision_element(true);
   const char* attr;
-  DrakeCollision::Shape shape = DrakeCollision::UNKNOWN;
-  vector<double> params;
+  string group_name;
+
+  attr = node->Attribute("group");
+  if (attr) {
+    group_name = attr;
+  } else {
+    group_name = "default";;
+  }
 
   TiXmlElement* geometry_node = node->FirstChildElement("geometry");
   if (!geometry_node)
     return false;
 
   TiXmlElement* shape_node;
+  unique_ptr<DrakeCollision::Geometry> geometry;
   if ((shape_node = geometry_node->FirstChildElement("box"))) {
-    shape = DrakeCollision::BOX;
     double x = 0, y = 0, z = 0;
     attr = shape_node->Attribute("size");
     if (attr) {
       stringstream s(attr);
       s >> x >> y >> z;
     }
-    params.push_back(x);
-    params.push_back(y);
-    params.push_back(z);
+    geometry = unique_ptr<DrakeCollision::Geometry>(new DrakeCollision::Box(Vector3d(x,y,z)));
   } else if ((shape_node = geometry_node->FirstChildElement("sphere"))) {
-    shape = DrakeCollision::SPHERE;
     double r = 0;
     attr = shape_node->Attribute("radius");
     if (attr) {
       stringstream s(attr);
       s >> r;
     }
-    params.push_back(r);
+    geometry = unique_ptr<DrakeCollision::Geometry>(new DrakeCollision::Sphere(r));
   } else if ((shape_node = geometry_node->FirstChildElement("cylinder"))) {
-    shape = DrakeCollision::CYLINDER;
     double r = 0, l = 0;
     attr = shape_node->Attribute("radius");
     if (attr) {
@@ -162,10 +164,8 @@ bool parseCollision(int body_index, TiXmlElement* node, RigidBodyManipulator* mo
       stringstream s(attr);
       s >> l;
     }
-    params.push_back(r);
-    params.push_back(l);
+    geometry = unique_ptr<DrakeCollision::Geometry>(new DrakeCollision::Cylinder(r, l));
   } else if ((shape_node = geometry_node->FirstChildElement("capsule"))) {
-    shape = DrakeCollision::CAPSULE;
     double r = 0, l = 0;
     attr = shape_node->Attribute("radius");
     if (attr) {
@@ -177,10 +177,8 @@ bool parseCollision(int body_index, TiXmlElement* node, RigidBodyManipulator* mo
       stringstream s(attr);
       s >> l;
     }
-    params.push_back(r);
-    params.push_back(l);
+    geometry = unique_ptr<DrakeCollision::Geometry>(new DrakeCollision::Capsule(r, l));
   } else if ((shape_node = geometry_node->FirstChildElement("mesh"))) {
-    shape = DrakeCollision::MESH;
     cerr << "Warning: mesh collision elements will be ignored (until I re-implement the logic below sans boost)" << endl;
     create_collision_element = false;
     /*
@@ -208,7 +206,8 @@ bool parseCollision(int body_index, TiXmlElement* node, RigidBodyManipulator* mo
   }
 
   if (create_collision_element) {
-    model->addCollisionElement(body_index,T.matrix(),shape,params);
+    model->addCollisionElement(move(geometry), model->bodies[body_index], 
+                               T_element_to_link, group_name);
   }
 
   return true;

@@ -38,6 +38,35 @@ public:
 
   bool hasParent() const;
 
+  virtual void setCollisionFilter(const DrakeCollision::bitmask& group, 
+                                  const DrakeCollision::bitmask& mask);
+
+  const DrakeCollision::bitmask& getGroup() const { return group; };
+  void setGroup(const DrakeCollision::bitmask& group) { this->group = group; };
+
+  const DrakeCollision::bitmask& getMask() const { return mask; };
+  void setMask(const DrakeCollision::bitmask& mask) { this->mask = mask; };
+
+  void addToGroup(const DrakeCollision::bitmask& group) { this->group |= group; }; 
+  void ignoreGroup(const DrakeCollision::bitmask& group) { this->mask |= group; };
+  void collideWithGroup(const DrakeCollision::bitmask& group) { this->mask &= ~group; };
+
+  bool adjacentTo(const std::shared_ptr<RigidBody>& other) const
+  {
+      return ((parent==other && !(joint && joint->isFloating())) ||
+          (other->parent.get() == this && !(other->joint && other->joint->isFloating())));
+  };
+
+  bool collidesWith(const std::shared_ptr<RigidBody>& other) const
+  {
+    bool ignored = this == other.get() || adjacentTo(other) || (group & other->mask).any() || (other->group & mask).any();
+    return !ignored;
+  };
+
+  bool appendCollisionElementIds(const std::string& group_name, std::vector<DrakeCollision::ElementId>& ids) const;
+
+  bool appendCollisionElementIds(std::vector<DrakeCollision::ElementId>& ids) const;
+
 public:
   std::string linkname;
   std::string jointname; // FLOATINGBASE TODO: remove
@@ -53,6 +82,11 @@ public:
   Matrix4d Ttree;  // floatingbase TODO: replace with Isometry3d?
   Matrix4d T_body_to_joint;  // floatingbase TODO: replace with Isometry3d?
 
+  std::vector< DrakeCollision::ElementId > collision_element_ids;
+  std::map< std::string, std::vector<DrakeCollision::ElementId> > collision_element_groups;
+
+  DrakeCollision::bitmask group;
+  DrakeCollision::bitmask mask;
   MatrixXd contact_pts;
 
   std::set<int> ancestor_dofs;
@@ -96,6 +130,19 @@ public:
   Gradient<Isometry3d::MatrixType, Eigen::Dynamic>::type dTdq_new;
 
   friend std::ostream& operator<<( std::ostream &out, const RigidBody &b);
+
+  class CollisionElement : public DrakeCollision::Element
+  {
+    public:
+      CollisionElement(std::unique_ptr<DrakeCollision::Geometry> geometry,
+                       const Matrix4d T_element_to_link, std::shared_ptr<RigidBody> body);
+
+      const std::shared_ptr<RigidBody>& getBody() const;
+
+      virtual bool collidesWith( const DrakeCollision::Element* other) const;
+    protected:
+      std::shared_ptr<RigidBody> body;
+  };
 
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

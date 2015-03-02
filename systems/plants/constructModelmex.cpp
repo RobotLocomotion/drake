@@ -216,34 +216,34 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
         memcpy(T.data(), mxGetPr(mxGetProperty(pShape,0,"T")), sizeof(double)*4*4);
         auto shape = (DrakeCollision::Shape)static_cast<int>(mxGetScalar(mxGetProperty(pShape,0,"bullet_shape_id")));
         vector<double> params_vec;
+        unique_ptr<DrakeCollision::Geometry> geometry;
         switch (shape) {
           case DrakeCollision::BOX:
           {
             double* params = mxGetPr(mxGetProperty(pShape,0,"size"));
-            params_vec.push_back(params[0]);
-            params_vec.push_back(params[1]);
-            params_vec.push_back(params[2]);
+            geometry = unique_ptr<DrakeCollision::Geometry>(new DrakeCollision::Box(Vector3d(params[0],params[1],params[2])));
           }
             break;
           case DrakeCollision::SPHERE:
           {
-            params_vec.push_back(*mxGetPr(mxGetProperty(pShape,0,"radius")));
+            double r(*mxGetPr(mxGetProperty(pShape,0,"radius")));
+            geometry = unique_ptr<DrakeCollision::Geometry>(new DrakeCollision::Sphere(r));
           }
             break;
           case DrakeCollision::CYLINDER:
           {
-            params_vec.push_back(*mxGetPr(mxGetProperty(pShape,0,"radius")));
-            params_vec.push_back(*mxGetPr(mxGetProperty(pShape,0,"len")));
+            double r(*mxGetPr(mxGetProperty(pShape,0,"radius")));
+            double l(*mxGetPr(mxGetProperty(pShape,0,"len")));
+            geometry = unique_ptr<DrakeCollision::Geometry>(new DrakeCollision::Cylinder(r, l));
           }
             break;
           case DrakeCollision::MESH:
           {
             mxArray* pPoints;
             mexCallMATLAB(1,&pPoints,1,&pShape,"getPoints");
-            double* params = mxGetPr(pPoints);
-            int n_params = (int) mxGetNumberOfElements(pPoints);
-            for (int k=0; k<n_params; k++)
-              params_vec.push_back(params[k]);
+            double n_pts = static_cast<int>(mxGetN(pPoints));
+            Map<Matrix3Xd> pts(mxGetPr(pPoints),3,n_pts);
+            geometry = unique_ptr<DrakeCollision::Geometry>(new DrakeCollision::Mesh(pts));
             mxDestroyArray(pPoints);
             // The element-to-link transform is applied in
             // RigidBodyMesh/getPoints - don't apply it again!
@@ -252,21 +252,25 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
             break;
           case DrakeCollision::CAPSULE:
           {
-            params_vec.push_back(*mxGetPr(mxGetProperty(pShape,0,"radius")));
-            params_vec.push_back(*mxGetPr(mxGetProperty(pShape,0,"len")));
+            double r(*mxGetPr(mxGetProperty(pShape,0,"radius")));
+            double l(*mxGetPr(mxGetProperty(pShape,0,"len")));
+            geometry = unique_ptr<DrakeCollision::Geometry>(new DrakeCollision::Capsule(r, l));
           }
             break;
           default:
             // intentionally do nothing..
             break;
         }
-
-        model->addCollisionElement(i,T,shape,params_vec,group_name);
-        if (!model->bodies[i]->hasParent()) {
-          model->updateCollisionElements(i);  // update static objects only once - right here on load
-        }
-
+        //DEBUG
+        //cout << "constructModelmex: geometry = " << geometry.get() << endl;
+        //END_DEBUG
+        model->addCollisionElement(move(geometry), model->bodies[i], 
+                                   T, group_name);
       }
+      if (!model->bodies[i]->hasParent()) {
+        model->updateCollisionElements(model->bodies[i]);  // update static objects only once - right here on load
+      }
+
 
 
       // Set collision filtering bitmasks
@@ -277,7 +281,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
       //cout << "constructModelmex: Group: " << *group << endl;
       //cout << "constructModelmex: Mask " << *mask << endl;
       //END_DEBUG
-      model->setCollisionFilter(i,*group,*mask);
+      model->bodies[i]->setCollisionFilter(*group,*mask);
     }
   }
 

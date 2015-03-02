@@ -265,7 +265,7 @@ void rotz(double theta, Matrix3d &M, Matrix3d &dM, Matrix3d &ddM)
 
 
 RigidBodyManipulator::RigidBodyManipulator(int ndof, int num_featherstone_bodies, int num_rigid_body_objects, int num_rigid_body_frames)
-  :  collision_model(DrakeCollision::newModel()), collision_model_no_margins(DrakeCollision::newModel())
+  :  collision_model(DrakeCollision::newModel())
 {
   use_new_kinsol = false;
   num_positions=0; NB=0; num_bodies=0; num_frames=0;
@@ -274,7 +274,7 @@ RigidBodyManipulator::RigidBodyManipulator(int ndof, int num_featherstone_bodies
 }
 
 RigidBodyManipulator::RigidBodyManipulator(const std::string &urdf_filename)
-  :  collision_model(DrakeCollision::newModel()), collision_model_no_margins(DrakeCollision::newModel())
+  :  collision_model(DrakeCollision::newModel())
 {
   num_positions=0; NB=0; num_bodies=0; num_frames=0;
   a_grav << 0,0,0,0,0,-9.81;
@@ -361,9 +361,6 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
 //  for (int i = 0; i < num_bodies; i++) {
 //    bodies[i]->setN(num_dof);
 //  }
-
-  collision_model->resize(num_bodies);
-  collision_model_no_margins->resize(num_bodies);
 
   num_frames = num_rigid_body_frames;
   frames.resize(num_frames);
@@ -487,7 +484,7 @@ void RigidBodyManipulator::compile(void)
 
   for (int i=0; i<num_bodies; i++) {
     if (!bodies[i]->hasParent())
-      updateCollisionElements(i);  // update static objects (not done in the kinematics loop)
+      updateCollisionElements(bodies[i]);  // update static objects (not done in the kinematics loop)
 
     // precompute sparsity pattern for each rigid body
     bodies[i]->computeAncestorDOFs(this); // TODO floating base : remove this
@@ -499,45 +496,72 @@ void RigidBodyManipulator::compile(void)
   initialized=true;
 }
 
-void RigidBodyManipulator::addCollisionElement(const int body_index, const Matrix4d & T_elem_to_lnk, DrakeCollision::Shape shape, vector<double> params, string group_name)
+DrakeCollision::ElementId RigidBodyManipulator::addCollisionElement(unique_ptr<DrakeCollision::Geometry> geometry, const shared_ptr<RigidBody>& body, const Matrix4d& T_element_to_link, string group_name)
 {
-  bool is_static = (body_index==0);
-  int parent_index = -1;
-  if (bodies[body_index]->hasParent()) parent_index = bodies[body_index]->parent->body_index;
-
-  collision_model->addElement(body_index,parent_index,T_elem_to_lnk,shape,params,group_name,is_static, true);
-  collision_model_no_margins->addElement(body_index,parent_index,T_elem_to_lnk,shape,params,group_name,is_static, false);
+  DrakeCollision::ElementId id(collision_model->addElement(unique_ptr<DrakeCollision::Element>(new RigidBody::CollisionElement(move(geometry), T_element_to_link, body))));
+  if (id != 0) {
+    body->collision_element_ids.push_back(id);
+    body->collision_element_groups[group_name].push_back(id);
+  }
+  return id;
 }
 
-void RigidBodyManipulator::updateCollisionElements(const int body_ind)
+void RigidBodyManipulator::updateCollisionElements(const shared_ptr<RigidBody>& body)
 {
-  collision_model->updateElementsForBody(body_ind, bodies[body_ind]->T);
-  collision_model_no_margins->updateElementsForBody(body_ind, bodies[body_ind]->T);
+  for (auto id_iter = body->collision_element_ids.begin(); 
+       id_iter != body->collision_element_ids.end(); 
+       ++id_iter) {
+    if (use_new_kinsol) {
+      collision_model->updateElementWorldTransform(*id_iter, body->T_new.matrix());
+    } else {
+      collision_model->updateElementWorldTransform(*id_iter, body->T);
+    }
+  }
 };
-
-bool RigidBodyManipulator::setCollisionFilter(const int body_ind,
-                                              const uint16_t group,
-                                              const uint16_t mask)
-{
-  //DEBUG
-  //cout << "RigidBodyManipulator::setCollisionFilter: Group: " << group << endl;
-  //cout << "RigidBodyManipulator::setCollisionFilter: Mask: " << mask << endl;
-  //END_DEBUG
-  bool status_one = collision_model->setCollisionFilter(body_ind,group,mask);
-  bool status_two = collision_model_no_margins->setCollisionFilter(body_ind, group, mask);
-  assert(status_one == status_two);
-  return status_one && status_two;
-}
 
 bool RigidBodyManipulator::collisionRaycast(const Matrix3Xd &origins,
                                             const Matrix3Xd &ray_endpoints,
                                             VectorXd &distances,
                                             bool use_margins )
 {
-  if (use_margins)
-    return collision_model->collisionRaycast(origins, ray_endpoints, distances);
-  else
-    return collision_model_no_margins->collisionRaycast(origins, ray_endpoints, distances);
+  return collision_model->collisionRaycast(origins, ray_endpoints, use_margins, distances);
+}
+
+
+bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
+                                            MatrixXd& normal,
+                                            MatrixXd& xA,
+                                            MatrixXd& xB,
+                                            vector<int>& bodyA_idx,
+                                            vector<int>& bodyB_idx,
+                                            const vector<DrakeCollision::ElementId>& ids_to_check,
+                                            bool use_margins)
+{
+  vector<DrakeCollision::PointPair> points;
+  bool points_found = collision_model->closestPointsAllToAll(ids_to_check, use_margins, points);
+  //DEBUG
+  //cout << "RigidBodyManipulator::collisionDetect: points.size() = " << points.size() << endl;
+  //END_DEBUG
+
+  xA = MatrixXd::Zero(3,points.size());
+  xB = MatrixXd::Zero(3,points.size());
+  normal = MatrixXd::Zero(3,points.size());
+  phi = VectorXd::Zero(points.size());
+
+  Vector3d ptA, ptB, n;
+  double distance;
+  for (int i=0; i<points.size(); ++i) {
+    points[i].getResults(ptA, ptB, n, distance);
+    xA.col(i) = ptA;
+    xB.col(i) = ptB;
+    normal.col(i) = n;
+    phi[i] = distance;
+    const RigidBody::CollisionElement* elementA = dynamic_cast<const RigidBody::CollisionElement*>(collision_model->readElement(points[i].idA));
+    bodyA_idx.push_back(elementA->getBody()->body_index);
+    const RigidBody::CollisionElement* elementB = dynamic_cast<const RigidBody::CollisionElement*>(collision_model->readElement(points[i].idB));
+    bodyB_idx.push_back(elementB->getBody()->body_index);
+  }
+  return points_found;
 }
 
 bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
@@ -550,12 +574,19 @@ bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
                                             const set<string>& active_element_groups,
                                             bool use_margins)
 {
-  if (use_margins)
-    return collision_model->closestPointsAllBodies(bodyA_idx,bodyB_idx,xA,xB,
-      normal,phi,bodies_idx,active_element_groups);
-  else
-    return collision_model_no_margins->closestPointsAllBodies(bodyA_idx,bodyB_idx,xA,xB,
-      normal,phi,bodies_idx,active_element_groups);
+  vector<DrakeCollision::ElementId> ids_to_check;
+  for (auto body_idx_iter = bodies_idx.begin();
+       body_idx_iter !=bodies_idx.end();
+       ++body_idx_iter) {
+    if (*body_idx_iter > 0 && *body_idx_iter < bodies.size()) {
+      for (auto group_iter = active_element_groups.begin();
+          group_iter != active_element_groups.end();
+          ++group_iter) {
+        bodies[*body_idx_iter]->appendCollisionElementIds(*group_iter, ids_to_check);
+      }
+    }
+  }
+  return collisionDetect(phi, normal, xA, xB, bodyA_idx, bodyB_idx, ids_to_check, use_margins);
 }
 
 bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
@@ -567,12 +598,15 @@ bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
                                             const vector<int>& bodies_idx,
                                             bool use_margins)
 {
-  if (use_margins)
-    return collision_model->closestPointsAllBodies(bodyA_idx,bodyB_idx,xA,xB,
-      normal,phi,bodies_idx);
-  else
-    return collision_model_no_margins->closestPointsAllBodies(bodyA_idx,bodyB_idx,xA,xB,
-      normal,phi,bodies_idx);
+  vector<DrakeCollision::ElementId> ids_to_check;
+  for (auto body_idx_iter = bodies_idx.begin();
+       body_idx_iter !=bodies_idx.end();
+       ++body_idx_iter) {
+    if (*body_idx_iter > 0 && *body_idx_iter < bodies.size()) {
+      bodies[*body_idx_iter]->appendCollisionElementIds(ids_to_check);
+    }
+  }
+  return collisionDetect(phi, normal, xA, xB, bodyA_idx, bodyB_idx, ids_to_check, use_margins);
 }
 
 bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
@@ -584,12 +618,17 @@ bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
                                             const set<string>& active_element_groups,
                                             bool use_margins)
 {
-  if (use_margins)
-    return collision_model->closestPointsAllBodies(bodyA_idx,bodyB_idx,xA,xB,
-      normal,phi,active_element_groups);
-  else
-    return collision_model_no_margins->closestPointsAllBodies(bodyA_idx,bodyB_idx,xA,xB,
-      normal,phi,active_element_groups);
+  vector<DrakeCollision::ElementId> ids_to_check;
+  for (auto body_iter = bodies.begin();
+       body_iter !=bodies.end();
+       ++body_iter) {
+    for (auto group_iter = active_element_groups.begin();
+        group_iter != active_element_groups.end();
+        ++group_iter) {
+      (*body_iter)->appendCollisionElementIds(*group_iter, ids_to_check);
+    }
+  }
+  return collisionDetect(phi, normal, xA, xB, bodyA_idx, bodyB_idx, ids_to_check, use_margins);
 }
 
 bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
@@ -600,21 +639,42 @@ bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
                                             vector<int>& bodyB_idx,
                                             bool use_margins)
 {
-  if (use_margins)
-    return collision_model->closestPointsAllBodies(bodyA_idx,bodyB_idx,xA,xB,normal,phi);
-  else
-    return collision_model_no_margins->closestPointsAllBodies(bodyA_idx,bodyB_idx,xA,xB,normal,phi);
+  vector<DrakeCollision::ElementId> ids_to_check;
+  for (auto body_iter = bodies.begin();
+       body_iter !=bodies.end();
+       ++body_iter) {
+    (*body_iter)->appendCollisionElementIds(ids_to_check);
+  }
+  return collisionDetect(phi, normal, xA, xB, bodyA_idx, bodyB_idx, ids_to_check, use_margins);
 }
 
 bool RigidBodyManipulator::allCollisions(vector<int>& bodyA_idx,
                                          vector<int>& bodyB_idx,
-                                         MatrixXd& ptsA, MatrixXd& ptsB,
+                                         MatrixXd& xA_in_world, MatrixXd& xB_in_world,
                                          bool use_margins)
 {
-  if (use_margins)
-    return collision_model->allCollisions(bodyA_idx, bodyB_idx, ptsA, ptsB);
-  else
-    return collision_model_no_margins->allCollisions(bodyA_idx, bodyB_idx, ptsA, ptsB);
+  vector<DrakeCollision::PointPair> points;
+  bool points_found = collision_model->collisionPointsAllToAll(use_margins, points);
+
+  xA_in_world = MatrixXd::Zero(3,points.size());
+  xB_in_world = MatrixXd::Zero(3,points.size());
+  //normal = MatrixXd::Zero(3,points.size());
+  //phi = VectorXd::Zero(points.size());
+
+  Vector3d ptA, ptB, n;
+  double distance;
+  for (int i=0; i<points.size(); ++i) {
+    points[i].getResults(ptA, ptA, n, distance);
+    xA_in_world.col(i) = ptA;
+    xB_in_world.col(i) = ptB;
+    //normal.col(i) = n;
+    //phi[i] = distance;
+    const RigidBody::CollisionElement* elementA = dynamic_cast<const RigidBody::CollisionElement*>(collision_model->readElement(points[i].idA));
+    bodyA_idx.push_back(elementA->getBody()->body_index);
+    const RigidBody::CollisionElement* elementB = dynamic_cast<const RigidBody::CollisionElement*>(collision_model->readElement(points[i].idB));
+    bodyB_idx.push_back(elementB->getBody()->body_index);
+  }
+  return points_found;
 }
 
 
@@ -892,12 +952,11 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
 
     if (bodies[i]->hasParent()) {
       //DEBUG
-      //cout << "RigidBodyManipulator::doKinematics: updating body " << i << " ..." << endl;
+      //cout << "RigidBodyManipulator::doKinematics: updating " << bodies[i]->linkname << " ..." << endl;
       //END_DEBUG
-      collision_model->updateElementsForBody(i,bodies[i]->T);
-      collision_model_no_margins->updateElementsForBody(i,bodies[i]->T);
+      updateCollisionElements(bodies[i]);
       //DEBUG
-      //cout << "RigidBodyManipulator::doKinematics: done updating body " << i << endl;
+      //cout << "RigidBodyManipulator::doKinematics: done updating " << bodies[i]->linkname << endl;
       //END_DEBUG
     }
   }
@@ -1066,8 +1125,7 @@ void RigidBodyManipulator::doKinematicsNew(const MatrixBase<DerivedQ>& q, const 
       }
 
       // Update collision geometries
-      collision_model->updateElementsForBody(i,body.T_new.matrix());
-      collision_model_no_margins->updateElementsForBody(i,body.T_new.matrix());
+      updateCollisionElements(bodies[i]);
     }
     else {
       body.T_new = Isometry3d(body.Ttree);

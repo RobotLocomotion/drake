@@ -13,7 +13,8 @@ using namespace Eigen;
 
 namespace DrakeCollision
 {
-  shared_ptr<Model> newModel()
+
+  unique_ptr<Model> newModel()
   {
 #ifdef BULLET_COLLISION
     return newModel(BULLET);
@@ -22,15 +23,15 @@ namespace DrakeCollision
 #endif
   }
 
-  shared_ptr<Model> newModel(ModelType model_type)
+  unique_ptr<Model> newModel(ModelType model_type)
   {
     switch (model_type) {
       case NONE:
-        return shared_ptr<Model>(new Model());
+        return unique_ptr<Model>(new Model());
         break;
       case BULLET:
 #ifdef BULLET_COLLISION
-        return shared_ptr<Model>(new BulletModel());
+        return unique_ptr<Model>(new BulletModel());
 #else
         cerr << "Recompile with Bullet enabled (-DBULLET_COLLISION) to use Bullet collision models." << endl;
 #endif
@@ -38,7 +39,7 @@ namespace DrakeCollision
       default:
         cerr << model_type << " is not a recognized collision model type." << endl;
     }
-    return shared_ptr<Model>();
+    return unique_ptr<Model>();
   };
   
 
@@ -76,47 +77,93 @@ namespace DrakeCollision
     return ("Unsupported collision shape: " + shape_str + ". " +  badShapeException::what()).c_str();
   }
 
-  bool Model::closestPointsAllBodies(std::vector<int>& bodyA_idx, 
-      std::vector<int>& bodyB_idx, 
-      MatrixXd& ptsA, MatrixXd& ptsB,
-      MatrixXd& normal, 
-      VectorXd& distance,
-      const std::set<std::string>& active_element_groups)
+  Element::Element(unique_ptr<Geometry> geometry, const Matrix4d T_element_to_local) : geometry(move(geometry)), T_element_to_local(T_element_to_local), id((ElementId) this) {}
+
+  const Matrix4d& Element::getWorldTransform() const
   {
-    return closestPointsAllBodies(bodyA_idx,bodyB_idx,ptsA,ptsB,normal,distance,
-        bodyIndices(),active_element_groups);
+    return T_element_to_world;
   }
 
-  bool Model::closestPointsAllBodies(std::vector<int>& bodyA_idx, 
-      std::vector<int>& bodyB_idx, 
-      MatrixXd& ptsA, MatrixXd& ptsB,
-      MatrixXd& normal, 
-      VectorXd& distance,
-      const std::vector<int>& bodies_idx)
+  const Matrix4d& Element::getLocalTransform() const
   {
-    return closestPointsAllBodies(bodyA_idx,bodyB_idx,ptsA,ptsB,normal,distance,
-        bodies_idx,elementGroupNames());
+    return T_element_to_local;
   }
 
-  bool Model::closestPointsAllBodies(std::vector<int>& bodyA_idx, 
-      std::vector<int>& bodyB_idx, 
-      MatrixXd& ptsA, MatrixXd& ptsB,
-      MatrixXd& normal, 
-      VectorXd& distance)
+  const Shape Element::getShape() const
   {
-    return closestPointsAllBodies(bodyA_idx,bodyB_idx,ptsA,ptsB,normal,distance,
-        bodyIndices(),elementGroupNames());
+    return geometry->getShape();
   }
 
-  const std::vector<int> Model::bodyIndices() const 
+  const Geometry* Element::getGeometry() const
   {
-    const std::vector<int> bodies_idx;
-    return bodies_idx;
+    return geometry.get();
   }
-  const std::set<std::string> Model::elementGroupNames() const 
+
+  ElementId Element::getId() const
   {
-    const std::set<std::string> active_element_groups;
-    return active_element_groups;
+    return id;
+  }
+
+  void Element::updateWorldTransform(const Eigen::Matrix4d& T_local_to_world)
+  {
+    setWorldTransform(T_local_to_world*(this->T_element_to_local));
+  }
+
+  void Element::setWorldTransform(const Matrix4d& T_element_to_world)
+  {
+    this->T_element_to_world = T_element_to_world;
+  }
+
+  const Shape Geometry::getShape() const
+  {
+    return shape;
+  }
+
+  Sphere::Sphere(double radius)
+    : Geometry(SPHERE), radius(radius) {}
+
+  Box::Box(const Eigen::Vector3d& size)
+    : Geometry(BOX), size(size) {}
+
+  Cylinder::Cylinder(double radius, double length)
+    : Geometry( CYLINDER), radius(radius), length(length) {}
+
+  Capsule::Capsule(double radius, double length)
+    : Geometry(CAPSULE), radius(radius), length(length) {}
+
+  Mesh::Mesh(const Eigen::Matrix3Xd& points) 
+    : Geometry(MESH), points(points) {}
+
+  ElementId Model::addElement(std::unique_ptr<Element> element)
+  {
+    if ((element != nullptr) && (element->getGeometry() != nullptr)) {
+      ElementId id = element->getId();
+      this->elements.insert(make_pair(id, move(element)));
+      return id;
+    } else {
+      return 0;
+    }
+  }
+
+  const Element* Model::readElement(ElementId id)
+  {
+    auto element_iter = elements.find(id);
+    if (element_iter != elements.end()) {
+      return element_iter->second.get();
+    } else {
+      return nullptr;
+    }
+  }
+
+  bool Model::updateElementWorldTransform(const ElementId id, const Matrix4d& T_elem_to_world)
+  {
+    auto elem_itr = elements.find(id);
+    if (elem_itr != elements.end()) {
+      elem_itr->second->updateWorldTransform(T_elem_to_world);
+      return true;
+    } else {
+      return false;
+    }
   }
 
 };
