@@ -53,12 +53,6 @@ public:
   Matrix4d Ttree;  // floatingbase TODO: replace with Isometry3d?
   Matrix4d T_body_to_joint;  // floatingbase TODO: replace with Isometry3d?
 
-  typedef struct _CollisionElement {
-    DrakeCollision::Shape shape;
-    std::vector<double> params;
-    Isometry3d T;
-  } CollisionElement;
-  std::vector<CollisionElement> collision_elements;
   MatrixXd contact_pts;
 
   std::set<int> ancestor_dofs;
