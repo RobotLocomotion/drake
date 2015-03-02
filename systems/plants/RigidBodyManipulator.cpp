@@ -3,6 +3,7 @@
 
 //#include "mex.h"
 #include "drakeGeometryUtil.h"
+//#include "drakeContactConstraintsUtil.h"
 #include "RigidBodyManipulator.h"
 #include "DrakeJoint.h"
 
@@ -2812,92 +2813,25 @@ void RigidBodyManipulator::HandC(MatrixBase<DerivedG> const & q, MatrixBase<Deri
   }
 }
 
-//computes surface tangent vectors for many normal vectors at once
-void RigidBodyManipulator::surfaceTangents(Map<Matrix3xd> const & normals, std::vector< Map<Matrix3xd> > & tangents)
-{
-  const int numContactPairs = normals.cols();
-  for (int curNormal = 0 ; curNormal < numContactPairs; curNormal++) {
-    Matrix3kd d;
-    surfaceTangentsSingle(normals.col(curNormal), d);
-    for (int k = 0 ; k < BASIS_VECTOR_HALF_COUNT ; k++) {
-      tangents[k].col(curNormal) = d.col(k);
-    }
-  }
-}
+// Builds the part of the contact Jacobian matrix corresponding to bodyInd
+//  by accumulating positive contributions  from points on body A and negative 
+//  contributions from the points on body B.
+//  This is because the normal vectors(n = dphi/dq) are defined to be pointing from B to A
+// INPUTS
+//   bodyInd: the index of the body currently being processed
+//   bodyPoints: (3 x n) matrix where each column is a point on the body
+//   cindA: indexes into the original set of m contact pairs where the body appears as Body A
+//   cindB: indexes into the original set of m contact pairs where the body appears as Body B
+// NOTE 
+//   cindA and cindB are gotten by calling findContactIndexes in drakeContactConstraintsUtil
+//   cols(bodyPoints) = size(cindA) + size(cindB)
+// OUTPUTS:
+//   J: (3m x nq) The partial contact Jacobian matrix
+// NOTE
+//  After one call to the function, the n rows of the Jacobian matrix corresponding to bodyInd will be completed
+//  This function must be called with all bodyInds to finish the total accumulation of the contact Jacobian
 
-//computes surface tangent vectors for a single normal vector
-void RigidBodyManipulator::surfaceTangentsSingle(Vector3d const & normal, Matrix3kd & d)
-{
-  Vector3d t1,t2;
-  double theta;
-  
-  if (1.0 - normal(2) < EPSILON) { // handle the unit-normal case (since it's unit length, just check z)
-    t1 << 1.0, 0.0, 0.0;
-  } else if (1 + normal(2) < EPSILON) {
-    t1 << -1.0, 0.0, 0.0;  //same for the reflected case
-  } else {// now the general case
-    t1 << normal(1), -normal(0), 0.0;
-    t1 /= sqrt(normal(1)*normal(1) + normal(0)*normal(0));
-  }
-  
-  t2 = t1.cross(normal);
-
-  for (int k = 0 ; k < BASIS_VECTOR_HALF_COUNT ; k++) {
-    theta = k*M_PI/BASIS_VECTOR_HALF_COUNT;
-    d.col(k)=cos(theta)*t1 + sin(theta)*t2;
-  }
-}
-
-void RigidBodyManipulator::getUniqueBodiesSorted(VectorXi const & idxA, VectorXi const & idxB, std::vector<int> & bodyIndsSorted)
-{
-  size_t m = idxA.size();
-  std::set<int> bodyInds;
-  
-  for (int i = 0 ; i < m ; i++) {  
-    bodyInds.insert(idxA[i]);
-    bodyInds.insert(idxB[i]);
-  }
-  
-  bodyIndsSorted.clear();
-
-  for (std::set<int>::const_iterator citer = bodyInds.begin() ; citer != bodyInds.end() ; citer++) {
-    if ( *citer > 1 ) {
-      bodyIndsSorted.push_back(*citer);
-    }
-  }
-  
-  sort(bodyIndsSorted.begin(), bodyIndsSorted.end());
-}
-
-void RigidBodyManipulator::findContactIndexes(VectorXi const & idxList, const int bodyIdx, std::vector<int> & contactIdx)
-{
-  int m = idxList.size();
-  contactIdx.clear();
-  for (int i = 0 ; i < m ; i++) {
-    if (idxList[i] == bodyIdx) {
-      contactIdx.push_back(i); //zero-based index 
-    }
-  }
-}
-
-void RigidBodyManipulator::getBodyPoints(std::vector<int> const & cindA, std::vector<int> const & cindB, Matrix3xd const & xA, Matrix3xd const & xB, MatrixXd & bodyPoints)
-{
-  int i = 0;
-  int numPtsA = cindA.size();
-  int numPtsB = cindB.size();
-
-  bodyPoints.resize(4, numPtsA + numPtsB);
-
-  for (i = 0 ; i < numPtsA ; i++ ) {
-    bodyPoints.col(i) << xA.col(cindA[i]), 1.0; //homogeneous coordinates
-  }
-
-  for (i = 0 ; i < numPtsB ; i++ ) {
-    bodyPoints.col(numPtsA + i) << xB.col(cindB[i]), 1.0;
-  }
-}
-
-void RigidBodyManipulator::accumulateJacobian(const int bodyInd, MatrixXd const & bodyPoints, std::vector<int> const & cindA, std::vector<int> const & cindB, MatrixXd & J)
+void RigidBodyManipulator::accumulateContactJacobian(const int bodyInd, MatrixXd const & bodyPoints, std::vector<int> const & cindA, std::vector<int> const & cindB, MatrixXd & J)
 {
   const int nq = J.cols();
   const int numPts = bodyPoints.cols();
@@ -2919,7 +2853,10 @@ void RigidBodyManipulator::accumulateJacobian(const int bodyInd, MatrixXd const 
   }
 }
 
-void RigidBodyManipulator::accumulateSecondOrderJacobian(const int bodyInd, MatrixXd const & bodyPoints, std::vector<int> const & cindA, std::vector<int> const & cindB, MatrixXd & dJ)
+// Same as above but computes the second order contact Jacobian
+// OUTPUTS:
+//  dJ: (3m x nq^2) Second order contact Jacobian
+void RigidBodyManipulator::accumulateSecondOrderContactJacobian(const int bodyInd, MatrixXd const & bodyPoints, std::vector<int> const & cindA, std::vector<int> const & cindB, MatrixXd & dJ)
 {
   const int dJCols = dJ.cols(); //nq^2 instead of nq
   const int numPts = bodyPoints.cols();
@@ -2939,6 +2876,20 @@ void RigidBodyManipulator::accumulateSecondOrderJacobian(const int bodyInd, Matr
     dJ.block(3*cindB[x], 0, 3, dJCols) -= dJ_tmp.block(offset + 3*x, 0, 3, dJCols);
   }  
 }
+
+// Computes the full contact Jacobian and, optionally, the second order contact Jacobian.  
+//  This can be used to compute the contact normals in joint coordinates (n = dphi/dq), the surface tangents
+//  in joint coordinates (D), and their respective second derivatives with respect to q (dn, dD)
+// INPUTS
+//   idxA: (m x 1) an integer list of body indexes of body A for m possible contact pairs
+//   idxB: (m x 1) an integeer list of body indexes of body B for m possible contact pairs
+//   xA: (3 x m) each column of the matrix is a contact point in the body A frame for that contact pair
+//   xB: (3 x m) each column of the matrix is a contact point in the body B frame for that contact pair
+//   compute_second_derivatives: boolean flag to indicate that the second order contact Jacobian should also be computed
+// OUTPUTS
+//   J: (3m x nq)
+//  (optional outputs if compute_second_derivatives is true)
+//  dJ: (3m x nq^2) Second order contact Jacobian
 
 void RigidBodyManipulator::computeContactJacobians(Map<VectorXi> const & idxA, Map<VectorXi> const & idxB, Map<Matrix3xd> const & xA, Map<Matrix3xd> const & xB, const bool compute_second_derivatives, MatrixXd & J, MatrixXd & dJ)
 {
@@ -2960,9 +2911,9 @@ void RigidBodyManipulator::computeContactJacobians(Map<VectorXi> const & idxA, M
     findContactIndexes(idxA, bodyInd, cindA);
     findContactIndexes(idxB, bodyInd, cindB);
     getBodyPoints(cindA, cindB, xA, xB, bodyPoints);
-    accumulateJacobian(bodyInd, bodyPoints, cindA, cindB, J);
+    accumulateContactJacobian(bodyInd, bodyPoints, cindA, cindB, J);
     if (compute_second_derivatives) {
-      accumulateSecondOrderJacobian(bodyInd, bodyPoints, cindA, cindB, dJ);
+      accumulateSecondOrderContactJacobian(bodyInd, bodyPoints, cindA, cindB, dJ);
     }
   } 
 }

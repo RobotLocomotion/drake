@@ -27,6 +27,9 @@ if (eigen3_FOUND)
     LIBS -ldrakeUtil
     REQUIRES
     VERSION 0.0.1)
+  add_library(drakeContactConstraintsUtil SHARED drakeContactConstraintsUtil.cpp)
+  pods_install_libraries(drakeContactConstraintsUtil)
+  pods_install_headers(drakeContactConstraintsUtil.h DESTINATION drake)
 
   add_library(drakeGradientUtil SHARED drakeGradientUtil.cpp)
   pods_install_libraries(drakeGradientUtil)

@@ -30,8 +30,7 @@ inline mxArray* getTangentsArray(RigidBodyManipulator * const model, Map<Matrix3
     mxSetCell(tangentCells, k, cell);
   }
 
-  model->surfaceTangents(normals, tangents);
-
+  surfaceTangents(normals, tangents);
   return tangentCells;
 }
 

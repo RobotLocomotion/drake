@@ -18,6 +18,7 @@ if (eigen3_FOUND)
  target_link_libraries(drakeRBM drakeCollision)
  include_directories( joints )
  target_link_libraries(drakeRBM drakeJoints)
+ target_link_libraries(drakeRBM drakeContactConstraintsUtil)
 
   pods_install_libraries(drakeRBM)
   pods_install_headers(RigidBodyManipulator.h RigidBody.h RigidBodyFrame.h KinematicPath.h DESTINATION drake)
