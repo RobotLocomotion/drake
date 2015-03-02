@@ -74,7 +74,6 @@ VectorXd wholeBodyPID(QPControllerState *pstate, RigidBodyManipulator *r, double
   if (pstate->t_prev != 0) {
     dt = t - pstate->t_prev;
   }
-  pstate->t_prev = t;
   pstate->q_integrator_state = params->integrator->eta * pstate->q_integrator_state + params->integrator->gains.cwiseProduct(q_des - q_vec) * dt;
   pstate->q_integrator_state = pstate->q_integrator_state.array().max(-params->integrator->clamps.array());
   pstate->q_integrator_state = pstate->q_integrator_state.array().min(params->integrator->clamps.array());
@@ -96,6 +95,33 @@ VectorXd wholeBodyPID(QPControllerState *pstate, RigidBodyManipulator *r, double
   qddot_des = qddot_des.array().min(params->qdd_bounds->max.array());
   return qddot_des;
 }
+
+VectorXd velocityReference(QPControllerData *pdata, QPControllerState *pstate, double t, double *q, double *qd, VectorXd qdd, bool foot_contact[2], VRefIntegratorParams *params, double *ankle_inds) {
+  int nq = pdata->r->num_dof;
+  int nv = pdata->r->num_velocities;
+  assert(qdd.size() == nv);
+  Map<VectorXd> qd_vec(qd, nv);
+
+  double dt = 0;
+  if (pstate->t_prev != 0) {
+    dt = t - pstate->t_prev;
+  }
+
+  pstate->vref_integrator_state = (1-params->eta)*pstate->vref_integrator_state + params->eta*qd_vec + qdd*dt;
+
+  if (params->zero_ankles_on_contact && foot_contact[0] == 1) {
+    pstate->vref_integrator_state(ankle_inds[0]) = 0;
+  }
+  if (params->zero_ankles_on_contact && foot_contact[1] == 1) {
+    pstate->vref_integrator_state(ankle_inds[1]) = 0;
+  }
+  if (pstate->foot_contact_prev[0] != foot_contact[0])
+
+  pstate->foot_contact_prev[0] = foot_contact[0];
+  pstate->foot_contact_prev[1] = foot_contact[1];
+
+
+
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
@@ -206,13 +232,22 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   // height
   double terrain_height = mxGetScalar(prhs[narg++]); // nonzero if we're using DRCFlatTerrainMap
 
+  // ankle_inds (can be removed once findPositionIndices is supported in mex
+  int ankle_inds[2];
+  ankle_inds[0] = (int) mxGetScalar(myGetField(prhs[narg], "left"));
+  ankle_inds[1] = (int) mxGetScalar(myGetField(prhs[narg], "right"));
 
+  // params
   const mxArray* params_obj = prhs[narg++];
   WholeBodyParams *whole_body_params;
   whole_body_params = new struct WholeBodyParams;
   whole_body_params->integrator = new struct IntegratorParams;
   whole_body_params->qdd_bounds = new struct QDDBounds;
   parseWholeBodyParams(params_obj, pdata->r, whole_body_params);
+  VRefIntegratorParams *vref_integrator_params;
+  vref_integrator_params = new struct VRefIntegratorParams;
+  vref_integrator_params->zero_ankles_on_contact = (bool) mxGetScalar(myGetField(myGetProperty(params_obj, "vref_integrator"), "zero_ankles_on_contact"));
+  vref_integrator_params->eta = mxGetScalar(myGetField(myGetProperty(params_obj, "vref_integrator"), "eta"));
 
   pm = myGetProperty(params_obj,"slack_limit");
   pdata->slack_limit = mxGetScalar(pm);
@@ -655,81 +690,109 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   // use transpose because B_act is orthogonal
   y = pdata->B_act.transpose()*(pdata->H_act*qdd + pdata->C_act - D_act*beta);
   //y = pdata->B_act.jacobiSvd(ComputeThinU|ComputeThinV).solve(pdata->H_act*qdd + pdata->C_act - Jz_act.transpose()*lambda - D_act*beta);
-  
-  if (nlhs>0) {
-    plhs[0] = eigenToMatlab(y);
-  }
-  
-  if (nlhs>1) {
-    plhs[1] = eigenToMatlab(qdd);
-  }
 
-  if (nlhs>2) {
-    plhs[2] = mxCreateNumericMatrix(1,1,mxINT32_CLASS,mxREAL);
-    memcpy(mxGetData(plhs[2]),&info,sizeof(int));
-  }
+  bool foot_contact[2];
+  foot_contact[0] = contact_force_detected[pdata->r.findLinkId("l_foot")] == 1;
+  foot_contact[1] = contact_force_detected[pdata->r.findLinkId("r_foot")] == 1;
 
-  if (nlhs>3) {
-      plhs[3] = mxCreateDoubleMatrix(1,active_supports.size(),mxREAL);
-      pr = mxGetPr(plhs[3]);
+  VectorXd v_ref = velocityReference(pdata, pstate, q, qd, qdd, foot_contact, vref_integrator_params, ankle_inds);
+  pstate->t_prev = t;
+  
+  narg = 0;
+  if (nlhs>narg) {
+    plhs[narg] = eigenToMatlab(y);
+  }
+  narg++
+  
+  if (nlhs>narg) {
+    plhs[narg] = eigenToMatlab(qdd);
+  }
+  narg++;
+
+  if (nlhs>narg) {
+    plhs[narg] = eigenToMatlab(v_ref);
+  }
+  narg++;
+
+  if (nlhs>narg) {
+    plhs[narg] = mxCreateNumericMatrix(1,1,mxINT32_CLASS,mxREAL);
+    memcpy(mxGetData(plhs[narg]),&info,sizeof(int));
+  }
+  narg++;
+
+  if (nlhs>narg) {
+      plhs[narg] = mxCreateDoubleMatrix(1,active_supports.size(),mxREAL);
+      pr = mxGetPr(plhs[narg]);
       int i=0;
       for (vector<SupportStateElement>::iterator iter = active_supports.begin(); iter!=active_supports.end(); iter++) {
           pr[i++] = (double) (iter->body_idx + 1);
       }
   }
+  narg++;
 
-  if (nlhs>4) {
-    plhs[4] = eigenToMatlab(alpha);
+  if (nlhs>narg) {
+    plhs[narg] = eigenToMatlab(alpha);
   }
+  narg++;
 
-  if (nlhs>5) {
-    plhs[5] = eigenToMatlab(pdata->Hqp);
+  if (nlhs>narg) {
+    plhs[narg] = eigenToMatlab(pdata->Hqp);
   }
+  narg++;
 
-  if (nlhs>6) {
-    plhs[6] = eigenToMatlab(f);
+  if (nlhs>narg) {
+    plhs[narg] = eigenToMatlab(f);
   }
+  narg++;
 
-  if (nlhs>7) {
-    plhs[7] = eigenToMatlab(Aeq);
+  if (nlhs>narg) {
+    plhs[narg] = eigenToMatlab(Aeq);
   }
+  narg++;
 
-  if (nlhs>8) {
-    plhs[8] = eigenToMatlab(beq);
+  if (nlhs>narg) {
+    plhs[narg] = eigenToMatlab(beq);
   }
+  narg++;
 
-  if (nlhs>9) {
-    plhs[9] = eigenToMatlab(Ain_lb_ub);
+  if (nlhs>narg) {
+    plhs[narg] = eigenToMatlab(Ain_lb_ub);
   }
+  narg++;
 
-  if (nlhs>10) {
-    plhs[10] = eigenToMatlab(bin_lb_ub);
+  if (nlhs>narg) {
+    plhs[narg] = eigenToMatlab(bin_lb_ub);
   }
+  narg++;
 
-  if (nlhs>11) {
-    plhs[11] = eigenToMatlab(Qnfdiag);
+  if (nlhs>narg) {
+    plhs[narg] = eigenToMatlab(Qnfdiag);
   }
+  narg++;
 
-  if (nlhs>12) {
-    plhs[12] = eigenToMatlab(Qneps);
+  if (nlhs>narg) {
+    plhs[narg] = eigenToMatlab(Qneps);
   }
+  narg++;
 
-  if (nlhs>13) {
+  if (nlhs>narg) {
     double Vdot;
     if (nc>0) 
       // note: Sdot is 0 for ZMP/double integrator dynamics, so we omit that term here
       Vdot = ((2*x_bar.transpose()*S + s1.transpose())*(A_ls*x_bar + B_ls*(Jcomdot*qdvec + Jcom*qdd)) + s1dot.transpose()*x_bar)(0) + s2dot;
     else
       Vdot = 0;
-    plhs[13] = mxCreateDoubleScalar(Vdot);
+    plhs[narg] = mxCreateDoubleScalar(Vdot);
   }
+  narg++;
 
-  if (nlhs>14) {
+  if (nlhs>narg) {
     RigidBodyManipulator* r = pdata->r;
 
     VectorXd individual_cops = individualSupportCOPs(r, active_supports, normals, B, beta);
-    plhs[14] = eigenToMatlab(individual_cops);
+    plhs[narg] = eigenToMatlab(individual_cops);
   }
+  narg++;
 
   if (model) { 
     GRBfreemodel(model); 
