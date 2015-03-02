@@ -71,7 +71,7 @@ import atlasControllers.*;
 
 param_sets = atlasParams.getDefaults(r);
 control = AtlasPlanlessQPController(r,...
-                                    param_sets, struct('use_mex', 1));
+                                    param_sets, struct('use_mex', 2));
 
 planeval = AtlasPlanEval(r, walking_plan_data);
 % plancontroller = AtlasSplitQPController(r, control, planeval);

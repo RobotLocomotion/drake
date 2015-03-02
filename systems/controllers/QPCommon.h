@@ -51,6 +51,13 @@ struct QPControllerState {
   bool foot_contact_prev[2];
   VectorXd vref_integrator_state;
   VectorXd q_integrator_state;
+  std::set<int> active;
+
+  // gurobi active set params
+  int *vbasis;
+  int *cbasis;
+  int vbasis_len;
+  int cbasis_len;
 };
 
 struct PositionIndicesCache {
@@ -85,49 +92,78 @@ struct VRefIntegratorParams {
 };
 
 struct IntegratorParams {
-  IntegratorParams (double *gains_data, size_t gains_size,
-                    double *clamps_data, size_t clamps_size):
-    gains(gains_data, gains_size),
-    clamps(clamps_data, clamps_size)
-    {}
-  Map<VectorXd> gains;
-  Map<VectorXd> clamps;
+  VectorXd gains;
+  VectorXd clamps;
   double eta;
 };
 
-struct QDDBounds {
-  QDDBounds (double *min_data, size_t min_size,
-             double *max_data, size_t max_size):
-    min(min_data, min_size),
-    max(max_data, max_size)
-    {}
-  Map<VectorXd> min;
-  Map<VectorXd> max;
+struct Bounds {
+  VectorXd min;
+  VectorXd max;
 };
 
 struct WholeBodyParams {
-  WholeBodyParams (double *Kp_data, size_t Kp_size,
-                   double *Kd_data, size_t Kd_size,
-                   double *w_qdd_data, size_t w_qdd_size,
-                   double *gains_data, size_t gains_size,
-                   double *clamps_data, size_t clamps_size,
-                   double *qdd_min_data, size_t qdd_min_size,
-                   double *qdd_max_data, size_t qdd_max_size
-                   ):
-    Kp(Kp_data, Kp_size),
-    Kd(Kd_data, Kd_size),
-    w_qdd(w_qdd_data, w_qdd_size),
-    integrator(gains_data, gains_size,
-               clamps_data, clamps_size),
-    qdd_bounds(qdd_min_data, qdd_min_size, 
-               qdd_max_data, qdd_max_size)
-    {};
-  Map<VectorXd> Kp;
-  Map<VectorXd> Kd;
-  Map<VectorXd> w_qdd;
+  VectorXd Kp;
+  VectorXd Kd;
+  VectorXd w_qdd;
 
   double damping_ratio;
   IntegratorParams integrator;
-  QDDBounds qdd_bounds;
+  Bounds qdd_bounds;
 };
+
+struct BodyMotionParams {
+  VectorXd Kp;
+  VectorXd Kd;
+  Bounds accel_bounds;
+  double weight;
+};
+
+struct AtlasParams {
+  WholeBodyParams whole_body;
+  std::vector<BodyMotionParams> body_motion;
+  VRefIntegratorParams vref_integrator;
+  Matrix3d W_kdot;
+  double Kp_ang;
+  double w_slack;
+  double slack_limit;
+  double w_grf;
+  double Kp_accel;
+  double contact_threshold;
+  double min_knee_angle;
+};
+
+struct AtlasParamSets {
+  AtlasParams walking;
+  AtlasParams standing;
+  AtlasParams kinematic;
+};
+
+struct NewQPControllerData {
+  GRBenv *env;
+  RigidBodyManipulator* r;
+  AtlasParamSets param_sets;
+  RobotPropertyCache rpc;
+  void* map_ptr;
+  VectorXd umin,umax;
+
+  // preallocate memory
+  MatrixXd H, H_float, H_act;
+  VectorXd C, C_float, C_act;
+  MatrixXd B, B_act;
+  MatrixXd J, Jdot;
+  MatrixXd J_xy, Jdot_xy;
+  MatrixXd Hqp;
+  RowVectorXd fqp;
+  
+  // momentum controller-specific
+  MatrixXd Ag, Agdot; // centroidal momentum matrix
+  MatrixXd Ak, Akdot; // centroidal angular momentum matrix
+
+  // logical separation for the "state", that is, things we expect to change at every iteration
+  // and which must persist to the next iteration
+  QPControllerState state;
+
+};
+
 
