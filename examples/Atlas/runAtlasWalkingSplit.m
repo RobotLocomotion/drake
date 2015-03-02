@@ -64,8 +64,8 @@ lfoot_navgoal(1:3) = lfoot_navgoal(1:3) + R*[0;0.13;0];
 goal_pos = struct('right', rfoot_navgoal, 'left', lfoot_navgoal);
 footstep_plan = r.planFootsteps(x0(1:nq), goal_pos, [], struct('step_params', struct('max_num_steps', 4)));
 
-% walking_plan_data = r.planWalkingZMP(x0(1:r.getNumPositions()), footstep_plan);
-walking_plan_data = StandingPlan.from_standing_state(x0, r);
+walking_plan_data = r.planWalkingZMP(x0(1:r.getNumPositions()), footstep_plan);
+% walking_plan_data = StandingPlan.from_standing_state(x0, r);
 
 import atlasControllers.*;
 
@@ -88,11 +88,11 @@ output_select(1).output=1;
 sys = mimoCascade(sys,v,[],[],output_select);
 
 
-T = min(walking_plan_data.duration + 0.5, 10);
+T = min(walking_plan_data.duration + 0.5, 30);
 
-% profile on
+profile on
 ytraj = simulate(sys, [0, T], x0, struct('gui_control_interface', true));
-% profile viewer
+profile viewer
 
 v.playback(ytraj, struct('slider', true));
 

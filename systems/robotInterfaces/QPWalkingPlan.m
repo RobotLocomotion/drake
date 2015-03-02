@@ -278,17 +278,7 @@ classdef QPWalkingPlan < QPControllerPlan
           i = i + 1;
         end
       end
-
-      % if ~pelvis_has_tracking
-      %   r.warning_manager.warnOnce('Drake:HardCodedPelvisheight', 'hard-coding pelvis height');
-      %   r.warning_manager.warnOnce('Drake:NoPelvisHeightLogic', 'not using pelvis height logic');
-      %   pelvis_target = [mean(feet_poses(1:2,:), 2); min(feet_poses(3,:)) + 0.74; 0; 0; angleAverage(feet_poses(6,1), feet_poses(6,2))];
-      %   coefs = reshape(pelvis_target, [6, 1, 1]);
-      %   coefs = cat(3, zeros(6, 1, 3), coefs);
-      %   qp_input.body_motion_data(tracked_bodies+1).body_id = rpc.pelvis_body_id;
-      %   qp_input.body_motion_data(tracked_bodies+1).ts = [t, t];
-      %   qp_input.body_motion_data(tracked_bodies+1).coefs = coefs;
-      % end
+      assert(pelvis_has_tracking, 'Expecting a link_constraints block for the pelvis');
 
       qp_input.param_set_name = obj.gain_set;
 

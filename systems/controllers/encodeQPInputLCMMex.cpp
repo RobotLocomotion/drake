@@ -108,7 +108,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
       double *coefs_ptr = mxGetPr(coefs);
       if (mxGetNumberOfDimensions(coefs) != 3) mexErrMsgTxt("coefs should be a dimension-3 array");
       const int *dim = mxGetDimensions(coefs);
-      if (dim[0] != 6.0 || dim[1] != 1.0 || dim[2] != 4.0) mexErrMsgTxt("coefs should be size 6x1x4");
+      if (dim[0] != 6 || dim[1] != 1 || dim[2] != 4) mexErrMsgTxt("coefs should be size 6x1x4");
       for (int j=0; j < dim[0]; j++) {
         for (int k=0; k < dim[1]; k++) {
           for (int l=0; l < dim[2]; l++) {

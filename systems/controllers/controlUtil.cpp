@@ -406,6 +406,40 @@ void sizecheck(const mxArray* mat, int M, int N) {
   return;
 }
 
+Vector6d bodyMotionPD(RigidBodyManipulator *r, double *q, double *qd, const int body_index, Vector6d body_pose_des, Vector6d body_v_des, Vector6d body_vdot_des, Vector6d Kp, Vector6d Kd) {
+  int nq = r->num_dof;
+  Map< VectorXd > qdvec(qd,nq);
+
+  r->doKinematics(q,false,qd);
+
+  // TODO: this must be updated to use quaternions/spatial velocity
+  Vector6d body_pose;
+  MatrixXd J = MatrixXd::Zero(6,r->num_dof);
+  Vector4d zero = Vector4d::Zero();
+  zero(3) = 1.0;
+  r->forwardKin(body_index,zero,1,body_pose);
+  r->forwardJac(body_index,zero,1,J);
+
+  Vector6d body_error;
+  body_error.head<3>()= body_pose_des.head<3>()-body_pose.head<3>();
+
+  Vector3d error_rpy,pose_rpy,des_rpy;
+  pose_rpy = body_pose.tail<3>();
+  des_rpy = body_pose_des.tail<3>();
+  angleDiff(pose_rpy,des_rpy,error_rpy);
+  body_error.tail(3) = error_rpy;
+
+  Vector6d body_vdot = (Kp.array()*body_error.array()).matrix() + (Kd.array()*(body_v_des-J*qdvec).array()).matrix() + body_vdot_des;
+  return body_vdot;
+}
+
+void evaluateCubicSplineSegment(double t, Matrix<double, 6, 4> coefs, Vector6d &y, Vector6d &ydot, Vector6d &yddot) {
+  // evaluate a cubic spline with coefficients coef and starting time 0 at time t
+  y = coefs.col(0)*pow(t, 3) + coefs.col(1)*pow(t, 2) + coefs.col(2)*t + coefs.col(3);
+  ydot = 3*coefs.col(0)*pow(t,2) + 2*coefs.col(1)*t + coefs.col(2);
+  yddot = 6*coefs.col(0)*t + 2*coefs.col(1);
+}
+
 template drakeControlUtilEXPORT void getRows(std::set<int> &, const MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > &);
 template drakeControlUtilEXPORT void getCols(std::set<int> &, const MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > &);
 template drakeControlUtilEXPORT void angleDiff(const MatrixBase<MatrixXd> &, const MatrixBase<MatrixXd> &, MatrixBase<MatrixXd> &);

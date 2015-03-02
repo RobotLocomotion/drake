@@ -20,6 +20,7 @@ classdef AtlasPlanlessQPController
     actuated_inds;
     use_mex;
     mex_ptr;
+    mex_state_ptr;
     support_detect_mex_ptr;
     use_bullet = false;
     using_flat_terrain;
@@ -97,9 +98,10 @@ classdef AtlasPlanlessQPController
           terrain_map_ptr = 0;
           obj.using_flat_terrain = true;
         end
-        obj.mex_ptr = SharedDataHandle(constructQPDataPointer(obj.robot.getMexModelPtr.ptr,...
+        obj.mex_ptr = SharedDataHandle(constructQPDataPointerMex(obj.robot.getMexModelPtr.ptr,...
           obj.robot.getB(), obj.robot.umin, obj.robot.umax,...
           terrain_map_ptr, obj.gurobi_options));
+        obj.mex_state_ptr = SharedDataHandle(constructQPStatePointerMex(obj.robot.getMexModelPtr.ptr));
       end
 
       if exist('supportDetectmex','file')~=3
@@ -117,10 +119,10 @@ classdef AtlasPlanlessQPController
       obj.q_integrator_data.t_prev = t;
       new_int_state = params.integrator.eta * obj.q_integrator_data.state + params.integrator.gains .* (q_des - q) * dt;
       if any(new_int_state)
-        new_int_state = max(-params.integrator.clamp, min(params.integrator.clamp, new_int_state));
+        new_int_state = max(-params.integrator.clamps, min(params.integrator.clamps, new_int_state));
         q_des = q_des + new_int_state;
-        q_des = max(obj.joint_limits.min - params.integrator.clamp,...
-                    min(obj.joint_limits.max + params.integrator.clamp, q_des)); % allow it to go delta above and below jlims
+        q_des = max(obj.joint_limits.min - params.integrator.clamps,...
+                    min(obj.joint_limits.max + params.integrator.clamps, q_des)); % allow it to go delta above and below jlims
       end
       obj.q_integrator_data.state = max(-params.integrator.clamps, min(params.integrator.clamps, new_int_state));
 
@@ -209,7 +211,16 @@ classdef AtlasPlanlessQPController
       nq = obj.numq;
 
       params = obj.param_sets.(char(qp_input.param_set_name));
-      w_qdd = params.whole_body.w_qdd;
+
+      % Copy the body motion data out of the LCM type (so we can pass it to mex)
+      body_motion_data = struct('body_id', cell(1, length(qp_input.body_motion_data)),...
+                                'ts', cell(1, length(qp_input.body_motion_data)),...
+                                'coefs', cell(1, length(qp_input.body_motion_data)));
+      for j = 1:length(qp_input.body_motion_data)
+        for f = fieldnames(body_motion_data(j))'
+          body_motion_data(j).(f{1}) = qp_input.body_motion_data(j).(f{1});
+        end
+      end
 
       % lcmgl = LCMGLClient('desired zmp');
       % lcmgl.glColor3f(0, 0.7, 1.0);
@@ -221,10 +232,6 @@ classdef AtlasPlanlessQPController
       
       mu = qp_input.support_data(1).mu;
       condof = qp_input.whole_body_data.constrained_dofs;
-
-      % Run PD on the desired configuration
-      qddot_des = obj.wholeBodyPID(t, q, qd, qp_input.whole_body_data.q_des, params.whole_body);
-
 
       contact_sensor = zeros(obj.numbod, 1);
       if foot_contact_sensor(1) > 0.5
@@ -262,25 +269,8 @@ classdef AtlasPlanlessQPController
         height = 0;
       end
 
-      [w_qdd, qddot_des] = obj.kneePD(q, qd, w_qdd, qddot_des, struct('right', false, 'left', false), params.min_knee_angle);
+      % [w_qdd, qddot_des] = obj.kneePD(q, qd, w_qdd, qddot_des, struct('right', false, 'left', false), params.min_knee_angle);
 
-      all_bodies_vdot = struct('body_id', cell(1,length(qp_input.body_motion_data)),...
-                               'body_vdot', cell(1,length(qp_input.body_motion_data)),...
-                               'params', cell(1,length(qp_input.body_motion_data)));
-      num_tracked_bodies = 0;
-      for j = 1:length(qp_input.body_motion_data)
-        body_id = qp_input.body_motion_data(j).body_id;
-        if ~isempty(body_id) && params.body_motion(body_id).weight ~= 0
-          num_tracked_bodies = num_tracked_bodies + 1;
-          [body_des, body_v_des, body_vdot_des] = evalCubicSplineSegment(t - qp_input.body_motion_data(j).ts(1), qp_input.body_motion_data(j).coefs);
-          body_vdot = obj.body_accel_pd(r, x, body_id,...
-                                        body_des, body_v_des, body_vdot_des, params.body_motion(body_id));
-          all_bodies_vdot(num_tracked_bodies).body_id = body_id; 
-          all_bodies_vdot(num_tracked_bodies).body_vdot = body_vdot;
-          all_bodies_vdot(num_tracked_bodies).params = params.body_motion(body_id);
-        end
-      end
-      all_bodies_vdot = all_bodies_vdot(1:num_tracked_bodies);
 
       qdd_lb =-500*ones(1,obj.numq);
       qdd_ub = 500*ones(1,obj.numq);
@@ -293,13 +283,34 @@ classdef AtlasPlanlessQPController
         % if t >= 0.1
         %   keyboard();
         % end
+        all_bodies_vdot = struct('body_id', cell(1,length(body_motion_data)),...
+                                 'body_vdot', cell(1,length(body_motion_data)),...
+                                 'params', cell(1,length(body_motion_data)));
+        num_tracked_bodies = 0;
+        for j = 1:length(body_motion_data)
+          body_id = body_motion_data(j).body_id;
+          if ~isempty(body_id) && params.body_motion(body_id).weight ~= 0
+            num_tracked_bodies = num_tracked_bodies + 1;
+            [body_des, body_v_des, body_vdot_des] = evalCubicSplineSegment(t - body_motion_data(j).ts(1), body_motion_data(j).coefs);
+            body_vdot = obj.body_accel_pd(r, x, body_id,...
+                                          body_des, body_v_des, body_vdot_des, params.body_motion(body_id));
+            all_bodies_vdot(num_tracked_bodies).body_id = body_id; 
+            all_bodies_vdot(num_tracked_bodies).body_vdot = body_vdot;
+            all_bodies_vdot(num_tracked_bodies).params = params.body_motion(body_id);
+          end
+        end
+        all_bodies_vdot = all_bodies_vdot(1:num_tracked_bodies);
         mask = getActiveSupportsmex(obj.mex_ptr.data, x, available_supports, contact_sensor, params.contact_threshold, height);
         supp = available_supports(logical(mask));
+
+        % Run PD on the desired configuration
+        qddot_des = obj.wholeBodyPID(t, q, qd, qp_input.whole_body_data.q_des, params.whole_body);
+
         [y, qdd, info_fqp, active_supports,...
           alpha, Hqp, fqp, Aeq, beq, Ain, bin,lb,ub] = atlasControllers.setupAndSolveQP(r, params, use_fastqp,...
                                              qddot_des, x, all_bodies_vdot,...
                                              condof, supp, qp_input.zmp_data, ...
-                                             qdd_lb, qdd_ub, w_qdd, ...
+                                             qdd_lb, qdd_ub, ...
                                              mu, height,obj.use_bullet,...
                                              ctrl_data, obj.gurobi_options);
       end
@@ -307,8 +318,21 @@ classdef AtlasPlanlessQPController
       if (obj.use_mex==1 || obj.use_mex==2)
 
         if (obj.use_mex==1)
-          [y,qdd,info_fqp,active_supports,alpha] = statelessQPControllermex(obj.mex_ptr.data,params,use_fastqp,qddot_des,x,...
-              all_bodies_vdot,condof,available_supports,contact_sensor,struct(qp_input.zmp_data),qdd_lb,qdd_ub,w_qdd,mu,height);
+          [y,qdd,info_fqp,active_supports,alpha] = statelessQPControllermex(obj.mex_ptr.data,...
+                                              obj.mex_state_ptr.data,...
+                                              t,...
+                                              x,...
+                                              struct(qp_input.zmp_data),...
+                                              struct(qp_input.whole_body_data),...
+                                              body_motion_data,...
+                                              available_supports,...
+                                              contact_sensor,...
+                                              use_fastqp,...
+                                              qdd_lb,...
+                                              qdd_ub,...
+                                              mu,...
+                                              height,...
+                                              params);
 
           if info_fqp < 0
             ctrl_data.infocount = ctrl_data.infocount+1;
@@ -327,8 +351,8 @@ classdef AtlasPlanlessQPController
         else
           [y_mex,mex_qdd,info_mex,active_supports_mex,~,Hqp_mex,fqp_mex,...
             Aeq_mex,beq_mex,Ain_mex,bin_mex,Qf,Qeps] = ...
-            statelessQPControllermex(obj.mex_ptr.data,params,use_fastqp,qddot_des,x,...
-            all_bodies_vdot,condof,available_supports,contact_sensor,struct(qp_input.zmp_data),qdd_lb,qdd_ub,w_qdd,mu,height);
+            statelessQPControllermex(obj.mex_ptr.data,obj.mex_state_ptr.data,t,params,use_fastqp,qddot_des,x,...
+            body_motion_data,condof,available_supports,contact_sensor,struct(qp_input.zmp_data),qdd_lb,qdd_ub,w_qdd,mu,height);
 
           num_active_contacts = zeros(1, length(supp));
           for j = 1:length(supp)
