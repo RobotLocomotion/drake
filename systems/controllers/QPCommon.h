@@ -72,5 +72,10 @@ struct QPControllerState {
   VectorXd vref_integrator_state;
   VectorXd q_integrator_state;
 };
+
+struct VRefIntegratorParams {
+  bool zero_ankles_on_contact;
+  double eta;
+};
    
 
