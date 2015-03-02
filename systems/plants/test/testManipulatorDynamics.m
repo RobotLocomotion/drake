@@ -39,6 +39,8 @@ C_check = [...
   cross(twist_omega, m * twist_v) - m * gravity_body];
 valuecheck(C, C_check);
 valuecheck([nv 0], size(B));
+
+checkMex(r);
 end
 
 function testActuatedPendulum()
