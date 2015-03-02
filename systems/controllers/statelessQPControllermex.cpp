@@ -312,9 +312,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       return; // to avoid a compiler warning
     }
   }
-  cout << "using params set: " + it->first + ", ";
+  // cout << "using params set: " + it->first + ", ";
   params = &(it->second);
-  mexPrintf("Kp_accel: %f, ", params->Kp_accel);
+  // mexPrintf("Kp_accel: %f, ", params->Kp_accel);
   narg++;
 
   const int dim = 3, // 3D
