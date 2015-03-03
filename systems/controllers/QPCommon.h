@@ -141,6 +141,7 @@ struct NewQPControllerData {
   void* map_ptr;
   double default_terrain_height;
   VectorXd umin,umax;
+  int use_fast_qp;
 
   // preallocate memory
   MatrixXd H, H_float, H_act;
@@ -168,4 +169,38 @@ struct DesiredBodyAcceleration {
   Vector6d body_vdot;
   double weight;
   Bounds accel_bounds;
+};
+
+struct QPControllerOutput {
+
+  VectorXd q_ref;
+  VectorXd qd_ref;
+  VectorXd qdd;
+  VectorXd u;
+};
+
+struct QPControllerDebugData {
+  std::vector<SupportStateElement> active_supports;
+  int nc;
+  MatrixXd normals;
+  MatrixXd B;
+  VectorXd alpha;
+  VectorXd f;
+  MatrixXd Aeq;
+  VectorXd beq;
+  MatrixXd Ain_lb_ub;
+  VectorXd bin_lb_ub;
+  MatrixXd Qnfdiag;
+  MatrixXd Qneps;
+  VectorXd x_bar;
+  MatrixXd S;
+  VectorXd s1;
+  VectorXd s1dot;
+  double s2dot;
+  MatrixXd A_ls;
+  MatrixXd B_ls;
+  MatrixXd Jcom;
+  MatrixXd Jcomdot;
+  VectorXd qdvec;
+  VectorXd beta;
 };

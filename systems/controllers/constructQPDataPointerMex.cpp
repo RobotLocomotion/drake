@@ -238,6 +238,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   pdata->default_terrain_height = mxGetScalar(prhs[narg]);
   narg++;
 
+  // use_fast_qp
+  pdata->use_fast_qp = (int) mxGetScalar(prhs[narg]);
+  narg++;
+
   // gurobi_opts
   const mxArray* psolveropts = prhs[narg];
 
