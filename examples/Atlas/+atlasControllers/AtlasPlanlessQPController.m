@@ -178,23 +178,21 @@ classdef AtlasPlanlessQPController
       t0 = tic();
 
       % Unpack variable names (just to make our code a bit easier to read)
-      ctrl_data = obj.controller_data;
       r = obj.robot;
       nq = obj.robot_property_cache.nq;
       nv = obj.robot_property_cache.nv;
 
-      param_set_name = char(qp_input.param_set_name);
-      params = obj.param_sets.(param_set_name);
+      param_set_name = qp_input.param_set_name;
 
-      % Copy the body motion data out of the LCM type (so we can pass it to mex)
-      body_motion_data = struct('body_id', cell(1, length(qp_input.body_motion_data)),...
-                                'ts', cell(1, length(qp_input.body_motion_data)),...
-                                'coefs', cell(1, length(qp_input.body_motion_data)));
-      for j = 1:length(qp_input.body_motion_data)
-        for f = fieldnames(body_motion_data(j))'
-          body_motion_data(j).(f{1}) = qp_input.body_motion_data(j).(f{1});
-        end
-      end
+      % % Copy the body motion data out of the LCM type (so we can pass it to mex)
+      % body_motion_data = struct('body_id', cell(1, length(qp_input.body_motion_data)),...
+      %                           'ts', cell(1, length(qp_input.body_motion_data)),...
+      %                           'coefs', cell(1, length(qp_input.body_motion_data)));
+      % for j = 1:length(qp_input.body_motion_data)
+      %   for f = fieldnames(body_motion_data(j))'
+      %     body_motion_data(j).(f{1}) = qp_input.body_motion_data(j).(f{1});
+      %   end
+      % end
 
       % lcmgl = LCMGLClient('desired zmp');
       % lcmgl.glColor3f(0, 0.7, 1.0);
@@ -204,7 +202,7 @@ classdef AtlasPlanlessQPController
       q = x(1:nq);
       qd = x(nq+(1:nv));
       
-      mu = qp_input.support_data(1).mu;
+      % mu = qp_input.support_data(1).mu;
 
       contact_sensor = zeros(obj.robot_property_cache.num_bodies, 1);
       if foot_contact_sensor(1) > 0.5
@@ -213,28 +211,28 @@ classdef AtlasPlanlessQPController
       if foot_contact_sensor(2) > 0.5
         contact_sensor(obj.foot_body_id.right) = 1;
       end
-      if isjava(qp_input.support_data)
-        % Reconstruct the support data as a matlab struct for mex
-        % compatibility
-        available_supports = struct('body_id', cell(1, length(qp_input.support_data)),...
-                                    'contact_pts', cell(1, length(qp_input.support_data)),...
-                                    'support_logic_map', cell(1, length(qp_input.support_data)),...
-                                    'mu', cell(1, length(qp_input.support_data)),...
-                                    'contact_surfaces', cell(1, length(qp_input.support_data)));
-        for j = 1:length(qp_input.support_data)
-          available_supports(j).body_id = qp_input.support_data(j).body_id;
-          available_supports(j).contact_pts = qp_input.support_data(j).contact_pts;
-          available_supports(j).support_logic_map = qp_input.support_data(j).support_logic_map;
-          available_supports(j).mu = qp_input.support_data(j).mu;
-          available_supports(j).contact_surfaces = qp_input.support_data(j).contact_surfaces;
-        end
-      else
-        available_supports = qp_input.support_data;
-      end
-      for j = 1:length(available_supports)
-        % it's a pain to handle mxLogicals on the c++ side
-        available_supports(j).support_logic_map = double(available_supports(j).support_logic_map);
-      end
+      % if isjava(qp_input.support_data)
+      %   % Reconstruct the support data as a matlab struct for mex
+      %   % compatibility
+      %   available_supports = struct('body_id', cell(1, length(qp_input.support_data)),...
+      %                               'contact_pts', cell(1, length(qp_input.support_data)),...
+      %                               'support_logic_map', cell(1, length(qp_input.support_data)),...
+      %                               'mu', cell(1, length(qp_input.support_data)),...
+      %                               'contact_surfaces', cell(1, length(qp_input.support_data)));
+      %   for j = 1:length(qp_input.support_data)
+      %     available_supports(j).body_id = qp_input.support_data(j).body_id;
+      %     available_supports(j).contact_pts = qp_input.support_data(j).contact_pts;
+      %     available_supports(j).support_logic_map = qp_input.support_data(j).support_logic_map;
+      %     available_supports(j).mu = qp_input.support_data(j).mu;
+      %     available_supports(j).contact_surfaces = qp_input.support_data(j).contact_surfaces;
+      %   end
+      % else
+      %   available_supports = qp_input.support_data;
+      % end
+      % for j = 1:length(available_supports)
+      %   % it's a pain to handle mxLogicals on the c++ side
+      %   available_supports(j).support_logic_map = double(available_supports(j).support_logic_map);
+      % end
 
       % [w_qdd, qddot_des] = obj.kneePD(q, qd, w_qdd, qddot_des, struct('right', false, 'left', false), params.min_knee_angle);
 
@@ -250,31 +248,48 @@ classdef AtlasPlanlessQPController
         % if t >= 0.1
         %   keyboard();
         % end
-        all_bodies_vdot = struct('body_id', cell(1,length(body_motion_data)),...
-                                 'body_vdot', cell(1,length(body_motion_data)),...
-                                 'params', cell(1,length(body_motion_data)));
-        num_tracked_bodies = 0;
+        params = obj.param_sets.(param_set_name);
+        all_bodies_vdot = struct('body_id', cell(1,length(qp_input.body_motion_data)),...
+                                 'body_vdot', cell(1,length(qp_input.body_motion_data)),...
+                                 'params', cell(1,length(qp_input.body_motion_data)));
         fun = fcompare(@atlasControllers.statelessBodyMotionControl,@statelessBodyMotionControlmex);
-        for j = 1:length(body_motion_data)
-          body_id = body_motion_data(j).body_id;
-          if ~isempty(body_id)
-            num_tracked_bodies = num_tracked_bodies + 1;
-            [body_des, body_v_des, body_vdot_des] = evalCubicSplineSegment(t - body_motion_data(j).ts(1), body_motion_data(j).coefs);
-            body_vdot = fun(r, x, body_id,...
-                                          body_des, body_v_des, body_vdot_des, params.body_motion(body_id));
-            all_bodies_vdot(num_tracked_bodies).body_id = body_id; 
-            all_bodies_vdot(num_tracked_bodies).body_vdot = body_vdot;
-            all_bodies_vdot(num_tracked_bodies).params = params.body_motion(body_id);
-          end
+        for j = 1:length(qp_input.body_motion_data)
+          body_id = qp_input.body_motion_data(j).body_id;
+          [body_des, body_v_des, body_vdot_des] = evalCubicSplineSegment(t - qp_input.body_motion_data(j).ts(1), qp_input.body_motion_data(j).coefs);
+          body_vdot = fun(r, x, body_id,...
+                                        body_des, body_v_des, body_vdot_des, params.body_motion(body_id));
+          all_bodies_vdot(j).body_id = body_id; 
+          all_bodies_vdot(j).body_vdot = body_vdot;
+          all_bodies_vdot(j).params = params.body_motion(body_id);
+          % fprintf(1, 'body: %d, vdot: %f %f %f %f %f %f\n', body_id,...
+          %          body_vdot(1), ...
+          %          body_vdot(2), ...
+          %          body_vdot(3), ...
+          %          body_vdot(4), ...
+          %          body_vdot(5), ...
+          %          body_vdot(6));
+          % all_bodies_vdot(j).params
         end
-        all_bodies_vdot = all_bodies_vdot(1:num_tracked_bodies);
-        mask = getActiveSupportsmex(obj.mex_ptr.data, x, available_supports, contact_sensor, params.contact_threshold, obj.default_terrain_height);
-        supp = available_supports(logical(mask));
+        mask = getActiveSupportsmex(obj.mex_ptr.data, x, qp_input.support_data, contact_sensor, params.contact_threshold, obj.default_terrain_height);
+        supp = qp_input.support_data(logical(mask));
 
         % Run PD on the desired configuration
         qddot_des = obj.wholeBodyPID(t, q, qd, qp_input.whole_body_data.q_des, params.whole_body);
 
         condof = qp_input.whole_body_data.constrained_dofs;
+        ctrl_data = obj.controller_data;
+
+        if isempty(qp_input.support_data)
+          mu = 1;
+        else
+          mu = qp_input.support_data(1).mu;
+          for j = 2:length(qp_input.support_data)
+            if qp_input.support_data(j).mu ~= mu
+              warning('Drake:MultipleMuNotSupported', 'We do not currently support different mu values for each support');
+            end
+          end
+        end
+
 
         [y, qdd, info_fqp, active_supports,...
           alpha, Hqp, fqp, Aeq, beq, Ain, bin,lb,ub] = atlasControllers.setupAndSolveQP(r, params, use_fastqp,...
@@ -295,14 +310,15 @@ classdef AtlasPlanlessQPController
                       statelessQPControllermex(obj.mex_ptr.data,...
                       t,...
                       x,...
-                      struct(qp_input.zmp_data),...
-                      struct(qp_input.whole_body_data),...
-                      body_motion_data,...
-                      available_supports,...
+                      qp_input,...
                       contact_sensor,...
-                      use_fastqp,...
-                      mu,...
-                      param_set_name);
+                      use_fastqp);
+                      % struct(qp_input.zmp_data),...
+                      % struct(qp_input.whole_body_data),...
+                      % body_motion_data,...
+                      % available_supports,...
+                      % mu,...
+                      % param_set_name);
           fprintf(1, 'mex: %f, ', toc(t0));
 
           if info_fqp < 0
@@ -324,16 +340,17 @@ classdef AtlasPlanlessQPController
           [y_mex,mex_qdd,vref_mex,info_mex,active_supports_mex,~,Hqp_mex,fqp_mex,...
             Aeq_mex,beq_mex,Ain_mex,bin_mex,Qf,Qeps] = ...
                statelessQPControllermex(obj.mex_ptr.data,...
-                                        t,...
-                                        x,...
-                                        struct(qp_input.zmp_data),...
-                                        struct(qp_input.whole_body_data),...
-                                        body_motion_data,...
-                                        available_supports,...
-                                        contact_sensor,...
-                                        use_fastqp,...
-                                        mu,...
-                                        param_set_name);
+                      t,...
+                      x,...
+                      qp_input,...
+                      contact_sensor,...
+                      use_fastqp);
+                      % struct(qp_input.zmp_data),...
+                      % struct(qp_input.whole_body_data),...
+                      % body_motion_data,...
+                      % available_supports,...
+                      % mu,...
+                      % param_set_name);
           fprintf(1, 'mex: %f, ', toc(t0));
 
           num_active_contacts = zeros(1, length(supp));

@@ -82,7 +82,7 @@ classdef QPInput2D
         msg.body_motion_data(j) = drake.lcmt_body_motion_data();
         msg.body_motion_data(j).body_id = obj.body_motion_data(j).body_id;
         msg.body_motion_data(j).ts = obj.body_motion_data(j).ts;
-        msg.body_motion_data(j).coefs = obj.body_motion_data(j).coefs;
+        msg.body_motion_data(j).coefs = reshape(obj.body_motion_data(j).coefs, 6, 4);
       end
       
       msg.whole_body_data = drake.lcmt_whole_body_data();

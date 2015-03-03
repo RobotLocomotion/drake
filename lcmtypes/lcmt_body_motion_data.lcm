@@ -7,5 +7,5 @@ struct lcmt_body_motion_data
 	int32_t body_id;
 
 	double ts[2];
-	double coefs[6][1][4];
+	double coefs[6][4];
 }
