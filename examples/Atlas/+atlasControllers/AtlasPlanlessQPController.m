@@ -184,16 +184,6 @@ classdef AtlasPlanlessQPController
 
       param_set_name = qp_input.param_set_name;
 
-      % % Copy the body motion data out of the LCM type (so we can pass it to mex)
-      % body_motion_data = struct('body_id', cell(1, length(qp_input.body_motion_data)),...
-      %                           'ts', cell(1, length(qp_input.body_motion_data)),...
-      %                           'coefs', cell(1, length(qp_input.body_motion_data)));
-      % for j = 1:length(qp_input.body_motion_data)
-      %   for f = fieldnames(body_motion_data(j))'
-      %     body_motion_data(j).(f{1}) = qp_input.body_motion_data(j).(f{1});
-      %   end
-      % end
-
       % lcmgl = LCMGLClient('desired zmp');
       % lcmgl.glColor3f(0, 0.7, 1.0);
       % lcmgl.sphere([y0; 0], 0.02, 20, 20);
@@ -211,36 +201,6 @@ classdef AtlasPlanlessQPController
       if foot_contact_sensor(2) > 0.5
         contact_sensor(obj.foot_body_id.right) = 1;
       end
-      % if isjava(qp_input.support_data)
-      %   % Reconstruct the support data as a matlab struct for mex
-      %   % compatibility
-      %   available_supports = struct('body_id', cell(1, length(qp_input.support_data)),...
-      %                               'contact_pts', cell(1, length(qp_input.support_data)),...
-      %                               'support_logic_map', cell(1, length(qp_input.support_data)),...
-      %                               'mu', cell(1, length(qp_input.support_data)),...
-      %                               'contact_surfaces', cell(1, length(qp_input.support_data)));
-      %   for j = 1:length(qp_input.support_data)
-      %     available_supports(j).body_id = qp_input.support_data(j).body_id;
-      %     available_supports(j).contact_pts = qp_input.support_data(j).contact_pts;
-      %     available_supports(j).support_logic_map = qp_input.support_data(j).support_logic_map;
-      %     available_supports(j).mu = qp_input.support_data(j).mu;
-      %     available_supports(j).contact_surfaces = qp_input.support_data(j).contact_surfaces;
-      %   end
-      % else
-      %   available_supports = qp_input.support_data;
-      % end
-      % for j = 1:length(available_supports)
-      %   % it's a pain to handle mxLogicals on the c++ side
-      %   available_supports(j).support_logic_map = double(available_supports(j).support_logic_map);
-      % end
-
-      % [w_qdd, qddot_des] = obj.kneePD(q, qd, w_qdd, qddot_des, struct('right', false, 'left', false), params.min_knee_angle);
-
-
-      % qdd_lb =-500*ones(1,nq);
-      % qdd_ub = 500*ones(1,nq);
-
-      % fprintf(1, ' non_mex: %f\n', toc(t0));
 
       use_fastqp = obj.solver == 0;
 
@@ -313,12 +273,6 @@ classdef AtlasPlanlessQPController
                       qp_input,...
                       contact_sensor,...
                       use_fastqp);
-                      % struct(qp_input.zmp_data),...
-                      % struct(qp_input.whole_body_data),...
-                      % body_motion_data,...
-                      % available_supports,...
-                      % mu,...
-                      % param_set_name);
           fprintf(1, 'mex: %f, ', toc(t0));
 
           if info_fqp < 0
@@ -345,12 +299,6 @@ classdef AtlasPlanlessQPController
                       qp_input,...
                       contact_sensor,...
                       use_fastqp);
-                      % struct(qp_input.zmp_data),...
-                      % struct(qp_input.whole_body_data),...
-                      % body_motion_data,...
-                      % available_supports,...
-                      % mu,...
-                      % param_set_name);
           fprintf(1, 'mex: %f, ', toc(t0));
 
           num_active_contacts = zeros(1, length(supp));
