@@ -18,7 +18,7 @@ if ~isfield(options,'base_offset')
   options.base_offset = [0.0, 0, 0.0]';
 end
 if ~isfield(options,'base_rpy')
-  options.base_rpy = [-pi/2, 0.0, 0]';
+  options.base_rpy = [0, 0.0, 0]';
 end
 
 r=RigidBodyManipulator();

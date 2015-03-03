@@ -22,7 +22,7 @@
         rpy="1.5707963267949 0 0" />
       <geometry>
         <mesh
-          filename="package://IRB140/urdf/meshes/ATI_sensor.STL" />
+          filename="package://IRB140/urdf/meshes/ATI_sensor.stl" />
       </geometry>
       <material
         name="">
@@ -36,7 +36,7 @@
         rpy="1.5707963267949 0 0" />
       <geometry>
         <mesh
-          filename="package://IRB140/urdf/meshes/ATI_sensor.STL" />
+          filename="package://IRB140/urdf/meshes/ATI_sensor.stl" />
       </geometry>
     </collision>
   </link>
