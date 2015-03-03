@@ -13,7 +13,7 @@ PrismaticJoint::~PrismaticJoint()
   // empty
 }
 
-Isometry3d PrismaticJoint::jointTransform(double* const q) const
+Isometry3d PrismaticJoint::jointTransform(const Eigen::Ref<const VectorXd>& q) const
 {
   Isometry3d ret;
   ret.linear().setIdentity();

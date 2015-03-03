@@ -2440,7 +2440,7 @@ classdef RigidBodyManipulator < Manipulator
     end
 
     function id = findCollisionFilterGroupID(model,collision_fg_name)
-        id = uint16(find(~cellfun(@isempty,strfind(model.collision_filter_groups.keys(),collision_fg_name))));
+        id = uint16(find(strcmp(model.collision_filter_groups.keys(),collision_fg_name)));
         if isempty(id)
           error('RigidBodyManipulator:findCollisionFilterGroupID', ...
                 'Unable to find collision filter group, %s',collision_fg_name);
