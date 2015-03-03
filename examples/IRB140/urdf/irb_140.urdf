@@ -6,7 +6,7 @@
     <inertial>
       <origin
         xyz="-0.0820393251688425 -0.0599247343482246 0.000402028640224033"
-        rpy="0 0 0" />
+        rpy="-1.57079 0 0" />
       <mass
         value="12.409016159487" />
       <inertia
@@ -20,7 +20,7 @@
     <visual>
       <origin
         xyz="0 0 0"
-        rpy="0 0 0" />
+        rpy="-1.57079 0 0" />
       <geometry>
         <mesh
           filename="package://IRB140/urdf/meshes/base_link.stl" />
@@ -34,7 +34,7 @@
     <collision>
       <origin
         xyz="0 0 0"
-        rpy="0 0 0" />
+        rpy="-1.57079 0 0" />
       <geometry>
         <mesh
           filename="package://IRB140/urdf/meshes/base_link.stl" />
@@ -292,7 +292,7 @@
     <child link="link_1"/>
     <limit effort="300" lower="-3.14159265359" upper="3.14159265359" velocity="4.36"/>
     <axis xyz="0 -1 0"/>
-    <origin rpy="0 0 0" xyz="0 -0.1095 0"/>
+    <origin rpy="-1.57079 0 0" xyz="0 0 0.1095"/>
   </joint>
   <joint name="joint2" type="revolute">
     <parent link="link_1"/>

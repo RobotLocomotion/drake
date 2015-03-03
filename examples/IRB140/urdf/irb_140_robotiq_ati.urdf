@@ -1052,12 +1052,12 @@
   </gazebo>
   <link name="base_link">
     <inertial>
-      <origin rpy="0 0 0" xyz="-0.0820393251688425 -0.0599247343482246 0.000402028640224033"/>
+      <origin rpy="-1.57079 0 0" xyz="-0.0820393251688425 -0.0599247343482246 0.000402028640224033"/>
       <mass value="12.409016159487"/>
       <inertia ixx="0.104502176006253" ixy="0.00734284655670482" ixz="1.00520827530156E-05" iyy="0.246486764065977" iyz="0.000843006810157312" izz="0.16727784258504"/>
     </inertial>
     <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <origin rpy="-1.57079 0 0" xyz="0 0 0"/>
       <geometry>
         <mesh filename="package://IRB140/urdf/meshes/base_link.stl"/>
       </geometry>
@@ -1066,7 +1066,7 @@
       </material>
     </visual>
     <collision>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <origin rpy="-1.57079 0 0" xyz="0 0 0"/>
       <geometry>
         <mesh filename="package://IRB140/urdf/meshes/base_link.stl"/>
       </geometry>
@@ -1215,7 +1215,7 @@
     <child link="link_1"/>
     <limit effort="300" lower="-3.14159265359" upper="3.14159265359" velocity="4.36"/>
     <axis xyz="0 -1 0"/>
-    <origin rpy="0 0 0" xyz="0 -0.1095 0"/>
+    <origin rpy="-1.57079 0 0" xyz="0 0 0.1095"/>
   </joint>
   <joint name="joint2" type="revolute">
     <parent link="link_1"/>
@@ -1291,7 +1291,7 @@
     <visual>
       <origin rpy="1.5707963267949 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://IRB140/urdf/meshes/ATI_sensor.STL"/>
+        <mesh filename="package://IRB140/urdf/meshes/ATI_sensor.stl"/>
       </geometry>
       <material name="">
         <color rgba="0.75294 0.75294 0.75294 1"/>
@@ -1300,7 +1300,7 @@
     <collision>
       <origin rpy="1.5707963267949 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://IRB140/urdf/meshes/ATI_sensor.STL"/>
+        <mesh filename="package://IRB140/urdf/meshes/ATI_sensor.stl"/>
       </geometry>
     </collision>
   </link>
