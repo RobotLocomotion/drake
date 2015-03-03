@@ -1,6 +1,6 @@
 include_directories ( .. )
 
-set(drakeCollision_SRC_FILES DrakeCollision.cpp simpleClosestPointFunctions.cpp Geometry.cpp Element.cpp PointPair.cpp Model.cpp)
+set(drakeCollision_SRC_FILES DrakeCollision.cpp Geometry.cpp Element.cpp PointPair.cpp Model.cpp)
 pods_find_pkg_config(bullet)
 
 if (bullet_FOUND)
