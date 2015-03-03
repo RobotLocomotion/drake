@@ -13,7 +13,7 @@
     <color rgba="0 0 1 1" />
   </material>
 
-  <link name="world" />
+  <link name="world" drake_ignore="true"/>
   <link name="base_part2">
     <inertial>
       <origin xyz="0 0 .015" rpy="0 0 0"/>
@@ -28,7 +28,7 @@
       <material name="green" />
     </visual>
   </link>
-  <joint name="base_weld" type="fixed">
+  <joint name="base_weld" type="fixed" drake_ignore="true">
     <parent link="world" />
     <child link="base_part2" />
     <origin xyz="0 0 0" />

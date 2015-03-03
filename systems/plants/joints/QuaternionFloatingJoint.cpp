@@ -16,7 +16,7 @@ QuaternionFloatingJoint::~QuaternionFloatingJoint()
   // empty
 }
 
-Isometry3d QuaternionFloatingJoint::jointTransform(double* const q) const
+Isometry3d QuaternionFloatingJoint::jointTransform(const Eigen::Ref<const VectorXd>& q) const
 {
   Isometry3d ret(Quaterniond(q[3], q[4], q[5], q[6]));
   ret.translation() << q[0], q[1], q[2];
@@ -24,7 +24,7 @@ Isometry3d QuaternionFloatingJoint::jointTransform(double* const q) const
   return ret;
 }
 
-void QuaternionFloatingJoint::motionSubspace(double* const q, MotionSubspaceType& motion_subspace, MatrixXd* dmotion_subspace) const
+void QuaternionFloatingJoint::motionSubspace(const Eigen::Ref<const VectorXd>& q, MotionSubspaceType& motion_subspace, MatrixXd* dmotion_subspace) const
 {
   motion_subspace.setIdentity(TWIST_SIZE, getNumVelocities());
   if (dmotion_subspace) {
@@ -32,7 +32,7 @@ void QuaternionFloatingJoint::motionSubspace(double* const q, MotionSubspaceType
   }
 }
 
-void QuaternionFloatingJoint::motionSubspaceDotTimesV(double* const q, double* const v,
+void QuaternionFloatingJoint::motionSubspaceDotTimesV(const Eigen::Ref<const VectorXd>& q, const Eigen::Ref<const VectorXd>& v,
     Vector6d& motion_subspace_dot_times_v,
     Gradient<Vector6d, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdq,
     Gradient<Vector6d, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdv) const
@@ -46,7 +46,7 @@ void QuaternionFloatingJoint::motionSubspaceDotTimesV(double* const q, double* c
   }
 }
 
-void QuaternionFloatingJoint::randomConfiguration(double* q, std::default_random_engine& generator) const
+void QuaternionFloatingJoint::randomConfiguration(Eigen::Ref<VectorXd>& q, std::default_random_engine& generator) const
 {
   normal_distribution<double> normal;
 
@@ -63,11 +63,11 @@ void QuaternionFloatingJoint::randomConfiguration(double* q, std::default_random
   q[6] = quat(3);
 }
 
-void QuaternionFloatingJoint::qdot2v(double* q, Eigen::MatrixXd& qdot_to_v, Eigen::MatrixXd* dqdot_to_v) const
+void QuaternionFloatingJoint::qdot2v(const Eigen::Ref<const VectorXd>& q, Eigen::MatrixXd& qdot_to_v, Eigen::MatrixXd* dqdot_to_v) const
 {
   qdot_to_v.resize(getNumVelocities(), getNumPositions());
 
-  Map<Vector4d> quat(&q[3]);
+  auto quat = q.middleRows<QUAT_SIZE>(SPACE_DIMENSION);
   Matrix3d R = quat2rotmat(quat);
 
   Vector4d quattilde;
@@ -100,11 +100,11 @@ void QuaternionFloatingJoint::qdot2v(double* q, Eigen::MatrixXd& qdot_to_v, Eige
   qdot_to_v.block<3, 4>(3, 3).setZero();
 }
 
-void QuaternionFloatingJoint::v2qdot(double* q, Eigen::MatrixXd& v_to_qdot, Eigen::MatrixXd* dv_to_qdot) const
+void QuaternionFloatingJoint::v2qdot(const Eigen::Ref<const VectorXd>& q, Eigen::MatrixXd& v_to_qdot, Eigen::MatrixXd* dv_to_qdot) const
 {
   v_to_qdot.resize(getNumPositions(), getNumVelocities());
 
-  Map<Vector4d> quat(&q[3]);
+  auto quat = q.middleRows<QUAT_SIZE>(SPACE_DIMENSION);
   Matrix3d R = quat2rotmat(quat);
 
   Matrix<double, QUAT_SIZE, SPACE_DIMENSION> M;
