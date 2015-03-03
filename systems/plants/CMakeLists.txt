@@ -77,7 +77,9 @@ if (eigen3_FOUND)
   add_rbm_mex(centerOfMassJacobianDotTimesVmex)
   add_rbm_mex(forwardJacDotTimesVmex)
   add_rbm_mex(contactConstraintsmex)
-  add_rbm_mex(surfaceTangentsmex)
+  
+  add_mex(surfaceTangentsmex surfaceTangentsmex.cpp)
+  target_link_libraries(surfaceTangentsmex drakeContactConstraintsUtil)
 
   include_directories( constraint )
   add_library(drakeIKoptions SHARED IKoptions.cpp)

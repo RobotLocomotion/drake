@@ -65,7 +65,7 @@ if obj.mex_model_ptr ~= 0
       [d, n, D, dn, dD] = contactConstraintsmex(obj.mex_model_ptr, normal, int32(idxA), int32(idxB), xA, xB);
     end
   else
-    d = surfaceTangentsmex(obj.mex_model_ptr, normal);     
+    d = surfaceTangentsmex(normal);     
   end
 else %MATLAB implementation
   if compute_first_derivative
