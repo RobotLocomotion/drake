@@ -5,7 +5,7 @@ checkDependency('bullet');
 %build an atlas model 
 robot = createAtlas('rpy');
 if robot.mex_model_ptr == 0
-  disp('testContactConstraintsMex: no mex model pointer... nothing to test');
+  disp('testSurfaceTangentsMex: no mex model pointer... nothing to test');
   return;
 end
 
@@ -14,7 +14,7 @@ q = getRandomConfiguration(robot);
 kinsol = robot.doKinematics(q);
 
 %get collision normals
-[~,normal,~,~,~,~] = robot.collisionDetect(kinsol);
+[~,normal] = robot.collisionDetect(kinsol);
 
 %get the results from the mexed version
 
