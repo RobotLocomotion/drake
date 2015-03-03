@@ -1,5 +1,4 @@
-
-#include "DrakeCollision.h"
+#include "PointPair.h"
 
 using namespace std;
 using namespace Eigen;

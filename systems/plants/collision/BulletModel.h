@@ -6,7 +6,8 @@
 #include <BulletCollision/NarrowPhaseCollision/btGjkPairDetector.h>
 #include <BulletCollision/NarrowPhaseCollision/btPointCollector.h>
 
-#include "DrakeCollision.h"
+#include "Element.h"
+#include "Model.h"
 #include "BulletResultCollector.h"
 
 namespace DrakeCollision
@@ -89,6 +90,16 @@ namespace DrakeCollision
 
       static constexpr double small_margin = 1e-9;
       static constexpr double large_margin = 0.05;
+
+      class unknownShapeException : public std::exception
+      {
+        public:
+          unknownShapeException(Shape shape);
+          virtual const char* what() const throw();
+          virtual ~unknownShapeException() throw() {};
+        protected:
+          std::string shape_str;
+      };
   };
 }
 #endif

@@ -415,4 +415,17 @@ namespace DrakeCollision
       return bullet_world_no_margin;
     }
   }
+
+  BulletModel::unknownShapeException::unknownShapeException(Shape shape)
+  { 
+    std::ostringstream ostr; 
+    ostr << shape; 
+    this->shape_str = ostr.str(); 
+  }
+ 
+  const char* BulletModel::unknownShapeException::what() const throw()
+  {
+    return ("Unknown collision shape: " + shape_str + ". Ignoring this collision element").c_str();
+  }
+
 }

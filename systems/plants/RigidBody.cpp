@@ -28,7 +28,9 @@ RigidBody::RigidBody(void) :
     dSdotVdvi(TWIST_SIZE, 0),
     JdotV(TWIST_SIZE, 1),
     dJdotVdq(TWIST_SIZE, 0),
-    dJdotVdv(TWIST_SIZE, 0)
+    dJdotVdv(TWIST_SIZE, 0),
+    group(DrakeCollision::DEFAULT_GROUP),
+    mask(DrakeCollision::ALL_MASK)
 {
   robotnum = 0;
 	position_num_start = 0;
