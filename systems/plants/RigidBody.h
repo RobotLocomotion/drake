@@ -12,7 +12,7 @@ class DLLEXPORT_RBM IndexRange {
  public:
   int start;
   int length;
-  
+
   bool operator<(const IndexRange& other) const {
     return start<other.start;
   }
@@ -44,23 +44,25 @@ public:
   int robotnum; // uses 0-index. starts from 0
   static const std::set<int> defaultRobotNumSet;
 // note: it's very ugly, but parent,dofnum,and pitch also exist currently (independently) at the rigidbodymanipulator level to represent the featherstone structure.  this version is for the kinematics.
-  int parent;
+  std::shared_ptr<RigidBody> parent;
+  int body_index; // index in RBM bodies vector (set in compile()) TODO: remove after we finish the conversion from parents being body indices to being pointers
   int position_num_start; // interpreted as start of position_num from Matlab
   int velocity_num_start;
   int floating; // FLOATINGBASE TODO: remove
   int pitch; // FLOATINGBASE TODO: remove
+  Matrix4d Ttree;  // floatingbase TODO: replace with Isometry3d?
+  Matrix4d T_body_to_joint;  // floatingbase TODO: replace with Isometry3d?
+
   MatrixXd contact_pts;
-  Matrix4d Ttree;
-  Matrix4d T_body_to_joint;
 
   std::set<int> ancestor_dofs;
   std::set<int> ddTdqdq_nonzero_rows;
   std::set<IndexRange> ddTdqdq_nonzero_rows_grouped;
 
-  Matrix4d T;
+  Matrix4d T;    // floatingbase TODO: replace with Isometry3d?
   MatrixXd dTdq; // floatingbase TODO: replace with dTdq_new
   MatrixXd dTdqdot;
-  Matrix4d Tdot;
+  Matrix4d Tdot; // floatingbase TODO: replace with Isometry3d?
   MatrixXd ddTdqdq;
 
   double mass;

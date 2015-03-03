@@ -1,5 +1,5 @@
 #include "RigidBodyManipulator.h"
-#include "URDFRigidBodyManipulator.h"
+#include "RigidBodyManipulator.h"
 #include "drakeGeometryUtil.h"
 #include <iostream>
 #include <cstdlib>
@@ -10,7 +10,7 @@ using namespace std;
 using namespace Eigen;
 int main()
 {
-  URDFRigidBodyManipulator* model = loadURDFfromFile("examples/Atlas/urdf/atlas_minimal_contact.urdf");
+  RigidBodyManipulator* model = new RigidBodyManipulator("examples/Atlas/urdf/atlas_minimal_contact.urdf");
   if(!model)
   {
     cerr<<"ERROR: Failed to load model"<<endl;
@@ -22,7 +22,7 @@ int main()
   default_random_engine generator;
   uniform_real_distribution<double> uniform;
 
-  for (vector<unique_ptr<RigidBody> >::const_iterator it = model->bodies.begin(); it != model->bodies.end(); ++it) {
+  for (vector<shared_ptr<RigidBody> >::const_iterator it = model->bodies.begin(); it != model->bodies.end(); ++it) {
     RigidBody& body = **it;
     double mass = uniform(generator);
     Matrix3d moment_of_inertia = Matrix3d::Random();
