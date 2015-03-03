@@ -2,6 +2,10 @@
 #include <fstream>
 #include <sstream>
 
+#include <Poco/Path.h>
+#include <Poco/File.h>
+#include <Poco/String.h>
+
 #include "tinyxml.h"
 #include "RigidBodyManipulator.h"
 #include "joints/drakeJointUtil.h"
@@ -12,6 +16,100 @@
 #include "joints/RollPitchYawFloatingJoint.h"
 
 using namespace std;
+
+void readObjFile(Poco::Path fpath, vector<double>& vertex_coordinates)
+{
+  string ext = fpath.getExtension();
+  Poco::toLower(ext);
+
+  ifstream file;
+  if (ext.compare("obj")==0) {
+    // cout << "Loading mesh from " << fname << " (scale = " << scale << ")" << endl;
+    file.open(fpath.toString(Poco::Path::PATH_NATIVE).c_str(),ifstream::in);
+
+  } else {
+    fpath.setExtension("obj");
+    //cout << fpath.toString() << endl;
+    if ( Poco::File( fpath ).exists() ) {
+      // try changing the extension to obj and loading
+      //      cout << "Loading mesh from " << mypath.replace_extension(".obj").native() << endl;
+      file.open(fpath.toString(Poco::Path::PATH_NATIVE).c_str(),ifstream::in);
+    }
+  }      
+
+  if (!file.is_open()) {
+    cerr << "Warning: Mesh " << fpath.toString(Poco::Path::PATH_NATIVE) << " ignored because it does not have extension .obj (nor can I find a juxtaposed file with a .obj extension)" << endl;
+  }
+
+  string line;
+  double d;
+  while (getline(file,line)) {
+    istringstream iss(line);
+    char type;
+    if (iss >> type && type == 'v') {
+      while (iss >> d) {
+        vertex_coordinates.push_back(d);
+      }
+    }
+  }
+}
+
+string exec(string cmd)
+{
+	// from http://stackoverflow.com/questions/478898/how-to-execute-a-command-and-get-output-of-command-within-c
+	// note: replace popen and pclose with _popen and _pclose for Windows.
+	FILE* pipe = popen(cmd.c_str(), "r");
+	if (!pipe) return "ERROR";
+	char buffer[128];
+	string result = "";
+	while(!feof(pipe)) {
+		if(fgets(buffer, 128, pipe) != NULL)
+			result += buffer;
+    }
+	pclose(pipe);
+	return result;
+}
+
+void searchenvvar(map<string,string> &package_map, string envvar)
+{
+	char* cstrpath = getenv(envvar.c_str());
+	if (!cstrpath) return;
+
+	string path(cstrpath), token, t;
+	istringstream iss(path);
+
+	while (getline(iss,token,':')) {
+		istringstream p(exec("find -L "+token+" -iname package.xml"));
+	  while (getline(p,t)) {
+      Poco::Path mypath(t);
+      mypath = mypath.parent();
+      //cout << mypath.depth() << endl;
+      //cout << mypath.toString() << endl;
+      if (mypath.depth() > 0) {
+        package_map.insert(make_pair(mypath.directory(mypath.depth()-1),mypath.toString(Poco::Path::PATH_NATIVE)));
+        //cout << mypath.getFileName() << endl;
+      }
+	  }
+	}
+}
+
+string rospack(string package)
+{
+	// my own quick and dirty implementation of the rospack algorithm (based on my matlab version in rospack.m)
+	static map<string,string> package_map;
+
+	if (package_map.empty()) {
+		searchenvvar(package_map,"ROS_ROOT");
+		searchenvvar(package_map,"ROS_PACKAGE_PATH");
+	}
+
+	map<string,string>::iterator iter = package_map.find(package);
+	if (iter != package_map.end())
+		return iter->second;
+
+	cerr << "Couldn't find package " << package << " in ROS_ROOT or ROS_PACKAGE_PATH" << endl;
+	return "";
+}
 
 // todo: rectify this with findLinkId in the class (which makes more assumptions)
 int findLinkIndex(RigidBodyManipulator* model, string linkname)
@@ -157,6 +255,9 @@ bool parseGeometry(TiXmlElement* node, DrakeShapes::Element& element)
     if (attr) {
       stringstream s(attr);
       s >> x >> y >> z;
+    } else {
+      cerr << "ERROR parsing box element size" << endl;
+      return false;
     }
     element.setGeometry(DrakeShapes::Box(Vector3d(x, y, z)));
   } else if ((shape_node = node->FirstChildElement("sphere"))) {
@@ -165,6 +266,9 @@ bool parseGeometry(TiXmlElement* node, DrakeShapes::Element& element)
     if (attr) {
       stringstream s(attr);
       s >> r;
+    } else {
+      cerr << "ERROR parsing sphere element radius" << endl;
+      return false;
     }
     element.setGeometry(DrakeShapes::Sphere(r));
   } else if ((shape_node = node->FirstChildElement("cylinder"))) {
@@ -173,11 +277,18 @@ bool parseGeometry(TiXmlElement* node, DrakeShapes::Element& element)
     if (attr) {
       stringstream s(attr);
       s >> r;
+    } else {
+      cerr << "ERROR parsing cylinder element radius" << endl;
+      return false;
     }
+
     attr = shape_node->Attribute("length");
     if (attr) {
       stringstream s(attr);
       s >> l;
+    } else {
+      cerr << "ERROR parsing cylinder element length" << endl;
+      return false;
     }
     element.setGeometry(DrakeShapes::Cylinder(r, l));
   } else if ((shape_node = node->FirstChildElement("capsule"))) {
@@ -186,11 +297,18 @@ bool parseGeometry(TiXmlElement* node, DrakeShapes::Element& element)
     if (attr) {
       stringstream s(attr);
       s >> r;
+    } else {
+      cerr << "ERROR parsing capsule element radius" << endl;
+      return false;
     }
+
     attr = shape_node->Attribute("length");
     if (attr) {
       stringstream s(attr);
       s >> l;
+    } else {
+      cerr << "ERROR parsing capsule element length" << endl;
+      return false;
     }
     element.setGeometry(DrakeShapes::Capsule(r, l));
   } else if ((shape_node = node->FirstChildElement("mesh"))) {
@@ -199,6 +317,39 @@ bool parseGeometry(TiXmlElement* node, DrakeShapes::Element& element)
       return false;
     string filename(attr);
     element.setGeometry(DrakeShapes::Mesh(filename));
+  } else if ((shape_node = geometry_node->FirstChildElement("mesh-points"))) {
+    attr = shape_node->Attribute("filename");
+    string filename;
+    if (attr) {
+      filename = attr;
+    } else {
+      cerr << "ERROR parsing mesh element filename" << endl;
+      return false;
+    }
+    Poco::Path raw_filename(filename);
+    Poco::Path root_dir_path(root_dir);
+    Poco::Path mesh_filename;
+    //cout << raw_filename.getDevice() << endl;
+    if (raw_filename.getDevice() == "package") {
+      Poco::Path package_path = Poco::Path(rospack(raw_filename.directory(0)));
+      mesh_filename = package_path;
+      for (int i = 1; i < raw_filename.depth()+1; ++i) {
+        mesh_filename.append(raw_filename.directory(i));
+      }
+    } else {
+      mesh_filename = root_dir;
+      mesh_filename.append(raw_filename);
+    }
+    vector<double> mesh_data;
+    readObjFile(mesh_filename, mesh_data);
+    if ((mesh_data.size() > 0) && (mesh_data.size() % 3 == 0)) {
+      double n_pts = mesh_data.size()/3;
+      Map<Matrix3Xd> pts(mesh_data.data(),3,n_pts);
+      geometry = unique_ptr<DrakeCollision::Geometry>(new DrakeCollision::Mesh(pts));
+    } else {
+      cerr << "ERROR parsing mesh file: " << mesh_filename.toString(Poco::Path::PATH_NATIVE) << endl;
+      return false;
+    }
     /*
      boost::shared_ptr<urdf::Mesh> mesh(boost::dynamic_pointer_cast<urdf::Mesh>(cptr->geometry));
      boost::filesystem::path mesh_filename(root_dir);

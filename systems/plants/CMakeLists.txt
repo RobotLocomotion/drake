@@ -12,11 +12,13 @@ if (Boost_FOUND)
   link_directories( ${Boost_LIBRARY_DIRS} )
 endif()
 
+find_package( Poco REQUIRED)
 
-if (eigen3_FOUND)
+if (eigen3_FOUND AND Poco_FOUND)
   # todo: check eigen version.  3.1.0 didn't work for clang.  3.2.0 did.
  add_library(drakeRBM SHARED RigidBodyManipulator.cpp RigidBody.cpp RigidBodyManipulatorURDF.cpp RigidBodyManipulatorContact.cpp tinyxml/tinyxml.cpp tinyxml/tinyxmlparser.cpp tinyxml/tinyxmlerror.cpp)
  target_link_libraries(drakeRBM drakeCollision)
+ target_link_libraries(drakeRBM PocoFoundation)
  include_directories( joints )
  target_link_libraries(drakeRBM drakeJoints)
 
