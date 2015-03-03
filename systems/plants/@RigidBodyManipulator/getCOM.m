@@ -7,6 +7,8 @@ function [com,J,dJ] = getCOM(model,kinsol,robotnum)
 
 if(nargin == 2)
   robotnum = 1;
+elseif robotnum<0 % then do all robots (and the world)
+  robotnum = 0:length(model.name);
 end
 if ~isstruct(kinsol)  
   % treat input as getCOM(model,q)

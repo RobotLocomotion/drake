@@ -1,23 +1,21 @@
 
 #include <iostream>
 #include <Eigen/Dense>
-#include "URDFRigidBodyManipulator.h"
+#include "RigidBodyManipulator.h"
 
 using namespace std;
 
 int main(int argc, char* argv[])
 {
   if (argc < 2) {
-    cerr << "Usage: urdf_kin_test urdf_filename" << endl;
+    cerr << "Usage: urdfManipulatorDynamicsTest urdf_filename" << endl;
     exit(-1);
   }
-  URDFRigidBodyManipulator* model = loadURDFfromFile(argv[1]);
-
+  RigidBodyManipulator* model = new RigidBodyManipulator(argv[1]);
   if (!model) {
     cerr << "ERROR: Failed to load model from " << argv[1] << endl;
     return -1;
   }
-  model->use_new_kinsol = true;
 
   // the order of the bodies may be different in matlab, so print it out once here
   cout << model->num_bodies << endl;
@@ -39,7 +37,7 @@ int main(int argc, char* argv[])
       sscanf(argv[2 + model->num_positions + i], "%lf", &v(i));
   }
 
-  model->doKinematicsNew(q.data(), true, v.data(), true);
+  model->doKinematicsNew(q, v, true, true);
 
   auto H = model->massMatrix<double>();
   cout << H.value() << endl;
