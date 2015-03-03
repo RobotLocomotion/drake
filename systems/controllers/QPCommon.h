@@ -172,7 +172,6 @@ struct DesiredBodyAcceleration {
 };
 
 struct QPControllerOutput {
-
   VectorXd q_ref;
   VectorXd qd_ref;
   VectorXd qdd;

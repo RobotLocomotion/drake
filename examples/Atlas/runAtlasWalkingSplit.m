@@ -87,7 +87,7 @@ output_select(1).output=1;
 sys = mimoCascade(sys,v,[],[],output_select);
 
 
-T = min(walking_plan_data.duration + 0.5, 30);
+T = min(walking_plan_data.duration + 1, 30);
 
 % profile on
 ytraj = simulate(sys, [0, T], x0, struct('gui_control_interface', true));
