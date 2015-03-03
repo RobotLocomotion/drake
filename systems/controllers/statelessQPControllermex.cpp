@@ -20,75 +20,6 @@
 
 using namespace std;
 
-// shared_ptr<WholeBodyParams> parseWholeBodyParams(const mxArray* params_obj, RigidBodyManipulator *r) {
-//   const mxArray *wb_obj = myGetProperty(params_obj, "whole_body");
-//   const mxArray *int_obj = myGetField(wb_obj, "integrator");
-//   const mxArray *qddbound_obj = myGetField(wb_obj, "qdd_bounds");
-//   int nq = r->num_dof;
-//   int nv = r->num_velocities;
-
-//   if (mxGetNumberOfElements(myGetField(wb_obj, "Kp")) != nq) mexErrMsgTxt("Kp should be of size nq");
-//   if (mxGetNumberOfElements(myGetField(wb_obj, "Kd")) != nq) mexErrMsgTxt("Kd should be of size nq");
-//   if (mxGetNumberOfElements(myGetField(wb_obj, "w_qdd")) != nv) mexErrMsgTxt("w_qdd should be of size nv");
-//   if (mxGetNumberOfElements(myGetField(int_obj, "gains")) != nq) mexErrMsgTxt("gains should be of size nq");
-//   if (mxGetNumberOfElements(myGetField(int_obj, "clamps")) != nq) mexErrMsgTxt("clamps should be of size nq");
-//   if (mxGetNumberOfElements(myGetField(qddbound_obj, "min")) != nv) mexErrMsgTxt("qdd min should be of size nv");
-//   if (mxGetNumberOfElements(myGetField(qddbound_obj, "max")) != nv) mexErrMsgTxt("qdd max should be of size nv");
-
-//   shared_ptr<WholeBodyParams> params(
-//     new WholeBodyParams(mxGetPr(myGetField(wb_obj, "Kp")), nq,
-//                         mxGetPr(myGetField(wb_obj, "Kd")), nq,
-//                         mxGetPr(myGetField(wb_obj, "w_qdd")), nv,
-//                         mxGetPr(myGetField(int_obj, "gains")), nq,
-//                         mxGetPr(myGetField(int_obj, "clamps")), nq,
-//                         mxGetPr(myGetField(qddbound_obj, "min")), nv,
-//                         mxGetPr(myGetField(qddbound_obj, "max")), nv));
-
-//   params->damping_ratio = mxGetScalar(myGetField(wb_obj, "damping_ratio"));
-//   params->integrator.eta = mxGetScalar(myGetField(int_obj, "eta"));
-//   return params;
-// }
-
-// shared_ptr<RobotPropertyCache> parseRobotPropertyCache(const mxArray *rpc_obj) {
-//   shared_ptr<RobotPropertyCache> rpc(new RobotPropertyCache());
-//   const mxArray *pobj;
-
-//   pobj = myGetField(myGetField(rpc_obj, "position_indices"), "r_leg_kny");
-//   Map<VectorXd>r_leg_kny(mxGetPr(pobj), mxGetNumberOfElements(pobj));
-//   rpc->position_indices.r_leg_kny = r_leg_kny.cast<int>();
-
-//   pobj = myGetField(myGetField(rpc_obj, "position_indices"), "l_leg_kny");
-//   Map<VectorXd>l_leg_kny(mxGetPr(pobj), mxGetNumberOfElements(pobj));
-//   rpc->position_indices.l_leg_kny = l_leg_kny.cast<int>();
-
-//   pobj = myGetField(myGetField(rpc_obj, "position_indices"), "r_leg");
-//   Map<VectorXd>r_leg(mxGetPr(pobj), mxGetNumberOfElements(pobj));
-//   rpc->position_indices.r_leg = r_leg.cast<int>();
-
-//   pobj = myGetField(myGetField(rpc_obj, "position_indices"), "l_leg");
-//   Map<VectorXd>l_leg(mxGetPr(pobj), mxGetNumberOfElements(pobj));
-//   rpc->position_indices.l_leg = l_leg.cast<int>();
-
-//   pobj = myGetField(myGetField(rpc_obj, "position_indices"), "r_leg_ak");
-//   Map<VectorXd>r_leg_ak(mxGetPr(pobj), mxGetNumberOfElements(pobj));
-//   rpc->position_indices.r_leg_ak = r_leg_ak.cast<int>();
-
-//   pobj = myGetField(myGetField(rpc_obj, "position_indices"), "l_leg_ak");
-//   Map<VectorXd>l_leg_ak(mxGetPr(pobj), mxGetNumberOfElements(pobj));
-//   rpc->position_indices.l_leg_ak = l_leg_ak.cast<int>();
-
-//   rpc->body_ids.r_foot = (int) mxGetScalar(myGetField(myGetField(rpc_obj, "body_ids"), "r_foot"));
-//   rpc->body_ids.l_foot = (int) mxGetScalar(myGetField(myGetField(rpc_obj, "body_ids"), "l_foot"));
-//   rpc->body_ids.pelvis = (int) mxGetScalar(myGetField(myGetField(rpc_obj, "body_ids"), "pelvis"));
-
-//   pobj = myGetField(rpc_obj, "actuated_indices");
-//   Map<VectorXd>actuated_indices(mxGetPr(pobj), mxGetNumberOfElements(pobj));
-//   rpc->actuated_indices = actuated_indices.cast<int>();
-
-//   return rpc;
-// }
-
-
 VectorXd wholeBodyPID(NewQPControllerData *pdata, double t, double *q, double *qd, VectorXd q_des, WholeBodyParams *params) {
   assert(q_des.size() == params->integrator.gains.size());
   double dt = 0;
@@ -203,13 +134,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   memcpy(&pdata,mxGetData(prhs[0]),sizeof(pdata));
   int nu = pdata->B.cols(), nq = pdata->r->num_dof;
 
-  int narg=1;
-  // if (!mxIsNumeric(prhs[narg]) || mxGetNumberOfElements(prhs[narg])!=1)
-  //   mexErrMsgIdAndTxt("Drake:QPControllermex:BadInputs","the second argument should be the state ptr");
-  // memcpy(&pstate,mxGetData(prhs[narg]),sizeof(pstate));
-  // narg++;
-
   // now retrieve the runtime params from their matlab object
+  int narg=1;
 
   // t
   double t = mxGetScalar(prhs[narg++]);
