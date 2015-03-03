@@ -20,8 +20,14 @@
 
 using namespace std;
 
-VectorXd wholeBodyPID(NewQPControllerData *pdata, double t, double *q, double *qd, VectorXd q_des, WholeBodyParams *params) {
+struct PIDOutput {
+  VectorXd q_ref;
+  VectorXd qddot_des;
+};
+
+PIDOutput wholeBodyPID(NewQPControllerData *pdata, double t, double *q, double *qd, VectorXd q_des, WholeBodyParams *params) {
   assert(q_des.size() == params->integrator.gains.size());
+  PIDOutput out;
   double dt = 0;
   int nq = pdata->r->num_dof;
   int nv = pdata->r->num_velocities;
@@ -39,6 +45,7 @@ VectorXd wholeBodyPID(NewQPControllerData *pdata, double t, double *q, double *q
   q_des = q_des + pdata->state.q_integrator_state;
   q_des = q_des.array().max((pdata->r->joint_limit_min - params->integrator.clamps).array());
   q_des = q_des.array().min((pdata->r->joint_limit_max + params->integrator.clamps).array());
+  out.q_ref = q_des;
 
   pdata->state.q_integrator_state = pdata->state.q_integrator_state.array().max(-params->integrator.clamps.array());
   pdata->state.q_integrator_state = pdata->state.q_integrator_state.array().min(params->integrator.clamps.array());
@@ -52,7 +59,8 @@ VectorXd wholeBodyPID(NewQPControllerData *pdata, double t, double *q, double *q
   VectorXd qddot_des = params->Kp.cwiseProduct(err_q) - params->Kd.cwiseProduct(qd_vec);
   qddot_des = qddot_des.array().max(params->qdd_bounds.min.array());
   qddot_des = qddot_des.array().min(params->qdd_bounds.max.array());
-  return qddot_des;
+  out.qddot_des = qddot_des;
+  return out;
 }
 
 VectorXd velocityReference(NewQPControllerData *pdata, double t, double *q, double *qd, VectorXd qdd, bool foot_contact[2], VRefIntegratorParams *params, RobotPropertyCache *rpc) {
@@ -120,6 +128,8 @@ VectorXd velocityReference(NewQPControllerData *pdata, double t, double *q, doub
 
 
 int setupAndSolveQP(NewQPControllerData *pdata, shared_ptr<drake::lcmt_qp_controller_input> qp_input, double t, double *q, double *qd, Matrix<bool, Dynamic, 1> b_contact_force, QPControllerOutput *qp_output, shared_ptr<QPControllerDebugData> debug) {
+  // The primary solve loop for our controller. This constructs and solves a Quadratic Program and produces the instantaneous desired torques, along with reference positions, velocities, and accelerations. 
+  // Note: argument `debug` MAY be set to NULL, which signals that no debug information is requested.
 
   // look up the param set by name
   AtlasParams *params; 
@@ -157,7 +167,9 @@ int setupAndSolveQP(NewQPControllerData *pdata, shared_ptr<drake::lcmt_qp_contro
   if (qp_input->whole_body_data.num_positions != nq) mexErrMsgTxt("number of positions doesn't match num_dof for this robot");
   Map<VectorXd> q_des(qp_input->whole_body_data.q_des.data(), nq);
   Map<VectorXd> condof(qp_input->whole_body_data.constrained_dofs.data(), qp_input->whole_body_data.num_constrained_dofs);
-  VectorXd qddot_des = wholeBodyPID(pdata, t, q, qd, q_des, &(params->whole_body));
+  PIDOutput pid_out = wholeBodyPID(pdata, t, q, qd, q_des, &(params->whole_body));
+  qp_output->q_ref = pid_out.q_ref;
+  // VectorXd qddot_des = wholeBodyPID(pdata, t, q, qd, q_des, &(params->whole_body));
 
 
   // mu
@@ -329,14 +341,14 @@ int setupAndSolveQP(NewQPControllerData *pdata, shared_ptr<drake::lcmt_qp_contro
       pdata->fqp += (S*x_bar + 0.5*s1).transpose()*B_ls*Jcom;
       pdata->fqp -= u0.transpose()*tmp2;
       pdata->fqp -= y0.transpose()*Qy*D_ls*Jcom;
-      pdata->fqp -= (params->whole_body.w_qdd.array()*qddot_des.array()).matrix().transpose();
+      pdata->fqp -= (params->whole_body.w_qdd.array()*pid_out.qddot_des.array()).matrix().transpose();
       if (include_angular_momentum) {
         pdata->fqp += qdvec.transpose()*pdata->Akdot.transpose()*params->W_kdot*pdata->Ak;
         pdata->fqp -= kdot_des.transpose()*params->W_kdot*pdata->Ak;
       }
       f.head(nq) = pdata->fqp.transpose();
      } else {
-      f.head(nq) = -qddot_des;
+      f.head(nq) = -pid_out.qddot_des;
     } 
   }
   f.tail(nf+neps) = VectorXd::Zero(nf+neps);
@@ -389,7 +401,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, shared_ptr<drake::lcmt_qp_contro
     // add joint acceleration constraints
     for (int i=0; i<qp_input->whole_body_data.num_constrained_dofs; i++) {
       Aeq(equality_ind,(int)condof[i]-1) = 1;
-      beq[equality_ind++] = qddot_des[(int)condof[i]-1];
+      beq[equality_ind++] = pid_out.qddot_des[(int)condof[i]-1];
     }
   }  
   
@@ -584,9 +596,6 @@ int setupAndSolveQP(NewQPControllerData *pdata, shared_ptr<drake::lcmt_qp_contro
   foot_contact[0] = b_contact_force(pdata->rpc.body_ids.r_foot) == 1;
   foot_contact[1] = b_contact_force(pdata->rpc.body_ids.l_foot) == 1;
   qp_output->qd_ref = velocityReference(pdata, t, q, qd, qp_output->qdd, foot_contact, &(params->vref_integrator), &(pdata->rpc));
-
-  mexWarnMsgTxt("not doing qref integration ");
-  qp_output->q_ref = q_des;
 
   // Remember t for next time around
   pdata->state.t_prev = t;
