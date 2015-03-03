@@ -32,13 +32,27 @@ using namespace Eigen;
 
 //extern std::set<int> emptyIntSet;  // was const std:set<int> emptyIntSet, but valgrind said I was leaking memory
 
+class DLLEXPORT_RBM RigidBodyActuator
+{
+public:
+  RigidBodyActuator(std::string _name, std::shared_ptr<RigidBody> _body, double _reduction = 1.0) :
+    name(_name), body(_body), reduction(_reduction) {};
+
+  std::string name;
+  std::shared_ptr<RigidBody> body;
+  double reduction;
+
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+};
+
 class DLLEXPORT_RBM RigidBodyLoop
 {
 public:
-  RigidBodyLoop(int _bodyA, Vector3d _ptA, int _bodyB, Vector3d _ptB) :
+  RigidBodyLoop(std::shared_ptr<RigidBody> _bodyA, Vector3d _ptA, std::shared_ptr<RigidBody> _bodyB, Vector3d _ptB) :
     bodyA(_bodyA), bodyB(_bodyB), ptA(_ptA), ptB(_ptB) {};
 
-  int bodyA, bodyB;
+  std::shared_ptr<RigidBody> bodyA, bodyB;
   Vector3d ptA, ptB;
 
 public:
@@ -49,7 +63,11 @@ class DLLEXPORT_RBM RigidBodyManipulator
 {
 public:
   RigidBodyManipulator(int num_dof, int num_featherstone_bodies=-1, int num_rigid_body_objects=-1, int num_rigid_body_frames=0);
+  RigidBodyManipulator(const std::string &urdf_filename);
   virtual ~RigidBodyManipulator(void);
+
+  bool addRobotFromURDFString(const std::string &xml_string, const std::string &root_dir = ".");
+  bool addRobotFromURDF(const std::string &urdf_filename);
 
   void resize(int num_dof, int num_featherstone_bodies=-1, int num_rigid_body_objects=-1, int num_rigid_body_frames=0);
 
@@ -235,12 +253,16 @@ public:
 
   // Rigid body objects
   int num_bodies;  // rigid body objects
-  std::vector<std::unique_ptr<RigidBody> > bodies;
+  std::vector<std::shared_ptr<RigidBody> > bodies;
 
   // Rigid body frames
   int num_frames;
   std::vector<RigidBodyFrame,Eigen::aligned_allocator<RigidBodyFrame> > frames;
 
+  // Rigid body actuators
+  std::vector<RigidBodyActuator,Eigen::aligned_allocator<RigidBodyActuator> > actuators;
+
+  // Rigid body loops
   std::vector<RigidBodyLoop,Eigen::aligned_allocator<RigidBodyLoop> > loops;
 
   // featherstone data structure

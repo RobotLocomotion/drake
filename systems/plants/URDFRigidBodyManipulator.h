@@ -19,8 +19,8 @@ public:
   URDFRigidBodyManipulator(void);
   virtual ~URDFRigidBodyManipulator(void);
 
-  bool addURDFfromXML(const std::string &xml_string, const std::string &root_dir = ".");
-  bool addURDFfromFile(const std::string &urdf_filename);
+  bool addRobotFromURDFString(const std::string &xml_string, const std::string &root_dir = ".");
+  bool addRobotFromURDF(const std::string &urdf_filename);
 
   std::map<std::string, int> robot_map;
   std::vector< std::map<std::string, int> > joint_map, dof_map;

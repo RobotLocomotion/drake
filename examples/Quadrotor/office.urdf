@@ -131,30 +131,6 @@
     </collision>
    </link>
 
-    <link name="tableLegLL">
-   	<inertial>
-   		<mass value=".5" />
-   		<origin xyz="0 0 0" rpy="0 0 0"/>
-		<inertia ixx="10"  ixy="0"  ixz="0" iyy="10" iyz="0" izz="10" />
-   	</inertial>
-
-	<visual>
-    <origin xyz="-1 1 .5" rpy="0 0 0" />
-    <geometry>
-      <box size=".1 .1 1." />
-    </geometry>
-    <material name="White"/>
-  </visual>
-  <collision>
-    <origin xyz="-1 1 .5" rpy="0 0 0" />
-    <geometry>
-      <box size=".1 .1 1." />
-    </geometry>
-    <material name="White"/>
-  </collision>
-
-   </link>
-
    <link name="TableTop">
    	<inertial>
    		<mass value=".5" />
