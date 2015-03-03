@@ -20,6 +20,9 @@
 
 using namespace std;
 
+// shared_ptr<drake::lcmt_atlas_command> initializeAtlasCommandMsg(RigidBodyManipulator *r, int atlas_version) {
+  
+
 struct PIDOutput {
   VectorXd q_ref;
   VectorXd qddot_des;
@@ -126,6 +129,25 @@ VectorXd velocityReference(NewQPControllerData *pdata, double t, double *q, doub
   return v_ref;
 }
 
+vector<SupportStateElement> loadAvailableSupports(shared_ptr<drake::lcmt_qp_controller_input> qp_input) {
+  vector<SupportStateElement> available_supports;
+  available_supports.resize(qp_input->num_support_data);
+  for (int i=0; i < qp_input->num_support_data; i++) {
+    available_supports[i].body_idx = qp_input->support_data[i].body_id - 1;
+    available_supports[i].contact_surface = qp_input->support_data[i].contact_surfaces;
+    for (int j=0; j < 4; j++) {
+      available_supports[i].support_logic_map[j] = qp_input->support_data[i].support_logic_map[j];
+    }
+    available_supports[i].contact_pts.resize(qp_input->support_data[i].num_contact_pts);
+    for (int j=0; j < qp_input->support_data[i].num_contact_pts; j++) {
+      for (int k = 0; k < 3; k++) {
+        available_supports[i].contact_pts[j][k] = qp_input->support_data[i].contact_pts[k][j];
+      }
+      available_supports[i].contact_pts[j][3] = 1;
+    }
+  }
+  return available_supports;
+}
 
 int setupAndSolveQP(NewQPControllerData *pdata, shared_ptr<drake::lcmt_qp_controller_input> qp_input, double t, double *q, double *qd, Matrix<bool, Dynamic, 1> b_contact_force, QPControllerOutput *qp_output, shared_ptr<QPControllerDebugData> debug) {
   // The primary solve loop for our controller. This constructs and solves a Quadratic Program and produces the instantaneous desired torques, along with reference positions, velocities, and accelerations. 
@@ -169,8 +191,6 @@ int setupAndSolveQP(NewQPControllerData *pdata, shared_ptr<drake::lcmt_qp_contro
   Map<VectorXd> condof(qp_input->whole_body_data.constrained_dofs.data(), qp_input->whole_body_data.num_constrained_dofs);
   PIDOutput pid_out = wholeBodyPID(pdata, t, q, qd, q_des, &(params->whole_body));
   qp_output->q_ref = pid_out.q_ref;
-  // VectorXd qddot_des = wholeBodyPID(pdata, t, q, qd, q_des, &(params->whole_body));
-
 
   // mu
   // NOTE: we're using the same mu for all supports
@@ -228,27 +248,10 @@ int setupAndSolveQP(NewQPControllerData *pdata, shared_ptr<drake::lcmt_qp_contro
 
   //---------------------------------------------------------------------
 
-  int num_active_contact_pts=0;
-  // vector<SupportStateElement> available_supports = parseSupportData(available_supp_obj);
-  vector<SupportStateElement> available_supports;
-  available_supports.resize(qp_input->num_support_data);
-  for (int i=0; i < qp_input->num_support_data; i++) {
-    available_supports[i].body_idx = qp_input->support_data[i].body_id - 1;
-    available_supports[i].contact_surface = qp_input->support_data[i].contact_surfaces;
-    for (int j=0; j < 4; j++) {
-      available_supports[i].support_logic_map[j] = qp_input->support_data[i].support_logic_map[j];
-    }
-    available_supports[i].contact_pts.resize(qp_input->support_data[i].num_contact_pts);
-    for (int j=0; j < qp_input->support_data[i].num_contact_pts; j++) {
-      for (int k = 0; k < 3; k++) {
-        available_supports[i].contact_pts[j][k] = qp_input->support_data[i].contact_pts[k][j];
-      }
-      available_supports[i].contact_pts[j][3] = 1;
-    }
-  }
-
+  vector<SupportStateElement> available_supports = loadAvailableSupports(qp_input);
   vector<SupportStateElement> active_supports = getActiveSupports(pdata->r, pdata->map_ptr, q, qd, available_supports, b_contact_force, params->contact_threshold, pdata->default_terrain_height);
 
+  int num_active_contact_pts=0;
   for (vector<SupportStateElement>::iterator iter = active_supports.begin(); iter!=active_supports.end(); iter++) {
     num_active_contact_pts += iter->contact_pts.size();
   }
