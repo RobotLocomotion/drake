@@ -17,4 +17,34 @@ namespace DrakeCollision
     getResults(ptA,ptB,normal);
     distance = this->distance;
   }
+
+  ElementId PointPair::getIdA()
+  {
+    return this->idA;
+  }
+
+  ElementId PointPair::getIdB()
+  {
+    return this->idB;
+  }
+
+  Vector3d PointPair::getNormal()
+  {
+    return this->normal;
+  }
+
+  double PointPair::getDistance()
+  {
+    return this->distance;
+  }
+
+  Vector3d PointPair::getPtA()
+  {
+    return this->ptA;
+  }
+
+  Vector3d PointPair::getPtB()
+  {
+    return this->ptB;
+  }
 }

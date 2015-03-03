@@ -9,24 +9,24 @@ using namespace Eigen;
 
 int testPointPair(PointPair point, double distance, Vector3d normal, ElementId idA, ElementId idB)
 {
-  if (point.distance != distance) {
+  if (point.getDistance() != distance) {
     cerr << "Wrong distance:" << endl;
-    cerr << "  Expected " << distance << ", got " << point.distance << endl;
+    cerr << "  Expected " << distance << ", got " << point.getDistance() << endl;
     return 1;
   }
-  if (point.normal != normal) {
-    cerr << "  Expected " << normal.transpose() << ", got " << point.normal.transpose() << endl;
+  if (point.getNormal() != normal) {
+    cerr << "  Expected " << normal.transpose() << ", got " << point.getNormal().transpose() << endl;
     cerr << "Wrong normal:" << endl;
     return 1;
   }
-  if (point.idA != idA) {
+  if (point.getIdA() != idA) {
     cerr << "Wrong idA:" << endl;
-    cerr << "  Expected " << idA << ", got " << point.idA << endl;
+    cerr << "  Expected " << idA << ", got " << point.getIdA() << endl;
     return 1;
   }
-  if (point.idB != idB) {
+  if (point.getIdB() != idB) {
     cerr << "Wrong idB:" << endl;
-    cerr << "  Expected " << idB << ", got " << point.idB << endl;
+    cerr << "  Expected " << idB << ", got " << point.getIdB() << endl;
     return 1;
   }
   return 0;

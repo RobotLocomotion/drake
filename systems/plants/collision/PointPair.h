@@ -20,15 +20,14 @@ namespace DrakeCollision
         distance(distance)
       {}
 
-      const ElementId idA;
-      const ElementId idB;
-      const Eigen::Vector3d ptA;
-      const Eigen::Vector3d ptB;
-      const Eigen::Vector3d normal;
-      double distance;
-
       void getResults(Eigen::Vector3d& ptA, Eigen::Vector3d& ptB, Eigen::Vector3d& normal);
       void getResults(Eigen::Vector3d& ptA, Eigen::Vector3d& ptB, Eigen::Vector3d& normal, double& distance);
+      ElementId getIdA();
+      ElementId getIdB();
+      Eigen::Vector3d getNormal();
+      Eigen::Vector3d getPtA();
+      Eigen::Vector3d getPtB();
+      double getDistance();
 
       bool operator < (const PointPair& pt) const
       {
@@ -59,6 +58,14 @@ namespace DrakeCollision
       {
         return (distance >= pt.distance);
       }
+
+    protected:
+      ElementId idA;
+      ElementId idB;
+      Eigen::Vector3d ptA;
+      Eigen::Vector3d ptB;
+      Eigen::Vector3d normal;
+      double distance;
   };
 }
 #endif

@@ -556,9 +556,9 @@ bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
     xB.col(i) = ptB;
     normal.col(i) = n;
     phi[i] = distance;
-    const RigidBody::CollisionElement* elementA = dynamic_cast<const RigidBody::CollisionElement*>(collision_model->readElement(points[i].idA));
+    const RigidBody::CollisionElement* elementA = dynamic_cast<const RigidBody::CollisionElement*>(collision_model->readElement(points[i].getIdA()));
     bodyA_idx.push_back(elementA->getBody()->body_index);
-    const RigidBody::CollisionElement* elementB = dynamic_cast<const RigidBody::CollisionElement*>(collision_model->readElement(points[i].idB));
+    const RigidBody::CollisionElement* elementB = dynamic_cast<const RigidBody::CollisionElement*>(collision_model->readElement(points[i].getIdB()));
     bodyB_idx.push_back(elementB->getBody()->body_index);
   }
   return points_found;
@@ -669,9 +669,9 @@ bool RigidBodyManipulator::allCollisions(vector<int>& bodyA_idx,
     xB_in_world.col(i) = ptB;
     //normal.col(i) = n;
     //phi[i] = distance;
-    const RigidBody::CollisionElement* elementA = dynamic_cast<const RigidBody::CollisionElement*>(collision_model->readElement(points[i].idA));
+    const RigidBody::CollisionElement* elementA = dynamic_cast<const RigidBody::CollisionElement*>(collision_model->readElement(points[i].getIdA()));
     bodyA_idx.push_back(elementA->getBody()->body_index);
-    const RigidBody::CollisionElement* elementB = dynamic_cast<const RigidBody::CollisionElement*>(collision_model->readElement(points[i].idB));
+    const RigidBody::CollisionElement* elementB = dynamic_cast<const RigidBody::CollisionElement*>(collision_model->readElement(points[i].getIdB()));
     bodyB_idx.push_back(elementB->getBody()->body_index);
   }
   return points_found;
