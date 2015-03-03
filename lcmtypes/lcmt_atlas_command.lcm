@@ -1,0 +1,58 @@
+package drake;
+
+/*
+ * modeled after the DRCSIM AtlasCommand ROS message, but updated for the atlas hardware API.
+ *
+ * control parameter spec:
+ *
+ *   q, qd, f are sensed position, velocity, torque, from AtlasJointState
+ *
+ *   q_d, qd_d, f_d are desired position, velocity, torque, from
+ *   AtlasJointDesired
+ *
+ *   The final joint command will be:
+ *
+ *    k_q_p   * ( q_d - q )     +
+ *    k_q_i   * 1/s * ( q_d - q ) +
+ *    k_qd_p  * ( qd_d - qd )   +
+ *    k_f_p   * ( f_d - f )     +
+ *    ff_qd   * qd        +
+ *    ff_qd_d   * qd_d        +
+ *    ff_f_d  * f_d         +
+ *    ff_const
+ */
+
+struct lcmt_atlas_command
+{
+  int64_t utime;
+  int32_t num_joints;
+
+  string joint_names [num_joints];
+
+  double position [num_joints];
+  double velocity [num_joints];
+  double effort [num_joints];
+
+  double k_q_p [num_joints]; // corresponds to kp_position in drcsim API
+  double k_q_i [num_joints]; // corresponds to ki_position in drcsim API
+  double k_qd_p [num_joints]; // corresponds to kp_velocity in drcsim API
+  double k_f_p [num_joints];
+  double ff_qd [num_joints]; // maps to kd_position in drcsim API (there isnt an equivalent gain in the bdi api)
+  double ff_qd_d [num_joints];
+  double ff_f_d [num_joints];
+  double ff_const [num_joints];
+
+  // k_torque can be an unsigned int 8value from 0 to 255,
+  //  at run time, a double between 0 and 1 is obtained
+  //  by dividing by 255.0d.
+  byte k_effort[num_joints]; // for controlling tradeoff between BDI/user control in SIM ONLY
+
+  // double i_effort_min [num_joints]; // SIM ONLY --- disabled because we never use it
+  // double i_effort_max [num_joints]; // SIM ONLY
+
+  // max allowed controller update period in milli-seconds simulation time
+  // for controller synchronization. See SynchronizationStatistics.msg for
+  // tracking synchronization status.
+  byte desired_controller_period_ms;
+}
+

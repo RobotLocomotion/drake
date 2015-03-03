@@ -566,6 +566,12 @@ std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray 
   return msg;
 }
 
+// shared_ptr<drake::lcmt_atlas_command> initializeAtlasCommandMsg(RigidBodyManipulator *r, int atlas_version) {
+//   vector<int> drake_to_atlas_joint_map;
+//   vector<std::string>atlas_joint_names;
+  
+// }
+
 
 template drakeControlUtilEXPORT void getRows(std::set<int> &, const MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > &);
 template drakeControlUtilEXPORT void getCols(std::set<int> &, const MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > &);
