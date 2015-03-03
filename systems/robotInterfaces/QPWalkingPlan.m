@@ -258,8 +258,6 @@ classdef QPWalkingPlan < QPControllerPlan
 
       qp_input.whole_body_data.q_des = obj.qstar;
 
-      feet_poses = zeros(6,2);
-      i = 1;
       pelvis_has_tracking = false;
       for j = 1:length(obj.link_constraints)
         qp_input.body_motion_data(j).body_id = obj.link_constraints(j).link_ndx;
@@ -273,10 +271,6 @@ classdef QPWalkingPlan < QPControllerPlan
           qp_input.body_motion_data(j).ts = obj.link_constraints(j).ts([body_t_ind,body_t_ind]);
         end
         qp_input.body_motion_data(j).coefs = obj.link_constraints(j).coefs(:,body_t_ind,:);
-        if any(qp_input.body_motion_data(j).body_id == [r.foot_body_id.right, r.foot_body_id.left])
-          feet_poses(:,i) = evalCubicSplineSegment(t - qp_input.body_motion_data(j).ts(1), qp_input.body_motion_data(j).coefs);
-          i = i + 1;
-        end
       end
       assert(pelvis_has_tracking, 'Expecting a link_constraints block for the pelvis');
 

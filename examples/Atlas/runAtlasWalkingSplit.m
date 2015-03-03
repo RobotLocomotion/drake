@@ -71,14 +71,15 @@ import atlasControllers.*;
 
 param_sets = atlasParams.getDefaults(r);
 control = AtlasPlanlessQPController(r,...
-                                    param_sets, struct('use_mex', 2));
+                                    param_sets, struct('use_mex', example_options.use_mex));
 
 planeval = AtlasPlanEval(r, walking_plan_data);
 % plancontroller = AtlasSplitQPController(r, control, planeval);
 
-plan_node = AtlasSplitQPController(r, [], planeval);
-control_node = AtlasSplitQPController(r, control, []);
-plancontroller = cascade(plan_node, control_node);
+% plan_node = AtlasSplitQPController(r, [], planeval);
+% control_node = AtlasSplitQPController(r, control, []);
+% plancontroller = cascade(plan_node, control_node);
+plancontroller = AtlasSplitQPController(r, control, planeval);
 
 sys = feedback(r, plancontroller);
 output_select(1).system=1;

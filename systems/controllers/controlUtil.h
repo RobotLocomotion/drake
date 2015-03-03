@@ -13,6 +13,7 @@
 #endif
 
 #include "drake/RigidBodyManipulator.h"
+#include "drake/lcmt_qp_controller_input.hpp"
 
 #if defined(WIN32) || defined(WIN64)
   #if defined(drakeControlUtil_EXPORTS)
@@ -69,6 +70,7 @@ drakeControlUtilEXPORT MatrixXd individualSupportCOPs(RigidBodyManipulator* r, c
 drakeControlUtilEXPORT void sizecheck(const mxArray* mat, int M, int N);
 drakeControlUtilEXPORT Vector6d bodyMotionPD(RigidBodyManipulator *r, double *q, double *qd, const int body_index, Vector6d body_pose_des, Vector6d body_v_des, Vector6d body_vdot_des, Vector6d Kp, Vector6d Kd);
 drakeControlUtilEXPORT void evaluateCubicSplineSegment(double t, Matrix<double, 6, 4> coefs, Vector6d &y, Vector6d &ydot, Vector6d &yddot); 
+drakeControlUtilEXPORT std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray *qp_input);
 
 
 #endif
