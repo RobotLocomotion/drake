@@ -10,13 +10,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	if (nrhs<1) mexErrMsgTxt("usage: mask=getActiveSupportsmex(ptr,x,support_data,contact_sensor,contact_threshold,terrain_height))");
 	if (nlhs<1) mexErrMsgTxt("please take at least one output");
 
-	struct NewQPControllerData* pdata;
 	const mxArray* pm;
 
 	// first get the ptr back from matlab
-  if (!mxIsNumeric(prhs[0]) || mxGetNumberOfElements(prhs[0])!=1)
-    mexErrMsgIdAndTxt("Drake:QPControllermex:BadInputs","the first argument should be the ptr");
-  memcpy(&pdata,mxGetData(prhs[0]),sizeof(pdata));
+  NewQPControllerData *pdata = (NewQPControllerData*) getDrakeMexPointer(prhs[0]);
 
   int nq = pdata->r->num_positions;
   int nv = pdata->r->num_velocities;

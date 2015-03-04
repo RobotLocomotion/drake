@@ -17,7 +17,7 @@ ctrl_data = obj.controller_data;
 all_bodies_vdot = struct('body_id', cell(1,length(qp_input.body_motion_data)),...
                          'body_vdot', cell(1,length(qp_input.body_motion_data)),...
                          'params', cell(1,length(qp_input.body_motion_data)));
-fun = fcompare(@atlasControllers.statelessBodyMotionControl,@statelessBodyMotionControlmex);
+fun = fcompare(@atlasControllers.bodyMotionControl,@statelessBodyMotionControlmex);
 for j = 1:length(qp_input.body_motion_data)
   body_id = qp_input.body_motion_data(j).body_id;
   [body_des, body_v_des, body_vdot_des] = evalCubicSplineSegment(t - qp_input.body_motion_data(j).ts(1), qp_input.body_motion_data(j).coefs);
@@ -29,7 +29,7 @@ for j = 1:length(qp_input.body_motion_data)
 end
 
 % Find the active set of supports
-mask = getActiveSupportsmex(obj.mex_ptr.data, [q; qd], qp_input.support_data, contact_sensor, params.contact_threshold, obj.default_terrain_height);
+mask = getActiveSupportsmex(obj.mex_ptr, [q; qd], qp_input.support_data, contact_sensor, params.contact_threshold, obj.default_terrain_height);
 supp = qp_input.support_data(logical(mask));
 
 % Run PD on the desired configuration

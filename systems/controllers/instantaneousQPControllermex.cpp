@@ -23,14 +23,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   if (nrhs<1) mexErrMsgTxt("usage: alpha=QPControllermex(ptr,t,x,qp_input,contact_sensor,use_fastqp)");
   if (nlhs<1) mexErrMsgTxt("take at least one output... please.");
 
-  struct NewQPControllerData* pdata;
-  // struct QPControllerState* pstate;
   double* pr;
 
   // first get the ptr back from matlab
-  if (!mxIsNumeric(prhs[0]) || mxGetNumberOfElements(prhs[0])!=1)
-    mexErrMsgIdAndTxt("Drake:QPControllermex:BadInputs","the first argument should be the ptr");
-  memcpy(&pdata,mxGetData(prhs[0]),sizeof(pdata));
+  NewQPControllerData *pdata = (NewQPControllerData*) getDrakeMexPointer(prhs[0]);
 
   // now retrieve the runtime params from their matlab object
   int narg=1;
