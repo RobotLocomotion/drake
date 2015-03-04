@@ -44,9 +44,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   if (mxGetNumberOfElements(prhs[narg]) != (nq + nv)) mexErrMsgTxt("size of x should be nq + nv\n");
   double *q_ptr = mxGetPr(prhs[narg]);
   double *qd_ptr = &q_ptr[nq];
-
   Map<VectorXd> q(q_ptr, nq);
   Map<VectorXd> qd(qd_ptr, nq);
+  narg++;
 
   // qp_input
   shared_ptr<drake::lcmt_qp_controller_input> qp_input = encodeQPInputLCM(prhs[narg]);
