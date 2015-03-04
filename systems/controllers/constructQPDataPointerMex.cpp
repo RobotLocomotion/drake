@@ -193,17 +193,27 @@ void parseRobotPropertyCache(const mxArray *rpc_obj, RobotPropertyCache *rpc) {
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
   if (nrhs<1) mexErrMsgTxt("usage: ptr = constructQPDataPointerMex(robot_obj, params_sets, robot_property_cache, B, umin, umax, terrain_map_ptr, gurobi_opts);");
+
+  if (nrhs == 1) {
+    // By convention, calling the constructor with just one argument (the pointer) should delete the pointer
+    if (isa(prhs[0],"DrakeMexPointer")) { 
+      destroyDrakeMexPointer<NewQPControllerData*>(prhs[0]);
+      return;
+    } else {
+      mexErrMsgIdAndTxt("Drake:constructQPDataPointerMex:BadInputs", "Expected a DrakeMexPointer (or a subclass)");
+    }
+  }
+
+
   if (nlhs<1) mexErrMsgTxt("take at least one output... please.");
 
-  int narg = 0;
   struct NewQPControllerData* pdata;
   pdata = new struct NewQPControllerData;
 
-  if (!mxIsNumeric(prhs[narg]) || mxGetNumberOfElements(prhs[narg])!=1)
-      mexErrMsgIdAndTxt("Drake:constructQPDataPointer:BadInputs","the first argument should be the robot mex ptr");
-
+  int narg = 0;
+  
   // robot_obj
-  memcpy(&(pdata->r), mxGetData(prhs[narg]), sizeof(pdata->r));
+  pdata->r = (RigidBodyManipulator*) getDrakeMexPointer(prhs[narg]);
   narg++;
 
   // param_sets
@@ -270,15 +280,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     CGE ( GRBsetdblparam(pdata->env,"barconvtol",0.0005), pdata->env );
   }
 
-  mxClassID cid;
-  if (sizeof(pdata)==4) cid = mxUINT32_CLASS;
-  else if (sizeof(pdata)==8) cid = mxUINT64_CLASS;
-  else mexErrMsgIdAndTxt("Drake:constructModelmex:PointerSize","Are you on a 32-bit machine or 64-bit machine??");
-  
-  plhs[0] = mxCreateNumericMatrix(1,1,cid,mxREAL);
-  memcpy(mxGetData(plhs[0]),&pdata,sizeof(pdata));
-
-  
   // preallocate some memory
   pdata->H.resize(nq,nq);
   pdata->H_float.resize(6,nq);
@@ -309,6 +310,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   pdata->state.q_integrator_state = VectorXd::Zero(pdata->r->num_positions);
   pdata->state.foot_contact_prev[0] = false;
   pdata->state.foot_contact_prev[1] = false;
+
+  plhs[0] = createDrakeMexPointer((void*) pdata, "NewQPControllerData");
 
   return;
 }
