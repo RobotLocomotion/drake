@@ -14,7 +14,7 @@ using namespace Eigen;
 namespace DrakeCollision
 {
 
-  const bitmask ALL_MASK(std::string(16,'1'));
+  const bitmask ALL_MASK(bitmask().set());
   const bitmask NONE_MASK(0);
   const bitmask DEFAULT_GROUP(1);
 

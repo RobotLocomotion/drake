@@ -7,9 +7,8 @@ classdef CollisionFilterGroup
   end
   properties (Constant)
     % Collision filter values are 16-bit bitmasks
-    DEFAULT_COLLISION_FILTER_GROUP_ID = uint16(1);
-    ALL_COLLISION_FILTER_GROUPS = intmax('uint16');
-    NO_COLLISION_FILTER_GROUPS = uint16(0);
+    DEFAULT_COLLISION_FILTER_GROUP_ID = true;
+    NO_COLLISION_FILTER_GROUPS = logical.empty();
   end
   methods
     function obj = CollisionFilterGroup()

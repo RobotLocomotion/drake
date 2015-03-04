@@ -16,12 +16,14 @@
 
 #include "DLLEXPORT_drakeCollision.h"
 
+static const int MAX_NUM_COLLISION_FILTER_GROUPS = 128;
+
 namespace DrakeCollision
 {
 
   DLLEXPORT_drakeCollision std::unique_ptr<Model> newModel();
 
-  typedef std::bitset<16> bitmask;
+  typedef std::bitset<MAX_NUM_COLLISION_FILTER_GROUPS> bitmask;
 
   // Constants
   extern const DLLEXPORT_drakeCollision bitmask ALL_MASK;
