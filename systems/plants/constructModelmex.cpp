@@ -310,16 +310,16 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
       }
 
       mxLogical* logical_belongs_to = mxGetLogicals(belongs_to);
-      for (int i = 0; i < numel_belongs_to; ++i) {
-        if (static_cast<bool>(logical_belongs_to[0])) {
-          group.set(i);
+      for (int j = 0; j < numel_belongs_to; ++j) {
+        if (static_cast<bool>(logical_belongs_to[j])) {
+          group.set(j);
         }
       }
 
       mxLogical* logical_ignores = mxGetLogicals(ignores);
-      for (int i = 0; i < numel_ignores; ++i) {
-        if (static_cast<bool>(logical_ignores[0])) {
-          group.set(i);
+      for (int j = 0; j < numel_ignores; ++j) {
+        if (static_cast<bool>(logical_ignores[j])) {
+          mask.set(j);
         }
       }
       model->bodies[i]->setCollisionFilter(group,mask);
