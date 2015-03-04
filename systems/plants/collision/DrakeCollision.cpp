@@ -14,7 +14,7 @@ using namespace Eigen;
 namespace DrakeCollision
 {
 
-  const bitmask ALL_MASK(bitmask().set());
+  const bitmask ALL_MASK(bitmask(0).set());
   const bitmask NONE_MASK(0);
   const bitmask DEFAULT_GROUP(1);
 
