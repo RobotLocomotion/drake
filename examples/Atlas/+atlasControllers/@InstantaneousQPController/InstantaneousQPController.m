@@ -98,111 +98,6 @@ classdef InstantaneousQPController
                                        obj.gurobi_options));
     end
 
-    function qddot_des = wholeBodyPID(obj, t, q, qd, q_des, params)
-      % Run PID control on the whole body state. 
-      % @param t time (s)
-      % @param q, qd the current robot posture and velocity vectors
-      % @param q_des the desired robot posture
-      % @param params the whole_body field of an atlasParams.* object.
-      if isnan(obj.q_integrator_data.t_prev)
-        obj.q_integrator_data.t_prev = t;
-      end
-      dt = t - obj.q_integrator_data.t_prev;
-      obj.q_integrator_data.t_prev = t;
-      new_int_state = params.integrator.eta * obj.q_integrator_data.state + params.integrator.gains .* (q_des - q) * dt;
-
-      if any(new_int_state)
-        [joint_limits_min, joint_limits_max] = r.getJointLimits();
-        new_int_state = max(-params.integrator.clamps, min(params.integrator.clamps, new_int_state));
-        q_des = q_des + new_int_state;
-        q_des = max(joint_limits_min - params.integrator.clamps,...
-                    min(joint_limits_max + params.integrator.clamps, q_des)); % allow it to go delta above and below jlims
-      end
-      obj.q_integrator_data.state = max(-params.integrator.clamps, min(params.integrator.clamps, new_int_state));
-
-      err_q = [q_des(1:3) - q(1:3); angleDiff(q(4:end), q_des(4:end))];
-      qddot_des = params.Kp .* err_q - params.Kd .* qd;
-      qddot_des = max(params.qdd_bounds.min,...
-                      min(params.qdd_bounds.max, qddot_des));
-    end
-
-
-    function [w_qdd, qddot_des] = kneePD(obj, q, qd, w_qdd, qddot_des, toe_off, min_knee_angle)
-      % Implement our toe-off logic for the knee. Not currently in use, but
-      % kept here for eventual inclusion.
-      kp = 40;
-      kd = 4;
-      r_knee_inds = obj.robot_property_cache.position_indices.r_leg_kny;
-      l_knee_inds = obj.robot_property_cache.position_indices.l_leg_kny;
-      if toe_off.right
-        r_kny_qdd_des = kp*(min_knee_angle-q(r_knee_inds)) - kd*qd(r_knee_inds);
-        qddot_des(r_knee_inds) = r_kny_qdd_des;
-        w_qdd(r_knee_inds) = 1;
-      elseif q(r_knee_inds) < min_knee_angle
-        w_qdd(r_knee_inds) = 1e-4;
-      end
-      if toe_off.left
-        l_kny_qdd_des = kp*(min_knee_angle-q(l_knee_inds)) - kd*qd(l_knee_inds);
-        qddot_des(l_knee_inds) = l_kny_qdd_des;
-        w_qdd(l_knee_inds) = 1;
-      elseif q(l_knee_inds) < min_knee_angle
-        w_qdd(l_knee_inds) = 1e-4;
-      end
-    end
-
-    function v_ref = velocityReference(obj, t, q, qd, qdd, foot_contact_sensor, params)
-      % Integrate expected accelerations to compute a feed-forward velocity reference. 
-      % @param t time (s)
-      % @param q, qd robot state
-      % @param qdd accelerations computed by the QP
-      % @param foot_contact_sensor 2x1 flags indicating whether contact is detected
-      %                            for the [left; right] foot.
-      % @param params the vref_integrator field of an atlasParams.* object.
-      fc = struct('right', foot_contact_sensor(2) > 0.5,...
-                            'left', foot_contact_sensor(1) > 0.5);
-
-      if isnan(obj.vref_integrator_data.t_prev)
-        obj.vref_integrator_data.t_prev = t;
-      end
-      dt = t - obj.vref_integrator_data.t_prev;
-      obj.vref_integrator_data.t_prev = t;
-
-      qd_int = obj.vref_integrator_data.state;
-      qd_int = (1-params.eta)*qd_int + params.eta*qd + qdd*dt;
-
-      if params.zero_ankles_on_contact && fc.left
-        qd_int(obj.robot_property_cache.position_indices.l_leg_ak) = 0;
-      end
-      if params.zero_ankles_on_contact && fc.right
-        qd_int(obj.robot_property_cache.position_indices.r_leg_ak) = 0;
-      end
-
-      fc_prev = obj.vref_integrator_data.fc_prev;
-      if fc_prev.left ~= fc.left
-        % contact state changed, reset integrated velocities
-        qd_int(obj.robot_property_cache.position_indices.l_leg) = qd(obj.robot_property_cache.position_indices.l_leg);
-      end
-      if fc_prev.right ~= fc.right
-        qd_int(obj.robot_property_cache.position_indices.r_leg) = qd(obj.robot_property_cache.position_indices.r_leg);
-      end
-
-      obj.vref_integrator_data.fc_prev = fc;
-      obj.vref_integrator_data.state = qd_int;
-
-      qd_err = qd_int - qd;
-
-      % do not velocity control ankles when in contact
-      if params.zero_ankles_on_contact && fc.left
-        qd_err(obj.robot_property_cache.position_indices.l_leg_ak) = 0;
-      end
-      if params.zero_ankles_on_contact && fc.right
-        qd_err(obj.robot_property_cache.position_indices.r_leg_ak) = 0;
-      end
-
-      delta_max = 1.0;
-      v_ref = max(-delta_max,min(delta_max,qd_err(obj.robot_property_cache.actuated_indices)));
-    end
-
     function [y, v_ref] = updateAndOutput(obj, t, x, qp_input, foot_contact_sensor)
       % Parse inputs from the robot and the planEval, set up the QP, solve it,
       % and return the torques and feed-forward velocity.
@@ -219,15 +114,10 @@ classdef InstantaneousQPController
       nq = obj.robot_property_cache.nq;
       nv = obj.robot_property_cache.nv;
 
-      param_set_name = qp_input.param_set_name;
-
       % lcmgl = LCMGLClient('desired zmp');
       % lcmgl.glColor3f(0, 0.7, 1.0);
       % lcmgl.sphere([y0; 0], 0.02, 20, 20);
       % lcmgl.switchBuffers();
-      
-      q = x(1:nq);
-      qd = x(nq+(1:nv));
       
       % mu = qp_input.support_data(1).mu;
 
@@ -245,56 +135,14 @@ classdef InstantaneousQPController
         % if t >= 0.1
         %   keyboard();
         % end
-        use_fastqp = obj.solver == 0;
-        params = obj.param_sets.(param_set_name);
-        all_bodies_vdot = struct('body_id', cell(1,length(qp_input.body_motion_data)),...
-                                 'body_vdot', cell(1,length(qp_input.body_motion_data)),...
-                                 'params', cell(1,length(qp_input.body_motion_data)));
-        fun = fcompare(@atlasControllers.statelessBodyMotionControl,@statelessBodyMotionControlmex);
-        for j = 1:length(qp_input.body_motion_data)
-          body_id = qp_input.body_motion_data(j).body_id;
-          [body_des, body_v_des, body_vdot_des] = evalCubicSplineSegment(t - qp_input.body_motion_data(j).ts(1), qp_input.body_motion_data(j).coefs);
-          body_vdot = fun(r, x, body_id,...
-                                        body_des, body_v_des, body_vdot_des, params.body_motion(body_id));
-          all_bodies_vdot(j).body_id = body_id; 
-          all_bodies_vdot(j).body_vdot = body_vdot;
-          all_bodies_vdot(j).params = params.body_motion(body_id);
-          % fprintf(1, 'body: %d, vdot: %f %f %f %f %f %f\n', body_id,...
-          %          body_vdot(1), ...
-          %          body_vdot(2), ...
-          %          body_vdot(3), ...
-          %          body_vdot(4), ...
-          %          body_vdot(5), ...
-          %          body_vdot(6));
-          % all_bodies_vdot(j).params
-        end
-        mask = getActiveSupportsmex(obj.mex_ptr.data, x, qp_input.support_data, contact_sensor, params.contact_threshold, obj.default_terrain_height);
-        supp = qp_input.support_data(logical(mask));
-
-        % Run PD on the desired configuration
-        qddot_des = obj.wholeBodyPID(t, q, qd, qp_input.whole_body_data.q_des, params.whole_body);
-
-        condof = qp_input.whole_body_data.constrained_dofs;
-
-        if isempty(qp_input.support_data)
-          mu = 1;
-        else
-          mu = qp_input.support_data(1).mu;
-          for j = 2:length(qp_input.support_data)
-            if qp_input.support_data(j).mu ~= mu
-              warning('Drake:MultipleMuNotSupported', 'We do not currently support different mu values for each support');
-            end
-          end
-        end
-
-
-        [y, qdd, info_fqp, active_supports,...
-          alpha, Hqp, fqp, Aeq, beq, Ain, bin,lb,ub] = atlasControllers.setupAndSolveQP(r, params, use_fastqp,...
-                                             qddot_des, x, all_bodies_vdot,...
-                                             condof, supp, qp_input.zmp_data, ...
-                                             mu, obj.default_terrain_height,obj.use_bullet,...
-                                             ctrl_data, obj.gurobi_options);
+        q = x(1:nq);
+        qd = x(nq+(1:nv));
+      
+        [y, qdd, info_fqp, supp,...
+          alpha, Hqp, fqp, Aeq, beq, Ain, bin,lb,ub] = obj.setupAndSolveQP(t, q, qd, qp_input, contact_sensor);
+        active_supports = [supp.body_id];
         if nargout >= 2
+          params = obj.param_sets.(qp_input.param_set_name);
           v_ref = obj.velocityReference(t, q, qd, qdd, foot_contact_sensor, params.vref_integrator);
         end
       end
