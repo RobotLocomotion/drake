@@ -14,7 +14,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="quadrotor_base.obj" scale=".1"/>
+        <mesh filename="Assembly-CrazyFlie-WSquExt-Centered.STL" scale=".001"/>
       </geometry>
     </visual>
     <!-- note: the original hector quadrotor urdf had a (simplified, but still complex) collision mesh, too -->
