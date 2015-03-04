@@ -1,14 +1,19 @@
 classdef QPInput2D
+% A container for the input to the InstantaneousQPController describing a
+% snapshot of the current plan at the current time and state. This is a "2D"
+% input because it reasons about the linear inverted pendulum in 2D (with a
+% fixed height assumption). We may eventually extend this to a QPInput3D
+% class.
   properties(Constant)
   end
 
   properties
-    timestamp
-    zmp_data
-    support_data 
-    body_motion_data 
-    whole_body_data 
-    param_set_name
+    timestamp % current time in seconds
+    zmp_data % information describing the setup and state of our linear inverted pendulum model
+    support_data  % information describing available supports which the controller MAY use
+    body_motion_data  % information describing body trajectories which the controller should track
+    whole_body_data  % information about the desired whole-body posture
+    param_set_name % the name of the current set of parameters. See atlasParams.getDefaults()
   end
 
   methods

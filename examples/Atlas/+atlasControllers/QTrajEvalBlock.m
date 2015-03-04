@@ -65,7 +65,6 @@ classdef QTrajEvalBlock < MIMODrakeSystem
       else
         obj.dt = 0.001;
       end
-      obj.dt
       obj = setSampleTime(obj,[obj.dt;0]);
       
       obj.robot = r;

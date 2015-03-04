@@ -1,10 +1,60 @@
-function [y, qdd, info_fqp, active_supports,...
-          alpha, Hqp, fqp, Aeq, beq, Ain, bin,lb,ub] = setupAndSolveQP(r, params, use_fastqp,...
-                                             qddot_des, x, all_bodies_vdot,...
-                                             condof, supp, zmp_data, ...
-                                             mu, height,use_bullet, ...
-                                             ctrl_data, gurobi_options)
+function [y, qdd, info_fqp, supp,...
+          alpha, Hqp, fqp, Aeq, beq, Ain, bin,lb,ub] = setupAndSolveQP(obj, t, q, qd, qp_input, contact_sensor)
+% Construct the quadratic control problem for Atlas and solve it, returning
+% torques and accelerations. This file currently represents most of the inner
+% loop of atlasControllers.AtlasQPController.output(), but extracted out into
+% its own function. It also mirrors the functionality of instantaneousQPControllermex.cpp
+% @param t current time (s)
+% @param q, qd current robot pose and velocity
+% @param qp_input QPInput2D describing the current plan state
+% @param contact_sensor num_bodies vector indicating whether the given body has detected contact force
 
+params = obj.param_sets.(qp_input.param_set_name);
+r = obj.robot;
+ctrl_data = obj.controller_data;
+
+% Compute desired body accelerations and costs
+all_bodies_vdot = struct('body_id', cell(1,length(qp_input.body_motion_data)),...
+                         'body_vdot', cell(1,length(qp_input.body_motion_data)),...
+                         'params', cell(1,length(qp_input.body_motion_data)));
+fun = fcompare(@atlasControllers.statelessBodyMotionControl,@statelessBodyMotionControlmex);
+for j = 1:length(qp_input.body_motion_data)
+  body_id = qp_input.body_motion_data(j).body_id;
+  [body_des, body_v_des, body_vdot_des] = evalCubicSplineSegment(t - qp_input.body_motion_data(j).ts(1), qp_input.body_motion_data(j).coefs);
+  body_vdot = fun(r, [q; qd], body_id,...
+                                body_des, body_v_des, body_vdot_des, params.body_motion(body_id));
+  all_bodies_vdot(j).body_id = body_id; 
+  all_bodies_vdot(j).body_vdot = body_vdot;
+  all_bodies_vdot(j).params = params.body_motion(body_id);
+end
+
+% Find the active set of supports
+mask = getActiveSupportsmex(obj.mex_ptr.data, [q; qd], qp_input.support_data, contact_sensor, params.contact_threshold, obj.default_terrain_height);
+supp = qp_input.support_data(logical(mask));
+
+% Run PD on the desired configuration
+qddot_des = obj.wholeBodyPID(t, q, qd, qp_input.whole_body_data.q_des, params.whole_body);
+
+% Find the constrained joints
+condof = qp_input.whole_body_data.constrained_dofs;
+
+% Extract the coefficient of friction
+if isempty(qp_input.support_data)
+  mu = 1;
+else
+  mu = qp_input.support_data(1).mu;
+  for j = 2:length(qp_input.support_data)
+    if qp_input.support_data(j).mu ~= mu
+      warning('Drake:MultipleMuNotSupported', 'We do not currently support different mu values for each support');
+    end
+  end
+end
+if (mu ~= 1)
+  r.warning_manager.warnOnce('Drake:MuAssumedToBe1', 'mu is assumed to be one in constactConstraints.m');
+end
+
+% Construct the linear system
+zmp_data = qp_input.zmp_data;
 B_ls = zmp_data.B;
 C_ls = zmp_data.C;
 D_ls = zmp_data.D;
@@ -19,8 +69,6 @@ w_qdd = params.whole_body.w_qdd;
 
 
 nq = r.getNumPositions();                                           
-q = x(1:nq);
-qd = x(nq+1:end);
 kinsol = doKinematics(r,q,false,true,qd);
 
 R_DQyD_ls = R_ls + D_ls'*Qy*D_ls;
@@ -28,7 +76,6 @@ R_DQyD_ls = R_ls + D_ls'*Qy*D_ls;
 for j = 1:length(supp)
   supp(j).num_contact_pts = size(supp(j).contact_pts, 2);
 end
-active_supports = [supp.body_id];
 
 dim = 3; % 3D
 nd = 4; % for friction cone approx, hard coded for now
@@ -67,7 +114,7 @@ if ~isempty(supp)
   nc = sum([supp.num_contact_pts]);
   Dbar = [];
   for j=1:length(supp)
-    [~,~,JB] = contactConstraintsBV(r,kinsol,false,struct('terrain_only',~use_bullet,...
+    [~,~,JB] = contactConstraintsBV(r,kinsol,false,struct('terrain_only',~obj.use_bullet,...
       'body_idx',[1,supp(j).body_id]));
     Dbar = [Dbar, vertcat(JB{:})']; % because contact constraints seems to ignore the collision_groups option
   end

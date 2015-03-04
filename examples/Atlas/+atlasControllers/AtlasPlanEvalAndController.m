@@ -56,6 +56,9 @@ classdef AtlasPlanEvalAndController < DrakeSystem
     end
 
     function y = output(obj, t, ~, x)
+      % Output as if we were a monolithic controller by passing state into
+      % PlanEval to get a qp_input, then passing state and qp_input to the
+      % InstantaneousQPController to get torques.
       if ~isempty(obj.plan_eval)
         if ~obj.quiet
           t0 = tic();

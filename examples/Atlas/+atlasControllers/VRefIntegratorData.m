@@ -1,6 +1,7 @@
 classdef VRefIntegratorData < atlasControllers.IntegratorData
+% Integrator state for the atlas velocity reference
   properties
-    fc_prev;
+    fc_prev; % foot contact state from last controller tick
   end
 
   methods
