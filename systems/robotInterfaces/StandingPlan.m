@@ -21,7 +21,8 @@ classdef StandingPlan < QPWalkingPlan
       comgoal = mean(foot_pos(1:2,:), 2);
 
       obj.zmptraj = comgoal;
-      [~, obj.V, obj.comtraj, obj.D_ls] = obj.robot.planZMPController(comgoal, q0);
+      [~, obj.V, obj.comtraj, limp_height] = obj.robot.planZMPController(comgoal, q0);
+      obj.D_ls = -limp_height/9.81*eye(2);
 
       link_constraints(1).link_ndx = obj.robot.foot_body_id.right;
       link_constraints(1).pt = [0;0;0];
