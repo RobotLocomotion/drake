@@ -53,12 +53,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   memcpy(&pdata,mxGetData(prhs[0]),sizeof(pdata));
 
-  int nq = pdata->r->num_dof;
+  int nq = pdata->r->num_positions;
+  int nv = pdata->r->num_velocities;
 
   int narg = 1;
-  double *q = mxGetPr(prhs[narg++]);
+  
+  Map<VectorXd> q(mxGetPr(prhs[narg++]), nq);
   double *qd = &q[nq];
-  Map< VectorXd > qdvec(qd,nq);
+  Map< VectorXd > qdvec(qd,nv);
 
   assert(mxGetM(prhs[narg])==6); assert(mxGetN(prhs[narg])==1);
   Map< Vector6d > body_pose_des(mxGetPr(prhs[narg++]));
@@ -69,11 +71,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   assert(mxGetM(prhs[narg])==6); assert(mxGetN(prhs[narg])==1);
   Map< Vector6d > body_vdot_des(mxGetPr(prhs[narg++]));
 
-  pdata->r->doKinematics(q,false,qd);
+  pdata->r->doKinematics(q,false,qdvec);
 
   // TODO: this must be updated to use quaternions/spatial velocity
   Vector6d body_pose;
-  MatrixXd J = MatrixXd::Zero(6,pdata->r->num_dof);
+  MatrixXd J = MatrixXd::Zero(6,pdata->r->num_positions);
   Vector4d zero = Vector4d::Zero();
   zero(3) = 1.0;
   pdata->r->forwardKin(pdata->body_index,zero,1,body_pose);

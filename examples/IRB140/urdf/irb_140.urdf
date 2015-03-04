@@ -6,7 +6,7 @@
     <inertial>
       <origin
         xyz="-0.0820393251688425 -0.0599247343482246 0.000402028640224033"
-        rpy="0 0 0" />
+        rpy="-1.57079 0 0" />
       <mass
         value="12.409016159487" />
       <inertia
@@ -20,11 +20,11 @@
     <visual>
       <origin
         xyz="0 0 0"
-        rpy="0 0 0" />
-<!--<geometry>
+        rpy="-1.57079 0 0" />
+      <geometry>
         <mesh
           filename="package://IRB140/urdf/meshes/base_link.stl" />
-      </geometry>-->
+      </geometry>
       <material
         name="">
         <color
@@ -34,13 +34,19 @@
     <collision>
       <origin
         xyz="0 0 0"
-        rpy="0 0 0" />
+        rpy="-1.57079 0 0" />
       <geometry>
         <mesh
           filename="package://IRB140/urdf/meshes/base_link.stl" />
       </geometry>
     </collision>
   </link>
+  <collision_filter_group name="base">
+	  <member link="base_link"/>
+  </collision_filter_group>
+  <collision_filter_group name="ignore_base">
+	  <member link="link_1"/>
+  </collision_filter_group>
   <link
     name="link_1">
     <inertial>
@@ -286,7 +292,7 @@
     <child link="link_1"/>
     <limit effort="300" lower="-3.14159265359" upper="3.14159265359" velocity="4.36"/>
     <axis xyz="0 -1 0"/>
-    <origin rpy="0 0 0" xyz="0 -0.1095 0"/>
+    <origin rpy="-1.57079 0 0" xyz="0 0 0.1095"/>
   </joint>
   <joint name="joint2" type="revolute">
     <parent link="link_1"/>
@@ -319,7 +325,7 @@
   <joint name="joint6" type="revolute">
     <parent link="link_5"/>
     <child link="link_6"/>
-    <limit effort="300" lower="-6.98131701" upper="-6.98131701" velocity="7.33"/>
+    <limit effort="300" lower="-6.98131701" upper="6.98131701" velocity="7.33"/>
     <axis xyz="1 0 0"/>
     <origin rpy="0 0 0" xyz="0.065 0 0"/>
   </joint>

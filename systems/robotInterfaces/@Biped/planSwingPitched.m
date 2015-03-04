@@ -46,9 +46,11 @@ swing2.pos(4:6) = swing1.pos(4:6) + angleDiff(swing1.pos(4:6), swing2.pos(4:6));
 
 xy_dist = norm(swing2.pos(1:2) - swing1.pos(1:2));
 
-% The terrain slice is a 2xN matrix, where the first row is distance along the straight line path from swing1 to swing2 and the second row is height above the z position of swing1.
+% The terrain slice is a 2xN matrix, where the first row is distance along
+% the straight line path from swing1 to swing2 and the second row is global
+% z height of the terrain at that point along the line
 terrain_slice = double(swing2.terrain_pts);
-terrain_slice = [[0;0], terrain_slice, [xy_dist; 0]];
+terrain_slice = [[0;swing1.pos(3)], terrain_slice, [xy_dist; swing2.pos(3)]];
 terrain_pts_in_local = [terrain_slice(1,:); zeros(1, size(terrain_slice, 2)); 
                         terrain_slice(2,:)];
 
@@ -154,14 +156,10 @@ foot_origin_knots = struct('t', zmp_knots(end).t, ...
                            'toe_off_allowed', struct(swing_foot_name, swing_distance_in_local >= MIN_DIST_FOR_TOE_OFF, stance_foot_name, false));
 
 function [pose, q0] = solve_for_pose(constraints, q0)
-  constraint_ptrs = {};
-  for k = 1:length(constraints)
-    constraint_ptrs{end+1} = constraints{k}.mex_ptr;
-  end
-  [q0, info] = inverseKin(biped,q0,q0,constraint_ptrs{:},ikoptions);
+  [q0, info] = inverseKin(biped,q0,q0,constraints{:},ikoptions);
   if info >= 10
     % try again?
-    [q0, info] = inverseKin(biped,q0,q0,constraint_ptrs{:},ikoptions);
+    [q0, info] = inverseKin(biped,q0,q0,constraints{:},ikoptions);
     if info < 10
       warning('Whoa...tried inverseKin again and got a different result...');
     else

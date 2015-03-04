@@ -16,7 +16,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     mexErrMsgIdAndTxt("Drake:inverseKinmex:NotEnoughInputs","Usage inverseKinmex(model_ptr,q_seed,q_nom,constraint1,constraint2,...,ikoptions");
   }
   RigidBodyManipulator* model = (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
-  int nq = model->num_dof;
+  int nq = model->num_positions;
   Map<VectorXd> q_seed(mxGetPr(prhs[1]),nq);
   Map<VectorXd> q_nom(mxGetPr(prhs[2]),nq);
   int num_constraints = nrhs-4;

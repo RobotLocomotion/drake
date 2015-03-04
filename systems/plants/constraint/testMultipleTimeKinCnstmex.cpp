@@ -27,7 +27,7 @@ void mexFunction(int nlhs,mxArray* plhs[], int nrhs, const mxArray * prhs[])
   int n_breaks = mxGetNumberOfElements(prhs[2]);
   double* t_ptr = new double[n_breaks];
   memcpy(t_ptr,mxGetPr(prhs[2]),sizeof(double)*n_breaks);
-  int nq = cnst->getRobotPointer()->num_dof;
+  int nq = cnst->getRobotPointer()->num_positions;
   MatrixXd q(nq,n_breaks);
   if(mxGetM(prhs[1]) != nq || mxGetN(prhs[1]) != n_breaks)
   {

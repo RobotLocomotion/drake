@@ -6,7 +6,12 @@ tts = traj.getBreaks();
 T = tts(end);
 dt = tts(2) - tts(1);
 
-x_smooth=smoothts(traj.eval(tts),'e',150);
+nx = r.getNumStates();
+x_smooth=zeros(nx,length(tts));
+x_breaks = traj.eval(tts);
+for i=1:nx
+  x_smooth(i,:) = smooth(x_breaks(i,:),15,'lowess');
+end
 dtraj = fnder(PPTrajectory(spline(tts,x_smooth)));
 qddtraj = dtraj(nq+(1:nq));
 

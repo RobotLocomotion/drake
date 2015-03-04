@@ -24,7 +24,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   RigidBodyManipulator *model= (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
 
   double* q = mxGetPr(prhs[1]);
-  for (int i = 0; i < model->num_dof; i++) {
+  for (int i = 0; i < model->num_positions; i++) {
     if (q[i] - model->cached_q[i] > 1e-8 || q[i] - model->cached_q[i] < -1e-8) {
       mexErrMsgIdAndTxt("Drake:forwardKinmex:InvalidKinematics","This kinsol is no longer valid.  Somebody has called doKinematics with a different q since the solution was computed.");
     }
@@ -50,8 +50,8 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
       robotnum_set.insert((int) probotnum[i]-1);
     }
     if (b_jacdot && nlhs>0) {
-      plhs[0] = mxCreateDoubleMatrix(3,model->num_dof,mxREAL);
-      Map<MatrixXd> Jdot(mxGetPr(plhs[0]),3,model->num_dof);
+      plhs[0] = mxCreateDoubleMatrix(3,model->num_positions,mxREAL);
+      Map<MatrixXd> Jdot(mxGetPr(plhs[0]),3,model->num_positions);
       model->getCOMJacDot(Jdot,robotnum_set);
       return;
     }
@@ -62,14 +62,14 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
       model->getCOM(x,robotnum_set);
     }
     if (nlhs>1) {
-      plhs[1] = mxCreateDoubleMatrix(3,model->num_dof,mxREAL);
-      Map<MatrixXd> J(mxGetPr(plhs[1]),3,model->num_dof);
+      plhs[1] = mxCreateDoubleMatrix(3,model->num_positions,mxREAL);
+      Map<MatrixXd> J(mxGetPr(plhs[1]),3,model->num_positions);
       model->getCOMJac(J,robotnum_set);
     }
   
     if (nlhs>2) {
-      plhs[2] = mxCreateDoubleMatrix(3,model->num_dof*model->num_dof,mxREAL);
-      Map<MatrixXd> dJ(mxGetPr(plhs[2]),3,model->num_dof*model->num_dof);
+      plhs[2] = mxCreateDoubleMatrix(3,model->num_positions*model->num_positions,mxREAL);
+      Map<MatrixXd> dJ(mxGetPr(plhs[2]),3,model->num_positions*model->num_positions);
       model->getCOMdJac(dJ,robotnum_set);
     }
     
@@ -101,8 +101,8 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   if (b_jacdot) {
     if (rotation_type>1) mexErrMsgIdAndTxt("Drake:forwardKinmex:NotImplemented","Jacobian dot of quaternions are not implemented yet");
 
-    plhs[0] = mxCreateDoubleMatrix(dim_with_rot*n_pts,model->num_dof,mxREAL); 
-    Map<MatrixXd> Jdot(mxGetPr(plhs[0]),dim_with_rot*n_pts,model->num_dof);
+    plhs[0] = mxCreateDoubleMatrix(dim_with_rot*n_pts,model->num_positions,mxREAL); 
+    Map<MatrixXd> Jdot(mxGetPr(plhs[0]),dim_with_rot*n_pts,model->num_positions);
     model->forwardJacDot(body_ind,pts,rotation_type,Jdot);
     return;
   } else {
@@ -112,15 +112,15 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
       model->forwardKin(body_ind,pts,rotation_type,x);
     }
     if (nlhs>1) {
-      plhs[1] = mxCreateDoubleMatrix(dim_with_rot*n_pts,model->num_dof,mxREAL);
-      Map<MatrixXd> J(mxGetPr(plhs[1]),dim_with_rot*n_pts,model->num_dof);
+      plhs[1] = mxCreateDoubleMatrix(dim_with_rot*n_pts,model->num_positions,mxREAL);
+      Map<MatrixXd> J(mxGetPr(plhs[1]),dim_with_rot*n_pts,model->num_positions);
       model->forwardJac(body_ind,pts,rotation_type,J);
     }
     
     if (nlhs>2) {
       if (rotation_type>0) mexErrMsgIdAndTxt("Drake:forwardKinmex:NotImplemented","Second derivatives of rotations are not implemented yet");
-      plhs[2] = mxCreateDoubleMatrix(dim*n_pts,model->num_dof*model->num_dof,mxREAL);
-      Map<MatrixXd> dJ(mxGetPr(plhs[2]),dim*n_pts,model->num_dof*model->num_dof);
+      plhs[2] = mxCreateDoubleMatrix(dim*n_pts,model->num_positions*model->num_positions,mxREAL);
+      Map<MatrixXd> dJ(mxGetPr(plhs[2]),dim*n_pts,model->num_positions*model->num_positions);
       model->forwarddJac(body_ind,pts,dJ);
     }
   }

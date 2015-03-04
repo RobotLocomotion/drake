@@ -8,6 +8,7 @@ const int defaultRobotNum[1] = {0};
 const set<int> RigidBody::defaultRobotNumSet(defaultRobotNum,defaultRobotNum+1);
 
 RigidBody::RigidBody(void) :
+    parent(nullptr),
     S(TWIST_SIZE, 0),
     dSdqi(0, 0),
     J(TWIST_SIZE, 0),
@@ -29,7 +30,8 @@ RigidBody::RigidBody(void) :
     dJdotVdq(TWIST_SIZE, 0),
     dJdotVdv(TWIST_SIZE, 0)
 {
-	dofnum = 0;
+  robotnum = 0;
+	position_num_start = 0;
 	velocity_num_start = 0;
 	mass = 0.0;
 	floating = 0;
@@ -87,35 +89,35 @@ const DrakeJoint& RigidBody::getJoint() const
 
 void RigidBody::computeAncestorDOFs(RigidBodyManipulator* model)
 {
-  if (dofnum>=0) {
+  if (position_num_start>=0) {
     int i,j;
-    if (parent>=0) {
-      ancestor_dofs = model->bodies[parent]->ancestor_dofs;
-      ddTdqdq_nonzero_rows = model->bodies[parent]->ddTdqdq_nonzero_rows;
+    if (parent!=nullptr) {
+      ancestor_dofs = parent->ancestor_dofs;
+      ddTdqdq_nonzero_rows = parent->ddTdqdq_nonzero_rows;
     }
 
     if (floating==1) {
     	for (j=0; j<6; j++) {
-    		ancestor_dofs.insert(dofnum+j);
+    		ancestor_dofs.insert(position_num_start+j);
     		for (i=0; i<3*model->NB; i++) {
-    			ddTdqdq_nonzero_rows.insert(i*model->NB + dofnum + j);
-    			ddTdqdq_nonzero_rows.insert(3*model->NB*dofnum + i + j);
+    			ddTdqdq_nonzero_rows.insert(i*model->NB + position_num_start + j);
+    			ddTdqdq_nonzero_rows.insert(3*model->NB*position_num_start + i + j);
     		}
     	}
     } else if (floating==2) {
     	for (j=0; j<7; j++) {
-    		ancestor_dofs.insert(dofnum+j);
+    		ancestor_dofs.insert(position_num_start+j);
     		for (i=0; i<3*model->NB; i++) {
-    			ddTdqdq_nonzero_rows.insert(i*model->NB + dofnum + j);
-    			ddTdqdq_nonzero_rows.insert(3*model->NB*dofnum + i + j);
+    			ddTdqdq_nonzero_rows.insert(i*model->NB + position_num_start + j);
+    			ddTdqdq_nonzero_rows.insert(3*model->NB*position_num_start + i + j);
     		}
     	}
     }
     else {
-    	ancestor_dofs.insert(dofnum);
+    	ancestor_dofs.insert(position_num_start);
     	for (i=0; i<3*model->NB; i++) {
-    		ddTdqdq_nonzero_rows.insert(i*model->NB + dofnum);
-    		ddTdqdq_nonzero_rows.insert(3*model->NB*dofnum + i);
+    		ddTdqdq_nonzero_rows.insert(i*model->NB + position_num_start);
+    		ddTdqdq_nonzero_rows.insert(3*model->NB*position_num_start + i);
     	}
     }
 
@@ -141,7 +143,7 @@ void RigidBody::computeAncestorDOFs(RigidBodyManipulator* model)
 }
 
 bool RigidBody::hasParent() const {
-  return parent >= 0;
+  return parent !=nullptr;
 }
 
 ostream &operator<<( ostream &out, const RigidBody &b)
@@ -149,6 +151,3 @@ ostream &operator<<( ostream &out, const RigidBody &b)
 	out << "RigidBody(" << b.linkname << "," << b.jointname << ")";
 	return out;
 }
-
-
-

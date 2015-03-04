@@ -274,7 +274,7 @@ classdef Manipulator < DrakeSystem
       
       varargout = cell(1,nargout);
       for i=1:length(obj.position_constraints)
-        v = cell(1,nargout);
+        v = cell(1,max(nargout,1));
         [v{:}] = obj.position_constraints{i}.eval(q);
         v{1} = v{1} - obj.position_constraints{i}.lb;  % center it around 0
         for j=1:nargout

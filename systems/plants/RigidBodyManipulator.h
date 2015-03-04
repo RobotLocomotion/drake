@@ -32,13 +32,27 @@ using namespace Eigen;
 
 //extern std::set<int> emptyIntSet;  // was const std:set<int> emptyIntSet, but valgrind said I was leaking memory
 
+class DLLEXPORT_RBM RigidBodyActuator
+{
+public:
+  RigidBodyActuator(std::string _name, std::shared_ptr<RigidBody> _body, double _reduction = 1.0) :
+    name(_name), body(_body), reduction(_reduction) {};
+
+  std::string name;
+  std::shared_ptr<RigidBody> body;
+  double reduction;
+
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+};
+
 class DLLEXPORT_RBM RigidBodyLoop
 {
 public:
-  RigidBodyLoop(int _bodyA, Vector3d _ptA, int _bodyB, Vector3d _ptB) :
+  RigidBodyLoop(std::shared_ptr<RigidBody> _bodyA, Vector3d _ptA, std::shared_ptr<RigidBody> _bodyB, Vector3d _ptB) :
     bodyA(_bodyA), bodyB(_bodyB), ptA(_ptA), ptB(_ptB) {};
 
-  int bodyA, bodyB;
+  std::shared_ptr<RigidBody> bodyA, bodyB;
   Vector3d ptA, ptB;
 
 public:
@@ -49,25 +63,41 @@ class DLLEXPORT_RBM RigidBodyManipulator
 {
 public:
   RigidBodyManipulator(int num_dof, int num_featherstone_bodies=-1, int num_rigid_body_objects=-1, int num_rigid_body_frames=0);
+  RigidBodyManipulator(const std::string &urdf_filename);
   virtual ~RigidBodyManipulator(void);
+
+  bool addRobotFromURDFString(const std::string &xml_string, const std::string &root_dir = ".");
+  bool addRobotFromURDF(const std::string &urdf_filename);
 
   void resize(int num_dof, int num_featherstone_bodies=-1, int num_rigid_body_objects=-1, int num_rigid_body_frames=0);
 
   void compile(void);  // call me after the model is loaded
-  void doKinematics(double* q, bool b_compute_second_derivatives=false, double* qd=NULL);
+  
+  template <typename Derived>
+  void doKinematics(MatrixBase<Derived> & q, bool b_compute_second_derivatives = false);
 
-  void doKinematicsNew(double* q, bool compute_gradients = false, double* v = nullptr, bool compute_JdotV = false);
+  template <typename DerivedA, typename DerivedB>
+  void doKinematics(MatrixBase<DerivedA> & q, bool b_compute_second_derivatives, MatrixBase<DerivedB> & v);
+
+  template <typename DerivedQ, typename DerivedV>
+  void doKinematicsNew(const MatrixBase<DerivedQ>& q, const MatrixBase<DerivedV>& v, bool compute_gradients = false, bool compute_JdotV = false);
 
   void updateCompositeRigidBodyInertias(int gradient_order);
 
   template <typename Scalar>
   GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> centroidalMomentumMatrix(int gradient_order);
 
-  template <typename Derived>
-  void getCMM(double* const q, double* const qd, MatrixBase<Derived> &A, MatrixBase<Derived> &Adot);
+  template <typename Scalar>
+  GradientVar<Scalar, TWIST_SIZE, 1> centroidalMomentumMatrixDotTimesV(int gradient_order);
+
+  template <typename DerivedA, typename DerivedB>
+  void getCMM(MatrixBase<DerivedA> const & q, MatrixBase<DerivedA> const & qd, MatrixBase<DerivedB> &A, MatrixBase<DerivedB> &Adot);
 
   template <typename Scalar>
   GradientVar<Scalar, SPACE_DIMENSION, 1> centerOfMass(int gradient_order, const std::set<int>& robotnum = RigidBody::defaultRobotNumSet);
+
+  template <typename Scalar>
+  GradientVar<Scalar, SPACE_DIMENSION, 1> centerOfMassJacobianDotTimesV(int gradient_order);
 
   template <typename Derived>
   void getCOM(MatrixBase<Derived> &com,const std::set<int> &robotnum = RigidBody::defaultRobotNumSet);
@@ -123,17 +153,29 @@ public:
   template <typename Scalar>
   GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> forwardKinPositionGradient(int npoints, int current_body_or_frame_ind, int new_body_or_frame_ind, int gradient_order);
 
+  template <typename DerivedPoints>
+  GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, 1> forwardJacDotTimesV(const MatrixBase<DerivedPoints>& points, int body_or_frame_ind, int base_or_frame_ind, int rotation_type, int gradient_order);
+
   template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD>
   void bodyKin(const int body_ind, const MatrixBase<DerivedA>& pts, MatrixBase<DerivedB> &x, MatrixBase<DerivedC> *J=NULL, MatrixBase<DerivedD> *P=NULL);
 
   template<typename Scalar>
   GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> geometricJacobian(int base_body_or_frame_ind, int end_effector_body_or_frame_ind, int expressed_in_body_or_frame_ind, int gradient_order, bool in_terms_of_qdot = false, std::vector<int>* v_indices = nullptr);
 
+  template <typename Scalar>
+  GradientVar<Scalar, TWIST_SIZE, 1> geometricJacobianDotTimesV(int base_body_or_frame_ind, int end_effector_body_or_frame_ind, int expressed_in_body_or_frame_ind, int gradient_order);
+
+  template <typename Scalar>
+  GradientVar<Scalar, TWIST_SIZE, 1> relativeTwist(int base_or_frame_ind, int body_or_frame_ind, int expressed_in_body_or_frame_ind, int gradient_order);
+
+  template <typename Scalar>
+  GradientVar<Scalar, TWIST_SIZE, 1> transformSpatialAcceleration(const GradientVar<Scalar, TWIST_SIZE, 1>& spatial_acceleration, int base_or_frame_ind, int body_or_frame_ind, int old_body_or_frame_ind, int new_body_or_frame_ind);
+
   template<typename Scalar>
   GradientVar<Scalar, SPACE_DIMENSION + 1, SPACE_DIMENSION + 1> relativeTransform(int base_or_frame_ind, int body_or_frame_ind, int gradient_order);
 
-  template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD, typename DerivedE, typename DerivedF>
-  void HandC(double* const q, double * const qd, MatrixBase<DerivedA> * const f_ext, MatrixBase<DerivedB> &H, MatrixBase<DerivedC> &C, MatrixBase<DerivedD> *dH=NULL, MatrixBase<DerivedE> *dC=NULL, MatrixBase<DerivedF> * const df_ext=NULL);
+  template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD, typename DerivedE, typename DerivedF, typename DerivedG>
+  void HandC(MatrixBase<DerivedG> const & q, MatrixBase<DerivedG> const & qd, MatrixBase<DerivedA> * const f_ext, MatrixBase<DerivedB> &H, MatrixBase<DerivedC> &C, MatrixBase<DerivedD> *dH=NULL, MatrixBase<DerivedE> *dC=NULL, MatrixBase<DerivedF> * const df_ext=NULL);
 
   void addCollisionElement(const int body_ind, const Matrix4d &T_elem_to_lnk, DrakeCollision::Shape shape, std::vector<double> params, std::string group_name = "default");
 
@@ -204,19 +246,23 @@ public:
 public:
   std::vector<std::string> robot_name;
 
-  int num_dof; // treated as nq now; TODO: rename to nq
+  int num_positions; // treated as nq now; TODO: rename to nq
   int num_velocities;
   VectorXd joint_limit_min;
   VectorXd joint_limit_max;
 
   // Rigid body objects
   int num_bodies;  // rigid body objects
-  std::vector<std::unique_ptr<RigidBody> > bodies;
+  std::vector<std::shared_ptr<RigidBody> > bodies;
 
   // Rigid body frames
   int num_frames;
   std::vector<RigidBodyFrame,Eigen::aligned_allocator<RigidBodyFrame> > frames;
 
+  // Rigid body actuators
+  std::vector<RigidBodyActuator,Eigen::aligned_allocator<RigidBodyActuator> > actuators;
+
+  // Rigid body loops
   std::vector<RigidBodyLoop,Eigen::aligned_allocator<RigidBodyLoop> > loops;
 
   // featherstone data structure
@@ -238,6 +284,7 @@ public:
   bool use_new_kinsol;
 
 private:
+  void doKinematics(double* q, bool b_compute_second_derivatives=false, double* qd=NULL);
   int parseBodyOrFrameID(const int body_or_frame_id, Matrix4d* Tframe = nullptr);
 
   // variables for featherstone dynamics

@@ -34,7 +34,7 @@ void FixedAxisOneDoFJoint::setJointLimits(double joint_limit_min, double joint_l
   this->joint_limit_max = joint_limit_max;
 }
 
-void FixedAxisOneDoFJoint::motionSubspace(double* const q, MotionSubspaceType& motion_subspace, MatrixXd* dmotion_subspace) const
+void FixedAxisOneDoFJoint::motionSubspace(const Eigen::Ref<const VectorXd>& q, MotionSubspaceType& motion_subspace, MatrixXd* dmotion_subspace) const
 {
   motion_subspace = joint_axis;
   if (dmotion_subspace) {
@@ -42,7 +42,7 @@ void FixedAxisOneDoFJoint::motionSubspace(double* const q, MotionSubspaceType& m
   }
 }
 
-void FixedAxisOneDoFJoint::motionSubspaceDotTimesV(double* const q, double* const v,
+void FixedAxisOneDoFJoint::motionSubspaceDotTimesV(const Eigen::Ref<const VectorXd>& q, const Eigen::Ref<const VectorXd>& v,
     Vector6d& motion_subspace_dot_times_v,
     Gradient<Vector6d, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdq,
     Gradient<Vector6d, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdv) const
@@ -58,7 +58,7 @@ void FixedAxisOneDoFJoint::motionSubspaceDotTimesV(double* const q, double* cons
   }
 }
 
-void FixedAxisOneDoFJoint::randomConfiguration(double* q, std::default_random_engine& generator) const
+void FixedAxisOneDoFJoint::randomConfiguration(Eigen::Ref<VectorXd>& q, std::default_random_engine& generator) const
 {
   if (isFinite(joint_limit_min) && isFinite(joint_limit_max)) {
     std::uniform_real_distribution<double> distribution(joint_limit_min, joint_limit_max);
@@ -88,7 +88,7 @@ void FixedAxisOneDoFJoint::randomConfiguration(double* q, std::default_random_en
   }
 }
 
-void FixedAxisOneDoFJoint::qdot2v(double* q, Eigen::MatrixXd& qdot_to_v, Eigen::MatrixXd* dqdot_to_v) const
+void FixedAxisOneDoFJoint::qdot2v(const Eigen::Ref<const VectorXd>& q, Eigen::MatrixXd& qdot_to_v, Eigen::MatrixXd* dqdot_to_v) const
 {
   qdot_to_v.setIdentity(getNumVelocities(), getNumPositions());
   if (dqdot_to_v) {
@@ -96,7 +96,7 @@ void FixedAxisOneDoFJoint::qdot2v(double* q, Eigen::MatrixXd& qdot_to_v, Eigen::
   }
 }
 
-void FixedAxisOneDoFJoint::v2qdot(double* q, Eigen::MatrixXd& v_to_qdot, Eigen::MatrixXd* dv_to_qdot) const
+void FixedAxisOneDoFJoint::v2qdot(const Eigen::Ref<const VectorXd>& q, Eigen::MatrixXd& v_to_qdot, Eigen::MatrixXd* dv_to_qdot) const
 {
   v_to_qdot.setIdentity(getNumPositions(), getNumVelocities());
   if (dv_to_qdot) {

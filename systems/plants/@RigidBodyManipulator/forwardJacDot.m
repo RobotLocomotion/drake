@@ -3,7 +3,7 @@ function Jdot = forwardJacDot(obj,kinsol,body_or_frame_ind,pts,rotation_type,rob
 % same input as [x,J] = forwardKin but returns Jdot
 % note: you must have called kinsol = doKinematics with qd passed in as the
 % last argument
-if nargin<6, robotnum=1; end
+if nargin<6, robotnum=1; elseif robotnum<0, robotnum = 0:length(model.name); end
 if nargin<5, rotation_type=0; end
 if nargin<4, pts=[]; end
 
