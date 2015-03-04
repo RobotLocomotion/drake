@@ -87,7 +87,7 @@ for iter = 1:3
 
   planeval = atlasControllers.AtlasPlanEval(r, walking_plan_data);
   control = atlasControllers.InstantaneousQPController(r, [], struct('use_mex', example_options.use_mex));
-  plancontroller = atlasControllers.AtlasPlanEvalAndController(r, control, planeval);
+  plancontroller = atlasControllers.AtlasPlanEvalAndControlSystem(r, control, planeval);
   sys = feedback(r, plancontroller);
 
   output_select(1).system=1;
