@@ -10,13 +10,11 @@ checkDependency('gurobi');
 checkDependency('lcmgl');
 
 if nargin<1, example_options=struct(); end
-if ~isfield(example_options,'use_mex'), example_options.use_mex = true; end
-if ~isfield(example_options,'use_bullet') example_options.use_bullet = false; end
-if ~isfield(example_options,'navgoal')
-%  navgoal = [2*rand();0.25*randn();0;0;0;0];
-  example_options.navgoal = [0.5;0;0;0;0;0];
-end
-if ~isfield(example_options,'terrain'), example_options.terrain = RigidBodyFlatTerrain; end
+example_options = applyDefaults(example_options, struct('use_mex', true,...
+                                                        'use_bullet', false,...
+                                                        'navgoal', [0.5;0;0;0;0;0],...
+                                                        'quiet', true,...
+                                                        'terrain', RigidBodyFlatTerrain));
 
 % silence some warnings
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints')
@@ -64,9 +62,11 @@ walking_plan_data = r.planWalkingZMP(x0(1:r.getNumPositions()), footstep_plan);
 
 control = atlasControllers.InstantaneousQPController(r, [],...
    struct('use_mex', example_options.use_mex));
+control.quiet = example_options.quiet;
 planeval = atlasControllers.AtlasPlanEval(r, walking_plan_data);
 
 plancontroller = atlasControllers.AtlasPlanEvalAndController(r, control, planeval);
+plancontroller.quiet = example_options.quiet;
 
 sys = feedback(r, plancontroller);
 output_select(1).system=1;

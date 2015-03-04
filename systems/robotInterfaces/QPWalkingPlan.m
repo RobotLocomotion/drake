@@ -283,7 +283,6 @@ classdef QPWalkingPlan < QPControllerPlan
       assert(pelvis_has_tracking, 'Expecting a link_constraints block for the pelvis');
 
       qp_input.param_set_name = obj.gain_set;
-      obj.gain_set
 
       obj = obj.updatePlanShift(t, x, qp_input, contact_force_detected);
       qp_input = obj.applyPlanShift(qp_input);
