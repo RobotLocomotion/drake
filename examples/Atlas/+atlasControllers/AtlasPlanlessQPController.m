@@ -202,6 +202,7 @@ classdef AtlasPlanlessQPController
       if foot_contact_sensor(2) > 0.5
         contact_sensor(obj.foot_body_id.right) = 1;
       end
+      ctrl_data = obj.controller_data;
 
 
       if (obj.use_mex==0 || obj.use_mex==2)
@@ -238,7 +239,6 @@ classdef AtlasPlanlessQPController
         qddot_des = obj.wholeBodyPID(t, q, qd, qp_input.whole_body_data.q_des, params.whole_body);
 
         condof = qp_input.whole_body_data.constrained_dofs;
-        ctrl_data = obj.controller_data;
 
         if isempty(qp_input.support_data)
           mu = 1;
