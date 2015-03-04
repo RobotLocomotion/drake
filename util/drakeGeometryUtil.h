@@ -142,21 +142,20 @@ DLLEXPORT typename Gradient<Eigen::Matrix<typename DerivedR::Scalar, QUAT_SIZE, 
 /*
  * angular velocity conversion functions
  */
-template <typename DerivedQ, typename DerivedM>
-DLLEXPORT void angularvel2quatdotMatrix(const Eigen::MatrixBase<DerivedQ>& q,
+template <typename DerivedQ, typename DerivedM, typename DerivedDM>
+void angularvel2quatdotMatrix(const Eigen::MatrixBase<DerivedQ>& q,
     Eigen::MatrixBase<DerivedM>& M,
-    typename Gradient<DerivedM, QUAT_SIZE, 1>::type* dM = nullptr);
+    Eigen::MatrixBase<DerivedDM>* dM = nullptr);
 
-template<typename DerivedRPY, typename DerivedPhi>
-DLLEXPORT void angularvel2rpydotMatrix(const Eigen::MatrixBase<DerivedRPY>& rpy,
+template<typename DerivedRPY, typename DerivedPhi, typename DerivedDPhi, typename DerivedDDPhi>
+void angularvel2rpydotMatrix(const Eigen::MatrixBase<DerivedRPY>& rpy,
     typename Eigen::MatrixBase<DerivedPhi>& phi,
-    typename Gradient<DerivedPhi, RPY_SIZE, 1>::type* dphi = nullptr,
-    typename Gradient<DerivedPhi, RPY_SIZE, 2>::type* ddphi = nullptr);
+    typename Eigen::MatrixBase<DerivedDPhi>* dphi = nullptr,
+    typename Eigen::MatrixBase<DerivedDDPhi>* ddphi = nullptr);
 
-template<typename Scalar>
-DLLEXPORT GradientVar<Scalar, Eigen::Dynamic, SPACE_DIMENSION> angularvel2RepresentationDotMatrix(
-    int rotation_type,
-    GradientVar<Scalar, Eigen::Dynamic, 1> qrot);
+template<typename Derived>
+DLLEXPORT GradientVar<typename Derived::Scalar, Eigen::Dynamic, SPACE_DIMENSION> angularvel2RepresentationDotMatrix(
+    int rotation_type, const Eigen::MatrixBase<Derived>& qrot, int gradient_order);
 
 template<typename DerivedRPY, typename DerivedE>
 DLLEXPORT void rpydot2angularvelMatrix(const Eigen::MatrixBase<DerivedRPY>& rpy,
@@ -195,12 +194,12 @@ DLLEXPORT GradientVar<typename DerivedI::Scalar, TWIST_SIZE, TWIST_SIZE> transfo
     const Eigen::MatrixBase<DerivedI>& I);
 
 template<typename DerivedA, typename DerivedB>
-DLLEXPORT Eigen::PlainObjectBase<DerivedB> crossSpatialMotion(
+DLLEXPORT typename TransformSpatial<DerivedB>::type crossSpatialMotion(
   const Eigen::MatrixBase<DerivedA>& a,
   const Eigen::MatrixBase<DerivedB>& b);
 
 template<typename DerivedA, typename DerivedB>
-DLLEXPORT Eigen::PlainObjectBase<DerivedB> crossSpatialForce(
+typename TransformSpatial<DerivedB>::type crossSpatialForce(
   const Eigen::MatrixBase<DerivedA>& a,
   const Eigen::MatrixBase<DerivedB>& b);
 

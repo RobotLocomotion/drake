@@ -16,7 +16,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     mexErrMsgIdAndTxt("Drake:inverseKinPointwisemex:NotEnoughInputs","Usage inverseKinPointwisemex(model_ptr,t,q_seed,q_nom,constraint1,constraint2,...,ikoptions");
   }
   RigidBodyManipulator* model = (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
-  int nq = model->num_dof;
+  int nq = model->num_positions;
   int nT = static_cast<int>(mxGetNumberOfElements(prhs[1]));
   double* t = mxGetPr(prhs[1]);
   Map<MatrixXd> q_seed(mxGetPr(prhs[2]),nq,nT);

@@ -47,9 +47,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   int type = cnst->getType();
   int num_cnst = cnst->getNumConstraint(t_ptr);
   //mexPrintf("num_cnst = %d\n",num_cnst);
-  int nq = cnst->getRobotPointer()->num_dof;
-  double* q = new double[nq];
-  memcpy(q,mxGetPr(prhs[1]),sizeof(double)*nq);
+  int nq = cnst->getRobotPointer()->num_positions;
+  Map<VectorXd> q(mxGetPr(prhs[1]), nq);
   cnst->getRobotPointer()->doKinematics(q);
   VectorXd c(num_cnst);
   MatrixXd dc(num_cnst,nq);
@@ -90,5 +89,4 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   plhs[6] = mxCreateDoubleMatrix(num_cnst,retvec_size,mxREAL);
   memcpy(mxGetPr(plhs[5]),lb.data(),sizeof(double)*num_cnst);
   memcpy(mxGetPr(plhs[6]),ub.data(),sizeof(double)*num_cnst);
-  delete[] q;
 }

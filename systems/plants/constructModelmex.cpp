@@ -105,6 +105,8 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     //DEBUG
     //cout << "constructModelmex: body " << i << endl;
     //END_DEBUG
+    model->bodies[i]->body_index = i;
+
     pm = mxGetProperty(pBodies,i,"linkname");
     mxGetString(pm,buf,100);
     model->bodies[i]->linkname.assign(buf,strlen(buf));
@@ -126,16 +128,21 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     if (!mxIsEmpty(pm)) memcpy(model->bodies[i]->I.data(),mxGetPr(pm),sizeof(double)*6*6);
 
     pm = mxGetProperty(pBodies,i,"position_num");
-    model->bodies[i]->dofnum = (int) mxGetScalar(pm) - 1;  //zero-indexed
+    model->bodies[i]->position_num_start = (int) mxGetScalar(pm) - 1;  //zero-indexed
 
     pm = mxGetProperty(pBodies,i,"velocity_num");
     model->bodies[i]->velocity_num_start = (int) mxGetScalar(pm) - 1;  //zero-indexed
 
     pm = mxGetProperty(pBodies,i,"parent");
     if (!pm || mxIsEmpty(pm))
-      model->bodies[i]->parent = -1;
-    else
-      model->bodies[i]->parent = static_cast<int>(mxGetScalar(pm)) - 1;
+      model->bodies[i]->parent = nullptr;
+    else {
+      int parent_ind = static_cast<int>(mxGetScalar(pm))-1;
+      if (parent_ind >= static_cast<int>(model->bodies.size()))
+        mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","bad body.parent %d (only have %d bodies)",parent_ind,model->bodies.size());
+      if (parent_ind>=0)
+        model->bodies[i]->parent = model->bodies[parent_ind];
+    }
 
     {
       mxGetString(mxGetProperty(pBodies, i, "jointname"), buf, 100);
@@ -176,11 +183,11 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
       model->bodies[i]->pitch = (int) mxGetScalar(pm);
     }
 
-    if (model->bodies[i]->dofnum>=0) {
+    if (model->bodies[i]->position_num_start>=0) {
        pm = mxGetProperty(pBodies,i,"joint_limit_min");
-       model->joint_limit_min[model->bodies[i]->dofnum] = mxGetScalar(pm);
+       model->joint_limit_min[model->bodies[i]->position_num_start] = mxGetScalar(pm);
        pm = mxGetProperty(pBodies,i,"joint_limit_max");
-       model->joint_limit_max[model->bodies[i]->dofnum] = mxGetScalar(pm);
+       model->joint_limit_max[model->bodies[i]->position_num_start] = mxGetScalar(pm);
     }
 
     pm = mxGetProperty(pBodies,i,"T_body_to_joint");
@@ -253,10 +260,12 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
             // intentionally do nothing..
             break;
         }
+
         model->addCollisionElement(i,T,shape,params_vec,group_name);
-        if (model->bodies[i]->parent<0) {
+        if (!model->bodies[i]->hasParent()) {
           model->updateCollisionElements(i);  // update static objects only once - right here on load
         }
+
       }
 
 
@@ -339,8 +348,8 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   }
 
 
-  memcpy(model->joint_limit_min.data(), mxGetPr(mxGetProperty(pRBM,0,"joint_limit_min")), sizeof(double)*model->num_dof);
-  memcpy(model->joint_limit_max.data(), mxGetPr(mxGetProperty(pRBM,0,"joint_limit_max")), sizeof(double)*model->num_dof);
+  memcpy(model->joint_limit_min.data(), mxGetPr(mxGetProperty(pRBM,0,"joint_limit_min")), sizeof(double)*model->num_positions);
+  memcpy(model->joint_limit_max.data(), mxGetPr(mxGetProperty(pRBM,0,"joint_limit_max")), sizeof(double)*model->num_positions);
 
   const mxArray* a_grav_array = mxGetProperty(pRBM,0,"gravity");
   if (a_grav_array && mxGetNumberOfElements(a_grav_array)==3) {

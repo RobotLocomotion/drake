@@ -366,7 +366,7 @@ classdef RigidBodyManipulator < Manipulator
       end
       
       if any(coulomb_friction)
-        f_friction = f_friction + min(1,max(-1,v./coulomb_window')).*coulomb_friction';
+        f_friction = f_friction + min(1,max(-1,v./coulomb_window)).*coulomb_friction;
         if compute_gradient
           ind = find(abs(v)<coulomb_window');
           dind = sign(v(ind))./coulomb_window(ind)' .* coulomb_window(ind)';
@@ -917,10 +917,10 @@ classdef RigidBodyManipulator < Manipulator
     
     function body_id = findLinkId(model,linkname,robot,error_level)
       % @param robot can be the robot number or the name of a robot
-      % robot=0 means look at all robots
+      % robot<0 means look at all robots
       % @param error_level >0 for throw error, 0 for throw warning, <0 for do nothing. @default throw error
       % @ingroup Kinematic Tree
-      if nargin<3 || isempty(robot), robot=0; end
+      if nargin<3 || isempty(robot), robot=-1; end
       linkname = lower(linkname);
       linkname=regexprep(linkname, '[\[\]\\\/\.]+', '_', 'preservecase');
 
@@ -929,7 +929,7 @@ classdef RigidBodyManipulator < Manipulator
       end
       items = strfind(lower({model.body.linkname}),linkname);
       ind = find(~cellfun(@isempty,items));
-      if (robot~=0), ind = ind(ismember([model.body(ind).robotnum],robot)); end
+      if (robot>=0), ind = ind(ismember([model.body(ind).robotnum],robot)); end
       if (length(ind)>0) % then handle removed fixed joints
         i=1;
         while i<=length(ind)
@@ -953,7 +953,7 @@ classdef RigidBodyManipulator < Manipulator
       end
       if (length(ind)~=1)
         if (nargin<4 || error_level>0)
-          if robot == 0
+          if robot < 0
             error('Drake:RigidBodyManipulator:UniqueLinkNotFound', ...
               'couldn''t find unique link %s.',linkname);
           else
@@ -994,11 +994,11 @@ classdef RigidBodyManipulator < Manipulator
       % @param name is the string name to search for
       % @param robotnum if specified restricts the search to a particular
       % robot
-      if nargin<3, robotnum=0; end
+      if nargin<3, robotnum=-1; end
       if ~isempty(model.frame)
         items = strfind(lower({model.frame.name}),lower(name));
         ind = find(~cellfun(@isempty,items));
-        if (robotnum~=0), ind = ind([model.body(model.frame(ind).body_ind).robotnum]==robotnum); end
+        if (robotnum~=-1), ind = ind([model.body(model.frame(ind).body_ind).robotnum]==robotnum); end
       else
         ind = [];
       end
@@ -1112,13 +1112,13 @@ classdef RigidBodyManipulator < Manipulator
 
     function body_id = findJointId(model,jointname,robot_num,error_level)
       % @param robot_num can be the robot number or the name of a robot
-      % robot_num=0 means look at all robots
+      % robot_num<0 means look at all robots
       % @ingroup Kinematic Tree
-      if nargin<3 || isempty(robot_num), robot_num=0; end
+      if nargin<3 || isempty(robot_num), robot_num=-1; end
       jointname = lower(jointname);
       if ischar(robot_num) robot_num = strmatch(lower(robot_num),lower({model.name})); end
       ind = find(strcmp(jointname,lower({model.body.jointname})));
-      if (robot_num~=0), ind = ind([model.body(ind).robotnum]==robot_num); end
+      if (robot_num>=0), ind = ind([model.body(ind).robotnum]==robot_num); end
       if (length(ind)~=1)
         if (nargin<4 || error_level>0)
           error('Drake:RigidBodyManipulator:UniqueJointNotFound',['couldn''t find unique joint ' ,jointname]);
@@ -1247,7 +1247,7 @@ classdef RigidBodyManipulator < Manipulator
       %                          will be restricted. Optional.
       %                          @default 1:numel(model.name)
       if nargin < 3,          robotnum = 1:numel(model.name); end
-      if all(robotnum == 0),  robotnum = 0:numel(model.name); end
+      if all(robotnum == -1),  robotnum = 0:numel(model.name); end
       for i=1:length(model.body)
         if ismember(model.body(i).robotnum,robotnum)
           model.body(i) = removeCollisionGroups(model.body(i),contact_groups);
@@ -1271,7 +1271,7 @@ classdef RigidBodyManipulator < Manipulator
       %                          @default 1:numel(model.body)
       if nargin < 4,          body_ids = 1:numel(model.body); end
       if nargin < 3,          robotnum = 1:numel(model.name); end
-      if all(robotnum == 0),  robotnum = 0:numel(model.name); end
+      if all(robotnum == -1),  robotnum = 0:numel(model.name); end
       for i=body_ids
         if ismember(model.body(i).robotnum,robotnum)
           model.body(i) = removeCollisionGroupsExcept(model.body(i),contact_groups);
@@ -1288,11 +1288,11 @@ classdef RigidBodyManipulator < Manipulator
       %                           * Numeric body index or frame id
       %                           * String containing body or frame name
       % @param robotnum       -- Scalar restricting the search to a particular
-      %                          robot. Optional. @default 0 (all robots)
+      %                          robot. Optional. @default -1 (all robots)
       %
       % @retval body_idx_or_frame_id  -- Numeric body index or frame id
       typecheck(body_or_frame,{'numeric','char'});
-      if nargin < 3, robotnum = 0; end
+      if nargin < 3, robotnum = -1; end
       if isnumeric(body_or_frame)
         sizecheck(body_or_frame,[1,1]);
         body_idx_or_frame_id = body_or_frame;
@@ -1305,7 +1305,7 @@ classdef RigidBodyManipulator < Manipulator
               body_idx_or_frame_id = findFrameId(obj,body_or_frame,robotnum);
             catch ex2
               if strcmp(ex.identifier,'Drake:RigidBodyManipulator:UniqueLinkNotFound')
-                if robotnum == 0
+                if robotnum == -1
                   error('Drake:RigidBodyManipulator:UniqueFrameOrLinkNotFound', ...
                     'Cannot find unique link or frame named %s',body_or_frame);
                 else
@@ -1561,12 +1561,12 @@ classdef RigidBodyManipulator < Manipulator
       % looping every time (since the result is a constant between
       % compiles)
       if nargin < 2
-        robotnum = 0; % robot num of 0 means all robots
+        robotnum = -1; % robot num of -1 means all robots
       end
 
       m = 0;
       for i=1:length(model.body)
-        if robotnum == 0 || model.body(i).robotnum == robotnum
+        if robotnum == -1 || model.body(i).robotnum == robotnum
           bm = model.body(i).mass;
           m = m + bm;
         end
@@ -2041,7 +2041,7 @@ classdef RigidBodyManipulator < Manipulator
         return;
       end
       
-      if nargin<2, 
+      if nargin<2 || robotnum<0, 
         fr = MultiCoordinateFrame.constructFrame(obj.robot_position_frames,[],true);
       else
         fr = obj.robot_position_frames{robotnum};
@@ -2056,7 +2056,7 @@ classdef RigidBodyManipulator < Manipulator
         return;
       end
       
-      if nargin<2,
+      if nargin<2 || robotnum<0,
         fr = MultiCoordinateFrame.constructFrame(obj.robot_velocity_frames,[],true);
       else
         fr = obj.robot_velocity_frames{robotnum};
@@ -2066,7 +2066,7 @@ classdef RigidBodyManipulator < Manipulator
     function fr = getStateFrame(obj,robotnum)
       % if robotnum is not specified, then it returns a state frame
       % including all state variables (for all robots)
-      if nargin<2,
+      if nargin<2 || robotnum<0,
         fr = getStateFrame@DrakeSystem(obj);
       else
         fr = obj.robot_state_frames{robotnum};
@@ -2440,7 +2440,7 @@ classdef RigidBodyManipulator < Manipulator
     end
 
     function id = findCollisionFilterGroupID(model,collision_fg_name)
-        id = uint16(find(~cellfun(@isempty,strfind(model.collision_filter_groups.keys(),collision_fg_name))));
+        id = uint16(find(strcmp(model.collision_filter_groups.keys(),collision_fg_name)));
         if isempty(id)
           error('RigidBodyManipulator:findCollisionFilterGroupID', ...
                 'Unable to find collision filter group, %s',collision_fg_name);
