@@ -2,7 +2,7 @@ function traj = simulateWalking(r, walking_plan_data, options)
 %NOTEST
 
 typecheck(r, 'Atlas');
-typecheck(walking_plan_data, 'WalkingPlanData');
+typecheck(walking_plan_data, 'QPWalkingPlan');
 
 import atlasControllers.*;
 
@@ -32,7 +32,7 @@ T = walking_plan_data.comtraj.tspan(2)-0.001;
 
 ctrl_data = QPControllerData(true,struct(...
   'acceleration_input_frame',atlasFrames.AtlasCoordinates(r),...
-  'D',-0.94/9.81*eye(2),... % assumed COM height
+  'D',-0.89/9.81*eye(2),... % assumed COM height
   'Qy',eye(2),...
   'S',walking_plan_data.V.S,... % always a constant
   's1',walking_plan_data.V.s1,...
@@ -50,7 +50,7 @@ ctrl_data = QPControllerData(true,struct(...
   'ignore_terrain',false,...
   'y0',walking_plan_data.zmptraj,...
   'plan_shift',zeros(3,1),...
-  'constrained_dofs',[findPositionIndices(r,'neck')]));
+  'constrained_dofs',[findPositionIndices(r,'arm');findPositionIndices(r,'back');findPositionIndices(r,'neck')]));
 
 options.dt = 0.003;
 options.debug = false;
@@ -92,7 +92,7 @@ if (options.use_ik)
 
 else
   
-  options.Kp_foot = 10*[100; 100; 100; 150; 150; 150];
+  options.Kp_foot = [100; 100; 100; 150; 150; 150];
   options.foot_damping_ratio = 0.5;
   options.Kp_pelvis = [0; 0; 150; 200; 200; 200];
   options.pelvis_damping_ratio = 0.6;
