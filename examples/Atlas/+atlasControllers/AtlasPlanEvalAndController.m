@@ -11,12 +11,16 @@ classdef AtlasPlanEvalAndController < DrakeSystem
 % sys2 = AtlasPlanEvalAndController(r, control, []);
 % plancontroller = cascade(sys1, sys2);
 % sys = feedback(r, plancontroller);
-  properties
+  properties(SetAccess=protected)
     control
     plan_eval;
     options;
     lc
     monitor
+  end
+
+  properties
+    quiet = true;
   end
 
   methods
@@ -53,32 +57,48 @@ classdef AtlasPlanEvalAndController < DrakeSystem
 
     function y = output(obj, t, ~, x)
       if ~isempty(obj.plan_eval)
-        t0 = tic();
+        if ~obj.quiet
+          t0 = tic();
+        end
         qp_input = obj.plan_eval.getQPControllerInput(t, x);
-        ptime = toc(t0);
-        fprintf(1, 'plan eval: %f, ', ptime);
+        if ~obj.quiet
+          ptime = toc(t0);
+          fprintf(1, 'plan eval: %f, ', ptime);
+        end
       else
-        t0 = tic();
+        if ~obj.quiet
+          t0 = tic();
+        end
         qp_input = [];
         while isempty(qp_input)
           qp_input = obj.monitor.getMessage();
         end
         qp_input = drake.lcmt_qp_controller_input(qp_input);
-        lcm_time = toc(t0);
-        fprintf(1, 'lcm receive: %f, ', lcm_time);
+        if ~obj.quiet 
+          lcm_time = toc(t0);
+          fprintf(1, 'lcm receive: %f, ', lcm_time);
+        end
       end
 
       if ~isempty(obj.control)
-        t0 = tic();
+        if ~obj.quiet
+          t0 = tic();
+        end
         [y, v_ref] = obj.control.updateAndOutput(t, x, qp_input, [-1;-1]);
-        ctime = toc(t0);
-        fprintf(1, 'control: %f\n', ctime);
+        if ~obj.quiet
+          ctime = toc(t0);
+          fprintf(1, 'control: %f\n', ctime);
+        end
       else
-        t0 = tic();
+        if ~obj.quiet
+          t0 = tic();
+        end
         encodeQPInputLCMMex(qp_input);
-        lcm_time = toc(t0);
+        if ~obj.quiet
+          lcm_time = toc(t0);
+          fprintf(1, 'lcm_serialize: %f, ', lcm_time);
+        end
         y = x;
-        fprintf(1, 'lcm_serialize: %f, ', lcm_time);
       end
     end
   end

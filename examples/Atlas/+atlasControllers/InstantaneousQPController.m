@@ -24,6 +24,10 @@ classdef InstantaneousQPController
     solver = 0;
   end
 
+  properties
+    quiet = true;
+  end
+
   methods
     function obj = InstantaneousQPController(r, param_sets, options)
       if nargin < 3
@@ -208,7 +212,7 @@ classdef InstantaneousQPController
       % @param foot_contact_sensor a 2x1 vector indicating whether contact force was
       %                            detected by the [left; right] foot
 
-      t0 = tic();
+      % t0 = tic();
 
       % Unpack variable names (just to make our code a bit easier to read)
       r = obj.robot;
@@ -298,14 +302,18 @@ classdef InstantaneousQPController
       if (obj.use_mex==1 || obj.use_mex==2)
 
         if (obj.use_mex==1)
-          t0 = tic();
+          if ~obj.quiet
+            t0 = tic();
+          end
           [y,qdd,v_ref,info_fqp] = ...
                       instantaneousQPControllermex(obj.mex_ptr.data,...
                       t,...
                       x,...
                       qp_input,...
                       contact_sensor);
-          fprintf(1, 'mex: %f, ', toc(t0));
+          if ~obj.quiet
+            fprintf(1, 'mex: %f, ', toc(t0));
+          end
 
           if info_fqp < 0
             ctrl_data.infocount = ctrl_data.infocount+1;
@@ -322,7 +330,9 @@ classdef InstantaneousQPController
           end
 
         else
-          t0 = tic();
+          if ~obj.quiet
+            t0 = tic();
+          end
           [y_mex,mex_qdd,vref_mex,info_mex,active_supports_mex,~,Hqp_mex,fqp_mex,...
             Aeq_mex,beq_mex,Ain_mex,bin_mex,Qf,Qeps] = ...
                instantaneousQPControllermex(obj.mex_ptr.data,...
@@ -330,7 +340,9 @@ classdef InstantaneousQPController
                       x,...
                       qp_input,...
                       contact_sensor);
-          fprintf(1, 'mex: %f, ', toc(t0));
+          if ~obj.quiet
+            fprintf(1, 'mex: %f, ', toc(t0));
+          end
 
           num_active_contacts = zeros(1, length(supp));
           for j = 1:length(supp)
