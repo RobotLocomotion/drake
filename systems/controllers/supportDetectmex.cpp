@@ -92,7 +92,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     double* pBodies = mxGetPr(mxBodies);
 
     mxArray* mxContactPts;
+    // We may have gotten a RigidBodySupportState object (in which case we need mxGetProperty...
     mxContactPts = mxGetProperty(prhs[desired_support_argid],0,"contact_pts");
+    // ...or a struct array, in which case we need mxGetField
     if (!mxContactPts) mxContactPts = mxGetField(prhs[desired_support_argid],0,"contact_pts");
     if (!mxContactPts) mexErrMsgTxt("couldn't get contact points");
     mxArray* mxContactSurfaces;

@@ -1,10 +1,13 @@
-function runAtlasWalking(example_options)
-%
-% @option use_mex
-% @option use_bullet
-% @option use_angular_momentum
-% @options navgoal
+function runAtlasWalkingSplit(example_options)
+%NOTEST
+% Run the new split QP controller, which consists of separate PlanEval and InstantaneousQPController objects.
+% @option use_mex [1] whether to use mex. 0: no, 1: yes, 2: compare mex and non-mex
+% @option use_bullet [false] whether to use bullet for collision detect
+% @option navgoal the goal for footstep planning
+% @option quiet [true] whether to silence timing printouts
+% @option num_steps [4] max number of steps to take
 % 
+% this function is tested in test/testSplitWalking.m
 
 checkDependency('gurobi');
 checkDependency('lcmgl');
@@ -14,6 +17,7 @@ example_options = applyDefaults(example_options, struct('use_mex', true,...
                                                         'use_bullet', false,...
                                                         'navgoal', [0.5;0;0;0;0;0],...
                                                         'quiet', true,...
+                                                        'num_steps', 4,...
                                                         'terrain', RigidBodyFlatTerrain));
 
 % silence some warnings
@@ -55,7 +59,7 @@ lfoot_navgoal(1:3) = lfoot_navgoal(1:3) + R*[0;0.13;0];
 
 % Plan footsteps to the goal
 goal_pos = struct('right', rfoot_navgoal, 'left', lfoot_navgoal);
-footstep_plan = r.planFootsteps(x0(1:nq), goal_pos, [], struct('step_params', struct('max_num_steps', 4)));
+footstep_plan = r.planFootsteps(x0(1:nq), goal_pos, [], struct('step_params', struct('max_num_steps', example_options.num_steps)));
 
 walking_plan_data = r.planWalkingZMP(x0(1:r.getNumPositions()), footstep_plan);
 % walking_plan_data = StandingPlan.from_standing_state(x0, r);
@@ -65,7 +69,7 @@ control = atlasControllers.InstantaneousQPController(r, [],...
 control.quiet = example_options.quiet;
 planeval = atlasControllers.AtlasPlanEval(r, walking_plan_data);
 
-plancontroller = atlasControllers.AtlasPlanEvalAndController(r, control, planeval);
+plancontroller = atlasControllers.AtlasPlanEvalAndControlSystem(r, control, planeval);
 plancontroller.quiet = example_options.quiet;
 
 sys = feedback(r, plancontroller);
