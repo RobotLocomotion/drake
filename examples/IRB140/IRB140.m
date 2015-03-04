@@ -37,12 +37,12 @@ classdef IRB140 < TimeSteppingRigidBodyManipulator
         elseif (strcmp(options.hands, 'robotiq_weight_only'))
           % Adds a box with weight roughly approximating the hands, so that
           % the controllers know what's up
-          options_hand.weld_to_link = 7;
-          obj = obj.addRobotFromURDF(getFullPathFromRelativePath('../Atlas/urdf/robotiq_box.urdf'), [0.11904; 0.0; 0.0], [pi; pi; pi/2], options_hand);
+          options_hand.weld_to_link = obj.manip.findLinkId('link_6');
+          obj = obj.addRobotFromURDF(getFullPathFromRelativePath('../Atlas/urdf/robotiq_box.urdf'), [0.11904; 0.0; 0.0], [pi; 0; pi/2], options_hand);
         elseif (strcmp(options.hands, 'block_hand'))
           % Box with collision. Good for hitting things with...
-          options_hand.weld_to_link = 7;
-          obj = obj.addRobotFromURDF(getFullPathFromRelativePath('../Atlas/urdf/block_hand.urdf'), [0.11904; 0.0; 0.0], [pi; pi; pi/2], options_hand);
+          options_hand.weld_to_link = obj.manip.findLinkId('link_6');
+          obj = obj.addRobotFromURDF(getFullPathFromRelativePath('../Atlas/urdf/block_hand.urdf'), [0.11904; 0.0; 0.0], [pi; 0; pi/2], options_hand);
         else
           error('unsupported hand type');
         end
