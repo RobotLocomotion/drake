@@ -1,4 +1,16 @@
 classdef AtlasPlanEvalAndController < DrakeSystem
+% Neither PlanEval nor PlanlessQPController implements the DrakeSystem
+% interface. Instead, we wrap a PlanEval and a PlanlessQPController inside
+% this class, which behaves as a drake system by taking in state, calling the
+% PlanEval and Controller in order, and outputting the atlasInput. In
+% addition, you can also chose to omit the PlanEval or Controller, in which
+% case the missing data will be sent or recieved through LCM in the
+% background. That might look something like the following:
+% 
+% sys1 = AtlasPlanEvalAndController(r, [], planEval);
+% sys2 = AtlasPlanEvalAndController(r, control, []);
+% plancontroller = cascade(sys1, sys2);
+% sys = feedback(r, plancontroller);
   properties
     control
     plan_eval;
