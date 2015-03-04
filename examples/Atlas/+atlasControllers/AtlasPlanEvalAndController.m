@@ -1,16 +1,17 @@
-classdef AtlasSplitQPController < DrakeSystem
+classdef AtlasPlanEvalAndController < DrakeSystem
   properties
     control
     plan_eval;
+    options;
     lc
     monitor
-    debug_monitor
-    options;
   end
 
   methods
-    function obj = AtlasSplitQPController(r, control, plan_eval, options)
+    function obj = AtlasPlanEvalAndController(r, control, plan_eval, options)
       checkDependency('lcmgl');
+      if ~isempty(control), typecheck(control, 'atlasControllers.PlanlessQPController'); end
+      if ~isempty(control), typecheck(plan_eval, 'atlasControllers.AtlasPlanEval'); end
       if nargin < 4
         options = struct();
       end
@@ -29,13 +30,11 @@ classdef AtlasSplitQPController < DrakeSystem
       obj.plan_eval = plan_eval;
       obj.options = options;
 
-      obj.lc = lcm.lcm.LCM.getSingleton();
       if isempty(obj.plan_eval) || isempty(obj.control)
+        obj.lc = lcm.lcm.LCM.getSingleton();
         if isempty(obj.plan_eval)
           obj.monitor = drake.util.MessageMonitor(drake.lcmt_qp_controller_input, 'timestamp');
-          obj.debug_monitor = drake.util.MessageMonitor(drake.lcmt_qp_controller_input, 'timestamp');
           obj.lc.subscribe('QP_CONTROLLER_INPUT', obj.monitor);
-          obj.lc.subscribe('QP_CONTROLLER_INPUT_DEBUG', obj.debug_monitor);
         end
       end
     end
@@ -53,38 +52,18 @@ classdef AtlasSplitQPController < DrakeSystem
           qp_input = obj.monitor.getMessage();
         end
         qp_input = drake.lcmt_qp_controller_input(qp_input);
-
-        if obj.options.debug_lcm
-          qp_input_debug = [];
-          while isempty(qp_input_debug)
-            qp_input_debug = obj.debug_monitor.getMessage();
-          end
-          qp_input_debug = drake.lcmt_qp_controller_input(qp_input_debug);
-
-          try
-            compareLCMMsgs(qp_input, qp_input_debug);
-          catch e
-            e.getReport()
-            keyboard();
-          end
-        end
-
         lcm_time = toc(t0);
         fprintf(1, 'lcm receive: %f, ', lcm_time);
       end
 
       if ~isempty(obj.control)
         t0 = tic();
-        [y, v_ref] = obj.control.tick(t, x, qp_input, [-1;-1]);
+        [y, v_ref] = obj.control.updateAndOutput(t, x, qp_input, [-1;-1]);
         ctime = toc(t0);
         fprintf(1, 'control: %f\n', ctime);
       else
         t0 = tic();
         encodeQPInputLCMMex(qp_input);
-        if obj.options.debug_lcm
-          qp_input_msg = qp_input.to_lcm();
-          obj.lc.publish('QP_CONTROLLER_INPUT_DEBUG', qp_input_msg);
-        end
         lcm_time = toc(t0);
         y = x;
         fprintf(1, 'lcm_serialize: %f, ', lcm_time);

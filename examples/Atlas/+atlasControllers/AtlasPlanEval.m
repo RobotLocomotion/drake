@@ -1,4 +1,4 @@
-classdef AtlasPlanEval < atlasControllers.PlanEval
+classdef AtlasPlanEval < PlanEval
   properties  
     robot_property_cache
     robot
@@ -6,7 +6,7 @@ classdef AtlasPlanEval < atlasControllers.PlanEval
 
   methods
     function obj = AtlasPlanEval(r, varargin)
-      obj = obj@atlasControllers.PlanEval(varargin{:});
+      obj = obj@PlanEval(varargin{:});
       obj.robot = r;
 
       obj.robot_property_cache = atlasUtil.propertyCache(obj.robot);

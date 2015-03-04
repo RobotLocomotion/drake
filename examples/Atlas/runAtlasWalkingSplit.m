@@ -1,9 +1,4 @@
 function runAtlasWalking(example_options)
-% Example running walking QP controller from
-% Scott Kuindersma, Frank Permenter, and Russ Tedrake.
-% An efficiently solvable quadratic program for stabilizing dynamic
-% locomotion. In Proceedings of the International Conference on 
-% Robotics and Automation, Hong Kong, China, May 2014. IEEE.
 %
 % @option use_mex
 % @option use_bullet
@@ -17,7 +12,6 @@ checkDependency('lcmgl');
 if nargin<1, example_options=struct(); end
 if ~isfield(example_options,'use_mex'), example_options.use_mex = true; end
 if ~isfield(example_options,'use_bullet') example_options.use_bullet = false; end
-if ~isfield(example_options,'use_angular_momentum') example_options.use_angular_momentum = false; end
 if ~isfield(example_options,'navgoal')
 %  navgoal = [2*rand();0.25*randn();0;0;0;0];
   example_options.navgoal = [0.5;0;0;0;0;0];
@@ -34,6 +28,7 @@ options.ignore_self_collisions = true;
 options.ignore_friction = true;
 options.dt = 0.001;
 options.terrain = example_options.terrain;
+options.use_bullet = example_options.use_bullet;
 r = Atlas(fullfile(getDrakePath,'examples','Atlas','urdf','atlas_minimal_contact.urdf'),options);
 r = r.removeCollisionGroupsExcept({'heel','toe'});
 r = compile(r);
@@ -67,25 +62,17 @@ footstep_plan = r.planFootsteps(x0(1:nq), goal_pos, [], struct('step_params', st
 walking_plan_data = r.planWalkingZMP(x0(1:r.getNumPositions()), footstep_plan);
 % walking_plan_data = StandingPlan.from_standing_state(x0, r);
 
-import atlasControllers.*;
-
 param_sets = atlasParams.getDefaults(r);
-control = AtlasPlanlessQPController(r,...
-                                    param_sets, struct('use_mex', example_options.use_mex));
+control = atlasControllers.PlanlessQPController(r, param_sets,...
+   struct('use_mex', example_options.use_mex));
+planeval = atlasControllers.AtlasPlanEval(r, walking_plan_data);
 
-planeval = AtlasPlanEval(r, walking_plan_data);
-% plancontroller = AtlasSplitQPController(r, control, planeval);
-
-% plan_node = AtlasSplitQPController(r, [], planeval);
-% control_node = AtlasSplitQPController(r, control, []);
-% plancontroller = cascade(plan_node, control_node);
-plancontroller = AtlasSplitQPController(r, control, planeval);
+plancontroller = atlasControllers.AtlasPlanEvalAndController(r, control, planeval);
 
 sys = feedback(r, plancontroller);
 output_select(1).system=1;
 output_select(1).output=1;
 sys = mimoCascade(sys,v,[],[],output_select);
-
 
 T = min(walking_plan_data.duration + 1, 30);
 
