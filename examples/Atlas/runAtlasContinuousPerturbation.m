@@ -15,7 +15,7 @@ checkDependency('gurobi');
 checkDependency('lcmgl');
 
 if nargin<2, example_options=struct(); end
-if ~isfield(example_options,'use_mex'), example_options.use_mex = false; end
+if ~isfield(example_options,'use_mex'), example_options.use_mex = true; end
 if ~isfield(example_options,'use_bullet') example_options.use_bullet = false; end
 if ~isfield(example_options,'use_angular_momentum') example_options.use_angular_momentum = false; end
 if ~isfield(example_options,'navgoal')
@@ -60,12 +60,12 @@ for iter = 1:3
   v.draw(0, x0)
 
   profile on
-  [walking_plan_data, plan] = planning_pipeline(recovery_planner, r, x0, zmpact, xstar, nq);
+  [walking_plan_data, recovery_plan] = planning_pipeline(recovery_planner, r, x0, zmpact, xstar, nq);
   profile viewer
 
   walking_plan_data.robot = r;
 
-  pm_biped = PointMassBiped(plan.omega);
+  pm_biped = PointMassBiped(recovery_plan.omega);
   [pm_traj, pm_v] = walking_plan_data.simulatePointMassBiped(pm_biped);
   pm_v.playback(pm_traj, struct('slider', true));
 
@@ -85,65 +85,21 @@ for iter = 1:3
   lcmgl.switchBuffers();
   keyboard()
 
-  sim_opts = struct('use_mex', example_options.use_mex,...
-                    'use_ik', false,...
-                    'use_bullet', example_options.use_bullet,...
-                    'use_angular_momentum', example_options.use_angular_momentum,...
-                    'draw_button', true,...
-                    'v', v);
-  traj = atlasUtil.simulateWalking(r, walking_plan_data, sim_opts);
+  planeval = atlasControllers.AtlasPlanEval(r, walking_plan_data);
+  control = atlasControllers.PlanlessQPController(r, [], struct('use_mex', example_options.use_mex));
+  plancontroller = atlasControllers.AtlasPlanEvalAndController(r, control, planeval);
+  sys = feedback(r, plancontroller);
 
-  % ctrl_data = QPControllerData(true,struct(...
-  %   'acceleration_input_frame',AtlasCoordinates(r),...
-  %   'D',-0.94/9.81*eye(2),... % assumed COM height
-  %   'Qy',eye(2),...
-  %   'S',walking_plan_data.V.S,... % always a constant
-  %   's1',walking_plan_data.V.s1,...
-  %   's2',walking_plan_data.V.s2,...
-  %   'x0',ConstantTrajectory([walking_plan_data.zmptraj.eval(T);0;0]),...
-  %   'u0',ConstantTrajectory(zeros(2,1)),...
-  %   'qtraj',x0(1:nq),...
-  %   'comtraj',walking_plan_data.comtraj,...
-  %   'link_constraints',walking_plan_data.link_constraints, ...
-  %   'support_times',walking_plan_data.support_times,...
-  %   'supports',walking_plan_data.supports,...
-  %   'mu',walking_plan_data.mu,...
-  %   'y0',walking_plan_data.zmptraj,...
-  %   'ignore_terrain',false,...
-  %   'plan_shift',[0;0;0],...
-  %   'constrained_dofs',[]));
+  output_select(1).system=1;
+  output_select(1).output=1;
+  sys = mimoCascade(sys,v,[],[],output_select);
 
-  % options.dt = 0.003;
-  % options.slack_limit = 100;
-  % options.use_bullet = use_bullet;
-  % w_qdd = zeros(nq, 1);
-  % w_qdd(findJointIndices(r, 'arm')) = .0001;
-  % w_qdd(findJointIndices(r, 'back')) = .0001;
-  % w_qdd(findJointIndices(r, 'neck')) = .0001;
-  % options.w_qdd = w_qdd;
-  % options.w_grf = 1e-8;
-  % options.w_slack = 5.0;
-  % options.debug = true;
-  % options.contact_threshold = 0.002;
-  % options.solver = 0; % 0 fastqp, 1 gurobi
-  % options.use_mex = use_mex;
+  T = walking_plan_data.duration;
 
+  traj = simulate(sys, [0, T], x0, struct('gui_control_interface', true));
 
-  % options.Kp =150*ones(6,1);
-  % options.Kd = 2*sqrt(options.Kp);
-  % lfoot_motion = BodyMotionControlBlock(r,'l_foot',ctrl_data,options);
-  % rfoot_motion = BodyMotionControlBlock(r,'r_foot',ctrl_data,options);
-  % options.Kp = [100; 100; 100; 150; 150; 150];
-  % options.Kd = 2*sqrt(options.Kp);
-  % pelvis_motion = PelvisMotionControlBlock(r,'pelvis',ctrl_data,options);
-  % % pelvis_motion.nominal_pelvis_height = 0.87;
-  % motion_frames = {lfoot_motion.getOutputFrame,rfoot_motion.getOutputFrame,...
-  % pelvis_motion.getOutputFrame};
-
-  % options.body_accel_input_weights = [.001 .001 .001];
-  % options.min_knee_angle = 0.7;
-
-  % playback(v,traj,struct('slider',true));
+  playback(v,traj,struct('slider',true));
+  
   tsample = 0:0.01:(T-0.01);
   rsole = zeros(6, length(tsample));
   lsole = zeros(6, length(tsample));
@@ -165,7 +121,7 @@ for iter = 1:3
 
   atlasUtil.plotWalkingTraj(r, traj, walking_plan_data);
 
-  % keyboard();
+  keyboard();
 
   breaks = traj.getBreaks();
   traj = PPTrajectory(foh(breaks, traj.eval(breaks)));
@@ -186,9 +142,9 @@ v.playback(combined_xtraj, struct('slider', true));
 
 end
 
-function [walking_plan_data, plan] = planning_pipeline(recovery_planner, r, x0, zmpact, xstar, nq)
-  plan = recovery_planner.solveBipedProblem(r, x0, zmpact);
-  walking_plan_data = DRCWalkingPlanData(WalkingPlanData.from_point_mass_biped_plan(plan, r, x0));
+function [walking_plan_data, recovery_plan] = planning_pipeline(recovery_planner, r, x0, zmpact, xstar, nq)
+  recovery_plan = recovery_planner.solveBipedProblem(r, x0, zmpact);
+  walking_plan_data = QPWalkingPlan.from_point_mass_biped_plan(recovery_plan, r, x0);
   walking_plan_data.qstar = xstar(1:nq);
   % walking_plan_data = DRCWalkingPlanData.from_walking_plan_t(walking_plan_data.to_walking_plan_t()); 
 end

@@ -3,7 +3,7 @@ function link_constraints = getLinkConstraints(obj, foot_origin_knots, zmptraj, 
 if nargin < 6
   options = struct();
 end
-options = applyDefaults(options, struct('pelvis_height_above_foot_origin', 0.76));
+options = applyDefaults(options, struct('pelvis_height_above_sole', 0.84));
 
 link_constraints = struct('link_ndx',{}, 'pt', {}, 'ts', {}, 'poses', {}, 'dposes', {}, 'contact_break_indices', {}, 'coefs', {}, 'toe_off_allowed', {});
 figure(321)
@@ -55,6 +55,11 @@ lfoot_des = evaluateSplineInLinkConstraints(0,link_constraints,lfoot_link_con_in
 rfoot_des = evaluateSplineInLinkConstraints(0,link_constraints,rfoot_link_con_ind);
 pelvis_reference_height(1) = min(lfoot_des(3),rfoot_des(3));
 
+T = obj.getFrame(obj.foot_frame_id.right).T;
+% Torig * T = Tsole
+rfoot_sole_des = poseRPY2tform(rfoot_des) * T;
+pelvis_height_above_foot_origin = options.pelvis_height_above_sole + (rfoot_sole_des(3) - rfoot_des(3));
+
 for i=1:length(support_times)-1
   isDoubleSupport = any(supports(i).bodies==obj.foot_body_id.left) && any(supports(i).bodies==obj.foot_body_id.right);
   isRightSupport = ~any(supports(i).bodies==obj.foot_body_id.left) && any(supports(i).bodies==obj.foot_body_id.right);
@@ -102,7 +107,7 @@ pelvis_ts = support_times;
 rpos = ppval(foot_pp.right, pelvis_ts);
 lpos = ppval(foot_pp.left, pelvis_ts);
 pelvis_poses = [mean(cat(3, rpos(1:2,:), lpos(1:2,:)), 3);
-                pelvis_reference_height + options.pelvis_height_above_foot_origin;
+                pelvis_reference_height + pelvis_height_above_foot_origin;
                 zeros(2,size(rpos, 2));
                 angleAverage(rpos(6,:)', lpos(6,:)')'];
 pp = foh(pelvis_ts, pelvis_poses);
@@ -114,3 +119,7 @@ link_constraints(end).pt = [0;0;0];
 link_constraints(end).ts = pelvis_ts;
 link_constraints(end).poses = pelvis_poses;
 link_constraints(end).coefs = coefs;
+
+
+% Only needed for backwards compatibility
+link_constraints(1).pelvis_reference_height = pelvis_reference_height;

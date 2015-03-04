@@ -9,6 +9,7 @@ classdef QPWalkingPlan < QPControllerPlan
     link_constraints
     zmptraj
     zmp_final
+    D_ls
     V
     qstar = [];
     c = [];
@@ -33,35 +34,35 @@ classdef QPWalkingPlan < QPControllerPlan
       obj = QPWalkingPlan.from_biped_foot_and_zmp_knots(foot_origin_knots, zmp_knots, biped, x0);
     end
 
-    function obj = from_biped_foot_and_zmp_knots(foot_origin_knots, zmp_knots, biped, x0)
-      [supports, support_times] = QPWalkingPlan.getSupports(zmp_knots);
-      zmptraj = QPWalkingPlan.getZMPTraj(zmp_knots);
-      link_constraints = biped.getLinkConstraints(foot_origin_knots, zmptraj, supports, support_times);
-      [c, V, comtraj] = biped.planZMPController(zmptraj, x0);
-
+    function obj = from_biped_foot_and_zmp_knots(foot_origin_knots, zmp_knots, biped, x0, options)
+      if nargin < 5
+        options = struct();
+      end
+      options = applyDefaults(options, struct('pelvis_height_above_sole', 0.84));
       obj = QPWalkingPlan(biped);
       obj.x0 = x0;
-      obj.support_times = support_times;
-      obj.duration = support_times(end)-support_times(1)-0.001;
-      obj.supports = supports;
-      obj.link_constraints = link_constraints;
-      obj.zmptraj = zmptraj;
-      obj.zmp_final = zmptraj.eval(zmptraj.tspan(end));
-      if isa(V.S, 'ConstantTrajectory')
-        V.S = fasteval(V.S, 0);
+
+      [obj.supports, obj.support_times] = QPWalkingPlan.getSupports(zmp_knots);
+      obj.zmptraj = QPWalkingPlan.getZMPTraj(zmp_knots);
+      [obj.c, obj.V, obj.comtraj, limp_height] = biped.planZMPController(obj.zmptraj, obj.x0, options);
+      obj.link_constraints = biped.getLinkConstraints(foot_origin_knots, obj.zmptraj, obj.supports, obj.support_times, struct('pelvis_height_above_sole', limp_height));
+
+      obj.duration = obj.support_times(end)-obj.support_times(1)-0.001;
+      obj.zmp_final = obj.zmptraj.eval(obj.zmptraj.tspan(end));
+      if isa(obj.V.S, 'ConstantTrajectory')
+        obj.V.S = fasteval(obj.V.S, 0);
       end
-      obj.V = V;
-      obj.c = c;
-      obj.comtraj = comtraj;
+      obj.D_ls = -limp_height/9.81*eye(2);
     end
 
-    function obj = from_point_mass_biped_plan(plan, biped, x0)
+    function obj = from_point_mass_biped_plan(plan, biped, x0, param_set_name)
+      if nargin < 4
+        param_set_name = 'recovery';
+      end
       typecheck(biped, 'Biped');
       typecheck(plan, 'PointMassBipedPlan');
 
       foot_start = biped.feetPosition(x0(1:biped.getNumPositions()));
-      % contact = plan.getContactSequence();
-      % contained = plan.contained;
       body_ind = struct('right', biped.getFrame(biped.foot_frame_id.right).body_ind,...
                         'left', biped.getFrame(biped.foot_frame_id.left).body_ind);
       body_ind_list = [body_ind.right, body_ind.left];
@@ -111,7 +112,9 @@ classdef QPWalkingPlan < QPControllerPlan
       zmp_knots(end+1) = zmp_knots(end);
       zmp_knots(end).t = zmp_knots(end).t + (plan.ts(end)-plan.ts(end-1));
 
-      obj = QPWalkingPlan.from_biped_foot_and_zmp_knots(foot_origin_knots, zmp_knots, biped, x0);
+      obj = QPWalkingPlan.from_biped_foot_and_zmp_knots(foot_origin_knots, zmp_knots, biped, x0, struct('pelvis_height_above_sole', []));
+      obj.default_qp_input.whole_body_data.constrained_dofs = biped.findPositionIndices('neck');
+      obj.gain_set = param_set_name;
     end
 
 
@@ -217,6 +220,7 @@ classdef QPWalkingPlan < QPControllerPlan
       t = min([t, T]);
 
       qp_input = obj.default_qp_input;
+      qp_input.zmp_data.D = obj.D_ls;
       qp_input.zmp_data.x0 = [obj.zmp_final; 0;0];
       if isnumeric(obj.zmptraj)
         qp_input.zmp_data.y0 = obj.zmptraj;
