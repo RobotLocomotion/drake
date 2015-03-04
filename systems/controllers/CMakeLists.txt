@@ -20,12 +20,15 @@ if (eigen3_FOUND)
     VERSION 0.0.1)
 
   if (gurobi_FOUND)
+    add_mex(QPCommon SHARED QPCommon.cpp)
+    target_link_libraries(QPCommon drakeControlUtil drakeQP)
+
     add_mex(QPControllermex QPControllermex.cpp)
     target_link_libraries(QPControllermex drakeQP drakeControlUtil)
     pods_use_pkg_config_packages(QPControllermex gurobi)
 
     add_mex(statelessQPControllermex statelessQPControllermex.cpp)
-    target_link_libraries(statelessQPControllermex drakeQP drakeControlUtil)
+    target_link_libraries(statelessQPControllermex drakeQP drakeControlUtil QPCommon)
     pods_use_pkg_config_packages(statelessQPControllermex gurobi)
 
     add_mex(constructQPDataPointerMex constructQPDataPointerMex.cpp)
@@ -56,7 +59,7 @@ if (eigen3_FOUND)
     include_directories (${CMAKE_BINARY_DIR}/lcmgen/lcmtypes )
     message(${CMAKE_BINARY_DIR}/lcmgen/lcmtypes )
     add_mex(encodeQPInputLCMMex encodeQPInputLCMMex.cpp)
-    target_link_libraries(encodeQPInputLCMMex lcm drakeControlUtil)
+    target_link_libraries(encodeQPInputLCMMex lcm drakeControlUtil QPCommon)
   endif()
 
 endif(eigen3_FOUND)
