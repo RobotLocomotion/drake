@@ -647,8 +647,9 @@ classdef AtlasQPController < QPController
     else
       varargout = {y};
     end
-    global qtraj_eval_start_time;
-    toc(qtraj_eval_start_time)
+    % % for profiling the entire atlas controller system (see QTrajEvalBlock.m)
+    % global qtraj_eval_start_time;
+    % toc(qtraj_eval_start_time)
   end
   end
 
