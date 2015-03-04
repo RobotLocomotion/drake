@@ -203,21 +203,25 @@ classdef QPWalkingPlan < QPControllerPlan
       next_plan = StandingPlan.from_standing_state(x, obj.robot);
     end
 
-    function qp_input = getQPControllerInput(obj, t, x, rpc)
+    function qp_input = getQPControllerInput(obj, t, x, rpc, contact_force_detected)
       % Get the input structure which can be passed to the stateless QP control loop
       % @param t the current time
       % @param x the current robot state
       % @param rpc the robot property cache, which lets us quickly look up info about
+      % @param contact_force_detected num_bodies vector indicating whether contact force
+      %                               was detected on that body. Default: zeros(num_bodies,1)
       % the robot which would be expensive to compute (such as terrain contact points)
 
-      % obj.robot.warning_manager.warnOnce('Drake:FakeStateDrift', 'faking state drift');
-      % x(1) = x(1) + 0.1*t;
+      if nargin < 5
+        contact_force_detected = zeros(rpc.num_bodies, 1);
+      end
 
       r = obj.robot;
       t = t - obj.start_time;
       
       T = obj.duration;
       t = min([t, T]);
+
 
       qp_input = obj.default_qp_input;
       qp_input.zmp_data.D = obj.D_ls;
@@ -279,16 +283,17 @@ classdef QPWalkingPlan < QPControllerPlan
       assert(pelvis_has_tracking, 'Expecting a link_constraints block for the pelvis');
 
       qp_input.param_set_name = obj.gain_set;
+      obj.gain_set
 
-      obj = obj.updatePlanShift(t, x, qp_input);
+      obj = obj.updatePlanShift(t, x, qp_input, contact_force_detected);
       qp_input = obj.applyPlanShift(qp_input);
     end
 
-    function obj = updatePlanShift(obj, t, x, qp_input)
+    function obj = updatePlanShift(obj, t, x, qp_input, contact_force_detected)
       active_support_bodies = [qp_input.support_data.body_id];
-      if any(active_support_bodies == obj.robot.foot_body_id.right)
+      if any(active_support_bodies == obj.robot.foot_body_id.right) && contact_force_detected(obj.robot.foot_body_id.right)
         loading_foot = obj.robot.foot_body_id.right;
-      elseif any(active_support_bodies == obj.robot.foot_body_id.left)
+      elseif any(active_support_bodies == obj.robot.foot_body_id.left) && contact_force_detected(obj.robot.foot_body_id.left)
         loading_foot = obj.robot.foot_body_id.left;
       else
         return;
@@ -303,6 +308,7 @@ classdef QPWalkingPlan < QPControllerPlan
           break
         end
       end
+      obj.plan_shift_data.plan_shift
     end
 
     function qp_input = applyPlanShift(obj, qp_input)

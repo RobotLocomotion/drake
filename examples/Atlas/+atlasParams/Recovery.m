@@ -12,6 +12,7 @@ classdef Recovery < atlasParams.Walking
       w_qdd(r.findPositionIndices('arm')) = 1e-4;
       w_qdd(r.findPositionIndices('back')) = 1e-4;
       obj.whole_body.w_qdd = w_qdd;
+      obj = obj.updateKd();
     end
   end
 end
