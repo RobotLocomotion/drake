@@ -77,8 +77,9 @@ classdef QTrajEvalBlock < MIMODrakeSystem
     end
        
     function [qdes,x]=mimoOutput(obj,t,~,x)
-      global qtraj_eval_start_time
-      qtraj_eval_start_time = tic();
+      % % for profiling the entire atlas controller system (see AtlasQPController.m)
+      % global qtraj_eval_start_time
+      % qtraj_eval_start_time = tic();
       
       qtraj = obj.controller_data.qtraj;
       if isa(qtraj,'double')
