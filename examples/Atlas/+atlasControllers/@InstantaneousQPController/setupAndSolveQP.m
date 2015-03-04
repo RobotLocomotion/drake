@@ -322,7 +322,7 @@ if info_fqp<0
   model.ub = ub;
 
   model.obj = fqp;
-  if gurobi_options.method==2
+  if obj.gurobi_options.method==2
     % see drake/algorithms/QuadraticProgram.m solveWGUROBI
     model.Q = .5*model.Q;
   end
@@ -332,7 +332,7 @@ if info_fqp<0
   end
 
 %         qp_tic = tic;
-  result = gurobi(model,gurobi_options);
+  result = gurobi(model,obj.gurobi_options);
 %         qp_toc = toc(qp_tic);
 %         fprintf('QP solve: %2.4f\n',qp_toc);
 
