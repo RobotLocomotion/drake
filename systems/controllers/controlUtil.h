@@ -69,9 +69,7 @@ drakeControlUtilEXPORT int contactConstraintsBV(RigidBodyManipulator *r, int nc,
 drakeControlUtilEXPORT MatrixXd individualSupportCOPs(RigidBodyManipulator* r, const std::vector<SupportStateElement>& active_supports, const MatrixXd& normals, const MatrixXd& B, const VectorXd& beta);
 drakeControlUtilEXPORT void sizecheck(const mxArray* mat, int M, int N);
 drakeControlUtilEXPORT Vector6d bodyMotionPD(RigidBodyManipulator *r, double *q, double *qd, const int body_index, Vector6d body_pose_des, Vector6d body_v_des, Vector6d body_vdot_des, Vector6d Kp, Vector6d Kd);
-drakeControlUtilEXPORT void evaluateCubicSplineSegment(double t, Matrix<double, 6, 4> coefs, Vector6d &y, Vector6d &ydot, Vector6d &yddot); 
-drakeControlUtilEXPORT std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray *qp_input);
-// drakeControlUtilEXPORT std::shared_ptr<drake::lcmt_atlas_command> initializeAtlasCommandMsg(RigidBodyManipulator *r, int atlas_version) ;
 
+drakeControlUtilEXPORT void evaluateCubicSplineSegment(double t, Matrix<double, 6, 4> coefs, Vector6d &y, Vector6d &ydot, Vector6d &yddot);
 
 #endif

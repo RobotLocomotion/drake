@@ -1,4 +1,5 @@
 #include "controlUtil.h"
+#include "drakeUtil.h"
 #include "drake/fastQP.h"
 #include "drake/gurobiQP.h"
 
@@ -80,11 +81,6 @@ struct RobotPropertyCache {
   BodyIdsCache body_ids;
   VectorXi actuated_indices;
 };
-
-// struct MapTest {
-//   MapTest (double *A_data, size_t A_size): A(A_data, A_size) {};
-//   Map<VectorXd> A;
-// };
 
 struct VRefIntegratorParams {
   bool zero_ankles_on_contact;
@@ -203,3 +199,19 @@ struct QPControllerDebugData {
   VectorXd qdvec;
   VectorXd beta;
 };
+
+struct PIDOutput {
+  VectorXd q_ref;
+  VectorXd qddot_des;
+};
+
+std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray *qp_input);
+
+PIDOutput wholeBodyPID(NewQPControllerData *pdata, double t, double *q, double *qd, VectorXd q_des, WholeBodyParams *params);
+
+VectorXd velocityReference(NewQPControllerData *pdata, double t, double *q, double *qd, VectorXd qdd, bool foot_contact[2], VRefIntegratorParams *params, RobotPropertyCache *rpc);
+
+vector<SupportStateElement> loadAvailableSupports(std::shared_ptr<drake::lcmt_qp_controller_input> qp_input);
+
+int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_controller_input> qp_input, double t, double *q, double *qd, Matrix<bool, Dynamic, 1> b_contact_force, QPControllerOutput *qp_output, std::shared_ptr<QPControllerDebugData> debug);
+
