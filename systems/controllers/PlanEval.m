@@ -1,4 +1,13 @@
 classdef PlanEval
+  % A PlanEval represents one half of a complete control system. It contains
+  % all the stateful information about the currently executed plan, and
+  % produces instantaneous input to the QP controller specifying the desired
+  % configuration, body positions, and parameters. Plan Eval maintains a queue
+  % of plans as additional state. When the current plan ends, it will
+  % automatically move to the next plan in the queue. If no additional plans
+  % are available, it will instead call current_plan.getSuccessor() to try to
+  % get a default successor plan. For example, QPWalkingPlan.getSuccessor()
+  % returns a standing plan at the current posture.
   properties
     data
   end
@@ -33,11 +42,17 @@ classdef PlanEval
     end
 
     function qp_input = getQPControllerInput(obj, t, x)
+      % Get a QPInput structure describing the instantaneous input to the QP
+      % controller
+      % @param t the current time (s)
+      % @param x the current robot state vector
       current_plan = obj.getCurrentPlan(t, x);
       qp_input = current_plan.getQPControllerInput(t, x);
     end
 
     function obj = insertPlan(obj, new_plan, idx)
+      % Insert a new plan to the queue *before* the given index.
+      % For example, to move a new plan to the front of the queue, set idx=1
       if nargin < 3
         idx = 1;
       end
@@ -51,10 +66,13 @@ classdef PlanEval
     end
 
     function obj = appendPlan(obj, new_plan)
+      % Add a plan to the end of the queue
       obj.data.plan_queue{end+1} = new_plan;
     end
 
     function obj = switchToPlan(obj, new_plan)
+      % Replace the queue with a single new plan, which will become the
+      % current plan immediately.
       obj.data.plan_queue = {new_plan};
     end
   end
