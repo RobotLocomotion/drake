@@ -1,4 +1,11 @@
-classdef PlanlessQPController 
+classdef InstantaneousQPController 
+% A QP-based balancing and walking controller that exploits TV-LQR solutions
+% for (time-varing) linear COM/ZMP dynamics. Includes logic specific to
+% atlas/bipeds for raising the heel while walking. This differs from
+% AtlasQPController in that it contains no stateful information about the
+% currently executed plan. Instead, it is designed to be fully general for a
+% variety of plan types (standing, walking, manipulating, etc.). The
+% AtlasPlanEval class now handles the state of the current plan.
   properties(SetAccess=private, GetAccess=public);
     debug;
     debug_pub;
@@ -18,7 +25,7 @@ classdef PlanlessQPController
   end
 
   methods
-    function obj = PlanlessQPController(r, param_sets, options)
+    function obj = InstantaneousQPController(r, param_sets, options)
       if nargin < 3
         options = struct();
       end
@@ -46,7 +53,7 @@ classdef PlanlessQPController
         obj.debug_pub = ControllerDebugPublisher('CONTROLLER_DEBUG');
       end
 
-      obj.controller_data = PlanlessQPControllerData(struct('infocount', 0,...
+      obj.controller_data = InstantaneousQPControllerData(struct('infocount', 0,...
                                                      'qp_active_set', []));
       obj.q_integrator_data = IntegratorData(r);
       obj.vref_integrator_data = VRefIntegratorData(r);
@@ -88,6 +95,11 @@ classdef PlanlessQPController
     end
 
     function qddot_des = wholeBodyPID(obj, t, q, qd, q_des, params)
+      % Run PID control on the whole body state. 
+      % @param t time (s)
+      % @param q, qd the current robot posture and velocity vectors
+      % @param q_des the desired robot posture
+      % @param params the whole_body field of an atlasParams.* object.
       if isnan(obj.q_integrator_data.t_prev)
         obj.q_integrator_data.t_prev = t;
       end
@@ -112,6 +124,8 @@ classdef PlanlessQPController
 
 
     function [w_qdd, qddot_des] = kneePD(obj, q, qd, w_qdd, qddot_des, toe_off, min_knee_angle)
+      % Implement our toe-off logic for the knee. Not currently in use, but
+      % kept here for eventual inclusion.
       kp = 40;
       kd = 4;
       r_knee_inds = obj.robot_property_cache.position_indices.r_leg_kny;
@@ -133,6 +147,13 @@ classdef PlanlessQPController
     end
 
     function v_ref = velocityReference(obj, t, q, qd, qdd, foot_contact_sensor, params)
+      % Integrate expected accelerations to compute a feed-forward velocity reference. 
+      % @param t time (s)
+      % @param q, qd robot state
+      % @param qdd accelerations computed by the QP
+      % @param foot_contact_sensor 2x1 flags indicating whether contact is detected
+      %                            for the [left; right] foot.
+      % @param params the vref_integrator field of an atlasParams.* object.
       fc = struct('right', foot_contact_sensor(2) > 0.5,...
                             'left', foot_contact_sensor(1) > 0.5);
 
@@ -179,9 +200,13 @@ classdef PlanlessQPController
     end
 
     function [y, v_ref] = updateAndOutput(obj, t, x, qp_input, foot_contact_sensor)
-
-      % obj.robot.warning_manager.warnOnce('Drake:FakeStateDrift', 'Faking state drift');
-      % x(1) = x(1) + 0.1*t;
+      % Parse inputs from the robot and the planEval, set up the QP, solve it,
+      % and return the torques and feed-forward velocity.
+      % @param t time (s)
+      % @param x robot state vector
+      % @param qp_input a QPInput2D object
+      % @param foot_contact_sensor a 2x1 vector indicating whether contact force was
+      %                            detected by the [left; right] foot
 
       t0 = tic();
 
@@ -275,7 +300,7 @@ classdef PlanlessQPController
         if (obj.use_mex==1)
           t0 = tic();
           [y,qdd,v_ref,info_fqp] = ...
-                      statelessQPControllermex(obj.mex_ptr.data,...
+                      instantaneousQPControllermex(obj.mex_ptr.data,...
                       t,...
                       x,...
                       qp_input,...
@@ -300,7 +325,7 @@ classdef PlanlessQPController
           t0 = tic();
           [y_mex,mex_qdd,vref_mex,info_mex,active_supports_mex,~,Hqp_mex,fqp_mex,...
             Aeq_mex,beq_mex,Ain_mex,bin_mex,Qf,Qeps] = ...
-               statelessQPControllermex(obj.mex_ptr.data,...
+               instantaneousQPControllermex(obj.mex_ptr.data,...
                       t,...
                       x,...
                       qp_input,...

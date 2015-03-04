@@ -31,7 +31,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   if (!mxIsNumeric(prhs[0]) || mxGetNumberOfElements(prhs[0])!=1)
     mexErrMsgIdAndTxt("Drake:QPControllermex:BadInputs","the first argument should be the ptr");
   memcpy(&pdata,mxGetData(prhs[0]),sizeof(pdata));
-  int nq = pdata->r->num_dof;
 
   // now retrieve the runtime params from their matlab object
   int narg=1;
@@ -40,8 +39,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   double t = mxGetScalar(prhs[narg++]);
 
   // x
-  double *q = mxGetPr(prhs[narg++]);
-  double *qd = &q[nq];
+  int nq = pdata->r->num_positions;
+  int nv = pdata->r->num_velocities;
+  if (mxGetNumberOfElements(prhs[narg]) != (nq + nv)) mexErrMsgTxt("size of x should be nq + nv\n");
+  double *q_ptr = mxGetPr(prhs[narg]);
+  double *qd_ptr = &q_ptr[nq];
+
+  Map<VectorXd> q(q_ptr, nq);
+  Map<VectorXd> qd(qd_ptr, nq);
 
   // qp_input
   shared_ptr<drake::lcmt_qp_controller_input> qp_input = encodeQPInputLCM(prhs[narg]);
@@ -145,7 +150,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     double Vdot;
     if (debug->nc>0) 
       // note: Sdot is 0 for ZMP/double integrator dynamics, so we omit that term here
-      Vdot = ((2*debug->x_bar.transpose()*debug->S + debug->s1.transpose())*(debug->A_ls*debug->x_bar + debug->B_ls*(debug->Jcomdot*debug->qdvec + debug->Jcom*qp_output.qdd)) + debug->s1dot.transpose()*debug->x_bar)(0) + debug->s2dot;
+      Vdot = ((2*debug->x_bar.transpose()*debug->S + debug->s1.transpose())*(debug->A_ls*debug->x_bar + debug->B_ls*(debug->Jcomdot*qd + debug->Jcom*qp_output.qdd)) + debug->s1dot.transpose()*debug->x_bar)(0) + debug->s2dot;
     else
       Vdot = 0;
     plhs[narg] = mxCreateDoubleScalar(Vdot);

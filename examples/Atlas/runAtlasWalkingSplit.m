@@ -62,8 +62,7 @@ footstep_plan = r.planFootsteps(x0(1:nq), goal_pos, [], struct('step_params', st
 walking_plan_data = r.planWalkingZMP(x0(1:r.getNumPositions()), footstep_plan);
 % walking_plan_data = StandingPlan.from_standing_state(x0, r);
 
-param_sets = atlasParams.getDefaults(r);
-control = atlasControllers.PlanlessQPController(r, param_sets,...
+control = atlasControllers.InstantaneousQPController(r, [],...
    struct('use_mex', example_options.use_mex));
 planeval = atlasControllers.AtlasPlanEval(r, walking_plan_data);
 

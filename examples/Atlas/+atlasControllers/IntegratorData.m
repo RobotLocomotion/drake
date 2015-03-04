@@ -1,4 +1,5 @@
 classdef IntegratorData < ControllerData
+% Container class for integrator state
   properties
     state;
     t_prev;

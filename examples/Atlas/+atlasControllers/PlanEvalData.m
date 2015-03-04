@@ -1,4 +1,7 @@
 classdef PlanEvalData < ControllerData
+% Container class for the PlanEval's queue of plans. This class is necessary
+% in order to make the plan queue a handle object, in order to make it
+% persistent across multiple calls to PlanEval.getCurrentPlan
   properties
     plan_queue
   end
