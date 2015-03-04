@@ -1,4 +1,7 @@
 classdef AtlasPlanEval < PlanEval
+% A PlanEval which includes some Atlas-specific tweaks. Specifically, it
+% provides a cache of useful robot properties which may be expensive to look
+% up at runtime.
   properties  
     robot_property_cache
     robot
