@@ -17,6 +17,7 @@ namespace DrakeCollision
 
   class DLLEXPORT_drakeCollision Model {
     public:
+      Model() {}
 
       virtual ElementId addElement(std::unique_ptr<Element> element);
 
@@ -51,6 +52,10 @@ namespace DrakeCollision
 
     protected:
       std::map< ElementId, std::unique_ptr<Element> >  elements;
+
+    private:
+      Model(const Model&) {}
+      Model& operator=(const Model&) { return *this; }
   };
 
 }

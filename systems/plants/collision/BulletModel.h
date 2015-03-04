@@ -100,6 +100,9 @@ namespace DrakeCollision
         protected:
           std::string shape_str;
       };
+    private:
+      BulletModel(const BulletModel&) {}
+      BulletModel& operator=(const BulletModel&) { return *this; }
   };
 }
 #endif

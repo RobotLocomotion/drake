@@ -46,6 +46,9 @@ namespace DrakeCollision
       std::unique_ptr<Geometry> geometry;
       const ElementId id;
 
+    private:
+      Element(const Element&) : id((ElementId) this) {}
+      Element& operator=(const Element&) { return *this; }
     public:
       EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
