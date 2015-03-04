@@ -9,7 +9,7 @@ using namespace std;
 void parseWholeBodyParams(const mxArray *params_obj, RigidBodyManipulator *r, WholeBodyParams *params) {
   const mxArray *int_obj = myGetField(params_obj, "integrator");
   const mxArray *qddbound_obj = myGetField(params_obj, "qdd_bounds");
-  int nq = r->num_dof;
+  int nq = r->num_positions;
   int nv = r->num_velocities;
 
   if (mxGetNumberOfElements(myGetField(params_obj, "Kp")) != nq) mexErrMsgTxt("Kp should be of size nq");
@@ -220,7 +220,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   narg++;
 
   // umin
-  int nq = pdata->r->num_dof, nu = pdata->B.cols();
+  int nq = pdata->r->num_positions, nu = pdata->B.cols();
   pdata->umin.resize(nu);
   pdata->umax.resize(nu);
   memcpy(pdata->umin.data(),mxGetPr(prhs[narg++]),sizeof(double)*nu);
@@ -306,7 +306,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   pdata->state.t_prev = 0;
   pdata->state.vref_integrator_state = VectorXd::Zero(pdata->r->num_velocities);
-  pdata->state.q_integrator_state = VectorXd::Zero(pdata->r->num_dof);
+  pdata->state.q_integrator_state = VectorXd::Zero(pdata->r->num_positions);
   pdata->state.foot_contact_prev[0] = false;
   pdata->state.foot_contact_prev[1] = false;
 
