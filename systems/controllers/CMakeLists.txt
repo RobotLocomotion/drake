@@ -27,9 +27,9 @@ if (eigen3_FOUND)
     target_link_libraries(QPControllermex drakeQP drakeControlUtil)
     pods_use_pkg_config_packages(QPControllermex gurobi)
 
-    add_mex(statelessQPControllermex statelessQPControllermex.cpp)
-    target_link_libraries(statelessQPControllermex drakeQP drakeControlUtil QPCommon)
-    pods_use_pkg_config_packages(statelessQPControllermex gurobi)
+    add_mex(instantaneousQPControllermex instantaneousQPControllermex.cpp)
+    target_link_libraries(instantaneousQPControllermex drakeQP drakeControlUtil QPCommon)
+    pods_use_pkg_config_packages(instantaneousQPControllermex gurobi)
 
     add_mex(constructQPDataPointerMex constructQPDataPointerMex.cpp)
     target_link_libraries(constructQPDataPointerMex drakeQP drakeControlUtil)

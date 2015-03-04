@@ -1,4 +1,4 @@
-classdef PlanlessQPControllerData < ControllerData
+classdef InstantaneousQPControllerData < ControllerData
   % Class that contains data needed by the QPController and cascaded modules.
 
   % properties that change infrequently or never
@@ -13,7 +13,7 @@ classdef PlanlessQPControllerData < ControllerData
   end
   
   methods 
-    function obj = PlanlessQPControllerData(data)
+    function obj = InstantaneousQPControllerData(data)
       typecheck(data,'struct');
       obj = obj@ControllerData(data);
     end

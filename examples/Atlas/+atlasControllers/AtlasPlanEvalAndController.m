@@ -1,6 +1,6 @@
 classdef AtlasPlanEvalAndController < DrakeSystem
-% Neither PlanEval nor PlanlessQPController implements the DrakeSystem
-% interface. Instead, we wrap a PlanEval and a PlanlessQPController inside
+% Neither PlanEval nor InstantaneousQPController implements the DrakeSystem
+% interface. Instead, we wrap a PlanEval and an InstantaneousQPController inside
 % this class, which behaves as a drake system by taking in state, calling the
 % PlanEval and Controller in order, and outputting the atlasInput. In
 % addition, you can also chose to omit the PlanEval or Controller, in which
@@ -22,7 +22,7 @@ classdef AtlasPlanEvalAndController < DrakeSystem
   methods
     function obj = AtlasPlanEvalAndController(r, control, plan_eval, options)
       checkDependency('lcmgl');
-      if ~isempty(control), typecheck(control, 'atlasControllers.PlanlessQPController'); end
+      if ~isempty(control), typecheck(control, 'atlasControllers.InstantaneousQPController'); end
       if ~isempty(control), typecheck(plan_eval, 'atlasControllers.AtlasPlanEval'); end
       if nargin < 4
         options = struct();
