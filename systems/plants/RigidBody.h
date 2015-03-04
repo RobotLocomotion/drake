@@ -135,7 +135,7 @@ public:
   {
     public:
       CollisionElement(std::unique_ptr<DrakeCollision::Geometry> geometry,
-                       const Matrix4d T_element_to_link, std::shared_ptr<RigidBody> body);
+                       const Matrix4d& T_element_to_link, std::shared_ptr<RigidBody> body);
 
       const std::shared_ptr<RigidBody>& getBody() const;
 

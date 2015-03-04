@@ -176,7 +176,7 @@ bool RigidBody::appendCollisionElementIds(vector<DrakeCollision::ElementId>& ids
 
 RigidBody::CollisionElement::
 CollisionElement(std::unique_ptr<DrakeCollision::Geometry> geometry,
-                 const Matrix4d T_element_to_link, std::shared_ptr<RigidBody> body)
+                 const Matrix4d& T_element_to_link, std::shared_ptr<RigidBody> body)
   : DrakeCollision::Element(move(geometry), T_element_to_link), body(body) {}
 
 const std::shared_ptr<RigidBody>& RigidBody::CollisionElement:: getBody() const

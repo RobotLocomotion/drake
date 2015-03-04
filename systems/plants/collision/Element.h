@@ -18,7 +18,7 @@ namespace DrakeCollision
   class DLLEXPORT_drakeCollision Element {
     public:
       Element(std::unique_ptr<Geometry> geometry, 
-          const Eigen::Matrix4d T_element_to_local = Eigen::Matrix4d::Identity())
+          const Eigen::Matrix4d& T_element_to_local = Eigen::Matrix4d::Identity())
         : geometry(move(geometry)), T_element_to_local(T_element_to_local), id((ElementId) this) 
       {};
 
