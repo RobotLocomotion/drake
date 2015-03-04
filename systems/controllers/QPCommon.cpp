@@ -127,21 +127,20 @@ std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray 
   return msg;
 }
 
-PIDOutput wholeBodyPID(NewQPControllerData *pdata, double t, double *q, double *qd, VectorXd q_des, WholeBodyParams *params) {
-  assert(q_des.size() == params->integrator.gains.size());
+PIDOutput wholeBodyPID(NewQPControllerData *pdata, double t, VectorXd q, VectorXd qd, VectorXd q_des, WholeBodyParams *params) {
   PIDOutput out;
   double dt = 0;
-  int nq = pdata->r->num_dof;
-  int nv = pdata->r->num_velocities;
+  int nq = pdata->r->num_positions;
+  assert(q.size() == nq);
+  assert(qd.size() == pdata->r->num_velocities);
+  assert(q_des.size() == params->integrator.gains.size());
   if (nq != pdata->r->num_velocities) {
     mexErrMsgTxt("this function will need to be rewritten when num_pos != num_vel");
   }
-  Map<VectorXd>q_vec(q, q_des.size(), nq);
-  Map<VectorXd>qd_vec(qd, nv);
   if (pdata->state.t_prev != 0) {
     dt = t - pdata->state.t_prev;
   }
-  pdata->state.q_integrator_state = params->integrator.eta * pdata->state.q_integrator_state + params->integrator.gains.cwiseProduct(q_des - q_vec) * dt;
+  pdata->state.q_integrator_state = params->integrator.eta * pdata->state.q_integrator_state + params->integrator.gains.cwiseProduct(q_des - q) * dt;
   pdata->state.q_integrator_state = pdata->state.q_integrator_state.array().max(-params->integrator.clamps.array());
   pdata->state.q_integrator_state = pdata->state.q_integrator_state.array().min(params->integrator.clamps.array());
   q_des = q_des + pdata->state.q_integrator_state;
@@ -154,29 +153,27 @@ PIDOutput wholeBodyPID(NewQPControllerData *pdata, double t, double *q, double *
 
   VectorXd err_q;
   err_q.resize(nq);
-  err_q.head(3) = q_des.head(3) - q_vec.head(3);
+  err_q.head(3) = q_des.head(3) - q.head(3);
   for (int j = 3; j < nq; j++) {
-    err_q(j) = angleDiff(q_vec(j), q_des(j));
+    err_q(j) = angleDiff(q(j), q_des(j));
   }
-  VectorXd qddot_des = params->Kp.cwiseProduct(err_q) - params->Kd.cwiseProduct(qd_vec);
+  VectorXd qddot_des = params->Kp.cwiseProduct(err_q) - params->Kd.cwiseProduct(qd);
   qddot_des = qddot_des.array().max(params->qdd_bounds.min.array());
   qddot_des = qddot_des.array().min(params->qdd_bounds.max.array());
   out.qddot_des = qddot_des;
   return out;
 }
 
-VectorXd velocityReference(NewQPControllerData *pdata, double t, double *q, double *qd, VectorXd qdd, bool foot_contact[2], VRefIntegratorParams *params, RobotPropertyCache *rpc) {
-  int nv = pdata->r->num_velocities;
+VectorXd velocityReference(NewQPControllerData *pdata, double t, VectorXd q, VectorXd qd, VectorXd qdd, bool foot_contact[2], VRefIntegratorParams *params, RobotPropertyCache *rpc) {
   int i;
-  assert(qdd.size() == nv);
-  Map<VectorXd> qd_vec(qd, nv);
+  assert(qdd.size() == pdata->r->num_velocities);
 
   double dt = 0;
   if (pdata->state.t_prev != 0) {
     dt = t - pdata->state.t_prev;
   }
 
-  pdata->state.vref_integrator_state = (1-params->eta)*pdata->state.vref_integrator_state + params->eta*qd_vec + qdd*dt;
+  pdata->state.vref_integrator_state = (1-params->eta)*pdata->state.vref_integrator_state + params->eta*qd + qdd*dt;
 
   if (params->zero_ankles_on_contact && foot_contact[0] == 1) {
     for (i=0; i < rpc->position_indices.l_leg_ak.size(); i++) {
@@ -191,20 +188,20 @@ VectorXd velocityReference(NewQPControllerData *pdata, double t, double *q, doub
   if (pdata->state.foot_contact_prev[0] != foot_contact[0]) {
     // contact state changed, reset integrated velocities
     for (i=0; i < rpc->position_indices.l_leg.size(); i++) {
-      pdata->state.vref_integrator_state(rpc->position_indices.l_leg(i)) = qd_vec(rpc->position_indices.l_leg(i));
+      pdata->state.vref_integrator_state(rpc->position_indices.l_leg(i)) = qd(rpc->position_indices.l_leg(i));
     }
   }
   if (pdata->state.foot_contact_prev[1] != foot_contact[1]) {
     // contact state changed, reset integrated velocities
     for (i=0; i < rpc->position_indices.r_leg.size(); i++) {
-      pdata->state.vref_integrator_state(rpc->position_indices.r_leg(i)) = qd_vec(rpc->position_indices.r_leg(i));
+      pdata->state.vref_integrator_state(rpc->position_indices.r_leg(i)) = qd(rpc->position_indices.r_leg(i));
     }
   }
 
   pdata->state.foot_contact_prev[0] = foot_contact[0];
   pdata->state.foot_contact_prev[1] = foot_contact[1];
 
-  VectorXd qd_err = pdata->state.vref_integrator_state - qd_vec;
+  VectorXd qd_err = pdata->state.vref_integrator_state - qd;
 
   // do not velocity control ankles when in contact
   if (params->zero_ankles_on_contact && foot_contact[0] == 1) {
@@ -254,7 +251,7 @@ vector<SupportStateElement> loadAvailableSupports(std::shared_ptr<drake::lcmt_qp
   
 // }
 
-int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_controller_input> qp_input, double t, double *q, double *qd, Matrix<bool, Dynamic, 1> b_contact_force, QPControllerOutput *qp_output, std::shared_ptr<QPControllerDebugData> debug) {
+int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_controller_input> qp_input, double t, VectorXd q, VectorXd qd, Matrix<bool, Dynamic, 1> b_contact_force, QPControllerOutput *qp_output, std::shared_ptr<QPControllerDebugData> debug) {
   // The primary solve loop for our controller. This constructs and solves a Quadratic Program and produces the instantaneous desired torques, along with reference positions, velocities, and accelerations. 
   // Note: argument `debug` MAY be set to NULL, which signals that no debug information is requested.
 
@@ -274,7 +271,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   // mexPrintf("Kp_accel: %f, ", params->Kp_accel);
 
   int nu = pdata->B.cols();
-  int nq = pdata->r->num_dof;
+  int nq = pdata->r->num_positions;
 
   // zmp_data
   Map<Matrix<double, 4, 4, RowMajor>> A_ls(&qp_input->zmp_data.A[0][0]);
@@ -394,7 +391,6 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     Jcom = pdata->J_xy;
     Jcomdot = pdata->Jdot_xy;
   }
-  Map<VectorXd> qdvec(qd,nq);
   
   MatrixXd B,JB,Jp,Jpdot,normals;
   int nc = contactConstraintsBV(pdata->r,num_active_contact_pts,mu,active_supports,pdata->map_ptr,B,JB,Jp,Jpdot,normals,pdata->default_terrain_height);
@@ -407,12 +403,12 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
       // x,y,z com 
       xlimp.resize(6); 
       xlimp.topRows(3) = xcom;
-      xlimp.bottomRows(3) = Jcom*qdvec;
+      xlimp.bottomRows(3) = Jcom*qd;
     }
     else {
       xlimp.resize(4); 
       xlimp.topRows(2) = xcom.topRows(2);
-      xlimp.bottomRows(2) = Jcom*qdvec;
+      xlimp.bottomRows(2) = Jcom*qd;
     }
     x_bar = xlimp-x0;
 
@@ -425,7 +421,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
 
   Vector3d kdot_des; 
   if (include_angular_momentum) {
-    VectorXd k = pdata->Ak*qdvec;
+    VectorXd k = pdata->Ak*qd;
     kdot_des = -params->Kp_ang*k; // TODO: parameterize
   }
   
@@ -440,7 +436,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     if (nc > 0) {
       // NOTE: moved Hqp calcs below, because I compute the inverse directly for FastQP (and sparse Hqp for gurobi)
       VectorXd tmp = C_ls*xlimp;
-      VectorXd tmp1 = Jcomdot*qdvec;
+      VectorXd tmp1 = Jcomdot*qd;
       MatrixXd tmp2 = R_DQyD_ls*Jcom;
 
       pdata->fqp = tmp.transpose()*Qy*D_ls*Jcom;
@@ -451,7 +447,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
       pdata->fqp -= y0.transpose()*Qy*D_ls*Jcom;
       pdata->fqp -= (params->whole_body.w_qdd.array()*pid_out.qddot_des.array()).matrix().transpose();
       if (include_angular_momentum) {
-        pdata->fqp += qdvec.transpose()*pdata->Akdot.transpose()*params->W_kdot*pdata->Ak;
+        pdata->fqp += qd.transpose()*pdata->Akdot.transpose()*params->W_kdot*pdata->Ak;
         pdata->fqp -= kdot_des.transpose()*params->W_kdot*pdata->Ak;
       }
       f.head(nq) = pdata->fqp.transpose();
@@ -479,7 +475,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     Aeq.block(6,0,neps,nq) = Jp;
     Aeq.block(6,nq,neps,nf) = MatrixXd::Zero(neps,nf);  // note: obvious sparsity here
     Aeq.block(6,nq+nf,neps,neps) = MatrixXd::Identity(neps,neps);             // note: obvious sparsity here
-    beq.segment(6,neps) = (-Jpdot -params->Kp_accel*Jp)*qdvec; 
+    beq.segment(6,neps) = (-Jpdot -params->Kp_accel*Jp)*qd; 
   }    
   
   // add in body spatial equality constraints
@@ -498,7 +494,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
         for (int j=0; j<6; j++) {
           if (!std::isnan(desired_body_accelerations[i].body_vdot(j))) {
             Aeq.block(equality_ind,0,1,nq) = Jb.row(j);
-            beq[equality_ind++] = -Jbdot.row(j)*qdvec + desired_body_accelerations[i].body_vdot(j);
+            beq[equality_ind++] = -Jbdot.row(j)*qd + desired_body_accelerations[i].body_vdot(j);
           }
         }
       }
@@ -531,11 +527,11 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   for (int i=0; i<desired_body_accelerations.size(); i++) {
     pdata->r->forwardJac(desired_body_accelerations[i].body_id0,orig,1,Jb);
     pdata->r->forwardJacDot(desired_body_accelerations[i].body_id0,orig,1,Jbdot);
-    Ain.block(constraint_start_index,0,6,pdata->r->num_dof) = Jb;
-    bin.segment(constraint_start_index,6) = -Jbdot*qdvec + desired_body_accelerations[i].accel_bounds.max;
+    Ain.block(constraint_start_index,0,6,pdata->r->num_positions) = Jb;
+    bin.segment(constraint_start_index,6) = -Jbdot*qd + desired_body_accelerations[i].accel_bounds.max;
     constraint_start_index += 6;
-    Ain.block(constraint_start_index,0,6,pdata->r->num_dof) = -Jb;
-    bin.segment(constraint_start_index,6) = Jbdot*qdvec - desired_body_accelerations[i].accel_bounds.min;
+    Ain.block(constraint_start_index,0,6,pdata->r->num_positions) = -Jb;
+    bin.segment(constraint_start_index,6) = Jbdot*qd - desired_body_accelerations[i].accel_bounds.min;
     constraint_start_index += 6;
   }
        
@@ -643,7 +639,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
           for (int j=0; j<6; j++) {
             if (!std::isnan(desired_body_accelerations[i].body_vdot[j])) {
               pdata->Hqp += desired_body_accelerations[i].weight*(Jb.row(j)).transpose()*Jb.row(j);
-              f.head(nq) += desired_body_accelerations[i].weight*(qdvec.transpose()*Jbdot.row(j).transpose() - desired_body_accelerations[i].body_vdot[j])*Jb.row(j).transpose();
+              f.head(nq) += desired_body_accelerations[i].weight*(qd.transpose()*Jbdot.row(j).transpose() - desired_body_accelerations[i].body_vdot[j])*Jb.row(j).transpose();
             }
           }
         }
@@ -734,7 +730,6 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     debug->B_ls = B_ls;
     debug->Jcom = Jcom;
     debug->Jcomdot = Jcomdot;
-    debug->qdvec = qdvec;
     debug->beta = beta;
   }
 
