@@ -1,4 +1,4 @@
-classdef AtlasPlanEvalAndController < DrakeSystem
+classdef AtlasPlanEvalAndControlSystem < DrakeSystem
 % Neither PlanEval nor InstantaneousQPController implements the DrakeSystem
 % interface. Instead, we wrap a PlanEval and an InstantaneousQPController inside
 % this class, which behaves as a drake system by taking in state, calling the
@@ -7,10 +7,17 @@ classdef AtlasPlanEvalAndController < DrakeSystem
 % case the missing data will be sent or recieved through LCM in the
 % background. That might look something like the following:
 % 
-% sys1 = AtlasPlanEvalAndController(r, [], planEval);
-% sys2 = AtlasPlanEvalAndController(r, control, []);
+% sys1 = AtlasPlanEvalAndControlSystem(r, [], planEval);
+% sys2 = AtlasPlanEvalAndControlSystem(r, control, []);
 % plancontroller = cascade(sys1, sys2);
 % sys = feedback(r, plancontroller);
+% 
+% WARNING: There is hidden state contained in both the plan and the control.
+% State within the controller should be minimal, and consists only of
+% integrator state, QP active set, and failure counts for fastQP. State within
+% the PlanEval (which contains a list of stateful plan objects) may be
+% substantial.
+%
   properties(SetAccess=protected)
     control
     plan_eval;
@@ -24,10 +31,10 @@ classdef AtlasPlanEvalAndController < DrakeSystem
   end
 
   methods
-    function obj = AtlasPlanEvalAndController(r, control, plan_eval, options)
+    function obj = AtlasPlanEvalAndControlSystem(r, control, plan_eval, options)
       checkDependency('lcmgl');
       if ~isempty(control), typecheck(control, 'atlasControllers.InstantaneousQPController'); end
-      if ~isempty(control), typecheck(plan_eval, 'atlasControllers.AtlasPlanEval'); end
+      if ~isempty(plan_eval), typecheck(plan_eval, 'atlasControllers.AtlasPlanEval'); end
       if nargin < 4
         options = struct();
       end
