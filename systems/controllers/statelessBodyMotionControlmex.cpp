@@ -23,10 +23,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   int narg = 1;
   int nq = r->num_positions;
   int nv = r->num_velocities;
-  double *q_ptr = mxGetPr(prhs[narg++]);
+  double *q_ptr = mxGetPr(prhs[narg]);
   double *qd_ptr = &q_ptr[nq];
   Map<VectorXd> q(q_ptr, nq);
   Map<VectorXd> qd(qd_ptr, nv);
+  narg++;
 
   body_index = (int) mxGetScalar(prhs[narg++]) - 1;
 
