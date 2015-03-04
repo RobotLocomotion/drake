@@ -19,6 +19,12 @@ classdef PlanlessQPController
 
   methods
     function obj = PlanlessQPController(r, param_sets, options)
+      if nargin < 3
+        options = struct();
+      end
+      if nargin < 2 || isempty(param_sets)
+        param_sets = atlasParams.getDefaults(r);
+      end
       options = applyDefaults(options,...
         struct('debug', false,...
                'use_mex', 1, ...
