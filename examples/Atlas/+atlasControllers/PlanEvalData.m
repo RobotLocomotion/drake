@@ -12,7 +12,9 @@ classdef PlanEvalData < ControllerData
     end
 
     function verifyControllerData(obj, data)
-      warning('not implemented yet');
+      for j = 1:length(data.plan_queue)
+        typecheck(data.plan_queue{j}, 'QPControllerPlan');
+      end
     end
   end
 end

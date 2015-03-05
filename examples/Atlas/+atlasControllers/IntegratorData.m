@@ -13,7 +13,8 @@ classdef IntegratorData < ControllerData
     end
 
     function verifyControllerData(obj,data)
-      warning('not implemented yet');
+      assert(isscalar(data.t_prev));
+      assert(isnumeric(data.state));
     end
   end
 
