@@ -98,13 +98,6 @@ else
   options.pelvis_damping_ratio = 0.6;
   options.Kp_q = 150.0*ones(r.getNumPositions(),1);
   options.q_damping_ratio = 0.6;
-  w_qdd = zeros(nq, 1);
-  w_qdd(findPositionIndices(r, 'arm')) = .0001;
-  w_qdd(findPositionIndices(r, 'back')) = .0001;
-  options.w_qdd = w_qdd;
-
-  options.body_accel_input_weights = [.001 .001 .001];
-  options.use_walking_pelvis_block = true;
 
   % construct QP controller and related control blocks
   [qp,lfoot_controller,rfoot_controller,pelvis_controller,pd,options] = constructQPWalkingController(r,ctrl_data,options);
