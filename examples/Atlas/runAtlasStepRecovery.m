@@ -1,10 +1,9 @@
-function runAtlasWalking(perturbation, example_options)
-% Example running walking QP controller from
-% Scott Kuindersma, Frank Permenter, and Russ Tedrake.
-% An efficiently solvable quadratic program for stabilizing dynamic
-% locomotion. In Proceedings of the International Conference on 
-% Robotics and Automation, Hong Kong, China, May 2014. IEEE.
-%
+function runAtlasStepRecovery(perturbation, example_options)
+% NOTEST
+% This is an initial test of our newly developed recovery planner. It starts
+% the robot with an initial perturbation and attempts to come to rest standing
+% up. 
+% @param perturbation the disturbance, expressed as initial CoM velocity in [x; y]
 % @option use_mex
 % @option use_bullet
 % @option use_angular_momentum
@@ -16,8 +15,8 @@ checkDependency('lcmgl');
 
 if nargin<2, example_options=struct(); end
 if ~isfield(example_options,'use_mex'), example_options.use_mex = true; end
-if ~isfield(example_options,'use_bullet') example_options.use_bullet = false; end
-if ~isfield(example_options,'use_angular_momentum') example_options.use_angular_momentum = false; end
+if ~isfield(example_options,'use_bullet'), example_options.use_bullet = false; end
+if ~isfield(example_options,'use_angular_momentum'), example_options.use_angular_momentum = false; end
 if ~isfield(example_options,'navgoal')
   example_options.navgoal = [1.5;0;0;0;0;0];
 end
@@ -59,9 +58,9 @@ for iter = 1:3
   r = r.setInitialState(x0);
   v.draw(0, x0)
 
-  profile on
+  % profile on
   [walking_plan_data, recovery_plan] = planning_pipeline(recovery_planner, r, x0, zmpact, xstar, nq);
-  profile viewer
+  % profile viewer
 
   walking_plan_data.robot = r;
 
@@ -83,7 +82,7 @@ for iter = 1:3
     lcmgl.sphere([walking_plan_data.zmptraj.eval(ts(i));0], 0.01, 20, 20);
   end
   lcmgl.switchBuffers();
-  keyboard()
+  % keyboard()
 
   planeval = atlasControllers.AtlasPlanEval(r, walking_plan_data);
   control = atlasControllers.InstantaneousQPController(r, [], struct('use_mex', example_options.use_mex));
@@ -121,7 +120,7 @@ for iter = 1:3
 
   atlasUtil.plotWalkingTraj(r, traj, walking_plan_data);
 
-  keyboard();
+  % keyboard();
 
   breaks = traj.getBreaks();
   traj = PPTrajectory(foh(breaks, traj.eval(breaks)));
@@ -143,6 +142,7 @@ v.playback(combined_xtraj, struct('slider', true));
 end
 
 function [walking_plan_data, recovery_plan] = planning_pipeline(recovery_planner, r, x0, zmpact, xstar, nq)
+  % Put into its own function to make profiling easier
   recovery_plan = recovery_planner.solveBipedProblem(r, x0, zmpact);
   walking_plan_data = QPWalkingPlan.from_point_mass_biped_plan(recovery_plan, r, x0);
   walking_plan_data.qstar = xstar(1:nq);
