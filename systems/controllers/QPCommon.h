@@ -2,6 +2,7 @@
 #include "drakeUtil.h"
 #include "drake/fastQP.h"
 #include "drake/gurobiQP.h"
+#include "drake/lcmt_qp_controller_input.hpp"
 
 const double REG = 1e-8;
 

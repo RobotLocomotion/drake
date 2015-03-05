@@ -27,23 +27,30 @@ if (eigen3_FOUND)
     target_link_libraries(QPControllermex drakeQP drakeControlUtil)
     pods_use_pkg_config_packages(QPControllermex gurobi)
 
-    add_mex(instantaneousQPControllermex instantaneousQPControllermex.cpp)
-    target_link_libraries(instantaneousQPControllermex drakeQP drakeControlUtil QPCommon)
-    pods_use_pkg_config_packages(instantaneousQPControllermex gurobi)
-
-    add_mex(constructQPDataPointerMex constructQPDataPointerMex.cpp)
-    target_link_libraries(constructQPDataPointerMex drakeQP drakeControlUtil)
-    pods_use_pkg_config_packages(constructQPDataPointerMex gurobi)
-
     add_mex(getActiveSupportsmex getActiveSupportsmex.cpp)
     target_link_libraries(getActiveSupportsmex drakeQP drakeControlUtil)
+
+    if (lcm_FOUND)
+      add_mex(instantaneousQPControllermex instantaneousQPControllermex.cpp)
+      target_link_libraries(instantaneousQPControllermex drakeQP drakeControlUtil QPCommon)
+      pods_use_pkg_config_packages(instantaneousQPControllermex gurobi)
+
+      add_mex(constructQPDataPointerMex constructQPDataPointerMex.cpp)
+      target_link_libraries(constructQPDataPointerMex drakeQP drakeControlUtil)
+      pods_use_pkg_config_packages(constructQPDataPointerMex gurobi)
+
+      add_mex(instantaneousBodyMotionControlmex instantaneousBodyMotionControlmex.cpp)
+      target_link_libraries(instantaneousBodyMotionControlmex drakeRBM drakeControlUtil)
+
+      include_directories (${CMAKE_BINARY_DIR}/lcmgen/lcmtypes )
+      message(${CMAKE_BINARY_DIR}/lcmgen/lcmtypes )
+      add_mex(encodeQPInputLCMMex encodeQPInputLCMMex.cpp)
+      target_link_libraries(encodeQPInputLCMMex lcm drakeControlUtil QPCommon)
+    endif()
   endif()
 
   add_mex(bodyMotionControlmex bodyMotionControlmex.cpp)
   target_link_libraries(bodyMotionControlmex drakeRBM drakeControlUtil)
-
-  add_mex(instantaneousBodyMotionControlmex instantaneousBodyMotionControlmex.cpp)
-  target_link_libraries(instantaneousBodyMotionControlmex drakeRBM drakeControlUtil)
 
   add_mex(pelvisMotionControlmex pelvisMotionControlmex.cpp)
   target_link_libraries(pelvisMotionControlmex drakeRBM drakeUtil drakeControlUtil)
@@ -55,12 +62,6 @@ if (eigen3_FOUND)
   include_directories (${CMAKE_SOURCE_DIR}/util )
   target_link_libraries(individualCentersOfPressuremex drakeRBM drakeUtil drakeControlUtil)
 
-  if (lcm_FOUND)
-    include_directories (${CMAKE_BINARY_DIR}/lcmgen/lcmtypes )
-    message(${CMAKE_BINARY_DIR}/lcmgen/lcmtypes )
-    add_mex(encodeQPInputLCMMex encodeQPInputLCMMex.cpp)
-    target_link_libraries(encodeQPInputLCMMex lcm drakeControlUtil QPCommon)
-  endif()
 
 endif(eigen3_FOUND)
 
