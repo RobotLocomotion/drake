@@ -92,24 +92,24 @@
     <child link="finger_1_link_1"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 0" xyz="0.020 0 0"/>
-    <limit effort="100" lower="0" upper="1.055"/>
-    <dynamics friction=".1" damping=".2" />
+    <!-- <limit effort="100" lower="0" upper="1.055"/> -->
+    <dynamics friction="0.0" damping="0.1" />
   </joint>
   <joint name="finger_1_joint_1" type="revolute">
     <parent link="finger_1_link_1"/>
     <child link="finger_1_link_2"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 -0.52" xyz="0.050 -.028 0"/>
-    <limit effort="100" lower="0" upper="1.5708" />
-    <dynamics friction=".1" damping=".2" />
+    <!-- <limit effort="100" lower="0" upper="1.5708" /> -->
+    <dynamics friction="0.0" damping="0.1" />
   </joint>
   <joint name="finger_1_joint_2" type="revolute">
     <parent link="finger_1_link_2"/>
     <child link="finger_1_link_3"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 0" xyz="0.039 0 0"/>
-    <limit effort="100" lower="-0.7854" upper="3.1416" />
-    <dynamics friction=".1" damping=".2" />
+    <!-- <limit effort="100" lower="-0.7854" upper="3.1416" /> -->
+    <dynamics friction="0.0" damping="0.1" />
   </joint>
   <link name="finger_2_link_0">
     <visual>
@@ -200,24 +200,24 @@
     <child link="finger_2_link_1"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 0" xyz="0.020 0 0"/>
-    <limit effort="100" lower="0" upper="1.055" />
-    <dynamics friction=".1" damping=".2" />    
+    <!-- <limit effort="100" lower="0" upper="1.055" /> -->
+    <dynamics friction="0.0" damping="0.1" />    
   </joint>
   <joint name="finger_2_joint_1" type="revolute">
     <parent link="finger_2_link_1"/>
     <child link="finger_2_link_2"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 -0.52" xyz="0.050 -.028 0"/>
-    <limit effort="100" lower="0" upper="1.5708" />
-    <dynamics friction=".1" damping=".2" />
+    <!-- <limit effort="100" lower="0" upper="1.5708" /> -->
+    <dynamics friction="0.0" damping="0.1" />
   </joint>
   <joint name="finger_2_joint_2" type="revolute">
     <parent link="finger_2_link_2"/>
     <child link="finger_2_link_3"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 0" xyz="0.039 0 0"/>
-    <limit effort="100" lower="-0.7854" upper="3.1416" />
-    <dynamics friction=".1" damping=".2" />
+    <!-- <limit effort="100" lower="-0.7854" upper="3.1416" /> -->
+    <dynamics friction="0.0" damping="0.1" />
   </joint>
   <link name="finger_middle_link_0">
     <visual>
@@ -317,24 +317,24 @@
     <child link="finger_middle_link_1"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 0" xyz="0.020 0 0"/>
-    <limit effort="100" lower="0" upper="1.055" />
-    <dynamics friction=".1" damping=".2" />
+    <!-- <limit effort="100" lower="0" upper="1.055" /> -->
+    <dynamics friction="0.0" damping="0.1" />
   </joint>
   <joint name="finger_middle_joint_1" type="revolute">
     <parent link="finger_middle_link_1"/>
     <child link="finger_middle_link_2"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 -0.52" xyz="0.050 -.028 0"/>
-    <limit effort="100" lower="0" upper="1.5708" />
-    <dynamics friction=".1" damping=".2" />
+    <!-- <limit effort="100" lower="0" upper="1.5708" /> -->
+    <dynamics friction="0.0" damping="0.1" />
   </joint>
   <joint name="finger_middle_joint_2" type="revolute">
     <parent link="finger_middle_link_2"/>
     <child link="finger_middle_link_3"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 0" xyz="0.039 0 0"/>
-    <limit effort="100" lower="-0.7854" upper="3.1416" />
-    <dynamics friction=".1" damping=".2" />
+    <!-- <limit effort="100" lower="-0.7854" upper="3.1416" /> -->
+    <dynamics friction="0.0" damping="0.1" />
   </joint>
   <force_element name="finger1_joint_0_spring">
    <torsional_spring stiffness="1">
