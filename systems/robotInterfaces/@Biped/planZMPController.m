@@ -11,11 +11,11 @@ q0 = x0(1:nq);
 
 kinsol = doKinematics(obj, q0);
 
-if length(x0) == nq
+if size(x0, 1) == nq
   com = getCOM(obj, kinsol);
   options.com0 = com(1:2);
 else
-  assert(length(x0) == obj.getNumStates(), 'expected a full configuration or state vector');
+  assert(size(x0, 1) == obj.getNumStates(), 'expected a full configuration or state vector');
   [com, J] = getCOM(obj, kinsol);
   comdot = J * x0((obj.getNumPositions()+1):end);
   options.com0 = com(1:2);

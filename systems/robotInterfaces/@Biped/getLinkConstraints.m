@@ -115,7 +115,7 @@ pelvis_body = obj.findLinkId('pelvis');
 pelvis_ts = support_times;
 rpos = ppval(foot_pp.right, pelvis_ts);
 lpos = ppval(foot_pp.left, pelvis_ts);
-pelvis_poses = [mean(cat(3, rpos(1:2,:), lpos(1:2,:)), 3);
+pelvis_poses = [nan(2, size(rpos, 2));
                 pelvis_reference_height + pelvis_height_above_foot_origin;
                 zeros(2,size(rpos, 2));
                 angleAverage(rpos(6,:)', lpos(6,:)')'];
