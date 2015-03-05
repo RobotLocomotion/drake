@@ -4,6 +4,7 @@
 
 template<int M, int N>
 void matlabToCArrayOfArrays(const mxArray *source, const int idx, const char *fieldname, double *destination)  {
+  // Matlab arrays come in as column-major data. To represent a matrix in C++, as we do in our LCM messages, we need an array of arrays. But that convention results in a row-major storage, so we have to be careful about how we copy data in. 
   const mxArray *field = myGetField(source, idx, fieldname);
   if (!mxIsDouble(field)) {
     std::cout << fieldname << std::endl;
@@ -19,6 +20,7 @@ void matlabToCArrayOfArrays(const mxArray *source, const int idx, const char *fi
 
 
 std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray *qp_input) {
+  // Take a matlab data structure corresponding to a QPInput2D object and parse it down to its representation as an equivalent LCM message. 
   std::shared_ptr<drake::lcmt_qp_controller_input> msg (new drake::lcmt_qp_controller_input());
 
   msg->timestamp = (int64_t) (mxGetScalar(myGetProperty(qp_input, "timestamp")) * 1000000);
@@ -128,6 +130,7 @@ std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray 
 }
 
 PIDOutput wholeBodyPID(NewQPControllerData *pdata, double t, VectorXd q, VectorXd qd, VectorXd q_des, WholeBodyParams *params) {
+  // Run a PID controller on the whole-body state to produce desired accelerations and reference posture
   PIDOutput out;
   double dt = 0;
   int nq = pdata->r->num_positions;
@@ -165,6 +168,7 @@ PIDOutput wholeBodyPID(NewQPControllerData *pdata, double t, VectorXd q, VectorX
 }
 
 VectorXd velocityReference(NewQPControllerData *pdata, double t, VectorXd q, VectorXd qd, VectorXd qdd, bool foot_contact[2], VRefIntegratorParams *params, RobotPropertyCache *rpc) {
+  // Integrate expected accelerations to determine a target feed-forward velocity, which we can pass in to Atlas
   int i;
   assert(qdd.size() == pdata->r->num_velocities);
 
@@ -226,6 +230,7 @@ VectorXd velocityReference(NewQPControllerData *pdata, double t, VectorXd q, Vec
 }
 
 vector<SupportStateElement> loadAvailableSupports(std::shared_ptr<drake::lcmt_qp_controller_input> qp_input) {
+  // Parse a qp_input LCM message to extract its available supports as a vector of SupportStateElements
   vector<SupportStateElement> available_supports;
   available_supports.resize(qp_input->num_support_data);
   for (int i=0; i < qp_input->num_support_data; i++) {
@@ -245,14 +250,8 @@ vector<SupportStateElement> loadAvailableSupports(std::shared_ptr<drake::lcmt_qp
   return available_supports;
 }
 
-// shared_ptr<drake::lcmt_atlas_command> initializeAtlasCommandMsg(RigidBodyManipulator *r, int atlas_version) {
-//   vector<int> drake_to_atlas_joint_map;
-//   vector<std::string>atlas_joint_names;
-  
-// }
-
 int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_controller_input> qp_input, double t, VectorXd q, VectorXd qd, Matrix<bool, Dynamic, 1> b_contact_force, QPControllerOutput *qp_output, std::shared_ptr<QPControllerDebugData> debug) {
-  // The primary solve loop for our controller. This constructs and solves a Quadratic Program and produces the instantaneous desired torques, along with reference positions, velocities, and accelerations. 
+  // The primary solve loop for our controller. This constructs and solves a Quadratic Program and produces the instantaneous desired torques, along with reference positions, velocities, and accelerations. It mirrors the Matlab implementation in atlasControllers.InstantaneousQPController.setupAndSolveQP(), and more documentation can be found there. 
   // Note: argument `debug` MAY be set to NULL, which signals that no debug information is requested.
 
   // look up the param set by name
