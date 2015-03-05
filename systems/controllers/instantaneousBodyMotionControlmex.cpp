@@ -1,5 +1,8 @@
 /* 
- * A simple PD control block for regulating a body pose given a desired position, velocity, and acceleration.   
+ * A simple PD control block for regulating a body pose given a desired
+ * position, velocity, and acceleration. This is similar to
+ * bodyMotionControlmex.cpp, but it maintains no internal state and can
+ * therefore be called for multiple different robot bodies.
  */
 #include "controlUtil.h"
 #include "drakeUtil.h"
@@ -7,7 +10,7 @@
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
-  if (nrhs<1) mexErrMsgTxt("usage: y=statelessBodyMotionControlmex(robot,x,body_ind,body_pose_des,body_v_des,body_vdot_des,params)");
+  if (nrhs<1) mexErrMsgTxt("usage: y=instantaneousBodyMotionControlmex(robot,x,body_ind,body_pose_des,body_v_des,body_vdot_des,params)");
   if (nlhs<1) mexErrMsgTxt("take at least one output... please.");
   
   // first get the ptr back from matlab
