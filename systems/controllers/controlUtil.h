@@ -13,7 +13,6 @@
 #endif
 
 #include "drake/RigidBodyManipulator.h"
-#include "drake/lcmt_qp_controller_input.hpp"
 
 #if defined(WIN32) || defined(WIN64)
   #if defined(drakeControlUtil_EXPORTS)
