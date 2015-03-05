@@ -8,3 +8,5 @@ runAtlasWalkingSplit(struct('use_mex', 1, 'navgoal', [0.2;0;0;0;0;0], 'num_steps
 
 % Then a longer plan, comparing mex and non-mex outputs
 runAtlasWalkingSplit(struct('use_mex', 2));
+
+%TIMEOUT 1500
