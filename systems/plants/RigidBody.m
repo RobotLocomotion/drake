@@ -164,6 +164,21 @@ classdef RigidBody < RigidBodyElement
         body = body.addCollisionGeometry(RigidBodyMeshPoints(pts));
       end
     end
+
+    function pts = getAxisAlignedBoundingBoxPoints(obj)
+      pts = [];
+      for i = 1:length(obj.collision_geometry)
+        pts = [pts, obj.collision_geometry{i}.getPoints()];
+      end
+      max_vals = repmat(max(pts,[],2),1,8);
+      min_vals = repmat(min(pts,[],2),1,8);
+      min_idx = logical([ 0 1 1 0 0 1 1 0;
+                          1 1 1 1 0 0 0 0;
+                          1 1 0 0 0 0 1 1]);
+      pts = zeros(3,8);
+      pts(min_idx) = min_vals(min_idx);
+      pts(~min_idx) = max_vals(~min_idx);
+    end
     
     function body = removeCollisionGroups(body,contact_groups)
       if isempty(body.collision_geometry), 
