@@ -227,9 +227,9 @@ VectorXd velocityReference(NewQPControllerData *pdata, double t, const Ref<Vecto
   return v_ref;
 }
 
-vector<SupportStateElement> loadAvailableSupports(std::shared_ptr<drake::lcmt_qp_controller_input> qp_input) {
+std::vector<SupportStateElement> loadAvailableSupports(std::shared_ptr<drake::lcmt_qp_controller_input> qp_input) {
   // Parse a qp_input LCM message to extract its available supports as a vector of SupportStateElements
-  vector<SupportStateElement> available_supports;
+  std::vector<SupportStateElement> available_supports;
   available_supports.resize(qp_input->num_support_data);
   for (int i=0; i < qp_input->num_support_data; i++) {
     available_supports[i].body_idx = qp_input->support_data[i].body_id - 1;
@@ -310,7 +310,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   
   assert(nu+6 == nq);
 
-  vector<DesiredBodyAcceleration> desired_body_accelerations;
+  std::vector<DesiredBodyAcceleration> desired_body_accelerations;
   desired_body_accelerations.resize(qp_input->num_tracked_bodies);
   Vector6d body_pose_des, body_v_des, body_vdot_des;
   Vector6d body_vdot;
@@ -348,11 +348,11 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
 
   //---------------------------------------------------------------------
 
-  vector<SupportStateElement> available_supports = loadAvailableSupports(qp_input);
-  vector<SupportStateElement> active_supports = getActiveSupports(pdata->r, pdata->map_ptr, q, qd, available_supports, b_contact_force, params->contact_threshold, pdata->default_terrain_height);
+  std::vector<SupportStateElement> available_supports = loadAvailableSupports(qp_input);
+  std::vector<SupportStateElement> active_supports = getActiveSupports(pdata->r, pdata->map_ptr, q, qd, available_supports, b_contact_force, params->contact_threshold, pdata->default_terrain_height);
 
   int num_active_contact_pts=0;
-  for (vector<SupportStateElement>::iterator iter = active_supports.begin(); iter!=active_supports.end(); iter++) {
+  for (std::vector<SupportStateElement>::iterator iter = active_supports.begin(); iter!=active_supports.end(); iter++) {
     num_active_contact_pts += iter->contact_pts.size();
   }
 
@@ -556,7 +556,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   VectorXd alpha(nparams);
 
   MatrixXd Qnfdiag(nf,1), Qneps(neps,1);
-  vector<MatrixXd*> QBlkDiag( nc>0 ? 3 : 1 );  // nq, nf, neps   // this one is for gurobi
+  std::vector<MatrixXd*> QBlkDiag( nc>0 ? 3 : 1 );  // nq, nf, neps   // this one is for gurobi
   
   VectorXd w = (params->whole_body.w_qdd.array() + REG).matrix();
   #ifdef USE_MATRIX_INVERSION_LEMMA
@@ -739,3 +739,4 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
 
   return info;
 }
+

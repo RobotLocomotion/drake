@@ -440,6 +440,21 @@ void evaluateCubicSplineSegment(double t, const Ref<const Matrix<double, 6, 4>> 
   yddot = 6*coefs.col(0)*t + 2*coefs.col(1);
 }
 
+// convert Matlab cell array of strings into a C++ vector of strings
+std::vector<std::string> get_strings(const mxArray *rhs) {
+  int num = mxGetNumberOfElements(rhs);
+  std::vector<std::string> strings(num);
+  for (int i=0; i<num; i++) {
+    // const mxArray *ptr = mxGetCell(rhs,i);
+    strings[i] = std::string(mxArrayToString(mxGetCell(rhs, i)));
+    // int buflen = mxGetN(ptr)*sizeof(mxChar)+1;
+    // char* str = (char*)mxMalloc(buflen);
+    // mxGetString(ptr, str, buflen);
+    // strings[i] = string(str);
+    // mxFree(str);
+  }
+  return strings;
+}
 
 template drakeControlUtilEXPORT void getRows(std::set<int> &, const MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > &);
 template drakeControlUtilEXPORT void getCols(std::set<int> &, const MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > &);

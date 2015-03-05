@@ -306,7 +306,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
     left_full_right_full_support
     left_toe_right_full_support
     left_full_right_toe_support
-    atlas_version = [];
+    atlas_version = 3;
   end
 
   properties

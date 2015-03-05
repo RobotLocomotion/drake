@@ -44,6 +44,9 @@ if (eigen3_FOUND)
       message(${CMAKE_BINARY_DIR}/lcmgen/lcmtypes )
       add_mex(encodeQPInputLCMMex encodeQPInputLCMMex.cpp)
       target_link_libraries(encodeQPInputLCMMex lcm drakeControlUtil QPCommon)
+
+      add_mex(AtlasCommand SHARED AtlasCommand.cpp)
+      target_link_libraries(AtlasCommand lcm)
     endif()
   endif()
 

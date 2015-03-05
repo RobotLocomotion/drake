@@ -72,4 +72,7 @@ drakeControlUtilEXPORT Vector6d bodyMotionPD(RigidBodyManipulator *r, Map<Vector
 
 drakeControlUtilEXPORT void evaluateCubicSplineSegment(double t, const Ref<const Matrix<double, 6, 4>> &coefs, Vector6d &y, Vector6d &ydot, Vector6d &yddot);
 
+// convert Matlab cell array of strings into a C++ vector of strings
+drakeControlUtilEXPORT std::vector<std::string> get_strings(const mxArray *rhs);
+
 #endif
