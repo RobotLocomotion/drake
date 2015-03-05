@@ -1,4 +1,5 @@
 function prop_cache = propertyCache(r)
+% NOTEST
 % Functions like findLinkId, getTerrainContactPoints, etc. can be too slow to call
 % in the inner loop of our controller or planner, so we cache some useful information
 % at setup time. 
