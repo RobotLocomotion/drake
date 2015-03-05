@@ -1,6 +1,9 @@
 function runAtlasWalkingSplit(example_options)
-%NOTEST
-% Run the new split QP controller, which consists of separate PlanEval and InstantaneousQPController objects.
+%NOTEST 
+% Run the new split QP controller, which consists of separate PlanEval
+% and InstantaneousQPController objects. The controller will also
+% automatically transition to standing when it reaches the end of its walking
+% plan.
 % @option use_mex [1] whether to use mex. 0: no, 1: yes, 2: compare mex and non-mex
 % @option use_bullet [false] whether to use bullet for collision detect
 % @option navgoal the goal for footstep planning
