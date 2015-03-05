@@ -3,13 +3,16 @@ function link_constraints = getLinkConstraints(obj, foot_origin_knots, zmptraj, 
 if nargin < 6
   options = struct();
 end
-options = applyDefaults(options, struct('pelvis_height_above_sole', 0.84));
+options = applyDefaults(options, struct('pelvis_height_above_sole', 0.84, 'debug', false));
 
 link_constraints = struct('link_ndx',{}, 'pt', {}, 'ts', {}, 'poses', {}, 'dposes', {}, 'contact_break_indices', {}, 'coefs', {}, 'toe_off_allowed', {});
-figure(321)
-clf
-subplot 211
-hold on
+
+if options.debug
+  figure(321)
+  clf
+  subplot 211
+  hold on
+end
 
 foot_pp = struct('right', {[]}, 'left', {[]});
 
@@ -30,11 +33,13 @@ for f = {'right', 'left'}
     foot_pp.(foot) = pchipDeriv(ts, foot_poses, foot_dposes);
   end
 
-  tsample = linspace(ts(1), ts(end), 200);
-  xs = ppval(foot_pp.(foot), tsample);
-  figure(321)
-  plot(tsample, xs(3,:), 'b.-')
-  xlim([0, ts(end)])
+  if options.debug
+    tsample = linspace(ts(1), ts(end), 200);
+    xs = ppval(foot_pp.(foot), tsample);
+    figure(321)
+    plot(tsample, xs(3,:), 'b.-')
+    xlim([0, ts(end)])
+  end
 
   % Compute cubic polynomial coefficients to save work in the controller
   [~, coefs, l, k, d] = unmkpp(foot_pp.(foot));
@@ -44,8 +49,10 @@ for f = {'right', 'left'}
   link_constraints(end+1) = struct('link_ndx', body_ind, 'pt', [0;0;0], 'ts', ts, 'poses', foot_poses, 'dposes', foot_dposes, 'contact_break_indices', find([foot_origin_knots.is_liftoff]), 'coefs', coefs, 'toe_off_allowed', [toe_off_allowed.(foot)]);
 end
 
-zmps = zmptraj.eval(tsample);
-plot(tsample, zmps(2,:), 'm.-');
+if options.debug
+  zmps = zmptraj.eval(tsample);
+  plot(tsample, zmps(2,:), 'm.-');
+end
 
 pelvis_reference_height = zeros(1,length(support_times));
 
@@ -64,8 +71,10 @@ for i=1:length(support_times)-1
   isDoubleSupport = any(supports(i).bodies==obj.foot_body_id.left) && any(supports(i).bodies==obj.foot_body_id.right);
   isRightSupport = ~any(supports(i).bodies==obj.foot_body_id.left) && any(supports(i).bodies==obj.foot_body_id.right);
   isLeftSupport = any(supports(i).bodies==obj.foot_body_id.left) && ~any(supports(i).bodies==obj.foot_body_id.right);
-  plot(support_times(i:i+1), 0.15 + 0.05*(isRightSupport|isDoubleSupport)*[1, 1], 'go:')
-  plot(support_times(i:i+1), 0.15 + 0.05*(isLeftSupport|isDoubleSupport)*[1,1], 'ro:')
+  if options.debug
+    plot(support_times(i:i+1), 0.15 + 0.05*(isRightSupport|isDoubleSupport)*[1, 1], 'go:')
+    plot(support_times(i:i+1), 0.15 + 0.05*(isLeftSupport|isDoubleSupport)*[1,1], 'ro:')
+  end
 
   nextIsDoubleSupport = any(supports(i+1).bodies==obj.foot_body_id.left) && any(supports(i+1).bodies==obj.foot_body_id.right);
   nextIsRightSupport = ~any(supports(i+1).bodies==obj.foot_body_id.left) && any(supports(i+1).bodies==obj.foot_body_id.right);

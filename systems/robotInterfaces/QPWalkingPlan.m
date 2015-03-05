@@ -39,13 +39,20 @@ classdef QPWalkingPlan < QPControllerPlan
         options = struct();
       end
       options = applyDefaults(options, struct('pelvis_height_above_sole', 0.84));
+      if isempty(options.pelvis_height_above_sole)
+        kinsol = doKinematics(biped, x0(1:biped.getNumPositions()));
+        pelvis_pos = forwardKin(biped, kinsol, biped.findLinkId('pelvis'), [0;0;0]);
+        feetPosition = biped.feetPosition(x0(1:biped.getNumPositions()));
+        options.pelvis_height_above_sole = pelvis_pos(3) - mean([feetPosition.right(3), feetPosition.left(3)])
+      end
+
       obj = QPWalkingPlan(biped);
       obj.x0 = x0;
 
       [obj.supports, obj.support_times] = QPWalkingPlan.getSupports(zmp_knots);
       obj.zmptraj = QPWalkingPlan.getZMPTraj(zmp_knots);
       [obj.c, obj.V, obj.comtraj, limp_height] = biped.planZMPController(obj.zmptraj, obj.x0, options);
-      obj.link_constraints = biped.getLinkConstraints(foot_origin_knots, obj.zmptraj, obj.supports, obj.support_times, struct('pelvis_height_above_sole', limp_height));
+      obj.link_constraints = biped.getLinkConstraints(foot_origin_knots, obj.zmptraj, obj.supports, obj.support_times, options);
 
       obj.duration = obj.support_times(end)-obj.support_times(1)-0.001;
       obj.zmp_final = obj.zmptraj.eval(obj.zmptraj.tspan(end));

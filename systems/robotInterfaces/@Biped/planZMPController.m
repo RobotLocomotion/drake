@@ -24,11 +24,17 @@ end
 
 foot_pos = forwardKin(obj, kinsol, [obj.foot_frame_id.right, obj.foot_frame_id.left], [0;0;0]);
 zfeet = mean(foot_pos(3,:));
+
+pelvis_pos = forwardKin(obj, kinsol, obj.findLinkId('pelvis'), [0;0;0]);
+actual_pelvis_above_sole = pelvis_pos(3) - zfeet;
+
 if isempty(options.pelvis_height_above_sole)
-  limp_height = com(3) - zfeet;
+  desired_pelvis_above_sole = actual_pelvis_above_sole;
 else
-  limp_height = options.pelvis_height_above_sole;
+  desired_pelvis_above_sole = options.pelvis_height_above_sole;
 end
+
+limp_height = (com(3) - zfeet) + (desired_pelvis_above_sole - actual_pelvis_above_sole);
 
 if isa(zmptraj_or_comgoal, 'Trajectory')
   [c, V, comtraj] = LinearInvertedPendulum.ZMPtrackerClosedForm(limp_height, zmptraj_or_comgoal, options);
