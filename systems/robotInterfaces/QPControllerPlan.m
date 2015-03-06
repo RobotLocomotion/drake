@@ -21,7 +21,11 @@ classdef QPControllerPlan
   methods
     function next_plan = getSuccessor(obj, t, x)
       next_plan = obj;
-      next_plan.end_time = inf;
+      next_plan.duration = inf;
+    end
+
+    function is_finished = isFinished(obj, t, x)
+      is_finished = t - obj.start_time >= obj.duration;
     end
   end
 end

@@ -29,7 +29,7 @@ classdef PlanEval
     function current_plan = getCurrentPlan(obj, t, x)
       while true
         current_plan = obj.data.plan_queue{1};
-        if (t - current_plan.start_time) < current_plan.duration
+        if ~current_plan.isFinished(t, x);
           break
         end
         if length(obj.data.plan_queue) == 1
