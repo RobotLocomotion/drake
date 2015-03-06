@@ -1,3 +1,4 @@
+#include <string>
 #include "drake/lcmt_atlas_command.hpp"
 #include "QPCommon.h"
 
