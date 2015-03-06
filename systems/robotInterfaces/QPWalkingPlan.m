@@ -210,7 +210,7 @@ classdef QPWalkingPlan < QPControllerPlan
       next_plan = StandingPlan.from_standing_state(x, obj.robot);
     end
 
-    function qp_input = getQPControllerInput(obj, t, x, rpc, contact_force_detected)
+    function qp_input = getQPControllerInput(obj, t_global, x, rpc, contact_force_detected)
       % Get the input structure which can be passed to the stateless QP control loop
       % @param t the current time
       % @param x the current robot state
@@ -224,10 +224,10 @@ classdef QPWalkingPlan < QPControllerPlan
       end
 
       r = obj.robot;
-      t = t - obj.start_time;
+      t_plan = t_global - obj.start_time;
       
       T = obj.duration;
-      t = min([t, T]);
+      t_plan = min([t_plan, T]);
 
 
       qp_input = obj.default_qp_input;
@@ -236,16 +236,16 @@ classdef QPWalkingPlan < QPControllerPlan
       if isnumeric(obj.zmptraj)
         qp_input.zmp_data.y0 = obj.zmptraj;
       else
-        qp_input.zmp_data.y0 = fasteval(obj.zmptraj, t);
+        qp_input.zmp_data.y0 = fasteval(obj.zmptraj, t_plan);
       end
       qp_input.zmp_data.S = obj.V.S;
       if isnumeric(obj.V.s1)
         qp_input.zmp_data.s1 = obj.V.s1;
       else
-        qp_input.zmp_data.s1 = fasteval(obj.V.s1,t);
+        qp_input.zmp_data.s1 = fasteval(obj.V.s1,t_plan);
       end
 
-      supp_idx = find(obj.support_times<=t,1,'last');
+      supp_idx = find(obj.support_times<=t_plan,1,'last');
       supp = obj.supports(supp_idx);
 
       qp_input.support_data = struct('body_id', {r.foot_body_id.right, r.foot_body_id.left},...
@@ -279,11 +279,11 @@ classdef QPWalkingPlan < QPControllerPlan
         if qp_input.body_motion_data(j).body_id == rpc.body_ids.pelvis
           pelvis_has_tracking = true;
         end
-        body_t_ind = find(obj.link_constraints(j).ts<=t,1,'last');
+        body_t_ind = find(obj.link_constraints(j).ts<=t_plan,1,'last');
         if body_t_ind < length(obj.link_constraints(j).ts)
-          qp_input.body_motion_data(j).ts = obj.link_constraints(j).ts(body_t_ind:body_t_ind+1);
+          qp_input.body_motion_data(j).ts = obj.link_constraints(j).ts(body_t_ind:body_t_ind+1) + obj.start_time;
         else
-          qp_input.body_motion_data(j).ts = obj.link_constraints(j).ts([body_t_ind,body_t_ind]);
+          qp_input.body_motion_data(j).ts = obj.link_constraints(j).ts([body_t_ind,body_t_ind]) + obj.start_time;
         end
         qp_input.body_motion_data(j).coefs = obj.link_constraints(j).coefs(:,body_t_ind,:);
       end
@@ -291,11 +291,11 @@ classdef QPWalkingPlan < QPControllerPlan
 
       qp_input.param_set_name = obj.gain_set;
 
-      obj = obj.updatePlanShift(t, x, qp_input, contact_force_detected);
+      obj = obj.updatePlanShift(t_global, x, qp_input, contact_force_detected);
       qp_input = obj.applyPlanShift(qp_input);
     end
 
-    function obj = updatePlanShift(obj, t, x, qp_input, contact_force_detected)
+    function obj = updatePlanShift(obj, t_global, x, qp_input, contact_force_detected)
       active_support_bodies = [qp_input.support_data.body_id];
       if any(active_support_bodies == obj.robot.foot_body_id.right) && contact_force_detected(obj.robot.foot_body_id.right)
         loading_foot = obj.robot.foot_body_id.right;
@@ -309,7 +309,7 @@ classdef QPWalkingPlan < QPControllerPlan
         if qp_input.body_motion_data(j).body_id == loading_foot;
           kinsol = obj.robot.doKinematics(x(1:obj.robot.getNumPositions()));
           foot_actual = obj.robot.forwardKin(kinsol, loading_foot, [0;0;0], 1);
-          foot_des = evalCubicSplineSegment(t - qp_input.body_motion_data(j).ts(1), qp_input.body_motion_data(j).coefs);
+          foot_des = evalCubicSplineSegment(t_global - qp_input.body_motion_data(j).ts(1), qp_input.body_motion_data(j).coefs);
           obj.plan_shift_data.plan_shift = foot_des - foot_actual;
           break
         end
