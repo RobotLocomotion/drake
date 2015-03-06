@@ -56,15 +56,6 @@ footstep_plan = r.planFootsteps(x0(1:nq), goal_pos, [], struct('step_params', st
 walking_plan_data = r.planWalkingZMP(x0(1:r.getNumPositions()), footstep_plan);
 % walking_plan_data = StandingPlan.from_standing_state(x0, r);
 
-% control = atlasControllers.InstantaneousQPController(r, [],...
-%    struct('use_mex', example_options.use_mex));
-% control.quiet = example_options.quiet;
-% planeval = atlasControllers.AtlasPlanEval(r, walking_plan_data);
-
-% plancontroller = atlasControllers.AtlasPlanEvalAndControlSystem(r, control, planeval);
-% plancontroller.quiet = example_options.quiet;
-
-% sys = feedback(r, plancontroller);
 r = r.setInputFrame(drcFrames.AtlasInput(r));
 r = r.setOutputFrame(drcFrames.AtlasState(r));
 sys = r;
@@ -76,10 +67,7 @@ sys = mimoCascade(sys,v,[],[],output_select);
 
 T = min(walking_plan_data.duration + 1, 30);
 
-% profile on
-% ytraj = simulate(sys, [0, T], x0, struct('gui_control_interface', true));
 runLCM(sys, x0, struct('tspan', [0, T],...
                         'timekeeper', ''));
-% profile viewer
 
 v.playback(ytraj, struct('slider', true));
