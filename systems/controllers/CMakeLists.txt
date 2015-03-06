@@ -36,7 +36,7 @@ if (eigen3_FOUND)
       target_link_libraries(RobotStateDriver drakeControlUtil)
 
       add_mex(instantaneousQPControllermex instantaneousQPControllermex.cpp)
-      target_link_libraries(instantaneousQPControllermex drakeQP drakeControlUtil QPCommon AtlasCommandDriver)
+      target_link_libraries(instantaneousQPControllermex drakeQP drakeControlUtil QPCommon AtlasCommandDriver RobotStateDriver)
       pods_use_pkg_config_packages(instantaneousQPControllermex gurobi)
 
       add_mex(constructQPDataPointerMex constructQPDataPointerMex.cpp)

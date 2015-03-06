@@ -13,6 +13,7 @@
 #include <limits>
 #include <cmath>
 #include "AtlasCommandDriver.hpp"
+#include "RobotStateDriver.hpp"
 #include "drake/lcmt_atlas_command.hpp"
 #include <lcm/lcm-cpp.hpp>
 
@@ -63,6 +64,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   QPControllerOutput qp_output;
   shared_ptr<QPControllerDebugData> debug;
 
+  // this does nothing right now; I'm just leaving it here to show Pat
+  shared_ptr<RobotStateDriver> state_driver(new RobotStateDriver(pdata->state_coordinate_names));
 
   if (nlhs>3) {
     debug.reset(new QPControllerDebugData());
