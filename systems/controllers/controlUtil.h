@@ -40,6 +40,13 @@ typedef struct _support_state_element
   bool support_logic_map[4];
 } SupportStateElement;
 
+struct DrakeRobotState {
+  // drake-ordered position and velocity vectors, with timestamp (in s)
+  double t;
+  VectorXd q;
+  VectorXd qd;
+};
+
 drakeControlUtilEXPORT std::vector<SupportStateElement> parseSupportData(const mxArray* supp_data);
 
 drakeControlUtilEXPORT bool isSupportElementActive(SupportStateElement* se, bool contact_force_detected, bool kinematic_contact_detected);
@@ -68,7 +75,7 @@ drakeControlUtilEXPORT int contactConstraints(RigidBodyManipulator *r, int nc, s
 drakeControlUtilEXPORT int contactConstraintsBV(RigidBodyManipulator *r, int nc, double mu, std::vector<SupportStateElement>& supp, void *map_ptr, MatrixXd &B, MatrixXd &JB, MatrixXd &Jp, MatrixXd &Jpdot, MatrixXd &normals, double terrain_height);
 drakeControlUtilEXPORT MatrixXd individualSupportCOPs(RigidBodyManipulator* r, const std::vector<SupportStateElement>& active_supports, const MatrixXd& normals, const MatrixXd& B, const VectorXd& beta);
 drakeControlUtilEXPORT void sizecheck(const mxArray* mat, int M, int N);
-drakeControlUtilEXPORT Vector6d bodyMotionPD(RigidBodyManipulator *r, Map<VectorXd> &q, Map<VectorXd> &qd, const int body_index, const Ref<const Vector6d> &body_pose_des, const Ref<const Vector6d> &body_v_des, const Ref<const Vector6d> &body_vdot_des, const Ref<const Vector6d> &Kp, const Ref<const Vector6d> &Kd);
+drakeControlUtilEXPORT Vector6d bodyMotionPD(RigidBodyManipulator *r, DrakeRobotState &robot_state, const int body_index, const Ref<const Vector6d> &body_pose_des, const Ref<const Vector6d> &body_v_des, const Ref<const Vector6d> &body_vdot_des, const Ref<const Vector6d> &Kp, const Ref<const Vector6d> &Kd);
 
 drakeControlUtilEXPORT void evaluateCubicSplineSegment(double t, const Ref<const Matrix<double, 6, 4>> &coefs, Vector6d &y, Vector6d &ydot, Vector6d &yddot);
 
@@ -80,13 +87,6 @@ struct RobotJointIndexMap {
 struct JointNames {
   std::vector<std::string> robot;
   std::vector<std::string> drake;
-};
-
-struct DrakeRobotState {
-  // drake-ordered position and velocity vectors, with timestamp (in s)
-  double t;
-  VectorXd q;
-  VectorXd qd;
 };
 
 drakeControlUtilEXPORT void getRobotJointIndexMap(JointNames *joint_names, RobotJointIndexMap *joint_map);

@@ -67,10 +67,15 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   // this does nothing right now; I'm just leaving it here to show Pat
   shared_ptr<RobotStateDriver> state_driver(new RobotStateDriver(pdata->state_coordinate_names));
 
+  DrakeRobotState robot_state;
+  robot_state.t = t;
+  robot_state.q = q;
+  robot_state.qd = qd;
+
   if (nlhs>3) {
     debug.reset(new QPControllerDebugData());
   }
-  int info = setupAndSolveQP(pdata, qp_input, t, q, qd, b_contact_force, &qp_output, debug);
+  int info = setupAndSolveQP(pdata, qp_input, robot_state, b_contact_force, &qp_output, debug);
 
   // convert to atlas_command and publish
   shared_ptr<AtlasCommandDriver> command_driver (new AtlasCommandDriver(&pdata->input_joint_names));
