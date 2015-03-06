@@ -55,14 +55,21 @@ footstep_plan = r.planFootsteps(x0(1:nq), goal_pos, [], struct('step_params', st
 
 walking_plan_data = r.planWalkingZMP(x0(1:r.getNumPositions()), footstep_plan);
 % walking_plan_data = StandingPlan.from_standing_state(x0, r);
+planeval = atlasControllers.AtlasPlanEval(r, walking_plan_data);
 
+% Wrap the planeval in a Drake system
+planeval_sys = atlasControllers.AtlasPlanEvalAndControlSystem(r, [], planeval);
+% Make sure planeval_sys can publish EST_ROBOT_STATE over LCM
+planeval_sys = planeval_sys.setOutputFrame(drcFrames.AtlasState(r));
+
+% Make our Atlas listen for ATLAS_COMMAND over LCM
 r = r.setInputFrame(drcFrames.AtlasInput(r));
-r = r.setOutputFrame(drcFrames.AtlasState(r));
-sys = r;
+
+sys = cascade(r, planeval_sys);
 
 output_select(1).system=1;
 output_select(1).output=1;
-v = v.setInputFrame(r.getOutputFrame());
+v = v.setInputFrame(sys.getOutputFrame());
 sys = mimoCascade(sys,v,[],[],output_select);
 
 T = min(walking_plan_data.duration + 1, 30);
