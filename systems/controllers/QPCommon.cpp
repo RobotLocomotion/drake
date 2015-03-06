@@ -319,7 +319,8 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     int body_id0 = qp_input->body_motion_data[i].body_id - 1;
     double weight = params->body_motion[body_id0].weight;
     desired_body_accelerations[i].body_id0 = body_id0;
-    Map<Matrix<double, 6, 4,RowMajor>>coefs(&qp_input->body_motion_data[i].coefs[0][0]);
+    Map<Matrix<double, 6, 4,RowMajor>>coefs_rowmaj(&qp_input->body_motion_data[i].coefs[0][0]);
+    Matrix<double, 6, 4> coefs = coefs_rowmaj;
     evaluateCubicSplineSegment(t - qp_input->body_motion_data[i].ts[0], coefs, body_pose_des, body_v_des, body_vdot_des);
     desired_body_accelerations[i].body_vdot = bodyMotionPD(pdata->r, q, qd, body_id0, body_pose_des, body_v_des, body_vdot_des, params->body_motion[body_id0].Kp, params->body_motion[body_id0].Kd);
     desired_body_accelerations[i].weight = weight;
