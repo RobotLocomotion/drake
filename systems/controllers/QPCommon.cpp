@@ -129,7 +129,7 @@ std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray 
   return msg;
 }
 
-PIDOutput wholeBodyPID(NewQPControllerData *pdata, double t, VectorXd q, VectorXd qd, VectorXd q_des, WholeBodyParams *params) {
+PIDOutput wholeBodyPID(NewQPControllerData *pdata, double t, const Ref<const VectorXd> &q, const Ref<const VectorXd> &qd, const Ref<const VectorXd> &q_des, WholeBodyParams *params) {
   // Run a PID controller on the whole-body state to produce desired accelerations and reference posture
   PIDOutput out;
   double dt = 0;
@@ -146,10 +146,9 @@ PIDOutput wholeBodyPID(NewQPControllerData *pdata, double t, VectorXd q, VectorX
   pdata->state.q_integrator_state = params->integrator.eta * pdata->state.q_integrator_state + params->integrator.gains.cwiseProduct(q_des - q) * dt;
   pdata->state.q_integrator_state = pdata->state.q_integrator_state.array().max(-params->integrator.clamps.array());
   pdata->state.q_integrator_state = pdata->state.q_integrator_state.array().min(params->integrator.clamps.array());
-  q_des = q_des + pdata->state.q_integrator_state;
-  q_des = q_des.array().max((pdata->r->joint_limit_min - params->integrator.clamps).array());
-  q_des = q_des.array().min((pdata->r->joint_limit_max + params->integrator.clamps).array());
-  out.q_ref = q_des;
+  out.q_ref = q_des + pdata->state.q_integrator_state;
+  out.q_ref = out.q_ref.array().max((pdata->r->joint_limit_min - params->integrator.clamps).array());
+  out.q_ref = out.q_ref.array().min((pdata->r->joint_limit_max + params->integrator.clamps).array());
 
   pdata->state.q_integrator_state = pdata->state.q_integrator_state.array().max(-params->integrator.clamps.array());
   pdata->state.q_integrator_state = pdata->state.q_integrator_state.array().min(params->integrator.clamps.array());
@@ -160,14 +159,13 @@ PIDOutput wholeBodyPID(NewQPControllerData *pdata, double t, VectorXd q, VectorX
   for (int j = 3; j < nq; j++) {
     err_q(j) = angleDiff(q(j), q_des(j));
   }
-  VectorXd qddot_des = params->Kp.cwiseProduct(err_q) - params->Kd.cwiseProduct(qd);
-  qddot_des = qddot_des.array().max(params->qdd_bounds.min.array());
-  qddot_des = qddot_des.array().min(params->qdd_bounds.max.array());
-  out.qddot_des = qddot_des;
+  out.qddot_des = params->Kp.cwiseProduct(err_q) - params->Kd.cwiseProduct(qd);
+  out.qddot_des = out.qddot_des.array().max(params->qdd_bounds.min.array());
+  out.qddot_des = out.qddot_des.array().min(params->qdd_bounds.max.array());
   return out;
 }
 
-VectorXd velocityReference(NewQPControllerData *pdata, double t, VectorXd q, VectorXd qd, VectorXd qdd, bool foot_contact[2], VRefIntegratorParams *params, RobotPropertyCache *rpc) {
+VectorXd velocityReference(NewQPControllerData *pdata, double t, const Ref<VectorXd> &q, const Ref<VectorXd> &qd, const Ref<VectorXd> &qdd, bool foot_contact[2], VRefIntegratorParams *params, RobotPropertyCache *rpc) {
   // Integrate expected accelerations to determine a target feed-forward velocity, which we can pass in to Atlas
   int i;
   assert(qdd.size() == pdata->r->num_velocities);
@@ -290,7 +288,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   if (qp_input->whole_body_data.num_positions != nq) mexErrMsgTxt("number of positions doesn't match num_dof for this robot");
   Map<VectorXd> q_des(qp_input->whole_body_data.q_des.data(), nq);
   Map<VectorXd> condof(qp_input->whole_body_data.constrained_dofs.data(), qp_input->whole_body_data.num_constrained_dofs);
-  PIDOutput pid_out = wholeBodyPID(pdata, t, q, qd, q_des, &(params->whole_body));
+  PIDOutput pid_out = wholeBodyPID(pdata, t, q, qd, q_des, &params->whole_body);
   qp_output->q_ref = pid_out.q_ref;
 
   // mu
