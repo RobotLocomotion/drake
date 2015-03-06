@@ -92,18 +92,24 @@
     <child link="finger_1_link_1"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 0" xyz="0.020 0 0"/>
+    <!-- <limit effort="100" lower="0" upper="1.055"/> -->
+    <dynamics friction="0.0" damping="0.1" />
   </joint>
   <joint name="finger_1_joint_1" type="continuous">
     <parent link="finger_1_link_1"/>
     <child link="finger_1_link_2"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 -0.52" xyz="0.050 -.028 0"/>
+    <!-- <limit effort="100" lower="0" upper="1.5708" /> -->
+    <dynamics friction="0.0" damping="0.1" />
   </joint>
   <joint name="finger_1_joint_2" type="continuous">
     <parent link="finger_1_link_2"/>
     <child link="finger_1_link_3"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 0" xyz="0.039 0 0"/>
+    <!-- <limit effort="100" lower="-0.7854" upper="3.1416" /> -->
+    <dynamics friction="0.0" damping="0.1" />
   </joint>
   <link name="finger_2_link_0">
     <visual>
@@ -115,15 +121,6 @@
         <color rgba=".2 .2 .2 1"/>
       </material>
     </visual>
-    <!--<collision>	
-				<origin xyz="-0.0455 0.0414 0.036" rpy="0 3.1416 -1.57"/>
-				<geometry>
-					<mesh filename="package://Atlas/urdf/meshes/s-model_articulated/collision/link_0.STL" />
-				</geometry>
-				<material name="yellow">
-					<color rgba="0 1 1 1"/>
-				</material>
-			</collision>-->
     <inertial>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <mass value="0.05"/>
@@ -203,18 +200,24 @@
     <child link="finger_2_link_1"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 0" xyz="0.020 0 0"/>
+    <!-- <limit effort="100" lower="0" upper="1.055" /> -->
+    <dynamics friction="0.0" damping="0.1" />    
   </joint>
   <joint name="finger_2_joint_1" type="continuous">
     <parent link="finger_2_link_1"/>
     <child link="finger_2_link_2"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 -0.52" xyz="0.050 -.028 0"/>
+    <!-- <limit effort="100" lower="0" upper="1.5708" /> -->
+    <dynamics friction="0.0" damping="0.1" />
   </joint>
   <joint name="finger_2_joint_2" type="continuous">
     <parent link="finger_2_link_2"/>
     <child link="finger_2_link_3"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 0" xyz="0.039 0 0"/>
+    <!-- <limit effort="100" lower="-0.7854" upper="3.1416" /> -->
+    <dynamics friction="0.0" damping="0.1" />
   </joint>
   <link name="finger_middle_link_0">
     <visual>
@@ -314,18 +317,24 @@
     <child link="finger_middle_link_1"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 0" xyz="0.020 0 0"/>
+    <!-- <limit effort="100" lower="0" upper="1.055" /> -->
+    <dynamics friction="0.0" damping="0.1" />
   </joint>
   <joint name="finger_middle_joint_1" type="continuous">
     <parent link="finger_middle_link_1"/>
     <child link="finger_middle_link_2"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 -0.52" xyz="0.050 -.028 0"/>
+    <!-- <limit effort="100" lower="0" upper="1.5708" /> -->
+    <dynamics friction="0.0" damping="0.1" />
   </joint>
   <joint name="finger_middle_joint_2" type="continuous">
     <parent link="finger_middle_link_2"/>
     <child link="finger_middle_link_3"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 0" xyz="0.039 0 0"/>
+    <!-- <limit effort="100" lower="-0.7854" upper="3.1416" /> -->
+    <dynamics friction="0.0" damping="0.1" />
   </joint>
   <force_element name="finger1_joint_0_spring">
    <torsional_spring stiffness="1">
@@ -401,12 +410,14 @@
     <child link="finger_1_link_0"/>
     <axis xyz="0 1 0"/>
     <origin rpy="0 3.1416 -1.57" xyz="-0.0455 0.0214 0.036"/>
+    <!--<limit lower="-0.16" upper="0.25" effort="100" />-->
   </joint>
   <joint name="palm_finger_2_joint" type="fixed">
     <parent link="palm"/>
     <child link="finger_2_link_0"/>
     <axis xyz="0 1 0"/>
     <origin rpy="0 3.1416 -1.57" xyz="-0.0455 0.0214 -0.036"/>
+    <!--<limit lower="-0.25" upper="0.16" effort="100" />-->
   </joint>
   <joint name="palm_finger_middle_joint" type="fixed">
     <parent link="palm"/>
@@ -414,5 +425,53 @@
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 1.57" xyz="0.0455 0.0214 0"/>
   </joint>
+
+  
+  <link name="finger_tensioner">
+    <inertial>
+      <mass value="0.1"/>
+      <inertia ixx="0.01" ixy="0.01" ixz="0.01" iyy="0.01" iyz="0.01" izz="0.01" />
+    </inertial>
+    <visual>
+      <material name="orange" />
+      <origin xyz="0 0.0 0" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+    </visual>
+  </link>
+  
+  <joint name="finger_tensioner" type="prismatic">
+    <origin xyz="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <parent link="palm"/>
+    <child link="finger_tensioner"/>
+    <limit lower="-0.02" upper="0.1" />
+  </joint>
+  
+
+ <cable name="finger1_cable" min_length="0.1" max_length="0.1"> 
+    <terminator link="finger_1_link_3" xyz="0 0 0" />
+    <!-- <pulley link="finger_1_link_2" xyz="0 0 0" radius="0"/>  -->
+    <terminator link="finger_tensioner" xyz="0 0 0"/>
+  </cable> 
+
+ <cable name="finger2_cable" min_length="0.1" max_length="0.1"> 
+    <terminator link="finger_2_link_3" xyz="0 0 0" />
+    <!-- <pulley link="finger_1_link_2" xyz="0 0 0" radius="0"/>  -->
+    <terminator link="finger_tensioner" xyz="0 0 0"/>
+  </cable> 
+
+ <cable name="finger_middle_cable" min_length="0.1" max_length="0.1"> 
+    <terminator link="finger_middle_link_3" xyz="0 0 0" />
+    <!-- <pulley link="finger_1_link_2" xyz="0 0 0" radius="0"/>  -->
+    <terminator link="finger_tensioner" xyz="0 0 0"/>
+  </cable> 
+
+  <transmission name="gripper" type="SimpleTransmission">
+    <actuator name="gripper"/>
+    <joint name="finger_tensioner"/>
+  </transmission>
+
 </robot>
 
