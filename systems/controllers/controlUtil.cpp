@@ -408,7 +408,7 @@ void sizecheck(const mxArray* mat, int M, int N) {
   return;
 }
 
-Vector6d bodyMotionPD(RigidBodyManipulator *r, VectorXd q, VectorXd qd, const int body_index, Vector6d body_pose_des, Vector6d body_v_des, Vector6d body_vdot_des, Vector6d Kp, Vector6d Kd) {
+Vector6d bodyMotionPD(RigidBodyManipulator *r, Map<VectorXd> &q, Map<VectorXd> &qd, const int body_index, const Ref<const Vector6d> &body_pose_des, const Ref<const Vector6d> &body_v_des, const Ref<const Vector6d> &body_vdot_des, const Ref<const Vector6d> &Kp, const Ref<const Vector6d> &Kd) {
 
   r->doKinematics(q,false,qd);
 
@@ -433,7 +433,7 @@ Vector6d bodyMotionPD(RigidBodyManipulator *r, VectorXd q, VectorXd qd, const in
   return body_vdot;
 }
 
-void evaluateCubicSplineSegment(double t, Matrix<double, 6, 4> coefs, Vector6d &y, Vector6d &ydot, Vector6d &yddot) {
+void evaluateCubicSplineSegment(double t, const Ref<const Matrix<double, 6, 4>> &coefs, Vector6d &y, Vector6d &ydot, Vector6d &yddot) {
   // evaluate a cubic spline with coefficients coef and starting time 0 at time t
   y = coefs.col(0)*pow(t, 3) + coefs.col(1)*pow(t, 2) + coefs.col(2)*t + coefs.col(3);
   ydot = 3*coefs.col(0)*pow(t,2) + 2*coefs.col(1)*t + coefs.col(2);
