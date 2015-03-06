@@ -52,16 +52,26 @@ control = atlasControllers.InstantaneousQPController(r, [],...
    struct('use_mex', example_options.use_mex));
 control.quiet = example_options.quiet;
 
-t = 0;
-x = [];
-qp_input = [];
+t0 = 0;
+x0 = xstar;
 contact_sensor = zeros(length(r.getManipulator().body), 1);
-      
-[~] = instantaneousQPControllermex(control.mex_ptr,...
-                              t,...
-                              x,...
-                              qp_input,...
-                              contact_sensor);
+
+dummy_qp_input = atlasControllers.AtlasPlanEval(r, StandingPlan.from_standing_state(x0, r)).getQPControllerInput(t0, x0);
+
+state_frame = drcFrames.AtlasState(r);
+state_frame.subscribe('EST_ROBOT_STATE');
+while true
+  [x, t] = state_frame.getNextMessage(10);
+  if isempty(x)
+    continue
+  end
+
+  [~] = instantaneousQPControllermex(control.mex_ptr,...
+                                t,...
+                                x,...
+                                dummy_qp_input,...
+                                contact_sensor);
+end
 
 
 

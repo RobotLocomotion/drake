@@ -1,0 +1,15 @@
+cmd "simulator" {
+	exec = "matlab -nosplash -nodesktop -r \"try; addpath_control; runAtlasSimAsync; catch e; e.getReport(), megaclear; exit(1); end; exit(0);\"";
+	host = "localhost";
+}
+
+cmd "planeval" {
+	exec = "matlab -nosplash -nodesktop -r \"try; addpath_control; runAtlasPlanEvalAsync; catch e; e.getReport(), megaclear; exit(1); end; exit(0);\"";
+	host = "localhost";
+}
+
+cmd "controller" {
+	exec = "matlab -nosplash -nodesktop -r \"try; addpath_control; runAtlasControllerStandalone; catch e; e.getReport(), megaclear; exit(1); end; exit(0);\"";
+	host = "localhost";
+}
+

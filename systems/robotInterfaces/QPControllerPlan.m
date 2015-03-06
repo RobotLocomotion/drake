@@ -9,7 +9,7 @@ classdef QPControllerPlan
                                 'only_if_kinematic', [0;1;0;1],...
                                 'kinematic_or_sensed', [0;1;1;1],...
                                 'prevent_support', zeros(4,1));
-    duration;
+    duration = inf;
     start_time = 0;
     default_qp_input = atlasControllers.QPInputConstantHeight;
   end

@@ -99,6 +99,7 @@ classdef LCMCoordinateFrame < CoordinateFrame & LCMSubscriber & LCMPublisher
         t=[];
       else
         [x,t] = obj.lcmcoder.decode(data);
+        % x = x((end-obj.nu+1:end));
       end
     end
     

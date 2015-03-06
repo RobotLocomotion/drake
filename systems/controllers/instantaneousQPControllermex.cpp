@@ -64,7 +64,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   QPControllerOutput qp_output;
   shared_ptr<QPControllerDebugData> debug;
 
-  // this does nothing right now; I'm just leaving it here to show Pat
   shared_ptr<RobotStateDriver> state_driver(new RobotStateDriver(pdata->state_coordinate_names));
 
   DrakeRobotState robot_state;
@@ -84,7 +83,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   if(!lcm.good()) {
     mexErrMsgTxt("bad lcm");
   }
-  lcm.publish("ATLAS_COMMAND_DEBUG", command_msg);
+  lcm.publish("ATLAS_COMMAND", command_msg);
 
   // return to matlab
   narg = 0;
