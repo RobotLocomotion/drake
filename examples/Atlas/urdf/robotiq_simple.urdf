@@ -87,19 +87,19 @@
       <inertia ixx="0.001239" ixy="-0.000251" ixz="0.000019" iyy="0.00085" iyz="0" izz="0.001632"/>
     </inertial>
   </link>
-  <joint name="finger_1_joint_0" type="continuous">
+  <joint name="finger_1_joint_0" type="revolute">
     <parent link="finger_1_link_0"/>
     <child link="finger_1_link_1"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 0" xyz="0.020 0 0"/>
   </joint>
-  <joint name="finger_1_joint_1" type="continuous">
+  <joint name="finger_1_joint_1" type="revolute">
     <parent link="finger_1_link_1"/>
     <child link="finger_1_link_2"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 -0.52" xyz="0.050 -.028 0"/>
   </joint>
-  <joint name="finger_1_joint_2" type="continuous">
+  <joint name="finger_1_joint_2" type="revolute">
     <parent link="finger_1_link_2"/>
     <child link="finger_1_link_3"/>
     <axis xyz="0 0 1"/>
@@ -198,19 +198,19 @@
       <inertia ixx="0.001239" ixy="-0.000251" ixz="0.000019" iyy="0.00085" iyz="0" izz="0.001632"/>
     </inertial>
   </link>
-  <joint name="finger_2_joint_0" type="continuous">
+  <joint name="finger_2_joint_0" type="revolute">
     <parent link="finger_2_link_0"/>
     <child link="finger_2_link_1"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 0" xyz="0.020 0 0"/>
   </joint>
-  <joint name="finger_2_joint_1" type="continuous">
+  <joint name="finger_2_joint_1" type="revolute">
     <parent link="finger_2_link_1"/>
     <child link="finger_2_link_2"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 -0.52" xyz="0.050 -.028 0"/>
   </joint>
-  <joint name="finger_2_joint_2" type="continuous">
+  <joint name="finger_2_joint_2" type="revolute">
     <parent link="finger_2_link_2"/>
     <child link="finger_2_link_3"/>
     <axis xyz="0 0 1"/>
@@ -309,69 +309,24 @@
       <inertia ixx="0.001239" ixy="-0.000251" ixz="0.000019" iyy="0.00085" iyz="0" izz="0.001632"/>
     </inertial>
   </link>
-  <joint name="finger_middle_joint_0" type="continuous">
+  <joint name="finger_middle_joint_0" type="revolute">
     <parent link="finger_middle_link_0"/>
     <child link="finger_middle_link_1"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 0" xyz="0.020 0 0"/>
   </joint>
-  <joint name="finger_middle_joint_1" type="continuous">
+  <joint name="finger_middle_joint_1" type="revolute">
     <parent link="finger_middle_link_1"/>
     <child link="finger_middle_link_2"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 -0.52" xyz="0.050 -.028 0"/>
   </joint>
-  <joint name="finger_middle_joint_2" type="continuous">
+  <joint name="finger_middle_joint_2" type="revolute">
     <parent link="finger_middle_link_2"/>
     <child link="finger_middle_link_3"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 0" xyz="0.039 0 0"/>
   </joint>
-  <force_element name="finger1_joint_0_spring">
-   <torsional_spring stiffness="1">
-      <joint name="finger_1_joint_0"/>
-    </torsional_spring>
-  </force_element>
-  <force_element name="finger1_joint_1_spring">
-   <torsional_spring stiffness="1">
-      <joint name="finger_1_joint_1"/>
-    </torsional_spring>
-  </force_element>
-  <force_element name="finger1_joint_2_spring">
-   <torsional_spring stiffness="1">
-      <joint name="finger_1_joint_2"/>
-    </torsional_spring>
-  </force_element>
-  <force_element name="finger2_joint_0_spring">
-   <torsional_spring stiffness="1">
-      <joint name="finger_2_joint_0"/>
-    </torsional_spring>
-  </force_element>
-  <force_element name="finger2_joint_1_spring">
-   <torsional_spring stiffness="1">
-      <joint name="finger_2_joint_1"/>
-    </torsional_spring>
-  </force_element>
-  <force_element name="finger2_joint_2_spring">
-   <torsional_spring stiffness="1">
-      <joint name="finger_2_joint_2"/>
-    </torsional_spring>
-  </force_element>
-  <force_element name="finger_middle_joint_0_spring">
-   <torsional_spring stiffness="1">
-      <joint name="finger_middle_joint_0"/>
-    </torsional_spring>
-  </force_element>
-  <force_element name="finger_middle_joint_1_spring">
-   <torsional_spring stiffness="1">
-      <joint name="finger_middle_joint_1"/>
-    </torsional_spring>
-  </force_element>
-  <force_element name="finger_middle_joint_2_spring">
-   <torsional_spring stiffness="1">
-      <joint name="finger_middle_joint_2"/>
-    </torsional_spring>
-  </force_element>
   <link name="palm">
     <visual>
       <geometry>
@@ -414,5 +369,51 @@
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 1.57" xyz="0.0455 0.0214 0"/>
   </joint>
+
+  <transmission name="finger_middle_joint_0" type="SimpleTransmission">
+    <actuator name="finger_middle_joint_0"/>
+    <joint name="finger_middle_joint_0"/>
+  </transmission>
+
+  <transmission name="finger_middle_joint_1" type="SimpleTransmission">
+    <actuator name="finger_middle_joint_1"/>
+    <joint name="finger_middle_joint_1"/>
+  </transmission>
+
+  <transmission name="finger_middle_joint_2" type="SimpleTransmission">
+    <actuator name="finger_middle_joint_2"/>
+    <joint name="finger_middle_joint_2"/>
+  </transmission>
+
+  <transmission name="finger_1_joint_0" type="SimpleTransmission">
+    <actuator name="finger_1_joint_0"/>
+    <joint name="finger_1_joint_0"/>
+  </transmission>
+
+  <transmission name="finger_1_joint_1" type="SimpleTransmission">
+    <actuator name="finger_1_joint_1"/>
+    <joint name="finger_1_joint_1"/>
+  </transmission>
+
+  <transmission name="finger_1_joint_2" type="SimpleTransmission">
+    <actuator name="finger_1_joint_2"/>
+    <joint name="finger_1_joint_2"/>
+  </transmission>
+
+  <transmission name="finger_2_joint_0" type="SimpleTransmission">
+    <actuator name="finger_2_joint_0"/>
+    <joint name="finger_2_joint_0"/>
+  </transmission>
+
+  <transmission name="finger_2_joint_1" type="SimpleTransmission">
+    <actuator name="finger_2_joint_1"/>
+    <joint name="finger_2_joint_1"/>
+  </transmission>
+
+  <transmission name="finger_2_joint_2" type="SimpleTransmission">
+    <actuator name="finger_2_joint_2"/>
+    <joint name="finger_2_joint_2"/>
+  </transmission>
+
 </robot>
 

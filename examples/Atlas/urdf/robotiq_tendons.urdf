@@ -1,6 +1,7 @@
 <?xml version="1.0" ?>
 
 <robot name="s-model_articulated" xmlns:xacro="http://ros.org/wiki/xacro">
+  <parameter name="spring_stiffness" value="1" />
   <link name="finger_1_link_0">
     <visual>
       <origin rpy="0 0 0" xyz="0.020 0 0"/>
@@ -337,47 +338,47 @@
     <dynamics friction="0.0" damping="0.1" />
   </joint>
   <force_element name="finger1_joint_0_spring">
-   <torsional_spring stiffness="1">
+   <torsional_spring stiffness="$spring_stiffness">
       <joint name="finger_1_joint_0"/>
     </torsional_spring>
   </force_element>
   <force_element name="finger1_joint_1_spring">
-   <torsional_spring stiffness="1">
+   <torsional_spring stiffness="$spring_stiffness">
       <joint name="finger_1_joint_1"/>
     </torsional_spring>
   </force_element>
   <force_element name="finger1_joint_2_spring">
-   <torsional_spring stiffness="1">
+   <torsional_spring stiffness="$spring_stiffness">
       <joint name="finger_1_joint_2"/>
     </torsional_spring>
   </force_element>
   <force_element name="finger2_joint_0_spring">
-   <torsional_spring stiffness="1">
+   <torsional_spring stiffness="$spring_stiffness">
       <joint name="finger_2_joint_0"/>
     </torsional_spring>
   </force_element>
   <force_element name="finger2_joint_1_spring">
-   <torsional_spring stiffness="1">
+   <torsional_spring stiffness="$spring_stiffness">
       <joint name="finger_2_joint_1"/>
     </torsional_spring>
   </force_element>
   <force_element name="finger2_joint_2_spring">
-   <torsional_spring stiffness="1">
+   <torsional_spring stiffness="$spring_stiffness">
       <joint name="finger_2_joint_2"/>
     </torsional_spring>
   </force_element>
   <force_element name="finger_middle_joint_0_spring">
-   <torsional_spring stiffness="1">
+   <torsional_spring stiffness="$spring_stiffness">
       <joint name="finger_middle_joint_0"/>
     </torsional_spring>
   </force_element>
   <force_element name="finger_middle_joint_1_spring">
-   <torsional_spring stiffness="1">
+   <torsional_spring stiffness="$spring_stiffness">
       <joint name="finger_middle_joint_1"/>
     </torsional_spring>
   </force_element>
   <force_element name="finger_middle_joint_2_spring">
-   <torsional_spring stiffness="1">
+   <torsional_spring stiffness="$spring_stiffness">
       <joint name="finger_middle_joint_2"/>
     </torsional_spring>
   </force_element>
