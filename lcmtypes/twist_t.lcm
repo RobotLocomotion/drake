@@ -1,0 +1,8 @@
+package drake;
+
+struct twist_t
+{
+   vector_3d_t linear_velocity;
+   vector_3d_t angular_velocity;
+}
+

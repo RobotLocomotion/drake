@@ -29,8 +29,14 @@ if (eigen3_FOUND)
     target_link_libraries(getActiveSupportsmex drakeQP drakeControlUtil)
 
     if (LCM_FOUND)
+      add_mex(AtlasCommandDriver SHARED AtlasCommandDriver.cpp)
+      target_link_libraries(AtlasCommandDriver drakeControlUtil)
+
+      add_mex(RobotStateDriver SHARED RobotStateDriver.cpp)
+      target_link_libraries(RobotStateDriver drakeControlUtil)
+
       add_mex(instantaneousQPControllermex instantaneousQPControllermex.cpp)
-      target_link_libraries(instantaneousQPControllermex drakeQP drakeControlUtil QPCommon)
+      target_link_libraries(instantaneousQPControllermex drakeQP drakeControlUtil QPCommon AtlasCommandDriver)
       pods_use_pkg_config_packages(instantaneousQPControllermex gurobi)
 
       add_mex(constructQPDataPointerMex constructQPDataPointerMex.cpp)
@@ -45,8 +51,6 @@ if (eigen3_FOUND)
       add_mex(encodeQPInputLCMMex encodeQPInputLCMMex.cpp)
       target_link_libraries(encodeQPInputLCMMex lcm drakeControlUtil QPCommon)
 
-      add_mex(AtlasCommand SHARED AtlasCommand.cpp)
-      target_link_libraries(AtlasCommand lcm)
     endif()
   endif()
 

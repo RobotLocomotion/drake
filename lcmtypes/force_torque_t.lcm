@@ -1,0 +1,23 @@
+package drake;
+
+// Force Torque Sensors in the feet and hands
+// Feet are only 3-axis: z-linear force,
+// x and y-axis torques.
+//
+
+struct force_torque_t
+{
+   float l_foot_force_z;
+   float l_foot_torque_x;
+   float l_foot_torque_y;
+
+   float r_foot_force_z;
+   float r_foot_torque_x;
+   float r_foot_torque_y;
+
+   float l_hand_force[3];
+   float l_hand_torque[3];
+
+   float r_hand_force[3];
+   float r_hand_torque[3];
+}

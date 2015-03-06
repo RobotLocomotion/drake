@@ -12,6 +12,9 @@
 #include "QPCommon.h"
 #include <limits>
 #include <cmath>
+#include "AtlasCommandDriver.hpp"
+#include "drake/lcmt_atlas_command.hpp"
+#include <lcm/lcm-cpp.hpp>
 
 //#define TEST_FAST_QP
 //#define USE_MATRIX_INVERSION_LEMMA
@@ -60,11 +63,22 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   QPControllerOutput qp_output;
   shared_ptr<QPControllerDebugData> debug;
 
+
   if (nlhs>3) {
     debug.reset(new QPControllerDebugData());
   }
   int info = setupAndSolveQP(pdata, qp_input, t, q, qd, b_contact_force, &qp_output, debug);
- 
+
+  // convert to atlas_command and publish
+  shared_ptr<AtlasCommandDriver> command_driver (new AtlasCommandDriver(&pdata->input_joint_names));
+  drake::lcmt_atlas_command* command_msg = command_driver->encode(t, &qp_output);
+  lcm::LCM lcm;
+  if(!lcm.good()) {
+    mexErrMsgTxt("bad lcm");
+  }
+  lcm.publish("ATLAS_COMMAND_DEBUG", command_msg);
+
+  // return to matlab
   narg = 0;
   if (nlhs>narg) {
     plhs[narg] = eigenToMatlab(qp_output.u);

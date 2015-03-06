@@ -14,6 +14,12 @@ lcmtypes_build(LCM_TYPES
 			 lcmt_foot_flag.lcm
 			 lcmt_body_motion_data.lcm
 			 lcmt_atlas_command.lcm
+			 force_torque_t.lcm
+			 position_3d_t.lcm
+			 quaternion_t.lcm
+			 robot_state_t.lcm
+			 twist_t.lcm
+			 vector_3d_t.lcm
 			 )
 
 #add_lcmtype(lcmt_drake_signal.lcm)

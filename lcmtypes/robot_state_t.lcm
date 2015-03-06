@@ -1,0 +1,19 @@
+package drake;
+
+// Full Combined Robot State
+// The velocity measurements are in inertial or local frame
+
+struct robot_state_t
+{
+  int64_t utime;
+  position_3d_t pose;
+  twist_t twist;
+
+  int16_t num_joints;
+  string joint_name[num_joints];
+  float joint_position [num_joints];
+  float joint_velocity [num_joints];
+  float joint_effort[num_joints];
+
+  force_torque_t force_torque;
+}
