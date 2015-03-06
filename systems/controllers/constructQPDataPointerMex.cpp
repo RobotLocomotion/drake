@@ -87,6 +87,53 @@ void parseVRefIntegratorParams(const mxArray *params_obj, VRefIntegratorParams *
   return;
 }
 
+void parseHardwareGains(const mxArray *params_obj, RigidBodyManipulator *r, AtlasHardwareGains *params) {
+  const mxArray *pobj;
+  int nu = r->num_velocities - 6;
+
+  pobj = myGetField(params_obj, "k_f_p");
+  sizecheck(pobj, nu, 1);
+  Map<VectorXd> k_f_p(mxGetPr(pobj), nu);
+  params->k_f_p = k_f_p;
+
+  pobj = myGetField(params_obj, "k_q_p");
+  sizecheck(pobj, nu, 1);
+  Map<VectorXd> k_q_p(mxGetPr(pobj), nu);
+  params->k_q_p = k_q_p;
+
+  pobj = myGetField(params_obj, "k_q_i");
+  sizecheck(pobj, nu, 1);
+  Map<VectorXd> k_q_i(mxGetPr(pobj), nu);
+  params->k_q_i = k_q_i;
+
+  pobj = myGetField(params_obj, "k_qd_p");
+  sizecheck(pobj, nu, 1);
+  Map<VectorXd> k_qd_p(mxGetPr(pobj), nu);
+  params->k_qd_p = k_qd_p;
+
+  pobj = myGetField(params_obj, "ff_qd");
+  sizecheck(pobj, nu, 1);
+  Map<VectorXd> ff_qd(mxGetPr(pobj), nu);
+  params->ff_qd = ff_qd;
+
+  pobj = myGetField(params_obj, "ff_f_d");
+  sizecheck(pobj, nu, 1);
+  Map<VectorXd> ff_f_d(mxGetPr(pobj), nu);
+  params->ff_f_d = ff_f_d;
+
+  pobj = myGetField(params_obj, "ff_const");
+  sizecheck(pobj, nu, 1);
+  Map<VectorXd> ff_const(mxGetPr(pobj), nu);
+  params->ff_const = ff_const;
+
+  pobj = myGetField(params_obj, "ff_qd_d");
+  sizecheck(pobj, nu, 1);
+  Map<VectorXd> ff_qd_d(mxGetPr(pobj), nu);
+  params->ff_qd_d = ff_qd_d;
+  return;
+}
+
+
 void parseAtlasParams(const mxArray *params_obj, RigidBodyManipulator *r, AtlasParams *params) {
   const mxArray *pobj;
 
@@ -134,6 +181,8 @@ void parseAtlasParams(const mxArray *params_obj, RigidBodyManipulator *r, AtlasP
     parseBodyMotionParams(body_motion_obj, i, &body_motion_params);
     params->body_motion[i] = body_motion_params;
   }
+
+  parseHardwareGains(myGetProperty(params_obj, "hardware_gains"), r, &(params->hardware_gains));
   return;
 }
 
@@ -187,6 +236,12 @@ void parseRobotPropertyCache(const mxArray *rpc_obj, RobotPropertyCache *rpc) {
   Map<VectorXd>actuated_indices(mxGetPr(pobj), mxGetNumberOfElements(pobj));
   rpc->actuated_indices = actuated_indices.cast<int>();
 
+  return;
+}
+
+void parseRobotJointNames(const mxArray *input_names, JointNames *joint_names) {
+  joint_names->robot = get_strings(myGetField(input_names, "robot"));
+  joint_names->drake = get_strings(myGetField(input_names, "drake"));
   return;
 }
 
@@ -254,6 +309,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   // gurobi_opts
   const mxArray* psolveropts = prhs[narg];
+  narg++;
+
+  // input_coordinate_names
+  parseRobotJointNames(myGetField(prhs[narg], "input"), &(pdata->input_joint_names));
+  pdata->state_coordinate_names = get_strings(myGetField(prhs[narg], "state"));
+  narg++;
 
   // Done parsing inputs
 

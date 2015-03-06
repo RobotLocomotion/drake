@@ -456,6 +456,59 @@ std::vector<std::string> get_strings(const mxArray *rhs) {
   return strings;
 }
 
+void getRobotJointIndexMap(JointNames *joint_names, RobotJointIndexMap *joint_map) {
+  if (joint_names->drake.size() != joint_names->robot.size()) {
+    mexErrMsgTxt("Cannot create joint name map: joint_names->drake and joint_names->robot must have the same length");
+  }
+  int njoints = joint_names->drake.size();
+  joint_map->drake_to_robot.resize(njoints);
+  joint_map->robot_to_drake.resize(njoints);
+
+  bool has_match;
+  for (int i=0; i < njoints; i++) {
+    has_match = false;
+    for (int j=0; j < njoints; j++) {
+      if (joint_names->drake[i].compare(joint_names->robot[j]) == 0) {
+        has_match = true;
+        joint_map->drake_to_robot[i] = j;
+        joint_map->robot_to_drake[j] = i;
+      }
+    }
+    if (!has_match) {
+      std::cout << "Could not match joint: " << joint_names->drake[i] << std::endl;
+      mexErrMsgTxt("Could not find a match for drake joint name");
+    }
+  }
+  return;
+}
+
+Vector3d angularvel2rpydot(const Vector3d& rpy, const Vector3d& omega) {
+  Vector3d rpydot;
+
+  rpydot[0] = cos(rpy[2])/cos(rpy[1])*omega[0] + sin(rpy[2])/cos(rpy[1])*omega[1];
+  rpydot[1] = -sin(rpy[2])*omega[0] + cos(rpy[2])*omega[1];
+  rpydot[2] = cos(rpy[2])*tan(rpy[1])*omega[0] + tan(rpy[1])*sin(rpy[2])*omega[1] + omega[2];
+    
+  return rpydot;
+}
+
+// based on drake.util.Transform
+Vector3d quat2rpy(Vector4d& q) {
+  double norm=sqrt(q[0]*q[0]+q[1]*q[1]+q[2]*q[2]+q[3]*q[3]);
+  if (abs(norm)>1e-12) {
+    q[0] /= norm; q[1] /= norm; q[2] /= norm; q[3] /= norm;
+  }
+
+  double w=q[0], x=q[1], y=q[2], z=q[3];
+    
+  Vector3d rpy;
+  rpy[0] = atan2(2.0*(w*x + y*z), w*w + z*z -(x*x +y*y));
+  rpy[1] = asin(2*(w*y - z*x));
+  rpy[2] = atan2(2*(w*z + x*y), w*w + x*x-(y*y+z*z));
+    
+  return rpy;
+}
+
 template drakeControlUtilEXPORT void getRows(std::set<int> &, const MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > &);
 template drakeControlUtilEXPORT void getCols(std::set<int> &, const MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > &);
 template drakeControlUtilEXPORT void angleDiff(const MatrixBase<MatrixXd> &, const MatrixBase<MatrixXd> &, MatrixBase<MatrixXd> &);

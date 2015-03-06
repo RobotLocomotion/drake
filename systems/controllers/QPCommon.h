@@ -1,3 +1,6 @@
+#ifndef _QPCOMMON_H_
+#define _QPCOMMON_H_
+
 #include "controlUtil.h"
 #include "drakeUtil.h"
 #include "drake/fastQP.h"
@@ -116,10 +119,22 @@ struct BodyMotionParams {
   double weight;
 };
 
+struct AtlasHardwareGains {
+  VectorXd k_f_p;
+  VectorXd k_q_p;
+  VectorXd k_q_i;
+  VectorXd k_qd_p;
+  VectorXd ff_qd;
+  VectorXd ff_f_d;
+  VectorXd ff_const;
+  VectorXd ff_qd_d;
+};
+
 struct AtlasParams {
   WholeBodyParams whole_body;
   std::vector<BodyMotionParams> body_motion;
   VRefIntegratorParams vref_integrator;
+  AtlasHardwareGains hardware_gains;
   Matrix3d W_kdot;
   double Kp_ang;
   double w_slack;
@@ -139,6 +154,8 @@ struct NewQPControllerData {
   double default_terrain_height;
   VectorXd umin,umax;
   int use_fast_qp;
+  JointNames input_joint_names;
+  std::vector<std::string> state_coordinate_names;
 
   // preallocate memory
   MatrixXd H, H_float, H_act;
@@ -214,3 +231,5 @@ VectorXd velocityReference(NewQPControllerData *pdata, double t, const Ref<Vecto
 std::vector<SupportStateElement> loadAvailableSupports(std::shared_ptr<drake::lcmt_qp_controller_input> qp_input);
 
 int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_controller_input> qp_input, double t, Map<VectorXd> &q, Map<VectorXd> &qd, const Ref<Matrix<bool, Dynamic, 1>> &b_contact_force, QPControllerOutput *qp_output, std::shared_ptr<QPControllerDebugData> debug);
+
+#endif

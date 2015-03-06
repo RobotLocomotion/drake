@@ -72,7 +72,29 @@ drakeControlUtilEXPORT Vector6d bodyMotionPD(RigidBodyManipulator *r, Map<Vector
 
 drakeControlUtilEXPORT void evaluateCubicSplineSegment(double t, const Ref<const Matrix<double, 6, 4>> &coefs, Vector6d &y, Vector6d &ydot, Vector6d &yddot);
 
+struct RobotJointIndexMap {
+  VectorXi drake_to_robot;
+  VectorXi robot_to_drake;
+};
+
+struct JointNames {
+  std::vector<std::string> robot;
+  std::vector<std::string> drake;
+};
+
+struct DrakeRobotState {
+  // drake-ordered position and velocity vectors, with timestamp (in s)
+  double t;
+  VectorXd q;
+  VectorXd qd;
+};
+
+drakeControlUtilEXPORT void getRobotJointIndexMap(JointNames *joint_names, RobotJointIndexMap *joint_map);
+
 // convert Matlab cell array of strings into a C++ vector of strings
 drakeControlUtilEXPORT std::vector<std::string> get_strings(const mxArray *rhs);
+
+Vector3d angularvel2rpydot(const Vector3d& rpy, const Vector3d& omega);
+Vector3d quat2rpy(Vector4d& q);
 
 #endif
