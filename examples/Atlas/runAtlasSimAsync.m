@@ -29,6 +29,7 @@ r = compile(r);
 load(fullfile(getDrakePath,'examples','Atlas','data','atlas_fp.mat'));
 if isfield(options,'initial_pose'), xstar(1:6) = options.initial_pose; end
 xstar = r.resolveConstraints(xstar);
+xstar(3) = xstar(3) + 0.03;
 r = r.setInitialState(xstar);
 
 v = r.constructVisualizer;
