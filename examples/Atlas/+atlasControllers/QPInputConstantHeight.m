@@ -119,7 +119,7 @@ classdef QPInputConstantHeight
       end
       obj.whole_body_data.q_des = msg.whole_body_data.q_des;
       obj.whole_body_data.constrained_dofs = msg.whole_body_data.constrained_dofs;
-      obj.param_set_name = msg.param_set_name;
+      obj.param_set_name = char(msg.param_set_name);
     end
   end
 end

@@ -58,6 +58,9 @@ contact_sensor = zeros(length(r.getManipulator().body), 1);
 
 dummy_qp_input = atlasControllers.AtlasPlanEval(r, StandingPlan.from_standing_state(x0, r)).getQPControllerInput(t0, x0);
 
+% Serialize to and from LCM for debugging (this *should* have no effect);
+dummy_qp_input = atlasControllers.QPInput2D.from_lcm(dummy_qp_input.to_lcm());
+
 state_frame = drcFrames.AtlasState(r);
 state_frame.subscribe('EST_ROBOT_STATE');
 lc = lcm.lcm.LCM.getSingleton();

@@ -39,11 +39,15 @@ x0 = xstar;
 % Make our Atlas listen for ATLAS_COMMAND over LCM and publish EST_ROBOT_STATE
 % command_to_effort = atlasControllers.AtlasCommandToEffortBlock(r);
 % command_to_effort = command_to_effort.setInputFrame(drcFrames.AtlasInput(r));
-r = r.setInputFrame(drcFrames.AtlasInput(r));
-r = r.setOutputFrame(drcFrames.AtlasState(r));
+% r = r.setInputFrame(drcFrames.AtlasInput(r));
+% output_frame = drcFrames.AtlasState(r);
+% output_frame.setMaxRate(2000);
+% r = r.setOutputFrame(output_frame);
 
 % sys = cascade(command_to_effort, r);
-sys = r;
+% sys = r;
+sys = cascade(CommandReceiver(r), r);
+sys = cascade(sys, StatePublisher(r));
 
 output_select(1).system=1;
 output_select(1).output=1;
