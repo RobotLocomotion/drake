@@ -27,21 +27,26 @@ r = Atlas(fullfile(getDrakePath,'examples','Atlas','urdf','atlas_minimal_contact
 r = r.removeCollisionGroupsExcept({'heel','toe'});
 r = compile(r);
 
-% set initial state to fixed point
-load(fullfile(getDrakePath,'examples','Atlas','data','atlas_fp.mat'));
-if isfield(options,'initial_pose'), xstar(1:6) = options.initial_pose; end
-xstar = r.resolveConstraints(xstar);
-r = r.setInitialState(xstar);
+% % set initial state to fixed point
+% load(fullfile(getDrakePath,'examples','Atlas','data','atlas_fp.mat'));
+% if isfield(options,'initial_pose'), xstar(1:6) = options.initial_pose; end
+% xstar = r.resolveConstraints(xstar);
+% r = r.setInitialState(xstar);
+
+state_frame = drcFrames.AtlasState(r);
+state_frame.subscribe('EST_ROBOT_STATE');
+x0 = [];
+while isempty(x0)
+  [x0, ~] = state_frame.getNextMessage(50);
+end
 
 nq = getNumPositions(r);
 
-x0 = xstar;
+navgoal = example_options.navgoal + [x0(1:2); 0;0;0;0];
+R=rotz(navgoal(6));
 
-% Find the initial positions of the feet
-R=rotz(example_options.navgoal(6));
-
-rfoot_navgoal = example_options.navgoal;
-lfoot_navgoal = example_options.navgoal;
+rfoot_navgoal = navgoal;
+lfoot_navgoal = navgoal;
 
 rfoot_navgoal(1:3) = rfoot_navgoal(1:3) + R*[0;-0.13;0];
 lfoot_navgoal(1:3) = lfoot_navgoal(1:3) + R*[0;0.13;0];
@@ -54,11 +59,6 @@ walking_plan = r.planWalkingZMP(x0(1:r.getNumPositions()), footstep_plan);
 % walking_plan = StandingPlan.from_standing_state(x0, r);
 planeval = atlasControllers.AtlasPlanEval(r, {WaitForRobotStatePlan(), walking_plan});
 
-% lc = lcm.lcm.LCM.getSingleton();
-% monitor = drake.util.MessageMonitor(drake.robot_state_t, 'utime');
-% lc.subscribe('EST_ROBOT_STATE', monitor);
-state_frame = drcFrames.AtlasState(r);
-state_frame.subscribe('EST_ROBOT_STATE');
 disp('plan eval ready');
 while true
   [x, t] = state_frame.getNextMessage(10);
