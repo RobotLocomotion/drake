@@ -37,9 +37,12 @@ v.display_dt = 0.01;
 x0 = xstar;
 
 % Make our Atlas listen for ATLAS_COMMAND over LCM and publish EST_ROBOT_STATE
+% command_to_effort = atlasControllers.AtlasCommandToEffortBlock(r);
+% command_to_effort = command_to_effort.setInputFrame(drcFrames.AtlasInput(r));
 r = r.setInputFrame(drcFrames.AtlasInput(r));
 r = r.setOutputFrame(drcFrames.AtlasState(r));
 
+% sys = cascade(command_to_effort, r);
 sys = r;
 
 output_select(1).system=1;
@@ -47,6 +50,7 @@ output_select(1).output=1;
 v = v.setInputFrame(sys.getOutputFrame());
 sys = mimoCascade(sys,v,[],[],output_select);
 
+disp('sim starting');
 runLCM(sys, x0, struct('tspan', [0, inf],...
                         'timekeeper', ''));
 

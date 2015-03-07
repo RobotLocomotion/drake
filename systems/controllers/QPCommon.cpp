@@ -692,6 +692,9 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
 
   // use transpose because B_act is orthogonal
   qp_output->u = pdata->B_act.transpose()*(pdata->H_act*qp_output->qdd + pdata->C_act - D_act*beta);
+  for (int i=0; i < qp_output->u.size(); i++) {
+    if (isnan(qp_output->u(i))) qp_output->u(i) = 0;
+  }
   //y = pdata->B_act.jacobiSvd(ComputeThinU|ComputeThinV).solve(pdata->H_act*qdd + pdata->C_act - Jz_act.transpose()*lambda - D_act*beta);
 
   bool foot_contact[2];

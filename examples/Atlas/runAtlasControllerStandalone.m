@@ -60,16 +60,25 @@ dummy_qp_input = atlasControllers.AtlasPlanEval(r, StandingPlan.from_standing_st
 
 state_frame = drcFrames.AtlasState(r);
 state_frame.subscribe('EST_ROBOT_STATE');
+lc = lcm.lcm.LCM.getSingleton();
+monitor = drake.util.MessageMonitor(drake.lcmt_qp_controller_input, 'timestamp');
+lc.subscribe('QP_CONTROLLER_INPUT', monitor);
+disp('controller ready');
 while true
   [x, t] = state_frame.getNextMessage(10);
-  if isempty(x)
+  qp_input_msg_data = monitor.getMessage();
+  if isempty(x) 
     continue
   end
-
+  if isempty(qp_input_msg_data)
+    qp_input = dummy_qp_input;
+  else
+    qp_input = atlasControllers.QPInput2D.from_lcm(drake.lcmt_qp_controller_input(qp_input_msg_data));
+  end
   [~] = instantaneousQPControllermex(control.mex_ptr,...
                                 t,...
                                 x,...
-                                dummy_qp_input,...
+                                qp_input,...
                                 contact_sensor);
 end
 

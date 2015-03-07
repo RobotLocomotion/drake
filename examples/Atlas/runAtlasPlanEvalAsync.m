@@ -59,6 +59,7 @@ planeval = atlasControllers.AtlasPlanEval(r, {WaitForRobotStatePlan(), walking_p
 % lc.subscribe('EST_ROBOT_STATE', monitor);
 state_frame = drcFrames.AtlasState(r);
 state_frame.subscribe('EST_ROBOT_STATE');
+disp('plan eval ready');
 while true
   [x, t] = state_frame.getNextMessage(10);
   qp_input = planeval.getQPControllerInput(t, x);

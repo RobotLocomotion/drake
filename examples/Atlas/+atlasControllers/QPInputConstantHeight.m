@@ -98,6 +98,30 @@ classdef QPInputConstantHeight
       msg.param_set_name = obj.param_set_name;
     end
   end
+
+  methods (Static)
+    function obj = from_lcm(msg)
+      obj = atlasControllers.QPInput2D();
+      obj.timestamp = msg.timestamp;
+      for f = fieldnames(obj.zmp_data)'
+        obj.zmp_data.(f{1}) = msg.zmp_data.(f{1});
+      end
+      for j = 1:length(msg.support_data)
+        for f = {'body_id', 'contact_pts', 'support_logic_map', 'mu', 'contact_surfaces'}
+          obj.support_data(j).(f{1}) = double(msg.support_data(j).(f{1}));
+        end
+      end
+      for j = 1:length(msg.body_motion_data)
+        for f = {'body_id', 'ts'}
+          obj.body_motion_data(j).(f{1}) = msg.body_motion_data(j).(f{1});
+        end
+        obj.body_motion_data(j).coefs = reshape(msg.body_motion_data(j).coefs, [6, 1, 4]);
+      end
+      obj.whole_body_data.q_des = msg.whole_body_data.q_des;
+      obj.whole_body_data.constrained_dofs = msg.whole_body_data.constrained_dofs;
+      obj.param_set_name = msg.param_set_name;
+    end
+  end
 end
 
 
