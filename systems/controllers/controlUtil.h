@@ -43,9 +43,9 @@ drakeControlUtilEXPORT std::vector<SupportStateElement> parseSupportData(const m
 
 drakeControlUtilEXPORT bool isSupportElementActive(SupportStateElement* se, bool contact_force_detected, bool kinematic_contact_detected);
 
-drakeControlUtilEXPORT Matrix<bool, Dynamic, 1> getActiveSupportMask(RigidBodyManipulator* r, void* map_ptr, VectorXd q, VectorXd qd, std::vector<SupportStateElement> available_supports, Matrix<bool, Dynamic, 1> contact_force_detected, double contact_threshold, double terrain_height);
+drakeControlUtilEXPORT Matrix<bool, Dynamic, 1> getActiveSupportMask(RigidBodyManipulator* r, void* map_ptr, VectorXd q, VectorXd qd, std::vector<SupportStateElement> &available_supports, const Ref<const Matrix<bool, Dynamic, 1>> &contact_force_detected, double contact_threshold, double terrain_height);
 
-drakeControlUtilEXPORT std::vector<SupportStateElement> getActiveSupports(RigidBodyManipulator* r, void* map_ptr, VectorXd q, VectorXd qd, std::vector<SupportStateElement> available_supports, Matrix<bool, Dynamic, 1> contact_force_detected, double contact_threshold, double terrain_height);
+drakeControlUtilEXPORT std::vector<SupportStateElement> getActiveSupports(RigidBodyManipulator* r, void* map_ptr, VectorXd q, VectorXd qd, std::vector<SupportStateElement> &available_supports, const Ref<const Matrix<bool, Dynamic, 1>> &contact_force_detected, double contact_threshold, double terrain_height);
 
 template <typename DerivedA, typename DerivedB>
 drakeControlUtilEXPORT void getRows(std::set<int> &rows, MatrixBase<DerivedA> const &M, MatrixBase<DerivedB> &Msub);
@@ -59,7 +59,7 @@ drakeControlUtilEXPORT void angleDiff(MatrixBase<DerivedPhi1> const &phi1, Matri
 drakeControlUtilEXPORT mxArray* myGetProperty(const mxArray* pobj, const char* propname);
 drakeControlUtilEXPORT mxArray* myGetField(const mxArray* pobj, const char* propname);
 drakeControlUtilEXPORT mxArray* myGetField(const mxArray* pobj, const int idx, const char* propname);
-drakeControlUtilEXPORT bool inSupport(std::vector<SupportStateElement> supports, int body_idx);
+drakeControlUtilEXPORT bool inSupport(std::vector<SupportStateElement> &supports, int body_idx);
 drakeControlUtilEXPORT void collisionDetect(void* map_ptr, Vector3d const & contact_pos, Vector3d &pos, Vector3d *normal, double terrain_height);
 drakeControlUtilEXPORT void surfaceTangents(const Vector3d & normal, Matrix<double,3,m_surface_tangents> & d);
 drakeControlUtilEXPORT int contactPhi(RigidBodyManipulator* r, SupportStateElement& supp, void *map_ptr, VectorXd &phi, double terrain_height);

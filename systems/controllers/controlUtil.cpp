@@ -62,7 +62,7 @@ mxArray* myGetField(const mxArray* pobj, const char* propname)
   return pm;
 }
 
-bool inSupport(std::vector<SupportStateElement> supports, int body_idx) {
+bool inSupport(std::vector<SupportStateElement> &supports, int body_idx) {
   for (int i=0; i<supports.size(); i++) {
     if (supports[i].body_idx == body_idx)
       return true;
@@ -343,7 +343,7 @@ bool isSupportElementActive(SupportStateElement* se, bool contact_force_detected
   return is_active;
 }
 
-Matrix<bool, Dynamic, 1> getActiveSupportMask(RigidBodyManipulator* r, void* map_ptr, VectorXd q, VectorXd qd, std::vector<SupportStateElement> available_supports, Matrix<bool, Dynamic, 1> contact_force_detected, double contact_threshold, double terrain_height) {
+Matrix<bool, Dynamic, 1> getActiveSupportMask(RigidBodyManipulator* r, void* map_ptr, VectorXd q, VectorXd qd, std::vector<SupportStateElement> &available_supports, const Ref<const Matrix<bool, Dynamic, 1>> &contact_force_detected, double contact_threshold, double terrain_height) {
   r->doKinematics(q, false, qd);
 
   int nsupp = available_supports.size();
@@ -384,7 +384,7 @@ Matrix<bool, Dynamic, 1> getActiveSupportMask(RigidBodyManipulator* r, void* map
   return active_supp_mask;
 }
 
-std::vector<SupportStateElement> getActiveSupports(RigidBodyManipulator* r, void* map_ptr, VectorXd q, VectorXd qd, std::vector<SupportStateElement> available_supports, Matrix<bool, Dynamic, 1> contact_force_detected, double contact_threshold, double terrain_height) {
+std::vector<SupportStateElement> getActiveSupports(RigidBodyManipulator* r, void* map_ptr, VectorXd q, VectorXd qd, std::vector<SupportStateElement> &available_supports, const Ref<const Matrix<bool, Dynamic, 1>> &contact_force_detected, double contact_threshold, double terrain_height) {
 
   Matrix<bool, Dynamic, 1> active_supp_mask = getActiveSupportMask(r, map_ptr, q, qd, available_supports, contact_force_detected, contact_threshold, terrain_height);
 
