@@ -3,13 +3,13 @@ cmd "01.controller" {
 	host = "localhost";
 }
 
-cmd "02.simulator" {
-	exec = "matlab -nosplash -nodesktop -r \"try; addpath_control; runAtlasSimAsync; catch e; e.getReport(), megaclear; exit(1); end; exit(0);\"";
+cmd "02.planeval" {
+	exec = "matlab -nosplash -nodesktop -r \"try; addpath_control; runAtlasPlanEvalAsync; catch e; e.getReport(), megaclear; exit(1); end; exit(0);\"";
 	host = "localhost";
 }
 
-cmd "03.planeval" {
-	exec = "matlab -nosplash -nodesktop -r \"try; addpath_control; runAtlasPlanEvalAsync; catch e; e.getReport(), megaclear; exit(1); end; exit(0);\"";
+cmd "03.simulator" {
+	exec = "matlab -nosplash -nodesktop -r \"try; addpath_control; runAtlasSimAsync; catch e; e.getReport(), megaclear; exit(1); end; exit(0);\"";
 	host = "localhost";
 }
 
