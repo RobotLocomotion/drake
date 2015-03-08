@@ -54,7 +54,10 @@ classdef LinearInvertedPendulum < LinearSystem
       v = CartTableVisualizer;
     end
     
-    function varargout = lqr(obj,com0,Qy)
+    function varargout = lqr(obj,com0,Qy,options)
+      if nargin < 4, options = struct(); end
+      options = applyDefaults(options, struct('use_lqr_cache', false,...
+                             'lqr_cache_com_height_resolution', 0.01)); 
       % objective min_u \int dt [ x_zmp(t)^2 ] 
       varargout = cell(1,nargout);
       if nargin>2
@@ -195,11 +198,32 @@ classdef LinearInvertedPendulum < LinearSystem
   end
   
   methods (Static)
+    function [A, B, C, D, Q, R, Q1, R1, N] = setupLinearSystem(h_over_g, Qy)
+      A = [zeros(2),eye(2);zeros(2,4)]; 
+      B = [zeros(2);eye(2)];
+      C = [eye(2), zeros(2)];
+      D = -h_over_g*eye(2);
+
+      % LQR costs for the output system
+      Q = Qy(5:6,5:6); % for consistency with the other solution methods
+      R = zeros(2);
+
+      % Convert to costs in xbar, u
+      Q1 = C'*Q*C;
+      R1 = R + D'*Q*D;
+      N = C'*Q*D;
+    end
+
     function [ct,Vt,comtraj] = ZMPtrackerClosedForm(h,dZMP,options)
       if nargin<3 options = struct(); end
-      if ~isfield(options,'compute_lyapunov') options.compute_lyapunov = (nargout>1); end
-      if ~isfield(options, 'Qy') options.Qy = diag([0,0,0,0,1,1]); end
-      
+      options = applyDefaults(options, struct('compute_lyapunov', (nargout>1),...
+                                              'Qy', diag([0,0,0,0,1,1]),...
+                                              'use_lqr_cache', false,...
+                                              'lqr_cache_com_height_resolution', 0.01));
+      if options.use_lqr_cache
+        % round our CoM height value to improve the likelihood of a cache hit
+        h = round(h / options.lqr_cache_com_height_resolution) * options.lqr_cache_com_height_resolution;
+      end
       typecheck(dZMP,'Trajectory');
       dZMP = dZMP.inFrame(desiredZMP);
       
@@ -221,22 +245,16 @@ classdef LinearInvertedPendulum < LinearSystem
       dt = diff(breaks);
 
       hg = h/9.81;
-      A = [zeros(2),eye(2);zeros(2,4)]; 
-      B = [zeros(2);eye(2)];
-      C = [eye(2), zeros(2)];
-      D = -hg*eye(2);
-
-      % LQR costs for the output system
-      Q = options.Qy(5:6,5:6); % for consistency with the other solution methods
-      R = zeros(2);
-
-      % Convert to costs in xbar, u
-      Q1 = C'*Q*C;
-      R1 = R + D'*Q*D;
+      [A, B, C, D, Q, R, Q1, R1, N] = LinearInvertedPendulum.setupLinearSystem(hg, options.Qy);
       R1i = inv(R1);
-      N = C'*Q*D;
       
-      [K,S] = lqr(A,B,Q1,R1,N); K=-K;
+      if options.use_lqr_cache
+        [K, S] = lqrWithCache(A, B, Q1, R1, N);
+      else
+        [K,S] = lqr(A,B,Q1,R1,N); 
+      end
+
+      K=-K;
       
       NB = (N' + B'*S);
       A2 = NB'*R1i*B' - A';
