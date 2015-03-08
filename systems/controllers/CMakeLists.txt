@@ -35,8 +35,11 @@ if (eigen3_FOUND)
       add_mex(RobotStateDriver SHARED RobotStateDriver.cpp)
       target_link_libraries(RobotStateDriver drakeControlUtil)
 
+      add_mex(FootContactDriver SHARED FootContactDriver.cpp)
+      target_link_libraries(FootContactDriver drakeControlUtil)
+
       add_mex(instantaneousQPControllermex instantaneousQPControllermex.cpp)
-      target_link_libraries(instantaneousQPControllermex drakeQP drakeControlUtil QPCommon AtlasCommandDriver RobotStateDriver)
+      target_link_libraries(instantaneousQPControllermex drakeQP drakeControlUtil QPCommon AtlasCommandDriver RobotStateDriver FootContactDriver)
       pods_use_pkg_config_packages(instantaneousQPControllermex gurobi)
 
       add_mex(constructQPDataPointerMex constructQPDataPointerMex.cpp)

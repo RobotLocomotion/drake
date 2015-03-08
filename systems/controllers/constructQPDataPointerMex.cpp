@@ -206,35 +206,35 @@ void parseRobotPropertyCache(const mxArray *rpc_obj, RobotPropertyCache *rpc) {
 
   pobj = myGetField(myGetField(rpc_obj, "position_indices"), "r_leg_kny");
   Map<VectorXd>r_leg_kny(mxGetPr(pobj), mxGetNumberOfElements(pobj));
-  rpc->position_indices.r_leg_kny = r_leg_kny.cast<int>();
+  rpc->position_indices.r_leg_kny = r_leg_kny.cast<int>().array() - 1;
 
   pobj = myGetField(myGetField(rpc_obj, "position_indices"), "l_leg_kny");
   Map<VectorXd>l_leg_kny(mxGetPr(pobj), mxGetNumberOfElements(pobj));
-  rpc->position_indices.l_leg_kny = l_leg_kny.cast<int>();
+  rpc->position_indices.l_leg_kny = l_leg_kny.cast<int>().array() - 1;
 
   pobj = myGetField(myGetField(rpc_obj, "position_indices"), "r_leg");
   Map<VectorXd>r_leg(mxGetPr(pobj), mxGetNumberOfElements(pobj));
-  rpc->position_indices.r_leg = r_leg.cast<int>();
+  rpc->position_indices.r_leg = r_leg.cast<int>().array() - 1;
 
   pobj = myGetField(myGetField(rpc_obj, "position_indices"), "l_leg");
   Map<VectorXd>l_leg(mxGetPr(pobj), mxGetNumberOfElements(pobj));
-  rpc->position_indices.l_leg = l_leg.cast<int>();
+  rpc->position_indices.l_leg = l_leg.cast<int>().array() - 1;
 
   pobj = myGetField(myGetField(rpc_obj, "position_indices"), "r_leg_ak");
   Map<VectorXd>r_leg_ak(mxGetPr(pobj), mxGetNumberOfElements(pobj));
-  rpc->position_indices.r_leg_ak = r_leg_ak.cast<int>();
+  rpc->position_indices.r_leg_ak = r_leg_ak.cast<int>().array() - 1;
 
   pobj = myGetField(myGetField(rpc_obj, "position_indices"), "l_leg_ak");
   Map<VectorXd>l_leg_ak(mxGetPr(pobj), mxGetNumberOfElements(pobj));
-  rpc->position_indices.l_leg_ak = l_leg_ak.cast<int>();
+  rpc->position_indices.l_leg_ak = l_leg_ak.cast<int>().array() - 1;
 
-  rpc->body_ids.r_foot = (int) mxGetScalar(myGetField(myGetField(rpc_obj, "body_ids"), "r_foot"));
-  rpc->body_ids.l_foot = (int) mxGetScalar(myGetField(myGetField(rpc_obj, "body_ids"), "l_foot"));
-  rpc->body_ids.pelvis = (int) mxGetScalar(myGetField(myGetField(rpc_obj, "body_ids"), "pelvis"));
+  rpc->body_ids.r_foot = (int) mxGetScalar(myGetField(myGetField(rpc_obj, "body_ids"), "r_foot")) - 1;
+  rpc->body_ids.l_foot = (int) mxGetScalar(myGetField(myGetField(rpc_obj, "body_ids"), "l_foot")) - 1;
+  rpc->body_ids.pelvis = (int) mxGetScalar(myGetField(myGetField(rpc_obj, "body_ids"), "pelvis")) - 1;
 
   pobj = myGetField(rpc_obj, "actuated_indices");
   Map<VectorXd>actuated_indices(mxGetPr(pobj), mxGetNumberOfElements(pobj));
-  rpc->actuated_indices = actuated_indices.cast<int>();
+  rpc->actuated_indices = actuated_indices.cast<int>().array() - 1;
 
   return;
 }

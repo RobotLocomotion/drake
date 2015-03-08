@@ -13,6 +13,7 @@
 #include <limits>
 #include <cmath>
 #include "AtlasCommandDriver.hpp"
+#include "FootContactDriver.hpp"
 #include "RobotStateDriver.hpp"
 #include "drake/lcmt_atlas_command.hpp"
 #include <lcm/lcm-cpp.hpp>
@@ -60,6 +61,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     b_contact_force(i) = (contact_force_detected(i) != 0);
   }
   narg++;
+
+  // Demonstrate the FootContactDriver for pat:
+  shared_ptr<FootContactDriver> foot_contact_driver(new FootContactDriver(pdata->rpc.body_ids));
 
   QPControllerOutput qp_output;
   shared_ptr<QPControllerDebugData> debug;
