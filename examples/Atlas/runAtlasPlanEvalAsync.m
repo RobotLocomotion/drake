@@ -27,18 +27,20 @@ r = Atlas(fullfile(getDrakePath,'examples','Atlas','urdf','atlas_minimal_contact
 r = r.removeCollisionGroupsExcept({'heel','toe'});
 r = compile(r);
 
-% % set initial state to fixed point
-% load(fullfile(getDrakePath,'examples','Atlas','data','atlas_fp.mat'));
-% if isfield(options,'initial_pose'), xstar(1:6) = options.initial_pose; end
-% xstar = r.resolveConstraints(xstar);
-% r = r.setInitialState(xstar);
-
 state_frame = drcFrames.AtlasState(r);
 state_frame.subscribe('EST_ROBOT_STATE');
-x0 = [];
-while isempty(x0)
-  [x0, ~] = state_frame.getNextMessage(50);
-end
+
+% x0 = [];
+% while isempty(x0)
+%   [x0, ~] = state_frame.getNextMessage(50);
+% end
+
+% set initial state to fixed point
+load(fullfile(getDrakePath,'examples','Atlas','data','atlas_fp.mat'));
+if isfield(options,'initial_pose'), xstar(1:6) = options.initial_pose; end
+xstar = r.resolveConstraints(xstar);
+r = r.setInitialState(xstar);
+x0 = xstar;
 
 nq = getNumPositions(r);
 
@@ -56,14 +58,18 @@ goal_pos = struct('right', rfoot_navgoal, 'left', lfoot_navgoal);
 footstep_plan = r.planFootsteps(x0(1:nq), goal_pos, [], struct('step_params', struct('max_num_steps', example_options.num_steps)));
 
 walking_plan = r.planWalkingZMP(x0(1:r.getNumPositions()), footstep_plan);
-% walking_plan = StandingPlan.from_standing_state(x0, r);
-planeval = atlasControllers.AtlasPlanEval(r, {WaitForRobotStatePlan(), walking_plan});
+
+standing_plan = StandingPlan.from_standing_state(x0, r);
+standing_plan.duration = 3;
+
+planeval = atlasControllers.AtlasPlanEval(r, {standing_plan, walking_plan});
 
 disp('plan eval ready');
 while true
   [x, t] = state_frame.getNextMessage(10);
-  qp_input = planeval.getQPControllerInput(t, x);
-  if ~isempty(qp_input)
-    encodeQPInputLCMMex(qp_input);
+  if isempty(x)
+    continue
   end
+  qp_input = planeval.getQPControllerInput(t, x);
+  encodeQPInputLCMMex(qp_input);
 end

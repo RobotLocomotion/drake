@@ -56,28 +56,26 @@ t0 = 0;
 x0 = xstar;
 contact_sensor = zeros(length(r.getManipulator().body), 1);
 
-dummy_qp_input = atlasControllers.AtlasPlanEval(r, StandingPlan.from_standing_state(x0, r)).getQPControllerInput(t0, x0);
-
-% Serialize to and from LCM for debugging (this *should* have no effect);
-dummy_qp_input = atlasControllers.QPInput2D.from_lcm(dummy_qp_input.to_lcm());
-
-state_frame = drcFrames.AtlasState(r);
-state_frame.subscribe('EST_ROBOT_STATE');
+state_coder = drcFrames.AtlasState(r).lcmcoder;
 lc = lcm.lcm.LCM.getSingleton();
-monitor = drake.util.MessageMonitor(drake.lcmt_qp_controller_input, 'timestamp');
-lc.subscribe('QP_CONTROLLER_INPUT', monitor);
+input_monitor = drake.util.MessageMonitor(drake.lcmt_qp_controller_input, 'timestamp');
+state_monitor = drake.util.MessageMonitor(drake.robot_state_t, 'utime');
+lc.subscribe('QP_CONTROLLER_INPUT', input_monitor);
+lc.subscribe('EST_ROBOT_STATE', state_monitor);
 disp('controller ready');
+
+% block until we get a *new* qp_input
+while isempty(input_monitor.getNextMessage(10))
+end
+
 while true
-  [x, t] = state_frame.getNextMessage(10);
-  qp_input_msg_data = monitor.getMessage();
-  if isempty(x) 
+  state_msg_data = state_monitor.getNextMessage(10);
+  qp_input_msg_data = input_monitor.getMessage();
+  if isempty(state_msg_data)
     continue
   end
-  if isempty(qp_input_msg_data)
-    qp_input = dummy_qp_input;
-  else
-    qp_input = atlasControllers.QPInput2D.from_lcm(drake.lcmt_qp_controller_input(qp_input_msg_data));
-  end
+  [x, t] = state_coder.decode(drc.robot_state_t(state_msg_data));
+  qp_input = atlasControllers.QPInput2D.from_lcm(drake.lcmt_qp_controller_input(qp_input_msg_data));
   [~] = instantaneousQPControllermex(control.mex_ptr,...
                                 t,...
                                 x,...
