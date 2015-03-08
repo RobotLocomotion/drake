@@ -7,6 +7,7 @@
 #include <set>
 #include <vector>
 #include <Eigen/Dense>
+#include <Eigen/StdVector>
 
 #ifdef USE_MAPS
 #include "terrain-map/TerrainMap.hpp"
@@ -34,7 +35,7 @@ typedef Matrix<double, 6,1> Vector6d;
 typedef struct _support_state_element
 {
   int body_idx;
-  std::vector<Vector4d> contact_pts;
+  std::vector<Vector4d, aligned_allocator<Vector4d>> contact_pts;
   int contact_surface;
   bool support_logic_map[4];
 } SupportStateElement;
