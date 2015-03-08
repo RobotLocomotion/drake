@@ -125,7 +125,7 @@ int contactPhi(RigidBodyManipulator* r, SupportStateElement& supp, void *map_ptr
   Vector3d contact_pos,pos,posB,normal;
 
   int i=0;
-  for (std::vector<Vector4d>::iterator pt_iter=supp.contact_pts.begin(); pt_iter!=supp.contact_pts.end(); pt_iter++) {
+  for (std::vector<Vector4d,aligned_allocator<Vector4d>>::iterator pt_iter=supp.contact_pts.begin(); pt_iter!=supp.contact_pts.end(); pt_iter++) {
     
     r->forwardKin(supp.body_idx,*pt_iter,0,contact_pos);
     collisionDetect(map_ptr,contact_pos,pos,NULL,terrain_height);
@@ -154,7 +154,7 @@ int contactConstraints(RigidBodyManipulator *r, int nc, std::vector<SupportState
   
   for (std::vector<SupportStateElement>::iterator iter = supp.begin(); iter!=supp.end(); iter++) {
     if (nc>0) {
-      for (std::vector<Vector4d>::iterator pt_iter=iter->contact_pts.begin(); pt_iter!=iter->contact_pts.end(); pt_iter++) {
+      for (std::vector<Vector4d,aligned_allocator<Vector4d>>::iterator pt_iter=iter->contact_pts.begin(); pt_iter!=iter->contact_pts.end(); pt_iter++) {
         r->forwardKin(iter->body_idx,*pt_iter,0,contact_pos);
         r->forwardJac(iter->body_idx,*pt_iter,0,J);
 
@@ -199,7 +199,7 @@ int contactConstraintsBV(RigidBodyManipulator *r, int nc, double mu, std::vector
   
   for (std::vector<SupportStateElement>::iterator iter = supp.begin(); iter!=supp.end(); iter++) {
     if (nc>0) {
-      for (std::vector<Vector4d>::iterator pt_iter=iter->contact_pts.begin(); pt_iter!=iter->contact_pts.end(); pt_iter++) {
+      for (std::vector<Vector4d,aligned_allocator<Vector4d>>::iterator pt_iter=iter->contact_pts.begin(); pt_iter!=iter->contact_pts.end(); pt_iter++) {
         r->forwardKin(iter->body_idx,*pt_iter,0,contact_pos);
         r->forwardJac(iter->body_idx,*pt_iter,0,J);
 
