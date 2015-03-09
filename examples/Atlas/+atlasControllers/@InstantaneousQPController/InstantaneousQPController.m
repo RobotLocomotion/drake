@@ -106,7 +106,7 @@ classdef InstantaneousQPController
       % and return the torques and feed-forward velocity.
       % @param t time (s)
       % @param x robot state vector
-      % @param qp_input a QPInput2D object
+      % @param qp_input a QPInputConstantHeight object
       % @param foot_contact_sensor a 2x1 vector indicating whether contact force was
       %                            detected by the [left; right] foot
 

@@ -143,7 +143,7 @@ classdef QPWalkingPlan < QPControllerPlan
       obj.robot = robot;
       S = load(obj.robot.fixed_point_file);
       obj.qstar = S.xstar(1:obj.robot.getNumPositions());
-      obj.default_qp_input = atlasControllers.QPInput2D();
+      obj.default_qp_input = atlasControllers.QPInputConstantHeight();
       obj.default_qp_input.whole_body_data.q_des = zeros(obj.robot.getNumPositions(), 1);
       obj.default_qp_input.whole_body_data.constrained_dofs = [findPositionIndices(obj.robot,'arm');findPositionIndices(obj.robot,'neck');findPositionIndices(obj.robot,'back_bkz');findPositionIndices(obj.robot,'back_bky')];
     end
