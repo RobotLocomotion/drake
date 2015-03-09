@@ -18,7 +18,7 @@ kinsol = robot.doKinematics(q);
 
 %get the results from the mexed version
 
-d_mex  = surfaceTangentsmex(normal);
+d_mex  = surfaceTangentsmex(robot.mex_model_ptr, normal);
 
 %get the results from the matlab version
 d = robot.surfaceTangents(normal);

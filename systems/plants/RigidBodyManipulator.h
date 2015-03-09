@@ -10,7 +10,6 @@
 #include "collision/DrakeCollision.h"
 #include "KinematicPath.h"
 #include "GradientVar.h"
-#include "drakeContactConstraintsUtil.h"
 
 #undef DLLEXPORT_RBM
 #if defined(WIN32) || defined(WIN64)
@@ -28,6 +27,12 @@
 #include "RigidBodyFrame.h"
 
 #define INF -2147483648    // this number is only used for checking the pitch to see if it's a revolute joint or a helical joint, and is set to match the value handed to us for inf from matlab.
+
+#define BASIS_VECTOR_HALF_COUNT 2  //number of basis vectors over 2 (i.e. 4 basis vectors in this case)
+#define EPSILON 10e-8
+
+typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
+typedef Eigen::Matrix<double, 3, Eigen::Dynamic> Matrix3xd;
 
 using namespace Eigen;
 
@@ -70,6 +75,8 @@ public:
   bool addRobotFromURDFString(const std::string &xml_string, const std::string &root_dir = ".");
   bool addRobotFromURDF(const std::string &urdf_filename);
 
+  void surfaceTangents(Eigen::Map<Matrix3xd> const & normals, std::vector< Map<Matrix3xd> > & tangents);
+  
   void resize(int num_dof, int num_featherstone_bodies=-1, int num_rigid_body_objects=-1, int num_rigid_body_frames=0);
 
   void compile(void);  // call me after the model is loaded
