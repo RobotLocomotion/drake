@@ -167,7 +167,6 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       model.LCP_cache.data.x = NaN(model.getNumStates(),1);
       model.LCP_cache.data.u = NaN(model.getNumInputs(),1);
       model.LCP_cache.data.nargout = NaN;
-      model.mex_model_ptr = model.manip.getMexModelPtr();
       model.dirty = false;
     end
 
@@ -1130,7 +1129,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     end
 
     function ptr = getMexModelPtr(obj)
-      ptr = obj.mex_model_ptr;
+      ptr = getMexModelPtr(obj.manip); 
     end
 
     function [phi,Jphi] = closestDistance(obj,varargin)
