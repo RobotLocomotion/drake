@@ -2,9 +2,7 @@
 #include <fstream>
 #include <sstream>
 
-#include <Poco/Path.h>
-#include <Poco/File.h>
-#include <Poco/String.h>
+#include "spruce/spruce.hh"
 
 #include "tinyxml.h"
 #include "RigidBodyManipulator.h"
@@ -17,28 +15,30 @@
 
 using namespace std;
 
-void readObjFile(Poco::Path fpath, vector<double>& vertex_coordinates)
+void readObjFile(spruce::path spath, vector<double>& vertex_coordinates)
 {
-  string ext = fpath.getExtension();
-  Poco::toLower(ext);
+  //spruce::path spath(fpath.toString(Poco::Path::PATH_NATIVE));
 
+  string ext = spath.extension();
+  std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);   
+  
   ifstream file;
-  if (ext.compare("obj")==0) {
-    // cout << "Loading mesh from " << fname << " (scale = " << scale << ")" << endl;
-    file.open(fpath.toString(Poco::Path::PATH_NATIVE).c_str(),ifstream::in);
+  if (ext.compare(".obj")==0) {
+     //cout << "Loading mesh from " << fname << " (scale = " << scale << ")" << endl;
+    file.open(spath.getStr().c_str(),ifstream::in);
 
   } else {
-    fpath.setExtension("obj");
-    //cout << fpath.toString() << endl;
-    if ( Poco::File( fpath ).exists() ) {
+    spath.setExtension(".obj");
+    
+    if ( spath.exists() ) {
       // try changing the extension to obj and loading
       //      cout << "Loading mesh from " << mypath.replace_extension(".obj").native() << endl;
-      file.open(fpath.toString(Poco::Path::PATH_NATIVE).c_str(),ifstream::in);
+      file.open(spath.getStr().c_str(),ifstream::in);
     }
   }      
 
   if (!file.is_open()) {
-    cerr << "Warning: Mesh " << fpath.toString(Poco::Path::PATH_NATIVE) << " ignored because it does not have extension .obj (nor can I find a juxtaposed file with a .obj extension)" << endl;
+    cerr << "Warning: Mesh " << spath.getStr() << " ignored because it does not have extension .obj (nor can I find a juxtaposed file with a .obj extension)" << endl;
   }
 
   string line;
@@ -81,12 +81,11 @@ void searchenvvar(map<string,string> &package_map, string envvar)
 	while (getline(iss,token,':')) {
 		istringstream p(exec("find -L "+token+" -iname package.xml"));
 	  while (getline(p,t)) {
-      Poco::Path mypath(t);
-      mypath = mypath.parent();
-      //cout << mypath.depth() << endl;
-      //cout << mypath.toString() << endl;
-      if (mypath.depth() > 0) {
-        package_map.insert(make_pair(mypath.directory(mypath.depth()-1),mypath.toString(Poco::Path::PATH_NATIVE)));
+      spruce::path mypath_s(t);
+      auto path_split = mypath_s.split();
+      if (path_split.size() > 2) {
+        
+        package_map.insert(make_pair(path_split.at(path_split.size()-2), mypath_s.root().append("/")));
         //cout << mypath.getFileName() << endl;
       }
 	  }
@@ -326,28 +325,33 @@ bool parseGeometry(TiXmlElement* node, DrakeShapes::Element& element)
       cerr << "ERROR parsing mesh element filename" << endl;
       return false;
     }
-    Poco::Path raw_filename(filename);
-    Poco::Path root_dir_path(root_dir);
-    Poco::Path mesh_filename;
-    //cout << raw_filename.getDevice() << endl;
-    if (raw_filename.getDevice() == "package") {
-      Poco::Path package_path = Poco::Path(rospack(raw_filename.directory(0)));
-      mesh_filename = package_path;
-      for (int i = 1; i < raw_filename.depth()+1; ++i) {
-        mesh_filename.append(raw_filename.directory(i));
+
+    spruce::path mesh_filename_s;
+    spruce::path raw_filename_s(filename);
+
+    auto split_filename = raw_filename_s.split();
+
+    if (split_filename.front() == "package:") {
+      spruce::path package_path_s = spruce::path(rospack(split_filename.at(2)));
+      mesh_filename_s = package_path_s;
+
+      auto split_raw = raw_filename_s.split();
+      for (int i = 1; i < split_raw.size()-2; ++i) {
+        mesh_filename_s.append(split_raw.at(i+2));
       }
+
     } else {
-      mesh_filename = root_dir;
-      mesh_filename.append(raw_filename);
+      mesh_filename_s = spruce::path(root_dir);
+      mesh_filename_s.append(filename);
     }
     vector<double> mesh_data;
-    readObjFile(mesh_filename, mesh_data);
+    readObjFile(mesh_filename_s, mesh_data);
     if ((mesh_data.size() > 0) && (mesh_data.size() % 3 == 0)) {
       double n_pts = mesh_data.size()/3;
       Map<Matrix3Xd> pts(mesh_data.data(),3,n_pts);
       geometry = unique_ptr<DrakeCollision::Geometry>(new DrakeCollision::Mesh(pts));
     } else {
-      cerr << "ERROR parsing mesh file: " << mesh_filename.toString(Poco::Path::PATH_NATIVE) << endl;
+      cerr << "ERROR parsing mesh file: " << mesh_filename_s.getStr() << endl;
       return false;
     }
     /*
