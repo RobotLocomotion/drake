@@ -221,47 +221,47 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 
         // Get element-to-link transform from MATLAB object
         memcpy(T.data(), mxGetPr(mxGetProperty(pShape,0,"T")), sizeof(double)*4*4);
-        auto shape = (DrakeCollision::Shape)static_cast<int>(mxGetScalar(mxGetProperty(pShape,0,"bullet_shape_id")));
+        auto shape = (DrakeShapes::Shape)static_cast<int>(mxGetScalar(mxGetProperty(pShape,0,"bullet_shape_id")));
         vector<double> params_vec;
-        unique_ptr<DrakeCollision::Geometry> geometry;
+        unique_ptr<DrakeShapes::Geometry> geometry;
         switch (shape) {
-          case DrakeCollision::BOX:
+          case DrakeShapes::BOX:
           {
             double* params = mxGetPr(mxGetProperty(pShape,0,"size"));
-            geometry = unique_ptr<DrakeCollision::Geometry>(new DrakeCollision::Box(Vector3d(params[0],params[1],params[2])));
+            geometry = unique_ptr<DrakeShapes::Geometry>(new DrakeShapes::Box(Vector3d(params[0],params[1],params[2])));
           }
             break;
-          case DrakeCollision::SPHERE:
+          case DrakeShapes::SPHERE:
           {
             double r(*mxGetPr(mxGetProperty(pShape,0,"radius")));
-            geometry = unique_ptr<DrakeCollision::Geometry>(new DrakeCollision::Sphere(r));
+            geometry = unique_ptr<DrakeShapes::Geometry>(new DrakeShapes::Sphere(r));
           }
             break;
-          case DrakeCollision::CYLINDER:
+          case DrakeShapes::CYLINDER:
           {
             double r(*mxGetPr(mxGetProperty(pShape,0,"radius")));
             double l(*mxGetPr(mxGetProperty(pShape,0,"len")));
-            geometry = unique_ptr<DrakeCollision::Geometry>(new DrakeCollision::Cylinder(r, l));
+            geometry = unique_ptr<DrakeShapes::Geometry>(new DrakeShapes::Cylinder(r, l));
           }
             break;
-          case DrakeCollision::MESH:
+          case DrakeShapes::MESH_POINTS:
           {
             mxArray* pPoints;
             mexCallMATLAB(1,&pPoints,1,&pShape,"getPoints");
             double n_pts = static_cast<int>(mxGetN(pPoints));
             Map<Matrix3Xd> pts(mxGetPr(pPoints),3,n_pts);
-            geometry = unique_ptr<DrakeCollision::Geometry>(new DrakeCollision::Mesh(pts));
+            geometry = unique_ptr<DrakeShapes::Geometry>(new DrakeShapes::MeshPoints(pts));
             mxDestroyArray(pPoints);
             // The element-to-link transform is applied in
             // RigidBodyMesh/getPoints - don't apply it again!
             T = Matrix4d::Identity();
           }
             break;
-          case DrakeCollision::CAPSULE:
+          case DrakeShapes::CAPSULE:
           {
             double r(*mxGetPr(mxGetProperty(pShape,0,"radius")));
             double l(*mxGetPr(mxGetProperty(pShape,0,"len")));
-            geometry = unique_ptr<DrakeCollision::Geometry>(new DrakeCollision::Capsule(r, l));
+            geometry = unique_ptr<DrakeShapes::Geometry>(new DrakeShapes::Capsule(r, l));
           }
             break;
           default:

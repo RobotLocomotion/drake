@@ -1,6 +1,6 @@
 include_directories ( .. )
 
-set(drakeCollision_SRC_FILES DrakeCollision.cpp Geometry.cpp Element.cpp PointPair.cpp Model.cpp)
+set(drakeCollision_SRC_FILES DrakeCollision.cpp Element.cpp PointPair.cpp Model.cpp)
 pods_find_pkg_config(bullet)
 
 if (bullet_FOUND)
@@ -13,10 +13,11 @@ add_library(drakeCollision SHARED ${drakeCollision_SRC_FILES})
 if (bullet_FOUND)
   pods_use_pkg_config_packages(drakeCollision bullet)
 endif()
+target_link_libraries(drakeCollision drakeShapes)
 
 enable_testing()
 add_subdirectory(test)
 
 pods_install_libraries(drakeCollision)
-pods_install_headers(DrakeCollision.h Geometry.h PointPair.h Element.h Model.h drakeCollisionMacros.h DESTINATION drake/collision)
+pods_install_headers(DrakeCollision.h Element.h Model.h drakeCollisionMacros.h DESTINATION drake/collision)
   

@@ -27,6 +27,7 @@ if (eigen3_FOUND)
     REQUIRES
     VERSION 0.0.1)
 
+  add_subdirectory(shapes)
   add_subdirectory(collision)
   add_subdirectory(constraint)
   add_subdirectory(joints)

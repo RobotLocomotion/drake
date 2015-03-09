@@ -135,7 +135,7 @@ bool parseCollision(int body_index, TiXmlElement* node, RigidBodyManipulator* mo
     return false;
 
   TiXmlElement* shape_node;
-  unique_ptr<DrakeCollision::Geometry> geometry;
+  unique_ptr<DrakeShapes::Geometry> geometry;
   if ((shape_node = geometry_node->FirstChildElement("box"))) {
     double x = 0, y = 0, z = 0;
     attr = shape_node->Attribute("size");
@@ -143,7 +143,7 @@ bool parseCollision(int body_index, TiXmlElement* node, RigidBodyManipulator* mo
       stringstream s(attr);
       s >> x >> y >> z;
     }
-    geometry = unique_ptr<DrakeCollision::Geometry>(new DrakeCollision::Box(Vector3d(x,y,z)));
+    geometry = unique_ptr<DrakeShapes::Geometry>(new DrakeShapes::Box(Vector3d(x,y,z)));
   } else if ((shape_node = geometry_node->FirstChildElement("sphere"))) {
     double r = 0;
     attr = shape_node->Attribute("radius");
@@ -151,7 +151,7 @@ bool parseCollision(int body_index, TiXmlElement* node, RigidBodyManipulator* mo
       stringstream s(attr);
       s >> r;
     }
-    geometry = unique_ptr<DrakeCollision::Geometry>(new DrakeCollision::Sphere(r));
+    geometry = unique_ptr<DrakeShapes::Geometry>(new DrakeShapes::Sphere(r));
   } else if ((shape_node = geometry_node->FirstChildElement("cylinder"))) {
     double r = 0, l = 0;
     attr = shape_node->Attribute("radius");
@@ -164,7 +164,7 @@ bool parseCollision(int body_index, TiXmlElement* node, RigidBodyManipulator* mo
       stringstream s(attr);
       s >> l;
     }
-    geometry = unique_ptr<DrakeCollision::Geometry>(new DrakeCollision::Cylinder(r, l));
+    geometry = unique_ptr<DrakeShapes::Geometry>(new DrakeShapes::Cylinder(r, l));
   } else if ((shape_node = geometry_node->FirstChildElement("capsule"))) {
     double r = 0, l = 0;
     attr = shape_node->Attribute("radius");
@@ -177,7 +177,7 @@ bool parseCollision(int body_index, TiXmlElement* node, RigidBodyManipulator* mo
       stringstream s(attr);
       s >> l;
     }
-    geometry = unique_ptr<DrakeCollision::Geometry>(new DrakeCollision::Capsule(r, l));
+    geometry = unique_ptr<DrakeShapes::Geometry>(new DrakeShapes::Capsule(r, l));
   } else if ((shape_node = geometry_node->FirstChildElement("mesh"))) {
     cerr << "Warning: mesh collision elements will be ignored (until I re-implement the logic below sans boost)" << endl;
     create_collision_element = false;

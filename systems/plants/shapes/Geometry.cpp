@@ -3,7 +3,7 @@
 using namespace std;
 using namespace Eigen;
 
-namespace DrakeCollision
+namespace DrakeShapes
 {
   Geometry::Geometry(Shape shape) : shape(shape) {};
 
@@ -24,7 +24,10 @@ namespace DrakeCollision
   Capsule::Capsule(double radius, double length)
     : Geometry(CAPSULE), radius(radius), length(length) {}
 
-  Mesh::Mesh(const Eigen::Matrix3Xd& points) 
-    : Geometry(MESH), points(points) {}
+  Mesh::Mesh(const string filename)
+    : Geometry(MESH), filename(filename) {}
+
+  MeshPoints::MeshPoints(const Eigen::Matrix3Xd& points) 
+    : Geometry(MESH_POINTS), points(points) {}
 
 }

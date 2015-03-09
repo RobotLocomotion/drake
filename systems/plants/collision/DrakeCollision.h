@@ -9,7 +9,7 @@
 #include <stdexcept>
 #include <bitset>
 
-#include "Geometry.h"
+//#include "Geometry.h"
 #include "PointPair.h"
 #include "Element.h"
 #include "Model.h"

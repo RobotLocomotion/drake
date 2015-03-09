@@ -8,6 +8,7 @@
 #include <Eigen/StdVector> //#include <vector>
 
 #include "collision/DrakeCollision.h"
+#include "shapes/DrakeShapes.h"
 #include "KinematicPath.h"
 #include "GradientVar.h"
 
@@ -187,7 +188,7 @@ public:
 
   void computeContactJacobians(Map<VectorXi> const & idxA, Map<VectorXi> const & idxB, Map<Matrix3xd> const & xA, Map<Matrix3xd> const & xB, const bool compute_second_derivatives, MatrixXd & J, MatrixXd & dJ);
 
-  DrakeCollision::ElementId addCollisionElement(std::unique_ptr<DrakeCollision::Geometry> geometry, const std::shared_ptr<RigidBody>& body, const Matrix4d& T_element_to_link, std::string group_name);
+  DrakeCollision::ElementId addCollisionElement(std::unique_ptr<DrakeShapes::Geometry> geometry, const std::shared_ptr<RigidBody>& body, const Matrix4d& T_element_to_link, std::string group_name);
 
   void updateCollisionElements(const std::shared_ptr<RigidBody>& body);
 

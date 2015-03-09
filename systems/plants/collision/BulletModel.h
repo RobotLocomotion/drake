@@ -83,11 +83,11 @@ namespace DrakeCollision
       std::vector< std::unique_ptr<btCollisionShape> > bt_collision_shapes;
 
     protected:
-      static std::unique_ptr<btCollisionShape> newBulletBoxShape(const Box* geometry, bool use_margins);
-      static std::unique_ptr<btCollisionShape> newBulletSphereShape(const Sphere* geometry, bool use_margins);
-      static std::unique_ptr<btCollisionShape> newBulletCylinderShape(const Cylinder* geometry, bool use_margins);
-      static std::unique_ptr<btCollisionShape> newBulletCapsuleShape(const Capsule* geometry, bool use_margins);
-      static std::unique_ptr<btCollisionShape> newBulletMeshShape(const Mesh* geometry, bool use_margins);
+      static std::unique_ptr<btCollisionShape> newBulletBoxShape(const DrakeShapes::Box* geometry, bool use_margins);
+      static std::unique_ptr<btCollisionShape> newBulletSphereShape(const DrakeShapes::Sphere* geometry, bool use_margins);
+      static std::unique_ptr<btCollisionShape> newBulletCylinderShape(const DrakeShapes::Cylinder* geometry, bool use_margins);
+      static std::unique_ptr<btCollisionShape> newBulletCapsuleShape(const DrakeShapes::Capsule* geometry, bool use_margins);
+      static std::unique_ptr<btCollisionShape> newBulletMeshPointsShape(const DrakeShapes::MeshPoints* geometry, bool use_margins);
 
       static constexpr double small_margin = 1e-9;
       static constexpr double large_margin = 0.05;
@@ -95,7 +95,7 @@ namespace DrakeCollision
       class unknownShapeException : public std::exception
       {
         public:
-          unknownShapeException(Shape shape);
+          unknownShapeException(DrakeShapes::Shape shape);
           virtual const char* what() const throw();
           virtual ~unknownShapeException() throw() {};
         protected:

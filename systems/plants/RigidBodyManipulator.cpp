@@ -497,7 +497,7 @@ void RigidBodyManipulator::compile(void)
   initialized=true;
 }
 
-DrakeCollision::ElementId RigidBodyManipulator::addCollisionElement(unique_ptr<DrakeCollision::Geometry> geometry, const shared_ptr<RigidBody>& body, const Matrix4d& T_element_to_link, string group_name)
+DrakeCollision::ElementId RigidBodyManipulator::addCollisionElement(unique_ptr<DrakeShapes::Geometry> geometry, const shared_ptr<RigidBody>& body, const Matrix4d& T_element_to_link, string group_name)
 {
   DrakeCollision::ElementId id(collision_model->addElement(unique_ptr<DrakeCollision::Element>(new RigidBody::CollisionElement(move(geometry), T_element_to_link, body))));
   if (id != 0) {
