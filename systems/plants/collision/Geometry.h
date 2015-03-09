@@ -4,7 +4,7 @@
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
 
-#include "DLLEXPORT_drakeCollision.h"
+#include "drakeCollisionMacros.h"
 
 namespace DrakeCollision
 {

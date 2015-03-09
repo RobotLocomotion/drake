@@ -18,5 +18,5 @@ enable_testing()
 add_subdirectory(test)
 
 pods_install_libraries(drakeCollision)
-pods_install_headers(DrakeCollision.h Geometry.h PointPair.h Element.h Model.h DLLEXPORT_drakeCollision.h DESTINATION drake/collision)
+pods_install_headers(DrakeCollision.h Geometry.h PointPair.h Element.h Model.h drakeCollisionMacros.h DESTINATION drake/collision)
   

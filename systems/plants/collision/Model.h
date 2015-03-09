@@ -7,7 +7,7 @@
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
 
-#include "DLLEXPORT_drakeCollision.h"
+#include "drakeCollisionMacros.h"
 #include "Element.h"
 #include "PointPair.h"
 

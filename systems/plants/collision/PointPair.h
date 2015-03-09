@@ -6,7 +6,7 @@
 
 #include "Element.h"
 
-#include "DLLEXPORT_drakeCollision.h"
+#include "drakeCollisionMacros.h"
 
 namespace DrakeCollision
 {

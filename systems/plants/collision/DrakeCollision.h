@@ -14,7 +14,7 @@
 #include "Element.h"
 #include "Model.h"
 
-#include "DLLEXPORT_drakeCollision.h"
+#include "drakeCollisionMacros.h"
 
 static const int MAX_NUM_COLLISION_FILTER_GROUPS = 128;
 
