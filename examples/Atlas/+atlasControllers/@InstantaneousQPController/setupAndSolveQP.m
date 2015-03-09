@@ -6,7 +6,7 @@ function [y, qdd, info_fqp, supp,...
 % its own function. It also mirrors the functionality of instantaneousQPControllermex.cpp
 % @param t current time (s)
 % @param q, qd current robot pose and velocity
-% @param qp_input QPInput2D describing the current plan state
+% @param qp_input QPInputConstantHeight describing the current plan state
 % @param contact_sensor num_bodies vector indicating whether the given body has detected contact force
 
 params = obj.param_sets.(qp_input.param_set_name);

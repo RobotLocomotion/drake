@@ -1,4 +1,4 @@
-classdef QPInput2D
+classdef QPInputConstantHeight
 % A container for the input to the InstantaneousQPController describing a
 % snapshot of the current plan at the current time and state. This is a "2D"
 % input because it reasons about the linear inverted pendulum in 2D (with a
@@ -17,7 +17,7 @@ classdef QPInput2D
   end
 
   methods
-    function obj = QPInput2D()
+    function obj = QPInputConstantHeight()
       obj.timestamp = 0;
       obj.zmp_data = struct('A',  [zeros(2),eye(2); zeros(2,4)],... % COM state map % 16 d
                         'B', [zeros(2); eye(2)],... % COM input map % 4 d
