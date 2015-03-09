@@ -15,7 +15,6 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
   RigidBodyManipulator* r = (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
 
-  MatrixXd all_body_contact_pts;
   Vector4d contact_pt = Vector4d::Zero();
   contact_pt(3) = 1.0;
 
@@ -43,9 +42,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
       int nc = static_cast<int>(mxGetN(mxBodyContactPts));
       if (nc<1) continue;
       
-      all_body_contact_pts.resize(mxGetM(mxBodyContactPts),mxGetN(mxBodyContactPts));
-      double* pr = mxGetPr(mxBodyContactPts); 
-      memcpy(all_body_contact_pts.data(),pr,sizeof(double)*mxGetM(mxBodyContactPts)*mxGetN(mxBodyContactPts));
+      Map<MatrixXd> all_body_contact_pts(mxGetPr(mxBodyContactPts), mxGetM(mxBodyContactPts), mxGetN(mxBodyContactPts));
 
       SupportStateElement se;
       se.body_idx = (int) pBodies[i]-1;
