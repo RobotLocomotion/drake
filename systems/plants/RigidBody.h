@@ -26,6 +26,8 @@ class DLLEXPORT_RBM RigidBody {
 private:
   std::unique_ptr<DrakeJoint> joint;
   typedef Matrix<double, 6,1> Vector6d;
+  DrakeCollision::bitmask collision_filter_group;
+  DrakeCollision::bitmask collision_filter_mask;
 
 public:
   RigidBody();
@@ -41,15 +43,15 @@ public:
   virtual void setCollisionFilter(const DrakeCollision::bitmask& group, 
                                   const DrakeCollision::bitmask& mask);
 
-  const DrakeCollision::bitmask& getGroup() const { return group; };
-  void setGroup(const DrakeCollision::bitmask& group) { this->group = group; };
+  const DrakeCollision::bitmask& getCollisionFilterGroup() const { return collision_filter_group; };
+  void setCollisionFilterGroup(const DrakeCollision::bitmask& group) { this->collision_filter_group = group; };
 
-  const DrakeCollision::bitmask& getMask() const { return mask; };
-  void setMask(const DrakeCollision::bitmask& mask) { this->mask = mask; };
+  const DrakeCollision::bitmask& getCollisionFilterMask() const { return collision_filter_mask; };
+  void setCollisionFilterMask(const DrakeCollision::bitmask& mask) { this->collision_filter_mask = mask; };
 
-  void addToGroup(const DrakeCollision::bitmask& group) { this->group |= group; }; 
-  void ignoreGroup(const DrakeCollision::bitmask& group) { this->mask |= group; };
-  void collideWithGroup(const DrakeCollision::bitmask& group) { this->mask &= ~group; };
+  void addToCollisionFilterGroup(const DrakeCollision::bitmask& group) { this->collision_filter_group |= group; }; 
+  void ignoreCollisionFilterGroup(const DrakeCollision::bitmask& group) { this->collision_filter_mask |= group; };
+  void collideWithCollisionFilterGroup(const DrakeCollision::bitmask& group) { this->collision_filter_mask &= ~group; };
 
   bool adjacentTo(const std::shared_ptr<RigidBody>& other) const
   {
@@ -59,7 +61,7 @@ public:
 
   bool collidesWith(const std::shared_ptr<RigidBody>& other) const
   {
-    bool ignored = this == other.get() || adjacentTo(other) || (group & other->mask).any() || (other->group & mask).any();
+    bool ignored = this == other.get() || adjacentTo(other) || (collision_filter_group & other->getCollisionFilterMask()).any() || (other->getCollisionFilterGroup() & collision_filter_mask).any();
     return !ignored;
   };
 
@@ -85,8 +87,6 @@ public:
   std::vector< DrakeCollision::ElementId > collision_element_ids;
   std::map< std::string, std::vector<DrakeCollision::ElementId> > collision_element_groups;
 
-  DrakeCollision::bitmask group;
-  DrakeCollision::bitmask mask;
   MatrixXd contact_pts;
 
   std::set<int> ancestor_dofs;
