@@ -107,13 +107,13 @@ else
   
   if nargout > 2
     [A, dA] = getCMMdA(model, kinsol, robotnum, in_terms_of_qdot);
-    total_mass = totalMass(model, robotnum);
+    total_mass = getMass(model, robotnum);
     J = A(4 : 6, :) / total_mass;
     dJ = getSubMatrixGradient(dA, 4:6, 1:size(J, 2), size(J)) / total_mass;
     dJ = reshape(dJ, size(J, 1), []); % convert to strange second derivative output format
   elseif nargout > 1
     A = getCMMdA(model, kinsol, robotnum, in_terms_of_qdot);
-    total_mass = totalMass(model, robotnum);
+    total_mass = getMass(model, robotnum);
     J = A(4 : 6, :) / total_mass;
   end
 end

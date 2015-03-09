@@ -157,7 +157,7 @@ else
   A = AdH' * A;
 
   if compute_gradients
-    total_mass = totalMass(robot, robotnum);
+    total_mass = getMass(robot, robotnum);
     dcom = A(4:6, :) / total_mass;
     if ~in_terms_of_qdot
       qdotToV = kinsol.qdotToV(2:end);

@@ -1421,7 +1421,7 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::centroidal
         }
       }
     }
-    dcom /= totalMass(robotnum);
+    dcom /= getMass(robotnum);
 
     // unfortunately we don't yet have anything more convenient for taking the gradient of a.colwise().cross(b)
     int ncols = ret.value().cols();
@@ -1465,7 +1465,7 @@ GradientVar<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::centroidalMomentumMatri
   return ret;
 }
 
-double RigidBodyManipulator::totalMass(const std::set<int>& robotnum)
+double RigidBodyManipulator::getMass(const std::set<int>& robotnum)
 {
   double total_mass = 0.0;
   for (int i = 0; i < num_bodies; i++) {
@@ -1521,7 +1521,7 @@ GradientVar<Scalar, SPACE_DIMENSION, Eigen::Dynamic> RigidBodyManipulator::cente
 {
   auto A = worldMomentumMatrix<Scalar>(gradient_order, robotnum, in_terms_of_qdot);
   GradientVar<Scalar, SPACE_DIMENSION, Eigen::Dynamic> ret(SPACE_DIMENSION, A.value().cols(), num_positions, gradient_order);
-  double total_mass = totalMass(robotnum);
+  double total_mass = getMass(robotnum);
   ret.value() = A.value().template bottomRows<SPACE_DIMENSION>() / total_mass;
   if (gradient_order > 0) {
     for (int col = 0; col < A.value().cols(); col++) {
@@ -1536,7 +1536,7 @@ GradientVar<Scalar, SPACE_DIMENSION, 1> RigidBodyManipulator::centerOfMassJacobi
 {
   auto cmm_dot_times_v = centroidalMomentumMatrixDotTimesV<Scalar>(gradient_order, robotnum);
   GradientVar<Scalar, SPACE_DIMENSION, 1> ret(SPACE_DIMENSION, 1, num_positions, gradient_order);
-  double total_mass = totalMass(robotnum);
+  double total_mass = getMass(robotnum);
   ret.value().noalias() = cmm_dot_times_v.value().template bottomRows<SPACE_DIMENSION>() / total_mass;
   if (gradient_order > 0) {
     ret.gradient().value().noalias() = cmm_dot_times_v.gradient().value().template bottomRows<SPACE_DIMENSION>() / total_mass;

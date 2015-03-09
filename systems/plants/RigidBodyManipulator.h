@@ -94,7 +94,7 @@ public:
 
   void updateCompositeRigidBodyInertias(int gradient_order);
 
-  double totalMass(const std::set<int>& robotnum = RigidBody::defaultRobotNumSet);
+  double getMass(const std::set<int>& robotnum = RigidBody::defaultRobotNumSet);
 
   template <typename Scalar>
   GradientVar<Scalar, SPACE_DIMENSION, 1> centerOfMass(int gradient_order, const std::set<int>& robotnum = RigidBody::defaultRobotNumSet);

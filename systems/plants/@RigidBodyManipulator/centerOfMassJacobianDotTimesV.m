@@ -24,7 +24,7 @@ if (kinsol.mex)
     [com_Jacobian_dot_times_v] = centerOfMassJacobianDotTimesVmex(obj.mex_model_ptr, robotnum);
   end
 else
-  total_mass = totalMass(obj, robotnum);
+  total_mass = getMass(obj, robotnum);
   if compute_gradients
     [Adot_times_v, dAdot_times_v] = centroidalMomentumMatrixDotTimesV(obj, kinsol, robotnum);
     dcom_Jacobian_dot_times_v = dAdot_times_v(4:6, :) / total_mass;
