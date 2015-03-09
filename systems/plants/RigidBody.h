@@ -65,9 +65,9 @@ public:
     return !ignored;
   };
 
-  bool appendCollisionElementIds(const std::string& group_name, std::vector<DrakeCollision::ElementId>& ids) const;
+  bool appendCollisionElementIdsFromThisBody(const std::string& group_name, std::vector<DrakeCollision::ElementId>& ids) const;
 
-  bool appendCollisionElementIds(std::vector<DrakeCollision::ElementId>& ids) const;
+  bool appendCollisionElementIdsFromThisBody(std::vector<DrakeCollision::ElementId>& ids) const;
 
 public:
   std::string linkname;
