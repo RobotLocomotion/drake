@@ -319,8 +319,28 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
               [phiL,JL] = obj.manip.jointLimitConstraints(q);
             end
             if isempty(possible_limit_indices)
-              possible_limit_indices = (phiL + h*JL*qd) < obj.z_inactive_guess_tol;
+              phiL_next = phiL + h*JL*qd;
+              possible_limit_indices = phiL_next < obj.z_inactive_guess_tol;
+              if ~isempty(obj.LCP_cache.data.possible_limit_indices)
+                % add some persistence to the active limit indices
+                possible_limit_indices = possible_limit_indices | (obj.LCP_cache.data.possible_limit_indices & phiL_next < 1.5*obj.z_inactive_guess_tol);
+              end
             end
+            
+            if isempty(obj.LCP_cache.data.possible_limit_indices) || any(obj.LCP_cache.data.possible_limit_indices~=possible_limit_indices)
+              possible_indices_changed = true;
+%              if ~isempty(obj.LCP_cache.data.possible_limit_indices)
+%                pframe = getPositionFrame(obj.manip);
+%                for i=find(possible_limit_indices>obj.LCP_cache.data.possible_limit_indices)'
+%                  disp(['adding limit ',pframe.coordinates{mod(i,pframe.dim)},' (',num2str(phiL(i) + h*JL(i,:)*qd),')']);
+%                end
+%                for i=find(obj.LCP_cache.data.possible_limit_indices>possible_limit_indices)'
+%                  disp(['removing limit  ',pframe.coordinates{mod(i,pframe.dim)},' (',num2str(phiL(i) + h*JL(i,:)*qd),')']);
+%                end
+%              end
+            end
+            obj.LCP_cache.data.possible_limit_indices=possible_limit_indices;
+        
             nL = sum(possible_limit_indices);
             
             % phi_check and J_check are the "impossible indices"
@@ -333,10 +353,6 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
             if (nargout>4)
               dJL = dJL(possible_limit_indices,:);
             end
-            if isempty(obj.LCP_cache.data.possible_limit_indices) || any(obj.LCP_cache.data.possible_limit_indices~=possible_limit_indices)
-              possible_indices_changed = true;
-            end
-            obj.LCP_cache.data.possible_limit_indices=possible_limit_indices;
           end
         else
           phi_check = zeros(0,1);
@@ -352,7 +368,12 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
           end
           
           if isempty(possible_contact_indices)
-            possible_contact_indices = (phiC+h*n*qd) < obj.z_inactive_guess_tol;
+            phiC_next = phiC + h*n*qd;
+            possible_contact_indices = phiC_next < obj.z_inactive_guess_tol;
+            if ~isempty(obj.LCP_cache.data.possible_contact_indices)
+              % add some persistence to the active contact indices
+              possible_contact_indices = possible_contact_indices | (obj.LCP_cache.data.possible_contact_indices & phiC_next < 1.5*obj.z_inactive_guess_tol);
+            end
           end
           nC = sum(possible_contact_indices);
           mC = length(D);
@@ -371,6 +392,10 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
           mu = mu(possible_contact_indices,:);
           if isempty(obj.LCP_cache.data.possible_contact_indices) || any(obj.LCP_cache.data.possible_contact_indices~=possible_contact_indices)
               possible_indices_changed = true;
+%              if ~isempty(obj.LCP_cache.data.possible_contact_indices)
+%                disp(['start evaluating contacts: ',num2str(find(possible_contact_indices>obj.LCP_cache.data.possible_contact_indices)'),...
+%                  ' and stop evaluating: ',num2str(find(obj.LCP_cache.data.possible_contact_indices>possible_contact_indices)')]);
+%              end
           end
           obj.LCP_cache.data.possible_contact_indices=possible_contact_indices;
           
@@ -565,21 +590,21 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         %      end
         %      return;
 
-        z = zeros(nL+nP+(mC+2)*nC,1); 
-        if possible_indices_changed || isempty(obj.LCP_cache.data.z)
-          z_inactive = true(nL+nP+(mC+2)*nC,1);
-          M_active = z_inactive;
-          obj.LCP_cache.data.z = z;
-        else
-          z_inactive = obj.LCP_cache.data.z>lb+1e-8;
-          % use conservative guess of M_active to avoid occasional numerical issues
-          % when M*z_inactive + w > 1e-8 by a small amount
-          M_active = z_inactive;
-        end
-
         QP_FAILED = true;
         
-        if obj.enable_fastqp
+        if ~possible_indices_changed && obj.enable_fastqp
+          z = zeros(nL+nP+(mC+2)*nC,1);
+          if isempty(obj.LCP_cache.data.z)
+            z_inactive = true(nL+nP+(mC+2)*nC,1);
+            M_active = z_inactive;
+            obj.LCP_cache.data.z = z;
+          else
+            z_inactive = obj.LCP_cache.data.z>lb+1e-8;
+            % use conservative guess of M_active to avoid occasional numerical issues
+            % when M*z_inactive + w > 1e-8 by a small amount
+            M_active = z_inactive;
+          end
+
           n_z_inactive = sum(z_inactive);
           if n_z_inactive > 0
             Aeq = M(M_active,z_inactive); 
@@ -613,7 +638,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
             end
           end
         end
-
+                
         if QP_FAILED 
             % then the active set has changed, call pathlcp
             %path_tic = tic;
@@ -716,7 +741,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
           possible_limit_indices(~possible_limit_indices) = penetration(1:limits);
           possible_contact_indices(~possible_contact_indices) = penetration(limits+1:end);
           
-          obj.warning_manager.warnOnce('Drake:TimeSteppingRigidBodyManipulator:ResolvingLCP','This timestep violated our assumptions about which contacts could possibly become active in one timestep.  Consider reducing your dt.  If it seems to happen a lot, then please let us know about it.');
+          warning('Drake:TimeSteppingRigidBodyManipulator:ResolvingLCP','This timestep violated our assumptions about which contacts could possibly become active in one timestep.  Consider reducing your dt.  If it seems to happen a lot, then please let us know about it.');
         else
           break;
         end
