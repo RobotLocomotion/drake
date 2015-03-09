@@ -48,8 +48,7 @@ while test_number < n_tests
     Jdot = reshape(reshape(dJ, numel(J), []) * kinsol.qdot, size(J));
     Jvdot_times_v = robot.forwardJacDotTimesV(kinsol, end_effector, points, rotation_type, base);
     
-    %     valuecheck(Jdot * qdot, Jvdot_times_v, epsilon);
-    valuecheck(Jdot * kinsol.qdot - Jvdot_times_v, zeros(size(Jdot, 1), 1), epsilon);
+    valuecheck(Jdot * kinsol.qdot, Jvdot_times_v, max(abs(Jvdot_times_v)) * epsilon);
     
     test_number = test_number + 1;
   end
@@ -82,7 +81,7 @@ while test_number < n_tests
     [~, dJdot_times_v] = robot.forwardJacDotTimesV(kinsol, end_effector, points, rotation_type, base);
     kinematics_options.compute_gradients = false;
     [~, dJdot_times_v_geval] = geval(1, @(q) robot.forwardJacDotTimesV(robot.doKinematics(q, v, kinematics_options), end_effector, points, rotation_type, base), q, geval_options);
-    valuecheck(dJdot_times_v_geval, dJdot_times_v, 1e-10);
+    valuecheck(dJdot_times_v_geval, dJdot_times_v, max(abs(dJdot_times_v(:))) * 1e-10);
     test_number = test_number + 1;
   end
 end
@@ -114,11 +113,10 @@ while test_number < n_tests
     
     kinematics_options.use_mex = true;
     kinsol = robot.doKinematics(q, v, kinematics_options);
-    [Jdot_times_v_mex, dJdot_times_v_mex] = robot.forwardJacDotTimesV(kinsol, end_effector, points, rotation_type, base); % TODO: gradient
-    valuecheck(Jdot_times_v_mex, Jdot_times_v, 1e-10);
-    valuecheck(dJdot_times_v_mex, dJdot_times_v, 1e-10);
+    [Jdot_times_v_mex, dJdot_times_v_mex] = robot.forwardJacDotTimesV(kinsol, end_effector, points, rotation_type, base);
+    valuecheck(Jdot_times_v_mex, Jdot_times_v, max(abs(Jdot_times_v)) * 1e-10);
+    valuecheck(dJdot_times_v_mex, dJdot_times_v, max(abs(dJdot_times_v(:))) * 1e-10);
     test_number = test_number + 1;
   end
 end
 end
-
