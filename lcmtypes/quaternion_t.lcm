@@ -1,9 +1,0 @@
-package drake;
-
-struct quaternion_t
-{
- double w;
- double x;
- double y;
- double z;
-}

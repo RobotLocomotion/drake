@@ -12,14 +12,6 @@
 #include "QPCommon.h"
 #include <limits>
 #include <cmath>
-#include "AtlasCommandDriver.hpp"
-#include "FootContactDriver.hpp"
-#include "RobotStateDriver.hpp"
-#include "drake/lcmt_atlas_command.hpp"
-#include <lcm/lcm-cpp.hpp>
-
-//#define TEST_FAST_QP
-//#define USE_MATRIX_INVERSION_LEMMA
 
 using namespace std;
 
@@ -62,13 +54,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   }
   narg++;
 
-  // Demonstrate the FootContactDriver for pat:
-  shared_ptr<FootContactDriver> foot_contact_driver(new FootContactDriver(pdata->rpc.body_ids));
-
   QPControllerOutput qp_output;
   shared_ptr<QPControllerDebugData> debug;
-
-  shared_ptr<RobotStateDriver> state_driver(new RobotStateDriver(pdata->state_coordinate_names));
 
   DrakeRobotState robot_state;
   robot_state.t = t;
@@ -79,15 +66,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     debug.reset(new QPControllerDebugData());
   }
   int info = setupAndSolveQP(pdata, qp_input, robot_state, b_contact_force, &qp_output, debug);
-
-  // convert to atlas_command and publish
-  shared_ptr<AtlasCommandDriver> command_driver (new AtlasCommandDriver(&pdata->input_joint_names));
-  drake::lcmt_atlas_command* command_msg = command_driver->encode(t, &qp_output);
-  lcm::LCM lcm;
-  if(!lcm.good()) {
-    mexErrMsgTxt("bad lcm");
-  }
-  lcm.publish("ATLAS_COMMAND", command_msg);
 
   // return to matlab
   narg = 0;
