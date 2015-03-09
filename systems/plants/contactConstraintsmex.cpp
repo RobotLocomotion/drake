@@ -45,7 +45,7 @@ inline void buildSparseMatrix(Matrix3xd const & pts, SparseMatrix<double> & spar
 }
 
 //forms a mex cell array and computes the surface tangents in-place using maps
-inline mxArray* getTangentsArray(Map<Matrix3xd> const & normals)
+inline mxArray* getTangentsArray(RigidBodyManipulator* const model, Map<Matrix3xd> const & normals)
 {
   const int numContactPairs = normals.cols();
   const mwSize cellDims[] = {1, BASIS_VECTOR_HALF_COUNT};
@@ -58,7 +58,7 @@ inline mxArray* getTangentsArray(Map<Matrix3xd> const & normals)
     mxSetCell(tangentCells, k, cell);
   }
 
-  surfaceTangents(normals, tangents);
+  model->surfaceTangents(normals, tangents);
 
   return tangentCells;
 }
@@ -93,7 +93,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 
   if (model != NULL) {
     if (nlhs > 0) {
-      plhs[0] = getTangentsArray(normals);
+      plhs[0] = getTangentsArray(model, normals);
     }
 
     const Map<VectorXi> idxA((int*)mxGetData(prhs[2]), numContactPairs); //collision pairs index of body A
