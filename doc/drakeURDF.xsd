@@ -982,7 +982,7 @@ yet. (see bug 921)</xs:documentation>
     </xs:complexType>
     <xs:complexType name="collision_filter_group">
         <xs:annotation>
-            <xs:documentation>Provides a means to exclude certain pairs of bodies from collision detec- tion and closest distance computations. A collision filter group can contain one or more links, and a link may belong to any number of collision filter groups. One collision filter group can ignore another, in which case pairs of bodies with one element from each group are skipped when performing the aforementioned computations.</xs:documentation>
+            <xs:documentation>Provides a means to exclude certain pairs of bodies from collision detection and closest distance computations. A collision filter group can contain one or more links, and a link may belong to any number of collision filter groups. Given two links A and B by default they are specified to be checked for collision. If they are adjacent in the kinematic tree, then they are not checked for collision unless one is the world link and the jointing connecting them is a floating base joint. If link A is in a collision filter group Alpha and link B is in a collision filter group Beta and Beta is in Alpha.ignored_collision_filter group then A and B are not checked for collision. The same also holds in reverse, i.e. if Alpha is in Beta.ignored_collision_filter_group then links A and B are not in collision. However only one of the two conditions is necessary for excluding the pair of bodies from collision detection.</xs:documentation>
         </xs:annotation>
         <xs:sequence>
             <xs:element name="member" type="link_reference" maxOccurs="unbounded" minOccurs="0">
