@@ -101,7 +101,7 @@ classdef QPInputConstantHeight
 
   methods (Static)
     function obj = from_lcm(msg)
-      obj = atlasControllers.QPInput2D();
+      obj = atlasControllers.QPInputConstantHeight();
       obj.timestamp = msg.timestamp;
       for f = fieldnames(obj.zmp_data)'
         obj.zmp_data.(f{1}) = msg.zmp_data.(f{1});
