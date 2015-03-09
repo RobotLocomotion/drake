@@ -169,7 +169,7 @@ bool RigidBody::appendCollisionElementIdsFromThisBody(const string& group_name, 
 
 bool RigidBody::appendCollisionElementIdsFromThisBody(vector<DrakeCollision::ElementId>& ids) const
 {
-  ids.reserve(ids.size() + distance(collision_element_ids.begin(), collision_element_ids.end()));
+  ids.reserve(ids.size() + collision_element_ids.size());
   ids.insert(ids.end(), collision_element_ids.begin(), collision_element_ids.end());
   return true;
 }
