@@ -10,18 +10,16 @@
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
-  if (nrhs<1) mexErrMsgTxt("usage: y=instantaneousBodyMotionControlmex(robot,x,body_ind,body_pose_des,body_v_des,body_vdot_des,params)");
+  if (nrhs<1) mexErrMsgTxt("usage: y=instantaneousBodyMotionControlmex(mex_ptr,x,body_ind,body_pose_des,body_v_des,body_vdot_des,params)");
   if (nlhs<1) mexErrMsgTxt("take at least one output... please.");
   
   // first get the ptr back from matlab
   if (mxGetNumberOfElements(prhs[0])!=1)
     mexErrMsgIdAndTxt("DRC:bodyMotionControlmex:BadInputs","the first argument should be the robot");
+  RigidBodyManipulator *r = (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
 
-  RigidBodyManipulator* r;
   mxArray* pm;
   int body_index;
-
-  memcpy(&r,mxGetData(myGetProperty(myGetProperty(prhs[0],"mex_model_ptr"),"ptr")),sizeof(r));
 
   int narg = 1;
   int nq = r->num_positions;

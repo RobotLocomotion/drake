@@ -17,7 +17,6 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     enable_fastqp; % whether we use the active set LCP
     lcmgl_contact_forces_scale = 0;  % <=0 implies no lcmgl
     z_inactive_guess_tol = .01;
-    mex_model_ptr = 0; % needed for access from mex functions
   end
 
   methods
