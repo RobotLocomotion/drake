@@ -1465,7 +1465,12 @@ GradientVar<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::centroidalMomentumMatri
 
 bool RigidBodyManipulator::isBodyPartOfRobot(const RigidBody& body, const std::set<int>& robotnum)
 {
-  return robotnum.find(body.robotnum) != robotnum.end() && robotnum.find(-1) != robotnum.end();
+  for (std::set<int>::const_iterator it = robotnum.begin(); it != robotnum.end(); ++it) {
+    if (*it < 0) {
+      return true;
+    }
+  }
+  return robotnum.find(-1) != robotnum.end();
 }
 
 double RigidBodyManipulator::getMass(const std::set<int>& robotnum)

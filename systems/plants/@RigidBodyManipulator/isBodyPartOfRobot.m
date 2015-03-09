@@ -5,7 +5,7 @@ function ret = isBodyPartOfRobot(model, body, robotnum)
 % RigidBody.robotnum field.
 % @retval ret whether or not the body is part of a robot.
 
-if robotnum < 0
+if any(robotnum < 0)
   ret = true;
 else
   ret = any(body.robotnum == robotnum);
