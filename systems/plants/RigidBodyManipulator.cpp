@@ -1331,8 +1331,7 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::worldMomen
     if (body.hasParent()) {
       const DrakeJoint& joint = body.getJoint();
       int ncols_joint = in_terms_of_qdot ? joint.getNumPositions() : joint.getNumVelocities();
-      std::set<int>::iterator robotnum_it = robotnum.find(body.robotnum);
-      if (robotnum_it != robotnum.end())
+      if (isBodyPartOfRobot(body, robotnum))
       {
         int start = in_terms_of_qdot ? body.position_num_start : body.velocity_num_start;
 
@@ -1375,8 +1374,7 @@ GradientVar<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::worldMomentumMatrixDotT
   for (int i = 0; i < num_bodies; i++) {
     RigidBody& body = *bodies[i];
     if (body.hasParent()) {
-      std::set<int>::iterator robotnum_it = robotnum.find(body.robotnum);
-      if (robotnum_it != robotnum.end()) {
+      if (isBodyPartOfRobot(body, robotnum)) {
         ret.value().noalias() += I_world[i] * body.JdotV;
         auto inertia_times_twist = (I_world[i] * body.twist).eval();
         ret.value().noalias() += crossSpatialForce(body.twist, inertia_times_twist);
@@ -1465,12 +1463,16 @@ GradientVar<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::centroidalMomentumMatri
   return ret;
 }
 
+bool RigidBodyManipulator::isBodyPartOfRobot(const RigidBody& body, const std::set<int>& robotnum)
+{
+  return robotnum.find(body.robotnum) != robotnum.end() && robotnum.find(-1) != robotnum.end();
+}
+
 double RigidBodyManipulator::getMass(const std::set<int>& robotnum)
 {
   double total_mass = 0.0;
   for (int i = 0; i < num_bodies; i++) {
-    std::set<int>::iterator robotnum_it = robotnum.find(bodies[i]->robotnum);
-    if (robotnum_it != robotnum.end())
+    if (isBodyPartOfRobot(*bodies[i], robotnum))
     {
       total_mass += bodies[i]->mass;
     }
@@ -1491,8 +1493,7 @@ GradientVar<Scalar, SPACE_DIMENSION, 1> RigidBodyManipulator::centerOfMass(int g
   com.value().setZero();
 
   for (int i = 0; i < num_bodies; i++) {
-    std::set<int>::iterator robotnum_it = robotnum.find(bodies[i]->robotnum);
-    if (robotnum_it != robotnum.end())
+    if (isBodyPartOfRobot(*bodies[i], robotnum))
     {
       body_mass = bodies[i]->mass;
       if (body_mass > 0) {

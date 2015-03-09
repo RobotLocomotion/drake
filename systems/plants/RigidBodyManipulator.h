@@ -94,6 +94,8 @@ public:
 
   void updateCompositeRigidBodyInertias(int gradient_order);
 
+  bool isBodyPartOfRobot(const RigidBody& body, const std::set<int>& robotnum);
+
   double getMass(const std::set<int>& robotnum = RigidBody::defaultRobotNumSet);
 
   template <typename Scalar>
