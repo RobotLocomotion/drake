@@ -20,7 +20,7 @@ void matlabToCArrayOfArrays(const mxArray *source, const int idx, const char *fi
 
 
 std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray *qp_input) {
-  // Take a matlab data structure corresponding to a QPInput2D object and parse it down to its representation as an equivalent LCM message. 
+  // Take a matlab data structure corresponding to a QPInputConstantHeight object and parse it down to its representation as an equivalent LCM message. 
   std::shared_ptr<drake::lcmt_qp_controller_input> msg (new drake::lcmt_qp_controller_input());
 
   msg->timestamp = (int64_t) (mxGetScalar(myGetProperty(qp_input, "timestamp")) * 1000000);

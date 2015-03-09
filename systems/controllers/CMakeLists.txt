@@ -4,8 +4,6 @@ if (eigen3_FOUND)
 
   pods_find_pkg_config(terrain-map)
 
-  pods_find_pkg_config(lcm)
-
   add_mex(drakeControlUtil SHARED controlUtil.cpp)
   if (terrain-map_FOUND)
     pods_use_pkg_config_packages(drakeControlUtil terrain-map)
@@ -30,7 +28,7 @@ if (eigen3_FOUND)
     add_mex(getActiveSupportsmex getActiveSupportsmex.cpp)
     target_link_libraries(getActiveSupportsmex drakeQP drakeControlUtil)
 
-    if (lcm_FOUND)
+    if (LCM_FOUND)
       add_mex(instantaneousQPControllermex instantaneousQPControllermex.cpp)
       target_link_libraries(instantaneousQPControllermex drakeQP drakeControlUtil QPCommon)
       pods_use_pkg_config_packages(instantaneousQPControllermex gurobi)
