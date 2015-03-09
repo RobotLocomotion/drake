@@ -37,7 +37,6 @@ namespace DrakeShapes
       const Eigen::Matrix4d T_element_to_local;
       std::unique_ptr<Geometry> geometry;
 
-    private:
       Element(const Element&) {}
       Element& operator=(const Element&) { return *this; }
     public:

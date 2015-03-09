@@ -40,6 +40,10 @@ public:
 
   bool hasParent() const;
 
+  void addVisualElement(std::unique_ptr<DrakeShapes::Geometry> geometry, const Matrix4d& T_element_to_link, const Vector4d& material);
+
+  const std::vector<DrakeShapes::VisualElement>& getVisualElements() const;
+
   virtual void setCollisionFilter(const DrakeCollision::bitmask& group, 
                                   const DrakeCollision::bitmask& mask);
 
@@ -83,6 +87,8 @@ public:
   int pitch; // FLOATINGBASE TODO: remove
   Matrix4d Ttree;  // floatingbase TODO: replace with Isometry3d?
   Matrix4d T_body_to_joint;  // floatingbase TODO: replace with Isometry3d?
+
+  std::vector< DrakeShapes::VisualElement > visual_elements;
 
   std::vector< DrakeCollision::ElementId > collision_element_ids;
   std::map< std::string, std::vector<DrakeCollision::ElementId> > collision_element_groups;

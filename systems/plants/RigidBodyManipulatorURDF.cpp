@@ -106,37 +106,11 @@ bool parseInertial(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyMani
   return true;
 }
 
-bool parseVisual(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyManipulator* model)
+bool parseGeometry(TiXmlElement* node, unique_ptr<DrakeShapes::Geometry>& geometry)
 {
-  // todo:  consider implementing this, but I don't need it yet
-  return true;
-}
-
-bool parseCollision(int body_index, TiXmlElement* node, RigidBodyManipulator* model)
-{
-  Matrix4d T_element_to_link = Matrix4d::Identity();
-  TiXmlElement* origin = node->FirstChildElement("origin");
-  if (origin)
-    poseAttributesToTransform(origin, T_element_to_link);
-
-  bool create_collision_element(true);
   const char* attr;
-  string group_name;
-
-  attr = node->Attribute("group");
-  if (attr) {
-    group_name = attr;
-  } else {
-    group_name = "default";;
-  }
-
-  TiXmlElement* geometry_node = node->FirstChildElement("geometry");
-  if (!geometry_node)
-    return false;
-
   TiXmlElement* shape_node;
-  unique_ptr<DrakeShapes::Geometry> geometry;
-  if ((shape_node = geometry_node->FirstChildElement("box"))) {
+  if ((shape_node = node->FirstChildElement("box"))) {
     double x = 0, y = 0, z = 0;
     attr = shape_node->Attribute("size");
     if (attr) {
@@ -144,7 +118,7 @@ bool parseCollision(int body_index, TiXmlElement* node, RigidBodyManipulator* mo
       s >> x >> y >> z;
     }
     geometry = unique_ptr<DrakeShapes::Geometry>(new DrakeShapes::Box(Vector3d(x,y,z)));
-  } else if ((shape_node = geometry_node->FirstChildElement("sphere"))) {
+  } else if ((shape_node = node->FirstChildElement("sphere"))) {
     double r = 0;
     attr = shape_node->Attribute("radius");
     if (attr) {
@@ -152,7 +126,7 @@ bool parseCollision(int body_index, TiXmlElement* node, RigidBodyManipulator* mo
       s >> r;
     }
     geometry = unique_ptr<DrakeShapes::Geometry>(new DrakeShapes::Sphere(r));
-  } else if ((shape_node = geometry_node->FirstChildElement("cylinder"))) {
+  } else if ((shape_node = node->FirstChildElement("cylinder"))) {
     double r = 0, l = 0;
     attr = shape_node->Attribute("radius");
     if (attr) {
@@ -165,7 +139,7 @@ bool parseCollision(int body_index, TiXmlElement* node, RigidBodyManipulator* mo
       s >> l;
     }
     geometry = unique_ptr<DrakeShapes::Geometry>(new DrakeShapes::Cylinder(r, l));
-  } else if ((shape_node = geometry_node->FirstChildElement("capsule"))) {
+  } else if ((shape_node = node->FirstChildElement("capsule"))) {
     double r = 0, l = 0;
     attr = shape_node->Attribute("radius");
     if (attr) {
@@ -178,9 +152,12 @@ bool parseCollision(int body_index, TiXmlElement* node, RigidBodyManipulator* mo
       s >> l;
     }
     geometry = unique_ptr<DrakeShapes::Geometry>(new DrakeShapes::Capsule(r, l));
-  } else if ((shape_node = geometry_node->FirstChildElement("mesh"))) {
-    cerr << "Warning: mesh collision elements will be ignored (until I re-implement the logic below sans boost)" << endl;
-    create_collision_element = false;
+  } else if ((shape_node = node->FirstChildElement("mesh"))) {
+    attr = shape_node->Attribute("filename");
+    if (!attr)
+      return false;
+    string filename(attr);
+    geometry = unique_ptr<DrakeShapes::Geometry>(new DrakeShapes::Mesh(filename));
     /*
      boost::shared_ptr<urdf::Mesh> mesh(boost::dynamic_pointer_cast<urdf::Mesh>(cptr->geometry));
      boost::filesystem::path mesh_filename(root_dir);
@@ -201,14 +178,80 @@ bool parseCollision(int body_index, TiXmlElement* node, RigidBodyManipulator* mo
      }
      */
   } else {
-    cerr << "ERROR: Link " << model->bodies[body_index]->linkname << " has a collision element with an unknown type" << endl;
+    return false;
+  }
+  return true;
+}
+
+bool parseVisual(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyManipulator* model)
+{
+  Matrix4d T_element_to_link = Matrix4d::Identity();
+  TiXmlElement* origin = node->FirstChildElement("origin");
+  if (origin)
+    poseAttributesToTransform(origin, T_element_to_link);
+
+  const char* attr;
+  string group_name;
+
+  attr = node->Attribute("group");
+  if (attr) {
+    group_name = attr;
+  } else {
+    group_name = "default";;
+  }
+
+  TiXmlElement* geometry_node = node->FirstChildElement("geometry");
+  if (!geometry_node)
+    return false;
+
+  unique_ptr<DrakeShapes::Geometry> geometry;
+  if (!parseGeometry(geometry_node, geometry))
+    cerr << "ERROR: Link " << body->linkname << " has a visual element with an unknown type" << endl;
+    return false;
+
+  Vector4d material;
+  TiXmlElement* material_node = node->FirstChildElement("material");
+  if (1) //(!material_node)
+    material << 0.7, 0.7, 0.7, 1;
+
+  body->addVisualElement(move(geometry), T_element_to_link, material);
+
+  return true;
+}
+
+bool parseCollision(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyManipulator* model)
+{
+  Matrix4d T_element_to_link = Matrix4d::Identity();
+  TiXmlElement* origin = node->FirstChildElement("origin");
+  if (origin)
+    poseAttributesToTransform(origin, T_element_to_link);
+
+  const char* attr;
+  string group_name;
+
+  attr = node->Attribute("group");
+  if (attr) {
+    group_name = attr;
+  } else {
+    group_name = "default";;
+  }
+
+  TiXmlElement* geometry_node = node->FirstChildElement("geometry");
+  if (!geometry_node)
+    return false;
+
+  unique_ptr<DrakeShapes::Geometry> geometry;
+  if (!parseGeometry(geometry_node, geometry)) {
+    cerr << "ERROR: Link " << body->linkname << " has a collision element with an unknown type" << endl;
     return false;
   }
 
-  if (create_collision_element) {
-    model->addCollisionElement(move(geometry), model->bodies[body_index], 
-                               T_element_to_link, group_name);
+  if (geometry->getShape() == DrakeShapes::MESH){
+    cerr << "Warning: mesh collision elements will be ignored (until I re-implement the logic below sans boost)" << endl;
+    return false;
   }
+
+  model->addCollisionElement(move(geometry), body, T_element_to_link, group_name);
 
   return true;
 }
@@ -242,7 +285,7 @@ bool parseLink(RigidBodyManipulator* model, TiXmlElement* node)
   body->body_index = model->bodies.size() - 1;
 
   for (TiXmlElement* collision_node = node->FirstChildElement("collision"); collision_node; collision_node = collision_node->NextSiblingElement("collision")) {
-    if (!parseCollision(body->body_index, collision_node, model))
+    if (!parseCollision(body, collision_node, model))
       return false;
   }
 

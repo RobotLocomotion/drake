@@ -148,6 +148,17 @@ bool RigidBody::hasParent() const {
   return parent !=nullptr;
 }
 
+
+void RigidBody::addVisualElement(unique_ptr<DrakeShapes::Geometry> geometry, const Matrix4d& T_element_to_link, const Vector4d& material)
+{
+  visual_elements.emplace_back(move(geometry), T_element_to_link, material);
+}
+
+const vector<DrakeShapes::VisualElement>& RigidBody::getVisualElements() const
+{
+  return visual_elements;
+}
+
 void RigidBody::setCollisionFilter(const DrakeCollision::bitmask& group, 
                                    const DrakeCollision::bitmask& mask)
 {
