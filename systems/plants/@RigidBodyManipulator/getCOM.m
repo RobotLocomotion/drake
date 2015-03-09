@@ -58,7 +58,7 @@ else
     
     dJ = zeros(d,nq^2);
     for i=1:length(model.body)
-      if isBodyPartOfRobot(model.body(i), robotnum)
+      if isBodyPartOfRobot(model, model.body(i), robotnum)
         bm = model.body(i).mass;
         if (bm>0)
           bc = model.body(i).com;
@@ -95,7 +95,7 @@ else
   m = 0;
   com = zeros(3,1);
   for i = 1:length(model.body)
-    if isBodyPartOfRobot(model.body(i), robotnum)
+    if isBodyPartOfRobot(model, model.body(i), robotnum)
       bm = model.body(i).mass;
       if (bm>0)
         bc = forwardKin(model,kinsol,i,model.body(i).com);

@@ -59,7 +59,7 @@ if compute_gradients
   dAdot_times_v = zeros(6, obj.getNumPositions());
 end
 for i = 2 : obj.getNumBodies()
-  if isBodyPartOfRobot(model.body(i), robotnum)
+  if isBodyPartOfRobot(model, model.body(i), robotnum)
     Adot_times_v = Adot_times_v + inertias_world{i} * kinsol.JdotV{i};
     inertia_times_twist = inertias_world{i} * kinsol.twists{i};
     Adot_times_v = Adot_times_v + crf(kinsol.twists{i}) * inertia_times_twist;

@@ -194,7 +194,7 @@ if compute_gradients
 end
 
 for i = 2 : length(robot.body)
-  if isBodyPartOfRobot(model.body(i), robotnum)
+  if isBodyPartOfRobot(model, model.body(i), robotnum)
     if in_terms_of_qdot
       IcJ = crbs_world{i} * kinsol.J{i};
       cols_joint = robot.body(i).position_num;
