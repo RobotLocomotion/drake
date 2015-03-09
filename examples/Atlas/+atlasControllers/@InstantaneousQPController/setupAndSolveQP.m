@@ -29,10 +29,10 @@ for j = 1:length(qp_input.body_motion_data)
 end
 
 % Find the active set of supports
-mask = getActiveSupportsmex(obj.mex_ptr, [q; qd], qp_input.support_data, contact_sensor, params.contact_threshold, obj.default_terrain_height);
+mask = getActiveSupportsmex(obj.data_mex_ptr, [q; qd], qp_input.support_data, contact_sensor, params.contact_threshold, obj.default_terrain_height);
 supp = qp_input.support_data(logical(mask));
 
-% Run PD on the desired configuration
+% Run PID on the desired configuration
 qddot_des = obj.wholeBodyPID(t, q, qd, qp_input.whole_body_data.q_des, params.whole_body);
 
 % Find the constrained joints
