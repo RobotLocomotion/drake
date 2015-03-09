@@ -330,7 +330,7 @@ std::vector<SupportStateElement> parseSupportData(const mxArray* supp_data) {
 bool isSupportElementActive(SupportStateElement* se, bool contact_force_detected, bool kinematic_contact_detected) {
   bool is_active;
 
-  // Implement the logic described in QPInput2D.m
+  // Implement the logic described in QPInputConstantHeight.m
   if (!contact_force_detected && !kinematic_contact_detected) {
     is_active = se->support_logic_map[0]; 
   } else if (!contact_force_detected && kinematic_contact_detected) {
