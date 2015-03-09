@@ -47,6 +47,9 @@ classdef InstantaneousQPController
         obj.(f{1}) = options.(f{1});
       end
 
+      if r.getNumPositions() ~= r.getNumVelocities()
+        error('Drake:NonQuaternionFloatingBaseAssumption', 'this code assumes a 6-dof XYZRPY floating base, and will need to be updated for quaternions');
+      end
       obj.robot = r;
       obj.param_sets = param_sets;
       obj.robot_property_cache = atlasUtil.propertyCache(r);
