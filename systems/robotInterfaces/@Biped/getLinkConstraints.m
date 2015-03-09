@@ -3,7 +3,7 @@ function link_constraints = getLinkConstraints(obj, foot_origin_knots, zmptraj, 
 if nargin < 6
   options = struct();
 end
-options = applyDefaults(options, struct('pelvis_height_above_sole', 0.84, 'debug', false));
+options = applyDefaults(options, struct('pelvis_height_above_sole', obj.default_walking_params.pelvis_height_above_foot_sole, 'debug', false));
 
 link_constraints = struct('link_ndx',{}, 'pt', {}, 'ts', {}, 'poses', {}, 'dposes', {}, 'contact_break_indices', {}, 'coefs', {}, 'toe_off_allowed', {});
 
