@@ -15,7 +15,7 @@ endif()
 
 if (eigen3_FOUND)
   # todo: check eigen version.  3.1.0 didn't work for clang.  3.2.0 did.
- add_library(drakeRBM SHARED RigidBodyManipulator.cpp RigidBody.cpp RigidBodyManipulatorURDF.cpp tinyxml/tinyxml.cpp tinyxml/tinyxmlparser.cpp tinyxml/tinyxmlerror.cpp)
+ add_library(drakeRBM SHARED RigidBodyManipulator.cpp RigidBody.cpp RigidBodyManipulatorURDF.cpp RigidBodyManipulatorContact.cpp tinyxml/tinyxml.cpp tinyxml/tinyxmlparser.cpp tinyxml/tinyxmlerror.cpp)
  target_link_libraries(drakeRBM drakeCollision)
  include_directories( joints )
  target_link_libraries(drakeRBM drakeJoints)
@@ -76,7 +76,7 @@ if (eigen3_FOUND)
   add_rbm_mex(centerOfMassJacobianDotTimesVmex)
   add_rbm_mex(forwardJacDotTimesVmex)
   add_rbm_mex(contactConstraintsmex)
-  add_mex(surfaceTangentsmex surfaceTangentsmex.cpp)
+  add_rbm_mex(surfaceTangentsmex)
 
   include_directories( constraint )
   add_library(drakeIKoptions SHARED IKoptions.cpp)
