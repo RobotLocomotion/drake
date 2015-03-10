@@ -468,4 +468,12 @@ public class BotLCMGLClient {
   }
 
   public synchronized void scaleToViewerAr() { add0(LCMGL_SCALE_TO_VIEWER_AR); }
+
+  public synchronized void drawPolygon3d(double[][] vertices,int num_vertices){
+	  glBegin(LCMGL_POLYGON);
+          for(int i=0;i<num_vertices;i++){
+		  glVertex3d(vertices[i][0],vertices[i][1],vertices[i][2]);
+	  }
+	  glEnd();
+  }
 }
