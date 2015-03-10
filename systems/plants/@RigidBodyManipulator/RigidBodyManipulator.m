@@ -2142,7 +2142,7 @@ classdef RigidBodyManipulator < Manipulator
       pval=[]; pmin=[]; pmax=[];
       index=1;
       for i=1:min(numel(model.name),numel(model.param_db))
-        pn = fieldnames(model.param_db{i});
+        pn = fieldnames(struct(model.param_db{i}));
         frames{i} = CoordinateFrame([model.name{i},'Params'],numel(pn),'p',pn);
         for j=1:numel(pn)
           pval=vertcat(pval,model.param_db{i}.(pn{j}).value);

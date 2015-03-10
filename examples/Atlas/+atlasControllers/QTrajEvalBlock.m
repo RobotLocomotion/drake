@@ -17,7 +17,7 @@ classdef QTrajEvalBlock < MIMODrakeSystem
     function obj = QTrajEvalBlock(r,controller_data,options)
       typecheck(r,'Biped');
       typecheck(controller_data,'ControllerData');
-      
+
       if nargin<3
         options = struct();
       end
@@ -76,6 +76,10 @@ classdef QTrajEvalBlock < MIMODrakeSystem
     end
        
     function [qdes,x]=mimoOutput(obj,t,~,x)
+      % % for profiling the entire atlas controller system (see AtlasQPController.m)
+      % global qtraj_eval_start_time
+      % qtraj_eval_start_time = tic();
+      
       qtraj = obj.controller_data.qtraj;
       if isa(qtraj,'double')
         qdes=qtraj;

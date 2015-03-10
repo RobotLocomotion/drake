@@ -11,7 +11,6 @@ classdef ControllerData < SharedDataHandle
   
   % optional: for properties that can be modified 'on the fly'
   properties (SetAccess=public,GetAccess=public)
-  
   end
 
   methods
@@ -25,7 +24,14 @@ classdef ControllerData < SharedDataHandle
   methods (Abstract)
     % asserts existence and type of properties contained in 'data'
     verifyControllerData(obj,data);
-    % sets class properties using values contained in 'data'
-    updateControllerData(obj,data);
+  end
+
+  methods
+    function updateControllerData(obj, data)
+      % sets class properties using values contained in 'data'
+      for f = fieldnames(data)'
+        obj.(f{1}) = data.(f{1});
+      end
+    end
   end
 end
