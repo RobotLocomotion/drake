@@ -50,6 +50,17 @@ bool parseVectorAttribute(TiXmlElement* node, const char* attribute_name, Vector
   return false;
 }
 
+bool parseVectorAttribute(TiXmlElement* node, const char* attribute_name, Vector4d &val)
+{
+  const char* attr = node->Attribute(attribute_name);
+  if (attr) {
+    stringstream s(attr);
+    s >> val(0) >> val(1) >> val(2) >> val(3);
+    return true;
+  }
+  return false;
+}
+
 void poseAttributesToTransform(TiXmlElement* node, Matrix4d& T)
 {
   double x = 0.0, y = 0.0, z = 0.0, roll = 0.0, pitch = 0.0, yaw = 0.0;
@@ -103,6 +114,36 @@ bool parseInertial(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyMani
   auto bodyI = transformSpatialInertia(T, static_cast<Gradient<Isometry3d::MatrixType, Eigen::Dynamic>::type*>(NULL), I);
   body->I = bodyI.value();
 
+  return true;
+}
+
+bool parseMaterial(TiXmlElement* node, map<string, Vector4d>& materials)
+{
+  const char* attr;
+  attr = node->Attribute("name");
+  if (!attr) {
+    cerr << "ERROR: material tag is missing name attribute" << endl;
+    return false;
+  }
+  string name(attr);
+  auto material_iter = materials.find(name);
+  bool already_in_map = false;
+  if (material_iter != materials.end()) {
+    already_in_map = true;
+  }
+
+  Vector4d rgba;
+  TiXmlElement* color_node = node->FirstChildElement("color");
+  if (color_node) {
+    if (!parseVectorAttribute(color_node, "rgba", rgba)) {
+      cerr << "ERROR: color tag is missing rgba attribute" << endl;
+      return false;
+    }
+    materials[name] = rgba;
+  } else if (!already_in_map) {
+    cerr << "ERROR: material \"" << name << "\" is used before it is defined" << endl;
+    return false;
+  }
   return true;
 }
 
@@ -183,22 +224,14 @@ bool parseGeometry(TiXmlElement* node, unique_ptr<DrakeShapes::Geometry>& geomet
   return true;
 }
 
-bool parseVisual(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyManipulator* model)
+bool parseVisual(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyManipulator* model, const map<string, Vector4d>& materials)
 {
   Matrix4d T_element_to_link = Matrix4d::Identity();
   TiXmlElement* origin = node->FirstChildElement("origin");
   if (origin)
     poseAttributesToTransform(origin, T_element_to_link);
 
-  const char* attr;
   string group_name;
-
-  attr = node->Attribute("group");
-  if (attr) {
-    group_name = attr;
-  } else {
-    group_name = "default";;
-  }
 
   TiXmlElement* geometry_node = node->FirstChildElement("geometry");
   if (!geometry_node)
@@ -210,9 +243,16 @@ bool parseVisual(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyManipu
     return false;
 
   Vector4d material;
+  material << 0.7, 0.7, 0.7, 1;
   TiXmlElement* material_node = node->FirstChildElement("material");
-  if (1) //(!material_node)
-    material << 0.7, 0.7, 0.7, 1;
+  if (material_node) {
+    const char* attr;
+    attr = node->Attribute("name");
+    if (!attr) {
+      return false;
+    }
+    material = materials.at(attr);
+  }
 
   body->addVisualElement(move(geometry), T_element_to_link, material);
 
@@ -256,7 +296,7 @@ bool parseCollision(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyMan
   return true;
 }
 
-bool parseLink(RigidBodyManipulator* model, TiXmlElement* node)
+bool parseLink(RigidBodyManipulator* model, TiXmlElement* node, const map< string, Vector4d >& materials)
 {
   const char* attr = node->Attribute("drake_ignore");
   if (attr && strcmp(attr, "true") == 0)
@@ -276,7 +316,7 @@ bool parseLink(RigidBodyManipulator* model, TiXmlElement* node)
       return false;
 
   for (TiXmlElement* visual_node = node->FirstChildElement("visual"); visual_node; visual_node = visual_node->NextSiblingElement("visual")) {
-    if (!parseVisual(body, visual_node, model)) {
+    if (!parseVisual(body, visual_node, model, materials)) {
       return false;
     }
   }
@@ -467,9 +507,16 @@ bool parseRobot(RigidBodyManipulator* model, TiXmlElement* node, const string &r
 {
   string robotname = node->Attribute("name");
 
+  // parse material elements
+  map< string, Vector4d> materials;
+  for (TiXmlElement* link_node = node->FirstChildElement("material"); link_node; link_node = link_node->NextSiblingElement("material")) {
+    if (!parseMaterial(link_node, materials)) {
+      return false;
+    }
+  }
   // parse link elements
   for (TiXmlElement* link_node = node->FirstChildElement("link"); link_node; link_node = link_node->NextSiblingElement("link"))
-    if (!parseLink(model, link_node))
+    if (!parseLink(model, link_node, materials))
       return false;
 
   // todo: parse collision filter groups
