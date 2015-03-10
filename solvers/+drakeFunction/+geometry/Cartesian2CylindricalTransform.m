@@ -1,8 +1,8 @@
 classdef Cartesian2CylindricalTransform < drakeFunction.DrakeFunction
   % Given a cartesian coordinate frame, transform its coordinates to a
   % cylindrical coordinates
-  properties
-    T_cylinder % This is a homogeneous transformation matrix, T_cylinder transforms a cylinder with [0;0;1] being its axis, and [1;0;0] as its theta=0 radius, to the cylinder in the cartesian frame
+  properties(SetAccess = protected)
+    T_cylinder % This is a homogeneous transformation matrix, T_cylinder transforms a cylinder with [0;0;1] being its axis, and nd the angle theta measured with respect to the x-axis
   end
   
   methods
@@ -19,7 +19,7 @@ classdef Cartesian2CylindricalTransform < drakeFunction.DrakeFunction
     function [x_cylinder,J] = eval(obj,x_cartesian)
       % x_cylinder = [radius;theta;height;roll;pitch;yaw]
       % we attach a cartesian frame [x_tangent;y_normal;z_tangent] in R^3x3 at the tip of the
-      % radius, where x_tangent is aligned with cross(height,radius),
+      % radius, where x_tangent is aligned with cross(radius,height),
       % y_norm is along the radius direction, and z_tangent =
       % cross(x_tangent,y_normal). roll;pitch;yaw are the Euler angles that
       % would rotate cartesian frame [x_tangent;y_normal;z_tangent] to
