@@ -472,6 +472,7 @@
   <transmission name="gripper" type="SimpleTransmission">
     <actuator name="gripper"/>
     <joint name="finger_tensioner"/>
+    <mechanicalReduction>100</mechanicalReduction>
   </transmission>
 
 </robot>
