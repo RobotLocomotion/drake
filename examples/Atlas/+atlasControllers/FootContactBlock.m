@@ -203,13 +203,10 @@ classdef FootContactBlock < MIMODrakeSystem
             pf = ctrl_data.link_constraints(ind).poses(:,break_ind+1);
             pf(4:6) = p(4:6) + angleDiff(p(4:6), pf(4:6));
             pfdot = ctrl_data.link_constraints(ind).dposes(:,break_ind+1);
-            [a0, a1, a2, a3] = cubicSplineCoefficients(tf-t, p, pf, pdot, pfdot);
+            coefs = cubicSplineCoefficients(tf-t, p, pf, pdot, pfdot);
             obj.controller_data.link_constraints(ind).poses(:,break_ind) = p;
             obj.controller_data.link_constraints(ind).dposes(:,break_ind) = pdot;
-            obj.controller_data.link_constraints(ind).a0(:,break_ind) = a0;
-            obj.controller_data.link_constraints(ind).a1(:,break_ind) = a1;
-            obj.controller_data.link_constraints(ind).a2(:,break_ind) = a2;
-            obj.controller_data.link_constraints(ind).a3(:,break_ind) = a3;
+            obj.controller_data.link_constraints(ind).coefs(:,break_ind,:) = coefs;
             obj.controller_data.link_constraints(ind).contact_break_indices(1) = [];
           end
         elseif ~y(2)
@@ -230,13 +227,10 @@ classdef FootContactBlock < MIMODrakeSystem
             pf = ctrl_data.link_constraints(ind).poses(:,break_ind+1);
             pf(4:6) = p(4:6) + angleDiff(p(4:6), pf(4:6));
             pfdot = ctrl_data.link_constraints(ind).dposes(:,break_ind+1);
-            [a0, a1, a2, a3] = cubicSplineCoefficients(tf-t, p, pf, pdot, pfdot);
+            coefs = cubicSplineCoefficients(tf-t, p, pf, pdot, pfdot);
             obj.controller_data.link_constraints(ind).poses(:,break_ind) = p;
             obj.controller_data.link_constraints(ind).dposes(:,break_ind) = pdot;
-            obj.controller_data.link_constraints(ind).a0(:,break_ind) = a0;
-            obj.controller_data.link_constraints(ind).a1(:,break_ind) = a1;
-            obj.controller_data.link_constraints(ind).a2(:,break_ind) = a2;
-            obj.controller_data.link_constraints(ind).a3(:,break_ind) = a3;
+            obj.controller_data.link_constraints(ind).coefs(:,break_ind,:) = coefs;
             obj.controller_data.link_constraints(ind).contact_break_indices(1) = [];
           end
         end

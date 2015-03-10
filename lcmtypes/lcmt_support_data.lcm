@@ -1,0 +1,17 @@
+package drake;
+
+struct lcmt_support_data
+{
+	int64_t timestamp;
+
+	int32_t body_id;
+
+	int32_t num_contact_pts;
+	double contact_pts[3][num_contact_pts];
+
+	boolean support_logic_map[4];
+
+	double mu;
+
+	int32_t contact_surfaces;
+}
