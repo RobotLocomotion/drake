@@ -26,16 +26,16 @@ compute_first_derivative = nargout > 8;
 compute_second_derivative = nargout > 10;
 
 if nargin<3,
-    allow_multiple_contacts = false;
+  allow_multiple_contacts = false;
 end
 
 if nargin<4,
-    active_collision_options = struct();
+  active_collision_options = struct();
 end
 
 if ~isstruct(kinsol)
-    % treat input as contactPositions(obj,q)
-    kinsol = doKinematics(obj,kinsol,compute_second_derivative);
+  % treat input as contactPositions(obj,q)
+  kinsol = doKinematics(obj,kinsol,compute_second_derivative);
 end
 
 [phi,normal,xA,xB,idxA,idxB] = collisionDetect(obj,kinsol,allow_multiple_contacts,active_collision_options);
@@ -45,33 +45,39 @@ nC = numel(phi);
 
 % If there are no potential collisions, return empty
 if nC == 0
-    d = [];
-    mu = [];
-    n = [];
-    D = [];
-    dn = [];
-    dD = [];
-    return;
+  d = [];
+  mu = [];
+  n = [];
+  D = [];
+  dn = [];
+  dD = [];
+  return;
 end
 
 % For now, all coefficients of friction are 1
 mu = ones(nC,1);
 
-% while surfaceTangentsmex is not explicitly dependent on the the mex_model_ptr,
-% it may be sufficient to check for the presence of Eigen.
-% This is faster than checking for the presence of files.
-if(obj.mex_model_ptr ~= 0)
-    d = surfaceTangentsmex(normal);
-else
+if obj.mex_model_ptr ~= 0
+  if compute_first_derivative
+    if ~compute_second_derivative
+      [d, n, D] = contactConstraintsmex(obj.mex_model_ptr, normal, int32(idxA), int32(idxB), xA, xB);
+    else
+      [d, n, D, dn, dD] = contactConstraintsmex(obj.mex_model_ptr, normal, int32(idxA), int32(idxB), xA, xB);
+    end
+  else
+    d = surfaceTangentsmex(obj.mex_model_ptr, normal);     
+  end
+else %MATLAB implementation
+  if compute_first_derivative
+    if ~compute_second_derivative
+      [d, n, D] = contactConstraintDerivatives(obj, normal, kinsol, idxA, idxB, xA, xB);
+    else
+      [d, n, D, dn, dD] = contactConstraintDerivatives(obj, normal, kinsol, idxA, idxB, xA, xB);
+    end
+  else
     d = obj.surfaceTangents(normal);
+  end
 end
 
-if compute_first_derivative
-    if(~compute_second_derivative)
-        [n, D] = contactConstraintDerivatives(obj, kinsol, idxA, idxB, xA, xB, normal, d, obj.mex_model_ptr~=0);
-    else
-        [n, D, dn, dD] = contactConstraintDerivatives(obj, kinsol, idxA, idxB, xA, xB, normal, d, obj.mex_model_ptr~=0);
-    end
-end
 end
 
