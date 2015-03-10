@@ -187,27 +187,20 @@ public:
 
   void computeContactJacobians(Map<VectorXi> const & idxA, Map<VectorXi> const & idxB, Map<Matrix3xd> const & xA, Map<Matrix3xd> const & xB, const bool compute_second_derivatives, MatrixXd & J, MatrixXd & dJ);
 
-  void addCollisionElement(const int body_ind, const Matrix4d &T_elem_to_lnk, DrakeCollision::Shape shape, std::vector<double> params, std::string group_name = "default");
+  DrakeCollision::ElementId addCollisionElement(std::unique_ptr<DrakeCollision::Geometry> geometry, const std::shared_ptr<RigidBody>& body, const Matrix4d& T_element_to_link, std::string group_name);
 
-  void updateCollisionElements(const int body_ind);
-
-  bool setCollisionFilter(const int body_ind, const uint16_t group,
-                          const uint16_t mask);
-
-  bool getPairwiseCollision(const int body_indA, const int body_indB, MatrixXd &ptsA, MatrixXd &ptsB, MatrixXd &normals, bool use_margins=true);
-
-  bool getPairwisePointCollision(const int body_indA, const int body_indB, const int body_collision_indA, Vector3d &ptA, Vector3d &ptB, Vector3d &normal, bool use_margins=true);
-
-  bool getPointCollision(const int body_ind, const int body_collision_ind, Vector3d &ptA, Vector3d &ptB, Vector3d &normal, bool use_margins=true);
-
-  bool getPairwiseClosestPoint(const int body_indA, const int body_indB, Vector3d &ptA, Vector3d &ptB, Vector3d &normal, double &distance, bool use_margins=true);
+  void updateCollisionElements(const std::shared_ptr<RigidBody>& body);
 
   bool collisionRaycast(const Matrix3Xd &origins, const Matrix3Xd &ray_endpoints, VectorXd &distances, bool use_margins=false);
 
-  //bool closestPointsAllBodies( MatrixXd& ptsA, MatrixXd& ptsB,
-                               //MatrixXd& normal, VectorXd& distance,
-                               //std::vector<int>& bodyA_idx,
-                               //std::vector<int>& bodyB_idx);
+  bool collisionDetect( VectorXd& phi,
+                        MatrixXd& normal,
+                        MatrixXd& xA,
+                        MatrixXd& xB,
+                        std::vector<int>& bodyA_idx,
+                        std::vector<int>& bodyB_idx,
+                        const std::vector<DrakeCollision::ElementId>& ids_to_check,
+                        bool use_margins);
 
   bool collisionDetect( VectorXd& phi, MatrixXd& normal,
                         MatrixXd& xA, MatrixXd& xB,
@@ -368,8 +361,8 @@ private:
   // precise raycasting, e.g. for simulating a laser scanner
   // These models are switched between with the use_margins flag
   // to collision-relevant methods of the RBM.
-  std::shared_ptr< DrakeCollision::Model > collision_model;
-  std::shared_ptr< DrakeCollision::Model > collision_model_no_margins;
+  std::unique_ptr< DrakeCollision::Model > collision_model;
+  //std::shared_ptr< DrakeCollision::Model > collision_model_no_margins;
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 

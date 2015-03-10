@@ -28,7 +28,9 @@ RigidBody::RigidBody(void) :
     dSdotVdvi(TWIST_SIZE, 0),
     JdotV(TWIST_SIZE, 1),
     dJdotVdq(TWIST_SIZE, 0),
-    dJdotVdv(TWIST_SIZE, 0)
+    dJdotVdv(TWIST_SIZE, 0),
+    collision_filter_group(DrakeCollision::DEFAULT_GROUP),
+    collision_filter_mask(DrakeCollision::ALL_MASK)
 {
   robotnum = 0;
 	position_num_start = 0;
@@ -144,6 +146,60 @@ void RigidBody::computeAncestorDOFs(RigidBodyManipulator* model)
 
 bool RigidBody::hasParent() const {
   return parent !=nullptr;
+}
+
+void RigidBody::setCollisionFilter(const DrakeCollision::bitmask& group, 
+                                   const DrakeCollision::bitmask& mask)
+{
+  setCollisionFilterGroup(group);
+  setCollisionFilterMask(mask);
+}
+
+bool RigidBody::appendCollisionElementIdsFromThisBody(const string& group_name, vector<DrakeCollision::ElementId>& ids) const
+{
+  auto group_ids_iter = collision_element_groups.find(group_name);
+  if (group_ids_iter != collision_element_groups.end()) {
+    ids.reserve(ids.size() + distance(group_ids_iter->second.begin(), group_ids_iter->second.end()));
+    ids.insert(ids.end(), group_ids_iter->second.begin(), group_ids_iter->second.end());
+    return true;
+  } else {
+    return false;
+  }
+}
+
+bool RigidBody::appendCollisionElementIdsFromThisBody(vector<DrakeCollision::ElementId>& ids) const
+{
+  ids.reserve(ids.size() + collision_element_ids.size());
+  ids.insert(ids.end(), collision_element_ids.begin(), collision_element_ids.end());
+  return true;
+}
+
+RigidBody::CollisionElement::
+CollisionElement(std::unique_ptr<DrakeCollision::Geometry> geometry,
+                 const Matrix4d& T_element_to_link, std::shared_ptr<RigidBody> body)
+  : DrakeCollision::Element(move(geometry), T_element_to_link), body(body) {}
+
+const std::shared_ptr<RigidBody>& RigidBody::CollisionElement:: getBody() const
+{
+  return this->body;
+}
+
+bool RigidBody::CollisionElement::collidesWith( const DrakeCollision::Element* other) const
+{
+  //DEBUG
+  //cout << "RigidBody::CollisionElement::collidesWith: START" << endl;
+  //END_DEBUG
+  auto other_rb = dynamic_cast<const RigidBody::CollisionElement*>(other);
+  bool collides = true;
+  if (other_rb != nullptr) {
+    collides = this->body->collidesWith(other_rb->body);
+    //DEBUG
+    //cout << "RigidBody::CollisionElement::collidesWith:" << endl;
+    //cout << "  " << this->body->linkname << " & " << other_rb->body->linkname;
+    //cout << ": collides = " << collides << endl;
+    //END_DEBUG
+  }   
+  return collides;
 }
 
 ostream &operator<<( ostream &out, const RigidBody &b)
