@@ -76,30 +76,45 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   //---------------------------------------------------------------------
   // Compute active support from desired supports -----------------------
 
+  Vector4d contact_pt = Vector4d::Zero();
+  contact_pt(3) = 1.0;
+
   vector<SupportStateElement> active_supports;
   set<int> contact_bodies; // redundant, clean up later
   int num_active_contact_pts=0;
   if (!mxIsEmpty(prhs[desired_support_argid])) {
     VectorXd phi;
-    mxArray* mxBodies = mxGetProperty(prhs[desired_support_argid],0,"bodies");
+    mxArray* mxBodies;
+    mxBodies = mxGetProperty(prhs[desired_support_argid],0,"bodies");
+    if (!mxBodies) mxBodies = mxGetField(prhs[desired_support_argid],0,"bodies");
     if (!mxBodies) mexErrMsgTxt("couldn't get bodies");
     double* pBodies = mxGetPr(mxBodies);
-    mxArray* mxContactPts = mxGetProperty(prhs[desired_support_argid],0,"contact_pts");
+
+    mxArray* mxContactPts;
+    // We may have gotten a RigidBodySupportState object (in which case we need mxGetProperty...
+    mxContactPts = mxGetProperty(prhs[desired_support_argid],0,"contact_pts");
+    // ...or a struct array, in which case we need mxGetField
+    if (!mxContactPts) mxContactPts = mxGetField(prhs[desired_support_argid],0,"contact_pts");
     if (!mxContactPts) mexErrMsgTxt("couldn't get contact points");
-    mxArray* mxContactSurfaces = mxGetProperty(prhs[desired_support_argid],0,"contact_surfaces");
+    mxArray* mxContactSurfaces;
+    mxContactSurfaces = mxGetProperty(prhs[desired_support_argid],0,"contact_surfaces");
+    if (!mxContactSurfaces) mxContactSurfaces = mxGetField(prhs[desired_support_argid],0,"contact_surfaces");
     if (!mxContactSurfaces) mexErrMsgTxt("couldn't get contact surfaces");
     double* pContactSurfaces = mxGetPr(mxContactSurfaces);
     
     for (i=0; i<mxGetNumberOfElements(mxBodies);i++) {
       mxArray* mxBodyContactPts = mxGetCell(mxContactPts,i);
-      int nc = static_cast<int>(mxGetNumberOfElements(mxBodyContactPts));
+      assert(mxGetM(mxBodyContactPts) == 3);
+      int nc = static_cast<int>(mxGetN(mxBodyContactPts));
       if (nc<1) continue;
       
+      Map<MatrixXd> all_body_contact_pts(mxGetPr(mxBodyContactPts), mxGetM(mxBodyContactPts), mxGetN(mxBodyContactPts));
+
       SupportStateElement se;
       se.body_idx = (int) pBodies[i]-1;
-      pr = mxGetPr(mxBodyContactPts); 
       for (j=0; j<nc; j++) {
-        se.contact_pt_inds.insert((int)pr[j]-1);
+        contact_pt.head(3) = all_body_contact_pts.col(j);
+        se.contact_pts.push_back(contact_pt);
       }
       se.contact_surface = (int) pContactSurfaces[i]-1;
       

@@ -111,6 +111,11 @@ classdef AtlasQPController < QPController
     x0 = x0 - [ctrl_data.plan_shift(1:2);0;0];
     y0 = y0 - ctrl_data.plan_shift(1:2);
 
+    % lcmgl = LCMGLClient('desired zmp');
+    % lcmgl.glColor3f(0, 0.7, 1.0);
+    % lcmgl.sphere([y0; 0], 0.02, 20, 20);
+    % lcmgl.switchBuffers();
+    
     mu = ctrl_data.mu;
     R_DQyD_ls = R_ls + D_ls'*Qy*D_ls;
 
@@ -212,6 +217,11 @@ classdef AtlasQPController < QPController
       B_act = B(act_idx,:);
 
       [xcom,Jcom] = getCOM(r,kinsol);
+      % lcmgl = LCMGLClient('actual com');
+      % lcmgl.glColor3f(0.8, 1, 0);
+      % lcmgl.sphere([xcom(1:2); 0], 0.02, 20, 20);
+      % lcmgl.switchBuffers();
+
 
       include_angular_momentum = any(any(obj.W_kdot));
 
@@ -227,13 +237,11 @@ classdef AtlasQPController < QPController
 
       if ~isempty(active_supports)
         nc = sum(num_active_contacts);
-        c_pre = 0;
         Dbar = [];
         for j=1:length(active_supports)
           [~,~,JB] = contactConstraintsBV(r,kinsol,false,struct('terrain_only',~obj.use_bullet,...
             'body_idx',[1,active_supports(j)],'collision_groups',active_contact_groups(j)));
           Dbar = [Dbar, vertcat(JB{:})']; % because contact constraints seems to ignore the collision_groups option
-          c_pre = c_pre + length(active_contact_pts{j});
         end
 
         Dbar_float = Dbar(float_idx,:);
@@ -639,6 +647,9 @@ classdef AtlasQPController < QPController
     else
       varargout = {y};
     end
+    % % for profiling the entire atlas controller system (see QTrajEvalBlock.m)
+    % global qtraj_eval_start_time;
+    % toc(qtraj_eval_start_time)
   end
   end
 

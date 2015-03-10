@@ -120,95 +120,28 @@ classdef QPControllerData < ControllerData
     end
         
     function updateControllerData(obj,data)
-      if isfield(data,'lqr_is_time_varying')
-        obj.lqr_is_time_varying = data.lqr_is_time_varying;
-      end
-      if isfield(data,'acceleration_input_frame')
-        obj.acceleration_input_frame = data.acceleration_input_frame;
-      end
-      if isfield(data,'qtraj')
-        obj.qtraj = data.qtraj;
-      end
-      if isfield(data,'comtraj')
-        obj.comtraj = data.comtraj;
-      end
-      if isfield(data,'S')
-        obj.S = data.S;
-      end
-      if isfield(data,'s1')
-        obj.s1 = data.s1;
-      end
-      if isfield(data,'s2')
-        obj.s2 = data.s2;
-      end
-      if isfield(data,'s1dot')
-        obj.s1dot = data.s1dot;
-      end
-      if isfield(data,'s2dot')
-        obj.s2dot = data.s2dot;
-      end
-      if isfield(data,'Qy')
-        obj.Qy = data.Qy;       
-      end      
-      if isfield(data,'y0')
-        obj.y0 = data.y0;
-      end
-      if isfield(data,'x0')
-        obj.x0 = data.x0;
-      end
-      if isfield(data,'u0')
-        obj.u0 = data.u0;
-      end
-      if isfield(data,'mu')
-        obj.mu = data.mu;
-      end
-      if isfield(data,'ignore_terrain')
-        obj.ignore_terrain = data.ignore_terrain;
-      end
-      if isfield(data,'supports')
-        obj.supports = data.supports;
-      end
-      if isfield(data,'support_times')
-        obj.support_times = data.support_times;
-      end
-      if isfield(data,'qp_active_set')
-        obj.qp_active_set = data.qp_active_set;
-      end
-      if isfield(data,'link_constraints')
-        obj.link_constraints = data.link_constraints;
-      end
-      if isfield(data,'constrained_dofs')
-        obj.constrained_dofs = data.constrained_dofs;
-      end
-      if isfield(data,'plan_shift')
-        obj.plan_shift = data.plan_shift;
-      end
-      if isfield(data,'R')
-        obj.R = data.R;
+      for f = fieldnames(data)'
+        obj.(f{1}) = data.(f{1});
       end
       if isfield(data,'A')
         if isa(data.A,'Trajectory')
           obj.A_is_time_varying = true;
         end
-        obj.A = data.A;
       end
       if isfield(data,'B')
         if isa(data.B,'Trajectory')
           obj.B_is_time_varying = true;
         end
-        obj.B = data.B;
       end
       if isfield(data,'C')
         if isa(data.C,'Trajectory')
           obj.C_is_time_varying = true;
         end
-        obj.C = data.C;
       end
       if isfield(data,'D')
         if isa(data.D,'Trajectory')
           obj.D_is_time_varying = true;
         end
-        obj.D = data.D;
       end
     end
   end
