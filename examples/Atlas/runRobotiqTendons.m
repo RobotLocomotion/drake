@@ -12,7 +12,7 @@ xstar_hand = robot.resolveConstraints(xstar_hand);
 %run simulation
 ts = 0:0.01:12;
 
-utraj = setOutputFrame(PPTrajectory(spline(ts,-60-60*cos(2*ts))),getInputFrame(robot));
+utraj = setOutputFrame(PPTrajectory(spline(ts,cos(2*ts))),getInputFrame(robot));
 ytraj = simulate(cascade(utraj,robot),[0 ts(end)],xstar_hand);
 
 %playback
