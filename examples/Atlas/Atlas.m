@@ -27,10 +27,10 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       warning(w);
 
       if (~strcmp(options.hands, 'none'))
-        if (strcmp(options.hands, 'robotiq'))
+        if (strcmp(options.hands, 'robotiq') || strcmp(options.hands, 'robotiq_tendons') || strcmp(options.hands, 'robotiq_simple'))
           options_hand.weld_to_link = findLinkId(obj,'r_hand');
           obj.hands = 1;
-          obj = obj.addRobotFromURDF(getFullPathFromRelativePath('urdf/robotiq.urdf'), [0; -0.195; -0.01], [0; -3.1415/2; 3.1415], options_hand);
+          obj = obj.addRobotFromURDF(getFullPathFromRelativePath(['urdf/', options.hands, '.urdf']), [0; -0.195; -0.01], [0; -3.1415/2; 3.1415], options_hand);
         elseif (strcmp(options.hands, 'robotiq_weight_only'))
           % Adds a box with weight roughly approximating the hands, so that
           % the controllers know what's up
