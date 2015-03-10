@@ -123,6 +123,7 @@ add_subdirectory(util)
 add_subdirectory(solvers)
 add_subdirectory(systems)
 add_subdirectory(thirdParty/GetFullPath)
+add_subdirectory(thirdParty/spruce)
 
 # setup matlab pods-compliance
 include(cmake/matlab_pods.cmake)
