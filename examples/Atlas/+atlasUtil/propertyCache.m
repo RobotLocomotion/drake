@@ -22,7 +22,9 @@ for j = 1:nbod
   contact_group_cache{j} = struct();
   for f = 1:length(r.getBody(j).collision_geometry_group_names)
     name = r.getBody(j).collision_geometry_group_names{f};
-    contact_group_cache{j}.(name) = r.getBody(j).getTerrainContactPoints(name);
+    if r.getBody(j).robotnum == 1
+      contact_group_cache{j}.(name) = r.getBody(j).getTerrainContactPoints(name);
+    end
   end
 end
 
