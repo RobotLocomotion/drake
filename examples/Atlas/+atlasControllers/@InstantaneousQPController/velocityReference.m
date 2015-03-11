@@ -1,4 +1,4 @@
-function v_ref = velocityReference(obj, t, q, qd, qdd, foot_contact_sensor, params)
+function qd_ref = velocityReference(obj, t, q, qd, qdd, foot_contact_sensor, params)
   % Integrate expected accelerations to compute a feed-forward velocity reference. 
   % @param t time (s)
   % @param q, qd robot state
@@ -48,5 +48,5 @@ function v_ref = velocityReference(obj, t, q, qd, qdd, foot_contact_sensor, para
   end
 
   delta_max = 1.0;
-  v_ref = max(-delta_max,min(delta_max,qd_err(obj.robot_property_cache.actuated_indices)));
+  qd_ref = max(-delta_max,min(delta_max,qd_err));
 end

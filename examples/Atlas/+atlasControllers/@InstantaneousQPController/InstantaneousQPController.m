@@ -153,7 +153,7 @@ classdef InstantaneousQPController
         active_supports = [supp.body_id];
         if nargout >= 2
           params = obj.param_sets.(qp_input.param_set_name);
-          v_ref = obj.velocityReference(t, q, qd, qdd, foot_contact_sensor, params.vref_integrator);
+          qd_ref = obj.velocityReference(t, q, qd, qdd, foot_contact_sensor, params.vref_integrator);
         end
       end
 
@@ -163,7 +163,7 @@ classdef InstantaneousQPController
           if ~obj.quiet
             t0 = tic();
           end
-          [y,qdd,v_ref,info_fqp] = ...
+          [y,qdd,qd_ref,info_fqp] = ...
                       instantaneousQPControllermex(obj.data_mex_ptr,...
                       t,...
                       x,...
@@ -309,6 +309,8 @@ classdef InstantaneousQPController
 
         obj.debug_pub.publish(debug_data);
       end
+
+      v_ref = qd_ref(obj.robot_property_cache.actuated_indices);
 
       if (0)     % simple timekeeping for performance optimization
         % note: also need to uncomment tic at very top of this method
