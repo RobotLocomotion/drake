@@ -227,16 +227,16 @@ classdef MotionPlanningTree
 
     function [obj, status, id_new] = extend(obj, q)
       [obj, q_new, id_near] = newPoint(obj, q);
-      if ~isempty(q_new)
+      if isempty(q_new) || obj.distanceMetric(q_new, q) > obj.distanceMetric(obj.getVertex(obj.getParentId(id_near)), q)
+        id_new = [];
+        status = obj.TRAPPED;
+      else
         [obj, id_new] = obj.addVertex(q_new, id_near);
         if q_new == q
           status = obj.REACHED;
         else
           status = obj.ADVANCED;
         end
-      else
-        id_new = [];
-        status = obj.TRAPPED;
       end
     end
 
