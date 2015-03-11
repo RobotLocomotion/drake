@@ -1,6 +1,7 @@
 include_directories ( .. )
 
 add_library(drakeShapes SHARED Geometry.cpp Element.cpp VisualElement.cpp)
+target_link_libraries(drakeShapes spruce)
 
 #enable_testing()
 #add_subdirectory(test)

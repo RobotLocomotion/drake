@@ -81,6 +81,24 @@ namespace DrakeCollision
     return bt_shape;
   }
 
+  unique_ptr<btCollisionShape> BulletModel::newBulletMeshShape(const DrakeShapes::Mesh& geometry, bool use_margins)
+  {
+    unique_ptr<btCollisionShape> bt_shape(new btConvexHullShape());
+    Matrix3Xd vertices;
+    if(geometry.extractMeshVertices(vertices)) {
+      if (use_margins)
+        bt_shape->setMargin(BulletModel::large_margin);
+      else
+        bt_shape->setMargin(BulletModel::small_margin);
+      for (int i=0; i<vertices.cols(); i++){
+        dynamic_cast<btConvexHullShape*>(bt_shape.get())->addPoint(btVector3(vertices(0,i),vertices(1,i),vertices(2,i)));
+      }
+      return bt_shape;
+    } else {
+      return nullptr;
+    }
+  }
+
   unique_ptr<btCollisionShape> BulletModel::newBulletMeshPointsShape(const DrakeShapes::MeshPoints& geometry, bool use_margins)
   {
     unique_ptr<btCollisionShape> bt_shape(new btConvexHullShape());
@@ -121,6 +139,13 @@ namespace DrakeCollision
             const auto cylinder = static_cast<const DrakeShapes::Cylinder&>(elements[id]->getGeometry());
             bt_shape = newBulletCylinderShape(cylinder, true);
             bt_shape_no_margin = newBulletCylinderShape(cylinder, false);
+          }
+          break;
+        case DrakeShapes::MESH:
+          {
+            const auto mesh = static_cast<const DrakeShapes::Mesh&>(elements[id]->getGeometry());
+            bt_shape = newBulletMeshShape(mesh, true);
+            bt_shape_no_margin = newBulletMeshShape(mesh, false);
           }
           break;
         case DrakeShapes::MESH_POINTS:

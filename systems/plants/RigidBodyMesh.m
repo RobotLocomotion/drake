@@ -20,8 +20,8 @@ classdef RigidBodyMesh < RigidBodyGeometry
       %   geometry in the body-frame
       % @param rpy - 3-element vector of Euler angles specifying the
       %   orientation of the geometry in the body-frame
-      obj = obj@RigidBodyGeometry(5,varargin{:}); % TODO: Change '5' to '4' once
-                                                  % we can open obj files in C++
+      obj = obj@RigidBodyGeometry(4,varargin{:}); 
+                                                  
       typecheck(filename,'char');
       obj.filename = filename;
     end

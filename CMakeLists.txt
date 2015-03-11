@@ -6,6 +6,8 @@ endif()
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # set up pods
 set(POD_NAME drake)
 include(cmake/pods.cmake)

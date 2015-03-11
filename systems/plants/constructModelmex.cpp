@@ -244,6 +244,12 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
             element.setGeometry(DrakeShapes::Cylinder(r, l));
           }
             break;
+          case DrakeShapes::MESH:
+          {
+            string filename(mxArrayToString(mxGetProperty(pShape,0,"filename")));
+            element.setGeometry(DrakeShapes::Mesh(filename));
+          }
+            break;
           case DrakeShapes::MESH_POINTS:
           {
             mxArray* pPoints;

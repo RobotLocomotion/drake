@@ -36,7 +36,8 @@ function collisionDetectGradTest(visualize,n_debris)
       v.draw(0,[q0;0*q0]);
       drawClosestPoints(r,q0,v,lcmgl);
       lcmgl.glColor3f(0,0,0);
-      lcmgl.text(zeros(3,1),sprintf('Min. signed distance: %6.4f\nMax.  difference between user and numerical gradients: %6.4e',min(f_user),max(abs(df_user(:)-df_num(:)))),0,0);
+      %lcmgl.text(zeros(3,1),sprintf('Min. signed distance: %6.4f\nMax.  difference between user and numerical gradients: %6.4e',min(f_user),max(abs(df_user(:)-df_num(:)))),0,0);
+      fprintf('Min. signed distance: %6.4f\nMax.  difference between user and numerical gradients: %6.4e\n',min(f_user),max(abs(df_user(:)-df_num(:))));
       lcmgl.switchBuffers();
     end
     if ~isempty(rows_bad)

@@ -69,9 +69,15 @@ namespace DrakeShapes
 
   class DLLEXPORT_drakeShapes Mesh : public Geometry {
     public:
-      Mesh(const std::string filename);
+      Mesh(const std::string& filename);
+      Mesh(const std::string& filename, const std::string& resolved_filename);
       virtual Mesh* clone() const;
+
       std::string filename;
+      std::string resolved_filename;
+      bool extractMeshVertices(Eigen::Matrix3Xd& vertex_coordinates) const;
+    protected:
+      std::string root_dir;
   };
 
   class DLLEXPORT_drakeShapes MeshPoints : public Geometry {

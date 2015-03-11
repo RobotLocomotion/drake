@@ -89,6 +89,7 @@ namespace DrakeCollision
       static std::unique_ptr<btCollisionShape> newBulletSphereShape(const DrakeShapes::Sphere& geometry, bool use_margins);
       static std::unique_ptr<btCollisionShape> newBulletCylinderShape(const DrakeShapes::Cylinder& geometry, bool use_margins);
       static std::unique_ptr<btCollisionShape> newBulletCapsuleShape(const DrakeShapes::Capsule& geometry, bool use_margins);
+      static std::unique_ptr<btCollisionShape> newBulletMeshShape(const DrakeShapes::Mesh& geometry, bool use_margins);
       static std::unique_ptr<btCollisionShape> newBulletMeshPointsShape(const DrakeShapes::MeshPoints& geometry, bool use_margins);
 
       static constexpr double small_margin = 1e-9;

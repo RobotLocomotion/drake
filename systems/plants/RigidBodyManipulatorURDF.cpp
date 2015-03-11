@@ -15,45 +15,6 @@
 
 using namespace std;
 
-void readObjFile(spruce::path spath, vector<double>& vertex_coordinates)
-{
-  //spruce::path spath(fpath.toString(Poco::Path::PATH_NATIVE));
-
-  string ext = spath.extension();
-  std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);   
-  
-  ifstream file;
-  if (ext.compare(".obj")==0) {
-     //cout << "Loading mesh from " << fname << " (scale = " << scale << ")" << endl;
-    file.open(spath.getStr().c_str(),ifstream::in);
-
-  } else {
-    spath.setExtension(".obj");
-    
-    if ( spath.exists() ) {
-      // try changing the extension to obj and loading
-      //      cout << "Loading mesh from " << mypath.replace_extension(".obj").native() << endl;
-      file.open(spath.getStr().c_str(),ifstream::in);
-    }
-  }      
-
-  if (!file.is_open()) {
-    cerr << "Warning: Mesh " << spath.getStr() << " ignored because it does not have extension .obj (nor can I find a juxtaposed file with a .obj extension)" << endl;
-  }
-
-  string line;
-  double d;
-  while (getline(file,line)) {
-    istringstream iss(line);
-    char type;
-    if (iss >> type && type == 'v') {
-      while (iss >> d) {
-        vertex_coordinates.push_back(d);
-      }
-    }
-  }
-}
-
 string exec(string cmd)
 {
 	// from http://stackoverflow.com/questions/478898/how-to-execute-a-command-and-get-output-of-command-within-c
@@ -108,6 +69,29 @@ string rospack(string package)
 
 	cerr << "Couldn't find package " << package << " in ROS_ROOT or ROS_PACKAGE_PATH" << endl;
 	return "";
+}
+
+string resolveFilename(const string& filename, const string& root_dir)
+{
+  spruce::path mesh_filename_s;
+  spruce::path raw_filename_s(filename);
+
+  auto split_filename = raw_filename_s.split();
+
+  if (split_filename.front() == "package:") {
+    spruce::path package_path_s = spruce::path(rospack(split_filename.at(2)));
+    mesh_filename_s = package_path_s;
+
+    auto split_raw = raw_filename_s.split();
+    for (int i = 1; i < split_raw.size()-2; ++i) {
+      mesh_filename_s.append(split_raw.at(i+2));
+    }
+
+  } else {
+    mesh_filename_s = spruce::path(root_dir);
+    mesh_filename_s.append(filename);
+  }
+  return mesh_filename_s.getStr();
 }
 
 // todo: rectify this with findLinkId in the class (which makes more assumptions)
@@ -244,7 +228,7 @@ bool parseMaterial(TiXmlElement* node, map<string, Vector4d>& materials)
   return true;
 }
 
-bool parseGeometry(TiXmlElement* node, DrakeShapes::Element& element)
+bool parseGeometry(TiXmlElement* node, const string& root_dir, DrakeShapes::Element& element)
 {
   const char* attr;
   TiXmlElement* shape_node;
@@ -315,71 +299,14 @@ bool parseGeometry(TiXmlElement* node, DrakeShapes::Element& element)
     if (!attr)
       return false;
     string filename(attr);
-    element.setGeometry(DrakeShapes::Mesh(filename));
-  } else if ((shape_node = geometry_node->FirstChildElement("mesh-points"))) {
-    attr = shape_node->Attribute("filename");
-    string filename;
-    if (attr) {
-      filename = attr;
-    } else {
-      cerr << "ERROR parsing mesh element filename" << endl;
-      return false;
-    }
-
-    spruce::path mesh_filename_s;
-    spruce::path raw_filename_s(filename);
-
-    auto split_filename = raw_filename_s.split();
-
-    if (split_filename.front() == "package:") {
-      spruce::path package_path_s = spruce::path(rospack(split_filename.at(2)));
-      mesh_filename_s = package_path_s;
-
-      auto split_raw = raw_filename_s.split();
-      for (int i = 1; i < split_raw.size()-2; ++i) {
-        mesh_filename_s.append(split_raw.at(i+2));
-      }
-
-    } else {
-      mesh_filename_s = spruce::path(root_dir);
-      mesh_filename_s.append(filename);
-    }
-    vector<double> mesh_data;
-    readObjFile(mesh_filename_s, mesh_data);
-    if ((mesh_data.size() > 0) && (mesh_data.size() % 3 == 0)) {
-      double n_pts = mesh_data.size()/3;
-      Map<Matrix3Xd> pts(mesh_data.data(),3,n_pts);
-      geometry = unique_ptr<DrakeCollision::Geometry>(new DrakeCollision::Mesh(pts));
-    } else {
-      cerr << "ERROR parsing mesh file: " << mesh_filename_s.getStr() << endl;
-      return false;
-    }
-    /*
-     boost::shared_ptr<urdf::Mesh> mesh(boost::dynamic_pointer_cast<urdf::Mesh>(cptr->geometry));
-     boost::filesystem::path mesh_filename(root_dir);
-     boost::regex package(".*package://.*");
-     if (!boost::regex_match(mesh->filename, package)) {
-     mesh_filename /= mesh->filename;
-     readObjFile(mesh_filename,params);
-     } else {
-     create_collision_element = false;
-     if (print_mesh_package_warning) {
-     cerr << "Warning: The robot '" << _urdf_model->getName()
-     << "' contains collision geometries that specify mesh "
-     << "files with the 'package://' syntax, which "
-     << "URDFRigidBodyManipulator does not support. These "
-     << "collision geometries will be ignored." << endl;
-     print_mesh_package_warning = false;
-     }
-     }
-     */
+    element.setGeometry(DrakeShapes::Mesh(filename, resolveFilename(filename, root_dir)));
   } else {
     return false;
   }
   return true;
 }
 
-bool parseVisual(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyManipulator* model, const map<string, Vector4d>& materials)
+bool parseVisual(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyManipulator* model, const map<string, Vector4d>& materials, const string& root_dir)
 {
   Matrix4d T_element_to_link = Matrix4d::Identity();
   TiXmlElement* origin = node->FirstChildElement("origin");
@@ -395,7 +322,7 @@ bool parseVisual(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyManipu
   }
 
   DrakeShapes::VisualElement element(T_element_to_link);
-  if (!parseGeometry(geometry_node, element)) {
+  if (!parseGeometry(geometry_node, root_dir, element)) {
     cerr << "ERROR: Link " << body->linkname << " has a visual element with an unknown type" << endl;
     return false;
   }
@@ -414,7 +341,7 @@ bool parseVisual(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyManipu
   return true;
 }
 
-bool parseCollision(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyManipulator* model)
+bool parseCollision(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyManipulator* model, const string& root_dir)
 {
   Matrix4d T_element_to_link = Matrix4d::Identity();
   TiXmlElement* origin = node->FirstChildElement("origin");
@@ -438,7 +365,7 @@ bool parseCollision(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyMan
   }
 
   RigidBody::CollisionElement element(T_element_to_link, body);
-  if (!parseGeometry(geometry_node, element)) {
+  if (!parseGeometry(geometry_node, root_dir, element)) {
     cerr << "ERROR: Link " << body->linkname << " has a collision element with an unknown type" << endl;
     return false;
   }
@@ -453,7 +380,7 @@ bool parseCollision(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyMan
   return true;
 }
 
-bool parseLink(RigidBodyManipulator* model, TiXmlElement* node, const map< string, Vector4d >& materials)
+bool parseLink(RigidBodyManipulator* model, TiXmlElement* node, const map< string, Vector4d >& materials, const string& root_dir)
 {
   const char* attr = node->Attribute("drake_ignore");
   if (attr && strcmp(attr, "true") == 0)
@@ -473,7 +400,7 @@ bool parseLink(RigidBodyManipulator* model, TiXmlElement* node, const map< strin
       return false;
 
   for (TiXmlElement* visual_node = node->FirstChildElement("visual"); visual_node; visual_node = visual_node->NextSiblingElement("visual")) {
-    if (!parseVisual(body, visual_node, model, materials)) {
+    if (!parseVisual(body, visual_node, model, materials, root_dir)) {
       printf("error parsing visual\n");
       return false;
     }
@@ -483,7 +410,7 @@ bool parseLink(RigidBodyManipulator* model, TiXmlElement* node, const map< strin
   body->body_index = model->bodies.size() - 1;
 
   for (TiXmlElement* collision_node = node->FirstChildElement("collision"); collision_node; collision_node = collision_node->NextSiblingElement("collision")) {
-    if (!parseCollision(body, collision_node, model)) {
+    if (!parseCollision(body, collision_node, model, root_dir)) {
       printf("error parsing collision\n");
       return false;
     }
@@ -677,7 +604,7 @@ bool parseRobot(RigidBodyManipulator* model, TiXmlElement* node, const string &r
   }
   // parse link elements
   for (TiXmlElement* link_node = node->FirstChildElement("link"); link_node; link_node = link_node->NextSiblingElement("link"))
-    if (!parseLink(model, link_node, materials))
+    if (!parseLink(model, link_node, materials, root_dir))
       return false;
 
   // todo: parse collision filter groups
