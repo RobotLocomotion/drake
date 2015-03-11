@@ -280,7 +280,7 @@ void spruce::path::normalize()
 {
     std::replace( path_str.begin(), path_str.end(), '\\', '/' );
 
-    if ( path_str.back() == '/' ) path_str.pop_back();
+    if ( path_str.back() == '/' ) path_str = path_str.substr(0, path_str.length()-1);
 }
 
 /*-------------------------------------------------------
