@@ -140,9 +140,12 @@ public:
   class CollisionElement : public DrakeCollision::Element
   {
     public:
+      CollisionElement(const CollisionElement& other);
       CollisionElement(const Matrix4d& T_element_to_link, std::shared_ptr<RigidBody> body);
       CollisionElement(const DrakeShapes::Geometry& geometry,
                        const Matrix4d& T_element_to_link, std::shared_ptr<RigidBody> body);
+
+      virtual CollisionElement* clone() const;
 
       const std::shared_ptr<RigidBody>& getBody() const;
 

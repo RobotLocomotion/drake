@@ -561,6 +561,9 @@ bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
                                             bool use_margins)
 {
   vector<DrakeCollision::PointPair> points;
+  //DEBUG
+  //cout << "RigidBodyManipulator::collisionDetect: calling collision_model->closestPointsAllToAll" << endl;
+  //END_DEBUG
   bool points_found = collision_model->closestPointsAllToAll(ids_to_check, use_margins, points);
   //DEBUG
   //cout << "RigidBodyManipulator::collisionDetect: points.size() = " << points.size() << endl;
@@ -580,6 +583,12 @@ bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
     normal.col(i) = n;
     phi[i] = distance;
     const RigidBody::CollisionElement* elementA = dynamic_cast<const RigidBody::CollisionElement*>(collision_model->readElement(points[i].getIdA()));
+    //DEBUG
+    //cout << "RigidBodyManipulator::collisionDetect: points[i].getIdA() = " << points[i].getIdA() << endl;
+    //cout << "RigidBodyManipulator::collisionDetect: collision_model->readElement(points[i].getIdA()) = " << collision_model->readElement(points[i].getIdA()) << endl;
+    //cout << "RigidBodyManipulator::collisionDetect: collision_model->readElement(points[i].getIdA())->getId() = " << collision_model->readElement(points[i].getIdA())->getId() << endl;
+    //cout << "RigidBodyManipulator::collisionDetect: elementA = " << elementA << endl;
+    //END_DEBUG
     bodyA_idx.push_back(elementA->getBody()->body_index);
     const RigidBody::CollisionElement* elementB = dynamic_cast<const RigidBody::CollisionElement*>(collision_model->readElement(points[i].getIdB()));
     bodyB_idx.push_back(elementB->getBody()->body_index);

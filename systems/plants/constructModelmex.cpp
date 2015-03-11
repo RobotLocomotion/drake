@@ -266,6 +266,10 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
             break;
           default:
             // intentionally do nothing..
+            
+            //DEBUG
+            //cout << "constructModelmex: SHOULD NOT GET HERE" << endl;
+            //END_DEBUG
             break;
         }
         //DEBUG
@@ -411,4 +415,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   model->compile();
 
   plhs[0] = createDrakeMexPointer((void*)model,"RigidBodyManipulator");
+  //DEBUG
+  //cout << "constructModelmex: END" << endl;
+  //END_DEBUG
 }

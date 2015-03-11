@@ -186,13 +186,22 @@ bool RigidBody::appendCollisionElementIdsFromThisBody(vector<DrakeCollision::Ele
 }
 
 RigidBody::CollisionElement::
+CollisionElement( const CollisionElement& other)
+  : DrakeCollision::Element(other), body(other.getBody()) {}
+
+  RigidBody::CollisionElement::
 CollisionElement( const Matrix4d& T_element_to_link, std::shared_ptr<RigidBody> body)
   : DrakeCollision::Element(T_element_to_link), body(body) {}
 
-RigidBody::CollisionElement::
+  RigidBody::CollisionElement::
 CollisionElement(const DrakeShapes::Geometry& geometry,
-                 const Matrix4d& T_element_to_link, std::shared_ptr<RigidBody> body)
+    const Matrix4d& T_element_to_link, std::shared_ptr<RigidBody> body)
   : DrakeCollision::Element(geometry, T_element_to_link), body(body) {}
+
+RigidBody::CollisionElement* RigidBody::CollisionElement::clone() const
+{
+  return new CollisionElement(*this);
+}
 
 const std::shared_ptr<RigidBody>& RigidBody::CollisionElement:: getBody() const
 {
@@ -219,6 +228,6 @@ bool RigidBody::CollisionElement::collidesWith( const DrakeCollision::Element* o
 
 ostream &operator<<( ostream &out, const RigidBody &b)
 {
-	out << "RigidBody(" << b.linkname << "," << b.jointname << ")";
-	return out;
+  out << "RigidBody(" << b.linkname << "," << b.jointname << ")";
+  return out;
 }
