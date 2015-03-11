@@ -1,8 +1,9 @@
 classdef Cartesian2CylindricalTransform < drakeFunction.DrakeFunction
   % Given a cartesian coordinate frame, transform its coordinates to a
-  % cylindrical coordinates
+  % cylindrical coordinates. Please refer to
+  % drake/doc/doc_cartesian2cylindrical.pdf for details on the coordinates.
   properties(SetAccess = protected)
-    T_cylinder % This is a homogeneous transformation matrix, T_cylinder transforms a cylinder with [0;0;1] being its axis, and nd the angle theta measured with respect to the x-axis
+    T_cylinder % This is a homogeneous transformation matrix, T_cylinder transforms a cylinder with [0;0;1] being its axis, and the angle theta measured with respect to the x-axis
   end
   
   methods
