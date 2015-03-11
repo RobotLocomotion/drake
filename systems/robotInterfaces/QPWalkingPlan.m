@@ -258,13 +258,13 @@ classdef QPWalkingPlan < QPControllerPlan
                                      'mu', {obj.mu, obj.mu},...
                                      'contact_surfaces', {0,0});
 
-      if any(supp.bodies==r.foot_body_id.right)
+      if ~isempty(supp.bodies) && any(supp.bodies==r.foot_body_id.right)
         r.warning_manager.warnOnce('Drake:HardCodedSupport', 'hard-coded for heel+toe support');
         qp_input.support_data(1).support_logic_map = obj.support_logic_maps.kinematic_or_sensed;
       else
         qp_input.support_data(1).support_logic_map = obj.support_logic_maps.prevent_support;
       end
-      if any(supp.bodies==r.foot_body_id.left)
+      if ~isempty(supp.bodies) && any(supp.bodies==r.foot_body_id.left)
         r.warning_manager.warnOnce('Drake:HardCodedSupport', 'hard-coded for heel+toe support');
         qp_input.support_data(2).support_logic_map = obj.support_logic_maps.kinematic_or_sensed;
       else
