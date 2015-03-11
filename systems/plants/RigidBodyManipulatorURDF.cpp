@@ -38,6 +38,17 @@ int findLinkIndexByJointName(RigidBodyManipulator* model, string jointname)
   return index;
 }
 
+bool parseScalarAttribute(TiXmlElement* node, const char* attribute_name, double& val)
+{
+  const char* attr = node->Attribute(attribute_name);
+  if (attr) {
+    stringstream s(attr);
+    s >> val;
+    return true;
+  }
+  return false;
+}
+
 // only writes values if they exist
 bool parseVectorAttribute(TiXmlElement* node, const char* attribute_name, Vector3d &val)
 {
@@ -327,29 +338,39 @@ bool parseJoint(RigidBodyManipulator* model, TiXmlElement* node)
     axis.normalize();
   }
 
-  // todo: add damping, etc?
-
-  TiXmlElement* limit_node = node->FirstChildElement("limit");
-  if (limit_node) {
-    cerr << "Warning: joint limits not (re-)implemented yet; they will be ignored." << endl;
-  }
-
   // now construct the actual joint (based on it's type)
-  DrakeJoint* joint = NULL;
+  DrakeJoint* joint = nullptr;
+  FixedAxisOneDoFJoint* fjoint = nullptr;
+
   if (type.compare("revolute") == 0 || type.compare("continuous") == 0) {
-    joint = new RevoluteJoint(name, Ttree, axis);
+    fjoint = new RevoluteJoint(name, Ttree, axis);
+    joint = fjoint;
   } else if (type.compare("fixed") == 0) {
     // FIXME: implement a fixed joint class
-    RevoluteJoint* rj = new RevoluteJoint(name, Ttree, axis);
-    rj->setJointLimits(0, 0);
-    joint = rj;
+    fjoint = new RevoluteJoint(name, Ttree, axis);
+    fjoint->setJointLimits(0, 0);
+    joint = fjoint;
   } else if (type.compare("prismatic") == 0) {
-    joint = new PrismaticJoint(name, Ttree, axis);
+    fjoint = new PrismaticJoint(name, Ttree, axis);
+    joint = fjoint;
   } else if (type.compare("floating") == 0) {
     joint = new RollPitchYawFloatingJoint(name, Ttree);
   } else {
     cerr << "ERROR: Unrecognized joint type: " << type << endl;
     return false;
+  }
+
+  TiXmlElement* dynamics_node = node->FirstChildElement("dynamics");
+  if (dynamics_node) {
+    cerr << "Warning: joint dynamics xml tag not (re-)implemented yet; they will be ignored." << endl;
+  }
+
+  TiXmlElement* limit_node = node->FirstChildElement("limit");
+  if (fjoint != nullptr && limit_node) {
+    double lower = -std::numeric_limits<double>::infinity(), upper = std::numeric_limits<double>::infinity();
+    parseScalarAttribute(limit_node,"lower",lower);
+    parseScalarAttribute(limit_node,"upper",upper);
+    fjoint->setJointLimits(lower,upper);
   }
 
   model->bodies[child_index]->setJoint(std::unique_ptr<DrakeJoint>(joint));
