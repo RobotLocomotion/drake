@@ -1,6 +1,6 @@
 classdef Cylindrical2CartesianTransform < drakeFunction.DrakeFunction
   % Given a cylindrical coordinate frame, transform its coordinates to a
-  % Cartesian coordinate. Refer to doc_cartesian2cylindrical.pdf for the
+  % Cartesian coordinate. Refer to drake/doc/doc_cartesian2cylindrical.pdf for the
   % transformation
   properties(SetAccess = protected)
     T_cylinder % This is a homogeneous transformation matrix, T_cylinder transforms a cylinder with [0;0;1] being its axis, and nd the angle theta measured with respect to the x-axis
@@ -18,7 +18,7 @@ classdef Cylindrical2CartesianTransform < drakeFunction.DrakeFunction
     end
     
     function [x_cartesian,J] = eval(obj,x_cylinder)
-      % Refer to doc_cartesian2cylindrical.pdf for the transformation
+      % Refer to drake/doc/doc_cartesian2cylindrical.pdf for the transformation
       % @retval x_cartesian = [x;y;z;roll;pitch;yaw];
       % @param x_cylinder =
       % [radius;theta;height;roll_tangent,pitch_tangent,yaw_tangent]
