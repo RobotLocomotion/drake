@@ -15,10 +15,16 @@ namespace DrakeShapes
 {
   class DLLEXPORT_drakeShapes Element {
     public:
-      Element(std::unique_ptr<Geometry> geometry, 
+      Element(const Geometry& geometry, 
           const Eigen::Matrix4d& T_element_to_local = Eigen::Matrix4d::Identity())
-        : geometry(move(geometry)), T_element_to_local(T_element_to_local)
+        : geometry(geometry.clone()), T_element_to_local(T_element_to_local)
       {};
+
+      Element(const Eigen::Matrix4d& T_element_to_local = Eigen::Matrix4d::Identity())
+        : geometry(), T_element_to_local(T_element_to_local)
+      {};
+
+      virtual Element* clone() const;
 
       const Eigen::Matrix4d& getWorldTransform() const; 
 
@@ -28,7 +34,9 @@ namespace DrakeShapes
 
       const Shape getShape() const;
 
-      const Geometry* getGeometry() const;
+      void setGeometry(const Geometry& geometry);
+
+      const Geometry& getGeometry() const;
 
     protected:
 
@@ -37,7 +45,7 @@ namespace DrakeShapes
       const Eigen::Matrix4d T_element_to_local;
       std::unique_ptr<Geometry> geometry;
 
-      Element(const Element&) {}
+      Element(const Element&);
       Element& operator=(const Element&) { return *this; }
     public:
       EIGEN_MAKE_ALIGNED_OPERATOR_NEW

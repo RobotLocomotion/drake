@@ -149,9 +149,9 @@ bool RigidBody::hasParent() const {
 }
 
 
-void RigidBody::addVisualElement(unique_ptr<DrakeShapes::Geometry> geometry, const Matrix4d& T_element_to_link, const Vector4d& material)
+void RigidBody::addVisualElement(const DrakeShapes::VisualElement& element)
 {
-  visual_elements.emplace_back(move(geometry), T_element_to_link, material);
+  visual_elements.push_back(element);
 }
 
 const vector<DrakeShapes::VisualElement>& RigidBody::getVisualElements() const
@@ -186,9 +186,13 @@ bool RigidBody::appendCollisionElementIdsFromThisBody(vector<DrakeCollision::Ele
 }
 
 RigidBody::CollisionElement::
-CollisionElement(std::unique_ptr<DrakeShapes::Geometry> geometry,
+CollisionElement( const Matrix4d& T_element_to_link, std::shared_ptr<RigidBody> body)
+  : DrakeCollision::Element(T_element_to_link), body(body) {}
+
+RigidBody::CollisionElement::
+CollisionElement(const DrakeShapes::Geometry& geometry,
                  const Matrix4d& T_element_to_link, std::shared_ptr<RigidBody> body)
-  : DrakeCollision::Element(move(geometry), T_element_to_link), body(body) {}
+  : DrakeCollision::Element(geometry, T_element_to_link), body(body) {}
 
 const std::shared_ptr<RigidBody>& RigidBody::CollisionElement:: getBody() const
 {

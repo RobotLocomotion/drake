@@ -39,10 +39,10 @@ namespace DrakeCollision
     bt_collision_world->getPairCache()->setOverlapFilterCallback(&filter_callback);
   }
 
-  unique_ptr<btCollisionShape> BulletModel::newBulletBoxShape(const DrakeShapes::Box* geometry, bool use_margins)
+  unique_ptr<btCollisionShape> BulletModel::newBulletBoxShape(const DrakeShapes::Box& geometry, bool use_margins)
   {
     unique_ptr<btCollisionShape> bt_shape(new btConvexHullShape());
-    btBoxShape bt_box( btVector3(geometry->size(0)/2,geometry->size(1)/2,geometry->size(2)/2) );
+    btBoxShape bt_box( btVector3(geometry.size(0)/2,geometry.size(1)/2,geometry.size(2)/2) );
     /* Strange things happen to the collision-normals when we use the
      * convex interface to the btBoxShape. Instead, we'll explicitly create
      * a btConvexHullShape.
@@ -60,38 +60,119 @@ namespace DrakeCollision
     return bt_shape;
   }
 
-  unique_ptr<btCollisionShape> BulletModel::newBulletSphereShape(const DrakeShapes::Sphere* geometry, bool use_margins)
+  unique_ptr<btCollisionShape> BulletModel::newBulletSphereShape(const DrakeShapes::Sphere& geometry, bool use_margins)
   {
-    unique_ptr<btCollisionShape> bt_shape(new btSphereShape(geometry->radius));
+    unique_ptr<btCollisionShape> bt_shape(new btSphereShape(geometry.radius));
     return bt_shape;
   }
 
-  unique_ptr<btCollisionShape> BulletModel::newBulletCylinderShape(const DrakeShapes::Cylinder* geometry, bool use_margins)
+  unique_ptr<btCollisionShape> BulletModel::newBulletCylinderShape(const DrakeShapes::Cylinder& geometry, bool use_margins)
   {
-    unique_ptr<btCollisionShape> bt_shape(new btCylinderShapeZ( btVector3(geometry->radius,geometry->radius,geometry->length/2) ));
+    unique_ptr<btCollisionShape> bt_shape(new btCylinderShapeZ( btVector3(geometry.radius,geometry.radius,geometry.length/2) ));
     return bt_shape;
   }
 
-  unique_ptr<btCollisionShape> BulletModel::newBulletCapsuleShape(const DrakeShapes::Capsule* geometry, bool use_margins)
+  unique_ptr<btCollisionShape> BulletModel::newBulletCapsuleShape(const DrakeShapes::Capsule& geometry, bool use_margins)
   {
     unique_ptr<btCollisionShape> bt_shape(new btConvexHullShape());
-    dynamic_cast<btConvexHullShape*>(bt_shape.get())->addPoint(btVector3(0,0,-geometry->length/2));
-    dynamic_cast<btConvexHullShape*>(bt_shape.get())->addPoint(btVector3(0,0,geometry->length/2));
-    bt_shape->setMargin(geometry->radius);
+    dynamic_cast<btConvexHullShape*>(bt_shape.get())->addPoint(btVector3(0,0,-geometry.length/2));
+    dynamic_cast<btConvexHullShape*>(bt_shape.get())->addPoint(btVector3(0,0,geometry.length/2));
+    bt_shape->setMargin(geometry.radius);
     return bt_shape;
   }
 
-  unique_ptr<btCollisionShape> BulletModel::newBulletMeshPointsShape(const DrakeShapes::MeshPoints* geometry, bool use_margins)
+  unique_ptr<btCollisionShape> BulletModel::newBulletMeshPointsShape(const DrakeShapes::MeshPoints& geometry, bool use_margins)
   {
     unique_ptr<btCollisionShape> bt_shape(new btConvexHullShape());
     if (use_margins)
       bt_shape->setMargin(BulletModel::large_margin);
     else
       bt_shape->setMargin(BulletModel::small_margin);
-    for (int i=0; i<geometry->points.cols(); i++){
-      dynamic_cast<btConvexHullShape*>(bt_shape.get())->addPoint(btVector3(geometry->points(0,i),geometry->points(1,i),geometry->points(2,i)));
+    for (int i=0; i<geometry.points.cols(); i++){
+      dynamic_cast<btConvexHullShape*>(bt_shape.get())->addPoint(btVector3(geometry.points(0,i),geometry.points(1,i),geometry.points(2,i)));
     }
     return bt_shape;
+  }
+
+  ElementId BulletModel::addElement(const Element& element)
+  {
+    ElementId id =  Model::addElement(element);
+
+    if (id != 0) {
+      unique_ptr<btCollisionShape> bt_shape;
+      unique_ptr<btCollisionShape> bt_shape_no_margin;
+      switch (elements[id]->getShape()) {
+        case DrakeShapes::BOX:
+          {
+            const auto box = static_cast<const DrakeShapes::Box&>(elements[id]->getGeometry());
+            bt_shape = newBulletBoxShape(box, true);          
+            bt_shape_no_margin = newBulletBoxShape(box, false);
+          }
+          break;
+        case DrakeShapes::SPHERE:
+          {
+            const auto sphere = static_cast<const DrakeShapes::Sphere&>(elements[id]->getGeometry());
+            bt_shape = newBulletSphereShape(sphere, true);
+            bt_shape_no_margin = newBulletSphereShape(sphere, false);
+          }
+          break;
+        case DrakeShapes::CYLINDER:
+          {
+            const auto cylinder = static_cast<const DrakeShapes::Cylinder&>(elements[id]->getGeometry());
+            bt_shape = newBulletCylinderShape(cylinder, true);
+            bt_shape_no_margin = newBulletCylinderShape(cylinder, false);
+          }
+          break;
+        case DrakeShapes::MESH_POINTS:
+          {
+            const auto mesh = static_cast<const DrakeShapes::MeshPoints&>(elements[id]->getGeometry());
+            bt_shape = newBulletMeshPointsShape(mesh, true);
+            bt_shape_no_margin = newBulletMeshPointsShape(mesh, false);
+          }
+          break;
+        case DrakeShapes::CAPSULE:
+          {
+            const auto capsule = static_cast<const DrakeShapes::Capsule&>(elements[id]->getGeometry());
+            bt_shape = newBulletCapsuleShape(capsule, true);
+            bt_shape_no_margin = newBulletCapsuleShape(capsule, false);
+          }
+          break;
+        default:
+          cerr << "Warning: Collision elements[id] has an unknown type " << elements[id]->getShape() << endl;
+          throw unknownShapeException(elements[id]->getShape());
+          break;
+      }
+      // Create the collision objects
+      unique_ptr<btCollisionObject> bt_obj(new btCollisionObject());
+      unique_ptr<btCollisionObject> bt_obj_no_margin(new btCollisionObject());
+      bt_obj->setCollisionShape(bt_shape.get());
+      bt_obj_no_margin->setCollisionShape(bt_shape_no_margin.get());
+      bt_obj->setUserPointer(elements[id].get());
+      bt_obj_no_margin->setUserPointer(elements[id].get());
+
+      // Add the collision objects to the collision worlds
+      bullet_world.bt_collision_world->addCollisionObject(bt_obj.get());
+      bullet_world_no_margin.bt_collision_world->addCollisionObject(bt_obj_no_margin.get());
+
+      if (elements[id]->isStatic()) {
+        bt_obj->setCollisionFlags(btCollisionObject::CF_KINEMATIC_OBJECT);
+        bt_obj->activate();
+        bt_obj_no_margin->setCollisionFlags(btCollisionObject::CF_KINEMATIC_OBJECT);
+        bt_obj_no_margin->activate();
+      } else {
+        bt_obj->setCollisionFlags(btCollisionObject::CF_STATIC_OBJECT);
+        bt_obj_no_margin->setCollisionFlags(btCollisionObject::CF_STATIC_OBJECT);
+      }
+
+      // Store the Bullet collision objects
+      bullet_world.bt_collision_objects.insert(make_pair(id, move(bt_obj)));
+      bullet_world_no_margin.bt_collision_objects.insert(make_pair(id, move(bt_obj_no_margin)));
+
+      // Store the Bullet collision shapes too, because Bullet does no cleanup
+      bt_collision_shapes.push_back(move(bt_shape));
+      bt_collision_shapes.push_back(move(bt_shape_no_margin));
+    }
+    return id;
   }
 
   ElementId BulletModel::addElement(std::unique_ptr<Element> element)
@@ -104,35 +185,35 @@ namespace DrakeCollision
       switch (elements[id]->getShape()) {
         case DrakeShapes::BOX:
           {
-            const auto box = static_cast<const DrakeShapes::Box*>(elements[id]->getGeometry());
+            const auto box = static_cast<const DrakeShapes::Box&>(elements[id]->getGeometry());
             bt_shape = newBulletBoxShape(box, true);          
             bt_shape_no_margin = newBulletBoxShape(box, false);
           }
           break;
         case DrakeShapes::SPHERE:
           {
-            const auto sphere = static_cast<const DrakeShapes::Sphere*>(elements[id]->getGeometry());
+            const auto sphere = static_cast<const DrakeShapes::Sphere&>(elements[id]->getGeometry());
             bt_shape = newBulletSphereShape(sphere, true);
             bt_shape_no_margin = newBulletSphereShape(sphere, false);
           }
           break;
         case DrakeShapes::CYLINDER:
           {
-            const auto cylinder = static_cast<const DrakeShapes::Cylinder*>(elements[id]->getGeometry());
+            const auto cylinder = static_cast<const DrakeShapes::Cylinder&>(elements[id]->getGeometry());
             bt_shape = newBulletCylinderShape(cylinder, true);
             bt_shape_no_margin = newBulletCylinderShape(cylinder, false);
           }
           break;
         case DrakeShapes::MESH_POINTS:
           {
-            const auto mesh = static_cast<const DrakeShapes::MeshPoints*>(elements[id]->getGeometry());
+            const auto mesh = static_cast<const DrakeShapes::MeshPoints&>(elements[id]->getGeometry());
             bt_shape = newBulletMeshPointsShape(mesh, true);
             bt_shape_no_margin = newBulletMeshPointsShape(mesh, false);
           }
           break;
         case DrakeShapes::CAPSULE:
           {
-            const auto capsule = static_cast<const DrakeShapes::Capsule*>(elements[id]->getGeometry());
+            const auto capsule = static_cast<const DrakeShapes::Capsule&>(elements[id]->getGeometry());
             bt_shape = newBulletCapsuleShape(capsule, true);
             bt_shape_no_margin = newBulletCapsuleShape(capsule, false);
           }

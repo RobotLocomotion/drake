@@ -223,25 +223,25 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
         memcpy(T.data(), mxGetPr(mxGetProperty(pShape,0,"T")), sizeof(double)*4*4);
         auto shape = (DrakeShapes::Shape)static_cast<int>(mxGetScalar(mxGetProperty(pShape,0,"bullet_shape_id")));
         vector<double> params_vec;
-        unique_ptr<DrakeShapes::Geometry> geometry;
+        RigidBody::CollisionElement element(T, model->bodies[i]);
         switch (shape) {
           case DrakeShapes::BOX:
           {
             double* params = mxGetPr(mxGetProperty(pShape,0,"size"));
-            geometry = unique_ptr<DrakeShapes::Geometry>(new DrakeShapes::Box(Vector3d(params[0],params[1],params[2])));
+            element.setGeometry(DrakeShapes::Box(Vector3d(params[0],params[1],params[2])));
           }
             break;
           case DrakeShapes::SPHERE:
           {
             double r(*mxGetPr(mxGetProperty(pShape,0,"radius")));
-            geometry = unique_ptr<DrakeShapes::Geometry>(new DrakeShapes::Sphere(r));
+            element.setGeometry(DrakeShapes::Sphere(r));
           }
             break;
           case DrakeShapes::CYLINDER:
           {
             double r(*mxGetPr(mxGetProperty(pShape,0,"radius")));
             double l(*mxGetPr(mxGetProperty(pShape,0,"len")));
-            geometry = unique_ptr<DrakeShapes::Geometry>(new DrakeShapes::Cylinder(r, l));
+            element.setGeometry(DrakeShapes::Cylinder(r, l));
           }
             break;
           case DrakeShapes::MESH_POINTS:
@@ -250,7 +250,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
             mexCallMATLAB(1,&pPoints,1,&pShape,"getPoints");
             double n_pts = static_cast<int>(mxGetN(pPoints));
             Map<Matrix3Xd> pts(mxGetPr(pPoints),3,n_pts);
-            geometry = unique_ptr<DrakeShapes::Geometry>(new DrakeShapes::MeshPoints(pts));
+            element.setGeometry(DrakeShapes::MeshPoints(pts));
             mxDestroyArray(pPoints);
             // The element-to-link transform is applied in
             // RigidBodyMesh/getPoints - don't apply it again!
@@ -261,7 +261,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
           {
             double r(*mxGetPr(mxGetProperty(pShape,0,"radius")));
             double l(*mxGetPr(mxGetProperty(pShape,0,"len")));
-            geometry = unique_ptr<DrakeShapes::Geometry>(new DrakeShapes::Capsule(r, l));
+            element.setGeometry(DrakeShapes::Capsule(r, l));
           }
             break;
           default:
@@ -271,8 +271,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
         //DEBUG
         //cout << "constructModelmex: geometry = " << geometry.get() << endl;
         //END_DEBUG
-        model->addCollisionElement(move(geometry), model->bodies[i], 
-                                   T, group_name);
+        model->addCollisionElement(element, model->bodies[i], group_name);
       }
       if (!model->bodies[i]->hasParent()) {
         model->updateCollisionElements(model->bodies[i]);  // update static objects only once - right here on load

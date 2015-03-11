@@ -40,7 +40,7 @@ public:
 
   bool hasParent() const;
 
-  void addVisualElement(std::unique_ptr<DrakeShapes::Geometry> geometry, const Matrix4d& T_element_to_link, const Vector4d& material);
+  void addVisualElement(const DrakeShapes::VisualElement& elements);
 
   const std::vector<DrakeShapes::VisualElement>& getVisualElements() const;
 
@@ -140,7 +140,8 @@ public:
   class CollisionElement : public DrakeCollision::Element
   {
     public:
-      CollisionElement(std::unique_ptr<DrakeShapes::Geometry> geometry,
+      CollisionElement(const Matrix4d& T_element_to_link, std::shared_ptr<RigidBody> body);
+      CollisionElement(const DrakeShapes::Geometry& geometry,
                        const Matrix4d& T_element_to_link, std::shared_ptr<RigidBody> body);
 
       const std::shared_ptr<RigidBody>& getBody() const;

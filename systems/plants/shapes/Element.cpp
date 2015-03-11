@@ -4,6 +4,18 @@ using namespace Eigen;
 
 namespace DrakeShapes
 { 
+  Element::Element(const Element& other) 
+    : T_element_to_world(other.getWorldTransform()),
+      T_element_to_local(other.getLocalTransform()),
+      geometry(other.getGeometry().clone()) 
+  {
+  }
+
+  Element* Element::clone() const
+  {
+    return new Element(*this);
+  }
+
   const Matrix4d& Element::getWorldTransform() const
   {
     return T_element_to_world;
@@ -19,9 +31,14 @@ namespace DrakeShapes
     return geometry->getShape();
   }
 
-  const Geometry* Element::getGeometry() const
+  void Element::setGeometry(const Geometry& geometry)
   {
-    return geometry.get();
+    this->geometry = std::unique_ptr<Geometry>(geometry.clone());
+  }
+
+  const Geometry& Element::getGeometry() const
+  {
+    return *geometry;
   }
 
   void Element::updateWorldTransform(const Eigen::Matrix4d& T_local_to_world)

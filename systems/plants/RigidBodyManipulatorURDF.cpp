@@ -147,7 +147,7 @@ bool parseMaterial(TiXmlElement* node, map<string, Vector4d>& materials)
   return true;
 }
 
-bool parseGeometry(TiXmlElement* node, unique_ptr<DrakeShapes::Geometry>& geometry)
+bool parseGeometry(TiXmlElement* node, DrakeShapes::Element& element)
 {
   const char* attr;
   TiXmlElement* shape_node;
@@ -158,7 +158,7 @@ bool parseGeometry(TiXmlElement* node, unique_ptr<DrakeShapes::Geometry>& geomet
       stringstream s(attr);
       s >> x >> y >> z;
     }
-    geometry = unique_ptr<DrakeShapes::Geometry>(new DrakeShapes::Box(Vector3d(x,y,z)));
+    element.setGeometry(DrakeShapes::Box(Vector3d(x, y, z)));
   } else if ((shape_node = node->FirstChildElement("sphere"))) {
     double r = 0;
     attr = shape_node->Attribute("radius");
@@ -166,7 +166,7 @@ bool parseGeometry(TiXmlElement* node, unique_ptr<DrakeShapes::Geometry>& geomet
       stringstream s(attr);
       s >> r;
     }
-    geometry = unique_ptr<DrakeShapes::Geometry>(new DrakeShapes::Sphere(r));
+    element.setGeometry(DrakeShapes::Sphere(r));
   } else if ((shape_node = node->FirstChildElement("cylinder"))) {
     double r = 0, l = 0;
     attr = shape_node->Attribute("radius");
@@ -179,7 +179,7 @@ bool parseGeometry(TiXmlElement* node, unique_ptr<DrakeShapes::Geometry>& geomet
       stringstream s(attr);
       s >> l;
     }
-    geometry = unique_ptr<DrakeShapes::Geometry>(new DrakeShapes::Cylinder(r, l));
+    element.setGeometry(DrakeShapes::Cylinder(r, l));
   } else if ((shape_node = node->FirstChildElement("capsule"))) {
     double r = 0, l = 0;
     attr = shape_node->Attribute("radius");
@@ -192,13 +192,13 @@ bool parseGeometry(TiXmlElement* node, unique_ptr<DrakeShapes::Geometry>& geomet
       stringstream s(attr);
       s >> l;
     }
-    geometry = unique_ptr<DrakeShapes::Geometry>(new DrakeShapes::Capsule(r, l));
+    element.setGeometry(DrakeShapes::Capsule(r, l));
   } else if ((shape_node = node->FirstChildElement("mesh"))) {
     attr = shape_node->Attribute("filename");
     if (!attr)
       return false;
     string filename(attr);
-    geometry = unique_ptr<DrakeShapes::Geometry>(new DrakeShapes::Mesh(filename));
+    element.setGeometry(DrakeShapes::Mesh(filename));
     /*
      boost::shared_ptr<urdf::Mesh> mesh(boost::dynamic_pointer_cast<urdf::Mesh>(cptr->geometry));
      boost::filesystem::path mesh_filename(root_dir);
@@ -234,27 +234,27 @@ bool parseVisual(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyManipu
   string group_name;
 
   TiXmlElement* geometry_node = node->FirstChildElement("geometry");
-  if (!geometry_node)
+  if (!geometry_node) {
+    cerr << "ERROR: Link " << body->linkname << " has a visual element without geometry." << endl;
     return false;
+  }
 
-  unique_ptr<DrakeShapes::Geometry> geometry;
-  if (!parseGeometry(geometry_node, geometry))
+  DrakeShapes::VisualElement element(T_element_to_link);
+  if (!parseGeometry(geometry_node, element)) {
     cerr << "ERROR: Link " << body->linkname << " has a visual element with an unknown type" << endl;
     return false;
+  }
 
-  Vector4d material;
-  material << 0.7, 0.7, 0.7, 1;
   TiXmlElement* material_node = node->FirstChildElement("material");
   if (material_node) {
     const char* attr;
     attr = node->Attribute("name");
-    if (!attr) {
-      return false;
+    if (attr) {
+      element.setMaterial(materials.at(attr));
     }
-    material = materials.at(attr);
   }
 
-  body->addVisualElement(move(geometry), T_element_to_link, material);
+  body->addVisualElement(element);
 
   return true;
 }
@@ -277,21 +277,23 @@ bool parseCollision(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyMan
   }
 
   TiXmlElement* geometry_node = node->FirstChildElement("geometry");
-  if (!geometry_node)
+  if (!geometry_node) {
+    cerr << "ERROR: Link " << body->linkname << " has a collision element without geometry" << endl;
     return false;
+  }
 
-  unique_ptr<DrakeShapes::Geometry> geometry;
-  if (!parseGeometry(geometry_node, geometry)) {
+  RigidBody::CollisionElement element(T_element_to_link, body);
+  if (!parseGeometry(geometry_node, element)) {
     cerr << "ERROR: Link " << body->linkname << " has a collision element with an unknown type" << endl;
     return false;
   }
 
-  if (geometry->getShape() == DrakeShapes::MESH){
+  if (element.getShape() == DrakeShapes::MESH){
     cerr << "Warning: mesh collision elements will be ignored (until I re-implement the logic below sans boost)" << endl;
-    return false;
+    return true;
   }
 
-  model->addCollisionElement(move(geometry), body, T_element_to_link, group_name);
+  model->addCollisionElement(element, body, group_name);
 
   return true;
 }
@@ -317,6 +319,7 @@ bool parseLink(RigidBodyManipulator* model, TiXmlElement* node, const map< strin
 
   for (TiXmlElement* visual_node = node->FirstChildElement("visual"); visual_node; visual_node = visual_node->NextSiblingElement("visual")) {
     if (!parseVisual(body, visual_node, model, materials)) {
+      printf("error parsing visual\n");
       return false;
     }
   }
@@ -325,8 +328,10 @@ bool parseLink(RigidBodyManipulator* model, TiXmlElement* node, const map< strin
   body->body_index = model->bodies.size() - 1;
 
   for (TiXmlElement* collision_node = node->FirstChildElement("collision"); collision_node; collision_node = collision_node->NextSiblingElement("collision")) {
-    if (!parseCollision(body, collision_node, model))
+    if (!parseCollision(body, collision_node, model)) {
+      printf("error parsing collision\n");
       return false;
+    }
   }
 
   return true;
@@ -505,6 +510,7 @@ bool parseLoop(RigidBodyManipulator* model, TiXmlElement* node)
 
 bool parseRobot(RigidBodyManipulator* model, TiXmlElement* node, const string &root_dir)
 {
+  printf("parseRobot\n");
   string robotname = node->Attribute("name");
 
   // parse material elements
@@ -521,20 +527,27 @@ bool parseRobot(RigidBodyManipulator* model, TiXmlElement* node, const string &r
 
   // todo: parse collision filter groups
 
+  printf("a\n");
   // parse joints
   for (TiXmlElement* joint_node = node->FirstChildElement("joint"); joint_node; joint_node = joint_node->NextSiblingElement("joint"))
     if (!parseJoint(model, joint_node))
       return false;
+
+  printf("b\n");
 
   // parse transmission elements
   for (TiXmlElement* transmission_node = node->FirstChildElement("transmission"); transmission_node; transmission_node = transmission_node->NextSiblingElement("transmission"))
     if (!parseTransmission(model, transmission_node))
       return false;
 
+  printf("c\n");
+
   // parse loop joints
   for (TiXmlElement* loop_node = node->FirstChildElement("loop_joint"); loop_node; loop_node = loop_node->NextSiblingElement("loop_joint"))
     if (!parseLoop(model, loop_node))
       return false;
+
+  printf("d\n");
 
   for (unsigned int i = 1; i < model->bodies.size(); i++) {
     if (model->bodies[i]->parent == nullptr) {  // attach the root nodes to the world with a floating base joint

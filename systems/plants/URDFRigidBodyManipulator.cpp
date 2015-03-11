@@ -715,23 +715,24 @@ bool URDFRigidBodyManipulator::addRobotFromURDFString(const string &xml_string, 
           int type = cptr->geometry->type;
           vector<double> params;
           unique_ptr<DrakeShapes::Geometry> geometry;
+          RigidBody::CollisionElement element(T, bodies[index]);
         	switch (type) {
         	case urdf::Geometry::BOX:
             {
           	  boost::shared_ptr<urdf::Box> box(boost::dynamic_pointer_cast<urdf::Box>(cptr->geometry));
-              geometry = unique_ptr<DrakeShapes::Geometry>(new DrakeShapes::Box(Vector3d(box->dim.x,box->dim.y,box->dim.z)));
+              element.setGeometry(DrakeShapes::Box(Vector3d(box->dim.x,box->dim.y,box->dim.z)));
             }
         		break;
         	case urdf::Geometry::SPHERE:
            	{
           		boost::shared_ptr<urdf::Sphere> sphere(boost::dynamic_pointer_cast<urdf::Sphere>(cptr->geometry));
-              geometry = unique_ptr<DrakeShapes::Geometry>(new DrakeShapes::Sphere(sphere->radius));
+              element.setGeometry(DrakeShapes::Sphere(sphere->radius));
           	}
         		break;
         	case urdf::Geometry::CYLINDER:
           	{
           		boost::shared_ptr<urdf::Cylinder> cyl(boost::dynamic_pointer_cast<urdf::Cylinder>(cptr->geometry));
-              geometry = unique_ptr<DrakeShapes::Geometry>(new DrakeShapes::Capsule(cyl->radius, cyl->length));
+              element.setGeometry(DrakeShapes::Capsule(cyl->radius, cyl->length));
           	}
         		break;
         	case urdf::Geometry::MESH:
@@ -744,7 +745,7 @@ bool URDFRigidBodyManipulator::addRobotFromURDFString(const string &xml_string, 
                 readObjFile(mesh_filename,params);
                 if (params.size() % 3 == 0) {
                   Matrix3Xd points = Matrix3Xd::Map(&params[0], 3, params.size()/3);
-                  geometry = unique_ptr<DrakeShapes::Geometry>(new DrakeShapes::MeshPoints(points));
+                  element.setGeometry(DrakeShapes::MeshPoints(points));
                 } else {
                   create_collision_element = false;
                 }
@@ -766,8 +767,7 @@ bool URDFRigidBodyManipulator::addRobotFromURDFString(const string &xml_string, 
         		break;
           }
           if (create_collision_element){
-            addCollisionElement(move(geometry), bodies[index], T, 
-                                cptr->group_name);
+            addCollisionElement(element, bodies[index], cptr->group_name);
           }
         }
       }

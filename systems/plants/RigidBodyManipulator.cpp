@@ -288,6 +288,18 @@ RigidBodyManipulator::RigidBodyManipulator(const std::string &urdf_filename)
   addRobotFromURDF(urdf_filename);
 }
 
+RigidBodyManipulator::RigidBodyManipulator(void)
+  :  collision_model(DrakeCollision::newModel())
+{
+  num_positions=0; NB=0; num_bodies=0; num_frames=0;
+  a_grav << 0,0,0,0,0,-9.81;
+  resize(num_positions,NB,1,num_frames);
+  bodies[0]->linkname = "world";
+  bodies[0]->robotnum = 0;
+  bodies[0]->body_index = 0;
+  use_new_kinsol = true; // assuming new kinsol in the updated logic below
+}
+
 RigidBodyManipulator::~RigidBodyManipulator(void)
 {
   //  if (collision_model)
@@ -497,9 +509,19 @@ void RigidBodyManipulator::compile(void)
   initialized=true;
 }
 
-DrakeCollision::ElementId RigidBodyManipulator::addCollisionElement(unique_ptr<DrakeShapes::Geometry> geometry, const shared_ptr<RigidBody>& body, const Matrix4d& T_element_to_link, string group_name)
+DrakeCollision::ElementId RigidBodyManipulator::addCollisionElement(const RigidBody::CollisionElement& element, const shared_ptr<RigidBody>& body, string group_name)
 {
-  DrakeCollision::ElementId id(collision_model->addElement(unique_ptr<DrakeCollision::Element>(new RigidBody::CollisionElement(move(geometry), T_element_to_link, body))));
+  DrakeCollision::ElementId id(collision_model->addElement(element));
+  if (id != 0) {
+    body->collision_element_ids.push_back(id);
+    body->collision_element_groups[group_name].push_back(id);
+  }
+  return id;
+}
+
+DrakeCollision::ElementId RigidBodyManipulator::addCollisionElement(DrakeShapes::Geometry& geometry, const shared_ptr<RigidBody>& body, const Matrix4d& T_element_to_link, string group_name)
+{
+  DrakeCollision::ElementId id(collision_model->addElement(unique_ptr<DrakeCollision::Element>(new RigidBody::CollisionElement(geometry, T_element_to_link, body))));
   if (id != 0) {
     body->collision_element_ids.push_back(id);
     body->collision_element_groups[group_name].push_back(id);

@@ -7,9 +7,17 @@ using namespace Eigen;
 
 namespace DrakeCollision
 {
+  ElementId Model::addElement(const Element& element)
+  {
+    unique_ptr<Element> element_local(element.clone());
+    ElementId id = element_local->getId();
+    this->elements.insert(make_pair(id, move(element_local)));
+    return id;
+  }
+
   ElementId Model::addElement(std::unique_ptr<Element> element)
   {
-    if ((element != nullptr) && (element->getGeometry() != nullptr)) {
+    if (element != nullptr) {
       ElementId id = element->getId();
       this->elements.insert(make_pair(id, move(element)));
       return id;

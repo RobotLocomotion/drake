@@ -71,6 +71,7 @@ class DLLEXPORT_RBM RigidBodyManipulator
 public:
   RigidBodyManipulator(int num_dof, int num_featherstone_bodies=-1, int num_rigid_body_objects=-1, int num_rigid_body_frames=0);
   RigidBodyManipulator(const std::string &urdf_filename);
+  RigidBodyManipulator(void);
   virtual ~RigidBodyManipulator(void);
 
   bool addRobotFromURDFString(const std::string &xml_string, const std::string &root_dir = ".");
@@ -188,7 +189,9 @@ public:
 
   void computeContactJacobians(Map<VectorXi> const & idxA, Map<VectorXi> const & idxB, Map<Matrix3xd> const & xA, Map<Matrix3xd> const & xB, const bool compute_second_derivatives, MatrixXd & J, MatrixXd & dJ);
 
-  DrakeCollision::ElementId addCollisionElement(std::unique_ptr<DrakeShapes::Geometry> geometry, const std::shared_ptr<RigidBody>& body, const Matrix4d& T_element_to_link, std::string group_name);
+  DrakeCollision::ElementId addCollisionElement(const RigidBody::CollisionElement& element, const std::shared_ptr<RigidBody>& body, std::string group_name);
+
+  DrakeCollision::ElementId addCollisionElement(DrakeShapes::Geometry& geometry, const std::shared_ptr<RigidBody>& body, const Matrix4d& T_element_to_link, std::string group_name);
 
   void updateCollisionElements(const std::shared_ptr<RigidBody>& body);
 
