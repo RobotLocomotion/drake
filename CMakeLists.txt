@@ -119,6 +119,8 @@ else()
    endif()
 endif()
 
+include_directories(thirdParty/spruce/include)
+
 add_subdirectory(util)
 add_subdirectory(solvers)
 add_subdirectory(systems)

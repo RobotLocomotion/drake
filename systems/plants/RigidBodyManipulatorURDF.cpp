@@ -2,7 +2,7 @@
 #include <fstream>
 #include <sstream>
 
-#include "spruce/spruce.hh"
+#include "spruce.hh"
 
 #include "tinyxml.h"
 #include "RigidBodyManipulator.h"
