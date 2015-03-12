@@ -25,6 +25,7 @@ cylinder_x_dir = cross(cylinder_axis,randn(3,1));
 cylinder_origin = randn(3,1);
 fcn3 = Cartesian2CylindricalTransform(cylinder_axis,cylinder_x_dir,cylinder_origin);
 x_cartesian = randn(6,1);
+x_cartesian(4:6) = rotmat2rpy(rpy2rotmat(x_cartesian(4:6)));
 [x_cylinder,dd] = fcn3.eval(x_cartesian);
 [~,df] = geval(@(x) fcn3.eval(x),x_cartesian,struct('grad_method','numerical'));
 valuecheck(dd,df,1e-3);
