@@ -472,4 +472,19 @@ public class BotLCMGLClient {
     }
 
   }
+
+  public synchronized void polygon(double[] x, double[] y, double[] z){
+    for(int i =0;i<x.length;i++){
+      for(int j=i;j<y.length;j++){
+	      for(int k = j;k<z.length;k++){
+		      glBegin(LCMGL_POLYGON);
+		      glVertex3d(x[i],y[i],z[i]);
+		      glVertex3d(x[j],y[j],z[j]);
+		      glVertex3d(x[k],y[k],z[k]);
+		      glEnd();
+	      }
+      }
+    }
+
+  }
 }
