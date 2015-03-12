@@ -136,22 +136,23 @@ void parseHardwareGains(const mxArray *params_obj, RigidBodyManipulator *r, Atla
 void parseHardwareParams(const mxArray *params_obj, RigidBodyManipulator *r, AtlasHardwareParams *params) {
   const mxArray *pobj;
 
-  parseHardwareGains(myGetProperty(params_obj, "gains"), r, &(params->gains));
+  parseHardwareGains(myGetField(params_obj, "gains"), r, &(params->gains));
 
-  params->joint_is_force_controlled = Matrix<bool, Dynamic, 1>::Zero(r->num_positions);
-  params->joint_is_position_controlled = Matrix<bool, Dynamic, 1>::Zero(r->num_positions);
+  int nu = r->num_velocities - 6;
+  params->joint_is_force_controlled = Matrix<bool, Dynamic, 1>::Zero(nu);
+  params->joint_is_position_controlled = Matrix<bool, Dynamic, 1>::Zero(nu);
 
   pobj = myGetField(params_obj, "joint_is_position_controlled");
-  sizecheck(pobj, r->num_positions, 1);
-  Map<VectorXd>pos_double(mxGetPrSafe(pobj), r->num_positions);
+  sizecheck(pobj, nu, 1);
+  Map<VectorXd>pos_double(mxGetPrSafe(pobj), nu);
 
   pobj = myGetField(params_obj, "joint_is_force_controlled");
-  sizecheck(pobj, r->num_positions, 1);
-  Map<VectorXd>force_double(mxGetPrSafe(pobj), r->num_positions);
+  sizecheck(pobj, nu, 1);
+  Map<VectorXd>force_double(mxGetPrSafe(pobj), nu);
 
-  for (int i=0; i < r->num_positions; i++) {
-    params->joint_is_force_controlled(i) = pos_double(i) > 0.5;
-    params->joint_is_position_controlled(i) = force_double(i) > 0.5;
+  for (int i=0; i < nu; i++) {
+    params->joint_is_force_controlled(i) = force_double(i) > 0.5;
+    params->joint_is_position_controlled(i) = pos_double(i) > 0.5;
   }
   return;
 }

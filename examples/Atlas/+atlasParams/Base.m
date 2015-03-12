@@ -7,7 +7,7 @@ classdef Base
     body_motion
     whole_body
     vref_integrator
-    hardware_gains
+    hardware
     W_kdot = zeros(3);
     Kp_ang = 0;
     w_slack = 0.05;
@@ -54,8 +54,8 @@ classdef Base
                                       'ff_f_d', zeros(nu,1),...
                                       'ff_const', zeros(nu,1),...
                                       'ff_qd_d', zeros(nu,1)),...
-                            'joint_is_force_controlled', ones(r.getNumPositions(), 1),...
-                            'joint_is_position_controlled', zeros(r.getNumPositions(), 1));
+                            'joint_is_force_controlled', ones(r.getNumInputs(), 1),...
+                            'joint_is_position_controlled', zeros(r.getNumInputs(), 1));
 
       obj = obj.updateKd();
     end
