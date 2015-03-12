@@ -24,6 +24,9 @@ classdef PlanEval
           obj = obj.appendPlan(plans);
         end
       end
+      if isempty(obj.data.plan_queue)
+        obj = obj.appendPlan(WaitForRobotStatePlan());
+      end
     end
 
     function current_plan = getCurrentPlan(obj, t, x)
