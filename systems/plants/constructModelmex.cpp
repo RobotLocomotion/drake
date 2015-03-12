@@ -221,7 +221,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 
         // Get element-to-link transform from MATLAB object
         memcpy(T.data(), mxGetPr(mxGetProperty(pShape,0,"T")), sizeof(double)*4*4);
-        auto shape = (DrakeShapes::Shape)static_cast<int>(mxGetScalar(mxGetProperty(pShape,0,"bullet_shape_id")));
+        auto shape = (DrakeShapes::Shape)static_cast<int>(mxGetScalar(mxGetProperty(pShape,0,"drake_shape_id")));
         vector<double> params_vec;
         RigidBody::CollisionElement element(T, model->bodies[i]);
         switch (shape) {
@@ -254,7 +254,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
           {
             mxArray* pPoints;
             mexCallMATLAB(1,&pPoints,1,&pShape,"getPoints");
-            double n_pts = static_cast<int>(mxGetN(pPoints));
+            int n_pts = static_cast<int>(mxGetN(pPoints));
             Map<Matrix3Xd> pts(mxGetPr(pPoints),3,n_pts);
             element.setGeometry(DrakeShapes::MeshPoints(pts));
             mxDestroyArray(pPoints);
