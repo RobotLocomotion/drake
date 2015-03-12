@@ -473,7 +473,7 @@ public class BotLCMGLClient {
 
   }
 
-  public synchronized void polygon(double[] x, double[] y, double[] z){
+  public synchronized void polyhedron(double[] x, double[] y, double[] z){
     for(int i =0;i<x.length;i++){
       for(int j=i;j<y.length;j++){
 	      for(int k = j;k<z.length;k++){
