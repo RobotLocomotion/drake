@@ -481,11 +481,12 @@ namespace DrakeCollision
     BulletResultCollector c;
     MatrixXd normals;
     vector<double> distance;
-    bullet_world.bt_collision_world->performDiscreteCollisionDetection();
-    int numManifolds = bullet_world.bt_collision_world->getDispatcher()->getNumManifolds();
+    BulletCollisionWorldWrapper& bt_world = getBulletWorld(use_margins);
+    bt_world.bt_collision_world->performDiscreteCollisionDetection();
+    int numManifolds = bt_world.bt_collision_world->getDispatcher()->getNumManifolds();
     for (int i=0;i<numManifolds;i++)
     {
-      btPersistentManifold* contactManifold =  bullet_world.bt_collision_world->getDispatcher()->getManifoldByIndexInternal(i);
+      btPersistentManifold* contactManifold =  bt_world.bt_collision_world->getDispatcher()->getManifoldByIndexInternal(i);
       const btCollisionObject* obA = contactManifold->getBody0();
       const btCollisionObject* obB = contactManifold->getBody1();
       auto elementA = static_cast< Element*  >(obA->getUserPointer());
