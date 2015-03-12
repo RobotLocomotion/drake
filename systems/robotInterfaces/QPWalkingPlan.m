@@ -225,10 +225,10 @@ classdef QPWalkingPlan < QPControllerPlan
 
       r = obj.robot;
       t_plan = t_global - obj.start_time;
+      t_plan = double(t_plan);
       
       T = obj.duration;
       t_plan = min([t_plan, T]);
-
 
       qp_input = obj.default_qp_input;
       qp_input.zmp_data.D = obj.D_ls;
