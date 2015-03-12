@@ -1466,20 +1466,22 @@ GradientVar<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::centroidalMomentumMatri
 bool RigidBodyManipulator::isBodyPartOfRobot(const RigidBody& body, const std::set<int>& robotnum)
 {
   for (std::set<int>::const_iterator it = robotnum.begin(); it != robotnum.end(); ++it) {
-    if (*it < 0) {
+    if (*it < -1) {
       return true;
     }
   }
-  return robotnum.find(-1) != robotnum.end();
+
+  return robotnum.find(body.robotnum) != robotnum.end();
 }
 
 double RigidBodyManipulator::getMass(const std::set<int>& robotnum)
 {
   double total_mass = 0.0;
   for (int i = 0; i < num_bodies; i++) {
-    if (isBodyPartOfRobot(*bodies[i], robotnum))
+    RigidBody& body = *bodies[i];
+    if (isBodyPartOfRobot(body, robotnum))
     {
-      total_mass += bodies[i]->mass;
+      total_mass += body.mass;
     }
   }
   return total_mass;
@@ -1498,11 +1500,12 @@ GradientVar<Scalar, SPACE_DIMENSION, 1> RigidBodyManipulator::centerOfMass(int g
   com.value().setZero();
 
   for (int i = 0; i < num_bodies; i++) {
-    if (isBodyPartOfRobot(*bodies[i], robotnum))
+    RigidBody& body = *bodies[i];
+    if (isBodyPartOfRobot(body, robotnum))
     {
-      body_mass = bodies[i]->mass;
+      body_mass = body.mass;
       if (body_mass > 0) {
-        Vector3d body_com_body_frame = (bodies[i]->com.topRows<SPACE_DIMENSION>());
+        Vector3d body_com_body_frame = (body.com.topRows<SPACE_DIMENSION>());
         auto body_com = forwardKinNew(body_com_body_frame, i, 0, 0, gradient_order);
         com.value() *= m;
         com.value().noalias() += body_mass * body_com.value();
