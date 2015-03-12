@@ -364,6 +364,39 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   mxLogical* use_new_kinsol = mxGetLogicals(mxGetProperty(pRBM,0,"use_new_kinsol"));
   model->use_new_kinsol = (bool) use_new_kinsol[0];
 
+  //  LOOP CONSTRAINTS
+  const mxArray* pLoops = mxGetProperty(pRBM,0,"loop");
+  int num_loops = static_cast<int>(mxGetNumberOfElements(pLoops));
+  model->loops.clear();
+  for (int i=0; i<num_loops; i++)
+  {
+    pm = mxGetProperty(pLoops,i,"body1");
+    int body_A_ind = static_cast<int>(mxGetScalar(pm)-1);
+    pm = mxGetProperty(pLoops,i,"body2");
+    int body_B_ind = static_cast<int>(mxGetScalar(pm)-1);
+    pm = mxGetProperty(pLoops,i,"pt1");
+    Vector3d pA;
+    memcpy(pA.data(), mxGetPr(pm), 3*sizeof(double));
+    pm = mxGetProperty(pLoops,i,"pt2");
+    Vector3d pB;
+    memcpy(pB.data(), mxGetPr(pm), 3*sizeof(double));
+    model->loops.push_back(RigidBodyLoop(model->bodies[body_A_ind], pA, model->bodies[body_B_ind], pB));
+  }
+
+  //ACTUATORS
+  const mxArray* pActuators = mxGetProperty(pRBM,0,"actuator");
+  int num_actuators = static_cast<int>(mxGetNumberOfElements(pActuators));
+  model->actuators.clear();
+  for (int i=0; i<num_actuators; i++)
+  {
+    pm = mxGetProperty(pActuators,i,"name");
+    mxGetString(pm,buf,100);
+    pm = mxGetProperty(pActuators,i,"joint");
+    int joint = static_cast<int>(mxGetScalar(pm)-1);
+    pm = mxGetProperty(pActuators,i, "reduction");
+    model->actuators.push_back(RigidBodyActuator(std::string(buf), model->bodies[joint], static_cast<double>(mxGetScalar(pm))));
+  }  
+
   model->compile();
 
   plhs[0] = createDrakeMexPointer((void*)model,"RigidBodyManipulator");

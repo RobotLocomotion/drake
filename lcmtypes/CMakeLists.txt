@@ -8,6 +8,12 @@ lcmtypes_build(LCM_TYPES
 			 lcmt_scope_data.lcm
 			 lcmt_viewer_command.lcm
 			 lcmt_simulation_command.lcm
+			 lcmt_zmp_data.lcm
+			 lcmt_qp_controller_input.lcm
+			 lcmt_support_data.lcm
+			 lcmt_foot_flag.lcm
+			 lcmt_body_motion_data.lcm
+			 lcmt_atlas_command.lcm
 			 )
 
 #add_lcmtype(lcmt_drake_signal.lcm)

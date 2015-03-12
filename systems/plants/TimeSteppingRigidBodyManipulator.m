@@ -1129,7 +1129,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     end
 
     function ptr = getMexModelPtr(obj)
-      ptr = getMexModelPtr(obj.manip);
+      ptr = getMexModelPtr(obj.manip); 
     end
 
     function [phi,Jphi] = closestDistance(obj,varargin)

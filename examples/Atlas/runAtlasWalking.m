@@ -65,7 +65,10 @@ footstep_plan = r.planFootsteps(x0(1:nq), goal_pos);
 
 walking_plan_data = r.planWalkingZMP(x0(1:r.getNumPositions()), footstep_plan);
 
-traj = atlasUtil.simulateWalking(r, walking_plan_data, example_options.use_mex, false, example_options.use_bullet, example_options.use_angular_momentum, true);
+sim_opts = struct('use_mex', example_options.use_mex,...
+                  'use_bullet', example_options.use_bullet,...
+                  'use_angular_momentum', example_options.use_angular_momentum);
+traj = atlasUtil.simulateWalking(r, walking_plan_data, sim_opts);
 
 playback(v,traj,struct('slider',true));
 

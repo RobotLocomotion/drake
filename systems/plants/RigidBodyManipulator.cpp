@@ -3,6 +3,7 @@
 
 //#include "mex.h"
 #include "drakeGeometryUtil.h"
+//#include "drakeContactConstraintsUtil.h"
 #include "RigidBodyManipulator.h"
 #include "DrakeJoint.h"
 
@@ -27,168 +28,168 @@ bool isnotnan(const MatrixBase<Derived>& x)
 }
 
 void Xrotz(double theta, MatrixXd* X) {
-	double c = cos(theta);
-	double s = sin(theta);
+  double c = cos(theta);
+  double s = sin(theta);
 
-	(*X).resize(6,6);
-	*X <<  c, s, 0, 0, 0, 0,
-		  -s, c, 0, 0, 0, 0,
-		   0, 0, 1, 0, 0, 0,
-		   0, 0, 0, c, s, 0,
-		   0, 0, 0,-s, c, 0,
-		   0, 0, 0, 0, 0, 1;
+  (*X).resize(6,6);
+  *X <<  c, s, 0, 0, 0, 0,
+      -s, c, 0, 0, 0, 0,
+       0, 0, 1, 0, 0, 0,
+       0, 0, 0, c, s, 0,
+       0, 0, 0,-s, c, 0,
+       0, 0, 0, 0, 0, 1;
 }
 
 void dXrotz(double theta, MatrixXd* dX) {
-	double dc = -sin(theta);
-	double ds = cos(theta);
+  double dc = -sin(theta);
+  double ds = cos(theta);
 
-	(*dX).resize(6,6);
-	*dX << dc, ds, 0, 0, 0, 0,
-      	  -ds, dc, 0, 0, 0, 0,
-       		0, 0, 0, 0, 0, 0,
-       		0, 0, 0, dc, ds, 0,
-       		0, 0, 0,-ds, dc, 0,
-       		0, 0, 0, 0, 0, 0;
+  (*dX).resize(6,6);
+  *dX << dc, ds, 0, 0, 0, 0,
+          -ds, dc, 0, 0, 0, 0,
+          0, 0, 0, 0, 0, 0,
+          0, 0, 0, dc, ds, 0,
+          0, 0, 0,-ds, dc, 0,
+          0, 0, 0, 0, 0, 0;
 }
 
 void Xtrans(Vector3d r, MatrixXd* X) {
-	(*X).resize(6,6);
-	*X <<  	1, 0, 0, 0, 0, 0,
-		   	0, 1, 0, 0, 0, 0,
-		   	0, 0, 1, 0, 0, 0,
-           	0, r[2],-r[1], 1, 0, 0,
-		   -r[2], 0, r[0], 0, 1, 0,
-          	r[1],-r[0], 0, 0, 0, 1;
+  (*X).resize(6,6);
+  *X <<   1, 0, 0, 0, 0, 0,
+        0, 1, 0, 0, 0, 0,
+        0, 0, 1, 0, 0, 0,
+            0, r[2],-r[1], 1, 0, 0,
+       -r[2], 0, r[0], 0, 1, 0,
+            r[1],-r[0], 0, 0, 0, 1;
 }
 
 void dXtrans(MatrixXd* dX) {
- 	(*dX).resize(36,3);
-	(*dX)(4,2) = -1;
-	(*dX)(5,1) = 1;
-	(*dX)(9,2) = 1;
-	(*dX)(11,0) = -1;
-	(*dX)(15,1) = -1;
-	(*dX)(16,0) = 1;
+  (*dX).resize(36,3);
+  (*dX)(4,2) = -1;
+  (*dX)(5,1) = 1;
+  (*dX)(9,2) = 1;
+  (*dX)(11,0) = -1;
+  (*dX)(15,1) = -1;
+  (*dX)(16,0) = 1;
 }
 
 void dXtransPitch(MatrixXd* dX) {
-	(*dX).resize(6,6);
-	*dX << 0, 0, 0, 0, 0, 0,
+  (*dX).resize(6,6);
+  *dX << 0, 0, 0, 0, 0, 0,
            0, 0, 0, 0, 0, 0,
            0, 0, 0, 0, 0, 0,
-   		   0, 1, 0, 0, 0, 0,
-       	  -1, 0, 0, 0, 0, 0,
+         0, 1, 0, 0, 0, 0,
+          -1, 0, 0, 0, 0, 0,
            0, 0, 0, 0, 0, 0;
 }
 
 
 void jcalc(int pitch, double q, MatrixXd* Xj, VectorXd* S) {
-	(*Xj).resize(6,6);
-	(*S).resize(6);
+  (*Xj).resize(6,6);
+  (*S).resize(6);
 
-	if (pitch == 0) { // revolute joint
-	  	Xrotz(q,Xj);
-	    *S << 0,0,1,0,0,0;
-	}
-	else if (pitch == INF) { // prismatic joint
-  		Xtrans(Vector3d(0.0,0.0,q),Xj);
-  		*S << 0,0,0,0,0,1;
-	}
-	else { // helical joint
-		MatrixXd A(6,6);
-		MatrixXd B(6,6);
-		Xrotz(q,&A);
-	    Xtrans(Vector3d(0.0,0.0,q*pitch),&B);
-		*Xj = A*B;
-  		*S << 0,0,1,0,0,pitch;
-	}
+  if (pitch == 0) { // revolute joint
+      Xrotz(q,Xj);
+      *S << 0,0,1,0,0,0;
+  }
+  else if (pitch == INF) { // prismatic joint
+      Xtrans(Vector3d(0.0,0.0,q),Xj);
+      *S << 0,0,0,0,0,1;
+  }
+  else { // helical joint
+    MatrixXd A(6,6);
+    MatrixXd B(6,6);
+    Xrotz(q,&A);
+      Xtrans(Vector3d(0.0,0.0,q*pitch),&B);
+    *Xj = A*B;
+      *S << 0,0,1,0,0,pitch;
+  }
 }
 
 void djcalc(int pitch, double q, MatrixXd* dXj) {
-	(*dXj).resize(6,6);
+  (*dXj).resize(6,6);
 
-	if (pitch == 0) { // revolute joint
-  		dXrotz(q,dXj);
-	}
-	else if (pitch == INF) { // prismatic joint
-  		dXtransPitch(dXj);
+  if (pitch == 0) { // revolute joint
+      dXrotz(q,dXj);
+  }
+  else if (pitch == INF) { // prismatic joint
+      dXtransPitch(dXj);
     }
-	else { // helical joint
-	    MatrixXd X(6,6),Xj(6,6),dXrz(6,6),dXjp(6,6);
-	    Xrotz(q,&Xj);
-	    dXrotz(q,&dXrz);
-	    Xtrans(Vector3d(0.0,0.0,q*pitch),&X);
-	    dXtransPitch(&dXjp);
-		*dXj = Xj * dXjp * pitch + dXrz * X;
-	}
+  else { // helical joint
+      MatrixXd X(6,6),Xj(6,6),dXrz(6,6),dXjp(6,6);
+      Xrotz(q,&Xj);
+      dXrotz(q,&dXrz);
+      Xtrans(Vector3d(0.0,0.0,q*pitch),&X);
+      dXtransPitch(&dXjp);
+    *dXj = Xj * dXjp * pitch + dXrz * X;
+  }
 }
 
 MatrixXd crm(VectorXd v)
 {
-  	MatrixXd vcross(6,6);
-  	vcross << 0, -v[2], v[1], 0, 0, 0,
-	    	v[2], 0,-v[0], 0, 0, 0,
-	   	   -v[1], v[0], 0, 0, 0, 0,
-	    	0, -v[5], v[4], 0, -v[2], v[1],
-	    	v[5], 0,-v[3], v[2], 0, -v[0],
-	   	   -v[4], v[3], 0,-v[1], v[0], 0;
-  	return vcross;
+    MatrixXd vcross(6,6);
+    vcross << 0, -v[2], v[1], 0, 0, 0,
+        v[2], 0,-v[0], 0, 0, 0,
+         -v[1], v[0], 0, 0, 0, 0,
+        0, -v[5], v[4], 0, -v[2], v[1],
+        v[5], 0,-v[3], v[2], 0, -v[0],
+         -v[4], v[3], 0,-v[1], v[0], 0;
+    return vcross;
 }
 
 MatrixXd crf(VectorXd v)
 {
- 	MatrixXd vcross(6,6);
- 	vcross << 0,-v[2], v[1], 0,-v[5], v[4],
-	    	v[2], 0,-v[0], v[5], 0,-v[3],
-	   	   -v[1], v[0], 0,-v[4], v[3], 0,
-	    	0, 0, 0, 0,-v[2], v[1],
-	    	0, 0, 0, v[2], 0,-v[0],
-	    	0, 0, 0,-v[1], v[0], 0;
- 	return vcross;
+  MatrixXd vcross(6,6);
+  vcross << 0,-v[2], v[1], 0,-v[5], v[4],
+        v[2], 0,-v[0], v[5], 0,-v[3],
+         -v[1], v[0], 0,-v[4], v[3], 0,
+        0, 0, 0, 0,-v[2], v[1],
+        0, 0, 0, v[2], 0,-v[0],
+        0, 0, 0,-v[1], v[0], 0;
+  return vcross;
 }
 
 void dcrm(VectorXd v, VectorXd x, MatrixXd dv, MatrixXd dx, MatrixXd* dvcross) {
- 	(*dvcross).resize(6,dv.cols());
- 	(*dvcross).row(0) = -dv.row(2)*x[1] + dv.row(1)*x[2] - v[2]*dx.row(1) + v[1]*dx.row(2);
-	(*dvcross).row(1) =  dv.row(2)*x[0] - dv.row(0)*x[2] + v[2]*dx.row(0) - v[0]*dx.row(2);
-  	(*dvcross).row(2) = -dv.row(1)*x[0] + dv.row(0)*x[1] - v[1]*dx.row(0) + v[0]*dx.row(1);
-  	(*dvcross).row(3) = -dv.row(5)*x[1] + dv.row(4)*x[2] - dv.row(2)*x[4] + dv.row(1)*x[5] - v[5]*dx.row(1) + v[4]*dx.row(2) - v[2]*dx.row(4) + v[1]*dx.row(5);
-  	(*dvcross).row(4) =  dv.row(5)*x[0] - dv.row(3)*x[2] + dv.row(2)*x[3] - dv.row(0)*x[5] + v[5]*dx.row(0) - v[3]*dx.row(2) + v[2]*dx.row(3) - v[0]*dx.row(5);
-  	(*dvcross).row(5) = -dv.row(4)*x[0] + dv.row(3)*x[1] - dv.row(1)*x[3] + dv.row(0)*x[4] - v[4]*dx.row(0) + v[3]*dx.row(1) - v[1]*dx.row(3) + v[0]*dx.row(4);
+  (*dvcross).resize(6,dv.cols());
+  (*dvcross).row(0) = -dv.row(2)*x[1] + dv.row(1)*x[2] - v[2]*dx.row(1) + v[1]*dx.row(2);
+  (*dvcross).row(1) =  dv.row(2)*x[0] - dv.row(0)*x[2] + v[2]*dx.row(0) - v[0]*dx.row(2);
+    (*dvcross).row(2) = -dv.row(1)*x[0] + dv.row(0)*x[1] - v[1]*dx.row(0) + v[0]*dx.row(1);
+    (*dvcross).row(3) = -dv.row(5)*x[1] + dv.row(4)*x[2] - dv.row(2)*x[4] + dv.row(1)*x[5] - v[5]*dx.row(1) + v[4]*dx.row(2) - v[2]*dx.row(4) + v[1]*dx.row(5);
+    (*dvcross).row(4) =  dv.row(5)*x[0] - dv.row(3)*x[2] + dv.row(2)*x[3] - dv.row(0)*x[5] + v[5]*dx.row(0) - v[3]*dx.row(2) + v[2]*dx.row(3) - v[0]*dx.row(5);
+    (*dvcross).row(5) = -dv.row(4)*x[0] + dv.row(3)*x[1] - dv.row(1)*x[3] + dv.row(0)*x[4] - v[4]*dx.row(0) + v[3]*dx.row(1) - v[1]*dx.row(3) + v[0]*dx.row(4);
 }
 
 void dcrf(VectorXd v, VectorXd x, MatrixXd dv, MatrixXd dx, MatrixXd* dvcross) {
- 	(*dvcross).resize(6,dv.cols());
- 	(*dvcross).row(0) =  dv.row(2)*x[1] - dv.row(1)*x[2] + dv.row(5)*x[4] - dv.row(4)*x[5] + v[2]*dx.row(1) - v[1]*dx.row(2) + v[5]*dx.row(4) - v[4]*dx.row(5);
-  	(*dvcross).row(1) = -dv.row(2)*x[0] + dv.row(0)*x[2] - dv.row(5)*x[3] + dv.row(3)*x[5] - v[2]*dx.row(0) + v[0]*dx.row(2) - v[5]*dx.row(3) + v[3]*dx.row(5);
- 	(*dvcross).row(2) =  dv.row(1)*x[0] - dv.row(0)*x[1] + dv.row(4)*x[3] - dv.row(3)*x[4] + v[1]*dx.row(0) - v[0]*dx.row(1) + v[4]*dx.row(3) - v[3]*dx.row(4);
-  	(*dvcross).row(3) =  dv.row(2)*x[4] - dv.row(1)*x[5] + v[2]*dx.row(4) - v[1]*dx.row(5);
-  	(*dvcross).row(4) = -dv.row(2)*x[3] + dv.row(0)*x[5] - v[2]*dx.row(3) + v[0]*dx.row(5);
-  	(*dvcross).row(5) =  dv.row(1)*x[3] - dv.row(0)*x[4] + v[1]*dx.row(3) - v[0]*dx.row(4);
-	*dvcross = -(*dvcross);
+  (*dvcross).resize(6,dv.cols());
+  (*dvcross).row(0) =  dv.row(2)*x[1] - dv.row(1)*x[2] + dv.row(5)*x[4] - dv.row(4)*x[5] + v[2]*dx.row(1) - v[1]*dx.row(2) + v[5]*dx.row(4) - v[4]*dx.row(5);
+    (*dvcross).row(1) = -dv.row(2)*x[0] + dv.row(0)*x[2] - dv.row(5)*x[3] + dv.row(3)*x[5] - v[2]*dx.row(0) + v[0]*dx.row(2) - v[5]*dx.row(3) + v[3]*dx.row(5);
+  (*dvcross).row(2) =  dv.row(1)*x[0] - dv.row(0)*x[1] + dv.row(4)*x[3] - dv.row(3)*x[4] + v[1]*dx.row(0) - v[0]*dx.row(1) + v[4]*dx.row(3) - v[3]*dx.row(4);
+    (*dvcross).row(3) =  dv.row(2)*x[4] - dv.row(1)*x[5] + v[2]*dx.row(4) - v[1]*dx.row(5);
+    (*dvcross).row(4) = -dv.row(2)*x[3] + dv.row(0)*x[5] - v[2]*dx.row(3) + v[0]*dx.row(5);
+    (*dvcross).row(5) =  dv.row(1)*x[3] - dv.row(0)*x[4] + v[1]*dx.row(3) - v[0]*dx.row(4);
+  *dvcross = -(*dvcross);
 }
 
 Matrix3d rotz(double theta) {
-	// returns 3D rotation matrix (about the z axis)
-	Matrix3d M;
-	double c=cos(theta);
-	double s=sin(theta);
-	M << c,-s, 0,
-		 s, c, 0,
-		 0, 0, 1;
-	return M;
+  // returns 3D rotation matrix (about the z axis)
+  Matrix3d M;
+  double c=cos(theta);
+  double s=sin(theta);
+  M << c,-s, 0,
+     s, c, 0,
+     0, 0, 1;
+  return M;
 }
 
 void Tjcalc(int pitch, double q, Matrix4d* TJ)
 {
-	*TJ = Matrix4d::Identity();
+  *TJ = Matrix4d::Identity();
 
   if (pitch==0) { // revolute joint
     (*TJ).topLeftCorner(3,3) = rotz(q);
   } else if (pitch == INF) { // prismatic joint
     (*TJ)(2,3) = q;
-	}	else { // helical joint
+  } else { // helical joint
     (*TJ).topLeftCorner(3,3) = rotz(q);
     (*TJ)(2,3) = q*pitch;
   }
@@ -196,37 +197,37 @@ void Tjcalc(int pitch, double q, Matrix4d* TJ)
 
 void dTjcalc(int pitch, double q, Matrix4d* dTJ)
 {
-	double s=sin(q);
-	double c=cos(q);
-  	if (pitch==0) { // revolute joint
-  		*dTJ << -s,-c, 0, 0,
-  				 c,-s, 0, 0,
-  				 0, 0, 0, 0,
-  				 0, 0, 0, 0;
-  	} else if (pitch == INF) { // prismatic joint
-  		*dTJ <<  0, 0, 0, 0,
-  				 0, 0, 0, 0,
-  				 0, 0, 0, 1,
-  				 0, 0, 0, 0;
+  double s=sin(q);
+  double c=cos(q);
+    if (pitch==0) { // revolute joint
+      *dTJ << -s,-c, 0, 0,
+           c,-s, 0, 0,
+           0, 0, 0, 0,
+           0, 0, 0, 0;
+    } else if (pitch == INF) { // prismatic joint
+      *dTJ <<  0, 0, 0, 0,
+           0, 0, 0, 0,
+           0, 0, 0, 1,
+           0, 0, 0, 0;
     } else { // helical joint
-  		*dTJ << -s,-c, 0, 0,
-  				 c,-s, 0, 0,
-  				 0, 0, 0, pitch,
-  				 0, 0, 0, 0;
-  	}
+      *dTJ << -s,-c, 0, 0,
+           c,-s, 0, 0,
+           0, 0, 0, pitch,
+           0, 0, 0, 0;
+    }
 }
 
 void ddTjcalc(int pitch, double q, Matrix4d* ddTJ)
 {
-  	double c = cos(q);
-  	double s = sin(q);
+    double c = cos(q);
+    double s = sin(q);
 
-  	if (pitch==0) { // revolute joint
-  		*ddTJ << -c, s, 0, 0,
-  				 -s,-c, 0, 0,
-  				  0, 0, 0, 0,
-  				  0, 0, 0, 0;
-  	} else if (pitch == INF) { // prismatic joint
+    if (pitch==0) { // revolute joint
+      *ddTJ << -c, s, 0, 0,
+           -s,-c, 0, 0,
+            0, 0, 0, 0,
+            0, 0, 0, 0;
+    } else if (pitch == INF) { // prismatic joint
       *ddTJ = Matrix4d::Zero();
     } else { // helical joint
       *ddTJ << -c, s, 0, 0,
@@ -556,9 +557,9 @@ bool RigidBodyManipulator::getPairwisePointCollision(const int body_indA,
      ) {
     return true;
   } else {
-		ptA << 1,1,1;
-		ptB << -1,-1,-1;
-		normal << 0,0,1;
+    ptA << 1,1,1;
+    ptB << -1,-1,-1;
+    normal << 0,0,1;
     return false;
   }
 };
@@ -843,12 +844,12 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
           }
 
           if (j>=3) {
-          	for (k=3; k<6; k++) {
+            for (k=3; k<6; k++) {
               TddTmult = parent->T*bodies[i]->Ttree * Tbinv * fb_ddTJ[j-3][k-3] * Tb;
               bodies[i]->ddTdqdq.row(3*num_positions*(bodies[i]->position_num_start+k) + bodies[i]->position_num_start+j) += TddTmult.row(0);
               bodies[i]->ddTdqdq.row(3*num_positions*(bodies[i]->position_num_start+k) + bodies[i]->position_num_start+j + num_positions) += TddTmult.row(1);
               bodies[i]->ddTdqdq.row(3*num_positions*(bodies[i]->position_num_start+k) + bodies[i]->position_num_start+j + 2*num_positions) += TddTmult.row(2);
-          	}
+            }
           }
         }
       }
@@ -1681,8 +1682,8 @@ void RigidBodyManipulator::findKinematicPath(KinematicPath& path, int start_body
 
 /*
  * rotation_type  0, no rotation
- * 		  1, output Euler angles
- * 		  2, output quaternion [w,x,y,z], with w>=0
+ *      1, output Euler angles
+ *      2, output quaternion [w,x,y,z], with w>=0
  */
 
 template <typename DerivedA, typename DerivedB>
@@ -2093,9 +2094,9 @@ void RigidBodyManipulator::forwardJac(const int body_or_frame_id, const MatrixBa
       dR12_dq(i) = dTdq(num_positions+i,2);
     }
 
-  	Vector4d case_check;
-  	case_check << R(0,0)+R(1,1)+R(2,2), R(0,0)-R(1,1)-R(2,2), -R(0,0)+R(1,1)-R(2,2), -R(0,0)-R(1,1)+R(2,2);
-  	int ind; double val = case_check.maxCoeff(&ind);
+    Vector4d case_check;
+    case_check << R(0,0)+R(1,1)+R(2,2), R(0,0)-R(1,1)-R(2,2), -R(0,0)+R(1,1)-R(2,2), -R(0,0)-R(1,1)+R(2,2);
+    int ind; double val = case_check.maxCoeff(&ind);
 
     MatrixXd Jq = MatrixXd::Zero(4,num_positions);
   	switch(ind) {
@@ -2779,8 +2780,8 @@ void RigidBodyManipulator::HandC(MatrixBase<DerivedG> const & q, MatrixBase<Deri
       dcrf(v[i],I[i]*v[i],dvdqd[i],I[i]*dvdqd[i],&(dcross));
       dfvpdqd[i] = I[i]*davpdqd[i] + dcross;
       if (df_ext) {
-	dfvpdq[i] = dfvpdq[i] - df_ext->block(i*6,0,6,num_positions);
-	dfvpdqd[i] = dfvpdqd[i] - df_ext->block(i*6,num_positions,6,num_positions);
+        dfvpdq[i] = dfvpdq[i] - df_ext->block(i*6,0,6,num_positions);
+        dfvpdqd[i] = dfvpdqd[i] - df_ext->block(i*6,num_positions,6,num_positions);
       }
 
     }
@@ -2961,8 +2962,6 @@ GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::positionConstraints
   return ret;
 }
 
-
-
 // explicit instantiations (required for linking):
 template DLLEXPORT_RBM void RigidBodyManipulator::doKinematics(MatrixBase<VectorXd>  &, bool);
 template DLLEXPORT_RBM void RigidBodyManipulator::doKinematics(MatrixBase< Map<VectorXd> >  &, bool);
@@ -2976,7 +2975,6 @@ template DLLEXPORT_RBM void RigidBodyManipulator::getCMM(MatrixBase<VectorXd> co
 template DLLEXPORT_RBM void RigidBodyManipulator::getCMM(MatrixBase<VectorXd> const &, MatrixBase<VectorXd> const &, MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > &);
 template DLLEXPORT_RBM void RigidBodyManipulator::getCMM(MatrixBase< Map<VectorXd> > const &, MatrixBase< Map<VectorXd> > const &, MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > &);
 template DLLEXPORT_RBM void RigidBodyManipulator::getCMM(MatrixBase< Map<VectorXd> > const &, MatrixBase< Map<VectorXd> > const &, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<MatrixXd> > &);
-
 
 template DLLEXPORT_RBM void RigidBodyManipulator::getCOM(MatrixBase< Map<Vector3d> > &,const set<int> &);
 template DLLEXPORT_RBM void RigidBodyManipulator::getCOM(MatrixBase< Map<MatrixXd> > &,const set<int> &);
