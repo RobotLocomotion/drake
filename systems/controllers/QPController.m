@@ -46,6 +46,7 @@ classdef QPController < MIMODrakeSystem
 
     obj.robot = r;
     obj.numq = getNumPositions(r);
+    obj.numv = getNumVelocities(r);
     obj.controller_data = controller_data;
     obj.n_body_accel_inputs = length(body_accel_input_frames);
 
@@ -691,6 +692,7 @@ classdef QPController < MIMODrakeSystem
   properties (SetAccess=private)
     robot; % to be controlled
     numq;
+    numv;
     controller_data; % shared data handle that holds S, h, foot trajectories, etc.
     W_kdot; % angular momentum cost term weight matrix
     w_qdd; % qdd objective function weight vector
