@@ -12,6 +12,7 @@ classdef QPControllerPlan
     duration = inf;
     start_time = 0;
     default_qp_input = atlasControllers.QPInputConstantHeight;
+    gain_set = 'standing';
   end
 
   methods(Abstract)

@@ -1,4 +1,4 @@
-classdef StandingPlan < QPWalkingPlan
+classdef StandingPlan < QPLocomotionPlan
   methods(Static)
     function obj = from_standing_state(x0, biped, support_state)
 
@@ -42,7 +42,7 @@ classdef StandingPlan < QPWalkingPlan
       obj.link_constraints = link_constraints;
 
       obj.zmp_final = comgoal;
-      obj.qstar = x0(1:nq);
+      obj.qtraj = x0(1:nq);
       obj.comtraj = comgoal;
       obj.gain_set = 'standing';
     end

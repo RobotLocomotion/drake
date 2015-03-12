@@ -1,24 +1,7 @@
-classdef QPWalkingPlan < QPControllerPlan
+classdef QPWalkingPlan < QPLocomotionPlan
 % Container for the results of the ZMP walking planning, which can be consumed by planWalkingStateTraj
 % to generate the full walking motion.
   properties
-    robot
-    x0
-    support_times
-    supports
-    link_constraints
-    zmptraj
-    zmp_final
-    D_ls
-    V
-    qstar = [];
-    c = [];
-    comtraj
-    mu=1;
-    t_offset=0;
-    ignore_terrain=false;
-    gain_set='walking';
-    plan_shift_data = PlanShiftData();
   end
 
   methods(Static)
@@ -59,7 +42,7 @@ classdef QPWalkingPlan < QPControllerPlan
       if isa(obj.V.S, 'ConstantTrajectory')
         obj.V.S = fasteval(obj.V.S, 0);
       end
-      obj.D_ls = -limp_height/9.81*eye(2);
+      obj.LIP_height = limp_height;
     end
 
     function obj = from_point_mass_biped_plan(plan, biped, x0, param_set_name)
@@ -139,13 +122,7 @@ classdef QPWalkingPlan < QPControllerPlan
 
   methods
     function obj = QPWalkingPlan(robot)
-      obj = obj@QPControllerPlan();
-      obj.robot = robot;
-      S = load(obj.robot.fixed_point_file);
-      obj.qstar = S.xstar(1:obj.robot.getNumPositions());
-      obj.default_qp_input = atlasControllers.QPInputConstantHeight();
-      obj.default_qp_input.whole_body_data.q_des = zeros(obj.robot.getNumPositions(), 1);
-      obj.default_qp_input.whole_body_data.constrained_dofs = [findPositionIndices(obj.robot,'arm');findPositionIndices(obj.robot,'neck');findPositionIndices(obj.robot,'back_bkz');findPositionIndices(obj.robot,'back_bky')];
+      obj = obj@QPLocomotionPlan(robot);
     end
 
     function obj = buildLinkTrajectories(obj)
@@ -210,90 +187,6 @@ classdef QPWalkingPlan < QPControllerPlan
       next_plan = StandingPlan.from_standing_state(x, obj.robot);
     end
 
-    function qp_input = getQPControllerInput(obj, t_global, x, rpc, contact_force_detected)
-      % Get the input structure which can be passed to the stateless QP control loop
-      % @param t the current time
-      % @param x the current robot state
-      % @param rpc the robot property cache, which lets us quickly look up info about
-      % @param contact_force_detected num_bodies vector indicating whether contact force
-      %                               was detected on that body. Default: zeros(num_bodies,1)
-      % the robot which would be expensive to compute (such as terrain contact points)
-
-      if nargin < 5
-        contact_force_detected = zeros(rpc.num_bodies, 1);
-      end
-
-      r = obj.robot;
-      t_plan = t_global - obj.start_time;
-      t_plan = double(t_plan);
-      
-      T = obj.duration;
-      t_plan = min([t_plan, T]);
-
-      qp_input = obj.default_qp_input;
-      qp_input.zmp_data.D = obj.D_ls;
-      qp_input.zmp_data.x0 = [obj.zmp_final; 0;0];
-      if isnumeric(obj.zmptraj)
-        qp_input.zmp_data.y0 = obj.zmptraj;
-      else
-        qp_input.zmp_data.y0 = fasteval(obj.zmptraj, t_plan);
-      end
-      qp_input.zmp_data.S = obj.V.S;
-      if isnumeric(obj.V.s1)
-        qp_input.zmp_data.s1 = obj.V.s1;
-      else
-        qp_input.zmp_data.s1 = fasteval(obj.V.s1,t_plan);
-      end
-
-      supp_idx = find(obj.support_times<=t_plan,1,'last');
-      supp = obj.supports(supp_idx);
-
-      qp_input.support_data = struct('body_id', {r.foot_body_id.right, r.foot_body_id.left},...
-                                     'contact_pts', {...
-                               [rpc.contact_groups{r.foot_body_id.right}.heel, ...
-                                rpc.contact_groups{r.foot_body_id.right}.toe],...
-                               [rpc.contact_groups{r.foot_body_id.left}.heel,...
-                                rpc.contact_groups{r.foot_body_id.left}.toe]},...
-                                     'support_logic_map', {zeros(4,1), zeros(4,1)},...
-                                     'mu', {obj.mu, obj.mu},...
-                                     'contact_surfaces', {0,0});
-
-      if ~isempty(supp.bodies) && any(supp.bodies==r.foot_body_id.right)
-        r.warning_manager.warnOnce('Drake:HardCodedSupport', 'hard-coded for heel+toe support');
-        qp_input.support_data(1).support_logic_map = obj.support_logic_maps.kinematic_or_sensed;
-      else
-        qp_input.support_data(1).support_logic_map = obj.support_logic_maps.prevent_support;
-      end
-      if ~isempty(supp.bodies) && any(supp.bodies==r.foot_body_id.left)
-        r.warning_manager.warnOnce('Drake:HardCodedSupport', 'hard-coded for heel+toe support');
-        qp_input.support_data(2).support_logic_map = obj.support_logic_maps.kinematic_or_sensed;
-      else
-        qp_input.support_data(2).support_logic_map = obj.support_logic_maps.prevent_support;
-      end
-
-      qp_input.whole_body_data.q_des = obj.qstar;
-
-      pelvis_has_tracking = false;
-      for j = 1:length(obj.link_constraints)
-        qp_input.body_motion_data(j).body_id = obj.link_constraints(j).link_ndx;
-        if qp_input.body_motion_data(j).body_id == rpc.body_ids.pelvis
-          pelvis_has_tracking = true;
-        end
-        body_t_ind = find(obj.link_constraints(j).ts<=t_plan,1,'last');
-        if body_t_ind < length(obj.link_constraints(j).ts)
-          qp_input.body_motion_data(j).ts = obj.link_constraints(j).ts(body_t_ind:body_t_ind+1) + obj.start_time;
-        else
-          qp_input.body_motion_data(j).ts = obj.link_constraints(j).ts([body_t_ind,body_t_ind]) + obj.start_time;
-        end
-        qp_input.body_motion_data(j).coefs = obj.link_constraints(j).coefs(:,body_t_ind,:);
-      end
-      assert(pelvis_has_tracking, 'Expecting a link_constraints block for the pelvis');
-
-      qp_input.param_set_name = obj.gain_set;
-
-      obj = obj.updatePlanShift(t_global, x, qp_input, contact_force_detected);
-      qp_input = obj.applyPlanShift(qp_input);
-    end
 
     function obj = updatePlanShift(obj, t_global, x, qp_input, contact_force_detected)
       active_support_bodies = [qp_input.support_data.body_id];
