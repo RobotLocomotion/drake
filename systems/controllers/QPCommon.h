@@ -130,11 +130,17 @@ struct AtlasHardwareGains {
   VectorXd ff_qd_d;
 };
 
+struct AtlasHardwareParams {
+  AtlasHardwareGains gains;
+  Matrix<bool, Dynamic, 1> joint_is_force_controlled;
+  Matrix<bool, Dynamic, 1> joint_is_position_controlled;
+};
+
 struct AtlasParams {
   WholeBodyParams whole_body;
   std::vector<BodyMotionParams> body_motion;
   VRefIntegratorParams vref_integrator;
-  AtlasHardwareGains hardware_gains;
+  AtlasHardwareParams hardware;
   Matrix3d W_kdot;
   double Kp_ang;
   double w_slack;
