@@ -30,7 +30,7 @@ RigidBody::RigidBody(void) :
     dJdotVdq(TWIST_SIZE, 0),
     dJdotVdv(TWIST_SIZE, 0),
     collision_filter_group(DrakeCollision::DEFAULT_GROUP),
-    collision_filter_mask(DrakeCollision::ALL_MASK)
+    collision_filter_ignores(DrakeCollision::NONE_MASK)
 {
   robotnum = 0;
 	position_num_start = 0;
@@ -160,10 +160,10 @@ const vector<DrakeShapes::VisualElement>& RigidBody::getVisualElements() const
 }
 
 void RigidBody::setCollisionFilter(const DrakeCollision::bitmask& group, 
-                                   const DrakeCollision::bitmask& mask)
+                                   const DrakeCollision::bitmask& ignores)
 {
   setCollisionFilterGroup(group);
-  setCollisionFilterMask(mask);
+  setCollisionFilterIgnores(ignores);
 }
 
 bool RigidBody::appendCollisionElementIdsFromThisBody(const string& group_name, vector<DrakeCollision::ElementId>& ids) const

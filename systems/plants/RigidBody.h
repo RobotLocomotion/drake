@@ -27,7 +27,7 @@ private:
   std::unique_ptr<DrakeJoint> joint;
   typedef Matrix<double, 6,1> Vector6d;
   DrakeCollision::bitmask collision_filter_group;
-  DrakeCollision::bitmask collision_filter_mask;
+  DrakeCollision::bitmask collision_filter_ignores;
 
 public:
   RigidBody();
@@ -45,17 +45,17 @@ public:
   const std::vector<DrakeShapes::VisualElement>& getVisualElements() const;
 
   virtual void setCollisionFilter(const DrakeCollision::bitmask& group, 
-                                  const DrakeCollision::bitmask& mask);
+                                  const DrakeCollision::bitmask& ignores);
 
   const DrakeCollision::bitmask& getCollisionFilterGroup() const { return collision_filter_group; };
   void setCollisionFilterGroup(const DrakeCollision::bitmask& group) { this->collision_filter_group = group; };
 
-  const DrakeCollision::bitmask& getCollisionFilterMask() const { return collision_filter_mask; };
-  void setCollisionFilterMask(const DrakeCollision::bitmask& mask) { this->collision_filter_mask = mask; };
+  const DrakeCollision::bitmask& getCollisionFilterIgnores() const { return collision_filter_ignores; };
+  void setCollisionFilterIgnores(const DrakeCollision::bitmask& ignores) { this->collision_filter_ignores = ignores; };
 
   void addToCollisionFilterGroup(const DrakeCollision::bitmask& group) { this->collision_filter_group |= group; }; 
-  void ignoreCollisionFilterGroup(const DrakeCollision::bitmask& group) { this->collision_filter_mask |= group; };
-  void collideWithCollisionFilterGroup(const DrakeCollision::bitmask& group) { this->collision_filter_mask &= ~group; };
+  void ignoreCollisionFilterGroup(const DrakeCollision::bitmask& group) { this->collision_filter_ignores |= group; };
+  void collideWithCollisionFilterGroup(const DrakeCollision::bitmask& group) { this->collision_filter_ignores &= ~group; };
 
   bool adjacentTo(const std::shared_ptr<RigidBody>& other) const
   {
@@ -65,7 +65,7 @@ public:
 
   bool collidesWith(const std::shared_ptr<RigidBody>& other) const
   {
-    bool ignored = this == other.get() || adjacentTo(other) || (collision_filter_group & other->getCollisionFilterMask()).any() || (other->getCollisionFilterGroup() & collision_filter_mask).any();
+    bool ignored = this == other.get() || adjacentTo(other) || (collision_filter_group & other->getCollisionFilterIgnores()).any() || (other->getCollisionFilterGroup() & collision_filter_ignores).any();
     return !ignored;
   };
 
