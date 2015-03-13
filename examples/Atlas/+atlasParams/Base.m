@@ -62,9 +62,9 @@ classdef Base
 
     function obj = updateKd(obj)
       % Recompute derivative gains based on provided damping ratios
-      obj.whole_body.Kd = getDampingGain(obj.whole_body.Kp, 0.7);
+      obj.whole_body.Kd = getDampingGain(obj.whole_body.Kp, obj.whole_body.damping_ratio);
       for j = 1:length(obj.body_motion)
-        obj.body_motion(j).Kd = getDampingGain(obj.body_motion(j).Kp, 0.7);
+        obj.body_motion(j).Kd = getDampingGain(obj.body_motion(j).Kp, obj.body_motion(j).damping_ratio);
       end
     end
   end
