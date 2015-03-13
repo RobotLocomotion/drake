@@ -78,13 +78,13 @@ classdef QPLocomotionPlan < QPControllerPlan
                                      'mu', {obj.mu, obj.mu},...
                                      'contact_surfaces', {0,0});
 
-      if ~isempty(supp.bodies) && any(supp.bodies==r.foot_body_id.right)
+      if ~isempty(supp) && any(supp.bodies==r.foot_body_id.right)
         r.warning_manager.warnOnce('Drake:HardCodedSupport', 'hard-coded for heel+toe support');
         qp_input.support_data(1).support_logic_map = obj.support_logic_maps.kinematic_or_sensed;
       else
         qp_input.support_data(1).support_logic_map = obj.support_logic_maps.prevent_support;
       end
-      if ~isempty(supp.bodies) && any(supp.bodies==r.foot_body_id.left)
+      if ~isempty(supp) && any(supp.bodies==r.foot_body_id.left)
         r.warning_manager.warnOnce('Drake:HardCodedSupport', 'hard-coded for heel+toe support');
         qp_input.support_data(2).support_logic_map = obj.support_logic_maps.kinematic_or_sensed;
       else
@@ -138,6 +138,7 @@ classdef QPLocomotionPlan < QPControllerPlan
           break
         end
       end
+      disp('plan shift: ')
       obj.plan_shift_data.plan_shift
     end
 
@@ -306,6 +307,7 @@ classdef QPLocomotionPlan < QPControllerPlan
 
       obj = QPLocomotionPlan(biped);
       obj.x0 = x0;
+      obj.qtraj = x0(1:biped.getNumPositions());
 
       [obj.supports, obj.support_times] = QPLocomotionPlan.getSupports(zmp_knots);
       obj.zmptraj = QPLocomotionPlan.getZMPTraj(zmp_knots);
