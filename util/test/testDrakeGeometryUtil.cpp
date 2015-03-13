@@ -190,6 +190,28 @@ void testSpatialCrossProduct()
   valuecheck(a_crf_b, -a_crm_b.transpose());
 }
 
+void testdrpy2rotmat()
+{
+  default_random_engine generator;
+  Vector3d rpy = uniformlyRandomRPY(generator);
+	Matrix3d R = rpy2rotmat(rpy);
+	Matrix<double,9,3> dR = drpy2rotmat(rpy);
+	Matrix<double,9,3> dR_num = Matrix<double,9,3>::Zero();
+	for(int i = 0;i<3;i++)
+	{
+		Vector3d err = Vector3d::Zero();
+		err(i) = 1e-7;
+		Vector3d rpyi = rpy+err;
+		Matrix3d Ri = rpy2rotmat(rpyi);
+		Matrix3d Ri_err = (Ri-R)/err(i);
+		for(int j = 0;j<9;j++)
+		{
+			dR_num(j,i) = Ri_err(j);
+			valuecheck(dR(j,i),dR_num(j,i),1e-3);
+		}
+	}
+}
+
 int main(int argc, char **argv)
 {
   testRotationConversionFunctions();
@@ -203,6 +225,7 @@ int main(int argc, char **argv)
 
   testDHomogTransInv(1000, true);
   testSpatialCrossProduct();
+	testdrpy2rotmat();
 
   return 0;
 }

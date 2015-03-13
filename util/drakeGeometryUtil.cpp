@@ -421,6 +421,28 @@ Eigen::Matrix<typename Derived::Scalar, 3, 3> rpy2rotmat(const Eigen::MatrixBase
   return R;
 }
 
+template<typename Derived>
+Eigen::Matrix<typename Derived::Scalar,9,3> drpy2rotmat(const Eigen::MatrixBase<Derived>& rpy)
+{
+  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3);
+  auto rpy_array = rpy.array();
+  auto s = rpy_array.sin();
+  auto c = rpy_array.cos();
+
+	Eigen::Matrix<typename Derived::Scalar, 9, 3> dR;
+	dR.row(0) << 0, c(2)*-s(1), c(1)*-s(2);
+	dR.row(1) << 0, -s(1)*s(2), c(2)*c(1);
+	dR.row(2) << 0, -c(1), 0;
+	dR.row(3) << c(2)*s(1)*c(0)-s(2)*-s(0), c(2)*c(1)*s(0), -s(2)*s(1)*s(0)-c(2)*c(0);
+	dR.row(4) << s(2)*s(1)*c(0)+c(2)*-s(0), s(2)*c(1)*s(0), c(2)*s(1)*s(0)-s(2)*c(0);
+	dR.row(5) << c(1)*c(0), -s(1)*s(0),0;
+	dR.row(6) << c(2)*s(1)*-s(0)+s(2)*c(0), c(2)*c(1)*c(0), -s(2)*s(1)*c(0)+c(2)*s(0);
+	dR.row(7) << s(2)*s(1)*-s(0)-c(2)*c(0), s(2)*c(1)*c(0), c(2)*s(1)*c(0)+s(2)*s(0);
+	dR.row(8) << c(1)*-s(0), -s(1)*c(0), 0; 
+
+	return dR;
+}
+
 // NOTE: not reshaping second derivative to Matlab geval output format!
 template <typename Derived>
 void normalizeVec(
@@ -1022,6 +1044,31 @@ typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime>::type dTransformSpatia
   return ret;
 }
 
+template<typename Derived, typename DerivedT>
+DLLEXPORT GradientVar<typename Derived::Scalar, 6, 1> cartesian2cylindrical(const Transform<typename DerivedT::Scalar,3,Isometry>& T, const MatrixBase<Derived>& xyzrpy)
+{
+  Matrix<double,3,6> dx_pos_cylinder = Matrix<double,3,6>::Zero();
+	dx_pos_cylinder.block(0,0,3,3) = T.linear().inverse();
+	Vector3d x_pos_cylinder = dx_pos_cylinder.block(0,0,3,3)*xyzrpy.block(0,0,3,1)-T.translation();
+	double radius = sqrt(pow(x_pos_cylinder(0),2)+pow(x_pos_cylinder(1),2));
+	RowVector3d dradius_dx_pos_cylinder = RowVector3d::Zero();
+  dradius_dx_pos_cylinder.block(0,0,1,2) = x_pos_cylinder.block(0,0,2,1).transpose()/radius;
+	double theta = atan2(x_pos_cylinder(1),x_pos_cylinder(0));
+	RowVector3d dtheta_dx_pos_cylinder = RowVector3d::Zero();
+	dtheta_dx_pos_cylinder(0) = -x_pos_cylinder(1)/pow(radius,2);
+	dtheta_dx_pos_cylinder(1) = x_pos_cylinder(0)/pow(radius,2);
+	double height = x_pos_cylinder(2);
+	RowVector3d dheight_dx_pos_cylinder(0,0,1.0);
+  Matrix<typename Derived::Scalar,6,1> x_cylinder = Matrix<typename Derived::Scalar,6,1>::Zero();
+  x_cylinder(0) = radius;
+	x_cylinder(1) = theta;
+	x_cylinder(2) = height;
+	Matrix<typename Derived::Scalar,6,6> J;
+	J.row(0) = dradius_dx_pos_cylinder*dx_pos_cylinder;
+	J.row(1) = dtheta_dx_pos_cylinder*dx_pos_cylinder;
+	J.row(2) = dheight_dx_pos_cylinder*dx_pos_cylinder;
+}
+
 // explicit instantiations
 template DLLEXPORT void normalizeVec(
     const MatrixBase< Vector3d >& x,
@@ -1068,6 +1115,9 @@ template DLLEXPORT Vector4d rpy2quat(const Eigen::MatrixBase<Vector3d>&);
 template DLLEXPORT Matrix3d rpy2rotmat(const Eigen::MatrixBase<Vector3d>&);
 template DLLEXPORT Matrix3d rpy2rotmat(const Eigen::MatrixBase<Eigen::Block<Eigen::Ref<Eigen::Matrix<double, -1, 1, 0, -1, 1> const, 0, Eigen::InnerStride<1> > const, 3, 1, false>>&);
 
+template DLLEXPORT Matrix<double,9,3> drpy2rotmat(const Eigen::MatrixBase<Vector3d>&);
+template DLLEXPORT Matrix<double,9,3> drpy2rotmat(const Eigen::MatrixBase<Eigen::Block<Eigen::Ref<Eigen::Matrix<double, -1, 1, 0, -1, 1> const, 0, Eigen::InnerStride<1> > const, 3, 1, false>>&);
+
 template DLLEXPORT Vector4d quat2axis(const MatrixBase< Map<Vector4d> >&);
 template DLLEXPORT Matrix3d quat2rotmat(const MatrixBase< Map<Vector4d> >& q);
 template DLLEXPORT Vector3d quat2rpy(const MatrixBase< Map<Vector4d> >&);
@@ -1083,6 +1133,7 @@ template DLLEXPORT Vector3d rotmat2rpy(const MatrixBase< Map<Matrix3d> >&);
 template DLLEXPORT Vector4d rpy2axis(const Eigen::MatrixBase< Map<Vector3d> >&);
 template DLLEXPORT Vector4d rpy2quat(const Eigen::MatrixBase< Map<Vector3d> >&);
 template DLLEXPORT Matrix3d rpy2rotmat(const Eigen::MatrixBase< Map<Vector3d> >&);
+template DLLEXPORT Matrix<double,9,3> drpy2rotmat(const Eigen::MatrixBase< Map<Vector3d> >&);
 
 template DLLEXPORT Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic> transformSpatialMotion(
     const Eigen::Isometry3d&,

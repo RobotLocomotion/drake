@@ -101,6 +101,8 @@ DLLEXPORT Eigen::Matrix<typename Derived::Scalar, 4, 1> rpy2quat(const Eigen::Ma
 template<typename Derived>
 DLLEXPORT Eigen::Matrix<typename Derived::Scalar, 3, 3> rpy2rotmat(const Eigen::MatrixBase<Derived>& rpy);
 
+template<typename Derived>
+DLLEXPORT Eigen::Matrix<typename Derived::Scalar, 9, 3> drpy2rotmat(const Eigen::MatrixBase<Derived>& rpy);
 /*
  * cross product related
  */
@@ -167,6 +169,11 @@ DLLEXPORT void quatdot2angularvelMatrix(const Eigen::MatrixBase<DerivedQ>& q,
     Eigen::MatrixBase<DerivedM>& M,
     typename Gradient<DerivedM, QUAT_SIZE, 1>::type* dM = nullptr);
 
+template<typename Derived, typename DerivedT>
+DLLEXPORT GradientVar<typename Derived::Scalar, 6, 1> cartesian2cylindrical( const Eigen::Transform<typename DerivedT::Scalar, 3, Eigen::Isometry>& T, const Eigen::MatrixBase<Derived>& xyzrpy);
+
+template<typename Derived, typename DerivedT>
+DLLEXPORT GradientVar<typename Derived::Scalar, 6, 1> cylindrical2cartesian( const Eigen::Transform<typename DerivedT::Scalar, 3, Eigen::Isometry>& T, const Eigen::MatrixBase<Derived>& xyzrpy);
 //#endif
 
 /*
