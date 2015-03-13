@@ -1,4 +1,4 @@
-function [A,dA] = getCMMdA(model,kinsol, robotnum, in_terms_of_qdot)
+function [A,dA] = getCMMdA(model, kinsol, robotnum, in_terms_of_qdot)
 % returns the centroidal momentum matrix as described in Orin & Goswami 2008
 %
 % h = A*qd, where h(4:6) is the total linear momentum and h(1:3) is the
