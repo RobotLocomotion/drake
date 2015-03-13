@@ -701,8 +701,8 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   //y = pdata->B_act.jacobiSvd(ComputeThinU|ComputeThinV).solve(pdata->H_act*qdd + pdata->C_act - Jz_act.transpose()*lambda - D_act*beta);
 
   bool foot_contact[2];
-  foot_contact[0] = b_contact_force(pdata->rpc.body_ids.r_foot) == 1;
-  foot_contact[1] = b_contact_force(pdata->rpc.body_ids.l_foot) == 1;
+  foot_contact[0] = b_contact_force(pdata->rpc.body_ids.l_foot) == 1;
+  foot_contact[1] = b_contact_force(pdata->rpc.body_ids.r_foot) == 1;
   qp_output->qd_ref = velocityReference(pdata, robot_state.t, robot_state.q, robot_state.qd, qp_output->qdd, foot_contact, &(params->vref_integrator), &(pdata->rpc));
 
   // Remember t for next time around
