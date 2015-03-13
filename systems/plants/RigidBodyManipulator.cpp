@@ -10,7 +10,7 @@
 #include <regex>
 #include <stdexcept>
 #include <limits>
-
+#include <float.h>
 //DEBUG
 //#include <stdexcept>
 //END_DEBUG
@@ -267,9 +267,15 @@ void getFiniteIndexes(T const & v, std::vector<int> &finite_indexes)
   const size_t n = v.size();
   for (size_t x = 0; x < n; x++)
   {
+    #if defined(WIN32) || defined(WIN64)
+    if (_finite(static_cast<double>(v[x]))) {
+      finite_indexes.push_back(x);
+    }
+    #else
     if (isfinite(static_cast<double>(v[x]))) {
       finite_indexes.push_back(x);
     }
+    #endif
   }
 }
 
