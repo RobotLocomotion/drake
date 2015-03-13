@@ -36,6 +36,8 @@ namespace DrakeShapes
 
       void setGeometry(const Geometry& geometry);
 
+      bool hasGeometry() const;
+
       const Geometry& getGeometry() const;
 
     protected:

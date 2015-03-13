@@ -41,6 +41,11 @@ namespace DrakeShapes
     return *geometry;
   }
 
+  bool Element::hasGeometry() const
+  {
+    return geometry != nullptr;
+  }
+
   void Element::updateWorldTransform(const Eigen::Matrix4d& T_local_to_world)
   {
     setWorldTransform(T_local_to_world*(this->T_element_to_local));
