@@ -6,6 +6,7 @@
 #include <stdexcept>
 
 #include "joints/drakeJointUtil.h"
+#include "joints/FixedAxisOneDoFJoint.h"
 
 using namespace Eigen;
 using namespace std;
@@ -163,8 +164,17 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
       double pitch = mxGetScalar(mxGetProperty(pBodies, i, "pitch"));
 
       if (model->bodies[i]->hasParent()) {
-        model->bodies[i]->setJoint(createJoint(jointname, Ttree, floating, joint_axis, pitch));
+	unique_ptr<DrakeJoint> joint = createJoint(jointname, Ttree, floating, joint_axis, pitch);
+
 //        mexPrintf((model->bodies[i]->getJoint().getName() + ": " + std::to_string(model->bodies[i]->getJoint().getNumVelocities()) + "\n").c_str());
+
+	FixedAxisOneDoFJoint* joint_w_limits = dynamic_cast<FixedAxisOneDoFJoint*>(joint.get());
+	if (joint_w_limits != nullptr) {
+	  double joint_limit_min = mxGetScalar(mxGetProperty(pBodies,i,"joint_limit_min"));
+	  double joint_limit_max = mxGetScalar(mxGetProperty(pBodies,i,"joint_limit_max"));
+	  joint_w_limits->setJointLimits(joint_limit_min,joint_limit_max);
+	}
+        model->bodies[i]->setJoint(joint);
       }
     }
     {
@@ -184,10 +194,6 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     }
 
     if (model->bodies[i]->position_num_start>=0) {
-       pm = mxGetProperty(pBodies,i,"joint_limit_min");
-       model->joint_limit_min[model->bodies[i]->position_num_start] = mxGetScalar(pm);
-       pm = mxGetProperty(pBodies,i,"joint_limit_max");
-       model->joint_limit_max[model->bodies[i]->position_num_start] = mxGetScalar(pm);
     }
 
     pm = mxGetProperty(pBodies,i,"T_body_to_joint");
@@ -346,10 +352,6 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     pm = mxGetProperty(pFrames,i,"T");
     memcpy(model->frames[i].Ttree.data(),mxGetPr(pm),sizeof(double)*4*4);
   }
-
-
-  memcpy(model->joint_limit_min.data(), mxGetPr(mxGetProperty(pRBM,0,"joint_limit_min")), sizeof(double)*model->num_positions);
-  memcpy(model->joint_limit_max.data(), mxGetPr(mxGetProperty(pRBM,0,"joint_limit_max")), sizeof(double)*model->num_positions);
 
   const mxArray* a_grav_array = mxGetProperty(pRBM,0,"gravity");
   if (a_grav_array && mxGetNumberOfElements(a_grav_array)==3) {

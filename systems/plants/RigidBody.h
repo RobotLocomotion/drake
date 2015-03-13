@@ -33,7 +33,7 @@ public:
   void setN(int nq, int nv);
   void computeAncestorDOFs(RigidBodyManipulator* model);
 
-  void setJoint(std::unique_ptr<DrakeJoint> joint);
+  void setJoint(std::unique_ptr<DrakeJoint>& joint);
   const DrakeJoint& getJoint() const;
 
   bool hasParent() const;

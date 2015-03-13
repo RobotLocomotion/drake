@@ -22,6 +22,8 @@ public:
   virtual ~FixedAxisOneDoFJoint();
 
   void setJointLimits(double joint_limit_min, double joint_limit_max);
+  const double getJointLimitMin(void) const { return joint_limit_min; }
+  const double getJointLimitMax(void) const { return joint_limit_max; }
 
   virtual void motionSubspace(const Eigen::Ref<const Eigen::VectorXd>& q, MotionSubspaceType& motion_subspace, Eigen::MatrixXd* dmotion_subspace) const; //override;
 
