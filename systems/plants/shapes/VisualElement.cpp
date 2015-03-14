@@ -8,7 +8,7 @@ namespace DrakeShapes
     //: Element(move(geometry), T_element_to_local), material(material) 
   //{}
 
-  void VisualElement::setMaterial(const Eigen::Vector4d material)
+  void VisualElement::setMaterial(const Eigen::Vector4d& material)
   {
     this->material = material;
   }
