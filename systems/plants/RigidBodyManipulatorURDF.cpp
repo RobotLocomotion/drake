@@ -13,13 +13,20 @@
 #include "joints/QuaternionFloatingJoint.h"
 #include "joints/RollPitchYawFloatingJoint.h"
 
+// from http://stackoverflow.com/questions/478898/how-to-execute-a-command-and-get-output-of-command-within-c
+#if defined(WIN32) || defined(WIN64)
+  #define POPEN _popen
+  #define PCLOSE _pclose
+#else
+  #define POPEN popen
+  #define PCLOSE pclose
+#endif
+
 using namespace std;
 
 string exec(string cmd)
 {
-	// from http://stackoverflow.com/questions/478898/how-to-execute-a-command-and-get-output-of-command-within-c
-	// note: replace popen and pclose with _popen and _pclose for Windows.
-	FILE* pipe = popen(cmd.c_str(), "r");
+	FILE* pipe = POPEN(cmd.c_str(), "r");
 	if (!pipe) return "ERROR";
 	char buffer[128];
 	string result = "";
@@ -27,7 +34,7 @@ string exec(string cmd)
 		if(fgets(buffer, 128, pipe) != NULL)
 			result += buffer;
     }
-	pclose(pipe);
+	PCLOSE(pipe);
 	return result;
 }
 
