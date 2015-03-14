@@ -32,6 +32,7 @@ classdef QPLocomotionPlan < QPControllerPlan
       else
         qf = fasteval(obj.qtraj, obj.qtraj.tspan(end));
       end
+      qf(1:6) = x(1:6);
       next_plan = QPLocomotionPlan.from_standing_state([qf; x(obj.robot.getNumPositions+1:end)], obj.robot, obj.supports(end));
       % next_plan = QPLocomotionPlan.from_standing_state(x, obj.robot, obj.supports(end));
 
