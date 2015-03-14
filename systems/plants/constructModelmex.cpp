@@ -247,7 +247,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
           case DrakeShapes::MESH:
           {
             string filename(mxArrayToString(mxGetProperty(pShape,0,"filename")));
-            element.setGeometry(DrakeShapes::Mesh(filename));
+            element.setGeometry(DrakeShapes::Mesh(filename, filename));
           }
             break;
           case DrakeShapes::MESH_POINTS:
