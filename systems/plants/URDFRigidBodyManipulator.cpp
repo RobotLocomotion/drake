@@ -640,7 +640,8 @@ bool URDFRigidBodyManipulator::addRobotFromURDFString(const string &xml_string, 
         joint_axis << j->axis.x, j->axis.y, j->axis.z;
         Isometry3d transform_to_parent_body;
         poseToTransform(j->parent_to_joint_origin_transform,transform_to_parent_body.matrix());
-        bodies[index]->setJoint(createJoint(j->name, transform_to_parent_body, bodies[index]->floating, joint_axis, bodies[index]->pitch));
+        unique_ptr<DrakeJoint> joint(createJoint(j->name, transform_to_parent_body, bodies[index]->floating, joint_axis, bodies[index]->pitch));
+        bodies[index]->setJoint(joint);
       }
 
     } else { // no joint, this link is attached directly to the floating base
@@ -672,7 +673,8 @@ bool URDFRigidBodyManipulator::addRobotFromURDFString(const string &xml_string, 
       // pitch is irrelevant
       bodies[index]->Ttree = Matrix4d::Identity();
       bodies[index]->T_body_to_joint = Matrix4d::Identity();
-      bodies[index]->setJoint(std::unique_ptr<RollPitchYawFloatingJoint>(new RollPitchYawFloatingJoint(jointname, Isometry3d::Identity())));
+      unique_ptr<DrakeJoint> joint(new RollPitchYawFloatingJoint(jointname, Isometry3d::Identity()));
+      bodies[index]->setJoint(joint);
 
       // todo: set up featherstone structure (dynamics)
       parent[index-1] = -1;
