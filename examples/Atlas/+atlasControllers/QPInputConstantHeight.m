@@ -8,6 +8,7 @@ classdef QPInputConstantHeight
   end
 
   properties
+    be_silent = false; % Whether to ignore this message and produce no output
     timestamp % current time in seconds
     zmp_data % information describing the setup and state of our linear inverted pendulum model
     support_data  % information describing available supports which the controller MAY use
