@@ -489,9 +489,9 @@ void RigidBodyManipulator::compile(void)
   for (int i=0; i<num_bodies; i++) {
     if (bodies[i]->hasParent()) {
       const FixedAxisOneDoFJoint* joint_w_limits = dynamic_cast<const FixedAxisOneDoFJoint*>(&(bodies[i]->getJoint()));
-      if (joint_w_limits == nullptr) {
-	joint_limit_min[bodies[i]->position_num_start] = joint_w_limits->getJointLimitMin();
-	joint_limit_max[bodies[i]->position_num_start] = joint_w_limits->getJointLimitMax();
+      if (joint_w_limits != nullptr) {
+        joint_limit_min[bodies[i]->position_num_start] = joint_w_limits->getJointLimitMin();
+        joint_limit_max[bodies[i]->position_num_start] = joint_w_limits->getJointLimitMax();
       }
     } else {
       updateCollisionElements(i);  // update static objects (not done in the kinematics loop)
