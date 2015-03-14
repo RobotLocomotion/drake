@@ -1045,11 +1045,11 @@ typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime>::type dTransformSpatia
 }
 
 template<typename Derived, typename DerivedT>
-DLLEXPORT GradientVar<typename Derived::Scalar, 6, 1> cartesian2cylindrical(const Transform<typename DerivedT::Scalar,3,Isometry>& T, const MatrixBase<Derived>& xyzrpy)
+DLLEXPORT GradientVar<typename Derived::Scalar, 6, 1> cartesian2cylindrical(const Transform<typename DerivedT::Scalar,3,Isometry>& T, const MatrixBase<Derived>& x_cartesian)
 {
   Matrix<double,3,6> dx_pos_cylinder = Matrix<double,3,6>::Zero();
 	dx_pos_cylinder.block(0,0,3,3) = T.linear().inverse();
-	Vector3d x_pos_cylinder = dx_pos_cylinder.block(0,0,3,3)*xyzrpy.block(0,0,3,1)-T.translation();
+	Vector3d x_pos_cylinder = dx_pos_cylinder.block(0,0,3,3)*x_cartesian.block(0,0,3,1)-T.translation();
 	double radius = sqrt(pow(x_pos_cylinder(0),2)+pow(x_pos_cylinder(1),2));
 	RowVector3d dradius_dx_pos_cylinder = RowVector3d::Zero();
   dradius_dx_pos_cylinder.block(0,0,1,2) = x_pos_cylinder.block(0,0,2,1).transpose()/radius;
@@ -1067,6 +1067,8 @@ DLLEXPORT GradientVar<typename Derived::Scalar, 6, 1> cartesian2cylindrical(cons
 	J.row(0) = dradius_dx_pos_cylinder*dx_pos_cylinder;
 	J.row(1) = dtheta_dx_pos_cylinder*dx_pos_cylinder;
 	J.row(2) = dheight_dx_pos_cylinder*dx_pos_cylinder;
+	Matrix3d x_rotmat = rpy2rotmat(x_cartesian.tail(3));
+	Matrix<double,9,3> dx_rotmat = drpy2rotmat(x_cartesian.tail(3));
 }
 
 // explicit instantiations
