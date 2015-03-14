@@ -152,6 +152,8 @@ public:
       virtual bool collidesWith( const DrakeCollision::Element* other) const;
     protected:
       std::shared_ptr<RigidBody> body;
+    public:
+      EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
 
 public:
