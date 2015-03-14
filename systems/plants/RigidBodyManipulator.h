@@ -75,7 +75,9 @@ public:
   virtual ~RigidBodyManipulator(void);
 
   bool addRobotFromURDFString(const std::string &xml_string, const std::string &root_dir = ".");
+  bool addRobotFromURDFString(const std::string &xml_string, std::map<std::string,std::string>& package_map, const std::string &root_dir = ".");
   bool addRobotFromURDF(const std::string &urdf_filename);
+  bool addRobotFromURDF(const std::string &urdf_filename, std::map<std::string,std::string>& package_map);
 
   void surfaceTangents(Eigen::Map<Matrix3xd> const & normals, std::vector< Map<Matrix3xd> > & tangents);
   

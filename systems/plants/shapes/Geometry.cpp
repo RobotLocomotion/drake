@@ -60,7 +60,7 @@ namespace DrakeShapes
   }
 
   Mesh::Mesh(const string& filename)
-    : Geometry(MESH), filename(filename), resolved_filename(filename) 
+    : Geometry(MESH), filename(filename)
   {}
 
   Mesh::Mesh(const string& filename, const string& resolved_filename)
@@ -72,6 +72,9 @@ namespace DrakeShapes
     //DEBUG
     //cout << "Mesh::extractMeshVertices: resolved_filename = " << resolved_filename << endl;
     //END_DEBUG
+    if (resolved_filename.empty()) {
+      return false;
+    }
     spruce::path spath(resolved_filename);
     string ext = spath.extension();
     std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);   
