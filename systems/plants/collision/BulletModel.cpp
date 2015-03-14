@@ -167,35 +167,37 @@ namespace DrakeCollision
           throw unknownShapeException(elements[id]->getShape());
           break;
       }
-      // Create the collision objects
-      unique_ptr<btCollisionObject> bt_obj(new btCollisionObject());
-      unique_ptr<btCollisionObject> bt_obj_no_margin(new btCollisionObject());
-      bt_obj->setCollisionShape(bt_shape.get());
-      bt_obj_no_margin->setCollisionShape(bt_shape_no_margin.get());
-      bt_obj->setUserPointer(elements[id].get());
-      bt_obj_no_margin->setUserPointer(elements[id].get());
+      if (bt_shape) {
+        // Create the collision objects
+        unique_ptr<btCollisionObject> bt_obj(new btCollisionObject());
+        unique_ptr<btCollisionObject> bt_obj_no_margin(new btCollisionObject());
+        bt_obj->setCollisionShape(bt_shape.get());
+        bt_obj_no_margin->setCollisionShape(bt_shape_no_margin.get());
+        bt_obj->setUserPointer(elements[id].get());
+        bt_obj_no_margin->setUserPointer(elements[id].get());
 
-      // Add the collision objects to the collision worlds
-      bullet_world.bt_collision_world->addCollisionObject(bt_obj.get());
-      bullet_world_no_margin.bt_collision_world->addCollisionObject(bt_obj_no_margin.get());
+        // Add the collision objects to the collision worlds
+        bullet_world.bt_collision_world->addCollisionObject(bt_obj.get());
+        bullet_world_no_margin.bt_collision_world->addCollisionObject(bt_obj_no_margin.get());
 
-      if (elements[id]->isStatic()) {
-        bt_obj->setCollisionFlags(btCollisionObject::CF_KINEMATIC_OBJECT);
-        bt_obj->activate();
-        bt_obj_no_margin->setCollisionFlags(btCollisionObject::CF_KINEMATIC_OBJECT);
-        bt_obj_no_margin->activate();
-      } else {
-        bt_obj->setCollisionFlags(btCollisionObject::CF_STATIC_OBJECT);
-        bt_obj_no_margin->setCollisionFlags(btCollisionObject::CF_STATIC_OBJECT);
+        if (elements[id]->isStatic()) {
+          bt_obj->setCollisionFlags(btCollisionObject::CF_KINEMATIC_OBJECT);
+          bt_obj->activate();
+          bt_obj_no_margin->setCollisionFlags(btCollisionObject::CF_KINEMATIC_OBJECT);
+          bt_obj_no_margin->activate();
+        } else {
+          bt_obj->setCollisionFlags(btCollisionObject::CF_STATIC_OBJECT);
+          bt_obj_no_margin->setCollisionFlags(btCollisionObject::CF_STATIC_OBJECT);
+        }
+
+        // Store the Bullet collision objects
+        bullet_world.bt_collision_objects.insert(make_pair(id, move(bt_obj)));
+        bullet_world_no_margin.bt_collision_objects.insert(make_pair(id, move(bt_obj_no_margin)));
+
+        // Store the Bullet collision shapes too, because Bullet does no cleanup
+        bt_collision_shapes.push_back(move(bt_shape));
+        bt_collision_shapes.push_back(move(bt_shape_no_margin));
       }
-
-      // Store the Bullet collision objects
-      bullet_world.bt_collision_objects.insert(make_pair(id, move(bt_obj)));
-      bullet_world_no_margin.bt_collision_objects.insert(make_pair(id, move(bt_obj_no_margin)));
-
-      // Store the Bullet collision shapes too, because Bullet does no cleanup
-      bt_collision_shapes.push_back(move(bt_shape));
-      bt_collision_shapes.push_back(move(bt_shape_no_margin));
     }
     return id;
   }
@@ -298,10 +300,17 @@ namespace DrakeCollision
       pos.setValue( T(0,3), T(1,3), T(2,3) );
       btT.setOrigin(pos);
 
-      bullet_world.bt_collision_objects.at(id)->setWorldTransform(btT);
-      bullet_world_no_margin.bt_collision_objects.at(id)->setWorldTransform(btT);
-      bullet_world.bt_collision_world->updateAabbs();
-      bullet_world_no_margin.bt_collision_world->updateAabbs();
+      auto bt_obj_iter = bullet_world.bt_collision_objects.find(id);
+      auto bt_obj_no_margin_iter = bullet_world_no_margin.bt_collision_objects.find(id);
+      if (bt_obj_iter != bullet_world.bt_collision_objects.end()) {
+        bullet_world.bt_collision_objects.at(id)->setWorldTransform(btT);
+        bullet_world.bt_collision_world->updateAabbs();
+      }
+
+      if (bt_obj_no_margin_iter != bullet_world_no_margin.bt_collision_objects.end()) {
+        bullet_world_no_margin.bt_collision_objects.at(id)->setWorldTransform(btT);
+        bullet_world_no_margin.bt_collision_world->updateAabbs();
+      }
     }
     return element_exists;
   }
