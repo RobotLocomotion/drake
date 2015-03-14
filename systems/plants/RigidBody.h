@@ -137,7 +137,7 @@ public:
 
   friend std::ostream& operator<<( std::ostream &out, const RigidBody &b);
 
-  class CollisionElement : public DrakeCollision::Element
+  class DLLEXPORT_RBM CollisionElement : public DrakeCollision::Element
   {
     public:
       CollisionElement(const CollisionElement& other);
