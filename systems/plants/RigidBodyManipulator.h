@@ -198,8 +198,6 @@ public:
 
   DrakeCollision::ElementId addCollisionElement(const RigidBody::CollisionElement& element, const std::shared_ptr<RigidBody>& body, std::string group_name);
 
-  DrakeCollision::ElementId addCollisionElement(DrakeShapes::Geometry& geometry, const std::shared_ptr<RigidBody>& body, const Matrix4d& T_element_to_link, std::string group_name);
-
   void updateCollisionElements(const std::shared_ptr<RigidBody>& body);
 
   bool collisionRaycast(const Matrix3Xd &origins, const Matrix3Xd &ray_endpoints, VectorXd &distances, bool use_margins=false);

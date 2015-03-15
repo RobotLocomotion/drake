@@ -528,16 +528,6 @@ DrakeCollision::ElementId RigidBodyManipulator::addCollisionElement(const RigidB
   return id;
 }
 
-DrakeCollision::ElementId RigidBodyManipulator::addCollisionElement(DrakeShapes::Geometry& geometry, const shared_ptr<RigidBody>& body, const Matrix4d& T_element_to_link, string group_name)
-{
-  DrakeCollision::ElementId id(collision_model->addElement(unique_ptr<DrakeCollision::Element>(new RigidBody::CollisionElement(geometry, T_element_to_link, body))));
-  if (id != 0) {
-    body->collision_element_ids.push_back(id);
-    body->collision_element_groups[group_name].push_back(id);
-  }
-  return id;
-}
-
 void RigidBodyManipulator::updateCollisionElements(const shared_ptr<RigidBody>& body)
 {
   for (auto id_iter = body->collision_element_ids.begin(); 
