@@ -11,7 +11,7 @@ classdef QPLocomotionPlan < QPControllerPlan
     V;
     qtraj;
     comtraj = [];
-    mu = 1;
+    mu = 0.5;
     plan_shift_data = PlanShiftData();
     g = 9.81; % gravity m/s^2
   end
@@ -328,7 +328,7 @@ classdef QPLocomotionPlan < QPControllerPlan
       if isa(obj.V.S, 'ConstantTrajectory')
         obj.V.S = fasteval(obj.V.S, 0);
       end
-      obj.LIP_height = limp_height;
+      obj.LIP_height = getAtlasNominalCOMHeight();
       obj.gain_set = 'walking';
     end
 
@@ -401,7 +401,7 @@ classdef QPLocomotionPlan < QPControllerPlan
       obj.qtraj = PPTrajectory(qtraj_pp);
       obj.start_time = obj.qtraj.tspan(1);
       obj.duration = obj.qtraj.tspan(end) - obj.start_time;
-      obj.support_times = obj.qtraj.tspan;
+      obj.support_times = [obj.qtraj.tspan(1); inf];
       obj.link_constraints = link_constraints;
     end
 
