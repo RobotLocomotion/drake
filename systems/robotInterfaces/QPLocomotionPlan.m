@@ -87,13 +87,13 @@ classdef QPLocomotionPlan < QPControllerPlan
 
       if ~isempty(supp) && any(supp.bodies==r.foot_body_id.right)
         r.warning_manager.warnOnce('Drake:HardCodedSupport', 'hard-coded for heel+toe support');
-        qp_input.support_data(1).support_logic_map = obj.support_logic_maps.kinematic_or_sensed;
+        qp_input.support_data(1).support_logic_map = obj.support_logic_maps.require_support;
       else
         qp_input.support_data(1).support_logic_map = obj.support_logic_maps.prevent_support;
       end
       if ~isempty(supp) && any(supp.bodies==r.foot_body_id.left)
         r.warning_manager.warnOnce('Drake:HardCodedSupport', 'hard-coded for heel+toe support');
-        qp_input.support_data(2).support_logic_map = obj.support_logic_maps.kinematic_or_sensed;
+        qp_input.support_data(2).support_logic_map = obj.support_logic_maps.require_support;
       else
         qp_input.support_data(2).support_logic_map = obj.support_logic_maps.prevent_support;
       end
