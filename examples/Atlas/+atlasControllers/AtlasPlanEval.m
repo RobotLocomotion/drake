@@ -15,9 +15,12 @@ classdef AtlasPlanEval < PlanEval
       obj.robot_property_cache = atlasUtil.propertyCache(obj.robot);
     end
 
-    function qp_input = getQPControllerInput(obj, t, x)
+    function qp_input = getQPControllerInput(obj, t, x, contact_force_detected)
+      if nargin < 4
+        contact_force_detected = zeros(obj.robot_property_cache.num_bodies, 1);
+      end
       plan = obj.getCurrentPlan(t, x);
-      qp_input = plan.getQPControllerInput(t, x, obj.robot_property_cache);
+      qp_input = plan.getQPControllerInput(t, x, obj.robot_property_cache, contact_force_detected);
     end
   end
 end
