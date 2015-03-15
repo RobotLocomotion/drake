@@ -122,12 +122,17 @@ classdef QPLocomotionPlan < QPControllerPlan
 
       qp_input.param_set_name = obj.gain_set;
 
-      obj = obj.updatePlanShift(t_global, x, qp_input, contact_force_detected);
+      if supp_idx < length(obj.supports)
+        next_support = obj.supports(supp_idx + 1);
+      else
+        next_support = obj.supports(supp_idx);
+      end
+      obj = obj.updatePlanShift(t_global, x, qp_input, contact_force_detected, next_support);
       qp_input = obj.applyPlanShift(qp_input);
     end
 
-    function obj = updatePlanShift(obj, t_global, x, qp_input, contact_force_detected)
-      active_support_bodies = [qp_input.support_data.body_id];
+    function obj = updatePlanShift(obj, t_global, x, qp_input, contact_force_detected, next_support)
+      active_support_bodies = next_support.bodies;
       if any(active_support_bodies == obj.robot.foot_body_id.right) && contact_force_detected(obj.robot.foot_body_id.right)
         loading_foot = obj.robot.foot_body_id.right;
       elseif any(active_support_bodies == obj.robot.foot_body_id.left) && contact_force_detected(obj.robot.foot_body_id.left)
