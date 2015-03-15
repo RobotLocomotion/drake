@@ -481,19 +481,13 @@ void RigidBodyManipulator::compile(void)
 
   resize(_num_positions, NB, num_bodies, num_frames); // TODO: change _num_positions to num_positions above after removing this
 
-  joint_limit_min.resize(num_positions);
   joint_limit_min = VectorXd::Constant(num_positions,-std::numeric_limits<double>::infinity());
-  joint_limit_max.resize(num_positions);
   joint_limit_max = VectorXd::Constant(num_positions,std::numeric_limits<double>::infinity());
 
   for (int i=0; i<num_bodies; i++) {
-    if (bodies[i]->hasParent()) {
-      const FixedAxisOneDoFJoint* joint_w_limits = dynamic_cast<const FixedAxisOneDoFJoint*>(&(bodies[i]->getJoint()));
-      if (joint_w_limits != nullptr) {
-        joint_limit_min[bodies[i]->position_num_start] = joint_w_limits->getJointLimitMin();
-        joint_limit_max[bodies[i]->position_num_start] = joint_w_limits->getJointLimitMax();
-      }
-    } else {
+    bodies[i]->setupOldKinematicTree(this);
+
+    if (!bodies[i]->hasParent()) {
       updateCollisionElements(i);  // update static objects (not done in the kinematics loop)
     }
 

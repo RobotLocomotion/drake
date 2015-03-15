@@ -37,7 +37,7 @@ namespace DrakeCollision
   {
     public:
       BulletModel();
-      ~BulletModel();
+      virtual ~BulletModel();
 
       typedef std::vector<BulletElement> ElementVec;
       
