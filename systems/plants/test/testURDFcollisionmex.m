@@ -1,6 +1,9 @@
 function testURDFcollisionmex
   checkDependency('bullet');
 
+  old_ros_package_path = getenv('ROS_PACKAGE_PATH');
+  setenv('ROS_PACKAGE_PATH', [old_ros_package_path, ':', ....
+                              fullfile(getDrakePath(), 'examples')]);
   urdf_collision_test = '../../../pod-build/bin/urdfCollisionTest';
   if ispc
     urdf_collision_test = [urdf_collision_test,'.exe'];

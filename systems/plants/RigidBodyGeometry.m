@@ -7,19 +7,19 @@ classdef RigidBodyGeometry
   end
   
   methods
-    function obj = RigidBodyGeometry(bullet_shape_id,varargin)
-      % obj = RigidBodyGeometry(bullet_shape_id) constructs a
+    function obj = RigidBodyGeometry(drake_shape_id,varargin)
+      % obj = RigidBodyGeometry(drake_shape_id) constructs a
       % RigidBodyGeometry object with the geometry-to-body transform set to
       % identity.
       %
-      % obj = RigidBodyGeometry(bullet_shape_id,T) constructs a
+      % obj = RigidBodyGeometry(drake_shape_id,T) constructs a
       % RigidBodyGeometry object with the geometry-to-body transform T.
       % 
-      % obj = RigidBodyGeometry(bullet_shape_id,xyz,rpy) constructs a
+      % obj = RigidBodyGeometry(drake_shape_id,xyz,rpy) constructs a
       % RigidBodyGeometry object with the geometry-to-body transform specified
       % by the position, xyz, and Euler angles, rpy.
       %
-      % @param bullet_shape_id - Integer that tells the DrakeCollision library
+      % @param drake_shape_id - Integer that tells the DrakeCollision library
       % what type of geometry this is.
       % @param T - 4x4 homogenous transform from geometry-frame to body-frame
       % @param xyz - 3-element vector specifying the position of the geometry
@@ -41,7 +41,7 @@ classdef RigidBodyGeometry
         rpy = reshape(varargin{2},3,1);
         T_geometry_to_body = [rpy2rotmat(rpy), xyz; zeros(1,3),1];
       end
-      obj.bullet_shape_id = bullet_shape_id;
+      obj.drake_shape_id = drake_shape_id;
       obj.T = T_geometry_to_body;
     end
     
@@ -254,7 +254,7 @@ classdef RigidBodyGeometry
                  
                  
     c = [.7 .7 .7];  % 3x1 color
-    bullet_shape_id = 0;  % UNKNOWN
+    drake_shape_id = 0;  % UNKNOWN
     name % String identifier
   end
 end

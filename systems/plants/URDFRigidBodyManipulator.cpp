@@ -711,33 +711,28 @@ bool URDFRigidBodyManipulator::addRobotFromURDFString(const string &xml_string, 
 
           Matrix4d T;
           poseToTransform(cptr->origin,T);
-          DrakeCollision::Shape shape = DrakeCollision::Shape::UNKNOWN;
 
           int type = cptr->geometry->type;
           vector<double> params;
+          unique_ptr<DrakeShapes::Geometry> geometry;
+          RigidBody::CollisionElement element(T, bodies[index]);
         	switch (type) {
         	case urdf::Geometry::BOX:
             {
           	  boost::shared_ptr<urdf::Box> box(boost::dynamic_pointer_cast<urdf::Box>(cptr->geometry));
-              params.push_back(box->dim.x);
-              params.push_back(box->dim.y);
-              params.push_back(box->dim.z);
-              shape = DrakeCollision::Shape::BOX;
+              element.setGeometry(DrakeShapes::Box(Vector3d(box->dim.x,box->dim.y,box->dim.z)));
             }
         		break;
         	case urdf::Geometry::SPHERE:
            	{
           		boost::shared_ptr<urdf::Sphere> sphere(boost::dynamic_pointer_cast<urdf::Sphere>(cptr->geometry));
-              params.push_back(sphere->radius);
-              shape = DrakeCollision::Shape::SPHERE;
+              element.setGeometry(DrakeShapes::Sphere(sphere->radius));
           	}
         		break;
         	case urdf::Geometry::CYLINDER:
           	{
           		boost::shared_ptr<urdf::Cylinder> cyl(boost::dynamic_pointer_cast<urdf::Cylinder>(cptr->geometry));
-              params.push_back(cyl->radius);
-              params.push_back(cyl->length);
-              shape = DrakeCollision::CYLINDER;
+              element.setGeometry(DrakeShapes::Capsule(cyl->radius, cyl->length));
           	}
         		break;
         	case urdf::Geometry::MESH:
@@ -748,6 +743,12 @@ bool URDFRigidBodyManipulator::addRobotFromURDFString(const string &xml_string, 
               if (!boost::regex_match(mesh->filename, package)) {
                 mesh_filename /= mesh->filename;
                 readObjFile(mesh_filename,params);
+                if (params.size() % 3 == 0) {
+                  Matrix3Xd points = Matrix3Xd::Map(&params[0], 3, params.size()/3);
+                  element.setGeometry(DrakeShapes::MeshPoints(points));
+                } else {
+                  create_collision_element = false;
+                }
               } else {
                 create_collision_element = false;
                 if (print_mesh_package_warning) {
@@ -759,7 +760,6 @@ bool URDFRigidBodyManipulator::addRobotFromURDFString(const string &xml_string, 
                   print_mesh_package_warning = false;
                 }
               }
-              shape = DrakeCollision::Shape::MESH;
           	}
         		break;
         	default:
@@ -767,12 +767,12 @@ bool URDFRigidBodyManipulator::addRobotFromURDFString(const string &xml_string, 
         		break;
           }
           if (create_collision_element){
-            addCollisionElement(index,T,shape,params);
+            addCollisionElement(element, bodies[index], cptr->group_name);
           }
         }
       }
       if (bodies[index]->parent!=nullptr) {
-        updateCollisionElements(index);  // update static objects only once - right here on load
+        updateCollisionElements(bodies[index]);  // update static objects only once - right here on load
       }
     }
 

@@ -29,14 +29,14 @@ int main(int argc, char* argv[])
 
 // for (i=0; i<model->num_dof; i++)
 // 	 q(i)=(double)rand() / RAND_MAX;
-    model->doKinematics(q,false);
+    model->doKinematicsNew(q,VectorXd::Zero(model->num_velocities).eval());
 //  }
 
   VectorXd phi;
   MatrixXd normal, xA, xB;
-  vector<int> bodyA_idx, bodyB_idx, bodies_idx;
+  vector<int> bodyA_idx, bodyB_idx;
 
-  model->collisionDetect(phi,normal,xA,xB,bodyA_idx,bodyB_idx,bodies_idx);
+  model->collisionDetect(phi,normal,xA,xB,bodyA_idx,bodyB_idx);
 
   for (int j=0; j<phi.rows(); ++j) {
     cout << phi(j) << " ";
