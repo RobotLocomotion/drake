@@ -138,10 +138,10 @@ classdef QPLocomotionPlan < QPControllerPlan
 
       for j = 1:length(qp_input.body_motion_data)
         if qp_input.body_motion_data(j).body_id == loading_foot;
-          kinsol = obj.robot.doKinematics(x(1:obj.robot.getNumPositions()));
+	  kinsol = obj.robot.doKinematics(x(1:obj.robot.getNumPositions()));
           foot_actual = obj.robot.forwardKin(kinsol, loading_foot, [0;0;0], 1);
           foot_des = evalCubicSplineSegment(t_global - qp_input.body_motion_data(j).ts(1), qp_input.body_motion_data(j).coefs);
-          obj.plan_shift_data.plan_shift = foot_des - foot_actual;
+          obj.plan_shift_data.plan_shift(1:3) = foot_des(1:3) - foot_actual(1:3);
           break
         end
       end
@@ -150,12 +150,12 @@ classdef QPLocomotionPlan < QPControllerPlan
     end
 
     function qp_input = applyPlanShift(obj, qp_input)
-     qp_input.zmp_data.x0(1:2) = qp_input.zmp_data.x0(1:2) - obj.plan_shift_data.plan_shift(1:2);
+      qp_input.zmp_data.x0(1:2) = qp_input.zmp_data.x0(1:2) - obj.plan_shift_data.plan_shift(1:2);
       qp_input.zmp_data.y0 = qp_input.zmp_data.y0 - obj.plan_shift_data.plan_shift(1:2);
       for j = 1:length(qp_input.body_motion_data)
-        qp_input.body_motion_data(j).coefs(:,:,end) = bsxfun(@minus, qp_input.body_motion_data(j).coefs(:,:,end), obj.plan_shift_data.plan_shift);
+        qp_input.body_motion_data(j).coefs(1:3,:,end) = bsxfun(@minus, qp_input.body_motion_data(j).coefs(1:3,:,end), obj.plan_shift_data.plan_shift(1:3));
       end
-      qp_input.whole_body_data.q_des(1:6) = qp_input.whole_body_data.q_des(1:6) - obj.plan_shift_data.plan_shift;
+      qp_input.whole_body_data.q_des(1:3) = qp_input.whole_body_data.q_des(1:3) - obj.plan_shift_data.plan_shift(1:3);
     end
 
     function [ytraj, v] = simulatePointMassBiped(obj, r)
