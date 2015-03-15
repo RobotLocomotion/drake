@@ -21,7 +21,7 @@ function collisionDetectGradTest(visualize,n_debris)
   warning(S);
 
   if visualize
-    v = r.constructVisualizer();
+    v = r.constructVisualizer(struct('use_collision_geometry',true));
     lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'testCollisionGrad');
   end
   nq = getNumPositions(r);
@@ -30,13 +30,14 @@ function collisionDetectGradTest(visualize,n_debris)
     q0 = xstar(1:nq)+5e-1*(2*rand(nq,1)-1);
     q0(1:3) = 2*(2*rand(3,1)-1);
     [f_user,df_user] = geval(@(q)contactConstraintsTest(r,q),q0,struct('grad_method','user'));
-    [~,df_num] = geval(@(q)contactConstraintsTest(r,q),q0,struct('grad_method','numerical','da',1.1e-8));
+    [~,df_num] = geval(@(q)contactConstraintsTest(r,q),q0,struct('grad_method','numerical','da',1.1e-8, 'diff_type','central'));
     rows_bad = find(any(abs(df_user-df_num)>1e-6,2));
     if visualize
       v.draw(0,[q0;0*q0]);
       drawClosestPoints(r,q0,v,lcmgl);
       lcmgl.glColor3f(0,0,0);
-      lcmgl.text(zeros(3,1),sprintf('Min. signed distance: %6.4f\nMax.  difference between user and numerical gradients: %6.4e',min(f_user),max(abs(df_user(:)-df_num(:)))),0,0);
+      %lcmgl.text(zeros(3,1),sprintf('Min. signed distance: %6.4f\nMax.  difference between user and numerical gradients: %6.4e',min(f_user),max(abs(df_user(:)-df_num(:)))),0,0);
+      fprintf('Min. signed distance: %6.4f\nMax.  difference between user and numerical gradients: %6.4e\n',min(f_user),max(abs(df_user(:)-df_num(:))));
       lcmgl.switchBuffers();
     end
     if ~isempty(rows_bad)

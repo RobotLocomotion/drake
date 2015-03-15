@@ -268,15 +268,13 @@ classdef RigidBody < RigidBodyElement
 
     function body = makeBelongToCollisionFilterGroup(body,collision_fg_id)
       for id = reshape(collision_fg_id,1,[])
-        body.collision_filter.belongs_to = ...
-          bitor(body.collision_filter.belongs_to,bitshift(1,id-1));
+        body.collision_filter.belongs_to(collision_fg_id) = true;
       end
     end
    
     function body = makeIgnoreCollisionFilterGroup(body,collision_fg_id)
       for id = reshape(collision_fg_id,1,[])
-        body.collision_filter.ignores = ...
-          bitor(body.collision_filter.ignores,bitshift(1,id-1));
+        body.collision_filter.ignores(collision_fg_id) = true;
       end
     end
 
