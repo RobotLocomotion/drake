@@ -103,6 +103,9 @@ DLLEXPORT Eigen::Matrix<typename Derived::Scalar, 3, 3> rpy2rotmat(const Eigen::
 
 template<typename Derived>
 DLLEXPORT Eigen::Matrix<typename Derived::Scalar, 9, 3> drpy2rotmat(const Eigen::MatrixBase<Derived>& rpy);
+
+DLLEXPORT Eigen::Matrix3d rotz(double theta);
+DLLEXPORT void rotz(double theta, Eigen::Matrix3d &M, Eigen::Matrix3d &dM, Eigen::Matrix3d &ddM);
 /*
  * cross product related
  */

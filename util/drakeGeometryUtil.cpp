@@ -421,6 +421,26 @@ Eigen::Matrix<typename Derived::Scalar, 3, 3> rpy2rotmat(const Eigen::MatrixBase
   return R;
 }
 
+Matrix3d rotz(double theta) {
+  // returns 3D rotation matrix (about the z axis)
+  Matrix3d M;
+  double c=cos(theta);
+  double s=sin(theta);
+  M << c,-s, 0,
+     s, c, 0,
+     0, 0, 1;
+  return M;
+}
+
+
+void rotz(double theta, Matrix3d &M, Matrix3d &dM, Matrix3d &ddM)
+{
+  double c=cos(theta), s=sin(theta);
+  M << c,-s,0, s,c,0, 0,0,1;
+  dM << -s,-c,0, c,-s,0, 0,0,0;
+  ddM << -c,s,0, -s,-c,0, 0,0,0;
+}
+
 template<typename Derived>
 Eigen::Matrix<typename Derived::Scalar,9,3> drpy2rotmat(const Eigen::MatrixBase<Derived>& rpy)
 {
@@ -1136,6 +1156,7 @@ template DLLEXPORT Vector4d rpy2axis(const Eigen::MatrixBase< Map<Vector3d> >&);
 template DLLEXPORT Vector4d rpy2quat(const Eigen::MatrixBase< Map<Vector3d> >&);
 template DLLEXPORT Matrix3d rpy2rotmat(const Eigen::MatrixBase< Map<Vector3d> >&);
 template DLLEXPORT Matrix<double,9,3> drpy2rotmat(const Eigen::MatrixBase< Map<Vector3d> >&);
+
 
 template DLLEXPORT Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic> transformSpatialMotion(
     const Eigen::Isometry3d&,
