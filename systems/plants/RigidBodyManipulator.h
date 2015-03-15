@@ -5,7 +5,7 @@
 #include <Eigen/LU>
 #include <set>
 #include <map>
-#include <Eigen/StdVector> //#include <vector>
+#include <Eigen/StdVector> 
 
 #include "collision/DrakeCollision.h"
 #include "KinematicPath.h"
@@ -110,6 +110,11 @@ public:
   template <typename Derived>
   void getCOM(MatrixBase<Derived> &com,const std::set<int> &robotnum = RigidBody::defaultRobotNumSet);
 
+  template <typename DerivedA, typename DerivedB, typename DerivedC>
+  void jointLimitConstraints(MatrixBase<DerivedA> const & q, MatrixBase<DerivedB> &phi, MatrixBase<DerivedC> &J) const;
+
+  size_t getNumJointLimitConstraints() const;
+
   template <typename Derived>
   void getCOMJac(MatrixBase<Derived> &J,const std::set<int> &robotnum = RigidBody::defaultRobotNumSet);
 
@@ -122,13 +127,13 @@ public:
   int getNumContacts(const std::set<int> &body_idx);// = emptyIntSet);
 
   template <typename Derived>
-    void getContactPositions(MatrixBase<Derived> &pos, const std::set<int> &body_idx);// = emptyIntSet);
+  void getContactPositions(MatrixBase<Derived> &pos, const std::set<int> &body_idx);// = emptyIntSet);
 
   template <typename Derived>
-    void getContactPositionsJac(MatrixBase<Derived> &J, const std::set<int> &body_idx);// = emptyIntSet);
+  void getContactPositionsJac(MatrixBase<Derived> &J, const std::set<int> &body_idx);// = emptyIntSet);
 
   template <typename Derived>
-    void getContactPositionsJacDot(MatrixBase<Derived> &Jdot, const std::set<int> &body_idx);// = emptyIntSet);
+  void getContactPositionsJacDot(MatrixBase<Derived> &Jdot, const std::set<int> &body_idx);// = emptyIntSet);
 
   void findAncestorBodies(std::vector<int>& ancestor_bodies, int body);
 

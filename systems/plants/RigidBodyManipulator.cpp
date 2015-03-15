@@ -1,9 +1,7 @@
 #include <iostream>
 #include <map>
 
-//#include "mex.h"
 #include "drakeGeometryUtil.h"
-//#include "drakeContactConstraintsUtil.h"
 #include "RigidBodyManipulator.h"
 #include "DrakeJoint.h"
 #include "FixedAxisOneDoFJoint.h"
@@ -13,7 +11,7 @@
 #include <regex>
 #include <stdexcept>
 #include <limits>
-
+#include "drakeFloatingPointUtil.h" //for isFinite
 //DEBUG
 //#include <stdexcept>
 //END_DEBUG
@@ -263,7 +261,18 @@ void rotz(double theta, Matrix3d &M, Matrix3d &dM, Matrix3d &ddM)
   ddM << -c,s,0, -s,-c,0, 0,0,0;
 }
 
-
+template <typename T>
+void getFiniteIndexes(T const & v, std::vector<int> &finite_indexes)
+{
+  finite_indexes.clear();
+  const size_t n = v.size();
+  for (size_t x = 0; x < n; x++)
+  {
+    if (isFinite<double>(static_cast<double>(v[x]))) {
+      finite_indexes.push_back(x);
+    }
+  }
+}
 
 
 RigidBodyManipulator::RigidBodyManipulator(int ndof, int num_featherstone_bodies, int num_rigid_body_objects, int num_rigid_body_frames)
@@ -2963,6 +2972,46 @@ GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::positionConstraints
   return ret;
 }
 
+template <typename DerivedA, typename DerivedB, typename DerivedC>
+void RigidBodyManipulator::jointLimitConstraints(MatrixBase<DerivedA> const & q, MatrixBase<DerivedB> &phi, MatrixBase<DerivedC> &J) const 
+{
+  std::vector<int> finite_min_index;
+  std::vector<int> finite_max_index;
+
+  getFiniteIndexes(joint_limit_min, finite_min_index);
+  getFiniteIndexes(joint_limit_max, finite_max_index);
+
+  const int numFiniteMin = finite_min_index.size();
+  const int numFiniteMax = finite_max_index.size();
+
+  phi = VectorXd::Zero(numFiniteMin + numFiniteMax);
+  J = MatrixXd::Zero(phi.size(), num_positions);
+  for (int i = 0; i < numFiniteMin; i++)
+  {
+    const int fi = finite_min_index[i];
+    phi[i] = q[fi] - joint_limit_min[fi];
+    J(i, fi) = 1.0;
+  }
+  
+  for (int i = 0; i < numFiniteMax; i++)
+  {
+    const int fi = finite_max_index[i];
+    phi[i + numFiniteMin] = joint_limit_max[fi] - q[fi];
+    J(i + numFiniteMin, fi) = -1.0;
+  }
+}
+
+size_t RigidBodyManipulator::getNumJointLimitConstraints() const
+{
+  std::vector<int> finite_min_index;
+  std::vector<int> finite_max_index;
+
+  getFiniteIndexes(joint_limit_min, finite_min_index);
+  getFiniteIndexes(joint_limit_max, finite_max_index);
+
+  return finite_min_index.size() + finite_max_index.size();
+}
+
 // explicit instantiations (required for linking):
 template DLLEXPORT_RBM void RigidBodyManipulator::doKinematics(MatrixBase<VectorXd>  &, bool);
 template DLLEXPORT_RBM void RigidBodyManipulator::doKinematics(MatrixBase< Map<VectorXd> >  &, bool);
@@ -3037,3 +3086,7 @@ template DLLEXPORT_RBM void RigidBodyManipulator::HandC(MatrixBase< Map<VectorXd
 template DLLEXPORT_RBM void RigidBodyManipulator::HandC(MatrixBase< Map<VectorXd> > const &, MatrixBase< Map<VectorXd> > const &, MatrixBase< MatrixXd > * const, MatrixBase< MatrixXd > &, MatrixBase< VectorXd > &, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > * const);
 
 template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, 1> RigidBodyManipulator::positionConstraints(int);
+
+template DLLEXPORT_RBM void RigidBodyManipulator::jointLimitConstraints(MatrixBase<VectorXd> const &, MatrixBase<VectorXd> &, MatrixBase<MatrixXd> &) const ;
+template DLLEXPORT_RBM void RigidBodyManipulator::jointLimitConstraints(MatrixBase< Map<VectorXd> > const &, MatrixBase<VectorXd> &, MatrixBase<MatrixXd> &) const ;
+template DLLEXPORT_RBM void RigidBodyManipulator::jointLimitConstraints(MatrixBase< Map<VectorXd> > const &, MatrixBase< Map<VectorXd> > &, MatrixBase< Map<MatrixXd> > &) const ;
