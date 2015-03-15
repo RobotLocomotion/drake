@@ -182,7 +182,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
           joint_w_limits->setJointLimits(joint_limit_min,joint_limit_max);
         }
 
-        model->bodies[i]->setJoint(joint);
+        model->bodies[i]->setJoint(move(joint));
       }
     }
 

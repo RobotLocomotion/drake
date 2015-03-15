@@ -64,7 +64,7 @@ void RigidBody::setN(int nq, int nv) {
 }
 
 
-void RigidBody::setJoint(std::unique_ptr<DrakeJoint>& new_joint)
+void RigidBody::setJoint(std::unique_ptr<DrakeJoint> new_joint)
 {
   this->joint = move(new_joint);
 

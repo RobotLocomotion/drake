@@ -37,7 +37,7 @@ public:
 
   void setupOldKinematicTree(RigidBodyManipulator* model);
 
-  void setJoint(std::unique_ptr<DrakeJoint>& joint);
+  void setJoint(std::unique_ptr<DrakeJoint> joint);
   const DrakeJoint& getJoint() const;
 
   bool hasParent() const;
