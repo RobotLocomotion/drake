@@ -50,8 +50,6 @@ namespace DrakeCollision
 
       virtual ElementId addElement(const Element& element);
 
-      virtual ElementId addElement(std::unique_ptr<Element> element);
-
       virtual bool updateElementWorldTransform(const ElementId, 
                                                const Eigen::Matrix4d& T_local_to_world);
 

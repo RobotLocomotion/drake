@@ -11,13 +11,13 @@
 namespace DrakeShapes
 {
   enum DLLEXPORT_drakeShapes Shape {
-    UNKNOWN,
-    BOX,
-    SPHERE,
-    CYLINDER,
-    MESH,
-    MESH_POINTS,
-    CAPSULE
+    UNKNOWN     = 0,
+    BOX         = 1,
+    SPHERE      = 2,
+    CYLINDER    = 3,
+    MESH        = 4,
+    MESH_POINTS = 5,
+    CAPSULE     = 6
   };
 
   class DLLEXPORT_drakeShapes Geometry {
