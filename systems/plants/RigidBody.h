@@ -42,7 +42,7 @@ public:
 
   void addVisualElement(const DrakeShapes::VisualElement& elements);
 
-  const std::vector<DrakeShapes::VisualElement>& getVisualElements() const;
+  const DrakeShapes::VectorOfVisualElements& getVisualElements() const;
 
   virtual void setCollisionFilter(const DrakeCollision::bitmask& group, 
                                   const DrakeCollision::bitmask& ignores);
@@ -88,7 +88,7 @@ public:
   Matrix4d Ttree;  // floatingbase TODO: replace with Isometry3d?
   Matrix4d T_body_to_joint;  // floatingbase TODO: replace with Isometry3d?
 
-  std::vector< DrakeShapes::VisualElement > visual_elements;
+  DrakeShapes::VectorOfVisualElements visual_elements;
 
   std::vector< DrakeCollision::ElementId > collision_element_ids;
   std::map< std::string, std::vector<DrakeCollision::ElementId> > collision_element_groups;

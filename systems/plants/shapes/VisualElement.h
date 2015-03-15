@@ -3,6 +3,7 @@
 #include <memory>
 
 #include <Eigen/Dense>
+#include <Eigen/StdVector>
 
 #include "Element.h"
 
@@ -29,5 +30,10 @@ namespace DrakeShapes
     public:
       EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
+
+  // See http://eigen.tuxfamily.org/dox-devel/group__TopicStlContainers.html
+  // for why this is necessary.
+  typedef std::vector< VisualElement, Eigen::aligned_allocator<VisualElement> >
+    VectorOfVisualElements;
 }
 #endif
