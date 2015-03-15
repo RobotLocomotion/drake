@@ -32,8 +32,7 @@ classdef QPLocomotionPlan < QPControllerPlan
       else
         qf = fasteval(obj.qtraj, obj.qtraj.tspan(end));
       end
-      qf(1:6) = x(1:6);
-      next_plan = QPLocomotionPlan.from_standing_state([qf; x(obj.robot.getNumPositions+1:end)], obj.robot, obj.supports(end));
+      next_plan = QPLocomotionPlan.from_standing_state([x(1:6); qf(7:end); x(obj.robot.getNumPositions+1:end)], obj.robot, obj.supports(end));
       % next_plan = QPLocomotionPlan.from_standing_state(x, obj.robot, obj.supports(end));
 
     end
@@ -315,7 +314,9 @@ classdef QPLocomotionPlan < QPControllerPlan
 
       obj = QPLocomotionPlan(biped);
       obj.x0 = x0;
-      obj.qtraj = x0(1:biped.getNumPositions());
+      arm_inds = biped.findPositionIndices('arm');
+      obj.qtraj(arm_inds) = x0(arm_inds);
+      % obj.qtraj = x0(1:biped.getNumPositions());
 
       [obj.supports, obj.support_times] = QPLocomotionPlan.getSupports(zmp_knots);
       obj.zmptraj = QPLocomotionPlan.getZMPTraj(zmp_knots);
