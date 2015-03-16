@@ -2995,8 +2995,8 @@ void RigidBodyManipulator::jointLimitConstraints(MatrixBase<DerivedA> const & q,
   const int numFiniteMin = finite_min_index.size();
   const int numFiniteMax = finite_max_index.size();
 
-  phi = VectorXd::Zero(numFiniteMin + numFiniteMax);
-  J = MatrixXd::Zero(phi.size(), num_positions);
+  phi.resize(numFiniteMin + numFiniteMax);
+  J.resize(phi.size(), num_positions);
   for (int i = 0; i < numFiniteMin; i++)
   {
     const int fi = finite_min_index[i];
