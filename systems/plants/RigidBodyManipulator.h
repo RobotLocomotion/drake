@@ -27,8 +27,6 @@
 #include "RigidBody.h"
 #include "RigidBodyFrame.h"
 
-#define INF -2147483648    // this number is only used for checking the pitch to see if it's a revolute joint or a helical joint, and is set to match the value handed to us for inf from matlab.
-
 #define BASIS_VECTOR_HALF_COUNT 2  //number of basis vectors over 2 (i.e. 4 basis vectors in this case)
 #define EPSILON 10e-8
 
