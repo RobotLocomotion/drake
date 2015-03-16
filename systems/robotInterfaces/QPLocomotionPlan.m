@@ -244,6 +244,14 @@ classdef QPLocomotionPlan < QPControllerPlan
       plot_traj_foh(obj.comtraj, [0,1,0]);
       plot_traj_foh(obj.zmptraj, [0,0,1]);
     end
+
+    function link_trajectories = getLinkTrajectories(obj)
+      link_trajectories = struct('link_ndx', {}, 'traj', {}, 'min_traj', {}, 'max_traj', {});
+      for j = 1:length(obj.link_constraints)
+        link_trajectories(j).link_ndx = obj.link_constraints(j).link_ndx;
+        link_trajectories(j).traj = PPTrajectory(mkpp(obj.link_constraints(j).ts, obj.link_constraints(j).coefs, size(obj.link_constraints(j).coefs, 1)));
+      end
+    end
   end
 
   methods(Static)
