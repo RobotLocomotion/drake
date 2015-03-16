@@ -138,6 +138,10 @@ classdef QPInputConstantHeight
         end
         obj.body_motion_data(j).coefs = reshape(msg.body_motion_data(j).coefs, [6, 1, 4]);
       end
+      for j = 1:length(msg.body_wrench_data)
+        obj.body_wrench_data(j).body_id = msg.body_wrench_data(j).body_id;
+        obj.body_wrench_data(j).wrench = msg.body_wrench_data(j).wrench;
+      end
       obj.whole_body_data.q_des = msg.whole_body_data.q_des;
       obj.whole_body_data.constrained_dofs = msg.whole_body_data.constrained_dofs;
       obj.param_set_name = char(msg.param_set_name);
