@@ -14,7 +14,7 @@ namespace DrakeCollision
 {
   class BulletModel;    // forward declaration
   
-  typedef std::map< ElementId, std::unique_ptr<btCollisionObject> > ElementToBtObjMap;
+  typedef std::unordered_map< ElementId, std::unique_ptr<btCollisionObject> > ElementToBtObjMap;
 
   struct OverlapFilterCallback : public btOverlapFilterCallback
   {

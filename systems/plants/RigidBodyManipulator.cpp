@@ -312,8 +312,6 @@ RigidBodyManipulator::RigidBodyManipulator(void)
 
 RigidBodyManipulator::~RigidBodyManipulator(void)
 {
-  //  if (collision_model)
-  //    delete collision_model;
 }
 
 
@@ -458,7 +456,6 @@ void RigidBodyManipulator::compile(void)
 {
   /* todo:
    - set joint limits (from drakejoint to rbm)
-   - add collision elements (and don't add them before, e.g. in constructModelmex).. or update them here
    */
 
   // reorder body list to make sure that parents before children in the list
@@ -992,6 +989,9 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
     }
   }
 
+  // Have the collision model do any model-wide updates that it needs to
+  collision_model->updateModel();
+
   kinematicsInit = true;
   for (i = 0; i < num_positions; i++) {
     cached_q[i] = q[i];
@@ -1189,6 +1189,9 @@ void RigidBodyManipulator::doKinematicsNew(const MatrixBase<DerivedQ>& q, const 
       }
     }
   }
+
+  // Have the collision model do any model-wide updates that it needs to
+  collision_model->updateModel();
 
   kinematicsInit = true;
   cached_inertia_gradients_order = -1;
