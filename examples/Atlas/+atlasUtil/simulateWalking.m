@@ -72,7 +72,7 @@ if (options.use_ik)
   ins(2).input = 3;
   outs(1).system = 2;
   outs(1).output = 1;
-  sys = mimoFeedback(qp,cascade(r, haltBlock),[],[],ins,outs);
+  sys = mimoFeedback(qp,r,[],[],ins,outs);
   clear ins;
 
   % feedback foot contact detector with QP/atlas
@@ -187,6 +187,6 @@ output_select(1).system=1;
 output_select(1).output=1;
 sys = mimoCascade(sys,v,[],[],output_select);
 warning(S);
-traj = simulate(sys,[0 T],x0,struct('gui_control_interface',true));
+traj = simulate(sys,[0 T],x0,struct('gui_control_interface',options.draw_button));
 
 end
