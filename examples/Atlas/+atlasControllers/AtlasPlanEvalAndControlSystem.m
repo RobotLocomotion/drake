@@ -21,7 +21,6 @@ classdef AtlasPlanEvalAndControlSystem < DrakeSystem
   properties(SetAccess=protected)
     control
     plan_eval;
-    robot;
     options;
     lc
     monitor
@@ -53,7 +52,6 @@ classdef AtlasPlanEvalAndControlSystem < DrakeSystem
       obj.control = control;
       obj.plan_eval = plan_eval;
       obj.options = options;
-      obj.robot = r;
 
       if isempty(obj.plan_eval) || isempty(obj.control)
         obj.lc = lcm.lcm.LCM.getSingleton();
@@ -106,10 +104,6 @@ classdef AtlasPlanEvalAndControlSystem < DrakeSystem
           t0 = tic();
         end
         encodeQPInputLCMMex(qp_input);
-        out_frame = obj.robot.getOutputFrame();
-        if isprop(out_frame, 'lcmcoder')
-          obj.lc.publish('EST_ROBOT_STATE', out_frame.lcmcoder.encode(t, x));
-        end
         if ~obj.quiet
           lcm_time = toc(t0);
           fprintf(1, 'lcm_serialize: %f, ', lcm_time);

@@ -4,13 +4,11 @@ classdef PlanEvalData < ControllerData
 % persistent across multiple calls to PlanEval.getCurrentPlan
   properties
     plan_queue
-    last_qp_input
   end
 
   methods
     function obj = PlanEvalData()
-      obj = obj@ControllerData(struct('plan_queue', {{}},...
-                                      'last_qp_input', {[]}));
+      obj = obj@ControllerData(struct('plan_queue', {{}}));
     end
 
     function verifyControllerData(obj, data)
