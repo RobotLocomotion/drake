@@ -2061,6 +2061,13 @@ GradientVar<Scalar, SPACE_DIMENSION + 1, SPACE_DIMENSION + 1> RigidBodyManipulat
 template <typename DerivedA, typename DerivedB>
 void RigidBodyManipulator::forwardJac(const int body_or_frame_id, const MatrixBase<DerivedA> &pts, const int rotation_type, MatrixBase<DerivedB> &J)
 {
+  if (use_new_kinsol) {
+    Matrix3Xd newPts = pts.block(0, 0, 3, pts.cols()); 
+    auto ret = forwardKinNew(newPts, body_or_frame_id, 0, rotation_type, 1);
+    J = ret.gradient().value();
+    return;
+  }
+
   int n_pts = static_cast<int>(pts.cols()); Matrix4d Tframe;
   int body_ind = parseBodyOrFrameID(body_or_frame_id, &Tframe);
 
@@ -2214,6 +2221,13 @@ void RigidBodyManipulator::forwardJacDot(const int body_or_frame_id, const Matri
 template <typename DerivedA, typename DerivedB>
 void RigidBodyManipulator::forwarddJac(const int body_or_frame_id, const MatrixBase<DerivedA> &pts, MatrixBase<DerivedB>& dJ)
 {
+  if (use_new_kinsol) {
+    Matrix3Xd newPts = pts.block(0, 0, 3, pts.cols()); 
+    auto ret = forwardKinNew(newPts, body_or_frame_id, 0, 0, 2);
+    dJ = ret.gradient().gradient().value();
+    return;
+  }
+
   int n_pts = static_cast<int>(pts.cols()); Matrix4d Tframe;
   int body_ind = parseBodyOrFrameID(body_or_frame_id, &Tframe);
 
@@ -2995,8 +3009,8 @@ void RigidBodyManipulator::jointLimitConstraints(MatrixBase<DerivedA> const & q,
   const int numFiniteMin = finite_min_index.size();
   const int numFiniteMax = finite_max_index.size();
 
-  phi.resize(numFiniteMin + numFiniteMax);
-  J.resize(phi.size(), num_positions);
+  phi = VectorXd::Zero(numFiniteMin + numFiniteMax);
+  J = MatrixXd::Zero(phi.size(), num_positions);
   for (int i = 0; i < numFiniteMin; i++)
   {
     const int fi = finite_min_index[i];
