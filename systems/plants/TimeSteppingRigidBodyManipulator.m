@@ -184,6 +184,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         [obj,z,Mqdn,wqdn,dz,dMqdn,dwqdn] = solveLCP(obj,t,x,u);
       else
         [obj,z,Mqdn,wqdn] = solveLCP(obj,t,x,u);
+        %[z, Mqdn, wqdn] = solveLCP_mex(obj,t, x, u);
       end
 
       num_q = obj.manip.num_positions;
@@ -227,6 +228,19 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
              all(u==obj.LCP_cache.data.u) && num_args_out <= obj.LCP_cache.data.nargout);
     end
 
+    function [z, Mqdn, wqdn] = solveLCP_mex(obj, t, x, u)
+        num_q = obj.manip.num_positions;
+        q=x(1:num_q); qd=x(num_q+(1:num_q));
+        h = obj.timestep;
+        kinsol = doKinematics(obj,q);
+        [phiC,~,~,~,~,~,~,mu,n,D] = obj.manip.contactConstraints(kinsol,true);
+        [M_mex, w_mex, Mqdn, wqdn] = setupLCPmex(obj.manip.mex_model_ptr, q, qd, u, phiC, n, D, h, obj.z_inactive_guess_tol);
+        lb = zeros(numel(w_mex),1);
+        ub = 1e20*ones(numel(w_mex),1);
+        z = pathlcp(M_mex, w_mex, lb, ub);
+        
+    end
+    
     function [obj,z,Mqdn,wqdn,dz,dMqdn,dwqdn] = solveLCP(obj,t,x,u)
 %       global active_set_fail_count 
       % do LCP time-stepping
@@ -312,10 +326,10 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
             [phiC,normal,d,xA,xB,idxA,idxB,mu,n,D] = obj.manip.contactConstraints(kinsol,true);
           end
         end
-        tic
-        [M_mex, w_mex, Mqdn_mex, wqdn_mex] = setupLCPmex(obj.manip.mex_model_ptr, q, qd, u, phiC, n, D, h, obj.z_inactive_guess_tol);
-        mextime = toc;
-        tic
+        
+        %[M_mex, w_mex, Mqdn_mex, wqdn_mex] = setupLCPmex(obj.manip.mex_model_ptr, q, qd, u, phiC, n, D, h, obj.z_inactive_guess_tol);
+        
+        
         if (nL > 0)
           if (obj.position_control)
             phiL = q(pos_control_index) - u;
@@ -620,8 +634,8 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
             end
           end
         end
-        matlabtime = toc;
-        speedup = matlabtime / mextime
+        
+        
         if QP_FAILED 
             % then the active set has changed, call pathlcp
             %path_tic = tic;
