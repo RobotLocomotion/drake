@@ -38,11 +38,14 @@ void RevoluteJoint::setupOldKinematicTree(RigidBodyManipulator* model, int body_
 
   Vector3d z_axis(0.0,0.0,1.0);
   if (rotation_axis.dot(z_axis)<1-1e-4) {
+//    std::cout << "T_body_to_joint (before) = " << std::endl << model->bodies[body_ind]->T_body_to_joint << std::endl;
     Vector4d a;
     a << rotation_axis.cross(z_axis), acos(rotation_axis.dot(z_axis));
     if ((std::abs(a(0))<1e-4) && (std::abs(a(1))<1e-4) && (std::abs(a(2))<1e-4))
       a.head(3) << 0.0, 1.0, 0.0;
+//    std::cout << "axis_angle = " << a.transpose() << std::endl;
     model->bodies[body_ind]->T_body_to_joint.topLeftCorner(3,3) = axis2rotmat(a);
+//    std::cout << "T_body_to_joint (after) = " << std::endl << model->bodies[body_ind]->T_body_to_joint << std::endl;
   }
 }
 

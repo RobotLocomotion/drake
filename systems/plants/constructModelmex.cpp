@@ -184,6 +184,9 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 
         model->bodies[i]->setJoint(move(joint));
       }
+
+//      pm = mxGetProperty(pBodies,i,"T_body_to_joint");
+//      memcpy(model->bodies[i]->T_body_to_joint.data(),mxGetPr(pm),sizeof(double)*4*4);
     }
 
     //DEBUG
