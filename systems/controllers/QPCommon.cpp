@@ -223,13 +223,6 @@ VectorXd velocityReference(NewQPControllerData *pdata, double t, const Ref<Vecto
   VectorXd qd_ref = qd_err.array().max(-delta_max);
   qd_ref = qd_ref.array().min(delta_max);
   return qd_ref;
-  // VectorXd v_ref = VectorXd::Zero(rpc->actuated_indices.size());
-  // for (i=0; i < rpc->actuated_indices.size(); i++) {
-  //   v_ref(i) = qd_err(rpc->actuated_indices(i));
-  // }
-  // v_ref = v_ref.array().max(-delta_max);
-  // v_ref = v_ref.array().min(delta_max);
-  // return v_ref;
 }
 
 std::vector<SupportStateElement> loadAvailableSupports(std::shared_ptr<drake::lcmt_qp_controller_input> qp_input) {
