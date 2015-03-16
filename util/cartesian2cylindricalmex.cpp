@@ -43,11 +43,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   R.col(0) = cylinder_x_dir;
   R.col(1) = cylinder_axis.cross(cylinder_x_dir);
   R.col(2) = cylinder_axis;
-  Transform<double,3,Isometry> T;
+  Transform<double,3,Isometry,0> T;
   T.setIdentity();
   T = T.rotate(R);  
   T = T.translate(cylinder_origin);
-  GradientVar<double,6,1> x_output(6,1,6,1);// = cartesian2cylindrical(T,x_input);
+  auto x_output = cartesian2cylindrical(T,x_input);
   plhs[0] = mxCreateDoubleMatrix(6,1,mxREAL);
   memcpy(mxGetPr(plhs[0]),x_output.value().data(),sizeof(double)*6);
   plhs[1] = mxCreateDoubleMatrix(6,6,mxREAL);

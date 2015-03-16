@@ -1064,9 +1064,10 @@ typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime>::type dTransformSpatia
   return ret;
 }
 
-template<typename Derived, typename ScalarT>
-DLLEXPORT GradientVar<ScalarT, 6, 1> cartesian2cylindrical(const Transform<ScalarT,3,Isometry>& T, const MatrixBase<Derived>& x_cartesian)
+template<typename Derived >
+DLLEXPORT GradientVar<typename Derived::Scalar, 6, 1> cartesian2cylindrical(const Transform<typename Derived::Scalar,3,Isometry>& T, const MatrixBase<Derived>& x_cartesian)
 {
+	typedef typename Derived::Scalar ScalarT;
   Matrix<double,3,6> dx_pos_cylinder = Matrix<double,3,6>::Zero();
   dx_pos_cylinder.block(0,0,3,3) = T.linear().inverse();
   Vector3d x_pos_cylinder = dx_pos_cylinder.block(0,0,3,3)*x_cartesian.block(0,0,3,1)-T.translation();
@@ -1079,7 +1080,7 @@ dradius_dx_pos_cylinder.block(0,0,1,2) = x_pos_cylinder.block(0,0,2,1).transpose
   dtheta_dx_pos_cylinder(1) = x_pos_cylinder(0)/pow(radius,2);
   double height = x_pos_cylinder(2);
   RowVector3d dheight_dx_pos_cylinder(0,0,1.0);
-  Matrix< ScalarT,6,1> x_cylinder = Matrix<ScalarT,6,1>::Zero();
+  Matrix<ScalarT ,6,1> x_cylinder = Matrix<ScalarT,6,1>::Zero();
   x_cylinder(0) = radius;
   x_cylinder(1) = theta;
   x_cylinder(2) = height;
@@ -1099,7 +1100,8 @@ dradius_dx_pos_cylinder.block(0,0,1,2) = x_pos_cylinder.block(0,0,2,1).transpose
   x_rotmat_cylinder_grad1.value() = R_cylinder2tangent*dx_pos_cylinder.block(0,0,3,3);
   Matrix<double,9,1> dR_cylinder2tangent_resize;
   memcpy(dR_cylinder2tangent_resize.data(),dR_cylinder2tangent.data(),sizeof(double)*9);
-  x_rotmat_cylinder_grad1.gradient().value() = matGradMult(dR_cylinder2tangent_resize,dx_pos_cylinder.block(0,0,3,3)).eval();
+	Matrix3d dx_pos_cylinder_block2 = dx_pos_cylinder.block(0,0,3,3).eval();
+  x_rotmat_cylinder_grad1.gradient().value() = matGradMult(dR_cylinder2tangent_resize,dx_pos_cylinder_block2).eval();
   x_rotmat_cylinder_grad.value() = R_cylinder2tangent*dx_pos_cylinder.block(0,0,3,3)*x_rotmat;
   GradientVar<double,3,3> x_rotmat_grad(3,3,6,1);
   x_rotmat_grad.value() = x_rotmat;
@@ -1348,7 +1350,7 @@ template DLLEXPORT Gradient<Eigen::Matrix<double, 6, 1, 0, 6, 1>, Eigen::Matrix<
     const Eigen::MatrixBase<Eigen::Matrix<double, 16, -1, 0, 16, -1>>& dT,
     const Eigen::MatrixBase<Eigen::Matrix<double, 6, -1, 0, 6, -1>>& dX);
 
-template DLLEXPORT GradientVar<double,6,1> cartesian2cylindrical(const Transform<double,3,Isometry> &T, const MatrixBase<Matrix<double,6,1>> &xyzrpy); 
+template DLLEXPORT GradientVar<Matrix<double,6,1,0,6,1>::Scalar,6,1> cartesian2cylindrical(const Transform<Matrix<double,6,1,0,6,1>::Scalar,3,Isometry,0> &T, const MatrixBase<Matrix<double,6,1,0,6,1>> &xyzrpy); 
 
 template DLLEXPORT void angularvel2quatdotMatrix(const Eigen::MatrixBase<Vector4d>& q,
     Eigen::MatrixBase< Matrix<double, QUAT_SIZE, SPACE_DIMENSION> >& M,
