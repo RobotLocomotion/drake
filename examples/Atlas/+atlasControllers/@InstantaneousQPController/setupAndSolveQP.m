@@ -157,8 +157,8 @@ Ieps(:,nq+nf+(1:neps)) = eye(neps);
 %----------------------------------------------------------------------
 % Set up problem constraints ------------------------------------------
 
-qdd_lb = -inf(1, nq);
-qdd_ub = inf(1, nq);
+qdd_lb = -500 * ones(1, nq);
+qdd_ub = 500 * ones(1, nq);
 lb = [qdd_lb zeros(1,nf)   -params.slack_limit*ones(1,neps)]'; % qddot/contact forces/slack vars
 ub = [qdd_ub 1e3*ones(1,nf) params.slack_limit*ones(1,neps)]';
 

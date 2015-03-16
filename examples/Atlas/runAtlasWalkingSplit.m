@@ -65,6 +65,9 @@ goal_pos = struct('right', rfoot_navgoal, 'left', lfoot_navgoal);
 footstep_plan = r.planFootsteps(x0(1:nq), goal_pos, [], struct('step_params', struct('max_num_steps', example_options.num_steps)));
 
 walking_plan_data = r.planWalkingZMP(x0(1:r.getNumPositions()), footstep_plan);
+r.warning_manager.warnOnce('Drake:MuAssumedToBe1', 'Setting mu=1 because contactConstraintsBV.m assumes that to be the case');
+walking_plan_data.mu = 1;
+
 % walking_plan_data = StandingPlan.from_standing_state(x0, r);
 
 control = atlasControllers.InstantaneousQPController(r, [],...
