@@ -94,7 +94,4 @@ drakeControlUtilEXPORT void getRobotJointIndexMap(JointNames *joint_names, Robot
 // convert Matlab cell array of strings into a C++ vector of strings
 drakeControlUtilEXPORT std::vector<std::string> get_strings(const mxArray *rhs);
 
-Vector3d angularvel2rpydot(const Vector3d& rpy, const Vector3d& omega);
-Vector3d quat2rpy(Vector4d& q);
-
 #endif
