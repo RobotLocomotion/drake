@@ -226,7 +226,7 @@ template <typename Derived>
 Eigen::Matrix<typename Derived::Scalar, 3, 3> axis2rotmat(const Eigen::MatrixBase<Derived>& a)
 {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
-  const auto& axis = a.template head<3>();
+  const auto& axis = (a.template head<3>())/(a.template head<3>()).norm();
   const auto& theta = a(3);
   auto x = axis(0);
   auto y = axis(1);

@@ -2,6 +2,8 @@
 #include <fstream>
 #include <sstream>
 
+#include "spruce.hh"
+
 #include "tinyxml.h"
 #include "RigidBodyManipulator.h"
 #include "joints/drakeJointUtil.h"
@@ -11,7 +13,108 @@
 #include "joints/QuaternionFloatingJoint.h"
 #include "joints/RollPitchYawFloatingJoint.h"
 
+// from http://stackoverflow.com/questions/478898/how-to-execute-a-command-and-get-output-of-command-within-c
+#if defined(WIN32) || defined(WIN64)
+  #define POPEN _popen
+  #define PCLOSE _pclose
+#else
+  #define POPEN popen
+  #define PCLOSE pclose
+#endif
+
 using namespace std;
+
+string exec(string cmd)
+{
+	FILE* pipe = POPEN(cmd.c_str(), "r");
+	if (!pipe) return "ERROR";
+	char buffer[128];
+	string result = "";
+	while(!feof(pipe)) {
+		if(fgets(buffer, 128, pipe) != NULL)
+			result += buffer;
+    }
+	PCLOSE(pipe);
+	return result;
+}
+
+void searchenvvar(map<string,string> &package_map, string envvar)
+{
+	char* cstrpath = getenv(envvar.c_str());
+	if (!cstrpath) return;
+
+	string path(cstrpath), token, t;
+	istringstream iss(path);
+
+	while (getline(iss,token,':')) {
+		istringstream p(exec("find -L "+token+" -iname package.xml"));
+	  while (getline(p,t)) {
+      spruce::path mypath_s(t);
+      auto path_split = mypath_s.split();
+      if (path_split.size() > 2) {
+        string package = path_split.at(path_split.size()-2);
+        auto package_iter = package_map.find(package);
+        // Don't overwrite entries in the map
+        if (package_iter == package_map.end()) {
+          package_map.insert(make_pair(package, mypath_s.root().append("/")));
+        }
+        //cout << mypath.getFileName() << endl;
+      }
+	  }
+	}
+}
+
+void populatePackageMap(map<string,string>& package_map)
+{
+  searchenvvar(package_map,"ROS_ROOT");
+  searchenvvar(package_map,"ROS_PACKAGE_PATH");
+}
+
+bool rospack(const string& package, const map<string,string>& package_map, string& package_path)
+{
+	// my own quick and dirty implementation of the rospack algorithm (based on my matlab version in rospack.m)
+	auto iter = package_map.find(package);
+	if (iter != package_map.end()) {
+    package_path = iter->second;
+		return true;
+  } else {
+    cerr << "Warning: Couldn't find package '" << package << "' in ROS_ROOT, ROS_PACKAGE_PATH, or user supplied package map" << endl;
+    return false;
+  }
+}
+
+string resolveFilename(const string& filename, const map<string,string>& package_map, const string& root_dir)
+{
+  spruce::path mesh_filename_s;
+  spruce::path raw_filename_s(filename);
+
+  auto split_filename = raw_filename_s.split();
+
+  if (split_filename.front() == "package:") {
+    string package_path_string;
+    if (rospack(split_filename.at(2), package_map, package_path_string)) {
+      spruce::path package_path_s = spruce::path(package_path_string);
+      mesh_filename_s = package_path_s;
+
+      auto split_raw = raw_filename_s.split();
+      for (int i = 1; i < split_raw.size()-2; ++i) {
+        mesh_filename_s.append(split_raw.at(i+2));
+      }
+    } else {
+      cerr << "Warning: Mesh '" << filename << "' could not be resolved and will be ignored by Drake." << endl;
+      return string();
+    }
+  } else {
+    mesh_filename_s = spruce::path(root_dir);
+    mesh_filename_s.append(filename);
+  }
+  if (!mesh_filename_s.exists()) {
+    cerr << "Warning: File '" << mesh_filename_s.getStr() << "' could not be found." << endl;
+    cerr << "Warning: Mesh '" << filename << "' could not be resolved and will be ignored by Drake." << endl;
+    return string();
+  }
+  return mesh_filename_s.getStr();
+}
 
 // todo: rectify this with findLinkId in the class (which makes more assumptions)
 int findLinkIndex(RigidBodyManipulator* model, string linkname)
@@ -56,6 +159,17 @@ bool parseVectorAttribute(TiXmlElement* node, const char* attribute_name, Vector
   if (attr) {
     stringstream s(attr);
     s >> val(0) >> val(1) >> val(2);
+    return true;
+  }
+  return false;
+}
+
+bool parseVectorAttribute(TiXmlElement* node, const char* attribute_name, Vector4d &val)
+{
+  const char* attr = node->Attribute(attribute_name);
+  if (attr) {
+    stringstream s(attr);
+    s >> val(0) >> val(1) >> val(2) >> val(3);
     return true;
   }
   return false;
@@ -117,115 +231,207 @@ bool parseInertial(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyMani
   return true;
 }
 
-bool parseVisual(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyManipulator* model)
+bool parseMaterial(TiXmlElement* node, map<string, Vector4d>& materials)
 {
-  // todo:  consider implementing this, but I don't need it yet
+  const char* attr;
+  attr = node->Attribute("name");
+  if (!attr) {
+    cerr << "ERROR: material tag is missing name attribute" << endl;
+    return false;
+  }
+  string name(attr);
+  auto material_iter = materials.find(name);
+  bool already_in_map = false;
+  if (material_iter != materials.end()) {
+    already_in_map = true;
+  }
+
+  Vector4d rgba;
+  TiXmlElement* color_node = node->FirstChildElement("color");
+  if (color_node) {
+    if (!parseVectorAttribute(color_node, "rgba", rgba)) {
+      cerr << "ERROR: color tag is missing rgba attribute" << endl;
+      return false;
+    }
+    materials[name] = rgba;
+  } else if (!already_in_map) {
+    cerr << "ERROR: material \"" << name << "\" is used before it is defined" << endl;
+    return false;
+  }
   return true;
 }
 
-bool parseCollision(int body_index, TiXmlElement* node, RigidBodyManipulator* model)
+bool parseGeometry(TiXmlElement* node, const map<string,string>& package_map, const string& root_dir, DrakeShapes::Element& element)
 {
-  Isometry3d T = Isometry3d::Identity();
-  TiXmlElement* origin = node->FirstChildElement("origin");
-  if (origin)
-    poseAttributesToTransform(origin, T.matrix());
-
-  bool create_collision_element(true);
+  // DEBUG
+  //cout << "parseGeometry: START" << endl;
+  // END_DEBUG
   const char* attr;
-  DrakeCollision::Shape shape = DrakeCollision::UNKNOWN;
-  vector<double> params;
-
-  TiXmlElement* geometry_node = node->FirstChildElement("geometry");
-  if (!geometry_node)
-    return false;
-
   TiXmlElement* shape_node;
-  if ((shape_node = geometry_node->FirstChildElement("box"))) {
-    shape = DrakeCollision::BOX;
+  if ((shape_node = node->FirstChildElement("box"))) {
     double x = 0, y = 0, z = 0;
     attr = shape_node->Attribute("size");
     if (attr) {
       stringstream s(attr);
       s >> x >> y >> z;
+    } else {
+      cerr << "ERROR parsing box element size" << endl;
+      return false;
     }
-    params.push_back(x);
-    params.push_back(y);
-    params.push_back(z);
-  } else if ((shape_node = geometry_node->FirstChildElement("sphere"))) {
-    shape = DrakeCollision::SPHERE;
+    element.setGeometry(DrakeShapes::Box(Vector3d(x, y, z)));
+  } else if ((shape_node = node->FirstChildElement("sphere"))) {
     double r = 0;
     attr = shape_node->Attribute("radius");
     if (attr) {
       stringstream s(attr);
       s >> r;
+    } else {
+      cerr << "ERROR parsing sphere element radius" << endl;
+      return false;
     }
-    params.push_back(r);
-  } else if ((shape_node = geometry_node->FirstChildElement("cylinder"))) {
-    shape = DrakeCollision::CYLINDER;
+    element.setGeometry(DrakeShapes::Sphere(r));
+  } else if ((shape_node = node->FirstChildElement("cylinder"))) {
     double r = 0, l = 0;
     attr = shape_node->Attribute("radius");
     if (attr) {
       stringstream s(attr);
       s >> r;
+    } else {
+      cerr << "ERROR parsing cylinder element radius" << endl;
+      return false;
     }
+
     attr = shape_node->Attribute("length");
     if (attr) {
       stringstream s(attr);
       s >> l;
+    } else {
+      cerr << "ERROR parsing cylinder element length" << endl;
+      return false;
     }
-    params.push_back(r);
-    params.push_back(l);
-  } else if ((shape_node = geometry_node->FirstChildElement("capsule"))) {
-    shape = DrakeCollision::CAPSULE;
+    element.setGeometry(DrakeShapes::Cylinder(r, l));
+  } else if ((shape_node = node->FirstChildElement("capsule"))) {
     double r = 0, l = 0;
     attr = shape_node->Attribute("radius");
     if (attr) {
       stringstream s(attr);
       s >> r;
+    } else {
+      cerr << "ERROR parsing capsule element radius" << endl;
+      return false;
     }
+
     attr = shape_node->Attribute("length");
     if (attr) {
       stringstream s(attr);
       s >> l;
+    } else {
+      cerr << "ERROR: Failed to parse capsule element length" << endl;
+      return false;
     }
-    params.push_back(r);
-    params.push_back(l);
-  } else if ((shape_node = geometry_node->FirstChildElement("mesh"))) {
-    shape = DrakeCollision::MESH;
-    cerr << "Warning: mesh collision elements will be ignored (until I re-implement the logic below sans boost)" << endl;
-    create_collision_element = false;
-    /*
-     boost::shared_ptr<urdf::Mesh> mesh(boost::dynamic_pointer_cast<urdf::Mesh>(cptr->geometry));
-     boost::filesystem::path mesh_filename(root_dir);
-     boost::regex package(".*package://.*");
-     if (!boost::regex_match(mesh->filename, package)) {
-     mesh_filename /= mesh->filename;
-     readObjFile(mesh_filename,params);
-     } else {
-     create_collision_element = false;
-     if (print_mesh_package_warning) {
-     cerr << "Warning: The robot '" << _urdf_model->getName()
-     << "' contains collision geometries that specify mesh "
-     << "files with the 'package://' syntax, which "
-     << "URDFRigidBodyManipulator does not support. These "
-     << "collision geometries will be ignored." << endl;
-     print_mesh_package_warning = false;
-     }
-     }
-     */
+    element.setGeometry(DrakeShapes::Capsule(r, l));
+  } else if ((shape_node = node->FirstChildElement("mesh"))) {
+    attr = shape_node->Attribute("filename");
+    if (!attr) {
+      cerr << "ERROR mesh element has no filename tag" << endl;
+      return false;
+    }
+    string filename(attr);
+    string resolved_filename = resolveFilename(filename, package_map, root_dir);
+    element.setGeometry(DrakeShapes::Mesh(filename, resolved_filename));
+                                          
   } else {
-    cerr << "ERROR: Link " << model->bodies[body_index]->linkname << " has a collision element with an unknown type" << endl;
+    cerr << "Warning: geometry element has an unknown type and will be ignored." << endl;
+  }
+  // DEBUG
+  //cout << "parseGeometry: END" << endl;
+  // END_DEBUG
+  return true;
+}
+
+bool parseVisual(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyManipulator* model, const map<string, Vector4d>& materials, const map<string,string>& package_map, const string& root_dir)
+{
+  // DEBUG
+  //cout << "parseVisual: START" << endl;
+  // END_DEBUG
+  Matrix4d T_element_to_link = Matrix4d::Identity();
+  TiXmlElement* origin = node->FirstChildElement("origin");
+  if (origin)
+    poseAttributesToTransform(origin, T_element_to_link);
+
+  string group_name;
+
+  TiXmlElement* geometry_node = node->FirstChildElement("geometry");
+  if (!geometry_node) {
+    cerr << "ERROR: Link " << body->linkname << " has a visual element without geometry." << endl;
     return false;
   }
 
-  if (create_collision_element) {
-    model->addCollisionElement(body_index,T.matrix(),shape,params);
+  DrakeShapes::VisualElement element(T_element_to_link);
+  if (!parseGeometry(geometry_node, package_map, root_dir, element)) {
+    cerr << "ERROR: Failed to parse visual element in link " << body->linkname << "." << endl;
+    return false;
+  }
+
+  TiXmlElement* material_node = node->FirstChildElement("material");
+  if (material_node) {
+    const char* attr;
+    attr = node->Attribute("name");
+    if (attr) {
+      element.setMaterial(materials.at(attr));
+    }
+  }
+
+  if (element.hasGeometry()) {
+    // DEBUG
+    //cout << "parseVisual: Adding element to body" << endl;
+    // END_DEBUG
+    body->addVisualElement(element);
+  }
+
+  // DEBUG
+  //cout << "parseVisual: END" << endl;
+  // END_DEBUG
+  return true;
+}
+
+bool parseCollision(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyManipulator* model, const map<string,string>& package_map, const string& root_dir)
+{
+  Matrix4d T_element_to_link = Matrix4d::Identity();
+  TiXmlElement* origin = node->FirstChildElement("origin");
+  if (origin)
+    poseAttributesToTransform(origin, T_element_to_link);
+
+  const char* attr;
+  string group_name;
+
+  attr = node->Attribute("group");
+  if (attr) {
+    group_name = attr;
+  } else {
+    group_name = "default";;
+  }
+
+  TiXmlElement* geometry_node = node->FirstChildElement("geometry");
+  if (!geometry_node) {
+    cerr << "ERROR: Link " << body->linkname << " has a collision element without geometry" << endl;
+    return false;
+  }
+
+  RigidBody::CollisionElement element(T_element_to_link, body);
+  if (!parseGeometry(geometry_node, package_map, root_dir, element)) {
+    cerr << "ERROR: Failed to parse collision element in link " << body->linkname << "." << endl;
+    return false;
+  }
+
+  if (element.hasGeometry()) {
+    model->addCollisionElement(element, body, group_name);
   }
 
   return true;
 }
 
-bool parseLink(RigidBodyManipulator* model, TiXmlElement* node)
+bool parseLink(RigidBodyManipulator* model, TiXmlElement* node, const map< string, Vector4d >& materials, const map<string,string>& package_map, const string& root_dir)
 {
   const char* attr = node->Attribute("drake_ignore");
   if (attr && strcmp(attr, "true") == 0)
@@ -245,18 +451,21 @@ bool parseLink(RigidBodyManipulator* model, TiXmlElement* node)
       return false;
 
   for (TiXmlElement* visual_node = node->FirstChildElement("visual"); visual_node; visual_node = visual_node->NextSiblingElement("visual")) {
-    if (!parseVisual(body, visual_node, model)) {
+    if (!parseVisual(body, visual_node, model, materials, package_map, root_dir)) {
+      printf("error parsing visual\n");
+      return false;
+    }
+  }
+
+  for (TiXmlElement* collision_node = node->FirstChildElement("collision"); collision_node; collision_node = collision_node->NextSiblingElement("collision")) {
+    if (!parseCollision(body, collision_node, model, package_map, root_dir)) {
+      printf("error parsing collision\n");
       return false;
     }
   }
 
   model->bodies.push_back(body);
   body->body_index = model->bodies.size() - 1;
-
-  for (TiXmlElement* collision_node = node->FirstChildElement("collision"); collision_node; collision_node = collision_node->NextSiblingElement("collision")) {
-    if (!parseCollision(body->body_index, collision_node, model))
-      return false;
-  }
 
   return true;
 }
@@ -373,7 +582,8 @@ bool parseJoint(RigidBodyManipulator* model, TiXmlElement* node)
     fjoint->setJointLimits(lower,upper);
   }
 
-  model->bodies[child_index]->setJoint(std::unique_ptr<DrakeJoint>(joint));
+  unique_ptr<DrakeJoint> joint_unique_ptr(joint);
+  model->bodies[child_index]->setJoint(move(joint_unique_ptr));
   model->bodies[child_index]->parent = model->bodies[parent_index];
 
   return true;
@@ -442,14 +652,29 @@ bool parseLoop(RigidBodyManipulator* model, TiXmlElement* node)
   return true;
 }
 
-bool parseRobot(RigidBodyManipulator* model, TiXmlElement* node, const string &root_dir)
+bool parseRobot(RigidBodyManipulator* model, TiXmlElement* node, const map<string,string> package_map, const string &root_dir)
 {
   string robotname = node->Attribute("name");
 
+  // parse material elements
+  map< string, Vector4d> materials;
+  for (TiXmlElement* link_node = node->FirstChildElement("material"); link_node; link_node = link_node->NextSiblingElement("material")) {
+    if (!parseMaterial(link_node, materials)) {
+      return false;
+    }
+  }
   // parse link elements
   for (TiXmlElement* link_node = node->FirstChildElement("link"); link_node; link_node = link_node->NextSiblingElement("link"))
-    if (!parseLink(model, link_node))
+    if (!parseLink(model, link_node, materials, package_map, root_dir)) {
       return false;
+    } 
+  //DEBUG
+    //else {
+      //cout << "Parsed link" << endl;
+      //cout << "model->bodies.size() = " << model->bodies.size() << endl;
+      //cout << "model->num_bodies = " << model->num_bodies << endl;
+    //}
+  //END_DEBUG
 
   // todo: parse collision filter groups
 
@@ -458,35 +683,42 @@ bool parseRobot(RigidBodyManipulator* model, TiXmlElement* node, const string &r
     if (!parseJoint(model, joint_node))
       return false;
 
+
   // parse transmission elements
   for (TiXmlElement* transmission_node = node->FirstChildElement("transmission"); transmission_node; transmission_node = transmission_node->NextSiblingElement("transmission"))
     if (!parseTransmission(model, transmission_node))
       return false;
+
 
   // parse loop joints
   for (TiXmlElement* loop_node = node->FirstChildElement("loop_joint"); loop_node; loop_node = loop_node->NextSiblingElement("loop_joint"))
     if (!parseLoop(model, loop_node))
       return false;
 
+
   for (unsigned int i = 1; i < model->bodies.size(); i++) {
     if (model->bodies[i]->parent == nullptr) {  // attach the root nodes to the world with a floating base joint
       model->bodies[i]->parent = model->bodies[0];
-      model->bodies[i]->setJoint(std::unique_ptr<DrakeJoint>(new RollPitchYawFloatingJoint("floating_rpy", Isometry3d::Identity())));
+      unique_ptr<DrakeJoint> joint(new RollPitchYawFloatingJoint("floating_rpy", Isometry3d::Identity()));
+      model->bodies[i]->setJoint(move(joint));
     }
   }
   return true;
 }
 
-bool parseURDF(RigidBodyManipulator* model, TiXmlDocument * xml_doc, const string &root_dir)
+bool parseURDF(RigidBodyManipulator* model, TiXmlDocument * xml_doc, map<string,string>& package_map, const string &root_dir)
 {
+  populatePackageMap(package_map);
   TiXmlElement *node = xml_doc->FirstChildElement("robot");
   if (!node) {
     cerr << "ERROR: This urdf does not contain a robot tag" << endl;
     return false;
   }
 
-  if (!parseRobot(model, node, root_dir))
+  if (!parseRobot(model, node, package_map, root_dir)) {
+    cerr << "ERROR: Failed to parse robot" << endl;
     return false;
+  }
 
   model->compile();
   return true;
@@ -494,12 +726,24 @@ bool parseURDF(RigidBodyManipulator* model, TiXmlDocument * xml_doc, const strin
 
 bool RigidBodyManipulator::addRobotFromURDFString(const string &xml_string, const string &root_dir)
 {
+  map<string,string> package_map;
+  return addRobotFromURDFString(xml_string, package_map, root_dir);
+}
+
+bool RigidBodyManipulator::addRobotFromURDFString(const string &xml_string, map<string, string>& package_map, const string &root_dir)
+{
   TiXmlDocument xml_doc;
   xml_doc.Parse(xml_string.c_str());
-  return parseURDF(this,&xml_doc,root_dir);
+  return parseURDF(this,&xml_doc,package_map,root_dir);
 }
 
 bool RigidBodyManipulator::addRobotFromURDF(const string &urdf_filename)
+{
+  map<string,string> package_map;
+  return addRobotFromURDF(urdf_filename, package_map);
+}
+
+bool RigidBodyManipulator::addRobotFromURDF(const string &urdf_filename, map<string,string>& package_map)
 {
   TiXmlDocument xml_doc(urdf_filename);
   if (!xml_doc.LoadFile()) {
@@ -513,5 +757,5 @@ bool RigidBodyManipulator::addRobotFromURDF(const string &urdf_filename)
     root_dir = urdf_filename.substr(0, found);
   }
 
-  return parseURDF(this,&xml_doc,root_dir);
+  return parseURDF(this,&xml_doc,package_map,root_dir);
 }

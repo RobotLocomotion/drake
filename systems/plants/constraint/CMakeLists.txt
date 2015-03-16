@@ -34,7 +34,7 @@ if(eigen3_FOUND)
       if (NOT MSVC)
         set_target_properties(testConstraintConstructor PROPERTIES COMPILE_FLAGS -fPIC)
       endif()
-      target_link_libraries(testConstraintConstructor drakeRBM drakeRigidBodyConstraint drakeRBMurdf drakeURDFinterface)
+      target_link_libraries(testConstraintConstructor drakeRBM drakeRigidBodyConstraint)
       add_test(NAME testConstraintConstructor WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/test" COMMAND testConstraintConstructor)
   endif()
 

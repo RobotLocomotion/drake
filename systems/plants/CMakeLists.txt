@@ -12,14 +12,13 @@ if (Boost_FOUND)
   link_directories( ${Boost_LIBRARY_DIRS} )
 endif()
 
-
 if (eigen3_FOUND)
   # todo: check eigen version.  3.1.0 didn't work for clang.  3.2.0 did.
  add_library(drakeRBM SHARED RigidBodyManipulator.cpp RigidBody.cpp RigidBodyManipulatorURDF.cpp RigidBodyManipulatorContact.cpp tinyxml/tinyxml.cpp tinyxml/tinyxmlparser.cpp tinyxml/tinyxmlerror.cpp)
  target_link_libraries(drakeRBM drakeCollision)
  include_directories( joints )
  target_link_libraries(drakeRBM drakeJoints)
-
+ target_link_libraries(drakeRBM spruce)
   pods_install_libraries(drakeRBM)
   pods_install_headers(RigidBodyManipulator.h RigidBody.h RigidBodyFrame.h KinematicPath.h DESTINATION drake)
   pods_install_pkg_config_file(drake-rbm
@@ -27,20 +26,12 @@ if (eigen3_FOUND)
     REQUIRES
     VERSION 0.0.1)
 
+  add_subdirectory(shapes)
   add_subdirectory(collision)
   add_subdirectory(constraint)
   add_subdirectory(joints)
 
   if (Boost_FOUND)
-    add_library(drakeRBMurdf URDFRigidBodyManipulator.cpp)
-    target_link_libraries(drakeRBMurdf drakeRBM drakeGeometryUtil drakeURDFinterface ${Boost_LIBRARIES})
-    if (NOT MSVC)
-    set_target_properties(drakeRBMurdf PROPERTIES COMPILE_FLAGS -fPIC )
-    endif()
-    pods_install_headers(URDFRigidBodyManipulator.h DESTINATION drake)
-    pods_install_libraries(drakeRBMurdf)
-
-    add_subdirectory(urdf_interface)
     add_subdirectory(viewer)
   endif(Boost_FOUND)
 

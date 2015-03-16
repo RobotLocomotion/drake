@@ -8,6 +8,7 @@
 #include <Eigen/StdVector> 
 
 #include "collision/DrakeCollision.h"
+#include "shapes/DrakeShapes.h"
 #include "KinematicPath.h"
 #include "GradientVar.h"
 
@@ -25,8 +26,6 @@
 
 #include "RigidBody.h"
 #include "RigidBodyFrame.h"
-
-#define INF -2147483648    // this number is only used for checking the pitch to see if it's a revolute joint or a helical joint, and is set to match the value handed to us for inf from matlab.
 
 #define BASIS_VECTOR_HALF_COUNT 2  //number of basis vectors over 2 (i.e. 4 basis vectors in this case)
 #define EPSILON 10e-8
@@ -70,10 +69,13 @@ class DLLEXPORT_RBM RigidBodyManipulator
 public:
   RigidBodyManipulator(int num_dof, int num_featherstone_bodies=-1, int num_rigid_body_objects=-1, int num_rigid_body_frames=0);
   RigidBodyManipulator(const std::string &urdf_filename);
+  RigidBodyManipulator(void);
   virtual ~RigidBodyManipulator(void);
 
   bool addRobotFromURDFString(const std::string &xml_string, const std::string &root_dir = ".");
+  bool addRobotFromURDFString(const std::string &xml_string, std::map<std::string,std::string>& package_map, const std::string &root_dir = ".");
   bool addRobotFromURDF(const std::string &urdf_filename);
+  bool addRobotFromURDF(const std::string &urdf_filename, std::map<std::string,std::string>& package_map);
 
   void surfaceTangents(Eigen::Map<Matrix3xd> const & normals, std::vector< Map<Matrix3xd> > & tangents);
   
@@ -192,27 +194,20 @@ public:
 
   void computeContactJacobians(Map<VectorXi> const & idxA, Map<VectorXi> const & idxB, Map<Matrix3xd> const & xA, Map<Matrix3xd> const & xB, const bool compute_second_derivatives, MatrixXd & J, MatrixXd & dJ);
 
-  void addCollisionElement(const int body_ind, const Matrix4d &T_elem_to_lnk, DrakeCollision::Shape shape, std::vector<double> params, std::string group_name = "default");
+  DrakeCollision::ElementId addCollisionElement(const RigidBody::CollisionElement& element, const std::shared_ptr<RigidBody>& body, std::string group_name);
 
-  void updateCollisionElements(const int body_ind);
-
-  bool setCollisionFilter(const int body_ind, const uint16_t group,
-                          const uint16_t mask);
-
-  bool getPairwiseCollision(const int body_indA, const int body_indB, MatrixXd &ptsA, MatrixXd &ptsB, MatrixXd &normals, bool use_margins=true);
-
-  bool getPairwisePointCollision(const int body_indA, const int body_indB, const int body_collision_indA, Vector3d &ptA, Vector3d &ptB, Vector3d &normal, bool use_margins=true);
-
-  bool getPointCollision(const int body_ind, const int body_collision_ind, Vector3d &ptA, Vector3d &ptB, Vector3d &normal, bool use_margins=true);
-
-  bool getPairwiseClosestPoint(const int body_indA, const int body_indB, Vector3d &ptA, Vector3d &ptB, Vector3d &normal, double &distance, bool use_margins=true);
+  void updateCollisionElements(const std::shared_ptr<RigidBody>& body);
 
   bool collisionRaycast(const Matrix3Xd &origins, const Matrix3Xd &ray_endpoints, VectorXd &distances, bool use_margins=false);
 
-  //bool closestPointsAllBodies( MatrixXd& ptsA, MatrixXd& ptsB,
-                               //MatrixXd& normal, VectorXd& distance,
-                               //std::vector<int>& bodyA_idx,
-                               //std::vector<int>& bodyB_idx);
+  bool collisionDetect( VectorXd& phi,
+                        MatrixXd& normal,
+                        MatrixXd& xA,
+                        MatrixXd& xB,
+                        std::vector<int>& bodyA_idx,
+                        std::vector<int>& bodyB_idx,
+                        const std::vector<DrakeCollision::ElementId>& ids_to_check,
+                        bool use_margins);
 
   bool collisionDetect( VectorXd& phi, MatrixXd& normal,
                         MatrixXd& xA, MatrixXd& xB,
@@ -261,7 +256,7 @@ public:
 public:
   std::vector<std::string> robot_name;
 
-  int num_positions; // treated as nq now; TODO: rename to nq
+  int num_positions;
   int num_velocities;
   VectorXd joint_limit_min;
   VectorXd joint_limit_max;
@@ -373,8 +368,8 @@ private:
   // precise raycasting, e.g. for simulating a laser scanner
   // These models are switched between with the use_margins flag
   // to collision-relevant methods of the RBM.
-  std::shared_ptr< DrakeCollision::Model > collision_model;
-  std::shared_ptr< DrakeCollision::Model > collision_model_no_margins;
+  std::unique_ptr< DrakeCollision::Model > collision_model;
+  //std::shared_ptr< DrakeCollision::Model > collision_model_no_margins;
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 

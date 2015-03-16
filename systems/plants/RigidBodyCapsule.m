@@ -22,7 +22,7 @@ classdef RigidBodyCapsule < RigidBodyGeometry
       %   geometry in the body-frame
       % @param rpy - 3-element vector of Euler angles specifying the
       %   orientation of the geometry in the body-frame
-      obj = obj@RigidBodyGeometry(5,varargin{:});
+      obj = obj@RigidBodyGeometry(6,varargin{:});
       sizecheck(radius,1);
       sizecheck(len,1);
       obj.radius = radius;

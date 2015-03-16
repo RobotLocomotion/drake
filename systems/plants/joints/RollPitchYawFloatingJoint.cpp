@@ -1,6 +1,8 @@
 #include "RollPitchYawFloatingJoint.h"
 #include <random>
 
+#include "RigidBodyManipulator.h" // todo: remove this when I remove setupOldKinematicTree
+
 using namespace Eigen;
 
 
@@ -143,3 +145,10 @@ void RollPitchYawFloatingJoint::v2qdot(const Eigen::Ref<const VectorXd>& q, Eige
     dv_to_qdot->setZero(v_to_qdot.size(), getNumPositions());
   }
 }
+
+void RollPitchYawFloatingJoint::setupOldKinematicTree(RigidBodyManipulator* model, int body_ind, int position_num_start, int velocity_num_start) const
+{
+  DrakeJoint::setupOldKinematicTree(model,body_ind,position_num_start,velocity_num_start);
+  model->bodies[body_ind]->floating = 1;
+}
+
