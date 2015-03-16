@@ -67,9 +67,9 @@ int main()
 
   shared_ptr<Model> model = newModel();
   ElementId id1, id2, id3;
-  id1 = model->addElement(unique_ptr<Element>(new Element(DrakeShapes::Box(Vector3d(1,1,1)))));
-  id2 = model->addElement(unique_ptr<Element>(new Element(DrakeShapes::Sphere(0.5))));
-  id3 = model->addElement(unique_ptr<Element>(new Element(DrakeShapes::Sphere(0.5))));
+  id1 = model->addElement(Element(DrakeShapes::Box(Vector3d(1,1,1))));
+  id2 = model->addElement(Element(DrakeShapes::Sphere(0.5)));
+  id3 = model->addElement(Element(DrakeShapes::Sphere(0.5)));
   model->updateElementWorldTransform(id1, T_body1_to_world);
   model->updateElementWorldTransform(id2, T_body2_to_world);
   model->updateElementWorldTransform(id3, T_body3_to_world);

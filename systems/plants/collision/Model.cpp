@@ -15,17 +15,6 @@ namespace DrakeCollision
     return id;
   }
 
-  ElementId Model::addElement(std::unique_ptr<Element> element)
-  {
-    if (element != nullptr) {
-      ElementId id = element->getId();
-      this->elements.insert(make_pair(id, move(element)));
-      return id;
-    } else {
-      return 0;
-    }
-  }
-
   const Element* Model::readElement(ElementId id)
   {
     auto element_iter = elements.find(id);

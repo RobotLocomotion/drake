@@ -21,8 +21,6 @@ namespace DrakeCollision
 
       virtual ElementId addElement(const Element& element);
 
-      virtual ElementId addElement(std::unique_ptr<Element> element);
-
       virtual const Element* readElement(ElementId id);
 
       virtual void updateModel() {};
