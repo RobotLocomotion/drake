@@ -172,8 +172,8 @@ DLLEXPORT void quatdot2angularvelMatrix(const Eigen::MatrixBase<DerivedQ>& q,
     Eigen::MatrixBase<DerivedM>& M,
     typename Gradient<DerivedM, QUAT_SIZE, 1>::type* dM = nullptr);
 
-template<typename Derived, typename DerivedT>
-DLLEXPORT GradientVar<typename Derived::Scalar, 6, 1> cartesian2cylindrical( const Eigen::Transform<typename DerivedT::Scalar, 3, Eigen::Isometry>& T, const Eigen::MatrixBase<Derived>& xyzrpy);
+template<typename Derived, typename ScalarT>
+DLLEXPORT GradientVar<ScalarT, 6, 1> cartesian2cylindrical(const Eigen::Transform<ScalarT, 3, Eigen::Isometry>& T, const Eigen::MatrixBase<Derived>& xyzrpy);
 
 template<typename Derived, typename DerivedT>
 DLLEXPORT GradientVar<typename Derived::Scalar, 6, 1> cylindrical2cartesian( const Eigen::Transform<typename DerivedT::Scalar, 3, Eigen::Isometry>& T, const Eigen::MatrixBase<Derived>& xyzrpy);
