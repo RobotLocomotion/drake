@@ -167,22 +167,22 @@ classdef QPLocomotionPlan < QPControllerPlan
       typecheck(r, 'PointMassBiped');
       typecheck(obj.robot, 'Biped');
 
-      obj = obj.buildLinkTrajectories();
+      link_trajectories = obj.getLinkTrajectories();
 
       r_ind = [];
       l_ind = [];
-      for j = 1:length(obj.link_constraints)
-        if obj.link_constraints(j).link_ndx == obj.robot.getFrame(obj.robot.foot_frame_id.right).body_ind
+      for j = 1:length(link_trajectories)
+        if link_trajectories(j).link_ndx == obj.robot.getFrame(obj.robot.foot_frame_id.right).body_ind
           r_ind = j;
-        elseif obj.link_constraints(j).link_ndx == obj.robot.getFrame(obj.robot.foot_frame_id.left).body_ind
+        elseif link_trajectories(j).link_ndx == obj.robot.getFrame(obj.robot.foot_frame_id.left).body_ind
           l_ind = j;
         end
       end
 
       breaks = obj.zmptraj.getBreaks();
       traj = PPTrajectory(foh(breaks, obj.zmptraj.eval(breaks)));
-      rtraj = PPTrajectory(foh(breaks, obj.link_constraints(r_ind).traj.eval(breaks)));
-      ltraj = PPTrajectory(foh(breaks, obj.link_constraints(l_ind).traj.eval(breaks)));
+      rtraj = PPTrajectory(foh(breaks, link_trajectories(r_ind).traj.eval(breaks)));
+      ltraj = PPTrajectory(foh(breaks, link_trajectories(l_ind).traj.eval(breaks)));
       contact = false(2, length(obj.support_times));
       for j = 1:length(obj.support_times)
         if any(obj.supports(j).bodies == obj.robot.foot_body_id.right)
