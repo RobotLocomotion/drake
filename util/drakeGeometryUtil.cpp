@@ -1095,20 +1095,18 @@ dradius_dx_pos_cylinder.block(0,0,1,2) = x_pos_cylinder.block(0,0,2,1).transpose
   Matrix3d dR_cylinder2tangent;
   Matrix3d ddR_cylinder2tangent;
   rotz(theta-M_PI/2,R_cylinder2tangent,dR_cylinder2tangent,ddR_cylinder2tangent);
-  GradientVar<double,3,3> x_rotmat_cylinder_grad(3,3,6,1);
-  GradientVar<double,3,3> x_rotmat_cylinder_grad1(3,3,6,1);
-  x_rotmat_cylinder_grad1.value() = R_cylinder2tangent*dx_pos_cylinder.block(0,0,3,3);
-  Matrix<double,9,1> dR_cylinder2tangent_resize;
-  memcpy(dR_cylinder2tangent_resize.data(),dR_cylinder2tangent.data(),sizeof(double)*9);
-	Matrix3d dx_pos_cylinder_block2 = dx_pos_cylinder.block(0,0,3,3).eval();
-  x_rotmat_cylinder_grad1.gradient().value() = matGradMult(dR_cylinder2tangent_resize,dx_pos_cylinder_block2).eval();
-  x_rotmat_cylinder_grad.value() = R_cylinder2tangent*dx_pos_cylinder.block(0,0,3,3)*x_rotmat;
-  GradientVar<double,3,3> x_rotmat_grad(3,3,6,1);
-  x_rotmat_grad.value() = x_rotmat;
-  x_rotmat_grad.gradient().value() = Matrix<double,9,6>::Zero();
-  x_rotmat_grad.gradient().value().block(0,3,9,3) = dx_rotmat;
-  x_cylinder.block(3,0,3,1) = rotmat2rpy(x_rotmat_grad.value());
-  J.block(3,0,3,6) = drotmat2rpy(x_rotmat_grad.value(),x_rotmat_grad.gradient().value());
+  Matrix3d x_rotmat_cylinder1 = R_cylinder2tangent*dx_pos_cylinder.block(0,0,3,3);
+  Matrix<double,9,3> dR_cylinder2tangent_dx_pos_cylinder = Matrix<double,9,3>::Zero();// The gradient dR_cylinder2tangent / dx_pos_cylinder
+  memcpy(dR_cylinder2tangent_dx_pos_cylinder.data()+9,dR_cylinder2tangent.data(),sizeof(double)*9);
+  Matrix<double,9,6> x_rotmat_cylinder_grad1 = dR_cylinder2tangent_dx_pos_cylinder*dx_pos_cylinder;
+	Matrix<double,9,6> x_rotmat_grad = Matrix<double,9,6>::Zero();
+	x_rotmat_grad.block(0,3,9,3) = dx_rotmat;
+	Matrix3d x_rotmat_cylinder = x_rotmat_cylinder1*x_rotmat;
+	auto dx_rotmat_cylinder = matGradMultMat(x_rotmat_cylinder1, x_rotmat, x_rotmat_cylinder_grad1, x_rotmat_grad).eval();
+  x_cylinder.block(3,0,3,1) = rotmat2rpy(x_rotmat_cylinder);
+  J.block(3,0,3,6);
+	//Matrix<double,9,6> dx_rotmat_cylinder_val = dx_rotmat_cylinder;
+	//drotmat2rpy(x_rotmat_cylinder,dx_rotmat_cylinder).eval();
   GradientVar<ScalarT,6,1> ret(6,1,6,1);
   ret.value() = x_cylinder;
   ret.gradient().value() = J; 
@@ -1247,6 +1245,10 @@ template DLLEXPORT Gradient<Matrix3d, QUAT_SIZE>::type dquat2rotmat(const Eigen:
 template DLLEXPORT Gradient<Vector3d, Dynamic>::type drotmat2rpy(
     const Eigen::MatrixBase<Matrix3d>&,
     const Eigen::MatrixBase< Matrix<double, RotmatSize, Dynamic> >&);
+
+template DLLEXPORT Gradient<Vector3d, 6>::type drotmat2rpy(
+    const Eigen::MatrixBase<Matrix3d>&,
+    const Eigen::MatrixBase< Matrix<double, RotmatSize, 6> >&);
 
 template DLLEXPORT Gradient<Vector4d, Dynamic>::type drotmat2quat(
     const Eigen::MatrixBase<Matrix3d>&,
