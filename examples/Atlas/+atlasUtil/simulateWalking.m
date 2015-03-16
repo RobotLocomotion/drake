@@ -2,7 +2,7 @@ function traj = simulateWalking(r, walking_plan_data, options)
 %NOTEST
 
 typecheck(r, 'Atlas');
-typecheck(walking_plan_data, 'QPWalkingPlan');
+typecheck(walking_plan_data, 'QPLocomotionPlan');
 
 import atlasControllers.*;
 
