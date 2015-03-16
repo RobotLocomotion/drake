@@ -149,6 +149,22 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
        D_possible*wqdn,
        VectorXd::Zero(nC);
 
-  
 
+  mxArray* mxlb = mxCreateDoubleMatrix(LCP_size, 1, mxREAL);
+  mxArray* mxub = mxCreateDoubleMatrix(LCP_size, 1, mxREAL);
+  
+  //experimental
+  Map<VectorXd> lb(mxGetPr(mxlb), LCP_size);
+  Map<VectorXd> ub(mxGetPr(mxub), LCP_size);
+  lb = VectorXd::Zero(LCP_size);
+  ub = 1e20*VectorXd::Ones(LCP_size);
+
+  mxArray *lhs[1];
+  mxArray *rhs[] = {plhs[0], plhs[1], mxlb, mxub};
+
+  mexCallMATLABsafe(1, lhs, 4, rhs, "pathlcp");
+  Map<VectorXd> z(mxGetPr(lhs[0]), LCP_size);
+
+  cout << "z: " << endl;
+  cout << z << endl;
 }
