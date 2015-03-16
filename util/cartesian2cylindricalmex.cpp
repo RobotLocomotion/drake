@@ -45,8 +45,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   R.col(2) = cylinder_axis;
   Transform<double,3,Isometry,0> T;
   T.setIdentity();
-  T = T.rotate(R);  
   T = T.translate(cylinder_origin);
+  T = T.rotate(R);  
   auto x_output = cartesian2cylindrical(T,x_input);
   plhs[0] = mxCreateDoubleMatrix(6,1,mxREAL);
   memcpy(mxGetPr(plhs[0]),x_output.value().data(),sizeof(double)*6);

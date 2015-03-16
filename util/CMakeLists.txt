@@ -43,6 +43,8 @@ if (eigen3_FOUND)
 
   add_mex(cartesian2cylindricalmex cartesian2cylindricalmex.cpp)
   target_link_libraries(cartesian2cylindricalmex drakeGeometryUtil drakeGradientUtil)
+  add_mex(cylindrical2cartesianmex cylindrical2cartesianmex.cpp)
+  target_link_libraries(cylindrical2cartesianmex drakeGeometryUtil drakeGradientUtil)
 endif()
 
 add_subdirectory(test)
