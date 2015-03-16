@@ -582,7 +582,8 @@ bool parseJoint(RigidBodyManipulator* model, TiXmlElement* node)
     fjoint->setJointLimits(lower,upper);
   }
 
-  model->bodies[child_index]->setJoint(std::unique_ptr<DrakeJoint>(joint));
+  unique_ptr<DrakeJoint> joint_unique_ptr(joint);
+  model->bodies[child_index]->setJoint(move(joint_unique_ptr));
   model->bodies[child_index]->parent = model->bodies[parent_index];
 
   return true;
@@ -698,7 +699,8 @@ bool parseRobot(RigidBodyManipulator* model, TiXmlElement* node, const map<strin
   for (unsigned int i = 1; i < model->bodies.size(); i++) {
     if (model->bodies[i]->parent == nullptr) {  // attach the root nodes to the world with a floating base joint
       model->bodies[i]->parent = model->bodies[0];
-      model->bodies[i]->setJoint(std::unique_ptr<DrakeJoint>(new RollPitchYawFloatingJoint("floating_rpy", Isometry3d::Identity())));
+      unique_ptr<DrakeJoint> joint(new RollPitchYawFloatingJoint("floating_rpy", Isometry3d::Identity()));
+      model->bodies[i]->setJoint(move(joint));
     }
   }
   return true;

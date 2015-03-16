@@ -4,6 +4,7 @@
 #include "drakeGeometryUtil.h"
 #include "RigidBodyManipulator.h"
 #include "DrakeJoint.h"
+#include "FixedAxisOneDoFJoint.h"
 
 #include <algorithm>
 #include <string>
@@ -319,15 +320,9 @@ RigidBodyManipulator::~RigidBodyManipulator(void)
 // Note:  this method is gross and should be scheduled for deletion upon switching to the new kinsol
 void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num_rigid_body_objects, int num_rigid_body_frames)
 {
-  int last_num_dof = num_positions, last_NB = NB, last_num_bodies = num_bodies;
+  int last_NB = NB, last_num_bodies = num_bodies;
 
   num_positions = ndof;
-  joint_limit_min.conservativeResize(num_positions);
-  joint_limit_max.conservativeResize(num_positions);
-  for (int i=last_num_dof; i<num_positions; i++) {
-    joint_limit_min[i] = -std::numeric_limits<double>::infinity();
-    joint_limit_max[i] = std::numeric_limits<double>::infinity();
-  }
 
   if (num_featherstone_bodies<0)
     NB = ndof;
@@ -504,7 +499,12 @@ void RigidBodyManipulator::compile(void)
 
   resize(_num_positions, NB, num_bodies, num_frames); // TODO: change _num_positions to num_positions above after removing this
 
+  joint_limit_min = VectorXd::Constant(num_positions,-std::numeric_limits<double>::infinity());
+  joint_limit_max = VectorXd::Constant(num_positions,std::numeric_limits<double>::infinity());
+
   for (int i=0; i<num_bodies; i++) {
+    bodies[i]->setupOldKinematicTree(this);
+
     if (!bodies[i]->hasParent())
       updateCollisionElements(bodies[i]);  // update static objects (not done in the kinematics loop)
 

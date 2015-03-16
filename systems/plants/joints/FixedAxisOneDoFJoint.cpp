@@ -6,6 +6,7 @@
 #include <exception>
 #include <stdexcept>
 
+#include "RigidBodyManipulator.h" // todo: remove this when I remove setupOldKinematicTree
 
 
 using namespace Eigen;
@@ -103,3 +104,11 @@ void FixedAxisOneDoFJoint::v2qdot(const Eigen::Ref<const VectorXd>& q, Eigen::Ma
     dv_to_qdot->setZero(v_to_qdot.size(), getNumPositions());
   }
 }
+
+void FixedAxisOneDoFJoint::setupOldKinematicTree(RigidBodyManipulator* model, int body_ind, int position_num_start, int velocity_num_start) const
+{
+  DrakeJoint::setupOldKinematicTree(model,body_ind,position_num_start,velocity_num_start);
+  model->joint_limit_min[position_num_start] = joint_limit_min;
+  model->joint_limit_max[position_num_start] = joint_limit_max;
+}
+

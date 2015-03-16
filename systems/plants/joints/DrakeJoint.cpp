@@ -1,4 +1,5 @@
 #include "DrakeJoint.h"
+#include "RigidBodyManipulator.h"
 
 using namespace Eigen;
 
@@ -35,3 +36,13 @@ const std::string& DrakeJoint::getName() const
 {
   return name;
 }
+
+void DrakeJoint::setupOldKinematicTree(RigidBodyManipulator* model, int body_ind, int position_num_start, int velocity_num_start) const
+{
+  model->bodies[body_ind]->jointname = name;
+  model->bodies[body_ind]->Ttree = transform_to_parent_body.matrix();
+//  model->bodies[body_ind]->T_body_to_joint = Matrix4d::Identity();
+  model->bodies[body_ind]->floating = 0;
+  model->bodies[body_ind]->pitch = 0.0;
+}
+

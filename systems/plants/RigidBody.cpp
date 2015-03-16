@@ -35,8 +35,10 @@ RigidBody::RigidBody(void) :
   robotnum = 0;
 	position_num_start = 0;
 	velocity_num_start = 0;
+	body_index = 0;
 	mass = 0.0;
 	floating = 0;
+	pitch = 0.0;
 	com << Vector3d::Zero(), 1;
 	I << Matrix<double, TWIST_SIZE, TWIST_SIZE>::Zero();
 	T = Matrix4d::Identity();
@@ -86,6 +88,16 @@ const DrakeJoint& RigidBody::getJoint() const
   }
   else {
     throw runtime_error("Joint is not initialized");
+  }
+}
+
+void RigidBody::setupOldKinematicTree(RigidBodyManipulator* model)
+{
+  // note: could also setup the featherstone data structures (in RBM) to use the old dynamics; but that doesn't add any additional functionality and is about to be removed
+
+  if (hasParent()) {
+    const DrakeJoint& joint = getJoint();
+    joint.setupOldKinematicTree(model,body_index,position_num_start,velocity_num_start);
   }
 }
 

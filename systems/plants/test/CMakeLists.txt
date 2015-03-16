@@ -20,7 +20,7 @@ macro(add_ik_cpp)
   add_executable(${ARGV} ${ARGV}.cpp)
   include_directories( .. )
   set_target_properties(${ARGV} PROPERTIES COMPILE_FLAGS "-fPIC")
-  target_link_libraries(${ARGV} drakeRBMurdf drakeURDFinterface drakeRigidBodyConstraint drakeIK)
+  target_link_libraries(${ARGV} drakeRigidBodyConstraint drakeIK)
   add_test( NAME ${ARGV} WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}" COMMAND ${ARGV})
 endmacro()
 
