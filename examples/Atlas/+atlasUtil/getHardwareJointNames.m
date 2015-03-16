@@ -1,4 +1,5 @@
 function hardware_joint_names = getHardwareJointNames(r)
+%NOTEST
 
 if isempty(r.atlas_version)
   atlas_version = 3;
