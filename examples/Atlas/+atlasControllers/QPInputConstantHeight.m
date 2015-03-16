@@ -64,6 +64,7 @@ classdef QPInputConstantHeight
     function msg = to_lcm(obj)
       msg = drake.lcmt_qp_controller_input();
       msg.timestamp = obj.timestamp * 1e6;
+      msg.be_silent = logical(obj.be_silent);
       msg.zmp_data = drake.lcmt_zmp_data();
       for f = fieldnames(obj.zmp_data)'
         msg.zmp_data.(f{1}) = obj.zmp_data.(f{1});
@@ -104,6 +105,7 @@ classdef QPInputConstantHeight
     function obj = from_lcm(msg)
       obj = atlasControllers.QPInputConstantHeight();
       obj.timestamp = msg.timestamp;
+      obj.be_silent = double(msg.be_silent);
       for f = fieldnames(obj.zmp_data)'
         obj.zmp_data.(f{1}) = msg.zmp_data.(f{1});
       end
