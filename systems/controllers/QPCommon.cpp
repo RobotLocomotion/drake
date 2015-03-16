@@ -99,6 +99,7 @@ std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray 
   const mxArray* body_wrench_data = myGetProperty(qp_input, "body_wrench_data");
   const int num_external_wrenches = mxGetN(body_wrench_data);
   msg->num_external_wrenches = num_external_wrenches;
+  msg->body_wrench_data.resize(num_external_wrenches);
   const int wrench_size = 6;
   if (num_external_wrenches > 0) {
     if (mxGetM(body_wrench_data) != 1) {
@@ -107,9 +108,9 @@ std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray 
     for (int i = 0; i < num_external_wrenches; i++) {
       msg->body_wrench_data[i].timestamp = msg->timestamp;
       msg->body_wrench_data[i].body_id = (int32_t) mxGetScalar(myGetField(body_wrench_data, i, "body_id"));
-      const mxArray* wrench = myGetField(body_motion_data, i, "wrench");
+      const mxArray* wrench = myGetField(body_wrench_data, i, "wrench");
       sizecheck(wrench, wrench_size, 1);
-      memcpy(msg->body_wrench_data[i].wrench, mxGetPr(myGetField(body_wrench_data, i, "wrench")), wrench_size * sizeof(double));
+      memcpy(msg->body_wrench_data[i].wrench, mxGetPr(wrench), wrench_size * sizeof(double));
     }
   }
 
@@ -397,19 +398,20 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   }
 
   // handle external wrenches to compensate for
-  std::unique_ptr<MatrixXd> f_ext(nullptr);
   if (qp_input->body_wrench_data.size() > 0) {
     const int wrench_size = 6;
-    f_ext = std::move(std::unique_ptr<MatrixXd>(new MatrixXd(wrench_size, pdata->r->num_bodies)));
-    f_ext->setZero();
+    MatrixXd f_ext(wrench_size, pdata->r->num_bodies);
+    f_ext.setZero();
     for (auto it = qp_input->body_wrench_data.begin(); it != qp_input->body_wrench_data.end(); ++it) {
       const drake::lcmt_body_wrench_data& body_wrench_data = *it;
       Map< const Matrix<double, wrench_size, 1> > wrench(body_wrench_data.wrench);
-      f_ext->col(body_wrench_data.body_id) = wrench;
+      f_ext.col(body_wrench_data.body_id - 1) = wrench;
     }
+    pdata->r->HandC(robot_state.q,robot_state.qd,&f_ext,pdata->H,pdata->C,(MatrixXd*)nullptr,(MatrixXd*)nullptr,(MatrixXd*)nullptr);
   }
-
-  pdata->r->HandC(robot_state.q,robot_state.qd,f_ext.get(),pdata->H,pdata->C,(MatrixXd*)nullptr,(MatrixXd*)nullptr,(MatrixXd*)nullptr);
+  else {
+    pdata->r->HandC(robot_state.q,robot_state.qd,(MatrixXd*)nullptr,pdata->H,pdata->C,(MatrixXd*)nullptr,(MatrixXd*)nullptr,(MatrixXd*)nullptr);
+  }
 
   pdata->H_float = pdata->H.topRows(6);
   pdata->H_act = pdata->H.bottomRows(nu);
