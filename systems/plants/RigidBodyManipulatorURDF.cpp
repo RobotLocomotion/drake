@@ -116,28 +116,6 @@ string resolveFilename(const string& filename, const map<string,string>& package
   return mesh_filename_s.getStr();
 }
 
-class WarningManager {
-  public:
-    void warnOnce(const string& id, const string& msg)
-    {
-      auto print_warning_iter = already_printed_warnings.find(id);
-      if (print_warning_iter == already_printed_warnings.end()) {
-        cout << msg << endl;
-        already_printed_warnings.insert(id);
-      }
-    }
-
-    void reset()
-    {
-      already_printed_warnings.clear();
-    }
-
-  private:
-    set<string> already_printed_warnings;
-};
-
-static WarningManager warning_manager;
-
 // todo: rectify this with findLinkId in the class (which makes more assumptions)
 int findLinkIndex(RigidBodyManipulator* model, string linkname)
 {
@@ -593,7 +571,7 @@ bool parseJoint(RigidBodyManipulator* model, TiXmlElement* node)
 
   TiXmlElement* dynamics_node = node->FirstChildElement("dynamics");
   if (dynamics_node) {
-    warning_manager.warnOnce("joint_dynamics", 
+    model->warnOnce("joint_dynamics", 
         "Warning: joint dynamics xml tag not (re-)implemented yet; they will be ignored.");
   }
 
@@ -731,7 +709,6 @@ bool parseRobot(RigidBodyManipulator* model, TiXmlElement* node, const map<strin
 
 bool parseURDF(RigidBodyManipulator* model, TiXmlDocument * xml_doc, map<string,string>& package_map, const string &root_dir)
 {
-  warning_manager.reset();
   populatePackageMap(package_map);
   TiXmlElement *node = xml_doc->FirstChildElement("robot");
   if (!node) {
