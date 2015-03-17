@@ -13,9 +13,6 @@
 #include <limits>
 #include <cmath>
 
-//#define TEST_FAST_QP
-//#define USE_MATRIX_INVERSION_LEMMA
-
 using namespace std;
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
@@ -60,11 +57,17 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   QPControllerOutput qp_output;
   shared_ptr<QPControllerDebugData> debug;
 
+  DrakeRobotState robot_state;
+  robot_state.t = t;
+  robot_state.q = q;
+  robot_state.qd = qd;
+
   if (nlhs>3) {
     debug.reset(new QPControllerDebugData());
   }
-  int info = setupAndSolveQP(pdata, qp_input, t, q, qd, b_contact_force, &qp_output, debug);
- 
+  int info = setupAndSolveQP(pdata, qp_input, robot_state, b_contact_force, &qp_output, debug);
+
+  // return to matlab
   narg = 0;
   if (nlhs>narg) {
     plhs[narg] = eigenToMatlab(qp_output.u);

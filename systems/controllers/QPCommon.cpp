@@ -23,6 +23,8 @@ std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray 
   // Take a matlab data structure corresponding to a QPInputConstantHeight object and parse it down to its representation as an equivalent LCM message. 
   std::shared_ptr<drake::lcmt_qp_controller_input> msg (new drake::lcmt_qp_controller_input());
 
+  msg->be_silent = mxGetScalar(myGetProperty(qp_input, "be_silent")) > 0.5;
+
   msg->timestamp = (int64_t) (mxGetScalar(myGetProperty(qp_input, "timestamp")) * 1000000);
 
   const mxArray* zmp_data = myGetProperty(qp_input, "zmp_data");
@@ -143,7 +145,7 @@ PIDOutput wholeBodyPID(NewQPControllerData *pdata, double t, const Ref<const Vec
   if (pdata->state.t_prev != 0) {
     dt = t - pdata->state.t_prev;
   }
-  pdata->state.q_integrator_state = params->integrator.eta * pdata->state.q_integrator_state + params->integrator.gains.cwiseProduct(q_des - q) * dt;
+  pdata->state.q_integrator_state = (1-params->integrator.eta) * pdata->state.q_integrator_state + params->integrator.gains.cwiseProduct(q_des - q) * dt;
   pdata->state.q_integrator_state = pdata->state.q_integrator_state.array().max(-params->integrator.clamps.array());
   pdata->state.q_integrator_state = pdata->state.q_integrator_state.array().min(params->integrator.clamps.array());
   out.q_ref = q_des + pdata->state.q_integrator_state;
@@ -218,18 +220,14 @@ VectorXd velocityReference(NewQPControllerData *pdata, double t, const Ref<Vecto
   }
 
   double delta_max = 1.0;
-  VectorXd v_ref = VectorXd::Zero(rpc->actuated_indices.size());
-  for (i=0; i < rpc->actuated_indices.size(); i++) {
-    v_ref(i) = qd_err(rpc->actuated_indices(i));
-  }
-  v_ref = v_ref.array().max(-delta_max);
-  v_ref = v_ref.array().min(delta_max);
-  return v_ref;
+  VectorXd qd_ref = qd_err.array().max(-delta_max);
+  qd_ref = qd_ref.array().min(delta_max);
+  return qd_ref;
 }
 
-vector<SupportStateElement> loadAvailableSupports(std::shared_ptr<drake::lcmt_qp_controller_input> qp_input) {
+std::vector<SupportStateElement> loadAvailableSupports(std::shared_ptr<drake::lcmt_qp_controller_input> qp_input) {
   // Parse a qp_input LCM message to extract its available supports as a vector of SupportStateElements
-  vector<SupportStateElement> available_supports;
+  std::vector<SupportStateElement> available_supports;
   available_supports.resize(qp_input->num_support_data);
   for (int i=0; i < qp_input->num_support_data; i++) {
     available_supports[i].body_idx = qp_input->support_data[i].body_id - 1;
@@ -248,7 +246,7 @@ vector<SupportStateElement> loadAvailableSupports(std::shared_ptr<drake::lcmt_qp
   return available_supports;
 }
 
-int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_controller_input> qp_input, double t, Map<VectorXd> &q, Map<VectorXd> &qd, const Ref<Matrix<bool, Dynamic, 1>> &b_contact_force, QPControllerOutput *qp_output, std::shared_ptr<QPControllerDebugData> debug) {
+int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_controller_input> qp_input, DrakeRobotState &robot_state, const Ref<Matrix<bool, Dynamic, 1>> &b_contact_force, QPControllerOutput *qp_output, std::shared_ptr<QPControllerDebugData> debug) {
   // The primary solve loop for our controller. This constructs and solves a Quadratic Program and produces the instantaneous desired torques, along with reference positions, velocities, and accelerations. It mirrors the Matlab implementation in atlasControllers.InstantaneousQPController.setupAndSolveQP(), and more documentation can be found there. 
   // Note: argument `debug` MAY be set to NULL, which signals that no debug information is requested.
 
@@ -288,7 +286,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   if (qp_input->whole_body_data.num_positions != nq) mexErrMsgTxt("number of positions doesn't match num_dof for this robot");
   Map<VectorXd> q_des(qp_input->whole_body_data.q_des.data(), nq);
   Map<VectorXd> condof(qp_input->whole_body_data.constrained_dofs.data(), qp_input->whole_body_data.num_constrained_dofs);
-  PIDOutput pid_out = wholeBodyPID(pdata, t, q, qd, q_des, &params->whole_body);
+  PIDOutput pid_out = wholeBodyPID(pdata, robot_state.t, robot_state.q, robot_state.qd, q_des, &params->whole_body);
   qp_output->q_ref = pid_out.q_ref;
 
   // mu
@@ -310,7 +308,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   
   assert(nu+6 == nq);
 
-  vector<DesiredBodyAcceleration> desired_body_accelerations;
+  std::vector<DesiredBodyAcceleration> desired_body_accelerations;
   desired_body_accelerations.resize(qp_input->num_tracked_bodies);
   Vector6d body_pose_des, body_v_des, body_vdot_des;
   Vector6d body_vdot;
@@ -321,8 +319,8 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     desired_body_accelerations[i].body_id0 = body_id0;
     Map<Matrix<double, 6, 4,RowMajor>>coefs_rowmaj(&qp_input->body_motion_data[i].coefs[0][0]);
     Matrix<double, 6, 4> coefs = coefs_rowmaj;
-    evaluateCubicSplineSegment(t - qp_input->body_motion_data[i].ts[0], coefs, body_pose_des, body_v_des, body_vdot_des);
-    desired_body_accelerations[i].body_vdot = bodyMotionPD(pdata->r, q, qd, body_id0, body_pose_des, body_v_des, body_vdot_des, params->body_motion[body_id0].Kp, params->body_motion[body_id0].Kd);
+    evaluateCubicSplineSegment(robot_state.t - qp_input->body_motion_data[i].ts[0], coefs, body_pose_des, body_v_des, body_vdot_des);
+    desired_body_accelerations[i].body_vdot = bodyMotionPD(pdata->r, robot_state, body_id0, body_pose_des, body_v_des, body_vdot_des, params->body_motion[body_id0].Kp, params->body_motion[body_id0].Kd);
     desired_body_accelerations[i].weight = weight;
     desired_body_accelerations[i].accel_bounds = params->body_motion[body_id0].accel_bounds;
     // mexPrintf("body: %d, vdot: %f %f %f %f %f %f weight: %f\n", body_id0, 
@@ -344,19 +342,19 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
 
   MatrixXd R_DQyD_ls = R_ls + D_ls.transpose()*Qy*D_ls;
 
-  pdata->r->doKinematics(q,false,qd);
+  pdata->r->doKinematics(robot_state.q,false,robot_state.qd);
 
   //---------------------------------------------------------------------
 
-  vector<SupportStateElement> available_supports = loadAvailableSupports(qp_input);
-  vector<SupportStateElement> active_supports = getActiveSupports(pdata->r, pdata->map_ptr, q, qd, available_supports, b_contact_force, params->contact_threshold, pdata->default_terrain_height);
+  std::vector<SupportStateElement> available_supports = loadAvailableSupports(qp_input);
+  std::vector<SupportStateElement> active_supports = getActiveSupports(pdata->r, pdata->map_ptr, robot_state.q, robot_state.qd, available_supports, b_contact_force, params->contact_threshold, pdata->default_terrain_height);
 
   int num_active_contact_pts=0;
-  for (vector<SupportStateElement>::iterator iter = active_supports.begin(); iter!=active_supports.end(); iter++) {
+  for (std::vector<SupportStateElement>::iterator iter = active_supports.begin(); iter!=active_supports.end(); iter++) {
     num_active_contact_pts += iter->contact_pts.size();
   }
 
-  pdata->r->HandC(q,qd,(MatrixXd*)nullptr,pdata->H,pdata->C,(MatrixXd*)nullptr,(MatrixXd*)nullptr,(MatrixXd*)nullptr);
+  pdata->r->HandC(robot_state.q,robot_state.qd,(MatrixXd*)nullptr,pdata->H,pdata->C,(MatrixXd*)nullptr,(MatrixXd*)nullptr,(MatrixXd*)nullptr);
 
   pdata->H_float = pdata->H.topRows(6);
   pdata->H_act = pdata->H.bottomRows(nu);
@@ -366,7 +364,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   bool include_angular_momentum = (params->W_kdot.array().maxCoeff() > 1e-10);
 
   if (include_angular_momentum) {
-    pdata->r->getCMM(q,qd,pdata->Ag,pdata->Agdot);
+    pdata->r->getCMM(robot_state.q,robot_state.qd,pdata->Ag,pdata->Agdot);
     pdata->Ak = pdata->Ag.topRows(3);
     pdata->Akdot = pdata->Agdot.topRows(3);
   }
@@ -401,12 +399,12 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
       // x,y,z com 
       xlimp.resize(6); 
       xlimp.topRows(3) = xcom;
-      xlimp.bottomRows(3) = Jcom*qd;
+      xlimp.bottomRows(3) = Jcom*robot_state.qd;
     }
     else {
       xlimp.resize(4); 
       xlimp.topRows(2) = xcom.topRows(2);
-      xlimp.bottomRows(2) = Jcom*qd;
+      xlimp.bottomRows(2) = Jcom*robot_state.qd;
     }
     x_bar = xlimp-x0;
 
@@ -419,7 +417,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
 
   Vector3d kdot_des; 
   if (include_angular_momentum) {
-    VectorXd k = pdata->Ak*qd;
+    VectorXd k = pdata->Ak*robot_state.qd;
     kdot_des = -params->Kp_ang*k; // TODO: parameterize
   }
   
@@ -434,7 +432,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     if (nc > 0) {
       // NOTE: moved Hqp calcs below, because I compute the inverse directly for FastQP (and sparse Hqp for gurobi)
       VectorXd tmp = C_ls*xlimp;
-      VectorXd tmp1 = Jcomdot*qd;
+      VectorXd tmp1 = Jcomdot*robot_state.qd;
       MatrixXd tmp2 = R_DQyD_ls*Jcom;
 
       pdata->fqp = tmp.transpose()*Qy*D_ls*Jcom;
@@ -445,7 +443,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
       pdata->fqp -= y0.transpose()*Qy*D_ls*Jcom;
       pdata->fqp -= (params->whole_body.w_qdd.array()*pid_out.qddot_des.array()).matrix().transpose();
       if (include_angular_momentum) {
-        pdata->fqp += qd.transpose()*pdata->Akdot.transpose()*params->W_kdot*pdata->Ak;
+        pdata->fqp += robot_state.qd.transpose()*pdata->Akdot.transpose()*params->W_kdot*pdata->Ak;
         pdata->fqp -= kdot_des.transpose()*params->W_kdot*pdata->Ak;
       }
       f.head(nq) = pdata->fqp.transpose();
@@ -473,7 +471,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     Aeq.block(6,0,neps,nq) = Jp;
     Aeq.block(6,nq,neps,nf) = MatrixXd::Zero(neps,nf);  // note: obvious sparsity here
     Aeq.block(6,nq+nf,neps,neps) = MatrixXd::Identity(neps,neps);             // note: obvious sparsity here
-    beq.segment(6,neps) = (-Jpdot -params->Kp_accel*Jp)*qd; 
+    beq.segment(6,neps) = (-Jpdot -params->Kp_accel*Jp)*robot_state.qd; 
   }    
   
   // add in body spatial equality constraints
@@ -492,7 +490,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
         for (int j=0; j<6; j++) {
           if (!std::isnan(desired_body_accelerations[i].body_vdot(j))) {
             Aeq.block(equality_ind,0,1,nq) = Jb.row(j);
-            beq[equality_ind++] = -Jbdot.row(j)*qd + desired_body_accelerations[i].body_vdot(j);
+            beq[equality_ind++] = -Jbdot.row(j)*robot_state.qd + desired_body_accelerations[i].body_vdot(j);
           }
         }
       }
@@ -526,10 +524,10 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     pdata->r->forwardJac(desired_body_accelerations[i].body_id0,orig,1,Jb);
     pdata->r->forwardJacDot(desired_body_accelerations[i].body_id0,orig,1,Jbdot);
     Ain.block(constraint_start_index,0,6,pdata->r->num_positions) = Jb;
-    bin.segment(constraint_start_index,6) = -Jbdot*qd + desired_body_accelerations[i].accel_bounds.max;
+    bin.segment(constraint_start_index,6) = -Jbdot*robot_state.qd + desired_body_accelerations[i].accel_bounds.max;
     constraint_start_index += 6;
     Ain.block(constraint_start_index,0,6,pdata->r->num_positions) = -Jb;
-    bin.segment(constraint_start_index,6) = Jbdot*qd - desired_body_accelerations[i].accel_bounds.min;
+    bin.segment(constraint_start_index,6) = Jbdot*robot_state.qd - desired_body_accelerations[i].accel_bounds.min;
     constraint_start_index += 6;
   }
        
@@ -556,7 +554,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   VectorXd alpha(nparams);
 
   MatrixXd Qnfdiag(nf,1), Qneps(neps,1);
-  vector<MatrixXd*> QBlkDiag( nc>0 ? 3 : 1 );  // nq, nf, neps   // this one is for gurobi
+  std::vector<MatrixXd*> QBlkDiag( nc>0 ? 3 : 1 );  // nq, nf, neps   // this one is for gurobi
   
   VectorXd w = (params->whole_body.w_qdd.array() + REG).matrix();
   #ifdef USE_MATRIX_INVERSION_LEMMA
@@ -637,7 +635,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
           for (int j=0; j<6; j++) {
             if (!std::isnan(desired_body_accelerations[i].body_vdot[j])) {
               pdata->Hqp += desired_body_accelerations[i].weight*(Jb.row(j)).transpose()*Jb.row(j);
-              f.head(nq) += desired_body_accelerations[i].weight*(qd.transpose()*Jbdot.row(j).transpose() - desired_body_accelerations[i].body_vdot[j])*Jb.row(j).transpose();
+              f.head(nq) += desired_body_accelerations[i].weight*(robot_state.qd.transpose()*Jbdot.row(j).transpose() - desired_body_accelerations[i].body_vdot[j])*Jb.row(j).transpose();
             }
           }
         }
@@ -692,15 +690,18 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
 
   // use transpose because B_act is orthogonal
   qp_output->u = pdata->B_act.transpose()*(pdata->H_act*qp_output->qdd + pdata->C_act - D_act*beta);
+  for (int i=0; i < qp_output->u.size(); i++) {
+    if (isnan(qp_output->u(i))) qp_output->u(i) = 0;
+  }
   //y = pdata->B_act.jacobiSvd(ComputeThinU|ComputeThinV).solve(pdata->H_act*qdd + pdata->C_act - Jz_act.transpose()*lambda - D_act*beta);
 
   bool foot_contact[2];
-  foot_contact[0] = b_contact_force(pdata->rpc.body_ids.r_foot) == 1;
-  foot_contact[1] = b_contact_force(pdata->rpc.body_ids.l_foot) == 1;
-  qp_output->qd_ref = velocityReference(pdata, t, q, qd, qp_output->qdd, foot_contact, &(params->vref_integrator), &(pdata->rpc));
+  foot_contact[0] = b_contact_force(pdata->rpc.body_ids.l_foot) == 1;
+  foot_contact[1] = b_contact_force(pdata->rpc.body_ids.r_foot) == 1;
+  qp_output->qd_ref = velocityReference(pdata, robot_state.t, robot_state.q, robot_state.qd, qp_output->qdd, foot_contact, &(params->vref_integrator), &(pdata->rpc));
 
   // Remember t for next time around
-  pdata->state.t_prev = t;
+  pdata->state.t_prev = robot_state.t;
 
   // If a debug pointer was passed in, fill it with useful data
   if (debug) {
@@ -739,3 +740,4 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
 
   return info;
 }
+

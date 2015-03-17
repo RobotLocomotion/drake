@@ -9,7 +9,7 @@ function qddot_des = wholeBodyPID(obj, t, q, qd, q_des, params)
   end
   dt = t - obj.q_integrator_data.t_prev;
   obj.q_integrator_data.t_prev = t;
-  new_int_state = params.integrator.eta * obj.q_integrator_data.state + params.integrator.gains .* (q_des - q) * dt;
+  new_int_state = (1-params.integrator.eta) * obj.q_integrator_data.state + params.integrator.gains .* (q_des - q) * dt;
 
   if any(new_int_state)
     [joint_limits_min, joint_limits_max] = r.getJointLimits();

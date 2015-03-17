@@ -244,6 +244,8 @@ public:
 
   //bool closestDistanceAllBodies(VectorXd& distance, MatrixXd& Jd);
 
+  void warnOnce(const std::string& id, const std::string& msg);
+
   int findLinkId(std::string linkname, int robot = -1);
   //@param robot   the index of the robot. robot = -1 means to look at all the robots
 
@@ -378,6 +380,8 @@ public:
 private:
   RigidBodyManipulator(const RigidBodyManipulator&) {}
   RigidBodyManipulator& operator=(const RigidBodyManipulator&) { return *this; }
+
+  std::set<std::string> already_printed_warnings;
 };
 
 

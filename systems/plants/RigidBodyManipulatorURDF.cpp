@@ -571,7 +571,8 @@ bool parseJoint(RigidBodyManipulator* model, TiXmlElement* node)
 
   TiXmlElement* dynamics_node = node->FirstChildElement("dynamics");
   if (dynamics_node) {
-    cerr << "Warning: joint dynamics xml tag not (re-)implemented yet; they will be ignored." << endl;
+    model->warnOnce("joint_dynamics", 
+        "Warning: joint dynamics xml tag not (re-)implemented yet; they will be ignored.");
   }
 
   TiXmlElement* limit_node = node->FirstChildElement("limit");

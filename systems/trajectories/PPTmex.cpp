@@ -129,12 +129,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
       switch ((int)(*command)) {
 
       case 1: { // eval
-        double *t = mxGetPr(prhs[2]);
+        double t = mxGetScalar(prhs[2]);
         int d1 = ppt->d1();
         int d2 = ppt->d2();
         plhs[0] = mxCreateDoubleMatrix(d1,d2,mxREAL);
         Map<MatrixXd> y(mxGetPr(plhs[0]),d1,d2);
-        ppt->eval(*t, y);
+        ppt->eval(t, y);
         break;
       }
 

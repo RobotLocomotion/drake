@@ -9,9 +9,10 @@ classdef QPControllerPlan
                                 'only_if_kinematic', [0;1;0;1],...
                                 'kinematic_or_sensed', [0;1;1;1],...
                                 'prevent_support', zeros(4,1));
-    duration;
+    duration = inf;
     start_time = 0;
     default_qp_input = atlasControllers.QPInputConstantHeight;
+    gain_set = 'standing';
   end
 
   methods(Abstract)
@@ -21,7 +22,11 @@ classdef QPControllerPlan
   methods
     function next_plan = getSuccessor(obj, t, x)
       next_plan = obj;
-      next_plan.end_time = inf;
+      next_plan.duration = inf;
+    end
+
+    function is_finished = isFinished(obj, t, x)
+      is_finished = t - obj.start_time >= obj.duration;
     end
   end
 end

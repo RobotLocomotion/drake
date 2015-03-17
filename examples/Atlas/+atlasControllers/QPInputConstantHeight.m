@@ -8,6 +8,7 @@ classdef QPInputConstantHeight
   end
 
   properties
+    be_silent = false; % Whether to ignore this message and produce no output
     timestamp % current time in seconds
     zmp_data % information describing the setup and state of our linear inverted pendulum model
     support_data  % information describing available supports which the controller MAY use
@@ -63,6 +64,7 @@ classdef QPInputConstantHeight
     function msg = to_lcm(obj)
       msg = drake.lcmt_qp_controller_input();
       msg.timestamp = obj.timestamp * 1e6;
+      msg.be_silent = logical(obj.be_silent);
       msg.zmp_data = drake.lcmt_zmp_data();
       for f = fieldnames(obj.zmp_data)'
         msg.zmp_data.(f{1}) = obj.zmp_data.(f{1});
@@ -96,6 +98,31 @@ classdef QPInputConstantHeight
       msg.whole_body_data.num_constrained_dofs = length(obj.whole_body_data.constrained_dofs);
       msg.whole_body_data.constrained_dofs = obj.whole_body_data.constrained_dofs;
       msg.param_set_name = obj.param_set_name;
+    end
+  end
+
+  methods (Static)
+    function obj = from_lcm(msg)
+      obj = atlasControllers.QPInputConstantHeight();
+      obj.timestamp = msg.timestamp;
+      obj.be_silent = double(msg.be_silent);
+      for f = fieldnames(obj.zmp_data)'
+        obj.zmp_data.(f{1}) = msg.zmp_data.(f{1});
+      end
+      for j = 1:length(msg.support_data)
+        for f = {'body_id', 'contact_pts', 'support_logic_map', 'mu', 'contact_surfaces'}
+          obj.support_data(j).(f{1}) = double(msg.support_data(j).(f{1}));
+        end
+      end
+      for j = 1:length(msg.body_motion_data)
+        for f = {'body_id', 'ts'}
+          obj.body_motion_data(j).(f{1}) = msg.body_motion_data(j).(f{1});
+        end
+        obj.body_motion_data(j).coefs = reshape(msg.body_motion_data(j).coefs, [6, 1, 4]);
+      end
+      obj.whole_body_data.q_des = msg.whole_body_data.q_des;
+      obj.whole_body_data.constrained_dofs = msg.whole_body_data.constrained_dofs;
+      obj.param_set_name = char(msg.param_set_name);
     end
   end
 end

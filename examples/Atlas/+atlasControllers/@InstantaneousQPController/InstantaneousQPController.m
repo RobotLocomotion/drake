@@ -88,6 +88,12 @@ classdef InstantaneousQPController
         terrain_map_ptr = 0;
       end
 
+      coordinate_names = struct(...
+        'state', {obj.robot.getStateFrame().coordinates(1:obj.robot.getNumPositions())},...
+        'input', struct('robot', {atlasUtil.getHardwareJointNames(obj.robot)}, ...
+                      'drake', {obj.robot.getInputFrame().coordinates}));
+
+
       obj.data_mex_ptr = ...
              constructQPDataPointerMex(obj.robot.getMexModelPtr(),...
                                        obj.param_sets,...
@@ -98,7 +104,8 @@ classdef InstantaneousQPController
                                        terrain_map_ptr,...
                                        obj.default_terrain_height,...
                                        obj.solver==0,...
-                                       obj.gurobi_options);
+                                       obj.gurobi_options,...
+                                       coordinate_names);
     end
 
     function [y, v_ref] = updateAndOutput(obj, t, x, qp_input, foot_contact_sensor)
@@ -146,7 +153,7 @@ classdef InstantaneousQPController
         active_supports = [supp.body_id];
         if nargout >= 2
           params = obj.param_sets.(qp_input.param_set_name);
-          v_ref = obj.velocityReference(t, q, qd, qdd, foot_contact_sensor, params.vref_integrator);
+          qd_ref = obj.velocityReference(t, q, qd, qdd, foot_contact_sensor, params.vref_integrator);
         end
       end
 
@@ -156,7 +163,7 @@ classdef InstantaneousQPController
           if ~obj.quiet
             t0 = tic();
           end
-          [y,qdd,v_ref,info_fqp] = ...
+          [y,qdd,qd_ref,info_fqp] = ...
                       instantaneousQPControllermex(obj.data_mex_ptr,...
                       t,...
                       x,...
@@ -302,6 +309,8 @@ classdef InstantaneousQPController
 
         obj.debug_pub.publish(debug_data);
       end
+
+      v_ref = qd_ref(obj.robot_property_cache.actuated_indices);
 
       if (0)     % simple timekeeping for performance optimization
         % note: also need to uncomment tic at very top of this method
