@@ -219,7 +219,8 @@ classdef LinearInvertedPendulum < LinearSystem
       options = applyDefaults(options, struct('compute_lyapunov', (nargout>1),...
                                               'Qy', diag([0,0,0,0,1,1]),...
                                               'use_lqr_cache', false,...
-                                              'lqr_cache_com_height_resolution', 0.01));
+                                              'lqr_cache_com_height_resolution', 0.01,...
+                                              'build_control_objects', true));
       if options.use_lqr_cache
         % round our CoM height value to improve the likelihood of a cache hit
         h = round(h / options.lqr_cache_com_height_resolution) * options.lqr_cache_com_height_resolution;
@@ -281,7 +282,11 @@ classdef LinearInvertedPendulum < LinearSystem
         alpha(:,j) = expm(A2*dt(j)) \ (s1dt - squeeze(beta(:,j,:))*(dt(j).^(0:k-1)'));
       end
       
-      ct = AffineSystem([],[],[],[],[],[],[],K,ExpPlusPPTrajectory(breaks,-.5*R1i*B',A2,alpha,gamma));
+      if options.build_control_objects
+        ct = AffineSystem([],[],[],[],[],[],[],K,ExpPlusPPTrajectory(breaks,-.5*R1i*B',A2,alpha,gamma));
+      else
+        ct = [];
+      end
         
       if options.compute_lyapunov
         s1traj = ExpPlusPPTrajectory(breaks,eye(4),A2,alpha,beta);
@@ -289,7 +294,11 @@ classdef LinearInvertedPendulum < LinearSystem
 %          s2traj = flipToPP(s2traj);
         [t,y,ydot] = ode4(@s2dynamics,fliplr(breaks),0);
         s2traj = PPTrajectory(pchipDeriv(breaks,fliplr(y.'),fliplr(ydot.')));
-        Vt = QuadraticLyapunovFunction(getInputFrame(ct),S,s1traj,s2traj);
+        if options.build_control_objects
+          Vt = QuadraticLyapunovFunction(getInputFrame(ct),S,s1traj,s2traj);
+        else
+          Vt = struct('S', S, 's1', s1traj, 's2', s2traj);
+        end
       else
         Vt = [];
       end

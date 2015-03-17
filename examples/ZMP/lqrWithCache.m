@@ -15,6 +15,7 @@ if isempty(lqr_solution_cache)
   end
 end
 
+cache_dirty = false;
 if lqr_solution_cache.isKey(key)
   value = lqr_solution_cache(key);
   K = value{1};
@@ -22,12 +23,16 @@ if lqr_solution_cache.isKey(key)
 else
   [K, S] = lqr(A, B, Q, R, N);
   lqr_solution_cache(key) = {K, S};
+  cache_dirty = true;
 end
 
 if length(lqr_solution_cache) > MAX_CACHE_ENTRIES;
   keys = lqr_solution_cache.keys();
   lqr_solution_cache.remove(keys(1:floor(end/2)));
+  cache_dirty = true;
 end
 
-save(fname, 'lqr_solution_cache');
+if cache_dirty
+  save(fname, 'lqr_solution_cache');
+end
 

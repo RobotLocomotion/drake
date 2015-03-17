@@ -11,7 +11,7 @@ q0 = x0(1:nq);
 
 kinsol = doKinematics(obj, q0);
 
-zmp_opts = struct('use_lqr_cache', true, 'lqr_cache_com_height_resolution', 0.01);
+zmp_opts = struct('use_lqr_cache', true, 'lqr_cache_com_height_resolution', 0.01, 'build_control_objects', false);
 if size(x0, 1) == nq
   com = getCOM(obj, kinsol);
   zmp_opts.com0 = com(1:2);
@@ -39,12 +39,9 @@ limp_height = (com(3) - zfeet) + (desired_pelvis_above_sole - actual_pelvis_abov
 limp_height = round(limp_height / zmp_opts.lqr_cache_com_height_resolution) * zmp_opts.lqr_cache_com_height_resolution;
 
 if isa(zmptraj_or_comgoal, 'Trajectory')
-  profile on
   t0 = tic();
   [c, V, comtraj] = LinearInvertedPendulum.ZMPtrackerClosedForm(limp_height, zmptraj_or_comgoal, zmp_opts);
   fprintf(1, 'zmp tracker time: %f s\n', toc(t0));
-  profile viewer
-  keyboard()
 elseif isnumeric(zmptraj_or_comgoal)
   hg = limp_height/9.81;
   [A, B, C, D, Q, R, Q1, R1, N] = LinearInvertedPendulum.setupLinearSystem(hg, diag([0,0,0,0,1,1]));
