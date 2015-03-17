@@ -706,6 +706,15 @@ bool RigidBodyManipulator::allCollisions(vector<int>& bodyA_idx,
 }
 
 
+void RigidBodyManipulator::warnOnce(const string& id, const string& msg)
+{
+  auto print_warning_iter = already_printed_warnings.find(id);
+  if (print_warning_iter == already_printed_warnings.end()) {
+    cout << msg << endl;
+    already_printed_warnings.insert(id);
+  }
+}
+
 //bool RigidBodyManipulator::closestDistanceAllBodies(VectorXd& distance,
                                                         //MatrixXd& Jd)
 //{
