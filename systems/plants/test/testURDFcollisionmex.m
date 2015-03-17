@@ -38,7 +38,8 @@ function testURDFcollisionmex
     [retval,outstr] = systemWCMakeEnv([urdf_collision_test,' ',urdffile,sprintf(' %f',q),' 2> /dev/null']);
     valuecheck(retval,0);
     if ~isempty(outstr)
-      out = textscan(outstr, [repmat('%f ',1,1+3*3) ' %s %s']);
+      outstr_cell = regexp(outstr, '=======', 'split');
+      out = textscan(outstr_cell{2}, [repmat('%f ',1,1+3*3) ' %s %s']);
       sizecheck(out{1},size(phi));
       normal_cpp = cell2mat(out(2:4))';
       xA_cpp = cell2mat(out(5:7))';
