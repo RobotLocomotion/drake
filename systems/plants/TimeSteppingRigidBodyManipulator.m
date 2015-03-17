@@ -183,8 +183,13 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       if (nargout>1)
         [obj,z,Mqdn,wqdn,dz,dMqdn,dwqdn] = solveLCP(obj,t,x,u);
       else
+        tic; 
         [obj,z,Mqdn,wqdn] = solveLCP(obj,t,x,u);
-        %[z, Mqdn, wqdn] = solveLCP_mex(obj,t, x, u);
+        timeMATLAB = toc;
+        tic;
+        [z_mex,Mqdn_mex,wqdn_mex] = solveLCP_mex(obj,t,x,u);
+        timeMEX = toc;
+        %speedup=timeMATLAB/timeMEX
       end
 
       num_q = obj.manip.num_positions;
@@ -234,11 +239,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         h = obj.timestep;
         kinsol = doKinematics(obj,q);
         [phiC,~,~,~,~,~,~,mu,n,D] = obj.manip.contactConstraints(kinsol,true);
-        [M_mex, w_mex, Mqdn, wqdn] = setupLCPmex(obj.manip.mex_model_ptr, q, qd, u, phiC, n, D, h, obj.z_inactive_guess_tol);
-        lb = zeros(numel(w_mex),1);
-        ub = 1e20*ones(numel(w_mex),1);
-        z = pathlcp(M_mex, w_mex, lb, ub);
-        
+        [z, Mqdn, wqdn] = setupLCPmex(obj.manip.mex_model_ptr, q, qd, u, phiC, n, D, h, obj.z_inactive_guess_tol);
     end
     
     function [obj,z,Mqdn,wqdn,dz,dMqdn,dwqdn] = solveLCP(obj,t,x,u)
@@ -324,11 +325,8 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
             [phiC,normal,d,xA,xB,idxA,idxB,mu,n,D,dn,dD] = obj.manip.contactConstraints(kinsol,true);
           else
             [phiC,normal,d,xA,xB,idxA,idxB,mu,n,D] = obj.manip.contactConstraints(kinsol,true);
-          end
-        end
-        
-        %[M_mex, w_mex, Mqdn_mex, wqdn_mex] = setupLCPmex(obj.manip.mex_model_ptr, q, qd, u, phiC, n, D, h, obj.z_inactive_guess_tol);
-        
+          end  
+        end    
         
         if (nL > 0)
           if (obj.position_control)
@@ -599,7 +597,6 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         end
 
         QP_FAILED = true;
-        
         if obj.enable_fastqp
           n_z_inactive = sum(z_inactive);
           if n_z_inactive > 0
@@ -635,6 +632,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
           end
         end
         
+        %QP_FAILED = true; %REMOVE THIS: TESTING PATH ONLY
         
         if QP_FAILED 
             % then the active set has changed, call pathlcp
@@ -738,7 +736,6 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
           limits = sum(~possible_limit_indices);
           possible_limit_indices(~possible_limit_indices) = penetration(1:limits);
           possible_contact_indices(~possible_contact_indices) = penetration(limits+1:end);
-          disp('added indices back in')
           obj.warning_manager.warnOnce('Drake:TimeSteppingRigidBodyManipulator:ResolvingLCP','This timestep violated our assumptions about which contacts could possibly become active in one timestep.  Consider reducing your dt.  If it seems to happen a lot, then please let us know about it.');
         else
           break;
