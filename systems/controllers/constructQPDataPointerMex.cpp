@@ -344,8 +344,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   pdata->B_act.resize(nu,nu);
   pdata->B_act = pdata->B.bottomRows(nu);
 
-  pdata->qdd_lb = VectorXd::Zero(nq).array() - 500;
-  pdata->qdd_ub = VectorXd::Zero(nq).array() + 500;
+  pdata->qdd_lb = VectorXd::Zero(nq).array() - numeric_limits<double>::infinity();
+  pdata->qdd_ub = VectorXd::Zero(nq).array() + numeric_limits<double>::infinity();
 
   //create gurobi environment
   int error = GRBloadenv(&(pdata->env),NULL);
