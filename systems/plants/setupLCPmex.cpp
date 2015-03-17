@@ -18,49 +18,91 @@ inline void manipulatorDynamics(RigidBodyManipulator *model, MatrixBase<DerivedA
   model->HandC(q, v, (MatrixXd*)nullptr, H, C, (MatrixXd*)nullptr, (MatrixXd*)nullptr, (MatrixXd*)nullptr);
 }
 
-template <typename Derived>
-inline void getThresholdIndices(MatrixBase<Derived> const &values, const double threshold, vector<int> & indices)
+inline void getInclusionIndices(vector<bool> const & inclusion, vector<int> & indices, bool getTrueIndices)
 {
+  const int n = inclusion.size();
   indices.clear();
-  const int n = values.size();
   for (int x = 0; x < n; x++) {
-    if (values[x] < threshold) {
+    if(inclusion[x] == getTrueIndices){
       indices.push_back(x);
     }
   }
 }
 
-inline void filterByIndices(vector<int> const &indices, VectorXd const & v, VectorXd & filtered)
+template <typename Derived>
+inline void getThresholdInclusion(MatrixBase<Derived> const &values, const double threshold, vector<bool> & belowThreshold)
+{
+  const int n = values.size();
+  belowThreshold.clear();
+  for (int x = 0; x < n; x++) {
+    belowThreshold.push_back(values[x]<threshold);
+  }
+}
+
+//counts number of inclusions
+inline int getNumTrue(vector<bool> const & bools)
+{
+  int count = 0;
+  const int n = bools.size();
+  for (int x = 0; x < n; x++) {
+    if (bools[x]) {
+      count++;
+    }
+  }
+  return count;
+}
+
+//splits a vector into two based on inclusion mapping
+inline void partitionVector(vector<bool> const &indices, VectorXd const & v, VectorXd & included, VectorXd & excluded)
 {
   const int n = indices.size();
-  filtered = VectorXd::Zero(n);
+  const int count = getNumTrue(indices);
+
+  included = VectorXd::Zero(count);
+  excluded = VectorXd::Zero(n-count);
+  
+  int inclusionIndex = 0;
+  int exclusionIndex = 0;
+
   for (int x = 0; x < n; x++) {
-    filtered[x] = v[indices[x]];
+    if (indices[x]) {
+      included[inclusionIndex++] = v[x];
+    } else {
+      excluded[exclusionIndex++] = v[x];
+    }
+  }
+}
+
+//splits a matrix into two based on a row inclusion mapping
+inline void partitionMatrix(vector<bool> const &indices, MatrixXd const & M, MatrixXd & included, MatrixXd & excluded)
+{   
+  const int n = indices.size();
+  const int count = getNumTrue(indices);
+  const int cols = M.cols();
+
+  included = MatrixXd::Zero(count, cols);
+  excluded = MatrixXd::Zero(n-count, cols);
+
+  int inclusionIndex = 0;
+  int exclusionIndex = 0;
+
+  for (int x = 0; x < n; x++) {
+    if (indices[x]) {
+      included.row(inclusionIndex++) = M.row(x);
+    } else {
+      excluded.row(exclusionIndex++) = M.row(x);
+    }
   }
 }
 
 //builds a filtered matrix containing only the rows specified by indices
-inline void filterByIndices(vector<int> const &indices, MatrixXd const & M, MatrixXd &filtered)
+inline void filterByIndices(vector<int> const &indices, MatrixXd const & M, MatrixXd & filtered)
 {
   const int n = indices.size();
   filtered = MatrixXd::Zero(n, M.cols());
   for (int x = 0; x < n; x++) {
     filtered.row(x) = M.row(indices[x]);
   }
-}
-
-vector<int> operator<(VectorXd const & v, double c)
-{
-  vector<int> filter_indices; 
-  getThresholdIndices(v, c, filter_indices);
-  return filter_indices;
-}
-
-std::string matrix_size(MatrixXd const & m)
-{
-  stringstream ss;
-  ss << m.rows() << "x" << m.cols();
-  return ss.str();
 }
 
 //[M, w, Mqdn, wqdn] = setupLCPmex(mex_model_ptr, q, qd, u, phiC, n, D, h, z_inactive_guess_tol)
@@ -79,92 +121,145 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   const Map<VectorXd> phiC(mxGetPr(prhs[4]),numContactPairs);
   const Map<MatrixXd> n(mxGetPr(prhs[5]), numContactPairs, nq);
 
-  VectorXd C, phiL, phiL_possible, phiC_possible;
-  MatrixXd H, B, JL, JL_possible, n_possible;
+  VectorXd C, phiL, phiL_possible, phiC_possible, phiL_check, phiC_check;
+  MatrixXd H, B, JL, JL_possible, n_possible, JL_check, n_check;
 
   manipulatorDynamics(model, q, v, H, C, B);
   auto phiP = model->positionConstraints<double>(1);
   model->jointLimitConstraints(q, phiL, JL);
 
-  
-  vector<int> possible_contact_indices = (phiC + h*n*v) < z_inactive_guess_tol;
-  vector<int> possible_limit_indices = (phiL + h*JL*v) < z_inactive_guess_tol;
-  
-  const int nC = possible_contact_indices.size();
-  const int nL = possible_limit_indices.size();
-  const int nP = phiP.value().size();
+  //initial guess for active constraints
+  vector<bool> possible_contact;
+  vector<bool> possible_jointlimit;
+  getThresholdInclusion(phiC + h*n*v, z_inactive_guess_tol, possible_contact);
+  getThresholdInclusion(phiL + h*JL*v, z_inactive_guess_tol, possible_jointlimit);
 
-  const int LCP_size = nL+nP+(mC+2)*nC;
+  while (true) {
+  //continue from here if our inactive guess fails
+    const int nC = getNumTrue(possible_contact);
+    const int nL = getNumTrue(possible_jointlimit);
+    const int nP = phiP.value().size();
 
-  filterByIndices(possible_limit_indices, phiL, phiL_possible);
-  filterByIndices(possible_contact_indices, phiC, phiC_possible);
+    const int LCP_size = nL+nP+(mC+2)*nC;
+    
+    vector<int> possible_contact_indices;
+    getInclusionIndices(possible_contact, possible_contact_indices, true);
 
-  filterByIndices(possible_limit_indices, JL, JL_possible);
-  filterByIndices(possible_contact_indices, n, n_possible);
+    partitionVector(possible_contact, phiC, phiC_possible, phiC_check);
+    partitionVector(possible_jointlimit, phiL, phiL_possible, phiL_check);
+    partitionMatrix(possible_contact, n, n_possible, n_check);
+    partitionMatrix(possible_jointlimit, JL, JL_possible, JL_check);
+    
+    MatrixXd D_possible(mC*nC, nq);
+    for (int i = 0; i < mC ; i++) {
+      Map<MatrixXd> D_i(mxGetPr(mxGetCell(prhs[6], i)), numContactPairs , nq);
+      MatrixXd D_i_possible, D_i_exclude;
+      filterByIndices(possible_contact_indices, D_i, D_i_possible);
+      D_possible.block(nC*i, 0, nC, nq) = D_i_possible;
+    }
 
-  MatrixXd D_possible(mC*nC, nq);
+    MatrixXd Hinv = H.inverse();
+    MatrixXd J(LCP_size, nq);
+    J << JL_possible, phiP.gradient().value(), n_possible, D_possible, MatrixXd::Zero(nC, nq);
 
-  for (int i = 0; i < mC ; i++) {
-    Map<MatrixXd> D_i(mxGetPr(mxGetCell(prhs[6], i)), numContactPairs , nq);
-    MatrixXd D_i_possible;
-    filterByIndices(possible_contact_indices, D_i, D_i_possible);
-    D_possible.block(nC*i, 0, nC, nq) = D_i_possible;
+    plhs[0] = mxCreateDoubleMatrix(LCP_size, 1, mxREAL);
+    plhs[1] = mxCreateDoubleMatrix(nq, LCP_size, mxREAL);
+    plhs[2] = mxCreateDoubleMatrix(nq, 1, mxREAL);
+
+    Map<VectorXd> z(mxGetPr(plhs[0]), LCP_size);
+    Map<MatrixXd> Mqdn(mxGetPr(plhs[1]), nq, LCP_size);
+    Map<VectorXd> wqdn(mxGetPr(plhs[2]), nq);
+
+    Mqdn = Hinv*J.transpose();
+    wqdn = v + h*Hinv*(B*u - C);
+
+    MatrixXd M(LCP_size, LCP_size);
+    VectorXd w(LCP_size);
+
+    M << h*JL_possible*Mqdn,
+         h*phiP.gradient().value()*Mqdn,
+         h*n_possible*Mqdn,
+         D_possible*Mqdn,
+         MatrixXd::Zero(nC, LCP_size);
+    
+
+    if (nC > 0) {
+      for (int i=0; i < mC ; i++) {
+        M.block(nL+nP+nC+nC*i, nL+nP+nC+mC*nC, nC, nC) = MatrixXd::Identity(nC, nC);
+        M.block(nL+nP+nC+mC*nC, nL+nP+nC+nC*i, nC, nC) = -1.0*MatrixXd::Identity(nC, nC);
+      }
+      double mu = 1.0; //TODO: pull this from contactConstraints
+      M.block(nL+nP+nC+mC*nC, nL+nP, nC, nC) = mu*MatrixXd::Identity(nC, nC);
+    }
+
+    w << phiL_possible + h*JL_possible*wqdn,
+         phiP.value() + h *phiP.gradient().value()*wqdn,
+         phiC_possible + h*n_possible*wqdn,
+         D_possible*wqdn,
+         VectorXd::Zero(nC);
+    
+    //solve LCP problem 
+    //TODO: call fastQP first
+    //TODO: call path from C++ (currently only 32-bit C libraries available)
+    //pathLCP needs its own copies to avoid segfaults
+    mxArray* mxM = mxCreateDoubleMatrix(LCP_size, LCP_size, mxREAL);
+    memcpy(mxGetPr(mxM),M.data(), sizeof(double)*LCP_size*LCP_size);
+    mxArray* mxw = mxCreateDoubleMatrix(LCP_size, 1, mxREAL);
+    memcpy(mxGetPr(mxw),w.data(), sizeof(double)*LCP_size);
+    mxArray* mxlb = mxCreateDoubleMatrix(LCP_size, 1, mxREAL);
+    mxArray* mxub = mxCreateDoubleMatrix(LCP_size, 1, mxREAL);  
+    Map<VectorXd> lb(mxGetPr(mxlb), LCP_size);
+    Map<VectorXd> ub(mxGetPr(mxub), LCP_size);
+    lb << VectorXd::Zero(nL),
+          -1e20*VectorXd::Ones(nP),
+          VectorXd::Zero(nC+mC*nC+nC);
+    ub = 1e20*VectorXd::Ones(LCP_size);
+
+    mxArray *lhs[1];
+    mxArray *rhs[] = {mxM, mxw, mxlb, mxub};
+    
+    mexCallMATLAB(1, lhs, 4, rhs, "pathlcp");
+    Map<VectorXd> z_path(mxGetPr(lhs[0]), LCP_size);
+    z = z_path;
+
+    mxDestroyArray(lhs[0]);
+    mxDestroyArray(mxlb);
+    mxDestroyArray(mxub);
+    mxDestroyArray(mxM);
+    mxDestroyArray(mxw);
+
+    
+    VectorXd qdn = Mqdn*z + wqdn;
+
+    vector<int> impossible_contact_indices, impossible_limit_indices;
+    getInclusionIndices(possible_contact, impossible_contact_indices, false);
+    getInclusionIndices(possible_jointlimit, impossible_limit_indices, false);
+
+    vector<bool> penetrating_joints, penetrating_contacts;
+    getThresholdInclusion(phiL_check + h*JL_check*qdn, 0.0, penetrating_joints);
+    getThresholdInclusion(phiC_check + h*n_check*qdn, 0.0, penetrating_contacts);
+
+    const int pJoints = getNumTrue(penetrating_joints);
+    const int pContacts = getNumTrue(penetrating_contacts);
+    const int penetrations = pJoints + pContacts;
+
+    //check nonpenetration assumptions
+    if (penetrations > 0) {
+      //revise and restart, if necessary
+      for (int x = 0; x < impossible_limit_indices.size(); x++) {
+        if (penetrating_joints[x]) {
+          possible_jointlimit[impossible_limit_indices[x]] = true;
+        }
+      }
+      for (int x = 0; x < impossible_contact_indices.size(); x++) {
+        if (penetrating_contacts[x]) {
+          possible_contact[impossible_contact_indices[x]] = true;
+        }
+      }
+      continue;
+    }
+
+    break;
   }
 
-
-  MatrixXd Hinv = H.inverse();
-  MatrixXd J(LCP_size, nq);
-  J << JL_possible, phiP.gradient().value(), n_possible, D_possible, MatrixXd::Zero(nC, nq);
-
-  plhs[0] = mxCreateDoubleMatrix(LCP_size, LCP_size, mxREAL);
-  plhs[1] = mxCreateDoubleMatrix(LCP_size, 1, mxREAL);
-  plhs[2] = mxCreateDoubleMatrix(nq, LCP_size, mxREAL);
-  plhs[3] = mxCreateDoubleMatrix(nq, 1, mxREAL);
-
-  Map<MatrixXd> M(mxGetPr(plhs[0]), LCP_size, LCP_size);
-  Map<VectorXd> w(mxGetPr(plhs[1]), LCP_size);
-  Map<MatrixXd> Mqdn(mxGetPr(plhs[2]), nq, LCP_size);
-  Map<VectorXd> wqdn(mxGetPr(plhs[3]), nq);
-
-  Mqdn = Hinv*J.transpose();
-  wqdn = v + h*Hinv*(B*u - C);
-
-  M << h*JL_possible*Mqdn,
-       h*phiP.gradient().value()*Mqdn,
-       h*n_possible*Mqdn,
-       D_possible*Mqdn,
-       MatrixXd::Zero(nC, LCP_size);
-  
-  for (int i=0; i < mC ; i++) {
-    M.block(nL+nP+nC+nC*i, LCP_size - nC, nC, nC) = MatrixXd::Identity(nC, nC);
-    M.block(nL+nP+nC+mC*nC, nL+nP+nC+nC*i, nC, nC) = -1.0*MatrixXd::Identity(nC, nC);
-  }
-
-  double mu = 1.0; //TODO: pull this from contactConstraints
-  M.block(nL+nP+nC+mC*nC, nP+nP, nC, nC) = mu*MatrixXd::Identity(nC, nC);
-
-  w << phiL_possible + h*JL_possible*wqdn,
-       phiP.value() + h *phiP.gradient().value()*wqdn,
-       phiC_possible + h*n_possible*wqdn,
-       D_possible*wqdn,
-       VectorXd::Zero(nC);
-
-
-  mxArray* mxlb = mxCreateDoubleMatrix(LCP_size, 1, mxREAL);
-  mxArray* mxub = mxCreateDoubleMatrix(LCP_size, 1, mxREAL);
-  
-  //experimental
-  Map<VectorXd> lb(mxGetPr(mxlb), LCP_size);
-  Map<VectorXd> ub(mxGetPr(mxub), LCP_size);
-  lb = VectorXd::Zero(LCP_size);
-  ub = 1e20*VectorXd::Ones(LCP_size);
-
-  mxArray *lhs[1];
-  mxArray *rhs[] = {plhs[0], plhs[1], mxlb, mxub};
-
-  mexCallMATLABsafe(1, lhs, 4, rhs, "pathlcp");
-  Map<VectorXd> z(mxGetPr(lhs[0]), LCP_size);
-
-  cout << "z: " << endl;
-  cout << z << endl;
 }
