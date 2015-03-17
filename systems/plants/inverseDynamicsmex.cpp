@@ -25,7 +25,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
 
 
   RigidBodyManipulator *model = (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
-  int nq = model->num_dof;
+  int nq = model->num_positions;
   int nv = model->num_velocities;
   const mxArray* f_ext_matlab = nullptr;
   const mxArray* vd_matlab = nullptr;

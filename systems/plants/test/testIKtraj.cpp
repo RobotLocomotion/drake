@@ -40,7 +40,7 @@ int main()
     //  r_foot = i;
     //}
   }
-  int nq = model->num_dof;
+  int nq = model->num_positions;
   VectorXd qstar = VectorXd::Zero(nq);
   qstar(3) = 0.8;
   model->doKinematics(qstar.data());
@@ -62,7 +62,7 @@ int main()
     t[i] = dt*i;
   }
   MatrixXd q0 = qstar.replicate(1,nT);
-  VectorXd qdot0 = VectorXd::Zero(model->num_dof);
+  VectorXd qdot0 = VectorXd::Zero(model->num_velocities);
   Vector3d com_lb = com0;
   com_lb(0) = nan("");;
   com_lb(1) = nan("");
@@ -85,9 +85,9 @@ int main()
   constraint_array[0] = com_kc;
   constraint_array[1] = kc_rhand;
   IKoptions ikoptions(model);
-  MatrixXd q_sol(model->num_dof,nT);
-  MatrixXd qdot_sol(model->num_dof,nT);
-  MatrixXd qddot_sol(model->num_dof,nT);
+  MatrixXd q_sol(model->num_positions,nT);
+  MatrixXd qdot_sol(model->num_velocities,nT);
+  MatrixXd qddot_sol(model->num_positions,nT);
   int info = 0;
   vector<string> infeasible_constraint;
   inverseKinTraj(model,nT,t,qdot0,q0,q0,num_constraints,constraint_array,q_sol,qdot_sol,qddot_sol,info,infeasible_constraint,ikoptions);

@@ -75,12 +75,12 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
     mxArray* joint_struct_out = mxCreateStructArray(1, dims, 0, nullptr);
 
-    Isometry3d joint_transform = joint->jointTransform(q.data());
+    Isometry3d joint_transform = joint->jointTransform(q);
     safelySetField(joint_struct_out, "joint_transform", eigenToMatlab(joint_transform.matrix()));
 
     DrakeJoint::MotionSubspaceType motion_subspace;
     MatrixXd dmotion_subspace;
-    joint->motionSubspace(q.data(), motion_subspace, &dmotion_subspace);
+    joint->motionSubspace(q, motion_subspace, &dmotion_subspace);
     safelySetField(joint_struct_out, "motion_subspace", eigenToMatlab(motion_subspace));
     safelySetField(joint_struct_out, "dmotion_subspace", eigenToMatlab(dmotion_subspace));
 
@@ -89,7 +89,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     Gradient<Vector6d, Eigen::Dynamic>::type dmotion_subspace_dot_times_vdq;
     Gradient<Vector6d, Eigen::Dynamic>::type dmotion_subspace_dot_times_vdv;
 
-    joint->motionSubspaceDotTimesV(q.data(), v.data(), motion_subspace_dot_times_v,
+    joint->motionSubspaceDotTimesV(q, v, motion_subspace_dot_times_v,
         &dmotion_subspace_dot_times_vdq,
         &dmotion_subspace_dot_times_vdv);
     safelySetField(joint_struct_out, "motion_subspace_dot_times_v", eigenToMatlab(motion_subspace_dot_times_v));
@@ -98,13 +98,13 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
     MatrixXd qdot_to_v;
     MatrixXd dqdot_to_v;
-    joint->qdot2v(q.data(), qdot_to_v, &dqdot_to_v);
+    joint->qdot2v(q, qdot_to_v, &dqdot_to_v);
     safelySetField(joint_struct_out, "qdot_to_v", eigenToMatlab(qdot_to_v));
     safelySetField(joint_struct_out, "dqdot_to_v", eigenToMatlab(dqdot_to_v));
 
     MatrixXd v_to_qdot;
     MatrixXd dv_to_qdot;
-    joint->v2qdot(q.data(), v_to_qdot, &dv_to_qdot);
+    joint->v2qdot(q, v_to_qdot, &dv_to_qdot);
     safelySetField(joint_struct_out, "v_to_qdot", eigenToMatlab(v_to_qdot));
     safelySetField(joint_struct_out, "dv_to_qdot", eigenToMatlab(dv_to_qdot));
 

@@ -1,7 +1,7 @@
 #ifndef __DrakeCollisionBullletResultCollector_H__
 #define __DrakeCollisionBullletResultCollector_H__
 
-#include "PointPair.h"
+#include "DrakeCollision.h"
 
 namespace DrakeCollision
 {
@@ -12,32 +12,21 @@ namespace DrakeCollision
     public:
       virtual void addPointPairResult(const PointPair& result);
         
-      inline void addSingleResult(const int bodyA_idx, const int bodyB_idx,
+      inline void addSingleResult(const ElementId idA,
+                                  const ElementId idB,
                                   const Eigen::Vector3d& ptA,
                                   const Eigen::Vector3d& ptB,
                                   const Eigen::Vector3d& normal,
                                   double distance)
       {
-        addPointPairResult(PointPair(bodyA_idx, bodyB_idx, ptA, ptB, normal, 
+        addPointPairResult(PointPair(idA, idB, ptA, ptB, normal, 
                                       distance));
       }
 
-      template<typename Derived>
-      void getResults(Eigen::MatrixBase<Derived> &ptsA, Eigen::MatrixBase<Derived> &ptsB, 
-                      Eigen::MatrixBase<Derived> &normals);
-
-      template<typename DerivedA, typename DerivedB>
-      void getResults(std::vector<int>& bodyA_idx, 
-          std::vector<int>& bodyB_idx,
-          Eigen::MatrixBase<DerivedA> &ptsA, 
-          Eigen::MatrixBase<DerivedA> &ptsB, 
-          Eigen::MatrixBase<DerivedA> &normals,
-          Eigen::MatrixBase<DerivedB>& distance);
-
-      template<typename Derived>
-      void getResults(std::vector<int>& bodyA_idx, std::vector<int>& bodyB_idx,
-                      Eigen::MatrixBase<Derived> &ptsA, Eigen::MatrixBase<Derived> &ptsB, 
-                      Eigen::MatrixBase<Derived> &normals,std::vector<double>& distance);
+      std::vector<PointPair> getResults() const
+      {
+        return pts;
+      }
 
       PointPair minDistPoint();
 
@@ -59,16 +48,11 @@ namespace DrakeCollision
 
       btCollisionWorld::ContactResultCallback* getBtPtr();
 
-      void setBodyIdx(const int bodyA_idx, const int bodyB_idx);
+      void setElements(const Element* elemA, const Element* elemB);
 
     protected:
       int curr_bodyA_idx;
       int curr_bodyB_idx;
-  };
-  
-  class MinDistResultCollector : public ResultCollector {
-    public:
-      virtual void addPointPairResult(const PointPair& result);
   };
   
   typedef std::shared_ptr< ResultCollector > ResultCollShPtr;

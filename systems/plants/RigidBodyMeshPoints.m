@@ -13,6 +13,7 @@ classdef RigidBodyMeshPoints < RigidBodyMesh
     function obj = RigidBodyMeshPoints(points)
       obj = obj@RigidBodyMesh('');
       obj.points = points;
+      obj.drake_shape_id = 5;
     end
     
     function points = getPoints(obj)

@@ -4,7 +4,7 @@ classdef RigidBodySupportState
 
   properties (SetAccess=protected)
     bodies; % array of supporting body indices
-    contact_pts; % cell array of vectors of supporting contact point indices
+    contact_pts; % cell array of supporting contact points, each cell is 3x[num pts per body]
     contact_groups; % cell array of cell arrays of contact group strings, 1 for each body
     num_contact_pts;  % convenience array containing the desired number of
                       %             contact points for each support body
@@ -27,22 +27,17 @@ classdef RigidBodySupportState
         for i=1:length(obj.bodies)
           body = r.getBody(obj.bodies(i));
           body_groups = contact_groups{i};
-          body_points = [];
-          for j=1:length(body_groups)
-            group_pts = body.collision_geometry_group_indices{strcmp(body.collision_geometry_group_names,body_groups{j})};
-            body_points = [body_points,group_pts];
-          end
-          obj.contact_pts{i} = body_points;
+          obj.contact_pts{i} = body.getTerrainContactPoints(body_groups);
           obj.contact_groups{i} = contact_groups{i};
-          obj.num_contact_pts(i)=length(body_points);
+          obj.num_contact_pts(i)=size(obj.contact_pts{i},2);
         end
       else
         % use all points on body
         for i=1:length(obj.bodies)
           terrain_contact_point_struct = getTerrainContactPoints(r,obj.bodies(i));
-          obj.contact_pts{i} = 1:size(terrain_contact_point_struct.pts,2);
+          obj.contact_pts{i} = terrain_contact_point_struct.pts;
           obj.contact_groups{i} = r.getBody(obj.bodies(i)).collision_geometry_group_names;
-          obj.num_contact_pts(i)=length(obj.contact_pts{i});
+          obj.num_contact_pts(i)=size(obj.contact_pts{i},2);
         end
       end
 

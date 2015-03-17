@@ -14,6 +14,7 @@ classdef WorldFixedPositionConstraint < MultipleTimeKinematicConstraint
     body
     body_name;
     pts
+    tol = 0; % tolerance for the constraint
   end
   
   methods(Access = protected)
@@ -97,8 +98,8 @@ classdef WorldFixedPositionConstraint < MultipleTimeKinematicConstraint
       if isempty(t)
         if(N>=2)
           n_pts = size(obj.pts,2);
-          lb = zeros(n_pts,1);
-          ub = zeros(n_pts,1);
+          lb = -obj.tol*ones(n_pts,1);
+          ub = obj.tol*ones(n_pts,1);
         else
           lb = [];
           ub = [];
@@ -107,13 +108,30 @@ classdef WorldFixedPositionConstraint < MultipleTimeKinematicConstraint
         valid_t = t(obj.isTimeValid(t));
         if(length(valid_t)>=2)
           n_pts = size(obj.pts,2);
-          lb = zeros(n_pts,1);
-          ub = zeros(n_pts,1);
+          lb = -obj.tol*ones(n_pts,1);
+          ub = obj.tol*ones(n_pts,1);
         else
           lb = [];
           ub = [];
         end
       end
+    end
+    
+    % set the tolerance for the constraint, default is 0.
+    function obj = setTol(obj,tol)
+      if ~isnumeric(tol)
+        error('Drake:WorldFixedPositionConstraint:TypeError','tol must be a numeric type');
+      end
+
+      if ~isscalar(tol)
+        error('Drake:WorldFixedPositionConstraint:SizeError','tol must be a scalar');
+      end
+
+      if tol < 0
+        error('Drake:WorldFixedPositionConstraint:SignError','tol must be >= 0');
+      end
+      
+       obj.tol = tol; 
     end
     
     function name_str = name(obj,t)

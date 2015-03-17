@@ -6,9 +6,17 @@
 #include <stdexcept>
 
 #include "joints/drakeJointUtil.h"
+#include "joints/FixedAxisOneDoFJoint.h"
 
 using namespace Eigen;
 using namespace std;
+
+bool isMxArrayVector( const mxArray* array )
+{
+  size_t num_rows = mxGetM(array);
+  size_t num_cols = mxGetN(array);
+  return (num_rows <= 1) || (num_cols <= 1);
+}
 
 void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 {
@@ -105,6 +113,8 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     //DEBUG
     //cout << "constructModelmex: body " << i << endl;
     //END_DEBUG
+    model->bodies[i]->body_index = i;
+
     pm = mxGetProperty(pBodies,i,"linkname");
     mxGetString(pm,buf,100);
     model->bodies[i]->linkname.assign(buf,strlen(buf));
@@ -126,16 +136,21 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     if (!mxIsEmpty(pm)) memcpy(model->bodies[i]->I.data(),mxGetPr(pm),sizeof(double)*6*6);
 
     pm = mxGetProperty(pBodies,i,"position_num");
-    model->bodies[i]->dofnum = (int) mxGetScalar(pm) - 1;  //zero-indexed
+    model->bodies[i]->position_num_start = (int) mxGetScalar(pm) - 1;  //zero-indexed
 
     pm = mxGetProperty(pBodies,i,"velocity_num");
     model->bodies[i]->velocity_num_start = (int) mxGetScalar(pm) - 1;  //zero-indexed
 
     pm = mxGetProperty(pBodies,i,"parent");
     if (!pm || mxIsEmpty(pm))
-      model->bodies[i]->parent = -1;
-    else
-      model->bodies[i]->parent = static_cast<int>(mxGetScalar(pm)) - 1;
+      model->bodies[i]->parent = nullptr;
+    else {
+      int parent_ind = static_cast<int>(mxGetScalar(pm))-1;
+      if (parent_ind >= static_cast<int>(model->bodies.size()))
+        mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","bad body.parent %d (only have %d bodies)",parent_ind,model->bodies.size());
+      if (parent_ind>=0)
+        model->bodies[i]->parent = model->bodies[parent_ind];
+    }
 
     {
       mxGetString(mxGetProperty(pBodies, i, "jointname"), buf, 100);
@@ -156,35 +171,23 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
       double pitch = mxGetScalar(mxGetProperty(pBodies, i, "pitch"));
 
       if (model->bodies[i]->hasParent()) {
-        model->bodies[i]->setJoint(createJoint(jointname, Ttree, floating, joint_axis, pitch));
+        unique_ptr<DrakeJoint> joint = createJoint(jointname, Ttree, floating, joint_axis, pitch);
+
 //        mexPrintf((model->bodies[i]->getJoint().getName() + ": " + std::to_string(model->bodies[i]->getJoint().getNumVelocities()) + "\n").c_str());
+
+        FixedAxisOneDoFJoint* joint_w_limits = dynamic_cast<FixedAxisOneDoFJoint*>(joint.get());
+        if (joint_w_limits != nullptr) {
+          double joint_limit_min = mxGetScalar(mxGetProperty(pBodies,i,"joint_limit_min"));
+          double joint_limit_max = mxGetScalar(mxGetProperty(pBodies,i,"joint_limit_max"));
+          joint_w_limits->setJointLimits(joint_limit_min,joint_limit_max);
+        }
+
+        model->bodies[i]->setJoint(move(joint));
       }
+
+//      pm = mxGetProperty(pBodies,i,"T_body_to_joint");
+//      memcpy(model->bodies[i]->T_body_to_joint.data(),mxGetPr(pm),sizeof(double)*4*4);
     }
-    {
-      pm = mxGetProperty(pBodies,i,"jointname");
-      mxGetString(pm,buf,100);
-      model->bodies[i]->jointname.assign(buf,strlen(buf));
-
-      pm = mxGetProperty(pBodies,i,"Ttree");
-      // todo: check that the size is 4x4
-      memcpy(model->bodies[i]->Ttree.data(),mxGetPr(pm),sizeof(double)*4*4);
-
-      pm = mxGetProperty(pBodies,i,"floating");
-      model->bodies[i]->floating = (int) mxGetScalar(pm);
-
-      pm = mxGetProperty(pBodies,i,"pitch");
-      model->bodies[i]->pitch = (int) mxGetScalar(pm);
-    }
-
-    if (model->bodies[i]->dofnum>=0) {
-       pm = mxGetProperty(pBodies,i,"joint_limit_min");
-       model->joint_limit_min[model->bodies[i]->dofnum] = mxGetScalar(pm);
-       pm = mxGetProperty(pBodies,i,"joint_limit_max");
-       model->joint_limit_max[model->bodies[i]->dofnum] = mxGetScalar(pm);
-    }
-
-    pm = mxGetProperty(pBodies,i,"T_body_to_joint");
-    memcpy(model->bodies[i]->T_body_to_joint.data(),mxGetPr(pm),sizeof(double)*4*4);
 
     //DEBUG
     //cout << "constructModelmex: About to parse collision geometry"  << endl;
@@ -207,68 +210,117 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 
         // Get element-to-link transform from MATLAB object
         memcpy(T.data(), mxGetPr(mxGetProperty(pShape,0,"T")), sizeof(double)*4*4);
-        auto shape = (DrakeCollision::Shape)static_cast<int>(mxGetScalar(mxGetProperty(pShape,0,"bullet_shape_id")));
+        auto shape = (DrakeShapes::Shape)static_cast<int>(mxGetScalar(mxGetProperty(pShape,0,"drake_shape_id")));
         vector<double> params_vec;
+        RigidBody::CollisionElement element(T, model->bodies[i]);
         switch (shape) {
-          case DrakeCollision::BOX:
+          case DrakeShapes::BOX:
           {
             double* params = mxGetPr(mxGetProperty(pShape,0,"size"));
-            params_vec.push_back(params[0]);
-            params_vec.push_back(params[1]);
-            params_vec.push_back(params[2]);
+            element.setGeometry(DrakeShapes::Box(Vector3d(params[0],params[1],params[2])));
           }
             break;
-          case DrakeCollision::SPHERE:
+          case DrakeShapes::SPHERE:
           {
-            params_vec.push_back(*mxGetPr(mxGetProperty(pShape,0,"radius")));
+            double r(*mxGetPr(mxGetProperty(pShape,0,"radius")));
+            element.setGeometry(DrakeShapes::Sphere(r));
           }
             break;
-          case DrakeCollision::CYLINDER:
+          case DrakeShapes::CYLINDER:
           {
-            params_vec.push_back(*mxGetPr(mxGetProperty(pShape,0,"radius")));
-            params_vec.push_back(*mxGetPr(mxGetProperty(pShape,0,"len")));
+            double r(*mxGetPr(mxGetProperty(pShape,0,"radius")));
+            double l(*mxGetPr(mxGetProperty(pShape,0,"len")));
+            element.setGeometry(DrakeShapes::Cylinder(r, l));
           }
             break;
-          case DrakeCollision::MESH:
+          case DrakeShapes::MESH:
+          {
+            string filename(mxArrayToString(mxGetProperty(pShape,0,"filename")));
+            element.setGeometry(DrakeShapes::Mesh(filename, filename));
+          }
+            break;
+          case DrakeShapes::MESH_POINTS:
           {
             mxArray* pPoints;
             mexCallMATLAB(1,&pPoints,1,&pShape,"getPoints");
-            double* params = mxGetPr(pPoints);
-            int n_params = (int) mxGetNumberOfElements(pPoints);
-            for (int k=0; k<n_params; k++)
-              params_vec.push_back(params[k]);
+            int n_pts = static_cast<int>(mxGetN(pPoints));
+            Map<Matrix3Xd> pts(mxGetPr(pPoints),3,n_pts);
+            element.setGeometry(DrakeShapes::MeshPoints(pts));
             mxDestroyArray(pPoints);
             // The element-to-link transform is applied in
             // RigidBodyMesh/getPoints - don't apply it again!
             T = Matrix4d::Identity();
           }
             break;
-          case DrakeCollision::CAPSULE:
+          case DrakeShapes::CAPSULE:
           {
-            params_vec.push_back(*mxGetPr(mxGetProperty(pShape,0,"radius")));
-            params_vec.push_back(*mxGetPr(mxGetProperty(pShape,0,"len")));
+            double r(*mxGetPr(mxGetProperty(pShape,0,"radius")));
+            double l(*mxGetPr(mxGetProperty(pShape,0,"len")));
+            element.setGeometry(DrakeShapes::Capsule(r, l));
           }
             break;
           default:
             // intentionally do nothing..
+            
+            //DEBUG
+            //cout << "constructModelmex: SHOULD NOT GET HERE" << endl;
+            //END_DEBUG
             break;
         }
-        model->addCollisionElement(i,T,shape,params_vec,group_name);
-        if (model->bodies[i]->parent<0) {
-          model->updateCollisionElements(i);  // update static objects only once - right here on load
-        }
+        //DEBUG
+        //cout << "constructModelmex: geometry = " << geometry.get() << endl;
+        //END_DEBUG
+        model->addCollisionElement(element, model->bodies[i], group_name);
       }
+      if (!model->bodies[i]->hasParent()) {
+        model->updateCollisionElements(model->bodies[i]);  // update static objects only once - right here on load
+      }
+
 
 
       // Set collision filtering bitmasks
       pm = mxGetProperty(pBodies,i,"collision_filter");
-      const uint16_t* group = (uint16_t*)mxGetPr(mxGetField(pm,0,"belongs_to"));
-      const uint16_t* mask = (uint16_t*)mxGetPr(mxGetField(pm,0,"ignores"));
-      //DEBUG
-      //cout << "constructModelmex: Group: " << *group << endl;
-      //cout << "constructModelmex: Mask " << *mask << endl;
-      //END_DEBUG
-      model->setCollisionFilter(i,*group,*mask);
+      DrakeCollision::bitmask group, mask;
+
+      mxArray* belongs_to = mxGetField(pm,0,"belongs_to");
+      mxArray* ignores = mxGetField(pm,0,"ignores");
+      if (!(mxIsLogical(belongs_to)) || !isMxArrayVector(belongs_to)) {
+        cout << "is logical: " << mxIsLogical(belongs_to) << endl;
+        cout << "number of dimensions: " << mxGetNumberOfDimensions(belongs_to) << endl;
+        mexErrMsgIdAndTxt("Drake:constructModelmex:BadCollisionFilterStruct",
+                          "The 'belongs_to' field of the 'collision_filter' "
+                          "struct must be a logical vector.");
+      }
+      if (!(mxIsLogical(ignores)) || !isMxArrayVector(ignores)) {
+        mexErrMsgIdAndTxt("Drake:constructModelmex:BadCollisionFilterStruct",
+                          "The 'ignores' field of the 'collision_filter' "
+                          "struct must be a logical vector.");
+      }
+      size_t numel_belongs_to(mxGetNumberOfElements(belongs_to));
+      size_t numel_ignores(mxGetNumberOfElements(ignores));
+      size_t num_collision_filter_groups = max(numel_belongs_to, numel_ignores);
+      if (num_collision_filter_groups > MAX_NUM_COLLISION_FILTER_GROUPS) {
+        mexErrMsgIdAndTxt("Drake:constructModelmex:TooManyCollisionFilterGroups",
+                          "The total number of collision filter groups (%d) "
+                          "exceeds the maximum allowed number (%d)", 
+                          num_collision_filter_groups, 
+                          MAX_NUM_COLLISION_FILTER_GROUPS);
+      }
+
+      mxLogical* logical_belongs_to = mxGetLogicals(belongs_to);
+      for (int j = 0; j < numel_belongs_to; ++j) {
+        if (static_cast<bool>(logical_belongs_to[j])) {
+          group.set(j);
+        }
+      }
+
+      mxLogical* logical_ignores = mxGetLogicals(ignores);
+      for (int j = 0; j < numel_ignores; ++j) {
+        if (static_cast<bool>(logical_ignores[j])) {
+          mask.set(j);
+        }
+      }
+      model->bodies[i]->setCollisionFilter(group,mask);
     }
   }
 
@@ -338,10 +390,6 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     memcpy(model->frames[i].Ttree.data(),mxGetPr(pm),sizeof(double)*4*4);
   }
 
-
-  memcpy(model->joint_limit_min.data(), mxGetPr(mxGetProperty(pRBM,0,"joint_limit_min")), sizeof(double)*model->num_dof);
-  memcpy(model->joint_limit_max.data(), mxGetPr(mxGetProperty(pRBM,0,"joint_limit_max")), sizeof(double)*model->num_dof);
-
   const mxArray* a_grav_array = mxGetProperty(pRBM,0,"gravity");
   if (a_grav_array && mxGetNumberOfElements(a_grav_array)==3) {
     double* p = mxGetPr(a_grav_array);
@@ -355,7 +403,43 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   mxLogical* use_new_kinsol = mxGetLogicals(mxGetProperty(pRBM,0,"use_new_kinsol"));
   model->use_new_kinsol = (bool) use_new_kinsol[0];
 
+  //  LOOP CONSTRAINTS
+  const mxArray* pLoops = mxGetProperty(pRBM,0,"loop");
+  int num_loops = static_cast<int>(mxGetNumberOfElements(pLoops));
+  model->loops.clear();
+  for (int i=0; i<num_loops; i++)
+  {
+    pm = mxGetProperty(pLoops,i,"body1");
+    int body_A_ind = static_cast<int>(mxGetScalar(pm)-1);
+    pm = mxGetProperty(pLoops,i,"body2");
+    int body_B_ind = static_cast<int>(mxGetScalar(pm)-1);
+    pm = mxGetProperty(pLoops,i,"pt1");
+    Vector3d pA;
+    memcpy(pA.data(), mxGetPr(pm), 3*sizeof(double));
+    pm = mxGetProperty(pLoops,i,"pt2");
+    Vector3d pB;
+    memcpy(pB.data(), mxGetPr(pm), 3*sizeof(double));
+    model->loops.push_back(RigidBodyLoop(model->bodies[body_A_ind], pA, model->bodies[body_B_ind], pB));
+  }
+
+  //ACTUATORS
+  const mxArray* pActuators = mxGetProperty(pRBM,0,"actuator");
+  int num_actuators = static_cast<int>(mxGetNumberOfElements(pActuators));
+  model->actuators.clear();
+  for (int i=0; i<num_actuators; i++)
+  {
+    pm = mxGetProperty(pActuators,i,"name");
+    mxGetString(pm,buf,100);
+    pm = mxGetProperty(pActuators,i,"joint");
+    int joint = static_cast<int>(mxGetScalar(pm)-1);
+    pm = mxGetProperty(pActuators,i, "reduction");
+    model->actuators.push_back(RigidBodyActuator(std::string(buf), model->bodies[joint], static_cast<double>(mxGetScalar(pm))));
+  }  
+
   model->compile();
 
   plhs[0] = createDrakeMexPointer((void*)model,"RigidBodyManipulator");
+  //DEBUG
+  //cout << "constructModelmex: END" << endl;
+  //END_DEBUG
 }

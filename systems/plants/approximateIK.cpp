@@ -13,7 +13,7 @@ template <typename DerivedA, typename DerivedB, typename DerivedC>
 void approximateIK(RigidBodyManipulator* model, const MatrixBase<DerivedA> &q_seed, const MatrixBase<DerivedB> &q_nom, const int num_constraints, RigidBodyConstraint** const constraint_array, MatrixBase<DerivedC> &q_sol, int &INFO, const IKoptions &ikoptions)
 {
   int num_kc = 0;
-  int nq = model->num_dof;
+  int nq = model->num_positions;
   SingleTimeKinematicConstraint** kc_array = new SingleTimeKinematicConstraint*[num_constraints];
   double* joint_lb= new double[nq];
   double* joint_ub= new double[nq];
@@ -109,7 +109,7 @@ void approximateIK(RigidBodyManipulator* model, const MatrixBase<DerivedA> &q_se
     allIndsData[j] = j;
   }  
   VectorXd q_seed_data(q_seed);
-  model->doKinematics(const_cast<double*>(q_seed_data.data()));
+  model->doKinematics(q_seed_data);
   int kc_idx,c_idx;
   for(kc_idx = 0;kc_idx<num_kc;kc_idx++)
   {
