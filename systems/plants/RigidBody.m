@@ -166,9 +166,15 @@ classdef RigidBody < RigidBodyElement
     end
 
     function pts = getAxisAlignedBoundingBoxPoints(obj)
+      % pts = getAxisAlignedBoundingBoxPoints(obj) returns the vertices of a
+      % conservative, axis-aligned bounding-box of this body's collision
+      % geometry. Specifically, it finds the bounding box of the bounding boxes
+      % of all the geometries.
+      %
+      % @retval pts  -- 3-by-8 array of vertices
       pts = [];
       for i = 1:length(obj.collision_geometry)
-        pts = [pts, obj.collision_geometry{i}.getPoints()];
+        pts = [pts, obj.collision_geometry{i}.getBoundingBoxPoints()];
       end
       max_vals = repmat(max(pts,[],2),1,8);
       min_vals = repmat(min(pts,[],2),1,8);
@@ -262,15 +268,13 @@ classdef RigidBody < RigidBodyElement
 
     function body = makeBelongToCollisionFilterGroup(body,collision_fg_id)
       for id = reshape(collision_fg_id,1,[])
-        body.collision_filter.belongs_to = ...
-          bitor(body.collision_filter.belongs_to,bitshift(1,id-1));
+        body.collision_filter.belongs_to(collision_fg_id) = true;
       end
     end
    
     function body = makeIgnoreCollisionFilterGroup(body,collision_fg_id)
       for id = reshape(collision_fg_id,1,[])
-        body.collision_filter.ignores = ...
-          bitor(body.collision_filter.ignores,bitshift(1,id-1));
+        body.collision_filter.ignores(collision_fg_id) = true;
       end
     end
 

@@ -24,7 +24,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   RigidBodyManipulator *model= (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
 
   double* q = mxGetPr(prhs[1]);
-  for (int i = 0; i < model->num_dof; i++) {
+  for (int i = 0; i < model->num_positions; i++) {
     if (q[i] - model->cached_q[i] > 1e-8 || q[i] - model->cached_q[i] < -1e-8) {
       mexErrMsgIdAndTxt("Drake:bodyKinmex:InvalidKinematics","This kinsol is no longer valid.  Somebody has called doKinematics with a different q since the solution was computed.");
     }
@@ -52,8 +52,8 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   Map<MatrixXd> *J=NULL, *P=NULL;
 
   if (nlhs>1) {
-    plhs[1] = mxCreateDoubleMatrix(dim*n_pts,model->num_dof,mxREAL);
-    J = new Map<MatrixXd>(mxGetPr(plhs[1]),dim*n_pts,model->num_dof);
+    plhs[1] = mxCreateDoubleMatrix(dim*n_pts,model->num_positions,mxREAL);
+    J = new Map<MatrixXd>(mxGetPr(plhs[1]),dim*n_pts,model->num_positions);
   }
   if (nlhs>2) {
     plhs[2] = mxCreateDoubleMatrix(dim*n_pts,dim*n_pts,mxREAL);

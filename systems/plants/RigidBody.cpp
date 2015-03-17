@@ -8,6 +8,7 @@ const int defaultRobotNum[1] = {0};
 const set<int> RigidBody::defaultRobotNumSet(defaultRobotNum,defaultRobotNum+1);
 
 RigidBody::RigidBody(void) :
+    parent(nullptr),
     S(TWIST_SIZE, 0),
     dSdqi(0, 0),
     J(TWIST_SIZE, 0),
@@ -27,12 +28,17 @@ RigidBody::RigidBody(void) :
     dSdotVdvi(TWIST_SIZE, 0),
     JdotV(TWIST_SIZE, 1),
     dJdotVdq(TWIST_SIZE, 0),
-    dJdotVdv(TWIST_SIZE, 0)
+    dJdotVdv(TWIST_SIZE, 0),
+    collision_filter_group(DrakeCollision::DEFAULT_GROUP),
+    collision_filter_ignores(DrakeCollision::NONE_MASK)
 {
-	dofnum = 0;
+  robotnum = 0;
+	position_num_start = 0;
 	velocity_num_start = 0;
+	body_index = 0;
 	mass = 0.0;
 	floating = 0;
+	pitch = 0.0;
 	com << Vector3d::Zero(), 1;
 	I << Matrix<double, TWIST_SIZE, TWIST_SIZE>::Zero();
 	T = Matrix4d::Identity();
@@ -85,37 +91,47 @@ const DrakeJoint& RigidBody::getJoint() const
   }
 }
 
+void RigidBody::setupOldKinematicTree(RigidBodyManipulator* model)
+{
+  // note: could also setup the featherstone data structures (in RBM) to use the old dynamics; but that doesn't add any additional functionality and is about to be removed
+
+  if (hasParent()) {
+    const DrakeJoint& joint = getJoint();
+    joint.setupOldKinematicTree(model,body_index,position_num_start,velocity_num_start);
+  }
+}
+
 void RigidBody::computeAncestorDOFs(RigidBodyManipulator* model)
 {
-  if (dofnum>=0) {
+  if (position_num_start>=0) {
     int i,j;
-    if (parent>=0) {
-      ancestor_dofs = model->bodies[parent]->ancestor_dofs;
-      ddTdqdq_nonzero_rows = model->bodies[parent]->ddTdqdq_nonzero_rows;
+    if (parent!=nullptr) {
+      ancestor_dofs = parent->ancestor_dofs;
+      ddTdqdq_nonzero_rows = parent->ddTdqdq_nonzero_rows;
     }
 
     if (floating==1) {
     	for (j=0; j<6; j++) {
-    		ancestor_dofs.insert(dofnum+j);
+    		ancestor_dofs.insert(position_num_start+j);
     		for (i=0; i<3*model->NB; i++) {
-    			ddTdqdq_nonzero_rows.insert(i*model->NB + dofnum + j);
-    			ddTdqdq_nonzero_rows.insert(3*model->NB*dofnum + i + j);
+    			ddTdqdq_nonzero_rows.insert(i*model->NB + position_num_start + j);
+    			ddTdqdq_nonzero_rows.insert(3*model->NB*position_num_start + i + j);
     		}
     	}
     } else if (floating==2) {
     	for (j=0; j<7; j++) {
-    		ancestor_dofs.insert(dofnum+j);
+    		ancestor_dofs.insert(position_num_start+j);
     		for (i=0; i<3*model->NB; i++) {
-    			ddTdqdq_nonzero_rows.insert(i*model->NB + dofnum + j);
-    			ddTdqdq_nonzero_rows.insert(3*model->NB*dofnum + i + j);
+    			ddTdqdq_nonzero_rows.insert(i*model->NB + position_num_start + j);
+    			ddTdqdq_nonzero_rows.insert(3*model->NB*position_num_start + i + j);
     		}
     	}
     }
     else {
-    	ancestor_dofs.insert(dofnum);
+    	ancestor_dofs.insert(position_num_start);
     	for (i=0; i<3*model->NB; i++) {
-    		ddTdqdq_nonzero_rows.insert(i*model->NB + dofnum);
-    		ddTdqdq_nonzero_rows.insert(3*model->NB*dofnum + i);
+    		ddTdqdq_nonzero_rows.insert(i*model->NB + position_num_start);
+    		ddTdqdq_nonzero_rows.insert(3*model->NB*position_num_start + i);
     	}
     }
 
@@ -141,14 +157,89 @@ void RigidBody::computeAncestorDOFs(RigidBodyManipulator* model)
 }
 
 bool RigidBody::hasParent() const {
-  return parent >= 0;
+  return parent !=nullptr;
+}
+
+
+void RigidBody::addVisualElement(const DrakeShapes::VisualElement& element)
+{
+  visual_elements.push_back(element);
+}
+
+const DrakeShapes::VectorOfVisualElements& RigidBody::getVisualElements() const
+{
+  return visual_elements;
+}
+
+void RigidBody::setCollisionFilter(const DrakeCollision::bitmask& group, 
+                                   const DrakeCollision::bitmask& ignores)
+{
+  setCollisionFilterGroup(group);
+  setCollisionFilterIgnores(ignores);
+}
+
+bool RigidBody::appendCollisionElementIdsFromThisBody(const string& group_name, vector<DrakeCollision::ElementId>& ids) const
+{
+  auto group_ids_iter = collision_element_groups.find(group_name);
+  if (group_ids_iter != collision_element_groups.end()) {
+    ids.reserve(ids.size() + distance(group_ids_iter->second.begin(), group_ids_iter->second.end()));
+    ids.insert(ids.end(), group_ids_iter->second.begin(), group_ids_iter->second.end());
+    return true;
+  } else {
+    return false;
+  }
+}
+
+bool RigidBody::appendCollisionElementIdsFromThisBody(vector<DrakeCollision::ElementId>& ids) const
+{
+  ids.reserve(ids.size() + collision_element_ids.size());
+  ids.insert(ids.end(), collision_element_ids.begin(), collision_element_ids.end());
+  return true;
+}
+
+RigidBody::CollisionElement::
+CollisionElement( const CollisionElement& other)
+  : DrakeCollision::Element(other), body(other.getBody()) {}
+
+  RigidBody::CollisionElement::
+CollisionElement( const Matrix4d& T_element_to_link, std::shared_ptr<RigidBody> body)
+  : DrakeCollision::Element(T_element_to_link), body(body) {}
+
+  RigidBody::CollisionElement::
+CollisionElement(const DrakeShapes::Geometry& geometry,
+    const Matrix4d& T_element_to_link, std::shared_ptr<RigidBody> body)
+  : DrakeCollision::Element(geometry, T_element_to_link), body(body) {}
+
+RigidBody::CollisionElement* RigidBody::CollisionElement::clone() const
+{
+  return new CollisionElement(*this);
+}
+
+const std::shared_ptr<RigidBody>& RigidBody::CollisionElement:: getBody() const
+{
+  return this->body;
+}
+
+bool RigidBody::CollisionElement::collidesWith( const DrakeCollision::Element* other) const
+{
+  //DEBUG
+  //cout << "RigidBody::CollisionElement::collidesWith: START" << endl;
+  //END_DEBUG
+  auto other_rb = dynamic_cast<const RigidBody::CollisionElement*>(other);
+  bool collides = true;
+  if (other_rb != nullptr) {
+    collides = this->body->collidesWith(other_rb->body);
+    //DEBUG
+    //cout << "RigidBody::CollisionElement::collidesWith:" << endl;
+    //cout << "  " << this->body->linkname << " & " << other_rb->body->linkname;
+    //cout << ": collides = " << collides << endl;
+    //END_DEBUG
+  }   
+  return collides;
 }
 
 ostream &operator<<( ostream &out, const RigidBody &b)
 {
-	out << "RigidBody(" << b.linkname << "," << b.jointname << ")";
-	return out;
+  out << "RigidBody(" << b.linkname << "," << b.jointname << ")";
+  return out;
 }
-
-
-

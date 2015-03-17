@@ -37,6 +37,7 @@ classdef MixedIntegerConvexProgram
 
     % a symbolic objective term constructed in yalmip
     symbolic_objective = 0;
+
   end
 
   properties (SetAccess = protected)
@@ -345,10 +346,14 @@ classdef MixedIntegerConvexProgram
       end
     end
 
-    function [obj, solvertime, objval] = solveYalmip(obj)
+    function [obj, solvertime, objval] = solveYalmip(obj, params)
       checkDependency('gurobi');
       constraints = obj.symbolic_constraints;
       objective = obj.symbolic_objective;
+
+      if nargin < 2 || isempty(params)
+        params = sdpsettings('solver', 'gurobi', 'verbose', 0);
+      end
 
       % Now add in any constraints or objectives which were declared non-symbolically
       objective = objective + obj.symbolic_vars' * obj.Q * obj.symbolic_vars + obj.c' * obj.symbolic_vars + obj.objcon;
@@ -376,7 +381,7 @@ classdef MixedIntegerConvexProgram
           polycone(obj.symbolic_vars(obj.polycones(j).index(2:end)), obj.symbolic_vars(obj.polycones(j).index(1)), obj.polycones(j).N)];
       end
 
-      diagnostics = optimize(constraints, objective, sdpsettings('solver', 'gurobi', 'verbose', 0));
+      diagnostics = optimize(constraints, objective, params);
       ok = diagnostics.problem == 0 || diagnostics.problem == -1;
       if ~ok
         error('Drake:MixedIntegerConvexProgram:InfeasibleProblem', 'The mixed-integer problem is infeasible.');

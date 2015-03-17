@@ -3,13 +3,18 @@ classdef RigidBodyFlatTerrain < RigidBodyTerrain
 %  everywhere
   
   methods 
-    function obj = RigidBodyFlatTerrain()
+    function obj = RigidBodyFlatTerrain(varargin)
+      % Construct a flat terrain map at a given z height (default 0)
+      p = inputParser();
+      p.addOptional('z', 0, @isscalar);
+      p.parse(varargin{:});
+      obj.z = p.Results.z;
       obj.geom = constructRigidBodyGeometry(obj);
     end
     
     function [z,normal] = getHeight(obj,xy)
       [m n] = size(xy);
-      z = repmat(0,1,n);
+      z = repmat(obj.z,1,n);
       normal = repmat([0;0;1],1,n);
     end
 
@@ -31,7 +36,7 @@ classdef RigidBodyFlatTerrain < RigidBodyTerrain
       box_width = 1000;
       box_depth = 10;
       geom = RigidBodyBox([box_width;box_width;box_depth]);
-      geom.T(3,4) = -box_depth/2;
+      geom.T(3,4) = obj.z - box_depth/2;
       geom.c = hex2dec({'ee','cb','ad'})'/256;  % something a little brighter (peach puff 2 from http://www.tayloredmktg.com/rgb/);
       geom.name = 'terrain';
 %      geom.c = hex2dec({'cd','af','95'})'/256;
@@ -40,5 +45,6 @@ classdef RigidBodyFlatTerrain < RigidBodyTerrain
   
   properties
     geom;
+    z;
   end
 end

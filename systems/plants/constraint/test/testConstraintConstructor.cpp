@@ -1,6 +1,6 @@
 #include <iostream>
 #include <cstdlib>
-#include "URDFRigidBodyManipulator.h"
+#include "RigidBodyManipulator.h"
 
 #include "../RigidBodyConstraint.h"
 
@@ -8,7 +8,7 @@ using namespace std;
 
 int main()
 {
-  URDFRigidBodyManipulator* model = loadURDFfromFile("../../../../examples/Atlas/urdf/atlas_minimal_contact.urdf");
+  RigidBodyManipulator* model = new RigidBodyManipulator("../../../../examples/Atlas/urdf/atlas_minimal_contact.urdf");
   if(!model)
   {
     cerr << "ERROR: Failed to load model"<<endl;

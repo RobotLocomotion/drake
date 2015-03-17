@@ -1,24 +1,24 @@
 
+
+include_directories (${CMAKE_SOURCE_DIR}/util tinyxml)
+
 # IMPORTANT NOTE!!
 # matlab has it's own boost libraries.  DO NOT let any mex file depend
 # on the system boost (directly nor indirectly), or you're asking for trouble.
 find_package( Boost COMPONENTS filesystem system regex)
 
-include_directories (${CMAKE_SOURCE_DIR}/util )
-
 if (Boost_FOUND)
-  include_directories ( ${Boost_INCLUDE_DIR} tinyxml )
+  include_directories ( ${Boost_INCLUDE_DIR} )
   link_directories( ${Boost_LIBRARY_DIRS} )
 endif()
 
-
 if (eigen3_FOUND)
   # todo: check eigen version.  3.1.0 didn't work for clang.  3.2.0 did.
- add_library(drakeRBM SHARED RigidBodyManipulator.cpp RigidBody.cpp)
+ add_library(drakeRBM SHARED RigidBodyManipulator.cpp RigidBody.cpp RigidBodyManipulatorURDF.cpp RigidBodyManipulatorContact.cpp tinyxml/tinyxml.cpp tinyxml/tinyxmlparser.cpp tinyxml/tinyxmlerror.cpp)
  target_link_libraries(drakeRBM drakeCollision)
  include_directories( joints )
  target_link_libraries(drakeRBM drakeJoints)
-
+ target_link_libraries(drakeRBM spruce)
   pods_install_libraries(drakeRBM)
   pods_install_headers(RigidBodyManipulator.h RigidBody.h RigidBodyFrame.h KinematicPath.h DESTINATION drake)
   pods_install_pkg_config_file(drake-rbm
@@ -26,20 +26,12 @@ if (eigen3_FOUND)
     REQUIRES
     VERSION 0.0.1)
 
+  add_subdirectory(shapes)
   add_subdirectory(collision)
   add_subdirectory(constraint)
   add_subdirectory(joints)
 
   if (Boost_FOUND)
-    add_library(drakeRBMurdf URDFRigidBodyManipulator.cpp)
-    target_link_libraries(drakeRBMurdf drakeRBM drakeGeometryUtil drakeURDFinterface ${Boost_LIBRARIES})
-    if (NOT MSVC)
-    set_target_properties(drakeRBMurdf PROPERTIES COMPILE_FLAGS -fPIC )
-    endif()
-    pods_install_headers(URDFRigidBodyManipulator.h DESTINATION drake)
-    pods_install_libraries(drakeRBMurdf)
-
-    add_subdirectory(urdf_interface)
     add_subdirectory(viewer)
   endif(Boost_FOUND)
 
@@ -70,11 +62,17 @@ if (eigen3_FOUND)
   add_rbm_mex(centroidalMomentumMatrixmex)
   add_rbm_mex(massMatrixmex)
   add_rbm_mex(inverseDynamicsmex)
+  add_rbm_mex(geometricJacobianDotTimesVmex)
+  add_rbm_mex(centroidalMomentumMatrixDotTimesVmex)
+  add_rbm_mex(centerOfMassJacobianDotTimesVmex)
+  add_rbm_mex(forwardJacDotTimesVmex)
+  add_rbm_mex(contactConstraintsmex)
+  add_rbm_mex(surfaceTangentsmex)
+  add_rbm_mex(jointLimitConstraintsmex)
 
-  add_mex(surfaceTangentsmex surfaceTangentsmex.cpp)
-
+  include_directories( constraint )
   add_library(drakeIKoptions SHARED IKoptions.cpp)
-  target_link_libraries(drakeIKoptions drakeRBM drakeUtil)
+  target_link_libraries(drakeIKoptions drakeRBM)
   macro(add_ikoptions_mex)
     add_mex(${ARGV} ${ARGV}.cpp)
     target_link_libraries(${ARGV} drakeRBM drakeUtil drakeIKoptions)
@@ -102,10 +100,10 @@ if (eigen3_FOUND)
   endif()
   add_library(drakeIK SHARED ${drakeIK_SRC_FILES})
   pods_use_pkg_config_packages(drakeIK ${drakeIK_PODS_PKG})
-  target_link_libraries(drakeIK drakeRBM drakeRigidBodyConstraint)
+  target_link_libraries(drakeIK drakeRBM drakeRigidBodyConstraint drakeIKoptions)
   set_target_properties(drakeIK PROPERTIES COMPILE_FLAGS -fPIC)
-  pods_install_libraries(drakeIK)
-  pods_install_headers(RigidBodyIK.h DESTINATION drake)
+  pods_install_libraries(drakeIK drakeIKoptions)
+  pods_install_headers(RigidBodyIK.h IKoptions.h DESTINATION drake)
 
   if (gurobi_FOUND)
     add_mex(approximateIKmex approximateIKmex.cpp)

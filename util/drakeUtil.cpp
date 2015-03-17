@@ -167,3 +167,8 @@ std::pair<Eigen::Vector3d, double> resolveCenterOfPressure(Eigen::Vector3d torqu
   }
   return std::pair<Vector3d, double>(cop, normal_torque_at_cop);
 }
+
+double * mxGetPrSafe(const mxArray *pobj) {
+  if (!mxIsDouble(pobj)) mexErrMsgIdAndTxt("Drake:mxGetPrSafe:BadInputs", "mxGetPr can only be called on arguments which correspond to Matlab doubles");
+  return mxGetPr(pobj);
+}

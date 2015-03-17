@@ -1,8 +1,8 @@
-function traj = simulateWalking(r, walking_plan_data, use_mex, use_ik, use_bullet, use_angular_momentum, draw_button)
+function traj = simulateWalking(r, walking_plan_data, options)
 %NOTEST
 
 typecheck(r, 'Atlas');
-typecheck(walking_plan_data, 'WalkingPlanData');
+typecheck(walking_plan_data, 'QPLocomotionPlan');
 
 import atlasControllers.*;
 
@@ -11,15 +11,19 @@ warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints')
 warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits')
 warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits')
 
-
-% BotVisualizer doesn't support terrains yet
-% terrain = r.getTerrain();
-% r = r.setTerrain([]);
-% r = r.compile();
-v = r.constructVisualizer;
-v.display_dt = 0.05;
-% r = r.setTerrain(terrain);
-% r = r.compile();
+options = applyDefaults(options, struct('use_mex', true,...
+                                        'use_bullet', false,...
+                                        'use_ik', false,...
+                                        'use_angular_momentum', false,...
+                                        'draw_button', true));
+                                      
+if ~isfield(options, 'v') || isempty(options.v)
+  v = r.constructVisualizer;
+  v.display_dt = 0.05;
+else
+  v = options.v;
+  rmfield(options, 'v'); % don't pass the vis down to the controllers
+end
 
 x0 = r.getInitialState();
 nq = getNumPositions(r);
@@ -49,16 +53,14 @@ ctrl_data = QPControllerData(true,struct(...
   'constrained_dofs',[findPositionIndices(r,'arm');findPositionIndices(r,'back');findPositionIndices(r,'neck')]));
 
 options.dt = 0.003;
-options.use_bullet = use_bullet;
 options.debug = false;
-options.use_mex = use_mex;
 
-if use_angular_momentum
+if options.use_angular_momentum
   options.Kp_ang = 1.0; % angular momentum proportunal feedback gain
   options.W_kdot = 1e-5*eye(3); % angular momentum weight
 end
 
-if (use_ik)
+if (options.use_ik)
   options.w_qdd = 0.001*ones(nq,1);
   % instantiate QP controller
   qp = QPController(r,{},ctrl_data,options);
@@ -70,7 +72,7 @@ if (use_ik)
   ins(2).input = 3;
   outs(1).system = 2;
   outs(1).output = 1;
-  sys = mimoFeedback(qp,cascade(r, haltBlock),[],[],ins,outs);
+  sys = mimoFeedback(qp,r,[],[],ins,outs);
   clear ins;
 
   % feedback foot contact detector with QP/atlas
@@ -185,6 +187,6 @@ output_select(1).system=1;
 output_select(1).output=1;
 sys = mimoCascade(sys,v,[],[],output_select);
 warning(S);
-traj = simulate(sys,[0 T],x0,struct('gui_control_interface',true));
+traj = simulate(sys,[0 T],x0,struct('gui_control_interface',options.draw_button));
 
 end

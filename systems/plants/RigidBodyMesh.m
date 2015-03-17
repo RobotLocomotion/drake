@@ -20,7 +20,8 @@ classdef RigidBodyMesh < RigidBodyGeometry
       %   geometry in the body-frame
       % @param rpy - 3-element vector of Euler angles specifying the
       %   orientation of the geometry in the body-frame
-      obj = obj@RigidBodyGeometry(4,varargin{:});
+      obj = obj@RigidBodyGeometry(4,varargin{:}); 
+                                                  
       typecheck(filename,'char');
       obj.filename = filename;
     end
@@ -72,7 +73,7 @@ classdef RigidBodyMesh < RigidBodyGeometry
         if strcmpi(ext,'.stl') || exist(fullfile(path,[name,'.stl']),'file')
           stl2vrml(fullfile(path,[name,'.stl']),path);
         else
-          error(['unknown mesh file extension ',geom.filename]);
+          error(['missing mesh file or unknown file extension ',geom.filename]);
         end
       end
       geom.filename = fullfile(path,[name,'.wrl']);

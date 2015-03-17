@@ -18,8 +18,8 @@ template<typename T> bool isFinite(T arg)
  */
 template<typename T> bool isInf(T arg)
 {
-  return arg != std::numeric_limits<T>::infinity() &&
-    arg != -std::numeric_limits<T>::infinity();
+  return arg == std::numeric_limits<T>::infinity() ||
+    arg == -std::numeric_limits<T>::infinity();
 }
 
 #endif /* DRAKEFLOATINGPOINTUTIL_H_ */

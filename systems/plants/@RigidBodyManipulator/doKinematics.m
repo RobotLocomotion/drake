@@ -251,11 +251,11 @@ else
   bodies = model.body;
   kinsol.T = computeTransforms(bodies, q);
   if options.compute_gradients
-    [S, dSdq] = computeMotionSubspaces(bodies, q);
+    [kinsol.S, kinsol.dSdq] = computeMotionSubspaces(bodies, q);
   else
-    S = computeMotionSubspaces(bodies, q);
+    kinsol.S = computeMotionSubspaces(bodies, q);
   end
-  kinsol.J = computeJ(kinsol.T, S);
+  kinsol.J = computeJ(kinsol.T, kinsol.S);
   
   if options.compute_gradients
     [kinsol.qdotToV, kinsol.dqdotToVdq] = computeQdotToV(bodies, q);
@@ -264,10 +264,13 @@ else
     kinsol.qdotToV = computeQdotToV(bodies, q);
     kinsol.vToqdot = computeVToqdot(bodies, q);
   end
+  if ~isempty(v)
+    kinsol.qdot = computeQdot(bodies, kinsol.vToqdot, v, length(q));
+  end
   
   if options.compute_gradients
-    kinsol.dTdq = computeTransformGradients(bodies, kinsol.T, S, kinsol.qdotToV, length(q));
-    kinsol.dJdq = computedJdq(bodies, kinsol.T, S, kinsol.dTdq, dSdq);
+    kinsol.dTdq = computeTransformGradients(bodies, kinsol.T, kinsol.S, kinsol.qdotToV, length(q));
+    kinsol.dJdq = computedJdq(bodies, kinsol.T, kinsol.S, kinsol.dTdq, kinsol.dSdq);
   end
   
   if ~isempty(v)
@@ -371,23 +374,19 @@ for i = 2 : nb
 end
 end
 
-
 function [Vq, dVq] = computeQdotToV(bodies, q)
 compute_gradient = nargout > 1;
 nb = length(bodies);
 Vq = cell(1, nb);
 if compute_gradient
   dVq = cell(1, nb);
-  nq = length(q);
 end
 
 for i = 2 : nb
   body = bodies(i);
   q_body = q(body.position_num);
   if compute_gradient
-    [Vq{i}, dVq_joint] = jointQdot2v(body, q_body);
-    dVq{i} = zeros(numel(Vq{i}), nq) * q(1);
-    dVq{i}(:, body.position_num) = dVq_joint;
+    [Vq{i}, dVq{i}] = jointQdot2v(body, q_body);
   else
     Vq{i} = jointQdot2v(body, q_body);
   end
@@ -397,23 +396,27 @@ end
 function [VqInv, dVqInv] = computeVToqdot(bodies, q)
 compute_gradient = nargout > 1;
 nb = length(bodies);
-nq = length(q);
 VqInv = cell(1, nb);
 if compute_gradient
   dVqInv = cell(1, nb);
-  nq = length(q);
 end
 
 for i = 2 : nb
   body = bodies(i);
   q_body = q(body.position_num);
   if compute_gradient
-    [VqInv{i}, dVqInv_joint] = jointV2qdot(body, q_body);
-    dVqInv{i} = zeros(numel(VqInv{i}), nq) * q(1);
-    dVqInv{i}(:, body.position_num) = dVqInv_joint;
+    [VqInv{i}, dVqInv{i}] = jointV2qdot(body, q_body);
   else
     VqInv{i} = jointV2qdot(body, q_body);
   end
+end
+end
+
+function qdot = computeQdot(bodies, vToqdot, v, nq)
+qdot = zeros(nq, 1) * vToqdot{2}(1);
+for i = 2 : length(bodies)
+  body = bodies(i);
+  qdot(body.position_num) = vToqdot{i} * v(body.velocity_num);
 end
 end
 

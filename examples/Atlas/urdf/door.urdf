@@ -231,7 +231,7 @@
     <parent link="Left_Jamb" />
     <child link="Right_Jamb" />
     <origin xyz="0 0 1.029495" />
-    <axis xyz="0 0 0" />
+    <axis xyz="1 0 0" />
   </joint>
 
 <joint
@@ -257,7 +257,7 @@
     <parent link="Knob1" />
     <child link="Knob2" />
     <origin xyz="0.0381 0 0" />
-    <axis xyz="0 0 0" />
+    <axis xyz="1 0 0" />
   </joint>
 
 
