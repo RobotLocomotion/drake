@@ -28,6 +28,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   double *qd_ptr = &q_ptr[nq];
   Map<VectorXd> q(q_ptr, nq);
   Map<VectorXd> qd(qd_ptr, nv);
+  DrakeRobotState robot_state;
+  robot_state.t = 0;
+  robot_state.q = q;
+  robot_state.qd = qd;
   narg++;
 
   body_index = (int) mxGetScalar(prhs[narg++]) - 1;
@@ -53,7 +57,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   // assert(mxGetM(prhs[narg])==6); assert(mxGetN(prgs[narg])==1);
   // Map< Vector6d > Kd(mxGetPr(prhs[narg++]));
 
-  Vector6d body_vdot = bodyMotionPD(r, q, qd, body_index, body_pose_des, body_v_des, body_vdot_des, Kp, Kd);
+  Vector6d body_vdot = bodyMotionPD(r, robot_state, body_index, body_pose_des, body_v_des, body_vdot_des, Kp, Kd);
   
   plhs[0] = eigenToMatlab(body_vdot);
 }

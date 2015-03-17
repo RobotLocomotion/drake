@@ -4,6 +4,9 @@ classdef Walking < atlasParams.Base
       typecheck(r, 'Atlas');
       obj = obj@atlasParams.Base(r);
       obj.whole_body.w_qdd = zeros(r.getNumVelocities(), 1);
+      if (r.getNumVelocities() ~= r.getNumPositions())
+        error('this code calls findPositionIndices, which is no longer equivalent to findVelocityIndices');
+      end
       obj.whole_body.w_qdd(findPositionIndices(r, 'arm')) = .0001;
       obj.whole_body.w_qdd(findPositionIndices(r, 'back')) = .0001;
       obj.whole_body.w_qdd(r.findPositionIndices('back_bkx')) = 0.1;
