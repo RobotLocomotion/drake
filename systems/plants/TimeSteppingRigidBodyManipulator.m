@@ -183,13 +183,12 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       if (nargout>1)
         [obj,z,Mqdn,wqdn,dz,dMqdn,dwqdn] = solveLCP(obj,t,x,u);
       else
-        tic; 
-        [obj,z,Mqdn,wqdn] = solveLCP(obj,t,x,u);
-        timeMATLAB = toc;
-        tic;
-        [z_mex,Mqdn_mex,wqdn_mex] = solveLCP_mex(obj,t,x,u);
-        timeMEX = toc;
-        %speedup=timeMATLAB/timeMEX
+        if (obj.manip.use_new_kinsol && obj.manip.mex_model_ptr~=0)
+          [obj,z,Mqdn,wqdn] = solveLCP(obj,t,x,u);
+          [z, Mqdn, wqdn] = solveLCP_mex(obj,t,x,u);
+        else
+          [obj,z,Mqdn,wqdn] = solveLCP(obj,t,x,u);
+        end
       end
 
       num_q = obj.manip.num_positions;

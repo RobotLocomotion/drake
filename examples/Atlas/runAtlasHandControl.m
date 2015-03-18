@@ -23,7 +23,7 @@ warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits')
 
 options.floating = true;
 options.dt = 0.002;
-options.use_new_kinsol = true;
+options.use_new_kinsol = false;
 options.hands = 'robotiq_weight_only';
 r = Atlas('urdf/atlas_minimal_contact.urdf',options);
 options.hands = 'robotiq';
@@ -231,10 +231,7 @@ if visualize
 end
 x0 = xstar_hands;
 x0(3) = 1.0; % drop it a bit
-profile on;
 traj = simulate(sys,[0 2],x0);
-profile off;
-profile viewer;
 if visualize
   % This doesn't see hand movements. Why?
   playback(v,traj,struct('slider',true));

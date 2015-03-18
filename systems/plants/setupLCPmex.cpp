@@ -127,7 +127,14 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   manipulatorDynamics(model, q, v, H, C, B);
   auto phiP = model->positionConstraints<double>(1);
   model->jointLimitConstraints(q, phiL, JL);
+  MatrixXd Hinv = H.inverse();
+  const int nP = phiP.value().size();
+  
+  plhs[2] = mxCreateDoubleMatrix(nq, 1, mxREAL);
+  Map<VectorXd> wqdn(mxGetPr(plhs[2]), nq);
+  wqdn = v + h*Hinv*(B*u - C);
 
+  //use forward euler step in joint space as
   //initial guess for active constraints
   vector<bool> possible_contact;
   vector<bool> possible_jointlimit;
@@ -138,8 +145,6 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   //continue from here if our inactive guess fails
     const int nC = getNumTrue(possible_contact);
     const int nL = getNumTrue(possible_jointlimit);
-    const int nP = phiP.value().size();
-
     const int LCP_size = nL+nP+(mC+2)*nC;
     
     vector<int> possible_contact_indices;
@@ -158,24 +163,35 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
       D_possible.block(nC*i, 0, nC, nq) = D_i_possible;
     }
 
-    MatrixXd Hinv = H.inverse();
+
     MatrixXd J(LCP_size, nq);
     J << JL_possible, phiP.gradient().value(), n_possible, D_possible, MatrixXd::Zero(nC, nq);
 
     plhs[0] = mxCreateDoubleMatrix(LCP_size, 1, mxREAL);
     plhs[1] = mxCreateDoubleMatrix(nq, LCP_size, mxREAL);
-    plhs[2] = mxCreateDoubleMatrix(nq, 1, mxREAL);
 
     Map<VectorXd> z(mxGetPr(plhs[0]), LCP_size);
     Map<MatrixXd> Mqdn(mxGetPr(plhs[1]), nq, LCP_size);
-    Map<VectorXd> wqdn(mxGetPr(plhs[2]), nq);
-
     Mqdn = Hinv*J.transpose();
-    wqdn = v + h*Hinv*(B*u - C);
+    
+    //solve LCP problem 
+    //TODO: call fastQP first
+    //TODO: call path from C++ (currently only 32-bit C libraries available)
+    mxArray* mxM = mxCreateDoubleMatrix(LCP_size, LCP_size, mxREAL);
+    mxArray* mxw = mxCreateDoubleMatrix(LCP_size, 1, mxREAL);
+    mxArray* mxlb = mxCreateDoubleMatrix(LCP_size, 1, mxREAL);
+    mxArray* mxub = mxCreateDoubleMatrix(LCP_size, 1, mxREAL);  
+    Map<VectorXd> lb(mxGetPr(mxlb), LCP_size);
+    Map<VectorXd> ub(mxGetPr(mxub), LCP_size);
+    lb << VectorXd::Zero(nL),
+          -1e20*VectorXd::Ones(nP),
+          VectorXd::Zero(nC+mC*nC+nC);
+    ub = 1e20*VectorXd::Ones(LCP_size);
+    
+    Map<MatrixXd> M(mxGetPr(mxM),LCP_size, LCP_size);
+    Map<VectorXd> w(mxGetPr(mxw), LCP_size);
 
-    MatrixXd M(LCP_size, LCP_size);
-    VectorXd w(LCP_size);
-
+    //build LCP matrix
     M << h*JL_possible*Mqdn,
          h*phiP.gradient().value()*Mqdn,
          h*n_possible*Mqdn,
@@ -192,42 +208,27 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
       M.block(nL+nP+nC+mC*nC, nL+nP, nC, nC) = mu*MatrixXd::Identity(nC, nC);
     }
 
+    //build LCP vector
     w << phiL_possible + h*JL_possible*wqdn,
          phiP.value() + h *phiP.gradient().value()*wqdn,
          phiC_possible + h*n_possible*wqdn,
          D_possible*wqdn,
          VectorXd::Zero(nC);
-    
-    //solve LCP problem 
-    //TODO: call fastQP first
-    //TODO: call path from C++ (currently only 32-bit C libraries available)
-    //pathLCP needs its own copies to avoid segfaults
-    mxArray* mxM = mxCreateDoubleMatrix(LCP_size, LCP_size, mxREAL);
-    memcpy(mxGetPr(mxM),M.data(), sizeof(double)*LCP_size*LCP_size);
-    mxArray* mxw = mxCreateDoubleMatrix(LCP_size, 1, mxREAL);
-    memcpy(mxGetPr(mxw),w.data(), sizeof(double)*LCP_size);
-    mxArray* mxlb = mxCreateDoubleMatrix(LCP_size, 1, mxREAL);
-    mxArray* mxub = mxCreateDoubleMatrix(LCP_size, 1, mxREAL);  
-    Map<VectorXd> lb(mxGetPr(mxlb), LCP_size);
-    Map<VectorXd> ub(mxGetPr(mxub), LCP_size);
-    lb << VectorXd::Zero(nL),
-          -1e20*VectorXd::Ones(nP),
-          VectorXd::Zero(nC+mC*nC+nC);
-    ub = 1e20*VectorXd::Ones(LCP_size);
 
     mxArray *lhs[1];
     mxArray *rhs[] = {mxM, mxw, mxlb, mxub};
     
+    //call solver
     mexCallMATLAB(1, lhs, 4, rhs, "pathlcp");
     Map<VectorXd> z_path(mxGetPr(lhs[0]), LCP_size);
     z = z_path;
 
+    //clean up
     mxDestroyArray(lhs[0]);
     mxDestroyArray(mxlb);
     mxDestroyArray(mxub);
     mxDestroyArray(mxM);
     mxDestroyArray(mxw);
-
     
     VectorXd qdn = Mqdn*z + wqdn;
 
@@ -245,20 +246,24 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 
     //check nonpenetration assumptions
     if (penetrations > 0) {
-      //revise and restart, if necessary
+      //revise joint limit active set
       for (int x = 0; x < impossible_limit_indices.size(); x++) {
         if (penetrating_joints[x]) {
           possible_jointlimit[impossible_limit_indices[x]] = true;
         }
       }
+
+      //revise contact constraint active set
       for (int x = 0; x < impossible_contact_indices.size(); x++) {
         if (penetrating_contacts[x]) {
           possible_contact[impossible_contact_indices[x]] = true;
         }
       }
+      //form new LCP
       continue;
     }
 
+    //our initial guess was correct. we're done
     break;
   }
 
