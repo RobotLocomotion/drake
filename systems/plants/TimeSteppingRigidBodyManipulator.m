@@ -14,7 +14,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     twoD=false
     position_control=false;
     LCP_cache;
-    enable_fastqp; % whether we use the active set LCPmatla
+    enable_fastqp; % whether we use the active set LCP
     lcmgl_contact_forces_scale = 0;  % <=0 implies no lcmgl
     z_inactive_guess_tol = .01;
   end
@@ -319,14 +319,6 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         
         while (1) 
         
-        if(nContactPairs > 0)
-          if (nargout>4)
-            [phiC,normal,d,xA,xB,idxA,idxB,mu,n,D,dn,dD] = obj.manip.contactConstraints(kinsol,true);
-          else
-            [phiC,normal,d,xA,xB,idxA,idxB,mu,n,D] = obj.manip.contactConstraints(kinsol,true);
-          end  
-        end    
-        
         if (nL > 0)
           if (obj.position_control)
             phiL = q(pos_control_index) - u;
@@ -344,7 +336,6 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
               possible_limit_indices = (phiL + h*JL*qd) < obj.z_inactive_guess_tol;
             end
             nL = sum(possible_limit_indices);
-            
             
             % phi_check and J_check are the "impossible indices"
             % which get checked at the end of the method (to make sure
@@ -367,7 +358,13 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
           JL = zeros(0,num_q^2);
         end
         
-        if (nContactPairs > 0)                    
+        if (nContactPairs > 0)                   
+          if (nargout>4)
+            [phiC,normal,d,xA,xB,idxA,idxB,mu,n,D,dn,dD] = obj.manip.contactConstraints(kinsol,true);
+          else
+            [phiC,normal,d,xA,xB,idxA,idxB,mu,n,D] = obj.manip.contactConstraints(kinsol,true);
+          end  
+
           if isempty(possible_contact_indices)
             possible_contact_indices = (phiC+h*n*qd) < obj.z_inactive_guess_tol;
           end
@@ -631,8 +628,6 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
           end
         end
         
-        %QP_FAILED = true; %REMOVE THIS: TESTING PATH ONLY
-        
         if QP_FAILED 
             % then the active set has changed, call pathlcp
             %path_tic = tic;
@@ -680,7 +675,6 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
           end
           lcmgl.switchBuffers();
         end
-        
 
         obj.LCP_cache.data.z = z;
         obj.LCP_cache.data.Mqdn = Mqdn;
