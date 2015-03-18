@@ -128,16 +128,36 @@ if ~isempty(supp)
   nc = sum([supp.num_contact_pts]);
   Dbar = [];
   for j=1:length(supp)
-    obj.robot.warning_manager.warnOnce('Drake:ContactPointAssumptionHack', 'hacked assumption of the number of contact points');
-    if supp(j).num_contact_pts == 4
-      [~,~,JB] = contactConstraintsBV(r,kinsol,false,struct('terrain_only',~obj.use_bullet,...
-        'body_idx',[1,supp(j).body_id]));
-    elseif supp(j).num_contact_pts == 2
-      [~,~,JB] = contactConstraintsBV(r,kinsol,false,struct('terrain_only',~obj.use_bullet,...
-        'body_idx',[1,supp(j).body_id], 'collision_groups', {{'toe'}}));
-    else
-      error('should be 2 or 4 contact pts');
+
+    % The new plan and control tools all work with contact points directly,
+    % and the c++ functions support this, but contactConstraintsBV.m expects
+    % only collision group names, so we have to back out the names of the
+    % groups corresponding to the points we're using. This is obviously rather
+    % slow, but it's just for the Matlab-only controller. -rdeits
+    body = obj.robot.getBody(supp(j).body_id);
+    collision_groups = body.collision_geometry_group_names;
+    group_mask = false(size(collision_groups));
+    for k = 1:length(collision_groups)
+      group_pts = body.getTerrainContactPoints(collision_groups{k});
+      any_in_group = false;
+      all_in_group = true;
+      for l = 1:size(group_pts, 2)
+        if any(all(abs(bsxfun(@minus, group_pts(:,l), supp(j).contact_pts)) < 1e-3, 1))
+          any_in_group = true;
+        else
+          all_in_group = false;
+        end
+      end
+      if any_in_group && all_in_group
+        group_mask(k) = true;
+      elseif any_in_group && ~all_in_group
+        error('I got some contact points belonging to collision group: %s, but not all of the points in that group. That will work in the c++ controller, but not in the matlab-only controller');
+      end
     end
+    active_collision_groups = collision_groups(group_mask);
+
+    [~,~,JB] = contactConstraintsBV(r,kinsol,false,struct('terrain_only',~obj.use_bullet,...
+      'body_idx',[1,supp(j).body_id], 'collision_groups', {active_collision_groups}));
     Dbar = [Dbar, vertcat(JB{:})']; % because contact constraints seems to ignore the collision_groups option
   end
 
