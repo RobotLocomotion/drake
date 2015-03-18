@@ -223,12 +223,10 @@ namespace DrakeCollision
       auto bt_obj_no_margin_iter = bullet_world_no_margin.bt_collision_objects.find(id);
       if (bt_obj_iter != bullet_world.bt_collision_objects.end()) {
         bullet_world.bt_collision_objects.at(id)->setWorldTransform(btT);
-        bullet_world.bt_collision_world->updateAabbs();
       }
 
       if (bt_obj_no_margin_iter != bullet_world_no_margin.bt_collision_objects.end()) {
         bullet_world_no_margin.bt_collision_objects.at(id)->setWorldTransform(btT);
-        bullet_world_no_margin.bt_collision_world->updateAabbs();
       }
     }
     return element_exists;

@@ -2,7 +2,7 @@
 #define __DrakeCollisionModel_H__
 
 #include <memory>
-#include <map>
+#include <unordered_map>
 
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
@@ -51,7 +51,7 @@ namespace DrakeCollision
       virtual bool collisionRaycast(const Eigen::Matrix3Xd &origin, const Eigen::Matrix3Xd &ray_endpoint, bool use_margins, Eigen::VectorXd &distances) { return false; };
 
     protected:
-      std::map< ElementId, std::unique_ptr<Element> >  elements;
+      std::unordered_map< ElementId, std::unique_ptr<Element> >  elements;
 
     private:
       Model(const Model&) {}
