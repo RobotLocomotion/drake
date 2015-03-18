@@ -1,4 +1,4 @@
-classdef QPControllerPlan
+classdef QPControllerPlan < handle
   properties
     % The support logic maps make it possible for the planner
     % to specify the support state used by the controller, based
