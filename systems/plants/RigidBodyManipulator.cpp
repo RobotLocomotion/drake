@@ -1210,9 +1210,20 @@ void RigidBodyManipulator::doKinematicsNew(const MatrixBase<DerivedQ>& q, const 
   for (int i = 0; i < num_positions; i++) cached_q[i] = q[i];
   if (v.rows() > 0) for (int i = 0; i < num_velocities; i++) cached_v[i] = v[i];
 }
+
 template <typename DerivedA, typename DerivedB>
 void RigidBodyManipulator::getCMM(MatrixBase<DerivedA> const & q, MatrixBase<DerivedA> const & qd, MatrixBase<DerivedB> &A, MatrixBase<DerivedB> &Adot)
 {
+  if (use_new_kinsol) {
+    typedef typename DerivedB::Scalar Scalar;
+    GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> cmm = centroidalMomentumMatrix<Scalar>(1);
+    A = cmm.value();
+    VectorXd Adot_vectorized = cmm.gradient().value() * qd;
+    Map<typename MatrixBase<DerivedA>::PlainObject> Adot_map(Adot_vectorized.data(), Adot.rows(), Adot.cols());
+    Adot = Adot_map;
+    return;
+  }
+
   // returns the centroidal momentum matrix as described in Orin & Goswami 2008
   //
   // h = A*qd, where h(4:6) is the total linear momentum and h(1:3) is the
@@ -1275,6 +1286,9 @@ void RigidBodyManipulator::getCMM(MatrixBase<DerivedA> const & q, MatrixBase<Der
 }
 
 void RigidBodyManipulator::updateCompositeRigidBodyInertias(int gradient_order) {
+  if (!use_new_kinsol) {
+    throw std::runtime_error("method requires new kinsol format");
+  }
   if (gradient_order > 1) {
     throw std::runtime_error("only first order gradients are available");
   }
@@ -1556,6 +1570,12 @@ GradientVar<Scalar, SPACE_DIMENSION, 1> RigidBodyManipulator::centerOfMassJacobi
 template <typename Derived>
 void RigidBodyManipulator::getCOM(MatrixBase<Derived> &com, const std::set<int> &robotnum)
 {
+  if (use_new_kinsol) {
+    typedef typename Derived::Scalar Scalar;
+    com = centerOfMass<Scalar>(0, robotnum).value();
+    return;
+  }
+
   double m = 0.0;
   double bm;
   com = Vector3d::Zero();
@@ -1577,6 +1597,12 @@ void RigidBodyManipulator::getCOM(MatrixBase<Derived> &com, const std::set<int> 
 template <typename Derived>
 void RigidBodyManipulator::getCOMJac(MatrixBase<Derived> &Jcom, const std::set<int> &robotnum)
 {
+  if (use_new_kinsol) {
+    typedef typename Derived::Scalar Scalar;
+    Jcom = centerOfMass<Scalar>(0, robotnum).gradient().value();
+    return;
+  }
+
   double m = 0.0;
   double bm;
   Jcom = MatrixXd::Zero(3,num_positions);
@@ -1598,6 +1624,14 @@ void RigidBodyManipulator::getCOMJac(MatrixBase<Derived> &Jcom, const std::set<i
 template <typename Derived>
 void RigidBodyManipulator::getCOMJacDot(MatrixBase<Derived> &Jcomdot, const std::set<int> &robotnum)
 {
+  if (use_new_kinsol) {
+    typedef typename Derived::Scalar Scalar;
+    VectorXd Jcomdot_vectorized = centerOfMass<Scalar>(0, robotnum).gradient().gradient().value() * cached_v;
+    Map<typename MatrixBase<Derived>::PlainObject> Jcomdot_map(Jcomdot_vectorized.data(), Jcomdot.rows(), Jcomdot.cols());
+    Jcomdot = Jcomdot_map;
+    return;
+  }
+
   double m = 0.0;
   double bm;
   Jcomdot = MatrixXd::Zero(3,num_positions);
@@ -1810,6 +1844,12 @@ void RigidBodyManipulator::findKinematicPath(KinematicPath& path, int start_body
 template <typename DerivedA, typename DerivedB>
 void RigidBodyManipulator::forwardKin(const int body_or_frame_id, const MatrixBase<DerivedA>& pts, const int rotation_type, MatrixBase<DerivedB> &x)
 {
+  if (use_new_kinsol) {
+    Matrix3Xd pts_block = pts.block(0, 0, 3, pts.cols());
+    x = forwardKinNew(pts_block, body_or_frame_id, 0, rotation_type, 0).value();
+    return;
+  }
+
   int n_pts = static_cast<int>(pts.cols()); Matrix4d Tframe;
   int body_ind = parseBodyOrFrameID(body_or_frame_id, &Tframe);
 
@@ -1873,6 +1913,20 @@ void RigidBodyManipulator::forwardKin(const int body_or_frame_id, const MatrixBa
 template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD>
 void RigidBodyManipulator::bodyKin(const int body_or_frame_id, const MatrixBase<DerivedA>& pts, MatrixBase<DerivedB> &x, MatrixBase<DerivedC> *J, MatrixBase<DerivedD> *P)
 {
+  if (use_new_kinsol) {
+    int gradient_order = J != nullptr ? 1 : 0;
+    Matrix3Xd pts_block = pts.block(0, 0, 3, pts.cols());
+    auto x_gradientvar = forwardKinNew(pts_block, 0, body_or_frame_id, 0, gradient_order);
+    x = x_gradientvar.value();
+    if (gradient_order > 0) {
+      *J = x_gradientvar.gradient().value();
+    }
+    if (P != nullptr) {
+      *P = forwardKinPositionGradient<typename DerivedD::Scalar>(x.cols(), 0, body_or_frame_id, 0).value();
+    }
+    return;
+  }
+
   Matrix4d Tframe;
   int body_ind = parseBodyOrFrameID(body_or_frame_id, &Tframe);
 
@@ -2081,6 +2135,9 @@ GradientVar<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::geometricJacobianDotTim
 template <typename Scalar>
 GradientVar<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::relativeTwist(int base_or_frame_ind, int body_or_frame_ind, int expressed_in_body_or_frame_ind, int gradient_order)
 {
+  if (!use_new_kinsol)
+    throw std::runtime_error("method requires new kinsol format");
+
   GradientVar<Scalar, TWIST_SIZE, 1> ret(TWIST_SIZE, 1, num_positions, gradient_order);
 
   int base_ind = parseBodyOrFrameID(base_or_frame_ind);
@@ -2103,6 +2160,9 @@ template <typename Scalar>
 GradientVar<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::transformSpatialAcceleration(
     const GradientVar<Scalar, TWIST_SIZE, 1>& spatial_acceleration, int base_ind, int body_ind, int old_expressed_in_body_or_frame_ind, int new_expressed_in_body_or_frame_ind)
 {
+  if (!use_new_kinsol)
+    throw std::runtime_error("method requires new kinsol format");
+
   if (old_expressed_in_body_or_frame_ind == new_expressed_in_body_or_frame_ind) {
     return spatial_acceleration;
   }
@@ -2276,6 +2336,16 @@ void RigidBodyManipulator::forwardJac(const int body_or_frame_id, const MatrixBa
 template <typename DerivedA, typename DerivedB>
 void RigidBodyManipulator::forwardJacDot(const int body_or_frame_id, const MatrixBase<DerivedA> &pts, const int rotation_type, MatrixBase<DerivedB>& Jdot)
 {
+  if (use_new_kinsol) {
+    Matrix3Xd pts_block = pts.block(0, 0, 3, pts.cols());
+    auto x_gradientvar = forwardKinNew(pts_block, body_or_frame_id, 0, rotation_type, 2);
+    auto& J = x_gradientvar.gradient();
+    VectorXd Jdot_vectorized = J.gradient().value() * cached_v;
+    Map<typename MatrixBase<DerivedB>::PlainObject> Jdot_map(Jdot_vectorized.data(), J.value().rows(), J.value().cols());
+    Jdot = Jdot_map;
+    return;
+  }
+
   int n_pts = static_cast<int>(pts.cols()); Matrix4d Tframe;
   int body_ind = parseBodyOrFrameID(body_or_frame_id, &Tframe);
 
@@ -2348,6 +2418,10 @@ void RigidBodyManipulator::forwarddJac(const int body_or_frame_id, const MatrixB
 template<typename Scalar>
 GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::massMatrix(int gradient_order)
 {
+  if (!use_new_kinsol) {
+    throw std::runtime_error("method requires new kinsol format");
+  }
+
   if (gradient_order > 1) {
     throw std::runtime_error("only first order gradients are available");
   }
@@ -2422,6 +2496,10 @@ GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(
     std::map<int, std::unique_ptr<GradientVar<Scalar, TWIST_SIZE, 1> > >& f_ext,
     GradientVar<Scalar, Eigen::Dynamic, 1>* vd, int gradient_order)
 {
+  if (!use_new_kinsol) {
+    throw std::runtime_error("method requires new kinsol format");
+  }
+
   if (gradient_order > 1) {
     throw std::runtime_error("only first order gradients are available");
   }
@@ -2552,6 +2630,9 @@ GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(
 template <typename DerivedPoints>
 GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, DerivedPoints::ColsAtCompileTime> RigidBodyManipulator::forwardKinNew(const MatrixBase<DerivedPoints>& points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type, int gradient_order)
 {
+  if (!use_new_kinsol) {
+    throw std::runtime_error("method requires new kinsol format");
+  }
   if (gradient_order > 2) {
     throw std::runtime_error("only first and second order gradients are available");
   }
@@ -2732,6 +2813,9 @@ GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwar
 template <typename Scalar>
 GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardKinPositionGradient(int npoints, int current_body_or_frame_ind, int new_body_or_frame_ind, int gradient_order)
 {
+  if (!use_new_kinsol) {
+    throw std::runtime_error("method requires new kinsol format");
+  }
   if (gradient_order > 1)
     throw std::runtime_error("Only first order gradients supported");
 
@@ -2849,6 +2933,37 @@ GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, 1> RigidBodyManipula
 template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD, typename DerivedE, typename DerivedF, typename DerivedG>
 void RigidBodyManipulator::HandC(MatrixBase<DerivedG> const & q, MatrixBase<DerivedG> const & qd, MatrixBase<DerivedA> * const f_ext, MatrixBase<DerivedB> &H, MatrixBase<DerivedC> &C, MatrixBase<DerivedD> *dH, MatrixBase<DerivedE> *dC, MatrixBase<DerivedF> * const df_ext)
 {
+  if (use_new_kinsol) {
+    typedef typename DerivedB::Scalar Scalar;
+    int H_gradient_order = dH != nullptr ? 1 : 0;
+    auto H_gradient_var = massMatrix<Scalar>(H_gradient_order);
+    H = H_gradient_var.value();
+    if (H_gradient_order > 0) {
+      *dH = H_gradient_var.gradient().value();
+    }
+
+    int C_gradient_order = dC != nullptr ? 1 : 0;
+    map<int, unique_ptr<GradientVar<double, TWIST_SIZE, 1> > > f_ext_map;
+    int nq = num_positions;
+    int nv = num_velocities;
+    if (f_ext != nullptr) {
+      for (int i = 0; i < f_ext->cols(); i++) {
+        if ((f_ext->col(i).array() != 0.0).any()) {
+          f_ext_map[i] = unique_ptr< GradientVar<double, TWIST_SIZE, 1> >(new GradientVar<double, TWIST_SIZE, 1>(TWIST_SIZE, 1, nq + nv, C_gradient_order));
+          f_ext_map[i]->value() = f_ext->col(i);
+          if (C_gradient_order > 0) {
+            f_ext_map[i]->gradient().value() = df_ext->template middleRows<TWIST_SIZE>(i * TWIST_SIZE);
+          }
+        }
+      }
+    }
+    auto C_gradientvar = inverseDynamics<Scalar>(f_ext_map, nullptr, C_gradient_order);
+    C = C_gradientvar.value();
+    if (C_gradient_order > 0) {
+      *dC = C_gradientvar.gradient().value();
+    }
+  }
+
   H = MatrixXd::Zero(num_positions,num_positions);
   if (dH) *dH = MatrixXd::Zero(num_positions*num_positions,num_positions);
   // C gets overwritten completely in the algorithm below
