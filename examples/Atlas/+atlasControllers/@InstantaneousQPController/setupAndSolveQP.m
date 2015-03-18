@@ -68,8 +68,19 @@ s1 = zmp_data.s1;
 x0 = zmp_data.x0;
 y0 = zmp_data.y0;
 u0 = zmp_data.u0;
+
+% get the whole-body weights
 w_qdd = params.whole_body.w_qdd;
 
+% Apply PD overrides for particular joints
+for j = 1:length(qp_input.joint_pd_override)
+  override = qp_input.joint_pd_override(j);
+  ind = override.position_ind;
+  err_q = override.qi_des - q(ind);
+  err_qd = override.qdi_des - qd(ind);
+  qddot_des(ind) = override.kp * err_q + override.kd * err_qd;
+  w_qdd(ind) = override.weight;
+end
 
 nq = r.getNumPositions();                                           
 kinsol = doKinematics(r,q,false,true,qd);
@@ -117,8 +128,16 @@ if ~isempty(supp)
   nc = sum([supp.num_contact_pts]);
   Dbar = [];
   for j=1:length(supp)
-    [~,~,JB] = contactConstraintsBV(r,kinsol,false,struct('terrain_only',~obj.use_bullet,...
-      'body_idx',[1,supp(j).body_id]));
+    obj.robot.warning_manager.warnOnce('Drake:ContactPointAssumptionHack', 'hacked assumption of the number of contact points');
+    if supp(j).num_contact_pts == 4
+      [~,~,JB] = contactConstraintsBV(r,kinsol,false,struct('terrain_only',~obj.use_bullet,...
+        'body_idx',[1,supp(j).body_id]));
+    elseif supp(j).num_contact_pts == 2
+      [~,~,JB] = contactConstraintsBV(r,kinsol,false,struct('terrain_only',~obj.use_bullet,...
+        'body_idx',[1,supp(j).body_id], 'collision_groups', {{'toe'}}));
+    else
+      error('should be 2 or 4 contact pts');
+    end
     Dbar = [Dbar, vertcat(JB{:})']; % because contact constraints seems to ignore the collision_groups option
   end
 
