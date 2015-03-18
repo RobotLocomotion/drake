@@ -1599,7 +1599,7 @@ void RigidBodyManipulator::getCOMJac(MatrixBase<Derived> &Jcom, const std::set<i
 {
   if (use_new_kinsol) {
     typedef typename Derived::Scalar Scalar;
-    Jcom = centerOfMass<Scalar>(0, robotnum).gradient().value();
+    Jcom = centerOfMass<Scalar>(1, robotnum).gradient().value();
     return;
   }
 
@@ -1626,7 +1626,7 @@ void RigidBodyManipulator::getCOMJacDot(MatrixBase<Derived> &Jcomdot, const std:
 {
   if (use_new_kinsol) {
     typedef typename Derived::Scalar Scalar;
-    VectorXd Jcomdot_vectorized = centerOfMass<Scalar>(0, robotnum).gradient().gradient().value() * cached_v;
+    VectorXd Jcomdot_vectorized = centerOfMass<Scalar>(2, robotnum).gradient().gradient().value() * cached_v;
     Map<typename MatrixBase<Derived>::PlainObject> Jcomdot_map(Jcomdot_vectorized.data(), Jcomdot.rows(), Jcomdot.cols());
     Jcomdot = Jcomdot_map;
     return;
@@ -2936,10 +2936,10 @@ void RigidBodyManipulator::HandC(MatrixBase<DerivedG> const & q, MatrixBase<Deri
   if (use_new_kinsol) {
     typedef typename DerivedB::Scalar Scalar;
     int H_gradient_order = dH != nullptr ? 1 : 0;
-    auto H_gradient_var = massMatrix<Scalar>(H_gradient_order);
-    H = H_gradient_var.value();
+    auto H_gradientvar = massMatrix<Scalar>(H_gradient_order);
+    H = H_gradientvar.value();
     if (H_gradient_order > 0) {
-      *dH = H_gradient_var.gradient().value();
+      *dH = H_gradientvar.gradient().value();
     }
 
     int C_gradient_order = dC != nullptr ? 1 : 0;
