@@ -152,8 +152,8 @@ classdef QPLocomotionPlan < QPControllerPlan
           break
         end
       end
-      disp('plan shift: ')
-      obj.plan_shift_data.plan_shift
+      %disp('plan shift: ')
+      %obj.plan_shift_data.plan_shift
     end
 
     function qp_input = applyPlanShift(obj, qp_input)
