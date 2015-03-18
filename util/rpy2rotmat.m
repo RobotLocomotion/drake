@@ -1,4 +1,4 @@
-function [rotMat,drotmat] = rpy2rotmat(rpy)
+function [rotMat,drotmat,ddrotmat] = rpy2rotmat(rpy)
 % equivalent to rotz(rpy(3))*roty(rpy(2))*rotx(rpy(1))
 
 cos_r = cos(rpy(1));
@@ -99,4 +99,135 @@ if(nargout>1)
   drotmat_val(21) = -sin_p*cos_r;
   drotmat = sparse(drotmat_row,drotmat_col,drotmat_val,9,3);
 end
+if(nargout>2)
+  rr_idx = 1;
+  rp_idx = 2;
+  ry_idx = 3;
+  pr_idx = 4;
+  pp_idx = 5;
+  py_idx = 6;
+  yr_idx = 7;
+  yp_idx = 8;
+  yy_idx = 9;
+  
+  ddR_row = zeros(53,1);
+  ddR_col = zeros(53,1);
+  ddR_val = zeros(53,1);
+  ddR_nnz = 1;
+  
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(1,yy_idx,-cos_y*cos_p,ddR_row,ddR_col,ddR_val,ddR_nnz);
+  
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(1,yp_idx,sin_y*sin_p,ddR_row,ddR_col,ddR_val,ddR_nnz);
+  
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(1,py_idx,sin_y*sin_p,ddR_row,ddR_col,ddR_val,ddR_nnz);
+  
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(1,pp_idx,-cos_y*cos_p,ddR_row,ddR_col,ddR_val,ddR_nnz);
+  
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(2,yy_idx,-sin_y*cos_p,ddR_row,ddR_col,ddR_val,ddR_nnz);
+  
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(2,yp_idx,-cos_y*sin_p,ddR_row,ddR_col,ddR_val,ddR_nnz);
+
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(2,py_idx,-cos_y*sin_p,ddR_row,ddR_col,ddR_val,ddR_nnz);
+
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(2,pp_idx,-sin_y*cos_p,ddR_row,ddR_col,ddR_val,ddR_nnz);
+  
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(3,pp_idx,sin_p,ddR_row,ddR_col,ddR_val,ddR_nnz);
+
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(4,rr_idx,-cos_y*sin_p*sin_r+sin_y*cos_r,ddR_row,ddR_col,ddR_val,ddR_nnz);
+
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(4,rp_idx,cos_y*cos_p*cos_r,ddR_row,ddR_col,ddR_val,ddR_nnz);
+  
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(4,ry_idx,-sin_y*sin_p*cos_r+cos_y*sin_r,ddR_row,ddR_col,ddR_val,ddR_nnz);
+  
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(4,pr_idx,cos_y*cos_p*cos_r,ddR_row,ddR_col,ddR_val,ddR_nnz);
+  
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(4,pp_idx,-cos_y*sin_p*sin_r,ddR_row,ddR_col,ddR_val,ddR_nnz);
+  
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(4,py_idx,-sin_y*cos_p*sin_r,ddR_row,ddR_col,ddR_val,ddR_nnz);
+
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(4,yr_idx,-sin_y*sin_p*cos_r+cos_y*sin_r,ddR_row,ddR_col,ddR_val,ddR_nnz);  
+
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(4,yp_idx,-sin_y*cos_p*sin_r,ddR_row,ddR_col,ddR_val,ddR_nnz);  
+
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(4,yy_idx,-cos_y*sin_p*sin_r+sin_y*cos_r,ddR_row,ddR_col,ddR_val,ddR_nnz);
+  
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(5,rr_idx,-sin_y*sin_p*sin_r-cos_y*cos_r,ddR_row,ddR_col,ddR_val,ddR_nnz);
+
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(5,rp_idx,sin_y*cos_p*cos_r,ddR_row,ddR_col,ddR_val,ddR_nnz);  
+
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(5,ry_idx,cos_y*sin_p*cos_r+sin_y*sin_r,ddR_row,ddR_col,ddR_val,ddR_nnz);
+  
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(5,pr_idx,sin_y*cos_p*cos_r,ddR_row,ddR_col,ddR_val,ddR_nnz);
+ 
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(5,pp_idx,-sin_y*sin_p*sin_r,ddR_row,ddR_col,ddR_val,ddR_nnz); 
+
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(5,py_idx,cos_y*cos_p*sin_r,ddR_row,ddR_col,ddR_val,ddR_nnz);  
+
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(5,yr_idx,cos_y*sin_p*cos_r+sin_y*sin_r,ddR_row,ddR_col,ddR_val,ddR_nnz);
+  
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(5,yp_idx,cos_y*cos_p*sin_r,ddR_row,ddR_col,ddR_val,ddR_nnz);  
+  
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(5,yy_idx,-sin_y*sin_p*sin_r-cos_y*cos_r,ddR_row,ddR_col,ddR_val,ddR_nnz);
+  
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(6,rr_idx,-cos_p*sin_r,ddR_row,ddR_col,ddR_val,ddR_nnz);
+  
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(6,rp_idx,-sin_p*cos_r,ddR_row,ddR_col,ddR_val,ddR_nnz);
+  
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(6,pr_idx,-sin_p*cos_r,ddR_row,ddR_col,ddR_val,ddR_nnz);
+  
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(6,pp_idx,-cos_p*sin_r,ddR_row,ddR_col,ddR_val,ddR_nnz);
+  
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(7,rr_idx,-cos_y*sin_p*cos_r-sin_y*sin_r,ddR_row,ddR_col,ddR_val,ddR_nnz);
+  
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(7,rp_idx,-cos_y*cos_p*sin_r,ddR_row,ddR_col,ddR_val,ddR_nnz);
+  
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(7,ry_idx,sin_y*sin_p*sin_r+cos_y*cos_r,ddR_row,ddR_col,ddR_val,ddR_nnz);
+  
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(7,pr_idx,-cos_y*cos_p*sin_r,ddR_row,ddR_col,ddR_val,ddR_nnz);
+  
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(7,pp_idx, -cos_y*sin_p*cos_r,ddR_row,ddR_col,ddR_val,ddR_nnz);
+  
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(7,py_idx, -sin_y*cos_p*cos_r,ddR_row,ddR_col,ddR_val,ddR_nnz);
+  
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(7,yr_idx,sin_y*sin_p*sin_r+cos_y*cos_r,ddR_row,ddR_col,ddR_val,ddR_nnz);
+  
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(7,yp_idx, -sin_y*cos_p*cos_r,ddR_row,ddR_col,ddR_val,ddR_nnz);
+  
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(7,yy_idx,-cos_y*sin_p*cos_r-sin_y*sin_r,ddR_row,ddR_col,ddR_val,ddR_nnz);
+  
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(8,rr_idx,-sin_y*sin_p*cos_r+cos_y*sin_r,ddR_row,ddR_col,ddR_val,ddR_nnz);
+  
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(8,rp_idx,-sin_y*cos_p*sin_r,ddR_row,ddR_col,ddR_val,ddR_nnz);
+  
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(8,ry_idx,-cos_y*sin_p*sin_r+sin_y*cos_r,ddR_row,ddR_col,ddR_val,ddR_nnz);
+  
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(8,pr_idx,-sin_y*cos_p*sin_r,ddR_row,ddR_col,ddR_val,ddR_nnz);
+  
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(8,pp_idx, -sin_y*sin_p*cos_r,ddR_row,ddR_col,ddR_val,ddR_nnz);
+  
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(8,py_idx,cos_y*cos_p*cos_r,ddR_row,ddR_col,ddR_val,ddR_nnz);
+  
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(8,yr_idx, -cos_y*sin_p*sin_r+sin_y*cos_r,ddR_row,ddR_col,ddR_val,ddR_nnz);
+  
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(8,yp_idx,cos_y*cos_p*cos_r,ddR_row,ddR_col,ddR_val,ddR_nnz);
+  
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(8,yy_idx,-sin_y*sin_p*cos_r+cos_y*sin_r,ddR_row,ddR_col,ddR_val,ddR_nnz);
+  
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(9,rr_idx, -cos_p*cos_r,ddR_row,ddR_col,ddR_val,ddR_nnz);
+  
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(9,rp_idx,sin_p*sin_r,ddR_row,ddR_col,ddR_val,ddR_nnz);
+  
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(9,pr_idx,sin_p*sin_r,ddR_row,ddR_col,ddR_val,ddR_nnz);
+  
+  [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(9,pp_idx,-cos_p*cos_r,ddR_row,ddR_col,ddR_val,ddR_nnz);
+  
+  ddrotmat = sparse(ddR_row(1:ddR_nnz-1),ddR_col(1:ddR_nnz-1),ddR_val(1:ddR_nnz-1),9,9);
+end
+end
+
+function [ddR_row,ddR_col,ddR_val,ddR_nnz] = addEntry_ddR(row,col,val,ddR_row,ddR_col,ddR_val,ddR_nnz)
+ddR_row(ddR_nnz) = row;
+ddR_col(ddR_nnz) = col;
+ddR_val(ddR_nnz) = val;
+ddR_nnz = ddR_nnz+1;
 end
