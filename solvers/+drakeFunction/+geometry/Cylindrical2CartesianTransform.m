@@ -38,25 +38,43 @@ classdef Cylindrical2CartesianTransform < drakeFunction.DrakeFunction
       obj.T_cylinder = [R_cylinder obj.cylinder_origin;0 0 0 1];
     end
     
-    function [x_cartesian,J] = eval(obj,x_cylinder)
+    function [x_cartesian,J,dJ] = eval(obj,x_cylinder)
       % Refer to drake/doc/doc_cartesian2cylindrical.pdf for the transformation
       % @retval x_cartesian = [x;y;z;roll;pitch;yaw];
       % @param x_cylinder =
       % [radius;theta;height;roll_tangent,pitch_tangent,yaw_tangent]
+      % @retval J  A 6 x 6 matrix, the Jacobian of x_cartesian w.r.t x_cylinder
+      % @retval dJ A 6 x 36 matrix, the second gradient of x_cartesian
+      % w.r.t x_cylinder, in the geval format
       radius = x_cylinder(1);
       theta = x_cylinder(2);
       height = x_cylinder(3);
-      x_pos_cartesian = obj.T_cylinder(1:3,1:3)*[radius*cos(theta);radius*sin(theta);height]+obj.T_cylinder(1:3,4);
-      dx_pos_cartesian = obj.T_cylinder(1:3,1:3)*[[cos(theta) radius*-sin(theta) 0;sin(theta) radius*cos(theta) 0;0 0 1] zeros(3,3)];
-      [R_tangent,dR_tangent] = rpy2rotmat(x_cylinder(4:6));
+      c_theta = cos(theta);
+      s_theta = sin(theta);
+      x_pos_cartesian = obj.T_cylinder(1:3,1:3)*[radius*c_theta;radius*s_theta;height]+obj.T_cylinder(1:3,4);
+      dx_pos_cartesian = obj.T_cylinder(1:3,1:3)*[[c_theta radius*-s_theta 0;s_theta radius*c_theta 0;0 0 1] zeros(3,3)];
+      ddx_idx = reshape(1:36,6,6);
+      ddx_pos_idx = reshape(ddx_idx(1:3,1:3),[],1);
+      ddx_rpy_idx = reshape(ddx_idx(4:6,4:6),[],1);
+      ddx_pos_cartesian = zeros(3,36);
+      ddx_pos_cartesian(:,ddx_pos_idx) = obj.T_cylinder(1:3,1:3)*[[0;0;0] [-s_theta;c_theta;0] zeros(3,1) [-s_theta;c_theta;0] [-radius*c_theta;-radius*s_theta;0] zeros(3,1) zeros(3,3)];
+      [R_tangent,dR_tangent,ddR_tangent_ddx_rpy_cylinder] = rpy2rotmat(x_cylinder(4:6));
       dR_tangent = [zeros(9,3) dR_tangent];
-      [R_tangent2cylinder,dR_tangent2cylinder] = rotz(pi/2-theta);
+      ddR_tangent = zeros(9,36);
+      ddR_tangent(:,ddx_rpy_idx) = ddR_tangent_ddx_rpy_cylinder;
+      [R_tangent2cylinder,dR_tangent2cylinder,ddR_tangent2cylinder_ddtheta] = rotz(pi/2-theta);
       dR_tangent2cylinder = [zeros(9,1) -dR_tangent2cylinder(:) zeros(9,4)];
+      ddR_tangent2cylinder = zeros(9,36);
+      ddR_tangent2cylinder(:,8) = ddR_tangent2cylinder_ddtheta(:);
       R_cylinder = R_tangent2cylinder*R_tangent;
       dR_cylinder = matGradMultMat(R_tangent2cylinder,R_tangent,dR_tangent2cylinder,dR_tangent);
+      ddR_cylinder = matHessianMultMat(R_tangent2cylinder,R_tangent,dR_tangent2cylinder,dR_tangent,ddR_tangent2cylinder,ddR_tangent);
       [x_rpy_cartesian,dx_rpy_cartesian] = rotmat2rpy(obj.T_cylinder(1:3,1:3)*R_cylinder,reshape(obj.T_cylinder(1:3,1:3)*reshape(dR_cylinder,3,[]),9,[]));
-      x_cartesian = [x_pos_cartesian;x_rpy_cartesian];
-      J = [dx_pos_cartesian;dx_rpy_cartesian];
+      x_cartesian = [x_pos_cartesian];%x_rpy_cartesian];
+      J = [dx_pos_cartesian];%;dx_rpy_cartesian];
+      dJ = ddx_pos_cartesian;
+      
+      
     end
   end
 end
