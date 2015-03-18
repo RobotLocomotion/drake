@@ -309,6 +309,13 @@ QblkDiag = {Hqp(1:nq,1:nq) + REG*eye(nq), ...
             params.w_grf*ones(nf,1) + REG*ones(nf,1), ...
             params.w_slack*ones(neps,1) + REG*ones(neps,1)};
 Aeq_fqp = full(Aeq);
+
+if (nc ~= ctrl_data.num_active_contact_pts) 
+  % Contact state has changed, so our active set is invalid
+  ctrl_data.qp_active_set = [];
+end
+ctrl_data.num_active_contact_pts = nc;
+
 % NOTE: model.obj is 2* f for fastQP!!!
 [alpha,info_fqp] = fastQPmex(QblkDiag,fqp,Ain_fqp,bin_fqp,Aeq_fqp,beq,ctrl_data.qp_active_set);
 
