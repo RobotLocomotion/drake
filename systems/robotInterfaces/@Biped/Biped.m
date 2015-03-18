@@ -295,7 +295,7 @@ classdef Biped < LeggedRobot
                                                               % slice upward (in m) to prevent false 
                                                               % positive obstacle detections from small 
                                                               % terrain height variations. 
-      p.addParamValue('padding_margin', [0, 0.05, 0.05, 0.05], @isnumeric) % padding for each slice in all directions
+      p.addParamValue('padding_margin', [0, 0.01, 0.01, 0.01], @isnumeric) % padding for each slice in all directions
       p.addParamValue('debug', false, @isnumeric);
       p.parse(varargin{:});
       q = p.Results.q;
