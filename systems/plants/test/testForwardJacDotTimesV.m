@@ -18,10 +18,9 @@ end
 
 options.use_new_kinsol = false;
 robot = createAtlas('rpy', options);
-for rotation_type = 0 : 2
-  compareToJacobianGradientMethod(robot, rotation_type);
-  checkMex(robot, rotation_type);
-end
+rotation_type = 0;
+compareToJacobianGradientMethod(robot, rotation_type);
+checkMex(robot, rotation_type);
 
 end
 

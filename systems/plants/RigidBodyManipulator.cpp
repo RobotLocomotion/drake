@@ -1584,7 +1584,7 @@ GradientVar<Scalar, SPACE_DIMENSION, 1> RigidBodyManipulator::centerOfMassJacobi
     if (gradient_order > 0)
       throw std::runtime_error("no gradients available with old kinsol format.");
     MatrixXd Jdot(SPACE_DIMENSION, num_positions);
-    getCOMJacDot(Jdot, RigidBody::defaultRobotNumSet);
+    getCOMJacDot(Jdot, robotnum);
     GradientVar<Scalar, SPACE_DIMENSION, 1> ret(Jdot.rows(), 1, num_positions, 0);
     ret.value() = Jdot * cached_v;
     return ret;
@@ -2883,7 +2883,7 @@ GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, 1> RigidBodyManipula
   if (!use_new_kinsol) {
     if (gradient_order > 0)
       throw std::runtime_error("no gradients available with old kinsol format.");
-    MatrixXd Jdot(SPACE_DIMENSION + rotationRepresentationSize(rotation_type), num_positions);
+    MatrixXd Jdot(points.cols() * SPACE_DIMENSION + rotationRepresentationSize(rotation_type), num_positions);
     forwardJacDot(body_or_frame_ind, points.colwise().homogeneous(), rotation_type, Jdot);
     typedef typename DerivedPoints::Scalar Scalar;
     GradientVar<Scalar, Dynamic, 1> ret(Jdot.rows(), 1, num_positions, 0);
