@@ -57,6 +57,7 @@ struct QPControllerState {
   VectorXd vref_integrator_state;
   VectorXd q_integrator_state;
   std::set<int> active;
+  int num_active_contact_pts;
 
   // gurobi active set params
   int *vbasis;

@@ -394,6 +394,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   pdata->state.q_integrator_state = VectorXd::Zero(pdata->r->num_positions);
   pdata->state.foot_contact_prev[0] = false;
   pdata->state.foot_contact_prev[1] = false;
+  pdata->state.num_active_contact_pts = 0;
 
   plhs[0] = createDrakeMexPointer((void*) pdata, "NewQPControllerData");
 

@@ -557,6 +557,13 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   std::vector<MatrixXd*> QBlkDiag( nc>0 ? 3 : 1 );  // nq, nf, neps   // this one is for gurobi
   
   VectorXd w = (params->whole_body.w_qdd.array() + REG).matrix();
+
+  if (nc != pdata->state.num_active_contact_pts) {
+    // Number of contact points has changed, so our active set is invalid
+    pdata->state.active.clear();
+  }
+  pdata->state.num_active_contact_pts = nc;
+
   #ifdef USE_MATRIX_INVERSION_LEMMA
   double max_body_accel_weight = -numeric_limits<double>::infinity();
   for (int i=0; i < desired_body_accelerations.size(); i++) {

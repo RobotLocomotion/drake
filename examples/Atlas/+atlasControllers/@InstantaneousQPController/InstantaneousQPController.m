@@ -61,7 +61,8 @@ classdef InstantaneousQPController
       end
 
       obj.controller_data = InstantaneousQPControllerData(struct('infocount', 0,...
-                                                     'qp_active_set', []));
+                                                     'qp_active_set', [],...
+                                                     'num_active_contact_pts', 0));
       obj.q_integrator_data = IntegratorData(r);
       obj.vref_integrator_data = VRefIntegratorData(r);
 
