@@ -15,6 +15,15 @@ if (kinsol.mex)
     Adot_times_v = centroidalMomentumMatrixDotTimesVmex(obj.mex_model_ptr, robotnum);
   end
 else
+  if ~obj.use_new_kinsol
+    if compute_gradients
+      error('gradients not implemented for old kinsol format.');
+    end
+    [~, Adot] = getCMM(obj, kinsol, kinsol.qd);
+    Adot_times_v = Adot * kinsol.qd;
+    return;
+  end
+  
   nq = obj.getNumPositions();
   
   if compute_gradients

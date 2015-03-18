@@ -1373,8 +1373,17 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::worldMomen
 template <typename Scalar>
 GradientVar<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::worldMomentumMatrixDotTimesV(int gradient_order, const std::set<int>& robotnum)
 {
-  if (!use_new_kinsol)
-    throw std::runtime_error("method requires new kinsol format");
+  if (!use_new_kinsol) {
+    if (gradient_order > 0)
+      throw std::runtime_error("no gradients available with old kinsol format.");
+    MatrixXd A(TWIST_SIZE, num_positions);
+    MatrixXd Adot(TWIST_SIZE, num_positions);
+    getCMM(cached_q, cached_v, A, Adot);
+    GradientVar<Scalar, TWIST_SIZE, 1> ret(Adot.rows(), 1, num_positions, 0);
+    ret.value() = Adot * cached_v;
+    return ret;
+  }
+
   if (gradient_order > 1)
     throw std::runtime_error("only first order gradient is available");
 
@@ -1456,6 +1465,17 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::centroidal
 template <typename Scalar>
 GradientVar<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::centroidalMomentumMatrixDotTimesV(int gradient_order, const std::set<int>& robotnum)
 {
+  if (!use_new_kinsol) {
+    if (gradient_order > 0)
+      throw std::runtime_error("no gradients available with old kinsol format.");
+    MatrixXd A(TWIST_SIZE, num_positions);
+    MatrixXd Adot(TWIST_SIZE, num_positions);
+    getCMM(cached_q, cached_v, A, Adot);
+    GradientVar<Scalar, TWIST_SIZE, 1> ret(Adot.rows(), 1, num_positions, 0);
+    ret.value() = Adot * cached_v;
+    return ret;
+  }
+
   auto ret = worldMomentumMatrixDotTimesV<Scalar>(gradient_order, robotnum);
 
   // transform from world frame to COM frame:
@@ -1542,6 +1562,9 @@ GradientVar<Scalar, SPACE_DIMENSION, 1> RigidBodyManipulator::centerOfMass(int g
 template <typename Scalar>
 GradientVar<Scalar, SPACE_DIMENSION, Eigen::Dynamic> RigidBodyManipulator::centerOfMassJacobian(int gradient_order, const std::set<int>& robotnum, bool in_terms_of_qdot)
 {
+  if (!use_new_kinsol)
+    throw std::runtime_error("method requires new kinsol format");
+
   auto A = worldMomentumMatrix<Scalar>(gradient_order, robotnum, in_terms_of_qdot);
   GradientVar<Scalar, SPACE_DIMENSION, Eigen::Dynamic> ret(SPACE_DIMENSION, A.value().cols(), num_positions, gradient_order);
   double total_mass = getMass(robotnum);
@@ -1557,6 +1580,16 @@ GradientVar<Scalar, SPACE_DIMENSION, Eigen::Dynamic> RigidBodyManipulator::cente
 template <typename Scalar>
 GradientVar<Scalar, SPACE_DIMENSION, 1> RigidBodyManipulator::centerOfMassJacobianDotTimesV(int gradient_order, const std::set<int>& robotnum)
 {
+  if (!use_new_kinsol) {
+    if (gradient_order > 0)
+      throw std::runtime_error("no gradients available with old kinsol format.");
+    MatrixXd Jdot(SPACE_DIMENSION, num_positions);
+    getCOMJacDot(Jdot, RigidBody::defaultRobotNumSet);
+    GradientVar<Scalar, SPACE_DIMENSION, 1> ret(Jdot.rows(), 1, num_positions, 0);
+    ret.value() = Jdot * cached_v;
+    return ret;
+  }
+
   auto cmm_dot_times_v = centroidalMomentumMatrixDotTimesV<Scalar>(gradient_order, robotnum);
   GradientVar<Scalar, SPACE_DIMENSION, 1> ret(SPACE_DIMENSION, 1, num_positions, gradient_order);
   double total_mass = getMass(robotnum);
@@ -2847,8 +2880,16 @@ template <typename DerivedPoints>
 GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::forwardJacDotTimesV(const MatrixBase<DerivedPoints>& points,
     int body_or_frame_ind, int base_or_frame_ind, int rotation_type, int gradient_order)
 {
-  if (!use_new_kinsol)
-    throw std::runtime_error("method requires new kinsol format");
+  if (!use_new_kinsol) {
+    if (gradient_order > 0)
+      throw std::runtime_error("no gradients available with old kinsol format.");
+    MatrixXd Jdot(SPACE_DIMENSION + rotationRepresentationSize(rotation_type), num_positions);
+    forwardJacDot(body_or_frame_ind, points.colwise().homogeneous(), rotation_type, Jdot);
+    typedef typename DerivedPoints::Scalar Scalar;
+    GradientVar<Scalar, Dynamic, 1> ret(Jdot.rows(), 1, num_positions, 0);
+    ret.value() = Jdot * cached_v;
+    return ret;
+  }
 
   if (gradient_order > 1) {
     throw std::runtime_error("only first order gradients are available");
