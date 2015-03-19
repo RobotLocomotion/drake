@@ -59,6 +59,10 @@ classdef QPLocomotionPlan < QPControllerPlan
       T = obj.duration;
       t_plan = min([t_plan, T]);
 
+      q = x(1:rpc.nq);
+      qd = x(rpc.nq+(1:rpc.nv));
+      kinsol = doKinematics(obj.robot, q);
+
       qp_input = obj.default_qp_input;
       qp_input.zmp_data.D = -obj.LIP_height/obj.g * eye(2);
       qp_input.zmp_data.x0 = [obj.zmp_final; 0;0];
@@ -74,53 +78,85 @@ classdef QPLocomotionPlan < QPControllerPlan
         qp_input.zmp_data.s1 = fasteval(obj.V.s1,t_plan);
       end
 
-      supp_idx = find(obj.support_times<=t_plan,1,'last');
-      supp = obj.supports(supp_idx);
-
-      qp_input.support_data = struct('body_id', {r.foot_body_id.right, r.foot_body_id.left},...
-                                     'contact_pts', {...
-                               [rpc.contact_groups{r.foot_body_id.right}.heel, ...
-                                rpc.contact_groups{r.foot_body_id.right}.toe],...
-                               [rpc.contact_groups{r.foot_body_id.left}.heel,...
-                                rpc.contact_groups{r.foot_body_id.left}.toe]},...
-                                     'support_logic_map', {zeros(4,1), zeros(4,1)},...
-                                     'mu', {obj.mu, obj.mu},...
-                                     'contact_surfaces', {0,0});
-
-      if ~isempty(supp) && any(supp.bodies==r.foot_body_id.right)
-        r.warning_manager.warnOnce('Drake:HardCodedSupport', 'hard-coded for heel+toe support');
-        qp_input.support_data(1).support_logic_map = obj.support_logic_maps.require_support;
-      else
-        qp_input.support_data(1).support_logic_map = obj.support_logic_maps.prevent_support;
-      end
-      if ~isempty(supp) && any(supp.bodies==r.foot_body_id.left)
-        r.warning_manager.warnOnce('Drake:HardCodedSupport', 'hard-coded for heel+toe support');
-        qp_input.support_data(2).support_logic_map = obj.support_logic_maps.require_support;
-      else
-        qp_input.support_data(2).support_logic_map = obj.support_logic_maps.prevent_support;
-      end
-
       if isnumeric(obj.qtraj)
         qp_input.whole_body_data.q_des = obj.qtraj;
       else
         qp_input.whole_body_data.q_des = fasteval(obj.qtraj, t_plan);
       end
 
+      supp_idx = find(obj.support_times<=t_plan,1,'last');
+
+      MIN_KNEE_ANGLE = 0.7;
+      KNEE_KP = 40;
+      KNEE_KD = 4;
+      KNEE_WEIGHT = 1;
+
       pelvis_has_tracking = false;
       for j = 1:length(obj.link_constraints)
-        qp_input.body_motion_data(j).body_id = obj.link_constraints(j).link_ndx;
+        body_id = obj.link_constraints(j).link_ndx;
+        qp_input.body_motion_data(j).body_id = body_id;
         if qp_input.body_motion_data(j).body_id == rpc.body_ids.pelvis
           pelvis_has_tracking = true;
         end
-        body_t_ind = find(obj.link_constraints(j).ts<=t_plan,1,'last');
+        if t_plan <= obj.link_constraints(j).ts(end)
+          body_t_ind = find(obj.link_constraints(j).ts<=t_plan,1,'last');
+        else
+          body_t_ind = length(obj.link_constraints(j).ts);
+        end
         if body_t_ind < length(obj.link_constraints(j).ts)
           qp_input.body_motion_data(j).ts = obj.link_constraints(j).ts(body_t_ind:body_t_ind+1) + obj.start_time;
         else
           qp_input.body_motion_data(j).ts = obj.link_constraints(j).ts([body_t_ind,body_t_ind]) + obj.start_time;
         end
+
+        if body_id == obj.robot.foot_body_id.right
+          kny_ind = rpc.position_indices.r_leg_kny;
+        elseif body_id == obj.robot.foot_body_id.left
+          kny_ind = rpc.position_indices.l_leg_kny;
+        else
+          kny_ind = [];
+        end
+        if ~isempty(kny_ind) && obj.link_constraints(j).toe_off_allowed(body_t_ind) && q(kny_ind) < MIN_KNEE_ANGLE
+          body_mask = obj.supports(supp_idx).bodies == body_id;
+          if any(body_mask) && ~isempty(obj.supports(supp_idx).contact_groups{body_mask})
+            obj.supports(supp_idx) = obj.supports(supp_idx).setContactPts(body_mask, rpc.contact_groups{body_id}.toe, {'toe'});
+          end
+          % obj.supports(supp_idx).contact_pts{body_mask} = rpc.contact_groups{body_id}.toe;
+          qp_input.joint_pd_override(end+1) = struct('position_ind', kny_ind,...
+                                                     'qi_des', MIN_KNEE_ANGLE,...
+                                                     'qdi_des', 0,...
+                                                     'kp', KNEE_KP,...
+                                                     'kd', KNEE_KD,...
+                                                     'weight', KNEE_WEIGHT);
+          if body_t_ind < size(obj.link_constraints(j).coefs, 2)
+            [p_current, J] = obj.robot.forwardKin(kinsol, obj.link_constraints(j).link_ndx, obj.link_constraints(j).pt, 1);
+            pd_current = J * qd;
+            p_next = obj.link_constraints(j).coefs(:,body_t_ind+1,end);
+            pd_next = obj.link_constraints(j).coefs(:,body_t_ind+1,end-1);
+            obj.link_constraints(j).coefs(:,body_t_ind,:) = cubicSplineCoefficients(obj.link_constraints(j).ts(body_t_ind+1) - t_plan, p_current, p_next, pd_current, pd_next);
+            obj.link_constraints(j).ts(body_t_ind) = t_plan;
+          end
+        end
+
         qp_input.body_motion_data(j).coefs = obj.link_constraints(j).coefs(:,body_t_ind,:);
+
       end
       assert(pelvis_has_tracking, 'Expecting a link_constraints block for the pelvis');
+
+      supp = obj.supports(supp_idx);
+
+      qp_input.support_data = struct('body_id', cell(1, length(supp.bodies)),...
+                                     'contact_pts', cell(1, length(supp.bodies)),...
+                                     'support_logic_map', cell(1, length(supp.bodies)),...
+                                     'mu', cell(1, length(supp.bodies)),...
+                                     'contact_surfaces', cell(1, length(supp.bodies)));
+      for j = 1:length(supp.bodies)
+        qp_input.support_data(j).body_id = supp.bodies(j);
+        qp_input.support_data(j).contact_pts = supp.contact_pts{j};
+        qp_input.support_data(j).support_logic_map = obj.support_logic_maps.require_support;
+        qp_input.support_data(j).mu = obj.mu;
+        qp_input.support_data(j).contact_surfaces = 0;
+      end
 
       qp_input.param_set_name = obj.gain_set;
 
@@ -129,11 +165,11 @@ classdef QPLocomotionPlan < QPControllerPlan
       else
         next_support = obj.supports(supp_idx);
       end
-      obj = obj.updatePlanShift(t_global, x, qp_input, contact_force_detected, next_support);
+      obj = obj.updatePlanShift(t_global, kinsol, qp_input, contact_force_detected, next_support);
       qp_input = obj.applyPlanShift(qp_input);
     end
 
-    function obj = updatePlanShift(obj, t_global, x, qp_input, contact_force_detected, next_support)
+    function obj = updatePlanShift(obj, t_global, kinsol, qp_input, contact_force_detected, next_support)
       active_support_bodies = next_support.bodies;
       if any(active_support_bodies == obj.robot.foot_body_id.right) && contact_force_detected(obj.robot.foot_body_id.right)
         loading_foot = obj.robot.foot_body_id.right;
@@ -145,15 +181,14 @@ classdef QPLocomotionPlan < QPControllerPlan
 
       for j = 1:length(qp_input.body_motion_data)
         if qp_input.body_motion_data(j).body_id == loading_foot;
-	  kinsol = obj.robot.doKinematics(x(1:obj.robot.getNumPositions()));
           foot_actual = obj.robot.forwardKin(kinsol, loading_foot, [0;0;0], 1);
           foot_des = evalCubicSplineSegment(t_global - qp_input.body_motion_data(j).ts(1), qp_input.body_motion_data(j).coefs);
           obj.plan_shift_data.plan_shift(1:3) = foot_des(1:3) - foot_actual(1:3);
           break
         end
       end
-      disp('plan shift: ')
-      obj.plan_shift_data.plan_shift
+      %disp('plan shift: ')
+      %obj.plan_shift_data.plan_shift
     end
 
     function qp_input = applyPlanShift(obj, qp_input)
@@ -284,10 +319,12 @@ classdef QPLocomotionPlan < QPControllerPlan
       link_constraints(1).pt = [0;0;0];
       link_constraints(1).ts = [0, inf];
       link_constraints(1).coefs = cat(3, zeros(6,1,3), reshape(forwardKin(obj.robot,kinsol,obj.robot.foot_body_id.right,[0;0;0],1),[6,1,1]));
+      link_constraints(1).toe_off_allowed = [false, false];
       link_constraints(2).link_ndx = obj.robot.foot_body_id.left;
       link_constraints(2).pt = [0;0;0];
       link_constraints(2).ts = [0, inf];
       link_constraints(2).coefs = cat(3, zeros(6,1,3),reshape(forwardKin(obj.robot,kinsol,obj.robot.foot_body_id.left,[0;0;0],1),[6,1,1]));
+      link_constraints(2).toe_off_allowed = [false, false];
       pelvis_id = obj.robot.findLinkId('pelvis');
       link_constraints(3).link_ndx = pelvis_id;
       link_constraints(3).pt = [0;0;0];
