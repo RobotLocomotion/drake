@@ -12,6 +12,7 @@
 #include <stdexcept>
 #include <limits>
 #include "drakeFloatingPointUtil.h" //for isFinite
+#include "RigidBodyConstraint.h"
 //DEBUG
 //#include <stdexcept>
 //END_DEBUG
@@ -3038,34 +3039,47 @@ void RigidBodyManipulator::positionConstraints(MatrixBase<DerivedA> & phi, Matri
     return;
   }
 
-  size_t numLoops = loops.size();
-  size_t numConstraints = getNumPositionConstraints();
+  const int nq = num_positions;
+  const size_t numLoops = loops.size();
+  const size_t numConstraints = getNumPositionConstraints();
   phi = VectorXd::Zero(numConstraints);
-  J = MatrixXd::Zero(numConstraints, num_positions);
+  J = MatrixXd::Zero(numConstraints, nq);
+  Matrix<double, 7, 1> bTbp, bpTb, wTb;
+  
+  Vector3d bodyA_pos;
+  Vector4d ptA, origin_pt;
+  MatrixXd JA(3,nq), dbTw_transdq(3,nq), dwTb(7,nq);
+  origin_pt << 0.0, 0.0, 0.0, 1.0;
+  Matrix4d dbTw_quat = dquatConjugate();
+
   for (size_t i = 0; i < numLoops; i++) {
-    Vector3d ptA_in_world, ptB_in_world;
-    Vector4d ptA, ptB;
-    MatrixXd JA(3, num_positions), JB(3, num_positions);
-
+    bTbp << loops[i].ptB, 1.0, 0.0, 0.0, 0.0;
+    Vector4d bpTb_quat = quatConjugate(bTbp.block(3,0,4,1));
+    Vector3d bpTb_trans = quatRotateVec(bpTb_quat,-bTbp.block(0,0,3,1));
+    bpTb << bpTb_trans, bpTb_quat;
     ptA << loops[i].ptA, 1.0;
-    ptB << loops[i].ptB, 1.0;
-    
-    int idA = loops[i].bodyA->body_index;
-    int idB = loops[i].bodyB->body_index;
-
-    //matGradMult d(AB)/dx (B is constant)
-    //matGradMultMat d(AB)/dx (B(x))
-    //transposeGrad dA' from dA
-    forwardKin(idA, ptA, 0, ptA_in_world);
-    forwardKin(idB, ptB, 0, ptB_in_world);
-
-    phi.segment(3*i, 3) = ptA_in_world - ptB_in_world; 
-    //this implementation only works when body B is 
-    //need to transform this to body B space using quaternion
-
-    forwardJac(idA, ptA, 0, JA);
-    forwardJac(idB, ptB, 0, JB);
-    J.block(3*i, 0, 3, num_positions) = JA - JB;
+    forwardKin(loops[i].bodyA->body_index,ptA,0,bodyA_pos);
+    forwardJac(loops[i].bodyA->body_index,ptA,0,JA);
+    forwardKin(loops[i].bodyB->body_index,origin_pt,2,wTb);
+    forwardJac(loops[i].bodyB->body_index,origin_pt,2,dwTb);
+    Vector4d bTw_quat = quatConjugate(wTb.block(3,0,4,1));
+    MatrixXd dbTw_quatdq = dbTw_quat*dwTb.block(3,0,4,nq);
+    Vector3d bTw_trans = quatRotateVec(bTw_quat,-wTb.block(0,0,3,1));
+    Matrix<double,3,7> dbTw_trans = dquatRotateVec(bTw_quat,-wTb.block(0,0,3,1));
+    dbTw_transdq = dbTw_trans.block(0,0,3,4)*dbTw_quatdq-dbTw_trans.block(0,4,3,3)*dwTb.block(0,0,3,nq);
+    Vector3d bpTw_trans1 = quatRotateVec(bpTb.block(3,0,4,1),bTw_trans);
+    Matrix<double,3,7> dbpTw_trans1 = dquatRotateVec(bpTb.block(3,0,4,1),bTw_trans);
+    MatrixXd dbpTw_trans1dq = dbpTw_trans1.block(0,4,3,3)*dbTw_transdq;
+    Vector3d bpTw_trans = bpTw_trans1+bpTb.block(0,0,3,1);
+    MatrixXd dbpTw_transdq = dbpTw_trans1dq;
+    Vector4d bpTw_quat = quatProduct(bpTb.block(3,0,4,1),bTw_quat);
+    Matrix<double,4,8> dbpTw_quat = dquatProduct(bpTb.block(3,0,4,1),bTw_quat);
+    MatrixXd dbpTw_quatdq = dbpTw_quat.block(0,4,4,4)*dbTw_quatdq;
+    Vector3d bp_bodyA_pos1 = quatRotateVec(bpTw_quat,bodyA_pos);
+    Matrix<double,3,7> dbp_bodyA_pos1 = dquatRotateVec(bpTw_quat,bodyA_pos);
+    MatrixXd dbp_bodyA_pos1dq = dbp_bodyA_pos1.block(0,0,3,4)*dbpTw_quatdq+dbp_bodyA_pos1.block(0,4,3,3)*JA;
+    phi.segment(3*i, 3) = bp_bodyA_pos1+bpTw_trans;
+    J.block(3*i, 0, 3, nq) = dbp_bodyA_pos1dq+dbpTw_transdq;
   }
 }
 
