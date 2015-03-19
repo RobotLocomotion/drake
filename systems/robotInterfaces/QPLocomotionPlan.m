@@ -98,7 +98,11 @@ classdef QPLocomotionPlan < QPControllerPlan
         if qp_input.body_motion_data(j).body_id == rpc.body_ids.pelvis
           pelvis_has_tracking = true;
         end
-        body_t_ind = find(obj.link_constraints(j).ts<=t_plan,1,'last');
+        if t_plan <= obj.link_constraints(j).ts(end)
+          body_t_ind = find(obj.link_constraints(j).ts<=t_plan,1,'last');
+        else
+          body_t_ind = length(obj.link_constraints(j).ts);
+        end
         if body_t_ind < length(obj.link_constraints(j).ts)
           qp_input.body_motion_data(j).ts = obj.link_constraints(j).ts(body_t_ind:body_t_ind+1) + obj.start_time;
         else
