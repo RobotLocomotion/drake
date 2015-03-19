@@ -20,7 +20,8 @@ all_bodies_vdot = struct('body_id', cell(1,length(qp_input.body_motion_data)),..
 
 for j = 1:length(qp_input.body_motion_data)
   body_id = qp_input.body_motion_data(j).body_id;
-  [body_des, body_v_des, body_vdot_des] = evalCubicSplineSegment(t - qp_input.body_motion_data(j).ts(1), qp_input.body_motion_data(j).coefs);
+  t_spline = max(qp_input.body_motion_data(j).ts(1), min(qp_input.body_motion_data(j).ts(2), t));
+  [body_des, body_v_des, body_vdot_des] = evalCubicSplineSegment(t_spline - qp_input.body_motion_data(j).ts(1), qp_input.body_motion_data(j).coefs);
   body_vdot = atlasControllers.bodyMotionControl(r, [q; qd], body_id,...
                   body_des, body_v_des, body_vdot_des, params.body_motion(body_id));
   body_vdot_mex = instantaneousBodyMotionControlmex(r.getMexModelPtr(), [q; qd], body_id,...
