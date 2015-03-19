@@ -36,7 +36,7 @@ classdef RecoveryPlanner < MixedIntegerConvexProgram
 
     end
 
-    function sol = solveBipedProblem(obj, biped, x0, zmp0)
+    function sol = solveBipedProblem(obj, biped, x0, zmp0, use_symbolic)
       typecheck(biped, 'Biped')
       nq = biped.getNumPositions();
       q0 = x0(1:nq);
@@ -65,10 +65,10 @@ classdef RecoveryPlanner < MixedIntegerConvexProgram
 
       warning('another z = 0 assumption here');
       omega = sqrt(9.81 / qcom(3));
-      sol = obj.solveBaseProblem(start, omega);
+      sol = obj.solveBaseProblem(start, omega, use_symbolic);
     end
 
-    function sol = solveBaseProblem(obj, start, omega)
+    function sol = solveBaseProblem(obj, start, omega, use_symbolic)
       if obj.has_setup
         error('Drake:RecoveryPlanner:DuplicateSetup', 'Cannot call setup twice on the same recovery planner instance');
       end
@@ -95,18 +95,10 @@ classdef RecoveryPlanner < MixedIntegerConvexProgram
         obj.vars.(name).ub(:,1) = obj.start.(name)(1:obj.vars.(name).size(1));
       end
 
-      if start.contact(1)
-        obj = obj.addSymbolicConstraints([...
-          obj.vars.qr.symb(:,2) == obj.vars.qr.symb(:,1),...
-          ]);
-      end
-      if start.contact(2)
-        obj = obj.addSymbolicConstraints([...
-          obj.vars.ql.symb(:,2) == obj.vars.ql.symb(:,1),...
-          ]);
-      end
+      obj_base = obj;
 
-      obj = obj.addDiscreteLinearDynamics();
+      obj = obj.addInitialContactConstraints(start.contact, use_symbolic);
+      obj = obj.addDiscreteLinearDynamics(use_symbolic);
       obj = obj.addReachability();
       obj = obj.addContactConstraints();
       obj = obj.addFootVelocityLimits();
@@ -118,7 +110,24 @@ classdef RecoveryPlanner < MixedIntegerConvexProgram
 
       % obj = obj.addSymbolicObjective(-.05 * sum(sum(obj.vars.contact.symb)));
 
-      obj = obj.solveYalmip(sdpsettings('solver', 'gurobi', 'verbose', 1));
+      [obj, solvertime, objval] = obj.solveYalmip(sdpsettings('solver', 'gurobi', 'verbose', 1))
+
+      if use_symbolic == 2
+        obj_check = obj_base;
+        obj_check = obj_check.addInitialContactConstraints(start.contact, false);
+        obj_check = obj_check.addDiscreteLinearDynamics(false);
+        obj_check = obj_check.addReachability();
+        obj_check = obj_check.addContactConstraints();
+        obj_check = obj_check.addFootVelocityLimits();
+
+        % obj_check = obj_check.addFinalCOMObjective();
+        obj_check = obj_check.addCapturePointObjective();
+        obj_check = obj_check.addFootMotionObjective();
+        obj_check = obj_check.addFinalPostureObjective();
+
+        [obj_check, solvertime_check, objval_check] = obj_check.solveYalmip(sdpsettings('solver', 'gurobi', 'verbose', 1))
+        valuecheck(objval_check, objval, 1e-2);
+      end
 
       sol = PointMassBipedPlan();
       sol.ts = obj.dt * (0:(obj.nsteps-1));
@@ -134,9 +143,39 @@ classdef RecoveryPlanner < MixedIntegerConvexProgram
       sol.omega = obj.omega;
     end
 
-    function obj = addDiscreteLinearDynamics(obj)
-      xcom = obj.vars.xcom.symb;
-      qcop = obj.vars.qcop.symb;
+    function obj = addInitialContactConstraints(obj, contact, use_symbolic)
+      if use_symbolic
+        if contact(1)
+          obj = obj.addSymbolicConstraints([...
+            obj.vars.qr.symb(:,2) == obj.vars.qr.symb(:,1),...
+            ]);
+        end
+        if contact(2)
+          obj = obj.addSymbolicConstraints([...
+            obj.vars.ql.symb(:,2) == obj.vars.ql.symb(:,1),...
+            ]);
+        end
+      else
+        Aeq = zeros(4, obj.nv);
+        beq = zeros(4,1);
+        offset = 0;
+        if contact(1)
+          Aeq(offset+(1:2),obj.vars.qr.i(:,2)) = eye(2);
+          Aeq(offset+(1:2),obj.vars.qr.i(:,1)) = -eye(2);
+          offset = offset + 2;
+        end
+        if contact(2)
+          Aeq(offset+(1:2),obj.vars.ql.i(:,2)) = eye(2);
+          Aeq(offset+(1:2),obj.vars.ql.i(:,1)) = -eye(2);
+          offset = offset + 2;
+        end
+        Aeq = Aeq(1:offset,:);
+        beq = beq(1:offset);
+        obj = obj.addLinearConstraints([], [], Aeq, beq);
+      end
+    end
+
+    function obj = addDiscreteLinearDynamics(obj, use_symbolic)
       A = [0, 0, 1, 0;
            0, 0, 0, 1;
            obj.omega^2, 0, 0, 0;
@@ -146,19 +185,48 @@ classdef RecoveryPlanner < MixedIntegerConvexProgram
            -obj.omega^2, 0;
            0, -obj.omega^2];
       Ai = inv(A);
-      for j = 1:obj.nsteps-1
-        beta = qcop(:,j);
-        alpha = (qcop(:,j+1) - qcop(:,j)) / obj.dt;
-        T = -Ai * B * beta - Ai*Ai*B*alpha;
-        S = -Ai * B * alpha;
-        Q = xcom(:,j) + Ai * B * beta + Ai * Ai * B * alpha;
-        obj = obj.addSymbolicConstraints(xcom(:,j+1) == expm(A*obj.dt) * Q + S * obj.dt + T);
-      end
+      exAdt = expm(A * obj.dt);
+      if use_symbolic
+        xcom = obj.vars.xcom.symb;
+        qcop = obj.vars.qcop.symb;
+        for j = 1:obj.nsteps-1
+          beta = qcop(:,j);
+          alpha = (qcop(:,j+1) - qcop(:,j)) / obj.dt;
+          T = -Ai * B * beta - Ai*Ai*B*alpha;
+          S = -Ai * B * alpha;
+          Q = xcom(:,j) + Ai * B * beta + Ai * Ai * B * alpha;
+          obj = obj.addSymbolicConstraints(xcom(:,j+1) == exAdt * Q + S * obj.dt + T);
+        end
 
-      obj = obj.addSymbolicConstraints([...
-        qcop(:,end) == mean([obj.vars.qr.symb(:,end), obj.vars.ql.symb(:,end)], 2),...
-        % obj.vars.contact.symb(:,end) == [1;1],...
-        ]);
+        obj = obj.addSymbolicConstraints([...
+          qcop(:,end) == mean([obj.vars.qr.symb(:,end), obj.vars.ql.symb(:,end)], 2),...
+          % obj.vars.contact.symb(:,end) == [1;1],...
+          ]);
+      else
+        Aeq = zeros(2 * (obj.nsteps-1), obj.nv);
+        beq = zeros(size(Aeq, 1));
+        offset = 0;
+        for j = 1:obj.nsteps-1
+          xcom(:,j+1) == exAdt * Q + S * obj.dt + T
+          xcom(:,j+1) == exAdt * (xcom(:,j) + Ai * B * beta + Ai * Ai * B * alpha) + S * obj.dt + T
+          xcom(:,j+1) == exAdt * (xcom(:,j) + Ai * B * qcop(:,j) + Ai * Ai * B * alpha) + S * obj.dt + T
+          xcom(:,j+1) == exAdt * (xcom(:,j) + Ai * B * qcop(:,j) + Ai * Ai * B * ((qcop(:,j+1) - qcop(:,j)) / obj.dt)) + S * obj.dt + T
+          xcom(:,j+1) == exAdt * (xcom(:,j) + Ai * B * qcop(:,j) + Ai * Ai * B * ((qcop(:,j+1) - qcop(:,j)) / obj.dt)) + (-Ai * B * alpha) * obj.dt + T
+          xcom(:,j+1) == exAdt * (xcom(:,j) + Ai * B * qcop(:,j) + Ai * Ai * B * ((qcop(:,j+1) - qcop(:,j)) / obj.dt)) + (-Ai * B * (qcop(:,j+1) - qcop(:,j)) / obj.dt) * obj.dt + T
+          xcom(:,j+1) == exAdt * (xcom(:,j) + Ai * B * qcop(:,j) + Ai * Ai * B * ((qcop(:,j+1) - qcop(:,j)) / obj.dt)) + (-Ai * B * (qcop(:,j+1) - qcop(:,j))) + T
+          xcom(:,j+1) == exAdt * (xcom(:,j) + Ai * B * qcop(:,j) + Ai * Ai * B * ((qcop(:,j+1) - qcop(:,j)) / obj.dt)) + (-Ai * B * (qcop(:,j+1) - qcop(:,j))) + -Ai * B * beta - Ai*Ai*B*alpha
+          xcom(:,j+1) == exAdt * (xcom(:,j) + Ai * B * qcop(:,j) + Ai * Ai * B * ((qcop(:,j+1) - qcop(:,j)) / obj.dt)) + (-Ai * B * (qcop(:,j+1) - qcop(:,j))) + -Ai * B * qcop(:,j) - Ai*Ai*B*((qcop(:,j+1) - qcop(:,j)) / obj.dt)
+          
+
+
+
+
+          % exAdt * (xcom(:,j) + Ai * B * qcop(:,j) + Ai * Ai * B * (qcop(:,j+1) - qcop(:,j)) / obj.dt) + 
+          Aeq(offset+(1:2), obj.vars.xcom.i(:,j+1)) = -eye(2);
+
+
+
+
     end
 
     function obj = addReachability(obj)
