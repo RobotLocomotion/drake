@@ -315,10 +315,12 @@ classdef QPLocomotionPlan < QPControllerPlan
       link_constraints(1).pt = [0;0;0];
       link_constraints(1).ts = [0, inf];
       link_constraints(1).coefs = cat(3, zeros(6,1,3), reshape(forwardKin(obj.robot,kinsol,obj.robot.foot_body_id.right,[0;0;0],1),[6,1,1]));
+      link_constraints(1).toe_off_allowed = [false, false];
       link_constraints(2).link_ndx = obj.robot.foot_body_id.left;
       link_constraints(2).pt = [0;0;0];
       link_constraints(2).ts = [0, inf];
       link_constraints(2).coefs = cat(3, zeros(6,1,3),reshape(forwardKin(obj.robot,kinsol,obj.robot.foot_body_id.left,[0;0;0],1),[6,1,1]));
+      link_constraints(2).toe_off_allowed = [false, false];
       pelvis_id = obj.robot.findLinkId('pelvis');
       link_constraints(3).link_ndx = pelvis_id;
       link_constraints(3).pt = [0;0;0];
