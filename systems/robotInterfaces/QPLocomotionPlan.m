@@ -78,37 +78,13 @@ classdef QPLocomotionPlan < QPControllerPlan
         qp_input.zmp_data.s1 = fasteval(obj.V.s1,t_plan);
       end
 
-      supp_idx = find(obj.support_times<=t_plan,1,'last');
-      supp = obj.supports(supp_idx);
-
-      qp_input.support_data = struct('body_id', {r.foot_body_id.right, r.foot_body_id.left},...
-                                     'contact_pts', {...
-                               [rpc.contact_groups{r.foot_body_id.right}.heel, ...
-                                rpc.contact_groups{r.foot_body_id.right}.toe],...
-                               [rpc.contact_groups{r.foot_body_id.left}.heel,...
-                                rpc.contact_groups{r.foot_body_id.left}.toe]},...
-                                     'support_logic_map', {zeros(4,1), zeros(4,1)},...
-                                     'mu', {obj.mu, obj.mu},...
-                                     'contact_surfaces', {0,0});
-
-      if ~isempty(supp) && any(supp.bodies==r.foot_body_id.right)
-        r.warning_manager.warnOnce('Drake:HardCodedSupport', 'hard-coded for heel+toe support');
-        qp_input.support_data(1).support_logic_map = obj.support_logic_maps.require_support;
-      else
-        qp_input.support_data(1).support_logic_map = obj.support_logic_maps.prevent_support;
-      end
-      if ~isempty(supp) && any(supp.bodies==r.foot_body_id.left)
-        r.warning_manager.warnOnce('Drake:HardCodedSupport', 'hard-coded for heel+toe support');
-        qp_input.support_data(2).support_logic_map = obj.support_logic_maps.require_support;
-      else
-        qp_input.support_data(2).support_logic_map = obj.support_logic_maps.prevent_support;
-      end
-
       if isnumeric(obj.qtraj)
         qp_input.whole_body_data.q_des = obj.qtraj;
       else
         qp_input.whole_body_data.q_des = fasteval(obj.qtraj, t_plan);
       end
+
+      supp_idx = find(obj.support_times<=t_plan,1,'last');
 
       MIN_KNEE_ANGLE = 0.7;
       KNEE_KP = 40;
@@ -117,7 +93,8 @@ classdef QPLocomotionPlan < QPControllerPlan
 
       pelvis_has_tracking = false;
       for j = 1:length(obj.link_constraints)
-        qp_input.body_motion_data(j).body_id = obj.link_constraints(j).link_ndx;
+        body_id = obj.link_constraints(j).link_ndx;
+        qp_input.body_motion_data(j).body_id = body_id;
         if qp_input.body_motion_data(j).body_id == rpc.body_ids.pelvis
           pelvis_has_tracking = true;
         end
@@ -128,15 +105,19 @@ classdef QPLocomotionPlan < QPControllerPlan
           qp_input.body_motion_data(j).ts = obj.link_constraints(j).ts([body_t_ind,body_t_ind]) + obj.start_time;
         end
 
-        if obj.link_constraints(j).link_ndx == obj.robot.foot_body_id.right
+        if body_id == obj.robot.foot_body_id.right
           kny_ind = rpc.position_indices.r_leg_kny;
-        elseif obj.link_constraints(j).link_ndx == obj.robot.foot_body_id.left
+        elseif body_id == obj.robot.foot_body_id.left
           kny_ind = rpc.position_indices.l_leg_kny;
         else
           kny_ind = [];
         end
         if ~isempty(kny_ind) && obj.link_constraints(j).toe_off_allowed(body_t_ind) && q(kny_ind) < MIN_KNEE_ANGLE
-          qp_input.support_data([qp_input.support_data.body_id] == obj.link_constraints(j).link_ndx).contact_pts = rpc.contact_groups{obj.link_constraints(j).link_ndx}.toe;
+          body_mask = obj.supports(supp_idx).bodies == body_id;
+          if any(body_mask) && ~isempty(obj.supports(supp_idx).contact_groups{body_mask})
+            obj.supports(supp_idx) = obj.supports(supp_idx).setContactPts(body_mask, rpc.contact_groups{body_id}.toe, {'toe'});
+          end
+          % obj.supports(supp_idx).contact_pts{body_mask} = rpc.contact_groups{body_id}.toe;
           qp_input.joint_pd_override(end+1) = struct('position_ind', kny_ind,...
                                                      'qi_des', MIN_KNEE_ANGLE,...
                                                      'qdi_des', 0,...
@@ -157,6 +138,21 @@ classdef QPLocomotionPlan < QPControllerPlan
 
       end
       assert(pelvis_has_tracking, 'Expecting a link_constraints block for the pelvis');
+
+      supp = obj.supports(supp_idx);
+
+      qp_input.support_data = struct('body_id', cell(1, length(supp.bodies)),...
+                                     'contact_pts', cell(1, length(supp.bodies)),...
+                                     'support_logic_map', cell(1, length(supp.bodies)),...
+                                     'mu', cell(1, length(supp.bodies)),...
+                                     'contact_surfaces', cell(1, length(supp.bodies)));
+      for j = 1:length(supp.bodies)
+        qp_input.support_data(j).body_id = supp.bodies(j);
+        qp_input.support_data(j).contact_pts = supp.contact_pts{j};
+        qp_input.support_data(j).support_logic_map = obj.support_logic_maps.require_support;
+        qp_input.support_data(j).mu = obj.mu;
+        qp_input.support_data(j).contact_surfaces = 0;
+      end
 
       qp_input.param_set_name = obj.gain_set;
 
