@@ -11,7 +11,8 @@ function [x_cartesian,v_cartesian,J, Jdotv] = cylindrical2cartesian(cylinder_axi
 % @param x_cylinder     A 6 x 1 vector. [radius;theta;height;roll;pitch;yaw] in the
 % cylindrical coordinate
 % @param v_cylinder     A 6 x 1 vector. [radius_dot;theta_dot;height_dot;angular_vel_x;angular_vel_y;angular_vel_z]
-% in the cylindrical coordinate
+% in the cylindrical coordinate. The angular velocity is measured in the
+% cylinder tangential frame
 % @retval x_cartesian     A 6 x 1 vector. The [x;y;z;roll;pitch;yaw] in the
 % cartesian frame
 % @retval v_cartesian     A 6 x 1 vector. The [xdot;ydot;zdot;angular_vel_x;angular_vel_y;angular_vel_z] in the
@@ -63,17 +64,15 @@ v_cartesian = zeros(6,1);
 v_cartesian(1:3) = v_pos_cartesian;
 % The angular velocity of the point in the Cartesian frame aligned with the
 % cylinder, is omega_theta+R_tangent*omega_cylinder*R_tangent'
-v_cartesian(4:6) = R_cylinder2cartesian*([0;0;theta_dot] + R_tangent2cylinder*v_cylinder(4:6));
+v_cartesian(4:6) = R_cylinder2cartesian*(-[0;0;theta_dot] + R_tangent2cylinder*v_cylinder(4:6));
 J = zeros(6,6);
 J(1:3,1:3) = R_cylinder2cartesian*[c_theta radius*-s_theta 0;...
                 s_theta radius*c_theta 0;...
                 0  0  1];
-J(4:6,2) = R_cylinder2cartesian(:,3);
+J(4:6,2) = -R_cylinder2cartesian(:,3);
 J(4:6,4:6) = R_cylinder2cartesian*R_tangent2cylinder;
 % Jdotv1 is Jdotv(1:3)
-Jdotv1 = [v_cartesian(1:3)'*[0 -s_theta 0; -s_theta -radius*c_theta 0; 0 0 0]*v_cartesian(1:3);...
-         v_cartesian(1:3)'*[0 c_theta 0; c_theta -radius*s_theta 0; 0 0 0]*v_cartesian(1:3);...
-         v_cartesian(1:3)'*zeros(3,3)*v_cartesian(1:3)];
+Jdotv1 = ([0 -s_theta 0;0 c_theta 0;0 0 0]*radius_dot+[-s_theta -radius*c_theta 0;c_theta -radius*s_theta 0;zeros(1,3)]*theta_dot)*[radius_dot;theta_dot;height_dot];
 % Jdotv2 is Jdotv(4:6)
 Jdotv2 = R_cylinder2cartesian*reshape(dR_tangent2cylinder_dtheta,3,3)*theta_dot*v_cartesian(4:6);
 Jdotv = [Jdotv1;Jdotv2];
