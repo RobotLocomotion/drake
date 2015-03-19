@@ -330,6 +330,7 @@ namespace DrakeCollision
   {
     
     distances.resize(origins.cols());
+    BulletCollisionWorldWrapper& bt_world = getBulletWorld(use_margins);
     
     for (int i = 0; i < origins.cols(); i ++)
     {
@@ -339,7 +340,7 @@ namespace DrakeCollision
         
         btCollisionWorld::ClosestRayResultCallback ray_callback(ray_from_world, ray_to_world);
         
-        bullet_world.bt_collision_world->rayTest(ray_from_world, ray_to_world, ray_callback);
+        bt_world.bt_collision_world->rayTest(ray_from_world, ray_to_world, ray_callback);
         
         if (ray_callback.hasHit()) {
             
