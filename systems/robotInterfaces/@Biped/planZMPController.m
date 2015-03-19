@@ -40,7 +40,8 @@ limp_height = round(limp_height / zmp_opts.lqr_cache_com_height_resolution) * zm
 
 if isa(zmptraj_or_comgoal, 'Trajectory')
   t0 = tic();
-  [c, V, comtraj] = LinearInvertedPendulum.ZMPtrackerClosedForm(limp_height, zmptraj_or_comgoal, zmp_opts);
+  [c, V] = LinearInvertedPendulum.ZMPtrackerClosedForm(limp_height, zmptraj_or_comgoal, zmp_opts);
+  comtraj = [];
   fprintf(1, 'zmp tracker time: %f s\n', toc(t0));
 elseif isnumeric(zmptraj_or_comgoal)
   hg = limp_height/9.81;

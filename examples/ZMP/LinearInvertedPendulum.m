@@ -289,15 +289,18 @@ classdef LinearInvertedPendulum < LinearSystem
       end
         
       if options.compute_lyapunov
-        s1traj = ExpPlusPPTrajectory(breaks,eye(4),A2,alpha,beta);
-%          s2traj = ODESolTrajectory(ode45(@s2dynamics,fliplr(breaks),0),[1 1]);
-%          s2traj = flipToPP(s2traj);
-        [t,y,ydot] = ode4(@s2dynamics,fliplr(breaks),0);
-        s2traj = PPTrajectory(pchipDeriv(breaks,fliplr(y.'),fliplr(ydot.')));
         if options.build_control_objects
+          s1traj = ExpPlusPPTrajectory(breaks,eye(4),A2,alpha,beta);
+          [t,y,ydot] = ode4(@s2dynamics,fliplr(breaks),0);
+          s2traj = PPTrajectory(pchipDeriv(breaks,fliplr(y.'),fliplr(ydot.')));
           Vt = QuadraticLyapunovFunction(getInputFrame(ct),S,s1traj,s2traj);
         else
-          Vt = struct('S', S, 's1', s1traj, 's2', s2traj);
+          s1traj = struct('breaks', breaks, ...
+                          'K', eye(4), ...
+                          'A', A2,...
+                          'alpha', alpha,...
+                          'gamma', beta);
+          Vt = struct('S', S, 's1', s1traj);
         end
       else
         Vt = [];
@@ -325,7 +328,11 @@ classdef LinearInvertedPendulum < LinearSystem
           b(1:2,j,1) = b(1:2,j,1)+zmp_tf;  % back in world coordinates
         end
         
-        comtraj = ExpPlusPPTrajectory(breaks,[eye(2),zeros(2,6)],Ay,[a;alpha],b(1:2,:,:));
+        if options.build_control_objects
+          comtraj = ExpPlusPPTrajectory(breaks,[eye(2),zeros(2,6)],Ay,[a;alpha],b(1:2,:,:));
+        else
+          comtraj = [];
+        end
       end
       
       function s2dot = s2dynamics(t,s2)

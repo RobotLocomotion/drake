@@ -71,7 +71,11 @@ classdef QPLocomotionPlan < QPControllerPlan
       if isnumeric(obj.V.s1)
         qp_input.zmp_data.s1 = obj.V.s1;
       else
-        qp_input.zmp_data.s1 = fasteval(obj.V.s1,t_plan);
+        if ~isfield(obj.V, 's1traj') || isempty(obj.V.s1traj)
+          obj.V.s1traj = SharedDataHandle(ExpPlusPPTrajectoryEvalmex(obj.V.s1.breaks, obj.V.s1.K, obj.V.s1.A, obj.V.s1.alpha, reshape(obj.V.s1.gamma, [size(obj.V.s1.gamma,1)*size(obj.V.s1.gamma,2), size(obj.V.s1.gamma, 3)])));
+        end
+        [qp_input.zmp_data.s1, ~] = ExpPlusPPTrajectoryEvalmex(obj.V.s1traj.data, t_plan);
+        % qp_input.zmp_data.s1 = fasteval(obj.V.s1,t_plan);
       end
 
       supp_idx = find(obj.support_times<=t_plan,1,'last');
