@@ -31,7 +31,7 @@ if(x_dir_norm<eps)
 error('cylinder_x_dir should be a non-zero vector');
 end
 cylinder_axis = cylinder_axis/axis_norm;
-cylinder_x_dir = cylinder_x_dir/x_dir_nom;
+cylinder_x_dir = cylinder_x_dir/x_dir_norm;
 if(abs(cylinder_axis'*cylinder_x_dir)>1e-10)
   error('cylinder_axis and cylinder_x_dir should be perpendicular to each other');
 end
@@ -50,15 +50,12 @@ x_pos_cartesian = R_cylinder2cartesian*[radius*c_theta;radius*s_theta;height]+cy
 v_pos_cartesian = R_cylinder2cartesian*[radius*-s_theta*theta_dot + radius_dot*c_theta;...
                               radius*c_theta*theta_dot + radius_dot*s_theta;... 
                               height_dot];
-[R_tangent,dR_tangent] = rpy2rotmat(x_cylinder(4:6));
-dR_tangent = [zeros(9,3) dR_tangent];
-[R_tangent2cylinder,dR_tangent2cylinder] = rotz(pi/2-theta);
-dR_tangent2cylinder = [zeros(9,1) -dR_tangent2cylinder(:) zeros(9,4)];
+R_tangent = rpy2rotmat(x_cylinder(4:6));
+[R_tangent2cylinder,dR_tangent2cylinder_dtheta] = rotz(pi/2-theta);
+dR_tangent2cylinder_dtheta = -dR_tangent2cylinder_dtheta(:);
 R_cylinder = R_tangent2cylinder*R_tangent;
-dR_cylinder = matGradMultMat(R_tangent2cylinder,R_tangent,dR_tangent2cylinder,dR_tangent);
 R_cartesian = R_cylinder2cartesian*R_cylinder;
-dR_cartesian = reshape(R_cylinder2cartesian*reshape(dR_cylinder,3,[]),9,[]);
-[x_rpy_cartesian,dx_rpy_cartesian] = rotmat2rpy(R_cartesian,dR_cartesian);
+x_rpy_cartesian = rotmat2rpy(R_cartesian);
 x_cartesian = zeros(6,1);
 x_cartesian(1:3) = x_pos_cartesian;
 x_cartesian(4:6) = x_rpy_cartesian;
@@ -73,7 +70,11 @@ J(1:3,1:3) = R_cylinder2cartesian*[c_theta radius*-s_theta 0;...
                 0  0  1];
 J(4:6,2) = R_cylinder2cartesian(:,3);
 J(4:6,4:6) = R_cylinder2cartesian*R_tangent2cylinder;
-Jdotv = [v_cartesian'*[0 -s_theta 0; -s_theta -radius*c_theta 0; 0 0 0]*v_cartesian;...
-         v_cartesian'*[0 c_theta 0; c_theta -radius*s_theta 0; 0 0 0]*v_cartesian;...
-         v_cartesian'*zeros(3,3)*v_cartesian];
+% Jdotv1 is Jdotv(1:3)
+Jdotv1 = [v_cartesian(1:3)'*[0 -s_theta 0; -s_theta -radius*c_theta 0; 0 0 0]*v_cartesian(1:3);...
+         v_cartesian(1:3)'*[0 c_theta 0; c_theta -radius*s_theta 0; 0 0 0]*v_cartesian(1:3);...
+         v_cartesian(1:3)'*zeros(3,3)*v_cartesian(1:3)];
+% Jdotv2 is Jdotv(4:6)
+Jdotv2 = R_cylinder2cartesian*reshape(dR_tangent2cylinder_dtheta,3,3)*theta_dot*v_cartesian(4:6);
+Jdotv = [Jdotv1;Jdotv2];
 end
