@@ -1064,103 +1064,60 @@ typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime>::type dTransformSpatia
   return ret;
 }
 
-template<typename Derived >
-DLLEXPORT GradientVar<typename Derived::Scalar, 6, 1> cartesian2cylindrical(const Transform<typename Derived::Scalar,3,Isometry>& T, const MatrixBase<Derived>& x_cartesian)
+template<typename ScalarT >
+DLLEXPORT void cylindrical2cartesian(const Matrix<ScalarT,3,1> &m_cylinder_axis, const Matrix<ScalarT,3,1> &m_cylinder_x_dir, const Matrix<ScalarT,3,1> &cylinder_origin, const Matrix<ScalarT,6,1> &x_cylinder, const Matrix<ScalarT,6,1> &v_cylinder, Matrix<ScalarT,6,1> &x_cartesian, Matrix<ScalarT,6,1> &v_cartesian, Matrix<ScalarT,6,6> &J, Matrix<ScalarT,6,1> &Jdotv)
 {
-	typedef typename Derived::Scalar ScalarT;
-  Matrix<double,3,6> dx_pos_cylinder = Matrix<double,3,6>::Zero();
-  dx_pos_cylinder.block(0,0,3,3) = T.linear().inverse();
-  Vector3d x_pos_cylinder = dx_pos_cylinder.block(0,0,3,3)*(x_cartesian.block(0,0,3,1)-T.translation());
-  double radius = sqrt(pow(x_pos_cylinder(0),2)+pow(x_pos_cylinder(1),2));
-  RowVector3d dradius_dx_pos_cylinder = RowVector3d::Zero();
-dradius_dx_pos_cylinder.block(0,0,1,2) = x_pos_cylinder.block(0,0,2,1).transpose()/radius;
-  double theta = atan2(x_pos_cylinder(1),x_pos_cylinder(0));
-  RowVector3d dtheta_dx_pos_cylinder = RowVector3d::Zero();
-  dtheta_dx_pos_cylinder(0) = -x_pos_cylinder(1)/pow(radius,2);
-  dtheta_dx_pos_cylinder(1) = x_pos_cylinder(0)/pow(radius,2);
-  double height = x_pos_cylinder(2);
-  RowVector3d dheight_dx_pos_cylinder(0,0,1.0);
-  Matrix<ScalarT ,6,1> x_cylinder = Matrix<ScalarT,6,1>::Zero();
-  x_cylinder(0) = radius;
-  x_cylinder(1) = theta;
-  x_cylinder(2) = height;
-  Matrix<ScalarT,6,6> J;
-  J.row(0) = dradius_dx_pos_cylinder*dx_pos_cylinder;
-  J.row(1) = dtheta_dx_pos_cylinder*dx_pos_cylinder;
-  J.row(2) = dheight_dx_pos_cylinder*dx_pos_cylinder;
-  Vector3d x_cartesian_rpy = x_cartesian.bottomLeftCorner(3,1);
-  Matrix3d x_rotmat = rpy2rotmat(x_cartesian_rpy);
-  Matrix<double,9,3> dx_rotmat = drpy2rotmat(x_cartesian_rpy);
-  Matrix3d R_cylinder2tangent;
-  Matrix3d dR_cylinder2tangent;
-  Matrix3d ddR_cylinder2tangent;
-  rotz(theta-M_PI/2,R_cylinder2tangent,dR_cylinder2tangent,ddR_cylinder2tangent);
-	Matrix3d dx_pos_cylinder_block1 = dx_pos_cylinder.block(0,0,3,3);
-  Matrix3d x_rotmat_cylinder1 = R_cylinder2tangent*dx_pos_cylinder_block1;
-	Matrix<double,9,1> dR_cylinder2tangent_resize;
-	memcpy(dR_cylinder2tangent_resize.data(),dR_cylinder2tangent.data(),sizeof(double)*9);
-	// dx_rotmat_cylinder1 = d(x_rotmat_cylinder1)/d(x_cartesian)
-  Matrix<double,9,6> dx_rotmat_cylinder1 = matGradMult((dR_cylinder2tangent_resize*dtheta_dx_pos_cylinder*dx_pos_cylinder).eval(),dx_pos_cylinder_block1); 
-	Matrix<double,9,6> x_rotmat_grad = Matrix<double,9,6>::Zero();
-	x_rotmat_grad.block(0,3,9,3) = dx_rotmat;
-	Matrix3d x_rotmat_cylinder = x_rotmat_cylinder1*x_rotmat;
-	auto dx_rotmat_cylinder = matGradMultMat(x_rotmat_cylinder1, x_rotmat, dx_rotmat_cylinder1, x_rotmat_grad).eval();
-  x_cylinder.block(3,0,3,1) = rotmat2rpy(x_rotmat_cylinder);
-  J.block(3,0,3,6) = drotmat2rpy(x_rotmat_cylinder,dx_rotmat_cylinder).eval();
-  GradientVar<ScalarT,6,1> ret(6,1,6,1);
-  ret.value() = x_cylinder;
-  ret.gradient().value() = J; 
-  return ret;
-}
-
-template<typename Derived >
-DLLEXPORT GradientVar<typename Derived::Scalar, 6, 1> cylindrical2cartesian(const Transform<typename Derived::Scalar,3,Isometry>& T, const MatrixBase<Derived>& x_cylinder)
-{
-	typedef typename Derived::Scalar ScalarT;
+	Matrix<ScalarT,3,1> cylinder_axis = m_cylinder_axis/m_cylinder_axis.norm();
+	Matrix<ScalarT,3,1> cylinder_x_dir = m_cylinder_x_dir/m_cylinder_x_dir.norm();
+	Matrix<ScalarT,3,3> R_cylinder2cartesian;
+	R_cylinder2cartesian.col(0) = cylinder_x_dir;
+	R_cylinder2cartesian.col(1) = cylinder_axis.cross(cylinder_x_dir);
+	R_cylinder2cartesian.col(2) = cylinder_axis;
 	double radius = x_cylinder(0);
 	double theta = x_cylinder(1);
 	double c_theta = cos(theta);
 	double s_theta = sin(theta);
 	double height = x_cylinder(2);
-	Vector3d x_pos_cylinder;
-	x_pos_cylinder << radius*c_theta,radius*s_theta,height;
-	Vector3d x_pos_cartesian = T.linear()*x_pos_cylinder+T.translation();
-	Matrix<double,3,6> dx_pos_cartesian = Matrix<double,3,6>::Zero();
-	dx_pos_cartesian(0,0) = c_theta;
-	dx_pos_cartesian(0,1) = radius*-s_theta;
-	dx_pos_cartesian(1,0) = s_theta;
-	dx_pos_cartesian(1,1) = radius*c_theta;
-	dx_pos_cartesian(2,2) = 1.0;
-	dx_pos_cartesian = T.linear()*dx_pos_cartesian;
-  Vector3d rpy_cylinder = x_cylinder.block(3,0,3,1);
-	Matrix3d R_tangent = rpy2rotmat(rpy_cylinder);
-	Matrix<double,9,6> dR_tangent = Matrix<double,9,6>::Zero();
-	dR_tangent.block(0,3,9,3) = drpy2rotmat(rpy_cylinder);
-	Matrix3d R_tangent2cylinder;
-	Matrix3d dR_tangent2cylinder_dtheta;
-	Matrix3d ddR_tangent2cylinder_ddtheta;
-	rotz(M_PI/2-theta,R_tangent2cylinder,dR_tangent2cylinder_dtheta,ddR_tangent2cylinder_ddtheta);
-	Matrix<double,9,6> dR_tangent2cylinder = Matrix<double,9,6>::Zero();
-  for(int i = 0;i<9;i++)
-	{
-		dR_tangent2cylinder(i,1) = -dR_tangent2cylinder_dtheta(i);
-	}
-	Matrix3d R_cylinder = R_tangent2cylinder*R_tangent;
-	auto dR_cylinder = matGradMultMat(R_tangent2cylinder,R_tangent, dR_tangent2cylinder,dR_tangent);
-	Matrix3d R_cylinder_cartesian = T.linear()*R_cylinder;
-	Matrix<double,3,18> dR_cylinder_resize;
-	memcpy(dR_cylinder_resize.data(),dR_cylinder.data(),sizeof(double)*54);
-	Matrix<double,3,18> dR_cylinder_cartesian_resize = T.linear()*dR_cylinder_resize;
-	Matrix<double,9,6> dR_cylinder_cartesian;
-	memcpy(dR_cylinder_cartesian.data(),dR_cylinder_cartesian_resize.data(),sizeof(double)*54);
-	Vector3d x_rpy_cartesian = rotmat2rpy(R_cylinder_cartesian);
-	Matrix<double,3,6> dx_rpy_cartesian = drotmat2rpy(R_cylinder_cartesian,dR_cylinder_cartesian);
-	GradientVar<ScalarT, 6, 1> ret(6,1,6,1);
-	ret.value().block(0,0,3,1) = x_pos_cartesian;
-	ret.value().block(3,0,3,1) = x_rpy_cartesian;
-	ret.gradient().value().block(0,0,3,6) = dx_pos_cartesian;
-	ret.gradient().value().block(3,0,3,6) = dx_rpy_cartesian;
-	return ret;
+	double radius_dot = v_cylinder(0);
+	double theta_dot = v_cylinder(1);
+	double height_dot = v_cylinder(2);
+	Matrix<ScalarT,3,1> x_pos_cartesian;
+	x_pos_cartesian << radius*c_theta, radius*s_theta, height;
+	x_pos_cartesian = R_cylinder2cartesian*x_pos_cartesian+cylinder_origin;
+	Matrix<ScalarT,3,1> v_pos_cartesian;
+	v_pos_cartesian << radius*-s_theta*theta_dot+radius_dot*c_theta, radius*c_theta*theta_dot+radius_dot*s_theta, height_dot;
+	v_pos_cartesian = R_cylinder2cartesian*v_pos_cartesian;
+	Vector3d x_rpy_cylinder = x_cylinder.block(3,0,3,1);
+	Matrix<ScalarT,3,3> R_tangent = rpy2rotmat(x_rpy_cylinder);
+  Matrix<ScalarT,3,3> R_tangent2cylinder;
+	Matrix<ScalarT,3,3> dR_tangent2cylinder;
+	Matrix<ScalarT,3,3> ddR_tangent2cylinder;
+	rotz(M_PI/2-theta,R_tangent2cylinder,dR_tangent2cylinder, ddR_tangent2cylinder);
+	Matrix<ScalarT,3,3> dR_tangent2cylinder_dtheta = -dR_tangent2cylinder;
+  Matrix<ScalarT,3,3> R_cylinder = R_tangent2cylinder*R_tangent;
+	Matrix<ScalarT,3,3> R_cartesian = R_cylinder2cartesian*R_cylinder;
+	Matrix<ScalarT,3,1> x_rpy_cartesian = rotmat2rpy(R_cartesian);
+	x_cartesian.block(0,0,3,1) = x_pos_cartesian;
+	x_cartesian.block(3,0,3,1) = x_rpy_cartesian;
+	v_cartesian.block(0,0,3,1) = v_pos_cartesian;
+	v_cartesian.block(3,0,3,1) = -theta_dot*R_cylinder2cartesian.col(2)+R_cylinder2cartesian*R_tangent2cylinder*v_cylinder.block(3,0,3,1);
+	J = Matrix<ScalarT,6,6>::Zero();
+	J.block(0,0,3,1) << c_theta,s_theta,0;
+	J.block(0,1,3,1) << radius*-s_theta,radius*c_theta,0;
+	J.block(0,2,3,1) << 0,0,1;
+	J.block(0,0,3,3) = R_cylinder2cartesian*J.block(0,0,3,3);
+	J.block(3,1,3,1) = -R_cylinder2cartesian.col(2);
+	J.block(3,3,3,3) = R_cylinder2cartesian*R_tangent2cylinder;
+	Matrix<ScalarT,3,3> dJ1_dradius = Matrix<ScalarT,3,3>::Zero();
+	dJ1_dradius(0,1) = -s_theta;
+	dJ1_dradius(1,1) = c_theta;
+	Matrix<ScalarT,3,3> dJ1_dtheta = Matrix<ScalarT,3,3>::Zero();
+	dJ1_dtheta(0,0) = -s_theta;
+	dJ1_dtheta(0,1) = -radius*c_theta;
+	dJ1_dtheta(1,0) = c_theta;
+	dJ1_dtheta(1,1) = -radius*s_theta;
+	Jdotv.block(0,0,3,1) = (dJ1_dradius*radius_dot+dJ1_dtheta*theta_dot)*v_cylinder.block(0,0,3,1);
+	Jdotv.block(3,0,3,1) = R_cylinder2cartesian*dR_tangent2cylinder_dtheta*theta_dot*v_cartesian.block(3,0,3,1);
 }
 // explicit instantiations
 template DLLEXPORT void normalizeVec(
@@ -1401,9 +1358,7 @@ template DLLEXPORT Gradient<Eigen::Matrix<double, 6, 1, 0, 6, 1>, Eigen::Matrix<
     const Eigen::MatrixBase<Eigen::Matrix<double, 16, -1, 0, 16, -1>>& dT,
     const Eigen::MatrixBase<Eigen::Matrix<double, 6, -1, 0, 6, -1>>& dX);
 
-template DLLEXPORT GradientVar<Matrix<double,6,1,0,6,1>::Scalar,6,1> cartesian2cylindrical(const Transform<Matrix<double,6,1,0,6,1>::Scalar,3,Isometry,0> &T, const MatrixBase<Matrix<double,6,1,0,6,1>> &xyzrpy); 
-
-template DLLEXPORT GradientVar<Matrix<double,6,1,0,6,1>::Scalar,6,1> cylindrical2cartesian(const Transform<Matrix<double,6,1,0,6,1>::Scalar,3,Isometry,0> &T, const MatrixBase<Matrix<double,6,1,0,6,1>> &xyzrpy); 
+template DLLEXPORT  void cylindrical2cartesian(const Matrix<double,3,1> &cylinder_axis, const Matrix<double,3,1> &cylinder_x_dir, const Matrix<double,3,1> & cylinder_origin, const Matrix<double,6,1> &x_cylinder, const Matrix<double,6,1> &v_cylinder, Matrix<double,6,1> &x_cartesian, Matrix<double,6,1> &v_cartesian, Matrix<double,6,6> &J, Matrix<double,6,1> &Jdotv );
 
 template DLLEXPORT void angularvel2quatdotMatrix(const Eigen::MatrixBase<Vector4d>& q,
     Eigen::MatrixBase< Matrix<double, QUAT_SIZE, SPACE_DIMENSION> >& M,

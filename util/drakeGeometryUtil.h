@@ -172,11 +172,8 @@ DLLEXPORT void quatdot2angularvelMatrix(const Eigen::MatrixBase<DerivedQ>& q,
     Eigen::MatrixBase<DerivedM>& M,
     typename Gradient<DerivedM, QUAT_SIZE, 1>::type* dM = nullptr);
 
-template<typename Derived>
-DLLEXPORT GradientVar<typename Derived::Scalar, 6, 1> cartesian2cylindrical(const Eigen::Transform<typename Derived::Scalar, 3, Eigen::Isometry,0>& T, const Eigen::MatrixBase<Derived>& xyzrpy);
-
-template<typename Derived>
-DLLEXPORT GradientVar<typename Derived::Scalar, 6, 1> cylindrical2cartesian(const Eigen::Transform<typename Derived::Scalar, 3, Eigen::Isometry,0>& T, const Eigen::MatrixBase<Derived>& xyzrpy);
+template<typename ScalarT>
+DLLEXPORT  void cylindrical2cartesian(const Eigen::Matrix<ScalarT,3,1> &cylinder_axis, const Eigen::Matrix<ScalarT,3,1> &cylinder_x_dir, const Eigen::Matrix<ScalarT,3,1> & cylinder_origin, const Eigen::Matrix<ScalarT,6,1> &x_cylinder, const Eigen::Matrix<ScalarT,6,1> &v_cylinder, Eigen::Matrix<ScalarT,6,1> &x_cartesian, Eigen::Matrix<ScalarT,6,1> &v_cartesian, Eigen::Matrix<ScalarT,6,6> &J, Eigen::Matrix<ScalarT,6,1> &Jdotv );
 /*
  * spatial transform functions
  */
