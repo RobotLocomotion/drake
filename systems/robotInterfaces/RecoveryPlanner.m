@@ -122,9 +122,7 @@ classdef RecoveryPlanner < MixedIntegerConvexProgram
       if use_symbolic
         [obj, solvertime, objval] = obj.solveYalmip(sdpsettings('solver', 'gurobi', 'verbose', 1));
       else
-        [obj, solvertime, objval] = obj.solveGurobi(struct('verbose', 1));
-        solvertime
-        objval
+        [obj, solvertime, objval] = obj.solveGurobi(struct('outputflag', 1));
       end
       solvertime
       objval
@@ -229,31 +227,31 @@ classdef RecoveryPlanner < MixedIntegerConvexProgram
         beq = zeros(size(Aeq, 1), 1);
         offset = 0;
         for j = 1:obj.nsteps-1
-          xcom(:,j) = rand(4,1);
-          qcop(:,j) = rand(2,1);
-          qcop(:,j+1) = rand(2,1);
-          beta = qcop(:,j);
-          alpha = (qcop(:,j+1) - qcop(:,j)) / obj.dt;
-          T = -Ai * B * beta - Ai*Ai*B*alpha;
-          S = -Ai * B * alpha;
-          Q = xcom(:,j) + Ai * B * beta + Ai * Ai * B * alpha;
-          xcom(:,j+1) = exAdt * Q + S * obj.dt + T;
+          % xcom(:,j) = rand(4,1);
+          % qcop(:,j) = rand(2,1);
+          % qcop(:,j+1) = rand(2,1);
+          % beta = qcop(:,j);
+          % alpha = (qcop(:,j+1) - qcop(:,j)) / obj.dt;
+          % T = -Ai * B * beta - Ai*Ai*B*alpha;
+          % S = -Ai * B * alpha;
+          % Q = xcom(:,j) + Ai * B * beta + Ai * Ai * B * alpha;
+          % xcom(:,j+1) = exAdt * Q + S * obj.dt + T;
 
-          valuecheck(xcom(:,j+1), exAdt * Q + S * obj.dt + T, 1e-8);
-          valuecheck(xcom(:,j+1), exAdt * (xcom(:,j) + Ai * B * beta + Ai * Ai * B * alpha) + S * obj.dt + T, 1e-8);
-          valuecheck(xcom(:,j+1), exAdt * (xcom(:,j) + Ai * B * qcop(:,j) + Ai * Ai * B * alpha) + S * obj.dt + T, 1e-8);
-          valuecheck(xcom(:,j+1), exAdt * (xcom(:,j) + Ai * B * qcop(:,j) + Ai * Ai * B * ((qcop(:,j+1) - qcop(:,j)) / obj.dt)) + S * obj.dt + T, 1e-8);
-          valuecheck(xcom(:,j+1), exAdt * (xcom(:,j) + Ai * B * qcop(:,j) + Ai * Ai * B * ((qcop(:,j+1) - qcop(:,j)) / obj.dt)) + (-Ai * B * alpha) * obj.dt + T, 1e-8);
-          valuecheck(xcom(:,j+1), exAdt * (xcom(:,j) + Ai * B * qcop(:,j) + Ai * Ai * B * ((qcop(:,j+1) - qcop(:,j)) / obj.dt)) + (-Ai * B * (qcop(:,j+1) - qcop(:,j)) / obj.dt) * obj.dt + T, 1e-8);
-          valuecheck(xcom(:,j+1), exAdt * (xcom(:,j) + Ai * B * qcop(:,j) + Ai * Ai * B * ((qcop(:,j+1) - qcop(:,j)) / obj.dt)) + (-Ai * B * (qcop(:,j+1) - qcop(:,j))) + T, 1e-8);
-          valuecheck(xcom(:,j+1), exAdt * (xcom(:,j) + Ai * B * qcop(:,j) + Ai * Ai * B * ((qcop(:,j+1) - qcop(:,j)) / obj.dt)) + (-Ai * B * (qcop(:,j+1) - qcop(:,j))) + -Ai * B * beta - Ai*Ai*B*alpha, 1e-8);
-          valuecheck(xcom(:,j+1), exAdt * (xcom(:,j) + Ai * B * qcop(:,j) + Ai * Ai * B * ((qcop(:,j+1) - qcop(:,j)) / obj.dt)) + (-Ai * B * (qcop(:,j+1) - qcop(:,j))) + -Ai * B * qcop(:,j) - Ai*Ai*B*((qcop(:,j+1) - qcop(:,j)) / obj.dt), 1e-8);
-          valuecheck(xcom(:,j+1), exAdt * xcom(:,j) + ...
-                         (exAdt * Ai * B + exAdt * Ai * Ai * B * -1/obj.dt + Ai * B - Ai * B  + Ai * Ai * B * 1/obj.dt) * qcop(:,j) + ...
-                         (exAdt * Ai * Ai * B * 1/obj.dt + -Ai * B + -Ai * Ai * B * 1/obj.dt) * qcop(:,j+1), 1e-8);
-          valuecheck(xcom(:,j+1), exAdt * xcom(:,j) + ...
-                         (exAdt * Ai * B + exAdt * Ai * Ai * B * -1/obj.dt + Ai * Ai * B * 1/obj.dt) * qcop(:,j) + ...
-                         (exAdt * Ai * Ai * B * 1/obj.dt + -Ai * B + -Ai * Ai * B * 1/obj.dt) * qcop(:,j+1), 1e-8);
+          % valuecheck(xcom(:,j+1), exAdt * Q + S * obj.dt + T, 1e-8);
+          % valuecheck(xcom(:,j+1), exAdt * (xcom(:,j) + Ai * B * beta + Ai * Ai * B * alpha) + S * obj.dt + T, 1e-8);
+          % valuecheck(xcom(:,j+1), exAdt * (xcom(:,j) + Ai * B * qcop(:,j) + Ai * Ai * B * alpha) + S * obj.dt + T, 1e-8);
+          % valuecheck(xcom(:,j+1), exAdt * (xcom(:,j) + Ai * B * qcop(:,j) + Ai * Ai * B * ((qcop(:,j+1) - qcop(:,j)) / obj.dt)) + S * obj.dt + T, 1e-8);
+          % valuecheck(xcom(:,j+1), exAdt * (xcom(:,j) + Ai * B * qcop(:,j) + Ai * Ai * B * ((qcop(:,j+1) - qcop(:,j)) / obj.dt)) + (-Ai * B * alpha) * obj.dt + T, 1e-8);
+          % valuecheck(xcom(:,j+1), exAdt * (xcom(:,j) + Ai * B * qcop(:,j) + Ai * Ai * B * ((qcop(:,j+1) - qcop(:,j)) / obj.dt)) + (-Ai * B * (qcop(:,j+1) - qcop(:,j)) / obj.dt) * obj.dt + T, 1e-8);
+          % valuecheck(xcom(:,j+1), exAdt * (xcom(:,j) + Ai * B * qcop(:,j) + Ai * Ai * B * ((qcop(:,j+1) - qcop(:,j)) / obj.dt)) + (-Ai * B * (qcop(:,j+1) - qcop(:,j))) + T, 1e-8);
+          % valuecheck(xcom(:,j+1), exAdt * (xcom(:,j) + Ai * B * qcop(:,j) + Ai * Ai * B * ((qcop(:,j+1) - qcop(:,j)) / obj.dt)) + (-Ai * B * (qcop(:,j+1) - qcop(:,j))) + -Ai * B * beta - Ai*Ai*B*alpha, 1e-8);
+          % valuecheck(xcom(:,j+1), exAdt * (xcom(:,j) + Ai * B * qcop(:,j) + Ai * Ai * B * ((qcop(:,j+1) - qcop(:,j)) / obj.dt)) + (-Ai * B * (qcop(:,j+1) - qcop(:,j))) + -Ai * B * qcop(:,j) - Ai*Ai*B*((qcop(:,j+1) - qcop(:,j)) / obj.dt), 1e-8);
+          % valuecheck(xcom(:,j+1), exAdt * xcom(:,j) + ...
+          %                (exAdt * Ai * B + exAdt * Ai * Ai * B * -1/obj.dt + Ai * B - Ai * B  + Ai * Ai * B * 1/obj.dt) * qcop(:,j) + ...
+          %                (exAdt * Ai * Ai * B * 1/obj.dt + -Ai * B + -Ai * Ai * B * 1/obj.dt) * qcop(:,j+1), 1e-8);
+          % valuecheck(xcom(:,j+1), exAdt * xcom(:,j) + ...
+          %                (exAdt * Ai * B + exAdt * Ai * Ai * B * -1/obj.dt + Ai * Ai * B * 1/obj.dt) * qcop(:,j) + ...
+          %                (exAdt * Ai * Ai * B * 1/obj.dt + -Ai * B + -Ai * Ai * B * 1/obj.dt) * qcop(:,j+1), 1e-8);
 
           ci = offset+(1:4);
           Aeq(ci, obj.vars.xcom.i(:,j+1)) = -eye(4);
