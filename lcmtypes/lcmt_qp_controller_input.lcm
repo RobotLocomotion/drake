@@ -2,6 +2,8 @@ package drake;
 
 struct lcmt_qp_controller_input
 {
+	boolean be_silent;
+
 	int64_t timestamp;
 
 	lcmt_zmp_data zmp_data;

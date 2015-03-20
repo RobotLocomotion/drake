@@ -18,8 +18,15 @@ if (eigen3_FOUND)
     VERSION 0.0.1)
 
   if (gurobi_FOUND)
-    add_mex(QPCommon SHARED QPCommon.cpp)
-    target_link_libraries(QPCommon drakeControlUtil drakeQP)
+    add_mex(drakeQPCommon SHARED QPCommon.cpp)
+    target_link_libraries(drakeQPCommon drakeControlUtil drakeQP)
+    pods_install_libraries(drakeQPCommon)
+    pods_install_headers(QPCommon.h DESTINATION drake)
+    pods_install_pkg_config_file(drake-qp-common
+      LIBS -ldrakeQPCommon
+      CFLAGS -I\${prefix}/include/lcmtypes
+      REQUIRES drake-control-util
+      VERSION 0.0.1)
 
     add_mex(QPControllermex QPControllermex.cpp)
     target_link_libraries(QPControllermex drakeQP drakeControlUtil)
@@ -30,7 +37,7 @@ if (eigen3_FOUND)
 
     if (LCM_FOUND)
       add_mex(instantaneousQPControllermex instantaneousQPControllermex.cpp)
-      target_link_libraries(instantaneousQPControllermex drakeQP drakeControlUtil QPCommon)
+      target_link_libraries(instantaneousQPControllermex drakeQP drakeControlUtil drakeQPCommon)
       pods_use_pkg_config_packages(instantaneousQPControllermex gurobi)
 
       add_mex(constructQPDataPointerMex constructQPDataPointerMex.cpp)
@@ -41,9 +48,9 @@ if (eigen3_FOUND)
       target_link_libraries(instantaneousBodyMotionControlmex drakeRBM drakeControlUtil)
 
       include_directories (${CMAKE_BINARY_DIR}/lcmgen/lcmtypes )
-      message(${CMAKE_BINARY_DIR}/lcmgen/lcmtypes )
       add_mex(encodeQPInputLCMMex encodeQPInputLCMMex.cpp)
-      target_link_libraries(encodeQPInputLCMMex lcm drakeControlUtil QPCommon)
+      target_link_libraries(encodeQPInputLCMMex lcm drakeControlUtil drakeQPCommon)
+
     endif()
   endif()
 

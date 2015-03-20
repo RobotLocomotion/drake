@@ -90,4 +90,6 @@ DLLEXPORT double angleAverage(double theta1, double theta2);
 
 DLLEXPORT std::pair<Eigen::Vector3d, double> resolveCenterOfPressure(Eigen::Vector3d torque, Eigen::Vector3d force, Eigen::Vector3d normal, Eigen::Vector3d point_on_contact_plane);
 
+DLLEXPORT double *mxGetPrSafe(const mxArray *pobj);
+
 #endif /* DRAKE_UTIL_H_ */

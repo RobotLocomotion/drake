@@ -1,3 +1,6 @@
+#ifndef _QPCOMMON_H_
+#define _QPCOMMON_H_
+
 #include "controlUtil.h"
 #include "drakeUtil.h"
 #include "drake/fastQP.h"
@@ -54,6 +57,7 @@ struct QPControllerState {
   VectorXd vref_integrator_state;
   VectorXd q_integrator_state;
   std::set<int> active;
+  int num_active_contact_pts;
 
   // gurobi active set params
   int *vbasis;
@@ -116,10 +120,28 @@ struct BodyMotionParams {
   double weight;
 };
 
+struct AtlasHardwareGains {
+  VectorXd k_f_p;
+  VectorXd k_q_p;
+  VectorXd k_q_i;
+  VectorXd k_qd_p;
+  VectorXd ff_qd;
+  VectorXd ff_f_d;
+  VectorXd ff_const;
+  VectorXd ff_qd_d;
+};
+
+struct AtlasHardwareParams {
+  AtlasHardwareGains gains;
+  Matrix<bool, Dynamic, 1> joint_is_force_controlled;
+  Matrix<bool, Dynamic, 1> joint_is_position_controlled;
+};
+
 struct AtlasParams {
   WholeBodyParams whole_body;
   std::vector<BodyMotionParams> body_motion;
   VRefIntegratorParams vref_integrator;
+  AtlasHardwareParams hardware;
   Matrix3d W_kdot;
   double Kp_ang;
   double w_slack;
@@ -139,6 +161,8 @@ struct NewQPControllerData {
   double default_terrain_height;
   VectorXd umin,umax;
   int use_fast_qp;
+  JointNames input_joint_names;
+  std::vector<std::string> state_coordinate_names;
 
   // preallocate memory
   MatrixXd H, H_float, H_act;
@@ -211,6 +235,8 @@ PIDOutput wholeBodyPID(NewQPControllerData *pdata, double t, const Ref<const Vec
 
 VectorXd velocityReference(NewQPControllerData *pdata, double t, const Ref<VectorXd> &q, const Ref<VectorXd> &qd, const Ref<VectorXd> &qdd, bool foot_contact[2], VRefIntegratorParams *params, RobotPropertyCache *rpc);
 
-vector<SupportStateElement> loadAvailableSupports(std::shared_ptr<drake::lcmt_qp_controller_input> qp_input);
+std::vector<SupportStateElement> loadAvailableSupports(std::shared_ptr<drake::lcmt_qp_controller_input> qp_input);
 
-int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_controller_input> qp_input, double t, Map<VectorXd> &q, Map<VectorXd> &qd, const Ref<Matrix<bool, Dynamic, 1>> &b_contact_force, QPControllerOutput *qp_output, std::shared_ptr<QPControllerDebugData> debug);
+int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_controller_input> qp_input, DrakeRobotState &robot_state, const Ref<Matrix<bool, Dynamic, 1>> &b_contact_force, QPControllerOutput *qp_output, std::shared_ptr<QPControllerDebugData> debug);
+
+#endif

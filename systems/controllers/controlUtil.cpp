@@ -408,9 +408,9 @@ void sizecheck(const mxArray* mat, int M, int N) {
   return;
 }
 
-Vector6d bodyMotionPD(RigidBodyManipulator *r, Map<VectorXd> &q, Map<VectorXd> &qd, const int body_index, const Ref<const Vector6d> &body_pose_des, const Ref<const Vector6d> &body_v_des, const Ref<const Vector6d> &body_vdot_des, const Ref<const Vector6d> &Kp, const Ref<const Vector6d> &Kd) {
+Vector6d bodyMotionPD(RigidBodyManipulator *r, DrakeRobotState &robot_state, const int body_index, const Ref<const Vector6d> &body_pose_des, const Ref<const Vector6d> &body_v_des, const Ref<const Vector6d> &body_vdot_des, const Ref<const Vector6d> &Kp, const Ref<const Vector6d> &Kd) {
 
-  r->doKinematics(q,false,qd);
+  r->doKinematics(robot_state.q,false,robot_state.qd);
 
   // TODO: this must be updated to use quaternions/spatial velocity
   Vector6d body_pose;
@@ -429,7 +429,7 @@ Vector6d bodyMotionPD(RigidBodyManipulator *r, Map<VectorXd> &q, Map<VectorXd> &
   angleDiff(pose_rpy,des_rpy,error_rpy);
   body_error.tail(3) = error_rpy;
 
-  Vector6d body_vdot = (Kp.array()*body_error.array()).matrix() + (Kd.array()*(body_v_des-J*qd).array()).matrix() + body_vdot_des;
+  Vector6d body_vdot = (Kp.array()*body_error.array()).matrix() + (Kd.array()*(body_v_des-J*robot_state.qd).array()).matrix() + body_vdot_des;
   return body_vdot;
 }
 
@@ -440,6 +440,47 @@ void evaluateCubicSplineSegment(double t, const Ref<const Matrix<double, 6, 4>> 
   yddot = 6*coefs.col(0)*t + 2*coefs.col(1);
 }
 
+// convert Matlab cell array of strings into a C++ vector of strings
+std::vector<std::string> get_strings(const mxArray *rhs) {
+  int num = mxGetNumberOfElements(rhs);
+  std::vector<std::string> strings(num);
+  for (int i=0; i<num; i++) {
+    // const mxArray *ptr = mxGetCell(rhs,i);
+    strings[i] = std::string(mxArrayToString(mxGetCell(rhs, i)));
+    // int buflen = mxGetN(ptr)*sizeof(mxChar)+1;
+    // char* str = (char*)mxMalloc(buflen);
+    // mxGetString(ptr, str, buflen);
+    // strings[i] = string(str);
+    // mxFree(str);
+  }
+  return strings;
+}
+
+void getRobotJointIndexMap(JointNames *joint_names, RobotJointIndexMap *joint_map) {
+  if (joint_names->drake.size() != joint_names->robot.size()) {
+    mexErrMsgTxt("Cannot create joint name map: joint_names->drake and joint_names->robot must have the same length");
+  }
+  int njoints = joint_names->drake.size();
+  joint_map->drake_to_robot.resize(njoints);
+  joint_map->robot_to_drake.resize(njoints);
+
+  bool has_match;
+  for (int i=0; i < njoints; i++) {
+    has_match = false;
+    for (int j=0; j < njoints; j++) {
+      if (joint_names->drake[i].compare(joint_names->robot[j]) == 0) {
+        has_match = true;
+        joint_map->drake_to_robot[i] = j;
+        joint_map->robot_to_drake[j] = i;
+      }
+    }
+    if (!has_match) {
+      std::cout << "Could not match joint: " << joint_names->drake[i] << std::endl;
+      mexErrMsgTxt("Could not find a match for drake joint name");
+    }
+  }
+  return;
+}
 
 template drakeControlUtilEXPORT void getRows(std::set<int> &, const MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > &);
 template drakeControlUtilEXPORT void getCols(std::set<int> &, const MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > &);
