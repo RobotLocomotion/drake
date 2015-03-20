@@ -9,7 +9,7 @@ using namespace std;
 using namespace Eigen;
 int main()
 {
-  RigidBodyManipulator rbm("../examples/Atlas/urdf/atlas_minimal_contact.urdf");
+  RigidBodyManipulator rbm("examples/Atlas/urdf/atlas_minimal_contact.urdf");
   RigidBodyManipulator* model = &rbm;
   if(!model)
   {
