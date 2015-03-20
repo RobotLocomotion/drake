@@ -35,6 +35,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
         if (strcmp(hand, 'robotiq') || strcmp(hand, 'robotiq_tendons') || strcmp(hand, 'robotiq_simple'))
           options_hand.weld_to_link = findLinkId(obj,'r_hand');
           obj.hand_right = 1;
+          obj.hand_right_kind = hand;
           obj = obj.addRobotFromURDF(getFullPathFromRelativePath(['urdf/', hand, '.urdf']), [0; -0.195; -0.01], [0; -3.1415/2; 3.1415], options_hand);
         elseif (strcmp(hand, 'robotiq_weight_only'))
           % Adds a box with weight roughly approximating the hands, so that
@@ -51,6 +52,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
         if (strcmp(hand, 'robotiq') || strcmp(hand, 'robotiq_tendons') || strcmp(hand, 'robotiq_simple'))
           options_hand.weld_to_link = findLinkId(obj,'l_hand');
           obj.hand_left = 1;
+          obj.hand_left_kind = hand;
           obj = obj.addRobotFromURDF(getFullPathFromRelativePath(['urdf/', hand, '.urdf']), [0; 0.195; 0.01], [0; -3.1415/2; 0], options_hand);
         elseif (strcmp(hand, 'robotiq_weight_only'))
           % Adds a box with weight roughly approximating the hands, so that
@@ -342,8 +344,10 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
                                     'constrain_full_foot_pose', true,... % whether to constrain the swing foot roll and pitch
                                     'pelvis_height_above_foot_sole', 0.84,... % default pelvis height when walking
                                     'nominal_LIP_COM_height', 0.89); % nominal height used to construct D_ls for our linear inverted pendulum model
-    hand_right = 0; % 0, none; 1, Robotiq
-    hand_left = 0; % 0, none; 1, Robotiq
+    hand_right = 0;
+    hand_right_kind = 'none';
+    hand_left = 0;
+    hand_left_kind = 'none';
     % preconstructing these for efficiency
     left_full_support
     left_toe_support
