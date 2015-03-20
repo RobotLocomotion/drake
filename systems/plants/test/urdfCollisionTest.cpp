@@ -38,6 +38,7 @@ int main(int argc, char* argv[])
 
   model->collisionDetect(phi,normal,xA,xB,bodyA_idx,bodyB_idx);
 
+  cout << "=======" << endl;
   for (int j=0; j<phi.rows(); ++j) {
     cout << phi(j) << " ";
     for (int i=0; i<3; ++i) {
