@@ -330,7 +330,7 @@ classdef QPLocomotionPlan < QPControllerPlan
       link_constraints(3).pt = [0;0;0];
       link_constraints(3).ts = [0, inf];
       pelvis_current = forwardKin(obj.robot,kinsol,pelvis_id,[0;0;0],1);
-      pelvis_target = pelvis_current;
+      pelvis_target = [mean(foot_pos(1:2,:), 2); pelvis_current(3:end)];
       link_constraints(3).coefs = cat(3, zeros(6,1,3),reshape(pelvis_target,[6,1,1,]));
       obj.link_constraints = link_constraints;
 
