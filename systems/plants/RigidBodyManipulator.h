@@ -253,7 +253,12 @@ public:
   //@param body_or_frame_id   the index of the body or the id of the frame.
 
   template <typename Scalar>
-  GradientVar<Scalar, Eigen::Dynamic, 1> positionConstraints(int gradient_order);
+  GradientVar<Scalar, Eigen::Dynamic, 1> positionConstraintsNew(int gradient_order);
+
+  template <typename DerivedA, typename DerivedB>
+  void positionConstraints(Eigen::MatrixBase<DerivedA> & phi, Eigen::MatrixBase<DerivedB> & J);
+
+  size_t getNumPositionConstraints() const;
 
 public:
   std::vector<std::string> robot_name;

@@ -12,6 +12,7 @@
 #include <stdexcept>
 #include <limits>
 #include "drakeFloatingPointUtil.h" //for isFinite
+#include "RigidBodyConstraint.h"
 //DEBUG
 //#include <stdexcept>
 //END_DEBUG
@@ -2972,7 +2973,7 @@ std::string RigidBodyManipulator::getBodyOrFrameName(int body_or_frame_id)
 }
 
 template <typename Scalar>
-GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::positionConstraints(int gradient_order)
+GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::positionConstraintsNew(int gradient_order)
 {
   if (!use_new_kinsol)
     throw std::runtime_error("method requires new kinsol format");
@@ -3032,6 +3033,59 @@ size_t RigidBodyManipulator::getNumJointLimitConstraints() const
   return finite_min_index.size() + finite_max_index.size();
 }
 
+size_t RigidBodyManipulator::getNumPositionConstraints() const 
+{
+  return loops.size()*3;
+}
+
+template <typename DerivedA, typename DerivedB>
+void RigidBodyManipulator::positionConstraints(MatrixBase<DerivedA> & phi, MatrixBase<DerivedB> & J)
+{
+  if (use_new_kinsol) {
+    auto positionConstraints = positionConstraintsNew<double>(1);
+    phi = positionConstraints.value();
+    J = positionConstraints.gradient().value();
+    return;
+  }
+
+  const int nq = num_positions;
+  const size_t numLoops = loops.size();
+  const size_t numConstraints = getNumPositionConstraints();
+  phi = VectorXd::Zero(numConstraints);
+  J = MatrixXd::Zero(numConstraints, nq);
+  Matrix<double, 7, 1> bpTb, wTb;
+  
+  Vector3d bodyA_pos;
+  Vector4d ptA, origin_pt;
+  MatrixXd JA(3,nq), dbTw_transdq(3,nq), dwTb(7,nq);
+  origin_pt << 0.0, 0.0, 0.0, 1.0;
+  Matrix4d dbTw_quat = dquatConjugate();
+
+  for (size_t i = 0; i < numLoops; i++) {
+    bpTb << -loops[i].ptB, 1.0, 0.0, 0.0, 0.0;
+    ptA << loops[i].ptA, 1.0;
+    forwardKin(loops[i].bodyA->body_index,ptA,0,bodyA_pos);
+    forwardJac(loops[i].bodyA->body_index,ptA,0,JA);
+    forwardKin(loops[i].bodyB->body_index,origin_pt,2,wTb);
+    forwardJac(loops[i].bodyB->body_index,origin_pt,2,dwTb);
+    Vector4d bTw_quat = quatConjugate(wTb.tail<4>());
+    MatrixXd dbTw_quatdq = dbTw_quat*dwTb.block(3,0,4,nq);
+    Vector3d bTw_trans = quatRotateVec(bTw_quat,-wTb.head<3>());
+    Matrix<double,3,7> dbTw_trans = dquatRotateVec(bTw_quat,-wTb.head<3>());
+    dbTw_transdq = dbTw_trans.block(0,0,3,4)*dbTw_quatdq-dbTw_trans.block(0,4,3,3)*dwTb.block(0,0,3,nq);    
+    Matrix<double,3,7> dbpTw_trans1 = dquatRotateVec(bpTb.tail<4>(),bTw_trans);
+    MatrixXd dbpTw_trans1dq = dbpTw_trans1.block(0,4,3,3)*dbTw_transdq;
+    Vector3d bpTw_trans = bTw_trans-loops[i].ptB;
+    Matrix<double,4,8> dbpTw_quat = dquatProduct(bpTb.tail<4>(),bTw_quat);
+    MatrixXd dbpTw_quatdq = dbpTw_quat.block(0,4,4,4)*dbTw_quatdq;
+    Vector3d bp_bodyA_pos1 = quatRotateVec(bTw_quat,bodyA_pos);
+    Matrix<double,3,7> dbp_bodyA_pos1 = dquatRotateVec(bTw_quat,bodyA_pos);
+    MatrixXd dbp_bodyA_pos1dq = dbp_bodyA_pos1.block(0,0,3,4)*dbpTw_quatdq+dbp_bodyA_pos1.block(0,4,3,3)*JA;
+    phi.segment(3*i, 3) = bp_bodyA_pos1+bpTw_trans;
+    J.block(3*i, 0, 3, nq) = dbp_bodyA_pos1dq+dbpTw_trans1dq;
+  }
+}
+
 // explicit instantiations (required for linking):
 template DLLEXPORT_RBM void RigidBodyManipulator::doKinematics(MatrixBase<VectorXd>  &, bool);
 template DLLEXPORT_RBM void RigidBodyManipulator::doKinematics(MatrixBase< Map<VectorXd> >  &, bool);
@@ -3069,7 +3123,7 @@ template DLLEXPORT_RBM void RigidBodyManipulator::forwardKin(const int, MatrixBa
 template DLLEXPORT_RBM void RigidBodyManipulator::forwardKin(const int, MatrixBase< Vector4d > const&, const int, MatrixBase< Matrix<double,6,1> > &);
 template DLLEXPORT_RBM void RigidBodyManipulator::forwardKin(const int, MatrixBase< Vector4d > const&, const int, MatrixBase< Matrix<double,7,1> > &);
 template DLLEXPORT_RBM void RigidBodyManipulator::forwardKin(const int, MatrixBase< Map<MatrixXd> > const&, const int, MatrixBase< MatrixXd > &);
-//template DLLEXPORT_RBM void RigidBodyManipulator::forwardKin(const int, const MatrixBase< Vector4d >&, const int, MatrixBase< Vector3d > &);
+
 template DLLEXPORT_RBM void RigidBodyManipulator::forwardJac(const int, const MatrixBase< MatrixXd > &, const int, MatrixBase< Map<MatrixXd> > &);
 //template DLLEXPORT_RBM void RigidBodyManipulator::forwardJac(const int, MatrixBase< Map<MatrixXd> > const&, const int, MatrixBase< MatrixXd > &);
 //template DLLEXPORT_RBM void RigidBodyManipulator::forwardJac(const int, MatrixBase< MatrixXd > const&, const int, MatrixBase< MatrixXd > &);
@@ -3105,7 +3159,10 @@ template DLLEXPORT_RBM void RigidBodyManipulator::HandC(MatrixBase<VectorXd> con
 template DLLEXPORT_RBM void RigidBodyManipulator::HandC(MatrixBase< Map<VectorXd> > const &, MatrixBase< Map<VectorXd> > const &, MatrixBase< Map<MatrixXd> > * const, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<VectorXd> > &, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > * const);
 template DLLEXPORT_RBM void RigidBodyManipulator::HandC(MatrixBase< Map<VectorXd> > const &, MatrixBase< Map<VectorXd> > const &, MatrixBase< MatrixXd > * const, MatrixBase< MatrixXd > &, MatrixBase< VectorXd > &, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > * const);
 
-template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, 1> RigidBodyManipulator::positionConstraints(int);
+template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, 1> RigidBodyManipulator::positionConstraintsNew(int);
+
+template DLLEXPORT_RBM void RigidBodyManipulator::positionConstraints(MatrixBase<VectorXd> &, MatrixBase<MatrixXd> &);
+template DLLEXPORT_RBM void RigidBodyManipulator::positionConstraints(MatrixBase< Map< VectorXd > > &, MatrixBase< Map< MatrixXd > > &);
 
 template DLLEXPORT_RBM void RigidBodyManipulator::jointLimitConstraints(MatrixBase<VectorXd> const &, MatrixBase<VectorXd> &, MatrixBase<MatrixXd> &) const ;
 template DLLEXPORT_RBM void RigidBodyManipulator::jointLimitConstraints(MatrixBase< Map<VectorXd> > const &, MatrixBase<VectorXd> &, MatrixBase<MatrixXd> &) const ;
