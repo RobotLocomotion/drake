@@ -7,13 +7,21 @@ classdef RecoveryPlanner < MixedIntegerConvexProgram
     dt = 0.05;
     max_foot_velocity = 2; % m / s
     STANCE_UPPER_BOUND = 2; % m, an upper bound on the width of the robot's stance, for mixed-integer constraint formulation
+    weights = struct('foot_motion', 0.01,...
+                     'final_posture', 0.01);
+    nom_stance_width = 0.26;
   end
 
   methods
-    function obj = RecoveryPlanner(nsteps, dt)
-      checkDependency('yalmip');
-      yalmip('clear');
-      obj = obj@MixedIntegerConvexProgram(true);
+    function obj = RecoveryPlanner(nsteps, dt, use_symbolic)
+      if nargin < 3
+        use_symbolic = false;
+      end
+      if use_symbolic
+        checkDependency('yalmip');
+        yalmip('clear');
+      end
+      obj = obj@MixedIntegerConvexProgram(use_symbolic);
 
       if ~isempty(nsteps)
         obj.nsteps = nsteps;
@@ -28,8 +36,10 @@ classdef RecoveryPlanner < MixedIntegerConvexProgram
       obj = obj.addVariable('ql', 'C', [2, obj.nsteps], -1, 1);
       obj = obj.addVariable('contained', 'B', [2, obj.nsteps], 0, 1);
       obj = obj.addVariable('capture_pt_obj', 'C', [1, 1], -inf, inf);
+      obj = obj.addVariable('foot_motion_slack', 'C', [1, obj.nsteps-1], -inf, inf);
       obj = obj.addVariable('foot_motion_obj', 'C', [1, 1], -inf, inf);
       obj = obj.addVariable('posture_obj', 'C', [1, 1], -inf, inf);
+      obj = obj.addVariable('posture_slack', 'C', [2, 1], -inf, inf);
 
 
     end
@@ -100,16 +110,25 @@ classdef RecoveryPlanner < MixedIntegerConvexProgram
       obj = obj.addReachability(use_symbolic);
       obj = obj.addContactConstraints(use_symbolic);
       obj = obj.addFootVelocityLimits(use_symbolic);
-      obj = obj.addFinalFootVelocity();
+      obj = obj.addFinalFootVelocity(use_symbolic);
 
       % obj = obj.addFinalCOMObjective();
       obj = obj.addCapturePointObjective(use_symbolic);
-      obj = obj.addFootMotionObjective();
-      obj = obj.addFinalPostureObjective();
+      obj = obj.addFootMotionObjective(use_symbolic);
+      obj = obj.addFinalPostureObjective(use_symbolic);
 
       % obj = obj.addSymbolicObjective(-.05 * sum(sum(obj.vars.contact.symb)));
 
-      [obj, solvertime, objval] = obj.solveYalmip(sdpsettings('solver', 'gurobi', 'verbose', 1))
+      if use_symbolic
+        [obj, solvertime, objval] = obj.solveYalmip(sdpsettings('solver', 'gurobi', 'verbose', 1));
+      else
+        [obj, solvertime, objval] = obj.solveGurobi(struct('verbose', 1));
+        solvertime
+        objval
+      end
+      solvertime
+      objval
+
 
       if use_symbolic == 2
         obj_check = obj_base;
@@ -118,14 +137,16 @@ classdef RecoveryPlanner < MixedIntegerConvexProgram
         obj_check = obj_check.addReachability(false);
         obj_check = obj_check.addContactConstraints(false);
         obj_check = obj_check.addFootVelocityLimits(false);
-        obj_check = obj_check.addFinalFootVelocity();
+        obj_check = obj_check.addFinalFootVelocity(false);
 
         % obj_check = obj_check.addFinalCOMObjective();
         obj_check = obj_check.addCapturePointObjective(false);
-        obj_check = obj_check.addFootMotionObjective();
-        obj_check = obj_check.addFinalPostureObjective();
+        obj_check = obj_check.addFootMotionObjective(false);
+        obj_check = obj_check.addFinalPostureObjective(false);
 
-        [obj_check, solvertime_check, objval_check] = obj_check.solveYalmip(sdpsettings('solver', 'gurobi', 'verbose', 1))
+        [obj_check, solvertime_check, objval_check] = obj_check.solveGurobi(struct('outputflag', 1));
+        solvertime_check
+        objval_check
         valuecheck(objval_check, objval, 1e-3);
         obj = obj_check;
       end
@@ -605,18 +626,191 @@ classdef RecoveryPlanner < MixedIntegerConvexProgram
         + norm(obj.vars.xcom.symb(3:4,end) - xdotf)^2);
     end
 
-    function obj = addFootMotionObjective(obj)
-      for j = 1:obj.nsteps-1
-        obj = obj.addSymbolicObjective(...
-          0.01 * sum(abs(obj.vars.qr.symb(:,j) - obj.vars.qr.symb(:,j+1))) + ...
-          0.01 * sum(abs(obj.vars.ql.symb(:,j) - obj.vars.ql.symb(:,j+1))));
+    function obj = addFootMotionObjective(obj, use_symbolic)
+      if use_symbolic
+        for j = 1:obj.nsteps-1
+          obj = obj.addSymbolicObjective(...
+            obj.weights.foot_motion * sum(abs(obj.vars.qr.symb(:,j) - obj.vars.qr.symb(:,j+1))) + ...
+            obj.weights.foot_motion * sum(abs(obj.vars.ql.symb(:,j) - obj.vars.ql.symb(:,j+1))));
+        end
+      else
+        A = zeros(4 * 2 * (obj.nsteps-1) + 1, obj.nv);
+        b = zeros(size(A, 1), 1);
+        offset = 0;
+        expected_offset = size(A, 1);
+
+        for j = 1:obj.nsteps-1
+          ci = offset+1;
+          A(ci, obj.vars.qr.i(1,j)) = 1;
+          A(ci, obj.vars.qr.i(1,j+1)) = -1;
+          A(ci, obj.vars.qr.i(2,j)) = 1;
+          A(ci, obj.vars.qr.i(2,j+1)) = -1;
+          A(ci, obj.vars.foot_motion_slack.i(1,j)) = -1;
+          offset = offset + 1;
+
+          ci = offset+1;
+          A(ci, obj.vars.qr.i(1,j)) = -1;
+          A(ci, obj.vars.qr.i(1,j+1)) = 1;
+          A(ci, obj.vars.qr.i(2,j)) = 1;
+          A(ci, obj.vars.qr.i(2,j+1)) = -1;
+          A(ci, obj.vars.foot_motion_slack.i(1,j)) = -1;
+          offset = offset + 1;
+
+          ci = offset+1;
+          A(ci, obj.vars.qr.i(1,j)) = 1;
+          A(ci, obj.vars.qr.i(1,j+1)) = -1;
+          A(ci, obj.vars.qr.i(2,j)) = -1;
+          A(ci, obj.vars.qr.i(2,j+1)) = 1;
+          A(ci, obj.vars.foot_motion_slack.i(1,j)) = -1;
+          offset = offset + 1;
+
+          ci = offset+1;
+          A(ci, obj.vars.qr.i(1,j)) = -1;
+          A(ci, obj.vars.qr.i(1,j+1)) = 1;
+          A(ci, obj.vars.qr.i(2,j)) = -1;
+          A(ci, obj.vars.qr.i(2,j+1)) = 1;
+          A(ci, obj.vars.foot_motion_slack.i(1,j)) = -1;
+          offset = offset + 1;
+
+          ci = offset+1;
+          A(ci, obj.vars.ql.i(1,j)) = 1;
+          A(ci, obj.vars.ql.i(1,j+1)) = -1;
+          A(ci, obj.vars.ql.i(2,j)) = 1;
+          A(ci, obj.vars.ql.i(2,j+1)) = -1;
+          A(ci, obj.vars.foot_motion_slack.i(1,j)) = -1;
+          offset = offset + 1;
+
+          ci = offset+1;
+          A(ci, obj.vars.ql.i(1,j)) = -1;
+          A(ci, obj.vars.ql.i(1,j+1)) = 1;
+          A(ci, obj.vars.ql.i(2,j)) = 1;
+          A(ci, obj.vars.ql.i(2,j+1)) = -1;
+          A(ci, obj.vars.foot_motion_slack.i(1,j)) = -1;
+          offset = offset + 1;
+
+          ci = offset+1;
+          A(ci, obj.vars.ql.i(1,j)) = 1;
+          A(ci, obj.vars.ql.i(1,j+1)) = -1;
+          A(ci, obj.vars.ql.i(2,j)) = -1;
+          A(ci, obj.vars.ql.i(2,j+1)) = 1;
+          A(ci, obj.vars.foot_motion_slack.i(1,j)) = -1;
+          offset = offset + 1;
+
+          ci = offset+1;
+          A(ci, obj.vars.ql.i(1,j)) = -1;
+          A(ci, obj.vars.ql.i(1,j+1)) = 1;
+          A(ci, obj.vars.ql.i(2,j)) = -1;
+          A(ci, obj.vars.ql.i(2,j+1)) = 1;
+          A(ci, obj.vars.foot_motion_slack.i(1,j)) = -1;
+          offset = offset + 1;
+        end
+        ci = offset+1;
+        A(ci, obj.vars.foot_motion_slack.i) = 1;
+        A(ci, obj.vars.foot_motion_obj.i) = -1;
+        offset = offset + 1;
+        assert(offset == expected_offset);
+
+        obj = obj.addLinearConstraints(A, b, [], []);
+        c = zeros(obj.nv, 1);
+        c(obj.vars.foot_motion_obj.i) = obj.weights.foot_motion;
+        obj = obj.addCost([], c, []);
       end
     end
 
-    function obj = addFinalPostureObjective(obj)
-      obj = obj.addSymbolicObjective(...
-        0.01 * sum(abs(obj.vars.qr.symb(:,end) - (obj.vars.xcom.symb(1:2,end) + [0; -0.13]))) + ...
-        0.01 * sum(abs(obj.vars.ql.symb(:,end) - (obj.vars.xcom.symb(1:2,end) + [0; 0.13]))));
+    function obj = addFinalPostureObjective(obj, use_symbolic)
+      if use_symbolic
+        obj = obj.addSymbolicObjective(...
+          obj.weights.final_posture * sum(abs(obj.vars.qr.symb(:,end) - (obj.vars.xcom.symb(1:2,end) + [0; -obj.nom_stance_width/2]))) + ...
+          obj.weights.final_posture * sum(abs(obj.vars.ql.symb(:,end) - (obj.vars.xcom.symb(1:2,end) + [0; obj.nom_stance_width/2]))));
+      else
+        A = zeros(4 * 2 + 1, obj.nv);
+        b = zeros(size(A, 1), 1);
+        ci = 1;
+
+        nom_pose = [0; -obj.nom_stance_width/2];
+
+        A(ci, obj.vars.qr.i(1,end)) = 1;
+        A(ci, obj.vars.xcom.i(1,end)) = -1;
+        b(ci) = nom_pose(1);
+        A(ci, obj.vars.qr.i(2,end)) = 1;
+        A(ci, obj.vars.xcom.i(2,end)) = -1;
+        b(ci) = b(ci) + nom_pose(2);
+        A(ci, obj.vars.posture_slack.i(1)) = -1;
+        ci = ci + 1;
+
+        A(ci, obj.vars.qr.i(1,end)) = -1;
+        A(ci, obj.vars.xcom.i(1,end)) = 1;
+        b(ci) = -nom_pose(1);
+        A(ci, obj.vars.qr.i(2,end)) = 1;
+        A(ci, obj.vars.xcom.i(2,end)) = -1;
+        b(ci) = b(ci) + nom_pose(2);
+        A(ci, obj.vars.posture_slack.i(1)) = -1;
+        ci = ci + 1;
+
+        A(ci, obj.vars.qr.i(1,end)) = 1;
+        A(ci, obj.vars.xcom.i(1,end)) = -1;
+        b(ci) = nom_pose(1);
+        A(ci, obj.vars.qr.i(2,end)) = -1;
+        A(ci, obj.vars.xcom.i(2,end)) = 1;
+        b(ci) = b(ci) - nom_pose(2);
+        A(ci, obj.vars.posture_slack.i(1)) = -1;
+        ci = ci + 1;
+
+        A(ci, obj.vars.qr.i(1,end)) = -1;
+        A(ci, obj.vars.xcom.i(1,end)) = 1;
+        b(ci) = -nom_pose(1);
+        A(ci, obj.vars.qr.i(2,end)) = -1;
+        A(ci, obj.vars.xcom.i(2,end)) = 1;
+        b(ci) = b(ci) - nom_pose(2);
+        A(ci, obj.vars.posture_slack.i(1)) = -1;
+        ci = ci + 1;
+
+        nom_pose = [0; obj.nom_stance_width/2];
+
+        A(ci, obj.vars.ql.i(1,end)) = 1;
+        A(ci, obj.vars.xcom.i(1,end)) = -1;
+        b(ci) = nom_pose(1);
+        A(ci, obj.vars.ql.i(2,end)) = 1;
+        A(ci, obj.vars.xcom.i(2,end)) = -1;
+        b(ci) = b(ci) + nom_pose(2);
+        A(ci, obj.vars.posture_slack.i(2)) = -1;
+        ci = ci + 1;
+
+        A(ci, obj.vars.ql.i(1,end)) = -1;
+        A(ci, obj.vars.xcom.i(1,end)) = 1;
+        b(ci) = -nom_pose(1);
+        A(ci, obj.vars.ql.i(2,end)) = 1;
+        A(ci, obj.vars.xcom.i(2,end)) = -1;
+        b(ci) = b(ci) + nom_pose(2);
+        A(ci, obj.vars.posture_slack.i(2)) = -1;
+        ci = ci + 1;
+
+        A(ci, obj.vars.ql.i(1,end)) = 1;
+        A(ci, obj.vars.xcom.i(1,end)) = -1;
+        b(ci) = nom_pose(1);
+        A(ci, obj.vars.ql.i(2,end)) = -1;
+        A(ci, obj.vars.xcom.i(2,end)) = 1;
+        b(ci) = b(ci) - nom_pose(2);
+        A(ci, obj.vars.posture_slack.i(2)) = -1;
+        ci = ci + 1;
+
+        A(ci, obj.vars.ql.i(1,end)) = -1;
+        A(ci, obj.vars.xcom.i(1,end)) = 1;
+        b(ci) = -nom_pose(1);
+        A(ci, obj.vars.ql.i(2,end)) = -1;
+        A(ci, obj.vars.xcom.i(2,end)) = 1;
+        b(ci) = b(ci) - nom_pose(2);
+        A(ci, obj.vars.posture_slack.i(2)) = -1;
+        ci = ci + 1;
+
+        A(ci, obj.vars.posture_slack.i) = 1;
+        A(ci, obj.vars.posture_obj.i) = -1;
+        obj = obj.addLinearConstraints(A, b, [], []);
+
+        c = zeros(obj.nv, 1);
+        c(obj.vars.posture_obj.i) = obj.weights.final_posture;
+        obj = obj.addCost([], c, []);
+      end
     end
 
     function obj = addFootVelocityLimits(obj, use_symbolic)
@@ -658,11 +852,26 @@ classdef RecoveryPlanner < MixedIntegerConvexProgram
       end
     end
 
-    function obj = addFinalFootVelocity(obj)
-      obj = obj.addSymbolicConstraints([...
-        obj.vars.qr.symb(:,end-1) == obj.vars.qr.symb(:,end),...
-        obj.vars.ql.symb(:,end-1) == obj.vars.ql.symb(:,end),...
-        ]);
+    function obj = addFinalFootVelocity(obj, use_symbolic)
+      if use_symbolic
+        obj = obj.addSymbolicConstraints([...
+          obj.vars.qr.symb(:,end-1) == obj.vars.qr.symb(:,end),...
+          obj.vars.ql.symb(:,end-1) == obj.vars.ql.symb(:,end),...
+          ]);
+      else
+        Aeq = zeros(4, obj.nv);
+        beq = zeros(size(Aeq, 1), 1);
+
+        ci = 1:2;
+        Aeq(ci, obj.vars.qr.i(:,end-1)) = eye(2);
+        Aeq(ci, obj.vars.qr.i(:,end)) = -eye(2);
+
+        ci = 3:4;
+        Aeq(ci, obj.vars.ql.i(:,end-1)) = eye(2);
+        Aeq(ci, obj.vars.ql.i(:,end)) = -eye(2);
+
+        obj = obj.addLinearConstraints([], [], Aeq, beq);
+      end
     end
   end
 end
