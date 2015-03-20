@@ -174,6 +174,9 @@ DLLEXPORT void quatdot2angularvelMatrix(const Eigen::MatrixBase<DerivedQ>& q,
 
 template<typename ScalarT>
 DLLEXPORT  void cylindrical2cartesian(const Eigen::Matrix<ScalarT,3,1> &cylinder_axis, const Eigen::Matrix<ScalarT,3,1> &cylinder_x_dir, const Eigen::Matrix<ScalarT,3,1> & cylinder_origin, const Eigen::Matrix<ScalarT,6,1> &x_cylinder, const Eigen::Matrix<ScalarT,6,1> &v_cylinder, Eigen::Matrix<ScalarT,6,1> &x_cartesian, Eigen::Matrix<ScalarT,6,1> &v_cartesian, Eigen::Matrix<ScalarT,6,6> &J, Eigen::Matrix<ScalarT,6,1> &Jdotv );
+
+template<typename ScalarT>
+DLLEXPORT  void cartesian2cylindrical(const Eigen::Matrix<ScalarT,3,1> &cylinder_axis, const Eigen::Matrix<ScalarT,3,1> &cylinder_x_dir, const Eigen::Matrix<ScalarT,3,1> & cylinder_origin, const Eigen::Matrix<ScalarT,6,1> &x_cartesian, const Eigen::Matrix<ScalarT,6,1> &v_cartesian, Eigen::Matrix<ScalarT,6,1> &x_cylinder, Eigen::Matrix<ScalarT,6,1> &v_cylinder, Eigen::Matrix<ScalarT,6,6> &J, Eigen::Matrix<ScalarT,6,1> &Jdotv );
 /*
  * spatial transform functions
  */
