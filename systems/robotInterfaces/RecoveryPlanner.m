@@ -77,6 +77,9 @@ classdef RecoveryPlanner < MixedIntegerConvexProgram
     end
 
     function sol = solveBaseProblem(obj, start, omega, use_symbolic)
+      if nargin < 4
+        use_symbolic = false;
+      end
       if obj.has_setup
         error('Drake:RecoveryPlanner:DuplicateSetup', 'Cannot call setup twice on the same recovery planner instance');
       end
