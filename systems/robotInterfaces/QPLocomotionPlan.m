@@ -55,6 +55,10 @@ classdef QPLocomotionPlan < QPControllerPlan
       r = obj.robot;
       t_plan = t_global - obj.start_time;
       t_plan = double(t_plan);
+      if t_plan < 0
+        qp_input = [];
+        return;
+      end
       
       T = obj.duration;
       t_plan = min([t_plan, T]);
@@ -84,7 +88,13 @@ classdef QPLocomotionPlan < QPControllerPlan
         qp_input.whole_body_data.q_des = fasteval(obj.qtraj, t_plan);
       end
 
-      supp_idx = find(obj.support_times<=t_plan,1,'last');
+      if t_plan < obj.support_times(1)
+        supp_idx = 1;
+      elseif t_plan > obj.support_times(end)
+        supp_idx = length(obj.support_times);
+      else
+        supp_idx = find(obj.support_times<=t_plan,1,'last');
+      end
 
       MIN_KNEE_ANGLE = 0.7;
       KNEE_KP = 40;
@@ -98,10 +108,12 @@ classdef QPLocomotionPlan < QPControllerPlan
         if qp_input.body_motion_data(j).body_id == rpc.body_ids.pelvis
           pelvis_has_tracking = true;
         end
-        if t_plan <= obj.link_constraints(j).ts(end)
-          body_t_ind = find(obj.link_constraints(j).ts<=t_plan,1,'last');
-        else
+        if t_plan < obj.link_constraints(j).ts(1)
+          body_t_ind = 1;
+        elseif t_plan > obj.link_constraints(j).ts(end)
           body_t_ind = length(obj.link_constraints(j).ts);
+        else
+          body_t_ind = find(obj.link_constraints(j).ts<=t_plan,1,'last');
         end
         if body_t_ind < length(obj.link_constraints(j).ts)
           qp_input.body_motion_data(j).ts = obj.link_constraints(j).ts(body_t_ind:body_t_ind+1) + obj.start_time;
