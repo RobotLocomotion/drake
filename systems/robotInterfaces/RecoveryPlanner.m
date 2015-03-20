@@ -27,12 +27,10 @@ classdef RecoveryPlanner < MixedIntegerConvexProgram
       obj = obj.addVariable('qr', 'C', [2, obj.nsteps], -1, 1);
       obj = obj.addVariable('ql', 'C', [2, obj.nsteps], -1, 1);
       obj = obj.addVariable('contained', 'B', [2, obj.nsteps], 0, 1);
+      obj = obj.addVariable('capture_pt_obj', 'C', [1, 1], -inf, inf);
+      obj = obj.addVariable('foot_motion_obj', 'C', [1, 1], -inf, inf);
+      obj = obj.addVariable('posture_obj', 'C', [1, 1], -inf, inf);
 
-
-      obj = obj.addSymbolicConstraints([...
-        obj.vars.qr.symb(:,end-1) == obj.vars.qr.symb(:,end),...
-        obj.vars.ql.symb(:,end-1) == obj.vars.ql.symb(:,end),...
-        ]);
 
     end
 
@@ -102,9 +100,10 @@ classdef RecoveryPlanner < MixedIntegerConvexProgram
       obj = obj.addReachability(use_symbolic);
       obj = obj.addContactConstraints(use_symbolic);
       obj = obj.addFootVelocityLimits(use_symbolic);
+      obj = obj.addFinalFootVelocity();
 
       % obj = obj.addFinalCOMObjective();
-      obj = obj.addCapturePointObjective();
+      obj = obj.addCapturePointObjective(use_symbolic);
       obj = obj.addFootMotionObjective();
       obj = obj.addFinalPostureObjective();
 
@@ -119,9 +118,10 @@ classdef RecoveryPlanner < MixedIntegerConvexProgram
         obj_check = obj_check.addReachability(false);
         obj_check = obj_check.addContactConstraints(false);
         obj_check = obj_check.addFootVelocityLimits(false);
+        obj_check = obj_check.addFinalFootVelocity();
 
         % obj_check = obj_check.addFinalCOMObjective();
-        obj_check = obj_check.addCapturePointObjective();
+        obj_check = obj_check.addCapturePointObjective(false);
         obj_check = obj_check.addFootMotionObjective();
         obj_check = obj_check.addFinalPostureObjective();
 
@@ -528,13 +528,70 @@ classdef RecoveryPlanner < MixedIntegerConvexProgram
       end
     end
 
-    function obj = addCapturePointObjective(obj)
+    function obj = addCapturePointObjective(obj, use_symbolic)
       % r'ic = r' + rd'
       % r' = r / z
       % rd' = rd / (omega * z)
       % ric = r'ic * z = z * (r/z + rd / (omega*z)) = r + rd/omega
-      obj = obj.addSymbolicObjective(...
-        norm((obj.vars.xcom.symb(1:2,end) + 1/obj.omega * obj.vars.xcom.symb(3:4,end)) - mean([obj.vars.qr.symb(:,end), obj.vars.ql.symb(:,end)], 2), 1));
+      if use_symbolic
+        obj = obj.addSymbolicConstraints([...
+          norm((obj.vars.xcom.symb(1:2,end) + 1/obj.omega * obj.vars.xcom.symb(3:4,end)) - mean([obj.vars.qr.symb(:,end), obj.vars.ql.symb(:,end)], 2), 1) <= obj.vars.capture_pt_obj.symb]);
+        obj = obj.addSymbolicObjective(obj.vars.capture_pt_obj.symb);                               
+      else
+        A = zeros(4, obj.nv);
+        b = zeros(size(A, 1), 1);
+        ci = 1;
+
+        A(ci, obj.vars.xcom.i(1,end)) = 1;
+        A(ci, obj.vars.xcom.i(3,end)) = 1/obj.omega;
+        A(ci, obj.vars.qr.i(1,end)) = -0.5;
+        A(ci, obj.vars.ql.i(1,end)) = -0.5;
+        A(ci, obj.vars.xcom.i(2,end)) = 1;
+        A(ci, obj.vars.xcom.i(4,end)) = 1/obj.omega;
+        A(ci, obj.vars.qr.i(2,end)) = -0.5;
+        A(ci, obj.vars.ql.i(2,end)) = -0.5;
+        A(ci, obj.vars.capture_pt_obj.i) = -1;
+        ci = ci + 1;
+
+        A(ci, obj.vars.xcom.i(1,end)) = -1;
+        A(ci, obj.vars.xcom.i(3,end)) = -1/obj.omega;
+        A(ci, obj.vars.qr.i(1,end)) = 0.5;
+        A(ci, obj.vars.ql.i(1,end)) = 0.5;
+        A(ci, obj.vars.xcom.i(2,end)) = 1;
+        A(ci, obj.vars.xcom.i(4,end)) = 1/obj.omega;
+        A(ci, obj.vars.qr.i(2,end)) = -0.5;
+        A(ci, obj.vars.ql.i(2,end)) = -0.5;
+        A(ci, obj.vars.capture_pt_obj.i) = -1;
+        ci = ci + 1;
+
+        A(ci, obj.vars.xcom.i(1,end)) = 1;
+        A(ci, obj.vars.xcom.i(3,end)) = 1/obj.omega;
+        A(ci, obj.vars.qr.i(1,end)) = -0.5;
+        A(ci, obj.vars.ql.i(1,end)) = -0.5;
+        A(ci, obj.vars.xcom.i(2,end)) = -1;
+        A(ci, obj.vars.xcom.i(4,end)) = -1/obj.omega;
+        A(ci, obj.vars.qr.i(2,end)) = 0.5;
+        A(ci, obj.vars.ql.i(2,end)) = 0.5;
+        A(ci, obj.vars.capture_pt_obj.i) = -1;
+        ci = ci + 1;
+
+        A(ci, obj.vars.xcom.i(1,end)) = -1;
+        A(ci, obj.vars.xcom.i(3,end)) = -1/obj.omega;
+        A(ci, obj.vars.qr.i(1,end)) = 0.5;
+        A(ci, obj.vars.ql.i(1,end)) = 0.5;
+        A(ci, obj.vars.xcom.i(2,end)) = -1;
+        A(ci, obj.vars.xcom.i(4,end)) = -1/obj.omega;
+        A(ci, obj.vars.qr.i(2,end)) = 0.5;
+        A(ci, obj.vars.ql.i(2,end)) = 0.5;
+        A(ci, obj.vars.capture_pt_obj.i) = -1;
+        ci = ci + 1;
+
+        obj = obj.addLinearConstraints(A, b, [], []);
+
+        c = zeros(obj.nv, 1);
+        c(obj.vars.capture_pt_obj.i) = 1;
+        obj = obj.addCost([], c, []);
+      end
     end
 
     function obj = addFinalCOMObjective(obj, xdotf)
@@ -599,6 +656,13 @@ classdef RecoveryPlanner < MixedIntegerConvexProgram
         assert(offset == expected_offset);
         obj = obj.addLinearConstraints(A, b, [], []);
       end
+    end
+
+    function obj = addFinalFootVelocity(obj)
+      obj = obj.addSymbolicConstraints([...
+        obj.vars.qr.symb(:,end-1) == obj.vars.qr.symb(:,end),...
+        obj.vars.ql.symb(:,end-1) == obj.vars.ql.symb(:,end),...
+        ]);
     end
   end
 end
