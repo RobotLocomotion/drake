@@ -121,14 +121,15 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   const Map<VectorXd> phiC(mxGetPr(prhs[4]),numContactPairs);
   const Map<MatrixXd> n(mxGetPr(prhs[5]), numContactPairs, nq);
 
-  VectorXd C, phiL, phiL_possible, phiC_possible, phiL_check, phiC_check;
-  MatrixXd H, B, JL, JL_possible, n_possible, JL_check, n_check;
+  VectorXd C, phiL, phiP, phiL_possible, phiC_possible, phiL_check, phiC_check;
+  MatrixXd H, B, JP, JL, JL_possible, n_possible, JL_check, n_check;
 
   manipulatorDynamics(model, q, v, H, C, B);
-  auto phiP = model->positionConstraints<double>(1);
+
+  model->positionConstraints(phiP, JP);
   model->jointLimitConstraints(q, phiL, JL);
   MatrixXd Hinv = H.inverse();
-  const int nP = phiP.value().size();
+  const int nP = phiP.size();
   
   plhs[2] = mxCreateDoubleMatrix(nq, 1, mxREAL);
   Map<VectorXd> wqdn(mxGetPr(plhs[2]), nq);
@@ -165,7 +166,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 
 
     MatrixXd J(LCP_size, nq);
-    J << JL_possible, phiP.gradient().value(), n_possible, D_possible, MatrixXd::Zero(nC, nq);
+    J << JL_possible, JP, n_possible, D_possible, MatrixXd::Zero(nC, nq);
 
     plhs[0] = mxCreateDoubleMatrix(LCP_size, 1, mxREAL);
     plhs[1] = mxCreateDoubleMatrix(nq, LCP_size, mxREAL);
@@ -193,7 +194,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 
     //build LCP matrix
     M << h*JL_possible*Mqdn,
-         h*phiP.gradient().value()*Mqdn,
+         h*JP*Mqdn,
          h*n_possible*Mqdn,
          D_possible*Mqdn,
          MatrixXd::Zero(nC, LCP_size);
@@ -210,7 +211,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 
     //build LCP vector
     w << phiL_possible + h*JL_possible*wqdn,
-         phiP.value() + h *phiP.gradient().value()*wqdn,
+         phiP + h*JP*wqdn,
          phiC_possible + h*n_possible*wqdn,
          D_possible*wqdn,
          VectorXd::Zero(nC);
