@@ -39,12 +39,10 @@ limp_height = (com(3) - zfeet) + (desired_pelvis_above_sole - actual_pelvis_abov
 limp_height = round(limp_height / zmp_opts.lqr_cache_com_height_resolution) * zmp_opts.lqr_cache_com_height_resolution;
 
 if isa(zmptraj_or_comgoal, 'Trajectory')
-  [c, V] = LinearInvertedPendulum.ZMPtrackerClosedForm(limp_height, zmptraj_or_comgoal, zmp_opts);
-  comtraj = [];
+  [c, V, comtraj] = LinearInvertedPendulum.ZMPtrackerClosedForm(limp_height, zmptraj_or_comgoal, zmp_opts);
 elseif isnumeric(zmptraj_or_comgoal)
   hg = limp_height/9.81;
-  [A, B, C, D, Q, R, Q1, R1, N] = LinearInvertedPendulum.setupLinearSystem(hg, diag([0,0,0,0,1,1]));
-  [~, S] = lqrWithCache(A, B, Q1, R1, N);
+  [~, S] = ZMPCachedLQR(hg, diag([0,0,0,0,1,1]));
   c = [];
   V = S;
   comtraj = zmptraj_or_comgoal;

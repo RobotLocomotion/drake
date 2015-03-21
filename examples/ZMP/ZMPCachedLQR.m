@@ -1,12 +1,12 @@
-function [K, S] = lqrWithCache(A, B, Q, R, N)
+function [K, S] = ZMPCachedLQR(h_over_g, Qy)
 
 MAX_CACHE_ENTRIES = 1000;
 
-key = sprintf('%f ', A, B, Q, R, N);
+key = [sprintf('hg %f ', h_over_g), 'Qy ', sprintf('%f', Qy)];
 
-fname = fullfile(getDrakePath(), 'examples', 'ZMP', 'data', 'lqr_solution_cache.mat');
 persistent lqr_solution_cache
 if isempty(lqr_solution_cache)
+  fname = fullfile(getDrakePath(), 'examples', 'ZMP', 'data', 'lqr_solution_cache.mat');
   if exist(fname, 'file')
     S = load(fname, 'lqr_solution_cache');
     lqr_solution_cache = S.lqr_solution_cache;
@@ -21,7 +21,8 @@ if lqr_solution_cache.isKey(key)
   K = value{1};
   S = value{2};
 else
-  [K, S] = lqr(A, B, Q, R, N);
+  [A, B, C, D, Q, R, Q1, R1, N] = LinearInvertedPendulum.setupLinearSystem(h_over_g, Qy);
+  [K, S] = lqr(A, B, Q1, R1, N);
   lqr_solution_cache(key) = {K, S};
   cache_dirty = true;
 end
@@ -33,6 +34,7 @@ if length(lqr_solution_cache) > MAX_CACHE_ENTRIES;
 end
 
 if cache_dirty
+  fname = fullfile(getDrakePath(), 'examples', 'ZMP', 'data', 'lqr_solution_cache.mat');
   save(fname, 'lqr_solution_cache');
 end
 

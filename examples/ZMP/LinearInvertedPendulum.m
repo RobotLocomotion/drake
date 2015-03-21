@@ -247,7 +247,7 @@ classdef LinearInvertedPendulum < LinearSystem
       R1i = inv(R1);
       
       if options.use_lqr_cache
-        [K, S] = lqrWithCache(A, B, Q1, R1, N);
+        [K, S] = ZMPCachedLQR(hg, options.Qy);
       else
         [K,S] = lqr(A,B,Q1,R1,N); 
       end
@@ -328,7 +328,11 @@ classdef LinearInvertedPendulum < LinearSystem
         if options.build_control_objects
           comtraj = ExpPlusPPTrajectory(breaks,[eye(2),zeros(2,6)],Ay,[a;alpha],b(1:2,:,:));
         else
-          comtraj = [];
+          comtraj = struct('breaks', breaks,...
+                           'K', [eye(2),zeros(2,6)],...
+                           'A', Ay,...
+                           'alpha', [a;alpha],...
+                           'gamma', b(1:2,:,:));
         end
       end
       
