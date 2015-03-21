@@ -23,9 +23,11 @@ warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits')
 
 options.floating = true;
 options.dt = 0.002;
-options.hands = 'robotiq_weight_only';
+options.hand_left = 'robotiq_weight_only';
+options.hand_right = 'robotiq_weight_only';
 r = Atlas('urdf/atlas_minimal_contact.urdf',options);
-options.hands = 'robotiq_tendons';
+options.hand_left = 'robotiq_tendons';
+options.hand_right = 'robotiq_tendons';
 r_hands = Atlas('urdf/atlas_minimal_contact.urdf',options);
 r = r.removeCollisionGroupsExcept({'heel','toe'});
 r_hands = r_hands.removeCollisionGroupsExcept({'heel','toe'});
@@ -168,15 +170,36 @@ ins(2).system = 1;
 ins(2).input = 3;
 ins(3).system = 2;
 ins(3).input = 2;
+ins(4).system = 2;
+ins(4).input = 3;
 outs(1).system = 2;
 outs(1).output = 1;
 outs(2).system = 2;
 outs(2).output = 2;
+outs(3).system = 2;
+outs(3).output = 3;
 sys = mimoFeedback(qp,r_hands,[],[],ins,outs);
 clear ins;
 clear outs;
 
-rh = RobotiqControlBlock(r_hands, 2, '');
+rh = RobotiqControlBlock(r_hands, 2, 'right_');
+ins(1).system = 1;
+ins(1).input = 1;
+ins(2).system = 1;
+ins(2).input = 2;
+ins(3).system = 1;
+ins(3).input = 4;
+outs(1).system = 1;
+outs(1).output = 1;
+outs(2).system = 1;
+outs(2).output = 2;
+outs(3).system = 1;
+outs(3).output = 3;
+sys = mimoFeedback(sys, rh,[],[],ins,outs);
+clear ins;
+clear outs;
+
+lh = RobotiqControlBlock(r_hands, 3, 'left_');
 ins(1).system = 1;
 ins(1).input = 1;
 ins(2).system = 1;
@@ -185,7 +208,9 @@ outs(1).system = 1;
 outs(1).output = 1;
 outs(2).system = 1;
 outs(2).output = 2;
-sys = mimoFeedback(sys, rh,[],[],ins,outs);
+outs(3).system = 1;
+outs(3).output = 3;
+sys = mimoFeedback(sys, lh,[],[],ins,outs);
 clear ins;
 clear outs;
 
@@ -199,6 +224,8 @@ outs(1).system = 2;
 outs(1).output = 1;
 outs(2).system = 2;
 outs(2).output = 2;
+outs(3).system = 2;
+outs(3).output = 3;
 sys = mimoFeedback(fc,sys,[],[],ins,outs);
 clear ins;
 
@@ -211,6 +238,8 @@ outs(1).system = 2;
 outs(1).output = 1;
 outs(2).system = 2;
 outs(2).output = 2;
+outs(3).system = 2;
+outs(3).output = 3;
 sys = mimoFeedback(pd,sys,[],[],ins,outs);
 clear ins;
 
@@ -225,6 +254,8 @@ if visualize
   output_select(1).output=1;
   output_select(2).system=1;
   output_select(2).output=2;
+  output_select(3).system = 1;
+  output_select(3).output = 3;
   sys = mimoCascade(sys,v,[],[],output_select);
   warning(S);
 end
