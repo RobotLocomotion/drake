@@ -81,7 +81,7 @@ for iter = 1:3
     lcmgl.sphere([walking_plan_data.zmptraj.eval(ts(i));0], 0.01, 20, 20);
   end
   lcmgl.switchBuffers();
-  keyboard()
+  % keyboard()
 
   planeval = atlasControllers.AtlasPlanEval(r, walking_plan_data);
   control = atlasControllers.InstantaneousQPController(r, [], struct('use_mex', example_options.use_mex));
