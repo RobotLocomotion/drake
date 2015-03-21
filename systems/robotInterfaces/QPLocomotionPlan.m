@@ -14,6 +14,7 @@ classdef QPLocomotionPlan < QPControllerPlan
     mu = 0.5;
     plan_shift_data = PlanShiftData();
     g = 9.81; % gravity m/s^2
+    is_quasistatic = false;
   end
 
   methods
@@ -65,15 +66,27 @@ classdef QPLocomotionPlan < QPControllerPlan
 
       q = x(1:rpc.nq);
       qd = x(rpc.nq+(1:rpc.nv));
-      kinsol = doKinematics(obj.robot, q);
 
       qp_input = obj.default_qp_input;
       qp_input.zmp_data.D = -obj.LIP_height/obj.g * eye(2);
-      qp_input.zmp_data.x0 = [obj.zmp_final; 0;0];
-      if isnumeric(obj.zmptraj)
-        qp_input.zmp_data.y0 = obj.zmptraj;
+
+      if isnumeric(obj.qtraj)
+        qp_input.whole_body_data.q_des = obj.qtraj;
       else
-        qp_input.zmp_data.y0 = fasteval(obj.zmptraj, t_plan);
+        qp_input.whole_body_data.q_des = fasteval(obj.qtraj, t_plan);
+      end
+
+      if obj.is_quasistatic
+        com_pos = obj.robot.getCOM(obj.robot.doKinematics(qp_input.whole_body_data.q_des));
+        qp_input.zmp_data.x0 = [com_pos(1:2); 0; 0];
+        qp_input.zmp_data.y0 = com_pos(1:2);
+      else
+        qp_input.zmp_data.x0 = [obj.zmp_final; 0;0];
+        if isnumeric(obj.zmptraj)
+          qp_input.zmp_data.y0 = obj.zmptraj;
+        else
+          qp_input.zmp_data.y0 = fasteval(obj.zmptraj, t_plan);
+        end
       end
       qp_input.zmp_data.S = obj.V.S;
       if isnumeric(obj.V.s1)
@@ -82,11 +95,7 @@ classdef QPLocomotionPlan < QPControllerPlan
         qp_input.zmp_data.s1 = fasteval(obj.V.s1,t_plan);
       end
 
-      if isnumeric(obj.qtraj)
-        qp_input.whole_body_data.q_des = obj.qtraj;
-      else
-        qp_input.whole_body_data.q_des = fasteval(obj.qtraj, t_plan);
-      end
+      kinsol = doKinematics(obj.robot, q);
 
       if t_plan < obj.support_times(1)
         supp_idx = 1;
@@ -315,6 +324,7 @@ classdef QPLocomotionPlan < QPControllerPlan
       obj.support_times = [0, inf];
       obj.duration = inf;
       obj.supports = [support_state, support_state];
+      obj.is_quasistatic = true;
 
       nq = obj.robot.getNumPositions();
       q0 = x0(1:nq);
