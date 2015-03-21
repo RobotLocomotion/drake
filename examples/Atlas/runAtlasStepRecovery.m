@@ -58,9 +58,9 @@ for iter = 1:3
   r = r.setInitialState(x0);
   v.draw(0, x0)
 
-  profile on
+  % profile on
   [walking_plan_data, recovery_plan] = planning_pipeline(recovery_planner, r, x0, zmpact, xstar, nq);
-  profile viewer
+  % profile viewer
 
   walking_plan_data.robot = r;
 

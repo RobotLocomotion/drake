@@ -54,10 +54,7 @@ classdef LinearInvertedPendulum < LinearSystem
       v = CartTableVisualizer;
     end
     
-    function varargout = lqr(obj,com0,Qy,options)
-      if nargin < 4, options = struct(); end
-      options = applyDefaults(options, struct('use_lqr_cache', false,...
-                             'lqr_cache_com_height_resolution', 0.01)); 
+    function varargout = lqr(obj,com0,Qy)
       % objective min_u \int dt [ x_zmp(t)^2 ] 
       varargout = cell(1,nargout);
       if nargin>2
