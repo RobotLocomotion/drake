@@ -183,7 +183,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       if (nargout>1)
         [obj,z,Mqdn,wqdn,dz,dMqdn,dwqdn] = solveLCP(obj,t,x,u);
       else
-        if (obj.manip.only_loops && obj.manip.mex_model_ptr~=0)
+        if (obj.manip.only_loops && obj.manip.mex_model_ptr~=0 && ~obj.position_control)
           [z, Mqdn, wqdn] = solveLCP_mex(obj,t,x,u);
         else
           [obj,z,Mqdn,wqdn] = solveLCP(obj,t,x,u);
