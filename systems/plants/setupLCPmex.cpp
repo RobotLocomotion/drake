@@ -147,7 +147,17 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
     const int nC = getNumTrue(possible_contact);
     const int nL = getNumTrue(possible_jointlimit);
     const int LCP_size = nL+nP+(mC+2)*nC;
+   
+    plhs[0] = mxCreateDoubleMatrix(LCP_size, 1, mxREAL);
+    plhs[1] = mxCreateDoubleMatrix(nq, LCP_size, mxREAL);
+
+    Map<VectorXd> z(mxGetPr(plhs[0]), LCP_size);
+    Map<MatrixXd> Mqdn(mxGetPr(plhs[1]), nq, LCP_size);
     
+    if (LCP_size == 0) {
+      return;
+    }
+
     vector<int> possible_contact_indices;
     getInclusionIndices(possible_contact, possible_contact_indices, true);
 
@@ -164,15 +174,9 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
       D_possible.block(nC*i, 0, nC, nq) = D_i_possible;
     }
 
-
     MatrixXd J(LCP_size, nq);
     J << JL_possible, JP, n_possible, D_possible, MatrixXd::Zero(nC, nq);
 
-    plhs[0] = mxCreateDoubleMatrix(LCP_size, 1, mxREAL);
-    plhs[1] = mxCreateDoubleMatrix(nq, LCP_size, mxREAL);
-
-    Map<VectorXd> z(mxGetPr(plhs[0]), LCP_size);
-    Map<MatrixXd> Mqdn(mxGetPr(plhs[1]), nq, LCP_size);
     Mqdn = Hinv*J.transpose();
     
     //solve LCP problem 
