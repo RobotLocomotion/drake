@@ -53,6 +53,9 @@ classdef QPLocomotionPlan < QPControllerPlan
         contact_force_detected = zeros(rpc.num_bodies, 1);
       end
 
+      if isempty(obj.start_time)
+        obj.start_time = t_global + 2;
+      end
       r = obj.robot;
       t_plan = t_global - obj.start_time;
       t_plan = double(t_plan);
@@ -313,11 +316,15 @@ classdef QPLocomotionPlan < QPControllerPlan
   end
 
   methods(Static)
-    function obj = from_standing_state(x0, biped, support_state)
+    function obj = from_standing_state(x0, biped, support_state, options)
 
       if nargin < 3
         support_state = RigidBodySupportState(biped, [biped.foot_body_id.right, biped.foot_body_id.left]);
       end
+      if nargin < 4
+        options = struct();
+      end
+      options = applyDefaults(options, struct('center_pelvis', true));
 
       obj = QPLocomotionPlan(biped);
       obj.x0 = x0;
@@ -330,9 +337,19 @@ classdef QPLocomotionPlan < QPControllerPlan
       q0 = x0(1:nq);
       kinsol = doKinematics(obj.robot, q0);
 
-      foot_pos = [obj.robot.forwardKin(kinsol, obj.robot.foot_frame_id.right, [0;0;0]),...
-                  obj.robot.forwardKin(kinsol, obj.robot.foot_frame_id.left, [0;0;0])];
-      comgoal = mean(foot_pos(1:2,:), 2);
+
+      pelvis_id = obj.robot.findLinkId('pelvis');
+      pelvis_current = forwardKin(obj.robot,kinsol,pelvis_id,[0;0;0],1);
+      if options.center_pelvis
+        foot_pos = [obj.robot.forwardKin(kinsol, obj.robot.foot_frame_id.right, [0;0;0]),...
+                    obj.robot.forwardKin(kinsol, obj.robot.foot_frame_id.left, [0;0;0])];
+        comgoal = mean(foot_pos(1:2,:), 2);
+        pelvis_target = [mean(foot_pos(1:2,:), 2); pelvis_current(3:end)];
+      else
+        comgoal = obj.robot.getCOM(kinsol);
+        comgoal = comgoal(1:2);
+        pelvis_target = pelvis_current;
+      end
 
       obj.zmptraj = comgoal;
       [~, obj.V, obj.comtraj, obj.LIP_height] = obj.robot.planZMPController(comgoal, q0);
@@ -347,12 +364,9 @@ classdef QPLocomotionPlan < QPControllerPlan
       link_constraints(2).ts = [0, inf];
       link_constraints(2).coefs = cat(3, zeros(6,1,3),reshape(forwardKin(obj.robot,kinsol,obj.robot.foot_body_id.left,[0;0;0],1),[6,1,1]));
       link_constraints(2).toe_off_allowed = [false, false];
-      pelvis_id = obj.robot.findLinkId('pelvis');
       link_constraints(3).link_ndx = pelvis_id;
       link_constraints(3).pt = [0;0;0];
       link_constraints(3).ts = [0, inf];
-      pelvis_current = forwardKin(obj.robot,kinsol,pelvis_id,[0;0;0],1);
-      pelvis_target = [mean(foot_pos(1:2,:), 2); pelvis_current(3:end)];
       link_constraints(3).coefs = cat(3, zeros(6,1,3),reshape(pelvis_target,[6,1,1,]));
       obj.link_constraints = link_constraints;
 
