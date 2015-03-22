@@ -1,4 +1,5 @@
 function [K, S] = ZMPCachedLQR(h_over_g, Qy)
+% NOTEST
 
 MAX_CACHE_ENTRIES = 1000;
 
