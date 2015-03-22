@@ -264,7 +264,7 @@ public:
   int findLinkId(std::string linkname, int robot = -1);
   //@param robot   the index of the robot. robot = -1 means to look at all the robots
   
-  int findJointId(std::string jointname, int robot);
+  int findJointId(std::string jointname, int robot = -1);
   //@param robot   the index of the robot. robot = -1 means to look at all the robots
 
   std::string getBodyOrFrameName(int body_or_frame_id);
