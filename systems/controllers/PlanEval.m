@@ -1,4 +1,4 @@
-classdef PlanEval
+classdef PlanEval < handle
   % A PlanEval represents one half of a complete control system. It contains
   % all the stateful information about the currently executed plan, and
   % produces instantaneous input to the QP controller specifying the desired
@@ -9,12 +9,14 @@ classdef PlanEval
   % get a default successor plan. For example, QPWalkingPlan.getSuccessor()
   % returns a standing plan at the current posture.
   properties
-    data
+    t = 0
+    x
+    qp_input
+    plan_queue = {};
   end
 
   methods
     function obj = PlanEval(plans)
-      obj.data = atlasControllers.PlanEvalData();
       if nargin >= 1
         if iscell(plans)
           for j = 1:length(plans)
@@ -24,23 +26,24 @@ classdef PlanEval
           obj = obj.appendPlan(plans);
         end
       end
-      if isempty(obj.data.plan_queue)
+      if isempty(obj.plan_queue)
         obj = obj.appendPlan(WaitForRobotStatePlan());
       end
     end
 
     function current_plan = getCurrentPlan(obj, t, x)
       while true
-        current_plan = obj.data.plan_queue{1};
+        current_plan = obj.plan_queue{1};
         if ~current_plan.isFinished(t, x);
           break
         end
-        if length(obj.data.plan_queue) == 1
-          obj.data.plan_queue{1} = current_plan.getSuccessor(t, x);
+        disp('current plan is finished')
+        if length(obj.plan_queue) == 1
+          obj.plan_queue{1} = current_plan.getSuccessor(t, x);
         else
-          obj.data.plan_queue(1) = [];
+          obj.plan_queue(1) = [];
         end
-        obj.data.plan_queue{1}.start_time = t;
+        obj.plan_queue{1}.start_time = t;
       end
     end
 
@@ -62,21 +65,21 @@ classdef PlanEval
       if idx < 1 
         error('idx must be >= 1');
       end
-      if idx > length(obj.data.plan_queue)
+      if idx > length(obj.plan_queue)
         error('Cannot insert a plan after the end of the queue. Ignoring this request.');
       end
-      obj.data.plan_queue = [obj.data.plan_queue(1:(idx-1)), {new_plan}, obj.data.plan_queue(idx:end)];
+      obj.plan_queue = [obj.plan_queue(1:(idx-1)), {new_plan}, obj.plan_queue(idx:end)];
     end
 
     function obj = appendPlan(obj, new_plan)
       % Add a plan to the end of the queue
-      obj.data.plan_queue{end+1} = new_plan;
+      obj.plan_queue{end+1} = new_plan;
     end
 
     function obj = switchToPlan(obj, new_plan)
       % Replace the queue with a single new plan, which will become the
       % current plan immediately.
-      obj.data.plan_queue = {new_plan};
+      obj.plan_queue = {new_plan};
     end
   end
 end
