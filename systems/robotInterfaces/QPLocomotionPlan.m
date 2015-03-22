@@ -54,6 +54,7 @@ classdef QPLocomotionPlan < QPControllerPlan
       end
 
       if isempty(obj.start_time)
+        % There is an unresolved issue in which the first call to getQPControllerInput() is very slow. If we do not add a few seconts to t_global, the second call will not happen until ~0.5-1s later, resulting in a jump in the trajectory. 
         obj.start_time = t_global + 2;
       end
       r = obj.robot;
