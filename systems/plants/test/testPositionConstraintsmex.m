@@ -5,6 +5,11 @@ urdf = fullfile('../../../examples/Atlas/urdf/robotiq.urdf');
 robot = RigidBodyManipulator(urdf);
 robot_new = RigidBodyManipulator(urdf, struct('use_new_kinsol', true));
 
+if robot.mex_model_ptr == 0 || robot_new.mex_model_ptr == 0 
+  disp('No mex model pointer was found.  Aborting test')
+  return
+end
+
 %random initial pose
 q = getRandomConfiguration(robot);
 
