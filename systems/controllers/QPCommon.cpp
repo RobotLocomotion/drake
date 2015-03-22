@@ -259,8 +259,8 @@ std::vector<SupportStateElement> loadAvailableSupports(std::shared_ptr<drake::lc
   return available_supports;
 }
 
-void applyJointPDOverride(std::vector<drake::lcmt_joint_pd_override> &joint_pd_override, DrakeRobotState &robot_state, PIDOutput &pid_out, VectorXd &w_qdd) {
-  for (std::vector<drake::lcmt_joint_pd_override>::iterator it = joint_pd_override.begin(); it != joint_pd_override.end(); it++) {
+void applyJointPDOverride(const std::vector<drake::lcmt_joint_pd_override> &joint_pd_override, const DrakeRobotState &robot_state, PIDOutput &pid_out, VectorXd &w_qdd) {
+  for (std::vector<drake::lcmt_joint_pd_override>::const_iterator it = joint_pd_override.begin(); it != joint_pd_override.end(); ++it) {
     int ind = it->position_ind - 1;
     double err_q = it->qi_des - robot_state.q(ind);
     double err_qd = it->qdi_des - robot_state.qd(ind);
