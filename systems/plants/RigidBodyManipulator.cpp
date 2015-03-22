@@ -3081,7 +3081,7 @@ int RigidBodyManipulator::findJointId(string jointname, int robot)
       }
     }
   }
-  // Unlike the MATLAB implementation, I am not handling the fixed joints
+  
   int num_match = 0;
   int ind_match = -1;
   for(int i = 0;i<this->num_bodies;i++)
