@@ -1,8 +1,6 @@
 function testCenterOfMassJacobianDotTimesV()
 options.use_new_kinsol = true;
-floatingBaseParameterizations = {'rpy'}; % TODO: reenable, 'quat'};
-% the only issue with quat is that currently it is not possible to get a
-% center of mass Jacobian that is in terms of v for this test.
+floatingBaseParameterizations = {'rpy', 'quat'};
 
 for parameterization = floatingBaseParameterizations
   robot = createAtlas(parameterization{:}, options);
@@ -17,18 +15,19 @@ nq = robot.getNumPositions();
 nv = robot.getNumVelocities();
 
 nTests = 5;
+robotnum = 1;
 for i = 1 : nTests
   q = getRandomConfiguration(robot);
   v = randn(nv, 1);
   
   options.use_mex = false;
   kinsol = robot.doKinematics(q, v, options);
-  Jdot_times_v = robot.centerOfMassJacobianDotTimesV(kinsol);
+  Jdot_times_v = robot.centerOfMassJacobianDotTimesV(kinsol, robotnum);
   
   options.use_mex = false;
   options.compute_gradients = true;
   kinsol = robot.doKinematics(q, v, options);
-  [~, J, dJ] = robot.getCOM(kinsol); % TODO: add in_terms_of_qdot option
+  [~, J, dJ] = robot.getCOM(kinsol, robotnum, false);
   Jdot = reshape(reshape(dJ, [], nq) * kinsol.qdot, size(J));
   Jdot_times_v_check = Jdot * v;
 

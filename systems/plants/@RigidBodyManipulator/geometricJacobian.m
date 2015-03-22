@@ -136,7 +136,7 @@ if compute_gradient
     
     dSjdqj = sign * kinsol.dSdq{j};
     if in_terms_of_qdot
-      dSjdqj = matGradMultMat(sign * kinsol.S{j}, kinsol.qdotToV{j}, dSjdqj, kinsol.dqdotToVdq{j});
+      dSjdqj = matGradMultMat(sign * kinsol.S{j}, kinsol.qdotToV{j}, dSjdqj, kinsol.dqdotToVdqi{j});
     end
     AdHj = transformAdjoint(obj.relativeTransform(kinsol, expressed_in, j));
     [Jj1, qdot_ind_ij] = obj.geometricJacobian(kinsol, expressed_in, j, 1, true);

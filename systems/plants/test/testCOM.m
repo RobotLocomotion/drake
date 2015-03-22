@@ -2,6 +2,7 @@ function testCOM
 % test COM computation with/without affordance
 urdf = [getDrakePath,'/examples/Atlas/urdf/atlas_minimal_contact.urdf'];
 options.floating = true;
+options.use_new_kinsol = true;
 w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
 %warning('off','Drake:RigidBodyManipulator:ReplacedCylinder');
 r = RigidBodyManipulator(urdf,options);
