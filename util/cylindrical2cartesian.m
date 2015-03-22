@@ -52,8 +52,7 @@ v_pos_cartesian = R_cylinder2cartesian*[radius*-s_theta*theta_dot + radius_dot*c
                               radius*c_theta*theta_dot + radius_dot*s_theta;... 
                               height_dot];
 R_tangent = rpy2rotmat(x_cylinder(4:6));
-[R_tangent2cylinder,dR_tangent2cylinder_dtheta] = rotz(pi/2-theta);
-dR_tangent2cylinder_dtheta = -dR_tangent2cylinder_dtheta(:);
+[R_tangent2cylinder,dR_tangent2cylinder_dtheta] = rotz(theta-pi/2);
 R_cylinder = R_tangent2cylinder*R_tangent;
 R_cartesian = R_cylinder2cartesian*R_cylinder;
 x_rpy_cartesian = rotmat2rpy(R_cartesian);
@@ -64,16 +63,16 @@ v_cartesian = zeros(6,1);
 v_cartesian(1:3) = v_pos_cartesian;
 % The angular velocity of the point in the Cartesian frame aligned with the
 % cylinder, is omega_theta+R_tangent*omega_cylinder*R_tangent'
-v_cartesian(4:6) = R_cylinder2cartesian*(-[0;0;theta_dot] + R_tangent2cylinder*v_cylinder(4:6));
+v_cartesian(4:6) = R_cylinder2cartesian*([0;0;theta_dot] + R_tangent2cylinder*v_cylinder(4:6));
 J = zeros(6,6);
 J(1:3,1:3) = R_cylinder2cartesian*[c_theta radius*-s_theta 0;...
                 s_theta radius*c_theta 0;...
                 0  0  1];
-J(4:6,2) = -R_cylinder2cartesian(:,3);
+J(4:6,2) = R_cylinder2cartesian(:,3);
 J(4:6,4:6) = R_cylinder2cartesian*R_tangent2cylinder;
 % Jdotv1 is Jdotv(1:3)
-Jdotv1 = ([0 -s_theta 0;0 c_theta 0;0 0 0]*radius_dot+[-s_theta -radius*c_theta 0;c_theta -radius*s_theta 0;zeros(1,3)]*theta_dot)*[radius_dot;theta_dot;height_dot];
+Jdotv1 = R_cylinder2cartesian*([0 -s_theta 0;0 c_theta 0;0 0 0]*radius_dot+[-s_theta -radius*c_theta 0;c_theta -radius*s_theta 0;zeros(1,3)]*theta_dot)*[radius_dot;theta_dot;height_dot];
 % Jdotv2 is Jdotv(4:6)
-Jdotv2 = R_cylinder2cartesian*reshape(dR_tangent2cylinder_dtheta,3,3)*theta_dot*v_cartesian(4:6);
+Jdotv2 = R_cylinder2cartesian*dR_tangent2cylinder_dtheta*theta_dot*v_cylinder(4:6);
 Jdotv = [Jdotv1;Jdotv2];
 end

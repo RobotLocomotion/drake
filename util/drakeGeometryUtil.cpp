@@ -1092,21 +1092,21 @@ DLLEXPORT void cylindrical2cartesian(const Matrix<Scalar,3,1> &m_cylinder_axis, 
   Matrix<Scalar,3,3> R_tangent2cylinder;
 	Matrix<Scalar,3,3> dR_tangent2cylinder;
 	Matrix<Scalar,3,3> ddR_tangent2cylinder;
-	rotz(M_PI/2-theta,R_tangent2cylinder,dR_tangent2cylinder, ddR_tangent2cylinder);
-	Matrix<Scalar,3,3> dR_tangent2cylinder_dtheta = -dR_tangent2cylinder;
+	rotz(theta-M_PI/2,R_tangent2cylinder,dR_tangent2cylinder, ddR_tangent2cylinder);
+	Matrix<Scalar,3,3> dR_tangent2cylinder_dtheta = dR_tangent2cylinder;
   Matrix<Scalar,3,3> R_cylinder = R_tangent2cylinder*R_tangent;
 	Matrix<Scalar,3,3> R_cartesian = R_cylinder2cartesian*R_cylinder;
 	Matrix<Scalar,3,1> x_rpy_cartesian = rotmat2rpy(R_cartesian);
 	x_cartesian.block(0,0,3,1) = x_pos_cartesian;
 	x_cartesian.block(3,0,3,1) = x_rpy_cartesian;
 	v_cartesian.block(0,0,3,1) = v_pos_cartesian;
-	v_cartesian.block(3,0,3,1) = -theta_dot*R_cylinder2cartesian.col(2)+R_cylinder2cartesian*R_tangent2cylinder*v_cylinder.block(3,0,3,1);
+	v_cartesian.block(3,0,3,1) = theta_dot*R_cylinder2cartesian.col(2)+R_cylinder2cartesian*R_tangent2cylinder*v_cylinder.block(3,0,3,1);
 	J = Matrix<Scalar,6,6>::Zero();
 	J.block(0,0,3,1) << c_theta,s_theta,0;
 	J.block(0,1,3,1) << radius*-s_theta,radius*c_theta,0;
 	J.block(0,2,3,1) << 0,0,1;
 	J.block(0,0,3,3) = R_cylinder2cartesian*J.block(0,0,3,3);
-	J.block(3,1,3,1) = -R_cylinder2cartesian.col(2);
+	J.block(3,1,3,1) = R_cylinder2cartesian.col(2);
 	J.block(3,3,3,3) = R_cylinder2cartesian*R_tangent2cylinder;
 	Matrix<Scalar,3,3> dJ1_dradius = Matrix<Scalar,3,3>::Zero();
 	dJ1_dradius(0,1) = -s_theta;
@@ -1116,8 +1116,8 @@ DLLEXPORT void cylindrical2cartesian(const Matrix<Scalar,3,1> &m_cylinder_axis, 
 	dJ1_dtheta(0,1) = -radius*c_theta;
 	dJ1_dtheta(1,0) = c_theta;
 	dJ1_dtheta(1,1) = -radius*s_theta;
-	Jdotv.block(0,0,3,1) = (dJ1_dradius*radius_dot+dJ1_dtheta*theta_dot)*v_cylinder.block(0,0,3,1);
-	Jdotv.block(3,0,3,1) = R_cylinder2cartesian*dR_tangent2cylinder_dtheta*theta_dot*v_cartesian.block(3,0,3,1);
+	Jdotv.block(0,0,3,1) = R_cylinder2cartesian*(dJ1_dradius*radius_dot+dJ1_dtheta*theta_dot)*v_cylinder.block(0,0,3,1);
+	Jdotv.block(3,0,3,1) = R_cylinder2cartesian*dR_tangent2cylinder_dtheta*theta_dot*v_cylinder.block(3,0,3,1);
 }
 
 template <typename Scalar>
@@ -1150,9 +1150,9 @@ DLLEXPORT  void cartesian2cylindrical(const Eigen::Matrix<Scalar,3,1> &m_cylinde
 	Matrix<Scalar,3,3> R_tangent2cylinder;
 	Matrix<Scalar,3,3> dR_tangent2cylinder;
 	Matrix<Scalar,3,3> ddR_tangent2cylinder;
-	rotz(M_PI/2-theta,R_tangent2cylinder,dR_tangent2cylinder, ddR_tangent2cylinder);
+	rotz(theta-M_PI/2,R_tangent2cylinder,dR_tangent2cylinder, ddR_tangent2cylinder);
 	Matrix<Scalar,3,3> R_cylinder2tangent = R_tangent2cylinder.transpose();
-	dR_tangent2cylinder = -dR_tangent2cylinder;
+	dR_tangent2cylinder = dR_tangent2cylinder;
 	Vector3d x_rpy_cartesian = x_cartesian.block(3,0,3,1);
 	Matrix<Scalar,3,3> R_cartesian = rpy2rotmat(x_rpy_cartesian);
 	x_cylinder.block(3,0,3,1) = rotmat2rpy(R_cylinder2tangent*R_cartesian2cylinder*R_cartesian);
@@ -1168,10 +1168,11 @@ DLLEXPORT  void cartesian2cylindrical(const Eigen::Matrix<Scalar,3,1> &m_cylinde
 	Jdot(0,1) = -x_pos_cylinder(0)*x_pos_cylinder(1)/radius_cubic*v_pos_cylinder(0)+pow(x_pos_cylinder(0),2)/radius_cubic*v_pos_cylinder(1);
 	Jdot(1,0) = 2*x_pos_cylinder(0)*x_pos_cylinder(1)/radius_quad*v_pos_cylinder(0)+(pow(x_pos_cylinder(1),2)-pow(x_pos_cylinder(0),2))/radius_quad*v_pos_cylinder(1);
 	Jdot(1,1) = (pow(x_pos_cylinder(1),2)-pow(x_pos_cylinder(0),2))/radius_quad*v_pos_cylinder(0)-2*x_pos_cylinder(0)*x_pos_cylinder(1)/radius_quad*v_pos_cylinder(1);
-	v_cylinder.block(3,0,3,1) = R_cylinder2tangent*R_cartesian2cylinder*v_cartesian.block(3,0,3,1)+theta_dot*R_cylinder2tangent.col(2);
-	J.block(3,0,3,3) = R_cylinder2tangent.col(2)*J.block(1,0,1,3);
+	Jdot.block(0,0,3,3) = Jdot.block(0,0,3,3)*R_cartesian2cylinder;
+	v_cylinder.block(3,0,3,1) = R_cylinder2tangent*R_cartesian2cylinder*v_cartesian.block(3,0,3,1)-theta_dot*R_cylinder2tangent.col(2);
+	J.block(3,0,3,3) = R_cylinder2tangent.col(2)*-J.block(1,0,1,3);
 	J.block(3,3,3,3) = R_cylinder2tangent*R_cartesian2cylinder;
-	Jdot.block(3,0,3,3) = dR_tangent2cylinder.row(2).transpose()*J.block(1,0,1,3)*theta_dot+R_cylinder2tangent.col(2)*Jdot.block(1,0,1,3);
+	Jdot.block(3,0,3,3) = dR_tangent2cylinder.row(2).transpose()*-J.block(1,0,1,3)*theta_dot+R_cylinder2tangent.col(2)*-Jdot.block(1,0,1,3);
 	Jdot.block(3,3,3,3) = dR_tangent2cylinder.transpose()*theta_dot*R_cartesian2cylinder;
 	Jdotv = Jdot*v_cartesian;
 }

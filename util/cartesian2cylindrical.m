@@ -50,28 +50,27 @@ height = x_pos_cylinder(3);
 height_dot = v_pos_cylinder(3);
 x_cylinder = zeros(6,1);
 x_cylinder(1:3) = [radius;theta;height];
-[R_tangent2cylinder,dR_tangent2cylinder_dtheta] = rotz(pi/2-theta);
-dR_tangent2cylinder_dtheta = -dR_tangent2cylinder_dtheta;
+[R_tangent2cylinder,dR_tangent2cylinder_dtheta] = rotz(theta-pi/2);
 x_cylinder(4:6) = rotmat2rpy(R_tangent2cylinder'*R_cylinder2cartesian'*rpy2rotmat(x_cartesian(4:6)));
 J = zeros(6,6);
 Jdot = zeros(6,6);
 J(1:3,1:3) = [x_pos_cylinder(1)/radius x_pos_cylinder(2)/radius 0;...
              -x_pos_cylinder(2)/radius^2 x_pos_cylinder(1)/radius^2 0;...
              0 0 1]*R_cylinder2cartesian';
-Jdot(1:3,1:3) = [x_pos_cylinder(2)^2/radius^3 -x_pos_cylinder(1)*x_pos_cylinder(2)/radius^3  0;...
+Jdot(1:3,1:3) = ([x_pos_cylinder(2)^2/radius^3 -x_pos_cylinder(1)*x_pos_cylinder(2)/radius^3  0;...
                  2*x_pos_cylinder(1)*x_pos_cylinder(2)/radius^4 (x_pos_cylinder(2)^2-x_pos_cylinder(1)^2)/radius^4 0;...
-                 0 0 0]*v_pos_cylinder(1)+...
+                 0 0 0]*R_cylinder2cartesian'*v_pos_cylinder(1)+...
                 [-x_pos_cylinder(1)*x_pos_cylinder(2)/radius^3 x_pos_cylinder(1)^2/radius^3 0;...
                  (x_pos_cylinder(2)^2-x_pos_cylinder(1)^2)/radius^4 -2*x_pos_cylinder(1)*x_pos_cylinder(2)/radius^4 0;...
-                 0 0 0]*v_pos_cylinder(2);
+                 0 0 0]*R_cylinder2cartesian'* v_pos_cylinder(2));
 % J(1:3,1:3) = [dradius_dx_pos_cylinder;dtheta_dx_pos_cylinder;dheight_dx_pos_cylinder]*R_cylinder2cartesian';
 v_cylinder = zeros(6,1);
 v_cylinder(1:3) = [radius_dot;theta_dot;height_dot];
 
-v_cylinder(4:6) = R_tangent2cylinder'*(R_cylinder2cartesian'*v_cartesian(4:6)+[0;0;theta_dot]);
-J(4:6,1:3) = R_tangent2cylinder(3,:)'*J(2,1:3);
+v_cylinder(4:6) = R_tangent2cylinder'*(R_cylinder2cartesian'*v_cartesian(4:6)-[0;0;theta_dot]);
+J(4:6,1:3) = R_tangent2cylinder(3,:)'*-J(2,1:3);
 J(4:6,4:6) = R_tangent2cylinder'*R_cylinder2cartesian';
-Jdot(4:6,1:3) = dR_tangent2cylinder_dtheta(3,:)'*J(2,1:3)*theta_dot+R_tangent2cylinder(3,:)'*Jdot(2,1:3);
+Jdot(4:6,1:3) = dR_tangent2cylinder_dtheta(3,:)'*-J(2,1:3)*theta_dot+R_tangent2cylinder(3,:)'*-Jdot(2,1:3);
 Jdot(4:6,4:6) = dR_tangent2cylinder_dtheta'*theta_dot*R_cylinder2cartesian';
 Jdotv = Jdot*v_cartesian;
 end
