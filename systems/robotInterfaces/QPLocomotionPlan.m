@@ -15,6 +15,8 @@ classdef QPLocomotionPlan < QPControllerPlan
     plan_shift_data = PlanShiftData();
     g = 9.81; % gravity m/s^2
     is_quasistatic = false;
+
+    last_qp_input;
   end
 
   methods
@@ -30,12 +32,13 @@ classdef QPLocomotionPlan < QPControllerPlan
     function next_plan = getSuccessor(obj, t, x)
       if isnumeric(obj.qtraj)
         qf = obj.qtraj;
+        next_plan = QPLocomotionPlan.from_standing_state([x(1:6); qf(7:end); x(obj.robot.getNumPositions+1:end)], obj.robot, obj.supports(end));
+        next_plan.mu = obj.mu;
+        next_plan.g = obj.g;
       else
-        qf = fasteval(obj.qtraj, obj.qtraj.tspan(end));
+        % qf = fasteval(obj.qtraj, obj.qtraj.tspan(end));
+        next_plan = FrozenPlan(obj.last_qp_input);
       end
-      next_plan = QPLocomotionPlan.from_standing_state([x(1:6); qf(7:end); x(obj.robot.getNumPositions+1:end)], obj.robot, obj.supports(end));
-      next_plan.mu = obj.mu;
-      next_plan.g = obj.g;
       % next_plan = QPLocomotionPlan.from_standing_state(x, obj.robot, obj.supports(end));
 
     end
@@ -55,7 +58,7 @@ classdef QPLocomotionPlan < QPControllerPlan
 
       if isempty(obj.start_time)
         % There is an unresolved issue in which the first call to getQPControllerInput() is very slow. If we do not add a few seconts to t_global, the second call will not happen until ~0.5-1s later, resulting in a jump in the trajectory. 
-        obj.start_time = t_global + 2;
+        obj.start_time = t_global;
       end
       r = obj.robot;
       t_plan = t_global - obj.start_time;
@@ -192,6 +195,7 @@ classdef QPLocomotionPlan < QPControllerPlan
       end
       obj = obj.updatePlanShift(t_global, kinsol, qp_input, contact_force_detected, next_support);
       qp_input = obj.applyPlanShift(qp_input);
+      obj.last_qp_input = qp_input;
     end
 
     function obj = updatePlanShift(obj, t_global, kinsol, qp_input, contact_force_detected, next_support)
