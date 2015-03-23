@@ -183,8 +183,8 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       if (nargout>1)
         [obj,z,Mqdn,wqdn,dz,dMqdn,dwqdn] = solveLCP(obj,t,x,u);
       else
-        if (obj.manip.only_loops && obj.manip.mex_model_ptr~=0 && ~obj.position_control)
-          [z, Mqdn, wqdn] = solveLCP_mex(obj,t,x,u);
+        if (obj.manip.only_loops && obj.manip.mex_model_ptr~=0)
+          [z, Mqdn, wqdn] = solveMexLCP(obj,t,x,u);
         else
           [obj,z,Mqdn,wqdn] = solveLCP(obj,t,x,u);
         end
@@ -231,12 +231,13 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
              all(u==obj.LCP_cache.data.u) && num_args_out <= obj.LCP_cache.data.nargout);
     end
 
-    function [z, Mqdn, wqdn] = solveLCP_mex(obj, t, x, u)
+    function [z, Mqdn, wqdn] = solveMexLCP(obj, t, x, u)
         num_q = obj.manip.num_positions;
-        q=x(1:num_q); qd=x(num_q+(1:num_q));
+        q=x(1:num_q); 
+        v=x(num_q+(1:obj.manip.num_velocities));
         kinsol = doKinematics(obj,q);
         [phiC,~,~,~,~,~,~,mu,n,D] = obj.manip.contactConstraints(kinsol,true);
-        [z, Mqdn, wqdn] = setupLCPmex(obj.manip.mex_model_ptr, q, qd, u, phiC, n, D, obj.timestep, obj.z_inactive_guess_tol);
+        [z, Mqdn, wqdn] = setupLCPmex(obj.manip.mex_model_ptr, q, v, u, phiC, n, D, obj.timestep, obj.z_inactive_guess_tol);
     end
     
     function [obj,z,Mqdn,wqdn,dz,dMqdn,dwqdn] = solveLCP(obj,t,x,u)
