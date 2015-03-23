@@ -99,8 +99,11 @@ while 1
     new_zmp_knots(k).t = new_zmp_knots(k).t + t0;
   end
 
-  % Allow toe-off one knot point earlier than the beginning of the swing. This is
+  % Allow toe-off two knot points earlier than the beginning of the swing. This is
   % necessary to allow toe-off to start earlier than halfway through the zmp shift
+  if length(foot_origin_knots) > 1
+    foot_origin_knots(end-1).toe_off_allowed = new_foot_knots(1).toe_off_allowed;
+  end
   foot_origin_knots(end).toe_off_allowed = new_foot_knots(1).toe_off_allowed;
   foot_origin_knots = [foot_origin_knots, new_foot_knots];
   zmp_knots = [zmp_knots, new_zmp_knots];
