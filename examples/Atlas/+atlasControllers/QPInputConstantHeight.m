@@ -15,6 +15,7 @@ classdef QPInputConstantHeight
     body_motion_data  % information describing body trajectories which the controller should track
     whole_body_data  % information about the desired whole-body posture
     param_set_name % the name of the current set of parameters. See atlasParams.getDefaults()
+    joint_pd_override;
   end
 
   methods
@@ -58,6 +59,12 @@ classdef QPInputConstantHeight
                             'coefs', {}); % 4 * 6 * 3 d
       obj.whole_body_data = struct('q_des', [],... % 34 d
                                'constrained_dofs', []); % 34 b
+      obj.joint_pd_override = struct('position_ind', {},...
+                                     'qi_des', {},...
+                                     'qdi_des', {},...
+                                     'kp', {},...
+                                     'kd', {},...
+                                     'weight', {});
       obj.param_set_name = 'walking';
     end
 

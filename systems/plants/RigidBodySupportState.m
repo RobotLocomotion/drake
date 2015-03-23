@@ -54,6 +54,11 @@ classdef RigidBodySupportState
       obj.contact_surfaces = contact_surfaces;
     end
 
+    function obj = setContactPts(obj, ind, contact_pts, contact_groups)
+      obj.contact_pts{ind} = contact_pts;
+      obj.contact_groups{ind} = contact_groups;
+      obj.num_contact_pts(ind) = size(contact_pts, 2);
+    end
   end
 
 end
