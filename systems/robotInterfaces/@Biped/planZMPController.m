@@ -44,7 +44,7 @@ elseif isnumeric(zmptraj_or_comgoal)
   hg = limp_height/9.81;
   [~, S] = ZMPCachedLQR(hg, diag([0,0,0,0,1,1]));
   c = [];
-  V = S;
+  V = struct('S', S, 's1', zeros(4,1));
   comtraj = zmptraj_or_comgoal;
 else
   error('Wrong type. Expected a zmp trajectory or a desired com position in xy');
