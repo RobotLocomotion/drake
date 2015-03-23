@@ -641,6 +641,13 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
         MatrixXd::Identity(nparams,nparams);
     bin_lb_ub << bin, -lb, ub;
 
+    for (std::set<int>::iterator it = pdata->state.active.begin(); it != pdata->state.active.end(); it++) {
+      if (std::isnan(bin_lb_ub(*it)) || std::isinf(bin_lb_ub(*it))) {
+        pdata->state.active.clear();
+        break;
+      }
+    }
+
     info = fastQPThatTakesQinv(QBlkDiag, f, Aeq, beq, Ain_lb_ub, bin_lb_ub, pdata->state.active, alpha);
 
     //if (info<0)   mexPrintf("fastQP info = %d.  Calling gurobi.\n", info);
@@ -693,6 +700,12 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
         MatrixXd::Identity(nparams,nparams);
     bin_lb_ub << bin, -lb, ub;
 
+    for (std::set<int>::iterator it = pdata->state.active.begin(); it != pdata->state.active.end(); it++) {
+      if (std::isnan(bin_lb_ub(*it)) || std::isinf(bin_lb_ub(*it))) {
+        pdata->state.active.clear();
+        break;
+      }
+    }
 
     if (pdata->use_fast_qp > 0)
     { // set up and call fastqp
