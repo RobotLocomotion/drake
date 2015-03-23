@@ -87,6 +87,76 @@ void parseVRefIntegratorParams(const mxArray *params_obj, VRefIntegratorParams *
   return;
 }
 
+void parseHardwareGains(const mxArray *params_obj, RigidBodyManipulator *r, AtlasHardwareGains *params) {
+  const mxArray *pobj;
+  int nu = r->num_velocities - 6;
+
+  pobj = myGetField(params_obj, "k_f_p");
+  sizecheck(pobj, nu, 1);
+  Map<VectorXd> k_f_p(mxGetPr(pobj), nu);
+  params->k_f_p = k_f_p;
+
+  pobj = myGetField(params_obj, "k_q_p");
+  sizecheck(pobj, nu, 1);
+  Map<VectorXd> k_q_p(mxGetPr(pobj), nu);
+  params->k_q_p = k_q_p;
+
+  pobj = myGetField(params_obj, "k_q_i");
+  sizecheck(pobj, nu, 1);
+  Map<VectorXd> k_q_i(mxGetPr(pobj), nu);
+  params->k_q_i = k_q_i;
+
+  pobj = myGetField(params_obj, "k_qd_p");
+  sizecheck(pobj, nu, 1);
+  Map<VectorXd> k_qd_p(mxGetPr(pobj), nu);
+  params->k_qd_p = k_qd_p;
+
+  pobj = myGetField(params_obj, "ff_qd");
+  sizecheck(pobj, nu, 1);
+  Map<VectorXd> ff_qd(mxGetPr(pobj), nu);
+  params->ff_qd = ff_qd;
+
+  pobj = myGetField(params_obj, "ff_f_d");
+  sizecheck(pobj, nu, 1);
+  Map<VectorXd> ff_f_d(mxGetPr(pobj), nu);
+  params->ff_f_d = ff_f_d;
+
+  pobj = myGetField(params_obj, "ff_const");
+  sizecheck(pobj, nu, 1);
+  Map<VectorXd> ff_const(mxGetPr(pobj), nu);
+  params->ff_const = ff_const;
+
+  pobj = myGetField(params_obj, "ff_qd_d");
+  sizecheck(pobj, nu, 1);
+  Map<VectorXd> ff_qd_d(mxGetPr(pobj), nu);
+  params->ff_qd_d = ff_qd_d;
+  return;
+}
+
+void parseHardwareParams(const mxArray *params_obj, RigidBodyManipulator *r, AtlasHardwareParams *params) {
+  const mxArray *pobj;
+
+  parseHardwareGains(myGetField(params_obj, "gains"), r, &(params->gains));
+
+  int nu = r->num_velocities - 6;
+  params->joint_is_force_controlled = Matrix<bool, Dynamic, 1>::Zero(nu);
+  params->joint_is_position_controlled = Matrix<bool, Dynamic, 1>::Zero(nu);
+
+  pobj = myGetField(params_obj, "joint_is_position_controlled");
+  sizecheck(pobj, nu, 1);
+  Map<VectorXd>pos_double(mxGetPrSafe(pobj), nu);
+
+  pobj = myGetField(params_obj, "joint_is_force_controlled");
+  sizecheck(pobj, nu, 1);
+  Map<VectorXd>force_double(mxGetPrSafe(pobj), nu);
+
+  for (int i=0; i < nu; i++) {
+    params->joint_is_force_controlled(i) = force_double(i) > 0.5;
+    params->joint_is_position_controlled(i) = pos_double(i) > 0.5;
+  }
+  return;
+}
+
 void parseAtlasParams(const mxArray *params_obj, RigidBodyManipulator *r, AtlasParams *params) {
   const mxArray *pobj;
 
@@ -134,6 +204,8 @@ void parseAtlasParams(const mxArray *params_obj, RigidBodyManipulator *r, AtlasP
     parseBodyMotionParams(body_motion_obj, i, &body_motion_params);
     params->body_motion[i] = body_motion_params;
   }
+
+  parseHardwareParams(myGetProperty(params_obj, "hardware"), r, &(params->hardware));
   return;
 }
 
@@ -157,36 +229,42 @@ void parseRobotPropertyCache(const mxArray *rpc_obj, RobotPropertyCache *rpc) {
 
   pobj = myGetField(myGetField(rpc_obj, "position_indices"), "r_leg_kny");
   Map<VectorXd>r_leg_kny(mxGetPr(pobj), mxGetNumberOfElements(pobj));
-  rpc->position_indices.r_leg_kny = r_leg_kny.cast<int>();
+  rpc->position_indices.r_leg_kny = r_leg_kny.cast<int>().array() - 1;
 
   pobj = myGetField(myGetField(rpc_obj, "position_indices"), "l_leg_kny");
   Map<VectorXd>l_leg_kny(mxGetPr(pobj), mxGetNumberOfElements(pobj));
-  rpc->position_indices.l_leg_kny = l_leg_kny.cast<int>();
+  rpc->position_indices.l_leg_kny = l_leg_kny.cast<int>().array() - 1;
 
   pobj = myGetField(myGetField(rpc_obj, "position_indices"), "r_leg");
   Map<VectorXd>r_leg(mxGetPr(pobj), mxGetNumberOfElements(pobj));
-  rpc->position_indices.r_leg = r_leg.cast<int>();
+  rpc->position_indices.r_leg = r_leg.cast<int>().array() - 1;
 
   pobj = myGetField(myGetField(rpc_obj, "position_indices"), "l_leg");
   Map<VectorXd>l_leg(mxGetPr(pobj), mxGetNumberOfElements(pobj));
-  rpc->position_indices.l_leg = l_leg.cast<int>();
+  rpc->position_indices.l_leg = l_leg.cast<int>().array() - 1;
 
   pobj = myGetField(myGetField(rpc_obj, "position_indices"), "r_leg_ak");
   Map<VectorXd>r_leg_ak(mxGetPr(pobj), mxGetNumberOfElements(pobj));
-  rpc->position_indices.r_leg_ak = r_leg_ak.cast<int>();
+  rpc->position_indices.r_leg_ak = r_leg_ak.cast<int>().array() - 1;
 
   pobj = myGetField(myGetField(rpc_obj, "position_indices"), "l_leg_ak");
   Map<VectorXd>l_leg_ak(mxGetPr(pobj), mxGetNumberOfElements(pobj));
-  rpc->position_indices.l_leg_ak = l_leg_ak.cast<int>();
+  rpc->position_indices.l_leg_ak = l_leg_ak.cast<int>().array() - 1;
 
-  rpc->body_ids.r_foot = (int) mxGetScalar(myGetField(myGetField(rpc_obj, "body_ids"), "r_foot"));
-  rpc->body_ids.l_foot = (int) mxGetScalar(myGetField(myGetField(rpc_obj, "body_ids"), "l_foot"));
-  rpc->body_ids.pelvis = (int) mxGetScalar(myGetField(myGetField(rpc_obj, "body_ids"), "pelvis"));
+  rpc->body_ids.r_foot = (int) mxGetScalar(myGetField(myGetField(rpc_obj, "body_ids"), "r_foot")) - 1;
+  rpc->body_ids.l_foot = (int) mxGetScalar(myGetField(myGetField(rpc_obj, "body_ids"), "l_foot")) - 1;
+  rpc->body_ids.pelvis = (int) mxGetScalar(myGetField(myGetField(rpc_obj, "body_ids"), "pelvis")) - 1;
 
   pobj = myGetField(rpc_obj, "actuated_indices");
   Map<VectorXd>actuated_indices(mxGetPr(pobj), mxGetNumberOfElements(pobj));
-  rpc->actuated_indices = actuated_indices.cast<int>();
+  rpc->actuated_indices = actuated_indices.cast<int>().array() - 1;
 
+  return;
+}
+
+void parseRobotJointNames(const mxArray *input_names, JointNames *joint_names) {
+  joint_names->robot = get_strings(myGetField(input_names, "robot"));
+  joint_names->drake = get_strings(myGetField(input_names, "drake"));
   return;
 }
 
@@ -254,6 +332,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   // gurobi_opts
   const mxArray* psolveropts = prhs[narg];
+  narg++;
+
+  // input_coordinate_names
+  parseRobotJointNames(myGetField(prhs[narg], "input"), &(pdata->input_joint_names));
+  pdata->state_coordinate_names = get_strings(myGetField(prhs[narg], "state"));
+  narg++;
 
   // Done parsing inputs
 
@@ -310,6 +394,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   pdata->state.q_integrator_state = VectorXd::Zero(pdata->r->num_positions);
   pdata->state.foot_contact_prev[0] = false;
   pdata->state.foot_contact_prev[1] = false;
+  pdata->state.num_active_contact_pts = 0;
 
   plhs[0] = createDrakeMexPointer((void*) pdata, "NewQPControllerData");
 

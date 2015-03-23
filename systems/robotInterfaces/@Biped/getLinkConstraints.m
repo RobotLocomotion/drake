@@ -118,7 +118,7 @@ lpos = ppval(foot_pp.left, pelvis_ts);
 pelvis_poses = [nan(2, size(rpos, 2));
                 pelvis_reference_height + pelvis_height_above_foot_origin;
                 zeros(2,size(rpos, 2));
-                angleAverage(rpos(6,:)', lpos(6,:)')'];
+                unwrap(angleAverage(rpos(6,:)', lpos(6,:)')')];
 pp = foh(pelvis_ts, pelvis_poses);
 [~,coefs, l, k, d] = unmkpp(pp);
 coefs = reshape(coefs, d, l, k);

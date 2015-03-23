@@ -9,7 +9,7 @@ classdef PlanShiftData < ControllerData
     end
 
     function verifyControllerData(obj, data)
-      warning('not implemented yet');
+      sizecheck(data.plan_shift, [6, 1]);
     end
   end
 end
