@@ -13,6 +13,9 @@ struct lcmt_qp_controller_input
 
 	int32_t num_tracked_bodies;
 	lcmt_body_motion_data body_motion_data[num_tracked_bodies];
+	
+	int32_t num_external_wrenches;
+	lcmt_body_wrench_data body_wrench_data[num_external_wrenches];
 
 	lcmt_whole_body_data whole_body_data;
 
