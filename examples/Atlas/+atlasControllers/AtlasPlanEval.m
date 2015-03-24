@@ -5,6 +5,7 @@ classdef AtlasPlanEval < PlanEval
   properties  
     robot_property_cache
     robot
+    recovery_plan
   end
 
   methods
@@ -13,6 +14,8 @@ classdef AtlasPlanEval < PlanEval
       obj.robot = r;
 
       obj.robot_property_cache = atlasUtil.propertyCache(obj.robot);
+
+      obj.recovery_plan = QPReactiveRecoveryPlan(r, [], 0.84);
     end
 
     function qp_input = getQPControllerInput(obj, t, x, contact_force_detected)
@@ -21,6 +24,7 @@ classdef AtlasPlanEval < PlanEval
       end
       plan = obj.getCurrentPlan(t, x);
       qp_input = plan.getQPControllerInput(t, x, obj.robot_property_cache, contact_force_detected);
+      [~] = obj.recovery_plan.getQPControllerInput(t, x, obj.robot_property_cache, contact_force_detected);
     end
   end
 end
