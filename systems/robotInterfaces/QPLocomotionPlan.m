@@ -30,17 +30,7 @@ classdef QPLocomotionPlan < QPControllerPlan
     end
 
     function next_plan = getSuccessor(obj, t, x)
-      if isnumeric(obj.qtraj)
-        qf = obj.qtraj;
-        next_plan = QPLocomotionPlan.from_standing_state([x(1:6); qf(7:end); x(obj.robot.getNumPositions+1:end)], obj.robot, obj.supports(end));
-        next_plan.mu = obj.mu;
-        next_plan.g = obj.g;
-      else
-        % qf = fasteval(obj.qtraj, obj.qtraj.tspan(end));
-        next_plan = FrozenPlan(obj.last_qp_input);
-      end
-      % next_plan = QPLocomotionPlan.from_standing_state(x, obj.robot, obj.supports(end));
-
+      next_plan = FrozenPlan(obj.last_qp_input);
     end
 
     function qp_input = getQPControllerInput(obj, t_global, x, rpc, contact_force_detected)
