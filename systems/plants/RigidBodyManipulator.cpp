@@ -751,6 +751,7 @@ void RigidBodyManipulator::doKinematics(MatrixBase<DerivedA>  & q, bool b_comput
 void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivatives, double* qd)
 {
   if (use_new_kinsol) {
+    warnOnce("new_kinsol_old_method_doKinematics", "Warning: called old doKinematics with use_new_kinsol set to true.");
     Map<VectorXd> q_map(q, num_positions, 1);
     double nv = qd == nullptr ? 0 : num_velocities;
     Map<VectorXd> v_map(qd, nv, 1);
@@ -1215,6 +1216,7 @@ template <typename DerivedA, typename DerivedB>
 void RigidBodyManipulator::getCMM(MatrixBase<DerivedA> const & q, MatrixBase<DerivedA> const & qd, MatrixBase<DerivedB> &A, MatrixBase<DerivedB> &Adot)
 {
   if (use_new_kinsol) {
+    warnOnce("new_kinsol_old_method_getCMM", "Warning: called old getCMM with use_new_kinsol set to true.");
     typedef typename DerivedB::Scalar Scalar;
     GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> cmm = centroidalMomentumMatrix<Scalar>(1);
     A = cmm.value();
@@ -1604,6 +1606,7 @@ template <typename Derived>
 void RigidBodyManipulator::getCOM(MatrixBase<Derived> &com, const std::set<int> &robotnum)
 {
   if (use_new_kinsol) {
+    warnOnce("new_kinsol_old_method_getCOM", "Warning: called old getCOM with use_new_kinsol set to true.");
     typedef typename Derived::Scalar Scalar;
     com = centerOfMass<Scalar>(0, robotnum).value();
     return;
@@ -1631,6 +1634,7 @@ template <typename Derived>
 void RigidBodyManipulator::getCOMJac(MatrixBase<Derived> &Jcom, const std::set<int> &robotnum)
 {
   if (use_new_kinsol) {
+    warnOnce("new_kinsol_old_method_getCOMJac", "Warning: called old getCOMJac with use_new_kinsol set to true.");
     typedef typename Derived::Scalar Scalar;
     Jcom = centerOfMass<Scalar>(1, robotnum).gradient().value();
     return;
@@ -1658,6 +1662,7 @@ template <typename Derived>
 void RigidBodyManipulator::getCOMJacDot(MatrixBase<Derived> &Jcomdot, const std::set<int> &robotnum)
 {
   if (use_new_kinsol) {
+    warnOnce("new_kinsol_old_method_getCOMJacDot", "Warning: called old getCOMJacDot with use_new_kinsol set to true.");
     typedef typename Derived::Scalar Scalar;
     VectorXd Jcomdot_vectorized = centerOfMass<Scalar>(2, robotnum).gradient().gradient().value() * cached_v;
     Map<typename MatrixBase<Derived>::PlainObject> Jcomdot_map(Jcomdot_vectorized.data(), Jcomdot.rows(), Jcomdot.cols());
@@ -1878,6 +1883,7 @@ template <typename DerivedA, typename DerivedB>
 void RigidBodyManipulator::forwardKin(const int body_or_frame_id, const MatrixBase<DerivedA>& pts, const int rotation_type, MatrixBase<DerivedB> &x)
 {
   if (use_new_kinsol) {
+    warnOnce("new_kinsol_old_method_forwardKin", "Warning: called old forwardKin with use_new_kinsol set to true.");
     Matrix3Xd pts_block = pts.block(0, 0, 3, pts.cols());
     x = forwardKinNew(pts_block, body_or_frame_id, 0, rotation_type, 0).value();
     return;
@@ -1947,6 +1953,7 @@ template <typename DerivedA, typename DerivedB, typename DerivedC, typename Deri
 void RigidBodyManipulator::bodyKin(const int body_or_frame_id, const MatrixBase<DerivedA>& pts, MatrixBase<DerivedB> &x, MatrixBase<DerivedC> *J, MatrixBase<DerivedD> *P)
 {
   if (use_new_kinsol) {
+    warnOnce("new_kinsol_old_method_bodyKin", "Warning: called old bodyKin with use_new_kinsol set to true.");
     int gradient_order = J != nullptr ? 1 : 0;
     Matrix3Xd pts_block = pts.block(0, 0, 3, pts.cols());
     auto x_gradientvar = forwardKinNew(pts_block, 0, body_or_frame_id, 0, gradient_order);
@@ -2255,6 +2262,7 @@ template <typename DerivedA, typename DerivedB>
 void RigidBodyManipulator::forwardJac(const int body_or_frame_id, const MatrixBase<DerivedA> &pts, const int rotation_type, MatrixBase<DerivedB> &J)
 {
   if (use_new_kinsol) {
+    warnOnce("new_kinsol_old_method_forwardJac", "Warning: called old forwardJac with use_new_kinsol set to true.");
     Matrix3Xd newPts = pts.block(0, 0, 3, pts.cols());
     auto ret = forwardKinNew(newPts, body_or_frame_id, 0, rotation_type, 1);
     J = ret.gradient().value();
@@ -2370,6 +2378,7 @@ template <typename DerivedA, typename DerivedB>
 void RigidBodyManipulator::forwardJacDot(const int body_or_frame_id, const MatrixBase<DerivedA> &pts, const int rotation_type, MatrixBase<DerivedB>& Jdot)
 {
   if (use_new_kinsol) {
+    warnOnce("new_kinsol_old_method_forwardJacDot", "Warning: called old forwardJacDot with use_new_kinsol set to true.");
     Matrix3Xd pts_block = pts.block(0, 0, 3, pts.cols());
     auto x_gradientvar = forwardKinNew(pts_block, body_or_frame_id, 0, rotation_type, 2);
     auto& J = x_gradientvar.gradient();
@@ -2425,6 +2434,7 @@ template <typename DerivedA, typename DerivedB>
 void RigidBodyManipulator::forwarddJac(const int body_or_frame_id, const MatrixBase<DerivedA> &pts, MatrixBase<DerivedB>& dJ)
 {
   if (use_new_kinsol) {
+    warnOnce("new_kinsol_old_method_forwarddJac", "Warning: called old forwarddJac with use_new_kinsol set to true.");
     Matrix3Xd newPts = pts.block(0, 0, 3, pts.cols());
     auto ret = forwardKinNew(newPts, body_or_frame_id, 0, 0, 2);
     dJ = ret.gradient().gradient().value();
@@ -2975,6 +2985,7 @@ template <typename DerivedA, typename DerivedB, typename DerivedC, typename Deri
 void RigidBodyManipulator::HandC(MatrixBase<DerivedG> const & q, MatrixBase<DerivedG> const & qd, MatrixBase<DerivedA> * const f_ext, MatrixBase<DerivedB> &H, MatrixBase<DerivedC> &C, MatrixBase<DerivedD> *dH, MatrixBase<DerivedE> *dC, MatrixBase<DerivedF> * const df_ext)
 {
   if (use_new_kinsol) {
+    warnOnce("new_kinsol_old_method_HandC", "Warning: called old HandC with use_new_kinsol set to true.");
     typedef typename DerivedB::Scalar Scalar;
     int H_gradient_order = dH != nullptr ? 1 : 0;
     auto H_gradientvar = massMatrix<Scalar>(H_gradient_order);
@@ -3341,6 +3352,7 @@ template <typename DerivedA, typename DerivedB>
 void RigidBodyManipulator::positionConstraints(MatrixBase<DerivedA> & phi, MatrixBase<DerivedB> & J)
 {
   if (use_new_kinsol) {
+    warnOnce("new_kinsol_old_method_positionConstraints", "Warning: called old positionConstraints with use_new_kinsol set to true.");
     auto positionConstraints = positionConstraintsNew<double>(1);
     phi = positionConstraints.value();
     J = positionConstraints.gradient().value();
