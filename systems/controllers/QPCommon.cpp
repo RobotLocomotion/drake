@@ -400,12 +400,17 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   // handle external wrenches to compensate for
   if (qp_input->body_wrench_data.size() > 0) {
     const int wrench_size = 6;
-    MatrixXd f_ext(wrench_size, pdata->r->num_bodies);
+    MatrixXd f_ext(wrench_size, pdata->r->NB); // f_ext is in terms of featherstone bodies...
     f_ext.setZero();
     for (auto it = qp_input->body_wrench_data.begin(); it != qp_input->body_wrench_data.end(); ++it) {
       const drake::lcmt_body_wrench_data& body_wrench_data = *it;
-      Map< const Matrix<double, wrench_size, 1> > wrench(body_wrench_data.wrench);
-      f_ext.col(body_wrench_data.body_id - 1) = wrench;
+      Map<const Matrix<double, wrench_size, 1> > wrench_in_body_frame(body_wrench_data.wrench);
+
+      // HandC expects external wrenches to be expressed in Featherstone 'joint' frame, expects the column number to correspond to the featherstone body index.
+      int body_id = body_wrench_data.body_id - 1;
+      auto wrench_in_joint_frame = transformSpatialForce(Isometry3d(pdata->r->bodies[body_id]->T_body_to_joint), wrench_in_body_frame);
+      int featherstone_id = pdata->r->bodies_vector_index_to_featherstone_body_index[body_id];
+      f_ext.col(featherstone_id) = wrench_in_joint_frame;
     }
     pdata->r->HandC(robot_state.q,robot_state.qd,&f_ext,pdata->H,pdata->C,(MatrixXd*)nullptr,(MatrixXd*)nullptr,(MatrixXd*)nullptr);
   }
