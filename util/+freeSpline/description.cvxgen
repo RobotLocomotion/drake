@@ -1,0 +1,56 @@
+# Produced by CVXGEN, 2015-03-24 13:12:44 -0400.
+# CVXGEN is Copyright (C) 2006-2012 Jacob Mattingley, jem@cvxgen.com.
+# The code in this file is Copyright (C) 2006-2012 Jacob Mattingley.
+# CVXGEN, or solvers produced by CVXGEN, cannot be used for commercial
+# applications without prior written permission from Jacob Mattingley.
+
+# Filename: description.cvxgen.
+# Description: A description of the CVXGEN problem.
+
+dimensions
+  n_dof = 6
+end
+
+parameters
+  r0(n_dof)
+  rd0(n_dof)
+  rf(n_dof)
+  rdf(n_dof)
+  r_switch(n_dof)
+  rd_switch(n_dof)
+  r_switch_slack(n_dof) nonnegative
+  rd_switch_slack(n_dof) nonnegative
+  t_switch(1)
+  t_f(1)
+end
+
+variables
+  C1[d] (n_dof), d=0..3
+  C2[d] (n_dof), d=0..3
+  max_accel (1)
+end
+
+minimize
+  max_accel
+subject to
+  max_accel >= abs(2*C1[2])
+  max_accel >= abs(2*C1[2] + 6*t_switch*C1[3])
+  max_accel >= abs(2*C2[2])
+  max_accel >= abs(2*C2[2] + 6*(t_f - t_switch)*C2[3])
+
+  # continuity
+  C1[0] + t_switch*C1[1] + t_switch*t_switch*C1[2] + t_switch*t_switch*t_switch*C1[3] == C2[0]
+  C1[1] + 2*t_switch*C1[2] + 3*t_switch*t_switch*C1[3] == C2[1]
+
+  # initial conditions
+  C1[0] == r0
+  C1[1] == rd0
+
+  # final conditions
+  C2[0] + (t_f - t_switch)*C2[1] + (t_f - t_switch)*(t_f - t_switch)*C2[2] + (t_f - t_switch)*(t_f - t_switch)*(t_f - t_switch)*C2[3] == rf
+  C2[1] + 2*(t_f - t_switch)*C2[2] + 3*(t_f - t_switch)*(t_f - t_switch)*C2[3] == rdf
+
+  # intermediate conditions
+  abs(C2[0] - r_switch) <= r_switch_slack
+  abs(C2[1] - rd_switch) <= rd_switch_slack
+end
