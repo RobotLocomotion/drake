@@ -102,15 +102,16 @@ stance_sole = [rpy2rotmat(stance.pos(4:6)), stance.pos(1:3); 0 0 0 1];
 stance_origin = stance_sole / T;
 stance_origin_pose = [stance_origin(1:3,4); rotmat2rpy(stance_origin(1:3,1:3))];
 
-T = biped.getFrame(swing1.frame_id).T;
-swing1_sole = [rpy2rotmat(swing1.pos(4:6)), swing1.pos(1:3); 0 0 0 1];
-swing1_origin = swing1_sole / T;
-swing1_origin_pose = [swing1_origin(1:3,4); rotmat2rpy(swing1_origin(1:3,1:3))];
+T_toe_to_foot = [eye(3),mean(swing_toe_points_in_foot, 2);0,0,0,1];
+T_sole_to_origin = biped.getFrame(swing1.frame_id).T;
+T_toe_to_origin = (T_sole_to_origin / T_sole_to_foot) * T_toe_to_foot;
+origin_in_toe = T_toe_to_origin \ [0;0;0;1];
 
-T = biped.getFrame(swing2.frame_id).T;
-swing2_sole = [rpy2rotmat(swing2.pos(4:6)), swing2.pos(1:3); 0 0 0 1];
-swing2_origin = swing2_sole / T;
-swing2_origin_pose = [swing2_origin(1:3,4); rotmat2rpy(swing2_origin(1:3,1:3))];
+T_swing1_origin_to_world = T_swing1_sole_to_world / T_sole_to_origin;
+swing1_origin_pose = [T_swing1_origin_to_world(1:3,4); rotmat2rpy(T_swing1_origin_to_world(1:3,1:3))];
+
+T_swing2_origin_to_world = T_swing2_sole_to_world / T_sole_to_origin;
+swing2_origin_pose = [T_swing2_origin_to_world(1:3,4); rotmat2rpy(T_swing2_origin_to_world(1:3,1:3))];
 
 instep_shift = [0.0;stance.walking_params.drake_instep_shift;0];
 zmp1 = shift_step_inward(biped, stance, instep_shift);
@@ -147,16 +148,22 @@ function add_foot_origin_knot(swing_pose, speed)
   foot_origin_knots(end).toe_off_allowed = struct(swing_foot_name, false, stance_foot_name, false);
 end
 
-% Apex knot 1
 max_terrain_ht = max(terrain_pts_in_toe_local(3,:));
 toe_ht_in_local = max_terrain_ht + params.step_height;
-pose = [swing1_origin_pose(1:3)*(1-APEX_FRACTIONS(1)) + APEX_FRACTIONS(1)*swing2_origin_pose(1:3) + [0;0;toe_ht_in_local]; quat2rpy(quat_toe_off)];
+toe_ht_in_world = T_local_to_world*[0;0;toe_ht_in_local;1];
+
+% Apex knot 1
+toe_apex1_in_world = (1-APEX_FRACTIONS(1))*toe1 + APEX_FRACTIONS(1)*toe2 + [0;0;toe_ht_in_world(3)]; 
+T_toe_apex1_to_world = [quat2rotmat(quat_toe_off),toe_apex1_in_world;zeros(1,3),1];
+apex1_origin_in_world = T_toe_apex1_to_world * origin_in_toe;
+pose = [apex1_origin_in_world(1:3); quat2rpy(quat_toe_off)];
 add_foot_origin_knot(pose, min(params.step_speed, MAX_TAKEOFF_SPEED)/2);
 
 % Apex knot 2
-max_terrain_ht = max(terrain_pts_in_toe_local(3,:));
-toe_ht_in_local = max_terrain_ht + params.step_height;
-pose = [swing1_origin_pose(1:3)*(1-APEX_FRACTIONS(2)) + APEX_FRACTIONS(2)*swing2_origin_pose(1:3) + [0;0;toe_ht_in_local]; quat2rpy(quat_swing2)];
+toe_apex2_in_world = (1-APEX_FRACTIONS(2))*toe1 + APEX_FRACTIONS(2)*toe2 + [0;0;toe_ht_in_world(3)]; 
+T_toe_apex2_to_world = [quat2rotmat(quat_swing2),toe_apex2_in_world;zeros(1,3),1];
+apex2_origin_in_world = T_toe_apex2_to_world * origin_in_toe;
+pose = [apex2_origin_in_world(1:3); quat2rpy(quat_swing2)];
 add_foot_origin_knot(pose);
 
 % Set the target velocities of the two apex poses based on the total distance traveled
