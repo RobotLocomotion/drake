@@ -64,7 +64,8 @@ lfoot_navgoal(1:3) = lfoot_navgoal(1:3) + R*[0;0.13;0];
 goal_pos = struct('right', rfoot_navgoal, 'left', lfoot_navgoal);
 footstep_plan = r.planFootsteps(x0(1:nq), goal_pos, [], struct('step_params', struct('max_num_steps', example_options.num_steps, 'max_forward_step', 0.4)));
 
-walking_plan_data = r.planWalkingZMP(x0(1:r.getNumPositions()), footstep_plan);
+% walking_plan_data = r.planWalkingZMP(x0(1:r.getNumPositions()), footstep_plan);
+walking_plan_data = QPReactiveRecoveryPlan(r);
 r.warning_manager.warnOnce('Drake:MuAssumedToBe1', 'Setting mu=1 because contactConstraintsBV.m assumes that to be the case');
 walking_plan_data.mu = 1;
 
