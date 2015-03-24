@@ -22,7 +22,7 @@ inline void getInclusionIndices(vector<bool> const & inclusion, vector<size_t> &
 }
 
 template <typename Derived>
-inline void getThresholdInclusion(MatrixBase<Derived> const &values, const double threshold, vector<bool> & below_threshold)
+inline void getThresholdInclusion(MatrixBase<Derived> const & values, const double threshold, vector<bool> & below_threshold)
 {
   const size_t n = values.size();
   below_threshold.clear();
@@ -45,13 +45,13 @@ inline size_t getNumTrue(vector<bool> const & bools)
 }
 
 //splits a vector into two based on inclusion mapping
-inline void partitionVector(vector<bool> const &indices, VectorXd const & v, VectorXd & included, VectorXd & excluded)
+inline void partitionVector(vector<bool> const & indices, VectorXd const & v, VectorXd & included, VectorXd & excluded)
 {
   const size_t n = indices.size();
   const size_t count = getNumTrue(indices);
 
   included = VectorXd::Zero(count);
-  excluded = VectorXd::Zero(n-count);
+  excluded = VectorXd::Zero(n - count);
   
   size_t inclusionIndex = 0;
   size_t exclusionIndex = 0;
@@ -66,7 +66,7 @@ inline void partitionVector(vector<bool> const &indices, VectorXd const & v, Vec
 }
 
 //splits a matrix into two based on a row inclusion mapping
-inline void partitionMatrix(vector<bool> const &indices, MatrixXd const & M, MatrixXd & included, MatrixXd & excluded)
+inline void partitionMatrix(vector<bool> const & indices, MatrixXd const & M, MatrixXd & included, MatrixXd & excluded)
 {   
   const size_t n = indices.size();
   const size_t count = getNumTrue(indices);
@@ -157,7 +157,17 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
     const size_t nC = getNumTrue(possible_contact);
     const size_t nL = getNumTrue(possible_jointlimit);
     const size_t lcp_size = nL + nP + (mC + 2) * nC;
+
+    plhs[0] = mxCreateDoubleMatrix(lcp_size, 1, mxREAL);
+    plhs[1] = mxCreateDoubleMatrix(nq, lcp_size, mxREAL);
+
+    Map<VectorXd> z(mxGetPr(plhs[0]), lcp_size);
+    Map<MatrixXd> Mqdn(mxGetPr(plhs[1]), nq, lcp_size);
     
+    if (lcp_size == 0) {
+      return;
+    }
+
     vector<size_t> possible_contact_indices;
     getInclusionIndices(possible_contact, possible_contact_indices, true);
 
@@ -177,11 +187,6 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
     MatrixXd J(lcp_size, nq);
     J << JL_possible, JP, n_possible, D_possible, MatrixXd::Zero(nC, nq);
 
-    plhs[0] = mxCreateDoubleMatrix(lcp_size, 1, mxREAL);
-    plhs[1] = mxCreateDoubleMatrix(nq, lcp_size, mxREAL);
-
-    Map<VectorXd> z(mxGetPr(plhs[0]), lcp_size);
-    Map<MatrixXd> Mqdn(mxGetPr(plhs[1]), nq, lcp_size);
     Mqdn = Hinv*J.transpose();
     
     //solve LCP problem 
