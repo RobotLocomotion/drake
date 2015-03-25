@@ -14,6 +14,9 @@ classdef QPLocomotionPlan < QPControllerPlan
     mu = 0.5;
     plan_shift_data = PlanShiftData();
     g = 9.81; % gravity m/s^2
+    is_quasistatic = false;
+
+    last_qp_input;
   end
 
   methods
@@ -29,12 +32,13 @@ classdef QPLocomotionPlan < QPControllerPlan
     function next_plan = getSuccessor(obj, t, x)
       if isnumeric(obj.qtraj)
         qf = obj.qtraj;
+        next_plan = QPLocomotionPlan.from_standing_state([x(1:6); qf(7:end); x(obj.robot.getNumPositions+1:end)], obj.robot, obj.supports(end));
+        next_plan.mu = obj.mu;
+        next_plan.g = obj.g;
       else
-        qf = fasteval(obj.qtraj, obj.qtraj.tspan(end));
+        % qf = fasteval(obj.qtraj, obj.qtraj.tspan(end));
+        next_plan = FrozenPlan(obj.last_qp_input);
       end
-      next_plan = QPLocomotionPlan.from_standing_state([x(1:6); qf(7:end); x(obj.robot.getNumPositions+1:end)], obj.robot, obj.supports(end));
-      next_plan.mu = obj.mu;
-      next_plan.g = obj.g;
       % next_plan = QPLocomotionPlan.from_standing_state(x, obj.robot, obj.supports(end));
 
     end
@@ -52,24 +56,43 @@ classdef QPLocomotionPlan < QPControllerPlan
         contact_force_detected = zeros(rpc.num_bodies, 1);
       end
 
+      if isempty(obj.start_time)
+        obj.start_time = t_global;
+      end
       r = obj.robot;
       t_plan = t_global - obj.start_time;
       t_plan = double(t_plan);
+      if t_plan < 0
+        qp_input = [];
+        return;
+      end
       
       T = obj.duration;
       t_plan = min([t_plan, T]);
 
       q = x(1:rpc.nq);
       qd = x(rpc.nq+(1:rpc.nv));
-      kinsol = doKinematics(obj.robot, q);
 
       qp_input = obj.default_qp_input;
       qp_input.zmp_data.D = -obj.LIP_height/obj.g * eye(2);
-      qp_input.zmp_data.x0 = [obj.zmp_final; 0;0];
-      if isnumeric(obj.zmptraj)
-        qp_input.zmp_data.y0 = obj.zmptraj;
+
+      if isnumeric(obj.qtraj)
+        qp_input.whole_body_data.q_des = obj.qtraj;
       else
-        qp_input.zmp_data.y0 = fasteval(obj.zmptraj, t_plan);
+        qp_input.whole_body_data.q_des = fasteval(obj.qtraj, t_plan);
+      end
+
+      if obj.is_quasistatic
+        com_pos = obj.robot.getCOM(obj.robot.doKinematics(qp_input.whole_body_data.q_des));
+        qp_input.zmp_data.x0 = [com_pos(1:2); 0; 0];
+        qp_input.zmp_data.y0 = com_pos(1:2);
+      else
+        qp_input.zmp_data.x0 = [obj.zmp_final; 0;0];
+        if isnumeric(obj.zmptraj)
+          qp_input.zmp_data.y0 = obj.zmptraj;
+        else
+          qp_input.zmp_data.y0 = fasteval(obj.zmptraj, t_plan);
+        end
       end
       qp_input.zmp_data.S = obj.V.S;
       if isnumeric(obj.V.s1)
@@ -78,13 +101,15 @@ classdef QPLocomotionPlan < QPControllerPlan
         qp_input.zmp_data.s1 = fasteval(obj.V.s1,t_plan);
       end
 
-      if isnumeric(obj.qtraj)
-        qp_input.whole_body_data.q_des = obj.qtraj;
-      else
-        qp_input.whole_body_data.q_des = fasteval(obj.qtraj, t_plan);
-      end
+      kinsol = doKinematics(obj.robot, q);
 
-      supp_idx = find(obj.support_times<=t_plan,1,'last');
+      if t_plan < obj.support_times(1)
+        supp_idx = 1;
+      elseif t_plan > obj.support_times(end)
+        supp_idx = length(obj.support_times);
+      else
+        supp_idx = find(obj.support_times<=t_plan,1,'last');
+      end
 
       MIN_KNEE_ANGLE = 0.7;
       KNEE_KP = 40;
@@ -98,10 +123,12 @@ classdef QPLocomotionPlan < QPControllerPlan
         if qp_input.body_motion_data(j).body_id == rpc.body_ids.pelvis
           pelvis_has_tracking = true;
         end
-        if t_plan <= obj.link_constraints(j).ts(end)
-          body_t_ind = find(obj.link_constraints(j).ts<=t_plan,1,'last');
-        else
+        if t_plan < obj.link_constraints(j).ts(1)
+          body_t_ind = 1;
+        elseif t_plan > obj.link_constraints(j).ts(end)
           body_t_ind = length(obj.link_constraints(j).ts);
+        else
+          body_t_ind = find(obj.link_constraints(j).ts<=t_plan,1,'last');
         end
         if body_t_ind < length(obj.link_constraints(j).ts)
           qp_input.body_motion_data(j).ts = obj.link_constraints(j).ts(body_t_ind:body_t_ind+1) + obj.start_time;
@@ -167,6 +194,7 @@ classdef QPLocomotionPlan < QPControllerPlan
       end
       obj = obj.updatePlanShift(t_global, kinsol, qp_input, contact_force_detected, next_support);
       qp_input = obj.applyPlanShift(qp_input);
+      obj.last_qp_input = qp_input;
     end
 
     function obj = updatePlanShift(obj, t_global, kinsol, qp_input, contact_force_detected, next_support)
@@ -292,25 +320,40 @@ classdef QPLocomotionPlan < QPControllerPlan
   end
 
   methods(Static)
-    function obj = from_standing_state(x0, biped, support_state)
+    function obj = from_standing_state(x0, biped, support_state, options)
 
       if nargin < 3
         support_state = RigidBodySupportState(biped, [biped.foot_body_id.right, biped.foot_body_id.left]);
       end
+      if nargin < 4
+        options = struct();
+      end
+      options = applyDefaults(options, struct('center_pelvis', true));
 
       obj = QPLocomotionPlan(biped);
       obj.x0 = x0;
       obj.support_times = [0, inf];
       obj.duration = inf;
       obj.supports = [support_state, support_state];
+      obj.is_quasistatic = true;
 
       nq = obj.robot.getNumPositions();
       q0 = x0(1:nq);
       kinsol = doKinematics(obj.robot, q0);
 
-      foot_pos = [obj.robot.forwardKin(kinsol, obj.robot.foot_frame_id.right, [0;0;0]),...
-                  obj.robot.forwardKin(kinsol, obj.robot.foot_frame_id.left, [0;0;0])];
-      comgoal = mean(foot_pos(1:2,:), 2);
+
+      pelvis_id = obj.robot.findLinkId('pelvis');
+      pelvis_current = forwardKin(obj.robot,kinsol,pelvis_id,[0;0;0],1);
+      if options.center_pelvis
+        foot_pos = [obj.robot.forwardKin(kinsol, obj.robot.foot_frame_id.right, [0;0;0]),...
+                    obj.robot.forwardKin(kinsol, obj.robot.foot_frame_id.left, [0;0;0])];
+        comgoal = mean(foot_pos(1:2,:), 2);
+        pelvis_target = [mean(foot_pos(1:2,:), 2); pelvis_current(3:end)];
+      else
+        comgoal = obj.robot.getCOM(kinsol);
+        comgoal = comgoal(1:2);
+        pelvis_target = pelvis_current;
+      end
 
       obj.zmptraj = comgoal;
       [~, obj.V, obj.comtraj, obj.LIP_height] = obj.robot.planZMPController(comgoal, q0);
@@ -325,12 +368,9 @@ classdef QPLocomotionPlan < QPControllerPlan
       link_constraints(2).ts = [0, inf];
       link_constraints(2).coefs = cat(3, zeros(6,1,3),reshape(forwardKin(obj.robot,kinsol,obj.robot.foot_body_id.left,[0;0;0],1),[6,1,1]));
       link_constraints(2).toe_off_allowed = [false, false];
-      pelvis_id = obj.robot.findLinkId('pelvis');
       link_constraints(3).link_ndx = pelvis_id;
       link_constraints(3).pt = [0;0;0];
       link_constraints(3).ts = [0, inf];
-      pelvis_current = forwardKin(obj.robot,kinsol,pelvis_id,[0;0;0],1);
-      pelvis_target = pelvis_current;
       link_constraints(3).coefs = cat(3, zeros(6,1,3),reshape(pelvis_target,[6,1,1,]));
       obj.link_constraints = link_constraints;
 
