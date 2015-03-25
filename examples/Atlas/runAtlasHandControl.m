@@ -261,7 +261,6 @@ if visualize
 end
 x0 = xstar_hands;
 x0(3) = 1.0; % drop it a bit
-
 traj = simulate(sys,[0 2],x0);
 if visualize
   % This doesn't see hand movements. Why?
