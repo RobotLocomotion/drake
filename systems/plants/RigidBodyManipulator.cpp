@@ -170,17 +170,6 @@ void dcrf(VectorXd v, VectorXd x, MatrixXd dv, MatrixXd dx, MatrixXd* dvcross) {
   *dvcross = -(*dvcross);
 }
 
-Matrix3d rotz(double theta) {
-  // returns 3D rotation matrix (about the z axis)
-  Matrix3d M;
-  double c=cos(theta);
-  double s=sin(theta);
-  M << c,-s, 0,
-     s, c, 0,
-     0, 0, 1;
-  return M;
-}
-
 void Tjcalc(int pitch, double q, Matrix4d* TJ)
 {
   *TJ = Matrix4d::Identity();
@@ -252,14 +241,6 @@ void roty(double theta, Matrix3d &M, Matrix3d &dM, Matrix3d &ddM)
   M << c,0,-s, 0,1,0, s,0,c;
   dM << -s,0,-c, 0,0,0, c,0,-s;  dM = -dM;
   ddM << -c,0,s, 0,0,0, -s,0,-c;
-}
-
-void rotz(double theta, Matrix3d &M, Matrix3d &dM, Matrix3d &ddM)
-{
-  double c=cos(theta), s=sin(theta);
-  M << c,-s,0, s,c,0, 0,0,1;
-  dM << -s,-c,0, c,-s,0, 0,0,0;
-  ddM << -c,s,0, -s,-c,0, 0,0,0;
 }
 
 template <typename T>
