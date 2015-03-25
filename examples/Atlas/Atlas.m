@@ -342,7 +342,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
                                     'drake_instep_shift', 0.0,... % Distance to shift ZMP trajectory inward toward the instep from the center of the foot (m)
                                     'mu', 1.0,... % friction coefficient
                                     'constrain_full_foot_pose', true,... % whether to constrain the swing foot roll and pitch
-                                    'pelvis_height_above_foot_sole', 0.84,... % default pelvis height when walking
+                                    'pelvis_height_above_foot_sole', 0.82,... % default pelvis height when walking
                                     'nominal_LIP_COM_height', 0.89); % nominal height used to construct D_ls for our linear inverted pendulum model
     hand_right = 0;
     hand_right_kind = 'none';
