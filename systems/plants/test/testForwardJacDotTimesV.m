@@ -58,7 +58,7 @@ while test_number < n_tests
     Jdot = reshape(reshape(dJ, numel(J), []) * kinsol.qd, size(J));
     Jvdot_times_v = robot.forwardJacDotTimesV(kinsol, end_effector, points, rotation_type, base);
     
-    valuecheck(Jdot * kinsol.qdot, Jvdot_times_v, computeTolerance(Jvdot_times_v, 1e-3, 1e-6));
+    valuecheck(Jdot * kinsol.qd, Jvdot_times_v, computeTolerance(Jvdot_times_v, 1e-3, 1e-6));
     
     test_number = test_number + 1;
   end
