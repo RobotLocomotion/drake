@@ -16,8 +16,11 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       if ~isfield(options,'terrain')
         options.terrain = RigidBodyFlatTerrain;
       end
-      if ~isfield(options,'hands')
-        options.hands = 'none';
+      if ~isfield(options,'hand_right')
+        options.hand_right = 'none';
+      end
+      if ~isfield(options,'hand_left')
+        options.hand_left = 'none';
       end
 
       w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
@@ -25,17 +28,37 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       obj = obj@TimeSteppingRigidBodyManipulator(urdf,options.dt,options);
       obj = obj@Biped('r_foot_sole', 'l_foot_sole');
       warning(w);
-      
-      if (~strcmp(options.hands, 'none'))
-        if (strcmp(options.hands, 'robotiq') || strcmp(options.hands, 'robotiq_tendons') || strcmp(options.hands, 'robotiq_simple'))
+
+      hand=options.hand_right;
+      if (~strcmp(hand, 'none'))
+        clear options_hand;
+        if (strcmp(hand, 'robotiq') || strcmp(hand, 'robotiq_tendons') || strcmp(hand, 'robotiq_simple'))
           options_hand.weld_to_link = findLinkId(obj,'r_hand');
-          obj.hands = 1;
-          obj = obj.addRobotFromURDF(getFullPathFromRelativePath(['urdf/', options.hands, '.urdf']), [0; -0.195; -0.01], [0; -3.1415/2; 3.1415], options_hand);
-        elseif (strcmp(options.hands, 'robotiq_weight_only'))
+          obj.hand_right = 1;
+          obj.hand_right_kind = hand;
+          obj = obj.addRobotFromURDF(getFullPathFromRelativePath(['urdf/', hand, '.urdf']), [0; -0.195; -0.01], [0; -3.1415/2; 3.1415], options_hand);
+        elseif (strcmp(hand, 'robotiq_weight_only'))
           % Adds a box with weight roughly approximating the hands, so that
           % the controllers know what's up
           options_hand.weld_to_link = findLinkId(obj,'r_hand');
           obj = obj.addRobotFromURDF(getFullPathFromRelativePath('urdf/robotiq_box.urdf'), [0; -0.195; -0.01], [0; -3.1415/2; 3.1415], options_hand);
+        else
+          error('unsupported hand type');
+        end
+      end
+      hand=options.hand_left;
+      if (~strcmp(hand, 'none'))
+        clear options_hand;
+        if (strcmp(hand, 'robotiq') || strcmp(hand, 'robotiq_tendons') || strcmp(hand, 'robotiq_simple'))
+          options_hand.weld_to_link = findLinkId(obj,'l_hand');
+          obj.hand_left = 1;
+          obj.hand_left_kind = hand;
+          obj = obj.addRobotFromURDF(getFullPathFromRelativePath(['urdf/', hand, '.urdf']), [0; 0.195; 0.01], [0; -3.1415/2; 0], options_hand);
+        elseif (strcmp(hand, 'robotiq_weight_only'))
+          % Adds a box with weight roughly approximating the hands, so that
+          % the controllers know what's up
+          options_hand.weld_to_link = findLinkId(obj,'l_hand');
+          obj = obj.addRobotFromURDF(getFullPathFromRelativePath('urdf/robotiq_box.urdf'), [0; 0.195; 0.01], [0; -3.1415/2; 0], options_hand);
         else
           error('unsupported hand type');
         end
@@ -75,13 +98,25 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
         atlas_state_frame = obj.manip.getStateFrame();
         atlas_state_frame = replaceFrameNum(atlas_state_frame,1,atlasFrames.AtlasState(obj));
       end
-      if (obj.hands > 0)
-        % Sub in handstates for the hands
-        % TODO: handle more than 1 hand?
+
+      % Sub in handstates for the hands
+      % If we sub in the order that they are added
+      % we should get this in the right order
+      if (obj.hand_right > 0)
         id = atlas_state_frame.getFrameNumByName('s-model_articulatedPosition+s-model_articulatedVelocity');
-        atlas_state_frame = replaceFrameNum(atlas_state_frame,id,atlasFrames.HandState(obj,id,'atlasFrames.HandState'));
+        if (length(id) > 1)
+          id = id(1);
+        end
+        atlas_state_frame = replaceFrameNum(atlas_state_frame,id,atlasFrames.HandState(obj,id,'right_atlasFrames.HandState'));
       end
-      
+      if (obj.hand_left > 0)
+        id = atlas_state_frame.getFrameNumByName('s-model_articulatedPosition+s-model_articulatedVelocity');
+        if (length(id) > 1)
+          id = id(1);
+        end
+        atlas_state_frame = replaceFrameNum(atlas_state_frame,id,atlasFrames.HandState(obj,id,'left_atlasFrames.HandState'));
+      end
+
       tsmanip_state_frame = obj.getStateFrame();
       if tsmanip_state_frame.dim>atlas_state_frame.dim
         tsmanip_state_frame.frame{1} = atlas_state_frame;
@@ -93,16 +128,27 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       obj = obj.setStateFrame(state_frame);
       
       % Same bit of complexity for input frame to get hand inputs
-      if (obj.hands > 0)
+      if (obj.hand_right > 0 || obj.hand_left > 0)
         input_frame = getInputFrame(obj);
         input_frame  = replaceFrameNum(input_frame,1,atlasFrames.AtlasInput(obj));
-        % Sub in handstates for the hand
-        % TODO: handle more than 1 hand?
-        id = input_frame.getFrameNumByName('s-model_articulatedInput');
-        input_frame = replaceFrameNum(input_frame,id,atlasFrames.HandInput(obj,id,'atlasFrames.HandInput'));
       else
         input_frame = atlasFrames.AtlasInput(obj);
       end
+      if (obj.hand_right > 0)
+        id = input_frame.getFrameNumByName('s-model_articulatedInput');
+        if (length(id) > 1)
+          id = id(1);
+        end
+        input_frame = replaceFrameNum(input_frame,id,atlasFrames.HandInput(obj,id,'right_atlasFrames.HandInput'));
+      end
+      if (obj.hand_left > 0)
+        id = input_frame.getFrameNumByName('s-model_articulatedInput');
+        if (length(id) > 1)
+          id = id(1);
+        end 
+        input_frame = replaceFrameNum(input_frame,id,atlasFrames.HandInput(obj,id,'left_atlasFrames.HandInput'));
+      end
+
       obj = obj.setInputFrame(input_frame);
       obj.manip = obj.manip.setInputFrame(input_frame);
       
@@ -297,7 +343,10 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
                                     'constrain_full_foot_pose', true,... % whether to constrain the swing foot roll and pitch
                                     'pelvis_height_above_foot_sole', 0.82,... % default pelvis height when walking
                                     'nominal_LIP_COM_height', 0.89); % nominal height used to construct D_ls for our linear inverted pendulum model
-    hands = 0; % 0, none; 1, Robotiq
+    hand_right = 0;
+    hand_right_kind = 'none';
+    hand_left = 0;
+    hand_left_kind = 'none';
     % preconstructing these for efficiency
     left_full_support
     left_toe_support

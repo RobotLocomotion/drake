@@ -5,7 +5,7 @@ classdef AtlasInput < SingletonCoordinateFrame
       typecheck(r,'TimeSteppingRigidBodyManipulator');
 
       manipInputFrame = r.getManipulator().getInputFrame();
-      if (r.hands > 0)
+      if (r.hand_left > 0 || r.hand_right > 0)
         manipInputFrame = manipInputFrame.getFrameByNum(1);
       end
       input_names = manipInputFrame.coordinates;

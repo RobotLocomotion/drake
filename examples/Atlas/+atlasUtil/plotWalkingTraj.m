@@ -1,6 +1,14 @@
 function [com, rms_com] = plotWalkingTraj(r, traj, walking_plan_data)
 %NOTEST
 
+if ~isa(walking_plan_data.comtraj, 'Trajectory')
+  walking_plan_data.comtraj = ExpPlusPPTrajectory(walking_plan_data.comtraj.breaks,...
+                                                  walking_plan_data.comtraj.K,...
+                                                  walking_plan_data.comtraj.A,...
+                                                  walking_plan_data.comtraj.alpha,...
+                                                  walking_plan_data.comtraj.gamma);
+end
+
 nq = r.getNumPositions();
 tts = traj.getBreaks();
 T = tts(end);

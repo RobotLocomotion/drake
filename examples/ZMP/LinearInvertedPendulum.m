@@ -195,11 +195,33 @@ classdef LinearInvertedPendulum < LinearSystem
   end
   
   methods (Static)
+    function [A, B, C, D, Q, R, Q1, R1, N] = setupLinearSystem(h_over_g, Qy)
+      A = [zeros(2),eye(2);zeros(2,4)]; 
+      B = [zeros(2);eye(2)];
+      C = [eye(2), zeros(2)];
+      D = -h_over_g*eye(2);
+
+      % LQR costs for the output system
+      Q = Qy(5:6,5:6); % for consistency with the other solution methods
+      R = zeros(2);
+
+      % Convert to costs in xbar, u
+      Q1 = C'*Q*C;
+      R1 = R + D'*Q*D;
+      N = C'*Q*D;
+    end
+
     function [ct,Vt,comtraj] = ZMPtrackerClosedForm(h,dZMP,options)
       if nargin<3 options = struct(); end
-      if ~isfield(options,'compute_lyapunov') options.compute_lyapunov = (nargout>1); end
-      if ~isfield(options, 'Qy') options.Qy = diag([0,0,0,0,1,1]); end
-      
+      options = applyDefaults(options, struct('compute_lyapunov', (nargout>1),...
+                                              'Qy', diag([0,0,0,0,1,1]),...
+                                              'use_lqr_cache', false,...
+                                              'lqr_cache_com_height_resolution', 0.01,...
+                                              'build_control_objects', true));
+      if options.use_lqr_cache
+        % round our CoM height value to improve the likelihood of a cache hit
+        h = round(h / options.lqr_cache_com_height_resolution) * options.lqr_cache_com_height_resolution;
+      end
       typecheck(dZMP,'Trajectory');
       dZMP = dZMP.inFrame(desiredZMP);
       
@@ -221,22 +243,16 @@ classdef LinearInvertedPendulum < LinearSystem
       dt = diff(breaks);
 
       hg = h/9.81;
-      A = [zeros(2),eye(2);zeros(2,4)]; 
-      B = [zeros(2);eye(2)];
-      C = [eye(2), zeros(2)];
-      D = -hg*eye(2);
-
-      % LQR costs for the output system
-      Q = options.Qy(5:6,5:6); % for consistency with the other solution methods
-      R = zeros(2);
-
-      % Convert to costs in xbar, u
-      Q1 = C'*Q*C;
-      R1 = R + D'*Q*D;
+      [A, B, C, D, Q, R, Q1, R1, N] = LinearInvertedPendulum.setupLinearSystem(hg, options.Qy);
       R1i = inv(R1);
-      N = C'*Q*D;
       
-      [K,S] = lqr(A,B,Q1,R1,N); K=-K;
+      if options.use_lqr_cache
+        [K, S] = ZMPCachedLQR(hg, options.Qy);
+      else
+        [K,S] = lqr(A,B,Q1,R1,N); 
+      end
+
+      K=-K;
       
       NB = (N' + B'*S);
       A2 = NB'*R1i*B' - A';
@@ -263,15 +279,26 @@ classdef LinearInvertedPendulum < LinearSystem
         alpha(:,j) = expm(A2*dt(j)) \ (s1dt - squeeze(beta(:,j,:))*(dt(j).^(0:k-1)'));
       end
       
-      ct = AffineSystem([],[],[],[],[],[],[],K,ExpPlusPPTrajectory(breaks,-.5*R1i*B',A2,alpha,gamma));
+      if options.build_control_objects
+        ct = AffineSystem([],[],[],[],[],[],[],K,ExpPlusPPTrajectory(breaks,-.5*R1i*B',A2,alpha,gamma));
+      else
+        ct = [];
+      end
         
       if options.compute_lyapunov
-        s1traj = ExpPlusPPTrajectory(breaks,eye(4),A2,alpha,beta);
-%          s2traj = ODESolTrajectory(ode45(@s2dynamics,fliplr(breaks),0),[1 1]);
-%          s2traj = flipToPP(s2traj);
-        [t,y,ydot] = ode4(@s2dynamics,fliplr(breaks),0);
-        s2traj = PPTrajectory(pchipDeriv(breaks,fliplr(y.'),fliplr(ydot.')));
-        Vt = QuadraticLyapunovFunction(getInputFrame(ct),S,s1traj,s2traj);
+        if options.build_control_objects
+          s1traj = ExpPlusPPTrajectory(breaks,eye(4),A2,alpha,beta);
+          [t,y,ydot] = ode4(@s2dynamics,fliplr(breaks),0);
+          s2traj = PPTrajectory(pchipDeriv(breaks,fliplr(y.'),fliplr(ydot.')));
+          Vt = QuadraticLyapunovFunction(getInputFrame(ct),S,s1traj,s2traj);
+        else
+          s1traj = struct('breaks', breaks, ...
+                          'K', eye(4), ...
+                          'A', A2,...
+                          'alpha', alpha,...
+                          'gamma', beta);
+          Vt = struct('S', S, 's1', s1traj);
+        end
       else
         Vt = [];
       end
@@ -298,7 +325,15 @@ classdef LinearInvertedPendulum < LinearSystem
           b(1:2,j,1) = b(1:2,j,1)+zmp_tf;  % back in world coordinates
         end
         
-        comtraj = ExpPlusPPTrajectory(breaks,[eye(2),zeros(2,6)],Ay,[a;alpha],b(1:2,:,:));
+        if options.build_control_objects
+          comtraj = ExpPlusPPTrajectory(breaks,[eye(2),zeros(2,6)],Ay,[a;alpha],b(1:2,:,:));
+        else
+          comtraj = struct('breaks', breaks,...
+                           'K', [eye(2),zeros(2,6)],...
+                           'A', Ay,...
+                           'alpha', [a;alpha],...
+                           'gamma', b(1:2,:,:));
+        end
       end
       
       function s2dot = s2dynamics(t,s2)

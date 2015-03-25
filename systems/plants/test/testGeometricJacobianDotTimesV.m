@@ -34,7 +34,7 @@ while test_number <= ntests
   Jdot_times_v = robot.geometricJacobianDotTimesV(kinsol, base, end_effector, expressed_in);
   
   % integrate
-  q = q + kinsol.qdot * dt;
+  q = q + kinsol.qd * dt;
   
   % update kinematics, Jacobian
   options.use_mex = true;

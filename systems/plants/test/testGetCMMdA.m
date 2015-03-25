@@ -6,16 +6,19 @@ test_cases = struct('urdf', ...
   [getDrakePath, '/examples/Pendulum/Pendulum.urdf']}, ...
   'floating',{true,true,false,false});
 for test_case = test_cases
-  options.floating = test_case.floating;
-  %options.floating = false;
-  w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
-  warning('off','Drake:RigidBodyManipulator:NonPSDInertia');
-  warning('off','Drake:RigidBodyManipulator:ReplacedCylinder');
-  r = RigidBodyManipulator(test_case.urdf,options);
-  warning(w);
-  checkGradients(r);
-  if r.use_new_kinsol
-    checkMex(r);
+  for use_new_kinsol = [false true]
+    options.use_new_kinsol = use_new_kinsol;
+    options.floating = test_case.floating;
+    %options.floating = false;
+    w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
+    warning('off','Drake:RigidBodyManipulator:NonPSDInertia');
+    warning('off','Drake:RigidBodyManipulator:ReplacedCylinder');
+    r = RigidBodyManipulator(test_case.urdf,options);
+    warning(w);
+    checkGradients(r);
+    if r.use_new_kinsol
+      checkMex(r);
+    end
   end
 end
 end

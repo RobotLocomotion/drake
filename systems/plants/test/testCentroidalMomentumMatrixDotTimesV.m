@@ -9,6 +9,11 @@ for parameterization = floatingBaseParameterizations
   checkMex(robot);
 end
 
+options.use_new_kinsol = false;
+robot = createAtlas('rpy', options);
+testAtlasExternalWrenchVersusMassMatrix(robot);
+checkMex(robot);
+
 end
 
 function testAtlasExternalWrenchVersusMassMatrix(robot)
@@ -67,14 +72,19 @@ v = randn(nv, 1);
 options.use_mex = false;
 
 kinsol = robot.doKinematics(q, v, options);
-[Adot_times_v, dAdot_times_v] = centroidalMomentumMatrixDotTimesV(robot, kinsol);
 
-options.use_mex = true;
-kinsol = robot.doKinematics(q, v, options);
-[Adot_times_v_mex, dAdot_times_v_mex] = centroidalMomentumMatrixDotTimesV(robot, kinsol);
-
-valuecheck(Adot_times_v, Adot_times_v_mex);
-valuecheck(dAdot_times_v, dAdot_times_v_mex);
-
+if robot.use_new_kinsol
+  [Adot_times_v, dAdot_times_v] = centroidalMomentumMatrixDotTimesV(robot, kinsol);
+  options.use_mex = true;
+  kinsol = robot.doKinematics(q, v, options);
+  [Adot_times_v_mex, dAdot_times_v_mex] = centroidalMomentumMatrixDotTimesV(robot, kinsol);
+  valuecheck(Adot_times_v, Adot_times_v_mex);
+  valuecheck(dAdot_times_v, dAdot_times_v_mex);
+else
+  Adot_times_v = centroidalMomentumMatrixDotTimesV(robot, kinsol);
+  options.use_mex = true;
+  kinsol = robot.doKinematics(q, v, options);
+  Adot_times_v_mex = centroidalMomentumMatrixDotTimesV(robot, kinsol);  
+  valuecheck(Adot_times_v, Adot_times_v_mex);
 end
-
+end
