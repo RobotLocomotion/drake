@@ -8,6 +8,11 @@ for parameterization = floatingBaseParameterizations
   testGradients(robot);
   checkMex(robot);
 end
+
+options.use_new_kinsol = false;
+robot = createAtlas('rpy', options);
+testAgainstJdotFromGradient(robot);
+checkMex(robot);
 end
 
 function testAgainstJdotFromGradient(robot)
@@ -27,8 +32,13 @@ for i = 1 : nTests
   options.use_mex = false;
   options.compute_gradients = true;
   kinsol = robot.doKinematics(q, v, options);
-  [~, J, dJ] = robot.getCOM(kinsol, robotnum, false);
-  Jdot = reshape(reshape(dJ, [], nq) * kinsol.qdot, size(J));
+  if robot.use_new_kinsol
+    in_terms_of_qdot = false; % what it really should be
+  else
+    in_terms_of_qdot = true; % rpy, assume qdot = v
+  end
+  [~, J, dJ] = robot.getCOM(kinsol, robotnum, in_terms_of_qdot);
+  Jdot = reshape(reshape(dJ, [], nq) * kinsol.qd, size(J));
   Jdot_times_v_check = Jdot * v;
 
   valuecheck(Jdot_times_v_check, Jdot_times_v, 1e-10);
@@ -56,19 +66,27 @@ end
 end
 
 function checkMex(robot)
-options.compute_gradients = true;
-
 q = getRandomConfiguration(robot);
 v = randn(robot.getNumVelocities(), 1);
 
-options.use_mex = false;
-kinsol = robot.doKinematics(q, v, options);
-[Jdot_times_v, dJdot_times_v] = robot.centerOfMassJacobianDotTimesV(kinsol);
+options.compute_gradients = true;
+if robot.use_new_kinsol
+  options.use_mex = false;
+  kinsol = robot.doKinematics(q, v, options);
+  [Jdot_times_v, dJdot_times_v] = robot.centerOfMassJacobianDotTimesV(kinsol);
+  options.use_mex = true;
+  kinsol = robot.doKinematics(q, v, options);
+  [Jdot_times_v_mex, dJdot_times_v_mex] = robot.centerOfMassJacobianDotTimesV(kinsol);
+  valuecheck(Jdot_times_v, Jdot_times_v_mex);
+  valuecheck(dJdot_times_v, dJdot_times_v_mex);
+else
+  options.use_mex = false;
+  kinsol = robot.doKinematics(q, v, options);
+  [Jdot_times_v] = robot.centerOfMassJacobianDotTimesV(kinsol);
+  options.use_mex = true;
+  kinsol = robot.doKinematics(q, v, options);
+  [Jdot_times_v_mex] = robot.centerOfMassJacobianDotTimesV(kinsol);
+  valuecheck(Jdot_times_v, Jdot_times_v_mex);
+end
 
-options.use_mex = true;
-kinsol = robot.doKinematics(q, v, options);
-[Jdot_times_v_mex, dJdot_times_v_mex] = robot.centerOfMassJacobianDotTimesV(kinsol);
-
-valuecheck(Jdot_times_v, Jdot_times_v_mex);
-valuecheck(dJdot_times_v, dJdot_times_v_mex);
 end
