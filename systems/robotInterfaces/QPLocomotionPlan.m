@@ -98,7 +98,11 @@ classdef QPLocomotionPlan < QPControllerPlan
       if isnumeric(obj.V.s1)
         qp_input.zmp_data.s1 = obj.V.s1;
       else
-        qp_input.zmp_data.s1 = fasteval(obj.V.s1,t_plan);
+        if ~isfield(obj.V, 's1traj') || isempty(obj.V.s1traj)
+          obj.V.s1traj = SharedDataHandle(ExpPlusPPTrajectoryEvalmex(obj.V.s1.breaks, obj.V.s1.K, obj.V.s1.A, obj.V.s1.alpha, reshape(obj.V.s1.gamma, [size(obj.V.s1.gamma,1)*size(obj.V.s1.gamma,2), size(obj.V.s1.gamma, 3)])));
+        end
+        [qp_input.zmp_data.s1, ~] = ExpPlusPPTrajectoryEvalmex(obj.V.s1traj.data, t_plan);
+        % qp_input.zmp_data.s1 = fasteval(obj.V.s1,t_plan);
       end
 
       kinsol = doKinematics(obj.robot, q);
@@ -305,6 +309,13 @@ classdef QPLocomotionPlan < QPControllerPlan
           plot_traj_foh(obj.link_constraints(j).traj_min, [0.8, 0.8, 0.2]);
           plot_traj_foh(obj.link_constraints(j).traj_max, [0.2, 0.8, 0.8]);
         end
+      end
+      if ~isa(obj.comtraj, 'Trajectory')
+        obj.comtraj = ExpPlusPPTrajectory(obj.comtraj.breaks,...
+                                          obj.comtraj.K,...
+                                          obj.comtraj.A,...
+                                          obj.comtraj.alpha,...
+                                          obj.comtraj.gamma);
       end
       plot_traj_foh(obj.comtraj, [0,1,0]);
       plot_traj_foh(obj.zmptraj, [0,0,1]);
