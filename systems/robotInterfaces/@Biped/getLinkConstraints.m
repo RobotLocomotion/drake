@@ -64,7 +64,7 @@ pelvis_reference_height(1) = min(lfoot_des(3),rfoot_des(3));
 
 T = obj.getFrame(obj.foot_frame_id.right).T;
 % Torig * T = Tsole
-rfoot_sole_des = poseRPY2tform(rfoot_des) * T;
+rfoot_sole_des = tform2poseRPY(poseRPY2tform(rfoot_des) * T);
 pelvis_height_above_foot_origin = options.pelvis_height_above_sole + (rfoot_sole_des(3) - rfoot_des(3));
 
 for i=1:length(support_times)-1
