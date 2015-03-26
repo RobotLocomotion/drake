@@ -11,7 +11,7 @@ classdef Base
     W_kdot = zeros(3);
     Kp_ang = 0;
     w_slack = 0.05;
-    slack_limit = 30;
+    slack_limit = 100;
     w_grf = 0.0;
     Kp_accel = 1.0;
     contact_threshold = 0.001;
@@ -40,7 +40,8 @@ classdef Base
                               'qdd_bounds', struct('min', -100*ones(r.getNumVelocities(), 1),...
                                                    'max', 100*ones(r.getNumVelocities(), 1)));
       obj.vref_integrator = struct('zero_ankles_on_contact', 0,...
-                                      'eta', 0.001);
+                                      'eta', 0.001,...
+                                      'delta_max', 10.0);
       obj.whole_body.w_qdd(r.findPositionIndices('back_bkx')) = 0.1;
       obj.whole_body.Kp(r.findPositionIndices('back_bkx')) = 50;
 

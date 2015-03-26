@@ -232,9 +232,8 @@ VectorXd velocityReference(NewQPControllerData *pdata, double t, const Ref<Vecto
     }
   }
 
-  double delta_max = 1.0;
-  VectorXd qd_ref = qd_err.array().max(-delta_max);
-  qd_ref = qd_ref.array().min(delta_max);
+  VectorXd qd_ref = qd_err.array().max(-params->delta_max);
+  qd_ref = qd_ref.array().min(params->delta_max);
   return qd_ref;
 }
 
