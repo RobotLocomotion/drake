@@ -236,14 +236,17 @@ classdef MixedIntegerConvexProgram
     end
 
     function obj = addSymbolicConstraints(obj, expr)
+      assert(obj.has_symbolic);
       obj.symbolic_constraints = [obj.symbolic_constraints, expr];
     end
 
     function obj = addSymbolicCost(obj, expr)
+      assert(obj.has_symbolic);
       obj = obj.addSymbolicObjective(expr);
     end
 
     function obj = addSymbolicObjective(obj, expr)
+      assert(obj.has_symbolic);
       obj.symbolic_objective = obj.symbolic_objective + expr;
     end
 

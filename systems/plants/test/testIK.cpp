@@ -1,7 +1,6 @@
 #include "RigidBodyIK.h"
 #include "RigidBodyManipulator.h"
 #include "../constraint/RigidBodyConstraint.h"
-#include "URDFRigidBodyManipulator.h"
 #include "../IKoptions.h"
 #include <iostream>
 #include <cstdlib>
@@ -11,7 +10,8 @@ using namespace std;
 using namespace Eigen;
 int main()
 {
-  URDFRigidBodyManipulator* model = loadURDFfromFile("./examples/Atlas/urdf/atlas_minimal_contact.urdf");
+  RigidBodyManipulator rbm("examples/Atlas/urdf/atlas_minimal_contact.urdf");
+  RigidBodyManipulator* model = &rbm;
   if(!model)
   {
     cerr<<"ERROR: Failed to load model"<<endl;
@@ -39,7 +39,7 @@ int main()
   {
     return 1;
   }
-  model->doKinematics(q_sol.data());
+  model->doKinematics(q_sol);
   Vector3d com;
   model->getCOM(com);
   printf("%5.2f\n%5.2f\n%5.2f\n",com(0),com(1),com(2));

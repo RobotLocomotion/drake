@@ -1566,7 +1566,7 @@ classdef RigidBodyManipulator < Manipulator
 
       m = 0;
       for i=1:length(model.body)
-        if robotnum == -1 || model.body(i).robotnum == robotnum
+        if isBodyPartOfRobot(model, model.body(i), robotnum)
           bm = model.body(i).mass;
           m = m + bm;
         end

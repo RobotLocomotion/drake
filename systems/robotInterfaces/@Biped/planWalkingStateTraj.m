@@ -16,6 +16,13 @@ q0 = walking_plan_data.x0(1:nq);
 qstar = xstar(1:nq);
 
 % time spacing of samples for IK
+if ~isa(walking_plan_data.comtraj, 'Trajectory')
+  walking_plan_data.comtraj = ExpPlusPPTrajectory(walking_plan_data.comtraj.breaks,...
+                                                  walking_plan_data.comtraj.K,...
+                                                  walking_plan_data.comtraj.A,...
+                                                  walking_plan_data.comtraj.alpha,...
+                                                  walking_plan_data.comtraj.gamma);
+end
 ts = 0:0.1:walking_plan_data.comtraj.tspan(end);
 if length(ts)>300 % limit number of IK samples to something reasonable
   ts = linspace(0,walking_plan_data.comtraj.tspan(end),300);
