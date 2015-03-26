@@ -78,12 +78,13 @@ for urdf = allURDFs()'
   end
   num_qc = size(P,1);  % todo: update this when num_q ~= num_v
   num_vc = size(P,1);
+  num_u = length(r.actuator);  % not getNumInputs, because RigidBodyForce elements are not parsed in C++ yet
 
   Hcpp = textscan(outstr,'%f','HeaderLines',1+num_bodies);
   index = num_vc^2;
   Ccpp = reshape(Hcpp{1}(index+(1:num_vc)),num_vc,1);
   index = index + num_vc;
-  Bcpp = reshape(Hcpp{1}(index+(1:getNumInputs(r)*num_vc)),getNumInputs(r),num_vc)';
+  Bcpp = reshape(Hcpp{1}(index+(1:num_u*num_vc)),num_u,num_vc)';
   index = index + numel(Bcpp);
   num_phi = 3*length(r.loop);
   phicpp = reshape(Hcpp{1}(index+(1:num_phi)),num_phi,1);
@@ -95,6 +96,7 @@ for urdf = allURDFs()'
   Ccpp = P'*Ccpp;
   Bcpp = P'*Bcpp;
   [H,C,B] = manipulatorDynamics(r,q,v);
+  B = B(:,1:num_u); % ignore rigid body force inputs
 
   % low tolerance because i'm just parsing the ascii printouts
   valuecheck(Hcpp,H,tol);
