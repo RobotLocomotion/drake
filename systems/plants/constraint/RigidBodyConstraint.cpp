@@ -2698,3 +2698,65 @@ void PostureChangeConstraint::bounds(const double* t, int n_breaks, VectorXd &lb
     ub.resize(0);
   }
 }
+
+GravityCompensationTorqueConstraint::
+GravityCompensationTorqueConstraint(RigidBodyManipulator* robot,
+    const VectorXi& joint_indices, const VectorXd& lb, const VectorXd& ub, const Vector2d &tspan)
+  : SingleTimeKinematicConstraint(robot, tspan), lb(lb), ub(ub), joint_indices(joint_indices)
+{
+  this->num_constraint = joint_indices.size();
+  this->type = RigidBodyConstraint::GravityCompensationTorqueConstraintType;
+}
+
+void GravityCompensationTorqueConstraint::eval(const double* t, VectorXd& c, MatrixXd& dc) const
+{
+  VectorXd qd = VectorXd::Zero(robot->num_velocities);
+  MatrixXd* f_ext = nullptr;
+  MatrixXd* df_ext = nullptr;
+  MatrixXd H(robot->num_velocities, robot->num_velocities);
+  MatrixXd dH(robot->num_velocities*robot->num_velocities, robot->num_positions+robot->num_velocities);
+  VectorXd G(robot->num_velocities);
+  MatrixXd dG(robot->num_velocities, robot->num_positions+robot->num_velocities);
+
+  robot->HandC(robot->cached_q, qd, f_ext, H, G, &dH, &dG, df_ext);
+
+  c.resize(num_constraint);
+  dc.resize(num_constraint, robot->num_positions);
+
+  for (int i = 0; i < num_constraint; ++i) {
+    c(i) = G(joint_indices(i));
+    dc.row(i) = dG.block(joint_indices(i), 0, 1, robot->num_positions);
+  }
+}
+
+void GravityCompensationTorqueConstraint::name(const double* t, std::vector<std::string>& name) const
+{
+  if(this->isTimeValid(t))
+  {
+    char cnst_name_buffer[100];
+    if(t == nullptr)
+    {
+      sprintf(cnst_name_buffer,"Gravity compensation torque constraint");
+    }
+    else
+    {
+      sprintf(cnst_name_buffer,
+          "Gravity compensation torque constraint at time %10.4f",*t);
+    }
+    std::string cnst_name(cnst_name_buffer);
+    for(int i = 0;i<this->num_constraint;i++)
+    {
+      name.push_back(cnst_name);
+    }
+  }
+  else
+  {
+    name.push_back("");
+  }
+}
+
+void GravityCompensationTorqueConstraint::bounds(const double* t, VectorXd& lb, VectorXd& ub) const
+{
+  lb = this->lb;
+  ub = this->ub;
+}

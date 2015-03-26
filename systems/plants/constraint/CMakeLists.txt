@@ -1,5 +1,6 @@
 include_directories ( .. )
 include_directories (../constraint)
+include_directories (../../controllers)
 
 macro(add_constraint_mex)
   add_mex(${ARGV} ${ARGV}.cpp)
@@ -18,7 +19,7 @@ if(eigen3_FOUND)
   pods_install_headers(RigidBodyConstraint.h DESTINATION drake)
 
   add_mex(drakeConstructRigidBodyConstraint SHARED constructPtrRigidBodyConstraint.cpp)
-  target_link_libraries(drakeConstructRigidBodyConstraint drakeRigidBodyConstraint drakeRBM drakeUtil drakeGeometryUtil)
+  target_link_libraries(drakeConstructRigidBodyConstraint drakeRigidBodyConstraint drakeRBM drakeUtil drakeGeometryUtil drakeControlUtil)
   add_constraint_mex(testSingleTimeKinCnstmex)
   add_constraint_mex(testMultipleTimeKinCnstmex)
   add_constraint_mex(testQuasiStaticConstraintmex)
