@@ -56,11 +56,8 @@ classdef RigidBodyTorsionalSpring < RigidBodyForceElement
   end
   
   methods (Static)
-    function [model,obj] = parseURDFNode(model,robotnum,node,options)
+    function [model,obj] = parseURDFNode(model,name,robotnum,node,options)
       obj = RigidBodyTorsionalSpring();
-      
-      name = char(node.getAttribute('name'));
-      name = regexprep(name, '\.', '_', 'preservecase');
       obj.name = name;
       
       if node.hasAttribute('rest_angle')

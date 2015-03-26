@@ -181,12 +181,9 @@ classdef RigidBodyBluffBody < RigidBodyForceElement
   
   methods (Static)
     
-    function [model,obj] = parseURDFNode(model,robotnum,node,options)
+    function [model,obj] = parseURDFNode(model,name,robotnum,node,options)
       % Parse URDF node for drag object.
       
-      name = char(node.getAttribute('name'));
-      name = regexprep(name, '\.', '_', 'preservecase');
-
       elNode = node.getElementsByTagName('parent').item(0);
       parent = findLinkId(model,char(elNode.getAttribute('link')),robotnum);
       

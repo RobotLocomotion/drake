@@ -756,7 +756,7 @@ classdef RigidBodyWing < RigidBodyForceElement
       
     end
 
-    function [model, obj] = parseURDFNode(model,robotnum,node,options)
+    function [model, obj] = parseURDFNode(model,name,robotnum,node,options)
       % Build a RigidBodyWing from a URDF.
       %
       % @param model model we are adding to
@@ -766,9 +766,6 @@ classdef RigidBodyWing < RigidBodyForceElement
       % @retval model updated model
       % @retval obj constructed RigidBodyWing
       
-      name = char(node.getAttribute('name'));
-      name = regexprep(name, '\.', '_', 'preservecase');
-
       elNode = node.getElementsByTagName('parent').item(0);
       parent = findLinkId(model,char(elNode.getAttribute('link')),robotnum);
 
