@@ -7,6 +7,7 @@
 #include "tinyxml.h"
 #include "RigidBodyManipulator.h"
 #include "joints/drakeJointUtil.h"
+#include "joints/FixedJoint.h"
 #include "joints/HelicalJoint.h"
 #include "joints/PrismaticJoint.h"
 #include "joints/RevoluteJoint.h"
@@ -556,9 +557,7 @@ bool parseJoint(RigidBodyManipulator* model, TiXmlElement* node)
     joint = fjoint;
   } else if (type.compare("fixed") == 0) {
     // FIXME: implement a fixed joint class
-    fjoint = new RevoluteJoint(name, Ttree, axis);
-    fjoint->setJointLimits(0, 0);
-    joint = fjoint;
+    joint = new FixedJoint(name, Ttree);
   } else if (type.compare("prismatic") == 0) {
     fjoint = new PrismaticJoint(name, Ttree, axis);
     joint = fjoint;

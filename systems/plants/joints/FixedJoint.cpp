@@ -18,6 +18,11 @@ FixedJoint::~FixedJoint()
   // empty
 }
 
+Eigen::Isometry3d FixedJoint::jointTransform(const Eigen::Ref<const Eigen::VectorXd>& q) const
+{
+  return Eigen::Isometry3d::Identity();
+}
+
 void FixedJoint::motionSubspace(const Eigen::Ref<const Eigen::VectorXd>& q, MotionSubspaceType& motion_subspace, Eigen::MatrixXd* dmotion_subspace) const
 {
   motion_subspace.resize(TWIST_SIZE, getNumVelocities());
