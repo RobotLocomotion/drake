@@ -30,6 +30,7 @@ for urdf = allURDFs()'
 
   [retval,outstr] = systemWCMakeEnv([urdf_kin_test,' ',urdffile,sprintf(' %f',q),' 2> /dev/null']);
   valuecheck(retval,0);
+  outstr_cell = regexp(outstr, '=======', 'split');  outstr = outstr_cell{2}(2:end);
   out = textscan(outstr,'%s %f %f %f %f %f %f');%,'delimiter',',');
   
   for i=1:getNumBodies(r)
@@ -54,6 +55,7 @@ for urdf = allURDFs()'
 
   [retval,outstr] = systemWCMakeEnv([urdf_manipulator_dynamics_test,' ',urdffile,sprintf(' %f',q),' 2> /dev/null']);
   valuecheck(retval,0);
+  outstr_cell = regexp(outstr, '=======', 'split');  outstr = outstr_cell{2}(2:end);
 
   num_bodies = textscan(outstr,'%d',1); num_bodies=num_bodies{1};
   linknames = textscan(outstr,'%s',num_bodies,'HeaderLines',1); linknames = linknames{1};
