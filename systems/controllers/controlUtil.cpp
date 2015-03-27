@@ -442,7 +442,7 @@ Vector6d bodySpatialMotionPD(RigidBodyManipulator *r, DrakeRobotState &robot_sta
 	Vector3d body_xyzdot = body_twist.tail(3);
 
 	Vector3d body_xyz_des = body_xyzrpy_des.head(3);
-	Vector4d body_rpy_des = body_xyzrpy_des.tail(3);
+	Vector3d body_rpy_des = body_xyzrpy_des.tail(3);
 	Vector3d body_angular_vel_des = body_v_des.tail(3);
 	Vector3d body_angular_vel_dot_des = body_vdot_des.tail(3);
 
