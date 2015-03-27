@@ -46,6 +46,17 @@ inline size_t getNumTrue(vector<bool> const & bools)
   return count;
 }
 
+inline bool anyTrue(vector<bool> const & bools)
+{ 
+  const size_t n = bools.size();
+  for (size_t x = 0; x < n; x++) {
+    if (bools[x]) {
+      return true;
+    }
+  }  
+  return false;
+}
+
 //splits a vector into two based on inclusion mapping
 inline void partitionVector(vector<bool> const & indices, VectorXd const & v, VectorXd & included, VectorXd & excluded)
 {
@@ -112,20 +123,19 @@ inline void filterByIndices(vector<size_t> const &indices, VectorXd const & v, V
 //fastQP(std::vector< Eigen::MatrixXd* > QblkDiag, const Eigen::VectorXd& f, const Eigen::MatrixXd& Aeq, 
 //const Eigen::VectorXd& beq, const Eigen::MatrixXd& Ain, const Eigen::VectorXd& bin, std::set<int>& active, Eigen::VectorXd& x);
 template <typename DerivedM, typename Derivedw, typename Derivedlb, typename Derivedz>
-bool callFastQP(MatrixBase<DerivedM> const & M, MatrixBase<Derivedw> const & w, MatrixBase<Derivedlb> const & lb, vector<bool> const & z_inactive, const size_t checkLimit,  MatrixBase<Derivedz> & z) 
+bool callFastQP(MatrixBase<DerivedM> const & M, MatrixBase<Derivedw> const & w, MatrixBase<Derivedlb> const & lb, vector<bool> & z_inactive, const size_t checkLimit,  MatrixBase<Derivedz> & z) 
 {
   const size_t num_inactive_z = getNumTrue(z_inactive);
   if (num_inactive_z == 0) { 
-    //cout << "early out fail" << endl;
     return false;
   }
+
   vector<size_t> z_inactive_indices, z_active_indices;
   vector<MatrixXd*> list_pQ;
   set<int> active;
   MatrixXd Aeq, Ain, Qdiag, M_temp, M_check;
   VectorXd fqp, bin, beq, zqp, w_check;
   getInclusionIndices(z_inactive, z_inactive_indices, true);
-  getInclusionIndices(z_inactive, z_active_indices, false);
   filterByIndices(z_inactive_indices, M, M_temp);
   filterByIndices(z_inactive_indices, M_temp.transpose(), Aeq);
   filterByIndices(z_inactive_indices, -w, beq);
@@ -136,42 +146,49 @@ bool callFastQP(MatrixBase<DerivedM> const & M, MatrixBase<Derivedw> const & w, 
   zqp = VectorXd::Zero(num_inactive_z);
   list_pQ.push_back(&Qdiag);
 
+  //cout << "Ain: " << endl;
+  //cout << Aeq.transpose() << endl;
+  //cout << "bin: " << endl;
+  //cout << beq << endl;
+
   int info = fastQP(list_pQ, fqp, Aeq.transpose(), beq, Ain, bin, active, zqp);
+  //cout << "zqp: " << endl;
+  //cout << zqp << endl;
+
   size_t zqp_index = 0;
   
-  if (info < 0) { 
-    //cout << "info fail" << endl;
+  if (info < 0) {
+    //cout << "info: " << info << endl;
     return false;
   } else { 
     for (size_t i = 0; i < num_inactive_z; i++) {
-      if (z_inactive[i]) { 
-        z[i] = zqp[zqp_index++];
-      }
+      z[z_inactive_indices[i]] = zqp[zqp_index++];
     }
   }
 
   //make sure fastQP actually produced a solution
-  vector<bool> violations;
-  z_active_indices.resize(checkLimit);
+  vector<bool> violations, ineq_violations;
+  z_inactive.resize(checkLimit);
+  getInclusionIndices(z_inactive, z_active_indices, false);
   filterByIndices(z_active_indices, M, M_temp); // keep active rows
   filterByIndices(z_inactive_indices, M_temp.transpose(), M_check);  //and inactive columns
   filterByIndices(z_active_indices, w, w_check);
-  getThresholdInclusion(M_check.transpose() * zqp + w_check, -SMALL, violations);
-  if (getNumTrue(violations) > 0 ) { 
-    //cout << M_check.transpose() * zqp + w_check << endl;
-    cout << "fail 1" << endl;
-    //cout << "violations: " << getNumTrue(violations) << endl;
+
+  getThresholdInclusion(M_check.transpose() * zqp + w_check, 0, violations);
+  
+  if (anyTrue(violations)) { 
+    //cout << "fail 1" << endl;
     return false;
   }
-  getThresholdInclusion(bin - Ain * zqp, -SMALL, violations);
-  if (getNumTrue(violations) > 0 ) { 
-    cout << "fail 2" << endl;
-    return false;
-  }
-  getThresholdInclusion(beq - Aeq.transpose() * zqp, -SMALL, violations); 
-  if (getNumTrue(violations) > 0 ) { 
-    cout << "fail 3" << endl;
-    return false;
+
+  getThresholdInclusion(Ain * zqp - bin, -SMALL, ineq_violations);
+  getThresholdInclusion(beq - Aeq.transpose() * zqp, -SMALL, violations);
+
+  for (size_t i = 0; i < num_inactive_z; i++) { 
+    if (ineq_violations[i] && violations[i]) { 
+      //cout << "fail 2" << endl;
+      return false;
+    }
   }
   return true;
 }
@@ -180,7 +197,7 @@ bool callFastQP(MatrixBase<DerivedM> const & M, MatrixBase<Derivedw> const & w, 
 void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) { 
   
   if (nlhs != 3 || nrhs != 10) {
-    mexErrMsgIdAndTxt("Drake:setupLCPmex:InvalidUsage","Usage: [z, Mqdn, wqdn] = setupLCPmex(mex_model_ptr, q, qd, u, phiC, n, D, h, z_inactive_guess_tol, z_cached)");
+    mexErrMsgIdAndTxt("Drake:setupLCPmex:InvalidUsage","Usage: [z, Mqdn, wqdn, zqp] = setupLCPmex(mex_model_ptr, q, qd, u, phiC, n, D, h, z_inactive_guess_tol, z_cached)");
   }
 
   RigidBodyManipulator *model= (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
@@ -251,7 +268,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 
     Map<VectorXd> z(mxGetPr(plhs[0]), lcp_size);
     Map<MatrixXd> Mqdn(mxGetPr(plhs[1]), nq, lcp_size);
-    
+
     if (lcp_size == 0) {
       return;
     } else { 
@@ -335,6 +352,8 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
     bool qp_failed = true;
     qp_failed = !callFastQP(M, w, lb, z_inactive, nL+nP+nC, z);
     
+    //cout << "qp_failed: " << qp_failed << endl;
+    
     if(qp_failed) {
       mexCallMATLAB(1, lhs, 4, rhs, "pathlcp");
       Map<VectorXd> z_path(mxGetPr(lhs[0]), lcp_size);
@@ -378,6 +397,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
       //throw away our old solution and try again
       mxDestroyArray(plhs[0]);
       mxDestroyArray(plhs[1]);
+      //cout << "re-solving LCP" << endl;
       continue;
     }
     //our initial guess was correct. we're done
