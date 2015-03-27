@@ -1,4 +1,4 @@
-classdef QPControllerPlan
+classdef QPControllerPlan < handle
   properties
     % The support logic maps make it possible for the planner
     % to specify the support state used by the controller, based
@@ -26,7 +26,11 @@ classdef QPControllerPlan
     end
 
     function is_finished = isFinished(obj, t, x)
-      is_finished = t - obj.start_time >= obj.duration;
+      if isempty(obj.start_time)
+        is_finished = false;
+      else
+        is_finished = t - obj.start_time >= obj.duration;
+      end
     end
   end
 end

@@ -75,16 +75,18 @@ classdef QPControllerData < ControllerData
         assert(isa(data.y0,'Trajectory'));
         assert(isa(data.S,'Trajectory') || isnumeric(data.S)); % handle constant case
         assert(isa(data.s1,'Trajectory'));
-        assert(isa(data.s2,'Trajectory'));
         if isfield(data,'s1dot')
           assert(isa(data.s1dot,'Trajectory'));
         else
           data.s1dot = fnder(data.s1);
         end
-        if isfield(data,'s2dot')
-          assert(isa(data.s2dot,'Trajectory'));
-        else
-          data.s2dot = fnder(data.s2);
+        if isfield(data, 's2')
+          assert(isa(data.s2, 'Trajectory'))
+          if isfield(data,'s2dot')
+            assert(isa(data.s2dot,'Trajectory'));
+          else
+            data.s2dot = fnder(data.s2);
+          end
         end
         assert(isa(data.u0,'Trajectory'));
       else

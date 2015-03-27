@@ -40,6 +40,11 @@ if (eigen3_FOUND)
   pods_install_headers(drakeFloatingPointUtil.h DESTINATION drake)
   
   pods_install_headers(GradientVar.h DESTINATION drake)
+
+  add_mex(cylindrical2cartesianmex cylindrical2cartesianmex.cpp)
+  target_link_libraries(cylindrical2cartesianmex drakeGeometryUtil drakeGradientUtil)
+  add_mex(cartesian2cylindricalmex cartesian2cylindricalmex.cpp)
+  target_link_libraries(cartesian2cylindricalmex drakeGeometryUtil drakeGradientUtil)
 endif()
 
 add_subdirectory(test)

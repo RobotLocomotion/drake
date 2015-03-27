@@ -12,6 +12,7 @@ lcmtypes_build(LCM_TYPES
 			 lcmt_qp_controller_input.lcm
 			 lcmt_support_data.lcm
 			 lcmt_foot_flag.lcm
+			 lcmt_joint_pd_override.lcm
 			 lcmt_body_motion_data.lcm
 			 )
 

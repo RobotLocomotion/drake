@@ -20,7 +20,8 @@ all_bodies_vdot = struct('body_id', cell(1,length(qp_input.body_motion_data)),..
 
 for j = 1:length(qp_input.body_motion_data)
   body_id = qp_input.body_motion_data(j).body_id;
-  [body_des, body_v_des, body_vdot_des] = evalCubicSplineSegment(t - qp_input.body_motion_data(j).ts(1), qp_input.body_motion_data(j).coefs);
+  t_spline = max(qp_input.body_motion_data(j).ts(1), min(qp_input.body_motion_data(j).ts(2), t));
+  [body_des, body_v_des, body_vdot_des] = evalCubicSplineSegment(t_spline - qp_input.body_motion_data(j).ts(1), qp_input.body_motion_data(j).coefs);
   body_vdot = atlasControllers.bodyMotionControl(r, [q; qd], body_id,...
                   body_des, body_v_des, body_vdot_des, params.body_motion(body_id));
   body_vdot_mex = instantaneousBodyMotionControlmex(r.getMexModelPtr(), [q; qd], body_id,...
@@ -68,8 +69,19 @@ s1 = zmp_data.s1;
 x0 = zmp_data.x0;
 y0 = zmp_data.y0;
 u0 = zmp_data.u0;
+
+% get the whole-body weights
 w_qdd = params.whole_body.w_qdd;
 
+% Apply PD overrides for particular joints
+for j = 1:length(qp_input.joint_pd_override)
+  override = qp_input.joint_pd_override(j);
+  ind = override.position_ind;
+  err_q = override.qi_des - q(ind);
+  err_qd = override.qdi_des - qd(ind);
+  qddot_des(ind) = override.kp * err_q + override.kd * err_qd;
+  w_qdd(ind) = override.weight;
+end
 
 nq = r.getNumPositions();                                           
 kinsol = doKinematics(r,q,false,true,qd);
@@ -117,8 +129,36 @@ if ~isempty(supp)
   nc = sum([supp.num_contact_pts]);
   Dbar = [];
   for j=1:length(supp)
+
+    % The new plan and control tools all work with contact points directly,
+    % and the c++ functions support this, but contactConstraintsBV.m expects
+    % only collision group names, so we have to back out the names of the
+    % groups corresponding to the points we're using. This is obviously rather
+    % slow, but it's just for the Matlab-only controller. -rdeits
+    body = obj.robot.getBody(supp(j).body_id);
+    collision_groups = body.collision_geometry_group_names;
+    group_mask = false(size(collision_groups));
+    for k = 1:length(collision_groups)
+      group_pts = body.getTerrainContactPoints(collision_groups{k});
+      any_in_group = false;
+      all_in_group = true;
+      for l = 1:size(group_pts, 2)
+        if any(all(abs(bsxfun(@minus, group_pts(:,l), supp(j).contact_pts)) < 1e-3, 1))
+          any_in_group = true;
+        else
+          all_in_group = false;
+        end
+      end
+      if any_in_group && all_in_group
+        group_mask(k) = true;
+      elseif any_in_group && ~all_in_group
+        error('I got some contact points belonging to collision group: %s, but not all of the points in that group. That will work in the c++ controller, but not in the matlab-only controller');
+      end
+    end
+    active_collision_groups = collision_groups(group_mask);
+
     [~,~,JB] = contactConstraintsBV(r,kinsol,false,struct('terrain_only',~obj.use_bullet,...
-      'body_idx',[1,supp(j).body_id]));
+      'body_idx',[1,supp(j).body_id], 'collision_groups', {active_collision_groups}));
     Dbar = [Dbar, vertcat(JB{:})']; % because contact constraints seems to ignore the collision_groups option
   end
 

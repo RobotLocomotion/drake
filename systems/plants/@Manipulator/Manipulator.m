@@ -162,10 +162,11 @@ classdef Manipulator < DrakeSystem
       % which can be enforced directly in the manipulator dynamics.
       % This method will also register phi (and it's time derivative)
       % as state constraints for the dynamical system.
-      
+      if( isa(con, 'DrakeFunctionConstraint') && ~isa(con.fcn, 'drakeFunction.kinematic.RelativePosition'))
+        obj.only_loops = false;
+      end
       id = numel(obj.position_constraints)+1;
       obj = updatePositionEqualityConstraint(obj,id,con);
-      
     end
     
     function obj = updatePositionEqualityConstraint(obj,id,con)
@@ -517,5 +518,6 @@ classdef Manipulator < DrakeSystem
     joint_limit_min = -inf;       % vector of length num_q with lower limits
     joint_limit_max = inf;        % vector of length num_q with upper limits
     joint_limit_constraint_id = [];
+    only_loops = true; %set to false when the manipulator gets non-loop constraints
   end
 end

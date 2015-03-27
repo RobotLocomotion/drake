@@ -265,7 +265,7 @@ else
     kinsol.vToqdot = computeVToqdot(bodies, q);
   end
   if ~isempty(v)
-    kinsol.qdot = computeQdot(bodies, kinsol.vToqdot, v, length(q));
+    kinsol.qd = computeQdot(bodies, kinsol.vToqdot, v, length(q));
   end
   
   if options.compute_gradients
@@ -420,11 +420,11 @@ for i = 2 : nb
 end
 end
 
-function qdot = computeQdot(bodies, vToqdot, v, nq)
-qdot = zeros(nq, 1) * vToqdot{2}(1);
+function qd = computeQdot(bodies, vToqdot, v, nq)
+qd = zeros(nq, 1) * vToqdot{2}(1);
 for i = 2 : length(bodies)
   body = bodies(i);
-  qdot(body.position_num) = vToqdot{i} * v(body.velocity_num);
+  qd(body.position_num) = vToqdot{i} * v(body.velocity_num);
 end
 end
 

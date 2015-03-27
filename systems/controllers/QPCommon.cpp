@@ -6,12 +6,8 @@ template<int M, int N>
 void matlabToCArrayOfArrays(const mxArray *source, const int idx, const char *fieldname, double *destination)  {
   // Matlab arrays come in as column-major data. To represent a matrix in C++, as we do in our LCM messages, we need an array of arrays. But that convention results in a row-major storage, so we have to be careful about how we copy data in. 
   const mxArray *field = myGetField(source, idx, fieldname);
-  if (!mxIsDouble(field)) {
-    std::cout << fieldname << std::endl;
-    mexErrMsgTxt("Numeric data must be passed in as doubles\n");
-  }
   sizecheck(field, M, N);
-  Map<Matrix<double, M, N>>A(mxGetPr(field));
+  Map<Matrix<double, M, N>>A(mxGetPrSafe(field));
   // C is row-major, matlab is column-major
   Matrix<double, N, M> A_t = A.transpose();
   memcpy(destination, A_t.data(), sizeof(double)*M*N);
@@ -115,16 +111,29 @@ std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray 
   }
 
   const mxArray* condof = myGetField(whole_body_data, "constrained_dofs");
-  const int ncons = mxGetM(condof);
+  const int ncons = mxGetNumberOfElements(condof);
   msg->whole_body_data.num_constrained_dofs = ncons;
   msg->whole_body_data.constrained_dofs.resize(ncons);
   if (ncons > 0) {
     if (mxGetN(condof) != 1) mexErrMsgTxt("constrained dofs should be a column vector");
-    Map<VectorXd>condof_vec(mxGetPr(condof), ncons);
+    Map<VectorXd>condof_vec(mxGetPrSafe(condof), ncons);
 
     for (int i=0; i < ncons; i++) {
-      msg->whole_body_data.constrained_dofs[i] = condof_vec(i);
+      msg->whole_body_data.constrained_dofs[i] = static_cast<int32_t>(condof_vec(i));
     }
+  }
+
+  const mxArray* joint_override = myGetProperty(qp_input, "joint_pd_override");
+  int num_joint_pd_overrides = mxGetNumberOfElements(joint_override);
+  msg->num_joint_pd_overrides = num_joint_pd_overrides;
+  msg->joint_pd_override.resize(num_joint_pd_overrides);
+  for (int i=0; i < num_joint_pd_overrides; i++) {
+    msg->joint_pd_override[i].position_ind = (int32_t) mxGetScalar(myGetField(joint_override, i, "position_ind"));
+    msg->joint_pd_override[i].qi_des = mxGetScalar(myGetField(joint_override, i, "qi_des"));
+    msg->joint_pd_override[i].qdi_des = mxGetScalar(myGetField(joint_override, i, "qdi_des"));
+    msg->joint_pd_override[i].kp = mxGetScalar(myGetField(joint_override, i, "kp"));
+    msg->joint_pd_override[i].kd = mxGetScalar(myGetField(joint_override, i, "kd"));
+    msg->joint_pd_override[i].weight = mxGetScalar(myGetField(joint_override, i, "weight"));
   }
 
   msg->param_set_name = mxArrayToString(myGetProperty(qp_input, "param_set_name"));
@@ -219,9 +228,8 @@ VectorXd velocityReference(NewQPControllerData *pdata, double t, const Ref<Vecto
     }
   }
 
-  double delta_max = 1.0;
-  VectorXd qd_ref = qd_err.array().max(-delta_max);
-  qd_ref = qd_ref.array().min(delta_max);
+  VectorXd qd_ref = qd_err.array().max(-params->delta_max);
+  qd_ref = qd_ref.array().min(params->delta_max);
   return qd_ref;
 }
 
@@ -244,6 +252,16 @@ std::vector<SupportStateElement> loadAvailableSupports(std::shared_ptr<drake::lc
     }
   }
   return available_supports;
+}
+
+void applyJointPDOverride(const std::vector<drake::lcmt_joint_pd_override> &joint_pd_override, const DrakeRobotState &robot_state, PIDOutput &pid_out, VectorXd &w_qdd) {
+  for (std::vector<drake::lcmt_joint_pd_override>::const_iterator it = joint_pd_override.begin(); it != joint_pd_override.end(); ++it) {
+    int ind = it->position_ind - 1;
+    double err_q = it->qi_des - robot_state.q(ind);
+    double err_qd = it->qdi_des - robot_state.qd(ind);
+    pid_out.qddot_des(ind) = it->kp * err_q + it->kd * err_qd;
+    w_qdd(ind) = it->weight;
+  }
 }
 
 int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_controller_input> qp_input, DrakeRobotState &robot_state, const Ref<Matrix<bool, Dynamic, 1>> &b_contact_force, QPControllerOutput *qp_output, std::shared_ptr<QPControllerDebugData> debug) {
@@ -285,8 +303,14 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   // // whole_body_data
   if (qp_input->whole_body_data.num_positions != nq) mexErrMsgTxt("number of positions doesn't match num_dof for this robot");
   Map<VectorXd> q_des(qp_input->whole_body_data.q_des.data(), nq);
-  Map<VectorXd> condof(qp_input->whole_body_data.constrained_dofs.data(), qp_input->whole_body_data.num_constrained_dofs);
+  if (qp_input->whole_body_data.constrained_dofs.size() != qp_input->whole_body_data.num_constrained_dofs) {
+    mexErrMsgTxt("size of constrained dofs does not match num_constrained_dofs");
+  }
+  Map<VectorXi> condof(qp_input->whole_body_data.constrained_dofs.data(), qp_input->whole_body_data.num_constrained_dofs);
   PIDOutput pid_out = wholeBodyPID(pdata, robot_state.t, robot_state.q, robot_state.qd, q_des, &params->whole_body);
+  VectorXd w_qdd = params->whole_body.w_qdd;
+  applyJointPDOverride(qp_input->joint_pd_override, robot_state, pid_out, w_qdd);
+
   qp_output->q_ref = pid_out.q_ref;
 
   // mu
@@ -319,7 +343,8 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     desired_body_accelerations[i].body_id0 = body_id0;
     Map<Matrix<double, 6, 4,RowMajor>>coefs_rowmaj(&qp_input->body_motion_data[i].coefs[0][0]);
     Matrix<double, 6, 4> coefs = coefs_rowmaj;
-    evaluateCubicSplineSegment(robot_state.t - qp_input->body_motion_data[i].ts[0], coefs, body_pose_des, body_v_des, body_vdot_des);
+    double t_spline = std::max(qp_input->body_motion_data[i].ts[0], std::min(qp_input->body_motion_data[i].ts[1], robot_state.t));
+    evaluateCubicSplineSegment(t_spline - qp_input->body_motion_data[i].ts[0], coefs, body_pose_des, body_v_des, body_vdot_des);
     desired_body_accelerations[i].body_vdot = bodyMotionPD(pdata->r, robot_state, body_id0, body_pose_des, body_v_des, body_vdot_des, params->body_motion[body_id0].Kp, params->body_motion[body_id0].Kd);
     desired_body_accelerations[i].weight = weight;
     desired_body_accelerations[i].accel_bounds = params->body_motion[body_id0].accel_bounds;
@@ -371,6 +396,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   Vector3d xcom;
   // consider making all J's into row-major
   
+
   pdata->r->getCOM(xcom);
   pdata->r->getCOMJac(pdata->J);
   pdata->r->getCOMJacDot(pdata->Jdot);
@@ -441,7 +467,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
       pdata->fqp += (S*x_bar + 0.5*s1).transpose()*B_ls*Jcom;
       pdata->fqp -= u0.transpose()*tmp2;
       pdata->fqp -= y0.transpose()*Qy*D_ls*Jcom;
-      pdata->fqp -= (params->whole_body.w_qdd.array()*pid_out.qddot_des.array()).matrix().transpose();
+      pdata->fqp -= (w_qdd.array()*pid_out.qddot_des.array()).matrix().transpose();
       if (include_angular_momentum) {
         pdata->fqp += robot_state.qd.transpose()*pdata->Akdot.transpose()*params->W_kdot*pdata->Ak;
         pdata->fqp -= kdot_des.transpose()*params->W_kdot*pdata->Ak;
@@ -556,7 +582,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   MatrixXd Qnfdiag(nf,1), Qneps(neps,1);
   std::vector<MatrixXd*> QBlkDiag( nc>0 ? 3 : 1 );  // nq, nf, neps   // this one is for gurobi
   
-  VectorXd w = (params->whole_body.w_qdd.array() + REG).matrix();
+  VectorXd w = (w_qdd.array() + REG).matrix();
 
   if (nc != pdata->state.num_active_contact_pts) {
     // Number of contact points has changed, so our active set is invalid
@@ -578,7 +604,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     //    matrix inversion lemma (see wikipedia):
     //    inv(A + U'CV) = inv(A) - inv(A)*U* inv([ inv(C)+ V*inv(A)*U ]) V inv(A)
     if (nc>0) {
-      MatrixXd Wi = ((1/(params->whole_body.w_qdd.array() + REG)).matrix()).asDiagonal();
+      MatrixXd Wi = ((1/(w_qdd.array() + REG)).matrix()).asDiagonal();
       if (R_DQyD_ls.trace()>1e-15) { // R_DQyD_ls is not zero
         pdata->Hqp = Wi - Wi*Jcom.transpose()*(R_DQyD_ls.inverse() + Jcom*Wi*Jcom.transpose()).inverse()*Jcom*Wi;
       }
@@ -614,6 +640,13 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
         MatrixXd::Identity(nparams,nparams);
     bin_lb_ub << bin, -lb, ub;
 
+    for (std::set<int>::iterator it = pdata->state.active.begin(); it != pdata->state.active.end(); it++) {
+      if (std::isnan(bin_lb_ub(*it)) || std::isinf(bin_lb_ub(*it))) {
+        pdata->state.active.clear();
+        break;
+      }
+    }
+
     info = fastQPThatTakesQinv(QBlkDiag, f, Aeq, beq, Ain_lb_ub, bin_lb_ub, pdata->state.active, alpha);
 
     //if (info<0)   mexPrintf("fastQP info = %d.  Calling gurobi.\n", info);
@@ -626,7 +659,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
       if (include_angular_momentum) {
         pdata->Hqp += pdata->Ak.transpose()*params->W_kdot*pdata->Ak;
       }
-      pdata->Hqp += params->whole_body.w_qdd.asDiagonal();
+      pdata->Hqp += w_qdd.asDiagonal();
       pdata->Hqp += REG*MatrixXd::Identity(nq,nq);
     } else {
       pdata->Hqp = (1+REG)*MatrixXd::Identity(nq,nq);
@@ -666,6 +699,12 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
         MatrixXd::Identity(nparams,nparams);
     bin_lb_ub << bin, -lb, ub;
 
+    for (std::set<int>::iterator it = pdata->state.active.begin(); it != pdata->state.active.end(); it++) {
+      if (std::isnan(bin_lb_ub(*it)) || std::isinf(bin_lb_ub(*it))) {
+        pdata->state.active.clear();
+        break;
+      }
+    }
 
     if (pdata->use_fast_qp > 0)
     { // set up and call fastqp
