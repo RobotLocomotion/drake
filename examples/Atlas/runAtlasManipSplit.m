@@ -72,6 +72,11 @@ qtraj_pp = spline(t_breaks,[zeros(nq,1) x_breaks(1:nq,:) zeros(nq,1)]);
 for i = 1:n_breaks
   kinsol = r.doKinematics(x_breaks(1:nq,i),x_breaks(nq+(1:nv),i));
   r_hand_breaks(:,i) = r.forwardKin(kinsol,r_hand,zeros(3,1),1);
+  for j = 4:6
+    if(unwrap(r_hand_breaks(j,i)) ~= r_hand_breaks(j,i))
+      r_hand_breaks(j,i) = unwrap(r_hand_breaks(j,i));
+    end
+  end
 end
 rhand_pp = zoh(t_breaks,r_hand_breaks);
 rhand_coefs = reshape(rhand_pp.coefs,6,n_breaks-1,1);
