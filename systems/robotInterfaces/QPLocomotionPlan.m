@@ -131,7 +131,6 @@ classdef QPLocomotionPlan < QPControllerPlan
 
       pelvis_has_tracking = false;
       for j = 1:length(obj.body_motions)
-
         body_id = obj.body_motions(j).body_id;
         if body_id == obj.robot.foot_body_id.right
           kny_ind = rpc.position_indices.r_leg_kny;

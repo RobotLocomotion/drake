@@ -98,6 +98,12 @@ std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray 
       matlabToCArrayOfArrays<6, 4>(body_motion_data, i, "coefs", &msg->body_motion_data[i].coefs[0][0]);
       msg->body_motion_data[i].in_floating_base_nullspace = static_cast<bool>(mxGetScalar(mxGetFieldSafe(body_motion_data, i, "in_floating_base_nullspace")));
       msg->body_motion_data[i].control_pose_when_in_contact = static_cast<bool>(mxGetScalar(mxGetFieldSafe(body_motion_data, i, "control_pose_when_in_contact")));
+      const mxArray* use_spatial_velocity = myGetField(body_motion_data, i, "use_spatial_velocity");
+      if(!mxIsLogicalScalar(use_spatial_velocity))
+      {
+              mexErrMsgTxt("use_spatial_velocity should be a logical scalar");
+      }
+      msg->body_motion_data[i].use_spatial_velocity = (bool)mxGetScalar(use_spatial_velocity);
     }
   }
 
@@ -362,13 +368,21 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
 
   for (int i=0; i < qp_input->num_tracked_bodies; i++) {
     int body_id0 = qp_input->body_motion_data[i].body_id - 1;
+		desired_body_accelerations[i].use_spatial_velocity = qp_input->body_motion_data[i].use_spatial_velocity;
     double weight = params->body_motion[body_id0].weight;
     desired_body_accelerations[i].body_id0 = body_id0;
     Map<Matrix<double, 6, 4,RowMajor>>coefs_rowmaj(&qp_input->body_motion_data[i].coefs[0][0]);
     Matrix<double, 6, 4> coefs = coefs_rowmaj;
     double t_spline = std::max(qp_input->body_motion_data[i].ts[0], std::min(qp_input->body_motion_data[i].ts[1], robot_state.t));
     evaluateCubicSplineSegment(t_spline - qp_input->body_motion_data[i].ts[0], coefs, body_pose_des, body_v_des, body_vdot_des);
-    desired_body_accelerations[i].body_vdot = bodyMotionPD(pdata->r, robot_state, body_id0, body_pose_des, body_v_des, body_vdot_des, params->body_motion[body_id0].Kp, params->body_motion[body_id0].Kd);
+		if(!desired_body_accelerations[i].use_spatial_velocity)
+		{
+			desired_body_accelerations[i].body_vdot = bodyMotionPD(pdata->r, robot_state, body_id0, body_pose_des, body_v_des, body_vdot_des, params->body_motion[body_id0].Kp, params->body_motion[body_id0].Kd);
+		}
+		else
+		{
+			desired_body_accelerations[i].body_vdot = bodySpatialMotionPD(pdata->r, robot_state, body_id0, body_pose_des, body_v_des, body_vdot_des, params->body_motion[body_id0].Kp,params->body_motion[body_id0].Kd);
+		}
     desired_body_accelerations[i].weight = weight;
     desired_body_accelerations[i].accel_bounds = params->body_motion[body_id0].accel_bounds;
     desired_body_accelerations[i].control_pose_when_in_contact = qp_input->body_motion_data[i].control_pose_when_in_contact;
@@ -567,13 +581,24 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   Vector3d orig = Vector3d::Zero();
   int equality_ind = 6+neps;
   MatrixXd Jb(6,nq);
-  Vector6d Jbdotv;	
+  MatrixXd Jbdot(6,nq);
+  Vector6d Jbdotv;
   for (int i=0; i<desired_body_accelerations.size(); i++) {
     if (desired_body_accelerations[i].weight < 0) { // negative implies constraint
       if (desired_body_accelerations[i].control_pose_when_in_contact || !inSupport(active_supports,desired_body_accelerations[i].body_id0)) {
-        pdata->r->forwardJac(desired_body_accelerations[i].body_id0,orig1,1,Jb);
-        auto Jdot_times_v = pdata->r->forwardJacDotTimesV(orig,desired_body_accelerations[i].body_id0,0,1,0);
-        Jbdotv.noalias() = Jdot_times_v.value();
+        if(desired_body_accelerations[i].use_spatial_velocity)
+        {
+          auto J_geometric = pdata->r->geometricJacobian<double>(0,desired_body_accelerations[i].body_id0,0,0,true,(std::vector<int>*)nullptr);
+          auto J_geometric_dot_times_v = pdata->r->geometricJacobianDotTimesV<double>(0,desired_body_accelerations[i].body_id0,0,0); 
+          Jb = J_geometric.value();
+          Jbdotv = J_geometric_dot_times_v.value();
+        }
+        else
+        {
+          pdata->r->forwardJac(desired_body_accelerations[i].body_id0,orig1,1,Jb);
+          auto Jdot_times_v = pdata->r->forwardJacDotTimesV(orig,desired_body_accelerations[i].body_id0,0,1,0);
+          Jbdotv.noalias() = Jdot_times_v.value();
+        }
 
         if (qp_input->body_motion_data[i].in_floating_base_nullspace) {
           Jb.block(0,0,6,6) = MatrixXd::Zero(6,6);
@@ -613,9 +638,20 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
 
   int constraint_start_index = 2*nu;
   for (int i=0; i<desired_body_accelerations.size(); i++) {
-    pdata->r->forwardJac(desired_body_accelerations[i].body_id0,orig1,1,Jb);
-    auto Jdot_times_v = pdata->r->forwardJacDotTimesV(orig,desired_body_accelerations[i].body_id0,0,1,0);
-    Jbdotv.noalias() = Jdot_times_v.value();
+    if(desired_body_accelerations[i].use_spatial_velocity)
+    {
+      auto J_geometric = pdata->r->geometricJacobian<double>(0,desired_body_accelerations[i].body_id0,0,0,true,(std::vector<int>*)nullptr);
+      auto J_geometric_dot_times_v = pdata->r->geometricJacobianDotTimesV<double>(0,desired_body_accelerations[i].body_id0,0,0);
+      Jb = J_geometric.value();
+      Jbdotv = J_geometric_dot_times_v.value();
+    }
+    else
+    {
+      pdata->r->forwardJac(desired_body_accelerations[i].body_id0,orig1,1,Jb);
+      auto Jdot_times_v = pdata->r->forwardJacDotTimesV(orig,desired_body_accelerations[i].body_id0,0,1,0);
+      Jbdotv.noalias() = Jdot_times_v.value();
+    }
+
     if (qp_input->body_motion_data[i].in_floating_base_nullspace) {
       Jb.block(0,0,6,6) = MatrixXd::Zero(6,6);
       // Jbdot.block(0,0,6,6) = MatrixXd::Zero(6,6);
@@ -740,9 +776,19 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     for (int i=0; i<desired_body_accelerations.size(); i++) {
       if (desired_body_accelerations[i].weight > 0) {
         if (desired_body_accelerations[i].control_pose_when_in_contact || !inSupport(active_supports,desired_body_accelerations[i].body_id0)) {
-          pdata->r->forwardJac(desired_body_accelerations[i].body_id0,orig1,1,Jb);
-          auto Jdot_times_v = pdata->r->forwardJacDotTimesV(orig,desired_body_accelerations[i].body_id0,0,1,0);
-          Jbdotv.noalias() = Jdot_times_v.value();
+          if(desired_body_accelerations[i].use_spatial_velocity)
+          {
+            auto J_geometric = pdata->r->geometricJacobian<double>(0,desired_body_accelerations[i].body_id0,0,0,true,(std::vector<int>*)nullptr);
+            auto J_geometric_dot_times_v = pdata->r->geometricJacobianDotTimesV<double>(0,desired_body_accelerations[i].body_id0,0,0);
+            Jb = J_geometric.value();
+            Jbdotv = J_geometric_dot_times_v.value();
+          }
+          else
+          {
+            pdata->r->forwardJac(desired_body_accelerations[i].body_id0,orig1,1,Jb);
+            auto Jdot_times_v = pdata->r->forwardJacDotTimesV(orig,desired_body_accelerations[i].body_id0,0,1,0);
+            Jbdotv.noalias() = Jdot_times_v.value();
+          }
 
           if (qp_input->body_motion_data[i].in_floating_base_nullspace) {
             Jb.block(0,0,6,6) = MatrixXd::Zero(6,6);

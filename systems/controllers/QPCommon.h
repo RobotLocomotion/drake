@@ -193,10 +193,12 @@ struct NewQPControllerData {
 
 struct DesiredBodyAcceleration {
   int body_id0;
+	Vector3d body_pt;
   Vector6d body_vdot;
   double weight;
   Bounds accel_bounds;
   bool control_pose_when_in_contact;
+  bool use_spatial_velocity;
 };
 
 struct QPControllerOutput {

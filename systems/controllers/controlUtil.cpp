@@ -424,7 +424,7 @@ Vector6d bodyMotionPD(RigidBodyManipulator *r, DrakeRobotState &robot_state, con
   return body_vdot;
 }
 
-Vector6d bodySpatialMotionPD(RigidBodyManipulator *r, DrakeRobotState &robot_state, const int body_index, const Vector7d &body_xyzrpy_des, const Vector6d &body_v_des, const Vector6d &body_vdot_des, const Vector6d &Kp, const Vector6d &Kd) {
+Vector6d bodySpatialMotionPD(RigidBodyManipulator *r, DrakeRobotState &robot_state, const int body_index, const Vector6d &body_xyzrpy_des, const Vector6d &body_v_des, const Vector6d &body_vdot_des, const Vector6d &Kp, const Vector6d &Kd) {
 	// This function uses quaternion, angular velocity and angular acceleration for computing the orientation. 
 	// @param body_v_des    desired [xyzdot;angular_velocity] 
 	// @param body_vdot_des    desired [xyzddot;angular_acceleration]
