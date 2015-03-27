@@ -26,6 +26,7 @@ if (eigen3_FOUND)
     REQUIRES
     VERSION 0.0.1)
 
+  pods_find_pkg_config(gurobi)
   add_subdirectory(shapes)
   add_subdirectory(collision)
   add_subdirectory(constraint)
@@ -71,8 +72,10 @@ if (eigen3_FOUND)
   add_rbm_mex(jointLimitConstraintsmex)
   add_rbm_mex(positionConstraintsmex)
   
-  add_mex(setupLCPmex setupLCPmex.cpp)
-  target_link_libraries(setupLCPmex drakeRBM drakeUtil drakeQP)
+  if(gurobi_FOUND)
+    add_mex(setupLCPmex setupLCPmex.cpp)
+    target_link_libraries(setupLCPmex drakeRBM drakeUtil drakeQP)
+  endif()
   
   
   include_directories( constraint )
