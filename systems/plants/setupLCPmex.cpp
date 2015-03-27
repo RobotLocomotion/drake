@@ -146,19 +146,9 @@ bool callFastQP(MatrixBase<DerivedM> const & M, MatrixBase<Derivedw> const & w, 
   zqp = VectorXd::Zero(num_inactive_z);
   list_pQ.push_back(&Qdiag);
 
-  //cout << "Ain: " << endl;
-  //cout << Aeq.transpose() << endl;
-  //cout << "bin: " << endl;
-  //cout << beq << endl;
-
   int info = fastQP(list_pQ, fqp, Aeq.transpose(), beq, Ain, bin, active, zqp);
-  //cout << "zqp: " << endl;
-  //cout << zqp << endl;
-
   size_t zqp_index = 0;
-  
   if (info < 0) {
-    //cout << "info: " << info << endl;
     return false;
   } else { 
     for (size_t i = 0; i < num_inactive_z; i++) {
@@ -173,23 +163,20 @@ bool callFastQP(MatrixBase<DerivedM> const & M, MatrixBase<Derivedw> const & w, 
   filterByIndices(z_active_indices, M, M_temp); // keep active rows
   filterByIndices(z_inactive_indices, M_temp.transpose(), M_check);  //and inactive columns
   filterByIndices(z_active_indices, w, w_check);
-
-  getThresholdInclusion(M_check.transpose() * zqp + w_check, 0, violations);
+  getThresholdInclusion(M_check.transpose() * zqp + w_check, -SMALL, violations);
   
   if (anyTrue(violations)) { 
-    //cout << "fail 1" << endl;
     return false;
   }
 
-  getThresholdInclusion(Ain * zqp - bin, -SMALL, ineq_violations);
-  getThresholdInclusion(beq - Aeq.transpose() * zqp, -SMALL, violations);
+  // getThresholdInclusion(Ain * zqp - bin, -SMALL, ineq_violations);
+  // getThresholdInclusion(beq - Aeq.transpose() * zqp, -SMALL, violations);
 
-  for (size_t i = 0; i < num_inactive_z; i++) { 
-    if (ineq_violations[i] && violations[i]) { 
-      //cout << "fail 2" << endl;
-      return false;
-    }
-  }
+  // for (size_t i = 0; i < num_inactive_z; i++) { 
+  //   if (ineq_violations[i] && violations[i]) { 
+  //     return false;
+  //   }
+  // }
   return true;
 }
 
@@ -297,7 +284,6 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
     Mqdn = H_cholesky.solve(J.transpose());
     
     //solve LCP problem 
-    //TODO: call fastQP first (int info = fastQP(QblkMat,f, Aeq, beq, Ain, bin, active, x))
     //TODO: call path from C++ (currently only 32-bit C libraries available)
     mxArray* mxM = mxCreateDoubleMatrix(lcp_size, lcp_size, mxREAL);
     mxArray* mxw = mxCreateDoubleMatrix(lcp_size, 1, mxREAL);
@@ -348,12 +334,11 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
       getThresholdInclusion(lb - z_cached, -SMALL, z_inactive);
     }
 
-    //try fast QP first
+    //try fastQP first
     bool qp_failed = true;
     qp_failed = !callFastQP(M, w, lb, z_inactive, nL+nP+nC, z);
     
-    //cout << "qp_failed: " << qp_failed << endl;
-    
+    //fall back to pathlcp
     if(qp_failed) {
       mexCallMATLAB(1, lhs, 4, rhs, "pathlcp");
       Map<VectorXd> z_path(mxGetPr(lhs[0]), lcp_size);
@@ -361,11 +346,11 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
       mxDestroyArray(lhs[0]);
     }
 
-    mxDestroyArray(mxlb);
     mxDestroyArray(mxub);
-    mxDestroyArray(mxM);
+    mxDestroyArray(mxlb);
     mxDestroyArray(mxw);
-    
+    mxDestroyArray(mxM);
+
     VectorXd qdn = Mqdn * z + wqdn;
 
     vector<size_t> impossible_contact_indices, impossible_limit_indices;
@@ -397,7 +382,6 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
       //throw away our old solution and try again
       mxDestroyArray(plhs[0]);
       mxDestroyArray(plhs[1]);
-      //cout << "re-solving LCP" << endl;
       continue;
     }
     //our initial guess was correct. we're done
