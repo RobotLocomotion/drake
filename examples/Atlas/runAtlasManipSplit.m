@@ -57,9 +57,9 @@ r_hand = r.findLinkId('r_hand');
 r_hand_pt = [0;-0.2;0];
 kinsol0 = r.doKinematics(q0,v0);
 r_hand_pos0 = r.forwardKin(kinsol0,r_hand,r_hand_pt,2);
-r_hand_rpy_des = rotmat2rpy(rotx(pi)*quat2rotmat(r_hand_pos0(4:7)));
-r_hand_cnstr = {WorldPositionConstraint(r,r_hand,r_hand_pt,r_hand_pos0(1:3)+[0.3;-0.1;0.5],r_hand_pos0(1:3)+[0.5;0.1;0.6],[1,1]),...
-  WorldEulerConstraint(r,r_hand,r_hand_rpy_des,r_hand_rpy_des,[1,1])};
+r_hand_cnstr = {WorldEulerConstraint(r,r_hand,[nan;pi/2;nan],[nan;pi/2;nan],[0.3 0.7]),...
+  WorldEulerConstraint(r,r_hand,[nan;pi/4;nan],[nan;0.6*pi;nan],[1,1])};
+
 qtraj0 = PPTrajectory(zoh([0,1],[q0 q0]));
 t_plan = [0,0.5,1];
 [xtraj,info] = inverseKinTraj(r,t_plan,qtraj0,qtraj0,cnstr{:},r_hand_cnstr{:});
