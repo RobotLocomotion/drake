@@ -432,7 +432,7 @@ Vector6d bodyMotionPD(RigidBodyManipulator *r, DrakeRobotState &robot_state, con
 
 	Matrix3d R = rpy2rotmat(body_rpy);
 	Matrix3d R_des = rpy2rotmat(body_rpy_des);
-	Matrix3d R_err = R.transpose()*R_des;
+	Matrix3d R_err = R_des*R.transpose();
 	Vector4d angleAxis_err = rotmat2axis(R_err); 
 	Vector3d angular_err = angleAxis_err.head(3)*angleAxis_err(3);
 
