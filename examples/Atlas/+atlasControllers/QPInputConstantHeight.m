@@ -15,7 +15,7 @@ classdef QPInputConstantHeight
     body_motion_data  % information describing body trajectories which the controller should track
     whole_body_data  % information about the desired whole-body posture
     param_set_name % the name of the current set of parameters. See atlasParams.getDefaults()
-    joint_pd_override;
+    joint_pd_override; % if present, override the q_des, Kp, Kd, and w_qdd for the given joints with new values (can be empty)
   end
 
   methods
