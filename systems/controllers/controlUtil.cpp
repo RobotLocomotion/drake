@@ -420,17 +420,49 @@ Vector6d bodyMotionPD(RigidBodyManipulator *r, DrakeRobotState &robot_state, con
   r->forwardKin(body_index,zero,1,body_pose);
   r->forwardJac(body_index,zero,1,J);
 
-  Vector6d body_error;
-  body_error.head<3>()= body_pose_des.head<3>()-body_pose.head<3>();
+	Vector3d body_xyz = body_pose.head(3);
+	Vector3d body_rpy = body_pose.tail(3);
+	Vector3d body_xyz_des = body_pose_des.head(3);
+	Vector3d body_rpy_des = body_pose_des.tail(3);
+	Vector6d body_xyzrpydot = J*robot_state.qd;
+	Vector3d body_rpydot = body_xyzrpydot.tail(3);
+	Matrix3d E;
+	Gradient<Matrix<double,3,3>,3,1>::type dE;
+	rpydot2angularvelMatrix(body_rpy,E, &dE);
+	Vector3d body_angular_vel = E*body_rpydot;
+	Matrix3d E_des;
+	Gradient<Matrix<double,3,3>,3,1>::type dE_des;
+	rpydot2angularvelMatrix(body_rpy_des,E_des, &dE_des);
+	Vector3d body_rpydot_des = body_v_des.tail(3);
+	Vector3d body_angular_vel_des = E_des*body_rpydot_des;
+	Vector3d body_angular_vel_dot_des = E_des*body_vdot_des.tail(3)+matGradMult(dE,body_rpydot_des)*body_rpydot_des;
 
-  Vector3d error_rpy,pose_rpy,des_rpy;
-  pose_rpy = body_pose.tail<3>();
-  des_rpy = body_pose_des.tail<3>();
-  angleDiff(pose_rpy,des_rpy,error_rpy);
-  body_error.tail(3) = error_rpy;
+  Vector3d xyz_err = body_xyz_des-body_xyz;
 
-  Vector6d body_vdot = (Kp.array()*body_error.array()).matrix() + (Kd.array()*(body_v_des-J*robot_state.qd).array()).matrix() + body_vdot_des;
-  return body_vdot;
+	Matrix3d R = rpy2rotmat(body_rpy);
+	Matrix3d R_des = rpy2rotmat(body_rpy_des);
+	Matrix3d R_err = R.transpose()*R_des;
+	Vector4d angleAxis_err = rotmat2axis(R_err); 
+	Vector3d angular_err = angleAxis_err.head(3)*angleAxis_err(3);
+
+	Vector3d xyzdot_err = body_v_des.head(3)-body_xyzrpydot.head(3);
+	Vector3d angular_vel_err = body_angular_vel_des-body_angular_vel;
+
+	Vector3d Kp_xyz = Kp.head(3);
+	Vector3d Kd_xyz = Kd.head(3);
+	Vector3d Kp_angular = Kp.tail(3);
+	Vector3d Kd_angular = Kd.tail(3);
+	Vector3d body_xyzddot = (Kp_xyz.array()*xyz_err.array()).matrix() + (Kd_xyz.array()*xyzdot_err.array()).matrix()+body_vdot_des.head(3);
+	Vector3d body_angular_vel_dot = (Kp_angular.array()*angular_err.array()).matrix() + (Kd_angular.array()*angular_vel_err.array()).matrix()+body_angular_vel_dot_des;
+	Matrix3d Phi;
+	Gradient<Matrix<double,3,3>,3,1>::type dPhi;
+	Gradient<Matrix<double,3,3>,3,2>::type ddPhi;
+	angularvel2rpydotMatrix(body_rpy,Phi,&dPhi,&ddPhi);
+	Vector3d body_rpyddot = matGradMult(dPhi,body_rpydot)*body_angular_vel+Phi*body_angular_vel_dot;
+	Vector6d body_xyzrpyddot;
+	body_xyzrpyddot.head(3) = body_xyzddot;
+	body_xyzrpyddot.tail(3) = body_rpyddot;
+  return body_xyzrpyddot;
 }
 
 void evaluateCubicSplineSegment(double t, const Ref<const Matrix<double, 6, 4>> &coefs, Vector6d &y, Vector6d &ydot, Vector6d &yddot) {
