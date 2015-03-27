@@ -90,6 +90,7 @@ struct RobotPropertyCache {
 struct VRefIntegratorParams {
   bool zero_ankles_on_contact;
   double eta;
+  double delta_max;
 };
 
 struct IntegratorParams {
