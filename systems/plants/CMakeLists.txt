@@ -70,8 +70,11 @@ if (eigen3_FOUND)
   add_rbm_mex(surfaceTangentsmex)
   add_rbm_mex(jointLimitConstraintsmex)
   add_rbm_mex(positionConstraintsmex)
-  add_rbm_mex(setupLCPmex)
-
+  
+  add_mex(setupLCPmex setupLCPmex.cpp)
+  target_link_libraries(setupLCPmex drakeRBM drakeUtil drakeQP)
+  
+  
   include_directories( constraint )
   add_library(drakeIKoptions SHARED IKoptions.cpp)
   target_link_libraries(drakeIKoptions drakeRBM)
