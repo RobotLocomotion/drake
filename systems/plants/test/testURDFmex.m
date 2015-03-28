@@ -28,8 +28,14 @@ for urdf = urdfs'
   w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
   warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
   warning('off','Drake:RigidBodyManipulator:ReplacedCylinder');
-  r = RigidBodyManipulator(urdffile,struct('floating',true,'use_new_kinsol',true));
-  warning(w);
+  try 
+    r = RigidBodyManipulator(urdffile,struct('floating',true,'use_new_kinsol',true));
+  catch ex
+    if strncmp(ex.identifier,'Drake:MissingDependency:',24)
+      disp(' skipping due to a missing dependency'); 
+      continue;
+    end
+  end
   
   if ~isempty(r.param_db)
     disp(' this model has parameters (not implemented in c++ yet), so will be skipped');
@@ -132,9 +138,16 @@ for urdf = urdfs'
   [H,C,B] = manipulatorDynamics(r,q,v);
   B = B(:,1:num_u); % ignore rigid body force inputs
 
+  has_friction = ([r.body.damping]~=0) | ([r.body.coulomb_friction]~=0);
+  has_friction = [r.body(has_friction).velocity_num];
+  no_friction = true(r.getNumVelocities(),1); no_friction(has_friction)=false;
+  if ~isempty(has_friction)
+    disp(' note: friction indices will be ignored (not implemented in c++ yet)');
+  end
+  
   % low tolerance because i'm just parsing the ascii printouts
   valuecheck(Hcpp,H,tol);
-  valuecheck(Ccpp,C,tol);
+  valuecheck(Ccpp(no_friction),C(no_friction),tol);
   valuecheck(Bcpp,B,tol);
   if num_phi>0
     [phi,J] = positionConstraints(r,q);
