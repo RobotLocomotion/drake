@@ -912,6 +912,7 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
     } else {
       shared_ptr<RigidBody> parent = bodies[i]->parent;
       double qi = q[bodies[i]->position_num_start];
+      if (bodies[i]->getJoint().getNumPositions()==0) qi = 0;  // fixed joint
       Tjcalc(bodies[i]->pitch,qi,&TJ);
       dTjcalc(bodies[i]->pitch,qi,&dTJ);
 
@@ -968,6 +969,7 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
 
       if (qd) {
         double qdi = qd[bodies[i]->position_num_start];
+        if (bodies[i]->getJoint().getNumVelocities()==0) qdi = 0;  // fixed joint
         TJdot = dTJ*qdi;
         ddTjcalc(bodies[i]->pitch,qi,&ddTJ);
         dTJdot = ddTJ*qdi;
