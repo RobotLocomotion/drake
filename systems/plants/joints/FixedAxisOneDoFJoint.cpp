@@ -15,7 +15,10 @@ FixedAxisOneDoFJoint::FixedAxisOneDoFJoint(const std::string& name, const Isomet
     DrakeJoint(name, transform_to_parent_body, 1, 1),
     joint_axis(joint_axis),
     joint_limit_min(-std::numeric_limits<double>::infinity()),
-    joint_limit_max(std::numeric_limits<double>::infinity())
+    joint_limit_max(std::numeric_limits<double>::infinity()),
+		damping(0.0),
+		coulomb_friction(0.0),
+		coulomb_window(0.0)
 {
   // empty
 }
@@ -34,6 +37,7 @@ void FixedAxisOneDoFJoint::setJointLimits(double joint_limit_min, double joint_l
   this->joint_limit_min = joint_limit_min;
   this->joint_limit_max = joint_limit_max;
 }
+
 
 void FixedAxisOneDoFJoint::motionSubspace(const Eigen::Ref<const VectorXd>& q, MotionSubspaceType& motion_subspace, MatrixXd* dmotion_subspace) const
 {
@@ -104,6 +108,24 @@ void FixedAxisOneDoFJoint::v2qdot(const Eigen::Ref<const VectorXd>& q, Eigen::Ma
     dv_to_qdot->setZero(v_to_qdot.size(), getNumPositions());
   }
 }
+
+void FixedAxisOneDoFJoint::setDynamics(double damping, double coulomb_friction, double coulomb_window)
+{
+	this->damping = damping;
+	this->coulomb_friction = coulomb_friction;
+	this->coulomb_window = coulomb_window;
+}
+
+/*
+GradientVar<double,1,1> FixedAxisOneDoFJoint::computeFrictionForce(const Eigen::Ref<const VectorXd>& v, int gradient_order) const
+{
+	GradientVar<double,1,1> force(1,1,1,gradient_order);
+	force.value() = damping*v[0];
+	if (gradient_order>0)
+		force.gradient().value() = damping;
+	return force;
+}
+*/
 
 void FixedAxisOneDoFJoint::setupOldKinematicTree(RigidBodyManipulator* model, int body_ind, int position_num_start, int velocity_num_start) const
 {

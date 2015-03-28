@@ -580,9 +580,13 @@ bool parseJoint(RigidBodyManipulator* model, TiXmlElement* node)
   }
 
   TiXmlElement* dynamics_node = node->FirstChildElement("dynamics");
-  if (dynamics_node) {
-    model->warnOnce("joint_dynamics", 
-        "Warning: joint dynamics xml tag not (re-)implemented yet; they will be ignored.");
+  if (fjoint != nullptr && dynamics_node) {
+    model->warnOnce("joint_dynamics", "Warning: joint dynamics xml tag is parsed, but not included in the dynamics methods yet.");
+  	double damping=0.0, coulomb_friction=0.0, coulomb_window=0.0;
+  	parseScalarAttribute(dynamics_node,"damping",damping);
+  	parseScalarAttribute(dynamics_node,"friction",coulomb_friction);
+  	parseScalarAttribute(dynamics_node,"coulomb_window",coulomb_window);
+  	fjoint->setDynamics(damping,coulomb_friction,coulomb_window);
   }
 
   TiXmlElement* limit_node = node->FirstChildElement("limit");
