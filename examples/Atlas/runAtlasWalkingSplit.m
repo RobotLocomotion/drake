@@ -34,6 +34,7 @@ options.ignore_friction = true;
 options.dt = 0.001;
 options.terrain = example_options.terrain;
 options.use_bullet = example_options.use_bullet;
+options.use_new_kinsol = false;
 r = Atlas(fullfile(getDrakePath,'examples','Atlas','urdf','atlas_minimal_contact.urdf'),options);
 r = r.removeCollisionGroupsExcept({'heel','toe'});
 r = compile(r);
