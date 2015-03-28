@@ -36,7 +36,7 @@ for urdf = urdfs'
     continue;
   end
   
-  q = 0*rand(getNumPositions(r),1);
+  q = rand(getNumPositions(r),1);
   kinsol = doKinematics(r,q);
 
   [retval,outstr] = systemWCMakeEnv([urdf_kin_test,' ',urdffile,sprintf(' %f',q),' 2> /dev/null']);
@@ -44,21 +44,55 @@ for urdf = urdfs'
   outstr_cell = regexp(outstr, '=======', 'split');  outstr = outstr_cell{2}(2:end);
   out = textscan(outstr,'%s %f %f %f %f %f %f');%,'delimiter',',');
   
-  for i=1:getNumBodies(r)
+  num_q = getNumPositions(r);
+  num_v = getNumVelocities(r);
+  P = sparse(0,num_v);  % map from matlab coords to c++ coords
+  linkid_matlab = [];
+  linkid_c = [];
+  for i=1:length(out{1})
     try
-      b = findLinkId(r,out{1}{i},-1,1);
+      linkid_matlab(end+1) = findLinkId(r,out{1}{i},-1,1);
+      linkid_c(end+1)=i;
     catch ex
-      % skip welded cases (at least until we implement
-      % https://github.com/RobotLocomotion/drake/issues/687
-      disp(['skipping ',out{1}{i},' because it''s been welded']);
-      continue;
+      if (strcmp(ex.identifier,'Drake:RigidBodyManipulator:WeldedLinkInd'))
+        % skip welded cases (at least until we implement
+        % https://github.com/RobotLocomotion/drake/issues/687
+        disp(['skipping ',out{1}{i},' because it''s been welded']);
+        continue;
+      else
+        rethrow(ex);
+      end
     end
-    pt = cellfun(@(a) a(i),out(2:end))';
-    x = forwardKin(r,kinsol,b,zeros(3,1),1);
+    if r.body(linkid_matlab(end)).parent~=0
+      inds = r.body(linkid_matlab(end)).position_num;
+      for j=inds'
+        P(end+1,j)=1;
+      end
+    end
+  end
+  num_qc = size(P,1);  % todo: update this when num_q ~= num_v
+  num_vc = size(P,1);
+  num_u = length(r.actuator);  % not getNumInputs, because RigidBodyForce elements are not parsed in C++ yet
+  
+  if ~isequal(P,eye(size(P)))  % eventually want to get rid of P (but this still triggers for a few urdfs)
+    % then rerun with remapped inputs
+    [retval,outstr] = systemWCMakeEnv([urdf_kin_test,' ',urdffile,sprintf(' %f',P*q),' 2> /dev/null']);
+    valuecheck(retval,0);
+    outstr_cell = regexp(outstr, '=======', 'split');  outstr = outstr_cell{2}(2:end);
+    out = textscan(outstr,'%s %f %f %f %f %f %f');%,'delimiter',',');
+  end
+  
+  for i=1:length(linkid_matlab)  
+    pt = cellfun(@(a) a(linkid_c(i)),out(2:end))';
+    x = forwardKin(r,kinsol,linkid_matlab(i),zeros(3,1),1);
 
     pt(4:6) = mod(pt(4:6),2*pi);
     x(4:6) = mod(x(4:6),2*pi);
-    valuecheck(pt,x,tol);
+    [tf,errstr]=valuecheck(pt,x,tol);
+    if ~tf,
+      disp(['checking ',r.body(linkid_matlab).linkname]); 
+      error('Drake:ValueCheck',errstr); 
+    end
   end
 
   %% test manipulator dynamics
@@ -73,38 +107,12 @@ for urdf = urdfs'
   
   v = 0*rand(getNumVelocities(r),1);
 
-  [retval,outstr] = systemWCMakeEnv([urdf_manipulator_dynamics_test,' ',urdffile,sprintf(' %f',q),' 2> /dev/null']);
+  [retval,outstr] = systemWCMakeEnv([urdf_manipulator_dynamics_test,' ',urdffile,sprintf(' %f',[P*q;P*v]),' 2> /dev/null']);
   valuecheck(retval,0);
   outstr_cell = regexp(outstr, '=======', 'split');  outstr = outstr_cell{2}(2:end);
 
   num_bodies = textscan(outstr,'%d',1); num_bodies=num_bodies{1};
   linknames = textscan(outstr,'%s',num_bodies,'HeaderLines',1); linknames = linknames{1};
-
-  num_q = getNumPositions(r);
-  num_v = getNumVelocities(r);
-  P = sparse(0,num_v);
-  for i=1:num_bodies
-    try
-      bi = findLinkId(r,linknames{i},-1,1);
-    catch ex
-      if (strcmp(ex.identifier,'Drake:RigidBodyManipulator:WeldedLinkInd'))
-        continue;
-      else
-        keyboard
-      end
-    end
-    if r.body(bi).parent~=0
-      inds = r.body(bi).position_num;
-      for j=inds'
-        P(end+1,j)=1;
-      end
-    end
-  end
-%  assert(isequal(P,eye(size(P))));  % eventually want to get rid of P (but
-%  doesn't work yet)
-  num_qc = size(P,1);  % todo: update this when num_q ~= num_v
-  num_vc = size(P,1);
-  num_u = length(r.actuator);  % not getNumInputs, because RigidBodyForce elements are not parsed in C++ yet
 
   Hcpp = textscan(outstr,'%f','HeaderLines',1+num_bodies);
   index = num_vc^2;
