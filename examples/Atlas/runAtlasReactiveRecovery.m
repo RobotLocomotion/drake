@@ -21,6 +21,7 @@ example_options = applyDefaults(example_options, struct('use_mex', true,...
                                                         'navgoal', [1.0;0;0;0;0;0],...
                                                         'quiet', true,...
                                                         'num_steps', 4,...
+                                                        'perturbation', [0.4; 0],...
                                                         'terrain', RigidBodyFlatTerrain));
 
 % silence some warnings
@@ -42,14 +43,17 @@ r = compile(r);
 load(fullfile(getDrakePath,'examples','Atlas','data','atlas_fp.mat'));
 if isfield(options,'initial_pose'), xstar(1:6) = options.initial_pose; end
 xstar = r.resolveConstraints(xstar);
-r = r.setInitialState(xstar);
+
+x0 = xstar;
+x0(r.getNumPositions() + (1:2)) = example_options.perturbation;
+
+r = r.setInitialState(x0);
 
 v = r.constructVisualizer;
-v.display_dt = 0.01;
+v.display_dt = 0.001;
 
 nq = getNumPositions(r);
 
-x0 = xstar;
 
 walking_plan_data = QPReactiveRecoveryPlan(r);
 
