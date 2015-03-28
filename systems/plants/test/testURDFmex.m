@@ -105,7 +105,7 @@ for urdf = urdfs'
     continue;
   end
   
-  v = 0*rand(getNumVelocities(r),1);
+  v = rand(getNumVelocities(r),1);
 
   [retval,outstr] = systemWCMakeEnv([urdf_manipulator_dynamics_test,' ',urdffile,sprintf(' %f',[P*q;P*v]),' 2> /dev/null']);
   valuecheck(retval,0);
