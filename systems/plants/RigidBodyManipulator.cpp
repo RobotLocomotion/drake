@@ -1088,59 +1088,71 @@ void RigidBodyManipulator::doKinematicsNew(const MatrixBase<DerivedQ>& q, const 
       }
 
       if (v.rows() > 0) {
-        // twist
-        auto v_body = v.middleRows(body.velocity_num_start, joint.getNumVelocities());
-        joint_twist.value().noalias() = body.J * v_body;
-        body.twist = body.parent->twist;
-        body.twist += joint_twist.value();
-
-        if (compute_gradients) {
-          // dtwistdq
-          joint_twist.gradient().value() = matGradMult(body.dJdq, v_body);
-          body.dtwistdq = body.parent->dtwistdq + joint_twist.gradient().value();
-        }
-
-        if (compute_JdotV) {
-          // Sdotv
-          auto dSdotVdqi = compute_gradients ? &body.dSdotVdqi : nullptr;
-          auto dSdotVdvi = compute_gradients ? &body.dSdotVdvi : nullptr;
-          joint.motionSubspaceDotTimesV(q_body, v_body, body.SdotV, dSdotVdqi, dSdotVdvi);
-
-          // Jdotv
-          auto joint_accel = crossSpatialMotion(body.twist, joint_twist.value());
-          joint_accel += transformSpatialMotion(body.T_new, body.SdotV);
-          body.JdotV = body.parent->JdotV + joint_accel;
+        if (joint.getNumVelocities()==0) { // for fixed joints
+          body.twist = body.parent->twist;
+           if (compute_gradients) body.dtwistdq = body.parent->dtwistdq;
+           if (compute_JdotV) {
+             body.JdotV = body.parent->JdotV;
+             if (compute_gradients) {
+               body.dJdotVdq = body.parent->dJdotVdq;
+               body.dJdotVdv = body.parent->dJdotVdv;
+             }
+           }
+        } else {
+          // twist
+          auto v_body = v.middleRows(body.velocity_num_start, joint.getNumVelocities());
+          joint_twist.value().noalias() = body.J * v_body;
+          body.twist += joint_twist.value();
+          body.twist = body.parent->twist;
 
           if (compute_gradients) {
-            // dJdotvdq
-            // TODO: exploit sparsity better
-            Matrix<double, TWIST_SIZE, Eigen::Dynamic> dSdotVdq(TWIST_SIZE, nq);
-            dSdotVdq.setZero();
-            dSdotVdq.middleCols(body.position_num_start, joint.getNumPositions()) = body.dSdotVdqi;
-            MatrixXd dcrm_twist_joint_twistdq(TWIST_SIZE, nq);
-            dcrm(body.twist, joint_twist.value(), body.dtwistdq, joint_twist.gradient().value(), &dcrm_twist_joint_twistdq); // TODO: make dcrm templated
-            body.dJdotVdq = body.parent->dJdotVdq
-                + dcrm_twist_joint_twistdq
-                + dTransformSpatialMotion(body.T_new, body.SdotV, body.dTdq_new, dSdotVdq);
+            // dtwistdq
+            joint_twist.gradient().value() = matGradMult(body.dJdq, v_body);
+            body.dtwistdq = body.parent->dtwistdq + joint_twist.gradient().value();
+          }
 
-            // dJdotvdv
-            int nv_joint = joint.getNumVelocities();
-            std::vector<int> v_indices;
-            auto dtwistdv = geometricJacobian<double>(0, i, 0, 0, false, &v_indices);
-            int nv_branch = static_cast<int>(v_indices.size());
+          if (compute_JdotV) {
+            // Sdotv
+            auto dSdotVdqi = compute_gradients ? &body.dSdotVdqi : nullptr;
+            auto dSdotVdvi = compute_gradients ? &body.dSdotVdvi : nullptr;
+            joint.motionSubspaceDotTimesV(q_body, v_body, body.SdotV, dSdotVdqi, dSdotVdvi);
 
-            Matrix<double, TWIST_SIZE, Eigen::Dynamic> djoint_twistdv(TWIST_SIZE, nv_branch);
-            djoint_twistdv.setZero();
-            djoint_twistdv.rightCols(nv_joint) = body.J;
+            // Jdotv
+            auto joint_accel = crossSpatialMotion(body.twist, joint_twist.value());
+            joint_accel += transformSpatialMotion(body.T_new, body.SdotV);
+            body.JdotV = body.parent->JdotV + joint_accel;
 
-            Matrix<double, TWIST_SIZE, Eigen::Dynamic> djoint_acceldv(TWIST_SIZE, nv_branch);
-            djoint_acceldv = dCrossSpatialMotion(body.twist, joint_twist.value(), dtwistdv.value(), djoint_twistdv); // TODO: can probably exploit sparsity better
-            djoint_acceldv.rightCols(nv_joint) += transformSpatialMotion(body.T_new, *dSdotVdvi);
+            if (compute_gradients) {
+              // dJdotvdq
+              // TODO: exploit sparsity better
+              Matrix<double, TWIST_SIZE, Eigen::Dynamic> dSdotVdq(TWIST_SIZE, nq);
+              dSdotVdq.setZero();
+              dSdotVdq.middleCols(body.position_num_start, joint.getNumPositions()) = body.dSdotVdqi;
+              MatrixXd dcrm_twist_joint_twistdq(TWIST_SIZE, nq);
+              dcrm(body.twist, joint_twist.value(), body.dtwistdq, joint_twist.gradient().value(), &dcrm_twist_joint_twistdq); // TODO: make dcrm templated
+              body.dJdotVdq = body.parent->dJdotVdq
+                  + dcrm_twist_joint_twistdq
+                  + dTransformSpatialMotion(body.T_new, body.SdotV, body.dTdq_new, dSdotVdq);
 
-            body.dJdotVdv.setZero();
-            for (int j = 0; j < nv_branch; j++) {
-              int v_index = v_indices[j];
-              body.dJdotVdv.col(v_index) = body.parent->dJdotVdv.col(v_index) + djoint_acceldv.col(j);
+              // dJdotvdv
+              int nv_joint = joint.getNumVelocities();
+              std::vector<int> v_indices;
+              auto dtwistdv = geometricJacobian<double>(0, i, 0, 0, false, &v_indices);
+              int nv_branch = static_cast<int>(v_indices.size());
+
+              Matrix<double, TWIST_SIZE, Eigen::Dynamic> djoint_twistdv(TWIST_SIZE, nv_branch);
+              djoint_twistdv.setZero();
+              djoint_twistdv.rightCols(nv_joint) = body.J;
+
+              Matrix<double, TWIST_SIZE, Eigen::Dynamic> djoint_acceldv(TWIST_SIZE, nv_branch);
+              djoint_acceldv = dCrossSpatialMotion(body.twist, joint_twist.value(), dtwistdv.value(), djoint_twistdv); // TODO: can probably exploit sparsity better
+              djoint_acceldv.rightCols(nv_joint) += transformSpatialMotion(body.T_new, *dSdotVdvi);
+
+              body.dJdotVdv.setZero();
+              for (int j = 0; j < nv_branch; j++) {
+                int v_index = v_indices[j];
+                body.dJdotVdv.col(v_index) = body.parent->dJdotVdv.col(v_index) + djoint_acceldv.col(j);
+              }
             }
           }
         }
