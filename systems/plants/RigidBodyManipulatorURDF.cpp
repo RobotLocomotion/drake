@@ -142,6 +142,17 @@ int findLinkIndexByJointName(RigidBodyManipulator* model, string jointname)
   return index;
 }
 
+bool parseScalarValue(TiXmlElement* node, double &val)
+{
+  const char* strval = node->FirstChild()->Value();
+  if (strval) {
+    stringstream s(strval);
+    s >> val;
+    return true;
+  }
+  return false;
+}
+
 bool parseScalarAttribute(TiXmlElement* node, const char* attribute_name, double& val)
 {
   const char* attr = node->Attribute(attribute_name);
@@ -256,7 +267,7 @@ bool parseMaterial(TiXmlElement* node, map<string, Vector4d>& materials)
     }
     materials[name] = rgba;
   } else if (!already_in_map) {
-    cerr << "ERROR: material \"" << name << "\" is used before it is defined" << endl;
+    cerr << "WARNING: material \"" << name << "\" is not a simple color material (so is currently unsupported)" << endl;
     return false;
   }
   return true;
@@ -612,7 +623,7 @@ bool parseTransmission(RigidBodyManipulator* model, TiXmlElement* node)
 
   TiXmlElement* reduction_node = node->FirstChildElement("mechanicalReduction");
   double gain = 1.0;
-  if (reduction_node) sscanf(reduction_node->Value(),"%lf",&gain);
+  if (reduction_node) parseScalarValue(reduction_node, gain);
 
   RigidBodyActuator a(joint_name,model->bodies[body_index],gain);
   model->actuators.push_back(a);
@@ -659,9 +670,7 @@ bool parseRobot(RigidBodyManipulator* model, TiXmlElement* node, const map<strin
   // parse material elements
   map< string, Vector4d> materials;
   for (TiXmlElement* link_node = node->FirstChildElement("material"); link_node; link_node = link_node->NextSiblingElement("material")) {
-    if (!parseMaterial(link_node, materials)) {
-      return false;
-    }
+    parseMaterial(link_node, materials);  // accept failed material parsing
   }
   // parse link elements
   for (TiXmlElement* link_node = node->FirstChildElement("link"); link_node; link_node = link_node->NextSiblingElement("link"))

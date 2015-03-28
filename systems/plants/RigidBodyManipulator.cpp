@@ -4,7 +4,7 @@
 #include "drakeGeometryUtil.h"
 #include "RigidBodyManipulator.h"
 #include "DrakeJoint.h"
-#include "FixedAxisOneDoFJoint.h"
+#include "FixedJoint.h"
 
 #include <algorithm>
 #include <string>
@@ -446,6 +446,23 @@ void RigidBodyManipulator::compile(void)
       auto iter = find(bodies.begin()+i+1,bodies.end(),bodies[i]->parent);
       if (iter==bodies.end()) break;
       bodies[i].swap(*iter);
+    }
+  }
+
+  // weld joints for links that have zero inertia and no children (as seen in pr2.urdf)
+  for (size_t i=0; i<bodies.size(); i++) {
+    if (bodies[i]->hasParent() && bodies[i]->I.isConstant(0)) {
+      bool hasChild = false;
+      for (size_t j=i+1; j<bodies.size(); j++) {
+        if (bodies[j]->parent == bodies[i]) {
+          hasChild = true;
+          break;
+        }
+      }
+      if (!hasChild) {
+        unique_ptr<DrakeJoint> joint_unique_ptr(new FixedJoint(bodies[i]->getJoint().getName(), bodies[i]->getJoint().getTransformToParentBody()));
+        bodies[i]->setJoint(move(joint_unique_ptr));
+      }
     }
   }
 

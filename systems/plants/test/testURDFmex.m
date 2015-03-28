@@ -1,4 +1,4 @@
-function testURDFmex
+function testURDFmex(urdfs)
 
 urdf_kin_test = '../../../pod-build/bin/urdfKinTest';
 urdf_manipulator_dynamics_test = '../../../pod-build/bin/urdfManipulatorDynamicsTest';
@@ -14,9 +14,15 @@ if (~exist(urdf_manipulator_dynamics_test,'file'))
   error('Drake:MissingDependency','testURDFmex requires that urdfManipulatorDynamicsTest is built (from the command line).  skipping this test');
 end
 
-tol = 1e-2; % low tolerance because i'm writing finite precision strings to and from the ascii terminal
+tol = .1; % low tolerance because i'm writing finite precision strings to and from the ascii terminal
 
-for urdf = allURDFs()'
+if nargin<1 || isempty(urdfs)
+  urdfs = allURDFs();
+elseif ~iscell(urdfs)
+  urdfs = {urdfs};
+end
+
+for urdf = urdfs'
   urdffile = GetFullPath(urdf{1});
   fprintf(1,'testing %s\n', urdffile);
   r = RigidBodyManipulator(urdffile,struct('floating',true,'use_new_kinsol',true));
@@ -68,7 +74,6 @@ for urdf = allURDFs()'
       bi = findLinkId(r,linknames{i},-1,1);
     catch
       % welded case
-      P(end+1,1)=0;
       continue;
     end
     if r.body(bi).parent~=0
@@ -78,6 +83,8 @@ for urdf = allURDFs()'
       end
     end
   end
+%  assert(isequal(P,eye(size(P))));  % eventually want to get rid of P (but
+%  doesn't work yet)
   num_qc = size(P,1);  % todo: update this when num_q ~= num_v
   num_vc = size(P,1);
   num_u = length(r.actuator);  % not getNumInputs, because RigidBodyForce elements are not parsed in C++ yet
