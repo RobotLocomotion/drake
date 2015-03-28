@@ -12,7 +12,7 @@
   <material name="blue">
     <color rgba="0 0 1 1" />
   </material>
-  <link name="world"/>
+  <link name="base"/>
   <link name="arm">
     <inertial>
       <origin xyz="0 0 -0.5" rpy="0 0 0" />
@@ -28,7 +28,7 @@
     </visual>
   </link>
   <joint name="theta" type="continuous">
-    <parent link="world" />
+    <parent link="base" />
     <child link="arm" />
     <origin xyz="0 0 0"/>
     <axis xyz="0 1 0" />
@@ -55,7 +55,7 @@
   </joint>
   <force_element name="spring">
     <linear_spring_damper stiffness="10" damping="1">
-      <link1 link="world" xyz="1 0 0"/>
+      <link1 link="base" xyz="1 0 0"/>
       <link2 link="ball" xyz="0 0 0"/>
     </linear_spring_damper>
   </force_element>

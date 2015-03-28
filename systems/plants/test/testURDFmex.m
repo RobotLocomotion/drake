@@ -25,12 +25,17 @@ end
 for urdf = urdfs'
   urdffile = GetFullPath(urdf{1});
   fprintf(1,'testing %s\n', urdffile);
+  w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
+  warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
+  warning('off','Drake:RigidBodyManipulator:ReplacedCylinder');
   r = RigidBodyManipulator(urdffile,struct('floating',true,'use_new_kinsol',true));
-
+  warning(w);
+  
   if ~isempty(r.param_db)
     disp(' this model has parameters (not implemented in c++ yet), so will be skipped');
     continue;
   end
+  
   q = 0*rand(getNumPositions(r),1);
   kinsol = doKinematics(r,q);
 
@@ -57,6 +62,15 @@ for urdf = urdfs'
   end
 
   %% test manipulator dynamics
+  if any(any([r.body.Iaddedmass]))
+    disp(' this model has added mass (not implemented in c++ yet)');
+    continue;
+  end
+  if length(r.force)>0
+    disp(' this model had force elements (not implemented in c++ yet)'); 
+    continue;
+  end
+  
   v = 0*rand(getNumVelocities(r),1);
 
   [retval,outstr] = systemWCMakeEnv([urdf_manipulator_dynamics_test,' ',urdffile,sprintf(' %f',q),' 2> /dev/null']);
@@ -72,9 +86,12 @@ for urdf = urdfs'
   for i=1:num_bodies
     try
       bi = findLinkId(r,linknames{i},-1,1);
-    catch
-      % welded case
-      continue;
+    catch ex
+      if (strcmp(ex.identifier,'Drake:RigidBodyManipulator:WeldedLinkInd'))
+        continue;
+      else
+        keyboard
+      end
     end
     if r.body(bi).parent~=0
       inds = r.body(bi).position_num;

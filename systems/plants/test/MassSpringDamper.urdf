@@ -9,7 +9,7 @@
   <material name="blue">
     <color rgba="0 0 1 1" />
   </material>
-  <link name="world"/>
+  <link name="base"/>
   <link name="mass">
     <inertial> 
       <origin xyz="0 0 0" rpy="0 0 0" />
@@ -25,13 +25,13 @@
     </visual> 
   </link>
   <joint name="x" type="prismatic">
-    <parent link="world"/>
+    <parent link="base"/>
     <child link="mass" />
     <axis xyz="1 0 0" />
   </joint>
   <force_element name="spring">
     <linear_spring_damper stiffness="10" damping="1">
-      <link1 link="world" xyz="0 0 0" />
+      <link1 link="base" xyz="0 0 0" />
       <link2 link="mass" xyz="0 0 0" />
     </linear_spring_damper>
   </force_element>

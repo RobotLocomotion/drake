@@ -88,7 +88,7 @@ classdef RigidBodyLoop < RigidBodyElement
       end
 
       % todo: add relativeQuatConstraint, too
-      warning('Drake:RigidBodyManipulator:ThreeDLoopJoints','3D loop joints do not properly enforce the joint axis constraint.  (they perform more like a ball joint)');
+      warnOnce(model.warning_manager,'Drake:RigidBodyManipulator:ThreeDLoopJoints','3D loop joints do not properly enforce the joint axis constraint.  (they perform more like a ball joint)');
     end
   end  
 end
