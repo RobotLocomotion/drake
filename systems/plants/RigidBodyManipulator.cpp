@@ -460,6 +460,7 @@ void RigidBodyManipulator::compile(void)
         }
       }
       if (!hasChild) {
+      	cout << "welding " << bodies[i]->getJoint().getName() << "because it has no inertia beneath it" << endl;
         unique_ptr<DrakeJoint> joint_unique_ptr(new FixedJoint(bodies[i]->getJoint().getName(), bodies[i]->getJoint().getTransformToParentBody()));
         bodies[i]->setJoint(move(joint_unique_ptr));
       }
@@ -911,8 +912,9 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
       cerr << "mex kinematics for quaternion floating bases are not implemented yet" << endl;
     } else {
       shared_ptr<RigidBody> parent = bodies[i]->parent;
-      double qi = q[bodies[i]->position_num_start];
-      if (bodies[i]->getJoint().getNumPositions()==0) qi = 0;  // fixed joint
+      double qi = 0.0;
+      if (bodies[i]->getJoint().getNumPositions()>0) // if not a fixed joint
+      	qi = q[bodies[i]->position_num_start];
       Tjcalc(bodies[i]->pitch,qi,&TJ);
       dTjcalc(bodies[i]->pitch,qi,&dTJ);
 
@@ -968,8 +970,9 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
       }
 
       if (qd) {
-        double qdi = qd[bodies[i]->position_num_start];
-        if (bodies[i]->getJoint().getNumVelocities()==0) qdi = 0;  // fixed joint
+        double qdi = 0.0;
+        if (bodies[i]->getJoint().getNumVelocities()>0) // if not a fixed joint
+        	qdi = qd[bodies[i]->position_num_start];
         TJdot = dTJ*qdi;
         ddTjcalc(bodies[i]->pitch,qi,&ddTJ);
         dTJdot = ddTJ*qdi;
@@ -1121,8 +1124,8 @@ void RigidBodyManipulator::doKinematicsNew(const MatrixBase<DerivedQ>& q, const 
           // twist
           auto v_body = v.middleRows(body.velocity_num_start, joint.getNumVelocities());
           joint_twist.value().noalias() = body.J * v_body;
-          body.twist += joint_twist.value();
           body.twist = body.parent->twist;
+          body.twist += joint_twist.value();
 
           if (compute_gradients) {
             // dtwistdq
