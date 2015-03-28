@@ -385,7 +385,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
 
   MatrixXd R_DQyD_ls = R_ls + D_ls.transpose()*Qy*D_ls;
 
-  pdata->r->doKinematics(robot_state.q,false,robot_state.qd);
+  pdata->r->doKinematics(robot_state.q,true,robot_state.qd);
 
   //---------------------------------------------------------------------
 
@@ -539,21 +539,24 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   
   // add in body spatial equality constraints
   // VectorXd body_vdot;
-  MatrixXd orig = MatrixXd::Zero(4,1);
-  orig(3,0) = 1;
+  Vector4d orig1 = Vector4d::Zero();
+  orig1(3) = 1.0;
+  Matrix<double,3,Eigen::Dynamic> orig(3,1);
+  orig.setZero();
   int equality_ind = 6+neps;
   MatrixXd Jb(6,nq);
-  MatrixXd Jbdot(6,nq);
+  Vector6d Jbdotv;	
   for (int i=0; i<desired_body_accelerations.size(); i++) {
     if (desired_body_accelerations[i].weight < 0) { // negative implies constraint
       if (!inSupport(active_supports,desired_body_accelerations[i].body_id0)) {
-        pdata->r->forwardJac(desired_body_accelerations[i].body_id0,orig,1,Jb);
-        pdata->r->forwardJacDot(desired_body_accelerations[i].body_id0,orig,1,Jbdot);
+        pdata->r->forwardJac(desired_body_accelerations[i].body_id0,orig1,1,Jb);
+        auto Jdot_times_v = pdata->r->forwardJacDotTimesV(orig,desired_body_accelerations[i].body_id0,0,1,0);
+        Jbdotv = Jdot_times_v.value();
 
         for (int j=0; j<6; j++) {
           if (!std::isnan(desired_body_accelerations[i].body_vdot(j))) {
             Aeq.block(equality_ind,0,1,nq) = Jb.row(j);
-            beq[equality_ind++] = -Jbdot.row(j)*robot_state.qd + desired_body_accelerations[i].body_vdot(j);
+            beq[equality_ind++] = -Jbdotv(j) + desired_body_accelerations[i].body_vdot(j);
           }
         }
       }
@@ -584,13 +587,14 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
 
   int constraint_start_index = 2*nu;
   for (int i=0; i<desired_body_accelerations.size(); i++) {
-    pdata->r->forwardJac(desired_body_accelerations[i].body_id0,orig,1,Jb);
-    pdata->r->forwardJacDot(desired_body_accelerations[i].body_id0,orig,1,Jbdot);
+    pdata->r->forwardJac(desired_body_accelerations[i].body_id0,orig1,1,Jb);
+    auto Jdot_times_v = pdata->r->forwardJacDotTimesV(orig,desired_body_accelerations[i].body_id0,0,1,0);
+    Jbdotv = Jdot_times_v.value();
     Ain.block(constraint_start_index,0,6,pdata->r->num_positions) = Jb;
-    bin.segment(constraint_start_index,6) = -Jbdot*robot_state.qd + desired_body_accelerations[i].accel_bounds.max;
+    bin.segment(constraint_start_index,6) = -Jbdotv + desired_body_accelerations[i].accel_bounds.max;
     constraint_start_index += 6;
     Ain.block(constraint_start_index,0,6,pdata->r->num_positions) = -Jb;
-    bin.segment(constraint_start_index,6) = Jbdot*robot_state.qd - desired_body_accelerations[i].accel_bounds.min;
+    bin.segment(constraint_start_index,6) = Jbdotv - desired_body_accelerations[i].accel_bounds.min;
     constraint_start_index += 6;
   }
        
@@ -673,8 +677,8 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     MatrixXd Ain_lb_ub(n_ineq+2*nparams,nparams);
     VectorXd bin_lb_ub(n_ineq+2*nparams);
     Ain_lb_ub << Ain,            // note: obvious sparsity here
-        -MatrixXd::Identity(nparams,nparams),
-        MatrixXd::Identity(nparams,nparams);
+    -MatrixXd::Identity(nparams,nparams),
+    MatrixXd::Identity(nparams,nparams);
     bin_lb_ub << bin, -lb, ub;
 
     for (std::set<int>::iterator it = pdata->state.active.begin(); it != pdata->state.active.end(); it++) {
@@ -706,13 +710,14 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     for (int i=0; i<desired_body_accelerations.size(); i++) {
       if (desired_body_accelerations[i].weight > 0) {
         if (!inSupport(active_supports,desired_body_accelerations[i].body_id0)) {
-          pdata->r->forwardJac(desired_body_accelerations[i].body_id0,orig,1,Jb);
-          pdata->r->forwardJacDot(desired_body_accelerations[i].body_id0,orig,1,Jbdot);
+          pdata->r->forwardJac(desired_body_accelerations[i].body_id0,orig1,1,Jb);
+          auto Jdot_times_v = pdata->r->forwardJacDotTimesV(orig,desired_body_accelerations[i].body_id0,0,1,0);
+          Jbdotv = Jdot_times_v.value();
 
           for (int j=0; j<6; j++) {
             if (!std::isnan(desired_body_accelerations[i].body_vdot[j])) {
               pdata->Hqp += desired_body_accelerations[i].weight*(Jb.row(j)).transpose()*Jb.row(j);
-              f.head(nq) += desired_body_accelerations[i].weight*(robot_state.qd.transpose()*Jbdot.row(j).transpose() - desired_body_accelerations[i].body_vdot[j])*Jb.row(j).transpose();
+              f.head(nq) += desired_body_accelerations[i].weight*(Jbdotv(j) - desired_body_accelerations[i].body_vdot[j])*Jb.row(j).transpose();
             }
           }
         }
@@ -732,8 +737,8 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     MatrixXd Ain_lb_ub(n_ineq+2*nparams,nparams);
     VectorXd bin_lb_ub(n_ineq+2*nparams);
     Ain_lb_ub << Ain,            // note: obvious sparsity here
-        -MatrixXd::Identity(nparams,nparams),
-        MatrixXd::Identity(nparams,nparams);
+    -MatrixXd::Identity(nparams,nparams),
+    MatrixXd::Identity(nparams,nparams);
     bin_lb_ub << bin, -lb, ub;
 
     for (std::set<int>::iterator it = pdata->state.active.begin(); it != pdata->state.active.end(); it++) {
