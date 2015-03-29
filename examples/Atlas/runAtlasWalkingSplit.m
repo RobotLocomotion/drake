@@ -15,9 +15,8 @@ checkDependency('lcmgl');
 
 if nargin<1, example_options=struct(); end
 example_options = applyDefaults(example_options, struct('use_bullet', false,...
-                                                        'navgoal', [1.0;0;0;0;0;0],...
-                                                        'quiet', true,...
-                                                        'num_steps', 4,...
+                                                        'navgoal', [1.5;0;0;0;0;0],...
+                                                        'num_steps', 6,...
                                                         'terrain', RigidBodyFlatTerrain));
 
 % silence some warnings
@@ -62,14 +61,11 @@ goal_pos = struct('right', rfoot_navgoal, 'left', lfoot_navgoal);
 footstep_plan = r.planFootsteps(x0(1:nq), goal_pos, [], struct('step_params', struct('max_num_steps', example_options.num_steps, 'max_forward_step', 0.4)));
 
 walking_plan_data = r.planWalkingZMP(x0(1:r.getNumPositions()), footstep_plan);
-% walking_plan_data = StandingPlan.from_standing_state(x0, r);
 
 control = atlasControllers.InstantaneousQPController(r, []);
-control.quiet = example_options.quiet;
 planeval = atlasControllers.AtlasPlanEval(r, walking_plan_data);
 
 plancontroller = atlasControllers.AtlasPlanEvalAndControlSystem(r, control, planeval);
-plancontroller.quiet = example_options.quiet;
 
 sys = feedback(r, plancontroller);
 output_select(1).system=1;
