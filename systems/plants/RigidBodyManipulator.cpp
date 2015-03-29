@@ -779,10 +779,10 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
   int i,j,k,l;
 
   //DEBUG
-  //cout << "RigidBodyManipulator::doKinematics: q = " << endl;
-  //for (i = 0; i < num_dof; i++) {
-    //cout << q[i] << endl;
-  //}
+  // cout << "RigidBodyManipulator::doKinematics: q = " << endl;
+  // for (i = 0; i < num_positions; i++) {
+  //   cout << q[i] << endl;
+  // }
   //END_DEBUG
   //Check against cached values for bodies[1];
   if (kinematicsInit) {
@@ -925,11 +925,22 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
 
     } else if (bodies[i]->floating == 2) {
       cerr << "mex kinematics for quaternion floating bases are not implemented yet" << endl;
+    } else if (bodies[i]->getJoint().getNumPositions() == 0) { // fixed joint
+      shared_ptr<RigidBody> parent = bodies[i]->parent;
+    	bodies[i]->T = parent->T * bodies[i]->Ttree;
+    	bodies[i]->dTdq = parent->dTdq * bodies[i]->Ttree;
+      if (b_compute_second_derivatives) {
+        for (set<IndexRange>::iterator iter = parent->ddTdqdq_nonzero_rows_grouped.begin(); iter != parent->ddTdqdq_nonzero_rows_grouped.end(); iter++) {
+          bodies[i]->ddTdqdq.block(iter->start,0,iter->length,4) = parent->ddTdqdq.block(iter->start,0,iter->length,4) * bodies[i]->Ttree;
+        }
+      }
+      if (qd) {
+        bodies[i]->Tdot = parent->Tdot * bodies[i]->Ttree;
+        bodies[i]->dTdqdot = parent->dTdqdot* bodies[i]->Ttree;
+      }
     } else {
       shared_ptr<RigidBody> parent = bodies[i]->parent;
-      double qi = 0.0;
-      if (bodies[i]->getJoint().getNumPositions()>0) // if not a fixed joint
-      	qi = q[bodies[i]->position_num_start];
+      double qi = q[bodies[i]->position_num_start];
       Tjcalc(bodies[i]->pitch,qi,&TJ);
       dTjcalc(bodies[i]->pitch,qi,&dTJ);
 
@@ -985,9 +996,7 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
       }
 
       if (qd) {
-        double qdi = 0.0;
-        if (bodies[i]->getJoint().getNumVelocities()>0) // if not a fixed joint
-        	qdi = qd[bodies[i]->position_num_start];
+        double qdi = qd[bodies[i]->position_num_start];
         TJdot = dTJ*qdi;
         ddTjcalc(bodies[i]->pitch,qi,&ddTJ);
         dTJdot = ddTJ*qdi;

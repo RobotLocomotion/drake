@@ -64,14 +64,14 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 
 		// generate random v
 		VectorXd matlab_v(matlab_model->num_velocities), cpp_v(cpp_model->num_velocities);
-		for (int i; i<matlab_model->num_velocities; i++) matlab_v[i] = distribution(generator);
+		for (int i=0; i<matlab_model->num_velocities; i++) matlab_v[i] = distribution(generator);
 		cpp_v.noalias() = P*matlab_v;
 
 		matlab_model->doKinematicsNew(matlab_q,matlab_v);
 		cpp_model->doKinematicsNew(cpp_q,cpp_v);
 
-		auto matlab_phi = matlab_model->positionConstraintsNew<double>(0);
-		auto cpp_phi = cpp_model->positionConstraintsNew<double>(0);
+		auto matlab_phi = matlab_model->positionConstraintsNew<double>(1);
+		auto cpp_phi = cpp_model->positionConstraintsNew<double>(1);
 
 		if (!matlab_phi.value().isApprox(cpp_phi.value(),1e-8)) {
 			cout << endl;
@@ -90,6 +90,38 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 					mexErrMsgTxt("ERROR: phi doesn't match (see terminal output)");
 				}
 			}
+		}
+
+		matlab_model->use_new_kinsol = false;
+		cpp_model->use_new_kinsol = false;
+
+		// flush the kinematics cache
+		VectorXd zero_q = VectorXd::Zero(matlab_model->num_positions);
+		matlab_model->doKinematics(zero_q,false);
+		zero_q = VectorXd::Zero(cpp_model->num_positions);
+		cpp_model->doKinematics(zero_q,false);
+
+		matlab_model->doKinematics(matlab_q,false,matlab_v);
+		cpp_model->doKinematics(cpp_q,false,cpp_v);
+		VectorXd matlab_phi_old(matlab_model->loops.size()*3), cpp_phi_old(cpp_model->loops.size()*3);
+		MatrixXd matlab_dphi_old(matlab_model->loops.size()*3,matlab_model->num_positions), cpp_dphi_old(cpp_model->loops.size()*3,cpp_model->num_positions);
+		matlab_model->positionConstraints(matlab_phi_old,matlab_dphi_old);
+		cpp_model->positionConstraints(cpp_phi_old,cpp_dphi_old);
+
+		if (!matlab_phi.value().isApprox(matlab_phi_old,1e-8)) {
+			cout << "matlab phi new:" << matlab_phi.value().transpose() << endl;
+			cout << "matlab phi old:" << matlab_phi_old.transpose() << endl;
+			mexErrMsgTxt("ERROR: matlab phi old doesn't match new");
+		}
+		if (!cpp_phi.value().isApprox(cpp_phi_old,1e-8)) {
+			mexErrMsgTxt("ERROR: cpp phi old doesn't match new");
+		}
+
+		if (!matlab_phi.gradient().value().isApprox(matlab_dphi_old,1e-8)) {
+			mexErrMsgTxt("ERROR: matlab phi old gradient doesn't match new");
+		}
+		if (!cpp_phi.gradient().value().isApprox(cpp_dphi_old,1e-8)) {
+			mexErrMsgTxt("ERROR: cpp phi old gradient doesn't match new");
 		}
   }
 
