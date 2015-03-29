@@ -671,8 +671,7 @@ classdef RigidBodyManipulator < Manipulator
         if model.body(i).parent>0
           ind = model.body(i).parent;
           if (ind>i)
-            map_new_to_old = 1:length(model.body); map_new_to_old(i)=ind; map_new_to_old(ind)=i;
-            model = updateBodyIndices(model,map_new_to_old);
+            model = updateBodyIndices(model,[1:i-1,ind,i:ind-1,ind+1:length(model.body)]);
             i=i-1;
           end
         end
