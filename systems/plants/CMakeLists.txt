@@ -71,7 +71,6 @@ if (eigen3_FOUND)
   add_rbm_mex(jointLimitConstraintsmex)
   add_rbm_mex(positionConstraintsmex)
   add_rbm_mex(setupLCPmex)
-  add_rbm_mex(matlabToCppProjectionmex)
 
   include_directories( constraint )
   add_library(drakeIKoptions SHARED IKoptions.cpp)

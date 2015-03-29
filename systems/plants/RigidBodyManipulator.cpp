@@ -271,7 +271,7 @@ RigidBodyManipulator::RigidBodyManipulator(int ndof, int num_featherstone_bodies
   resize(ndof,num_featherstone_bodies,num_rigid_body_objects,num_rigid_body_frames);
 }
 
-RigidBodyManipulator::RigidBodyManipulator(const std::string &urdf_filename)
+RigidBodyManipulator::RigidBodyManipulator(const std::string &urdf_filename, const std::string &floating_base_type)
   :  collision_model(DrakeCollision::newModel())
 {
   num_positions=0; NB=0; num_bodies=0; num_frames=0;
@@ -282,7 +282,7 @@ RigidBodyManipulator::RigidBodyManipulator(const std::string &urdf_filename)
   bodies[0]->body_index = 0;
   use_new_kinsol = true; // assuming new kinsol in the updated logic below
 
-  addRobotFromURDF(urdf_filename);
+  addRobotFromURDF(urdf_filename,floating_base_type);
 }
 
 RigidBodyManipulator::RigidBodyManipulator(void)
@@ -446,12 +446,16 @@ void RigidBodyManipulator::compile(void)
    */
 
   // reorder body list to make sure that parents before children in the list
-  for (size_t i=0; i<bodies.size(); i++) {
-    while (bodies[i]->hasParent()) {
+	int i=0;
+  while (i<bodies.size()) {
+    if (bodies[i]->hasParent()) {
       auto iter = find(bodies.begin()+i+1,bodies.end(),bodies[i]->parent);
-      if (iter==bodies.end()) break;
-      bodies[i].swap(*iter);
+      if (iter!=bodies.end()) {
+      	bodies[i].swap(*iter);
+      	i--;
+      }
     }
+    i++;
   }
 
   // weld joints for links that have zero inertia and no children (as seen in pr2.urdf)

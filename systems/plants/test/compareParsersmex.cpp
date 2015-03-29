@@ -14,14 +14,16 @@ using namespace std;
 void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 
   if (nrhs < 1) {
-    mexErrMsgIdAndTxt("Drake:compareParsersmex:NotEnoughInputs","Usage compareParsersmex(model_ptr, urdf_file)");
+    mexErrMsgIdAndTxt("Drake:compareParsersmex:NotEnoughInputs","Usage compareParsersmex(model_ptr, urdf_file, floating_base_type)");
   }
 
   // first get the model_ptr back from matlab
   RigidBodyManipulator *matlab_model= (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
 
   char urdf_file[1000]; mxGetString(prhs[1],urdf_file,1000);
-  RigidBodyManipulator* cpp_model = new RigidBodyManipulator(urdf_file);
+  char floating_base_type[100] = "rpy";
+  if (nrhs>2) mxGetString(prhs[2],floating_base_type,100);
+  RigidBodyManipulator* cpp_model = new RigidBodyManipulator(urdf_file,floating_base_type);
 
 /*
   for (int i=0; i<cpp_model->num_bodies; i++) {
@@ -37,7 +39,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   }
 */
 
-  // Compute coordinate transform between the two models
+  // Compute coordinate transform between the two models (in case they are not identical)
   MatrixXd P = MatrixXd::Zero(cpp_model->num_positions,matlab_model->num_positions);  // projection from the coordinates of matlab_model to cpp_model
   for (int i=0; i<cpp_model->num_bodies; i++) {
   	if (cpp_model->bodies[i]->hasParent() && cpp_model->bodies[i]->getJoint().getNumPositions()>0) {
