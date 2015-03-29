@@ -154,8 +154,8 @@ classdef InstantaneousQPController
         d.command = 'freeze';
         behavior_pub.publish(d);
       end
-
-
+      
       v_ref = qd_ref(obj.robot_property_cache.actuated_indices);
+    end
   end
 end
