@@ -16,6 +16,8 @@ public:
 
   virtual ~RollPitchYawFloatingJoint();
 
+  virtual const std::string getPositionName(int index) const;
+
   virtual Eigen::Isometry3d jointTransform(const Eigen::Ref<const Eigen::VectorXd>& q) const; //override;
 
   virtual void motionSubspace(const Eigen::Ref<const Eigen::VectorXd>& q, MotionSubspaceType& motion_subspace, Eigen::MatrixXd* dmotion_subspace = nullptr) const; //override;

@@ -18,6 +18,48 @@ QuaternionFloatingJoint::~QuaternionFloatingJoint()
   // empty
 }
 
+const std::string QuaternionFloatingJoint::getPositionName(int index) const
+{
+	switch (index) {
+	case 0:
+		return name+"_x";
+	case 1:
+		return name+"_y";
+	case 2:
+		return name+"_z";
+	case 3:
+		return name+"_qw";
+	case 4:
+		return name+"_qx";
+	case 5:
+		return name+"_qy";
+	case 6:
+		return name+"_qz";
+	default:
+		throw std::runtime_error("bad index");
+	}
+}
+
+const std::string QuaternionFloatingJoint::getVelocityName(int index) const
+{
+	switch (index) {
+	case 0:
+		return name+"_xdot";
+	case 1:
+		return name+"_ydot";
+	case 2:
+		return name+"_zdot";
+	case 3:
+		return name+"_wx";
+	case 4:
+		return name+"_wy";
+	case 5:
+		return name+"_wz";
+	default:
+		throw std::runtime_error("bad index");
+	}
+}
+
 Isometry3d QuaternionFloatingJoint::jointTransform(const Eigen::Ref<const VectorXd>& q) const
 {
   Isometry3d ret(Quaterniond(q[3], q[4], q[5], q[6]));

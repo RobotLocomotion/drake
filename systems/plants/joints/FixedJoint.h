@@ -17,6 +17,8 @@ public:
 
   virtual ~FixedJoint();
 
+  virtual const std::string getPositionName(int index) const { throw std::runtime_error("bad index"); }
+
   virtual Eigen::Isometry3d jointTransform(const Eigen::Ref<const Eigen::VectorXd>& q) const;
 
   virtual void motionSubspace(const Eigen::Ref<const Eigen::VectorXd>& q, MotionSubspaceType& motion_subspace, Eigen::MatrixXd* dmotion_subspace = nullptr) const;

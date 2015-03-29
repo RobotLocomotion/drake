@@ -67,61 +67,84 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 		for (int i=0; i<matlab_model->num_velocities; i++) matlab_v[i] = distribution(generator);
 		cpp_v.noalias() = P*matlab_v;
 
-		matlab_model->doKinematicsNew(matlab_q,matlab_v);
-		cpp_model->doKinematicsNew(cpp_q,cpp_v);
+		{ // run new and old kinematics
+			matlab_model->use_new_kinsol = true;
+			cpp_model->use_new_kinsol = true;
 
-		auto matlab_phi = matlab_model->positionConstraintsNew<double>(1);
-		auto cpp_phi = cpp_model->positionConstraintsNew<double>(1);
+			matlab_model->doKinematicsNew(matlab_q,matlab_v);
+			cpp_model->doKinematicsNew(cpp_q,cpp_v);
 
-		if (!matlab_phi.value().isApprox(cpp_phi.value(),1e-8)) {
-			cout << endl;
-			for (int i=0; i<matlab_model->loops.size(); i++) {
-				// could be the same error vector, but in a different coordinate frame
-				Vector3d m_phi = matlab_phi.value().middleRows(i*3,3);
-				Vector3d c_phi = cpp_phi.value().middleRows(i*3,3);
+			matlab_model->use_new_kinsol = false;
+			cpp_model->use_new_kinsol = false;
 
-				// rotate the vector into the non-fixed coordinate system
-				shared_ptr<RigidBody> b = cpp_model->loops[i].bodyB;
-				while (b->hasParent() && b->getJoint().getNumPositions()==0) {
-					c_phi = b->getJoint().getTransformToParentBody().matrix().topLeftCorner(3,3) * c_phi;
-					b = b->parent;
-				}
-				if (!m_phi.isApprox(c_phi,1e-8)) {
-					mexErrMsgTxt("ERROR: phi doesn't match (see terminal output)");
-				}
+			// flush the kinematics cache
+			VectorXd zero_q = VectorXd::Zero(matlab_model->num_positions);
+			matlab_model->doKinematics(zero_q,false);
+			zero_q = VectorXd::Zero(cpp_model->num_positions);
+			cpp_model->doKinematics(zero_q,false);
+
+			matlab_model->doKinematics(matlab_q,false,matlab_v);
+			cpp_model->doKinematics(cpp_q,false,cpp_v);
+
+			matlab_model->use_new_kinsol = true;
+			cpp_model->use_new_kinsol = true;
+		}
+
+		{ // compare joint limits
+			if (matlab_model->joint_limit_max.isApprox(P*cpp_model->joint_limit_max,1e-8)) {
+				mexErrMsgTxt("ERROR: joint_limit_max doesn't match");
+			}
+			if (matlab_model->joint_limit_min.isApprox(P*cpp_model->joint_limit_min,1e-8)) {
+				mexErrMsgTxt("ERROR: joint_limit_min doesn't match");
 			}
 		}
 
-		matlab_model->use_new_kinsol = false;
-		cpp_model->use_new_kinsol = false;
+		{ // compare position constraints
+			auto matlab_phi = matlab_model->positionConstraintsNew<double>(1);
+			auto cpp_phi = cpp_model->positionConstraintsNew<double>(1);
 
-		// flush the kinematics cache
-		VectorXd zero_q = VectorXd::Zero(matlab_model->num_positions);
-		matlab_model->doKinematics(zero_q,false);
-		zero_q = VectorXd::Zero(cpp_model->num_positions);
-		cpp_model->doKinematics(zero_q,false);
+			if (!matlab_phi.value().isApprox(cpp_phi.value(),1e-8)) {
+				cout << endl;
+				for (int i=0; i<matlab_model->loops.size(); i++) {
+					// could be the same error vector, but in a different coordinate frame
+					Vector3d m_phi = matlab_phi.value().middleRows(i*3,3);
+					Vector3d c_phi = cpp_phi.value().middleRows(i*3,3);
 
-		matlab_model->doKinematics(matlab_q,false,matlab_v);
-		cpp_model->doKinematics(cpp_q,false,cpp_v);
-		VectorXd matlab_phi_old(matlab_model->loops.size()*3), cpp_phi_old(cpp_model->loops.size()*3);
-		MatrixXd matlab_dphi_old(matlab_model->loops.size()*3,matlab_model->num_positions), cpp_dphi_old(cpp_model->loops.size()*3,cpp_model->num_positions);
-		matlab_model->positionConstraints(matlab_phi_old,matlab_dphi_old);
-		cpp_model->positionConstraints(cpp_phi_old,cpp_dphi_old);
+					// rotate the vector into the non-fixed coordinate system
+					shared_ptr<RigidBody> b = cpp_model->loops[i].bodyB;
+					while (b->hasParent() && b->getJoint().getNumPositions()==0) {
+						c_phi = b->getJoint().getTransformToParentBody().matrix().topLeftCorner(3,3) * c_phi;
+						b = b->parent;
+					}
+					if (!m_phi.isApprox(c_phi,1e-8)) {
+						mexErrMsgTxt("ERROR: phi doesn't match (see terminal output)");
+					}
+				}
+			}
 
-		if (!matlab_phi.value().isApprox(matlab_phi_old,1e-8)) {
-			cout << "matlab phi new:" << matlab_phi.value().transpose() << endl;
-			cout << "matlab phi old:" << matlab_phi_old.transpose() << endl;
-			mexErrMsgTxt("ERROR: matlab phi old doesn't match new");
-		}
-		if (!cpp_phi.value().isApprox(cpp_phi_old,1e-8)) {
-			mexErrMsgTxt("ERROR: cpp phi old doesn't match new");
-		}
+			matlab_model->use_new_kinsol = false;
+			cpp_model->use_new_kinsol = false;
 
-		if (!matlab_phi.gradient().value().isApprox(matlab_dphi_old,1e-8)) {
-			mexErrMsgTxt("ERROR: matlab phi old gradient doesn't match new");
-		}
-		if (!cpp_phi.gradient().value().isApprox(cpp_dphi_old,1e-8)) {
-			mexErrMsgTxt("ERROR: cpp phi old gradient doesn't match new");
+			VectorXd matlab_phi_old(matlab_model->loops.size()*3), cpp_phi_old(cpp_model->loops.size()*3);
+			MatrixXd matlab_dphi_old(matlab_model->loops.size()*3,matlab_model->num_positions), cpp_dphi_old(cpp_model->loops.size()*3,cpp_model->num_positions);
+			matlab_model->positionConstraints(matlab_phi_old,matlab_dphi_old);
+			cpp_model->positionConstraints(cpp_phi_old,cpp_dphi_old);
+
+			if (!matlab_phi.value().isApprox(matlab_phi_old,1e-8)) {
+				cout << "matlab phi new:" << matlab_phi.value().transpose() << endl;
+				cout << "matlab phi old:" << matlab_phi_old.transpose() << endl;
+				mexErrMsgTxt("ERROR: matlab phi old doesn't match new");
+			}
+			if (!cpp_phi.value().isApprox(cpp_phi_old,1e-8)) {
+				mexErrMsgTxt("ERROR: cpp phi old doesn't match new");
+			}
+
+			if (!matlab_phi.gradient().value().isApprox(matlab_dphi_old,1e-8)) {
+				mexErrMsgTxt("ERROR: matlab phi old gradient doesn't match new");
+			}
+			if (!cpp_phi.gradient().value().isApprox(cpp_dphi_old,1e-8)) {
+				mexErrMsgTxt("ERROR: cpp phi old gradient doesn't match new");
+			}
 		}
   }
 

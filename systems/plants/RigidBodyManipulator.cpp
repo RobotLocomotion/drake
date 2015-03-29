@@ -530,6 +530,36 @@ void RigidBodyManipulator::getRandomConfiguration(Eigen::VectorXd& q, std::defau
 	}
 }
 
+string RigidBodyManipulator::getPositionName(int position_num) const
+{
+	if (position_num<0 || position_num>=num_positions)
+		throw std::runtime_error("position_num is out of range");
+
+	int body_index = 0;
+	while (body_index+1<num_bodies && bodies[body_index+1]->position_num_start<=position_num) body_index++;
+
+	return bodies[body_index]->getJoint().getPositionName(position_num-bodies[body_index]->position_num_start);
+}
+
+string RigidBodyManipulator::getVelocityName(int velocity_num) const
+{
+	if (velocity_num<0 || velocity_num>=num_velocities)
+		throw std::runtime_error("position_num is out of range");
+
+	int body_index = 0;
+	while (body_index+1<num_bodies && bodies[body_index+1]->velocity_num_start<=velocity_num) body_index++;
+
+	return bodies[body_index]->getJoint().getVelocityName(velocity_num-bodies[body_index]->velocity_num_start);
+}
+
+string RigidBodyManipulator::getStateName(int state_num) const
+{
+	if (state_num<num_positions)
+		return getPositionName(state_num);
+	else
+		return getVelocityName(state_num);
+}
+
 DrakeCollision::ElementId RigidBodyManipulator::addCollisionElement(const RigidBody::CollisionElement& element, const shared_ptr<RigidBody>& body, string group_name)
 {
   DrakeCollision::ElementId id(collision_model->addElement(element));

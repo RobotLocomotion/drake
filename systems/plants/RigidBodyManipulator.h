@@ -85,6 +85,11 @@ public:
   void compile(void);  // call me after the model is loaded
 
   void getRandomConfiguration(Eigen::VectorXd& q, std::default_random_engine& generator) const;
+
+  // akin to the coordinateframe names in matlab
+  std::string getPositionName(int position_num) const;
+  std::string getVelocityName(int velocity_num) const;
+  std::string getStateName(int state_num) const;
   
   template <typename Derived>
   void doKinematics(MatrixBase<Derived> & q, bool b_compute_second_derivatives = false);
@@ -124,8 +129,6 @@ public:
 
   template <typename DerivedA, typename DerivedB>
   void getCMM(MatrixBase<DerivedA> const & q, MatrixBase<DerivedA> const & qd, MatrixBase<DerivedB> &A, MatrixBase<DerivedB> &Adot);
-
-
 
   template <typename Derived>
   void getCOM(MatrixBase<Derived> &com,const std::set<int> &robotnum = RigidBody::defaultRobotNumSet);

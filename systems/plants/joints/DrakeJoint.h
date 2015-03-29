@@ -31,14 +31,13 @@ class DLLEXPORT_DRAKEJOINT DrakeJoint
   // DrakeJoint& operator=(const DrakeJoint&) = delete;
 
 private:
-  const std::string name;
   const Eigen::Isometry3d transform_to_parent_body;
   const int num_positions;
   const int num_velocities;
 
 protected:
   typedef Eigen::Matrix<double, 6, 1> Vector6d;
-
+  const std::string name;
 
 public:
   DrakeJoint(const std::string& name, const Eigen::Isometry3d& transform_to_parent_body, int num_positions, int num_velocities);
@@ -53,6 +52,8 @@ public:
   const int getNumVelocities() const;
 
   const std::string& getName() const;
+  virtual const std::string getPositionName(int index) const = 0;
+  virtual const std::string getVelocityName(int index) const { return getPositionName(index)+"dot"; }
 
   virtual Eigen::Isometry3d jointTransform(const Eigen::Ref<const Eigen::VectorXd>& q) const = 0;
 

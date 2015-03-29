@@ -17,6 +17,26 @@ RollPitchYawFloatingJoint::~RollPitchYawFloatingJoint()
   // empty
 }
 
+const std::string RollPitchYawFloatingJoint::getPositionName(int index) const
+{
+	switch (index) {
+	case 0:
+		return name+"_x";
+	case 1:
+		return name+"_y";
+	case 2:
+		return name+"_z";
+	case 3:
+		return name+"_roll";
+	case 4:
+		return name+"_pitch";
+	case 5:
+		return name+"_yaw";
+	default:
+		throw std::runtime_error("bad index");
+	}
+}
+
 Isometry3d RollPitchYawFloatingJoint::jointTransform(const Eigen::Ref<const VectorXd>& q) const
 {
   Isometry3d ret;
