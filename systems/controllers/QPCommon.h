@@ -85,6 +85,7 @@ struct RobotPropertyCache {
   PositionIndicesCache position_indices;
   BodyIdsCache body_ids;
   VectorXi actuated_indices;
+  int num_bodies;
 };
 
 struct VRefIntegratorParams {
