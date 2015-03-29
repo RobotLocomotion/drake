@@ -330,9 +330,10 @@ public:
 
   VectorXd cached_q, cached_v;  // these should be private
 
-  bool use_new_kinsol;
+  void setUseNewKinsol(bool tf) { use_new_kinsol=tf; kinematicsInit=false; }
 
 private:
+  bool use_new_kinsol;
   void doKinematics(double* q, bool b_compute_second_derivatives=false, double* qd=NULL);
   
   //helper functions for contactConstraints

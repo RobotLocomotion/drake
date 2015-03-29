@@ -68,26 +68,17 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 		cpp_v.noalias() = P*matlab_v;
 
 		{ // run new and old kinematics
-			matlab_model->use_new_kinsol = true;
-			cpp_model->use_new_kinsol = true;
-
-			matlab_model->doKinematicsNew(matlab_q,matlab_v);
-			cpp_model->doKinematicsNew(cpp_q,cpp_v);
-
-			matlab_model->use_new_kinsol = false;
-			cpp_model->use_new_kinsol = false;
-
-			// flush the kinematics cache
-			VectorXd zero_q = VectorXd::Zero(matlab_model->num_positions);
-			matlab_model->doKinematics(zero_q,false);
-			zero_q = VectorXd::Zero(cpp_model->num_positions);
-			cpp_model->doKinematics(zero_q,false);
+			matlab_model->setUseNewKinsol(false);
+			cpp_model->setUseNewKinsol(false);
 
 			matlab_model->doKinematics(matlab_q,false,matlab_v);
 			cpp_model->doKinematics(cpp_q,false,cpp_v);
 
-			matlab_model->use_new_kinsol = true;
-			cpp_model->use_new_kinsol = true;
+			matlab_model->setUseNewKinsol(true);
+			cpp_model->setUseNewKinsol(true);
+
+			matlab_model->doKinematicsNew(matlab_q,matlab_v);
+			cpp_model->doKinematicsNew(cpp_q,cpp_v);
 		}
 
 		{ // compare joint limits
@@ -122,8 +113,8 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 				}
 			}
 
-			matlab_model->use_new_kinsol = false;
-			cpp_model->use_new_kinsol = false;
+			matlab_model->setUseNewKinsol(false);
+			cpp_model->setUseNewKinsol(false);
 
 			VectorXd matlab_phi_old(matlab_model->loops.size()*3), cpp_phi_old(cpp_model->loops.size()*3);
 			MatrixXd matlab_dphi_old(matlab_model->loops.size()*3,matlab_model->num_positions), cpp_dphi_old(cpp_model->loops.size()*3,cpp_model->num_positions);
