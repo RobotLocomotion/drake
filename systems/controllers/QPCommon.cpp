@@ -101,7 +101,7 @@ std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray 
       const mxArray* use_spatial_velocity = myGetField(body_motion_data, i, "use_spatial_velocity");
       if(!mxIsLogicalScalar(use_spatial_velocity))
       {
-              mexErrMsgTxt("use_spatial_velocity should be a logical scalar");
+        mexErrMsgTxt("use_spatial_velocity should be a logical scalar");
       }
       msg->body_motion_data[i].use_spatial_velocity = (bool)mxGetScalar(use_spatial_velocity);
     }
@@ -368,21 +368,21 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
 
   for (int i=0; i < qp_input->num_tracked_bodies; i++) {
     int body_id0 = qp_input->body_motion_data[i].body_id - 1;
-		desired_body_accelerations[i].use_spatial_velocity = qp_input->body_motion_data[i].use_spatial_velocity;
+    desired_body_accelerations[i].use_spatial_velocity = qp_input->body_motion_data[i].use_spatial_velocity;
     double weight = params->body_motion[body_id0].weight;
     desired_body_accelerations[i].body_id0 = body_id0;
     Map<Matrix<double, 6, 4,RowMajor>>coefs_rowmaj(&qp_input->body_motion_data[i].coefs[0][0]);
     Matrix<double, 6, 4> coefs = coefs_rowmaj;
     double t_spline = std::max(qp_input->body_motion_data[i].ts[0], std::min(qp_input->body_motion_data[i].ts[1], robot_state.t));
     evaluateCubicSplineSegment(t_spline - qp_input->body_motion_data[i].ts[0], coefs, body_pose_des, body_v_des, body_vdot_des);
-		if(!desired_body_accelerations[i].use_spatial_velocity)
-		{
-			desired_body_accelerations[i].body_vdot = bodyMotionPD(pdata->r, robot_state, body_id0, body_pose_des, body_v_des, body_vdot_des, params->body_motion[body_id0].Kp, params->body_motion[body_id0].Kd);
-		}
-		else
-		{
-			desired_body_accelerations[i].body_vdot = bodySpatialMotionPD(pdata->r, robot_state, body_id0, body_pose_des, body_v_des, body_vdot_des, params->body_motion[body_id0].Kp,params->body_motion[body_id0].Kd);
-		}
+    if(!desired_body_accelerations[i].use_spatial_velocity)
+    {
+      desired_body_accelerations[i].body_vdot = bodyMotionPD(pdata->r, robot_state, body_id0, body_pose_des, body_v_des, body_vdot_des, params->body_motion[body_id0].Kp, params->body_motion[body_id0].Kd);
+    }
+    else
+    {
+      desired_body_accelerations[i].body_vdot = bodySpatialMotionPD(pdata->r, robot_state, body_id0, body_pose_des, body_v_des, body_vdot_des, params->body_motion[body_id0].Kp,params->body_motion[body_id0].Kd);
+    }
     desired_body_accelerations[i].weight = weight;
     desired_body_accelerations[i].accel_bounds = params->body_motion[body_id0].accel_bounds;
     desired_body_accelerations[i].control_pose_when_in_contact = qp_input->body_motion_data[i].control_pose_when_in_contact;
