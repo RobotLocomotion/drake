@@ -1,10 +1,8 @@
 function runAtlasWalkingSplit(example_options)
-%NOTEST 
 % Run the new split QP controller, which consists of separate PlanEval
 % and InstantaneousQPController objects. The controller will also
 % automatically transition to standing when it reaches the end of its walking
 % plan.
-% @option use_mex [1] whether to use mex. 0: no, 1: yes, 2: compare mex and non-mex
 % @option use_bullet [false] whether to use bullet for collision detect
 % @option navgoal the goal for footstep planning
 % @option quiet [true] whether to silence timing printouts
@@ -16,8 +14,7 @@ checkDependency('gurobi');
 checkDependency('lcmgl');
 
 if nargin<1, example_options=struct(); end
-example_options = applyDefaults(example_options, struct('use_mex', true,...
-                                                        'use_bullet', false,...
+example_options = applyDefaults(example_options, struct('use_bullet', false,...
                                                         'navgoal', [1.0;0;0;0;0;0],...
                                                         'quiet', true,...
                                                         'num_steps', 4,...
@@ -70,8 +67,7 @@ walking_plan_data.mu = 1;
 
 % walking_plan_data = StandingPlan.from_standing_state(x0, r);
 
-control = atlasControllers.InstantaneousQPController(r, [],...
-   struct('use_mex', example_options.use_mex));
+control = atlasControllers.InstantaneousQPController(r, []);
 control.quiet = example_options.quiet;
 planeval = atlasControllers.AtlasPlanEval(r, walking_plan_data);
 
