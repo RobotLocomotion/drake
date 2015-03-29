@@ -4,15 +4,18 @@ classdef QPControllerPlan < handle
     % to specify the support state used by the controller, based
     % on the controller's instantaneous force and kinematic input. 
     % See QPInputConstantHeight.m for a more complete description. 
+    duration = inf;
+    start_time = 0;
+    default_qp_input = atlasControllers.QPInputConstantHeight;
+    gain_set = 'standing';
+  end
+
+  properties(Constant)
     support_logic_maps = struct('require_support', ones(4,1),...
                                 'only_if_force_sensed', [0;0;1;1],...
                                 'only_if_kinematic', [0;1;0;1],...
                                 'kinematic_or_sensed', [0;1;1;1],...
                                 'prevent_support', zeros(4,1));
-    duration = inf;
-    start_time = 0;
-    default_qp_input = atlasControllers.QPInputConstantHeight;
-    gain_set = 'standing';
   end
 
   methods(Abstract)

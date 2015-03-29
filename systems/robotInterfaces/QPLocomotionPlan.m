@@ -17,6 +17,8 @@ classdef QPLocomotionPlan < QPControllerPlan
     is_quasistatic = false;
     constrained_dofs = [];
 
+    planned_support_command = QPControllerPlan.support_logic_maps.require_support; % when the plan says a given body is in support, require the controller to use that support. To allow the controller to use that support only if it thinks the body is in contact with the terrain, try QPControllerPlan.support_logic_maps.kinematic_or_sensed; 
+
     last_qp_input;
   end
 
@@ -176,7 +178,7 @@ classdef QPLocomotionPlan < QPControllerPlan
       for j = 1:length(supp.bodies)
         qp_input.support_data(j).body_id = supp.bodies(j);
         qp_input.support_data(j).contact_pts = supp.contact_pts{j};
-        qp_input.support_data(j).support_logic_map = obj.support_logic_maps.require_support;
+        qp_input.support_data(j).support_logic_map = obj.planned_support_command;
         qp_input.support_data(j).mu = obj.mu;
         qp_input.support_data(j).contact_surfaces = 0;
       end
