@@ -48,9 +48,10 @@ void QuaternionFloatingJoint::motionSubspaceDotTimesV(const Eigen::Ref<const Vec
   }
 }
 
-void QuaternionFloatingJoint::randomConfiguration(Eigen::Ref<VectorXd>& q, std::default_random_engine& generator) const
+VectorXd QuaternionFloatingJoint::randomConfiguration(std::default_random_engine& generator) const
 {
-  normal_distribution<double> normal;
+	VectorXd q(7);
+	normal_distribution<double> normal;
 
   // position
   q[0] = normal(generator);
@@ -63,6 +64,7 @@ void QuaternionFloatingJoint::randomConfiguration(Eigen::Ref<VectorXd>& q, std::
   q[4] = quat(1);
   q[5] = quat(2);
   q[6] = quat(3);
+  return q;
 }
 
 void QuaternionFloatingJoint::qdot2v(const Eigen::Ref<const VectorXd>& q, Eigen::MatrixXd& qdot_to_v, Eigen::MatrixXd* dqdot_to_v) const

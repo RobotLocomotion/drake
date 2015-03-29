@@ -26,7 +26,7 @@ public:
       Gradient<Vector6d, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdq = nullptr,
       Gradient<Vector6d, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdv = nullptr) const; //override;
 
-  virtual void randomConfiguration(Eigen::Ref<Eigen::VectorXd>& q, std::default_random_engine& generator) const; //override;
+  virtual Eigen::VectorXd randomConfiguration(std::default_random_engine& generator) const; //override;
 
   virtual void qdot2v(const Eigen::Ref<const Eigen::VectorXd>& q, Eigen::MatrixXd& qdot_to_v, Eigen::MatrixXd* dqdot_to_v) const; //override;
 

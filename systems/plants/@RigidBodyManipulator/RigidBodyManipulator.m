@@ -1432,6 +1432,9 @@ classdef RigidBodyManipulator < Manipulator
           A{model.body(i).parent,i} = model.body(i).jointname;
         end
       end
+      for i=1:length(model.loop)
+        A{model.loop(i).body1,model.loop(i).body2} = ['loop',num2str(i),':',model.loop(i).name];
+      end
       node_names = {model.body.linkname};
 %      node_names = regexprep({model.body.linkname},'+(.)*','');
       drawGraph(A,node_names);

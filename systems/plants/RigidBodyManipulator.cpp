@@ -256,6 +256,11 @@ void getFiniteIndexes(T const & v, std::vector<int> &finite_indexes)
   }
 }
 
+std::ostream& operator<<(std::ostream& os, const RigidBodyLoop& obj)
+{
+  os << "loop connects pt " << obj.ptA.transpose() << " on " << obj.bodyA->linkname << " to pt " << obj.ptB.transpose() << " on " << obj.bodyB->linkname << std::endl;
+  return os;
+}
 
 RigidBodyManipulator::RigidBodyManipulator(int ndof, int num_featherstone_bodies, int num_rigid_body_objects, int num_rigid_body_frames)
   :  collision_model(DrakeCollision::newModel())
@@ -513,6 +518,16 @@ void RigidBodyManipulator::compile(void)
   cached_v.resize(num_velocities);
 
   initialized=true;
+}
+
+void RigidBodyManipulator::getRandomConfiguration(Eigen::VectorXd& q, std::default_random_engine& generator) const
+{
+	for (int i=0; i<num_bodies; i++) {
+		if (bodies[i]->hasParent()) {
+			const DrakeJoint& joint = bodies[i]->getJoint();
+			q.middleRows(bodies[i]->position_num_start,joint.getNumPositions()) = joint.randomConfiguration(generator);
+		}
+	}
 }
 
 DrakeCollision::ElementId RigidBodyManipulator::addCollisionElement(const RigidBody::CollisionElement& element, const shared_ptr<RigidBody>& body, string group_name)
@@ -3192,7 +3207,7 @@ void RigidBodyManipulator::HandC(MatrixBase<DerivedG> const & q, MatrixBase<Deri
   }
 }
 
-int RigidBodyManipulator::findLinkId(string linkname, int robot)
+shared_ptr<RigidBody> RigidBodyManipulator::findLink(string linkname, int robot)
 {
   std::transform(linkname.begin(), linkname.end(), linkname.begin(), ::tolower); // convert to lower case
 
@@ -3203,7 +3218,6 @@ int RigidBodyManipulator::findLinkId(string linkname, int robot)
   name_match.resize(this->num_bodies);
   for(int i = 0;i<this->num_bodies;i++)
   {
-
     string lower_linkname = this->bodies[i]->linkname;
     std::transform(lower_linkname.begin(), lower_linkname.end(), lower_linkname.begin(), ::tolower); // convert to lower case
     if(lower_linkname.find(linkname) != string::npos)
@@ -3239,13 +3253,74 @@ int RigidBodyManipulator::findLinkId(string linkname, int robot)
   if(num_match != 1)
   {
     cerr<<"couldn't find unique link "<<linkname<<endl;
-    return(EXIT_FAILURE);
+    return(nullptr);
   }
   else
   {
-    return ind_match;
+    return this->bodies[ind_match];
   }
 }
+
+int RigidBodyManipulator::findLinkId(string name, int robot)
+{
+	shared_ptr<RigidBody> link = findLink(name,robot);
+	if (link == nullptr) return(EXIT_FAILURE);
+	return link->body_index;
+}
+
+shared_ptr<RigidBody> RigidBodyManipulator::findJoint(string jointname, int robot)
+{
+  std::transform(jointname.begin(), jointname.end(), jointname.begin(), ::tolower); // convert to lower case
+
+  vector<bool> name_match;
+  name_match.resize(this->num_bodies);
+  for(int i = 0;i<this->num_bodies;i++)
+  {
+  	if (bodies[i]->hasParent()) {
+  		string lower_jointname = this->bodies[i]->getJoint().getName();
+  		std::transform(lower_jointname.begin(), lower_jointname.end(), lower_jointname.begin(), ::tolower); // convert to lower case
+			if(lower_jointname.compare(jointname) == 0)
+			{
+				name_match[i] = true;
+			}
+			else
+			{
+				name_match[i] = false;
+			}
+  	}
+  }
+  if(robot != -1)
+  {
+    for(int i = 0;i<this->num_bodies;i++)
+    {
+      if(name_match[i])
+      {
+        name_match[i] = this->bodies[i]->robotnum == robot;
+      }
+    }
+  }
+  // Unlike the MATLAB implementation, I am not handling the fixed joints
+  int num_match = 0;
+  int ind_match = -1;
+  for(int i = 0;i<this->num_bodies;i++)
+  {
+    if(name_match[i])
+    {
+      num_match++;
+      ind_match = i;
+    }
+  }
+  if(num_match != 1)
+  {
+    cerr<<"couldn't find unique joint "<<jointname<<endl;
+    return(nullptr);
+  }
+  else
+  {
+    return this->bodies[ind_match];
+  }
+}
+
 
 std::string RigidBodyManipulator::getBodyOrFrameName(int body_or_frame_id)
 {

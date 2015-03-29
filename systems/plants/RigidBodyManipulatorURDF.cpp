@@ -712,7 +712,7 @@ bool parseRobot(RigidBodyManipulator* model, TiXmlElement* node, const map<strin
   for (unsigned int i = 1; i < model->bodies.size(); i++) {
     if (model->bodies[i]->parent == nullptr) {  // attach the root nodes to the world with a floating base joint
       model->bodies[i]->parent = model->bodies[0];
-      unique_ptr<DrakeJoint> joint(new RollPitchYawFloatingJoint("floating_rpy", Isometry3d::Identity()));
+      unique_ptr<DrakeJoint> joint(new RollPitchYawFloatingJoint("base", Isometry3d::Identity()));
       model->bodies[i]->setJoint(move(joint));
     }
   }

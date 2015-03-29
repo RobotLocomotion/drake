@@ -42,7 +42,7 @@ for urdf = urdfs'
     continue;
   end
   
-  q = rand(getNumPositions(r),1);
+  q = getRandomConfiguration(r);
   kinsol = doKinematics(r,q);
 
   [retval,outstr] = systemWCMakeEnv([urdf_kin_test,' ',urdffile,sprintf(' %f',q),' 2> /dev/null']);
@@ -152,7 +152,7 @@ for urdf = urdfs'
   if num_phi>0
     [phi,J] = positionConstraints(r,q);
     Jcpp = Jcpp*P;
-    valuecheck(phicpp,phi,tol);
+    valuecheck(phicpp,phi,tol/10);
     valuecheck(Jcpp,J,tol);
   end
 end
