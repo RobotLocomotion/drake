@@ -1136,7 +1136,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         if(nrhs != 5 && nrhs != 6)
         {
           mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs",
-              "Usage ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint::GravityCompensationTorqueConstraint, robot.mex_model_ptr, joint_ind, lb, ub, tspan)");
+              "Usage ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint::GravityCompensationTorqueConstraintType, robot.mex_model_ptr, joint_ind, lb, ub, tspan)");
         }
         RigidBodyManipulator* model = (RigidBodyManipulator*) getDrakeMexPointer(prhs[1]);
         Vector2d tspan;

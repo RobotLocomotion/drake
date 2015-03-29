@@ -2757,6 +2757,12 @@ void GravityCompensationTorqueConstraint::name(const double* t, std::vector<std:
 
 void GravityCompensationTorqueConstraint::bounds(const double* t, VectorXd& lb, VectorXd& ub) const
 {
-  lb = this->lb;
-  ub = this->ub;
+  if(this->isTimeValid(t))
+  {
+    lb = this->lb;
+    ub = this->ub;
+  } else {
+    lb.resize(0);
+    ub.resize(0);
+  }
 }
