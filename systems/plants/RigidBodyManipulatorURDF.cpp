@@ -7,6 +7,7 @@
 #include "tinyxml.h"
 #include "RigidBodyManipulator.h"
 #include "joints/drakeJointUtil.h"
+#include "joints/FixedJoint.h"
 #include "joints/HelicalJoint.h"
 #include "joints/PrismaticJoint.h"
 #include "joints/RevoluteJoint.h"
@@ -141,6 +142,17 @@ int findLinkIndexByJointName(RigidBodyManipulator* model, string jointname)
   return index;
 }
 
+bool parseScalarValue(TiXmlElement* node, double &val)
+{
+  const char* strval = node->FirstChild()->Value();
+  if (strval) {
+    stringstream s(strval);
+    s >> val;
+    return true;
+  }
+  return false;
+}
+
 bool parseScalarAttribute(TiXmlElement* node, const char* attribute_name, double& val)
 {
   const char* attr = node->Attribute(attribute_name);
@@ -255,7 +267,7 @@ bool parseMaterial(TiXmlElement* node, map<string, Vector4d>& materials)
     }
     materials[name] = rgba;
   } else if (!already_in_map) {
-    cerr << "ERROR: material \"" << name << "\" is used before it is defined" << endl;
+    cerr << "WARNING: material \"" << name << "\" is not a simple color material (so is currently unsupported)" << endl;
     return false;
   }
   return true;
@@ -556,9 +568,7 @@ bool parseJoint(RigidBodyManipulator* model, TiXmlElement* node)
     joint = fjoint;
   } else if (type.compare("fixed") == 0) {
     // FIXME: implement a fixed joint class
-    fjoint = new RevoluteJoint(name, Ttree, axis);
-    fjoint->setJointLimits(0, 0);
-    joint = fjoint;
+    joint = new FixedJoint(name, Ttree);
   } else if (type.compare("prismatic") == 0) {
     fjoint = new PrismaticJoint(name, Ttree, axis);
     joint = fjoint;
@@ -570,9 +580,13 @@ bool parseJoint(RigidBodyManipulator* model, TiXmlElement* node)
   }
 
   TiXmlElement* dynamics_node = node->FirstChildElement("dynamics");
-  if (dynamics_node) {
-    model->warnOnce("joint_dynamics", 
-        "Warning: joint dynamics xml tag not (re-)implemented yet; they will be ignored.");
+  if (fjoint != nullptr && dynamics_node) {
+    model->warnOnce("joint_dynamics", "Warning: joint dynamics xml tag is parsed, but not included in the dynamics methods yet.");
+  	double damping=0.0, coulomb_friction=0.0, coulomb_window=0.0;
+  	parseScalarAttribute(dynamics_node,"damping",damping);
+  	parseScalarAttribute(dynamics_node,"friction",coulomb_friction);
+  	parseScalarAttribute(dynamics_node,"coulomb_window",coulomb_window);
+  	fjoint->setDynamics(damping,coulomb_friction,coulomb_window);
   }
 
   TiXmlElement* limit_node = node->FirstChildElement("limit");
@@ -613,7 +627,7 @@ bool parseTransmission(RigidBodyManipulator* model, TiXmlElement* node)
 
   TiXmlElement* reduction_node = node->FirstChildElement("mechanicalReduction");
   double gain = 1.0;
-  if (reduction_node) sscanf(reduction_node->Value(),"%lf",&gain);
+  if (reduction_node) parseScalarValue(reduction_node, gain);
 
   RigidBodyActuator a(joint_name,model->bodies[body_index],gain);
   model->actuators.push_back(a);
@@ -660,9 +674,7 @@ bool parseRobot(RigidBodyManipulator* model, TiXmlElement* node, const map<strin
   // parse material elements
   map< string, Vector4d> materials;
   for (TiXmlElement* link_node = node->FirstChildElement("material"); link_node; link_node = link_node->NextSiblingElement("material")) {
-    if (!parseMaterial(link_node, materials)) {
-      return false;
-    }
+    parseMaterial(link_node, materials);  // accept failed material parsing
   }
   // parse link elements
   for (TiXmlElement* link_node = node->FirstChildElement("link"); link_node; link_node = link_node->NextSiblingElement("link"))

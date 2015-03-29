@@ -444,7 +444,7 @@ classdef RigidBodyWingWithControlSurface < RigidBodyWing
   
   methods (Static)
     
-    function [model, obj] = parseURDFNode(model,robotnum,node,options)
+    function [model, obj] = parseURDFNode(model,name,robotnum,node,options)
       % Parses URDF node for wing_with_control_surface
       %
       % @param model model we are buidling
@@ -455,10 +455,6 @@ classdef RigidBodyWingWithControlSurface < RigidBodyWing
       % @retval model updated model
       % @reval obj newly created RigidBodyWingWithControlSurface object
       
-      
-      name = char(node.getAttribute('name'));
-      name = regexprep(name, '\.', '_', 'preservecase');
-
       elNode = node.getElementsByTagName('parent').item(0);
       parent = findLinkId(model,char(elNode.getAttribute('link')),robotnum);
 
