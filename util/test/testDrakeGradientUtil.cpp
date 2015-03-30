@@ -75,8 +75,8 @@ void testMatGradMultMat(int ntests, bool check)
     volatile auto vol = dAB; // volatile to make sure that the result doesn't get discarded in compiler optimization
 
     if (check) {
-      auto dAB_check = Eigen::kroneckerProduct(Eigen::MatrixXd::Identity(B.cols(), B.cols()), A) * dB
-          + Eigen::kroneckerProduct(B.transpose(), Eigen::MatrixXd::Identity(A.rows(), A.rows())) * dA;
+      auto dAB_check = (Eigen::kroneckerProduct(Eigen::MatrixXd::Identity(B.cols(), B.cols()), A) * dB
+          + Eigen::kroneckerProduct(B.transpose(), Eigen::MatrixXd::Identity(A.rows(), A.rows())) * dA).eval();
 
       if (!dAB.isApprox(dAB_check, 1e-10)) {
         throw std::runtime_error("wrong.");
