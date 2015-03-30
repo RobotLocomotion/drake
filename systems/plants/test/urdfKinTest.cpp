@@ -17,9 +17,11 @@ int main(int argc, char* argv[])
   	cerr << "ERROR: Failed to load model from " << argv[1] << endl;
   	return -1;
   }
+  cout << "=======" << endl;
 
   // run kinematics with second derivatives 100 times
   VectorXd q = VectorXd::Zero(model->num_positions);
+  VectorXd v = VectorXd::Zero(model->num_velocities);
   int i;
 
   if (argc>=2+model->num_positions) {
@@ -29,7 +31,7 @@ int main(int argc, char* argv[])
 
 // for (i=0; i<model->num_dof; i++)
 // 	 q(i)=(double)rand() / RAND_MAX;
-    model->doKinematics(q,false);
+    model->doKinematicsNew(q,v);
 //  }
 
 //  const Vector4d zero(0,0,0,1);

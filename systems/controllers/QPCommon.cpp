@@ -6,12 +6,8 @@ template<int M, int N>
 void matlabToCArrayOfArrays(const mxArray *source, const int idx, const char *fieldname, double *destination)  {
   // Matlab arrays come in as column-major data. To represent a matrix in C++, as we do in our LCM messages, we need an array of arrays. But that convention results in a row-major storage, so we have to be careful about how we copy data in. 
   const mxArray *field = myGetField(source, idx, fieldname);
-  if (!mxIsDouble(field)) {
-    std::cout << fieldname << std::endl;
-    mexErrMsgTxt("Numeric data must be passed in as doubles\n");
-  }
   sizecheck(field, M, N);
-  Map<Matrix<double, M, N>>A(mxGetPr(field));
+  Map<Matrix<double, M, N>>A(mxGetPrSafe(field));
   // C is row-major, matlab is column-major
   Matrix<double, N, M> A_t = A.transpose();
   memcpy(destination, A_t.data(), sizeof(double)*M*N);
@@ -115,15 +111,15 @@ std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray 
   }
 
   const mxArray* condof = myGetField(whole_body_data, "constrained_dofs");
-  const int ncons = mxGetM(condof);
+  const int ncons = mxGetNumberOfElements(condof);
   msg->whole_body_data.num_constrained_dofs = ncons;
   msg->whole_body_data.constrained_dofs.resize(ncons);
   if (ncons > 0) {
     if (mxGetN(condof) != 1) mexErrMsgTxt("constrained dofs should be a column vector");
-    Map<VectorXd>condof_vec(mxGetPr(condof), ncons);
+    Map<VectorXd>condof_vec(mxGetPrSafe(condof), ncons);
 
     for (int i=0; i < ncons; i++) {
-      msg->whole_body_data.constrained_dofs[i] = condof_vec(i);
+      msg->whole_body_data.constrained_dofs[i] = static_cast<int32_t>(condof_vec(i));
     }
   }
 
@@ -232,9 +228,8 @@ VectorXd velocityReference(NewQPControllerData *pdata, double t, const Ref<Vecto
     }
   }
 
-  double delta_max = 1.0;
-  VectorXd qd_ref = qd_err.array().max(-delta_max);
-  qd_ref = qd_ref.array().min(delta_max);
+  VectorXd qd_ref = qd_err.array().max(-params->delta_max);
+  qd_ref = qd_ref.array().min(params->delta_max);
   return qd_ref;
 }
 
@@ -308,7 +303,10 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   // // whole_body_data
   if (qp_input->whole_body_data.num_positions != nq) mexErrMsgTxt("number of positions doesn't match num_dof for this robot");
   Map<VectorXd> q_des(qp_input->whole_body_data.q_des.data(), nq);
-  Map<VectorXd> condof(qp_input->whole_body_data.constrained_dofs.data(), qp_input->whole_body_data.num_constrained_dofs);
+  if (qp_input->whole_body_data.constrained_dofs.size() != qp_input->whole_body_data.num_constrained_dofs) {
+    mexErrMsgTxt("size of constrained dofs does not match num_constrained_dofs");
+  }
+  Map<VectorXi> condof(qp_input->whole_body_data.constrained_dofs.data(), qp_input->whole_body_data.num_constrained_dofs);
   PIDOutput pid_out = wholeBodyPID(pdata, robot_state.t, robot_state.q, robot_state.qd, q_des, &params->whole_body);
   VectorXd w_qdd = params->whole_body.w_qdd;
   applyJointPDOverride(qp_input->joint_pd_override, robot_state, pid_out, w_qdd);
@@ -398,6 +396,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   Vector3d xcom;
   // consider making all J's into row-major
   
+
   pdata->r->getCOM(xcom);
   pdata->r->getCOMJac(pdata->J);
   pdata->r->getCOMJacDot(pdata->Jdot);
