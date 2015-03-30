@@ -256,7 +256,6 @@ void getFiniteIndexes(T const & v, std::vector<int> &finite_indexes)
   }
 }
 
-
 RigidBodyManipulator::RigidBodyManipulator(int ndof, int num_featherstone_bodies, int num_rigid_body_objects, int num_rigid_body_frames)
   :  collision_model(DrakeCollision::newModel())
 {
@@ -431,6 +430,11 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
   initialized = false;
   kinematicsInit = false;
   secondDerivativesCached = 0;
+
+  gradients_cached = false;
+  velocity_kinematics_cached = false;
+  jdotV_cached = false;
+  cached_inertia_gradients_order = -1;
 }
 
 
@@ -1029,6 +1033,7 @@ void RigidBodyManipulator::doKinematicsNew(const MatrixBase<DerivedQ>& q, const 
   EIGEN_STATIC_ASSERT_VECTOR_ONLY(MatrixBase<DerivedV>);
   assert(q.rows() == num_positions);
   assert(v.rows() == num_velocities || v.rows() == 0);
+  compute_JdotV = compute_JdotV && (v.rows() > 0); // no sense in computing Jdot times v if v is not passed in
 
   if (kinematicsInit) {
     bool skip = true;
@@ -1312,6 +1317,7 @@ void RigidBodyManipulator::updateCompositeRigidBodyInertias(int gradient_order) 
   if (gradient_order > 1) {
     throw std::runtime_error("only first order gradients are available");
   }
+  checkCachedKinematicsSettings(gradient_order > 0, false, false, "updateCompositeRigidBodyInertias");
 
   if (gradient_order > cached_inertia_gradients_order) {
     for (int i = 0; i < num_bodies; i++) {
@@ -1348,6 +1354,7 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::worldMomen
     throw std::runtime_error("method requires new kinsol format");
   if (gradient_order > 1)
     throw std::runtime_error("only first order gradient is available");
+  checkCachedKinematicsSettings(gradient_order > 0, false, false, "worldMomentumMatrix");
 
   updateCompositeRigidBodyInertias(gradient_order);
 
@@ -1406,6 +1413,7 @@ GradientVar<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::worldMomentumMatrixDotT
 
   if (gradient_order > 1)
     throw std::runtime_error("only first order gradient is available");
+  checkCachedKinematicsSettings(gradient_order > 0, true, true, "worldMomentumMatrixDotTimesV");
 
   updateCompositeRigidBodyInertias(gradient_order);
 
@@ -1438,6 +1446,7 @@ GradientVar<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::worldMomentumMatrixDotT
 template <typename Scalar>
 GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::centroidalMomentumMatrix(int gradient_order, const std::set<int>& robotnum, bool in_terms_of_qdot)
 {
+  // kinematics cache checks already being done in worldMomentumMatrix.
   auto ret = worldMomentumMatrix<Scalar>(gradient_order, robotnum, in_terms_of_qdot);
 
   // transform from world frame to COM frame
@@ -1495,6 +1504,7 @@ GradientVar<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::centroidalMomentumMatri
     return ret;
   }
 
+  // kinematics cache checks already being done in worldMomentumMatrixDotTimesV
   auto ret = worldMomentumMatrixDotTimesV<Scalar>(gradient_order, robotnum);
 
   // transform from world frame to COM frame:
@@ -1545,6 +1555,7 @@ GradientVar<Scalar, SPACE_DIMENSION, 1> RigidBodyManipulator::centerOfMass(int g
 {
   if (!use_new_kinsol)
     throw std::runtime_error("method requires new kinsol format");
+  checkCachedKinematicsSettings(false, false, false, "centerOfMass"); // don't check for gradients, that will be done in centerOfMassJacobian below.
 
   int nq = num_positions;
   GradientVar<Scalar, SPACE_DIMENSION, 1> com(SPACE_DIMENSION, 1, nq, gradient_order);
@@ -1583,6 +1594,7 @@ GradientVar<Scalar, SPACE_DIMENSION, Eigen::Dynamic> RigidBodyManipulator::cente
 {
   if (!use_new_kinsol)
     throw std::runtime_error("method requires new kinsol format");
+  checkCachedKinematicsSettings(gradient_order > 0, false, false, "centerOfMassJacobian");
 
   auto A = worldMomentumMatrix<Scalar>(gradient_order, robotnum, in_terms_of_qdot);
   GradientVar<Scalar, SPACE_DIMENSION, Eigen::Dynamic> ret(SPACE_DIMENSION, A.value().cols(), num_positions, gradient_order);
@@ -1609,6 +1621,7 @@ GradientVar<Scalar, SPACE_DIMENSION, 1> RigidBodyManipulator::centerOfMassJacobi
     return ret;
   }
 
+  // kinematics cache checks are already being done in centroidalMomentumMatrixDotTimesV
   auto cmm_dot_times_v = centroidalMomentumMatrixDotTimesV<Scalar>(gradient_order, robotnum);
   GradientVar<Scalar, SPACE_DIMENSION, 1> ret(SPACE_DIMENSION, 1, num_positions, gradient_order);
   double total_mass = getMass(robotnum);
@@ -2022,6 +2035,7 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJ
     if (gradient_order > 1) {
       throw std::runtime_error("gradient order not supported");
     }
+    checkCachedKinematicsSettings(gradient_order > 0, false, false, "geometricJacobian");
 
     KinematicPath kinematic_path;
     findKinematicPath(kinematic_path, base_body_or_frame_ind, end_effector_body_or_frame_ind);
@@ -2175,6 +2189,8 @@ GradientVar<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::geometricJacobianDotTim
     throw std::runtime_error("method requires new kinsol format");
   if (gradient_order > 1)
     throw std::runtime_error("only first order gradient available");
+  checkCachedKinematicsSettings(gradient_order > 0, true, true, "geometricJacobianDotTimesV");
+
   GradientVar<Scalar, TWIST_SIZE, 1> ret(TWIST_SIZE, 1, num_positions, gradient_order);
 
   int base_body_ind = parseBodyOrFrameID(base_body_or_frame_ind);
@@ -2194,6 +2210,7 @@ GradientVar<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::relativeTwist(int base_
 {
   if (!use_new_kinsol)
     throw std::runtime_error("method requires new kinsol format");
+  checkCachedKinematicsSettings(gradient_order > 0, true, false, "relativeTwist");
 
   GradientVar<Scalar, TWIST_SIZE, 1> ret(TWIST_SIZE, 1, num_positions, gradient_order);
 
@@ -2220,11 +2237,13 @@ GradientVar<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::transformSpatialAcceler
   if (!use_new_kinsol)
     throw std::runtime_error("method requires new kinsol format");
 
+  int gradient_order = spatial_acceleration.maxOrder();
+  checkCachedKinematicsSettings(gradient_order > 0, true, true, "transformSpatialAcceleration");
+
   if (old_expressed_in_body_or_frame_ind == new_expressed_in_body_or_frame_ind) {
     return spatial_acceleration;
   }
 
-  int gradient_order = spatial_acceleration.maxOrder();
   GradientVar<Scalar, TWIST_SIZE, 1> ret(TWIST_SIZE, 1, num_positions, gradient_order);
 
   auto twist_of_body_wrt_base = relativeTwist<Scalar>(base_ind, body_ind, old_expressed_in_body_or_frame_ind, gradient_order);
@@ -2249,6 +2268,7 @@ GradientVar<Scalar, SPACE_DIMENSION + 1, SPACE_DIMENSION + 1> RigidBodyManipulat
 {
   if (!use_new_kinsol)
     throw std::runtime_error("method requires new kinsol format");
+  checkCachedKinematicsSettings(gradient_order > 0, false, false, "relativeTransform");
 
   int nq = num_positions;
   GradientVar<Scalar, SPACE_DIMENSION + 1, SPACE_DIMENSION + 1> ret(SPACE_DIMENSION + 1, SPACE_DIMENSION + 1, nq, gradient_order);
@@ -2478,13 +2498,11 @@ void RigidBodyManipulator::forwarddJac(const int body_or_frame_id, const MatrixB
 template<typename Scalar>
 GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::massMatrix(int gradient_order)
 {
-  if (!use_new_kinsol) {
+  if (!use_new_kinsol)
     throw std::runtime_error("method requires new kinsol format");
-  }
-
-  if (gradient_order > 1) {
+  if (gradient_order > 1)
     throw std::runtime_error("only first order gradients are available");
-  }
+  checkCachedKinematicsSettings(gradient_order > 0, false, false, "massMatrix");
 
   int nv = num_velocities;
   int nq = num_positions;
@@ -2556,13 +2574,11 @@ GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(
     std::map<int, std::unique_ptr<GradientVar<Scalar, TWIST_SIZE, 1> > >& f_ext,
     GradientVar<Scalar, Eigen::Dynamic, 1>* vd, int gradient_order)
 {
-  if (!use_new_kinsol) {
+  if (!use_new_kinsol)
     throw std::runtime_error("method requires new kinsol format");
-  }
-
-  if (gradient_order > 1) {
+  if (gradient_order > 1)
     throw std::runtime_error("only first order gradients are available");
-  }
+  checkCachedKinematicsSettings(gradient_order > 0, true, true, "inverseDynamics");
 
   updateCompositeRigidBodyInertias(gradient_order);
 
@@ -2690,19 +2706,16 @@ GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(
 template <typename DerivedPoints>
 GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, DerivedPoints::ColsAtCompileTime> RigidBodyManipulator::forwardKinNew(const MatrixBase<DerivedPoints>& points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type, int gradient_order)
 {
-  if (!use_new_kinsol) {
+  if (!use_new_kinsol)
     throw std::runtime_error("method requires new kinsol format");
-  }
-  if (gradient_order > 2) {
+  if (gradient_order > 2)
     throw std::runtime_error("only first and second order gradients are available");
-  }
-  if (gradient_order > 1 && !gradients_cached) {
-    throw std::runtime_error("must call doKinematics with compute_gradients set to true to compute forwardKin second derivatives");
-  }
 
   bool compute_jacobian_without_transform_gradients = gradient_order > 0 && !gradients_cached;
   int x_gradient_order = compute_jacobian_without_transform_gradients ? 0 : std::min(gradient_order, 1);
   int J_gradient_order = gradient_order > 1 ? gradient_order - 1 : 0;
+
+  checkCachedKinematicsSettings(x_gradient_order > 0, false, false, "forwardKinNew"); // rely on check in forwardJacV for Jacobian gradients
 
   int nq = num_positions;
   int npoints = static_cast<int>(points.cols());
@@ -2767,10 +2780,9 @@ GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwar
 {
   if (!use_new_kinsol)
     throw std::runtime_error("method requires new kinsol format");
-
-  if (gradient_order > 1) {
+  if (gradient_order > 1)
     throw std::runtime_error("only first order gradient is available");
-  }
+  checkCachedKinematicsSettings(gradient_order > 0, false, false, "forwardJacV");
 
   int nq = num_positions;
   int nv = num_velocities;
@@ -2878,6 +2890,7 @@ GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwar
   }
   if (gradient_order > 1)
     throw std::runtime_error("Only first order gradients supported");
+  checkCachedKinematicsSettings(gradient_order > 0, false, false, "forwardKinPositionGradient");
 
   int nq = num_positions;
   auto Tinv = relativeTransform<Scalar>(current_body_or_frame_ind, new_body_or_frame_ind, gradient_order);
@@ -2918,9 +2931,9 @@ GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, 1> RigidBodyManipula
     return ret;
   }
 
-  if (gradient_order > 1) {
+  if (gradient_order > 1)
     throw std::runtime_error("only first order gradients are available");
-  }
+  checkCachedKinematicsSettings(gradient_order > 0, true, true, "forwardJacDotTimesV");
 
   typedef typename DerivedPoints::Scalar Scalar;
   int npoints = static_cast<int>(points.cols());
@@ -3412,6 +3425,18 @@ void RigidBodyManipulator::positionConstraints(MatrixBase<DerivedA> & phi, Matri
     phi.segment(3*i, 3) = bp_bodyA_pos1+bpTw_trans;
     J.block(3*i, 0, 3, nq) = dbp_bodyA_pos1dq+dbpTw_trans1dq;
   }
+}
+
+void RigidBodyManipulator::checkCachedKinematicsSettings(bool kinematics_gradients_required, bool velocity_kinematics_required, bool jdot_times_v_required, const std::string& method_name)
+{
+  if (!kinematicsInit)
+    throw runtime_error((method_name + " requires doKinematics to have been called.").c_str());
+  if (kinematics_gradients_required && ! gradients_cached)
+    throw runtime_error((method_name + " requires kinematics gradients, which have not been cached. Please call doKinematics with compute_gradients set to true.").c_str());
+  if (velocity_kinematics_required && ! velocity_kinematics_cached)
+    throw runtime_error((method_name + " requires velocity kinematics, which have not been cached. Please call doKinematics with a velocity vector.").c_str());
+  if (jdot_times_v_required && !jdotV_cached)
+    throw runtime_error((method_name + " requires Jdot times v, which has not been cached. Please call doKinematics with a velocity vector and compute_JdotV set to true.").c_str());
 }
 
 // explicit instantiations (required for linking):

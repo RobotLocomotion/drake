@@ -332,6 +332,7 @@ private:
   void accumulateSecondOrderContactJacobian(const size_t bodyInd, MatrixXd const & bodyPoints, std::vector<size_t> const & cindA, std::vector<size_t> const & cindB, MatrixXd & dJ);
 
   int parseBodyOrFrameID(const int body_or_frame_id, Matrix4d* Tframe = nullptr);
+  void checkCachedKinematicsSettings(bool kinematics_gradients_required, bool velocity_kinematics_required, bool jdot_times_v_required, const std::string& method_name);
 
   // variables for featherstone dynamics
   std::vector<VectorXd> S;

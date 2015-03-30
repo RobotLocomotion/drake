@@ -14,6 +14,10 @@ if (eigen3_FOUND)
 
   add_executable(urdfManipulatorDynamicsTest urdfManipulatorDynamicsTest.cpp)
   target_link_libraries(urdfManipulatorDynamicsTest drakeRBM)
+  
+  add_executable(testKinematicsCacheChecks testKinematicsCacheChecks.cpp)
+  target_link_libraries(testKinematicsCacheChecks drakeRBM)
+  add_test(NAME testKinematicsCacheChecks COMMAND testKinematicsCacheChecks)
 endif()
 
 macro(add_ik_cpp)
