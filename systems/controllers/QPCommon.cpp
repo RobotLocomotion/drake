@@ -541,8 +541,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   // VectorXd body_vdot;
   Vector4d orig1 = Vector4d::Zero();
   orig1(3) = 1.0;
-  Matrix<double,3,Eigen::Dynamic> orig(3,1);
-  orig.setZero();
+  Vector3d orig = Vector3d::Zero();
   int equality_ind = 6+neps;
   MatrixXd Jb(6,nq);
   Vector6d Jbdotv;	
