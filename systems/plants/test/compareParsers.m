@@ -1,7 +1,7 @@
 function compareParsers(urdfs)
 
 if nargin<1 || isempty(urdfs)
-  urdfs = allURDFS();
+  urdfs = allURDFs();
 elseif ~iscell(urdfs)
   urdfs = {urdfs};
 end
@@ -13,12 +13,13 @@ for urdf=urdfs'
   warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
   warning('off','Drake:RigidBodyManipulator:ReplacedCylinder');
   try 
-    r = RigidBodyManipulator(urdffile,struct('floating',true,'use_new_kinsol',true));
+    r = RigidBodyManipulator(urdffile,struct('floating',false,'use_new_kinsol',true));
   catch ex
     if strncmp(ex.identifier,'Drake:MissingDependency:',24)
       disp(' skipping due to a missing dependency'); 
       continue;
     end
+    rethrow(ex);
   end
   
   if ~isempty(r.param_db)
@@ -26,5 +27,5 @@ for urdf=urdfs'
     continue;
   end
   
-  compareParsersmex(r.mex_model_ptr,urdfs{1});
+  compareParsersmex(r.mex_model_ptr,urdfs{1},'fixed');
 end

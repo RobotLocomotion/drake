@@ -2621,6 +2621,9 @@ GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(
     throw std::runtime_error("only first order gradients are available");
   }
 
+  if (!jdotV_cached)
+  	throw std::runtime_error("you must call doKinematicsNew with compute_JdotV set to true");
+
   updateCompositeRigidBodyInertias(gradient_order);
 
   int nq = num_positions;

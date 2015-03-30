@@ -25,20 +25,6 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   if (nrhs>2) mxGetString(prhs[2],floating_base_type,100);
   RigidBodyManipulator* cpp_model = new RigidBodyManipulator(urdf_file,floating_base_type);
 
-/*
-  for (int i=0; i<cpp_model->num_bodies; i++) {
-  	if (cpp_model->bodies[i]->hasParent())
-  		cout << cpp_model->bodies[i]->getJoint().getName() << endl;
-  }
-
-  cout << " --- " << endl;
-
-  for (int i=0; i<matlab_model->num_bodies; i++) {
-  	if (matlab_model->bodies[i]->hasParent())
-  		cout << matlab_model->bodies[i]->getJoint().getName() << endl;
-  }
-*/
-
   // Compute coordinate transform between the two models (in case they are not identical)
   MatrixXd P = MatrixXd::Zero(cpp_model->num_positions,matlab_model->num_positions);  // projection from the coordinates of matlab_model to cpp_model
   for (int i=0; i<cpp_model->num_bodies; i++) {
@@ -49,6 +35,9 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   			P(cpp_model->bodies[i]->position_num_start+j,b->position_num_start+j) = 1.0;
   		}
   	}
+  }
+  if (!P.isApprox(MatrixXd::Identity(matlab_model->num_positions,matlab_model->num_positions))) {
+  	mexErrMsgTxt("ERROR: coordinates don't match");
   }
 
   std::default_random_engine generator;  // note: gets the same seed every time, would have to seed it manually
@@ -73,14 +62,34 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 			matlab_model->setUseNewKinsol(false);
 			cpp_model->setUseNewKinsol(false);
 
-			matlab_model->doKinematics(matlab_q,false,matlab_v);
-			cpp_model->doKinematics(cpp_q,false,cpp_v);
+			matlab_model->doKinematics(matlab_q,true,matlab_v);
+			cpp_model->doKinematics(cpp_q,true,cpp_v);
 
 			matlab_model->setUseNewKinsol(true);
 			cpp_model->setUseNewKinsol(true);
 
-			matlab_model->doKinematicsNew(matlab_q,matlab_v);
-			cpp_model->doKinematicsNew(cpp_q,cpp_v);
+			matlab_model->doKinematicsNew(matlab_q,matlab_v,true,true);
+			cpp_model->doKinematicsNew(cpp_q,cpp_v,true,true);
+		}
+
+		{ // compare H, C, and B
+		  map<int, unique_ptr<GradientVar<double, TWIST_SIZE, 1>> > f_ext;
+
+		  auto matlab_H = matlab_model->massMatrix<double>();
+		  auto cpp_H = cpp_model->massMatrix<double>();
+		  if (!matlab_H.value().isApprox(cpp_H.value(),1e-8))
+		  	mexErrMsgTxt("ERROR: H doesn't match");
+
+		  auto matlab_C = matlab_model->inverseDynamics(f_ext);
+		  auto cpp_C = cpp_model->inverseDynamics(f_ext);
+		  if (!matlab_C.value().isApprox(cpp_C.value(),1e-8)) {
+		  	cout << "matlab C: " << matlab_C.value().transpose() << endl;
+		  	cout << "cpp C   : " << cpp_C.value().transpose() << endl;
+		  	mexErrMsgTxt("ERROR: C doesn't match");
+		  }
+
+		  if (!matlab_model->B.isApprox(cpp_model->B,1e-8))
+		  	mexErrMsgTxt("ERROR: B doesn't match");
 		}
 
 		{ // compare joint limits
