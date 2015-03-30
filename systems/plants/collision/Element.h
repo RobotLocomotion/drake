@@ -27,6 +27,8 @@ namespace DrakeCollision
         : DrakeShapes::Element(geometry, T_element_to_local), id((ElementId) this) 
       {};
 
+      virtual ~Element(){};
+
       virtual Element* clone() const;
 
       ElementId getId() const;

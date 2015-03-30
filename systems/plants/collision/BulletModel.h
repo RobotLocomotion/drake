@@ -43,6 +43,9 @@ namespace DrakeCollision
   {
     public:
       BulletModel() {};
+
+      virtual ~BulletModel(){};
+
       //Required member functions for Model interface
       virtual void updateModel();
 

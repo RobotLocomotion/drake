@@ -25,12 +25,11 @@ namespace DrakeShapes
       Geometry();
       Geometry(const Geometry& other);
 
+      virtual ~Geometry() {}
+
       virtual Geometry* clone() const;
 
       const Shape getShape() const;
-
-      // http://stackoverflow.com/questions/461203/when-to-use-virtual-destructors
-      virtual ~Geometry() {}
 
     protected:
       Geometry(Shape shape);
@@ -40,6 +39,7 @@ namespace DrakeShapes
   class DLLEXPORT_drakeShapes Sphere: public Geometry {
     public:
       Sphere(double radius);
+      virtual ~Sphere() {}
       virtual Sphere* clone() const;
       double radius;
   };
@@ -47,6 +47,7 @@ namespace DrakeShapes
   class DLLEXPORT_drakeShapes Box : public Geometry {
     public:
       Box(const Eigen::Vector3d& size);
+      virtual ~Box() {}
       virtual Box* clone() const;
       Eigen::Vector3d size;
   };
@@ -54,6 +55,7 @@ namespace DrakeShapes
   class DLLEXPORT_drakeShapes Cylinder : public Geometry {
     public:
       Cylinder(double radius, double length);
+      virtual ~Cylinder() {}
       virtual Cylinder* clone() const;
       double radius;
       double length;
@@ -62,6 +64,7 @@ namespace DrakeShapes
   class DLLEXPORT_drakeShapes Capsule : public Geometry {
     public:
       Capsule(double radius, double length);
+      virtual ~Capsule() {}
       virtual Capsule* clone() const;
       double radius;
       double length;
@@ -71,6 +74,7 @@ namespace DrakeShapes
     public:
       Mesh(const std::string& filename);
       Mesh(const std::string& filename, const std::string& resolved_filename);
+      virtual ~Mesh() {}
       virtual Mesh* clone() const;
 
       std::string filename;
@@ -83,6 +87,7 @@ namespace DrakeShapes
   class DLLEXPORT_drakeShapes MeshPoints : public Geometry {
     public:
       MeshPoints(const Eigen::Matrix3Xd& points);
+      virtual ~MeshPoints() {}
       virtual MeshPoints* clone() const;
       Eigen::Matrix3Xd points;
   };
