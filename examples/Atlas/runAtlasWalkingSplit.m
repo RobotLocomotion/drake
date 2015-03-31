@@ -77,7 +77,7 @@ sys = mimoCascade(sys,v,[],[],output_select);
 % Simulate and draw the result
 T = min(walking_plan_data.duration + 1, 30);
 ytraj = simulate(sys, [0, T], x0, struct('gui_control_interface', true));
-[com, rms_com] = atlasUtil.plotWalkingTraj(r, ytraj, walking_plan_data)
+[com, rms_com] = atlasUtil.plotWalkingTraj(r, ytraj, walking_plan_data);
 
 if ~rangecheck(rms_com, 0, 0.01);
   error('Drake:runAtlasWalkingSplit:BadCoMTracking', 'Center-of-mass during execution differs substantially from the plan.');
