@@ -3508,6 +3508,11 @@ template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, 1> RigidBodyManipulat
 template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, 1> RigidBodyManipulator::forwardJacDotTimesV(const MatrixBase< Matrix<double, 3, 1> >&, int, int, int, int);
 template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::massMatrix(int);
 template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(std::map<int, std::unique_ptr<GradientVar<double, TWIST_SIZE, 1> > >& f_ext, GradientVar<double, Eigen::Dynamic, 1>* vd, int);
+template DLLEXPORT_RBM GradientVar<double, TWIST_SIZE, 1> RigidBodyManipulator::relativeTwist<double>(int, int, int, int);
+template DLLEXPORT_RBM GradientVar<double, 6, Dynamic> RigidBodyManipulator::worldMomentumMatrix<double>(int, const std::set<int>&, bool);
+template DLLEXPORT_RBM GradientVar<double, 6, 1> RigidBodyManipulator::transformSpatialAcceleration<double>(GradientVar<double, 6, 1> const&, int, int, int, int);
+template DLLEXPORT_RBM GradientVar<double, 6, 1> RigidBodyManipulator::worldMomentumMatrixDotTimesV<double>(int, const std::set<int>&);
+
 
 template DLLEXPORT_RBM void RigidBodyManipulator::HandC(MatrixBase<VectorXd> const &, MatrixBase<VectorXd> const &, MatrixBase< Map<MatrixXd> > * const, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<VectorXd> > &, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > * const);
 template DLLEXPORT_RBM void RigidBodyManipulator::HandC(MatrixBase<VectorXd> const &, MatrixBase<VectorXd> const &, MatrixBase< MatrixXd > * const, MatrixBase< MatrixXd > &, MatrixBase< VectorXd > &, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > * const);
