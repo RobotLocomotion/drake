@@ -10,6 +10,8 @@ namespace DrakeCollision
 
   class ResultCollector {
     public:
+      virtual ~ResultCollector(){};
+
       virtual void addPointPairResult(const PointPair& result);
         
       inline void addSingleResult(const ElementId idA,
@@ -36,6 +38,8 @@ namespace DrakeCollision
   class BulletResultCollector : public ResultCollector, public btCollisionWorld::ContactResultCallback
   {
     public:
+      virtual ~BulletResultCollector(){};
+
       using ResultCollector::addSingleResult;
 
       BulletResultCollector() : curr_bodyA_idx(-1), curr_bodyB_idx(-1) {};
