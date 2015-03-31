@@ -17,7 +17,7 @@ if (eigen3_FOUND)
   
   add_executable(testKinematicsCacheChecks testKinematicsCacheChecks.cpp)
   target_link_libraries(testKinematicsCacheChecks drakeRBM)
-  add_test(NAME testKinematicsCacheChecks COMMAND testKinematicsCacheChecks)
+  add_test(NAME testKinematicsCacheChecks WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}" COMMAND testKinematicsCacheChecks)
 endif()
 
 macro(add_ik_cpp)

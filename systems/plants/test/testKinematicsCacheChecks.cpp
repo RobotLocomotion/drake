@@ -83,7 +83,7 @@ void performChecks(RigidBodyManipulator& model, int gradient_order, const CheckS
 int main()
 {
   std::unique_ptr<RigidBodyManipulator> model(new RigidBodyManipulator("examples/Atlas/urdf/atlas_minimal_contact.urdf"));
-  if(!model)
+  if (model == nullptr)
   {
     cerr<<"ERROR: Failed to load model"<<endl;
   }
