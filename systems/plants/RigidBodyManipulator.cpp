@@ -3247,6 +3247,58 @@ int RigidBodyManipulator::findLinkId(string linkname, int robot)
   }
 }
 
+int RigidBodyManipulator::findJointId(string jointname, int robot)
+{
+  std::transform(jointname.begin(), jointname.end(), jointname.begin(), ::tolower); // convert to lower case
+
+  vector<bool> name_match;
+  name_match.resize(this->num_bodies);
+  for(int i = 0;i<this->num_bodies;i++)
+  {
+
+    string lower_jointname = this->bodies[i]->jointname;
+    std::transform(lower_jointname.begin(), lower_jointname.end(), lower_jointname.begin(), ::tolower); // convert to lower case
+    if(lower_jointname.find(jointname) != string::npos)
+    {
+      name_match[i] = true;
+    }
+    else
+    {
+      name_match[i] = false;
+    }
+  }
+  if(robot != -1)
+  {
+    for(int i = 0;i<this->num_bodies;i++)
+    {
+      if(name_match[i])
+      {
+        name_match[i] = this->bodies[i]->robotnum == robot;
+      }
+    }
+  }
+  
+  int num_match = 0;
+  int ind_match = -1;
+  for(int i = 0;i<this->num_bodies;i++)
+  {
+    if(name_match[i])
+    {
+      num_match++;
+      ind_match = i;
+    }
+  }
+  if(num_match != 1)
+  {
+    cerr<<"couldn't find unique link "<<jointname<<endl;
+    return(EXIT_FAILURE);
+  }
+  else
+  {
+    return ind_match;
+  }
+}
+
 std::string RigidBodyManipulator::getBodyOrFrameName(int body_or_frame_id)
 {
   if (body_or_frame_id>=0) {
