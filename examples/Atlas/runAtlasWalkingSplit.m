@@ -15,8 +15,8 @@ checkDependency('lcmgl');
 
 if nargin<1, example_options=struct(); end
 example_options = applyDefaults(example_options, struct('use_bullet', false,...
-                                                        'navgoal', [1.5;0;0;0;0;0],...
-                                                        'num_steps', 6,...
+                                                        'navgoal', [1.0;0;0;0;0;0],...
+                                                        'num_steps', 4,...
                                                         'terrain', RigidBodyFlatTerrain));
 
 % silence some warnings
@@ -60,23 +60,28 @@ lfoot_navgoal(1:3) = lfoot_navgoal(1:3) + R*[0;0.13;0];
 goal_pos = struct('right', rfoot_navgoal, 'left', lfoot_navgoal);
 footstep_plan = r.planFootsteps(x0(1:nq), goal_pos, [], struct('step_params', struct('max_num_steps', example_options.num_steps, 'max_forward_step', 0.4)));
 
+% Generate a dynamic walking plan
 walking_plan_data = r.planWalkingZMP(x0(1:r.getNumPositions()), footstep_plan);
 
+% Build our controller and plan eval objects
 control = atlasControllers.InstantaneousQPController(r, []);
 planeval = atlasControllers.AtlasPlanEval(r, walking_plan_data);
-
 plancontroller = atlasControllers.AtlasPlanEvalAndControlSystem(r, control, planeval);
-
 sys = feedback(r, plancontroller);
+
+% Add a visualizer
 output_select(1).system=1;
 output_select(1).output=1;
 sys = mimoCascade(sys,v,[],[],output_select);
 
+% Simulate and draw the result
 T = min(walking_plan_data.duration + 1, 30);
-
-% profile on
 ytraj = simulate(sys, [0, T], x0, struct('gui_control_interface', true));
-% profile viewer
+[com, rms_com] = atlasUtil.plotWalkingTraj(r, ytraj, walking_plan_data)
+
+if ~rangecheck(rms_com, 0, 0.01);
+  error('Drake:runAtlasWalkingSplit:BadCoMTracking', 'Center-of-mass during execution differs substantially from the plan.');
+end
 
 v.playback(ytraj, struct('slider', true));
 
