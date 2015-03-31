@@ -33,6 +33,8 @@ namespace DrakeCollision
   BulletCollisionWorldWrapper::BulletCollisionWorldWrapper()
     : bt_collision_configuration(), bt_collision_broadphase(), filter_callback()
   {
+    bt_collision_configuration.setConvexConvexMultipointIterations(8,8);
+    bt_collision_configuration.setPlaneConvexMultipointIterations(8,8);
     bt_collision_dispatcher = unique_ptr<btCollisionDispatcher>(new btCollisionDispatcher(&bt_collision_configuration));
     bt_collision_world = unique_ptr<btCollisionWorld>(new btCollisionWorld(bt_collision_dispatcher.get(), &bt_collision_broadphase, &bt_collision_configuration));
 
@@ -200,6 +202,68 @@ namespace DrakeCollision
       }
     }
     return id;
+  }
+
+  bool BulletModel::potentialCollisionPoints(bool use_margins, vector<PointPair> & potential_collisions)
+  {
+    BulletCollisionWorldWrapper& bt_world = getBulletWorld(use_margins);
+    BulletResultCollector c;
+    bt_world.bt_collision_world->performDiscreteCollisionDetection();
+    int numManifolds = bt_world.bt_collision_world->getDispatcher()->getNumManifolds();
+    for (int i=0;i<numManifolds;i++)
+    {
+      btPersistentManifold* contactManifold =  bt_world.bt_collision_world->getDispatcher()->getManifoldByIndexInternal(i);
+      const btCollisionObject* obA = contactManifold->getBody0();
+      const btCollisionObject* obB = contactManifold->getBody1();
+
+      auto elementA = static_cast< Element*  >(obA->getUserPointer());
+      auto elementB = static_cast< Element*  >(obB->getUserPointer());
+
+      DrakeShapes::Shape shapeA = elementA->getShape();
+      DrakeShapes::Shape shapeB = elementB->getShape();
+
+      ElementId idA = elementA->getId();
+      ElementId idB = elementB->getId();
+
+      double marginA = 0;
+      double marginB = 0;
+
+      if (shapeA ==  DrakeShapes::MESH || shapeA ==  DrakeShapes::BOX) { 
+        marginA = obA->getCollisionShape()->getMargin();
+      }
+      if (shapeB == DrakeShapes::MESH || shapeB == DrakeShapes::BOX) { 
+        marginB = obB->getCollisionShape()->getMargin();
+      }
+      int numContacts = contactManifold->getNumContacts();
+
+      for (int j=0;j<numContacts;j++)
+      {        
+        btManifoldPoint& pt = contactManifold->getContactPoint(j);
+        const btVector3& normalOnB = pt.m_normalWorldOnB;
+        const btVector3& pointOnAinWorld = pt.getPositionWorldOnA() + normalOnB*marginA;
+        const btVector3& pointOnBinWorld = pt.getPositionWorldOnB() - normalOnB*marginB;
+        const btVector3 pointOnElemA = obA->getWorldTransform().invXform(pointOnAinWorld);
+        const btVector3 pointOnElemB = obB->getWorldTransform().invXform(pointOnBinWorld);
+
+        VectorXd pointOnA_1(4);
+        VectorXd pointOnB_1(4);
+
+        pointOnA_1 << toVector3d(pointOnElemA), 1.0;
+        pointOnB_1 << toVector3d(pointOnElemB), 1.0;
+
+        Vector3d pointOnA;
+        Vector3d pointOnB;
+
+        pointOnA << elements[idA]->getLocalTransform().topRows(3) * pointOnA_1;
+        pointOnB << elements[idB]->getLocalTransform().topRows(3) * pointOnB_1;
+
+        c.addSingleResult(idA, idB, pointOnA, pointOnB, toVector3d(normalOnB),(double) pt.getDistance() + marginA + marginB);
+      }
+    }   
+    
+    potential_collisions = c.getResults();
+
+    return potential_collisions.size() > 0;
   }
 
   bool BulletModel::updateElementWorldTransform(const ElementId id, 

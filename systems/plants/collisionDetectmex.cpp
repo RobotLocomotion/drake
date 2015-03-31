@@ -38,6 +38,8 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   //cout << "collisionDetectmex: Parse active_bodies START" << endl;
   // END_DEBUG
   const mxArray* active_collision_options = prhs[2];
+  const mxArray* allow_multiple_contacts = prhs[1];
+
   const mxArray* body_idx = mxGetField(active_collision_options,0,"body_idx");
   if (body_idx != NULL) {
     //DEBUG
@@ -82,28 +84,26 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   vector<int> bodyA_idx, bodyB_idx;
   MatrixXd ptsA, ptsB, normals, JA, JB, Jd;
   VectorXd dist;
-  // DEBUG
-  //cout << "collisionDetectmex: Call collisionDetect START" << endl;
-  // END_DEBUG
+
+  const bool multiple_contacts = mxIsLogicalScalarTrue(allow_multiple_contacts);
   if (active_bodies_idx.size() > 0) {
     if (active_group_names.size() > 0) {
-      model-> collisionDetect(dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx,
+      model->collisionDetect(dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx,
                               active_bodies_idx,active_group_names);
     } else {
-      model-> collisionDetect(dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx,
+      model->collisionDetect(dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx,
                               active_bodies_idx);
     }
   } else {
-    if (active_group_names.size() > 0) {
-      model-> collisionDetect(dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx,
+    if(multiple_contacts) {
+      model->potentialCollisions(dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx);
+    } else if (active_group_names.size() > 0) {
+      model->collisionDetect(dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx,
                              active_group_names);
     } else {
-      model-> collisionDetect(dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx);
+      model->collisionDetect(dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx);
     }
   }
-  // DEBUG
-  //cout << "collisionDetectmex: Call collisionDetect END" << endl;
-  // END_DEBUG
 
   vector<int32_T> idxA(bodyA_idx.size());
   transform(bodyA_idx.begin(),bodyA_idx.end(),idxA.begin(),

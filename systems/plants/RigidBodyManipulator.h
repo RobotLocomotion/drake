@@ -257,6 +257,13 @@ public:
                      MatrixXd& ptsA, MatrixXd& ptsB,
                         bool use_margins = true);
 
+  bool potentialCollisions(Eigen::VectorXd& phi,
+                           Eigen::MatrixXd& normal,
+                           Eigen::MatrixXd& xA,
+                           Eigen::MatrixXd& xB,
+                           std::vector<int>& bodyA_idx,
+                           std::vector<int>& bodyB_idx, 
+                           bool use_margins = true);
   //bool closestDistanceAllBodies(VectorXd& distance, MatrixXd& Jd);
 
   void warnOnce(const std::string& id, const std::string& msg);

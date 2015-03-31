@@ -41,6 +41,11 @@ namespace DrakeCollision
           const bool use_margins,
           std::vector<PointPair>& closest_points)
       { return false; };
+
+      virtual bool potentialCollisionPoints(const bool use_margins,
+          std::vector<PointPair> &potential_collisions)
+      { return false; };
+
       //
       // Performs raycasting collision detecting (like a LIDAR / laser rangefinder)
       //

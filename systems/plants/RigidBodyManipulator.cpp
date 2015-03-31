@@ -676,6 +676,45 @@ bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
   return collisionDetect(phi, normal, xA, xB, bodyA_idx, bodyB_idx, ids_to_check, use_margins);
 }
 
+bool RigidBodyManipulator::potentialCollisions(VectorXd& phi,
+                                            MatrixXd& normal,
+                                            MatrixXd& xA,
+                                            MatrixXd& xB,
+                                            vector<int>& bodyA_idx,
+                                            vector<int>& bodyB_idx,
+                                            bool use_margins)
+{
+  
+  vector<DrakeCollision::PointPair> potential_collisions;
+  bool points_found = collision_model->potentialCollisionPoints(use_margins, potential_collisions);
+  size_t num_potential_collisions = potential_collisions.size();
+
+  phi = VectorXd::Zero(num_potential_collisions);
+  normal = MatrixXd::Zero(3, num_potential_collisions);
+  xA = MatrixXd(3, num_potential_collisions);
+  xB = MatrixXd(3, num_potential_collisions);
+
+  bodyA_idx.clear();
+  bodyB_idx.clear();
+
+  Vector3d ptA, ptB, n;
+  double distance;
+
+  for (int i = 0; i < potential_collisions.size(); i++) {
+    const RigidBody::CollisionElement* elementA = dynamic_cast<const RigidBody::CollisionElement*>(collision_model->readElement(potential_collisions[i].getIdA()));
+    const RigidBody::CollisionElement* elementB = dynamic_cast<const RigidBody::CollisionElement*>(collision_model->readElement(potential_collisions[i].getIdB()));
+    potential_collisions[i].getResults(ptA, ptB, n, distance);
+    xA.col(i) = ptA;
+    xB.col(i) = ptB;
+    normal.col(i) = n;
+    phi[i] = distance;
+    bodyA_idx.push_back(elementA->getBody()->body_index);
+    bodyB_idx.push_back(elementB->getBody()->body_index);
+  }
+
+  return points_found;
+}
+
 bool RigidBodyManipulator::allCollisions(vector<int>& bodyA_idx,
                                          vector<int>& bodyB_idx,
                                          MatrixXd& xA_in_world, MatrixXd& xB_in_world,
