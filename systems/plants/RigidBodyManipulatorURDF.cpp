@@ -142,25 +142,12 @@ int findLinkIndexByJointName(RigidBodyManipulator* model, string jointname)
   return index;
 }
 
-void parseScalarDouble(string str, double& val)
-{
-	// todo: make this more robust...
-	std::transform(str.begin(), str.end(), str.begin(), ::tolower);
-	if (str.compare("inf")==0) {
-		val = std::numeric_limits<double>::infinity();
-	} else if (str.compare("-inf")==0) {
-		val = std::numeric_limits<double>::infinity();
-	} else {
-    stringstream s(str);
-    s >> val;
-	}
-}
-
 bool parseScalarValue(TiXmlElement* node, double &val)
 {
   const char* strval = node->FirstChild()->Value();
   if (strval) {
-  	parseScalarDouble(strval,val);
+    stringstream s(strval);
+    s >> val;
     return true;
   }
   return false;
@@ -170,8 +157,9 @@ bool parseScalarAttribute(TiXmlElement* node, const char* attribute_name, double
 {
   const char* attr = node->Attribute(attribute_name);
   if (attr) {
-  	parseScalarDouble(attr,val);
-  	return true;
+    stringstream s(attr);
+    s >> val;
+    return true;
   }
   return false;
 }
@@ -181,7 +169,6 @@ bool parseVectorAttribute(TiXmlElement* node, const char* attribute_name, Vector
 {
   const char* attr = node->Attribute(attribute_name);
   if (attr) {
-  	// todo: handle inf here, too?
     stringstream s(attr);
     s >> val(0) >> val(1) >> val(2);
     return true;
@@ -193,7 +180,6 @@ bool parseVectorAttribute(TiXmlElement* node, const char* attribute_name, Vector
 {
   const char* attr = node->Attribute(attribute_name);
   if (attr) {
-  	// todo: handle inf here, too?
     stringstream s(attr);
     s >> val(0) >> val(1) >> val(2) >> val(3);
     return true;
