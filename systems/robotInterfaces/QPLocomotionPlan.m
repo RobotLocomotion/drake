@@ -167,20 +167,35 @@ classdef QPLocomotionPlan < QPControllerPlan
 
       end
       assert(pelvis_has_tracking, 'Expecting a link_constraints block for the pelvis');
-
+      
       supp = obj.supports(supp_idx);
-
-      qp_input.support_data = struct('body_id', cell(1, length(supp.bodies)),...
-                                     'contact_pts', cell(1, length(supp.bodies)),...
-                                     'support_logic_map', cell(1, length(supp.bodies)),...
-                                     'mu', cell(1, length(supp.bodies)),...
-                                     'contact_surfaces', cell(1, length(supp.bodies)));
+      
+      [phi, normal, xA, xB, idxA, idxB] = r.collisionDetect(kinsol, true);      
+      active_supports = 0;
+      
+      active_supp_data = {};
       for j = 1:length(supp.bodies)
-        qp_input.support_data(j).body_id = supp.bodies(j);
-        qp_input.support_data(j).contact_pts = supp.contact_pts{j};
+          supp_inds = find(idxB == supp.bodies(j));    
+        if ~isempty(supp_inds)
+            active_supports = active_supports + 1;
+            active_supp_data{active_supports}.body_id = supp.bodies(j);
+            active_supp_data{active_supports}.contact_pts = xB(:, supp_inds);
+        end
+      end
+      
+      qp_input.support_data = struct('body_id', cell(1, active_supports),...
+                                     'contact_pts', cell(1, active_supports),...
+                                     'support_logic_map', cell(1, active_supports),...
+                                     'mu', cell(1, active_supports),...
+                                     'contact_surfaces', cell(1, active_supports));
+     
+      for j = 1:active_supports
+        qp_input.support_data(j).body_id = active_supp_data{j}.body_id;
+        qp_input.support_data(j).contact_pts = active_supp_data{j}.contact_pts;        
         qp_input.support_data(j).support_logic_map = obj.planned_support_command;
         qp_input.support_data(j).mu = obj.mu;
         qp_input.support_data(j).contact_surfaces = 0;
+        
       end
 
       qp_input.param_set_name = obj.gain_set;
