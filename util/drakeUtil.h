@@ -7,6 +7,7 @@
 
 #include "mex.h"
 #include <string>
+#include <stdexcept>
 #include <vector>
 #include <utility>
 #include <Eigen/Core>
