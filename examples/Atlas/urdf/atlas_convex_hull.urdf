@@ -393,9 +393,9 @@
         <mesh filename="package://Atlas/urdf/meshes/r_foot.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
-    <collision>
+    <collision group="heel">
       <origin rpy="0 -0 0" xyz="0 0 0"/>
-      <geometry group="toe">
+      <geometry>
         <mesh filename="package://Atlas/urdf/meshes/r_foot_chull.wrl" scale="1 1 1"/>
       </geometry>
     </collision>
