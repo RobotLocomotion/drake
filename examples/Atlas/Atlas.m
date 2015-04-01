@@ -22,12 +22,27 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       if ~isfield(options,'hand_left')
         options.hand_left = 'none';
       end
+      if ~isfield(options,'atlas_version') 
+        options.atlas_version = 3; 
+      end
 
       w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
       
       obj = obj@TimeSteppingRigidBodyManipulator(urdf,options.dt,options);
       obj = obj@Biped('r_foot_sole', 'l_foot_sole');
       warning(w);
+
+      if options.atlas_version == 3;
+        hand_position_right = [0; -0.195; -0.01];
+        hand_position_left = [0; 0.195; 0.01];
+        hand_orientation_right = [0; -3.1415/2; 3.1415];
+        hand_orientation_left = [0; -3.1415/2; 0];
+      else
+        hand_position_right = [0; -0.195; -0.01];
+        hand_position_left = hand_position_right;
+        hand_orientation_right = [0; -3.1415/2; 3.1415];
+        hand_orientation_left = [0; 3.1415/2; 3.1415];
+      end
 
       hand=options.hand_right;
       if (~strcmp(hand, 'none'))
@@ -36,12 +51,12 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
           options_hand.weld_to_link = findLinkId(obj,'r_hand');
           obj.hand_right = 1;
           obj.hand_right_kind = hand;
-          obj = obj.addRobotFromURDF(getFullPathFromRelativePath(['urdf/', hand, '.urdf']), [0; -0.195; -0.01], [0; -3.1415/2; 3.1415], options_hand);
+          obj = obj.addRobotFromURDF(getFullPathFromRelativePath(['urdf/', hand, '.urdf']), hand_position_right, hand_orientation_right, options_hand);
         elseif (strcmp(hand, 'robotiq_weight_only'))
           % Adds a box with weight roughly approximating the hands, so that
           % the controllers know what's up
           options_hand.weld_to_link = findLinkId(obj,'r_hand');
-          obj = obj.addRobotFromURDF(getFullPathFromRelativePath('urdf/robotiq_box.urdf'), [0; -0.195; -0.01], [0; -3.1415/2; 3.1415], options_hand);
+          obj = obj.addRobotFromURDF(getFullPathFromRelativePath('urdf/robotiq_box.urdf'), hand_position_right, hand_orientation_right, options_hand);
         else
           error('unsupported hand type');
         end
@@ -53,12 +68,12 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
           options_hand.weld_to_link = findLinkId(obj,'l_hand');
           obj.hand_left = 1;
           obj.hand_left_kind = hand;
-          obj = obj.addRobotFromURDF(getFullPathFromRelativePath(['urdf/', hand, '.urdf']), [0; 0.195; 0.01], [0; -3.1415/2; 0], options_hand);
+          obj = obj.addRobotFromURDF(getFullPathFromRelativePath(['urdf/', hand, '.urdf']), hand_position_left,hand_orientation_left, options_hand);
         elseif (strcmp(hand, 'robotiq_weight_only'))
           % Adds a box with weight roughly approximating the hands, so that
           % the controllers know what's up
           options_hand.weld_to_link = findLinkId(obj,'l_hand');
-          obj = obj.addRobotFromURDF(getFullPathFromRelativePath('urdf/robotiq_box.urdf'), [0; 0.195; 0.01], [0; -3.1415/2; 0], options_hand);
+          obj = obj.addRobotFromURDF(getFullPathFromRelativePath('urdf/robotiq_box.urdf'), hand_position_left,hand_orientation_left, options_hand);
         else
           error('unsupported hand type');
         end
