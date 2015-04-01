@@ -1091,7 +1091,7 @@ void RigidBodyManipulator::doKinematicsNew(const MatrixBase<DerivedQ>& q, const 
     if (compute_gradients && !gradients_cached) {
       skip = false;
     }
-    if (v.rows() > 0) {
+    if (v.rows() == num_velocities) {
       if (!velocity_kinematics_cached) {
         skip = false;
       }
@@ -1168,7 +1168,7 @@ void RigidBodyManipulator::doKinematicsNew(const MatrixBase<DerivedQ>& q, const 
         body.dJdq = dTransformSpatialMotion(body.T_new, body.S, body.dTdq_new, dSdq);
       }
 
-      if (v.rows() > 0) {
+      if (v.rows() == num_velocities) {
         if (joint.getNumVelocities()==0) { // for fixed joints
           body.twist = body.parent->twist;
            if (compute_gradients) body.dtwistdq = body.parent->dtwistdq;
@@ -1253,7 +1253,7 @@ void RigidBodyManipulator::doKinematicsNew(const MatrixBase<DerivedQ>& q, const 
         body.dTdq_new.setZero();
         // gradient of motion subspace in world is empty
       }
-      if (v.rows() > 0) {
+      if (v.rows() == num_velocities) {
         body.twist.setZero();
         if (compute_gradients) {
           body.dtwistdq.setZero();
@@ -1280,7 +1280,7 @@ void RigidBodyManipulator::doKinematicsNew(const MatrixBase<DerivedQ>& q, const 
   kinematicsInit = true;
   cached_inertia_gradients_order = -1;
   gradients_cached = compute_gradients;
-  velocity_kinematics_cached = v.rows() > 0;
+  velocity_kinematics_cached = v.rows() == num_velocities;
   jdotV_cached = compute_JdotV && velocity_kinematics_cached;
   for (int i = 0; i < num_positions; i++) cached_q[i] = q[i];
   if (v.rows() > 0) for (int i = 0; i < num_velocities; i++) cached_v[i] = v[i];
@@ -3366,6 +3366,13 @@ shared_ptr<RigidBody> RigidBodyManipulator::findJoint(string jointname, int robo
   {
     return this->bodies[ind_match];
   }
+}
+
+int RigidBodyManipulator::findJointId(string name, int robot)
+{
+	shared_ptr<RigidBody> link = findJoint(name,robot);
+	if (link == nullptr) return(EXIT_FAILURE);
+	return link->body_index;
 }
 
 
