@@ -54,7 +54,7 @@
         <mesh filename="package://Atlas/urdf/meshes/l_foot.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
-    <collision>
+    <collision group="heel">
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
         <mesh filename="package://Atlas/urdf/meshes/l_foot_chull.wrl" scale="1 1 1"/>
@@ -65,7 +65,7 @@
    <collision group="heel">
       <origin rpy="0 0 0" xyz="-0.082 0.0624435 -0.081119"/>
       <geometry>
-        <sphere radius="0"/>
+        <sphere radius="1e-7"/>
       </geometry>
     </collision>
     <visual>
@@ -77,7 +77,7 @@
     <collision group="heel">
       <origin rpy="0 0 0" xyz="-0.082 -0.0624435 -0.081119"/>
       <geometry>
-        <sphere radius="0"/>
+        <sphere radius="1e-7"/>
       </geometry>
     </collision>
     <visual>
@@ -89,7 +89,7 @@
     <collision group="toe">
       <origin rpy="0 0 0" xyz="0.178 0.0624435 -0.081119"/>
       <geometry>
-        <sphere radius="0"/>
+        <sphere radius="1e-7"/>
       </geometry>
     </collision>
     <visual>
@@ -101,7 +101,7 @@
     <collision group="toe">
       <origin rpy="0 0 0" xyz="0.178 -0.0624435 -0.081119"/>
       <geometry>
-        <sphere radius="0"/>
+        <sphere radius="1e-7"/>
       </geometry>
     </collision>
     <visual>
@@ -395,7 +395,7 @@
     </visual>
     <collision>
       <origin rpy="0 -0 0" xyz="0 0 0"/>
-      <geometry>
+      <geometry group="toe">
         <mesh filename="package://Atlas/urdf/meshes/r_foot_chull.wrl" scale="1 1 1"/>
       </geometry>
     </collision>
@@ -403,7 +403,7 @@
    <collision group="heel">
       <origin rpy="0 0 0" xyz="-0.082 0.0624435 -0.081119"/>
       <geometry>
-        <sphere radius="0"/>
+        <sphere radius="1e-7"/>
       </geometry>
     </collision>
     <visual>
@@ -415,7 +415,7 @@
     <collision group="heel">
       <origin rpy="0 0 0" xyz="-0.082 -0.0624435 -0.081119"/>
       <geometry>
-        <sphere radius="0"/>
+        <sphere radius="1e-7"/>
       </geometry>
     </collision>
     <visual>
@@ -427,7 +427,7 @@
     <collision group="toe">
       <origin rpy="0 0 0" xyz="0.178 0.0624435 -0.081119"/>
       <geometry>
-        <sphere radius="0"/>
+        <sphere radius="1e-7"/>
       </geometry>
     </collision>
     <visual>
@@ -439,7 +439,7 @@
     <collision group="toe">
       <origin rpy="0 0 0" xyz="0.178 -0.0624435 -0.081119"/>
       <geometry>
-        <sphere radius="0"/>
+        <sphere radius="1e-7"/>
       </geometry>
     </collision>
     <visual>

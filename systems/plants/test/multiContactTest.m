@@ -12,15 +12,15 @@ function multiContactTest
   padding = 0.02;
   padding2 = 0.02;
   q0 = [0;0;0.5+padding;0;0;0];
-  q1 = [0;0.0;1+1.5+padding+padding2;0;0;pi/2];
+  q1 = [0;0.0;1.5+padding+padding2;0;0;pi/2];
   options.floating = true;
   options.terrain = [];
   
-  p = p.addRobotFromURDF('FallingBrickContactPoints.urdf', [], [], options);
-  p = p.addRobotFromURDF('FallingBrickContactPoints.urdf', [], [], options);
+  %p = p.addRobotFromURDF('FallingBrickContactPoints.urdf', [], [], options);
+  %p = p.addRobotFromURDF('FallingBrickContactPoints.urdf', [], [], options);
   
-  %p = p.addRobotFromURDF('FallingBrick.urdf', [], [], options);
-  %p = p.addRobotFromURDF('FallingBrick.urdf', [], [], options);
+  p = p.addRobotFromURDF('FallingBrick.urdf', [], [], options);
+  p = p.addRobotFromURDF('FallingBrick.urdf', [], [], options);
   
   xtraj = p.simulate([0 3], [q0;q1;0*q0;0*q1])
   v = p.constructVisualizer();
