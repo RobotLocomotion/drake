@@ -106,7 +106,7 @@ std::string to_string(Eigen::MatrixBase<Derived> & a)
 
 
 template<typename Derived>
-void valuecheck( Eigen::MatrixBase<Derived>& a, Eigen::MatrixBase<Derived>& b, double tol, std::string error_msg)
+void valuecheck( Eigen::MatrixBase<Derived>& a, Eigen::MatrixBase<Derived>& b, double tol, std::string error_msg, std::string a_name = "actual", std::string b_name = "desired")
 {
 	// note: isApprox uses the L2 norm, so is bad for comparing against zero
 	if (a.rows() != b.rows() || a.cols() != b.cols()) {
@@ -124,7 +124,7 @@ void valuecheck( Eigen::MatrixBase<Derived>& a, Eigen::MatrixBase<Derived>& b, d
 				}
 			if (ok) return;
 		}
-		error_msg += "A:\n" + to_string(a) + "\nB:\n" + to_string(b) + "\n";
+		error_msg += "\n" + a_name + ":\n" + to_string(a) + "\n" + b_name + ":\n" + to_string(b) + "\n";
 		throw std::runtime_error("Drake:ValueCheck ERROR:" + error_msg);
 	}
 }

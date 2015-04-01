@@ -88,8 +88,8 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 		}
 
 		{ // compare joint limits
-			valuecheck(matlab_model->joint_limit_min,cpp_model->joint_limit_min,1e-8,"joint_limit_min doesn't match");
-			valuecheck(matlab_model->joint_limit_max,cpp_model->joint_limit_max,1e-8,"joint_limit_max doesn't match");
+			valuecheck(matlab_model->joint_limit_min,cpp_model->joint_limit_min,1e-8,"joint_limit_min doesn't match","matlab","cpp");
+			valuecheck(matlab_model->joint_limit_max,cpp_model->joint_limit_max,1e-8,"joint_limit_max doesn't match","matlab","cpp");
 		}
 
 		{ // compare position constraints
