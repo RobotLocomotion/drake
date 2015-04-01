@@ -22,6 +22,8 @@ namespace DrakeShapes
                     const Eigen::Vector4d& material)
     : Element(geometry, T_element_to_local), material(material) {};
 
+      virtual ~VisualElement(){};
+
       void setMaterial(const Eigen::Vector4d& material);
 
       const Eigen::Vector4d& getMaterial() const;

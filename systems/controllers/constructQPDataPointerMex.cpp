@@ -84,6 +84,11 @@ void parseVRefIntegratorParams(const mxArray *params_obj, VRefIntegratorParams *
   pobj = myGetField(params_obj, "eta");
   sizecheck(pobj, 1, 1);
   params->eta = mxGetScalar(pobj);
+
+  pobj = myGetField(params_obj, "delta_max");
+  sizecheck(pobj, 1, 1);
+  params->delta_max = mxGetScalar(pobj);
+
   return;
 }
 

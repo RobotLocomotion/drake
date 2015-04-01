@@ -15,6 +15,9 @@ classdef QPLocomotionPlan < QPControllerPlan
     plan_shift_data = PlanShiftData();
     g = 9.81; % gravity m/s^2
     is_quasistatic = false;
+    constrained_dofs = [];
+
+    planned_support_command = QPControllerPlan.support_logic_maps.require_support; % when the plan says a given body is in support, require the controller to use that support. To allow the controller to use that support only if it thinks the body is in contact with the terrain, try QPControllerPlan.support_logic_maps.kinematic_or_sensed; 
 
     last_qp_input;
   end
@@ -26,21 +29,11 @@ classdef QPLocomotionPlan < QPControllerPlan
       obj.qtraj = S.xstar(1:obj.robot.getNumPositions());
       obj.default_qp_input = atlasControllers.QPInputConstantHeight();
       obj.default_qp_input.whole_body_data.q_des = zeros(obj.robot.getNumPositions(), 1);
-      obj.default_qp_input.whole_body_data.constrained_dofs = [findPositionIndices(obj.robot,'arm');findPositionIndices(obj.robot,'neck');findPositionIndices(obj.robot,'back_bkz');findPositionIndices(obj.robot,'back_bky')];
+      obj.constrained_dofs = [findPositionIndices(obj.robot,'arm');findPositionIndices(obj.robot,'neck');findPositionIndices(obj.robot,'back_bkz');findPositionIndices(obj.robot,'back_bky')];
     end
 
     function next_plan = getSuccessor(obj, t, x)
-      if isnumeric(obj.qtraj)
-        qf = obj.qtraj;
-        next_plan = QPLocomotionPlan.from_standing_state([x(1:6); qf(7:end); x(obj.robot.getNumPositions+1:end)], obj.robot, obj.supports(end));
-        next_plan.mu = obj.mu;
-        next_plan.g = obj.g;
-      else
-        % qf = fasteval(obj.qtraj, obj.qtraj.tspan(end));
-        next_plan = FrozenPlan(obj.last_qp_input);
-      end
-      % next_plan = QPLocomotionPlan.from_standing_state(x, obj.robot, obj.supports(end));
-
+      next_plan = FrozenPlan(obj.last_qp_input);
     end
 
     function qp_input = getQPControllerInput(obj, t_global, x, rpc, contact_force_detected)
@@ -81,6 +74,7 @@ classdef QPLocomotionPlan < QPControllerPlan
       else
         qp_input.whole_body_data.q_des = fasteval(obj.qtraj, t_plan);
       end
+      qp_input.whole_body_data.constrained_dofs = obj.constrained_dofs;
 
       if obj.is_quasistatic
         com_pos = obj.robot.getCOM(obj.robot.doKinematics(qp_input.whole_body_data.q_des));
@@ -184,7 +178,7 @@ classdef QPLocomotionPlan < QPControllerPlan
       for j = 1:length(supp.bodies)
         qp_input.support_data(j).body_id = supp.bodies(j);
         qp_input.support_data(j).contact_pts = supp.contact_pts{j};
-        qp_input.support_data(j).support_logic_map = obj.support_logic_maps.require_support;
+        qp_input.support_data(j).support_logic_map = obj.planned_support_command;
         qp_input.support_data(j).mu = obj.mu;
         qp_input.support_data(j).contact_surfaces = 0;
       end
@@ -506,6 +500,16 @@ classdef QPLocomotionPlan < QPControllerPlan
       obj.duration = obj.qtraj.tspan(end) - obj.start_time;
       obj.support_times = [obj.qtraj.tspan(1); inf];
       obj.link_constraints = link_constraints;
+
+
+      for j = 1:length(obj.link_constraints)
+        if obj.link_constraints(j).link_ndx == biped.findLinkId('r_hand')
+          obj.constrained_dofs = setdiff(obj.constrained_dofs, findPositionIndices(obj.robot,'r_arm'));
+        elseif obj.link_constraints(j).link_ndx == biped.findLinkId('l_hand')
+          obj.constrained_dofs = setdiff(obj.constrained_dofs, findPositionIndices(obj.robot,'l_arm'));
+        end
+      end
+
       obj.gain_set = 'manip';
     end
 
