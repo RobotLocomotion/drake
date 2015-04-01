@@ -32,6 +32,14 @@ for urdf=urdfs'
     disp(' this model has parameters (not implemented in c++ yet), so will be skipped');
     continue;
   end
+  if any(any([r.body.Iaddedmass]))
+    disp(' this model has added mass (not implemented in c++ yet)');
+    continue;
+  end
+  if length(r.force)>0
+    disp(' this model had force elements (not implemented in c++ yet)'); 
+    continue;
+  end
   
   compareParsersmex(r.mex_model_ptr,urdffile,'rpy');
 end
