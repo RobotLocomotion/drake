@@ -63,6 +63,7 @@ mxArray* myGetField(const mxArray* pobj, const char* propname)
 }
 
 bool inSupport(std::vector<SupportStateElement> &supports, int body_idx) {
+  // HANDLE IF BODY_IDX IS A FRAME ID?
   for (int i=0; i<supports.size(); i++) {
     if (supports[i].body_idx == body_idx)
       return true;
@@ -410,7 +411,6 @@ Vector6d bodyMotionPD(RigidBodyManipulator *r, DrakeRobotState &robot_state, con
   zero(3) = 1.0;
   r->forwardKin(body_index,zero,1,body_pose);
   r->forwardJac(body_index,zero,1,J);
-
   Vector6d body_error;
   body_error.head<3>()= body_pose_des.head<3>()-body_pose.head<3>();
 
@@ -419,7 +419,7 @@ Vector6d bodyMotionPD(RigidBodyManipulator *r, DrakeRobotState &robot_state, con
   des_rpy = body_pose_des.tail<3>();
   angleDiff(pose_rpy,des_rpy,error_rpy);
   body_error.tail(3) = error_rpy;
-
+  
   Vector6d body_vdot = (Kp.array()*body_error.array()).matrix() + (Kd.array()*(body_v_des-J*robot_state.qd).array()).matrix() + body_vdot_des;
   return body_vdot;
 }
