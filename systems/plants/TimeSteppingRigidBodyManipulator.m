@@ -676,6 +676,8 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
           obj.LCP_cache.data.dwqdn = [];
         end
       end
+%       sim_impulse = J(nL+nP+(1:(1+mC)*nC),:)'*z(nL+nP+(1:(1+mC)*nC))
+%       sim_qd = Mqdn*z + wqdn
     end
 
     function obj = addSensor(obj,sensor)

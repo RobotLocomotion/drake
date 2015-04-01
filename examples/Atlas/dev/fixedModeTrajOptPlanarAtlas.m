@@ -131,6 +131,12 @@ knee_inds = knee_inds(:);
 knee_constraint = BoundingBoxConstraint(.1*ones(length(knee_inds),1),inf(length(knee_inds),1));
 traj_opt = traj_opt.addBoundingBoxConstraint(knee_constraint,knee_inds);
 
+
+% bound joint velocities
+joint_vel_max = 3;
+joint_vel_bound = BoundingBoxConstraint(-joint_vel_max*ones(p.getNumVelocities,1),joint_vel_max*ones(p.getNumVelocities,1));
+traj_opt = traj_opt.addStateConstraint(joint_vel_bound,1:N,11:20);
+
 traj_opt = traj_opt.setSolverOptions('snopt','print','snopt.out');
 traj_opt = traj_opt.setSolverOptions('snopt','MajorIterationsLimit',200);
 traj_opt = traj_opt.setSolverOptions('snopt','MinorIterationsLimit',500000);

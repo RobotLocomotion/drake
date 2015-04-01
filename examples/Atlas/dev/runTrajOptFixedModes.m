@@ -1,7 +1,9 @@
 % megaclear
 % traj_file = 'data/atlas_passive_ankle_lqr.mat';
 % traj_file = 'data/atlas_passive_ankle_traj.mat';
-traj_file = 'data/atlas_passive_ankle_traj_fm.mat';
+% traj_file = 'data/atlas_passive_ankle_traj_fm2.mat';
+passive_ankle = false;
+traj_file = 'data/atlas_traj_fm';
 load(traj_file);
 
 %% get mode sequence
@@ -27,11 +29,11 @@ mode_seq_vec
 
 %% expand
 N_vec_pre= N_vec;
-N_vec = floor(N_vec*2);
+N_vec = floor(2*N_vec);
 t_pre = xtraj.pp.breaks;
 t_init = t_pre(1);
 sum(N_vec)
-keyboard
+% keyboard
 % 
 for i=1:length(N_vec),
   t_span_mode = [t_pre(sum(N_vec_pre(1:i-1))+1) t_pre(sum(N_vec_pre(1:i))+1)];
@@ -44,7 +46,7 @@ options.N_vec = N_vec;
 options.mode_seq_vec = mode_seq_vec;
 
 %%
-passive_ankle = true;
+
 
 % load model
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');

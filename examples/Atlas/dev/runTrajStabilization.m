@@ -24,9 +24,10 @@ if passive_ankle
   s = '../urdf/atlas_simple_spring_ankle_planar_contact.urdf';
   traj_file = 'data/atlas_passiveankle_traj_lqr_zoh.mat';
   %traj_file = 'data/atlas_passiveankle_traj_lqr_090314_zoh.mat';
-else
+else  
   s = '../urdf/atlas_simple_planar_contact.urdf';
-  traj_file = 'data/atlas_lqr_01.mat';
+  traj_file = 'data/atlas_lqr_fm2_cost10.mat';
+%   traj_file = 'data/atlas_lqr_01.mat';
 end
 w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
 r = Atlas(s,options);
@@ -42,10 +43,9 @@ v = r.constructVisualizer;
 v.display_dt = 0.01;
 
 
-
 load(traj_file);
 
-repeat_n = 5;
+repeat_n = 1;
 
 [xtraj,utraj,Btraj,Straj_full] = repeatTraj(r,xtraj,utraj,Btraj,Straj_full,repeat_n,true);
 
@@ -72,8 +72,10 @@ end
  
 options.right_foot_name = 'r_foot';
 options.left_foot_name = 'l_foot'; 
-modes = [8,6,3,3,4,4,4,2,7,7,8,8];%,8,6,3,3,4,4];
-% modes = repmat(modes,1,repeat_n);
+%modes = [8,6,3,3,4,4,4,2,7,7,8,8];%,8,6,3,3,4,4];
+% modes = [8,6,1,3,4,4,2,1,7,8];
+modes = [8,6,3,4,4,2,7,8];
+modes = repmat(modes,1,repeat_n);
 lfoot_ind = findLinkId(r,options.left_foot_name);
 rfoot_ind = findLinkId(r,options.right_foot_name);  
 
@@ -132,9 +134,9 @@ options.w_phi_slack = 0.0;
 options.w_qdd = 0*ones(nq,1);
 options.w_grf = 0;
 options.Kp_accel = 0;
-options.contact_threshold = 1e-4;
-options.offset_x = false;
-qp = FullStateQPController(r,ctrl_data,options);
+options.contact_threshold = 1e-4; %was 1e-4
+options.offset_x = true;
+qp = FullStateQPControllerDT(r,ctrl_data,options);
 
 % feedback QP controller with Atlas
 sys = feedback(r,qp);
@@ -145,11 +147,12 @@ output_select(1).output=1;
 sys = mimoCascade(sys,v,[],[],output_select);
 warning(S);
 
-% t0 = tf/2-0.05;
+% t0 = .418;
+% tf = 1;s
 
 x0 = xtraj.eval(t0);
-
-traj = simulate(sys,[t0 tf],xtraj.eval(t0));
+keyboard
+traj = simulate(sys,[t0 tf],x0);
 playback(v,traj,struct('slider',true));
 
 
@@ -167,15 +170,17 @@ if 0
   hold off;
 end
 
-if 1
+if 0
   pptraj = PPTrajectory(foh(traj.getBreaks,traj.eval(traj.getBreaks)));
   for i=1:20
     figure(100+i);
-    hold on;
     fnplt(xtraj(i));
+    hold on;
     fnplt(pptraj(i));
+    title(strrep(r.getStateFrame.coordinates(i),'_','\_'));
     hold off;
   end
 end
+keyboard
 end
 

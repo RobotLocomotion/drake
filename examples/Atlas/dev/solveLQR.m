@@ -2,6 +2,9 @@ function solveLQR(p,xtraj,utraj,ltraj,Q,R,Qf)
 
 if nargin < 5
   Q = diag([100*ones(p.getNumPositions,1);10*ones(p.getNumVelocities,1)]);
+  
+%   Q(1:3,1:3) = Q(1:3,1:3)*10;
+  
   R = 0.01*eye(getNumInputs(p));
   Qf = 1*Q;
 end

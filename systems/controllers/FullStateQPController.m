@@ -197,6 +197,10 @@ classdef FullStateQPController < DrakeSystem
     % get phi for planned contact groups
     % if phi < threshold, then add to active contacts
     % else, add to desired contacts
+    
+    if max(supp_idx) > length(ctrl_data.supports)
+      keyboard
+    end
 
     kinsol = doKinematics(r,q,true,true,qd);
     rigid_body_support_state = ctrl_data.supports(supp_idx);
@@ -269,7 +273,8 @@ classdef FullStateQPController < DrakeSystem
     neps = nc*dim;
     if obj.offset_x
       xoffset = obj.controller_data.xoffset
-      x0(1) = x0(1) - obj.controller_data.xoffset;
+%       x0(1) = x(1)  + obj.controller_data.xoffset;
+      x0(1) = x0(1) + obj.controller_data.xoffset;
     end
     %----------------------------------------------------------------------
     % Build handy index matrices ------------------------------------------
@@ -390,7 +395,7 @@ classdef FullStateQPController < DrakeSystem
     end
 %     beta=Ibeta*alpha
     y = Iu*alpha;
-    
+%     y = u0;
   end
   end
 
