@@ -8,12 +8,18 @@ end
 
 for urdf=urdfs'
   urdffile = GetFullPath(urdf{1});
+  
+  if ~isempty(strfind(urdffile,'office.urdf'))
+    % drake/examples/Quadrotor/office.urdf is horribly malformed
+    continue;
+  end
+  
   fprintf(1,'testing %s\n', urdffile);
   w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
   warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
   warning('off','Drake:RigidBodyManipulator:ReplacedCylinder');
   try 
-    r = RigidBodyManipulator(urdffile,struct('floating',false,'use_new_kinsol',true));
+    r = RigidBodyManipulator(urdffile,struct('floating','rpy','use_new_kinsol',true));
   catch ex
     if strncmp(ex.identifier,'Drake:MissingDependency:',24)
       disp(' skipping due to a missing dependency'); 
@@ -27,5 +33,5 @@ for urdf=urdfs'
     continue;
   end
   
-  compareParsersmex(r.mex_model_ptr,urdfs{1},'fixed');
+  compareParsersmex(r.mex_model_ptr,urdffile,'rpy');
 end

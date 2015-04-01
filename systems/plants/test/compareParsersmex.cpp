@@ -37,6 +37,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   	}
   }
   if (!P.isApprox(MatrixXd::Identity(matlab_model->num_positions,matlab_model->num_positions))) {
+  	cout << "P = \n" << P << endl;
   	mexErrMsgTxt("ERROR: coordinates don't match");
   }
 
@@ -77,28 +78,18 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 
 		  auto matlab_H = matlab_model->massMatrix<double>();
 		  auto cpp_H = cpp_model->massMatrix<double>();
-		  if (!matlab_H.value().isApprox(cpp_H.value(),1e-8))
-		  	mexErrMsgTxt("ERROR: H doesn't match");
+		  valuecheck(matlab_H.value(),cpp_H.value(),1e-8,"H doesn't match");
 
 		  auto matlab_C = matlab_model->inverseDynamics(f_ext);
 		  auto cpp_C = cpp_model->inverseDynamics(f_ext);
-		  if (!matlab_C.value().isApprox(cpp_C.value(),1e-8)) {
-		  	cout << "matlab C: " << matlab_C.value().transpose() << endl;
-		  	cout << "cpp C   : " << cpp_C.value().transpose() << endl;
-		  	mexErrMsgTxt("ERROR: C doesn't match");
-		  }
+		  valuecheck(matlab_C.value(),cpp_C.value(),1e-8,"C doesn't match");
 
-		  if (!matlab_model->B.isApprox(cpp_model->B,1e-8))
-		  	mexErrMsgTxt("ERROR: B doesn't match");
+		  valuecheck(matlab_model->B,cpp_model->B,1e-8,"B doesn't match");
 		}
 
 		{ // compare joint limits
-			if (matlab_model->joint_limit_max.isApprox(P*cpp_model->joint_limit_max,1e-8)) {
-				mexErrMsgTxt("ERROR: joint_limit_max doesn't match");
-			}
-			if (matlab_model->joint_limit_min.isApprox(P*cpp_model->joint_limit_min,1e-8)) {
-				mexErrMsgTxt("ERROR: joint_limit_min doesn't match");
-			}
+			valuecheck(matlab_model->joint_limit_min,cpp_model->joint_limit_min,1e-8,"joint_limit_min doesn't match");
+			valuecheck(matlab_model->joint_limit_max,cpp_model->joint_limit_max,1e-8,"joint_limit_max doesn't match");
 		}
 
 		{ // compare position constraints

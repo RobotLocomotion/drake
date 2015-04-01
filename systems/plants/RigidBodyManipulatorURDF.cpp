@@ -248,7 +248,7 @@ bool parseMaterial(TiXmlElement* node, map<string, Vector4d>& materials)
   const char* attr;
   attr = node->Attribute("name");
   if (!attr) {
-    cerr << "ERROR: material tag is missing name attribute" << endl;
+    cerr << "WARNING: material tag is missing name attribute" << endl;
     return false;
   }
   string name(attr);
@@ -262,7 +262,7 @@ bool parseMaterial(TiXmlElement* node, map<string, Vector4d>& materials)
   TiXmlElement* color_node = node->FirstChildElement("color");
   if (color_node) {
     if (!parseVectorAttribute(color_node, "rgba", rgba)) {
-      cerr << "ERROR: color tag is missing rgba attribute" << endl;
+      cerr << "WARNING: color tag is missing rgba attribute" << endl;
       return false;
     }
     materials[name] = rgba;
@@ -770,8 +770,7 @@ bool RigidBodyManipulator::addRobotFromURDF(const string &urdf_filename, map<str
 {
   TiXmlDocument xml_doc(urdf_filename);
   if (!xml_doc.LoadFile()) {
-    cerr << "ERROR: failed to load file " << urdf_filename << endl;
-    return false;
+    throw std::runtime_error("failed to load file " + urdf_filename);
   }
 
   string root_dir=".";

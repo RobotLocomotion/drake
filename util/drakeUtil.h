@@ -6,9 +6,12 @@
  */
 
 #include "mex.h"
+#include <string>
 #include <vector>
 #include <utility>
 #include <Eigen/Core>
+
+#include <ostream> // a little gross: needed only for valuecheck (but keeping that code in the header avoids explicit instantiations)
 
 #ifndef DRAKE_UTIL_H_
 #define DRAKE_UTIL_H_
@@ -91,5 +94,38 @@ DLLEXPORT double angleAverage(double theta1, double theta2);
 DLLEXPORT std::pair<Eigen::Vector3d, double> resolveCenterOfPressure(Eigen::Vector3d torque, Eigen::Vector3d force, Eigen::Vector3d normal, Eigen::Vector3d point_on_contact_plane);
 
 DLLEXPORT double *mxGetPrSafe(const mxArray *pobj);
+
+template<typename Derived>
+std::string to_string(Eigen::MatrixBase<Derived> & a)
+{
+	std::stringstream ss;
+	ss << a;
+	return ss.str();
+}
+
+
+template<typename Derived>
+void valuecheck( Eigen::MatrixBase<Derived>& a, Eigen::MatrixBase<Derived>& b, double tol, std::string error_msg)
+{
+	// note: isApprox uses the L2 norm, so is bad for comparing against zero
+	if (a.rows() != b.rows() || a.cols() != b.cols()) {
+		throw std::runtime_error("Drake:ValueCheck ERROR:" + error_msg + "size mismatch: (" + std::to_string(a.rows()) + " by " + std::to_string(a.cols()) + ") and (" + std::to_string(b.rows()) + " by " + std::to_string(b.cols()) + ")");
+	}
+	if (!(a-b).isZero(tol)) {
+		if (!a.allFinite() && !b.allFinite()) {
+			// could be failing because inf-inf = nan
+			bool ok=true;
+			for (int i=0; i<a.rows(); i++)
+				for (int j=0; j<a.cols(); j++) {
+					ok = ok && ((a(i,j) == std::numeric_limits<double>::infinity() && b(i,j) == std::numeric_limits<double>::infinity()) ||
+					(a(i,j) == -std::numeric_limits<double>::infinity() && b(i,j) == -std::numeric_limits<double>::infinity()) ||
+			    (std::isnan(a(i,j)) && std::isnan(b(i,j))) || (std::abs(a(i,j)-b(i,j))<tol));
+				}
+			if (ok) return;
+		}
+		error_msg += "A:\n" + to_string(a) + "\nB:\n" + to_string(b) + "\n";
+		throw std::runtime_error("Drake:ValueCheck ERROR:" + error_msg);
+	}
+}
 
 #endif /* DRAKE_UTIL_H_ */
