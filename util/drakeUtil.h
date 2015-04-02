@@ -92,4 +92,6 @@ DLLEXPORT std::pair<Eigen::Vector3d, double> resolveCenterOfPressure(Eigen::Vect
 
 DLLEXPORT double *mxGetPrSafe(const mxArray *pobj);
 
+DLLEXPORT void sizecheck(const mxArray* mat, int M, int N);
+
 #endif /* DRAKE_UTIL_H_ */
