@@ -700,7 +700,7 @@ bool RigidBodyManipulator::potentialCollisions(VectorXd& phi,
   Vector3d ptA, ptB, n;
   double distance;
 
-  for (int i = 0; i < potential_collisions.size(); i++) {
+  for (size_t i = 0; i < num_potential_collisions; i++) {
     const RigidBody::CollisionElement* elementA = dynamic_cast<const RigidBody::CollisionElement*>(collision_model->readElement(potential_collisions[i].getIdA()));
     const RigidBody::CollisionElement* elementB = dynamic_cast<const RigidBody::CollisionElement*>(collision_model->readElement(potential_collisions[i].getIdB()));
     potential_collisions[i].getResults(ptA, ptB, n, distance);
