@@ -456,6 +456,22 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
         }
       }
       break;
+    case RigidBodyConstraint::GravityCompensationTorqueConstraintType:
+      {
+        GravityCompensationTorqueConstraint* cnst = (GravityCompensationTorqueConstraint*) constraint;
+        if(field_str=="robot")
+        {
+          RigidBodyManipulator* robot = (RigidBodyManipulator*) getDrakeMexPointer(prhs[2]);
+          GravityCompensationTorqueConstraint* cnst_new = new GravityCompensationTorqueConstraint(*cnst);
+          cnst_new->updateRobot(robot);
+          plhs[0] = createDrakeConstraintMexPointer((void*) cnst_new,"GravityCompensationTorqueConstraint");
+        }
+        else
+        {
+          mexErrMsgIdAndTxt("Drake:updatePtrRigidBodyConstraintmex:BadInputs","GravityCompensationTorqueConstraint:argument 2 is not accepted");
+        }
+      }
+      break;
     default:
       mexErrMsgIdAndTxt("Drake:updatePtrRigidBodyConstraintmex:BadInputs","Unsupported constraint type");
       break;

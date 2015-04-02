@@ -1,5 +1,6 @@
 include_directories ( .. )
 include_directories (../constraint)
+include_directories (../../controllers)
 
 macro(add_constraint_mex)
   add_mex(${ARGV} ${ARGV}.cpp)

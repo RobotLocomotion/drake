@@ -172,3 +172,13 @@ double * mxGetPrSafe(const mxArray *pobj) {
   if (!mxIsDouble(pobj)) mexErrMsgIdAndTxt("Drake:mxGetPrSafe:BadInputs", "mxGetPr can only be called on arguments which correspond to Matlab doubles");
   return mxGetPr(pobj);
 }
+
+void sizecheck(const mxArray* mat, int M, int N) {
+  if (mxGetM(mat) != M) {
+    mexErrMsgIdAndTxt("Drake:WrongSize", "wrong number of rows. Expected: %d but got: %d", M, mxGetM(mat));
+  }
+  if (mxGetN(mat) != N) {
+    mexErrMsgIdAndTxt("Drake:WrongSize", "wrong number of columns. Expected: %d but got: %d", N, mxGetN(mat));
+  }
+  return;
+}

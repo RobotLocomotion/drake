@@ -725,17 +725,14 @@ bool RigidBodyManipulator::allCollisions(vector<int>& bodyA_idx,
 
   xA_in_world = MatrixXd::Zero(3,points.size());
   xB_in_world = MatrixXd::Zero(3,points.size());
-  //normal = MatrixXd::Zero(3,points.size());
-  //phi = VectorXd::Zero(points.size());
-
+  
   Vector3d ptA, ptB, n;
   double distance;
   for (int i=0; i<points.size(); ++i) {
-    points[i].getResults(ptA, ptA, n, distance);
+    points[i].getResults(ptA, ptB, n, distance);
     xA_in_world.col(i) = ptA;
     xB_in_world.col(i) = ptB;
-    //normal.col(i) = n;
-    //phi[i] = distance;
+    
     const RigidBody::CollisionElement* elementA = dynamic_cast<const RigidBody::CollisionElement*>(collision_model->readElement(points[i].getIdA()));
     bodyA_idx.push_back(elementA->getBody()->body_index);
     const RigidBody::CollisionElement* elementB = dynamic_cast<const RigidBody::CollisionElement*>(collision_model->readElement(points[i].getIdB()));

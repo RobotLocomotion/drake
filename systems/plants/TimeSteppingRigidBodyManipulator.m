@@ -18,6 +18,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     lcmgl_contact_forces_scale = 0;  % <=0 implies no lcmgl
     z_inactive_guess_tol = .01;
     multiple_contacts = false;
+    gurobi_present = false;
   end
 
   methods
@@ -124,6 +125,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
 
     function model = compile(model)
       w = warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
+      model.gurobi_present = checkDependency('gurobi');
       model.manip = model.manip.compile();
       warning(w);
 
@@ -189,7 +191,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       if (nargout>1)
         [obj,z,Mqdn,wqdn,dz,dMqdn,dwqdn] = solveLCP(obj,t,x,u);
       else
-        if (obj.manip.only_loops && obj.manip.mex_model_ptr~=0 && ~obj.position_control)
+        if (obj.gurobi_present && obj.manip.only_loops && obj.manip.mex_model_ptr~=0 && ~obj.position_control)
            [obj,z,Mqdn,wqdn] = solveMexLCP(obj,t,x,u);
            %[obj,z,Mqdn,wqdn] = solveLCP(obj,t,x,u);
         else
