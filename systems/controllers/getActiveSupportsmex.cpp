@@ -19,7 +19,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   int nv = pdata->r->num_velocities;
 
   int narg=1;  
-  double *q_ptr = mxGetPr(prhs[narg]);
+  double *q_ptr = mxGetPrSafe(prhs[narg]);
   double *qd_ptr = &q_ptr[nq];
   Map<VectorXd> q(q_ptr, nq);
   Map<VectorXd> qd(qd_ptr, nv);
@@ -29,7 +29,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   narg++;
 
   pm = prhs[narg];
-  Map<VectorXd> contact_force_detected(mxGetPr(pm), mxGetNumberOfElements(pm), 1);
+  Map<VectorXd> contact_force_detected(mxGetPrSafe(pm), mxGetNumberOfElements(pm), 1);
   narg++;
 
   pm = prhs[narg];

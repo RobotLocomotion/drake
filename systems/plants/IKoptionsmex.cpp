@@ -52,7 +52,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
             mexErrMsgIdAndTxt("Drake:updatePtrIKoptionsmex:BadInputs","Q must be nq x nq double matrix");
           }
           MatrixXd Q(nq,nq);
-          memcpy(Q.data(),mxGetPr(prhs[3]),sizeof(double)*nq*nq);
+          memcpy(Q.data(),mxGetPrSafe(prhs[3]),sizeof(double)*nq*nq);
           ikoptions_new->setQ(Q);
         }
         else if(field_str == "Qa")
@@ -62,7 +62,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
             mexErrMsgIdAndTxt("Drake:updatePtrIKoptionsmex:BadInputs","Qa must be nq x nq double matrix");
           }
           MatrixXd Qa(nq,nq);
-          memcpy(Qa.data(),mxGetPr(prhs[3]),sizeof(double)*nq*nq);
+          memcpy(Qa.data(),mxGetPrSafe(prhs[3]),sizeof(double)*nq*nq);
           ikoptions_new->setQa(Qa);
         }
         else if(field_str == "Qv")
@@ -72,7 +72,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
             mexErrMsgIdAndTxt("Drake:updatePtrIKoptionsmex:BadInputs","Qv must be nq x nq double matrix");
           }
           MatrixXd Qv(nq,nq);
-          memcpy(Qv.data(),mxGetPr(prhs[3]),sizeof(double)*nq*nq);
+          memcpy(Qv.data(),mxGetPrSafe(prhs[3]),sizeof(double)*nq*nq);
           ikoptions_new->setQv(Qv);
         }
         else if (field_str == "debug")
@@ -175,8 +175,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
           }
           VectorXd lb(nq);
           VectorXd ub(nq);
-          memcpy(lb.data(),mxGetPr(prhs[3]),sizeof(double)*nq);
-          memcpy(ub.data(),mxGetPr(prhs[4]),sizeof(double)*nq);
+          memcpy(lb.data(),mxGetPrSafe(prhs[3]),sizeof(double)*nq);
+          memcpy(ub.data(),mxGetPrSafe(prhs[4]),sizeof(double)*nq);
           ikoptions_new->setq0(lb,ub);
         }
         else if(field_str == "qd0")
@@ -187,8 +187,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
           }
           VectorXd lb(nq);
           VectorXd ub(nq);
-          memcpy(lb.data(),mxGetPr(prhs[3]),sizeof(double)*nq);
-          memcpy(ub.data(),mxGetPr(prhs[4]),sizeof(double)*nq);
+          memcpy(lb.data(),mxGetPrSafe(prhs[3]),sizeof(double)*nq);
+          memcpy(ub.data(),mxGetPrSafe(prhs[4]),sizeof(double)*nq);
           ikoptions_new->setqd0(lb,ub);
         }
         else if(field_str == "qdf")
@@ -199,8 +199,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
           }
           VectorXd lb(nq);
           VectorXd ub(nq);
-          memcpy(lb.data(),mxGetPr(prhs[3]),sizeof(double)*nq);
-          memcpy(ub.data(),mxGetPr(prhs[4]),sizeof(double)*nq);
+          memcpy(lb.data(),mxGetPrSafe(prhs[3]),sizeof(double)*nq);
+          memcpy(ub.data(),mxGetPrSafe(prhs[4]),sizeof(double)*nq);
           ikoptions_new->setqdf(lb,ub);
         }
         else if(field_str == "additionaltSamples")
@@ -217,7 +217,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
               mexErrMsgIdAndTxt("Drake:updatePtrIKoptionsmex:BadInputs","additional_tSamples must be a row double vector");
             }
             t_samples.resize(mxGetN(prhs[3]));
-            memcpy(t_samples.data(),mxGetPr(prhs[3]),sizeof(double)*mxGetN(prhs[3]));
+            memcpy(t_samples.data(),mxGetPrSafe(prhs[3]),sizeof(double)*mxGetN(prhs[3]));
           }
           ikoptions_new->setAdditionaltSamples(t_samples);
         }

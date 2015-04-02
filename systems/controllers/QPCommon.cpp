@@ -57,7 +57,7 @@ std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray 
 
       const mxArray *contact_pts = myGetField(support_data, i, "contact_pts");
       if (!contact_pts) mexErrMsgTxt("couldn't get points");
-      Map<MatrixXd>contact_pts_mat(mxGetPr(contact_pts), mxGetM(contact_pts), mxGetN(contact_pts));
+      Map<MatrixXd>contact_pts_mat(mxGetPrSafe(contact_pts), mxGetM(contact_pts), mxGetN(contact_pts));
       msg->support_data[i].num_contact_pts = (int32_t) mxGetN(contact_pts);
       msg->support_data[i].contact_pts.resize(3);
       for (int j=0; j < 3; j++) {
@@ -87,7 +87,7 @@ std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray 
     for (int i=0; i < nbod; i++) {
       msg->body_motion_data[i].timestamp = msg->timestamp;
       msg->body_motion_data[i].body_id = (int32_t) mxGetScalar(myGetField(body_motion_data, i, "body_id"));
-      memcpy(msg->body_motion_data[i].ts, mxGetPr(myGetField(body_motion_data, i, "ts")), 2*sizeof(double));
+      memcpy(msg->body_motion_data[i].ts, mxGetPrSafe(myGetField(body_motion_data, i, "ts")), 2*sizeof(double));
       const mxArray* coefs = myGetField(body_motion_data, i, "coefs");
       if (mxGetNumberOfDimensions(coefs) != 3) mexErrMsgTxt("coefs should be a dimension-3 array");
       const mwSize* dim = mxGetDimensions(coefs);
@@ -103,7 +103,7 @@ std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray 
   const int npos = mxGetM(q_des);
   msg->whole_body_data.timestamp = msg->timestamp;
   msg->whole_body_data.num_positions = npos;
-  Map<VectorXd>q_des_vec(mxGetPr(q_des), npos);
+  Map<VectorXd>q_des_vec(mxGetPrSafe(q_des), npos);
   msg->whole_body_data.q_des.resize(npos);
 
   for (int i=0; i < npos; i++) {

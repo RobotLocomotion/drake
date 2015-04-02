@@ -20,7 +20,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   // first get the model_ptr back from matlab
   RigidBodyManipulator *model= (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
 
-  Map<VectorXd> q(mxGetPr(prhs[1]), model->num_positions);
+  Map<VectorXd> q(mxGetPrSafe(prhs[1]), model->num_positions);
   for (int i = 0; i < model->num_positions; i++) {
     if (q[i] - model->cached_q[i] > 1e-8 || q[i] - model->cached_q[i] < -1e-8) {
       mexErrMsgIdAndTxt("Drake:getCMMmex:InvalidKinematics","This kinsol is no longer valid.  Somebody has called doKinematics with a different q since the solution was computed.");
@@ -28,13 +28,13 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   }
 
   plhs[0] = mxCreateDoubleMatrix(6,model->num_positions,mxREAL);
-  Map<MatrixXd> A(mxGetPr(plhs[0]),6,model->num_positions);
+  Map<MatrixXd> A(mxGetPrSafe(plhs[0]),6,model->num_positions);
   plhs[1] = mxCreateDoubleMatrix(6,model->num_positions,mxREAL);
-  Map<MatrixXd> Adot(mxGetPr(plhs[1]),6,model->num_positions);
+  Map<MatrixXd> Adot(mxGetPrSafe(plhs[1]),6,model->num_positions);
 
   
   if (nrhs > 2) {
-    Map<VectorXd> qd(mxGetPr(prhs[2]), model->num_velocities);
+    Map<VectorXd> qd(mxGetPrSafe(prhs[2]), model->num_velocities);
     model->getCMM(q,qd,A,Adot);
   }
   else {

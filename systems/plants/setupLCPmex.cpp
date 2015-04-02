@@ -207,12 +207,12 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   const size_t mC = mxGetNumberOfElements(D_array);
   const double z_inactive_guess_tol = static_cast<double>(mxGetScalar(inactive_guess_array));
   const double h = static_cast<double>(mxGetScalar(h_array));
-  const Map<VectorXd> q(mxGetPr(q_array), nq);
-  const Map<VectorXd> v(mxGetPr(v_array), nv);
-  const Map<VectorXd> u(mxGetPr(u_array), model->B.cols());
-  const Map<VectorXd> phiC(mxGetPr(phiC_array), num_contact_pairs);
-  const Map<MatrixXd> n(mxGetPr(n_array), num_contact_pairs, nq);
-  const Map<VectorXd> z_cached(mxGetPr(z_cached_array), num_z_cached);
+  const Map<VectorXd> q(mxGetPrSafe(q_array), nq);
+  const Map<VectorXd> v(mxGetPrSafe(v_array), nv);
+  const Map<VectorXd> u(mxGetPrSafe(u_array), model->B.cols());
+  const Map<VectorXd> phiC(mxGetPrSafe(phiC_array), num_contact_pairs);
+  const Map<MatrixXd> n(mxGetPrSafe(n_array), num_contact_pairs, nq);
+  const Map<VectorXd> z_cached(mxGetPrSafe(z_cached_array), num_z_cached);
   
   VectorXd C, phiL, phiP, phiL_possible, phiC_possible, phiL_check, phiC_check;
   MatrixXd H, B, JP, JL, JL_possible, n_possible, JL_check, n_check;
@@ -228,7 +228,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   const size_t nP = phiP.size();
   
   plhs[2] = mxCreateDoubleMatrix(nq, 1, mxREAL);
-  Map<VectorXd> wqdn(mxGetPr(plhs[2]), nq);
+  Map<VectorXd> wqdn(mxGetPrSafe(plhs[2]), nq);
 
   LLT<MatrixXd> H_cholesky(H); // compute the Cholesky decomposition of H
   wqdn = H_cholesky.solve(B * u - C);
@@ -253,8 +253,8 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
     plhs[0] = mxCreateDoubleMatrix(lcp_size, 1, mxREAL);
     plhs[1] = mxCreateDoubleMatrix(nq, lcp_size, mxREAL);
 
-    Map<VectorXd> z(mxGetPr(plhs[0]), lcp_size);
-    Map<MatrixXd> Mqdn(mxGetPr(plhs[1]), nq, lcp_size);
+    Map<VectorXd> z(mxGetPrSafe(plhs[0]), lcp_size);
+    Map<MatrixXd> Mqdn(mxGetPrSafe(plhs[1]), nq, lcp_size);
 
     if (lcp_size == 0) {
       return;
@@ -272,7 +272,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
     
     MatrixXd D_possible(mC * nC, nq);
     for (size_t i = 0; i < mC ; i++) {
-      Map<MatrixXd> D_i(mxGetPr(mxGetCell(D_array, i)), num_contact_pairs , nq);
+      Map<MatrixXd> D_i(mxGetPrSafe(mxGetCell(D_array, i)), num_contact_pairs , nq);
       MatrixXd D_i_possible, D_i_exclude;
       filterByIndices(possible_contact_indices, D_i, D_i_possible);
       D_possible.block(nC * i, 0, nC, nq) = D_i_possible;
@@ -289,8 +289,8 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
     mxArray* mxw = mxCreateDoubleMatrix(lcp_size, 1, mxREAL);
     mxArray* mxlb = mxCreateDoubleMatrix(lcp_size, 1, mxREAL);
     mxArray* mxub = mxCreateDoubleMatrix(lcp_size, 1, mxREAL);  
-    Map<VectorXd> lb(mxGetPr(mxlb), lcp_size);
-    Map<VectorXd> ub(mxGetPr(mxub), lcp_size);
+    Map<VectorXd> lb(mxGetPrSafe(mxlb), lcp_size);
+    Map<VectorXd> ub(mxGetPrSafe(mxub), lcp_size);
     lb << VectorXd::Zero(nL),
           -BIG * VectorXd::Ones(nP),
           VectorXd::Zero(nC + mC * nC + nC);
@@ -298,8 +298,8 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
     mxArray *lhs[1];
     mxArray *rhs[] = {mxM, mxw, mxlb, mxub};
     
-    Map<MatrixXd> M(mxGetPr(mxM),lcp_size, lcp_size);
-    Map<VectorXd> w(mxGetPr(mxw), lcp_size);
+    Map<MatrixXd> M(mxGetPrSafe(mxM),lcp_size, lcp_size);
+    Map<VectorXd> w(mxGetPrSafe(mxw), lcp_size);
 
     //build LCP matrix
     M << h * JL_possible * Mqdn,
@@ -341,7 +341,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
     //fall back to pathlcp
     if(qp_failed) {
       mexCallMATLAB(1, lhs, 4, rhs, "pathlcp");
-      Map<VectorXd> z_path(mxGetPr(lhs[0]), lcp_size);
+      Map<VectorXd> z_path(mxGetPrSafe(lhs[0]), lcp_size);
       z = z_path;
       mxDestroyArray(lhs[0]);
     }

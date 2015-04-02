@@ -26,7 +26,7 @@ inline mxArray* getTangentsArray(RigidBodyManipulator* const model, Map<Matrix3x
   for (int k = 0 ; k < BASIS_VECTOR_HALF_COUNT ; k++)
   {
     mxArray *cell = mxCreateDoubleMatrix(3, numContactPairs, mxREAL );    
-    tangents.push_back(Map<Matrix3xd>(mxGetPr(cell), 3, numContactPairs));
+    tangents.push_back(Map<Matrix3xd>(mxGetPrSafe(cell), 3, numContactPairs));
     mxSetCell(tangentCells, k, cell);
   }
 
@@ -50,7 +50,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   }
 
   //Mapping Eigen Matrix to existing memory to avoid copy overhead
-  Map<Matrix3xd> normals(mxGetPr(prhs[1]), 3, numNormals); 
+  Map<Matrix3xd> normals(mxGetPrSafe(prhs[1]), 3, numNormals); 
 
   if (nlhs > 0) {
     plhs[0] = getTangentsArray(model, normals);
