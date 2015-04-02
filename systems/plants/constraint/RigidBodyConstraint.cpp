@@ -2363,96 +2363,101 @@ MinDistanceConstraint::eval(const double* t, VectorXd& c, MatrixXd& dc) const
   //DEBUG
   //std::cout << "MinDistanceConstraint::eval: START" << std::endl;
   //END_DEBUG
-  VectorXd dist, scaled_dist, pairwise_costs;
-  MatrixXd xA, xB, normal, ddist_dq, dscaled_dist_ddist, dpairwise_costs_dscaled_dist;
-  std::vector<int> idxA;
-  std::vector<int> idxB;
+  if(this->isTimeValid(t)) {
+    VectorXd dist, scaled_dist, pairwise_costs;
+    MatrixXd xA, xB, normal, ddist_dq, dscaled_dist_ddist, dpairwise_costs_dscaled_dist;
+    std::vector<int> idxA;
+    std::vector<int> idxB;
 
-  if (active_bodies_idx.size() > 0) {
-    if (active_group_names.size() > 0) {
-      robot->collisionDetect(dist,normal,xA,xB,idxA,idxB,active_bodies_idx,active_group_names);
+    if (active_bodies_idx.size() > 0) {
+      if (active_group_names.size() > 0) {
+        robot->collisionDetect(dist,normal,xA,xB,idxA,idxB,active_bodies_idx,active_group_names);
+      } else {
+        robot->collisionDetect(dist,normal,xA,xB,idxA,idxB,active_bodies_idx);
+      }
     } else {
-      robot->collisionDetect(dist,normal,xA,xB,idxA,idxB,active_bodies_idx);
+      if (active_group_names.size() > 0) {
+        robot->collisionDetect(dist,normal,xA,xB,idxA,idxB,active_group_names);
+      } else {
+        robot->collisionDetect(dist,normal,xA,xB,idxA,idxB);
+      }
     }
+
+    int num_pts = static_cast<int>(xA.cols());
+    ddist_dq = MatrixXd::Zero(num_pts,robot->num_positions);
+
+    // Compute Jacobian of closest distance vector
+    //DEBUG
+    //std:: cout << "IntegratedClosestDistanceConstraint::eval_valid: Compute distance Jacobian" << std::endl;
+    //END_DEBUG
+    scaleDistance(dist,scaled_dist,dscaled_dist_ddist);
+    penalty(scaled_dist, pairwise_costs, dpairwise_costs_dscaled_dist);
+
+    std::vector< std::vector<int> > orig_idx_of_pt_on_bodyA(robot->num_bodies);
+    std::vector< std::vector<int> > orig_idx_of_pt_on_bodyB(robot->num_bodies);
+    for (int k = 0; k < num_pts; ++k) {
+      //DEBUG
+      //std::cout << "MinDistanceConstraint::eval: First loop: " << k << std::endl;
+      //std::cout << "pairwise_costs.size() = " << pairwise_costs.size() << std::endl;
+      //std::cout << "pairwise_costs.size() = " << pairwise_costs.size() << std::endl;
+      //END_DEBUG
+      if (pairwise_costs(k) > 0) {
+        orig_idx_of_pt_on_bodyA.at(idxA.at(k)).push_back(k);
+        orig_idx_of_pt_on_bodyB.at(idxB.at(k)).push_back(k);
+      }
+    }
+    for (int k = 0; k < robot->num_bodies; ++k) {
+      //DEBUG
+      //std::cout << "MinDistanceConstraint::eval: Second loop: " << k << std::endl;
+      //END_DEBUG
+      int l = 0;
+      int numA = static_cast<int>(orig_idx_of_pt_on_bodyA.at(k).size());
+      int numB = static_cast<int>(orig_idx_of_pt_on_bodyB.at(k).size());
+      if(numA+numB==0)
+      {
+        continue;
+      }
+      MatrixXd x_k(3, numA + numB);
+      for (; l < numA; ++l) {
+        //DEBUG
+        //std::cout << "MinDistanceConstraint::eval: Third loop: " << l << std::endl;
+        //END_DEBUG
+        x_k.col(l) = xA.col(orig_idx_of_pt_on_bodyA.at(k).at(l));
+      }
+      for (; l < numA + numB; ++l) {
+        //DEBUG
+        //std::cout << "MinDistanceConstraint::eval: Fourth loop: " << l << std::endl;
+        //END_DEBUG
+        x_k.col(l) = xB.col(orig_idx_of_pt_on_bodyB.at(k).at(l-numA));
+      }
+      MatrixXd x_k_1(4,x_k.cols());
+      MatrixXd J_k(3*x_k.cols(),robot->num_positions);
+      x_k_1 << x_k, MatrixXd::Ones(1,x_k.cols());
+      robot->forwardJac(k,x_k_1,0,J_k);
+      l = 0;
+      for (; l < numA; ++l) {
+        //DEBUG
+        //std::cout << "MinDistanceConstraint::eval: Fifth loop: " << l << std::endl;
+        //END_DEBUG
+        ddist_dq.row(orig_idx_of_pt_on_bodyA.at(k).at(l)) += normal.col(orig_idx_of_pt_on_bodyA.at(k).at(l)).transpose() * J_k.block(3*l,0,3,robot->num_positions);
+      }
+      for (; l < numA+numB; ++l) {
+        //DEBUG
+        //std::cout << "MinDistanceConstraint::eval: Sixth loop: " << l << std::endl;
+        //END_DEBUG
+        ddist_dq.row(orig_idx_of_pt_on_bodyB.at(k).at(l-numA)) += -normal.col(orig_idx_of_pt_on_bodyB.at(k).at(l-numA)).transpose() * J_k.block(3*l,0,3,robot->num_positions);
+      }
+    }
+    //DEBUG
+    //std::cout << "MinDistanceConstraint::eval: Set outputs" << std::endl;
+    //END_DEBUG
+    MatrixXd dcost_dscaled_dist(dpairwise_costs_dscaled_dist.colwise().sum());
+    c(0) = pairwise_costs.sum();
+    dc = dcost_dscaled_dist*dscaled_dist_ddist*ddist_dq;
   } else {
-    if (active_group_names.size() > 0) {
-      robot->collisionDetect(dist,normal,xA,xB,idxA,idxB,active_group_names);
-    } else {
-      robot->collisionDetect(dist,normal,xA,xB,idxA,idxB);
-    }
+    c.resize(0);
+    dc.resize(0,0);
   }
-
-  int num_pts = static_cast<int>(xA.cols());
-  ddist_dq = MatrixXd::Zero(num_pts,robot->num_positions);
-
-  // Compute Jacobian of closest distance vector
-  //DEBUG
-  //std:: cout << "IntegratedClosestDistanceConstraint::eval_valid: Compute distance Jacobian" << std::endl;
-  //END_DEBUG
-  scaleDistance(dist,scaled_dist,dscaled_dist_ddist);
-  penalty(scaled_dist, pairwise_costs, dpairwise_costs_dscaled_dist);
-
-  std::vector< std::vector<int> > orig_idx_of_pt_on_bodyA(robot->num_bodies);
-  std::vector< std::vector<int> > orig_idx_of_pt_on_bodyB(robot->num_bodies);
-  for (int k = 0; k < num_pts; ++k) {
-    //DEBUG
-    //std::cout << "MinDistanceConstraint::eval: First loop: " << k << std::endl;
-    //std::cout << "pairwise_costs.size() = " << pairwise_costs.size() << std::endl;
-    //std::cout << "pairwise_costs.size() = " << pairwise_costs.size() << std::endl;
-    //END_DEBUG
-    if (pairwise_costs(k) > 0) {
-      orig_idx_of_pt_on_bodyA.at(idxA.at(k)).push_back(k);
-      orig_idx_of_pt_on_bodyB.at(idxB.at(k)).push_back(k);
-    }
-  }
-  for (int k = 0; k < robot->num_bodies; ++k) {
-    //DEBUG
-    //std::cout << "MinDistanceConstraint::eval: Second loop: " << k << std::endl;
-    //END_DEBUG
-    int l = 0;
-    int numA = static_cast<int>(orig_idx_of_pt_on_bodyA.at(k).size());
-    int numB = static_cast<int>(orig_idx_of_pt_on_bodyB.at(k).size());
-    if(numA+numB==0)
-    {
-      continue;
-    }
-    MatrixXd x_k(3, numA + numB);
-    for (; l < numA; ++l) {
-      //DEBUG
-      //std::cout << "MinDistanceConstraint::eval: Third loop: " << l << std::endl;
-      //END_DEBUG
-      x_k.col(l) = xA.col(orig_idx_of_pt_on_bodyA.at(k).at(l));
-    }
-    for (; l < numA + numB; ++l) {
-      //DEBUG
-      //std::cout << "MinDistanceConstraint::eval: Fourth loop: " << l << std::endl;
-      //END_DEBUG
-      x_k.col(l) = xB.col(orig_idx_of_pt_on_bodyB.at(k).at(l-numA));
-    }
-    MatrixXd x_k_1(4,x_k.cols());
-    MatrixXd J_k(3*x_k.cols(),robot->num_positions);
-    x_k_1 << x_k, MatrixXd::Ones(1,x_k.cols());
-    robot->forwardJac(k,x_k_1,0,J_k);
-    l = 0;
-    for (; l < numA; ++l) {
-      //DEBUG
-      //std::cout << "MinDistanceConstraint::eval: Fifth loop: " << l << std::endl;
-      //END_DEBUG
-      ddist_dq.row(orig_idx_of_pt_on_bodyA.at(k).at(l)) += normal.col(orig_idx_of_pt_on_bodyA.at(k).at(l)).transpose() * J_k.block(3*l,0,3,robot->num_positions);
-    }
-    for (; l < numA+numB; ++l) {
-      //DEBUG
-      //std::cout << "MinDistanceConstraint::eval: Sixth loop: " << l << std::endl;
-      //END_DEBUG
-      ddist_dq.row(orig_idx_of_pt_on_bodyB.at(k).at(l-numA)) += -normal.col(orig_idx_of_pt_on_bodyB.at(k).at(l-numA)).transpose() * J_k.block(3*l,0,3,robot->num_positions);
-    }
-  }
-  //DEBUG
-  //std::cout << "MinDistanceConstraint::eval: Set outputs" << std::endl;
-  //END_DEBUG
-  MatrixXd dcost_dscaled_dist(dpairwise_costs_dscaled_dist.colwise().sum());
-  c(0) = pairwise_costs.sum();
-  dc = dcost_dscaled_dist*dscaled_dist_ddist*ddist_dq;
   //DEBUG
   //std::cout << "MinDistanceConstraint::eval: END" << std::endl;
   //END_DEBUG
@@ -2694,6 +2699,74 @@ void PostureChangeConstraint::bounds(const double* t, int n_breaks, VectorXd &lb
   }
   else
   {
+    lb.resize(0);
+    ub.resize(0);
+  }
+}
+
+GravityCompensationTorqueConstraint::
+GravityCompensationTorqueConstraint(RigidBodyManipulator* robot,
+    const VectorXi& joint_indices, const VectorXd& lb, const VectorXd& ub, const Vector2d &tspan)
+  : SingleTimeKinematicConstraint(robot, tspan), lb(lb), ub(ub), joint_indices(joint_indices)
+{
+  this->num_constraint = joint_indices.size();
+  this->type = RigidBodyConstraint::GravityCompensationTorqueConstraintType;
+}
+
+void GravityCompensationTorqueConstraint::eval(const double* t, VectorXd& c, MatrixXd& dc) const
+{
+  VectorXd qd = VectorXd::Zero(robot->num_velocities);
+  MatrixXd* f_ext = nullptr;
+  MatrixXd* df_ext = nullptr;
+  MatrixXd H(robot->num_velocities, robot->num_velocities);
+  MatrixXd dH(robot->num_velocities*robot->num_velocities, robot->num_positions+robot->num_velocities);
+  VectorXd G(robot->num_velocities);
+  MatrixXd dG(robot->num_velocities, robot->num_positions+robot->num_velocities);
+
+  robot->HandC(robot->cached_q, qd, f_ext, H, G, &dH, &dG, df_ext);
+
+  c.resize(num_constraint);
+  dc.resize(num_constraint, robot->num_positions);
+
+  for (int i = 0; i < num_constraint; ++i) {
+    c(i) = G(joint_indices(i));
+    dc.row(i) = dG.block(joint_indices(i), 0, 1, robot->num_positions);
+  }
+}
+
+void GravityCompensationTorqueConstraint::name(const double* t, std::vector<std::string>& name) const
+{
+  if(this->isTimeValid(t))
+  {
+    char cnst_name_buffer[100];
+    if(t == nullptr)
+    {
+      sprintf(cnst_name_buffer,"Gravity compensation torque constraint");
+    }
+    else
+    {
+      sprintf(cnst_name_buffer,
+          "Gravity compensation torque constraint at time %10.4f",*t);
+    }
+    std::string cnst_name(cnst_name_buffer);
+    for(int i = 0;i<this->num_constraint;i++)
+    {
+      name.push_back(cnst_name);
+    }
+  }
+  else
+  {
+    name.push_back("");
+  }
+}
+
+void GravityCompensationTorqueConstraint::bounds(const double* t, VectorXd& lb, VectorXd& ub) const
+{
+  if(this->isTimeValid(t))
+  {
+    lb = this->lb;
+    ub = this->ub;
+  } else {
     lb.resize(0);
     ub.resize(0);
   }

@@ -44,9 +44,6 @@ if (eigen3_FOUND)
       target_link_libraries(constructQPDataPointerMex drakeQP drakeControlUtil)
       pods_use_pkg_config_packages(constructQPDataPointerMex gurobi)
 
-      add_mex(instantaneousBodyMotionControlmex instantaneousBodyMotionControlmex.cpp)
-      target_link_libraries(instantaneousBodyMotionControlmex drakeRBM drakeControlUtil)
-
       include_directories (${CMAKE_BINARY_DIR}/lcmgen/lcmtypes )
       add_mex(encodeQPInputLCMMex encodeQPInputLCMMex.cpp)
       target_link_libraries(encodeQPInputLCMMex lcm drakeControlUtil drakeQPCommon)

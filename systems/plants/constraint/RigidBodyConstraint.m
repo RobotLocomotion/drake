@@ -53,6 +53,7 @@ classdef RigidBodyConstraint
     RelativeQuatConstraintType = 24;
     RelativeGazeDirConstraintType = 25;
     MinDistanceConstraintType = 26;
+    GravityCompensationTorqueConstraintType = 27;
   end
   
   methods

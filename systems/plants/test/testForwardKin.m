@@ -111,7 +111,14 @@ for i = 1 : n_tests
       [x_mex, J_mex] = robot.forwardKin(kinsol_mex, end_effector, points, options);
     end
     
-    valuecheck(x_mex, x);
+    x_pos = x(1 : end - rotationRepresentationSize(rotation_type), :);
+    x_pos_mex = x_mex(1 : end - rotationRepresentationSize(rotation_type), :);
+    
+    x_rot = x(end - rotationRepresentationSize(rotation_type) + 1 : end, :);
+    x_rot_mex = x_mex(end - rotationRepresentationSize(rotation_type) + 1 : end, :);
+    
+    valuecheck(x_pos_mex, x_pos);
+    valuecheckRotations(x_rot, x_rot_mex, rotation_type);
     valuecheck(J_mex, J);
     if robot.use_new_kinsol || rotation_type == 0
       valuecheck(dJ_mex, dJ);
@@ -158,5 +165,28 @@ for i = 1 : n_tests
     valuecheck(J_with_gradients, J);
   end
 end
+end
 
+function valuecheckRotations(val, desired_val, rotation_type, tolerance)
+if nargin < 4
+  tolerance = 1e-10;
+end
+
+sizecheck(desired_val, size(val));
+switch rotation_type
+  case 0
+    % do nothing
+  case 1
+    valuecheck(angleDiff(val, desired_val), zeros(size(val)), tolerance);
+  case 2
+    for col = 1 : size(val, 2)
+      q = val(:, col);
+      q_mex = desired_val(:, col);
+      angle_axis_diff = quat2axis(quatDiff(q, q_mex));
+      angle_diff = angle_axis_diff(4);
+      valuecheck(angle_diff, 0, tolerance);
+    end
+  otherwise
+    error('rotation type not recognized');
+end
 end
