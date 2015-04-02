@@ -375,51 +375,55 @@ end
 
 
 function model = parseForceElement(model,robotnum,node,options)
+
+name = char(node.getAttribute('name'));
+name = regexprep(name, '\.', '_', 'preservecase');
+
 fe = [];
 childNodes = node.getChildNodes();
 elnode = node.getElementsByTagName('linear_spring_damper').item(0);
 if ~isempty(elnode)
-  [model,fe] = RigidBodySpringDamper.parseURDFNode(model,robotnum,elnode,options);
+  [model,fe] = RigidBodySpringDamper.parseURDFNode(model,name,robotnum,elnode,options);
 end
 
 elnode = node.getElementsByTagName('torsional_spring').item(0);
 if ~isempty(elnode)
-  [model,fe] = RigidBodyTorsionalSpring.parseURDFNode(model,robotnum,elnode,options);
+  [model,fe] = RigidBodyTorsionalSpring.parseURDFNode(model,name,robotnum,elnode,options);
 end
 
 elnode = node.getElementsByTagName('wing').item(0);
 if ~isempty(elnode)
-  [model,fe] = RigidBodyWing.parseURDFNode(model,robotnum,elnode,options);
+  [model,fe] = RigidBodyWing.parseURDFNode(model,name,robotnum,elnode,options);
 end
 
 elnode = node.getElementsByTagName('wing_with_control_surface').item(0);
 if ~isempty(elnode)
-  [model,fe] = RigidBodyWingWithControlSurface.parseURDFNode(model,robotnum,elnode,options);
+  [model,fe] = RigidBodyWingWithControlSurface.parseURDFNode(model,name,robotnum,elnode,options);
 end
 
 elnode = node.getElementsByTagName('bluff_body').item(0);
 if ~isempty(elnode)
-  [model,fe] = RigidBodyBluffBody.parseURDFNode(model,robotnum,elnode,options);
+  [model,fe] = RigidBodyBluffBody.parseURDFNode(model,name,robotnum,elnode,options);
 end
 
 elnode = node.getElementsByTagName('thrust').item(0);
 if ~isempty(elnode)
-  [model,fe] = RigidBodyThrust.parseURDFNode(model,robotnum,elnode,options);
+  [model,fe] = RigidBodyThrust.parseURDFNode(model,name,robotnum,elnode,options);
 end
 
 elnode = node.getElementsByTagName('added_mass').item(0);
 if ~isempty(elnode)
-  [model,fe] = RigidBodyAddedMass.parseURDFNode(model,robotnum,elnode,options);
+  [model,fe] = RigidBodyAddedMass.parseURDFNode(model,name,robotnum,elnode,options);
 end
 
 elnode = node.getElementsByTagName('buoyancy').item(0);
 if ~isempty(elnode)
-  [model,fe] = RigidBodyBuoyant.parseURDFNode(model,robotnum,elnode,options);
+  [model,fe] = RigidBodyBuoyant.parseURDFNode(model,name,robotnum,elnode,options);
 end
 
 elnode = node.getElementsByTagName('propellor').item(0);
 if ~isempty(elnode)
-  [model,fe] = RigidBodyPropellor.parseURDFNode(model,robotnum,elnode,options);
+  [model,fe] = RigidBodyPropellor.parseURDFNode(model,name,robotnum,elnode,options);
 end
 
 

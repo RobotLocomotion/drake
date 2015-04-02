@@ -17,6 +17,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     enable_fastqp; % whether we use the active set LCP
     lcmgl_contact_forces_scale = 0;  % <=0 implies no lcmgl
     z_inactive_guess_tol = .01;
+    gurobi_present = false;
   end
 
   methods
@@ -118,6 +119,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
 
     function model = compile(model)
       w = warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
+      model.gurobi_present = checkDependency('gurobi');
       model.manip = model.manip.compile();
       warning(w);
 
@@ -183,8 +185,9 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       if (nargout>1)
         [obj,z,Mqdn,wqdn,dz,dMqdn,dwqdn] = solveLCP(obj,t,x,u);
       else
-        if (obj.manip.only_loops && obj.manip.mex_model_ptr~=0 && ~obj.position_control)
-          [z, Mqdn, wqdn] = solveMexLCP(obj,t,x,u);
+        if (obj.gurobi_present && obj.manip.only_loops && obj.manip.mex_model_ptr~=0 && ~obj.position_control)
+           [obj,z,Mqdn,wqdn] = solveMexLCP(obj,t,x,u);
+           %[obj,z,Mqdn,wqdn] = solveLCP(obj,t,x,u);
         else
           [obj,z,Mqdn,wqdn] = solveLCP(obj,t,x,u);
         end
@@ -231,13 +234,14 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
              all(u==obj.LCP_cache.data.u) && num_args_out <= obj.LCP_cache.data.nargout);
     end
 
-    function [z, Mqdn, wqdn] = solveMexLCP(obj, t, x, u)
+    function [obj, z, Mqdn, wqdn] = solveMexLCP(obj, t, x, u)
         num_q = obj.manip.num_positions;
         q=x(1:num_q); 
         v=x(num_q+(1:obj.manip.num_velocities));
         kinsol = doKinematics(obj,q);
         [phiC,~,~,~,~,~,~,mu,n,D] = obj.manip.contactConstraints(kinsol,true);
-        [z, Mqdn, wqdn] = setupLCPmex(obj.manip.mex_model_ptr, q, v, u, phiC, n, D, obj.timestep, obj.z_inactive_guess_tol);
+        [z, Mqdn, wqdn] = setupLCPmex(obj.manip.mex_model_ptr, q, v, u, phiC, n, D, obj.timestep, obj.z_inactive_guess_tol, obj.LCP_cache.data.z);
+        obj.LCP_cache.data.z = z;
     end
     
     function [obj,z,Mqdn,wqdn,dz,dMqdn,dwqdn] = solveLCP(obj,t,x,u)
@@ -580,7 +584,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         %      return;
 
         z = zeros(nL+nP+(mC+2)*nC,1); 
-        if possible_indices_changed || isempty(obj.LCP_cache.data.z)
+        if possible_indices_changed || isempty(obj.LCP_cache.data.z) || numel(obj.LCP_cache.data.z) ~= numel(lb)
           z_inactive = true(nL+nP+(mC+2)*nC,1);
           M_active = z_inactive;
           obj.LCP_cache.data.z = z;
@@ -590,7 +594,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
           % when M*z_inactive + w > 1e-8 by a small amount
           M_active = z_inactive;
         end
-
+        
         QP_FAILED = true;
         if obj.enable_fastqp
           n_z_inactive = sum(z_inactive);
@@ -604,6 +608,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
             fqp = -0*obj.LCP_cache.data.z(z_inactive); % could used the previous solution here
             % but it introduces unwanted hidden state
 %             fastqp_tic = tic;
+            
             [z_,info_fqp] = fastQPmex(QblkDiag,fqp,Ain_fqp,bin_fqp,Aeq,beq,[]);
 %             fastqp_time = toc(fastqp_tic);
 %             fprintf('FastQP solve time: %2.5f\n',fastqp_time);
@@ -621,8 +626,9 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
               % M(z_active,z_inactive)*z(z_inactive)+w(z_active) >= 0  % since we're assuming that z(z_active) == 0
               z_active = ~z_inactive(1:(nL+nP+nC));  % only look at joint limit, position, and normal variables since if cn_i = 0, 
               % then that's a solution and we don't care about the relative velocity \lambda_i
-              QP_FAILED = (~isempty(w(z_active)) && any(M(z_active,z_inactive)*z(z_inactive)+w(z_active) < 0)) || ...
-                any(((z(z_inactive)>lb(z_inactive)+1e-8) & (M(z_inactive, z_inactive)*z(z_inactive)+w(z_inactive)>1e-8)));
+              QP_FAILED1 = (~isempty(w(z_active)) && any(M(z_active,z_inactive)*z(z_inactive)+w(z_active) < 0));
+              QP_FAILED2 = any(((z(z_inactive)>lb(z_inactive)+1e-8) & (M(z_inactive, z_inactive)*z(z_inactive)+w(z_inactive)>1e-8)));
+              QP_FAILED = QP_FAILED1 || QP_FAILED2;
             end
           end
         end

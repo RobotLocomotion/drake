@@ -2,6 +2,7 @@
 #include "RigidBodyManipulator.h"
 #include "RigidBodyConstraint.h"
 #include "drakeUtil.h"
+#include "controlUtil.h"
 using namespace Eigen;
 using namespace std;
 
@@ -1128,6 +1129,51 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         auto cnst = new MinDistanceConstraint(model,min_distance,active_bodies_idx,active_group_names,tspan);
         plhs[0] = createDrakeConstraintMexPointer((void*)cnst,
                                         "MinDistanceConstraint");
+      }
+      break;
+    case RigidBodyConstraint::GravityCompensationTorqueConstraintType:
+      {
+        if(nrhs != 5 && nrhs != 6)
+        {
+          mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs",
+              "Usage ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint::GravityCompensationTorqueConstraintType, robot.mex_model_ptr, joint_ind, lb, ub, tspan)");
+        }
+        RigidBodyManipulator* model = (RigidBodyManipulator*) getDrakeMexPointer(prhs[1]);
+        Vector2d tspan;
+        if(nrhs == 5)
+        {
+          tspan<< -mxGetInf(), mxGetInf();
+        }
+        else
+        {
+          rigidBodyConstraintParseTspan(prhs[5],tspan);
+        }
+
+        size_t num_joints(mxGetNumberOfElements(prhs[2]));
+
+        VectorXd joint_ind_tmp(num_joints);
+        memcpy(joint_ind_tmp.data(),mxGetPrSafe(prhs[2]),sizeof(double)*num_joints);
+
+        VectorXi joint_ind(num_joints);
+        for(int i = 0;i<num_joints;i++)
+        {
+          joint_ind(i) = (int) joint_ind_tmp(i)-1;
+          if(joint_ind(i)<0 || joint_ind(i)>=model->num_positions)
+          {
+            mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","joint_ind must be within [1,nq]");
+          }
+        }
+
+        VectorXd lb(num_joints);
+        VectorXd ub(num_joints);
+        sizecheck(prhs[3], num_joints, 1);
+        sizecheck(prhs[4], num_joints, 1);
+        memcpy(lb.data(),mxGetPrSafe(prhs[3]),sizeof(double)*num_joints);
+        memcpy(ub.data(),mxGetPrSafe(prhs[4]),sizeof(double)*num_joints);
+
+        auto cnst = new GravityCompensationTorqueConstraint(model,joint_ind,lb,ub,tspan);
+        plhs[0] = createDrakeConstraintMexPointer((void*)cnst,
+                                        "GravityCompensationTorqueConstraint");
       }
       break;
     default:

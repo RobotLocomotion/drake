@@ -24,6 +24,8 @@ namespace DrakeShapes
         : geometry(), T_element_to_local(T_element_to_local)
       {};
 
+      virtual ~Element(){};
+
       virtual Element* clone() const;
 
       const Eigen::Matrix4d& getWorldTransform() const; 

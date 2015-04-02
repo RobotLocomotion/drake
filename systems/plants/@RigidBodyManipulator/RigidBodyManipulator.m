@@ -879,7 +879,7 @@ classdef RigidBodyManipulator < Manipulator
       end
       
       if (model.num_contact_pairs>0)
-        warning('Drake:RigidBodyManipulator:UnsupportedContactPoints','Contact is not supported by the dynamics methods of this class.  Consider using TimeSteppingRigidBodyManipulator or HybridPlanarRigidBodyManipulator');
+        warnOnce(model.warning_manager,'Drake:RigidBodyManipulator:UnsupportedContactPoints','Contact is not supported by the dynamics methods of this class.  Consider using TimeSteppingRigidBodyManipulator or HybridPlanarRigidBodyManipulator');
       end
 
 %      H = manipulatorDynamics(model,zeros(model.num_positions,1),zeros(model.num_positions,1));

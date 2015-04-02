@@ -81,6 +81,7 @@ class DLLEXPORT RigidBodyConstraint
     static const int RelativeQuatConstraintType                 = 24;
     static const int RelativeGazeDirConstraintType              = 25;
     static const int MinDistanceConstraintType                  = 26;
+    static const int GravityCompensationTorqueConstraintType    = 27;
 };
 
 /**
@@ -689,5 +690,23 @@ class DLLEXPORT PostureChangeConstraint: public MultipleTimeLinearPostureConstra
     virtual void name(const double* t, int n_breaks, std::vector<std::string> &name_str) const;
     virtual void bounds(const double* t, int n_breaks, Eigen::VectorXd &lb, Eigen::VectorXd &ub) const;
     virtual ~PostureChangeConstraint(){};
+};
+
+class DLLEXPORT GravityCompensationTorqueConstraint: public SingleTimeKinematicConstraint
+{
+  public:
+    GravityCompensationTorqueConstraint(RigidBodyManipulator* model,
+                                        const Eigen::VectorXi& joint_indices,
+                                        const Eigen::VectorXd& lb,
+                                        const Eigen::VectorXd& ub,
+                                        const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan);
+    virtual void eval(const double* t,Eigen::VectorXd& c, Eigen::MatrixXd& dc) const;
+    virtual void name(const double* t, std::vector<std::string> &name) const;
+    virtual void bounds(const double* t, Eigen::VectorXd& lb, Eigen::VectorXd& ub) const;
+    virtual ~GravityCompensationTorqueConstraint(){};
+  protected:
+    Eigen::VectorXi joint_indices;
+    Eigen::VectorXd lb;
+    Eigen::VectorXd ub;
 };
 #endif

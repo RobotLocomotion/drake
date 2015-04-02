@@ -398,16 +398,6 @@ std::vector<SupportStateElement> getActiveSupports(RigidBodyManipulator* r, void
   return active_supports;
 }
 
-void sizecheck(const mxArray* mat, int M, int N) {
-  if (mxGetM(mat) != M) {
-    mexErrMsgIdAndTxt("Drake:WrongSize", "wrong number of rows. Expected: %d but got: %d", M, mxGetM(mat));
-  }
-  if (mxGetN(mat) != N) {
-    mexErrMsgIdAndTxt("Drake:WrongSize", "wrong number of columns. Expected: %d but got: %d", N, mxGetN(mat));
-  }
-  return;
-}
-
 Vector6d bodyMotionPD(RigidBodyManipulator *r, DrakeRobotState &robot_state, const int body_index, const Ref<const Vector6d> &body_pose_des, const Ref<const Vector6d> &body_v_des, const Ref<const Vector6d> &body_vdot_des, const Ref<const Vector6d> &Kp, const Ref<const Vector6d> &Kd) {
 
   r->doKinematics(robot_state.q,false,robot_state.qd);

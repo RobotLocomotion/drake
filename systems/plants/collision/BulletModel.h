@@ -29,6 +29,8 @@ namespace DrakeCollision
   {
     BulletCollisionWorldWrapper();
 
+    ElementToBtObjMap bt_collision_objects;
+
     btDefaultCollisionConfiguration bt_collision_configuration;
     btDbvtBroadphase bt_collision_broadphase;
     OverlapFilterCallback filter_callback;
@@ -36,13 +38,15 @@ namespace DrakeCollision
     std::unique_ptr<btCollisionDispatcher> bt_collision_dispatcher;
     std::unique_ptr<btCollisionWorld> bt_collision_world;
 
-    ElementToBtObjMap bt_collision_objects;
   };
 
   class BulletModel : public Model
   {
     public:
       BulletModel() {};
+
+      virtual ~BulletModel(){};
+
       //Required member functions for Model interface
       virtual void updateModel();
 
@@ -78,9 +82,9 @@ namespace DrakeCollision
 
       BulletCollisionWorldWrapper& getBulletWorld(bool use_margins);
 
+      std::vector< std::unique_ptr<btCollisionShape> > bt_collision_shapes;
       BulletCollisionWorldWrapper bullet_world;
       BulletCollisionWorldWrapper bullet_world_no_margin;
-      std::vector< std::unique_ptr<btCollisionShape> > bt_collision_shapes;
 
     protected:
       static std::unique_ptr<btCollisionShape> newBulletBoxShape(const DrakeShapes::Box& geometry, bool use_margins);

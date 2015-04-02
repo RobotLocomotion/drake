@@ -1,7 +1,9 @@
-function testPositionConstraintsmex
+function testPositionConstraintsmex(urdf)
 
 %create a robot with a lot of positions constraints
-urdf = fullfile('../../../examples/Atlas/urdf/robotiq.urdf');
+if nargin<1 || isempty(urdf)
+  urdf = fullfile('../../../examples/Atlas/urdf/robotiq.urdf');
+end
 robot = RigidBodyManipulator(urdf);
 robot_new = RigidBodyManipulator(urdf, struct('use_new_kinsol', true));
 

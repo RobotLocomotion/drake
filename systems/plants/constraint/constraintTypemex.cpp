@@ -105,6 +105,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     case RigidBodyConstraint::MinDistanceConstraintType:
       plhs[0] = mxCreateString("MinDistanceConstraint");
       break;
+    case RigidBodyConstraint::GravityCompensationTorqueConstraintType:
+      plhs[0] = mxCreateString("GravityCompensationTorqueConstraint");
+      break;
     default:
       mexErrMsgIdAndTxt("Drake:constraintTypemex:BadInputs","The constraint type is not supported");
       break;

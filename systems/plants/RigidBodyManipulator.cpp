@@ -4,7 +4,7 @@
 #include "drakeGeometryUtil.h"
 #include "RigidBodyManipulator.h"
 #include "DrakeJoint.h"
-#include "FixedAxisOneDoFJoint.h"
+#include "FixedJoint.h"
 
 #include <algorithm>
 #include <string>
@@ -449,6 +449,24 @@ void RigidBodyManipulator::compile(void)
     }
   }
 
+  // weld joints for links that have zero inertia and no children (as seen in pr2.urdf)
+  for (size_t i=0; i<bodies.size(); i++) {
+    if (bodies[i]->hasParent() && bodies[i]->I.isConstant(0)) {
+      bool hasChild = false;
+      for (size_t j=i+1; j<bodies.size(); j++) {
+        if (bodies[j]->parent == bodies[i]) {
+          hasChild = true;
+          break;
+        }
+      }
+      if (!hasChild) {
+      	cout << "welding " << bodies[i]->getJoint().getName() << "because it has no inertia beneath it" << endl;
+        unique_ptr<DrakeJoint> joint_unique_ptr(new FixedJoint(bodies[i]->getJoint().getName(), bodies[i]->getJoint().getTransformToParentBody()));
+        bodies[i]->setJoint(move(joint_unique_ptr));
+      }
+    }
+  }
+
   num_bodies = static_cast<int>(bodies.size());
   int _num_positions = 0;
   num_velocities = 0;
@@ -668,17 +686,14 @@ bool RigidBodyManipulator::allCollisions(vector<int>& bodyA_idx,
 
   xA_in_world = MatrixXd::Zero(3,points.size());
   xB_in_world = MatrixXd::Zero(3,points.size());
-  //normal = MatrixXd::Zero(3,points.size());
-  //phi = VectorXd::Zero(points.size());
-
+  
   Vector3d ptA, ptB, n;
   double distance;
   for (int i=0; i<points.size(); ++i) {
-    points[i].getResults(ptA, ptA, n, distance);
+    points[i].getResults(ptA, ptB, n, distance);
     xA_in_world.col(i) = ptA;
     xB_in_world.col(i) = ptB;
-    //normal.col(i) = n;
-    //phi[i] = distance;
+    
     const RigidBody::CollisionElement* elementA = dynamic_cast<const RigidBody::CollisionElement*>(collision_model->readElement(points[i].getIdA()));
     bodyA_idx.push_back(elementA->getBody()->body_index);
     const RigidBody::CollisionElement* elementB = dynamic_cast<const RigidBody::CollisionElement*>(collision_model->readElement(points[i].getIdB()));
@@ -894,7 +909,9 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
       cerr << "mex kinematics for quaternion floating bases are not implemented yet" << endl;
     } else {
       shared_ptr<RigidBody> parent = bodies[i]->parent;
-      double qi = q[bodies[i]->position_num_start];
+      double qi = 0.0;
+      if (bodies[i]->getJoint().getNumPositions()>0) // if not a fixed joint
+      	qi = q[bodies[i]->position_num_start];
       Tjcalc(bodies[i]->pitch,qi,&TJ);
       dTjcalc(bodies[i]->pitch,qi,&dTJ);
 
@@ -950,7 +967,9 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
       }
 
       if (qd) {
-        double qdi = qd[bodies[i]->position_num_start];
+        double qdi = 0.0;
+        if (bodies[i]->getJoint().getNumVelocities()>0) // if not a fixed joint
+        	qdi = qd[bodies[i]->position_num_start];
         TJdot = dTJ*qdi;
         ddTjcalc(bodies[i]->pitch,qi,&ddTJ);
         dTJdot = ddTJ*qdi;
@@ -1088,59 +1107,71 @@ void RigidBodyManipulator::doKinematicsNew(const MatrixBase<DerivedQ>& q, const 
       }
 
       if (v.rows() > 0) {
-        // twist
-        auto v_body = v.middleRows(body.velocity_num_start, joint.getNumVelocities());
-        joint_twist.value().noalias() = body.J * v_body;
-        body.twist = body.parent->twist;
-        body.twist += joint_twist.value();
-
-        if (compute_gradients) {
-          // dtwistdq
-          joint_twist.gradient().value() = matGradMult(body.dJdq, v_body);
-          body.dtwistdq = body.parent->dtwistdq + joint_twist.gradient().value();
-        }
-
-        if (compute_JdotV) {
-          // Sdotv
-          auto dSdotVdqi = compute_gradients ? &body.dSdotVdqi : nullptr;
-          auto dSdotVdvi = compute_gradients ? &body.dSdotVdvi : nullptr;
-          joint.motionSubspaceDotTimesV(q_body, v_body, body.SdotV, dSdotVdqi, dSdotVdvi);
-
-          // Jdotv
-          auto joint_accel = crossSpatialMotion(body.twist, joint_twist.value());
-          joint_accel += transformSpatialMotion(body.T_new, body.SdotV);
-          body.JdotV = body.parent->JdotV + joint_accel;
+        if (joint.getNumVelocities()==0) { // for fixed joints
+          body.twist = body.parent->twist;
+           if (compute_gradients) body.dtwistdq = body.parent->dtwistdq;
+           if (compute_JdotV) {
+             body.JdotV = body.parent->JdotV;
+             if (compute_gradients) {
+               body.dJdotVdq = body.parent->dJdotVdq;
+               body.dJdotVdv = body.parent->dJdotVdv;
+             }
+           }
+        } else {
+          // twist
+          auto v_body = v.middleRows(body.velocity_num_start, joint.getNumVelocities());
+          joint_twist.value().noalias() = body.J * v_body;
+          body.twist = body.parent->twist;
+          body.twist += joint_twist.value();
 
           if (compute_gradients) {
-            // dJdotvdq
-            // TODO: exploit sparsity better
-            Matrix<double, TWIST_SIZE, Eigen::Dynamic> dSdotVdq(TWIST_SIZE, nq);
-            dSdotVdq.setZero();
-            dSdotVdq.middleCols(body.position_num_start, joint.getNumPositions()) = body.dSdotVdqi;
-            MatrixXd dcrm_twist_joint_twistdq(TWIST_SIZE, nq);
-            dcrm(body.twist, joint_twist.value(), body.dtwistdq, joint_twist.gradient().value(), &dcrm_twist_joint_twistdq); // TODO: make dcrm templated
-            body.dJdotVdq = body.parent->dJdotVdq
-                + dcrm_twist_joint_twistdq
-                + dTransformSpatialMotion(body.T_new, body.SdotV, body.dTdq_new, dSdotVdq);
+            // dtwistdq
+            joint_twist.gradient().value() = matGradMult(body.dJdq, v_body);
+            body.dtwistdq = body.parent->dtwistdq + joint_twist.gradient().value();
+          }
 
-            // dJdotvdv
-            int nv_joint = joint.getNumVelocities();
-            std::vector<int> v_indices;
-            auto dtwistdv = geometricJacobian<double>(0, i, 0, 0, false, &v_indices);
-            int nv_branch = static_cast<int>(v_indices.size());
+          if (compute_JdotV) {
+            // Sdotv
+            auto dSdotVdqi = compute_gradients ? &body.dSdotVdqi : nullptr;
+            auto dSdotVdvi = compute_gradients ? &body.dSdotVdvi : nullptr;
+            joint.motionSubspaceDotTimesV(q_body, v_body, body.SdotV, dSdotVdqi, dSdotVdvi);
 
-            Matrix<double, TWIST_SIZE, Eigen::Dynamic> djoint_twistdv(TWIST_SIZE, nv_branch);
-            djoint_twistdv.setZero();
-            djoint_twistdv.rightCols(nv_joint) = body.J;
+            // Jdotv
+            auto joint_accel = crossSpatialMotion(body.twist, joint_twist.value());
+            joint_accel += transformSpatialMotion(body.T_new, body.SdotV);
+            body.JdotV = body.parent->JdotV + joint_accel;
 
-            Matrix<double, TWIST_SIZE, Eigen::Dynamic> djoint_acceldv(TWIST_SIZE, nv_branch);
-            djoint_acceldv = dCrossSpatialMotion(body.twist, joint_twist.value(), dtwistdv.value(), djoint_twistdv); // TODO: can probably exploit sparsity better
-            djoint_acceldv.rightCols(nv_joint) += transformSpatialMotion(body.T_new, *dSdotVdvi);
+            if (compute_gradients) {
+              // dJdotvdq
+              // TODO: exploit sparsity better
+              Matrix<double, TWIST_SIZE, Eigen::Dynamic> dSdotVdq(TWIST_SIZE, nq);
+              dSdotVdq.setZero();
+              dSdotVdq.middleCols(body.position_num_start, joint.getNumPositions()) = body.dSdotVdqi;
+              MatrixXd dcrm_twist_joint_twistdq(TWIST_SIZE, nq);
+              dcrm(body.twist, joint_twist.value(), body.dtwistdq, joint_twist.gradient().value(), &dcrm_twist_joint_twistdq); // TODO: make dcrm templated
+              body.dJdotVdq = body.parent->dJdotVdq
+                  + dcrm_twist_joint_twistdq
+                  + dTransformSpatialMotion(body.T_new, body.SdotV, body.dTdq_new, dSdotVdq);
 
-            body.dJdotVdv.setZero();
-            for (int j = 0; j < nv_branch; j++) {
-              int v_index = v_indices[j];
-              body.dJdotVdv.col(v_index) = body.parent->dJdotVdv.col(v_index) + djoint_acceldv.col(j);
+              // dJdotvdv
+              int nv_joint = joint.getNumVelocities();
+              std::vector<int> v_indices;
+              auto dtwistdv = geometricJacobian<double>(0, i, 0, 0, false, &v_indices);
+              int nv_branch = static_cast<int>(v_indices.size());
+
+              Matrix<double, TWIST_SIZE, Eigen::Dynamic> djoint_twistdv(TWIST_SIZE, nv_branch);
+              djoint_twistdv.setZero();
+              djoint_twistdv.rightCols(nv_joint) = body.J;
+
+              Matrix<double, TWIST_SIZE, Eigen::Dynamic> djoint_acceldv(TWIST_SIZE, nv_branch);
+              djoint_acceldv = dCrossSpatialMotion(body.twist, joint_twist.value(), dtwistdv.value(), djoint_twistdv); // TODO: can probably exploit sparsity better
+              djoint_acceldv.rightCols(nv_joint) += transformSpatialMotion(body.T_new, *dSdotVdvi);
+
+              body.dJdotVdv.setZero();
+              for (int j = 0; j < nv_branch; j++) {
+                int v_index = v_indices[j];
+                body.dJdotVdv.col(v_index) = body.parent->dJdotVdv.col(v_index) + djoint_acceldv.col(j);
+              }
             }
           }
         }
