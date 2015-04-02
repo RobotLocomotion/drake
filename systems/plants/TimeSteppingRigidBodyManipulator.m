@@ -17,6 +17,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     enable_fastqp; % whether we use the active set LCP
     lcmgl_contact_forces_scale = 0;  % <=0 implies no lcmgl
     z_inactive_guess_tol = .01;
+    multiple_contacts = false;
   end
 
   methods
@@ -39,13 +40,18 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       else
         manip = manipulator_or_urdf_filename;
       end
+
       typecheck(manip,'RigidBodyManipulator');
       obj = obj@DrakeSystem(0,manip.getNumStates(),manip.getNumInputs(),manip.getNumOutputs(),manip.isDirectFeedthrough(),manip.isTI());
       obj.manip = manip;
       if isa(manip,'PlanarRigidBodyManipulator')
         obj.twoD = true;
       end
-      
+
+      if isfield(options, 'multiple_contacts')
+        obj.multiple_contacts = options.multiple_contacts == true;
+      end
+
       if ~isfield(options,'enable_fastqp')
         obj.enable_fastqp = checkDependency('fastqp');
       else
@@ -236,7 +242,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         q=x(1:num_q); 
         v=x(num_q+(1:obj.manip.num_velocities));
         kinsol = doKinematics(obj,q);
-        [phiC,~,~,~,~,~,~,mu,n,D] = obj.manip.contactConstraints(kinsol,true);
+        [phiC,~,~,~,~,~,~,mu,n,D] = obj.manip.contactConstraints(kinsol, obj.multiple_contacts);
         [z, Mqdn, wqdn] = setupLCPmex(obj.manip.mex_model_ptr, q, v, u, phiC, n, D, obj.timestep, obj.z_inactive_guess_tol);
     end
     
@@ -359,9 +365,9 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         
         if (nContactPairs > 0)                   
           if (nargout>4)
-            [phiC,normal,d,xA,xB,idxA,idxB,mu,n,D,dn,dD] = obj.manip.contactConstraints(kinsol,true);
+            [phiC,normal,d,xA,xB,idxA,idxB,mu,n,D,dn,dD] = obj.manip.contactConstraints(kinsol, true);
           else
-            [phiC,normal,d,xA,xB,idxA,idxB,mu,n,D] = obj.manip.contactConstraints(kinsol,true);
+            [phiC,normal,d,xA,xB,idxA,idxB,mu,n,D] = obj.manip.contactConstraints(kinsol, true);
           end  
 
           if isempty(possible_contact_indices)

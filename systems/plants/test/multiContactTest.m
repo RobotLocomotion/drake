@@ -10,9 +10,9 @@ function multiContactTest
   p = TimeSteppingRigidBodyManipulator([], dt, options);
     
   padding = 0.02;
-  padding2 = 0.02;
   q0 = [0;0;0.5+padding;0;0;0];
-  q1 = [0;0.0;1.5+padding+padding2;0;0;pi/2];
+  q1 = [0;0.0;1.5+2*padding;0;0;pi/2];
+  q2 = [0;0.0;2.5+3*padding;0;0;0];
   options.floating = true;
   options.terrain = [];
   
@@ -21,12 +21,13 @@ function multiContactTest
   
   p = p.addRobotFromURDF('FallingBrick.urdf', [], [], options);
   p = p.addRobotFromURDF('FallingBrick.urdf', [], [], options);
+  p = p.addRobotFromURDF('FallingBrick.urdf', [], [], options);
   
-  xtraj = p.simulate([0 3], [q0;q1;0*q0;0*q1])
+  xtraj = p.simulate([0 3], [q0;q1;q2;0*q0;0*q1;0*q2])
   v = p.constructVisualizer();
   for t = xtraj.getBreaks
     xt = xtraj.eval(t);
-    qt = xt(1:size(q0,1)+size(q1,1));
+    qt = xt(1:3*size(q0,1));
     kinsol = p.doKinematics(qt);
     [phi, normal, xA, xB, idxa, idxb] = p.collisionDetect(kinsol, true);
     v.draw(t,qt);
