@@ -32,17 +32,29 @@ options.floating = true;
 options.ignore_self_collisions = true;
 options.ignore_friction = true;
 options.dt = 0.001;
-options.terrain = example_options.terrain;
+
+boxurdf = fullfile(getDrakePath,'systems','plants','test','FallingBrick.urdf');
+box_r = RigidBodyManipulator();
+box_r = box_r.setTerrain(RigidBodyFlatTerrain());
+box_r = box_r.addRobotFromURDF(boxurdf, [0.22;0;0], [0;0;pi/2]);
+box_r = box_r.compile();
+height_map = RigidBodyHeightMapTerrain.constructHeightMapFromRaycast(box_r,[],-3:.015:3, -3:.015:3, 10);
+options.terrain = height_map;
+
 options.use_bullet = true;
+options.multiple_contacts = true;
 r = Atlas(fullfile(getDrakePath,'examples','Atlas','urdf','atlas_convex_hull.urdf'),options);
 r = r.removeCollisionGroupsExcept({'heel','toe'});
+r = r.addRobotFromURDF(fullfile(getDrakePath,'systems','plants','test','FallingBrick.urdf'), [0.22;0;0], [0;0;pi/2]);
+options.floating = false;
+
 r = compile(r);
 
 % set initial state to fixed point
 load(fullfile(getDrakePath,'examples','Atlas','data','atlas_fp.mat'));
 if isfield(options,'initial_pose'), xstar(1:6) = options.initial_pose; end
+xstar(3) = xstar(3)+.5025;
 xstar = r.resolveConstraints(xstar);
-xstar(3) = xstar(3)+0.06;
 r = r.setInitialState(xstar);
 
 
@@ -57,8 +69,7 @@ x0 = xstar;
 standing_plan = QPLocomotionPlan.from_standing_state(x0, r);
 standing_plan.planned_support_command = QPControllerPlan.support_logic_maps.kinematic_or_sensed;
 
-control = atlasControllers.InstantaneousQPController(r, [],...
-   struct('use_mex', example_options.use_mex));
+control = atlasControllers.InstantaneousQPController(r, [], struct());
 control.quiet = example_options.quiet;
 planeval = atlasControllers.AtlasPlanEval(r, standing_plan);
 
