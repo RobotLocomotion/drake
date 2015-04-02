@@ -7,9 +7,10 @@ function multiContactTest
   options.enable_fastqp = false;
   options.use_bullet = true;
   options.terrain = RigidBodyFlatTerrain();
+  options.multiple_contacts = true;
   p = TimeSteppingRigidBodyManipulator([], dt, options);
     
-  padding = 0.02;
+  padding = 0.04;
   q0 = [0;0;0.5+padding;0;0;0];
   q1 = [0;0.0;1.5+2*padding;0;0;pi/2];
   q2 = [0;0.0;2.5+3*padding;0;0;0];
