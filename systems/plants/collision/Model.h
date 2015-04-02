@@ -19,6 +19,8 @@ namespace DrakeCollision
     public:
       Model() {}
 
+      virtual ~Model(){};
+
       virtual ElementId addElement(const Element& element);
 
       virtual const Element* readElement(ElementId id);
