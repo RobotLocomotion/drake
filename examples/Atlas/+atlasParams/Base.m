@@ -14,7 +14,7 @@ classdef Base
     slack_limit = 100;
     w_grf = 0.0;
     Kp_accel = 1.0;
-    contact_threshold = 0.001;
+    contact_threshold = 0.002;
     min_knee_angle = 0.7;
   end
 
@@ -30,10 +30,12 @@ classdef Base
                                'Kd', mat2cell(zeros(6, nbod), 6, ones(1, nbod)));
       obj.body_motion(r.findLinkId('pelvis')).weight = 0.01;
       obj.body_motion(r.foot_body_id.right).weight = 0.01;
+      obj.body_motion(r.findLinkId('pelvis')).Kp = [150; 150; 150; 200; 200; 200];
+      obj.body_motion(r.findLinkId('pelvis')).damping_ratio = 0.6;
       obj.body_motion(r.foot_body_id.left).weight = 0.01;
 
-      obj.whole_body = struct('Kp', 160*ones(r.getNumPositions(), 1),...
-                              'damping_ratio', 0.7,...
+      obj.whole_body = struct('Kp', 150*ones(r.getNumPositions(), 1),...
+                              'damping_ratio', 0.6,...
                               'Kd', zeros(r.getNumPositions(), 1),...
                               'w_qdd', 1e-3 * ones(r.getNumVelocities(), 1),...
                               'integrator', struct('gains', zeros(r.getNumPositions(), 1),...
