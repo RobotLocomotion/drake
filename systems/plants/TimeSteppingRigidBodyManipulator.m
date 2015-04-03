@@ -187,7 +187,6 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       else
         if (obj.gurobi_present && obj.manip.only_loops && obj.manip.mex_model_ptr~=0 && ~obj.position_control)
            [obj,z,Mqdn,wqdn] = solveMexLCP(obj,t,x,u);
-           %[obj,z,Mqdn,wqdn] = solveLCP(obj,t,x,u);
         else
           [obj,z,Mqdn,wqdn] = solveLCP(obj,t,x,u);
         end
