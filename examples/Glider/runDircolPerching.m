@@ -9,6 +9,12 @@ x0 = [-3.5 0.1 0 0 7 0 0]';
 tf0 = 1.0;
 xf = p.xd;
 N=41;
+%A solution can be found for N=21 and probably smaller, but the gain in
+%computation time from N=31 to N=21 is small.
+%Computation time* with fmincon solver, N=41, ~250s
+%Computation time* with fmincon solver, N=31, ~140s
+%Computation time* with studentSnopt solver, N=31, ~40s
+%* Computations times in an average 2013 laptop.
 
 prog = DircolTrajectoryOptimization(p,N,[0 2]);
 %prog = prog.setCheckGrad(true);
