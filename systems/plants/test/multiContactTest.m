@@ -17,9 +17,6 @@ function multiContactTest
   options.floating = true;
   options.terrain = [];
   
-  %p = p.addRobotFromURDF('FallingBrickContactPoints.urdf', [], [], options);
-  %p = p.addRobotFromURDF('FallingBrickContactPoints.urdf', [], [], options);
-  
   p = p.addRobotFromURDF('FallingBrick.urdf', [], [], options);
   p = p.addRobotFromURDF('FallingBrick.urdf', [], [], options);
   p = p.addRobotFromURDF('FallingBrick.urdf', [], [], options);
@@ -48,15 +45,13 @@ function debugLCMGL(r,v,kinsol,phi,normal,xA,xB,idxA,idxB)
 
     lcmgl.glColor3f(0,0,0); % black
     lcmgl.glLineWidth(5); % black
-    lcmgl.line3(xA_in_world(1),xA_in_world(2),xA_in_world(3), ...
-                xB_in_world(1),xB_in_world(2),xB_in_world(3));
+    lcmgl.line3(xA_in_world(1), xA_in_world(2), xA_in_world(3), ...
+                xB_in_world(1), xB_in_world(2), xB_in_world(3));
     
     lcmgl.glColor3f(.7,.7,.7); % gray
     end
     
     lcmgl.switchBuffers();
-
-    %pause(0.05);
 end
 
 end

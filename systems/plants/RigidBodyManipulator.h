@@ -257,7 +257,7 @@ public:
                      MatrixXd& ptsA, MatrixXd& ptsB,
                         bool use_margins = true);
 
-  bool potentialCollisions(Eigen::VectorXd& phi,
+  void potentialCollisions(Eigen::VectorXd& phi,
                            Eigen::MatrixXd& normal,
                            Eigen::MatrixXd& xA,
                            Eigen::MatrixXd& xB,

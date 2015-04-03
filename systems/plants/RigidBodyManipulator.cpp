@@ -676,7 +676,7 @@ bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
   return collisionDetect(phi, normal, xA, xB, bodyA_idx, bodyB_idx, ids_to_check, use_margins);
 }
 
-bool RigidBodyManipulator::potentialCollisions(VectorXd& phi,
+void RigidBodyManipulator::potentialCollisions(VectorXd& phi,
                                             MatrixXd& normal,
                                             MatrixXd& xA,
                                             MatrixXd& xB,
@@ -686,7 +686,7 @@ bool RigidBodyManipulator::potentialCollisions(VectorXd& phi,
 {
   
   vector<DrakeCollision::PointPair> potential_collisions;
-  bool points_found = collision_model->potentialCollisionPoints(use_margins, potential_collisions);
+  potential_collisions = collision_model->potentialCollisionPoints(use_margins);
   size_t num_potential_collisions = potential_collisions.size();
 
   phi = VectorXd::Zero(num_potential_collisions);
@@ -711,8 +711,6 @@ bool RigidBodyManipulator::potentialCollisions(VectorXd& phi,
     bodyA_idx.push_back(elementA->getBody()->body_index);
     bodyB_idx.push_back(elementB->getBody()->body_index);
   }
-
-  return points_found;
 }
 
 bool RigidBodyManipulator::allCollisions(vector<int>& bodyA_idx,

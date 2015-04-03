@@ -50,7 +50,8 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       end
 
       if isfield(options, 'multiple_contacts')
-        obj.multiple_contacts = options.multiple_contacts == true;
+        typecheck(options.multiple_contacts, 'logical');
+        obj.multiple_contacts = options.multiple_contacts;
       end
 
       if ~isfield(options,'enable_fastqp')
