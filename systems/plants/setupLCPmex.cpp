@@ -169,14 +169,14 @@ bool callFastQP(MatrixBase<DerivedM> const & M, MatrixBase<Derivedw> const & w, 
     return false;
   }
 
-  // getThresholdInclusion(Ain * zqp - bin, -SMALL, ineq_violations);
-  // getThresholdInclusion(beq - Aeq.transpose() * zqp, -SMALL, violations);
+  getThresholdInclusion(Ain * zqp - bin, -SMALL, ineq_violations);
+  getThresholdInclusion(beq - Aeq.transpose() * zqp, -SMALL, violations);
 
-  // for (size_t i = 0; i < num_inactive_z; i++) { 
-  //   if (ineq_violations[i] && violations[i]) { 
-  //     return false;
-  //   }
-  // }
+  for (size_t i = 0; i < num_inactive_z; i++) { 
+    if (ineq_violations[i] && violations[i]) { 
+      return false;
+    }
+  }
   return true;
 }
 
