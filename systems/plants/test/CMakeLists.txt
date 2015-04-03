@@ -15,7 +15,7 @@ if (eigen3_FOUND)
   add_executable(urdfManipulatorDynamicsTest urdfManipulatorDynamicsTest.cpp)
   target_link_libraries(urdfManipulatorDynamicsTest drakeRBM)
   
-  if (MSVC10)
+  if (NOT MSVC10)
     # this test does not compile on MSVC 2010 because of the use of variadic templates
     add_executable(testKinematicsCacheChecks testKinematicsCacheChecks.cpp)
     target_link_libraries(testKinematicsCacheChecks drakeRBM)
