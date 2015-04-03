@@ -575,25 +575,17 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
           end
         end
         
-        % check gradients
-        %      xdn = M;
-        %      if (nargout>1)
-        %        df = reshape(dM,prod(size(M)),[]);
-        %      end
-        %      return;
-
-        z = zeros(nL+nP+(mC+2)*nC,1); 
-        if possible_indices_changed || isempty(obj.LCP_cache.data.z) || numel(obj.LCP_cache.data.z) ~= numel(lb)
-          z_inactive = true(nL+nP+(mC+2)*nC,1);
-          obj.LCP_cache.data.z = z;
-        else
-          z_inactive = obj.LCP_cache.data.z>lb+1e-8;
-          % use conservative guess of z_inactive to avoid occasional numerical issues
-          % when M*z_inactive + w > 1e-8 by a small amount
-        end
-        
         QP_FAILED = true;
-        if obj.enable_fastqp
+        if ~possible_indices_changed && obj.enable_fastqp
+          z = zeros(nL+nP+(mC+2)*nC,1);
+          if isempty(obj.LCP_cache.data.z) || numel(obj.LCP_cache.data.z) ~= numel(lb)
+            z_inactive = true(nL+nP+(mC+2)*nC,1);
+            obj.LCP_cache.data.z = z;
+          else
+            z_inactive = obj.LCP_cache.data.z>lb+1e-8;
+            % use conservative guess of M_active to avoid occasional numerical issues
+            % when M*z_inactive + w > 1e-8 by a small amount
+          end
           n_z_inactive = sum(z_inactive);
           if n_z_inactive > 0
             Aeq = M(z_inactive,z_inactive); 
