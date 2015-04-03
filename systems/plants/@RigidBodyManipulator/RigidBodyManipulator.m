@@ -39,7 +39,7 @@ classdef RigidBodyManipulator < Manipulator
   properties (Access=public)  % i think these should be private, but probably needed to access them from mex? - Russ
     featherstone = [];
     B = [];
-    mex_model_ptr = 0;
+    mex_model_ptr = nullPointer();
     dirty = true;
     collision_filter_groups;  % map of CollisionFilterGroup objects
   end
@@ -82,7 +82,7 @@ classdef RigidBodyManipulator < Manipulator
 
   methods (Static)
     function obj = loadobj(obj)
-      obj.mex_model_ptr = 0;
+      obj.mex_model_ptr = nullPointer();
       obj = compile(obj);
       % NOTEST
     end

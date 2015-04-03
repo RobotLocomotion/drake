@@ -83,16 +83,7 @@ classdef InstantaneousQPController
       if isa(terrain,'DRCTerrainMap')
         terrain_map_ptr = terrain.map_handle.getPointerForMex();
       else
-        % Try to determine if we're on 64- or 32-bit matlab. From http://www.mathworks.com/matlabcentral/answers/96172#comment_270161
-        % We do this because constructQPDataPointerMex now (correctly, I think) checks that the terrain_map_ptr
-        % is actually the correct size for a pointer on this system, rather than just blindly casting from double.
-        [~, maxArraySize] = computer();
-        is64bit = maxArraySize > 2^31;
-        if is64bit
-          terrain_map_ptr = uint64(0);
-        else
-          terrain_map_ptr = uint32(0);
-        end
+        terrain_map_ptr = nullPointer();
       end
 
       coordinate_names = struct(...
