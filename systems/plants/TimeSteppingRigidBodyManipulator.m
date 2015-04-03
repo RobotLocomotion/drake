@@ -119,7 +119,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
 
     function model = compile(model)
       w = warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
-      model.gurobi_present = checkDependency('gurobi');
+      model.gurobi_present = true;
       model.manip = model.manip.compile();
       warning(w);
 
