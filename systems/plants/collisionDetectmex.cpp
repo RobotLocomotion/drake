@@ -130,11 +130,11 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   }
   if (nlhs>4) {
     plhs[4] = mxCreateNumericMatrix(1,static_cast<int>(idxA.size()),mxINT32_CLASS,mxREAL);
-    memcpy(mxGetPrSafe(plhs[4]),idxA.data(),sizeof(int32_T)*idxA.size());
+    memcpy(mxGetData(plhs[4]),idxA.data(),sizeof(int32_T)*idxA.size());
   }
   if (nlhs>5) {
     plhs[5] = mxCreateNumericMatrix(1,static_cast<int>(idxB.size()),mxINT32_CLASS,mxREAL);
-    memcpy(mxGetPrSafe(plhs[5]),idxB.data(),sizeof(int32_T)*idxB.size());
+    memcpy(mxGetData(plhs[5]),idxB.data(),sizeof(int32_T)*idxB.size());
   }
   //DEBUG
   //cout << "collisionDetectmex: END" << endl;
