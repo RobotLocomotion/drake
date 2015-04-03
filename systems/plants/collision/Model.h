@@ -24,6 +24,8 @@ namespace DrakeCollision
       virtual ElementId addElement(const Element& element);
 
       virtual const Element* readElement(ElementId id);
+      
+      virtual void getTerrainPoints(ElementId id0, Eigen::Matrix4Xd &terrain_points);
 
       virtual void updateModel() {};
 

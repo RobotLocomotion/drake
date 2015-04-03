@@ -31,6 +31,9 @@ namespace DrakeShapes
 
       const Shape getShape() const;
 
+      virtual void getPoints(Eigen::Matrix4Xd &points);
+      virtual void getBoundingBoxPoints(Eigen::Matrix4Xd &points);
+
     protected:
       Geometry(Shape shape);
       Shape shape;
@@ -41,6 +44,8 @@ namespace DrakeShapes
       Sphere(double radius);
       virtual ~Sphere() {}
       virtual Sphere* clone() const;
+      virtual void getPoints(Eigen::Matrix4Xd &points);
+      virtual void getBoundingBoxPoints(Eigen::Matrix4Xd &points);
       double radius;
   };
 
@@ -49,7 +54,11 @@ namespace DrakeShapes
       Box(const Eigen::Vector3d& size);
       virtual ~Box() {}
       virtual Box* clone() const;
+      virtual void getPoints(Eigen::Matrix4Xd &points);
+      virtual void getBoundingBoxPoints(Eigen::Matrix4Xd &points);
+      
       Eigen::Vector3d size;
+      
   };
 
   class DLLEXPORT_drakeShapes Cylinder : public Geometry {
@@ -57,6 +66,8 @@ namespace DrakeShapes
       Cylinder(double radius, double length);
       virtual ~Cylinder() {}
       virtual Cylinder* clone() const;
+      virtual void getPoints(Eigen::Matrix4Xd &points);
+      virtual void getBoundingBoxPoints(Eigen::Matrix4Xd &points);
       double radius;
       double length;
   };
@@ -66,6 +77,8 @@ namespace DrakeShapes
       Capsule(double radius, double length);
       virtual ~Capsule() {}
       virtual Capsule* clone() const;
+      virtual void getPoints(Eigen::Matrix4Xd &points);
+      virtual void getBoundingBoxPoints(Eigen::Matrix4Xd &points);
       double radius;
       double length;
   };
@@ -76,6 +89,8 @@ namespace DrakeShapes
       Mesh(const std::string& filename, const std::string& resolved_filename);
       virtual ~Mesh() {}
       virtual Mesh* clone() const;
+      virtual void getPoints(Eigen::Matrix4Xd &points);
+      virtual void getBoundingBoxPoints(Eigen::Matrix4Xd &points);
 
       std::string filename;
       std::string resolved_filename;
@@ -89,6 +104,10 @@ namespace DrakeShapes
       MeshPoints(const Eigen::Matrix3Xd& points);
       virtual ~MeshPoints() {}
       virtual MeshPoints* clone() const;
+
+      virtual void getPoints(Eigen::Matrix4Xd &points);
+      virtual void getBoundingBoxPoints(Eigen::Matrix4Xd &points);
+
       Eigen::Matrix3Xd points;
   };
 

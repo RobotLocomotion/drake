@@ -46,6 +46,19 @@ namespace DrakeShapes
     return geometry != nullptr;
   }
 
+  void Element::getPoints(Eigen::Matrix4Xd &local_points)
+  {
+    if ( !hasGeometry() ) {
+      local_points = Eigen::Matrix4Xd();
+      return;
+    }
+    
+    Eigen::Matrix4Xd points;
+    geometry->getPoints(points);
+
+    local_points = T_element_to_local * points;
+  }
+  
   void Element::updateWorldTransform(const Eigen::Matrix4d& T_local_to_world)
   {
     setWorldTransform(T_local_to_world*(this->T_element_to_local));
