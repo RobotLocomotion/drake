@@ -166,12 +166,14 @@ apex2_origin_in_world = T_toe_apex2_to_world * origin_in_toe;
 pose = [apex2_origin_in_world(1:3); quat2rpy(quat_swing2)];
 add_foot_origin_knot(pose);
 
-% Set the target velocities of the two apex poses based on the total distance traveled
-foot_origin_knots(end).(swing_foot_name)(7:9) = (foot_origin_knots(end).(swing_foot_name)(1:3) - foot_origin_knots(end-1).(swing_foot_name)(1:3)) / (foot_origin_knots(end).t - foot_origin_knots(end-1).t);
-foot_origin_knots(end-1).(swing_foot_name)(7:9) = (foot_origin_knots(end).(swing_foot_name)(1:3) - foot_origin_knots(end-1).(swing_foot_name)(1:3)) / (foot_origin_knots(end).t - foot_origin_knots(end-1).t);
-% angles require unwrapping to get the correct velocities
-foot_origin_knots(end).(swing_foot_name)(10:12) = angleDiff(foot_origin_knots(end-1).(swing_foot_name)(4:6), foot_origin_knots(end).(swing_foot_name)(4:6)) / (foot_origin_knots(end).t - foot_origin_knots(end-1).t);
-foot_origin_knots(end-1).(swing_foot_name)(10:12) = angleDiff(foot_origin_knots(end-1).(swing_foot_name)(4:6), foot_origin_knots(end).(swing_foot_name)(4:6)) / (foot_origin_knots(end).t - foot_origin_knots(end-1).t);
+
+
+% % Set the target velocities of the two apex poses based on the total distance traveled
+% foot_origin_knots(end).(swing_foot_name)(7:9) = (foot_origin_knots(end).(swing_foot_name)(1:3) - foot_origin_knots(end-1).(swing_foot_name)(1:3)) / (foot_origin_knots(end).t - foot_origin_knots(end-1).t);
+% foot_origin_knots(end-1).(swing_foot_name)(7:9) = (foot_origin_knots(end).(swing_foot_name)(1:3) - foot_origin_knots(end-1).(swing_foot_name)(1:3)) / (foot_origin_knots(end).t - foot_origin_knots(end-1).t);
+% % angles require unwrapping to get the correct velocities
+% foot_origin_knots(end).(swing_foot_name)(10:12) = angleDiff(foot_origin_knots(end-1).(swing_foot_name)(4:6), foot_origin_knots(end).(swing_foot_name)(4:6)) / (foot_origin_knots(end).t - foot_origin_knots(end-1).t);
+% foot_origin_knots(end-1).(swing_foot_name)(10:12) = angleDiff(foot_origin_knots(end-1).(swing_foot_name)(4:6), foot_origin_knots(end).(swing_foot_name)(4:6)) / (foot_origin_knots(end).t - foot_origin_knots(end-1).t);
 
 
 % Landing knot
@@ -185,6 +187,19 @@ zmp_knots(end).supp = RigidBodySupportState(biped, [stance_body_index, swing_bod
 foot_origin_knots(end+1) = foot_origin_knots(end);
 foot_origin_knots(end).t = foot_origin_knots(end-1).t + hold_time / 2;
 
+% Unwrap angles
+for j = 1:length(foot_origin_knots)-1
+  for f = {swing_foot_name, stance_foot_name}
+    foot_origin_knots(j+1).(f{1})(10:12) = foot_origin_knots(j).(f{1})(10:12) + ...
+                                           angleDiff(foot_origin_knots(j).(f{1})(10:12),...
+                                                     foot_origin_knots(j+1).(f{1})(10:12));
+  end
+end
+
+% Compute nice splines
+for f = {swing_foot_name, stance_foot_name}
+  foot = f{1};
+  params = 
 
 end
 

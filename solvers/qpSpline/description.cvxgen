@@ -1,0 +1,74 @@
+# Produced by CVXGEN, 2015-04-03 15:45:16 -0400.
+# CVXGEN is Copyright (C) 2006-2012 Jacob Mattingley, jem@cvxgen.com.
+# The code in this file is Copyright (C) 2006-2012 Jacob Mattingley.
+# CVXGEN, or solvers produced by CVXGEN, cannot be used for commercial
+# applications without prior written permission from Jacob Mattingley.
+
+# Filename: description.cvxgen.
+# Description: A description of the CVXGEN problem.
+
+dimensions
+  n_dof = 6
+end
+
+parameters
+  x0(n_dof)
+  xd0(n_dof)
+
+  x1(n_dof)
+
+  x2(n_dof)
+
+  xf(n_dof)
+  xdf(n_dof)
+
+  t0(1)
+  t1(1)
+  t2(1)
+  tf(1)
+
+  Q0(2,2) symmetric psd
+  Q1(2,2) symmetric psd
+  Q2(2,2) symmetric psd
+
+end
+
+variables
+  C0[d] (n_dof), d=0..3
+  C1[d] (n_dof), d=0..3
+  C2[d] (n_dof), d=0..3
+  y0[d] (2), d=1..n_dof
+  y1[d] (2), d=1..n_dof
+  y2[d] (2), d=1..n_dof
+end
+
+minimize
+  sum[d=1..n_dof](quad(y0[d],Q0)) + sum[d=1..n_dof](quad(y1[d],Q1)) + sum[d=1..n_dof](quad(y2[d],Q2))
+
+subject to
+  # Initial conditions
+  C0[0] == x0
+  C0[1] == xd0
+
+  # Intermediate conditions
+  C1[0] == x1
+  C2[0] == x2
+
+  # Continuity of position
+  C0[0] + (t1 - t0)*C0[1] + (t1 - t0)*(t1 - t0)*C0[2] + (t1 - t0)*(t1 - t0)*(t1 - t0)*C0[3] == C1[0]
+  C1[0] + (t2 - t1)*C1[1] + (t2 - t1)*(t2 - t1)*C1[2] + (t2 - t1)*(t2 - t1)*(t2 - t1)*C1[3] == C2[0]
+  C2[0] + (tf - t2)*C2[1] + (tf - t2)*(tf - t2)*C2[2] + (tf - t2)*(tf - t2)*(tf - t2)*C2[3] == xf
+
+  # Continuity of velocity
+  C0[1] + 2*(t1 - t0)*C0[2] + 3*(t1 - t0)*(t1 - t0)*C0[3] == C1[1]
+  C1[1] + 2*(t2 - t1)*C1[2] + 3*(t2 - t1)*(t2 - t1)*C1[3] == C2[1]
+  C2[1] + 2*(tf - t2)*C2[2] + 3*(tf - t2)*(tf - t2)*C2[3] == xdf
+
+  # objective variables
+  y0[d][1] == C0[2][d], d=1..n_dof
+  y0[d][2] == C0[3][d], d=1..n_dof
+  y1[d][1] == C1[2][d], d=1..n_dof
+  y1[d][2] == C1[3][d], d=1..n_dof
+  y2[d][1] == C2[2][d], d=1..n_dof
+  y2[d][2] == C2[3][d], d=1..n_dof
+end

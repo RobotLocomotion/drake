@@ -3,7 +3,7 @@ function link_constraints = getLinkConstraints(obj, foot_origin_knots, zmptraj, 
 if nargin < 6
   options = struct();
 end
-options = applyDefaults(options, struct('pelvis_height_above_sole', obj.default_walking_params.pelvis_height_above_foot_sole, 'debug', false));
+options = applyDefaults(options, struct('pelvis_height_above_sole', obj.default_walking_params.pelvis_height_above_foot_sole, 'debug', true));
 
 link_constraints = struct('link_ndx',{}, 'pt', {}, 'ts', {}, 'poses', {}, 'dposes', {}, 'contact_break_indices', {}, 'coefs', {}, 'toe_off_allowed', {});
 
@@ -16,8 +16,19 @@ end
 
 foot_pp = struct('right', {[]}, 'left', {[]});
 
+if options.debug
+  lcmgl = LCMGLClient('swing_traj');
+end
+
 for f = {'right', 'left'}
   foot = f{1};
+  if options.debug
+    if strcmp(foot, 'right')
+      lcmgl.glColor3f(0.2,0.8,0.2);
+    else
+      lcmgl.glColor3f(0.8,0.2,0.2);
+    end
+  end
   foot_states = [foot_origin_knots.(foot)];
   foot_poses = foot_states(1:6,:);
   frame_id = obj.foot_frame_id.(foot);
@@ -36,9 +47,31 @@ for f = {'right', 'left'}
   if options.debug
     tsample = linspace(ts(1), ts(end), 200);
     xs = ppval(foot_pp.(foot), tsample);
+    foot_deriv_pp = fnder(foot_pp.(foot));
+    xds = ppval(foot_deriv_pp, tsample);
     figure(321)
     plot(tsample, xs(3,:), 'b.-')
     xlim([0, ts(end)])
+
+    lcmgl.glPointSize(5);
+    lcmgl.points(xs(1,:), xs(2,:), xs(3,:));
+
+    vscale = 0.1;
+    for j = 1:size(xs,2)
+      lcmgl.line3(xs(1,j), xs(2,j), xs(3,j), ...
+                  xs(1,j) + vscale*xds(1,j),...
+                  xs(2,j) + vscale*xds(2,j),...
+                  xs(3,j) + vscale*xds(3,j));
+    end
+
+    oldfig = gcf();
+    figure(322)
+    clf
+    hold on
+    plot(tsample, xds(1,:), 'r.-')
+    plot(tsample, xds(2,:), 'g.-')
+    plot(tsample, xds(3,:), 'b.-')
+    sfigure(oldfig);
   end
 
   % Compute cubic polynomial coefficients to save work in the controller
@@ -47,11 +80,14 @@ for f = {'right', 'left'}
   assert(k == 4, 'expected a piecewise cubic polynomial');
   toe_off_allowed = [foot_origin_knots.toe_off_allowed];
   link_constraints(end+1) = struct('link_ndx', body_ind, 'pt', [0;0;0], 'ts', ts, 'poses', foot_poses, 'dposes', foot_dposes, 'contact_break_indices', find([foot_origin_knots.is_liftoff]), 'coefs', coefs, 'toe_off_allowed', [toe_off_allowed.(foot)]);
+
+
 end
 
 if options.debug
   zmps = zmptraj.eval(tsample);
   plot(tsample, zmps(2,:), 'm.-');
+  lcmgl.switchBuffers();
 end
 
 pelvis_reference_height = zeros(1,length(support_times));

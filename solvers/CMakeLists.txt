@@ -45,8 +45,10 @@ if(snopt_c_FOUND)
 			PATHS "${MATLAB_ROOT}/sys/os/"
 			PATH_SUFFIXES glnxa64/ maci64/ NO_DEFAULT_PATH)
 	endif()
-	
+
 	if (GFORTRAN_LIBRARY)
 	  target_link_libraries(NonlinearProgramSnoptmex ${GFORTRAN_LIBRARY})
 	endif()
 endif()
+
+add_subdirectory(qpSpline)
