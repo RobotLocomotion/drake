@@ -65,7 +65,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
             new_bodies[idx] = (int) mxGetScalar(prhs[2+idx*2])-1;
             int npts = mxGetN(prhs[3+idx*2]);
             MatrixXd new_body_pts_tmp(3,npts);
-            memcpy(new_body_pts_tmp.data(),mxGetPr(prhs[3+idx*2]),sizeof(double)*3*npts);
+            memcpy(new_body_pts_tmp.data(),mxGetPrSafe(prhs[3+idx*2]),sizeof(double)*3*npts);
             new_body_pts[idx].resize(4,npts);
             new_body_pts[idx].block(0,0,3,npts) = new_body_pts_tmp;
             new_body_pts[idx].row(3) = MatrixXd::Ones(1,npts);
@@ -88,7 +88,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
           int num_robot = mxGetNumberOfElements(prhs[2]);
           double* robotnum_tmp = new double[num_robot];
           int* robotnum = new int[num_robot];
-          memcpy(robotnum_tmp,mxGetPr(prhs[2]),sizeof(double)*num_robot);
+          memcpy(robotnum_tmp,mxGetPrSafe(prhs[2]),sizeof(double)*num_robot);
           for(int i = 0;i<num_robot;i++)
           {
             robotnum[i] = (int) robotnum_tmp[i]-1;
@@ -119,11 +119,11 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
           int* joint_idx = new int[num_idx];
           for(int i = 0;i<num_idx;i++)
           {
-            joint_idx[i] = (int) *(mxGetPr(prhs[2])+i)-1;
+            joint_idx[i] = (int) *(mxGetPrSafe(prhs[2])+i)-1;
           }
           VectorXd lb(num_idx),ub(num_idx);
-          memcpy(lb.data(),mxGetPr(prhs[3]),sizeof(double)*num_idx);
-          memcpy(ub.data(),mxGetPr(prhs[4]),sizeof(double)*num_idx);
+          memcpy(lb.data(),mxGetPrSafe(prhs[3]),sizeof(double)*num_idx);
+          memcpy(ub.data(),mxGetPrSafe(prhs[4]),sizeof(double)*num_idx);
           PostureConstraint* pc_new = new PostureConstraint(*pc);
           pc_new->setJointLimits(num_idx,joint_idx,lb,ub);
           delete[] joint_idx;
@@ -262,7 +262,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
           int num_robot = mxGetNumberOfElements(prhs[2]);
           double* robotnum_tmp = new double[num_robot];
           int* robotnum = new int[num_robot];
-          memcpy(robotnum_tmp,mxGetPr(prhs[2]),sizeof(double)*num_robot);
+          memcpy(robotnum_tmp,mxGetPrSafe(prhs[2]),sizeof(double)*num_robot);
           for(int i = 0;i<num_robot;i++)
           {
             robotnum[i] = (int) robotnum_tmp[i]-1;
