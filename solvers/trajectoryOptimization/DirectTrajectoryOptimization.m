@@ -184,8 +184,8 @@ classdef DirectTrajectoryOptimization < NonlinearProgram
 
       if nargin<3, traj_init = struct(); end
 
-      obj = obj.setSolver('default');
       z0 = obj.getInitialVars(t_init,traj_init);
+      obj = obj.setSolver('default');
       [z,F,info,infeasible_constraint_name] = obj.solve(z0);
       xtraj = reconstructStateTrajectory(obj,z);
       if nargout>1, utraj = reconstructInputTrajectory(obj,z); end

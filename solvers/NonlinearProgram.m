@@ -154,7 +154,7 @@ classdef NonlinearProgram
       
       obj.bbcon_lb = [];
       obj.bbcon_ub = [];
-     
+      
       obj.solver_options.fmincon = optimset('Display','off');
       obj.solver_options.snopt = struct();
       obj.solver_options.snopt.MajorIterationsLimit = 1000;
