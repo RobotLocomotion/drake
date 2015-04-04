@@ -91,28 +91,28 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   transform(bodyB_idx.begin(), bodyB_idx.end(), idxB.begin(),
       [](int i){return ++i;});
 
-  if (nlhs > 0) {
-    plhs[0] = mxCreateDoubleMatrix(3, static_cast<int>(ptsA.cols()), mxREAL);
-    memcpy(mxGetPr(plhs[0]), ptsA.data(), sizeof(double) * 3 * ptsA.cols());
+  if (nlhs>0) {
+    plhs[0] = mxCreateDoubleMatrix(3,static_cast<int>(ptsA.cols()),mxREAL);
+    memcpy(mxGetPrSafe(plhs[0]),ptsA.data(),sizeof(double)*3*ptsA.cols());
   }
-  if (nlhs > 1) {
-    plhs[1] = mxCreateDoubleMatrix(3, static_cast<int>(ptsB.cols()), mxREAL);
-    memcpy(mxGetPr(plhs[1]), ptsB.data(), sizeof(double) * 3 * ptsB.cols());
+  if (nlhs>1) {
+    plhs[1] = mxCreateDoubleMatrix(3,static_cast<int>(ptsB.cols()),mxREAL);
+    memcpy(mxGetPrSafe(plhs[1]),ptsB.data(),sizeof(double)*3*ptsB.cols());
   }
-  if (nlhs > 2) {
-    plhs[2] = mxCreateDoubleMatrix(3, static_cast<int>(normals.cols()), mxREAL);
-    memcpy(mxGetPr(plhs[2]), normals.data(), sizeof(double) * 3 * normals.cols());
+  if (nlhs>2) {
+    plhs[2] = mxCreateDoubleMatrix(3,static_cast<int>(normals.cols()),mxREAL);
+    memcpy(mxGetPrSafe(plhs[2]),normals.data(),sizeof(double)*3*normals.cols());
   }
-  if (nlhs > 3) {
-    plhs[3] = mxCreateDoubleMatrix(1, static_cast<int>(dist.size()), mxREAL);
-    memcpy(mxGetPr(plhs[3]), dist.data(), sizeof(double) * dist.size());
+  if (nlhs>3) {
+    plhs[3] = mxCreateDoubleMatrix(1,static_cast<int>(dist.size()),mxREAL);
+    memcpy(mxGetPrSafe(plhs[3]),dist.data(),sizeof(double)*dist.size());
   }
-  if (nlhs > 4) {
-    plhs[4] = mxCreateNumericMatrix(1, static_cast<int>(idxA.size()), mxINT32_CLASS, mxREAL);
-    memcpy(mxGetPr(plhs[4]), idxA.data(), sizeof(int32_T) * idxA.size());
+  if (nlhs>4) {
+    plhs[4] = mxCreateNumericMatrix(1,static_cast<int>(idxA.size()),mxINT32_CLASS,mxREAL);
+    memcpy(mxGetData(plhs[4]),idxA.data(),sizeof(int32_T)*idxA.size());
   }
-  if (nlhs > 5) {
-    plhs[5] = mxCreateNumericMatrix(1, static_cast<int>(idxB.size()), mxINT32_CLASS, mxREAL);
-    memcpy(mxGetPr(plhs[5]), idxB.data(), sizeof(int32_T) * idxB.size());
+  if (nlhs>5) {
+    plhs[5] = mxCreateNumericMatrix(1,static_cast<int>(idxB.size()),mxINT32_CLASS,mxREAL);
+    memcpy(mxGetData(plhs[5]),idxB.data(),sizeof(int32_T)*idxB.size());
   }
 }

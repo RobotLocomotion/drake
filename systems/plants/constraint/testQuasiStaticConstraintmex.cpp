@@ -40,10 +40,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   bool active = qsc->isActive();
   RigidBodyManipulator* model = qsc->getRobotPointer();
   int nq = model->num_positions;
-  Map<VectorXd> q(mxGetPr(prhs[1]), nq);
+  Map<VectorXd> q(mxGetPrSafe(prhs[1]), nq);
   int num_weights = qsc->getNumWeights();
   double* weights = new double[num_weights];
-  memcpy(weights,mxGetPr(prhs[2]),sizeof(double)*num_weights);
+  memcpy(weights,mxGetPrSafe(prhs[2]),sizeof(double)*num_weights);
   int num_qsc_cnst = qsc->getNumConstraint(t_ptr);
   VectorXd c(num_qsc_cnst-1);
   MatrixXd dc(num_qsc_cnst-1,nq+num_weights);
@@ -56,12 +56,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   plhs[0] = mxCreateLogicalScalar(active);
   plhs[1] = mxCreateDoubleScalar((double) num_weights);
   plhs[2] = mxCreateDoubleMatrix(num_qsc_cnst-1,1,mxREAL);
-  memcpy(mxGetPr(plhs[2]),c.data(),sizeof(double)*(num_qsc_cnst-1));
+  memcpy(mxGetPrSafe(plhs[2]),c.data(),sizeof(double)*(num_qsc_cnst-1));
   plhs[3] = mxCreateDoubleMatrix(num_qsc_cnst-1,nq+num_weights,mxREAL);
-  memcpy(mxGetPr(plhs[3]),dc.data(),sizeof(double)*dc.size());
+  memcpy(mxGetPrSafe(plhs[3]),dc.data(),sizeof(double)*dc.size());
   plhs[4] = mxCreateDoubleMatrix(num_qsc_cnst-1,1,mxREAL);
-  memcpy(mxGetPr(plhs[4]),lb.data(),sizeof(double)*(num_qsc_cnst-1));
+  memcpy(mxGetPrSafe(plhs[4]),lb.data(),sizeof(double)*(num_qsc_cnst-1));
   plhs[5] = mxCreateDoubleMatrix(num_qsc_cnst-1,1,mxREAL);
-  memcpy(mxGetPr(plhs[5]),ub.data(),sizeof(double)*(num_qsc_cnst-1));
+  memcpy(mxGetPrSafe(plhs[5]),ub.data(),sizeof(double)*(num_qsc_cnst-1));
   delete[] weights;
 }

@@ -25,14 +25,14 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray *prhs[])
   MultipleTimeLinearPostureConstraint* cnst = (MultipleTimeLinearPostureConstraint*) getDrakeMexPointer(prhs[0]);
   int n_breaks = mxGetNumberOfElements(prhs[2]);
   double* t_ptr = new double[n_breaks];
-  memcpy(t_ptr,mxGetPr(prhs[2]),sizeof(double)*n_breaks);
+  memcpy(t_ptr,mxGetPrSafe(prhs[2]),sizeof(double)*n_breaks);
   int nq = cnst->getRobotPointer()->num_positions;
   MatrixXd q(nq,n_breaks);
   if(mxGetM(prhs[1]) != nq || mxGetN(prhs[1]) != n_breaks)
   {
     mexErrMsgIdAndTxt("Drake:testMultipleTimeLinearPostureConstraintmex:BadInputs","Argument 2 must be of size nq*n_breaks");
   }
-  memcpy(q.data(),mxGetPr(prhs[1]),sizeof(double)*nq*n_breaks); 
+  memcpy(q.data(),mxGetPrSafe(prhs[1]),sizeof(double)*nq*n_breaks); 
   int num_cnst = cnst->getNumConstraint(t_ptr,n_breaks); 
   VectorXd c(num_cnst);
   cnst->feval(t_ptr,n_breaks,q,c);
@@ -54,13 +54,13 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray *prhs[])
   }
   plhs[0] = mxCreateDoubleScalar((double) num_cnst);
   plhs[1] = mxCreateDoubleMatrix(num_cnst,1,mxREAL);
-  memcpy(mxGetPr(plhs[1]),c.data(),sizeof(double)*num_cnst);
+  memcpy(mxGetPrSafe(plhs[1]),c.data(),sizeof(double)*num_cnst);
   plhs[2] = mxCreateDoubleMatrix(iAfun_tmp.size(),1,mxREAL);
-  memcpy(mxGetPr(plhs[2]),iAfun_tmp.data(),sizeof(double)*iAfun_tmp.size());
+  memcpy(mxGetPrSafe(plhs[2]),iAfun_tmp.data(),sizeof(double)*iAfun_tmp.size());
   plhs[3] = mxCreateDoubleMatrix(jAvar_tmp.size(),1,mxREAL);
-  memcpy(mxGetPr(plhs[3]),jAvar_tmp.data(),sizeof(double)*jAvar_tmp.size());
+  memcpy(mxGetPrSafe(plhs[3]),jAvar_tmp.data(),sizeof(double)*jAvar_tmp.size());
   plhs[4] = mxCreateDoubleMatrix(A.size(),1,mxREAL);
-  memcpy(mxGetPr(plhs[4]),A.data(),sizeof(double)*A.size());
+  memcpy(mxGetPrSafe(plhs[4]),A.data(),sizeof(double)*A.size());
   int name_ndim = 1;
   mwSize name_dims[] = {(mwSize) num_cnst};
   plhs[5] = mxCreateCellArray(name_ndim,name_dims);
@@ -72,8 +72,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray *prhs[])
   }
   plhs[6] = mxCreateDoubleMatrix(num_cnst,1,mxREAL);
   plhs[7] = mxCreateDoubleMatrix(num_cnst,1,mxREAL);
-  memcpy(mxGetPr(plhs[6]),lb.data(),sizeof(double)*num_cnst);
-  memcpy(mxGetPr(plhs[7]),ub.data(),sizeof(double)*num_cnst);
+  memcpy(mxGetPrSafe(plhs[6]),lb.data(),sizeof(double)*num_cnst);
+  memcpy(mxGetPrSafe(plhs[7]),ub.data(),sizeof(double)*num_cnst);
   delete[] t_ptr;
 }
 

@@ -26,14 +26,14 @@ void mexFunction(int nlhs,mxArray* plhs[], int nrhs, const mxArray * prhs[])
   MultipleTimeKinematicConstraint* cnst = (MultipleTimeKinematicConstraint*) getDrakeMexPointer(prhs[0]);
   int n_breaks = mxGetNumberOfElements(prhs[2]);
   double* t_ptr = new double[n_breaks];
-  memcpy(t_ptr,mxGetPr(prhs[2]),sizeof(double)*n_breaks);
+  memcpy(t_ptr,mxGetPrSafe(prhs[2]),sizeof(double)*n_breaks);
   int nq = cnst->getRobotPointer()->num_positions;
   MatrixXd q(nq,n_breaks);
   if(mxGetM(prhs[1]) != nq || mxGetN(prhs[1]) != n_breaks)
   {
     mexErrMsgIdAndTxt("Drake:testMultipleTimeKinCnstmex:BadInputs","Argument 2 must be of size nq*n_breaks");
   }
-  memcpy(q.data(),mxGetPr(prhs[1]),sizeof(double)*nq*n_breaks); 
+  memcpy(q.data(),mxGetPrSafe(prhs[1]),sizeof(double)*nq*n_breaks); 
   int type = cnst->getType();
   int num_cnst = cnst->getNumConstraint(t_ptr,n_breaks); 
   VectorXd c(num_cnst);
@@ -56,9 +56,9 @@ void mexFunction(int nlhs,mxArray* plhs[], int nrhs, const mxArray * prhs[])
   plhs[0] = mxCreateDoubleScalar((double) type);
   plhs[1] = mxCreateDoubleScalar((double) num_cnst);
   plhs[2] = mxCreateDoubleMatrix(num_cnst,retvec_size,mxREAL);
-  memcpy(mxGetPr(plhs[2]),c.data(),sizeof(double)*num_cnst);
+  memcpy(mxGetPrSafe(plhs[2]),c.data(),sizeof(double)*num_cnst);
   plhs[3] = mxCreateDoubleMatrix(num_cnst,nq*n_breaks,mxREAL);
-  memcpy(mxGetPr(plhs[3]),dc.data(),sizeof(double)*num_cnst*nq*n_breaks);
+  memcpy(mxGetPrSafe(plhs[3]),dc.data(),sizeof(double)*num_cnst*nq*n_breaks);
   int name_ndim = 1;
   mwSize name_dims[] = {(mwSize) num_cnst};
   plhs[4] = mxCreateCellArray(name_ndim,name_dims);
@@ -70,7 +70,7 @@ void mexFunction(int nlhs,mxArray* plhs[], int nrhs, const mxArray * prhs[])
   }
   plhs[5] = mxCreateDoubleMatrix(num_cnst,retvec_size,mxREAL);
   plhs[6] = mxCreateDoubleMatrix(num_cnst,retvec_size,mxREAL);
-  memcpy(mxGetPr(plhs[5]),lb.data(),sizeof(double)*num_cnst);
-  memcpy(mxGetPr(plhs[6]),ub.data(),sizeof(double)*num_cnst);
+  memcpy(mxGetPrSafe(plhs[5]),lb.data(),sizeof(double)*num_cnst);
+  memcpy(mxGetPrSafe(plhs[6]),ub.data(),sizeof(double)*num_cnst);
   delete[] t_ptr;
 }

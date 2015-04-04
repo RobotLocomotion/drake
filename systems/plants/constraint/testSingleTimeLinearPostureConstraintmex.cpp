@@ -34,7 +34,7 @@ void mexFunction(int nlhs,mxArray* plhs[], int nrhs, const mxArray * prhs[])
     mexErrMsgIdAndTxt("Drake:testSingleTimeLinearPostureConstraintmex:BadInputs","q must a numeric column vector with size nq");
   }
   VectorXd q(nq);
-  memcpy(q.data(),mxGetPr(prhs[1]),sizeof(double)*nq);
+  memcpy(q.data(),mxGetPrSafe(prhs[1]),sizeof(double)*nq);
   double* t_ptr = nullptr;
   if(mxGetNumberOfElements(prhs[2]) == 0)
   {
@@ -42,7 +42,7 @@ void mexFunction(int nlhs,mxArray* plhs[], int nrhs, const mxArray * prhs[])
   }
   else if(mxGetNumberOfElements(prhs[2]) == 1)
   {
-    t_ptr = mxGetPr(prhs[2]);
+    t_ptr = mxGetPrSafe(prhs[2]);
   }
   int type = stlpc->getType();
   int num_cnst = stlpc->getNumConstraint(t_ptr);
@@ -67,15 +67,15 @@ void mexFunction(int nlhs,mxArray* plhs[], int nrhs, const mxArray * prhs[])
     retvec_size = 1;
   }
   plhs[2] = mxCreateDoubleMatrix(num_cnst,retvec_size,mxREAL);
-  memcpy(mxGetPr(plhs[2]),c.data(),sizeof(double)*num_cnst);
+  memcpy(mxGetPrSafe(plhs[2]),c.data(),sizeof(double)*num_cnst);
   plhs[3] = mxCreateDoubleMatrix(iAfun.size(),retvec_size,mxREAL);
   plhs[4] = mxCreateDoubleMatrix(jAvar.size(),retvec_size,mxREAL);
   plhs[5] = mxCreateDoubleMatrix(A.size(),retvec_size,mxREAL);
   for(int i = 0;i<iAfun.size();i++)
   {
-    *(mxGetPr(plhs[3])+i) = (double) iAfun(i)+1;
-    *(mxGetPr(plhs[4])+i) = (double) jAvar(i)+1;
-    *(mxGetPr(plhs[5])+i) = A(i);
+    *(mxGetPrSafe(plhs[3])+i) = (double) iAfun(i)+1;
+    *(mxGetPrSafe(plhs[4])+i) = (double) jAvar(i)+1;
+    *(mxGetPrSafe(plhs[5])+i) = A(i);
   }
   int name_ndim = 1;
   mwSize name_dims[] = {(mwSize) num_cnst};
@@ -88,6 +88,6 @@ void mexFunction(int nlhs,mxArray* plhs[], int nrhs, const mxArray * prhs[])
   }
   plhs[7] = mxCreateDoubleMatrix(num_cnst,retvec_size,mxREAL);
   plhs[8] = mxCreateDoubleMatrix(num_cnst,retvec_size,mxREAL);
-  memcpy(mxGetPr(plhs[7]),lb.data(),sizeof(double)*num_cnst);
-  memcpy(mxGetPr(plhs[8]),ub.data(),sizeof(double)*num_cnst);
+  memcpy(mxGetPrSafe(plhs[7]),lb.data(),sizeof(double)*num_cnst);
+  memcpy(mxGetPrSafe(plhs[8]),ub.data(),sizeof(double)*num_cnst);
 }

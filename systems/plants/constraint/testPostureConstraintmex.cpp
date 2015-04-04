@@ -33,6 +33,6 @@ void mexFunction(int nlhs,mxArray* plhs[], int nrhs, const mxArray *prhs[])
   pc->bounds(t_ptr,lb,ub);
   plhs[0] = mxCreateDoubleMatrix(nq,1,mxREAL);
   plhs[1] = mxCreateDoubleMatrix(nq,1,mxREAL);
-  memcpy(mxGetPr(plhs[0]),lb.data(),sizeof(double)*nq);
-  memcpy(mxGetPr(plhs[1]),ub.data(),sizeof(double)*nq);
+  memcpy(mxGetPrSafe(plhs[0]),lb.data(),sizeof(double)*nq);
+  memcpy(mxGetPrSafe(plhs[1]),ub.data(),sizeof(double)*nq);
 }

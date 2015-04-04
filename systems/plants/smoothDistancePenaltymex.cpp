@@ -173,7 +173,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
       memcpy(active_bodies_idx.data(),(int*) mxGetData(body_idx),
           sizeof(int)*n_active_bodies);
     } else if(mxGetClassID(body_idx) == mxDOUBLE_CLASS) {
-	  double* ptr = mxGetPr(body_idx);
+	  double* ptr = mxGetPrSafe(body_idx);
 	  for (int i=0; i<n_active_bodies; i++)
 		active_bodies_idx[i] = static_cast<int>(ptr[i]);
     } else {
@@ -234,6 +234,6 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   }
   if (nlhs>1) {
     plhs[1] = mxCreateDoubleMatrix(static_cast<int>(dpenalty.rows()),static_cast<int>(dpenalty.cols()),mxREAL);
-    memcpy(mxGetPr(plhs[1]),dpenalty.data(),sizeof(double)*dpenalty.size());
+    memcpy(mxGetPrSafe(plhs[1]),dpenalty.data(),sizeof(double)*dpenalty.size());
   }
 }

@@ -42,13 +42,16 @@ while test_number < n_tests
   v = randn(nv, 1);
   
   kinsol = robot.doKinematics(q, v, kinematics_options);
-  
+ 
   if robot.use_new_kinsol
     base = randi(body_range);
   else
     base = 1;
   end
   end_effector = randi(body_range);
+  if rotation_type == 1 && isForwardKinRPYNearSingularity(robot, kinsol, end_effector, base, 1e-1);
+    continue;
+  end
   forwardkin_options.base_or_frame_id = base;
   if base ~= end_effector
     nPoints = randi([1, 10]);
@@ -88,6 +91,9 @@ while test_number < n_tests
     
     kinematics_options.compute_gradients = true;
     kinsol = robot.doKinematics(q, v, kinematics_options);
+    if rotation_type == 1 && isForwardKinRPYNearSingularity(robot, kinsol, end_effector, base, 1e-1);
+      continue;
+    end
     [~, dJdot_times_v] = robot.forwardJacDotTimesV(kinsol, end_effector, points, rotation_type, base);
     kinematics_options.compute_gradients = false;
     [~, dJdot_times_v_geval] = geval(1, @(q) robot.forwardJacDotTimesV(robot.doKinematics(q, v, kinematics_options), end_effector, points, rotation_type, base), q, geval_options);
@@ -124,6 +130,9 @@ while test_number < n_tests
     
     kinematics_options.use_mex = false;
     kinsol = robot.doKinematics(q, v, kinematics_options);
+    if rotation_type == 1 && isForwardKinRPYNearSingularity(robot, kinsol, end_effector, base, 1e-1);
+      continue;
+    end
     
     if robot.use_new_kinsol
       [Jdot_times_v, dJdot_times_v] = robot.forwardJacDotTimesV(kinsol, end_effector, points, rotation_type, base);
@@ -154,3 +163,7 @@ if ret < min_absolute_tolerance
 end
 end
 
+function ret = isForwardKinRPYNearSingularity(robot, kinsol, end_effector, base, tol)
+x = robot.forwardKin(kinsol, end_effector, zeros(3, 1), struct('rotation_type', 1, 'base_or_frame_id', base));
+ret = abs(abs(x(5)) - pi / 2) < tol;
+end
