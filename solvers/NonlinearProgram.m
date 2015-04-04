@@ -947,6 +947,9 @@ classdef NonlinearProgram
         exitflag = 1;
         infeasible_constraint_name = {};
       else
+        if isempty(obj.solver)
+          obj = obj.setSolver('default');
+        end
         switch lower(obj.solver)
           case 'snopt'
             [x,objval,exitflag,infeasible_constraint_name] = snopt(obj,x0);
