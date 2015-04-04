@@ -155,7 +155,6 @@ classdef NonlinearProgram
       obj.bbcon_lb = [];
       obj.bbcon_ub = [];
       
-      obj = obj.setSolver('default');
       obj.solver_options.fmincon = optimset('Display','off');
       obj.solver_options.snopt = struct();
       obj.solver_options.snopt.MajorIterationsLimit = 1000;
@@ -948,6 +947,9 @@ classdef NonlinearProgram
         exitflag = 1;
         infeasible_constraint_name = {};
       else
+        if isempty(obj.solver)
+          obj = obj.setSolver('default');
+        end
         switch lower(obj.solver)
           case 'snopt'
             [x,objval,exitflag,infeasible_constraint_name] = snopt(obj,x0);
