@@ -163,20 +163,20 @@ bool callFastQP(MatrixBase<DerivedM> const & M, MatrixBase<Derivedw> const & w, 
   filterByIndices(z_active_indices, M, M_temp); // keep active rows
   filterByIndices(z_inactive_indices, M_temp.transpose(), M_check);  //and inactive columns
   filterByIndices(z_active_indices, w, w_check);
-  getThresholdInclusion(M_check.transpose() * zqp + w_check, -SMALL, violations);
+  getThresholdInclusion((M_check.transpose() * zqp + w_check).eval(), -SMALL, violations);
   
   if (anyTrue(violations)) { 
     return false;
   }
 
-  // getThresholdInclusion(Ain * zqp - bin, -SMALL, ineq_violations);
-  // getThresholdInclusion(beq - Aeq.transpose() * zqp, -SMALL, violations);
+  getThresholdInclusion((Ain * zqp - bin).eval(), -SMALL, ineq_violations);
+  getThresholdInclusion((beq - Aeq.transpose() * zqp).eval(), -SMALL, violations);
 
-  // for (size_t i = 0; i < num_inactive_z; i++) { 
-  //   if (ineq_violations[i] && violations[i]) { 
-  //     return false;
-  //   }
-  // }
+  for (size_t i = 0; i < num_inactive_z; i++) { 
+    if (ineq_violations[i] && violations[i]) { 
+      return false;
+    }
+  }
   return true;
 }
 
@@ -241,8 +241,8 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   vector<bool> possible_jointlimit;
   vector<bool> z_inactive;
 
-  getThresholdInclusion(phiC + h * n * v, z_inactive_guess_tol, possible_contact);
-  getThresholdInclusion(phiL + h * JL * v, z_inactive_guess_tol, possible_jointlimit);
+  getThresholdInclusion((phiC + h * n * v).eval(), z_inactive_guess_tol, possible_contact);
+  getThresholdInclusion((phiL + h * JL * v).eval(), z_inactive_guess_tol, possible_jointlimit);
 
   while (true) {
   //continue from here if our inactive guess fails
@@ -331,7 +331,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
         z_inactive.push_back(true);
       }
     } else {
-      getThresholdInclusion(lb - z_cached, -SMALL, z_inactive);
+      getThresholdInclusion((lb - z_cached).eval(), -SMALL, z_inactive);
     }
 
     //try fastQP first
@@ -358,8 +358,8 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
     getInclusionIndices(possible_jointlimit, impossible_limit_indices, false);
 
     vector<bool> penetrating_joints, penetrating_contacts;
-    getThresholdInclusion(phiL_check + h * JL_check * qdn, 0.0, penetrating_joints);
-    getThresholdInclusion(phiC_check + h * n_check * qdn, 0.0, penetrating_contacts);
+    getThresholdInclusion((phiL_check + h * JL_check * qdn).eval(), 0.0, penetrating_joints);
+    getThresholdInclusion((phiC_check + h * n_check * qdn).eval(), 0.0, penetrating_contacts);
 
     const size_t num_penetrating_joints = getNumTrue(penetrating_joints);
     const size_t num_penetrating_contacts = getNumTrue(penetrating_contacts);
