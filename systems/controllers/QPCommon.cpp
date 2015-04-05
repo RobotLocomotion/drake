@@ -385,7 +385,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
 
   MatrixXd R_DQyD_ls = R_ls + D_ls.transpose()*Qy*D_ls;
 
-  pdata->r->doKinematics(robot_state.q,false,robot_state.qd);
+  pdata->r->doKinematics(robot_state.q,true,robot_state.qd);
 
   //---------------------------------------------------------------------
 
