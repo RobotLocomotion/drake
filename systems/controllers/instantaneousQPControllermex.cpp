@@ -149,7 +149,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     double Vdot;
     if (debug->nc>0) 
       // note: Sdot is 0 for ZMP/double integrator dynamics, so we omit that term here
-      Vdot = ((2*debug->x_bar.transpose()*debug->S + debug->s1.transpose())*(debug->A_ls*debug->x_bar + debug->B_ls*(debug->Jcomdot*qd + debug->Jcom*qp_output.qdd)) + debug->s1dot.transpose()*debug->x_bar)(0) + debug->s2dot;
+      Vdot = ((2*debug->x_bar.transpose()*debug->S + debug->s1.transpose())*(debug->A_ls*debug->x_bar + debug->B_ls*(debug->Jcomdotv + debug->Jcom*qp_output.qdd)) + debug->s1dot.transpose()*debug->x_bar)(0) + debug->s2dot;
     else
       Vdot = 0;
     plhs[narg] = mxCreateDoubleScalar(Vdot);

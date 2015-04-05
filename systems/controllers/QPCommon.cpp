@@ -385,7 +385,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
 
   MatrixXd R_DQyD_ls = R_ls + D_ls.transpose()*Qy*D_ls;
 
-  pdata->r->doKinematics(robot_state.q,true,robot_state.qd);
+  pdata->r->doKinematics(robot_state.q,false,robot_state.qd);
 
   //---------------------------------------------------------------------
 
@@ -434,25 +434,42 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   // consider making all J's into row-major
   
 
-  pdata->r->getCOM(xcom);
-  pdata->r->getCOMJac(pdata->J);
-  pdata->r->getCOMJacDot(pdata->Jdot);
-  pdata->J_xy = pdata->J.topRows(2);
-  pdata->Jdot_xy = pdata->Jdot.topRows(2);
+  if(!pdata->r->use_new_kinsol)
+  {
+    pdata->r->getCOM(xcom);
+    pdata->r->getCOMJac(pdata->J);
+    MatrixXd Jdot;
+    pdata->r->getCOMJacDot(Jdot);
+    pdata->Jdotv = Jdot*robot_state.qd;
+    pdata->J_xy = pdata->J.topRows(2);
+    pdata->Jdotv_xy = pdata->Jdotv.head(2);
+  }
+  else
+  {
+    GradientVar<double,3,1> xcom_grad = pdata->r->centerOfMass<double>(1);
+    xcom = xcom_grad.value();
+    pdata->J = xcom_grad.gradient().value();
+    GradientVar<double,3,1> comdotv_grad = pdata->r->centerOfMassJacobianDotTimesV<double>(0);
+    pdata->Jdotv = comdotv_grad.value();
+    pdata->J_xy = pdata->J.topRows(2);
+    pdata->Jdotv_xy = pdata->Jdotv.head(2);
+  }
 
-  MatrixXd Jcom,Jcomdot;
+  MatrixXd Jcom;
+  VectorXd Jcomdotv;
 
   if (x0.size()==6) {
     Jcom = pdata->J;
-    Jcomdot = pdata->Jdot;
+    Jcomdotv = pdata->Jdotv;
   }
   else {
     Jcom = pdata->J_xy;
-    Jcomdot = pdata->Jdot_xy;
+    Jcomdotv = pdata->Jdotv_xy;
   }
   
-  MatrixXd B,JB,Jp,Jpdot,normals;
-  int nc = contactConstraintsBV(pdata->r,num_active_contact_pts,mu,active_supports,pdata->map_ptr,B,JB,Jp,Jpdot,normals,pdata->default_terrain_height);
+  MatrixXd B,JB,Jp,normals;
+  VectorXd Jpdotv;
+  int nc = contactConstraintsBV(pdata->r,num_active_contact_pts,mu,active_supports,pdata->map_ptr,B,JB,Jp,Jpdotv,normals,pdata->default_terrain_height);
   int neps = nc*dim;
 
   VectorXd x_bar,xlimp;
@@ -495,7 +512,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     if (nc > 0) {
       // NOTE: moved Hqp calcs below, because I compute the inverse directly for FastQP (and sparse Hqp for gurobi)
       VectorXd tmp = C_ls*xlimp;
-      VectorXd tmp1 = Jcomdot*robot_state.qd;
+      VectorXd tmp1 = Jcomdotv;
       MatrixXd tmp2 = R_DQyD_ls*Jcom;
 
       pdata->fqp = tmp.transpose()*Qy*D_ls*Jcom;
@@ -534,7 +551,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     Aeq.block(6,0,neps,nq) = Jp;
     Aeq.block(6,nq,neps,nf) = MatrixXd::Zero(neps,nf);  // note: obvious sparsity here
     Aeq.block(6,nq+nf,neps,neps) = MatrixXd::Identity(neps,neps);             // note: obvious sparsity here
-    beq.segment(6,neps) = (-Jpdot -params->Kp_accel*Jp)*robot_state.qd; 
+    beq.segment(6,neps) = -Jpdotv -params->Kp_accel*Jp*robot_state.qd; 
   }    
   
   // add in body spatial equality constraints
@@ -815,7 +832,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     debug->A_ls = A_ls;
     debug->B_ls = B_ls;
     debug->Jcom = Jcom;
-    debug->Jcomdot = Jcomdot;
+    debug->Jcomdotv = Jcomdotv;
     debug->beta = beta;
   }
 

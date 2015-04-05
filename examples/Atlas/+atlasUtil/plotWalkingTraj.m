@@ -61,10 +61,10 @@ for i=1:length(ts)
   kinsol = doKinematics(r,q);
 
   [com(:,i),J]=getCOM(r,kinsol);
-  Jdot = forwardJacDot(r,kinsol,0);
+  Jdotv = centerOfMassJacobianDotTimesV(r,kinsol,0);
   comdes(:,i)=walking_plan_data.comtraj.eval(t);
   zmpdes(:,i)=walking_plan_data.zmptraj.eval(t);
-  zmpact(:,i)=com(1:2,i) - com(3,i)/9.81 * (J(1:2,:)*qdd + Jdot(1:2,:)*qd);
+  zmpact(:,i)=com(1:2,i) - com(3,i)/9.81 * (J(1:2,:)*qdd + Jdotv(1:2));
 
   lfoot_cpos = terrainContactPositions(r,kinsol,lfoot);
   rfoot_cpos = terrainContactPositions(r,kinsol,rfoot);
