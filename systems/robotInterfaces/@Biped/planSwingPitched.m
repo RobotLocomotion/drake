@@ -167,15 +167,6 @@ pose = [apex2_origin_in_world(1:3); quat2rpy(quat_swing2)];
 add_foot_origin_knot(pose);
 
 
-
-% % Set the target velocities of the two apex poses based on the total distance traveled
-% foot_origin_knots(end).(swing_foot_name)(7:9) = (foot_origin_knots(end).(swing_foot_name)(1:3) - foot_origin_knots(end-1).(swing_foot_name)(1:3)) / (foot_origin_knots(end).t - foot_origin_knots(end-1).t);
-% foot_origin_knots(end-1).(swing_foot_name)(7:9) = (foot_origin_knots(end).(swing_foot_name)(1:3) - foot_origin_knots(end-1).(swing_foot_name)(1:3)) / (foot_origin_knots(end).t - foot_origin_knots(end-1).t);
-% % angles require unwrapping to get the correct velocities
-% foot_origin_knots(end).(swing_foot_name)(10:12) = angleDiff(foot_origin_knots(end-1).(swing_foot_name)(4:6), foot_origin_knots(end).(swing_foot_name)(4:6)) / (foot_origin_knots(end).t - foot_origin_knots(end-1).t);
-% foot_origin_knots(end-1).(swing_foot_name)(10:12) = angleDiff(foot_origin_knots(end-1).(swing_foot_name)(4:6), foot_origin_knots(end).(swing_foot_name)(4:6)) / (foot_origin_knots(end).t - foot_origin_knots(end-1).t);
-
-
 % Landing knot
 add_foot_origin_knot(swing2_origin_pose, min(params.step_speed, MAX_LANDING_SPEED)/2);
 foot_origin_knots(end).is_landing = true;
@@ -196,10 +187,16 @@ for j = 1:length(foot_origin_knots)-1
   end
 end
 
-% Compute nice splines
-for f = {swing_foot_name, stance_foot_name}
-  foot = f{1};
-  params = 
+% Find velocities for the apex knots by solving a small QP to get a smooth, minimum-acceleration cubic spline
+foot = swing_foot_name;
+states = [foot_origin_knots(1:4).(foot)];
+coefs = qpSpline([foot_origin_knots(1:4).t],...
+                 states(1:6,:),...
+                 states(7:12, 1),...
+                 states(7:12, 4));
+for j = 2:3
+  foot_origin_knots(j).(foot)(7:12) = coefs(:,j,end-1);
+end
 
 end
 

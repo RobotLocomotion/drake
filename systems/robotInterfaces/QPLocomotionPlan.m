@@ -153,14 +153,7 @@ classdef QPLocomotionPlan < QPControllerPlan
                                                      'kp', KNEE_KP,...
                                                      'kd', KNEE_KD,...
                                                      'weight', KNEE_WEIGHT);
-          if body_t_ind < size(obj.link_constraints(j).coefs, 2)
-            [p_current, J] = obj.robot.forwardKin(kinsol, obj.link_constraints(j).link_ndx, obj.link_constraints(j).pt, 1);
-            pd_current = J * qd;
-            p_next = obj.link_constraints(j).coefs(:,body_t_ind+1,end);
-            pd_next = obj.link_constraints(j).coefs(:,body_t_ind+1,end-1);
-            obj.link_constraints(j).coefs(:,body_t_ind,:) = cubicSplineCoefficients(obj.link_constraints(j).ts(body_t_ind+1) - t_plan, p_current, p_next, pd_current, pd_next);
-            obj.link_constraints(j).ts(body_t_ind) = t_plan;
-          end
+          obj = obj.updateSwingTrajectory(t_plan, j, body_t_ind, kinsol, qd);
         end
 
         qp_input.body_motion_data(j).coefs = obj.link_constraints(j).coefs(:,body_t_ind,:);
@@ -195,6 +188,28 @@ classdef QPLocomotionPlan < QPControllerPlan
       obj.last_qp_input = qp_input;
     end
 
+    function obj = updateSwingTrajectory(obj, t_plan, link_con_ind, body_t_ind, kinsol, qd)
+      link_con = obj.link_constraints(link_con_ind);
+      if body_t_ind < size(link_con.coefs, 2) - 2
+        [x0, J] = obj.robot.forwardKin(kinsol, link_con.link_ndx, link_con.pt, 1);
+        xd0 = J * qd;
+
+        xs = [x0, link_con.coefs(:,body_t_ind+(1:3),end)];
+        xdf = link_con.coefs(:,body_t_ind+3,end-1);
+        ts = [t_plan, link_con.ts(body_t_ind+(1:3))];
+        coefs = qpSpline(ts, xs, xd0, xdf);
+        obj.link_constraints(link_con_ind).coefs(:,body_t_ind+(0:2),:) = coefs;
+        obj.link_constraints(link_con_ind).ts(body_t_ind) = ts(1);
+      elseif body_t_ind < size(link_con.coefs, 2)
+        [p_current, J] = obj.robot.forwardKin(kinsol, link_con.link_ndx, link_con.pt, 1);
+        pd_current = J * qd;
+        p_next = link_con.coefs(:,body_t_ind+1,end);
+        pd_next = link_con.coefs(:,body_t_ind+1,end-1);
+        obj.link_constraints(link_con_ind).coefs(:,body_t_ind,:) = cubicSplineCoefficients(link_con.ts(body_t_ind+1) - t_plan, p_current, p_next, pd_current, pd_next);
+        obj.link_constraints(link_con_ind).ts(body_t_ind) = t_plan;
+      end
+    end
+
     function obj = updatePlanShift(obj, t_global, kinsol, qp_input, contact_force_detected, next_support)
       active_support_bodies = next_support.bodies;
       if any(active_support_bodies == obj.robot.foot_body_id.right) && contact_force_detected(obj.robot.foot_body_id.right)
@@ -221,7 +236,7 @@ classdef QPLocomotionPlan < QPControllerPlan
       qp_input.zmp_data.x0(1:2) = qp_input.zmp_data.x0(1:2) - obj.plan_shift_data.plan_shift(1:2);
       qp_input.zmp_data.y0 = qp_input.zmp_data.y0 - obj.plan_shift_data.plan_shift(1:2);
       for j = 1:length(qp_input.body_motion_data)
-        qp_input.body_motion_data(j).coefs(1:3,:,end) = bsxfun(@minus, qp_input.body_motion_data(j).coefs(1:3,:,end), obj.plan_shift_data.plan_shift(1:3));
+        qp_input.body_motion_data(j).coefs(1:3,:,end) = qp_input.body_motion_data(j).coefs(1:3,:,end) - obj.plan_shift_data.plan_shift(1:3);
       end
       qp_input.whole_body_data.q_des(1:3) = qp_input.whole_body_data.q_des(1:3) - obj.plan_shift_data.plan_shift(1:3);
     end
