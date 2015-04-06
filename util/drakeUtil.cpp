@@ -109,15 +109,15 @@ mxArray* createDrakeMexPointer(void* ptr, const char* name, int num_additional_i
 void* getDrakeMexPointer(const mxArray* mx)
 {
 	void* ptr = NULL;
-  
-  if (!mxIsClass(mx, "DrakeMexPointer")) {
+
+  if (!mxIsClass(mx, "DrakeMexPointer")) 
     mexErrMsgIdAndTxt("Drake:getDrakeMexPointer:BadInputs", "getDrakeMexPointer can only be called on arguments which correspond to DrakeMexPointer objects");
-  }
-	// todo: optimize this by caching the pointer values, as described in
-	// http://groups.csail.mit.edu/locomotion/bugs/show_bug.cgi?id=1590
-	mxArray* ptrArray = mxGetProperty(mx,0,"ptr");
-	if (!ptrArray)
-		mexErrMsgIdAndTxt("Drake:getDrakeMexPointer:BadInputs","cannot retrieve 'ptr' field from this mxArray.  are you sure it's a valid DrakeMexPointer object?");
+
+  // todo: optimize this by caching the pointer values, as described in
+  // http://groups.csail.mit.edu/locomotion/bugs/show_bug.cgi?id=1590
+  mxArray* ptrArray = mxGetProperty(mx,0,"ptr");
+  if (!ptrArray)
+    mexErrMsgIdAndTxt("Drake:getDrakeMexPointer:BadInputs","cannot retrieve 'ptr' field from this mxArray.  are you sure it's a valid DrakeMexPointer object?");
 
   if (!mxIsNumeric(ptrArray) || mxGetNumberOfElements(ptrArray)!=1)
     mexErrMsgIdAndTxt("Drake:getDrakeMexPointer:BadInputs","the ptr property of this DrakeMexPointer does not appear to contain a valid pointer");
