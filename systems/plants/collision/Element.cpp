@@ -6,6 +6,19 @@ using namespace std;
 
 namespace DrakeCollision
 { 
+  Element::Element(const Matrix4d& T_element_to_local)
+    : DrakeShapes::Element(T_element_to_local)
+  { 
+    id = (ElementId) this;
+  }
+
+  Element::Element(const DrakeShapes::Geometry& geometry, 
+      const Matrix4d& T_element_to_local)
+    : DrakeShapes::Element(geometry, T_element_to_local)
+  {
+    id = (ElementId) this;
+  }
+
   Element::Element(const Element& other) 
     : DrakeShapes::Element(other), id((ElementId) this)  
   {
