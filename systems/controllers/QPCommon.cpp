@@ -184,7 +184,7 @@ PIDOutput wholeBodyPID(NewQPControllerData *pdata, double t, const Ref<const Vec
 
   VectorXd err_q;
   err_q.resize(nq);
-  err_q.head(3) = q_des.head(3) - q.head(3);
+  err_q.head<3>() = q_des.head<3>() - q.head<3>();
   for (int j = 3; j < nq; j++) {
     err_q(j) = angleDiff(q(j), q_des(j));
   }
@@ -420,7 +420,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
 
   pdata->H_float = pdata->H.topRows(6);
   pdata->H_act = pdata->H.bottomRows(nu);
-  pdata->C_float = pdata->C.head(6);
+  pdata->C_float = pdata->C.head<6>();
   pdata->C_act = pdata->C.tail(nu);
 
   bool include_angular_momentum = (params->W_kdot.array().maxCoeff() > 1e-10);
@@ -442,7 +442,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     pdata->r->getCOMJacDot(Jdot);
     pdata->Jdotv = Jdot*robot_state.qd;
     pdata->J_xy = pdata->J.topRows(2);
-    pdata->Jdotv_xy = pdata->Jdotv.head(2);
+    pdata->Jdotv_xy = pdata->Jdotv.head<2>();
   }
   else
   {
@@ -452,7 +452,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     GradientVar<double,3,1> comdotv_grad = pdata->r->centerOfMassJacobianDotTimesV<double>(0);
     pdata->Jdotv = comdotv_grad.value();
     pdata->J_xy = pdata->J.topRows(2);
-    pdata->Jdotv_xy = pdata->Jdotv.head(2);
+    pdata->Jdotv_xy = pdata->Jdotv.head<2>();
   }
 
   MatrixXd Jcom;

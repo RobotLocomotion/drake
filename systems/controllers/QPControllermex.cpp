@@ -272,7 +272,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       SupportStateElement se;
       se.body_idx = (int) pBodies[i]-1;
       for (j=0; j<nc; j++) {
-        contact_pt.head(3) = all_body_contact_pts.col(j);
+        contact_pt.head<3>() = all_body_contact_pts.col(j);
         se.contact_pts.push_back(contact_pt);
       }
       se.contact_surface = (int) pContactSurfaces[i]-1;
@@ -287,7 +287,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   pdata->H_float = pdata->H.topRows(6);
   pdata->H_act = pdata->H.bottomRows(nu);
-  pdata->C_float = pdata->C.head(6);
+  pdata->C_float = pdata->C.head<6>();
   pdata->C_act = pdata->C.tail(nu);
 
   bool include_angular_momentum = (pdata->W_kdot.array().maxCoeff() > 1e-10);
@@ -306,7 +306,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   pdata->r->getCOMJacDot(Jdot);
   pdata->Jdotv = Jdot*qd;
   pdata->J_xy = pdata->J.topRows(2);
-  pdata->Jdotv_xy = pdata->Jdotv.head(2);
+  pdata->Jdotv_xy = pdata->Jdotv.head<2>();
 
   MatrixXd Jcom;
   VectorXd Jcomdotv;
