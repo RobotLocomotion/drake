@@ -567,7 +567,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
       if (!inSupport(active_supports,desired_body_accelerations[i].body_id0)) {
         pdata->r->forwardJac(desired_body_accelerations[i].body_id0,orig1,1,Jb);
         auto Jdot_times_v = pdata->r->forwardJacDotTimesV(orig,desired_body_accelerations[i].body_id0,0,1,0);
-        Jbdotv = Jdot_times_v.value();
+        Jbdotv.noalias() = Jdot_times_v.value();
 
         for (int j=0; j<6; j++) {
           if (!std::isnan(desired_body_accelerations[i].body_vdot(j))) {
@@ -605,7 +605,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   for (int i=0; i<desired_body_accelerations.size(); i++) {
     pdata->r->forwardJac(desired_body_accelerations[i].body_id0,orig1,1,Jb);
     auto Jdot_times_v = pdata->r->forwardJacDotTimesV(orig,desired_body_accelerations[i].body_id0,0,1,0);
-    Jbdotv = Jdot_times_v.value();
+    Jbdotv.noalias() = Jdot_times_v.value();
     Ain.block(constraint_start_index,0,6,pdata->r->num_positions) = Jb;
     bin.segment(constraint_start_index,6) = -Jbdotv + desired_body_accelerations[i].accel_bounds.max;
     constraint_start_index += 6;
@@ -728,12 +728,12 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
         if (!inSupport(active_supports,desired_body_accelerations[i].body_id0)) {
           pdata->r->forwardJac(desired_body_accelerations[i].body_id0,orig1,1,Jb);
           auto Jdot_times_v = pdata->r->forwardJacDotTimesV(orig,desired_body_accelerations[i].body_id0,0,1,0);
-          Jbdotv = Jdot_times_v.value();
+          Jbdotv.noalias() = Jdot_times_v.value();
 
           for (int j=0; j<6; j++) {
             if (!std::isnan(desired_body_accelerations[i].body_vdot[j])) {
               pdata->Hqp += desired_body_accelerations[i].weight*(Jb.row(j)).transpose()*Jb.row(j);
-              f.head(nq) += desired_body_accelerations[i].weight*(Jbdotv(j) - desired_body_accelerations[i].body_vdot[j])*Jb.row(j).transpose();
+              f.head(nq).noalias() += desired_body_accelerations[i].weight*(Jbdotv(j) - desired_body_accelerations[i].body_vdot[j])*Jb.row(j).transpose();
             }
           }
         }
