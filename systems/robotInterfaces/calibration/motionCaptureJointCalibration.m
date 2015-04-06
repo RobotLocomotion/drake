@@ -67,7 +67,11 @@ if options.search_floating
     error('Calling this function with options.search_floating = true currently requires the first joint in the kinematic chain to be an rpy-parameterized floating joint.');
   end
   floating_indices = floating_body.position_num;
-  floating_states0 = [zeros(3, nposes); ones(1, nposes); zeros(3, nposes)]; % zero rotation in quaternion
+  floating_states0 = zeros(7, nposes);
+  floating_states0(1 : 3, :) = q_data(floating_body.position_num(1 : 3), :);
+  for i = 1 : nposes
+    floating_states0(4 : 7, i) = rpy2quat(q_data(floating_body.position_num(4 : 6), i));
+  end  
 else
   floating_indices = zeros(0, 1);
   floating_states0 = zeros(0, nposes);

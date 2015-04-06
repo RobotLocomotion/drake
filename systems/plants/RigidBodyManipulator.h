@@ -318,6 +318,7 @@ public:
   std::vector<MatrixXd> I;
   Matrix<double,TWIST_SIZE,1> a_grav;
   MatrixXd B;  // the B matrix maps inputs into joint-space forces
+  std::map<int, int> bodies_vector_index_to_featherstone_body_index;
 
   VectorXd cached_q, cached_v;  // these should be private
 

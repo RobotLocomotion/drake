@@ -483,9 +483,15 @@ void RigidBodyManipulator::compile(void)
       body.velocity_num_start = 0;
     }
   }
+
+  int featherstone_body_index = 0;
   for (int i=0; i<num_bodies; i++) {
     bodies[i]->body_index = i;
     bodies[i]->setN(_num_positions, num_velocities);
+    if (bodies[i]->hasParent()) {
+      bodies_vector_index_to_featherstone_body_index[i] = featherstone_body_index + bodies[i]->getJoint().getNumPositions() - 1;
+      featherstone_body_index += bodies[i]->getJoint().getNumPositions();
+    }
   }
 
   B.resize(num_velocities,actuators.size());
