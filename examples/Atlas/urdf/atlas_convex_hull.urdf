@@ -65,7 +65,7 @@
    <collision group="heel">
       <origin rpy="0 0 0" xyz="-0.082 0.0624435 -0.081119"/>
       <geometry>
-        <sphere radius="1e-7"/>
+        <sphere radius="0"/>
       </geometry>
     </collision>
     <visual>
@@ -77,7 +77,7 @@
     <collision group="heel">
       <origin rpy="0 0 0" xyz="-0.082 -0.0624435 -0.081119"/>
       <geometry>
-        <sphere radius="1e-7"/>
+        <sphere radius="0"/>
       </geometry>
     </collision>
     <visual>
@@ -89,7 +89,7 @@
     <collision group="toe">
       <origin rpy="0 0 0" xyz="0.178 0.0624435 -0.081119"/>
       <geometry>
-        <sphere radius="1e-7"/>
+        <sphere radius="0"/>
       </geometry>
     </collision>
     <visual>
@@ -101,7 +101,7 @@
     <collision group="toe">
       <origin rpy="0 0 0" xyz="0.178 -0.0624435 -0.081119"/>
       <geometry>
-        <sphere radius="1e-7"/>
+        <sphere radius="0"/>
       </geometry>
     </collision>
     <visual>
@@ -403,7 +403,7 @@
    <collision group="heel">
       <origin rpy="0 0 0" xyz="-0.082 0.0624435 -0.081119"/>
       <geometry>
-        <sphere radius="1e-7"/>
+        <sphere radius="0"/>
       </geometry>
     </collision>
     <visual>
@@ -415,7 +415,7 @@
     <collision group="heel">
       <origin rpy="0 0 0" xyz="-0.082 -0.0624435 -0.081119"/>
       <geometry>
-        <sphere radius="1e-7"/>
+        <sphere radius="0"/>
       </geometry>
     </collision>
     <visual>
@@ -427,7 +427,7 @@
     <collision group="toe">
       <origin rpy="0 0 0" xyz="0.178 0.0624435 -0.081119"/>
       <geometry>
-        <sphere radius="1e-7"/>
+        <sphere radius="0"/>
       </geometry>
     </collision>
     <visual>
@@ -439,7 +439,7 @@
     <collision group="toe">
       <origin rpy="0 0 0" xyz="0.178 -0.0624435 -0.081119"/>
       <geometry>
-        <sphere radius="1e-7"/>
+        <sphere radius="0"/>
       </geometry>
     </collision>
     <visual>

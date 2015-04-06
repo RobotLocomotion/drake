@@ -34,7 +34,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
     mexErrMsgIdAndTxt("Drake:collisionDetectmex:InvalidInputType", "Expected a boolean logic type for allow_multiple_collisions but got something else.");
   }
 
-  if(!mxIsStruct(prhs[2])) { 
+  if (!mxIsStruct(prhs[2])) { 
     mexErrMsgIdAndTxt("Drake:collisionDetectmex:InvalidInputType", "Expected a struct type for active_collision_options but got something else.");    
   }
 
