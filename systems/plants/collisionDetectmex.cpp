@@ -18,10 +18,24 @@ using namespace std;
  *                        active_collision_options);
  */
 
-void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
+void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
 
-  if (nrhs < 1) {
-    mexErrMsgIdAndTxt("Drake:collisionDetectmex:NotEnoughInputs","Usage collisionDetectmex(model_ptr)");
+  //check number of arguments
+  if (nrhs < 3) {
+    mexErrMsgIdAndTxt("Drake:collisionDetectmex:NotEnoughInputs", "Usage: [xA,xB,normal,distance,idxA,idxB] = collisionDetectmex(mex_model_ptr, allow_multiple_contacts, active_collision_options)");
+  }
+
+  //check argument types
+  if (!mxIsClass(prhs[0], "DrakeMexPointer")) {
+    mexErrMsgIdAndTxt("Drake:collisionDetectmex:InvalidInputType", "Expected a DrakeMexPointer for mex_model_ptr but got something else.");
+  }
+
+  if (!mxIsLogical(prhs[1])) {
+    mexErrMsgIdAndTxt("Drake:collisionDetectmex:InvalidInputType", "Expected a boolean logic type for allow_multiple_collisions but got something else.");
+  }
+
+  if(!mxIsStruct(prhs[2])) { 
+    mexErrMsgIdAndTxt("Drake:collisionDetectmex:InvalidInputType", "Expected a struct type for active_collision_options but got something else.");    
   }
 
   // first get the model_ptr back from matlab
