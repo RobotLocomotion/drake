@@ -59,10 +59,15 @@ lfoot_navgoal(1:3) = lfoot_navgoal(1:3) + R*[0;0.13;0];
 
 % Plan footsteps to the goal
 goal_pos = struct('right', rfoot_navgoal, 'left', lfoot_navgoal);
-footstep_plan = r.planFootsteps(x0(1:nq), goal_pos, [], struct('step_params', struct('max_num_steps', example_options.num_steps, 'max_forward_step', 0.4)));
+footstep_plan = r.planFootsteps(x0(1:nq), goal_pos, [], struct('step_params', struct('max_num_steps', example_options.num_steps, 'max_forward_step', 0.75, 'nom_step_width', 0.2)));
 
 % Generate a dynamic walking plan
 walking_plan_data = r.planWalkingZMP(x0(1:r.getNumPositions()), footstep_plan);
+
+% [ytraj] = r.planWalkingStateTraj(walking_plan_data);
+% v.playback(ytraj, struct('slider', true));
+% keyboard();
+
 
 % Build our controller and plan eval objects
 control = atlasControllers.InstantaneousQPController(r, []);
@@ -82,9 +87,10 @@ ytraj = simulate(sys, [0, T], x0, struct('gui_control_interface', true));
 toc
 [com, rms_com] = atlasUtil.plotWalkingTraj(r, ytraj, walking_plan_data);
 
+v.playback(ytraj, struct('slider', true));
+
 if ~rangecheck(rms_com, 0, 0.01);
   error('Drake:runAtlasWalkingSplit:BadCoMTracking', 'Center-of-mass during execution differs substantially from the plan.');
 end
 
-v.playback(ytraj, struct('slider', true));
 

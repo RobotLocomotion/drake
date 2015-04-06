@@ -16,6 +16,8 @@
 %     C0_1 + 2*(t1 - t0)*C0_2 + 3*(t1 - t0)*(t1 - t0)*C0_3 == C1_1
 %     C1_1 + 2*(t2 - t1)*C1_2 + 3*(t2 - t1)*(t2 - t1)*C1_3 == C2_1
 %     C2_1 + 2*(tf - t2)*C2_2 + 3*(tf - t2)*(tf - t2)*C2_3 == xdf
+%     2*C0_2 + 6*(t1 - t0)*C0_3 == 2*C1_2
+%     2*C1_2 + 6*(t2 - t1)*C1_3 == 2*C2_2
 %     y0_1(1) == C0_2(1)
 %     y0_2(1) == C0_2(2)
 %     y0_3(1) == C0_2(3)
@@ -109,7 +111,7 @@
 %
 % Specify params.Q0, ..., params.xf, then run
 %   [vars, status] = csolve(params, settings)
-% Produced by CVXGEN, 2015-04-03 15:45:16 -0400.
+% Produced by CVXGEN, 2015-04-06 13:38:00 -0400.
 % CVXGEN is Copyright (C) 2006-2012 Jacob Mattingley, jem@cvxgen.com.
 % The code in this file is Copyright (C) 2006-2012 Jacob Mattingley.
 % CVXGEN, or solvers produced by CVXGEN, cannot be used for commercial

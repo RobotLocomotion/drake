@@ -1,4 +1,4 @@
-function coefs = qpSpline(ts, xs, xd0, xdf, debug)
+function [coefs, objval] = qpSpline(ts, xs, xd0, xdf, debug)
 % Compute a smooth spline through four knot points with fixed velocity at the
 % initial and final knots only. Solves a (very small) QP using cvxgen to
 % minimize the integral of the squared norm of acceleration along the
@@ -39,6 +39,7 @@ settings = struct('verbose', 0);
 coefs = [cat(3, vars.C0_3, vars.C0_2, vars.C0_1, vars.C0_0),...
          cat(3, vars.C1_3, vars.C1_2, vars.C1_1, vars.C1_0),...
          cat(3, vars.C2_3, vars.C2_2, vars.C2_1, vars.C2_0)];
+objval = status.optval;
 
 if debug
   pp = mkpp(ts, coefs, 6);
@@ -58,6 +59,13 @@ if debug
   as = ppval(atraj, tt);
   ns = sum(as.^2,1);
   error = abs(sum(ns) * (tt(2) - tt(1)) - status.optval) / status.optval
+
+  figure(16);
+  clf
+  for j = 1:6
+    subplot(6,1,j);
+    plot(tt, as(j,:));
+  end
 
   rangecheck(error, 0, 1e-2);
 end

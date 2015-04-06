@@ -1,4 +1,4 @@
-/* Produced by CVXGEN, 2015-04-03 15:45:17 -0400.  */
+/* Produced by CVXGEN, 2015-04-06 13:38:01 -0400.  */
 /* CVXGEN is Copyright (C) 2006-2012 Jacob Mattingley, jem@cvxgen.com. */
 /* The code in this file is Copyright (C) 2006-2012 Jacob Mattingley. */
 /* CVXGEN, or solvers produced by CVXGEN, cannot be used for commercial */
@@ -84,22 +84,22 @@ typedef struct Workspace_t {
   double *h;
   double *s_inv;
   double *s_inv_z;
-  double b[96];
+  double b[108];
   double q[108];
-  double rhs[204];
-  double x[204];
+  double rhs[216];
+  double x[216];
   double *s;
   double *z;
   double *y;
-  double lhs_aff[204];
-  double lhs_cc[204];
-  double buffer[204];
-  double buffer2[204];
-  double KKT[300];
-  double L[414];
-  double d[204];
-  double v[204];
-  double d_inv[204];
+  double lhs_aff[216];
+  double lhs_cc[216];
+  double buffer[216];
+  double buffer2[216];
+  double KKT[336];
+  double L[480];
+  double d[216];
+  double v[216];
+  double d_inv[216];
   double gap;
   double optval;
   double ineq_resid_squared;
@@ -128,21 +128,6 @@ extern Vars vars;
 extern Params params;
 extern Workspace work;
 extern Settings settings;
-/* Function definitions in testsolver.c: */
-int main(int argc, char **argv);
-void load_default_data(void);
-
-/* Function definitions in util.c: */
-void tic(void);
-float toc(void);
-float tocq(void);
-void printmatrix(char *name, double *A, int m, int n, int sparse);
-double unif(double lower, double upper);
-float ran1(long*idum, int reset);
-float randn_internal(long *idum, int reset);
-double randn(void);
-void reset_rand(void);
-
 /* Function definitions in ldl.c: */
 void ldl_solve(double *target, double *var);
 void ldl_factor(void);
@@ -178,5 +163,20 @@ double calc_eq_resid_squared(void);
 void better_start(void);
 void fillrhs_start(void);
 long solve(void);
+
+/* Function definitions in testsolver.c: */
+int main(int argc, char **argv);
+void load_default_data(void);
+
+/* Function definitions in util.c: */
+void tic(void);
+float toc(void);
+float tocq(void);
+void printmatrix(char *name, double *A, int m, int n, int sparse);
+double unif(double lower, double upper);
+float ran1(long*idum, int reset);
+float randn_internal(long *idum, int reset);
+double randn(void);
+void reset_rand(void);
 
 #endif

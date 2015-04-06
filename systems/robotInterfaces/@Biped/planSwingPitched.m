@@ -17,9 +17,9 @@ APEX_FRACTIONS = [0.15, 0.92]; % We plan only two poses of the foot during the a
                                % fraction of the distance from its initial location to its final location.
 
 FOOT_YAW_RATE = 0.75; % rad/s
-FOOT_PITCH_RATE = 2*pi; % rad/s
+FOOT_PITCH_RATE = 2.0; % rad/s
 
-MIN_DIST_FOR_TOE_OFF = 0.1; % minimum distance of *forward* progress for toe-off to be allowed.
+MIN_DIST_FOR_TOE_OFF = 0.4; % minimum distance of *forward* progress for toe-off to be allowed.
                             % This disallows toe-off during backward stepping. 
                             % The distance is measured as the vector between the two swing poses
                             % dotted with the orientation of the stance foot
@@ -190,10 +190,43 @@ end
 % Find velocities for the apex knots by solving a small QP to get a smooth, minimum-acceleration cubic spline
 foot = swing_foot_name;
 states = [foot_origin_knots(1:4).(foot)];
-coefs = qpSpline([foot_origin_knots(1:4).t],...
+
+% pp = pchip([foot_origin_knots(1:4).t], states(1:6,:));
+% [~, coefs, l, k, d] = unmkpp(pp);
+% coefs = reshape(coefs, [d, l, k]);
+
+% 3 cubic splines = 3 * 4 vars
+% initial position = 1 con
+% init vel = 1 con
+% continuity of position = 2 con
+% cont of vel = 2 con
+% final pose = 1 con
+% final vel = 1 con
+% continuity of accel = 2 con
+
+% 12 vars, 8 cons
+
+% nonlinear opt: vars t1, t2
+% obj fun = qpSpline -> optval
+
+function c = objfun(x)
+  ts = [foot_origin_knots(1).t, x, foot_origin_knots(4).t];
+  [coefs, optval] = qpSpline(ts,...
+                             states(1:6,:),...
+                             states(7:12, 1),...
+                             states(7:12, 4));
+  c = optval;
+end
+
+xstar = fmincon(@objfun, [foot_origin_knots(2:3).t], [1, -1],0,[],[],...
+                [foot_origin_knots(1).t, foot_origin_knots(1).t],...
+                [foot_origin_knots(4).t, foot_origin_knots(4).t]);
+
+ts = [foot_origin_knots(1).t, xstar, foot_origin_knots(4).t];
+coefs = qpSpline(ts,...
                  states(1:6,:),...
                  states(7:12, 1),...
-                 states(7:12, 4));
+                 states(7:12, 4), true);
 for j = 2:3
   foot_origin_knots(j).(foot)(7:12) = coefs(:,j,end-1);
 end

@@ -20,6 +20,8 @@ classdef QPLocomotionPlan < QPControllerPlan
     planned_support_command = QPControllerPlan.support_logic_maps.require_support; % when the plan says a given body is in support, require the controller to use that support. To allow the controller to use that support only if it thinks the body is in contact with the terrain, try QPControllerPlan.support_logic_maps.kinematic_or_sensed; 
 
     last_qp_input;
+
+    lcmgl = LCMGLClient('locomotion_plan');
   end
 
   methods
@@ -143,17 +145,19 @@ classdef QPLocomotionPlan < QPControllerPlan
         end
         if ~isempty(kny_ind) && obj.link_constraints(j).toe_off_allowed(body_t_ind) && q(kny_ind) < MIN_KNEE_ANGLE
           body_mask = obj.supports(supp_idx).bodies == body_id;
-          if any(body_mask) && ~isempty(obj.supports(supp_idx).contact_groups{body_mask})
+          if any(body_mask)
+            if ~isempty(obj.supports(supp_idx).contact_groups{body_mask})
             obj.supports(supp_idx) = obj.supports(supp_idx).setContactPts(body_mask, rpc.contact_groups{body_id}.toe, {'toe'});
+            end
+            % obj.supports(supp_idx).contact_pts{body_mask} = rpc.contact_groups{body_id}.toe;
+            qp_input.joint_pd_override(end+1) = struct('position_ind', kny_ind,...
+                                                       'qi_des', MIN_KNEE_ANGLE,...
+                                                       'qdi_des', 0,...
+                                                       'kp', KNEE_KP,...
+                                                       'kd', KNEE_KD,...
+                                                       'weight', KNEE_WEIGHT);
+            obj = obj.updateSwingTrajectory(t_plan, j, body_t_ind, kinsol, qd);
           end
-          % obj.supports(supp_idx).contact_pts{body_mask} = rpc.contact_groups{body_id}.toe;
-          qp_input.joint_pd_override(end+1) = struct('position_ind', kny_ind,...
-                                                     'qi_des', MIN_KNEE_ANGLE,...
-                                                     'qdi_des', 0,...
-                                                     'kp', KNEE_KP,...
-                                                     'kd', KNEE_KD,...
-                                                     'weight', KNEE_WEIGHT);
-          obj = obj.updateSwingTrajectory(t_plan, j, body_t_ind, kinsol, qd);
         end
 
         qp_input.body_motion_data(j).coefs = obj.link_constraints(j).coefs(:,body_t_ind,:);
@@ -190,24 +194,51 @@ classdef QPLocomotionPlan < QPControllerPlan
 
     function obj = updateSwingTrajectory(obj, t_plan, link_con_ind, body_t_ind, kinsol, qd)
       link_con = obj.link_constraints(link_con_ind);
-      if body_t_ind < size(link_con.coefs, 2) - 2
-        [x0, J] = obj.robot.forwardKin(kinsol, link_con.link_ndx, link_con.pt, 1);
-        xd0 = J * qd;
 
-        xs = [x0, link_con.coefs(:,body_t_ind+(1:3),end)];
-        xdf = link_con.coefs(:,body_t_ind+3,end-1);
-        ts = [t_plan, link_con.ts(body_t_ind+(1:3))];
-        coefs = qpSpline(ts, xs, xd0, xdf);
-        obj.link_constraints(link_con_ind).coefs(:,body_t_ind+(0:2),:) = coefs;
-        obj.link_constraints(link_con_ind).ts(body_t_ind) = ts(1);
-      elseif body_t_ind < size(link_con.coefs, 2)
-        [p_current, J] = obj.robot.forwardKin(kinsol, link_con.link_ndx, link_con.pt, 1);
-        pd_current = J * qd;
-        p_next = link_con.coefs(:,body_t_ind+1,end);
-        pd_next = link_con.coefs(:,body_t_ind+1,end-1);
-        obj.link_constraints(link_con_ind).coefs(:,body_t_ind,:) = cubicSplineCoefficients(link_con.ts(body_t_ind+1) - t_plan, p_current, p_next, pd_current, pd_next);
-        obj.link_constraints(link_con_ind).ts(body_t_ind) = t_plan;
+      [x0, J] = obj.robot.forwardKin(kinsol, link_con.link_ndx, link_con.pt, 1);
+      xd0 = J * qd;
+
+      xs = [x0, link_con.coefs(:,body_t_ind+(1:3),end)];
+      xdf = link_con.coefs(:,body_t_ind+3,end-1);
+      t0 = [t_plan, link_con.ts(body_t_ind+(1:3))];
+
+      function c = objfun(x)
+        ts = [t0(1), x, t0(4)];
+        [coefs, optval] = qpSpline(ts,...
+                                   xs,...
+                                   xd0,...
+                                   xdf);
+        c = optval;
       end
+
+
+      xstar = fmincon(@objfun, [t0(2:3)], [1, -1],0,[],[],...
+                      [t0(1), t0(1)],...
+                      [t0(4), t0(4)]);
+
+      ts = [t0(1), xstar, t0(4)];
+      coefs = qpSpline(ts, xs, xd0, xdf);
+
+      tt = linspace(ts(1), ts(end));
+      pp = mkpp(ts, coefs, 6);
+      xs = ppval(pp, tt);
+      xds = ppval(fnder(pp, 1), tt);
+      obj.lcmgl.glPointSize(5);
+      obj.lcmgl.points(xs(1,:), xs(2,:), xs(3,:));
+
+      vscale = 0.1;
+      for j = 1:size(xs,2)
+        obj.lcmgl.line3(xs(1,j), xs(2,j), xs(3,j), ...
+                    xs(1,j) + vscale*xds(1,j),...
+                    xs(2,j) + vscale*xds(2,j),...
+                    xs(3,j) + vscale*xds(3,j));
+      end
+      obj.lcmgl.switchBuffers();
+
+
+      % coefs = qpSpline(ts, xs, xd0, xdf);
+      obj.link_constraints(link_con_ind).coefs(:,body_t_ind+(0:2),:) = coefs;
+      obj.link_constraints(link_con_ind).ts(body_t_ind) = ts(1);
     end
 
     function obj = updatePlanShift(obj, t_global, kinsol, qp_input, contact_force_detected, next_support)

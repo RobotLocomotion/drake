@@ -1,4 +1,4 @@
-/* Produced by CVXGEN, 2015-04-03 15:45:17 -0400.  */
+/* Produced by CVXGEN, 2015-04-06 13:38:01 -0400.  */
 /* CVXGEN is Copyright (C) 2006-2012 Jacob Mattingley, jem@cvxgen.com. */
 /* The code in this file is Copyright (C) 2006-2012 Jacob Mattingley. */
 /* CVXGEN, or solvers produced by CVXGEN, cannot be used for commercial */
@@ -30,8 +30,8 @@ void set_defaults(void) {
 }
 void setup_pointers(void) {
   work.y = work.x + 108;
-  work.s = work.x + 204;
-  work.z = work.x + 204;
+  work.s = work.x + 216;
+  work.z = work.x + 216;
   vars.C0_0 = work.x + 0;
   vars.C0_1 = work.x + 6;
   vars.C0_2 = work.x + 12;
@@ -111,7 +111,7 @@ void set_start(void) {
   int i;
   for (i = 0; i < 108; i++)
     work.x[i] = 0;
-  for (i = 0; i < 96; i++)
+  for (i = 0; i < 108; i++)
     work.y[i] = 0;
   for (i = 0; i < 0; i++)
     work.s[i] = (work.h[i] > 0) ? work.h[i] : settings.s_init;
@@ -156,7 +156,7 @@ void fillrhs_aff(void) {
     r3[i] += -work.s[i] + work.h[i];
   /* r4 = -Ax + b. */
   multbymA(r4, work.x);
-  for (i = 0; i < 96; i++)
+  for (i = 0; i < 108; i++)
     r4[i] += work.b[i];
 }
 void fillrhs_cc(void) {
@@ -199,7 +199,7 @@ void fillrhs_cc(void) {
   /* Fill-in the rhs. */
   for (i = 0; i < 108; i++)
     work.rhs[i] = 0;
-  for (i = 108; i < 204; i++)
+  for (i = 108; i < 216; i++)
     work.rhs[i] = 0;
   for (i = 0; i < 0; i++)
     r2[i] = work.s_inv[i]*(smu - ds_aff[i]*dz_aff[i]);
@@ -212,7 +212,7 @@ void refine(double *target, double *var) {
   for (j = 0; j < settings.refine_steps; j++) {
     norm2 = 0;
     matrix_multiply(residual, var);
-    for (i = 0; i < 204; i++) {
+    for (i = 0; i < 216; i++) {
       residual[i] = residual[i] - target[i];
       norm2 += residual[i]*residual[i];
     }
@@ -227,7 +227,7 @@ void refine(double *target, double *var) {
     /* Solve to find new_var = KKT \ (target - A*var). */
     ldl_solve(residual, new_var);
     /* Update var += new_var, or var += KKT \ (target - A*var). */
-    for (i = 0; i < 204; i++) {
+    for (i = 0; i < 216; i++) {
       var[i] -= new_var[i];
     }
   }
@@ -237,7 +237,7 @@ void refine(double *target, double *var) {
     /* it's expensive. */
     norm2 = 0;
     matrix_multiply(residual, var);
-    for (i = 0; i < 204; i++) {
+    for (i = 0; i < 216; i++) {
       residual[i] = residual[i] - target[i];
       norm2 += residual[i]*residual[i];
     }
@@ -270,11 +270,11 @@ double calc_eq_resid_squared(void) {
   /* Find -Ax. */
   multbymA(work.buffer, work.x);
   /* Add +b. */
-  for (i = 0; i < 96; i++)
+  for (i = 0; i < 108; i++)
     work.buffer[i] += work.b[i];
   /* Now find the squared norm. */
   norm2_squared = 0;
-  for (i = 0; i < 96; i++)
+  for (i = 0; i < 108; i++)
     norm2_squared += work.buffer[i]*work.buffer[i];
   return norm2_squared;
 }
@@ -301,7 +301,7 @@ void better_start(void) {
   /* Just set x and y as is. */
   for (i = 0; i < 108; i++)
     work.x[i] = x[i];
-  for (i = 0; i < 96; i++)
+  for (i = 0; i < 108; i++)
     work.y[i] = y[i];
   /* Now complete the initialization. Start with s. */
   /* Must have alpha > max(z). */
@@ -346,7 +346,7 @@ void fillrhs_start(void) {
     r2[i] = 0;
   for (i = 0; i < 0; i++)
     r3[i] = work.h[i];
-  for (i = 0; i < 96; i++)
+  for (i = 0; i < 108; i++)
     r4[i] = work.b[i];
 }
 long solve(void) {
@@ -386,7 +386,7 @@ long solve(void) {
     ldl_solve(work.rhs, work.lhs_cc);
     refine(work.rhs, work.lhs_cc);
     /* Add the two together and store in aff. */
-    for (i = 0; i < 204; i++)
+    for (i = 0; i < 216; i++)
       work.lhs_aff[i] += work.lhs_cc[i];
     /* Rename aff to reflect its new meaning. */
     dx = work.lhs_aff;
@@ -413,7 +413,7 @@ long solve(void) {
       work.s[i] += alpha*ds[i];
     for (i = 0; i < 0; i++)
       work.z[i] += alpha*dz[i];
-    for (i = 0; i < 96; i++)
+    for (i = 0; i < 108; i++)
       work.y[i] += alpha*dy[i];
     work.gap = eval_gap();
     work.eq_resid_squared = calc_eq_resid_squared();

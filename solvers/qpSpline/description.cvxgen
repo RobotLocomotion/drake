@@ -1,4 +1,4 @@
-# Produced by CVXGEN, 2015-04-03 15:45:16 -0400.
+# Produced by CVXGEN, 2015-04-06 13:38:00 -0400.
 # CVXGEN is Copyright (C) 2006-2012 Jacob Mattingley, jem@cvxgen.com.
 # The code in this file is Copyright (C) 2006-2012 Jacob Mattingley.
 # CVXGEN, or solvers produced by CVXGEN, cannot be used for commercial
@@ -63,6 +63,13 @@ subject to
   C0[1] + 2*(t1 - t0)*C0[2] + 3*(t1 - t0)*(t1 - t0)*C0[3] == C1[1]
   C1[1] + 2*(t2 - t1)*C1[2] + 3*(t2 - t1)*(t2 - t1)*C1[3] == C2[1]
   C2[1] + 2*(tf - t2)*C2[2] + 3*(tf - t2)*(tf - t2)*C2[3] == xdf
+
+  # Continuity of acceleration
+  # x = c0 + c1 t + c2 t^2 + c3 t^3
+  # xd = c1 + 2 c2 t + 3 c3 t^2
+  # xdd = 2 c2 + 6 c3 t
+  2*C0[2] + 6*(t1-t0)*C0[3] == 2*C1[2]
+  2*C1[2] + 6*(t2-t1)*C1[3] == 2*C2[2]
 
   # objective variables
   y0[d][1] == C0[2][d], d=1..n_dof
