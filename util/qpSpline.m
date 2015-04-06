@@ -62,6 +62,14 @@ if debug
 
   figure(16);
   clf
+  vs = ppval(fnder(pp, 1), tt);
+  for j = 1:6
+    subplot(6, 1, j)
+    plot(tt, vs(j,:));
+  end
+
+  figure(17);
+  clf
   for j = 1:6
     subplot(6,1,j);
     plot(tt, as(j,:));

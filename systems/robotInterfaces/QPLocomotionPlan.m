@@ -111,7 +111,7 @@ classdef QPLocomotionPlan < QPControllerPlan
         supp_idx = find(obj.support_times<=t_plan,1,'last');
       end
 
-      MIN_KNEE_ANGLE = 0.7;
+      MIN_KNEE_ANGLE = 0.85;
       KNEE_KP = 40;
       KNEE_KD = 4;
       KNEE_WEIGHT = 1;
@@ -138,25 +138,44 @@ classdef QPLocomotionPlan < QPControllerPlan
 
         if body_id == obj.robot.foot_body_id.right
           kny_ind = rpc.position_indices.r_leg_kny;
+          other_foot = obj.robot.foot_body_id.left;
         elseif body_id == obj.robot.foot_body_id.left
           kny_ind = rpc.position_indices.l_leg_kny;
+          other_foot = obj.robot.foot_body_id.right;
         else
           kny_ind = [];
+          other_foot = [];
         end
-        if ~isempty(kny_ind) && obj.link_constraints(j).toe_off_allowed(body_t_ind) && q(kny_ind) < MIN_KNEE_ANGLE
+
+        if ~isempty(kny_ind)
           body_mask = obj.supports(supp_idx).bodies == body_id;
-          if any(body_mask)
-            if ~isempty(obj.supports(supp_idx).contact_groups{body_mask})
-            obj.supports(supp_idx) = obj.supports(supp_idx).setContactPts(body_mask, rpc.contact_groups{body_id}.toe, {'toe'});
+          in_support = any(body_mask);
+          if in_support && q(kny_ind) < MIN_KNEE_ANGLE
+            other_foot_pose = obj.link_constraints([obj.link_constraints.link_ndx] == other_foot).coefs(:,body_t_ind,end);
+            foot_knot = obj.link_constraints(j).coefs(:,body_t_ind,end);
+            R = rotmat(-foot_knot(6));
+            vector_to_other_foot_in_local = R * (other_foot_pose(1:2) - foot_knot(1:2));
+            toe_off_allowed = vector_to_other_foot_in_local(1) > 0.05;
+            vector_to_other_foot_in_local
+            if toe_off_allowed
+
+
+        % toe_off_allowed = in_support && 
+        % if ~isempty(kny_ind) && obj.link_constraints(j).toe_off_allowed(body_t_ind) && q(kny_ind) < MIN_KNEE_ANGLE
+        %   if any(body_mask)
+              if ~isempty(obj.supports(supp_idx).contact_groups{body_mask})
+                obj.supports(supp_idx) = obj.supports(supp_idx).setContactPts(body_mask, rpc.contact_groups{body_id}.toe, {'toe'});
+              end
+              qp_input.joint_pd_override(end+1) = struct('position_ind', kny_ind,...
+                                                         'qi_des', MIN_KNEE_ANGLE,...
+                                                         'qdi_des', 0,...
+                                                         'kp', KNEE_KP,...
+                                                         'kd', KNEE_KD,...
+                                                         'weight', KNEE_WEIGHT);
+              if supp_idx < length(obj.supports) && ~any(obj.supports(supp_idx+1).bodies == body_id)
+                obj = obj.updateSwingTrajectory(t_plan, j, body_t_ind, kinsol, qd);
+              end
             end
-            % obj.supports(supp_idx).contact_pts{body_mask} = rpc.contact_groups{body_id}.toe;
-            qp_input.joint_pd_override(end+1) = struct('position_ind', kny_ind,...
-                                                       'qi_des', MIN_KNEE_ANGLE,...
-                                                       'qdi_des', 0,...
-                                                       'kp', KNEE_KP,...
-                                                       'kd', KNEE_KD,...
-                                                       'weight', KNEE_WEIGHT);
-            obj = obj.updateSwingTrajectory(t_plan, j, body_t_ind, kinsol, qd);
           end
         end
 

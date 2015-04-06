@@ -15,8 +15,8 @@ checkDependency('lcmgl');
 
 if nargin<1, example_options=struct(); end
 example_options = applyDefaults(example_options, struct('use_bullet', false,...
-                                                        'navgoal', [1.0;0;0;0;0;0],...
-                                                        'num_steps', 4,...
+                                                        'navgoal', [2.0;0;0;0;0;0],...
+                                                        'num_steps', 6,...
                                                         'terrain', RigidBodyFlatTerrain));
 
 % silence some warnings
@@ -27,6 +27,7 @@ warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits')
 options.floating = true;
 options.ignore_self_collisions = true;
 options.ignore_friction = true;
+% options.ignore_effort_limits = true;
 options.dt = 0.001;
 options.terrain = example_options.terrain;
 options.use_bullet = example_options.use_bullet;

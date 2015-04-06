@@ -17,12 +17,13 @@ APEX_FRACTIONS = [0.15, 0.92]; % We plan only two poses of the foot during the a
                                % fraction of the distance from its initial location to its final location.
 
 FOOT_YAW_RATE = 0.75; % rad/s
-FOOT_PITCH_RATE = 2.0; % rad/s
+FOOT_PITCH_RATE = inf; % rad/s
 
 MIN_DIST_FOR_TOE_OFF = 0.4; % minimum distance of *forward* progress for toe-off to be allowed.
                             % This disallows toe-off during backward stepping. 
                             % The distance is measured as the vector between the two swing poses
                             % dotted with the orientation of the stance foot
+MIN_DIST_FOR_PITCHED_SWING = 0.4;
 
 MAX_LANDING_SPEED = 0.75;
 MAX_TAKEOFF_SPEED = 1.5;
@@ -59,7 +60,7 @@ T_local_to_world = [[rotmat(atan2(swing2.pos(2) - swing1.pos(2), swing2.pos(1) -
 % Determine how much of a forward step this is
 swing_distance_in_local = (swing2.pos(1:2) - swing1.pos(1:2))' * (rotmat(stance.pos(6)) * [1;0]);
 
-if swing_distance_in_local > MIN_DIST_FOR_TOE_OFF
+if swing_distance_in_local > MIN_DIST_FOR_PITCHED_SWING
   toe_off_angle = DEFAULT_FOOT_PITCH;
 else
   toe_off_angle = 0;
@@ -130,7 +131,7 @@ foot_origin_knots = struct('t', zmp_knots(end).t, ...
 
 function add_foot_origin_knot(swing_pose, speed)
   if nargin < 2
-    speed = params.step_speed;
+    speed = params.step_speed/2;
   end
   foot_origin_knots(end+1).(swing_foot_name) = [swing_pose; zeros(6,1)];
   foot_origin_knots(end).(stance_foot_name) = [stance_origin_pose; zeros(6,1)];
@@ -139,6 +140,9 @@ function add_foot_origin_knot(swing_pose, speed)
   sole2 = rotmat2rpy(rpy2rotmat(foot_origin_knots(end).(swing_foot_name)(4:6)) * T_sole_to_foot(1:3,1:3));
   yaw_distance = abs(angleDiff(sole1(3), sole2(3)));
   pitch_distance = abs(angleDiff(sole1(2), sole2(2)));
+  cart_dt = cartesian_distance / speed
+  yaw_dt = yaw_distance / FOOT_YAW_RATE
+  pitch_dt = pitch_distance / FOOT_PITCH_RATE
   dt = max([cartesian_distance / speed,...
             yaw_distance / FOOT_YAW_RATE,...
             pitch_distance / FOOT_PITCH_RATE]);
@@ -157,7 +161,8 @@ toe_apex1_in_world = (1-APEX_FRACTIONS(1))*toe1 + APEX_FRACTIONS(1)*toe2 + [0;0;
 T_toe_apex1_to_world = [quat2rotmat(quat_toe_off),toe_apex1_in_world;zeros(1,3),1];
 apex1_origin_in_world = T_toe_apex1_to_world * origin_in_toe;
 pose = [apex1_origin_in_world(1:3); quat2rpy(quat_toe_off)];
-add_foot_origin_knot(pose, min(params.step_speed, MAX_TAKEOFF_SPEED)/2);
+add_foot_origin_knot(pose);
+% add_foot_origin_knot(pose, min(params.step_speed, MAX_TAKEOFF_SPEED)/2);
 
 % Apex knot 2
 toe_apex2_in_world = (1-APEX_FRACTIONS(2))*toe1 + APEX_FRACTIONS(2)*toe2 + [0;0;toe_ht_in_world(3)]; 
@@ -168,7 +173,8 @@ add_foot_origin_knot(pose);
 
 
 % Landing knot
-add_foot_origin_knot(swing2_origin_pose, min(params.step_speed, MAX_LANDING_SPEED)/2);
+add_foot_origin_knot(swing2_origin_pose);
+% add_foot_origin_knot(swing2_origin_pose, min(params.step_speed, MAX_LANDING_SPEED)/2);
 foot_origin_knots(end).is_landing = true;
 zmp_knots(end+1).t = foot_origin_knots(end).t;
 zmp_knots(end).zmp = zmp1;
@@ -228,6 +234,7 @@ coefs = qpSpline(ts,...
                  states(7:12, 1),...
                  states(7:12, 4), true);
 for j = 2:3
+  foot_origin_knots(j).t = ts(j);
   foot_origin_knots(j).(foot)(7:12) = coefs(:,j,end-1);
 end
 
