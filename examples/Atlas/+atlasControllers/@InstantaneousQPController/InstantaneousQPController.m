@@ -83,7 +83,7 @@ classdef InstantaneousQPController
       if isa(terrain,'DRCTerrainMap')
         terrain_map_ptr = terrain.map_handle.getPointerForMex();
       else
-        terrain_map_ptr = 0;
+        terrain_map_ptr = nullPointer();
       end
 
       coordinate_names = struct(...

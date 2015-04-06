@@ -111,11 +111,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   }
   
   // cost:  (q-q_nom)'*Q*(q-q_nom)  \equiv q'*Q*q - 2*q_nom'*Q*q  (const term doesn't matter)
-  Map<VectorXd> q_nom(mxGetPr(prhs[2]), nq);
-  Map<MatrixXd> Q(mxGetPr(prhs[3]), nq, nq);
+  Map<VectorXd> q_nom(mxGetPrSafe(prhs[2]), nq);
+  Map<MatrixXd> Q(mxGetPrSafe(prhs[3]), nq, nq);
   VectorXd c = -Q*q_nom;
   
-  double *q0 = mxGetPr(prhs[1]);
+  double *q0 = mxGetPrSafe(prhs[1]);
   model->doKinematics(q0);
   
   VectorXd q0vec = Map<VectorXd>(q0, nq);
@@ -133,7 +133,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
       int n_pts = mxGetN(prhs[i+1]);
       body_pos.resize(4, 1);
       body_pos << 0, 0, 0, 1;
-      world_pos = new Map<MatrixXd>(mxGetPr(prhs[i+1]), 3, n_pts);
+      world_pos = new Map<MatrixXd>(mxGetPrSafe(prhs[i+1]), 3, n_pts);
       
       rows = 3;
       i+=2;
@@ -158,7 +158,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
       } else {
         rows = mxGetM(prhs[i+2]);
         int n_pts = mxGetN(prhs[i+2]);
-        world_pos = new Map<MatrixXd>(mxGetPr(prhs[i+2]), rows, n_pts);
+        world_pos = new Map<MatrixXd>(mxGetPrSafe(prhs[i+2]), rows, n_pts);
       }
       
       if (mxIsClass(prhs[i+1], "char") || mxGetM(prhs[i+1]) == 1) {
@@ -169,7 +169,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         }
         n_pts = mxGetN(prhs[i+1]);
         
-        Map<MatrixXd> pts_tmp(mxGetPr(prhs[i+1]), 3, n_pts);
+        Map<MatrixXd> pts_tmp(mxGetPrSafe(prhs[i+1]), 3, n_pts);
         body_pos.resize(4, n_pts);
         body_pos << pts_tmp, MatrixXd::Ones(1, n_pts);
       }
@@ -201,7 +201,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     }
     
     if (max != NULL) {
-      double *val = mxGetPr(max);
+      double *val = mxGetPrSafe(max);
       
       // add inequality constraint
       for (j = 0; j < rows; j++) {
@@ -222,7 +222,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     }
     
     if (min != NULL) {
-      double *val = mxGetPr(min);
+      double *val = mxGetPrSafe(min);
       // add inequality constraint
       for (j = 0; j < rows; j++) {
         if (!mxIsNaN(val[j])) {
@@ -288,7 +288,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   #endif  
   
   plhs[0] = mxCreateDoubleMatrix(nq, 1, mxREAL);
-  memcpy(mxGetPr(plhs[0]), q.data(), sizeof(double)*nq);
+  memcpy(mxGetPrSafe(plhs[0]), q.data(), sizeof(double)*nq);
   
   if (nlhs>1) {
     plhs[1] = mxCreateDoubleScalar(result);

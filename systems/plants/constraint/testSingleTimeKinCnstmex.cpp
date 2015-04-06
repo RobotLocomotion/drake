@@ -37,7 +37,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     }
     if(num_t == 1)
     {
-      t_ptr = mxGetPr(prhs[2]);
+      t_ptr = mxGetPrSafe(prhs[2]);
     }
     if(num_t>1)
     {
@@ -48,7 +48,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   int num_cnst = cnst->getNumConstraint(t_ptr);
   //mexPrintf("num_cnst = %d\n",num_cnst);
   int nq = cnst->getRobotPointer()->num_positions;
-  Map<VectorXd> q(mxGetPr(prhs[1]), nq);
+  Map<VectorXd> q(mxGetPrSafe(prhs[1]), nq);
   cnst->getRobotPointer()->doKinematics(q);
   VectorXd c(num_cnst);
   MatrixXd dc(num_cnst,nq);
@@ -73,9 +73,9 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   plhs[0] = mxCreateDoubleScalar((double) type);
   plhs[1] = mxCreateDoubleScalar((double) num_cnst);
   plhs[2] = mxCreateDoubleMatrix(num_cnst,retvec_size,mxREAL);
-  memcpy(mxGetPr(plhs[2]),c.data(),sizeof(double)*num_cnst);
+  memcpy(mxGetPrSafe(plhs[2]),c.data(),sizeof(double)*num_cnst);
   plhs[3] = mxCreateDoubleMatrix(num_cnst,nq,mxREAL);
-  memcpy(mxGetPr(plhs[3]),dc.data(),sizeof(double)*num_cnst*nq);
+  memcpy(mxGetPrSafe(plhs[3]),dc.data(),sizeof(double)*num_cnst*nq);
   int name_ndim = 1;
   mwSize name_dims[] = {(mwSize) num_cnst};
   plhs[4] = mxCreateCellArray(name_ndim,name_dims);
@@ -87,6 +87,6 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   }
   plhs[5] = mxCreateDoubleMatrix(num_cnst,retvec_size,mxREAL);
   plhs[6] = mxCreateDoubleMatrix(num_cnst,retvec_size,mxREAL);
-  memcpy(mxGetPr(plhs[5]),lb.data(),sizeof(double)*num_cnst);
-  memcpy(mxGetPr(plhs[6]),ub.data(),sizeof(double)*num_cnst);
+  memcpy(mxGetPrSafe(plhs[5]),lb.data(),sizeof(double)*num_cnst);
+  memcpy(mxGetPrSafe(plhs[6]),ub.data(),sizeof(double)*num_cnst);
 }

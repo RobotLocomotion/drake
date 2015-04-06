@@ -33,35 +33,35 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
   Map<MatrixXd> *df_ext=NULL;
   if (static_cast<int>(mxGetNumberOfElements(prhs[1]))!=model->num_positions || static_cast<int>(mxGetNumberOfElements(prhs[2]))!=model->num_positions)
     mexErrMsgIdAndTxt("Drake:HandCmex:BadInputs","q and qd must be size %d x 1",model->num_positions);
-  Map<VectorXd> q(mxGetPr(prhs[1]), model->num_positions);
-  Map<VectorXd> qd(mxGetPr(prhs[2]), model->num_velocities);
+  Map<VectorXd> q(mxGetPrSafe(prhs[1]), model->num_positions);
+  Map<VectorXd> qd(mxGetPrSafe(prhs[2]), model->num_velocities);
   
   if (nrhs>3) {
     if (!mxIsEmpty(prhs[3])) {
-      f_ext = new Map<MatrixXd>(mxGetPr(prhs[3]),6,model->NB);
+      f_ext = new Map<MatrixXd>(mxGetPrSafe(prhs[3]),6,model->NB);
     }
   }
   if (nrhs>4) {
     if (!mxIsEmpty(prhs[4])) {
-      df_ext = new Map<MatrixXd>(mxGetPr(prhs[4]),6*model->NB,2*model->num_positions);
+      df_ext = new Map<MatrixXd>(mxGetPrSafe(prhs[4]),6*model->NB,2*model->num_positions);
     }
   }
   
   Map<MatrixXd> *dH=NULL, *dC=NULL;
   
   plhs[0] = mxCreateDoubleMatrix(model->num_positions,model->num_positions,mxREAL);
-  Map<MatrixXd> H(mxGetPr(plhs[0]),model->num_positions,model->num_positions);
+  Map<MatrixXd> H(mxGetPrSafe(plhs[0]),model->num_positions,model->num_positions);
 
   plhs[1] = mxCreateDoubleMatrix(model->num_positions,1,mxREAL);
-  Map<VectorXd> C(mxGetPr(plhs[1]),model->num_positions);
+  Map<VectorXd> C(mxGetPrSafe(plhs[1]),model->num_positions);
 
   if (nlhs>2) {
     plhs[2] = mxCreateDoubleMatrix(model->num_positions*model->num_positions,model->num_positions,mxREAL);
-    dH = new Map<MatrixXd>(mxGetPr(plhs[2]),model->num_positions*model->num_positions,model->num_positions);
+    dH = new Map<MatrixXd>(mxGetPrSafe(plhs[2]),model->num_positions*model->num_positions,model->num_positions);
   }
   if (nlhs>3) {
     plhs[3] = mxCreateDoubleMatrix(model->num_positions,2*model->num_positions,mxREAL);
-    dC = new Map<MatrixXd>(mxGetPr(plhs[3]),model->num_positions,2*model->num_positions);
+    dC = new Map<MatrixXd>(mxGetPrSafe(plhs[3]),model->num_positions,2*model->num_positions);
   }  
   
   model->HandC(q,qd,f_ext,H,C,dH,dC,df_ext);

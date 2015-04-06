@@ -8,7 +8,7 @@ template<int M, int N>
 void checkAndCopy(const mxArray *source, const int idx, const char *fieldname, double *destination)  {
 	const mxArray *field = myGetField(source, idx, fieldname);
   sizecheck(field, M, N);
-	Map<Matrix<double, M, N>>A(mxGetPr(field));
+	Map<Matrix<double, M, N>>A(mxGetPrSafe(field));
   // C is row-major, matlab is column-major
   Matrix<double, N, M> A_t = A.transpose();
   memcpy(destination, A_t.data(), sizeof(double)*M*N);
