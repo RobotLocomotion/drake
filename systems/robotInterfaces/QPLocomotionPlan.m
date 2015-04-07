@@ -221,22 +221,11 @@ classdef QPLocomotionPlan < QPControllerPlan
       xdf = link_con.coefs(:,body_t_ind+3,end-1);
       t0 = [t_plan, link_con.ts(body_t_ind+(1:3))];
 
-      function c = objfun(x)
-        ts = [t0(1), x, t0(4)];
-        [coefs, optval] = qpSpline(ts,...
-                                   xs,...
-                                   xd0,...
-                                   xdf);
-        c = optval;
-      end
 
+      ts = [t0(1), 0, 0, t0(4)];
+      qpSpline_options = struct('optimize_knot_times', true);
+      [coefs, ts] = qpSpline(ts, xs, xd0, xdf, qpSpline_options);
 
-      xstar = fmincon(@objfun, [t0(2:3)], [1, -1],0,[],[],...
-                      [t0(1), t0(1)],...
-                      [t0(4), t0(4)]);
-
-      ts = [t0(1), xstar, t0(4)];
-      coefs = qpSpline(ts, xs, xd0, xdf);
 
       tt = linspace(ts(1), ts(end));
       pp = mkpp(ts, coefs, 6);

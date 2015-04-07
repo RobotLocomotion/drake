@@ -1,4 +1,4 @@
-function [coefs, objval] = qpSpline(ts, xs, xd0, xdf, debug)
+function [coefs, ts, objval] = qpSpline(ts, xs, xd0, xdf, settings, debug)
 % Compute a smooth spline through four knot points with fixed velocity at the
 % initial and final knots only. Solves a (very small) QP using cvxgen to
 % minimize the integral of the squared norm of acceleration along the
@@ -7,9 +7,15 @@ function [coefs, objval] = qpSpline(ts, xs, xd0, xdf, debug)
 % @param xs [6x4] 6-DOF poses at each knot
 % @param xd0 [6x1] initial velocity
 % @param xdf [6x1] final velocity
+% @param settings settings struct; options
+%   - optimize_knot_times @default false
 % @option debug
 
-if nargin < 5
+if ~isfield(settings, 'optimize_knot_times')
+  settings.optimize_knot_times = false;
+end
+
+if nargin < 6
   debug = false;
 end
 
@@ -34,8 +40,15 @@ params = struct('x0', xs(:,1),...
                        6*(ts(3) - ts(2))^2, 6^2 / 3 *(ts(3) - ts(2))^3],...
                 'Q2', [2^2 * (ts(4) - ts(3)), 6*(ts(4) - ts(3))^2;
                        6*(ts(4) - ts(3))^2, 6^2 / 3 *(ts(4) - ts(3))^3]);
-settings = struct('verbose', 0);
-[vars, status] = qpSplineMex(params, settings);
+cvx_settings = struct('verbose', 0);
+
+if settings.optimize_knot_times
+  [vars, status] = qpSplineGridSearchmex(params, cvx_settings);
+  ts(2) = vars.t1;
+  ts(3) = vars.t2;
+else
+  [vars, status] = qpSplineMex(params, cvx_settings);
+end
 coefs = [cat(3, vars.C0_3, vars.C0_2, vars.C0_1, vars.C0_0),...
          cat(3, vars.C1_3, vars.C1_2, vars.C1_1, vars.C1_0),...
          cat(3, vars.C2_3, vars.C2_2, vars.C2_1, vars.C2_0)];

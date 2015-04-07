@@ -92,6 +92,10 @@ DLLEXPORT std::pair<Eigen::Vector3d, double> resolveCenterOfPressure(Eigen::Vect
 
 DLLEXPORT double *mxGetPrSafe(const mxArray *pobj);
 
+DLLEXPORT mxArray* mxGetFieldSafe(const mxArray* array, size_t index, std::string const& field_name);
+
+DLLEXPORT void mxSetFieldSafe(mxArray* array, size_t index, std::string const & fieldname, mxArray* data);
+
 DLLEXPORT void sizecheck(const mxArray* mat, int M, int N);
 
 #endif /* DRAKE_UTIL_H_ */

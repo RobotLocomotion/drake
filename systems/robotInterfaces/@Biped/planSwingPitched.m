@@ -215,24 +215,14 @@ states = [foot_origin_knots(1:4).(foot)];
 % nonlinear opt: vars t1, t2
 % obj fun = qpSpline -> optval
 
-function c = objfun(x)
-  ts = [foot_origin_knots(1).t, x, foot_origin_knots(4).t];
-  [coefs, optval] = qpSpline(ts,...
-                             states(1:6,:),...
-                             states(7:12, 1),...
-                             states(7:12, 4));
-  c = optval;
-end
 
-xstar = fmincon(@objfun, [foot_origin_knots(2:3).t], [1, -1],0,[],[],...
-                [foot_origin_knots(1).t, foot_origin_knots(1).t],...
-                [foot_origin_knots(4).t, foot_origin_knots(4).t]);
-
-ts = [foot_origin_knots(1).t, xstar, foot_origin_knots(4).t];
+ts = [foot_origin_knots(1).t, 0, 0, foot_origin_knots(4).t];
+qpSpline_options = struct('optimize_knot_times', true);
 coefs = qpSpline(ts,...
                  states(1:6,:),...
                  states(7:12, 1),...
-                 states(7:12, 4), true);
+                 states(7:12, 4), qpSpline_options, true);
+
 for j = 2:3
   foot_origin_knots(j).t = ts(j);
   foot_origin_knots(j).(foot)(7:12) = coefs(:,j,end-1);

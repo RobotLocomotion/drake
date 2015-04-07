@@ -188,6 +188,26 @@ double * mxGetPrSafe(const mxArray *pobj) {
   return mxGetPr(pobj);
 }
 
+mxArray* mxGetFieldSafe(const mxArray* array, size_t index, std::string const& field_name)
+{
+  mxArray* ret = mxGetField(array, index, field_name.c_str());
+  if (!ret)
+  {
+    mexErrMsgIdAndTxt("Drake::mxGetFieldSafe", ("Field not found: " + field_name).c_str());
+  }
+  return ret;
+}
+
+void mxSetFieldSafe(mxArray* array, size_t index, std::string const & fieldname, mxArray* data)
+{
+  int fieldnum;
+  fieldnum = mxGetFieldNumber(array, fieldname.c_str());
+  if (fieldnum < 0) {
+    fieldnum = mxAddField(array, fieldname.c_str());
+  }
+  mxSetFieldByNumber(array, index, fieldnum, data);
+}
+
 void sizecheck(const mxArray* mat, int M, int N) {
   if (mxGetM(mat) != M) {
     mexErrMsgIdAndTxt("Drake:WrongSize", "wrong number of rows. Expected: %d but got: %d", M, mxGetM(mat));
