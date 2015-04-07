@@ -56,6 +56,10 @@ for f = {'right', 'left'}
     lcmgl.glPointSize(5);
     lcmgl.points(xs(1,:), xs(2,:), xs(3,:));
 
+    for j = 1:length(ts)
+      lcmgl.sphere(foot_poses(1:3,j), 0.02, 10, 10);
+    end
+
     vscale = 0.1;
     for j = 1:size(xs,2)
       lcmgl.line3(xs(1,j), xs(2,j), xs(3,j), ...
