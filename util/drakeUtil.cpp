@@ -11,6 +11,7 @@
 #include <math.h>
 #include <limits>
 #include <Eigen/Dense>
+#include <iostream>
 
 using namespace std;
 
@@ -117,8 +118,22 @@ void* getDrakeMexPointer(const mxArray* mx)
   // todo: optimize this by caching the pointer values, as described in
   // http://groups.csail.mit.edu/locomotion/bugs/show_bug.cgi?id=1590
   mxArray* ptrArray = mxGetProperty(mx, 0, "ptr");
+
   if (!ptrArray)
     mexErrMsgIdAndTxt("Drake:getDrakeMexPointer:BadInputs", "cannot retrieve 'ptr' field from this mxArray.  are you sure it's a valid DrakeMexPointer object?");
+
+  switch (sizeof(void*)) { 
+    case 4:
+      if (!mxIsUint32(ptrArray))
+        mexErrMsgIdAndTxt("Drake:getDrakeMexPointer:BadPointerSize", "DrakeMexPointer expected a 32-bit ptr field but got something else");        
+      break;
+    case 8:
+      if (!mxIsUint64(ptrArray))
+        mexErrMsgIdAndTxt("Drake:getDrakeMexPointer:BadPointerSize", "DrakeMexPointer expected a 64-bit ptr field but got something else");        
+      break;
+    default:
+      mexErrMsgIdAndTxt("Drake:getDrakeMexPointer:BadPointerSize", "DrakeMexPointer got a pointer that was neither 32-bit nor 64-bit.");
+  }
 
   if (!mxIsNumeric(ptrArray) || mxGetNumberOfElements(ptrArray) != 1)
     mexErrMsgIdAndTxt("Drake:getDrakeMexPointer:BadInputs","the ptr property of this DrakeMexPointer does not appear to contain a valid pointer");
