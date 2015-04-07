@@ -127,23 +127,36 @@ for i=1:length(support_times)-1
   lfoot_des_next = evaluateSplineInLinkConstraints(t_next,link_constraints,lfoot_link_con_ind);
   rfoot_des_next = evaluateSplineInLinkConstraints(t_next,link_constraints,rfoot_link_con_ind);
 
+  step_height_delta_threshold = 0.025; % cm, min change in height to classify step up/down
+  step_up_pelvis_shift = 0.03; % cm
   if isDoubleSupport && nextIsDoubleSupport
     pelvis_reference_height(i+1) = pelvis_reference_height(i);
   elseif isDoubleSupport && nextIsLeftSupport
-    pelvis_reference_height(i+1) = lfoot_des_next(3);
+    if lfoot_des_next(3) > rfoot_des(3) + step_height_delta_threshold
+      % stepping up with left foot
+      pelvis_reference_height(i+1) = lfoot_des_next(3)-step_up_pelvis_shift;
+    else
+      pelvis_reference_height(i+1) = lfoot_des_next(3);
+    end
   elseif isDoubleSupport && nextIsRightSupport
-    pelvis_reference_height(i+1) = rfoot_des_next(3);
-  elseif isLeftSupport && nextIsDoubleSupport 
-    % check to see if foot is going down
-    if rfoot_des_next(3)+0.025 < lfoot_des(3)
+
+    if rfoot_des_next(3) > lfoot_des(3) + step_height_delta_threshold
+      % stepping up with right foot
+      pelvis_reference_height(i+1) = rfoot_des_next(3)-step_up_pelvis_shift;
+    else
       pelvis_reference_height(i+1) = rfoot_des_next(3);
+    end
+  elseif isLeftSupport && nextIsDoubleSupport 
+    if rfoot_des_next(3) < lfoot_des(3) - step_height_delta_threshold
+      % stepping down with right foot
+      pelvis_reference_height(i+1) = rfoot_des_next(3)-step_up_pelvis_shift;
     else
       pelvis_reference_height(i+1) = lfoot_des(3);
     end
   elseif isRightSupport && nextIsDoubleSupport 
-    % check to see if foot is going down
-    if lfoot_des_next(3)+0.025 < rfoot_des(3)
-      pelvis_reference_height(i+1) = lfoot_des_next(3);
+    if lfoot_des_next(3) < rfoot_des(3) - step_height_delta_threshold
+      % stepping down with left foot
+      pelvis_reference_height(i+1) = lfoot_des_next(3)-step_up_pelvis_shift;
     else
       pelvis_reference_height(i+1) = rfoot_des(3);
     end
