@@ -85,7 +85,6 @@ classdef QPLocomotionPlan < QPControllerPlan
       qp_input.whole_body_data.constrained_dofs = obj.constrained_dofs;
 
       if obj.is_quasistatic
-        com_pos = obj.robot.getCOM(obj.robot.doKinematics(qp_input.whole_body_data.q_des));
         if isnumeric(obj.comtraj)
           com_state = obj.comtraj;          
         else
@@ -98,7 +97,7 @@ classdef QPLocomotionPlan < QPControllerPlan
 
         qp_input.zmp_data.x0 = com_state;
         % set the zmp desired to zero as a convention, we aren't using it
-        qp_input.zmp_data.y0 = 0*com_pos(1:2);
+        qp_input.zmp_data.y0 = com_state(1:2);
       else
         qp_input.zmp_data.x0 = [obj.zmp_final; 0;0];
         if isnumeric(obj.zmptraj)
