@@ -11,7 +11,6 @@
 #include <math.h>
 #include <limits>
 #include <Eigen/Dense>
-#include <iostream>
 
 using namespace std;
 
@@ -111,9 +110,6 @@ mxArray* createDrakeMexPointer(void* ptr, const char* name, int num_additional_i
 void* getDrakeMexPointer(const mxArray* mx)
 {
   void* ptr = NULL;
-
-  if (!mxIsClass(mx, "DrakeMexPointer")) 
-    mexErrMsgIdAndTxt("Drake:getDrakeMexPointer:BadInputs", "getDrakeMexPointer can only be called on arguments which correspond to DrakeMexPointer objects");
 
   // todo: optimize this by caching the pointer values, as described in
   // http://groups.csail.mit.edu/locomotion/bugs/show_bug.cgi?id=1590
