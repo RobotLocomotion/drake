@@ -10,5 +10,5 @@ xs = [rand(6,1), rand(6,1), rand(6,1), rand(6,1)];
 xd0 = rand(6,1);
 xdf = rand(6,1);
 
-options.optimize_knot_times = false;
-coefs = qpSpline(ts, xs, xd0, xdf, options, false);
+options.optimize_knot_times = true;
+coefs = qpSpline(ts, xs, xd0, xdf, options, true);
