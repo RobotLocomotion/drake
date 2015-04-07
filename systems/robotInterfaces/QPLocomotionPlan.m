@@ -116,7 +116,7 @@ classdef QPLocomotionPlan < QPControllerPlan
         supp_idx = find(obj.support_times<=t_plan,1,'last');
       end
 
-      MIN_KNEE_ANGLE = 0.35;
+      MIN_KNEE_ANGLE = 0.7;
       KNEE_KP = 40;
       KNEE_KD = 4;
       KNEE_WEIGHT = 1;
