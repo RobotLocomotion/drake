@@ -12,7 +12,7 @@ params = applyDefaults(params, biped.default_walking_params);
 DEBUG = false;
 DEFAULT_FOOT_PITCH = pi/8; % The amount by which the swing foot pitches forward during walking
 
-APEX_FRACTIONS = [0.15, 0.92]; % We plan only two poses of the foot during the aerial phase of the swing.
+APEX_FRACTIONS = [0.15, 0.85]; % We plan only two poses of the foot during the aerial phase of the swing.
                                % Those poses are planned for locations where the toe has traveled a given
                                % fraction of the distance from its initial location to its final location.
 
