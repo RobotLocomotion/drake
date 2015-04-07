@@ -116,7 +116,7 @@ classdef QPLocomotionPlan < QPControllerPlan
         supp_idx = find(obj.support_times<=t_plan,1,'last');
       end
 
-      MIN_KNEE_ANGLE = 0.95;
+      MIN_KNEE_ANGLE = 0.35;
       KNEE_KP = 40;
       KNEE_KD = 4;
       KNEE_WEIGHT = 1;
@@ -155,7 +155,6 @@ classdef QPLocomotionPlan < QPControllerPlan
           other_foot = [];
         end
 
-        q(kny_ind)
         if ~isempty(kny_ind)
           if ~obj.toe_off_active.(foot_name)
             if any(obj.supports(supp_idx).bodies == body_id) && any(obj.supports(supp_idx).bodies == other_foot) && q(kny_ind) < MIN_KNEE_ANGLE
@@ -169,6 +168,7 @@ classdef QPLocomotionPlan < QPControllerPlan
           else
             if ~any(obj.supports(supp_idx).bodies == body_id)
               obj.toe_off_active.(foot_name) = false;
+              obj = obj.updateSwingTrajectory(t_plan, j, body_t_ind, kinsol, qd);
             end
           end
 
@@ -185,7 +185,6 @@ classdef QPLocomotionPlan < QPControllerPlan
                                                        'weight', KNEE_WEIGHT);
             % if body_t_ind < length(obj.link_constraints(j).toe_off_allowed) && obj.link_constraints(j).toe_off_allowed(body_t_ind+1)
 %               if supp_idx < length(obj.supports) && ~any(obj.supports(supp_idx+1).bodies == body_id)
-              obj = obj.updateSwingTrajectory(t_plan, j, body_t_ind, kinsol, qd);
             % end
           end
         end
