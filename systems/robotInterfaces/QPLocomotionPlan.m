@@ -86,8 +86,19 @@ classdef QPLocomotionPlan < QPControllerPlan
 
       if obj.is_quasistatic
         com_pos = obj.robot.getCOM(obj.robot.doKinematics(qp_input.whole_body_data.q_des));
-        qp_input.zmp_data.x0 = [com_pos(1:2); 0; 0];
-        qp_input.zmp_data.y0 = com_pos(1:2);
+        if isnumeric(obj.comtraj)
+          com_state = obj.comtraj;          
+        else
+          com_state = fasteval(obj.comtraj,t_plan);
+        end
+
+        if size(com_state,1) == 2;
+            com_state = [com_state;0*com_state];
+        end
+
+        qp_input.zmp_data.x0 = com_state;
+        % set the zmp desired to zero as a convention, we aren't using it
+        qp_input.zmp_data.y0 = 0*com_pos(1:2);
       else
         qp_input.zmp_data.x0 = [obj.zmp_final; 0;0];
         if isnumeric(obj.zmptraj)
@@ -96,16 +107,21 @@ classdef QPLocomotionPlan < QPControllerPlan
           qp_input.zmp_data.y0 = fasteval(obj.zmptraj, t_plan);
         end
       end
-      qp_input.zmp_data.S = obj.V.S;
+
+      if isnumeric(obj.V.S)
+        qp_input.zmp_data.S = obj.V.S;
+      else
+        qp_input.zmp_data.S = fasteval(obj.V.S,t_plan);
+      end
+      
       if isnumeric(obj.V.s1)
         qp_input.zmp_data.s1 = obj.V.s1;
       else
-        if ~isfield(obj.V, 's1traj') || isempty(obj.V.s1traj)
-          obj.V.s1traj = SharedDataHandle(ExpPlusPPTrajectoryEvalmex(obj.V.s1.breaks, obj.V.s1.K, obj.V.s1.A, obj.V.s1.alpha, reshape(obj.V.s1.gamma, [size(obj.V.s1.gamma,1)*size(obj.V.s1.gamma,2), size(obj.V.s1.gamma, 3)])));
-        end
-        [qp_input.zmp_data.s1, ~] = ExpPlusPPTrajectoryEvalmex(obj.V.s1traj.data, t_plan);
-        % qp_input.zmp_data.s1 = fasteval(obj.V.s1,t_plan);
+        qp_input.zmp_data.s1 = fasteval(obj.V.s1, t_plan);
       end
+
+
+
 
       kinsol = doKinematics(obj.robot, q);
 
@@ -286,6 +302,7 @@ classdef QPLocomotionPlan < QPControllerPlan
       end
       %disp('plan shift: ')
       %obj.plan_shift_data.plan_shift
+      keyboard;
     end
 
     function qp_input = applyPlanShift(obj, qp_input)
@@ -394,6 +411,54 @@ classdef QPLocomotionPlan < QPControllerPlan
         link_trajectories(j).traj = PPTrajectory(mkpp(obj.body_motions(j).ts, obj.body_motions(j).coefs, size(obj.body_motions(j).coefs, 1)));
       end
     end
+    
+    function obj = setCOMTraj(obj,qtraj)
+      ts = qtraj.getBreaks();
+      if length(ts) == 1
+        ts = [0,Inf];
+      end
+      com_poses = zeros(2,length(ts));
+      for j = 1:numel(ts)
+        kinsol = obj.robot.doKinematics(obj.qtraj.eval(ts(j)));
+        com_position = obj.robot.getCOM(kinsol);
+        com_poses(:,j) = com_position(1:2);
+      end
+      obj.comtraj = PPTrajectory(pchip(ts,com_poses));      
+    end
+
+    function obj = setLQR_for_COM(obj)
+      % copied from runAtlasRunning
+      % build TV-LQR controller on COM dynamics
+      ts = obj.comtraj.getBreaks();
+      comdot_traj = fnder(obj.comtraj);
+      comdot = comdot_traj.eval(ts);
+      com = obj.comtraj.eval(ts);
+      comddot = 0*com;
+      x0traj = PPTrajectory(foh(ts,[com;comdot]));
+      x0traj = x0traj.setOutputFrame(atlasFrames.COMState(2));
+      u0traj = PPTrajectory(foh(ts,comddot));
+      u0traj = u0traj.setOutputFrame(atlasFrames.COMAcceleration(2));
+
+      Q = diag([10 10 1 1]);
+      R = 0.0001*eye(2);
+      A = [zeros(2),eye(2); zeros(2,4)];
+      B = [zeros(2); eye(2)];
+      clear options;
+      options.tspan = ts;
+      options.sqrtmethod = false;
+      ti_sys = LinearSystem(A,B,[],[],eye(4),[]);
+      ti_sys = ti_sys.setStateFrame(atlasFrames.COMState(2));
+      ti_sys = ti_sys.setOutputFrame(atlasFrames.COMState(2));
+      ti_sys = ti_sys.setInputFrame(atlasFrames.COMAcceleration(2));
+      [~,V] = tvlqr(ti_sys,x0traj,u0traj,Q,R,Q,options);
+      obj.V = V;
+      % set the Qy to zero since we only want to stabilize COM
+      obj.default_qp_input.zmp_data.Qy = 0*obj.default_qp_input.zmp_data.Qy;
+      obj.default_qp_input.zmp_data.A = A;
+      obj.default_qp_input.zmp_data.B = B;
+      obj.default_qp_input.zmp_data.R = R;
+    end
+    
   end
 
   methods(Static)
@@ -577,29 +642,6 @@ classdef QPLocomotionPlan < QPControllerPlan
       obj.gain_set = param_set_name;
     end
 
-    % function obj = from_configuration_traj(biped, qtraj_pp, link_constraints)
-    %   breaks = unmkpp(qtraj_pp);
-    %   x0 = [ppval(qtraj_pp, breaks(1)); zeros(biped.getNumVelocities(), 1)];
-    %   obj = QPLocomotionPlan.from_standing_state(x0, biped);
-    %   obj.qtraj = PPTrajectory(qtraj_pp);
-    %   obj.start_time = obj.qtraj.tspan(1);
-    %   obj.duration = obj.qtraj.tspan(end) - obj.start_time;
-    %   obj.support_times = [obj.qtraj.tspan(1); inf];
-    %   obj.link_constraints = link_constraints;
-
-
-    %   for j = 1:length(obj.link_constraints)
-    %     if obj.link_constraints(j).link_ndx == biped.findLinkId('r_hand')
-    %       obj.constrained_dofs = setdiff(obj.constrained_dofs, findPositionIndices(obj.robot,'r_arm'));
-    %     elseif obj.link_constraints(j).link_ndx == biped.findLinkId('l_hand')
-    %       obj.constrained_dofs = setdiff(obj.constrained_dofs, findPositionIndices(obj.robot,'l_arm'));
-    %     end
-    %   end
-
-    %   obj.gain_set = 'manip';
-    % end
-
-
     function obj = from_quasistatic_qtraj(biped, qtraj, options)
       % Construct a plan from a whole-body joint trajectory, with both feet in contact with the ground at all times
       if nargin < 3
@@ -608,6 +650,7 @@ classdef QPLocomotionPlan < QPControllerPlan
       options = applyDefaults(options, struct('bodies_to_track', [biped.findLinkId('pelvis'),...
                                                                   biped.foot_body_id.right,...
                                                                   biped.foot_body_id.left]));
+      obj.is_quasistatic = true;
       q0 = qtraj.eval(qtraj.tspan(1));
       x0 = [q0; zeros(biped.getNumVelocities(), 1)];
       obj = QPLocomotionPlan.from_standing_state(x0, biped);
@@ -629,6 +672,9 @@ classdef QPLocomotionPlan < QPControllerPlan
       end
 
       ts = qtraj.getBreaks();
+      if length(ts) == 1
+        ts = [0,Inf];
+      end
       body_poses = zeros([6, length(ts), length(options.bodies_to_track)]);
       for i = 1:numel(ts)
         kinsol = doKinematics(obj.robot,qtraj.eval(ts(i)));
@@ -648,7 +694,11 @@ classdef QPLocomotionPlan < QPControllerPlan
       end
 
       obj.gain_set = 'manip';
+      obj = obj.setCOMTraj(qtraj);
+      obj = obj.setLQR_for_COM();
     end
+
+    
 
 
     % supports should be struct array with fields contact_pts (which is a cell with array elements) and bodies which is an array
