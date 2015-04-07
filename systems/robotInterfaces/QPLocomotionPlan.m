@@ -125,6 +125,10 @@ classdef QPLocomotionPlan < QPControllerPlan
       for j = 1:length(obj.link_constraints)
         body_id = obj.link_constraints(j).link_ndx;
         qp_input.body_motion_data(j).body_id = body_id;
+        if ~isfield(obj.link_constraints(j),'in_floating_base_nullspace') || isempty(obj.link_constraints(j).in_floating_base_nullspace)
+          obj.link_constraints(j).in_floating_base_nullspace = false;
+        end
+        qp_input.body_motion_data(j).in_floating_base_nullspace = obj.link_constraints(j).in_floating_base_nullspace;
         if qp_input.body_motion_data(j).body_id == rpc.body_ids.pelvis
           pelvis_has_tracking = true;
         end
@@ -441,15 +445,18 @@ classdef QPLocomotionPlan < QPControllerPlan
       link_constraints(1).ts = [0, inf];
       link_constraints(1).coefs = cat(3, zeros(6,1,3), reshape(forwardKin(obj.robot,kinsol,obj.robot.foot_body_id.right,[0;0;0],1),[6,1,1]));
       link_constraints(1).toe_off_allowed = [false, false];
+      link_constraints(1).in_floating_base_nullspace = true;
       link_constraints(2).link_ndx = obj.robot.foot_body_id.left;
       link_constraints(2).pt = [0;0;0];
       link_constraints(2).ts = [0, inf];
       link_constraints(2).coefs = cat(3, zeros(6,1,3),reshape(forwardKin(obj.robot,kinsol,obj.robot.foot_body_id.left,[0;0;0],1),[6,1,1]));
       link_constraints(2).toe_off_allowed = [false, false];
+      link_constraints(2).in_floating_base_nullspace = true;
       link_constraints(3).link_ndx = pelvis_id;
       link_constraints(3).pt = [0;0;0];
       link_constraints(3).ts = [0, inf];
       link_constraints(3).coefs = cat(3, zeros(6,1,3),reshape(pelvis_target,[6,1,1,]));
+      link_constraints(3).in_floating_base_nullspace = false;
       obj.link_constraints = link_constraints;
 
       obj.zmp_final = comgoal;

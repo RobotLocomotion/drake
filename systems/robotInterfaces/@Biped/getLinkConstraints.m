@@ -5,7 +5,7 @@ if nargin < 6
 end
 options = applyDefaults(options, struct('pelvis_height_above_sole', obj.default_walking_params.pelvis_height_above_foot_sole, 'debug', true));
 
-link_constraints = struct('link_ndx',{}, 'pt', {}, 'ts', {}, 'poses', {}, 'dposes', {}, 'contact_break_indices', {}, 'coefs', {}, 'toe_off_allowed', {});
+link_constraints = struct('link_ndx',{}, 'pt', {}, 'ts', {}, 'poses', {}, 'dposes', {}, 'contact_break_indices', {}, 'coefs', {}, 'toe_off_allowed', {}, 'in_floating_base_nullspace', {});
 
 if options.debug
   figure(321)
@@ -83,9 +83,7 @@ for f = {'right', 'left'}
   coefs = reshape(coefs, [d, l, k]);
   assert(k == 4, 'expected a piecewise cubic polynomial');
   toe_off_allowed = [foot_origin_knots.toe_off_allowed];
-  link_constraints(end+1) = struct('link_ndx', body_ind, 'pt', [0;0;0], 'ts', ts, 'poses', foot_poses, 'dposes', foot_dposes, 'contact_break_indices', find([foot_origin_knots.is_liftoff]), 'coefs', coefs, 'toe_off_allowed', [toe_off_allowed.(foot)]);
-
-
+  link_constraints(end+1) = struct('link_ndx', body_ind, 'pt', [0;0;0], 'ts', ts, 'poses', foot_poses, 'dposes', foot_dposes, 'contact_break_indices', find([foot_origin_knots.is_liftoff]), 'coefs', coefs, 'toe_off_allowed', [toe_off_allowed.(foot)], 'in_floating_base_nullspace', true);
 end
 
 if options.debug
@@ -181,6 +179,7 @@ link_constraints(end).pt = [0;0;0];
 link_constraints(end).ts = pelvis_ts;
 link_constraints(end).poses = pelvis_poses;
 link_constraints(end).coefs = coefs;
+link_constraints(end).in_floating_base_nullspace = false;
 
 
 % Only needed for backwards compatibility

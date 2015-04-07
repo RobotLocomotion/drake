@@ -8,4 +8,5 @@ struct lcmt_body_motion_data
 
 	double ts[2];
 	double coefs[6][4];
+  boolean in_floating_base_nullspace;
 }
