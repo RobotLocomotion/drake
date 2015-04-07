@@ -44,13 +44,10 @@ swing2.pos(4:6) = swing1.pos(4:6) + angleDiff(swing1.pos(4:6), swing2.pos(4:6));
 
 xy_dist = norm(swing2.pos(1:2) - swing1.pos(1:2));
 
-% The terrain slice is a 2xN matrix, where the first row is distance along
-% the straight line path from swing1 to swing2 and the second row is global
-% z height of the terrain at that point along the line
-terrain_slice = double(swing2.terrain_pts);
-terrain_slice = [[0;swing1.pos(3)], terrain_slice, [xy_dist; swing2.pos(3)]];
-terrain_pts_in_local = [terrain_slice(1,:); zeros(1, size(terrain_slice, 2)); 
-                        terrain_slice(2,:)];
+% terrain_slice = double(swing2.terrain_pts);
+% terrain_slice = [[0;swing1.pos(3)], terrain_slice, [xy_dist; swing2.pos(3)]];
+% terrain_pts_in_local = [terrain_slice(1,:); zeros(1, size(terrain_slice, 2)); 
+%                         terrain_slice(2,:) - swing1.pos(3)]
 
 % Transform to world coordinates
 T_local_to_world = [[rotmat(atan2(swing2.pos(2) - swing1.pos(2), swing2.pos(1) - swing1.pos(1))), [0;0];
@@ -88,7 +85,7 @@ toe2= mean(swing2_toe_points_in_world(1:3,:), 2);
 T_toe_local_to_world = [[rotmat(atan2(toe2(2) - toe1(2), toe2(1) - toe1(1))), [0;0];
                      0, 0, 1], toe1(1:3); 
                     0, 0, 0, 1];
-terrain_pts_in_toe_local = T_toe_local_to_world \ (T_local_to_world * [terrain_pts_in_local; ones(1, size(terrain_pts_in_local,2))]);
+% terrain_pts_in_toe_local = T_toe_local_to_world \ (T_local_to_world * [terrain_pts_in_local; ones(1, size(terrain_pts_in_local,2))]);
 
 quat_toe_off = rotmat2quat(rpy2rotmat(swing1.pos(4:6)) * rpy2rotmat([0;toe_off_angle;0]) / T_sole_to_foot(1:3,1:3));
 quat_swing2 = rotmat2quat(rpy2rotmat(swing2.pos(4:6)) / T_sole_to_foot(1:3,1:3));
@@ -149,12 +146,9 @@ function add_foot_origin_knot(swing_pose, speed)
   foot_origin_knots(end).toe_off_allowed = struct(swing_foot_name, false, stance_foot_name, false);
 end
 
-terrain_pts_in_world = T_toe_local_to_world \ terrain_pts_in_toe_local;
-max_terrain_ht_in_world = max(terrain_pts_in_world(3,:));
-% max_terrain_ht = max(terrain_pts_in_toe_local(3,:));
-% toe_ht_in_local = max_terrain_ht + params.step_height;
-% toe_ht_in_world = T_local_to_world*[0;0;toe_ht_in_local;1];
-
+% terrain_pts_in_world = T_toe_local_to_world \ terrain_pts_in_toe_local;
+% max_terrain_ht_in_world = max(terrain_pts_in_world(3,:))
+max_terrain_ht_in_world = max(swing2.terrain_pts(2,:))
 % Apex knot 1
 toe_apex1_in_world = (1-APEX_FRACTIONS(1))*toe1 + APEX_FRACTIONS(1)*toe2;
 toe_ht = max([toe_apex1_in_world(3) + params.step_height,...
