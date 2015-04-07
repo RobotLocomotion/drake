@@ -140,9 +140,6 @@ function add_foot_origin_knot(swing_pose, speed)
   sole2 = rotmat2rpy(rpy2rotmat(foot_origin_knots(end).(swing_foot_name)(4:6)) * T_sole_to_foot(1:3,1:3));
   yaw_distance = abs(angleDiff(sole1(3), sole2(3)));
   pitch_distance = abs(angleDiff(sole1(2), sole2(2)));
-  cart_dt = cartesian_distance / speed
-  yaw_dt = yaw_distance / FOOT_YAW_RATE
-  pitch_dt = pitch_distance / FOOT_PITCH_RATE
   dt = max([cartesian_distance / speed,...
             yaw_distance / FOOT_YAW_RATE,...
             pitch_distance / FOOT_PITCH_RATE]);
@@ -209,28 +206,9 @@ end
 foot = swing_foot_name;
 states = [foot_origin_knots(1:4).(foot)];
 
-% pp = pchip([foot_origin_knots(1:4).t], states(1:6,:));
-% [~, coefs, l, k, d] = unmkpp(pp);
-% coefs = reshape(coefs, [d, l, k]);
-
-% 3 cubic splines = 3 * 4 vars
-% initial position = 1 con
-% init vel = 1 con
-% continuity of position = 2 con
-% cont of vel = 2 con
-% final pose = 1 con
-% final vel = 1 con
-% continuity of accel = 2 con
-
-% 12 vars, 8 cons
-
-% nonlinear opt: vars t1, t2
-% obj fun = qpSpline -> optval
-
-
 ts = [foot_origin_knots(1).t, 0, 0, foot_origin_knots(4).t];
 qpSpline_options = struct('optimize_knot_times', true);
-coefs = qpSpline(ts,...
+[coefs, ts] = qpSpline(ts,...
                  states(1:6,:),...
                  states(7:12, 1),...
                  states(7:12, 4), qpSpline_options, true);
