@@ -117,9 +117,9 @@ classdef QPLocomotionPlan < QPControllerPlan
       end
 
       MIN_KNEE_ANGLE = 0.7;
-      KNEE_KP = 40;
-      KNEE_KD = 4;
-      KNEE_WEIGHT = 1;
+      KNEE_KP = 400;
+      KNEE_KD = 13;
+      KNEE_WEIGHT = 10;
 
       pelvis_has_tracking = false;
       for j = 1:length(obj.link_constraints)
@@ -168,7 +168,6 @@ classdef QPLocomotionPlan < QPControllerPlan
           else
             if ~any(obj.supports(supp_idx).bodies == body_id)
               obj.toe_off_active.(foot_name) = false;
-              obj = obj.updateSwingTrajectory(t_plan, j, body_t_ind, kinsol, qd);
             end
           end
 
@@ -183,45 +182,17 @@ classdef QPLocomotionPlan < QPControllerPlan
                                                        'kp', KNEE_KP,...
                                                        'kd', KNEE_KD,...
                                                        'weight', KNEE_WEIGHT);
-            % if body_t_ind < length(obj.link_constraints(j).toe_off_allowed) && obj.link_constraints(j).toe_off_allowed(body_t_ind+1)
-%               if supp_idx < length(obj.supports) && ~any(obj.supports(supp_idx+1).bodies == body_id)
-            % end
+            if obj.link_constraints(j).toe_off_allowed(body_t_ind)
+              obj = obj.updateSwingTrajectory(t_plan, j, body_t_ind, kinsol, qd);
+            end
+
           end
         end
-
-
-
-%           body_mask = obj.supports(supp_idx).bodies == body_id;
-%           in_support = any(body_mask);
-%           if in_support && q(kny_ind) < MIN_KNEE_ANGLE
-%             % other_foot_pose = obj.link_constraints([obj.link_constraints.link_ndx] == other_foot).coefs(:,body_t_ind,end);
-%             % foot_knot = obj.link_constraints(j).coefs(:,body_t_ind,end);
-%             % R = rotmat(-foot_knot(6));
-%             % vector_to_other_foot_in_local = R * (other_foot_pose(1:2) - foot_knot(1:2));
-%             % toe_off_allowed = vector_to_other_foot_in_local(1) > 0.05;
-%             % vector_to_other_foot_in_local
-%             % if toe_off_allowed
-%             %   if ~isempty(obj.supports(supp_idx).contact_groups{body_mask})
-%             %     obj.supports(supp_idx) = obj.supports(supp_idx).setContactPts(body_mask, rpc.contact_groups{body_id}.toe, {'toe'});
-%             %   end
-%             %   qp_input.joint_pd_override(end+1) = struct('position_ind', kny_ind,...
-%             %                                              'qi_des', MIN_KNEE_ANGLE,...
-%             %                                              'qdi_des', 0,...
-%             %                                              'kp', KNEE_KP,...
-%             %                                              'kd', KNEE_KD,...
-%             %                                              'weight', KNEE_WEIGHT);
-%               obj.link_constraints(j).toe_off_allowed(body_t_ind+(0:3))
-%               if body_t_ind < length(obj.link_constraints(j).toe_off_allowed) && obj.link_constraints(j).toe_off_allowed(body_t_ind+1)
-% %               if supp_idx < length(obj.supports) && ~any(obj.supports(supp_idx+1).bodies == body_id)
-%                 obj = obj.updateSwingTrajectory(t_plan, j, body_t_ind, kinsol, qd);
-%               end
-%             end
-        %   end
-        % end
 
         qp_input.body_motion_data(j).coefs = obj.link_constraints(j).coefs(:,body_t_ind,:);
 
       end
+
       assert(pelvis_has_tracking, 'Expecting a link_constraints block for the pelvis');
 
       supp = obj.supports(supp_idx);
@@ -257,9 +228,17 @@ classdef QPLocomotionPlan < QPControllerPlan
       [x0, J] = obj.robot.forwardKin(kinsol, link_con.link_ndx, link_con.pt, 1);
       xd0 = J * qd;
 
-      xs = [x0, link_con.coefs(:,body_t_ind+(1:3),end)];
-      xdf = link_con.coefs(:,body_t_ind+3,end-1);
-      t0 = [t_plan, link_con.ts(body_t_ind+(1:3))];
+      xs = [x0, link_con.coefs(:,body_t_ind+(2:4),end)];
+
+      % Move the first aerial knot point to be directly above our current foot origin pose
+      nhat = xs(1:2,end) - x0(1:2);
+      nhat = nhat / norm(nhat);
+      if nhat' * xs(1:2,2) < nhat' * x0(1:2)
+        xs(1:2,2) = x0(1:2);
+      end
+
+      xdf = link_con.coefs(:,body_t_ind+4,end-1);
+      t0 = [link_con.ts(body_t_ind+(1:4))];
 
 
       ts = [t0(1), 0, 0, t0(4)];
@@ -285,8 +264,8 @@ classdef QPLocomotionPlan < QPControllerPlan
 
 
       % coefs = qpSpline(ts, xs, xd0, xdf);
-      obj.link_constraints(link_con_ind).coefs(:,body_t_ind+(0:2),:) = coefs;
-      obj.link_constraints(link_con_ind).ts(body_t_ind+(0:2)) = ts(1:3);
+      obj.link_constraints(link_con_ind).coefs(:,body_t_ind+(1:3),:) = coefs;
+      obj.link_constraints(link_con_ind).ts(body_t_ind+(1:3)) = ts(1:3);
     end
 
     function obj = updatePlanShift(obj, t_global, kinsol, qp_input, contact_force_detected, next_support)

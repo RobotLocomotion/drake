@@ -113,7 +113,7 @@ while 1
   % if length(foot_origin_knots) > 1
   %   foot_origin_knots(end-1).toe_off_allowed = new_foot_knots(1).toe_off_allowed;
   % end
-  foot_origin_knots(end).toe_off_allowed = new_foot_knots(1).toe_off_allowed;
+  foot_origin_knots(end).toe_off_allowed.(sw_foot) = true;
   foot_origin_knots = [foot_origin_knots, new_foot_knots];
   zmp_knots = [zmp_knots, new_zmp_knots];
 

@@ -165,8 +165,6 @@ T_toe_apex1_to_world = [quat2rotmat(quat_toe_off),toe_apex1_in_world;zeros(1,3),
 apex1_origin_in_world = T_toe_apex1_to_world * origin_in_toe;
 pose = [apex1_origin_in_world(1:3); quat2rpy(quat_toe_off)];
 add_foot_origin_knot(pose);
-foot_origin_knots(end).toe_off_allowed.(swing_foot_name) = true;
-% add_foot_origin_knot(pose, min(params.step_speed, MAX_TAKEOFF_SPEED)/2);
 
 % Apex knot 2
 toe_apex2_in_world = (1-APEX_FRACTIONS(2))*toe1 + APEX_FRACTIONS(2)*toe2; 
@@ -178,7 +176,6 @@ T_toe_apex2_to_world = [quat2rotmat(quat_swing2),toe_apex2_in_world;zeros(1,3),1
 apex2_origin_in_world = T_toe_apex2_to_world * origin_in_toe;
 pose = [apex2_origin_in_world(1:3); quat2rpy(quat_swing2)];
 add_foot_origin_knot(pose);
-foot_origin_knots(end).toe_off_allowed.(swing_foot_name) = true;
 
 
 % Landing knot
