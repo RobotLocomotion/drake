@@ -127,7 +127,7 @@ foot_origin_knots = struct('t', zmp_knots(end).t, ...
                            stance_foot_name, [stance_origin_pose; zeros(6,1)], ...
                            'is_liftoff', true,...
                            'is_landing', false,...
-                           'toe_off_allowed', struct(swing_foot_name, swing_distance_in_local >= MIN_DIST_FOR_TOE_OFF, stance_foot_name, false));
+                           'toe_off_allowed', struct(swing_foot_name, false, stance_foot_name, false));
 
 function add_foot_origin_knot(swing_pose, speed)
   if nargin < 2
@@ -152,24 +152,36 @@ function add_foot_origin_knot(swing_pose, speed)
   foot_origin_knots(end).toe_off_allowed = struct(swing_foot_name, false, stance_foot_name, false);
 end
 
-max_terrain_ht = max(terrain_pts_in_toe_local(3,:));
-toe_ht_in_local = max_terrain_ht + params.step_height;
-toe_ht_in_world = T_local_to_world*[0;0;toe_ht_in_local;1];
+terrain_pts_in_world = T_toe_local_to_world \ terrain_pts_in_toe_local;
+max_terrain_ht_in_world = max(terrain_pts_in_world(3,:));
+% max_terrain_ht = max(terrain_pts_in_toe_local(3,:));
+% toe_ht_in_local = max_terrain_ht + params.step_height;
+% toe_ht_in_world = T_local_to_world*[0;0;toe_ht_in_local;1];
 
 % Apex knot 1
-toe_apex1_in_world = (1-APEX_FRACTIONS(1))*toe1 + APEX_FRACTIONS(1)*toe2 + [0;0;toe_ht_in_world(3)]; 
+toe_apex1_in_world = (1-APEX_FRACTIONS(1))*toe1 + APEX_FRACTIONS(1)*toe2;
+toe_ht = max([toe_apex1_in_world(3) + params.step_height,...
+              max_terrain_ht_in_world + params.step_height]);
+toe_apex1_in_world(3) = toe_ht;
+% toe_apex1_in_world = (1-APEX_FRACTIONS(1))*toe1 + APEX_FRACTIONS(1)*toe2 + [0;0;toe_ht_in_local]; 
 T_toe_apex1_to_world = [quat2rotmat(quat_toe_off),toe_apex1_in_world;zeros(1,3),1];
 apex1_origin_in_world = T_toe_apex1_to_world * origin_in_toe;
 pose = [apex1_origin_in_world(1:3); quat2rpy(quat_toe_off)];
 add_foot_origin_knot(pose);
+foot_origin_knots(end).toe_off_allowed.(swing_foot_name) = true;
 % add_foot_origin_knot(pose, min(params.step_speed, MAX_TAKEOFF_SPEED)/2);
 
 % Apex knot 2
-toe_apex2_in_world = (1-APEX_FRACTIONS(2))*toe1 + APEX_FRACTIONS(2)*toe2 + [0;0;toe_ht_in_world(3)]; 
+toe_apex2_in_world = (1-APEX_FRACTIONS(2))*toe1 + APEX_FRACTIONS(2)*toe2; 
+toe_ht = max([toe_apex2_in_world(3) + params.step_height,...
+              max_terrain_ht_in_world + params.step_height]);
+toe_apex2_in_world(3) = toe_ht;
+% toe_apex2_in_world = (1-APEX_FRACTIONS(2))*toe1 + APEX_FRACTIONS(2)*toe2 + [0;0;toe_ht_in_local]; 
 T_toe_apex2_to_world = [quat2rotmat(quat_swing2),toe_apex2_in_world;zeros(1,3),1];
 apex2_origin_in_world = T_toe_apex2_to_world * origin_in_toe;
 pose = [apex2_origin_in_world(1:3); quat2rpy(quat_swing2)];
 add_foot_origin_knot(pose);
+foot_origin_knots(end).toe_off_allowed.(swing_foot_name) = true;
 
 
 % Landing knot
