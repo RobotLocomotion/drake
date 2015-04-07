@@ -3498,3 +3498,5 @@ template DLLEXPORT_RBM void RigidBodyManipulator::positionConstraints(MatrixBase
 template DLLEXPORT_RBM void RigidBodyManipulator::jointLimitConstraints(MatrixBase<VectorXd> const &, MatrixBase<VectorXd> &, MatrixBase<MatrixXd> &) const ;
 template DLLEXPORT_RBM void RigidBodyManipulator::jointLimitConstraints(MatrixBase< Map<VectorXd> > const &, MatrixBase<VectorXd> &, MatrixBase<MatrixXd> &) const ;
 template DLLEXPORT_RBM void RigidBodyManipulator::jointLimitConstraints(MatrixBase< Map<VectorXd> > const &, MatrixBase< Map<VectorXd> > &, MatrixBase< Map<MatrixXd> > &) const ;
+template DLLEXPORT_RBM Eigen::Matrix<double, 6, -1, 0, 6, -1> RigidBodyManipulator::compactToFull<Eigen::Matrix<double, 6, -1, 0, 6, -1> >(Eigen::MatrixBase<Eigen::Matrix<double, 6, -1, 0, 6, -1> > const&, std::vector<int, std::allocator<int> > const&, bool);
+

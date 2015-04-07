@@ -405,7 +405,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
 
   MatrixXd R_DQyD_ls = R_ls + D_ls.transpose()*Qy*D_ls;
 
-  pdata->r->doKinematics(robot_state.q,true,robot_state.qd);
+  pdata->r->doKinematics(robot_state.q,false,robot_state.qd);
 
   //---------------------------------------------------------------------
 
@@ -581,13 +581,13 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   Vector3d orig = Vector3d::Zero();
   int equality_ind = 6+neps;
   MatrixXd Jb(6,nq);
-  MatrixXd Jbdot(6,nq);
-  Vector6d Jbdotv;
+  Vector6d Jbdotv;	
   for (int i=0; i<desired_body_accelerations.size(); i++) {
     if (desired_body_accelerations[i].weight < 0) { // negative implies constraint
       if (desired_body_accelerations[i].control_pose_when_in_contact || !inSupport(active_supports,desired_body_accelerations[i].body_id0)) {
         if(desired_body_accelerations[i].use_spatial_velocity)
         {
+          mexPrintf("negative constraint\n");
           auto J_geometric = pdata->r->geometricJacobian<double>(0,desired_body_accelerations[i].body_id0,0,0,true,(std::vector<int>*)nullptr);
           auto J_geometric_dot_times_v = pdata->r->geometricJacobianDotTimesV<double>(0,desired_body_accelerations[i].body_id0,0,0); 
           Jb = J_geometric.value();
@@ -638,7 +638,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
 
   int constraint_start_index = 2*nu;
   for (int i=0; i<desired_body_accelerations.size(); i++) {
-    if(desired_body_accelerations[i].use_spatial_velocity)
+    /*if(desired_body_accelerations[i].use_spatial_velocity)
     {
       auto J_geometric = pdata->r->geometricJacobian<double>(0,desired_body_accelerations[i].body_id0,0,0,true,(std::vector<int>*)nullptr);
       auto J_geometric_dot_times_v = pdata->r->geometricJacobianDotTimesV<double>(0,desired_body_accelerations[i].body_id0,0,0);
@@ -646,11 +646,10 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
       Jbdotv = J_geometric_dot_times_v.value();
     }
     else
-    {
+    {*/
       pdata->r->forwardJac(desired_body_accelerations[i].body_id0,orig1,1,Jb);
       auto Jdot_times_v = pdata->r->forwardJacDotTimesV(orig,desired_body_accelerations[i].body_id0,0,1,0);
       Jbdotv.noalias() = Jdot_times_v.value();
-    }
 
     if (qp_input->body_motion_data[i].in_floating_base_nullspace) {
       Jb.block(0,0,6,6) = MatrixXd::Zero(6,6);
@@ -780,7 +779,10 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
           {
             auto J_geometric = pdata->r->geometricJacobian<double>(0,desired_body_accelerations[i].body_id0,0,0,true,(std::vector<int>*)nullptr);
             auto J_geometric_dot_times_v = pdata->r->geometricJacobianDotTimesV<double>(0,desired_body_accelerations[i].body_id0,0,0);
-            Jb = J_geometric.value();
+            KinematicPath body_path;
+            pdata->r->findKinematicPath(body_path,0,desired_body_accelerations[i].body_id0);
+            Matrix<double,6,-1> Jb_compact = Matrix<double,6,-1>::Zero(6, J_geometric.value().cols()); //J_geometric.value();
+            Matrix<double,6,-1> Jb_tmp = pdata->r->compactToFull(Jb_compact,body_path.joint_path,true);
             Jbdotv = J_geometric_dot_times_v.value();
           }
           else

@@ -434,7 +434,7 @@ Vector6d bodySpatialMotionPD(RigidBodyManipulator *r, DrakeRobotState &robot_sta
   {
     throw std::runtime_error("bodySpatialMotionPD requires new kinsol format");
   }
-  r->doKinematicsNew(robot_state.q,robot_state.qd,false);
+  /*r->doKinematicsNew(robot_state.q,robot_state.qd,false);
 
   Vector3d origin = Vector3d::Zero();
   auto body_pose = r->forwardKinNew(origin,body_index,0,2,0);
@@ -470,9 +470,8 @@ Vector6d bodySpatialMotionPD(RigidBodyManipulator *r, DrakeRobotState &robot_sta
   
   Vector6d twist_dot;
   twist_dot.head<3>() = body_angular_vel_dot;
-  twist_dot.tail<3>() = body_xyzddot;
-  twist_dot = Vector6d::Zero();
-  return twist_dot;
+  twist_dot.tail<3>() = body_xyzddot;*/
+  return Vector6d::Zero();
 }
 
 void evaluateCubicSplineSegment(double t, const Ref<const Matrix<double, 6, 4>> &coefs, Vector6d &y, Vector6d &ydot, Vector6d &yddot) {

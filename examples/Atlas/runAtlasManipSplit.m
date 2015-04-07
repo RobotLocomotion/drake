@@ -63,10 +63,12 @@ t_plan = [0,0.5,1];
 [xtraj,info] = inverseKinTraj(r,t_plan,qtraj0,qtraj0,cnstr{:},r_hand_cnstr{:});
 
 n_breaks = 20;
-t_breaks = linspace(t_plan(1),t_plan(end)*4,n_breaks);
+t_breaks = linspace(t_plan(1),t_plan(end),n_breaks);
 r_hand_breaks = zeros(6,n_breaks);
 x_breaks = xtraj.eval(t_breaks);
+t_breaks = t_breaks*4;
 qtraj_pp = spline(t_breaks,[zeros(nq,1) x_breaks(1:nq,:) zeros(nq,1)]);
+% qtraj_pp = spline(t_breaks,[zeros(nq,1) repmat(x_breaks(1:nq,1),1,n_breaks) zeros(nq,1)]);
 for i = 1:n_breaks
   kinsol = r.doKinematics(x_breaks(1:nq,i),x_breaks(nq+(1:nv),i));
   r_hand_breaks(:,i) = r.forwardKin(kinsol,r_hand,zeros(3,1),1);
@@ -84,12 +86,12 @@ link_constraints(2) = struct('link_ndx',r_hand,...
                              'pt',zeros(3,1),...
                              'ts',t_breaks,...
                              'coefs',rhand_coefs,...
-                             'use_spatial_velocity',false);
+                             'use_spatial_velocity',true);
 link_constraints(1) = struct('link_ndx',pelvis,...
                              'pt',zeros(3,1),...
                              'ts',t_breaks,...
                              'coefs',cat(3,zeros(6,n_breaks,3),reshape(x_breaks(1:6,:),6,n_breaks,1)),...
-                             'use_spatial_velocity',true);
+                             'use_spatial_velocity',false);
 manip_plan_data = QPLocomotionPlan.from_configuration_traj(r,qtraj_pp,link_constraints);
 % walking_plan_data = StandingPlan.from_standing_state(x0, r);
 
@@ -104,7 +106,7 @@ sys = mimoCascade(sys,v,[],[],output_select);
 T = min(manip_plan_data.duration + 1, 30);
 
 % profile on
-ytraj = simulate(sys, [0, T], x0, struct('gui_control_interface', true));
+ytraj = simulate(sys, [0, 0.01], x0, struct('gui_control_interface', true));
 % profile viewer
 
 v.playback(ytraj, struct('slider', true));
