@@ -148,7 +148,11 @@ end
 
 % terrain_pts_in_world = T_toe_local_to_world \ terrain_pts_in_toe_local;
 % max_terrain_ht_in_world = max(terrain_pts_in_world(3,:))
-max_terrain_ht_in_world = max(swing2.terrain_pts(2,:))
+if ~isempty(swing2.terrain_pts)
+  max_terrain_ht_in_world = max(swing2.terrain_pts(2,:))
+else
+  max_terrain_ht_in_world = -inf;
+end
 % Apex knot 1
 toe_apex1_in_world = (1-APEX_FRACTIONS(1))*toe1 + APEX_FRACTIONS(1)*toe2;
 toe_ht = max([toe_apex1_in_world(3) + params.step_height,...
