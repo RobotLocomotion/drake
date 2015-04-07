@@ -438,17 +438,17 @@ Vector6d bodySpatialMotionPD(RigidBodyManipulator *r, DrakeRobotState &robot_sta
 
   Vector3d origin = Vector3d::Zero();
   auto body_pose = r->forwardKinNew(origin,body_index,0,2,0);
-  Vector3d body_xyz = body_pose.value().head(3);
-  Vector4d body_quat = body_pose.value().tail(4);
+  Vector3d body_xyz = body_pose.value().head<3>();
+  Vector4d body_quat = body_pose.value().tail<4>();
   auto J_geometric = r->geometricJacobian<double>(0,body_index,0,0,true,(std::vector<int>*)nullptr);
   Vector6d body_twist = J_geometric.value()*robot_state.qd;
-  Vector3d body_angular_vel = body_twist.head(3);
-  Vector3d body_xyzdot = body_twist.tail(3);
+  Vector3d body_angular_vel = body_twist.head<3>();
+  Vector3d body_xyzdot = body_twist.tail<3>();
 
-  Vector3d body_xyz_des = body_xyzrpy_des.head(3);
-  Vector3d body_rpy_des = body_xyzrpy_des.tail(3);
-  Vector3d body_angular_vel_des = body_v_des.tail(3);
-  Vector3d body_angular_vel_dot_des = body_vdot_des.tail(3);
+  Vector3d body_xyz_des = body_xyzrpy_des.head<3>();
+  Vector3d body_rpy_des = body_xyzrpy_des.tail<3>();
+  Vector3d body_angular_vel_des = body_v_des.tail<3>();
+  Vector3d body_angular_vel_dot_des = body_vdot_des.tail<3>();
 
   Vector3d xyz_err = body_xyz_des-body_xyz;
 
@@ -456,21 +456,31 @@ Vector6d bodySpatialMotionPD(RigidBodyManipulator *r, DrakeRobotState &robot_sta
   Matrix3d R_des = rpy2rotmat(body_rpy_des);
   Matrix3d R_err = R_des*R.transpose();
   Vector4d angleAxis_err = rotmat2axis(R_err); 
-  Vector3d angular_err = angleAxis_err.head(3)*angleAxis_err(3);
+  Vector3d angular_err = angleAxis_err.head<3>()*angleAxis_err(3);
 
-  Vector3d xyzdot_err = body_v_des.head(3)-body_xyzdot;
+  Vector3d xyzdot_err = body_v_des.head<3>()-body_xyzdot;
   Vector3d angular_vel_err = body_angular_vel_des-body_angular_vel;
 
-  Vector3d Kp_xyz = Kp.head(3);
-  Vector3d Kd_xyz = Kd.head(3);
-  Vector3d Kp_angular = Kp.tail(3);
-  Vector3d Kd_angular = Kd.tail(3);
-  Vector3d body_xyzddot = (Kp_xyz.array()*xyz_err.array()).matrix() + (Kd_xyz.array()*xyzdot_err.array()).matrix()+body_vdot_des.head(3);
+  Vector3d Kp_xyz = Kp.head<3>();
+  Vector3d Kd_xyz = Kd.head<3>();
+  Vector3d Kp_angular = Kp.tail<3>();
+  Vector3d Kd_angular = Kd.tail<3>();
+  Vector3d body_xyzddot = (Kp_xyz.array()*xyz_err.array()).matrix() + (Kd_xyz.array()*xyzdot_err.array()).matrix()+body_vdot_des.head<3>();
   Vector3d body_angular_vel_dot = (Kp_angular.array()*angular_err.array()).matrix() + (Kd_angular.array()*angular_vel_err.array()).matrix()+body_angular_vel_dot_des;
   
   Vector6d twist_dot;
-  twist_dot.head(3) = body_angular_vel_dot;
-  twist_dot.tail(3) = body_xyzddot;
+  twist_dot.head<3>() = body_angular_vel_dot;
+  twist_dot.tail<3>() = body_xyzddot;
+  mexPrintf("\n body_vdot_des ");
+  for(int i = 0;i<6;i++)
+  {
+    mexPrintf("%5.3f ",body_vdot_des(i));
+  }
+  mexPrintf("\n twist_dot ");
+  for(int i = 0;i<6;i++)
+  {
+    mexPrintf("%5.3f ",twist_dot(i));
+  }
   return twist_dot;
 }
 
