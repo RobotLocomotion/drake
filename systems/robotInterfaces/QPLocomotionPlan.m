@@ -410,11 +410,9 @@ classdef QPLocomotionPlan < QPControllerPlan
       end
     end
     
-    function obj = setCOMTraj(obj,qtraj)
-      ts = qtraj.getBreaks();
-      if length(ts) == 1
-        ts = [0,Inf];
-      end
+    function obj = setCOMTraj(obj)
+      ts = obj.qtraj.getBreaks();
+      % this deals with the case of a constant trajectory
       com_poses = zeros(2,length(ts));
       for j = 1:numel(ts)
         kinsol = obj.robot.doKinematics(obj.qtraj.eval(ts(j)));
@@ -650,6 +648,14 @@ classdef QPLocomotionPlan < QPControllerPlan
                                                                   biped.foot_body_id.right,...
                                                                   biped.foot_body_id.left]));
       obj.is_quasistatic = true;
+
+      % handle the case where qtraj is a constant trajectory, make it length 10
+      if isa(qtraj,'ConstantTrajectory')
+        disp('got a ConstantTrajectory, making it a PPTrajectory of with tspan [0,10]');
+        q0 = qtraj.eval(0);
+        qtraj = PPTrajectory(pchip([0,10],[q0,q0]));
+      end
+
       q0 = qtraj.eval(qtraj.tspan(1));
       x0 = [q0; zeros(biped.getNumVelocities(), 1)];
       obj = QPLocomotionPlan.from_standing_state(x0, biped);
@@ -671,9 +677,6 @@ classdef QPLocomotionPlan < QPControllerPlan
       end
 
       ts = qtraj.getBreaks();
-      if length(ts) == 1
-        ts = [0,Inf];
-      end
       body_poses = zeros([6, length(ts), length(options.bodies_to_track)]);
       for i = 1:numel(ts)
         kinsol = doKinematics(obj.robot,qtraj.eval(ts(i)));
@@ -692,8 +695,8 @@ classdef QPLocomotionPlan < QPControllerPlan
         obj.body_motions(j) = BodyMotionData.from_body_poses(body_poses(:,:,j));
       end
 
-      obj.gain_set = 'manip';
-      obj = obj.setCOMTraj(qtraj);
+      obj.gain_set = 'quasistatic';
+      obj = obj.setCOMTraj();
       obj = obj.setLQR_for_COM();
     end
 
