@@ -4,7 +4,6 @@ function runAtlasManipSplit(example_options)
 % and InstantaneousQPController objects. The controller will also
 % automatically transition to standing when it reaches the end of its walking
 % plan.
-% @option use_mex [1] whether to use mex. 0: no, 1: yes, 2: compare mex and non-mex
 % @option use_bullet [false] whether to use bullet for collision detect
 % @option quiet [true] whether to silence timing printouts
 
@@ -15,9 +14,7 @@ checkDependency('gurobi');
 checkDependency('lcmgl');
 
 if nargin<1, example_options=struct(); end
-example_options = applyDefaults(example_options, struct('use_mex', true,...
-                                                        'use_bullet', false,...
-                                                        'quiet', true,...
+example_options = applyDefaults(example_options, struct('use_bullet', false,...
                                                         'terrain', RigidBodyFlatTerrain));
 
 % silence some warnings
@@ -96,14 +93,9 @@ link_constraints(1) = struct('link_ndx',pelvis,...
 manip_plan_data = QPLocomotionPlan.from_configuration_traj(r,qtraj_pp,link_constraints);
 % walking_plan_data = StandingPlan.from_standing_state(x0, r);
 
-control = atlasControllers.InstantaneousQPController(r, [],...
-   struct('use_mex', example_options.use_mex));
-control.quiet = example_options.quiet;
+control = atlasControllers.InstantaneousQPController(r, []);
 planeval = atlasControllers.AtlasPlanEval(r, manip_plan_data);
-
 plancontroller = atlasControllers.AtlasPlanEvalAndControlSystem(r, control, planeval);
-plancontroller.quiet = example_options.quiet;
-
 sys = feedback(r, plancontroller);
 output_select(1).system=1;
 output_select(1).output=1;

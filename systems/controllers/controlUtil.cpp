@@ -471,16 +471,7 @@ Vector6d bodySpatialMotionPD(RigidBodyManipulator *r, DrakeRobotState &robot_sta
   Vector6d twist_dot;
   twist_dot.head<3>() = body_angular_vel_dot;
   twist_dot.tail<3>() = body_xyzddot;
-  mexPrintf("\n body_vdot_des ");
-  for(int i = 0;i<6;i++)
-  {
-    mexPrintf("%5.3f ",body_vdot_des(i));
-  }
-  mexPrintf("\n twist_dot ");
-  for(int i = 0;i<6;i++)
-  {
-    mexPrintf("%5.3f ",twist_dot(i));
-  }
+  twist_dot = Vector6d::Zero();
   return twist_dot;
 }
 
