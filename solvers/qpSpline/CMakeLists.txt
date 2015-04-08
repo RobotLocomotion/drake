@@ -6,14 +6,9 @@ pods_install_pkg_config_file(qpSpline
   REQUIRES
   VERSION 0.0.2)
 
-#add_mex(qpSplinemex qpSplinemex.cpp)
-#include_directories (${CMAKE_SOURCE_DIR}/util)
-#target_link_libraries(qpSplinemex qpSpline)
-#install(TARGETS qpSplinemex DESTINATION matlab)
-#
-#add_mex(qpSplineGridSearchmex qpSplineGridSearchmex.cpp)
-#include_directories (${CMAKE_SOURCE_DIR}/util)
-#target_Ålink_libraries(qpSpline qpSpline)
-#install(TARGETS qpSplineGridSearchmex DESTINATION matlab)
+add_mex(twoWaypointCubicSplinemex twoWaypointCubicSplinemex.cpp)
+include_directories (${CMAKE_SOURCE_DIR}/util)
+target_link_libraries(twoWaypointCubicSplinemex splineGeneration drakeUtil)
+install(TARGETS twoWaypointCubicSplinemex DESTINATION matlab)
 
 add_subdirectory(test)

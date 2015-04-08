@@ -41,5 +41,6 @@ int main(int argc, char **argv) {
 
   testIntegralAndDerivative();
   testMultiplication();
+  cout << "test passed" << endl;
   return 0;
 }

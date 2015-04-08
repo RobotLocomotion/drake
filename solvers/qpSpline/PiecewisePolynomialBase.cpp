@@ -1,4 +1,6 @@
 #include "PiecewisePolynomialBase.h"
+#include <stdexcept>
+#include <sstream>
 
 PiecewisePolynomialBase::PiecewisePolynomialBase(std::vector<double> const & segment_times) :
   segment_times(segment_times)
@@ -23,10 +25,12 @@ int PiecewisePolynomialBase::getNumberOfCoefficients(int segment_number) const {
 }
 
 double PiecewisePolynomialBase::getStartTime(int segment_number) const {
+  segmentNumberRangeCheck(segment_number);
   return segment_times[segment_number];
 }
 
 double PiecewisePolynomialBase::getEndTime(int segment_number) const {
+  segmentNumberRangeCheck(segment_number);
   return segment_times[segment_number + 1];
 }
 
@@ -47,3 +51,10 @@ int PiecewisePolynomialBase::getTotalNumberOfCoefficients() const {
   return ret;
 }
 
+void PiecewisePolynomialBase::segmentNumberRangeCheck(int segment_number) const {
+  if (segment_number < 0 || segment_number >= getNumberOfSegments()) {
+    std::stringstream msg;
+    msg << "Segment number " << segment_number << " out of range [" << 0 << ", " << getNumberOfSegments() - 1 << "]" << std::endl;
+    throw std::runtime_error(msg.str().c_str());
+  }
+}

@@ -28,6 +28,9 @@ public:
   double getEndTime() const;
 
   int getTotalNumberOfCoefficients() const;
+
+protected:
+  void segmentNumberRangeCheck(int segment_number) const;
 };
 
 #endif /* DRAKE_SOLVERS_QPSPLINE_PIECEWISEPOLYNOMIALBASE_H_ */

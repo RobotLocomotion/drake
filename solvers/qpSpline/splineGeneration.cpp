@@ -1,6 +1,7 @@
 #include "splineGeneration.h"
 
 #include <Eigen/Dense>
+#include <iostream>
 #include <sstream>
 #include <numeric>
 #include <stdexcept>
