@@ -16,7 +16,6 @@ options.use_mex = false;
 t = timeit(@() qpSpline(ts, xs, xd0, xdf, options, false), 2);
 
 options.use_mex = true;
-tic
 [coefs_mex, objval_mex] = qpSpline(ts, xs, xd0, xdf, options, false);
 t_mex = timeit(@() qpSpline(ts, xs, xd0, xdf, options, false), 2);
 
