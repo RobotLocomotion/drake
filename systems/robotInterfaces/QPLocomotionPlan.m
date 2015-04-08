@@ -106,11 +106,7 @@ classdef QPLocomotionPlan < QPControllerPlan
         end
       end
 
-      if isnumeric(obj.V.S)
-        qp_input.zmp_data.S = obj.V.S;
-      else
-        qp_input.zmp_data.S = fasteval(obj.V.S,t_plan);
-      end
+      qp_input.zmp_data.S = obj.V.S;
       
       if isnumeric(obj.V.s1)
         qp_input.zmp_data.s1 = obj.V.s1;
