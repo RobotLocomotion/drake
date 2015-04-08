@@ -65,7 +65,8 @@ PiecewisePolynomial generateSpline(const SplineInformation& spline_information) 
       int number_of_coefficients = spline_information.getNumberOfCoefficients(i);
       int segment_col_start = segment_col_starts[i];
       auto constraint_matrix_segment_part = constraint_matrix.block<1, Dynamic>(constraint_row_start, segment_col_start, 1, number_of_coefficients);
-      setConstraintMatrixPart(constraint.getTime(), constraint.getDerivativeOrder(), constraint_matrix_segment_part);
+      double t_local = constraint.getTime() - spline_information.getStartTime(i);
+      setConstraintMatrixPart(t_local, constraint.getDerivativeOrder(), constraint_matrix_segment_part);
       right_hand_side(constraint_row_start) = constraint.getValue();
       constraint_row_start += 1;
     }
@@ -78,12 +79,13 @@ PiecewisePolynomial generateSpline(const SplineInformation& spline_information) 
     int first_spline_index = constraint.getFirstSplineIndex();
     int number_of_coefficients_1 = spline_information.getNumberOfCoefficients(first_spline_index);
     auto constraint_matrix_segment_part_1 = constraint_matrix.block<1, Dynamic>(constraint_row_start, segment_col_starts[first_spline_index], 1, number_of_coefficients_1);
-    setConstraintMatrixPart(spline_information.getEndTime(first_spline_index), constraint.getDerivativeOrder(), constraint_matrix_segment_part_1, 1.0);
+    double t_local_1 = spline_information.getEndTime(first_spline_index) - spline_information.getStartTime(first_spline_index);
+    setConstraintMatrixPart(t_local_1, constraint.getDerivativeOrder(), constraint_matrix_segment_part_1, 1.0);
 
     int second_spline_index = constraint.getSecondSplineIndex();
     int number_of_coefficients_2 = spline_information.getNumberOfCoefficients(second_spline_index);
     auto constraint_matrix_segment_part_2 = constraint_matrix.block<1, Dynamic>(constraint_row_start, segment_col_starts[second_spline_index], 1, number_of_coefficients_2);
-    setConstraintMatrixPart(spline_information.getStartTime(second_spline_index), constraint.getDerivativeOrder(), constraint_matrix_segment_part_2, -1.0);
+    setConstraintMatrixPart(0.0, constraint.getDerivativeOrder(), constraint_matrix_segment_part_2, -1.0);
 
     right_hand_side(constraint_row_start) = 0.0;
 

@@ -51,7 +51,8 @@ PiecewisePolynomial PiecewisePolynomial::integral(double integration_constant) c
 }
 
 double PiecewisePolynomial::value(double t) {
-  return polynomials[getSegmentIndex(t)].value(t);
+  int segment_index = getSegmentIndex(t);
+  return polynomials[segment_index].value(t - getStartTime(segment_index));
 }
 
 const Polynomial& PiecewisePolynomial::getPolynomial(int segment_index) const {

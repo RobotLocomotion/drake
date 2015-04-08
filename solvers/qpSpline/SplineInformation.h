@@ -14,6 +14,8 @@ private:
   std::vector<ContinuityConstraint> continuity_constraints;
 
 public:
+  virtual ~SplineInformation() {};
+
   SplineInformation(std::vector<int> const & segment_polynomial_orders, std::vector<double> const & segment_times);
 
   virtual int getSegmentPolynomialOrder(int segment_number) const;

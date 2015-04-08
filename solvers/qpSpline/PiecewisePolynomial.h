@@ -13,6 +13,8 @@ private:
   int getSegmentIndex(double t);
 
 public:
+  virtual ~PiecewisePolynomial() {};
+
   PiecewisePolynomial(std::vector<Polynomial> const& polynomials, std::vector<double> const& segment_times);
 
   PiecewisePolynomial derivative(int derivative_order = 1) const;
