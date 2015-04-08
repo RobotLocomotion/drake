@@ -249,21 +249,6 @@ classdef NonlinearProgram
       else
         error('Drake:NonlinearProgram:UnsupportedConstraint','Unsupported constraint type');
       end
-      
-      if(strcmpi(obj.solver,'studentsnopt'))
-        if(~checkDependency('studentSnopt'))
-          error('Drake:NonlinearProgram:UnsupportedSolver',' studentSNOPT not found.  studentSNOPT support will be disabled.');
-%         It is asssumed 1- that no variables are added within addConstraint
-%         and 2- that there will be no manual introduction of variables (i.e. not calling addDecisionVariable) between
-%         addConstraint calls:
-%         elseif(~(obj.num_vars<=300))
-%           error('Drake:NonlinearProgram:UnsupportedSolver',' Number of variables over studentSNOPT support: obj.num_vars>300');
-        elseif(~(obj.num_cin+obj.num_ceq+size(obj.Ain,1)+size(obj.Aeq,1)<=300))
-          error('Drake:NonlinearProgram:UnsupportedSolver',' Number of constraints over studentSNOPT support: obj.num_cin+obj.num_ceq+size(obj.Ain,1)+size(obj.Aeq,1)>300');
-        end
-      elseif isempty(obj.solver)
-        obj = obj.setSolver('default');
-      end
     end
     
     function [obj,cnstr_id] = addNonlinearConstraint(obj,cnstr,xind, data_ind)
@@ -336,6 +321,21 @@ classdef NonlinearProgram
       cnstr_id = obj.next_nlcon_id;
       obj.next_nlcon_id = obj.next_nlcon_id-3;
       obj.nlcon_id = [obj.nlcon_id cnstr_id];
+      
+      if(strcmpi(obj.solver,'studentsnopt'))
+        if(~checkDependency('studentSnopt'))
+          error('Drake:NonlinearProgram:UnsupportedSolver',' studentSNOPT not found.  studentSNOPT support will be disabled.');
+%         It is asssumed 1- that no variables are added within addConstraint
+%         and 2- that there will be no manual introduction of variables (i.e. not calling addDecisionVariable) between
+%         addConstraint calls:
+%         elseif(~(obj.num_vars<=300))
+%           error('Drake:NonlinearProgram:UnsupportedSolver',' Number of variables over studentSNOPT support: obj.num_vars>300');
+        elseif(~(obj.num_cin+obj.num_ceq+size(obj.Ain,1)+size(obj.Aeq,1)<=300))
+          error('Drake:NonlinearProgram:UnsupportedSolver',' Number of constraints over studentSNOPT support: obj.num_cin+obj.num_ceq+size(obj.Ain,1)+size(obj.Aeq,1)>300');
+        end
+      elseif isempty(obj.solver)
+        obj = obj.setSolver('default');
+      end      
     end
     
     function [obj,cnstr_id] = addLinearConstraint(obj,cnstr,xind)
@@ -389,7 +389,21 @@ classdef NonlinearProgram
         obj.next_lcon_id = obj.next_lcon_id-3;
         obj.lcon_id = [obj.lcon_id cnstr_id];
 %       end
-      
+
+      if(strcmpi(obj.solver,'studentsnopt'))
+        if(~checkDependency('studentSnopt'))
+          error('Drake:NonlinearProgram:UnsupportedSolver',' studentSNOPT not found.  studentSNOPT support will be disabled.');
+%         It is asssumed 1- that no variables are added within addConstraint
+%         and 2- that there will be no manual introduction of variables (i.e. not calling addDecisionVariable) between
+%         addConstraint calls:
+%         elseif(~(obj.num_vars<=300))
+%           error('Drake:NonlinearProgram:UnsupportedSolver',' Number of variables over studentSNOPT support: obj.num_vars>300');
+        elseif(~(obj.num_cin+obj.num_ceq+size(obj.Ain,1)+size(obj.Aeq,1)<=300))
+          error('Drake:NonlinearProgram:UnsupportedSolver',' Number of constraints over studentSNOPT support: obj.num_cin+obj.num_ceq+size(obj.Ain,1)+size(obj.Aeq,1)>300');
+        end
+      elseif isempty(obj.solver)
+        obj = obj.setSolver('default');
+      end
     end   
 
     function [obj,cnstr_id] = addBoundingBoxConstraint(obj,cnstr,xind)
