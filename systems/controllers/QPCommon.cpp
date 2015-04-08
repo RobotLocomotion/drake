@@ -5,7 +5,10 @@
 template<int M, int N>
 void matlabToCArrayOfArrays(const mxArray *source, const int idx, const char *fieldname, double *destination)  {
   // Matlab arrays come in as column-major data. To represent a matrix in C++, as we do in our LCM messages, we need an array of arrays. But that convention results in a row-major storage, so we have to be careful about how we copy data in. 
-  const mxArray *field = myGetField(source, idx, fieldname);
+  const mxArray *field = mxGetField(source, idx, fieldname);
+  if (!field) {
+    field = mxGetPropertySafe(source, idx, fieldname);
+  }
   sizecheck(field, M, N);
   Map<Matrix<double, M, N>>A(mxGetPrSafe(field));
   // C is row-major, matlab is column-major
@@ -86,14 +89,15 @@ std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray 
     }
     for (int i=0; i < nbod; i++) {
       msg->body_motion_data[i].timestamp = msg->timestamp;
-      msg->body_motion_data[i].body_id = (int32_t) mxGetScalar(myGetField(body_motion_data, i, "body_id"));
-      memcpy(msg->body_motion_data[i].ts, mxGetPrSafe(myGetField(body_motion_data, i, "ts")), 2*sizeof(double));
-      const mxArray* coefs = myGetField(body_motion_data, i, "coefs");
+      msg->body_motion_data[i].body_id = (int32_t) mxGetScalar(mxGetPropertySafe(body_motion_data, i, "body_id"));
+      memcpy(msg->body_motion_data[i].ts, mxGetPrSafe(mxGetPropertySafe(body_motion_data, i, "ts")), 2*sizeof(double));
+      const mxArray* coefs = mxGetPropertySafe(body_motion_data, i, "coefs");
       if (mxGetNumberOfDimensions(coefs) != 3) mexErrMsgTxt("coefs should be a dimension-3 array");
       const mwSize* dim = mxGetDimensions(coefs);
-      if (dim[0] != 6 || dim[1] != 1 || dim[2] != 4) mexErrMsgTxt("coefs should be size 6x4");
+      if (dim[0] != 6 || dim[1] != 1 || dim[2] != 4) mexErrMsgTxt("coefs should be size 6x1x4");
       matlabToCArrayOfArrays<6, 4>(body_motion_data, i, "coefs", &msg->body_motion_data[i].coefs[0][0]);
-      msg->body_motion_data[i].in_floating_base_nullspace = mxGetScalar(myGetField(body_motion_data, i,"in_floating_base_nullspace")) > 0.5;
+      msg->body_motion_data[i].in_floating_base_nullspace = static_cast<bool>(mxGetScalar(mxGetPropertySafe(body_motion_data, i, "in_floating_base_nullspace")));
+      msg->body_motion_data[i].control_pose_when_in_contact = static_cast<bool>(mxGetScalar(mxGetPropertySafe(body_motion_data, i, "control_pose_when_in_contact")));
     }
   }
 
@@ -367,6 +371,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     desired_body_accelerations[i].body_vdot = bodyMotionPD(pdata->r, robot_state, body_id0, body_pose_des, body_v_des, body_vdot_des, params->body_motion[body_id0].Kp, params->body_motion[body_id0].Kd);
     desired_body_accelerations[i].weight = weight;
     desired_body_accelerations[i].accel_bounds = params->body_motion[body_id0].accel_bounds;
+    desired_body_accelerations[i].control_pose_when_in_contact = qp_input->body_motion_data[i].control_pose_when_in_contact;
     // mexPrintf("body: %d, vdot: %f %f %f %f %f %f weight: %f\n", body_id0, 
     //           desired_body_accelerations[i].body_vdot(0), 
     //           desired_body_accelerations[i].body_vdot(1), 
@@ -565,7 +570,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   Vector6d Jbdotv;	
   for (int i=0; i<desired_body_accelerations.size(); i++) {
     if (desired_body_accelerations[i].weight < 0) { // negative implies constraint
-      if (!inSupport(active_supports,desired_body_accelerations[i].body_id0)) {
+      if (desired_body_accelerations[i].control_pose_when_in_contact || !inSupport(active_supports,desired_body_accelerations[i].body_id0)) {
         pdata->r->forwardJac(desired_body_accelerations[i].body_id0,orig1,1,Jb);
         auto Jdot_times_v = pdata->r->forwardJacDotTimesV(orig,desired_body_accelerations[i].body_id0,0,1,0);
         Jbdotv.noalias() = Jdot_times_v.value();
@@ -734,7 +739,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     // add in body spatial acceleration cost terms
     for (int i=0; i<desired_body_accelerations.size(); i++) {
       if (desired_body_accelerations[i].weight > 0) {
-        if (!inSupport(active_supports,desired_body_accelerations[i].body_id0)) {
+        if (desired_body_accelerations[i].control_pose_when_in_contact || !inSupport(active_supports,desired_body_accelerations[i].body_id0)) {
           pdata->r->forwardJac(desired_body_accelerations[i].body_id0,orig1,1,Jb);
           auto Jdot_times_v = pdata->r->forwardJacDotTimesV(orig,desired_body_accelerations[i].body_id0,0,1,0);
           Jbdotv.noalias() = Jdot_times_v.value();

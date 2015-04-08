@@ -1,5 +1,4 @@
 function [zmp_knots, foot_origin_knots] = planZMPTraj(biped, q0, footsteps, options)
-% function [zmptraj, link_constraints, support_times, supports] = planZMPTraj(biped, q0, footsteps, options)
 % Plan the trajectories of the ZMP and the feet in order to follow the given footsteps
 % @param q0 the initial configuration vector
 % @param footsteps a list of Footstep objects

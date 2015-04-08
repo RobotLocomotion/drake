@@ -188,6 +188,24 @@ double * mxGetPrSafe(const mxArray *pobj) {
   return mxGetPr(pobj);
 }
 
+mxArray* mxGetPropertySafe(const mxArray* array, std::string const& field_name) {
+  return mxGetPropertySafe(array, 0, field_name);
+}
+
+mxArray* mxGetPropertySafe(const mxArray* array, size_t index, std::string const& field_name)
+{
+  mxArray* ret = mxGetProperty(array, index, field_name.c_str());
+  if (!ret)
+  {
+    mexErrMsgIdAndTxt("Drake::mxGetPropertySafe", ("Field not found: " + field_name).c_str());
+  }
+  return ret;
+}
+
+mxArray* mxGetFieldSafe(const mxArray* array, std::string const& field_name) {
+  return mxGetFieldSafe(array, 0, field_name);
+}
+
 mxArray* mxGetFieldSafe(const mxArray* array, size_t index, std::string const& field_name)
 {
   mxArray* ret = mxGetField(array, index, field_name.c_str());

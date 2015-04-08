@@ -46,8 +46,10 @@ for f = {'right', 'left'}
     % foot_dposes = foot_states(7:12,:);
     % foot_pp.(foot) = pchipDeriv(ts, foot_poses, foot_dposes);
   end
+  body_motions(end).in_floating_base_nullspace = true(1, numel(ts));
 
   if options.debug
+    foot_pp.(foot) = mkpp(body_motions(end).ts, body_motions(end).coefs, 6);
     tsample = linspace(ts(1), ts(end), 200);
     xs = ppval(foot_pp.(foot), tsample);
     foot_deriv_pp = fnder(foot_pp.(foot));
@@ -86,7 +88,7 @@ for f = {'right', 'left'}
   % coefs = reshape(coefs, [d, l, k]);
   % assert(k == 4, 'expected a piecewise cubic polynomial');
   toe_off_allowed = [foot_origin_knots.toe_off_allowed];
-  body_motions(end).toe_off_allowed = toe_off_allowed.(foot);
+  body_motions(end).toe_off_allowed = [toe_off_allowed.(foot)];
   % link_constraints(end+1) = struct('link_ndx', body_ind, 'pt', [0;0;0], 'ts', ts, 'poses', foot_poses, 'dposes', foot_dposes, 'contact_break_indices', find([foot_origin_knots.is_liftoff]), 'coefs', coefs, 'toe_off_allowed', [toe_off_allowed.(foot)], 'in_floating_base_nullspace', true);
 end
 
@@ -100,8 +102,8 @@ pelvis_reference_height = zeros(1,length(support_times));
 
 % lfoot_link_con_ind = [body_motions.link_ndx]==obj.foot_body_id.left;
 % rfoot_link_con_ind = [body_motions.link_ndx]==obj.foot_body_id.right;
-lfoot_body_motion = body_motions(body_motions.body_id == obj.foot_body_id.left);
-rfoot_body_motion = body_motions(body_motions.body_id == obj.foot_body_id.right);
+lfoot_body_motion = body_motions([body_motions.body_id] == obj.foot_body_id.left);
+rfoot_body_motion = body_motions([body_motions.body_id] == obj.foot_body_id.right);
 lfoot_des = lfoot_body_motion.eval(0);
 rfoot_des = rfoot_body_motion.eval(0);
 % lfoot_des = evaluateSplineInLinkConstraints(0,link_constraints,lfoot_link_con_ind);
@@ -183,9 +185,8 @@ pelvis_poses = [nan(2, size(rpos, 2));
                 zeros(2,size(rpos, 2));
                 unwrap(angleAverage(rpos(6,:)', lpos(6,:)')')];
 pp = foh(pelvis_ts, pelvis_poses);
-[~,coefs, l, k, d] = unmkpp(pp);
-coefs = reshape(coefs, d, l, k);
-body_motions(end+1) = BodyMotionData.from_body_poses_and_velocities(pelvis_body, pelvis_ts, coefs(:,:,end), coefs(:,:,end-1));
+pelvis_dposes = ppval(fnder(pp, 1), pelvis_ts);
+body_motions(end+1) = BodyMotionData.from_body_poses_and_velocities(pelvis_body, pelvis_ts, pelvis_poses, pelvis_dposes);
 
 % coefs = cat(3, zeros(6, size(coefs, 2), 2), coefs);
 
