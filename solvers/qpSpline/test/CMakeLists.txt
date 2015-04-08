@@ -1,4 +1,10 @@
 add_executable(testSplineGeneration testSplineGeneration.cpp)
 target_link_libraries(testSplineGeneration splineGeneration)
 include_directories( .. )
-add_test(NAME testDrakeGradientUtil COMMAND testDrakeGradientUtil)
+add_test(NAME testSplineGeneration COMMAND testSplineGeneration)
+
+add_executable(testPolynomial testPolynomial.cpp)
+target_link_libraries(testPolynomial splineGeneration)
+include_directories( .. )
+include_directories (${CMAKE_SOURCE_DIR}/util/test)
+add_test(NAME testPolynomial COMMAND testPolynomial)

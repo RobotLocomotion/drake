@@ -71,23 +71,26 @@ int main(int argc, char **argv) {
 
   // check value constraints
   double tol = 1e-10;
-  valueCheck(result.derivativeValue(0, spline_information.getStartTime(0)), x0, tol);
-  valueCheck(result.derivativeValue(1, spline_information.getStartTime(0)), xd0, tol);
+  PiecewisePolynomial derivative = result.derivative();
+  PiecewisePolynomial second_derivative = derivative.derivative();
 
-  valueCheck(result.derivativeValue(0, spline_information.getEndTime(num_segments - 1)), xf, tol);
-  valueCheck(result.derivativeValue(1, spline_information.getEndTime(num_segments - 1)), xdf, tol);
+  valueCheck(result.value(spline_information.getStartTime(0)), x0, tol);
+  valueCheck(derivative.value(spline_information.getStartTime(0)), xd0, tol);
 
-  valueCheck(result.derivativeValue(0, spline_information.getStartTime(1)), x1, tol);
-  valueCheck(result.derivativeValue(0, spline_information.getStartTime(2)), x2, tol);
+  valueCheck(result.value(spline_information.getEndTime(num_segments - 1)), xf, tol);
+  valueCheck(derivative.value(spline_information.getEndTime(num_segments - 1)), xdf, tol);
+
+  valueCheck(result.value(spline_information.getStartTime(1)), x1, tol);
+  valueCheck(derivative.value(spline_information.getStartTime(2)), x2, tol);
 
   // check continuity constraints
   double eps = 1e-10;
   int num_knots = num_segments - 1;
   for (int i = 0; i < num_knots; i++) {
-    for (int derivative_order = 0; derivative_order < 3; derivative_order++) {
-      double t_knot = result.derivativeValue(derivative_order, spline_information.getEndTime(i));
-      valueCheck(result.derivativeValue(derivative_order, t_knot - eps), result.derivativeValue(derivative_order, t_knot + eps), 1e-8);
-    }
+    double t_knot = spline_information.getEndTime(i);
+    valueCheck(result.value(t_knot - eps), result.value(t_knot + eps), 1e-8);
+    valueCheck(derivative.value(t_knot - eps), derivative.value(t_knot + eps), 1e-8);
+    valueCheck(second_derivative.value(t_knot - eps), second_derivative.value(t_knot + eps), 1e-8);
   }
 
   return 0;

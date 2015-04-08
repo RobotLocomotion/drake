@@ -16,7 +16,11 @@ private:
 public:
   PiecewisePolynomial(std::vector<Polynomial> const& polynomials, std::vector<double> const& segment_times);
 
-  double derivativeValue(int derivative_order, double t);
+  PiecewisePolynomial derivative(int derivative_order = 1) const;
+
+  PiecewisePolynomial integral(double integration_constant) const;
+
+  double value(double t);
 
   virtual int getSegmentPolynomialOrder(int segment_number) const;
 };
