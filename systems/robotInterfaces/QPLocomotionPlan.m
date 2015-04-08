@@ -96,7 +96,6 @@ classdef QPLocomotionPlan < QPControllerPlan
         end
 
         qp_input.zmp_data.x0 = com_state;
-        % set the zmp desired to zero as a convention, we aren't using it
         qp_input.zmp_data.y0 = com_state(1:2);
       else
         qp_input.zmp_data.x0 = [obj.zmp_final; 0;0];
@@ -118,9 +117,6 @@ classdef QPLocomotionPlan < QPControllerPlan
       else
         qp_input.zmp_data.s1 = fasteval(obj.V.s1, t_plan);
       end
-
-
-
 
       kinsol = doKinematics(obj.robot, q);
 
@@ -198,14 +194,6 @@ classdef QPLocomotionPlan < QPControllerPlan
         if qp_input.body_motion_data(j).body_id == rpc.body_ids.pelvis
           pelvis_has_tracking = true;
         end
-
-        lcmgl = LCMGLClient(num2str(j));
-        lcmgl.glColor3f(1,0,0);
-        pose_des = evalCubicSplineSegment(t_global - qp_input.body_motion_data(j).ts(1), qp_input.body_motion_data(j).coefs);
-        lcmgl.sphere(pose_des(1:3), 0.02, 20, 20);
-        lcmgl.switchBuffers();
-
-
       end
 
       assert(pelvis_has_tracking, 'Expecting a motion_motion_data element for the pelvis');
@@ -488,24 +476,6 @@ classdef QPLocomotionPlan < QPControllerPlan
 
       obj.body_motions(3).coefs = cat(3, zeros(6,1,3),reshape(pelvis_target,[6,1,1,]));
       obj.body_motions(3).in_floating_base_nullspace = false(1, 2);
-      % link_constraints(1).link_ndx = obj.robot.foot_body_id.right;
-      % link_constraints(1).pt = [0;0;0];
-      % link_constraints(1).ts = [0, inf];
-      % link_constraints(1).coefs = cat(3, zeros(6,1,3), reshape(forwardKin(obj.robot,kinsol,obj.robot.foot_body_id.right,[0;0;0],1),[6,1,1]));
-      % link_constraints(1).toe_off_allowed = [false, false];
-      % link_constraints(1).in_floating_base_nullspace = true;
-      % link_constraints(2).link_ndx = obj.robot.foot_body_id.left;
-      % link_constraints(2).pt = [0;0;0];
-      % link_constraints(2).ts = [0, inf];
-      % link_constraints(2).coefs = cat(3, zeros(6,1,3),reshape(forwardKin(obj.robot,kinsol,obj.robot.foot_body_id.left,[0;0;0],1),[6,1,1]));
-      % link_constraints(2).toe_off_allowed = [false, false];
-      % link_constraints(2).in_floating_base_nullspace = true;
-      % link_constraints(3).link_ndx = pelvis_id;
-      % link_constraints(3).pt = [0;0;0];
-      % link_constraints(3).ts = [0, inf];
-      % link_constraints(3).coefs = cat(3, zeros(6,1,3),reshape(pelvis_target,[6,1,1,]));
-      % link_constraints(3).in_floating_base_nullspace = false;
-      % obj.link_constraints = link_constraints;
 
       obj.zmp_final = comgoal;
       obj.qtraj = x0(1:nq);
@@ -692,45 +662,5 @@ classdef QPLocomotionPlan < QPControllerPlan
       zmptraj = PPTrajectory(foh([zmp_knots.t], [zmp_knots.zmp]));
       zmptraj = setOutputFrame(zmptraj, SingletonCoordinateFrame('desiredZMP',2,'z',{'x_zmp','y_zmp'}));
     end
-
-    function zmp_traj = computeZMPFromCOM(com_traj,g)
-      ts = com_traj.getBreaks();
-      g_z = g(3);
-      com_position_initial = com_traj.eval(ts(1));
-      com_height = com_position_initial(3);
-      com_dot_traj = fnder(com_traj);
-      com_ddot_traj = fnder(com_dot_traj);
-      com_vals = com_traj.eval(ts);
-      com_ddot_vals = com_ddot_traj.eval(ts);
-      zmp_vals = com_vals - com_height/g_z.*com_ddot_vals;
-
-      % only care about x & y, not z
-      zmp_vals = zmp_vals(1:2,:);
-      zmp_traj = PPTrajectory(pchip(ts,zmp_vals));
-      zmp_traj = zmp_traj.setOutputFrame(desiredZMP);
-    end
-
-    function link_constraint_body = genLinkConstraint(r,qtraj,body_id,pt)
-      if nargin < 4
-        pt = [0;0;0];
-      end
-
-      ts = qtraj.getBreaks();
-      body_position = zeros(6,length(ts));
-      for j = 1:length(ts)
-        kinsol = r.doKinematics(qtraj.eval(ts(j)));
-        body_position(:,j) = r.forwardKin(kinsol,body_id,pt,1);
-      end
-
-      body_traj = pchip(ts,body_position);
-      link_constraint_body.link_ndx = body_id;
-      link_constraint_body.pt = pt;
-      [breaks, coefs, l, k, d] = unmkpp(body_traj);
-      coefs = reshape(coefs, [d,l,k]);
-      link_constraint_body.ts = breaks;
-      link_constraint_body.coefs = coefs;
-      link_constraint_body.toe_off_allowed = false(1,length(link_constraint_body.ts));
-    end
-
   end
 end
