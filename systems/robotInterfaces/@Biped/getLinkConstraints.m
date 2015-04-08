@@ -47,9 +47,9 @@ for f = {'right', 'left'}
     % foot_pp.(foot) = pchipDeriv(ts, foot_poses, foot_dposes);
   end
   body_motions(end).in_floating_base_nullspace = true(1, numel(ts));
+  foot_pp.(foot) = body_motions(end).getPP();
 
   if options.debug
-    foot_pp.(foot) = mkpp(body_motions(end).ts, body_motions(end).coefs, 6);
     tsample = linspace(ts(1), ts(end), 200);
     xs = ppval(foot_pp.(foot), tsample);
     foot_deriv_pp = fnder(foot_pp.(foot));
