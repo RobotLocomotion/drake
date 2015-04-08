@@ -197,7 +197,7 @@ mxArray* mxGetPropertySafe(const mxArray* array, size_t index, std::string const
   mxArray* ret = mxGetProperty(array, index, field_name.c_str());
   if (!ret)
   {
-    mexErrMsgIdAndTxt("Drake::mxGetPropertySafe", ("Field not found: " + field_name).c_str());
+    mexErrMsgIdAndTxt("Drake:mxGetPropertySafe", ("Field not found: " + field_name).c_str());
   }
   return ret;
 }
@@ -211,7 +211,7 @@ mxArray* mxGetFieldSafe(const mxArray* array, size_t index, std::string const& f
   mxArray* ret = mxGetField(array, index, field_name.c_str());
   if (!ret)
   {
-    mexErrMsgIdAndTxt("Drake::mxGetFieldSafe", ("Field not found: " + field_name).c_str());
+    mexErrMsgIdAndTxt("Drake:mxGetFieldSafe", ("Field not found: " + field_name).c_str());
   }
   return ret;
 }
