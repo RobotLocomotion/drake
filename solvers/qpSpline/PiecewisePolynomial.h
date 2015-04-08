@@ -9,7 +9,6 @@ class PiecewisePolynomial : public PiecewisePolynomialBase
 {
 private:
   std::vector<Polynomial> polynomials;
-  std::vector<double> segment_times;
 
   int getSegmentIndex(double t);
 
@@ -21,6 +20,8 @@ public:
   PiecewisePolynomial integral(double integration_constant) const;
 
   double value(double t);
+
+  const Polynomial& getPolynomial(int segment_index) const;
 
   virtual int getSegmentPolynomialOrder(int segment_number) const;
 };

@@ -2,7 +2,6 @@
 #include <stdexcept>
 #include <cassert>
 #include <algorithm>
-#include <iostream>
 
 using namespace std;
 
@@ -27,7 +26,7 @@ int PiecewisePolynomial::getSegmentIndex(double t) {
     t = getEndTime();
 
   int segment_index = 0;
-  while (t >= getEndTime(segment_index) && segment_index < getNumberOfSegments())
+  while (t >= getEndTime(segment_index) && segment_index < getNumberOfSegments() - 1)
     segment_index++;
 
   return segment_index;
@@ -55,6 +54,12 @@ double PiecewisePolynomial::value(double t) {
   return polynomials[getSegmentIndex(t)].value(t);
 }
 
-int PiecewisePolynomial::getSegmentPolynomialOrder(int segment_number) const {
-  return polynomials[segment_number].getOrder();
+const Polynomial& PiecewisePolynomial::getPolynomial(int segment_index) const {
+  segmentNumberRangeCheck(segment_index);
+  return polynomials[segment_index];
+}
+
+int PiecewisePolynomial::getSegmentPolynomialOrder(int segment_index) const {
+  segmentNumberRangeCheck(segment_index);
+  return polynomials[segment_index].getOrder();
 }

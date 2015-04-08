@@ -34,6 +34,7 @@ int main(int argc, char **argv) {
 
   PiecewisePolynomial result = twoWaypointCubicSpline(segment_times, x0, xd0, xf, xdf, x1, x2);
 
+
   for (int i = 0; i < num_segments; i++) {
     valuecheck(segment_times[i], result.getStartTime(i));
   }
@@ -44,14 +45,16 @@ int main(int argc, char **argv) {
   PiecewisePolynomial derivative = result.derivative();
   PiecewisePolynomial second_derivative = derivative.derivative();
 
+
   valuecheck(result.value(result.getStartTime(0)), x0, tol);
   valuecheck(derivative.value(result.getStartTime(0)), xd0, tol);
+
 
   valuecheck(result.value(result.getEndTime(num_segments - 1)), xf, tol);
   valuecheck(derivative.value(result.getEndTime(num_segments - 1)), xdf, tol);
 
   valuecheck(result.value(result.getStartTime(1)), x1, tol);
-  valuecheck(derivative.value(result.getStartTime(2)), x2, tol);
+  valuecheck(result.value(result.getStartTime(2)), x2, tol);
 
   // check continuity constraints
   double eps = 1e-10;
@@ -62,6 +65,8 @@ int main(int argc, char **argv) {
     valuecheck(derivative.value(t_knot - eps), derivative.value(t_knot + eps), 1e-8);
     valuecheck(second_derivative.value(t_knot - eps), second_derivative.value(t_knot + eps), 1e-8);
   }
+
+  std::cout << "test passed" << std::endl;
 
   return 0;
 }

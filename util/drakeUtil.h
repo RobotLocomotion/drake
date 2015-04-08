@@ -80,6 +80,8 @@ mxArray* stdVectorToMatlab(const std::vector<int>& vec) {
   return pm;
 }
 
+DLLEXPORT const std::vector<double> matlabToStdVector(const mxArray* in);
+
 void baseZeroToBaseOne(std::vector<int>& vec)
 {
   for (std::vector<int>::iterator iter=vec.begin(); iter!=vec.end(); iter++)

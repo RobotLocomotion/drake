@@ -4,7 +4,8 @@
 #include <stdexcept>
 
 SplineInformation::SplineInformation(std::vector<int> const & segment_polynomial_orders, std::vector<double> const & segment_times) :
-  PiecewisePolynomialBase(segment_times)
+  PiecewisePolynomialBase(segment_times),
+  segment_polynomial_orders(segment_polynomial_orders)
 {
   assert(segment_times.size() == segment_polynomial_orders.size() + 1);
   value_constraints.resize(getNumberOfSegments());
