@@ -43,9 +43,9 @@ params = struct('x0', xs(:,1),...
 cvx_settings = struct('verbose', 0);
 
 if settings.optimize_knot_times
-  tic()
+  % tic()
   [vars, status] = qpSplineGridSearchmex(params, cvx_settings);
-  toc()
+  % toc()
   ts(2) = vars.t1;
   ts(3) = vars.t2;
 else
