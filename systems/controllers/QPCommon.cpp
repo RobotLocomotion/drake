@@ -89,15 +89,15 @@ std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray 
     }
     for (int i=0; i < nbod; i++) {
       msg->body_motion_data[i].timestamp = msg->timestamp;
-      msg->body_motion_data[i].body_id = (int32_t) mxGetScalar(mxGetPropertySafe(body_motion_data, i, "body_id"));
-      memcpy(msg->body_motion_data[i].ts, mxGetPrSafe(mxGetPropertySafe(body_motion_data, i, "ts")), 2*sizeof(double));
-      const mxArray* coefs = mxGetPropertySafe(body_motion_data, i, "coefs");
+      msg->body_motion_data[i].body_id = (int32_t) mxGetScalar(mxGetFieldSafe(body_motion_data, i, "body_id"));
+      memcpy(msg->body_motion_data[i].ts, mxGetPrSafe(mxGetFieldSafe(body_motion_data, i, "ts")), 2*sizeof(double));
+      const mxArray* coefs = mxGetFieldSafe(body_motion_data, i, "coefs");
       if (mxGetNumberOfDimensions(coefs) != 3) mexErrMsgTxt("coefs should be a dimension-3 array");
       const mwSize* dim = mxGetDimensions(coefs);
       if (dim[0] != 6 || dim[1] != 1 || dim[2] != 4) mexErrMsgTxt("coefs should be size 6x1x4");
       matlabToCArrayOfArrays<6, 4>(body_motion_data, i, "coefs", &msg->body_motion_data[i].coefs[0][0]);
-      msg->body_motion_data[i].in_floating_base_nullspace = static_cast<bool>(mxGetScalar(mxGetPropertySafe(body_motion_data, i, "in_floating_base_nullspace")));
-      msg->body_motion_data[i].control_pose_when_in_contact = static_cast<bool>(mxGetScalar(mxGetPropertySafe(body_motion_data, i, "control_pose_when_in_contact")));
+      msg->body_motion_data[i].in_floating_base_nullspace = static_cast<bool>(mxGetScalar(mxGetFieldSafe(body_motion_data, i, "in_floating_base_nullspace")));
+      msg->body_motion_data[i].control_pose_when_in_contact = static_cast<bool>(mxGetScalar(mxGetFieldSafe(body_motion_data, i, "control_pose_when_in_contact")));
     }
   }
 

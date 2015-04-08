@@ -117,9 +117,9 @@ classdef QPLocomotionPlan < QPControllerPlan
       end
 
       MIN_KNEE_ANGLE = 0.7;
-      KNEE_KP = 400;
-      KNEE_KD = 13;
-      KNEE_WEIGHT = 10;
+      KNEE_KP = 40;
+      KNEE_KD = 4;
+      KNEE_WEIGHT = 1;
 
       pelvis_has_tracking = false;
       % for j = 1:length(obj.link_constraints)
@@ -156,7 +156,7 @@ classdef QPLocomotionPlan < QPControllerPlan
         body_t_ind = obj.body_motions(j).findTInd(t_plan);
         if ~isempty(kny_ind)
           if ~obj.toe_off_active.(foot_name)
-            if any(obj.supports(supp_idx).bodies == body_id) && any(obj.supports(supp_idx).bodies == other_foot) && q(kny_ind) < MIN_KNEE_ANGLE
+            if any(obj.supports(supp_idx).bodies == body_id) && q(kny_ind) < MIN_KNEE_ANGLE % && any(obj.supports(supp_idx).bodies == other_foot) 
               other_foot_pose = obj.body_motions([obj.body_motions.body_id] == other_foot).coefs(:,body_t_ind,end);
               % other_foot_pose = obj.link_constraints([obj.link_constraints.link_ndx] == other_foot).coefs(:,body_t_ind,end);
               foot_knot = obj.body_motions(j).coefs(:,body_t_ind,end);

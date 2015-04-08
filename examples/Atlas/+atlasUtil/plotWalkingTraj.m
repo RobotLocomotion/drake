@@ -42,10 +42,8 @@ zmpact = zeros(2, length(ts));
 lfoot_pos = zeros(6, length(ts));
 rfoot_pos = zeros(6, length(ts));
 
-rfoottraj = PPTrajectory(pchip(walking_plan_data.body_motions(1).ts,...
-                               walking_plan_data.body_motions(1).coefs(:,:,end)));
-lfoottraj = PPTrajectory(pchip(walking_plan_data.body_motions(2).ts,...
-                               walking_plan_data.body_motions(2).coefs(:,:,end)));
+rfoottraj = PPTrajectory(walking_plan_data.body_motions(1).getPP());
+lfoottraj = PPTrajectory(walking_plan_data.body_motions(2).getPP());
 
 for i=1:length(ts)
   % ts is from the walking plan, but traj is only defined at the dt

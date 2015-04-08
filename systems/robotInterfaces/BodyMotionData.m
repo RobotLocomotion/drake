@@ -47,11 +47,16 @@ classdef BodyMotionData
     function body_motion_slice = slice(obj, t_ind)
       slice_t_inds = min([t_ind, t_ind+1], [length(obj.ts), length(obj.ts)]);
       slice_t_inds = max(slice_t_inds, [1, 1]);
-      body_motion_slice = BodyMotionData(obj.body_id, obj.ts(slice_t_inds));
-      body_motion_slice.coefs = obj.coefs(:,t_ind,:);
-      body_motion_slice.toe_off_allowed = obj.toe_off_allowed(t_ind);
-      body_motion_slice.in_floating_base_nullspace = obj.in_floating_base_nullspace(t_ind);
-      body_motion_slice.control_pose_when_in_contact = obj.control_pose_when_in_contact(t_ind);
+      body_motion_slice = struct('body_id', obj.body_id,...
+                                 'ts', obj.ts(slice_t_inds),...
+                                 'coefs', obj.coefs(:,t_ind,:),...
+                                 'toe_off_allowed', obj.toe_off_allowed(t_ind),...
+                                 'in_floating_base_nullspace', obj.in_floating_base_nullspace(t_ind),...
+                                 'control_pose_when_in_contact', obj.control_pose_when_in_contact(t_ind));
+    end
+
+    function pp = getPP(obj)
+      pp = mkpp(obj.ts, obj.coefs, size(obj.coefs, 1));
     end
   end
 
