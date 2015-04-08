@@ -8,13 +8,10 @@
 
 using namespace std;
 
-int main(int argc, char **argv) {
+default_random_engine generator;
+uniform_real_distribution<double> uniform;
 
-  default_random_engine generator;
-  uniform_real_distribution<double> uniform;
-
-  int num_segments = 3;
-
+vector<double> generateSegmentTimes(int num_segments) {
   vector<double> segment_times;
   double t0 = 0.0; // uniform(generator);
   segment_times.push_back(t0);
@@ -22,6 +19,34 @@ int main(int argc, char **argv) {
     double duration = 1.0; // uniform(generator);
     segment_times.push_back(segment_times[i] + duration);
   }
+  return segment_times;
+}
+
+double randomSpeedTest(int ntests) {
+  double ret = 0.0;
+  int num_segments = 3;
+  vector<double> segment_times = generateSegmentTimes(num_segments);
+  for (int i = 0; i < ntests; i++) {
+
+    double x0 = uniform(generator);
+    double xd0 = uniform(generator);
+
+    double xf = uniform(generator);
+    double xdf = uniform(generator);
+
+    double x1 = uniform(generator);
+    double x2 = uniform(generator);
+
+    PiecewisePolynomial result = twoWaypointCubicSpline(segment_times, x0, xd0, xf, xdf, x1, x2);
+    ret += result.value(0.0);
+  }
+  return ret;
+}
+
+int main(int argc, char **argv) {
+  int num_segments = 3;
+
+  vector<double> segment_times = generateSegmentTimes(num_segments);
 
   double x0 = uniform(generator);
   double xd0 = uniform(generator);
@@ -32,8 +57,8 @@ int main(int argc, char **argv) {
   double x1 = uniform(generator);
   double x2 = uniform(generator);
 
-  PiecewisePolynomial result = twoWaypointCubicSpline(segment_times, x0, xd0, xf, xdf, x1, x2);
 
+  PiecewisePolynomial result = twoWaypointCubicSpline(segment_times, x0, xd0, xf, xdf, x1, x2);
 
   for (int i = 0; i < num_segments; i++) {
     valuecheck(segment_times[i], result.getStartTime(i));
@@ -66,7 +91,12 @@ int main(int argc, char **argv) {
     valuecheck(second_derivative.value(t_knot - eps), second_derivative.value(t_knot + eps), 1e-8);
   }
 
-  std::cout << "test passed" << std::endl;
+#if !defined(WIN32) && !defined(WIN64)
+  int ntests = 100000;
+  cout << "time: " << measure<chrono::microseconds>::execution(randomSpeedTest, ntests) / (double) ntests << " microseconds." << endl;
+#endif
+
+  cout << "test passed" << endl;
 
   return 0;
 }
