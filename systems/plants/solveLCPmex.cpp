@@ -120,8 +120,6 @@ inline void filterByIndices(vector<size_t> const &indices, VectorXd const & v, V
   }
 }
 
-//fastQP(std::vector< Eigen::MatrixXd* > QblkDiag, const Eigen::VectorXd& f, const Eigen::MatrixXd& Aeq, 
-//const Eigen::VectorXd& beq, const Eigen::MatrixXd& Ain, const Eigen::VectorXd& bin, std::set<int>& active, Eigen::VectorXd& x);
 template <typename DerivedM, typename Derivedw, typename Derivedlb, typename Derivedz>
 bool callFastQP(MatrixBase<DerivedM> const & M, MatrixBase<Derivedw> const & w, MatrixBase<Derivedlb> const & lb, vector<bool> & z_inactive, const size_t checkLimit,  MatrixBase<Derivedz> & z) 
 {
@@ -182,11 +180,9 @@ bool callFastQP(MatrixBase<DerivedM> const & M, MatrixBase<Derivedw> const & w, 
 
 //[z, Mqdn, wqdn] = setupLCPmex(mex_model_ptr, q, qd, u, phiC, n, D, h, z_inactive_guess_tol)
 void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) { 
-  
-  if (nlhs != 3 || nrhs != 11) {
-    mexErrMsgIdAndTxt("Drake:setupLCPmex:InvalidUsage","Usage: [z, Mqdn, wqdn, zqp] = setupLCPmex(mex_model_ptr, q, qd, u, phiC, n, D, h, z_inactive_guess_tol, z_cached, lcp_mexfile)");
+  if (nlhs != 3 || nrhs != 10) {
+    mexErrMsgIdAndTxt("Drake:setupLCPmex:InvalidUsage","Usage: [z, Mqdn, wqdn, zqp] = setupLCPmex(mex_model_ptr, q, qd, u, phiC, n, D, h, z_inactive_guess_tol, z_cached)");
   }
-  char lcp_mexfile[256];
 
   RigidBodyManipulator *model= (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
   const int nq = model->num_positions;
@@ -202,7 +198,6 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   const mxArray* h_array = prhs[7];
   const mxArray* inactive_guess_array = prhs[8];
   const mxArray* z_cached_array = prhs[9];
-  const mxArray* lcp_mexfile_array = prhs[10];  
 
   const size_t num_z_cached = mxGetNumberOfElements(z_cached_array);
   const size_t num_contact_pairs = mxGetNumberOfElements(phiC_array);
@@ -215,7 +210,6 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   const Map<VectorXd> phiC(mxGetPrSafe(phiC_array), num_contact_pairs);
   const Map<MatrixXd> n(mxGetPrSafe(n_array), num_contact_pairs, nq);
   const Map<VectorXd> z_cached(mxGetPrSafe(z_cached_array), num_z_cached);
-  mxGetString(lcp_mexfile_array, lcp_mexfile, 256);
   
   VectorXd C, phiL, phiP, phiL_possible, phiC_possible, phiL_check, phiC_check;
   MatrixXd H, B, JP, JL, JL_possible, n_possible, JL_check, n_check;
@@ -350,8 +344,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
     z_path = VectorXd::Zero(lcp_size);
     //fall back to pathlcp
     if(qp_failed) {
-      //TODO: fix this path
-      callMexStandalone(lcp_mexfile, 2, lhs, 7, const_cast<const mxArray**>(rhs));
+      callMexStandalone(PATHLCP_MEXFILE, 2, lhs, 7, const_cast<const mxArray**>(rhs));
       z = z_path;
       mxDestroyArray(lhs[0]);
       mxDestroyArray(lhs[1]);
