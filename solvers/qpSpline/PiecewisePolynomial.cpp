@@ -33,8 +33,26 @@ int PiecewisePolynomial::getSegmentIndex(double t) {
   return segment_index;
 }
 
-double PiecewisePolynomial::derivativeValue(int derivative_order, double t) {
-  return polynomials[getSegmentIndex(t)].derivativeValue(derivative_order, t);
+PiecewisePolynomial PiecewisePolynomial::derivative(int derivative_order) const {
+  vector<Polynomial> derivative_polynomials;
+  derivative_polynomials.reserve(polynomials.size());
+  for (auto it = polynomials.begin(); it != polynomials.end(); ++it) {
+    derivative_polynomials.push_back(it->derivative(derivative_order));
+  }
+  return PiecewisePolynomial(derivative_polynomials, segment_times);
+}
+
+PiecewisePolynomial PiecewisePolynomial::integral(double integration_constant) const {
+  vector<Polynomial> integral_polynomials;
+  integral_polynomials.reserve(polynomials.size());
+  for (auto it = polynomials.begin(); it != polynomials.end(); ++it) {
+    integral_polynomials.push_back(it->integral(integration_constant));
+  }
+  return PiecewisePolynomial(integral_polynomials, segment_times);
+}
+
+double PiecewisePolynomial::value(double t) {
+  return polynomials[getSegmentIndex(t)].value(t);
 }
 
 int PiecewisePolynomial::getSegmentPolynomialOrder(int segment_number) const {

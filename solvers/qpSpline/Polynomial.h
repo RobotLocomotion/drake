@@ -11,11 +11,34 @@ private:
 public:
   Polynomial(Eigen::Ref<Eigen::VectorXd> const& coefficients);
 
+  Polynomial(int num_coefficients);
+
+  int getNumberOfCoefficients() const;
+
   int getOrder() const;
+
+  Eigen::VectorXd const& getCoefficients() const;
 
   double value(double t) const;
 
-  double derivativeValue(int derivative_order, double t) const;
+  Polynomial derivative(int derivative_order = 1) const;
+
+  Polynomial integral(double integration_constant = 0.0) const;
+
+  Polynomial& operator+=(const Polynomial& other);
+
+  Polynomial& operator*=(const Polynomial& other);
+
+  const Polynomial operator+(const Polynomial &other) const;
+
+  const Polynomial operator*(const Polynomial &other) const;
+
+  static Polynomial zero();
+
+private:
+  double valueHorner(double t) const;
+
+  double valueStabilizedHorner(double t) const;
 };
 
 #endif /* DRAKE_SOLVERS_QPSPLINE_POLYNOMIAL_H_ */
