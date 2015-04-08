@@ -153,9 +153,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     pdata->C_act.resize(nu);
 
     pdata->J.resize(3,nq);
-    pdata->Jdot.resize(3,nq);
     pdata->J_xy.resize(2,nq);
-    pdata->Jdot_xy.resize(2,nq);
     pdata->Hqp.resize(nq,nq);
     pdata->fqp.resize(nq);
     pdata->Ag.resize(6,nq);
@@ -274,7 +272,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       SupportStateElement se;
       se.body_idx = (int) pBodies[i]-1;
       for (j=0; j<nc; j++) {
-        contact_pt.head(3) = all_body_contact_pts.col(j);
+        contact_pt.head<3>() = all_body_contact_pts.col(j);
         se.contact_pts.push_back(contact_pt);
       }
       se.contact_surface = (int) pContactSurfaces[i]-1;
@@ -289,7 +287,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   pdata->H_float = pdata->H.topRows(6);
   pdata->H_act = pdata->H.bottomRows(nu);
-  pdata->C_float = pdata->C.head(6);
+  pdata->C_float = pdata->C.head<6>();
   pdata->C_act = pdata->C.tail(nu);
 
   bool include_angular_momentum = (pdata->W_kdot.array().maxCoeff() > 1e-10);
@@ -304,23 +302,27 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   
   pdata->r->getCOM(xcom);
   pdata->r->getCOMJac(pdata->J);
-  pdata->r->getCOMJacDot(pdata->Jdot);
+  MatrixXd Jdot;
+  pdata->r->getCOMJacDot(Jdot);
+  pdata->Jdotv = Jdot*qd;
   pdata->J_xy = pdata->J.topRows(2);
-  pdata->Jdot_xy = pdata->Jdot.topRows(2);
+  pdata->Jdotv_xy = pdata->Jdotv.head<2>();
 
-  MatrixXd Jcom,Jcomdot;
+  MatrixXd Jcom;
+  VectorXd Jcomdotv;
 
   if (x0.size()==6) {
     Jcom = pdata->J;
-    Jcomdot = pdata->Jdot;
+    Jcomdotv = pdata->Jdotv;
   }
   else {
     Jcom = pdata->J_xy;
-    Jcomdot = pdata->Jdot_xy;
+    Jcomdotv = pdata->Jdotv_xy;
   }
 
-  MatrixXd B,JB,Jp,Jpdot,normals;
-  int nc = contactConstraintsBV(pdata->r,num_active_contact_pts,mu,active_supports,pdata->map_ptr,B,JB,Jp,Jpdot,normals,terrain_height);
+  MatrixXd B,JB,Jp,normals;
+  VectorXd Jpdotv;
+  int nc = contactConstraintsBV(pdata->r,num_active_contact_pts,mu,active_supports,pdata->map_ptr,B,JB,Jp,Jpdotv,normals,terrain_height);
   int neps = nc*dim;
 
   VectorXd x_bar,xlimp;
@@ -363,7 +365,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     if (nc > 0) {
       // NOTE: moved Hqp calcs below, because I compute the inverse directly for FastQP (and sparse Hqp for gurobi)
       VectorXd tmp = C_ls*xlimp;
-      VectorXd tmp1 = Jcomdot*qd;
+      VectorXd tmp1 = Jcomdotv;
       MatrixXd tmp2 = R_DQyD_ls*Jcom;
 
       pdata->fqp = tmp.transpose()*Qy*D_ls*Jcom;
@@ -401,7 +403,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     Aeq.block(6,0,neps,nq) = Jp;
     Aeq.block(6,nq,neps,nf) = MatrixXd::Zero(neps,nf);  // note: obvious sparsity here
     Aeq.block(6,nq+nf,neps,neps) = MatrixXd::Identity(neps,neps);             // note: obvious sparsity here
-    beq.segment(6,neps) = (-Jpdot -pdata->Kp_accel*Jp)*qd; 
+    beq.segment(6,neps) = -Jpdotv -pdata->Kp_accel*Jp*qd; 
   }    
   
   // add in body spatial equality constraints
@@ -693,7 +695,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     double Vdot;
     if (nc>0) 
       // note: Sdot is 0 for ZMP/double integrator dynamics, so we omit that term here
-      Vdot = ((2*x_bar.transpose()*S + s1.transpose())*(A_ls*x_bar + B_ls*(Jcomdot*qd + Jcom*qdd)) + s1dot.transpose()*x_bar)(0) + s2dot;
+      Vdot = ((2*x_bar.transpose()*S + s1.transpose())*(A_ls*x_bar + B_ls*(Jcomdotv + Jcom*qdd)) + s1dot.transpose()*x_bar)(0) + s2dot;
     else
       Vdot = 0;
     plhs[13] = mxCreateDoubleScalar(Vdot);

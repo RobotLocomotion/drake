@@ -951,6 +951,11 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       [varargout{:}] = getCOM(obj.manip,varargin{:});
     end
 
+    function varargout = centerOfMassJacobianDotTimesV(obj,varargin)
+      varargout = cell(1,nargout);
+      [varargout{:}] = centerOfMassJacobianDotTimesV(obj.manip,varargin{:});
+    end
+    
     function varargout = getCMM(obj,varargin)
       varargout=cell(1,nargout);
       [varargout{:}] = getCMM(obj.manip,varargin{:});
