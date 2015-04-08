@@ -21,7 +21,7 @@ bool isa(const mxArray* mxa, const char* class_str)
   mxArray* prhs[2];
   prhs[0] = const_cast<mxArray*>(mxa);
   prhs[1] = mxCreateString(class_str);
-  mexCallMATLAB(1,&plhs,2,prhs,"isa");
+  mexCallMATLAB(1, &plhs, 2, prhs, "isa");
   bool tf = *mxGetLogicals(plhs);
   mxDestroyArray(plhs);
   mxDestroyArray(prhs[1]);
@@ -31,13 +31,13 @@ bool isa(const mxArray* mxa, const char* class_str)
 bool mexCallMATLABsafe(int nlhs, mxArray* plhs[], int nrhs, mxArray* prhs[], const char* filename)
 {
   int i;
-  mxArray* ex = mexCallMATLABWithTrap(nlhs,plhs,nrhs,prhs,filename);
+  mxArray* ex = mexCallMATLABWithTrap(nlhs, plhs, nrhs, prhs, filename);
   if (ex) {
-    mexPrintf("DrakeSystem S-Function: error when calling ''%s'' with the following arguments:\n",filename);
-    for (i=0; i<nrhs; i++)
-      mexCallMATLAB(0,NULL,1,&prhs[i],"disp");
+    mexPrintf("DrakeSystem S-Function: error when calling ''%s'' with the following arguments:\n", filename);
+    for (i = 0; i < nrhs; i++)
+      mexCallMATLAB(0, NULL, 1, &prhs[i], "disp");
     mxArray *report;
-    mexCallMATLAB(1,&report,1,&ex,"getReport");
+    mexCallMATLAB(1, &report, 1, &ex, "getReport");
     char *errmsg = mxArrayToString(report);
     mexPrintf(errmsg);
     mxFree(errmsg);
@@ -46,12 +46,12 @@ bool mexCallMATLABsafe(int nlhs, mxArray* plhs[], int nrhs, mxArray* prhs[], con
     mxDestroyArray(ex);
     return true;
   }
-  for (i=0; i<nlhs; i++)
+  for (i = 0; i < nlhs; i++)
     if (!plhs[i]) {
       mexPrintf("Drake mexCallMATLABsafe: error when calling ''%s'' with the following arguments:\n", filename);
-      for (i=0; i<nrhs; i++)
-        mexCallMATLAB(0,NULL,1,&prhs[i],"disp");
-      mexErrMsgIdAndTxt("Drake:mexCallMATLABsafe:NotEnoughOutputs","Asked for %d outputs, but function only returned %d\n",nrhs,i);
+      for (i = 0; i < nrhs; i++)
+        mexCallMATLAB(0, NULL, 1, &prhs[i], "disp");
+      mexErrMsgIdAndTxt("Drake:mexCallMATLABsafe:NotEnoughOutputs", "Asked for %d outputs, but function only returned %d\n", nrhs, i);
       return true;
     }
   return false;
@@ -66,37 +66,38 @@ bool mexCallMATLABsafe(int nlhs, mxArray* plhs[], int nrhs, mxArray* prhs[], con
  */
 mxArray* createDrakeMexPointer(void* ptr, const char* name, int num_additional_inputs, mxArray* delete_fcn_additional_inputs[], const char* subclass_name)
 {
-	mxClassID cid;
-	if (sizeof(ptr)==4) cid = mxUINT32_CLASS;
-	else if (sizeof(ptr)==8) cid = mxUINT64_CLASS;
-  else mexErrMsgIdAndTxt("Drake:constructDrakeMexPointer:PointerSize","Are you on a 32-bit machine or 64-bit machine??");
+  mxClassID cid;
+  if (sizeof(ptr) == 4) cid = mxUINT32_CLASS;
+  else if (sizeof(ptr) == 8) cid = mxUINT64_CLASS;
+  else mexErrMsgIdAndTxt("Drake:constructDrakeMexPointer:PointerSize", "Are you on a 32-bit machine or 64-bit machine??");
 
-	int nrhs=3+num_additional_inputs;
-	mxArray *plhs[1];
-  mxArray **prhs;  prhs = new mxArray*[nrhs];
+  int nrhs = 3 + num_additional_inputs;
+  mxArray *plhs[1];
+  mxArray **prhs;  
+  prhs = new mxArray*[nrhs];
 
-	prhs[0] = mxCreateNumericMatrix(1,1,cid,mxREAL);
-  memcpy(mxGetData(prhs[0]),&ptr,sizeof(ptr));
+  prhs[0] = mxCreateNumericMatrix(1, 1, cid, mxREAL);
+  memcpy(mxGetData(prhs[0]), &ptr, sizeof(ptr));
 
-	prhs[1] = mxCreateString(mexFunctionName());
+  prhs[1] = mxCreateString(mexFunctionName());
 
   prhs[2] = mxCreateString(name);
 
-  for (int i=0; i<num_additional_inputs; i++)
+  for (int i = 0; i < num_additional_inputs; i++)
     prhs[3+i] = delete_fcn_additional_inputs[i];
 
 //  mexPrintf("deleteMethod = %s\n name =%s\n", deleteMethod,name);
 
   // call matlab to construct mex pointer object
   if (subclass_name) {
-    mexCallMATLABsafe(1,plhs,nrhs,prhs,subclass_name);
-    if (!isa(plhs[0],"DrakeMexPointer")) {
+    mexCallMATLABsafe(1, plhs, nrhs, prhs, subclass_name);
+    if (!isa(plhs[0], "DrakeMexPointer")) {
       mxDestroyArray(plhs[0]);
-      mexErrMsgIdAndTxt("Drake:createDrakeMexPointer:InvalidSubclass","subclass_name is not a valid subclass of DrakeMexPointer");
+      mexErrMsgIdAndTxt("Drake:createDrakeMexPointer:InvalidSubclass", "subclass_name is not a valid subclass of DrakeMexPointer");
     }
   }
   else
-    mexCallMATLABsafe(1,plhs,nrhs,prhs,"DrakeMexPointer");
+    mexCallMATLABsafe(1, plhs, nrhs, prhs, "DrakeMexPointer");
 
   mexLock();
 
@@ -108,17 +109,31 @@ mxArray* createDrakeMexPointer(void* ptr, const char* name, int num_additional_i
 
 void* getDrakeMexPointer(const mxArray* mx)
 {
-	void* ptr = NULL;
+  void* ptr = NULL;
 
-	// todo: optimize this by caching the pointer values, as described in
-	// http://groups.csail.mit.edu/locomotion/bugs/show_bug.cgi?id=1590
-	mxArray* ptrArray = mxGetProperty(mx,0,"ptr");
-	if (!ptrArray)
-		mexErrMsgIdAndTxt("Drake:getDrakeMexPointer:BadInputs","cannot retrieve 'ptr' field from this mxArray.  are you sure it's a valid DrakeMexPointer object?");
+  // todo: optimize this by caching the pointer values, as described in
+  // http://groups.csail.mit.edu/locomotion/bugs/show_bug.cgi?id=1590
+  mxArray* ptrArray = mxGetProperty(mx, 0, "ptr");
 
-  if (!mxIsNumeric(ptrArray) || mxGetNumberOfElements(ptrArray)!=1)
+  if (!ptrArray)
+    mexErrMsgIdAndTxt("Drake:getDrakeMexPointer:BadInputs", "cannot retrieve 'ptr' field from this mxArray.  are you sure it's a valid DrakeMexPointer object?");
+
+  switch (sizeof(void*)) { 
+    case 4:
+      if (!mxIsUint32(ptrArray))
+        mexErrMsgIdAndTxt("Drake:getDrakeMexPointer:BadPointerSize", "DrakeMexPointer expected a 32-bit ptr field but got something else");        
+      break;
+    case 8:
+      if (!mxIsUint64(ptrArray))
+        mexErrMsgIdAndTxt("Drake:getDrakeMexPointer:BadPointerSize", "DrakeMexPointer expected a 64-bit ptr field but got something else");        
+      break;
+    default:
+      mexErrMsgIdAndTxt("Drake:getDrakeMexPointer:BadPointerSize", "DrakeMexPointer got a pointer that was neither 32-bit nor 64-bit.");
+  }
+
+  if (!mxIsNumeric(ptrArray) || mxGetNumberOfElements(ptrArray) != 1)
     mexErrMsgIdAndTxt("Drake:getDrakeMexPointer:BadInputs","the ptr property of this DrakeMexPointer does not appear to contain a valid pointer");
-  memcpy(&ptr,mxGetData(ptrArray),sizeof(ptr));     // note: could use a reinterpret_cast here instead
+  memcpy(&ptr, mxGetData(ptrArray), sizeof(ptr));     // note: could use a reinterpret_cast here instead
 
   return ptr;
 }
@@ -130,10 +145,10 @@ double angleAverage(double theta1, double theta2) {
   // theta1 is a scalar or column vector of angles (rad)
   // theta2 is a scalar or column vector of angles (rad)
 
-  double x_mean = 0.5*(cos(theta1)+cos(theta2));
-  double y_mean = 0.5*(sin(theta1)+sin(theta2));
+  double x_mean = 0.5 * (cos(theta1) + cos(theta2));
+  double y_mean = 0.5 * (sin(theta1) + sin(theta2));
 
-  double angle_mean = atan2(y_mean,x_mean);
+  double angle_mean = atan2(y_mean, x_mean);
 
   return angle_mean;
 }
