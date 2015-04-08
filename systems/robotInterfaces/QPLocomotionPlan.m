@@ -260,22 +260,21 @@ classdef QPLocomotionPlan < QPControllerPlan
       [coefs, ts] = qpSpline(ts, xs, xd0, xdf, qpSpline_options);
 
 
-      tt = linspace(ts(1), ts(end));
-      pp = mkpp(ts, coefs, 6);
-      xs = ppval(pp, tt);
-      xds = ppval(fnder(pp, 1), tt);
-      obj.lcmgl.glPointSize(5);
-      obj.lcmgl.points(xs(1,:), xs(2,:), xs(3,:));
+      % tt = linspace(ts(1), ts(end));
+      % pp = mkpp(ts, coefs, 6);
+      % xs = ppval(pp, tt);
+      % xds = ppval(fnder(pp, 1), tt);
+      % obj.lcmgl.glPointSize(5);
+      % obj.lcmgl.points(xs(1,:), xs(2,:), xs(3,:));
 
-      vscale = 0.1;
-      for j = 1:size(xs,2)
-        obj.lcmgl.line3(xs(1,j), xs(2,j), xs(3,j), ...
-                    xs(1,j) + vscale*xds(1,j),...
-                    xs(2,j) + vscale*xds(2,j),...
-                    xs(3,j) + vscale*xds(3,j));
-      end
-      obj.lcmgl.switchBuffers();
-
+      % vscale = 0.1;
+      % for j = 1:size(xs,2)
+      %   obj.lcmgl.line3(xs(1,j), xs(2,j), xs(3,j), ...
+      %               xs(1,j) + vscale*xds(1,j),...
+      %               xs(2,j) + vscale*xds(2,j),...
+      %               xs(3,j) + vscale*xds(3,j));
+      % end
+      % obj.lcmgl.switchBuffers();
 
       % coefs = qpSpline(ts, xs, xd0, xdf);
       obj.body_motions(body_motion_ind).coefs(:,body_t_ind+(1:3),:) = coefs;
