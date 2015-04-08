@@ -423,37 +423,17 @@ classdef QPLocomotionPlan < QPControllerPlan
     end
 
     function obj = setLQR_for_COM(obj)
-      % copied from runAtlasRunning
-      % build TV-LQR controller on COM dynamics
-      ts = obj.comtraj.getBreaks();
-      comdot_traj = fnder(obj.comtraj);
-      comdot = comdot_traj.eval(ts);
-      com = obj.comtraj.eval(ts);
-      comddot = 0*com;
-      x0traj = PPTrajectory(foh(ts,[com;comdot]));
-      x0traj = x0traj.setOutputFrame(atlasFrames.COMState(2));
-      u0traj = PPTrajectory(foh(ts,comddot));
-      u0traj = u0traj.setOutputFrame(atlasFrames.COMAcceleration(2));
-
       Q = diag([10 10 1 1]);
       R = 0.0001*eye(2);
       A = [zeros(2),eye(2); zeros(2,4)];
       B = [zeros(2); eye(2)];
-      clear options;
-      options.tspan = ts;
-      options.sqrtmethod = false;
-      ti_sys = LinearSystem(A,B,[],[],eye(4),[]);
-      ti_sys = ti_sys.setStateFrame(atlasFrames.COMState(2));
-      ti_sys = ti_sys.setOutputFrame(atlasFrames.COMState(2));
-      ti_sys = ti_sys.setInputFrame(atlasFrames.COMAcceleration(2));
-      [~,V] = tvlqr(ti_sys,x0traj,u0traj,Q,R,Q,options);
-      obj.V = V;
-      obj.V.S = obj.V.S.eval(0);
+      [~,S,~] = lqr(A,B,Q,R);
       % set the Qy to zero since we only want to stabilize COM
       obj.default_qp_input.zmp_data.Qy = 0*obj.default_qp_input.zmp_data.Qy;
       obj.default_qp_input.zmp_data.A = A;
       obj.default_qp_input.zmp_data.B = B;
       obj.default_qp_input.zmp_data.R = R;
+      obj.default_qp_input.zmp_data.S = S;
     end
     
   end
