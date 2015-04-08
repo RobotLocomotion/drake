@@ -180,6 +180,44 @@ bool callFastQP(MatrixBase<DerivedM> const & M, MatrixBase<Derivedw> const & w, 
   return true;
 }
 
+//TODO: move this to drakeUtil
+template <typename Derived>
+mxArray* eigen2sparse(MatrixBase<Derived> const & M, int & num_non_zero) 
+{
+  const mwSize rows = M.rows();
+  const mwSize cols = M.cols();
+
+  vector<mwIndex> ir;
+  vector<mwIndex> jc;
+  vector<double> pr;
+
+  mwSize cumulative_nonzero = 0;
+  jc.push_back(cumulative_nonzero);
+  double eps = std::numeric_limits<double>::epsilon();
+  for (mwIndex j = 0; j < cols; j++) {
+    for (mwIndex i = 0; i < rows; i++)  {
+      double value = M(i, j);
+      
+      if (value > eps || value < -eps) {
+        ir.push_back(i);
+        pr.push_back(value);
+        cumulative_nonzero++;
+      }
+    }
+    jc.push_back(cumulative_nonzero);
+  }
+
+  mxArray* sparse_mex = mxCreateSparse(rows, cols, cumulative_nonzero, mxREAL);
+  
+  memcpy((double*)mxGetPr(sparse_mex), pr.data(), cumulative_nonzero * sizeof(double));
+  memcpy((int*)mxGetIr(sparse_mex), ir.data(), cumulative_nonzero * sizeof(mwIndex));
+  memcpy((int *)mxGetJc(sparse_mex), jc.data(), (cols + 1) * sizeof(mwIndex));
+
+  num_non_zero = cumulative_nonzero;
+  return sparse_mex;
+}
+
+
 //[z, Mqdn, wqdn] = setupLCPmex(mex_model_ptr, q, qd, u, phiC, n, D, h, z_inactive_guess_tol)
 void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) { 
   
@@ -258,9 +296,8 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 
     if (lcp_size == 0) {
       return;
-    } else { 
-      z = VectorXd::Zero(lcp_size);
-    }
+    } 
+    z = VectorXd::Zero(lcp_size);
 
     vector<size_t> possible_contact_indices;
     getInclusionIndices(possible_contact, possible_contact_indices, true);
@@ -285,20 +322,18 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
     
     //solve LCP problem 
     //TODO: call path from C++ (currently only 32-bit C libraries available)
-    mxArray* mxM = mxCreateDoubleMatrix(lcp_size, lcp_size, mxREAL);
     mxArray* mxw = mxCreateDoubleMatrix(lcp_size, 1, mxREAL);
     mxArray* mxlb = mxCreateDoubleMatrix(lcp_size, 1, mxREAL);
     mxArray* mxub = mxCreateDoubleMatrix(lcp_size, 1, mxREAL);  
+    
     Map<VectorXd> lb(mxGetPrSafe(mxlb), lcp_size);
     Map<VectorXd> ub(mxGetPrSafe(mxub), lcp_size);
     lb << VectorXd::Zero(nL),
           -BIG * VectorXd::Ones(nP),
           VectorXd::Zero(nC + mC * nC + nC);
     ub = BIG * VectorXd::Ones(lcp_size);
-    mxArray *lhs[1];
-    mxArray *rhs[] = {mxM, mxw, mxlb, mxub};
     
-    Map<MatrixXd> M(mxGetPrSafe(mxM),lcp_size, lcp_size);
+    MatrixXd M(lcp_size, lcp_size);
     Map<VectorXd> w(mxGetPrSafe(mxw), lcp_size);
 
     //build LCP matrix
@@ -338,18 +373,32 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
     bool qp_failed = true;
     qp_failed = !callFastQP(M, w, lb, z_inactive, nL+nP+nC, z);
     
+    int nnz;
+    mxArray* mxM_sparse = eigen2sparse(M, nnz);
+    mxArray* mxnnzJ = mxCreateDoubleScalar(static_cast<double>(nnz));
+    mxArray* mxn = mxCreateDoubleScalar(static_cast<double>(lcp_size));
+    mxArray* mxz = mxCreateDoubleMatrix(lcp_size, 1, mxREAL);
+    mxArray *lhs[2];
+    mxArray *rhs[] = {mxn, mxnnzJ, mxz, mxlb, mxub, mxM_sparse, mxw};
+
+    Map<VectorXd> z_path(mxGetPr(mxz), lcp_size);
+    z_path = VectorXd::Zero(lcp_size);
     //fall back to pathlcp
     if(qp_failed) {
-      mexCallMATLAB(1, lhs, 4, rhs, "pathlcp");
-      Map<VectorXd> z_path(mxGetPrSafe(lhs[0]), lcp_size);
+      //TODO: fix this path
+      callMexStandalone("/home/drc/drake-distro/drake/thirdParty/path/lcppath.mexa64", 2, lhs, 7, const_cast<const mxArray**>(rhs));
       z = z_path;
       mxDestroyArray(lhs[0]);
+      mxDestroyArray(lhs[1]);
     }
 
+    mxDestroyArray(mxz);
+    mxDestroyArray(mxn);
+    mxDestroyArray(mxnnzJ);
     mxDestroyArray(mxub);
     mxDestroyArray(mxlb);
     mxDestroyArray(mxw);
-    mxDestroyArray(mxM);
+    mxDestroyArray(mxM_sparse);
 
     VectorXd qdn = Mqdn * z + wqdn;
 

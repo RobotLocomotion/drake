@@ -11,6 +11,7 @@
 #include <math.h>
 #include <limits>
 #include <Eigen/Dense>
+#include <iostream>
 
 using namespace std;
 
@@ -181,4 +182,31 @@ void sizecheck(const mxArray* mat, int M, int N) {
     mexErrMsgIdAndTxt("Drake:WrongSize", "wrong number of columns. Expected: %d but got: %d", N, mxGetN(mat));
   }
   return;
+}
+
+void callMexStandalone(const char* mexFile, int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
+
+  void* handle;
+  void (*mexFunc)(int, mxArray*[], int, const mxArray* []);
+
+  // Dynamically load the mex file:
+  handle = dlopen(mexFile, RTLD_NOW);
+  if (!handle) {
+     fprintf(stderr,"%s\n",dlerror());
+     return;
+  }
+  
+  //find the entry function pointer
+  char* error;
+  *(void**) &(mexFunc) = dlsym(handle, "mexFunction");
+  if ((error = dlerror()) != NULL) {
+    fprintf(stderr,"%s\n", error);
+    return;
+  }
+  
+  //call mexFunction()
+  mexFunc(nlhs, plhs, nrhs, const_cast<const mxArray**>(prhs));
+
+  //close mex file
+  dlclose(handle);
 }
