@@ -7,8 +7,6 @@
 
 #include "drakeUtil.h"
 
-extern "C" void matlabQPSplineSolve(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]);
-
 const int GRID_STEPS = 10;
 const int MAX_NRHS = 2;
 const int NUM_SPLINE_PARTS = 3;
@@ -16,13 +14,6 @@ const int Q_SIZE = NUM_SPLINE_PARTS - 1;
 
 using namespace std;
 using namespace Eigen;
-
-Matrix<double, Q_SIZE, Q_SIZE> computeQ(double t0, double t1) {
-  Matrix<double, Q_SIZE, Q_SIZE> Q;
-  Q << std::pow(2.0, 2.0) * (t1 - t0), 6.0 * std::pow(t1 - t0, 2.0),
-      6.0 * std::pow(t1 - t0, 2.0), std::pow(6.0, 2.0) / 3.0 * std::pow(t1 - t0, 3.0);
-  return Q;
-}
 
 void setUpQPSplineSolveFields(double ts[NUM_SPLINE_PARTS + 1], mxArray* t1_mx, mxArray* t2_mx, mxArray* Q_mx[NUM_SPLINE_PARTS])
 {
