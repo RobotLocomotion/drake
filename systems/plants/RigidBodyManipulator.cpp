@@ -3345,21 +3345,6 @@ Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynam
   return ret;
 }
 
-template <typename Derived>
-Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> RigidBodyManipulator::compactToFull(
-    const Eigen::MatrixBase<Derived>& compact, const std::vector<int>& joint_path, bool in_terms_of_qdot) {
-  int ncols = in_terms_of_qdot ? num_positions : num_velocities;
-  Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> full(compact.rows(), ncols);
-  full.setZero();
-  int compact_col_start = 0;
-  for (std::vector<int>::const_iterator it = joint_path.begin(); it != joint_path.end(); ++it) {
-    RigidBody& body = *bodies[*it];
-    int nv_joint = body.getJoint().getNumVelocities();
-    full.middleCols(body.velocity_num_start, nv_joint) = compact.middleCols(compact_col_start, nv_joint);
-    compact_col_start += nv_joint;
-  }
-  return full;
-}
 
 size_t RigidBodyManipulator::getNumPositionConstraints() const 
 {
@@ -3498,5 +3483,4 @@ template DLLEXPORT_RBM void RigidBodyManipulator::positionConstraints(MatrixBase
 template DLLEXPORT_RBM void RigidBodyManipulator::jointLimitConstraints(MatrixBase<VectorXd> const &, MatrixBase<VectorXd> &, MatrixBase<MatrixXd> &) const ;
 template DLLEXPORT_RBM void RigidBodyManipulator::jointLimitConstraints(MatrixBase< Map<VectorXd> > const &, MatrixBase<VectorXd> &, MatrixBase<MatrixXd> &) const ;
 template DLLEXPORT_RBM void RigidBodyManipulator::jointLimitConstraints(MatrixBase< Map<VectorXd> > const &, MatrixBase< Map<VectorXd> > &, MatrixBase< Map<MatrixXd> > &) const ;
-template DLLEXPORT_RBM Eigen::Matrix<double, 6, -1, 0, 6, -1> RigidBodyManipulator::compactToFull<Eigen::Matrix<double, 6, -1, 0, 6, -1> >(Eigen::MatrixBase<Eigen::Matrix<double, 6, -1, 0, 6, -1> > const&, std::vector<int, std::allocator<int> > const&, bool);
 

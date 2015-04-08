@@ -198,6 +198,7 @@ struct DesiredBodyAcceleration {
   Bounds accel_bounds;
   bool control_pose_when_in_contact;
   bool use_spatial_velocity;
+  KinematicPath body_path;
 };
 
 struct QPControllerOutput {

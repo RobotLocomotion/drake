@@ -434,14 +434,20 @@ Vector6d bodySpatialMotionPD(RigidBodyManipulator *r, DrakeRobotState &robot_sta
   {
     throw std::runtime_error("bodySpatialMotionPD requires new kinsol format");
   }
-  /*r->doKinematicsNew(robot_state.q,robot_state.qd,false);
+  r->doKinematicsNew(robot_state.q,robot_state.qd,false);
 
   Vector3d origin = Vector3d::Zero();
   auto body_pose = r->forwardKinNew(origin,body_index,0,2,0);
   Vector3d body_xyz = body_pose.value().head<3>();
   Vector4d body_quat = body_pose.value().tail<4>();
-  auto J_geometric = r->geometricJacobian<double>(0,body_index,0,0,true,(std::vector<int>*)nullptr);
-  Vector6d body_twist = J_geometric.value()*robot_state.qd;
+  std::vector<int> v_indices;
+  auto J_geometric = r->geometricJacobian<double>(0,body_index,0,0,true,&v_indices);
+  VectorXd v_compact(v_indices.size());
+  for(int i = 0;i<v_indices.size();i++)
+  {
+    v_compact(i) = robot_state.qd(v_indices[i]);
+  }
+  Vector6d body_twist = J_geometric.value()*v_compact;
   Vector3d body_angular_vel = body_twist.head<3>();
   Vector3d body_xyzdot = body_twist.tail<3>();
 
@@ -470,8 +476,8 @@ Vector6d bodySpatialMotionPD(RigidBodyManipulator *r, DrakeRobotState &robot_sta
   
   Vector6d twist_dot;
   twist_dot.head<3>() = body_angular_vel_dot;
-  twist_dot.tail<3>() = body_xyzddot;*/
-  return Vector6d::Zero();
+  twist_dot.tail<3>() = body_xyzddot;
+  return twist_dot;
 }
 
 void evaluateCubicSplineSegment(double t, const Ref<const Matrix<double, 6, 4>> &coefs, Vector6d &y, Vector6d &ydot, Vector6d &yddot) {
