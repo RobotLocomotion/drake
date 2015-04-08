@@ -586,7 +586,6 @@ classdef QPLocomotionPlan < QPControllerPlan
     end
 
     function obj = from_quasistatic_qtraj(biped, qtraj, options)
-      % Construct a plan from a whole-body joint trajectory, with both feet in contact with the ground at all times
       if nargin < 3
         options = struct();
       end
@@ -595,11 +594,11 @@ classdef QPLocomotionPlan < QPControllerPlan
                                                                   biped.foot_body_id.left]),...
                                               'bodies_to_control_when_in_contact', biped.findLinkId('pelvis'));
 
-      % handle the case where qtraj is a constant trajectory, make it length 10
+      % handle the case where qtraj is a constant trajectory
       if isa(qtraj,'ConstantTrajectory')
         disp('got a ConstantTrajectory, making it a PPTrajectory of with tspan [0,10]');
         q0 = qtraj.eval(0);
-        qtraj = PPTrajectory(pchip([0,10],[q0,q0]));
+        qtraj = PPTrajectory(zoh([0, inf], [q0, q0]));
       end
 
       q0 = qtraj.eval(qtraj.tspan(1));
