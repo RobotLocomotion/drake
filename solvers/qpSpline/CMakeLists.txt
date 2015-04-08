@@ -11,4 +11,9 @@ include_directories (${CMAKE_SOURCE_DIR}/util)
 target_link_libraries(twoWaypointCubicSplinemex splineGeneration drakeUtil)
 install(TARGETS twoWaypointCubicSplinemex DESTINATION matlab)
 
+add_mex(twoWaypointCubicSplineFreeKnotTimesmex twoWaypointCubicSplineFreeKnotTimesmex.cpp)
+include_directories (${CMAKE_SOURCE_DIR}/util)
+target_link_libraries(twoWaypointCubicSplineFreeKnotTimesmex splineGeneration drakeUtil)
+install(TARGETS twoWaypointCubicSplineFreeKnotTimesmex DESTINATION matlab)
+
 add_subdirectory(test)

@@ -58,3 +58,13 @@ void PiecewisePolynomialBase::segmentNumberRangeCheck(int segment_number) const 
     throw std::runtime_error(msg.str().c_str());
   }
 }
+
+bool PiecewisePolynomialBase::segmentTimesEqual(const PiecewisePolynomialBase& other, double tol) {
+  if (segment_times.size() != other.segment_times.size())
+    return false;
+  for (int i = 0; i < segment_times.size(); i++) {
+    if (abs(segment_times[i] - other.segment_times[i]) > tol)
+      return false;
+  }
+  return true;
+}

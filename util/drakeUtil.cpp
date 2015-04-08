@@ -234,6 +234,16 @@ const std::vector<double> matlabToStdVector(const mxArray* in) {
   return std::vector<double>(data, data + mxGetM(in) * mxGetN(in));
 }
 
+int sub2ind(mwSize ndims, const mwSize* dims, const mwSize* sub) {
+  int stride = 1;
+  int ret = 0;
+  for (int i = 0; i < ndims; i++) {
+    ret += sub[i] * stride;
+    stride *= dims[i];
+  }
+  return ret;
+}
+
 void sizecheck(const mxArray* mat, int M, int N) {
   if (mxGetM(mat) != M) {
     mexErrMsgIdAndTxt("Drake:WrongSize", "wrong number of rows. Expected: %d but got: %d", M, mxGetM(mat));

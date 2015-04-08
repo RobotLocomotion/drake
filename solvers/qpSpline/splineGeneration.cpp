@@ -9,13 +9,6 @@
 using namespace std;
 using namespace Eigen;
 
-//Matrix<double, Q_SIZE, Q_SIZE> computeQ(double t0, double t1) {
-//  Matrix<double, Q_SIZE, Q_SIZE> Q;
-//  Q << std::pow(2.0, 2.0) * (t1 - t0), 6.0 * std::pow(t1 - t0, 2.0),
-//      6.0 * std::pow(t1 - t0, 2.0), std::pow(6.0, 2.0) / 3.0 * std::pow(t1 - t0, 3.0);
-//  return Q;
-//}
-
 template <typename DerivedM>
 void setConstraintMatrixPart(double time, int derivative_order, MatrixBase<DerivedM> & constraint_matrix, double scaling = 1.0)
 {
@@ -93,7 +86,10 @@ PiecewisePolynomial generateSpline(const SplineInformation& spline_information) 
   }
 
   // solve
-  VectorXd solution = constraint_matrix.colPivHouseholderQr().solve(right_hand_side);
+  auto decomposition = constraint_matrix.colPivHouseholderQr();
+  if (!decomposition.isInvertible())
+    throw ConstraintMatrixSingularError();
+  VectorXd solution = decomposition.solve(right_hand_side);
 
   // create Polynomials
   std::vector<Polynomial> polynomials;
