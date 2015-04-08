@@ -4,7 +4,7 @@ classdef QPLocomotionPlan < QPControllerPlan
     x0;
     support_times
     supports;
-    link_constraints;
+    body_motions;
     zmptraj = [];
     zmp_final = [];
     LIP_height;
@@ -122,28 +122,24 @@ classdef QPLocomotionPlan < QPControllerPlan
       KNEE_WEIGHT = 10;
 
       pelvis_has_tracking = false;
-      for j = 1:length(obj.link_constraints)
-        body_id = obj.link_constraints(j).link_ndx;
-        qp_input.body_motion_data(j).body_id = body_id;
-        if ~isfield(obj.link_constraints(j),'in_floating_base_nullspace') || isempty(obj.link_constraints(j).in_floating_base_nullspace)
-          obj.link_constraints(j).in_floating_base_nullspace = false;
-        end
-        qp_input.body_motion_data(j).in_floating_base_nullspace = obj.link_constraints(j).in_floating_base_nullspace;
-        if qp_input.body_motion_data(j).body_id == rpc.body_ids.pelvis
-          pelvis_has_tracking = true;
-        end
-        if t_plan < obj.link_constraints(j).ts(1)
-          body_t_ind = 1;
-        elseif t_plan > obj.link_constraints(j).ts(end)
-          body_t_ind = length(obj.link_constraints(j).ts);
-        else
-          body_t_ind = find(obj.link_constraints(j).ts<=t_plan,1,'last');
-        end
-        if body_t_ind < length(obj.link_constraints(j).ts)
-          qp_input.body_motion_data(j).ts = obj.link_constraints(j).ts(body_t_ind:body_t_ind+1) + obj.start_time;
-        else
-          qp_input.body_motion_data(j).ts = obj.link_constraints(j).ts([body_t_ind,body_t_ind]) + obj.start_time;
-        end
+      % for j = 1:length(obj.link_constraints)
+      for j = 1:length(obj.body_motions)
+        % body_id = obj.link_constraints(j).link_ndx;
+        % qp_input.body_motion_data(j).body_id = body_id;
+        % if ~isfield(obj.link_constraints(j),'in_floating_base_nullspace') || isempty(obj.link_constraints(j).in_floating_base_nullspace)
+        %   obj.link_constraints(j).in_floating_base_nullspace = false;
+        % end
+        % qp_input.body_motion_data(j).in_floating_base_nullspace = obj.link_constraints(j).in_floating_base_nullspace;
+        % if qp_input.body_motion_data(j).body_id == rpc.body_ids.pelvis
+        %   pelvis_has_tracking = true;
+        % end
+        % if t_plan < obj.link_constraints(j).ts(1)
+        %   body_t_ind = 1;
+        % elseif t_plan > obj.link_constraints(j).ts(end)
+        %   body_t_ind = length(obj.link_constraints(j).ts);
+        % else
+        %   body_t_ind = find(obj.link_constraints(j).ts<=t_plan,1,'last');
+        % end
 
         if body_id == obj.robot.foot_body_id.right
           kny_ind = rpc.position_indices.r_leg_kny;
@@ -159,6 +155,7 @@ classdef QPLocomotionPlan < QPControllerPlan
           other_foot = [];
         end
 
+        body_t_ind = obj.body_motions(j).findTInd(t_plan);
         if ~isempty(kny_ind)
           if ~obj.toe_off_active.(foot_name)
             if any(obj.supports(supp_idx).bodies == body_id) && any(obj.supports(supp_idx).bodies == other_foot) && q(kny_ind) < MIN_KNEE_ANGLE
@@ -193,7 +190,15 @@ classdef QPLocomotionPlan < QPControllerPlan
           end
         end
 
-        qp_input.body_motion_data(j).coefs = obj.link_constraints(j).coefs(:,body_t_ind,:);
+        % qp_input.body_motion_data(j).coefs = obj.link_constraints(j).coefs(:,body_t_ind,:);
+        qp_input.body_motion_data(j) = obj.body_motions(j).sliceAtTInd(body_t_ind);
+
+        qp_input.body_motion_data(j).ts = qp_input.body_motion_data(j).ts + obj.start_time;
+        % if body_t_ind < length(obj.link_constraints(j).ts)
+        %   obj.link_constraints(j).ts(body_t_ind:body_t_ind+1) + obj.start_time;
+        % else
+        %   qp_input.body_motion_data(j).ts = obj.link_constraints(j).ts([body_t_ind,body_t_ind]) + obj.start_time;
+        % end
 
       end
 
