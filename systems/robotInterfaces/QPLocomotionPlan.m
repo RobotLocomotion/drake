@@ -591,8 +591,8 @@ classdef QPLocomotionPlan < QPControllerPlan
       end
       options = applyDefaults(options, struct('bodies_to_track', [biped.findLinkId('pelvis'),...
                                                                   biped.foot_body_id.right,...
-                                                                  biped.foot_body_id.left]),...
-                                              'bodies_to_control_when_in_contact', biped.findLinkId('pelvis'));
+                                                                  biped.foot_body_id.left],...
+                                              'bodies_to_control_when_in_contact', biped.findLinkId('pelvis')));
 
       % handle the case where qtraj is a constant trajectory
       if isa(qtraj,'ConstantTrajectory')
@@ -637,7 +637,7 @@ classdef QPLocomotionPlan < QPControllerPlan
 
       obj.body_motions = BodyMotionData.empty();
       for j = 1:numel(options.bodies_to_track)
-        obj.body_motions(j) = BodyMotionData.from_body_poses(body_poses(:,:,j));
+        obj.body_motions(j) = BodyMotionData.from_body_poses(options.bodies_to_track(j), ts, body_poses(:,:,j));
         if ismember(options.bodies_to_track(j), options.bodies_to_control_when_in_contact)
           obj.body_motions(j).control_pose_when_in_contact = true(1, numel(obj.body_motions(j).ts));
         end
