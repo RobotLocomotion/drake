@@ -420,15 +420,20 @@ Vector6d bodyMotionPD(RigidBodyManipulator *r, DrakeRobotState &robot_state, con
   angleDiff(pose_rpy,des_rpy,error_rpy);
   body_error.tail(3) = error_rpy;
 
+  Vector6d body_v = J*robot_state.qd;
   Vector6d body_vdot = (Kp.array()*body_error.array()).matrix() + (Kd.array()*(body_v_des-J*robot_state.qd).array()).matrix() + body_vdot_des;
   return body_vdot;
 }
 
-Vector6d bodySpatialMotionPD(RigidBodyManipulator *r, DrakeRobotState &robot_state, const int body_index, const Vector6d &body_xyzrpy_des, const Vector6d &body_v_des, const Vector6d &body_vdot_des, const Vector6d &Kp, const Vector6d &Kd) {
-	// This function uses quaternion, angular velocity and angular acceleration for computing the orientation. 
-	// @param body_v_des    desired [xyzdot;angular_velocity] 
-	// @param body_vdot_des    desired [xyzddot;angular_acceleration]
-	// @retval twist_dot, [angular_acceleration, xyz_acceleration] 
+Vector6d bodySpatialMotionPD(RigidBodyManipulator *r, DrakeRobotState &robot_state, const int body_index, const Vector6d &body_xyzrpy_des, const Vector6d &body_v_des, const Vector6d &body_vdot_des, const Vector6d &Kp, const Vector6d &Kd)
+{
+	// This function uses euler angles, angular velocity and angular acceleration for computing the orientation. 
+        // @param body_xyzrpy_des  desired [xyz;roll;pitch;yaw] in task frame
+	// @param body_v_des    desired [xyzdot;angular_velocity] in task frame
+	// @param body_vdot_des    desired [xyzddot;angular_acceleration] in task frame
+        // @param Kp     The gain in task frame
+        // @param Kd     The gain in task frame 
+	// @retval twist_dot, [angular_acceleration, xyz_acceleration] in world frame
 
   if(!r->use_new_kinsol)
   {
@@ -441,15 +446,16 @@ Vector6d bodySpatialMotionPD(RigidBodyManipulator *r, DrakeRobotState &robot_sta
   Vector3d body_xyz = body_pose.value().head<3>();
   Vector4d body_quat = body_pose.value().tail<4>();
   std::vector<int> v_indices;
-  auto J_geometric = r->geometricJacobian<double>(0,body_index,0,0,true,&v_indices);
+  auto J_geometric = r->geometricJacobian<double>(0,body_index,body_index,0,true,&v_indices);
   VectorXd v_compact(v_indices.size());
   for(int i = 0;i<v_indices.size();i++)
   {
     v_compact(i) = robot_state.qd(v_indices[i]);
   }
   Vector6d body_twist = J_geometric.value()*v_compact;
-  Vector3d body_angular_vel = body_twist.head<3>();
-  Vector3d body_xyzdot = body_twist.tail<3>();
+  Matrix3d R = quat2rotmat(body_quat);
+  Vector3d body_angular_vel = R*body_twist.head<3>();// body_angular velocity in world frame
+  Vector3d body_xyzdot = R*body_twist.tail<3>();// body_xyzdot in world frame
 
   Vector3d body_xyz_des = body_xyzrpy_des.head<3>();
   Vector3d body_rpy_des = body_xyzrpy_des.tail<3>();
@@ -458,7 +464,6 @@ Vector6d bodySpatialMotionPD(RigidBodyManipulator *r, DrakeRobotState &robot_sta
 
   Vector3d xyz_err = body_xyz_des-body_xyz;
 
-  Matrix3d R = quat2rotmat(body_quat);
   Matrix3d R_des = rpy2rotmat(body_rpy_des);
   Matrix3d R_err = R_des*R.transpose();
   Vector4d angleAxis_err = rotmat2axis(R_err); 
@@ -474,9 +479,9 @@ Vector6d bodySpatialMotionPD(RigidBodyManipulator *r, DrakeRobotState &robot_sta
   Vector3d body_xyzddot = (Kp_xyz.array()*xyz_err.array()).matrix() + (Kd_xyz.array()*xyzdot_err.array()).matrix()+body_vdot_des.head<3>();
   Vector3d body_angular_vel_dot = (Kp_angular.array()*angular_err.array()).matrix() + (Kd_angular.array()*angular_vel_err.array()).matrix()+body_angular_vel_dot_des;
   
-  Vector6d twist_dot;
-  twist_dot.head<3>() = body_angular_vel_dot;
-  twist_dot.tail<3>() = body_xyzddot;
+  Vector6d twist_dot = Vector6d::Zero();
+  twist_dot.head<3>() = R.transpose()*body_angular_vel_dot;
+  twist_dot.tail<3>() = R.transpose()*body_xyzddot+body_angular_vel.cross(body_twist.tail<3>());
   return twist_dot;
 }
 

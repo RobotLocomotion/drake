@@ -23,6 +23,7 @@ classdef QPLocomotionPlan < QPControllerPlan
     last_qp_input;
 
     lcmgl = LCMGLClient('locomotion_plan');
+    joint_pd_override_data
   end
 
   properties(Access=protected)
@@ -38,6 +39,7 @@ classdef QPLocomotionPlan < QPControllerPlan
       obj.default_qp_input = atlasControllers.QPInputConstantHeight();
       obj.default_qp_input.whole_body_data.q_des = zeros(obj.robot.getNumPositions(), 1);
       obj.constrained_dofs = [findPositionIndices(obj.robot,'arm');findPositionIndices(obj.robot,'neck');findPositionIndices(obj.robot,'back_bkz');findPositionIndices(obj.robot,'back_bky')];
+      obj.joint_pd_override_data = struct('position_ind',{},'qtraj',{},'kp',{},'kd',{},'weight',{});
     end
 
     function next_plan = getSuccessor(obj, t, x)
@@ -217,6 +219,18 @@ classdef QPLocomotionPlan < QPControllerPlan
       end
       obj = obj.updatePlanShift(t_global, kinsol, qp_input, contact_force_detected, next_support);
       qp_input = obj.applyPlanShift(qp_input);
+      
+      for j = 1:length(obj.joint_pd_override_data.position_ind)
+        q_des = obj.joint_pd_override_data.qtraj.eval(t_plan);
+        qd_des = obj.joint_pd_override_data.qtraj.deriv(t_plan);
+        qp_input.joint_pd_override(end+1) = struct('position_ind',obj.joint_pd_override_data.position_ind(j),...
+                                                   'qi_des',q_des(j),...
+                                                   'qdi_des',qd_des(j),...
+                                                   'kp',obj.joint_pd_override_data.kp(j),...
+                                                   'kd',obj.joint_pd_override_data.kd(j),...
+                                                   'weight',obj.joint_pd_override_data.weight(j));
+      end
+      
       obj.last_qp_input = qp_input;
     end
 
