@@ -73,8 +73,8 @@ if (eigen3_FOUND)
   add_rbm_mex(positionConstraintsmex)
   
   if(gurobi_FOUND)
-    add_mex(setupLCPmex setupLCPmex.cpp)
-    target_link_libraries(setupLCPmex drakeRBM drakeUtil drakeQP)
+    add_mex(solveLCPmex solveLCPmex.cpp)
+    target_link_libraries(solveLCPmex drakeRBM drakeUtil drakeQP)
   endif()
   
   

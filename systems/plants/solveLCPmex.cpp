@@ -180,50 +180,13 @@ bool callFastQP(MatrixBase<DerivedM> const & M, MatrixBase<Derivedw> const & w, 
   return true;
 }
 
-//TODO: move this to drakeUtil
-template <typename Derived>
-mxArray* eigen2sparse(MatrixBase<Derived> const & M, int & num_non_zero) 
-{
-  const mwSize rows = M.rows();
-  const mwSize cols = M.cols();
-
-  vector<mwIndex> ir;
-  vector<mwIndex> jc;
-  vector<double> pr;
-
-  mwSize cumulative_nonzero = 0;
-  jc.push_back(cumulative_nonzero);
-  double eps = std::numeric_limits<double>::epsilon();
-  for (mwIndex j = 0; j < cols; j++) {
-    for (mwIndex i = 0; i < rows; i++)  {
-      double value = M(i, j);
-      
-      if (value > eps || value < -eps) {
-        ir.push_back(i);
-        pr.push_back(value);
-        cumulative_nonzero++;
-      }
-    }
-    jc.push_back(cumulative_nonzero);
-  }
-
-  mxArray* sparse_mex = mxCreateSparse(rows, cols, cumulative_nonzero, mxREAL);
-  
-  memcpy((double*)mxGetPr(sparse_mex), pr.data(), cumulative_nonzero * sizeof(double));
-  memcpy((int*)mxGetIr(sparse_mex), ir.data(), cumulative_nonzero * sizeof(mwIndex));
-  memcpy((int *)mxGetJc(sparse_mex), jc.data(), (cols + 1) * sizeof(mwIndex));
-
-  num_non_zero = cumulative_nonzero;
-  return sparse_mex;
-}
-
-
 //[z, Mqdn, wqdn] = setupLCPmex(mex_model_ptr, q, qd, u, phiC, n, D, h, z_inactive_guess_tol)
 void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) { 
   
-  if (nlhs != 3 || nrhs != 10) {
-    mexErrMsgIdAndTxt("Drake:setupLCPmex:InvalidUsage","Usage: [z, Mqdn, wqdn, zqp] = setupLCPmex(mex_model_ptr, q, qd, u, phiC, n, D, h, z_inactive_guess_tol, z_cached)");
+  if (nlhs != 3 || nrhs != 11) {
+    mexErrMsgIdAndTxt("Drake:setupLCPmex:InvalidUsage","Usage: [z, Mqdn, wqdn, zqp] = setupLCPmex(mex_model_ptr, q, qd, u, phiC, n, D, h, z_inactive_guess_tol, z_cached, lcp_mexfile)");
   }
+  char lcp_mexfile[256];
 
   RigidBodyManipulator *model= (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
   const int nq = model->num_positions;
@@ -239,6 +202,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   const mxArray* h_array = prhs[7];
   const mxArray* inactive_guess_array = prhs[8];
   const mxArray* z_cached_array = prhs[9];
+  const mxArray* lcp_mexfile_array = prhs[10];  
 
   const size_t num_z_cached = mxGetNumberOfElements(z_cached_array);
   const size_t num_contact_pairs = mxGetNumberOfElements(phiC_array);
@@ -251,6 +215,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   const Map<VectorXd> phiC(mxGetPrSafe(phiC_array), num_contact_pairs);
   const Map<MatrixXd> n(mxGetPrSafe(n_array), num_contact_pairs, nq);
   const Map<VectorXd> z_cached(mxGetPrSafe(z_cached_array), num_z_cached);
+  mxGetString(lcp_mexfile_array, lcp_mexfile, 256);
   
   VectorXd C, phiL, phiP, phiL_possible, phiC_possible, phiL_check, phiC_check;
   MatrixXd H, B, JP, JL, JL_possible, n_possible, JL_check, n_check;
@@ -374,7 +339,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
     qp_failed = !callFastQP(M, w, lb, z_inactive, nL+nP+nC, z);
     
     int nnz;
-    mxArray* mxM_sparse = eigen2sparse(M, nnz);
+    mxArray* mxM_sparse = eigenToMatlabSparse(M, nnz);
     mxArray* mxnnzJ = mxCreateDoubleScalar(static_cast<double>(nnz));
     mxArray* mxn = mxCreateDoubleScalar(static_cast<double>(lcp_size));
     mxArray* mxz = mxCreateDoubleMatrix(lcp_size, 1, mxREAL);
@@ -386,7 +351,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
     //fall back to pathlcp
     if(qp_failed) {
       //TODO: fix this path
-      callMexStandalone("/home/drc/drake-distro/drake/thirdParty/path/lcppath.mexa64", 2, lhs, 7, const_cast<const mxArray**>(rhs));
+      callMexStandalone(lcp_mexfile, 2, lhs, 7, const_cast<const mxArray**>(rhs));
       z = z_path;
       mxDestroyArray(lhs[0]);
       mxDestroyArray(lhs[1]);

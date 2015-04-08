@@ -11,9 +11,9 @@
 #include <math.h>
 #include <limits>
 #include <Eigen/Dense>
-#include <iostream>
 
 using namespace std;
+using namespace Eigen;
 
 bool isa(const mxArray* mxa, const char* class_str)
 // mxIsClass seems to not be able to handle derived classes. so i'll implement what I need by calling back to matlab
@@ -195,7 +195,7 @@ void callMexStandalone(const char* mexFile, int nlhs, mxArray* plhs[], int nrhs,
      fprintf(stderr,"%s\n",dlerror());
      return;
   }
-  
+
   //find the entry function pointer
   char* error;
   *(void**) &(mexFunc) = dlsym(handle, "mexFunction");
@@ -210,3 +210,44 @@ void callMexStandalone(const char* mexFile, int nlhs, mxArray* plhs[], int nrhs,
   //close mex file
   dlclose(handle);
 }
+
+//builds a matlab sparse matrix in mex from a given eigen matrix
+//the caller is responsible for destroying the resulting array
+template <typename Derived>
+mxArray* eigenToMatlabSparse(MatrixBase<Derived> const & M, int & num_non_zero) 
+{
+  const mwSize rows = M.rows();
+  const mwSize cols = M.cols();
+
+  vector<mwIndex> ir;
+  vector<mwIndex> jc;
+  vector<double> pr;
+
+  mwSize cumulative_nonzero = 0;
+  jc.push_back(cumulative_nonzero);
+  double eps = std::numeric_limits<double>::epsilon();
+  for (mwIndex j = 0; j < cols; j++) {
+    for (mwIndex i = 0; i < rows; i++)  {
+      double value = M(i, j);
+      
+      if (value > eps || value < -eps) {
+        ir.push_back(i);
+        pr.push_back(value);
+        cumulative_nonzero++;
+      }
+    }
+    jc.push_back(cumulative_nonzero);
+  }
+
+  mxArray* sparse_mex = mxCreateSparse(rows, cols, cumulative_nonzero, mxREAL);
+  
+  memcpy((double*)mxGetPr(sparse_mex), pr.data(), cumulative_nonzero * sizeof(double));
+  memcpy((int*)mxGetIr(sparse_mex), ir.data(), cumulative_nonzero * sizeof(mwIndex));
+  memcpy((int *)mxGetJc(sparse_mex), jc.data(), (cols + 1) * sizeof(mwIndex));
+
+  num_non_zero = cumulative_nonzero;
+  return sparse_mex;
+}
+
+template DLLEXPORT mxArray* eigenToMatlabSparse(MatrixBase< MatrixXd > const &, int &) ;
+template DLLEXPORT mxArray* eigenToMatlabSparse(MatrixBase< Map< MatrixXd> > const &, int &) ;

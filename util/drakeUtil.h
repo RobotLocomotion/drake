@@ -49,6 +49,9 @@ template <typename Derived> inline void destroyDrakeMexPointer(const mxArray* mx
 //  mexPrintf(mexIsLocked() ? "mex file is locked\n" : "mex file is unlocked\n");
 }
 
+template <typename Derived>
+DLLEXPORT mxArray* eigenToMatlabSparse(Eigen::MatrixBase<Derived> const & M, int & num_non_zero);
+
 template <typename DerivedA>
 mxArray* eigenToMatlab(const DerivedA &m)
 {
