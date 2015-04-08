@@ -3,6 +3,12 @@
 
 #include "SplineInformation.h"
 #include "PiecewisePolynomial.h"
+#include <stdexcept>
+
+class ConstraintMatrixSingularError : public std::runtime_error {
+public:
+  ConstraintMatrixSingularError() : runtime_error("Constraint matrix is singular!") { };
+};
 
 PiecewisePolynomial generateSpline(const SplineInformation& spline_information);
 

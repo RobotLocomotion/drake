@@ -31,6 +31,8 @@ public:
 
 protected:
   void segmentNumberRangeCheck(int segment_number) const;
+
+  bool segmentTimesEqual(const PiecewisePolynomialBase& b, double tol);
 };
 
 #endif /* DRAKE_SOLVERS_QPSPLINE_PIECEWISEPOLYNOMIALBASE_H_ */

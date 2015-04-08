@@ -64,3 +64,31 @@ int PiecewisePolynomial::getSegmentPolynomialOrder(int segment_index) const {
   segmentNumberRangeCheck(segment_index);
   return polynomials[segment_index].getOrder();
 }
+
+PiecewisePolynomial& PiecewisePolynomial::operator+=(const PiecewisePolynomial& other) {
+  if (!segmentTimesEqual(other, 1e-10))
+    throw runtime_error("Addition not yet implemented when segment times are not equal");
+  for (int i = 0; i < polynomials.size(); i++)
+    polynomials[i] += other.polynomials[i];
+  return *this;
+}
+
+PiecewisePolynomial& PiecewisePolynomial::operator*=(const PiecewisePolynomial& other) {
+  if (!segmentTimesEqual(other, 1e-10))
+    throw runtime_error("Multiplication not yet implemented when segment times are not equal");
+  for (int i = 0; i < polynomials.size(); i++)
+    polynomials[i] *= other.polynomials[i];
+  return *this;
+}
+
+const PiecewisePolynomial PiecewisePolynomial::operator+(const PiecewisePolynomial &other) const {
+  PiecewisePolynomial ret = *this;
+  ret += other;
+  return ret;
+}
+
+const PiecewisePolynomial PiecewisePolynomial::operator*(const PiecewisePolynomial &other) const {
+  PiecewisePolynomial ret = *this;
+  ret *= other;
+  return ret;
+}

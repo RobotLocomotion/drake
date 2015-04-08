@@ -19,13 +19,21 @@ public:
 
   PiecewisePolynomial derivative(int derivative_order = 1) const;
 
-  PiecewisePolynomial integral(double integration_constant) const;
+  PiecewisePolynomial integral(double integration_constant = 0.0) const;
 
   double value(double t);
 
   const Polynomial& getPolynomial(int segment_index) const;
 
   virtual int getSegmentPolynomialOrder(int segment_number) const;
+
+  PiecewisePolynomial& operator+=(const PiecewisePolynomial& other);
+
+  PiecewisePolynomial& operator*=(const PiecewisePolynomial& other);
+
+  const PiecewisePolynomial operator+(const PiecewisePolynomial &other) const;
+
+  const PiecewisePolynomial operator*(const PiecewisePolynomial &other) const;
 };
 
 #endif /* DRAKE_SOLVERS_QPSPLINE_PIECEWISEPOLYNOMIAL_H_ */
