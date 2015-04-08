@@ -155,6 +155,7 @@ classdef NonlinearProgram
       obj.bbcon_lb = [];
       obj.bbcon_ub = [];
       
+      obj = obj.setSolver('default');
       obj.solver_options.fmincon = optimset('Display','off');
       obj.solver_options.snopt = struct();
       obj.solver_options.snopt.MajorIterationsLimit = 1000;
@@ -331,7 +332,8 @@ classdef NonlinearProgram
 %         elseif(~(obj.num_vars<=300))
 %           error('Drake:NonlinearProgram:UnsupportedSolver',' Number of variables over studentSNOPT support: obj.num_vars>300');
         elseif(~(obj.num_cin+obj.num_ceq+size(obj.Ain,1)+size(obj.Aeq,1)<=300))
-          error('Drake:NonlinearProgram:UnsupportedSolver',' Number of constraints over studentSNOPT support: obj.num_cin+obj.num_ceq+size(obj.Ain,1)+size(obj.Aeq,1)>300');
+          warning('Number of constraints exceeded studentSNOPT support: obj.num_cin+obj.num_ceq+size(obj.Ain,1)+size(obj.Aeq,1)>300.  Switching to fmincon.');
+          obj = obj.setSolver('fmincon');
         end
       elseif isempty(obj.solver)
         obj = obj.setSolver('default');
@@ -399,7 +401,8 @@ classdef NonlinearProgram
 %         elseif(~(obj.num_vars<=300))
 %           error('Drake:NonlinearProgram:UnsupportedSolver',' Number of variables over studentSNOPT support: obj.num_vars>300');
         elseif(~(obj.num_cin+obj.num_ceq+size(obj.Ain,1)+size(obj.Aeq,1)<=300))
-          error('Drake:NonlinearProgram:UnsupportedSolver',' Number of constraints over studentSNOPT support: obj.num_cin+obj.num_ceq+size(obj.Ain,1)+size(obj.Aeq,1)>300');
+          warning('Number of constraints exceeds studentSNOPT support: obj.num_cin+obj.num_ceq+size(obj.Ain,1)+size(obj.Aeq,1)>300. Switching to fmincon');
+          obj = obj.setSolver('fmincon');
         end
       elseif isempty(obj.solver)
         obj = obj.setSolver('default');
@@ -636,7 +639,8 @@ classdef NonlinearProgram
         if(~checkDependency('studentSnopt'))
           error('Drake:NonlinearProgram:UnsupportedSolver',' studentSNOPT not found.  studentSNOPT support will be disabled.');
         elseif(~(obj.num_vars<=300))
-          error('Drake:NonlinearProgram:UnsupportedSolver',' Number of variables over studentSNOPT support: obj.num_vars>300');
+          error('Number of variables exceeds studentSNOPT support: obj.num_vars>300. Switching to fmincon');
+          obj = obj.setSolver('fmincon');
 %         It is assumed that addDecisionVariable does not add any constraint and that
 %         no constraints are going to be added manually (e.g. not by calling addConsraint)
 %         between addDecisionVariable calls.
