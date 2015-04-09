@@ -33,6 +33,8 @@ public:
 
   const Polynomial operator*(const Polynomial &other) const;
 
+  bool isApprox(const Polynomial& other, double tol) const;
+
   static Polynomial zero();
 
 private:

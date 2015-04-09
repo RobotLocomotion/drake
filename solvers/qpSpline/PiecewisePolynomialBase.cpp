@@ -11,6 +11,10 @@ PiecewisePolynomialBase::PiecewisePolynomialBase(std::vector<double> const & seg
   }
 }
 
+PiecewisePolynomialBase::PiecewisePolynomialBase() {
+  // empty
+}
+
 PiecewisePolynomialBase::~PiecewisePolynomialBase()
 {
   // empty
@@ -32,6 +36,10 @@ double PiecewisePolynomialBase::getStartTime(int segment_number) const {
 double PiecewisePolynomialBase::getEndTime(int segment_number) const {
   segmentNumberRangeCheck(segment_number);
   return segment_times[segment_number + 1];
+}
+
+double PiecewisePolynomialBase::getDuration(int segment_number) const {
+  return getEndTime(segment_number) - getStartTime(segment_number);
 }
 
 double PiecewisePolynomialBase::getStartTime() const {
@@ -59,7 +67,7 @@ void PiecewisePolynomialBase::segmentNumberRangeCheck(int segment_number) const 
   }
 }
 
-bool PiecewisePolynomialBase::segmentTimesEqual(const PiecewisePolynomialBase& other, double tol) {
+bool PiecewisePolynomialBase::segmentTimesEqual(const PiecewisePolynomialBase& other, double tol) const {
   if (segment_times.size() != other.segment_times.size())
     return false;
   for (int i = 0; i < segment_times.size(); i++) {

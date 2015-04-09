@@ -12,11 +12,11 @@ coefs = qpSpline(ts, xs, xd0, xdf, options, false);
 options.optimize_knot_times = false;
 options.use_mex = false;
 
-[coefs, objval] = qpSpline(ts, xs, xd0, xdf, options, false);
+[coefs, objval] = qpSpline(ts, xs, xd0, xdf, options, true);
 t = timeit(@() qpSpline(ts, xs, xd0, xdf, options, false), 2);
 
 options.use_mex = true;
-[coefs_mex, objval_mex] = qpSpline(ts, xs, xd0, xdf, options, false);
+[coefs_mex, objval_mex] = qpSpline(ts, xs, xd0, xdf, options, true);
 t_mex = timeit(@() qpSpline(ts, xs, xd0, xdf, options, false), 2);
 
 valuecheck(coefs_mex, coefs);

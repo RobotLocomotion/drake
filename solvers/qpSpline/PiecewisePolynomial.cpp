@@ -17,6 +17,10 @@ PiecewisePolynomial::PiecewisePolynomial(std::vector<Polynomial> const& polynomi
   }
 }
 
+PiecewisePolynomial::PiecewisePolynomial() {
+  // empty
+}
+
 int PiecewisePolynomial::getSegmentIndex(double t) {
   // clip to min/max times
   if (t < getStartTime())
@@ -41,18 +45,20 @@ PiecewisePolynomial PiecewisePolynomial::derivative(int derivative_order) const 
   return PiecewisePolynomial(derivative_polynomials, segment_times);
 }
 
-PiecewisePolynomial PiecewisePolynomial::integral(double integration_constant) const {
-  vector<Polynomial> integral_polynomials;
-  integral_polynomials.reserve(polynomials.size());
-  for (auto it = polynomials.begin(); it != polynomials.end(); ++it) {
-    integral_polynomials.push_back(it->integral(integration_constant));
+PiecewisePolynomial PiecewisePolynomial::integral(double value_at_start_time) const {
+  PiecewisePolynomial ret;
+  ret.segment_times = segment_times;
+  ret.polynomials.reserve(polynomials.size());
+  ret.polynomials.push_back(polynomials[0].integral(value_at_start_time));
+  for (int i = 1; i < getNumberOfSegments(); i++) {
+    ret.polynomials.push_back(polynomials[i].integral(ret.segmentValueAtGlobalAbscissa(i - 1, getStartTime(i))));
   }
-  return PiecewisePolynomial(integral_polynomials, segment_times);
+  return ret;
 }
 
 double PiecewisePolynomial::value(double t) {
   int segment_index = getSegmentIndex(t);
-  return polynomials[segment_index].value(t - getStartTime(segment_index));
+  return segmentValueAtGlobalAbscissa(segment_index, t);
 }
 
 const Polynomial& PiecewisePolynomial::getPolynomial(int segment_index) const {
@@ -92,3 +98,19 @@ const PiecewisePolynomial PiecewisePolynomial::operator*(const PiecewisePolynomi
   ret *= other;
   return ret;
 }
+
+bool PiecewisePolynomial::isApprox(const PiecewisePolynomial& other, double tol) const {
+  if (!segmentTimesEqual(other, tol))
+    return false;
+
+  for (int i = 0; i < getNumberOfSegments(); ++i) {
+    if (!polynomials[i].isApprox(other.polynomials[i], tol))
+      return false;
+  }
+  return true;
+}
+
+double PiecewisePolynomial::segmentValueAtGlobalAbscissa(int segment_index, double t) const {
+  return polynomials[segment_index].value(t - getStartTime(segment_index));
+}
+

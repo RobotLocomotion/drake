@@ -129,9 +129,7 @@ else
       E(ci, v.c2.i(3)) = -2;
       ci = ci + 1;
       
-      tic()
       z = E \ d;
-      toc();
       
       % M = [Q, E'; E, zeros(nc)];
       % b = [zeros(nv, 1); d];

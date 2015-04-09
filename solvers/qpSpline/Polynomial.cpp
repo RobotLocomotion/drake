@@ -120,6 +120,10 @@ const Polynomial Polynomial::operator*(const Polynomial &other) const {
   return ret;
 }
 
+bool Polynomial::isApprox(const Polynomial& other, double tol) const {
+  return coefficients.isApprox(other.coefficients, tol);
+}
+
 Polynomial Polynomial::zero() {
   Polynomial ret(1);
   ret.coefficients(0) = 0.0;

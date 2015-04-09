@@ -57,18 +57,10 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
       for (int dof = 0; dof < ndof && valid_solution; dof++) {
         try {
           PiecewisePolynomial spline = twoWaypointCubicSpline(segment_times, xs(dof, 0), xd0[dof], xs(dof, 3), xdf[dof], xs(dof, 1), xs(dof, 2));
-          // objective value using Q matrices:
-          for (int i = 0; i < num_segments; i++) {
-            auto Q = computeQ(spline.getStartTime(i), spline.getEndTime(i));
-            auto coeffs_part = spline.getPolynomial(i).getCoefficients().bottomRows<Q_SIZE>();
-            objective_value += (coeffs_part.transpose() * Q * coeffs_part).value();
-          }
-
-          // objective value using PiecewisePolynomial methods:
-//          PiecewisePolynomial acceleration_squared = spline.derivative(2);
-//          acceleration_squared *= acceleration_squared;
-//          PiecewisePolynomial acceleration_squared_integral = acceleration_squared.integral();
-//          objective_value += acceleration_squared_integral.value(spline.getEndTime()) - acceleration_squared_integral.value(spline.getStartTime());
+          PiecewisePolynomial acceleration_squared = spline.derivative(2);
+          acceleration_squared *= acceleration_squared;
+          PiecewisePolynomial acceleration_squared_integral = acceleration_squared.integral();
+          objective_value += acceleration_squared_integral.value(spline.getEndTime()) - acceleration_squared_integral.value(spline.getStartTime());
         }
         catch (ConstraintMatrixSingularError& e) {
           valid_solution = false;

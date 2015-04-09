@@ -23,6 +23,8 @@ public:
 
   double getEndTime(int segment_number) const;
 
+  double getDuration(int segment_number) const;
+
   double getStartTime() const;
 
   double getEndTime() const;
@@ -32,7 +34,9 @@ public:
 protected:
   void segmentNumberRangeCheck(int segment_number) const;
 
-  bool segmentTimesEqual(const PiecewisePolynomialBase& b, double tol);
+  bool segmentTimesEqual(const PiecewisePolynomialBase& b, double tol) const;
+
+  PiecewisePolynomialBase();
 };
 
 #endif /* DRAKE_SOLVERS_QPSPLINE_PIECEWISEPOLYNOMIALBASE_H_ */

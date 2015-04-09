@@ -8,6 +8,7 @@
 #include <Eigen/Core>
 #include <iostream>
 #include <stdexcept>
+#include <cmath>
 
 #include "mex.h"
 
@@ -44,7 +45,7 @@ void valuecheck(const Eigen::DenseBase<DerivedA>& a, const Eigen::DenseBase<Deri
 
 void valuecheck(double a, double b, double tolerance = 1e-8)
 {
-  if (abs(a - b) > tolerance) {
+  if (std::abs(a - b) > tolerance) {
     std::ostringstream stream;
     stream << "Expected:\n" << a << "\nbut got:" << b << "\n";
     throw std::runtime_error(stream.str());
