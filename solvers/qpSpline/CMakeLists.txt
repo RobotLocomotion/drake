@@ -1,20 +1,19 @@
-
-add_mex(qpSplineMex csolve.c ldl.c matrix_support.c solver.c util.c)
-set_target_properties(qpSplineMex PROPERTIES COMPILE_FLAGS "-Wall -Os")
-
-install(TARGETS qpSplineMex DESTINATION matlab)
-
-add_library(qpSpline solver.c ldl.c matrix_support.c util.c)
-pods_install_libraries(qpSpline)
-pods_install_headers(solver.h DESTINATION qpSpline)
+add_library(splineGeneration splineGeneration.cpp Polynomial.cpp PiecewisePolynomialBase.cpp PiecewisePolynomial.cpp SplineInformation.cpp ValueConstraint.cpp ContinuityConstraint.cpp)
+pods_install_libraries(splineGeneration)
+pods_install_headers(splineGeneration.h Polynomial.h PiecewisePolynomialBase.h PiecewisePolynomial.h SplineInformation.h ValueConstraint.h ContinuityConstraint.h DESTINATION qpSpline)
 pods_install_pkg_config_file(qpSpline
   LIBS -lqpSpline
   REQUIRES
-  VERSION 0.0.1)
+  VERSION 0.0.2)
 
-add_mex(qpSplineGridSearchmex qpSplineGridSearchmex.cpp matlabQPSplineSolve.c ldl.c matrix_support.c solver.c util.c)
+add_mex(twoWaypointCubicSplinemex twoWaypointCubicSplinemex.cpp)
 include_directories (${CMAKE_SOURCE_DIR}/util)
-target_link_libraries(qpSplineGridSearchmex drakeUtil)
-set_target_properties(qpSplineMex PROPERTIES COMPILE_FLAGS "-Wall -Os")
+target_link_libraries(twoWaypointCubicSplinemex splineGeneration drakeUtil)
+install(TARGETS twoWaypointCubicSplinemex DESTINATION matlab)
 
-install(TARGETS qpSplineGridSearchmex DESTINATION matlab)
+add_mex(twoWaypointCubicSplineFreeKnotTimesmex twoWaypointCubicSplineFreeKnotTimesmex.cpp)
+include_directories (${CMAKE_SOURCE_DIR}/util)
+target_link_libraries(twoWaypointCubicSplineFreeKnotTimesmex splineGeneration drakeUtil)
+install(TARGETS twoWaypointCubicSplineFreeKnotTimesmex DESTINATION matlab)
+
+add_subdirectory(test)

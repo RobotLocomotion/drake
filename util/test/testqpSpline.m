@@ -1,14 +1,27 @@
 function testqpSpline()
 
-t0 = 0;
-t1 = 1;
-t2 = 2;
-t3 = 3;
-
+ndof = 6;
 ts = [0, 1, 2, 3];
-xs = [rand(6,1), rand(6,1), rand(6,1), rand(6,1)];
-xd0 = rand(6,1);
-xdf = rand(6,1);
+xs = [rand(ndof,1), rand(ndof,1), rand(ndof,1), rand(ndof,1)];
+xd0 = rand(ndof,1);
+xdf = rand(ndof,1);
 
 options.optimize_knot_times = true;
-coefs = qpSpline(ts, xs, xd0, xdf, options, true);
+coefs = qpSpline(ts, xs, xd0, xdf, options, false);
+
+options.optimize_knot_times = false;
+options.use_mex = false;
+
+[coefs, objval] = qpSpline(ts, xs, xd0, xdf, options, false);
+t = timeit(@() qpSpline(ts, xs, xd0, xdf, options, false), 2);
+
+options.use_mex = true;
+[coefs_mex, objval_mex] = qpSpline(ts, xs, xd0, xdf, options, false);
+t_mex = timeit(@() qpSpline(ts, xs, xd0, xdf, options, false), 2);
+
+valuecheck(coefs_mex, coefs);
+valuecheck(objval_mex, objval);
+
+fprintf('t: %0.5f, t_mex: %0.5f\n', t, t_mex);
+
+end
