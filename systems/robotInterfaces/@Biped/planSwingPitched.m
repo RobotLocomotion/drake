@@ -17,7 +17,7 @@ APEX_FRACTIONS = [0.15, 0.85]; % We plan only two poses of the foot during the a
                                % fraction of the distance from its initial location to its final location.
 
 FOOT_YAW_RATE = 0.75; % rad/s
-MIN_STEP_TIME = 0.5; %s
+MIN_STEP_TIME = 0.75; %s
 
 MIN_DIST_FOR_PITCHED_SWING = 0.4;
 
