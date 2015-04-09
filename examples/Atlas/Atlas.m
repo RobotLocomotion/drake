@@ -79,7 +79,6 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
         end
       end
 
-      
       if options.floating
         % could also do fixed point search here
         obj = obj.setInitialState(obj.resolveConstraints(zeros(obj.getNumStates(),1)));
