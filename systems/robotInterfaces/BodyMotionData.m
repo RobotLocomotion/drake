@@ -6,6 +6,7 @@ classdef BodyMotionData
     toe_off_allowed;
     in_floating_base_nullspace;
     control_pose_when_in_contact;
+    use_spatial_velocity
   end
 
   methods
@@ -16,6 +17,7 @@ classdef BodyMotionData
       obj.in_floating_base_nullspace = false(1, numel(ts));
       obj.control_pose_when_in_contact = false(1, numel(ts));
       obj.coefs = zeros(6, numel(ts), 4);
+      obj.use_spatial_velocity = false;
     end
 
     function t_ind = findTInd(obj, t)
@@ -52,7 +54,8 @@ classdef BodyMotionData
                                  'coefs', obj.coefs(:,t_ind,:),...
                                  'toe_off_allowed', obj.toe_off_allowed(t_ind),...
                                  'in_floating_base_nullspace', obj.in_floating_base_nullspace(t_ind),...
-                                 'control_pose_when_in_contact', obj.control_pose_when_in_contact(t_ind));
+                                 'control_pose_when_in_contact', obj.control_pose_when_in_contact(t_ind),...
+                                 'use_spatial_velocity',obj.use_spatial_velocity);
     end
 
     function pp = getPP(obj)
