@@ -2,13 +2,11 @@ function testQuatdot2expdot
 q = uniformlyRandomQuat();
 qdot = randn(4,1);
 qdot = qdot-q'*qdot*q;
-wdot = quatdot2expdot(q,qdot);
-check_derivative(q,qdot,wdot);
+wdot = check_derivative(q,qdot);
 
 q = [1;zeros(3,1)];
 qdot = [0;randn(3,1)];
-wdot = quatdot2expdot(q,qdot);
-check_derivative(q,qdot,wdot);
+wdot = check_derivative(q,qdot);
 
 N = 50;
 q = zeros(4,N);
@@ -19,12 +17,17 @@ for i = 1:N
 end
 wdot = quatdot2expdot(q,qdot);
 for i = 1:N
-  check_derivative(q(:,i),qdot(:,i),wdot(:,i));
+  valuecheck(check_derivative(q(:,i),qdot(:,i)),wdot(:,i));
 end
 end
 
-function check_derivative(q,qdot,wdot)
+function wdot = check_derivative(q,qdot)
+wdot = quatdot2expdot(q,qdot);
 w = quat2exp(q);
+[w_mex,dw_mex] = quat2expmex(q);
+wdot_mex = dw_mex*qdot;
+valuecheck(w,w_mex);
+valuecheck(wdot,wdot_mex);
 omega = quatdot2angularvel(q,qdot);
 dt = 1e-5;
 angle = norm(omega)*dt;
