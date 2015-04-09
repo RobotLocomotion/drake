@@ -34,6 +34,6 @@ angle = norm(omega)*dt;
 axis = omega/norm(omega);
 R_dt = axis2rotmat([axis;angle]);
 q2 = rotmat2quat(R_dt*quat2rotmat(q));
-q2 = q2'*q*q2;
+q2 = sign(q2'*q)*q2;
 valuecheck((quat2exp(q2)-w)/dt,wdot,1e-3);
 end
