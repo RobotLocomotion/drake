@@ -73,7 +73,17 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="build|**/pod-build/**" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name=""/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="avl/src"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="bertini/src"/>
+						<entry excluding="**/test/**|**/Demos/**|**/Extras/**|**/UnitTests/**" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="bullet"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="director/src"/>
+						<entry excluding="pod-build/include/**" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="drake"/>
+						<entry excluding="bench/|debug/|demos/|doc/|failtest/|test/" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="eigen/eigen-eigen-10219c95fe65"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="lcm/lcm-1.2.1"/>
+						<entry excluding="**/pod-build/**" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="libbot"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="octomap/octomap"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="snopt/cppsrc"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="snopt/csrc"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -132,7 +142,16 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="build|**/pod-build" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name=""/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="avl/src"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="bertini/src"/>
+						<entry excluding="**/test/**|**/Demos/**|**/Extras/**|**/UnitTests/**" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="bullet"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="director/src"/>
+						<entry excluding="pod-build/include/**" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="drake"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="lcm/lcm-1.2.1"/>
+						<entry excluding="**/pod-build/**" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="libbot"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="octomap/octomap"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="snopt/cppsrc"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="snopt/csrc"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -189,7 +208,16 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="build|**/pod-build/include/**" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name=""/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="avl/src"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="bertini/src"/>
+						<entry excluding="**/test/**|**/Demos/**|**/Extras/**|**/UnitTests/**" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="bullet"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="director/src"/>
+						<entry excluding="pod-build/include/**" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="drake"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="lcm/lcm-1.2.1"/>
+						<entry excluding="**/pod-build/**" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="libbot"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="octomap/octomap"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="snopt/cppsrc"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="snopt/csrc"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -202,17 +230,17 @@
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
 	<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
 	<storageModule moduleId="refreshScope" versionNumber="2">
-		<configuration configurationName="Default">
-			<resource resourceType="PROJECT" workspacePath="/drake-distro"/>
-		</configuration>
 		<configuration configurationName="drake-eclipse">
 			<resource resourceType="PROJECT" workspacePath="/drake-distro"/>
 		</configuration>
-		<configuration configurationName="drake-OSX">
+		<configuration configurationName="drake-OSX-debug">
 			<resource resourceType="PROJECT" workspacePath="/drake-distro"/>
 		</configuration>
 		<configuration configurationName="drake-linux"/>
-		<configuration configurationName="drake-OSX-debug">
+		<configuration configurationName="Default">
+			<resource resourceType="PROJECT" workspacePath="/drake-distro"/>
+		</configuration>
+		<configuration configurationName="drake-OSX">
 			<resource resourceType="PROJECT" workspacePath="/drake-distro"/>
 		</configuration>
 	</storageModule>
