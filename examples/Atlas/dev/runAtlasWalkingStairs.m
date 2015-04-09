@@ -1,6 +1,10 @@
 function runAtlasWalkingStairs()
+% Experimental test case for walking up stairs. Not yet reliable.
+%NOTEST
+
 checkDependency('iris');
 checkDependency('lcmgl');
+path_handle = addpathTemporary(fullfile(getDrakePath(), 'examples', 'Atlas'));
 
 robot_options = struct();
 robot_options = applyDefaults(robot_options, struct('use_bullet', false,...
