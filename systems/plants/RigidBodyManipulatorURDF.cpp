@@ -301,7 +301,7 @@ bool parseGeometry(TiXmlElement* node, const map<string,string>& package_map, co
       cerr << "ERROR parsing sphere element radius" << endl;
       return false;
     }
-    element.setGeometry(DrakeShapes::Sphere(r));
+    element.setGeometry(DrakeShapes::Sphere(max(MIN_RADIUS, r)));
   } else if ((shape_node = node->FirstChildElement("cylinder"))) {
     double r = 0, l = 0;
     attr = shape_node->Attribute("radius");
