@@ -5,6 +5,10 @@ function exp2quatTest()
     geval_options.grad_method = {'user', 'taylorvar'};
     geval_options.tol = 1e-7;
     [q, dq, ddq] = geval(@exp2quat, v, geval_options);
+    [q_mex,dq_mex,ddq_mex] = expmap2quatmex(v);
+    valuecheck(q,q_mex);
+    valuecheck(dq,dq_mex);
+    valuecheck(ddq,ddq_mex);
     valuecheck(norm(q), 1);
     
     v = zeros(3,1);

@@ -366,20 +366,41 @@ DLLEXPORT GradientVar<Scalar, Eigen::Dynamic, 1> rotmat2Representation(const Gra
 }
 
 template <typename Derived>
-GradientVar<typename Derived::Scalar, QUAT_SIZE, 1> expmap2quat(const Eigen::MatrixBase<Derived>& v)
+GradientVar<typename Derived::Scalar, QUAT_SIZE, 1> expmap2quat(const Eigen::MatrixBase<Derived>& v, const int gradient_order)
 {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3);
-  GradientVar<typename Derived::Scalar, QUAT_SIZE, 1> ret(QUAT_SIZE, 1, EXPMAP_SIZE);
+  GradientVar<typename Derived::Scalar, QUAT_SIZE, 1> ret(QUAT_SIZE, 1, EXPMAP_SIZE,gradient_order);
   auto theta = v.norm();
   if (theta < pow(std::numeric_limits<typename Derived::Scalar>::epsilon(),0.25)) {
     ret.value() = expmap2quatDegenerate(v, theta);
-    ret.gradient().value() = dexpmap2quatDegenerate(v, theta);
-    ret.gradient().gradient().value() = ddexpmap2quatDegenerate(v, theta);
+    if(gradient_order>0)
+    {
+      ret.gradient().value() = dexpmap2quatDegenerate(v, theta);
+      if(gradient_order>1)
+      {
+        ret.gradient().gradient().value() = ddexpmap2quatDegenerate(v, theta);
+        if(gradient_order>2)
+        {
+          throw std::runtime_error("expmap2quat does not support gradient order larger than 2");
+        }
+      }
+    }
   } else {
     ret.value() = expmap2quatNonDegenerate(v, theta);
-    ret.gradient().value() = dexpmap2quatNonDegenerate(v, theta);
-    ret.gradient().gradient().value() = ddexpmap2quatNonDegenerate(v, theta);
+    if(gradient_order>0)
+    {
+      ret.gradient().value() = dexpmap2quatNonDegenerate(v, theta);
+      if(gradient_order>1)
+      {
+        ret.gradient().gradient().value() = ddexpmap2quatNonDegenerate(v, theta);
+        if(gradient_order>2)
+        {
+          throw std::runtime_error("expmap2quat does not support gradient order larger than 2");
+        }
+      }
+    }
   }
+  return ret;
 }
 
 DLLEXPORT int rotationRepresentationSize(int rotation_type)
@@ -1260,7 +1281,8 @@ template DLLEXPORT GradientVar<double, Eigen::Dynamic, 1> rotmat2Representation(
     const GradientVar<double, SPACE_DIMENSION, SPACE_DIMENSION>& R,
     int rotation_type);
 
-template DLLEXPORT GradientVar<double, QUAT_SIZE, 1> expmap2quat(const MatrixBase<Vector3d>& v);
+template DLLEXPORT GradientVar<double, QUAT_SIZE, 1> expmap2quat(const MatrixBase<Vector3d>& v, const int gradient_order);
+template DLLEXPORT GradientVar<double, QUAT_SIZE, 1> expmap2quat(const MatrixBase<Map<Vector3d>>& v, const int gradient_order);
 
 template DLLEXPORT Vector4d rpy2axis(const Eigen::MatrixBase<Vector3d>&);
 template DLLEXPORT Vector4d rpy2quat(const Eigen::MatrixBase<Vector3d>&);

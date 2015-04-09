@@ -1,29 +1,26 @@
-function testQuatdot2expdot
+function testQuatdot2expmapdot
 q = uniformlyRandomQuat();
 qdot = randn(4,1);
 qdot = qdot-q'*qdot*q;
-wdot = check_derivative(q,qdot);
+check_derivative(q,qdot);
 
 q = [1;zeros(3,1)];
 qdot = [0;randn(3,1)];
-wdot = check_derivative(q,qdot);
+check_derivative(q,qdot);
 
 N = 50;
 q = zeros(4,N);
 qdot = randn(4,N);
+[w,wdot] = quatdot2expmapdot(q,qdot);
 for i = 1:N
-  q(:,i) = uniformlyRandomQuat();
-  qdot(:,i) = qdot(:,i)-q(:,i)'*qdot(:,i)*q(:,i);
-end
-wdot = quatdot2expdot(q,qdot);
-for i = 1:N
-  valuecheck(check_derivative(q(:,i),qdot(:,i)),wdot(:,i));
+  [wi,dwi] = quat2expmap(q(:,i));
+  valuecheck(w(:,i),wi);
+  valuecheck(wdot(:,i),dwi*qdot(:,i));
 end
 end
 
-function wdot = check_derivative(q,qdot)
-wdot = quatdot2expdot(q,qdot);
-w = quat2exp(q);
+function check_derivative(q,qdot)
+[w,wdot] = quatdot2expmapdot(q,qdot);
 [w_mex,dw_mex] = quat2expmex(q);
 wdot_mex = dw_mex*qdot;
 valuecheck(w,w_mex);
@@ -35,5 +32,5 @@ axis = omega/norm(omega);
 R_dt = axis2rotmat([axis;angle]);
 q2 = rotmat2quat(R_dt*quat2rotmat(q));
 q2 = sign(q2'*q)*q2;
-valuecheck((quat2exp(q2)-w)/dt,wdot,1e-3);
+valuecheck((quat2expmap(q2)-w)/dt,wdot,1e-3);
 end

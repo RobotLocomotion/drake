@@ -48,6 +48,9 @@ if (eigen3_FOUND)
 
   add_mex(quat2expmex quat2expmex.cpp)
   target_link_libraries(quat2expmex drakeGeometryUtil drakeGradientUtil)
+
+  add_mex(expmap2quatmex expmap2quatmex.cpp)
+  target_link_libraries(expmap2quatmex drakeGeometryUtil drakeGradientUtil)
 endif()
 
 add_subdirectory(test)

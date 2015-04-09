@@ -21,7 +21,7 @@
 
 const int TWIST_SIZE = 6;
 const int QUAT_SIZE = 4;
-const int EXPMAP_SIZE = 4;
+const int EXPMAP_SIZE = 3;
 const int HOMOGENEOUS_TRANSFORM_SIZE = 16;
 const int AXIS_ANGLE_SIZE = 4;
 const int SPACE_DIMENSION = 3;
@@ -77,7 +77,7 @@ DLLEXPORT Eigen::Matrix<typename Derived::Scalar, 3, 1> axis2rpy(const Eigen::Ma
  * expmap2x
  */
 template <typename Derived>
-DLLEXPORT GradientVar<typename Derived::Scalar, QUAT_SIZE, 1> expmap2quat(const Eigen::MatrixBase<Derived>& q);
+DLLEXPORT GradientVar<typename Derived::Scalar, QUAT_SIZE, 1> expmap2quat(const Eigen::MatrixBase<Derived>& q, const int gradient_ordr);
 
 /*
  * rotmat2x
