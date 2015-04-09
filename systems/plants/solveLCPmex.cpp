@@ -1,6 +1,7 @@
 #include "mex.h"
 #include <iostream>
 #include "drakeUtil.h"
+#include "MexWrapper.h"
 #include "RigidBodyManipulator.h"
 #include "math.h"
 #include "drake/fastQP.h"
@@ -180,10 +181,12 @@ bool callFastQP(MatrixBase<DerivedM> const & M, MatrixBase<Derivedw> const & w, 
 
 //[z, Mqdn, wqdn] = setupLCPmex(mex_model_ptr, q, qd, u, phiC, n, D, h, z_inactive_guess_tol)
 void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) { 
+  
   if (nlhs != 3 || nrhs != 10) {
     mexErrMsgIdAndTxt("Drake:setupLCPmex:InvalidUsage","Usage: [z, Mqdn, wqdn, zqp] = setupLCPmex(mex_model_ptr, q, qd, u, phiC, n, D, h, z_inactive_guess_tol, z_cached)");
   }
-
+  static unique_ptr<MexWrapper> lcp_mex = unique_ptr<MexWrapper>(new MexWrapper(PATHLCP_MEXFILE));
+  
   RigidBodyManipulator *model= (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
   const int nq = model->num_positions;
   const int nv = model->num_velocities;
@@ -344,7 +347,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
     z_path = VectorXd::Zero(lcp_size);
     //fall back to pathlcp
     if(qp_failed) {
-      callMexStandalone(PATHLCP_MEXFILE, 2, lhs, 7, const_cast<const mxArray**>(rhs));
+      lcp_mex->mexFunction(2, lhs, 7, const_cast<const mxArray**>(rhs));
       z = z_path;
       mxDestroyArray(lhs[0]);
       mxDestroyArray(lhs[1]);
