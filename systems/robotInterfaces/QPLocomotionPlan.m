@@ -13,7 +13,7 @@ classdef QPLocomotionPlan < QPControllerPlan
     comtraj = [];
     mu = 0.5;
     plan_shift_data = PlanShiftData();
-    plan_shift_z_only = true;
+    plan_shift_z_only = false;
     g = 9.81; % gravity m/s^2
     is_quasistatic = false;
     constrained_dofs = [];
