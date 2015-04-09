@@ -171,6 +171,11 @@ add_foot_origin_knot(pose);
 add_foot_origin_knot(swing2_origin_pose);
 % add_foot_origin_knot(swing2_origin_pose, min(params.step_speed, MAX_LANDING_SPEED)/2);
 foot_origin_knots(end).is_landing = true;
+if foot_origin_knots(end).t - foot_origin_knots(1).t < MIN_STEP_TIME
+  foot_origin_knots(end).t = foot_origin_knots(1).t + MIN_STEP_TIME;
+end
+
+
 zmp_knots(end+1).t = foot_origin_knots(end).t;
 zmp_knots(end).zmp = zmp1;
 zmp_knots(end).supp = RigidBodySupportState(biped, [stance_body_index, swing_body_index]);
@@ -193,9 +198,6 @@ end
 foot = swing_foot_name;
 states = [foot_origin_knots(1:4).(foot)];
 
-if foot_origin_knots(4).t - foot_origin_knots(1).t < MIN_STEP_TIME
-  foot_origin_knots(4).t = foot_origin_knots(1).t + MIN_STEP_TIME;
-end
 ts = [foot_origin_knots(1).t, 0, 0, foot_origin_knots(4).t];
 
 qpSpline_options = struct('optimize_knot_times', true);
