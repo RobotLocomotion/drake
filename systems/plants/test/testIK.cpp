@@ -46,7 +46,7 @@ int main()
   /*MATFile *presultmat;
   presultmat = matOpen("q_sol.mat","w");
   mxArray* pqsol = mxCreateDoubleMatrix(model->num_dof,1,mxREAL);
-  memcpy(mxGetPr(pqsol),q_sol.data(),sizeof(double)*model->num_dof);
+  memcpy(mxGetPrSafe(pqsol),q_sol.data(),sizeof(double)*model->num_dof);
   matPutVariable(presultmat,"q_sol",pqsol);
   matClose(presultmat);*/
   delete com_kc;

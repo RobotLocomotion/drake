@@ -28,11 +28,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         
     if (!mxIsNumeric(prhs[2]) || mxGetM(prhs[2])!=6 || mxGetN(prhs[2])!=1)
     mexErrMsgIdAndTxt("DRC:bodyMotionControlmex:BadInputs","the third argument should be Kp");
-    memcpy(&(pdata->Kp),mxGetPr(prhs[2]),sizeof(pdata->Kp));
+    memcpy(&(pdata->Kp),mxGetPrSafe(prhs[2]),sizeof(pdata->Kp));
 
     if (!mxIsNumeric(prhs[3]) || mxGetM(prhs[3])!=6 || mxGetN(prhs[3])!=1)
     mexErrMsgIdAndTxt("DRC:bodyMotionControlmex:BadInputs","the fourth argument should be Kd");
-    memcpy(&(pdata->Kd),mxGetPr(prhs[3]),sizeof(pdata->Kd));
+    memcpy(&(pdata->Kd),mxGetPrSafe(prhs[3]),sizeof(pdata->Kd));
 
     pdata->body_index = (int) mxGetScalar(prhs[4]) -1;
 
@@ -58,18 +58,18 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   int narg = 1;
   
-  Map<VectorXd> q(mxGetPr(prhs[narg++]), nq);
+  Map<VectorXd> q(mxGetPrSafe(prhs[narg++]), nq);
   double *qd = &q[nq];
   Map< VectorXd > qdvec(qd,nv);
 
   assert(mxGetM(prhs[narg])==6); assert(mxGetN(prhs[narg])==1);
-  Map< Vector6d > body_pose_des(mxGetPr(prhs[narg++]));
+  Map< Vector6d > body_pose_des(mxGetPrSafe(prhs[narg++]));
 
   assert(mxGetM(prhs[narg])==6); assert(mxGetN(prhs[narg])==1);
-  Map< Vector6d > body_v_des(mxGetPr(prhs[narg++]));
+  Map< Vector6d > body_v_des(mxGetPrSafe(prhs[narg++]));
 
   assert(mxGetM(prhs[narg])==6); assert(mxGetN(prhs[narg])==1);
-  Map< Vector6d > body_vdot_des(mxGetPr(prhs[narg++]));
+  Map< Vector6d > body_vdot_des(mxGetPrSafe(prhs[narg++]));
 
   pdata->r->doKinematics(q,false,qdvec);
 

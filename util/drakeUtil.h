@@ -72,13 +72,18 @@ Eigen::Matrix<double, RowsAtCompileTime, ColsAtCompileTime> matlabToEigen(const 
   return ret;
 }
 
-mxArray* stdVectorToMatlab(const std::vector<int>& vec) {
+template <typename Scalar>
+mxArray* stdVectorToMatlab(const std::vector<Scalar>& vec) {
   mxArray* pm = mxCreateDoubleMatrix(static_cast<int>(vec.size()), 1, mxREAL);
   for (int i = 0; i < static_cast<int>(vec.size()); i++) {
     mxGetPr(pm)[i] = (double) vec[i];
   }
   return pm;
 }
+
+DLLEXPORT const std::vector<double> matlabToStdVector(const mxArray* in);
+
+DLLEXPORT int sub2ind(mwSize ndims, const mwSize* dims, const mwSize* sub);
 
 void baseZeroToBaseOne(std::vector<int>& vec)
 {
@@ -91,6 +96,13 @@ DLLEXPORT double angleAverage(double theta1, double theta2);
 DLLEXPORT std::pair<Eigen::Vector3d, double> resolveCenterOfPressure(Eigen::Vector3d torque, Eigen::Vector3d force, Eigen::Vector3d normal, Eigen::Vector3d point_on_contact_plane);
 
 DLLEXPORT double *mxGetPrSafe(const mxArray *pobj);
+
+DLLEXPORT mxArray* mxGetPropertySafe(const mxArray* array, std::string const& field_name);
+DLLEXPORT mxArray* mxGetFieldSafe(const mxArray* array, std::string const& field_name);
+DLLEXPORT mxArray* mxGetPropertySafe(const mxArray* array, size_t index, std::string const& field_name);
+DLLEXPORT mxArray* mxGetFieldSafe(const mxArray* array, size_t index, std::string const& field_name);
+
+DLLEXPORT void mxSetFieldSafe(mxArray* array, size_t index, std::string const & fieldname, mxArray* data);
 
 DLLEXPORT void sizecheck(const mxArray* mat, int M, int N);
 

@@ -1,5 +1,4 @@
 function [zmp_knots, foot_origin_knots] = planZMPTraj(biped, q0, footsteps, options)
-% function [zmptraj, link_constraints, support_times, supports] = planZMPTraj(biped, q0, footsteps, options)
 % Plan the trajectories of the ZMP and the feet in order to follow the given footsteps
 % @param q0 the initial configuration vector
 % @param footsteps a list of Footstep objects
@@ -87,9 +86,15 @@ while 1
     initial_hold = options.first_step_hold_s;
 %     sw1.walking_params.drake_min_hold_time = options.first_step_hold_s;
     is_first_step = false;
+    sw1.walking_params.step_speed = sw1.walking_params.step_speed / 2;
   else
     initial_hold = 0;
   end
+  if istep.left == length(steps.left) || istep.right == length(steps.right)
+    % this is the last swing, so slow down
+    sw1.walking_params.step_speed = sw1.walking_params.step_speed / 2;
+  end
+
   [new_foot_knots, new_zmp_knots] = planSwingPitched(biped, st, sw0, sw1, initial_hold);
   t0 = foot_origin_knots(end).t;
   for k = 1:length(new_foot_knots)
@@ -99,12 +104,7 @@ while 1
     new_zmp_knots(k).t = new_zmp_knots(k).t + t0;
   end
 
-  % Allow toe-off two knot points earlier than the beginning of the swing. This is
-  % necessary to allow toe-off to start earlier than halfway through the zmp shift
-  if length(foot_origin_knots) > 1
-    foot_origin_knots(end-1).toe_off_allowed = new_foot_knots(1).toe_off_allowed;
-  end
-  foot_origin_knots(end).toe_off_allowed = new_foot_knots(1).toe_off_allowed;
+  foot_origin_knots(end).toe_off_allowed.(sw_foot) = true;
   foot_origin_knots = [foot_origin_knots, new_foot_knots];
   zmp_knots = [zmp_knots, new_zmp_knots];
 

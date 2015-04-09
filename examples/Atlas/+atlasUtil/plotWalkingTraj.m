@@ -42,10 +42,8 @@ zmpact = zeros(2, length(ts));
 lfoot_pos = zeros(6, length(ts));
 rfoot_pos = zeros(6, length(ts));
 
-rfoottraj = PPTrajectory(pchip(walking_plan_data.link_constraints(1).ts,...
-                               walking_plan_data.link_constraints(1).poses));
-lfoottraj = PPTrajectory(pchip(walking_plan_data.link_constraints(2).ts,...
-                               walking_plan_data.link_constraints(2).poses));
+rfoottraj = PPTrajectory(walking_plan_data.body_motions(1).getPP());
+lfoottraj = PPTrajectory(walking_plan_data.body_motions(2).getPP());
 
 for i=1:length(ts)
   % ts is from the walking plan, but traj is only defined at the dt
@@ -61,10 +59,10 @@ for i=1:length(ts)
   kinsol = doKinematics(r,q);
 
   [com(:,i),J]=getCOM(r,kinsol);
-  Jdot = forwardJacDot(r,kinsol,0);
+  Jdotv = centerOfMassJacobianDotTimesV(r,kinsol,0);
   comdes(:,i)=walking_plan_data.comtraj.eval(t);
   zmpdes(:,i)=walking_plan_data.zmptraj.eval(t);
-  zmpact(:,i)=com(1:2,i) - com(3,i)/9.81 * (J(1:2,:)*qdd + Jdot(1:2,:)*qd);
+  zmpact(:,i)=com(1:2,i) - com(3,i)/9.81 * (J(1:2,:)*qdd + Jdotv(1:2));
 
   lfoot_cpos = terrainContactPositions(r,kinsol,lfoot);
   rfoot_cpos = terrainContactPositions(r,kinsol,rfoot);

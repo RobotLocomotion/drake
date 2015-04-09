@@ -22,7 +22,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
   RigidBodyManipulator *model = (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
   set<int> robotnum_set;
   int num_robot = static_cast<int>(mxGetNumberOfElements(prhs[1]));
-  double* robotnum = mxGetPr(prhs[1]);
+  double* robotnum = mxGetPrSafe(prhs[1]);
   for (int i = 0; i < num_robot; i++) {
     robotnum_set.insert((int) robotnum[i] - 1);
   }

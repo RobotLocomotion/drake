@@ -187,7 +187,6 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       else
         if (obj.gurobi_present && obj.manip.only_loops && obj.manip.mex_model_ptr~=0 && ~obj.position_control)
            [obj,z,Mqdn,wqdn] = solveMexLCP(obj,t,x,u);
-           %[obj,z,Mqdn,wqdn] = solveLCP(obj,t,x,u);
         else
           [obj,z,Mqdn,wqdn] = solveLCP(obj,t,x,u);
         end
@@ -576,42 +575,26 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
           end
         end
         
-        % check gradients
-        %      xdn = M;
-        %      if (nargout>1)
-        %        df = reshape(dM,prod(size(M)),[]);
-        %      end
-        %      return;
-
-        z = zeros(nL+nP+(mC+2)*nC,1); 
-        if possible_indices_changed || isempty(obj.LCP_cache.data.z) || numel(obj.LCP_cache.data.z) ~= numel(lb)
-          z_inactive = true(nL+nP+(mC+2)*nC,1);
-          M_active = z_inactive;
-          obj.LCP_cache.data.z = z;
-        else
-          z_inactive = obj.LCP_cache.data.z>lb+1e-8;
-          % use conservative guess of M_active to avoid occasional numerical issues
-          % when M*z_inactive + w > 1e-8 by a small amount
-          M_active = z_inactive;
-        end
-        
         QP_FAILED = true;
-        if obj.enable_fastqp
+        if ~possible_indices_changed && obj.enable_fastqp
+          z = zeros(nL+nP+(mC+2)*nC,1);
+          if isempty(obj.LCP_cache.data.z) || numel(obj.LCP_cache.data.z) ~= numel(lb)
+            z_inactive = true(nL+nP+(mC+2)*nC,1);
+            obj.LCP_cache.data.z = z;
+          else
+            z_inactive = obj.LCP_cache.data.z>lb+1e-8;
+            % use conservative guess of M_active to avoid occasional numerical issues
+            % when M*z_inactive + w > 1e-8 by a small amount
+          end
           n_z_inactive = sum(z_inactive);
           if n_z_inactive > 0
-            Aeq = M(M_active,z_inactive); 
-            beq = -w(M_active);
-            M_inactive = ~M_active & z_inactive;            
-            Ain_fqp = [-M(M_inactive,z_inactive); -eye(n_z_inactive)];
-            bin_fqp = [w(M_inactive); -lb(z_inactive)];
+            Aeq = M(z_inactive,z_inactive); 
+            beq = -w(z_inactive);
+            Ain_fqp = -eye(n_z_inactive);
+            bin_fqp = -lb(z_inactive);
             QblkDiag = {eye(n_z_inactive)};
-            fqp = -0*obj.LCP_cache.data.z(z_inactive); % could used the previous solution here
-            % but it introduces unwanted hidden state
-%             fastqp_tic = tic;
-            
+            fqp = zeros(n_z_inactive, 1);
             [z_,info_fqp] = fastQPmex(QblkDiag,fqp,Ain_fqp,bin_fqp,Aeq,beq,[]);
-%             fastqp_time = toc(fastqp_tic);
-%             fprintf('FastQP solve time: %2.5f\n',fastqp_time);
             QP_FAILED = info_fqp<0;
             if ~QP_FAILED
               z(z_inactive) = z_; 
@@ -635,17 +618,8 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         
         if QP_FAILED 
             % then the active set has changed, call pathlcp
-            %path_tic = tic;
-
             z = pathlcp(M,w,lb,ub);
-  %             path_time = toc(path_tic);
-  %             fprintf('Path solve time: %2.5f\n',path_time);
             obj.LCP_cache.data.fastqp_active_set = [];
-%             if isempty(active_set_fail_count)
-%                active_set_fail_count = 1;
-%             else
-%                active_set_fail_count = active_set_fail_count + 1;
-%             end
         end
         % for debugging
         %cN = z(nL+nP+(1:nC))
@@ -977,6 +951,11 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       [varargout{:}] = getCOM(obj.manip,varargin{:});
     end
 
+    function varargout = centerOfMassJacobianDotTimesV(obj,varargin)
+      varargout = cell(1,nargout);
+      [varargout{:}] = centerOfMassJacobianDotTimesV(obj.manip,varargin{:});
+    end
+    
     function varargout = getCMM(obj,varargin)
       varargout=cell(1,nargout);
       [varargout{:}] = getCMM(obj.manip,varargin{:});

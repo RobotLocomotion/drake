@@ -37,19 +37,19 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
     if (!mxIsNumeric(prhs[2]) || mxGetNumberOfElements(prhs[2])!=1)
     mexErrMsgIdAndTxt("DRC:pelvisMotionControlmex:BadInputs","the third argument should be alpha");
-    memcpy(&(pdata->alpha),mxGetPr(prhs[2]),sizeof(pdata->alpha));
+    memcpy(&(pdata->alpha),mxGetPrSafe(prhs[2]),sizeof(pdata->alpha));
 
     if (!mxIsNumeric(prhs[3]) || mxGetNumberOfElements(prhs[3])!=1)
     mexErrMsgIdAndTxt("DRC:pelvisMotionControlmex:BadInputs","the fourth argument should be nominal_pelvis_height");
-    memcpy(&(pdata->nominal_pelvis_height),mxGetPr(prhs[3]),sizeof(pdata->nominal_pelvis_height));
+    memcpy(&(pdata->nominal_pelvis_height),mxGetPrSafe(prhs[3]),sizeof(pdata->nominal_pelvis_height));
 
     if (!mxIsNumeric(prhs[4]) || mxGetM(prhs[4])!=6 || mxGetN(prhs[4])!=1)
     mexErrMsgIdAndTxt("DRC:pelvisMotionControlmex:BadInputs","the fifth argument should be Kp");
-    memcpy(&(pdata->Kp),mxGetPr(prhs[4]),sizeof(pdata->Kp));
+    memcpy(&(pdata->Kp),mxGetPrSafe(prhs[4]),sizeof(pdata->Kp));
 
     if (!mxIsNumeric(prhs[5]) || mxGetM(prhs[5])!=6 || mxGetN(prhs[5])!=1)
     mexErrMsgIdAndTxt("DRC:pelvisMotionControlmex:BadInputs","the sixth argument should be Kd");
-    memcpy(&(pdata->Kd),mxGetPr(prhs[5]),sizeof(pdata->Kd));
+    memcpy(&(pdata->Kd),mxGetPrSafe(prhs[5]),sizeof(pdata->Kd));
 
 
     mxClassID cid;
@@ -78,7 +78,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   int nv = pdata->r->num_velocities;
 
   int narg = 1;
-  Map<VectorXd> q(mxGetPr(prhs[narg++]), nq);
+  Map<VectorXd> q(mxGetPrSafe(prhs[narg++]), nq);
   double *qd = &q[nq];
   Map<VectorXd> qdvec(qd, nv);
   double lfoot_yaw = mxGetScalar(prhs[narg++]);

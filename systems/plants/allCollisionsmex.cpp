@@ -59,18 +59,18 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 
   if (nlhs>0) {
     plhs[0] = mxCreateDoubleMatrix(3,ptsA.cols(),mxREAL);
-    memcpy(mxGetPr(plhs[0]),ptsA.data(),sizeof(double)*3*ptsA.cols());
+    memcpy(mxGetPrSafe(plhs[0]),ptsA.data(),sizeof(double)*3*ptsA.cols());
   }
   if (nlhs>1) {
     plhs[1] = mxCreateDoubleMatrix(3,ptsB.cols(),mxREAL);
-    memcpy(mxGetPr(plhs[1]),ptsB.data(),sizeof(double)*3*ptsB.cols());
+    memcpy(mxGetPrSafe(plhs[1]),ptsB.data(),sizeof(double)*3*ptsB.cols());
   }
   if (nlhs>2) {
     plhs[2] = mxCreateNumericMatrix(1,idxA.size(),mxINT32_CLASS,mxREAL);
-    memcpy(mxGetPr(plhs[2]),idxA.data(),sizeof(int32_T)*idxA.size());
+    memcpy(mxGetPrSafe(plhs[2]),idxA.data(),sizeof(int32_T)*idxA.size());
   }
   if (nlhs>3) {
     plhs[3] = mxCreateNumericMatrix(1,idxB.size(),mxINT32_CLASS,mxREAL);
-    memcpy(mxGetPr(plhs[3]),idxB.data(),sizeof(int32_T)*idxB.size());
+    memcpy(mxGetPrSafe(plhs[3]),idxB.data(),sizeof(int32_T)*idxB.size());
   }
 }

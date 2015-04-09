@@ -1,8 +1,6 @@
 function testJointCalibration
-s = rng(215615, 'twister');
 testJointOffsetCalibration();
 testJointStiffnessCalibration();
-rng(s);
 end
 
 function testJointOffsetCalibration()
@@ -12,10 +10,12 @@ num_poses = 10;
 q_offset_max = 1e-2;
 q_noise_stddev = 1e-6;
 
+s = rng(1234, 'twister');
 q_offset_actual = 2 * (rand(length(q_indices), 1) - 0.5) * q_offset_max;
 q_measured = q_actual + q_noise_stddev * randn(size(q_actual));
 q_measured(q_indices, :) = q_measured(q_indices, :) - repmat(q_offset_actual, 1, num_poses);
 scales = {100, 1};
+rng(s);
 
 options.search_floating = true;
 [q_offset_estimated, marker_params, floating_states] = jointOffsetCalibration(r, q_measured, q_indices, ...
@@ -33,7 +33,7 @@ checkFloatingStates(r, bodies, q_actual, floating_states, num_poses);
 end
 
 function testJointStiffnessCalibration()
-num_poses = 15;
+num_poses = 30;
 k_nominal = 0.5e4;
 k_max_deviation = 1e4;
 k_initial_stddev = 1e3;
@@ -41,6 +41,8 @@ q_noise_stddev = 1e-5;
 u_stddev = 150;
 
 [r, q_actual, q_indices, bodies, marker_positions_actual, marker_functions, num_unmeasured_markers, vicon_data] = setUp(num_poses);
+
+s = rng(1234, 'twister');
 
 nk = length(q_indices);
 k_actual = k_nominal * ones(nk, 1) + rand(nk, 1) * k_max_deviation;
@@ -58,10 +60,10 @@ q_measured(q_indices, :) = q_measured(q_indices, :) - dq_actual;
 k_initial = abs(k_actual + k_initial_stddev * randn(nk, 1));
 scales = {1, 1};
 
+rng(s);
+
 options.search_floating = true;
 
-
-options.search_floating = true;
 [k_estimated, marker_params, floating_states] = jointStiffnessCalibration(r, q_measured, u_data, q_indices, ...
   bodies, marker_functions, cellfun(@(x) 3 * x, num_unmeasured_markers, 'UniformOutput', false), vicon_data, ...
   scales, k_initial, options);
@@ -94,6 +96,8 @@ vicon_data_noise_stddev = 1e-6;
 marker_offset_max = 0.1;
 num_markers = 4;
 num_measured_markers = 3;
+
+s = rng(215615, 'twister');
 
 % actual ('perfect') joint configurations
 nq = r.getNumPositions();
@@ -143,6 +147,8 @@ marker_functions = cell(length(bodies), 1);
 for i = 1 : length(bodies)
   marker_functions{i} = @(params) markerPositions(params, marker_positions_measured{i});
 end
+
+rng(s);
 end
 
 function [x, dx] = markerPositions(params, marker_positions_measured)

@@ -29,7 +29,7 @@ void rigidBodyConstraintParseTspan(const mxArray* pm,Eigen::Vector2d &tspan)
   else
   {
     double* tspan_tmp = new double[num_tspan];
-    memcpy(tspan_tmp,mxGetPr(pm),sizeof(double)*num_tspan);
+    memcpy(tspan_tmp,mxGetPrSafe(pm),sizeof(double)*num_tspan);
     tspan<<tspan_tmp[0],tspan_tmp[num_tspan-1];
     if(tspan(0)>tspan(1))
     {
@@ -49,7 +49,7 @@ void rigidBodyConstraintParse3dUnitVector(const mxArray* pm, Vector3d &unit_vec)
   {
     mexErrMsgIdAndTxt("Drake:rigidBodyConstraintParse3dUnitVector:BadInputs","vector should be of size 3x1");
   }
-  memcpy(unit_vec.data(),mxGetPr(pm),sizeof(double)*3);
+  memcpy(unit_vec.data(),mxGetPrSafe(pm),sizeof(double)*3);
   double vec_norm = unit_vec.norm();
   if(vec_norm==0.0)
   {
@@ -68,7 +68,7 @@ void rigidBodyConstraintParseQuat(const mxArray* pm, Vector4d &quat)
   {
     mexErrMsgIdAndTxt("Drake:rigidBodyConstraintParseQuat:BadInputs","The input argument 1 should be of size 4x1");
   }
-  memcpy(quat.data(),mxGetPr(pm),sizeof(double)*4);
+  memcpy(quat.data(),mxGetPrSafe(pm),sizeof(double)*4);
   for(int i = 0;i<4;i++)
   {
     if((mxIsInf(quat(i)))||(mxIsNaN(quat(i))))

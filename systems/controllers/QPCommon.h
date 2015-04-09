@@ -21,8 +21,10 @@ struct QPControllerData {
   MatrixXd H, H_float, H_act;
   VectorXd C, C_float, C_act;
   MatrixXd B, B_act;
-  MatrixXd J, Jdot;
-  MatrixXd J_xy, Jdot_xy;
+  MatrixXd J;
+  Vector3d Jdotv;
+  MatrixXd J_xy;
+  Vector2d Jdotv_xy;
   MatrixXd Hqp;
   RowVectorXd fqp;
   
@@ -170,8 +172,10 @@ struct NewQPControllerData {
   MatrixXd H, H_float, H_act;
   VectorXd C, C_float, C_act;
   MatrixXd B, B_act;
-  MatrixXd J, Jdot;
-  MatrixXd J_xy, Jdot_xy;
+  MatrixXd J;
+  Vector3d Jdotv;
+  MatrixXd J_xy;
+  Vector2d Jdotv_xy;
   MatrixXd Hqp;
   RowVectorXd fqp;
   VectorXd qdd_lb;
@@ -192,6 +196,7 @@ struct DesiredBodyAcceleration {
   Vector6d body_vdot;
   double weight;
   Bounds accel_bounds;
+  bool control_pose_when_in_contact;
 };
 
 struct QPControllerOutput {
@@ -222,7 +227,7 @@ struct QPControllerDebugData {
   MatrixXd A_ls;
   MatrixXd B_ls;
   MatrixXd Jcom;
-  MatrixXd Jcomdot;
+  VectorXd Jcomdotv;
   VectorXd beta;
 };
 
