@@ -31,12 +31,15 @@ namespace DrakeShapes
 
       const Shape getShape() const;
 
-      virtual void getPoints(Eigen::Matrix4Xd &points);
-      virtual void getBoundingBoxPoints(Eigen::Matrix4Xd &points);
+      virtual void getPoints(Eigen::Matrix3Xd &points) const;
+      virtual void getBoundingBoxPoints(Eigen::Matrix3Xd &points) const;
 
     protected:
       Geometry(Shape shape);
+      void getBoundingBoxPoints(double x_half_width, double y_half_width, double z_half_width, Eigen::Matrix3Xd &points) const;
+      
       Shape shape;
+      static const int NUM_BBOX_POINTS = 8;      
   };
 
   class DLLEXPORT_drakeShapes Sphere: public Geometry {
@@ -44,9 +47,11 @@ namespace DrakeShapes
       Sphere(double radius);
       virtual ~Sphere() {}
       virtual Sphere* clone() const;
-      virtual void getPoints(Eigen::Matrix4Xd &points);
-      virtual void getBoundingBoxPoints(Eigen::Matrix4Xd &points);
+      virtual void getPoints(Eigen::Matrix3Xd &points) const;
+      virtual void getBoundingBoxPoints(Eigen::Matrix3Xd &points) const;
+      
       double radius;
+      static const int NUM_POINTS = 1;
   };
 
   class DLLEXPORT_drakeShapes Box : public Geometry {
@@ -54,8 +59,8 @@ namespace DrakeShapes
       Box(const Eigen::Vector3d& size);
       virtual ~Box() {}
       virtual Box* clone() const;
-      virtual void getPoints(Eigen::Matrix4Xd &points);
-      virtual void getBoundingBoxPoints(Eigen::Matrix4Xd &points);
+      virtual void getPoints(Eigen::Matrix3Xd &points) const;
+      virtual void getBoundingBoxPoints(Eigen::Matrix3Xd &points) const;
       
       Eigen::Vector3d size;
       
@@ -66,8 +71,8 @@ namespace DrakeShapes
       Cylinder(double radius, double length);
       virtual ~Cylinder() {}
       virtual Cylinder* clone() const;
-      virtual void getPoints(Eigen::Matrix4Xd &points);
-      virtual void getBoundingBoxPoints(Eigen::Matrix4Xd &points);
+      virtual void getPoints(Eigen::Matrix3Xd &points) const;
+      virtual void getBoundingBoxPoints(Eigen::Matrix3Xd &points) const;
       double radius;
       double length;
   };
@@ -77,10 +82,12 @@ namespace DrakeShapes
       Capsule(double radius, double length);
       virtual ~Capsule() {}
       virtual Capsule* clone() const;
-      virtual void getPoints(Eigen::Matrix4Xd &points);
-      virtual void getBoundingBoxPoints(Eigen::Matrix4Xd &points);
+      virtual void getPoints(Eigen::Matrix3Xd &points) const;
+      virtual void getBoundingBoxPoints(Eigen::Matrix3Xd &points) const;
       double radius;
       double length;
+      
+      static const int NUM_POINTS = 2;
   };
 
   class DLLEXPORT_drakeShapes Mesh : public Geometry {
@@ -89,8 +96,8 @@ namespace DrakeShapes
       Mesh(const std::string& filename, const std::string& resolved_filename);
       virtual ~Mesh() {}
       virtual Mesh* clone() const;
-      virtual void getPoints(Eigen::Matrix4Xd &points);
-      virtual void getBoundingBoxPoints(Eigen::Matrix4Xd &points);
+      virtual void getPoints(Eigen::Matrix3Xd &points) const;
+      virtual void getBoundingBoxPoints(Eigen::Matrix3Xd &points) const;
 
       std::string filename;
       std::string resolved_filename;
@@ -105,8 +112,8 @@ namespace DrakeShapes
       virtual ~MeshPoints() {}
       virtual MeshPoints* clone() const;
 
-      virtual void getPoints(Eigen::Matrix4Xd &points);
-      virtual void getBoundingBoxPoints(Eigen::Matrix4Xd &points);
+      virtual void getPoints(Eigen::Matrix3Xd &points) const;
+      virtual void getBoundingBoxPoints(Eigen::Matrix3Xd &points) const;
 
       Eigen::Matrix3Xd points;
   };

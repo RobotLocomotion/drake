@@ -537,27 +537,26 @@ void RigidBodyManipulator::updateCollisionElements(const shared_ptr<RigidBody>& 
     }
     
     // update the body's contact points    
-    getTerrainPoints(body, body->contact_pts);
+    Matrix3Xd contact_pts;
+    getTerrainPoints(*body, contact_pts);
+    body->contact_pts = contact_pts.colwise().homogeneous();
   }
 };
 
-void RigidBodyManipulator::getTerrainPoints(int body_id, Eigen::MatrixXd &terrain_points) {
-  getTerrainPoints(bodies[body_id], terrain_points);
-}
-
-void RigidBodyManipulator::getTerrainPoints(const shared_ptr<RigidBody>& body, Eigen::MatrixXd &terrain_points) {
+void RigidBodyManipulator::getTerrainPoints(const RigidBody& body, Eigen::Matrix3Xd &terrain_points) const 
+{
   // clear matrix before filling it again
-  int num_points = 0;
-  terrain_points.resize(0,0);
+  size_t num_points = 0;
+  terrain_points.resize(Eigen::NoChange,0);
 
-  for (auto id_iter = body->collision_element_ids.begin(); 
-       id_iter != body->collision_element_ids.end(); 
+  for (auto id_iter = body.collision_element_ids.begin(); 
+       id_iter != body.collision_element_ids.end(); 
        ++id_iter) {
     
-    Matrix4Xd element_points;
+    Matrix3Xd element_points;
     collision_model->getTerrainPoints(*id_iter, element_points);
-    terrain_points.conservativeResize(4, terrain_points.cols() + element_points.cols());
-    terrain_points.block(0, num_points, 4, element_points.cols()) = element_points;
+    terrain_points.conservativeResize(Eigen::NoChange, terrain_points.cols() + element_points.cols());
+    terrain_points.block(0, num_points, terrain_points.rows(), element_points.cols()) = element_points;
     num_points += element_points.cols();
   }
 }
