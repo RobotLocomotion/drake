@@ -163,19 +163,26 @@ bool callFastQP(MatrixBase<DerivedM> const & M, MatrixBase<Derivedw> const & w, 
   filterByIndices(z_inactive_indices, M_temp.transpose(), M_check);  //and inactive columns
   filterByIndices(z_active_indices, w, w_check);
   getThresholdInclusion((M_check.transpose() * zqp + w_check).eval(), -SMALL, violations);
-  
+  //check equality constraints
   if (anyTrue(violations)) { 
     return false;
   }
-
+ 
   getThresholdInclusion((Ain * zqp - bin).eval(), -SMALL, ineq_violations);
   getThresholdInclusion((beq - Aeq.transpose() * zqp).eval(), -SMALL, violations);
-
+  //check inequality constraints
   for (size_t i = 0; i < num_inactive_z; i++) { 
     if (ineq_violations[i] && violations[i]) { 
       return false;
     }
   }
+
+  //check complementarity constraints
+  getThresholdInclusion((-(zqp.transpose()*(Aeq*zqp - beq)).cwiseAbs()).eval(), -SMALL, violations);
+  if(anyTrue(violations)) {
+    return false;
+  }
+  
   return true;
 }
 

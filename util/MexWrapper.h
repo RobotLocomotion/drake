@@ -2,7 +2,6 @@
 #define MEX_WRAPPER_H
 
 #include "mex.h"
-#include <dlfcn.h>
 #include <string>
 
 class MexWrapper {
@@ -13,6 +12,7 @@ class MexWrapper {
     std::string getMexFile() const;
    private:
    	std::string m_mex_file;
+   	bool m_good;
    	void* m_handle;
     void (*m_mexFunc)(int, mxArray*[], int, const mxArray* []);
 };
