@@ -4,6 +4,7 @@
 #include <limits>
 #include <stdexcept>
 #include <Eigen/Sparse>
+#include "expmap2quat.h"
 
 using namespace Eigen;
 
@@ -362,6 +363,23 @@ DLLEXPORT GradientVar<Scalar, Eigen::Dynamic, 1> rotmat2Representation(const Gra
     throw std::runtime_error("rotation representation type not recognized");
   }
   return ret;
+}
+
+template <typename Derived>
+GradientVar<typename Derived::Scalar, QUAT_SIZE, 1> expmap2quat(const Eigen::MatrixBase<Derived>& v)
+{
+  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3);
+  GradientVar<typename Derived::Scalar, QUAT_SIZE, 1> ret(QUAT_SIZE, 1, EXPMAP_SIZE);
+  auto theta = v.norm();
+  if (theta < pow(std::numeric_limits<typename Derived::Scalar>::epsilon(),0.25)) {
+    ret.value() = expmap2quatDegenerate(v, theta);
+    ret.gradient().value() = dexpmap2quatDegenerate(v, theta);
+    ret.gradient().gradient().value() = ddexpmap2quatDegenerate(v, theta);
+  } else {
+    ret.value() = expmap2quatNonDegenerate(v, theta);
+    ret.gradient().value() = dexpmap2quatNonDegenerate(v, theta);
+    ret.gradient().gradient().value() = ddexpmap2quatNonDegenerate(v, theta);
+  }
 }
 
 DLLEXPORT int rotationRepresentationSize(int rotation_type)
@@ -1241,6 +1259,8 @@ template DLLEXPORT Vector3d rotmat2rpy(const MatrixBase<Matrix3d>&);
 template DLLEXPORT GradientVar<double, Eigen::Dynamic, 1> rotmat2Representation(
     const GradientVar<double, SPACE_DIMENSION, SPACE_DIMENSION>& R,
     int rotation_type);
+
+template DLLEXPORT GradientVar<double, QUAT_SIZE, 1> expmap2quat(const MatrixBase<Vector3d>& v);
 
 template DLLEXPORT Vector4d rpy2axis(const Eigen::MatrixBase<Vector3d>&);
 template DLLEXPORT Vector4d rpy2quat(const Eigen::MatrixBase<Vector3d>&);
