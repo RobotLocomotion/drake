@@ -1033,7 +1033,7 @@ void RigidBodyManipulator::doKinematicsNew(const MatrixBase<DerivedQ>& q, const 
   EIGEN_STATIC_ASSERT_VECTOR_ONLY(MatrixBase<DerivedV>);
   assert(q.rows() == num_positions);
   assert(v.rows() == num_velocities || v.rows() == 0);
-  compute_JdotV = compute_JdotV && (v.rows() > 0); // no sense in computing Jdot times v if v is not passed in
+  compute_JdotV = compute_JdotV && (v.rows() == num_velocities); // no sense in computing Jdot times v if v is not passed in
 
   if (kinematicsInit) {
     bool skip = true;
@@ -1063,6 +1063,7 @@ void RigidBodyManipulator::doKinematicsNew(const MatrixBase<DerivedQ>& q, const 
       return;
     }
   }
+  kinematicsInit = true; // doing this here because there is a geometricJacobian within doKinematics below which checks for kinematicsInit.
 
   int nq = num_positions;
   int gradient_order = compute_gradients ? 1 : 0;
@@ -1226,10 +1227,9 @@ void RigidBodyManipulator::doKinematicsNew(const MatrixBase<DerivedQ>& q, const 
   // Have the collision model do any model-wide updates that it needs to
   collision_model->updateModel();
 
-  kinematicsInit = true;
   cached_inertia_gradients_order = -1;
   gradients_cached = compute_gradients;
-  velocity_kinematics_cached = v.rows() > 0;
+  velocity_kinematics_cached = v.rows() == num_velocities;
   jdotV_cached = compute_JdotV && velocity_kinematics_cached;
   for (int i = 0; i < num_positions; i++) cached_q[i] = q[i];
   if (v.rows() > 0) for (int i = 0; i < num_velocities; i++) cached_v[i] = v[i];
