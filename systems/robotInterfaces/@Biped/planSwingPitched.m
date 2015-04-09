@@ -17,16 +17,8 @@ APEX_FRACTIONS = [0.15, 0.85]; % We plan only two poses of the foot during the a
                                % fraction of the distance from its initial location to its final location.
 
 FOOT_YAW_RATE = 0.75; % rad/s
-FOOT_PITCH_RATE = inf; % rad/s
 
-MIN_DIST_FOR_TOE_OFF = 0.4; % minimum distance of *forward* progress for toe-off to be allowed.
-                            % This disallows toe-off during backward stepping. 
-                            % The distance is measured as the vector between the two swing poses
-                            % dotted with the orientation of the stance foot
 MIN_DIST_FOR_PITCHED_SWING = 0.4;
-
-MAX_LANDING_SPEED = 0.75;
-MAX_TAKEOFF_SPEED = 1.5;
 
 if stance.frame_id == biped.foot_frame_id.right
   stance_foot_name = 'right';
@@ -136,10 +128,8 @@ function add_foot_origin_knot(swing_pose, speed)
   sole1 = rotmat2rpy(rpy2rotmat(foot_origin_knots(end-1).(swing_foot_name)(4:6)) * T_sole_to_foot(1:3,1:3));
   sole2 = rotmat2rpy(rpy2rotmat(foot_origin_knots(end).(swing_foot_name)(4:6)) * T_sole_to_foot(1:3,1:3));
   yaw_distance = abs(angleDiff(sole1(3), sole2(3)));
-  pitch_distance = abs(angleDiff(sole1(2), sole2(2)));
   dt = max([cartesian_distance / speed,...
-            yaw_distance / FOOT_YAW_RATE,...
-            pitch_distance / FOOT_PITCH_RATE]);
+            yaw_distance / FOOT_YAW_RATE]);
   foot_origin_knots(end).t = foot_origin_knots(end-1).t + dt;
   foot_origin_knots(end).is_liftoff = false;
   foot_origin_knots(end).is_landing = false;
@@ -149,7 +139,7 @@ end
 % terrain_pts_in_world = T_toe_local_to_world \ terrain_pts_in_toe_local;
 % max_terrain_ht_in_world = max(terrain_pts_in_world(3,:))
 if ~isempty(swing2.terrain_pts)
-  max_terrain_ht_in_world = max(swing2.terrain_pts(2,:))
+  max_terrain_ht_in_world = max(swing2.terrain_pts(2,:));
 else
   max_terrain_ht_in_world = -inf;
 end

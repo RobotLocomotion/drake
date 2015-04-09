@@ -79,14 +79,4 @@ classdef QPInputConstantHeight
       error('deprecated, use encodeQPInputLCMMex instead');
     end
   end
-
-  methods (Static)
-    function obj = from_lcm(msg)
-      error('deprecated');
-    end
-  end
 end
-
-
-
-% 219 doubles, 148 bytes
