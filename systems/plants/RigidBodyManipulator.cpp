@@ -464,7 +464,7 @@ void RigidBodyManipulator::compile(void)
         }
       }
       if (!hasChild) {
-      	cout << "welding " << bodies[i]->getJoint().getName() << "because it has no inertia beneath it" << endl;
+      	cout << "welding " << bodies[i]->getJoint().getName() << " because it has no inertia beneath it" << endl;
         unique_ptr<DrakeJoint> joint_unique_ptr(new FixedJoint(bodies[i]->getJoint().getName(), bodies[i]->getJoint().getTransformToParentBody()));
         bodies[i]->setJoint(move(joint_unique_ptr));
       }
