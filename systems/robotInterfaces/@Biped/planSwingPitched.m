@@ -193,10 +193,10 @@ end
 foot = swing_foot_name;
 states = [foot_origin_knots(1:4).(foot)];
 
-ts = [foot_origin_knots(1).t, 0, 0, foot_origin_knots(4).t];
-if ts(4) - ts(1) < MIN_STEP_TIME
-  ts(4) = ts(1) + MIN_STEP_TIME;
+if foot_origin_knots(4).t - foot_origin_knots(1).t < MIN_STEP_TIME
+  foot_origin_knots(4).t = foot_origin_knots(1).t + MIN_STEP_TIME;
 end
+ts = [foot_origin_knots(1).t, 0, 0, foot_origin_knots(4).t];
 
 qpSpline_options = struct('optimize_knot_times', true);
 [coefs, ts] = qpSpline(ts,...
@@ -204,7 +204,7 @@ qpSpline_options = struct('optimize_knot_times', true);
                  states(7:12, 1),...
                  states(7:12, 4), qpSpline_options, false);
 
-for j = 1:4
+for j = 2:3
   foot_origin_knots(j).t = ts(j);
   foot_origin_knots(j).(foot)(7:12) = coefs(:,j,end-1);
 end
