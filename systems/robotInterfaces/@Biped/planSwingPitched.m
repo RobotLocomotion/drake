@@ -17,6 +17,7 @@ APEX_FRACTIONS = [0.15, 0.85]; % We plan only two poses of the foot during the a
                                % fraction of the distance from its initial location to its final location.
 
 FOOT_YAW_RATE = 0.75; % rad/s
+MIN_STEP_TIME = 0.5; %s
 
 MIN_DIST_FOR_PITCHED_SWING = 0.4;
 
@@ -179,11 +180,12 @@ foot_origin_knots(end+1) = foot_origin_knots(end);
 foot_origin_knots(end).t = foot_origin_knots(end-1).t + hold_time / 2;
 
 % Unwrap angles
+angle_inds = [4:6, 10:12];
 for j = 1:length(foot_origin_knots)-1
   for f = {swing_foot_name, stance_foot_name}
-    foot_origin_knots(j+1).(f{1})(10:12) = foot_origin_knots(j).(f{1})(10:12) + ...
-                                           angleDiff(foot_origin_knots(j).(f{1})(10:12),...
-                                                     foot_origin_knots(j+1).(f{1})(10:12));
+    foot_origin_knots(j+1).(f{1})(angle_inds) = foot_origin_knots(j).(f{1})(angle_inds) + ...
+                                           angleDiff(foot_origin_knots(j).(f{1})(angle_inds),...
+                                                     foot_origin_knots(j+1).(f{1})(angle_inds));
   end
 end
 
@@ -192,13 +194,17 @@ foot = swing_foot_name;
 states = [foot_origin_knots(1:4).(foot)];
 
 ts = [foot_origin_knots(1).t, 0, 0, foot_origin_knots(4).t];
+if ts(4) - ts(1) < MIN_STEP_TIME
+  ts(4) = ts(1) + MIN_STEP_TIME;
+end
+
 qpSpline_options = struct('optimize_knot_times', true);
 [coefs, ts] = qpSpline(ts,...
                  states(1:6,:),...
                  states(7:12, 1),...
                  states(7:12, 4), qpSpline_options, false);
 
-for j = 2:3
+for j = 1:4
   foot_origin_knots(j).t = ts(j);
   foot_origin_knots(j).(foot)(7:12) = coefs(:,j,end-1);
 end
