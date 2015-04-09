@@ -6,7 +6,6 @@ end
 options = applyDefaults(options, struct('pelvis_height_above_sole', obj.default_walking_params.pelvis_height_above_foot_sole, 'debug', false));
 
 body_motions = BodyMotionData.empty();
-% link_constraints = struct('link_ndx',{}, 'pt', {}, 'ts', {}, 'poses', {}, 'dposes', {}, 'contact_break_indices', {}, 'coefs', {}, 'toe_off_allowed', {}, 'in_floating_base_nullspace', {});
 
 if options.debug
   figure(321)
@@ -39,12 +38,8 @@ for f = {'right', 'left'}
 
   if size(foot_states, 1) == 6
     body_motions(end+1) = BodyMotionData.from_body_poses(body_ind, ts, foot_states);
-    % foot_pp.(foot) = pchip(ts, foot_poses);
-    % foot_dposes = ppval(fnder(foot_pp.(foot), 1), ts);
   elseif size(foot_states, 1) == 12
     body_motions(end+1) = BodyMotionData.from_body_poses_and_velocities(body_ind, ts, foot_states(1:6,:), foot_states(7:12,:));
-    % foot_dposes = foot_states(7:12,:);
-    % foot_pp.(foot) = pchipDeriv(ts, foot_poses, foot_dposes);
   end
   body_motions(end).in_floating_base_nullspace = true(1, numel(ts));
   foot_pp.(foot) = body_motions(end).getPP();
@@ -83,13 +78,8 @@ for f = {'right', 'left'}
     sfigure(oldfig);
   end
 
-  % % Compute cubic polynomial coefficients to save work in the controller
-  % [~, coefs, l, k, d] = unmkpp(foot_pp.(foot));
-  % coefs = reshape(coefs, [d, l, k]);
-  % assert(k == 4, 'expected a piecewise cubic polynomial');
   toe_off_allowed = [foot_origin_knots.toe_off_allowed];
   body_motions(end).toe_off_allowed = [toe_off_allowed.(foot)];
-  % link_constraints(end+1) = struct('link_ndx', body_ind, 'pt', [0;0;0], 'ts', ts, 'poses', foot_poses, 'dposes', foot_dposes, 'contact_break_indices', find([foot_origin_knots.is_liftoff]), 'coefs', coefs, 'toe_off_allowed', [toe_off_allowed.(foot)], 'in_floating_base_nullspace', true);
 end
 
 if options.debug
@@ -100,14 +90,10 @@ end
 
 pelvis_reference_height = zeros(1,length(support_times));
 
-% lfoot_link_con_ind = [body_motions.link_ndx]==obj.foot_body_id.left;
-% rfoot_link_con_ind = [body_motions.link_ndx]==obj.foot_body_id.right;
 lfoot_body_motion = body_motions([body_motions.body_id] == obj.foot_body_id.left);
 rfoot_body_motion = body_motions([body_motions.body_id] == obj.foot_body_id.right);
 lfoot_des = lfoot_body_motion.eval(0);
 rfoot_des = rfoot_body_motion.eval(0);
-% lfoot_des = evaluateSplineInLinkConstraints(0,link_constraints,lfoot_link_con_ind);
-% rfoot_des = evaluateSplineInLinkConstraints(0,link_constraints,rfoot_link_con_ind);
 pelvis_reference_height(1) = min(lfoot_des(3),rfoot_des(3));
 
 T = obj.getFrame(obj.foot_frame_id.right).T;
@@ -132,12 +118,8 @@ for i=1:length(support_times)-1
   t_next = support_times(i+1);
   lfoot_des = lfoot_body_motion.eval(t);
   rfoot_des = rfoot_body_motion.eval(t);
-  % lfoot_des = evaluateSplineInLinkConstraints(t,link_constraints,lfoot_link_con_ind);
-  % rfoot_des = evaluateSplineInLinkConstraints(t,link_constraints,rfoot_link_con_ind);
   lfoot_des_next = lfoot_body_motion.eval(t_next);
   rfoot_des_next = rfoot_body_motion.eval(t_next);
-  % lfoot_des_next = evaluateSplineInLinkConstraints(t_next,link_constraints,lfoot_link_con_ind);
-  % rfoot_des_next = evaluateSplineInLinkConstraints(t_next,link_constraints,rfoot_link_con_ind);
 
   step_height_delta_threshold = 0.025; % cm, min change in height to classify step up/down
   step_up_pelvis_shift = 0.03; % cm
@@ -187,17 +169,3 @@ pelvis_poses = [nan(2, size(rpos, 2));
 pp = foh(pelvis_ts, pelvis_poses);
 pelvis_dposes = ppval(fnder(pp, 1), pelvis_ts);
 body_motions(end+1) = BodyMotionData.from_body_poses_and_velocities(pelvis_body, pelvis_ts, pelvis_poses, pelvis_dposes);
-
-% coefs = cat(3, zeros(6, size(coefs, 2), 2), coefs);
-
-
-% link_constraints(end+1).link_ndx = pelvis_body;
-% link_constraints(end).pt = [0;0;0];
-% link_constraints(end).ts = pelvis_ts;
-% link_constraints(end).poses = pelvis_poses;
-% link_constraints(end).coefs = coefs;
-% link_constraints(end).in_floating_base_nullspace = false;
-
-
-% Only needed for backwards compatibility
-% link_constraints(1).pelvis_reference_height = pelvis_reference_height;

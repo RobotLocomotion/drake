@@ -260,7 +260,6 @@ classdef QPLocomotionPlan < QPControllerPlan
       % end
       % obj.lcmgl.switchBuffers();
 
-      % coefs = qpSpline(ts, xs, xd0, xdf);
       obj.body_motions(body_motion_ind).coefs(:,body_t_ind+(1:3),:) = coefs;
       obj.body_motions(body_motion_ind).ts(body_t_ind+(1:3)) = ts(1:3);
     end
@@ -596,7 +595,6 @@ classdef QPLocomotionPlan < QPControllerPlan
 
       % handle the case where qtraj is a constant trajectory
       if isa(qtraj,'ConstantTrajectory')
-        disp('got a ConstantTrajectory, making it a PPTrajectory of with tspan [0,10]');
         q0 = qtraj.eval(0);
         qtraj = PPTrajectory(zoh([0, inf], [q0, q0]));
       end
