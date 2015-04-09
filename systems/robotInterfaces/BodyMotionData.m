@@ -7,6 +7,8 @@ classdef BodyMotionData
     in_floating_base_nullspace;
     control_pose_when_in_contact;
     use_spatial_velocity
+    quat_task_to_world % A rotation transformation, the coefs is specified in the task frame
+    translation_task_to_world % translation from task frame to the world frame
   end
 
   methods
@@ -18,6 +20,8 @@ classdef BodyMotionData
       obj.control_pose_when_in_contact = false(1, numel(ts));
       obj.coefs = zeros(6, numel(ts), 4);
       obj.use_spatial_velocity = false;
+      obj.quat_task_to_world = [1;0;0;0];
+      obj.translation_task_to_world = zeros(3,1);
     end
 
     function t_ind = findTInd(obj, t)
@@ -55,7 +59,9 @@ classdef BodyMotionData
                                  'toe_off_allowed', obj.toe_off_allowed(t_ind),...
                                  'in_floating_base_nullspace', obj.in_floating_base_nullspace(t_ind),...
                                  'control_pose_when_in_contact', obj.control_pose_when_in_contact(t_ind),...
-                                 'use_spatial_velocity',obj.use_spatial_velocity);
+                                 'use_spatial_velocity',obj.use_spatial_velocity,...
+                                 'quat_task_to_world',obj.quat_task_to_world,...
+                                 'translation_task_to_world',obj.translation_task_to_world);
     end
 
     function pp = getPP(obj)

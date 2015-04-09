@@ -12,4 +12,6 @@ struct lcmt_body_motion_data
 	boolean control_pose_when_in_contact;
 
         boolean use_spatial_velocity;
+        double quat_task_to_world[4];
+        double translation_task_to_world[4];
 }

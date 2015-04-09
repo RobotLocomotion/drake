@@ -199,6 +199,7 @@ struct DesiredBodyAcceleration {
   bool control_pose_when_in_contact;
   bool use_spatial_velocity;
   KinematicPath body_path;
+  Isometry3d T_task_to_world;
 };
 
 struct QPControllerOutput {

@@ -104,6 +104,18 @@ std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray 
         mexErrMsgTxt("use_spatial_velocity should be a logical scalar");
       }
       msg->body_motion_data[i].use_spatial_velocity = (bool)mxGetScalar(use_spatial_velocity);
+      const mxArray* quat_task_to_world = mxGetFieldSafe(body_motion_data, i, "quat_task_to_world"); 
+      if(mxGetM(quat_task_to_world) != 4 || mxGetN(quat_task_to_world) != 1)
+      {
+        mexErrMsgTxt("quat_task_to_world should be 4 x 1");
+      }
+      memcpy(msg->body_motion_data[i].quat_task_to_world,mxGetPr(quat_task_to_world),sizeof(double)*4);
+      const mxArray* translation_task_to_world = mxGetFieldSafe(body_motion_data, i, "translation_task_to_world");
+      if(mxGetM(translation_task_to_world) != 3 || mxGetN(translation_task_to_world) != 1)
+      {
+        mexErrMsgTxt("translation_task_to_world should be 3 x 1");
+      }
+      memcpy(msg->body_motion_data[i].translation_task_to_world, mxGetPr(translation_task_to_world),sizeof(double)*3);
     }
   }
 
@@ -371,6 +383,10 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     desired_body_accelerations[i].use_spatial_velocity = qp_input->body_motion_data[i].use_spatial_velocity;
     double weight = params->body_motion[body_id0].weight;
     desired_body_accelerations[i].body_id0 = body_id0;
+    Map<Vector4d> quat_task_to_world(qp_input->body_motion_data[i].quat_task_to_world);
+    Map<Vector3d> translation_task_to_world(qp_input->body_motion_data[i].translation_task_to_world);
+    desired_body_accelerations[i].T_task_to_world.linear() = quat2rotmat(quat_task_to_world);
+    desired_body_accelerations[i].T_task_to_world.translation() = translation_task_to_world;
     pdata->r->findKinematicPath(desired_body_accelerations[i].body_path,0,desired_body_accelerations[i].body_id0);
     Map<Matrix<double, 6, 4,RowMajor>>coefs_rowmaj(&qp_input->body_motion_data[i].coefs[0][0]);
     Matrix<double, 6, 4> coefs = coefs_rowmaj;
@@ -382,7 +398,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     }
     else
     {
-      desired_body_accelerations[i].body_vdot = bodySpatialMotionPD(pdata->r, robot_state, body_id0, body_pose_des, body_v_des, body_vdot_des, params->body_motion[body_id0].Kp,params->body_motion[body_id0].Kd);
+      desired_body_accelerations[i].body_vdot = bodySpatialMotionPD(pdata->r, robot_state, body_id0, body_pose_des, body_v_des, body_vdot_des, params->body_motion[body_id0].Kp,params->body_motion[body_id0].Kd,desired_body_accelerations[i].T_task_to_world);
     }
     desired_body_accelerations[i].weight = weight;
     desired_body_accelerations[i].accel_bounds = params->body_motion[body_id0].accel_bounds;

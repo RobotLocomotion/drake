@@ -458,11 +458,11 @@ Vector6d bodySpatialMotionPD(RigidBodyManipulator *r, DrakeRobotState &robot_sta
   Vector6d body_twist = J_geometric.value()*v_compact;
   Matrix3d R_body_to_world = quat2rotmat(body_quat);
   Matrix3d R_world_to_body = R_body_to_world.transpose();
-  Matrix3d R_body_to_task = T_world_to_task.rotation()*R_body_to_world;
+  Matrix3d R_body_to_task = T_world_to_task.linear()*R_body_to_world;
   Vector3d body_angular_vel = R_body_to_world*body_twist.head<3>();// body_angular velocity in world frame
   Vector3d body_xyzdot = R_body_to_world*body_twist.tail<3>();// body_xyzdot in world frame
-  Vector3d body_angular_vel_task = T_world_to_task.rotation()*body_angular_vel;
-  Vector3d body_xyzdot_task = T_world_to_task.rotation()*body_xyzdot;
+  Vector3d body_angular_vel_task = T_world_to_task.linear()*body_angular_vel;
+  Vector3d body_xyzdot_task = T_world_to_task.linear()*body_xyzdot;
 
   Vector3d body_xyz_des = body_xyzrpy_des.head<3>();
   Vector3d body_rpy_des = body_xyzrpy_des.tail<3>();
@@ -487,8 +487,8 @@ Vector6d bodySpatialMotionPD(RigidBodyManipulator *r, DrakeRobotState &robot_sta
   Vector3d body_angular_vel_dot_task = (Kp_angular.array()*angular_err_task.array()).matrix() + (Kd_angular.array()*angular_vel_err_task.array()).matrix()+body_angular_vel_dot_des;
   
   Vector6d twist_dot = Vector6d::Zero();
-  Vector3d body_xyzddot = T_task_to_world.rotation()*body_xyzddot_task;
-  Vector3d body_angular_vel_dot = T_task_to_world.rotation()*body_angular_vel_dot_task;
+  Vector3d body_xyzddot = T_task_to_world.linear()*body_xyzddot_task;
+  Vector3d body_angular_vel_dot = T_task_to_world.linear()*body_angular_vel_dot_task;
   twist_dot.head<3>() = R_world_to_body*body_angular_vel_dot;
   twist_dot.tail<3>() = R_world_to_body*body_xyzddot-body_twist.head<3>().cross(body_twist.tail<3>());
   return twist_dot;
