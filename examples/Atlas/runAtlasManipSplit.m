@@ -95,14 +95,18 @@ body_motions(2) = BodyMotionData(r_hand,t_breaks);
 body_motions(2).coefs = rhand_coefs;
 body_motions(2).use_spatial_velocity = true;
 
-manip_plan_data = QPLocomotionPlan.from_configuration_traj(r,qtraj_pp,body_motions);
-% walking_plan_data = StandingPlan.from_standing_state(x0, r);
+manip_plan_data = QPLocomotionPlan.from_quasistatic_qtraj(r,PPTrajectory(qtraj_pp));
+manip_plan_data.body_motions = body_motions;
 r_arm_idx = r.findPositionIndices('r_arm');
+manip_plan_data.constrained_dofs = setdiff(manip_plan_data.constrained_dofs, r_arm_idx);
+manip_plan_data.gain_set = 'manip';
+% walking_plan_data = StandingPlan.from_standing_state(x0, r);
+
 
 manip_plan_data.joint_pd_override_data = struct('position_ind',r_arm_idx,...
                                               'kp',zeros(length(r_arm_idx),1),...
                                               'kd',zeros(length(r_arm_idx),1),...
-                                              'weight',1e-5*ones(length(r_arm_idx),1));
+                                              'weight',1e-10*ones(length(r_arm_idx),1));
 control = atlasControllers.InstantaneousQPController(r, []);
 planeval = atlasControllers.AtlasPlanEval(r, manip_plan_data);
 plancontroller = atlasControllers.AtlasPlanEvalAndControlSystem(r, control, planeval);
@@ -112,7 +116,6 @@ output_select(1).output=1;
 sys = mimoCascade(sys,v,[],[],output_select);
 
 T = min(manip_plan_data.duration + 1, 30);
-
 % profile on
 tic
 ytraj = simulate(sys, [0, T], x0, struct('gui_control_interface', true));
