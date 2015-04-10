@@ -6,6 +6,8 @@
 				<externalSettings/>
 				<extensions>
 					<extension id="org.eclipse.cdt.core.MachO64" point="org.eclipse.cdt.core.BinaryParser"/>
+					<extension id="org.eclipse.cdt.core.ELF" point="org.eclipse.cdt.core.BinaryParser"/>
+					<extension id="org.eclipse.cdt.core.GNU_ELF" point="org.eclipse.cdt.core.BinaryParser"/>
 					<extension id="org.eclipse.cdt.core.GmakeErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.CWDLocator" point="org.eclipse.cdt.core.ErrorParser"/>
 				</extensions>
@@ -14,7 +16,7 @@
 				<configuration artifactName="${ProjName}" buildProperties="" description="" id="cdt.managedbuild.toolchain.llvm.clang.macosx.base.970840552" name="Default" parent="org.eclipse.cdt.build.core.emptycfg">
 					<folderInfo id="cdt.managedbuild.toolchain.llvm.clang.macosx.base.970840552.1874677557" name="/" resourcePath="">
 						<toolChain id="cdt.managedbuild.toolchain.llvm.clang.macosx.base.942632489" name="LLVM with Clang (MacOSX)">
-							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.MachO64" id="cdt.managedbuild.target.llvm.macosx.platform.base.1590331119" isAbstract="true" name="Debug Platform" osList="macosx"/>
+							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.MachO64;org.eclipse.cdt.core.ELF;org.eclipse.cdt.core.GNU_ELF" id="cdt.managedbuild.target.llvm.macosx.platform.base.1590331119" isAbstract="true" name="Debug Platform" osList="macosx"/>
 							<builder id="cdt.managedbuild.toolchain.llvm.clang.macosx.base.970840552.1588693744" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" superClass="org.eclipse.cdt.build.core.settings.default.builder"/>
 						</toolChain>
 					</folderInfo>
@@ -27,6 +29,8 @@
 				<externalSettings/>
 				<extensions>
 					<extension id="org.eclipse.cdt.core.MachO64" point="org.eclipse.cdt.core.BinaryParser"/>
+					<extension id="org.eclipse.cdt.core.ELF" point="org.eclipse.cdt.core.BinaryParser"/>
+					<extension id="org.eclipse.cdt.core.GNU_ELF" point="org.eclipse.cdt.core.BinaryParser"/>
 					<extension id="org.eclipse.cdt.core.GmakeErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.CWDLocator" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.GCCErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
@@ -38,7 +42,7 @@
 				<configuration artifactName="${ProjName}" buildProperties="" description="" id="cdt.managedbuild.toolchain.llvm.clang.macosx.base.970840552.1256585170" name="drake-OSX" parent="org.eclipse.cdt.build.core.emptycfg">
 					<folderInfo id="cdt.managedbuild.toolchain.llvm.clang.macosx.base.970840552.1256585170." name="/" resourcePath="">
 						<toolChain id="cdt.managedbuild.toolchain.llvm.clang.macosx.base.1127728130" name="LLVM with Clang (MacOSX)" superClass="cdt.managedbuild.toolchain.llvm.clang.macosx.base">
-							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.MachO64" id="cdt.managedbuild.target.llvm.macosx.platform.base.394491126" isAbstract="true" name="Debug Platform" osList="macosx" superClass="cdt.managedbuild.target.llvm.macosx.platform.base"/>
+							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.MachO64;org.eclipse.cdt.core.ELF;org.eclipse.cdt.core.GNU_ELF" id="cdt.managedbuild.target.llvm.macosx.platform.base.394491126" isAbstract="true" name="Debug Platform" osList="macosx" superClass="cdt.managedbuild.target.llvm.macosx.platform.base"/>
 							<builder arguments="BUILD_TYPE=Release" command="make" id="org.eclipse.cdt.build.core.settings.default.builder.216261103" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" parallelBuildOn="true" parallelizationNumber="optimal" superClass="org.eclipse.cdt.build.core.settings.default.builder">
 								<outputEntries>
 									<entry excluding="include" flags="VALUE_WORKSPACE_PATH" kind="outputPath" name="build"/>
@@ -94,6 +98,8 @@
 				<externalSettings/>
 				<extensions>
 					<extension id="org.eclipse.cdt.core.MachO64" point="org.eclipse.cdt.core.BinaryParser"/>
+					<extension id="org.eclipse.cdt.core.ELF" point="org.eclipse.cdt.core.BinaryParser"/>
+					<extension id="org.eclipse.cdt.core.GNU_ELF" point="org.eclipse.cdt.core.BinaryParser"/>
 					<extension id="org.eclipse.cdt.core.GmakeErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.CWDLocator" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.GCCErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
@@ -105,7 +111,7 @@
 				<configuration artifactName="${ProjName}" buildProperties="" description="" id="cdt.managedbuild.toolchain.llvm.clang.macosx.base.970840552.1256585170.47481641" name="drake-linux" parent="org.eclipse.cdt.build.core.emptycfg">
 					<folderInfo id="cdt.managedbuild.toolchain.llvm.clang.macosx.base.970840552.1256585170.47481641." name="/" resourcePath="">
 						<toolChain id="cdt.managedbuild.toolchain.gnu.base.1781940837" name="Linux GCC" superClass="cdt.managedbuild.toolchain.gnu.base">
-							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.MachO64" id="cdt.managedbuild.target.gnu.platform.base.537295438" name="Debug Platform" osList="linux,hpux,aix,qnx" superClass="cdt.managedbuild.target.gnu.platform.base"/>
+							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.MachO64;org.eclipse.cdt.core.ELF;org.eclipse.cdt.core.GNU_ELF" id="cdt.managedbuild.target.gnu.platform.base.537295438" name="Debug Platform" osList="linux,hpux,aix,qnx" superClass="cdt.managedbuild.target.gnu.platform.base"/>
 							<builder id="cdt.managedbuild.target.gnu.builder.base.1207896501" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" parallelBuildOn="true" parallelizationNumber="optimal" superClass="cdt.managedbuild.target.gnu.builder.base">
 								<outputEntries>
 									<entry flags="VALUE_WORKSPACE_PATH" kind="outputPath" name="build"/>
@@ -147,6 +153,7 @@
 						<entry excluding="**/test/**|**/Demos/**|**/Extras/**|**/UnitTests/**" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="bullet"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="director/src"/>
 						<entry excluding="pod-build/include/**" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="drake"/>
+						<entry excluding="bench/|debug/|demos/|doc/|failtest/|test/" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="eigen/eigen-eigen-10219c95fe65"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="lcm/lcm-1.2.1"/>
 						<entry excluding="**/pod-build/**" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="libbot"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="octomap/octomap"/>
@@ -162,6 +169,8 @@
 				<externalSettings/>
 				<extensions>
 					<extension id="org.eclipse.cdt.core.MachO64" point="org.eclipse.cdt.core.BinaryParser"/>
+					<extension id="org.eclipse.cdt.core.ELF" point="org.eclipse.cdt.core.BinaryParser"/>
+					<extension id="org.eclipse.cdt.core.GNU_ELF" point="org.eclipse.cdt.core.BinaryParser"/>
 					<extension id="org.eclipse.cdt.core.GmakeErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.CWDLocator" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.GCCErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
@@ -173,7 +182,7 @@
 				<configuration artifactName="${ProjName}" buildProperties="" description="" id="cdt.managedbuild.toolchain.llvm.clang.macosx.base.970840552.1256585170.1240922641" name="drake-OSX-debug" parent="org.eclipse.cdt.build.core.emptycfg">
 					<folderInfo id="cdt.managedbuild.toolchain.llvm.clang.macosx.base.970840552.1256585170.1240922641." name="/" resourcePath="">
 						<toolChain id="cdt.managedbuild.toolchain.llvm.clang.macosx.base.374006190" name="LLVM with Clang (MacOSX)" superClass="cdt.managedbuild.toolchain.llvm.clang.macosx.base">
-							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.MachO64" id="cdt.managedbuild.target.llvm.macosx.platform.base.1852329643" isAbstract="true" name="Debug Platform" osList="macosx" superClass="cdt.managedbuild.target.llvm.macosx.platform.base"/>
+							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.MachO64;org.eclipse.cdt.core.ELF;org.eclipse.cdt.core.GNU_ELF" id="cdt.managedbuild.target.llvm.macosx.platform.base.1852329643" isAbstract="true" name="Debug Platform" osList="macosx" superClass="cdt.managedbuild.target.llvm.macosx.platform.base"/>
 							<builder arguments="BUILD_TYPE=Debug" command="make" id="org.eclipse.cdt.build.core.settings.default.builder.1958059128" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" parallelBuildOn="true" parallelizationNumber="optimal" superClass="org.eclipse.cdt.build.core.settings.default.builder">
 								<outputEntries>
 									<entry excluding="include" flags="VALUE_WORKSPACE_PATH" kind="outputPath" name="build"/>
@@ -213,6 +222,7 @@
 						<entry excluding="**/test/**|**/Demos/**|**/Extras/**|**/UnitTests/**" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="bullet"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="director/src"/>
 						<entry excluding="pod-build/include/**" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="drake"/>
+						<entry excluding="bench/|debug/|demos/|doc/|failtest/|test/" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="eigen/eigen-eigen-10219c95fe65"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="lcm/lcm-1.2.1"/>
 						<entry excluding="**/pod-build/**" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="libbot"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="octomap/octomap"/>
