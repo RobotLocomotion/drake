@@ -8,7 +8,6 @@
 #include "mex.h"
 #include <vector>
 #include <utility>
-#include <dlfcn.h>
 #include <Eigen/Core>
 
 #ifndef DRAKE_UTIL_H_
@@ -28,9 +27,6 @@
 // Helper routines
 DLLEXPORT bool isa(const mxArray* mxa, const char* class_str);
 DLLEXPORT bool mexCallMATLABsafe(int nlhs, mxArray* plhs[], int nrhs, mxArray* prhs[], const char* filename);
-
-//call a mex file from c++ without mexCallMATLAB
-void callMexStandalone(const char* mexFile, int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]);
 
 // Mex pointers shared through matlab
 DLLEXPORT mxArray* createDrakeMexPointer(void* ptr, const char* name="", int num_additional_inputs=0, mxArray *delete_fcn_additional_inputs[] = NULL, const char* subclass_name=NULL);  // increments lock count
