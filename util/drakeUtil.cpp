@@ -11,6 +11,7 @@
 #include <math.h>
 #include <limits>
 #include <Eigen/Dense>
+#include <stdexcept>
 
 using namespace std;
 
