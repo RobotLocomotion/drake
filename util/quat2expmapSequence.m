@@ -1,4 +1,4 @@
-function [w,wdot] = quat2expSequence(quat,quat_dot)
+function [w,wdot] = quat2expmapSequence(quat,quat_dot)
 N = size(quat,2);
 assert(all(size(quat_dot)==[4,N]));
 w = zeros(3,N);
@@ -9,7 +9,7 @@ for i = 1:N
     quat(:,i) = flip*quat(:,i);
     quat_dot(:,i) = flip*quat_dot(:,i);
   end
-  [w(:,i),dw] = quat2expmex(quat(:,i));
+  [w(:,i),dw] = quat2expmapmex(quat(:,i));
   wdot(:,i) = dw*quat_dot(:,i);
 end
 end

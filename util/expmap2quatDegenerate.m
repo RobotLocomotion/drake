@@ -1,4 +1,4 @@
-function [q_degenerate,dq_degenerate,ddq_degenerate] = exp2quatDegenerate(in1,theta)
+function [q_degenerate,dq_degenerate,ddq_degenerate] = expmap2quatDegenerate(in1,theta)
 %EXP2QUATDEGENERATE
 %    [Q_DEGENERATE,DQ_DEGENERATE,DDQ_DEGENERATE] = EXP2QUATDEGENERATE(IN1,THETA)
 

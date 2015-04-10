@@ -266,6 +266,6 @@ DLLEXPORT typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime>::type dTrans
     const Eigen::MatrixBase<DerivedDX>& dX);
 
 template <typename Derived>
-DLLEXPORT GradientVar<typename Derived::Scalar,3,1> quat2exp(const Eigen::MatrixBase<Derived> &q, int gradient_order);
+DLLEXPORT GradientVar<typename Derived::Scalar,3,1> quat2expmap(const Eigen::MatrixBase<Derived> &q, int gradient_order);
 
 #endif

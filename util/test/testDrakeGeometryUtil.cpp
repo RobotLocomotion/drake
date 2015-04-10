@@ -55,7 +55,7 @@ void testRotationConversionFunctions()
     Vector3d rpy_back = axis2rpy(axis);
     valuecheck(rpy, rpy_back, 1e-6);
   }
-  // exp2quat, quat2exp
+  // expmap2quat, quat2expmap
   Vector4d quat_degenerate = Vector4d::Zero();
   quat_degenerate(0) = 1.0;
   testExpmap2quat(quat_degenerate);
@@ -227,7 +227,7 @@ void testdrpy2rotmat()
 
 void testExpmap2quat(const Vector4d &quat)
 {
-  auto expmap = quat2exp(quat,1);
+  auto expmap = quat2expmap(quat,1);
   auto quat_back  = expmap2quat(expmap.value(),2);
   valuecheck(std::abs(quat.transpose()*quat_back.value()),1);
   valuecheck(expmap.gradient().value()*quat_back.gradient().value(),Matrix3d::Identity());

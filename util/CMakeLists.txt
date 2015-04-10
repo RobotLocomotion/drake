@@ -46,8 +46,8 @@ if (eigen3_FOUND)
   add_mex(cartesian2cylindricalmex cartesian2cylindricalmex.cpp)
   target_link_libraries(cartesian2cylindricalmex drakeGeometryUtil drakeGradientUtil)
 
-  add_mex(quat2expmex quat2expmex.cpp)
-  target_link_libraries(quat2expmex drakeGeometryUtil drakeGradientUtil)
+  add_mex(quat2expmapmex quat2expmapmex.cpp)
+  target_link_libraries(quat2expmapmex drakeGeometryUtil drakeGradientUtil)
 
   add_mex(expmap2quatmex expmap2quatmex.cpp)
   target_link_libraries(expmap2quatmex drakeGeometryUtil drakeGradientUtil)
