@@ -1152,7 +1152,6 @@ DLLEXPORT  void cartesian2cylindrical(const Eigen::Matrix<Scalar,3,1> &m_cylinde
 	Matrix<Scalar,3,3> ddR_tangent2cylinder;
 	rotz(theta-M_PI/2,R_tangent2cylinder,dR_tangent2cylinder, ddR_tangent2cylinder);
 	Matrix<Scalar,3,3> R_cylinder2tangent = R_tangent2cylinder.transpose();
-	dR_tangent2cylinder = dR_tangent2cylinder;
 	Vector3d x_rpy_cartesian = x_cartesian.block(3,0,3,1);
 	Matrix<Scalar,3,3> R_cartesian = rpy2rotmat(x_rpy_cartesian);
 	x_cylinder.block(3,0,3,1) = rotmat2rpy(R_cylinder2tangent*R_cartesian2cylinder*R_cartesian);
