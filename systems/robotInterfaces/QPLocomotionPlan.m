@@ -240,12 +240,17 @@ classdef QPLocomotionPlan < QPControllerPlan
 
       [x0, J] = obj.robot.forwardKin(kinsol, body_motion_data.body_id, [0;0;0], 2);
       xd0 = J * qd;
+      xd0 = [xd0(1:3); quatdot2expmapdot(x0(4:7), xd0(4:7))];
 
-      xs = [x0, zeros(7,3)];
+      xs_quat = [x0, zeros(7,3)];
       for j = 2:4
-        xs(:,j) = [body_motion_data.coefs(1:3, body_t_ind+j, end);
+        xs_quat(:,j) = [body_motion_data.coefs(1:3, body_t_ind+j, end);
                    expmap2quat(body_motion_data.coefs(4:6, body_t_ind+j, end))];
-        xs(4:7,j) = xs(4:7,j) * sign(xs(4:7,j-1)' * xs(4:7,j));
+        xs_quat(4:7,j) = xs_quat(4:7,j) * sign(xs_quat(4:7,j-1)' * xs_quat(4:7,j));
+      end
+      xs = zeros(6, 4);
+      for j = 1:4
+        xs(:,j) = [xs_quat(1:3,j); quat2expmap(xs_quat(4:7,j))];
       end
 
       % Move the first aerial knot point to be directly above our current foot origin pose

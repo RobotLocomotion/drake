@@ -89,14 +89,21 @@ end
 
 pelvis_reference_height = zeros(1,length(support_times));
 
-lfoot_body_motion = body_motions([body_motions.body_id] == obj.foot_body_id.left);
-rfoot_body_motion = body_motions([body_motions.body_id] == obj.foot_body_id.right);
-lfoot_des = lfoot_body_motion.eval(0);
-rfoot_des = rfoot_body_motion.eval(0);
-pelvis_reference_height(1) = min(lfoot_des(3),rfoot_des(3));
-
 T_sole_frame = struct('right', obj.getFrame(obj.foot_frame_id.right).T,...
            'left', obj.getFrame(obj.foot_frame_id.left).T);
+
+lfoot_body_motion = body_motions([body_motions.body_id] == obj.foot_body_id.left);
+rfoot_body_motion = body_motions([body_motions.body_id] == obj.foot_body_id.right);
+
+lfoot_orig = lfoot_body_motion.eval(0);
+T_l_orig = poseQuat2tform([lfoot_orig(1:3); expmap2quat(lfoot_orig(4:6))]);
+lsole_des = T_l_orig * T_sole_frame.left;
+
+rfoot_orig = rfoot_body_motion.eval(0);
+T_r_orig = poseQuat2tform([rfoot_orig(1:3); expmap2quat(rfoot_orig(4:6))]);
+rsole_des = T_r_orig * T_sole_frame.right;
+
+pelvis_reference_height(1) = min(lsole_des(3),rsole_des(3));
 
 for i=1:length(support_times)-1
   isDoubleSupport = any(supports(i).bodies==obj.foot_body_id.left) && any(supports(i).bodies==obj.foot_body_id.right);
@@ -172,24 +179,24 @@ pelvis_ts = support_times;
 rpos = ppval(foot_pp.right, pelvis_ts);
 lpos = ppval(foot_pp.left, pelvis_ts);
 
-rexp = rpos(4:6,:);
-lexp = lpos(4:6,:);
-for j = 1:size(rexp, 2)
-  rq = expmap2quat(rexp(:,j));
-  lq = expmap2quat(lexp(:,j));
-  lq = lq * sign(lq' * rq);
-  lexp(:,j) = quat2expmap(lq);
+pelvis_yaw = zeros(1, numel(pelvis_ts));
+
+for j = 1:numel(pelvis_ts)
+  rrpy = quat2rpy(expmap2quat(rpos(4:6,j)));
+  lrpy = quat2rpy(expmap2quat(lpos(4:6,j)));
+  pelvis_yaw(j) = angleAverage(rrpy(3), lrpy(3));
 end
-pelvis_exp = [zeros(2, size(rexp, 2));
-              mean([rexp(3,:); lexp(3,:)], 1)];
+pelvis_yaw = unwrap(pelvis_yaw);
 
-pelvis_poses_exp = [nan(2, size(rpos, 2));
+
+pelvis_poses_rpy = [nan(2, size(rpos, 2));
                 pelvis_reference_height + options.pelvis_height_above_sole;
-                pelvis_exp];
+                zeros(2, numel(pelvis_ts));
+                pelvis_yaw];
 
-pp = foh(pelvis_ts, pelvis_poses_exp);
+pp = foh(pelvis_ts, pelvis_poses_rpy);
 pelvis_dposes = ppval(fnder(pp, 1), pelvis_ts);
-body_motions(end+1) = BodyMotionData.from_body_xyzexp_and_xyzexpdot(pelvis_body, pelvis_ts, pelvis_poses_exp, pelvis_dposes);
+body_motions(end+1) = BodyMotionData.from_body_poses_and_velocities(pelvis_body, pelvis_ts, pelvis_poses_rpy, pelvis_dposes);
 
 if options.debug
   pp = body_motions(end).getPP();
