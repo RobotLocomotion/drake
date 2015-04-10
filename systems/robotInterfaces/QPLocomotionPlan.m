@@ -605,7 +605,6 @@ classdef QPLocomotionPlan < QPControllerPlan
     end
 
     function obj = from_quasistatic_qtraj(biped, qtraj, options)
-      error('this needs to be updated to use exponential map rotations');
       if nargin < 3
         options = struct();
       end
@@ -641,22 +640,28 @@ classdef QPLocomotionPlan < QPControllerPlan
       end
 
       ts = qtraj.getBreaks();
-      body_poses = zeros([6, length(ts), length(options.bodies_to_track)]);
+      body_poses = zeros([7, length(ts), length(options.bodies_to_track)]);
+      body_velocity = zeros([7,length(ts), length(options.bodies_to_track)]);
+      body_xyzexpmap = zeros([6, length(ts), length(options.bodies_to_track)]);
+      body_xyzexpmap_dot = zeros([6, length(ts), length(options.bodies_to_track)]);
       for i = 1:numel(ts)
-        kinsol = doKinematics(obj.robot,qtraj.eval(ts(i)));
+        qi = qtraj.eval(ts(i));
+        vi = qtraj.deriv(ts(i));
+        kinsol = doKinematics(obj.robot,qi);
         for j = 1:numel(options.bodies_to_track)
-          body_poses(:,i,j) = obj.robot.forwardKin(kinsol, options.bodies_to_track(j), [0;0;0], 1);
+          [body_poses(:,i,j),Jij] = obj.robot.forwardKin(kinsol, options.bodies_to_track(j), [0;0;0], 2);
+          body_velocity(:,i,j) = Jij*vi;
+          body_xyzexpmap(1:3,i,j) = body_poses(1:3,i,j);
+          body_xyzexpmap_dot(1:3,i,j) = body_velocity(1:3,i,j);
         end
       end
       for j = 1:numel(options.bodies_to_track)
-        for k = 4:6
-          body_poses(k,:,j) = unwrap(body_poses(k,:,j));
-        end
+        [body_xyzexpmap(4:6,:,j),body_xyzexpmap_dot(4:6,:,j)] = quat2expmapSequence(body_poses(4:7,:,j),body_velocity(4:7,:,j));
       end
 
       obj.body_motions = BodyMotionData.empty();
       for j = 1:numel(options.bodies_to_track)
-        obj.body_motions(j) = BodyMotionData.from_body_poses(options.bodies_to_track(j), ts, body_poses(:,:,j));
+        obj.body_motions(j) = BodyMotionData.from_body_xyzexp_and_xyzexpdot(options.bodies_to_track(j), ts, body_xyzexpmap(:,:,j), body_xyzexpmap_dot(:,:,j));
         if ismember(options.bodies_to_track(j), options.bodies_to_control_when_in_contact)
           obj.body_motions(j).control_pose_when_in_contact = true(1, numel(obj.body_motions(j).ts));
         end
