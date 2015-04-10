@@ -5,6 +5,9 @@ if nargin < 5
 end
 
 assert(swing1.frame_id == swing2.frame_id, 'planSwing expects to plan a swing trajectory between two positions of the /same/ foot body')
+sizecheck(stance.pos, [7, 1]);
+sizecheck(swing1.pos, [7, 1]);
+sizecheck(swing2.pos, [7, 1]);
 
 params = struct(swing2.walking_params);
 params = applyDefaults(params, biped.default_walking_params);
@@ -32,9 +35,6 @@ else
   swing_foot_name = 'left';
 end
 
-swing2.pos(4:6) = swing1.pos(4:6) + angleDiff(swing1.pos(4:6), swing2.pos(4:6));
-
-
 xy_dist = norm(swing2.pos(1:2) - swing1.pos(1:2));
 
 % terrain_slice = double(swing2.terrain_pts);
@@ -48,7 +48,8 @@ T_local_to_world = [[rotmat(atan2(swing2.pos(2) - swing1.pos(2), swing2.pos(1) -
                     0, 0, 0, 1];
 
 % Determine how much of a forward step this is
-swing_distance_in_local = (swing2.pos(1:2) - swing1.pos(1:2))' * (rotmat(stance.pos(6)) * [1;0]);
+R = quat2rotmat(stance.pos(4:7));
+swing_distance_in_local = (swing2.pos(1:3) - swing1.pos(1:3))' * (R * [1;0;0]);
 
 if swing_distance_in_local > MIN_DIST_FOR_PITCHED_SWING
   toe_off_angle = DEFAULT_FOOT_PITCH;
@@ -62,13 +63,13 @@ swing_toe_points_in_foot = biped.getBody(swing_body_index).getTerrainContactPoin
 T_sole_to_foot = biped.getFrame(swing1.frame_id).T;
 
 T_swing1_sole_to_world = ...
-  [rpy2rotmat(swing1.pos(4:6)),swing1.pos(1:3); zeros(1, 3), 1];
+  [quat2rotmat(swing1.pos(4:7)),swing1.pos(1:3); zeros(1, 3), 1];
 T_swing1_foot_to_world = T_swing1_sole_to_world/T_sole_to_foot;
 swing1_toe_points_in_world = T_swing1_foot_to_world * ...
   [swing_toe_points_in_foot; ones(1,size(swing_toe_points_in_foot,2))];
 
 T_swing2_sole_to_world = ...
-  [rpy2rotmat(swing2.pos(4:6)),swing2.pos(1:3); zeros(1, 3), 1];
+  [quat2rotmat(swing2.pos(4:7)),swing2.pos(1:3); zeros(1, 3), 1];
 T_swing2_foot_to_world = T_swing2_sole_to_world/T_sole_to_foot;
 swing2_toe_points_in_world = T_swing2_foot_to_world * ...
   [swing_toe_points_in_foot; ones(1,size(swing_toe_points_in_foot,2))];
@@ -80,8 +81,8 @@ T_toe_local_to_world = [[rotmat(atan2(toe2(2) - toe1(2), toe2(1) - toe1(1))), [0
                     0, 0, 0, 1];
 % terrain_pts_in_toe_local = T_toe_local_to_world \ (T_local_to_world * [terrain_pts_in_local; ones(1, size(terrain_pts_in_local,2))]);
 
-quat_toe_off = rotmat2quat(rpy2rotmat(swing1.pos(4:6)) * rpy2rotmat([0;toe_off_angle;0]) / T_sole_to_foot(1:3,1:3));
-quat_swing2 = rotmat2quat(rpy2rotmat(swing2.pos(4:6)) / T_sole_to_foot(1:3,1:3));
+quat_toe_off = rotmat2quat(quat2rotmat(swing1.pos(4:7)) * rpy2rotmat([0;toe_off_angle;0]) / T_sole_to_foot(1:3,1:3));
+quat_swing2 = rotmat2quat(quat2rotmat(swing2.pos(4:7)) / T_sole_to_foot(1:3,1:3));
 
 if DEBUG
   v = biped.constructVisualizer();
@@ -89,9 +90,10 @@ if DEBUG
 end
 
 T = biped.getFrame(stance.frame_id).T;
-stance_sole = [rpy2rotmat(stance.pos(4:6)), stance.pos(1:3); 0 0 0 1];
+stance_sole = [quat2rotmat(stance.pos(4:7)), stance.pos(1:3); 0 0 0 1];
 stance_origin = stance_sole / T;
-stance_origin_pose = [stance_origin(1:3,4); rotmat2rpy(stance_origin(1:3,1:3))];
+stance_origin_pose = [stance_origin(1:3,4); rotmat2quat(stance_origin(1:3,1:3))];
+stance_origin_pose(4:7) = sign(stance.pos(4:7)' * stance_origin_pose(4:7)) * stance_origin_pose(4:7);
 
 T_toe_to_foot = [eye(3),mean(swing_toe_points_in_foot, 2);0,0,0,1];
 T_sole_to_origin = biped.getFrame(swing1.frame_id).T;
@@ -99,10 +101,12 @@ T_toe_to_origin = (T_sole_to_origin / T_sole_to_foot) * T_toe_to_foot;
 origin_in_toe = T_toe_to_origin \ [0;0;0;1];
 
 T_swing1_origin_to_world = T_swing1_sole_to_world / T_sole_to_origin;
-swing1_origin_pose = [T_swing1_origin_to_world(1:3,4); rotmat2rpy(T_swing1_origin_to_world(1:3,1:3))];
+swing1_origin_pose = [T_swing1_origin_to_world(1:3,4); rotmat2quat(T_swing1_origin_to_world(1:3,1:3))];
+swing1_origin_pose(4:7) = sign(swing1.pos(4:7)' * swing1_origin_pose(4:7)) * swing1_origin_pose(4:7);
 
 T_swing2_origin_to_world = T_swing2_sole_to_world / T_sole_to_origin;
-swing2_origin_pose = [T_swing2_origin_to_world(1:3,4); rotmat2rpy(T_swing2_origin_to_world(1:3,1:3))];
+swing2_origin_pose = [T_swing2_origin_to_world(1:3,4); rotmat2quat(T_swing2_origin_to_world(1:3,1:3))];
+swing2_origin_pose(4:7) = sign(swing2.pos(4:7)' * swing2_origin_pose(4:7)) * swing2_origin_pose(4:7);
 
 instep_shift = [0.0;stance.walking_params.drake_instep_shift;0];
 zmp1 = shift_step_inward(biped, stance, instep_shift);
@@ -113,8 +117,8 @@ zmp_knots = struct('t', initial_hold_time + (hold_time / 2),...
  'supp', RigidBodySupportState(biped, stance_body_index));
 
 foot_origin_knots = struct('t', zmp_knots(end).t, ...
-                           swing_foot_name, [swing1_origin_pose; zeros(6,1)], ...
-                           stance_foot_name, [stance_origin_pose; zeros(6,1)], ...
+                           swing_foot_name, [swing1_origin_pose(1:3); quat2expmap(swing1_origin_pose(4:7)); zeros(6,1)], ...
+                           stance_foot_name, [stance_origin_pose(1:3); quat2expmap(stance_origin_pose(4:7)); zeros(6,1)], ...
                            'is_liftoff', true,...
                            'is_landing', false,...
                            'toe_off_allowed', struct(swing_foot_name, false, stance_foot_name, false));
@@ -123,12 +127,10 @@ function add_foot_origin_knot(swing_pose, speed)
   if nargin < 2
     speed = params.step_speed/2;
   end
-  foot_origin_knots(end+1).(swing_foot_name) = [swing_pose; zeros(6,1)];
-  foot_origin_knots(end).(stance_foot_name) = [stance_origin_pose; zeros(6,1)];
+  foot_origin_knots(end+1).(swing_foot_name) = [swing_pose(1:3); quat2expmap(swing_pose(4:7)); zeros(6,1)];
+  foot_origin_knots(end).(stance_foot_name) = [stance_origin_pose(1:3); quat2expmap(stance_origin_pose(4:7)); zeros(6,1)];
   cartesian_distance = norm(foot_origin_knots(end).(swing_foot_name)(1:3) - foot_origin_knots(end-1).(swing_foot_name)(1:3));
-  sole1 = rotmat2rpy(rpy2rotmat(foot_origin_knots(end-1).(swing_foot_name)(4:6)) * T_sole_to_foot(1:3,1:3));
-  sole2 = rotmat2rpy(rpy2rotmat(foot_origin_knots(end).(swing_foot_name)(4:6)) * T_sole_to_foot(1:3,1:3));
-  yaw_distance = abs(angleDiff(sole1(3), sole2(3)));
+  yaw_distance = abs((foot_origin_knots(end).(swing_foot_name)(4:6) - foot_origin_knots(end-1).(swing_foot_name)(4:6))' * [0;0;1]);
   dt = max([cartesian_distance / speed,...
             yaw_distance / FOOT_YAW_RATE]);
   foot_origin_knots(end).t = foot_origin_knots(end-1).t + dt;
@@ -149,10 +151,9 @@ toe_apex1_in_world = (1-APEX_FRACTIONS(1))*toe1 + APEX_FRACTIONS(1)*toe2;
 toe_ht = max([toe_apex1_in_world(3) + params.step_height,...
               max_terrain_ht_in_world + params.step_height]);
 toe_apex1_in_world(3) = toe_ht;
-% toe_apex1_in_world = (1-APEX_FRACTIONS(1))*toe1 + APEX_FRACTIONS(1)*toe2 + [0;0;toe_ht_in_local]; 
 T_toe_apex1_to_world = [quat2rotmat(quat_toe_off),toe_apex1_in_world;zeros(1,3),1];
 apex1_origin_in_world = T_toe_apex1_to_world * origin_in_toe;
-pose = [apex1_origin_in_world(1:3); quat2rpy(quat_toe_off)];
+pose = [apex1_origin_in_world(1:3); quat_toe_off];
 add_foot_origin_knot(pose);
 
 % Apex knot 2
@@ -160,10 +161,9 @@ toe_apex2_in_world = (1-APEX_FRACTIONS(2))*toe1 + APEX_FRACTIONS(2)*toe2;
 toe_ht = max([toe_apex2_in_world(3) + params.step_height,...
               max_terrain_ht_in_world + params.step_height]);
 toe_apex2_in_world(3) = toe_ht;
-% toe_apex2_in_world = (1-APEX_FRACTIONS(2))*toe1 + APEX_FRACTIONS(2)*toe2 + [0;0;toe_ht_in_local]; 
 T_toe_apex2_to_world = [quat2rotmat(quat_swing2),toe_apex2_in_world;zeros(1,3),1];
 apex2_origin_in_world = T_toe_apex2_to_world * origin_in_toe;
-pose = [apex2_origin_in_world(1:3); quat2rpy(quat_swing2)];
+pose = [apex2_origin_in_world(1:3); quat_swing2];
 add_foot_origin_knot(pose);
 
 
@@ -183,16 +183,6 @@ zmp_knots(end).supp = RigidBodySupportState(biped, [stance_body_index, swing_bod
 % Final knot
 foot_origin_knots(end+1) = foot_origin_knots(end);
 foot_origin_knots(end).t = foot_origin_knots(end-1).t + hold_time / 2;
-
-% Unwrap angles
-angle_inds = [4:6, 10:12];
-for j = 1:length(foot_origin_knots)-1
-  for f = {swing_foot_name, stance_foot_name}
-    foot_origin_knots(j+1).(f{1})(angle_inds) = foot_origin_knots(j).(f{1})(angle_inds) + ...
-                                           angleDiff(foot_origin_knots(j).(f{1})(angle_inds),...
-                                                     foot_origin_knots(j+1).(f{1})(angle_inds));
-  end
-end
 
 % Find velocities for the apex knots by solving a small QP to get a smooth, minimum-acceleration cubic spline
 foot = swing_foot_name;
@@ -218,7 +208,7 @@ function pos = shift_step_inward(biped, step, instep_shift)
     instep_shift = [1;-1;1].*instep_shift;
   end
   pos_center = step.pos;
-  R = rpy2rotmat(pos_center(4:6));
+  R = quat2rotmat(pos_center(4:7));
   shift = R*instep_shift;
   pos = pos_center(1:2) + shift(1:2);
 end

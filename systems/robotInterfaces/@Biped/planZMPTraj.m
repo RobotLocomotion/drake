@@ -16,36 +16,41 @@ sizecheck(q0,[biped.getNumPositions,1]);
 
 is_right_foot = footsteps(1).frame_id == biped.foot_frame_id.right;
 
-foot0 = feetPosition(biped, q0);
-foot0.right(6) = foot0.left(6) + angleDiff(foot0.left(6), foot0.right(6));
+kinsol = doKinematics(biped, q0);
+foot0 = struct('right', forwardKin(biped, kinsol, biped.foot_frame_id.right, [0;0;0], 2),...
+               'left', forwardKin(biped, kinsol, biped.foot_frame_id.left, [0;0;0], 2));
 
-steps.right = footsteps([footsteps.frame_id] == biped.foot_frame_id.right);
-steps.left = footsteps([footsteps.frame_id] == biped.foot_frame_id.left);
-steps.right(1).pos = foot0.right;
-steps.left(1).pos = foot0.left;
-
-for f = {'left', 'right'}
-  foot = f{1};
-  for k = 1:(length(steps.(foot))-1)
-    p1 = steps.(foot)(k).pos;
-    p2 = steps.(foot)(k+1).pos;
-    steps.(foot)(k+1).pos = [p2(1:3); p1(4:6) + angleDiff(p1(4:6), p2(4:6))];
+footsteps_with_quat = footsteps;
+footsteps_with_quat(1).pos = [footsteps_with_quat(1).pos(1:3); rpy2quat(footsteps_with_quat(1).pos(4:6))];
+for j = 1:2
+  for f = {'right', 'left'}
+    foot = f{1};
+    if footsteps_with_quat(j).frame_id == biped.foot_frame_id.(foot)
+      footsteps_with_quat(j).pos = foot0.(foot);
+    end
   end
 end
+for j = 1:length(footsteps)-1
+  % Make sure quaternions of adjacent steps are in the same hemisphere
+  q1 = footsteps_with_quat(j).pos(4:7);
+  q2 = rpy2quat(footsteps(j+1).pos(4:6));
+  q2 = sign(q1' * q2) * q2;
+  footsteps_with_quat(j+1).pos(4:7) = q2;
+end
+steps.right = footsteps_with_quat([footsteps_with_quat.frame_id] == biped.foot_frame_id.right);
+steps.left = footsteps_with_quat([footsteps_with_quat.frame_id] == biped.foot_frame_id.left);
 
-rfoot_body_idx = biped.getFrame(biped.foot_frame_id.right).body_ind;
-lfoot_body_idx = biped.getFrame(biped.foot_frame_id.left).body_ind;
 zmp0 = [];
 initial_supports = [];
 if steps.right(1).is_in_contact
   z = steps.right(1).pos;
   zmp0(:,end+1) = z(1:2);
-  initial_supports(end+1) = rfoot_body_idx;
+  initial_supports(end+1) = biped.foot_body_id.right;
 end
 if steps.left(1).is_in_contact
   z = steps.left(1).pos;
   zmp0(:,end+1) = z(1:2);
-  initial_supports(end+1) = lfoot_body_idx;
+  initial_supports(end+1) = biped.foot_body_id.left;
 end
 zmp0 = mean(zmp0, 2);
 supp0 = RigidBodySupportState(biped, initial_supports);
@@ -62,9 +67,10 @@ for f = {'right', 'left'}
   frame_id = biped.foot_frame_id.(foot);
   T = biped.getFrame(frame_id).T;
   sole_pose = steps.(foot)(1).pos;
-  Tsole = [rpy2rotmat(sole_pose(4:6)), sole_pose(1:3); 0 0 0 1];
+  Tsole = [quat2rotmat(sole_pose(4:7)), sole_pose(1:3); 0 0 0 1];
   Torig = Tsole / T;
-  foot_origin_knots.(foot) = [Torig(1:3,4); rotmat2rpy(Torig(1:3,1:3)); zeros(6,1)];
+  foot_origin_knots.(foot) = [Torig(1:3,4); quat2expmap(rotmat2quat(Torig(1:3,1:3))); zeros(6,1)];
+  % foot_origin_knots.(foot) = [Torig(1:3,4); rotmat2rpy(Torig(1:3,1:3)); zeros(6,1)];
 end
 
 istep = struct('right', 1, 'left', 1);
@@ -121,8 +127,8 @@ t0 = foot_origin_knots(end).t;
 foot_origin_knots(end+1) = foot_origin_knots(end);
 foot_origin_knots(end).t = t0 + 1.5;
 zmpf = mean([steps.right(end).pos(1:2), steps.left(end).pos(1:2)], 2);
-zmp_knots(end+1) =  struct('t', foot_origin_knots(end-1).t, 'zmp', zmpf, 'supp', RigidBodySupportState(biped, [rfoot_body_idx, lfoot_body_idx]));
-zmp_knots(end+1) =  struct('t', foot_origin_knots(end).t, 'zmp', zmpf, 'supp', RigidBodySupportState(biped, [rfoot_body_idx, lfoot_body_idx]));
+zmp_knots(end+1) =  struct('t', foot_origin_knots(end-1).t, 'zmp', zmpf, 'supp', RigidBodySupportState(biped, [biped.foot_body_id.right, biped.foot_body_id.left]));
+zmp_knots(end+1) =  struct('t', foot_origin_knots(end).t, 'zmp', zmpf, 'supp', RigidBodySupportState(biped, [biped.foot_body_id.right, biped.foot_body_id.left]));
 
 % dynamic_footstep_plan = DynamicFootstepPlan(biped, zmp_knots, foot_origin_knots);
 end
