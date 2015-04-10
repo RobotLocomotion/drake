@@ -68,9 +68,9 @@ void mexFunction(int nlhs,mxArray* plhs[], int nrhs, const mxArray * prhs[])
   }
   plhs[2] = mxCreateDoubleMatrix(num_cnst,retvec_size,mxREAL);
   memcpy(mxGetPrSafe(plhs[2]),c.data(),sizeof(double)*num_cnst);
-  plhs[3] = mxCreateDoubleMatrix(iAfun.size(),retvec_size,mxREAL);
-  plhs[4] = mxCreateDoubleMatrix(jAvar.size(),retvec_size,mxREAL);
-  plhs[5] = mxCreateDoubleMatrix(A.size(),retvec_size,mxREAL);
+  plhs[3] = mxCreateDoubleMatrix(static_cast<int>(iAfun.size()), retvec_size, mxREAL);
+  plhs[4] = mxCreateDoubleMatrix(static_cast<int>(jAvar.size()), retvec_size, mxREAL);
+  plhs[5] = mxCreateDoubleMatrix(static_cast<int>(A.size()), retvec_size, mxREAL);
   for(int i = 0;i<iAfun.size();i++)
   {
     *(mxGetPrSafe(plhs[3])+i) = (double) iAfun(i)+1;

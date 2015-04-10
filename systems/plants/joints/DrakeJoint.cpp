@@ -43,6 +43,6 @@ void DrakeJoint::setupOldKinematicTree(RigidBodyManipulator* model, int body_ind
   model->bodies[body_ind]->Ttree = transform_to_parent_body.matrix();
 //  model->bodies[body_ind]->T_body_to_joint = Matrix4d::Identity();
   model->bodies[body_ind]->floating = 0;
-  model->bodies[body_ind]->pitch = 0.0;
+  model->bodies[body_ind]->pitch = 0;
 }
 
