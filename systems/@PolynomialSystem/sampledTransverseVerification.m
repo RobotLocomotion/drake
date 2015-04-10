@@ -324,6 +324,10 @@ function y=doubleSafe(x)
 end
 
 function tf=equalpoly(A,B)
+  if isequal(A,B)
+    tf = true;
+    return;
+  end
 
   x=decomp(A);
   sizecheck(A,1); sizecheck(B,1);
