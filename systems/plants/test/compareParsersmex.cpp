@@ -21,8 +21,18 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   RigidBodyManipulator *matlab_model= (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
 
   char urdf_file[1000]; mxGetString(prhs[1],urdf_file,1000);
-  char floating_base_type[100] = "rpy";
-  if (nrhs>2) mxGetString(prhs[2],floating_base_type,100);
+  char floating_base_type_str[100] = "rpy";
+  if (nrhs>2) mxGetString(prhs[2],floating_base_type_str,100);
+  DrakeJoint::FloatingBaseType floating_base_type;
+  if (strcmp(floating_base_type_str,"fixed")==0)
+    floating_base_type = DrakeJoint::FIXED;
+  else if (strcmp(floating_base_type_str,"rpy")==0)
+    floating_base_type = DrakeJoint::ROLLPITCHYAW;
+  else if (strcmp(floating_base_type_str,"quat")==0)
+    floating_base_type = DrakeJoint::QUATERNION;
+  else
+    mexErrMsgIdAndTxt("Drake:compareParsersmex:BadInputs", "Unknown floating base type.  must be 'fixed', 'rpy', or 'quat'");
+
   RigidBodyManipulator* cpp_model = new RigidBodyManipulator(urdf_file,floating_base_type);
 
   // Compute coordinate transform between the two models (in case they are not identical)

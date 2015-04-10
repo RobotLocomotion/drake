@@ -29,6 +29,12 @@ class DLLEXPORT_DRAKEJOINT DrakeJoint
   // not available in MSVC2010...
   // DrakeJoint(const DrakeJoint&) = delete;
   // DrakeJoint& operator=(const DrakeJoint&) = delete;
+public:
+  enum FloatingBaseType {
+    FIXED        = 0,
+    ROLLPITCHYAW = 1,
+    QUATERNION   = 2
+  };
 
 private:
   const Eigen::Isometry3d transform_to_parent_body;

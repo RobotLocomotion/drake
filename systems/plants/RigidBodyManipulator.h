@@ -69,14 +69,14 @@ class DLLEXPORT_RBM RigidBodyManipulator
 {
 public:
   RigidBodyManipulator(int num_dof, int num_featherstone_bodies=-1, int num_rigid_body_objects=-1, int num_rigid_body_frames=0);
-  RigidBodyManipulator(const std::string &urdf_filename, const std::string &floating_base_type = "rpy");
+  RigidBodyManipulator(const std::string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
   RigidBodyManipulator(void);
   virtual ~RigidBodyManipulator(void);
 
-  bool addRobotFromURDFString(const std::string &xml_string, const std::string &root_dir = ".", const std::string &floating_base_type = "rpy");
-  bool addRobotFromURDFString(const std::string &xml_string, std::map<std::string,std::string>& package_map, const std::string &root_dir = ".", const std::string &floating_base_type = "rpy");
-  bool addRobotFromURDF(const std::string &urdf_filename, const std::string &floating_base_type = "rpy");
-  bool addRobotFromURDF(const std::string &urdf_filename, std::map<std::string,std::string>& package_map, const std::string &floating_base_type = "rpy");
+  bool addRobotFromURDFString(const std::string &xml_string, const std::string &root_dir = ".", const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
+  bool addRobotFromURDFString(const std::string &xml_string, std::map<std::string,std::string>& package_map, const std::string &root_dir = ".", const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
+  bool addRobotFromURDF(const std::string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
+  bool addRobotFromURDF(const std::string &urdf_filename, std::map<std::string,std::string>& package_map, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
 
   void surfaceTangents(Eigen::Map<Matrix3xd> const & normals, std::vector< Map<Matrix3xd> > & tangents);
   
@@ -332,6 +332,7 @@ public:
   VectorXd cached_q, cached_v;  // these should be private
 
   void setUseNewKinsol(bool tf) { use_new_kinsol=tf; kinematicsInit=false; }
+  bool getUseNewKinsol(void) { return use_new_kinsol; }
 
 private:
   bool use_new_kinsol;

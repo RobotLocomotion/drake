@@ -271,7 +271,7 @@ RigidBodyManipulator::RigidBodyManipulator(int ndof, int num_featherstone_bodies
   resize(ndof,num_featherstone_bodies,num_rigid_body_objects,num_rigid_body_frames);
 }
 
-RigidBodyManipulator::RigidBodyManipulator(const std::string &urdf_filename, const std::string &floating_base_type)
+RigidBodyManipulator::RigidBodyManipulator(const std::string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type)
   :  collision_model(DrakeCollision::newModel())
 {
   num_positions=0; NB=0; num_bodies=0; num_frames=0;
