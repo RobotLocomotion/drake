@@ -379,10 +379,22 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   Vector6d body_vdot;
 
   for (int i=0; i < qp_input->num_tracked_bodies; i++) {
-    int body_id0 = qp_input->body_motion_data[i].body_id - 1;
+    if (qp_input->body_motion_data[i].body_id == 0)
+      mexErrMsgTxt("Body motion data with body id 0\n");
+    int body_or_frame_id0 = qp_input->body_motion_data[i].body_id - 1;
+    int true_body_id0 = body_or_frame_id0;
+    if (body_or_frame_id0 < 0){
+      // and get actual body using that; get back to the original
+      // frame id (undo the -1), and transform into index based
+      // on frame # by adding 1 and inverting
+      int frame_ind = -(body_or_frame_id0+2);
+      if (frame_ind >= pdata->r->num_frames)
+        mexErrMsgTxt("Got a frame ind greater than available!\n");
+      true_body_id0 = pdata->r->frames[frame_ind].body_ind;
+    }
     desired_body_accelerations[i].use_spatial_velocity = qp_input->body_motion_data[i].use_spatial_velocity;
-    double weight = params->body_motion[body_id0].weight;
-    desired_body_accelerations[i].body_id0 = body_id0;
+    double weight = params->body_motion[true_body_id0].weight;
+    desired_body_accelerations[i].body_id0 = body_or_frame_id0;
     Map<Vector4d> quat_task_to_world(qp_input->body_motion_data[i].quat_task_to_world);
     Map<Vector3d> translation_task_to_world(qp_input->body_motion_data[i].translation_task_to_world);
     desired_body_accelerations[i].T_task_to_world.linear() = quat2rotmat(quat_task_to_world);
@@ -394,16 +406,17 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     if(!desired_body_accelerations[i].use_spatial_velocity)
     {
       evaluateCubicSplineSegment(t_spline - qp_input->body_motion_data[i].ts[0], coefs, body_pose_des, body_v_des, body_vdot_des);
-      desired_body_accelerations[i].body_vdot = bodyMotionPD(pdata->r, robot_state, body_id0, body_pose_des, body_v_des, body_vdot_des, params->body_motion[body_id0].Kp, params->body_motion[body_id0].Kd);
+      desired_body_accelerations[i].body_vdot = bodyMotionPD(pdata->r, robot_state, body_or_frame_id0, body_pose_des, body_v_des, body_vdot_des, params->body_motion[true_body_id0].Kp, params->body_motion[true_body_id0].Kd);
     }
     else
     {
       evaluateXYZExpmapCubicSplineSegment(t_spline - qp_input->body_motion_data[i].ts[0], coefs, body_pose_des, body_v_des, body_vdot_des);
-      desired_body_accelerations[i].body_vdot = bodySpatialMotionPD(pdata->r, robot_state, body_id0, body_pose_des, body_v_des, body_vdot_des, params->body_motion[body_id0].Kp,params->body_motion[body_id0].Kd,desired_body_accelerations[i].T_task_to_world);
+      desired_body_accelerations[i].body_vdot = bodySpatialMotionPD(pdata->r, robot_state, body_or_frame_id0, body_pose_des, body_v_des, body_vdot_des, params->body_motion[true_body_id0].Kp,params->body_motion[true_body_id0].Kd,desired_body_accelerations[i].T_task_to_world);
     }
     desired_body_accelerations[i].weight = weight;
-    desired_body_accelerations[i].accel_bounds = params->body_motion[body_id0].accel_bounds;
+    desired_body_accelerations[i].accel_bounds = params->body_motion[true_body_id0].accel_bounds;
     desired_body_accelerations[i].control_pose_when_in_contact = qp_input->body_motion_data[i].control_pose_when_in_contact;
+    
     // mexPrintf("body: %d, vdot: %f %f %f %f %f %f weight: %f\n", body_id0, 
     //           desired_body_accelerations[i].body_vdot(0), 
     //           desired_body_accelerations[i].body_vdot(1), 
