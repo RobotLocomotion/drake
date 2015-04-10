@@ -189,7 +189,6 @@ classdef QPLocomotionPlan < QPControllerPlan
 
         if qp_input.body_motion_data(j).body_id == rpc.body_ids.pelvis
           pelvis_has_tracking = true;
-          obj.body_motions(j).eval(t_plan)
         end
 
       end

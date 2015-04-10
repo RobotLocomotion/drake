@@ -48,6 +48,9 @@ for f = {'right', 'left'}
     xs = ppval(foot_pp.(foot), tsample);
     foot_deriv_pp = fnder(foot_pp.(foot));
     xds = ppval(foot_deriv_pp, tsample);
+    figure(320)
+    plot(tsample, xs);
+    
     figure(321)
     plot(tsample, xs(3,:), 'b.-')
     xlim([0, ts(end)])

@@ -33,7 +33,7 @@ end
 for j = 1:length(footsteps)-1
   % Make sure quaternions of adjacent steps are in the same hemisphere
   q1 = footsteps_with_quat(j).pos(4:7);
-  q2 = footsteps_with_quat(j).pos(4:7);
+  q2 = rpy2quat(footsteps(j+1).pos(4:6));
   q2 = sign(q1' * q2) * q2;
   footsteps_with_quat(j+1).pos(4:7) = q2;
 end
