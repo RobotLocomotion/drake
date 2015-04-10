@@ -3,7 +3,7 @@ function body_motions = getLinkConstraints(obj, foot_origin_knots, zmptraj, supp
 if nargin < 6
   options = struct();
 end
-options = applyDefaults(options, struct('pelvis_height_above_sole', obj.default_walking_params.pelvis_height_above_foot_sole, 'debug', false));
+options = applyDefaults(options, struct('pelvis_height_above_sole', obj.default_walking_params.pelvis_height_above_foot_sole, 'debug', true));
 
 body_motions = BodyMotionData.empty();
 
@@ -30,21 +30,20 @@ for f = {'right', 'left'}
     end
   end
   foot_states = [foot_origin_knots.(foot)];
-  foot_poses = foot_states(1:6,:);
   frame_id = obj.foot_frame_id.(foot);
   body_ind = obj.getFrame(frame_id).body_ind;
-  foot_poses(4:6,:) = unwrap(foot_poses(4:6,:), [], 2);
   ts = [foot_origin_knots.t];
 
   if size(foot_states, 1) == 6
-    body_motions(end+1) = BodyMotionData.from_body_poses(body_ind, ts, foot_states);
+    body_motions(end+1) = BodyMotionData.from_body_xyzexp(body_ind, ts, foot_states);
   elseif size(foot_states, 1) == 12
-    body_motions(end+1) = BodyMotionData.from_body_poses_and_velocities(body_ind, ts, foot_states(1:6,:), foot_states(7:12,:));
+    body_motions(end+1) = BodyMotionData.from_body_xyzexp_and_xyzexpdot(body_ind, ts, foot_states(1:6,:), foot_states(7:12,:));
   end
   body_motions(end).in_floating_base_nullspace = true(1, numel(ts));
   foot_pp.(foot) = body_motions(end).getPP();
 
   if options.debug
+    foot_poses_exp = foot_states(1:6,:);
     tsample = linspace(ts(1), ts(end), 200);
     xs = ppval(foot_pp.(foot), tsample);
     foot_deriv_pp = fnder(foot_pp.(foot));
@@ -57,7 +56,7 @@ for f = {'right', 'left'}
     lcmgl.points(xs(1,:), xs(2,:), xs(3,:));
 
     for j = 1:length(ts)
-      lcmgl.sphere(foot_poses(1:3,j), 0.02, 10, 10);
+      lcmgl.sphere(foot_poses_exp(1:3,j), 0.02, 10, 10);
     end
 
     vscale = 0.1;
@@ -96,10 +95,8 @@ lfoot_des = lfoot_body_motion.eval(0);
 rfoot_des = rfoot_body_motion.eval(0);
 pelvis_reference_height(1) = min(lfoot_des(3),rfoot_des(3));
 
-T = obj.getFrame(obj.foot_frame_id.right).T;
-% Torig * T = Tsole
-rfoot_sole_des = tform2poseRPY(poseRPY2tform(rfoot_des) * T);
-pelvis_height_above_foot_origin = options.pelvis_height_above_sole + (rfoot_sole_des(3) - rfoot_des(3));
+T_sole_frame = struct('right', obj.getFrame(obj.foot_frame_id.right).T,...
+           'left', obj.getFrame(obj.foot_frame_id.left).T);
 
 for i=1:length(support_times)-1
   isDoubleSupport = any(supports(i).bodies==obj.foot_body_id.left) && any(supports(i).bodies==obj.foot_body_id.right);
@@ -116,43 +113,55 @@ for i=1:length(support_times)-1
 
   t = support_times(i);
   t_next = support_times(i+1);
-  lfoot_des = lfoot_body_motion.eval(t);
-  rfoot_des = rfoot_body_motion.eval(t);
-  lfoot_des_next = lfoot_body_motion.eval(t_next);
-  rfoot_des_next = rfoot_body_motion.eval(t_next);
+
+  lfoot_orig = lfoot_body_motion.eval(t);
+  T_l_orig = poseQuat2tform([lfoot_orig(1:3); expmap2quat(lfoot_orig(4:6))]);
+  lsole_des = T_l_orig * T_sole_frame.left;
+
+  rfoot_orig = rfoot_body_motion.eval(t);
+  T_r_orig = poseQuat2tform([rfoot_orig(1:3); expmap2quat(rfoot_orig(4:6))]);
+  rsole_des = T_r_orig * T_sole_frame.right;
+
+  lfoot_orig_next = lfoot_body_motion.eval(t_next);
+  T_l_orig_next = poseQuat2tform([lfoot_orig_next(1:3); expmap2quat(lfoot_orig_next(4:6))]);
+  lsole_des_next = T_l_orig_next * T_sole_frame.left;
+
+  rfoot_orig_next = rfoot_body_motion.eval(t_next);
+  T_r_orig_next = poseQuat2tform([rfoot_orig_next(1:3); expmap2quat(rfoot_orig_next(4:6))]);
+  rsole_des_next = T_r_orig_next * T_sole_frame.right;
 
   step_height_delta_threshold = 0.025; % cm, min change in height to classify step up/down
   step_up_pelvis_shift = 0.03; % cm
   if isDoubleSupport && nextIsDoubleSupport
     pelvis_reference_height(i+1) = pelvis_reference_height(i);
   elseif isDoubleSupport && nextIsLeftSupport
-    if lfoot_des_next(3) > rfoot_des(3) + step_height_delta_threshold
+    if lsole_des_next(3) > rsole_des(3) + step_height_delta_threshold
       % stepping up with left foot
-      pelvis_reference_height(i+1) = lfoot_des_next(3)-step_up_pelvis_shift;
+      pelvis_reference_height(i+1) = lsole_des_next(3)-step_up_pelvis_shift;
     else
-      pelvis_reference_height(i+1) = lfoot_des_next(3);
+      pelvis_reference_height(i+1) = lsole_des_next(3);
     end
   elseif isDoubleSupport && nextIsRightSupport
 
-    if rfoot_des_next(3) > lfoot_des(3) + step_height_delta_threshold
+    if rsole_des_next(3) > lsole_des(3) + step_height_delta_threshold
       % stepping up with right foot
-      pelvis_reference_height(i+1) = rfoot_des_next(3)-step_up_pelvis_shift;
+      pelvis_reference_height(i+1) = rsole_des_next(3)-step_up_pelvis_shift;
     else
-      pelvis_reference_height(i+1) = rfoot_des_next(3);
+      pelvis_reference_height(i+1) = rsole_des_next(3);
     end
   elseif isLeftSupport && nextIsDoubleSupport 
-    if rfoot_des_next(3) < lfoot_des(3) - step_height_delta_threshold
+    if rsole_des_next(3) < lsole_des(3) - step_height_delta_threshold
       % stepping down with right foot
-      pelvis_reference_height(i+1) = rfoot_des_next(3)-step_up_pelvis_shift;
+      pelvis_reference_height(i+1) = rsole_des_next(3)-step_up_pelvis_shift;
     else
-      pelvis_reference_height(i+1) = lfoot_des(3);
+      pelvis_reference_height(i+1) = lsole_des(3);
     end
   elseif isRightSupport && nextIsDoubleSupport 
-    if lfoot_des_next(3) < rfoot_des(3) - step_height_delta_threshold
+    if lsole_des_next(3) < rsole_des(3) - step_height_delta_threshold
       % stepping down with left foot
-      pelvis_reference_height(i+1) = lfoot_des_next(3)-step_up_pelvis_shift;
+      pelvis_reference_height(i+1) = lsole_des_next(3)-step_up_pelvis_shift;
     else
-      pelvis_reference_height(i+1) = rfoot_des(3);
+      pelvis_reference_height(i+1) = rsole_des(3);
     end
   end
 end
@@ -162,10 +171,30 @@ pelvis_body = obj.findLinkId('pelvis');
 pelvis_ts = support_times;
 rpos = ppval(foot_pp.right, pelvis_ts);
 lpos = ppval(foot_pp.left, pelvis_ts);
-pelvis_poses = [nan(2, size(rpos, 2));
-                pelvis_reference_height + pelvis_height_above_foot_origin;
-                zeros(2,size(rpos, 2));
-                unwrap(angleAverage(rpos(6,:)', lpos(6,:)')')];
-pp = foh(pelvis_ts, pelvis_poses);
+
+rexp = rpos(4:6,:);
+lexp = lpos(4:6,:);
+for j = 1:size(rexp, 2)
+  rq = expmap2quat(rexp(:,j));
+  lq = expmap2quat(lexp(:,j));
+  lq = lq * sign(lq' * rq);
+  lexp(:,j) = quat2expmap(lq);
+end
+pelvis_exp = [zeros(2, size(rexp, 2));
+              mean([rexp(3,:); lexp(3,:)], 1)];
+
+pelvis_poses_exp = [nan(2, size(rpos, 2));
+                pelvis_reference_height + options.pelvis_height_above_sole;
+                pelvis_exp];
+
+pp = foh(pelvis_ts, pelvis_poses_exp);
 pelvis_dposes = ppval(fnder(pp, 1), pelvis_ts);
-body_motions(end+1) = BodyMotionData.from_body_poses_and_velocities(pelvis_body, pelvis_ts, pelvis_poses, pelvis_dposes);
+body_motions(end+1) = BodyMotionData.from_body_xyzexp_and_xyzexpdot(pelvis_body, pelvis_ts, pelvis_poses_exp, pelvis_dposes);
+
+if options.debug
+  pp = body_motions(end).getPP();
+  tt = linspace(pelvis_ts(1), pelvis_ts(end), 100);
+  ps = ppval(pp, tt);
+  figure(25)
+  plot(tt, ps);
+end

@@ -154,10 +154,9 @@ classdef QPLocomotionPlan < QPControllerPlan
             if any(obj.supports(supp_idx).bodies == body_id) && q(kny_ind) < MIN_KNEE_ANGLE % && any(obj.supports(supp_idx).bodies == other_foot) 
               other_foot_pose = obj.body_motions([obj.body_motions.body_id] == other_foot).coefs(:,body_t_ind,end);
               foot_knot = obj.body_motions(j).coefs(:,body_t_ind,end);
-              R = rotmat(-foot_knot(6));
-              vector_to_other_foot_in_local = R * (other_foot_pose(1:2) - foot_knot(1:2));
-
-              obj.toe_off_active.(foot_name) = vector_to_other_foot_in_local(1) > 0.05;
+              R = quat2rotmat(expmap2quat(-foot_knot(4:6)));
+              dist_in_local = (other_foot_pose(1:3) - foot_knot(1:3))' * (R * [1;0;0]);
+              obj.toe_off_active.(foot_name) = dist_in_local > 0.05;
             end
           else
             if ~any(obj.supports(supp_idx).bodies == body_id)
@@ -190,7 +189,9 @@ classdef QPLocomotionPlan < QPControllerPlan
 
         if qp_input.body_motion_data(j).body_id == rpc.body_ids.pelvis
           pelvis_has_tracking = true;
+          obj.body_motions(j).eval(t_plan)
         end
+
       end
 
       assert(pelvis_has_tracking, 'Expecting a motion_motion_data element for the pelvis');
@@ -237,10 +238,15 @@ classdef QPLocomotionPlan < QPControllerPlan
     function obj = updateSwingTrajectory(obj, t_plan, body_motion_ind, body_t_ind, kinsol, qd)
       body_motion_data = obj.body_motions(body_motion_ind);
 
-      [x0, J] = obj.robot.forwardKin(kinsol, body_motion_data.body_id, [0;0;0], 1);
+      [x0, J] = obj.robot.forwardKin(kinsol, body_motion_data.body_id, [0;0;0], 2);
       xd0 = J * qd;
 
-      xs = [x0, body_motion_data.coefs(:,body_t_ind+(2:4),end)];
+      xs = [x0, zeros(7,3)];
+      for j = 2:4
+        xs(:,j) = [body_motion_data.coefs(1:3, body_t_ind+j, end);
+                   expmap2quat(body_motion_data.coefs(4:6, body_t_ind+j, end))];
+        xs(4:7,j) = xs(4:7,j) * sign(xs(4:7,j-1)' * xs(4:7,j));
+      end
 
       % Move the first aerial knot point to be directly above our current foot origin pose
       nhat = xs(1:2,end) - x0(1:2);
@@ -250,28 +256,26 @@ classdef QPLocomotionPlan < QPControllerPlan
       end
 
       xdf = body_motion_data.coefs(:,body_t_ind+4,end-1);
-      t0 = [body_motion_data.ts(body_t_ind+(1:4))];
 
-
-      ts = [t0(1), 0, 0, t0(4)];
+      ts = [body_motion_data.ts(body_t_ind+1), 0, 0, body_motion_data.ts(body_t_ind+4)];
       qpSpline_options = struct('optimize_knot_times', true);
       [coefs, ts] = qpSpline(ts, xs, xd0, xdf, qpSpline_options);
 
-      % tt = linspace(ts(1), ts(end));
-      % pp = mkpp(ts, coefs, 6);
-      % xs = ppval(pp, tt);
-      % xds = ppval(fnder(pp, 1), tt);
-      % obj.lcmgl.glPointSize(5);
-      % obj.lcmgl.points(xs(1,:), xs(2,:), xs(3,:));
+      tt = linspace(ts(1), ts(end));
+      pp = mkpp(ts, coefs, 6);
+      xs = ppval(pp, tt);
+      xds = ppval(fnder(pp, 1), tt);
+      obj.lcmgl.glPointSize(5);
+      obj.lcmgl.points(xs(1,:), xs(2,:), xs(3,:));
 
-      % vscale = 0.1;
-      % for j = 1:size(xs,2)
-      %   obj.lcmgl.line3(xs(1,j), xs(2,j), xs(3,j), ...
-      %               xs(1,j) + vscale*xds(1,j),...
-      %               xs(2,j) + vscale*xds(2,j),...
-      %               xs(3,j) + vscale*xds(3,j));
-      % end
-      % obj.lcmgl.switchBuffers();
+      vscale = 0.1;
+      for j = 1:size(xs,2)
+        obj.lcmgl.line3(xs(1,j), xs(2,j), xs(3,j), ...
+                    xs(1,j) + vscale*xds(1,j),...
+                    xs(2,j) + vscale*xds(2,j),...
+                    xs(3,j) + vscale*xds(3,j));
+      end
+      obj.lcmgl.switchBuffers();
 
       obj.body_motions(body_motion_ind).coefs(:,body_t_ind+(1:3),:) = coefs;
       obj.body_motions(body_motion_ind).ts(body_t_ind+(1:3)) = ts(1:3);
@@ -289,14 +293,12 @@ classdef QPLocomotionPlan < QPControllerPlan
 
       for j = 1:length(qp_input.body_motion_data)
         if qp_input.body_motion_data(j).body_id == loading_foot;
-          foot_actual = obj.robot.forwardKin(kinsol, loading_foot, [0;0;0], 1);
+          foot_actual = obj.robot.forwardKin(kinsol, loading_foot, [0;0;0], 0);
           foot_des = evalCubicSplineSegment(t_global - qp_input.body_motion_data(j).ts(1), qp_input.body_motion_data(j).coefs);
           obj.plan_shift_data.plan_shift(1:3) = foot_des(1:3) - foot_actual(1:3);
           break
         end
       end
-      %disp('plan shift: ')
-      %obj.plan_shift_data.plan_shift
     end
 
     function qp_input = applyPlanShift(obj, qp_input)
@@ -536,6 +538,7 @@ classdef QPLocomotionPlan < QPControllerPlan
     end
 
     function obj = from_point_mass_biped_plan(plan, biped, x0, param_set_name)
+      error('this needs to be updated to use exponential map rotations');
       if nargin < 4
         param_set_name = 'recovery';
       end
@@ -598,6 +601,7 @@ classdef QPLocomotionPlan < QPControllerPlan
     end
 
     function obj = from_quasistatic_qtraj(biped, qtraj, options)
+      error('this needs to be updated to use exponential map rotations');
       if nargin < 3
         options = struct();
       end

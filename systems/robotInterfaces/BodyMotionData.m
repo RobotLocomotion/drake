@@ -71,6 +71,7 @@ classdef BodyMotionData
 
   methods(Static)
     function obj = from_body_poses(body_id, ts, poses)
+      % [xyz; rpy]
       obj = BodyMotionData(body_id, ts);
       pp = pchip(ts, poses);
       [~, obj.coefs, l, k, d] = unmkpp(pp);
@@ -78,9 +79,27 @@ classdef BodyMotionData
     end
 
     function obj = from_body_poses_and_velocities(body_id, ts, poses, dposes)
+      % [xyz; rpy] and [xyzdot; rpydot]
       obj = BodyMotionData(body_id, ts);
 
       pp = pchipDeriv(ts, poses, dposes);
+      [~, obj.coefs, l, k, d] = unmkpp(pp);
+      obj.coefs = reshape(obj.coefs, [d, l, k]);
+    end
+
+    function obj = from_body_xyzexp(body_id, ts, poses_exp)
+      % [xyz; exp]
+      obj = BodyMotionData(body_id, ts);
+      obj.use_spatial_velocity = true;
+      pp = pchip(ts, poses_exp);
+      [~, obj.coefs, l, k, d] = unmkpp(pp);
+      obj.coefs = reshape(obj.coefs, [d, l, k]);
+    end
+
+    function obj = from_body_xyzexp_and_xyzexpdot(body_id, ts, poses_exp, dposes_exp)
+      obj = BodyMotionData(body_id, ts);
+      obj.use_spatial_velocity = true;
+      pp = pchipDeriv(ts, poses_exp, dposes_exp);
       [~, obj.coefs, l, k, d] = unmkpp(pp);
       obj.coefs = reshape(obj.coefs, [d, l, k]);
     end
