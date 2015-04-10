@@ -97,7 +97,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     model->dofnum[i] = (int) dofnum[i] - 1; // zero-indexed
 
     mxArray* pXtreei = mxGetCell(pXtree,i);
-    if (!pXtreei) mexErrMsgIdAndTxt("Drake:HandCpmex:BadInputs","can't access model.featherstone.Xtree{%d}",i);
+    if (!pXtreei) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't access model.featherstone.Xtree{%d}",i);
 
     // todo: check that the size is 6x6
     memcpy(model->Xtree[i].data(),mxGetPrSafe(pXtreei),sizeof(double)*6*6);

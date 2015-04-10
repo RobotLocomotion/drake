@@ -437,6 +437,7 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
   kinematicsInit = false;
   secondDerivativesCached = 0;
 
+  position_kinematics_cached = false;
   gradients_cached = false;
   velocity_kinematics_cached = false;
   jdotV_cached = false;
@@ -1155,7 +1156,7 @@ void RigidBodyManipulator::doKinematicsNew(const MatrixBase<DerivedQ>& q, const 
   assert(v.rows() == num_velocities || v.rows() == 0);
   compute_JdotV = compute_JdotV && (v.rows() == num_velocities); // no sense in computing Jdot times v if v is not passed in
 
-  if (kinematicsInit) {
+  if (position_kinematics_cached) {
     bool skip = true;
     if (compute_gradients && !gradients_cached) {
       skip = false;
@@ -1183,7 +1184,7 @@ void RigidBodyManipulator::doKinematicsNew(const MatrixBase<DerivedQ>& q, const 
       return;
     }
   }
-  kinematicsInit = true; // doing this here because there is a geometricJacobian within doKinematics below which checks for kinematicsInit.
+  position_kinematics_cached = true; // doing this here because there is a geometricJacobian within doKinematics below which checks for kinematicsInit.
 
   int nq = num_positions;
   int gradient_order = compute_gradients ? 1 : 0;
@@ -3140,202 +3141,6 @@ GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, 1> RigidBodyManipula
   return ret;
 }
 
-template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD, typename DerivedE, typename DerivedF, typename DerivedG>
-void RigidBodyManipulator::HandC(MatrixBase<DerivedG> const & q, MatrixBase<DerivedG> const & qd, MatrixBase<DerivedA> * const f_ext, MatrixBase<DerivedB> &H, MatrixBase<DerivedC> &C, MatrixBase<DerivedD> *dH, MatrixBase<DerivedE> *dC, MatrixBase<DerivedF> * const df_ext)
-{
-  if (use_new_kinsol) {
-    warnOnce("new_kinsol_old_method_HandC", "Warning: called old HandC with use_new_kinsol set to true.");
-    typedef typename DerivedB::Scalar Scalar;
-    int H_gradient_order = dH != nullptr ? 1 : 0;
-    auto H_gradientvar = massMatrix<Scalar>(H_gradient_order);
-    H = H_gradientvar.value();
-    if (H_gradient_order > 0) {
-      *dH = H_gradientvar.gradient().value();
-    }
-
-    int C_gradient_order = dC != nullptr ? 1 : 0;
-    map<int, unique_ptr<GradientVar<double, TWIST_SIZE, 1> > > f_ext_map;
-    int nq = num_positions;
-    int nv = num_velocities;
-    if (f_ext != nullptr) {
-      for (int i = 0; i < f_ext->cols(); i++) {
-        if ((f_ext->col(i).array() != 0.0).any()) {
-          f_ext_map[i] = unique_ptr< GradientVar<double, TWIST_SIZE, 1> >(new GradientVar<double, TWIST_SIZE, 1>(TWIST_SIZE, 1, nq + nv, C_gradient_order));
-          f_ext_map[i]->value() = f_ext->col(i);
-          if (C_gradient_order > 0) {
-            f_ext_map[i]->gradient().value() = df_ext->template middleRows<TWIST_SIZE>(i * TWIST_SIZE);
-          }
-        }
-      }
-    }
-    auto C_gradientvar = inverseDynamics<Scalar>(f_ext_map, nullptr, C_gradient_order);
-    C = C_gradientvar.value();
-    if (C_gradient_order > 0) {
-      *dC = C_gradientvar.gradient().value();
-    }
-  }
-
-  H = MatrixXd::Zero(num_positions,num_positions);
-  if (dH) *dH = MatrixXd::Zero(num_positions*num_positions,num_positions);
-  // C gets overwritten completely in the algorithm below
-
-  VectorXd vJ(6), fh(6), dfh(6), dvJdqd(6);
-  MatrixXd XJ(6,6), dXJdq(6,6);
-  int i,j,k,n,np,nk;
-
-  for (i=0; i<NB; i++) {
-    n = dofnum[i];
-    jcalc(pitch[i],q[n],&XJ,&(S[i]));
-    vJ = S[i] * qd[n];
-    Xup[i] = XJ * Xtree[i];
-
-    if (parent[i] < 0) {
-      v[i] = vJ;
-      avp[i] = Xup[i] * (-a_grav);
-    } else {
-      v[i] = Xup[i]*v[parent[i]] + vJ;
-      avp[i] = Xup[i]*avp[parent[i]] + crm(v[i])*vJ;
-    }
-    fvp[i] = I[i]*avp[i] + crf(v[i])*I[i]*v[i];
-    if (f_ext)
-      fvp[i] = fvp[i] - f_ext->col(i);
-    IC[i] = I[i];
-
-    //Calculate gradient information if it is requested
-    if (dH || dC) {
-      djcalc(pitch[i], q[n], &dXJdq);
-      dXupdq[i] = dXJdq * Xtree[i];
-
-      for (j=0; j<NB; j++) {
-        dIC[i][j] = MatrixXd::Zero(6,6);
-      }
-    }
-
-    if (dC) {
-      dvJdqd = S[i];
-      if (parent[i] < 0) {
-        dvdqd[i].col(n) = dvJdqd;
-        davpdq[i].col(n) = dXupdq[i] * (-a_grav);
-      } else {
-        j = parent[i];
-        dvdq[i] = Xup[i]*dvdq[j];
-        dvdq[i].col(n) += dXupdq[i]*v[j];
-        dvdqd[i] = Xup[i]*dvdqd[j];
-        dvdqd[i].col(n) += dvJdqd;
-
-        davpdq[i] = Xup[i]*davpdq[j];
-        davpdq[i].col(n) += dXupdq[i]*avp[j];
-        for (k=0; k < NB; k++) {
-          dcrm(v[i],vJ,dvdq[i].col(k),VectorXd::Zero(6),&(dcross));
-          davpdq[i].col(k) += dcross;
-        }
-
-        dvJdqd_mat = MatrixXd::Zero(6,NB);
-        dvJdqd_mat.col(n) = dvJdqd;
-        dcrm(v[i],vJ,dvdqd[i],dvJdqd_mat,&(dcross));
-        davpdqd[i] = Xup[i]*davpdqd[j] + dcross;
-      }
-
-      dcrf(v[i],I[i]*v[i],dvdq[i],I[i]*dvdq[i],&(dcross));
-      dfvpdq[i] = I[i]*davpdq[i] + dcross;
-      dcrf(v[i],I[i]*v[i],dvdqd[i],I[i]*dvdqd[i],&(dcross));
-      dfvpdqd[i] = I[i]*davpdqd[i] + dcross;
-      if (df_ext) {
-        dfvpdq[i] = dfvpdq[i] - df_ext->block(i*6,0,6,num_positions);
-        dfvpdqd[i] = dfvpdqd[i] - df_ext->block(i*6,num_positions,6,num_positions);
-      }
-
-    }
-  }
-
-  for (i=(NB-1); i>=0; i--) {
-    n = dofnum[i];
-    C(n) = (S[i]).transpose() * fvp[i] + damping[i]*qd[n];
-
-    if (qd[n] >= coulomb_window[i]) {
-      C(n) += coulomb_friction[i];
-    }
-    else if (qd[n] <= -coulomb_window[i]) {
-      C(n) -= coulomb_friction[i];
-    }
-    else {
-      C(n) += qd[n]/coulomb_window[i] * coulomb_friction[i];
-    }
-
-    if (dC) {
-      (*dC).block(n,0,1,NB) = S[i].transpose()*dfvpdq[i];
-      (*dC).block(n,NB,1,NB) = S[i].transpose()*dfvpdqd[i];
-      (*dC)(n,NB+n) += damping[i];
-
-      if (qd[n]<0 && qd[n]>-coulomb_window[i]) {
-        (*dC)(n,NB+n) -= 1/coulomb_window[i] * coulomb_friction[i];
-      }
-      else if (qd[n]>=0 && qd[n]<coulomb_window[i]) {
-        (*dC)(n,NB+n) += 1/coulomb_window[i] * coulomb_friction[i];
-      }
-    }
-
-    if (parent[i] >= 0) {
-      fvp[parent[i]] += (Xup[i]).transpose()*fvp[i];
-      IC[parent[i]] += (Xup[i]).transpose()*IC[i]*Xup[i];
-
-      if (dH) {
-        for (k=0; k < NB; k++) {
-          dIC[parent[i]][k] += Xup[i].transpose()*dIC[i][k]*Xup[i];
-        }
-        dIC[parent[i]][n] += dXupdq[i].transpose()*IC[i]*Xup[i] + Xup[i].transpose()*IC[i]*dXupdq[i];
-      }
-
-      if (dC) {
-        dfvpdq[parent[i]] += Xup[i].transpose()*dfvpdq[i];
-        dfvpdq[parent[i]].col(n) += dXupdq[i].transpose()*fvp[i];
-        dfvpdqd[parent[i]] += Xup[i].transpose()*dfvpdqd[i];
-      }
-    }
-  }
-
-  for (i=0; i<NB; i++) {
-    n = dofnum[i];
-    fh = IC[i] * S[i];
-    H(n,n) = (S[i]).transpose() * fh;
-    j=i;
-    while (parent[j] >= 0) {
-      fh = (Xup[j]).transpose() * fh;
-      j = parent[j];
-      np = dofnum[j];
-
-      H(n,np) = (S[j]).transpose() * fh;
-      H(np,n) = H(n,np);
-    }
-  }
-
-  if (dH) {
-    for (k=0; k < NB; k++) {
-      nk = dofnum[k];
-      for (i=0; i < NB; i++) {
-        n = dofnum[i];
-        fh = IC[i] * S[i];
-        dfh = dIC[i][nk] * S[i]; //dfh/dqk
-        (*dH)(n + n*NB,nk) = S[i].transpose() * dfh;
-        j = i;
-        while (parent[j] >= 0) {
-          if (j==k) {
-            dfh = Xup[j].transpose() * dfh + dXupdq[j].transpose() * fh;
-          } else {
-            dfh = Xup[j].transpose() * dfh;
-          }
-          fh = Xup[j].transpose() * fh;
-
-          j = parent[j];
-          np = dofnum[j];
-          (*dH)(n + (np)*NB,nk) = S[j].transpose() * dfh;
-          (*dH)(np + (n)*NB,nk) = (*dH)(n + np*NB,nk);
-        }
-      }
-    }
-  }
-}
-
 shared_ptr<RigidBody> RigidBodyManipulator::findLink(string linkname, int robot)
 {
   std::transform(linkname.begin(), linkname.end(), linkname.begin(), ::tolower); // convert to lower case
@@ -3627,8 +3432,8 @@ void RigidBodyManipulator::positionConstraints(MatrixBase<DerivedA> & phi, Matri
 
 void RigidBodyManipulator::checkCachedKinematicsSettings(bool kinematics_gradients_required, bool velocity_kinematics_required, bool jdot_times_v_required, const std::string& method_name)
 {
-  if (!kinematicsInit)
-    throw runtime_error((method_name + " requires doKinematics to have been called.").c_str());
+  if (!position_kinematics_cached)
+    throw runtime_error((method_name + " requires position kinematics, which have not been cached. Please call doKinematics.").c_str());
   if (kinematics_gradients_required && ! gradients_cached)
     throw runtime_error((method_name + " requires kinematics gradients, which have not been cached. Please call doKinematics with compute_gradients set to true.").c_str());
   if (velocity_kinematics_required && ! velocity_kinematics_cached)
@@ -3710,12 +3515,6 @@ template DLLEXPORT_RBM GradientVar<double, TWIST_SIZE, 1> RigidBodyManipulator::
 template DLLEXPORT_RBM GradientVar<double, 6, Dynamic> RigidBodyManipulator::worldMomentumMatrix<double>(int, const std::set<int>&, bool);
 template DLLEXPORT_RBM GradientVar<double, 6, 1> RigidBodyManipulator::transformSpatialAcceleration<double>(GradientVar<double, 6, 1> const&, int, int, int, int);
 template DLLEXPORT_RBM GradientVar<double, 6, 1> RigidBodyManipulator::worldMomentumMatrixDotTimesV<double>(int, const std::set<int>&);
-
-
-template DLLEXPORT_RBM void RigidBodyManipulator::HandC(MatrixBase<VectorXd> const &, MatrixBase<VectorXd> const &, MatrixBase< Map<MatrixXd> > * const, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<VectorXd> > &, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > * const);
-template DLLEXPORT_RBM void RigidBodyManipulator::HandC(MatrixBase<VectorXd> const &, MatrixBase<VectorXd> const &, MatrixBase< MatrixXd > * const, MatrixBase< MatrixXd > &, MatrixBase< VectorXd > &, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > * const);
-template DLLEXPORT_RBM void RigidBodyManipulator::HandC(MatrixBase< Map<VectorXd> > const &, MatrixBase< Map<VectorXd> > const &, MatrixBase< Map<MatrixXd> > * const, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<VectorXd> > &, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > * const);
-template DLLEXPORT_RBM void RigidBodyManipulator::HandC(MatrixBase< Map<VectorXd> > const &, MatrixBase< Map<VectorXd> > const &, MatrixBase< MatrixXd > * const, MatrixBase< MatrixXd > &, MatrixBase< VectorXd > &, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > * const);
 
 template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, 1> RigidBodyManipulator::positionConstraintsNew(int);
 

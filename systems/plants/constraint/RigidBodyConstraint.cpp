@@ -1,6 +1,7 @@
 #include "RigidBodyConstraint.h"
 #include "../RigidBodyManipulator.h"
 
+#include <map>
 #include "../../../util/drakeGeometryUtil.h"
 
 #if defined(WIN32) || defined(WIN64)
@@ -2716,21 +2717,16 @@ GravityCompensationTorqueConstraint(RigidBodyManipulator* robot,
 void GravityCompensationTorqueConstraint::eval(const double* t, VectorXd& c, MatrixXd& dc) const
 {
   VectorXd qd = VectorXd::Zero(robot->num_velocities);
-  MatrixXd* f_ext = nullptr;
-  MatrixXd* df_ext = nullptr;
-  MatrixXd H(robot->num_velocities, robot->num_velocities);
-  MatrixXd dH(robot->num_velocities*robot->num_velocities, robot->num_positions+robot->num_velocities);
-  VectorXd G(robot->num_velocities);
-  MatrixXd dG(robot->num_velocities, robot->num_positions+robot->num_velocities);
-
-  robot->HandC(robot->cached_q, qd, f_ext, H, G, &dH, &dG, df_ext);
+  robot->doKinematicsNew(robot->cached_q, qd, true);
+  std::map<int, std::unique_ptr<GradientVar<double, TWIST_SIZE, 1>> > f_ext;
+  auto G_gradientvar = robot->inverseDynamics(f_ext);
 
   c.resize(num_constraint);
   dc.resize(num_constraint, robot->num_positions);
 
   for (int i = 0; i < num_constraint; ++i) {
-    c(i) = G(joint_indices(i));
-    dc.row(i) = dG.block(joint_indices(i), 0, 1, robot->num_positions);
+    c(i) = G_gradientvar.value()(joint_indices(i));
+    dc.row(i) = G_gradientvar.gradient().value().block(joint_indices(i), 0, 1, robot->num_positions);
   }
 }
 
