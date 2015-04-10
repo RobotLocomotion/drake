@@ -32,7 +32,7 @@ if (eigen3_FOUND)
   pods_install_libraries(drakeGradientUtil)
   pods_install_headers(drakeGradientUtil.h DESTINATION drake)
 
-  add_library(drakeGeometryUtil SHARED drakeGeometryUtil.cpp)
+  add_library(drakeGeometryUtil SHARED drakeGeometryUtil.cpp expmap2quat.cpp)
   target_link_libraries(drakeGeometryUtil drakeGradientUtil)
   pods_install_libraries(drakeGeometryUtil)
   pods_install_headers(drakeGeometryUtil.h DESTINATION drake)
