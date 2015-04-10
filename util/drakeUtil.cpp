@@ -213,7 +213,7 @@ const std::vector<double> matlabToStdVector(const mxArray* in) {
   if (mxGetM(in) != 1 && mxGetN(in) != 1)
     throw runtime_error("Not a vector");
   double* data = mxGetPrSafe(in);
-  return std::vector<double>(data, data + mxGetM(in) * mxGetN(in));
+  return std::vector<double>(data, data + mxGetNumberOfElements(in));
 }
 
 int sub2ind(mwSize ndims, const mwSize* dims, const mwSize* sub) {
