@@ -9,14 +9,6 @@ using namespace std;
 using namespace Eigen;
 
 const int GRID_STEPS = 10;
-const int Q_SIZE = 2;
-
-Matrix<double, Q_SIZE, Q_SIZE> computeQ(double t0, double t1) {
-  Matrix<double, Q_SIZE, Q_SIZE> Q;
-  Q << std::pow(2.0, 2.0) * (t1 - t0), 6.0 * std::pow(t1 - t0, 2.0),
-      6.0 * std::pow(t1 - t0, 2.0), std::pow(6.0, 2.0) / 3.0 * std::pow(t1 - t0, 3.0);
-  return Q;
-}
 
 void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
   string usage = "[coefs, ts, objective_value] = twoWaypointCubicSplineFreeKnotTimesmex.cpp(t0, tf, xs, xd0, xdf)";
@@ -40,8 +32,6 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
   std::vector<double> segment_times;
   segment_times.resize(num_segments + 1);
   segment_times[0] = t0;
-//  segment_times[1] = 1.0;
-//  segment_times[2] = 2.0;
   segment_times[num_segments] = tf;
   std::vector<double> best_segment_times = segment_times;
   double t_step = (tf - t0) / GRID_STEPS;
