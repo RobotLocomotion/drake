@@ -41,7 +41,7 @@ if (MATLAB_FOUND)
   endmacro()
 
   add_rbm_mex(constructModelmex)
-    add_rbm_mex(doKinematicsmex)
+  add_rbm_mex(doKinematicsmex)
   add_rbm_mex(forwardKinmex)
   add_rbm_mex(bodyKinmex)
   add_rbm_mex(collisionDetectmex)

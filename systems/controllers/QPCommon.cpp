@@ -407,20 +407,17 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   // handle external wrenches to compensate for
   const int wrench_size = 6;
   typedef GradientVar<double, TWIST_SIZE, 1> WrenchGradientVarType;
-  if (qp_input->body_wrench_data.size() > 0) {
-    std::map<int, std::unique_ptr<GradientVar<double, TWIST_SIZE, 1>> > f_ext;
-    for (auto it = qp_input->body_wrench_data.begin(); it != qp_input->body_wrench_data.end(); ++it) {
-      const drake::lcmt_body_wrench_data& body_wrench_data = *it;
-      int body_id = body_wrench_data.body_id - 1;
-      f_ext[body_id] = std::unique_ptr<WrenchGradientVarType>(new WrenchGradientVarType(wrench_size, 1, nq, 0));
-      f_ext[body_id]->value() = Map<const WrenchGradientVarType::DataType>(body_wrench_data.wrench);
-    }
-
-    RigidBodyManipulator* model = pdata->r;
-	model->doKinematicsNew(robot_state.q, robot_state.qd);
-    pdata->H = model->massMatrix<double>().value();
-    pdata->C = model->inverseDynamics(f_ext).value();
+  std::map<int, std::unique_ptr<GradientVar<double, TWIST_SIZE, 1>> > f_ext;
+  for (auto it = qp_input->body_wrench_data.begin(); it != qp_input->body_wrench_data.end(); ++it) {
+    const drake::lcmt_body_wrench_data& body_wrench_data = *it;
+    int body_id = body_wrench_data.body_id - 1;
+    f_ext[body_id] = std::unique_ptr<WrenchGradientVarType>(new WrenchGradientVarType(wrench_size, 1, nq, 0));
+    f_ext[body_id]->value() = Map<const WrenchGradientVarType::DataType>(body_wrench_data.wrench);
   }
+
+  pdata->r->doKinematicsNew(robot_state.q, robot_state.qd);
+  pdata->H = pdata->r->massMatrix<double>().value();
+  pdata->C = pdata->r->inverseDynamics(f_ext).value();
 
   pdata->H_float = pdata->H.topRows(6);
   pdata->H_act = pdata->H.bottomRows(nu);

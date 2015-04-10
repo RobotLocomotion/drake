@@ -101,8 +101,6 @@ public:
   template <typename DerivedQ, typename DerivedV>
   void doKinematicsNew(const MatrixBase<DerivedQ>& q, const MatrixBase<DerivedV>& v, bool compute_gradients = false, bool compute_JdotV = false);
 
-  void updateCompositeRigidBodyInertias(int gradient_order);
-
   bool isBodyPartOfRobot(const RigidBody& body, const std::set<int>& robotnum);
 
   double getMass(const std::set<int>& robotnum = RigidBody::defaultRobotNumSet);
@@ -349,6 +347,8 @@ private:
   //helper functions for contactConstraints
   void accumulateContactJacobian(const size_t bodyInd, MatrixXd const & bodyPoints, std::vector<size_t> const & cindA, std::vector<size_t> const & cindB, MatrixXd & J);
   void accumulateSecondOrderContactJacobian(const size_t bodyInd, MatrixXd const & bodyPoints, std::vector<size_t> const & cindA, std::vector<size_t> const & cindB, MatrixXd & dJ);
+
+  void updateCompositeRigidBodyInertias(int gradient_order);
 
   void checkCachedKinematicsSettings(bool kinematics_gradients_required, bool velocity_kinematics_required, bool jdot_times_v_required, const std::string& method_name);
 
