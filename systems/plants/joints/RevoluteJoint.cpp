@@ -34,7 +34,7 @@ Matrix<double, TWIST_SIZE, 1> RevoluteJoint::spatialJointAxis(const Vector3d& ro
 void RevoluteJoint::setupOldKinematicTree(RigidBodyManipulator* model, int body_ind, int position_num_start, int velocity_num_start) const
 {
   FixedAxisOneDoFJoint::setupOldKinematicTree(model,body_ind,position_num_start,velocity_num_start);
-  model->bodies[body_ind]->pitch = 0.0;
+  model->bodies[body_ind]->pitch = 0;
 
   Vector3d z_axis(0.0,0.0,1.0);
   if (rotation_axis.dot(z_axis)<1-1e-4) {

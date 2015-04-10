@@ -17,8 +17,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   }
   RigidBodyManipulator* model = (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
   int nq = model->num_positions;
-  Map<VectorXd> q_seed(mxGetPr(prhs[1]),nq);
-  Map<VectorXd> q_nom(mxGetPr(prhs[2]),nq);
+  Map<VectorXd> q_seed(mxGetPrSafe(prhs[1]),nq);
+  Map<VectorXd> q_nom(mxGetPrSafe(prhs[2]),nq);
   int num_constraints = nrhs-4;
   RigidBodyConstraint** constraint_array = new RigidBodyConstraint*[num_constraints];
   for(int i = 0;i<num_constraints;i++)
@@ -27,7 +27,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   }
   IKoptions* ikoptions = (IKoptions*) getDrakeMexPointer(prhs[nrhs-1]);
   plhs[0] = mxCreateDoubleMatrix(nq,1,mxREAL);
-  Map<VectorXd> q_sol(mxGetPr(plhs[0]),nq);
+  Map<VectorXd> q_sol(mxGetPrSafe(plhs[0]),nq);
   int info;
   vector<string> infeasible_constraint;
   inverseKin(model,q_seed,q_nom,num_constraints,constraint_array,q_sol,info,infeasible_constraint,*ikoptions);

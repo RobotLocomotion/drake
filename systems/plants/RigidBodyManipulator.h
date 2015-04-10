@@ -327,6 +327,7 @@ public:
   std::vector<MatrixXd> I;
   Matrix<double,TWIST_SIZE,1> a_grav;
   MatrixXd B;  // the B matrix maps inputs into joint-space forces
+  std::map<int, int> bodies_vector_index_to_featherstone_body_index;
 
   VectorXd cached_q, cached_v;  // these should be private
 
@@ -337,8 +338,8 @@ private:
   void doKinematics(double* q, bool b_compute_second_derivatives=false, double* qd=NULL);
   
   //helper functions for contactConstraints
-  void accumulateContactJacobian(const int bodyInd, MatrixXd const & bodyPoints, std::vector<int> const & cindA, std::vector<int> const & cindB, MatrixXd & J);
-  void accumulateSecondOrderContactJacobian(const int bodyInd, MatrixXd const & bodyPoints, std::vector<int> const & cindA, std::vector<int> const & cindB, MatrixXd & dJ);
+  void accumulateContactJacobian(const size_t bodyInd, MatrixXd const & bodyPoints, std::vector<size_t> const & cindA, std::vector<size_t> const & cindB, MatrixXd & J);
+  void accumulateSecondOrderContactJacobian(const size_t bodyInd, MatrixXd const & bodyPoints, std::vector<size_t> const & cindA, std::vector<size_t> const & cindB, MatrixXd & dJ);
 
   int parseBodyOrFrameID(const int body_or_frame_id, Matrix4d* Tframe = nullptr);
 

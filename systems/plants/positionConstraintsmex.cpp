@@ -19,7 +19,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     mexErrMsgIdAndTxt("Drake:positionConstraintsmex:InvalidPositionVectorLength", "q contains the wrong number of elements");
   }
 
-  Map<VectorXd> q(mxGetPr(prhs[1]),nq); 
+  Map<VectorXd> q(mxGetPrSafe(prhs[1]),nq); 
 
   model->doKinematics(q);
 
@@ -28,8 +28,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   plhs[0] = mxCreateDoubleMatrix(numPositionConstraints, 1, mxREAL);
   plhs[1] = mxCreateDoubleMatrix(numPositionConstraints, nq, mxREAL);
 
-  Map<VectorXd> phi(mxGetPr(plhs[0]), numPositionConstraints);
-  Map<MatrixXd> J(mxGetPr(plhs[1]), numPositionConstraints, nq);
+  Map<VectorXd> phi(mxGetPrSafe(plhs[0]), numPositionConstraints);
+  Map<MatrixXd> J(mxGetPrSafe(plhs[1]), numPositionConstraints, nq);
 
   model->positionConstraints(phi, J);  
 }

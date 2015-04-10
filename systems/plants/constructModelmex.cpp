@@ -58,32 +58,32 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 
   pm = mxGetField(featherstone,0,"parent");
   if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.parent.");
-  double* parent = mxGetPr(pm);
+  double* parent = mxGetPrSafe(pm);
 
   pm = mxGetField(featherstone,0,"pitch");
   if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.pitch.");
-  double* pitch = mxGetPr(pm);
+  double* pitch = mxGetPrSafe(pm);
 
   pm = mxGetField(featherstone,0,"position_num");
   if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.position_num.");
-  double* dofnum = mxGetPr(pm);
+  double* dofnum = mxGetPrSafe(pm);
 //  throw runtime_error("here");
 
   pm = mxGetField(featherstone,0,"damping");
   if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.damping.");
-  memcpy(model->damping.data(),mxGetPr(pm),sizeof(double)*model->NB);
+  memcpy(model->damping.data(),mxGetPrSafe(pm),sizeof(double)*model->NB);
 
   pm = mxGetField(featherstone,0,"coulomb_friction");
   if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.coulomb_friction.");
-  memcpy(model->coulomb_friction.data(),mxGetPr(pm),sizeof(double)*model->NB);
+  memcpy(model->coulomb_friction.data(),mxGetPrSafe(pm),sizeof(double)*model->NB);
 
   pm = mxGetField(featherstone,0,"static_friction");
   if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.static_friction.");
-  memcpy(model->static_friction.data(),mxGetPr(pm),sizeof(double)*model->NB);
+  memcpy(model->static_friction.data(),mxGetPrSafe(pm),sizeof(double)*model->NB);
 
   pm = mxGetField(featherstone,0,"coulomb_window");
   if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.coulomb_window.");
-  memcpy(model->coulomb_window.data(),mxGetPr(pm),sizeof(double)*model->NB);
+  memcpy(model->coulomb_window.data(),mxGetPrSafe(pm),sizeof(double)*model->NB);
 
   mxArray* pXtree = mxGetField(featherstone,0,"Xtree");
   if (!pXtree) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.Xtree.");
@@ -100,13 +100,13 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     if (!pXtreei) mexErrMsgIdAndTxt("Drake:HandCpmex:BadInputs","can't access model.featherstone.Xtree{%d}",i);
 
     // todo: check that the size is 6x6
-    memcpy(model->Xtree[i].data(),mxGetPr(pXtreei),sizeof(double)*6*6);
+    memcpy(model->Xtree[i].data(),mxGetPrSafe(pXtreei),sizeof(double)*6*6);
 
     mxArray* pIi = mxGetCell(pI,i);
     if (!pIi) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't access model.featherstone.I{%d}",i);
 
     // todo: check that the size is 6x6
-    memcpy(model->I[i].data(),mxGetPr(pIi),sizeof(double)*6*6);
+    memcpy(model->I[i].data(),mxGetPrSafe(pIi),sizeof(double)*6*6);
   }
 
   for (int i=0; i<model->num_bodies; i++) {
@@ -130,10 +130,10 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     model->bodies[i]->mass = (double) mxGetScalar(pm);
 
     pm = mxGetProperty(pBodies,i,"com");
-    if (!mxIsEmpty(pm)) memcpy(model->bodies[i]->com.data(),mxGetPr(pm),sizeof(double)*3);
+    if (!mxIsEmpty(pm)) memcpy(model->bodies[i]->com.data(),mxGetPrSafe(pm),sizeof(double)*3);
 
     pm = mxGetProperty(pBodies,i,"I");
-    if (!mxIsEmpty(pm)) memcpy(model->bodies[i]->I.data(),mxGetPr(pm),sizeof(double)*6*6);
+    if (!mxIsEmpty(pm)) memcpy(model->bodies[i]->I.data(),mxGetPrSafe(pm),sizeof(double)*6*6);
 
     pm = mxGetProperty(pBodies,i,"position_num");
     model->bodies[i]->position_num_start = (int) mxGetScalar(pm) - 1;  //zero-indexed
@@ -160,13 +160,13 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
       pm = mxGetProperty(pBodies, i, "Ttree");
       // todo: check that the size is 4x4
       Isometry3d Ttree;
-      memcpy(Ttree.data(), mxGetPr(pm), sizeof(double) * 4 * 4);
+      memcpy(Ttree.data(), mxGetPrSafe(pm), sizeof(double) * 4 * 4);
 
       int floating = (int) mxGetScalar(mxGetProperty(pBodies, i, "floating"));
 
       Eigen::Vector3d joint_axis;
       pm = mxGetProperty(pBodies, i, "joint_axis");
-      memcpy(joint_axis.data(), mxGetPr(pm), sizeof(double) * 3);
+      memcpy(joint_axis.data(), mxGetPrSafe(pm), sizeof(double) * 3);
 
       double pitch = mxGetScalar(mxGetProperty(pBodies, i, "pitch"));
 
@@ -186,7 +186,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
       }
 
 //      pm = mxGetProperty(pBodies,i,"T_body_to_joint");
-//      memcpy(model->bodies[i]->T_body_to_joint.data(),mxGetPr(pm),sizeof(double)*4*4);
+//      memcpy(model->bodies[i]->T_body_to_joint.data(),mxGetPrSafe(pm),sizeof(double)*4*4);
     }
 
     //DEBUG
@@ -209,27 +209,27 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
         }
 
         // Get element-to-link transform from MATLAB object
-        memcpy(T.data(), mxGetPr(mxGetProperty(pShape,0,"T")), sizeof(double)*4*4);
+        memcpy(T.data(), mxGetPrSafe(mxGetProperty(pShape,0,"T")), sizeof(double)*4*4);
         auto shape = (DrakeShapes::Shape)static_cast<int>(mxGetScalar(mxGetProperty(pShape,0,"drake_shape_id")));
         vector<double> params_vec;
         RigidBody::CollisionElement element(T, model->bodies[i]);
         switch (shape) {
           case DrakeShapes::BOX:
           {
-            double* params = mxGetPr(mxGetProperty(pShape,0,"size"));
+            double* params = mxGetPrSafe(mxGetProperty(pShape,0,"size"));
             element.setGeometry(DrakeShapes::Box(Vector3d(params[0],params[1],params[2])));
           }
             break;
           case DrakeShapes::SPHERE:
           {
-            double r(*mxGetPr(mxGetProperty(pShape,0,"radius")));
+            double r(*mxGetPrSafe(mxGetProperty(pShape,0,"radius")));
             element.setGeometry(DrakeShapes::Sphere(r));
           }
             break;
           case DrakeShapes::CYLINDER:
           {
-            double r(*mxGetPr(mxGetProperty(pShape,0,"radius")));
-            double l(*mxGetPr(mxGetProperty(pShape,0,"len")));
+            double r(*mxGetPrSafe(mxGetProperty(pShape,0,"radius")));
+            double l(*mxGetPrSafe(mxGetProperty(pShape,0,"len")));
             element.setGeometry(DrakeShapes::Cylinder(r, l));
           }
             break;
@@ -244,7 +244,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
             mxArray* pPoints;
             mexCallMATLAB(1,&pPoints,1,&pShape,"getPoints");
             int n_pts = static_cast<int>(mxGetN(pPoints));
-            Map<Matrix3Xd> pts(mxGetPr(pPoints),3,n_pts);
+            Map<Matrix3Xd> pts(mxGetPrSafe(pPoints),3,n_pts);
             element.setGeometry(DrakeShapes::MeshPoints(pts));
             mxDestroyArray(pPoints);
             // The element-to-link transform is applied in
@@ -254,8 +254,8 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
             break;
           case DrakeShapes::CAPSULE:
           {
-            double r(*mxGetPr(mxGetProperty(pShape,0,"radius")));
-            double l(*mxGetPr(mxGetProperty(pShape,0,"len")));
+            double r(*mxGetPrSafe(mxGetProperty(pShape,0,"radius")));
+            double l(*mxGetPrSafe(mxGetProperty(pShape,0,"len")));
             element.setGeometry(DrakeShapes::Capsule(r, l));
           }
             break;
@@ -368,7 +368,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
       //cout << "constructModelmex: Got number of points: " << n_pts << endl;
       //cout << "constructModelmex: Set contact_pts of body" << endl;
       //END_DEBUG
-      Map<MatrixXd> pts(mxGetPr(pPts),3,n_pts);
+      Map<MatrixXd> pts(mxGetPrSafe(pPts),3,n_pts);
       model->bodies[body_idx]->contact_pts.resize(4,n_pts);
       model->bodies[body_idx]->contact_pts << pts, MatrixXd::Ones(1,n_pts);
       //DEBUG
@@ -387,12 +387,12 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     model->frames[i].body_ind = (int) mxGetScalar(pm)-1;
 
     pm = mxGetProperty(pFrames,i,"T");
-    memcpy(model->frames[i].Ttree.data(),mxGetPr(pm),sizeof(double)*4*4);
+    memcpy(model->frames[i].Ttree.data(),mxGetPrSafe(pm),sizeof(double)*4*4);
   }
 
   const mxArray* a_grav_array = mxGetProperty(pRBM,0,"gravity");
   if (a_grav_array && mxGetNumberOfElements(a_grav_array)==3) {
-    double* p = mxGetPr(a_grav_array);
+    double* p = mxGetPrSafe(a_grav_array);
     model->a_grav[3] = p[0];
     model->a_grav[4] = p[1];
     model->a_grav[5] = p[2];
@@ -415,10 +415,10 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     int body_B_ind = static_cast<int>(mxGetScalar(pm)-1);
     pm = mxGetProperty(pLoops,i,"pt1");
     Vector3d pA;
-    memcpy(pA.data(), mxGetPr(pm), 3*sizeof(double));
+    memcpy(pA.data(), mxGetPrSafe(pm), 3*sizeof(double));
     pm = mxGetProperty(pLoops,i,"pt2");
     Vector3d pB;
-    memcpy(pB.data(), mxGetPr(pm), 3*sizeof(double));
+    memcpy(pB.data(), mxGetPrSafe(pm), 3*sizeof(double));
     model->loops.push_back(RigidBodyLoop(model->bodies[body_A_ind], pA, model->bodies[body_B_ind], pB));
   }
 

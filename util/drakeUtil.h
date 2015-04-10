@@ -96,6 +96,8 @@ DLLEXPORT std::pair<Eigen::Vector3d, double> resolveCenterOfPressure(Eigen::Vect
 
 DLLEXPORT double *mxGetPrSafe(const mxArray *pobj);
 
+DLLEXPORT void sizecheck(const mxArray* mat, int M, int N);
+
 template<typename Derived>
 std::string to_string(Eigen::MatrixBase<Derived> & a)
 {

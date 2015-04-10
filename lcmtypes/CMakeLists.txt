@@ -14,6 +14,7 @@ lcmtypes_build(LCM_TYPES
 			 lcmt_foot_flag.lcm
 			 lcmt_joint_pd_override.lcm
 			 lcmt_body_motion_data.lcm
+			 lcmt_body_wrench_data.lcm
 			 lcmt_force_torque.lcm
 			 )
 

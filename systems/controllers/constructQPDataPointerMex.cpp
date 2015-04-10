@@ -6,6 +6,22 @@
 
 using namespace std;
 
+void parseIntegratorParams(const mxArray *params_obj, IntegratorParams &params) {
+  const mxArray *pobj;
+  pobj = myGetField(params_obj, "gains");
+  Map<VectorXd> gains(mxGetPrSafe(pobj), mxGetNumberOfElements(pobj));
+  params.gains = gains;
+
+  pobj = myGetField(params_obj, "clamps");
+  Map<VectorXd> clamps(mxGetPrSafe(pobj), mxGetNumberOfElements(pobj));
+  params.clamps = clamps;
+
+  pobj = myGetField(params_obj, "eta");
+  params.eta = mxGetScalar(pobj);
+
+  return;
+}
+
 void parseWholeBodyParams(const mxArray *params_obj, RigidBodyManipulator *r, WholeBodyParams *params) {
   const mxArray *int_obj = myGetField(params_obj, "integrator");
   const mxArray *qddbound_obj = myGetField(params_obj, "qdd_bounds");
@@ -20,25 +36,21 @@ void parseWholeBodyParams(const mxArray *params_obj, RigidBodyManipulator *r, Wh
   if (mxGetNumberOfElements(myGetField(qddbound_obj, "min")) != nv) mexErrMsgTxt("qdd min should be of size nv");
   if (mxGetNumberOfElements(myGetField(qddbound_obj, "max")) != nv) mexErrMsgTxt("qdd max should be of size nv");
 
-  Map<VectorXd>Kp(mxGetPr(myGetField(params_obj, "Kp")), mxGetNumberOfElements(myGetField(params_obj, "Kp")));
+  Map<VectorXd>Kp(mxGetPrSafe(myGetField(params_obj, "Kp")), mxGetNumberOfElements(myGetField(params_obj, "Kp")));
   params->Kp = Kp;
 
-  Map<VectorXd>Kd(mxGetPr(myGetField(params_obj, "Kd")), mxGetNumberOfElements(myGetField(params_obj, "Kd")));
+  Map<VectorXd>Kd(mxGetPrSafe(myGetField(params_obj, "Kd")), mxGetNumberOfElements(myGetField(params_obj, "Kd")));
   params->Kd = Kd;
 
-  Map<VectorXd>w_qdd(mxGetPr(myGetField(params_obj, "w_qdd")), mxGetNumberOfElements(myGetField(params_obj, "w_qdd")));
+  Map<VectorXd>w_qdd(mxGetPrSafe(myGetField(params_obj, "w_qdd")), mxGetNumberOfElements(myGetField(params_obj, "w_qdd")));
   params->w_qdd = w_qdd;
 
-  Map<VectorXd>gains(mxGetPr(myGetField(int_obj, "gains")), mxGetNumberOfElements(myGetField(int_obj, "gains")));
-  params->integrator.gains = gains;
+  parseIntegratorParams(int_obj, params->integrator);
 
-  Map<VectorXd>clamps(mxGetPr(myGetField(int_obj, "clamps")), mxGetNumberOfElements(myGetField(int_obj, "clamps")));
-  params->integrator.clamps = clamps;
-
-  Map<VectorXd>min(mxGetPr(myGetField(qddbound_obj, "min")), mxGetNumberOfElements(myGetField(qddbound_obj, "min")));
+  Map<VectorXd>min(mxGetPrSafe(myGetField(qddbound_obj, "min")), mxGetNumberOfElements(myGetField(qddbound_obj, "min")));
   params->qdd_bounds.min = min;
 
-  Map<VectorXd>max(mxGetPr(myGetField(qddbound_obj, "max")), mxGetNumberOfElements(myGetField(qddbound_obj, "max")));
+  Map<VectorXd>max(mxGetPrSafe(myGetField(qddbound_obj, "max")), mxGetNumberOfElements(myGetField(qddbound_obj, "max")));
   params->qdd_bounds.max = max;
   return;
 }
@@ -49,12 +61,12 @@ void parseBodyMotionParams(const mxArray *params_obj, int i, BodyMotionParams *p
 
   pobj = myGetField(params_obj, i, "Kp");
   sizecheck(pobj, 6, 1);
-  Map<Vector6d>Kp(mxGetPr(pobj));
+  Map<Vector6d>Kp(mxGetPrSafe(pobj));
   params->Kp = Kp;
 
   pobj = myGetField(params_obj, i, "Kd");
   sizecheck(pobj, 6, 1);
-  Map<Vector6d>Kd(mxGetPr(pobj));
+  Map<Vector6d>Kd(mxGetPrSafe(pobj));
   params->Kd = Kd;
 
   pobj = myGetField(params_obj, i, "weight");
@@ -63,12 +75,12 @@ void parseBodyMotionParams(const mxArray *params_obj, int i, BodyMotionParams *p
 
   pobj = myGetField(bounds_obj, "min");
   sizecheck(pobj, 6, 1);
-  Map<Vector6d>min(mxGetPr(pobj));
+  Map<Vector6d>min(mxGetPrSafe(pobj));
   params->accel_bounds.min = min;
 
   pobj = myGetField(bounds_obj, "max");
   sizecheck(pobj, 6, 1);
-  Map<Vector6d>max(mxGetPr(pobj));
+  Map<Vector6d>max(mxGetPrSafe(pobj));
   params->accel_bounds.max = max;
   return;
 }
@@ -98,42 +110,42 @@ void parseHardwareGains(const mxArray *params_obj, RigidBodyManipulator *r, Atla
 
   pobj = myGetField(params_obj, "k_f_p");
   sizecheck(pobj, nu, 1);
-  Map<VectorXd> k_f_p(mxGetPr(pobj), nu);
+  Map<VectorXd> k_f_p(mxGetPrSafe(pobj), nu);
   params->k_f_p = k_f_p;
 
   pobj = myGetField(params_obj, "k_q_p");
   sizecheck(pobj, nu, 1);
-  Map<VectorXd> k_q_p(mxGetPr(pobj), nu);
+  Map<VectorXd> k_q_p(mxGetPrSafe(pobj), nu);
   params->k_q_p = k_q_p;
 
   pobj = myGetField(params_obj, "k_q_i");
   sizecheck(pobj, nu, 1);
-  Map<VectorXd> k_q_i(mxGetPr(pobj), nu);
+  Map<VectorXd> k_q_i(mxGetPrSafe(pobj), nu);
   params->k_q_i = k_q_i;
 
   pobj = myGetField(params_obj, "k_qd_p");
   sizecheck(pobj, nu, 1);
-  Map<VectorXd> k_qd_p(mxGetPr(pobj), nu);
+  Map<VectorXd> k_qd_p(mxGetPrSafe(pobj), nu);
   params->k_qd_p = k_qd_p;
 
   pobj = myGetField(params_obj, "ff_qd");
   sizecheck(pobj, nu, 1);
-  Map<VectorXd> ff_qd(mxGetPr(pobj), nu);
+  Map<VectorXd> ff_qd(mxGetPrSafe(pobj), nu);
   params->ff_qd = ff_qd;
 
   pobj = myGetField(params_obj, "ff_f_d");
   sizecheck(pobj, nu, 1);
-  Map<VectorXd> ff_f_d(mxGetPr(pobj), nu);
+  Map<VectorXd> ff_f_d(mxGetPrSafe(pobj), nu);
   params->ff_f_d = ff_f_d;
 
   pobj = myGetField(params_obj, "ff_const");
   sizecheck(pobj, nu, 1);
-  Map<VectorXd> ff_const(mxGetPr(pobj), nu);
+  Map<VectorXd> ff_const(mxGetPrSafe(pobj), nu);
   params->ff_const = ff_const;
 
   pobj = myGetField(params_obj, "ff_qd_d");
   sizecheck(pobj, nu, 1);
-  Map<VectorXd> ff_qd_d(mxGetPr(pobj), nu);
+  Map<VectorXd> ff_qd_d(mxGetPrSafe(pobj), nu);
   params->ff_qd_d = ff_qd_d;
   return;
 }
@@ -167,7 +179,7 @@ void parseAtlasParams(const mxArray *params_obj, RigidBodyManipulator *r, AtlasP
 
   pobj = myGetProperty(params_obj, "W_kdot");
   sizecheck(pobj, 3, 3);
-  Map<Matrix3d>W_kdot(mxGetPr(pobj));
+  Map<Matrix3d>W_kdot(mxGetPrSafe(pobj));
   params->W_kdot = W_kdot;
 
   pobj = myGetProperty(params_obj, "Kp_ang");
@@ -233,27 +245,27 @@ void parseRobotPropertyCache(const mxArray *rpc_obj, RobotPropertyCache *rpc) {
   const mxArray *pobj;
 
   pobj = myGetField(myGetField(rpc_obj, "position_indices"), "r_leg_kny");
-  Map<VectorXd>r_leg_kny(mxGetPr(pobj), mxGetNumberOfElements(pobj));
+  Map<VectorXd>r_leg_kny(mxGetPrSafe(pobj), mxGetNumberOfElements(pobj));
   rpc->position_indices.r_leg_kny = r_leg_kny.cast<int>().array() - 1;
 
   pobj = myGetField(myGetField(rpc_obj, "position_indices"), "l_leg_kny");
-  Map<VectorXd>l_leg_kny(mxGetPr(pobj), mxGetNumberOfElements(pobj));
+  Map<VectorXd>l_leg_kny(mxGetPrSafe(pobj), mxGetNumberOfElements(pobj));
   rpc->position_indices.l_leg_kny = l_leg_kny.cast<int>().array() - 1;
 
   pobj = myGetField(myGetField(rpc_obj, "position_indices"), "r_leg");
-  Map<VectorXd>r_leg(mxGetPr(pobj), mxGetNumberOfElements(pobj));
+  Map<VectorXd>r_leg(mxGetPrSafe(pobj), mxGetNumberOfElements(pobj));
   rpc->position_indices.r_leg = r_leg.cast<int>().array() - 1;
 
   pobj = myGetField(myGetField(rpc_obj, "position_indices"), "l_leg");
-  Map<VectorXd>l_leg(mxGetPr(pobj), mxGetNumberOfElements(pobj));
+  Map<VectorXd>l_leg(mxGetPrSafe(pobj), mxGetNumberOfElements(pobj));
   rpc->position_indices.l_leg = l_leg.cast<int>().array() - 1;
 
   pobj = myGetField(myGetField(rpc_obj, "position_indices"), "r_leg_ak");
-  Map<VectorXd>r_leg_ak(mxGetPr(pobj), mxGetNumberOfElements(pobj));
+  Map<VectorXd>r_leg_ak(mxGetPrSafe(pobj), mxGetNumberOfElements(pobj));
   rpc->position_indices.r_leg_ak = r_leg_ak.cast<int>().array() - 1;
 
   pobj = myGetField(myGetField(rpc_obj, "position_indices"), "l_leg_ak");
-  Map<VectorXd>l_leg_ak(mxGetPr(pobj), mxGetNumberOfElements(pobj));
+  Map<VectorXd>l_leg_ak(mxGetPrSafe(pobj), mxGetNumberOfElements(pobj));
   rpc->position_indices.l_leg_ak = l_leg_ak.cast<int>().array() - 1;
 
   rpc->body_ids.r_foot = (int) mxGetScalar(myGetField(myGetField(rpc_obj, "body_ids"), "r_foot")) - 1;
@@ -261,8 +273,11 @@ void parseRobotPropertyCache(const mxArray *rpc_obj, RobotPropertyCache *rpc) {
   rpc->body_ids.pelvis = (int) mxGetScalar(myGetField(myGetField(rpc_obj, "body_ids"), "pelvis")) - 1;
 
   pobj = myGetField(rpc_obj, "actuated_indices");
-  Map<VectorXd>actuated_indices(mxGetPr(pobj), mxGetNumberOfElements(pobj));
+  Map<VectorXd>actuated_indices(mxGetPrSafe(pobj), mxGetNumberOfElements(pobj));
   rpc->actuated_indices = actuated_indices.cast<int>().array() - 1;
+
+  pobj = myGetField(rpc_obj, "num_bodies");
+  rpc->num_bodies = (int) mxGetScalar(pobj);
 
   return;
 }
@@ -309,21 +324,34 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   // B
   pdata->B.resize(mxGetM(prhs[narg]),mxGetN(prhs[narg]));
-  memcpy(pdata->B.data(),mxGetPr(prhs[narg]),sizeof(double)*mxGetM(prhs[narg])*mxGetN(prhs[narg]));
+  memcpy(pdata->B.data(),mxGetPrSafe(prhs[narg]),sizeof(double)*mxGetM(prhs[narg])*mxGetN(prhs[narg]));
   narg++;
 
   // umin
   int nq = pdata->r->num_positions, nu = pdata->B.cols();
   pdata->umin.resize(nu);
   pdata->umax.resize(nu);
-  memcpy(pdata->umin.data(),mxGetPr(prhs[narg++]),sizeof(double)*nu);
+  memcpy(pdata->umin.data(),mxGetPrSafe(prhs[narg++]),sizeof(double)*nu);
 
   // umax
-  memcpy(pdata->umax.data(),mxGetPr(prhs[narg++]),sizeof(double)*nu);
+  memcpy(pdata->umax.data(),mxGetPrSafe(prhs[narg++]),sizeof(double)*nu);
 
   // terrain_map_ptr
   if (!mxIsNumeric(prhs[narg]) || mxGetNumberOfElements(prhs[narg])!=1) mexErrMsgIdAndTxt("Drake:constructQPDataPointerMex:BadInputs","this should be a map pointer");
-  memcpy(&pdata->map_ptr,mxGetPr(prhs[narg]),sizeof(pdata->map_ptr));
+  void *ptr = NULL;
+  mxClassID cid;
+  if (sizeof(ptr) == 4) {
+    cid = mxUINT32_CLASS;
+  } else if (sizeof(ptr) == 8) {
+    cid = mxUINT64_CLASS;
+  } else {
+    std::cout << "size of ptr: " << sizeof(ptr) << std::endl;
+    mexErrMsgTxt("We expect size of pointer to be 4 on a 32-bit machine or 8 on a 64-bit machine");
+  }
+  if (mxGetClassID(prhs[narg]) != cid) {
+    mexErrMsgTxt("map_ptr should be a uint64 (for 64-bit machines) or uint32 (for 32-bit machines)");
+  }
+  memcpy(&pdata->map_ptr,mxGetData(prhs[narg]),sizeof(ptr));
   if (!pdata->map_ptr) mexWarnMsgTxt("Map ptr is NULL. Assuming flat ground.");
   narg++;
 
@@ -379,9 +407,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   pdata->C_act.resize(nu);
 
   pdata->J.resize(3,nq);
-  pdata->Jdot.resize(3,nq);
   pdata->J_xy.resize(2,nq);
-  pdata->Jdot_xy.resize(2,nq);
   pdata->Hqp.resize(nq,nq);
   pdata->fqp.resize(nq);
   pdata->Ag.resize(6,nq);

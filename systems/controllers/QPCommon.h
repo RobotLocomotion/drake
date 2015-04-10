@@ -21,8 +21,10 @@ struct QPControllerData {
   MatrixXd H, H_float, H_act;
   VectorXd C, C_float, C_act;
   MatrixXd B, B_act;
-  MatrixXd J, Jdot;
-  MatrixXd J_xy, Jdot_xy;
+  MatrixXd J;
+  Vector3d Jdotv;
+  MatrixXd J_xy;
+  Vector2d Jdotv_xy;
   MatrixXd Hqp;
   RowVectorXd fqp;
   
@@ -85,6 +87,7 @@ struct RobotPropertyCache {
   PositionIndicesCache position_indices;
   BodyIdsCache body_ids;
   VectorXi actuated_indices;
+  int num_bodies;
 };
 
 struct VRefIntegratorParams {
@@ -169,8 +172,10 @@ struct NewQPControllerData {
   MatrixXd H, H_float, H_act;
   VectorXd C, C_float, C_act;
   MatrixXd B, B_act;
-  MatrixXd J, Jdot;
-  MatrixXd J_xy, Jdot_xy;
+  MatrixXd J;
+  Vector3d Jdotv;
+  MatrixXd J_xy;
+  Vector2d Jdotv_xy;
   MatrixXd Hqp;
   RowVectorXd fqp;
   VectorXd qdd_lb;
@@ -221,7 +226,7 @@ struct QPControllerDebugData {
   MatrixXd A_ls;
   MatrixXd B_ls;
   MatrixXd Jcom;
-  MatrixXd Jcomdot;
+  VectorXd Jcomdotv;
   VectorXd beta;
 };
 

@@ -39,11 +39,11 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   ikoptions->getqdf(qdf_lb,qdf_ub);
   plhs[0] = mxCreateDoubleScalar((double) robot_address);
   plhs[1] = mxCreateDoubleMatrix(nq,nq,mxREAL);
-  memcpy(mxGetPr(plhs[1]),Q.data(),sizeof(double)*nq*nq);
+  memcpy(mxGetPrSafe(plhs[1]),Q.data(),sizeof(double)*nq*nq);
   plhs[2] = mxCreateDoubleMatrix(nq,nq,mxREAL);
-  memcpy(mxGetPr(plhs[2]),Qa.data(),sizeof(double)*nq*nq);
+  memcpy(mxGetPrSafe(plhs[2]),Qa.data(),sizeof(double)*nq*nq);
   plhs[3] = mxCreateDoubleMatrix(nq,nq,mxREAL);
-  memcpy(mxGetPr(plhs[3]),Qv.data(),sizeof(double)*nq*nq);
+  memcpy(mxGetPrSafe(plhs[3]),Qv.data(),sizeof(double)*nq*nq);
   plhs[4] = mxCreateLogicalScalar(debug_mode);
   plhs[5] = mxCreateLogicalScalar(sequentialSeedFlag);
   plhs[6] = mxCreateDoubleScalar(majorFeasibilityTolerance);
@@ -54,7 +54,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   if(t_samples.size()>0)
   {
     plhs[11] = mxCreateDoubleMatrix(1,static_cast<int>(t_samples.size()),mxREAL);
-    memcpy(mxGetPr(plhs[11]),t_samples.data(),sizeof(double)*t_samples.size());
+    memcpy(mxGetPrSafe(plhs[11]),t_samples.data(),sizeof(double)*t_samples.size());
   }
   else
   {
@@ -62,15 +62,15 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   }
   plhs[12] = mxCreateLogicalScalar(fixInitialState);
   plhs[13] = mxCreateDoubleMatrix(nq,1,mxREAL);
-  memcpy(mxGetPr(plhs[13]),q0_lb.data(),sizeof(double)*nq);
+  memcpy(mxGetPrSafe(plhs[13]),q0_lb.data(),sizeof(double)*nq);
   plhs[14] = mxCreateDoubleMatrix(nq,1,mxREAL);
-  memcpy(mxGetPr(plhs[14]),q0_ub.data(),sizeof(double)*nq);
+  memcpy(mxGetPrSafe(plhs[14]),q0_ub.data(),sizeof(double)*nq);
   plhs[15] = mxCreateDoubleMatrix(nq,1,mxREAL);
-  memcpy(mxGetPr(plhs[15]),qd0_lb.data(),sizeof(double)*nq);
+  memcpy(mxGetPrSafe(plhs[15]),qd0_lb.data(),sizeof(double)*nq);
   plhs[16] = mxCreateDoubleMatrix(nq,1,mxREAL);
-  memcpy(mxGetPr(plhs[16]),qd0_ub.data(),sizeof(double)*nq);
+  memcpy(mxGetPrSafe(plhs[16]),qd0_ub.data(),sizeof(double)*nq);
   plhs[17] = mxCreateDoubleMatrix(nq,1,mxREAL);
-  memcpy(mxGetPr(plhs[17]),qdf_lb.data(),sizeof(double)*nq);
+  memcpy(mxGetPrSafe(plhs[17]),qdf_lb.data(),sizeof(double)*nq);
   plhs[18] = mxCreateDoubleMatrix(nq,1,mxREAL);
-  memcpy(mxGetPr(plhs[18]),qdf_ub.data(),sizeof(double)*nq);
+  memcpy(mxGetPrSafe(plhs[18]),qdf_ub.data(),sizeof(double)*nq);
 }

@@ -720,6 +720,7 @@ classdef NonlinearProgram
           error('Drake:NonlinearProgram:UnsupportedSOlver',' SNOPT not found.  SNOPT support will be disabled.');
         end
         obj.solver = 'snopt';
+        obj.which_snopt = 2;
       elseif(strcmp(solver,'fmincon'))
         if(~checkDependency('fmincon'))
           error('Drake:NonlinearProgram:UnsupportedSolver',' fmincon support is disabled. To enable it, install MATLAB Optimization toolbox');
