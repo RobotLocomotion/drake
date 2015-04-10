@@ -6,4 +6,8 @@ function [varargout] = expmap2quat(v)
   else
     [varargout{:}] = expmap2quatImpl(v);
   end
+  if nargout > 2
+    % convert to strange second derivative output format
+    varargout{3} = reshape(varargout{3}, size(varargout{2}, 1), []); 
+  end
 end

@@ -1,5 +1,7 @@
 %#codegen
 function [q, dq, ddq] = expmap2quatImpl(v) 
+  % NOTE: This function outputs ddq as the jacobian of dq, not in our second
+  % derivative format.
   theta = norm(v);
   is_degenerate = (theta <= eps^0.25);
   switch nargout
@@ -22,5 +24,4 @@ function [q, dq, ddq] = expmap2quatImpl(v)
         [q, dq, ddq] = expmap2quatNonDegenerate(v, theta);
       end
   end
-  
 end
