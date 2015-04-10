@@ -1,6 +1,7 @@
 #include "Polynomial.h"
 #include <cassert>
 #include <algorithm>
+#include <cmath>
 
 using namespace std;
 using namespace Eigen;
@@ -46,7 +47,7 @@ double Polynomial::valueStabilizedHorner(double t) const {
     val = val * inv_t + coefficients[i];
   }
 
-  return std::pow(t, (coefficients.size() - 1)) * val;
+  return std::pow(t, (double) (coefficients.size() - 1)) * val;
 }
 
 double Polynomial::value(double t) const {
@@ -101,7 +102,7 @@ Polynomial& Polynomial::operator*=(const Polynomial& other) {
   coefficients.setZero(outer_product.rows() + outer_product.cols() - 1);
   for (DenseIndex i = 0; i < getNumberOfCoefficients(); i++) {
     for (DenseIndex row = max(i - outer_product.cols() + 1, (DenseIndex) 0); row < min(i + 1, outer_product.rows()); row++) {
-      int col = i - row;
+      DenseIndex col = i - row;
       coefficients(i) += outer_product(row, col);
     }
   }

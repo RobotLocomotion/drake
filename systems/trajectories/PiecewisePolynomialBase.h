@@ -3,7 +3,18 @@
 
 #include <vector>
 
-class PiecewisePolynomialBase
+#undef DLLEXPORT
+#if defined(WIN32) || defined(WIN64)
+  #if defined(drakePiecewisePolynomial_EXPORTS)
+    #define DLLEXPORT __declspec( dllexport )
+  #else
+    #define DLLEXPORT __declspec( dllimport )
+  #endif
+#else
+  #define DLLEXPORT
+#endif
+
+class DLLEXPORT PiecewisePolynomialBase
 {
 protected:
   std::vector<double> segment_times;

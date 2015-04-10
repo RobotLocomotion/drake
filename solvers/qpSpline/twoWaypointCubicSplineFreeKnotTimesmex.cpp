@@ -23,9 +23,9 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
   auto xd0 = matlabToEigen<Dynamic, 1>(prhs[3]);
   auto xdf = matlabToEigen<Dynamic, 1>(prhs[4]);
 
-  mwSize ndof = xs.rows();
-  mwSize num_segments = 3;
-  mwSize num_coeffs_per_segment = 4;
+  int ndof = static_cast<int>(xs.rows());
+  int num_segments = 3;
+  int num_coeffs_per_segment = 4;
   mwSize dims[] = {ndof, num_segments, num_coeffs_per_segment};
   plhs[0] = mxCreateNumericArray(num_segments, dims, mxDOUBLE_CLASS, mxREAL);
 
@@ -52,7 +52,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
           PiecewisePolynomial acceleration_squared_integral = acceleration_squared.integral();
           objective_value += acceleration_squared_integral.value(spline.getEndTime()) - acceleration_squared_integral.value(spline.getStartTime());
         }
-        catch (ConstraintMatrixSingularError& e) {
+        catch (ConstraintMatrixSingularError&) {
           valid_solution = false;
         }
       }

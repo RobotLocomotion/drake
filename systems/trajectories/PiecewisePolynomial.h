@@ -1,11 +1,22 @@
-#ifndef DRAKE_SOLVERS_QPSPLINE_PIECEWISEPOLYNOMIAL_H_
-#define DRAKE_SOLVERS_QPSPLINE_PIECEWISEPOLYNOMIAL_H_
+#ifndef DRAKE_SYSTEMS_TRAJECTORIES_PIECEWISEPOLYNOMIAL_H_
+#define DRAKE_SYSTEMS_TRAJECTORIES_PIECEWISEPOLYNOMIAL_H_
 
 #include "PiecewisePolynomialBase.h"
 #include "Polynomial.h"
 #include <vector>
 
-class PiecewisePolynomial : public PiecewisePolynomialBase
+#undef DLLEXPORT
+#if defined(WIN32) || defined(WIN64)
+  #if defined(drakePiecewisePolynomial_EXPORTS)
+    #define DLLEXPORT __declspec( dllexport )
+  #else
+    #define DLLEXPORT __declspec( dllimport )
+  #endif
+#else
+  #define DLLEXPORT
+#endif
+
+class DLLEXPORT PiecewisePolynomial : public PiecewisePolynomialBase
 {
 private:
   std::vector<Polynomial> polynomials;
@@ -43,4 +54,4 @@ protected:
   double segmentValueAtGlobalAbscissa(int segment_index, double t) const;
 };
 
-#endif /* DRAKE_SOLVERS_QPSPLINE_PIECEWISEPOLYNOMIAL_H_ */
+#endif /* DRAKE_SYSTEMS_TRAJECTORIES_PIECEWISEPOLYNOMIAL_H_ */

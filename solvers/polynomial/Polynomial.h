@@ -1,9 +1,20 @@
-#ifndef DRAKE_SOLVERS_QPSPLINE_POLYNOMIAL_H_
-#define DRAKE_SOLVERS_QPSPLINE_POLYNOMIAL_H_
+#ifndef DRAKE_SOLVERS_POLYNOMIAL_POLYNOMIAL_H_
+#define DRAKE_SOLVERS_POLYNOMIAL_POLYNOMIAL_H_
 
 #include <Eigen/Core>
 
-class Polynomial
+#undef DLLEXPORT
+#if defined(WIN32) || defined(WIN64)
+  #if defined(drakePolynomial_EXPORTS)
+    #define DLLEXPORT __declspec( dllexport )
+  #else
+    #define DLLEXPORT __declspec( dllimport )
+  #endif
+#else
+  #define DLLEXPORT
+#endif
+
+class DLLEXPORT Polynomial
 {
 private:
   Eigen::VectorXd coefficients;
@@ -43,4 +54,4 @@ private:
   double valueStabilizedHorner(double t) const;
 };
 
-#endif /* DRAKE_SOLVERS_QPSPLINE_POLYNOMIAL_H_ */
+#endif /* DRAKE_SOLVERS_POLYNOMIAL_POLYNOMIAL_H_ */
