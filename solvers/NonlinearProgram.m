@@ -325,8 +325,8 @@ classdef NonlinearProgram
       
       if(strcmpi(obj.solver,'studentsnopt'))
         if(~(obj.num_cin+obj.num_ceq+size(obj.Ain,1)+size(obj.Aeq,1)<=300))
-          warning('Number of constraints exceeded studentSNOPT support: obj.num_cin+obj.num_ceq+size(obj.Ain,1)+size(obj.Aeq,1)>300.  Switching to fmincon.');
-          obj = obj.setSolver('fmincon');
+          warning('Number of constraints exceeded studentSNOPT support: obj.num_cin+obj.num_ceq+size(obj.Ain,1)+size(obj.Aeq,1)>300.  Switching to default solver.');
+          obj = obj.setSolver('default');
         end
       end      
     end
@@ -385,8 +385,8 @@ classdef NonlinearProgram
 
       if(strcmpi(obj.solver,'studentsnopt'))
         if(~(obj.num_cin+obj.num_ceq+size(obj.Ain,1)+size(obj.Aeq,1)<=300))
-          warning('Number of constraints exceeds studentSNOPT support: obj.num_cin+obj.num_ceq+size(obj.Ain,1)+size(obj.Aeq,1)>300. Switching to fmincon');
-          obj = obj.setSolver('fmincon');
+          warning('Number of constraints exceeds studentSNOPT support: obj.num_cin+obj.num_ceq+size(obj.Ain,1)+size(obj.Aeq,1)>300. Switching to default solver.');
+          obj = obj.setSolver('default');
         end
       end
     end   
@@ -619,8 +619,8 @@ classdef NonlinearProgram
       
       if(strcmpi(obj.solver,'studentsnopt'))
         if(~(obj.num_vars<=300))
-          warning('Number of variables exceeds studentSNOPT support: obj.num_vars>300. Switching to fmincon');
-          obj = obj.setSolver('fmincon');
+          warning('Number of variables exceeds studentSNOPT support: obj.num_vars>300. Switching to default solver.');
+          obj = obj.setSolver('default');
         end
       end
     end
