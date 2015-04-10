@@ -18,7 +18,7 @@ QuaternionFloatingJoint::~QuaternionFloatingJoint()
   // empty
 }
 
-const std::string QuaternionFloatingJoint::getPositionName(int index) const
+std::string QuaternionFloatingJoint::getPositionName(int index) const
 {
 	switch (index) {
 	case 0:
@@ -40,7 +40,7 @@ const std::string QuaternionFloatingJoint::getPositionName(int index) const
 	}
 }
 
-const std::string QuaternionFloatingJoint::getVelocityName(int index) const
+std::string QuaternionFloatingJoint::getVelocityName(int index) const
 {
 	switch (index) {
 	case 0:

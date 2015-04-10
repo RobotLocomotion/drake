@@ -12,7 +12,7 @@
 #include <utility>
 #include <Eigen/Core>
 
-#include <ostream> // a little gross: needed only for valuecheck (but keeping that code in the header avoids explicit instantiations)
+#include <sstream> // needed only for valuecheck (but keeping that code in the header avoids explicit instantiations)
 
 #ifndef DRAKE_UTIL_H_
 #define DRAKE_UTIL_H_
@@ -99,7 +99,7 @@ DLLEXPORT double *mxGetPrSafe(const mxArray *pobj);
 DLLEXPORT void sizecheck(const mxArray* mat, int M, int N);
 
 template<typename Derived>
-std::string to_string(Eigen::MatrixBase<Derived> & a)
+std::string to_string(const Eigen::MatrixBase<Derived> & a)
 {
 	std::stringstream ss;
 	ss << a;
@@ -107,8 +107,8 @@ std::string to_string(Eigen::MatrixBase<Derived> & a)
 }
 
 
-template<typename Derived>
-void valuecheck( Eigen::MatrixBase<Derived>& a, Eigen::MatrixBase<Derived>& b, double tol, std::string error_msg)
+template<typename DerivedA, typename DerivedB>
+void valuecheck(const Eigen::MatrixBase<DerivedA>& a, const Eigen::MatrixBase<DerivedB>& b, double tol, std::string error_msg)
 {
 	// note: isApprox uses the L2 norm, so is bad for comparing against zero
 	if (a.rows() != b.rows() || a.cols() != b.cols()) {

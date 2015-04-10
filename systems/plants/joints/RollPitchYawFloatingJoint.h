@@ -16,7 +16,7 @@ public:
 
   virtual ~RollPitchYawFloatingJoint();
 
-  virtual const std::string getPositionName(int index) const;
+  virtual std::string getPositionName(int index) const;
 
   virtual Eigen::Isometry3d jointTransform(const Eigen::Ref<const Eigen::VectorXd>& q) const; //override;
 

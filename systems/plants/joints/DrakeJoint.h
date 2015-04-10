@@ -58,8 +58,8 @@ public:
   const int getNumVelocities() const;
 
   const std::string& getName() const;
-  virtual const std::string getPositionName(int index) const = 0;
-  virtual const std::string getVelocityName(int index) const { return getPositionName(index)+"dot"; }
+  virtual std::string getPositionName(int index) const = 0;
+  virtual std::string getVelocityName(int index) const { return getPositionName(index)+"dot"; }
 
   virtual Eigen::Isometry3d jointTransform(const Eigen::Ref<const Eigen::VectorXd>& q) const = 0;
 

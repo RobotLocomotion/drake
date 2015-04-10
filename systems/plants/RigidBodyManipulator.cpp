@@ -446,7 +446,7 @@ void RigidBodyManipulator::compile(void)
    */
 
   // reorder body list to make sure that parents before children in the list
-	int i=0;
+	size_t i=0;
   while (i<bodies.size()) {
     if (bodies[i]->hasParent()) {
       auto iter = find(bodies.begin()+i+1,bodies.end(),bodies[i]->parent);
@@ -546,7 +546,7 @@ string RigidBodyManipulator::getPositionName(int position_num) const
 	if (position_num<0 || position_num>=num_positions)
 		throw std::runtime_error("position_num is out of range");
 
-	int body_index = 0;
+	size_t body_index = 0;
 	while (body_index+1<num_bodies && bodies[body_index+1]->position_num_start<=position_num) body_index++;
 
 	return bodies[body_index]->getJoint().getPositionName(position_num-bodies[body_index]->position_num_start);
@@ -557,7 +557,7 @@ string RigidBodyManipulator::getVelocityName(int velocity_num) const
 	if (velocity_num<0 || velocity_num>=num_velocities)
 		throw std::runtime_error("position_num is out of range");
 
-	int body_index = 0;
+	size_t body_index = 0;
 	while (body_index+1<num_bodies && bodies[body_index+1]->velocity_num_start<=velocity_num) body_index++;
 
 	return bodies[body_index]->getJoint().getVelocityName(velocity_num-bodies[body_index]->velocity_num_start);
@@ -3313,7 +3313,8 @@ shared_ptr<RigidBody> RigidBodyManipulator::findLink(string linkname, int robot)
 int RigidBodyManipulator::findLinkId(string name, int robot)
 {
 	shared_ptr<RigidBody> link = findLink(name,robot);
-	if (link == nullptr) return(EXIT_FAILURE);
+	if (link == nullptr)
+	  throw std::runtime_error("could not find link id: " + name);
 	return link->body_index;
 }
 
@@ -3373,7 +3374,8 @@ shared_ptr<RigidBody> RigidBodyManipulator::findJoint(string jointname, int robo
 int RigidBodyManipulator::findJointId(string name, int robot)
 {
 	shared_ptr<RigidBody> link = findJoint(name,robot);
-	if (link == nullptr) return(EXIT_FAILURE);
+	if (link == nullptr)
+    throw std::runtime_error("could not find joint id: " + name);
 	return link->body_index;
 }
 

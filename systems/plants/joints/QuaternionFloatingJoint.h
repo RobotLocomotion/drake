@@ -15,8 +15,8 @@ public:
 
   virtual ~QuaternionFloatingJoint();
 
-  virtual const std::string getPositionName(int index) const;
-  virtual const std::string getVelocityName(int index) const;
+  virtual std::string getPositionName(int index) const;
+  virtual std::string getVelocityName(int index) const;
 
   virtual Eigen::Isometry3d jointTransform(const Eigen::Ref<const Eigen::VectorXd>& q) const; //override;
 

@@ -28,7 +28,7 @@ public:
   double getJointLimitMin(void) const { return joint_limit_min; }
   double getJointLimitMax(void) const { return joint_limit_max; }
 
-  virtual const std::string getPositionName(int index) const { if (index!=0) throw std::runtime_error("bad index"); return name; }
+  virtual std::string getPositionName(int index) const { if (index!=0) throw std::runtime_error("bad index"); return name; }
 
   virtual void motionSubspace(const Eigen::Ref<const Eigen::VectorXd>& q, MotionSubspaceType& motion_subspace, Eigen::MatrixXd* dmotion_subspace) const; //override;
 

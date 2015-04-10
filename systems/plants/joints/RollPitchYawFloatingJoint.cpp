@@ -17,7 +17,7 @@ RollPitchYawFloatingJoint::~RollPitchYawFloatingJoint()
   // empty
 }
 
-const std::string RollPitchYawFloatingJoint::getPositionName(int index) const
+std::string RollPitchYawFloatingJoint::getPositionName(int index) const
 {
 	switch (index) {
 	case 0:
