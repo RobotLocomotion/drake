@@ -612,7 +612,7 @@ bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
   for (auto body_idx_iter = bodies_idx.begin();
        body_idx_iter !=bodies_idx.end();
        ++body_idx_iter) {
-    if (*body_idx_iter > 0 && *body_idx_iter < bodies.size()) {
+    if (*body_idx_iter >= 0 && *body_idx_iter < bodies.size()) {
       for (auto group_iter = active_element_groups.begin();
           group_iter != active_element_groups.end();
           ++group_iter) {
@@ -636,7 +636,7 @@ bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
   for (auto body_idx_iter = bodies_idx.begin();
        body_idx_iter !=bodies_idx.end();
        ++body_idx_iter) {
-    if (*body_idx_iter > 0 && *body_idx_iter < bodies.size()) {
+    if (*body_idx_iter >= 0 && *body_idx_iter < bodies.size()) {
       bodies[*body_idx_iter]->appendCollisionElementIdsFromThisBody(ids_to_check);
     }
   }
