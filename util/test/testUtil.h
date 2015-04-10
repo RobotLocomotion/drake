@@ -10,8 +10,6 @@
 #include <stdexcept>
 #include <cmath>
 
-#include "mex.h"
-
 // requires <chrono>, which isn't available in MSVC2010...
 #if !defined(WIN32) && !defined(WIN64)
 template<typename TimeT = std::chrono::milliseconds>
@@ -50,24 +48,6 @@ void valuecheck(double a, double b, double tolerance = 1e-8)
     stream << "Expected:\n" << a << "\nbut got:" << b << "\n";
     throw std::runtime_error(stream.str());
   }
-}
-
-template<int RowsAtCompileTime, int ColsAtCompileTime>
-Eigen::Matrix<double, RowsAtCompileTime, ColsAtCompileTime> matlabToEigen(const mxArray* matlab_array)
-{
-  const mwSize* size_array = mxGetDimensions(matlab_array);
-  Eigen::Matrix<double, RowsAtCompileTime, ColsAtCompileTime> ret(size_array[0], size_array[1]);
-  memcpy(ret.data(), mxGetPr(matlab_array), sizeof(double) * ret.size());
-  return ret;
-}
-
-template <typename DerivedA>
-mxArray* eigenToMatlab(const DerivedA &m)
-{
- mxArray* pm = mxCreateDoubleMatrix(static_cast<int>(m.rows()),static_cast<int>(m.cols()),mxREAL);
- if (m.rows()*m.cols()>0)
-   memcpy(mxGetPr(pm),m.data(),sizeof(double)*m.rows()*m.cols());
- return pm;
 }
 
 #endif /* TESTUTIL_H_ */
