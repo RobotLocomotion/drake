@@ -425,10 +425,10 @@ Vector6d bodyMotionPD(RigidBodyManipulator *r, DrakeRobotState &robot_state, con
   return body_vdot;
 }
 
-Vector6d bodySpatialMotionPD(RigidBodyManipulator *r, DrakeRobotState &robot_state, const int body_index, const Vector6d &body_xyzrpy_des, const Vector6d &body_v_des, const Vector6d &body_vdot_des, const Vector6d &Kp, const Vector6d &Kd, const Isometry3d &T_task_to_world)
+Vector6d bodySpatialMotionPD(RigidBodyManipulator *r, DrakeRobotState &robot_state, const int body_index, const Vector6d &body_xyzexp_des, const Vector6d &body_v_des, const Vector6d &body_vdot_des, const Vector6d &Kp, const Vector6d &Kd, const Isometry3d &T_task_to_world)
 {
 	// This function uses euler angles, angular velocity and angular acceleration for computing the orientation. 
-        // @param body_xyzrpy_des  desired [xyz;roll;pitch;yaw] in task frame
+        // @param body_xyzexp_des  desired [xyz;expoential_map] in task frame
 	// @param body_v_des    desired [xyzdot;angular_velocity] in task frame
 	// @param body_vdot_des    desired [xyzddot;angular_acceleration] in task frame
         // @param Kp     The gain in task frame
@@ -464,14 +464,15 @@ Vector6d bodySpatialMotionPD(RigidBodyManipulator *r, DrakeRobotState &robot_sta
   Vector3d body_angular_vel_task = T_world_to_task.linear()*body_angular_vel;
   Vector3d body_xyzdot_task = T_world_to_task.linear()*body_xyzdot;
 
-  Vector3d body_xyz_des = body_xyzrpy_des.head<3>();
-  Vector3d body_rpy_des = body_xyzrpy_des.tail<3>();
+  Vector3d body_xyz_des = body_xyzexp_des.head<3>();
+  Vector3d body_exp_des = body_xyzexp_des.tail<3>();
   Vector3d body_angular_vel_des = body_v_des.tail<3>();
   Vector3d body_angular_vel_dot_des = body_vdot_des.tail<3>();
 
   Vector3d xyz_err_task = body_xyz_des-body_xyz_task;
 
-  Matrix3d R_des = rpy2rotmat(body_rpy_des);
+  auto quat_des_grad = expmap2quat(body_exp_des,0);
+  Matrix3d R_des = quat2rotmat(quat_des_grad.value());
   Matrix3d R_err_task = R_des*R_body_to_task.transpose();
   Vector4d angleAxis_err_task = rotmat2axis(R_err_task); 
   Vector3d angular_err_task = angleAxis_err_task.head<3>()*angleAxis_err_task(3);
@@ -499,6 +500,31 @@ void evaluateCubicSplineSegment(double t, const Ref<const Matrix<double, 6, 4>> 
   y = coefs.col(0)*pow(t, 3) + coefs.col(1)*pow(t, 2) + coefs.col(2)*t + coefs.col(3);
   ydot = 3*coefs.col(0)*pow(t,2) + 2*coefs.col(1)*t + coefs.col(2);
   yddot = 6*coefs.col(0)*t + 2*coefs.col(1);
+}
+
+void evaluateXYZExpmapCubicSplineSegment(double t, const Matrix<double,6,4> &coefs, Vector6d &xyzexp, Vector6d &xyzdot_angular_vel, Vector6d &xyzddot_angular_accel)
+{
+  double t2 = t*t;
+  double t3 = pow(t,3);
+  xyzexp = coefs.col(0)*t3+coefs.col(1)*t2+coefs.col(2)*t+coefs.col(3);
+  Vector6d xyzexpdot = coefs.col(0)*3.0*t2+coefs.col(1)*2.0*t+coefs.col(2);
+  Vector6d xyzexpddot = coefs.col(0)*6.0*t+coefs.col(1)*2.0;
+  xyzdot_angular_vel.head<3>() = xyzexpdot.head<3>();
+  xyzddot_angular_accel.head<3>() = xyzexpddot.head<3>();
+  Vector3d expmap = xyzexp.tail<3>();
+  auto quat_grad = expmap2quat(expmap,2);
+  Vector4d quat = quat_grad.value();
+  Vector4d quat_dot = quat_grad.gradient().value()*xyzexpdot.tail<3>();
+  quat_grad.gradient().gradient().value().resize(12,3);
+  Matrix<double,12,3> dE = quat_grad.gradient().gradient().value();
+  Vector3d expdot = xyzexpdot.tail<3>();
+  Matrix<double,4,3> Edot = matGradMult(dE,expdot);
+  Vector4d quat_ddot = quat_grad.gradient().value()*xyzexpddot.tail<3>() + Edot*expdot;
+  Matrix<double,3,4> M;
+  Matrix<double,12,4> dM;
+  quatdot2angularvelMatrix(quat,M,&dM);
+  xyzdot_angular_vel.tail<3>() = M*quat_dot;
+  xyzddot_angular_accel.tail<3>() = M*quat_ddot+matGradMult(dM,quat_dot)*quat_dot;
 }
 
 // convert Matlab cell array of strings into a C++ vector of strings

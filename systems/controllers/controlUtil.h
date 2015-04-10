@@ -80,6 +80,8 @@ drakeControlUtilEXPORT Vector6d bodySpatialMotionPD(RigidBodyManipulator *r, Dra
 
 drakeControlUtilEXPORT void evaluateCubicSplineSegment(double t, const Ref<const Matrix<double, 6, 4>> &coefs, Vector6d &y, Vector6d &ydot, Vector6d &yddot);
 
+drakeControlUtilEXPORT void evaluateXYZExpmapCubicSplineSegment(double t, const Matrix<double,6,4> &coefs, Vector6d &xyzexp, Vector6d &xyzdot_angular_vel, Vector6d &xyzddot_angular_accel);
+
 struct RobotJointIndexMap {
   VectorXi drake_to_robot;
   VectorXi robot_to_drake;
