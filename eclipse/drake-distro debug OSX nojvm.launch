@@ -32,7 +32,4 @@
 <mapAttribute key="org.eclipse.debug.core.environmentVariables">
 <mapEntry key="MATLAB_DEBUG" value="gdb"/>
 </mapAttribute>
-<listAttribute key="org.eclipse.debug.ui.favoriteGroups">
-<listEntry value="org.eclipse.debug.ui.launchGroup.debug"/>
-</listAttribute>
 </launchConfiguration>
