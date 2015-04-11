@@ -134,6 +134,9 @@ classdef QPLocomotionPlan < QPControllerPlan
       pelvis_has_tracking = false;
       for j = 1:length(obj.body_motions)
         body_id = obj.body_motions(j).body_id;
+        if body_id < 0
+          body_id = obj.robot.getFrame(body_id).body_ind;
+        end
         if body_id == obj.robot.foot_body_id.right
           kny_ind = rpc.position_indices.r_leg_kny;
           foot_name = 'right';
@@ -152,11 +155,17 @@ classdef QPLocomotionPlan < QPControllerPlan
         if ~isempty(kny_ind)
           if ~obj.toe_off_active.(foot_name)
             if any(obj.supports(supp_idx).bodies == body_id) && q(kny_ind) < MIN_KNEE_ANGLE % && any(obj.supports(supp_idx).bodies == other_foot) 
-              other_foot_pose = obj.body_motions([obj.body_motions.body_id] == other_foot).coefs(:,body_t_ind,end);
-              foot_knot = obj.body_motions(j).coefs(:,body_t_ind,end);
-              R = quat2rotmat(expmap2quat(-foot_knot(4:6)));
-              dist_in_local = (other_foot_pose(1:3) - foot_knot(1:3))' * (R * [1;0;0]);
-              obj.toe_off_active.(foot_name) = dist_in_local > 0.05;
+              for k = 1:length(obj.body_motions)
+                if obj.body_motions(k).body_id == other_foot || ...
+                   obj.body_motions(k).body_id < 0 && obj.robot.getFrame(obj.body_motions(k).body_id).body_ind == other_foot
+                  other_foot_pose = obj.body_motions(k).coefs(:,body_t_ind,end);
+                  foot_knot = obj.body_motions(j).coefs(:,body_t_ind,end);
+                  R = quat2rotmat(expmap2quat(-foot_knot(4:6)));
+                  dist_in_local = (other_foot_pose(1:3) - foot_knot(1:3))' * (R * [1;0;0]);
+                  obj.toe_off_active.(foot_name) = dist_in_local > 0.05;
+                  break
+                end
+              end
             end
           else
             if ~any(obj.supports(supp_idx).bodies == body_id)
@@ -239,25 +248,27 @@ classdef QPLocomotionPlan < QPControllerPlan
 
       [x0, J] = obj.robot.forwardKin(kinsol, body_motion_data.body_id, [0;0;0], 2);
       xd0 = J * qd;
+      
+      
+      x1_exp = body_motion_data.coefs(:,body_t_ind+2, end);
+      xd1_exp = body_motion_data.coefs(:,body_t_ind+2, end);
+      [quat1, dquat1_dexp] = expmap2quat(x1_exp(4:6));
+      quatdot1 = dquat1_dexp * xd1_exp(4:6);
+      
+      flip = sign(x0(4:7)' * quat1);
+      x0(4:7) = x0(4:7) * flip;
+      xd0(4:7) = xd0(4:7) * flip;
+
       xd0 = [xd0(1:3); quatdot2expmapdot(x0(4:7), xd0(4:7))];
-
-      xs_quat = [x0, zeros(7,3)];
-      for j = 2:4
-        xs_quat(:,j) = [body_motion_data.coefs(1:3, body_t_ind+j, end);
-                   expmap2quat(body_motion_data.coefs(4:6, body_t_ind+j, end))];
-        xs_quat(4:7,j) = xs_quat(4:7,j) * sign(xs_quat(4:7,j-1)' * xs_quat(4:7,j));
-      end
-      xs = zeros(6, 4);
-      for j = 1:4
-        xs(:,j) = [xs_quat(1:3,j); quat2expmap(xs_quat(4:7,j))];
-      end
-
+      
       % Move the first aerial knot point to be directly above our current foot origin pose
       nhat = xs(1:2,end) - x0(1:2);
       nhat = nhat / norm(nhat);
       if nhat' * xs(1:2,2) < nhat' * x0(1:2)
         xs(1:2,2) = x0(1:2);
       end
+      
+      xs = [[x0(1:3); quat2expmap(x0(4:7))], body_motion_data.coefs(:, body_t_ind+(2:4), end)];
 
       xdf = body_motion_data.coefs(:,body_t_ind+4,end-1);
 
@@ -296,8 +307,12 @@ classdef QPLocomotionPlan < QPControllerPlan
       end
 
       for j = 1:length(qp_input.body_motion_data)
-        if qp_input.body_motion_data(j).body_id == loading_foot;
-          foot_actual = obj.robot.forwardKin(kinsol, loading_foot, [0;0;0], 0);
+        body_id = qp_input.body_motion_data(j).body_id;
+        if body_id < 0
+          body_id = obj.robot.getFrame(body_id).body_ind;
+        end
+        if body_id == loading_foot;
+          foot_actual = obj.robot.forwardKin(kinsol, qp_input.body_motion_data(j).body_id, [0;0;0], 0);
           foot_des = evalCubicSplineSegment(t_global - qp_input.body_motion_data(j).ts(1), qp_input.body_motion_data(j).coefs);
           obj.plan_shift_data.plan_shift(1:3) = foot_des(1:3) - foot_actual(1:3);
           break
@@ -385,12 +400,12 @@ classdef QPLocomotionPlan < QPControllerPlan
       end
 
       link_trajectories = obj.getLinkTrajectories();
-      for j = 1:length(obj.link_trajectories)
-        if ~isempty(obj.link_trajectories(j).traj)
-          plot_traj_foh(obj.link_trajectories(j).traj, [0.8, 0.8, 0.2]);
+      for j = 1:length(link_trajectories)
+        if ~isempty(link_trajectories(j).traj)
+          plot_traj_foh(link_trajectories(j).traj, [0.8, 0.8, 0.2]);
         else
-          plot_traj_foh(obj.link_trajectories(j).traj_min, [0.8, 0.8, 0.2]);
-          plot_traj_foh(obj.link_trajectories(j).traj_max, [0.2, 0.8, 0.8]);
+          plot_traj_foh(link_trajectories(j).traj_min, [0.8, 0.8, 0.2]);
+          plot_traj_foh(link_trajectories(j).traj_max, [0.2, 0.8, 0.8]);
         end
       end
       if ~isa(obj.comtraj, 'Trajectory')
@@ -505,11 +520,11 @@ classdef QPLocomotionPlan < QPControllerPlan
         footstep_plan.footsteps(j).walking_params = applyDefaults(struct(footstep_plan.footsteps(j).walking_params),...
           biped.default_walking_params);
       end
-      [zmp_knots, foot_origin_knots] = biped.planZMPTraj(x0(1:biped.getNumPositions()), footstep_plan.footsteps, zmp_options);
-      obj = QPLocomotionPlan.from_biped_foot_and_zmp_knots(foot_origin_knots, zmp_knots, biped, x0);
+      [zmp_knots, foot_motion_data] = biped.planZMPTraj(x0(1:biped.getNumPositions()), footstep_plan.footsteps, zmp_options);
+      obj = QPLocomotionPlan.from_biped_foot_and_zmp_knots(foot_motion_data, zmp_knots, biped, x0);
     end
 
-    function obj = from_biped_foot_and_zmp_knots(foot_origin_knots, zmp_knots, biped, x0, options)
+    function obj = from_biped_foot_and_zmp_knots(foot_motion_data, zmp_knots, biped, x0, options)
       if nargin < 5
         options = struct();
       end
@@ -530,7 +545,8 @@ classdef QPLocomotionPlan < QPControllerPlan
       [obj.supports, obj.support_times] = QPLocomotionPlan.getSupports(zmp_knots);
       obj.zmptraj = QPLocomotionPlan.getZMPTraj(zmp_knots);
       [~, obj.V, obj.comtraj, ~] = biped.planZMPController(obj.zmptraj, obj.x0, options);
-      obj.body_motions = biped.getLinkConstraints(foot_origin_knots, obj.zmptraj, obj.supports, obj.support_times, options);
+      pelvis_motion_data = biped.getPelvisMotionForWalking(foot_motion_data, obj.supports, obj.support_times, options);
+      obj.body_motions = [foot_motion_data, pelvis_motion_data];
 
       obj.duration = obj.support_times(end)-obj.support_times(1)-0.001;
       obj.zmp_final = obj.zmptraj.eval(obj.zmptraj.tspan(end));

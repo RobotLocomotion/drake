@@ -19,6 +19,7 @@ matlabFunction(q_degenerate, dq_degenerate, ddq_degenerate, 'Vars', {v,th}, 'Fil
 
 dir = pwd;
 cd(fullfile(getDrakePath(), 'util'));
+v_num = zeros(3,1);
 codegen expmap2quatImpl.m -args {v_num}
 cd(dir);
 
