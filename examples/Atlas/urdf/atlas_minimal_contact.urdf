@@ -93,6 +93,7 @@
   </link>
   <frame link="l_foot" name="l_foot_sole" rpy="0 0 0" xyz="0.0480 0 -0.081119"/>
   <frame link="l_foot" name="l_foot_toe" rpy="0 0 0" xyz="0.178 0 -0.081119"/>
+  <!-- Having a Drake frame located at the link origin is redundant, but it's very useful for debugging differences between Drake frames and Drake bodies -->
   <frame link="l_foot" name="l_foot_orig" rpy="0 0 0" xyz="0 0 0"/>
   <link name="l_hand">
     <inertial>
@@ -525,6 +526,7 @@
   </link>
   <frame link="r_foot" name="r_foot_sole" rpy="0 0 0" xyz="0.0480 0 -0.081119"/>
   <frame link="r_foot" name="r_foot_toe" rpy="0 0 0" xyz="0.178 0 -0.081119"/>
+  <!-- Having a Drake frame located at the link origin is redundant, but it's very useful for debugging differences between Drake frames and Drake bodies -->
   <frame link="r_foot" name="r_foot_orig" rpy="0 0 0" xyz="0 0 0"/>
   <link name="r_hand">
     <inertial>
