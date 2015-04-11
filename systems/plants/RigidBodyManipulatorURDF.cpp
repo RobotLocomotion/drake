@@ -732,7 +732,7 @@ bool parseRobot(RigidBodyManipulator* model, TiXmlElement* node, const map<strin
         }
 				break;
 			default:
-			  throw std::runtime_error("unknown floating base type " + std::to_string(floating_base_type));
+			  throw std::runtime_error("unknown floating base type");
     	}
     }
   }
@@ -744,13 +744,11 @@ bool parseURDF(RigidBodyManipulator* model, TiXmlDocument * xml_doc, map<string,
   populatePackageMap(package_map);
   TiXmlElement *node = xml_doc->FirstChildElement("robot");
   if (!node) {
-    cerr << "ERROR: This urdf does not contain a robot tag" << endl;
-    return false;
+    throw std::runtime_error("ERROR: This urdf does not contain a robot tag");
   }
 
   if (!parseRobot(model, node, package_map, root_dir, floating_base_type)) {
-    cerr << "ERROR: Failed to parse robot" << endl;
-    return false;
+    throw std::runtime_error("ERROR: Failed to parse robot");
   }
 
   model->compile();

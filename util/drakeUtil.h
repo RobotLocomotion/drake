@@ -12,7 +12,11 @@
 #include <utility>
 #include <Eigen/Core>
 
-#include <sstream> // needed only for valuecheck (but keeping that code in the header avoids explicit instantiations)
+// needed only for valuecheck (but keeping that code in the header avoids explicit instantiations)
+#include <sstream> 
+#include <cmath>
+// end valuecheck includes
+
 
 #ifndef DRAKE_UTIL_H_
 #define DRAKE_UTIL_H_
@@ -106,6 +110,13 @@ std::string to_string(const Eigen::MatrixBase<Derived> & a)
 	return ss.str();
 }
 
+inline int my_isnan(double x) {
+#ifdef WIN32
+  return _isnan(x);
+#else
+  return std::isnan(x);
+#endif
+}
 
 template<typename DerivedA, typename DerivedB>
 void valuecheck(const Eigen::MatrixBase<DerivedA>& a, const Eigen::MatrixBase<DerivedB>& b, double tol, std::string error_msg)
@@ -122,7 +133,7 @@ void valuecheck(const Eigen::MatrixBase<DerivedA>& a, const Eigen::MatrixBase<De
 				for (int j=0; j<a.cols(); j++) {
 					ok = ok && ((a(i,j) == std::numeric_limits<double>::infinity() && b(i,j) == std::numeric_limits<double>::infinity()) ||
 					(a(i,j) == -std::numeric_limits<double>::infinity() && b(i,j) == -std::numeric_limits<double>::infinity()) ||
-			    (std::isnan(a(i,j)) && std::isnan(b(i,j))) || (std::abs(a(i,j)-b(i,j))<tol));
+			    (my_isnan(a(i,j)) && my_isnan(b(i,j))) || (std::abs(a(i,j)-b(i,j))<tol));
 				}
 			if (ok) return;
 		}
