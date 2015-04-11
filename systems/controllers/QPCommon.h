@@ -192,7 +192,7 @@ struct NewQPControllerData {
 };
 
 struct DesiredBodyAcceleration {
-  int body_id0;
+  int body_or_frame_id0;
   Vector6d body_vdot;
   double weight;
   Bounds accel_bounds;

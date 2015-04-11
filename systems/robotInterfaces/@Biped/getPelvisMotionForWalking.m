@@ -18,24 +18,23 @@ end
 
 pelvis_reference_height = zeros(1,length(support_times));
 
-T_sole_to_orig = struct('right', inv(obj.getFrame(obj.foot_frame_id.right).T),...
-           'left', inv(obj.getFrame(obj.foot_frame_id.left).T));
-T_frame_to_sole = T_sole_to_orig;
+T_orig_to_sole = struct('right', obj.getFrame(obj.foot_frame_id.right).T,...
+           'left', obj.getFrame(obj.foot_frame_id.left).T);
 for j = 1:2
   frame_or_body_id = foot_motion_data(j).body_id;
   if frame_or_body_id > 0
     if frame_or_body_id == obj.foot_body_id.right
-      T_frame_to_sole.right = inv(T_sole_to_orig.right);
+      T_frame_to_sole.right = T_orig_to_sole.right;
     else
-      T_frame_to_sole.left = inv(T_sole_to_orig.left);
+      T_frame_to_sole.left = T_orig_to_sole.left;
     end
   else
     frame = obj.getFrame(frame_or_body_id);
-    T_frame_to_orig = frame.T;
+    T_orig_to_frame = frame.T;
     if frame.body_ind == obj.foot_body_id.right
-      T_frame_to_sole.right = T_frame_to_orig * T_sole_to_orig.right;
+      T_frame_to_sole.right = T_orig_to_frame \ T_orig_to_sole.right;
     else
-      T_frame_to_sole.left = T_frame_to_orig * T_sole_to_orig.left;
+      T_frame_to_sole.left = T_orig_to_frame \ T_orig_to_sole.left;
     end
   end
 end
