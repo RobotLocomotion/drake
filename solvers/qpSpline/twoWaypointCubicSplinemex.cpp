@@ -19,9 +19,9 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
   auto xd0 = matlabToEigen<Dynamic, 1>(prhs[2]);
   auto xdf = matlabToEigen<Dynamic, 1>(prhs[3]);
 
-  int ndof = static_cast<int>(xs.rows());
-  int num_segments = 3;
-  int num_coeffs_per_segment = 4;
+  mwSize ndof = static_cast<mwSize>(xs.rows());
+  mwSize num_segments = 3;
+  mwSize num_coeffs_per_segment = 4;
   mwSize dims[] = {ndof, num_segments, num_coeffs_per_segment};
   plhs[0] = mxCreateNumericArray(num_segments, dims, mxDOUBLE_CLASS, mxREAL);
   double objective_value = 0.0;

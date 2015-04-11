@@ -1,6 +1,6 @@
 function testqpSpline()
 testMex();
-testTiming();
+% testTiming(); doesn't assert anything and timeit isn't available everywhere
 testObjectiveValue();
 end
 

@@ -23,16 +23,16 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
   auto xd0 = matlabToEigen<Dynamic, 1>(prhs[3]);
   auto xdf = matlabToEigen<Dynamic, 1>(prhs[4]);
 
-  int ndof = static_cast<int>(xs.rows());
-  int num_segments = 3;
-  int num_coeffs_per_segment = 4;
+  mwSize ndof = static_cast<mwSize>(xs.rows());
+  mwSize num_segments = 3;
+  mwSize num_coeffs_per_segment = 4;
   mwSize dims[] = {ndof, num_segments, num_coeffs_per_segment};
   plhs[0] = mxCreateNumericArray(num_segments, dims, mxDOUBLE_CLASS, mxREAL);
 
   std::vector<double> segment_times;
-  segment_times.resize(num_segments + 1);
+  segment_times.resize(static_cast<size_t>(num_segments) + 1);
   segment_times[0] = t0;
-  segment_times[num_segments] = tf;
+  segment_times[static_cast<size_t>(num_segments)] = tf;
   std::vector<double> best_segment_times = segment_times;
   double t_step = (tf - t0) / GRID_STEPS;
   double min_objective_value = numeric_limits<double>::infinity();
