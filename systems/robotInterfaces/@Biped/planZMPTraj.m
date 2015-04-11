@@ -70,7 +70,11 @@ for f = {'right', 'left'}
   sole_pose = steps.(foot)(1).pos;
   Tsole = [quat2rotmat(sole_pose(4:7)), sole_pose(1:3); 0 0 0 1];
   Torig = Tsole / T;
-  Tframe = Torig * biped.getFrame(target_frame_id.(foot)).T;
+  if target_frame_id.(foot) < 0
+    Tframe = Torig * biped.getFrame(target_frame_id.(foot)).T;
+  else
+    Tframe = Torig;
+  end
   frame_knots.(foot) = [Tframe(1:3,4); quat2expmap(rotmat2quat(Tframe(1:3,1:3))); zeros(6,1)];
 end
 

@@ -25,9 +25,9 @@ for j = 1:2
   frame_or_body_id = foot_motion_data(j).body_id;
   if frame_or_body_id > 0
     if frame_or_body_id == obj.foot_body_id.right
-      T_frame_to_sole.right = T_sole_to_orig.right;
+      T_frame_to_sole.right = inv(T_sole_to_orig.right);
     else
-      T_frame_to_sole.left = T_sole_to_orig.left;
+      T_frame_to_sole.left = inv(T_sole_to_orig.left);
     end
   else
     frame = obj.getFrame(frame_or_body_id);

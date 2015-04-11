@@ -61,7 +61,11 @@ swing_body_index = biped.foot_body_id.(swing_foot_name);
 stance_body_index = biped.foot_body_id.(stance_foot_name);
 % swing_toe_points_in_foot = biped.getBody(swing_body_index).getTerrainContactPoints('toe');
 T_sole_to_foot = biped.getFrame(swing1.frame_id).T;
-T_frame_to_foot = biped.getFrame(target_frame_id.(swing_foot_name)).T;
+if target_frame_id.(swing_foot_name) < 0
+  T_frame_to_foot = biped.getFrame(target_frame_id.(swing_foot_name)).T;
+else
+  T_frame_to_foot = eye(4);
+end
 T_toe_to_foot = biped.getFrame(biped.toe_frame_id.(swing_foot_name)).T;
 
 T_swing1_sole_to_world = ...
@@ -84,7 +88,11 @@ if DEBUG
 end
 
 T_stance_sole_to_foot = biped.getFrame(stance.frame_id).T;
-T_stance_frame_to_foot = biped.getFrame(target_frame_id.(stance_foot_name)).T;
+if target_frame_id.(stance_foot_name) < 0
+  T_stance_frame_to_foot = biped.getFrame(target_frame_id.(stance_foot_name)).T;
+else
+  T_stance_frame_to_foot = eye(4);
+end
 T_stance_sole_to_world = poseQuat2tform(stance.pos);
 T_stance_frame_to_world = T_stance_sole_to_world / T_stance_sole_to_foot * T_stance_frame_to_foot;
 
