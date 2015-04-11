@@ -10,8 +10,8 @@ if nargin < 4; options = struct(); end
 if ~isfield(options, 't0'); options.t0 = 0; end
 if ~isfield(options, 'first_step_hold_s'); options.first_step_hold_s = 1.5; end
 
-target_frame_id = struct('right', biped.parseBodyOrFrameID('r_foot_orig'),...
-                         'left', biped.parseBodyOrFrameID('l_foot_orig'));
+target_frame_id = struct('right', biped.toe_frame_id.right,...
+                         'left', biped.toe_frame_id.left);
 
 typecheck(biped,{'RigidBodyManipulator','TimeSteppingRigidBodyManipulator'});
 typecheck(q0,'numeric');
