@@ -36,7 +36,6 @@
 DLLEXPORT bool isa(const mxArray* mxa, const char* class_str);
 DLLEXPORT bool mexCallMATLABsafe(int nlhs, mxArray* plhs[], int nrhs, mxArray* prhs[], const char* filename);
 
-
 // Mex pointers shared through matlab
 DLLEXPORT mxArray* createDrakeMexPointer(void* ptr, const char* name="", int num_additional_inputs=0, mxArray *delete_fcn_additional_inputs[] = NULL, const char* subclass_name=NULL);  // increments lock count
 // Note: the same mex function which calls this method will be called with the syntax mexFunction(drake_mex_ptr) as the destructor
@@ -53,6 +52,9 @@ template <typename Derived> inline void destroyDrakeMexPointer(const mxArray* mx
 
 //  mexPrintf(mexIsLocked() ? "mex file is locked\n" : "mex file is unlocked\n");
 }
+
+template <typename Derived>
+DLLEXPORT mxArray* eigenToMatlabSparse(Eigen::MatrixBase<Derived> const & M, int & num_non_zero);
 
 template <typename DerivedA>
 mxArray* eigenToMatlab(const DerivedA &m)

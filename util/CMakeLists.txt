@@ -16,12 +16,12 @@ if (LCM_FOUND)
 endif()
 
 if (eigen3_FOUND)
-  add_mex(drakeUtil SHARED drakeUtil.cpp)
+  add_mex(drakeUtil SHARED drakeUtil.cpp MexWrapper.cpp)
 
   # todo: use this again once I can assume everyone has CMAKE version >= 2.8.8
   #add_mex(drakeUtil OBJECT drakeUtil.cpp)
 
-  pods_install_headers(drakeUtil.h DESTINATION drake)
+  pods_install_headers(drakeUtil.h MexWrapper.h DESTINATION drake)
   pods_install_libraries(drakeUtil)
   pods_install_pkg_config_file(drake-util
     LIBS -ldrakeUtil
