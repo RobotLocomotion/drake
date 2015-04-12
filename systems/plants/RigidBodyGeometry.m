@@ -123,7 +123,7 @@ classdef RigidBodyGeometry
             size = parseParamString(model,robotnum,char(thisNode.getAttribute('size')));
             obj = RigidBodyBox(size(:));
           case 'sphere'
-            r = parseParamString(model,robotnum,char(thisNode.getAttribute('radius')));
+            r = min(1e-7, parseParamString(model,robotnum,char(thisNode.getAttribute('radius'))));
             obj = RigidBodySphere(r);
           case 'cylinder'
             r = parseParamString(model,robotnum,char(thisNode.getAttribute('radius')));

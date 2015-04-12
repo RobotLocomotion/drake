@@ -29,6 +29,7 @@
 
 #define BASIS_VECTOR_HALF_COUNT 2  //number of basis vectors over 2 (i.e. 4 basis vectors in this case)
 #define EPSILON 10e-8
+#define MIN_RADIUS 1e-7
 
 typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
 typedef Eigen::Matrix<double, 3, Eigen::Dynamic> Matrix3xd;
@@ -257,6 +258,13 @@ public:
                      MatrixXd& ptsA, MatrixXd& ptsB,
                         bool use_margins = true);
 
+  void potentialCollisions(Eigen::VectorXd& phi,
+                           Eigen::MatrixXd& normal,
+                           Eigen::MatrixXd& xA,
+                           Eigen::MatrixXd& xB,
+                           std::vector<int>& bodyA_idx,
+                           std::vector<int>& bodyB_idx, 
+                           bool use_margins = true);
   //bool closestDistanceAllBodies(VectorXd& distance, MatrixXd& Jd);
 
   void warnOnce(const std::string& id, const std::string& msg);

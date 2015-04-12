@@ -18,13 +18,24 @@ using namespace std;
  *                        active_collision_options);
  */
 
-void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
-  //DEBUG
-  //cout << "collisionDetectmex: START" << endl;
-  //END_DEBUG
+void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
 
-  if (nrhs < 1) {
-    mexErrMsgIdAndTxt("Drake:collisionDetectmex:NotEnoughInputs","Usage collisionDetectmex(model_ptr)");
+  //check number of arguments
+  if (nrhs < 3) {
+    mexErrMsgIdAndTxt("Drake:collisionDetectmex:NotEnoughInputs", "Usage: [xA,xB,normal,distance,idxA,idxB] = collisionDetectmex(mex_model_ptr, allow_multiple_contacts, active_collision_options)");
+  }
+
+  //check argument types
+  if (!mxIsClass(prhs[0], "DrakeMexPointer")) {
+    mexErrMsgIdAndTxt("Drake:collisionDetectmex:InvalidInputType", "Expected a DrakeMexPointer for mex_model_ptr but got something else.");
+  }
+
+  if (!mxIsLogical(prhs[1])) {
+    mexErrMsgIdAndTxt("Drake:collisionDetectmex:InvalidInputType", "Expected a boolean logic type for allow_multiple_collisions but got something else.");
+  }
+
+  if (!mxIsStruct(prhs[2])) { 
+    mexErrMsgIdAndTxt("Drake:collisionDetectmex:InvalidInputType", "Expected a struct type for active_collision_options but got something else.");    
   }
 
   // first get the model_ptr back from matlab
@@ -33,83 +44,65 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   // Parse `active_collision_options`
   vector<int> active_bodies_idx;
   set<string> active_group_names;
-  // First get the list of body indices for which to compute distances
-  // DEBUG
-  //cout << "collisionDetectmex: Parse active_bodies START" << endl;
-  // END_DEBUG
+
   const mxArray* active_collision_options = prhs[2];
-  const mxArray* body_idx = mxGetField(active_collision_options,0,"body_idx");
+  const mxArray* allow_multiple_contacts = prhs[1];
+
+  const mxArray* body_idx = mxGetField(active_collision_options, 0, "body_idx");
   if (body_idx != NULL) {
-    //DEBUG
-    //cout << "collisionDetectmex: Received body_idx" << endl;
-    //END_DEBUG
-    int n_active_bodies = static_cast<int>(mxGetNumberOfElements(body_idx));
-    //DEBUG
-    //cout << "collisionDetectmex: n_active_bodies = " << n_active_bodies << endl;
-    //END_DEBUG
+    size_t n_active_bodies = static_cast<size_t>(mxGetNumberOfElements(body_idx));
+
     active_bodies_idx.resize(n_active_bodies);
     memcpy(active_bodies_idx.data(),(int*) mxGetData(body_idx),
            sizeof(int)*n_active_bodies);
-    transform(active_bodies_idx.begin(),active_bodies_idx.end(),
+    transform(active_bodies_idx.begin(), active_bodies_idx.end(),
               active_bodies_idx.begin(),
               [](int i){return --i;});
   }
-  // DEBUG
-  //cout << "collisionDetectmex: Parse active_bodies END" << endl;
-  // END_DEBUG
 
-  // Then get the group names for which to compute distances
-  // DEBUG
-  //cout << "collisionDetectmex: Parse collision groups START" << endl;
-  // END_DEBUG
-  const mxArray* collision_groups = mxGetField(active_collision_options,0,
-                                               "collision_groups");
+  const mxArray* collision_groups = mxGetField(active_collision_options, 0, "collision_groups");
+  
   if (collision_groups != NULL) {
-    int num = static_cast<int>(mxGetNumberOfElements(collision_groups));
-    for (int i=0; i<num; i++) {
-      const mxArray *ptr = mxGetCell(collision_groups,i);
-      int buflen = static_cast<int>(mxGetN(ptr)*sizeof(mxChar))+1;
+    size_t num_collision_groups = static_cast<size_t>(mxGetNumberOfElements(collision_groups));
+    for (size_t i = 0; i < num_collision_groups; i++) {
+      const mxArray *ptr = mxGetCell(collision_groups, i);
+      size_t buflen = static_cast<size_t>(mxGetN(ptr) * sizeof(mxChar)) + 1;
       char* str = (char*)mxMalloc(buflen);
       mxGetString(ptr, str, buflen);
       active_group_names.insert(str);
       mxFree(str);
     }
   }
-  // DEBUG
-  //cout << "collisionDetectmex: Parse collision groups END" << endl;
-  // END_DEBUG
 
   vector<int> bodyA_idx, bodyB_idx;
   MatrixXd ptsA, ptsB, normals, JA, JB, Jd;
   VectorXd dist;
-  // DEBUG
-  //cout << "collisionDetectmex: Call collisionDetect START" << endl;
-  // END_DEBUG
+
   if (active_bodies_idx.size() > 0) {
     if (active_group_names.size() > 0) {
-      model-> collisionDetect(dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx,
+      model->collisionDetect(dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx,
                               active_bodies_idx,active_group_names);
     } else {
-      model-> collisionDetect(dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx,
+      model->collisionDetect(dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx,
                               active_bodies_idx);
     }
   } else {
-    if (active_group_names.size() > 0) {
-      model-> collisionDetect(dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx,
+    const bool multiple_contacts = mxIsLogicalScalarTrue(allow_multiple_contacts);
+    if(multiple_contacts) {
+      model->potentialCollisions(dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx);
+    } else if (active_group_names.size() > 0) {
+      model->collisionDetect(dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx,
                              active_group_names);
     } else {
-      model-> collisionDetect(dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx);
+      model->collisionDetect(dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx);
     }
   }
-  // DEBUG
-  //cout << "collisionDetectmex: Call collisionDetect END" << endl;
-  // END_DEBUG
 
   vector<int32_T> idxA(bodyA_idx.size());
-  transform(bodyA_idx.begin(),bodyA_idx.end(),idxA.begin(),
+  transform(bodyA_idx.begin(), bodyA_idx.end(), idxA.begin(),
       [](int i){return ++i;});
   vector<int32_T> idxB(bodyB_idx.size());
-  transform(bodyB_idx.begin(),bodyB_idx.end(),idxB.begin(),
+  transform(bodyB_idx.begin(), bodyB_idx.end(), idxB.begin(),
       [](int i){return ++i;});
 
   if (nlhs>0) {
@@ -136,7 +129,4 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
     plhs[5] = mxCreateNumericMatrix(1,static_cast<int>(idxB.size()),mxINT32_CLASS,mxREAL);
     memcpy(mxGetData(plhs[5]),idxB.data(),sizeof(int32_T)*idxB.size());
   }
-  //DEBUG
-  //cout << "collisionDetectmex: END" << endl;
-  //END_DEBUG
 }

@@ -13,6 +13,9 @@
 namespace DrakeCollision
 {
   class BulletModel;    // forward declaration
+
+  #define PERTURBATION_ITERATIONS 8 
+  #define MINIMUM_POINTS_PERTURBATION_THRESHOLD 8
   
   typedef std::unordered_map< ElementId, std::unique_ptr<btCollisionObject> > ElementToBtObjMap;
 
@@ -28,7 +31,6 @@ namespace DrakeCollision
   struct BulletCollisionWorldWrapper
   {
     BulletCollisionWorldWrapper();
-
     ElementToBtObjMap bt_collision_objects;
 
     btDefaultCollisionConfiguration bt_collision_configuration;
@@ -76,6 +78,9 @@ namespace DrakeCollision
       virtual bool collisionRaycast(const Eigen::Matrix3Xd &origins, 
               const Eigen::Matrix3Xd &ray_endpoints, bool use_margins, 
               Eigen::VectorXd &distances);
+
+      virtual std::vector<PointPair> potentialCollisionPoints(bool use_margins);
+
       // END Required member functions
       
     protected:

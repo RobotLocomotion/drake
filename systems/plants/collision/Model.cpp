@@ -49,4 +49,5 @@ namespace DrakeCollision
       const bool use_margins,
       vector<PointPair>& closest_points)
   { return false; };
+
 }

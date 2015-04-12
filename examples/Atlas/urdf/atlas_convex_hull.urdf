@@ -54,7 +54,7 @@
         <mesh filename="package://Atlas/urdf/meshes/l_foot.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
-    <collision>
+    <collision group="heel">
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
         <mesh filename="package://Atlas/urdf/meshes/l_foot_chull.wrl" scale="1 1 1"/>
@@ -393,7 +393,7 @@
         <mesh filename="package://Atlas/urdf/meshes/r_foot.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
-    <collision>
+    <collision group="heel">
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
         <mesh filename="package://Atlas/urdf/meshes/r_foot_chull.wrl" scale="1 1 1"/>
