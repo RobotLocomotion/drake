@@ -1,7 +1,4 @@
-
-
 include_directories (${CMAKE_SOURCE_DIR}/util tinyxml)
-
 # IMPORTANT NOTE!!
 # matlab has it's own boost libraries.  DO NOT let any mex file depend
 # on the system boost (directly nor indirectly), or you're asking for trouble.
@@ -71,10 +68,11 @@ if (eigen3_FOUND)
   add_rbm_mex(surfaceTangentsmex)
   add_rbm_mex(jointLimitConstraintsmex)
   add_rbm_mex(positionConstraintsmex)
-  
+
   if(gurobi_FOUND)
-    add_mex(setupLCPmex setupLCPmex.cpp)
-    target_link_libraries(setupLCPmex drakeRBM drakeUtil drakeQP)
+    add_definitions(-DPATHLCP_MEXFILE=\"${CMAKE_SOURCE_DIR}/thirdParty/path/lcppath.${MEX_EXT}\")
+    add_mex(solveLCPmex solveLCPmex.cpp)
+    target_link_libraries(solveLCPmex drakeRBM drakeUtil drakeQP)
   endif()
   
   

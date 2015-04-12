@@ -1,6 +1,7 @@
 #include "mex.h"
 #include <iostream>
 #include "drakeUtil.h"
+#include "MexWrapper.h"
 #include "RigidBodyManipulator.h"
 #include "math.h"
 #include "drake/fastQP.h"
@@ -120,8 +121,6 @@ inline void filterByIndices(vector<size_t> const &indices, VectorXd const & v, V
   }
 }
 
-//fastQP(std::vector< Eigen::MatrixXd* > QblkDiag, const Eigen::VectorXd& f, const Eigen::MatrixXd& Aeq, 
-//const Eigen::VectorXd& beq, const Eigen::MatrixXd& Ain, const Eigen::VectorXd& bin, std::set<int>& active, Eigen::VectorXd& x);
 template <typename DerivedM, typename Derivedw, typename Derivedlb, typename Derivedz>
 bool callFastQP(MatrixBase<DerivedM> const & M, MatrixBase<Derivedw> const & w, MatrixBase<Derivedlb> const & lb, vector<bool> & z_inactive, const size_t checkLimit,  MatrixBase<Derivedz> & z) 
 {
@@ -164,29 +163,37 @@ bool callFastQP(MatrixBase<DerivedM> const & M, MatrixBase<Derivedw> const & w, 
   filterByIndices(z_inactive_indices, M_temp.transpose(), M_check);  //and inactive columns
   filterByIndices(z_active_indices, w, w_check);
   getThresholdInclusion((M_check.transpose() * zqp + w_check).eval(), -SMALL, violations);
-  
+  //check equality constraints
   if (anyTrue(violations)) { 
     return false;
   }
-
+ 
   getThresholdInclusion((Ain * zqp - bin).eval(), -SMALL, ineq_violations);
   getThresholdInclusion((beq - Aeq.transpose() * zqp).eval(), -SMALL, violations);
-
+  //check inequality constraints
   for (size_t i = 0; i < num_inactive_z; i++) { 
     if (ineq_violations[i] && violations[i]) { 
       return false;
     }
   }
+
+  //check complementarity constraints
+  getThresholdInclusion((-(zqp.transpose()*(Aeq*zqp - beq)).cwiseAbs()).eval(), -SMALL, violations);
+  if(anyTrue(violations)) {
+    return false;
+  }
+  
   return true;
 }
 
 //[z, Mqdn, wqdn] = setupLCPmex(mex_model_ptr, q, qd, u, phiC, n, D, h, z_inactive_guess_tol)
-void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) { 
+void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) { 
   
-  if (nlhs != 3 || nrhs != 10) {
-    mexErrMsgIdAndTxt("Drake:setupLCPmex:InvalidUsage","Usage: [z, Mqdn, wqdn, zqp] = setupLCPmex(mex_model_ptr, q, qd, u, phiC, n, D, h, z_inactive_guess_tol, z_cached)");
+  if (nlhs != 3 || nrhs != 13) {
+    mexErrMsgIdAndTxt("Drake:setupLCPmex:InvalidUsage","Usage: [z, Mqdn, wqdn, zqp] = setupLCPmex(mex_model_ptr, q, qd, u, phiC, n, D, h, z_inactive_guess_tol, z_cached, H, C, B)");
   }
-
+  static unique_ptr<MexWrapper> lcp_mex = unique_ptr<MexWrapper>(new MexWrapper(PATHLCP_MEXFILE));
+  
   RigidBodyManipulator *model= (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
   const int nq = model->num_positions;
   const int nv = model->num_velocities;
@@ -201,6 +208,9 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   const mxArray* h_array = prhs[7];
   const mxArray* inactive_guess_array = prhs[8];
   const mxArray* z_cached_array = prhs[9];
+  const mxArray* H_array = prhs[10];
+  const mxArray* C_array = prhs[11];
+  const mxArray* B_array = prhs[12];
 
   const size_t num_z_cached = mxGetNumberOfElements(z_cached_array);
   const size_t num_contact_pairs = mxGetNumberOfElements(phiC_array);
@@ -213,14 +223,12 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   const Map<VectorXd> phiC(mxGetPrSafe(phiC_array), num_contact_pairs);
   const Map<MatrixXd> n(mxGetPrSafe(n_array), num_contact_pairs, nq);
   const Map<VectorXd> z_cached(mxGetPrSafe(z_cached_array), num_z_cached);
-  
-  VectorXd C, phiL, phiP, phiL_possible, phiC_possible, phiL_check, phiC_check;
-  MatrixXd H, B, JP, JL, JL_possible, n_possible, JL_check, n_check;
-  
-  H.resize(nv, nv); 
-  C = VectorXd::Zero(nv);
-  B = model->B;
-  model->HandC(q, v, (MatrixXd*)nullptr, H, C, (MatrixXd*)nullptr, (MatrixXd*)nullptr, (MatrixXd*)nullptr);
+  const Map<MatrixXd> H(mxGetPrSafe(H_array), nv, nv);
+  const Map<VectorXd> C(mxGetPrSafe(C_array), nv);
+  const Map<MatrixXd> B(mxGetPrSafe(B_array), mxGetM(B_array), mxGetN(B_array));
+
+  VectorXd phiL, phiP, phiL_possible, phiC_possible, phiL_check, phiC_check;
+  MatrixXd JP, JL, JL_possible, n_possible, JL_check, n_check;
 
   model->positionConstraints(phiP, JP);
   model->jointLimitConstraints(q, phiL, JL);
@@ -258,9 +266,8 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 
     if (lcp_size == 0) {
       return;
-    } else { 
-      z = VectorXd::Zero(lcp_size);
-    }
+    } 
+    z = VectorXd::Zero(lcp_size);
 
     vector<size_t> possible_contact_indices;
     getInclusionIndices(possible_contact, possible_contact_indices, true);
@@ -285,20 +292,18 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
     
     //solve LCP problem 
     //TODO: call path from C++ (currently only 32-bit C libraries available)
-    mxArray* mxM = mxCreateDoubleMatrix(lcp_size, lcp_size, mxREAL);
     mxArray* mxw = mxCreateDoubleMatrix(lcp_size, 1, mxREAL);
     mxArray* mxlb = mxCreateDoubleMatrix(lcp_size, 1, mxREAL);
     mxArray* mxub = mxCreateDoubleMatrix(lcp_size, 1, mxREAL);  
+    
     Map<VectorXd> lb(mxGetPrSafe(mxlb), lcp_size);
     Map<VectorXd> ub(mxGetPrSafe(mxub), lcp_size);
     lb << VectorXd::Zero(nL),
           -BIG * VectorXd::Ones(nP),
           VectorXd::Zero(nC + mC * nC + nC);
     ub = BIG * VectorXd::Ones(lcp_size);
-    mxArray *lhs[1];
-    mxArray *rhs[] = {mxM, mxw, mxlb, mxub};
     
-    Map<MatrixXd> M(mxGetPrSafe(mxM),lcp_size, lcp_size);
+    MatrixXd M(lcp_size, lcp_size);
     Map<VectorXd> w(mxGetPrSafe(mxw), lcp_size);
 
     //build LCP matrix
@@ -338,18 +343,31 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
     bool qp_failed = true;
     qp_failed = !callFastQP(M, w, lb, z_inactive, nL+nP+nC, z);
     
+    int nnz;
+    mxArray* mxM_sparse = eigenToMatlabSparse(M, nnz);
+    mxArray* mxnnzJ = mxCreateDoubleScalar(static_cast<double>(nnz));
+    mxArray* mxn = mxCreateDoubleScalar(static_cast<double>(lcp_size));
+    mxArray* mxz = mxCreateDoubleMatrix(lcp_size, 1, mxREAL);
+    mxArray *lhs[2];
+    mxArray *rhs[] = {mxn, mxnnzJ, mxz, mxlb, mxub, mxM_sparse, mxw};
+
+    Map<VectorXd> z_path(mxGetPr(mxz), lcp_size);
+    z_path = VectorXd::Zero(lcp_size);
     //fall back to pathlcp
     if(qp_failed) {
-      mexCallMATLAB(1, lhs, 4, rhs, "pathlcp");
-      Map<VectorXd> z_path(mxGetPrSafe(lhs[0]), lcp_size);
+      lcp_mex->mexFunction(2, lhs, 7, const_cast<const mxArray**>(rhs));
       z = z_path;
       mxDestroyArray(lhs[0]);
+      mxDestroyArray(lhs[1]);
     }
 
+    mxDestroyArray(mxz);
+    mxDestroyArray(mxn);
+    mxDestroyArray(mxnnzJ);
     mxDestroyArray(mxub);
     mxDestroyArray(mxlb);
     mxDestroyArray(mxw);
-    mxDestroyArray(mxM);
+    mxDestroyArray(mxM_sparse);
 
     VectorXd qdn = Mqdn * z + wqdn;
 
