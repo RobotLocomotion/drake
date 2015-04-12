@@ -51,7 +51,7 @@ for i = N:-1:1  %N = number of continuous phases
         xT = xtraj.traj{j}.trajs{2}.eval(Tprev);
         uT = utraj.traj{j}.eval(Tprev);
 
-        zcs = guards(p,Tprev,[mode;xT],uT);
+        zcs = zeroCrossings(p,Tprev,[mode;xT],uT);
         active_id = find(zcs<1e-6);
         if (isempty(active_id)), error('no active guard at final time');end
         if (length(active_id)>1), error('multiple guards tripped at the same time.  behavior is undefined.  consider reducing the step size'); end
@@ -128,7 +128,7 @@ utraji = utraj.traj{i};
 t = xtraji.tspan(end);
 uT = utraji.eval(xtraji.tspan(end));
 xT = xtraji.eval(xtraji.tspan(end));
-zcs = guards(p,t,[i;xT],uT);
+zcs = zeroCrossings(p,t,[i;xT],uT);
 active_id = find(zcs<1e-6);
 if (isempty(active_id)), error('no active guard at final time');end % Just gets first guard, hack for compass gait
 if (length(active_id)>1), error('multiple guards tripped at the same time.  behavior is undefined.  consider reducing the step size'); end
