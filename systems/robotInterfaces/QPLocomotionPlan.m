@@ -269,20 +269,27 @@ classdef QPLocomotionPlan < QPControllerPlan
       % if nhat' * xs(1:2,2) < nhat' * x0(1:2)
       %   xs(1:2,2) = x0(1:2);
       % end
-      % T_x0_to_world_in_world = poseQuat2tform([xs(1:3,1), expmap2quat(xs(4:6,1))]);
-      % T_x1_to_world_in_world = poseQuat2tform([xs(1:3,2), expmap2quat(xs(4:6,2))]);
+      T_x0_to_world_in_world = poseQuat2tform([xs(1:3,1); expmap2quat(xs(4:6,1))]);
+      T_x1_to_world_in_world = poseQuat2tform([xs(1:3,2); expmap2quat(xs(4:6,2))]);
+      xprime_x0 = T_x0_to_world_in_world * [1;0;0;0];
+      xprime_x1 = T_x1_to_world_in_world * [1;0;0;0];
+      if xprime_x0(3) < xprime_x1(3)
+        xs(4:6,2) = quat2expmap(slerp(expmap2quat(xs(4:6,1)), expmap2quat(xs(4:6,3)), 0.5));
+      end
+
       % T_x0_to_x1_in_world = T_x0_to_world_in_world / T_x1_to_world_in_world;
       % T_x0_to_x1_in_x0 = T_x0_to_x1_in_world / T_x0_to_world_in_world;
 
       % Rotate the first aereal knot point to match the current orientation
-      xs(4:6,2) = xs(4:6,1);
+      % xs(4:6,2) = mean(xs(4:6,[1,3]), 2);
+      % xs(4:6,2) = xs(4:6,1);
 
 
 
       xdf = body_motion_data.coefs(:,body_t_ind+4,end-1);
 
-      ts = [body_motion_data.ts(body_t_ind+1), 0, 0, body_motion_data.ts(body_t_ind+4)];
-      qpSpline_options = struct('optimize_knot_times', true);
+      ts = body_motion_data.ts(body_t_ind+(1:4));
+      qpSpline_options = struct('optimize_knot_times', false);
       [coefs, ts] = qpSpline(ts, xs, xd0, xdf, qpSpline_options);
 
       tt = linspace(ts(1), ts(end));
