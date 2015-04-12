@@ -264,11 +264,20 @@ classdef QPLocomotionPlan < QPControllerPlan
       xs = [[x0(1:3); quat2expmap(x0(4:7))], body_motion_data.coefs(:, body_t_ind+(2:4), end)];
       
       % Move the first aerial knot point to be directly above our current foot origin pose
-      nhat = xs(1:2,end) - x0(1:2);
-      nhat = nhat / norm(nhat);
-      if nhat' * xs(1:2,2) < nhat' * x0(1:2)
-        xs(1:2,2) = x0(1:2);
-      end
+      % nhat = xs(1:2,end) - x0(1:2);
+      % nhat = nhat / norm(nhat);
+      % if nhat' * xs(1:2,2) < nhat' * x0(1:2)
+      %   xs(1:2,2) = x0(1:2);
+      % end
+      % T_x0_to_world_in_world = poseQuat2tform([xs(1:3,1), expmap2quat(xs(4:6,1))]);
+      % T_x1_to_world_in_world = poseQuat2tform([xs(1:3,2), expmap2quat(xs(4:6,2))]);
+      % T_x0_to_x1_in_world = T_x0_to_world_in_world / T_x1_to_world_in_world;
+      % T_x0_to_x1_in_x0 = T_x0_to_x1_in_world / T_x0_to_world_in_world;
+
+      % Rotate the first aereal knot point to match the current orientation
+      xs(4:6,2) = xs(4:6,1);
+
+
 
       xdf = body_motion_data.coefs(:,body_t_ind+4,end-1);
 

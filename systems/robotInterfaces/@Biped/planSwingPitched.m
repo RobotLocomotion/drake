@@ -13,7 +13,7 @@ params = struct(swing2.walking_params);
 params = applyDefaults(params, biped.default_walking_params);
 
 DEBUG = false;
-DEFAULT_FOOT_PITCH = pi/8; % The amount by which the swing foot pitches forward during walking
+DEFAULT_FOOT_PITCH = 0; % The amount by which the swing foot pitches forward during walking
 
 APEX_FRACTIONS = [0.15, 0.85]; % We plan only two poses of the foot during the aerial phase of the swing.
                                % Those poses are planned for locations where the toe has traveled a given
@@ -135,18 +135,25 @@ else
 end
 % Apex knot 1
 toe_apex1_in_world = (1-APEX_FRACTIONS(1))*toe1(1:3) + APEX_FRACTIONS(1)*toe2(1:3);
-toe_ht = max([toe_apex1_in_world(3) + params.step_height,...
-              max_terrain_ht_in_world + params.step_height]);
-toe_apex1_in_world(3) = toe_ht;
+
+if max_terrain_ht_in_world > toe_apex1_in_world(3) + params.step_height/2
+  toe_apex1_in_world = [toe1(1:2); max_terrain_ht_in_world + params.step_height];
+else
+  toe_apex1_in_world(3) = max([toe_apex1_in_world(3) + params.step_height,...
+                               max_terrain_ht_in_world + params.step_height]);
+end
 T_apex1_toe_to_world = poseQuat2tform([toe_apex1_in_world(1:3); quat_toe_off]);
 T_apex1_frame_to_world = T_apex1_toe_to_world / T_toe_to_foot * T_frame_to_foot;
 add_frame_knot(tform2poseQuat(T_apex1_frame_to_world));
 
 % Apex knot 2
 toe_apex2_in_world = (1-APEX_FRACTIONS(2))*toe1(1:3) + APEX_FRACTIONS(2)*toe2(1:3);
-toe_ht = max([toe_apex2_in_world(3) + params.step_height,...
-              max_terrain_ht_in_world + params.step_height]);
-toe_apex2_in_world(3) = toe_ht;
+if max_terrain_ht_in_world > toe_apex2_in_world(3) + params.step_height/2
+  toe_apex2_in_world = [toe2(1:2); max_terrain_ht_in_world + params.step_height];
+else
+  toe_apex2_in_world(3) = max([toe_apex2_in_world(3) + params.step_height,...
+                               max_terrain_ht_in_world + params.step_height]);
+end
 T_apex2_toe_to_world = poseQuat2tform([toe_apex2_in_world(1:3); quat_swing2]);
 T_apex2_frame_to_world = T_apex2_toe_to_world / T_toe_to_foot * T_frame_to_foot;
 add_frame_knot(tform2poseQuat(T_apex2_frame_to_world));
