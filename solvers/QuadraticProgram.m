@@ -52,8 +52,7 @@ methods
     obj = obj.addBoundingBoxConstraint(BoundingBoxConstraint(x_lb,x_ub));
     obj.Q = Q;
     obj.f = f;
-  % todo: check dependencies here and pick my favorite that is also installed
-    obj.solver = 'gurobi';
+    obj = obj.setSolver('default');
     obj.solver_options.quadprog = optimset('Display','off');
   end
 
@@ -161,6 +160,16 @@ methods
         error('Drake:UnsupportedSolver','fastqp is not installed');
       end
       obj.solver = solver;
+    elseif(strcmp(solver,'default'))
+      if checkDependency('gurobi')
+        obj.solver = 'gurobi';
+      elseif checkDependency('gurobi_mex')  % possible if gurobi was compiled, but addpath_gurobi isn't loaded
+        obj.solver = 'gurobi_mex';
+      elseif checkDependency('quadprog')
+        obj.solver = 'quadprog';
+      else
+        obj = setSolver@NonlinearProgram(obj,'default');
+      end
     else
       obj = setSolver@NonlinearProgram(obj,solver);
     end

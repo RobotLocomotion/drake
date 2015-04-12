@@ -445,7 +445,7 @@ classdef RigidBodyManipulator < Manipulator
       child = model.body(child_ind);
 
       jointname = regexprep(name, '\.', '_', 'preservecase');
-      if ismember(lower(jointname),lower({model.body([model.body.robotnum]==child.robotnum).jointname}))
+      if ~isempty(jointname) && ismember(lower(jointname),lower({model.body([model.body.robotnum]==child.robotnum).jointname}))
         model.warning_manager.warnOnce('Drake:RigidBodyManipulator:DuplicateJointName',['You already have a joint named ', jointname, ' on this robot.  This can cause problems later if you try to access elements of the state vector by name']);
       end
       child.jointname = jointname;
