@@ -322,6 +322,13 @@ classdef NonlinearProgram
       cnstr_id = obj.next_nlcon_id;
       obj.next_nlcon_id = obj.next_nlcon_id-3;
       obj.nlcon_id = [obj.nlcon_id cnstr_id];
+      
+      if(strcmpi(obj.solver,'studentsnopt'))
+        if(~(obj.num_cin+obj.num_ceq+size(obj.Ain,1)+size(obj.Aeq,1)<=300))
+          warning('Number of constraints exceeded studentSNOPT support: obj.num_cin+obj.num_ceq+size(obj.Ain,1)+size(obj.Aeq,1)>300.  Switching to default solver.');
+          obj = obj.setSolver('default');
+        end
+      end      
     end
     
     function [obj,cnstr_id] = addLinearConstraint(obj,cnstr,xind)
@@ -375,7 +382,13 @@ classdef NonlinearProgram
         obj.next_lcon_id = obj.next_lcon_id-3;
         obj.lcon_id = [obj.lcon_id cnstr_id];
 %       end
-      
+
+      if(strcmpi(obj.solver,'studentsnopt'))
+        if(~(obj.num_cin+obj.num_ceq+size(obj.Ain,1)+size(obj.Aeq,1)<=300))
+          warning('Number of constraints exceeds studentSNOPT support: obj.num_cin+obj.num_ceq+size(obj.Ain,1)+size(obj.Aeq,1)>300. Switching to default solver.');
+          obj = obj.setSolver('default');
+        end
+      end
     end   
 
     function [obj,cnstr_id] = addBoundingBoxConstraint(obj,cnstr,xind)
@@ -603,6 +616,13 @@ classdef NonlinearProgram
         obj.bbcon_lb(end+(1:num_new_vars),:) = -inf(num_new_vars,size(obj.bbcon_lb,2));
         obj.bbcon_ub(end+(1:num_new_vars),:) = inf(num_new_vars,size(obj.bbcon_ub,2));
       end
+      
+      if(strcmpi(obj.solver,'studentsnopt'))
+        if(~(obj.num_vars<=300))
+          warning('Number of variables exceeds studentSNOPT support: obj.num_vars>300. Switching to default solver.');
+          obj = obj.setSolver('default');
+        end
+      end
     end
     
     function obj = replaceCost(obj,cost,cost_idx,xind)
@@ -717,7 +737,7 @@ classdef NonlinearProgram
         obj.solver = 'snopt';
       elseif(strcmp(solver,'studentSnopt'))
         if(~checkDependency('studentSnopt'))
-          error('Drake:NonlinearProgram:UnsupportedSOlver',' SNOPT not found.  SNOPT support will be disabled.');
+          error('Drake:NonlinearProgram:UnsupportedSolver',' studentSNOPT not found.  studentSNOPT support will be disabled.');
         end
         obj.solver = 'snopt';
         obj.which_snopt = 2;
