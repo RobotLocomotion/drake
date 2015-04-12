@@ -123,7 +123,7 @@ void valuecheck(const Eigen::MatrixBase<DerivedA>& a, const Eigen::MatrixBase<De
 {
 	// note: isApprox uses the L2 norm, so is bad for comparing against zero
 	if (a.rows() != b.rows() || a.cols() != b.cols()) {
-		throw std::runtime_error("Drake:ValueCheck ERROR:" + error_msg + "size mismatch: (" + std::to_string(a.rows()) + " by " + std::to_string(a.cols()) + ") and (" + std::to_string(b.rows()) + " by " + std::to_string(b.cols()) + ")");
+	  throw std::runtime_error("Drake:ValueCheck ERROR:" + error_msg + "size mismatch: (" + std::to_string(static_cast<unsigned long long>(a.rows())) + " by " + std::to_string(static_cast<unsigned long long>(a.cols())) + ") and (" + std::to_string(static_cast<unsigned long long>(b.rows())) + " by " + std::to_string(static_cast<unsigned long long>(b.cols())) + ")");
 	}
 	if (!(a-b).isZero(tol)) {
 		if (!a.allFinite() && !b.allFinite()) {
