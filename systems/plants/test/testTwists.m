@@ -7,8 +7,8 @@ robot = createAtlas(floatingJointType);
 
 % robot = RigidBodyManipulator(fullfile('../../../examples/FurutaPendulum/FurutaPendulum.urdf'));
 
-nq = robot.getNumStates() / 2; % TODO
-nv = robot.getNumStates() / 2; % TODO
+nq = robot.getNumPositions();
+nv = robot.getNumVelocities();
 
 nBodies = length(robot.body);
 
@@ -20,7 +20,7 @@ for j = 1 : nTests
   twists = robot.twists(kinsol.T, q, v);
   
   for i = 1 : nBodies
-    TdotFromTwist = kinsol.T{i} * twistToTildeForm(twists{i});
+    TdotFromTwist = kinsol.T{i} * twistToTildeForm(transformTwists(inv(kinsol.T{i}), twists{i}));
     valuecheck(TdotFromTwist, kinsol.Tdot{i}, 1e-12);
   end
 end

@@ -305,6 +305,9 @@ classdef DynamicalSystem
       % solver
 
       if nargin<3, v=[]; end
+      if getNumStates(obj)<1, 
+        x=Point(obj.getStateFrame); success=true; prog=[]; return;
+      end
       if isa(x0,'Point')
         x0 = double(x0.inFrame(obj.getStateFrame));
       end
@@ -319,7 +322,7 @@ classdef DynamicalSystem
       end
       
       if ~isempty(v)
-        prog = addDisplayFunction(prog,@(x)v.draw(0,x));
+        prog = addDisplayFunction(prog,@(x)v.drawWrapper(0,x));
       end
       
       [x,~,exitflag,infeasible_constraint_name] = solve(prog,x0);

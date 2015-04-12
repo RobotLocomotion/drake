@@ -1,0 +1,17 @@
+\documentclass{article}
+\usepackage{amsmath,amsfonts,graphicx}
+\begin{document}
+\begin{figure}
+	\centering
+	\includegraphics[width=0.5\textwidth]{cartesian2cylindrical.pdf}
+	\caption{Cylindrical coordinate}
+	\label{fig:cylindrical}
+\end{figure}
+As shown in Fig.\ref{fig:cylindrical}, we first attach a Cartesian coordinate $x_c,y_c,z_c$ to the cylinder, these three vectors represent the location and orientation of the cylinder in the world frame. The axis of the cylinder is along the $z_c$ axis. For any point in the cylindrical coordinate, its coordinates are 
+\begin{align}
+p_c = \begin{bmatrix} r\\\theta\\ h\end{bmatrix}
+\end{align}
+where $r$ is the radius of that point, $\theta$ is the angle between the point and the $x_c$ axis, and $h$ is the height.
+
+We then attach a tangential coordinate frame $x_t,y_n,z_t$ at the point $p_c$, this tangential coordinate will be used to indicate the orientation of a body at point $x_c$. $x_t$ is aligned with $\mathbf{r}\times z_c$, where $\mathbf{r}$ is the vector along the radius. $y_n$ is the normal vector of the circle, it is aligned with $\mathbf{r}$, $z_t$ is aligned with $z_c$.
+\end{document}

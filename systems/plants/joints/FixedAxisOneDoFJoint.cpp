@@ -6,6 +6,7 @@
 #include <exception>
 #include <stdexcept>
 
+#include "RigidBodyManipulator.h" // todo: remove this when I remove setupOldKinematicTree
 
 
 using namespace Eigen;
@@ -14,7 +15,10 @@ FixedAxisOneDoFJoint::FixedAxisOneDoFJoint(const std::string& name, const Isomet
     DrakeJoint(name, transform_to_parent_body, 1, 1),
     joint_axis(joint_axis),
     joint_limit_min(-std::numeric_limits<double>::infinity()),
-    joint_limit_max(std::numeric_limits<double>::infinity())
+    joint_limit_max(std::numeric_limits<double>::infinity()),
+		damping(0.0),
+		coulomb_friction(0.0),
+		coulomb_window(0.0)
 {
   // empty
 }
@@ -34,7 +38,8 @@ void FixedAxisOneDoFJoint::setJointLimits(double joint_limit_min, double joint_l
   this->joint_limit_max = joint_limit_max;
 }
 
-void FixedAxisOneDoFJoint::motionSubspace(double* const q, MotionSubspaceType& motion_subspace, MatrixXd* dmotion_subspace) const
+
+void FixedAxisOneDoFJoint::motionSubspace(const Eigen::Ref<const VectorXd>& q, MotionSubspaceType& motion_subspace, MatrixXd* dmotion_subspace) const
 {
   motion_subspace = joint_axis;
   if (dmotion_subspace) {
@@ -42,7 +47,7 @@ void FixedAxisOneDoFJoint::motionSubspace(double* const q, MotionSubspaceType& m
   }
 }
 
-void FixedAxisOneDoFJoint::motionSubspaceDotTimesV(double* const q, double* const v,
+void FixedAxisOneDoFJoint::motionSubspaceDotTimesV(const Eigen::Ref<const VectorXd>& q, const Eigen::Ref<const VectorXd>& v,
     Vector6d& motion_subspace_dot_times_v,
     Gradient<Vector6d, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdq,
     Gradient<Vector6d, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdv) const
@@ -58,9 +63,10 @@ void FixedAxisOneDoFJoint::motionSubspaceDotTimesV(double* const q, double* cons
   }
 }
 
-void FixedAxisOneDoFJoint::randomConfiguration(double* q, std::default_random_engine& generator) const
+Eigen::VectorXd FixedAxisOneDoFJoint::randomConfiguration(std::default_random_engine& generator) const
 {
-  if (isFinite(joint_limit_min) && isFinite(joint_limit_max)) {
+	Eigen::VectorXd q(1);
+	if (isFinite(joint_limit_min) && isFinite(joint_limit_max)) {
     std::uniform_real_distribution<double> distribution(joint_limit_min, joint_limit_max);
     q[0] = distribution(generator);
   }
@@ -86,9 +92,10 @@ void FixedAxisOneDoFJoint::randomConfiguration(double* q, std::default_random_en
       q[0] = joint_limit_max;
     }
   }
+	return q;
 }
 
-void FixedAxisOneDoFJoint::qdot2v(double* q, Eigen::MatrixXd& qdot_to_v, Eigen::MatrixXd* dqdot_to_v) const
+void FixedAxisOneDoFJoint::qdot2v(const Eigen::Ref<const VectorXd>& q, Eigen::MatrixXd& qdot_to_v, Eigen::MatrixXd* dqdot_to_v) const
 {
   qdot_to_v.setIdentity(getNumVelocities(), getNumPositions());
   if (dqdot_to_v) {
@@ -96,10 +103,36 @@ void FixedAxisOneDoFJoint::qdot2v(double* q, Eigen::MatrixXd& qdot_to_v, Eigen::
   }
 }
 
-void FixedAxisOneDoFJoint::v2qdot(double* q, Eigen::MatrixXd& v_to_qdot, Eigen::MatrixXd* dv_to_qdot) const
+void FixedAxisOneDoFJoint::v2qdot(const Eigen::Ref<const VectorXd>& q, Eigen::MatrixXd& v_to_qdot, Eigen::MatrixXd* dv_to_qdot) const
 {
   v_to_qdot.setIdentity(getNumPositions(), getNumVelocities());
   if (dv_to_qdot) {
     dv_to_qdot->setZero(v_to_qdot.size(), getNumPositions());
   }
 }
+
+void FixedAxisOneDoFJoint::setDynamics(double damping, double coulomb_friction, double coulomb_window)
+{
+	this->damping = damping;
+	this->coulomb_friction = coulomb_friction;
+	this->coulomb_window = coulomb_window;
+}
+
+/*
+GradientVar<double,1,1> FixedAxisOneDoFJoint::computeFrictionForce(const Eigen::Ref<const VectorXd>& v, int gradient_order) const
+{
+	GradientVar<double,1,1> force(1,1,1,gradient_order);
+	force.value() = damping*v[0];
+	if (gradient_order>0)
+		force.gradient().value() = damping;
+	return force;
+}
+*/
+
+void FixedAxisOneDoFJoint::setupOldKinematicTree(RigidBodyManipulator* model, int body_ind, int position_num_start, int velocity_num_start) const
+{
+  DrakeJoint::setupOldKinematicTree(model,body_ind,position_num_start,velocity_num_start);
+  model->joint_limit_min[position_num_start] = joint_limit_min;
+  model->joint_limit_max[position_num_start] = joint_limit_max;
+}
+

@@ -103,17 +103,18 @@ classdef BodyMotionControlBlock < DrakeSystem
         link_con_ind = [ctrl_data.link_constraints.link_ndx]==obj.body_ind;
         body_traj_ind = find(ctrl_data.link_constraints(link_con_ind).ts<=t,1,'last');
         tt = t-ctrl_data.link_constraints(link_con_ind).ts(body_traj_ind);
-        a0 = ctrl_data.link_constraints(link_con_ind).a0(:,body_traj_ind);
-        a1 = ctrl_data.link_constraints(link_con_ind).a1(:,body_traj_ind);
-        a2 = ctrl_data.link_constraints(link_con_ind).a2(:,body_traj_ind);
-        a3 = ctrl_data.link_constraints(link_con_ind).a3(:,body_traj_ind);
-        [body_des,body_v_des,body_vdot_des] = evalCubicSplineSegment(tt,a0,a1,a2,a3);
+        coefs = ctrl_data.link_constraints(link_con_ind).coefs(:,body_traj_ind,:);
+        [body_des,body_v_des,body_vdot_des] = evalCubicSplineSegment(tt,coefs);
       end
 
       if obj.use_plan_shift
-        body_des(3) = body_des(3) - ctrl_data.plan_shift(3);
+        body_des(1:3) = body_des(1:3) - ctrl_data.plan_shift(1:3);
       end
       
+      % lcmgl = LCMGLClient(sprintf('link_%d_desired', obj.body_ind));
+      % lcmgl.sphere(body_des(1:3), 0.03, 20, 20);
+      % lcmgl.switchBuffers();
+
       if (obj.use_mex == 0 || obj.use_mex==2)
         q = x(1:obj.nq);
         qd = x(obj.nq+1:end);

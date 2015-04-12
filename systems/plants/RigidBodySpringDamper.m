@@ -125,14 +125,15 @@ classdef RigidBodySpringDamper < RigidBodyForceElement
         obj.body2 = model.body(body_ind).parent;
       end
     end
+    
+    function [T,U] = energy(obj,manip,q,qd)
+      error('not implemented yet (but would be trivial)');
+    end
   end
   
   methods (Static)
-    function [model,obj] = parseURDFNode(model,robotnum,node,options)
+    function [model,obj] = parseURDFNode(model,name,robotnum,node,options)
       obj = RigidBodySpringDamper();
-      
-      name = char(node.getAttribute('name'));
-      name = regexprep(name, '\.', '_', 'preservecase');
       obj.name = name;
       
       if node.hasAttribute('rest_length')

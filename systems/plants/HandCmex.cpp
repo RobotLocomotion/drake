@@ -29,39 +29,39 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
   // first get the model_ptr back from matlab
   RigidBodyManipulator *model= (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
   
-  double *q,*qd;
   Map<MatrixXd> *f_ext=NULL;
   Map<MatrixXd> *df_ext=NULL;
-  if (static_cast<int>(mxGetNumberOfElements(prhs[1]))!=model->num_dof || static_cast<int>(mxGetNumberOfElements(prhs[2]))!=model->num_dof)
-    mexErrMsgIdAndTxt("Drake:HandCmex:BadInputs","q and qd must be size %d x 1",model->num_dof);
-  q = mxGetPr(prhs[1]);
-  qd = mxGetPr(prhs[2]);
+  if (static_cast<int>(mxGetNumberOfElements(prhs[1]))!=model->num_positions || static_cast<int>(mxGetNumberOfElements(prhs[2]))!=model->num_positions)
+    mexErrMsgIdAndTxt("Drake:HandCmex:BadInputs","q and qd must be size %d x 1",model->num_positions);
+  Map<VectorXd> q(mxGetPrSafe(prhs[1]), model->num_positions);
+  Map<VectorXd> qd(mxGetPrSafe(prhs[2]), model->num_velocities);
+  
   if (nrhs>3) {
     if (!mxIsEmpty(prhs[3])) {
-      f_ext = new Map<MatrixXd>(mxGetPr(prhs[3]),6,model->NB);
+      f_ext = new Map<MatrixXd>(mxGetPrSafe(prhs[3]),6,model->NB);
     }
   }
   if (nrhs>4) {
     if (!mxIsEmpty(prhs[4])) {
-      df_ext = new Map<MatrixXd>(mxGetPr(prhs[4]),6*model->NB,2*model->num_dof);
+      df_ext = new Map<MatrixXd>(mxGetPrSafe(prhs[4]),6*model->NB,2*model->num_positions);
     }
   }
   
   Map<MatrixXd> *dH=NULL, *dC=NULL;
   
-  plhs[0] = mxCreateDoubleMatrix(model->num_dof,model->num_dof,mxREAL);
-  Map<MatrixXd> H(mxGetPr(plhs[0]),model->num_dof,model->num_dof);
+  plhs[0] = mxCreateDoubleMatrix(model->num_positions,model->num_positions,mxREAL);
+  Map<MatrixXd> H(mxGetPrSafe(plhs[0]),model->num_positions,model->num_positions);
 
-  plhs[1] = mxCreateDoubleMatrix(model->num_dof,1,mxREAL);
-  Map<VectorXd> C(mxGetPr(plhs[1]),model->num_dof);
+  plhs[1] = mxCreateDoubleMatrix(model->num_positions,1,mxREAL);
+  Map<VectorXd> C(mxGetPrSafe(plhs[1]),model->num_positions);
 
   if (nlhs>2) {
-    plhs[2] = mxCreateDoubleMatrix(model->num_dof*model->num_dof,model->num_dof,mxREAL);
-    dH = new Map<MatrixXd>(mxGetPr(plhs[2]),model->num_dof*model->num_dof,model->num_dof);
+    plhs[2] = mxCreateDoubleMatrix(model->num_positions*model->num_positions,model->num_positions,mxREAL);
+    dH = new Map<MatrixXd>(mxGetPrSafe(plhs[2]),model->num_positions*model->num_positions,model->num_positions);
   }
   if (nlhs>3) {
-    plhs[3] = mxCreateDoubleMatrix(model->num_dof,2*model->num_dof,mxREAL);
-    dC = new Map<MatrixXd>(mxGetPr(plhs[3]),model->num_dof,2*model->num_dof);
+    plhs[3] = mxCreateDoubleMatrix(model->num_positions,2*model->num_positions,mxREAL);
+    dC = new Map<MatrixXd>(mxGetPrSafe(plhs[3]),model->num_positions,2*model->num_positions);
   }  
   
   model->HandC(q,qd,f_ext,H,C,dH,dC,df_ext);

@@ -57,6 +57,16 @@ classdef AcrobotPlant < Manipulator
       B = [0; 1];
     end
     
+    function [T,U] = energy(obj,x)
+      m1=obj.m1; m2=obj.m2; l1=obj.l1; g=obj.g; lc1=obj.lc1; lc2=obj.lc2; b1=obj.b1; b2=obj.b2;
+      I1 = obj.Ic1 + obj.m1*obj.lc1^2; I2 = obj.Ic2 + obj.m2*obj.lc2^2;
+      q = x(1:2); qd = x(3:4);
+      c = cos(q(1:2,:));  s = sin(q(1:2,:));  c12 = cos(q(1,:)+q(2,:));
+      
+      T = .5*I1*qd(1)^2 + .5*(m2*l1^2 + I2 + 2*m2*l1*lc2*c(2))*qd(1)^2 + .5*I2*qd(2)^2 + (I2 + m2*l1*lc2*c(2))*qd(1)*qd(2);
+      U = -m1*g*lc1*c(1) - m2*g*(l1*c(1)+lc2*c12);
+    end
+    
     % todo: also implement sodynamics here so that I can keep the
     % vectorized version?
     

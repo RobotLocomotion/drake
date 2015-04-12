@@ -507,7 +507,7 @@ classdef DrakeSystem < DynamicalSystem
       if (nargin<3), x0=getInitialState(obj); end
 
       if (obj.num_zcs>0), warning('Drake:DrakeSystem:UnsupportedZeroCrossings','system has zero-crossings, but i havne''t passed them to ode45 yet.  (should be trivial)'); end
-      if (obj.num_xcon>0), warning('Drake:DrakeSystem:UnsupportedConstraints','system has constraints, but they are not explicitly satisfied during simulation (yet - it should be an easy fix in the ode suite)'); end
+      if (getNumStateConstraints(obj)>0), warning('Drake:DrakeSystem:UnsupportedConstraints','system has constraints, but they are not explicitly satisfied during simulation (yet - it should be an easy fix in the ode suite)'); end
 
       odeoptions = obj.simulink_params;
       odefun = @(t,x)obj.dynamics(t,x,zeros(obj.getNumInputs(),1));

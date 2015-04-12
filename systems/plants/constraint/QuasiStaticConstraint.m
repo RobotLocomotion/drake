@@ -165,18 +165,9 @@ classdef QuasiStaticConstraint<RigidBodyConstraint
       center_pos = mean(contact_pos,2);
       shrinkFactor = obj.shrinkFactor+1e-4;
       shrink_vertices = contact_pos*shrinkFactor+repmat(center_pos*(1-shrinkFactor),1,num_accum_pts);
-      problem.d = com(1:2);
-      problem.C = shrink_vertices(1:2,:);
-      problem.x0 = 1/obj.num_pts*ones(obj.num_pts,1);
-      problem.Aeq = ones(1,obj.num_pts);
-      problem.beq = 1;
-      problem.lb = zeros(obj.num_pts,1);
-      problem.ub = ones(obj.num_pts,1);
-      problem.solver = 'lsqlin';
-      problem.options = optimset('LargeScale','off','Display','off');
-      checkDependency('lsqlin');
-      [weights,resnorm,~,exitflag] = lsqlin(problem.C,problem.d,[],[],problem.Aeq,problem.beq,problem.lb,problem.ub,problem.x0,problem.options);
-      flag = resnorm<1e-6;
+
+      K = convhull(shrink_vertices(1,:), shrink_vertices(2,:));
+      flag = inpolygon(com(1), com(2), shrink_vertices(1,K), shrink_vertices(2,K));
     end
     
     function [lb,ub] = bounds(obj,t)

@@ -1,12 +1,25 @@
 function [com, rms_com] = plotWalkingTraj(r, traj, walking_plan_data)
 %NOTEST
 
+if ~isa(walking_plan_data.comtraj, 'Trajectory')
+  walking_plan_data.comtraj = ExpPlusPPTrajectory(walking_plan_data.comtraj.breaks,...
+                                                  walking_plan_data.comtraj.K,...
+                                                  walking_plan_data.comtraj.A,...
+                                                  walking_plan_data.comtraj.alpha,...
+                                                  walking_plan_data.comtraj.gamma);
+end
+
 nq = r.getNumPositions();
 tts = traj.getBreaks();
 T = tts(end);
 dt = tts(2) - tts(1);
 
-x_smooth=smoothts(traj.eval(tts),'e',150);
+nx = r.getNumStates();
+x_smooth=zeros(nx,length(tts));
+x_breaks = traj.eval(tts);
+for i=1:nx
+  x_smooth(i,:) = smooth(x_breaks(i,:),15,'lowess');
+end
 dtraj = fnder(PPTrajectory(spline(tts,x_smooth)));
 qddtraj = dtraj(nq+(1:nq));
 
@@ -34,7 +47,6 @@ rfoottraj = PPTrajectory(pchip(walking_plan_data.link_constraints(1).ts,...
 lfoottraj = PPTrajectory(pchip(walking_plan_data.link_constraints(2).ts,...
                                walking_plan_data.link_constraints(2).poses));
 
-
 for i=1:length(ts)
   % ts is from the walking plan, but traj is only defined at the dt
   % intervals
@@ -46,13 +58,13 @@ for i=1:length(ts)
   qd=xt(nq+(1:nq));
   qdd=qddtraj.eval(t);
 
-  kinsol = doKinematics(r,q);
+  kinsol = doKinematics(r, q, qd);
 
   [com(:,i),J]=getCOM(r,kinsol);
-  Jdot = forwardJacDot(r,kinsol,0);
+  Jdotv = centerOfMassJacobianDotTimesV(r,kinsol,0);
   comdes(:,i)=walking_plan_data.comtraj.eval(t);
   zmpdes(:,i)=walking_plan_data.zmptraj.eval(t);
-  zmpact(:,i)=com(1:2,i) - com(3,i)/9.81 * (J(1:2,:)*qdd + Jdot(1:2,:)*qd);
+  zmpact(:,i)=com(1:2,i) - com(3,i)/9.81 * (J(1:2,:)*qdd + Jdotv(1:2));
 
   lfoot_cpos = terrainContactPositions(r,kinsol,lfoot);
   rfoot_cpos = terrainContactPositions(r,kinsol,rfoot);
@@ -61,7 +73,7 @@ for i=1:length(ts)
   rfoot_p = forwardKin(r,kinsol,rfoot,[0;0;0],1);
 
   lfoot_pos(:,i) = lfoot_p;
-  rfoot_pos(:,i) = lfoot_p;
+  rfoot_pos(:,i) = rfoot_p;
 
   if any(lfoot_cpos(3,:) < 1e-4)
     lstep_counter=lstep_counter+1;

@@ -25,7 +25,6 @@ else % then try to evaluate the dependency now...
       end
 
     case 'spotless'
-      % require spotless
       conf.spotless_enabled = logical(exist('msspoly','class'));
       if ~conf.spotless_enabled
         if ~pod_pkg_config('spotless')

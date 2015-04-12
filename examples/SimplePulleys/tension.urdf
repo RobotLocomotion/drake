@@ -74,7 +74,7 @@
   </link>
   
   <joint name="tensioner_angle" type="revolute">
-    <origin xyz="3 1 3.5"/>
+    <origin xyz="3 1 2.5"/>
     <axis xyz="0 1 0"/>
     <parent link="base"/>
     <child link="tensioner"/>
@@ -98,16 +98,16 @@
   </joint>
 
   <force_element name="tensioner_spring">
-    <torsional_spring rest_angle="0" stiffness="20">
+    <torsional_spring rest_angle="0" stiffness="40">
       <joint name="tensioner_angle"/>
     </torsional_spring>
   </force_element>
 
 <!--  <cable min_length="8" max_length="8"> --> <!-- good for if I take out the final pulley -->
-  <cable min_length="11" max_length="11"> 
-    <terminator link="base" xyz="-3 1 4" />
+  <cable min_length="10" max_length="10"> 
+    <terminator link="base" xyz="-3 1 3" />
     <pulley link="load" xyz="0 0 0" axis="0 -1 0" radius="1"/>
-    <pulley link="base" xyz="3 1 3.5" axis="0 1 0" radius=".5" number_of_wraps="1" />
+    <pulley link="base" xyz="3 1 2.5" axis="0 1 0" radius=".5" number_of_wraps="1" />
     <terminator link="tensioner" xyz=".51 0 0"/>
   </cable>
 

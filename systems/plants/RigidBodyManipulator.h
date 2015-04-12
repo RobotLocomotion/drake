@@ -4,10 +4,13 @@
 #include <Eigen/Dense>
 #include <Eigen/LU>
 #include <set>
-#include <Eigen/StdVector> //#include <vector>
+#include <map>
+#include <Eigen/StdVector> 
 
 #include "collision/DrakeCollision.h"
+#include "shapes/DrakeShapes.h"
 #include "KinematicPath.h"
+#include "GradientVar.h"
 
 #undef DLLEXPORT_RBM
 #if defined(WIN32) || defined(WIN64)
@@ -24,30 +27,117 @@
 #include "RigidBody.h"
 #include "RigidBodyFrame.h"
 
-#define INF -2147483648    // this number is only used for checking the pitch to see if it's a revolute joint or a helical joint, and is set to match the value handed to us for inf from matlab.
+#define BASIS_VECTOR_HALF_COUNT 2  //number of basis vectors over 2 (i.e. 4 basis vectors in this case)
+#define EPSILON 10e-8
+#define MIN_RADIUS 1e-7
+
+typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
+typedef Eigen::Matrix<double, 3, Eigen::Dynamic> Matrix3xd;
 
 using namespace Eigen;
 
 //extern std::set<int> emptyIntSet;  // was const std:set<int> emptyIntSet, but valgrind said I was leaking memory
 
-class DLLEXPORT_RBM RigidBodyManipulator 
+class DLLEXPORT_RBM RigidBodyActuator
+{
+public:
+  RigidBodyActuator(std::string _name, std::shared_ptr<RigidBody> _body, double _reduction = 1.0) :
+    name(_name), body(_body), reduction(_reduction) {};
+
+  std::string name;
+  std::shared_ptr<RigidBody> body;
+  double reduction;
+
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+};
+
+class DLLEXPORT_RBM RigidBodyLoop
+{
+public:
+  RigidBodyLoop(std::shared_ptr<RigidBody> _bodyA, Vector3d _ptA, std::shared_ptr<RigidBody> _bodyB, Vector3d _ptB) :
+    bodyA(_bodyA), bodyB(_bodyB), ptA(_ptA), ptB(_ptB) {};
+
+  std::shared_ptr<RigidBody> bodyA, bodyB;
+  Vector3d ptA, ptB;
+
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+	friend std::ostream& operator<<(std::ostream& os, const RigidBodyLoop& obj);
+};
+
+class DLLEXPORT_RBM RigidBodyManipulator
 {
 public:
   RigidBodyManipulator(int num_dof, int num_featherstone_bodies=-1, int num_rigid_body_objects=-1, int num_rigid_body_frames=0);
+  RigidBodyManipulator(const std::string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
+  RigidBodyManipulator(void);
   virtual ~RigidBodyManipulator(void);
 
+  bool addRobotFromURDFString(const std::string &xml_string, const std::string &root_dir = ".", const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
+  bool addRobotFromURDFString(const std::string &xml_string, std::map<std::string,std::string>& package_map, const std::string &root_dir = ".", const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
+  bool addRobotFromURDF(const std::string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
+  bool addRobotFromURDF(const std::string &urdf_filename, std::map<std::string,std::string>& package_map, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
+
+  void surfaceTangents(Eigen::Map<Matrix3xd> const & normals, std::vector< Map<Matrix3xd> > & tangents);
+  
   void resize(int num_dof, int num_featherstone_bodies=-1, int num_rigid_body_objects=-1, int num_rigid_body_frames=0);
 
   void compile(void);  // call me after the model is loaded
-  void doKinematics(double* q, bool b_compute_second_derivatives=false, double* qd=NULL);
 
-  void doKinematicsNew(double* q, bool compute_gradients = false, double* v = nullptr, bool compute_JdotV = false);
+  void getRandomConfiguration(Eigen::VectorXd& q, std::default_random_engine& generator) const;
 
+  // akin to the coordinateframe names in matlab
+  std::string getPositionName(int position_num) const;
+  std::string getVelocityName(int velocity_num) const;
+  std::string getStateName(int state_num) const;
+  
   template <typename Derived>
-  void getCMM(double* const q, double* const qd, MatrixBase<Derived> &A, MatrixBase<Derived> &Adot);
+  void doKinematics(MatrixBase<Derived> & q, bool b_compute_second_derivatives = false);
+
+  template <typename DerivedA, typename DerivedB>
+  void doKinematics(MatrixBase<DerivedA> & q, bool b_compute_second_derivatives, MatrixBase<DerivedB> & v);
+
+  template <typename DerivedQ, typename DerivedV>
+  void doKinematicsNew(const MatrixBase<DerivedQ>& q, const MatrixBase<DerivedV>& v, bool compute_gradients = false, bool compute_JdotV = false);
+
+  void updateCompositeRigidBodyInertias(int gradient_order);
+
+  bool isBodyPartOfRobot(const RigidBody& body, const std::set<int>& robotnum);
+
+  double getMass(const std::set<int>& robotnum = RigidBody::defaultRobotNumSet);
+
+  template <typename Scalar>
+  GradientVar<Scalar, SPACE_DIMENSION, 1> centerOfMass(int gradient_order, const std::set<int>& robotnum = RigidBody::defaultRobotNumSet);
+
+  template <typename Scalar>
+  GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> worldMomentumMatrix(int gradient_order, const std::set<int>& robotnum = RigidBody::defaultRobotNumSet, bool in_terms_of_qdot = false);
+
+  template <typename Scalar>
+  GradientVar<Scalar, TWIST_SIZE, 1> worldMomentumMatrixDotTimesV(int gradient_order, const std::set<int>& robotnum = RigidBody::defaultRobotNumSet);
+
+  template <typename Scalar>
+  GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> centroidalMomentumMatrix(int gradient_order, const std::set<int>& robotnum = RigidBody::defaultRobotNumSet, bool in_terms_of_qdot = false);
+
+  template <typename Scalar>
+  GradientVar<Scalar, TWIST_SIZE, 1> centroidalMomentumMatrixDotTimesV(int gradient_order, const std::set<int>& robotnum = RigidBody::defaultRobotNumSet);
+
+  template <typename Scalar>
+  GradientVar<Scalar, SPACE_DIMENSION, Eigen::Dynamic> centerOfMassJacobian(int gradient_order, const std::set<int>& robotnum = RigidBody::defaultRobotNumSet, bool in_terms_of_qdot = false);
+
+  template <typename Scalar>
+  GradientVar<Scalar, SPACE_DIMENSION, 1> centerOfMassJacobianDotTimesV(int gradient_order, const std::set<int>& robotnum = RigidBody::defaultRobotNumSet);
+
+  template <typename DerivedA, typename DerivedB>
+  void getCMM(MatrixBase<DerivedA> const & q, MatrixBase<DerivedA> const & qd, MatrixBase<DerivedB> &A, MatrixBase<DerivedB> &Adot);
 
   template <typename Derived>
   void getCOM(MatrixBase<Derived> &com,const std::set<int> &robotnum = RigidBody::defaultRobotNumSet);
+
+  template <typename DerivedA, typename DerivedB, typename DerivedC>
+  void jointLimitConstraints(MatrixBase<DerivedA> const & q, MatrixBase<DerivedB> &phi, MatrixBase<DerivedC> &J) const;
+
+  size_t getNumJointLimitConstraints() const;
 
   template <typename Derived>
   void getCOMJac(MatrixBase<Derived> &J,const std::set<int> &robotnum = RigidBody::defaultRobotNumSet);
@@ -61,13 +151,13 @@ public:
   int getNumContacts(const std::set<int> &body_idx);// = emptyIntSet);
 
   template <typename Derived>
-    void getContactPositions(MatrixBase<Derived> &pos, const std::set<int> &body_idx);// = emptyIntSet);
-  
+  void getContactPositions(MatrixBase<Derived> &pos, const std::set<int> &body_idx);// = emptyIntSet);
+
   template <typename Derived>
-    void getContactPositionsJac(MatrixBase<Derived> &J, const std::set<int> &body_idx);// = emptyIntSet);
-  
+  void getContactPositionsJac(MatrixBase<Derived> &J, const std::set<int> &body_idx);// = emptyIntSet);
+
   template <typename Derived>
-    void getContactPositionsJacDot(MatrixBase<Derived> &Jdot, const std::set<int> &body_idx);// = emptyIntSet);
+  void getContactPositionsJacDot(MatrixBase<Derived> &Jdot, const std::set<int> &body_idx);// = emptyIntSet);
 
   void findAncestorBodies(std::vector<int>& ancestor_bodies, int body);
 
@@ -85,91 +175,152 @@ public:
   template <typename DerivedA, typename DerivedB>
   void forwarddJac(const int body_ind, const MatrixBase<DerivedA>& pts, MatrixBase<DerivedB> &dJ);
 
+  template <typename Scalar>
+  GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> massMatrix(int gradient_order = 0);
+
+  template <typename Scalar>
+  GradientVar<Scalar, Eigen::Dynamic, 1> inverseDynamics(std::map<int, std::unique_ptr< GradientVar<Scalar, TWIST_SIZE, 1> > >& f_ext, GradientVar<Scalar, Eigen::Dynamic, 1>* vd = nullptr, int gradient_order = 0);
+
+  template <typename DerivedPoints>
+  GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, DerivedPoints::ColsAtCompileTime> forwardKinNew(const MatrixBase<DerivedPoints>& points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type, int gradient_order);
+
+  template <typename Scalar, int XRows, int XCols>
+  GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> forwardJacV(const GradientVar<Scalar, XRows, XCols>& x, int body_or_frame_ind, int base_or_frame_ind, int rotation_type, bool compute_analytic_jacobian, int gradient_order);
+
+  template <typename Scalar>
+  GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> forwardKinPositionGradient(int npoints, int current_body_or_frame_ind, int new_body_or_frame_ind, int gradient_order);
+
+  template <typename DerivedPoints>
+  GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, 1> forwardJacDotTimesV(const MatrixBase<DerivedPoints>& points, int body_or_frame_ind, int base_or_frame_ind, int rotation_type, int gradient_order);
+
   template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD>
   void bodyKin(const int body_ind, const MatrixBase<DerivedA>& pts, MatrixBase<DerivedB> &x, MatrixBase<DerivedC> *J=NULL, MatrixBase<DerivedD> *P=NULL);
 
-  template<typename DerivedA>
-  void geometricJacobian(int base_body_or_frame_ind, int end_effector_body_or_frame_ind, int expressed_in_body_or_frame_ind, PlainObjectBase<DerivedA>& J, std::vector<int>* v_indices);
+  template<typename Scalar>
+  GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> geometricJacobian(int base_body_or_frame_ind, int end_effector_body_or_frame_ind, int expressed_in_body_or_frame_ind, int gradient_order, bool in_terms_of_qdot = false, std::vector<int>* v_indices = nullptr);
 
-  template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD, typename DerivedE, typename DerivedF>
-  void HandC(double* const q, double * const qd, MatrixBase<DerivedA> * const f_ext, MatrixBase<DerivedB> &H, MatrixBase<DerivedC> &C, MatrixBase<DerivedD> *dH=NULL, MatrixBase<DerivedE> *dC=NULL, MatrixBase<DerivedF> * const df_ext=NULL);
+  template <typename Scalar>
+  GradientVar<Scalar, TWIST_SIZE, 1> geometricJacobianDotTimesV(int base_body_or_frame_ind, int end_effector_body_or_frame_ind, int expressed_in_body_or_frame_ind, int gradient_order);
 
-  void addCollisionElement(const int body_ind, const Matrix4d &T_elem_to_lnk, DrakeCollision::Shape shape, std::vector<double> params, std::string group_name = "default");
+  template <typename Scalar>
+  GradientVar<Scalar, TWIST_SIZE, 1> relativeTwist(int base_or_frame_ind, int body_or_frame_ind, int expressed_in_body_or_frame_ind, int gradient_order);
 
-  void updateCollisionElements(const int body_ind);
+  template <typename Scalar>
+  GradientVar<Scalar, TWIST_SIZE, 1> transformSpatialAcceleration(const GradientVar<Scalar, TWIST_SIZE, 1>& spatial_acceleration, int base_or_frame_ind, int body_or_frame_ind, int old_body_or_frame_ind, int new_body_or_frame_ind);
 
-  bool setCollisionFilter(const int body_ind, const uint16_t group, 
-                          const uint16_t mask);
+  template<typename Scalar>
+  GradientVar<Scalar, SPACE_DIMENSION + 1, SPACE_DIMENSION + 1> relativeTransform(int base_or_frame_ind, int body_or_frame_ind, int gradient_order);
 
-  bool getPairwiseCollision(const int body_indA, const int body_indB, MatrixXd &ptsA, MatrixXd &ptsB, MatrixXd &normals, bool use_margins=true);
+  template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD, typename DerivedE, typename DerivedF, typename DerivedG>
+  void HandC(MatrixBase<DerivedG> const & q, MatrixBase<DerivedG> const & qd, MatrixBase<DerivedA> * const f_ext, MatrixBase<DerivedB> &H, MatrixBase<DerivedC> &C, MatrixBase<DerivedD> *dH=NULL, MatrixBase<DerivedE> *dC=NULL, MatrixBase<DerivedF> * const df_ext=NULL);
 
-  bool getPairwisePointCollision(const int body_indA, const int body_indB, const int body_collision_indA, Vector3d &ptA, Vector3d &ptB, Vector3d &normal, bool use_margins=true);
+  void computeContactJacobians(Map<VectorXi> const & idxA, Map<VectorXi> const & idxB, Map<Matrix3xd> const & xA, Map<Matrix3xd> const & xB, const bool compute_second_derivatives, MatrixXd & J, MatrixXd & dJ);
 
-  bool getPointCollision(const int body_ind, const int body_collision_ind, Vector3d &ptA, Vector3d &ptB, Vector3d &normal, bool use_margins=true);
+  DrakeCollision::ElementId addCollisionElement(const RigidBody::CollisionElement& element, const std::shared_ptr<RigidBody>& body, std::string group_name);
 
-  bool getPairwiseClosestPoint(const int body_indA, const int body_indB, Vector3d &ptA, Vector3d &ptB, Vector3d &normal, double &distance, bool use_margins=true);
-  
+  void updateCollisionElements(const std::shared_ptr<RigidBody>& body);
+
   bool collisionRaycast(const Matrix3Xd &origins, const Matrix3Xd &ray_endpoints, VectorXd &distances, bool use_margins=false);
 
-  //bool closestPointsAllBodies( MatrixXd& ptsA, MatrixXd& ptsB,
-                               //MatrixXd& normal, VectorXd& distance,
-                               //std::vector<int>& bodyA_idx, 
-                               //std::vector<int>& bodyB_idx);
+  bool collisionDetect( VectorXd& phi,
+                        MatrixXd& normal,
+                        MatrixXd& xA,
+                        MatrixXd& xB,
+                        std::vector<int>& bodyA_idx,
+                        std::vector<int>& bodyB_idx,
+                        const std::vector<DrakeCollision::ElementId>& ids_to_check,
+                        bool use_margins);
 
-  bool collisionDetect( VectorXd& phi, MatrixXd& normal, 
-                        MatrixXd& xA, MatrixXd& xB, 
-                        std::vector<int>& bodyA_idx, 
+  bool collisionDetect( VectorXd& phi, MatrixXd& normal,
+                        MatrixXd& xA, MatrixXd& xB,
+                        std::vector<int>& bodyA_idx,
                         std::vector<int>& bodyB_idx,
                         const std::vector<int>& bodies_idx,
                         const std::set<std::string>& active_element_groups,
                         bool use_margins = true);
 
-  bool collisionDetect( VectorXd& phi, MatrixXd& normal, 
-                        MatrixXd& xA, MatrixXd& xB, 
-                        std::vector<int>& bodyA_idx, 
+  bool collisionDetect( VectorXd& phi, MatrixXd& normal,
+                        MatrixXd& xA, MatrixXd& xB,
+                        std::vector<int>& bodyA_idx,
                         std::vector<int>& bodyB_idx,
                         const std::vector<int>& bodies_idx,
                         bool use_margins = true);
 
-  bool collisionDetect( VectorXd& phi, MatrixXd& normal, 
-                        MatrixXd& xA, MatrixXd& xB, 
-                        std::vector<int>& bodyA_idx, 
+  bool collisionDetect( VectorXd& phi, MatrixXd& normal,
+                        MatrixXd& xA, MatrixXd& xB,
+                        std::vector<int>& bodyA_idx,
                         std::vector<int>& bodyB_idx,
                         const std::set<std::string>& active_element_groups,
                         bool use_margins = true);
 
-  bool collisionDetect( VectorXd& phi, MatrixXd& normal, 
-                        MatrixXd& xA, MatrixXd& xB, 
-                        std::vector<int>& bodyA_idx, 
+  bool collisionDetect( VectorXd& phi, MatrixXd& normal,
+                        MatrixXd& xA, MatrixXd& xB,
+                        std::vector<int>& bodyA_idx,
                         std::vector<int>& bodyB_idx,
                         bool use_margins = true);
 
 
-  bool allCollisions(std::vector<int>& bodyA_idx, std::vector<int>& bodyB_idx, 
+  bool allCollisions(std::vector<int>& bodyA_idx, std::vector<int>& bodyB_idx,
                      MatrixXd& ptsA, MatrixXd& ptsB,
                         bool use_margins = true);
 
+  void potentialCollisions(Eigen::VectorXd& phi,
+                           Eigen::MatrixXd& normal,
+                           Eigen::MatrixXd& xA,
+                           Eigen::MatrixXd& xB,
+                           std::vector<int>& bodyA_idx,
+                           std::vector<int>& bodyB_idx, 
+                           bool use_margins = true);
   //bool closestDistanceAllBodies(VectorXd& distance, MatrixXd& Jd);
-  
+
+  void warnOnce(const std::string& id, const std::string& msg);
+
+  std::shared_ptr<RigidBody> findLink(std::string linkname, int robot=-1);
   int findLinkId(std::string linkname, int robot = -1);
+  std::shared_ptr<RigidBody> findJoint(std::string jointname, int robot=-1);
+  int findJointId(std::string linkname, int robot = -1);
   //@param robot   the index of the robot. robot = -1 means to look at all the robots
-  
+
   std::string getBodyOrFrameName(int body_or_frame_id);
-  //@param body_or_frame_id   the index of the body or the id of the frame. 
+  //@param body_or_frame_id   the index of the body or the id of the frame.
+
+  template <typename Scalar>
+  GradientVar<Scalar, Eigen::Dynamic, 1> positionConstraintsNew(int gradient_order);
+
+  template <typename DerivedA, typename DerivedB>
+  void positionConstraints(Eigen::MatrixBase<DerivedA> & phi, Eigen::MatrixBase<DerivedB> & J);
+
+  size_t getNumPositionConstraints() const;
+
+  template <typename Derived>
+  Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> transformVelocityMappingToPositionDotMapping(
+      const Eigen::MatrixBase<Derived>& mat, const std::vector<int>& joint_path);
+
+  template <typename Derived>
+  Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> compactToFull(
+      const Eigen::MatrixBase<Derived>& compact, const std::vector<int>& joint_path, bool in_terms_of_qdot);
+
 public:
   std::vector<std::string> robot_name;
 
-  int num_dof; // treated as nq now; TODO: rename to nq
+  int num_positions;
+  int num_velocities;
   VectorXd joint_limit_min;
   VectorXd joint_limit_max;
 
   // Rigid body objects
   int num_bodies;  // rigid body objects
-  std::vector<std::unique_ptr<RigidBody>> bodies;
+  std::vector<std::shared_ptr<RigidBody> > bodies;
 
   // Rigid body frames
   int num_frames;
   std::vector<RigidBodyFrame,Eigen::aligned_allocator<RigidBodyFrame> > frames;
+
+  // Rigid body actuators
+  std::vector<RigidBodyActuator,Eigen::aligned_allocator<RigidBodyActuator> > actuators;
+
+  // Rigid body loops
+  std::vector<RigidBodyLoop,Eigen::aligned_allocator<RigidBodyLoop> > loops;
 
   // featherstone data structure
   int NB;  // featherstone bodies
@@ -182,15 +333,25 @@ public:
   VectorXd static_friction;
   std::vector<MatrixXd> Xtree;
   std::vector<MatrixXd> I;
-  VectorXd a_grav;
+  Matrix<double,TWIST_SIZE,1> a_grav;
+  MatrixXd B;  // the B matrix maps inputs into joint-space forces
+  std::map<int, int> bodies_vector_index_to_featherstone_body_index;
 
-  VectorXd cached_q, cached_qd;  // these should be private
+  VectorXd cached_q, cached_v;  // these should be private
 
-  bool use_new_kinsol;
-
+  void setUseNewKinsol(bool tf) { use_new_kinsol=tf; kinematicsInit=false; }
+  bool getUseNewKinsol(void) { return use_new_kinsol; }
 
 private:
+  bool use_new_kinsol;
+  void doKinematics(double* q, bool b_compute_second_derivatives=false, double* qd=NULL);
+  
+  //helper functions for contactConstraints
+  void accumulateContactJacobian(const size_t bodyInd, MatrixXd const & bodyPoints, std::vector<size_t> const & cindA, std::vector<size_t> const & cindB, MatrixXd & J);
+  void accumulateSecondOrderContactJacobian(const size_t bodyInd, MatrixXd const & bodyPoints, std::vector<size_t> const & cindA, std::vector<size_t> const & cindB, MatrixXd & dJ);
+
   int parseBodyOrFrameID(const int body_or_frame_id, Matrix4d* Tframe = nullptr);
+  void checkCachedKinematicsSettings(bool kinematics_gradients_required, bool velocity_kinematics_required, bool jdot_times_v_required, const std::string& method_name);
 
   // variables for featherstone dynamics
   std::vector<VectorXd> S;
@@ -199,11 +360,16 @@ private:
   std::vector<VectorXd> avp;
   std::vector<VectorXd> fvp;
   std::vector<MatrixXd> IC;
+  std::vector<Matrix<double, TWIST_SIZE, TWIST_SIZE>, Eigen::aligned_allocator< Matrix<double, TWIST_SIZE, TWIST_SIZE> > > I_world;
+  std::vector<Matrix<double, TWIST_SIZE, TWIST_SIZE>, Eigen::aligned_allocator< Matrix<double, TWIST_SIZE, TWIST_SIZE> > > Ic_new;
+
 
   //Variables for gradient calculations
   MatrixXd dTdTmult;
   std::vector<MatrixXd> dXupdq;
-  std::vector<std::vector<MatrixXd>> dIC;
+  std::vector<std::vector<MatrixXd> > dIC;
+    std::vector<Gradient<Matrix<double, TWIST_SIZE, TWIST_SIZE>, Eigen::Dynamic>::type> dI_world;
+  std::vector<Gradient<Matrix<double, TWIST_SIZE, TWIST_SIZE>, Eigen::Dynamic>::type> dIc_new;
 
   std::vector<MatrixXd> dvdq;
   std::vector<MatrixXd> dvdqd;
@@ -221,15 +387,15 @@ private:
 
   // preallocate for CMM function
   MatrixXd Xg; // spatial centroidal projection matrix
-  MatrixXd dXg;  // dXg_dq * qd  
-  std::vector<MatrixXd> Ic; // body spatial inertias
-  std::vector<MatrixXd> dIc; // derivative of body spatial inertias
+  MatrixXd dXg;  // dXg_dq * qd
+  std::vector<MatrixXd> Ic; // composite rigid body inertias
+  std::vector<MatrixXd> dIc; // derivative of composite rigid body inertias
   std::vector<VectorXd> phi; // joint axis vectors
   std::vector<MatrixXd> Xworld; // spatial transforms from world to each body
   std::vector<MatrixXd> dXworld; // dXworld_dq * qd
-  std::vector<MatrixXd> dXup; // dXup_dq * qd 
+  std::vector<MatrixXd> dXup; // dXup_dq * qd
   MatrixXd Xcom; // spatial transform from centroid to world
-  MatrixXd Jcom; 
+  MatrixXd Jcom;
   MatrixXd dXcom;
   MatrixXd Xi;
   MatrixXd dXidq;
@@ -238,6 +404,10 @@ private:
   bool initialized;
   bool kinematicsInit;
   int secondDerivativesCached;
+  bool gradients_cached;
+  bool velocity_kinematics_cached;
+  bool jdotV_cached;
+  int cached_inertia_gradients_order;
 
   // collision_model and collision_model_no_margins both maintain
   // a collection of the collision geometry in the RBM for use in
@@ -249,8 +419,8 @@ private:
   // precise raycasting, e.g. for simulating a laser scanner
   // These models are switched between with the use_margins flag
   // to collision-relevant methods of the RBM.
-  std::shared_ptr< DrakeCollision::Model > collision_model;
-  std::shared_ptr< DrakeCollision::Model > collision_model_no_margins;  
+  std::unique_ptr< DrakeCollision::Model > collision_model;
+  //std::shared_ptr< DrakeCollision::Model > collision_model_no_margins;
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
@@ -259,6 +429,8 @@ public:
 private:
   RigidBodyManipulator(const RigidBodyManipulator&) {}
   RigidBodyManipulator& operator=(const RigidBodyManipulator&) { return *this; }
+
+  std::set<std::string> already_printed_warnings;
 };
 
 

@@ -589,7 +589,7 @@ classdef TaylorVar
       function cleanup_subs
         % turn all subsrefs into A(ind)=B(:), instead of A(sub1,sub2)=B.
         for k=1:length(s.subs)
-          if (s.subs{k}==':')
+          if (strcmp(s.subs{k},':'))
             s.subs{k}=1:a.dim(k);
           end
         end
@@ -850,7 +850,7 @@ classdef TaylorVar
       
       d = prod(dd);
       if d>1 % ... replicate xs and index in case PP is vector-valued ...
-        xs = reshape(xs(ones(d,1),:),1,d*lx);
+        xs = reshape(repmat(xs,d,1),1,d*lx);
         index = d*index; temp = (-d:-1).';
         index = reshape(1+index(ones(d,1),:)+temp(:,ones(1,lx)), d*lx, 1 );
       else

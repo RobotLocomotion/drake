@@ -257,8 +257,12 @@ classdef Visualizer < DrakeSystem
 
       set(f, 'Position', [560 400 560 20 + 30*rows]);
       resize_gui();
-      update_display(slider{1});
-
+      if isempty(state_dims), 
+        obj.drawWrapper(0,[]); 
+      else 
+        update_display(slider{1});
+      end
+      
       function resize_gui(source, eventdata)
         p = get(gcf,'Position');
         width = p(3);

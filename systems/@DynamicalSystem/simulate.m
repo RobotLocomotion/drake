@@ -11,6 +11,9 @@ function [ytraj,xtraj,lcmlog] = simulate(obj,tspan,x0,options)
 % @option capture_lcm_channels a string containing the regular expression of the
 %           channels to subscribe to (e.g. '.*' for all).
 %           @default '' -> don't record lcm
+% @option gui_control_interface set to true to bring up a figure with play/stop buttons @default false
+% @option lcm_control_interface channel on which to listen for lcmt_simulation_control messages.  @default '' -- which means no lcm
+%            interface
 
 checkDependency('simulink');
 if ~exist('DCSFunction','file')
@@ -19,19 +22,30 @@ end
 
 typecheck(tspan,'double');
 if (length(tspan)<2) error('length(tspan) must be > 1'); end
-if (nargin<4) options=struct([]); end
+if (nargin<4) options=struct(); end
 mdl = getModel(obj);
 
 if (strcmp(get_param(mdl,'SimulationStatus'),'paused'))
   feval(mdl,[],[],[],'term');  % terminate model, in case it was still running before
 end
 
-% add realtime block
+% add lcm logger block
 lcmlog = []; log_name=[];
 if isfield(options,'capture_lcm_channels') && ~isempty(options.capture_lcm_channels) && nargout>2
   log_name = [mdl,'_lcm_log'];
   add_block('drake/lcmLogger',[mdl,'/lcmLogger'],'channel_regex',['''',options.capture_lcm_channels,''''],'log_to_workspace_variable',['''',log_name,'''']);
   fprintf(1,'Logging LCM channels ''%s''\n', options.capture_lcm_channels);
+end
+
+% add control interface block
+if ~isfield(options,'gui_control_interface'), options.gui_control_interface = false; end
+if ~isfield(options,'lcm_control_interface'), options.lcm_control_interface = ''; end
+
+if options.gui_control_interface || ~isempty(options.lcm_control_interface)
+  assignin('base',[mdl,'_control'],SimulationControlBlock(options.gui_control_interface,options.lcm_control_interface));
+  add_block('simulink/User-Defined Functions/S-Function',[mdl,'/simulation_control'], ...
+    'FunctionName','DCSFunction', ...
+    'parameters',[mdl,'_control']);
 end
 
 pstruct = obj.simulink_params;

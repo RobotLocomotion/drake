@@ -191,7 +191,7 @@ classdef RigidBodyHeightMapTerrain < RigidBodyTerrain & RigidBodyGeometry
       pts = [origin(1:2,:); zeros(1,numel(X))];
       
       kinsol = doKinematics(manip,q);
-      distance = collisionRaycast(manip,kinsol,origin,pts);
+      distance = collisionRaycast(manip,kinsol,origin,pts,false);
       distance(distance<0) = inf;
       Z = scanner_height - reshape(distance,size(X));
       

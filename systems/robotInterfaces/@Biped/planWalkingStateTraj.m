@@ -12,20 +12,23 @@ if nargin < 3
 end
 
 nq = obj.getNumPositions();
-q0 = walking_plan_data.q0;
+q0 = walking_plan_data.x0(1:nq);
 qstar = xstar(1:nq);
 
 % time spacing of samples for IK
+if ~isa(walking_plan_data.comtraj, 'Trajectory')
+  walking_plan_data.comtraj = ExpPlusPPTrajectory(walking_plan_data.comtraj.breaks,...
+                                                  walking_plan_data.comtraj.K,...
+                                                  walking_plan_data.comtraj.A,...
+                                                  walking_plan_data.comtraj.alpha,...
+                                                  walking_plan_data.comtraj.gamma);
+end
 ts = 0:0.1:walking_plan_data.comtraj.tspan(end);
 if length(ts)>300 % limit number of IK samples to something reasonable
   ts = linspace(0,walking_plan_data.comtraj.tspan(end),300);
 end
 
-% We no longer compute a trajectory for the feet, just a sequence of poses,
-% so we need to build that trajectory now.
-for j = 1:length(walking_plan_data.link_constraints)
-  walking_plan_data.link_constraints(j).traj = PPTrajectory(pchip(walking_plan_data.link_constraints(j).ts, walking_plan_data.link_constraints(j).poses));
-end
+link_trajectories = walking_plan_data.getLinkTrajectories();
 
 %% create desired joint trajectory
 cost = Point(obj.getStateFrame,1);
@@ -42,20 +45,21 @@ cost = double(cost);
 ikoptions = IKoptions(obj);
 ikoptions = ikoptions.setQ(diag(cost(1:obj.getNumPositions)));
 
+q = zeros(obj.getNumPositions(), length(ts));
 htraj = [];
 full_IK_calls = 0;
 for i=1:length(ts)
   t = ts(i);
   if (i>1)
     ik_args = {};
-    for j = 1:length(walking_plan_data.link_constraints)
-      body_ind = walking_plan_data.link_constraints(j).link_ndx;
-      if ~isempty(walking_plan_data.link_constraints(j).traj)
-        min_pos = walking_plan_data.link_constraints(j).traj.eval(t);
+    for j = 1:length(link_trajectories)
+      body_ind = link_trajectories(j).link_ndx;
+      if ~isempty(link_trajectories(j).traj)
+        min_pos = link_trajectories(j).traj.eval(t);
         max_pos = min_pos;
       else
-        min_pos = walking_plan_data.link_constraints(j).min_traj.eval(t);
-        max_pos = walking_plan_data.link_constraints(j).max_traj.eval(t);
+        min_pos = link_trajectories(j).min_traj.eval(t);
+        max_pos = link_trajectories(j).max_traj.eval(t);
       end
       ik_args = [ik_args,{constructRigidBodyConstraint(RigidBodyConstraint.WorldPositionConstraintType,true,...
           obj,body_ind, [0;0;0],min_pos(1:3),max_pos(1:3)),...

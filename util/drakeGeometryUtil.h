@@ -6,6 +6,7 @@
 #include <cmath>
 #include <random>
 #include "drakeGradientUtil.h"
+#include "GradientVar.h"
 
 #undef DLLEXPORT
 #if defined(WIN32) || defined(WIN64)
@@ -83,6 +84,11 @@ DLLEXPORT Eigen::Matrix<typename Derived::Scalar, 4, 1> rotmat2quat(const Eigen:
 template<typename Derived>
 DLLEXPORT Eigen::Matrix<typename Derived::Scalar, 3, 1> rotmat2rpy(const Eigen::MatrixBase<Derived>& R);
 
+template<typename Scalar>
+DLLEXPORT GradientVar<Scalar, Eigen::Dynamic, 1> rotmat2Representation(const GradientVar<Scalar, SPACE_DIMENSION, SPACE_DIMENSION>& R, int rotation_type);
+
+DLLEXPORT int rotationRepresentationSize(int rotation_type);
+
 /*
  * rpy2x
  */
@@ -95,9 +101,23 @@ DLLEXPORT Eigen::Matrix<typename Derived::Scalar, 4, 1> rpy2quat(const Eigen::Ma
 template<typename Derived>
 DLLEXPORT Eigen::Matrix<typename Derived::Scalar, 3, 3> rpy2rotmat(const Eigen::MatrixBase<Derived>& rpy);
 
+template<typename Derived>
+DLLEXPORT Eigen::Matrix<typename Derived::Scalar, 9, 3> drpy2rotmat(const Eigen::MatrixBase<Derived>& rpy);
 
+DLLEXPORT Eigen::Matrix3d rotz(double theta);
+DLLEXPORT void rotz(double theta, Eigen::Matrix3d &M, Eigen::Matrix3d &dM, Eigen::Matrix3d &ddM);
+/*
+ * cross product related
+ */
 template <typename Derived>
 DLLEXPORT Eigen::Matrix<typename Derived::Scalar, 3, 3> vectorToSkewSymmetric(const Eigen::MatrixBase<Derived>& p);
+
+template <typename DerivedA, typename DerivedB>
+DLLEXPORT Eigen::Matrix<typename DerivedA::Scalar, 3, Eigen::Dynamic> dcrossProduct(
+    const Eigen::MatrixBase<DerivedA>& a,
+    const Eigen::MatrixBase<DerivedB>& b,
+    const typename Gradient<DerivedA, Eigen::Dynamic>::type& da,
+    const typename Gradient<DerivedB, Eigen::Dynamic>::type& db);
 
 /*
  * rotation conversion gradient functions
@@ -127,16 +147,20 @@ DLLEXPORT typename Gradient<Eigen::Matrix<typename DerivedR::Scalar, QUAT_SIZE, 
 /*
  * angular velocity conversion functions
  */
-template <typename DerivedQ, typename DerivedM>
-DLLEXPORT void angularvel2quatdotMatrix(const Eigen::MatrixBase<DerivedQ>& q,
+template <typename DerivedQ, typename DerivedM, typename DerivedDM>
+void angularvel2quatdotMatrix(const Eigen::MatrixBase<DerivedQ>& q,
     Eigen::MatrixBase<DerivedM>& M,
-    typename Gradient<DerivedM, QUAT_SIZE, 1>::type* dM = nullptr);
+    Eigen::MatrixBase<DerivedDM>* dM = nullptr);
 
-template<typename DerivedRPY, typename DerivedPhi>
-DLLEXPORT void angularvel2rpydotMatrix(const Eigen::MatrixBase<DerivedRPY>& rpy,
+template<typename DerivedRPY, typename DerivedPhi, typename DerivedDPhi, typename DerivedDDPhi>
+void angularvel2rpydotMatrix(const Eigen::MatrixBase<DerivedRPY>& rpy,
     typename Eigen::MatrixBase<DerivedPhi>& phi,
-    typename Gradient<DerivedPhi, RPY_SIZE, 1>::type* dphi = nullptr,
-    typename Gradient<DerivedPhi, RPY_SIZE, 2>::type* ddphi = nullptr);
+    typename Eigen::MatrixBase<DerivedDPhi>* dphi = nullptr,
+    typename Eigen::MatrixBase<DerivedDDPhi>* ddphi = nullptr);
+
+template<typename Derived>
+DLLEXPORT GradientVar<typename Derived::Scalar, Eigen::Dynamic, SPACE_DIMENSION> angularvel2RepresentationDotMatrix(
+    int rotation_type, const Eigen::MatrixBase<Derived>& qrot, int gradient_order);
 
 template<typename DerivedRPY, typename DerivedE>
 DLLEXPORT void rpydot2angularvelMatrix(const Eigen::MatrixBase<DerivedRPY>& rpy,
@@ -148,8 +172,11 @@ DLLEXPORT void quatdot2angularvelMatrix(const Eigen::MatrixBase<DerivedQ>& q,
     Eigen::MatrixBase<DerivedM>& M,
     typename Gradient<DerivedM, QUAT_SIZE, 1>::type* dM = nullptr);
 
-//#endif
+template<typename ScalarT>
+DLLEXPORT  void cylindrical2cartesian(const Eigen::Matrix<ScalarT,3,1> &cylinder_axis, const Eigen::Matrix<ScalarT,3,1> &cylinder_x_dir, const Eigen::Matrix<ScalarT,3,1> & cylinder_origin, const Eigen::Matrix<ScalarT,6,1> &x_cylinder, const Eigen::Matrix<ScalarT,6,1> &v_cylinder, Eigen::Matrix<ScalarT,6,1> &x_cartesian, Eigen::Matrix<ScalarT,6,1> &v_cartesian, Eigen::Matrix<ScalarT,6,6> &J, Eigen::Matrix<ScalarT,6,1> &Jdotv );
 
+template<typename ScalarT>
+DLLEXPORT  void cartesian2cylindrical(const Eigen::Matrix<ScalarT,3,1> &cylinder_axis, const Eigen::Matrix<ScalarT,3,1> &cylinder_x_dir, const Eigen::Matrix<ScalarT,3,1> & cylinder_origin, const Eigen::Matrix<ScalarT,6,1> &x_cartesian, const Eigen::Matrix<ScalarT,6,1> &v_cartesian, Eigen::Matrix<ScalarT,6,1> &x_cylinder, Eigen::Matrix<ScalarT,6,1> &v_cylinder, Eigen::Matrix<ScalarT,6,6> &J, Eigen::Matrix<ScalarT,6,1> &Jdotv );
 /*
  * spatial transform functions
  */
@@ -168,7 +195,35 @@ DLLEXPORT typename TransformSpatial<DerivedF>::type transformSpatialForce(
     const Eigen::Transform<typename DerivedF::Scalar, 3, Eigen::Isometry>& T,
     const Eigen::MatrixBase<DerivedF>& F);
 
-//#if !defined(WIN32) && !defined(WIN64)
+template<typename DerivedI>
+DLLEXPORT GradientVar<typename DerivedI::Scalar, TWIST_SIZE, TWIST_SIZE> transformSpatialInertia(
+    const Eigen::Transform<typename DerivedI::Scalar, SPACE_DIMENSION, Eigen::Isometry>& T_current_to_new,
+    const typename Gradient<typename Eigen::Transform<typename DerivedI::Scalar, SPACE_DIMENSION, Eigen::Isometry>::MatrixType, Eigen::Dynamic>::type* dT_current_to_new,
+    const Eigen::MatrixBase<DerivedI>& I);
+
+template<typename DerivedA, typename DerivedB>
+DLLEXPORT typename TransformSpatial<DerivedB>::type crossSpatialMotion(
+  const Eigen::MatrixBase<DerivedA>& a,
+  const Eigen::MatrixBase<DerivedB>& b);
+
+template<typename DerivedA, typename DerivedB>
+typename TransformSpatial<DerivedB>::type crossSpatialForce(
+  const Eigen::MatrixBase<DerivedA>& a,
+  const Eigen::MatrixBase<DerivedB>& b);
+
+template<typename DerivedA, typename DerivedB>
+DLLEXPORT Eigen::Matrix<typename DerivedA::Scalar, TWIST_SIZE, Eigen::Dynamic> dCrossSpatialMotion(
+  const Eigen::MatrixBase<DerivedA>& a,
+  const Eigen::MatrixBase<DerivedB>& b,
+  const typename Gradient<DerivedA, Eigen::Dynamic>::type& da,
+  const typename Gradient<DerivedB, Eigen::Dynamic>::type& db);
+
+template<typename DerivedA, typename DerivedB>
+DLLEXPORT Eigen::Matrix<typename DerivedA::Scalar, TWIST_SIZE, Eigen::Dynamic> dCrossSpatialForce(
+  const Eigen::MatrixBase<DerivedA>& a,
+  const Eigen::MatrixBase<DerivedB>& b,
+  const typename Gradient<DerivedA, Eigen::Dynamic>::type& da,
+  const typename Gradient<DerivedB, Eigen::Dynamic>::type& db);
 
 /*
  * spatial transform gradient methods
@@ -190,14 +245,14 @@ DLLEXPORT typename DHomogTrans<DerivedDT>::type dHomogTransInv(
     const Eigen::MatrixBase<DerivedDT>& dT);
 
 template <typename Scalar, typename DerivedX, typename DerivedDT, typename DerivedDX>
-DLLEXPORT typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime, 1>::type dTransformAdjoint(
+DLLEXPORT typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime, 1>::type dTransformSpatialMotion(
     const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T,
     const Eigen::MatrixBase<DerivedX>& X,
     const Eigen::MatrixBase<DerivedDT>& dT,
     const Eigen::MatrixBase<DerivedDX>& dX);
 
 template <typename Scalar, typename DerivedX, typename DerivedDT, typename DerivedDX>
-DLLEXPORT typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime>::type dTransformAdjointTranspose(
+DLLEXPORT typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime>::type dTransformSpatialForce(
     const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T,
     const Eigen::MatrixBase<DerivedX>& X,
     const Eigen::MatrixBase<DerivedDT>& dT,

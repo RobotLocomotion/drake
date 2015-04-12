@@ -18,14 +18,14 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
     end
     
     function [length,dlength] = eval(obj,q)
-      kinsol = obj.rbm.doKinematics(q);
+      kinsol = obj.rbm.doKinematics(q,nargout>2);
 
       length = 0;
       dlength = 0*q';
-%      ddlength = zeros(1,numel(q)^2);
+      ddlength = zeros(1,numel(q)^2);
       for i=1:numel(obj.pulley)
         if nargout>2
-          [pt,ddpt] = forwardKin(obj.rbm,kinsol,obj.pulley(i).frame,obj.pulley(i).xyz);
+          [pt,dpt,ddpt] = forwardKin(obj.rbm,kinsol,obj.pulley(i).frame,obj.pulley(i).xyz);
         elseif nargout>1
           [pt,dpt] = forwardKin(obj.rbm,kinsol,obj.pulley(i).frame,obj.pulley(i).xyz);
         else
@@ -41,11 +41,18 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
           if nargout>1
             dvec = dpt-last_dpt;
             dC = vec'*dvec/C;
+            
+            if nargout>2
+              ddvec = ddpt - last_ddpt;
+% not finished yet:  ddC = dvec'*dvec/C + vec'*ddvec/C - vec'*dvec*dC/C^2;
+            end
           end
           
           r1 = obj.pulley(i-1).radius;
           r2 = obj.pulley(i).radius;
-          assert(C>r1+r2+eps); % cut me a little slack, eh?
+          if (C<r1+r2+eps) % cut me a little slack, eh?
+            continue;  % just skip this one... because the optimizers might actually get here
+          end
           if r1>0 || r2>0,            
             alignment = dot(obj.pulley(i-1).axis,obj.pulley(i).axis);
             if r1>0 && r2>0, % then make sure the axes are aligned
@@ -109,18 +116,18 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
               dC = vec'*dvec/(C+eps);
               dlength = dlength+dC;
             end
-            
+                        
             if r1>0,
               %% now add in the arc length between pt1 and last_attachment_pt
               v1 = (pt1-last_pt)/r1; v2 = (last_attachment_pt-last_pt)/r1;
-              c = dot(v1,v2); svec = cross(v1,v2); s = norm(svec);
+              c = dot(v1,v2); svec = cross(v1,v2); s = sqrt(svec'*svec);
               theta = atan2(s,c);
               if theta<0, theta=theta+2*pi; end
               length = length+theta*r1;
               
               if nargout>1
                 dv1 = (dpt1-last_dpt)/r1; dv2 = (last_attachment_dpt-last_dpt)/r1;
-                dc = v2'*dv1+v1'*dv2; dsvec=dcross(v1,v2)*[dv1;dv2]; ds = svec'*dsvec/(s+eps);
+                dc = v2'*dv1+v1'*dv2; dsvec=dcross(v1,v2,dv1,dv2); ds = svec'*dsvec/max(s,eps);
                 dtheta = -s*dc + c*ds;
                 dlength = dlength + dtheta*r1;
               end
@@ -197,8 +204,9 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
             n = size(vertex,2);
             edge = horzcat(edge,[n-1;n]);
           else
-            vertex = horzcat(vertex,pt);
-            edge = horzcat(edge,[i-1;i]);
+            vertex = horzcat(vertex,[last_pt,pt]);
+            n = size(vertex,2);
+            edge = horzcat(edge,[n-1;n]);
           end
         end
         

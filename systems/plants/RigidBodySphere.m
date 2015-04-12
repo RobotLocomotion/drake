@@ -92,7 +92,7 @@ classdef RigidBodySphere < RigidBodyGeometry
       % @param  obj - RigidBodySphere object
       % @retval pts - 3xm array of points on this geometry (in link frame) that
       %               can collide with the world.
-      if obj.radius == 0
+      if obj.radius < 1e-6
         pts = getPoints(obj);
       else
         pts=[];
