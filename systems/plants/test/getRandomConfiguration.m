@@ -20,8 +20,18 @@ for i = 2 : obj.getNumBodies()
       q_body = randn;
     elseif ~isinf(body.joint_limit_min) && ~isinf(body.joint_limit_max)
       q_body = body.joint_limit_min + rand * (body.joint_limit_max - body.joint_limit_min);
+    elseif ~isinf(body.joint_limit_min)
+      % one-sided joint limit
+      q_body = randn; 
+      if (q_body<body.joint_limit_min) % then flip it to the other side of the limit
+        q_body = body.joint_limit_min + (body.joint_limit_min - q_body);
+      end
     else
-      error('case of one-sided joint limits currently not handled')
+      % other one-sided joint limit
+      q_body = randn; 
+      if (q_body>body.joint_limit_max) % then flip it to the other side of the limit
+        q_body = body.joint_limit_max - (q_body - body.joint_limit_max);
+      end
     end
   else
     pos = randn(3, 1);

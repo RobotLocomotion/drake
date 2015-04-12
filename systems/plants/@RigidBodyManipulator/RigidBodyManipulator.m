@@ -663,11 +663,6 @@ classdef RigidBodyManipulator < Manipulator
       % After parsing, compute some relevant data structures that will be
       % accessed in the dynamics and visualization
 
-      model = removeFixedJoints(model);
-
-      % Clear cached contact points
-      model.cached_terrain_contact_points_struct = [];
-
       % reorder body list to make sure that parents before children in the
       % list (otherwise simple loops over bodies might not compute
       % kinematics/dynamics correctly)
@@ -682,6 +677,11 @@ classdef RigidBodyManipulator < Manipulator
         end
         i=i+1;
       end
+      
+      model = removeFixedJoints(model);
+
+      % Clear cached contact points
+      model.cached_terrain_contact_points_struct = [];
       
       %% update RigidBodyElements
       % todo: use applyToAllRigidBodyElements (but will have to generalize
@@ -1431,6 +1431,9 @@ classdef RigidBodyManipulator < Manipulator
         if model.body(i).parent>0
           A{model.body(i).parent,i} = model.body(i).jointname;
         end
+      end
+      for i=1:length(model.loop)
+        A{model.loop(i).body1,model.loop(i).body2} = ['loop',num2str(i),':',model.loop(i).name];
       end
       node_names = {model.body.linkname};
 %      node_names = regexprep({model.body.linkname},'+(.)*','');

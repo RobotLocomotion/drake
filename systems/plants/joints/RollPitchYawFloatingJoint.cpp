@@ -17,6 +17,26 @@ RollPitchYawFloatingJoint::~RollPitchYawFloatingJoint()
   // empty
 }
 
+std::string RollPitchYawFloatingJoint::getPositionName(int index) const
+{
+	switch (index) {
+	case 0:
+		return name+"_x";
+	case 1:
+		return name+"_y";
+	case 2:
+		return name+"_z";
+	case 3:
+		return name+"_roll";
+	case 4:
+		return name+"_pitch";
+	case 5:
+		return name+"_yaw";
+	default:
+		throw std::runtime_error("bad index");
+	}
+}
+
 Isometry3d RollPitchYawFloatingJoint::jointTransform(const Eigen::Ref<const VectorXd>& q) const
 {
   Isometry3d ret;
@@ -115,8 +135,9 @@ void RollPitchYawFloatingJoint::motionSubspaceDotTimesV(const Eigen::Ref<const V
   }
 }
 
-void RollPitchYawFloatingJoint::randomConfiguration(Eigen::Ref<VectorXd>& q, std::default_random_engine& generator) const
+VectorXd RollPitchYawFloatingJoint::randomConfiguration(std::default_random_engine& generator) const
 {
+	VectorXd q(6);
   std::normal_distribution<double> normal;
 
   Map<Vector3d> pos(&q[0]);
@@ -126,6 +147,7 @@ void RollPitchYawFloatingJoint::randomConfiguration(Eigen::Ref<VectorXd>& q, std
 
   Map<Vector3d> rpy(&q[3]);
   rpy = uniformlyRandomRPY(generator);
+  return q;
 }
 
 void RollPitchYawFloatingJoint::qdot2v(const Eigen::Ref<const VectorXd>& q, Eigen::MatrixXd& qdot_to_v, Eigen::MatrixXd* dqdot_to_v) const

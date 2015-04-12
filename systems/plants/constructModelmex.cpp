@@ -401,7 +401,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   }
 
   mxLogical* use_new_kinsol = mxGetLogicals(mxGetProperty(pRBM,0,"use_new_kinsol"));
-  model->use_new_kinsol = (bool) use_new_kinsol[0];
+  model->setUseNewKinsol((bool)use_new_kinsol[0]);
 
   //  LOOP CONSTRAINTS
   const mxArray* pLoops = mxGetProperty(pRBM,0,"loop");

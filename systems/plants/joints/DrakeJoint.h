@@ -29,16 +29,21 @@ class DLLEXPORT_DRAKEJOINT DrakeJoint
   // not available in MSVC2010...
   // DrakeJoint(const DrakeJoint&) = delete;
   // DrakeJoint& operator=(const DrakeJoint&) = delete;
+public:
+  enum FloatingBaseType {
+    FIXED        = 0,
+    ROLLPITCHYAW = 1,
+    QUATERNION   = 2
+  };
 
 private:
-  const std::string name;
   const Eigen::Isometry3d transform_to_parent_body;
   const int num_positions;
   const int num_velocities;
 
 protected:
   typedef Eigen::Matrix<double, 6, 1> Vector6d;
-
+  const std::string name;
 
 public:
   DrakeJoint(const std::string& name, const Eigen::Isometry3d& transform_to_parent_body, int num_positions, int num_velocities);
@@ -53,6 +58,8 @@ public:
   const int getNumVelocities() const;
 
   const std::string& getName() const;
+  virtual std::string getPositionName(int index) const = 0;
+  virtual std::string getVelocityName(int index) const { return getPositionName(index)+"dot"; }
 
   virtual Eigen::Isometry3d jointTransform(const Eigen::Ref<const Eigen::VectorXd>& q) const = 0;
 
@@ -64,7 +71,7 @@ public:
       Gradient<Vector6d, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdq = nullptr,
       Gradient<Vector6d, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdv = nullptr) const = 0;
 
-  virtual void randomConfiguration(Eigen::Ref<Eigen::VectorXd>& q, std::default_random_engine& generator) const = 0;
+  virtual Eigen::VectorXd randomConfiguration(std::default_random_engine& generator) const = 0;
 
   virtual void qdot2v(const Eigen::Ref<const Eigen::VectorXd>& q, Eigen::MatrixXd& qdot_to_v, Eigen::MatrixXd* dqdot_to_v) const = 0;
 

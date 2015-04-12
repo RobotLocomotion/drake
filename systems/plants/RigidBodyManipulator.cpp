@@ -256,6 +256,11 @@ void getFiniteIndexes(T const & v, std::vector<int> &finite_indexes)
   }
 }
 
+std::ostream& operator<<(std::ostream& os, const RigidBodyLoop& obj)
+{
+  os << "loop connects pt " << obj.ptA.transpose() << " on " << obj.bodyA->linkname << " to pt " << obj.ptB.transpose() << " on " << obj.bodyB->linkname << std::endl;
+  return os;
+}
 
 RigidBodyManipulator::RigidBodyManipulator(int ndof, int num_featherstone_bodies, int num_rigid_body_objects, int num_rigid_body_frames)
   :  collision_model(DrakeCollision::newModel())
@@ -266,7 +271,7 @@ RigidBodyManipulator::RigidBodyManipulator(int ndof, int num_featherstone_bodies
   resize(ndof,num_featherstone_bodies,num_rigid_body_objects,num_rigid_body_frames);
 }
 
-RigidBodyManipulator::RigidBodyManipulator(const std::string &urdf_filename)
+RigidBodyManipulator::RigidBodyManipulator(const std::string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type)
   :  collision_model(DrakeCollision::newModel())
 {
   num_positions=0; NB=0; num_bodies=0; num_frames=0;
@@ -277,7 +282,7 @@ RigidBodyManipulator::RigidBodyManipulator(const std::string &urdf_filename)
   bodies[0]->body_index = 0;
   use_new_kinsol = true; // assuming new kinsol in the updated logic below
 
-  addRobotFromURDF(urdf_filename);
+  addRobotFromURDF(urdf_filename,floating_base_type);
 }
 
 RigidBodyManipulator::RigidBodyManipulator(void)
@@ -441,12 +446,17 @@ void RigidBodyManipulator::compile(void)
    */
 
   // reorder body list to make sure that parents before children in the list
-  for (size_t i=0; i<bodies.size(); i++) {
-    while (bodies[i]->hasParent()) {
+	size_t i=0;
+  while (i<bodies.size()) {
+    if (bodies[i]->hasParent()) {
       auto iter = find(bodies.begin()+i+1,bodies.end(),bodies[i]->parent);
-      if (iter==bodies.end()) break;
-      bodies[i].swap(*iter);
+      if (iter!=bodies.end()) {
+      	bodies.insert(bodies.begin()+i,bodies[i]->parent);
+      	bodies.erase(iter+1);
+      	i--;
+      }
     }
+    i++;
   }
 
   // weld joints for links that have zero inertia and no children (as seen in pr2.urdf)
@@ -519,6 +529,46 @@ void RigidBodyManipulator::compile(void)
   cached_v.resize(num_velocities);
 
   initialized=true;
+}
+
+void RigidBodyManipulator::getRandomConfiguration(Eigen::VectorXd& q, std::default_random_engine& generator) const
+{
+	for (int i=0; i<num_bodies; i++) {
+		if (bodies[i]->hasParent()) {
+			const DrakeJoint& joint = bodies[i]->getJoint();
+			q.middleRows(bodies[i]->position_num_start,joint.getNumPositions()) = joint.randomConfiguration(generator);
+		}
+	}
+}
+
+string RigidBodyManipulator::getPositionName(int position_num) const
+{
+	if (position_num<0 || position_num>=num_positions)
+		throw std::runtime_error("position_num is out of range");
+
+	size_t body_index = 0;
+	while (body_index+1<num_bodies && bodies[body_index+1]->position_num_start<=position_num) body_index++;
+
+	return bodies[body_index]->getJoint().getPositionName(position_num-bodies[body_index]->position_num_start);
+}
+
+string RigidBodyManipulator::getVelocityName(int velocity_num) const
+{
+	if (velocity_num<0 || velocity_num>=num_velocities)
+		throw std::runtime_error("position_num is out of range");
+
+	size_t body_index = 0;
+	while (body_index+1<num_bodies && bodies[body_index+1]->velocity_num_start<=velocity_num) body_index++;
+
+	return bodies[body_index]->getJoint().getVelocityName(velocity_num-bodies[body_index]->velocity_num_start);
+}
+
+string RigidBodyManipulator::getStateName(int state_num) const
+{
+	if (state_num<num_positions)
+		return getPositionName(state_num);
+	else
+		return getVelocityName(state_num);
 }
 
 DrakeCollision::ElementId RigidBodyManipulator::addCollisionElement(const RigidBody::CollisionElement& element, const shared_ptr<RigidBody>& body, string group_name)
@@ -804,10 +854,10 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
   int i,j,k,l;
 
   //DEBUG
-  //cout << "RigidBodyManipulator::doKinematics: q = " << endl;
-  //for (i = 0; i < num_dof; i++) {
-    //cout << q[i] << endl;
-  //}
+  // cout << "RigidBodyManipulator::doKinematics: q = " << endl;
+  // for (i = 0; i < num_positions; i++) {
+  //   cout << q[i] << endl;
+  // }
   //END_DEBUG
   //Check against cached values for bodies[1];
   if (kinematicsInit) {
@@ -950,11 +1000,22 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
 
     } else if (bodies[i]->floating == 2) {
       cerr << "mex kinematics for quaternion floating bases are not implemented yet" << endl;
+    } else if (bodies[i]->getJoint().getNumPositions() == 0) { // fixed joint
+      shared_ptr<RigidBody> parent = bodies[i]->parent;
+    	bodies[i]->T = parent->T * bodies[i]->Ttree;
+    	bodies[i]->dTdq = parent->dTdq * bodies[i]->Ttree;
+      if (b_compute_second_derivatives) {
+        for (set<IndexRange>::iterator iter = parent->ddTdqdq_nonzero_rows_grouped.begin(); iter != parent->ddTdqdq_nonzero_rows_grouped.end(); iter++) {
+          bodies[i]->ddTdqdq.block(iter->start,0,iter->length,4) = parent->ddTdqdq.block(iter->start,0,iter->length,4) * bodies[i]->Ttree;
+        }
+      }
+      if (qd) {
+        bodies[i]->Tdot = parent->Tdot * bodies[i]->Ttree;
+        bodies[i]->dTdqdot = parent->dTdqdot* bodies[i]->Ttree;
+      }
     } else {
       shared_ptr<RigidBody> parent = bodies[i]->parent;
-      double qi = 0.0;
-      if (bodies[i]->getJoint().getNumPositions()>0) // if not a fixed joint
-      	qi = q[bodies[i]->position_num_start];
+      double qi = q[bodies[i]->position_num_start];
       Tjcalc(bodies[i]->pitch,qi,&TJ);
       dTjcalc(bodies[i]->pitch,qi,&dTJ);
 
@@ -1010,9 +1071,7 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
       }
 
       if (qd) {
-        double qdi = 0.0;
-        if (bodies[i]->getJoint().getNumVelocities()>0) // if not a fixed joint
-        	qdi = qd[bodies[i]->position_num_start];
+        double qdi = qd[bodies[i]->position_num_start];
         TJdot = dTJ*qdi;
         ddTjcalc(bodies[i]->pitch,qi,&ddTJ);
         dTJdot = ddTJ*qdi;
@@ -1072,7 +1131,7 @@ void RigidBodyManipulator::doKinematicsNew(const MatrixBase<DerivedQ>& q, const 
     if (compute_gradients && !gradients_cached) {
       skip = false;
     }
-    if (v.rows() > 0) {
+    if (v.rows() == num_velocities) {
       if (!velocity_kinematics_cached) {
         skip = false;
       }
@@ -1149,7 +1208,7 @@ void RigidBodyManipulator::doKinematicsNew(const MatrixBase<DerivedQ>& q, const 
         body.dJdq = dTransformSpatialMotion(body.T_new, body.S, body.dTdq_new, dSdq);
       }
 
-      if (v.rows() > 0) {
+      if (v.rows() == num_velocities) {
         if (joint.getNumVelocities()==0) { // for fixed joints
           body.twist = body.parent->twist;
            if (compute_gradients) body.dtwistdq = body.parent->dtwistdq;
@@ -1234,7 +1293,7 @@ void RigidBodyManipulator::doKinematicsNew(const MatrixBase<DerivedQ>& q, const 
         body.dTdq_new.setZero();
         // gradient of motion subspace in world is empty
       }
-      if (v.rows() > 0) {
+      if (v.rows() == num_velocities) {
         body.twist.setZero();
         if (compute_gradients) {
           body.dtwistdq.setZero();
@@ -1261,7 +1320,7 @@ void RigidBodyManipulator::doKinematicsNew(const MatrixBase<DerivedQ>& q, const 
   kinematicsInit = true;
   cached_inertia_gradients_order = -1;
   gradients_cached = compute_gradients;
-  velocity_kinematics_cached = v.rows() > 0;
+  velocity_kinematics_cached = v.rows() == num_velocities;
   jdotV_cached = compute_JdotV && velocity_kinematics_cached;
   for (int i = 0; i < num_positions; i++) cached_q[i] = q[i];
   if (v.rows() > 0) for (int i = 0; i < num_velocities; i++) cached_v[i] = v[i];
@@ -2601,6 +2660,9 @@ GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(
     throw std::runtime_error("only first order gradients are available");
   }
 
+  if (!jdotV_cached)
+  	throw std::runtime_error("you must call doKinematicsNew with compute_JdotV set to true");
+
   updateCompositeRigidBodyInertias(gradient_order);
 
   int nq = num_positions;
@@ -3231,7 +3293,7 @@ void RigidBodyManipulator::HandC(MatrixBase<DerivedG> const & q, MatrixBase<Deri
   }
 }
 
-int RigidBodyManipulator::findLinkId(string linkname, int robot)
+shared_ptr<RigidBody> RigidBodyManipulator::findLink(string linkname, int robot)
 {
   std::transform(linkname.begin(), linkname.end(), linkname.begin(), ::tolower); // convert to lower case
 
@@ -3242,7 +3304,6 @@ int RigidBodyManipulator::findLinkId(string linkname, int robot)
   name_match.resize(this->num_bodies);
   for(int i = 0;i<this->num_bodies;i++)
   {
-
     string lower_linkname = this->bodies[i]->linkname;
     std::transform(lower_linkname.begin(), lower_linkname.end(), lower_linkname.begin(), ::tolower); // convert to lower case
     if(lower_linkname.find(linkname) != string::npos)
@@ -3278,13 +3339,83 @@ int RigidBodyManipulator::findLinkId(string linkname, int robot)
   if(num_match != 1)
   {
     cerr<<"couldn't find unique link "<<linkname<<endl;
-    return(EXIT_FAILURE);
+    return(nullptr);
   }
   else
   {
-    return ind_match;
+    return this->bodies[ind_match];
   }
 }
+
+int RigidBodyManipulator::findLinkId(string name, int robot)
+{
+	shared_ptr<RigidBody> link = findLink(name,robot);
+	if (link == nullptr)
+	  throw std::runtime_error("could not find link id: " + name);
+	return link->body_index;
+}
+
+shared_ptr<RigidBody> RigidBodyManipulator::findJoint(string jointname, int robot)
+{
+  std::transform(jointname.begin(), jointname.end(), jointname.begin(), ::tolower); // convert to lower case
+
+  vector<bool> name_match;
+  name_match.resize(this->num_bodies);
+  for(int i = 0;i<this->num_bodies;i++)
+  {
+  	if (bodies[i]->hasParent()) {
+  		string lower_jointname = this->bodies[i]->getJoint().getName();
+  		std::transform(lower_jointname.begin(), lower_jointname.end(), lower_jointname.begin(), ::tolower); // convert to lower case
+			if(lower_jointname.compare(jointname) == 0)
+			{
+				name_match[i] = true;
+			}
+			else
+			{
+				name_match[i] = false;
+			}
+  	}
+  }
+  if(robot != -1)
+  {
+    for(int i = 0;i<this->num_bodies;i++)
+    {
+      if(name_match[i])
+      {
+        name_match[i] = this->bodies[i]->robotnum == robot;
+      }
+    }
+  }
+  // Unlike the MATLAB implementation, I am not handling the fixed joints
+  int num_match = 0;
+  int ind_match = -1;
+  for(int i = 0;i<this->num_bodies;i++)
+  {
+    if(name_match[i])
+    {
+      num_match++;
+      ind_match = i;
+    }
+  }
+  if(num_match != 1)
+  {
+    cerr<<"couldn't find unique joint "<<jointname<<endl;
+    return(nullptr);
+  }
+  else
+  {
+    return this->bodies[ind_match];
+  }
+}
+
+int RigidBodyManipulator::findJointId(string name, int robot)
+{
+	shared_ptr<RigidBody> link = findJoint(name,robot);
+	if (link == nullptr)
+    throw std::runtime_error("could not find joint id: " + name);
+	return link->body_index;
+}
+
 
 std::string RigidBodyManipulator::getBodyOrFrameName(int body_or_frame_id)
 {

@@ -63,26 +63,34 @@ public:
 
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+	friend std::ostream& operator<<(std::ostream& os, const RigidBodyLoop& obj);
 };
 
 class DLLEXPORT_RBM RigidBodyManipulator
 {
 public:
   RigidBodyManipulator(int num_dof, int num_featherstone_bodies=-1, int num_rigid_body_objects=-1, int num_rigid_body_frames=0);
-  RigidBodyManipulator(const std::string &urdf_filename);
+  RigidBodyManipulator(const std::string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
   RigidBodyManipulator(void);
   virtual ~RigidBodyManipulator(void);
 
-  bool addRobotFromURDFString(const std::string &xml_string, const std::string &root_dir = ".");
-  bool addRobotFromURDFString(const std::string &xml_string, std::map<std::string,std::string>& package_map, const std::string &root_dir = ".");
-  bool addRobotFromURDF(const std::string &urdf_filename);
-  bool addRobotFromURDF(const std::string &urdf_filename, std::map<std::string,std::string>& package_map);
+  bool addRobotFromURDFString(const std::string &xml_string, const std::string &root_dir = ".", const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
+  bool addRobotFromURDFString(const std::string &xml_string, std::map<std::string,std::string>& package_map, const std::string &root_dir = ".", const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
+  bool addRobotFromURDF(const std::string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
+  bool addRobotFromURDF(const std::string &urdf_filename, std::map<std::string,std::string>& package_map, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
 
   void surfaceTangents(Eigen::Map<Matrix3xd> const & normals, std::vector< Map<Matrix3xd> > & tangents);
   
   void resize(int num_dof, int num_featherstone_bodies=-1, int num_rigid_body_objects=-1, int num_rigid_body_frames=0);
 
   void compile(void);  // call me after the model is loaded
+
+  void getRandomConfiguration(Eigen::VectorXd& q, std::default_random_engine& generator) const;
+
+  // akin to the coordinateframe names in matlab
+  std::string getPositionName(int position_num) const;
+  std::string getVelocityName(int velocity_num) const;
+  std::string getStateName(int state_num) const;
   
   template <typename Derived>
   void doKinematics(MatrixBase<Derived> & q, bool b_compute_second_derivatives = false);
@@ -122,8 +130,6 @@ public:
 
   template <typename DerivedA, typename DerivedB>
   void getCMM(MatrixBase<DerivedA> const & q, MatrixBase<DerivedA> const & qd, MatrixBase<DerivedB> &A, MatrixBase<DerivedB> &Adot);
-
-
 
   template <typename Derived>
   void getCOM(MatrixBase<Derived> &com,const std::set<int> &robotnum = RigidBody::defaultRobotNumSet);
@@ -269,7 +275,10 @@ public:
 
   void warnOnce(const std::string& id, const std::string& msg);
 
+  std::shared_ptr<RigidBody> findLink(std::string linkname, int robot=-1);
   int findLinkId(std::string linkname, int robot = -1);
+  std::shared_ptr<RigidBody> findJoint(std::string jointname, int robot=-1);
+  int findJointId(std::string linkname, int robot = -1);
   //@param robot   the index of the robot. robot = -1 means to look at all the robots
 
   std::string getBodyOrFrameName(int body_or_frame_id);
@@ -330,9 +339,11 @@ public:
 
   VectorXd cached_q, cached_v;  // these should be private
 
-  bool use_new_kinsol;
+  void setUseNewKinsol(bool tf) { use_new_kinsol=tf; kinematicsInit=false; }
+  bool getUseNewKinsol(void) { return use_new_kinsol; }
 
 private:
+  bool use_new_kinsol;
   void doKinematics(double* q, bool b_compute_second_derivatives=false, double* qd=NULL);
   
   //helper functions for contactConstraints
