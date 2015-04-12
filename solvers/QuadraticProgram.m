@@ -160,7 +160,7 @@ methods
         error('Drake:UnsupportedSolver','fastqp is not installed');
       end
       obj.solver = solver;
-    elseif(strcmp(solver,'default')
+    elseif(strcmp(solver,'default'))
       if checkDependency('gurobi')
         obj.solver = 'gurobi';
       elseif checkDependency('gurobi_mex')  % possible if gurobi was compiled, but addpath_gurobi isn't loaded
