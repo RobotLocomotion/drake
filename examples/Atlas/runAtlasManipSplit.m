@@ -1,14 +1,12 @@
 function runAtlasManipSplit(example_options)
-%NOTEST 
 % Run the new split QP controller, which consists of separate PlanEval
 % and InstantaneousQPController objects. The controller will also
 % automatically transition to standing when it reaches the end of its walking
 % plan.
+% This function is intended to test the singularity that would encounter if
+% we used Euler angle. We should observe vey smooth output motion as we are
+% tracking the spatial velocity.
 % @option use_bullet [false] whether to use bullet for collision detect
-% @option quiet [true] whether to silence timing printouts
-
-% 
-% this function is tested in test/testSplitWalking.m
 
 checkDependency('gurobi');
 checkDependency('lcmgl');
@@ -64,44 +62,41 @@ t_plan = [0,0.5,1];
 
 n_breaks = 20;
 t_breaks = linspace(t_plan(1),t_plan(end),n_breaks);
-r_hand_breaks = zeros(7,n_breaks);
-r_hand_dot_breaks = zeros(7,n_breaks);
+% r_hand_breaks = zeros(7,n_breaks);
+% r_hand_dot_breaks = zeros(7,n_breaks);
 
 x_breaks = xtraj.eval(t_breaks);
 t_breaks = t_breaks*4;
 x_breaks(nq+(1:nv),:) = 1/4*x_breaks(nq+(1:nv),:);
 qtraj_pp = spline(t_breaks,[zeros(nq,1) x_breaks(1:nq,:) zeros(nq,1)]);
 % qtraj_pp = spline(t_breaks,[zeros(nq,1) repmat(x_breaks(1:nq,1),1,n_breaks) zeros(nq,1)]);
-for i = 1:n_breaks
-  kinsol = r.doKinematics(x_breaks(1:nq,i),x_breaks(nq+(1:nv),i));
-  [r_hand_breaks(:,i),Ji] = r.forwardKin(kinsol,r_hand,zeros(3,1),2);
-  r_hand_dot_breaks(:,i) = Ji*x_breaks(nq+(1:nv),i);
-end
-r_hand_xyzexp_breaks = zeros(6,n_breaks);
-r_hand_xyzexpdot_breaks = zeros(6,n_breaks);
-r_hand_xyzexp_breaks(1:3,:) = r_hand_breaks(1:3,:);
-r_hand_xyzexpdot_breaks(1:3,:) = r_hand_dot_breaks(1:3,:);
-[r_hand_xyzexp_breaks(4:6,:),r_hand_xyzexpdot_breaks(4:6,:)] = quat2expmapSequence(r_hand_breaks(4:7,:),r_hand_dot_breaks(4:7,:));
-rhand_pp = pchipDeriv(t_breaks,r_hand_xyzexp_breaks,r_hand_xyzexpdot_breaks);
+% for i = 1:n_breaks
+%   kinsol = r.doKinematics(x_breaks(1:nq,i),x_breaks(nq+(1:nv),i));
+%   [r_hand_breaks(:,i),Ji] = r.forwardKin(kinsol,r_hand,zeros(3,1),2);
+%   r_hand_dot_breaks(:,i) = Ji*x_breaks(nq+(1:nv),i);
+% end
+% r_hand_xyzexp_breaks = zeros(6,n_breaks);
+% r_hand_xyzexpdot_breaks = zeros(6,n_breaks);
+% r_hand_xyzexp_breaks(1:3,:) = r_hand_breaks(1:3,:);
+% r_hand_xyzexpdot_breaks(1:3,:) = r_hand_dot_breaks(1:3,:);
+% [r_hand_xyzexp_breaks(4:6,:),r_hand_xyzexpdot_breaks(4:6,:)] = quat2expmapSequence(r_hand_breaks(4:7,:),r_hand_dot_breaks(4:7,:));
+% rhand_pp = pchipDeriv(t_breaks,r_hand_xyzexp_breaks,r_hand_xyzexpdot_breaks);
 % rhand_pp = zoh(t_breaks,r_hand_breaks);
-rhand_coefs = reshape(rhand_pp.coefs,6,n_breaks-1,4);
-rhand_coefs = [rhand_coefs rhand_coefs(:,end,:)];
+% rhand_coefs = reshape(rhand_pp.coefs,6,n_breaks-1,4);
+% rhand_coefs = [rhand_coefs rhand_coefs(:,end,:)];
 % rhand_coefs = cat(3,zeros(6,n_breaks,3),rhand_coefs);
 
-body_motions(1) = BodyMotionData(pelvis,t_breaks);
-body_motions(1).coefs = cat(3,zeros(6,n_breaks,3),reshape(x_breaks(1:6,:),6,n_breaks,1));
-body_motions(1).use_spatial_velocity = false;
-body_motions(2) = BodyMotionData(r_hand,t_breaks);
-body_motions(2).coefs = rhand_coefs;
-body_motions(2).use_spatial_velocity = true;
+% body_motions(1) = BodyMotionData(pelvis,t_breaks);
+% body_motions(1).coefs = cat(3,zeros(6,n_breaks,3),reshape(x_breaks(1:6,:),6,n_breaks,1));
+% body_motions(1).use_spatial_velocity = false;
+% body_motions(2) = BodyMotionData(r_hand,t_breaks);
+% body_motions(2).coefs = rhand_coefs;
+% body_motions(2).use_spatial_velocity = true;
 
 manip_plan_data = QPLocomotionPlan.from_quasistatic_qtraj(r,PPTrajectory(qtraj_pp),struct('bodies_to_track',[pelvis,r_hand]));
 % manip_plan_data.body_motions = body_motions;
 r_arm_idx = r.findPositionIndices('r_arm');
-% manip_plan_data.constrained_dofs = setdiff(manip_plan_data.constrained_dofs, r_arm_idx);
 manip_plan_data.gain_set = 'manip';
-% walking_plan_data = StandingPlan.from_standing_state(x0, r);
-
 
 manip_plan_data.joint_pd_override_data = struct('position_ind',r_arm_idx,...
                                               'kp',zeros(length(r_arm_idx),1),...
