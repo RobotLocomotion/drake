@@ -139,7 +139,7 @@ for i=1:length(support_times)-1
   rsole_des_next = tform2poseQuat(T_r_frame_next * T_frame_to_sole.right);
 
   step_height_delta_threshold = 0.025; % cm, min change in height to classify step up/down
-  step_up_pelvis_shift = 0.03; % cm
+  step_up_pelvis_shift = 0.1; % cm
   if isDoubleSupport && nextIsDoubleSupport
     pelvis_reference_height(i+1) = pelvis_reference_height(i);
   elseif isDoubleSupport && nextIsLeftSupport
