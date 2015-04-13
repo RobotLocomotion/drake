@@ -39,7 +39,7 @@ const std::string& DrakeJoint::getName() const
 
 GradientVar<double, Eigen::Dynamic, 1> DrakeJoint::frictionTorque(const Eigen::Ref<const VectorXd>& v, int gradient_order) const
 {
-  GradientVar<double, Eigen::Dynamic, 1> ret(Eigen::Dynamic, 1, getNumPositions(), gradient_order);
+  GradientVar<double, Eigen::Dynamic, 1> ret(getNumVelocities(), 1, getNumVelocities(), gradient_order);
   ret.value().setZero();
   if (gradient_order > 0) {
     ret.gradient().value().setZero();

@@ -2780,12 +2780,41 @@ GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(
       }
     }
   }
+
+  auto friction_torques = frictionTorques(cached_v, gradient_order);
+  ret.value() += friction_torques.value();
+  if (gradient_order > 0)
+    ret.gradient().value().block(0, nq, nv, nv) += friction_torques.gradient().value();
+
   return ret;
 }
 
 template <typename DerivedV>
 GradientVar<typename DerivedV::Scalar, Dynamic, 1> RigidBodyManipulator::frictionTorques(Eigen::MatrixBase<DerivedV> const & v, int gradient_order) {
-  // TODO
+  typedef typename DerivedV::Scalar Scalar;
+  GradientVar<Scalar, Dynamic, 1> ret(num_velocities, 1, num_velocities, gradient_order);
+  if (gradient_order > 1)
+    throw std::runtime_error("only first order gradients are available");
+
+  if (gradient_order > 0)
+    ret.gradient().value().setZero();
+
+  for (auto it = bodies.begin(); it != bodies.end(); ++it) {
+    RigidBody& body = **it;
+    if (body.hasParent()) {
+      const DrakeJoint& joint = body.getJoint();
+      int nv_joint = joint.getNumVelocities();
+      int v_start_joint = body.velocity_num_start;
+      auto v_body = v.middleRows(v_start_joint, nv_joint);
+      auto friction_torque_body = joint.frictionTorque(v_body, gradient_order);
+      ret.value().middleRows(v_start_joint, nv_joint) = friction_torque_body.value();
+      if (gradient_order > 0) {
+        ret.gradient().value().block(v_start_joint, v_start_joint, nv_joint, nv_joint) = friction_torque_body.gradient().value();
+      }
+    }
+  }
+
+  return ret;
 }
 
 template <typename DerivedPoints>
