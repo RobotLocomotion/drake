@@ -28,8 +28,6 @@ if length(ts)>300 % limit number of IK samples to something reasonable
   ts = linspace(0,walking_plan_data.comtraj.tspan(end),300);
 end
 
-% link_trajectories = walking_plan_data.getLinkTrajectories();
-
 %% create desired joint trajectory
 cost = Point(obj.getStateFrame,1);
 cost.base_x = 0;
@@ -54,20 +52,31 @@ for i=1:length(ts)
     ik_args = {};
     for j = 1:length(walking_plan_data.body_motions)
       body_ind = walking_plan_data.body_motions(j).body_id;
-      xyz_exp = walking_plan_data.body_motions(j).eval(t);
-      quat = expmap2quat(xyz_exp(4:6));
+      if walking_plan_data.body_motions(j).use_spatial_velocity
+        xyz_exp = walking_plan_data.body_motions(j).eval(t);
+        xyz = xyz_exp(1:3);
+        quat = expmap2quat(xyz_exp(4:6));
+        % rpy = quat2rpy(quat);
+      else
+        xyz_rpy = walking_plan_data.body_motions(j).eval(t);
+        xyz = xyz_rpy(1:3);
+        % rpy = xyz_rpy(4:6);
+        quat = rpy2quat(xyz_rpy(4:6));
+      end
 
-      body_ind = link_trajectories(j).link_ndx;
       ik_args = [ik_args,{constructRigidBodyConstraint(RigidBodyConstraint.WorldPositionConstraintType,true,...
-          obj,body_ind, [0;0;0],xyz_exp(1:3), xyz_exp(1:3)),...
-          constructRigidBodyConstraint(RigidBodyConstraint.WorldQuatConstraintType,true,obj,body_ind,quat,0)}];
+          obj,body_ind, [0;0;0],xyz, xyz),...
+          constructRigidBodyConstraint(RigidBodyConstraint.WorldQuatConstraintType,true,obj,body_ind,quat,0.01)}];
+      % ik_args = [ik_args,{constructRigidBodyConstraint(RigidBodyConstraint.WorldPositionConstraintType,true,...
+      %     obj,body_ind, [0;0;0],xyz, xyz),...
+      %     constructRigidBodyConstraint(RigidBodyConstraint.WorldEulerConstraintType,true,obj,body_ind,rpy,rpy)}];
     end
     kc_com = constructRigidBodyConstraint(RigidBodyConstraint.WorldCoMConstraintType,true,obj.getMexModelPtr,[walking_plan_data.comtraj.eval(t);nan],[walking_plan_data.comtraj.eval(t);nan]);
-    [q(:,i),info] = approximateIKmex(obj.getMexModelPtr,q(:,i-1),qstar,kc_com,ik_args{:},ikoptions.mex_ptr);
-    if info
-      full_IK_calls = full_IK_calls + 1;
+    % [q(:,i),info] = approximateIKmex(obj.getMexModelPtr,q(:,i-1),qstar,kc_com,ik_args{:},ikoptions.mex_ptr);
+    % if info
+    %   full_IK_calls = full_IK_calls + 1;
       q(:,i) = inverseKin(obj,q(:,i-1),qstar,kc_com,ik_args{:},ikoptions);
-    end
+    % end
 
   else
     q = q0;
