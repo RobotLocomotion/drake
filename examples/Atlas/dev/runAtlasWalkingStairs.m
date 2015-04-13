@@ -15,6 +15,8 @@ robot_options = applyDefaults(robot_options, struct('use_bullet', true,...
                                                     'enable_fastqp', true,...
                                                     'ignore_friction', true,...
                                                     'use_new_kinsol', true,...
+                                                    'hand_right', 'robotiq_weight_only',...
+                                                    'hand_left', 'robotiq_weight_only',...
                                                     'dt', 0.001));
 % silence some warnings
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints')
@@ -27,7 +29,17 @@ r = compile(r);
 
 % set initial state to fixed point
 load(fullfile(getDrakePath,'examples','Atlas','data','atlas_fp.mat'));
+
+xstar(r.findPositionIndices('r_arm_usy')) = -0.931;
+xstar(r.findPositionIndices('r_arm_shx')) = 0.717;
+xstar(r.findPositionIndices('r_arm_ely')) = 1.332;
+xstar(r.findPositionIndices('r_arm_elx')) = -0.871;
+xstar(r.findPositionIndices('l_arm_usy')) = -0.931;
+xstar(r.findPositionIndices('l_arm_shx')) = -0.717;
+xstar(r.findPositionIndices('l_arm_ely')) = 1.332;
+xstar(r.findPositionIndices('l_arm_elx')) = 0.871;
 xstar = r.resolveConstraints(xstar);
+
 r = r.setInitialState(xstar);
 x0 = xstar;
 nq = r.getNumPositions();
