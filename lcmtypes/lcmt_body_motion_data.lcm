@@ -18,4 +18,5 @@ struct lcmt_body_motion_data
         double xyz_kd_multiplier[3];
         double expmap_kp_multiplier;
         double expmap_kd_multiplier;
+        double weight_multiplier[6];
 }

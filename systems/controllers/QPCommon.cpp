@@ -140,6 +140,12 @@ std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray 
         mexErrMsgTxt("expmap_kd_multiplier should be 1 x 1");
       }
       msg->body_motion_data[i].expmap_kd_multiplier = mxGetScalar(expmap_kd_multiplier);
+      const mxArray* weight_multiplier = mxGetFieldSafe(body_motion_data, i, "weight_multiplier");
+      if(mxGetM(weight_multiplier) != 6 || mxGetN(weight_multiplier) != 1)
+      {
+        mexErrMsgTxt("weight_multiplier should be 6 x 1");
+      }
+      memcpy(msg->body_motion_data[i].weight_multiplier, mxGetPr(weight_multiplier), sizeof(double)*6);
     }
   }
 
@@ -427,6 +433,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     Map<Vector3d> xyz_kd_multiplier(qp_input->body_motion_data[i].xyz_kd_multiplier);
     double expmap_kp_multiplier = qp_input->body_motion_data[i].expmap_kp_multiplier;
     double expmap_kd_multiplier = qp_input->body_motion_data[i].expmap_kd_multiplier;
+    memcpy(desired_body_accelerations[i].weight_multiplier.data(),qp_input->body_motion_data[i].weight_multiplier,sizeof(double)*6);
     pdata->r->findKinematicPath(desired_body_accelerations[i].body_path,0,desired_body_accelerations[i].body_or_frame_id0);
     Map<Matrix<double, 6, 4,RowMajor>>coefs_rowmaj(&qp_input->body_motion_data[i].coefs[0][0]);
     Matrix<double, 6, 4> coefs = coefs_rowmaj;
@@ -878,8 +885,8 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
           }
           for (int j=0; j<6; j++) {
             if (!std::isnan(desired_body_accelerations[i].body_vdot[j])) {
-              pdata->Hqp += desired_body_accelerations[i].weight*(Jb.row(j)).transpose()*Jb.row(j);
-              f.head(nq).noalias() += desired_body_accelerations[i].weight*(Jbdotv(j) - desired_body_accelerations[i].body_vdot[j])*Jb.row(j).transpose();
+              pdata->Hqp += desired_body_accelerations[i].weight*desired_body_accelerations[i].weight_multiplier(j)*(Jb.row(j)).transpose()*Jb.row(j);
+              f.head(nq).noalias() += desired_body_accelerations[i].weight*desired_body_accelerations[i].weight_multiplier(j)*(Jbdotv(j) - desired_body_accelerations[i].body_vdot[j])*Jb.row(j).transpose();
             }
           }
         }

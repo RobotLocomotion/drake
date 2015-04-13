@@ -13,6 +13,7 @@ classdef BodyMotionData
     xyz_kd_multiplier % A 3 x 1 vector. The multiplier for the Kd gain on xyz velocity error of the body, default to [1;1;1]
     expmap_kp_multiplier % A positive scalar. The multiplier for the Kp gain on exponential map error of body orientation, default to 1
     expmap_kd_multiplier % A positive scalar. The multiplier for the Kd gain on exponential map velocity error of body orientation, default to 1
+    weight_multiplier % A 6 x 1 vector. The multiplier for twist_dot (angular_aceleration, cartesian_acceleration) weight in the QP controller, default to ones(6,1);
   end
 
   methods
@@ -30,6 +31,7 @@ classdef BodyMotionData
       obj.xyz_kd_multiplier = [1;1;1];
       obj.expmap_kp_multiplier = 1;
       obj.expmap_kd_multiplier = 1;
+      obj.weight_multiplier = ones(6,1);
     end
 
     function t_ind = findTInd(obj, t)
@@ -73,7 +75,8 @@ classdef BodyMotionData
                                  'xyz_kp_multiplier',obj.xyz_kp_multiplier,...
                                  'xyz_kd_multiplier',obj.xyz_kd_multiplier,...
                                  'expmap_kp_multiplier',obj.expmap_kp_multiplier,...
-                                 'expmap_kd_multiplier',obj.expmap_kd_multiplier);
+                                 'expmap_kd_multiplier',obj.expmap_kd_multiplier,...
+                                 'weight_multiplier',obj.weight_multiplier);
     end
 
     function pp = getPP(obj)
@@ -110,6 +113,9 @@ classdef BodyMotionData
       end
       if any(obj.expmap_kd_multiplier ~= new_body_motion_data.expmap_kd_multiplier)
         error('Drake:BodyMotionData:BadExtend', 'expmap_kd_multiplier must match');
+      end
+      if any(obj.weight_multiplier ~= new_body_motion_data.weight_multiplier)
+        error('Drake:BodyMotionData:BadExtend', 'weight_multiplier must match');
       end
       nts = numel(obj.ts) - 1;
       obj.ts = [obj.ts(1:nts), new_body_motion_data.ts];
