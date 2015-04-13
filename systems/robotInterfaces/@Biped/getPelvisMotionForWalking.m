@@ -138,7 +138,7 @@ for i=1:length(support_times)-1
   T_r_frame_next = poseQuat2tform([rfoot_frame_next(1:3); expmap2quat(rfoot_frame_next(4:6))]);
   rsole_des_next = tform2poseQuat(T_r_frame_next * T_frame_to_sole.right);
 
-  step_height_delta_threshold = 0.025; % cm, min change in height to classify step up/down
+  step_height_delta_threshold = 0.05; % cm, min change in height to classify step up/down
   step_up_pelvis_shift = 0.1; % cm
   if isDoubleSupport && nextIsDoubleSupport
     pelvis_reference_height(i+1) = pelvis_reference_height(i);
@@ -160,14 +160,14 @@ for i=1:length(support_times)-1
   elseif isLeftSupport && nextIsDoubleSupport 
     if rsole_des_next(3) < lsole_des(3) - step_height_delta_threshold
       % stepping down with right foot
-      pelvis_reference_height(i+1) = rsole_des_next(3)-step_up_pelvis_shift;
+      pelvis_reference_height(i+1) = rsole_des_next(3);
     else
       pelvis_reference_height(i+1) = lsole_des(3);
     end
   elseif isRightSupport && nextIsDoubleSupport 
     if lsole_des_next(3) < rsole_des(3) - step_height_delta_threshold
       % stepping down with left foot
-      pelvis_reference_height(i+1) = lsole_des_next(3)-step_up_pelvis_shift;
+      pelvis_reference_height(i+1) = lsole_des_next(3);
     else
       pelvis_reference_height(i+1) = rsole_des(3);
     end
