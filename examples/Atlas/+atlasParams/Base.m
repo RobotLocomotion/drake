@@ -3,7 +3,7 @@ classdef Base
   % are fixed at compile time for a particular type of plan (walking, manipulating,
   % standing, recovery, etc.) but which can be switched out for a different set when
   % the plan type changes. 
-  properties(GetAccess=public, SetAccess=protected)
+  properties
     body_motion
     whole_body
     vref_integrator

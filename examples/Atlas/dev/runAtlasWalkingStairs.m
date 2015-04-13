@@ -7,12 +7,16 @@ checkDependency('lcmgl');
 path_handle = addpathTemporary(fullfile(getDrakePath(), 'examples', 'Atlas'));
 
 robot_options = struct();
-robot_options = applyDefaults(robot_options, struct('use_bullet', false,...
+robot_options = applyDefaults(robot_options, struct('use_bullet', true,...
                                                     'terrain', RigidBodyFlatTerrain,...
                                                     'floating', true,...
                                                     'ignore_self_collisions', true,...
+                                                    'ignore_effort_limits', true,...
+                                                    'enable_fastqp', true,...
                                                     'ignore_friction', true,...
                                                     'use_new_kinsol', true,...
+                                                    'hand_right', 'robotiq_weight_only',...
+                                                    'hand_left', 'robotiq_weight_only',...
                                                     'dt', 0.001));
 % silence some warnings
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints')
@@ -25,27 +29,36 @@ r = compile(r);
 
 % set initial state to fixed point
 load(fullfile(getDrakePath,'examples','Atlas','data','atlas_fp.mat'));
+
+xstar(r.findPositionIndices('r_arm_usy')) = -0.931;
+xstar(r.findPositionIndices('r_arm_shx')) = 0.717;
+xstar(r.findPositionIndices('r_arm_ely')) = 1.332;
+xstar(r.findPositionIndices('r_arm_elx')) = -0.871;
+xstar(r.findPositionIndices('l_arm_usy')) = -0.931;
+xstar(r.findPositionIndices('l_arm_shx')) = -0.717;
+xstar(r.findPositionIndices('l_arm_ely')) = 1.332;
+xstar(r.findPositionIndices('l_arm_elx')) = 0.871;
 xstar = r.resolveConstraints(xstar);
+
 r = r.setInitialState(xstar);
 x0 = xstar;
 nq = r.getNumPositions();
 
-box_size = [0.3, 0.75, 0.15];
+box_size = [0.28, 39*0.0254, 0.22];
 
-box_tops = [0.5, 0, 0.15;
-            0.8, 0, 0.3]';
+box_tops = [0.2, 0, 0;
+            0.2+0.28, 0, 0.22;
+            0.2+2*0.28, 0, 0.22*2;
+            0.2+3*0.28, 0, 0.22*3;
+            0.2+4*0.28, 0, 0.22*4]';
 
-lcmgl = LCMGLClient('iris_regions');
-[A, b] = poly2lincon([-1, 0.18, 0.18, -1],...
-                     [-1, -1, 1, 1]);
-[A, b] = convert_to_cspace(A, b);
-safe_regions = iris.TerrainRegion(A, b, [], [], [0;0;0], [0;0;1]);
+safe_regions = iris.TerrainRegion.empty();
 
 for j = 1:size(box_tops, 2)
   b = RigidBodyBox(box_size, box_tops(:,j) + [0;0;-box_size(3)/2], [0;0;0]);
   r = r.addGeometryToBody('world', b);
-  [A, b] = poly2lincon(box_tops(1,j) + [-0.01, 0.01, 0.01, -0.01],...
-                       box_tops(2,j) + [-1, -1, 1, 1]);
+  [A, b] = poly2lincon(box_tops(1,j) + [-0.01, 0, 0, -0.01],...
+                       box_tops(2,j) + [-0.25, -0.25, 0.25, 0.25]);
   [A, b] = convert_to_cspace(A, b);
   safe_regions(end+1) = iris.TerrainRegion(A, b, [], [], box_tops(1:3,j), [0;0;1]);
 end
@@ -54,20 +67,17 @@ height_map = RigidBodyHeightMapTerrain.constructHeightMapFromRaycast(r,x0(1:nq),
 r = r.setTerrain(height_map).compile();
 
 v = r.constructVisualizer();
+v.display_dt = 0.01;
 
-lcmgl.glColor3f(0,0,0);
-for j = 1:length(safe_regions)
-  safe_regions(j).getXYZPolytope().drawLCMGL(lcmgl);
-end
-
-
-footstep_plan = r.planFootsteps(x0(1:nq), struct('right',[3;-0.13;0;0;0;0],...
-                                                 'left', [3;0.13;0;0;0;0]),...
+footstep_plan = r.planFootsteps(x0(1:nq), struct('right',[1.65;-0.13;0;0;0;0],...
+                                                 'left', [1.65;0.13;0;0;0;0]),...
                                 safe_regions,...
                                 struct('step_params', struct('max_forward_step', 0.4,...
-                                                             'nom_foward_step', 0.1,...
+                                                             'nom_forward_step', 0.05,...
                                                              'max_num_steps', 10)));
+lcmgl = LCMGLClient('footsteps');
 footstep_plan.draw_lcmgl(lcmgl);
+lcmgl.switchBuffers();
 
 % Add terrain profiles
 for j = 3:length(footstep_plan.footsteps)
@@ -79,10 +89,8 @@ end
 
 walking_plan = r.planWalkingZMP(x0(1:nq), footstep_plan);
 
-lcmgl.switchBuffers();
-
-ytraj = r.planWalkingStateTraj(walking_plan);
-v.playback(ytraj, struct('slider', true));
+% ytraj = r.planWalkingStateTraj(walking_plan);
+% v.playback(ytraj, struct('slider', true));
 
 % Build our controller and plan eval objects
 control = atlasControllers.InstantaneousQPController(r, []);
@@ -96,8 +104,9 @@ output_select(1).output=1;
 sys = mimoCascade(sys,v,[],[],output_select);
 
 % Simulate and draw the result
-T = min(walking_plan.duration + 1, 30);
+T = walking_plan.duration;
 ytraj = simulate(sys, [0, T], x0, struct('gui_control_interface', true));
+[com, rms_com] = atlasUtil.plotWalkingTraj(r, ytraj, walking_plan);
 
 v.playback(ytraj, struct('slider', true));
 
@@ -105,9 +114,9 @@ v.playback(ytraj, struct('slider', true));
 end
 
 function [A, b] = convert_to_cspace(A, b)
-  A = [A, zeros(size(A, 1), 1)];
-       % zeros(2, size(A, 2) + 1)];
-  % A(end-1,3) = 1;
-  % A(end,3) = -1;
-  % b = [b; pi/8; pi/8];
+  A = [A, zeros(size(A, 1), 1);
+       zeros(2, size(A, 2) + 1)];
+  A(end-1,3) = 1;
+  A(end,3) = -1;
+  b = [b; 0; 0];
 end

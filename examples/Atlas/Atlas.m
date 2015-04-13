@@ -337,27 +337,6 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
 
   properties (SetAccess = protected, GetAccess = public)
     x0
-    default_footstep_params = struct('nom_forward_step', 0.25,... % m
-                                      'max_forward_step', 0.35,...% m
-                                      'max_backward_step', 0.2,...% m
-                                      'max_step_width', 0.38,...% m
-                                      'min_step_width', 0.18,...% m
-                                      'nom_step_width', 0.26,...% m
-                                      'max_outward_angle', pi/8,... % rad
-                                      'max_inward_angle', 0.01,... % rad
-                                      'nom_upward_step', 0.25,... % m
-                                      'nom_downward_step', 0.25,...% m
-                                      'max_num_steps', 10,...
-                                      'min_num_steps', 1,...
-                                      'leading_foot', 1); % 0: left, 1: right
-    default_walking_params = struct('step_speed', 0.5,... % speed of the swing foot (m/s)
-                                    'step_height', 0.05,... % approximate clearance over terrain (m)
-                                    'drake_min_hold_time', 1.0,... % minimum time in double support (s)
-                                    'drake_instep_shift', 0.0,... % Distance to shift ZMP trajectory inward toward the instep from the center of the foot (m)
-                                    'mu', 1.0,... % friction coefficient
-                                    'constrain_full_foot_pose', true,... % whether to constrain the swing foot roll and pitch
-                                    'pelvis_height_above_foot_sole', 0.84,... % default pelvis height when walking
-                                    'nominal_LIP_COM_height', 0.89); % nominal height used to construct D_ls for our linear inverted pendulum model
     hand_right = 0;
     hand_right_kind = 'none';
     hand_left = 0;
@@ -375,5 +354,26 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
 
   properties
     fixed_point_file = fullfile(getDrakePath(), 'examples', 'Atlas', 'data', 'atlas_fp.mat');
+    default_footstep_params = struct('nom_forward_step', 0.25,... % m
+                                      'max_forward_step', 0.35,...% m
+                                      'max_backward_step', 0.2,...% m
+                                      'max_step_width', 0.38,...% m
+                                      'min_step_width', 0.18,...% m
+                                      'nom_step_width', 0.26,...% m
+                                      'max_outward_angle', pi/8,... % rad
+                                      'max_inward_angle', 0.01,... % rad
+                                      'nom_upward_step', 0.25,... % m
+                                      'nom_downward_step', 0.25,...% m
+                                      'max_num_steps', 10,...
+                                      'min_num_steps', 1,...
+                                      'leading_foot', 1); % 0: left, 1: right
+    default_walking_params = struct('step_speed', 0.5,... % speed of the swing foot (m/s)
+                                    'step_height', 0.05,... % approximate clearance over terrain (m)
+                                    'drake_min_hold_time', 0.7,... % minimum time in double support (s)
+                                    'drake_instep_shift', 0.0,... % Distance to shift ZMP trajectory inward toward the instep from the center of the foot (m)
+                                    'mu', 1.0,... % friction coefficient
+                                    'constrain_full_foot_pose', true,... % whether to constrain the swing foot roll and pitch
+                                    'pelvis_height_above_foot_sole', 0.84,... % default pelvis height when walking
+                                    'nominal_LIP_COM_height', 0.89); % nominal height used to construct D_ls for our linear inverted pendulum model
   end
 end
