@@ -28,7 +28,7 @@ if length(ts)>300 % limit number of IK samples to something reasonable
   ts = linspace(0,walking_plan_data.comtraj.tspan(end),300);
 end
 
-link_trajectories = walking_plan_data.getLinkTrajectories();
+% link_trajectories = walking_plan_data.getLinkTrajectories();
 
 %% create desired joint trajectory
 cost = Point(obj.getStateFrame,1);
@@ -52,18 +52,15 @@ for i=1:length(ts)
   t = ts(i);
   if (i>1)
     ik_args = {};
-    for j = 1:length(link_trajectories)
+    for j = 1:length(walking_plan_data.body_motions)
+      body_ind = walking_plan_data.body_motions(j).body_id;
+      xyz_exp = walking_plan_data.body_motions(j).eval(t);
+      quat = expmap2quat(xyz_exp(4:6));
+
       body_ind = link_trajectories(j).link_ndx;
-      if ~isempty(link_trajectories(j).traj)
-        min_pos = link_trajectories(j).traj.eval(t);
-        max_pos = min_pos;
-      else
-        min_pos = link_trajectories(j).min_traj.eval(t);
-        max_pos = link_trajectories(j).max_traj.eval(t);
-      end
       ik_args = [ik_args,{constructRigidBodyConstraint(RigidBodyConstraint.WorldPositionConstraintType,true,...
-          obj,body_ind, [0;0;0],min_pos(1:3),max_pos(1:3)),...
-          constructRigidBodyConstraint(RigidBodyConstraint.WorldEulerConstraintType,true,obj,body_ind,min_pos(4:6),max_pos(4:6))}];
+          obj,body_ind, [0;0;0],xyz_exp(1:3), xyz_exp(1:3)),...
+          constructRigidBodyConstraint(RigidBodyConstraint.WorldQuatConstraintType,true,obj,body_ind,quat,0)}];
     end
     kc_com = constructRigidBodyConstraint(RigidBodyConstraint.WorldCoMConstraintType,true,obj.getMexModelPtr,[walking_plan_data.comtraj.eval(t);nan],[walking_plan_data.comtraj.eval(t);nan]);
     [q(:,i),info] = approximateIKmex(obj.getMexModelPtr,q(:,i-1),qstar,kc_com,ik_args{:},ikoptions.mex_ptr);

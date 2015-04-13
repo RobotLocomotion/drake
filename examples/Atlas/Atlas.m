@@ -352,7 +352,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
                                       'leading_foot', 1); % 0: left, 1: right
     default_walking_params = struct('step_speed', 0.5,... % speed of the swing foot (m/s)
                                     'step_height', 0.05,... % approximate clearance over terrain (m)
-                                    'drake_min_hold_time', 1.0,... % minimum time in double support (s)
+                                    'drake_min_hold_time', 2.0,... % minimum time in double support (s)
                                     'drake_instep_shift', 0.0,... % Distance to shift ZMP trajectory inward toward the instep from the center of the foot (m)
                                     'mu', 1.0,... % friction coefficient
                                     'constrain_full_foot_pose', true,... % whether to constrain the swing foot roll and pitch
