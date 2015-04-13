@@ -263,34 +263,36 @@ classdef QPLocomotionPlan < QPControllerPlan
 
       xs = [[x0(1:3); quat2expmap(x0(4:7))], body_motion_data.coefs(:, body_t_ind+(2:4), end)];
       
-      % Move the first aerial knot point to be directly above our current foot origin pose
-      nhat = xs(1:2,end) - x0(1:2);
-      nhat = nhat / norm(nhat);
-      if nhat' * xs(1:2,2) < nhat' * x0(1:2)
-        xs(1:2,2) = x0(1:2);
+      % If the current pose is pitched down more than the first aerial knot point, adjust the knot point to match the current pose
+      T_x0_to_world_in_world = poseQuat2tform([xs(1:3,1); expmap2quat(xs(4:6,1))]);
+      T_x1_to_world_in_world = poseQuat2tform([xs(1:3,2); expmap2quat(xs(4:6,2))]);
+      xprime_x0 = T_x0_to_world_in_world * [1;0;0;0];
+      xprime_x1 = T_x1_to_world_in_world * [1;0;0;0];
+      if xprime_x0(3) < xprime_x1(3)
+        xs(4:6,2) = quat2expmap(slerp(expmap2quat(xs(4:6,1)), expmap2quat(xs(4:6,3)), 0.5));
       end
 
       xdf = body_motion_data.coefs(:,body_t_ind+4,end-1);
 
-      ts = [body_motion_data.ts(body_t_ind+1), 0, 0, body_motion_data.ts(body_t_ind+4)];
-      qpSpline_options = struct('optimize_knot_times', true);
+      ts = body_motion_data.ts(body_t_ind+(1:4));
+      qpSpline_options = struct('optimize_knot_times', false);
       [coefs, ts] = qpSpline(ts, xs, xd0, xdf, qpSpline_options);
 
-      tt = linspace(ts(1), ts(end));
-      pp = mkpp(ts, coefs, 6);
-      xs = ppval(pp, tt);
-      xds = ppval(fnder(pp, 1), tt);
-      obj.lcmgl.glPointSize(5);
-      obj.lcmgl.points(xs(1,:), xs(2,:), xs(3,:));
+      % tt = linspace(ts(1), ts(end));
+      % pp = mkpp(ts, coefs, 6);
+      % xs = ppval(pp, tt);
+      % xds = ppval(fnder(pp, 1), tt);
+      % obj.lcmgl.glPointSize(5);
+      % obj.lcmgl.points(xs(1,:), xs(2,:), xs(3,:));
 
-      vscale = 0.1;
-      for j = 1:size(xs,2)
-        obj.lcmgl.line3(xs(1,j), xs(2,j), xs(3,j), ...
-                    xs(1,j) + vscale*xds(1,j),...
-                    xs(2,j) + vscale*xds(2,j),...
-                    xs(3,j) + vscale*xds(3,j));
-      end
-      obj.lcmgl.switchBuffers();
+      % vscale = 0.1;
+      % for j = 1:size(xs,2)
+      %   obj.lcmgl.line3(xs(1,j), xs(2,j), xs(3,j), ...
+      %               xs(1,j) + vscale*xds(1,j),...
+      %               xs(2,j) + vscale*xds(2,j),...
+      %               xs(3,j) + vscale*xds(3,j));
+      % end
+      % obj.lcmgl.switchBuffers();
 
       obj.body_motions(body_motion_ind).coefs(:,body_t_ind+(1:3),:) = coefs;
       obj.body_motions(body_motion_ind).ts(body_t_ind+(1:3)) = ts(1:3);
