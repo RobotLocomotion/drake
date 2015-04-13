@@ -405,13 +405,12 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   }
 
   // handle external wrenches to compensate for
-  const int wrench_size = 6;
   typedef GradientVar<double, TWIST_SIZE, 1> WrenchGradientVarType;
   std::map<int, std::unique_ptr<GradientVar<double, TWIST_SIZE, 1>> > f_ext;
   for (auto it = qp_input->body_wrench_data.begin(); it != qp_input->body_wrench_data.end(); ++it) {
     const drake::lcmt_body_wrench_data& body_wrench_data = *it;
     int body_id = body_wrench_data.body_id - 1;
-    f_ext[body_id] = std::unique_ptr<WrenchGradientVarType>(new WrenchGradientVarType(wrench_size, 1, nq, 0));
+    f_ext[body_id] = std::unique_ptr<WrenchGradientVarType>(new WrenchGradientVarType(TWIST_SIZE, 1, nq, 0));
     f_ext[body_id]->value() = Map<const WrenchGradientVarType::DataType>(body_wrench_data.wrench);
   }
 
