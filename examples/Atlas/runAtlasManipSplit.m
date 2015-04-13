@@ -95,10 +95,10 @@ body_motions(2) = BodyMotionData(r_hand,t_breaks);
 body_motions(2).coefs = rhand_coefs;
 body_motions(2).use_spatial_velocity = true;
 
-manip_plan_data = QPLocomotionPlan.from_quasistatic_qtraj(r,PPTrajectory(qtraj_pp));
-manip_plan_data.body_motions = body_motions;
+manip_plan_data = QPLocomotionPlan.from_quasistatic_qtraj(r,PPTrajectory(qtraj_pp),struct('bodies_to_track',[pelvis,r_hand]));
+% manip_plan_data.body_motions = body_motions;
 r_arm_idx = r.findPositionIndices('r_arm');
-manip_plan_data.constrained_dofs = setdiff(manip_plan_data.constrained_dofs, r_arm_idx);
+% manip_plan_data.constrained_dofs = setdiff(manip_plan_data.constrained_dofs, r_arm_idx);
 manip_plan_data.gain_set = 'manip';
 % walking_plan_data = StandingPlan.from_standing_state(x0, r);
 

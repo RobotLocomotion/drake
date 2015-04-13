@@ -200,6 +200,7 @@ struct DesiredBodyAcceleration {
   bool use_spatial_velocity;
   KinematicPath body_path;
   Isometry3d T_task_to_world;
+  Vector6d weight_multiplier;
 };
 
 struct QPControllerOutput {

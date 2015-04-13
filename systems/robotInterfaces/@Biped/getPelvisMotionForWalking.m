@@ -191,14 +191,25 @@ end
 pelvis_yaw = unwrap(pelvis_yaw);
 
 
-pelvis_poses_rpy = [nan(2, size(rpos, 2));
+pelvis_poses_rpy = [zeros(2, size(rpos, 2));
                 pelvis_reference_height + options.pelvis_height_above_sole;
                 zeros(2, numel(pelvis_ts));
                 pelvis_yaw];
+pelvis_xyz_expmap = zeros(6,size(pelvis_poses_rpy,2));
+pelvis_xyz_expmap(1:3,:) = pelvis_poses_rpy(1:3,:);
+pelvis_quat = zeros(4,size(pelvis_poses_rpy,2));
+for i = 1:size(pelvis_poses_rpy,2)
+  pelvis_quat(:,i) = rpy2quat(pelvis_poses_rpy(4:6,i));
+  if(i>1)
+    pelvis_quat(:,i) = sign(pelvis_quat(:,i-1)'*pelvis_quat(:,i))*pelvis_quat(:,i);
+  end
+  pelvis_xyz_expmap(4:6,i) = quat2expmap(pelvis_quat(:,i));
+end
 
-pp = foh(pelvis_ts, pelvis_poses_rpy);
-pelvis_motion_data = BodyMotionData.from_body_xyzrpy_pp(pelvis_body, pp);
-
+% pp = foh(pelvis_ts, pelvis_xyz_expmap);
+pelvis_motion_data = BodyMotionData.from_body_xyzexp(pelvis_body, pelvis_ts,pelvis_xyz_expmap);
+pelvis_motion_data.weight_multiplier = [1;1;1;0;0;1];
+pelvis_motion_data.use_spatial_velocity = true;
 if options.debug
   pp = pelvis_motion_data.getPP();
   tt = linspace(pelvis_ts(1), pelvis_ts(end), 100);

@@ -6,8 +6,8 @@ classdef Manip < atlasParams.Standing
       r_hand = r.findLinkId('r_hand');
       obj.body_motion(l_hand).weight = 0.001;
       obj.body_motion(r_hand).weight = 0.001;
-      obj.body_motion(l_hand).damping_ratio = 0.8;
-      obj.body_motion(r_hand).damping_ratio = 0.8;
+      obj.body_motion(l_hand).damping_ratio = 0.9;
+      obj.body_motion(r_hand).damping_ratio = 0.9;
       obj = obj.updateKd();
     end
   end
