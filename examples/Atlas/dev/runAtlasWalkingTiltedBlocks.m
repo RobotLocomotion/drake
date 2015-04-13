@@ -50,10 +50,12 @@ box_tops = [0.4, 0, 0.2, 0;
             0.4+0.4, 0, 0.2, pi/2;
             0.4+0.4*2, 0, 0.2, pi;
             0.4+0.4*3, 0, 0.2, -pi/2;
+            0.4+0.4*4, 0, 0.35, 0;
             0.4, -0.4, 0.2, -pi/2;
             0.4+0.4, -0.4, 0.2, 0;
             0.4+0.4*2, -0.4, 0.2, pi/2;
-            0.4+0.4*3, -0.4, 0.35, pi]';
+            0.4+0.4*3, -0.4, 0.35, pi;
+            0.4+0.4*4, -0.4, 0.5, -pi/2]';
 
 safe_regions = iris.TerrainRegion.empty();
 [A, b] = poly2lincon([-1, 0.05, 0.05, -1], [-1, -1, 1, 1]);
@@ -78,13 +80,13 @@ r = r.setTerrain(height_map).compile();
 v = r.constructVisualizer();
 v.display_dt = 0.01;
 
-footstep_plan = r.planFootsteps(x0(1:nq), struct('right',[1.65;-0.13;0;0;0;0],...
-                                                 'left', [1.65;0.13;0;0;0;0]),...
+footstep_plan = r.planFootsteps(x0(1:nq), struct('right',[max(box_tops(1,:));-0.13;0;0;0;0],...
+                                                 'left', [max(box_tops(1,:));0.13;0;0;0;0]),...
                                 safe_regions,...
                                 struct('step_params', struct('max_forward_step', 0.4,...
                                                              'nom_forward_step', 0.05,...
                                                              'nom_upward_step', 0.3,...
-                                                             'max_num_steps', 12)));
+                                                             'max_num_steps', 14)));
 lcmgl = LCMGLClient('footsteps');
 footstep_plan.draw_lcmgl(lcmgl);
 lcmgl.switchBuffers();
