@@ -19,7 +19,7 @@ classdef Biped < LeggedRobot
     body_collision_slice_heights % see getBodyCollisionSlices() below
   end
 
-  properties(Abstract, SetAccess = protected, GetAccess = public)
+  properties(Abstract)
     default_footstep_params
     default_walking_params
   end

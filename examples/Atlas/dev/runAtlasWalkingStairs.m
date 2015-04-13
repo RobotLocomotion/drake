@@ -7,11 +7,12 @@ checkDependency('lcmgl');
 path_handle = addpathTemporary(fullfile(getDrakePath(), 'examples', 'Atlas'));
 
 robot_options = struct();
-robot_options = applyDefaults(robot_options, struct('use_bullet', false,...
+robot_options = applyDefaults(robot_options, struct('use_bullet', true,...
                                                     'terrain', RigidBodyFlatTerrain,...
                                                     'floating', true,...
                                                     'ignore_self_collisions', true,...
                                                     'ignore_effort_limits', true,...
+                                                    'enable_fastqp', true,...
                                                     'ignore_friction', true,...
                                                     'use_new_kinsol', true,...
                                                     'dt', 0.001));
@@ -31,13 +32,13 @@ r = r.setInitialState(xstar);
 x0 = xstar;
 nq = r.getNumPositions();
 
-box_size = [0.35, 0.75, 0.15];
+box_size = [0.28, 39*0.0254, 0.22];
 
 box_tops = [0.2, 0, 0;
-            0.55, 0, 0.15;
-            0.9, 0, 0.3;
-            1.25, 0, 0.15;
-            1.6, 0, 0]';
+            0.2+0.28, 0, 0.22;
+            0.2+2*0.28, 0, 0.22*2;
+            0.2+3*0.28, 0, 0.22*3;
+            0.2+4*0.28, 0, 0.22*4]';
 
 safe_regions = iris.TerrainRegion.empty();
 
@@ -45,7 +46,7 @@ for j = 1:size(box_tops, 2)
   b = RigidBodyBox(box_size, box_tops(:,j) + [0;0;-box_size(3)/2], [0;0;0]);
   r = r.addGeometryToBody('world', b);
   [A, b] = poly2lincon(box_tops(1,j) + [-0.01, 0, 0, -0.01],...
-                       box_tops(2,j) + [-1, -1, 1, 1]);
+                       box_tops(2,j) + [-0.25, -0.25, 0.25, 0.25]);
   [A, b] = convert_to_cspace(A, b);
   safe_regions(end+1) = iris.TerrainRegion(A, b, [], [], box_tops(1:3,j), [0;0;1]);
 end
