@@ -34,7 +34,7 @@ void testMultiplication() {
   uniform_real_distribution<double> uniform;
 
   double t = uniform(generator);
-  valuecheck(product.value(t), poly1.value(t) * poly2.value(2), 1e-8);
+  valuecheck(product.value(t), poly1.value(t) * poly2.value(t), 1e-8);
 }
 
 int main(int argc, char **argv) {
