@@ -136,7 +136,7 @@ end
 % Apex knot 1
 toe_apex1_in_world = (1-APEX_FRACTIONS(1))*toe1(1:3) + APEX_FRACTIONS(1)*toe2(1:3);
 
-if max_terrain_ht_in_world > toe_apex1_in_world(3) + params.step_height/2
+if max_terrain_ht_in_world > toe_apex1_in_world(3) + params.step_height
   toe_apex1_in_world = [toe1(1:2); max_terrain_ht_in_world + params.step_height];
 else
   toe_apex1_in_world(3) = max([toe_apex1_in_world(3) + params.step_height,...
