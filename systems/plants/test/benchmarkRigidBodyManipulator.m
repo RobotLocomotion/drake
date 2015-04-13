@@ -4,7 +4,7 @@ iters = 1000;
 use_new_kinsol_options = [false true];
 gradient_options = [false true];
 
-for scenario = 1; %[1 2]
+for scenario = [1 2]
   % 1: CMM + a couple of Jacobians
   % 2: manipulatorDynamics
   
