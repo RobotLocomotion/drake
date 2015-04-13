@@ -180,4 +180,3 @@ void QuaternionFloatingJoint::setupOldKinematicTree(RigidBodyManipulator* model,
   DrakeJoint::setupOldKinematicTree(model,body_ind,position_num_start,velocity_num_start);
   model->bodies[body_ind]->floating = 2;
 }
-
