@@ -27,7 +27,7 @@ options.ignore_self_collisions = true;
 options.ignore_friction = true;
 options.dt = 0.001;
 
-box_xpos = 0.22;
+box_xpos = 0.19;
 boxurdf = fullfile(getDrakePath,'systems','plants','test','FallingBrick.urdf');
 box_r = RigidBodyManipulator();
 box_r = box_r.setTerrain(RigidBodyFlatTerrain());

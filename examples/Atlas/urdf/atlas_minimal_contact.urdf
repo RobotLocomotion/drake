@@ -82,6 +82,30 @@
       <origin rpy="0 0 0" xyz="0.00016 -0.08159 0.00002"/>
       <inertia ixx="0.000388" ixy="0" ixz="0" iyy="0.000477" iyz="0" izz="0.000379"/>
     </inertial>
+    <collision group="default">
+      <origin rpy="0 0 0" xyz="0.0 0.115 0.0"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="0.0 0.115 0.0"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+    </visual>
+    <collision group="knuckle">
+      <origin rpy="0 0 0" xyz="0 0.26 0.0"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0.26 0.0"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+    </visual>
   </link>
   <link name="l_larm">
     <inertial>
@@ -128,6 +152,18 @@
     <visual>
       <geometry>
         <mesh filename="package://Atlas/urdf/meshes/l_lleg.obj"/>
+      </geometry>
+    </visual>
+    <collision group="knee">
+      <origin rpy="0 0 0" xyz="0.1096 0.0029 0.012"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="0.1096 0.0029 0.012"/>
+      <geometry>
+        <sphere radius="0.01"/>
       </geometry>
     </visual>
   </link>
@@ -202,9 +238,30 @@
         <mesh filename="package://Atlas/urdf/meshes/l_uleg.obj"/>
       </geometry>
     </visual>
-    <!-- to cover the logo shield -->
-    <!-- inside strut -->
-    <!-- outside strut -->
+    <collision group="hamstring">
+      <origin rpy="0 0 0" xyz="-0.1179 0.02085 -0.18"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="-0.1179 0.02085 -0.18"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+    </visual>
+    <collision group="hamstring">
+      <origin rpy="0 0 0" xyz="-0.1179 0.02085 -0.08"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="-0.1179 0.02085 -0.08"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+    </visual>>
   </link>
   <link name="ltorso">
     <inertial>
@@ -239,6 +296,126 @@
     <visual>
       <geometry>
         <mesh filename="package://Atlas/urdf/meshes/pelvis.obj"/>
+      </geometry>
+    </visual>
+ <collision group="front">
+      <origin rpy="0 0 0" xyz="0.17 0.042 0.115"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="0.17 0.042 0.115"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+    </visual>
+    <collision group="front">
+      <origin rpy="0 0 0" xyz="0.17 -0.042 0.115"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="0.17 -0.042 0.115"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+    </visual>
+    <collision group="front">
+      <origin rpy="0 0 0" xyz="0.17 0.042 0.065"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="0.17 0.042 0.065"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+    </visual>
+    <collision group="front">
+      <origin rpy="0 0 0" xyz="0.17 -0.042 0.065"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="0.17 -0.042 0.065"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+    </visual>
+    <collision group="back">
+      <origin rpy="0 0 0" xyz="-0.15 0.042 0.115"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="-0.15 0.042 0.115"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+    </visual>
+    <collision group="back">
+      <origin rpy="0 0 0" xyz="-0.15 -0.042 0.115"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="-0.15 -0.042 0.115"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+    </visual>
+    <collision group="back">
+      <origin rpy="0 0 0" xyz="-0.15 0.042 0.065"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="-0.15 0.042 0.065"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+    </visual>
+    <collision group="back">
+      <origin rpy="0 0 0" xyz="-0.15 -0.042 0.065"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="-0.15 -0.042 0.065"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+    </visual>
+    <collision group="butt">
+      <origin rpy="0 0 0" xyz="-0.15 0.075 -0.15"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="-0.15 0.075 -0.15"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+    </visual>
+    <collision group="butt">
+      <origin rpy="0 0 0" xyz="-0.15 -0.075 -0.15"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="-0.15 -0.075 -0.15"/>
+      <geometry>
+        <sphere radius="0.01"/>
       </geometry>
     </visual>
   </link>
@@ -320,6 +497,30 @@
       <origin rpy="0 0 0" xyz="0.00016 -0.08159 0.00002"/>
       <inertia ixx="0.000388" ixy="0" ixz="0" iyy="0.000477" iyz="0" izz="0.000379"/>
     </inertial>
+    <collision group="palm">
+      <origin rpy="0 0 0" xyz="0.0 -0.115 0.0"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="0.0 -0.115 0.0"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+    </visual>
+    <collision group="knuckle">
+      <origin rpy="0 0 0" xyz="0 -0.26 0.0"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 -0.26 0.0"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+    </visual>
   </link>
   <link name="r_larm">
     <inertial>
@@ -366,6 +567,18 @@
     <visual>
       <geometry>
         <mesh filename="package://Atlas/urdf/meshes/r_lleg.obj"/>
+      </geometry>
+    </visual>
+    <collision group="knee">
+      <origin rpy="0 0 0" xyz="0.1096 0.0029 0.012"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="0.1096 0.0029 0.012"/>
+      <geometry>
+        <sphere radius="0.01"/>
       </geometry>
     </visual>
   </link>
@@ -440,9 +653,30 @@
         <mesh filename="package://Atlas/urdf/meshes/r_uleg.obj"/>
       </geometry>
     </visual>
-    <!-- to cover the logo shield -->
-    <!-- inside strut -->
-    <!-- outside strut -->
+    <collision group="hamstring">
+      <origin rpy="0 0 0" xyz="-0.1179 -0.02085 -0.18"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="-0.1179 -0.02085 -0.18"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+    </visual>
+    <collision group="hamstring">
+      <origin rpy="0 0 0" xyz="-0.1179 -0.02085 -0.08"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="-0.1179 -0.02085 -0.08"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+    </visual>
   </link>
   <link name="utorso">
     <inertial>
@@ -453,6 +687,102 @@
     <visual>
       <geometry>
         <mesh filename="package://Atlas/urdf/meshes/utorso.obj"/>
+      </geometry>
+    </visual>
+    <collision group="front">
+      <origin rpy="0 0 0" xyz="0.2040 0.12 0.3471"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="0.2040 0.12 0.3471"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+    </visual>
+    <collision group="front">
+      <origin rpy="0 0 0" xyz="0.2040 -0.12 0.3471"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="0.2040 -0.12 0.3471"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+    </visual>
+    <collision group="front">
+      <origin rpy="0 0 0" xyz="0.2040 0.12 0.0309"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="0.2040 0.12 0.0309"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+    </visual>
+    <collision group="front">
+      <origin rpy="0 0 0" xyz="0.2040 -0.12 0.0309"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="0.2040 -0.12 0.0309"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+    </visual>
+    <collision group="back">
+      <origin rpy="0 0 0" xyz="-0.1148 0.12 0.3471"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="-0.1148 0.12 0.3471"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+    </visual>
+    <collision group="back">
+      <origin rpy="0 0 0" xyz="-0.1148 -0.12 0.3471"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="-0.1148 -0.12 0.3471"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+    </visual>
+    <collision group="back">
+      <origin rpy="0 0 0" xyz="-0.1148 0.12 0.0309"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="-0.1148 0.12 0.0309"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+    </visual>
+    <collision group="back">
+      <origin rpy="0 0 0" xyz="-0.1148 -0.12 0.0309"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="-0.1148 -0.12 0.0309"/>
+      <geometry>
+        <sphere radius="0.01"/>
       </geometry>
     </visual>
   </link>
@@ -1008,7 +1338,7 @@
     <joint name="r_leg_hpz"/>
     <mechanicalReduction>1</mechanicalReduction>
   </transmission>
-  <!-- <link name="l_hand_force_torque">
+  <link name="l_hand_force_torque">
     <inertial>
       <mass value="0.1"/>
       <origin xyz="0 0 0"/>
@@ -1493,43 +1823,6 @@
     <child link="l_hand_camera_optical_frame"/>
   </joint>
   <link name="l_hand_camera_optical_frame"/>
-  <gazebo reference="l_hand_camera_link">
-    <sensor name="l_hand_camera_sensor" type="camera">
-      <update_rate>10.0</update_rate>
-      <camera name="l_hand_camera">
-        <pose>0 0 0 0 0 0</pose>
-        <horizontal_fov>1.7281</horizontal_fov>
-        <image>
-          <width>1280</width>
-          <height>1024</height>
-          <format>R8G8B8</format>
-        </image>
-        <clip>
-          <near>0.02</near>
-          <far>100</far>
-        </clip>
-        <noise>
-          <type>gaussian</type>
-          <mean>0.0</mean>
-          <stddev>0.007</stddev>
-        </noise>
-      </camera>
-      <plugin filename="libgazebo_ros_camera.so" name="l_hand_camera_controller">
-        <alwaysOn>true</alwaysOn>
-        <updateRate>0.0</updateRate>
-        <cameraName>robotiq_hands/l_hand_camera</cameraName>
-        <imageTopicName>image_raw</imageTopicName>
-        <cameraInfoTopicName>camera_info</cameraInfoTopicName>
-        <frameName>l_hand_camera_optical_frame</frameName>
-        <hackBaseline>0.07</hackBaseline>
-        <distortionK1>0.0</distortionK1>
-        <distortionK2>0.0</distortionK2>
-        <distortionK3>0.0</distortionK3>
-        <distortionT1>0.0</distortionT1>
-        <distortionT2>0.0</distortionT2>
-      </plugin>
-    </sensor>
-  </gazebo>
   <joint name="r_hand_face_joint" type="fixed">
     <origin rpy="0.0 0.0 0.0" xyz="0 0.12 0"/>
     <parent link="r_hand_force_torque"/>
@@ -1553,6 +1846,6 @@
     <parent link="r_hand_camera_link"/>
     <child link="r_hand_camera_optical_frame"/>
   </joint>
-  <link name="r_hand_camera_optical_frame"/> -->
+  <link name="r_hand_camera_optical_frame"/>
   
 </robot>
