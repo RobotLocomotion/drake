@@ -50,3 +50,6 @@ if(snopt_c_FOUND)
 	  target_link_libraries(NonlinearProgramSnoptmex ${GFORTRAN_LIBRARY})
 	endif()
 endif()
+
+add_subdirectory(polynomial)
+add_subdirectory(qpSpline)

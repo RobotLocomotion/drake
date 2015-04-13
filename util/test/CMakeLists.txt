@@ -24,11 +24,14 @@ if (eigen3_FOUND)
   endif (NOT WIN32)
   
   add_mex(testQuatmex testQuatmex.cpp)
+  include_directories( .. )
   target_link_libraries(testQuatmex drakeGeometryUtil)
 
   add_mex(testGeometryGradientsmex testGeometryGradientsmex.cpp)
+  include_directories( .. )
   target_link_libraries(testGeometryGradientsmex drakeGeometryUtil)
 
   add_mex(testGeometryConversionFunctionsmex testGeometryConversionFunctionsmex.cpp)
+  include_directories( .. )
   target_link_libraries(testGeometryConversionFunctionsmex drakeGeometryUtil)
 endif(eigen3_FOUND)

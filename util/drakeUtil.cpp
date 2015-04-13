@@ -11,6 +11,7 @@
 #include <math.h>
 #include <limits>
 #include <Eigen/Dense>
+#include <stdexcept>
 
 using namespace std;
 using namespace Eigen;
@@ -187,6 +188,44 @@ std::pair<Eigen::Vector3d, double> resolveCenterOfPressure(Eigen::Vector3d torqu
 double * mxGetPrSafe(const mxArray *pobj) {
   if (!mxIsDouble(pobj)) mexErrMsgIdAndTxt("Drake:mxGetPrSafe:BadInputs", "mxGetPr can only be called on arguments which correspond to Matlab doubles");
   return mxGetPr(pobj);
+}
+
+mxArray* mxGetFieldSafe(const mxArray* array, size_t index, std::string const& field_name)
+{
+  mxArray* ret = mxGetField(array, index, field_name.c_str());
+  if (!ret)
+  {
+    mexErrMsgIdAndTxt("Drake::mxGetFieldSafe", ("Field not found: " + field_name).c_str());
+  }
+  return ret;
+}
+
+void mxSetFieldSafe(mxArray* array, size_t index, std::string const & fieldname, mxArray* data)
+{
+  int fieldnum;
+  fieldnum = mxGetFieldNumber(array, fieldname.c_str());
+  if (fieldnum < 0) {
+    fieldnum = mxAddField(array, fieldname.c_str());
+  }
+  mxSetFieldByNumber(array, index, fieldnum, data);
+}
+
+const std::vector<double> matlabToStdVector(const mxArray* in) {
+  // works for both row vectors and column vectors
+  if (mxGetM(in) != 1 && mxGetN(in) != 1)
+    throw runtime_error("Not a vector");
+  double* data = mxGetPrSafe(in);
+  return std::vector<double>(data, data + mxGetNumberOfElements(in));
+}
+
+int sub2ind(mwSize ndims, const mwSize* dims, const mwSize* sub) {
+  int stride = 1;
+  int ret = 0;
+  for (int i = 0; i < ndims; i++) {
+    ret += sub[i] * stride;
+    stride *= dims[i];
+  }
+  return ret;
 }
 
 void sizecheck(const mxArray* mat, int M, int N) {

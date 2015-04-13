@@ -82,13 +82,18 @@ Eigen::Matrix<double, RowsAtCompileTime, ColsAtCompileTime> matlabToEigen(const 
   return ret;
 }
 
-mxArray* stdVectorToMatlab(const std::vector<int>& vec) {
+template <typename Scalar>
+mxArray* stdVectorToMatlab(const std::vector<Scalar>& vec) {
   mxArray* pm = mxCreateDoubleMatrix(static_cast<int>(vec.size()), 1, mxREAL);
   for (int i = 0; i < static_cast<int>(vec.size()); i++) {
     mxGetPr(pm)[i] = (double) vec[i];
   }
   return pm;
 }
+
+DLLEXPORT const std::vector<double> matlabToStdVector(const mxArray* in);
+
+DLLEXPORT int sub2ind(mwSize ndims, const mwSize* dims, const mwSize* sub);
 
 void baseZeroToBaseOne(std::vector<int>& vec)
 {
