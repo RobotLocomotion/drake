@@ -403,6 +403,7 @@ std::vector<SupportStateElement> getActiveSupports(RigidBodyManipulator* r, void
 Vector6d bodyMotionPD(RigidBodyManipulator *r, DrakeRobotState &robot_state, const int body_index, const Ref<const Vector6d> &body_pose_des, const Ref<const Vector6d> &body_v_des, const Ref<const Vector6d> &body_vdot_des, const Ref<const Vector6d> &Kp, const Ref<const Vector6d> &Kd) {
 	// This function uses Euler angle to represent orientation, it takes in Euler angles, Euler angle velocity and Euler angle acceleration feed-forward terms, and output an Euler angle acceleration
 
+  r->warnOnce("call_body_motion", "Warning: bodyMotionPD will be deprecated, switch to call bodySpatialMotionPD");
   r->doKinematics(robot_state.q,false,robot_state.qd);
 
   Vector6d body_pose;

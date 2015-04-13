@@ -20,7 +20,7 @@ end
 end
 
 function check_derivative(q,qdot)
-[w,wdot] = quatdot2expmapdot(q,qdot);
+[wdot,w] = quatdot2expmapdot(q,qdot);
 [w_mex,dw_mex] = quat2expmapmex(q);
 wdot_mex = dw_mex*qdot;
 valuecheck(w,w_mex);
