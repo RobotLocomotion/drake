@@ -1,4 +1,4 @@
-function [w,wdot] = quatdot2expmapdot(q,qdot)
+function [wdot,w] = quatdot2expmapdot(q,qdot)
 % Given quaternion q and quaternion time derivative qdot, return the time
 % derivative of exponential representation
 % @param q   A 4 x N matrix, q(:,i) is a quaternion
