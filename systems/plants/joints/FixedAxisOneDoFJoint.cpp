@@ -119,7 +119,7 @@ void FixedAxisOneDoFJoint::setDynamics(double damping, double coulomb_friction, 
 }
 
 GradientVar<double, Eigen::Dynamic, 1> FixedAxisOneDoFJoint::frictionTorque(const Eigen::Ref<const Eigen::VectorXd>& v, int gradient_order) const {
-  GradientVar<double, Eigen::Dynamic, 1> ret(Eigen::Dynamic, 1, getNumPositions(), gradient_order);
+  GradientVar<double, Eigen::Dynamic, 1> ret(getNumVelocities(), 1, getNumVelocities(), gradient_order);
   ret.value()[0] = damping * v[0];
   ret.value()[0] += std::min(1.0, std::max(-1.0, v[0] / coulomb_window)) * coulomb_friction;
   if (gradient_order > 0) {
