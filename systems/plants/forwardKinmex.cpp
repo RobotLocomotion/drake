@@ -10,8 +10,6 @@ using namespace std;
 /*
  * A C version of the forwardKin function
  *
- * Piggybacks on HandCpmex.cpp to properly initialize and destroy models
- * Call with doKinematicsmex(q,b_compute_second_derivatives);
  */
 
 void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {

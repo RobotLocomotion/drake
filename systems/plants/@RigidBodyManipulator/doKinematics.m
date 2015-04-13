@@ -69,6 +69,7 @@ end
 if ~isfield(options, 'use_mex'), options.use_mex = true; end
 if ~isfield(options, 'compute_gradients'), options.compute_gradients = false; end
 if ~isfield(options, 'compute_JdotV'), options.compute_JdotV = ~isempty(v); end
+if ~isfield(options, 'force_new_kinsol'), options.force_new_kinsol = false; end
 
 if warn_signature_changed
   % TODO: turn on warning
@@ -76,7 +77,7 @@ if warn_signature_changed
 %     'Called doKinematics using arguments corresponding to the old method signature. This will be phased out; please update your call to match the new signature.');
 end
 
-if model.use_new_kinsol
+if model.use_new_kinsol || options.force_new_kinsol
   kinsol = doKinematicsNew(model, q, v, options);
 else  
   kinsol.q = q;
@@ -421,7 +422,7 @@ end
 end
 
 function qd = computeQdot(bodies, vToqdot, v, nq)
-qd = zeros(nq, 1) * vToqdot{2}(1);
+qd = zeros(nq, 1) * v(1);
 for i = 2 : length(bodies)
   body = bodies(i);
   qd(body.position_num) = vToqdot{i} * v(body.velocity_num);
