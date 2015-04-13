@@ -269,7 +269,7 @@ classdef QPLocomotionPlan < QPControllerPlan
       xprime_x0 = T_x0_to_world_in_world * [1;0;0;0];
       xprime_x1 = T_x1_to_world_in_world * [1;0;0;0];
       if xprime_x0(3) < xprime_x1(3)
-        xs(4:6,2) = quat2expmap(slerp(expmap2quat(xs(4:6,1)), expmap2quat(xs(4:6,3)), 0.5));
+        xs(4:6,2) = quat2expmap(slerp(expmap2quat(xs(4:6,1)), expmap2quat(xs(4:6,3)), 0.1));
       end
 
       xdf = body_motion_data.coefs(:,body_t_ind+4,end-1);

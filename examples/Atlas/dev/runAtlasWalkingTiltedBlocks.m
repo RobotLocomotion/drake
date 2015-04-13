@@ -30,14 +30,14 @@ r = compile(r);
 % set initial state to fixed point
 load(fullfile(getDrakePath,'examples','Atlas','data','atlas_fp.mat'));
 
-xstar(r.findPositionIndices('r_arm_usy')) = -0.931;
-xstar(r.findPositionIndices('r_arm_shx')) = 0.717;
-xstar(r.findPositionIndices('r_arm_ely')) = 1.332;
-xstar(r.findPositionIndices('r_arm_elx')) = -0.871;
-xstar(r.findPositionIndices('l_arm_usy')) = -0.931;
-xstar(r.findPositionIndices('l_arm_shx')) = -0.717;
-xstar(r.findPositionIndices('l_arm_ely')) = 1.332;
-xstar(r.findPositionIndices('l_arm_elx')) = 0.871;
+% xstar(r.findPositionIndices('r_arm_usy')) = -0.931;
+% xstar(r.findPositionIndices('r_arm_shx')) = 0.717;
+% xstar(r.findPositionIndices('r_arm_ely')) = 1.332;
+% xstar(r.findPositionIndices('r_arm_elx')) = -0.871;
+% xstar(r.findPositionIndices('l_arm_usy')) = -0.931;
+% xstar(r.findPositionIndices('l_arm_shx')) = -0.717;
+% xstar(r.findPositionIndices('l_arm_ely')) = 1.332;
+% xstar(r.findPositionIndices('l_arm_elx')) = 0.871;
 xstar = r.resolveConstraints(xstar);
 
 r = r.setInitialState(xstar);
@@ -84,7 +84,7 @@ footstep_plan = r.planFootsteps(x0(1:nq), struct('right',[1.65;-0.13;0;0;0;0],..
                                 struct('step_params', struct('max_forward_step', 0.4,...
                                                              'nom_forward_step', 0.05,...
                                                              'nom_upward_step', 0.3,...
-                                                             'max_num_steps', 10)));
+                                                             'max_num_steps', 12)));
 lcmgl = LCMGLClient('footsteps');
 footstep_plan.draw_lcmgl(lcmgl);
 lcmgl.switchBuffers();
