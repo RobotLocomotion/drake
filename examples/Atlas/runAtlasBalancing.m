@@ -1,14 +1,8 @@
 function runAtlasBalancing(use_mex)
-
-if ~checkDependency('gurobi')
-  warning('Must have gurobi installed to run this example');
-  return;
-end
-
-path_handle = addpathTemporary(fullfile(getDrakePath(), 'examples', 'ZMP'));
-import atlasControllers.*;
-
 % put robot in a random x,y,yaw position and balance for 2 seconds
+
+checkDependency('gurobi')
+
 visualize = true;
 
 if (nargin<1); use_mex = true; end
@@ -39,80 +33,25 @@ kinsol = doKinematics(r,q0);
 
 com = getCOM(r,kinsol);
 
-% build TI-ZMP controller
-footidx = [findLinkId(r,'r_foot'), findLinkId(r,'l_foot')];
-foot_pos = terrainContactPositions(r,kinsol,footidx);
-comgoal = mean([mean(foot_pos(1:2,1:4)');mean(foot_pos(1:2,5:8)')])';
-limp = LinearInvertedPendulum(com(3));
-[~,V] = lqr(limp,comgoal);
+% Construct plan
+standing_plan = QPLocomotionPlan.from_standing_state(x0, r);
 
-foot_support = RigidBodySupportState(r,find(~cellfun(@isempty,strfind(r.getLinkNames(),'foot'))));
+% Only use supports when in contact
+standing_plan.planned_support_command = standing_plan.support_logic_maps.kinematic_or_sensed;
 
-
-ctrl_data = QPControllerData(false,struct(...
-  'acceleration_input_frame',atlasFrames.AtlasCoordinates(r),...
-  'D',-com(3)/9.81*eye(2),...
-  'Qy',eye(2),...
-  'S',V.S,...
-  's1',zeros(4,1),...
-  's2',0,...
-  'x0',[comgoal;0;0],...
-  'u0',zeros(2,1),...
-  'y0',comgoal,...
-  'qtraj',x0(1:nq),...
-  'support_times',0,...
-  'supports',foot_support,...
-  'mu',1.0,...
-  'ignore_terrain',false,...
-  'constrained_dofs',[]));
-
-% instantiate QP controller
-options.slack_limit = 30.0;
-options.w_qdd = 0.001*ones(nq,1);
-options.w_grf = 0;
-options.w_slack = 0.001;
-options.debug = false;
-options.use_mex = use_mex;
+param_sets = atlasParams.getDefaults(r);
 
 if use_angular_momentum
-  options.Kp_ang = 1.0; % angular momentum proportunal feedback gain
-  options.W_kdot = 1e-5*eye(3); % angular momentum weight
-else
-  options.W_kdot = zeros(3);
+  param_sets.standing.Kp_ang = 1.0; % angular momentum proportunal feedback gain
+  param_sets.standing.W_kdot = 1e-5*eye(3); % angular momentum weight
 end
 
-qp = QPController(r,{},ctrl_data,options);
-clear options;
+% Construct our control blocks
+planeval = atlasControllers.AtlasPlanEval(r, standing_plan);
+control = atlasControllers.InstantaneousQPController(r, param_sets);
+plancontroller = atlasControllers.AtlasPlanEvalAndControlSystem(r, control, planeval);
 
-% feedback QP controller with atlas
-ins(1).system = 1;
-ins(1).input = 2;
-ins(2).system = 1;
-ins(2).input = 3;
-outs(1).system = 2;
-outs(1).output = 1;
-sys = mimoFeedback(qp,r,[],[],ins,outs);
-clear ins;
-
-% feedback foot contact detector with QP/atlas
-options.use_lcm=false;
-options.contact_threshold = 0.002;
-fc = FootContactBlock(r,ctrl_data,options);
-ins(1).system = 2;
-ins(1).input = 1;
-sys = mimoFeedback(fc,sys,[],[],ins,outs);
-clear ins;
-
-% feedback PD trajectory controller
-options.use_ik = false;
-pd = IKPDBlock(r,ctrl_data,options);
-ins(1).system = 1;
-ins(1).input = 1;
-sys = mimoFeedback(pd,sys,[],[],ins,outs);
-clear ins;
-
-qt = QTrajEvalBlock(r,ctrl_data);
-sys = mimoFeedback(qt,sys,[],[],[],outs);
+sys = feedback(r, plancontroller);
 
 if visualize
   v = r.constructVisualizer;
