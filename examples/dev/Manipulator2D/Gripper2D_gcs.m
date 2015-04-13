@@ -95,7 +95,7 @@ classdef Gripper2D_gcs < Gripper2D
       
       count=0;
 %       nBodies = length(obj.model.body);
-      nBodies = obj.model.featherstone.NB + 1;
+      nBodies = length(obj.body);
       for i=1:nBodies;
 %         body = obj.model.body(i);
         contact_pts = obj.model.body(i).contact_pts;

@@ -1625,7 +1625,7 @@ classdef RigidBodyManipulator < Manipulator
       % construct a transform from the state vector to the COM
       checkDirty(model);
       tf = FunctionHandleCoordinateTransform(0,0,model.getStateFrame(),fr,true,true,[],[], ...
-        @(obj,~,~,x) getCOM(model,x(1:model.featherstone.NB)));
+        @(obj,~,~,x) getCOM(model,x(1:model.num_positions)));
 
       model.getStateFrame().addTransform(tf);
     end
