@@ -13,6 +13,7 @@ classdef Biped < LeggedRobot
   properties
     foot_body_id
     foot_frame_id
+    toe_frame_id
     inner_foot_shape % see getInnerFootShape() below
     default_body_collision_slices % see getBodyCollisionSlices() below
     body_collision_slice_heights % see getBodyCollisionSlices() below
@@ -41,6 +42,8 @@ classdef Biped < LeggedRobot
       l_body_id = obj.getFrame(l_frame_id).body_ind;
       obj.foot_body_id = struct('left', l_body_id, 'right', r_body_id);
       obj.foot_frame_id = struct('left', l_frame_id, 'right', r_frame_id);
+      obj.toe_frame_id = struct('left', obj.parseBodyOrFrameID('l_foot_toe'),...
+                                'right', obj.parseBodyOrFrameID('r_foot_toe'));
     end
 
     function [A, b] = getReachabilityPolytope(obj, stance_foot_frame, swing_foot_frame, params)

@@ -67,6 +67,32 @@ classdef BodyMotionData
     function pp = getPP(obj)
       pp = mkpp(obj.ts, obj.coefs, size(obj.coefs, 1));
     end
+
+    function obj = extend(obj, new_body_motion_data)
+      if obj.ts(end) ~= new_body_motion_data.ts(1)
+        error('Drake:BodyMotionData:BadExtend', 'final time of first arg should match initial time of second arg');
+      end
+      if size(obj.coefs, 1) ~= size(new_body_motion_data.coefs, 1)
+        error('Drake:BodyMotionData:BadExtend', 'dimension of coefs should match');
+      end
+      if obj.body_id ~= new_body_motion_data.body_id
+        error('Drake:BodyMotionData:BadExtend', 'body_ids must match');
+      end
+      if obj.use_spatial_velocity ~= new_body_motion_data.use_spatial_velocity
+        error('Drake:BodyMotionData:BadExtend', 'use_spatial_velocity flag must match');
+      end
+      if any(obj.quat_task_to_world ~= new_body_motion_data.quat_task_to_world)
+        error('Drake:BodyMotionData:BadExtend', 'quat_task_to_world must match');
+      end
+      if any(obj.translation_task_to_world ~= new_body_motion_data.translation_task_to_world)
+        error('Drake:BodyMotionData:BadExtend', 'translation_task_to_world must match');
+      end
+      nts = numel(obj.ts) - 1;
+      obj.ts = [obj.ts(1:nts), new_body_motion_data.ts];
+      obj.toe_off_allowed = [obj.toe_off_allowed(1:nts), new_body_motion_data.toe_off_allowed];
+      obj.in_floating_base_nullspace = [obj.in_floating_base_nullspace(1:nts), new_body_motion_data.in_floating_base_nullspace];
+      obj.control_pose_when_in_contact = [obj.control_pose_when_in_contact(1:nts), new_body_motion_data.control_pose_when_in_contact];
+    end
   end
 
   methods(Static)
@@ -85,6 +111,18 @@ classdef BodyMotionData
       pp = pchipDeriv(ts, poses, dposes);
       [~, obj.coefs, l, k, d] = unmkpp(pp);
       obj.coefs = reshape(obj.coefs, [d, l, k]);
+    end
+
+    function obj = from_body_xyzrpy_pp(body_id, pp)
+      [ts, coefs, l, k, d] = unmkpp(pp);
+      coefs = reshape(coefs, [d, l, k]);
+      obj = BodyMotionData(body_id, ts);
+      if size(coefs, 3) < 4
+        coefs = cat(3, zeros([6, size(coefs, 2), 4 - size(coefs, 3)]), coefs);
+      elseif size(coefs, 3) > 4
+        error('Drake:BodyMotionData:SplineDegreeTooHigh', 'BodyMotionData only supports splines up to degree 3 (cubic)');
+      end
+      obj.coefs = coefs;
     end
 
     function obj = from_body_xyzexp(body_id, ts, poses_exp)
