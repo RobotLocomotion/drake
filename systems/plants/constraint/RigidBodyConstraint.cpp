@@ -2221,7 +2221,7 @@ void WorldFixedBodyPoseConstraint::name(const double* t, int n_breaks, std::vect
     sprintf(cnst_name_buffer1,"World fixed body pose constraint for %s position",this->body_name.c_str());
     std::string cnst_name_str1(cnst_name_buffer1);
     name_str.push_back(cnst_name_str1);
-    char cnst_name_buffer2[100];
+    char cnst_name_buffer2[500];
     sprintf(cnst_name_buffer2,"World fixed body pose constraint for %s orientation",this->body_name.c_str());
     std::string cnst_name_str2(cnst_name_buffer2);
     name_str.push_back(cnst_name_str2);

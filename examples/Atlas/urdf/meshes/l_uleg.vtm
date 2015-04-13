@@ -4,9 +4,6 @@
     <DataSet index="0" file="l_uleg/l_uleg_0.vtp">
       
     </DataSet>
-    <DataSet index="1" file="l_uleg/l_uleg_1.vtp">
-      
-    </DataSet>
     
   </vtkMultiBlockDataSet>
 </VTKFile>

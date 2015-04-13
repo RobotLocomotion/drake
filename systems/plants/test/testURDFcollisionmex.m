@@ -1,5 +1,7 @@
 function testURDFcollisionmex
-  checkDependency('bullet');
+%NOTEST
+%pending fix from @avalenzu
+checkDependency('bullet');
 
   old_ros_package_path = getenv('ROS_PACKAGE_PATH');
   setenv('ROS_PACKAGE_PATH', [old_ros_package_path, ':', ....

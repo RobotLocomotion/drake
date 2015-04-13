@@ -1,5 +1,5 @@
 function runAtlasRunning(use_mex,use_angular_momentum)
-
+%NOTEST
 if ~checkDependency('gurobi')
   warning('Must have gurobi installed to run this example');
   return;
@@ -25,10 +25,10 @@ v = r.constructVisualizer;
 v.display_dt = 0.005;
 
 % load in running trajectory
-load('data/results_2m_2mps_midstrike.mat');
+load('data/running_v5.mat');
 
-ts = unique(sol.xtraj_three.getBreaks);
-xtraj = sol.xtraj_three;
+ts = unique(sol.xtraj.getBreaks);
+xtraj = sol.xtraj;
 r.setInitialState(xtraj.eval(0));
 x_knots = xtraj.eval(ts);
 

@@ -17,16 +17,9 @@ l_hand = r.findLinkId('l_hand');
 head = r.findLinkId('head');
 pelvis = r.findLinkId('pelvis');
 
-l_hand_geometry = r.getBody(l_hand).getCollisionGeometry;
-r_hand_geometry = r.getBody(r_hand).getCollisionGeometry;
-l_hand_pts = [];
-r_hand_pts = [];
-for i=1:length(l_hand_geometry),
-  l_hand_pts = [l_hand_pts r.getBody(l_hand).getCollisionGeometry{i}.getPoints];
-end
-for i=1:length(r_hand_geometry),
-  r_hand_pts = [r_hand_pts r.getBody(r_hand).getCollisionGeometry{i}.getPoints];
-end
+
+l_hand_pts = [0;0.2;0];
+r_hand_pts = [0;0.2;0];
 
 r_foot_contact_pts = r.getBody(r_foot).getTerrainContactPoints();
 l_foot_contact_pts = r.getBody(l_foot).getTerrainContactPoints();

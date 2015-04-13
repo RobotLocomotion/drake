@@ -622,8 +622,15 @@ bool parseTransmission(RigidBodyManipulator* model, TiXmlElement* node)
     cerr << "ERROR: transmission is missing a joint element" << endl;
     return false;
   }
+  
   string joint_name(joint_node->Attribute("name"));
+
   int body_index = findLinkIndexByJointName(model,joint_name);
+
+  if (model->bodies[body_index]->getJoint().getNumPositions() == 0) {
+    cerr << "WARNING: Skipping transmission since it's attached to a fixed joint: " << joint_name << endl;
+    return true;
+  }
 
   TiXmlElement* reduction_node = node->FirstChildElement("mechanicalReduction");
   double gain = 1.0;
