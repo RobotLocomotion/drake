@@ -37,25 +37,25 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   {
     mexErrMsgIdAndTxt("Drake:cartesian2cylindricalmex:InvalidInput","v should be a 6 x 1 vector");
   }
-	Matrix<double,6,1> v_cartesian;
-	memcpy(v_cartesian.data(),mxGetPr(prhs[4]),sizeof(double)*6);
+  Matrix<double,6,1> v_cartesian;
+  memcpy(v_cartesian.data(),mxGetPr(prhs[4]),sizeof(double)*6);
   cylinder_axis = cylinder_axis/cylinder_axis.norm();
   cylinder_x_dir = cylinder_x_dir/cylinder_x_dir.norm();
   if(abs(cylinder_axis.transpose()*cylinder_x_dir)>1e-10)
   {
     mexErrMsgIdAndTxt("Drake:cartesian2cylindricalmex:InvalidInput","cylinder_x_dir and cylinder_axis should be perpendicular to each othter");
   }
-	Matrix<double,6,1> x_cylinder;
-	Matrix<double,6,1> v_cylinder;
-	Matrix<double,6,6> J;
-	Matrix<double,6,1> Jdotv;
-	cartesian2cylindrical(cylinder_axis,cylinder_x_dir,cylinder_origin,x_cartesian,v_cartesian,x_cylinder,v_cylinder,J,Jdotv);
+  Matrix<double,6,1> x_cylinder;
+  Matrix<double,6,1> v_cylinder;
+  Matrix<double,6,6> J;
+  Matrix<double,6,1> Jdotv;
+  cartesian2cylindrical(cylinder_axis,cylinder_x_dir,cylinder_origin,x_cartesian,v_cartesian,x_cylinder,v_cylinder,J,Jdotv);
   plhs[0] = mxCreateDoubleMatrix(6,1,mxREAL);
   memcpy(mxGetPr(plhs[0]),x_cylinder.data(),sizeof(double)*6);
   plhs[1] = mxCreateDoubleMatrix(6,1,mxREAL);
   memcpy(mxGetPr(plhs[1]),v_cylinder.data(),sizeof(double)*6);
-	plhs[2] = mxCreateDoubleMatrix(6,6,mxREAL);
-	memcpy(mxGetPr(plhs[2]),J.data(),sizeof(double)*36);
-	plhs[3] = mxCreateDoubleMatrix(6,1,mxREAL);
-	memcpy(mxGetPr(plhs[3]),Jdotv.data(),sizeof(double)*6);
+  plhs[2] = mxCreateDoubleMatrix(6,6,mxREAL);
+  memcpy(mxGetPr(plhs[2]),J.data(),sizeof(double)*36);
+  plhs[3] = mxCreateDoubleMatrix(6,1,mxREAL);
+  memcpy(mxGetPr(plhs[3]),Jdotv.data(),sizeof(double)*6);
 }
