@@ -9,6 +9,10 @@ classdef BodyMotionData
     use_spatial_velocity
     quat_task_to_world % A rotation transformation, the coefs is specified in the task frame
     translation_task_to_world % translation from task frame to the world frame
+    xyz_kp_multiplier % A 3 x 1 vector. The multiplier for the Kp gain on xyz position error of the body, default to [1;1;1]
+    xyz_kd_multiplier % A 3 x 1 vector. The multiplier for the Kd gain on xyz velocity error of the body, default to [1;1;1]
+    expmap_kp_multiplier % A positive scalar. The multiplier for the Kp gain on exponential map error of body orientation, default to 1
+    expmap_kd_multiplier % A positive scalar. The multiplier for the Kd gain on exponential map velocity error of body orientation, default to 1
   end
 
   methods
@@ -22,6 +26,10 @@ classdef BodyMotionData
       obj.use_spatial_velocity = false;
       obj.quat_task_to_world = [1;0;0;0];
       obj.translation_task_to_world = zeros(3,1);
+      obj.xyz_kp_multiplier = [1;1;1];
+      obj.xyz_kd_multiplier = [1;1;1];
+      obj.expmap_kp_multiplier = 1;
+      obj.expmap_kd_multiplier = 1;
     end
 
     function t_ind = findTInd(obj, t)
@@ -61,7 +69,11 @@ classdef BodyMotionData
                                  'control_pose_when_in_contact', obj.control_pose_when_in_contact(t_ind),...
                                  'use_spatial_velocity',obj.use_spatial_velocity,...
                                  'quat_task_to_world',obj.quat_task_to_world,...
-                                 'translation_task_to_world',obj.translation_task_to_world);
+                                 'translation_task_to_world',obj.translation_task_to_world,...
+                                 'xyz_kp_multiplier',obj.xyz_kp_multiplier,...
+                                 'xyz_kd_multiplier',obj.xyz_kd_multiplier,...
+                                 'expmap_kp_multiplier',obj.expmap_kp_multiplier,...
+                                 'expmap_kd_multiplier',obj.expmap_kd_multiplier);
     end
 
     function pp = getPP(obj)
@@ -86,6 +98,18 @@ classdef BodyMotionData
       end
       if any(obj.translation_task_to_world ~= new_body_motion_data.translation_task_to_world)
         error('Drake:BodyMotionData:BadExtend', 'translation_task_to_world must match');
+      end
+      if any(obj.xyz_kp_multiplier ~= new_body_motion_data.xyz_kp_multiplier)
+        error('Drake:BodyMotionData:BadExtend', 'xyz_kp_multiplier must match');
+      end
+      if any(obj.xyz_kd_multiplier ~= new_body_motion_data.xyz_kd_multiplier)
+        error('Drake:BodyMotionData:BadExtend', 'xyz_kd_multiplier must match');
+      end
+      if any(obj.expmap_kp_multiplier ~= new_body_motion_data.expmap_kp_multiplier)
+        error('Drake:BodyMotionData:BadExtend', 'expmap_kp_multiplier must match');
+      end
+      if any(obj.expmap_kd_multiplier ~= new_body_motion_data.expmap_kd_multiplier)
+        error('Drake:BodyMotionData:BadExtend', 'expmap_kd_multiplier must match');
       end
       nts = numel(obj.ts) - 1;
       obj.ts = [obj.ts(1:nts), new_body_motion_data.ts];

@@ -630,18 +630,18 @@ classdef QPLocomotionPlan < QPControllerPlan
                                               'bodies_to_control_when_in_contact', biped.findLinkId('pelvis')));
 
       if(~isfield(options,'zero_final_acceleration'))
-        options.zero_final_acceleration = true;
+        options.zero_final_acceleration = false;
       end
       % handle the case where qtraj is a constant trajectory
       if isa(qtraj,'ConstantTrajectory')
         q0 = qtraj.eval(0);
         qtraj = PPTrajectory(zoh([0, inf], [q0, q0]));
       end
-
+      ts = qtraj.getBreaks();
       if(options.zero_final_acceleration)
         % Append a zero-order-hold trajectory at the end
         qtraj_pp = qtraj.pp;
-        ts = qtraj.getBreaks();
+        
         ts = [ts ts(end)+0.05];
         qtraj_coefs = reshape(qtraj_pp.coefs,[qtraj_pp.dim,qtraj_pp.pieces,qtraj_pp.order]);
         qtraj_coefs = cat(2,qtraj_coefs,reshape([zeros(qtraj_pp.dim,qtraj_pp.order-1) qtraj_coefs(:,end,end)],[qtraj_pp.dim,1,qtraj_pp.order]));

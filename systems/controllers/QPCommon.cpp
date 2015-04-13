@@ -116,6 +116,30 @@ std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray 
         mexErrMsgTxt("translation_task_to_world should be 3 x 1");
       }
       memcpy(msg->body_motion_data[i].translation_task_to_world, mxGetPr(translation_task_to_world),sizeof(double)*3);
+      const mxArray* xyz_kp_multiplier = mxGetFieldSafe(body_motion_data, i, "xyz_kp_multiplier");
+      if(mxGetM(xyz_kp_multiplier) != 3 || mxGetN(xyz_kp_multiplier) != 1)
+      {
+        mexErrMsgTxt("xyz_kp_multiplier should be 3 x 1");
+      }
+      memcpy(msg->body_motion_data[i].xyz_kp_multiplier, mxGetPr(xyz_kp_multiplier), sizeof(double)*3);
+      const mxArray* xyz_kd_multiplier = mxGetFieldSafe(body_motion_data, i, "xyz_kd_multiplier");
+      if(mxGetM(xyz_kd_multiplier) != 3 || mxGetN(xyz_kd_multiplier) != 1)
+      {
+        mexErrMsgTxt("xyz_kd_multiplier should be 3 x 1");
+      }
+      memcpy(msg->body_motion_data[i].xyz_kd_multiplier, mxGetPr(xyz_kd_multiplier), sizeof(double)*3);
+      const mxArray* expmap_kp_multiplier = mxGetFieldSafe(body_motion_data, i, "expmap_kp_multiplier");
+      if(mxGetM(expmap_kp_multiplier) != 1 || mxGetN(expmap_kp_multiplier) != 1)
+      {
+        mexErrMsgTxt("expmap_kp_multiplier should be 1 x 1");
+      }
+      msg->body_motion_data[i].expmap_kp_multiplier = mxGetScalar(expmap_kp_multiplier);
+      const mxArray* expmap_kd_multiplier = mxGetFieldSafe(body_motion_data, i, "expmap_kd_multiplier");
+      if(mxGetM(expmap_kd_multiplier) != 1 || mxGetN(expmap_kd_multiplier) != 1)
+      {
+        mexErrMsgTxt("expmap_kd_multiplier should be 1 x 1");
+      }
+      msg->body_motion_data[i].expmap_kd_multiplier = mxGetScalar(expmap_kd_multiplier);
     }
   }
 
@@ -399,6 +423,10 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     Map<Vector3d> translation_task_to_world(qp_input->body_motion_data[i].translation_task_to_world);
     desired_body_accelerations[i].T_task_to_world.linear() = quat2rotmat(quat_task_to_world);
     desired_body_accelerations[i].T_task_to_world.translation() = translation_task_to_world;
+    Map<Vector3d> xyz_kp_multiplier(qp_input->body_motion_data[i].xyz_kp_multiplier);
+    Map<Vector3d> xyz_kd_multiplier(qp_input->body_motion_data[i].xyz_kd_multiplier);
+    double expmap_kp_multiplier = qp_input->body_motion_data[i].expmap_kp_multiplier;
+    double expmap_kd_multiplier = qp_input->body_motion_data[i].expmap_kd_multiplier;
     pdata->r->findKinematicPath(desired_body_accelerations[i].body_path,0,desired_body_accelerations[i].body_or_frame_id0);
     Map<Matrix<double, 6, 4,RowMajor>>coefs_rowmaj(&qp_input->body_motion_data[i].coefs[0][0]);
     Matrix<double, 6, 4> coefs = coefs_rowmaj;
@@ -410,8 +438,14 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     }
     else
     {
+      Vector6d body_Kp;
+      body_Kp.head<3>() = (params->body_motion[true_body_id0].Kp.head<3>().array()*xyz_kp_multiplier.array()).matrix();
+      body_Kp.tail<3>() = params->body_motion[true_body_id0].Kp.tail<3>()*expmap_kp_multiplier;
+      Vector6d body_Kd;
+      body_Kd.head<3>() = (params->body_motion[true_body_id0].Kd.head<3>().array()*xyz_kd_multiplier.array()).matrix();
+      body_Kd.tail<3>() = params->body_motion[true_body_id0].Kd.tail<3>()*expmap_kd_multiplier;
       evaluateXYZExpmapCubicSplineSegment(t_spline - qp_input->body_motion_data[i].ts[0], coefs, body_pose_des, body_v_des, body_vdot_des);
-      desired_body_accelerations[i].body_vdot = bodySpatialMotionPD(pdata->r, robot_state, body_or_frame_id0, body_pose_des, body_v_des, body_vdot_des, params->body_motion[true_body_id0].Kp,params->body_motion[true_body_id0].Kd,desired_body_accelerations[i].T_task_to_world);
+      desired_body_accelerations[i].body_vdot = bodySpatialMotionPD(pdata->r, robot_state, body_or_frame_id0, body_pose_des, body_v_des, body_vdot_des, body_Kp, body_Kd,desired_body_accelerations[i].T_task_to_world);
     }
     desired_body_accelerations[i].weight = weight;
     desired_body_accelerations[i].accel_bounds = params->body_motion[true_body_id0].accel_bounds;
