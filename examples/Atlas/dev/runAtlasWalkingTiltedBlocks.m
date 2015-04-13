@@ -66,7 +66,7 @@ for j = 1:size(box_tops, 2)
   r = r.addGeometryToBody('world', b);
   offset = rpy2rotmat(rpy) * [0;0;box_size(3)/2];
   [A, b] = poly2lincon(box_tops(1,j) + offset(1) + [-0.03, 0.03, 0.03, -0.03],...
-                       box_tops(2,j) + offset(2) + [-0.12, -0.12, 0.12, 0.12]);
+                       box_tops(2,j) + offset(2) + [-0.11, -0.11, 0.11, 0.11]);
   [A, b] = convert_to_cspace(A, b);
   normal = rpy2rotmat(rpy) * [0;0;1];
   safe_regions(end+1) = iris.TerrainRegion(A, b, [], [], box_tops(1:3,j), normal);
