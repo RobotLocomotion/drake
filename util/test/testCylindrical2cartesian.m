@@ -26,11 +26,13 @@ x_cartesian_dt(4:6) = x_cartesian(4:6)+angularvel2rpydot(x_cartesian(4:6),v_cart
 valuecheck((x_cylinder_dt(1:3)-x_cylinder(1:3))/dt,v_cylinder(1:3),1e-3);
 valuecheck(rpydot2angularvel(x_cylinder(4:6),(x_cylinder_dt(4:6)-x_cylinder(4:6))/dt),v_cylinder(4:6),1e-2);
 valuecheck((J_dt-J)/dt*v_cartesian,Jdotv,1e-2);
-[x_cylinder_mex,v_cylinder_mex,J_mex,Jdotv_mex] = cartesian2cylindricalmex(cylinder_axis,cylinder_x_dir,cylinder_origin,x_cartesian,v_cartesian);
-valuecheck(x_cylinder_mex,x_cylinder);
-valuecheck(v_cylinder_mex,v_cylinder);
-valuecheck(J_mex,J);
-valuecheck(Jdotv_mex,Jdotv);
+if(exist('cartesian2cylindricalmex','file'))
+  [x_cylinder_mex,v_cylinder_mex,J_mex,Jdotv_mex] = cartesian2cylindricalmex(cylinder_axis,cylinder_x_dir,cylinder_origin,x_cartesian,v_cartesian);
+  valuecheck(x_cylinder_mex,x_cylinder);
+  valuecheck(v_cylinder_mex,v_cylinder);
+  valuecheck(J_mex,J);
+  valuecheck(Jdotv_mex,Jdotv);
+end
 
 
 [x_cartesian2,v_cartesian2,J2,Jdotv2] = cylindrical2cartesian(cylinder_axis,cylinder_x_dir,cylinder_origin,x_cylinder,v_cylinder);
@@ -45,11 +47,13 @@ valuecheck(rpydot2angularvel(x_cartesian2(4:6),(x_cartesian2_dt(4:6)-x_cartesian
 % Test if Jdotv is correct
 valuecheck((J2_dt-J2)/dt*v_cylinder,Jdotv2,1e-2);
 % Test if mex and matlab match
-[x_cartesian2_mex,v_cartesian2_mex,J2_mex,Jdotv2_mex] = cylindrical2cartesianmex(cylinder_axis,cylinder_x_dir,cylinder_origin,x_cylinder,v_cylinder);
-valuecheck(x_cartesian2_mex,x_cartesian2);
-valuecheck(v_cartesian2_mex,v_cartesian2);
-valuecheck(J2_mex,J2);
-valuecheck(Jdotv2_mex,Jdotv2);
+if(exist('cylindrical2cartesianmex','file'))
+  [x_cartesian2_mex,v_cartesian2_mex,J2_mex,Jdotv2_mex] = cylindrical2cartesianmex(cylinder_axis,cylinder_x_dir,cylinder_origin,x_cylinder,v_cylinder);
+  valuecheck(x_cartesian2_mex,x_cartesian2);
+  valuecheck(v_cartesian2_mex,v_cartesian2);
+  valuecheck(J2_mex,J2);
+  valuecheck(Jdotv2_mex,Jdotv2);
+end
 
 % Test if cartesian2cylindrical and cylindrical2cartesian are inverse to
 % each other
