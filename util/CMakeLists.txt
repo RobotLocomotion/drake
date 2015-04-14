@@ -5,7 +5,7 @@ if (simulink_FOUND)
 
 add_mex(barycentricInterpolation barycentricInterpolation.cpp)
 
-if (LCM_FOUND)
+if (LCM_FOUND AND MATLAB_FOUND)
   if (simulink_FOUND)
     add_mex(lcmLogger lcmLogger.cpp)
     pods_use_pkg_config_packages(lcmLogger lcm)
@@ -15,7 +15,7 @@ if (LCM_FOUND)
   pods_use_pkg_config_packages(publishLCMLog lcm)
 endif()
 
-if (eigen3_FOUND)
+if (MATLAB_FOUND)
   add_mex(drakeUtil SHARED drakeUtil.cpp MexWrapper.cpp)
 
   # todo: use this again once I can assume everyone has CMAKE version >= 2.8.8
@@ -27,20 +27,22 @@ if (eigen3_FOUND)
     LIBS -ldrakeUtil
     REQUIRES
     VERSION 0.0.1)
+endif()
 
-  add_library(drakeGradientUtil SHARED drakeGradientUtil.cpp)
-  pods_install_libraries(drakeGradientUtil)
-  pods_install_headers(drakeGradientUtil.h DESTINATION drake)
+add_library(drakeGradientUtil SHARED drakeGradientUtil.cpp)
+pods_install_libraries(drakeGradientUtil)
+pods_install_headers(drakeGradientUtil.h DESTINATION drake)
 
-  add_library(drakeGeometryUtil SHARED drakeGeometryUtil.cpp)
-  target_link_libraries(drakeGeometryUtil drakeGradientUtil)
-  pods_install_libraries(drakeGeometryUtil)
-  pods_install_headers(drakeGeometryUtil.h DESTINATION drake)
+add_library(drakeGeometryUtil SHARED drakeGeometryUtil.cpp)
+target_link_libraries(drakeGeometryUtil drakeGradientUtil)
+pods_install_libraries(drakeGeometryUtil)
+pods_install_headers(drakeGeometryUtil.h DESTINATION drake)
 
-  pods_install_headers(drakeFloatingPointUtil.h DESTINATION drake)
-  
-  pods_install_headers(GradientVar.h DESTINATION drake)
+pods_install_headers(drakeFloatingPointUtil.h DESTINATION drake)
 
+pods_install_headers(GradientVar.h DESTINATION drake)
+
+if (MATLAB_FOUND)
   add_mex(cylindrical2cartesianmex cylindrical2cartesianmex.cpp)
   target_link_libraries(cylindrical2cartesianmex drakeGeometryUtil drakeGradientUtil)
   add_mex(cartesian2cylindricalmex cartesian2cylindricalmex.cpp)
@@ -101,4 +103,4 @@ file(APPEND ${CMAKE_BINARY_DIR}/bin/drake_debug_mex.sh
 install(FILES ${CMAKE_BINARY_DIR}/bin/drake_debug_mex.sh
         DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
         PERMISSIONS OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-endif(NOT WIN32)
+endif(0) #NOT WIN32)
