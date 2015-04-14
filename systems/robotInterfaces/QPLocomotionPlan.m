@@ -156,17 +156,7 @@ classdef QPLocomotionPlan < QPControllerPlan
         if ~isempty(kny_ind)
           if ~obj.toe_off_active.(foot_name)
             if any(obj.supports(supp_idx).bodies == body_id) && q(kny_ind) < obj.MIN_KNEE_ANGLE % && any(obj.supports(supp_idx).bodies == other_foot) 
-              for k = 1:length(obj.body_motions)
-                if obj.body_motions(k).body_id == other_foot || ...
-                   obj.body_motions(k).body_id < 0 && obj.robot.getFrame(obj.body_motions(k).body_id).body_ind == other_foot
-                  other_foot_pose = obj.body_motions(k).coefs(:,body_t_ind,end);
-                  foot_knot = obj.body_motions(j).coefs(:,body_t_ind,end);
-                  R = quat2rotmat(expmap2quat(-foot_knot(4:6)));
-                  dist_in_local = (other_foot_pose(1:3) - foot_knot(1:3))' * (R * [1;0;0]);
-                  obj.toe_off_active.(foot_name) = dist_in_local >= 0;
-                  break
-                end
-              end
+              obj.toe_off_active.(foot_name) = (supp_idx < length(obj.supports)) && ~any(obj.supports(supp_idx+1).bodies == body_id);
             end
           else
             if ~any(obj.supports(supp_idx).bodies == body_id)
