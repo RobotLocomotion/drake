@@ -537,7 +537,7 @@ void RigidBodyManipulator::compile(void)
   }
 
   cached_q.resize(num_positions);
-  cached_q.resize(num_velocities);
+  cached_v.resize(num_velocities);
 
   cached_q_new.resize(num_positions);
   cached_v_new.resize(num_velocities);
