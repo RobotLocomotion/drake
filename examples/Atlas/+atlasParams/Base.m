@@ -72,9 +72,6 @@ classdef Base
       obj.joint_soft_limits(r.findPositionIndices('l_leg_kny')).enabled = true;
       obj.joint_soft_limits(r.findPositionIndices('l_leg_kny')).lb = 0.5;
 
-      obj.joint_soft_limits
-
-
       nu = r.getNumInputs();
       obj.hardware = struct('gains', struct(...
                                       'k_f_p', zeros(nu,1),...
