@@ -790,33 +790,8 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   
   // set obj,lb,up
   VectorXd lb(nparams), ub(nparams);
-  // double dt = 0.001;
-  // double margin = -0.1;
-  // VectorXd qdd_lb_for_joint_limits = (pdata->r->joint_limit_min.array() + margin - robot_state.q.array() - dt * robot_state.qd.array()) * 2.0 / (dt * dt);
-  // VectorXd qdd_ub_for_joint_limits = (pdata->r->joint_limit_max.array() - margin - robot_state.q.array() - dt * robot_state.qd.array()) * 2.0 / (dt * dt);
-  // lb.head(nq) = pdata->qdd_lb.array().max(qdd_lb_for_joint_limits.array());
-  // ub.head(nq) = pdata->qdd_ub.array().min(qdd_ub_for_joint_limits.array());
   lb.head(nq) = pdata->qdd_lb;
   ub.head(nq) = pdata->qdd_ub;
-  // double dt = robot_state.t - pdata->state.t_prev;
-  // double joint_limit_escape_rate = 1.0;
-  // for (int i=0; i < nq; i++) {
-  //   if (robot_state.q(i) + dt * robot_state.qd(i) <= pdata->r->joint_limit_min(i)) {
-  //     // q + qd*t + 1/2 qdd*t^2 >= q + k * t
-  //     // 1/2 qdd*t^2 >= k*t - qd*t
-  //     // qdd >= 2/t^2 * (k*t - qd*t);
-  //     // qdd >= 2/t * (k - qd);
-  //     // lb(i) = std::max(lb(i), 2.0 / dt * (joint_limit_escape_rate - robot_state.qd(i)));
-  //     lb(i) = 0;
-  //   }
-  //   if (robot_state.q(i) + dt *robot_state.qd(i) >= pdata->r->joint_limit_max(i)) {
-  //     // q + qd*t + 1/2 qdd*t^2 <= q - k*t
-  //     // 1/2 qdd*t^2 <= -k*t - qd*t
-  //     // qdd <= (2/t) * (-k - qd)
-  //     // ub(i) = std::min(ub(i), 2.0 / dt * (-joint_limit_escape_rate - robot_state.qd(i)));
-  //     ub(i) = 0;
-  //   }
-  // }
   lb.segment(nq,nf) = VectorXd::Zero(nf);
   ub.segment(nq,nf) = 1e3*VectorXd::Ones(nf);
   lb.tail(neps) = -params->slack_limit*VectorXd::Ones(neps);
