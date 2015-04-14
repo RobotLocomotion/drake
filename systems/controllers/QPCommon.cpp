@@ -325,6 +325,34 @@ std::vector<SupportStateElement> loadAvailableSupports(std::shared_ptr<drake::lc
   return available_supports;
 }
 
+void addJointSoftLimits(const JointSoftLimitParams &params, const DrakeRobotState &robot_state, const VectorXd &q_des, std::vector<drake::lcmt_joint_pd_override> &joint_pd_override) {
+  Matrix<bool, Dynamic, 1> has_joint_override = Matrix<bool, Dynamic, 1>::Zero(q_des.size());
+  for (std::vector<drake::lcmt_joint_pd_override>::iterator it = joint_pd_override.begin(); it != joint_pd_override.end(); ++it) {
+    has_joint_override(it->position_ind - 1) = 1;
+  }
+  for (int i=0; i < params.lb.size(); i++) {
+    if (!has_joint_override(i) && params.enabled(i)) {
+      double w_lb = 0;
+      double w_ub = 0;
+      if (!isinf(params.lb(i))) {
+        w_lb = params.weight(i) / (1 + exp(-params.k_logistic(i) * (params.lb(i) - robot_state.q(i))));
+      }
+      if (!isinf(params.ub(i))) {
+        w_ub = params.weight(i) / (1 + exp(-params.k_logistic(i) * (robot_state.q(i) - params.ub(i))));
+      }
+      double weight = std::max(w_ub, w_lb);
+      drake::lcmt_joint_pd_override override;
+      override.position_ind = i + 1;
+      override.qi_des = q_des(i);
+      override.qdi_des = 0;
+      override.kp = params.kp(i);
+      override.kd = params.kd(i);
+      override.weight = weight;
+      joint_pd_override.push_back(override);
+    }
+  }
+}
+
 void applyJointPDOverride(const std::vector<drake::lcmt_joint_pd_override> &joint_pd_override, const DrakeRobotState &robot_state, PIDOutput &pid_out, VectorXd &w_qdd) {
   for (std::vector<drake::lcmt_joint_pd_override>::const_iterator it = joint_pd_override.begin(); it != joint_pd_override.end(); ++it) {
     int ind = it->position_ind - 1;
@@ -378,9 +406,13 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     mexErrMsgTxt("size of constrained dofs does not match num_constrained_dofs");
   }
   Map<VectorXi> condof(qp_input->whole_body_data.constrained_dofs.data(), qp_input->whole_body_data.num_constrained_dofs);
+
   PIDOutput pid_out = wholeBodyPID(pdata, robot_state.t, robot_state.q, robot_state.qd, q_des, &params->whole_body);
   VectorXd w_qdd = params->whole_body.w_qdd;
+
+  addJointSoftLimits(params->joint_soft_limits, robot_state, q_des, qp_input->joint_pd_override);
   applyJointPDOverride(qp_input->joint_pd_override, robot_state, pid_out, w_qdd);
+
 
   qp_output->q_ref = pid_out.q_ref;
 
@@ -766,6 +798,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   // ub.head(nq) = pdata->qdd_ub.array().min(qdd_ub_for_joint_limits.array());
   lb.head(nq) = pdata->qdd_lb;
   ub.head(nq) = pdata->qdd_ub;
+  // double dt = robot_state.t - pdata->state.t_prev;
   // double joint_limit_escape_rate = 1.0;
   // for (int i=0; i < nq; i++) {
   //   if (robot_state.q(i) + dt * robot_state.qd(i) <= pdata->r->joint_limit_min(i)) {
@@ -773,13 +806,15 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   //     // 1/2 qdd*t^2 >= k*t - qd*t
   //     // qdd >= 2/t^2 * (k*t - qd*t);
   //     // qdd >= 2/t * (k - qd);
-  //     lb(i) = std::max(lb(i), 2.0 / dt * (joint_limit_escape_rate - robot_state.qd(i)));
+  //     // lb(i) = std::max(lb(i), 2.0 / dt * (joint_limit_escape_rate - robot_state.qd(i)));
+  //     lb(i) = 0;
   //   }
   //   if (robot_state.q(i) + dt *robot_state.qd(i) >= pdata->r->joint_limit_max(i)) {
   //     // q + qd*t + 1/2 qdd*t^2 <= q - k*t
   //     // 1/2 qdd*t^2 <= -k*t - qd*t
   //     // qdd <= (2/t) * (-k - qd)
-  //     ub(i) = std::min(ub(i), 2.0 / dt * (-joint_limit_escape_rate - robot_state.qd(i)));
+  //     // ub(i) = std::min(ub(i), 2.0 / dt * (-joint_limit_escape_rate - robot_state.qd(i)));
+  //     ub(i) = 0;
   //   }
   // }
   lb.segment(nq,nf) = VectorXd::Zero(nf);

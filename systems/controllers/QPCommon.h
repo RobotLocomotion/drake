@@ -107,6 +107,16 @@ struct Bounds {
   VectorXd max;
 };
 
+struct JointSoftLimitParams {
+  Matrix<bool, Dynamic, 1> enabled;
+  VectorXd lb;
+  VectorXd ub;
+  VectorXd kp;
+  VectorXd kd;
+  VectorXd weight;
+  VectorXd k_logistic;
+};
+
 struct WholeBodyParams {
   VectorXd Kp;
   VectorXd Kd;
@@ -145,6 +155,7 @@ struct AtlasParams {
   WholeBodyParams whole_body;
   std::vector<BodyMotionParams> body_motion;
   VRefIntegratorParams vref_integrator;
+  JointSoftLimitParams joint_soft_limits;
   AtlasHardwareParams hardware;
   Matrix3d W_kdot;
   double Kp_ang;
