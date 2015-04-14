@@ -4,7 +4,6 @@ function runAtlasStepRecovery(perturbation, example_options)
 % the robot with an initial perturbation and attempts to come to rest standing
 % up. 
 % @param perturbation the disturbance, expressed as initial CoM velocity in [x; y]
-% @option use_mex
 % @option use_bullet
 % @option use_angular_momentum
 % @options navgoal
@@ -14,7 +13,6 @@ checkDependency('gurobi');
 checkDependency('lcmgl');
 
 if nargin<2, example_options=struct(); end
-if ~isfield(example_options,'use_mex'), example_options.use_mex = true; end
 if ~isfield(example_options,'use_bullet'), example_options.use_bullet = false; end
 if ~isfield(example_options,'use_angular_momentum'), example_options.use_angular_momentum = false; end
 if ~isfield(example_options,'navgoal')
@@ -84,7 +82,7 @@ for iter = 1:3
   % keyboard()
 
   planeval = atlasControllers.AtlasPlanEval(r, walking_plan_data);
-  control = atlasControllers.InstantaneousQPController(r, [], struct('use_mex', example_options.use_mex));
+  control = atlasControllers.InstantaneousQPController(r, []);
   plancontroller = atlasControllers.AtlasPlanEvalAndControlSystem(r, control, planeval);
   sys = feedback(r, plancontroller);
 
