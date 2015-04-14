@@ -1,5 +1,5 @@
 function runAtlasBalancingWithContactSensor(use_mex)
-
+%NOTEST
 if ~checkDependency('gurobi')
   warning('Must have gurobi installed to run this example');
   return;
