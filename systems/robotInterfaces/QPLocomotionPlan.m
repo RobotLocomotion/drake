@@ -24,6 +24,12 @@ classdef QPLocomotionPlan < QPControllerPlan
 
     lcmgl = LCMGLClient('locomotion_plan');
     joint_pd_override_data
+
+    MIN_KNEE_ANGLE = 0.7;
+    KNEE_KP = 40;
+    KNEE_KD = 4;
+    KNEE_WEIGHT = 1;
+
   end
 
   properties(Access=protected)
@@ -126,11 +132,6 @@ classdef QPLocomotionPlan < QPControllerPlan
         supp_idx = find(obj.support_times<=t_plan,1,'last');
       end
 
-      MIN_KNEE_ANGLE = 0.7;
-      KNEE_KP = 40;
-      KNEE_KD = 4;
-      KNEE_WEIGHT = 1;
-
       pelvis_has_tracking = false;
       for j = 1:length(obj.body_motions)
         body_id = obj.body_motions(j).body_id;
@@ -154,7 +155,7 @@ classdef QPLocomotionPlan < QPControllerPlan
         body_t_ind = obj.body_motions(j).findTInd(t_plan);
         if ~isempty(kny_ind)
           if ~obj.toe_off_active.(foot_name)
-            if any(obj.supports(supp_idx).bodies == body_id) && q(kny_ind) < MIN_KNEE_ANGLE % && any(obj.supports(supp_idx).bodies == other_foot) 
+            if any(obj.supports(supp_idx).bodies == body_id) && q(kny_ind) < obj.MIN_KNEE_ANGLE % && any(obj.supports(supp_idx).bodies == other_foot) 
               for k = 1:length(obj.body_motions)
                 if obj.body_motions(k).body_id == other_foot || ...
                    obj.body_motions(k).body_id < 0 && obj.robot.getFrame(obj.body_motions(k).body_id).body_ind == other_foot
@@ -179,17 +180,27 @@ classdef QPLocomotionPlan < QPControllerPlan
             if ~isempty(obj.supports(supp_idx).contact_groups{body_mask})
               obj.supports(supp_idx) = obj.supports(supp_idx).setContactPts(body_mask, rpc.contact_groups{body_id}.toe, {'toe'});
             end
-            qp_input.joint_pd_override(end+1) = struct('position_ind', kny_ind,...
-                                                       'qi_des', MIN_KNEE_ANGLE,...
-                                                       'qdi_des', 0,...
-                                                       'kp', KNEE_KP,...
-                                                       'kd', KNEE_KD,...
-                                                       'weight', KNEE_WEIGHT);
+            % qp_input.joint_pd_override(end+1) = struct('position_ind', kny_ind,...
+            %                                            'qi_des', obj.MIN_KNEE_ANGLE,...
+            %                                            'qdi_des', 0,...
+            %                                            'kp', obj.KNEE_KP,...
+            %                                            'kd', obj.KNEE_KD,...
+            %                                            'weight', obj.KNEE_WEIGHT);
             if obj.body_motions(j).toe_off_allowed(body_t_ind)
               obj = obj.updateSwingTrajectory(t_plan, j, body_t_ind, kinsol, qd);
             end
 
           end
+
+          % if ~isempty(kny_ind) && q(kny_ind) < obj.MIN_KNEE_ANGLE
+          %   qp_input.joint_pd_override(end+1) = struct('position_ind', kny_ind,...
+          %                                              'qi_des', obj.MIN_KNEE_ANGLE,...
+          %                                              'qdi_des', 0,...
+          %                                              'kp', obj.KNEE_KP,...
+          %                                              'kd', obj.KNEE_KD,...
+          %                                              'weight', 1e-2);
+          % end
+
         end
 
         qp_input.body_motion_data(j) = obj.body_motions(j).slice(body_t_ind);

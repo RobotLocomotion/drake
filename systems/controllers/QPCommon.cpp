@@ -758,8 +758,12 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   
   // set obj,lb,up
   VectorXd lb(nparams), ub(nparams);
-  lb.head(nq) = pdata->qdd_lb;
-  ub.head(nq) = pdata->qdd_ub;
+  double dt = 0.001;
+  double margin = -0.1;
+  VectorXd qdd_lb_for_joint_limits = (pdata->r->joint_limit_min.array() + margin - robot_state.q.array() - dt * robot_state.qd.array()) * 2.0 / (dt * dt);
+  VectorXd qdd_ub_for_joint_limits = (pdata->r->joint_limit_max.array() - margin - robot_state.q.array() - dt * robot_state.qd.array()) * 2.0 / (dt * dt);
+  lb.head(nq) = pdata->qdd_lb.array().max(qdd_lb_for_joint_limits.array());
+  ub.head(nq) = pdata->qdd_ub.array().min(qdd_ub_for_joint_limits.array());
   lb.segment(nq,nf) = VectorXd::Zero(nf);
   ub.segment(nq,nf) = 1e3*VectorXd::Ones(nf);
   lb.tail(neps) = -params->slack_limit*VectorXd::Ones(neps);
@@ -943,6 +947,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   //----------------------------------------------------------------------
   // Solve for inputs ----------------------------------------------------
   qp_output->qdd = alpha.head(nq);
+
   VectorXd beta = alpha.segment(nq,nc*nd);
 
   // use transpose because B_act is orthogonal
