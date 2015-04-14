@@ -109,6 +109,7 @@ struct Bounds {
 
 struct JointSoftLimitParams {
   Matrix<bool, Dynamic, 1> enabled;
+  VectorXi disable_when_body_in_support;
   VectorXd lb;
   VectorXd ub;
   VectorXd kp;

@@ -59,6 +59,8 @@ classdef Base
       % w_qdd = max(w_lb, w_lb)
       % where w_qdd is the cost weight of qdd_des, defined as:
       % qdd_des(i) = kp * (q_des(i) - q(i)) - kd * qd(i)
+      % 
+      % If disable_when_body_in_support = i != 0, then the joint soft limits will be disabled when body i is in support
       obj.joint_soft_limits = struct('enabled', num2cell(false(1, r.getNumPositions())),...
                                      'lb', num2cell(-inf(1, r.getNumPositions())),...
                                      'ub', num2cell(inf(1, r.getNumPositions())),...
@@ -66,11 +68,14 @@ classdef Base
                                      'damping_ratio', num2cell(repmat(0.6, 1, r.getNumPositions())),...
                                      'kd', num2cell(zeros(1, r.getNumPositions())),... % Set when we call updateKd
                                      'weight', num2cell(repmat(1e-5, 1, r.getNumPositions())),...
+                                     'disable_when_body_in_support', num2cell(zeros(1, r.getNumPositions)),...
                                      'k_logistic', num2cell(repmat(20, 1, r.getNumPositions())));
       obj.joint_soft_limits(r.findPositionIndices('r_leg_kny')).enabled = true;
       obj.joint_soft_limits(r.findPositionIndices('r_leg_kny')).lb = 0.5;
+      obj.joint_soft_limits(r.findPositionIndices('r_leg_kny')).disable_when_body_in_support = r.foot_body_id.right;
       obj.joint_soft_limits(r.findPositionIndices('l_leg_kny')).enabled = true;
       obj.joint_soft_limits(r.findPositionIndices('l_leg_kny')).lb = 0.5;
+      obj.joint_soft_limits(r.findPositionIndices('l_leg_kny')).disable_when_body_in_support = r.foot_body_id.left;
 
       nu = r.getNumInputs();
       obj.hardware = struct('gains', struct(...

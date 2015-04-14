@@ -29,6 +29,7 @@ void parseJointSoftLimits(const mxArray *params_obj, RigidBodyManipulator *r, Jo
     mexErrMsgTxt("Joint soft limits should be of size nq");
 
   params->enabled = Matrix<bool, Dynamic, 1>::Zero(nq);
+  params->disable_when_body_in_support = VectorXi::Zero(nq);
   params->lb = VectorXd::Zero(nq);
   params->ub = VectorXd::Zero(nq);
   params->kp = VectorXd::Zero(nq);
@@ -38,6 +39,7 @@ void parseJointSoftLimits(const mxArray *params_obj, RigidBodyManipulator *r, Jo
 
   for (int i=0; i < nq; i++) {
     params->enabled(i) = static_cast<bool> (mxGetScalar(mxGetFieldSafe(params_obj, i, "enabled")));
+    params->disable_when_body_in_support(i) = static_cast<int> (mxGetScalar(mxGetFieldSafe(params_obj, i, "disable_when_body_in_support")));
     params->lb(i) = mxGetScalar(mxGetFieldSafe(params_obj, i, "lb"));
     params->ub(i) = mxGetScalar(mxGetFieldSafe(params_obj, i, "ub"));
     params->kp(i) = mxGetScalar(mxGetFieldSafe(params_obj, i, "kp"));

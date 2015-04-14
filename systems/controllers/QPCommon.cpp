@@ -325,30 +325,33 @@ std::vector<SupportStateElement> loadAvailableSupports(std::shared_ptr<drake::lc
   return available_supports;
 }
 
-void addJointSoftLimits(const JointSoftLimitParams &params, const DrakeRobotState &robot_state, const VectorXd &q_des, std::vector<drake::lcmt_joint_pd_override> &joint_pd_override) {
+void addJointSoftLimits(const JointSoftLimitParams &params, const DrakeRobotState &robot_state, const VectorXd &q_des, std::vector<SupportStateElement> &supports, std::vector<drake::lcmt_joint_pd_override> &joint_pd_override) {
   Matrix<bool, Dynamic, 1> has_joint_override = Matrix<bool, Dynamic, 1>::Zero(q_des.size());
   for (std::vector<drake::lcmt_joint_pd_override>::iterator it = joint_pd_override.begin(); it != joint_pd_override.end(); ++it) {
     has_joint_override(it->position_ind - 1) = 1;
   }
   for (int i=0; i < params.lb.size(); i++) {
     if (!has_joint_override(i) && params.enabled(i)) {
-      double w_lb = 0;
-      double w_ub = 0;
-      if (!isinf(params.lb(i))) {
-        w_lb = params.weight(i) / (1 + exp(-params.k_logistic(i) * (params.lb(i) - robot_state.q(i))));
+      int disable_body_1idx = params.disable_when_body_in_support(i);
+      if (disable_body_1idx == 0 || !inSupport(supports, disable_body_1idx - 1)) {
+        double w_lb = 0;
+        double w_ub = 0;
+        if (!isinf(params.lb(i))) {
+          w_lb = params.weight(i) / (1 + exp(-params.k_logistic(i) * (params.lb(i) - robot_state.q(i))));
+        }
+        if (!isinf(params.ub(i))) {
+          w_ub = params.weight(i) / (1 + exp(-params.k_logistic(i) * (robot_state.q(i) - params.ub(i))));
+        }
+        double weight = std::max(w_ub, w_lb);
+        drake::lcmt_joint_pd_override override;
+        override.position_ind = i + 1;
+        override.qi_des = q_des(i);
+        override.qdi_des = 0;
+        override.kp = params.kp(i);
+        override.kd = params.kd(i);
+        override.weight = weight;
+        joint_pd_override.push_back(override);
       }
-      if (!isinf(params.ub(i))) {
-        w_ub = params.weight(i) / (1 + exp(-params.k_logistic(i) * (robot_state.q(i) - params.ub(i))));
-      }
-      double weight = std::max(w_ub, w_lb);
-      drake::lcmt_joint_pd_override override;
-      override.position_ind = i + 1;
-      override.qi_des = q_des(i);
-      override.qdi_des = 0;
-      override.kp = params.kp(i);
-      override.kd = params.kd(i);
-      override.weight = weight;
-      joint_pd_override.push_back(override);
     }
   }
 }
@@ -399,6 +402,11 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   Map<Matrix<double, 4, 1>> s1(&qp_input->zmp_data.s1[0][0]);
   Map<Matrix<double, 4, 1>> s1dot(&qp_input->zmp_data.s1dot[0][0]);
 
+  // Active supports
+  std::vector<SupportStateElement> available_supports = loadAvailableSupports(qp_input);
+  std::vector<SupportStateElement> active_supports = getActiveSupports(pdata->r, pdata->map_ptr, robot_state.q, robot_state.qd, available_supports, b_contact_force, params->contact_threshold, pdata->default_terrain_height);
+
+
   // // whole_body_data
   if (qp_input->whole_body_data.num_positions != nq) mexErrMsgTxt("number of positions doesn't match num_dof for this robot");
   Map<VectorXd> q_des(qp_input->whole_body_data.q_des.data(), nq);
@@ -410,7 +418,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   PIDOutput pid_out = wholeBodyPID(pdata, robot_state.t, robot_state.q, robot_state.qd, q_des, &params->whole_body);
   VectorXd w_qdd = params->whole_body.w_qdd;
 
-  addJointSoftLimits(params->joint_soft_limits, robot_state, q_des, qp_input->joint_pd_override);
+  addJointSoftLimits(params->joint_soft_limits, robot_state, q_des, active_supports, qp_input->joint_pd_override);
   applyJointPDOverride(qp_input->joint_pd_override, robot_state, pid_out, w_qdd);
 
 
@@ -489,16 +497,6 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     desired_body_accelerations[i].weight = weight;
     desired_body_accelerations[i].accel_bounds = params->body_motion[true_body_id0].accel_bounds;
     desired_body_accelerations[i].control_pose_when_in_contact = qp_input->body_motion_data[i].control_pose_when_in_contact;
-    
-    // mexPrintf("body: %d, vdot: %f %f %f %f %f %f weight: %f\n", body_id0, 
-    //           desired_body_accelerations[i].body_vdot(0), 
-    //           desired_body_accelerations[i].body_vdot(1), 
-    //           desired_body_accelerations[i].body_vdot(2), 
-    //           desired_body_accelerations[i].body_vdot(3), 
-    //           desired_body_accelerations[i].body_vdot(4), 
-    //           desired_body_accelerations[i].body_vdot(5),
-    //           weight);
-      // mexPrintf("tracking body: %d, coefs[:,0]: %f %f %f %f %f %f coefs(", body_id0,
   }
 
   int n_body_accel_eq_constraints = 0;
@@ -512,9 +510,6 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   pdata->r->doKinematics(robot_state.q,false,robot_state.qd);
 
   //---------------------------------------------------------------------
-
-  std::vector<SupportStateElement> available_supports = loadAvailableSupports(qp_input);
-  std::vector<SupportStateElement> active_supports = getActiveSupports(pdata->r, pdata->map_ptr, robot_state.q, robot_state.qd, available_supports, b_contact_force, params->contact_threshold, pdata->default_terrain_height);
 
   int num_active_contact_pts=0;
   for (std::vector<SupportStateElement>::iterator iter = active_supports.begin(); iter!=active_supports.end(); iter++) {
