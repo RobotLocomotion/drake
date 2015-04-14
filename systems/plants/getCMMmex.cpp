@@ -22,7 +22,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 
   Map<VectorXd> q(mxGetPrSafe(prhs[1]), model->num_positions);
   for (int i = 0; i < model->num_positions; i++) {
-    if (q[i] - model->cached_q[i] > 1e-8 || q[i] - model->cached_q[i] < -1e-8) {
+    if (q[i] - model->cached_q_old[i] > 1e-8 || q[i] - model->cached_q_old[i] < -1e-8) {
       mexErrMsgIdAndTxt("Drake:getCMMmex:InvalidKinematics","This kinsol is no longer valid.  Somebody has called doKinematics with a different q since the solution was computed.");
     }
   }

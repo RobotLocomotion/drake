@@ -537,7 +537,13 @@ void RigidBodyManipulator::compile(void)
   }
 
   cached_q.resize(num_positions);
-  cached_v.resize(num_velocities);
+  cached_q.resize(num_velocities);
+
+  cached_q_new.resize(num_positions);
+  cached_v_new.resize(num_velocities);
+
+  cached_q_old.resize(num_positions);
+  cached_v_old.resize(num_velocities);
 
   initialized=true;
 }
@@ -894,7 +900,7 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
     if (b_compute_second_derivatives && !secondDerivativesCached)
       skip = false;
     for (i = 0; i < num_positions; i++) {
-      if (q[i] != cached_q[i] || (qd && qd[i] != cached_v[i])) {
+      if (q[i] != cached_q_old[i] || (qd && qd[i] != cached_v_old[i])) {
         skip = false;
         break;
       }
@@ -1135,8 +1141,13 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
 
   kinematicsInit = true;
   for (i = 0; i < num_positions; i++) {
+    cached_q_old[i] = q[i];
     cached_q[i] = q[i];
-    if (qd) cached_v[i] = qd[i];
+
+    if (qd) {
+      cached_v_old[i] = qd[i];
+      cached_v[i] = qd[i];
+    }
   }
   secondDerivativesCached = b_compute_second_derivatives;
   //DEBUG
@@ -1154,6 +1165,9 @@ void RigidBodyManipulator::doKinematicsNew(const MatrixBase<DerivedQ>& q, const 
   EIGEN_STATIC_ASSERT_VECTOR_ONLY(MatrixBase<DerivedV>);
   assert(q.rows() == num_positions);
   assert(v.rows() == num_velocities || v.rows() == 0);
+  if (!initialized)
+    compile();
+
   compute_JdotV = compute_JdotV && (v.rows() == num_velocities); // no sense in computing Jdot times v if v is not passed in
 
   if (position_kinematics_cached) {
@@ -1166,7 +1180,7 @@ void RigidBodyManipulator::doKinematicsNew(const MatrixBase<DerivedQ>& q, const 
         skip = false;
       }
       for (int i = 0; i < num_velocities; i++) {
-        if (v[i] != cached_v[i]) {
+        if (v[i] != cached_v_new[i]) {
           skip = false;
           break;
         }
@@ -1175,7 +1189,7 @@ void RigidBodyManipulator::doKinematicsNew(const MatrixBase<DerivedQ>& q, const 
     if (compute_JdotV && !jdotV_cached)
       skip = false;
     for (int i = 0; i < num_positions; i++) {
-      if (q[i] != cached_q[i]) {
+      if (q[i] != cached_q_new[i]) {
         skip = false;
         break;
       }
@@ -1352,8 +1366,14 @@ void RigidBodyManipulator::doKinematicsNew(const MatrixBase<DerivedQ>& q, const 
   gradients_cached = compute_gradients;
   velocity_kinematics_cached = v.rows() == num_velocities;
   jdotV_cached = compute_JdotV && velocity_kinematics_cached;
-  for (int i = 0; i < num_positions; i++) cached_q[i] = q[i];
-  if (v.rows() > 0) for (int i = 0; i < num_velocities; i++) cached_v[i] = v[i];
+
+  cached_q = q;
+  cached_q_new = q;
+
+  if (v.rows() > 0) {
+    cached_v = v;
+    cached_v_new = v;
+  }
 }
 
 template <typename DerivedA, typename DerivedB>
@@ -1521,9 +1541,9 @@ GradientVar<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::worldMomentumMatrixDotT
       throw std::runtime_error("no gradients available with old kinsol format.");
     MatrixXd A(TWIST_SIZE, num_positions);
     MatrixXd Adot(TWIST_SIZE, num_positions);
-    getCMM(cached_q, cached_v, A, Adot);
+    getCMM(cached_q_old, cached_v_old, A, Adot);
     GradientVar<Scalar, TWIST_SIZE, 1> ret(Adot.rows(), 1, num_positions, 0);
-    ret.value() = Adot * cached_v;
+    ret.value() = Adot * cached_v_old;
     return ret;
   }
 
@@ -1614,9 +1634,9 @@ GradientVar<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::centroidalMomentumMatri
       throw std::runtime_error("no gradients available with old kinsol format.");
     MatrixXd A(TWIST_SIZE, num_positions);
     MatrixXd Adot(TWIST_SIZE, num_positions);
-    getCMM(cached_q, cached_v, A, Adot);
+    getCMM(cached_q_old, cached_v_old, A, Adot);
     GradientVar<Scalar, TWIST_SIZE, 1> ret(Adot.rows(), 1, num_positions, 0);
-    ret.value() = Adot * cached_v;
+    ret.value() = Adot * cached_v_old;
     return ret;
   }
 
@@ -1729,7 +1749,7 @@ GradientVar<Scalar, SPACE_DIMENSION, 1> RigidBodyManipulator::centerOfMassJacobi
     MatrixXd Jdot(SPACE_DIMENSION, num_positions);
     getCOMJacDot(Jdot, robotnum);
     GradientVar<Scalar, SPACE_DIMENSION, 1> ret(Jdot.rows(), 1, num_positions, 0);
-    ret.value() = Jdot * cached_v;
+    ret.value() = Jdot * cached_v_old;
     return ret;
   }
 
@@ -1806,7 +1826,7 @@ void RigidBodyManipulator::getCOMJacDot(MatrixBase<Derived> &Jcomdot, const std:
   if (use_new_kinsol) {
     warnOnce("new_kinsol_old_method_getCOMJacDot", "Warning: called old getCOMJacDot with use_new_kinsol set to true.");
     typedef typename Derived::Scalar Scalar;
-    VectorXd Jcomdot_vectorized = centerOfMass<Scalar>(2, robotnum).gradient().gradient().value() * cached_v;
+    VectorXd Jcomdot_vectorized = centerOfMass<Scalar>(2, robotnum).gradient().gradient().value() * cached_v_new;
     Map<typename MatrixBase<Derived>::PlainObject> Jcomdot_map(Jcomdot_vectorized.data(), Jcomdot.rows(), Jcomdot.cols());
     Jcomdot = Jcomdot_map;
     return;
@@ -2284,7 +2304,7 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJ
       const DrakeJoint& joint = body->getJoint();
 
       motion_subspace.resize(Eigen::NoChange, joint.getNumVelocities());
-      joint.motionSubspace(cached_q.middleRows(body->position_num_start, joint.getNumPositions()), motion_subspace);
+      joint.motionSubspace(cached_q_old.middleRows(body->position_num_start, joint.getNumPositions()), motion_subspace);
 
       sign = kinematic_path.joint_direction_signs[i];
       auto block = J.template block<TWIST_SIZE, Dynamic>(0, col_start, TWIST_SIZE, joint.getNumVelocities());
@@ -2530,7 +2550,7 @@ void RigidBodyManipulator::forwardJacDot(const int body_or_frame_id, const Matri
     Matrix3Xd pts_block = pts.block(0, 0, 3, pts.cols());
     auto x_gradientvar = forwardKinNew(pts_block, body_or_frame_id, 0, rotation_type, 2);
     auto& J = x_gradientvar.gradient();
-    VectorXd Jdot_vectorized = J.gradient().value() * cached_v;
+    VectorXd Jdot_vectorized = J.gradient().value() * cached_v_new;
     Map<typename MatrixBase<DerivedB>::PlainObject> Jdot_map(Jdot_vectorized.data(), J.value().rows(), J.value().cols());
     Jdot = Jdot_map;
     return;
@@ -2810,7 +2830,7 @@ GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(
     }
   }
 
-  auto friction_torques = frictionTorques(cached_v, gradient_order);
+  auto friction_torques = frictionTorques(cached_v_new, gradient_order);
   ret.value() += friction_torques.value();
   if (gradient_order > 0)
     ret.gradient().value().block(0, nq, nv, nv) += friction_torques.gradient().value();
@@ -3063,7 +3083,7 @@ GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, 1> RigidBodyManipula
     forwardJacDot(body_or_frame_ind, points.colwise().homogeneous(), rotation_type, Jdot);
     typedef typename DerivedPoints::Scalar Scalar;
     GradientVar<Scalar, Dynamic, 1> ret(Jdot.rows(), 1, num_positions, 0);
-    ret.value() = Jdot * cached_v;
+    ret.value() = Jdot * cached_v_old;
     return ret;
   }
 

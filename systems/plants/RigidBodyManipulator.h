@@ -339,12 +339,15 @@ public:
   std::map<int, int> bodies_vector_index_to_featherstone_body_index;
 
   VectorXd cached_q, cached_v;  // these should be private
+  VectorXd cached_q_old, cached_v_old;  // these should be private
 
   void setUseNewKinsol(bool tf) { use_new_kinsol=tf; kinematicsInit=false; }
   bool getUseNewKinsol(void) { return use_new_kinsol; }
 
 private:
+  VectorXd cached_q_new, cached_v_new;
   bool use_new_kinsol;
+
   void doKinematics(double* q, bool b_compute_second_derivatives=false, double* qd=NULL);
   
   //helper functions for contactConstraints

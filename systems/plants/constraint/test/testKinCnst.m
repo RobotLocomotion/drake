@@ -246,7 +246,7 @@ testKinCnst_userfun(true,false,t_valid,q,q_aff,RigidBodyConstraint.RelativeQuatC
 testKinCnstInvalidTime_userfun(true,false,t_invalid,q,RigidBodyConstraint.RelativeQuatConstraintType,robot,...
   r_hand,l_hand,rpy2quat(randn(3,1)),5/180*pi,tspan0);
 
-display('Check gravity compenstaion torque constraint');
+display('Check gravity compensation torque constraint');
 testKinCnst_userfun(true,false,t_valid,q,q_aff,RigidBodyConstraint.GravityCompensationTorqueConstraintType,robot,robot_aff,robot.findPositionIndices('elx'),[-50;-70],[60;90],tspan0);
 testKinCnstInvalidTime_userfun(true,false,t_invalid,q,RigidBodyConstraint.GravityCompensationTorqueConstraintType,robot,robot.findPositionIndices('elx'),[-50;-70],[60;90],tspan0);
 end
