@@ -110,14 +110,10 @@ classdef PlanarRigidBodyVisualizer < RigidBodyVisualizer
   end
 
   properties (Access=protected)
-    body;  % body(i).xyz{j} and body(i).c{j} describe the geometry of the jth patch on body i
     Tview;
   end
   
   properties
-    xlim=[-2,2]
-    ylim=[-2,2];
-    debug = false;  % if true, draws extras, like the coordinate frames and COMs for each link
     fade_percent = 0;     % 0 to 1 
     fade_color = [1 1 1];
   end

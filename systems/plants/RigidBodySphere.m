@@ -99,6 +99,18 @@ classdef RigidBodySphere < RigidBodyGeometry
       end
     end
   
+    function h = draw(obj,model,kinsol,body_ind)
+      persistent sphere_pts; % for all spheres
+      if isempty(sphere_pts)
+        [x,y,z] = sphere;
+        sphere_pts = [x(:)'; y(:)'; z(:)'; 1+0*x(:)'];
+      end
+      
+      pts = forwardKin(model,kinsol,body_ind,obj.T(1:3,:)*obj.radius*sphere_pts);
+      N = size(pts,2)/2;
+      % todo: specify the color
+      h = surf([pts(1,1:N);pts(1,N+1:end)],[pts(2,1:N);pts(2,N+1:end)],[pts(3,1:N);pts(3,N+1:end)]);
+    end    
   end
   properties
     radius;

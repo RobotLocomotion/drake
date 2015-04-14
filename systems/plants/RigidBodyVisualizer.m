@@ -4,6 +4,13 @@ classdef RigidBodyVisualizer < Visualizer
   end
   properties
     gravity_visual_magnitude=.25;      
+    body;  % body(i).xyz{j} and body(i).c{j} describe the jth geometry on body i
+    debug = false;  % if true, draws extras, like the coordinate frames and COMs for each link
+    xlim=[-2,2];
+    ylim=[-2,2];
+    zlim=[-2,2];
+    az = -24;
+    el = 80;
   end
   methods
     function obj = RigidBodyVisualizer(manip)
@@ -39,6 +46,59 @@ classdef RigidBodyVisualizer < Visualizer
       end
       
       inspector@Visualizer(obj,x0,state_dims,minrange,maxrange,obj.model);
+    end
+    
+    function draw(obj,t,x)
+      n = obj.model.num_positions;
+      q = x(1:n); %qd=x(n+(1:n));
+      kinsol = obj.model.doKinematics(q);
+      
+      % for debugging:
+      %co = get(gca,'ColorOrder');
+      %h = [];
+      % end debugging
+
+      figure(25); 
+      clf; hold on;
+      
+      for i=1:length(obj.model.body)
+        for j=1:length(obj.model.body(i).visual_geometry)
+          draw(obj.model.body(i).visual_geometry{j},obj.model,kinsol,i);
+        end
+        if (obj.debug) % draw extra debugging info
+          body = obj.model.body(i);
+          origin = forwardKin(obj.model,kinsol,i,[0;0;0]);
+          plot(origin(1),origin(2),'k+');
+          if (body.mass~=0)
+            com = forwardKin(obj.model,kinsol,i,body.com);
+            plot3(com(1),com(2),com(3),'ro');
+            line([origin(1),com(1)],[origin(2),com(2)],[origin(3),com(3)],'Color','r');
+          end
+          if body.parent>0
+            parent_origin = forwardKin(obj.model,kinsol,body.parent,[0;0;0]);
+            line([origin(1),parent_origin(1)],[origin(2),parent_origin(2)],[origin(3),parent_origin(3)],'Color','k');
+          end
+        end
+      end
+      
+      axis equal;
+      if ~isempty(obj.xlim)
+        xlim(obj.xlim);
+      end
+      if ~isempty(obj.ylim)
+        ylim(obj.ylim);
+      end
+      if ~isempty(obj.axis)
+        axis(obj.axis);
+      end
+      if ~isempty(obj.az)
+        view(obj.az,obj.el);
+      end
+      
+      xlabel('x');
+      ylabel('y');
+      zlabel('z');
+      title(['t = ', num2str(t,'%.2f') ' sec']);
     end
       
     function kinematicInspector(obj,body_or_frame_id,pt,q0,minrange,maxrange)
