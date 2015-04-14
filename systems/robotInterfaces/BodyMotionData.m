@@ -134,6 +134,14 @@ classdef BodyMotionData
       obj.coefs = reshape(obj.coefs, [d, l, k]);
     end
 
+    function obj = from_body_xyzquat(body_id, ts, xyz_quat)
+      xyz_exp = zeros(6, size(xyz_quat, 2));
+      for j = 1:size(xyz_quat, 2)
+        xyz_exp(:,j) = [xyz_quat(1:3,j); quat2expmap(xyz_quat(4:7,j))];
+      end
+      obj = BodyMotionData.from_body_xyzexp(body_id, ts, xyz_exp);
+    end
+
     function obj = from_body_poses_and_velocities(body_id, ts, poses, dposes)
       % [xyz; rpy] and [xyzdot; rpydot]
       obj = BodyMotionData(body_id, ts);
