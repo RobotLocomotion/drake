@@ -220,7 +220,6 @@ for i = 2 : nBodies
   
   if ~isempty(f_ext)
     external_wrench = f_ext(:, i);
-    dexternal_wrench = getSubMatrixGradient(df_ext,1:twist_size,i,size(f_ext),1:nq);
     
     % external wrenches are expressed in 'joint' frame. Transform from
     % joint to world:
@@ -232,6 +231,7 @@ for i = 2 : nBodies
     net_wrenches{i} = net_wrenches{i} - external_wrench;
     
     if compute_gradient
+      dexternal_wrench = getSubMatrixGradient(df_ext,1:twist_size,i,size(f_ext),1:nq);
       dT_joint_to_world = matGradMult(kinsol.dTdq{i}, T_joint_to_body);
       dexternal_wrench = dTransformSpatialForce(T_joint_to_world, external_wrench, dT_joint_to_world, dexternal_wrench);
       dnet_wrenches{i} = dnet_wrenches{i} - dexternal_wrench;
