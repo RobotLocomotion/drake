@@ -12,7 +12,7 @@ classdef QPLocomotionPlan < QPControllerPlan
     qtraj;
     comtraj = [];
     mu = 0.5;
-    plan_shift_data = PlanShiftData();
+    plan_shift = zeros(6,1);
     plan_shift_z_only = false;
     g = 9.81; % gravity m/s^2
     is_quasistatic = false;
@@ -133,6 +133,7 @@ classdef QPLocomotionPlan < QPControllerPlan
       end
 
       pelvis_has_tracking = false;
+
       for j = 1:length(obj.body_motions)
         body_id = obj.body_motions(j).body_id;
         if body_id < 0
@@ -317,7 +318,7 @@ classdef QPLocomotionPlan < QPControllerPlan
         if body_id == loading_foot;
           foot_actual = obj.robot.forwardKin(kinsol, qp_input.body_motion_data(j).body_id, [0;0;0], 0);
           foot_des = evalCubicSplineSegment(t_global - qp_input.body_motion_data(j).ts(1), qp_input.body_motion_data(j).coefs);
-          obj.plan_shift_data.plan_shift(1:3) = foot_des(1:3) - foot_actual(1:3);
+          obj.plan_shift(1:3) = foot_des(1:3) - foot_actual(1:3);
           break
         end
       end
@@ -325,16 +326,16 @@ classdef QPLocomotionPlan < QPControllerPlan
 
     function qp_input = applyPlanShift(obj, qp_input)
       if ~obj.plan_shift_z_only
-        qp_input.zmp_data.x0(1:2) = qp_input.zmp_data.x0(1:2) - obj.plan_shift_data.plan_shift(1:2);
-        qp_input.zmp_data.y0 = qp_input.zmp_data.y0 - obj.plan_shift_data.plan_shift(1:2);
+        qp_input.zmp_data.x0(1:2) = qp_input.zmp_data.x0(1:2) - obj.plan_shift(1:2);
+        qp_input.zmp_data.y0 = qp_input.zmp_data.y0 - obj.plan_shift(1:2);
         inds = 1:3;
       else
         inds = 3;
       end
       for j = 1:length(qp_input.body_motion_data)
-        qp_input.body_motion_data(j).coefs(inds,:,end) = qp_input.body_motion_data(j).coefs(inds,:,end) - obj.plan_shift_data.plan_shift(inds);
+        qp_input.body_motion_data(j).coefs(inds,:,end) = qp_input.body_motion_data(j).coefs(inds,:,end) - obj.plan_shift(inds);
       end
-      qp_input.whole_body_data.q_des(inds) = qp_input.whole_body_data.q_des(inds) - obj.plan_shift_data.plan_shift(inds);
+      qp_input.whole_body_data.q_des(inds) = qp_input.whole_body_data.q_des(inds) - obj.plan_shift(inds);
     end
 
     function [ytraj, v] = simulatePointMassBiped(obj, r)
