@@ -82,7 +82,7 @@ namespace DrakeShapes
 
   void Box::getPoints(Matrix3Xd &points) const
   {
-    Geometry::getBoundingBoxPoints(size(0)/2, size(1)/2, size(2)/2, points);      
+    Geometry::getBoundingBoxPoints(size(0)/2.0, size(1)/2.0, size(2)/2.0, points);      
   }
 
   void Box::getBoundingBoxPoints(Matrix3Xd &points) const
@@ -111,7 +111,7 @@ namespace DrakeShapes
 
   void Cylinder::getBoundingBoxPoints(Matrix3Xd &points) const
   {
-    Geometry::getBoundingBoxPoints(radius, radius, length/2, points);      
+    Geometry::getBoundingBoxPoints(radius, radius, length/2.0, points);      
   }
 
   Capsule::Capsule(double radius, double length)
@@ -129,14 +129,14 @@ namespace DrakeShapes
       RowVectorXd cx = RowVectorXd::Zero(NUM_POINTS);
       RowVectorXd cy = RowVectorXd::Zero(NUM_POINTS);
       RowVectorXd cz = RowVectorXd::Zero(NUM_POINTS);
-      cz << length/2, -length/2;
+      cz << length/2.0, -length/2.0;
 
       points << cx, cy, cz;
   }
 
   void Capsule::getBoundingBoxPoints(Matrix3Xd &points) const
   {
-      Geometry::getBoundingBoxPoints(radius, radius, (length/2 + radius), points);    
+      Geometry::getBoundingBoxPoints(radius, radius, (length/2.0 + radius), points);    
   }
 
   Mesh::Mesh(const string& filename)
@@ -246,8 +246,11 @@ namespace DrakeShapes
 
       Vector3d min_pos = mesh_vertices.rowwise().minCoeff();
       Vector3d max_pos = mesh_vertices.rowwise().maxCoeff();
-      Vector3d size = max_pos - min_pos;
-      Geometry::getBoundingBoxPoints(size(0)/2, size(1)/2, size(2)/2, bbox_points); 
+      
+      bbox_points.resize(Eigen::NoChange, NUM_BBOX_POINTS);
+      bbox_points << min(1), min(1), min(1), min(1), max(1), max(1), max(1), max(1),
+                     min(2), min(2), max(2), max(2), min(2), min(2), max(2), max(2),
+                     min(3), max(3), min(3), max(3), min(3), max(3), min(3), max(3);
                      
   }
 
@@ -268,8 +271,11 @@ namespace DrakeShapes
   {
     Vector3d min_pos = points.rowwise().minCoeff();
     Vector3d max_pos = points.rowwise().maxCoeff();
-    Vector3d size = max_pos - min_pos;
-    Geometry::getBoundingBoxPoints(size(0)/2, size(1)/2, size(2)/2, bbox_points);      
+     
+    bbox_points.resize(Eigen::NoChange, NUM_BBOX_POINTS);
+    bbox_points << min(1), min(1), min(1), min(1), max(1), max(1), max(1), max(1),
+                   min(2), min(2), max(2), max(2), min(2), min(2), max(2), max(2),
+                   min(3), max(3), min(3), max(3), min(3), max(3), min(3), max(3);
   }
 
 }
