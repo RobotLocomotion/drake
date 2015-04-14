@@ -248,9 +248,9 @@ namespace DrakeShapes
       Vector3d max_pos = mesh_vertices.rowwise().maxCoeff();
       
       bbox_points.resize(Eigen::NoChange, NUM_BBOX_POINTS);
-      bbox_points << min(1), min(1), min(1), min(1), max(1), max(1), max(1), max(1),
-                     min(2), min(2), max(2), max(2), min(2), min(2), max(2), max(2),
-                     min(3), max(3), min(3), max(3), min(3), max(3), min(3), max(3);
+      bbox_points << min_pos(1), min_pos(1), min_pos(1), min_pos(1), max_pos(1), max_pos(1), max_pos(1), max_pos(1),
+                     min_pos(2), min_pos(2), max_pos(2), max_pos(2), min_pos(2), min_pos(2), max_pos(2), max_pos(2),
+                     min_pos(3), max_pos(3), min_pos(3), max_pos(3), min_pos(3), max_pos(3), min_pos(3), max_pos(3);
                      
   }
 
@@ -273,9 +273,9 @@ namespace DrakeShapes
     Vector3d max_pos = points.rowwise().maxCoeff();
      
     bbox_points.resize(Eigen::NoChange, NUM_BBOX_POINTS);
-    bbox_points << min(1), min(1), min(1), min(1), max(1), max(1), max(1), max(1),
-                   min(2), min(2), max(2), max(2), min(2), min(2), max(2), max(2),
-                   min(3), max(3), min(3), max(3), min(3), max(3), min(3), max(3);
+    bbox_points << min_pos(1), min_pos(1), min_pos(1), min_pos(1), max_pos(1), max_pos(1), max_pos(1), max_pos(1),
+                   min_pos(2), min_pos(2), max_pos(2), max_pos(2), min_pos(2), min_pos(2), max_pos(2), max_pos(2),
+                   min_pos(3), max_pos(3), min_pos(3), max_pos(3), min_pos(3), max_pos(3), min_pos(3), max_pos(3);
   }
 
 }
