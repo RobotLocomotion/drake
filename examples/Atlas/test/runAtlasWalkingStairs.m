@@ -1,6 +1,5 @@
 function runAtlasWalkingStairs()
-%NOTEST
-% Experimental test case for walking up stairs. Not yet reliable.
+% Climb a set of stairs modeled after the DRC finals task
 
 checkDependency('iris');
 checkDependency('lcmgl');
@@ -110,6 +109,9 @@ ytraj = simulate(sys, [0, T], x0, struct('gui_control_interface', true));
 
 v.playback(ytraj, struct('slider', true));
 
+if ~rangecheck(rms_com, 0, 0.005);
+  error('Drake:runAtlasWalkingStairs:BadCoMTracking', 'Center-of-mass during execution differs substantially from the plan.');
+end
 
 end
 

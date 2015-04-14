@@ -1,6 +1,5 @@
 function runAtlasWalkingTiltedBlocks()
-%NOTEST
-% Experimental test case for walking up stairs. Not yet reliable.
+% Run atlas across the tilted cinderblock terrain from the DRC testbed
 
 checkDependency('iris');
 checkDependency('lcmgl');
@@ -29,15 +28,6 @@ r = compile(r);
 
 % set initial state to fixed point
 load(fullfile(getDrakePath,'examples','Atlas','data','atlas_fp.mat'));
-
-% xstar(r.findPositionIndices('r_arm_usy')) = -0.931;
-% xstar(r.findPositionIndices('r_arm_shx')) = 0.717;
-% xstar(r.findPositionIndices('r_arm_ely')) = 1.332;
-% xstar(r.findPositionIndices('r_arm_elx')) = -0.871;
-% xstar(r.findPositionIndices('l_arm_usy')) = -0.931;
-% xstar(r.findPositionIndices('l_arm_shx')) = -0.717;
-% xstar(r.findPositionIndices('l_arm_ely')) = 1.332;
-% xstar(r.findPositionIndices('l_arm_elx')) = 0.871;
 xstar = r.resolveConstraints(xstar);
 
 r = r.setInitialState(xstar);
@@ -118,10 +108,6 @@ end
 
 walking_plan = r.planWalkingZMP(x0(1:nq), footstep_plan);
 
-% ytraj = r.planWalkingStateTraj(walking_plan);
-% v.playback(ytraj, struct('slider', true));
-% keyboard()
-
 % Build our controller and plan eval objects
 control = atlasControllers.InstantaneousQPController(r, []);
 planeval = atlasControllers.AtlasPlanEval(r, walking_plan);
@@ -140,6 +126,9 @@ ytraj = simulate(sys, [0, T], x0, struct('gui_control_interface', true));
 
 v.playback(ytraj, struct('slider', true));
 
+if ~rangecheck(rms_com, 0, 0.005);
+  error('Drake:runAtlasWalkingTiltedBlocks:BadCoMTracking', 'Center-of-mass during execution differs substantially from the plan.');
+end
 
 end
 
