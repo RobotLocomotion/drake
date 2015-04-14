@@ -76,7 +76,7 @@ output_select(1).output=1;
 sys = mimoCascade(sys,v,[],[],output_select);
 
 % Simulate and draw the result
-T = min(walking_plan_data.duration + 1, 30);
+T = walking_plan_data.duration + 1;
 tic
 ytraj = simulate(sys, [0, T], x0, struct('gui_control_interface', true));
 toc
@@ -84,7 +84,7 @@ toc
 
 v.playback(ytraj, struct('slider', true));
 
-if ~rangecheck(rms_com, 0, 0.01);
+if ~rangecheck(rms_com, 0, 0.005);
   error('Drake:runAtlasWalkingSplit:BadCoMTracking', 'Center-of-mass during execution differs substantially from the plan.');
 end
 
