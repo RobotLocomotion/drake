@@ -188,8 +188,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   
   Map< VectorXd > qddot_des(mxGetPrSafe(prhs[narg++]),nq);
   
-  Map<VectorXd> q(mxGetPrSafe(prhs[narg++]), nq);
-  Map<VectorXd> qd(&q[nq], nv);  
+  Map<VectorXd> q(mxGetPrSafe(prhs[narg]), nq);
+  Map<VectorXd> qd(mxGetPrSafe(prhs[narg++]) + nq, nv);
 
   vector<VectorXd,aligned_allocator<VectorXd>> body_accel_inputs;
   for (int i=0; i<pdata->n_body_accel_inputs; i++) {
