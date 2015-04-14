@@ -492,16 +492,16 @@ classdef QPLocomotionPlan < QPControllerPlan
 
 
       pelvis_id = obj.robot.findLinkId('pelvis');
-      pelvis_current = forwardKin(obj.robot,kinsol,pelvis_id,[0;0;0],1);
+      pelvis_current_xyzquat = forwardKin(obj.robot,kinsol,pelvis_id,[0;0;0],2);
       if options.center_pelvis
         foot_pos = [obj.robot.forwardKin(kinsol, obj.robot.foot_frame_id.right, [0;0;0]),...
                     obj.robot.forwardKin(kinsol, obj.robot.foot_frame_id.left, [0;0;0])];
         comgoal = mean(foot_pos(1:2,:), 2);
-        pelvis_target = [mean(foot_pos(1:2,:), 2); pelvis_current(3:end)];
+        pelvis_target_xyzquat = [mean(foot_pos(1:2,:), 2); pelvis_current_xyzquat(3:end)];
       else
         comgoal = obj.robot.getCOM(kinsol);
         comgoal = comgoal(1:2);
-        pelvis_target = pelvis_current;
+        pelvis_target_xyzquat = pelvis_current_xyzquat;
       end
 
       obj.zmptraj = comgoal;
@@ -510,13 +510,18 @@ classdef QPLocomotionPlan < QPControllerPlan
       obj.body_motions = [BodyMotionData(obj.robot.foot_body_id.right, [0, inf]),...
                           BodyMotionData(obj.robot.foot_body_id.left, [0, inf]),...
                           BodyMotionData(pelvis_id, [0, inf])];
-      obj.body_motions(1).coefs = cat(3, zeros(6,1,3), reshape(forwardKin(obj.robot,kinsol,obj.robot.foot_body_id.right,[0;0;0],1),[6,1,1]));
+      rfoot_xyzquat = forwardKin(obj.robot,kinsol,obj.robot.foot_body_id.right,[0;0;0],2);
+      rfoot_xyzexpmap = [rfoot_xyzquat(1:3);quat2expmap(rfoot_xyzquat(4:7))];
+      obj.body_motions(1).coefs = cat(3, zeros(6,1,3), reshape(rfoot_xyzexpmap,[6,1,1]));
       obj.body_motions(1).in_floating_base_nullspace = true(1, 2);
 
-      obj.body_motions(2).coefs = cat(3, zeros(6,1,3),reshape(forwardKin(obj.robot,kinsol,obj.robot.foot_body_id.left,[0;0;0],1),[6,1,1]));
+      lfoot_xyzquat = forwardKin(obj.robot,kinsol,obj.robot.foot_body_id.left,[0;0;0],2);
+      lfoot_xyzexpmap = [lfoot_xyzquat(1:3);quat2expmap(lfoot_xyzquat(4:7))];
+      obj.body_motions(2).coefs = cat(3, zeros(6,1,3),reshape(lfoot_xyzexpmap,[6,1,1]));
       obj.body_motions(2).in_floating_base_nullspace = true(1, 2);
 
-      obj.body_motions(3).coefs = cat(3, zeros(6,1,3),reshape(pelvis_target,[6,1,1,]));
+      pelvis_target_xyzexpmap = [pelvis_target_xyzquat(1:3);quat2expmap(pelvis_target_xyzquat(4:7))];
+      obj.body_motions(3).coefs = cat(3, zeros(6,1,3),reshape(pelvis_target_xyzexpmap,[6,1,1,]));
       obj.body_motions(3).in_floating_base_nullspace = false(1, 2);
 
       obj.zmp_final = comgoal;

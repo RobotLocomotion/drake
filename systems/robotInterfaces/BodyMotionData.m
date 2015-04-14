@@ -24,7 +24,7 @@ classdef BodyMotionData
       obj.in_floating_base_nullspace = false(1, numel(ts));
       obj.control_pose_when_in_contact = false(1, numel(ts));
       obj.coefs = zeros(6, numel(ts), 4);
-      obj.use_spatial_velocity = false;
+      obj.use_spatial_velocity = true;
       obj.quat_task_to_world = [1;0;0;0];
       obj.translation_task_to_world = zeros(3,1);
       obj.xyz_kp_multiplier = [1;1;1];
