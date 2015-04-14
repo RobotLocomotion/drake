@@ -163,7 +163,7 @@ classdef QPLocomotionPlan < QPControllerPlan
                   foot_knot = obj.body_motions(j).coefs(:,body_t_ind,end);
                   R = quat2rotmat(expmap2quat(-foot_knot(4:6)));
                   dist_in_local = (other_foot_pose(1:3) - foot_knot(1:3))' * (R * [1;0;0]);
-                  obj.toe_off_active.(foot_name) = dist_in_local > 0.05;
+                  obj.toe_off_active.(foot_name) = dist_in_local >= 0;
                   break
                 end
               end

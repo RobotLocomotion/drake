@@ -92,9 +92,9 @@ classdef InstantaneousQPController
                       'drake', {obj.robot.getInputFrame().coordinates}));
 
 
-      [jl_min, jl_max] = obj.robot.getJointLimits();
-      jl_min(obj.robot.findPositionIndices('kny')) = 0.5;
-      obj.robot = obj.robot.setJointLimits(jl_min, jl_max).compile();
+      % [jl_min, jl_max] = obj.robot.getJointLimits();
+      % jl_min(obj.robot.findPositionIndices('kny')) = 0.5;
+      % obj.robot = obj.robot.setJointLimits(jl_min, jl_max).compile();
       obj.data_mex_ptr = ...
              constructQPDataPointerMex(obj.robot.getMexModelPtr(),...
                                        obj.param_sets,...
