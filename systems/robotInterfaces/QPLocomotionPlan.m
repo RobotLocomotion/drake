@@ -259,7 +259,7 @@ classdef QPLocomotionPlan < QPControllerPlan
       x0(4:7) = x0(4:7) * flip;
       xd0(4:7) = xd0(4:7) * flip;
 
-      xd0 = [xd0(1:3); quatdot2expmapdot(x0(4:7), xd0(4:7))];
+      xd0 = [zeros(3,1); quatdot2expmapdot(x0(4:7), xd0(4:7))];
 
       xs = [[x0(1:3); quat2expmap(x0(4:7))], body_motion_data.coefs(:, body_t_ind+(2:4), end)];
       

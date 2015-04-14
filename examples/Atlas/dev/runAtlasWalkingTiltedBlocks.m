@@ -83,6 +83,7 @@ end
 r = r.compile();
 height_map = RigidBodyHeightMapTerrain.constructHeightMapFromRaycast(r,x0(1:nq),-1:.015:4,-1:.015:1,10);
 r = r.setTerrain(height_map).compile();
+r.default_walking_params.drake_min_hold_time = 1.0;
 
 v = r.constructVisualizer();
 v.display_dt = 0.01;
