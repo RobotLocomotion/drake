@@ -596,8 +596,31 @@ void RigidBodyManipulator::updateCollisionElements(const shared_ptr<RigidBody>& 
     } else {
       collision_model->updateElementWorldTransform(*id_iter, body->T);
     }
+    
+    // update the body's contact points    
+    Matrix3Xd contact_pts;
+    getTerrainPoints(*body, contact_pts);
+    body->contact_pts = contact_pts.colwise().homogeneous();
   }
 };
+
+void RigidBodyManipulator::getTerrainPoints(const RigidBody& body, Eigen::Matrix3Xd &terrain_points) const 
+{
+  // clear matrix before filling it again
+  size_t num_points = 0;
+  terrain_points.resize(Eigen::NoChange,0);
+
+  for (auto id_iter = body.collision_element_ids.begin(); 
+       id_iter != body.collision_element_ids.end(); 
+       ++id_iter) {
+    
+    Matrix3Xd element_points;
+    collision_model->getTerrainPoints(*id_iter, element_points);
+    terrain_points.conservativeResize(Eigen::NoChange, terrain_points.cols() + element_points.cols());
+    terrain_points.block(0, num_points, terrain_points.rows(), element_points.cols()) = element_points;
+    num_points += element_points.cols();
+  }
+}
 
 bool RigidBodyManipulator::collisionRaycast(const Matrix3Xd &origins,
                                             const Matrix3Xd &ray_endpoints,

@@ -41,6 +41,8 @@ namespace DrakeShapes
       bool hasGeometry() const;
 
       const Geometry& getGeometry() const;
+      
+      void getPoints(Eigen::Matrix3Xd &points);
 
     protected:
 
