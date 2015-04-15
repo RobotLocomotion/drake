@@ -436,7 +436,7 @@ Vector6d bodySpatialMotionPD(RigidBodyManipulator *r, DrakeRobotState &robot_sta
         // @param T_task_to_world  The homogeneous transform from task to world
 	// @retval twist_dot, [angular_acceleration, xyz_acceleration] in body frame
 
-  if(!r->use_new_kinsol)
+  if(!r->getUseNewKinsol())
   {
     throw std::runtime_error("bodySpatialMotionPD requires new kinsol format");
   }
