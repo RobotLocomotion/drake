@@ -55,6 +55,7 @@ for i=1:length(ts)
       xyz_exp = walking_plan_data.body_motions(j).eval(t);
       xyz = xyz_exp(1:3);
       quat = expmap2quat(xyz_exp(4:6));
+      xyz(walking_plan_data.body_motions(j).weight_multiplier(4:6) == 0) = nan;
 
       ik_args = [ik_args,{constructRigidBodyConstraint(RigidBodyConstraint.WorldPositionConstraintType,true,...
           obj,body_ind, [0;0;0],xyz, xyz),...
