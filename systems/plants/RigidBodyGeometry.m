@@ -109,6 +109,9 @@ classdef RigidBodyGeometry
       
     end
     
+    function h = draw(obj,model,kinsol,body_ind)
+      % intentionally left blank, can be overloaded
+    end
   end
   
   methods (Static)
