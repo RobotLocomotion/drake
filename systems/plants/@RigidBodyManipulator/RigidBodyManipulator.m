@@ -465,8 +465,8 @@ classdef RigidBodyManipulator < Manipulator
         child.wrljoint = wrl_joint_origin;
       end
 
-      child.Xtree = Xrotx(rpy(1))*Xroty(rpy(2))*Xrotz(rpy(3))*Xtrans(xyz);
-      child.Ttree = [rotz(rpy(3))*roty(rpy(2))*rotx(rpy(1)),xyz; 0,0,0,1];  % equivalent to rpy2rotmat
+      child.Ttree = [rpy2rotmat(rpy), xyz; 0,0,0,1];
+      child.Xtree = transformAdjoint(homogTransInv(child.Ttree)); % +++TK: should really be named XtreeInv...
 
       % note that I only now finally understand that my Ttree*[x;1] is
       % *ALMOST* (up to translation?? need to resolve this!) the same as inv(Xtree)*[x;zeros(3,1)].  sigh.
@@ -484,9 +484,8 @@ classdef RigidBodyManipulator < Manipulator
           valuecheck(sin(axis_angle(4)),0,1e-4);
           axis_angle(1:3)=[0;1;0];
         end
-        jointrpy = quat2rpy(axis2quat(axis_angle));
-        child.X_joint_to_body=Xrotx(jointrpy(1))*Xroty(jointrpy(2))*Xrotz(jointrpy(3));
-        child.T_body_to_joint=[rotz(jointrpy(3))*roty(jointrpy(2))*rotx(jointrpy(1)),zeros(3,1); 0,0,0,1];
+        child.T_body_to_joint = [axis2rotmat(axis_angle), zeros(3,1); 0,0,0,1];
+        child.X_joint_to_body=transformAdjoint(homogTransInv(child.T_body_to_joint));
 
         valuecheck(inv(child.X_joint_to_body)*[axis;zeros(3,1)],[0;0;1;zeros(3,1)],1e-6);
         valuecheck(child.T_body_to_joint*[axis;1],[0;0;1;1],1e-6);
