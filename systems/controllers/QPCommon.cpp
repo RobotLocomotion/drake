@@ -359,16 +359,8 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     if (qp_input->body_motion_data[i].body_id == 0)
       mexErrMsgTxt("Body motion data with body id 0\n");
     int body_or_frame_id0 = qp_input->body_motion_data[i].body_id - 1;
-    int true_body_id0 = body_or_frame_id0;
-    if (body_or_frame_id0 < 0){
-      // and get actual body using that; get back to the original
-      // frame id (undo the -1), and transform into index based
-      // on frame # by adding 1 and inverting
-      int frame_ind = -(body_or_frame_id0+2);
-      if (frame_ind >= pdata->r->num_frames)
-        mexErrMsgTxt("Got a frame ind greater than available!\n");
-      true_body_id0 = pdata->r->frames[frame_ind].body_ind;
-    }
+    int true_body_id0 = pdata->r->parseBodyOrFrameID(body_or_frame_id0, NULL);
+
     double weight = params->body_motion[true_body_id0].weight;
     desired_body_accelerations[i].body_id0 = body_or_frame_id0;
     Map<Matrix<double, 6, 4,RowMajor>>coefs_rowmaj(&qp_input->body_motion_data[i].coefs[0][0]);
