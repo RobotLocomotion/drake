@@ -25,7 +25,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       if ~isfield(options,'atlas_version') 
         options.atlas_version = 3; 
       end
-      
+
       w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
       
       obj = obj@TimeSteppingRigidBodyManipulator(urdf,options.dt,options);

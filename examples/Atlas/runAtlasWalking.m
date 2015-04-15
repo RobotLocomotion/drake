@@ -1,4 +1,4 @@
-function runAtlasWalkingSplit(robot_options, walking_options)
+function runAtlasWalking(robot_options, walking_options)
 % Run the new split QP controller, which consists of separate PlanEval
 % and InstantaneousQPController objects. The controller will also
 % automatically transition to standing when it reaches the end of its walking
