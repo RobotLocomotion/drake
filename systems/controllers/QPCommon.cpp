@@ -251,7 +251,26 @@ VectorXd velocityReference(NewQPControllerData *pdata, double t, const Ref<Vecto
     dt = t - pdata->state.t_prev;
   }
 
-  pdata->state.vref_integrator_state = (1-params->eta)*pdata->state.vref_integrator_state + params->eta*qd + qdd*dt;
+  VectorXd qdd_limited = qdd;
+  // Do not wind the vref integrator up against the joint limits for the legs
+  for (i=0; i < rpc->position_indices.r_leg.size(); i++) {
+    int pos_ind = rpc->position_indices.r_leg(i);
+    if (q(pos_ind) <= pdata->r->joint_limit_min(pos_ind) + 0.05) {
+      qdd_limited(pos_ind) = std::max(qdd(pos_ind), 0.0);
+    } else if (q(pos_ind) >= pdata->r->joint_limit_max(pos_ind) - 0.05) {
+      qdd_limited(pos_ind) = std::min(qdd(pos_ind), 0.0);
+    }
+  }
+  for (i=0; i < rpc->position_indices.l_leg.size(); i++) {
+    int pos_ind = rpc->position_indices.l_leg(i);
+    if (q(pos_ind) <= pdata->r->joint_limit_min(pos_ind) + 0.05) {
+      qdd_limited(pos_ind) = std::max(qdd(pos_ind), 0.0);
+    } else if (q(pos_ind) >= pdata->r->joint_limit_max(pos_ind) - 0.05) {
+      qdd_limited(pos_ind) = std::min(qdd(pos_ind), 0.0);
+    }
+  }
+
+  pdata->state.vref_integrator_state = (1-params->eta)*pdata->state.vref_integrator_state + params->eta*qd + qdd_limited*dt;
 
   if (params->zero_ankles_on_contact && foot_contact[0] == 1) {
     for (i=0; i < rpc->position_indices.l_leg_ak.size(); i++) {
