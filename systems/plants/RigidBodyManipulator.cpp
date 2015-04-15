@@ -1376,81 +1376,6 @@ void RigidBodyManipulator::doKinematicsNew(const MatrixBase<DerivedQ>& q, const 
   }
 }
 
-template <typename DerivedA, typename DerivedB>
-void RigidBodyManipulator::getCMM(MatrixBase<DerivedA> const & q, MatrixBase<DerivedA> const & qd, MatrixBase<DerivedB> &A, MatrixBase<DerivedB> &Adot)
-{
-  if (use_new_kinsol) {
-    warnOnce("new_kinsol_old_method_getCMM", "Warning: called old getCMM with use_new_kinsol set to true.");
-    typedef typename DerivedB::Scalar Scalar;
-    GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> cmm = centroidalMomentumMatrix<Scalar>(1);
-    A = cmm.value();
-    VectorXd Adot_vectorized = cmm.gradient().value() * qd;
-    Map<typename MatrixBase<DerivedA>::PlainObject> Adot_map(Adot_vectorized.data(), Adot.rows(), Adot.cols());
-    Adot = Adot_map;
-    return;
-  }
-
-  // returns the centroidal momentum matrix as described in Orin & Goswami 2008
-  //
-  // h = A*qd, where h(4:6) is the total linear momentum and h(1:3) is the
-  // total angular momentum in the centroid frame (world fram translated to COM).
-
-  Vector3d com; getCOM(com);
-  Xtrans(-com,&Xcom);
-
-  getCOMJac(Jcom);
-  Vector3d com_dot = Jcom*qd;
-  dXcom = MatrixXd::Zero(6,6);
-  dXcom(5,1) = 1*com_dot(0);
-  dXcom(4,2) = -1*com_dot(0);
-  dXcom(5,0) = -1*com_dot(1);
-  dXcom(3,2) = 1*com_dot(1);
-  dXcom(4,0) = 1*com_dot(2);
-  dXcom(3,1) = -1*com_dot(2);
-
-  A = MatrixXd::Zero(6,num_positions);
-  Adot = MatrixXd::Zero(6,num_positions);
-
-  for (int i=0; i < NB; i++) {
-    Ic[i] = I[i];
-    dIc[i] = MatrixXd::Zero(6,6);
-  }
-
-  int n;
-  for (int i=NB-1; i >= 0; i--) {
-    n = dofnum[i];
-    jcalc(pitch[i],q[n],&Xi,&phi[i]);
-    Xup[i] = Xi * Xtree[i];
-
-    djcalc(pitch[i], q[n], &dXidq);
-    dXup[i] = dXidq * Xtree[i] * qd[n];
-
-    if (parent[i] >= 0) {
-      Ic[parent[i]] += Xup[i].transpose()*Ic[i]*Xup[i];
-      dIc[parent[i]] += (dXup[i].transpose()*Ic[i] + Xup[i].transpose()*dIc[i])*Xup[i] + Xup[i].transpose()*Ic[i]*dXup[i];
-    }
-  }
-
-
-  for (int i=0; i < NB; i++) {
-    if (parent[i] >= 0) {
-      Xworld[i] = Xup[i] * Xworld[parent[i]];
-      dXworld[i] = dXup[i]*Xworld[parent[i]] + Xup[i]*dXworld[parent[i]];
-    }
-    else {
-      Xworld[i] = Xup[i];
-      dXworld[i] = dXup[i];
-    }
-
-    Xg = Xworld[i] * Xcom; // spatial transform from centroid to body
-    dXg = dXworld[i] * Xcom + Xworld[i] * dXcom;
-
-    n = dofnum[i];
-    A.col(n) = Xg.transpose()*Ic[i]*phi[i];
-    Adot.col(n) = dXg.transpose()*Ic[i]*phi[i] + Xg.transpose()*dIc[i]*phi[i];
-  }
-}
-
 void RigidBodyManipulator::updateCompositeRigidBodyInertias(int gradient_order) {
   if (gradient_order > 1) {
     throw std::runtime_error("only first order gradients are available");
@@ -1536,17 +1461,6 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::worldMomen
 template <typename Scalar>
 GradientVar<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::worldMomentumMatrixDotTimesV(int gradient_order, const std::set<int>& robotnum)
 {
-  if (!use_new_kinsol) {
-    if (gradient_order > 0)
-      throw std::runtime_error("no gradients available with old kinsol format.");
-    MatrixXd A(TWIST_SIZE, num_positions);
-    MatrixXd Adot(TWIST_SIZE, num_positions);
-    getCMM(cached_q_old, cached_v_old, A, Adot);
-    GradientVar<Scalar, TWIST_SIZE, 1> ret(Adot.rows(), 1, num_positions, 0);
-    ret.value() = Adot * cached_v_old;
-    return ret;
-  }
-
   if (gradient_order > 1)
     throw std::runtime_error("only first order gradient is available");
   checkCachedKinematicsSettings(gradient_order > 0, true, true, "worldMomentumMatrixDotTimesV");
@@ -1629,17 +1543,6 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::centroidal
 template <typename Scalar>
 GradientVar<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::centroidalMomentumMatrixDotTimesV(int gradient_order, const std::set<int>& robotnum)
 {
-  if (!use_new_kinsol) {
-    if (gradient_order > 0)
-      throw std::runtime_error("no gradients available with old kinsol format.");
-    MatrixXd A(TWIST_SIZE, num_positions);
-    MatrixXd Adot(TWIST_SIZE, num_positions);
-    getCMM(cached_q_old, cached_v_old, A, Adot);
-    GradientVar<Scalar, TWIST_SIZE, 1> ret(Adot.rows(), 1, num_positions, 0);
-    ret.value() = Adot * cached_v_old;
-    return ret;
-  }
-
   // kinematics cache checks already being done in worldMomentumMatrixDotTimesV
   auto ret = worldMomentumMatrixDotTimesV<Scalar>(gradient_order, robotnum);
 
@@ -3489,11 +3392,6 @@ template DLLEXPORT_RBM void RigidBodyManipulator::doKinematicsNew(const MatrixBa
 
 template DLLEXPORT_RBM void RigidBodyManipulator::doKinematics(MatrixBase<VectorXd>  &, bool, MatrixBase<VectorXd>  &);
 template DLLEXPORT_RBM void RigidBodyManipulator::doKinematics(MatrixBase< Map<VectorXd> >  &, bool, MatrixBase< Map<VectorXd> >  &);
-
-template DLLEXPORT_RBM void RigidBodyManipulator::getCMM(MatrixBase<VectorXd> const &, MatrixBase<VectorXd> const &, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<MatrixXd> > &);
-template DLLEXPORT_RBM void RigidBodyManipulator::getCMM(MatrixBase<VectorXd> const &, MatrixBase<VectorXd> const &, MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > &);
-template DLLEXPORT_RBM void RigidBodyManipulator::getCMM(MatrixBase< Map<VectorXd> > const &, MatrixBase< Map<VectorXd> > const &, MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > &);
-template DLLEXPORT_RBM void RigidBodyManipulator::getCMM(MatrixBase< Map<VectorXd> > const &, MatrixBase< Map<VectorXd> > const &, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<MatrixXd> > &);
 
 template DLLEXPORT_RBM void RigidBodyManipulator::getCOM(MatrixBase< Map<Vector3d> > &,const set<int> &);
 template DLLEXPORT_RBM void RigidBodyManipulator::getCOM(MatrixBase< Map<MatrixXd> > &,const set<int> &);

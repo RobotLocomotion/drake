@@ -428,9 +428,10 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   bool include_angular_momentum = (params->W_kdot.array().maxCoeff() > 1e-10);
 
   if (include_angular_momentum) {
-    pdata->r->getCMM(robot_state.q,robot_state.qd,pdata->Ag,pdata->Agdot);
-    pdata->Ak = pdata->Ag.topRows(3);
-    pdata->Akdot = pdata->Agdot.topRows(3);
+    pdata->Ag = pdata->r->centroidalMomentumMatrix<double>(0).value();
+    pdata->Agdot_times_v = pdata->r->centroidalMomentumMatrixDotTimesV<double>(0).value();
+    pdata->Ak = pdata->Ag.topRows<3>();
+    pdata->Akdot_times_v = pdata->Agdot_times_v.topRows<3>();
   }
   Vector3d xcom;
   // consider making all J's into row-major
@@ -525,7 +526,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
       pdata->fqp -= y0.transpose()*Qy*D_ls*Jcom;
       pdata->fqp -= (w_qdd.array()*pid_out.qddot_des.array()).matrix().transpose();
       if (include_angular_momentum) {
-        pdata->fqp += robot_state.qd.transpose()*pdata->Akdot.transpose()*params->W_kdot*pdata->Ak;
+        pdata->fqp += pdata->Akdot_times_v.transpose()*params->W_kdot*pdata->Ak;
         pdata->fqp -= kdot_des.transpose()*params->W_kdot*pdata->Ak;
       }
       f.head(nq) = pdata->fqp.transpose();

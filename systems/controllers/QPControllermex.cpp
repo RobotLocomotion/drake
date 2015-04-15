@@ -157,9 +157,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     pdata->Hqp.resize(nq,nq);
     pdata->fqp.resize(nq);
     pdata->Ag.resize(6,nq);
-    pdata->Agdot.resize(6,nq);
     pdata->Ak.resize(3,nq);
-    pdata->Akdot.resize(3,nq);
 
     pdata->vbasis_len = 0;
     pdata->cbasis_len = 0;
@@ -296,9 +294,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   bool include_angular_momentum = (pdata->W_kdot.array().maxCoeff() > 1e-10);
 
   if (include_angular_momentum) {
-    pdata->r->getCMM(q,qd,pdata->Ag,pdata->Agdot);
-    pdata->Ak = pdata->Ag.topRows(3);
-    pdata->Akdot = pdata->Agdot.topRows(3);
+    pdata->Ag = pdata->r->centroidalMomentumMatrix<double>(0).value();
+    pdata->Agdot_times_v = pdata->r->centroidalMomentumMatrixDotTimesV<double>(0).value();
+    pdata->Ak = pdata->Ag.topRows<3>();
+    pdata->Akdot_times_v = pdata->Agdot_times_v.topRows<3>();
   }
   Vector3d xcom;
   // consider making all J's into row-major
@@ -378,7 +377,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       pdata->fqp -= y0.transpose()*Qy*D_ls*Jcom;
       pdata->fqp -= (pdata->w_qdd.array()*qddot_des.array()).matrix().transpose();
       if (include_angular_momentum) {
-        pdata->fqp += qd.transpose()*pdata->Akdot.transpose()*pdata->W_kdot*pdata->Ak;
+        pdata->fqp += pdata->Akdot_times_v.transpose() * pdata->W_kdot * pdata->Ak;
         pdata->fqp -= kdot_des.transpose()*pdata->W_kdot*pdata->Ak;
       }
       f.head(nq) = pdata->fqp.transpose();
