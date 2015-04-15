@@ -2241,12 +2241,6 @@ classdef RigidBodyManipulator < Manipulator
           % multiple times, and will update b each time! (so the test will
           % fail on the second pass)
 
-          b.X_joint_to_body = Xroty(-pi/2);
-          % note: this is a strange and ugly case where I have to let the
-          % X_joint_to_body get out of sync with the T_body_to_joint, since
-          % the kinematics believes one thing and the featherstone dynamics
-          % believes another.
-
           for j=0:4, m.I{n+j} = zeros(6); end
           m.I{n+5} = b.X_joint_to_body'*b.I*b.X_joint_to_body;
           m.f_ext_map_to = [m.f_ext_map_to,n+5];
