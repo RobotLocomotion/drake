@@ -6,7 +6,6 @@ classdef BodyMotionData
     toe_off_allowed;
     in_floating_base_nullspace;
     control_pose_when_in_contact;
-    use_spatial_velocity
     quat_task_to_world % A rotation transformation, the coefs is specified in the task frame
     translation_task_to_world % translation from task frame to the world frame
     xyz_kp_multiplier % A 3 x 1 vector. The multiplier for the Kp gain on xyz position error of the body, default to [1;1;1]
@@ -24,7 +23,6 @@ classdef BodyMotionData
       obj.in_floating_base_nullspace = false(1, numel(ts));
       obj.control_pose_when_in_contact = false(1, numel(ts));
       obj.coefs = zeros(6, numel(ts), 4);
-      obj.use_spatial_velocity = true;
       obj.quat_task_to_world = [1;0;0;0];
       obj.translation_task_to_world = zeros(3,1);
       obj.xyz_kp_multiplier = [1;1;1];
@@ -69,7 +67,6 @@ classdef BodyMotionData
                                  'toe_off_allowed', obj.toe_off_allowed(t_ind),...
                                  'in_floating_base_nullspace', obj.in_floating_base_nullspace(t_ind),...
                                  'control_pose_when_in_contact', obj.control_pose_when_in_contact(t_ind),...
-                                 'use_spatial_velocity',obj.use_spatial_velocity,...
                                  'quat_task_to_world',obj.quat_task_to_world,...
                                  'translation_task_to_world',obj.translation_task_to_world,...
                                  'xyz_kp_multiplier',obj.xyz_kp_multiplier,...
@@ -92,9 +89,6 @@ classdef BodyMotionData
       end
       if obj.body_id ~= new_body_motion_data.body_id
         error('Drake:BodyMotionData:BadExtend', 'body_ids must match');
-      end
-      if obj.use_spatial_velocity ~= new_body_motion_data.use_spatial_velocity
-        error('Drake:BodyMotionData:BadExtend', 'use_spatial_velocity flag must match');
       end
       if any(obj.quat_task_to_world ~= new_body_motion_data.quat_task_to_world)
         error('Drake:BodyMotionData:BadExtend', 'quat_task_to_world must match');
@@ -126,47 +120,55 @@ classdef BodyMotionData
   end
 
   methods(Static)
-    function obj = from_body_poses(body_id, ts, poses)
-      % [xyz; rpy]
-      obj = BodyMotionData(body_id, ts);
-      pp = pchip(ts, poses);
-      [~, obj.coefs, l, k, d] = unmkpp(pp);
-      obj.coefs = reshape(obj.coefs, [d, l, k]);
+    function obj = from_body_poses(body_id, ts, xyz_rpy)
+      % Maintained for backwards compatibility, assumed to be xyzrpy
+      obj = BodyMotionData.from_body_xyzrpy(body_id, ts, xyz_rpy);
+    end
+
+    function obj = from_body_poses_and_velocities(body_id, ts, xyz_rpy, xyz_rpydot)
+      % Maintained for backwards compatibility, assumed to be xyzrpy
+      quat = zeros(4, size(xyz_rpy, 2));
+      quatdot = zeros(4, size(xyz_rpy, 2));
+      for j = 1:size(xyz_rpy, 2)
+        quat(:,j) = rpy2quat(xyz_rpy(4:6,j));
+        angvel = rpydot2angularvel(xyz_rpy(4:6,j), xyz_rpydot(4:6,j));
+        M = angularvel2quatdotMatrix(quat(:,j));
+        quatdot(:,j) = M * angvel;
+      end
+      [expmap, expmapdot] = quat2expmapSequence(quat, quatdot);
+      xyz_exp = [xyz_rpy(1:3,:); expmap];
+      xyz_expdot = [xyz_rpydot(1:3,:); expmapdot];
+      obj = BodyMotionData.from_body_xyzexp_and_xyzexpdot(body_id, ts, xyz_exp, xyz_expdot);
+    end
+
+    function obj = from_body_xyzrpy(body_id, ts, poses)
+      quat = zeros(4, size(poses, 2));
+      for j = 1:size(poses, 2)
+        quat(:,j) = rpy2quat(poses(4:6,j));
+      end
+      expmap = quat2expmapSequence(quat, zeros(size(quat)));
+      xyz_exp = [poses(1:3,:); expmap];
+      obj = BodyMotionData.from_body_xyzexp(body_id, ts, xyz_exp);
     end
 
     function obj = from_body_xyzquat(body_id, ts, xyz_quat)
       xyz_exp = zeros(6, size(xyz_quat, 2));
-      for j = 1:size(xyz_quat, 2)
-        xyz_exp(:,j) = [xyz_quat(1:3,j); quat2expmap(xyz_quat(4:7,j))];
-      end
+      xyz_exp(1:3,:) = xyz_quat(1:3,:);
+      expmap = quat2expmapSequence(xyz_quat(4:7,:), zeros(4, size(xyz_quat,2)));
+      xyz_exp(4:6,:) = expmap;
       obj = BodyMotionData.from_body_xyzexp(body_id, ts, xyz_exp);
     end
 
-    function obj = from_body_poses_and_velocities(body_id, ts, poses, dposes)
-      % [xyz; rpy] and [xyzdot; rpydot]
-      obj = BodyMotionData(body_id, ts);
-
-      pp = pchipDeriv(ts, poses, dposes);
-      [~, obj.coefs, l, k, d] = unmkpp(pp);
-      obj.coefs = reshape(obj.coefs, [d, l, k]);
-    end
-
-    function obj = from_body_xyzrpy_pp(body_id, pp)
-      [ts, coefs, l, k, d] = unmkpp(pp);
-      coefs = reshape(coefs, [d, l, k]);
-      obj = BodyMotionData(body_id, ts);
-      if size(coefs, 3) < 4
-        coefs = cat(3, zeros([6, size(coefs, 2), 4 - size(coefs, 3)]), coefs);
-      elseif size(coefs, 3) > 4
-        error('Drake:BodyMotionData:SplineDegreeTooHigh', 'BodyMotionData only supports splines up to degree 3 (cubic)');
-      end
-      obj.coefs = coefs;
+    function obj = from_body_xyzquat_and_xyzquatdot(body_id, ts, xyzquat, xyzquatdot)
+      [expmap, expmapdot] = quat2expmapSequence(xyzquat(4:7,:), xyzquatdot(4:7,:));
+      xyz_exp = [xyzquat(1:3,:); expmap];
+      xyz_expdot = [xyzquatdot(1:3,:); expmapdot];
+      obj = BodyMotionData.from_body_xyzexp_and_xyzexpdot(body_id, ts, xyz_exp, xyz_expdot);
     end
 
     function obj = from_body_xyzexp(body_id, ts, poses_exp)
       % [xyz; exp]
       obj = BodyMotionData(body_id, ts);
-      obj.use_spatial_velocity = true;
       pp = pchip(ts, poses_exp);
       [~, obj.coefs, l, k, d] = unmkpp(pp);
       obj.coefs = reshape(obj.coefs, [d, l, k]);
@@ -174,7 +176,6 @@ classdef BodyMotionData
 
     function obj = from_body_xyzexp_and_xyzexpdot(body_id, ts, poses_exp, dposes_exp)
       obj = BodyMotionData(body_id, ts);
-      obj.use_spatial_velocity = true;
       pp = pchipDeriv(ts, poses_exp, dposes_exp);
       [~, obj.coefs, l, k, d] = unmkpp(pp);
       obj.coefs = reshape(obj.coefs, [d, l, k]);

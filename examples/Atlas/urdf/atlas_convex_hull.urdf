@@ -134,6 +134,7 @@
     <!--    <xacro:collision_point group="inner" xyz="0.06 -0.055 -0.081119" visualize="1"/>-->
   </link>
   <frame link="l_foot" name="l_foot_sole" rpy="0 0 0" xyz="0.0480 0 -0.081119"/>
+  <frame link="l_foot" name="l_foot_toe" rpy="0 0 0" xyz="0.178 0 -0.081119"/>
   <link name="l_hand">
     <inertial>
       <mass value="2.509"/>
@@ -474,6 +475,7 @@
     <!--    <xacro:collision_point group="inner" xyz="0.06 -0.055 -0.081119" visualize="1"/>-->
   </link>
   <frame link="r_foot" name="r_foot_sole" rpy="0 0 0" xyz="0.0480 0 -0.081119"/>
+  <frame link="r_foot" name="r_foot_toe" rpy="0 0 0" xyz="0.178 0 -0.081119"/>
   <link name="r_hand">
     <inertial>
       <mass value="2.509"/>
