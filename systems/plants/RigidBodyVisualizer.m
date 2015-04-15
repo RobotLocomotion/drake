@@ -3,7 +3,7 @@ classdef RigidBodyVisualizer < Visualizer
     model;
   end
   properties
-    gravity_visual_magnitude=.25;      
+    gravity_visual_magnitude=.25;
     debug = false;  % if true, draws extras, like the coordinate frames and COMs for each link
     xlim=[-2,2];
     ylim=[-2,2];
@@ -19,16 +19,16 @@ classdef RigidBodyVisualizer < Visualizer
       % brings up a simple slider gui that displays the robot
       % in the specified state when possible. It also shows resulting
       % forces and torques if some of the specified states are velocities.
-      % 
+      %
       % @param x0 the initial state to display the robot in
       % @param state_dims are the indices of the states to show on the
       % slider. Including velocity states will display the forces and torques.
       % @param minrange is the lower bound for the sliders
       % @param maxrange is the upper bound for the sliders
-      % @option gravity_visual_magnitude specifies the visual length of 
-      % the vector representing the gravitational force. Other force 
-      % visualizations are scaled accordingly. 
-        
+      % @option gravity_visual_magnitude specifies the visual length of
+      % the vector representing the gravitational force. Other force
+      % visualizations are scaled accordingly.
+
       if (nargin<2), x0 = getInitialState(obj.model); end
       if (nargin<3), state_dims = 1:getNumPositions(obj.model); end
       [jlmin,jlmax] = getJointLimits(obj.model);
@@ -39,25 +39,25 @@ classdef RigidBodyVisualizer < Visualizer
       if (nargin<4), minrange = xmin(state_dims); end
       if (nargin<5), maxrange = xmax(state_dims); end
       if (nargin<6), options = struct(); end
-      if isfield(options,'gravity_visual_magnitude') 
-          obj.gravity_visual_magnitude = options.gravity_visual_magnitude; 
+      if isfield(options,'gravity_visual_magnitude')
+          obj.gravity_visual_magnitude = options.gravity_visual_magnitude;
       end
-      
+
       inspector@Visualizer(obj,x0,state_dims,minrange,maxrange,obj.model);
     end
-    
+
     function draw(obj,t,x)
-      n = obj.model.num_positions;
-      q = x(1:n); %qd=x(n+(1:n));
+      nq = obj.model.num_positions;
+      q = x(1:nq); %qd=x(nq+(1:nq));
       kinsol = obj.model.doKinematics(q);
-      
+
       % for debugging:
       %co = get(gca,'ColorOrder');
       %h = [];
       % end debugging
 
-      for i=1:length(obj.model.body)
-        for j=1:length(obj.model.body(i).visual_geometry)
+      for i=1:numel(obj.model.body)
+        for j=1:numel(obj.model.body(i).visual_geometry)
           draw(obj.model.body(i).visual_geometry{j},obj.model,kinsol,i);
         end
         if (obj.debug) % draw extra debugging info
@@ -75,7 +75,7 @@ classdef RigidBodyVisualizer < Visualizer
           end
         end
       end
-      
+
       axis equal;
       if ~isempty(obj.xlim)
         xlim(obj.xlim);
@@ -86,39 +86,39 @@ classdef RigidBodyVisualizer < Visualizer
       if ~isempty(obj.axis)
         axis(obj.axis);
       end
-      
+
       xlabel('x');
       ylabel('y');
       zlabel('z');
       title(['t = ', num2str(t,'%.2f') ' sec']);
     end
-      
+
     function kinematicInspector(obj,body_or_frame_id,pt,q0,minrange,maxrange)
       % kinematicInspector(model,body_or_frame_id,pt,q0)
       % brings up a simple slider gui (like the inspector() in Visualizer)
       % which calls inverse kinematics to drive the specified point on the
       % robot through a Cartesian endpoint (when possible).
-      % 
+      %
       % @param body_or_frame_id e.g. from findFrameId,findJointId, or
       % findLinkId
       % @param pt a 3x1 point in Cartesian space
       % @param q0 (optional) initial pose for the robot @default uses
       % getInitialState()
       %
-      
+
       nq = getNumPositions(obj.model);
       if nargin<4
         x0 = getInitialState(obj.model);
       else
         x0 = [q0;zeros(getNumVelocities(obj.model),1)];
       end
-      
+
       x = resolveConstraints(obj.model,x0);
       q0 = x(1:nq);
-      q = q0; 
-      
+      q = q0;
+
       obj.drawWrapper(0,x);
-      
+
       kinsol = doKinematics(obj.model,q);
       desired_pt = forwardKin(obj.model,kinsol,body_or_frame_id,pt);
 
@@ -129,7 +129,7 @@ classdef RigidBodyVisualizer < Visualizer
       rows = length(varnames);
       f = sfigure(98); clf;
       set(f, 'Position', [560 400 280 20 + 30*rows]);
-      
+
       y=30*rows-10;
       for i=1:rows
         label{i} = uicontrol('Style','text','String',varnames{i}, ...
@@ -141,7 +141,7 @@ classdef RigidBodyVisualizer < Visualizer
         slider_listener{i} = addlistener(slider{i},'ContinuousValueChange',@update_display);
         y = y - 30;
       end
-      
+
 
       function update_display(source, eventdata)
         if nargin>1 && isempty(eventdata), return; end  % was running twice for most events
@@ -154,12 +154,11 @@ classdef RigidBodyVisualizer < Visualizer
         [q,info] = inverseKin(obj.model,q,q,ik_constraint);
         if info~=1, info, end
         x(1:nq) = q;
-        
+
         obj.drawWrapper(0,x);
         desired_pt'
         q'
-      end      
-    end    
+      end
+    end
   end
 end
-
