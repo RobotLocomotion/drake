@@ -494,7 +494,7 @@ classdef Visualizer < DrakeSystem
     playback_speed=1;  % 1=realtime
     draw_axes=false;  % when making movies true=gcf,false=gca
     display_time=true; % when true, time is written to figure title
-    preserve_view=true; % when true, drawWrapper gets the view, calls draw, then restores the view
+    preserve_view=false; % when true, drawWrapper gets the view, calls draw, then restores the view
     axis;  % set this to non-empty for a fixed view (must be implemented by the draw method)
     fignum = 25;
   end

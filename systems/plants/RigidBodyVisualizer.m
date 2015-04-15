@@ -13,6 +13,7 @@ classdef RigidBodyVisualizer < Visualizer
     function obj = RigidBodyVisualizer(manip)
       obj = obj@Visualizer(getPositionFrame(manip));
       obj.model = manip;
+      obj.preserve_view = true;
     end
     function inspector(obj,x0,state_dims,minrange,maxrange,options)
       % brings up a simple slider gui that displays the robot

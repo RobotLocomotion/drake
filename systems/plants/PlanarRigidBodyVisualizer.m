@@ -23,6 +23,7 @@ classdef PlanarRigidBodyVisualizer < RigidBodyVisualizer
       end
       warning(w);
       obj.Tview = Tview;
+      obj.preserve_view = false;
     end
     
     function draw(obj,t,x)
