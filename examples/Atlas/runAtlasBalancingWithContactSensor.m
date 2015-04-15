@@ -1,5 +1,4 @@
 function runAtlasBalancingWithContactSensor(use_mex)
-%NOTEST
 if ~checkDependency('gurobi')
   warning('Must have gurobi installed to run this example');
   return;
@@ -26,11 +25,13 @@ r = compile(r);
 
 r_pure = r;
 l_foot_body = findLinkId(r,'l_foot');
-l_foot_frame = RigidBodyFrame(l_foot_body,zeros(3,1),zeros(3,1),'l_foot');
+l_foot_frame = RigidBodyFrame(l_foot_body,zeros(3,1),zeros(3,1),'l_foot_forcetorque');
+r = r.addFrame(l_foot_frame);
 l_foot_force_sensor = ContactForceTorqueSensor(r, l_foot_frame);
 r = addSensor(r, l_foot_force_sensor);
 r_foot_body = findLinkId(r,'r_foot');
-r_foot_frame = RigidBodyFrame(r_foot_body,zeros(3,1),zeros(3,1),'r_foot');
+r_foot_frame = RigidBodyFrame(r_foot_body,zeros(3,1),zeros(3,1),'r_foot_forcetorque');
+r = r.addFrame(r_foot_frame);
 r_foot_force_sensor = ContactForceTorqueSensor(r, r_foot_frame);
 r = addSensor(r, r_foot_force_sensor);
 
