@@ -54,6 +54,7 @@ endif()
 
 # set up matlab build
 include(cmake/mex.cmake)
+mex_setup()
 
 enable_testing()
 include(CTest)
@@ -116,6 +117,8 @@ else()
    if (Eigen3_FOUND)
       set(eigen3_FOUND 1)
       include_directories( EIGEN3_INCLUDE_DIR )
+   else()
+      message(FATAL_ERROR "Could not find eigen, which is a required depedency")
    endif()
 endif()
 
