@@ -46,7 +46,7 @@ namespace DrakeShapes
     return geometry != nullptr;
   }
 
-  void Element::getPoints(Eigen::Matrix3Xd &local_points)
+  void Element::getTerrainContactPoints(Eigen::Matrix3Xd &local_points)
   {
     if ( !hasGeometry() ) {
       local_points = Eigen::Matrix3Xd();
@@ -54,7 +54,7 @@ namespace DrakeShapes
     }
     
     Eigen::Matrix3Xd points;
-    geometry->getPoints(points);
+    geometry->getTerrainContactPoints(points);
 
     Eigen::Matrix4Xd transformed_points = T_element_to_local * points.colwise().homogeneous();
     local_points = transformed_points.colwise().hnormalized();
