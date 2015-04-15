@@ -1,4 +1,4 @@
-#include "../drakeGeometryUtil.h"
+#include "drakeGeometryUtil.h"
 #include "mex.h"
 using namespace Eigen;
 

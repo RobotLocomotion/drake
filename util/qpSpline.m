@@ -1,4 +1,4 @@
-function [coefs, ts, objval] = qpSpline(ts, xs, xd0, xdf, settings, debug)
+function [coefs, ts, objval] = qpSpline(ts, xs, xd0, xdf, settings)
 % Compute a smooth spline through four knot points with fixed velocity at the
 % initial and final knots only. Solves a (very small) QP using cvxgen to
 % minimize the integral of the squared norm of acceleration along the
@@ -18,16 +18,10 @@ if ~isfield(settings, 'use_mex')
   settings.use_mex = true;
 end
 
-if nargin < 6
-  debug = false;
-end
-
 assert(all(size(ts) == [1,4]));
 assert(all(size(xs) == [6,4]));
 assert(all(size(xd0) == [6,1]));
 assert(all(size(xdf) == [6,1]));
-
-cvx_settings = struct('verbose', 0);
 
 if settings.optimize_knot_times
   [coefs, ts, objval] = twoWaypointCubicSplineFreeKnotTimesmex(ts(1), ts(end), xs, xd0, xdf);
@@ -129,9 +123,7 @@ else
       E(ci, v.c2.i(3)) = -2;
       ci = ci + 1;
       
-      tic()
       z = E \ d;
-      toc();
       
       % M = [Q, E'; E, zeros(nc)];
       % b = [zeros(nv, 1); d];
@@ -147,40 +139,4 @@ else
     end
   end
 end
-
-if debug
-  pp = mkpp(ts, coefs, 6);
-
-  tt = linspace(ts(1), ts(end), 1000);
-  ps = ppval(pp, tt);
-  figure(15);
-  clf
-  for j = 1:6
-    subplot(6, 1, j)
-    hold on
-    plot(tt, ps(j,:));
-    plot(ts, xs(j,:), 'ro');
-  end
-
-  atraj = fnder(pp, 2);
-  as = ppval(atraj, tt);
-  ns = sum(as.^2,1);
-  error = abs(sum(ns) * (tt(2) - tt(1)) - objval) / objval
-
-  figure(16);
-  clf
-  vs = ppval(fnder(pp, 1), tt);
-  for j = 1:6
-    subplot(6, 1, j)
-    plot(tt, vs(j,:));
-  end
-
-  figure(17);
-  clf
-  for j = 1:6
-    subplot(6,1,j);
-    plot(tt, as(j,:));
-  end
-
-  rangecheck(error, 0, 1e-2);
 end

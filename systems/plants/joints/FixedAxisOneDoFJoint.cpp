@@ -63,9 +63,10 @@ void FixedAxisOneDoFJoint::motionSubspaceDotTimesV(const Eigen::Ref<const Vector
   }
 }
 
-void FixedAxisOneDoFJoint::randomConfiguration(Eigen::Ref<VectorXd>& q, std::default_random_engine& generator) const
+Eigen::VectorXd FixedAxisOneDoFJoint::randomConfiguration(std::default_random_engine& generator) const
 {
-  if (isFinite(joint_limit_min) && isFinite(joint_limit_max)) {
+	Eigen::VectorXd q(1);
+	if (isFinite(joint_limit_min) && isFinite(joint_limit_max)) {
     std::uniform_real_distribution<double> distribution(joint_limit_min, joint_limit_max);
     q[0] = distribution(generator);
   }
@@ -91,6 +92,7 @@ void FixedAxisOneDoFJoint::randomConfiguration(Eigen::Ref<VectorXd>& q, std::def
       q[0] = joint_limit_max;
     }
   }
+	return q;
 }
 
 void FixedAxisOneDoFJoint::qdot2v(const Eigen::Ref<const VectorXd>& q, Eigen::MatrixXd& qdot_to_v, Eigen::MatrixXd* dqdot_to_v) const

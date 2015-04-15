@@ -540,7 +540,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   // consider making all J's into row-major
   
 
-  if(!pdata->r->use_new_kinsol)
+  if(!pdata->r->getUseNewKinsol())
   {
     pdata->r->getCOM(xcom);
     pdata->r->getCOMJac(pdata->J);

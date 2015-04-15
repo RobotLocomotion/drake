@@ -145,7 +145,7 @@ for i=1:N
 end
 
 if (~isfield(options,'degL1'))
-  options.degL1 = deg(DV,p_xp);  % just a guess
+  options.degL1 = deg(DV,p_xp) - deg(V,p_xp);  % just a guess
 end
 
 % conservative initial guess (need to do something smarter here)
@@ -324,23 +324,5 @@ function y=doubleSafe(x)
 end
 
 function tf=equalpoly(A,B)
-
-  x=decomp(A);
-  sizecheck(A,1); sizecheck(B,1);
-  if (deg(A,x)>2 || deg(B,x)>2) error('not supported yet'); end  % but not very hard!
-  
-  C=A-B;
-  if (any(abs(doubleSafe(subs(C,x,0*x)))>1e-4))
-    tf=false; return;
-  end
-  
-  if (any(abs(doubleSafe(subs(diff(C,x),x,0*x)))>1e-4))
-    tf=false; return;
-  end
-  
-  if (any(abs(doubleSafe(subs(diff(diff(C,x)',x),x,0*x)))>1e-4))
-    tf=false; return;
-  end
-  
-  tf=true;
+  tf = (clean(A-B,1e-4)==0);
 end

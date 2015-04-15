@@ -56,7 +56,7 @@ for i=1:length(ts)
   qd=xt(nq+(1:nq));
   qdd=qddtraj.eval(t);
 
-  kinsol = doKinematics(r,q);
+  kinsol = doKinematics(r, q, qd);
 
   [com(:,i),J]=getCOM(r,kinsol);
   Jdotv = centerOfMassJacobianDotTimesV(r,kinsol,0);
