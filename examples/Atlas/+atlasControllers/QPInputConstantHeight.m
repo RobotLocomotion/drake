@@ -83,7 +83,7 @@ classdef QPInputConstantHeight
     end
 
     function msg = to_lcm(obj)
-      error('deprecated, use encodeQPInputLCMMex instead');
+      msg = drake.lcmt_qp_controller_input(encodeQPInputLCMMex(obj, false));
     end
   end
 end
