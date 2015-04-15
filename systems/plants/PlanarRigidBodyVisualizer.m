@@ -111,6 +111,7 @@ classdef PlanarRigidBodyVisualizer < RigidBodyVisualizer
 
   properties (Access=protected)
     Tview;
+    body;  % body(i).x{j} and body(i).c{j} describe the jth geometry on body i
   end
   
   properties

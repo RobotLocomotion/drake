@@ -4,13 +4,10 @@ classdef RigidBodyVisualizer < Visualizer
   end
   properties
     gravity_visual_magnitude=.25;      
-    body;  % body(i).xyz{j} and body(i).c{j} describe the jth geometry on body i
     debug = false;  % if true, draws extras, like the coordinate frames and COMs for each link
     xlim=[-2,2];
     ylim=[-2,2];
     zlim=[-2,2];
-    az = -24;
-    el = 80;
   end
   methods
     function obj = RigidBodyVisualizer(manip)
@@ -58,9 +55,6 @@ classdef RigidBodyVisualizer < Visualizer
       %h = [];
       % end debugging
 
-      figure(25); 
-      clf; hold on;
-      
       for i=1:length(obj.model.body)
         for j=1:length(obj.model.body(i).visual_geometry)
           draw(obj.model.body(i).visual_geometry{j},obj.model,kinsol,i);
@@ -90,9 +84,6 @@ classdef RigidBodyVisualizer < Visualizer
       end
       if ~isempty(obj.axis)
         axis(obj.axis);
-      end
-      if ~isempty(obj.az)
-        view(obj.az,obj.el);
       end
       
       xlabel('x');
