@@ -40,7 +40,7 @@ namespace DrakeShapes
   void Geometry::getBoundingBoxPoints(double x_half_width, double y_half_width, double z_half_width, Eigen::Matrix3Xd &points) const
   {
     // Return axis-aligned bounding-box vertices
-      points.resize(Eigen::NoChange, NUM_BBOX_POINTS);
+      points.resize(3, NUM_BBOX_POINTS);
 
       RowVectorXd cx(NUM_BBOX_POINTS), cy(NUM_BBOX_POINTS), cz(NUM_BBOX_POINTS);
       cx << -1, 1,  1, -1, -1,  1,  1, -1;
@@ -64,7 +64,7 @@ namespace DrakeShapes
 
   void Sphere::getPoints(Matrix3Xd &points) const
   {
-    points = Matrix3Xd::Zero(Eigen::NoChange, NUM_POINTS);    
+    points = Matrix3Xd::Zero(3, NUM_POINTS);
   }
 
   void Sphere::getBoundingBoxPoints(Matrix3Xd &points) const
