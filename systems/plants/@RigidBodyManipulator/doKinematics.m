@@ -422,11 +422,18 @@ end
 end
 
 function qd = computeQdot(bodies, vToqdot, v, nq)
-qd = zeros(nq, 1) * v(1);
-for i = 2 : length(bodies)
-  body = bodies(i);
-  qd(body.position_num) = vToqdot{i} * v(body.velocity_num);
+original_warning_state = warning('error', 'Drake:TaylorVar:DoubleConversion');
+qd = zeros(nq, 1);
+try
+  for i = 2 : length(bodies)
+    body = bodies(i);
+    qd(body.position_num) = vToqdot{i} * v(body.velocity_num);
+  end
+catch
+  % do it the inefficient but TaylorVar-proof way
+  qd = blkdiag(vToqdot{:}) * v;
 end
+warning(original_warning_state);
 end
 
 function [twists, dtwistsdq] = computeTwistsInBaseFrame(bodies, J, v, dJdq)
