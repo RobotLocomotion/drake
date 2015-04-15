@@ -18,12 +18,9 @@ void checkAndCopy(const mxArray *source, const int idx, const char *fieldname, d
 
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
-	if (nrhs < 1) {
-		mexErrMsgTxt("usage: msg_ptr=encodeQPInputLCMMex(qp_input)");
+	if (nrhs < 1 || nrhs > 2) {
+		mexErrMsgTxt("usage: msg_str=encodeQPInputLCMMex(qp_input) OR msg_str=encodeQPInputLCMMex(qp_input, publish_flag)");
 	}
-	// if (nlhs < 1) {
-	// 	mexErrMsgTxt("please take one output");
-	// }
 
 	lcm::LCM lcm;
 	if(!lcm.good()) {
@@ -34,19 +31,28 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 	const mxArray* qp_input = prhs[narg];
 	narg++;
 
+	bool publish_flag;
+  if (narg < nrhs) {
+    publish_flag = static_cast<bool> (mxGetScalar(prhs[narg]));
+  } else {
+		publish_flag = true;
+  }
+  narg++;
+
   shared_ptr<drake::lcmt_qp_controller_input> msg = encodeQPInputLCM(qp_input);
 
-	lcm.publish("QP_CONTROLLER_INPUT", &*msg);
+  if (publish_flag) {
+  	lcm.publish("QP_CONTROLLER_INPUT", &*msg);
+  }
 
-	// drake::lcmt_qp_controller_input* msg_ptr = &msg;
-
- //    mxClassID cid;
- //    if (sizeof(msg_ptr)==4) cid = mxUINT32_CLASS;
- //    else if (sizeof(msg_ptr)==8) cid = mxUINT64_CLASS;
- //    else mexErrMsgIdAndTxt("Drake:supportDetectmex:PointerSize","Are you on a 32-bit machine or 64-bit machine??");
-     
- //    plhs[0] = mxCreateNumericMatrix(1,1,cid,mxREAL);
- //    memcpy(mxGetData(plhs[0]),&msg_ptr,sizeof(msg_ptr));
-
- //    return;
+  if (nlhs > 0) {
+    int msg_size = msg->getEncodedSize();
+    plhs[0] = mxCreateNumericMatrix(msg_size, 1, mxUINT8_CLASS, mxREAL);
+    void *msg_ptr = mxGetData(plhs[0]);
+    int num_written = msg->encode(msg_ptr, 0, msg_size);
+    if (num_written != msg_size) {
+      mexPrintf("Number written: %d, message size: %d\n", num_written, msg_size);
+      mexErrMsgTxt("Number of bytes written does not match message size.\n");
+    }
+  }
 }

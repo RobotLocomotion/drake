@@ -52,31 +52,17 @@ for i=1:length(ts)
     ik_args = {};
     for j = 1:length(walking_plan_data.body_motions)
       body_ind = walking_plan_data.body_motions(j).body_id;
-      if walking_plan_data.body_motions(j).use_spatial_velocity
-        xyz_exp = walking_plan_data.body_motions(j).eval(t);
-        xyz = xyz_exp(1:3);
-        quat = expmap2quat(xyz_exp(4:6));
-        % rpy = quat2rpy(quat);
-      else
-        xyz_rpy = walking_plan_data.body_motions(j).eval(t);
-        xyz = xyz_rpy(1:3);
-        % rpy = xyz_rpy(4:6);
-        quat = rpy2quat(xyz_rpy(4:6));
-      end
+      xyz_exp = walking_plan_data.body_motions(j).eval(t);
+      xyz = xyz_exp(1:3);
+      quat = expmap2quat(xyz_exp(4:6));
+      xyz(walking_plan_data.body_motions(j).weight_multiplier(4:6) == 0) = nan;
 
       ik_args = [ik_args,{constructRigidBodyConstraint(RigidBodyConstraint.WorldPositionConstraintType,true,...
           obj,body_ind, [0;0;0],xyz, xyz),...
           constructRigidBodyConstraint(RigidBodyConstraint.WorldQuatConstraintType,true,obj,body_ind,quat,0.01)}];
-      % ik_args = [ik_args,{constructRigidBodyConstraint(RigidBodyConstraint.WorldPositionConstraintType,true,...
-      %     obj,body_ind, [0;0;0],xyz, xyz),...
-      %     constructRigidBodyConstraint(RigidBodyConstraint.WorldEulerConstraintType,true,obj,body_ind,rpy,rpy)}];
     end
     kc_com = constructRigidBodyConstraint(RigidBodyConstraint.WorldCoMConstraintType,true,obj.getMexModelPtr,[walking_plan_data.comtraj.eval(t);nan],[walking_plan_data.comtraj.eval(t);nan]);
-    % [q(:,i),info] = approximateIKmex(obj.getMexModelPtr,q(:,i-1),qstar,kc_com,ik_args{:},ikoptions.mex_ptr);
-    % if info
-    %   full_IK_calls = full_IK_calls + 1;
-      q(:,i) = inverseKin(obj,q(:,i-1),qstar,kc_com,ik_args{:},ikoptions);
-    % end
+    q(:,i) = inverseKin(obj,q(:,i-1),qstar,kc_com,ik_args{:},ikoptions);
 
   else
     q = q0;

@@ -209,7 +209,6 @@ end
 % pp = foh(pelvis_ts, pelvis_xyz_expmap);
 pelvis_motion_data = BodyMotionData.from_body_xyzexp(pelvis_body, pelvis_ts,pelvis_xyz_expmap);
 pelvis_motion_data.weight_multiplier = [1;1;1;0;0;1];
-pelvis_motion_data.use_spatial_velocity = true;
 if options.debug
   pp = pelvis_motion_data.getPP();
   tt = linspace(pelvis_ts(1), pelvis_ts(end), 100);

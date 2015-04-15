@@ -11,7 +11,6 @@ struct lcmt_body_motion_data
 	boolean in_floating_base_nullspace;
 	boolean control_pose_when_in_contact;
 
-        boolean use_spatial_velocity;
         double quat_task_to_world[4];
         double translation_task_to_world[4];
         double xyz_kp_multiplier[3];
