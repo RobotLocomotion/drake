@@ -392,7 +392,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
 
   MatrixXd R_DQyD_ls = R_ls + D_ls.transpose()*Qy*D_ls;
 
-  pdata->r->doKinematics(robot_state.q,false,robot_state.qd);
+  pdata->r->doKinematicsNew(robot_state.q, robot_state.qd);
 
   //---------------------------------------------------------------------
 
@@ -416,7 +416,6 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     f_ext[body_id]->value() = wrench_in_joint_frame;
   }
 
-  pdata->r->doKinematicsNew(robot_state.q, robot_state.qd);
   pdata->H = pdata->r->massMatrix<double>().value();
   pdata->C = pdata->r->inverseDynamics(f_ext).value();
 
