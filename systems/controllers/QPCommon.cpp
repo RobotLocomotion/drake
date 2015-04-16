@@ -411,7 +411,9 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     const drake::lcmt_body_wrench_data& body_wrench_data = *it;
     int body_id = body_wrench_data.body_id - 1;
     f_ext[body_id] = std::unique_ptr<WrenchGradientVarType>(new WrenchGradientVarType(TWIST_SIZE, 1, nq, 0));
-    f_ext[body_id]->value() = Map<const WrenchGradientVarType::DataType>(body_wrench_data.wrench);
+    Map<const Matrix<double, TWIST_SIZE, 1> > wrench_in_body_frame(body_wrench_data.wrench);
+    auto wrench_in_joint_frame = transformSpatialForce(Isometry3d(pdata->r->bodies[body_id]->T_body_to_joint), wrench_in_body_frame);
+    f_ext[body_id]->value() = wrench_in_joint_frame;
   }
 
   pdata->r->doKinematicsNew(robot_state.q, robot_state.qd);
