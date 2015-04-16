@@ -33,6 +33,8 @@ namespace DrakeCollision
   BulletCollisionWorldWrapper::BulletCollisionWorldWrapper()
     : bt_collision_configuration(), bt_collision_broadphase(), filter_callback()
   {
+    bt_collision_configuration.setConvexConvexMultipointIterations(PERTURBATION_ITERATIONS, MINIMUM_POINTS_PERTURBATION_THRESHOLD);
+    bt_collision_configuration.setPlaneConvexMultipointIterations(PERTURBATION_ITERATIONS, MINIMUM_POINTS_PERTURBATION_THRESHOLD);
     bt_collision_dispatcher = unique_ptr<btCollisionDispatcher>(new btCollisionDispatcher(&bt_collision_configuration));
     bt_collision_world = unique_ptr<btCollisionWorld>(new btCollisionWorld(bt_collision_dispatcher.get(), &bt_collision_broadphase, &bt_collision_configuration));
 
@@ -200,6 +202,65 @@ namespace DrakeCollision
       }
     }
     return id;
+  }
+
+  vector<PointPair> BulletModel::potentialCollisionPoints(bool use_margins)
+  {
+    BulletCollisionWorldWrapper& bt_world = getBulletWorld(use_margins);
+    BulletResultCollector c;
+    bt_world.bt_collision_world->performDiscreteCollisionDetection();
+    size_t numManifolds = bt_world.bt_collision_world->getDispatcher()->getNumManifolds();
+    
+    for (size_t i = 0; i < numManifolds; i++)
+    {
+      btPersistentManifold* contact_manifold =  bt_world.bt_collision_world->getDispatcher()->getManifoldByIndexInternal(i);
+      const btCollisionObject* obA = contact_manifold->getBody0();
+      const btCollisionObject* obB = contact_manifold->getBody1();
+
+      auto elementA = static_cast< Element*  >(obA->getUserPointer());
+      auto elementB = static_cast< Element*  >(obB->getUserPointer());
+
+      DrakeShapes::Shape shapeA = elementA->getShape();
+      DrakeShapes::Shape shapeB = elementB->getShape();
+
+      ElementId idA = elementA->getId();
+      ElementId idB = elementB->getId();
+
+      double marginA = 0;
+      double marginB = 0;
+
+      if (shapeA ==  DrakeShapes::MESH || shapeA ==  DrakeShapes::BOX) { 
+        marginA = obA->getCollisionShape()->getMargin();
+      }
+      if (shapeB == DrakeShapes::MESH || shapeB == DrakeShapes::BOX) { 
+        marginB = obB->getCollisionShape()->getMargin();
+      }
+      size_t num_contacts = contact_manifold->getNumContacts();
+
+      for (size_t j = 0; j < num_contacts; j++)
+      {        
+        btManifoldPoint& pt = contact_manifold->getContactPoint(j);
+        const btVector3& normal_on_B = pt.m_normalWorldOnB;
+        const btVector3& point_on_A_in_world = pt.getPositionWorldOnA() + normal_on_B * marginA;
+        const btVector3& point_on_B_in_world = pt.getPositionWorldOnB() - normal_on_B * marginB;
+        const btVector3 point_on_elemA = obA->getWorldTransform().invXform(point_on_A_in_world);
+        const btVector3 point_on_elemB = obB->getWorldTransform().invXform(point_on_B_in_world);
+
+        Vector4d point_on_A_1, point_on_B_1;
+
+        point_on_A_1 << toVector3d(point_on_elemA), 1.0;
+        point_on_B_1 << toVector3d(point_on_elemB), 1.0;
+
+        Vector3d point_on_A, point_on_B;
+
+        point_on_A << elements[idA]->getLocalTransform().topRows(3) * point_on_A_1;
+        point_on_B << elements[idB]->getLocalTransform().topRows(3) * point_on_B_1;
+
+        c.addSingleResult(idA, idB, point_on_A, point_on_B, toVector3d(normal_on_B), static_cast<double>(pt.getDistance()) + marginA + marginB);
+      }
+    }   
+
+    return c.getResults();
   }
 
   bool BulletModel::updateElementWorldTransform(const ElementId id, 

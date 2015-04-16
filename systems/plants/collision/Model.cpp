@@ -24,6 +24,15 @@ namespace DrakeCollision
       return nullptr;
     }
   }
+  
+  void Model::getTerrainPoints(ElementId id0, Eigen::Matrix3Xd &terrain_points) {
+    auto element_iter = elements.find(id0);
+    if ( element_iter != elements.end()) {
+      element_iter->second->getPoints(terrain_points);
+    } else {
+      terrain_points = Eigen::Matrix3Xd();
+    }
+  }
 
   bool Model::updateElementWorldTransform(const ElementId id, const Matrix4d& T_elem_to_world)
   {
@@ -49,4 +58,5 @@ namespace DrakeCollision
       const bool use_margins,
       vector<PointPair>& closest_points)
   { return false; };
+
 }

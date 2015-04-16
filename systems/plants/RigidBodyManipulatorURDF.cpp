@@ -248,7 +248,7 @@ bool parseMaterial(TiXmlElement* node, map<string, Vector4d>& materials)
   const char* attr;
   attr = node->Attribute("name");
   if (!attr) {
-    cerr << "ERROR: material tag is missing name attribute" << endl;
+    cerr << "WARNING: material tag is missing name attribute" << endl;
     return false;
   }
   string name(attr);
@@ -262,7 +262,7 @@ bool parseMaterial(TiXmlElement* node, map<string, Vector4d>& materials)
   TiXmlElement* color_node = node->FirstChildElement("color");
   if (color_node) {
     if (!parseVectorAttribute(color_node, "rgba", rgba)) {
-      cerr << "ERROR: color tag is missing rgba attribute" << endl;
+      cerr << "WARNING: color tag is missing rgba attribute" << endl;
       return false;
     }
     materials[name] = rgba;
@@ -301,7 +301,7 @@ bool parseGeometry(TiXmlElement* node, const map<string,string>& package_map, co
       cerr << "ERROR parsing sphere element radius" << endl;
       return false;
     }
-    element.setGeometry(DrakeShapes::Sphere(r));
+    element.setGeometry(DrakeShapes::Sphere(max(MIN_RADIUS, r)));
   } else if ((shape_node = node->FirstChildElement("cylinder"))) {
     double r = 0, l = 0;
     attr = shape_node->Attribute("radius");
@@ -667,7 +667,7 @@ bool parseLoop(RigidBodyManipulator* model, TiXmlElement* node)
   return true;
 }
 
-bool parseRobot(RigidBodyManipulator* model, TiXmlElement* node, const map<string,string> package_map, const string &root_dir)
+bool parseRobot(RigidBodyManipulator* model, TiXmlElement* node, const map<string,string> package_map, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type)
 {
   string robotname = node->Attribute("name");
 
@@ -711,64 +711,81 @@ bool parseRobot(RigidBodyManipulator* model, TiXmlElement* node, const map<strin
 
   for (unsigned int i = 1; i < model->bodies.size(); i++) {
     if (model->bodies[i]->parent == nullptr) {  // attach the root nodes to the world with a floating base joint
-      model->bodies[i]->parent = model->bodies[0];
-      unique_ptr<DrakeJoint> joint(new RollPitchYawFloatingJoint("floating_rpy", Isometry3d::Identity()));
-      model->bodies[i]->setJoint(move(joint));
+			model->bodies[i]->parent = model->bodies[0];
+			switch (floating_base_type) {
+      case DrakeJoint::FIXED:
+        {
+          unique_ptr<DrakeJoint> joint(new FixedJoint("base", Isometry3d::Identity()));
+          model->bodies[i]->setJoint(move(joint));
+        }
+        break;
+			case DrakeJoint::ROLLPITCHYAW:
+        {
+          unique_ptr<DrakeJoint> joint(new RollPitchYawFloatingJoint("base", Isometry3d::Identity()));
+          model->bodies[i]->setJoint(move(joint));
+        }
+				break;
+			case DrakeJoint::QUATERNION:
+        {
+          unique_ptr<DrakeJoint> joint(new FixedJoint("base", Isometry3d::Identity()));
+          model->bodies[i]->setJoint(move(joint));
+        }
+				break;
+			default:
+			  throw std::runtime_error("unknown floating base type");
+    	}
     }
   }
   return true;
 }
 
-bool parseURDF(RigidBodyManipulator* model, TiXmlDocument * xml_doc, map<string,string>& package_map, const string &root_dir)
+bool parseURDF(RigidBodyManipulator* model, TiXmlDocument * xml_doc, map<string,string>& package_map, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type)
 {
   populatePackageMap(package_map);
   TiXmlElement *node = xml_doc->FirstChildElement("robot");
   if (!node) {
-    cerr << "ERROR: This urdf does not contain a robot tag" << endl;
-    return false;
+    throw std::runtime_error("ERROR: This urdf does not contain a robot tag");
   }
 
-  if (!parseRobot(model, node, package_map, root_dir)) {
-    cerr << "ERROR: Failed to parse robot" << endl;
-    return false;
+  if (!parseRobot(model, node, package_map, root_dir, floating_base_type)) {
+    throw std::runtime_error("ERROR: Failed to parse robot");
   }
 
   model->compile();
   return true;
 }
 
-bool RigidBodyManipulator::addRobotFromURDFString(const string &xml_string, const string &root_dir)
+bool RigidBodyManipulator::addRobotFromURDFString(const string &xml_string, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type)
 {
   map<string,string> package_map;
-  return addRobotFromURDFString(xml_string, package_map, root_dir);
+  return addRobotFromURDFString(xml_string, package_map, root_dir, floating_base_type);
 }
 
-bool RigidBodyManipulator::addRobotFromURDFString(const string &xml_string, map<string, string>& package_map, const string &root_dir)
+bool RigidBodyManipulator::addRobotFromURDFString(const string &xml_string, map<string, string>& package_map, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type)
 {
   TiXmlDocument xml_doc;
   xml_doc.Parse(xml_string.c_str());
-  return parseURDF(this,&xml_doc,package_map,root_dir);
+  return parseURDF(this,&xml_doc,package_map,root_dir,floating_base_type);
 }
 
-bool RigidBodyManipulator::addRobotFromURDF(const string &urdf_filename)
+bool RigidBodyManipulator::addRobotFromURDF(const string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type)
 {
   map<string,string> package_map;
-  return addRobotFromURDF(urdf_filename, package_map);
+  return addRobotFromURDF(urdf_filename, package_map, floating_base_type);
 }
 
-bool RigidBodyManipulator::addRobotFromURDF(const string &urdf_filename, map<string,string>& package_map)
+bool RigidBodyManipulator::addRobotFromURDF(const string &urdf_filename, map<string,string>& package_map, const DrakeJoint::FloatingBaseType floating_base_type)
 {
   TiXmlDocument xml_doc(urdf_filename);
   if (!xml_doc.LoadFile()) {
-    cerr << "ERROR: failed to load file " << urdf_filename << endl;
-    return false;
+    throw std::runtime_error("failed to load file " + urdf_filename);
   }
 
-  string root_dir="";
+  string root_dir=".";
   size_t found = urdf_filename.find_last_of("/\\");
   if (found != string::npos) {
     root_dir = urdf_filename.substr(0, found);
   }
 
-  return parseURDF(this,&xml_doc,package_map,root_dir);
+  return parseURDF(this,&xml_doc,package_map,root_dir,floating_base_type);
 }
