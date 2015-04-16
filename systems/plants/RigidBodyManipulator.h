@@ -219,7 +219,7 @@ public:
   DrakeCollision::ElementId addCollisionElement(const RigidBody::CollisionElement& element, const std::shared_ptr<RigidBody>& body, std::string group_name);
 
   void updateCollisionElements(const std::shared_ptr<RigidBody>& body);
-  void getTerrainPoints(const RigidBody& body, Eigen::Matrix3Xd &terrain_points) const;
+  void getTerrainContactPoints(const RigidBody& body, Eigen::Matrix3Xd &terrain_points) const;
 
   bool collisionRaycast(const Matrix3Xd &origins, const Matrix3Xd &ray_endpoints, VectorXd &distances, bool use_margins=false);
 

@@ -4,7 +4,7 @@ function runDRCPracticeTerrain
 checkDependency('iris');
 checkDependency('mosek');
 task_number=2; % consider taking the task number as an input if/when we load the other tasks
-options.atlas_version = 3;
+options.atlas_version = 5;
 r = Atlas('urdf/atlas_minimal_contact.urdf',options);
 
 clear gazeboModelPath;
