@@ -10,10 +10,8 @@ for i = 1:N
   [w(:,i),dw] = quat2expmapmex(quat(:,i));
   wdot(:,i) = dw*quat_dot(:,i);
   if(i>1)
-    [w(:,i),flip_flag] = unwrapExpmap(w(:,i-1),w(:,i));
-    if(flip_flag)
-      wdot(:,i) = -wdot(:,i);
-    end
+    [w(:,i),dw2] = unwrapExpmap(w(:,i-1),w(:,i));
+    wdot(:,i) = dw2*wdot(:,i);
   end
 end
 end
