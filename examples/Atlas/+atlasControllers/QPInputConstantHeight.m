@@ -13,6 +13,7 @@ classdef QPInputConstantHeight
     zmp_data % information describing the setup and state of our linear inverted pendulum model
     support_data  % information describing available supports which the controller MAY use
     body_motion_data  % information describing body trajectories which the controller should track
+    body_wrench_data % information describing external wrenches to compensate for
     whole_body_data  % information about the desired whole-body posture
     param_set_name % the name of the current set of parameters. See atlasParams.getDefaults()
     joint_pd_override; % if present, override the q_des, Kp, Kd, and w_qdd for the given joints with new values (can be empty)
@@ -57,6 +58,8 @@ classdef QPInputConstantHeight
       obj.body_motion_data = struct('body_id', {},... % 3 d
                             'ts', {},... % 6 d
                             'coefs', {}); % 4 * 6 * 3 d
+      obj.body_wrench_data = struct('body_id', {},...
+                                    'wrench', {});
       obj.whole_body_data = struct('q_des', [],... % 34 d
                                'constrained_dofs', []); % 34 b
       obj.joint_pd_override = struct('position_ind', {},...
@@ -99,6 +102,14 @@ classdef QPInputConstantHeight
         msg.body_motion_data(j).coefs = reshape(obj.body_motion_data(j).coefs, 6, 4);
       end
       
+      num_external_wrenches = length(obj.body_wrench_data);
+      msg.num_external_wrenches = num_external_wrenches;
+      for j = 1 : num_external_wrenches
+        msg.body_wrench_data(j) = drake.lcmt_body_wrench_data();
+        msg.body_wrench_data(j).body_id = obj.body_wrench_data(j).body_id;
+        msg.body_motion_data(j).wrench = obj.body_wrench_data(j).wrench;
+      end
+      
       msg.whole_body_data = drake.lcmt_whole_body_data();
       msg.whole_body_data.num_positions = numel(obj.whole_body_data.q_des);
       msg.whole_body_data.q_des = obj.whole_body_data.q_des;
@@ -126,6 +137,10 @@ classdef QPInputConstantHeight
           obj.body_motion_data(j).(f{1}) = msg.body_motion_data(j).(f{1});
         end
         obj.body_motion_data(j).coefs = reshape(msg.body_motion_data(j).coefs, [6, 1, 4]);
+      end
+      for j = 1:length(msg.body_wrench_data)
+        obj.body_wrench_data(j).body_id = msg.body_wrench_data(j).body_id;
+        obj.body_wrench_data(j).wrench = msg.body_wrench_data(j).wrench;
       end
       obj.whole_body_data.q_des = msg.whole_body_data.q_des;
       obj.whole_body_data.constrained_dofs = msg.whole_body_data.constrained_dofs;

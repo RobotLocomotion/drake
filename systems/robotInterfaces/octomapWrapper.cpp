@@ -61,10 +61,10 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
         mexPrintf("octree search\n");
         if (mxGetM(prhs[2])!=3) mexErrMsgTxt("octomapWrapper: pts must be 3-by-n");
         int n = mxGetN(prhs[2]);
-        double* pts = mxGetPr(prhs[2]);
+        double* pts = mxGetPrSafe(prhs[2]);
         if (nlhs>0) {
           plhs[0] = mxCreateDoubleMatrix(1,n,mxREAL);
-          double* presults = mxGetPr(plhs[0]);
+          double* presults = mxGetPrSafe(plhs[0]);
           for (int i=0; i<n; i++) {
             OcTreeNode* result = tree->search(pts[3*i],pts[3*i+1],pts[3*i+2]);
             if (result==NULL) presults[i]=-1.0;
@@ -78,16 +78,16 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 //      mexPrintf("octree get leaf nodes\n");
         int N = tree->getNumLeafNodes();
         plhs[0] = mxCreateDoubleMatrix(3,N,mxREAL);
-        double *leaf_xyz = mxGetPr(plhs[0]);
+        double *leaf_xyz = mxGetPrSafe(plhs[0]);
 
         double *leaf_value = NULL, *leaf_size=NULL;
         if (nlhs>1) { // return value
           plhs[1] = mxCreateDoubleMatrix(1,N,mxREAL);
-          leaf_value = mxGetPr(plhs[1]);
+          leaf_value = mxGetPrSafe(plhs[1]);
         }
         if (nlhs>2) { // return size
           plhs[2] = mxCreateDoubleMatrix(1,N,mxREAL);
-          leaf_size = mxGetPr(plhs[2]);
+          leaf_size = mxGetPrSafe(plhs[2]);
         }
 
         for(OcTree::leaf_iterator leaf = tree->begin_leafs(),
@@ -105,7 +105,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 //        mexPrintf("octree updateNode\n");
         if (mxGetM(prhs[2])!=3) mexErrMsgTxt("octomapWrapper: pts must be 3-by-n");
         int n = mxGetN(prhs[2]);
-        double* pts = mxGetPr(prhs[2]);
+        double* pts = mxGetPrSafe(prhs[2]);
         mxLogical* occupied = mxGetLogicals(prhs[3]);
         for (int i=0; i<n; i++) {
           tree->updateNode(pts[3*i],pts[3*i+1],pts[3*i+2],occupied[i]);
@@ -115,8 +115,8 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     case 12: // insert a scan of endpoints and sensor origin
       {
         // pointsA should be 3xN, originA is 3x1
-        double* points = mxGetPr(prhs[2]);
-        double* originA = mxGetPr(prhs[3]);
+        double* points = mxGetPrSafe(prhs[2]);
+        double* originA = mxGetPrSafe(prhs[3]);
         int n = mxGetN(prhs[2]);
         point3d origin ((float)originA[0],(float)originA[1],(float)originA[2]);
         Pointcloud pointCloud;

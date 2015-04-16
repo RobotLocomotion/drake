@@ -850,7 +850,7 @@ classdef TaylorVar
       
       d = prod(dd);
       if d>1 % ... replicate xs and index in case PP is vector-valued ...
-        xs = reshape(xs(ones(d,1),:),1,d*lx);
+        xs = reshape(repmat(xs,d,1),1,d*lx);
         index = d*index; temp = (-d:-1).';
         index = reshape(1+index(ones(d,1),:)+temp(:,ones(1,lx)), d*lx, 1 );
       else

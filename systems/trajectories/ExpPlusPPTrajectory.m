@@ -11,7 +11,7 @@ classdef ExpPlusPPTrajectory < Trajectory
     A       % square matrix from the matrix exponential
     alpha   % must be size(A,1) x n
     gamma   % must be dim x n x pporder
-    mex_ptr = 0 % higher speed eval in C++
+    mex_ptr = nullPointer() % higher speed eval in C++
   end    
 
   methods

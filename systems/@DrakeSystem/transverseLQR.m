@@ -3,13 +3,14 @@ function [ltvsys,Vtraj] = transverseLQR(obj,xtraj,utraj,Q,R,Qf,transSurf)
 %
 % irm@mit.edu
 
-typecheck(xtraj,'Trajectory');
-sizecheck(xtraj,[getNumStates(obj),1]);
-typecheck(utraj,'Trajectory');
-sizecheck(utraj,[getNumInputs(obj),1]);
+nX = getNumStates(obj);
+nU = getNumInputs(obj);
 
-nX = xtraj.dim;
-nU = utraj.dim;
+typecheck(xtraj,'Trajectory');
+sizecheck(xtraj,[nX,1]);
+typecheck(utraj,'Trajectory');
+sizecheck(utraj,[nU,1]);
+
 tspan=utraj.getBreaks();
 
 if (isa(Q,'double'))
@@ -40,6 +41,7 @@ Sdot = FunctionHandleTrajectory(@(t)Sdynamics(t,Ssol.eval(t),obj,Q,R,xtraj,utraj
 ltvsys = TransverseLinearControl(xtraj,utraj,Ksol,transSurf,Ssol,Sdot,Q,R,obj);
 
 if (nargout>1)
+  checkDependency('spotless');
   xperp=msspoly('p',nX-1);
   tau=msspoly('t',1);
   Vtraj = PolynomialTrajectory(@(t) (xperp-getPi(transSurf,t)*xtraj.eval(t))'*(Ssol.eval(t)+Sdot.eval(t)*(tau-t))*(xperp-getPi(transSurf,t)*xtraj.eval(t)),tspan);

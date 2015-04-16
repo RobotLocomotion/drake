@@ -30,6 +30,7 @@ options.ignore_friction = true;
 options.dt = 0.001;
 options.terrain = example_options.terrain;
 options.use_bullet = example_options.use_bullet;
+options.use_new_kinsol = true;
 r = Atlas(fullfile(getDrakePath,'examples','Atlas','urdf','atlas_minimal_contact.urdf'),options);
 r = r.removeCollisionGroupsExcept({'heel','toe'});
 r = compile(r);
@@ -76,7 +77,9 @@ sys = mimoCascade(sys,v,[],[],output_select);
 
 % Simulate and draw the result
 T = min(walking_plan_data.duration + 1, 30);
+tic
 ytraj = simulate(sys, [0, T], x0, struct('gui_control_interface', true));
+toc
 [com, rms_com] = atlasUtil.plotWalkingTraj(r, ytraj, walking_plan_data);
 
 if ~rangecheck(rms_com, 0, 0.01);

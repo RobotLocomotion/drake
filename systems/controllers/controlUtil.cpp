@@ -182,14 +182,14 @@ int contactConstraints(RigidBodyManipulator *r, int nc, std::vector<SupportState
 }
 
 
-int contactConstraintsBV(RigidBodyManipulator *r, int nc, double mu, std::vector<SupportStateElement>& supp, void *map_ptr, MatrixXd &B, MatrixXd &JB, MatrixXd &Jp, MatrixXd &Jpdot, MatrixXd &normals, double terrain_height)
+int contactConstraintsBV(RigidBodyManipulator *r, int nc, double mu, std::vector<SupportStateElement>& supp, void *map_ptr, MatrixXd &B, MatrixXd &JB, MatrixXd &Jp, VectorXd &Jpdotv, MatrixXd &normals, double terrain_height)
 {
   int j, k=0, nq = r->num_positions;
 
   B.resize(3,nc*2*m_surface_tangents);
   JB.resize(nq,nc*2*m_surface_tangents);
   Jp.resize(3*nc,nq);
-  Jpdot.resize(3*nc,nq);
+  Jpdotv.resize(3*nc);
   normals.resize(3, nc);
   
   Vector3d contact_pos,pos,posB,normal; 
@@ -213,11 +213,12 @@ int contactConstraintsBV(RigidBodyManipulator *r, int nc, double mu, std::vector
           JB.col((2*k+1)*m_surface_tangents+j) = J.transpose()*B.col((2*k+1)*m_surface_tangents+j);
         }
 
-        // store away kin sols into Jp and Jpdot
+        // store away kin sols into Jp and Jpdotv
         // NOTE: I'm cheating and using a slightly different ordering of J and Jdot here
         Jp.block(3*k,0,3,nq) = J;
-        r->forwardJacDot(iter->body_idx,*pt_iter,0,J);
-        Jpdot.block(3*k,0,3,nq) = J;
+        Vector3d pt = (*pt_iter).head(3);
+        auto Jpdotv_grad = r->forwardJacDotTimesV(pt,iter->body_idx,0,0,0);
+        Jpdotv.block(3*k,0,3,1) = Jpdotv_grad.value();
         normals.col(k) = normal;
         
         k++;
@@ -306,7 +307,7 @@ std::vector<SupportStateElement> parseSupportData(const mxArray* supp_data) {
     num_pts = mxGetN(mxGetField(supp_data, i, "contact_pts"));
     pm = mxGetField(supp_data, i, "support_logic_map");
     if (mxIsDouble(pm)) {
-      logic_map_double = mxGetPr(pm);
+      logic_map_double = mxGetPrSafe(pm);
       for (j = 0; j < 4; j++) {
         se.support_logic_map[j] = logic_map_double[j] != 0;
       }
@@ -315,7 +316,7 @@ std::vector<SupportStateElement> parseSupportData(const mxArray* supp_data) {
     }
     pm = mxGetField(supp_data, i, "contact_pts");
     contact_pts.resize(mxGetM(pm), mxGetN(pm));
-    memcpy(contact_pts.data(), mxGetPr(pm), sizeof(double)*mxGetNumberOfElements(pm));
+    memcpy(contact_pts.data(), mxGetPrSafe(pm), sizeof(double)*mxGetNumberOfElements(pm));
 
     for (j = 0; j < num_pts; j++) {
       contact_pt.head(3) = contact_pts.col(j);

@@ -338,7 +338,20 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   // terrain_map_ptr
   if (!mxIsNumeric(prhs[narg]) || mxGetNumberOfElements(prhs[narg])!=1) mexErrMsgIdAndTxt("Drake:constructQPDataPointerMex:BadInputs","this should be a map pointer");
-  memcpy(&pdata->map_ptr,mxGetPrSafe(prhs[narg]),sizeof(pdata->map_ptr));
+  void *ptr = NULL;
+  mxClassID cid;
+  if (sizeof(ptr) == 4) {
+    cid = mxUINT32_CLASS;
+  } else if (sizeof(ptr) == 8) {
+    cid = mxUINT64_CLASS;
+  } else {
+    std::cout << "size of ptr: " << sizeof(ptr) << std::endl;
+    mexErrMsgTxt("We expect size of pointer to be 4 on a 32-bit machine or 8 on a 64-bit machine");
+  }
+  if (mxGetClassID(prhs[narg]) != cid) {
+    mexErrMsgTxt("map_ptr should be a uint64 (for 64-bit machines) or uint32 (for 32-bit machines)");
+  }
+  memcpy(&pdata->map_ptr,mxGetData(prhs[narg]),sizeof(ptr));
   if (!pdata->map_ptr) mexWarnMsgTxt("Map ptr is NULL. Assuming flat ground.");
   narg++;
 
@@ -394,9 +407,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   pdata->C_act.resize(nu);
 
   pdata->J.resize(3,nq);
-  pdata->Jdot.resize(3,nq);
   pdata->J_xy.resize(2,nq);
-  pdata->Jdot_xy.resize(2,nq);
   pdata->Hqp.resize(nq,nq);
   pdata->fqp.resize(nq);
   pdata->Ag.resize(6,nq);

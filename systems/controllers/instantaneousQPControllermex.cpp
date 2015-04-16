@@ -35,7 +35,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   int nq = pdata->r->num_positions;
   int nv = pdata->r->num_velocities;
   if (mxGetNumberOfElements(prhs[narg]) != (nq + nv)) mexErrMsgTxt("size of x should be nq + nv\n");
-  double *q_ptr = mxGetPr(prhs[narg]);
+  double *q_ptr = mxGetPrSafe(prhs[narg]);
   double *qd_ptr = &q_ptr[nq];
   Map<VectorXd> q(q_ptr, nq);
   Map<VectorXd> qd(qd_ptr, nq);
@@ -47,7 +47,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   // contact_sensor
   const mxArray *pobj = prhs[narg];
-  Map<VectorXd> contact_force_detected(mxGetPr(pobj), mxGetNumberOfElements(pobj), 1);
+  Map<VectorXd> contact_force_detected(mxGetPrSafe(pobj), mxGetNumberOfElements(pobj), 1);
   Matrix<bool, Dynamic, 1> b_contact_force = Matrix<bool, Dynamic, 1>::Zero(contact_force_detected.size());
   for (int i=0; i < b_contact_force.size(); i++) {
     b_contact_force(i) = (contact_force_detected(i) != 0);
@@ -92,7 +92,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   if (nlhs>narg) {
       plhs[narg] = mxCreateDoubleMatrix(1,debug->active_supports.size(),mxREAL);
-      pr = mxGetPr(plhs[narg]);
+      pr = mxGetPrSafe(plhs[narg]);
       int i=0;
       for (vector<SupportStateElement>::iterator iter = debug->active_supports.begin(); iter!=debug->active_supports.end(); iter++) {
           pr[i++] = (double) (iter->body_idx + 1);
@@ -149,7 +149,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     double Vdot;
     if (debug->nc>0) 
       // note: Sdot is 0 for ZMP/double integrator dynamics, so we omit that term here
-      Vdot = ((2*debug->x_bar.transpose()*debug->S + debug->s1.transpose())*(debug->A_ls*debug->x_bar + debug->B_ls*(debug->Jcomdot*qd + debug->Jcom*qp_output.qdd)) + debug->s1dot.transpose()*debug->x_bar)(0) + debug->s2dot;
+      Vdot = ((2*debug->x_bar.transpose()*debug->S + debug->s1.transpose())*(debug->A_ls*debug->x_bar + debug->B_ls*(debug->Jcomdotv + debug->Jcom*qp_output.qdd)) + debug->s1dot.transpose()*debug->x_bar)(0) + debug->s2dot;
     else
       Vdot = 0;
     plhs[narg] = mxCreateDoubleScalar(Vdot);

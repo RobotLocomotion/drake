@@ -3,14 +3,13 @@
 # debugMexTester.m and debugMexTest.cpp were moved to dev
 # add_mex(debugMexTest debugMexTest.cpp)
 
-if (eigen3_FOUND)
-  if (NOT WIN32)
+if (NOT WIN32)
   # doesn't work because the timing tests require the <chrono> include
   add_executable(testDrakeGeometryUtil testDrakeGeometryUtil.cpp)
   target_link_libraries(testDrakeGeometryUtil drakeGeometryUtil drakeGradientUtil)
   include_directories( .. )
   add_test(NAME testDrakeGeometryUtil COMMAND testDrakeGeometryUtil)
-  
+
   add_executable(testGradientVar testGradientVar.cpp)
   target_link_libraries(testGradientVar drakeGradientUtil)
   include_directories( .. )
@@ -21,14 +20,18 @@ if (eigen3_FOUND)
   target_link_libraries(testDrakeGradientUtil drakeGeometryUtil drakeGradientUtil)
   include_directories( .. )
   add_test(NAME testDrakeGradientUtil COMMAND testDrakeGradientUtil)
-  endif (NOT WIN32)
-  
+endif (NOT WIN32)
+
+if (MATLAB_FOUND)
   add_mex(testQuatmex testQuatmex.cpp)
+  include_directories( .. )
   target_link_libraries(testQuatmex drakeGeometryUtil)
 
   add_mex(testGeometryGradientsmex testGeometryGradientsmex.cpp)
+  include_directories( .. )
   target_link_libraries(testGeometryGradientsmex drakeGeometryUtil)
 
   add_mex(testGeometryConversionFunctionsmex testGeometryConversionFunctionsmex.cpp)
+  include_directories( .. )
   target_link_libraries(testGeometryConversionFunctionsmex drakeGeometryUtil)
-endif(eigen3_FOUND)
+endif(MATLAB_FOUND)
