@@ -605,11 +605,17 @@ bool parseJoint(RigidBodyManipulator* model, TiXmlElement* node)
 }
 
 bool parseTransmission(RigidBodyManipulator* model, TiXmlElement* node)
-{
-  const char* attr = node->Attribute("type");
+{  
+  TiXmlElement* type_node = node->FirstChildElement("type");
+  const char* attr = type_node->GetText();
+
   if (!attr) {
-    cerr << "ERROR: transmission element is missing the type attribute" << endl;
-    return false;
+    attr = node->Attribute("type"); // old URDF format, kept for convenience
+    
+    if (!attr) {    
+      cerr << "ERROR: transmission element is missing the type child" << endl;
+      return false;
+    }
   }
   string type(attr);
   if (type.find("SimpleTransmission")==string::npos) {
