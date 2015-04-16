@@ -526,6 +526,11 @@ void RigidBodyManipulator::compile(void)
     if (!bodies[i]->hasParent())
       updateCollisionElements(bodies[i]);  // update static objects (not done in the kinematics loop)
 
+    // update the body's contact points
+    Matrix3Xd contact_pts;
+    getTerrainContactPoints(*bodies[i], contact_pts);
+    bodies[i]->contact_pts = contact_pts.colwise().homogeneous();
+
     // precompute sparsity pattern for each rigid body
     bodies[i]->computeAncestorDOFs(this); // TODO floating base : remove this
   }
@@ -596,15 +601,10 @@ void RigidBodyManipulator::updateCollisionElements(const shared_ptr<RigidBody>& 
     } else {
       collision_model->updateElementWorldTransform(*id_iter, body->T);
     }
-    
-    // update the body's contact points    
-    Matrix3Xd contact_pts;
-    getTerrainPoints(*body, contact_pts);
-    body->contact_pts = contact_pts.colwise().homogeneous();
   }
 };
 
-void RigidBodyManipulator::getTerrainPoints(const RigidBody& body, Eigen::Matrix3Xd &terrain_points) const 
+void RigidBodyManipulator::getTerrainContactPoints(const RigidBody& body, Eigen::Matrix3Xd &terrain_points) const 
 {
   // clear matrix before filling it again
   size_t num_points = 0;
@@ -615,7 +615,7 @@ void RigidBodyManipulator::getTerrainPoints(const RigidBody& body, Eigen::Matrix
        ++id_iter) {
     
     Matrix3Xd element_points;
-    collision_model->getTerrainPoints(*id_iter, element_points);
+    collision_model->getTerrainContactPoints(*id_iter, element_points);
     terrain_points.conservativeResize(Eigen::NoChange, terrain_points.cols() + element_points.cols());
     terrain_points.block(0, num_points, terrain_points.rows(), element_points.cols()) = element_points;
     num_points += element_points.cols();

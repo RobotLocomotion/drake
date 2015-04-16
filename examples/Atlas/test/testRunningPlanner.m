@@ -483,8 +483,8 @@ function half_periodic_constraint = halfPeriodicConstraint(robot)
     eq_mat(row,[initial_indices(idx) final_indices(idx)]) = [1 1];
   end
 
-  l_arm_usy_idx = robot.getBody(robot.findJointId('l_arm_usy')).position_num;
-  r_arm_usy_idx = robot.getBody(robot.findJointId('r_arm_usy')).position_num;
+  l_arm_usy_idx = robot.getBody(robot.findJointId('l_arm_shz')).position_num;
+  r_arm_usy_idx = robot.getBody(robot.findJointId('r_arm_shz')).position_num;
   symmetric_matrix = addSymmetricPair(symmetric_matrix,1:2,l_arm_usy_idx,r_arm_usy_idx);
 
   l_arm_shx_idx = robot.getBody(robot.findJointId('l_arm_shx')).position_num;

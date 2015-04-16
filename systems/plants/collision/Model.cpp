@@ -25,10 +25,10 @@ namespace DrakeCollision
     }
   }
   
-  void Model::getTerrainPoints(ElementId id0, Eigen::Matrix3Xd &terrain_points) {
+  void Model::getTerrainContactPoints(ElementId id0, Eigen::Matrix3Xd &terrain_points) {
     auto element_iter = elements.find(id0);
     if ( element_iter != elements.end()) {
-      element_iter->second->getPoints(terrain_points);
+      element_iter->second->getTerrainContactPoints(terrain_points);
     } else {
       terrain_points = Eigen::Matrix3Xd();
     }
