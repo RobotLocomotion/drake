@@ -2506,7 +2506,7 @@ GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::massMa
  * additionally calling doKinematics with a zero joint velocity vector.
  * To compute only the Coriolis term, pass in nullptr for vd and set gravity to zero.
  *
- * Note that f_ext is currently expressed in Featherstone 'joint' frame. This is soon to be changed to body frame.
+ * Note that the wrenches in f_ext are expressed in body frame.
  */
 template <typename Scalar>
 GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(
@@ -2590,19 +2590,16 @@ GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(
       }
 
       if (f_ext[i] != nullptr) {
-        Isometry3d T_joint_to_body = Isometry3d(body.T_body_to_joint).inverse();
-        Isometry3d T_joint_to_world = body.T_new * T_joint_to_body; // external wrenches are expressed in 'joint' frame.
-        net_wrenches.value().col(i) -= transformSpatialForce(T_joint_to_world, f_ext[i]->value());
+        net_wrenches.value().col(i) -= transformSpatialForce(body.T_new, f_ext[i]->value());
 
         if (gradient_order > 0) {
-          auto dT_joint_to_worlddq = matGradMult(body.dTdq_new, T_joint_to_body.matrix());
           auto net_wrenches_q_gradient_block = net_wrenches.gradient().value().template block<TWIST_SIZE, Eigen::Dynamic>(TWIST_SIZE * i, 0, TWIST_SIZE, nq);
           auto df_extdq = f_ext[i]->gradient().value().middleCols(0, nq);
-          net_wrenches_q_gradient_block -= dTransformSpatialForce(T_joint_to_world, f_ext[i]->value(), dT_joint_to_worlddq, df_extdq);
+          net_wrenches_q_gradient_block -= dTransformSpatialForce(body.T_new, f_ext[i]->value(), body.dTdq_new, df_extdq);
 
           auto net_wrenches_v_gradient_block = net_wrenches.gradient().value().template block<TWIST_SIZE, Eigen::Dynamic>(TWIST_SIZE * i, nq, TWIST_SIZE, nv);
           auto df_extdv = f_ext[i]->gradient().value().middleCols(nq, nv);
-          net_wrenches_v_gradient_block -= transformSpatialForce(T_joint_to_world, df_extdv);
+          net_wrenches_v_gradient_block -= transformSpatialForce(body.T_new, df_extdv);
         }
       }
     }

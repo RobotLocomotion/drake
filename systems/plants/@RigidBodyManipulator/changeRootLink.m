@@ -89,9 +89,8 @@ while (true)
         valuecheck(sin(axis_angle(4)),0,1e-4);
         axis_angle(1:3)=[0;1;0];
       end
-      jointrpy = axis2rpy(axis_angle);
-      current_body.X_joint_to_body=Xrotx(jointrpy(1))*Xroty(jointrpy(2))*Xrotz(jointrpy(3));
-      current_body.T_body_to_joint=[rotz(jointrpy(3))*roty(jointrpy(2))*rotx(jointrpy(1)),zeros(3,1); 0,0,0,1];
+      child.T_body_to_joint = [axis2rotmat(axis_angle), zeros(3,1); 0,0,0,1];
+      child.X_joint_to_body = transformAdjoint(homogTransInv(child.T_body_to_joint));
  
       valuecheck(inv(current_body.X_joint_to_body)*[current_body.joint_axis;zeros(3,1)],[0;0;1;zeros(3,1)],1e-6);
       valuecheck(current_body.T_body_to_joint*[current_body.joint_axis;1],[0;0;1;1],1e-6);

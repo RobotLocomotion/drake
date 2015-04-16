@@ -397,21 +397,13 @@ classdef RigidBodyManipulator < Manipulator
 
       % try to do it the Xtree way
       force = ftmp(:,1)-ftmp(:,2);
-      f_body = [ cross(point,force,1); force ];  % spatial force in body coordinates
-
-      % convert to joint frame. TODO: at this point X_joint_to_body is
-      % always identity, so this should not do anything. Need to get rid of
-      % this, as well as transformations to joint frameinside
-      % RigidBodyForceElements.
-      f = obj.body(body_ind).X_joint_to_body'*f_body;
+      f = [ cross(point,force,1); force ];  % spatial force in body coordinates
 
       if (nargout>1)
         dforcedq = ftmpJ(1:3,:)-ftmpJ(4:6,:);
         dforcedforce = ftmpP(1:3,1:size(force,1))-ftmpP(4:6,1:size(force,1));
-        df_bodydq = [ cross(repmat(point,1,size(dforcedq,2)),dforcedq); dforcedq ];
-        df_bodydforce = [ cross(repmat(point,1,size(dforcedforce,2)),dforcedforce); dforcedforce];
-        dfdq = obj.body(body_ind).X_joint_to_body'*df_bodydq;
-        dfdforce = obj.body(body_ind).X_joint_to_body'*df_bodydforce;
+        dfdq = [ cross(repmat(point,1,size(dforcedq,2)),dforcedq); dforcedq ];
+        dfdforce = [ cross(repmat(point,1,size(dforcedforce,2)),dforcedforce); dforcedforce];
       end
     end
 
@@ -1530,8 +1522,7 @@ classdef RigidBodyManipulator < Manipulator
                     body_ind = body_frame.body_ind;
                 end
                 f_ext = computeSpatialForce(force_element,model,q,qd);
-                joint_wrench = f_ext(:,body_ind);
-                body_wrench = inv(model.body(body_ind).X_joint_to_body)'*joint_wrench;
+                body_wrench = f_ext(:,body_ind);
                 pos = forwardKin(model,kinsol,body_ind,[zeros(3,1),body_wrench(1:3),body_wrench(4:6)]);
                 point = pos(:,1);
                 torque_ext = pos(:,2)-point;
