@@ -97,7 +97,7 @@ posture_constraint_6 = posture_constraint_6.setJointLimits(joint_inds, joints_lo
 
 % fixed right arm
 posture_constraint_7 = PostureConstraint(r, [-inf, inf]);
-joint_inds = [joints.r_arm_usy; joints.r_arm_shx; joints.r_arm_ely; joints.r_arm_elx; joints.r_arm_uwy; joints.r_arm_mwx; joints.neck_ay];
+joint_inds = [joints.r_arm_shz; joints.r_arm_shx; joints.r_arm_ely; joints.r_arm_elx; joints.r_arm_uwy; joints.r_arm_mwx; joints.neck_ay];
 joints_lower_limit = q_nom(joint_inds);
 joints_upper_limit = q_nom(joint_inds);
 posture_constraint_7 = posture_constraint_7.setJointLimits(joint_inds, joints_lower_limit, joints_upper_limit);
