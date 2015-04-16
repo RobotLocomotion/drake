@@ -335,6 +335,13 @@ public:
   MatrixXd B;  // the B matrix maps inputs into joint-space forces
   std::map<int, int> bodies_vector_index_to_featherstone_body_index;
 
+  /*
+   * Temporary solution, as we're switching from old kinematics to new.
+   * Had to separate these so that it's possible to know specifically whether the old doKinematics and/or new doKinematics
+   * has been cached with a given q and v. There was a place outside of RigidBodyManipulator that used cached_q and should continue
+   * to work for both new and old doKinematics, so we kept cached_q and cached_v as well (set by whatever doKinematics method
+   * was called last).
+   */
   VectorXd cached_q, cached_v;  // these should be private
   VectorXd cached_q_old, cached_v_old;  // these should be private
 
