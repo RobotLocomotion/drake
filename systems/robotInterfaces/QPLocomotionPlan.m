@@ -182,16 +182,6 @@ classdef QPLocomotionPlan < QPControllerPlan
             end
 
           end
-
-          % if ~isempty(kny_ind) && q(kny_ind) < obj.MIN_KNEE_ANGLE
-          %   qp_input.joint_pd_override(end+1) = struct('position_ind', kny_ind,...
-          %                                              'qi_des', obj.MIN_KNEE_ANGLE,...
-          %                                              'qdi_des', 0,...
-          %                                              'kp', obj.KNEE_KP,...
-          %                                              'kd', obj.KNEE_KD,...
-          %                                              'weight', 1e-2);
-          % end
-
         end
 
         qp_input.body_motion_data(j) = obj.body_motions(j).slice(body_t_ind);

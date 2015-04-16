@@ -3,7 +3,7 @@ function pelvis_motion_data = getPelvisMotionForWalking(obj, foot_motion_data, s
 if nargin < 6
   options = struct();
 end
-options = applyDefaults(options, struct('pelvis_height_above_sole', obj.default_walking_params.pelvis_height_above_foot_sole, 'debug', true));
+options = applyDefaults(options, struct('pelvis_height_above_sole', obj.default_walking_params.pelvis_height_above_foot_sole, 'debug', false));
 
 if options.debug
   figure(321)

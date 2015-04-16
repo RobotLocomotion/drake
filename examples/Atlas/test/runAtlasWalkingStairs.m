@@ -10,8 +10,7 @@ robot_options = applyDefaults(robot_options, struct('use_bullet', true,...
                                                     'terrain', RigidBodyFlatTerrain,...
                                                     'floating', true,...
                                                     'ignore_self_collisions', true,...
-                                                    'ignore_effort_limits', true,...
-                                                    'enable_fastqp', true,...
+                                                    'enable_fastqp', false,...
                                                     'ignore_friction', true,...
                                                     'use_new_kinsol', true,...
                                                     'hand_right', 'robotiq_weight_only',...
@@ -29,14 +28,14 @@ r = compile(r);
 % set initial state to fixed point
 load(fullfile(getDrakePath,'examples','Atlas','data','atlas_fp.mat'));
 
-xstar(r.findPositionIndices('r_arm_usy')) = -0.931;
-xstar(r.findPositionIndices('r_arm_shx')) = 0.717;
-xstar(r.findPositionIndices('r_arm_ely')) = 1.332;
-xstar(r.findPositionIndices('r_arm_elx')) = -0.871;
-xstar(r.findPositionIndices('l_arm_usy')) = -0.931;
-xstar(r.findPositionIndices('l_arm_shx')) = -0.717;
-xstar(r.findPositionIndices('l_arm_ely')) = 1.332;
-xstar(r.findPositionIndices('l_arm_elx')) = 0.871;
+xstar(r.findPositionIndices('r_arm_shz')) = 1.3;
+xstar(r.findPositionIndices('r_arm_shx')) = 0;
+xstar(r.findPositionIndices('r_arm_elx')) = -0.5;
+xstar(r.findPositionIndices('r_arm_ely')) = 0;
+xstar(r.findPositionIndices('l_arm_shz')) = -1.3;
+xstar(r.findPositionIndices('l_arm_shx')) = 0;
+xstar(r.findPositionIndices('l_arm_elx')) = 0.5;
+xstar(r.findPositionIndices('l_arm_ely')) = 0;
 xstar = r.resolveConstraints(xstar);
 
 r = r.setInitialState(xstar);
@@ -88,24 +87,7 @@ end
 
 walking_plan = r.planWalkingZMP(x0(1:nq), footstep_plan);
 
-% ytraj = r.planWalkingStateTraj(walking_plan);
-% v.playback(ytraj, struct('slider', true));
-
-% Build our controller and plan eval objects
-control = atlasControllers.InstantaneousQPController(r, []);
-planeval = atlasControllers.AtlasPlanEval(r, walking_plan);
-plancontroller = atlasControllers.AtlasPlanEvalAndControlSystem(r, control, planeval);
-sys = feedback(r, plancontroller);
-
-% Add a visualizer
-output_select(1).system=1;
-output_select(1).output=1;
-sys = mimoCascade(sys,v,[],[],output_select);
-
-% Simulate and draw the result
-T = walking_plan.duration;
-ytraj = simulate(sys, [0, T], x0, struct('gui_control_interface', true));
-[com, rms_com] = atlasUtil.plotWalkingTraj(r, ytraj, walking_plan);
+[ytraj, com, rms_com] = atlasUtil.simulateWalking(r, walking_plan);
 
 v.playback(ytraj, struct('slider', true));
 
