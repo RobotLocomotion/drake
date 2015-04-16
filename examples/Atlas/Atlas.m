@@ -84,8 +84,10 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
 
       % Add a force on a specified link if we want!
       if ~isempty(options.external_force)
-        obj.external_force = 1;
-        options_ef.weld_to_link = findLinkId(obj,options.external_force);
+        % For compile purposes, record that we have external force applied to a link
+        % (this affects input frames)
+        obj.external_force = findLinkId(obj,options.external_force);
+        options_ef.weld_to_link = obj.external_force;
         obj = obj.addRobotFromURDF(strcat(getenv('DRC_PATH'), '/drake/util/three_dof_force.urdf'), ...
           [0; 0; 0], [0; 0; 0], options_ef);
       end
