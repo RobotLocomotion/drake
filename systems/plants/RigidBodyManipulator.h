@@ -69,7 +69,7 @@ public:
 class DLLEXPORT_RBM RigidBodyManipulator
 {
 public:
-  RigidBodyManipulator(int num_dof, int num_featherstone_bodies=-1, int num_rigid_body_objects=-1, int num_rigid_body_frames=0);
+  RigidBodyManipulator(int num_dof, int num_rigid_body_objects=-1, int num_rigid_body_frames=0);
   RigidBodyManipulator(const std::string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
   RigidBodyManipulator(void);
   virtual ~RigidBodyManipulator(void);
@@ -81,7 +81,7 @@ public:
 
   void surfaceTangents(Eigen::Map<Matrix3xd> const & normals, std::vector< Map<Matrix3xd> > & tangents);
   
-  void resize(int num_dof, int num_featherstone_bodies=-1, int num_rigid_body_objects=-1, int num_rigid_body_frames=0);
+  void resize(int num_dof, int num_rigid_body_objects=-1, int num_rigid_body_frames=0);
 
   void compile(void);  // call me after the model is loaded
 
@@ -320,20 +320,8 @@ public:
   // Rigid body loops
   std::vector<RigidBodyLoop,Eigen::aligned_allocator<RigidBodyLoop> > loops;
 
-  // featherstone data structure
-  int NB;  // featherstone bodies
-  VectorXi pitch;
-  VectorXi parent;
-  VectorXi dofnum;
-  VectorXd damping;
-  VectorXd coulomb_friction;
-  VectorXd coulomb_window;
-  VectorXd static_friction;
-  std::vector<MatrixXd> Xtree;
-  std::vector<MatrixXd> I;
   Matrix<double,TWIST_SIZE,1> a_grav;
   MatrixXd B;  // the B matrix maps inputs into joint-space forces
-  std::map<int, int> bodies_vector_index_to_featherstone_body_index;
 
   /*
    * Temporary solution, as we're switching from old kinematics to new.
@@ -363,51 +351,19 @@ private:
   void checkCachedKinematicsSettings(bool kinematics_gradients_required, bool velocity_kinematics_required, bool jdot_times_v_required, const std::string& method_name);
 
   // variables for featherstone dynamics
-  std::vector<VectorXd> S;
-  std::vector<MatrixXd> Xup;
-  std::vector<VectorXd> v;
-  std::vector<VectorXd> avp;
-  std::vector<VectorXd> fvp;
-  std::vector<MatrixXd> IC;
   std::vector<Matrix<double, TWIST_SIZE, TWIST_SIZE>, Eigen::aligned_allocator< Matrix<double, TWIST_SIZE, TWIST_SIZE> > > I_world;
   std::vector<Matrix<double, TWIST_SIZE, TWIST_SIZE>, Eigen::aligned_allocator< Matrix<double, TWIST_SIZE, TWIST_SIZE> > > Ic_new;
 
 
   //Variables for gradient calculations
   MatrixXd dTdTmult;
-  std::vector<MatrixXd> dXupdq;
-  std::vector<std::vector<MatrixXd> > dIC;
-    std::vector<Gradient<Matrix<double, TWIST_SIZE, TWIST_SIZE>, Eigen::Dynamic>::type> dI_world;
+  std::vector<Gradient<Matrix<double, TWIST_SIZE, TWIST_SIZE>, Eigen::Dynamic>::type> dI_world;
   std::vector<Gradient<Matrix<double, TWIST_SIZE, TWIST_SIZE>, Eigen::Dynamic>::type> dIc_new;
-
-  std::vector<MatrixXd> dvdq;
-  std::vector<MatrixXd> dvdqd;
-  std::vector<MatrixXd> davpdq;
-  std::vector<MatrixXd> davpdqd;
-  std::vector<MatrixXd> dfvpdq;
-  std::vector<MatrixXd> dfvpdqd;
-  MatrixXd dvJdqd_mat;
-  MatrixXd dcross;
 
   // preallocate for COM functions
   Vector3d bc;
   MatrixXd bJ;
   MatrixXd bdJ;
-
-  // preallocate for CMM function
-  MatrixXd Xg; // spatial centroidal projection matrix
-  MatrixXd dXg;  // dXg_dq * qd
-  std::vector<MatrixXd> Ic; // composite rigid body inertias
-  std::vector<MatrixXd> dIc; // derivative of composite rigid body inertias
-  std::vector<VectorXd> phi; // joint axis vectors
-  std::vector<MatrixXd> Xworld; // spatial transforms from world to each body
-  std::vector<MatrixXd> dXworld; // dXworld_dq * qd
-  std::vector<MatrixXd> dXup; // dXup_dq * qd
-  MatrixXd Xcom; // spatial transform from centroid to world
-  MatrixXd Jcom;
-  MatrixXd dXcom;
-  MatrixXd Xi;
-  MatrixXd dXidq;
 
   int num_contact_pts;
   bool initialized;

@@ -23,8 +23,8 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
   int nq = model->num_positions;
   int nv = model->num_velocities;
   
-  if (mxGetNumberOfElements(prhs[1])!=model->NB)
-    mexErrMsgIdAndTxt("Drake:doKinematicsmex:BadInputs", "q must be size %d x 1", model->NB);
+  if (mxGetNumberOfElements(prhs[1])!=nq)
+    mexErrMsgIdAndTxt("Drake:doKinematicsmex:BadInputs", "q must be size %d x 1", nq);
   
   Map<VectorXd> q(mxGetPrSafe(prhs[1]), nq);
   bool b_compute_second_derivatives = (mxGetScalar(prhs[2])!=0.0);

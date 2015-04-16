@@ -262,21 +262,25 @@ std::ostream& operator<<(std::ostream& os, const RigidBodyLoop& obj)
   return os;
 }
 
-RigidBodyManipulator::RigidBodyManipulator(int ndof, int num_featherstone_bodies, int num_rigid_body_objects, int num_rigid_body_frames)
-  :  collision_model(DrakeCollision::newModel())
+RigidBodyManipulator::RigidBodyManipulator(int ndof, int num_rigid_body_objects, int num_rigid_body_frames) :
+    collision_model(DrakeCollision::newModel())
 {
   use_new_kinsol = false;
-  num_positions=0; NB=0; num_bodies=0; num_frames=0;
-  a_grav << 0,0,0,0,0,-9.81;
-  resize(ndof,num_featherstone_bodies,num_rigid_body_objects,num_rigid_body_frames);
+  num_positions = 0;
+  num_bodies = 0;
+  num_frames = 0;
+  a_grav << 0, 0, 0, 0, 0, -9.81;
+  resize(ndof, num_rigid_body_objects, num_rigid_body_frames);
 }
 
 RigidBodyManipulator::RigidBodyManipulator(const std::string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type)
   :  collision_model(DrakeCollision::newModel())
 {
-  num_positions=0; NB=0; num_bodies=0; num_frames=0;
-  a_grav << 0,0,0,0,0,-9.81;
-  resize(num_positions,NB,1,num_frames);
+  num_positions = 0;
+  num_bodies = 0;
+  num_frames = 0;
+  a_grav << 0, 0, 0, 0, 0, -9.81;
+  resize(num_positions, 1, num_frames);
   bodies[0]->linkname = "world";
   bodies[0]->robotnum = 0;
   bodies[0]->body_index = 0;
@@ -285,12 +289,14 @@ RigidBodyManipulator::RigidBodyManipulator(const std::string &urdf_filename, con
   addRobotFromURDF(urdf_filename,floating_base_type);
 }
 
-RigidBodyManipulator::RigidBodyManipulator(void)
-  :  collision_model(DrakeCollision::newModel())
+RigidBodyManipulator::RigidBodyManipulator(void) :
+    collision_model(DrakeCollision::newModel())
 {
-  num_positions=0; NB=0; num_bodies=0; num_frames=0;
-  a_grav << 0,0,0,0,0,-9.81;
-  resize(num_positions,NB,1,num_frames);
+  num_positions = 0;
+  num_bodies = 0;
+  num_frames = 0;
+  a_grav << 0, 0, 0, 0, 0, -9.81;
+  resize(num_positions, 1, num_frames);
   bodies[0]->linkname = "world";
   bodies[0]->robotnum = 0;
   bodies[0]->body_index = 0;
@@ -303,49 +309,15 @@ RigidBodyManipulator::~RigidBodyManipulator(void)
 
 
 // Note:  this method is gross and should be scheduled for deletion upon switching to the new kinsol
-void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num_rigid_body_objects, int num_rigid_body_frames)
+void RigidBodyManipulator::resize(int ndof, int num_rigid_body_objects, int num_rigid_body_frames)
 {
-  int last_NB = NB, last_num_bodies = num_bodies;
+  int last_num_bodies = num_bodies;
 
   num_positions = ndof;
 
-  if (num_featherstone_bodies<0)
-    NB = ndof;
-  else
-    NB = num_featherstone_bodies;
-
-  pitch.conservativeResize(NB);
-  parent.conservativeResize(NB);
-  dofnum.conservativeResize(NB);
-  damping.conservativeResize(NB);
-  coulomb_friction.conservativeResize(NB);
-  static_friction.conservativeResize(NB);
-  coulomb_window.conservativeResize(NB);
-
-  // note: these are std:vectors (and the above are eigen vectors)
-  Xtree.resize(NB);
-  I.resize(NB);
-  S.resize(NB);
-  Xup.resize(NB);
-  v.resize(NB);
-  avp.resize(NB);
-  fvp.resize(NB);
-  IC.resize(NB);
-  for(int i=last_NB; i < NB; i++) {
-    Xtree[i] = MatrixXd::Zero(6,6);
-    I[i] = MatrixXd::Zero(6,6);
-    S[i] = VectorXd::Zero(6);
-    Xup[i] = MatrixXd::Zero(6,6);
-    v[i] = VectorXd::Zero(6);
-    avp[i] = VectorXd::Zero(6);
-    fvp[i] = VectorXd::Zero(6);
-    IC[i] = MatrixXd::Zero(6,6);
-  }
-
-  if (num_rigid_body_objects<0)
-    num_bodies = NB+1;  // this was my old assumption, so leave it here as the default behavior
-  else
-    num_bodies = num_rigid_body_objects;
+  if (num_rigid_body_objects < 0)
+    throw runtime_error("number of rigid body objects must be positive");
+  num_bodies = num_rigid_body_objects;
 
   I_world.resize(num_bodies);
   Ic_new.resize(num_bodies);
@@ -357,25 +329,10 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
   bodies.reserve(num_bodies);
   for (int i = last_num_bodies; i < num_bodies; i++) {
     bodies.push_back(std::shared_ptr<RigidBody>(new RigidBody()));
-//    bodies[i]->dofnum = i - 1;
-  } // setup default dofnums
-
-//  for (int i = 0; i < num_bodies; i++) {
-//    bodies[i]->setN(num_dof);
-//  }
+  }
 
   num_frames = num_rigid_body_frames;
   frames.resize(num_frames);
-
-  //Variable allocation for gradient calculations
-  dXupdq.resize(NB);
-  dIC.resize(NB);
-  for(int i=0; i < NB; i++) {
-    dIC[i].resize(NB);
-    for(int j=0; j < NB; j++) {
-      dIC[i][j] = MatrixXd::Zero(6,6);
-    }
-  }
 
   dI_world.resize(num_bodies);
   dIc_new.resize(num_bodies);
@@ -384,54 +341,11 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
     dIc_new[i] = MatrixXd::Zero(Ic_new[i].size(), num_positions);
   }
 
-  // don't need to resize dcross (it gets resized in dcrm)
-
-  dvdq.resize(NB);
-  dvdqd.resize(NB);
-  davpdq.resize(NB);
-  davpdqd.resize(NB);
-  dfvpdq.resize(NB);
-  dfvpdqd.resize(NB);
-
-  dvJdqd_mat = MatrixXd::Zero(6,num_positions);
-  for(int i=0; i < NB; i++) {
-    dvdq[i] = MatrixXd::Zero(6,num_positions);
-    dvdqd[i] = MatrixXd::Zero(6,num_positions);
-    davpdq[i] = MatrixXd::Zero(6,num_positions);
-    davpdqd[i] = MatrixXd::Zero(6,num_positions);
-    dfvpdq[i] = MatrixXd::Zero(6,num_positions);
-    dfvpdqd[i] = MatrixXd::Zero(6,num_positions);
-  }
-
   // preallocate for COM functions
   bc = Vector3d::Zero();
   bJ = MatrixXd::Zero(3,num_positions);
   bdJ = MatrixXd::Zero(3,num_positions*num_positions);
   dTdTmult = MatrixXd::Zero(3*num_positions,4);
-
-  // preallocate for CMM function
-  Ic.resize(NB); // composite rigid body inertias
-  dIc.resize(NB); // derivative of composite rigid body inertias
-  phi.resize(NB); // joint axis vectors
-  Xworld.resize(NB); // spatial transforms from world to each body
-  dXworld.resize(NB); // dXworld_dq * qd
-  dXup.resize(NB); // dXup_dq * qd
-  for(int i=0; i < NB; i++) {
-    Ic[i] = MatrixXd::Zero(6,6);
-    dIc[i] = MatrixXd::Zero(6,6);
-    phi[i] = VectorXd::Zero(6);
-    Xworld[i] = MatrixXd::Zero(6,6);
-    dXworld[i] = MatrixXd::Zero(6,6);
-    dXup[i] = MatrixXd::Zero(6,6);
-  }
-
-  Xg = MatrixXd::Zero(6,6); // spatial centroidal projection matrix for a single body
-  dXg = MatrixXd::Zero(6,6);  // dXg_dq * qd
-  Xcom = MatrixXd::Zero(6,6); // spatial transform from centroid to world
-  Jcom = MatrixXd::Zero(3,num_positions);
-  dXcom = MatrixXd::Zero(6,6);
-  Xi = MatrixXd::Zero(6,6);
-  dXidq = MatrixXd::Zero(6,6);
 
   initialized = false;
   kinematicsInit = false;
@@ -447,10 +361,6 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
 
 void RigidBodyManipulator::compile(void)
 {
-  /* todo:
-   - set joint limits (from drakejoint to rbm)
-   */
-
   // reorder body list to make sure that parents before children in the list
 	size_t i=0;
   while (i<bodies.size()) {
@@ -500,14 +410,9 @@ void RigidBodyManipulator::compile(void)
     }
   }
 
-  int featherstone_body_index = 0;
   for (int i=0; i<num_bodies; i++) {
     bodies[i]->body_index = i;
     bodies[i]->setN(_num_positions, num_velocities);
-    if (bodies[i]->hasParent()) {
-      bodies_vector_index_to_featherstone_body_index[i] = featherstone_body_index + bodies[i]->getJoint().getNumPositions() - 1;
-      featherstone_body_index += bodies[i]->getJoint().getNumPositions();
-    }
   }
 
   B.resize(num_velocities,actuators.size());
@@ -516,7 +421,7 @@ void RigidBodyManipulator::compile(void)
     for (int i=0; i<actuators[ia].body->getJoint().getNumVelocities(); i++)
       B(actuators[ia].body->velocity_num_start+i,ia) = actuators[ia].reduction;
 
-  resize(_num_positions, NB, num_bodies, num_frames); // TODO: change _num_positions to num_positions above after removing this
+  resize(_num_positions, num_bodies, num_frames); // TODO: change _num_positions to num_positions above after removing this
 
   joint_limit_min = VectorXd::Constant(num_positions,-std::numeric_limits<double>::infinity());
   joint_limit_max = VectorXd::Constant(num_positions,std::numeric_limits<double>::infinity());
@@ -3229,6 +3134,8 @@ GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::positionConstraints
 template <typename DerivedA, typename DerivedB, typename DerivedC>
 void RigidBodyManipulator::jointLimitConstraints(MatrixBase<DerivedA> const & q, MatrixBase<DerivedB> &phi, MatrixBase<DerivedC> &J) const
 {
+  // FIXME: iterate of fixedAxisOneDoFJoints
+
   std::vector<int> finite_min_index;
   std::vector<int> finite_max_index;
 

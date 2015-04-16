@@ -22,9 +22,6 @@ classdef RigidBodyTorsionalSpring < RigidBodyForceElement
          df_ext = sparse(6*getNumBodies(manip),size(q,1)+size(qd,1));
       end
 
-      % note, because featherstone coordinates do everything about the
-      % z-axis, the below is actually equivalent to
-      % f_ext(:,obj.child_body) = manip.body(obj.child_body).X_joint_to_body'*[zeros(3,1);torque*manip.body(obj.child_body).joint_axis];
       f_ext(:,obj.child_body) = [zeros(2,1);torque;zeros(3,1)]; 
       if obj.parent_body ~= 0 % don't apply force to world body
         f_ext(:,obj.parent_body) = -[zeros(2,1);torque;zeros(3,1)]; 
