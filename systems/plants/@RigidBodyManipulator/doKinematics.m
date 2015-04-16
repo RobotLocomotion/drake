@@ -422,6 +422,8 @@ end
 end
 
 function qd = computeQdot(bodies, vToqdot, v, nq)
+% see http://undocumentedmatlab.com/blog/trapping-warnings-efficiently
+% this turns a warning with the specified ID into an error.
 original_warning_state = warning('error', 'Drake:TaylorVar:DoubleConversion');
 qd = zeros(nq, 1);
 try
