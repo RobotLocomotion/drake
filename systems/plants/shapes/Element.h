@@ -42,7 +42,7 @@ namespace DrakeShapes
 
       const Geometry& getGeometry() const;
       
-      void getPoints(Eigen::Matrix3Xd &points);
+      void getTerrainContactPoints(Eigen::Matrix3Xd &points);
 
     protected:
 

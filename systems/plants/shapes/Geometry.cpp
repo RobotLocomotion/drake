@@ -72,6 +72,14 @@ namespace DrakeShapes
     Geometry::getBoundingBoxPoints(radius, radius, radius, points);      
   }
 
+  void Sphere::getTerrainContactPoints(Matrix3Xd &points) const
+  {
+    if (radius < 1e-6)
+      getPoints(points);
+    else
+      points = Matrix3Xd();
+  }
+
   Box::Box(const Eigen::Vector3d& size)
     : Geometry(BOX), size(size) {}
 
@@ -86,6 +94,11 @@ namespace DrakeShapes
   }
 
   void Box::getBoundingBoxPoints(Matrix3Xd &points) const
+  {
+    getPoints(points);
+  }
+
+  void Box::getTerrainContactPoints(Matrix3Xd &points) const
   {
     getPoints(points);
   }

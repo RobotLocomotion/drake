@@ -1,16 +1,10 @@
 function runAtlasBalancingSplit(example_options)
 %NOTEST 
 % Run the new split QP controller, which consists of separate PlanEval
-% and InstantaneousQPController objects. The controller will also
-% automatically transition to standing when it reaches the end of its walking
-% plan.
+% and InstantaneousQPController objects. 
 % @option use_mex [1] whether to use mex. 0: no, 1: yes, 2: compare mex and non-mex
 % @option use_bullet [false] whether to use bullet for collision detect
-% @option navgoal the goal for footstep planning
-% @option quiet [true] whether to silence timing printouts
 % @option num_steps [4] max number of steps to take
-% 
-% this function is tested in test/testSplitWalking.m
 
 checkDependency('gurobi');
 checkDependency('lcmgl');
@@ -33,10 +27,11 @@ options.ignore_self_collisions = true;
 options.ignore_friction = true;
 options.dt = 0.001;
 
+box_xpos = 0.19;
 boxurdf = fullfile(getDrakePath,'systems','plants','test','FallingBrick.urdf');
 box_r = RigidBodyManipulator();
 box_r = box_r.setTerrain(RigidBodyFlatTerrain());
-box_r = box_r.addRobotFromURDF(boxurdf, [0.22;0;0], [0;0;pi/2]);
+box_r = box_r.addRobotFromURDF(boxurdf, [box_xpos;0;0], [0;0;pi/2]);
 box_r = box_r.compile();
 height_map = RigidBodyHeightMapTerrain.constructHeightMapFromRaycast(box_r,[],-3:.015:3, -3:.015:3, 10);
 options.terrain = height_map;
@@ -45,7 +40,7 @@ options.use_bullet = true;
 options.multiple_contacts = true;
 r = Atlas(fullfile(getDrakePath,'examples','Atlas','urdf','atlas_convex_hull.urdf'),options);
 r = r.removeCollisionGroupsExcept({'heel','toe'});
-r = r.addRobotFromURDF(fullfile(getDrakePath,'systems','plants','test','FallingBrick.urdf'), [0.22;0;0], [0;0;pi/2]);
+r = r.addRobotFromURDF(fullfile(getDrakePath,'systems','plants','test','FallingBrick.urdf'), [box_xpos;0;0], [0;0;pi/2]);
 options.floating = false;
 
 r = compile(r);

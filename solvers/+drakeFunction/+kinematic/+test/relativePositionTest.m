@@ -29,7 +29,7 @@ function relativePositionTest(visualize)
 
   %% Test a basic RelativePosition object
   % Create a DrakeFunction that computes the world position of the hand points
-  hand_pts_in_body = rbm.getBody(rbm.findLinkId('l_hand')).getTerrainContactPoints();
+  hand_pts_in_body = [0;0.2;0];
   hand_pts_fcn = RelativePosition(rbm,'l_hand','world',hand_pts_in_body);
 
   % Evaluate that DrakeFunction
