@@ -33,6 +33,7 @@ namespace DrakeShapes
 
       virtual void getPoints(Eigen::Matrix3Xd &points) const;
       virtual void getBoundingBoxPoints(Eigen::Matrix3Xd &points) const;
+      virtual void getTerrainContactPoints(Eigen::Matrix3Xd &points) const { points = Eigen::Matrix3Xd(); };
 
     protected:
       Geometry(Shape shape);
@@ -49,6 +50,7 @@ namespace DrakeShapes
       virtual Sphere* clone() const;
       virtual void getPoints(Eigen::Matrix3Xd &points) const;
       virtual void getBoundingBoxPoints(Eigen::Matrix3Xd &points) const;
+      virtual void getTerrainContactPoints(Eigen::Matrix3Xd &points) const;
       
       double radius;
       static const int NUM_POINTS = 1;
@@ -61,6 +63,7 @@ namespace DrakeShapes
       virtual Box* clone() const;
       virtual void getPoints(Eigen::Matrix3Xd &points) const;
       virtual void getBoundingBoxPoints(Eigen::Matrix3Xd &points) const;
+      virtual void getTerrainContactPoints(Eigen::Matrix3Xd &points) const;
       
       Eigen::Vector3d size;
       
@@ -73,6 +76,7 @@ namespace DrakeShapes
       virtual Cylinder* clone() const;
       virtual void getPoints(Eigen::Matrix3Xd &points) const;
       virtual void getBoundingBoxPoints(Eigen::Matrix3Xd &points) const;
+
       double radius;
       double length;
   };
