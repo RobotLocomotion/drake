@@ -23,7 +23,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
         options.hand_left = 'none';
       end
       if ~isfield(options,'atlas_version') 
-        options.atlas_version = 3; 
+        options.atlas_version = 5; 
       end
 
       w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
@@ -32,16 +32,21 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       obj = obj@Biped('r_foot_sole', 'l_foot_sole');
       warning(w);
 
-      if options.atlas_version == 3;
+      if options.atlas_version == 3
         hand_position_right = [0; -0.195; -0.01];
         hand_position_left = [0; 0.195; 0.01];
-        hand_orientation_right = [0; -3.1415/2; 3.1415];
-        hand_orientation_left = [0; -3.1415/2; 0];
-      else
+        hand_orientation_right = [0; -pi/2; pi];
+        hand_orientation_left = [0; -pi/2; 0];
+      elseif options.atlas_version == 4
         hand_position_right = [0; -0.195; -0.01];
         hand_position_left = hand_position_right;
-        hand_orientation_right = [0; -3.1415/2; 3.1415];
-        hand_orientation_left = [0; 3.1415/2; 3.1415];
+        hand_orientation_right = [0; -pi/2; pi];
+        hand_orientation_left = [0; pi/2; pi];
+      elseif options.atlas_version == 5
+        hand_position_right = [0; -0.1245; 0];
+        hand_orientation_right = [0; 0; pi];
+        hand_position_left = [0; -0.1245; 0];
+        hand_orientation_left = [0; 0; pi];
       end
 
       hand=options.hand_right;

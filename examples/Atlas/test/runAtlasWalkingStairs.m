@@ -29,14 +29,14 @@ r = compile(r);
 % set initial state to fixed point
 load(fullfile(getDrakePath,'examples','Atlas','data','atlas_fp.mat'));
 
-xstar(r.findPositionIndices('r_arm_usy')) = -0.931;
-xstar(r.findPositionIndices('r_arm_shx')) = 0.717;
-xstar(r.findPositionIndices('r_arm_ely')) = 1.332;
-xstar(r.findPositionIndices('r_arm_elx')) = -0.871;
-xstar(r.findPositionIndices('l_arm_usy')) = -0.931;
-xstar(r.findPositionIndices('l_arm_shx')) = -0.717;
-xstar(r.findPositionIndices('l_arm_ely')) = 1.332;
-xstar(r.findPositionIndices('l_arm_elx')) = 0.871;
+xstar(r.findPositionIndices('r_arm_shz')) = 1.3;
+xstar(r.findPositionIndices('r_arm_shx')) = 0;
+xstar(r.findPositionIndices('r_arm_elx')) = -0.5;
+xstar(r.findPositionIndices('r_arm_ely')) = 0;
+xstar(r.findPositionIndices('l_arm_shz')) = -1.3;
+xstar(r.findPositionIndices('l_arm_shx')) = 0;
+xstar(r.findPositionIndices('l_arm_elx')) = 0.5;
+xstar(r.findPositionIndices('l_arm_ely')) = 0;
 xstar = r.resolveConstraints(xstar);
 
 r = r.setInitialState(xstar);
