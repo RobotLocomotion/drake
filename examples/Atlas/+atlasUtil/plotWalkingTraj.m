@@ -23,8 +23,24 @@ end
 dtraj = fnder(PPTrajectory(spline(tts,x_smooth)));
 qddtraj = dtraj(nq+(1:nq));
 
-lfoot = findLinkId(r,'l_foot');
-rfoot = findLinkId(r,'r_foot');
+for j = 1:length(walking_plan_data.body_motions)
+  if walking_plan_data.body_motions(j).body_id == r.foot_body_id.right || ...
+     (walking_plan_data.body_motions(j).body_id < 0 && r.getFrame(walking_plan_data.body_motions(j).body_id).body_ind == r.foot_body_id.right)
+    r_ind = j;
+  elseif  walking_plan_data.body_motions(j).body_id == r.foot_body_id.left || ...
+     (walking_plan_data.body_motions(j).body_id < 0 && r.getFrame(walking_plan_data.body_motions(j).body_id).body_ind == r.foot_body_id.left)
+    l_ind = j;
+  end
+end
+
+rfoot_motion = walking_plan_data.body_motions(r_ind);
+if rfoot_motion.body_id < 0
+  rfoot_body = r.getFrame(rfoot_motion.body_id).body_ind;
+end
+lfoot_motion = walking_plan_data.body_motions(l_ind);
+if lfoot_motion.body_id < 0
+  lfoot_body = r.getFrame(lfoot_motion.body_id).body_ind;
+end
 
 lstep_counter = 0;
 rstep_counter = 0;
@@ -42,8 +58,8 @@ zmpact = zeros(2, length(ts));
 lfoot_pos = zeros(6, length(ts));
 rfoot_pos = zeros(6, length(ts));
 
-rfoottraj = PPTrajectory(walking_plan_data.body_motions(1).getPP());
-lfoottraj = PPTrajectory(walking_plan_data.body_motions(2).getPP());
+rfoottraj = PPTrajectory(rfoot_motion.getPP());
+lfoottraj = PPTrajectory(lfoot_motion.getPP());
 
 for i=1:length(ts)
   % ts is from the walking plan, but traj is only defined at the dt
@@ -64,11 +80,11 @@ for i=1:length(ts)
   zmpdes(:,i)=walking_plan_data.zmptraj.eval(t);
   zmpact(:,i)=com(1:2,i) - com(3,i)/9.81 * (J(1:2,:)*qdd + Jdotv(1:2));
 
-  lfoot_cpos = terrainContactPositions(r,kinsol,lfoot);
-  rfoot_cpos = terrainContactPositions(r,kinsol,rfoot);
+  lfoot_cpos = terrainContactPositions(r,kinsol,lfoot_body);
+  rfoot_cpos = terrainContactPositions(r,kinsol,rfoot_body);
 
-  lfoot_p = forwardKin(r,kinsol,lfoot,[0;0;0],1);
-  rfoot_p = forwardKin(r,kinsol,rfoot,[0;0;0],1);
+  lfoot_p = forwardKin(r,kinsol,lfoot_body,[0;0;0],1);
+  rfoot_p = forwardKin(r,kinsol,rfoot_body,[0;0;0],1);
 
   lfoot_pos(:,i) = lfoot_p;
   rfoot_pos(:,i) = rfoot_p;
@@ -84,11 +100,9 @@ for i=1:length(ts)
 
 
   lfoot_des = eval(lfoottraj,t);
-  lfoot_des(3) = max(lfoot_des(3), 0.0811);     % hack to fix footstep planner bug
   rms_foot = rms_foot+norm(lfoot_des([1:3])-lfoot_p([1:3]))^2;
 
   rfoot_des = eval(rfoottraj,t);
-  rfoot_des(3) = max(rfoot_des(3), 0.0811);     % hack to fix footstep planner bug
   rms_foot = rms_foot+norm(rfoot_des([1:3])-rfoot_p([1:3]))^2;
 
   rms_zmp = rms_zmp+norm(zmpdes(:,i)-zmpact(:,i))^2;
@@ -126,8 +140,8 @@ plot(zmpact(1,:),zmpact(2,:),'r.-','LineWidth',1);
 %plot(com(1,:),com(2,:),'m.-','LineWidth',1);
 
 left_foot_steps = eval(lfoottraj,lfoottraj.getBreaks);
-tc_lfoot = getTerrainContactPoints(r,lfoot);
-tc_rfoot = getTerrainContactPoints(r,rfoot);
+tc_lfoot = getTerrainContactPoints(r,lfoot_body);
+tc_rfoot = getTerrainContactPoints(r,rfoot_body);
 for i=1:size(left_foot_steps,2);
   cpos = rpy2rotmat(left_foot_steps(4:6,i)) * tc_lfoot.pts + repmat(left_foot_steps(1:3,i),1,4);
   if all(cpos(3,:)<=0.001)
