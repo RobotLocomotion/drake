@@ -248,22 +248,19 @@ classdef QPLocomotionPlan < QPControllerPlan
     function obj = updateSwingTrajectory(obj, t_plan, body_motion_ind, body_t_ind, kinsol, qd)
       body_motion_data = obj.body_motions(body_motion_ind);
 
-      [x0, J] = obj.robot.forwardKin(kinsol, body_motion_data.body_id, [0;0;0], 2);
-      xd0 = J * qd;
+      [x0_xyzquat, J] = obj.robot.forwardKin(kinsol, body_motion_data.body_id, [0;0;0], 2);
+      xd0_xyzquat = J * qd;
+      [x0_expmap,dexpmap2dquat] = quat2expmap(x0_xyzquat(4:7));
+      xd0_xyzexpmap = [xd0_xyzquat(1:3);dexpmap2dquat*xd0_xyzquat(4:7)];
       
       
-      x1_exp = body_motion_data.coefs(:,body_t_ind+2, end);
-      xd1_exp = body_motion_data.coefs(:,body_t_ind+2, end);
-      [quat1, dquat1_dexp] = expmap2quat(x1_exp(4:6));
-      quatdot1 = dquat1_dexp * xd1_exp(4:6);
-      
-      flip = sign(x0(4:7)' * quat1);
-      x0(4:7) = x0(4:7) * flip;
-      xd0(4:7) = xd0(4:7) * flip;
+      x1_xyzexp = body_motion_data.coefs(:,body_t_ind+2, end);
+      [x0_expmap,dx0_expmap] = unwrapExpmap(x1_xyzexp(4:6),x0_expmap);
+      xd0_xyzexpmap(4:6) = dx0_expmap*xd0_xyzexpmap(4:6);
+      x0_xyzexpmap = [x0_xyzquat(1:3);x0_expmap];
+      xd0_xyzexpmap(1:3) = zeros(3,1);
 
-      xd0 = [zeros(3,1); quatdot2expmapdot(x0(4:7), xd0(4:7))];
-
-      xs = [[x0(1:3); quat2expmap(x0(4:7))], body_motion_data.coefs(:, body_t_ind+(2:4), end)];
+      xs = [x0_xyzexpmap, body_motion_data.coefs(:, body_t_ind+(2:4), end)];
       
       % If the current pose is pitched down more than the first aerial knot point, adjust the knot point to match the current pose
       T_x0_to_world_in_world = poseQuat2tform([xs(1:3,1); expmap2quat(xs(4:6,1))]);
@@ -278,7 +275,7 @@ classdef QPLocomotionPlan < QPControllerPlan
 
       ts = body_motion_data.ts(body_t_ind+(1:4));
       qpSpline_options = struct('optimize_knot_times', false);
-      [coefs, ts] = qpSpline(ts, xs, xd0, xdf, qpSpline_options);
+      [coefs, ts] = qpSpline(ts, xs, xd0_xyzexpmap, xdf, qpSpline_options);
 
       % tt = linspace(ts(1), ts(end));
       % pp = mkpp(ts, coefs, 6);
