@@ -970,9 +970,9 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       [varargout{:}] = centroidalMomentumMatrixDotTimesV(obj.manip,varargin{:});
     end
 
-    function varargout = getCMMdA(obj,varargin)
+    function varargout = centroidalMomentumMatrix(obj,varargin)
       varargout=cell(1,nargout);
-      [varargout{:}] = getCMMdA(obj.manip,varargin{:});
+      [varargout{:}] = centroidalMomentumMatrix(obj.manip,varargin{:});
     end
 
     function varargout = parseBodyOrFrameID(obj,varargin)

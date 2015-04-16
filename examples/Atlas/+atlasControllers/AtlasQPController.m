@@ -226,7 +226,7 @@ classdef AtlasQPController < QPController
       include_angular_momentum = any(any(obj.W_kdot));
 
       if include_angular_momentum
-        A = getCMMdA(r, kinsol);
+        A = centroidalMomentumMatrix(r, kinsol);
         Adot_times_v = centroidalMomentumMatrixDotTimesVmex(r, kinsol);
       end
 

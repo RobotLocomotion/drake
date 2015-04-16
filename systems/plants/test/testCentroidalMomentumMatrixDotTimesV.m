@@ -40,7 +40,7 @@ for i = 1 : nTests
   [H, C, B] = robot.manipulatorDynamics(q, v, false);
   vdot = H \ (B * tau - C);
   
-  A = getCMMdA(robot, kinsol);
+  A = centroidalMomentumMatrix(robot, kinsol);
   Adot_times_v = centroidalMomentumMatrixDotTimesV(robot, kinsol);
   hdot = A * vdot + Adot_times_v; % rate of change of centroidal momentum
   valuecheck(zeros(6, 1), hdot, 1e-5);
