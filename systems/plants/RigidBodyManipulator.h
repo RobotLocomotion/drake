@@ -393,7 +393,7 @@ public:
 // The following was required for building w/ DLLEXPORT_RBM on windows (due to the unique_ptrs).  See
 // http://stackoverflow.com/questions/8716824/cannot-access-private-member-error-only-when-class-has-export-linkage
 private:
-  RigidBodyManipulator(const RigidBodyManipulator&) {}
+  RigidBodyManipulator(const RigidBodyManipulator&);
   RigidBodyManipulator& operator=(const RigidBodyManipulator&) { return *this; }
 
   std::set<std::string> already_printed_warnings;
