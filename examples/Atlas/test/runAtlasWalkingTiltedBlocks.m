@@ -124,3 +124,5 @@ function [A, b] = convert_to_cspace(A, b)
   A(end,3) = -1;
   b = [b; 0; 0];
 end
+
+% TIMEOUT 1000
