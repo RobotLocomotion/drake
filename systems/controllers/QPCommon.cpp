@@ -1,4 +1,5 @@
 #include "QPCommon.h"
+#include "drakeFloatingPointUtil.h"
 #include "controlUtil.h"
 #include <Eigen/StdVector>
 
@@ -335,10 +336,10 @@ void addJointSoftLimits(const JointSoftLimitParams &params, const DrakeRobotStat
       if (disable_body_1idx == 0 || !inSupport(supports, disable_body_1idx - 1)) {
         double w_lb = 0;
         double w_ub = 0;
-        if (!isinf(params.lb(i))) {
+        if (!isInf(params.lb(i))) {
           w_lb = logisticSigmoid(params.weight(i), params.k_logistic(i), params.lb(i), robot_state.q(i));
         }
-        if (!isinf(params.ub(i))) {
+        if (!isInf(params.ub(i))) {
           w_ub = logisticSigmoid(params.weight(i), params.k_logistic(i), robot_state.q(i), params.ub(i));
         }
         double weight = std::max(w_ub, w_lb);
