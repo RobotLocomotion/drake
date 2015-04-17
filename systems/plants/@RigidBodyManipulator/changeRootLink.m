@@ -53,8 +53,7 @@ while (true)
     current_body.pitch = 0;
     current_body.floating = 0;
     current_body.Xtree = eye(6); 
-    current_body.Ttree = eye(4); 
-    current_body.X_joint_to_body = eye(6);
+    current_body.Ttree = eye(4);
     current_body.T_body_to_joint = eye(4);
 
     X_old_body_to_new_body = Xrotx(rpy(1))*Xroty(rpy(2))*Xrotz(rpy(3))*Xtrans(xyz);
@@ -90,9 +89,6 @@ while (true)
         axis_angle(1:3)=[0;1;0];
       end
       child.T_body_to_joint = [axis2rotmat(axis_angle), zeros(3,1); 0,0,0,1];
-      child.X_joint_to_body = transformAdjoint(homogTransInv(child.T_body_to_joint));
- 
-      valuecheck(inv(current_body.X_joint_to_body)*[current_body.joint_axis;zeros(3,1)],[0;0;1;zeros(3,1)],1e-6);
       valuecheck(current_body.T_body_to_joint*[current_body.joint_axis;1],[0;0;1;1],1e-6);
     end
     

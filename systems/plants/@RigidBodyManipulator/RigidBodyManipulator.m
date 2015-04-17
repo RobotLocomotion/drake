@@ -479,9 +479,6 @@ classdef RigidBodyManipulator < Manipulator
           axis_angle(1:3)=[0;1;0];
         end
         child.T_body_to_joint = [axis2rotmat(axis_angle), zeros(3,1); 0,0,0,1];
-        child.X_joint_to_body=transformAdjoint(homogTransInv(child.T_body_to_joint));
-
-        valuecheck(inv(child.X_joint_to_body)*[axis;zeros(3,1)],[0;0;1;zeros(3,1)],1e-6);
         valuecheck(child.T_body_to_joint*[axis;1],[0;0;1;1],1e-6);
       end
 
