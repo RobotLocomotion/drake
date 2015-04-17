@@ -356,16 +356,22 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   Vector6d body_vdot;
 
   for (int i=0; i < qp_input->num_tracked_bodies; i++) {
-    int body_id0 = qp_input->body_motion_data[i].body_id - 1;
-    double weight = params->body_motion[body_id0].weight;
-    desired_body_accelerations[i].body_id0 = body_id0;
+    if (qp_input->body_motion_data[i].body_id == 0)
+      mexErrMsgTxt("Body motion data with body id 0\n");
+    int body_or_frame_id0 = qp_input->body_motion_data[i].body_id - 1;
+    int true_body_id0 = pdata->r->parseBodyOrFrameID(body_or_frame_id0, NULL);
+
+    double weight = params->body_motion[true_body_id0].weight;
+    desired_body_accelerations[i].body_id0 = body_or_frame_id0;
     Map<Matrix<double, 6, 4,RowMajor>>coefs_rowmaj(&qp_input->body_motion_data[i].coefs[0][0]);
     Matrix<double, 6, 4> coefs = coefs_rowmaj;
     double t_spline = std::max(qp_input->body_motion_data[i].ts[0], std::min(qp_input->body_motion_data[i].ts[1], robot_state.t));
     evaluateCubicSplineSegment(t_spline - qp_input->body_motion_data[i].ts[0], coefs, body_pose_des, body_v_des, body_vdot_des);
-    desired_body_accelerations[i].body_vdot = bodyMotionPD(pdata->r, robot_state, body_id0, body_pose_des, body_v_des, body_vdot_des, params->body_motion[body_id0].Kp, params->body_motion[body_id0].Kd);
+    //mexPrintf("Before the call. bf id %d, true %d\n", body_or_frame_id0, true_body_id0);
+    desired_body_accelerations[i].body_vdot = bodyMotionPD(pdata->r, robot_state, body_or_frame_id0, body_pose_des, body_v_des, body_vdot_des, params->body_motion[true_body_id0].Kp, params->body_motion[true_body_id0].Kd);
+    //mexPrintf("After the call\n");
     desired_body_accelerations[i].weight = weight;
-    desired_body_accelerations[i].accel_bounds = params->body_motion[body_id0].accel_bounds;
+    desired_body_accelerations[i].accel_bounds = params->body_motion[true_body_id0].accel_bounds;
     // mexPrintf("body: %d, vdot: %f %f %f %f %f %f weight: %f\n", body_id0, 
     //           desired_body_accelerations[i].body_vdot(0), 
     //           desired_body_accelerations[i].body_vdot(1), 
