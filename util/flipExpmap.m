@@ -1,5 +1,6 @@
 function [w_flip,dw_flip] = flipExpmap(w)
-% flip the exponential map 
+% flip the rotation axis of exponential map, and turn the rotation angle
+% from theta to 2*pi-theta. w_flip and w represent the same rotation
 w_norm = norm(w);
 if(w_norm>eps)
   w_dir = w/w_norm;
