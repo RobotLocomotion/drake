@@ -200,10 +200,10 @@ pelvis_xyz_expmap(1:3,:) = pelvis_poses_rpy(1:3,:);
 pelvis_quat = zeros(4,size(pelvis_poses_rpy,2));
 for i = 1:size(pelvis_poses_rpy,2)
   pelvis_quat(:,i) = rpy2quat(pelvis_poses_rpy(4:6,i));
-  if(i>1)
-    pelvis_quat(:,i) = sign(pelvis_quat(:,i-1)'*pelvis_quat(:,i))*pelvis_quat(:,i);
-  end
   pelvis_xyz_expmap(4:6,i) = quat2expmap(pelvis_quat(:,i));
+  if(i>1)
+    pelvis_xyz_expmap(4:6,i) = unwrapExpmap(pelvis_xyz_expmap(4:6,i-1),pelvis_xyz_expmap(4:6,i));
+  end
 end
 
 % pp = foh(pelvis_ts, pelvis_xyz_expmap);
