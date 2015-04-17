@@ -2784,85 +2784,99 @@ GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwar
   GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> J_geometric = geometricJacobian<Scalar>(base_ind, body_ind, expressed_in, gradient_order, compute_analytic_jacobian, &v_or_q_indices);
 
   // split up into rotational and translational parts
-  GradientVar<Scalar, SPACE_DIMENSION, Eigen::Dynamic> Jomega(SPACE_DIMENSION, J_geometric.value().cols(), nq, gradient_order);
-  Jomega.value() = J_geometric.value().template topRows<SPACE_DIMENSION>();
-
-  GradientVar<Scalar, SPACE_DIMENSION, Eigen::Dynamic> Jv(SPACE_DIMENSION, J_geometric.value().cols(), nq, gradient_order);
-  Jv.value() = J_geometric.value().template bottomRows<SPACE_DIMENSION>();
-
-  if (gradient_order > 0) {
-    for (int col = 0; col < J_geometric.value().cols(); col++) {
-      for (int row = 0; row < SPACE_DIMENSION; row++) {
-        // Jomega
-        setSubMatrixGradient<Eigen::Dynamic>(Jomega.gradient().value(), getSubMatrixGradient<Eigen::Dynamic>(J_geometric.gradient().value(), row, col, J_geometric.value().rows()), row, col, Jomega.value().rows());
-
-        // Jv
-        setSubMatrixGradient<Eigen::Dynamic>(Jv.gradient().value(), getSubMatrixGradient<Eigen::Dynamic>(J_geometric.gradient().value(), row + SPACE_DIMENSION, col, J_geometric.value().rows()), row, col, Jv.value().rows());
-      }
-    }
-  }
+  auto Jomega = J_geometric.value().template topRows<SPACE_DIMENSION>();
+  auto Jv = J_geometric.value().template bottomRows<SPACE_DIMENSION>();
 
   // compute rotation Jacobian
-  int rotation_representation_size = rotationRepresentationSize(rotation_type);
-  GradientVar<Scalar, Eigen::Dynamic, 1> qrot(rotation_representation_size, 1, nq, gradient_order);
-  qrot.value() = x.value().template block<Eigen::Dynamic, 1>(SPACE_DIMENSION, 0, x.value().rows() - SPACE_DIMENSION, 1);
-  if (gradient_order > 0) {
-    for (int i = 0; i < rotation_representation_size; i++) {
-      qrot.gradient().value().template middleRows<1>(i) = getSubMatrixGradient<Eigen::Dynamic>(x.gradient().value(), SPACE_DIMENSION + i, 0, x.value().rows());
-    }
-  }
-
-  GradientVar<Scalar, Eigen::Dynamic, SPACE_DIMENSION> Phi = angularvel2RepresentationDotMatrix(rotation_type, qrot.value(), gradient_order);
-  GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> Jrot(Phi.value().rows(), Jomega.value().cols(), nq, gradient_order);
-  Jrot.value() = Phi.value() * Jomega.value();
-  if (gradient_order > 0) {
-    auto dPhidq = (Phi.gradient().value() * qrot.gradient().value()).eval();
-    Jrot.gradient().value() = matGradMultMat(Phi.value(), Jomega.value(), dPhidq, Jomega.gradient().value());
-  }
+  DenseIndex rotation_representation_size = x.value().rows() - SPACE_DIMENSION;
+  auto qrot = x.value().template block<Eigen::Dynamic, 1>(SPACE_DIMENSION, 0, rotation_representation_size, 1);
+  auto Phi = angularvel2RepresentationDotMatrix(rotation_type, qrot, gradient_order);
+  auto Jrot = (Phi.value() * Jomega).eval();
 
   // compute J
   GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> J(x.value().size(), cols, nq, gradient_order);
   J.value().setZero();
-  if (gradient_order > 0)
-    J.gradient().value().setZero();
-
   int row_start = 0;
   for (int i = 0; i < npoints; i++) {
     // translation part
-    int col_start = 0;
+    int col = 0;
     const auto& point = x.value().template block<SPACE_DIMENSION, 1>(0, i);
     for (std::vector<int>::iterator it = v_or_q_indices.begin(); it != v_or_q_indices.end(); ++it) {
-      J.value().template block<SPACE_DIMENSION, 1>(row_start, *it) = Jv.value().template middleCols<1>(col_start);
-      const auto& Jomega_col = Jomega.value().template middleCols<1>(col_start);
+      J.value().template block<SPACE_DIMENSION, 1>(row_start, *it) = Jv.col(col);
+      const auto& Jomega_col = Jomega.col(col);
       J.value().template block<SPACE_DIMENSION, 1>(row_start, *it).noalias() += Jomega_col.cross(point);
-
-      if (gradient_order > 0) {
-        auto rows = intRange<SPACE_DIMENSION>(0);
-        auto dJpos_col = getSubMatrixGradient<Eigen::Dynamic>(Jv.gradient().value(), rows, intRange<1>(col_start), Jv.value().rows());
-        auto dJomega_col = getSubMatrixGradient<Eigen::Dynamic>(Jomega.gradient().value(), rows, intRange<1>(col_start), Jv.value().rows());
-        auto dpoint = getSubMatrixGradient<Eigen::Dynamic>(x.gradient().value(), rows, intRange<1>(i), x.value().rows());
-        dJpos_col.noalias() += dcrossProduct(Jomega_col, point, dJomega_col, dpoint);
-        setSubMatrixGradient<Eigen::Dynamic>(J.gradient().value(), dJpos_col, intRange<SPACE_DIMENSION>(row_start), intRange<1>(*it), J.value().rows());
-      }
-      col_start++;
+      col++;
     }
     row_start += SPACE_DIMENSION;
 
     // rotation part
-    if (Jrot.value().rows() > 0) {
-      col_start = 0;
+    if (Jrot.rows() > 0) {
+      col = 0;
       for (std::vector<int>::iterator it = v_or_q_indices.begin(); it != v_or_q_indices.end(); ++it) {
-        J.value().template block<Eigen::Dynamic, 1>(row_start, *it, Jrot.value().rows(), 1) = Jrot.value().template middleCols<1>(col_start);
+        J.value().template block<Eigen::Dynamic, 1>(row_start, *it, Jrot.rows(), 1) = Jrot.col(col);
+        col++;
+      }
+      row_start += qrot.rows();
+    }
+  }
 
-        if (gradient_order > 0) {
-          for (int row = 0; row < rotation_representation_size; row++) {
-            auto dJrot_element = getSubMatrixGradient<Eigen::Dynamic>(Jrot.gradient().value(), row, col_start, Jrot.value().rows());
+  if (gradient_order > 0) {
+    typename Gradient<decltype(Jomega), Eigen::Dynamic>::type dJomega(Jomega.size(), nq);
+    typename Gradient<decltype(Jv), Eigen::Dynamic>::type dJv(Jv.size(), nq);
+    for (int col = 0; col < J_geometric.value().cols(); col++) {
+      for (int row = 0; row < SPACE_DIMENSION; row++) {
+        dJomega.row(row + col * Jomega.rows()) = getSubMatrixGradient<Eigen::Dynamic>(J_geometric.gradient().value(), row, col, J_geometric.value().rows());
+        dJv.row(row + col * Jv.rows()) = getSubMatrixGradient<Eigen::Dynamic>(J_geometric.gradient().value(), row + SPACE_DIMENSION, col, J_geometric.value().rows());
+      }
+    }
+
+    KinematicPath path;
+    findKinematicPath(path, base_ind, body_ind);
+    MatrixXd dqrotdq;
+    if (compute_analytic_jacobian)
+      dqrotdq = compactToFull(Jrot, path.joint_path, true);
+    else {
+      dqrotdq = transformVelocityMappingToPositionDotMapping(compactToFull(Jrot, path.joint_path, false));
+    }
+    auto dPhidq = (Phi.gradient().value() * dqrotdq).eval();
+    auto dJrot = matGradMultMat(Phi.value(), Jomega, dPhidq, dJomega);
+
+    J.gradient().value().setZero();
+
+    row_start = 0;
+    auto rows = intRange<SPACE_DIMENSION>(0);
+    for (int i = 0; i < npoints; i++) {
+      // translation part
+      int col = 0;
+      const auto& point = x.value().template block<SPACE_DIMENSION, 1>(0, i);
+      Matrix<Scalar, SPACE_DIMENSION, Dynamic> dpoint;
+      if (compute_analytic_jacobian)
+        dpoint = getSubMatrixGradient<Eigen::Dynamic>(J.value(), rows, intRange<1>(i), x.value().rows());
+      else
+        dpoint = transformVelocityMappingToPositionDotMapping(getSubMatrixGradient<Eigen::Dynamic>(J.value(), rows, intRange<1>(i), x.value().rows()));
+
+      for (std::vector<int>::iterator it = v_or_q_indices.begin(); it != v_or_q_indices.end(); ++it) {
+        const auto& Jomega_col = Jomega.col(col);
+        auto dJpos_col = getSubMatrixGradient<Eigen::Dynamic>(dJv, rows, intRange<1>(col), Jv.rows());
+        auto dJomega_col = getSubMatrixGradient<Eigen::Dynamic>(dJomega, rows, intRange<1>(col), Jomega.rows());
+        dJpos_col.noalias() += dcrossProduct(Jomega_col, point, dJomega_col, dpoint);
+        setSubMatrixGradient<Eigen::Dynamic>(J.gradient().value(), dJpos_col, intRange<SPACE_DIMENSION>(row_start), intRange<1>(*it), J.value().rows());
+        col++;
+      }
+      row_start += SPACE_DIMENSION;
+      // rotation part
+
+      if (Jrot.rows() > 0) {
+        col = 0;
+        for (std::vector<int>::iterator it = v_or_q_indices.begin(); it != v_or_q_indices.end(); ++it) {
+          for (int row = 0; row < qrot.rows(); row++) {
+            auto dJrot_element = getSubMatrixGradient<Eigen::Dynamic>(dJrot, row, col, Jrot.rows());
             setSubMatrixGradient<Eigen::Dynamic>(J.gradient().value(), dJrot_element, row_start + row, *it, J.value().rows());
           }
+          col++;
         }
-        col_start++;
+        row_start += qrot.rows();
       }
-      row_start += rotation_representation_size;
     }
   }
 
@@ -3193,28 +3207,22 @@ size_t RigidBodyManipulator::getNumJointLimitConstraints() const
 
 template <typename Derived>
 Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> RigidBodyManipulator::transformVelocityMappingToPositionDotMapping(
-    const Eigen::MatrixBase<Derived>& mat, const std::vector<int>& joint_path)
+    const Eigen::MatrixBase<Derived>& mat)
 {
-  int cols = 0;
-  for (std::vector<int>::const_iterator it = joint_path.begin(); it != joint_path.end(); ++it) {
-    const DrakeJoint& joint = bodies[joint_path[*it]]->getJoint();
-    cols += joint.getNumPositions();
-  }
-
-  Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> ret(mat.rows(), cols);
+  Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> ret(mat.rows(), num_positions);
   int ret_col_start = 0;
   int mat_col_start = 0;
-  for (std::vector<int>::const_iterator it = joint_path.begin(); it != joint_path.end(); ++it) {
-    RigidBody& body = *bodies[*it];
-    const DrakeJoint& joint = body.getJoint();
-    ret.middleCols(ret_col_start, joint.getNumPositions()).noalias() = mat.middleCols(mat_col_start, joint.getNumVelocities()) * body.qdot_to_v;
-    ret_col_start += joint.getNumPositions();
-    mat_col_start += joint.getNumVelocities();
+  for (auto it = bodies.begin(); it != bodies.end(); ++it) {
+    RigidBody& body = **it;
+    if (body.hasParent()) {
+      const DrakeJoint& joint = body.getJoint();
+      ret.middleCols(ret_col_start, joint.getNumPositions()).noalias() = mat.middleCols(mat_col_start, joint.getNumVelocities()) * body.qdot_to_v;
+      ret_col_start += joint.getNumPositions();
+      mat_col_start += joint.getNumVelocities();
+    }
   }
   return ret;
 }
-
-
 size_t RigidBodyManipulator::getNumPositionConstraints() const
 {
   return loops.size()*3;

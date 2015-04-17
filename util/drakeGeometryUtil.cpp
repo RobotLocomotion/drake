@@ -1503,6 +1503,15 @@ template DLLEXPORT Eigen::Matrix<double, 3, Eigen::Dynamic> dcrossProduct(
     const Gradient<Eigen::Block<Eigen::Matrix<double, 6, 1, 0, 6, 1>, 3, 1, false>, Eigen::Dynamic>::type& da,
     const Gradient<Eigen::Matrix<double, 3, 1, 0, 3, 1>, Eigen::Dynamic>::type& db);
 
+template DLLEXPORT Eigen::Matrix<Eigen::Block<Eigen::Block<Eigen::Matrix<double, 6, -1, 0, 6, -1>, 3, -1, false>, 3, 1, true>::Scalar, 3, -1, 0, 3, -1> dcrossProduct<Eigen::Block<Eigen::Block<Eigen::Matrix<double, 6, -1, 0, 6, -1>, 3, -1, false>, 3, 1, true>,
+    Eigen::Block<Eigen::Matrix<double, -1, 1, 0, -1, 1> const, 3, 1, false> >(Eigen::MatrixBase<Eigen::Block<Eigen::Block<Eigen::Matrix<double, 6, -1, 0, 6, -1>, 3, -1, false>, 3, 1, true> > const&, Eigen::MatrixBase<Eigen::Block<Eigen::Matrix<double, -1, 1, 0, -1, 1> const, 3, 1, false> > const&,
+    Gradient<Eigen::Block<Eigen::Block<Eigen::Matrix<double, 6, -1, 0, 6, -1>, 3, -1, false>, 3, 1, true>, -1, 1>::type const&, Gradient<Eigen::Block<Eigen::Matrix<double, -1, 1, 0, -1, 1> const, 3, 1, false>, -1, 1>::type const&);
+
+template DLLEXPORT Eigen::Matrix<Eigen::Block<Eigen::Block<Eigen::Matrix<double, 6, -1, 0, 6, -1>, 3, -1, false>, 3, 1, true>::Scalar, 3, -1, 0, 3, -1> dcrossProduct<Eigen::Block<Eigen::Block<Eigen::Matrix<double, 6, -1, 0, 6, -1>, 3, -1, false>, 3, 1, true>,
+    Eigen::Block<Eigen::Matrix<double, -1, -1, 0, -1, -1> const, 3, 1, false> >(Eigen::MatrixBase<Eigen::Block<Eigen::Block<Eigen::Matrix<double, 6, -1, 0, 6, -1>, 3, -1, false>, 3, 1, true> > const&,
+    Eigen::MatrixBase<Eigen::Block<Eigen::Matrix<double, -1, -1, 0, -1, -1> const, 3, 1, false> > const&, Gradient<Eigen::Block<Eigen::Block<Eigen::Matrix<double, 6, -1, 0, 6, -1>, 3, -1, false>, 3, 1, true>, -1, 1>::type const&,
+    Gradient<Eigen::Block<Eigen::Matrix<double, -1, -1, 0, -1, -1> const, 3, 1, false>, -1, 1>::type const&);
+
 template DLLEXPORT Eigen::Matrix<double, 3, -1, 0, 3, -1> dcrossProduct<Eigen::Block<Eigen::Matrix<double, 6, 1, 0, 6, 1> const, 3, 1, false>, Eigen::Block<Eigen::Block<Eigen::Matrix<double, -1, 1, 0, -1, 1>, 3, 1, false>, 3, 1, true> >(Eigen::MatrixBase<Eigen::Block<Eigen::Matrix<double, 6, 1, 0, 6, 1> const, 3, 1, false> > const&, Eigen::MatrixBase<Eigen::Block<Eigen::Block<Eigen::Matrix<double, -1, 1, 0, -1, 1>, 3, 1, false>, 3, 1, true> > const&, Gradient<Eigen::Block<Eigen::Matrix<double, 6, 1, 0, 6, 1> const, 3, 1, false>, -1, 1>::type const&, Gradient<Eigen::Block<Eigen::Block<Eigen::Matrix<double, -1, 1, 0, -1, 1>, 3, 1, false>, 3, 1, true>, -1, 1>::type const&);
 
 template DLLEXPORT Eigen::Matrix<double, 3, -1, 0, 3, -1> dcrossProduct<Eigen::Block<Eigen::Matrix<double, 6, 1, 0, 6, 1> const, 3, 1, false>, Eigen::Block<Eigen::Matrix<double, 3, 1, 0, 3, 1>, 3, 1, true> >(Eigen::MatrixBase<Eigen::Block<Eigen::Matrix<double, 6, 1, 0, 6, 1> const, 3, 1, false> > const&, Eigen::MatrixBase<Eigen::Block<Eigen::Matrix<double, 3, 1, 0, 3, 1>, 3, 1, true> > const&, Gradient<Eigen::Block<Eigen::Matrix<double, 6, 1, 0, 6, 1> const, 3, 1, false>, -1, 1>::type const&, Gradient<Eigen::Block<Eigen::Matrix<double, 3, 1, 0, 3, 1>, 3, 1, true>, -1, 1>::type const&);
@@ -1611,6 +1620,11 @@ template DLLEXPORT GradientVar<double, Eigen::Dynamic, SPACE_DIMENSION> angularv
 template DLLEXPORT GradientVar<double, Eigen::Dynamic, SPACE_DIMENSION> angularvel2RepresentationDotMatrix(
     int rotation_type, const Eigen::MatrixBase< Eigen::Block<Eigen::Matrix<double, -1, -1, 0, -1, -1>, -1, 1, false> >& qrot, int gradient_order);
 template DLLEXPORT GradientVar<double, -1, 3> angularvel2RepresentationDotMatrix<Eigen::Block<Eigen::Matrix<double, -1, 1, 0, -1, 1>, -1, 1, false> >(int, Eigen::MatrixBase<Eigen::Block<Eigen::Matrix<double, -1, 1, 0, -1, 1>, -1, 1, false> > const&, int);
+template DLLEXPORT GradientVar<Eigen::Block<Eigen::Matrix<double, -1, 1, 0, -1, 1> const, -1, 1, false>::Scalar, -1, 3> angularvel2RepresentationDotMatrix<Eigen::Block<Eigen::Matrix<double, -1, 1, 0, -1, 1> const, -1, 1, false> >(int,
+    Eigen::MatrixBase<Eigen::Block<Eigen::Matrix<double, -1, 1, 0, -1, 1> const, -1, 1, false> > const&, int);
+template DLLEXPORT GradientVar<Eigen::Block<Eigen::Matrix<double, -1, -1, 0, -1, -1> const, -1, 1, false>::Scalar, -1, 3> angularvel2RepresentationDotMatrix<Eigen::Block<Eigen::Matrix<double, -1, -1, 0, -1, -1> const, -1, 1, false> >(int,
+    Eigen::MatrixBase<Eigen::Block<Eigen::Matrix<double, -1, -1, 0, -1, -1> const, -1, 1, false> > const&, int);
+
 
 template DLLEXPORT void quatdot2angularvelMatrix(const Eigen::MatrixBase<Vector4d>& q,
     Eigen::MatrixBase< Matrix<double, SPACE_DIMENSION, QUAT_SIZE> >& M,

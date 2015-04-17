@@ -300,7 +300,7 @@ public:
 
   template <typename Derived>
   Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> transformVelocityMappingToPositionDotMapping(
-      const Eigen::MatrixBase<Derived>& mat, const std::vector<int>& joint_path);
+      const Eigen::MatrixBase<Derived>& mat);
 
 template <typename Derived>
 Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> compactToFull(
