@@ -1,4 +1,5 @@
 #include "QPCommon.h"
+#include "drakeFloatingPointUtil.h"
 #include "controlUtil.h"
 #include <Eigen/StdVector>
 
@@ -356,10 +357,10 @@ void addJointSoftLimits(const JointSoftLimitParams &params, const DrakeRobotStat
       if (disable_body_1idx == 0 || !inSupport(supports, disable_body_1idx - 1)) {
         double w_lb = 0;
         double w_ub = 0;
-        if (!isinf(params.lb(i))) {
+        if (!isInf(params.lb(i))) {
           w_lb = logisticSigmoid(params.weight(i), params.k_logistic(i), params.lb(i), robot_state.q(i));
         }
-        if (!isinf(params.ub(i))) {
+        if (!isInf(params.ub(i))) {
           w_ub = logisticSigmoid(params.weight(i), params.k_logistic(i), robot_state.q(i), params.ub(i));
         }
         double weight = std::max(w_ub, w_lb);
@@ -706,8 +707,8 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
       if (desired_body_accelerations[i].control_pose_when_in_contact || !inSupport(active_supports,body_id0)) {
         auto J_geometric = pdata->r->geometricJacobian<double>(0,desired_body_accelerations[i].body_or_frame_id0,desired_body_accelerations[i].body_or_frame_id0,0,true,(std::vector<int>*)nullptr);
         auto J_geometric_dot_times_v = pdata->r->geometricJacobianDotTimesV<double>(0,desired_body_accelerations[i].body_or_frame_id0,desired_body_accelerations[i].body_or_frame_id0,0); 
-        Matrix<double,6,-1> Jb_compact = J_geometric.value();
-        Jb = pdata->r->compactToFull<Matrix<double,6,-1>>(Jb_compact,desired_body_accelerations[i].body_path.joint_path,true);
+        Matrix<double,6,Dynamic> Jb_compact = J_geometric.value();
+        Jb = pdata->r->compactToFull<Matrix<double,6,Dynamic>>(Jb_compact,desired_body_accelerations[i].body_path.joint_path,true);
         Jbdotv = J_geometric_dot_times_v.value();
 
         if (qp_input->body_motion_data[i].in_floating_base_nullspace) {
@@ -750,8 +751,8 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   for (int i=0; i<desired_body_accelerations.size(); i++) {
     auto J_geometric = pdata->r->geometricJacobian<double>(0,desired_body_accelerations[i].body_or_frame_id0,desired_body_accelerations[i].body_or_frame_id0 ,0,true,(std::vector<int>*)nullptr);
     auto J_geometric_dot_times_v = pdata->r->geometricJacobianDotTimesV<double>(0,desired_body_accelerations[i].body_or_frame_id0,desired_body_accelerations[i].body_or_frame_id0,0);
-    Matrix<double,6,-1>Jb_compact = J_geometric.value();
-    Jb = pdata->r->compactToFull<Matrix<double,6,-1>>(Jb_compact,desired_body_accelerations[i].body_path.joint_path,true);
+    Matrix<double,6,Dynamic>Jb_compact = J_geometric.value();
+    Jb = pdata->r->compactToFull<Matrix<double,6,Dynamic>>(Jb_compact,desired_body_accelerations[i].body_path.joint_path,true);
     Jbdotv = J_geometric_dot_times_v.value();
 
     if (qp_input->body_motion_data[i].in_floating_base_nullspace) {
@@ -887,8 +888,8 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
         if (desired_body_accelerations[i].control_pose_when_in_contact || !inSupport(active_supports,body_id0)) {
           auto J_geometric = pdata->r->geometricJacobian<double>(0,desired_body_accelerations[i].body_or_frame_id0,desired_body_accelerations[i].body_or_frame_id0,0,true,(std::vector<int>*)nullptr);
           auto J_geometric_dot_times_v = pdata->r->geometricJacobianDotTimesV<double>(0,desired_body_accelerations[i].body_or_frame_id0,desired_body_accelerations[i].body_or_frame_id0,0);
-          Matrix<double,6,-1> Jb_compact = J_geometric.value();
-          Jb = pdata->r->compactToFull<Matrix<double,6,-1>>(Jb_compact,desired_body_accelerations[i].body_path.joint_path,true);
+          Matrix<double,6,Dynamic> Jb_compact = J_geometric.value();
+          Jb = pdata->r->compactToFull<Matrix<double,6,Dynamic>>(Jb_compact,desired_body_accelerations[i].body_path.joint_path,true);
           Jbdotv = J_geometric_dot_times_v.value();
 
           if (qp_input->body_motion_data[i].in_floating_base_nullspace) {
