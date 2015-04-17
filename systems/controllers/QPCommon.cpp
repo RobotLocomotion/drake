@@ -328,7 +328,7 @@ std::vector<SupportStateElement> loadAvailableSupports(std::shared_ptr<drake::lc
 void addJointSoftLimits(const JointSoftLimitParams &params, const DrakeRobotState &robot_state, const VectorXd &q_des, std::vector<SupportStateElement> &supports, std::vector<drake::lcmt_joint_pd_override> &joint_pd_override) {
   Matrix<bool, Dynamic, 1> has_joint_override = Matrix<bool, Dynamic, 1>::Zero(q_des.size());
   for (std::vector<drake::lcmt_joint_pd_override>::iterator it = joint_pd_override.begin(); it != joint_pd_override.end(); ++it) {
-    has_joint_override(it->position_ind - 1) = 1;
+    has_joint_override(it->position_ind - 1) = true;
   }
   for (int i=0; i < params.lb.size(); i++) {
     if (!has_joint_override(i) && params.enabled(i)) {
