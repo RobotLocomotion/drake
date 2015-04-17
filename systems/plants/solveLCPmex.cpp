@@ -373,13 +373,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
       mxDestroyArray(mxz);
       mxDestroyArray(mxn);
       mxDestroyArray(mxnnzJ);
-      mxDestroyArray(mxub);
-      mxDestroyArray(mxlb);
-      mxDestroyArray(mxw);
       mxDestroyArray(mxM_sparse);
     }
 
-
+    mxDestroyArray(mxub);
+    mxDestroyArray(mxlb);
+    mxDestroyArray(mxw);
 
     VectorXd qdn = Mqdn * z + wqdn;
 
