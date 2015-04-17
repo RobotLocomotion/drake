@@ -355,6 +355,13 @@ classdef QPLocomotionPlan < QPControllerPlan
         end
       end
       ctraj = PPTrajectory(zoh(obj.support_times, contact));
+      if ~isa(obj.comtraj, 'Trajectory')
+        obj.comtraj = ExpPlusPPTrajectory(obj.comtraj.breaks,...
+                                          obj.comtraj.K,...
+                                          obj.comtraj.A,...
+                                          obj.comtraj.alpha,...
+                                          obj.comtraj.gamma);
+      end
       comtraj = obj.comtraj;
       dcomtraj = fnder(obj.comtraj, 1);
 

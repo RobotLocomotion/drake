@@ -22,6 +22,9 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       if ~isfield(options,'hand_left')
         options.hand_left = 'none';
       end
+      if ~isfield(options,'external_force')
+        options.external_force = [];
+      end
       if ~isfield(options,'atlas_version') 
         options.atlas_version = 5; 
       end
@@ -84,6 +87,15 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
         end
       end
 
+      % Add a force on a specified link if we want!
+      if ~isempty(options.external_force)
+        % For compile purposes, record that we have external force applied to a link
+        % (this affects input frames)
+        obj.external_force = findLinkId(obj,options.external_force);
+        options_ef.weld_to_link = obj.external_force;
+        obj = obj.addRobotFromURDF(strcat(getenv('DRC_PATH'), '/drake/util/three_dof_force.urdf'), ...
+          [0; 0; 0], [0; 0; 0], options_ef);
+      end
       
       if options.floating
         % could also do fixed point search here
@@ -149,7 +161,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       obj = obj.setStateFrame(state_frame);
       
       % Same bit of complexity for input frame to get hand inputs
-      if (obj.hand_right > 0 || obj.hand_left > 0)
+      if (obj.hand_right > 0 || obj.hand_left > 0 || obj.external_force > 0)
         input_frame = getInputFrame(obj);
         input_frame  = replaceFrameNum(input_frame,1,atlasFrames.AtlasInput(obj));
       else
@@ -355,6 +367,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
     left_toe_right_full_support
     left_full_right_toe_support
     atlas_version = [];
+    external_force = 0; % if nonzero, body id where force is being exerted
   end
 
   properties
@@ -381,4 +394,5 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
                                     'pelvis_height_above_foot_sole', 0.84,... % default pelvis height when walking
                                     'nominal_LIP_COM_height', 0.89); % nominal height used to construct D_ls for our linear inverted pendulum model
   end
+
 end

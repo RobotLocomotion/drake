@@ -285,6 +285,8 @@ public:
   std::string getBodyOrFrameName(int body_or_frame_id);
   //@param body_or_frame_id   the index of the body or the id of the frame.
 
+  int parseBodyOrFrameID(const int body_or_frame_id, Matrix4d* Tframe = nullptr);
+  
   template <typename Scalar>
   GradientVar<Scalar, Eigen::Dynamic, 1> positionConstraintsNew(int gradient_order);
 
@@ -362,7 +364,6 @@ private:
   void accumulateContactJacobian(const size_t bodyInd, MatrixXd const & bodyPoints, std::vector<size_t> const & cindA, std::vector<size_t> const & cindB, MatrixXd & J);
   void accumulateSecondOrderContactJacobian(const size_t bodyInd, MatrixXd const & bodyPoints, std::vector<size_t> const & cindA, std::vector<size_t> const & cindB, MatrixXd & dJ);
 
-  int parseBodyOrFrameID(const int body_or_frame_id, Matrix4d* Tframe = nullptr);
   void checkCachedKinematicsSettings(bool kinematics_gradients_required, bool velocity_kinematics_required, bool jdot_times_v_required, const std::string& method_name);
 
   // variables for featherstone dynamics

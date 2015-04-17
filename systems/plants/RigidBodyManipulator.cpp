@@ -1027,7 +1027,7 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
       }
 
     } else if (bodies[i]->floating == 2) {
-      cerr << "mex kinematics for quaternion floating bases are not implemented yet" << endl;
+      cerr << "kinematics for quaternion floating bases are not implemented yet" << endl;
     } else if (bodies[i]->getJoint().getNumPositions() == 0) { // fixed joint
       shared_ptr<RigidBody> parent = bodies[i]->parent;
     	bodies[i]->T = parent->T * bodies[i]->Ttree;
@@ -1943,6 +1943,12 @@ int RigidBodyManipulator::parseBodyOrFrameID(const int body_or_frame_id, Matrix4
     cerr << "parseBodyOrFrameID got a -1, which should have been reserved for COM.  Shouldn't have gotten here." << endl;
   } else if (body_or_frame_id<0) {
     int frame_ind = -body_or_frame_id-2;
+    // check that this is in range
+    if (frame_ind >= num_frames){
+      std::ostringstream stream;
+      stream << "Got a frame ind greater than available!\n";
+      throw std::runtime_error(stream.str());
+    }
     body_ind = frames[frame_ind].body_ind;
 
     if (Tframe)
