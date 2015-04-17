@@ -57,7 +57,7 @@ for j = 1:size(box_tops, 2)
   r = r.addGeometryToBody('world', b);
   [A, b] = poly2lincon(box_tops(1,j) + [-0.01, 0, 0, -0.01],...
                        box_tops(2,j) + [-0.25, -0.25, 0.25, 0.25]);
-  [A, b] = convert_to_cspace(A, b);
+  [A, b] = convertToCspace(A, b);
   safe_regions(end+1) = iris.TerrainRegion(A, b, [], [], box_tops(1:3,j), [0;0;1]);
 end
 r = r.compile();
@@ -97,7 +97,7 @@ end
 
 end
 
-function [A, b] = convert_to_cspace(A, b)
+function [A, b] = convertToCspace(A, b)
   A = [A, zeros(size(A, 1), 1);
        zeros(2, size(A, 2) + 1)];
   A(end-1,3) = 1;

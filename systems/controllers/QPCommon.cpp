@@ -2,6 +2,8 @@
 #include "controlUtil.h"
 #include <Eigen/StdVector>
 
+#define LEG_INTEGRATOR_DEACTIVATION_MARGIN 0.05
+
 template<int M, int N>
 void matlabToCArrayOfArrays(const mxArray *source, const int idx, const char *fieldname, double *destination)  {
   // Matlab arrays come in as column-major data. To represent a matrix in C++, as we do in our LCM messages, we need an array of arrays. But that convention results in a row-major storage, so we have to be careful about how we copy data in. 
@@ -255,17 +257,17 @@ VectorXd velocityReference(NewQPControllerData *pdata, double t, const Ref<Vecto
   // Do not wind the vref integrator up against the joint limits for the legs
   for (i=0; i < rpc->position_indices.r_leg.size(); i++) {
     int pos_ind = rpc->position_indices.r_leg(i);
-    if (q(pos_ind) <= pdata->r->joint_limit_min(pos_ind) + 0.05) {
+    if (q(pos_ind) <= pdata->r->joint_limit_min(pos_ind) + LEG_INTEGRATOR_DEACTIVATION_MARGIN) {
       qdd_limited(pos_ind) = std::max(qdd(pos_ind), 0.0);
-    } else if (q(pos_ind) >= pdata->r->joint_limit_max(pos_ind) - 0.05) {
+    } else if (q(pos_ind) >= pdata->r->joint_limit_max(pos_ind) - LEG_INTEGRATOR_DEACTIVATION_MARGIN) {
       qdd_limited(pos_ind) = std::min(qdd(pos_ind), 0.0);
     }
   }
   for (i=0; i < rpc->position_indices.l_leg.size(); i++) {
     int pos_ind = rpc->position_indices.l_leg(i);
-    if (q(pos_ind) <= pdata->r->joint_limit_min(pos_ind) + 0.05) {
+    if (q(pos_ind) <= pdata->r->joint_limit_min(pos_ind) + LEG_INTEGRATOR_DEACTIVATION_MARGIN) {
       qdd_limited(pos_ind) = std::max(qdd(pos_ind), 0.0);
-    } else if (q(pos_ind) >= pdata->r->joint_limit_max(pos_ind) - 0.05) {
+    } else if (q(pos_ind) >= pdata->r->joint_limit_max(pos_ind) - LEG_INTEGRATOR_DEACTIVATION_MARGIN) {
       qdd_limited(pos_ind) = std::min(qdd(pos_ind), 0.0);
     }
   }
