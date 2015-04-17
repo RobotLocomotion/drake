@@ -19,6 +19,11 @@ void matlabToCArrayOfArrays(const mxArray *source, const int idx, const char *fi
   return;
 }
 
+double logisticSigmoid(double L, double k, double x, double x0) {
+  // Compute the value of the logistic sigmoid f(x) = L / (1 + exp(-k(x - x0)))
+  return L / (1.0 + exp(-k * (x - x0)));
+}
+
 
 std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray *qp_input) {
   // Take a matlab data structure corresponding to a QPInputConstantHeight object and parse it down to its representation as an equivalent LCM message. 
@@ -352,10 +357,10 @@ void addJointSoftLimits(const JointSoftLimitParams &params, const DrakeRobotStat
         double w_lb = 0;
         double w_ub = 0;
         if (!isinf(params.lb(i))) {
-          w_lb = params.weight(i) / (1 + exp(-params.k_logistic(i) * (params.lb(i) - robot_state.q(i))));
+          w_lb = logisticSigmoid(params.weight(i), params.k_logistic(i), params.lb(i), robot_state.q(i));
         }
         if (!isinf(params.ub(i))) {
-          w_ub = params.weight(i) / (1 + exp(-params.k_logistic(i) * (robot_state.q(i) - params.ub(i))));
+          w_ub = logisticSigmoid(params.weight(i), params.k_logistic(i), robot_state.q(i), params.ub(i));
         }
         double weight = std::max(w_ub, w_lb);
         drake::lcmt_joint_pd_override override;
