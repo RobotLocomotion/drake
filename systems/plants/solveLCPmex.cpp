@@ -122,9 +122,11 @@ inline void filterByIndices(vector<size_t> const &indices, VectorXd const & v, V
 }
 
 template <typename DerivedM, typename Derivedw, typename Derivedlb, typename Derivedz>
-bool callFastQP(MatrixBase<DerivedM> const & M, MatrixBase<Derivedw> const & w, MatrixBase<Derivedlb> const & lb, vector<bool> & z_inactive, const size_t checkLimit,  MatrixBase<Derivedz> & z) 
+bool callFastQP(MatrixBase<DerivedM> const & M, MatrixBase<Derivedw> const & w, MatrixBase<Derivedlb> const & lb, vector<bool> & z_inactive, const size_t nL, const size_t nP, const size_t nC,  MatrixBase<Derivedz> & z) 
 {
   const size_t num_inactive_z = getNumTrue(z_inactive);
+  const size_t checkLimit = nL+nP+nC;
+
   if (num_inactive_z == 0) { 
     return false;
   }
@@ -179,10 +181,17 @@ bool callFastQP(MatrixBase<DerivedM> const & M, MatrixBase<Derivedw> const & w, 
 
   //check complementarity constraints
   getThresholdInclusion((-(zqp.transpose()*(Aeq*zqp - beq)).cwiseAbs()).eval(), -SMALL, violations);
-  if(anyTrue(violations)) {
+  if (anyTrue(violations)) {
     return false;
   }
-  
+
+  //if fastQP gives us a solution that involves
+  //sliding motion, count it as a failure
+  getThresholdInclusion(-(z.tail(nC).cwiseAbs().eval()), -SMALL, violations);
+  if (anyTrue(violations)) {
+    return false;
+  }
+
   return true;
 }
 
@@ -341,33 +350,36 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
 
     //try fastQP first
     bool qp_failed = true;
-    qp_failed = !callFastQP(M, w, lb, z_inactive, nL+nP+nC, z);
-    
-    int nnz;
-    mxArray* mxM_sparse = eigenToMatlabSparse(M, nnz);
-    mxArray* mxnnzJ = mxCreateDoubleScalar(static_cast<double>(nnz));
-    mxArray* mxn = mxCreateDoubleScalar(static_cast<double>(lcp_size));
-    mxArray* mxz = mxCreateDoubleMatrix(lcp_size, 1, mxREAL);
-    mxArray *lhs[2];
-    mxArray *rhs[] = {mxn, mxnnzJ, mxz, mxlb, mxub, mxM_sparse, mxw};
+    qp_failed = !callFastQP(M, w, lb, z_inactive, nL, nP, nC, z);
 
-    Map<VectorXd> z_path(mxGetPr(mxz), lcp_size);
-    z_path = VectorXd::Zero(lcp_size);
+
     //fall back to pathlcp
     if(qp_failed) {
+      int nnz;
+      mxArray* mxM_sparse = eigenToMatlabSparse(M, nnz);
+      mxArray* mxnnzJ = mxCreateDoubleScalar(static_cast<double>(nnz));
+      mxArray* mxn = mxCreateDoubleScalar(static_cast<double>(lcp_size));
+      mxArray* mxz = mxCreateDoubleMatrix(lcp_size, 1, mxREAL);
+      mxArray *lhs[2];
+      mxArray *rhs[] = {mxn, mxnnzJ, mxz, mxlb, mxub, mxM_sparse, mxw};
+      
+      Map<VectorXd> z_path(mxGetPr(mxz), lcp_size);
+      z_path = VectorXd::Zero(lcp_size);
       lcp_mex->mexFunction(2, lhs, 7, const_cast<const mxArray**>(rhs));
       z = z_path;
+
       mxDestroyArray(lhs[0]);
       mxDestroyArray(lhs[1]);
+      mxDestroyArray(mxz);
+      mxDestroyArray(mxn);
+      mxDestroyArray(mxnnzJ);
+      mxDestroyArray(mxub);
+      mxDestroyArray(mxlb);
+      mxDestroyArray(mxw);
+      mxDestroyArray(mxM_sparse);
     }
 
-    mxDestroyArray(mxz);
-    mxDestroyArray(mxn);
-    mxDestroyArray(mxnnzJ);
-    mxDestroyArray(mxub);
-    mxDestroyArray(mxlb);
-    mxDestroyArray(mxw);
-    mxDestroyArray(mxM_sparse);
+
 
     VectorXd qdn = Mqdn * z + wqdn;
 
