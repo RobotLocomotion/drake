@@ -48,10 +48,6 @@ void performChecks(RigidBodyManipulator& model, int gradient_order, const CheckS
   std::vector<int> v_or_qdot_indices;
   int npoints = 3;
   int nq = model.num_positions;
-  GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> x_gradientvar(points.rows() + rotationRepresentationSize(rotation_type), npoints, nq, gradient_order);
-  x_gradientvar.value().setRandom();
-  if (gradient_order > 0)
-    x_gradientvar.gradient().value().setRandom();
   GradientVar<double, TWIST_SIZE, 1> spatial_acceleration(TWIST_SIZE, 1, nq, gradient_order);
   spatial_acceleration.value().setRandom();
   if (gradient_order > 0)
@@ -67,7 +63,7 @@ void performChecks(RigidBodyManipulator& model, int gradient_order, const CheckS
   checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyManipulator::massMatrix<double>, gradient_order);
   checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyManipulator::forwardKinNew<PointsType>, points, body_or_frame_ind, base_or_frame_ind, rotation_type, gradient_order + 1);
   checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyManipulator::forwardKinPositionGradient<double>, npoints, body_or_frame_ind, base_or_frame_ind, gradient_order);
-  checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyManipulator::forwardJacV<double, Dynamic, Dynamic>, x_gradientvar, body_or_frame_ind, base_or_frame_ind, rotation_type, in_terms_of_qdot, gradient_order);
+  checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyManipulator::forwardJacV<PointsType>, points, body_or_frame_ind, base_or_frame_ind, rotation_type, in_terms_of_qdot, gradient_order);
 
   checkForErrors(settings.expect_error_on_velocity_methods, model, &RigidBodyManipulator::relativeTwist<double>, base_or_frame_ind, body_or_frame_ind, expressed_in_frame_ind, gradient_order);
 

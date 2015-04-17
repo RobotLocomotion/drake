@@ -339,6 +339,23 @@ Eigen::Matrix<typename Derived::Scalar, 3, 1> rotmat2rpy(const Eigen::MatrixBase
   return rpy;
 }
 
+template<typename Derived>
+DLLEXPORT Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, 1> rotmat2Representation(const Eigen::MatrixBase<Derived>& R, int rotation_type)
+{
+  typedef typename Derived::Scalar Scalar;
+  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> ret;
+  switch (rotation_type) {
+  case 0:
+    return Eigen::Matrix<Scalar, Eigen::Dynamic, 1>(0, 1);
+  case 1:
+    return rotmat2rpy(R);
+  case 2:
+    return rotmat2quat(R);
+  default:
+    throw std::runtime_error("rotation representation type not recognized");
+  }
+}
+
 template<typename Scalar>
 DLLEXPORT GradientVar<Scalar, Eigen::Dynamic, 1> rotmat2Representation(const GradientVar<Scalar, SPACE_DIMENSION, SPACE_DIMENSION>& R, int rotation_type)
 {
@@ -1347,6 +1364,9 @@ template DLLEXPORT Vector3d axis2rpy(const MatrixBase<Vector4d>&);
 template DLLEXPORT Vector4d rotmat2axis(const MatrixBase<Matrix3d>&);
 template DLLEXPORT Vector4d rotmat2quat(const MatrixBase<Matrix3d>&);
 template DLLEXPORT Vector3d rotmat2rpy(const MatrixBase<Matrix3d>&);
+
+template DLLEXPORT Eigen::Matrix<Eigen::Block<Eigen::Matrix<double, 4, 4, 0, 4, 4>, 3, 3, false>::Scalar, -1, 1, 0, -1, 1> rotmat2Representation<Eigen::Block<Eigen::Matrix<double, 4, 4, 0, 4, 4>, 3, 3, false> >(Eigen::MatrixBase<Eigen::Block<Eigen::Matrix<double, 4, 4, 0, 4, 4>, 3, 3, false> > const&, int);
+
 template DLLEXPORT GradientVar<double, Eigen::Dynamic, 1> rotmat2Representation(
     const GradientVar<double, SPACE_DIMENSION, SPACE_DIMENSION>& R,
     int rotation_type);
@@ -1512,9 +1532,21 @@ template DLLEXPORT Eigen::Matrix<Eigen::Block<Eigen::Block<Eigen::Matrix<double,
     Eigen::MatrixBase<Eigen::Block<Eigen::Matrix<double, -1, -1, 0, -1, -1> const, 3, 1, false> > const&, Gradient<Eigen::Block<Eigen::Block<Eigen::Matrix<double, 6, -1, 0, 6, -1>, 3, -1, false>, 3, 1, true>, -1, 1>::type const&,
     Gradient<Eigen::Block<Eigen::Matrix<double, -1, -1, 0, -1, -1> const, 3, 1, false>, -1, 1>::type const&);
 
-template DLLEXPORT Eigen::Matrix<double, 3, -1, 0, 3, -1> dcrossProduct<Eigen::Block<Eigen::Matrix<double, 6, 1, 0, 6, 1> const, 3, 1, false>, Eigen::Block<Eigen::Block<Eigen::Matrix<double, -1, 1, 0, -1, 1>, 3, 1, false>, 3, 1, true> >(Eigen::MatrixBase<Eigen::Block<Eigen::Matrix<double, 6, 1, 0, 6, 1> const, 3, 1, false> > const&, Eigen::MatrixBase<Eigen::Block<Eigen::Block<Eigen::Matrix<double, -1, 1, 0, -1, 1>, 3, 1, false>, 3, 1, true> > const&, Gradient<Eigen::Block<Eigen::Matrix<double, 6, 1, 0, 6, 1> const, 3, 1, false>, -1, 1>::type const&, Gradient<Eigen::Block<Eigen::Block<Eigen::Matrix<double, -1, 1, 0, -1, 1>, 3, 1, false>, 3, 1, true>, -1, 1>::type const&);
+template DLLEXPORT Eigen::Matrix<double, 3, -1, 0, 3, -1> dcrossProduct<Eigen::Block<Eigen::Matrix<double, 6, 1, 0, 6, 1> const, 3, 1, false>, Eigen::Block<Eigen::Block<Eigen::Matrix<double, -1, 1, 0, -1, 1>, 3, 1, false>, 3, 1, true> >(
+    Eigen::MatrixBase<Eigen::Block<Eigen::Matrix<double, 6, 1, 0, 6, 1> const, 3, 1, false> > const&, Eigen::MatrixBase<Eigen::Block<Eigen::Block<Eigen::Matrix<double, -1, 1, 0, -1, 1>, 3, 1, false>, 3, 1, true> > const&,
+    Gradient<Eigen::Block<Eigen::Matrix<double, 6, 1, 0, 6, 1> const, 3, 1, false>, -1, 1>::type const&, Gradient<Eigen::Block<Eigen::Block<Eigen::Matrix<double, -1, 1, 0, -1, 1>, 3, 1, false>, 3, 1, true>, -1, 1>::type const&);
 
-template DLLEXPORT Eigen::Matrix<double, 3, -1, 0, 3, -1> dcrossProduct<Eigen::Block<Eigen::Matrix<double, 6, 1, 0, 6, 1> const, 3, 1, false>, Eigen::Block<Eigen::Matrix<double, 3, 1, 0, 3, 1>, 3, 1, true> >(Eigen::MatrixBase<Eigen::Block<Eigen::Matrix<double, 6, 1, 0, 6, 1> const, 3, 1, false> > const&, Eigen::MatrixBase<Eigen::Block<Eigen::Matrix<double, 3, 1, 0, 3, 1>, 3, 1, true> > const&, Gradient<Eigen::Block<Eigen::Matrix<double, 6, 1, 0, 6, 1> const, 3, 1, false>, -1, 1>::type const&, Gradient<Eigen::Block<Eigen::Matrix<double, 3, 1, 0, 3, 1>, 3, 1, true>, -1, 1>::type const&);
+template DLLEXPORT Eigen::Matrix<double, 3, -1, 0, 3, -1> dcrossProduct<Eigen::Block<Eigen::Matrix<double, 6, 1, 0, 6, 1> const, 3, 1, false>, Eigen::Block<Eigen::Matrix<double, 3, 1, 0, 3, 1>, 3, 1, true> >(
+    Eigen::MatrixBase<Eigen::Block<Eigen::Matrix<double, 6, 1, 0, 6, 1> const, 3, 1, false> > const&, Eigen::MatrixBase<Eigen::Block<Eigen::Matrix<double, 3, 1, 0, 3, 1>, 3, 1, true> > const&, Gradient<Eigen::Block<Eigen::Matrix<double, 6, 1, 0, 6, 1> const, 3, 1, false>, -1, 1>::type const&,
+    Gradient<Eigen::Block<Eigen::Matrix<double, 3, 1, 0, 3, 1>, 3, 1, true>, -1, 1>::type const&);
+
+template DLLEXPORT Eigen::Matrix<Eigen::Block<Eigen::Block<Eigen::Matrix<double, 6, -1, 0, 6, -1>, 3, -1, false>, 3, 1, true>::Scalar, 3, -1, 0, 3, -1> dcrossProduct<Eigen::Block<Eigen::Block<Eigen::Matrix<double, 6, -1, 0, 6, -1>, 3, -1, false>, 3, 1, true>,
+    Eigen::Block<Eigen::Matrix<double, -1, 1, 0, -1, 1>, 3, 1, false> >(Eigen::MatrixBase<Eigen::Block<Eigen::Block<Eigen::Matrix<double, 6, -1, 0, 6, -1>, 3, -1, false>, 3, 1, true> > const&, Eigen::MatrixBase<Eigen::Block<Eigen::Matrix<double, -1, 1, 0, -1, 1>, 3, 1, false> > const&,
+    Gradient<Eigen::Block<Eigen::Block<Eigen::Matrix<double, 6, -1, 0, 6, -1>, 3, -1, false>, 3, 1, true>, -1, 1>::type const&, Gradient<Eigen::Block<Eigen::Matrix<double, -1, 1, 0, -1, 1>, 3, 1, false>, -1, 1>::type const&);
+
+template DLLEXPORT Eigen::Matrix<Eigen::Block<Eigen::Block<Eigen::Matrix<double, 6, -1, 0, 6, -1>, 3, -1, false>, 3, 1, true>::Scalar, 3, -1, 0, 3, -1> dcrossProduct<Eigen::Block<Eigen::Block<Eigen::Matrix<double, 6, -1, 0, 6, -1>, 3, -1, false>, 3, 1, true>,
+    Eigen::Block<Eigen::Matrix<double, -1, -1, 0, -1, -1>, 3, 1, false> >(Eigen::MatrixBase<Eigen::Block<Eigen::Block<Eigen::Matrix<double, 6, -1, 0, 6, -1>, 3, -1, false>, 3, 1, true> > const&, Eigen::MatrixBase<Eigen::Block<Eigen::Matrix<double, -1, -1, 0, -1, -1>, 3, 1, false> > const&,
+    Gradient<Eigen::Block<Eigen::Block<Eigen::Matrix<double, 6, -1, 0, 6, -1>, 3, -1, false>, 3, 1, true>, -1, 1>::type const&, Gradient<Eigen::Block<Eigen::Matrix<double, -1, -1, 0, -1, -1>, 3, 1, false>, -1, 1>::type const&);
 
 template DLLEXPORT DHomogTrans<MatrixXd>::type dHomogTrans(
     const Isometry3d&,
