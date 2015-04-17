@@ -125,7 +125,7 @@ GradientVar<double, Eigen::Dynamic, 1> FixedAxisOneDoFJoint::frictionTorque(cons
   if (gradient_order > 0) {
     ret.gradient().value()(0, 0) = damping;
     if (std::abs(v[0]) < coulomb_window)
-      ret.gradient().value()(0, 0) += std::copysign(coulomb_friction / coulomb_window, v[0]);
+      ret.gradient().value()(0, 0) += sign(v[0]) * (coulomb_friction / coulomb_window);
   }
   return ret;
 }
