@@ -247,14 +247,13 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         kinsol = doKinematics(obj,q);
         [H,C,B] = manipulatorDynamics(obj.manip, q, v);
         [phiC,~,~,~,~,~,~,mu,n,D] = obj.manip.contactConstraints(kinsol, obj.multiple_contacts);
-        [z, Mqdn, wqdn] = solveLCPmex(obj.manip.mex_model_ptr, q, v, u, phiC, n, D, obj.timestep, obj.z_inactive_guess_tol, obj.LCP_cache.data.z, H, C, B);
+        [z, Mqdn, wqdn] = solveLCPmex(obj.manip.mex_model_ptr, q, v, u, phiC, n, D, obj.timestep, obj.z_inactive_guess_tol, obj.LCP_cache.data.z, H, C, B, obj.enable_fastqp);
         obj.LCP_cache.data.z = z;
     end
 
     function [obj,z,Mqdn,wqdn,dz,dMqdn,dwqdn] = solveLCP(obj,t,x,u)
 %       global active_set_fail_count
       % do LCP time-stepping
-
       % todo: implement some basic caching here
       if cacheHit(obj,t,x,u,nargout)
         z = obj.LCP_cache.data.z;
