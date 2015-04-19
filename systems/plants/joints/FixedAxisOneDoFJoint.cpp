@@ -118,16 +118,17 @@ void FixedAxisOneDoFJoint::setDynamics(double damping, double coulomb_friction, 
 	this->coulomb_window = coulomb_window;
 }
 
-/*
-GradientVar<double,1,1> FixedAxisOneDoFJoint::computeFrictionForce(const Eigen::Ref<const VectorXd>& v, int gradient_order) const
-{
-	GradientVar<double,1,1> force(1,1,1,gradient_order);
-	force.value() = damping*v[0];
-	if (gradient_order>0)
-		force.gradient().value() = damping;
-	return force;
+GradientVar<double, Eigen::Dynamic, 1> FixedAxisOneDoFJoint::frictionTorque(const Eigen::Ref<const Eigen::VectorXd>& v, int gradient_order) const {
+  GradientVar<double, Eigen::Dynamic, 1> ret(getNumVelocities(), 1, getNumVelocities(), gradient_order);
+  ret.value()[0] = damping * v[0];
+  ret.value()[0] += std::min(1.0, std::max(-1.0, v[0] / coulomb_window)) * coulomb_friction;
+  if (gradient_order > 0) {
+    ret.gradient().value()(0, 0) = damping;
+    if (std::abs(v[0]) < coulomb_window)
+      ret.gradient().value()(0, 0) += sign(v[0]) * (coulomb_friction / coulomb_window);
+  }
+  return ret;
 }
-*/
 
 void FixedAxisOneDoFJoint::setupOldKinematicTree(RigidBodyManipulator* model, int body_ind, int position_num_start, int velocity_num_start) const
 {

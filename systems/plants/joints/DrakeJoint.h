@@ -6,6 +6,7 @@
 //#include "RigidBody.h"
 #include <random>
 #include "drakeGeometryUtil.h"
+#include "GradientVar.h"
 
 #undef DLLEXPORT_DRAKEJOINT
 #if defined(WIN32) || defined(WIN64)
@@ -76,6 +77,8 @@ public:
   virtual void qdot2v(const Eigen::Ref<const Eigen::VectorXd>& q, Eigen::MatrixXd& qdot_to_v, Eigen::MatrixXd* dqdot_to_v) const = 0;
 
   virtual void v2qdot(const Eigen::Ref<const Eigen::VectorXd>& q, Eigen::MatrixXd& v_to_qdot, Eigen::MatrixXd* dv_to_qdot) const = 0;
+
+  virtual GradientVar<double, Eigen::Dynamic, 1> frictionTorque(const Eigen::Ref<const Eigen::VectorXd>& v, int gradient_order) const;
 
   virtual void setupOldKinematicTree(RigidBodyManipulator* model, int body_ind, int position_num_start, int velocity_num_start) const;
 

@@ -1,6 +1,7 @@
 #include "QPCommon.h"
 #include "controlUtil.h"
 #include <Eigen/StdVector>
+#include <map>
 
 template<int M, int N>
 void matlabToCArrayOfArrays(const mxArray *source, const int idx, const char *fieldname, double *destination)  {
@@ -391,7 +392,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
 
   MatrixXd R_DQyD_ls = R_ls + D_ls.transpose()*Qy*D_ls;
 
-  pdata->r->doKinematics(robot_state.q,false,robot_state.qd);
+  pdata->r->doKinematicsNew(robot_state.q, robot_state.qd);
 
   //---------------------------------------------------------------------
 
@@ -404,25 +405,19 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   }
 
   // handle external wrenches to compensate for
-  if (qp_input->body_wrench_data.size() > 0) {
-    const int wrench_size = 6;
-    MatrixXd f_ext(wrench_size, pdata->r->NB); // f_ext is in terms of featherstone bodies...
-    f_ext.setZero();
-    for (auto it = qp_input->body_wrench_data.begin(); it != qp_input->body_wrench_data.end(); ++it) {
-      const drake::lcmt_body_wrench_data& body_wrench_data = *it;
-      Map<const Matrix<double, wrench_size, 1> > wrench_in_body_frame(body_wrench_data.wrench);
+  typedef GradientVar<double, TWIST_SIZE, 1> WrenchGradientVarType;
+  std::map<int, std::unique_ptr<GradientVar<double, TWIST_SIZE, 1>> > f_ext;
+  for (auto it = qp_input->body_wrench_data.begin(); it != qp_input->body_wrench_data.end(); ++it) {
+    const drake::lcmt_body_wrench_data& body_wrench_data = *it;
+    int body_id = body_wrench_data.body_id - 1;
+    f_ext[body_id] = std::unique_ptr<WrenchGradientVarType>(new WrenchGradientVarType(TWIST_SIZE, 1, nq, 0));
+    Map<const Matrix<double, TWIST_SIZE, 1> > wrench_in_body_frame(body_wrench_data.wrench);
+    auto wrench_in_joint_frame = transformSpatialForce(Isometry3d(pdata->r->bodies[body_id]->T_body_to_joint), wrench_in_body_frame);
+    f_ext[body_id]->value() = wrench_in_joint_frame;
+  }
 
-      // HandC expects external wrenches to be expressed in Featherstone 'joint' frame, expects the column number to correspond to the featherstone body index.
-      int body_id = body_wrench_data.body_id - 1;
-      auto wrench_in_joint_frame = transformSpatialForce(Isometry3d(pdata->r->bodies[body_id]->T_body_to_joint), wrench_in_body_frame);
-      int featherstone_id = pdata->r->bodies_vector_index_to_featherstone_body_index[body_id];
-      f_ext.col(featherstone_id) = wrench_in_joint_frame;
-    }
-    pdata->r->HandC(robot_state.q,robot_state.qd,&f_ext,pdata->H,pdata->C,(MatrixXd*)nullptr,(MatrixXd*)nullptr,(MatrixXd*)nullptr);
-  }
-  else {
-    pdata->r->HandC(robot_state.q,robot_state.qd,(MatrixXd*)nullptr,pdata->H,pdata->C,(MatrixXd*)nullptr,(MatrixXd*)nullptr,(MatrixXd*)nullptr);
-  }
+  pdata->H = pdata->r->massMatrix<double>().value();
+  pdata->C = pdata->r->inverseDynamics(f_ext).value();
 
   pdata->H_float = pdata->H.topRows(6);
   pdata->H_act = pdata->H.bottomRows(nu);
@@ -432,9 +427,10 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   bool include_angular_momentum = (params->W_kdot.array().maxCoeff() > 1e-10);
 
   if (include_angular_momentum) {
-    pdata->r->getCMM(robot_state.q,robot_state.qd,pdata->Ag,pdata->Agdot);
-    pdata->Ak = pdata->Ag.topRows(3);
-    pdata->Akdot = pdata->Agdot.topRows(3);
+    pdata->Ag = pdata->r->centroidalMomentumMatrix<double>(0).value();
+    pdata->Agdot_times_v = pdata->r->centroidalMomentumMatrixDotTimesV<double>(0).value();
+    pdata->Ak = pdata->Ag.topRows<3>();
+    pdata->Akdot_times_v = pdata->Agdot_times_v.topRows<3>();
   }
   Vector3d xcom;
   // consider making all J's into row-major
@@ -529,7 +525,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
       pdata->fqp -= y0.transpose()*Qy*D_ls*Jcom;
       pdata->fqp -= (w_qdd.array()*pid_out.qddot_des.array()).matrix().transpose();
       if (include_angular_momentum) {
-        pdata->fqp += robot_state.qd.transpose()*pdata->Akdot.transpose()*params->W_kdot*pdata->Ak;
+        pdata->fqp += pdata->Akdot_times_v.transpose()*params->W_kdot*pdata->Ak;
         pdata->fqp -= kdot_des.transpose()*params->W_kdot*pdata->Ak;
       }
       f.head(nq) = pdata->fqp.transpose();
