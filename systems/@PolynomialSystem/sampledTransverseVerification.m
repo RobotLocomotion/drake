@@ -28,11 +28,12 @@ function [VtrajXP,VtrajX] = sampledTransverseVerification(sys,G,Vtraj0,ts,xtraj,
 %   @default true
 % @option degL1
 
-
-
 ts=ts(:);
 
 if (~isCT(sys)) error('not implemented yet'); end
+
+checkDependency('sedumi');
+checkDependency('distcomp'); % note: to operate without this, simply change the parfor to for in the loop below
 
 num_x = sys.getNumStates();
 num_xd = sys.getNumDiscStates();
@@ -254,7 +255,6 @@ function L=findMultipliers(xp,precomp,rho,rhodot,options)
   % note: compute L for each sample point in parallel using parfor
 
   N = length(precomp)-1;
-  if (matlabpool('size')==0) matlabpool; end
  
   parfor i=1:N
 %   for i=fliplr(1:N)

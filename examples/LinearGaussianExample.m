@@ -40,6 +40,7 @@ classdef LinearGaussianExample < StochasticDrakeSystem
  methods
    function prob=monteCarlo(obj,S,tspan,x0)
      N=200;
+     checkDependency('distcomp');   % note: if you don't have distcomp, then 
      parfor i=1:N
        xtraj = simulate(obj,tspan,x0);
        xs=eval(xtraj,xtraj.getBreaks());

@@ -36,6 +36,7 @@ function V = sampledFiniteTimeVerification(sys,ts,G,varargin)
 % Implements the algorithm described in http://arxiv.org/pdf/1010.3013v1
 
 checkDependency('sedumi');
+checkDependency('distcomp'); % note: to operate without this, simply change the parfor to for in the loop below
 
 t=msspoly('t',1);
 ts=ts(:);
@@ -488,12 +489,11 @@ end
 
 % fix rho, optimize lagrange multipliers
 function L=findMultipliers(x,V,Vdot,rho,rhodot,options)
-  % note: compute L for each sample point in parallel using parfor
+  % note: compute L for each sample point 
 
   N = length(V)-1;
-  if (matlabpool('size')==0) matlabpool; end
  
-  for i=1:N
+  parfor i=1:N  % note: convert this to for if you don't have the parallel computing toolbox
     prog = mssprog;
     Lxmonom = monomials(x,0:options.degL1);
     [prog,l] = new(prog,length(Lxmonom),'free');
