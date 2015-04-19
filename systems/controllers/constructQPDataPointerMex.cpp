@@ -440,9 +440,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   pdata->Hqp.resize(nq,nq);
   pdata->fqp.resize(nq);
   pdata->Ag.resize(6,nq);
-  pdata->Agdot.resize(6,nq);
   pdata->Ak.resize(3,nq);
-  pdata->Akdot.resize(3,nq);
 
   pdata->state.vbasis_len = 0;
   pdata->state.cbasis_len = 0;

@@ -7,7 +7,7 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
   % comdot(:,i)-comdot(:,i-1) = comddot(:,i)*dt(i)
   % m*comddot(:,i) = sum_j F_j-m*g
   % q(:,i)-q(:,i-1) = v(:,i)*dt(i)
-  % A*v(:,i) = H(:,i) where A = robot.getCMM
+  % A*v(:,i) = H(:,i) where A = robot.centroidalMomentumMatrix
   properties(SetAccess = protected)
     com_inds % A 3 x obj.N matrix. x(com_inds(:,i)) is the com position at i'th knot point
     comdot_inds % A 3 x obj.N matrix. x(comdot_inds(:,i)) is the com velocity at i'th knot point
@@ -191,7 +191,7 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
         dc = [dcom_q -eye(3)];
       end
       function [c,dc] = angularMomentumMatch(kinsol,v,H)
-        [A,dA] = obj.robot.getCMMdA(kinsol);
+        [A,dA] = obj.robot.centroidalMomentumMatrix(kinsol);
         c = A(1:3,:)*v-H;
         dc = [[eye(3) zeros(3)]*matGradMult(dA,v) A(1:3,:) -eye(3)];
       end

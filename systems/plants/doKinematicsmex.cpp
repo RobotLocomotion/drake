@@ -9,7 +9,6 @@ using namespace std;
 /*
  * A C version of the doKinematics function
  *
- * Piggybacks on HandCmex.cpp to properly initialize and destroy models
  * Call with doKinematicsmex(q,b_compute_second_derivatives);
  */
 
