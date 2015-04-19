@@ -116,15 +116,15 @@ std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray 
       const mxArray* xyz_kp_multiplier = mxGetFieldSafe(body_motion_data, i, "xyz_kp_multiplier");
       sizecheck(xyz_kp_multiplier,3,1);
       memcpy(msg->body_motion_data[i].xyz_kp_multiplier, mxGetPr(xyz_kp_multiplier), sizeof(double)*3);
-      const mxArray* xyz_kd_multiplier = mxGetFieldSafe(body_motion_data, i, "xyz_kd_multiplier");
-      sizecheck(xyz_kd_multiplier,3,1);
-      memcpy(msg->body_motion_data[i].xyz_kd_multiplier, mxGetPr(xyz_kd_multiplier), sizeof(double)*3);
+      const mxArray* xyz_damping_ratio_multiplier = mxGetFieldSafe(body_motion_data, i, "xyz_damping_ratio_multiplier");
+      sizecheck(xyz_damping_ratio_multiplier,3,1);
+      memcpy(msg->body_motion_data[i].xyz_damping_ratio_multiplier, mxGetPr(xyz_damping_ratio_multiplier), sizeof(double)*3);
       const mxArray* expmap_kp_multiplier = mxGetFieldSafe(body_motion_data, i, "expmap_kp_multiplier");
       sizecheck(expmap_kp_multiplier,1,1);
       msg->body_motion_data[i].expmap_kp_multiplier = mxGetScalar(expmap_kp_multiplier);
-      const mxArray* expmap_kd_multiplier = mxGetFieldSafe(body_motion_data, i, "expmap_kd_multiplier");
-      sizecheck(expmap_kd_multiplier,1,1);
-      msg->body_motion_data[i].expmap_kd_multiplier = mxGetScalar(expmap_kd_multiplier);
+      const mxArray* expmap_damping_ratio_multiplier = mxGetFieldSafe(body_motion_data, i, "expmap_damping_ratio_multiplier");
+      sizecheck(expmap_damping_ratio_multiplier,1,1);
+      msg->body_motion_data[i].expmap_damping_ratio_multiplier = mxGetScalar(expmap_damping_ratio_multiplier);
       const mxArray* weight_multiplier = mxGetFieldSafe(body_motion_data, i, "weight_multiplier");
       sizecheck(weight_multiplier,6,1);
       memcpy(msg->body_motion_data[i].weight_multiplier, mxGetPr(weight_multiplier), sizeof(double)*6);
@@ -462,9 +462,9 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     desired_body_accelerations[i].T_task_to_world.linear() = quat2rotmat(quat_task_to_world);
     desired_body_accelerations[i].T_task_to_world.translation() = translation_task_to_world;
     Map<Vector3d> xyz_kp_multiplier(qp_input->body_motion_data[i].xyz_kp_multiplier);
-    Map<Vector3d> xyz_kd_multiplier(qp_input->body_motion_data[i].xyz_kd_multiplier);
+    Map<Vector3d> xyz_damping_ratio_multiplier(qp_input->body_motion_data[i].xyz_damping_ratio_multiplier);
     double expmap_kp_multiplier = qp_input->body_motion_data[i].expmap_kp_multiplier;
-    double expmap_kd_multiplier = qp_input->body_motion_data[i].expmap_kd_multiplier;
+    double expmap_damping_ratio_multiplier = qp_input->body_motion_data[i].expmap_damping_ratio_multiplier;
     memcpy(desired_body_accelerations[i].weight_multiplier.data(),qp_input->body_motion_data[i].weight_multiplier,sizeof(double)*6);
     pdata->r->findKinematicPath(desired_body_accelerations[i].body_path,0,desired_body_accelerations[i].body_or_frame_id0);
     Map<Matrix<double, 6, 4,RowMajor>>coefs_rowmaj(&qp_input->body_motion_data[i].coefs[0][0]);
@@ -475,8 +475,8 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     body_Kp.head<3>() = (params->body_motion[true_body_id0].Kp.head<3>().array()*xyz_kp_multiplier.array()).matrix();
     body_Kp.tail<3>() = params->body_motion[true_body_id0].Kp.tail<3>()*expmap_kp_multiplier;
     Vector6d body_Kd;
-    body_Kd.head<3>() = (params->body_motion[true_body_id0].Kd.head<3>().array()*xyz_kd_multiplier.array()).matrix();
-    body_Kd.tail<3>() = params->body_motion[true_body_id0].Kd.tail<3>()*expmap_kd_multiplier;
+    body_Kd.head<3>() = (params->body_motion[true_body_id0].Kd.head<3>().array()*xyz_damping_ratio_multiplier.array()*xyz_kp_multiplier.array().sqrt()).matrix();
+    body_Kd.tail<3>() = params->body_motion[true_body_id0].Kd.tail<3>()*sqrt(expmap_kp_multiplier)*expmap_damping_ratio_multiplier;
     evaluateXYZExpmapCubicSplineSegment(t_spline - qp_input->body_motion_data[i].ts[0], coefs, body_pose_des, body_v_des, body_vdot_des);
 
     desired_body_accelerations[i].body_vdot = bodySpatialMotionPD(pdata->r, robot_state, body_or_frame_id0, body_pose_des, body_v_des, body_vdot_des, body_Kp, body_Kd,desired_body_accelerations[i].T_task_to_world);
