@@ -1,10 +1,9 @@
-function runAtlasBalancingSplitPerturbation(example_options) 
+function runAtlasBalancingSplitPerturb(example_options) 
 % Run the new split QP controller, which consists of separate PlanEval
 % and InstantaneousQPController objects. Perturbs a supplied amount at
 % a specified time.
 % @option use_mex [1] whether to use mex. 0: no, 1: yes, 2: compare mex and non-mex
 % @option use_bullet [false] whether to use bullet for collision detect
-% @option quiet [true] whether to silence timing printouts
 % @option perturb_body ['pelvis']
 % @option perturb_amount [1000; 0; 0] applied to pelvis
 % @option perturb_timing [0.1 0.2] (i.e. tstart tend)
@@ -13,9 +12,7 @@ checkDependency('gurobi');
 checkDependency('lcmgl');
 
 if nargin<1, example_options=struct(); end
-example_options = applyDefaults(example_options, struct('use_mex', true,...
-                                                        'use_bullet', false,...
-                                                        'quiet', true,...
+example_options = applyDefaults(example_options, struct('use_bullet', false,...
                                                         'perturb_body', 'mtorso',...
                                                         'perturb_amount', [250;0;0],...
                                                         'perturb_timing', [1.0 1.1],...
@@ -30,9 +27,9 @@ options.floating = true;
 options.ignore_self_collisions = true;
 options.ignore_friction = true;
 options.dt = 0.001;
+options.use_new_kinsol = true;
 options.terrain = example_options.terrain;
 options.use_bullet = example_options.use_bullet;
-options.use_mex = example_options.use_mex;
 r = Atlas(fullfile(getDrakePath,'examples','Atlas','urdf','atlas_convex_hull.urdf'),options);
 r = r.removeCollisionGroupsExcept({'heel','toe'});
 r = compile(r);
@@ -64,13 +61,11 @@ standing_plan = QPLocomotionPlan.from_standing_state(x0, r);
 standing_plan.planned_support_command = QPControllerPlan.support_logic_maps.kinematic_or_sensed;
 
 control = atlasControllers.InstantaneousQPController(r, [], struct());
-control.quiet = example_options.quiet;
 planeval = atlasControllers.AtlasPlanEval(r, standing_plan);
 
 plancontroller = atlasControllers.AtlasPlanEvalAndControlSystem(r, control, planeval);
-plancontroller.quiet = example_options.quiet;
 
-T = 3;
+T = 6;
 ts = example_options.perturb_timing;
 ts = [0 ts(1) ts(2) T];
 vals = example_options.perturb_amount;
@@ -97,3 +92,9 @@ ytraj = simulate(sys, [0, T], xstar_complete, struct('gui_control_interface', tr
 
 v.playback(ytraj, struct('slider', true));
 
+xf = ytraj.eval(ytraj.tspan(end));
+kinsol = doKinematics(r, xf(1:nq));
+comf = getCOM(r, kinsol);
+
+% Make sure we're still standing
+rangecheck(comf, [-0.01; -0.01; 0.9], [0.01; 0.01; inf]);
