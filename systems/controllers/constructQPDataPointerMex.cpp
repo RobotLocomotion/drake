@@ -22,6 +22,34 @@ void parseIntegratorParams(const mxArray *params_obj, IntegratorParams &params) 
   return;
 }
 
+void parseJointSoftLimits(const mxArray *params_obj, RigidBodyManipulator *r, JointSoftLimitParams *params) {
+  int nq = r->num_positions;
+
+  if (mxGetNumberOfElements(params_obj) != nq)
+    mexErrMsgTxt("Joint soft limits should be of size nq");
+
+  params->enabled = Matrix<bool, Dynamic, 1>::Zero(nq);
+  params->disable_when_body_in_support = VectorXi::Zero(nq);
+  params->lb = VectorXd::Zero(nq);
+  params->ub = VectorXd::Zero(nq);
+  params->kp = VectorXd::Zero(nq);
+  params->kd = VectorXd::Zero(nq);
+  params->weight = VectorXd::Zero(nq);
+  params->k_logistic = VectorXd::Zero(nq);
+
+  for (int i=0; i < nq; i++) {
+    params->enabled(i) = static_cast<bool> (mxGetScalar(mxGetFieldSafe(params_obj, i, "enabled")));
+    params->disable_when_body_in_support(i) = static_cast<int> (mxGetScalar(mxGetFieldSafe(params_obj, i, "disable_when_body_in_support")));
+    params->lb(i) = mxGetScalar(mxGetFieldSafe(params_obj, i, "lb"));
+    params->ub(i) = mxGetScalar(mxGetFieldSafe(params_obj, i, "ub"));
+    params->kp(i) = mxGetScalar(mxGetFieldSafe(params_obj, i, "kp"));
+    params->kd(i) = mxGetScalar(mxGetFieldSafe(params_obj, i, "kd"));
+    params->weight(i) = mxGetScalar(mxGetFieldSafe(params_obj, i, "weight"));
+    params->k_logistic(i) = mxGetScalar(mxGetFieldSafe(params_obj, i, "k_logistic"));
+  }
+  return;
+}
+
 void parseWholeBodyParams(const mxArray *params_obj, RigidBodyManipulator *r, WholeBodyParams *params) {
   const mxArray *int_obj = myGetField(params_obj, "integrator");
   const mxArray *qddbound_obj = myGetField(params_obj, "qdd_bounds");
@@ -212,6 +240,7 @@ void parseAtlasParams(const mxArray *params_obj, RigidBodyManipulator *r, AtlasP
 
   parseWholeBodyParams(myGetProperty(params_obj, "whole_body"), r, &(params->whole_body));
   parseVRefIntegratorParams(myGetProperty(params_obj, "vref_integrator"), &(params->vref_integrator));
+  parseJointSoftLimits(myGetProperty(params_obj, "joint_soft_limits"), r, &(params->joint_soft_limits));
 
   BodyMotionParams body_motion_params;
   const mxArray *body_motion_obj = myGetProperty(params_obj, "body_motion");

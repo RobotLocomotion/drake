@@ -8,4 +8,14 @@ struct lcmt_body_motion_data
 
 	double ts[2];
 	double coefs[6][4];
+	boolean in_floating_base_nullspace;
+	boolean control_pose_when_in_contact;
+
+        double quat_task_to_world[4];
+        double translation_task_to_world[3];
+        double xyz_kp_multiplier[3];
+        double xyz_kd_multiplier[3];
+        double expmap_kp_multiplier;
+        double expmap_kd_multiplier;
+        double weight_multiplier[6];
 }
