@@ -230,7 +230,7 @@ void testExpmap2quat(const Vector4d &quat)
   auto expmap = quat2expmap(quat,1);
   auto quat_back  = expmap2quat(expmap.value(),2);
   valuecheck(std::abs(quat.transpose()*quat_back.value()),1);
-  valuecheck(expmap.gradient().value()*quat_back.gradient().value(),Matrix3d::Identity());
+  valuecheck(expmap.gradient().value()*quat_back.gradient().value(),Matrix3d::Identity(),1E-10);
 }
 
 int main(int argc, char **argv)
