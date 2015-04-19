@@ -7,8 +7,8 @@ function [zmp_knots, body_motions] = planZMPTraj(biped, q0, footsteps, options)
 
 if nargin < 4; options = struct(); end
 
-if ~isfield(options, 't0'); options.t0 = 0; end
-if ~isfield(options, 'first_step_hold_s'); options.first_step_hold_s = 1.5; end
+options = applyDefaults(options, struct('t0', 0,...
+                                        'first_step_hold_s', 1.5));
 
 target_frame_id = struct('right', biped.toe_frame_id.right,...
                          'left', biped.toe_frame_id.left);
@@ -45,18 +45,27 @@ steps.left = footsteps_with_quat([footsteps_with_quat.frame_id] == biped.foot_fr
 
 zmp0 = [];
 initial_supports = [];
-if steps.right(1).is_in_contact
-  z = steps.right(1).pos;
-  zmp0(:,end+1) = z(1:2);
-  initial_supports(end+1) = biped.foot_body_id.right;
-end
-if steps.left(1).is_in_contact
-  z = steps.left(1).pos;
-  zmp0(:,end+1) = z(1:2);
-  initial_supports(end+1) = biped.foot_body_id.left;
+initial_support_groups = {};
+support_polygon_pts = zeros(2,0);
+for f = {'left', 'right'}
+  foot = f{1};
+  if steps.(foot)(1).is_in_contact
+    if steps.(foot)(1).walking_params.use_forefoot_only
+      supp_pts = biped.getTerrainContactPoints(biped.foot_body_id.(foot), {{'toe', 'midfoot'}})
+      zmp0(:,end+1) = mean(supp_pts.pts(1:2,:), 2);
+      support_polygon_pts = [support_polygon_pts, supp_pts.pts(1:2,:)];
+      initial_support_groups{end+1} = {'toe', 'midfoot'};
+    else
+      supp_pts = biped.getTerrainContactPoints(biped.foot_body_id.(foot), {{'toe', 'heel'}})
+      zmp0(:,end+1) = mean(supp_pts.pts(1:2,:), 2);
+      support_polygon_pts = [support_polygon_pts, supp_pts.pts(1:2,:)];
+      initial_support_groups{end+1} = {'toe', 'heel'};
+    end
+    initial_supports(end+1) = biped.foot_body_id.(foot);
+  end
 end
 zmp0 = mean(zmp0, 2);
-supp0 = RigidBodySupportState(biped, initial_supports);
+supp0 = RigidBodySupportState(biped, initial_supports, initial_support_groups);
 zmp_knots = struct('t', options.t0, 'zmp', zmp0, 'supp', supp0);
 
 frame_knots = struct('t', options.t0, ...

@@ -75,6 +75,30 @@
         <sphere radius="0.01"/>
       </geometry>
     </visual>
+    <collision group="midfoot">
+      <origin rpy="0 0 0" xyz="-0.0426 0.066 -0.07645"/>
+      <geometry>
+        <sphere radius="0.0"/>
+      </geometry>
+    </collision>
+    <visual group="midfoot">
+      <origin rpy="0 0 0" xyz="-0.0426 0.066 -0.07645"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+    </visual>
+    <collision group="midfoot">
+      <origin rpy="0 0 0" xyz="-0.0426 -0.0626 -0.07645"/>
+      <geometry>
+        <sphere radius="0.0"/>
+      </geometry>
+    </collision>
+    <visual group="midfoot">
+      <origin rpy="0 0 0" xyz="-0.0426 -0.0626 -0.07645"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+    </visual>
   </link>
   <link name="l_hand">
     <inertial>
@@ -309,6 +333,30 @@
     </collision>
     <visual group="toe">
       <origin rpy="0 0 0" xyz="0.1728 -0.066 -0.07645"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+    </visual>
+    <collision group="midfoot">
+      <origin rpy="0 0 0" xyz="0.0426 0.0626 -0.07645"/>
+      <geometry>
+        <sphere radius="0.0"/>
+      </geometry>
+    </collision>
+    <visual group="midfoot">
+      <origin rpy="0 0 0" xyz="0.0426 0.0626 -0.07645"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+    </visual>
+    <collision group="midfoot">
+      <origin rpy="0 0 0" xyz="0.0426 -0.066 -0.07645"/>
+      <geometry>
+        <sphere radius="0.0"/>
+      </geometry>
+    </collision>
+    <visual group="midfoot">
+      <origin rpy="0 0 0" xyz="0.0426 -0.066 -0.07645"/>
       <geometry>
         <sphere radius="0.01"/>
       </geometry>
