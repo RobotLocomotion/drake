@@ -11,7 +11,6 @@ robot_options = applyDefaults(robot_options, struct('use_bullet', true,...
                                                     'floating', true,...
                                                     'ignore_self_collisions', true,...
                                                     'enable_fastqp', false,...
-                                                    'multiple_contacts', true,...
                                                     'ignore_friction', true,...
                                                     'use_new_kinsol', true,...
                                                     'hand_right', 'robotiq_weight_only',...
@@ -22,7 +21,7 @@ warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints')
 warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits')
 
 % construct robot model
-r = Atlas(fullfile(getDrakePath,'examples','Atlas','urdf','atlas_convex_hull.urdf'),robot_options);
+r = Atlas(fullfile(getDrakePath,'examples','Atlas','urdf','atlas_minimal_contact.urdf'),robot_options);
 r = r.removeCollisionGroupsExcept({'heel','toe','midfoot'});
 r = compile(r);
 
@@ -44,10 +43,14 @@ r = r.setInitialState(xstar);
 x0 = xstar;
 nq = r.getNumPositions();
 
-box_size = [39*0.0254, 0.18, 0.22];
+l = 0.22;
+box_size = [39*0.0254, l, 0.22];
 
 box_tops = [0, 0.2, 0;
-            0, 0.2+0.18, 0.22]';
+            0, 0.2+l, 0.22;
+            0, 0.2+2*l, 0.22*2;
+            0, 0.2+3*l, 0.22*3;
+            0, 0.2+4*l, 0.22*4]';
 
 safe_regions = iris.TerrainRegion.empty();
 
@@ -55,7 +58,7 @@ for j = 1:size(box_tops, 2)
   b = RigidBodyBox(box_size, box_tops(:,j) + [0;0;-box_size(3)/2], [0;0;0]);
   r = r.addGeometryToBody('world', b);
   [A, b] = poly2lincon(box_tops(1,j) + [-0.25, -0.25, 0.25, 0.25],...
-                       box_tops(2,j) + [-0.065, -0.06, -0.06, -0.065]);
+                       box_tops(2,j) + [-0.095, -0.09, -0.09, -0.095]);
   [A, b] = convertToCspace(A, b);
   safe_regions(end+1) = iris.TerrainRegion(A, b, [], [], box_tops(1:3,j), [0;0;1]);
 end
@@ -71,12 +74,12 @@ r.default_walking_params.use_forefoot_only = true;
 v = r.constructVisualizer();
 v.display_dt = 0.01;
 
-footstep_plan = r.planFootsteps(x0(1:nq), struct('right',[0.13;0.4;0;0;0;0],...
-                                                 'left', [-0.13;0.4;0;0;0;0]),...
+footstep_plan = r.planFootsteps(x0(1:nq), struct('right',[0.13;1.0;0;0;0;0],...
+                                                 'left', [-0.13;1.0;0;0;0;0]),...
                                 safe_regions,...
                                 struct('step_params', struct('max_forward_step', 0.4,...
                                                              'nom_forward_step', 0.025,...
-                                                             'max_num_steps', 9)));
+                                                             'max_num_steps', 10)));
 lcmgl = LCMGLClient('footsteps');
 footstep_plan.draw_lcmgl(lcmgl);
 lcmgl.switchBuffers();
