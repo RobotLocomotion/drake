@@ -36,7 +36,7 @@ public:
 
   const Polynomial& getPolynomial(int segment_index) const;
 
-  virtual int getSegmentPolynomialOrder(int segment_index) const;
+  virtual int getSegmentPolynomialDegree(int segment_index) const;
 
   PiecewisePolynomial& operator+=(const PiecewisePolynomial& other);
 

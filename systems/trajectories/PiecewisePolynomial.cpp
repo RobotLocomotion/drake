@@ -66,9 +66,9 @@ const Polynomial& PiecewisePolynomial::getPolynomial(int segment_index) const {
   return polynomials[segment_index];
 }
 
-int PiecewisePolynomial::getSegmentPolynomialOrder(int segment_index) const {
+int PiecewisePolynomial::getSegmentPolynomialDegree(int segment_index) const {
   segmentNumberRangeCheck(segment_index);
-  return polynomials[segment_index].getOrder();
+  return polynomials[segment_index].getDegree();
 }
 
 PiecewisePolynomial& PiecewisePolynomial::operator+=(const PiecewisePolynomial& other) {

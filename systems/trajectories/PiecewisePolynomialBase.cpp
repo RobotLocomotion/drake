@@ -25,7 +25,7 @@ int PiecewisePolynomialBase::getNumberOfSegments() const {
 }
 
 int PiecewisePolynomialBase::getNumberOfCoefficients(int segment_number) const {
-  return getSegmentPolynomialOrder(segment_number) + 1;
+  return getSegmentPolynomialDegree(segment_number) + 1;
 }
 
 double PiecewisePolynomialBase::getStartTime(int segment_number) const {
