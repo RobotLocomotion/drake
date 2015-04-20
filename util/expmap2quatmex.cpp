@@ -1,4 +1,5 @@
 #include "mex.h"
+#include "drakeUtil.h"
 #include "drakeGeometryUtil.h"
 #include "drakeGradientUtil.h"
 
@@ -15,12 +16,12 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   {
     mexErrMsgTxt("expmap should be a 3 x 1 vector\n");
   }
-  Map<Vector3d> expmap(mxGetPr(prhs[0]));
+  Map<Vector3d> expmap(mxGetPrSafe(prhs[0]));
   auto ret = expmap2quat(expmap,2);
   plhs[0] = mxCreateDoubleMatrix(4,1,mxREAL);
-  memcpy(mxGetPr(plhs[0]),ret.value().data(),sizeof(double)*4);
+  memcpy(mxGetPrSafe(plhs[0]),ret.value().data(),sizeof(double)*4);
   plhs[1] = mxCreateDoubleMatrix(4,3,mxREAL);
-  memcpy(mxGetPr(plhs[1]),ret.gradient().value().data(),sizeof(double)*12);
+  memcpy(mxGetPrSafe(plhs[1]),ret.gradient().value().data(),sizeof(double)*12);
   plhs[2] = mxCreateDoubleMatrix(4,9,mxREAL);
-  memcpy(mxGetPr(plhs[2]),ret.gradient().gradient().value().data(),sizeof(double)*36);
+  memcpy(mxGetPrSafe(plhs[2]),ret.gradient().gradient().value().data(),sizeof(double)*36);
 }

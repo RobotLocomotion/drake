@@ -109,16 +109,16 @@ std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray 
       msg->body_motion_data[i].control_pose_when_in_contact = static_cast<bool>(mxGetScalar(mxGetFieldSafe(body_motion_data, i, "control_pose_when_in_contact")));
       const mxArray* quat_task_to_world = mxGetFieldSafe(body_motion_data, i, "quat_task_to_world"); 
       sizecheck(quat_task_to_world,4,1);
-      memcpy(msg->body_motion_data[i].quat_task_to_world,mxGetPr(quat_task_to_world),sizeof(double)*4);
+      memcpy(msg->body_motion_data[i].quat_task_to_world,mxGetPrSafe(quat_task_to_world),sizeof(double)*4);
       const mxArray* translation_task_to_world = mxGetFieldSafe(body_motion_data, i, "translation_task_to_world");
       sizecheck(translation_task_to_world,3,1);
-      memcpy(msg->body_motion_data[i].translation_task_to_world, mxGetPr(translation_task_to_world),sizeof(double)*3);
+      memcpy(msg->body_motion_data[i].translation_task_to_world, mxGetPrSafe(translation_task_to_world),sizeof(double)*3);
       const mxArray* xyz_kp_multiplier = mxGetFieldSafe(body_motion_data, i, "xyz_kp_multiplier");
       sizecheck(xyz_kp_multiplier,3,1);
-      memcpy(msg->body_motion_data[i].xyz_kp_multiplier, mxGetPr(xyz_kp_multiplier), sizeof(double)*3);
+      memcpy(msg->body_motion_data[i].xyz_kp_multiplier, mxGetPrSafe(xyz_kp_multiplier), sizeof(double)*3);
       const mxArray* xyz_damping_ratio_multiplier = mxGetFieldSafe(body_motion_data, i, "xyz_damping_ratio_multiplier");
       sizecheck(xyz_damping_ratio_multiplier,3,1);
-      memcpy(msg->body_motion_data[i].xyz_damping_ratio_multiplier, mxGetPr(xyz_damping_ratio_multiplier), sizeof(double)*3);
+      memcpy(msg->body_motion_data[i].xyz_damping_ratio_multiplier, mxGetPrSafe(xyz_damping_ratio_multiplier), sizeof(double)*3);
       const mxArray* expmap_kp_multiplier = mxGetFieldSafe(body_motion_data, i, "expmap_kp_multiplier");
       sizecheck(expmap_kp_multiplier,1,1);
       msg->body_motion_data[i].expmap_kp_multiplier = mxGetScalar(expmap_kp_multiplier);
@@ -127,7 +127,7 @@ std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray 
       msg->body_motion_data[i].expmap_damping_ratio_multiplier = mxGetScalar(expmap_damping_ratio_multiplier);
       const mxArray* weight_multiplier = mxGetFieldSafe(body_motion_data, i, "weight_multiplier");
       sizecheck(weight_multiplier,6,1);
-      memcpy(msg->body_motion_data[i].weight_multiplier, mxGetPr(weight_multiplier), sizeof(double)*6);
+      memcpy(msg->body_motion_data[i].weight_multiplier, mxGetPrSafe(weight_multiplier), sizeof(double)*6);
     }
   }
 
@@ -145,7 +145,7 @@ std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray 
       msg->body_wrench_data[i].body_id = (int32_t) mxGetScalar(myGetField(body_wrench_data, i, "body_id"));
       const mxArray* wrench = myGetField(body_wrench_data, i, "wrench");
       sizecheck(wrench, wrench_size, 1);
-      memcpy(msg->body_wrench_data[i].wrench, mxGetPr(wrench), wrench_size * sizeof(double));
+      memcpy(msg->body_wrench_data[i].wrench, mxGetPrSafe(wrench), wrench_size * sizeof(double));
     }
   }
 
