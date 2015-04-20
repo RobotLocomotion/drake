@@ -142,14 +142,14 @@ for i=1:length(support_times)-1
   step_up_pelvis_shift = 0.07; % cm
   if isDoubleSupport && nextIsDoubleSupport
     pelvis_reference_height(i+1) = pelvis_reference_height(i);
-  elseif isDoubleSupport && nextIsLeftSupport
+  elseif isDoubleSupport && nextIsRightSupport
     if lsole_des_next(3) > rsole_des(3) + step_height_delta_threshold
       % stepping up with left foot
       pelvis_reference_height(i+1) = lsole_des_next(3)-step_up_pelvis_shift;
     else
       pelvis_reference_height(i+1) = lsole_des_next(3);
     end
-  elseif isDoubleSupport && nextIsRightSupport
+  elseif isDoubleSupport && nextIsLeftSupport
 
     if rsole_des_next(3) > lsole_des(3) + step_height_delta_threshold
       % stepping up with right foot
