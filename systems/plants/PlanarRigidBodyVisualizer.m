@@ -23,6 +23,7 @@ classdef PlanarRigidBodyVisualizer < RigidBodyVisualizer
       end
       warning(w);
       obj.Tview = Tview;
+      obj.preserve_view = false;
     end
     
     function draw(obj,t,x)
@@ -110,14 +111,11 @@ classdef PlanarRigidBodyVisualizer < RigidBodyVisualizer
   end
 
   properties (Access=protected)
-    body;  % body(i).xyz{j} and body(i).c{j} describe the geometry of the jth patch on body i
     Tview;
+    body;  % body(i).x{j} and body(i).c{j} describe the jth geometry on body i
   end
   
   properties
-    xlim=[-2,2]
-    ylim=[-2,2];
-    debug = false;  % if true, draws extras, like the coordinate frames and COMs for each link
     fade_percent = 0;     % 0 to 1 
     fade_color = [1 1 1];
   end

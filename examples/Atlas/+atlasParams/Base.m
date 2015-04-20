@@ -3,11 +3,12 @@ classdef Base
   % are fixed at compile time for a particular type of plan (walking, manipulating,
   % standing, recovery, etc.) but which can be switched out for a different set when
   % the plan type changes. 
-  properties(GetAccess=public, SetAccess=protected)
+  properties
     body_motion
     whole_body
     vref_integrator
     hardware
+    joint_soft_limits
     W_kdot = zeros(3);
     Kp_ang = 0;
     w_slack = 0.05;
@@ -51,6 +52,31 @@ classdef Base
       obj.whole_body.w_qdd(r.findPositionIndices('back_bkx')) = 0.1;
       obj.whole_body.Kp(r.findPositionIndices('back_bkx')) = 50;
 
+      % Soft joint limits enforced by a sigmoid weight on q(i) - q_des(i)
+      % The sigmoid is defined as:
+      % w_lb = weight / (1 + exp(-k_logistic * (lb - q(i))))
+      % w_ub = weight / (1 + exp(-k_logistic * (q(i) - ub)))
+      % w_qdd = max(w_lb, w_lb)
+      % where w_qdd is the cost weight of qdd_des, defined as:
+      % qdd_des(i) = kp * (q_des(i) - q(i)) - kd * qd(i)
+      % 
+      % If disable_when_body_in_support = i != 0, then the joint soft limits will be disabled when body i is in support
+      obj.joint_soft_limits = struct('enabled', num2cell(false(1, r.getNumPositions())),...
+                                     'lb', num2cell(-inf(1, r.getNumPositions())),...
+                                     'ub', num2cell(inf(1, r.getNumPositions())),...
+                                     'kp', num2cell(repmat(150, 1, r.getNumPositions())),...
+                                     'damping_ratio', num2cell(repmat(0.6, 1, r.getNumPositions())),...
+                                     'kd', num2cell(zeros(1, r.getNumPositions())),... % Set when we call updateKd
+                                     'weight', num2cell(repmat(1e-5, 1, r.getNumPositions())),...
+                                     'disable_when_body_in_support', num2cell(zeros(1, r.getNumPositions)),...
+                                     'k_logistic', num2cell(repmat(20, 1, r.getNumPositions())));
+      obj.joint_soft_limits(r.findPositionIndices('r_leg_kny')).enabled = true;
+      obj.joint_soft_limits(r.findPositionIndices('r_leg_kny')).lb = 0.5;
+      obj.joint_soft_limits(r.findPositionIndices('r_leg_kny')).disable_when_body_in_support = r.foot_body_id.right;
+      obj.joint_soft_limits(r.findPositionIndices('l_leg_kny')).enabled = true;
+      obj.joint_soft_limits(r.findPositionIndices('l_leg_kny')).lb = 0.5;
+      obj.joint_soft_limits(r.findPositionIndices('l_leg_kny')).disable_when_body_in_support = r.foot_body_id.left;
+
       nu = r.getNumInputs();
       obj.hardware = struct('gains', struct(...
                                       'k_f_p', zeros(nu,1),...
@@ -72,6 +98,9 @@ classdef Base
       obj.whole_body.Kd = getDampingGain(obj.whole_body.Kp, obj.whole_body.damping_ratio);
       for j = 1:length(obj.body_motion)
         obj.body_motion(j).Kd = getDampingGain(obj.body_motion(j).Kp, obj.body_motion(j).damping_ratio);
+      end
+      for j = 1:length(obj.joint_soft_limits)
+        obj.joint_soft_limits(j).kd = getDampingGain(obj.joint_soft_limits(j).kp, obj.joint_soft_limits(j).damping_ratio);
       end
     end
   end

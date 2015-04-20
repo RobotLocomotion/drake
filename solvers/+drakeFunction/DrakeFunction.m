@@ -150,6 +150,10 @@ classdef DrakeFunction
     function fcn = duplicate(obj,n)
       % fcn = duplicate(obj,n) returns a concatenated DrakeFunction containing
       % n duplicates of obj
+      if n < 2 
+        fcn = obj;
+        return;
+      end
       more_obj = repmat({obj},1,n-1);
       fcn = concatenate(obj,more_obj{:});
     end

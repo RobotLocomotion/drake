@@ -3,6 +3,8 @@
 #include <cassert>
 #include <stdexcept>
 
+using namespace std;
+
 SplineInformation::SplineInformation(std::vector<int> const & segment_polynomial_orders, std::vector<double> const & segment_times) :
   PiecewisePolynomialBase(segment_times),
   segment_polynomial_orders(segment_polynomial_orders)
@@ -24,12 +26,12 @@ std::vector<ContinuityConstraint> const & SplineInformation::getContinuityConstr
 }
 
 int SplineInformation::getNumberOfConstraints() const {
-  int ret = 0;
+  size_t ret = 0;
   for (auto it = value_constraints.begin(); it != value_constraints.end(); ++it) {
     ret += it->size();
   }
   ret += continuity_constraints.size();
-  return ret;
+  return static_cast<int>(ret);
 }
 
 void SplineInformation::addContinuityConstraint(ContinuityConstraint const & constraint) {

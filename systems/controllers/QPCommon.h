@@ -29,8 +29,11 @@ struct QPControllerData {
   RowVectorXd fqp;
   
   // momentum controller-specific
-  MatrixXd Ag, Agdot; // centroidal momentum matrix
-  MatrixXd Ak, Akdot; // centroidal angular momentum matrix
+  MatrixXd Ag; // centroidal momentum matrix
+  Vector6d Agdot_times_v; // centroidal momentum velocity-dependent bias
+  MatrixXd Ak; // centroidal angular momentum matrix
+  Vector3d Akdot_times_v; // centroidal angular momentum velocity-dependent bias
+
   MatrixXd W_kdot; // quadratic cost for angular momentum rate: (kdot_des - kdot)'*W*(kdot_des - kdot)
   VectorXd w_qdd; 
   double w_grf; 
@@ -107,6 +110,17 @@ struct Bounds {
   VectorXd max;
 };
 
+struct JointSoftLimitParams {
+  Matrix<bool, Dynamic, 1> enabled;
+  VectorXi disable_when_body_in_support;
+  VectorXd lb;
+  VectorXd ub;
+  VectorXd kp;
+  VectorXd kd;
+  VectorXd weight;
+  VectorXd k_logistic;
+};
+
 struct WholeBodyParams {
   VectorXd Kp;
   VectorXd Kd;
@@ -145,6 +159,7 @@ struct AtlasParams {
   WholeBodyParams whole_body;
   std::vector<BodyMotionParams> body_motion;
   VRefIntegratorParams vref_integrator;
+  JointSoftLimitParams joint_soft_limits;
   AtlasHardwareParams hardware;
   Matrix3d W_kdot;
   double Kp_ang;
@@ -182,8 +197,10 @@ struct NewQPControllerData {
   VectorXd qdd_ub;
   
   // momentum controller-specific
-  MatrixXd Ag, Agdot; // centroidal momentum matrix
-  MatrixXd Ak, Akdot; // centroidal angular momentum matrix
+  MatrixXd Ag; // centroidal momentum matrix
+  Vector6d Agdot_times_v; // centroidal momentum velocity-dependent bias
+  MatrixXd Ak; // centroidal angular momentum matrix
+  Vector3d Akdot_times_v; // centroidal angular momentum velocity-dependent bias
 
   // logical separation for the "state", that is, things we expect to change at every iteration
   // and which must persist to the next iteration
@@ -192,11 +209,15 @@ struct NewQPControllerData {
 };
 
 struct DesiredBodyAcceleration {
-  int body_id0;
+  int body_or_frame_id0;
   Vector6d body_vdot;
   double weight;
   Bounds accel_bounds;
   bool control_pose_when_in_contact;
+  bool use_spatial_velocity;
+  KinematicPath body_path;
+  Isometry3d T_task_to_world;
+  Vector6d weight_multiplier;
 };
 
 struct QPControllerOutput {

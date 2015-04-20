@@ -221,7 +221,7 @@
     <child link="Door" />
     <origin xyz="-0.041275 -0.460375 1.029495" />
     <axis xyz="0 0 1" />
-    <limit lower="0" upper="3/4*pi" />
+    <limit lower="0" upper="2.3562" />
     <dynamics friction="1" damping="1" />
   </joint>
  
@@ -241,7 +241,7 @@
     <child link="Knob1" />
     <origin xyz="0.079375 0.8509 -0.102394" />
     <axis xyz="1 0 0" />
-    <limit lower="-pi/2" upper="pi/2" />
+    <limit lower="-1.5708" upper="1.5708" />
     <dynamics friction="0.1" damping="0.1" />
   </joint>
 

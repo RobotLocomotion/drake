@@ -5,14 +5,25 @@
 #include "PiecewisePolynomial.h"
 #include <stdexcept>
 
+#undef DLLEXPORT
+#if defined(WIN32) || defined(WIN64)
+  #if defined(drakeSplineGeneration_EXPORTS)
+    #define DLLEXPORT __declspec( dllexport )
+  #else
+    #define DLLEXPORT __declspec( dllimport )
+  #endif
+#else
+  #define DLLEXPORT
+#endif
+
 class ConstraintMatrixSingularError : public std::runtime_error {
 public:
   ConstraintMatrixSingularError() : runtime_error("Constraint matrix is singular!") { };
 };
 
-PiecewisePolynomial generateSpline(const SplineInformation& spline_information);
+DLLEXPORT PiecewisePolynomial generateSpline(const SplineInformation& spline_information);
 
-PiecewisePolynomial twoWaypointCubicSpline(const std::vector<double>& segment_times, double x0, double xd0, double xf, double xdf, double x1, double x2);
+DLLEXPORT PiecewisePolynomial twoWaypointCubicSpline(const std::vector<double>& segment_times, double x0, double xd0, double xf, double xdf, double x1, double x2);
 
 
 #endif /* DRAKE_SOLVERS_QPSPLINE_SPLINEGENERATION_H_ */

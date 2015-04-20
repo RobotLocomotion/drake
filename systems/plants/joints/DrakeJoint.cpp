@@ -37,12 +37,22 @@ const std::string& DrakeJoint::getName() const
   return name;
 }
 
+GradientVar<double, Eigen::Dynamic, 1> DrakeJoint::frictionTorque(const Eigen::Ref<const VectorXd>& v, int gradient_order) const
+{
+  GradientVar<double, Eigen::Dynamic, 1> ret(getNumVelocities(), 1, getNumVelocities(), gradient_order);
+  ret.value().setZero();
+  if (gradient_order > 0) {
+    ret.gradient().value().setZero();
+  }
+  return ret;
+}
+
 void DrakeJoint::setupOldKinematicTree(RigidBodyManipulator* model, int body_ind, int position_num_start, int velocity_num_start) const
 {
   model->bodies[body_ind]->jointname = name;
   model->bodies[body_ind]->Ttree = transform_to_parent_body.matrix();
 //  model->bodies[body_ind]->T_body_to_joint = Matrix4d::Identity();
   model->bodies[body_ind]->floating = 0;
-  model->bodies[body_ind]->pitch = 0.0;
+  model->bodies[body_ind]->pitch = 0;
 }
 

@@ -46,9 +46,9 @@ void FixedJoint::motionSubspaceDotTimesV(const Eigen::Ref<const Eigen::VectorXd>
   }
 }
 
-void FixedJoint::randomConfiguration(Eigen::Ref<Eigen::VectorXd>& q, std::default_random_engine& generator) const
+Eigen::VectorXd FixedJoint::randomConfiguration(std::default_random_engine& generator) const
 {
-  // empty
+  return Eigen::VectorXd::Zero(0);
 }
 
 void FixedJoint::qdot2v(const Eigen::Ref<const Eigen::VectorXd>& q, Eigen::MatrixXd& qdot_to_v, Eigen::MatrixXd* dqdot_to_v) const

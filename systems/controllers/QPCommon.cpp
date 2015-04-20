@@ -1,6 +1,10 @@
 #include "QPCommon.h"
+#include "drakeFloatingPointUtil.h"
 #include "controlUtil.h"
 #include <Eigen/StdVector>
+#include <map>
+
+#define LEG_INTEGRATOR_DEACTIVATION_MARGIN 0.05
 
 template<int M, int N>
 void matlabToCArrayOfArrays(const mxArray *source, const int idx, const char *fieldname, double *destination)  {
@@ -15,6 +19,11 @@ void matlabToCArrayOfArrays(const mxArray *source, const int idx, const char *fi
   Matrix<double, N, M> A_t = A.transpose();
   memcpy(destination, A_t.data(), sizeof(double)*M*N);
   return;
+}
+
+double logisticSigmoid(double L, double k, double x, double x0) {
+  // Compute the value of the logistic sigmoid f(x) = L / (1 + exp(-k(x - x0)))
+  return L / (1.0 + exp(-k * (x - x0)));
 }
 
 
@@ -98,6 +107,27 @@ std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray 
       matlabToCArrayOfArrays<6, 4>(body_motion_data, i, "coefs", &msg->body_motion_data[i].coefs[0][0]);
       msg->body_motion_data[i].in_floating_base_nullspace = static_cast<bool>(mxGetScalar(mxGetFieldSafe(body_motion_data, i, "in_floating_base_nullspace")));
       msg->body_motion_data[i].control_pose_when_in_contact = static_cast<bool>(mxGetScalar(mxGetFieldSafe(body_motion_data, i, "control_pose_when_in_contact")));
+      const mxArray* quat_task_to_world = mxGetFieldSafe(body_motion_data, i, "quat_task_to_world"); 
+      sizecheck(quat_task_to_world,4,1);
+      memcpy(msg->body_motion_data[i].quat_task_to_world,mxGetPrSafe(quat_task_to_world),sizeof(double)*4);
+      const mxArray* translation_task_to_world = mxGetFieldSafe(body_motion_data, i, "translation_task_to_world");
+      sizecheck(translation_task_to_world,3,1);
+      memcpy(msg->body_motion_data[i].translation_task_to_world, mxGetPrSafe(translation_task_to_world),sizeof(double)*3);
+      const mxArray* xyz_kp_multiplier = mxGetFieldSafe(body_motion_data, i, "xyz_kp_multiplier");
+      sizecheck(xyz_kp_multiplier,3,1);
+      memcpy(msg->body_motion_data[i].xyz_kp_multiplier, mxGetPrSafe(xyz_kp_multiplier), sizeof(double)*3);
+      const mxArray* xyz_damping_ratio_multiplier = mxGetFieldSafe(body_motion_data, i, "xyz_damping_ratio_multiplier");
+      sizecheck(xyz_damping_ratio_multiplier,3,1);
+      memcpy(msg->body_motion_data[i].xyz_damping_ratio_multiplier, mxGetPrSafe(xyz_damping_ratio_multiplier), sizeof(double)*3);
+      const mxArray* expmap_kp_multiplier = mxGetFieldSafe(body_motion_data, i, "expmap_kp_multiplier");
+      sizecheck(expmap_kp_multiplier,1,1);
+      msg->body_motion_data[i].expmap_kp_multiplier = mxGetScalar(expmap_kp_multiplier);
+      const mxArray* expmap_damping_ratio_multiplier = mxGetFieldSafe(body_motion_data, i, "expmap_damping_ratio_multiplier");
+      sizecheck(expmap_damping_ratio_multiplier,1,1);
+      msg->body_motion_data[i].expmap_damping_ratio_multiplier = mxGetScalar(expmap_damping_ratio_multiplier);
+      const mxArray* weight_multiplier = mxGetFieldSafe(body_motion_data, i, "weight_multiplier");
+      sizecheck(weight_multiplier,6,1);
+      memcpy(msg->body_motion_data[i].weight_multiplier, mxGetPrSafe(weight_multiplier), sizeof(double)*6);
     }
   }
 
@@ -115,7 +145,7 @@ std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray 
       msg->body_wrench_data[i].body_id = (int32_t) mxGetScalar(myGetField(body_wrench_data, i, "body_id"));
       const mxArray* wrench = myGetField(body_wrench_data, i, "wrench");
       sizecheck(wrench, wrench_size, 1);
-      memcpy(msg->body_wrench_data[i].wrench, mxGetPr(wrench), wrench_size * sizeof(double));
+      memcpy(msg->body_wrench_data[i].wrench, mxGetPrSafe(wrench), wrench_size * sizeof(double));
     }
   }
 
@@ -209,7 +239,26 @@ VectorXd velocityReference(NewQPControllerData *pdata, double t, const Ref<Vecto
     dt = t - pdata->state.t_prev;
   }
 
-  pdata->state.vref_integrator_state = (1-params->eta)*pdata->state.vref_integrator_state + params->eta*qd + qdd*dt;
+  VectorXd qdd_limited = qdd;
+  // Do not wind the vref integrator up against the joint limits for the legs
+  for (i=0; i < rpc->position_indices.r_leg.size(); i++) {
+    int pos_ind = rpc->position_indices.r_leg(i);
+    if (q(pos_ind) <= pdata->r->joint_limit_min(pos_ind) + LEG_INTEGRATOR_DEACTIVATION_MARGIN) {
+      qdd_limited(pos_ind) = std::max(qdd(pos_ind), 0.0);
+    } else if (q(pos_ind) >= pdata->r->joint_limit_max(pos_ind) - LEG_INTEGRATOR_DEACTIVATION_MARGIN) {
+      qdd_limited(pos_ind) = std::min(qdd(pos_ind), 0.0);
+    }
+  }
+  for (i=0; i < rpc->position_indices.l_leg.size(); i++) {
+    int pos_ind = rpc->position_indices.l_leg(i);
+    if (q(pos_ind) <= pdata->r->joint_limit_min(pos_ind) + LEG_INTEGRATOR_DEACTIVATION_MARGIN) {
+      qdd_limited(pos_ind) = std::max(qdd(pos_ind), 0.0);
+    } else if (q(pos_ind) >= pdata->r->joint_limit_max(pos_ind) - LEG_INTEGRATOR_DEACTIVATION_MARGIN) {
+      qdd_limited(pos_ind) = std::min(qdd(pos_ind), 0.0);
+    }
+  }
+
+  pdata->state.vref_integrator_state = (1-params->eta)*pdata->state.vref_integrator_state + params->eta*qd + qdd_limited*dt;
 
   if (params->zero_ankles_on_contact && foot_contact[0] == 1) {
     for (i=0; i < rpc->position_indices.l_leg_ak.size(); i++) {
@@ -277,6 +326,37 @@ std::vector<SupportStateElement> loadAvailableSupports(std::shared_ptr<drake::lc
   return available_supports;
 }
 
+void addJointSoftLimits(const JointSoftLimitParams &params, const DrakeRobotState &robot_state, const VectorXd &q_des, std::vector<SupportStateElement> &supports, std::vector<drake::lcmt_joint_pd_override> &joint_pd_override) {
+  Matrix<bool, Dynamic, 1> has_joint_override = Matrix<bool, Dynamic, 1>::Zero(q_des.size());
+  for (std::vector<drake::lcmt_joint_pd_override>::iterator it = joint_pd_override.begin(); it != joint_pd_override.end(); ++it) {
+    has_joint_override(it->position_ind - 1) = true;
+  }
+  for (int i=0; i < params.lb.size(); i++) {
+    if (!has_joint_override(i) && params.enabled(i)) {
+      int disable_body_1idx = params.disable_when_body_in_support(i);
+      if (disable_body_1idx == 0 || !inSupport(supports, disable_body_1idx - 1)) {
+        double w_lb = 0;
+        double w_ub = 0;
+        if (!isInf(params.lb(i))) {
+          w_lb = logisticSigmoid(params.weight(i), params.k_logistic(i), params.lb(i), robot_state.q(i));
+        }
+        if (!isInf(params.ub(i))) {
+          w_ub = logisticSigmoid(params.weight(i), params.k_logistic(i), robot_state.q(i), params.ub(i));
+        }
+        double weight = std::max(w_ub, w_lb);
+        drake::lcmt_joint_pd_override override;
+        override.position_ind = i + 1;
+        override.qi_des = q_des(i);
+        override.qdi_des = 0;
+        override.kp = params.kp(i);
+        override.kd = params.kd(i);
+        override.weight = weight;
+        joint_pd_override.push_back(override);
+      }
+    }
+  }
+}
+
 void applyJointPDOverride(const std::vector<drake::lcmt_joint_pd_override> &joint_pd_override, const DrakeRobotState &robot_state, PIDOutput &pid_out, VectorXd &w_qdd) {
   for (std::vector<drake::lcmt_joint_pd_override>::const_iterator it = joint_pd_override.begin(); it != joint_pd_override.end(); ++it) {
     int ind = it->position_ind - 1;
@@ -323,6 +403,11 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   Map<Matrix<double, 4, 1>> s1(&qp_input->zmp_data.s1[0][0]);
   Map<Matrix<double, 4, 1>> s1dot(&qp_input->zmp_data.s1dot[0][0]);
 
+  // Active supports
+  std::vector<SupportStateElement> available_supports = loadAvailableSupports(qp_input);
+  std::vector<SupportStateElement> active_supports = getActiveSupports(pdata->r, pdata->map_ptr, robot_state.q, robot_state.qd, available_supports, b_contact_force, params->contact_threshold, pdata->default_terrain_height);
+
+
   // // whole_body_data
   if (qp_input->whole_body_data.num_positions != nq) mexErrMsgTxt("number of positions doesn't match num_dof for this robot");
   Map<VectorXd> q_des(qp_input->whole_body_data.q_des.data(), nq);
@@ -330,9 +415,13 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     mexErrMsgTxt("size of constrained dofs does not match num_constrained_dofs");
   }
   Map<VectorXi> condof(qp_input->whole_body_data.constrained_dofs.data(), qp_input->whole_body_data.num_constrained_dofs);
+
   PIDOutput pid_out = wholeBodyPID(pdata, robot_state.t, robot_state.q, robot_state.qd, q_des, &params->whole_body);
   VectorXd w_qdd = params->whole_body.w_qdd;
+
+  addJointSoftLimits(params->joint_soft_limits, robot_state, q_des, active_supports, qp_input->joint_pd_override);
   applyJointPDOverride(qp_input->joint_pd_override, robot_state, pid_out, w_qdd);
+
 
   qp_output->q_ref = pid_out.q_ref;
 
@@ -357,30 +446,44 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
 
   std::vector<DesiredBodyAcceleration> desired_body_accelerations;
   desired_body_accelerations.resize(qp_input->num_tracked_bodies);
-  Vector6d body_pose_des, body_v_des, body_vdot_des;
+  Vector6d body_v_des, body_vdot_des;
   Vector6d body_vdot;
+  Isometry3d body_pose_des;
 
   for (int i=0; i < qp_input->num_tracked_bodies; i++) {
-    int body_id0 = qp_input->body_motion_data[i].body_id - 1;
-    double weight = params->body_motion[body_id0].weight;
-    desired_body_accelerations[i].body_id0 = body_id0;
+    if (qp_input->body_motion_data[i].body_id == 0)
+      mexErrMsgTxt("Body motion data with body id 0\n");
+    int body_or_frame_id0 = qp_input->body_motion_data[i].body_id - 1;
+    int true_body_id0 = pdata->r->parseBodyOrFrameID(body_or_frame_id0, NULL);
+    double weight = params->body_motion[true_body_id0].weight;
+    desired_body_accelerations[i].body_or_frame_id0 = body_or_frame_id0;
+    Map<Vector4d> quat_task_to_world(qp_input->body_motion_data[i].quat_task_to_world);
+    Map<Vector3d> translation_task_to_world(qp_input->body_motion_data[i].translation_task_to_world);
+    desired_body_accelerations[i].T_task_to_world.linear() = quat2rotmat(quat_task_to_world);
+    desired_body_accelerations[i].T_task_to_world.translation() = translation_task_to_world;
+    Map<Vector3d> xyz_kp_multiplier(qp_input->body_motion_data[i].xyz_kp_multiplier);
+    Map<Vector3d> xyz_damping_ratio_multiplier(qp_input->body_motion_data[i].xyz_damping_ratio_multiplier);
+    double expmap_kp_multiplier = qp_input->body_motion_data[i].expmap_kp_multiplier;
+    double expmap_damping_ratio_multiplier = qp_input->body_motion_data[i].expmap_damping_ratio_multiplier;
+    memcpy(desired_body_accelerations[i].weight_multiplier.data(),qp_input->body_motion_data[i].weight_multiplier,sizeof(double)*6);
+    pdata->r->findKinematicPath(desired_body_accelerations[i].body_path,0,desired_body_accelerations[i].body_or_frame_id0);
     Map<Matrix<double, 6, 4,RowMajor>>coefs_rowmaj(&qp_input->body_motion_data[i].coefs[0][0]);
     Matrix<double, 6, 4> coefs = coefs_rowmaj;
     double t_spline = std::max(qp_input->body_motion_data[i].ts[0], std::min(qp_input->body_motion_data[i].ts[1], robot_state.t));
-    evaluateCubicSplineSegment(t_spline - qp_input->body_motion_data[i].ts[0], coefs, body_pose_des, body_v_des, body_vdot_des);
-    desired_body_accelerations[i].body_vdot = bodyMotionPD(pdata->r, robot_state, body_id0, body_pose_des, body_v_des, body_vdot_des, params->body_motion[body_id0].Kp, params->body_motion[body_id0].Kd);
+
+    Vector6d body_Kp;
+    body_Kp.head<3>() = (params->body_motion[true_body_id0].Kp.head<3>().array()*xyz_kp_multiplier.array()).matrix();
+    body_Kp.tail<3>() = params->body_motion[true_body_id0].Kp.tail<3>()*expmap_kp_multiplier;
+    Vector6d body_Kd;
+    body_Kd.head<3>() = (params->body_motion[true_body_id0].Kd.head<3>().array()*xyz_damping_ratio_multiplier.array()*xyz_kp_multiplier.array().sqrt()).matrix();
+    body_Kd.tail<3>() = params->body_motion[true_body_id0].Kd.tail<3>()*sqrt(expmap_kp_multiplier)*expmap_damping_ratio_multiplier;
+    evaluateXYZExpmapCubicSplineSegment(t_spline - qp_input->body_motion_data[i].ts[0], coefs, body_pose_des, body_v_des, body_vdot_des);
+
+    desired_body_accelerations[i].body_vdot = bodySpatialMotionPD(pdata->r, robot_state, body_or_frame_id0, body_pose_des, body_v_des, body_vdot_des, body_Kp, body_Kd,desired_body_accelerations[i].T_task_to_world);
+    
     desired_body_accelerations[i].weight = weight;
-    desired_body_accelerations[i].accel_bounds = params->body_motion[body_id0].accel_bounds;
+    desired_body_accelerations[i].accel_bounds = params->body_motion[true_body_id0].accel_bounds;
     desired_body_accelerations[i].control_pose_when_in_contact = qp_input->body_motion_data[i].control_pose_when_in_contact;
-    // mexPrintf("body: %d, vdot: %f %f %f %f %f %f weight: %f\n", body_id0, 
-    //           desired_body_accelerations[i].body_vdot(0), 
-    //           desired_body_accelerations[i].body_vdot(1), 
-    //           desired_body_accelerations[i].body_vdot(2), 
-    //           desired_body_accelerations[i].body_vdot(3), 
-    //           desired_body_accelerations[i].body_vdot(4), 
-    //           desired_body_accelerations[i].body_vdot(5),
-    //           weight);
-      // mexPrintf("tracking body: %d, coefs[:,0]: %f %f %f %f %f %f coefs(", body_id0,
   }
 
   int n_body_accel_eq_constraints = 0;
@@ -391,12 +494,9 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
 
   MatrixXd R_DQyD_ls = R_ls + D_ls.transpose()*Qy*D_ls;
 
-  pdata->r->doKinematics(robot_state.q,false,robot_state.qd);
+  pdata->r->doKinematicsNew(robot_state.q, robot_state.qd);
 
   //---------------------------------------------------------------------
-
-  std::vector<SupportStateElement> available_supports = loadAvailableSupports(qp_input);
-  std::vector<SupportStateElement> active_supports = getActiveSupports(pdata->r, pdata->map_ptr, robot_state.q, robot_state.qd, available_supports, b_contact_force, params->contact_threshold, pdata->default_terrain_height);
 
   int num_active_contact_pts=0;
   for (std::vector<SupportStateElement>::iterator iter = active_supports.begin(); iter!=active_supports.end(); iter++) {
@@ -404,25 +504,19 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   }
 
   // handle external wrenches to compensate for
-  if (qp_input->body_wrench_data.size() > 0) {
-    const int wrench_size = 6;
-    MatrixXd f_ext(wrench_size, pdata->r->NB); // f_ext is in terms of featherstone bodies...
-    f_ext.setZero();
-    for (auto it = qp_input->body_wrench_data.begin(); it != qp_input->body_wrench_data.end(); ++it) {
-      const drake::lcmt_body_wrench_data& body_wrench_data = *it;
-      Map<const Matrix<double, wrench_size, 1> > wrench_in_body_frame(body_wrench_data.wrench);
+  typedef GradientVar<double, TWIST_SIZE, 1> WrenchGradientVarType;
+  std::map<int, std::unique_ptr<GradientVar<double, TWIST_SIZE, 1>> > f_ext;
+  for (auto it = qp_input->body_wrench_data.begin(); it != qp_input->body_wrench_data.end(); ++it) {
+    const drake::lcmt_body_wrench_data& body_wrench_data = *it;
+    int body_id = body_wrench_data.body_id - 1;
+    f_ext[body_id] = std::unique_ptr<WrenchGradientVarType>(new WrenchGradientVarType(TWIST_SIZE, 1, nq, 0));
+    Map<const Matrix<double, TWIST_SIZE, 1> > wrench_in_body_frame(body_wrench_data.wrench);
+    auto wrench_in_joint_frame = transformSpatialForce(Isometry3d(pdata->r->bodies[body_id]->T_body_to_joint), wrench_in_body_frame);
+    f_ext[body_id]->value() = wrench_in_joint_frame;
+  }
 
-      // HandC expects external wrenches to be expressed in Featherstone 'joint' frame, expects the column number to correspond to the featherstone body index.
-      int body_id = body_wrench_data.body_id - 1;
-      auto wrench_in_joint_frame = transformSpatialForce(Isometry3d(pdata->r->bodies[body_id]->T_body_to_joint), wrench_in_body_frame);
-      int featherstone_id = pdata->r->bodies_vector_index_to_featherstone_body_index[body_id];
-      f_ext.col(featherstone_id) = wrench_in_joint_frame;
-    }
-    pdata->r->HandC(robot_state.q,robot_state.qd,&f_ext,pdata->H,pdata->C,(MatrixXd*)nullptr,(MatrixXd*)nullptr,(MatrixXd*)nullptr);
-  }
-  else {
-    pdata->r->HandC(robot_state.q,robot_state.qd,(MatrixXd*)nullptr,pdata->H,pdata->C,(MatrixXd*)nullptr,(MatrixXd*)nullptr,(MatrixXd*)nullptr);
-  }
+  pdata->H = pdata->r->massMatrix<double>().value();
+  pdata->C = pdata->r->inverseDynamics(f_ext).value();
 
   pdata->H_float = pdata->H.topRows(6);
   pdata->H_act = pdata->H.bottomRows(nu);
@@ -432,15 +526,16 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   bool include_angular_momentum = (params->W_kdot.array().maxCoeff() > 1e-10);
 
   if (include_angular_momentum) {
-    pdata->r->getCMM(robot_state.q,robot_state.qd,pdata->Ag,pdata->Agdot);
-    pdata->Ak = pdata->Ag.topRows(3);
-    pdata->Akdot = pdata->Agdot.topRows(3);
+    pdata->Ag = pdata->r->centroidalMomentumMatrix<double>(0).value();
+    pdata->Agdot_times_v = pdata->r->centroidalMomentumMatrixDotTimesV<double>(0).value();
+    pdata->Ak = pdata->Ag.topRows<3>();
+    pdata->Akdot_times_v = pdata->Agdot_times_v.topRows<3>();
   }
   Vector3d xcom;
   // consider making all J's into row-major
   
 
-  if(!pdata->r->use_new_kinsol)
+  if(!pdata->r->getUseNewKinsol())
   {
     pdata->r->getCOM(xcom);
     pdata->r->getCOMJac(pdata->J);
@@ -529,7 +624,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
       pdata->fqp -= y0.transpose()*Qy*D_ls*Jcom;
       pdata->fqp -= (w_qdd.array()*pid_out.qddot_des.array()).matrix().transpose();
       if (include_angular_momentum) {
-        pdata->fqp += robot_state.qd.transpose()*pdata->Akdot.transpose()*params->W_kdot*pdata->Ak;
+        pdata->fqp += pdata->Akdot_times_v.transpose()*params->W_kdot*pdata->Ak;
         pdata->fqp -= kdot_des.transpose()*params->W_kdot*pdata->Ak;
       }
       f.head(nq) = pdata->fqp.transpose();
@@ -570,10 +665,13 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   Vector6d Jbdotv;	
   for (int i=0; i<desired_body_accelerations.size(); i++) {
     if (desired_body_accelerations[i].weight < 0) { // negative implies constraint
-      if (desired_body_accelerations[i].control_pose_when_in_contact || !inSupport(active_supports,desired_body_accelerations[i].body_id0)) {
-        pdata->r->forwardJac(desired_body_accelerations[i].body_id0,orig1,1,Jb);
-        auto Jdot_times_v = pdata->r->forwardJacDotTimesV(orig,desired_body_accelerations[i].body_id0,0,1,0);
-        Jbdotv.noalias() = Jdot_times_v.value();
+      int body_id0 = pdata->r->parseBodyOrFrameID(desired_body_accelerations[i].body_or_frame_id0,(Matrix4d*)nullptr);
+      if (desired_body_accelerations[i].control_pose_when_in_contact || !inSupport(active_supports,body_id0)) {
+        auto J_geometric = pdata->r->geometricJacobian<double>(0,desired_body_accelerations[i].body_or_frame_id0,desired_body_accelerations[i].body_or_frame_id0,0,true,(std::vector<int>*)nullptr);
+        auto J_geometric_dot_times_v = pdata->r->geometricJacobianDotTimesV<double>(0,desired_body_accelerations[i].body_or_frame_id0,desired_body_accelerations[i].body_or_frame_id0,0); 
+        Matrix<double,6,Dynamic> Jb_compact = J_geometric.value();
+        Jb = pdata->r->compactToFull<Matrix<double,6,Dynamic>>(Jb_compact,desired_body_accelerations[i].body_path.joint_path,true);
+        Jbdotv = J_geometric_dot_times_v.value();
 
         if (qp_input->body_motion_data[i].in_floating_base_nullspace) {
           Jb.block(0,0,6,6) = MatrixXd::Zero(6,6);
@@ -613,9 +711,12 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
 
   int constraint_start_index = 2*nu;
   for (int i=0; i<desired_body_accelerations.size(); i++) {
-    pdata->r->forwardJac(desired_body_accelerations[i].body_id0,orig1,1,Jb);
-    auto Jdot_times_v = pdata->r->forwardJacDotTimesV(orig,desired_body_accelerations[i].body_id0,0,1,0);
-    Jbdotv.noalias() = Jdot_times_v.value();
+    auto J_geometric = pdata->r->geometricJacobian<double>(0,desired_body_accelerations[i].body_or_frame_id0,desired_body_accelerations[i].body_or_frame_id0 ,0,true,(std::vector<int>*)nullptr);
+    auto J_geometric_dot_times_v = pdata->r->geometricJacobianDotTimesV<double>(0,desired_body_accelerations[i].body_or_frame_id0,desired_body_accelerations[i].body_or_frame_id0,0);
+    Matrix<double,6,Dynamic>Jb_compact = J_geometric.value();
+    Jb = pdata->r->compactToFull<Matrix<double,6,Dynamic>>(Jb_compact,desired_body_accelerations[i].body_path.joint_path,true);
+    Jbdotv = J_geometric_dot_times_v.value();
+
     if (qp_input->body_motion_data[i].in_floating_base_nullspace) {
       Jb.block(0,0,6,6) = MatrixXd::Zero(6,6);
       // Jbdot.block(0,0,6,6) = MatrixXd::Zero(6,6);
@@ -739,10 +840,13 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     // add in body spatial acceleration cost terms
     for (int i=0; i<desired_body_accelerations.size(); i++) {
       if (desired_body_accelerations[i].weight > 0) {
-        if (desired_body_accelerations[i].control_pose_when_in_contact || !inSupport(active_supports,desired_body_accelerations[i].body_id0)) {
-          pdata->r->forwardJac(desired_body_accelerations[i].body_id0,orig1,1,Jb);
-          auto Jdot_times_v = pdata->r->forwardJacDotTimesV(orig,desired_body_accelerations[i].body_id0,0,1,0);
-          Jbdotv.noalias() = Jdot_times_v.value();
+        int body_id0 = pdata->r->parseBodyOrFrameID(desired_body_accelerations[i].body_or_frame_id0,(Matrix4d*)nullptr);
+        if (desired_body_accelerations[i].control_pose_when_in_contact || !inSupport(active_supports,body_id0)) {
+          auto J_geometric = pdata->r->geometricJacobian<double>(0,desired_body_accelerations[i].body_or_frame_id0,desired_body_accelerations[i].body_or_frame_id0,0,true,(std::vector<int>*)nullptr);
+          auto J_geometric_dot_times_v = pdata->r->geometricJacobianDotTimesV<double>(0,desired_body_accelerations[i].body_or_frame_id0,desired_body_accelerations[i].body_or_frame_id0,0);
+          Matrix<double,6,Dynamic> Jb_compact = J_geometric.value();
+          Jb = pdata->r->compactToFull<Matrix<double,6,Dynamic>>(Jb_compact,desired_body_accelerations[i].body_path.joint_path,true);
+          Jbdotv = J_geometric_dot_times_v.value();
 
           if (qp_input->body_motion_data[i].in_floating_base_nullspace) {
             Jb.block(0,0,6,6) = MatrixXd::Zero(6,6);
@@ -750,8 +854,8 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
           }
           for (int j=0; j<6; j++) {
             if (!std::isnan(desired_body_accelerations[i].body_vdot[j])) {
-              pdata->Hqp += desired_body_accelerations[i].weight*(Jb.row(j)).transpose()*Jb.row(j);
-              f.head(nq).noalias() += desired_body_accelerations[i].weight*(Jbdotv(j) - desired_body_accelerations[i].body_vdot[j])*Jb.row(j).transpose();
+              pdata->Hqp += desired_body_accelerations[i].weight*desired_body_accelerations[i].weight_multiplier(j)*(Jb.row(j)).transpose()*Jb.row(j);
+              f.head(nq).noalias() += desired_body_accelerations[i].weight*desired_body_accelerations[i].weight_multiplier(j)*(Jbdotv(j) - desired_body_accelerations[i].body_vdot[j])*Jb.row(j).transpose();
             }
           }
         }
@@ -808,6 +912,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   //----------------------------------------------------------------------
   // Solve for inputs ----------------------------------------------------
   qp_output->qdd = alpha.head(nq);
+
   VectorXd beta = alpha.segment(nq,nc*nd);
 
   // use transpose because B_act is orthogonal

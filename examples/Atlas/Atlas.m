@@ -22,8 +22,11 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       if ~isfield(options,'hand_left')
         options.hand_left = 'none';
       end
+      if ~isfield(options,'external_force')
+        options.external_force = [];
+      end
       if ~isfield(options,'atlas_version') 
-        options.atlas_version = 3; 
+        options.atlas_version = 5; 
       end
 
       w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
@@ -32,16 +35,21 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       obj = obj@Biped('r_foot_sole', 'l_foot_sole');
       warning(w);
 
-      if options.atlas_version == 3;
+      if options.atlas_version == 3
         hand_position_right = [0; -0.195; -0.01];
         hand_position_left = [0; 0.195; 0.01];
-        hand_orientation_right = [0; -3.1415/2; 3.1415];
-        hand_orientation_left = [0; -3.1415/2; 0];
-      else
+        hand_orientation_right = [0; -pi/2; pi];
+        hand_orientation_left = [0; -pi/2; 0];
+      elseif options.atlas_version == 4
         hand_position_right = [0; -0.195; -0.01];
         hand_position_left = hand_position_right;
-        hand_orientation_right = [0; -3.1415/2; 3.1415];
-        hand_orientation_left = [0; 3.1415/2; 3.1415];
+        hand_orientation_right = [0; -pi/2; pi];
+        hand_orientation_left = [0; pi/2; pi];
+      elseif options.atlas_version == 5
+        hand_position_right = [0; -0.1245; 0];
+        hand_orientation_right = [0; 0; pi];
+        hand_position_left = [0; -0.1245; 0];
+        hand_orientation_left = [0; 0; pi];
       end
 
       hand=options.hand_right;
@@ -79,6 +87,16 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
         end
       end
 
+      % Add a force on a specified link if we want!
+      if ~isempty(options.external_force)
+        % For compile purposes, record that we have external force applied to a link
+        % (this affects input frames)
+        obj.external_force = findLinkId(obj,options.external_force);
+        options_ef.weld_to_link = obj.external_force;
+        obj = obj.addRobotFromURDF(strcat(getenv('DRC_PATH'), '/drake/util/three_dof_force.urdf'), ...
+          [0; 0; 0], [0; 0; 0], options_ef);
+      end
+      
       if options.floating
         % could also do fixed point search here
         obj = obj.setInitialState(obj.resolveConstraints(zeros(obj.getNumStates(),1)));
@@ -143,7 +161,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       obj = obj.setStateFrame(state_frame);
       
       % Same bit of complexity for input frame to get hand inputs
-      if (obj.hand_right > 0 || obj.hand_left > 0)
+      if (obj.hand_right > 0 || obj.hand_left > 0 || obj.external_force > 0)
         input_frame = getInputFrame(obj);
         input_frame  = replaceFrameNum(input_frame,1,atlasFrames.AtlasInput(obj));
       else
@@ -336,6 +354,24 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
 
   properties (SetAccess = protected, GetAccess = public)
     x0
+    hand_right = 0;
+    hand_right_kind = 'none';
+    hand_left = 0;
+    hand_left_kind = 'none';
+    % preconstructing these for efficiency
+    left_full_support
+    left_toe_support
+    right_full_support
+    right_toe_support
+    left_full_right_full_support
+    left_toe_right_full_support
+    left_full_right_toe_support
+    atlas_version = [];
+    external_force = 0; % if nonzero, body id where force is being exerted
+  end
+
+  properties
+    fixed_point_file = fullfile(getDrakePath(), 'examples', 'Atlas', 'data', 'atlas_fp.mat');
     default_footstep_params = struct('nom_forward_step', 0.25,... % m
                                       'max_forward_step', 0.35,...% m
                                       'max_backward_step', 0.2,...% m
@@ -351,28 +387,12 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
                                       'leading_foot', 1); % 0: left, 1: right
     default_walking_params = struct('step_speed', 0.5,... % speed of the swing foot (m/s)
                                     'step_height', 0.05,... % approximate clearance over terrain (m)
-                                    'drake_min_hold_time', 1.0,... % minimum time in double support (s)
+                                    'drake_min_hold_time', 0.7,... % minimum time in double support (s)
                                     'drake_instep_shift', 0.0,... % Distance to shift ZMP trajectory inward toward the instep from the center of the foot (m)
                                     'mu', 1.0,... % friction coefficient
                                     'constrain_full_foot_pose', true,... % whether to constrain the swing foot roll and pitch
                                     'pelvis_height_above_foot_sole', 0.84,... % default pelvis height when walking
                                     'nominal_LIP_COM_height', 0.89); % nominal height used to construct D_ls for our linear inverted pendulum model
-    hand_right = 0;
-    hand_right_kind = 'none';
-    hand_left = 0;
-    hand_left_kind = 'none';
-    % preconstructing these for efficiency
-    left_full_support
-    left_toe_support
-    right_full_support
-    right_toe_support
-    left_full_right_full_support
-    left_toe_right_full_support
-    left_full_right_toe_support
-    atlas_version = [];
   end
 
-  properties
-    fixed_point_file = fullfile(getDrakePath(), 'examples', 'Atlas', 'data', 'atlas_fp.mat');
-  end
 end

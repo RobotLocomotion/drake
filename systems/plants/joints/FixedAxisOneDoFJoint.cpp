@@ -63,9 +63,10 @@ void FixedAxisOneDoFJoint::motionSubspaceDotTimesV(const Eigen::Ref<const Vector
   }
 }
 
-void FixedAxisOneDoFJoint::randomConfiguration(Eigen::Ref<VectorXd>& q, std::default_random_engine& generator) const
+Eigen::VectorXd FixedAxisOneDoFJoint::randomConfiguration(std::default_random_engine& generator) const
 {
-  if (isFinite(joint_limit_min) && isFinite(joint_limit_max)) {
+	Eigen::VectorXd q(1);
+	if (isFinite(joint_limit_min) && isFinite(joint_limit_max)) {
     std::uniform_real_distribution<double> distribution(joint_limit_min, joint_limit_max);
     q[0] = distribution(generator);
   }
@@ -91,6 +92,7 @@ void FixedAxisOneDoFJoint::randomConfiguration(Eigen::Ref<VectorXd>& q, std::def
       q[0] = joint_limit_max;
     }
   }
+	return q;
 }
 
 void FixedAxisOneDoFJoint::qdot2v(const Eigen::Ref<const VectorXd>& q, Eigen::MatrixXd& qdot_to_v, Eigen::MatrixXd* dqdot_to_v) const
@@ -116,16 +118,17 @@ void FixedAxisOneDoFJoint::setDynamics(double damping, double coulomb_friction, 
 	this->coulomb_window = coulomb_window;
 }
 
-/*
-GradientVar<double,1,1> FixedAxisOneDoFJoint::computeFrictionForce(const Eigen::Ref<const VectorXd>& v, int gradient_order) const
-{
-	GradientVar<double,1,1> force(1,1,1,gradient_order);
-	force.value() = damping*v[0];
-	if (gradient_order>0)
-		force.gradient().value() = damping;
-	return force;
+GradientVar<double, Eigen::Dynamic, 1> FixedAxisOneDoFJoint::frictionTorque(const Eigen::Ref<const Eigen::VectorXd>& v, int gradient_order) const {
+  GradientVar<double, Eigen::Dynamic, 1> ret(getNumVelocities(), 1, getNumVelocities(), gradient_order);
+  ret.value()[0] = damping * v[0];
+  ret.value()[0] += std::min(1.0, std::max(-1.0, v[0] / coulomb_window)) * coulomb_friction;
+  if (gradient_order > 0) {
+    ret.gradient().value()(0, 0) = damping;
+    if (std::abs(v[0]) < coulomb_window)
+      ret.gradient().value()(0, 0) += sign(v[0]) * (coulomb_friction / coulomb_window);
+  }
+  return ret;
 }
-*/
 
 void FixedAxisOneDoFJoint::setupOldKinematicTree(RigidBodyManipulator* model, int body_ind, int position_num_start, int velocity_num_start) const
 {

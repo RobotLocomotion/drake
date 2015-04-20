@@ -37,7 +37,7 @@ int main()
 
   VectorXd q = VectorXd::Random(model->num_positions);
   VectorXd v = VectorXd::Random(model->num_velocities);
-  model->use_new_kinsol = true;
+  model->setUseNewKinsol(true);
   model->doKinematicsNew(q, v, true, true);
 
 

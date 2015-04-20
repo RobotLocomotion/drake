@@ -129,7 +129,7 @@ wrench_sol = cdfkp.contactWrench(x_sol);
 for i = 1:nT
   kinsol_tmp = robot.doKinematics(q_sol(:,i),false,false);
   valuecheck(robot.getCOM(kinsol_tmp),com_sol(:,i),1e-3);
-  A = robot.getCMMdA(kinsol_tmp);
+  A = robot.centroidalMomentumMatrix(kinsol_tmp);
   valuecheck(A(1:3,:)*v_sol(:,i),H_sol(:,i),1e-3);
 end
 valuecheck(diff(com_sol,[],2)./bsxfun(@times,ones(3,1),h_sol),(comdot_sol(:,1:end-1)+comdot_sol(:,2:end))/2,1e-3);

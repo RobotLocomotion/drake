@@ -29,7 +29,7 @@ void surfaceTangentsSingle(Vector3d const & normal, Matrix3kd & d)
   
   t2 = t1.cross(normal);
 
-  for (int k = 0 ; k < BASIS_VECTOR_HALF_COUNT ; k++) {
+  for (size_t k = 0 ; k < BASIS_VECTOR_HALF_COUNT ; k++) {
     theta = k*M_PI/BASIS_VECTOR_HALF_COUNT;
     d.col(k)=cos(theta)*t1 + sin(theta)*t2;
   }
@@ -42,19 +42,19 @@ void surfaceTangentsSingle(Vector3d const & normal, Matrix3kd & d)
 //   idxB mx1 vector of bodyh indexes for body B in m possible contacts
 // OUTPUTS:
 //   bodyIndsSorted a set of unique, sorted(ascending) body indexes participating in contact pairs
-void getUniqueBodiesSorted(VectorXi const & idxA, VectorXi const & idxB, std::vector<int> & bodyIndsSorted)
+void getUniqueBodiesSorted(VectorXi const & idxA, VectorXi const & idxB, std::vector<size_t> & bodyIndsSorted)
 {
   size_t m = idxA.size();
-  std::set<int> bodyInds;
+  std::set<size_t> bodyInds;
   
-  for (int i = 0 ; i < m ; i++) {  
+  for (size_t i = 0 ; i < m ; i++) {  
     bodyInds.insert(idxA[i]);
     bodyInds.insert(idxB[i]);
   }
   
   bodyIndsSorted.clear();
 
-  for (std::set<int>::const_iterator citer = bodyInds.begin() ; citer != bodyInds.end() ; citer++) {
+  for (std::set<size_t>::const_iterator citer = bodyInds.begin() ; citer != bodyInds.end() ; citer++) {
     if ( *citer > 1 ) {
       bodyIndsSorted.push_back(*citer);
     }
@@ -70,11 +70,11 @@ void getUniqueBodiesSorted(VectorXi const & idxA, VectorXi const & idxB, std::ve
 //   bodyIdx: the body index to search for
 // OUTPUTS:
 //   contactIdx: the list of n indexes into idxList where bodyIdx occurred
-void findContactIndexes(VectorXi const & idxList, const int bodyIdx, std::vector<int> & contactIdx)
+void findContactIndexes(VectorXi const & idxList, const size_t bodyIdx, std::vector<size_t> & contactIdx)
 {
-  int m = idxList.size();
+  size_t m = idxList.size();
   contactIdx.clear();
-  for (int i = 0 ; i < m ; i++) {
+  for (size_t i = 0 ; i < m ; i++) {
     if (idxList[i] == bodyIdx) {
       contactIdx.push_back(i); //zero-based index 
     }
@@ -92,11 +92,11 @@ void findContactIndexes(VectorXi const & idxList, const int bodyIdx, std::vector
 //   bodyPoints: (4 x n) matrix of contact points containing occurences of body A contact points followed
 //     by body B contactpoints where n = size(cindA) + size(cindB)
 // NOTE: the output is a matrix of 4-vector columns in homogeneous coordinates (x,y,z,1)'
-void getBodyPoints(std::vector<int> const & cindA, std::vector<int> const & cindB, Matrix3xd const & xA, Matrix3xd const & xB, MatrixXd & bodyPoints)
+void getBodyPoints(std::vector<size_t> const & cindA, std::vector<size_t> const & cindB, Matrix3xd const & xA, Matrix3xd const & xB, MatrixXd & bodyPoints)
 {
-  int i = 0;
-  int numPtsA = cindA.size();
-  int numPtsB = cindB.size();
+  size_t i = 0;
+  size_t numPtsA = cindA.size();
+  size_t numPtsB = cindB.size();
 
   bodyPoints.resize(4, numPtsA + numPtsB);
 
@@ -127,10 +127,10 @@ void getBodyPoints(std::vector<int> const & cindA, std::vector<int> const & cind
 //  After one call to the function, the n rows of the Jacobian matrix corresponding to bodyInd will be completed
 //  This function must be called with all bodyInds to finish the total accumulation of the contact Jacobian
 
-void RigidBodyManipulator::accumulateContactJacobian(const int bodyInd, MatrixXd const & bodyPoints, std::vector<int> const & cindA, std::vector<int> const & cindB, MatrixXd & J)
+void RigidBodyManipulator::accumulateContactJacobian(const size_t bodyInd, MatrixXd const & bodyPoints, std::vector<size_t> const & cindA, std::vector<size_t> const & cindB, MatrixXd & J)
 {
-  const int nq = J.cols();
-  const int numPts = bodyPoints.cols();
+  const size_t nq = J.cols();
+  const size_t numPts = bodyPoints.cols();
   const size_t numCA = cindA.size();
   const size_t numCB = cindB.size();
   const size_t offset = 3*numCA;
@@ -152,10 +152,10 @@ void RigidBodyManipulator::accumulateContactJacobian(const int bodyInd, MatrixXd
 // Same as above but computes the second order contact Jacobian
 // OUTPUTS:
 //  dJ: (3m x nq^2) Second order contact Jacobian
-void RigidBodyManipulator::accumulateSecondOrderContactJacobian(const int bodyInd, MatrixXd const & bodyPoints, std::vector<int> const & cindA, std::vector<int> const & cindB, MatrixXd & dJ)
+void RigidBodyManipulator::accumulateSecondOrderContactJacobian(const size_t bodyInd, MatrixXd const & bodyPoints, std::vector<size_t> const & cindA, std::vector<size_t> const & cindB, MatrixXd & dJ)
 {
-  const int dJCols = dJ.cols(); //nq^2 instead of nq
-  const int numPts = bodyPoints.cols();
+  const size_t dJCols = dJ.cols(); //nq^2 instead of nq
+  const size_t numPts = bodyPoints.cols();
   const size_t numCA = cindA.size();
   const size_t numCB = cindB.size();
   const size_t offset = 3*numCA;
@@ -163,12 +163,12 @@ void RigidBodyManipulator::accumulateSecondOrderContactJacobian(const int bodyIn
   forwarddJac(bodyInd - 1, bodyPoints, dJ_tmp); //dJac instead of Jac
 
   //add contributions from points in xA
-  for (int x = 0 ; x < numCA ; x++) {
+  for (size_t x = 0 ; x < numCA ; x++) {
     dJ.block(3*cindA[x], 0, 3, dJCols) += dJ_tmp.block(3*x, 0, 3, dJCols);
   }
 
   //subtract contributions from points in xB
-  for (int x = 0 ; x < numCB ; x++) {
+  for (size_t x = 0 ; x < numCB ; x++) {
     dJ.block(3*cindB[x], 0, 3, dJCols) -= dJ_tmp.block(offset + 3*x, 0, 3, dJCols);
   }  
 }
@@ -189,20 +189,20 @@ void RigidBodyManipulator::accumulateSecondOrderContactJacobian(const int bodyIn
 
 void RigidBodyManipulator::computeContactJacobians(Map<VectorXi> const & idxA, Map<VectorXi> const & idxB, Map<Matrix3xd> const & xA, Map<Matrix3xd> const & xB, const bool compute_second_derivatives, MatrixXd & J, MatrixXd & dJ)
 {
-  std::vector<int> bodyInds;
-  const int nq = num_positions;
-  const int numContactPairs = xA.cols();
+  std::vector<size_t> bodyInds;
+  const size_t nq = num_positions;
+  const size_t numContactPairs = xA.cols();
 
   J = MatrixXd::Zero(3*numContactPairs, nq);
   dJ = MatrixXd::Zero(3*numContactPairs, nq*nq);
   
   getUniqueBodiesSorted(idxA, idxB, bodyInds);
   
-  const int numUniqueBodies = bodyInds.size();
+  const size_t numUniqueBodies = bodyInds.size();
 
-  for (int i = 0; i < numUniqueBodies ; i++) {
-    const int bodyInd = bodyInds[i];
-    vector<int> cindA, cindB;
+  for (size_t i = 0; i < numUniqueBodies ; i++) {
+    const size_t bodyInd = bodyInds[i];
+    vector<size_t> cindA, cindB;
     MatrixXd bodyPoints;
     findContactIndexes(idxA, bodyInd, cindA);
     findContactIndexes(idxB, bodyInd, cindB);
@@ -225,11 +225,11 @@ void RigidBodyManipulator::computeContactJacobians(Map<VectorXi> const & idxA, M
 //      Eigen templates can be optimized at compile time
 void RigidBodyManipulator::surfaceTangents(Map<Matrix3xd> const & normals, std::vector< Map<Matrix3xd> > & tangents)
 {
-  const int numContactPairs = normals.cols();
-  for (int curNormal = 0 ; curNormal < numContactPairs; curNormal++) {
+  const size_t numContactPairs = normals.cols();
+  for (size_t curNormal = 0 ; curNormal < numContactPairs; curNormal++) {
     Matrix3kd d;
     surfaceTangentsSingle(normals.col(curNormal), d);
-    for (int k = 0 ; k < BASIS_VECTOR_HALF_COUNT ; k++) {
+    for (size_t k = 0 ; k < BASIS_VECTOR_HALF_COUNT ; k++) {
       tangents[k].col(curNormal) = d.col(k);
     }
   }

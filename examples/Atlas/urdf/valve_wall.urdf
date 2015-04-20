@@ -259,7 +259,7 @@
     <origin xyz=".22543 0.48736 1.1049" />
     <axis xyz="1 0 0" />
 <dynamics damping="5" friction="5"/>
-<limit lower="0" upper="pi/2" />
+<limit lower="0" upper="1.5708" />
   </joint>
  
 <joint
