@@ -392,7 +392,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
                                     'mu', 1.0,... % friction coefficient
                                     'constrain_full_foot_pose', true,... % whether to constrain the swing foot roll and pitch
                                     'pelvis_height_above_foot_sole', 0.84,... % default pelvis height when walking
-                                    'use_forefoot_only', false,... % only use the front half of the foot for support
+                                    'support_contact_groups', {{'heel', 'toe'}},... % which contact groups are available for support when walking
                                     'nominal_LIP_COM_height', 0.89); % nominal height used to construct D_ls for our linear inverted pendulum model
   end
 

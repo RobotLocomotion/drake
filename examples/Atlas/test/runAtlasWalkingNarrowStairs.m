@@ -69,7 +69,7 @@ height_map = RigidBodyHeightMapTerrain.constructHeightMapFromRaycast(r,x0_scan(1
 r = r.setTerrain(height_map).compile();
 
 % Only use the front half of the foot for support
-r.default_walking_params.use_forefoot_only = true;
+r.default_walking_params.support_contact_groups = {'toe', 'midfoot'};
 
 v = r.constructVisualizer();
 v.display_dt = 0.01;

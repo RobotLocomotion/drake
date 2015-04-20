@@ -146,13 +146,9 @@ function [zmp, supp] = getZMPBetweenFeet(biped, steps)
   for f = {'left', 'right'}
     foot = f{1};
     if steps.(foot).is_in_contact
-      if steps.(foot).walking_params.use_forefoot_only
-        supp_pts = biped.getTerrainContactPoints(biped.foot_body_id.(foot), {{'toe', 'midfoot'}});
-        initial_support_groups{end+1} = {'toe', 'midfoot'};
-      else
-        supp_pts = biped.getTerrainContactPoints(biped.foot_body_id.(foot), {{'toe', 'heel'}});
-        initial_support_groups{end+1} = {'toe', 'heel'};
-      end
+      supp_groups = steps.(foot).walking_params.support_contact_groups;
+      supp_pts = biped.getTerrainContactPoints(biped.foot_body_id.(foot), {supp_groups});
+      initial_support_groups{end+1} = supp_groups;
       supp_pts_in_world = bsxfun(@plus, quat2rotmat(steps.(foot).pos(4:7)) * supp_pts.pts, steps.(foot).pos(1:3));
       zmp(:,end+1) = mean(supp_pts_in_world(1:2,:), 2);
       initial_supports(end+1) = biped.foot_body_id.(foot);
