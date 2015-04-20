@@ -43,6 +43,20 @@ end
 steps.right = footsteps_with_quat([footsteps_with_quat.frame_id] == biped.foot_frame_id.right);
 steps.left = footsteps_with_quat([footsteps_with_quat.frame_id] == biped.foot_frame_id.left);
 
+com0 = getCOM(biped, kinsol);
+sole_to_com = rotmat(-footsteps(1).pos(6)) * (com0(1:2) - footsteps(1).pos(1:2));
+if sole_to_com(1) < 0.01 
+  % CoM is behind sole, so we have to use the heel support to get moving
+  for f = {'left', 'right'}
+    foot = f{1};
+    for j = 1:length(steps.(foot)(1).walking_params.support_contact_groups)
+      if strcmp(steps.(foot)(1).walking_params.support_contact_groups{j}, 'midfoot')
+        steps.(foot)(1).walking_params.support_contact_groups{j} = 'heel';
+      end
+    end
+  end
+end
+
 [zmp0, supp0] = getZMPBetweenFeet(biped, struct('right', steps.right(1), 'left', steps.left(1)));
 zmp_knots = struct('t', options.t0, 'zmp', zmp0, 'supp', supp0);
 
@@ -149,7 +163,10 @@ function [zmp, supp] = getZMPBetweenFeet(biped, steps)
       supp_groups = steps.(foot).walking_params.support_contact_groups;
       supp_pts = biped.getTerrainContactPoints(biped.foot_body_id.(foot), {supp_groups});
       initial_support_groups{end+1} = supp_groups;
-      supp_pts_in_world = bsxfun(@plus, quat2rotmat(steps.(foot).pos(4:7)) * supp_pts.pts, steps.(foot).pos(1:3));
+      T_sole_to_world = poseQuat2tform(steps.(foot).pos);
+      T_sole_to_foot = biped.getFrame(steps.(foot).frame_id).T;
+      T_foot_to_world = T_sole_to_world / T_sole_to_foot;
+      supp_pts_in_world = T_foot_to_world * [supp_pts.pts; ones(1, size(supp_pts.pts, 2))];
       zmp(:,end+1) = mean(supp_pts_in_world(1:2,:), 2);
       initial_supports(end+1) = biped.foot_body_id.(foot);
     end
