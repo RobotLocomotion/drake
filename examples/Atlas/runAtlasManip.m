@@ -1,4 +1,4 @@
-function runAtlasManipSplit(example_options)
+function runAtlasManip(example_options)
 % Run the new split QP controller, which consists of separate PlanEval
 % and InstantaneousQPController objects. The controller will also
 % automatically transition to standing when it reaches the end of its walking
