@@ -99,9 +99,7 @@ public:
   void doKinematics(MatrixBase<DerivedA> & q, bool b_compute_second_derivatives, MatrixBase<DerivedB> & v);
 
   template <typename DerivedQ, typename DerivedV>
-  void doKinematicsNew(const MatrixBase<DerivedQ>& q, const MatrixBase<DerivedV>& v, bool compute_gradients = false, bool compute_JdotV = false);
-
-  void updateCompositeRigidBodyInertias(int gradient_order);
+  void doKinematicsNew(const MatrixBase<DerivedQ>& q, const MatrixBase<DerivedV>& v, bool compute_gradients = false, bool compute_JdotV = true);
 
   bool isBodyPartOfRobot(const RigidBody& body, const std::set<int>& robotnum);
 
@@ -127,9 +125,6 @@ public:
 
   template <typename Scalar>
   GradientVar<Scalar, SPACE_DIMENSION, 1> centerOfMassJacobianDotTimesV(int gradient_order, const std::set<int>& robotnum = RigidBody::defaultRobotNumSet);
-
-  template <typename DerivedA, typename DerivedB>
-  void getCMM(MatrixBase<DerivedA> const & q, MatrixBase<DerivedA> const & qd, MatrixBase<DerivedB> &A, MatrixBase<DerivedB> &Adot);
 
   template <typename Derived>
   void getCOM(MatrixBase<Derived> &com,const std::set<int> &robotnum = RigidBody::defaultRobotNumSet);
@@ -181,6 +176,9 @@ public:
   template <typename Scalar>
   GradientVar<Scalar, Eigen::Dynamic, 1> inverseDynamics(std::map<int, std::unique_ptr< GradientVar<Scalar, TWIST_SIZE, 1> > >& f_ext, GradientVar<Scalar, Eigen::Dynamic, 1>* vd = nullptr, int gradient_order = 0);
 
+  template <typename DerivedV>
+  GradientVar<typename DerivedV::Scalar, Dynamic, 1> frictionTorques(Eigen::MatrixBase<DerivedV> const & v, int gradient_order = 0);
+
   template <typename DerivedPoints>
   GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, DerivedPoints::ColsAtCompileTime> forwardKinNew(const MatrixBase<DerivedPoints>& points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type, int gradient_order);
 
@@ -210,9 +208,6 @@ public:
 
   template<typename Scalar>
   GradientVar<Scalar, SPACE_DIMENSION + 1, SPACE_DIMENSION + 1> relativeTransform(int base_or_frame_ind, int body_or_frame_ind, int gradient_order);
-
-  template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD, typename DerivedE, typename DerivedF, typename DerivedG>
-  void HandC(MatrixBase<DerivedG> const & q, MatrixBase<DerivedG> const & qd, MatrixBase<DerivedA> * const f_ext, MatrixBase<DerivedB> &H, MatrixBase<DerivedC> &C, MatrixBase<DerivedD> *dH=NULL, MatrixBase<DerivedE> *dC=NULL, MatrixBase<DerivedF> * const df_ext=NULL);
 
   void computeContactJacobians(Map<VectorXi> const & idxA, Map<VectorXi> const & idxB, Map<Matrix3xd> const & xA, Map<Matrix3xd> const & xB, const bool compute_second_derivatives, MatrixXd & J, MatrixXd & dJ);
 
@@ -285,6 +280,8 @@ public:
   std::string getBodyOrFrameName(int body_or_frame_id);
   //@param body_or_frame_id   the index of the body or the id of the frame.
 
+  int parseBodyOrFrameID(const int body_or_frame_id, Matrix4d* Tframe = nullptr);
+  
   template <typename Scalar>
   GradientVar<Scalar, Eigen::Dynamic, 1> positionConstraintsNew(int gradient_order);
 
@@ -338,20 +335,31 @@ public:
   MatrixXd B;  // the B matrix maps inputs into joint-space forces
   std::map<int, int> bodies_vector_index_to_featherstone_body_index;
 
+  /*
+   * Temporary solution, as we're switching from old kinematics to new.
+   * Had to separate these so that it's possible to know specifically whether the old doKinematics and/or new doKinematics
+   * has been cached with a given q and v. There was a place outside of RigidBodyManipulator that used cached_q and should continue
+   * to work for both new and old doKinematics, so we kept cached_q and cached_v as well (set by whatever doKinematics method
+   * was called last).
+   */
   VectorXd cached_q, cached_v;  // these should be private
+  VectorXd cached_q_old, cached_v_old;  // these should be private
 
   void setUseNewKinsol(bool tf) { use_new_kinsol=tf; kinematicsInit=false; }
   bool getUseNewKinsol(void) { return use_new_kinsol; }
 
 private:
+  VectorXd cached_q_new, cached_v_new;
   bool use_new_kinsol;
+
   void doKinematics(double* q, bool b_compute_second_derivatives=false, double* qd=NULL);
   
   //helper functions for contactConstraints
   void accumulateContactJacobian(const size_t bodyInd, MatrixXd const & bodyPoints, std::vector<size_t> const & cindA, std::vector<size_t> const & cindB, MatrixXd & J);
   void accumulateSecondOrderContactJacobian(const size_t bodyInd, MatrixXd const & bodyPoints, std::vector<size_t> const & cindA, std::vector<size_t> const & cindB, MatrixXd & dJ);
 
-  int parseBodyOrFrameID(const int body_or_frame_id, Matrix4d* Tframe = nullptr);
+  void updateCompositeRigidBodyInertias(int gradient_order);
+
   void checkCachedKinematicsSettings(bool kinematics_gradients_required, bool velocity_kinematics_required, bool jdot_times_v_required, const std::string& method_name);
 
   // variables for featherstone dynamics
@@ -405,6 +413,7 @@ private:
   bool initialized;
   bool kinematicsInit;
   int secondDerivativesCached;
+  bool position_kinematics_cached;
   bool gradients_cached;
   bool velocity_kinematics_cached;
   bool jdotV_cached;

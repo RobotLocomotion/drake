@@ -8,10 +8,7 @@ using namespace Eigen;
 using namespace std;
 
 /*
- * A C version of the forwardKin function
- *
- * Piggybacks on HandCpmex.cpp to properly initialize and destroy models
- * Call with doKinematicsmex(q,b_compute_second_derivatives);
+ * A C version of the bodyKin function
  */
 
 void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
@@ -25,7 +22,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 
   double* q = mxGetPrSafe(prhs[1]);
   for (int i = 0; i < model->num_positions; i++) {
-    if (q[i] - model->cached_q[i] > 1e-8 || q[i] - model->cached_q[i] < -1e-8) {
+    if (q[i] - model->cached_q_old[i] > 1e-8 || q[i] - model->cached_q_old[i] < -1e-8) {
       mexErrMsgIdAndTxt("Drake:bodyKinmex:InvalidKinematics","This kinsol is no longer valid.  Somebody has called doKinematics with a different q since the solution was computed.");
     }
   }

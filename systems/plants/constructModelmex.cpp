@@ -97,7 +97,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     model->dofnum[i] = (int) dofnum[i] - 1; // zero-indexed
 
     mxArray* pXtreei = mxGetCell(pXtree,i);
-    if (!pXtreei) mexErrMsgIdAndTxt("Drake:HandCpmex:BadInputs","can't access model.featherstone.Xtree{%d}",i);
+    if (!pXtreei) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't access model.featherstone.Xtree{%d}",i);
 
     // todo: check that the size is 6x6
     memcpy(model->Xtree[i].data(),mxGetPrSafe(pXtreei),sizeof(double)*6*6);
@@ -175,11 +175,16 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 
 //        mexPrintf((model->bodies[i]->getJoint().getName() + ": " + std::to_string(model->bodies[i]->getJoint().getNumVelocities()) + "\n").c_str());
 
-        FixedAxisOneDoFJoint* joint_w_limits = dynamic_cast<FixedAxisOneDoFJoint*>(joint.get());
-        if (joint_w_limits != nullptr) {
+        FixedAxisOneDoFJoint* fixed_axis_one_dof_joint = dynamic_cast<FixedAxisOneDoFJoint*>(joint.get());
+        if (fixed_axis_one_dof_joint != nullptr) {
           double joint_limit_min = mxGetScalar(mxGetProperty(pBodies,i,"joint_limit_min"));
           double joint_limit_max = mxGetScalar(mxGetProperty(pBodies,i,"joint_limit_max"));
-          joint_w_limits->setJointLimits(joint_limit_min,joint_limit_max);
+          fixed_axis_one_dof_joint->setJointLimits(joint_limit_min,joint_limit_max);
+
+          double damping = mxGetScalar(mxGetProperty(pBodies, i, "damping"));
+          double coulomb_friction = mxGetScalar(mxGetProperty(pBodies, i, "coulomb_friction"));
+          double coulomb_window = mxGetScalar(mxGetProperty(pBodies, i, "coulomb_window"));
+          fixed_axis_one_dof_joint->setDynamics(damping, coulomb_friction, coulomb_window);
         }
 
         model->bodies[i]->setJoint(move(joint));
