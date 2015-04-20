@@ -17,12 +17,13 @@ matlabFunction(q, dq, ddq, 'Vars', {v,th}, 'File',filename);
 filename = fullfile(getDrakePath(), 'util', 'expmap2quatDegenerate');
 matlabFunction(q_degenerate, dq_degenerate, ddq_degenerate, 'Vars', {v,th}, 'File',filename);
 
-dir = pwd;
-cd(fullfile(getDrakePath(), 'util'));
-v_num = zeros(3,1);
-codegen expmap2quatImpl.m -args {v_num}
-cd(dir);
+%dir = pwd;
+%cd(fullfile(getDrakePath(), 'util'));
+%v_num = zeros(3,1);
+%codegen expmap2quatImpl.m -args {v_num}
+%cd(dir);
 
+path = fullfile(getDrakePath(), 'util');
 filename = 'expmap2quat';
 function_name_cell = {};
 output_cell = {};
@@ -52,4 +53,4 @@ function_name_cell{end+1} = 'ddexpmap2quatDegenerate';
 output_cell{end+1} = struct('var', ddq_degenerate, 'name', 'q');
 inputs_cell{end+1} = struct('var', {v, th}, 'name', {'v', 'theta'});
 
-ccodeWithEigenRef(filename, function_name_cell, output_cell, inputs_cell);
+ccodeWithEigenRef(path, filename, function_name_cell, output_cell, inputs_cell);

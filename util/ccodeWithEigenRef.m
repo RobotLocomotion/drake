@@ -1,4 +1,4 @@
-function str = ccodeWithEigen(filename, function_name_cell, output_cell, inputs_cell)
+function str = ccodeWithEigenRef(path, filename, function_name_cell, output_cell, inputs_cell)
   if ~iscell(function_name_cell)
     function_name_cell = {function_name_cell};
   end
@@ -20,14 +20,14 @@ function str = ccodeWithEigen(filename, function_name_cell, output_cell, inputs_
   include = sprintf('#include <Eigen/Dense>');
   body = sprintf('%s\n', header_string_cell{:});
   str = sprintf('%s\n\n%s', include, body);
-  fid = fopen([filename '.h'], 'w');
+  fid = fopen(fullfile(path, [filename '.h']), 'w');
   fprintf(fid, str);
 
   % Write .cpp file
   include = sprintf('#include "%s.h"\n', filename);
   body = sprintf('%s\n\n', function_string_cell{:});
   str = sprintf('%s\n\nusing namespace Eigen;\n\n%s', include, body);
-  fid = fopen([filename '.cpp'], 'w');
+  fid = fopen(fullfile(path, [filename '.cpp']), 'w');
   fprintf(fid, str);
 end
 

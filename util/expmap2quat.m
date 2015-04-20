@@ -1,8 +1,9 @@
-function [varargout] = expmap2quat(v) 
-  varargout = cell(1, nargout);
-  use_mex = (isnumeric(v) && exist('expmap2quatImpl_mex','file'));
+function [varargout] = expmap2quat(v, use_mex) 
+  if nargin < 2, use_mex = true; end
+  varargout = cell(1, max(nargout,1));
+  use_mex = use_mex && isnumeric(v);
   if use_mex
-    [varargout{:}] = expmap2quatImpl_mex(v);
+    [varargout{:}] = expmap2quatImplmex(v);
   else
     [varargout{:}] = expmap2quatImpl(v);
   end
