@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <dlfcn.h>
+#include "MexWrapper.h"
 
 #include <matrix.h>
 #include <mat.h>
@@ -35,17 +35,10 @@ mxArray *mexCallMATLABWithTrap(int nlhs, mxArray *plhs[], int nrhs,
 
 // todo: implement stubs for other mex functions (mexErrMsgAndTxt, ...) here
 
-typedef struct _dl_data
-{
-	void* handle;
-	void (*mexFunction)(int, mxArray*[], int, const mxArray* []);
-} DLData;
-
 int main(int argc, char* argv[])  // todo: take the mex function and dynamically load / run it.
 {
-	map<string,DLData> mexfiles;
-	map<string,DLData>::iterator iter;
-//	map<double,void*> mexPointers;
+	map<string,MexWrapper> mexfiles;
+	map<string,MexWrapper>::iterator iter;
 
   // load inputs from matfile
   MATFile* pmatfile = matOpen("/tmp/mex_debug.mat", "r");
@@ -71,21 +64,9 @@ int main(int argc, char* argv[])  // todo: take the mex function and dynamically
 
     iter=mexfiles.find(funstr);
     if (iter == mexfiles.end()) {
-    	DLData d;
-    	// Dynamically load the mex file:
-			d.handle = dlopen(funstr.c_str(),RTLD_NOW);
-			if (!d.handle) {
-				fprintf(stderr,"%s\n",dlerror());
-				exit(EXIT_FAILURE);
-			}
-			char* error;
-			*(void**) &(d.mexFunction) = dlsym(d.handle,"mexFunction");
-			if ((error = dlerror()) != NULL) {
-				fprintf(stderr,"%s\n", error);
-				exit(EXIT_FAILURE);
-			}
-			pair<map<string,DLData>::iterator,bool> ret;
-			ret = mexfiles.insert(pair<string, DLData>(funstr,d));
+    	MexWrapper mex = MexWrapper(funstr);
+			pair<map<string,MexWrapper>::iterator,bool> ret;
+			ret = mexfiles.insert(pair<string, MexWrapper>(funstr,mex));
 			iter = ret.first;
     }
 
@@ -118,9 +99,6 @@ int main(int argc, char* argv[])  // todo: take the mex function and dynamically
   
   // cleanup          
   cleanupDrakeMexPointers();
-
-  for (iter=mexfiles.begin(); iter!=mexfiles.end(); iter++)
-  	dlclose(iter->second.handle);
 
   matClose(pmatfile);
   exit(EXIT_SUCCESS);
