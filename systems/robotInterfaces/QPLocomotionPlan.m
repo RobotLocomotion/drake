@@ -622,7 +622,7 @@ classdef QPLocomotionPlan < QPControllerPlan
       obj.default_qp_input.whole_body_data.constrained_dofs = biped.findPositionIndices('neck');
       obj.gain_set = param_set_name;
     end
-
+    
     function obj = from_quasistatic_qtraj(biped, qtraj, options)
       if nargin < 3
         options = struct();
@@ -630,8 +630,14 @@ classdef QPLocomotionPlan < QPControllerPlan
       options = applyDefaults(options, struct('bodies_to_track', [biped.findLinkId('pelvis'),...
                                                                   biped.foot_body_id.right,...
                                                                   biped.foot_body_id.left],...
+                                              'quat_task_to_world',repmat([1;0;0;0],1,3),...
+                                              'translation_task_to_world',zeros(3,3),...
                                               'bodies_to_control_when_in_contact', biped.findLinkId('pelvis')));
 
+      num_bodies_to_track = length(options.bodies_to_track);
+      sizecheck(options.quat_task_to_world,[4,num_bodies_to_track]);
+      sizecheck(options.translation_task_to_world,[3,num_bodies_to_track]);
+      
       if(~isfield(options,'zero_final_acceleration'))
         options.zero_final_acceleration = false;
       end
@@ -663,7 +669,7 @@ classdef QPLocomotionPlan < QPControllerPlan
         obj.support_times = options.support_times;
       end
 
-      for j = 1:length(options.bodies_to_track)
+      for j = 1:num_bodies_to_track
         if options.bodies_to_track(j) == biped.findLinkId('r_hand')
           obj.constrained_dofs = setdiff(obj.constrained_dofs, findPositionIndices(obj.robot,'r_arm'));
         elseif options.bodies_to_track(j) == biped.findLinkId('l_hand')
@@ -672,28 +678,41 @@ classdef QPLocomotionPlan < QPControllerPlan
       end
 
       
-      body_poses = zeros([7, length(ts), length(options.bodies_to_track)]);
-      body_velocity = zeros([7,length(ts), length(options.bodies_to_track)]);
-      body_xyzexpmap = zeros([6, length(ts), length(options.bodies_to_track)]);
-      body_xyzexpmap_dot = zeros([6, length(ts), length(options.bodies_to_track)]);
+      body_poses = zeros([7, length(ts), num_bodies_to_track]);
+      body_velocity = zeros([7,length(ts), num_bodies_to_track]);
+      body_xyzexpmap = zeros([6, length(ts), num_bodies_to_track]);
+      body_xyzexpmap_dot = zeros([6, length(ts), num_bodies_to_track]);
+      body_R_world_to_task = zeros(3, 3, num_bodies_to_track);
+      body_translation_world_to_task = zeros(3, num_bodies_to_track);
+      for i = 1:length(options.bodies_to_track)
+        body_R_world_to_task(:,:,i) = quat2rotmat(quatConjugate(options.quat_task_to_world(:,i)));
+        body_translation_world_to_task(:,i) = -body_R_world_to_task(:,:,i)*options.translation_task_to_world(:,i);
+      end
+      
       for i = 1:numel(ts)
         qi = qtraj.eval(ts(i));
         vi = qtraj.deriv(ts(i));
         kinsol = doKinematics(obj.robot,qi);
-        for j = 1:numel(options.bodies_to_track)
+        for j = 1:num_bodies_to_track
           [body_poses(:,i,j),Jij] = obj.robot.forwardKin(kinsol, options.bodies_to_track(j), [0;0;0], 2);
           body_velocity(:,i,j) = Jij*vi;
+          body_poses(1:3,i,j) = body_R_world_to_task(:,:,j)*body_poses(1:3,i,j)+body_translation_world_to_task(:,j);
+          body_poses(4:7,i,j) = quatProduct(quatConjugate(options.quat_task_to_world(:,j)),body_poses(4:7,i,j));
+          body_velocity(1:3,i,j) = body_R_world_to_task(:,:,j)*body_velocity(1:3,i,j);
+          body_velocity(4:7,i,j) = quatProduct(quatConjugate(options.quat_task_to_world(:,j)),body_velocity(4:7,i,j));
           body_xyzexpmap(1:3,i,j) = body_poses(1:3,i,j);
           body_xyzexpmap_dot(1:3,i,j) = body_velocity(1:3,i,j);
         end
       end
-      for j = 1:numel(options.bodies_to_track)
+      for j = 1:num_bodies_to_track
         [body_xyzexpmap(4:6,:,j),body_xyzexpmap_dot(4:6,:,j)] = quat2expmapSequence(body_poses(4:7,:,j),body_velocity(4:7,:,j));
       end
 
       obj.body_motions = BodyMotionData.empty();
       for j = 1:numel(options.bodies_to_track)
         obj.body_motions(j) = BodyMotionData.from_body_xyzexp_and_xyzexpdot(options.bodies_to_track(j), ts, body_xyzexpmap(:,:,j), body_xyzexpmap_dot(:,:,j));
+        obj.body_motions(j).quat_task_to_world = options.quat_task_to_world(:,j);
+        obj.body_motions(j).translation_task_to_world = options.translation_task_to_world(:,j);
         if ismember(options.bodies_to_track(j), options.bodies_to_control_when_in_contact)
           obj.body_motions(j).control_pose_when_in_contact = true(1, numel(obj.body_motions(j).ts));
         end
