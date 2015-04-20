@@ -1,6 +1,8 @@
 function R = axis2rotmat(a)
 % convert from axis angle, a = [x;y;z;theta];
-a(1:3) = a(1:3)/norm(a(1:3));
+if isnumeric(a) % for TrigPoly
+  a(1:3) = a(1:3)/norm(a(1:3));
+end
 x = a(1);
 y = a(2);
 z = a(3);

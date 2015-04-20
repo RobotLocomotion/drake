@@ -11,7 +11,6 @@ classdef AtlasPlanEval < PlanEval
     function obj = AtlasPlanEval(r, varargin)
       obj = obj@PlanEval(varargin{:});
       obj.robot = r;
-
       obj.robot_property_cache = atlasUtil.propertyCache(obj.robot);
     end
 
