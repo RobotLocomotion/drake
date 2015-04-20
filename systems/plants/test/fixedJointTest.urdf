@@ -72,7 +72,7 @@
 
   <transmission type="SimpleTransmission" name="shoulder_trans">
     <actuator name="shoulder_torque" />
-    <joint name="shoulder" />
+    <joint name="elbow" />
     <mechanicalReduction>1</mechanicalReduction>
   </transmission>
 </robot>

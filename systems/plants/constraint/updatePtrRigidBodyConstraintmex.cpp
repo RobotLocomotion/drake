@@ -18,7 +18,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
     destroyDrakeMexPointer<RigidBodyConstraint*>(prhs[0]);
     return;
   }
-  mwSize strlen = mxGetNumberOfElements(prhs[1])+1;
+  mwSize strlen = static_cast<mwSize>(mxGetNumberOfElements(prhs[1]) + 1);
   char* field = new char[strlen];
   mxGetString(prhs[1],field,strlen);
   string field_str(field);
@@ -63,7 +63,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
           for(int idx = 0;idx<num_new_bodies;idx++)
           {
             new_bodies[idx] = (int) mxGetScalar(prhs[2+idx*2])-1;
-            int npts = mxGetN(prhs[3+idx*2]);
+            size_t npts = mxGetN(prhs[3+idx*2]);
             MatrixXd new_body_pts_tmp(3,npts);
             memcpy(new_body_pts_tmp.data(),mxGetPrSafe(prhs[3+idx*2]),sizeof(double)*3*npts);
             new_body_pts[idx].resize(4,npts);
@@ -85,7 +85,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
         }
         else if(field_str=="robotnum")
         {
-          int num_robot = mxGetNumberOfElements(prhs[2]);
+          size_t num_robot = mxGetNumberOfElements(prhs[2]);
           double* robotnum_tmp = new double[num_robot];
           int* robotnum = new int[num_robot];
           memcpy(robotnum_tmp,mxGetPrSafe(prhs[2]),sizeof(double)*num_robot);
@@ -111,7 +111,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
         PostureConstraint* pc = (PostureConstraint*) constraint;
         if(field_str=="bounds")
         { // setJointLimits(pc,joint_idx,lb,ub)
-          int num_idx = mxGetM(prhs[2]);
+          size_t num_idx = mxGetM(prhs[2]);
           if(!mxIsNumeric(prhs[2]) || mxGetN(prhs[2]) != 1 || !mxIsNumeric(prhs[3]) || mxGetM(prhs[3]) != num_idx || mxGetN(prhs[3]) != 1 || !mxIsNumeric(prhs[4]) || mxGetM(prhs[4]) != num_idx || mxGetN(prhs[4]) != 1)
           {
             mexErrMsgIdAndTxt("Drake:updatePtrRigidBodyConstraintmex:BadInputs","PostureConstraint:joint_idx, lb and ub must be of the same length numerical vector");
@@ -125,7 +125,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
           memcpy(lb.data(),mxGetPrSafe(prhs[3]),sizeof(double)*num_idx);
           memcpy(ub.data(),mxGetPrSafe(prhs[4]),sizeof(double)*num_idx);
           PostureConstraint* pc_new = new PostureConstraint(*pc);
-          pc_new->setJointLimits(num_idx,joint_idx,lb,ub);
+          pc_new->setJointLimits(static_cast<int>(num_idx), joint_idx, lb, ub);
           delete[] joint_idx;
           plhs[0] = createDrakeConstraintMexPointer((void*)pc_new,"PostureConstraint");
         }
@@ -259,7 +259,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
         }
         else if(field_str=="robotnum")
         {
-          int num_robot = mxGetNumberOfElements(prhs[2]);
+          size_t num_robot = mxGetNumberOfElements(prhs[2]);
           double* robotnum_tmp = new double[num_robot];
           int* robotnum = new int[num_robot];
           memcpy(robotnum_tmp,mxGetPrSafe(prhs[2]),sizeof(double)*num_robot);

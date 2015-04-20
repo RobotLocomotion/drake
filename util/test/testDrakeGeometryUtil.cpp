@@ -7,6 +7,8 @@
 using namespace Eigen;
 using namespace std;
 
+void testExpmap2quat(const Vector4d &quat);
+
 void testRotationConversionFunctions()
 {
   int ntests = 100;
@@ -52,6 +54,17 @@ void testRotationConversionFunctions()
     Vector4d axis = rpy2axis(rpy);
     Vector3d rpy_back = axis2rpy(axis);
     valuecheck(rpy, rpy_back, 1e-6);
+  }
+  // expmap2quat, quat2expmap
+  Vector4d quat_degenerate = Vector4d::Zero();
+  quat_degenerate(0) = 1.0;
+  testExpmap2quat(quat_degenerate);
+  quat_degenerate(0) = -1.0;
+  testExpmap2quat(quat_degenerate);
+  for (int i = 0; i<ntests; i++)
+  {
+    Vector4d quat = uniformlyRandomQuat(generator);
+    testExpmap2quat(quat);
   }
 }
 
@@ -194,22 +207,30 @@ void testdrpy2rotmat()
 {
   default_random_engine generator;
   Vector3d rpy = uniformlyRandomRPY(generator);
-	Matrix3d R = rpy2rotmat(rpy);
-	Matrix<double,9,3> dR = drpy2rotmat(rpy);
-	Matrix<double,9,3> dR_num = Matrix<double,9,3>::Zero();
-	for(int i = 0;i<3;i++)
-	{
-		Vector3d err = Vector3d::Zero();
-		err(i) = 1e-7;
-		Vector3d rpyi = rpy+err;
-		Matrix3d Ri = rpy2rotmat(rpyi);
-		Matrix3d Ri_err = (Ri-R)/err(i);
-		for(int j = 0;j<9;j++)
-		{
-			dR_num(j,i) = Ri_err(j);
-			valuecheck(dR(j,i),dR_num(j,i),1e-3);
-		}
-	}
+  Matrix3d R = rpy2rotmat(rpy);
+  Matrix<double,9,3> dR = drpy2rotmat(rpy);
+  Matrix<double,9,3> dR_num = Matrix<double,9,3>::Zero();
+  for(int i = 0;i<3;i++)
+  {
+    Vector3d err = Vector3d::Zero();
+    err(i) = 1e-7;
+    Vector3d rpyi = rpy+err;
+    Matrix3d Ri = rpy2rotmat(rpyi);
+    Matrix3d Ri_err = (Ri-R)/err(i);
+    for(int j = 0;j<9;j++)
+    {
+      dR_num(j,i) = Ri_err(j);
+      valuecheck(dR(j,i),dR_num(j,i),1e-3);
+    }
+  }
+}
+
+void testExpmap2quat(const Vector4d &quat)
+{
+  auto expmap = quat2expmap(quat,1);
+  auto quat_back  = expmap2quat(expmap.value(),2);
+  valuecheck(std::abs(quat.transpose()*quat_back.value()),1);
+  valuecheck(expmap.gradient().value()*quat_back.gradient().value(),Matrix3d::Identity(),1E-10);
 }
 
 int main(int argc, char **argv)

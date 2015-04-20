@@ -6,7 +6,18 @@
 #include "ValueConstraint.h"
 #include "ContinuityConstraint.h"
 
-class SplineInformation : public PiecewisePolynomialBase
+#undef DLLEXPORT
+#if defined(WIN32) || defined(WIN64)
+  #if defined(drakeSplineGeneration_EXPORTS)
+    #define DLLEXPORT __declspec( dllexport )
+  #else
+    #define DLLEXPORT __declspec( dllimport )
+  #endif
+#else
+  #define DLLEXPORT
+#endif
+
+class DLLEXPORT SplineInformation : public PiecewisePolynomialBase
 {
 private:
   std::vector<int> segment_polynomial_orders;

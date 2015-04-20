@@ -1,5 +1,6 @@
-if (eigen3_FOUND)
+if (MATLAB_FOUND)
   add_mex(testDrakeJointsmex testDrakeJointsmex.cpp)
   include_directories( .. )
+  include_directories (${CMAKE_SOURCE_DIR}/util)
   target_link_libraries(testDrakeJointsmex drakeJoints)
-endif(eigen3_FOUND)
+endif(MATLAB_FOUND)

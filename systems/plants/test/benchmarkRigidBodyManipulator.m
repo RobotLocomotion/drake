@@ -4,8 +4,8 @@ iters = 1000;
 use_new_kinsol_options = [false true];
 gradient_options = [false true];
 
-for scenario = 1; %[1 2]
-  % 1: CMM + a couple of Jacobians
+for scenario = [1 2]
+  % 1: a couple of Jacobians
   % 2: manipulatorDynamics
   
   figure(scenario);
@@ -46,11 +46,6 @@ for scenario = 1; %[1 2]
         
         if scenario == 1
           kinsol = robot.doKinematics(q, [], kinsol_options);
-          if robot.use_new_kinsol
-            robot.getCMMdA(kinsol); % getCMMdA is mexed, getCMM is not
-          else
-            robot.getCMM(kinsol); % getCMM is mexed, getCMMdA is not
-          end
           
           for j = 1 : length(feet)
             points = randn(3, npoints_feet);

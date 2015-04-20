@@ -22,20 +22,20 @@ classdef QPInputConstantHeight
   methods
     function obj = QPInputConstantHeight()
       obj.timestamp = 0;
-      obj.zmp_data = struct('A',  [zeros(2),eye(2); zeros(2,4)],... % COM state map 
-                        'B', [zeros(2); eye(2)],... % COM input map
-                        'C', [eye(2),zeros(2)],... % ZMP state-output map
-                        'D', -0.89/9.81*eye(2),... % ZMP input-output map
-                        'x0', zeros(4,1),... % nominal state
-                        'y0', zeros(2,1),... % nominal output
-                        'u0', zeros(2,1),... % nominal input
-                        'R', zeros(2),... % input LQR cost
-                        'Qy', 0.8*eye(2),... % output LQR cost
-                        'S', zeros(4),... % cost-to-go terms: x'Sx + x's1 + s2
-                        's1', zeros(4,1),...
-                        's1dot', zeros(4,1),... 
-                        's2', 0,... 
-                        's2dot', 0);
+      obj.zmp_data = struct('A',  [zeros(2),eye(2); zeros(2,4)],... % COM state map 4x4
+                        'B', [zeros(2); eye(2)],... % COM input map 4x2
+                        'C', [eye(2),zeros(2)],... % ZMP state-output map 2x4
+                        'D', -0.89/9.81*eye(2),... % ZMP input-output map 2x2
+                        'x0', zeros(4,1),... % nominal state 4x1
+                        'y0', zeros(2,1),... % nominal output 2x1
+                        'u0', zeros(2,1),... % nominal input 2x1
+                        'R', zeros(2),... % input LQR cost 2x2
+                        'Qy', 0.8*eye(2),... % output LQR cost 2x2
+                        'S', zeros(4),... % cost-to-go terms: x'Sx + x's1 + s2 [4x4]
+                        's1', zeros(4,1),... % 4x1
+                        's1dot', zeros(4,1),... % 4x1
+                        's2', 0,... % 1x1
+                        's2dot', 0); % 1x1
 
       % support_logic_map lets us specify the way the various forms of contact detection are combined. 
       % We do this by enumerating all possible binary inputs from the force sensor and the kinematic
@@ -55,12 +55,20 @@ classdef QPInputConstantHeight
       %
       obj.support_data = struct('body_id', {}, 'contact_pts', {}, 'support_logic_map', {}, 'mu', {}, 'contact_surfaces', {});
       
+      % Data describing the desired motions of 0 or more bodies on the robot. Each element in this structure is produced by the BodyMotionData.slice() method. For documentation of all the parameters, please see BodyMotionData.m
       obj.body_motion_data = struct('body_id', {},...
                                     'ts', {},...
                                     'coefs', {},...
                                     'toe_off_allowed', {},...
                                     'in_floating_base_nullspace', {},...
-                                    'control_pose_when_in_contact', {});
+                                    'control_pose_when_in_contact', {},...
+                                    'quat_task_to_world',{},...
+                                    'translation_task_to_world',{},...
+                                    'xyz_kp_multiplier',{},...
+                                    'xyz_damping_ratio_multiplier',{},...
+                                    'expmap_kp_multiplier',{},...
+                                    'expmap_damping_ratio_multiplier',{},...
+                                    'weight_multiplier',{});
       
       obj.body_wrench_data = struct('body_id', {},...
                                     'wrench', {});
@@ -76,7 +84,7 @@ classdef QPInputConstantHeight
     end
 
     function msg = to_lcm(obj)
-      error('deprecated, use encodeQPInputLCMMex instead');
+      msg = drake.lcmt_qp_controller_input(encodeQPInputLCMMex(obj, false));
     end
   end
 end

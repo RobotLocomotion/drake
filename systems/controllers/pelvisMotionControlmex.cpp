@@ -78,14 +78,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   int nv = pdata->r->num_velocities;
 
   int narg = 1;
-  Map<VectorXd> q(mxGetPrSafe(prhs[narg++]), nq);
-  double *qd = &q[nq];
-  Map<VectorXd> qdvec(qd, nv);
+  Map<VectorXd> q(mxGetPrSafe(prhs[narg]), nq);
+  Map<VectorXd> qd(mxGetPrSafe(prhs[narg++]) + nq, nv);
   double lfoot_yaw = mxGetScalar(prhs[narg++]);
   double rfoot_yaw = mxGetScalar(prhs[narg++]);
   double foot_z = mxGetScalar(prhs[narg++]);
 
-  pdata->r->doKinematics(q,false,qdvec);
+  pdata->r->doKinematics(q,false,qd);
 
   // TODO: this must be updated to use quaternions/spatial velocity
   Vector6d pelvis_pose;
@@ -116,7 +115,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   angleDiff(pose_rpy,des_rpy,error_rpy);
   error.tail(3) = error_rpy;
 
-  Vector6d body_vdot = (pdata->Kp.array()*error.array()).matrix() - (pdata->Kd.array()*(Jpelvis*qdvec).array()).matrix();
+  Vector6d body_vdot = (pdata->Kp.array()*error.array()).matrix() - (pdata->Kd.array()*(Jpelvis*qd).array()).matrix();
 
   plhs[0] = eigenToMatlab(body_vdot);
 }

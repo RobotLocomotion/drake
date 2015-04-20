@@ -10,8 +10,8 @@ try
   xtraj=trajs.xtraj;
   utraj=trajs.utraj;
 
-  utraj = setOutputFrame(utraj,p.getInputFrame);
-  xtraj = setOutputFrame(xtraj,p.getStateFrame);
+  utraj = setOutputFrame(utraj,pd.getInputFrame);
+  xtraj = setOutputFrame(xtraj,pd.getStateFrame);
 catch
   [utraj,xtraj]=runDircolPerching(pd);
 end

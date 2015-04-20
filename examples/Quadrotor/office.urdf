@@ -388,26 +388,26 @@
    <joint name="joint1" type="fixed">
    	<parent link="wall1"/>
         <child link="wall2"/>
-        <child link="TableLegUL"/>
+<!--        <child link="TableLegUL"/>
         <child link="TableLegUR"/>
         <child link="TableLegLR"/>
         <child link="TableLegLL"/>
         <child link="TableTop"/>
-        <child link="cabinet"/>
+        <child link="cabinet"/> -->
 	<origin xyz="5 4 1" rpy="0 0 0" />
    </joint>
 
    <joint name="joint2" type="fixed">
    	<parent link="wall2"/>
         <child link="wall3"/>
-        <child link="wall23"/>
+<!--        <child link="wall23"/> -->
 	<origin xyz="-5 4 -1" rpy="0 0 0" />
    </joint>
 
    <joint name="joint3" type="fixed">
    	<parent link="wall3"/>
         <child link="wall4"/>
-        <child link="wall34"/>
+<!--        <child link="wall34"/> -->
 	<origin xyz="-5 -4 1" rpy="0 0 0" />
    </joint>
 
