@@ -606,8 +606,11 @@ bool parseJoint(RigidBodyManipulator* model, TiXmlElement* node)
 
 bool parseTransmission(RigidBodyManipulator* model, TiXmlElement* node)
 {  
+  const char* attr = nullptr;
   TiXmlElement* type_node = node->FirstChildElement("type");
-  const char* attr = type_node->GetText();
+  if ( type_node ) {
+    attr = type_node->GetText();
+  }
 
   if (!attr) {
     attr = node->Attribute("type"); // old URDF format, kept for convenience
