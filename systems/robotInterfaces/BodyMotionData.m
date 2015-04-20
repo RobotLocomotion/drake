@@ -15,9 +15,9 @@ classdef BodyMotionData
     quat_task_to_world % A rotation transformation, the coefs is specified in the task frame
     translation_task_to_world % translation from task frame to the world frame
     xyz_kp_multiplier % A 3 x 1 vector. The multiplier for the Kp gain on xyz position error of the body, default to [1;1;1]
-    xyz_kd_multiplier % A 3 x 1 vector. The multiplier for the Kd gain on xyz velocity error of the body, default to [1;1;1]
+    xyz_damping_ratio_multiplier % A 3 x 1 vector. The multiplier for the damping ratio on xyz velocity error of the body, default to [1;1;1]
     expmap_kp_multiplier % A positive scalar. The multiplier for the Kp gain on exponential map error of body orientation, default to 1
-    expmap_kd_multiplier % A positive scalar. The multiplier for the Kd gain on exponential map velocity error of body orientation, default to 1
+    expmap_damping_ratio_multiplier % A positive scalar. The multiplier for the damping ratio on exponential map velocity error of body orientation, default to 1
     weight_multiplier % A 6 x 1 vector. The multiplier for twist_dot (angular_aceleration, cartesian_acceleration) weight in the QP controller, default to ones(6,1);
   end
 
@@ -32,9 +32,9 @@ classdef BodyMotionData
       obj.quat_task_to_world = [1;0;0;0];
       obj.translation_task_to_world = zeros(3,1);
       obj.xyz_kp_multiplier = [1;1;1];
-      obj.xyz_kd_multiplier = [1;1;1];
+      obj.xyz_damping_ratio_multiplier = [1;1;1];
       obj.expmap_kp_multiplier = 1;
-      obj.expmap_kd_multiplier = 1;
+      obj.expmap_damping_ratio_multiplier = 1;
       obj.weight_multiplier = ones(6,1);
     end
 
@@ -76,9 +76,9 @@ classdef BodyMotionData
                                  'quat_task_to_world',obj.quat_task_to_world,...
                                  'translation_task_to_world',obj.translation_task_to_world,...
                                  'xyz_kp_multiplier',obj.xyz_kp_multiplier,...
-                                 'xyz_kd_multiplier',obj.xyz_kd_multiplier,...
+                                 'xyz_damping_ratio_multiplier',obj.xyz_damping_ratio_multiplier,...
                                  'expmap_kp_multiplier',obj.expmap_kp_multiplier,...
-                                 'expmap_kd_multiplier',obj.expmap_kd_multiplier,...
+                                 'expmap_damping_ratio_multiplier',obj.expmap_damping_ratio_multiplier,...
                                  'weight_multiplier',obj.weight_multiplier);
     end
 
@@ -105,14 +105,14 @@ classdef BodyMotionData
       if any(obj.xyz_kp_multiplier ~= new_body_motion_data.xyz_kp_multiplier)
         error('Drake:BodyMotionData:BadExtend', 'xyz_kp_multiplier must match');
       end
-      if any(obj.xyz_kd_multiplier ~= new_body_motion_data.xyz_kd_multiplier)
-        error('Drake:BodyMotionData:BadExtend', 'xyz_kd_multiplier must match');
+      if any(obj.xyz_damping_ratio_multiplier ~= new_body_motion_data.xyz_damping_ratio_multiplier)
+        error('Drake:BodyMotionData:BadExtend', 'xyz_damping_ratio_multiplier must match');
       end
       if any(obj.expmap_kp_multiplier ~= new_body_motion_data.expmap_kp_multiplier)
         error('Drake:BodyMotionData:BadExtend', 'expmap_kp_multiplier must match');
       end
-      if any(obj.expmap_kd_multiplier ~= new_body_motion_data.expmap_kd_multiplier)
-        error('Drake:BodyMotionData:BadExtend', 'expmap_kd_multiplier must match');
+      if any(obj.expmap_damping_ratio_multiplier ~= new_body_motion_data.expmap_damping_ratio_multiplier)
+        error('Drake:BodyMotionData:BadExtend', 'expmap_damping_ratio_multiplier must match');
       end
       if any(obj.weight_multiplier ~= new_body_motion_data.weight_multiplier)
         error('Drake:BodyMotionData:BadExtend', 'weight_multiplier must match');

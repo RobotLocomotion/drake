@@ -49,10 +49,10 @@ if (MATLAB_FOUND)
   target_link_libraries(cartesian2cylindricalmex drakeGeometryUtil drakeGradientUtil)
 
   add_mex(quat2expmapmex quat2expmapmex.cpp)
-  target_link_libraries(quat2expmapmex drakeGeometryUtil drakeGradientUtil)
+  target_link_libraries(quat2expmapmex drakeUtil drakeGeometryUtil drakeGradientUtil)
 
   add_mex(expmap2quatmex expmap2quatmex.cpp)
-  target_link_libraries(expmap2quatmex drakeGeometryUtil drakeGradientUtil)
+  target_link_libraries(expmap2quatmex drakeUtil drakeGeometryUtil drakeGradientUtil)
 endif()
 
 add_subdirectory(test)
