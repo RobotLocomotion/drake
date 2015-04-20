@@ -50,4 +50,14 @@ void valuecheck(double a, double b, double tolerance = 1e-8)
   }
 }
 
+template <typename T>
+void valuecheck(T const & a, T const & b)
+{
+  if (a != b) {
+    std::ostringstream stream;
+    stream << "Expected:\n" << a << "\nbut got:" << b << "\n";
+    throw std::runtime_error(stream.str());
+  }
+}
+
 #endif /* TESTUTIL_H_ */
