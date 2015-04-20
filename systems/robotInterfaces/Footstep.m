@@ -14,6 +14,14 @@ classdef Footstep
     walking_params
   end
 
+  properties(Constant)
+    SUPPORT_GROUPS_HEEL_TOE = 0;
+    SUPPORT_GROUPS_MIDFOOT_TOE = 1;
+    SUPPORT_GROUPS_HEEL_MIDFOOT = 2;
+    support_contact_groups_enum_to_cell = containers.Map([Footstep.SUPPORT_GROUPS_HEEL_TOE, Footstep.SUPPORT_GROUPS_MIDFOOT_TOE, Footstep.SUPPORT_GROUPS_HEEL_MIDFOOT], {{'heel', 'toe'}, {'midfoot', 'toe'}, {'heel', 'midfoot'}})
+    support_contact_groups_str_to_enum = containers.Map({'heel+toe', 'toe+heel', 'midfoot+toe', 'toe+midfoot', 'heel+midfoot', 'midfoot+heel'}, [Footstep.SUPPORT_GROUPS_HEEL_TOE, Footstep.SUPPORT_GROUPS_HEEL_TOE, Footstep.SUPPORT_GROUPS_MIDFOOT_TOE, Footstep.SUPPORT_GROUPS_MIDFOOT_TOE, Footstep.SUPPORT_GROUPS_HEEL_MIDFOOT, Footstep.SUPPORT_GROUPS_HEEL_MIDFOOT]); % can't have a cell array as the key for a Map, so we join the cell elements with '+' before lookup
+  end
+
   methods
     function obj = Footstep(pos, id, frame_id, is_in_contact, pos_fixed, terrain_pts, infeasibility, walking_params)
       obj.pos = pos;
@@ -54,7 +62,11 @@ classdef Footstep
         msg.terrain_height = obj.terrain_pts(2,:);
       end
       msg.infeasibility = obj.infeasibility;
-      msg.params = populateLCMFields(drc.footstep_params_t(), obj.walking_params);
+      params = obj.walking_params;
+      if iscell(params.support_contact_groups)
+        params.support_contact_groups = obj.support_contact_groups_str_to_enum(strjoin(params.support_contact_groups, '+'));
+      end
+      msg.params = populateLCMFields(drc.footstep_params_t(), params);
     end
   end
 
@@ -81,7 +93,8 @@ classdef Footstep
       terrain_pts = [reshape(msg.terrain_path_dist, 1, []);
                      reshape(msg.terrain_height, 1, []);];
       infeasibility = msg.infeasibility;
-      walking_params = msg.params;
+      walking_params = struct(msg.params);
+      walking_params.support_contact_groups = Footstep.support_contact_groups_enum_to_cell(walking_params.support_contact_groups);
       footstep = Footstep(pos, id, frame_id, is_in_contact, pos_fixed, terrain_pts, infeasibility, walking_params);
     end
   end
