@@ -1,11 +1,17 @@
 classdef BodyMotionData
+  % Data structure describing the desired motion of a single body on the
+  % robot. The QPLocomotionPlan will call this class's slice() method to get a
+  % snapshot of the desired body motion, which will be sent to the controller
+  % as part of the QP controller input.
+  % 
+  % The desired body motion is expressed as a piecewise cubic polynomial. 
   properties
-    ts;
-    coefs;
-    body_id;
-    toe_off_allowed;
-    in_floating_base_nullspace;
-    control_pose_when_in_contact;
+    ts;  % Times of the breakpoints in the cubic polynomial
+    coefs; % Coefficients of the cubic polynomial. The format is [x; y; z; w1; w2; w3] where w(1:3) is the exponential map representation of the orientation. 
+    body_id; % Body or frame ID to track
+    toe_off_allowed; % A flag used by the QPLocomotionPlan to determine whether to engage toe-only support when walking. Set this to False unless you have some reason not to.
+    in_floating_base_nullspace; % Whether to explicitly disallow floating base acceleration as a method for accelerating this body in the controller. We set this for the legs so that, for example, if the leg falls behind its plan, the controller doesn't accelerate the pelvis forward to compensate, which can cause a fall. 
+    control_pose_when_in_contact; % Whether to attempt to control the pose of this body even when it's in contact with the world. This is typically false, but we've set it to true when using the pelvis as a support. 
     quat_task_to_world % A rotation transformation, the coefs is specified in the task frame
     translation_task_to_world % translation from task frame to the world frame
     xyz_kp_multiplier % A 3 x 1 vector. The multiplier for the Kp gain on xyz position error of the body, default to [1;1;1]
