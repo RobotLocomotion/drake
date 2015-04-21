@@ -806,6 +806,10 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       [varargout{:}] = getTerrainHeight(obj.manip,varargin{:});
     end
 
+    function obj = setJointLimits(obj,varargin)
+      obj.manip = setJointLimits(obj.manip,varargin{:});
+    end
+
     function obj=addRobotFromURDF(obj,varargin)
       if obj.twoD
         w = warning('off','Drake:PlanarRigidBodyManipulator:UnsupportedContactPoints');
