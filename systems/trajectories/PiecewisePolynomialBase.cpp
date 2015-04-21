@@ -1,6 +1,7 @@
 #include "PiecewisePolynomialBase.h"
 #include <stdexcept>
 #include <sstream>
+#include <cmath>
 
 PiecewisePolynomialBase::PiecewisePolynomialBase(std::vector<double> const & segment_times) :
   segment_times(segment_times)
@@ -71,7 +72,7 @@ bool PiecewisePolynomialBase::segmentTimesEqual(const PiecewisePolynomialBase& o
   if (segment_times.size() != other.segment_times.size())
     return false;
   for (int i = 0; i < segment_times.size(); i++) {
-    if (abs(segment_times[i] - other.segment_times[i]) > tol)
+    if (std::abs(segment_times[i] - other.segment_times[i]) > tol)
       return false;
   }
   return true;
