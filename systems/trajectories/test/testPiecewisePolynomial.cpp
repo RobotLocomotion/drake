@@ -3,6 +3,7 @@
 #include <random>
 #include <vector>
 #include "testUtil.h"
+#include <iostream>
 
 using namespace std;
 using namespace Eigen;
