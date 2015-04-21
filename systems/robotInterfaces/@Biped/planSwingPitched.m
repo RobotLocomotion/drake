@@ -117,6 +117,7 @@ function add_frame_knot(swing_pose, speed)
     speed = params.step_speed/2;
   end
   frame_knots(end+1).(swing_foot_name) = [swing_pose(1:3); quat2expmap(swing_pose(4:7)); zeros(6,1)];
+  frame_knots(end).(swing_foot_name)(4:6) = unwrapExpmap(frame_knots(end-1).(swing_foot_name)(4:6), frame_knots(end).(swing_foot_name)(4:6));
   frame_knots(end).(stance_foot_name) = [stance_frame_pose(1:3); quat2expmap(stance_frame_pose(4:7)); zeros(6,1)];
   cartesian_distance = norm(frame_knots(end).(swing_foot_name)(1:3) - frame_knots(end-1).(swing_foot_name)(1:3));
   yaw_distance = abs((frame_knots(end).(swing_foot_name)(4:6) - frame_knots(end-1).(swing_foot_name)(4:6))' * [0;0;1]);
@@ -177,6 +178,13 @@ frame_knots(end).t = frame_knots(end-1).t + hold_time / 2;
 % Find velocities for the apex knots by solving a small QP to get a smooth, minimum-acceleration cubic spline
 foot = swing_foot_name;
 states = [frame_knots(1:4).(foot)];
+for j = 2:size(states, 2)
+  w1 = states(4:6,j-1);
+  w2 = states(4:6,j);
+  [w2, dw2] = unwrapExpmap(w1, w2);
+  states(4:6,j) = w2;
+  states(10:12,j) = dw2 * states(10:12,j);
+end
 
 ts = [frame_knots(1).t, 0, 0, frame_knots(4).t];
 
