@@ -2,6 +2,7 @@
 #include <Eigen/Core>
 #include <random>
 #include "testUtil.h"
+#include <iostream>
 
 using namespace Eigen;
 using namespace std;
@@ -69,7 +70,7 @@ void testRoots() {
     VectorXd coeffs = VectorXd::Random(int_distribution(generator));
     Polynomial<CoefficientType> poly(coeffs);
     auto roots = poly.roots();
-    valuecheck(roots.rows(), poly.getDegree());
+    valuecheck(roots.rows(), poly.getDegree(), 1e-8);
     for (int i = 0; i < roots.size(); i++) {
       auto value = poly.value(roots[i]);
       valuecheck(std::abs(value), 0.0, 1e-8);
