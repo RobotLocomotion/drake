@@ -7,9 +7,9 @@ struct lcmt_body_motion_data
 	int32_t body_id;
 
         // cubic spline segments, forming a pptraj
-        int32_t num_spline_segments;
+        int32_t num_spline_ts;
         int32_t num_spline_coefs; // = num_spline_segments - 1
-	double ts[num_spline_segments];
+	double ts[num_spline_ts];
 	lcmt_cubic_spline_coefs coefs[num_spline_coefs];
 	boolean in_floating_base_nullspace;
 	boolean control_pose_when_in_contact;

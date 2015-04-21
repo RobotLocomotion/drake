@@ -7,15 +7,18 @@
 #define LEG_INTEGRATOR_DEACTIVATION_MARGIN 0.05
 
 template<int M, int N>
-void matlabToCArrayOfArrays(const mxArray *source, const int idx, const char *fieldname, double *destination, int outerStride=1)  {
+void matlabToCArrayOfArrays(const mxArray *source, const int idx, const char *fieldname, double *destination, int outerStride = -1, int offset = 0)  {
   // Matlab arrays come in as column-major data. To represent a matrix in C++, as we do in our LCM messages, we need an array of arrays. But that convention results in a row-major storage, so we have to be careful about how we copy data in. 
   const mxArray *field = mxGetField(source, idx, fieldname);
   if (!field) {
     field = mxGetPropertySafe(source, idx, fieldname);
   }
   sizecheck(field, M, N);
-  mexWarnMsgTxt("This probably needs an offset");
-  Map<Matrix<double, M, N>, 0, OuterStride<>>A(mxGetPrSafe(field), OuterStride<>(outerStride));
+  if (outerStride == -1)
+    // outerstride should be the # of elems between rows
+    outerStride = M;
+  //mexWarnMsgTxt("This probably needs an offset");
+  Map<Matrix<double, M, N>, 0, OuterStride<>>A(mxGetPrSafe(field)+offset, OuterStride<>(outerStride));
   // C is row-major, matlab is column-major
   Matrix<double, N, M> A_t = A.transpose();
   memcpy(destination, A_t.data(), sizeof(double)*M*N);
@@ -100,18 +103,18 @@ std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray 
       msg->body_motion_data[i].timestamp = msg->timestamp;
       msg->body_motion_data[i].body_id = (int32_t) mxGetScalar(mxGetFieldSafe(body_motion_data, i, "body_id"));
       const mwSize* dimts = mxGetDimensions(mxGetFieldSafe(body_motion_data, i, "ts"));
-      printf("%d %d\n", dimts[0], dimts[1]);
-      if (dimts[0] <= 1) mexErrMsgTxt("ts should be a vector greater than length 1");
-      memcpy(msg->body_motion_data[i].ts.data(), mxGetPrSafe(mxGetFieldSafe(body_motion_data, i, "ts")), dimts[0]*sizeof(double));
+      if (dimts[1] <= 1) mexErrMsgTxt("ts should be a vector greater than length 1");
+      msg->body_motion_data[i].ts = std::vector<double>(mxGetPrSafe(mxGetFieldSafe(body_motion_data, i, "ts")), 
+        ((double*)mxGetPrSafe(mxGetFieldSafe(body_motion_data, i, "ts"))) + dimts[1]);
       const mxArray* coefs = mxGetFieldSafe(body_motion_data, i, "coefs");
       if (mxGetNumberOfDimensions(coefs) != 3) mexErrMsgTxt("coefs should be a dimension-3 array");
       const mwSize* dimcoefs = mxGetDimensions(coefs);
-      if (dimcoefs[0] != 6 || dimcoefs[1] != dimts[0]-1 || dimcoefs[2] != 4) mexErrMsgTxt("coefs should be size 6xNx4 where N = len(ts)-1");
+      if (dimcoefs[0] != 6 || dimcoefs[1] != dimts[1]-1 || dimcoefs[2] != 4) mexErrMsgTxt("coefs should be size 6xNx4 where N = len(ts)-1");
       msg->body_motion_data[i].coefs.resize(dimcoefs[1]);
       for (int j=0; j<dimcoefs[1]; j++){
-        matlabToCArrayOfArrays<6, 4>(body_motion_data, i, "coefs", &msg->body_motion_data[i].coefs[j].coefs[0][0], dimcoefs[1]);
+        matlabToCArrayOfArrays<6, 4>(body_motion_data, i, "coefs", &msg->body_motion_data[i].coefs[j].coefs[0][0], dimcoefs[1]*dimcoefs[0]);
       }
-      msg->body_motion_data[i].num_spline_segments = dimts[0];
+      msg->body_motion_data[i].num_spline_ts = dimts[1];
       msg->body_motion_data[i].num_spline_coefs = dimcoefs[1];
       msg->body_motion_data[i].in_floating_base_nullspace = static_cast<bool>(mxGetScalar(mxGetFieldSafe(body_motion_data, i, "in_floating_base_nullspace")));
       msg->body_motion_data[i].control_pose_when_in_contact = static_cast<bool>(mxGetScalar(mxGetFieldSafe(body_motion_data, i, "control_pose_when_in_contact")));
@@ -477,12 +480,14 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     pdata->r->findKinematicPath(desired_body_accelerations[i].body_path,0,desired_body_accelerations[i].body_or_frame_id0);
     // Figure out our time index in the piecewise polynomial -- 
     double t_spline = std::max(qp_input->body_motion_data[i].ts[0], 
-      std::min(qp_input->body_motion_data[i].ts[qp_input->body_motion_data[i].num_spline_segments-1], robot_state.t));
+      std::min(qp_input->body_motion_data[i].ts[qp_input->body_motion_data[i].num_spline_ts-1], robot_state.t));
     int segment_index = 0;
     // the segment index we want is the last one s.t. the end time of the segment 
     // is greater than the current time
-    while (robot_state.t >= qp_input->body_motion_data[i].ts[segment_index+1] && segment_index < qp_input->body_motion_data[i].num_spline_segments - 1)
+    while (robot_state.t >= qp_input->body_motion_data[i].ts[segment_index+1] && segment_index < qp_input->body_motion_data[i].num_spline_coefs - 1)
       segment_index++;
+    if (segment_index > 0)
+      mexWarnMsgTxt("this shouldn't happen yet!\n");
     // extract coefs of that spline
     Matrix<double, 6, 4> coefs = Map<Matrix<double, 6, 4, RowMajor>>(&qp_input->body_motion_data[i].coefs[segment_index].coefs[0][0]);
 
