@@ -102,18 +102,20 @@ std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray 
       msg->body_motion_data[i].timestamp = msg->timestamp;
       msg->body_motion_data[i].body_id = (int32_t) mxGetScalar(mxGetFieldSafe(body_motion_data, i, "body_id"));
       const mwSize* dimts = mxGetDimensions(mxGetFieldSafe(body_motion_data, i, "ts"));
-      if (dimts[1] <= 1) mexErrMsgTxt("ts should be a vector greater than length 1");
+      // support either row or column ts coming in
+      if (dimts[1] <= 1 && dimts[0] <= 1) mexErrMsgTxt("ts should be a vector greater than length 1");
+      const int lents = std::max(dimts[1], dimts[0]);
       msg->body_motion_data[i].ts = std::vector<double>(mxGetPrSafe(mxGetFieldSafe(body_motion_data, i, "ts")), 
-        ((double*)mxGetPrSafe(mxGetFieldSafe(body_motion_data, i, "ts"))) + dimts[1]);
+        ((double*)mxGetPrSafe(mxGetFieldSafe(body_motion_data, i, "ts"))) + lents);
       const mxArray* coefs = mxGetFieldSafe(body_motion_data, i, "coefs");
       if (mxGetNumberOfDimensions(coefs) != 3) mexErrMsgTxt("coefs should be a dimension-3 array");
       const mwSize* dimcoefs = mxGetDimensions(coefs);
-      if (dimcoefs[0] != 6 || dimcoefs[1] != dimts[1]-1 || dimcoefs[2] != 4) mexErrMsgTxt("coefs should be size 6xNx4 where N = len(ts)-1");
+      if (dimcoefs[0] != 6 || dimcoefs[1] != lents-1 || dimcoefs[2] != 4) mexErrMsgTxt("coefs should be size 6xNx4 where N = len(ts)-1");
       msg->body_motion_data[i].coefs.resize(dimcoefs[1]);
       for (int j=0; j<dimcoefs[1]; j++){
         matlabToCArrayOfArrays<6, 4>(body_motion_data, i, "coefs", &msg->body_motion_data[i].coefs[j].coefs[0][0], dimcoefs[1]*dimcoefs[0], dimcoefs[0]*j);
       }
-      msg->body_motion_data[i].num_spline_ts = dimts[1];
+      msg->body_motion_data[i].num_spline_ts = lents;
       msg->body_motion_data[i].num_spline_coefs = dimcoefs[1];
       msg->body_motion_data[i].in_floating_base_nullspace = static_cast<bool>(mxGetScalar(mxGetFieldSafe(body_motion_data, i, "in_floating_base_nullspace")));
       msg->body_motion_data[i].control_pose_when_in_contact = static_cast<bool>(mxGetScalar(mxGetFieldSafe(body_motion_data, i, "control_pose_when_in_contact")));
