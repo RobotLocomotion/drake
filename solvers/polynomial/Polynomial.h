@@ -16,19 +16,20 @@
 #define DLLEXPORT
 #endif
 
+template <typename CoefficientType = double>
 class DLLEXPORT Polynomial
 {
 public:
-  typedef double CoefficientType;
+  typedef typename Eigen::Matrix<CoefficientType, Eigen::Dynamic, 1> CoefficientsType;
   typedef typename Eigen::NumTraits<CoefficientType>::Real RealScalar;
   typedef std::complex<RealScalar> RootType;
   typedef Eigen::Matrix<RootType, Eigen::Dynamic, 1> RootsType;
 
 private:
-  Eigen::Matrix<CoefficientType, Eigen::Dynamic, 1> coefficients;
+  CoefficientsType coefficients;
 
 public:
-  Polynomial(Eigen::Ref<Eigen::VectorXd> const& coefficients);
+  Polynomial(Eigen::Ref<CoefficientsType> const& coefficients);
 
   Polynomial(int num_coefficients);
 
@@ -36,9 +37,9 @@ public:
 
   int getDegree() const;
 
-  Eigen::VectorXd const& getCoefficients() const;
+  CoefficientsType const& getCoefficients() const;
 
-  template<typename T>
+  template<typename T> // can be different from both CoefficientsType and RealScalar
   T value(const T& t) const
   {
     return poly_eval(coefficients, t);
@@ -46,7 +47,7 @@ public:
 
   Polynomial derivative(int derivative_order = 1) const;
 
-  Polynomial integral(double integration_constant = 0.0) const;
+  Polynomial integral(const CoefficientType& integration_constant = 0.0) const;
 
   Polynomial& operator+=(const Polynomial& other);
 
@@ -78,7 +79,7 @@ public:
 
   RootsType roots() const;
 
-  bool isApprox(const Polynomial& other, const CoefficientType& tol) const;
+  bool isApprox(const Polynomial& other, const RealScalar& tol) const;
 
   static Polynomial zero();
 };

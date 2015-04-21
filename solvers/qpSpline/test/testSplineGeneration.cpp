@@ -37,7 +37,7 @@ double randomSpeedTest(int ntests) {
     double x1 = uniform(generator);
     double x2 = uniform(generator);
 
-    PiecewisePolynomial result = twoWaypointCubicSpline(segment_times, x0, xd0, xf, xdf, x1, x2);
+    PiecewisePolynomial<double> result = twoWaypointCubicSpline(segment_times, x0, xd0, xf, xdf, x1, x2);
     ret += result.value(0.0);
   }
   return ret;
@@ -58,7 +58,7 @@ int main(int argc, char **argv) {
   double x2 = uniform(generator);
 
 
-  PiecewisePolynomial result = twoWaypointCubicSpline(segment_times, x0, xd0, xf, xdf, x1, x2);
+  PiecewisePolynomial<double> result = twoWaypointCubicSpline(segment_times, x0, xd0, xf, xdf, x1, x2);
 
   for (int i = 0; i < num_segments; i++) {
     valuecheck(segment_times[i], result.getStartTime(i));
@@ -67,8 +67,8 @@ int main(int argc, char **argv) {
 
   // check value constraints
   double tol = 1e-10;
-  PiecewisePolynomial derivative = result.derivative();
-  PiecewisePolynomial second_derivative = derivative.derivative();
+  PiecewisePolynomial<double> derivative = result.derivative();
+  PiecewisePolynomial<double> second_derivative = derivative.derivative();
 
 
   valuecheck(result.value(result.getStartTime(0)), x0, tol);
@@ -92,7 +92,7 @@ int main(int argc, char **argv) {
   }
 
 #if !defined(WIN32) && !defined(WIN64)
-  int ntests = 100000;
+  int ntests = 1000;
   cout << "time: " << measure<chrono::microseconds>::execution(randomSpeedTest, ntests) / (double) ntests << " microseconds." << endl;
 #endif
 
