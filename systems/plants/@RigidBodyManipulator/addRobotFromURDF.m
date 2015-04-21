@@ -534,7 +534,9 @@ end
 
 function model=parseTransmission(model,robotnum,node,options)
 
-if isempty(strfind(char(node.getAttribute('type')),'SimpleTransmission'))
+% old type as attribute kept for convenience
+typeAttribute = char(node.getAttribute('type'));
+if ~isempty(typeAttribute) && isempty(strfind(typeAttribute,'SimpleTransmission'))
   return; % only parse SimpleTransmissions so far');
 end
 
@@ -544,6 +546,10 @@ childNodes = node.getChildNodes();
 for i=1:childNodes.getLength()
   thisNode = childNodes.item(i-1);
   switch (lower(char(thisNode.getNodeName())))
+    case 'type'
+      if ( isempty(strfind(char(thisNode.getFirstChild().getNodeValue()),'SimpleTransmission')))
+          return;  % only parse SimpleTransmissions so far
+      end
     case 'actuator'
       actuator.name = char(thisNode.getAttribute('name'));
       actuator.name=regexprep(actuator.name, '\.', '_', 'preservecase');
