@@ -65,11 +65,20 @@ classdef BodyMotionData
     end
 
     function body_motion_slice = slice(obj, t_ind)
-      slice_t_inds = min([t_ind, t_ind+1], [length(obj.ts), length(obj.ts)]);
-      slice_t_inds = max(slice_t_inds, [1, 1]);
+      if (length(obj.ts) < 3)
+        slice_t_inds = min([t_ind, t_ind+1], [length(obj.ts), length(obj.ts)]);
+        slice_t_inds = max(slice_t_inds, [1, 1]);
+        slice_coef_t_inds = t_ind;
+      else
+        slice_t_inds = min([t_ind, t_ind+1, t_ind+2], [length(obj.ts), length(obj.ts), length(obj.ts)]);
+        slice_t_inds = max(slice_t_inds, [1, 1, 1]);
+        slice_coef_t_inds = min(slice_t_inds(1:2), [size(obj.coefs, 2), size(obj.coefs, 2)]); 
+      end
+      % lookahead a slice
+      
       body_motion_slice = struct('body_id', obj.body_id,...
                                  'ts', obj.ts(slice_t_inds),...
-                                 'coefs', obj.coefs(:,t_ind,:),...
+                                 'coefs', obj.coefs(:,slice_coef_t_inds,:),...
                                  'toe_off_allowed', obj.toe_off_allowed(t_ind),...
                                  'in_floating_base_nullspace', obj.in_floating_base_nullspace(t_ind),...
                                  'control_pose_when_in_contact', obj.control_pose_when_in_contact(t_ind),...

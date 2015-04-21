@@ -310,8 +310,9 @@ classdef QPLocomotionPlan < QPControllerPlan
         end
         if body_id == loading_foot;
           foot_actual = obj.robot.forwardKin(kinsol, qp_input.body_motion_data(j).body_id, [0;0;0], 0);
-          foot_des = evalCubicSplineSegment(t_global - qp_input.body_motion_data(j).ts(1), qp_input.body_motion_data(j).coefs);
-          obj.plan_shift(1:3) = foot_des(1:3) - foot_actual(1:3);
+          % apply plan shift based on nearest-in-time coefs
+          foot_des = evalCubicSplineSegment(t_global - qp_input.body_motion_data(j).ts(1), qp_input.body_motion_data(j).coefs(:, 1, :));
+          obj.plan_shift(1:3, :) = foot_des(1:3) - foot_actual(1:3);
           break
         end
       end
@@ -332,7 +333,7 @@ classdef QPLocomotionPlan < QPControllerPlan
         inds = [];
       end
       for j = 1:length(qp_input.body_motion_data)
-        qp_input.body_motion_data(j).coefs(inds,:,end) = qp_input.body_motion_data(j).coefs(inds,:,end) - obj.plan_shift(inds);
+        qp_input.body_motion_data(j).coefs(inds,:,end) = qp_input.body_motion_data(j).coefs(inds,:,end) - repmat(obj.plan_shift(inds), [1, size(qp_input.body_motion_data(j).coefs, 2)]);
       end
       qp_input.whole_body_data.q_des(inds) = qp_input.whole_body_data.q_des(inds) - obj.plan_shift(inds);
     end

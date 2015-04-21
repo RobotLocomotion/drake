@@ -13,7 +13,6 @@ void matlabToCArrayOfArrays(const mxArray *source, const int idx, const char *fi
   if (!field) {
     field = mxGetPropertySafe(source, idx, fieldname);
   }
-  sizecheck(field, M, N);
   if (outerStride == -1)
     // outerstride should be the # of elems between rows
     outerStride = M;
@@ -112,7 +111,7 @@ std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray 
       if (dimcoefs[0] != 6 || dimcoefs[1] != dimts[1]-1 || dimcoefs[2] != 4) mexErrMsgTxt("coefs should be size 6xNx4 where N = len(ts)-1");
       msg->body_motion_data[i].coefs.resize(dimcoefs[1]);
       for (int j=0; j<dimcoefs[1]; j++){
-        matlabToCArrayOfArrays<6, 4>(body_motion_data, i, "coefs", &msg->body_motion_data[i].coefs[j].coefs[0][0], dimcoefs[1]*dimcoefs[0]);
+        matlabToCArrayOfArrays<6, 4>(body_motion_data, i, "coefs", &msg->body_motion_data[i].coefs[j].coefs[0][0], dimcoefs[1]*dimcoefs[0], dimcoefs[0]*j);
       }
       msg->body_motion_data[i].num_spline_ts = dimts[1];
       msg->body_motion_data[i].num_spline_coefs = dimcoefs[1];
@@ -486,8 +485,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     // is greater than the current time
     while (robot_state.t >= qp_input->body_motion_data[i].ts[segment_index+1] && segment_index < qp_input->body_motion_data[i].num_spline_coefs - 1)
       segment_index++;
-    if (segment_index > 0)
-      mexWarnMsgTxt("this shouldn't happen yet!\n");
+    
     // extract coefs of that spline
     Matrix<double, 6, 4> coefs = Map<Matrix<double, 6, 4, RowMajor>>(&qp_input->body_motion_data[i].coefs[segment_index].coefs[0][0]);
 
