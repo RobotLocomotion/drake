@@ -23,6 +23,18 @@ else % then try to evaluate the dependency now...
         warning('Drake:SimulinkVersion','Most features of Drake require SIMULINK version 7.3 or above.');
         % haven't actually tested with lower versions
       end
+      
+    case 'distcomp'
+      v=ver('distcomp');
+      conf.distcomp_enabled = ~isempty(v);
+      if ~conf.distcomp_enabled
+        disp(' MATLAB Parallel Computing Toolbox was not found');
+      else
+        % go ahead and start up a pool if necessary
+        if (exist('matlabpool','file') && matlabpool('size')==0) 
+          matlabpool; 
+        end
+      end
 
     case 'spotless'
       conf.spotless_enabled = logical(exist('msspoly','class'));

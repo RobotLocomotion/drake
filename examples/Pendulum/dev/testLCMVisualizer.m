@@ -1,8 +1,8 @@
 function testLCMVisualizer
 
-p = addpath([getDrakePath,'/examples/Pendulum']);
+% NOTEST - have to update this (probably to not use the parallel toolbox)
 
-if (matlabpool('size')>0), matlabpool('close'); end
+tmpdir = addpathTemporary([getDrakePath,'/examples/Pendulum']);
 job1 = batch('runPendulum','Workspace',struct(),'CaptureDiary',true);
 
 %ok = waitForState(job1,'running');
@@ -15,4 +15,3 @@ diary(job1);
 %destroy(job1);
 delete(job1);
 
-path(p);

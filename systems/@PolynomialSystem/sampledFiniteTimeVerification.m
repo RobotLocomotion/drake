@@ -37,6 +37,9 @@ function V = sampledFiniteTimeVerification(sys,ts,G,varargin)
 
 checkDependency('sedumi');
 
+% for old versions of parallel computing toolbox, startup a matlabpool if necessary:
+if (exist('matlabpool','file') && matlabpool('size')==0) matlabpool; end
+
 t=msspoly('t',1);
 ts=ts(:);
 
@@ -488,12 +491,11 @@ end
 
 % fix rho, optimize lagrange multipliers
 function L=findMultipliers(x,V,Vdot,rho,rhodot,options)
-  % note: compute L for each sample point in parallel using parfor
+  % note: compute L for each sample point 
 
   N = length(V)-1;
-  if (matlabpool('size')==0) matlabpool; end
  
-  for i=1:N
+  parfor i=1:N  
     prog = mssprog;
     Lxmonom = monomials(x,0:options.degL1);
     [prog,l] = new(prog,length(Lxmonom),'free');
