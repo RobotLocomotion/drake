@@ -1,4 +1,8 @@
 function pelvis_motion_data = getPelvisMotionForWalking(obj, foot_motion_data, supports, support_times, options)
+% Get the BodyMotionData for the robot's pelvis, given the BodyMotionData for its feet, plus its planned support sequence. 
+typecheck(foot_motion_data, 'BodyMotionData');
+typecheck(supports, 'RigidBodySupportState');
+assert(isnumeric(support_times));
 
 if nargin < 6
   options = struct();

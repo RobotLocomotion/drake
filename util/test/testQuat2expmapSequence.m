@@ -9,7 +9,13 @@ for i = 1:N
 end
 [w,wdot] = quat2expmapSequence(quat,quat_dot);
 w_diff = diff(w,1,2);
-if(any(sqrt(sum(w_diff.^2,1))>2*pi))
-  error('The distance between adjacent exponential map should be less than 2*pi');
+w_distance = sum(w_diff.^2,1);
+w_distance_flip = zeros(1,N-1);
+for i = 2:N
+  w_flip = flipExpmap(w(:,i));
+  w_distance_flip(i-1) = sum((w_flip-w(:,i-1)).^2,1);
+end
+if(any(w_distance>w_distance_flip+eps))
+  error('quat2expmapSquence chose the exponential map in the wrong direction');
 end
 end

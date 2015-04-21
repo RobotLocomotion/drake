@@ -1,9 +1,8 @@
 function runPendLCMControl
 
-oldpath = addpath([getDrakePath,'/examples/Pendulum']);
+tmpdir = addpathTemporary([getDrakePath,'/examples/Pendulum']);
 
 p=PendulumPlant;
 p = setInputLimits(p,-inf,inf);
 runLCM(PendulumEnergyShaping(p),[],struct('tspan',[0 2]));
 
-path(oldpath);
