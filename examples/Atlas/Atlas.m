@@ -25,12 +25,12 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       if ~isfield(options,'external_force')
         options.external_force = [];
       end
-      if ~isfield(options,'atlas_version') 
-        options.atlas_version = 3; 
+      if ~isfield(options,'atlas_version')
+        options.atlas_version = 3;
       end
 
       w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
-      
+
       obj = obj@TimeSteppingRigidBodyManipulator(urdf,options.dt,options);
       obj = obj@Biped('r_foot_sole', 'l_foot_sole');
       warning(w);
@@ -88,10 +88,10 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
         % (this affects input frames)
         obj.external_force = findLinkId(obj,options.external_force);
         options_ef.weld_to_link = obj.external_force;
-        obj = obj.addRobotFromURDF(strcat(getenv('DRC_PATH'), '/drake/util/three_dof_force.urdf'), ...
+        obj = obj.addRobotFromURDF(fullfile(getDrakePath,'util','three_dof_force.urdf'), ...
           [0; 0; 0], [0; 0; 0], options_ef);
       end
-      
+
       if options.floating
         % could also do fixed point search here
         obj = obj.setInitialState(obj.resolveConstraints(zeros(obj.getNumStates(),1)));
@@ -104,7 +104,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       if isfield(options, 'atlas_version')
         obj.atlas_version = options.atlas_version;
       end
-      
+
       obj.left_full_support = RigidBodySupportState(obj,obj.foot_body_id.left);
       obj.left_toe_support = RigidBodySupportState(obj,obj.foot_body_id.left,{{'toe'}});
       obj.right_full_support = RigidBodySupportState(obj,obj.foot_body_id.right);
@@ -154,7 +154,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       end
       obj.manip = obj.manip.setStateFrame(atlas_state_frame);
       obj = obj.setStateFrame(state_frame);
-      
+
       % Same bit of complexity for input frame to get hand inputs
       if (obj.hand_right > 0 || obj.hand_left > 0 || obj.external_force > 0)
         input_frame = getInputFrame(obj);
@@ -173,13 +173,13 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
         id = input_frame.getFrameNumByName('s-model_articulatedInput');
         if (length(id) > 1)
           id = id(1);
-        end 
+        end
         input_frame = replaceFrameNum(input_frame,id,atlasFrames.HandInput(obj,id,'left_atlasFrames.HandInput'));
       end
 
       obj = obj.setInputFrame(input_frame);
       obj.manip = obj.manip.setInputFrame(input_frame);
-      
+
       % Construct output frame, which comes from state plus sensor
       % info
       atlas_output_frame = atlas_state_frame;
@@ -210,12 +210,12 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
           end
         end
       end
-      
+
       if ~isequal_modulo_transforms(atlas_output_frame,getOutputFrame(obj.manip))
         obj.manip = obj.manip.setNumOutputs(atlas_output_frame.dim);
         obj.manip = obj.manip.setOutputFrame(atlas_output_frame);
       end
-      
+
       if ~isequal_modulo_transforms(output_frame,getOutputFrame(obj))
         obj = obj.setNumOutputs(output_frame.dim);
         obj = obj.setOutputFrame(output_frame);
@@ -286,7 +286,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       body_accel_bounds(2).min_acceleration = -acc_limit;
       body_accel_bounds(2).max_acceleration = acc_limit;
       if ~isfield(options, 'body_accel_bounds'); options.body_accel_bounds = body_accel_bounds; end;
-      
+
       [qp,lfoot_control_block,rfoot_control_block,pelvis_control_block,pd,options] = ...
         constructQPBalancingController(obj,controller_data,options);
     end
@@ -314,7 +314,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
         'use_ik',false,...
         'Kp_q',0.0*ones(obj.getNumPositions(),1),...
         'q_damping_ratio',0.0));
-      
+
       options.w_qdd(findPositionIndices(obj,'back_bkx')) = 0.1;
       options.Kp_q(findPositionIndices(obj,'back_bkx')) = 50;
 
