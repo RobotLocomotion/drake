@@ -1,6 +1,6 @@
 classdef LinearGaussianExample < StochasticDrakeSystem
 
- methods 
+ methods
    function obj = LinearGaussianExample
      obj = obj@StochasticDrakeSystem(...
        1, ... % number of continuous states
@@ -12,15 +12,15 @@ classdef LinearGaussianExample < StochasticDrakeSystem
        1, ... % number of noise inputs
        .01);  % time constant of w(t)
    end
-   
+
    function xcdot = stochasticDynamics(obj,t,x,u,w)
      xcdot = -x + w;
    end
-   
+
    function x0 = getInitialState(obj)
      x0 = randn;
    end
-   
+
    function y = stochasticOutput(obj,t,x,u,w);
      y=x;
    end
@@ -36,11 +36,11 @@ classdef LinearGaussianExample < StochasticDrakeSystem
 %     prob=monteCarlo(sys,S,tspan,x0)
    end
  end
- 
+
  methods
    function prob=monteCarlo(obj,S,tspan,x0)
      N=200;
-     checkDependency('distcomp');   % note: if you don't have distcomp, then 
+     checkDependency('distcomp');   % note: if you don't have distcomp, then simply change the parfor to for
      parfor i=1:N
        xtraj = simulate(obj,tspan,x0);
        xs=eval(xtraj,xtraj.getBreaks());
@@ -53,26 +53,25 @@ classdef LinearGaussianExample < StochasticDrakeSystem
 %     figure(12);
 %     hist([xend{:}],linspace(-5,5,41)); axis([-5,5,0,N]);
    end
-   
+
    function plotKalman(obj,tspan)
      % for comparison w/ monte-carlo, plot the distribution that I would
      % expect to get at the end of tspan (with x0=0) given the kalman
      % filter equations.
      % (using symbols from Kalman-Bucy subsection of http://en.wikipedia.org/wiki/Kalman_filter)
-     
-     F=-1; Q=1; 
+
+     F=-1; Q=1;
      %H=1; R=0; are unused (no observations)
-     
+
      m0 = 0;  P0 = 0;  % initial mean and covariance
      Pdot = @(t,P)(F*P+P*F''+Q);
      P=matrixODE(@ode45,Pdot,tspan,P0);  %note: this is overkill, since P is a scalar in this case
      Pf = P.eval(tspan(end));
-     
+
      pdf = @(xs)(1/sqrt(2*pi*Pf^2)*exp(-xs.^2/(2*Pf^2)));
      figure(13)
      xs=-5:.01:5;
      plot(xs,200*pdf(xs));
    end
- end 
+ end
 end
-
