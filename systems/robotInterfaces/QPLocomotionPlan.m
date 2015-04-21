@@ -199,7 +199,6 @@ classdef QPLocomotionPlan < QPControllerPlan
           if ~any(supp.bodies == body_id)
             k = find(obj.supports(supp_idx+1).bodies == body_id);
             if ~isempty(k)
-              supp.bodies, body_id, obj.supports(supp_idx+1).bodies
               % this body is not in contact, but will be in the next support state
               qp_input.support_data(end+1).body_id = body_id;
               qp_input.support_data(end).contact_pts = obj.supports(supp_idx+1).contact_pts{k};
