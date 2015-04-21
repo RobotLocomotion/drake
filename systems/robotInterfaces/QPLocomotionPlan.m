@@ -13,7 +13,7 @@ classdef QPLocomotionPlan < QPControllerPlan
     comtraj = [];
     mu = 0.5;
     plan_shift = zeros(6,1);
-    plan_shift_z_only = false;
+    plan_shift_mode = QPLocomotionPlan.PLAN_SHIFT_Z_AND_ZMP;
     g = 9.81; % gravity m/s^2
     is_quasistatic = false;
     constrained_dofs = [];
@@ -36,6 +36,12 @@ classdef QPLocomotionPlan < QPControllerPlan
     toe_off_active = struct('right', false, 'left', false);
   end
 
+  properties(Constant)
+    PLAN_SHIFT_NONE = 0;
+    PLAN_SHIFT_XYZ = 1;
+    PLAN_SHIFT_Z_ONLY = 2;
+    PLAN_SHIFT_Z_AND_ZMP = 3;
+  end
 
   methods
     function obj = QPLocomotionPlan(robot)
@@ -312,12 +318,18 @@ classdef QPLocomotionPlan < QPControllerPlan
     end
 
     function qp_input = applyPlanShift(obj, qp_input)
-      if ~obj.plan_shift_z_only
+      if obj.plan_shift_mode == QPLocomotionPlan.PLAN_SHIFT_XYZ ||...
+         obj.plan_shift_mode == QPLocomotionPlan.PLAN_SHIFT_Z_AND_ZMP
         qp_input.zmp_data.x0(1:2) = qp_input.zmp_data.x0(1:2) - obj.plan_shift(1:2);
         qp_input.zmp_data.y0 = qp_input.zmp_data.y0 - obj.plan_shift(1:2);
+      end
+      if obj.plan_shift_mode == QPLocomotionPlan.PLAN_SHIFT_XYZ
         inds = 1:3;
-      else
+      elseif obj.plan_shift_mode == QPLocomotionPlan.PLAN_SHIFT_Z_ONLY ||...
+             obj.plan_shift_mode == QPLocomotionPlan.PLAN_SHIFT_Z_AND_ZMP
         inds = 3;
+      else
+        inds = [];
       end
       for j = 1:length(qp_input.body_motion_data)
         qp_input.body_motion_data(j).coefs(inds,:,end) = qp_input.body_motion_data(j).coefs(inds,:,end) - obj.plan_shift(inds);
