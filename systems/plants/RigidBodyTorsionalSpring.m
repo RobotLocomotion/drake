@@ -29,7 +29,7 @@ classdef RigidBodyTorsionalSpring < RigidBodyForceElement
       f_ext(:,obj.child_body) = AdT_body_to_joint' * wrench_on_child_in_child_joint_frame;
 
       if obj.parent_body ~= 0 % don't apply force to world body
-        T_parent_body_to_child_joint = homogTransInv(manip.body(obj.child_body.Ttree));
+        T_parent_body_to_child_joint = homogTransInv(manip.body(obj.child_body).Ttree);
         AdT_parent_body_to_child_joint = transformAdjoint(T_parent_body_to_child_joint);
         f_ext(:,obj.parent_body) = -AdT_parent_body_to_child_joint' * wrench_on_child_in_child_joint_frame; 
       end
