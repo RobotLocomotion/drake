@@ -1,0 +1,6 @@
+package drake;
+
+struct lcmt_cubic_spline_coefs
+{
+	double coefs[6][4];
+}
