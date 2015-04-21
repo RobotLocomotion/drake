@@ -16,17 +16,18 @@
   #define DLLEXPORT
 #endif
 
+template <typename CoefficientType = double>
 class DLLEXPORT PiecewisePolynomial : public PiecewisePolynomialBase
 {
 private:
-  std::vector<Polynomial> polynomials;
+  std::vector<Polynomial<CoefficientType>> polynomials;
 
   int getSegmentIndex(double t);
 
 public:
   virtual ~PiecewisePolynomial() {};
 
-  PiecewisePolynomial(std::vector<Polynomial> const& polynomials, std::vector<double> const& segment_times);
+  PiecewisePolynomial(std::vector<Polynomial<CoefficientType>> const& polynomials, std::vector<double> const& segment_times);
 
   PiecewisePolynomial derivative(int derivative_order = 1) const;
 
@@ -34,7 +35,7 @@ public:
 
   double value(double t);
 
-  const Polynomial& getPolynomial(int segment_index) const;
+  const Polynomial<CoefficientType>& getPolynomial(int segment_index) const;
 
   virtual int getSegmentPolynomialDegree(int segment_index) const;
 

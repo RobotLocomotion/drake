@@ -27,7 +27,7 @@ void setConstraintMatrixPart(double time, int derivative_order, MatrixBase<Deriv
   }
 }
 
-PiecewisePolynomial generateSpline(const SplineInformation& spline_information) {
+PiecewisePolynomial<double> generateSpline(const SplineInformation& spline_information) {
   int num_segments = spline_information.getNumberOfSegments();
   int num_constraints = spline_information.getNumberOfConstraints();
   int num_coefficients = spline_information.getTotalNumberOfCoefficients();
@@ -92,17 +92,17 @@ PiecewisePolynomial generateSpline(const SplineInformation& spline_information) 
   VectorXd solution = decomposition.solve(right_hand_side);
 
   // create Polynomials
-  std::vector<Polynomial> polynomials;
+  std::vector<Polynomial<double>> polynomials;
   for (int i = 0; i < num_segments; i++) {
     auto coefficients = solution.segment(segment_col_starts[i], spline_information.getNumberOfCoefficients(i));
-    polynomials.push_back(Polynomial(coefficients));
+    polynomials.push_back(Polynomial<double>(coefficients));
   }
 
   // return a PiecewisePolynomial
-  return PiecewisePolynomial(polynomials, spline_information.getSegmentTimes());
+  return PiecewisePolynomial<double>(polynomials, spline_information.getSegmentTimes());
 }
 
-PiecewisePolynomial twoWaypointCubicSpline(const vector<double>& segment_times, double x0, double xd0, double xf, double xdf, double x1, double x2) {
+PiecewisePolynomial<double> twoWaypointCubicSpline(const vector<double>& segment_times, double x0, double xd0, double xf, double xdf, double x1, double x2) {
   const int num_segments = 3;
   assert(segment_times.size() == num_segments + 1);
 

@@ -21,24 +21,26 @@ vector<double> generateSegmentTimes(int num_segments) {
   return segment_times;
 }
 
+template <typename CoefficientType>
 void testIntegralAndDerivative() {
-  vector<Polynomial> polynomials;
+  vector<Polynomial<CoefficientType>> polynomials;
   int num_coefficients = 5;
   int num_segments = 3;
+  typedef typename Polynomial<CoefficientType>::CoefficientsType CoefficientsType;
   for (int i = 0; i < num_segments; ++i) {
-    VectorXd coefficients = VectorXd::Random(num_coefficients);
-    polynomials.push_back(Polynomial(coefficients));
+    CoefficientsType coefficients = CoefficientsType::Random(num_coefficients);
+    polynomials.push_back(Polynomial<CoefficientType>(coefficients));
   }
 
   // differentiate integral, get original back
-  PiecewisePolynomial piecewise(polynomials, generateSegmentTimes(num_segments));
-  PiecewisePolynomial piecewise_back = piecewise.integral().derivative();
+  PiecewisePolynomial<CoefficientType> piecewise(polynomials, generateSegmentTimes(num_segments));
+  PiecewisePolynomial<CoefficientType> piecewise_back = piecewise.integral().derivative();
   if (!piecewise.isApprox(piecewise_back, 1e-10))
     throw runtime_error("wrong");
 
   // check value at start time
   double value_at_t0 = uniform(generator);
-  PiecewisePolynomial integral = piecewise.integral(value_at_t0);
+  PiecewisePolynomial<CoefficientType> integral = piecewise.integral(value_at_t0);
   valuecheck(value_at_t0, integral.value(piecewise.getStartTime()), 1e-10);
 
   // check continuity at knot points
@@ -48,7 +50,7 @@ void testIntegralAndDerivative() {
 }
 
 int main(int argc, char **argv) {
-  testIntegralAndDerivative();
+  testIntegralAndDerivative<double>();
 
   std::cout << "test passed";
 
