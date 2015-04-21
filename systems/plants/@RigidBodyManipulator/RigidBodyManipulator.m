@@ -284,7 +284,6 @@ classdef RigidBodyManipulator < Manipulator
 
       B = obj.B;
       if length(obj.force)>0
-        f_ext = sparse(6,m.NB);
         for i=1:length(obj.force)
           if (obj.force{i}.direct_feedthrough_flag)
             [~,B_force] = computeSpatialForce(obj.force{i},obj,q,qd);

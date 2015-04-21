@@ -135,25 +135,23 @@ inline int my_isnan(double x) {
 template<typename DerivedA, typename DerivedB>
 void valuecheck(const Eigen::MatrixBase<DerivedA>& a, const Eigen::MatrixBase<DerivedB>& b, double tol, std::string error_msg)
 {
-	// note: isApprox uses the L2 norm, so is bad for comparing against zero
-	if (a.rows() != b.rows() || a.cols() != b.cols()) {
-	  throw std::runtime_error("Drake:ValueCheck ERROR:" + error_msg + "size mismatch: (" + std::to_string(static_cast<unsigned long long>(a.rows())) + " by " + std::to_string(static_cast<unsigned long long>(a.cols())) + ") and (" + std::to_string(static_cast<unsigned long long>(b.rows())) + " by " + std::to_string(static_cast<unsigned long long>(b.cols())) + ")");
-	}
-	if (!(a-b).isZero(tol)) {
-		if (!a.allFinite() && !b.allFinite()) {
-			// could be failing because inf-inf = nan
-			bool ok=true;
-			for (int i=0; i<a.rows(); i++)
-				for (int j=0; j<a.cols(); j++) {
-					ok = ok && ((a(i,j) == std::numeric_limits<double>::infinity() && b(i,j) == std::numeric_limits<double>::infinity()) ||
-					(a(i,j) == -std::numeric_limits<double>::infinity() && b(i,j) == -std::numeric_limits<double>::infinity()) ||
-			    (my_isnan(a(i,j)) && my_isnan(b(i,j))) || (std::abs(a(i,j)-b(i,j))<tol));
-				}
-			if (ok) return;
-		}
-		error_msg += "A:\n" + to_string(a) + "\nB:\n" + to_string(b) + "\n";
-		throw std::runtime_error("Drake:ValueCheck ERROR:" + error_msg);
-	}
+  // note: isApprox uses the L2 norm, so is bad for comparing against zero
+  if (a.rows() != b.rows() || a.cols() != b.cols()) {
+    throw std::runtime_error("Drake:ValueCheck ERROR:" + error_msg + "size mismatch: (" + std::to_string(static_cast<unsigned long long>(a.rows())) + " by " + std::to_string(static_cast<unsigned long long>(a.cols())) + ") and (" + std::to_string(static_cast<unsigned long long>(b.rows())) + " by " + std::to_string(static_cast<unsigned long long>(b.cols())) + ")");
+  }
+  if (!(a-b).isZero(tol)) {
+    if (!a.allFinite() && !b.allFinite()) {
+      // could be failing because inf-inf = nan
+      bool ok=true;
+      for (int i=0; i<a.rows(); i++)
+        for (int j=0; j<a.cols(); j++) {
+          ok = ok && ((a(i,j) == std::numeric_limits<double>::infinity() && b(i,j) == std::numeric_limits<double>::infinity()) || (a(i,j) == -std::numeric_limits<double>::infinity() && b(i,j) == -std::numeric_limits<double>::infinity()) || (my_isnan(a(i,j)) && my_isnan(b(i,j))) || (std::abs(a(i,j)-b(i,j))<tol));
+        }
+      if (ok) return;
+    }
+    error_msg += "A:\n" + to_string(a) + "\nB:\n" + to_string(b) + "\n";
+    throw std::runtime_error("Drake:ValueCheck ERROR:" + error_msg);
+  }
 }
 
 #endif /* DRAKE_UTIL_H_ */

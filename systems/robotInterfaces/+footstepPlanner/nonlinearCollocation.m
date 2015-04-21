@@ -295,14 +295,15 @@ function [Q, c] = footstepQuadraticCost(biped, seed_plan, weights, goal_pos, nom
   c = zeros(nvar, 1);
 
   w_goal = diag(weights.goal);
-  if seed_plan.footsteps(end).frame_id == biped.foot_frame_id.right
-    xg = reshape(goal_pos.right, [], 1);
-  else
-    xg = reshape(goal_pos.left, [], 1);
+  for j = (nsteps - 1):nsteps
+    if seed_plan.footsteps(j).frame_id == biped.foot_frame_id.right
+      xg = reshape(goal_pos.right, [], 1);
+    else
+      xg = reshape(goal_pos.left, [], 1);
+    end
+    Q(world_ndx(:,j), world_ndx(:,j)) = w_goal;
+    c(world_ndx(:,j)) = -2 * xg' * w_goal;
   end
-  j = nsteps;
-  Q(world_ndx(:,j), world_ndx(:,j)) = w_goal;
-  c(world_ndx(:,j)) = -2 * xg' * w_goal;
 
   w_rel = diag(weights.relative);
   for j = 2:nsteps
