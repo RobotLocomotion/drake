@@ -1,5 +1,5 @@
 classdef QPLocomotionPlan < QPControllerPlan
-  properties
+  properties(GetAccess=private, SetAccess=private)
     robot;
     x0;
     support_times
@@ -24,19 +24,17 @@ classdef QPLocomotionPlan < QPControllerPlan
 
     lcmgl = LCMGLClient('locomotion_plan');
     joint_pd_override_data
+    
+    toe_off_active = struct('right', false, 'left', false);
+  end
 
+  properties(Access=private, Constant)
     MIN_KNEE_ANGLE = 0.7;
     KNEE_KP = 40;
     KNEE_KD = 4;
     KNEE_WEIGHT = 1;
-
-  end
-
-  properties(Access=protected)
-    toe_off_active = struct('right', false, 'left', false);
-  end
-
-  properties(Constant)
+    
+    % turn into enum:
     PLAN_SHIFT_NONE = 0;
     PLAN_SHIFT_XYZ = 1;
     PLAN_SHIFT_Z_ONLY = 2;
@@ -336,106 +334,6 @@ classdef QPLocomotionPlan < QPControllerPlan
       end
       qp_input.whole_body_data.q_des(inds) = qp_input.whole_body_data.q_des(inds) - obj.plan_shift(inds);
     end
-
-    function [ytraj, v] = simulatePointMassBiped(obj, r)
-      typecheck(r, 'PointMassBiped');
-      typecheck(obj.robot, 'Biped');
-
-      link_trajectories = obj.getLinkTrajectories();
-
-      r_ind = [];
-      l_ind = [];
-      for j = 1:length(link_trajectories)
-        if link_trajectories(j).link_ndx == obj.robot.getFrame(obj.robot.foot_frame_id.right).body_ind
-          r_ind = j;
-        elseif link_trajectories(j).link_ndx == obj.robot.getFrame(obj.robot.foot_frame_id.left).body_ind
-          l_ind = j;
-        end
-      end
-
-      breaks = obj.zmptraj.getBreaks();
-      traj = PPTrajectory(foh(breaks, obj.zmptraj.eval(breaks)));
-      rtraj = PPTrajectory(foh(breaks, link_trajectories(r_ind).traj.eval(breaks)));
-      ltraj = PPTrajectory(foh(breaks, link_trajectories(l_ind).traj.eval(breaks)));
-      contact = false(2, length(obj.support_times));
-      for j = 1:length(obj.support_times)
-        if any(obj.supports(j).bodies == obj.robot.foot_body_id.right)
-          contact(1,j) = true;
-        end
-        if any(obj.supports(j).bodies == obj.robot.foot_body_id.left)
-          contact(2,j) = true;
-        end
-      end
-      ctraj = PPTrajectory(zoh(obj.support_times, contact));
-      if ~isa(obj.comtraj, 'Trajectory')
-        obj.comtraj = ExpPlusPPTrajectory(obj.comtraj.breaks,...
-                                          obj.comtraj.K,...
-                                          obj.comtraj.A,...
-                                          obj.comtraj.alpha,...
-                                          obj.comtraj.gamma);
-      end
-      comtraj = obj.comtraj;
-      dcomtraj = fnder(obj.comtraj, 1);
-
-      utraj = traj.vertcat(rtraj(1:2));
-      utraj = utraj.vertcat(ltraj(1:2));
-      utraj = utraj.vertcat(ctraj);
-      utraj = utraj.vertcat(comtraj(1:2));
-      utraj = utraj.setOutputFrame(r.getInputFrame());
-
-      sys = cascade(utraj, r);
-      com0 = comtraj.eval(breaks(1));
-      comdot0 = dcomtraj.eval(breaks(1));
-      ytraj = sys.simulate([breaks(1), breaks(end)], [com0(1:2); comdot0(1:2)]);
-
-      if nargout > 1
-        v = r.constructVisualizer();
-      end
-    end
-
-    function draw_lcmgl(obj, lcmgl)
-      function plot_traj_foh(traj, color)
-        ts = traj.getBreaks();
-        pts = traj.eval(ts);
-        if size(pts,1) == 2
-          pts = [pts; zeros(1,size(pts,2))];
-        end
-        lcmgl.glColor3f(color(1), color(2), color(3));
-        lcmgl.glBegin(lcmgl.LCMGL_LINES);
-        for j = 1:length(ts)-1
-          lcmgl.glVertex3f(pts(1,j), pts(2,j),pts(3,j));
-          lcmgl.glVertex3f(pts(1,j+1), pts(2,j+1), pts(3,j+1));
-        end
-        lcmgl.glEnd();
-      end
-
-      link_trajectories = obj.getLinkTrajectories();
-      for j = 1:length(link_trajectories)
-        if ~isempty(link_trajectories(j).traj)
-          plot_traj_foh(link_trajectories(j).traj, [0.8, 0.8, 0.2]);
-        else
-          plot_traj_foh(link_trajectories(j).traj_min, [0.8, 0.8, 0.2]);
-          plot_traj_foh(link_trajectories(j).traj_max, [0.2, 0.8, 0.8]);
-        end
-      end
-      if ~isa(obj.comtraj, 'Trajectory')
-        obj.comtraj = ExpPlusPPTrajectory(obj.comtraj.breaks,...
-                                          obj.comtraj.K,...
-                                          obj.comtraj.A,...
-                                          obj.comtraj.alpha,...
-                                          obj.comtraj.gamma);
-      end
-      plot_traj_foh(obj.comtraj, [0,1,0]);
-      plot_traj_foh(obj.zmptraj, [0,0,1]);
-    end
-
-    function link_trajectories = getLinkTrajectories(obj)
-      link_trajectories = struct('link_ndx', {}, 'traj', {}, 'min_traj', {}, 'max_traj', {});
-      for j = 1:length(obj.body_motions)
-        link_trajectories(j).link_ndx = obj.body_motions(j).body_id;
-        link_trajectories(j).traj = PPTrajectory(mkpp(obj.body_motions(j).ts, obj.body_motions(j).coefs, size(obj.body_motions(j).coefs, 1)));
-      end
-    end
     
     function obj = setCOMTraj(obj)
       ts = obj.qtraj.getBreaks();
@@ -463,6 +361,17 @@ classdef QPLocomotionPlan < QPControllerPlan
       obj.default_qp_input.zmp_data.S = S;
     end
     
+    function body_motions = getBodyMotions(obj)
+      body_motions = obj.body_motions;
+    end
+    
+    function zmptraj = getZMPTrajectory(obj)
+      zmptraj = obj.zmptraj;
+    end
+    
+    function comtraj = getCenterOfMassTrajectory(obj)
+      comtraj = obj.comtraj;
+    end
   end
 
   methods(Static)
@@ -570,69 +479,6 @@ classdef QPLocomotionPlan < QPControllerPlan
       end
       obj.LIP_height = biped.default_walking_params.nominal_LIP_COM_height;
       obj.gain_set = 'walking';
-    end
-
-    function obj = from_point_mass_biped_plan(plan, biped, x0, param_set_name)
-      error('this needs to be updated to use exponential map rotations');
-      if nargin < 4
-        param_set_name = 'recovery';
-      end
-      typecheck(biped, 'Biped');
-      typecheck(plan, 'PointMassBipedPlan');
-
-      foot_start = biped.feetPosition(x0(1:biped.getNumPositions()));
-      body_ind = struct('right', biped.getFrame(biped.foot_frame_id.right).body_ind,...
-                        'left', biped.getFrame(biped.foot_frame_id.left).body_ind);
-      body_ind_list = [body_ind.right, body_ind.left];
-      initial_supports = RigidBodySupportState(biped, body_ind_list(plan.support(:,1)));
-      zmp_knots = struct('t', 0, 'zmp', plan.qcop(:,1), 'supp', initial_supports);
-
-      offset = [-0.048; 0; 0.0811; 0;0;0];
-      foot_origin_knots = struct('t', plan.ts(1),...
-                                 'right', foot_start.right + offset,...
-                                 'left', foot_start.left + offset,...
-                                 'is_liftoff', false,...
-                                 'is_landing', false,...
-                                 'toe_off_allowed', struct('right', false, 'left', false));
-      motion = [any(abs(diff(plan.qr, 1, 2)) >= 0.005), false;
-                any(abs(diff(plan.ql, 1, 2)) >= 0.005), false];
-      warning('ignoring roll and pitch')
-      for j = 2:length(plan.ts)
-        foot_origin_knots(end+1).t = plan.ts(j);
-        if motion(1,j) || motion(1,j-1)
-          zr = 0.025;
-        else
-          zr = 0;
-        end
-        if motion(2,j) || motion(2, j-1)
-          zl = 0.025;
-        else
-          zl = 0;
-        end
-        foot_origin_knots(end).right = [plan.qr(:,j); zr; 0; 0; foot_start.right(6)] + offset;
-        foot_origin_knots(end).left = [plan.ql(:,j); zl; 0; 0; foot_start.left(6)] + offset;
-        foot_origin_knots(end).is_liftoff = any(plan.support(:,j) < plan.support(:,j-1));
-        if j > 2
-          foot_origin_knots(end).is_landing = any(plan.support(:,j) > plan.support(:,j-1));
-        else
-          foot_origin_knots(end).is_landing = false;
-        end
-        foot_origin_knots(end).toe_off_allowed = struct('right', false, 'left', false);
-
-        zmp_knots(end+1).t = plan.ts(j);
-        zmp_knots(end).zmp = plan.qcop(:,j);
-        zmp_knots(end).supp = RigidBodySupportState(biped, body_ind_list(plan.support(:,j)));
-      end
-
-      foot_origin_knots(end+1) = foot_origin_knots(end);
-      foot_origin_knots(end).t = foot_origin_knots(end-1).t + (plan.ts(end)-plan.ts(end-1));
-
-      zmp_knots(end+1) = zmp_knots(end);
-      zmp_knots(end).t = zmp_knots(end).t + (plan.ts(end)-plan.ts(end-1));
-
-      obj = QPLocomotionPlan.from_biped_foot_and_zmp_knots(foot_origin_knots, zmp_knots, biped, x0, struct('pelvis_height_above_sole', []));
-      obj.default_qp_input.whole_body_data.constrained_dofs = biped.findPositionIndices('neck');
-      obj.gain_set = param_set_name;
     end
     
     function obj = from_quasistatic_qtraj(biped, qtraj, options)
