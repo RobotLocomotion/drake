@@ -29,7 +29,6 @@ else % then try to evaluate the dependency now...
       conf.distcomp_enabled = ~isempty(v);
       if ~conf.distcomp_enabled
         disp(' MATLAB Parallel Computing Toolbox was not found');
-        disp(' Note that some examples can be easily adapted by, e.g., replacing parfor with for');
       else
         % go ahead and start up a pool if necessary
         if (exist('matlabpool','file') && matlabpool('size')==0) 

@@ -40,7 +40,10 @@ classdef LinearGaussianExample < StochasticDrakeSystem
  methods
    function prob=monteCarlo(obj,S,tspan,x0)
      N=200;
-     checkDependency('distcomp');   % note: if you don't have distcomp, then simply change the parfor to for
+
+     % for old versions of parallel computing toolbox, startup a matlabpool if necessary:
+     if (exist('matlabpool','file') && matlabpool('size')==0) matlabpool; end
+     
      parfor i=1:N
        xtraj = simulate(obj,tspan,x0);
        xs=eval(xtraj,xtraj.getBreaks());

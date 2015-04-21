@@ -33,7 +33,8 @@ ts=ts(:);
 if (~isCT(sys)) error('not implemented yet'); end
 
 checkDependency('sedumi');
-checkDependency('distcomp'); % note: to operate without this, simply change the parfor to for in the loop below
+% for old versions of parallel computing toolbox, startup a matlabpool if necessary:
+if (exist('matlabpool','file') && matlabpool('size')==0) matlabpool; end
 
 num_x = sys.getNumStates();
 num_xd = sys.getNumDiscStates();
