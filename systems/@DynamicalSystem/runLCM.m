@@ -71,13 +71,10 @@ else % otherwise set up the LCM blocks and run simulink.
   
   mdl = ['LCM_',datestr(now,'MMSSFFF')];  % use the class name + uid as the model name
   new_system(mdl,'Model');
-  mdl_handle = SimulinkModelHandle(mdl);  % so it gets closed properly
   set_param(mdl,'SolverPrmCheckMsg','none');  % disables warning for automatic selection of default timestep
+  mdl = SimulinkModelHandle(mdl);  
   
-  load_system('simulink3');
-  add_block('simulink3/Subsystems/Subsystem',[mdl,'/system']);
-  Simulink.SubSystem.deleteContents([mdl,'/system']);
-  Simulink.BlockDiagram.copyContentsToSubSystem(obj.getModel(),[mdl,'/system']);
+  mdl.addSubsystem('system',obj.getModel());
   
   load_system('drake');
   if getNumInputs(obj)>0

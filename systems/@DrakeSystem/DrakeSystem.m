@@ -218,16 +218,14 @@ classdef DrakeSystem < DynamicalSystem
       mdl = regexprep(mdl, '\.', '_'); % take any dots out to make it a valid Matlab function
       mdl = mdl(1:min(59,length(mdl))); % truncate the name so that simulink won't throw a warning about it being too long
       new_system(mdl,'Model');
-      mdl = SimulinkModelHandle(mdl);
-      
       set_param(mdl,'SolverPrmCheckMsg','none');  % disables warning for automatic selection of default timestep
-      var_name = registerParameter(mdl,obj,'DrakeSystem');
+      mdl = SimulinkModelHandle(mdl);
       
       load_system('simulink');
       load_system('simulink3');
       add_block('simulink/User-Defined Functions/S-Function',[mdl,'/DrakeSys'], ...
         'FunctionName','DCSFunction', ...
-        'parameters',var_name);
+        'parameters',registerParameter(mdl,obj,'DrakeSystem'));
       
       m = Simulink.Mask.create([mdl,'/DrakeSys']);
       m.set('Display',['fprintf(''',class(obj),''')']);

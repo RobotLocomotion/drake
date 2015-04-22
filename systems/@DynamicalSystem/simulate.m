@@ -44,7 +44,7 @@ if ~isfield(options,'lcm_control_interface'), options.lcm_control_interface = ''
 if options.gui_control_interface || ~isempty(options.lcm_control_interface)
   add_block('simulink/User-Defined Functions/S-Function',[mdl,'/simulation_control'], ...
     'FunctionName','DCSFunction', ...
-    'parameters',registerParameter(mdl,SimulationControlBlock(options.gui_control_interface,options.lcm_control_interface),'control'));
+    'parameters',registerParameter(mdl,SimulationControlBlock(mdl,options.gui_control_interface,options.lcm_control_interface),'control'));
 end
 
 pstruct = obj.simulink_params;

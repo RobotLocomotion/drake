@@ -44,6 +44,10 @@ classdef SimulinkModelHandle < handle
       % references are left.
 
       base_workspace_variable_name = [obj.name,'_',simple_name];
+      if length(base_workspace_variable_name)>=60
+        % simulink seems to have problems with long names...
+        base_workspace_variable_name = base_workspace_variable_name(end-59:end);
+      end
       if evalin('base',['exist(''',base_workspace_variable_name,''',''var'')'])
         error('this would clobber an existing var');
       end
@@ -112,8 +116,12 @@ classdef SimulinkModelHandle < handle
     end
     
     function varargout = feval(obj,varargin)
-      varargout=cell(1,max(nargout,1));
-      varargout{:} = feval(obj.name,varargin{:});
+      if nargout>0
+        varargout=cell(1,nargout);
+        varargout{:} = feval(obj.name,varargin{:});
+      else
+        feval(obj.name,varargin{:});
+      end
     end
     
   end
