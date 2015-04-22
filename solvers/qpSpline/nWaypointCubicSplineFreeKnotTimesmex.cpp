@@ -44,16 +44,21 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
   std::vector<std::vector<double>> xi(ndof, std::vector<double>(num_knots));
   for (int dof = 0; dof < ndof; dof++)
     for (int knot = 0; knot < num_knots; knot++)
-      xi[dof][knot] = xs(dof, knot);
+      xi[dof][knot] = xs(dof, 1+knot);
 
-  for (int t_superindex = 0; t_superindex < pow(GRID_STEPS, num_knots); t_superindex++){
-    // Separate out our superindex over the entire grid search into 
-    // the individual indices we're dealing with here
-    // (we're functionally in base GRID_STEPS)
-    for (int i=0; i < num_knots; i++){
-      int t_index = (t_superindex / (int)pow(GRID_STEPS, i)) % GRID_STEPS;
-      segment_times[i+1] = t0 + t_index * t_step;
-    }
+  int t_indices[num_knots];
+  if (GRID_STEPS <= num_knots){
+    // If we have have too few grid steps, then by pigeonhole it's
+    // impossible to give each a unique time in our grid search.
+    mexErrMsgIdAndTxt("Drake:nWaypointCubicSplineFreeKnotTimesmex.cpp:TooManyKnotsForNumGridSteps", usage.c_str());
+  }
+  for (int i=0; i<num_knots; i++)
+    t_indices[i] = i+1; // assume knot point won't be the same time as the
+          // initial state, or previous knot point
+ 
+  while (t_indices[0] < GRID_STEPS-num_knots+1){
+    for (int i=0; i<num_knots; i++)
+      segment_times[i+1] = t0 + t_indices[i]*t_step;
 
     bool valid_solution = true;
     double objective_value = 0.0;
@@ -73,6 +78,20 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
     if (valid_solution && objective_value < min_objective_value) {
       best_segment_times = segment_times;
       min_objective_value = objective_value;
+    }
+
+    // Advance grid search counter or terminate, counting from
+    // the latest t_index, and on overflow carrying to the
+    // next lowest t_index and resetting to the new value of that
+    // next lowest t_index. (since times must always be in order!)
+    t_indices[num_knots-1]++;
+    // carry, except for the lowest place, which we 
+    // use to detect doneness.
+    for (int i=num_knots-1; i>0; i--){
+      if ((i==num_knots-1 && t_indices[i] >= GRID_STEPS) || (i<num_knots-1 && t_indices[i] >= t_indices[i+1])){
+        t_indices[i-1]++;
+        t_indices[i] = t_indices[i-1]+1;
+      }
     }
   }
 

@@ -119,7 +119,7 @@ PiecewisePolynomial nWaypointCubicSpline(const vector<double>& segment_times, do
   spline_information.addValueConstraint(num_segments - 1, ValueConstraint(1, spline_information.getEndTime(num_segments - 1), xdf));
 
   int num_knots = num_segments - 1;
-  for (int i=0; i < num_knots; i++) {
+  for (int i = 0; i < num_knots; i++) {
     spline_information.addValueConstraint(i+1, ValueConstraint(0, spline_information.getStartTime(i+1), xi[i]));
   }
 
