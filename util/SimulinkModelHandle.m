@@ -17,7 +17,7 @@ classdef SimulinkModelHandle < handle
     end
     
     function delete(obj)
-      disp(['closing ',obj.name]);
+%      disp(['closing ',obj.name]);
       try
         close_system(obj.name,0);
       catch
@@ -26,12 +26,12 @@ classdef SimulinkModelHandle < handle
       end
       
       for i=1:length(obj.base_workspace_variables)
-        count = evalin('base',[obj.base_workspace_variables{i},'_count']);
+        count = evalin('base',[obj.base_workspace_variables{i},'_c']);
         if count<=1
-          disp(['deleting ',obj.base_workspace_variables{i}]);
-          evalin('base',['clear ',obj.base_workspace_variables{i},' ',obj.base_workspace_variables{i},'_count']); 
+%          disp(['deleting ',obj.base_workspace_variables{i}]);
+          evalin('base',['clear ',obj.base_workspace_variables{i},' ',obj.base_workspace_variables{i},'_c;']); 
         else
-          evalin('base',[obj.base_workspace_variables{i},'_count=',num2str(count-1)]);
+          evalin('base',[obj.base_workspace_variables{i},'_c=',num2str(count-1),';']);
         end
       end
     end
@@ -45,22 +45,22 @@ classdef SimulinkModelHandle < handle
 
       base_workspace_variable_name = [obj.name,'_',simple_name];
       if length(base_workspace_variable_name)>=60
-        % simulink seems to have problems with long names...
+        % MATLAB has a maximum name length of 63 characters
         base_workspace_variable_name = base_workspace_variable_name(end-59:end);
       end
-      if evalin('base',['exist(''',base_workspace_variable_name,''',''var'')'])
+      if evalin('base',['exist(''',base_workspace_variable_name,''',''var'');'])
         error('this would clobber an existing var');
       end
       
       assignin('base',base_workspace_variable_name,var);
-      assignin('base',[base_workspace_variable_name,'_count'],1);
+      assignin('base',[base_workspace_variable_name,'_c'],1);
       
       obj.base_workspace_variables{end+1}=base_workspace_variable_name;
     end
     
     function inheritParameters(obj,from_mdl)
       for i=1:length(from_mdl.base_workspace_variables)
-        evalin('base',[from_mdl.base_workspace_variables{i},'_count=',from_mdl.base_workspace_variables{i},'_count+1']);
+        evalin('base',[from_mdl.base_workspace_variables{i},'_c=',from_mdl.base_workspace_variables{i},'_c+1;']);
       end
       obj.base_workspace_variables = horzcat(obj.base_workspace_variables,from_mdl.base_workspace_variables);
     end
