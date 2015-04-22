@@ -218,9 +218,9 @@ classdef DrakeSystem < DynamicalSystem
       mdl = regexprep(mdl, '\.', '_'); % take any dots out to make it a valid Matlab function
       mdl = mdl(1:min(59,length(mdl))); % truncate the name so that simulink won't throw a warning about it being too long
       close_system(mdl,0);  % close it if there is an instance already open
-      obj.simulink_model_handles.data(end+1) = new_system(mdl,'Model');
+      new_system(mdl,'Model');
       set_param(mdl,'SolverPrmCheckMsg','none');  % disables warning for automatic selection of default timestep
-
+      
       assignin('base',[mdl,'_obj'],obj);
 
       load_system('simulink');
@@ -252,6 +252,11 @@ classdef DrakeSystem < DynamicalSystem
       if ~isempty(obj.state_constraints)
         obj.warning_manager.warnOnce('Drake:DrakeSystem:ConstraintsNotEnforced','system has constraints, but they aren''t enforced in the simulink model yet.');
       end
+      
+      function cleanup_model(mdl)
+        evalin('base', ['clear ',mdl,'_obj']);
+      end
+      mdl = SimulinkModelHandle(mdl,@cleanup_model);
     end
 
     function [xstar,ustar,info] = findFixedPoint(obj,x0,u0)

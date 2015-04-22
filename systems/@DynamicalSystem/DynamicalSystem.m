@@ -56,7 +56,6 @@ classdef DynamicalSystem
   methods
     function sys = DynamicalSystem()
       sys.warning_manager = WarningManager();
-      sys.simulink_model_handles = SharedDataHandle([],@close_system);
     end
         
     function sys = inInputFrame(sys,frame)
@@ -729,6 +728,5 @@ classdef DynamicalSystem
   
   properties (Access=public)
     warning_manager;
-    simulink_model_handles;
   end    
 end
