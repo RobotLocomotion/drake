@@ -493,6 +493,50 @@ string RigidBodyManipulator::getStateName(int state_num) const
 		return getVelocityName(state_num);
 }
 
+map<string, int> RigidBodyManipulator::computeDofMap() const
+{
+  const RigidBodyManipulator* const model = this;
+
+  const std::shared_ptr<RigidBody> worldBody = model->bodies[0];
+
+  map<string, int> dofMap;
+
+  for (auto iter = this->bodies.begin(); iter != this->bodies.end(); ++iter) { 
+    std::shared_ptr<RigidBody> body(*iter);
+
+    if (!body->hasParent())
+    {
+      continue;
+    }
+
+    if (body->getJoint().getNumPositions() == 0)
+    {
+      continue;
+    }
+
+    int dofId = body->position_num_start;
+
+    if (body->parent == worldBody)
+    {
+      //printf("dofMap base\n");
+
+      dofMap["base_x"] = dofId + 0;
+      dofMap["base_y"] = dofId + 1;
+      dofMap["base_z"] = dofId + 2;
+      dofMap["base_roll"] = dofId + 3;
+      dofMap["base_pitch"] = dofId + 4;
+      dofMap["base_yaw"] = dofId + 5;
+    }
+    else
+    {
+      //printf("dofMap[%s] = %d\n", body->getJoint().getName().c_str(), dofId);
+      dofMap[body->getJoint().getName()] = dofId;
+    }
+
+  }
+  return dofMap;
+}
+
 DrakeCollision::ElementId RigidBodyManipulator::addCollisionElement(const RigidBody::CollisionElement& element, const shared_ptr<RigidBody>& body, string group_name)
 {
   DrakeCollision::ElementId id(collision_model->addElement(element));
@@ -707,6 +751,13 @@ void RigidBodyManipulator::potentialCollisions(VectorXd& phi,
     bodyA_idx.push_back(elementA->getBody()->body_index);
     bodyB_idx.push_back(elementB->getBody()->body_index);
   }
+}
+
+vector<size_t> RigidBodyManipulator::collidingPoints(
+    const vector<Vector3d>& points, 
+    double collision_threshold)
+{
+  return collision_model->collidingPoints(points, collision_threshold);
 }
 
 bool RigidBodyManipulator::allCollisions(vector<int>& bodyA_idx,

@@ -8,6 +8,29 @@ using namespace Eigen;
 
 namespace DrakeCollision
 {
+
+  struct BinaryContactResultCallback : public btCollisionWorld::ContactResultCallback
+  {
+    public:
+      bool isInCollision()
+      {
+        return in_collision;
+      }
+
+      virtual	btScalar	addSingleResult(
+          btManifoldPoint& cp,	
+          const btCollisionObjectWrapper* colObj0Wrap,
+          int partId0,int index0,
+          const btCollisionObjectWrapper* colObj1Wrap,
+          int partId1,int index1) 
+      {
+        in_collision = true;
+        return 0;
+      }
+    private:
+        bool in_collision;
+  };
+
   bool OverlapFilterCallback::needBroadphaseCollision(btBroadphaseProxy* proxy0,
       btBroadphaseProxy* proxy1) const
   {
@@ -261,6 +284,41 @@ namespace DrakeCollision
     }   
 
     return c.getResults();
+  }
+
+  vector<size_t> BulletModel::collidingPoints(const vector<Vector3d>& points, 
+                                              double collision_threshold)
+  {
+    // Create sphere geometry
+    btSphereShape bt_shape(collision_threshold);
+
+    // Create Bullet collision object
+    btCollisionObject bt_obj;
+    btCollisionObject* bt_obj_ptr = static_cast<btCollisionObject*>(&bt_obj);
+    bt_obj.setCollisionShape(static_cast<btCollisionShape*>(&bt_shape));
+
+    btTransform btT;
+    btT.setIdentity();
+    BulletCollisionWorldWrapper& bt_world = getBulletWorld(false);
+    vector<size_t> in_collision_indices;
+
+    for (size_t i = 0; i < points.size(); ++i) {
+      BinaryContactResultCallback c;
+
+      btVector3 pos(static_cast<btScalar>(points[i](0)), 
+                    static_cast<btScalar>(points[i](1)),
+                    static_cast<btScalar>(points[i](2)));
+      btT.setOrigin(pos);
+      bt_obj.setWorldTransform(btT);
+
+      bt_world.bt_collision_world->contactTest(bt_obj_ptr, c);
+
+      if (c.isInCollision()) {
+        in_collision_indices.push_back(i);
+      }
+    }
+
+    return in_collision_indices;
   }
 
   bool BulletModel::updateElementWorldTransform(const ElementId id, 
