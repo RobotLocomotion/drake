@@ -294,10 +294,24 @@ public:
   Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> transformVelocityMappingToPositionDotMapping(
       const Eigen::MatrixBase<Derived>& mat, const std::vector<int>& joint_path);
 
-  template <typename Derived>
-  Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> compactToFull(
-      const Eigen::MatrixBase<Derived>& compact, const std::vector<int>& joint_path, bool in_terms_of_qdot);
-
+template <typename Derived>
+Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> compactToFull(
+    const Eigen::MatrixBase<Derived>& compact, const std::vector<int>& joint_path, bool in_terms_of_qdot) {
+  /*
+   * This method is used after calling geometric Jacobian, where compact is the Jacobian on the joints that are on the kinematic path; if we want to reconstruct the full Jacobian on all joints, then we should call this method. 
+   */
+  int ncols = in_terms_of_qdot ? num_positions : num_velocities;
+  Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> full(compact.rows(), ncols);
+  full.setZero();
+  int compact_col_start = 0;
+  for (std::vector<int>::const_iterator it = joint_path.begin(); it != joint_path.end(); ++it) {
+    RigidBody& body = *bodies[*it];
+    int nv_joint = body.getJoint().getNumVelocities();
+    full.middleCols(body.velocity_num_start, nv_joint) = compact.middleCols(compact_col_start, nv_joint);
+    compact_col_start += nv_joint;
+  }
+  return full;
+};
 public:
   std::vector<std::string> robot_name;
 

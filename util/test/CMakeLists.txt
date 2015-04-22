@@ -6,7 +6,7 @@
 if (NOT WIN32)
   # doesn't work because the timing tests require the <chrono> include
   add_executable(testDrakeGeometryUtil testDrakeGeometryUtil.cpp)
-  target_link_libraries(testDrakeGeometryUtil drakeGeometryUtil drakeGradientUtil)
+  target_link_libraries(testDrakeGeometryUtil drakeUtil drakeGeometryUtil drakeGradientUtil)
   include_directories( .. )
   add_test(NAME testDrakeGeometryUtil COMMAND testDrakeGeometryUtil)
 

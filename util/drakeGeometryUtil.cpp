@@ -4,6 +4,7 @@
 #include <limits>
 #include <stdexcept>
 #include <Eigen/Sparse>
+#include "expmap2quat.h"
 
 using namespace Eigen;
 
@@ -360,6 +361,44 @@ DLLEXPORT GradientVar<Scalar, Eigen::Dynamic, 1> rotmat2Representation(const Gra
     break;
   default:
     throw std::runtime_error("rotation representation type not recognized");
+  }
+  return ret;
+}
+
+template <typename Derived>
+GradientVar<typename Derived::Scalar, QUAT_SIZE, 1> expmap2quat(const Eigen::MatrixBase<Derived>& v, const int gradient_order)
+{
+  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3);
+  GradientVar<typename Derived::Scalar, QUAT_SIZE, 1> ret(QUAT_SIZE, 1, EXPMAP_SIZE,gradient_order);
+  auto theta = v.norm();
+  if (theta < pow(std::numeric_limits<typename Derived::Scalar>::epsilon(),0.25)) {
+    ret.value() = expmap2quatDegenerate(v, theta);
+    if(gradient_order>0)
+    {
+      ret.gradient().value() = dexpmap2quatDegenerate(v, theta);
+      if(gradient_order>1)
+      {
+        ret.gradient().gradient().value() = ddexpmap2quatDegenerate(v, theta);
+        if(gradient_order>2)
+        {
+          throw std::runtime_error("expmap2quat does not support gradient order larger than 2");
+        }
+      }
+    }
+  } else {
+    ret.value() = expmap2quatNonDegenerate(v, theta);
+    if(gradient_order>0)
+    {
+      ret.gradient().value() = dexpmap2quatNonDegenerate(v, theta);
+      if(gradient_order>1)
+      {
+        ret.gradient().gradient().value() = ddexpmap2quatNonDegenerate(v, theta);
+        if(gradient_order>2)
+        {
+          throw std::runtime_error("expmap2quat does not support gradient order larger than 2");
+        }
+      }
+    }
   }
   return ret;
 }
@@ -1176,6 +1215,30 @@ DLLEXPORT  void cartesian2cylindrical(const Eigen::Matrix<Scalar,3,1> &m_cylinde
   Jdotv = Jdot*v_cartesian;
 }
 
+template <typename Derived>
+DLLEXPORT GradientVar<typename Derived::Scalar,3,1> quat2expmap(const MatrixBase<Derived> &q, int gradient_order)
+{
+  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(MatrixBase<Derived>,4);
+  double t = sqrt(1-q(0)*q(0));
+  bool is_degenerate=(t*t<std::numeric_limits<typename Derived::Scalar>::epsilon());
+  double s = is_degenerate?2.0:2.0*acos(q(0))/t;
+  GradientVar<typename Derived::Scalar,3,1> ret(3,1,4,gradient_order);
+  ret.value() = s*q.tail(3);
+  if(gradient_order>0)
+  {
+    ret.gradient().value() = Matrix<typename Derived::Scalar,3,4>::Zero();
+    double dsdq1 = is_degenerate?0.0: (-2*t+2*acos(q(0))*q(0))/pow(t,3);
+    ret.gradient().value().col(0) = q.tail(3)*dsdq1;
+    ret.gradient().value().block(0,1,3,3) = Matrix3d::Identity()*s;
+  }
+  else if(gradient_order>1)
+  {
+    throw std::runtime_error("gradient_order>1 is not supported in quat2expmap");
+  }
+  return ret;
+}
+
+
 // explicit instantiations
 template DLLEXPORT void normalizeVec(
     const MatrixBase< Vector3d >& x,
@@ -1216,6 +1279,9 @@ template DLLEXPORT Vector3d rotmat2rpy(const MatrixBase<Matrix3d>&);
 template DLLEXPORT GradientVar<double, Eigen::Dynamic, 1> rotmat2Representation(
     const GradientVar<double, SPACE_DIMENSION, SPACE_DIMENSION>& R,
     int rotation_type);
+
+template DLLEXPORT GradientVar<double, QUAT_SIZE, 1> expmap2quat(const MatrixBase<Vector3d>& v, const int gradient_order);
+template DLLEXPORT GradientVar<double, QUAT_SIZE, 1> expmap2quat(const MatrixBase<Map<Vector3d>>& v, const int gradient_order);
 
 template DLLEXPORT Vector4d rpy2axis(const Eigen::MatrixBase<Vector3d>&);
 template DLLEXPORT Vector4d rpy2quat(const Eigen::MatrixBase<Vector3d>&);
@@ -1484,3 +1550,6 @@ template DLLEXPORT void quatdot2angularvelMatrix(const Eigen::MatrixBase<Map<Vec
 template DLLEXPORT void quatdot2angularvelMatrix(const Eigen::MatrixBase< Eigen::Block<Eigen::Ref<Eigen::Matrix<double, -1, 1, 0, -1, 1> const, 0, Eigen::InnerStride<1> > const, 4, 1, false> >& q,
     Eigen::MatrixBase< Matrix<double, SPACE_DIMENSION, QUAT_SIZE> >& M,
     Gradient<Matrix<double, SPACE_DIMENSION, QUAT_SIZE>, QUAT_SIZE, 1>::type* dM);
+
+template DLLEXPORT GradientVar<double,3,1> quat2expmap(const MatrixBase<Vector4d> &q, int gradient_order);
+template DLLEXPORT GradientVar<double,3,1> quat2expmap(const MatrixBase<Map<Vector4d>> &q, int gradient_order);
