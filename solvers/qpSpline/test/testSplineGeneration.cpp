@@ -37,7 +37,8 @@ double randomSpeedTest(int ntests) {
     double x1 = uniform(generator);
     double x2 = uniform(generator);
 
-    PiecewisePolynomial result = twoWaypointCubicSpline(segment_times, x0, xd0, xf, xdf, x1, x2);
+    std::vector<double> xi = {x1, x2};
+    PiecewisePolynomial result = nWaypointCubicSpline(segment_times, x0, xd0, xf, xdf, xi);
     ret += result.value(0.0);
   }
   return ret;
@@ -58,7 +59,8 @@ int main(int argc, char **argv) {
   double x2 = uniform(generator);
 
 
-  PiecewisePolynomial result = twoWaypointCubicSpline(segment_times, x0, xd0, xf, xdf, x1, x2);
+  std::vector<double> xi = {x1, x2};
+  PiecewisePolynomial result = nWaypointCubicSpline(segment_times, x0, xd0, xf, xdf, xi);
 
   for (int i = 0; i < num_segments; i++) {
     valuecheck(segment_times[i], result.getStartTime(i));
