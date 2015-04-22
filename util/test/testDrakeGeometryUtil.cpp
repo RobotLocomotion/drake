@@ -1,7 +1,6 @@
 #include <Eigen/Core>
 #include "drakeGeometryUtil.h"
 #include "testUtil.h"
-#include "drakeUtil.h" //Need this only because we need the valuecehck in drakeUtil, which uses isZero rather than isApprox. The long term solution is to move drakeUtil.valuecheck to testUtil
 #include <iostream>
 #include <cmath>
 
@@ -230,7 +229,7 @@ void testExpmap2quat(const Vector4d &quat)
 {
   auto expmap = quat2expmap(quat,1);
   auto quat_back  = expmap2quat(expmap.value(),2);
-  valuecheck(std::abs(quat.transpose()*quat_back.value()),1);
+  valuecheck(std::abs(quat.transpose() * quat_back.value()), 1.0, 1e-8);
   std::string error_msg;
   Matrix3d expmap_back = expmap.gradient().value()*quat_back.gradient().value();
   Matrix3d identity = Matrix3d::Identity();
