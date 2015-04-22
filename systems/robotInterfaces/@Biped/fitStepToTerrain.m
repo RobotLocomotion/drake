@@ -3,7 +3,7 @@ function step = fitStepToTerrain(biped, step)
 
 closest_terrain_pos = step.pos(1:3,:);
 [closest_terrain_pos(3,:), normal] = biped.getTerrainHeight(step.pos(1:3,:));
-normal(3,normal(3,:) < 0) = -normal(3,normal(3,:) < 0);
+normal(:,normal(3,:) < 0) = -normal(:,normal(3,:) < 0);
 
 ground_pos = step.pos;
 
