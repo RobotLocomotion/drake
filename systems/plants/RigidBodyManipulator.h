@@ -79,6 +79,8 @@ public:
   bool addRobotFromURDF(const std::string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
   bool addRobotFromURDF(const std::string &urdf_filename, std::map<std::string,std::string>& package_map, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
 
+  std::map<std::string, int> computeDofMap() const;
+
   void surfaceTangents(Eigen::Map<Matrix3xd> const & normals, std::vector< Map<Matrix3xd> > & tangents);
   
   void resize(int num_dof, int num_featherstone_bodies=-1, int num_rigid_body_objects=-1, int num_rigid_body_frames=0);
@@ -268,6 +270,10 @@ public:
                            std::vector<int>& bodyB_idx, 
                            bool use_margins = true);
   //bool closestDistanceAllBodies(VectorXd& distance, MatrixXd& Jd);
+ 
+  virtual std::vector<size_t> collidingPoints(
+        const std::vector<Eigen::Vector3d>& points, 
+        double collision_threshold);
 
   void warnOnce(const std::string& id, const std::string& msg);
 
