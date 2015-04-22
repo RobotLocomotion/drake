@@ -663,7 +663,7 @@ classdef DynamicalSystem
       if (nargin<3) mdl = getModel(obj); end
       
       if (isempty(obj.structured_x))
-        obj.structured_x = Simulink.BlockDiagram.getInitialState(mdl);
+        obj.structured_x = Simulink.BlockDiagram.getInitialState(mdl.name);
       end
       xs = obj.structured_x;
       if (length(xs.signals)>1)

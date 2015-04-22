@@ -31,7 +31,7 @@ classdef SimulinkModelHandle < handle
           disp(['deleting ',obj.base_workspace_variables{i}]);
           evalin('base',['clear ',obj.base_workspace_variables{i},' ',obj.base_workspace_variables{i},'_count']); 
         else
-          evalin('base',[obj.base_workspace_variables{i},'=',num2str(count-1)]);
+          evalin('base',[obj.base_workspace_variables{i},'_count=',num2str(count-1)]);
         end
       end
     end
@@ -59,6 +59,15 @@ classdef SimulinkModelHandle < handle
         evalin('base',[from_mdl.base_workspace_variables{i},'_count=',from_mdl.base_workspace_variables{i},'_count+1']);
       end
       obj.base_workspace_variables = horzcat(obj.base_workspace_variables,from_mdl.base_workspace_variables);
+    end
+    
+    function addSubsystem(obj,subsystem_name,subsystem_mdl)
+      load_system('simulink3');
+      name = [obj.name,'/',subsystem_name];
+      add_block('simulink3/Subsystems/Subsystem',name);
+      Simulink.SubSystem.deleteContents(name);
+      Simulink.BlockDiagram.copyContentsToSubSystem(subsystem_mdl.name,name);
+      obj.inheritParameters(subsystem_mdl);
     end
     
   end

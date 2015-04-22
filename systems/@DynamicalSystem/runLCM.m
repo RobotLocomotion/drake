@@ -71,6 +71,7 @@ else % otherwise set up the LCM blocks and run simulink.
   
   mdl = ['LCM_',datestr(now,'MMSSFFF')];  % use the class name + uid as the model name
   new_system(mdl,'Model');
+  mdl_handle = SimulinkModelHandle(mdl);  % so it gets closed properly
   set_param(mdl,'SolverPrmCheckMsg','none');  % disables warning for automatic selection of default timestep
   
   load_system('simulink3');
@@ -103,8 +104,7 @@ else % otherwise set up the LCM blocks and run simulink.
 
   if (~isempty(x0)) % handle initial conditions
     x0 = obj.stateVectorToStructure(double(x0),mdl);
-    assignin('base',[mdl,'_x0'],x0);
-    pstruct.InitialState = [mdl,'_x0'];
+    pstruct.InitialState = registerParameter(mdl_handle,x0,'x0');
     pstruct.LoadInitialState = 'on';
 
     if (~isempty(find_system(mdl,'ClassName','InitialCondition')))
@@ -112,7 +112,6 @@ else % otherwise set up the LCM blocks and run simulink.
     end
   end  
   
-  h = SimulinkModelHandle(mdl);
   sim(mdl,pstruct);
   
 end
