@@ -111,8 +111,10 @@ else % otherwise set up the LCM blocks and run simulink.
       warning('Your model appears to have an initial conditions block in it (e.g., from SimMechanics).  That block will overwrite any initial conditions that you pass in to simulate.');
     end
   end  
-    
+  
+  h = SimulinkModelHandle(mdl);
   sim(mdl,pstruct);
+  
 end
 
 end

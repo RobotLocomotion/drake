@@ -6,30 +6,68 @@ classdef SimulinkModelHandle < handle
 %    now mex_model_ptr continues to act like it did before, but
 %    will internally be accessing the shared data structure. 
 
-  properties (SetAccess=private,GetAccess=public)
-    additional_delete_fcn=[];
-  end
-  
   properties
     name;
+    base_workspace_variables={};
   end
   
   methods 
-    function obj = SimulinkModelHandle(mdl, additional_delete_fcn)
+    function obj = SimulinkModelHandle(mdl)
       obj.name = mdl;
-      if (nargin>1)
-        typecheck(additional_delete_fcn,'function_handle');
-        obj.additional_delete_fcn = additional_delete_fcn;
-      end
     end
     
     function delete(obj)
-      close_system(obj.name,0);
-      if ~isempty(obj.additional_delete_fcn)
-        feval(obj.additional_delete_fcn,obj.name);
+      disp(['closing ',obj.name]);
+      try
+        close_system(obj.name,0);
+      catch
+        feval(obj.name,[],[],[],'term');
+        close_system(obj.name,0);
+      end
+      
+      for i=1:length(obj.base_workspace_variables)
+        count = evalin('base',[obj.base_workspace_variables{i},'_count']);
+        if count<=1
+          disp(['deleting ',obj.base_workspace_variables{i}]);
+          evalin('base',['clear ',obj.base_workspace_variables{i},' ',obj.base_workspace_variables{i},'_count']); 
+        else
+          evalin('base',[obj.base_workspace_variables{i},'=',num2str(count-1)]);
+        end
       end
     end
     
+    function base_workspace_variable_name = registerParameter(obj,var,simple_name)
+      % to share data with the simulink model, it needs to be copied to the
+      % base workspace.  this sets up a simple garbage collector.
+      % it's slightly non-trivial, because if the contents of the model are
+      % copied to a different model, I have to keep track of how many
+      % references are left.
+
+      base_workspace_variable_name = [obj.name,'_',simple_name];
+      if evalin('base',['exist(''',base_workspace_variable_name,''',''var'')'])
+        error('this would clobber an existing var');
+      end
+      
+      assignin('base',base_workspace_variable_name,var);
+      assignin('base',[base_workspace_variable_name,'_count'],1);
+      
+      obj.base_workspace_variables{end+1}=base_workspace_variable_name;
+    end
+    
+    function inheritParameters(obj,from_mdl)
+      for i=1:length(from_mdl.base_workspace_variables)
+        evalin('base',[from_mdl.base_workspace_variables{i},'_count=',from_mdl.base_workspace_variables{i},'_count+1']);
+      end
+      obj.base_workspace_variables = horzcat(obj.base_workspace_variables,from_mdl.base_workspace_variables);
+    end
+    
+  end
+  
+  
+  
+  % overload methods so I can treat it like the simulink model name (which
+  % I was using everywhere before)
+  methods
     function str = horzcat(varargin)
       % the model name is often used in string concatenations to build out
       % other models
@@ -62,6 +100,11 @@ classdef SimulinkModelHandle < handle
     function varargout = find_system(obj,varargin)
       varargout=cell(1,max(nargout,1));
       varargout{:} = find_system(obj.name,varargin{:});
+    end
+    
+    function varargout = feval(obj,varargin)
+      varargout=cell(1,max(nargout,1));
+      varargout{:} = feval(obj.name,varargin{:});
     end
     
   end

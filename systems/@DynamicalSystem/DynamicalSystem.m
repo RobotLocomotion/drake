@@ -20,7 +20,7 @@ classdef DynamicalSystem
     % for a full description
     ts = getSampleTime(obj);
 
-    % Returns a handle (the string) of a simulink model which implements the system
+    % Returns a SimulinkModelHandle to a simulink model which implements the system
     mdl = getModel(obj);
 
     % Returns a (possibly random) state vector which is a feasible initial

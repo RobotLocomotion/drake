@@ -8,10 +8,15 @@ classdef SimulinkModel < DynamicalSystem
       % Construct a simulink model DynamicalSystem
       %
       % @param mdl a string containing the name of an existing simulink model
-      
-      load_system(mdl);
-      obj.mdl = mdl;
 
+      if isa(mdl,'SimulinkModelHandle')
+        obj.mdl = mdl;
+        mdl = mdl.name;
+      else
+        load_system(mdl);
+        obj.mdl = SimulinkModelHandle(mdl);
+      end
+      
       set_param(mdl,'InheritedTsInSrcMsg','none');
       set_param(mdl,'SolverPrmCheckMsg','none');
       
@@ -139,7 +144,7 @@ classdef SimulinkModel < DynamicalSystem
     num_x;  % dimension of x (= num_xc + num_xd)
     num_u;  % dimension of u
     num_y;  % dimension of the output y
-    mdl;    % a string name for the simulink model
+    mdl;    % the SimulinkModelHandle
   end
   
   
