@@ -33,7 +33,7 @@ add_library(drakeGradientUtil SHARED drakeGradientUtil.cpp)
 pods_install_libraries(drakeGradientUtil)
 pods_install_headers(drakeGradientUtil.h DESTINATION drake)
 
-add_library(drakeGeometryUtil SHARED drakeGeometryUtil.cpp)
+add_library(drakeGeometryUtil SHARED drakeGeometryUtil.cpp expmap2quat.cpp)
 target_link_libraries(drakeGeometryUtil drakeGradientUtil)
 pods_install_libraries(drakeGeometryUtil)
 pods_install_headers(drakeGeometryUtil.h DESTINATION drake)
@@ -47,6 +47,12 @@ if (MATLAB_FOUND)
   target_link_libraries(cylindrical2cartesianmex drakeGeometryUtil drakeGradientUtil)
   add_mex(cartesian2cylindricalmex cartesian2cylindricalmex.cpp)
   target_link_libraries(cartesian2cylindricalmex drakeGeometryUtil drakeGradientUtil)
+
+  add_mex(quat2expmapmex quat2expmapmex.cpp)
+  target_link_libraries(quat2expmapmex drakeUtil drakeGeometryUtil drakeGradientUtil)
+
+  add_mex(expmap2quatImplmex expmap2quatImplmex.cpp)
+  target_link_libraries(expmap2quatImplmex drakeUtil drakeGeometryUtil drakeGradientUtil)
 endif()
 
 add_subdirectory(test)

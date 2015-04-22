@@ -8,7 +8,7 @@ function xtraj = runAtlasWalkingPlanning(options)
 
 if nargin<1, options = struct(); end
 if ~isfield(options,'terrain'), options.terrain = RigidBodyFlatTerrain(); end
-if ~isfield(options,'navgoal'), options.navgoal = [1.5;0;0;0;0;0]; end
+if ~isfield(options,'navgoal'), options.navgoal = [1.5;0;0;0;0;pi/2]; end
 if ~isfield(options,'safe_regions'), options.safe_regions = []; end
 if ~isfield(options,'step_params'), options.step_params = struct(); end
 

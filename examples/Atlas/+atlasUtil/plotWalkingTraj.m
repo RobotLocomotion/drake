@@ -23,11 +23,28 @@ end
 dtraj = fnder(PPTrajectory(spline(tts,x_smooth)));
 qddtraj = dtraj(nq+(1:nq));
 
-lfoot = findLinkId(r,'l_foot');
-rfoot = findLinkId(r,'r_foot');
+body_motions = struct('right', [], 'left', []);
+for j = 1:length(walking_plan_data.body_motions)
+  if walking_plan_data.body_motions(j).body_id == r.foot_body_id.right || ...
+     (walking_plan_data.body_motions(j).body_id < 0 && r.getFrame(walking_plan_data.body_motions(j).body_id).body_ind == r.foot_body_id.right)
+     body_motions.right = walking_plan_data.body_motions(j);
+  elseif  walking_plan_data.body_motions(j).body_id == r.foot_body_id.left || ...
+     (walking_plan_data.body_motions(j).body_id < 0 && r.getFrame(walking_plan_data.body_motions(j).body_id).body_ind == r.foot_body_id.left)
+     body_motions.left = walking_plan_data.body_motions(j);
+  end
+end
 
-lstep_counter = 0;
-rstep_counter = 0;
+foot_bodies = struct();
+for f = {'left', 'right'}
+  foot = f{1};
+  if body_motions.(foot).body_id > 0
+    foot_bodies.(foot) = body_motions.(foot).body_id;
+  else
+    foot_bodies.(foot) = r.getFrame(body_motions.(foot).body_id).body_ind;
+  end
+end
+
+step_counter = struct('left', 0, 'right', 0);
 
 ts = linspace(tts(1), tts(end), 150);
 
@@ -39,13 +56,13 @@ com = zeros(3, length(ts));
 comdes = zeros(2, length(ts));
 zmpdes = zeros(2, length(ts));
 zmpact = zeros(2, length(ts));
-lfoot_pos = zeros(6, length(ts));
-rfoot_pos = zeros(6, length(ts));
+foot_pos = struct('left', zeros(6, length(ts)),...
+                  'right', zeros(6, length(ts)));
 
-rfoottraj = PPTrajectory(pchip(walking_plan_data.link_constraints(1).ts,...
-                               walking_plan_data.link_constraints(1).poses));
-lfoottraj = PPTrajectory(pchip(walking_plan_data.link_constraints(2).ts,...
-                               walking_plan_data.link_constraints(2).poses));
+foot_traj = struct('left', PPTrajectory(body_motions.left.getPP()),...
+                   'right', PPTrajectory(body_motions.right.getPP()));
+
+foot_steps = struct('left', [], 'right', []);
 
 for i=1:length(ts)
   % ts is from the walking plan, but traj is only defined at the dt
@@ -66,32 +83,23 @@ for i=1:length(ts)
   zmpdes(:,i)=walking_plan_data.zmptraj.eval(t);
   zmpact(:,i)=com(1:2,i) - com(3,i)/9.81 * (J(1:2,:)*qdd + Jdotv(1:2));
 
-  lfoot_cpos = terrainContactPositions(r,kinsol,lfoot);
-  rfoot_cpos = terrainContactPositions(r,kinsol,rfoot);
+  for f = {'left', 'right'}
+    foot = f{1};
+    foot_cpos = terrainContactPositions(r, kinsol, foot_bodies.(foot));
 
-  lfoot_p = forwardKin(r,kinsol,lfoot,[0;0;0],1);
-  rfoot_p = forwardKin(r,kinsol,rfoot,[0;0;0],1);
+    foot_p = forwardKin(r, kinsol, foot_bodies.(foot), [0;0;0], 1);
 
-  lfoot_pos(:,i) = lfoot_p;
-  rfoot_pos(:,i) = rfoot_p;
+    foot_pos.(foot)(:,i) = foot_p;
 
-  if any(lfoot_cpos(3,:) < 1e-4)
-    lstep_counter=lstep_counter+1;
-    lfoot_steps(:,lstep_counter) = lfoot_p;
+    if any(foot_cpos(3,:) < 1e-4)
+      step_counter.(foot) = step_counter.(foot) + 1;
+      foot_steps.(foot)(:,step_counter.(foot)) = foot_p;
+    end
+
+    foot_frame_des = eval(foot_traj.(foot), t);
+    foot_frame_act = forwardKin(r, kinsol, body_motions.(foot).body_id, [0;0;0], 2);
+    rms_foot = rms_foot + norm(foot_frame_des(1:3) - foot_frame_act(1:3))^2;
   end
-  if any(rfoot_cpos(3,:) < 1e-4)
-    rstep_counter=rstep_counter+1;
-    rfoot_steps(:,rstep_counter) = rfoot_p;
-  end
-
-
-  lfoot_des = eval(lfoottraj,t);
-  lfoot_des(3) = max(lfoot_des(3), 0.0811);     % hack to fix footstep planner bug
-  rms_foot = rms_foot+norm(lfoot_des([1:3])-lfoot_p([1:3]))^2;
-
-  rfoot_des = eval(rfoottraj,t);
-  rfoot_des(3) = max(rfoot_des(3), 0.0811);     % hack to fix footstep planner bug
-  rms_foot = rms_foot+norm(rfoot_des([1:3])-rfoot_p([1:3]))^2;
 
   rms_zmp = rms_zmp+norm(zmpdes(:,i)-zmpact(:,i))^2;
   rms_com = rms_com+norm(comdes(:,i)-com(1:2,i))^2;
@@ -99,7 +107,7 @@ end
 
 rms_zmp = sqrt(rms_zmp/length(ts))
 rms_com = sqrt(rms_com/length(ts))
-rms_foot = sqrt(rms_foot/(lstep_counter+rstep_counter))
+rms_foot = sqrt(rms_foot/(step_counter.left + step_counter.right))
 
 figure(2);
 clf;
@@ -127,45 +135,29 @@ plot(zmpact(1,:),zmpact(2,:),'r.-','LineWidth',1);
 %plot(comdes(1,:),comdes(2,:),'g','LineWidth',3);
 %plot(com(1,:),com(2,:),'m.-','LineWidth',1);
 
-left_foot_steps = eval(lfoottraj,lfoottraj.getBreaks);
-tc_lfoot = getTerrainContactPoints(r,lfoot);
-tc_rfoot = getTerrainContactPoints(r,rfoot);
-for i=1:size(left_foot_steps,2);
-  cpos = rpy2rotmat(left_foot_steps(4:6,i)) * tc_lfoot.pts + repmat(left_foot_steps(1:3,i),1,4);
-  if all(cpos(3,:)<=0.001)
-    plot(cpos(1,[1,2]),cpos(2,[1,2]),'k-','LineWidth',2);
-    plot(cpos(1,[1,3]),cpos(2,[1,3]),'g-','LineWidth',2);
-    plot(cpos(1,[1,3]),cpos(2,[1,3]),'k-','LineWidth',2);
-    plot(cpos(1,[2,4]),cpos(2,[2,4]),'k-','LineWidth',2);
-    plot(cpos(1,[3,4]),cpos(2,[3,4]),'k-','LineWidth',2);
+tc = struct('left', getTerrainContactPoints(r,foot_bodies.left),...
+            'right', getTerrainContactPoints(r,foot_bodies.right));
+
+for f = {'left', 'right'}
+  foot = f{1};
+  planned_foot_steps = eval(foot_traj.(foot), foot_traj.(foot).getBreaks());
+  for i=1:size(planned_foot_steps,2);
+    cpos = rpy2rotmat(planned_foot_steps(4:6,i)) * tc.(foot).pts + repmat(planned_foot_steps(1:3,i),1,4);
+    if all(cpos(3,:)<=0.001)
+      plot(cpos(1,[1,2]),cpos(2,[1,2]),'k-','LineWidth',2);
+      plot(cpos(1,[1,3]),cpos(2,[1,3]),'k-','LineWidth',2);
+      plot(cpos(1,[2,4]),cpos(2,[2,4]),'k-','LineWidth',2);
+      plot(cpos(1,[3,4]),cpos(2,[3,4]),'k-','LineWidth',2);
+    end
   end
-end
 
-right_foot_steps = eval(rfoottraj,rfoottraj.getBreaks);
-for i=1:size(right_foot_steps,2);
-  cpos = rpy2rotmat(right_foot_steps(4:6,i)) * tc_rfoot.pts + repmat(right_foot_steps(1:3,i),1,4);
-  if all(cpos(3,:)<=0.001)
-    plot(cpos(1,[1,2]),cpos(2,[1,2]),'k-','LineWidth',2);
-    plot(cpos(1,[1,3]),cpos(2,[1,3]),'k-','LineWidth',2);
-    plot(cpos(1,[2,4]),cpos(2,[2,4]),'k-','LineWidth',2);
-    plot(cpos(1,[3,4]),cpos(2,[3,4]),'k-','LineWidth',2);
+  for i=1:step_counter.(foot)
+    cpos = rpy2rotmat(foot_steps.(foot)(4:6,i)) * tc.(foot).pts + repmat(foot_steps.(foot)(1:3,i),1,4);
+    plot(cpos(1,[1,2]),cpos(2,[1,2]),'g-','LineWidth',1.65);
+    plot(cpos(1,[1,3]),cpos(2,[1,3]),'g-','LineWidth',1.65);
+    plot(cpos(1,[2,4]),cpos(2,[2,4]),'g-','LineWidth',1.65);
+    plot(cpos(1,[3,4]),cpos(2,[3,4]),'g-','LineWidth',1.65);
   end
-end
-
-for i=1:lstep_counter
-  cpos = rpy2rotmat(lfoot_steps(4:6,i)) * tc_lfoot.pts + repmat(lfoot_steps(1:3,i),1,4);
-  plot(cpos(1,[1,2]),cpos(2,[1,2]),'g-','LineWidth',1.65);
-  plot(cpos(1,[1,3]),cpos(2,[1,3]),'g-','LineWidth',1.65);
-  plot(cpos(1,[2,4]),cpos(2,[2,4]),'g-','LineWidth',1.65);
-  plot(cpos(1,[3,4]),cpos(2,[3,4]),'g-','LineWidth',1.65);
-end
-
-for i=1:rstep_counter
-  cpos = rpy2rotmat(rfoot_steps(4:6,i)) * tc_rfoot.pts + repmat(rfoot_steps(1:3,i),1,4);
-  plot(cpos(1,[1,2]),cpos(2,[1,2]),'g-','LineWidth',1.65);
-  plot(cpos(1,[1,3]),cpos(2,[1,3]),'g-','LineWidth',1.65);
-  plot(cpos(1,[2,4]),cpos(2,[2,4]),'g-','LineWidth',1.65);
-  plot(cpos(1,[3,4]),cpos(2,[3,4]),'g-','LineWidth',1.65);
 end
 
 plot(zmpdes(1,:),zmpdes(2,:),'b','LineWidth',3);
