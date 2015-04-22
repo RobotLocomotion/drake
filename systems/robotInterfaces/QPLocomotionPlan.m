@@ -1,7 +1,6 @@
 classdef QPLocomotionPlan < QPControllerPlan
   properties(GetAccess=private, SetAccess=private)
     robot;
-    x0;
     support_times
     supports;
     body_motions;
@@ -391,7 +390,6 @@ classdef QPLocomotionPlan < QPControllerPlan
       options = applyDefaults(options, struct('center_pelvis', true));
       
       obj = QPLocomotionPlan(biped);
-      obj.x0 = x0;
       obj.support_times = [0, inf];
       obj.duration = inf;
       obj.supports = [support_state, support_state];
@@ -466,14 +464,13 @@ classdef QPLocomotionPlan < QPControllerPlan
       end
       
       obj = QPLocomotionPlan(biped);
-      obj.x0 = x0;
       arm_inds = biped.findPositionIndices('arm');
       obj.qtraj(arm_inds) = x0(arm_inds);
       % obj.qtraj = x0(1:biped.getNumPositions());
       
       [obj.supports, obj.support_times] = QPLocomotionPlan.getSupports(zmp_knots);
       obj.zmptraj = QPLocomotionPlan.getZMPTraj(zmp_knots);
-      [~, obj.V, obj.comtraj, ~] = biped.planZMPController(obj.zmptraj, obj.x0, options);
+      [~, obj.V, obj.comtraj, ~] = biped.planZMPController(obj.zmptraj, x0, options);
       pelvis_motion_data = biped.getPelvisMotionForWalking(foot_motion_data, obj.supports, obj.support_times, options);
       obj.body_motions = [foot_motion_data, pelvis_motion_data];
       
