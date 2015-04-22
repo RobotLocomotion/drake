@@ -25,8 +25,8 @@ int PiecewisePolynomialBase::getNumberOfSegments() const {
   return static_cast<int>(segment_times.size() - 1);
 }
 
-int PiecewisePolynomialBase::getNumberOfCoefficients(int segment_number) const {
-  return getSegmentPolynomialDegree(segment_number) + 1;
+int PiecewisePolynomialBase::getNumberOfCoefficients(int segment_number, Eigen::DenseIndex row, Eigen::DenseIndex col) const {
+  return getSegmentPolynomialDegree(segment_number, row, col) + 1;
 }
 
 double PiecewisePolynomialBase::getStartTime(int segment_number) const {
@@ -51,11 +51,11 @@ double PiecewisePolynomialBase::getEndTime() const {
   return getEndTime(getNumberOfSegments() - 1);
 }
 
-int PiecewisePolynomialBase::getTotalNumberOfCoefficients() const {
+int PiecewisePolynomialBase::getTotalNumberOfCoefficients(Eigen::DenseIndex row, Eigen::DenseIndex col) const {
   int ret = 0;
 
   for (int i = 0; i < getNumberOfSegments(); i++) {
-    ret += getNumberOfCoefficients(i);
+    ret += getNumberOfCoefficients(i, row, col);
   }
   return ret;
 }
@@ -76,4 +76,11 @@ bool PiecewisePolynomialBase::segmentTimesEqual(const PiecewisePolynomialBase& o
       return false;
   }
   return true;
+}
+
+void PiecewisePolynomialBase::checkScalarValued() const
+{
+  if (rows() != 1 || cols() != 1) {
+    throw std::runtime_error("Not scalar valued.");
+  }
 }

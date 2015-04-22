@@ -33,6 +33,8 @@ public:
 
   Polynomial(int num_coefficients);
 
+  Polynomial();
+
   int getNumberOfCoefficients() const;
 
   int getDegree() const;

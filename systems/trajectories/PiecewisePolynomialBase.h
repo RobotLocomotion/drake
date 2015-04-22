@@ -1,6 +1,7 @@
 #ifndef DRAKE_SOLVERS_QPSPLINE_PIECEWISEPOLYNOMIALBASE_H_
 #define DRAKE_SOLVERS_QPSPLINE_PIECEWISEPOLYNOMIALBASE_H_
 
+#include <Eigen/Core>
 #include <vector>
 
 #undef DLLEXPORT
@@ -24,11 +25,15 @@ public:
 
   virtual ~PiecewisePolynomialBase();
 
-  virtual int getSegmentPolynomialDegree(int segment_number) const = 0;
+  virtual int getSegmentPolynomialDegree(int segment_number, Eigen::DenseIndex row = 0, Eigen::DenseIndex col = 0) const = 0;
+
+  virtual Eigen::DenseIndex rows() const = 0;
+
+  virtual Eigen::DenseIndex cols() const = 0;
 
   int getNumberOfSegments() const;
 
-  int getNumberOfCoefficients(int segment_number) const;
+  int getNumberOfCoefficients(int segment_number, Eigen::DenseIndex row = 0, Eigen::DenseIndex col = 0) const;
 
   double getStartTime(int segment_number) const;
 
@@ -40,12 +45,14 @@ public:
 
   double getEndTime() const;
 
-  int getTotalNumberOfCoefficients() const;
+  int getTotalNumberOfCoefficients(Eigen::DenseIndex row = 0, Eigen::DenseIndex col = 0) const;
 
 protected:
   void segmentNumberRangeCheck(int segment_number) const;
 
   bool segmentTimesEqual(const PiecewisePolynomialBase& b, double tol) const;
+
+  void checkScalarValued() const;
 
   PiecewisePolynomialBase();
 };

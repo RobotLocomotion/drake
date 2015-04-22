@@ -18,7 +18,12 @@ Polynomial<CoefficientType>::Polynomial(int num_coefficients) :
   coefficients(num_coefficients)
 {
   assert(coefficients.rows() > 0);
-  // empty;
+}
+
+template <typename CoefficientType>
+Polynomial<CoefficientType>::Polynomial() :
+  coefficients(0, 1)
+{
 }
 
 template <typename CoefficientType>
@@ -195,6 +200,8 @@ typename Polynomial<CoefficientType>::RootsType Polynomial<CoefficientType>::roo
 
 template <typename CoefficientType>
 bool Polynomial<CoefficientType>::isApprox(const Polynomial& other, const RealScalar& tol) const {
+  if (getNumberOfCoefficients() != other.getNumberOfCoefficients())
+    return false;
   return coefficients.isApprox(other.coefficients, tol);
 }
 
