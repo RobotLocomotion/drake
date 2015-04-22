@@ -56,8 +56,9 @@ classdef DynamicalSystem
   methods
     function sys = DynamicalSystem()
       sys.warning_manager = WarningManager();
+      sys.simulink_model_handles = SharedDataHandle([],@close_system);
     end
-    
+        
     function sys = inInputFrame(sys,frame)
       % Ensures that sys has the specified input frame, by
       % searching for and cascading a coordinate transformation to
@@ -728,5 +729,6 @@ classdef DynamicalSystem
   
   properties (Access=public)
     warning_manager;
+    simulink_model_handles;
   end    
 end
