@@ -1,4 +1,4 @@
-classdef QPLocomotionPlan < QPControllerPlan
+classdef QPLocomotionPlan < QPControllerPlanMatlabImplementation
   properties(GetAccess=private, SetAccess=private)
     robot;
     support_times
@@ -45,8 +45,8 @@ classdef QPLocomotionPlan < QPControllerPlan
       obj.robot = robot;
       S = load(obj.robot.fixed_point_file);
       obj.qtraj = S.xstar(1:obj.robot.getNumPositions());
-      obj.default_qp_input = atlasControllers.QPInputConstantHeight();
-      obj.default_qp_input.whole_body_data.q_des = zeros(obj.robot.getNumPositions(), 1);
+      obj.default_qp_input_ = atlasControllers.QPInputConstantHeight();
+      obj.default_qp_input_.whole_body_data.q_des = zeros(obj.robot.getNumPositions(), 1);
       obj.constrained_dofs = [findPositionIndices(obj.robot,'arm');findPositionIndices(obj.robot,'neck');findPositionIndices(obj.robot,'back_bkz');findPositionIndices(obj.robot,'back_bky')];
       obj.joint_pd_override_data = struct('position_ind',{},'kp',{},'kd',{},'weight',{});
       
@@ -71,24 +71,24 @@ classdef QPLocomotionPlan < QPControllerPlan
         contact_force_detected = zeros(rpc.num_bodies, 1);
       end
       
-      if isempty(obj.start_time)
-        obj.start_time = t_global;
+      if isempty(obj.start_time_)
+        obj.start_time_ = t_global;
       end
       r = obj.robot;
-      t_plan = t_global - obj.start_time;
+      t_plan = t_global - obj.start_time_;
       t_plan = double(t_plan);
       if t_plan < 0
         qp_input = [];
         return;
       end
       
-      T = obj.duration;
+      T = obj.duration_;
       t_plan = min([t_plan, T]);
       
       q = x(1:rpc.nq);
       qd = x(rpc.nq+(1:rpc.nv));
       
-      qp_input = obj.default_qp_input;
+      qp_input = obj.default_qp_input_;
       qp_input.zmp_data.D = -obj.LIP_height/obj.g * eye(2);
       
       if isnumeric(obj.qtraj)
@@ -192,7 +192,7 @@ classdef QPLocomotionPlan < QPControllerPlan
         
         qp_input.body_motion_data(j) = obj.body_motions(j).slice(body_t_ind);
         
-        qp_input.body_motion_data(j).ts = qp_input.body_motion_data(j).ts + obj.start_time;
+        qp_input.body_motion_data(j).ts = qp_input.body_motion_data(j).ts + obj.start_time_;
         
         if qp_input.body_motion_data(j).body_id == rpc.body_ids.pelvis
           pelvis_has_tracking = true;
@@ -217,7 +217,7 @@ classdef QPLocomotionPlan < QPControllerPlan
         qp_input.support_data(j).contact_surfaces = 0;
       end
       
-      qp_input.param_set_name = obj.gain_set;
+      qp_input.param_set_name = obj.gain_set_;
       
       if supp_idx < length(obj.supports)
         next_support = obj.supports(supp_idx + 1);
@@ -241,6 +241,7 @@ classdef QPLocomotionPlan < QPControllerPlan
       obj.last_qp_input = qp_input;
     end
     
+    % not part of interface:
     function body_motions = getBodyMotions(obj)
       body_motions = obj.body_motions;
     end
@@ -370,11 +371,11 @@ classdef QPLocomotionPlan < QPControllerPlan
       B = [zeros(2); eye(2)];
       [~,S,~] = lqr(A,B,Q,R);
       % set the Qy to zero since we only want to stabilize COM
-      obj.default_qp_input.zmp_data.Qy = 0*obj.default_qp_input.zmp_data.Qy;
-      obj.default_qp_input.zmp_data.A = A;
-      obj.default_qp_input.zmp_data.B = B;
-      obj.default_qp_input.zmp_data.R = R;
-      obj.default_qp_input.zmp_data.S = S;
+      obj.default_qp_input_.zmp_data.Qy = 0*obj.default_qp_input_.zmp_data.Qy;
+      obj.default_qp_input_.zmp_data.A = A;
+      obj.default_qp_input_.zmp_data.B = B;
+      obj.default_qp_input_.zmp_data.R = R;
+      obj.default_qp_input_.zmp_data.S = S;
     end
   end
   
@@ -391,7 +392,7 @@ classdef QPLocomotionPlan < QPControllerPlan
       
       obj = QPLocomotionPlan(biped);
       obj.support_times = [0, inf];
-      obj.duration = inf;
+      obj.duration_ = inf;
       obj.supports = [support_state, support_state];
       obj.is_quasistatic = true;
       
@@ -436,7 +437,7 @@ classdef QPLocomotionPlan < QPControllerPlan
       obj.zmp_final = comgoal;
       obj.qtraj = x0(1:nq);
       obj.comtraj = comgoal;
-      obj.gain_set = 'standing';
+      obj.gain_set_ = 'standing';
     end
     
     function obj = from_biped_footstep_plan(footstep_plan, biped, x0, zmp_options)
@@ -474,13 +475,13 @@ classdef QPLocomotionPlan < QPControllerPlan
       pelvis_motion_data = biped.getPelvisMotionForWalking(foot_motion_data, obj.supports, obj.support_times, options);
       obj.body_motions = [foot_motion_data, pelvis_motion_data];
       
-      obj.duration = obj.support_times(end)-obj.support_times(1)-0.001;
+      obj.duration_ = obj.support_times(end)-obj.support_times(1)-0.001;
       obj.zmp_final = obj.zmptraj.eval(obj.zmptraj.tspan(end));
       if isa(obj.V.S, 'ConstantTrajectory')
         obj.V.S = fasteval(obj.V.S, 0);
       end
       obj.LIP_height = biped.default_walking_params.nominal_LIP_COM_height;
-      obj.gain_set = 'walking';
+      obj.gain_set_ = 'walking';
     end
     
     function obj = from_quasistatic_qtraj(biped, qtraj, options)
@@ -521,7 +522,7 @@ classdef QPLocomotionPlan < QPControllerPlan
       x0 = [q0; zeros(biped.getNumVelocities(), 1)];
       obj = QPLocomotionPlan.from_standing_state(x0, biped);
       obj.qtraj = qtraj;
-      obj.duration = obj.qtraj.tspan(end) - obj.qtraj.tspan(1);
+      obj.duration_ = obj.qtraj.tspan(end) - obj.qtraj.tspan(1);
       obj.support_times = [obj.qtraj.tspan(1); inf];
       
       if isfield(options,'supports') && isfield(options,'support_times')
@@ -578,7 +579,7 @@ classdef QPLocomotionPlan < QPControllerPlan
         end
       end
       
-      obj.gain_set = 'manip';
+      obj.gain_set_ = 'manip';
       obj = obj.setCOMTraj();
       obj = obj.setLQR_for_COM();
     end

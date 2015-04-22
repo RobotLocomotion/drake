@@ -1,4 +1,4 @@
-classdef WaitForRobotStatePlan < QPControllerPlan
+classdef WaitForRobotStatePlan < QPControllerPlanMatlabImplementation
   methods
     function qp_input = getQPControllerInput(obj,varargin) 
       qp_input = [];
