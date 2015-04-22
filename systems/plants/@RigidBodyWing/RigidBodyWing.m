@@ -497,7 +497,6 @@ classdef RigidBodyWing < RigidBodyForceElement
         dtorque_worlddqd = -airspeed*airspeed*wingYunit*dCMdqd + -CM*2*airspeed*(wingYunit*dairspeeddqd);
       end
 
-      % convert torque to joint frame (featherstone dynamics algorithm never reasons in body coordinates)
       if (nargout>1)
         [torque_body, torque_bodyP, torque_bodyJ] = bodyKin(manip,kinsol,frame.body_ind,[torque_world,zeros(3,1)]);
         torque_body = torque_body(:,1)-torque_body(:,2);
@@ -508,12 +507,6 @@ classdef RigidBodyWing < RigidBodyForceElement
       else
         torque_body = bodyKin(manip,kinsol,frame.body_ind,[torque_world,zeros(3,1)]);
         torque_body = torque_body(:,1)-torque_body(:,2);
-      end
-
-      torque_joint = manip.body(frame.body_ind).X_joint_to_body'*[torque_body;0;0;0];
-      if (nargout>1)
-        dtorque_jointdq = manip.body(frame.body_ind).X_joint_to_body'*[dtorque_bodydq;zeros(3,nq)];
-        dtorque_jointdqd = manip.body(frame.body_ind).X_joint_to_body'*[dtorque_bodydqd;zeros(3,nq)];
       end
 
       %inputs of point (body coordinates), and force (world coordinates)
@@ -528,10 +521,10 @@ classdef RigidBodyWing < RigidBodyForceElement
         f = cartesianForceToSpatialForce(manip, kinsol, frame.body_ind, frame.T(1:3,4),lift_world+drag_world);
       end
 
-      body_force = torque_joint + f;
+      body_force = [torque_body;0;0;0] + f;
       if (nargout>1)
-        dbody_forcedq = dtorque_jointdq + dfdq;
-        dbody_forcedqd = dtorque_jointdqd + dfdqd;
+        dbody_forcedq = [dtorque_bodydq;zeros(3,nq)] + dfdq;
+        dbody_forcedqd = [dtorque_bodydqd;zeros(3,nq)] + dfdqd;
       end
 
       force = sparse(6,getNumBodies(manip))*q(1); % q(1) is for taylorvar
