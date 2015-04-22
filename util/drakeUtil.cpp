@@ -140,6 +140,12 @@ void* getDrakeMexPointer(const mxArray* mx)
   return ptr;
 }
 
+void baseZeroToBaseOne(std::vector<int>& vec)
+{
+  for (std::vector<int>::iterator iter=vec.begin(); iter!=vec.end(); iter++)
+    (*iter)++;
+}
+
 double angleAverage(double theta1, double theta2) {
   // Computes the average between two angles by averaging points on the unit
   // circle and taking the arctan of the result.

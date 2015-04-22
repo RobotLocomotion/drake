@@ -88,11 +88,7 @@ DLLEXPORT const std::vector<double> matlabToStdVector(const mxArray* in);
 
 DLLEXPORT int sub2ind(mwSize ndims, const mwSize* dims, const mwSize* sub);
 
-void baseZeroToBaseOne(std::vector<int>& vec)
-{
-  for (std::vector<int>::iterator iter=vec.begin(); iter!=vec.end(); iter++)
-    (*iter)++;
-}
+DLLEXPORT void baseZeroToBaseOne(std::vector<int>& vec);
 
 DLLEXPORT double angleAverage(double theta1, double theta2);
 
