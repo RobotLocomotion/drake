@@ -6,6 +6,7 @@
 #include "drake/fastQP.h"
 #include "drake/gurobiQP.h"
 #include "drake/lcmt_qp_controller_input.hpp"
+#include <vector>
 
 const double REG = 1e-8;
 
@@ -255,6 +256,55 @@ struct QPControllerDebugData {
 struct PIDOutput {
   VectorXd q_ref;
   VectorXd qddot_des;
+};
+
+// adapted from https://en.wikibooks.org/wiki/More_C%2B%2B_Idioms/Type_Safe_Enum
+class Side
+{
+public:
+  enum SideEnum {LEFT, RIGHT};
+
+private:
+  SideEnum val;
+
+public:
+
+  Side(SideEnum v) : val(v) {}
+  SideEnum underlying() const { return val; }
+
+  friend bool operator == (const Side & lhs, const Side & rhs) { return lhs.val == rhs.val; }
+  friend bool operator != (const Side & lhs, const Side & rhs) { return lhs.val != rhs.val; }
+  friend bool operator <  (const Side & lhs, const Side & rhs) { return lhs.val <  rhs.val; }
+  friend bool operator <= (const Side & lhs, const Side & rhs) { return lhs.val <= rhs.val; }
+  friend bool operator >  (const Side & lhs, const Side & rhs) { return lhs.val >  rhs.val; }
+  friend bool operator >= (const Side & lhs, const Side & rhs) { return lhs.val >= rhs.val; }
+
+  Side oppositeSide() {
+    switch (val) {
+    case LEFT:
+      return Side(RIGHT);
+    case RIGHT:
+      return Side(LEFT);
+    default:
+      throw std::runtime_error("should not get here");
+    }
+  }
+
+  std::string toString() {
+    switch (val) {
+    case LEFT:
+      return "left";
+    case RIGHT:
+      return "right";
+    default:
+      throw std::runtime_error("should not get here");
+    }
+  }
+
+  static std::vector<Side> values()
+  {
+    return std::vector<Side> { {LEFT, RIGHT} };
+  }
 };
 
 std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray *qp_input);
