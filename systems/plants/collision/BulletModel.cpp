@@ -55,8 +55,8 @@ namespace DrakeCollision
   BulletCollisionWorldWrapper::BulletCollisionWorldWrapper()
     : bt_collision_configuration(), bt_collision_broadphase(), filter_callback()
   {
-    bt_collision_configuration.setConvexConvexMultipointIterations(PERTURBATION_ITERATIONS, MINIMUM_POINTS_PERTURBATION_THRESHOLD);
-    bt_collision_configuration.setPlaneConvexMultipointIterations(PERTURBATION_ITERATIONS, MINIMUM_POINTS_PERTURBATION_THRESHOLD);
+    bt_collision_configuration.setConvexConvexMultipointIterations(0, 0);
+    bt_collision_configuration.setPlaneConvexMultipointIterations(0, 0);
     bt_collision_dispatcher = unique_ptr<btCollisionDispatcher>(new btCollisionDispatcher(&bt_collision_configuration));
     bt_collision_world = unique_ptr<btCollisionWorld>(new btCollisionWorld(bt_collision_dispatcher.get(), &bt_collision_broadphase, &bt_collision_configuration));
 
@@ -229,6 +229,8 @@ namespace DrakeCollision
   vector<PointPair> BulletModel::potentialCollisionPoints(bool use_margins)
   {
     BulletCollisionWorldWrapper& bt_world = getBulletWorld(use_margins);
+    bt_world.bt_collision_configuration.setConvexConvexMultipointIterations(PERTURBATION_ITERATIONS, MINIMUM_POINTS_PERTURBATION_THRESHOLD);
+    bt_world.bt_collision_configuration.setPlaneConvexMultipointIterations(PERTURBATION_ITERATIONS, MINIMUM_POINTS_PERTURBATION_THRESHOLD);
     BulletResultCollector c;
     bt_world.bt_collision_world->performDiscreteCollisionDetection();
     size_t numManifolds = bt_world.bt_collision_world->getDispatcher()->getNumManifolds();
@@ -282,6 +284,8 @@ namespace DrakeCollision
       }
     }   
 
+    bt_world.bt_collision_configuration.setConvexConvexMultipointIterations(0, 0);
+    bt_world.bt_collision_configuration.setPlaneConvexMultipointIterations(0, 0);
     return c.getResults();
   }
 
