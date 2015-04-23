@@ -24,7 +24,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
   mwSize num_knots = num_segments - 1;
   mwSize num_coeffs_per_segment = 4;
   mwSize dims[] = {ndof, num_segments, num_coeffs_per_segment};
-  plhs[0] = mxCreateNumericArray(num_segments, dims, mxDOUBLE_CLASS, mxREAL);
+  plhs[0] = mxCreateNumericArray(3, dims, mxDOUBLE_CLASS, mxREAL);
   double objective_value = 0.0;
   for (mwSize dof = 0; dof < ndof; dof++) {
     std::vector<double> xi(num_knots);
@@ -41,7 +41,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
     for (mwSize segment_index = 0; segment_index < spline.getNumberOfSegments(); segment_index++) {
       for (mwSize coefficient_index = 0; coefficient_index < num_coeffs_per_segment; coefficient_index++) {
         mwSize sub[] = {dof, segment_index, num_coeffs_per_segment - coefficient_index - 1}; // Matlab's reverse coefficient indexing...
-        *(mxGetPr(plhs[0]) + sub2ind(num_segments, dims, sub)) = spline.getPolynomial(segment_index).getCoefficients()[coefficient_index];
+        *(mxGetPr(plhs[0]) + sub2ind(3, dims, sub)) = spline.getPolynomial(segment_index).getCoefficients()[coefficient_index];
       }
     }
   }
