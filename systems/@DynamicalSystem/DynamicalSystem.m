@@ -512,7 +512,7 @@ classdef DynamicalSystem
       if (~strcmp(get_param(mdl,'SimulationStatus'),'stopped'))
         feval(mdl,[],[],[],'term');
       end
-      [A,B,C,D] = linmod(mdl,x0,u0,[1e-5,t0]);
+      [A,B,C,D] = linmod(mdl.name,x0,u0,[1e-5,t0]);
       
       if (nargout>4) 
         xdot0 = dynamics(obj,t0,x0,u0);
@@ -539,7 +539,7 @@ classdef DynamicalSystem
       if (~strcmp(get_param(mdl,'SimulationStatus'),'stopped'))
         feval(mdl,[],[],[],'term');
       end
-      [A,B,C,D] = dlinmod(mdl,ts,x0,u0,[1e-5,t0]);
+      [A,B,C,D] = dlinmod(mdl.name,ts,x0,u0,[1e-5,t0]);
       if (nargout>4) 
         xn0 = update(obj,t0,x0,u0);
         if (length(xn0)~=size(A,1)) 

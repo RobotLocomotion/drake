@@ -211,7 +211,7 @@ classdef DrakeSystem < DynamicalSystem
         error('%s\n',errorMsg{:})
       end
       
-      uid = sprintf('%018.0f', now * 24*60*60*1e6);
+      uid = datestr(now,'MMSSFFF');
       
       % make a simulink model from this block
       mdl = [class(obj),'_',uid];  % use the class name + uid as the model name
