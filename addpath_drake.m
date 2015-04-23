@@ -66,17 +66,5 @@ clear util/getDrakePath;
 % from here: http://pages.cs.wisc.edu/~ferris/path.html
 setenv('PATH_LICENSE_STRING', '2096056969&Russ_Tedrake&Massachusetts_Institute_of_Technology&&USR&75042&18_4_2014&1000&PATH&GEN&0_0_0&0_0_0&5000&0_0');
 
-% turn off autosave for simulink models (seems evil, but generating
-% boatloads of autosaves is clearly worse)
-if checkDependency('simulink')
-  autosave_options = get_param(0,'AutoSaveOptions');
-  if autosave_options.SaveOnModelUpdate
-    warning('Drake:DisablingSimulinkAutosave','Disabling autosave for simulink blocks (to avoid generating a lot of *.mdl.autosave files in your directory.  If you aren''t a regular Simulink user and don''t want this disabled, comment out this section in addpath_drake.\nTo disable this warning in the future, add\n   warning(''off'',''Drake:DisablingSimulinkAutosave'')\nto your matlab startup.m');
-    autosave_options.SaveOnModelUpdate = false;
-    set_param(0,'AutoSaveOptions',autosave_options);
-  end
-end
-% todo: try setting this before simulating, then resetting it after the
-% simulate?
 
 end
