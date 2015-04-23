@@ -49,7 +49,9 @@ classdef SimulinkModelHandle < handle
         base_workspace_variable_name = base_workspace_variable_name(end-59:end);
       end
       if evalin('base',['exist(''',base_workspace_variable_name,''',''var'');'])
-        error('this would clobber an existing var');
+        % make it unique
+        base_workspace_variable_name = registerParameter(obj,var,[simple_name,'_',datestr(now,'MMSSFFF')]);
+        return
       end
       
       assignin('base',base_workspace_variable_name,var);
