@@ -99,6 +99,29 @@ void matlabToCArrayOfArrays(const mxArray *source, double (&destination)[Rows][C
   }
 }
 
+// note for if/when we split off all Matlab related stuff into a different file: this function is not Matlab related
+template <typename Derived, size_t Rows = Derived::RowsAtCompileTime, size_t Cols = Derived::ColsAtCompileTime>
+void eigenToCArrayOfArrays(const Eigen::MatrixBase<Derived>& source, double (&destination)[Rows][Cols]) {
+  if (Rows != source.rows())
+    throw std::runtime_error("Number of rows of source doesn't match destination");
+  if (Cols != source.cols())
+    throw std::runtime_error("Number of columns of source doesn't match destination");
+  for (size_t row = 0; row < Rows; ++row) {
+    for (size_t col = 0; col < Cols; ++col) {
+      destination[row][col] = source(row, col);
+    }
+  }
+}
+
+// note for if/when we split off all Matlab related stuff into a different file: this function is not Matlab related
+template <typename Derived>
+void eigenVectorToStdVector(const Eigen::MatrixBase<Derived>& source, std::vector<typename Derived::Scalar>& destination) {
+  assert(source.rows() == 1 || source.cols() == 1);
+  destination.reserve(static_cast<size_t>(source.size()));
+  for (Eigen::DenseIndex i = 0; i < source.size(); i++)
+    destination[static_cast<size_t>(i)] = source(i);
+}
+
 DLLEXPORT const std::vector<double> matlabToStdVector(const mxArray* in);
 
 DLLEXPORT int sub2ind(mwSize ndims, const mwSize* dims, const mwSize* sub);
