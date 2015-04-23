@@ -13,7 +13,8 @@ classdef QPLocomotionPlan < QPControllerPlan
     comtraj = [];
     mu = 0.5;
     plan_shift = zeros(6,1);
-    plan_shift_z_only = false;
+    plan_shift_zmp_inds = 1:2;
+    plan_shift_body_motion_inds = 3;
     g = 9.81; % gravity m/s^2
     is_quasistatic = false;
     constrained_dofs = [];
@@ -35,7 +36,6 @@ classdef QPLocomotionPlan < QPControllerPlan
   properties(Access=protected)
     toe_off_active = struct('right', false, 'left', false);
   end
-
 
   methods
     function obj = QPLocomotionPlan(robot)
@@ -240,6 +240,10 @@ classdef QPLocomotionPlan < QPControllerPlan
 
       [x0_xyzquat, J] = obj.robot.forwardKin(kinsol, body_motion_data.body_id, [0;0;0], 2);
       xd0_xyzquat = J * qd;
+
+      % Undo our plan shift, since it will be reapplied later
+      x0_xyzquat(obj.plan_shift_body_motion_inds) = x0_xyzquat(obj.plan_shift_body_motion_inds) + obj.plan_shift(obj.plan_shift_body_motion_inds);
+
       [x0_expmap,dexpmap2dquat] = quat2expmap(x0_xyzquat(4:7));
       xd0_xyzexpmap = [xd0_xyzquat(1:3);dexpmap2dquat*xd0_xyzquat(4:7)];
       
@@ -312,13 +316,10 @@ classdef QPLocomotionPlan < QPControllerPlan
     end
 
     function qp_input = applyPlanShift(obj, qp_input)
-      if ~obj.plan_shift_z_only
-        qp_input.zmp_data.x0(1:2) = qp_input.zmp_data.x0(1:2) - obj.plan_shift(1:2);
-        qp_input.zmp_data.y0 = qp_input.zmp_data.y0 - obj.plan_shift(1:2);
-        inds = 1:3;
-      else
-        inds = 3;
-      end
+      qp_input.zmp_data.x0(obj.plan_shift_zmp_inds) = qp_input.zmp_data.x0(obj.plan_shift_zmp_inds) - obj.plan_shift(obj.plan_shift_zmp_inds);
+      qp_input.zmp_data.y0(obj.plan_shift_zmp_inds) = qp_input.zmp_data.y0(obj.plan_shift_zmp_inds) - obj.plan_shift(obj.plan_shift_zmp_inds);
+
+      inds = obj.plan_shift_body_motion_inds;
       for j = 1:length(qp_input.body_motion_data)
         qp_input.body_motion_data(j).coefs(inds,:,end) = qp_input.body_motion_data(j).coefs(inds,:,end) - obj.plan_shift(inds);
       end
