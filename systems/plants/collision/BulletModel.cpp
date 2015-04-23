@@ -28,7 +28,7 @@ namespace DrakeCollision
         return 0;
       }
     private:
-        bool in_collision;
+        bool in_collision = false;
   };
 
   bool OverlapFilterCallback::needBroadphaseCollision(btBroadphaseProxy* proxy0,
