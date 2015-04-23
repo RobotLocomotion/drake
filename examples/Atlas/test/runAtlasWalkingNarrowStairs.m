@@ -1,5 +1,5 @@
-function runAtlasWalkingStairs()
-% Climb a set of stairs modeled after the DRC finals task
+function runAtlasWalkingNarrowStairs()
+% Climb a set of stairs which are intentionally shorter than the robot's feet. This forces the controller to explicitly plan for and control only partial foot contact. 
 
 checkDependency('iris');
 checkDependency('lcmgl');
@@ -28,6 +28,7 @@ r = compile(r);
 % set initial state to fixed point
 load(fullfile(getDrakePath,'examples','Atlas','data','atlas_fp.mat'));
 
+% Move the robot's arms out in front to bring the CoM forward
 xstar(6) = pi/2;
 xstar(r.findPositionIndices('r_arm_shz')) = 1.3;
 xstar(r.findPositionIndices('r_arm_shx')) = 0;
@@ -43,6 +44,7 @@ r = r.setInitialState(xstar);
 x0 = xstar;
 nq = r.getNumPositions();
 
+% Generate boxes and IRIS safe terrain regions
 l = 0.22;
 box_size = [39*0.0254, l, 0.22];
 
@@ -74,6 +76,7 @@ r.default_walking_params.support_contact_groups = {'toe', 'midfoot'};
 v = r.constructVisualizer();
 v.display_dt = 0.01;
 
+% Plan footsteps
 footstep_plan = r.planFootsteps(x0(1:nq), struct('right',[0.13;1.0;0;0;0;0],...
                                                  'left', [-0.13;1.0;0;0;0;0]),...
                                 safe_regions,...
