@@ -1,0 +1,3 @@
+add_executable(testQPLocomotionPlan testQPLocomotionPlan.cpp)
+include_directories(..)
+target_link_libraries(testQPLocomotionPlan drakeQPCommon)
