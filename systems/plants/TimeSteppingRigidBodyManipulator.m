@@ -375,7 +375,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
           else
             [phiC,normal,d,xA,xB,idxA,idxB,mu,n,D] = obj.manip.contactConstraints(kinsol, obj.multiple_contacts);
           end
-          if numel(phiC > 0)
+          if ~isempty(phiC)
               if isempty(possible_contact_indices)
                 possible_contact_indices = (phiC+h*n*qd) < obj.z_inactive_guess_tol;
               end
