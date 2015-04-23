@@ -12,6 +12,11 @@ namespace DrakeCollision
   struct BinaryContactResultCallback : public btCollisionWorld::ContactResultCallback
   {
     public:
+      BinaryContactResultCallback()
+      {
+        in_collision = false;
+      }
+
       bool isInCollision()
       {
         return in_collision;
@@ -28,7 +33,7 @@ namespace DrakeCollision
         return 0;
       }
     private:
-        bool in_collision = false;
+        bool in_collision;
   };
 
   bool OverlapFilterCallback::needBroadphaseCollision(btBroadphaseProxy* proxy0,
