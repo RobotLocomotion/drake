@@ -3,6 +3,7 @@
 #include <random>
 #include <vector>
 #include "testUtil.h"
+#include "trajectoryTestUtil.h"
 #include <iostream>
 
 using namespace std;
@@ -10,40 +11,6 @@ using namespace Eigen;
 
 default_random_engine generator;
 uniform_real_distribution<double> uniform;
-
-vector<double> generateSegmentTimes(int num_segments) {
-  vector<double> segment_times;
-  double t0 = uniform(generator);
-  segment_times.push_back(t0);
-  for (int i = 0; i < num_segments; ++i) {
-    double duration = uniform(generator);
-    segment_times.push_back(segment_times[i] + duration);
-  }
-  return segment_times;
-}
-
-template<typename CoefficientType>
-PiecewisePolynomial<CoefficientType> createRandomPiecewisePolynomial(int rows, int cols, int num_coefficients, const vector<double>& segment_times)
-{
-  int num_segments = segment_times.size() - 1;
-  typedef PiecewisePolynomial<CoefficientType> PiecewisePolynomialType;
-  typedef typename PiecewisePolynomialType::PolynomialType PolynomialType;
-  typedef typename PiecewisePolynomialType::PolynomialMatrix PolynomialMatrix;
-  typedef typename PiecewisePolynomialType::CoefficientMatrix CoefficientMatrix;
-  vector<PolynomialMatrix> polynomials;
-  int size = rows * cols;
-  typedef typename PolynomialType::CoefficientsType CoefficientsType;
-  for (int segment_index = 0; segment_index < num_segments; ++segment_index) {
-    PolynomialMatrix matrix(rows, cols);
-    for (int i = 0; i < size; i++) {
-      CoefficientsType coefficients = CoefficientsType::Random(num_coefficients);
-      matrix(i) = PolynomialType(coefficients);
-    }
-    polynomials.push_back(matrix);
-  }
-  PiecewisePolynomialType piecewise(polynomials, segment_times);
-  return piecewise;
-}
 
 template <typename CoefficientType>
 void testIntegralAndDerivative() {
@@ -55,8 +22,8 @@ void testIntegralAndDerivative() {
   typedef PiecewisePolynomial<CoefficientType> PiecewisePolynomialType;
   typedef typename PiecewisePolynomialType::CoefficientMatrix CoefficientMatrix;
 
-  vector<double> segment_times = generateSegmentTimes(num_segments);
-  PiecewisePolynomialType piecewise = createRandomPiecewisePolynomial<CoefficientType>(rows, cols, num_coefficients, segment_times);
+  vector<double> segment_times = generateRandomSegmentTimes(num_segments, generator);
+  PiecewisePolynomialType piecewise = generateRandomPiecewisePolynomial<CoefficientType>(rows, cols, num_coefficients, segment_times);
 
   // differentiate integral, get original back
   PiecewisePolynomialType piecewise_back = piecewise.integral().derivative();
@@ -64,7 +31,7 @@ void testIntegralAndDerivative() {
     throw runtime_error("wrong");
 
   // check value at start time
-  CoefficientMatrix desired_value_at_t0 = decltype(piecewise)::CoefficientMatrix::Random(piecewise.rows(), piecewise.cols());
+  CoefficientMatrix desired_value_at_t0 = PiecewisePolynomialType::CoefficientMatrix::Random(piecewise.rows(), piecewise.cols());
   PiecewisePolynomialType integral = piecewise.integral(desired_value_at_t0);
   auto value_at_t0 = integral.matrixValue(piecewise.getStartTime());
   valuecheck(desired_value_at_t0, value_at_t0, 1e-10);
@@ -91,9 +58,9 @@ void testOperators() {
     int rows = int_distribution(generator);
     int cols = int_distribution(generator);
 
-    vector<double> segment_times = generateSegmentTimes(num_segments);
-    PiecewisePolynomialType piecewise1 = createRandomPiecewisePolynomial<CoefficientType>(rows, cols, num_coefficients, segment_times);
-    PiecewisePolynomialType piecewise2 = createRandomPiecewisePolynomial<CoefficientType>(rows, cols, num_coefficients, segment_times);
+    vector<double> segment_times = generateRandomSegmentTimes(num_segments, generator);
+    PiecewisePolynomialType piecewise1 = generateRandomPiecewisePolynomial<CoefficientType>(rows, cols, num_coefficients, segment_times);
+    PiecewisePolynomialType piecewise2 = generateRandomPiecewisePolynomial<CoefficientType>(rows, cols, num_coefficients, segment_times);
 
     PiecewisePolynomialType sum = piecewise1 + piecewise2;
 

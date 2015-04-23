@@ -5,6 +5,7 @@
 #include "PiecewisePolynomialBase.h"
 #include "Polynomial.h"
 #include <vector>
+#include <random>
 
 #undef DLLEXPORT
 #if defined(WIN32) || defined(WIN64)
@@ -27,8 +28,6 @@ public:
 
 private:
   std::vector<PolynomialMatrix> polynomials; // a PolynomialMatrix for each piece
-
-  int getSegmentIndex(double t);
 
 public:
   virtual ~PiecewisePolynomial() { };

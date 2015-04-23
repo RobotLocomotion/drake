@@ -40,22 +40,6 @@ PiecewisePolynomial<CoefficientType>::PiecewisePolynomial() {
 }
 
 template <typename CoefficientType>
-int PiecewisePolynomial<CoefficientType>::getSegmentIndex(double t) {
-  // clip to min/max times
-  if (t < getStartTime())
-    t = getStartTime();
-
-  if (t > getEndTime())
-    t = getEndTime();
-
-  int segment_index = 0;
-  while (t >= getEndTime(segment_index) && segment_index < getNumberOfSegments() - 1)
-    segment_index++;
-
-  return segment_index;
-}
-
-template <typename CoefficientType>
 PiecewisePolynomial<CoefficientType> PiecewisePolynomial<CoefficientType>::derivative(int derivative_order) const {
   PiecewisePolynomial ret = *this;
   for (auto it = ret.polynomials.begin(); it != ret.polynomials.end(); ++it) {

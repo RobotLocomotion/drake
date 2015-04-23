@@ -47,6 +47,8 @@ public:
 
   int getTotalNumberOfCoefficients(Eigen::DenseIndex row = 0, Eigen::DenseIndex col = 0) const;
 
+  int getSegmentIndex(double t) const;
+
 protected:
   void segmentNumberRangeCheck(int segment_number) const;
 

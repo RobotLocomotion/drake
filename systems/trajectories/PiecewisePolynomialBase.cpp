@@ -60,6 +60,21 @@ int PiecewisePolynomialBase::getTotalNumberOfCoefficients(Eigen::DenseIndex row,
   return ret;
 }
 
+int PiecewisePolynomialBase::getSegmentIndex(double t) const {
+  // clip to min/max times
+  if (t < getStartTime())
+    t = getStartTime();
+
+  if (t > getEndTime())
+    t = getEndTime();
+
+  int segment_index = 0;
+  while (t >= getEndTime(segment_index) && segment_index < getNumberOfSegments() - 1)
+    segment_index++;
+
+  return segment_index;
+}
+
 void PiecewisePolynomialBase::segmentNumberRangeCheck(int segment_number) const {
   if (segment_number < 0 || segment_number >= getNumberOfSegments()) {
     std::stringstream msg;
