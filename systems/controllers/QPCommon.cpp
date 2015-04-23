@@ -6,26 +6,18 @@
 
 #define LEG_INTEGRATOR_DEACTIVATION_MARGIN 0.05
 
-template<int M, int N>
-void matlabToCArrayOfArrays(const mxArray *source, const int idx, const char *fieldname, double *destination)  {
-  // Matlab arrays come in as column-major data. To represent a matrix in C++, as we do in our LCM messages, we need an array of arrays. But that convention results in a row-major storage, so we have to be careful about how we copy data in. 
-  const mxArray *field = mxGetField(source, idx, fieldname);
-  if (!field) {
-    field = mxGetPropertySafe(source, idx, fieldname);
+const mxArray* getFieldOrPropertySafe(const mxArray* array, size_t index, std::string const& field_name) {
+  const mxArray* field_or_property = mxGetFieldSafe(array, index, field_name);
+  if (field_or_property == nullptr) {
+    field_or_property = mxGetPropertySafe(array, index, field_name);
   }
-  sizecheck(field, M, N);
-  Map<Matrix<double, M, N>>A(mxGetPrSafe(field));
-  // C is row-major, matlab is column-major
-  Matrix<double, N, M> A_t = A.transpose();
-  memcpy(destination, A_t.data(), sizeof(double)*M*N);
-  return;
+  return field_or_property;
 }
 
 double logisticSigmoid(double L, double k, double x, double x0) {
   // Compute the value of the logistic sigmoid f(x) = L / (1 + exp(-k(x - x0)))
   return L / (1.0 + exp(-k * (x - x0)));
 }
-
 
 std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray *qp_input) {
   // Take a matlab data structure corresponding to a QPInputConstantHeight object and parse it down to its representation as an equivalent LCM message. 
@@ -37,20 +29,20 @@ std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray 
 
   const mxArray* zmp_data = myGetProperty(qp_input, "zmp_data");
 
-  matlabToCArrayOfArrays<4, 4>(zmp_data, 0, "A", &msg->zmp_data.A[0][0]);
-  matlabToCArrayOfArrays<4, 2>(zmp_data, 0, "B", &msg->zmp_data.B[0][0]);
-  matlabToCArrayOfArrays<2, 4>(zmp_data, 0, "C", &msg->zmp_data.C[0][0]);
-  matlabToCArrayOfArrays<2, 2>(zmp_data, 0, "D", &msg->zmp_data.D[0][0]);
-  matlabToCArrayOfArrays<4, 1>(zmp_data, 0, "x0", &msg->zmp_data.x0[0][0]);
-  matlabToCArrayOfArrays<2, 1>(zmp_data, 0, "y0", &msg->zmp_data.y0[0][0]);
-  matlabToCArrayOfArrays<2, 1>(zmp_data, 0, "u0", &msg->zmp_data.u0[0][0]);
-  matlabToCArrayOfArrays<2, 2>(zmp_data, 0, "R", &msg->zmp_data.R[0][0]);
-  matlabToCArrayOfArrays<2, 2>(zmp_data, 0, "Qy", &msg->zmp_data.Qy[0][0]);
-  matlabToCArrayOfArrays<4, 4>(zmp_data, 0, "S", &msg->zmp_data.S[0][0]);
-  matlabToCArrayOfArrays<4, 1>(zmp_data, 0, "s1", &msg->zmp_data.s1[0][0]);
-  matlabToCArrayOfArrays<4, 1>(zmp_data, 0, "s1dot", &msg->zmp_data.s1dot[0][0]);
-  msg->zmp_data.s2 = mxGetScalar(myGetField(zmp_data, "s2"));
-  msg->zmp_data.s2dot = mxGetScalar(myGetField(zmp_data, "s2dot"));
+  matlabToCArrayOfArrays(getFieldOrPropertySafe(zmp_data, 0, "A"), msg->zmp_data.A);
+  matlabToCArrayOfArrays(getFieldOrPropertySafe(zmp_data, 0, "B"), msg->zmp_data.B);
+  matlabToCArrayOfArrays(getFieldOrPropertySafe(zmp_data, 0, "C"), msg->zmp_data.C);
+  matlabToCArrayOfArrays(getFieldOrPropertySafe(zmp_data, 0, "D"), msg->zmp_data.D);
+  matlabToCArrayOfArrays(getFieldOrPropertySafe(zmp_data, 0, "x0"), msg->zmp_data.x0);
+  matlabToCArrayOfArrays(getFieldOrPropertySafe(zmp_data, 0, "y0"), msg->zmp_data.y0);
+  matlabToCArrayOfArrays(getFieldOrPropertySafe(zmp_data, 0, "u0"), msg->zmp_data.u0);
+  matlabToCArrayOfArrays(getFieldOrPropertySafe(zmp_data, 0, "R"), msg->zmp_data.R);
+  matlabToCArrayOfArrays(getFieldOrPropertySafe(zmp_data, 0, "Qy"), msg->zmp_data.Qy);
+  matlabToCArrayOfArrays(getFieldOrPropertySafe(zmp_data, 0, "S"), msg->zmp_data.S);
+  matlabToCArrayOfArrays(getFieldOrPropertySafe(zmp_data, 0, "s1"), msg->zmp_data.s1);
+  matlabToCArrayOfArrays(getFieldOrPropertySafe(zmp_data, 0, "s1dot"), msg->zmp_data.s1dot);
+  msg->zmp_data.s2 = mxGetScalar(mxGetFieldSafe(zmp_data, "s2"));
+  msg->zmp_data.s2dot = mxGetScalar(mxGetFieldSafe(zmp_data, "s2dot"));
   msg->zmp_data.timestamp = msg->timestamp;
 
 
@@ -79,7 +71,7 @@ std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray 
         }
       }
 
-      matlabToCArrayOfArrays<4, 1>(support_data, i, "support_logic_map", &double_logic_map[0][0]);
+      matlabToCArrayOfArrays(getFieldOrPropertySafe(support_data, i, "support_logic_map"), double_logic_map);
       for (int j=0; j < 4; j++) {
         msg->support_data[i].support_logic_map[j] = (double_logic_map[j][0] != 0);
       }
@@ -104,7 +96,7 @@ std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray 
       if (mxGetNumberOfDimensions(coefs) != 3) mexErrMsgTxt("coefs should be a dimension-3 array");
       const mwSize* dim = mxGetDimensions(coefs);
       if (dim[0] != 6 || dim[1] != 1 || dim[2] != 4) mexErrMsgTxt("coefs should be size 6x1x4");
-      matlabToCArrayOfArrays<6, 4>(body_motion_data, i, "coefs", &msg->body_motion_data[i].coefs[0][0]);
+      matlabToCArrayOfArrays(getFieldOrPropertySafe(body_motion_data, i, "coefs"), msg->body_motion_data[i].coefs);
       msg->body_motion_data[i].in_floating_base_nullspace = static_cast<bool>(mxGetScalar(mxGetFieldSafe(body_motion_data, i, "in_floating_base_nullspace")));
       msg->body_motion_data[i].control_pose_when_in_contact = static_cast<bool>(mxGetScalar(mxGetFieldSafe(body_motion_data, i, "control_pose_when_in_contact")));
       const mxArray* quat_task_to_world = mxGetFieldSafe(body_motion_data, i, "quat_task_to_world"); 

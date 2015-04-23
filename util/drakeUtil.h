@@ -84,6 +84,21 @@ mxArray* stdVectorToMatlab(const std::vector<Scalar>& vec) {
   return pm;
 }
 
+DLLEXPORT void sizecheck(const mxArray* mat, int M, int N);
+
+template <size_t Rows, size_t Cols>
+void matlabToCArrayOfArrays(const mxArray *source, double (&destination)[Rows][Cols])  {
+  // Matlab arrays come in as column-major data. The format used in e.g. LCM messages is an array of arrays.
+  // from http://stackoverflow.com/a/17569578/2228557
+  sizecheck(source, static_cast<int>(Rows), static_cast<int>(Cols));
+  double* source_data = mxGetPr(source);
+  for (size_t row = 0; row < Rows; ++row) {
+    for (size_t col = 0; col < Cols; ++col) {
+      destination[row][col] = source_data[row + col * Rows];
+    }
+  }
+}
+
 DLLEXPORT const std::vector<double> matlabToStdVector(const mxArray* in);
 
 DLLEXPORT int sub2ind(mwSize ndims, const mwSize* dims, const mwSize* sub);
@@ -103,6 +118,5 @@ DLLEXPORT mxArray* mxGetFieldSafe(const mxArray* array, size_t index, std::strin
 
 DLLEXPORT void mxSetFieldSafe(mxArray* array, size_t index, std::string const & fieldname, mxArray* data);
 
-DLLEXPORT void sizecheck(const mxArray* mat, int M, int N);
 
 #endif /* DRAKE_UTIL_H_ */
