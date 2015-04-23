@@ -45,9 +45,9 @@ public:
 
   const std::vector<double>& getSegmentTimes() const;
 
-protected:
   void segmentNumberRangeCheck(int segment_number) const;
 
+protected:
   bool segmentTimesEqual(const PiecewiseFunction& b, double tol) const;
 
   void checkScalarValued() const;
