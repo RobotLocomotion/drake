@@ -42,13 +42,12 @@ namespace DrakeCollision
     if (collides) {
       btCollisionObject* bt_collision_object0 = (btCollisionObject*) proxy0->m_clientObject;
       btCollisionObject* bt_collision_object1 = (btCollisionObject*) proxy1->m_clientObject;
-      if ((bt_collision_object0->getUserPointer() == NULL) || 
-          (bt_collision_object1->getUserPointer() == NULL)) {
-        return false;
+      if ((bt_collision_object0->getUserPointer() != NULL) &&
+          (bt_collision_object1->getUserPointer() != NULL)) {
+        auto element0 = static_cast< Element* >(bt_collision_object0->getUserPointer());
+        auto element1 = static_cast< Element* >(bt_collision_object1->getUserPointer());
+        collides = collides && element0->collidesWith(element1);
       }
-      auto element0 = static_cast< Element* >(bt_collision_object0->getUserPointer());
-      auto element1 = static_cast< Element* >(bt_collision_object1->getUserPointer());
-      collides = collides && element0->collidesWith(element1);
     }
     return collides;
   }
