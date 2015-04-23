@@ -154,6 +154,9 @@ end
 end
 
 function [zmp, supp] = getZMPBetweenFeet(biped, steps)
+  % Find the location of the ZMP at the center of the active contact points of the feet.
+  % @param biped a Biped
+  % @param steps a struct mapping the strings 'right' and 'left' to two Footstep objects
   zmp = zeros(2,0);
   initial_supports = [];
   initial_support_groups = {};
