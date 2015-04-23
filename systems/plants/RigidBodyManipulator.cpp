@@ -588,48 +588,18 @@ string RigidBodyManipulator::getStateName(int state_num) const
 		return getVelocityName(state_num);
 }
 
-map<string, int> RigidBodyManipulator::computeDofMap() const
+map<string, int> RigidBodyManipulator::computePositionNameToIndexMap() const
 {
   const RigidBodyManipulator* const model = this;
 
   const std::shared_ptr<RigidBody> worldBody = model->bodies[0];
 
-  map<string, int> dofMap;
+  map<string, int> name_to_index_map;
 
-  for (auto iter = this->bodies.begin(); iter != this->bodies.end(); ++iter) { 
-    std::shared_ptr<RigidBody> body(*iter);
-
-    if (!body->hasParent())
-    {
-      continue;
-    }
-
-    if (body->getJoint().getNumPositions() == 0)
-    {
-      continue;
-    }
-
-    int dofId = body->position_num_start;
-
-    if (body->parent == worldBody)
-    {
-      //printf("dofMap base\n");
-
-      dofMap["base_x"] = dofId + 0;
-      dofMap["base_y"] = dofId + 1;
-      dofMap["base_z"] = dofId + 2;
-      dofMap["base_roll"] = dofId + 3;
-      dofMap["base_pitch"] = dofId + 4;
-      dofMap["base_yaw"] = dofId + 5;
-    }
-    else
-    {
-      //printf("dofMap[%s] = %d\n", body->getJoint().getName().c_str(), dofId);
-      dofMap[body->getJoint().getName()] = dofId;
-    }
-
+  for (int i = 0; i < this->num_positions; ++i) {
+      name_to_index_map[getPositionName(i)] = i;
   }
-  return dofMap;
+  return name_to_index_map;
 }
 
 DrakeCollision::ElementId RigidBodyManipulator::addCollisionElement(const RigidBody::CollisionElement& element, const shared_ptr<RigidBody>& body, string group_name)
