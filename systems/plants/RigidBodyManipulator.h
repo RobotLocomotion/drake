@@ -79,7 +79,7 @@ public:
   bool addRobotFromURDF(const std::string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
   bool addRobotFromURDF(const std::string &urdf_filename, std::map<std::string,std::string>& package_map, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
 
-  std::map<std::string, int> computeDofMap() const;
+  std::map<std::string, int> computePositionNameToIndexMap() const;
 
   void surfaceTangents(Eigen::Map<Matrix3xd> const & normals, std::vector< Map<Matrix3xd> > & tangents);
   
