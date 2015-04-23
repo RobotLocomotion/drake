@@ -115,4 +115,4 @@ function [A, b] = convertToCspace(A, b)
   b = [b; pi/2; -pi/2];
 end
 
-% TIMEOUT 1000
+% TIMEOUT 1500
