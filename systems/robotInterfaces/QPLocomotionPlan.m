@@ -31,7 +31,7 @@ classdef QPLocomotionPlan < QPControllerPlan
     KNEE_KD = 4;
     KNEE_WEIGHT = 1;
 
-    EARLY_CONTACT_ALLOWED_TIME = 0.1; % If a body is about to come into contact within the next [early_contact_allowed_time] seconds, then add an optional support that the controller can use if it senses force on that body
+    EARLY_CONTACT_ALLOWED_TIME = 0.4; % If a body is about to come into contact within the next [early_contact_allowed_time] seconds, then add an optional support that the controller can use if it senses force on that body
 
   end
 
