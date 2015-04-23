@@ -30,9 +30,9 @@ void testSimpleCase() {
 
   ExponentialPlusPiecewisePolynomial<CoefficientType> expPlusPp(K, A, alpha, polynomial_part);
 
-  uniform_real_distribution<CoefficientType> uniform(polynomial_part.getStartTime(), polynomial_part.getEndTime());
+  uniform_real_distribution<CoefficientType> uniform(expPlusPp.getStartTime(), expPlusPp.getEndTime());
   double t = uniform(generator);
-  auto check = K(0) * std::exp(A(0) * (t - polynomial_part.getStartTime())) * alpha0(0) + polynomial_part.value(t);
+  auto check = K(0) * std::exp(A(0) * (t - expPlusPp.getStartTime())) * alpha0(0) + polynomial_part.value(t);
 
   valuecheck(check, expPlusPp.value(t)(0), 1e-8);
 }

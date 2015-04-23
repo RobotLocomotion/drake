@@ -8,7 +8,7 @@ template<typename CoefficientType>
 ExponentialPlusPiecewisePolynomial<CoefficientType>::ExponentialPlusPiecewisePolynomial(
     const Eigen::Ref<MatrixX>& K, const Eigen::Ref<MatrixX>& A, const std::vector<VectorX>& alpha,
     const PiecewisePolynomial<CoefficientType>& piecewise_polynomial_part) :
-    K(K), A(A), alpha(alpha), piecewise_polynomial_part(piecewise_polynomial_part)
+    PiecewiseFunction(piecewise_polynomial_part.getSegmentTimes()), K(K), A(A), alpha(alpha), piecewise_polynomial_part(piecewise_polynomial_part)
 {
   int num_segments = piecewise_polynomial_part.getNumberOfSegments();
   assert(A.rows() == rows());
@@ -33,9 +33,15 @@ typename ExponentialPlusPiecewisePolynomial<CoefficientType>::ValueType Exponent
 }
 
 template<typename CoefficientType>
-Eigen::DenseIndex ExponentialPlusPiecewisePolynomial<CoefficientType>::rows()
+Eigen::DenseIndex ExponentialPlusPiecewisePolynomial<CoefficientType>::rows() const
 {
   return piecewise_polynomial_part.rows();
+}
+
+template<typename CoefficientType>
+Eigen::DenseIndex ExponentialPlusPiecewisePolynomial<CoefficientType>::cols() const
+{
+  return piecewise_polynomial_part.cols();
 }
 
 template class DLLEXPORT ExponentialPlusPiecewisePolynomial<double>;

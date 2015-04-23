@@ -3,11 +3,11 @@ if (MATLAB_FOUND)
   add_mex(ExpPlusPPTrajectoryEvalmex ExpPlusPPTrajectoryEvalmex.cpp)
 endif()
 
-add_library(drakeTrajectories PiecewisePolynomialBase.cpp PiecewisePolynomial.cpp ExponentialPlusPiecewisePolynomial.cpp)
+add_library(drakeTrajectories PiecewiseFunction.cpp PiecewisePolynomialBase.cpp PiecewisePolynomial.cpp ExponentialPlusPiecewisePolynomial.cpp)
 include_directories(${CMAKE_SOURCE_DIR}/solvers/polynomial)
 target_link_libraries(drakeTrajectories drakePolynomial)
 pods_install_libraries(drakeTrajectories)
-pods_install_headers(PiecewisePolynomial.h PiecewisePolynomialBase.h ExponentialPlusPiecewisePolynomial.h DESTINATION drake)
+pods_install_headers(PiecewiseFunction.h PiecewisePolynomial.h PiecewisePolynomialBase.h ExponentialPlusPiecewisePolynomial.h DESTINATION drake)
 pods_install_pkg_config_file(drakeTrajectories
 LIBS -ldrakeTrajectories
 REQUIRES

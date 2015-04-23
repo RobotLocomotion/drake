@@ -22,7 +22,7 @@
  */
 
 template<typename CoefficientType = double>
-class DLLEXPORT ExponentialPlusPiecewisePolynomial
+class DLLEXPORT ExponentialPlusPiecewisePolynomial : public PiecewiseFunction
 {
 public:
   typedef Eigen::Matrix<CoefficientType, Eigen::Dynamic, Eigen::Dynamic> MatrixX;
@@ -42,7 +42,9 @@ public:
 
   ValueType value(double t); // return type should not be VectorX because the scalar type of the output should be the same as the type of t
 
-  Eigen::DenseIndex rows();
+  virtual Eigen::DenseIndex rows() const;
+
+  virtual Eigen::DenseIndex cols() const;
 };
 
 #endif /* SYSTEMS_TRAJECTORIES_EXPONENTIALPLUSPIECEWISEPOLYNOMIAL_H_ */
