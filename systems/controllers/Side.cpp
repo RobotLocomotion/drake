@@ -1,37 +1,51 @@
 #include "Side.h"
 #include <stdexcept>
 
-bool Side::operator==(const Side & other)
+const std::array<Side::SideEnum, 2> Side::values = { { Side::LEFT, Side::RIGHT } };
+
+Side::Side() :
+    val(LEFT)
+{
+  // empty
+}
+
+Side::Side(Side::SideEnum v) :
+    val(v)
+{
+  // empty
+}
+
+bool Side::operator==(const Side & other) const
 {
   return val == other.val;
 }
 
-bool Side::operator!=(const Side & other)
+bool Side::operator!=(const Side & other) const
 {
   return val != other.val;
 }
 
-bool Side::operator<(const Side & other)
+bool Side::operator<(const Side & other) const
 {
   return val < other.val;
 }
 
-bool Side::operator<=(const Side & other)
+bool Side::operator<=(const Side & other) const
 {
   return val <= other.val;
 }
 
-bool Side::operator>(const Side & other)
+bool Side::operator>(const Side & other) const
 {
   return val > other.val;
 }
 
-bool Side::operator>=(const Side & other)
+bool Side::operator>=(const Side & other) const
 {
   return val >= other.val;
 }
 
-Side Side::oppositeSide()
+Side Side::oppositeSide() const
 {
   switch (val) {
   case LEFT:
@@ -43,7 +57,7 @@ Side Side::oppositeSide()
   }
 }
 
-std::string Side::toString()
+std::string Side::toString() const
 {
   switch (val) {
   case LEFT:
@@ -53,9 +67,4 @@ std::string Side::toString()
   default:
     throw std::runtime_error("should not get here");
   }
-}
-
-std::vector<Side> Side::values()
-{
-  return std::vector<Side> { { Side::LEFT, Side::RIGHT } };
 }

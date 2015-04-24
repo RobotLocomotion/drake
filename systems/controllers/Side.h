@@ -1,7 +1,7 @@
 #ifndef SYSTEMS_CONTROLLERS_SIDE_H_
 #define SYSTEMS_CONTROLLERS_SIDE_H_
 
-#include <vector>
+#include <array>
 #include <string>
 
 // adapted from https://en.wikibooks.org/wiki/More_C%2B%2B_Idioms/Type_Safe_Enum
@@ -14,19 +14,20 @@ private:
   SideEnum val;
 
 public:
-  Side(SideEnum v) : val(v) {}
+  static const std::array<SideEnum, 2> values;
+  Side(); // to allow usage in STL containers
+  Side(SideEnum v);
   SideEnum underlying() const { return val; }
 
-  bool operator == (const Side & other);
-  bool operator != (const Side & other);
-  bool operator <  (const Side & other);
-  bool operator <= (const Side & other);
-  bool operator >  (const Side & other);
-  bool operator >= (const Side & other);
+  bool operator == (const Side & other) const;
+  bool operator != (const Side & other) const;
+  bool operator <  (const Side & other) const;
+  bool operator <= (const Side & other) const;
+  bool operator >  (const Side & other) const;
+  bool operator >= (const Side & other) const;
 
-  Side oppositeSide();
-  std::string toString();
-  static std::vector<Side> values();
+  Side oppositeSide()  const;
+  std::string toString() const;
 };
 
 #endif /* SYSTEMS_CONTROLLERS_SIDE_H_ */
