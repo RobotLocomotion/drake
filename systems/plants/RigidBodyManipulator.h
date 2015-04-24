@@ -69,7 +69,7 @@ public:
 class DLLEXPORT_RBM RigidBodyManipulator
 {
 public:
-  RigidBodyManipulator(int num_dof, int num_featherstone_bodies=-1, int num_rigid_body_objects=-1, int num_rigid_body_frames=0);
+  RigidBodyManipulator(int num_dof, int num_rigid_body_objects=-1, int num_rigid_body_frames=0);
   RigidBodyManipulator(const std::string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
   RigidBodyManipulator(void);
   virtual ~RigidBodyManipulator(void);
@@ -81,7 +81,7 @@ public:
 
   void surfaceTangents(Eigen::Map<Matrix3xd> const & normals, std::vector< Map<Matrix3xd> > & tangents);
   
-  void resize(int num_dof, int num_featherstone_bodies=-1, int num_rigid_body_objects=-1, int num_rigid_body_frames=0);
+  void resize(int num_dof, int num_rigid_body_objects=-1, int num_rigid_body_frames=0);
 
   void compile(void);  // call me after the model is loaded
 
@@ -99,9 +99,7 @@ public:
   void doKinematics(MatrixBase<DerivedA> & q, bool b_compute_second_derivatives, MatrixBase<DerivedB> & v);
 
   template <typename DerivedQ, typename DerivedV>
-  void doKinematicsNew(const MatrixBase<DerivedQ>& q, const MatrixBase<DerivedV>& v, bool compute_gradients = false, bool compute_JdotV = false);
-
-  void updateCompositeRigidBodyInertias(int gradient_order);
+  void doKinematicsNew(const MatrixBase<DerivedQ>& q, const MatrixBase<DerivedV>& v, bool compute_gradients = false, bool compute_JdotV = true);
 
   bool isBodyPartOfRobot(const RigidBody& body, const std::set<int>& robotnum);
 
@@ -127,9 +125,6 @@ public:
 
   template <typename Scalar>
   GradientVar<Scalar, SPACE_DIMENSION, 1> centerOfMassJacobianDotTimesV(int gradient_order, const std::set<int>& robotnum = RigidBody::defaultRobotNumSet);
-
-  template <typename DerivedA, typename DerivedB>
-  void getCMM(MatrixBase<DerivedA> const & q, MatrixBase<DerivedA> const & qd, MatrixBase<DerivedB> &A, MatrixBase<DerivedB> &Adot);
 
   template <typename Derived>
   void getCOM(MatrixBase<Derived> &com,const std::set<int> &robotnum = RigidBody::defaultRobotNumSet);
@@ -181,6 +176,9 @@ public:
   template <typename Scalar>
   GradientVar<Scalar, Eigen::Dynamic, 1> inverseDynamics(std::map<int, std::unique_ptr< GradientVar<Scalar, TWIST_SIZE, 1> > >& f_ext, GradientVar<Scalar, Eigen::Dynamic, 1>* vd = nullptr, int gradient_order = 0);
 
+  template <typename DerivedV>
+  GradientVar<typename DerivedV::Scalar, Dynamic, 1> frictionTorques(Eigen::MatrixBase<DerivedV> const & v, int gradient_order = 0);
+
   template <typename DerivedPoints>
   GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, DerivedPoints::ColsAtCompileTime> forwardKinNew(const MatrixBase<DerivedPoints>& points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type, int gradient_order);
 
@@ -210,9 +208,6 @@ public:
 
   template<typename Scalar>
   GradientVar<Scalar, SPACE_DIMENSION + 1, SPACE_DIMENSION + 1> relativeTransform(int base_or_frame_ind, int body_or_frame_ind, int gradient_order);
-
-  template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD, typename DerivedE, typename DerivedF, typename DerivedG>
-  void HandC(MatrixBase<DerivedG> const & q, MatrixBase<DerivedG> const & qd, MatrixBase<DerivedA> * const f_ext, MatrixBase<DerivedB> &H, MatrixBase<DerivedC> &C, MatrixBase<DerivedD> *dH=NULL, MatrixBase<DerivedE> *dC=NULL, MatrixBase<DerivedF> * const df_ext=NULL);
 
   void computeContactJacobians(Map<VectorXi> const & idxA, Map<VectorXi> const & idxB, Map<Matrix3xd> const & xA, Map<Matrix3xd> const & xB, const bool compute_second_derivatives, MatrixXd & J, MatrixXd & dJ);
 
@@ -285,6 +280,8 @@ public:
   std::string getBodyOrFrameName(int body_or_frame_id);
   //@param body_or_frame_id   the index of the body or the id of the frame.
 
+  int parseBodyOrFrameID(const int body_or_frame_id, Matrix4d* Tframe = nullptr);
+  
   template <typename Scalar>
   GradientVar<Scalar, Eigen::Dynamic, 1> positionConstraintsNew(int gradient_order);
 
@@ -297,10 +294,24 @@ public:
   Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> transformVelocityMappingToPositionDotMapping(
       const Eigen::MatrixBase<Derived>& mat, const std::vector<int>& joint_path);
 
-  template <typename Derived>
-  Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> compactToFull(
-      const Eigen::MatrixBase<Derived>& compact, const std::vector<int>& joint_path, bool in_terms_of_qdot);
-
+template <typename Derived>
+Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> compactToFull(
+    const Eigen::MatrixBase<Derived>& compact, const std::vector<int>& joint_path, bool in_terms_of_qdot) {
+  /*
+   * This method is used after calling geometric Jacobian, where compact is the Jacobian on the joints that are on the kinematic path; if we want to reconstruct the full Jacobian on all joints, then we should call this method. 
+   */
+  int ncols = in_terms_of_qdot ? num_positions : num_velocities;
+  Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> full(compact.rows(), ncols);
+  full.setZero();
+  int compact_col_start = 0;
+  for (std::vector<int>::const_iterator it = joint_path.begin(); it != joint_path.end(); ++it) {
+    RigidBody& body = *bodies[*it];
+    int nv_joint = body.getJoint().getNumVelocities();
+    full.middleCols(body.velocity_num_start, nv_joint) = compact.middleCols(compact_col_start, nv_joint);
+    compact_col_start += nv_joint;
+  }
+  return full;
+};
 public:
   std::vector<std::string> robot_name;
 
@@ -323,88 +334,56 @@ public:
   // Rigid body loops
   std::vector<RigidBodyLoop,Eigen::aligned_allocator<RigidBodyLoop> > loops;
 
-  // featherstone data structure
-  int NB;  // featherstone bodies
-  VectorXi pitch;
-  VectorXi parent;
-  VectorXi dofnum;
-  VectorXd damping;
-  VectorXd coulomb_friction;
-  VectorXd coulomb_window;
-  VectorXd static_friction;
-  std::vector<MatrixXd> Xtree;
-  std::vector<MatrixXd> I;
   Matrix<double,TWIST_SIZE,1> a_grav;
   MatrixXd B;  // the B matrix maps inputs into joint-space forces
-  std::map<int, int> bodies_vector_index_to_featherstone_body_index;
 
+  /*
+   * Temporary solution, as we're switching from old kinematics to new.
+   * Had to separate these so that it's possible to know specifically whether the old doKinematics and/or new doKinematics
+   * has been cached with a given q and v. There was a place outside of RigidBodyManipulator that used cached_q and should continue
+   * to work for both new and old doKinematics, so we kept cached_q and cached_v as well (set by whatever doKinematics method
+   * was called last).
+   */
   VectorXd cached_q, cached_v;  // these should be private
+  VectorXd cached_q_old, cached_v_old;  // these should be private
 
   void setUseNewKinsol(bool tf) { use_new_kinsol=tf; kinematicsInit=false; }
   bool getUseNewKinsol(void) { return use_new_kinsol; }
 
 private:
+  VectorXd cached_q_new, cached_v_new;
   bool use_new_kinsol;
+
   void doKinematics(double* q, bool b_compute_second_derivatives=false, double* qd=NULL);
   
   //helper functions for contactConstraints
   void accumulateContactJacobian(const size_t bodyInd, MatrixXd const & bodyPoints, std::vector<size_t> const & cindA, std::vector<size_t> const & cindB, MatrixXd & J);
   void accumulateSecondOrderContactJacobian(const size_t bodyInd, MatrixXd const & bodyPoints, std::vector<size_t> const & cindA, std::vector<size_t> const & cindB, MatrixXd & dJ);
 
-  int parseBodyOrFrameID(const int body_or_frame_id, Matrix4d* Tframe = nullptr);
+  void updateCompositeRigidBodyInertias(int gradient_order);
+
   void checkCachedKinematicsSettings(bool kinematics_gradients_required, bool velocity_kinematics_required, bool jdot_times_v_required, const std::string& method_name);
 
   // variables for featherstone dynamics
-  std::vector<VectorXd> S;
-  std::vector<MatrixXd> Xup;
-  std::vector<VectorXd> v;
-  std::vector<VectorXd> avp;
-  std::vector<VectorXd> fvp;
-  std::vector<MatrixXd> IC;
   std::vector<Matrix<double, TWIST_SIZE, TWIST_SIZE>, Eigen::aligned_allocator< Matrix<double, TWIST_SIZE, TWIST_SIZE> > > I_world;
   std::vector<Matrix<double, TWIST_SIZE, TWIST_SIZE>, Eigen::aligned_allocator< Matrix<double, TWIST_SIZE, TWIST_SIZE> > > Ic_new;
 
 
   //Variables for gradient calculations
   MatrixXd dTdTmult;
-  std::vector<MatrixXd> dXupdq;
-  std::vector<std::vector<MatrixXd> > dIC;
-    std::vector<Gradient<Matrix<double, TWIST_SIZE, TWIST_SIZE>, Eigen::Dynamic>::type> dI_world;
+  std::vector<Gradient<Matrix<double, TWIST_SIZE, TWIST_SIZE>, Eigen::Dynamic>::type> dI_world;
   std::vector<Gradient<Matrix<double, TWIST_SIZE, TWIST_SIZE>, Eigen::Dynamic>::type> dIc_new;
-
-  std::vector<MatrixXd> dvdq;
-  std::vector<MatrixXd> dvdqd;
-  std::vector<MatrixXd> davpdq;
-  std::vector<MatrixXd> davpdqd;
-  std::vector<MatrixXd> dfvpdq;
-  std::vector<MatrixXd> dfvpdqd;
-  MatrixXd dvJdqd_mat;
-  MatrixXd dcross;
 
   // preallocate for COM functions
   Vector3d bc;
   MatrixXd bJ;
   MatrixXd bdJ;
 
-  // preallocate for CMM function
-  MatrixXd Xg; // spatial centroidal projection matrix
-  MatrixXd dXg;  // dXg_dq * qd
-  std::vector<MatrixXd> Ic; // composite rigid body inertias
-  std::vector<MatrixXd> dIc; // derivative of composite rigid body inertias
-  std::vector<VectorXd> phi; // joint axis vectors
-  std::vector<MatrixXd> Xworld; // spatial transforms from world to each body
-  std::vector<MatrixXd> dXworld; // dXworld_dq * qd
-  std::vector<MatrixXd> dXup; // dXup_dq * qd
-  MatrixXd Xcom; // spatial transform from centroid to world
-  MatrixXd Jcom;
-  MatrixXd dXcom;
-  MatrixXd Xi;
-  MatrixXd dXidq;
-
   int num_contact_pts;
   bool initialized;
   bool kinematicsInit;
   int secondDerivativesCached;
+  bool position_kinematics_cached;
   bool gradients_cached;
   bool velocity_kinematics_cached;
   bool jdotV_cached;
@@ -428,7 +407,7 @@ public:
 // The following was required for building w/ DLLEXPORT_RBM on windows (due to the unique_ptrs).  See
 // http://stackoverflow.com/questions/8716824/cannot-access-private-member-error-only-when-class-has-export-linkage
 private:
-  RigidBodyManipulator(const RigidBodyManipulator&) {}
+  RigidBodyManipulator(const RigidBodyManipulator&);
   RigidBodyManipulator& operator=(const RigidBodyManipulator&) { return *this; }
 
   std::set<std::string> already_printed_warnings;

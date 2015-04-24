@@ -13,12 +13,13 @@ classdef Biped < LeggedRobot
   properties
     foot_body_id
     foot_frame_id
+    toe_frame_id
     inner_foot_shape % see getInnerFootShape() below
     default_body_collision_slices % see getBodyCollisionSlices() below
     body_collision_slice_heights % see getBodyCollisionSlices() below
   end
 
-  properties(Abstract, SetAccess = protected, GetAccess = public)
+  properties(Abstract)
     default_footstep_params
     default_walking_params
   end
@@ -41,6 +42,8 @@ classdef Biped < LeggedRobot
       l_body_id = obj.getFrame(l_frame_id).body_ind;
       obj.foot_body_id = struct('left', l_body_id, 'right', r_body_id);
       obj.foot_frame_id = struct('left', l_frame_id, 'right', r_frame_id);
+      obj.toe_frame_id = struct('left', obj.parseBodyOrFrameID('l_foot_toe'),...
+                                'right', obj.parseBodyOrFrameID('r_foot_toe'));
     end
 
     function [A, b] = getReachabilityPolytope(obj, stance_foot_frame, swing_foot_frame, params)
@@ -98,7 +101,7 @@ classdef Biped < LeggedRobot
 
       [Axy, bxy] = poly2lincon([0, params.max_forward_step, 0, -params.max_forward_step],...
                                [params.min_step_width, params.nom_step_width, params.max_step_width, params.nom_step_width]);
-      [Axz, bxz] = poly2lincon([0, params.nom_forward_step, params.max_forward_step, params.nom_forward_step, 0, -params.max_forward_step], ...
+      [Axz, bxz] = poly2lincon([0, params.max_forward_step, params.max_forward_step, params.max_forward_step, 0, -params.max_forward_step], ...
                                [params.nom_upward_step, params.nom_upward_step, 0, -params.nom_downward_step, -params.nom_downward_step, 0]);
       A = [Axy, zeros(size(Axy, 1), 4);
            Axz(:,1), zeros(size(Axz, 1), 1), Axz(:,2), zeros(size(Axz, 1), 3);

@@ -42,10 +42,9 @@ if ~isfield(options,'gui_control_interface'), options.gui_control_interface = fa
 if ~isfield(options,'lcm_control_interface'), options.lcm_control_interface = ''; end
 
 if options.gui_control_interface || ~isempty(options.lcm_control_interface)
-  assignin('base',[mdl,'_control'],SimulationControlBlock(options.gui_control_interface,options.lcm_control_interface));
   add_block('simulink/User-Defined Functions/S-Function',[mdl,'/simulation_control'], ...
     'FunctionName','DCSFunction', ...
-    'parameters',[mdl,'_control']);
+    'parameters',registerParameter(mdl,SimulationControlBlock(mdl,options.gui_control_interface,options.lcm_control_interface),'control'));
 end
 
 pstruct = obj.simulink_params;
@@ -66,8 +65,7 @@ if (nargin>2 && ~isempty(x0)) % handle initial conditions
     sizecheck(x0,[obj.getStateFrame.dim,1]);
   end
   x0 = stateVectorToStructure(obj,x0,mdl);
-  assignin('base',[mdl,'_x0'],x0);
-  pstruct.InitialState = [mdl,'_x0'];
+  pstruct.InitialState = registerParameter(mdl,x0,'x0');
   pstruct.LoadInitialState = 'on';
 
   if (~isempty(find_system(mdl,'ClassName','InitialCondition')))

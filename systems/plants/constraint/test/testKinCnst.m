@@ -74,12 +74,12 @@ testKinCnst_userfun(true,false,t_valid,q_aff,q_aff,RigidBodyConstraint.WorldCoMC
 testKinCnstInvalidTime_userfun(true,false,t_invalid,q_aff,RigidBodyConstraint.WorldCoMConstraintType,robot_aff,[0;0;0.9],[0;0;1],tspan0);
 
 display('Check world position constraint');
-testKinCnst_userfun(true,false,t_valid,q,q_aff,RigidBodyConstraint.WorldPositionConstraintType,robot,robot_aff,l_foot,l_foot_pts,[-100*ones(2,4);zeros(1,4)],[100*ones(2,4);zeros(1,4)],tspan0);
-testKinCnstInvalidTime_userfun(true,false,t_invalid,q,RigidBodyConstraint.WorldPositionConstraintType,robot,l_foot,l_foot_pts,[-100*ones(2,4);zeros(1,4)],[100*ones(2,4);zeros(1,4)],tspan0);
+testKinCnst_userfun(true,false,t_valid,q,q_aff,RigidBodyConstraint.WorldPositionConstraintType,robot,robot_aff,l_foot,l_foot_pts,[-100*ones(2,nLPts);zeros(1,nLPts)],[100*ones(2,nLPts);zeros(1,nLPts)],tspan0);
+testKinCnstInvalidTime_userfun(true,false,t_invalid,q,RigidBodyConstraint.WorldPositionConstraintType,robot,l_foot,l_foot_pts,[-100*ones(2,nLPts);zeros(1,nLPts)],[100*ones(2,nLPts);zeros(1,nLPts)],tspan0);
 
 display('Check world position constraint with nan');
-testKinCnst_userfun(true,false,t_valid,q,q_aff,RigidBodyConstraint.WorldPositionConstraintType,robot,robot_aff,l_foot,l_foot_pts,[nan(2,4);zeros(1,4)],[nan(2,4);zeros(1,4)],tspan0);
-testKinCnstInvalidTime_userfun(true,false,t_invalid,q,RigidBodyConstraint.WorldPositionConstraintType,robot,l_foot,l_foot_pts,[nan(2,4);zeros(1,4)],[nan(2,4);zeros(1,4)],tspan0);
+testKinCnst_userfun(true,false,t_valid,q,q_aff,RigidBodyConstraint.WorldPositionConstraintType,robot,robot_aff,l_foot,l_foot_pts,[nan(2,nLPts);zeros(1,nLPts)],[nan(2,nLPts);zeros(1,nLPts)],tspan0);
+testKinCnstInvalidTime_userfun(true,false,t_invalid,q,RigidBodyConstraint.WorldPositionConstraintType,robot,l_foot,l_foot_pts,[nan(2,nLPts);zeros(1,nLPts)],[nan(2,nLPts);zeros(1,nLPts)],tspan0);
 
 display('Check world quaternion constraint')
 testKinCnst_userfun(true,false,t_valid,q,q_aff,RigidBodyConstraint.WorldQuatConstraintType,robot,robot_aff,r_foot,[1;0;0;0],0.01,tspan0);
@@ -217,8 +217,8 @@ display('Check world position in frame constraint');
 rpy = 2*pi*rand(3,1) - pi;
 xyz = [0.2;0.2;0.2].*rand(3,1) + [0.5;0.0;0.5];
 T = [rpy2rotmat(rpy),xyz;zeros(1,3),1];
-testKinCnst_userfun(true,false,t_valid,q,q_aff,RigidBodyConstraint.WorldPositionInFrameConstraintType,robot,robot_aff,l_foot,l_foot_pts,T,[-100*ones(2,4);zeros(1,4)],[100*ones(2,4);zeros(1,4)],tspan0);
-testKinCnstInvalidTime_userfun(true,false,t_invalid,q,RigidBodyConstraint.WorldPositionInFrameConstraintType,robot,l_foot,l_foot_pts,T,[-100*ones(2,4);zeros(1,4)],[100*ones(2,4);zeros(1,4)],tspan0);
+testKinCnst_userfun(true,false,t_valid,q,q_aff,RigidBodyConstraint.WorldPositionInFrameConstraintType,robot,robot_aff,l_foot,l_foot_pts,T,[-100*ones(2,nLPts);zeros(1,nLPts)],[100*ones(2,nLPts);zeros(1,nLPts)],tspan0);
+testKinCnstInvalidTime_userfun(true,false,t_invalid,q,RigidBodyConstraint.WorldPositionInFrameConstraintType,robot,l_foot,l_foot_pts,T,[-100*ones(2,nLPts);zeros(1,nLPts)],[100*ones(2,nLPts);zeros(1,nLPts)],tspan0);
 
 display('Check point to line segment distance constraint');
 testKinCnst_userfun(true,false,t_valid,q,q_aff,RigidBodyConstraint.Point2LineSegDistConstraintType,robot,robot_aff,l_hand,[0;0;0],r_foot,r_foot_pts(:,1:2),0.1,1,tspan0);
@@ -246,7 +246,7 @@ testKinCnst_userfun(true,false,t_valid,q,q_aff,RigidBodyConstraint.RelativeQuatC
 testKinCnstInvalidTime_userfun(true,false,t_invalid,q,RigidBodyConstraint.RelativeQuatConstraintType,robot,...
   r_hand,l_hand,rpy2quat(randn(3,1)),5/180*pi,tspan0);
 
-display('Check gravity compenstaion torque constraint');
+display('Check gravity compensation torque constraint');
 testKinCnst_userfun(true,false,t_valid,q,q_aff,RigidBodyConstraint.GravityCompensationTorqueConstraintType,robot,robot_aff,robot.findPositionIndices('elx'),[-50;-70],[60;90],tspan0);
 testKinCnstInvalidTime_userfun(true,false,t_invalid,q,RigidBodyConstraint.GravityCompensationTorqueConstraintType,robot,robot.findPositionIndices('elx'),[-50;-70],[60;90],tspan0);
 end

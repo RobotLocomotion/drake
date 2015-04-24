@@ -198,7 +198,7 @@ bool callFastQP(MatrixBase<DerivedM> const & M, MatrixBase<Derivedw> const & w, 
 //[z, Mqdn, wqdn] = setupLCPmex(mex_model_ptr, q, qd, u, phiC, n, D, h, z_inactive_guess_tol)
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) { 
   
-  if (nlhs != 3 || nrhs != 13) {
+  if (nlhs != 3 || nrhs != 14) {
     mexErrMsgIdAndTxt("Drake:setupLCPmex:InvalidUsage","Usage: [z, Mqdn, wqdn, zqp] = setupLCPmex(mex_model_ptr, q, qd, u, phiC, n, D, h, z_inactive_guess_tol, z_cached, H, C, B)");
   }
   static unique_ptr<MexWrapper> lcp_mex = unique_ptr<MexWrapper>(new MexWrapper(PATHLCP_MEXFILE));
@@ -220,6 +220,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
   const mxArray* H_array = prhs[10];
   const mxArray* C_array = prhs[11];
   const mxArray* B_array = prhs[12];
+  const mxArray* enable_fastqp_array = prhs[13];
 
   const size_t num_z_cached = mxGetNumberOfElements(z_cached_array);
   const size_t num_contact_pairs = mxGetNumberOfElements(phiC_array);
@@ -235,6 +236,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
   const Map<MatrixXd> H(mxGetPrSafe(H_array), nv, nv);
   const Map<VectorXd> C(mxGetPrSafe(C_array), nv);
   const Map<MatrixXd> B(mxGetPrSafe(B_array), mxGetM(B_array), mxGetN(B_array));
+  const bool enable_fastqp = mxIsLogicalScalarTrue(enable_fastqp_array);
 
   VectorXd phiL, phiP, phiL_possible, phiC_possible, phiL_check, phiC_check;
   MatrixXd JP, JL, JL_possible, n_possible, JL_check, n_check;
@@ -339,20 +341,20 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
          D_possible * wqdn,
          VectorXd::Zero(nC);
 
-    if (num_z_cached != lcp_size) {
-      z_inactive.clear();
-      for (int i = 0; i < lcp_size; i++) {
-        z_inactive.push_back(true);
-      }
-    } else {
-      getThresholdInclusion((lb - z_cached).eval(), -SMALL, z_inactive);
-    }
-
     //try fastQP first
     bool qp_failed = true;
-    qp_failed = !callFastQP(M, w, lb, z_inactive, nL, nP, nC, z);
-
-
+    if (enable_fastqp) {
+      if (num_z_cached != lcp_size) {
+        z_inactive.clear();
+        for (int i = 0; i < lcp_size; i++) {
+          z_inactive.push_back(true);
+        }
+      } else {
+        getThresholdInclusion((lb - z_cached).eval(), -SMALL, z_inactive);
+      }
+      qp_failed = !callFastQP(M, w, lb, z_inactive, nL, nP, nC, z);
+    }
+    
     //fall back to pathlcp
     if(qp_failed) {
       int nnz;

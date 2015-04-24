@@ -40,9 +40,6 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 
 //  model->robot_name = get_strings(mxGetProperty(pRBM,0,"name"));
 
-  const mxArray* featherstone = mxGetProperty(pRBM,0,"featherstone");
-  if (!featherstone) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs", "the featherstone array is invalid");
-
   const mxArray* pBodies = mxGetProperty(pRBM,0,"body");
   if (!pBodies) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","the body array is invalid");
   int num_bodies = static_cast<int>(mxGetNumberOfElements(pBodies));
@@ -51,63 +48,11 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   if (!pFrames) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","the frame array is invalid");
   int num_frames = static_cast<int>(mxGetNumberOfElements(pFrames));
 
-  // set up the model
-  pm = mxGetField(featherstone,0,"NB");
-  if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.NB.  Are you passing in the correct structure?");
-  model = new RigidBodyManipulator((int) mxGetScalar(pm), (int) mxGetScalar(pm), num_bodies, num_frames);
+  pm = mxGetProperty(pRBM, 0, "num_positions");
+  if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","model should have a num_positions field");
+  int num_positions = static_cast<int>(*mxGetPrSafe(pm));
 
-  pm = mxGetField(featherstone,0,"parent");
-  if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.parent.");
-  double* parent = mxGetPrSafe(pm);
-
-  pm = mxGetField(featherstone,0,"pitch");
-  if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.pitch.");
-  double* pitch = mxGetPrSafe(pm);
-
-  pm = mxGetField(featherstone,0,"position_num");
-  if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.position_num.");
-  double* dofnum = mxGetPrSafe(pm);
-//  throw runtime_error("here");
-
-  pm = mxGetField(featherstone,0,"damping");
-  if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.damping.");
-  memcpy(model->damping.data(),mxGetPrSafe(pm),sizeof(double)*model->NB);
-
-  pm = mxGetField(featherstone,0,"coulomb_friction");
-  if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.coulomb_friction.");
-  memcpy(model->coulomb_friction.data(),mxGetPrSafe(pm),sizeof(double)*model->NB);
-
-  pm = mxGetField(featherstone,0,"static_friction");
-  if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.static_friction.");
-  memcpy(model->static_friction.data(),mxGetPrSafe(pm),sizeof(double)*model->NB);
-
-  pm = mxGetField(featherstone,0,"coulomb_window");
-  if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.coulomb_window.");
-  memcpy(model->coulomb_window.data(),mxGetPrSafe(pm),sizeof(double)*model->NB);
-
-  mxArray* pXtree = mxGetField(featherstone,0,"Xtree");
-  if (!pXtree) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.Xtree.");
-
-  mxArray* pI = mxGetField(featherstone,0,"I");
-  if (!pI) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.I.");
-
-  for (int i=0; i<model->NB; i++) {
-    model->parent[i] = ((int) parent[i]) - 1;  // since it will be used as a C index
-    model->pitch[i] = (int) pitch[i];
-    model->dofnum[i] = (int) dofnum[i] - 1; // zero-indexed
-
-    mxArray* pXtreei = mxGetCell(pXtree,i);
-    if (!pXtreei) mexErrMsgIdAndTxt("Drake:HandCpmex:BadInputs","can't access model.featherstone.Xtree{%d}",i);
-
-    // todo: check that the size is 6x6
-    memcpy(model->Xtree[i].data(),mxGetPrSafe(pXtreei),sizeof(double)*6*6);
-
-    mxArray* pIi = mxGetCell(pI,i);
-    if (!pIi) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't access model.featherstone.I{%d}",i);
-
-    // todo: check that the size is 6x6
-    memcpy(model->I[i].data(),mxGetPrSafe(pIi),sizeof(double)*6*6);
-  }
+  model = new RigidBodyManipulator(num_positions, num_bodies, num_frames);
 
   for (int i=0; i<model->num_bodies; i++) {
     //DEBUG
@@ -175,11 +120,16 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 
 //        mexPrintf((model->bodies[i]->getJoint().getName() + ": " + std::to_string(model->bodies[i]->getJoint().getNumVelocities()) + "\n").c_str());
 
-        FixedAxisOneDoFJoint* joint_w_limits = dynamic_cast<FixedAxisOneDoFJoint*>(joint.get());
-        if (joint_w_limits != nullptr) {
+        FixedAxisOneDoFJoint* fixed_axis_one_dof_joint = dynamic_cast<FixedAxisOneDoFJoint*>(joint.get());
+        if (fixed_axis_one_dof_joint != nullptr) {
           double joint_limit_min = mxGetScalar(mxGetProperty(pBodies,i,"joint_limit_min"));
           double joint_limit_max = mxGetScalar(mxGetProperty(pBodies,i,"joint_limit_max"));
-          joint_w_limits->setJointLimits(joint_limit_min,joint_limit_max);
+          fixed_axis_one_dof_joint->setJointLimits(joint_limit_min,joint_limit_max);
+
+          double damping = mxGetScalar(mxGetProperty(pBodies, i, "damping"));
+          double coulomb_friction = mxGetScalar(mxGetProperty(pBodies, i, "coulomb_friction"));
+          double coulomb_window = mxGetScalar(mxGetProperty(pBodies, i, "coulomb_window"));
+          fixed_axis_one_dof_joint->setDynamics(damping, coulomb_friction, coulomb_window);
         }
 
         model->bodies[i]->setJoint(move(joint));

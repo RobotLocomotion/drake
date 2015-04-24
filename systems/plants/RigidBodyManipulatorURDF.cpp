@@ -567,7 +567,6 @@ bool parseJoint(RigidBodyManipulator* model, TiXmlElement* node)
     fjoint = new RevoluteJoint(name, Ttree, axis);
     joint = fjoint;
   } else if (type.compare("fixed") == 0) {
-    // FIXME: implement a fixed joint class
     joint = new FixedJoint(name, Ttree);
   } else if (type.compare("prismatic") == 0) {
     fjoint = new PrismaticJoint(name, Ttree, axis);
@@ -605,11 +604,20 @@ bool parseJoint(RigidBodyManipulator* model, TiXmlElement* node)
 }
 
 bool parseTransmission(RigidBodyManipulator* model, TiXmlElement* node)
-{
-  const char* attr = node->Attribute("type");
+{  
+  const char* attr = nullptr;
+  TiXmlElement* type_node = node->FirstChildElement("type");
+  if ( type_node ) {
+    attr = type_node->GetText();
+  }
+
   if (!attr) {
-    cerr << "ERROR: transmission element is missing the type attribute" << endl;
-    return false;
+    attr = node->Attribute("type"); // old URDF format, kept for convenience
+    
+    if (!attr) {    
+      cerr << "ERROR: transmission element is missing the type child" << endl;
+      return false;
+    }
   }
   string type(attr);
   if (type.find("SimpleTransmission")==string::npos) {

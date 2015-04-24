@@ -20,7 +20,7 @@ classdef DynamicalSystem
     % for a full description
     ts = getSampleTime(obj);
 
-    % Returns a handle (the string) of a simulink model which implements the system
+    % Returns a SimulinkModelHandle to a simulink model which implements the system
     mdl = getModel(obj);
 
     % Returns a (possibly random) state vector which is a feasible initial
@@ -57,7 +57,7 @@ classdef DynamicalSystem
     function sys = DynamicalSystem()
       sys.warning_manager = WarningManager();
     end
-    
+        
     function sys = inInputFrame(sys,frame)
       % Ensures that sys has the specified input frame, by
       % searching for and cascading a coordinate transformation to
@@ -99,14 +99,10 @@ classdef DynamicalSystem
       mdl = ['Cascade_',datestr(now,'MMSSFFF')];  % use the class name + uid as the model name
       new_system(mdl,'Model');
       set_param(mdl,'SolverPrmCheckMsg','none');  % disables warning for automatic selection of default timestep
+      mdl = SimulinkModelHandle(mdl);
       
-      load_system('simulink3');
-      add_block('simulink3/Subsystems/Subsystem',[mdl,'/system1']);
-      Simulink.SubSystem.deleteContents([mdl,'/system1']);
-      Simulink.BlockDiagram.copyContentsToSubSystem(sys1.getModel(),[mdl,'/system1']);
-      add_block('simulink3/Subsystems/Subsystem',[mdl,'/system2']);
-      Simulink.SubSystem.deleteContents([mdl,'/system2']);
-      Simulink.BlockDiagram.copyContentsToSubSystem(sys2.getModel(),[mdl,'/system2']);
+      mdl.addSubsystem('system1',sys1.getModel());
+      mdl.addSubsystem('system2',sys2.getModel());
       add_line(mdl,'system1/1','system2/1');
 
       if (getNumInputs(sys1)>0)
@@ -145,18 +141,15 @@ classdef DynamicalSystem
       mdl = ['Feedback_',datestr(now,'MMSSFFF')];  % use the class name + uid as the model name
       new_system(mdl,'Model');
       set_param(mdl,'SolverPrmCheckMsg','none');  % disables warning for automatic selection of default timestep
+      mdl = SimulinkModelHandle(mdl);
       
       load_system('simulink3');
       add_block('simulink3/Sources/In1',[mdl,'/in']);
       add_block('simulink3/Math/Sum',[mdl,'/sum']);
       add_line(mdl,'in/1','sum/1');
 
-      add_block('simulink3/Subsystems/Subsystem',[mdl,'/system1']);
-      Simulink.SubSystem.deleteContents([mdl,'/system1']);
-      Simulink.BlockDiagram.copyContentsToSubSystem(sys1.getModel(),[mdl,'/system1']);
-      add_block('simulink3/Subsystems/Subsystem',[mdl,'/system2']);
-      Simulink.SubSystem.deleteContents([mdl,'/system2']);
-      Simulink.BlockDiagram.copyContentsToSubSystem(sys2.getModel(),[mdl,'/system2']);
+      mdl.addSubsystem('system1',sys1.getModel());
+      mdl.addSubsystem('system2',sys2.getModel());
 
       add_line(mdl,'sum/1','system1/1');
       add_line(mdl,'system1/1','system2/1');
@@ -188,15 +181,12 @@ classdef DynamicalSystem
       mdl = ['Parallel_',datestr(now,'MMSSFFF')];  % use the class name + uid as the model name
       new_system(mdl,'Model');
       set_param(mdl,'SolverPrmCheckMsg','none');  % disables warning for automatic selection of default timestep
+      mdl = SimulinkModelHandle(mdl);
       
       load_system('simulink3');
       
-      add_block('simulink3/Subsystems/Subsystem',[mdl,'/system1']);
-      Simulink.SubSystem.deleteContents([mdl,'/system1']);
-      Simulink.BlockDiagram.copyContentsToSubSystem(sys1.getModel(),[mdl,'/system1']);
-      add_block('simulink3/Subsystems/Subsystem',[mdl,'/system2']);
-      Simulink.SubSystem.deleteContents([mdl,'/system2']);
-      Simulink.BlockDiagram.copyContentsToSubSystem(sys2.getModel(),[mdl,'/system2']);
+      mdl.addSubsystem('system1',sys1.getModel());
+      mdl.addSubsystem('system2',sys2.getModel());
       
       if (getNumInputs(sys1)>0 || getNumInputs(sys2)>0)
         inframe = MultiCoordinateFrame.constructFrame({sys1.getInputFrame,sys2.getInputFrame});
@@ -266,11 +256,10 @@ classdef DynamicalSystem
       mdl = ['SampledData_',datestr(now,'MMSSFFF')];  % use the class name + uid as the model name
       new_system(mdl,'Model');
       set_param(mdl,'SolverPrmCheckMsg','none');  % disables warning for automatic selection of default timestep
+      mdl = SimulinkModelHandle(mdl);
       
       load_system('simulink3');
-      add_block('simulink3/Subsystems/Subsystem',[mdl,'/system']);
-      Simulink.SubSystem.deleteContents([mdl,'/system']);
-      Simulink.BlockDiagram.copyContentsToSubSystem(sys.getModel(),[mdl,'/system']);
+      mdl.addSubsystem('system',sys.getModel());
 
       if (getNumInputs(sys)>0)
         add_block('simulink3/Sources/In1',[mdl,'/in']);
@@ -523,7 +512,7 @@ classdef DynamicalSystem
       if (~strcmp(get_param(mdl,'SimulationStatus'),'stopped'))
         feval(mdl,[],[],[],'term');
       end
-      [A,B,C,D] = linmod(mdl,x0,u0,[1e-5,t0]);
+      [A,B,C,D] = linmod(mdl.name,x0,u0,[1e-5,t0]);
       
       if (nargout>4) 
         xdot0 = dynamics(obj,t0,x0,u0);
@@ -550,7 +539,7 @@ classdef DynamicalSystem
       if (~strcmp(get_param(mdl,'SimulationStatus'),'stopped'))
         feval(mdl,[],[],[],'term');
       end
-      [A,B,C,D] = dlinmod(mdl,ts,x0,u0,[1e-5,t0]);
+      [A,B,C,D] = dlinmod(mdl.name,ts,x0,u0,[1e-5,t0]);
       if (nargout>4) 
         xn0 = update(obj,t0,x0,u0);
         if (length(xn0)~=size(A,1)) 
@@ -663,7 +652,7 @@ classdef DynamicalSystem
       if (nargin<3) mdl = getModel(obj); end
       
       if (isempty(obj.structured_x))
-        obj.structured_x = Simulink.BlockDiagram.getInitialState(mdl);
+        obj.structured_x = Simulink.BlockDiagram.getInitialState(mdl.name);
       end
       xs = obj.structured_x;
       if (length(xs.signals)>1)

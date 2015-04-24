@@ -23,7 +23,6 @@ classdef RigidBody < RigidBodyElement
     floating=0; % 0 = not floating base, 1 = rpy floating base, 2 = quaternion floating base
     joint_axis=[1;0;0]; 
     Xtree=eye(6);   % velocity space coordinate transform *from parent to this node*
-    X_joint_to_body=eye(6);  % velocity space coordinate transfrom from joint frame (where joint_axis = z-axis) to body frame 
     Ttree=eye(4);   % position space coordinate transform *from this node to parent*
     T_body_to_joint=eye(4);
     wrljoint='';  % tranformation to joint coordinates in wrl syntax

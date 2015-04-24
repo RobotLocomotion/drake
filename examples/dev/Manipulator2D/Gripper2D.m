@@ -53,7 +53,7 @@ classdef Gripper2D < PlanarRigidBodyManipulator
       [sphere_coords, dPts_sphere, ddPts_sphere] = obj.forwardKin(kinsol,4,[0;0]);
      
       
-      nBodies = obj.model.featherstone.NB + 1;
+      nBodies = length(obj.body);
       for i=1:nBodies;
         contact_pts = obj.model.body(i).contact_pts;
         nC = size(contact_pts,2);
