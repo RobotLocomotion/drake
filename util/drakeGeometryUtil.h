@@ -270,6 +270,5 @@ DLLEXPORT GradientVar<typename Derived::Scalar,3,1> quat2expmap(const Eigen::Mat
  
 DLLEXPORT GradientVar<double,3,1> flipExpmap(const Eigen::Ref<const Eigen::Vector3d> &expmap, int gradient_order);
 
-template <typename Derived>
-DLLEXPORT GradientVar<typename Derived::Scalar,3,1> unwrapExpmap(const Eigen::Ref<const Eigen::MatrixBase<Derived>> &expmap1, const Eigen::Ref<const Eigen::MatrixBase<Derived>> &expmap2, int gradient_order);
+DLLEXPORT GradientVar<double,3,1> unwrapExpmap(const Eigen::Ref<const Eigen::Vector3d> &expmap1, const Eigen::Ref<const Eigen::Vector3d> &expmap2, int gradient_order);
 #endif
