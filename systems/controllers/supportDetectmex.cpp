@@ -96,11 +96,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     // ...or a struct array, in which case we need mxGetField
     if (!mxContactPts) mxContactPts = mxGetField(prhs[desired_support_argid],0,"contact_pts");
     if (!mxContactPts) mexErrMsgTxt("couldn't get contact points");
-    mxArray* mxContactSurfaces;
-    mxContactSurfaces = mxGetProperty(prhs[desired_support_argid],0,"contact_surfaces");
-    if (!mxContactSurfaces) mxContactSurfaces = mxGetField(prhs[desired_support_argid],0,"contact_surfaces");
-    if (!mxContactSurfaces) mexErrMsgTxt("couldn't get contact surfaces");
-    double* pContactSurfaces = mxGetPr(mxContactSurfaces);
     
     for (i=0; i<mxGetNumberOfElements(mxBodies);i++) {
       mxArray* mxBodyContactPts = mxGetCell(mxContactPts,i);
@@ -116,7 +111,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         contact_pt.head(3) = all_body_contact_pts.col(j);
         se.contact_pts.push_back(contact_pt);
       }
-      se.contact_surface = (int) pContactSurfaces[i]-1;
       
       if (contact_threshold == -1) { // ignore terrain
         if (contact_sensor(i)!=0) { // no sensor info, or sensor says yes contact

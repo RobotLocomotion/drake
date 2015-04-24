@@ -12,6 +12,4 @@ struct lcmt_support_data
 	boolean support_logic_map[4];
 
 	double mu;
-
-	int32_t contact_surfaces;
 }

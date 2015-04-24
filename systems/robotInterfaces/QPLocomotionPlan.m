@@ -201,14 +201,12 @@ classdef QPLocomotionPlan < QPControllerPlan
       qp_input.support_data = struct('body_id', cell(1, length(supp.bodies)),...
                                      'contact_pts', cell(1, length(supp.bodies)),...
                                      'support_logic_map', cell(1, length(supp.bodies)),...
-                                     'mu', cell(1, length(supp.bodies)),...
-                                     'contact_surfaces', cell(1, length(supp.bodies)));
+                                     'mu', cell(1, length(supp.bodies)));
       for j = 1:length(supp.bodies)
         qp_input.support_data(j).body_id = supp.bodies(j);
         qp_input.support_data(j).contact_pts = supp.contact_pts{j};
         qp_input.support_data(j).support_logic_map = obj.planned_support_command;
         qp_input.support_data(j).mu = obj.mu;
-        qp_input.support_data(j).contact_surfaces = 0;
       end
 
       qp_input.param_set_name = obj.gain_set;

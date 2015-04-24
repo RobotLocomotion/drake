@@ -329,7 +329,6 @@ std::vector<SupportStateElement> parseSupportData(const mxArray* supp_data) {
       contact_pt.head(3) = contact_pts.col(j);
       se.contact_pts.push_back(contact_pt);
     }
-    se.contact_surface = ((int) mxGetScalar(mxGetField(supp_data, i, "contact_surfaces"))) - 1;
     supports.push_back(se);
   }
   return supports;

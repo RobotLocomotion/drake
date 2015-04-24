@@ -8,12 +8,10 @@ classdef RigidBodySupportState
     contact_groups; % cell array of cell arrays of contact group strings, 1 for each body
     num_contact_pts;  % convenience array containing the desired number of
                       %             contact points for each support body
-    contact_surfaces; % int IDs either: 0 (terrain), -1 (any body in bullet collision world)
-                      %             or (1:num_bodies) collision object ID
   end
 
   methods
-    function obj = RigidBodySupportState(r,bodies,contact_groups,contact_surfaces)
+    function obj = RigidBodySupportState(r,bodies,contact_groups)
       typecheck(r,'Biped');
       typecheck(bodies,'double');
       obj.bodies = bodies(bodies~=0);
@@ -40,18 +38,6 @@ classdef RigidBodySupportState
           obj.num_contact_pts(i)=size(obj.contact_pts{i},2);
         end
       end
-
-      if nargin>3
-        obj = setContactSurfaces(obj,contact_surfaces);
-      else
-        obj.contact_surfaces = zeros(length(obj.bodies),1);
-      end
-    end
-
-    function obj = setContactSurfaces(obj,contact_surfaces)
-      typecheck(contact_surfaces,'double');
-      sizecheck(contact_surfaces,length(obj.bodies));
-      obj.contact_surfaces = contact_surfaces;
     end
 
     function obj = setContactPts(obj, ind, contact_pts, contact_groups)
@@ -62,4 +48,3 @@ classdef RigidBodySupportState
   end
 
 end
-

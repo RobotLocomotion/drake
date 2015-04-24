@@ -253,9 +253,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     double* pBodies = mxGetPrSafe(mxBodies);
     mxArray* mxContactPts = myGetField(prhs[desired_support_argid],"contact_pts");
     if (!mxContactPts) mexErrMsgTxt("couldn't get contact points");
-    mxArray* mxContactSurfaces = myGetField(prhs[desired_support_argid],"contact_surfaces");
-    if (!mxContactSurfaces) mexErrMsgTxt("couldn't get contact surfaces");
-    double* pContactSurfaces = mxGetPrSafe(mxContactSurfaces);
     
     for (i=0; i<mxGetNumberOfElements(mxBodies);i++) {
       mxArray* mxBodyContactPts = mxGetCell(mxContactPts,i);
@@ -273,7 +270,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         contact_pt.head<3>() = all_body_contact_pts.col(j);
         se.contact_pts.push_back(contact_pt);
       }
-      se.contact_surface = (int) pContactSurfaces[i]-1;
       
       active_supports.push_back(se);
       num_active_contact_pts += nc;

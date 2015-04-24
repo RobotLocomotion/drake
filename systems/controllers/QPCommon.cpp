@@ -84,7 +84,6 @@ std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray 
         msg->support_data[i].support_logic_map[j] = (double_logic_map[j][0] != 0);
       }
       msg->support_data[i].mu = mxGetScalar(myGetField(support_data, i, "mu"));
-      msg->support_data[i].contact_surfaces = (int32_t) mxGetScalar(myGetField(support_data, i, "contact_surfaces"));
     }
   }
 
@@ -311,7 +310,6 @@ std::vector<SupportStateElement> loadAvailableSupports(std::shared_ptr<drake::lc
   available_supports.resize(qp_input->num_support_data);
   for (int i=0; i < qp_input->num_support_data; i++) {
     available_supports[i].body_idx = qp_input->support_data[i].body_id - 1;
-    available_supports[i].contact_surface = qp_input->support_data[i].contact_surfaces;
     for (int j=0; j < 4; j++) {
       available_supports[i].support_logic_map[j] = qp_input->support_data[i].support_logic_map[j];
     }
@@ -962,4 +960,3 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
 
   return info;
 }
-
