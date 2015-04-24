@@ -24,7 +24,7 @@ private:
 public:
   BodyMotionData(int body_or_frame_id, const std::vector<double>& segment_times);
 
-  int findSegmentIndex(double t);
+  int findSegmentIndex(double t) const;
 
   int getBodyOrFrameId() const;
 

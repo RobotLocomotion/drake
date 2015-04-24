@@ -89,6 +89,8 @@ struct BodyIdsCache {
 };
    
 struct RobotPropertyCache {
+  typedef std::map<std::string, Eigen::Matrix3Xd> ContactGroupNameToContactPointsMap;
+  std::vector<ContactGroupNameToContactPointsMap> contact_groups; // one for each support
   PositionIndicesCache position_indices;
   BodyIdsCache body_ids;
   VectorXi actuated_indices;

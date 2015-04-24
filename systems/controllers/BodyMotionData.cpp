@@ -1,5 +1,10 @@
 #include "BodyMotionData.h"
 
+int BodyMotionData::findSegmentIndex(double t) const
+{
+  return trajectory.getSegmentIndex(t);
+}
+
 int BodyMotionData::getBodyOrFrameId() const
 {
   return body_or_frame_id;
