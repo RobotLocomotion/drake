@@ -97,6 +97,11 @@ Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> PiecewisePolynomial<Coeffi
 }
 
 template <typename CoefficientType>
+const typename PiecewisePolynomial<CoefficientType>::PolynomialMatrix& PiecewisePolynomial<CoefficientType>::getPolynomialMatrix(int segment_index) const {
+  return polynomials[segment_index];
+}
+
+template <typename CoefficientType>
 const Polynomial<CoefficientType>& PiecewisePolynomial<CoefficientType>::getPolynomial(int segment_index, Eigen::DenseIndex row, Eigen::DenseIndex col) const {
   segmentNumberRangeCheck(segment_index);
   return polynomials[segment_index](row, col);
