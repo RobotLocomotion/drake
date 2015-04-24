@@ -115,6 +115,17 @@ void eigenToCArrayOfArrays(const Eigen::MatrixBase<Derived>& source, double (&de
 }
 
 // note for if/when we split off all Matlab related stuff into a different file: this function is not Matlab related
+// can only be used when the dimension information of the array is known at compile time
+template <size_t Size, typename Derived>
+void eigenVectorToCArray(const Eigen::MatrixBase<Derived>& source, double (&destination)[Size]) {
+  if (Size != source.size())
+    throw std::runtime_error("Size of source doesn't match destination");
+  for (size_t i = 0; i < Size; ++i) {
+    destination[i] = source(i);
+  }
+}
+
+// note for if/when we split off all Matlab related stuff into a different file: this function is not Matlab related
 template <typename Derived>
 void eigenVectorToStdVector(const Eigen::MatrixBase<Derived>& source, std::vector<typename Derived::Scalar>& destination) {
   assert(source.rows() == 1 || source.cols() == 1);
