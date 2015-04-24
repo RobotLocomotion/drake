@@ -29,7 +29,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
   for (mwSize dof = 0; dof < ndof; dof++) {
     std::vector<double> xi(num_knots);
     for (int knot = 0; knot < num_knots; knot++)
-      xi[knot] = xs(dof, knot);
+      xi[knot] = xs(dof, knot+1);
 
     PiecewisePolynomial spline = nWaypointCubicSpline(segment_times, xs(dof, 0), xd0[dof], xs(dof, num_segments), xdf[dof], xi);
 
