@@ -56,6 +56,9 @@ if (MATLAB_FOUND)
 
   add_mex(flipExpmapmex flipExpmapmex.cpp)
   target_link_libraries(flipExpmapmex drakeUtil drakeGeometryUtil drakeGradientUtil)
+
+  add_mex(unwrapExpmapmex unwrapExpmapmex.cpp)
+  target_link_libraries(unwrapExpmapmex drakeUtil drakeGeometryUtil drakeGradientUtil)
 endif()
 
 add_subdirectory(test)

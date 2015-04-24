@@ -1267,11 +1267,25 @@ DLLEXPORT GradientVar<double,3,1> flipExpmap(const Ref<const Vector3d> &expmap, 
   return ret;
 }
 
-template <typename Derived>
-DLLEXPORT GradientVar<typename Derived::Scalar, 3,1> unwrapExpmap(const Ref<const MatrixBase<Derived>> & expmap1, const Ref<const MatrixBase<Derived>> &expmap2, int gradient_order)
+DLLEXPORT GradientVar<double, 3,1> unwrapExpmap(const Ref<const Vector3d> & expmap1, const Ref<const Vector3d> &expmap2, int gradient_order)
 {
-  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(MatrixBase<Derived>,3);
-  GradientVar<typename Derived::Scalar,3,1> expmap2_flip(3,1,3,gradient_order);
+  auto expmap2_flip = flipExpmap(expmap2,gradient_order);
+  double distance1 = (expmap1-expmap2).squaredNorm();
+  double distance2 = (expmap1-expmap2_flip.value()).squaredNorm();
+  if(distance1>distance2)
+  {
+    return expmap2_flip;
+  }
+  else
+  {
+    GradientVar<double,3,1> ret(3,1,3,gradient_order);
+    ret.value() = expmap2;
+    if(gradient_order>0)
+    {
+      ret.gradient().value() = Matrix3d::Identity();
+    }
+    return ret;
+  }
 }
 
 
