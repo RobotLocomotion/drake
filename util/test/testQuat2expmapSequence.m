@@ -8,6 +8,9 @@ for i = 1:N
   quat_dot(:,i) = quat_dot(:,i)-quat_dot(:,i)'*quat(:,i)*quat(:,i);
 end
 [w,wdot] = quat2expmapSequence(quat,quat_dot);
+[w_mex,wdot_mex] = quat2expmapSequencemex(quat,quat_dot);
+valuecheck(w,w_mex);
+valuecheck(wdot,wdot_mex);
 w_diff = diff(w,1,2);
 w_distance = sum(w_diff.^2,1);
 w_distance_flip = zeros(1,N-1);

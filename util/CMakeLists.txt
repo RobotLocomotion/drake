@@ -59,6 +59,9 @@ if (MATLAB_FOUND)
 
   add_mex(unwrapExpmapmex unwrapExpmapmex.cpp)
   target_link_libraries(unwrapExpmapmex drakeUtil drakeGeometryUtil drakeGradientUtil)
+
+  add_mex(quat2expmapSequencemex quat2expmapSequencemex.cpp)
+  target_link_libraries(quat2expmapSequencemex drakeUtil drakeGeometryUtil drakeGradientUtil)
 endif()
 
 add_subdirectory(test)
