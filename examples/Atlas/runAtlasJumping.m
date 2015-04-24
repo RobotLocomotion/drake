@@ -84,7 +84,7 @@ nT = 17;
 
 flight = RigidBodySupportState(r,[]);
 foot_support = RigidBodySupportState(r,[l_foot,r_foot]);
-toe_support = RigidBodySupportState(r,[l_foot,r_foot],{{'toe'},{'toe'}});
+toe_support = RigidBodySupportState(r,[l_foot,r_foot],struct('contact_groups',{{'toe'},{'toe'}}));
 
 supports = [foot_support;foot_support;foot_support;foot_support;foot_support;...
   toe_support;toe_support;...
