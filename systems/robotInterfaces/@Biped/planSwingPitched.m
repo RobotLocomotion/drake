@@ -100,10 +100,15 @@ instep_shift = [0.0;stance.walking_params.drake_instep_shift;0];
 zmp1 = shift_step_inward(biped, stance, instep_shift);
 
 hold_time = params.drake_min_hold_time;
-supp = RigidBodySupportState(biped, stance_body_index, {stance.walking_params.support_contact_groups});
+
+support_options.use_support_surface = 1;
+v = quat2rotmat(stance.pos(4:7)) * [0;0;1];
+b = -v' * stance.pos(1:3);
+support_options.support_surfaces = {[v;b]};
+support_options.contact_groups =  {stance.walking_params.support_contact_groups};
 zmp_knots = struct('t', initial_hold_time + (hold_time / 2),...
  'zmp', zmp1, ...
- 'supp', supp);
+ 'supp', RigidBodySupportState(biped, stance_body_index, support_options));
 
 swing1_frame_pose = tform2poseQuat(T_swing1_frame_to_world);
 swing2_frame_pose = tform2poseQuat(T_swing2_frame_to_world);
@@ -170,10 +175,16 @@ end
 
 zmp_knots(end+1).t = frame_knots(end).t;
 zmp_knots(end).zmp = zmp1;
-zmp_knots(end).supp = RigidBodySupportState(biped,...
-                                            [stance_body_index, swing_body_index],...
-                                            {stance.walking_params.support_contact_groups,...
-                                             swing2.walking_params.support_contact_groups});
+
+support_options.use_support_surface = ones(2,1);
+v_stance = quat2rotmat(stance.pos(4:7)) * [0;0;1];
+b_stance = -v_stance' * stance.pos(1:3);
+v_swing = quat2rotmat(swing2.pos(4:7)) * [0;0;1];
+b_swing = -v_swing' * swing2.pos(1:3);
+support_options.support_surfaces = {[v_stance;b_stance], [v_swing;b_swing]};
+
+support_options.contact_groups = {stance.walking_params.support_contact_groups,swing2.walking_params.support_contact_groups};
+zmp_knots(end).supp = RigidBodySupportState(biped, [stance_body_index, swing_body_index], support_options);
 
 % Final knot
 frame_knots(end+1) = frame_knots(end);
@@ -229,4 +240,3 @@ function pos = shift_step_inward(biped, step, instep_shift)
   shift = R*instep_shift;
   pos = pose_center(1:2) + shift(1:2);
 end
-

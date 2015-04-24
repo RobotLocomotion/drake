@@ -8,7 +8,7 @@ classdef RigidBodySupportState
     contact_groups; % cell array of cell arrays of contact group strings, 1 for each body
     num_contact_pts;  % convenience array containing the desired number of
                       %             contact points for each support body
-    use_support_surface; % bool vector with the same length as bodies
+    use_support_surface; % logical vector with the same length as bodies
     support_surfaces; % 4-vector describing a support surface: [v; b] such that v' * [x;y;z] + b == 0
    end
 
@@ -50,7 +50,7 @@ classdef RigidBodySupportState
         sizecheck(options.use_support_surface,nbod);
         obj.use_support_surface = options.use_support_surface;
       else
-        obj.use_support_surface = false(nbod,1);
+        obj.use_support_surface = zeros(nbod,1);
       end
 
       if isfield(options,'support_surfaces')

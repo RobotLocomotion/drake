@@ -160,6 +160,7 @@ function [zmp, supp] = getZMPBetweenFeet(biped, steps)
   zmp = zeros(2,0);
   initial_supports = [];
   initial_support_groups = {};
+  initial_support_surfaces = {};
   for f = {'left', 'right'}
     foot = f{1};
     if steps.(foot).is_in_contact
@@ -172,8 +173,14 @@ function [zmp, supp] = getZMPBetweenFeet(biped, steps)
       supp_pts_in_world = T_foot_to_world * [supp_pts.pts; ones(1, size(supp_pts.pts, 2))];
       zmp(:,end+1) = mean(supp_pts_in_world(1:2,:), 2);
       initial_supports(end+1) = biped.foot_body_id.(foot);
+      v = quat2rotmat(steps.(foot).pos(4:7)) * [0;0;1];
+      b = -v' * steps.(foot).pos(1:3);
+      initial_support_surfaces{end+1} = [v;b];
     end
   end
   zmp = mean(zmp, 2);
-  supp = RigidBodySupportState(biped, initial_supports, initial_support_groups);
+  support_options.use_support_surface = ones(length(initial_supports),1);
+  support_options.support_surfaces = initial_support_surfaces;
+  support_options.contact_groups = initial_support_groups;
+  supp = RigidBodySupportState(biped, initial_supports, support_options);
 end
