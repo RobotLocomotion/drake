@@ -63,6 +63,16 @@ private:
   const std::vector<bool>& planned_support_command = support_logic_maps.at(REQUIRE_SUPPORT);
 
 public:
+
+  /*
+   * Get the input structure which can be passed to the stateless QP control loop
+   * @param t the current time
+   * @param x the current robot state
+   * @param rpc the robot property cache, which lets us quickly look up info about
+   * @param contact_force_detected num_bodies vector indicating whether contact force
+   * was detected on that body. Default: zeros(num_bodies,1)
+   * the robot which would be expensive to compute (such as terrain contact points)
+   */
   void publishQPControllerInput(
       double t_global, const Eigen::VectorXd& q, const Eigen::VectorXd& v,
       const RobotPropertyCache& robot_property_cache, const std::vector<bool>& contact_force_detected);

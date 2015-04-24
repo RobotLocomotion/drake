@@ -48,13 +48,6 @@ void QPLocomotionPlan::publishQPControllerInput(
     double t_global, const Eigen::VectorXd& q, const VectorXd& v,
     const RobotPropertyCache& robot_property_cache, const std::vector<bool>& contact_force_detected)
 {
-//  Get the input structure which can be passed to the stateless QP control loop
-//  @param t the current time
-//  @param x the current robot state
-//  @param rpc the robot property cache, which lets us quickly look up info about
-//  @param contact_force_detected num_bodies vector indicating whether contact force
-//  was detected on that body. Default: zeros(num_bodies,1)
-//  the robot which would be expensive to compute (such as terrain contact points)
 
   if (isNaN(start_time))
     start_time = t_global;
@@ -182,8 +175,6 @@ void QPLocomotionPlan::publishQPControllerInput(
       }
     }
 
-    // TODO:
-//        qp_input.body_motion_data(j) = obj.body_motions(j).slice(body_t_ind);
     const PiecewisePolynomial<> body_motion_trajectory = body_motion.getTrajectory();
     drake::lcmt_body_motion_data body_motion_data_for_support_lcm;
     body_motion_data_for_support_lcm.body_id = body_id;
@@ -196,17 +187,13 @@ void QPLocomotionPlan::publishQPControllerInput(
     const Isometry3d& transform_task_to_world = body_motion.getTransformTaskToWorld();
     Vector4d quat_task_to_world = rotmat2quat(transform_task_to_world.linear());
     Vector3d translation_task_to_world = transform_task_to_world.translation();
-
-//    memcpy()
-
-//        'quat_task_to_world',obj.quat_task_to_world,...
-//        'translation_task_to_world',obj.translation_task_to_world,...
-//        'xyz_kp_multiplier',obj.xyz_kp_multiplier,...
-//        'xyz_damping_ratio_multiplier',obj.xyz_damping_ratio_multiplier,...
-//        'expmap_kp_multiplier',obj.expmap_kp_multiplier,...
-//        'expmap_damping_ratio_multiplier',obj.expmap_damping_ratio_multiplier,...
-//        'weight_multiplier',obj.weight_multiplier);
-
+    eigenVectorToCArray(quat_task_to_world, body_motion_data_for_support_lcm.quat_task_to_world);
+    eigenVectorToCArray(translation_task_to_world, body_motion_data_for_support_lcm.translation_task_to_world);
+    eigenVectorToCArray(body_motion.getXyzProportionalGainMultiplier(), body_motion_data_for_support_lcm.xyz_kp_multiplier);
+    eigenVectorToCArray(body_motion.getXyzDampingRatioMultiplier(), body_motion_data_for_support_lcm.xyz_damping_ratio_multiplier);
+    body_motion_data_for_support_lcm.expmap_kp_multiplier = body_motion.getExponentialMapProportionalGainMultiplier();
+    body_motion_data_for_support_lcm.expmap_damping_ratio_multiplier = body_motion.getExponentialMapDampingRatioMultiplier();
+    eigenVectorToCArray(body_motion.getWeightMultiplier(), body_motion_data_for_support_lcm.weight_multiplier);
 
     qp_input.body_motion_data.push_back(body_motion_data_for_support_lcm);
 
@@ -245,6 +232,52 @@ void QPLocomotionPlan::publishQPControllerInput(
 
   // TODO: publish LCM message
 }
+
+void QPLocomotionPlan::updateSwingTrajectory(double t_plan, BodyMotionData& body_motion_data, int body_motion_segment_index, const Eigen::Vector<double>& qd) {
+  typedef Matrix<double, 7, 1> Vector7d;
+
+  auto x0_xyzquat = robot->forwardKinNew((Vector3d::Zero()).eval(), body_motion_data.getBodyOrFrameId(), 0, 2, 1);
+  auto& J = x0_xyzquat.gradient().value();
+  auto xd0_xyzquat = (J * qd).eval();
+  auto quat = xd0_xyzquat.tail<QUAT_SIZE>();
+  auto x0_expmap = quat2expmap(quat, 1);
+  Vector7d xd0_xyzexpmap;
+  xd0_xyzexpmap.head<3> = x0_xyzquat.value().head<SPACE_DIMENSION>();
+  xd0_xyzexpmap.tail<3> = x0_expmap.gradient().value() * xd0_xyzquat.value().tail<QUAT_SIZE>();
+
+  int next_landing_spline_offset = 2;
+  int next_landing_spline = body_motion_segment_index + next_landing_spline_offset;
+  PiecewisePolynomial<double> trajectory = body_motion_data.getTrajectory();
+  auto x1_xyzexp = trajectory.value(trajectory.getEndTime(next_landing_spline));
+
+  // TODO:
+//      x1_xyzexp = body_motion_data.coefs(:,body_t_ind+2, end); // TODO:why 2?
+//      [x0_expmap,dx0_expmap] = unwrapExpmap(x1_xyzexp(4:6),x0_expmap);
+//      xd0_xyzexpmap(4:6) = dx0_expmap*xd0_xyzexpmap(4:6);
+//      x0_xyzexpmap = [x0_xyzquat(1:3);x0_expmap];
+//      xd0_xyzexpmap(1:3) = zeros(3,1); // TODO:WTF?
+//      xs = [x0_xyzexpmap, body_motion_data.coefs(:, body_t_ind+(2:4), end)];
+
+
+//      % If the current pose is pitched down more than the first aerial knot point, adjust the knot point to match the current pose
+//      T_x0_to_world_in_world = poseQuat2tform([xs(1:3,1); expmap2quat(xs(4:6,1))]);
+//      T_x1_to_world_in_world = poseQuat2tform([xs(1:3,2); expmap2quat(xs(4:6,2))]);
+//      xprime_x0 = T_x0_to_world_in_world * [1;0;0;0];
+//      xprime_x1 = T_x1_to_world_in_world * [1;0;0;0];
+//      if xprime_x0(3) < xprime_x1(3)
+//        xs(4:6,2) = quat2expmap(slerp(expmap2quat(xs(4:6,1)), expmap2quat(xs(4:6,3)), 0.1));
+//      end
+//
+//      xdf = body_motion_data.coefs(:,body_t_ind+4,end-1);
+//
+//      ts = body_motion_data.ts(body_t_ind+(1:4));
+//      qpSpline_options = struct('optimize_knot_times', false);
+//      [coefs, ts] = qpSpline(ts, xs, xd0_xyzexpmap, xdf, qpSpline_options);
+//
+//      obj.body_motions(body_motion_ind).coefs(:,body_t_ind+(1:3),:) = coefs;
+//      obj.body_motions(body_motion_ind).ts(body_t_ind+(1:3)) = ts(1:3);
+}
+
 
 bool QPLocomotionPlan::isSupportingBody(int body_index, const RigidBodySupportState& support_state) {
   for (auto it = support_state.begin(); it != support_state.end(); ++it) {
