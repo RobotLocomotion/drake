@@ -366,58 +366,70 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
           J_check = zeros(0,num_q);
           JL = zeros(0,num_q^2);
         end
-
-        if (nContactPairs > 0)
+        
+        has_contacts = (nContactPairs > 0);
+        
+        if has_contacts
           if (nargout>4)
             [phiC,normal,d,xA,xB,idxA,idxB,mu,n,D,dn,dD] = obj.manip.contactConstraints(kinsol, obj.multiple_contacts);
           else
             [phiC,normal,d,xA,xB,idxA,idxB,mu,n,D] = obj.manip.contactConstraints(kinsol, obj.multiple_contacts);
           end
+          if ~isempty(phiC)
+              if isempty(possible_contact_indices)
+                possible_contact_indices = (phiC+h*n*qd) < obj.z_inactive_guess_tol;
+              end
 
-          if isempty(possible_contact_indices)
-            possible_contact_indices = (phiC+h*n*qd) < obj.z_inactive_guess_tol;
+              nC = sum(possible_contact_indices);
+              mC = length(D);
+
+              J = zeros(nL + nP + (mC+2)*nC,num_q)*q(1); % *q(1) is for taylorvar
+              lb = zeros(nL+nP+(mC+2)*nC,1);
+              ub = Big*ones(nL+nP+(mC+2)*nC,1);
+              D = vertcat(D{:});
+              % just keep the likely contacts (and store data to check the unlikely):
+              phi_check = [phi_check;phiC(~possible_contact_indices)];
+              J_check = [J_check; n(~possible_contact_indices,:)];
+              phiC = phiC(possible_contact_indices);
+              n = n(possible_contact_indices,:);
+              D = D(repmat(possible_contact_indices,mC,1),:);
+              mu = mu(possible_contact_indices,:);
+
+              if isempty(obj.LCP_cache.data.possible_contact_indices) || ...
+                  numel(obj.LCP_cache.data.possible_contact_indices)~= numel(possible_contact_indices) || ...
+                  any(obj.LCP_cache.data.possible_contact_indices~=possible_contact_indices)
+                  possible_indices_changed = true;
+              end
+              
+              obj.LCP_cache.data.possible_contact_indices=possible_contact_indices;
+
+              J(nL+nP+(1:nC),:) = n;
+              J(nL+nP+nC+(1:mC*nC),:) = D;
+
+              if nargout>4
+                dJ = zeros(nL+nP+(mC+2)*nC,num_q^2);  % was sparse, but reshape trick for the transpose below didn't work
+                dJ(nL+nP+(1:nC),:) = reshape(dn(possible_contact_indices,:),nC,[]);
+                dD = cellfun(@(A)reshape(A(possible_contact_indices,:),size(D{1},1),size(D{1},2)*size(dD{1},2)),dD,'UniformOutput',false);
+                dD = vertcat(dD{:});
+                dJ(nL+nP+nC+(1:mC*nC),:) = dD;
+              end
+
+              contact_data.normal = normal(:,possible_contact_indices);
+              for i=1:length(d)
+                contact_data.d{i} = d{i}(:,possible_contact_indices);
+              end
+              contact_data.xA = xA(:,possible_contact_indices);
+              contact_data.xB = xB(:,possible_contact_indices);
+              contact_data.idxA = idxA(possible_contact_indices);
+              contact_data.idxB = idxB(possible_contact_indices);
+          else
+              has_contacts = false;
           end
-
-          nC = sum(possible_contact_indices);
-          mC = length(D);
-
-          J = zeros(nL + nP + (mC+2)*nC,num_q)*q(1); % *q(1) is for taylorvar
-          lb = zeros(nL+nP+(mC+2)*nC,1);
-          ub = Big*ones(nL+nP+(mC+2)*nC,1);
-          D = vertcat(D{:});
-          % just keep the likely contacts (and store data to check the unlikely):
-          phi_check = [phi_check;phiC(~possible_contact_indices)];
-          J_check = [J_check; n(~possible_contact_indices,:)];
-          phiC = phiC(possible_contact_indices);
-          n = n(possible_contact_indices,:);
-          D = D(repmat(possible_contact_indices,mC,1),:);
-          mu = mu(possible_contact_indices,:);
-
-          if isempty(obj.LCP_cache.data.possible_contact_indices) || any(obj.LCP_cache.data.possible_contact_indices~=possible_contact_indices)
-              possible_indices_changed = true;
-          end
-          obj.LCP_cache.data.possible_contact_indices=possible_contact_indices;
-
-          J(nL+nP+(1:nC),:) = n;
-          J(nL+nP+nC+(1:mC*nC),:) = D;
-
-          if nargout>4
-            dJ = zeros(nL+nP+(mC+2)*nC,num_q^2);  % was sparse, but reshape trick for the transpose below didn't work
-            dJ(nL+nP+(1:nC),:) = reshape(dn(possible_contact_indices,:),nC,[]);
-            dD = cellfun(@(A)reshape(A(possible_contact_indices,:),size(D{1},1),size(D{1},2)*size(dD{1},2)),dD,'UniformOutput',false);
-            dD = vertcat(dD{:});
-            dJ(nL+nP+nC+(1:mC*nC),:) = dD;
-          end
-
-          contact_data.normal = normal(:,possible_contact_indices);
-          for i=1:length(d)
-            contact_data.d{i} = d{i}(:,possible_contact_indices);
-          end
-          contact_data.xA = xA(:,possible_contact_indices);
-          contact_data.xB = xB(:,possible_contact_indices);
-          contact_data.idxA = idxA(possible_contact_indices);
-          contact_data.idxB = idxB(possible_contact_indices);
         else
+            has_contacts = false;
+        end
+        
+        if ~has_contacts
           mC=0;
           nC=0;
           J = zeros(nL+nP,num_q);
@@ -430,6 +442,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
           phi_check = zeros(0,1);
           J_check = zeros(0,num_q);
         end
+        
         obj.LCP_cache.data.contact_data = contact_data;
 
         if (nC+nL+nP+nV==0)  % if there are no possible contacts
