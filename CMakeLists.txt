@@ -56,6 +56,12 @@ endif()
 include(cmake/mex.cmake)
 mex_setup()
 
+# frustratingly, this didn't seem to work, so instead I've added a -C argument to both the Makefile and the drake-admin/runUnitTests scripts
+#if (NOT CTEST_CONFIGURATION_TYPE)
+#   set(CTEST_CONFIGURATION_TYPE ${CMAKE_BUILD_TYPE})
+#   message("Setting CTEST Configuration Type to ${CTEST_CONFIGURATION_TYPE}")
+#endif()
+
 enable_testing()
 include(CTest)
 
