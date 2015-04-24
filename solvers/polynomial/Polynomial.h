@@ -16,10 +16,11 @@
 #define DLLEXPORT
 #endif
 
-template <typename CoefficientType = double>
+template <typename _CoefficientType = double>
 class DLLEXPORT Polynomial
 {
 public:
+  typedef _CoefficientType CoefficientType;
   typedef typename Eigen::Matrix<CoefficientType, Eigen::Dynamic, 1> CoefficientsType;
   typedef typename Eigen::NumTraits<CoefficientType>::Real RealScalar;
   typedef std::complex<RealScalar> RootType;

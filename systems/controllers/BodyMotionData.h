@@ -38,9 +38,7 @@ public:
 
   double getExponentialMapProportionalGainMultiplier() const;
 
-  const PiecewisePolynomial<double>& getTrajectory() const;
-
-  void setTrajectory(const PiecewisePolynomial<double>& trajectory);
+  PiecewisePolynomial<double>& getTrajectory();
 
   const Eigen::Isometry3d& getTransformTaskToWorld() const;
 

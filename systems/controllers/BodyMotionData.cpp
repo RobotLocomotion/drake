@@ -35,14 +35,9 @@ double BodyMotionData::getExponentialMapProportionalGainMultiplier() const
   return exponential_map_proportional_gain_multiplier;
 }
 
-const PiecewisePolynomial<double>& BodyMotionData::getTrajectory() const
+PiecewisePolynomial<double>& BodyMotionData::getTrajectory()
 {
   return trajectory;
-}
-
-void BodyMotionData::setTrajectory(const PiecewisePolynomial<double>& trajectory)
-{
-  this->trajectory = trajectory;
 }
 
 const Eigen::Isometry3d& BodyMotionData::getTransformTaskToWorld() const

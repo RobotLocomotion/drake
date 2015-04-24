@@ -2,6 +2,7 @@
 #include "drakeFloatingPointUtil.h"
 #include <stdexcept>
 #include <algorithm>
+#include "drakeGeometryUtil.h"
 
 // TODO: default start_time to nan
 // TODO: set default qp input
@@ -11,11 +12,39 @@
 // TODO: timestamp? be_silent? num variables?
 // TODO: discuss possibility of chatter in knee control
 // TODO: drakePiecewisePolynomial_EXPORTS
+// TODO: constructor:   planned_support_command = support_logic_maps[REQUIRE_SUPPORT];
+// TODO: constructor: joint_pd_override_data
 
 using namespace std;
 using namespace Eigen;
 
-void QPLocomotionPlan::createQPControllerInput(
+
+template <size_t Rows, size_t Cols, typename Derived>
+void polynomialVectorCoefficientsToCArrayOfArraysMatlabOrdering(const Eigen::MatrixBase<Derived>& source, typename Derived::Scalar::CoefficientType (&destination)[Rows][Cols]) {
+  assert(source.cols() == 1);
+  if (Rows != source.rows())
+    throw std::runtime_error("Number of rows of source doesn't match destination");
+
+  typedef typename Derived::Scalar PolynomialType;
+  typedef typename PolynomialType::CoefficientType CoefficientType;
+  typedef typename PolynomialType::CoefficientsType CoefficientsType;
+
+  for (size_t row = 0; row < Rows; ++row) {
+    const PolynomialType& polynomial = source(row);
+    const CoefficientsType& coefficients = polynomial.getCoefficients();
+    for (size_t col = 0; col < Cols; ++col) {
+      size_t coefficient_index = Cols - col - 1;
+      if (coefficient_index < coefficients.size())
+        destination[row][col] = coefficients[coefficient_index];
+      else
+        destination[row][col] = (CoefficientType) 0;
+    }
+  }
+}
+
+const std::map<SupportLogicType, std::vector<bool> > QPLocomotionPlan::support_logic_maps = QPLocomotionPlan::createSupportLogicMaps();
+
+void QPLocomotionPlan::publishQPControllerInput(
     double t_global, const Eigen::VectorXd& q, const VectorXd& v,
     const RobotPropertyCache& robot_property_cache, const std::vector<bool>& contact_force_detected)
 {
@@ -83,8 +112,6 @@ void QPLocomotionPlan::createQPControllerInput(
   while (support_index < support_times.size() - 1 && t_plan >= support_times[support_index + 1])
     support_index++;
 
-  bool pelvis_has_tracking = false;
-
   std::map<int, Side> foot_body_id_to_side;
   foot_body_id_to_side[robot_property_cache.body_ids.l_foot] = Side::LEFT;
   foot_body_id_to_side[robot_property_cache.body_ids.r_foot] = Side::RIGHT;
@@ -93,6 +120,11 @@ void QPLocomotionPlan::createQPControllerInput(
   knee_indices[Side::LEFT] = robot_property_cache.position_indices.l_leg_kny[0];
   knee_indices[Side::RIGHT] = robot_property_cache.position_indices.r_leg_kny[0];
 
+  RigidBodySupportState& support_state = supports[support_index];
+  bool is_last_support = support_index == supports.size() - 1;
+  const RigidBodySupportState& next_support = is_last_support ? supports[support_index] : supports[support_index + 1];
+
+  bool pelvis_has_tracking = false;
   for (int j = 0; j < body_motions.size(); ++j) {
     BodyMotionData& body_motion = body_motions[j];
     int body_or_frame_id = body_motion.getBodyOrFrameId();
@@ -105,16 +137,13 @@ void QPLocomotionPlan::createQPControllerInput(
       // toe off active switching logic
       Side side = it->second;
       int knee_index = knee_indices[side];
-      RigidBodySupportState& support_state = supports[support_index];
       if (toe_off_active[side]) {
         bool is_support_foot = isSupportingBody(body_id, support_state);
         bool knee_close_to_singularity = q[knee_index] < knee_settings.min_knee_angle;
         if (is_support_foot && knee_close_to_singularity) {
-          bool is_last_support = support_index == supports.size() - 1;
           if (is_last_support)
             toe_off_active[side] = false;
           else {
-            const RigidBodySupportState& next_support = supports[support_index + 1];
             toe_off_active[side] = !isSupportingBody(body_id, next_support);
           }
         }
@@ -153,72 +182,68 @@ void QPLocomotionPlan::createQPControllerInput(
       }
     }
 
-
     // TODO:
 //        qp_input.body_motion_data(j) = obj.body_motions(j).slice(body_t_ind);
+    const PiecewisePolynomial<> body_motion_trajectory = body_motion.getTrajectory();
+    drake::lcmt_body_motion_data body_motion_data_for_support_lcm;
+    body_motion_data_for_support_lcm.body_id = body_id;
+    body_motion_data_for_support_lcm.ts[0] = body_motion_trajectory.getStartTime(body_motion_segment_index);
+    body_motion_data_for_support_lcm.ts[1] = body_motion_trajectory.getEndTime(body_motion_segment_index);
+    const PiecewisePolynomial<>::PolynomialMatrix& bodyMotionSegmentIndex = body_motion_trajectory.getPolynomialMatrix(body_motion_segment_index);
+    polynomialVectorCoefficientsToCArrayOfArraysMatlabOrdering(bodyMotionSegmentIndex, body_motion_data_for_support_lcm.coefs);
+    body_motion_data_for_support_lcm.in_floating_base_nullspace = body_motion.isInFloatingBaseNullSpace(body_motion_segment_index);
+    body_motion_data_for_support_lcm.control_pose_when_in_contact = body_motion.isPoseControlledWhenInContact(body_motion_segment_index);
+    const Isometry3d& transform_task_to_world = body_motion.getTransformTaskToWorld();
+    Vector4d quat_task_to_world = rotmat2quat(transform_task_to_world.linear());
+    Vector3d translation_task_to_world = transform_task_to_world.translation();
+
+//    memcpy()
+
+//        'quat_task_to_world',obj.quat_task_to_world,...
+//        'translation_task_to_world',obj.translation_task_to_world,...
+//        'xyz_kp_multiplier',obj.xyz_kp_multiplier,...
+//        'xyz_damping_ratio_multiplier',obj.xyz_damping_ratio_multiplier,...
+//        'expmap_kp_multiplier',obj.expmap_kp_multiplier,...
+//        'expmap_damping_ratio_multiplier',obj.expmap_damping_ratio_multiplier,...
+//        'weight_multiplier',obj.weight_multiplier);
 
 
-//    body_motion.setTrajectory()
-//        qp_input.body_motion_data(j).ts = qp_input.body_motion_data(j).ts + obj.start_time_;
-//
-//        if qp_input.body_motion_data(j).body_id == rpc.body_ids.pelvis
-//          pelvis_has_tracking = true;
-//        end
-//
+    qp_input.body_motion_data.push_back(body_motion_data_for_support_lcm);
 
 
+    body_motion.getTrajectory().shiftRight(start_time);
+    if (body_id == robot_property_cache.body_ids.pelvis)
+      pelvis_has_tracking = true;
   }
 
-//
-//      for j = 1:length(obj.body_motions)
-//
-//      end
-//
-//      assert(pelvis_has_tracking, 'Expecting a motion_motion_data element for the pelvis');
-//
-//      supp = obj.supports(supp_idx);
-//
-//      qp_input.support_data = struct('body_id', cell(1, length(supp.bodies)),...
-//        'contact_pts', cell(1, length(supp.bodies)),...
-//        'support_logic_map', cell(1, length(supp.bodies)),...
-//        'mu', cell(1, length(supp.bodies)),...
-//        'contact_surfaces', cell(1, length(supp.bodies)));
-//      for j = 1:length(supp.bodies)
-//        qp_input.support_data(j).body_id = supp.bodies(j);
-//        qp_input.support_data(j).contact_pts = supp.contact_pts{j};
-//        qp_input.support_data(j).support_logic_map = obj.planned_support_command;
-//        qp_input.support_data(j).mu = obj.mu;
-//        qp_input.support_data(j).contact_surfaces = 0;
-//      end
-//
-//      qp_input.param_set_name = obj.gain_set_;
-//
-//      if supp_idx < length(obj.supports)
-//        next_support = obj.supports(supp_idx + 1);
-//      else
-//        next_support = obj.supports(supp_idx);
-//      end
+  if (!pelvis_has_tracking)
+    throw runtime_error("Expecting a motion_motion_data element for the pelvis");
+
+  for (auto it = support_state.begin(); it != support_state.end(); ++it) {
+    drake::lcmt_support_data support_data_element_lcm;
+    support_data_element_lcm.body_id = static_cast<int32_t>(it->body);
+    eigenToStdVectorOfStdVectors(it->contact_points, support_data_element_lcm.contact_pts);
+    for (int i = 0; i < planned_support_command.size(); i++)
+      support_data_element_lcm.support_logic_map[i] = planned_support_command[i];
+    support_data_element_lcm.mu = mu;
+    support_data_element_lcm.contact_surfaces = 0;
+    qp_input.support_data.push_back(support_data_element_lcm);
+  }
+
+  qp_input.param_set_name = gain_set;
+
+  // TODO
+//  updatePlanShift(t_global, qp_input, contact_force_detected, next_support);
 //      obj = obj.updatePlanShift(t_global, kinsol, qp_input, contact_force_detected, next_support);
+
+  // TODO
+//  applyPlanShift(qp_input);
 //      qp_input = obj.applyPlanShift(qp_input);
-//
-//      if(~isempty(obj.joint_pd_override_data))
-//        for j = 1:length(obj.joint_pd_override_data.position_ind)
-//          qp_input.joint_pd_override(end+1) = struct('position_ind',obj.joint_pd_override_data.position_ind(j),...
-//            'qi_des',qp_input.whole_body_data.q_des(obj.joint_pd_override_data.position_ind(j)),...
-//            'qdi_des',0,...
-//            'kp',obj.joint_pd_override_data.kp(j),...
-//            'kd',obj.joint_pd_override_data.kd(j),...
-//            'weight',obj.joint_pd_override_data.weight(j));
-//        end
-//      end
-//
-//      obj.last_qp_input = qp_input;
-}
 
+  qp_input.joint_pd_override = joint_pd_override_data;
+  last_qp_input = qp_input;
 
-QPLocomotionPlan::~QPLocomotionPlan()
-{
-  // TODO Auto-generated destructor stub
+  // TODO: publish LCM message
 }
 
 bool QPLocomotionPlan::isSupportingBody(int body_index, const RigidBodySupportState& support_state) {
@@ -228,3 +253,14 @@ bool QPLocomotionPlan::isSupportingBody(int body_index, const RigidBodySupportSt
   }
   return false;
 }
+
+const std::map<SupportLogicType, std::vector<bool> > QPLocomotionPlan::createSupportLogicMaps()
+{
+  std::map<SupportLogicType, std::vector<bool> > ret;
+  ret[REQUIRE_SUPPORT] = { {true, true, true, true} };
+  ret[ONLY_IF_FORCE_SENSED] = { {false, false, true, true} };
+  ret[KINEMATIC_OR_SENSED] = { {false, true, true, true} };
+  ret[PREVENT_SUPPORT] = { {false, false, false, false} };
+  return ret;
+}
+

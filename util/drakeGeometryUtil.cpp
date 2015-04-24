@@ -1308,6 +1308,8 @@ template DLLEXPORT Vector4d rpy2quat(const Eigen::MatrixBase< Map<Vector3d> >&);
 template DLLEXPORT Matrix3d rpy2rotmat(const Eigen::MatrixBase< Map<Vector3d> >&);
 template DLLEXPORT Matrix<double,9,3> drpy2rotmat(const Eigen::MatrixBase< Map<Vector3d> >&);
 
+template DLLEXPORT Matrix<Block<Matrix4d const, 3, 3, false>::Scalar, 4, 1, 0, 4, 1> rotmat2quat<Block<Matrix4d const, 3, 3, false> >(MatrixBase<Block<Matrix4d const, 3, 3, false> > const&);
+
 
 template DLLEXPORT Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic> transformSpatialMotion(
     const Eigen::Isometry3d&,
