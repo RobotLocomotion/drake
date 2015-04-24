@@ -1,4 +1,4 @@
-function runAtlasBalancingSplitPerturb(example_options) 
+function runAtlasBalancingPerturb(example_options) 
 % Run the new split QP controller, which consists of separate PlanEval
 % and InstantaneousQPController objects. Perturbs a supplied amount at
 % a specified time.

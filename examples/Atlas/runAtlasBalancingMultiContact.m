@@ -1,11 +1,9 @@
-function runAtlasBalancingSplit(example_options)
-%NOTEST 
-% Run the new split QP controller, which consists of separate PlanEval
-% and InstantaneousQPController objects. 
-% @option use_mex [1] whether to use mex. 0: no, 1: yes, 2: compare mex and non-mex
-% @option use_bullet [false] whether to use bullet for collision detect
-% @option num_steps [4] max number of steps to take
-
+function runAtlasBalancingMultiContact(example_options)
+%NOTEST
+% Run the balancing controller on a convex hull model using the new
+% multiple_contacts logic to allow us to balance even with part of the foot
+% overhanging.
+ 
 checkDependency('gurobi');
 checkDependency('lcmgl');
 
