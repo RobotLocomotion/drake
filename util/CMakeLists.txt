@@ -53,6 +53,9 @@ if (MATLAB_FOUND)
 
   add_mex(expmap2quatImplmex expmap2quatImplmex.cpp)
   target_link_libraries(expmap2quatImplmex drakeUtil drakeGeometryUtil drakeGradientUtil)
+
+  add_mex(flipExpmapmex flipExpmapmex.cpp)
+  target_link_libraries(flipExpmapmex drakeUtil drakeGeometryUtil drakeGradientUtil)
 endif()
 
 add_subdirectory(test)

@@ -1238,6 +1238,42 @@ DLLEXPORT GradientVar<typename Derived::Scalar,3,1> quat2expmap(const MatrixBase
   return ret;
 }
 
+DLLEXPORT GradientVar<double,3,1> flipExpmap(const Ref<const Vector3d> &expmap, int gradient_order)
+{
+  if(gradient_order>1)
+  {
+    throw std::runtime_error("gradient_order>1 is not supported in flipExpmap");
+  }
+  double expmap_norm = expmap.norm();
+  bool is_degenerate=(expmap_norm<std::numeric_limits<double>::epsilon());
+  GradientVar<double,3,1> ret(3,1,3,gradient_order);
+  Matrix3d eye3 = Matrix3d::Identity();
+  if(is_degenerate)
+  {
+    ret.value() = expmap;
+    if(gradient_order>0)
+    {
+      ret.gradient().value() = eye3;
+    }
+  }
+  else
+  {
+    ret.value() = expmap-expmap/expmap_norm*2*M_PI;
+    if(gradient_order>0)
+    {
+      ret.gradient().value() = eye3-(expmap_norm*expmap_norm*eye3-expmap*expmap.transpose())/pow(expmap_norm,3)*2*M_PI;
+    }
+  }
+  return ret;
+}
+
+template <typename Derived>
+DLLEXPORT GradientVar<typename Derived::Scalar, 3,1> unwrapExpmap(const Ref<const MatrixBase<Derived>> & expmap1, const Ref<const MatrixBase<Derived>> &expmap2, int gradient_order)
+{
+  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(MatrixBase<Derived>,3);
+  GradientVar<typename Derived::Scalar,3,1> expmap2_flip(3,1,3,gradient_order);
+}
+
 
 // explicit instantiations
 template DLLEXPORT void normalizeVec(
@@ -1553,3 +1589,4 @@ template DLLEXPORT void quatdot2angularvelMatrix(const Eigen::MatrixBase< Eigen:
 
 template DLLEXPORT GradientVar<double,3,1> quat2expmap(const MatrixBase<Vector4d> &q, int gradient_order);
 template DLLEXPORT GradientVar<double,3,1> quat2expmap(const MatrixBase<Map<Vector4d>> &q, int gradient_order);
+
