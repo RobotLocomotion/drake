@@ -1287,7 +1287,7 @@ DLLEXPORT GradientVar<double, 3,1> unwrapExpmap(const Ref<const Vector3d> & expm
 }
 
 
-void quat2expmapSequence(const Ref<const Matrix<double,4,Dynamic>> &quat, const Ref<const Matrix<double,4,Dynamic>> &quat_dot, Ref<Matrix<double,3,Dynamic>> &expmap, Ref<Matrix<double,3,Dynamic>> &expmap_dot)
+void quat2expmapSequence(const Ref<const Matrix<double,4,Dynamic>> &quat, const Ref<const Matrix<double,4,Dynamic>> &quat_dot, Ref<Matrix<double,3,Dynamic>> expmap, Ref<Matrix<double,3,Dynamic>> expmap_dot)
 {
   int N = quat.cols();
   if(quat_dot.cols() != N)
