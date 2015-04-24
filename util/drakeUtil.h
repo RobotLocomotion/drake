@@ -123,6 +123,19 @@ void eigenVectorToStdVector(const Eigen::MatrixBase<Derived>& source, std::vecto
     destination[static_cast<size_t>(i)] = source(i);
 }
 
+// note for if/when we split off all Matlab related stuff into a different file: this function is not Matlab related
+template <typename Derived>
+void eigenToStdVectorOfStdVectors(const Eigen::MatrixBase<Derived>& source, std::vector< std::vector<typename Derived::Scalar> >& destination) {
+  destination.reserve(source.rows());
+  for (Eigen::DenseIndex row = 0; row < source.rows(); ++row) {
+    auto& destination_row = destination[row];
+    destination_row.reserve(source.cols());
+    for (Eigen::DenseIndex col = 0; col < source.cols(); ++col) {
+      destination_row[col] = source(row, col);
+    }
+  }
+}
+
 DLLEXPORT const std::vector<double> matlabToStdVector(const mxArray* in);
 
 DLLEXPORT int sub2ind(mwSize ndims, const mwSize* dims, const mwSize* sub);
