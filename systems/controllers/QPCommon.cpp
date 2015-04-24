@@ -3,6 +3,7 @@
 #include "controlUtil.h"
 #include <Eigen/StdVector>
 #include <map>
+#include "mat.h"
 
 #define LEG_INTEGRATOR_DEACTIVATION_MARGIN 0.05
 
@@ -372,6 +373,18 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   // Note: argument `debug` MAY be set to NULL, which signals that no debug information is requested.
 
   // look up the param set by name
+  for(int i = 0;i<qp_input->num_tracked_bodies;i++)
+  {
+    if(qp_input->body_motion_data[i].body_id == 31)
+    {
+      MATFile* fp_file = matOpen("/home/hongkai/drc/software/control/matlab/test/arm_up_fp.mat","r");
+      mxArray* xstar = matGetVariable(fp_file,"xstar");
+      memcpy(robot_state.q.data(),mxGetPr(xstar),sizeof(double)*pdata->r->num_positions);
+      memcpy(robot_state.qd.data(),mxGetPr(xstar)+pdata->r->num_positions,sizeof(double)*pdata->r->num_positions);
+    }
+  }
+  MatrixXd Hqp_rhand; 
+  VectorXd fqp_rhand;
   AtlasParams *params; 
   std::map<string,AtlasParams>::iterator it;
   it = pdata->param_sets.find(qp_input->param_set_name);
@@ -480,6 +493,15 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     evaluateXYZExpmapCubicSplineSegment(t_spline - qp_input->body_motion_data[i].ts[0], coefs, body_pose_des, body_v_des, body_vdot_des);
 
     desired_body_accelerations[i].body_vdot = bodySpatialMotionPD(pdata->r, robot_state, body_or_frame_id0, body_pose_des, body_v_des, body_vdot_des, body_Kp, body_Kd,desired_body_accelerations[i].T_task_to_world);
+    if(desired_body_accelerations[i].body_or_frame_id0 == 30)
+    {
+      mexPrintf("body %d vdot ",desired_body_accelerations[i].body_or_frame_id0);
+      for(int k = 0;k<6;k++)
+      {
+        mexPrintf("%6.4f ",desired_body_accelerations[i].body_vdot(k));
+      }
+      mexPrintf("\n weight %6.4f\n",weight);
+    }
     
     desired_body_accelerations[i].weight = weight;
     desired_body_accelerations[i].accel_bounds = params->body_motion[true_body_id0].accel_bounds;
@@ -606,6 +628,8 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   //  min: ybar*Qy*ybar + ubar*R*ubar + (2*S*xbar + s1)*(A*x + B*u) +
   //    w_qdd*quad(qddot_ref - qdd) + w_eps*quad(epsilon) +
   //    w_grf*quad(beta) + quad(kdot_des - (A*qdd + Adot*qd))  
+  vector<MatrixXd> Hqp_debug;
+  vector<VectorXd> fqp_debug;
   VectorXd f(nparams);
   {      
     if (nc > 0) {
@@ -631,7 +655,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     } 
   }
   f.tail(nf+neps) = VectorXd::Zero(nf+neps);
-  
+  fqp_debug.push_back(f);
   int neq = 6+neps+6*n_body_accel_eq_constraints+qp_input->whole_body_data.num_constrained_dofs;
   MatrixXd Aeq = MatrixXd::Zero(neq,nparams);
   VectorXd beq = VectorXd::Zero(neq);
@@ -779,6 +803,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     else {
       pdata->Hqp = MatrixXd::Constant(nq,1,1/(1+REG));
     }
+    Hqp_debug.push_back(pdata->Hqp);
 
     #ifdef TEST_FAST_QP
       if (nc>0) {
@@ -831,6 +856,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     } else {
       pdata->Hqp = (1+REG)*MatrixXd::Identity(nq,nq);
     }
+    Hqp_debug.push_back(pdata->Hqp);
 
     // add in body spatial acceleration cost terms
     for (int i=0; i<desired_body_accelerations.size(); i++) {
@@ -847,10 +873,31 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
             Jb.block(0,0,6,6) = MatrixXd::Zero(6,6);
             // Jbdot.block(0,0,6,6) = MatrixXd::Zero(6,6);
           }
+          if(desired_body_accelerations[i].body_or_frame_id0 == 30)
+          {
+            mexPrintf("\nbody weight ");
+            for(int j = 0;j<6;j++)
+            {
+              mexPrintf("%6.4f ",desired_body_accelerations[i].weight*desired_body_accelerations[i].weight_multiplier(j));
+            }
+            mexPrintf("\n");
+          }
+          if(desired_body_accelerations[i].body_or_frame_id0 == 30)
+          {
+            Hqp_rhand = MatrixXd::Zero(nq,nq);
+            fqp_rhand = VectorXd::Zero(nq);
+            for(int j = 0;j<6;j++)
+            {
+              Hqp_rhand += desired_body_accelerations[i].weight*desired_body_accelerations[i].weight_multiplier(j)*(Jb.row(j)).transpose()*Jb.row(j);
+              fqp_rhand += desired_body_accelerations[i].weight*desired_body_accelerations[i].weight_multiplier(j)*(Jbdotv(j) - desired_body_accelerations[i].body_vdot[j])*Jb.row(j).transpose();
+            }
+          }
           for (int j=0; j<6; j++) {
             if (!std::isnan(desired_body_accelerations[i].body_vdot[j])) {
               pdata->Hqp += desired_body_accelerations[i].weight*desired_body_accelerations[i].weight_multiplier(j)*(Jb.row(j)).transpose()*Jb.row(j);
               f.head(nq).noalias() += desired_body_accelerations[i].weight*desired_body_accelerations[i].weight_multiplier(j)*(Jbdotv(j) - desired_body_accelerations[i].body_vdot[j])*Jb.row(j).transpose();
+              Hqp_debug.push_back(pdata->Hqp);
+              fqp_debug.push_back(f);
             }
           }
         }
@@ -924,6 +971,42 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
 
   // Remember t for next time around
   pdata->state.t_prev = robot_state.t;
+
+  mexPrintf("ub(end)=%7.4f\n",*(ub.data()+ub.rows()-1));
+  int debug_nrhs = 0;
+  mxArray* prhs_debug[14];
+  prhs_debug[debug_nrhs++] = eigenToMatlab(robot_state.q);
+  prhs_debug[debug_nrhs++] = eigenToMatlab(robot_state.qd);
+  prhs_debug[debug_nrhs++] = eigenToMatlab(alpha);
+  prhs_debug[debug_nrhs++] = eigenToMatlab(pdata->Hqp);
+  prhs_debug[debug_nrhs++] = eigenToMatlab(f);
+  prhs_debug[debug_nrhs++] = eigenToMatlab(Aeq);
+  prhs_debug[debug_nrhs++] = eigenToMatlab(beq);
+  prhs_debug[debug_nrhs++] = eigenToMatlab(Ain_lb_ub);
+  prhs_debug[debug_nrhs++] = eigenToMatlab(bin_lb_ub);
+  prhs_debug[debug_nrhs++] = eigenToMatlab(Qnfdiag);
+  prhs_debug[debug_nrhs++] = eigenToMatlab(Qneps);
+  prhs_debug[debug_nrhs++] = eigenToMatlab(w_qdd);
+  prhs_debug[debug_nrhs++] = eigenToMatlab(Hqp_rhand);
+  prhs_debug[debug_nrhs++] = eigenToMatlab(fqp_rhand);
+  mexPrintf("w_qdd ");
+  for(int i = 0;i<w_qdd.rows();i++)
+  {
+    mexPrintf("%8.6f ",w_qdd(i));
+  }
+  mexPrintf("\n");
+  bool call_matlab_debug = false;
+  for(int i = 0;i<desired_body_accelerations.size();i++)
+  {
+    if(desired_body_accelerations[i].body_or_frame_id0 == 30)
+    {
+      call_matlab_debug = true;
+    }
+  }
+  if(call_matlab_debug)
+  {
+    mexCallMATLAB(0,(mxArray**)nullptr, debug_nrhs, prhs_debug, "passFromcpp");
+  }
 
   // If a debug pointer was passed in, fill it with useful data
   if (debug) {
