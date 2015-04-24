@@ -100,7 +100,8 @@ void matlabToCArrayOfArrays(const mxArray *source, double (&destination)[Rows][C
 }
 
 // note for if/when we split off all Matlab related stuff into a different file: this function is not Matlab related
-template <typename Derived, size_t Rows = Derived::RowsAtCompileTime, size_t Cols = Derived::ColsAtCompileTime>
+// can only be used when the dimension information of the array is known at compile time
+template <size_t Rows, size_t Cols, typename Derived>
 void eigenToCArrayOfArrays(const Eigen::MatrixBase<Derived>& source, double (&destination)[Rows][Cols]) {
   if (Rows != source.rows())
     throw std::runtime_error("Number of rows of source doesn't match destination");
