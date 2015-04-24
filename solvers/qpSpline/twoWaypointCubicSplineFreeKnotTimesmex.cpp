@@ -50,7 +50,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
           PiecewisePolynomial<double> acceleration_squared = spline.derivative(2);
           acceleration_squared *= acceleration_squared;
           PiecewisePolynomial<double> acceleration_squared_integral = acceleration_squared.integral();
-          objective_value += acceleration_squared_integral.value(spline.getEndTime()) - acceleration_squared_integral.value(spline.getStartTime());
+          objective_value += acceleration_squared_integral.scalarValue(spline.getEndTime()) - acceleration_squared_integral.scalarValue(spline.getStartTime());
         }
         catch (ConstraintMatrixSingularError&) {
           valid_solution = false;

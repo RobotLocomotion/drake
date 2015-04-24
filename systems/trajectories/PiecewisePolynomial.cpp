@@ -79,13 +79,13 @@ PiecewisePolynomial<CoefficientType> PiecewisePolynomial<CoefficientType>::integ
 }
 
 template <typename CoefficientType>
-double PiecewisePolynomial<CoefficientType>::value(double t, Eigen::DenseIndex row, Eigen::DenseIndex col) {
+double PiecewisePolynomial<CoefficientType>::scalarValue(double t, Eigen::DenseIndex row, Eigen::DenseIndex col) {
   int segment_index = getSegmentIndex(t);
   return segmentValueAtGlobalAbscissa(segment_index, t, row, col);
 }
 
 template <typename CoefficientType>
-Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> PiecewisePolynomial<CoefficientType>::matrixValue(double t) {
+Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> PiecewisePolynomial<CoefficientType>::value(double t) {
   int segment_index = getSegmentIndex(t);
   Eigen::Matrix<double, PolynomialMatrix::RowsAtCompileTime, PolynomialMatrix::ColsAtCompileTime> ret(rows(), cols());
   for (DenseIndex row = 0; row < rows(); row++) {
@@ -159,6 +159,13 @@ bool PiecewisePolynomial<CoefficientType>::isApprox(const PiecewisePolynomial<Co
     }
   }
   return true;
+}
+
+template<typename CoefficientType>
+void PiecewisePolynomial<CoefficientType>::shiftRight(double offset) {
+  for (auto it = segment_times.begin(); it != segment_times.end(); ++it) {
+    *it += offset;
+  }
 }
 
 template <typename CoefficientType>

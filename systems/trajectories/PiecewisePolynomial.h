@@ -44,9 +44,9 @@ public:
 
   PiecewisePolynomial integral(const Eigen::Ref<CoefficientMatrix>& value_at_start_time) const;
 
-  double value(double t, Eigen::DenseIndex row = 0, Eigen::DenseIndex col = 0);
+  double scalarValue(double t, Eigen::DenseIndex row = 0, Eigen::DenseIndex col = 0);
 
-  Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> matrixValue(double t);
+  Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> value(double t);
 
   const PolynomialMatrix& getPolynomialMatrix(int segment_index) const;
 
@@ -67,6 +67,8 @@ public:
   const PiecewisePolynomial operator*(const PiecewisePolynomial &other) const;
 
   bool isApprox(const PiecewisePolynomial& other, double tol) const;
+
+  void shiftRight(double offset);
 
 protected:
   PiecewisePolynomial();

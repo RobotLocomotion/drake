@@ -33,7 +33,7 @@ void testIntegralAndDerivative() {
   // check value at start time
   CoefficientMatrix desired_value_at_t0 = PiecewisePolynomialType::CoefficientMatrix::Random(piecewise.rows(), piecewise.cols());
   PiecewisePolynomialType integral = piecewise.integral(desired_value_at_t0);
-  auto value_at_t0 = integral.matrixValue(piecewise.getStartTime());
+  auto value_at_t0 = integral.value(piecewise.getStartTime());
   valuecheck(desired_value_at_t0, value_at_t0, 1e-10);
 
   // check continuity at knot points
@@ -43,7 +43,7 @@ void testIntegralAndDerivative() {
 }
 
 template <typename CoefficientType>
-void testOperators() {
+void testBasicFunctionality() {
   int max_num_coefficients = 6;
   int num_tests = 100;
   default_random_engine generator;
@@ -64,16 +64,22 @@ void testOperators() {
 
     PiecewisePolynomialType sum = piecewise1 + piecewise2;
 
+    normal_distribution<double> normal;
+    double offset = normal(generator);
+    PiecewisePolynomialType piecewise1_shifted = piecewise1;
+    piecewise1_shifted.shiftRight(offset);
+
     uniform_real_distribution<double> uniform(piecewise1.getStartTime(), piecewise1.getEndTime());
     double t = uniform(generator);
 
-    valuecheck(sum.value(t), piecewise1.value(t) + piecewise2.value(t), 1e-8);
+    valuecheck(sum.scalarValue(t), piecewise1.scalarValue(t) + piecewise2.scalarValue(t), 1e-8);
+    valuecheck(piecewise1_shifted.scalarValue(t), piecewise1.scalarValue(t - offset), 1e-8);
   }
 }
 
 int main(int argc, char **argv) {
   testIntegralAndDerivative<double>();
-  testOperators<double>();
+  testBasicFunctionality<double>();
 
   std::cout << "test passed";
 

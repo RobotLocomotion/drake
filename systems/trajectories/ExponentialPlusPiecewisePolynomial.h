@@ -37,14 +37,18 @@ private:
 
 public:
   ExponentialPlusPiecewisePolynomial(
-      const Eigen::Ref<MatrixX>& K, const Eigen::Ref<MatrixX>& A, const std::vector<VectorX>& alpha,
+      const MatrixX& K, const MatrixX& A, const std::vector<VectorX>& alpha,
       const PiecewisePolynomial<CoefficientType>& piecewise_polynomial_part);
 
   ValueType value(double t); // return type should not be VectorX because the scalar type of the output should be the same as the type of t
 
+  ExponentialPlusPiecewisePolynomial derivative(int derivative_order = 1) const;
+
   virtual Eigen::DenseIndex rows() const;
 
   virtual Eigen::DenseIndex cols() const;
+
+  void shiftRight(double offset);
 };
 
 #endif /* SYSTEMS_TRAJECTORIES_EXPONENTIALPLUSPIECEWISEPOLYNOMIAL_H_ */
