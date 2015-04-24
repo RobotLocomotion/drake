@@ -1409,7 +1409,7 @@ classdef RigidBodyManipulator < Manipulator
     end
 
     function drawKinematicTree(model)
-      % depends on having graphviz2mat installed (from matlabcentral)
+      % depends on having graphviz installed
       % todo: make that a dependency in configure?
       % @ingroup Kinematic Tree
 
