@@ -104,7 +104,7 @@ hold_time = params.drake_min_hold_time;
 support_options.use_support_surface = 1;
 v = quat2rotmat(stance.pos(4:7)) * [0;0;1];
 b = -v' * stance.pos(1:3);
-support_options.support_surfaces = {[v;b]};
+support_options.support_surface = {[v;b]};
 support_options.contact_groups =  {stance.walking_params.support_contact_groups};
 zmp_knots = struct('t', initial_hold_time + (hold_time / 2),...
  'zmp', zmp1, ...
@@ -181,7 +181,7 @@ v_stance = quat2rotmat(stance.pos(4:7)) * [0;0;1];
 b_stance = -v_stance' * stance.pos(1:3);
 v_swing = quat2rotmat(swing2.pos(4:7)) * [0;0;1];
 b_swing = -v_swing' * swing2.pos(1:3);
-support_options.support_surfaces = {[v_stance;b_stance], [v_swing;b_swing]};
+support_options.support_surface = {[v_stance;b_stance], [v_swing;b_swing]};
 
 support_options.contact_groups = {stance.walking_params.support_contact_groups,swing2.walking_params.support_contact_groups};
 zmp_knots(end).supp = RigidBodySupportState(biped, [stance_body_index, swing_body_index], support_options);

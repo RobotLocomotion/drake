@@ -33,8 +33,9 @@ typedef struct _support_state_element
 {
   int body_idx;
   std::vector<Vector4d, aligned_allocator<Vector4d>> contact_pts;
-  int contact_surface;
   bool support_logic_map[4];
+  bool use_support_surface;
+  float support_surface[4];
 } SupportStateElement;
 
 struct DrakeRobotState {

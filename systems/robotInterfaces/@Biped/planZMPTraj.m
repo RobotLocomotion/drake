@@ -58,6 +58,7 @@ if sole_to_com(1) < 0.01
 end
 
 [zmp0, supp0] = getZMPBetweenFeet(biped, struct('right', steps.right(1), 'left', steps.left(1)));
+
 zmp_knots = struct('t', options.t0, 'zmp', zmp0, 'supp', supp0);
 
 frame_knots = struct('t', options.t0, ...
@@ -180,7 +181,7 @@ function [zmp, supp] = getZMPBetweenFeet(biped, steps)
   end
   zmp = mean(zmp, 2);
   support_options.use_support_surface = ones(length(initial_supports),1);
-  support_options.support_surfaces = initial_support_surfaces;
+  support_options.support_surface = initial_support_surfaces;
   support_options.contact_groups = initial_support_groups;
   supp = RigidBodySupportState(biped, initial_supports, support_options);
 end
