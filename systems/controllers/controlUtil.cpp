@@ -90,6 +90,8 @@ void collisionDetect(void* map_ptr, Vector3d const &contact_pos, Vector3d &pos, 
         return;
       }
     }
+#else
+    throw std::runtime_error("map_ptr is not NULL, but controlUtil was built without USE_MAPS support");
 #endif      
   } else {
 //    mexPrintf("Warning: using 0,0,1 as normal\n");
