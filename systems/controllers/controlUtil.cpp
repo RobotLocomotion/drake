@@ -131,10 +131,10 @@ int contactPhi(RigidBodyManipulator* r, SupportStateElement& supp, void *map_ptr
 
   int i=0;
   for (std::vector<Vector4d,aligned_allocator<Vector4d>>::iterator pt_iter=supp.contact_pts.begin(); pt_iter!=supp.contact_pts.end(); pt_iter++) {
-//     std::cout << "body pt: " << *pt_iter << std::endl;    r->forwardKin(supp.body_idx,*pt_iter,0,contact_pos);
+    r->forwardKin(supp.body_idx,*pt_iter,0,contact_pos);
     collisionDetect(map_ptr,contact_pos,pos,&normal,terrain_height);
     pos -= contact_pos;  // now -rel_pos in matlab version
-//     std::cout << "contact pos: " << contact_pos << std::endl;
+//    std::cout << "contact pos: " << contact_pos.transpose() << std::endl;
     phi(i) = pos.norm();
     if (pos.dot(normal)>0)
       phi(i)=-phi(i);
@@ -312,6 +312,7 @@ std::vector<SupportStateElement> parseSupportData(const mxArray* supp_data) {
     pm = mxGetField(supp_data, i, "support_logic_map");
     if (mxIsDouble(pm)) {
       logic_map_double = mxGetPrSafe(pm);
+      assert(mxGetM(pm)==4);
       for (j = 0; j < 4; j++) {
         se.support_logic_map[j] = logic_map_double[j] != 0;
       }
@@ -334,7 +335,7 @@ std::vector<SupportStateElement> parseSupportData(const mxArray* supp_data) {
 
 bool isSupportElementActive(SupportStateElement* se, bool contact_force_detected, bool kinematic_contact_detected) {
   bool is_active;
-  std::cout << "checking element with body: " << se->body_idx << " force: " << contact_force_detected << " kin: " << kinematic_contact_detected << std::endl;
+//  std::cout << "checking element with body: " << se->body_idx << " force: " << contact_force_detected << " kin: " << kinematic_contact_detected << std::endl;
   // Implement the logic described in QPInputConstantHeight.m
   if (!contact_force_detected && !kinematic_contact_detected) {
     is_active = se->support_logic_map[0]; 
