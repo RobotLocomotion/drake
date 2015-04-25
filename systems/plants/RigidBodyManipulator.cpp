@@ -493,6 +493,20 @@ string RigidBodyManipulator::getStateName(int state_num) const
 		return getVelocityName(state_num);
 }
 
+map<string, int> RigidBodyManipulator::computePositionNameToIndexMap() const
+{
+  const RigidBodyManipulator* const model = this;
+
+  const std::shared_ptr<RigidBody> worldBody = model->bodies[0];
+
+  map<string, int> name_to_index_map;
+
+  for (int i = 0; i < this->num_positions; ++i) {
+      name_to_index_map[getPositionName(i)] = i;
+  }
+  return name_to_index_map;
+}
+
 DrakeCollision::ElementId RigidBodyManipulator::addCollisionElement(const RigidBody::CollisionElement& element, const shared_ptr<RigidBody>& body, string group_name)
 {
   DrakeCollision::ElementId id(collision_model->addElement(element));
@@ -707,6 +721,13 @@ void RigidBodyManipulator::potentialCollisions(VectorXd& phi,
     bodyA_idx.push_back(elementA->getBody()->body_index);
     bodyB_idx.push_back(elementB->getBody()->body_index);
   }
+}
+
+vector<size_t> RigidBodyManipulator::collidingPoints(
+    const vector<Vector3d>& points, 
+    double collision_threshold)
+{
+  return collision_model->collidingPoints(points, collision_threshold);
 }
 
 bool RigidBodyManipulator::allCollisions(vector<int>& bodyA_idx,
