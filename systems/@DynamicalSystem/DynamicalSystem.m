@@ -370,7 +370,7 @@ classdef DynamicalSystem
       inport = find_system(mdl,'SearchDepth',1,'BlockType','Inport');
       ts = [];
       for i=1:length(inport)
-        ts = [ts,Simulink.Block.getSampleTimes(inport{i}).Value'];
+        ts = [ts,getSimulinkSampleTimes(inport{i})];
       end
     end
     function ts = getOutputSampleTimes(obj)
@@ -380,7 +380,7 @@ classdef DynamicalSystem
       outport = find_system(mdl,'SearchDepth',1,'BlockType','Outport');
       ts = [];
       for i=1:length(outport)
-        ts = [ts,Simulink.Block.getSampleTimes(outport{i}).Value'];
+        ts = [ts,getSimulinkSampleTimes(outport{i})];
       end
     end
     
@@ -652,7 +652,7 @@ classdef DynamicalSystem
       if (nargin<3) mdl = getModel(obj); end
       
       if (isempty(obj.structured_x))
-        obj.structured_x = Simulink.BlockDiagram.getInitialState(mdl.name);
+        obj.structured_x = getSimulinkStateStructure(mdl.name);
       end
       xs = obj.structured_x;
       if (length(xs.signals)>1)
