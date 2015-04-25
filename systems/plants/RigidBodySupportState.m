@@ -9,7 +9,7 @@ classdef RigidBodySupportState
     num_contact_pts;  % convenience array containing the desired number of
                       %             contact points for each support body
     use_support_surface; % logical vector with the same length as bodies
-    support_surfaces; % 4-vector describing a support surface: [v; b] such that v' * [x;y;z] + b == 0
+    support_surface; % 4-vector describing a support surface: [v; b] such that v' * [x;y;z] + b == 0
    end
 
   methods
@@ -29,7 +29,7 @@ classdef RigidBodySupportState
       if isfield(options,'contact_groups')
         typecheck(options.contact_groups,'cell');
         sizecheck(options.contact_groups,nbod);
-        for i=1:length(obj.bodies)
+        for i=1:nbod
           body = r.getBody(obj.bodies(i));
           body_groups = options.contact_groups{i};
           obj.contact_pts{i} = body.getTerrainContactPoints(body_groups);
@@ -53,14 +53,16 @@ classdef RigidBodySupportState
         obj.use_support_surface = zeros(nbod,1);
       end
 
-      if isfield(options,'support_surfaces')
-        typecheck(options.support_surfaces,'cell');
-        sizecheck(options.support_surfaces,nbod);
-        obj.support_surfaces = options.support_surfaces;
+      if isfield(options,'support_surface')
+        typecheck(options.support_surface,'cell');
+        sizecheck(options.support_surface,nbod);
+        obj.support_surface = options.support_surface;
       else
-        obj.support_surfaces = cell(1,nbod);
+        obj.support_surface = cell(1,nbod);
+        for i=1:nbod
+          obj.support_surface{i} = [0;0;1;0];
+        end
       end
-      
     end
 
     function obj = setContactPts(obj, ind, contact_pts, contact_groups)
