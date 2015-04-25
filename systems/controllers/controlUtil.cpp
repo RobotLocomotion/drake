@@ -209,7 +209,12 @@ int contactConstraintsBV(RigidBodyManipulator *r, int nc, double mu, std::vector
         r->forwardKin(iter->body_idx,*pt_iter,0,contact_pos);
         r->forwardJac(iter->body_idx,*pt_iter,0,J);
 
-        collisionDetect(map_ptr,contact_pos,pos,&normal,terrain_height);
+        if (iter->use_support_surface) {
+          normal = iter->support_surface.head(3);
+        }
+        else {
+          collisionDetect(map_ptr,contact_pos,pos,&normal,terrain_height);
+        }
         surfaceTangents(normal,d);
         for (j=0; j<m_surface_tangents; j++) {
           B.col(2*k*m_surface_tangents+j) = (normal + mu*d.col(j)) / norm; 
