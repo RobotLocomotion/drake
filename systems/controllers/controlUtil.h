@@ -35,9 +35,6 @@ typedef struct _support_state_element
   std::vector<Vector4d, aligned_allocator<Vector4d>> contact_pts;
   int contact_surface;
   bool support_logic_map[4];
-  
-public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 } SupportStateElement;
 
 struct DrakeRobotState {
