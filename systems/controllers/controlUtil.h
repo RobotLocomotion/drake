@@ -9,10 +9,6 @@
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
 
-#ifdef USE_MAPS
-#include "terrain-map/TerrainMap.hpp"
-#endif
-
 #include "drake/RigidBodyManipulator.h"
 
 #if defined(WIN32) || defined(WIN64)
@@ -39,6 +35,9 @@ typedef struct _support_state_element
   std::vector<Vector4d, aligned_allocator<Vector4d>> contact_pts;
   int contact_surface;
   bool support_logic_map[4];
+  
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 } SupportStateElement;
 
 struct DrakeRobotState {
