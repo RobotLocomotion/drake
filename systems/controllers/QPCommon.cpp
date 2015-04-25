@@ -630,6 +630,8 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   //    w_grf*quad(beta) + quad(kdot_des - (A*qdd + Adot*qd))  
   vector<MatrixXd> Hqp_debug;
   vector<VectorXd> fqp_debug;
+  mexPrintf("nc=%d\n",nc);
+  mexPrintf("include_angular_momentum=%s\n",include_angular_momentum?"True":"False");
   VectorXd f(nparams);
   {      
     if (nc > 0) {
@@ -639,12 +641,18 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
       MatrixXd tmp2 = R_DQyD_ls*Jcom;
 
       pdata->fqp = tmp.transpose()*Qy*D_ls*Jcom;
+      fqp_debug.push_back(pdata->fqp);
       // mexPrintf("fqp head: %f %f %f\n", pdata->fqp(0), pdata->fqp(1), pdata->fqp(2));
       pdata->fqp += tmp1.transpose()*tmp2;
+      fqp_debug.push_back(pdata->fqp);
       pdata->fqp += (S*x_bar + 0.5*s1).transpose()*B_ls*Jcom;
+      fqp_debug.push_back(pdata->fqp);
       pdata->fqp -= u0.transpose()*tmp2;
+      fqp_debug.push_back(pdata->fqp);
       pdata->fqp -= y0.transpose()*Qy*D_ls*Jcom;
+      fqp_debug.push_back(pdata->fqp);
       pdata->fqp -= (w_qdd.array()*pid_out.qddot_des.array()).matrix().transpose();
+      fqp_debug.push_back(pdata->fqp);
       if (include_angular_momentum) {
         pdata->fqp += pdata->Akdot_times_v.transpose()*params->W_kdot*pdata->Ak;
         pdata->fqp -= kdot_des.transpose()*params->W_kdot*pdata->Ak;
@@ -974,7 +982,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
 
   mexPrintf("ub(end)=%7.4f\n",*(ub.data()+ub.rows()-1));
   int debug_nrhs = 0;
-  mxArray* prhs_debug[14];
+  mxArray** prhs_debug = new mxArray*[19+Hqp_debug.size()+fqp_debug.size()];
   prhs_debug[debug_nrhs++] = eigenToMatlab(robot_state.q);
   prhs_debug[debug_nrhs++] = eigenToMatlab(robot_state.qd);
   prhs_debug[debug_nrhs++] = eigenToMatlab(alpha);
@@ -989,6 +997,37 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   prhs_debug[debug_nrhs++] = eigenToMatlab(w_qdd);
   prhs_debug[debug_nrhs++] = eigenToMatlab(Hqp_rhand);
   prhs_debug[debug_nrhs++] = eigenToMatlab(fqp_rhand);
+  for(int i = 0;i<Hqp_debug.size();i++)
+  {
+    prhs_debug[debug_nrhs++] = eigenToMatlab(Hqp_debug[i]);
+  }
+  for(int i = 0;i<fqp_debug.size();i++)
+  {
+    prhs_debug[debug_nrhs++] = eigenToMatlab(fqp_debug[i]);
+  }
+  /*prhs_debug[debug_nrhs] = mxCreateDoubleMatrix(C_ls.rows(),C_ls.cols(),mxREAL);
+  for(int i = 0;i<C_ls.rows();i++)
+  {
+    for(int j = 0;j<C_ls.cols();j++)
+    {
+      *(mxGetPr(prhs_debug[debug_nrhs])+i*C_ls.cols()+j) = C_ls(i,j);
+    }
+  }
+  debug_nrhs++;*/
+  prhs_debug[debug_nrhs++] = eigenToMatlab(C_ls);
+  prhs_debug[debug_nrhs++] = eigenToMatlab(xlimp);
+  prhs_debug[debug_nrhs++] = eigenToMatlab(Qy);
+  prhs_debug[debug_nrhs++] = eigenToMatlab(D_ls);
+  /*prhs_debug[debug_nrhs] = mxCreateDoubleMatrix(D_ls.rows(),D_ls.cols(),mxREAL);
+  for(int i = 0;i<D_ls.rows();i++)
+  {
+    for(int j = 0;j<D_ls.cols();j++)
+    {
+      *(mxGetPr(prhs_debug[debug_nrhs])+i*D_ls.cols()+j) = D_ls(i,j);
+    }
+  }
+  debug_nrhs++;*/
+  prhs_debug[debug_nrhs++] = eigenToMatlab(Jcom);
   mexPrintf("w_qdd ");
   for(int i = 0;i<w_qdd.rows();i++)
   {
@@ -1007,6 +1046,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   {
     mexCallMATLAB(0,(mxArray**)nullptr, debug_nrhs, prhs_debug, "passFromcpp");
   }
+  delete[] prhs_debug;
 
   // If a debug pointer was passed in, fill it with useful data
   if (debug) {
