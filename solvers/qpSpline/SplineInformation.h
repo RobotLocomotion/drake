@@ -20,7 +20,7 @@
 class DLLEXPORT SplineInformation : public PiecewisePolynomialBase
 {
 private:
-  std::vector<int> segment_polynomial_orders;
+  std::vector<int> segment_polynomial_degrees;
   std::vector<std::vector<ValueConstraint> > value_constraints;
   std::vector<ContinuityConstraint> continuity_constraints;
 
@@ -29,7 +29,7 @@ public:
 
   SplineInformation(std::vector<int> const & segment_polynomial_orders, std::vector<double> const & segment_times);
 
-  virtual int getSegmentPolynomialOrder(int segment_number) const;
+  virtual int getSegmentPolynomialDegree(int segment_number) const;
 
   std::vector<ValueConstraint> const & getValueConstraints(int segment_number) const;
 

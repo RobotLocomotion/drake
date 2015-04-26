@@ -22,6 +22,14 @@ template<typename T> bool isInf(T arg)
     arg == -std::numeric_limits<T>::infinity();
 }
 
+inline bool isNaN(double x) {
+#ifdef WIN32
+  return _isnan(x) != 0;
+#else
+  return std::isnan(x);
+#endif
+}
+
 /*
  * from http://stackoverflow.com/questions/1903954/is-there-a-standard-sign-function-signum-sgn-in-c-c
  * returns 0 when val is +0 or -0

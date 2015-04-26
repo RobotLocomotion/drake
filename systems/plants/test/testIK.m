@@ -31,6 +31,8 @@ end
 for i=1:length(r_foot_geometry),
   r_foot_pts = [r_foot_pts robot.getBody(r_foot).getCollisionGeometry{i}.getPoints];
 end
+n_l_foot_pts = size(l_foot_pts, 2);
+n_r_foot_pts = size(r_foot_pts, 2);
 l_hand_pts = [0;0;0];
 r_hand_pts = [0;0;0];
 
@@ -145,14 +147,14 @@ end
 
 
 display('Check a body position constraint')
-kc2l = WorldPositionConstraint(robot,l_foot,l_foot_pts,[nan(2,4);zeros(1,4)],[nan(2,4);zeros(1,4)],tspan);
-kc2r = WorldPositionConstraint(robot,r_foot,r_foot_pts,[nan(2,4);zeros(1,4)],[nan(2,4);zeros(1,4)],tspan);
+kc2l = WorldPositionConstraint(robot,l_foot,l_foot_pts,[nan(2,n_l_foot_pts);zeros(1,n_l_foot_pts)],[nan(2,n_l_foot_pts);zeros(1,n_l_foot_pts)],tspan);
+kc2r = WorldPositionConstraint(robot,r_foot,r_foot_pts,[nan(2,n_r_foot_pts);zeros(1,n_r_foot_pts)],[nan(2,n_r_foot_pts);zeros(1,n_r_foot_pts)],tspan);
 q = test_IK_userfun(robot,q_seed,q_nom,kc1,pc_knee,kc2l,kc2r,ikoptions);
 kinsol = doKinematics(robot,q);
 lfoot_pos = forwardKin(robot,kinsol,l_foot,l_foot_pts,0);
 rfoot_pos = forwardKin(robot,kinsol,r_foot,r_foot_pts,0);
-valuecheck(lfoot_pos(3,:),[0 0 0 0],1e-5);
-valuecheck(rfoot_pos(3,:),[0 0 0 0],1e-5);
+valuecheck(lfoot_pos(3,:),zeros(1,n_l_foot_pts),1e-5);
+valuecheck(rfoot_pos(3,:),zeros(1,n_r_foot_pts),1e-5);
 
 display('Check IK pointwise with body position constraint');
 [q,info] = test_IKpointwise_userfun(robot,[0,1],[q_seed q_seed+1e-3*randn(nq,1)],[q_nom q_nom],kc1,pc_knee,kc2l,kc2r,ikoptions);
@@ -161,8 +163,8 @@ for i = 1:size(q,2)
   kinsol = doKinematics(robot,q(:,i));
   lfoot_pos = forwardKin(robot,kinsol,l_foot,l_foot_pts,0);
   rfoot_pos = forwardKin(robot,kinsol,r_foot,r_foot_pts,0);
-  valuecheck(lfoot_pos(3,:),[0 0 0 0],1e-5);
-  valuecheck(rfoot_pos(3,:),[0 0 0 0],1e-5);
+  valuecheck(lfoot_pos(3,:),zeros(1,n_l_foot_pts),1e-5);
+  valuecheck(rfoot_pos(3,:),zeros(1,n_r_foot_pts),1e-5);
 end
 end
 
@@ -170,14 +172,14 @@ display('Check a body position (in random frame) constraint')
 rpy = [pi/10,pi/20,pi/10];
 xyz = [0.5;0.0;0.2];
 T = [rpy2rotmat(rpy),xyz;zeros(1,3),1];
-kc2l_frame = WorldPositionInFrameConstraint(robot,l_foot,l_foot_pts,T,[nan(2,4);zeros(1,4)],[nan(2,4);zeros(1,4)],tspan);
-kc2r_frame = WorldPositionInFrameConstraint(robot,r_foot,r_foot_pts,T,[nan(2,4);zeros(1,4)],[nan(2,4);zeros(1,4)],tspan);
+kc2l_frame = WorldPositionInFrameConstraint(robot,l_foot,l_foot_pts,T,[nan(2,n_l_foot_pts);zeros(1,n_l_foot_pts)],[nan(2,n_l_foot_pts);zeros(1,n_l_foot_pts)],tspan);
+kc2r_frame = WorldPositionInFrameConstraint(robot,r_foot,r_foot_pts,T,[nan(2,n_r_foot_pts);zeros(1,n_r_foot_pts)],[nan(2,n_r_foot_pts);zeros(1,n_r_foot_pts)],tspan);
 q = test_IK_userfun(robot,q_seed,q_nom,kc1,pc_knee,kc2l_frame,kc2r_frame,ikoptions);
 kinsol = doKinematics(robot,q);
 lfoot_pos = homogTransMult(invHT(T),forwardKin(robot,kinsol,l_foot,l_foot_pts,0));
 rfoot_pos = homogTransMult(invHT(T),forwardKin(robot,kinsol,r_foot,r_foot_pts,0));
-valuecheck(lfoot_pos(3,:),[0 0 0 0],1e-5);
-valuecheck(rfoot_pos(3,:),[0 0 0 0],1e-5);
+valuecheck(lfoot_pos(3,:),zeros(1,n_l_foot_pts),1e-5);
+valuecheck(rfoot_pos(3,:),zeros(1,n_r_foot_pts),1e-5);
 
 display('Check IK pointwise with body position (in random frame) constraint');
 [q,info] = test_IKpointwise_userfun(robot,[0,1],[q_seed q_seed+1e-3*randn(nq,1)],[q_nom q_nom],kc1,pc_knee,kc2l_frame,kc2r_frame,ikoptions);
@@ -186,8 +188,8 @@ for i = 1:size(q,2)
   kinsol = doKinematics(robot,q(:,i));
   lfoot_pos = homogTransMult(invHT(T),forwardKin(robot,kinsol,l_foot,l_foot_pts,0));
   rfoot_pos = homogTransMult(invHT(T),forwardKin(robot,kinsol,r_foot,r_foot_pts,0));
-  valuecheck(lfoot_pos(3,:),[0 0 0 0],1e-5);
-  valuecheck(rfoot_pos(3,:),[0 0 0 0],1e-5);
+  valuecheck(lfoot_pos(3,:),zeros(1,n_l_foot_pts),1e-5);
+  valuecheck(rfoot_pos(3,:),zeros(1,n_r_foot_pts),1e-5);
 end
 end
 
@@ -435,8 +437,8 @@ if(com(3)>1+1e-5 || com(3)<0.9-1e-5)
 end
 rfoot_pos = forwardKin(robot,kinsol,r_foot,r_foot_pts,0);
 lfoot_pos = forwardKin(robot,kinsol,l_foot,l_foot_pts,0);
-valuecheck(rfoot_pos(3,:),[0 0 0 0],1e-5);
-valuecheck(lfoot_pos(3,:),[0 0 0 0],1e-5);
+valuecheck(rfoot_pos(3,:),zeros(1,n_r_foot_pts),1e-5);
+valuecheck(lfoot_pos(3,:),zeros(1,n_l_foot_pts),1e-5);
 shrinkFactor = qsc.shrinkFactor+1e-4;
 center_pos = mean([lfoot_pos(1:2,:) rfoot_pos(1:2,:)],2);
 shrink_vertices = [lfoot_pos(1:2,:) rfoot_pos(1:2,:)]*shrinkFactor+repmat(center_pos*(1-shrinkFactor),1,size(l_foot_pts,2)+size(r_foot_pts,2));

@@ -221,23 +221,18 @@ for i = 2 : nBodies
   if ~isempty(f_ext)
     external_wrench = f_ext(:, i);
     
-    % external wrenches are expressed in 'joint' frame. Transform from
-    % joint to world:
-    T_joint_to_body = homogTransInv(manipulator.body(i).T_body_to_joint);
-    T_joint_to_world = kinsol.T{i} * T_joint_to_body;
-    T_world_to_joint = homogTransInv(T_joint_to_world);
-    AdT_world_to_joint = transformAdjoint(T_world_to_joint);
-    external_wrench = AdT_world_to_joint' * external_wrench;
+    % external wrenches are expressed in body frame. Transform from body to world:
+    AdT_world_to_body = transformAdjoint(homogTransInv(kinsol.T{i}));
+    external_wrench = AdT_world_to_body' * external_wrench;
     net_wrenches{i} = net_wrenches{i} - external_wrench;
     
     if compute_gradient
       dexternal_wrench = getSubMatrixGradient(df_ext,1:twist_size,i,size(f_ext),1:nq);
-      dT_joint_to_world = matGradMult(kinsol.dTdq{i}, T_joint_to_body);
-      dexternal_wrench = dTransformSpatialForce(T_joint_to_world, external_wrench, dT_joint_to_world, dexternal_wrench);
+      dexternal_wrench = dTransformSpatialForce(kinsol.T{i}, external_wrench, kinsol.dTdq{i}, dexternal_wrench);
       dnet_wrenches{i} = dnet_wrenches{i} - dexternal_wrench;
       
       dexternal_wrenchdv = getSubMatrixGradient(df_ext,1:twist_size,i,size(f_ext),nq+(1:nv));
-      dexternal_wrenchdv = AdT_world_to_joint' * dexternal_wrenchdv;
+      dexternal_wrenchdv = AdT_world_to_body' * dexternal_wrenchdv;
       dnet_wrenchesdv{i} = dnet_wrenchesdv{i} - dexternal_wrenchdv;
     end
   end

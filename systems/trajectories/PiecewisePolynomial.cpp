@@ -2,10 +2,12 @@
 #include <stdexcept>
 #include <cassert>
 #include <algorithm>
+#include <complex>
 
 using namespace std;
 
-PiecewisePolynomial::PiecewisePolynomial(std::vector<Polynomial> const& polynomials, std::vector<double> const& segment_times) :
+template <typename CoefficientType>
+PiecewisePolynomial<CoefficientType>::PiecewisePolynomial(std::vector<Polynomial<CoefficientType>> const& polynomials, std::vector<double> const& segment_times) :
     PiecewisePolynomialBase(segment_times),
     polynomials(polynomials)
 {
@@ -17,11 +19,13 @@ PiecewisePolynomial::PiecewisePolynomial(std::vector<Polynomial> const& polynomi
   }
 }
 
-PiecewisePolynomial::PiecewisePolynomial() {
+template <typename CoefficientType>
+PiecewisePolynomial<CoefficientType>::PiecewisePolynomial() {
   // empty
 }
 
-int PiecewisePolynomial::getSegmentIndex(double t) {
+template <typename CoefficientType>
+int PiecewisePolynomial<CoefficientType>::getSegmentIndex(double t) {
   // clip to min/max times
   if (t < getStartTime())
     t = getStartTime();
@@ -36,17 +40,19 @@ int PiecewisePolynomial::getSegmentIndex(double t) {
   return segment_index;
 }
 
-PiecewisePolynomial PiecewisePolynomial::derivative(int derivative_order) const {
-  vector<Polynomial> derivative_polynomials;
+template <typename CoefficientType>
+PiecewisePolynomial<CoefficientType> PiecewisePolynomial<CoefficientType>::derivative(int derivative_order) const {
+  vector<Polynomial<CoefficientType>> derivative_polynomials;
   derivative_polynomials.reserve(polynomials.size());
   for (auto it = polynomials.begin(); it != polynomials.end(); ++it) {
     derivative_polynomials.push_back(it->derivative(derivative_order));
   }
-  return PiecewisePolynomial(derivative_polynomials, segment_times);
+  return PiecewisePolynomial<CoefficientType>(derivative_polynomials, segment_times);
 }
 
-PiecewisePolynomial PiecewisePolynomial::integral(double value_at_start_time) const {
-  PiecewisePolynomial ret;
+template <typename CoefficientType>
+PiecewisePolynomial<CoefficientType> PiecewisePolynomial<CoefficientType>::integral(double value_at_start_time) const {
+  PiecewisePolynomial<CoefficientType> ret;
   ret.segment_times = segment_times;
   ret.polynomials.reserve(polynomials.size());
   ret.polynomials.push_back(polynomials[0].integral(value_at_start_time));
@@ -56,22 +62,26 @@ PiecewisePolynomial PiecewisePolynomial::integral(double value_at_start_time) co
   return ret;
 }
 
-double PiecewisePolynomial::value(double t) {
+template <typename CoefficientType>
+double PiecewisePolynomial<CoefficientType>::value(double t) {
   int segment_index = getSegmentIndex(t);
   return segmentValueAtGlobalAbscissa(segment_index, t);
 }
 
-const Polynomial& PiecewisePolynomial::getPolynomial(int segment_index) const {
+template <typename CoefficientType>
+const Polynomial<CoefficientType>& PiecewisePolynomial<CoefficientType>::getPolynomial(int segment_index) const {
   segmentNumberRangeCheck(segment_index);
   return polynomials[segment_index];
 }
 
-int PiecewisePolynomial::getSegmentPolynomialOrder(int segment_index) const {
+template <typename CoefficientType>
+int PiecewisePolynomial<CoefficientType>::getSegmentPolynomialDegree(int segment_index) const {
   segmentNumberRangeCheck(segment_index);
-  return polynomials[segment_index].getOrder();
+  return polynomials[segment_index].getDegree();
 }
 
-PiecewisePolynomial& PiecewisePolynomial::operator+=(const PiecewisePolynomial& other) {
+template <typename CoefficientType>
+PiecewisePolynomial<CoefficientType>& PiecewisePolynomial<CoefficientType>::operator+=(const PiecewisePolynomial<CoefficientType>& other) {
   if (!segmentTimesEqual(other, 1e-10))
     throw runtime_error("Addition not yet implemented when segment times are not equal");
   for (int i = 0; i < polynomials.size(); i++)
@@ -79,7 +89,8 @@ PiecewisePolynomial& PiecewisePolynomial::operator+=(const PiecewisePolynomial& 
   return *this;
 }
 
-PiecewisePolynomial& PiecewisePolynomial::operator*=(const PiecewisePolynomial& other) {
+template <typename CoefficientType>
+PiecewisePolynomial<CoefficientType>& PiecewisePolynomial<CoefficientType>::operator*=(const PiecewisePolynomial<CoefficientType>& other) {
   if (!segmentTimesEqual(other, 1e-10))
     throw runtime_error("Multiplication not yet implemented when segment times are not equal");
   for (int i = 0; i < polynomials.size(); i++)
@@ -87,19 +98,22 @@ PiecewisePolynomial& PiecewisePolynomial::operator*=(const PiecewisePolynomial& 
   return *this;
 }
 
-const PiecewisePolynomial PiecewisePolynomial::operator+(const PiecewisePolynomial &other) const {
-  PiecewisePolynomial ret = *this;
+template <typename CoefficientType>
+const PiecewisePolynomial<CoefficientType> PiecewisePolynomial<CoefficientType>::operator+(const PiecewisePolynomial<CoefficientType> &other) const {
+  PiecewisePolynomial<CoefficientType> ret = *this;
   ret += other;
   return ret;
 }
 
-const PiecewisePolynomial PiecewisePolynomial::operator*(const PiecewisePolynomial &other) const {
-  PiecewisePolynomial ret = *this;
+template <typename CoefficientType>
+const PiecewisePolynomial<CoefficientType> PiecewisePolynomial<CoefficientType>::operator*(const PiecewisePolynomial<CoefficientType> &other) const {
+  PiecewisePolynomial<CoefficientType> ret = *this;
   ret *= other;
   return ret;
 }
 
-bool PiecewisePolynomial::isApprox(const PiecewisePolynomial& other, double tol) const {
+template <typename CoefficientType>
+bool PiecewisePolynomial<CoefficientType>::isApprox(const PiecewisePolynomial<CoefficientType>& other, double tol) const {
   if (!segmentTimesEqual(other, tol))
     return false;
 
@@ -110,7 +124,10 @@ bool PiecewisePolynomial::isApprox(const PiecewisePolynomial& other, double tol)
   return true;
 }
 
-double PiecewisePolynomial::segmentValueAtGlobalAbscissa(int segment_index, double t) const {
+template <typename CoefficientType>
+double PiecewisePolynomial<CoefficientType>::segmentValueAtGlobalAbscissa(int segment_index, double t) const {
   return polynomials[segment_index].value(t - getStartTime(segment_index));
 }
 
+template class DLLEXPORT PiecewisePolynomial<double>;
+//template class DLLEXPORT PiecewisePolynomial<std::complex<double>>; // doesn't work yet

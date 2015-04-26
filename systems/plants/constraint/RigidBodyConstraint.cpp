@@ -27,13 +27,6 @@ void drakePrintMatrix(const MatrixXd &mat)
   }
 };
 
-static void checkBodyInd(int body, int num_bodies, int min_body_ind = 0)
-{
-  if(body< min_body_ind || body>=num_bodies)
-  {
-    std::cerr<<"body should be within ["<<min_body_ind<<" robot.num_bodies-1]"<<std::endl;
-  }
-}
 namespace DrakeRigidBodyConstraint{
   Vector4d com_pts(0.0,0.0,0.0,1.0);
   const int WorldCoMDefaultRobotNum[1] = {0};

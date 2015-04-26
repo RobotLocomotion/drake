@@ -24,7 +24,7 @@ public:
 
   virtual ~PiecewisePolynomialBase();
 
-  virtual int getSegmentPolynomialOrder(int segment_number) const = 0;
+  virtual int getSegmentPolynomialDegree(int segment_number) const = 0;
 
   int getNumberOfSegments() const;
 
