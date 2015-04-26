@@ -161,14 +161,14 @@ for i=1:length(support_times)-1
       pelvis_reference_height(i+1) = rsole_des_next(3);
     end
   elseif isLeftSupport && nextIsDoubleSupport 
-    if rsole_des_next(3) < lsole_des(3) - step_height_delta_threshold
+    if rsole_des_next(3) < lsole_des(3)
       % stepping down with right foot
       pelvis_reference_height(i+1) = rsole_des_next(3);
     else
       pelvis_reference_height(i+1) = lsole_des(3);
     end
   elseif isRightSupport && nextIsDoubleSupport 
-    if lsole_des_next(3) < rsole_des(3) - step_height_delta_threshold
+    if lsole_des_next(3) < rsole_des(3) 
       % stepping down with left foot
       pelvis_reference_height(i+1) = lsole_des_next(3);
     else
