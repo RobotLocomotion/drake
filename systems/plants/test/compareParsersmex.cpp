@@ -1,5 +1,6 @@
 #include "mex.h"
 #include <iostream>
+#include "testUtil.h"
 #include "drakeUtil.h"
 #include "RigidBodyManipulator.h"
 #include "math.h"

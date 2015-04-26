@@ -6,17 +6,10 @@
  */
 
 #include "mex.h"
-#include <string>
 #include <stdexcept>
 #include <vector>
 #include <utility>
 #include <Eigen/Core>
-
-// needed only for valuecheck (but keeping that code in the header avoids explicit instantiations)
-#include <sstream> 
-#include <cmath>
-// end valuecheck includes
-
 
 #ifndef DRAKE_UTIL_H_
 #define DRAKE_UTIL_H_
@@ -91,15 +84,74 @@ mxArray* stdVectorToMatlab(const std::vector<Scalar>& vec) {
   return pm;
 }
 
+DLLEXPORT void sizecheck(const mxArray* mat, int M, int N);
+
+template <size_t Rows, size_t Cols>
+void matlabToCArrayOfArrays(const mxArray *source, double (&destination)[Rows][Cols])  {
+  // Matlab arrays come in as column-major data. The format used in e.g. LCM messages is an array of arrays.
+  // from http://stackoverflow.com/a/17569578/2228557
+  sizecheck(source, static_cast<int>(Rows), static_cast<int>(Cols));
+  double* source_data = mxGetPr(source);
+  for (size_t row = 0; row < Rows; ++row) {
+    for (size_t col = 0; col < Cols; ++col) {
+      destination[row][col] = source_data[row + col * Rows];
+    }
+  }
+}
+
+// note for if/when we split off all Matlab related stuff into a different file: this function is not Matlab related
+// can only be used when the dimension information of the array is known at compile time
+template <size_t Rows, size_t Cols, typename Derived>
+void eigenToCArrayOfArrays(const Eigen::MatrixBase<Derived>& source, double (&destination)[Rows][Cols]) {
+  if (Rows != source.rows())
+    throw std::runtime_error("Number of rows of source doesn't match destination");
+  if (Cols != source.cols())
+    throw std::runtime_error("Number of columns of source doesn't match destination");
+  for (size_t row = 0; row < Rows; ++row) {
+    for (size_t col = 0; col < Cols; ++col) {
+      destination[row][col] = source(row, col);
+    }
+  }
+}
+
+// note for if/when we split off all Matlab related stuff into a different file: this function is not Matlab related
+// can only be used when the dimension information of the array is known at compile time
+template <size_t Size, typename Derived>
+void eigenVectorToCArray(const Eigen::MatrixBase<Derived>& source, double (&destination)[Size]) {
+  if (Size != source.size())
+    throw std::runtime_error("Size of source doesn't match destination");
+  for (size_t i = 0; i < Size; ++i) {
+    destination[i] = source(i);
+  }
+}
+
+// note for if/when we split off all Matlab related stuff into a different file: this function is not Matlab related
+template <typename Derived>
+void eigenVectorToStdVector(const Eigen::MatrixBase<Derived>& source, std::vector<typename Derived::Scalar>& destination) {
+  assert(source.rows() == 1 || source.cols() == 1);
+  destination.reserve(static_cast<size_t>(source.size()));
+  for (Eigen::DenseIndex i = 0; i < source.size(); i++)
+    destination[static_cast<size_t>(i)] = source(i);
+}
+
+// note for if/when we split off all Matlab related stuff into a different file: this function is not Matlab related
+template <typename Derived>
+void eigenToStdVectorOfStdVectors(const Eigen::MatrixBase<Derived>& source, std::vector< std::vector<typename Derived::Scalar> >& destination) {
+  destination.reserve(source.rows());
+  for (Eigen::DenseIndex row = 0; row < source.rows(); ++row) {
+    auto& destination_row = destination[row];
+    destination_row.reserve(source.cols());
+    for (Eigen::DenseIndex col = 0; col < source.cols(); ++col) {
+      destination_row[col] = source(row, col);
+    }
+  }
+}
+
 DLLEXPORT const std::vector<double> matlabToStdVector(const mxArray* in);
 
 DLLEXPORT int sub2ind(mwSize ndims, const mwSize* dims, const mwSize* sub);
 
-void baseZeroToBaseOne(std::vector<int>& vec)
-{
-  for (std::vector<int>::iterator iter=vec.begin(); iter!=vec.end(); iter++)
-    (*iter)++;
-}
+DLLEXPORT void baseZeroToBaseOne(std::vector<int>& vec);
 
 DLLEXPORT double angleAverage(double theta1, double theta2);
 
@@ -114,44 +166,5 @@ DLLEXPORT mxArray* mxGetFieldSafe(const mxArray* array, size_t index, std::strin
 
 DLLEXPORT void mxSetFieldSafe(mxArray* array, size_t index, std::string const & fieldname, mxArray* data);
 
-DLLEXPORT void sizecheck(const mxArray* mat, int M, int N);
-
-template<typename Derived>
-std::string to_string(const Eigen::MatrixBase<Derived> & a)
-{
-	std::stringstream ss;
-	ss << a;
-	return ss.str();
-}
-
-inline int my_isnan(double x) {
-#ifdef WIN32
-  return _isnan(x);
-#else
-  return std::isnan(x);
-#endif
-}
-
-template<typename DerivedA, typename DerivedB>
-void valuecheck(const Eigen::MatrixBase<DerivedA>& a, const Eigen::MatrixBase<DerivedB>& b, double tol, std::string error_msg)
-{
-  // note: isApprox uses the L2 norm, so is bad for comparing against zero
-  if (a.rows() != b.rows() || a.cols() != b.cols()) {
-    throw std::runtime_error("Drake:ValueCheck ERROR:" + error_msg + "size mismatch: (" + std::to_string(static_cast<unsigned long long>(a.rows())) + " by " + std::to_string(static_cast<unsigned long long>(a.cols())) + ") and (" + std::to_string(static_cast<unsigned long long>(b.rows())) + " by " + std::to_string(static_cast<unsigned long long>(b.cols())) + ")");
-  }
-  if (!(a-b).isZero(tol)) {
-    if (!a.allFinite() && !b.allFinite()) {
-      // could be failing because inf-inf = nan
-      bool ok=true;
-      for (int i=0; i<a.rows(); i++)
-        for (int j=0; j<a.cols(); j++) {
-          ok = ok && ((a(i,j) == std::numeric_limits<double>::infinity() && b(i,j) == std::numeric_limits<double>::infinity()) || (a(i,j) == -std::numeric_limits<double>::infinity() && b(i,j) == -std::numeric_limits<double>::infinity()) || (my_isnan(a(i,j)) && my_isnan(b(i,j))) || (std::abs(a(i,j)-b(i,j))<tol));
-        }
-      if (ok) return;
-    }
-    error_msg += "A:\n" + to_string(a) + "\nB:\n" + to_string(b) + "\n";
-    throw std::runtime_error("Drake:ValueCheck ERROR:" + error_msg);
-  }
-}
 
 #endif /* DRAKE_UTIL_H_ */

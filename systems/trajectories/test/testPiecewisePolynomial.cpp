@@ -3,6 +3,8 @@
 #include <random>
 #include <vector>
 #include "testUtil.h"
+#include "trajectoryTestUtil.h"
+#include <iostream>
 
 using namespace std;
 using namespace Eigen;
@@ -10,36 +12,29 @@ using namespace Eigen;
 default_random_engine generator;
 uniform_real_distribution<double> uniform;
 
-vector<double> generateSegmentTimes(int num_segments) {
-  vector<double> segment_times;
-  double t0 = uniform(generator);
-  segment_times.push_back(t0);
-  for (int i = 0; i < num_segments; ++i) {
-    double duration = uniform(generator);
-    segment_times.push_back(segment_times[i] + duration);
-  }
-  return segment_times;
-}
-
+template <typename CoefficientType>
 void testIntegralAndDerivative() {
-  vector<Polynomial> polynomials;
   int num_coefficients = 5;
   int num_segments = 3;
-  for (int i = 0; i < num_segments; ++i) {
-    VectorXd coefficients = VectorXd::Random(num_coefficients);
-    polynomials.push_back(Polynomial(coefficients));
-  }
+  int rows = 3;
+  int cols = 5;
+
+  typedef PiecewisePolynomial<CoefficientType> PiecewisePolynomialType;
+  typedef typename PiecewisePolynomialType::CoefficientMatrix CoefficientMatrix;
+
+  vector<double> segment_times = generateRandomSegmentTimes(num_segments, generator);
+  PiecewisePolynomialType piecewise = generateRandomPiecewisePolynomial<CoefficientType>(rows, cols, num_coefficients, segment_times);
 
   // differentiate integral, get original back
-  PiecewisePolynomial piecewise(polynomials, generateSegmentTimes(num_segments));
-  PiecewisePolynomial piecewise_back = piecewise.integral().derivative();
+  PiecewisePolynomialType piecewise_back = piecewise.integral().derivative();
   if (!piecewise.isApprox(piecewise_back, 1e-10))
     throw runtime_error("wrong");
 
   // check value at start time
-  double value_at_t0 = uniform(generator);
-  PiecewisePolynomial integral = piecewise.integral(value_at_t0);
-  valuecheck(value_at_t0, integral.value(piecewise.getStartTime()), 1e-10);
+  CoefficientMatrix desired_value_at_t0 = PiecewisePolynomialType::CoefficientMatrix::Random(piecewise.rows(), piecewise.cols());
+  PiecewisePolynomialType integral = piecewise.integral(desired_value_at_t0);
+  auto value_at_t0 = integral.value(piecewise.getStartTime());
+  valuecheck(desired_value_at_t0, value_at_t0, 1e-10);
 
   // check continuity at knot points
   for (int i = 0; i < piecewise.getNumberOfSegments() - 1; ++i) {
@@ -47,8 +42,44 @@ void testIntegralAndDerivative() {
   }
 }
 
+template <typename CoefficientType>
+void testBasicFunctionality() {
+  int max_num_coefficients = 6;
+  int num_tests = 100;
+  default_random_engine generator;
+  uniform_int_distribution<> int_distribution(1, max_num_coefficients);
+
+  typedef PiecewisePolynomial<CoefficientType> PiecewisePolynomialType;
+  typedef typename PiecewisePolynomialType::CoefficientMatrix CoefficientMatrix;
+
+  for (int i = 0; i < num_tests; ++i) {
+    int num_coefficients = int_distribution(generator);
+    int num_segments = int_distribution(generator);
+    int rows = int_distribution(generator);
+    int cols = int_distribution(generator);
+
+    vector<double> segment_times = generateRandomSegmentTimes(num_segments, generator);
+    PiecewisePolynomialType piecewise1 = generateRandomPiecewisePolynomial<CoefficientType>(rows, cols, num_coefficients, segment_times);
+    PiecewisePolynomialType piecewise2 = generateRandomPiecewisePolynomial<CoefficientType>(rows, cols, num_coefficients, segment_times);
+
+    PiecewisePolynomialType sum = piecewise1 + piecewise2;
+
+    normal_distribution<double> normal;
+    double offset = normal(generator);
+    PiecewisePolynomialType piecewise1_shifted = piecewise1;
+    piecewise1_shifted.shiftRight(offset);
+
+    uniform_real_distribution<double> uniform(piecewise1.getStartTime(), piecewise1.getEndTime());
+    double t = uniform(generator);
+
+    valuecheck(sum.scalarValue(t), piecewise1.scalarValue(t) + piecewise2.scalarValue(t), 1e-8);
+    valuecheck(piecewise1_shifted.scalarValue(t), piecewise1.scalarValue(t - offset), 1e-8);
+  }
+}
+
 int main(int argc, char **argv) {
-  testIntegralAndDerivative();
+  testIntegralAndDerivative<double>();
+  testBasicFunctionality<double>();
 
   std::cout << "test passed";
 

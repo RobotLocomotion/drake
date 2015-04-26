@@ -27,16 +27,14 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
   plhs[0] = mxCreateNumericArray(3, dims, mxDOUBLE_CLASS, mxREAL);
   double objective_value = 0.0;
   for (mwSize dof = 0; dof < ndof; dof++) {
-    std::vector<double> xi(num_knots);
-    for (int knot = 0; knot < num_knots; knot++)
-      xi[knot] = xs(dof, knot+1);
+    VectorXd xi = xs.block(dof, 1, 1, num_knots);
 
-    PiecewisePolynomial spline = nWaypointCubicSpline(segment_times, xs(dof, 0), xd0[dof], xs(dof, num_segments), xdf[dof], xi);
+    PiecewisePolynomial<double> spline = nWaypointCubicSpline(segment_times, xs(dof, 0), xd0[dof], xs(dof, num_segments), xdf[dof], xi);
 
-    PiecewisePolynomial acceleration_squared = spline.derivative(2);
+    PiecewisePolynomial<double> acceleration_squared = spline.derivative(2);
     acceleration_squared *= acceleration_squared;
-    PiecewisePolynomial acceleration_squared_integral = acceleration_squared.integral();
-    objective_value += acceleration_squared_integral.value(spline.getEndTime()) - acceleration_squared_integral.value(spline.getStartTime());
+    PiecewisePolynomial<double> acceleration_squared_integral = acceleration_squared.integral();
+    objective_value += acceleration_squared_integral.scalarValue(spline.getEndTime()) - acceleration_squared_integral.scalarValue(spline.getStartTime());
 
     for (mwSize segment_index = 0; segment_index < spline.getNumberOfSegments(); segment_index++) {
       for (mwSize coefficient_index = 0; coefficient_index < num_coeffs_per_segment; coefficient_index++) {

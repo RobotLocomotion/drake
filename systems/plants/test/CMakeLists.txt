@@ -4,6 +4,7 @@ pods_find_pkg_config(bullet)
 
 if (MATLAB_FOUND)
   add_rbm_mex(compareParsersmex)
+  include_directories(${PROJECT_SOURCE_DIR}/util/test)
 endif (MATLAB_FOUND)
 
 add_executable(urdfKinTest urdfKinTest.cpp)

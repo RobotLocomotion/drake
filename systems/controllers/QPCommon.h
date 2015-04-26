@@ -6,6 +6,8 @@
 #include "drake/fastQP.h"
 #include "drake/gurobiQP.h"
 #include "drake/lcmt_qp_controller_input.hpp"
+#include "ExponentialPlusPiecewisePolynomial.h"
+#include <vector>
 
 const double REG = 1e-8;
 
@@ -87,6 +89,8 @@ struct BodyIdsCache {
 };
    
 struct RobotPropertyCache {
+  typedef std::map<std::string, Eigen::Matrix3Xd> ContactGroupNameToContactPointsMap;
+  std::vector<ContactGroupNameToContactPointsMap> contact_groups; // one for each support
   PositionIndicesCache position_indices;
   BodyIdsCache body_ids;
   VectorXi actuated_indices;
@@ -256,6 +260,25 @@ struct PIDOutput {
   VectorXd q_ref;
   VectorXd qddot_des;
 };
+
+enum PlanShiftMode {NONE, XYZ, Z_ONLY, Z_AND_ZMP};
+
+struct QuadraticLyapunovFunction {
+  // TODO: turn this into a class with more functionality
+  MatrixXd S;
+  ExponentialPlusPiecewisePolynomial<double> s1;
+};
+
+struct RigidBodySupportStateElement {
+  // TODO: turn this into a class with more functionality
+  // TODO: consolidate with SupportStateElement?
+  int body; // TODO: should probably be a RigidBody smart pointer
+  Matrix3Xd contact_points;
+  std::vector<std::string> contact_groups; // TODO: should probably have an enum or class instead of the string
+  int contact_surface; // TODO: should probably be a different type
+};
+
+typedef std::vector<RigidBodySupportStateElement> RigidBodySupportState;
 
 std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray *qp_input);
 

@@ -1,5 +1,7 @@
 if (MATLAB_FOUND)
-  include_directories (${CMAKE_SOURCE_DIR}/util )
+  include_directories (${PROJECT_SOURCE_DIR}/util )
+  include_directories (${PROJECT_SOURCE_DIR}/systems/trajectories )
+  include_directories (${PROJECT_SOURCE_DIR}/solvers/polynomial )
   pods_find_pkg_config(gurobi)
 
   pods_find_pkg_config(terrain-map)
@@ -19,8 +21,8 @@ if (MATLAB_FOUND)
     VERSION 0.0.1)
 
   if (gurobi_FOUND)
-    add_mex(drakeQPCommon SHARED QPCommon.cpp)
-    target_link_libraries(drakeQPCommon drakeControlUtil drakeQP)
+    add_mex(drakeQPCommon SHARED QPCommon.cpp Side.cpp BodyMotionData.cpp)
+    target_link_libraries(drakeQPCommon drakeControlUtil drakeQP drakeTrajectories)
     pods_install_libraries(drakeQPCommon)
     pods_install_headers(QPCommon.h DESTINATION drake)
     pods_install_pkg_config_file(drake-qp-common
@@ -49,6 +51,17 @@ if (MATLAB_FOUND)
       add_mex(encodeQPInputLCMMex encodeQPInputLCMMex.cpp)
       target_link_libraries(encodeQPInputLCMMex lcm drakeControlUtil drakeQPCommon)
 
+      # add_mex(drakeQPLocomotionPlan SHARED QPLocomotionPlan.cpp)
+      # target_link_libraries(drakeQPLocomotionPlan drakeQPCommon)
+      # pods_install_libraries(drakeQPLocomotionPlan)
+      # pods_install_headers(QPLocomotionPlan.h DESTINATION drake)
+      # pods_install_pkg_config_file(drake-qp-locomotion-plan
+      # LIBS -ldrakeQPLocomotionPlan
+      # CFLAGS -I\${prefix}/include/lcmtypes
+      # REQUIRES drake-qp-common
+      # VERSION 0.0.1)
+
+
     endif()
   endif()
 
@@ -67,3 +80,5 @@ if (MATLAB_FOUND)
 
 
 endif(MATLAB_FOUND)
+
+add_subdirectory(test)

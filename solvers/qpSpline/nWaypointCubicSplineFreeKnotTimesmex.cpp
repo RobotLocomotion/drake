@@ -43,10 +43,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
   double min_objective_value = numeric_limits<double>::infinity();
 
   // assemble the knot point locations for input to nWaypointCubicSpline
-  std::vector<std::vector<double>> xi(ndof, std::vector<double>(num_knots));
-  for (int dof = 0; dof < ndof; dof++)
-    for (int knot = 0; knot < num_knots; knot++)
-      xi[dof][knot] = xs(dof, 1+knot);
+  MatrixXd xi = xs.block(0, 1, ndof, num_knots);
 
   int t_indices[num_knots];
   if (GRID_STEPS <= num_knots){
@@ -66,11 +63,11 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
     double objective_value = 0.0;
     for (int dof = 0; dof < ndof && valid_solution; dof++) {
       try {
-        PiecewisePolynomial spline = nWaypointCubicSpline(segment_times, xs(dof, 0), xd0[dof], xs(dof, num_segments), xdf[dof], xi[dof]);
-        PiecewisePolynomial acceleration_squared = spline.derivative(2);
+        PiecewisePolynomial<double> spline = nWaypointCubicSpline(segment_times, xs(dof, 0), xd0[dof], xs(dof, num_segments), xdf[dof], xi.row(dof));
+        PiecewisePolynomial<double> acceleration_squared = spline.derivative(2);
         acceleration_squared *= acceleration_squared;
-        PiecewisePolynomial acceleration_squared_integral = acceleration_squared.integral();
-        objective_value += acceleration_squared_integral.value(spline.getEndTime()) - acceleration_squared_integral.value(spline.getStartTime());
+        PiecewisePolynomial<double> acceleration_squared_integral = acceleration_squared.integral();
+        objective_value += acceleration_squared_integral.scalarValue(spline.getEndTime()) - acceleration_squared_integral.scalarValue(spline.getStartTime());
       }
       catch (ConstraintMatrixSingularError&) {
         valid_solution = false;
@@ -98,7 +95,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
   }
 
   for (mwSize dof = 0; dof < ndof; dof++) {
-    PiecewisePolynomial spline = nWaypointCubicSpline(best_segment_times, xs(dof, 0), xd0[dof], xs(dof, num_segments), xdf[dof], xi[dof]);
+    PiecewisePolynomial<double> spline = nWaypointCubicSpline(best_segment_times, xs(dof, 0), xd0[dof], xs(dof, num_segments), xdf[dof], xi.row(dof));
     for (mwSize segment_index = 0; segment_index < spline.getNumberOfSegments(); segment_index++) {
       for (mwSize coefficient_index = 0; coefficient_index < num_coeffs_per_segment; coefficient_index++) {
         mwSize sub[] = {dof, segment_index, num_coeffs_per_segment - coefficient_index - 1}; // Matlab's reverse coefficient indexing...

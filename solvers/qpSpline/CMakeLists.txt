@@ -3,7 +3,7 @@ include_directories (${CMAKE_SOURCE_DIR}/solvers/polynomial)
 include_directories (${CMAKE_SOURCE_DIR}/systems/trajectories)
 
 add_library(drakeSplineGeneration splineGeneration.cpp SplineInformation.cpp ValueConstraint.cpp ContinuityConstraint.cpp)
-target_link_libraries(drakeSplineGeneration drakePolynomial drakePiecewisePolynomial)
+target_link_libraries(drakeSplineGeneration drakeTrajectories)
 pods_install_libraries(drakeSplineGeneration)
 pods_install_headers(splineGeneration.h ValueConstraint.h ContinuityConstraint.h DESTINATION drake)
 pods_install_pkg_config_file(drakeSplineGeneration

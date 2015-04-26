@@ -27,7 +27,7 @@ void setConstraintMatrixPart(double time, int derivative_order, MatrixBase<Deriv
   }
 }
 
-PiecewisePolynomial generateSpline(const SplineInformation& spline_information) {
+PiecewisePolynomial<double> generateSpline(const SplineInformation& spline_information) {
   int num_segments = spline_information.getNumberOfSegments();
   int num_constraints = spline_information.getNumberOfConstraints();
   int num_coefficients = spline_information.getTotalNumberOfCoefficients();
@@ -92,17 +92,17 @@ PiecewisePolynomial generateSpline(const SplineInformation& spline_information) 
   VectorXd solution = decomposition.solve(right_hand_side);
 
   // create Polynomials
-  std::vector<Polynomial> polynomials;
+  std::vector<Polynomial<double>> polynomials;
   for (int i = 0; i < num_segments; i++) {
     auto coefficients = solution.segment(segment_col_starts[i], spline_information.getNumberOfCoefficients(i));
-    polynomials.push_back(Polynomial(coefficients));
+    polynomials.push_back(Polynomial<double>(coefficients));
   }
 
   // return a PiecewisePolynomial
-  return PiecewisePolynomial(polynomials, spline_information.getSegmentTimes());
+  return PiecewisePolynomial<double>(polynomials, spline_information.getSegmentTimes());
 }
 
-PiecewisePolynomial nWaypointCubicSpline(const vector<double>& segment_times, double x0, double xd0, double xf, double xdf, const vector<double>& xi) {
+PiecewisePolynomial<double> nWaypointCubicSpline(const vector<double>& segment_times, double x0, double xd0, double xf, double xdf, const Ref<const VectorXd> &xi) {
   const int num_segments = xi.size()+1;
   assert(segment_times.size() == num_segments + 1);
 
@@ -120,7 +120,7 @@ PiecewisePolynomial nWaypointCubicSpline(const vector<double>& segment_times, do
 
   int num_knots = num_segments - 1;
   for (int i = 0; i < num_knots; i++) {
-    spline_information.addValueConstraint(i+1, ValueConstraint(0, spline_information.getStartTime(i+1), xi[i]));
+    spline_information.addValueConstraint(i+1, ValueConstraint(0, spline_information.getStartTime(i+1), xi(i)));
   }
 
   for (int i = 0; i < num_knots; i++) {
