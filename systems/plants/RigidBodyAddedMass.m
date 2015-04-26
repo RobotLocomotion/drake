@@ -63,7 +63,7 @@ classdef RigidBodyAddedMass < RigidBodyForceElement
 
             %Transform from body to joint coordinates
             force = sparse(6,getNumBodies(manip));
-            force(:,body_ind) = manip.body(body_ind).X_joint_to_body'*forceLocal;
+            force(:,body_ind) = forceLocal;
         end
     end
     

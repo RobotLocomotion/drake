@@ -2,6 +2,10 @@
 #include "drakeUtil.h"
 #include "mex.h"
 
+#ifdef USE_MAPS
+#include "terrain-map/TerrainMap.hpp"
+#endif
+
 template <typename DerivedA, typename DerivedB>
 void getRows(std::set<int> &rows, MatrixBase<DerivedA> const &M, MatrixBase<DerivedB> &Msub)
 {
@@ -86,6 +90,8 @@ void collisionDetect(void* map_ptr, Vector3d const &contact_pos, Vector3d &pos, 
         return;
       }
     }
+#else
+    throw std::runtime_error("map_ptr is not NULL, but controlUtil was built without USE_MAPS support");
 #endif      
   } else {
 //    mexPrintf("Warning: using 0,0,1 as normal\n");
@@ -123,15 +129,14 @@ int contactPhi(RigidBodyManipulator* r, SupportStateElement& supp, void *map_ptr
 
   if (nc<1) return nc;
 
-  Vector3d contact_pos,pos,posB,normal;
+  Vector3d contact_pos,pos,normal;
 
   int i=0;
   for (std::vector<Vector4d,aligned_allocator<Vector4d>>::iterator pt_iter=supp.contact_pts.begin(); pt_iter!=supp.contact_pts.end(); pt_iter++) {
-    
     r->forwardKin(supp.body_idx,*pt_iter,0,contact_pos);
-    collisionDetect(map_ptr,contact_pos,pos,NULL,terrain_height);
+    collisionDetect(map_ptr,contact_pos,pos,&normal,terrain_height);
     pos -= contact_pos;  // now -rel_pos in matlab version
-    
+//    std::cout << "contact pos: " << contact_pos.transpose() << std::endl;
     phi(i) = pos.norm();
     if (pos.dot(normal)>0)
       phi(i)=-phi(i);
@@ -149,7 +154,7 @@ int contactConstraints(RigidBodyManipulator *r, int nc, std::vector<SupportState
   Jp.resize(3*nc,nq);
   Jpdot.resize(3*nc,nq);
   
-  Vector3d contact_pos,pos,posB,normal;
+  Vector3d contact_pos,pos,normal;
   MatrixXd J(3,nq);
   Matrix<double,3,m_surface_tangents> d;
   
@@ -193,7 +198,7 @@ int contactConstraintsBV(RigidBodyManipulator *r, int nc, double mu, std::vector
   Jpdotv.resize(3*nc);
   normals.resize(3, nc);
   
-  Vector3d contact_pos,pos,posB,normal; 
+  Vector3d contact_pos,pos,normal; 
   MatrixXd J(3,nq);
   Matrix<double,3,m_surface_tangents> d;
   double norm = sqrt(1+mu*mu); // because normals and ds are orthogonal, the norm has a simple form
@@ -309,6 +314,7 @@ std::vector<SupportStateElement> parseSupportData(const mxArray* supp_data) {
     pm = mxGetField(supp_data, i, "support_logic_map");
     if (mxIsDouble(pm)) {
       logic_map_double = mxGetPrSafe(pm);
+      assert(mxGetM(pm)==4);
       for (j = 0; j < 4; j++) {
         se.support_logic_map[j] = logic_map_double[j] != 0;
       }
@@ -331,7 +337,7 @@ std::vector<SupportStateElement> parseSupportData(const mxArray* supp_data) {
 
 bool isSupportElementActive(SupportStateElement* se, bool contact_force_detected, bool kinematic_contact_detected) {
   bool is_active;
-
+//  std::cout << "checking element with body: " << se->body_idx << " force: " << contact_force_detected << " kin: " << kinematic_contact_detected << std::endl;
   // Implement the logic described in QPInputConstantHeight.m
   if (!contact_force_detected && !kinematic_contact_detected) {
     is_active = se->support_logic_map[0]; 

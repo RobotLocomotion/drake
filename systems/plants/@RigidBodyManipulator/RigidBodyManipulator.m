@@ -37,7 +37,6 @@ classdef RigidBodyManipulator < Manipulator
   end
 
   properties (Access=public)  % i think these should be private, but probably needed to access them from mex? - Russ
-    featherstone = [];
     B = [];
     mex_model_ptr = nullPointer();
     dirty = true;
@@ -397,18 +396,13 @@ classdef RigidBodyManipulator < Manipulator
 
       % try to do it the Xtree way
       force = ftmp(:,1)-ftmp(:,2);
-      f_body = [ cross(point,force,1); force ];  % spatial force in body coordinates
-
-      % convert to joint frame (featherstone dynamics algorithm never reasons in body coordinates)
-      f = obj.body(body_ind).X_joint_to_body'*f_body;
+      f = [ cross(point,force,1); force ];  % spatial force in body coordinates
 
       if (nargout>1)
         dforcedq = ftmpJ(1:3,:)-ftmpJ(4:6,:);
         dforcedforce = ftmpP(1:3,1:size(force,1))-ftmpP(4:6,1:size(force,1));
-        df_bodydq = [ cross(repmat(point,1,size(dforcedq,2)),dforcedq); dforcedq ];
-        df_bodydforce = [ cross(repmat(point,1,size(dforcedforce,2)),dforcedforce); dforcedforce];
-        dfdq = obj.body(body_ind).X_joint_to_body'*df_bodydq;
-        dfdforce = obj.body(body_ind).X_joint_to_body'*df_bodydforce;
+        dfdq = [ cross(repmat(point,1,size(dforcedq,2)),dforcedq); dforcedq ];
+        dfdforce = [ cross(repmat(point,1,size(dforcedforce,2)),dforcedforce); dforcedforce];
       end
     end
 
@@ -484,9 +478,6 @@ classdef RigidBodyManipulator < Manipulator
           axis_angle(1:3)=[0;1;0];
         end
         child.T_body_to_joint = [axis2rotmat(axis_angle), zeros(3,1); 0,0,0,1];
-        child.X_joint_to_body=transformAdjoint(homogTransInv(child.T_body_to_joint));
-
-        valuecheck(inv(child.X_joint_to_body)*[axis;zeros(3,1)],[0;0;1;zeros(3,1)],1e-6);
         valuecheck(child.T_body_to_joint*[axis;1],[0;0;1;1],1e-6);
       end
 
@@ -700,8 +691,6 @@ classdef RigidBodyManipulator < Manipulator
         model.actuator(i) = new_element;
       end
 
-      %% extract featherstone model structure
-      model = extractFeatherstone(model);
       % set position and velocity vector indices
       num_q=0;num_v=0;
       for i=1:length(model.body)
@@ -1420,7 +1409,7 @@ classdef RigidBodyManipulator < Manipulator
     end
 
     function drawKinematicTree(model)
-      % depends on having graphviz2mat installed (from matlabcentral)
+      % depends on having graphviz installed
       % todo: make that a dependency in configure?
       % @ingroup Kinematic Tree
 
@@ -1529,8 +1518,7 @@ classdef RigidBodyManipulator < Manipulator
                     body_ind = body_frame.body_ind;
                 end
                 f_ext = computeSpatialForce(force_element,model,q,qd);
-                joint_wrench = f_ext(:,body_ind);
-                body_wrench = inv(model.body(body_ind).X_joint_to_body)'*joint_wrench;
+                body_wrench = f_ext(:,body_ind);
                 pos = forwardKin(model,kinsol,body_ind,[zeros(3,1),body_wrench(1:3),body_wrench(4:6)]);
                 point = pos(:,1);
                 torque_ext = pos(:,2)-point;
@@ -1624,7 +1612,7 @@ classdef RigidBodyManipulator < Manipulator
       % construct a transform from the state vector to the COM
       checkDirty(model);
       tf = FunctionHandleCoordinateTransform(0,0,model.getStateFrame(),fr,true,true,[],[], ...
-        @(obj,~,~,x) getCOM(model,x(1:model.featherstone.NB)));
+        @(obj,~,~,x) getCOM(model,x(1:model.num_positions)));
 
       model.getStateFrame().addTransform(tf);
     end
@@ -2183,105 +2171,6 @@ classdef RigidBodyManipulator < Manipulator
       end
       frame_dims = [inputparents.robotnum];
       fr = MultiCoordinateFrame.constructFrame(fr,frame_dims,true);
-    end
-
-    function model = extractFeatherstone(model)
-      % @ingroup Kinematic Tree
-
-      %      m=struct('NB',{},'parent',{},'jcode',{},'Xtree',{},'I',{});
-      dof=0;inds=[];
-      for i=1:length(model.body)
-        if model.body(i).parent>0
-          if (model.body(i).floating==1)
-            model.body(i).position_num=dof+(1:6)';
-            dof=dof+6;
-            inds = [inds,i];
-          elseif (model.body(i).floating==2)
-            model.body(i).position_num=dof+(1:7)';
-            dof=dof+7;
-            inds = [inds,i];
-          else
-            dof=dof+1;
-            model.body(i).position_num=dof;
-            inds = [inds,i];
-          end
-        else
-          model.body(i).position_num=0;
-        end
-      end
-      m = struct('NB',dof,'parent',[],'position_num',[],'pitch',[],'damping',[],'coulomb_friction',[],'static_friction',[],'coulomb_window',[],'Xtree',[],'X_joint_to_body',[],'I',[]);
-      m.NB= dof;
-      n=1;
-      m.f_ext_map_from = inds;  % size is length(model.body) output is index into NB, or zero
-      m.f_ext_map_to = [];
-
-      for i=1:length(inds) % number of links with parents
-        b=model.body(inds(i));
-        if (b.floating==1)   % implement relative ypr, but with position_nums as rpy
-          % todo:  remove this and handle the floating joint directly in
-          % HandC.  this is really just a short term hack.
-          m.position_num(n+(0:5)) = b.position_num([1;2;3;6;5;4]);
-          m.pitch(n+(0:2)) = inf;  % prismatic
-          m.pitch(n+(3:5)) = 0;    % revolute
-          m.damping(n+(0:5)) = 0;
-          m.coulomb_friction(n+(0:5)) = 0;
-          m.static_friction(n+(0:5)) = 0;
-          m.coulomb_window(n+(0:5)) = eps;
-          m.parent(n+(0:5)) = [model.body(b.parent).position_num,n+(0:4)];  % rel ypr
-          m.Xtree{n} = Xroty(pi/2);   % x
-          m.Xtree{n+1} = Xrotx(-pi/2)*Xroty(-pi/2); % y (note these are relative changes, x was up, now I'm rotating so y will be up)
-          m.Xtree{n+2} = Xrotx(pi/2); % z
-          m.Xtree{n+3} = eye(6);       % yaw
-          m.Xtree{n+4} = Xrotx(-pi/2);  % pitch
-          m.Xtree{n+5} = Xroty(pi/2)*Xrotx(pi/2);  % roll
-
-%          valuecheck(b.X_joint_to_body,eye(6))); % if this isn't true, then I probably need to handle it better on the line below
-          % but I can't leave the check in because it is also very ugly because this method gets run potentially
-          % multiple times, and will update b each time! (so the test will
-          % fail on the second pass)
-
-          for j=0:4, m.I{n+j} = zeros(6); end
-          m.I{n+5} = b.X_joint_to_body'*b.I*b.X_joint_to_body;
-          m.f_ext_map_to = [m.f_ext_map_to,n+5];
-          n=n+6;
-        elseif (b.floating==2)
-          if model.use_new_kinsol
-            % quick fix so that quaternion kinematics are usable
-            m.position_num(n+(0:6)) = b.position_num;
-            m.pitch(n+(0:6)) = nan;  % should not be used
-            m.damping(n+(0:6)) = 0;
-            m.coulomb_friction(n+(0:6)) = 0;
-            m.static_friction(n+(0:6)) = 0;
-            m.coulomb_window(n+(0:6)) = eps;
-            m.parent(n+(0:6)) = nan;
-            for j = 0 : 6
-              m.Xtree{n + j} = nan(6, 6);
-            end
-            b.X_joint_to_body = eye(6);
-            for j=0:6
-              m.I{n+j} = zeros(6);
-            end
-            m.f_ext_map_to = [m.f_ext_map_to,n+6];
-            n=n+7;
-          else
-            error('dynamics for quaternion floating base not implemented yet');
-          end
-        else
-          m.parent(n) = max(model.body(b.parent).position_num);
-          m.position_num(n) = b.position_num;  % note: only need this for my floating hack above (remove it when gone)
-          m.pitch(n) = b.pitch;
-          m.Xtree{n} = inv(b.X_joint_to_body)*b.Xtree*model.body(b.parent).X_joint_to_body;
-          m.I{n} = b.X_joint_to_body'*b.I*b.X_joint_to_body;
-          m.damping(n) = b.damping;  % add damping so that it's faster to look up in the dynamics functions.
-          m.coulomb_friction(n) = b.coulomb_friction;
-          m.static_friction(n) = b.static_friction;
-          m.coulomb_window(n) = b.coulomb_window;
-          m.f_ext_map_to = [m.f_ext_map_to,n];
-          n=n+1;
-        end
-        model.body(inds(i)) = b;  % b isn't a handle anymore, so store any changes
-      end
-      model.featherstone = m;
     end
 
     function model=removeFixedJoints(model)

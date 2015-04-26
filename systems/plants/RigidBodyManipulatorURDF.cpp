@@ -567,7 +567,6 @@ bool parseJoint(RigidBodyManipulator* model, TiXmlElement* node)
     fjoint = new RevoluteJoint(name, Ttree, axis);
     joint = fjoint;
   } else if (type.compare("fixed") == 0) {
-    // FIXME: implement a fixed joint class
     joint = new FixedJoint(name, Ttree);
   } else if (type.compare("prismatic") == 0) {
     fjoint = new PrismaticJoint(name, Ttree, axis);

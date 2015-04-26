@@ -19,8 +19,6 @@ classdef DrakeSystem < DynamicalSystem
       %   dynamics/update/output do not depend on time.  Set to true if
       %   possible.
 
-      obj.uid = sprintf('%018.0f', now * 24*60*60*1e6);
-
       if (nargin>0)
         obj = setNumContStates(obj,num_xc);
         obj = setNumDiscStates(obj,num_xd);
@@ -212,29 +210,29 @@ classdef DrakeSystem < DynamicalSystem
           'Running configure and make in the drake root directory will fix this.'};
         error('%s\n',errorMsg{:})
       end
-
+      
+      uid = datestr(now,'MMSSFFF');
+      
       % make a simulink model from this block
-      mdl = [class(obj),'_',obj.uid];  % use the class name + uid as the model name
+      mdl = [class(obj),'_',uid];  % use the class name + uid as the model name
       mdl = regexprep(mdl, '\.', '_'); % take any dots out to make it a valid Matlab function
       mdl = mdl(1:min(59,length(mdl))); % truncate the name so that simulink won't throw a warning about it being too long
-      close_system(mdl,0);  % close it if there is an instance already open
       new_system(mdl,'Model');
       set_param(mdl,'SolverPrmCheckMsg','none');  % disables warning for automatic selection of default timestep
-
-      assignin('base',[mdl,'_obj'],obj);
-
+      mdl = SimulinkModelHandle(mdl);
+      
       load_system('simulink');
       load_system('simulink3');
       add_block('simulink/User-Defined Functions/S-Function',[mdl,'/DrakeSys'], ...
         'FunctionName','DCSFunction', ...
-        'parameters',[mdl,'_obj']);
-
+        'parameters',registerParameter(mdl,obj,'DrakeSystem'));
+      
       m = Simulink.Mask.create([mdl,'/DrakeSys']);
       m.set('Display',['fprintf(''',class(obj),''')']);
-
+      
       if (getNumInputs(obj)>0)
         add_block('simulink3/Sources/In1',[mdl,'/in']);
-
+        
         if (any(~isinf([obj.umin,obj.umax]))) % then add saturation block
           add_block('simulink3/Nonlinear/Saturation',[mdl,'/sat'],...
             'UpperLimit',mat2str(obj.umax),'LowerLimit',mat2str(obj.umin));
@@ -248,10 +246,11 @@ classdef DrakeSystem < DynamicalSystem
         add_block('simulink3/Sinks/Out1',[mdl,'/out']);
         add_line(mdl,'DrakeSys/1','out/1');
       end
-
+      
       if ~isempty(obj.state_constraints)
         obj.warning_manager.warnOnce('Drake:DrakeSystem:ConstraintsNotEnforced','system has constraints, but they aren''t enforced in the simulink model yet.');
       end
+      
     end
 
     function [xstar,ustar,info] = findFixedPoint(obj,x0,u0)
@@ -679,7 +678,6 @@ classdef DrakeSystem < DynamicalSystem
     num_u=0;  % dimension of u
     num_y=0;  % dimension of the output y
     num_zcs = 0;  % number of zero-crossings.  @default: 0
-    uid;    % unique identifier for simulink models of this block instance
     direct_feedthrough_flag=true;  % true/false: does the output depend on u?  set false if you can!
     ts=[];    % default sample times of the model
     num_xcon_eq = 0;  % number of state *equality* constraints
@@ -691,5 +689,4 @@ classdef DrakeSystem < DynamicalSystem
     umin=[];   % constrains u>=umin (default umin=-inf)
     umax=[];    % constrains u<=uman (default umax=inf)
   end
-
 end

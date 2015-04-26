@@ -7,7 +7,7 @@ using namespace std;
 
 SplineInformation::SplineInformation(std::vector<int> const & segment_polynomial_orders, std::vector<double> const & segment_times) :
   PiecewisePolynomialBase(segment_times),
-  segment_polynomial_orders(segment_polynomial_orders)
+  segment_polynomial_degrees(segment_polynomial_orders)
 {
   assert(segment_times.size() == segment_polynomial_orders.size() + 1);
   value_constraints.resize(getNumberOfSegments());
@@ -42,6 +42,6 @@ std::vector<double> const & SplineInformation::getSegmentTimes() const {
   return segment_times;
 }
 
-int SplineInformation::getSegmentPolynomialOrder(int segment_number) const {
-  return segment_polynomial_orders[segment_number];
+int SplineInformation::getSegmentPolynomialDegree(int segment_number) const {
+  return segment_polynomial_degrees[segment_number];
 }

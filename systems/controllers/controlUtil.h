@@ -9,10 +9,6 @@
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
 
-#ifdef USE_MAPS
-#include "terrain-map/TerrainMap.hpp"
-#endif
-
 #include "drake/RigidBodyManipulator.h"
 
 #if defined(WIN32) || defined(WIN64)

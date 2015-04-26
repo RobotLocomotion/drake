@@ -44,7 +44,7 @@ collision_object = RigidBodyCapsule(0.05,1,[0.45,-0.05,0.35],[-pi/4,0,0]);
 collision_object.c = [0.5;0.4;0.3];
 r = addGeometryToBody(r, world, collision_object);
 
-collision_object = RigidBodyCapsule(0.05,1,[0.35,0.27,0],[0,pi/2,0]);
+collision_object = RigidBodyCapsule(0.05,1,[-0.35,-0.27,0],[0,pi/2,0]);
 collision_object.c = [0.5;0.4;0.3];
 r = addGeometryToBody(r, l_hand, collision_object);
 collision_object = RigidBodyCapsule(0.05,1,[0;0;0],[0,pi/2,0]);
@@ -53,7 +53,7 @@ collision_object.c = [0.5;0.4;0.3];
 r = r.compile();
 warning(w);
 
-xyz_quat_start = [0.5969; -0.1587; 0.9; -0.2139; 0.6724; 0.3071; -0.6387];
+xyz_quat_start = [0.5969; -0.1587; 0.85; -0.584; -0.457; 0.662; 0.112];
 
 % IK constraints
 qsc_constraint_0 = QuasiStaticConstraint(r, [-inf, inf], 1);
@@ -108,7 +108,7 @@ joints_lower_limit = 30*pi/180*[1;1];
 joints_upper_limit = 120*pi/180*[1;1];
 posture_constraint_8 = posture_constraint_8.setJointLimits(joint_inds, joints_lower_limit, joints_upper_limit);
 
-point_in_link_frame = [0; 0.24449999999999988; 0.011200000000000071];
+point_in_link_frame = [0; -0.24449999999999988; 0.011200000000000071];
 ref_frame = [0.10040853387866658, 0.30507204666777654, 0.94702121025152886, 0.19671872655867628; -0.070421541493923046, 0.95162340926777023, -0.29908810311880585, 1.0145817508809061; -0.9924509725008871, -0.036659695518642732, 0.11703475512224609, 0.9; 0.0, 0.0, 0.0, 1.0];
 lower_bounds = [0.0; 0.0; 0.0] + [-0; -0; -0];
 upper_bounds = [0.0; 0.0; 0.0] + [0.0; 0.0; 0.0];
@@ -117,11 +117,11 @@ position_constraint_7 = WorldPositionInFrameConstraint(r, l_hand, point_in_link_
 %position_constraint_7 = WorldPositionConstraint(r, l_hand, ref_frame(1:3,:)*[point_in_link_frame;1], lower_bounds, upper_bounds, [1.0, 1.0]);
 
 l_hand_initial_position_constraint = WorldPositionConstraint(r, l_hand, [0;0;0], xyz_quat_start(1:3), xyz_quat_start(1:3));
-point_in_link_frame = [0.9; 0.24449999999999988; 0.011200000000000071];
+point_in_link_frame = [-0.35; -0.27; 0.011200000000000071];
 
 
 
-quat_constraint_8 = WorldQuatConstraint(r, l_hand, [0.73638758447380859; 0.089093166809596377; 0.6584413641826542; -0.1274782451791375], 10*pi/180, [1.0, 1.0]);
+quat_constraint_8 = WorldQuatConstraint(r, l_hand, [0.1439; 0.6104; -0.0161; 0.7787], 10*pi/180, [1.0, 1.0]);
 
 l_hand_initial_quat_constraint = WorldQuatConstraint(r, l_hand, xyz_quat_start(4:7), 0*pi/180);
 
@@ -132,9 +132,12 @@ options.display_after_every = 100;
 
 TA = TaskSpaceMotionPlanningTree(r, 'l_hand', point_in_link_frame);
 TA  = TA.setMinDistance(min_distance);
-TA  = TA.setOrientationWeight(1);
-TA.max_edge_length = 0.05;
-TA.max_length_between_constraint_checks = TA.max_edge_length;
+aabb_pts = r.getBody(TA.end_effector_id).getAxisAlignedBoundingBoxPoints();
+aabb_pts = bsxfun(@minus, aabb_pts, TA.end_effector_pt);
+max_radius = max(sqrt(sum(aabb_pts.^2,1)));
+TA  = TA.setOrientationWeight(2*pi*max_radius);
+TA.max_edge_length = 0.2;
+TA.max_length_between_constraint_checks = 0.05;
 TA.angle_tol = 1*pi/180;
 TA.position_tol = 1e-3;
 TA.trees{TA.cspace_idx}.active_collision_options.body_idx = setdiff(1:r.getNumBodies(), [l_foot, r_foot]);
@@ -244,6 +247,10 @@ T_smooth.interp_weight = 0.5;
 q_idx = TA.idx{TA.cspace_idx};
 
 if (info == 1) && (options.n_smoothing_passes > 0)
+  % Factor in joint-space distance in smoothing because its easy for Atlas v5 to
+  % have configurations in which the hand poses are almost identical but the
+  % joint poses are very different.
+  T_smooth.weights(T_smooth.cspace_idx) = 0.5;
   smoothing_timer = tic;
   T_smooth = T_smooth.setLCMGL('T_smooth', TA.line_color);
   [T_smooth, id_last] = T_smooth.recursiveConnectSmoothing(path_ids_A, options.n_smoothing_passes, options.visualize);

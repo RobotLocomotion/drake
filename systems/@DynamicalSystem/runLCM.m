@@ -72,11 +72,9 @@ else % otherwise set up the LCM blocks and run simulink.
   mdl = ['LCM_',datestr(now,'MMSSFFF')];  % use the class name + uid as the model name
   new_system(mdl,'Model');
   set_param(mdl,'SolverPrmCheckMsg','none');  % disables warning for automatic selection of default timestep
+  mdl = SimulinkModelHandle(mdl);  
   
-  load_system('simulink3');
-  add_block('simulink3/Subsystems/Subsystem',[mdl,'/system']);
-  Simulink.SubSystem.deleteContents([mdl,'/system']);
-  Simulink.BlockDiagram.copyContentsToSubSystem(obj.getModel(),[mdl,'/system']);
+  mdl.addSubsystem('system',obj.getModel());
   
   load_system('drake');
   if getNumInputs(obj)>0
@@ -103,16 +101,16 @@ else % otherwise set up the LCM blocks and run simulink.
 
   if (~isempty(x0)) % handle initial conditions
     x0 = obj.stateVectorToStructure(double(x0),mdl);
-    assignin('base',[mdl,'_x0'],x0);
-    pstruct.InitialState = [mdl,'_x0'];
+    pstruct.InitialState = registerParameter(mdl_handle,x0,'x0');
     pstruct.LoadInitialState = 'on';
 
     if (~isempty(find_system(mdl,'ClassName','InitialCondition')))
       warning('Your model appears to have an initial conditions block in it (e.g., from SimMechanics).  That block will overwrite any initial conditions that you pass in to simulate.');
     end
   end  
-    
+  
   sim(mdl,pstruct);
+  
 end
 
 end
