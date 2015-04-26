@@ -367,9 +367,8 @@ void RigidBodyManipulator::compile(void)
     if (bodies[i]->hasParent()) {
       auto iter = find(bodies.begin()+i+1,bodies.end(),bodies[i]->parent);
       if (iter!=bodies.end()) {
+	bodies.erase(iter);
       	bodies.insert(bodies.begin()+i,bodies[i]->parent);
-	auto next_iter = iter+1;
-	if (next_iter != bodies.end()) bodies.erase(next_iter);
       	i--;
       }
     }
