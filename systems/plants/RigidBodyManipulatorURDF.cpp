@@ -477,7 +477,7 @@ bool parseLink(RigidBodyManipulator* model, TiXmlElement* node, const map< strin
   }
 
   model->bodies.push_back(body);
-  body->body_index = model->bodies.size() - 1;
+  body->body_index = static_cast<int>(model->bodies.size()) - 1;
 
   return true;
 }
