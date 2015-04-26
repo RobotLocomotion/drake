@@ -31,6 +31,8 @@ classdef QPLocomotionPlan < QPControllerPlan
     KNEE_KD = 4;
     KNEE_WEIGHT = 1;
 
+    EARLY_CONTACT_ALLOWED_TIME = 0.1; % If a body is about to come into contact within the next [early_contact_allowed_time] seconds, then add an optional support that the controller can use if it senses force on that body
+
   end
 
   properties(Access=protected)
@@ -131,6 +133,7 @@ classdef QPLocomotionPlan < QPControllerPlan
       else
         supp_idx = find(obj.support_times<=t_plan,1,'last');
       end
+      supp = obj.supports(supp_idx);
 
       pelvis_has_tracking = false;
 
@@ -180,7 +183,6 @@ classdef QPLocomotionPlan < QPControllerPlan
             if obj.body_motions(j).toe_off_allowed(body_t_ind)
               obj = obj.updateSwingTrajectory(t_plan, j, body_t_ind, kinsol, qd);
             end
-
           end
         end
 
@@ -188,15 +190,27 @@ classdef QPLocomotionPlan < QPControllerPlan
 
         qp_input.body_motion_data(j).ts = qp_input.body_motion_data(j).ts + obj.start_time;
 
-        if qp_input.body_motion_data(j).body_id == rpc.body_ids.pelvis
+        if body_id == rpc.body_ids.pelvis
           pelvis_has_tracking = true;
         end
 
+        % Add optional support for a body which is about to be in contact
+        if supp_idx < length(obj.supports) && obj.support_times(supp_idx+1) - t_plan < obj.EARLY_CONTACT_ALLOWED_TIME
+          if ~any(supp.bodies == body_id)
+            k = find(obj.supports(supp_idx+1).bodies == body_id);
+            if ~isempty(k)
+              % this body is not in contact, but will be in the next support state
+              qp_input.support_data(end+1).body_id = body_id;
+              qp_input.support_data(end).contact_pts = obj.supports(supp_idx+1).contact_pts{k};
+              qp_input.support_data(end).support_logic_map = obj.support_logic_maps.only_if_force_sensed;
+              qp_input.support_data(end).mu = obj.mu;
+              qp_input.support_data(end).contact_surfaces = 0;
+            end
+          end
+        end
       end
 
       assert(pelvis_has_tracking, 'Expecting a motion_motion_data element for the pelvis');
-
-      supp = obj.supports(supp_idx);
 
       qp_input.support_data = struct('body_id', cell(1, length(supp.bodies)),...
                                      'contact_pts', cell(1, length(supp.bodies)),...
@@ -212,6 +226,8 @@ classdef QPLocomotionPlan < QPControllerPlan
         qp_input.support_data(j).use_support_surface = supp.use_support_surface(j);
         qp_input.support_data(j).support_surface = supp.support_surface{j};
       end
+
+      
 
       qp_input.param_set_name = obj.gain_set;
 
