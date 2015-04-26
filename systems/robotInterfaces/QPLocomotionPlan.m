@@ -14,7 +14,7 @@ classdef QPLocomotionPlan < QPControllerPlan
     mu = 0.5;
     plan_shift = zeros(6,1);
     plan_shift_zmp_inds = 1:2;
-    plan_shift_body_motion_inds = 3;
+    plan_shift_body_motion_inds = 1:3;
     g = 9.81; % gravity m/s^2
     is_quasistatic = false;
     constrained_dofs = [];
