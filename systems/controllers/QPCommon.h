@@ -294,4 +294,6 @@ std::vector<SupportStateElement> loadAvailableSupports(std::shared_ptr<drake::lc
 
 int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_controller_input> qp_input, DrakeRobotState &robot_state, const Ref<Matrix<bool, Dynamic, 1>> &b_contact_force, QPControllerOutput *qp_output, std::shared_ptr<QPControllerDebugData> debug);
 
+void parseRobotPropertyCache(const mxArray *rpc_obj, RobotPropertyCache *rpc);
+
 #endif
