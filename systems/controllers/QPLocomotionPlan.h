@@ -80,6 +80,8 @@ public:
 private:
   bool isSupportingBody(int body_index, const RigidBodySupportState& support_state);
 
+  void updateSwingTrajectory(double t_plan, BodyMotionData& body_motion_data, int body_motion_segment_index, const Eigen::VectorXd& qd);
+
   static const std::map<SupportLogicType, std::vector<bool> > createSupportLogicMaps();
 };
 

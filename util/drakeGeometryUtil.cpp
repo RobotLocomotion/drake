@@ -1555,3 +1555,4 @@ template DLLEXPORT void quatdot2angularvelMatrix(const Eigen::MatrixBase< Eigen:
 
 template DLLEXPORT GradientVar<double,3,1> quat2expmap(const MatrixBase<Vector4d> &q, int gradient_order);
 template DLLEXPORT GradientVar<double,3,1> quat2expmap(const MatrixBase<Map<Vector4d>> &q, int gradient_order);
+template DLLEXPORT GradientVar<Eigen::Block<Eigen::Matrix<double, -1, 1, 0, -1, 1>, 4, 1, false>::Scalar, 3, 1> quat2expmap<Eigen::Block<Eigen::Matrix<double, -1, 1, 0, -1, 1>, 4, 1, false> >(Eigen::MatrixBase<Eigen::Block<Eigen::Matrix<double, -1, 1, 0, -1, 1>, 4, 1, false> > const&, int);
