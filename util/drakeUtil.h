@@ -129,9 +129,10 @@ void eigenVectorToCArray(const Eigen::MatrixBase<Derived>& source, double (&dest
 template <typename Derived>
 void eigenVectorToStdVector(const Eigen::MatrixBase<Derived>& source, std::vector<typename Derived::Scalar>& destination) {
   assert(source.rows() == 1 || source.cols() == 1);
-  destination.reserve(static_cast<size_t>(source.size()));
-  for (Eigen::DenseIndex i = 0; i < source.size(); i++)
+  destination.resize(static_cast<size_t>(source.size()));
+  for (Eigen::DenseIndex i = 0; i < source.size(); i++) {
     destination[static_cast<size_t>(i)] = source(i);
+  }
 }
 
 // note for if/when we split off all Matlab related stuff into a different file: this function is not Matlab related

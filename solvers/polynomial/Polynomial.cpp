@@ -7,13 +7,6 @@ using namespace std;
 using namespace Eigen;
 
 template <typename CoefficientType>
-Polynomial<CoefficientType>::Polynomial(Eigen::Ref<CoefficientsType> const& coefficients) :
-  coefficients(coefficients)
-{
-  assert(coefficients.rows() > 0);
-}
-
-template <typename CoefficientType>
 Polynomial<CoefficientType>::Polynomial(const CoefficientType& scalar_value) :
   coefficients(1, 1)
 {

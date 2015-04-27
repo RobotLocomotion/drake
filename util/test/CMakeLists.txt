@@ -34,9 +34,8 @@ if (MATLAB_FOUND)
   add_mex(testGeometryConversionFunctionsmex testGeometryConversionFunctionsmex.cpp)
   include_directories( .. )
   target_link_libraries(testGeometryConversionFunctionsmex drakeGeometryUtil)
-  
-  # matlab required because of drakeUtil include.
-  add_executable(testLCMUtil testLCMUtil.cpp)
-  include_directories( .. )
-  target_link_libraries(testLCMUtil drakeLCMUtil)
 endif(MATLAB_FOUND)
+
+add_executable(testLCMUtil testLCMUtil.cpp)
+include_directories( .. )
+target_link_libraries(testLCMUtil drakeLCMUtil drakeTrajectoryTestUtil)
