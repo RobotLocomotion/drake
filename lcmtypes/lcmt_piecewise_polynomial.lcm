@@ -1,0 +1,14 @@
+package drake;
+
+struct lcmt_piecewise_polynomial
+{
+	int64_t timestamp;
+
+	int32_t num_breaks;
+
+	double breaks[num_breaks];
+	
+	int32_t num_segments;
+	
+	lcmt_polynomial_matrix polynomial_matrices[num_segments];
+}

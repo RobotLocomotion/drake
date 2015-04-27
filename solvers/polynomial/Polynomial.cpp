@@ -14,10 +14,10 @@ Polynomial<CoefficientType>::Polynomial(Eigen::Ref<CoefficientsType> const& coef
 }
 
 template <typename CoefficientType>
-Polynomial<CoefficientType>::Polynomial(int num_coefficients) :
-  coefficients(num_coefficients)
+Polynomial<CoefficientType>::Polynomial(const CoefficientType& scalar_value) :
+  coefficients(1, 1)
 {
-  assert(coefficients.rows() > 0);
+  coefficients[0] = scalar_value;
 }
 
 template <typename CoefficientType>
@@ -48,7 +48,8 @@ Polynomial<CoefficientType> Polynomial<CoefficientType>::derivative(int derivati
   if (derivative_num_coefficients <= 0)
     return Polynomial<CoefficientType>::zero();
 
-  Polynomial<CoefficientType> ret(derivative_num_coefficients);
+  Polynomial<CoefficientType> ret;
+  ret.coefficients.resize(derivative_num_coefficients, 1);
   for (int i = 0; i < ret.getNumberOfCoefficients(); i++) {
     RealScalar factorial = 1.0;
     for (int j = 0; j < derivative_order; j++)
@@ -62,7 +63,8 @@ Polynomial<CoefficientType> Polynomial<CoefficientType>::derivative(int derivati
 
 template <typename CoefficientType>
 Polynomial<CoefficientType> Polynomial<CoefficientType>::integral(const CoefficientType& integration_constant) const {
-  Polynomial<CoefficientType> ret(getNumberOfCoefficients() + 1);
+  Polynomial<CoefficientType> ret;
+  ret.coefficients.resize(getNumberOfCoefficients() + 1, 1);
   ret.coefficients(0) = integration_constant;
   for (int i = 1; i < ret.getNumberOfCoefficients(); i++) {
     ret.coefficients(i) = coefficients(i - 1) / (RealScalar) i;
@@ -207,7 +209,8 @@ bool Polynomial<CoefficientType>::isApprox(const Polynomial& other, const RealSc
 
 template <typename CoefficientType>
 Polynomial<CoefficientType> Polynomial<CoefficientType>::zero() {
-  Polynomial<CoefficientType> ret(1);
+  Polynomial<CoefficientType> ret;
+  ret.coefficients.resize(1, 1);
   ret.coefficients(0) = (CoefficientType) 0;
   return ret;
 }

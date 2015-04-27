@@ -48,6 +48,8 @@ void testOperators() {
     Polynomial<CoefficientType> poly1_minus_scalar = poly1 - scalar;
     Polynomial<CoefficientType> poly1_scaled = poly1 * scalar;
     Polynomial<CoefficientType> poly1_div = poly1 / scalar;
+    Polynomial<CoefficientType> poly1_times_poly1 = poly1;
+    poly1_times_poly1 *= poly1_times_poly1;
 
     double t = uniform(generator);
     valuecheck(sum.value(t), poly1.value(t) + poly2.value(t), 1e-8);
@@ -57,6 +59,7 @@ void testOperators() {
     valuecheck(poly1_minus_scalar.value(t), poly1.value(t) - scalar, 1e-8);
     valuecheck(poly1_scaled.value(t), poly1.value(t) * scalar, 1e-8);
     valuecheck(poly1_div.value(t), poly1.value(t) / scalar, 1e-8);
+    valuecheck(poly1_times_poly1.value(t), poly1.value(t) * poly1.value(t), 1e-8);
   }
 }
 
@@ -93,12 +96,57 @@ void testEvalType() {
   valuecheck(typeid(decltype(valueComplexInput)) == typeid(std::complex<double>), true);
 }
 
+template<typename CoefficientType, DenseIndex RowsAtCompileTime = Dynamic, DenseIndex ColsAtCompileTime = Dynamic>
+Matrix<Polynomial<CoefficientType>, Dynamic, Dynamic> createRandomPolynomialMatrix(
+    default_random_engine generator, int max_num_coefficients, int rows = RowsAtCompileTime, int cols = ColsAtCompileTime)
+{
+  uniform_int_distribution<> num_coefficients_distribution(1, max_num_coefficients);
+  Matrix<Polynomial<CoefficientType>, RowsAtCompileTime, ColsAtCompileTime> mat(rows, cols);
+  for (int row = 0; row < mat.rows(); ++row) {
+    for (int col = 0; col < mat.cols(); ++col) {
+      auto coeffs = (Matrix<CoefficientType, Dynamic, 1>::Random(num_coefficients_distribution(generator))).eval();
+      mat(row, col) = Polynomial<CoefficientType>(coeffs);
+    }
+  }
+  return mat;
+}
+
+template <typename CoefficientType>
+void testPolynomialMatrix() {
+  int max_matrix_rows_cols = 7;
+  int max_num_coefficients = 6;
+  default_random_engine generator;
+
+  uniform_int_distribution<> matrix_size_distribution(1, max_matrix_rows_cols);
+  int rows_A = matrix_size_distribution(generator);
+  int cols_A = matrix_size_distribution(generator);
+  int rows_B = cols_A;
+  int cols_B = matrix_size_distribution(generator);
+
+  auto A = createRandomPolynomialMatrix<CoefficientType>(generator, max_num_coefficients, rows_A, cols_A);
+  auto B = createRandomPolynomialMatrix<CoefficientType>(generator, max_num_coefficients, rows_B, cols_B);
+  auto C = createRandomPolynomialMatrix<CoefficientType>(generator, max_num_coefficients, rows_A, cols_A);
+  auto product = A * B; // just verify that this is possible without crashing
+  auto sum = A + C;
+
+  uniform_real_distribution<double> uniform;
+  for (int row = 0; row < A.rows(); ++row) {
+    for (int col = 0; col < A.cols(); ++col) {
+      double t = uniform(generator);
+      valuecheck(sum(row, col).value(t), A(row, col).value(t) + C(row, col).value(t), 1e-8);
+    }
+  }
+
+  C.setZero(); // this was a problem before
+}
+
 int main(int argc, char **argv) {
 
   testIntegralAndDerivative<double>();
   testOperators<double>();
   testRoots<double>();
   testEvalType();
+  testPolynomialMatrix<double>();
   cout << "test passed" << endl;
   return 0;
 }

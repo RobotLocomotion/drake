@@ -234,29 +234,31 @@ void QPLocomotionPlan::publishQPControllerInput(
 }
 
 void QPLocomotionPlan::updateSwingTrajectory(double t_plan, BodyMotionData& body_motion_data, int body_motion_segment_index, const Eigen::VectorXd& qd) {
-  typedef Matrix<double, 7, 1> Vector7d;
+  // TODO: clean up a bit. Doesn't make sense to store every intermediate thing in stacked vectors.
 
   auto x0_xyzquat = robot->forwardKinNew((Vector3d::Zero()).eval(), body_motion_data.getBodyOrFrameId(), 0, 2, 1);
   auto& J = x0_xyzquat.gradient().value();
   auto xd0_xyzquat = (J * qd).eval();
   auto quat = xd0_xyzquat.tail<QUAT_SIZE>();
   auto x0_expmap = quat2expmap(quat, 1);
-  Vector7d xd0_xyzexpmap;
-  xd0_xyzexpmap.head<3>() = x0_xyzquat.value().head<SPACE_DIMENSION>();
-  xd0_xyzexpmap.tail<3>() = x0_expmap.gradient().value() * xd0_xyzquat.tail<QUAT_SIZE>();
+  Vector6d xd0_xyzexpmap;
+  xd0_xyzexpmap.head<SPACE_DIMENSION>() = x0_xyzquat.value().head<SPACE_DIMENSION>();
+  xd0_xyzexpmap.tail<SPACE_DIMENSION>() = x0_expmap.gradient().value() * xd0_xyzquat.tail<QUAT_SIZE>();
 
   int next_landing_spline_offset = 2;
-  int next_landing_spline = body_motion_segment_index + next_landing_spline_offset;
+  int next_landing_spline_segment_index = body_motion_segment_index + next_landing_spline_offset;
   PiecewisePolynomial<double> trajectory = body_motion_data.getTrajectory();
-  auto x1_xyzexp = trajectory.value(trajectory.getEndTime(next_landing_spline));
+  VectorXd x1_xyzexp = trajectory.value(trajectory.getEndTime(next_landing_spline_segment_index));
 
-  // TODO:
-//      x1_xyzexp = body_motion_data.coefs(:,body_t_ind+2, end); // TODO:why 2?
+  auto x0_expmap_unwrapped = unwrapExpmap(x1_xyzexp.tail<SPACE_DIMENSION>(), x0_expmap.value(), 1);
+  xd0_xyzexpmap.tail<SPACE_DIMENSION>() = x0_expmap_unwrapped.gradient().value() * xd0_xyzexpmap.tail<SPACE_DIMENSION>();
+  xd0_xyzexpmap.head<3>().setZero(); // TODO, after all this we just set it to zero...
+
 //      [x0_expmap,dx0_expmap] = unwrapExpmap(x1_xyzexp(4:6),x0_expmap);
 //      xd0_xyzexpmap(4:6) = dx0_expmap*xd0_xyzexpmap(4:6);
 //      x0_xyzexpmap = [x0_xyzquat(1:3);x0_expmap];
-//      xd0_xyzexpmap(1:3) = zeros(3,1); // TODO:WTF?
-//      xs = [x0_xyzexpmap, body_motion_data.coefs(:, body_t_ind+(2:4), end)];
+//      xd0_xyzexpmap(1:3) = zeros(3,1);
+//      xs = [x0_xyzexpmap, body_motion_data.coefs(:, body_t_ind+(2:4), end)]; TODO
 
 
 //      % If the current pose is pitched down more than the first aerial knot point, adjust the knot point to match the current pose
