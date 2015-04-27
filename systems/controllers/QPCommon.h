@@ -80,6 +80,7 @@ struct PositionIndicesCache {
   VectorXi l_leg;
   VectorXi r_leg_ak;
   VectorXi l_leg_ak;
+  VectorXi arm;
 };
 
 struct BodyIdsCache {

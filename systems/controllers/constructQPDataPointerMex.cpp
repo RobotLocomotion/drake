@@ -297,6 +297,10 @@ void parseRobotPropertyCache(const mxArray *rpc_obj, RobotPropertyCache *rpc) {
   Map<VectorXd>l_leg_ak(mxGetPrSafe(pobj), mxGetNumberOfElements(pobj));
   rpc->position_indices.l_leg_ak = l_leg_ak.cast<int>().array() - 1;
 
+  pobj = myGetField(myGetField(rpc_obj, "position_indices"), "arm");
+  Map<VectorXd>arm(mxGetPrSafe(pobj), mxGetNumberOfElements(pobj));
+  rpc->position_indices.arm = arm.cast<int>().array() - 1;
+
   rpc->body_ids.r_foot = (int) mxGetScalar(myGetField(myGetField(rpc_obj, "body_ids"), "r_foot")) - 1;
   rpc->body_ids.l_foot = (int) mxGetScalar(myGetField(myGetField(rpc_obj, "body_ids"), "l_foot")) - 1;
   rpc->body_ids.pelvis = (int) mxGetScalar(myGetField(myGetField(rpc_obj, "body_ids"), "pelvis")) - 1;
