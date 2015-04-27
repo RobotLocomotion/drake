@@ -37,7 +37,7 @@ private:
 public:
   Polynomial(Eigen::Ref<CoefficientsType> const& coefficients);
 
-  Polynomial(int num_coefficients);
+  Polynomial(const CoefficientType& scalar_value); // this is required for some Eigen operations when used in a polynomial matrix
 
   Polynomial();
 
