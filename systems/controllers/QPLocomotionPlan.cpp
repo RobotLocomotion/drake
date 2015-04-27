@@ -233,7 +233,7 @@ void QPLocomotionPlan::publishQPControllerInput(
   // TODO: publish LCM message
 }
 
-void QPLocomotionPlan::updateSwingTrajectory(double t_plan, BodyMotionData& body_motion_data, int body_motion_segment_index, const Eigen::Vector<double>& qd) {
+void QPLocomotionPlan::updateSwingTrajectory(double t_plan, BodyMotionData& body_motion_data, int body_motion_segment_index, const Eigen::VectorXd& qd) {
   typedef Matrix<double, 7, 1> Vector7d;
 
   auto x0_xyzquat = robot->forwardKinNew((Vector3d::Zero()).eval(), body_motion_data.getBodyOrFrameId(), 0, 2, 1);
@@ -242,8 +242,8 @@ void QPLocomotionPlan::updateSwingTrajectory(double t_plan, BodyMotionData& body
   auto quat = xd0_xyzquat.tail<QUAT_SIZE>();
   auto x0_expmap = quat2expmap(quat, 1);
   Vector7d xd0_xyzexpmap;
-  xd0_xyzexpmap.head<3> = x0_xyzquat.value().head<SPACE_DIMENSION>();
-  xd0_xyzexpmap.tail<3> = x0_expmap.gradient().value() * xd0_xyzquat.value().tail<QUAT_SIZE>();
+  xd0_xyzexpmap.head<3>() = x0_xyzquat.value().head<SPACE_DIMENSION>();
+  xd0_xyzexpmap.tail<3>() = x0_expmap.gradient().value() * xd0_xyzquat.tail<QUAT_SIZE>();
 
   int next_landing_spline_offset = 2;
   int next_landing_spline = body_motion_segment_index + next_landing_spline_offset;
