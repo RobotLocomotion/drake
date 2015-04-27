@@ -37,6 +37,10 @@ add_library(drakeGeometryUtil SHARED drakeGeometryUtil.cpp expmap2quat.cpp)
 target_link_libraries(drakeGeometryUtil drakeGradientUtil)
 pods_install_libraries(drakeGeometryUtil)
 pods_install_headers(drakeGeometryUtil.h DESTINATION drake)
+pods_install_pkg_config_file(drake-geometry-util
+  LIBS -ldrakeGeometryUtil
+  REQUIRES
+  VERSION 0.0.1)
 
 pods_install_headers(drakeFloatingPointUtil.h DESTINATION drake)
 
@@ -53,6 +57,15 @@ if (MATLAB_FOUND)
 
   add_mex(expmap2quatImplmex expmap2quatImplmex.cpp)
   target_link_libraries(expmap2quatImplmex drakeUtil drakeGeometryUtil drakeGradientUtil)
+
+  add_mex(flipExpmapmex flipExpmapmex.cpp)
+  target_link_libraries(flipExpmapmex drakeUtil drakeGeometryUtil drakeGradientUtil)
+
+  add_mex(unwrapExpmapmex unwrapExpmapmex.cpp)
+  target_link_libraries(unwrapExpmapmex drakeUtil drakeGeometryUtil drakeGradientUtil)
+
+  add_mex(quat2expmapSequencemex quat2expmapSequencemex.cpp)
+  target_link_libraries(quat2expmapSequencemex drakeUtil drakeGeometryUtil drakeGradientUtil)
 endif()
 
 add_subdirectory(test)

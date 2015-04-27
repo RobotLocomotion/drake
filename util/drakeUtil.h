@@ -166,5 +166,6 @@ DLLEXPORT mxArray* mxGetFieldSafe(const mxArray* array, size_t index, std::strin
 
 DLLEXPORT void mxSetFieldSafe(mxArray* array, size_t index, std::string const & fieldname, mxArray* data);
 
+DLLEXPORT void sizecheck(const mxArray* mat, int M, int N);
 
 #endif /* DRAKE_UTIL_H_ */

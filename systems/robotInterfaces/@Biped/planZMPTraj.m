@@ -7,8 +7,8 @@ function [zmp_knots, body_motions] = planZMPTraj(biped, q0, footsteps, options)
 
 if nargin < 4; options = struct(); end
 
-if ~isfield(options, 't0'); options.t0 = 0; end
-if ~isfield(options, 'first_step_hold_s'); options.first_step_hold_s = 1.5; end
+options = applyDefaults(options, struct('t0', 0,...
+                                        'first_step_hold_s', 1.5));
 
 target_frame_id = struct('right', biped.toe_frame_id.right,...
                          'left', biped.toe_frame_id.left);
@@ -43,20 +43,21 @@ end
 steps.right = footsteps_with_quat([footsteps_with_quat.frame_id] == biped.foot_frame_id.right);
 steps.left = footsteps_with_quat([footsteps_with_quat.frame_id] == biped.foot_frame_id.left);
 
-zmp0 = [];
-initial_supports = [];
-if steps.right(1).is_in_contact
-  z = steps.right(1).pos;
-  zmp0(:,end+1) = z(1:2);
-  initial_supports(end+1) = biped.foot_body_id.right;
+com0 = getCOM(biped, kinsol);
+sole_to_com = rotmat(-footsteps(1).pos(6)) * (com0(1:2) - footsteps(1).pos(1:2));
+if sole_to_com(1) < 0.01 
+  % CoM is behind sole, so we have to use the heel support to get moving
+  for f = {'left', 'right'}
+    foot = f{1};
+    for j = 1:length(steps.(foot)(1).walking_params.support_contact_groups)
+      if strcmp(steps.(foot)(1).walking_params.support_contact_groups{j}, 'midfoot')
+        steps.(foot)(1).walking_params.support_contact_groups{j} = 'heel';
+      end
+    end
+  end
 end
-if steps.left(1).is_in_contact
-  z = steps.left(1).pos;
-  zmp0(:,end+1) = z(1:2);
-  initial_supports(end+1) = biped.foot_body_id.left;
-end
-zmp0 = mean(zmp0, 2);
-supp0 = RigidBodySupportState(biped, initial_supports);
+
+[zmp0, supp0] = getZMPBetweenFeet(biped, struct('right', steps.right(1), 'left', steps.left(1)));
 zmp_knots = struct('t', options.t0, 'zmp', zmp0, 'supp', supp0);
 
 frame_knots = struct('t', options.t0, ...
@@ -131,9 +132,10 @@ end
 t0 = frame_knots(end).t;
 frame_knots(end+1) = frame_knots(end);
 frame_knots(end).t = t0 + 1.5;
-zmpf = mean([steps.right(end).pos(1:2), steps.left(end).pos(1:2)], 2);
-zmp_knots(end+1) =  struct('t', frame_knots(end-1).t, 'zmp', zmpf, 'supp', RigidBodySupportState(biped, [biped.foot_body_id.right, biped.foot_body_id.left]));
-zmp_knots(end+1) =  struct('t', frame_knots(end).t, 'zmp', zmpf, 'supp', RigidBodySupportState(biped, [biped.foot_body_id.right, biped.foot_body_id.left]));
+[zmpf, suppf] = getZMPBetweenFeet(biped, struct('right', steps.right(end), 'left', steps.left(end)));
+% zmpf = mean([steps.right(end).pos(1:2), steps.left(end).pos(1:2)], 2);
+zmp_knots(end+1) =  struct('t', frame_knots(end-1).t, 'zmp', zmpf, 'supp', suppf);
+zmp_knots(end+1) =  struct('t', frame_knots(end).t, 'zmp', zmpf, 'supp', suppf);
 
 % dynamic_footstep_plan = DynamicFootstepPlan(biped, zmp_knots, frame_knots);
 
@@ -147,4 +149,31 @@ for f = {'right', 'left'}
   body_motions(end+1) = BodyMotionData.from_body_xyzexp_and_xyzexpdot(frame_id, ts, foot_states(1:6,:), foot_states(7:12,:));
   body_motions(end).in_floating_base_nullspace = true(1, numel(ts));
   body_motions(end).toe_off_allowed = [toe_off_allowed.(foot)];
+end
+
+end
+
+function [zmp, supp] = getZMPBetweenFeet(biped, steps)
+  % Find the location of the ZMP at the center of the active contact points of the feet.
+  % @param biped a Biped
+  % @param steps a struct mapping the strings 'right' and 'left' to two Footstep objects
+  zmp = zeros(2,0);
+  initial_supports = [];
+  initial_support_groups = {};
+  for f = {'left', 'right'}
+    foot = f{1};
+    if steps.(foot).is_in_contact
+      supp_groups = steps.(foot).walking_params.support_contact_groups;
+      supp_pts = biped.getTerrainContactPoints(biped.foot_body_id.(foot), {supp_groups});
+      initial_support_groups{end+1} = supp_groups;
+      T_sole_to_world = poseQuat2tform(steps.(foot).pos);
+      T_sole_to_foot = biped.getFrame(steps.(foot).frame_id).T;
+      T_foot_to_world = T_sole_to_world / T_sole_to_foot;
+      supp_pts_in_world = T_foot_to_world * [supp_pts.pts; ones(1, size(supp_pts.pts, 2))];
+      zmp(:,end+1) = mean(supp_pts_in_world(1:2,:), 2);
+      initial_supports(end+1) = biped.foot_body_id.(foot);
+    end
+  end
+  zmp = mean(zmp, 2);
+  supp = RigidBodySupportState(biped, initial_supports, initial_support_groups);
 end

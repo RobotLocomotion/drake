@@ -85,6 +85,30 @@
         <sphere radius="0.01"/>
       </geometry>
     </visual>
+    <collision group="midfoot">
+      <origin rpy="0 0 0" xyz="-0.0426 0.066 -0.07645"/>
+      <geometry>
+        <sphere radius="0.0"/>
+      </geometry>
+    </collision>
+    <visual group="midfoot">
+      <origin rpy="0 0 0" xyz="-0.0426 0.066 -0.07645"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+    </visual>
+    <collision group="midfoot">
+      <origin rpy="0 0 0" xyz="-0.0426 -0.0626 -0.07645"/>
+      <geometry>
+        <sphere radius="0.0"/>
+      </geometry>
+    </collision>
+    <visual group="midfoot">
+      <origin rpy="0 0 0" xyz="-0.0426 -0.0626 -0.07645"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+    </visual>
   </link>
   <link name="l_hand">
     <inertial>
@@ -379,6 +403,30 @@
     </collision>
     <visual group="toe">
       <origin rpy="0 0 0" xyz="0.1728 -0.066 -0.07645"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+    </visual>
+    <collision group="midfoot">
+      <origin rpy="0 0 0" xyz="0.0426 0.0626 -0.07645"/>
+      <geometry>
+        <sphere radius="0.0"/>
+      </geometry>
+    </collision>
+    <visual group="midfoot">
+      <origin rpy="0 0 0" xyz="0.0426 0.0626 -0.07645"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+    </visual>
+    <collision group="midfoot">
+      <origin rpy="0 0 0" xyz="0.0426 -0.066 -0.07645"/>
+      <geometry>
+        <sphere radius="0.0"/>
+      </geometry>
+    </collision>
+    <visual group="midfoot">
+      <origin rpy="0 0 0" xyz="0.0426 -0.066 -0.07645"/>
       <geometry>
         <sphere radius="0.01"/>
       </geometry>
@@ -1614,7 +1662,7 @@
           <!-- Noise is sampled independently per pixel on each frame.
                That pixel's noise value is added to each of its color
                channels, which at that point lie in the range [0,1].
-               The stddev value of 0.007 is based on experimental data 
+               The stddev value of 0.007 is based on experimental data
                from a camera in a Sandia hand pointed at a static scene
                in a couple of different lighting conditions.  -->
           <mean>0.0</mean>
@@ -1683,7 +1731,7 @@
           <!-- Noise is sampled independently per pixel on each frame.
                That pixel's noise value is added to each of its color
                channels, which at that point lie in the range [0,1].
-               The stddev value of 0.007 is based on experimental data 
+               The stddev value of 0.007 is based on experimental data
                from a camera in a Sandia hand pointed at a static scene
                in a couple of different lighting conditions.  -->
           <mean>0.0</mean>

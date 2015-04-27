@@ -1215,18 +1215,16 @@ DLLEXPORT  void cartesian2cylindrical(const Eigen::Matrix<Scalar,3,1> &m_cylinde
   Jdotv = Jdot*v_cartesian;
 }
 
-template <typename Derived>
-DLLEXPORT GradientVar<typename Derived::Scalar,3,1> quat2expmap(const MatrixBase<Derived> &q, int gradient_order)
+DLLEXPORT GradientVar<double,3,1> quat2expmap(const Ref<const Vector4d> &q, int gradient_order)
 {
-  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(MatrixBase<Derived>,4);
   double t = sqrt(1-q(0)*q(0));
-  bool is_degenerate=(t*t<std::numeric_limits<typename Derived::Scalar>::epsilon());
+  bool is_degenerate=(t*t<std::numeric_limits<double>::epsilon());
   double s = is_degenerate?2.0:2.0*acos(q(0))/t;
-  GradientVar<typename Derived::Scalar,3,1> ret(3,1,4,gradient_order);
+  GradientVar<double,3,1> ret(3,1,4,gradient_order);
   ret.value() = s*q.tail(3);
   if(gradient_order>0)
   {
-    ret.gradient().value() = Matrix<typename Derived::Scalar,3,4>::Zero();
+    ret.gradient().value() = Matrix<double,3,4>::Zero();
     double dsdq1 = is_degenerate?0.0: (-2*t+2*acos(q(0))*q(0))/pow(t,3);
     ret.gradient().value().col(0) = q.tail(3)*dsdq1;
     ret.gradient().value().block(0,1,3,3) = Matrix3d::Identity()*s;
@@ -1238,6 +1236,79 @@ DLLEXPORT GradientVar<typename Derived::Scalar,3,1> quat2expmap(const MatrixBase
   return ret;
 }
 
+DLLEXPORT GradientVar<double,3,1> flipExpmap(const Ref<const Vector3d> &expmap, int gradient_order)
+{
+  if(gradient_order>1)
+  {
+    throw std::runtime_error("gradient_order>1 is not supported in flipExpmap");
+  }
+  double expmap_norm = expmap.norm();
+  bool is_degenerate=(expmap_norm<std::numeric_limits<double>::epsilon());
+  GradientVar<double,3,1> ret(3,1,3,gradient_order);
+  Matrix3d eye3 = Matrix3d::Identity();
+  if(is_degenerate)
+  {
+    ret.value() = expmap;
+    if(gradient_order>0)
+    {
+      ret.gradient().value() = eye3;
+    }
+  }
+  else
+  {
+    ret.value() = expmap-expmap/expmap_norm*2*M_PI;
+    if(gradient_order>0)
+    {
+      ret.gradient().value() = eye3-(expmap_norm*expmap_norm*eye3-expmap*expmap.transpose())/pow(expmap_norm,3)*2*M_PI;
+    }
+  }
+  return ret;
+}
+
+DLLEXPORT GradientVar<double, 3,1> unwrapExpmap(const Ref<const Vector3d> & expmap1, const Ref<const Vector3d> &expmap2, int gradient_order)
+{
+  auto expmap2_flip = flipExpmap(expmap2,gradient_order);
+  double distance1 = (expmap1-expmap2).squaredNorm();
+  double distance2 = (expmap1-expmap2_flip.value()).squaredNorm();
+  if(distance1>distance2)
+  {
+    return expmap2_flip;
+  }
+  else
+  {
+    GradientVar<double,3,1> ret(3,1,3,gradient_order);
+    ret.value() = expmap2;
+    if(gradient_order>0)
+    {
+      ret.gradient().value() = Matrix3d::Identity();
+    }
+    return ret;
+  }
+}
+
+
+void quat2expmapSequence(const Ref<const Matrix<double,4,Dynamic>> &quat, const Ref<const Matrix<double,4,Dynamic>> &quat_dot, Ref<Matrix<double,3,Dynamic>> expmap, Ref<Matrix<double,3,Dynamic>> expmap_dot)
+{
+  int N = quat.cols();
+  if(quat_dot.cols() != N)
+  {
+    throw std::runtime_error("quat_dot must have the same number of columns as quat in quat2expmapSequence");
+  }
+  expmap.resize(3,N);
+  expmap_dot.resize(3,N);
+  for(int i = 0;i<N;i++)
+  {
+    auto expmap_grad = quat2expmap(quat.col(i),1);
+    expmap.col(i) = expmap_grad.value();
+    expmap_dot.col(i) = expmap_grad.gradient().value()*quat_dot.col(i);
+    if(i>=1)
+    {
+      auto unwrap_grad = unwrapExpmap(expmap.col(i-1),expmap.col(i),1);
+      expmap.col(i) = unwrap_grad.value();
+      expmap_dot.col(i) = unwrap_grad.gradient().value()*expmap_dot.col(i);
+    }
+  }
+}
 
 // explicit instantiations
 template DLLEXPORT void normalizeVec(
@@ -1553,5 +1624,4 @@ template DLLEXPORT void quatdot2angularvelMatrix(const Eigen::MatrixBase< Eigen:
     Eigen::MatrixBase< Matrix<double, SPACE_DIMENSION, QUAT_SIZE> >& M,
     Gradient<Matrix<double, SPACE_DIMENSION, QUAT_SIZE>, QUAT_SIZE, 1>::type* dM);
 
-template DLLEXPORT GradientVar<double,3,1> quat2expmap(const MatrixBase<Vector4d> &q, int gradient_order);
-template DLLEXPORT GradientVar<double,3,1> quat2expmap(const MatrixBase<Map<Vector4d>> &q, int gradient_order);
+
