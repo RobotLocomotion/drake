@@ -68,7 +68,7 @@ mxArray* myGetField(const mxArray* pobj, const char* propname)
 
 bool inSupport(std::vector<SupportStateElement> &supports, int body_idx) {
   // HANDLE IF BODY_IDX IS A FRAME ID?
-  for (int i=0; i<supports.size(); i++) {
+  for (size_t i=0; i<supports.size(); i++) {
     if (supports[i].body_idx == body_idx)
       return true;
   }
@@ -252,7 +252,7 @@ MatrixXd individualSupportCOPs(RigidBodyManipulator* r, const std::vector<Suppor
   MatrixXd individual_cops(3, n);
   individual_cops.fill(std::numeric_limits<double>::quiet_NaN());
 
-  for (int j = 0; j < active_supports.size(); j++) {
+  for (size_t j = 0; j < active_supports.size(); j++) {
     auto active_support = active_supports[j];
     auto contact_pts = active_support.contact_pts;
 
@@ -270,7 +270,7 @@ MatrixXd individualSupportCOPs(RigidBodyManipulator* r, const std::vector<Suppor
       Vector3d force = Vector3d::Zero();
       Vector3d torque = Vector3d::Zero();
 
-      for (int k = 0; k < contact_pts.size(); k++) {
+      for (size_t k = 0; k < contact_pts.size(); k++) {
       // for (auto k = contact_pts.begin(); k!= contact_pts.end(); k++) { 
         const auto& Bblock = Bj.middleCols(k * n_basis_vectors_per_contact, n_basis_vectors_per_contact);
         const auto& betablock = betaj.segment(k * n_basis_vectors_per_contact, n_basis_vectors_per_contact);
@@ -402,7 +402,7 @@ std::vector<SupportStateElement> getActiveSupports(RigidBodyManipulator* r, void
 
   std::vector<SupportStateElement> active_supports;
 
-  for (int i=0; i < available_supports.size(); i++) {
+  for (size_t i=0; i < available_supports.size(); i++) {
     if (active_supp_mask(i)) {
       active_supports.push_back(available_supports[i]);
     }
@@ -435,7 +435,7 @@ Vector6d bodySpatialMotionPD(RigidBodyManipulator *r, DrakeRobotState &robot_sta
   std::vector<int> v_indices;
   auto J_geometric = r->geometricJacobian<double>(0,body_index,body_index,0,true,&v_indices);
   VectorXd v_compact(v_indices.size());
-  for(int i = 0;i<v_indices.size();i++)
+  for(size_t i = 0;i<v_indices.size();i++)
   {
     v_compact(i) = robot_state.qd(v_indices[i]);
   }
