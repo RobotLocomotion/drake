@@ -15,6 +15,7 @@ if (LCM_FOUND AND MATLAB_FOUND)
   pods_use_pkg_config_packages(publishLCMLog lcm)
 endif()
 
+
 if (MATLAB_FOUND)
   add_mex(drakeUtil SHARED drakeUtil.cpp MexWrapper.cpp)
 
@@ -27,6 +28,15 @@ if (MATLAB_FOUND)
     LIBS -ldrakeUtil
     REQUIRES
     VERSION 0.0.1)
+endif()
+
+if (LCM_FOUND AND MATLAB_FOUND)
+  # matlab required because of drakeUtil include.
+  include_directories (${CMAKE_SOURCE_DIR}/systems/trajectories )
+  include_directories (${CMAKE_SOURCE_DIR}/solvers/polynomial )
+  include_directories (${CMAKE_BINARY_DIR}/lcmgen/lcmtypes )
+  add_mex(drakeLCMUtil SHARED lcmUtil.cpp)
+  target_link_libraries(drakeLCMUtil drakeUtil drakeTrajectories)
 endif()
 
 add_library(drakeGradientUtil SHARED drakeGradientUtil.cpp)
