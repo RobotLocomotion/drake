@@ -3,6 +3,7 @@
 #include <random>
 #include "testUtil.h"
 #include <iostream>
+#include <typeinfo>
 
 using namespace Eigen;
 using namespace std;
@@ -62,10 +63,10 @@ void testOperators() {
 template <typename CoefficientType>
 void testRoots() {
   int max_num_coefficients = 6;
-  int num_tests = 50;
   default_random_engine generator;
   std::uniform_int_distribution<> int_distribution(1, max_num_coefficients);
 
+  int num_tests = 50;
   for (int i = 0; i < num_tests; ++i) {
     VectorXd coeffs = VectorXd::Random(int_distribution(generator));
     Polynomial<CoefficientType> poly(coeffs);
@@ -78,11 +79,26 @@ void testRoots() {
   }
 }
 
+void testEvalType() {
+  int max_num_coefficients = 6;
+  default_random_engine generator;
+  std::uniform_int_distribution<> int_distribution(1, max_num_coefficients);
+  VectorXd coeffs = VectorXd::Random(int_distribution(generator));
+  Polynomial<double> poly(coeffs);
+
+  auto valueIntInput = poly.value(1);
+  valuecheck(typeid(decltype(valueIntInput)) == typeid(double), true);
+
+  auto valueComplexInput = poly.value(std::complex<double>(1.0, 2.0));
+  valuecheck(typeid(decltype(valueComplexInput)) == typeid(std::complex<double>), true);
+}
+
 int main(int argc, char **argv) {
 
   testIntegralAndDerivative<double>();
   testOperators<double>();
   testRoots<double>();
+  testEvalType();
   cout << "test passed" << endl;
   return 0;
 }

@@ -25,6 +25,11 @@ public:
   typedef typename Eigen::NumTraits<CoefficientType>::Real RealScalar;
   typedef std::complex<RealScalar> RootType;
   typedef Eigen::Matrix<RootType, Eigen::Dynamic, 1> RootsType;
+  template <typename Rhs, typename Lhs>
+  using ProductType = decltype((Rhs) 0 * (Lhs) 0);
+//  using ProductType = decltype(::std::declval<Rhs>() * ::std::declval<Lhs>()); // declval not available in MSVC2010
+
+
 
 private:
   CoefficientsType coefficients;
@@ -43,7 +48,7 @@ public:
   CoefficientsType const& getCoefficients() const;
 
   template<typename T> // can be different from both CoefficientsType and RealScalar
-  T value(const T& t) const
+  ProductType<CoefficientType, T> value(const T& t) const
   {
     return poly_eval(coefficients, t);
   }
