@@ -42,19 +42,19 @@ void surfaceTangentsSingle(Vector3d const & normal, Matrix3kd & d)
 //   idxB mx1 vector of bodyh indexes for body B in m possible contacts
 // OUTPUTS:
 //   bodyIndsSorted a set of unique, sorted(ascending) body indexes participating in contact pairs
-void getUniqueBodiesSorted(VectorXi const & idxA, VectorXi const & idxB, std::vector<size_t> & bodyIndsSorted)
+void getUniqueBodiesSorted(VectorXi const & idxA, VectorXi const & idxB, std::vector<int> & bodyIndsSorted)
 {
   size_t m = idxA.size();
-  std::set<size_t> bodyInds;
+  std::set<int> bodyInds;
   
-  for (size_t i = 0 ; i < m ; i++) {  
+  for (size_t i = 0 ; i < m ; i++) {
     bodyInds.insert(idxA[i]);
     bodyInds.insert(idxB[i]);
   }
   
   bodyIndsSorted.clear();
 
-  for (std::set<size_t>::const_iterator citer = bodyInds.begin() ; citer != bodyInds.end() ; citer++) {
+  for (std::set<int>::const_iterator citer = bodyInds.begin() ; citer != bodyInds.end() ; citer++) {
     if ( *citer > 1 ) {
       bodyIndsSorted.push_back(*citer);
     }
@@ -89,8 +89,8 @@ void findContactIndexes(VectorXi const & idxList, const size_t bodyIdx, std::vec
 //   xA: (3 x m) matrix where each column represents a contact point on body A
 //   xB: (3 x m) matrix where each column represents a contact point on body B
 // OUTPUTS:
-//   bodyPoints: (4 x n) matrix of contact points containing occurences of body A contact points followed
-//     by body B contactpoints where n = size(cindA) + size(cindB)
+//   bodyPoints: (4 x n) matrix of contact points containing occurrences of body A contact points followed
+//     by body B contact points where n = size(cindA) + size(cindB)
 // NOTE: the output is a matrix of 4-vector columns in homogeneous coordinates (x,y,z,1)'
 void getBodyPoints(std::vector<size_t> const & cindA, std::vector<size_t> const & cindB, Matrix3xd const & xA, Matrix3xd const & xB, MatrixXd & bodyPoints)
 {
@@ -127,7 +127,7 @@ void getBodyPoints(std::vector<size_t> const & cindA, std::vector<size_t> const 
 //  After one call to the function, the n rows of the Jacobian matrix corresponding to bodyInd will be completed
 //  This function must be called with all bodyInds to finish the total accumulation of the contact Jacobian
 
-void RigidBodyManipulator::accumulateContactJacobian(const size_t bodyInd, MatrixXd const & bodyPoints, std::vector<size_t> const & cindA, std::vector<size_t> const & cindB, MatrixXd & J)
+void RigidBodyManipulator::accumulateContactJacobian(const int bodyInd, MatrixXd const & bodyPoints, std::vector<size_t> const & cindA, std::vector<size_t> const & cindB, MatrixXd & J)
 {
   const size_t nq = J.cols();
   const size_t numPts = bodyPoints.cols();
@@ -152,7 +152,7 @@ void RigidBodyManipulator::accumulateContactJacobian(const size_t bodyInd, Matri
 // Same as above but computes the second order contact Jacobian
 // OUTPUTS:
 //  dJ: (3m x nq^2) Second order contact Jacobian
-void RigidBodyManipulator::accumulateSecondOrderContactJacobian(const size_t bodyInd, MatrixXd const & bodyPoints, std::vector<size_t> const & cindA, std::vector<size_t> const & cindB, MatrixXd & dJ)
+void RigidBodyManipulator::accumulateSecondOrderContactJacobian(const int bodyInd, MatrixXd const & bodyPoints, std::vector<size_t> const & cindA, std::vector<size_t> const & cindB, MatrixXd & dJ)
 {
   const size_t dJCols = dJ.cols(); //nq^2 instead of nq
   const size_t numPts = bodyPoints.cols();
@@ -189,7 +189,7 @@ void RigidBodyManipulator::accumulateSecondOrderContactJacobian(const size_t bod
 
 void RigidBodyManipulator::computeContactJacobians(Map<VectorXi> const & idxA, Map<VectorXi> const & idxB, Map<Matrix3xd> const & xA, Map<Matrix3xd> const & xB, const bool compute_second_derivatives, MatrixXd & J, MatrixXd & dJ)
 {
-  std::vector<size_t> bodyInds;
+  std::vector<int> bodyInds;
   const size_t nq = num_positions;
   const size_t numContactPairs = xA.cols();
 
@@ -201,7 +201,7 @@ void RigidBodyManipulator::computeContactJacobians(Map<VectorXi> const & idxA, M
   const size_t numUniqueBodies = bodyInds.size();
 
   for (size_t i = 0; i < numUniqueBodies ; i++) {
-    const size_t bodyInd = bodyInds[i];
+    const int bodyInd = bodyInds[i];
     vector<size_t> cindA, cindB;
     MatrixXd bodyPoints;
     findContactIndexes(idxA, bodyInd, cindA);
