@@ -38,7 +38,7 @@ RigidBody::RigidBody(void) :
 	body_index = 0;
 	mass = 0.0;
 	floating = 0;
-	pitch = 0.0;
+	pitch = 0;
 	com << Vector3d::Zero(), 1;
 	I << Matrix<double, TWIST_SIZE, TWIST_SIZE>::Zero();
 	T = Matrix4d::Identity();

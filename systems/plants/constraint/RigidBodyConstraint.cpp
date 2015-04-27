@@ -2703,7 +2703,7 @@ GravityCompensationTorqueConstraint(RigidBodyManipulator* robot,
     const VectorXi& joint_indices, const VectorXd& lb, const VectorXd& ub, const Vector2d &tspan)
   : SingleTimeKinematicConstraint(robot, tspan), lb(lb), ub(ub), joint_indices(joint_indices)
 {
-  this->num_constraint = joint_indices.size();
+  this->num_constraint = static_cast<int>(joint_indices.size());
   this->type = RigidBodyConstraint::GravityCompensationTorqueConstraintType;
 }
 
