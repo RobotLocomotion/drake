@@ -301,6 +301,19 @@ void parseRobotPropertyCache(const mxArray *rpc_obj, RobotPropertyCache *rpc) {
   Map<VectorXd>arm(mxGetPrSafe(pobj), mxGetNumberOfElements(pobj));
   rpc->position_indices.arm = arm.cast<int>().array() - 1;
 
+  pobj = myGetField(myGetField(rpc_obj, "position_indices"), "back_bkz");
+  Map<VectorXd>back_bkz(mxGetPrSafe(pobj), mxGetNumberOfElements(pobj));
+  rpc->position_indices.back_bkz = back_bkz.cast<int>().array() - 1;
+
+  pobj = myGetField(myGetField(rpc_obj, "position_indices"), "back_bky");
+  Map<VectorXd>back_bky(mxGetPrSafe(pobj), mxGetNumberOfElements(pobj));
+  rpc->position_indices.back_bky = back_bky.cast<int>().array() - 1;
+
+  pobj = myGetField(myGetField(rpc_obj, "position_indices"), "neck");
+  Map<VectorXd>neck(mxGetPrSafe(pobj), mxGetNumberOfElements(pobj));
+  rpc->position_indices.neck = neck.cast<int>().array() - 1;
+
+
   rpc->body_ids.r_foot = (int) mxGetScalar(myGetField(myGetField(rpc_obj, "body_ids"), "r_foot")) - 1;
   rpc->body_ids.l_foot = (int) mxGetScalar(myGetField(myGetField(rpc_obj, "body_ids"), "l_foot")) - 1;
   rpc->body_ids.pelvis = (int) mxGetScalar(myGetField(myGetField(rpc_obj, "body_ids"), "pelvis")) - 1;
