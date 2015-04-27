@@ -7,7 +7,7 @@
 #define LEG_INTEGRATOR_DEACTIVATION_MARGIN 0.05
 
 const mxArray* getFieldOrPropertySafe(const mxArray* array, size_t index, std::string const& field_name) {
-  const mxArray* field_or_property = mxGetFieldSafe(array, index, field_name);
+  const mxArray* field_or_property = mxGetField(array, index, field_name.c_str());
   if (field_or_property == nullptr) {
     field_or_property = mxGetPropertySafe(array, index, field_name);
   }
