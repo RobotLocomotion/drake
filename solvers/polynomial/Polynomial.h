@@ -4,6 +4,7 @@
 #include <Eigen/Core>
 #include <complex>
 #include <unsupported/Eigen/Polynomials>
+#include <random>
 
 #undef DLLEXPORT
 #if defined(WIN32) || defined(WIN64)
@@ -27,7 +28,7 @@ public:
   typedef Eigen::Matrix<RootType, Eigen::Dynamic, 1> RootsType;
   template <typename Rhs, typename Lhs>
   using ProductType = decltype((Rhs) 0 * (Lhs) 0);
-//  using ProductType = decltype(::std::declval<Rhs>() * ::std::declval<Lhs>()); // declval not available in MSVC2010
+  //  using ProductType = decltype(::std::declval<Rhs>() * ::std::declval<Lhs>()); // declval not available in MSVC2010
 
 
 
@@ -35,7 +36,12 @@ private:
   CoefficientsType coefficients;
 
 public:
-  Polynomial(Eigen::Ref<CoefficientsType> const& coefficients);
+  template <typename Derived>
+  Polynomial(Eigen::MatrixBase<Derived> const& coefficients) :
+      coefficients(coefficients)
+  {
+    assert(coefficients.rows() > 0);
+  }
 
   Polynomial(const CoefficientType& scalar_value); // this is required for some Eigen operations when used in a polynomial matrix
 
@@ -90,6 +96,21 @@ public:
   bool isApprox(const Polynomial& other, const RealScalar& tol) const;
 
   static Polynomial zero();
+
+
+  template<Eigen::DenseIndex RowsAtCompileTime = Eigen::Dynamic, Eigen::DenseIndex ColsAtCompileTime = Eigen::Dynamic>
+  static Eigen::Matrix<Polynomial<CoefficientType>, Eigen::Dynamic, Eigen::Dynamic> createRandomPolynomialMatrix(std::default_random_engine generator, int max_num_coefficients, int rows = RowsAtCompileTime, int cols = ColsAtCompileTime)
+  {
+    std::uniform_int_distribution<> num_coefficients_distribution(1, max_num_coefficients);
+    Eigen::Matrix<Polynomial<CoefficientType>, RowsAtCompileTime, ColsAtCompileTime> mat(rows, cols);
+    for (int row = 0; row < mat.rows(); ++row) {
+      for (int col = 0; col < mat.cols(); ++col) {
+        auto coeffs = (Eigen::Matrix<CoefficientType, Eigen::Dynamic, 1>::Random(num_coefficients_distribution(generator))).eval();
+        mat(row, col) = Polynomial<CoefficientType>(coeffs);
+      }
+    }
+    return mat;
+  }
 };
 
 #endif /* DRAKE_SOLVERS_POLYNOMIAL_POLYNOMIAL_H_ */

@@ -30,13 +30,14 @@ if (MATLAB_FOUND)
     VERSION 0.0.1)
 endif()
 
-if (LCM_FOUND AND MATLAB_FOUND)
-  # matlab required because of drakeUtil include.
+if (LCM_FOUND)
+  # note: requires drakeUtil header file, but not linking against it because 
+  # we only need methods that are templated and defined in the header
   include_directories (${CMAKE_SOURCE_DIR}/systems/trajectories )
   include_directories (${CMAKE_SOURCE_DIR}/solvers/polynomial )
   include_directories (${CMAKE_BINARY_DIR}/lcmgen/lcmtypes )
-  add_mex(drakeLCMUtil SHARED lcmUtil.cpp)
-  target_link_libraries(drakeLCMUtil drakeUtil drakeTrajectories)
+  add_library(drakeLCMUtil SHARED lcmUtil.cpp)
+  target_link_libraries(drakeLCMUtil drakeTrajectories)
 endif()
 
 add_library(drakeGradientUtil SHARED drakeGradientUtil.cpp)

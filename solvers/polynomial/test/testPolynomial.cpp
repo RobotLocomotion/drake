@@ -96,21 +96,6 @@ void testEvalType() {
   valuecheck(typeid(decltype(valueComplexInput)) == typeid(std::complex<double>), true);
 }
 
-template<typename CoefficientType, DenseIndex RowsAtCompileTime = Dynamic, DenseIndex ColsAtCompileTime = Dynamic>
-Matrix<Polynomial<CoefficientType>, Dynamic, Dynamic> createRandomPolynomialMatrix(
-    default_random_engine generator, int max_num_coefficients, int rows = RowsAtCompileTime, int cols = ColsAtCompileTime)
-{
-  uniform_int_distribution<> num_coefficients_distribution(1, max_num_coefficients);
-  Matrix<Polynomial<CoefficientType>, RowsAtCompileTime, ColsAtCompileTime> mat(rows, cols);
-  for (int row = 0; row < mat.rows(); ++row) {
-    for (int col = 0; col < mat.cols(); ++col) {
-      auto coeffs = (Matrix<CoefficientType, Dynamic, 1>::Random(num_coefficients_distribution(generator))).eval();
-      mat(row, col) = Polynomial<CoefficientType>(coeffs);
-    }
-  }
-  return mat;
-}
-
 template <typename CoefficientType>
 void testPolynomialMatrix() {
   int max_matrix_rows_cols = 7;
@@ -123,9 +108,9 @@ void testPolynomialMatrix() {
   int rows_B = cols_A;
   int cols_B = matrix_size_distribution(generator);
 
-  auto A = createRandomPolynomialMatrix<CoefficientType>(generator, max_num_coefficients, rows_A, cols_A);
-  auto B = createRandomPolynomialMatrix<CoefficientType>(generator, max_num_coefficients, rows_B, cols_B);
-  auto C = createRandomPolynomialMatrix<CoefficientType>(generator, max_num_coefficients, rows_A, cols_A);
+  auto A = Polynomial<CoefficientType>::createRandomPolynomialMatrix(generator, max_num_coefficients, rows_A, cols_A);
+  auto B = Polynomial<CoefficientType>::createRandomPolynomialMatrix(generator, max_num_coefficients, rows_B, cols_B);
+  auto C = Polynomial<CoefficientType>::createRandomPolynomialMatrix(generator, max_num_coefficients, rows_A, cols_A);
   auto product = A * B; // just verify that this is possible without crashing
   auto sum = A + C;
 
