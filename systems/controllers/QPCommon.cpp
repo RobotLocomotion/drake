@@ -373,18 +373,6 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   // Note: argument `debug` MAY be set to NULL, which signals that no debug information is requested.
 
   // look up the param set by name
-  /*for(int i = 0;i<qp_input->num_tracked_bodies;i++)
-  {
-    if(qp_input->body_motion_data[i].body_id == 31)
-    {
-      MATFile* fp_file = matOpen("/home/hongkai/drc/software/control/matlab/test/arm_up_fp.mat","r");
-      mxArray* xstar = matGetVariable(fp_file,"xstar");
-      memcpy(robot_state.q.data(),mxGetPr(xstar),sizeof(double)*pdata->r->num_positions);
-      memcpy(robot_state.qd.data(),mxGetPr(xstar)+pdata->r->num_positions,sizeof(double)*pdata->r->num_positions);
-    }
-  }*/
-  MatrixXd Hqp_rhand; 
-  VectorXd fqp_rhand;
   AtlasParams *params; 
   std::map<string,AtlasParams>::iterator it;
   it = pdata->param_sets.find(qp_input->param_set_name);
@@ -628,10 +616,6 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   //  min: ybar*Qy*ybar + ubar*R*ubar + (2*S*xbar + s1)*(A*x + B*u) +
   //    w_qdd*quad(qddot_ref - qdd) + w_eps*quad(epsilon) +
   //    w_grf*quad(beta) + quad(kdot_des - (A*qdd + Adot*qd))  
-  vector<MatrixXd> Hqp_debug;
-  vector<VectorXd> fqp_debug;
-  mexPrintf("nc=%d\n",nc);
-  mexPrintf("include_angular_momentum=%s\n",include_angular_momentum?"True":"False");
   VectorXd f(nparams);
   {      
     if (nc > 0) {
@@ -641,18 +625,12 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
       MatrixXd tmp2 = R_DQyD_ls*Jcom;
 
       pdata->fqp = tmp.transpose()*Qy*D_ls*Jcom;
-      fqp_debug.push_back(pdata->fqp);
       // mexPrintf("fqp head: %f %f %f\n", pdata->fqp(0), pdata->fqp(1), pdata->fqp(2));
       pdata->fqp += tmp1.transpose()*tmp2;
-      fqp_debug.push_back(pdata->fqp);
       pdata->fqp += (S*x_bar + 0.5*s1).transpose()*B_ls*Jcom;
-      fqp_debug.push_back(pdata->fqp);
       pdata->fqp -= u0.transpose()*tmp2;
-      fqp_debug.push_back(pdata->fqp);
       pdata->fqp -= y0.transpose()*Qy*D_ls*Jcom;
-      fqp_debug.push_back(pdata->fqp);
       pdata->fqp -= (w_qdd.array()*pid_out.qddot_des.array()).matrix().transpose();
-      fqp_debug.push_back(pdata->fqp);
       if (include_angular_momentum) {
         pdata->fqp += pdata->Akdot_times_v.transpose()*params->W_kdot*pdata->Ak;
         pdata->fqp -= kdot_des.transpose()*params->W_kdot*pdata->Ak;
@@ -663,7 +641,6 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     } 
   }
   f.tail(nf+neps) = VectorXd::Zero(nf+neps);
-  fqp_debug.push_back(f);
   int neq = 6+neps+6*n_body_accel_eq_constraints+qp_input->whole_body_data.num_constrained_dofs;
   MatrixXd Aeq = MatrixXd::Zero(neq,nparams);
   VectorXd beq = VectorXd::Zero(neq);
@@ -811,7 +788,6 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     else {
       pdata->Hqp = MatrixXd::Constant(nq,1,1/(1+REG));
     }
-    Hqp_debug.push_back(pdata->Hqp);
 
     #ifdef TEST_FAST_QP
       if (nc>0) {
@@ -864,7 +840,6 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     } else {
       pdata->Hqp = (1+REG)*MatrixXd::Identity(nq,nq);
     }
-    Hqp_debug.push_back(pdata->Hqp);
 
     // add in body spatial acceleration cost terms
     for (int i=0; i<desired_body_accelerations.size(); i++) {
@@ -890,22 +865,10 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
             }
             mexPrintf("\n");
           }
-          if(desired_body_accelerations[i].body_or_frame_id0 == 30)
-          {
-            Hqp_rhand = MatrixXd::Zero(nq,nq);
-            fqp_rhand = VectorXd::Zero(nq);
-            for(int j = 0;j<6;j++)
-            {
-              Hqp_rhand += desired_body_accelerations[i].weight*desired_body_accelerations[i].weight_multiplier(j)*(Jb.row(j)).transpose()*Jb.row(j);
-              fqp_rhand += desired_body_accelerations[i].weight*desired_body_accelerations[i].weight_multiplier(j)*(Jbdotv(j) - desired_body_accelerations[i].body_vdot[j])*Jb.row(j).transpose();
-            }
-          }
           for (int j=0; j<6; j++) {
             if (!std::isnan(desired_body_accelerations[i].body_vdot[j])) {
               pdata->Hqp += desired_body_accelerations[i].weight*desired_body_accelerations[i].weight_multiplier(j)*(Jb.row(j)).transpose()*Jb.row(j);
               f.head(nq).noalias() += desired_body_accelerations[i].weight*desired_body_accelerations[i].weight_multiplier(j)*(Jbdotv(j) - desired_body_accelerations[i].body_vdot[j])*Jb.row(j).transpose();
-              Hqp_debug.push_back(pdata->Hqp);
-              fqp_debug.push_back(f);
             }
           }
         }
@@ -979,56 +942,6 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
 
   // Remember t for next time around
   pdata->state.t_prev = robot_state.t;
-
-  mexPrintf("ub(end)=%7.4f\n",*(ub.data()+ub.rows()-1));
-  /*int debug_nrhs = 0;
-  mxArray** prhs_debug = new mxArray*[19+Hqp_debug.size()+fqp_debug.size()];
-  prhs_debug[debug_nrhs++] = eigenToMatlab(robot_state.q);
-  prhs_debug[debug_nrhs++] = eigenToMatlab(robot_state.qd);
-  prhs_debug[debug_nrhs++] = eigenToMatlab(alpha);
-  prhs_debug[debug_nrhs++] = eigenToMatlab(pdata->Hqp);
-  prhs_debug[debug_nrhs++] = eigenToMatlab(f);
-  prhs_debug[debug_nrhs++] = eigenToMatlab(Aeq);
-  prhs_debug[debug_nrhs++] = eigenToMatlab(beq);
-  prhs_debug[debug_nrhs++] = eigenToMatlab(Ain_lb_ub);
-  prhs_debug[debug_nrhs++] = eigenToMatlab(bin_lb_ub);
-  prhs_debug[debug_nrhs++] = eigenToMatlab(Qnfdiag);
-  prhs_debug[debug_nrhs++] = eigenToMatlab(Qneps);
-  prhs_debug[debug_nrhs++] = eigenToMatlab(w_qdd);
-  prhs_debug[debug_nrhs++] = eigenToMatlab(Hqp_rhand);
-  prhs_debug[debug_nrhs++] = eigenToMatlab(fqp_rhand);
-  for(int i = 0;i<Hqp_debug.size();i++)
-  {
-    prhs_debug[debug_nrhs++] = eigenToMatlab(Hqp_debug[i]);
-  }
-  for(int i = 0;i<fqp_debug.size();i++)
-  {
-    prhs_debug[debug_nrhs++] = eigenToMatlab(fqp_debug[i]);
-  }
-  prhs_debug[debug_nrhs++] = eigenToMatlab(C_ls);
-  prhs_debug[debug_nrhs++] = eigenToMatlab(xlimp);
-  prhs_debug[debug_nrhs++] = eigenToMatlab(Qy);
-  prhs_debug[debug_nrhs++] = eigenToMatlab(D_ls);
-  prhs_debug[debug_nrhs++] = eigenToMatlab(Jcom);*/
-  mexPrintf("w_qdd ");
-  for(int i = 0;i<w_qdd.rows();i++)
-  {
-    mexPrintf("%8.6f ",w_qdd(i));
-  }
-  mexPrintf("\n");
-  bool call_matlab_debug = false;
-  /*for(int i = 0;i<desired_body_accelerations.size();i++)
-  {
-    if(desired_body_accelerations[i].body_or_frame_id0 == 30)
-    {
-      call_matlab_debug = true;
-    }
-  }
-  if(call_matlab_debug)
-  {
-    mexCallMATLAB(0,(mxArray**)nullptr, debug_nrhs, prhs_debug, "passFromcpp");
-  }
-  delete[] prhs_debug;*/
 
   // If a debug pointer was passed in, fill it with useful data
   if (debug) {
