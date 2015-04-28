@@ -14,7 +14,7 @@
 // TODO: com traj 2x1, differentiate
 // TODO: check that support_times are in order
 // TODO: don't forget about foot_body_ids
-// TODO: timestamp? be_silent? num variables?
+// TODO: be_silent: false
 // TODO: discuss possibility of chatter in knee control
 // TODO: drakePiecewisePolynomial_EXPORTS
 // TODO: constructor:   planned_support_command = support_logic_maps[REQUIRE_SUPPORT];
@@ -217,6 +217,7 @@ void QPLocomotionPlan::publishQPControllerInput(
     eigenVectorToCArray(body_motion.getWeightMultiplier(), body_motion_data_for_support_lcm.weight_multiplier);
 
     qp_input.body_motion_data.push_back(body_motion_data_for_support_lcm);
+    qp_input.num_tracked_bodies++;
 
     if (body_id == robot_property_cache.body_ids.pelvis)
       pelvis_has_tracking = true;
@@ -235,6 +236,7 @@ void QPLocomotionPlan::publishQPControllerInput(
     support_data_element_lcm.mu = mu;
     support_data_element_lcm.contact_surfaces = 0;
     qp_input.support_data.push_back(support_data_element_lcm);
+    qp_input.num_support_data++;
   }
 
   qp_input.param_set_name = gain_set;
