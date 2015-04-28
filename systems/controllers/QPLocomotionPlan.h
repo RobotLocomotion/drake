@@ -43,7 +43,9 @@ private:
   PiecewisePolynomial<double> q_traj;
   ExponentialPlusPiecewisePolynomial<double> com_traj;
   double mu;
-  Eigen::Isometry3d plan_shift;
+  Eigen::Vector3d plan_shift;
+  std::vector<Eigen::DenseIndex> plan_shift_zmp_indices;
+  std::vector<Eigen::DenseIndex> plan_shift_body_motion_indices;
   double g;
   bool is_quasistatic;
   std::vector<int> constrained_position_indices;
@@ -79,13 +81,11 @@ public:
       const RobotPropertyCache& robot_property_cache, const std::vector<bool>& contact_force_detected);
 
 private:
-  bool isSupportingBody(int body_index, const RigidBodySupportState& support_state);
+  bool isSupportingBody(int body_index, const RigidBodySupportState& support_state) const;
 
   void updateSwingTrajectory(double t_plan, BodyMotionData& body_motion_data, int body_motion_segment_index, const Eigen::VectorXd& qd);
 
-  void updatePlanShift(double t_global, const std::vector<bool>& contact_force_detected, const RigidBodySupportState& next_support);
-
-  void applyPlanShift(drake::lcmt_qp_controller_input& qp_input);
+  Eigen::Vector3d computePlanShift(double t_global, const std::vector<bool>& contact_force_detected, const RigidBodySupportState& next_support) const;
 
   static const std::map<SupportLogicType, std::vector<bool> > createSupportLogicMaps();
 };
