@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include <algorithm>
 #include "drakeGeometryUtil.h"
+#include "lcmUtil.h"
 
 // TODO: default start_time to nan
 // TODO: set default qp input
@@ -178,10 +179,7 @@ void QPLocomotionPlan::publishQPControllerInput(
     const PiecewisePolynomial<> body_motion_trajectory = body_motion.getTrajectory();
     drake::lcmt_body_motion_data body_motion_data_for_support_lcm;
     body_motion_data_for_support_lcm.body_id = body_id;
-    body_motion_data_for_support_lcm.ts[0] = body_motion_trajectory.getStartTime(body_motion_segment_index);
-    body_motion_data_for_support_lcm.ts[1] = body_motion_trajectory.getEndTime(body_motion_segment_index);
-    const PiecewisePolynomial<>::PolynomialMatrix& bodyMotionSegmentIndex = body_motion_trajectory.getPolynomialMatrix(body_motion_segment_index);
-    polynomialVectorCoefficientsToCArrayOfArraysMatlabOrdering(bodyMotionSegmentIndex, body_motion_data_for_support_lcm.coefs[0].coefs);
+    encodePiecewisePolynomial(body_motion.getTrajectory(), body_motion_data_for_support_lcm.spline);
     body_motion_data_for_support_lcm.in_floating_base_nullspace = body_motion.isInFloatingBaseNullSpace(body_motion_segment_index);
     body_motion_data_for_support_lcm.control_pose_when_in_contact = body_motion.isPoseControlledWhenInContact(body_motion_segment_index);
     const Isometry3d& transform_task_to_world = body_motion.getTransformTaskToWorld();

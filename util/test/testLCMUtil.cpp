@@ -27,8 +27,8 @@ void testPolynomialMatrix()
   auto poly_matrix = Polynomial<double>::createRandomPolynomialMatrix(generator, 6, 5, 8);
   drake::lcmt_polynomial_matrix msg;
   encodePolynomialMatrix(poly_matrix, msg);
-  valuecheck<DenseIndex>(msg.rows, poly_matrix.rows());
-  valuecheck<DenseIndex>(msg.cols, poly_matrix.cols());
+  valuecheck(static_cast<int>(msg.rows), static_cast<int>(poly_matrix.rows()));
+  valuecheck(static_cast<int>(msg.cols), static_cast<int>(poly_matrix.cols()));
   auto poly_matrix_back = decodePolynomialMatrix<Dynamic, Dynamic>(msg);
   valuecheck(poly_matrix.rows(), poly_matrix_back.rows());
   valuecheck(poly_matrix.cols(), poly_matrix_back.cols());

@@ -11,7 +11,7 @@ if (MATLAB_FOUND)
     pods_use_pkg_config_packages(drakeControlUtil terrain-map)
     set_target_properties(drakeControlUtil PROPERTIES COMPILE_FLAGS "-DUSE_MAPS")
   endif()
-  target_link_libraries(drakeControlUtil drakeRBM drakeUtil)
+  target_link_libraries(drakeControlUtil drakeRBM drakeUtil drakeTrajectories)
   pods_install_libraries(drakeControlUtil)
   pods_install_headers(controlUtil.h DESTINATION drake)
   pods_install_pkg_config_file(drake-control-util
@@ -21,7 +21,7 @@ if (MATLAB_FOUND)
 
   if (gurobi_FOUND)
     add_mex(drakeQPCommon SHARED QPCommon.cpp Side.cpp BodyMotionData.cpp)
-    target_link_libraries(drakeQPCommon drakeControlUtil drakeQP drakeTrajectories)
+    target_link_libraries(drakeQPCommon drakeControlUtil drakeQP drakeTrajectories drakeLCMUtil)
     pods_install_libraries(drakeQPCommon)
     pods_install_headers(QPCommon.h DESTINATION drake)
     pods_install_pkg_config_file(drake-qp-common
