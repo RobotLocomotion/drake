@@ -85,7 +85,7 @@ double PiecewisePolynomial<CoefficientType>::scalarValue(double t, Eigen::DenseI
 }
 
 template <typename CoefficientType>
-Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> PiecewisePolynomial<CoefficientType>::value(double t) {
+Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> PiecewisePolynomial<CoefficientType>::value(double t) const {
   int segment_index = getSegmentIndex(t);
   Eigen::Matrix<double, PolynomialMatrix::RowsAtCompileTime, PolynomialMatrix::ColsAtCompileTime> ret(rows(), cols());
   for (DenseIndex row = 0; row < rows(); row++) {

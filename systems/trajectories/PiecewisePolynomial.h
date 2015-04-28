@@ -46,7 +46,7 @@ public:
 
   double scalarValue(double t, Eigen::DenseIndex row = 0, Eigen::DenseIndex col = 0);
 
-  Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> value(double t);
+  Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> value(double t) const;
 
   const PolynomialMatrix& getPolynomialMatrix(int segment_index) const;
 
