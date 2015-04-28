@@ -24,7 +24,7 @@ classdef QPLocomotionPlan < QPControllerPlan
     last_qp_input;
 
     lcmgl = LCMGLClient('locomotion_plan');
-    untracked_joint_ind % The indices of the joints being un-tracked. The joint could be un-tracked if the body end effector is tracked.
+    untracked_joint_inds % The indices of the joints being un-tracked. The joint could be un-tracked if the body end effector is tracked.
 
     MIN_KNEE_ANGLE = 0.7;
     KNEE_KP = 40;
@@ -45,7 +45,7 @@ classdef QPLocomotionPlan < QPControllerPlan
       obj.default_qp_input = atlasControllers.QPInputConstantHeight();
       obj.default_qp_input.whole_body_data.q_des = zeros(obj.robot.getNumPositions(), 1);
       obj.constrained_dofs = [findPositionIndices(obj.robot,'arm');findPositionIndices(obj.robot,'neck');findPositionIndices(obj.robot,'back_bkz');findPositionIndices(obj.robot,'back_bky')];
-      obj.untracked_joint_ind = [];
+      obj.untracked_joint_inds = [];
     end
 
     function next_plan = getSuccessor(obj, t, x)
@@ -221,17 +221,21 @@ classdef QPLocomotionPlan < QPControllerPlan
       obj = obj.updatePlanShift(t_global, kinsol, qp_input, contact_force_detected, next_support);
       qp_input = obj.applyPlanShift(qp_input);
       
-      if(~isempty(obj.untracked_joint_ind))
-        for j = 1:length(obj.untracked_joint_ind)
-          qp_input.joint_pd_override(end+1) = struct('position_ind',obj.untracked_joint_ind(j),...
-                                                     'qi_des',q(obj.untracked_joint_ind(j)),...
-                                                     'qdi_des',qd(obj.untracked_joint_ind(j)),...
+      if(~isempty(obj.untracked_joint_inds))
+        for j = 1:length(obj.untracked_joint_inds)
+          qp_input.joint_pd_override(end+1) = struct('position_ind',obj.untracked_joint_inds(j),...
+                                                     'qi_des',q(obj.untracked_joint_inds(j)),...
+                                                     'qdi_des',qd(obj.untracked_joint_inds(j)),...
                                                      'kp',0,...
                                                      'kd',0,...
                                                      'weight',0);
         end
-        qp_input.whole_body_data.q_des(obj.untracked_joint_ind) = q(obj.untracked_joint_ind);
-        qp_input.whole_body_data.constrained_dofs = setdiff(qp_input.whole_body_data.constrained_dofs,obj.untracked_joint_ind);
+        % In DRCPlanEval, it smoothes between the current
+        % qp_input.whole_body_data and the qtraj in the next plan. Since we
+        % always plan from the current posture, for the untracked joints,
+        % we should set the q_des to the current posture.
+        qp_input.whole_body_data.q_des(obj.untracked_joint_inds) = q(obj.untracked_joint_inds);
+        qp_input.whole_body_data.constrained_dofs = setdiff(qp_input.whole_body_data.constrained_dofs,obj.untracked_joint_inds);
       end
       
       obj.last_qp_input = qp_input;
@@ -636,7 +640,7 @@ classdef QPLocomotionPlan < QPControllerPlan
                                               'quat_task_to_world',repmat([1;0;0;0],1,3),...
                                               'translation_task_to_world',zeros(3,3),...
                                               'bodies_to_control_when_in_contact', biped.findLinkId('pelvis'),...
-                                              'track_com_traj_flag',false));
+                                              'track_com_traj',false));
 
       num_bodies_to_track = length(options.bodies_to_track);
       sizecheck(options.quat_task_to_world,[4,num_bodies_to_track]);
@@ -723,7 +727,7 @@ classdef QPLocomotionPlan < QPControllerPlan
       end
 
       obj.gain_set = 'manip';
-      if(options.track_com_traj_flag)
+      if(options.track_com_traj)
         obj = obj.setCOMTraj();
         obj = obj.setLQR_for_COM();
       end

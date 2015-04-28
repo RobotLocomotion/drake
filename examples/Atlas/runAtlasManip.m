@@ -72,11 +72,11 @@ manip_plan_data = QPLocomotionPlan.from_quasistatic_qtraj(r,PPTrajectory(qtraj_p
   struct('bodies_to_track',[pelvis,r_hand],...
          'quat_task_to_world',repmat(uniformlyRandomQuat(),1,2),...
          'translation_task_to_world',randn(3,2),...
-         'track_com_traj_flag',true));
+         'track_com_traj',true));
 r_arm_idx = r.findPositionIndices('r_arm');
 manip_plan_data.gain_set = 'manip';
 
-manip_plan_data.untracked_joint_ind = r_arm_idx;
+manip_plan_data.untracked_joint_inds = r_arm_idx;
 control = atlasControllers.InstantaneousQPController(r, []);
 planeval = atlasControllers.AtlasPlanEval(r, manip_plan_data);
 plancontroller = atlasControllers.AtlasPlanEvalAndControlSystem(r, control, planeval);
