@@ -62,18 +62,25 @@ void testBasicFunctionality() {
     PiecewisePolynomialType piecewise1 = generateRandomPiecewisePolynomial<CoefficientType>(rows, cols, num_coefficients, segment_times);
     PiecewisePolynomialType piecewise2 = generateRandomPiecewisePolynomial<CoefficientType>(rows, cols, num_coefficients, segment_times);
 
-    PiecewisePolynomialType sum = piecewise1 + piecewise2;
-
     normal_distribution<double> normal;
-    double offset = normal(generator);
+    double shift = normal(generator);
+    CoefficientMatrix offset = CoefficientMatrix::Random(piecewise1.rows(), piecewise1.cols());
+
+    PiecewisePolynomialType sum = piecewise1 + piecewise2;
+    PiecewisePolynomialType difference = piecewise2 - piecewise1;
+    PiecewisePolynomialType piecewise1_plus_offset = piecewise1 + offset;
+    PiecewisePolynomialType piecewise1_minus_offset = piecewise1 - offset;
     PiecewisePolynomialType piecewise1_shifted = piecewise1;
-    piecewise1_shifted.shiftRight(offset);
+    piecewise1_shifted.shiftRight(shift);
 
     uniform_real_distribution<double> uniform(piecewise1.getStartTime(), piecewise1.getEndTime());
     double t = uniform(generator);
 
-    valuecheck(sum.scalarValue(t), piecewise1.scalarValue(t) + piecewise2.scalarValue(t), 1e-8);
-    valuecheck(piecewise1_shifted.scalarValue(t), piecewise1.scalarValue(t - offset), 1e-8);
+    valuecheck(sum.value(t), piecewise1.value(t) + piecewise2.value(t), 1e-8);
+    valuecheck(difference.value(t), piecewise2.value(t) - piecewise1.value(t), 1e-8);
+    valuecheck(piecewise1_plus_offset.value(t), piecewise1.value(t) + offset, 1e-8);
+    valuecheck(piecewise1_minus_offset.value(t), piecewise1.value(t) - offset, 1e-8);
+    valuecheck(piecewise1_shifted.value(t), piecewise1.value(t - shift), 1e-8);
   }
 }
 

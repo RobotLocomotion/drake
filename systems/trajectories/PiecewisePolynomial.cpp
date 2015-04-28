@@ -124,6 +124,15 @@ PiecewisePolynomial<CoefficientType>& PiecewisePolynomial<CoefficientType>::oper
 }
 
 template <typename CoefficientType>
+PiecewisePolynomial<CoefficientType>& PiecewisePolynomial<CoefficientType>::operator-=(const PiecewisePolynomial<CoefficientType>& other) {
+  if (!segmentTimesEqual(other, 1e-10))
+    throw runtime_error("Addition not yet implemented when segment times are not equal");
+  for (int i = 0; i < polynomials.size(); i++)
+    polynomials[i] -= other.polynomials[i];
+  return *this;
+}
+
+template <typename CoefficientType>
 PiecewisePolynomial<CoefficientType>& PiecewisePolynomial<CoefficientType>::operator*=(const PiecewisePolynomial<CoefficientType>& other) {
   if (!segmentTimesEqual(other, 1e-10))
     throw runtime_error("Multiplication not yet implemented when segment times are not equal");
@@ -133,16 +142,51 @@ PiecewisePolynomial<CoefficientType>& PiecewisePolynomial<CoefficientType>::oper
 }
 
 template <typename CoefficientType>
-const PiecewisePolynomial<CoefficientType> PiecewisePolynomial<CoefficientType>::operator+(const PiecewisePolynomial<CoefficientType> &other) const {
+PiecewisePolynomial<CoefficientType>& PiecewisePolynomial<CoefficientType>::operator+=(const PiecewisePolynomial<CoefficientType>::CoefficientMatrix& offset) {
+  for (int i = 0; i < polynomials.size(); i++)
+    polynomials[i] += offset.template cast<PolynomialType>();
+  return *this;
+}
+
+template <typename CoefficientType>
+PiecewisePolynomial<CoefficientType>& PiecewisePolynomial<CoefficientType>::operator-=(const PiecewisePolynomial<CoefficientType>::CoefficientMatrix& offset) {
+  for (int i = 0; i < polynomials.size(); i++)
+    polynomials[i] -= offset.template cast<PolynomialType>();
+  return *this;
+}
+
+template <typename CoefficientType>
+const PiecewisePolynomial<CoefficientType> PiecewisePolynomial<CoefficientType>::operator+(const PiecewisePolynomial<CoefficientType>& other) const {
   PiecewisePolynomial<CoefficientType> ret = *this;
   ret += other;
   return ret;
 }
 
 template <typename CoefficientType>
-const PiecewisePolynomial<CoefficientType> PiecewisePolynomial<CoefficientType>::operator*(const PiecewisePolynomial<CoefficientType> &other) const {
+const PiecewisePolynomial<CoefficientType> PiecewisePolynomial<CoefficientType>::operator-(const PiecewisePolynomial<CoefficientType>& other) const {
+  PiecewisePolynomial<CoefficientType> ret = *this;
+  ret -= other;
+  return ret;
+}
+
+template <typename CoefficientType>
+const PiecewisePolynomial<CoefficientType> PiecewisePolynomial<CoefficientType>::operator*(const PiecewisePolynomial<CoefficientType>& other) const {
   PiecewisePolynomial<CoefficientType> ret = *this;
   ret *= other;
+  return ret;
+}
+
+template <typename CoefficientType>
+const PiecewisePolynomial<CoefficientType> PiecewisePolynomial<CoefficientType>::operator+(const PiecewisePolynomial<CoefficientType>::CoefficientMatrix& offset) const {
+  PiecewisePolynomial<CoefficientType> ret = *this;
+  ret += offset;
+  return ret;
+}
+
+template <typename CoefficientType>
+const PiecewisePolynomial<CoefficientType> PiecewisePolynomial<CoefficientType>::operator-(const PiecewisePolynomial<CoefficientType>::CoefficientMatrix& offset) const {
+  PiecewisePolynomial<CoefficientType> ret = *this;
+  ret -= offset;
   return ret;
 }
 
