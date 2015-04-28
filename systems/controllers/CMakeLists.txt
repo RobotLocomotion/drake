@@ -52,7 +52,7 @@ if (MATLAB_FOUND)
       target_link_libraries(encodeQPInputLCMMex lcm drakeControlUtil drakeQPCommon)
 
       add_mex(drakeQPLocomotionPlan SHARED QPLocomotionPlan.cpp)
-      target_link_libraries(drakeQPLocomotionPlan drakeQPCommon)
+      target_link_libraries(drakeQPLocomotionPlan drakeQPCommon drakeSplineGeneration)
       pods_install_libraries(drakeQPLocomotionPlan)
       pods_install_headers(QPLocomotionPlan.h DESTINATION drake)
       pods_install_pkg_config_file(drake-qp-locomotion-plan
