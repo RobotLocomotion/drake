@@ -236,7 +236,6 @@ void QPLocomotionPlan::publishQPControllerInput(
 void QPLocomotionPlan::updateSwingTrajectory(double t_plan, BodyMotionData& body_motion_data, int body_motion_segment_index, const Eigen::VectorXd& qd) {
   int takeoff_segment_index = body_motion_segment_index + 1; // this function is called before takeoff
   int num_swing_segments = 3;
-  int landing_segment_index = takeoff_segment_index + num_swing_segments - 1;
 
   // last three knot points from spline
   PiecewisePolynomial<double>& trajectory = body_motion_data.getTrajectory();
@@ -281,19 +280,13 @@ void QPLocomotionPlan::updateSwingTrajectory(double t_plan, BodyMotionData& body
   assert(std::abs(trajectory.getStartTime(takeoff_segment_index) - breaks[0]) < 1e-10); // TODO: get rid of this once we know this is right.
   assert(std::abs(trajectory.getStartTime(landing_segment_index) - breaks[num_swing_segments]) < 1e-10); // TODO: get rid of this once we know this is right.
 
-  for (int i = 0; i < x0_expmap_unwrapped.value().rows(); ++i) {
-//    PiecewisePolynomial<double> updated_spline = twoWaypointCubicSpline(breaks, x0(i), xd0(i), xf(i), xdf(i), x1(i), x2(i));
-//    body_motion_data.getTrajectory().replace(takeoff_segment_index, updated_spline);
+  for (int dof_num = 0; dof_num < x0.rows(); ++dof_num) {
+    PiecewisePolynomial<double> updated_spline_for_dof = twoWaypointCubicSpline(breaks, x0(dof_num), xd0(dof_num), xf(dof_num), xdf(dof_num), x1(dof_num), x2(dof_num));
+    for (int j = 0; j < updated_spline_for_dof.getNumberOfSegments(); j++) {
+      body_motion_data.getTrajectory().setPolynomialMatrixBlock(updated_spline_for_dof.getPolynomialMatrix(j), takeoff_segment_index + j, dof_num, 0);
+    }
   }
-
-
-
-//      ts = body_motion_data.ts(body_t_ind+(1:4));
-//      qpSpline_options = struct('optimize_knot_times', false);
-//      [coefs, ts] = qpSpline(ts, xs, xd0_xyzexpmap, xdf, qpSpline_options);
-//
-//      obj.body_motions(body_motion_ind).coefs(:,body_t_ind+(1:3),:) = coefs;
-//      obj.body_motions(body_motion_ind).ts(body_t_ind+(1:3)) = ts(1:3);
+  // NOTE: not updating times here. If we use a spline generation method that also determines the times, remember to update those as well
 }
 
 
