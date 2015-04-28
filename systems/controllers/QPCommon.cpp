@@ -3,6 +3,7 @@
 #include "controlUtil.h"
 #include <Eigen/StdVector>
 #include <map>
+#include "lcmUtil.h"
 
 #define LEG_INTEGRATOR_DEACTIVATION_MARGIN 0.05
 
@@ -17,6 +18,31 @@ const mxArray* getFieldOrPropertySafe(const mxArray* array, size_t index, std::s
 double logisticSigmoid(double L, double k, double x, double x0) {
   // Compute the value of the logistic sigmoid f(x) = L / (1 + exp(-k(x - x0)))
   return L / (1.0 + exp(-k * (x - x0)));
+}
+
+PiecewisePolynomial<double> matlabToPiecewisePolynomial(const mxArray* pobj, int index) {
+  std::vector<double> ts = matlabToStdVector(mxGetField(pobj, index, "ts"));
+  const int num_segments = ts.size() - 1;
+  const mxArray *coefs = mxGetFieldSafe(pobj, index, "coefs");
+  if (mxGetNumberOfDimensions(coefs) != 3) mexErrMsgTxt("coefs should be a dimension-3 array");
+  const mwSize* dim = mxGetDimensions(coefs);
+  if (dim[0] != 6 || dim[1] != num_segments || dim[2] != 4) mexErrMsgTxt("coefs should be size 6xNx4, where N is the number of spline segments");
+
+  Map<VectorXd> coefs_flat(mxGetPrSafe(coefs), dim[0] * dim[1] * dim[2]);
+  // coefs_flat[i + j * dim[0] + k * dim[0] * dim[1]] = coefs(i, j, k);
+  std::vector<Matrix<Polynomial<double>, Dynamic, Dynamic>> poly_matrices;
+  poly_matrices.reserve(num_segments);
+  for (int j=0; j < num_segments; ++j) {
+    Matrix<Polynomial<double>, Dynamic, Dynamic> poly_matrix(6, 1);
+    for (int i=0; i < 6; ++i) {
+      poly_matrix(i) = Polynomial<double>(Vector4d(coefs_flat(i + j * 6 + 3 * 6 * num_segments),
+                                                   coefs_flat(i + j * 6 + 2 * 6 * num_segments),
+                                                   coefs_flat(i + j * 6 + 1 * 6 * num_segments),
+                                                   coefs_flat(i + j * 6 + 0 * 6 * num_segments)));
+    }
+    poly_matrices.push_back(poly_matrix);
+  }
+  return PiecewisePolynomial<double>(poly_matrices, ts);
 }
 
 std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray *qp_input) {
@@ -91,12 +117,10 @@ std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray 
     for (int i=0; i < nbod; i++) {
       msg->body_motion_data[i].timestamp = msg->timestamp;
       msg->body_motion_data[i].body_id = (int32_t) mxGetScalar(mxGetFieldSafe(body_motion_data, i, "body_id"));
-      memcpy(msg->body_motion_data[i].ts, mxGetPrSafe(mxGetFieldSafe(body_motion_data, i, "ts")), 2*sizeof(double));
-      const mxArray* coefs = mxGetFieldSafe(body_motion_data, i, "coefs");
-      if (mxGetNumberOfDimensions(coefs) != 3) mexErrMsgTxt("coefs should be a dimension-3 array");
-      const mwSize* dim = mxGetDimensions(coefs);
-      if (dim[0] != 6 || dim[1] != 1 || dim[2] != 4) mexErrMsgTxt("coefs should be size 6x1x4");
-      matlabToCArrayOfArrays(getFieldOrPropertySafe(body_motion_data, i, "coefs"), msg->body_motion_data[i].coefs);
+
+      PiecewisePolynomial<double> spline = matlabToPiecewisePolynomial(body_motion_data, i);
+      encodePiecewisePolynomial(spline, msg->body_motion_data[i].spline);
+
       msg->body_motion_data[i].in_floating_base_nullspace = static_cast<bool>(mxGetScalar(mxGetFieldSafe(body_motion_data, i, "in_floating_base_nullspace")));
       msg->body_motion_data[i].control_pose_when_in_contact = static_cast<bool>(mxGetScalar(mxGetFieldSafe(body_motion_data, i, "control_pose_when_in_contact")));
       const mxArray* quat_task_to_world = mxGetFieldSafe(body_motion_data, i, "quat_task_to_world"); 
@@ -184,6 +208,7 @@ std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray 
   msg->param_set_name = mxArrayToString(myGetProperty(qp_input, "param_set_name"));
   return msg;
 }
+
 
 PIDOutput wholeBodyPID(NewQPControllerData *pdata, double t, const Ref<const VectorXd> &q, const Ref<const VectorXd> &qd, const Ref<const VectorXd> &q_des, WholeBodyParams *params) {
   // Run a PID controller on the whole-body state to produce desired accelerations and reference posture
@@ -459,9 +484,9 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     double expmap_damping_ratio_multiplier = qp_input->body_motion_data[i].expmap_damping_ratio_multiplier;
     memcpy(desired_body_accelerations[i].weight_multiplier.data(),qp_input->body_motion_data[i].weight_multiplier,sizeof(double)*6);
     pdata->r->findKinematicPath(desired_body_accelerations[i].body_path,0,desired_body_accelerations[i].body_or_frame_id0);
-    Map<Matrix<double, 6, 4,RowMajor>>coefs_rowmaj(&qp_input->body_motion_data[i].coefs[0][0]);
-    Matrix<double, 6, 4> coefs = coefs_rowmaj;
-    double t_spline = std::max(qp_input->body_motion_data[i].ts[0], std::min(qp_input->body_motion_data[i].ts[1], robot_state.t));
+
+    auto spline = decodePiecewisePolynomial(qp_input->body_motion_data[i].spline);
+    evaluateXYZExpmapCubicSpline(robot_state.t, spline, body_pose_des, body_v_des, body_vdot_des);
 
     Vector6d body_Kp;
     body_Kp.head<3>() = (params->body_motion[true_body_id0].Kp.head<3>().array()*xyz_kp_multiplier.array()).matrix();
@@ -469,7 +494,6 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     Vector6d body_Kd;
     body_Kd.head<3>() = (params->body_motion[true_body_id0].Kd.head<3>().array()*xyz_damping_ratio_multiplier.array()*xyz_kp_multiplier.array().sqrt()).matrix();
     body_Kd.tail<3>() = params->body_motion[true_body_id0].Kd.tail<3>()*sqrt(expmap_kp_multiplier)*expmap_damping_ratio_multiplier;
-    evaluateXYZExpmapCubicSplineSegment(t_spline - qp_input->body_motion_data[i].ts[0], coefs, body_pose_des, body_v_des, body_vdot_des);
 
     desired_body_accelerations[i].body_vdot = bodySpatialMotionPD(pdata->r, robot_state, body_or_frame_id0, body_pose_des, body_v_des, body_vdot_des, body_Kp, body_Kd,desired_body_accelerations[i].T_task_to_world);
     
