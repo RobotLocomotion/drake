@@ -180,6 +180,20 @@ void PiecewisePolynomial<CoefficientType>::setPolynomialMatrixBlock(const Piecew
   polynomials[segment_number].block(row_start, col_start, replacement.rows(), replacement.cols()) = replacement;
 }
 
+template<typename CoefficientType>
+PiecewisePolynomial<CoefficientType> PiecewisePolynomial<CoefficientType>::slice(int start_segment_index, int num_segments) {
+  segmentNumberRangeCheck(start_segment_index);
+  segmentNumberRangeCheck(start_segment_index + num_segments - 1);
+
+  auto segment_times_start_it = segment_times.begin() + start_segment_index;
+  auto segment_times_slice = vector<double>(segment_times_start_it, segment_times_start_it + num_segments + 1); // + 1 because there's one more segment times than segments
+
+  auto polynomials_start_it = polynomials.begin() + start_segment_index;
+  auto polynomials_slice = vector<PolynomialMatrix>(polynomials_start_it, polynomials_start_it + num_segments);
+
+  return PiecewisePolynomial<CoefficientType>(polynomials_slice, segment_times_slice);
+}
+
 template <typename CoefficientType>
 double PiecewisePolynomial<CoefficientType>::segmentValueAtGlobalAbscissa(int segment_index, double t, Eigen::DenseIndex row, Eigen::DenseIndex col) const {
   return polynomials[segment_index](row, col).value(t - getStartTime(segment_index));
