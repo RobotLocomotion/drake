@@ -258,16 +258,16 @@ VectorXd velocityReference(NewQPControllerData *pdata, double t, const Ref<Vecto
 
   VectorXd qdd_limited = qdd;
   // Do not wind the vref integrator up against the joint limits for the legs
-  for (i=0; i < rpc->position_indices.r_leg.size(); i++) {
-    int pos_ind = rpc->position_indices.r_leg(i);
+  for (i=0; i < rpc->position_indices.at("r_leg").size(); i++) {
+    int pos_ind = rpc->position_indices.at("r_leg")(i);
     if (q(pos_ind) <= pdata->r->joint_limit_min(pos_ind) + LEG_INTEGRATOR_DEACTIVATION_MARGIN) {
       qdd_limited(pos_ind) = std::max(qdd(pos_ind), 0.0);
     } else if (q(pos_ind) >= pdata->r->joint_limit_max(pos_ind) - LEG_INTEGRATOR_DEACTIVATION_MARGIN) {
       qdd_limited(pos_ind) = std::min(qdd(pos_ind), 0.0);
     }
   }
-  for (i=0; i < rpc->position_indices.l_leg.size(); i++) {
-    int pos_ind = rpc->position_indices.l_leg(i);
+  for (i=0; i < rpc->position_indices.at("l_leg").size(); i++) {
+    int pos_ind = rpc->position_indices.at("l_leg")(i);
     if (q(pos_ind) <= pdata->r->joint_limit_min(pos_ind) + LEG_INTEGRATOR_DEACTIVATION_MARGIN) {
       qdd_limited(pos_ind) = std::max(qdd(pos_ind), 0.0);
     } else if (q(pos_ind) >= pdata->r->joint_limit_max(pos_ind) - LEG_INTEGRATOR_DEACTIVATION_MARGIN) {
@@ -278,25 +278,25 @@ VectorXd velocityReference(NewQPControllerData *pdata, double t, const Ref<Vecto
   pdata->state.vref_integrator_state = (1-params->eta)*pdata->state.vref_integrator_state + params->eta*qd + qdd_limited*dt;
 
   if (params->zero_ankles_on_contact && foot_contact[0] == 1) {
-    for (i=0; i < rpc->position_indices.l_leg_ak.size(); i++) {
-      pdata->state.vref_integrator_state(rpc->position_indices.l_leg_ak(i)) = 0;
+    for (i=0; i < rpc->position_indices.at("l_leg_ak").size(); i++) {
+      pdata->state.vref_integrator_state(rpc->position_indices.at("l_leg_ak")(i)) = 0;
     }
   }
   if (params->zero_ankles_on_contact && foot_contact[1] == 1) {
-    for (i=0; i < rpc->position_indices.r_leg_ak.size(); i++) {
-      pdata->state.vref_integrator_state(rpc->position_indices.r_leg_ak(i)) = 0;
+    for (i=0; i < rpc->position_indices.at("r_leg_ak").size(); i++) {
+      pdata->state.vref_integrator_state(rpc->position_indices.at("r_leg_ak")(i)) = 0;
     }
   }
   if (pdata->state.foot_contact_prev[0] != foot_contact[0]) {
     // contact state changed, reset integrated velocities
-    for (i=0; i < rpc->position_indices.l_leg.size(); i++) {
-      pdata->state.vref_integrator_state(rpc->position_indices.l_leg(i)) = qd(rpc->position_indices.l_leg(i));
+    for (i=0; i < rpc->position_indices.at("l_leg").size(); i++) {
+      pdata->state.vref_integrator_state(rpc->position_indices.at("l_leg")(i)) = qd(rpc->position_indices.at("l_leg")(i));
     }
   }
   if (pdata->state.foot_contact_prev[1] != foot_contact[1]) {
     // contact state changed, reset integrated velocities
-    for (i=0; i < rpc->position_indices.r_leg.size(); i++) {
-      pdata->state.vref_integrator_state(rpc->position_indices.r_leg(i)) = qd(rpc->position_indices.r_leg(i));
+    for (i=0; i < rpc->position_indices.at("r_leg").size(); i++) {
+      pdata->state.vref_integrator_state(rpc->position_indices.at("r_leg")(i)) = qd(rpc->position_indices.at("r_leg")(i));
     }
   }
 
@@ -307,13 +307,13 @@ VectorXd velocityReference(NewQPControllerData *pdata, double t, const Ref<Vecto
 
   // do not velocity control ankles when in contact
   if (params->zero_ankles_on_contact && foot_contact[0] == 1) {
-    for (i=0; i < rpc->position_indices.l_leg_ak.size(); i++) {
-      qd_err(rpc->position_indices.l_leg_ak(i)) = 0;
+    for (i=0; i < rpc->position_indices.at("l_leg_ak").size(); i++) {
+      qd_err(rpc->position_indices.at("l_leg_ak")(i)) = 0;
     }
   }
   if (params->zero_ankles_on_contact && foot_contact[1] == 1) {
-    for (i=0; i < rpc->position_indices.r_leg_ak.size(); i++) {
-      qd_err(rpc->position_indices.r_leg_ak(i)) = 0;
+    for (i=0; i < rpc->position_indices.at("r_leg_ak").size(); i++) {
+      qd_err(rpc->position_indices.at("r_leg_ak")(i)) = 0;
     }
   }
 
@@ -979,49 +979,43 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   return info;
 }
 
+void parsePositionIndices(const mxArray *pobj, std::map<std::string, VectorXi> &position_indices) {
+  int num_fields = mxGetNumberOfFields(pobj);
+  for (int i=0; i < num_fields; ++i) {
+    const mxArray* pfield = mxGetFieldByNumber(pobj, 0, i);
+    Map<VectorXd> indices_double(mxGetPrSafe(pfield), mxGetNumberOfElements(pfield));
+    VectorXi indices = indices_double.cast<int> ();
+    position_indices[std::string(mxGetFieldNameByNumber(pobj, i))] = indices;
+  }
+  return;
+}
+
+void parseContactGroups(const mxArray* pobj, std::vector<RobotPropertyCache::ContactGroupNameToContactPointsMap> &contact_groups) {
+  const int num_groups = mxGetNumberOfElements(pobj);
+  contact_groups.reserve(num_groups);
+
+  for (int i=0; i < num_groups; ++i) {
+    RobotPropertyCache::ContactGroupNameToContactPointsMap groups;
+    const mxArray* cell_obj = mxGetCell(pobj, i);
+    int num_fields = mxGetNumberOfFields(cell_obj);
+    for (int j=0; j < num_fields; ++j) {
+      const mxArray* pfield = mxGetFieldByNumber(cell_obj, 0, j);
+      if (mxGetM(pfield) != 3) {
+        mexErrMsgTxt("expected contact points of size 3xN");
+      }
+      Map<Matrix<double, 3, Dynamic>> pts(mxGetPrSafe(pfield), 3, mxGetN(pfield));
+      groups[std::string(mxGetFieldNameByNumber(cell_obj, j))] = pts;
+    }
+    contact_groups.push_back(groups);
+  }
+  return;
+}
+
 void parseRobotPropertyCache(const mxArray *rpc_obj, RobotPropertyCache *rpc) {
   const mxArray *pobj;
 
-  pobj = myGetField(myGetField(rpc_obj, "position_indices"), "r_leg_kny");
-  Map<VectorXd>r_leg_kny(mxGetPrSafe(pobj), mxGetNumberOfElements(pobj));
-  rpc->position_indices.r_leg_kny = r_leg_kny.cast<int>().array() - 1;
-
-  pobj = myGetField(myGetField(rpc_obj, "position_indices"), "l_leg_kny");
-  Map<VectorXd>l_leg_kny(mxGetPrSafe(pobj), mxGetNumberOfElements(pobj));
-  rpc->position_indices.l_leg_kny = l_leg_kny.cast<int>().array() - 1;
-
-  pobj = myGetField(myGetField(rpc_obj, "position_indices"), "r_leg");
-  Map<VectorXd>r_leg(mxGetPrSafe(pobj), mxGetNumberOfElements(pobj));
-  rpc->position_indices.r_leg = r_leg.cast<int>().array() - 1;
-
-  pobj = myGetField(myGetField(rpc_obj, "position_indices"), "l_leg");
-  Map<VectorXd>l_leg(mxGetPrSafe(pobj), mxGetNumberOfElements(pobj));
-  rpc->position_indices.l_leg = l_leg.cast<int>().array() - 1;
-
-  pobj = myGetField(myGetField(rpc_obj, "position_indices"), "r_leg_ak");
-  Map<VectorXd>r_leg_ak(mxGetPrSafe(pobj), mxGetNumberOfElements(pobj));
-  rpc->position_indices.r_leg_ak = r_leg_ak.cast<int>().array() - 1;
-
-  pobj = myGetField(myGetField(rpc_obj, "position_indices"), "l_leg_ak");
-  Map<VectorXd>l_leg_ak(mxGetPrSafe(pobj), mxGetNumberOfElements(pobj));
-  rpc->position_indices.l_leg_ak = l_leg_ak.cast<int>().array() - 1;
-
-  pobj = myGetField(myGetField(rpc_obj, "position_indices"), "arm");
-  Map<VectorXd>arm(mxGetPrSafe(pobj), mxGetNumberOfElements(pobj));
-  rpc->position_indices.arm = arm.cast<int>().array() - 1;
-
-  pobj = myGetField(myGetField(rpc_obj, "position_indices"), "back_bkz");
-  Map<VectorXd>back_bkz(mxGetPrSafe(pobj), mxGetNumberOfElements(pobj));
-  rpc->position_indices.back_bkz = back_bkz.cast<int>().array() - 1;
-
-  pobj = myGetField(myGetField(rpc_obj, "position_indices"), "back_bky");
-  Map<VectorXd>back_bky(mxGetPrSafe(pobj), mxGetNumberOfElements(pobj));
-  rpc->position_indices.back_bky = back_bky.cast<int>().array() - 1;
-
-  pobj = myGetField(myGetField(rpc_obj, "position_indices"), "neck");
-  Map<VectorXd>neck(mxGetPrSafe(pobj), mxGetNumberOfElements(pobj));
-  rpc->position_indices.neck = neck.cast<int>().array() - 1;
-
+  parsePositionIndices(mxGetFieldSafe(rpc_obj, "position_indices"), rpc->position_indices);
+  parseContactGroups(mxGetFieldSafe(rpc_obj, "contact_groups"), rpc->contact_groups);
 
   rpc->body_ids.r_foot = (int) mxGetScalar(myGetField(myGetField(rpc_obj, "body_ids"), "r_foot")) - 1;
   rpc->body_ids.l_foot = (int) mxGetScalar(myGetField(myGetField(rpc_obj, "body_ids"), "l_foot")) - 1;

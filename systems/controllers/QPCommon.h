@@ -73,19 +73,6 @@ struct QPControllerState {
   int cbasis_len;
 };
 
-struct PositionIndicesCache {
-  VectorXi r_leg_kny;
-  VectorXi l_leg_kny;
-  VectorXi r_leg;
-  VectorXi l_leg;
-  VectorXi r_leg_ak;
-  VectorXi l_leg_ak;
-  VectorXi arm;
-  VectorXi back_bky;
-  VectorXi back_bkz;
-  VectorXi neck;
-};
-
 struct BodyIdsCache {
   int r_foot;
   int l_foot;
@@ -95,7 +82,7 @@ struct BodyIdsCache {
 struct RobotPropertyCache {
   typedef std::map<std::string, Eigen::Matrix3Xd> ContactGroupNameToContactPointsMap;
   std::vector<ContactGroupNameToContactPointsMap> contact_groups; // one for each support
-  PositionIndicesCache position_indices;
+  std::map<std::string, Eigen::VectorXi> position_indices;
   BodyIdsCache body_ids;
   VectorXi actuated_indices;
   int num_bodies;
