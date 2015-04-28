@@ -64,5 +64,9 @@ if (MATLAB_FOUND)
   include_directories (${CMAKE_SOURCE_DIR}/util )
   target_link_libraries(individualCentersOfPressuremex drakeRBM drakeUtil drakeControlUtil)
 
+  add_mex(bodySpatialMotionPDmex bodySpatialMotionPDmex.cpp)
+  include_directories (${CMAKE_SOURCE_DIR}/util )
+  target_link_libraries(bodySpatialMotionPDmex drakeRBM drakeGeometryUtil drakeUtil drakeControlUtil)
+
 
 endif(MATLAB_FOUND)
