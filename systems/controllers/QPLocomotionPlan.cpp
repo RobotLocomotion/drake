@@ -2,7 +2,9 @@
 #include "drakeFloatingPointUtil.h"
 #include <stdexcept>
 #include <algorithm>
+#include <cmath>
 #include "drakeGeometryUtil.h"
+#include "splineGeneration.h"
 #include "lcmUtil.h"
 
 // TODO: default start_time to nan
@@ -232,44 +234,60 @@ void QPLocomotionPlan::publishQPControllerInput(
 }
 
 void QPLocomotionPlan::updateSwingTrajectory(double t_plan, BodyMotionData& body_motion_data, int body_motion_segment_index, const Eigen::VectorXd& qd) {
-  // TODO: clean up a bit. Doesn't make sense to store every intermediate thing in stacked vectors.
+  int takeoff_segment_index = body_motion_segment_index + 1; // this function is called before takeoff
+  int num_swing_segments = 3;
+  int landing_segment_index = takeoff_segment_index + num_swing_segments - 1;
 
+  // last three knot points from spline
+  PiecewisePolynomial<double>& trajectory = body_motion_data.getTrajectory();
+  VectorXd x1 = trajectory.value(trajectory.getEndTime(takeoff_segment_index));
+  VectorXd x2 = trajectory.value(trajectory.getEndTime(takeoff_segment_index + 1));
+  VectorXd xf = trajectory.value(trajectory.getEndTime(takeoff_segment_index + 2));
+
+  // first knot point from current position
   auto x0_xyzquat = robot->forwardKinNew((Vector3d::Zero()).eval(), body_motion_data.getBodyOrFrameId(), 0, 2, 1);
   auto& J = x0_xyzquat.gradient().value();
   auto xd0_xyzquat = (J * qd).eval();
-  auto quat = xd0_xyzquat.tail<QUAT_SIZE>();
-  auto x0_expmap = quat2expmap(quat, 1);
-  Vector6d xd0_xyzexpmap;
-  xd0_xyzexpmap.head<SPACE_DIMENSION>() = x0_xyzquat.value().head<SPACE_DIMENSION>();
-  xd0_xyzexpmap.tail<SPACE_DIMENSION>() = x0_expmap.gradient().value() * xd0_xyzquat.tail<QUAT_SIZE>();
+  Vector4d x0_quat = x0_xyzquat.value().tail<4>(); // copying to Vector4d for quatRotateVec later on.
+  auto x0_expmap = quat2expmap(x0_quat, 1);
+  Vector3d xd0_expmap = x0_expmap.gradient().value() * xd0_xyzquat.tail<4>();
 
-  int next_landing_spline_offset = 2;
-  int next_landing_spline_segment_index = body_motion_segment_index + next_landing_spline_offset;
-  PiecewisePolynomial<double> trajectory = body_motion_data.getTrajectory();
-  VectorXd x1_xyzexp = trajectory.value(trajectory.getEndTime(next_landing_spline_segment_index));
+  auto x0_expmap_unwrapped = unwrapExpmap(x1.tail<3>(), x0_expmap.value(), 1);
+  Vector6d x0;
+  x0.head<3>() = x0_xyzquat.value().head<3>();
+  x0.tail<3>() = x0_expmap_unwrapped.value().tail<3>();
 
-  auto x0_expmap_unwrapped = unwrapExpmap(x1_xyzexp.tail<SPACE_DIMENSION>(), x0_expmap.value(), 1);
-  xd0_xyzexpmap.tail<SPACE_DIMENSION>() = x0_expmap_unwrapped.gradient().value() * xd0_xyzexpmap.tail<SPACE_DIMENSION>();
-  xd0_xyzexpmap.head<3>().setZero(); // TODO, after all this we just set it to zero...
+  Vector6d xd0;
+  xd0.head<3>().setZero();
+  xd0.tail<3>() = x0_expmap_unwrapped.gradient().value() * xd0_expmap;
 
-//      [x0_expmap,dx0_expmap] = unwrapExpmap(x1_xyzexp(4:6),x0_expmap);
-//      xd0_xyzexpmap(4:6) = dx0_expmap*xd0_xyzexpmap(4:6);
-//      x0_xyzexpmap = [x0_xyzquat(1:3);x0_expmap];
-//      xd0_xyzexpmap(1:3) = zeros(3,1);
-//      xs = [x0_xyzexpmap, body_motion_data.coefs(:, body_t_ind+(2:4), end)]; TODO
+  // If the current pose is pitched down more than the first aerial knot point, adjust the knot point to match the current pose
+  Vector3d unit_x = Vector3d::UnitX();
+  auto quat1_gradientvar = expmap2quat(x1.tail<3>(), 0);
+  Vector3d unit_x_rotated_0 = quatRotateVec(x0_quat, unit_x);
+  Vector3d unit_x_rotated_1 = quatRotateVec(quat1_gradientvar.value(), unit_x);
+  if (unit_x_rotated_0(2) < unit_x_rotated_1(2)) {
+    auto quat2_gradientvar = expmap2quat(x2.tail<3>(), 0);
+    x1.tail<3>() = quat2expmap(slerp(x0_quat, quat2_gradientvar.value(), 0.1), 0).value();
+  }
+
+  // FIXME: way too expensive
+  MatrixXd xdf = trajectory.derivative().value(trajectory.getEndTime(takeoff_segment_index + 2));
+
+  auto start_it = trajectory.getSegmentTimes().begin() + takeoff_segment_index;
+  int num_breaks = num_swing_segments + 1;
+  auto end_it = start_it + num_breaks + 1; // + 1 because this iterator should point past the end of the subvector
+  std::vector<double> breaks(start_it, end_it);
+  assert(std::abs(trajectory.getStartTime(takeoff_segment_index) - breaks[0]) < 1e-10); // TODO: get rid of this once we know this is right.
+  assert(std::abs(trajectory.getStartTime(landing_segment_index) - breaks[num_swing_segments]) < 1e-10); // TODO: get rid of this once we know this is right.
+
+  for (int i = 0; i < x0_expmap_unwrapped.value().rows(); ++i) {
+//    PiecewisePolynomial<double> updated_spline = twoWaypointCubicSpline(breaks, x0(i), xd0(i), xf(i), xdf(i), x1(i), x2(i));
+//    body_motion_data.getTrajectory().replace(takeoff_segment_index, updated_spline);
+  }
 
 
-//      % If the current pose is pitched down more than the first aerial knot point, adjust the knot point to match the current pose
-//      T_x0_to_world_in_world = poseQuat2tform([xs(1:3,1); expmap2quat(xs(4:6,1))]);
-//      T_x1_to_world_in_world = poseQuat2tform([xs(1:3,2); expmap2quat(xs(4:6,2))]);
-//      xprime_x0 = T_x0_to_world_in_world * [1;0;0;0];
-//      xprime_x1 = T_x1_to_world_in_world * [1;0;0;0];
-//      if xprime_x0(3) < xprime_x1(3)
-//        xs(4:6,2) = quat2expmap(slerp(expmap2quat(xs(4:6,1)), expmap2quat(xs(4:6,3)), 0.1));
-//      end
-//
-//      xdf = body_motion_data.coefs(:,body_t_ind+4,end-1);
-//
+
 //      ts = body_motion_data.ts(body_t_ind+(1:4));
 //      qpSpline_options = struct('optimize_knot_times', false);
 //      [coefs, ts] = qpSpline(ts, xs, xd0_xyzexpmap, xdf, qpSpline_options);

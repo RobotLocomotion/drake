@@ -2,6 +2,7 @@ if (MATLAB_FOUND)
   include_directories (${PROJECT_SOURCE_DIR}/util )
   include_directories (${PROJECT_SOURCE_DIR}/systems/trajectories )
   include_directories (${PROJECT_SOURCE_DIR}/solvers/polynomial )
+  include_directories (${PROJECT_SOURCE_DIR}/solvers/qpSpline )
   pods_find_pkg_config(gurobi)
 
   pods_find_pkg_config(terrain-map)
