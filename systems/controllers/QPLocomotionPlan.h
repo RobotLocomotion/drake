@@ -86,6 +86,8 @@ private:
 
   void updatePlanShift(double t_global, const std::vector<bool>& contact_force_detected, const RigidBodySupportState& next_support);
 
+  void applyPlanShift(drake::lcmt_qp_controller_input& qp_input);
+
   static const std::map<SupportLogicType, std::vector<bool> > createSupportLogicMaps();
 };
 

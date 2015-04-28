@@ -8,6 +8,7 @@
 #include "lcmUtil.h"
 
 // TODO: go through everything and make it match the updated Matlab code
+// TODO: check times (global vs. plan)
 // TODO: default start_time to nan
 // TODO: set default qp input
 // TODO: com traj 2x1, differentiate
@@ -24,6 +25,7 @@
 // knee_indices[Side::LEFT] = robot_property_cache.position_indices.l_leg_kny[0];
 // knee_indices[Side::RIGHT] = robot_property_cache.position_indices.r_leg_kny[0];
 // TODO: constructor: plan_shift.setIdentity()
+// TODO: make body_motions a map from RigidBody* to BodyMotionData, remove body_id from BodyMotionData?
 
 using namespace std;
 using namespace Eigen;
@@ -216,9 +218,7 @@ void QPLocomotionPlan::publishQPControllerInput(
 
   updatePlanShift(t_plan, contact_force_detected, next_support);
 
-  // TODO
-//  applyPlanShift(qp_input);
-//      qp_input = obj.applyPlanShift(qp_input);
+  applyPlanShift(qp_input);
 
   qp_input.joint_pd_override = joint_pd_override_data;
   last_qp_input = qp_input;
@@ -291,28 +291,71 @@ bool QPLocomotionPlan::isSupportingBody(int body_index, const RigidBodySupportSt
   return false;
 }
 
+template<class InputIt, class UnaryPredicate>
+InputIt find_if_not(InputIt first, InputIt last, UnaryPredicate q)
+{
+    return std::find_if(first, last, std::not1(q));
+}
+
+template <typename T>
+class AddressEqual
+{
+private:
+  const T& t;
+public:
+  AddressEqual(const T& t) : t(t) {}
+  bool operator()(const T& other) const { return &t == &other; }
+};
+
 void QPLocomotionPlan::updatePlanShift(double t_plan, const std::vector<bool>& contact_force_detected, const RigidBodySupportState& next_support) {
-  // determine loading foot
-  for (auto support_it = next_support.begin(); support_it != next_support.end(); ++support_it) {
-    int support_body_id = support_it->body;
-    bool is_loading = contact_force_detected[support_body_id];
+  // determine indices corresponding to support feet in next support
+  std::vector<int> support_foot_indices;
+  for (auto it = next_support.begin(); it != next_support.end(); ++it) {
+    RigidBodySupportStateElement support_state_element = *it;
+    int support_body_id = support_state_element.body;
     bool is_foot = foot_body_id_to_side.find(support_body_id) != foot_body_id_to_side.end();
-    if (is_loading && is_foot) {
-      // find corresponding body_motion
-      for (auto body_motion_it = body_motions.begin(); body_motion_it != body_motions.end(); ++body_motion_it) {
-        int body_motion_body_id = robot->parseBodyOrFrameID(body_motion_it->getBodyOrFrameId());
-        if (body_motion_body_id == support_body_id) {
-          int world = 0;
-          int rotation_type = 0;
-          Vector3d foot_frame_origin_actual = robot->forwardKinNew(Vector3d::Zero().eval(), body_motion_it->getBodyOrFrameId(), world, rotation_type, 0).value();
-          Vector3d foot_frame_origin_planned = body_motion_it->getTrajectory().value(t_plan).topRows<3>();
-          plan_shift.translation() = foot_frame_origin_planned - foot_frame_origin_actual;
+    bool is_loading = contact_force_detected[support_body_id];
+    if (is_foot && is_loading) {
+      support_foot_indices.push_back(support_body_id);
+    }
+  }
+
+  // find where the next support is in our planned list of supports
+  vector<RigidBodySupportState>::iterator next_support_it = std::find_if(supports.begin(), supports.end(), AddressEqual<const RigidBodySupportState&>(next_support));
+
+  // reverse iterate to find which one came into contact last
+  reverse_iterator<vector<RigidBodySupportState>::iterator> supports_reverse_it(next_support_it);
+  for (; supports_reverse_it != supports.rend(); ++supports_reverse_it) {
+    const RigidBodySupportState& support = *supports_reverse_it;
+    for (auto support_foot_it = support_foot_indices.begin(); support_foot_it != support_foot_indices.end(); ++support_foot_it) {
+      if (!isSupportingBody(*support_foot_it, support)) {
+        int support_foot_that_came_into_contact_last = *support_foot_it;
+
+        // find corresponding body_motion and compute new plan shift
+        for (auto body_motion_it = body_motions.begin(); body_motion_it != body_motions.end(); ++body_motion_it) {
+          int body_motion_body_id = robot->parseBodyOrFrameID(body_motion_it->getBodyOrFrameId());
+          if (body_motion_body_id == support_foot_that_came_into_contact_last) {
+            int world = 0;
+            int rotation_type = 0;
+            Vector3d foot_frame_origin_actual = robot->forwardKinNew(Vector3d::Zero().eval(), body_motion_it->getBodyOrFrameId(), world, rotation_type, 0).value();
+            Vector3d foot_frame_origin_planned = body_motion_it->getTrajectory().value(t_plan).topRows<3>();
+            plan_shift.translation() = foot_frame_origin_planned - foot_frame_origin_actual;
+          }
         }
+        /*
+         * If more than one supporting foot came into contact at the same time (e.g. when jumping and landing with two feet at the same time)
+         * just use the foot that appears first in support_foot_indices
+         */
+        return;
       }
     }
   }
 }
 
+void QPLocomotionPlan::applyPlanShift(drake::lcmt_qp_controller_input& qp_input)
+{
+
+}
 
 const std::map<SupportLogicType, std::vector<bool> > QPLocomotionPlan::createSupportLogicMaps()
 {
@@ -323,4 +366,3 @@ const std::map<SupportLogicType, std::vector<bool> > QPLocomotionPlan::createSup
   ret[PREVENT_SUPPORT] = { {false, false, false, false} };
   return ret;
 }
-
