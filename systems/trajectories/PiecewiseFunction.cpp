@@ -49,11 +49,7 @@ double PiecewiseFunction::getEndTime() const {
 
 int PiecewiseFunction::getSegmentIndex(double t) const {
   // clip to min/max times
-  if (t < getStartTime())
-    t = getStartTime();
-
-  if (t > getEndTime())
-    t = getEndTime();
+  t = std::min(std::max(t, getStartTime()), getEndTime());
 
   int segment_index = 0;
   // TODO: something smarter than this linear search

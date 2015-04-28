@@ -77,9 +77,21 @@ void testBasicFunctionality() {
   }
 }
 
+template <typename CoefficientType>
+void testValueOutsideOfRange() {
+  typedef PiecewisePolynomial<CoefficientType> PiecewisePolynomialType;
+
+  default_random_engine generator;
+  vector<double> segment_times = generateRandomSegmentTimes(6, generator);
+  PiecewisePolynomialType piecewise = generateRandomPiecewisePolynomial<CoefficientType>(3, 4, 5, segment_times);
+  valuecheck(piecewise.value(piecewise.getStartTime()), piecewise.value(piecewise.getStartTime() - 1.0), 1e-10);
+  valuecheck(piecewise.value(piecewise.getEndTime()), piecewise.value(piecewise.getEndTime() + 1.0), 1e-10);
+}
+
 int main(int argc, char **argv) {
   testIntegralAndDerivative<double>();
   testBasicFunctionality<double>();
+  testValueOutsideOfRange<double>();
 
   std::cout << "test passed";
 
