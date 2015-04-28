@@ -7,6 +7,7 @@
 #include "splineGeneration.h"
 #include "lcmUtil.h"
 
+// TODO: go through everything and make it match the updated Matlab code
 // TODO: default start_time to nan
 // TODO: set default qp input
 // TODO: com traj 2x1, differentiate
@@ -17,6 +18,12 @@
 // TODO: drakePiecewisePolynomial_EXPORTS
 // TODO: constructor:   planned_support_command = support_logic_maps[REQUIRE_SUPPORT];
 // TODO: constructor: joint_pd_override_data
+// TODO: constructor:
+// foot_body_id_to_side[robot_property_cache.body_ids.l_foot] = Side::LEFT;
+// foot_body_id_to_side[robot_property_cache.body_ids.r_foot] = Side::RIGHT;
+// knee_indices[Side::LEFT] = robot_property_cache.position_indices.l_leg_kny[0];
+// knee_indices[Side::RIGHT] = robot_property_cache.position_indices.r_leg_kny[0];
+// TODO: constructor: plan_shift.setIdentity()
 
 using namespace std;
 using namespace Eigen;
@@ -101,20 +108,13 @@ void QPLocomotionPlan::publishQPControllerInput(
   auto s1_current = V.s1.value(t_plan);
   eigenToCArrayOfArrays(s1_current, qp_input.zmp_data.s1);
 
-  robot->doKinematicsNew(q, v);
+  VectorXd v_dummy(0, 1);
+  robot->doKinematicsNew(q, v_dummy);
 
   // TODO: something smarter than this linear search
   size_t support_index = 0;
   while (support_index < support_times.size() - 1 && t_plan >= support_times[support_index + 1])
     support_index++;
-
-  std::map<int, Side> foot_body_id_to_side;
-  foot_body_id_to_side[robot_property_cache.body_ids.l_foot] = Side::LEFT;
-  foot_body_id_to_side[robot_property_cache.body_ids.r_foot] = Side::RIGHT;
-
-  std::map<Side, int> knee_indices;
-  knee_indices[Side::LEFT] = robot_property_cache.position_indices.l_leg_kny[0];
-  knee_indices[Side::RIGHT] = robot_property_cache.position_indices.r_leg_kny[0];
 
   RigidBodySupportState& support_state = supports[support_index];
   bool is_last_support = support_index == supports.size() - 1;
@@ -132,8 +132,8 @@ void QPLocomotionPlan::publishQPControllerInput(
     if (is_foot) {
       // toe off active switching logic
       Side side = it->second;
-      int knee_index = knee_indices[side];
-      if (toe_off_active[side]) {
+      int knee_index = knee_indices.at(side);
+      if (!toe_off_active[side]) {
         bool is_support_foot = isSupportingBody(body_id, support_state);
         bool knee_close_to_singularity = q[knee_index] < knee_settings.min_knee_angle;
         if (is_support_foot && knee_close_to_singularity) {
@@ -147,9 +147,7 @@ void QPLocomotionPlan::publishQPControllerInput(
       else {
         if (!isSupportingBody(body_id, support_state)) {
           toe_off_active[side] = false;
-          // TODO:
-//          updateSwingTrajectory(t_plan, support_state, );
-                //              obj = obj.updateSwingTrajectory(t_plan, j, body_t_ind-1, kinsol, qd);
+          updateSwingTrajectory(t_plan, body_motion, body_motion_segment_index - 1, v);
         }
       }
 
@@ -170,10 +168,7 @@ void QPLocomotionPlan::publishQPControllerInput(
         qp_input.num_joint_pd_overrides++;
 
         if (body_motion.isToeOffAllowed(body_motion_segment_index)) {
-          // TODO:
-//          updateSwingTrajectory();
-//              obj = obj.updateSwingTrajectory(t_plan, j, body_t_ind, kinsol, qd);
-
+          updateSwingTrajectory(t_plan, body_motion, body_motion_segment_index, v);
         }
       }
     }
@@ -181,7 +176,9 @@ void QPLocomotionPlan::publishQPControllerInput(
     const PiecewisePolynomial<> body_motion_trajectory = body_motion.getTrajectory();
     drake::lcmt_body_motion_data body_motion_data_for_support_lcm;
     body_motion_data_for_support_lcm.body_id = body_id;
-    encodePiecewisePolynomial(body_motion.getTrajectory(), body_motion_data_for_support_lcm.spline);
+    PiecewisePolynomial<double> body_motion_trajectory_slice = body_motion.getTrajectory().slice(body_motion_segment_index, 2);
+    body_motion_trajectory_slice.shiftRight(start_time); // convert to global time
+    encodePiecewisePolynomial(body_motion_trajectory_slice, body_motion_data_for_support_lcm.spline);
     body_motion_data_for_support_lcm.in_floating_base_nullspace = body_motion.isInFloatingBaseNullSpace(body_motion_segment_index);
     body_motion_data_for_support_lcm.control_pose_when_in_contact = body_motion.isPoseControlledWhenInContact(body_motion_segment_index);
     const Isometry3d& transform_task_to_world = body_motion.getTransformTaskToWorld();
@@ -197,8 +194,6 @@ void QPLocomotionPlan::publishQPControllerInput(
 
     qp_input.body_motion_data.push_back(body_motion_data_for_support_lcm);
 
-
-    body_motion.getTrajectory().shiftRight(start_time);
     if (body_id == robot_property_cache.body_ids.pelvis)
       pelvis_has_tracking = true;
   }
@@ -219,9 +214,7 @@ void QPLocomotionPlan::publishQPControllerInput(
 
   qp_input.param_set_name = gain_set;
 
-  // TODO
-//  updatePlanShift(t_global, qp_input, contact_force_detected, next_support);
-//      obj = obj.updatePlanShift(t_global, kinsol, qp_input, contact_force_detected, next_support);
+  updatePlanShift(t_plan, contact_force_detected, next_support);
 
   // TODO
 //  applyPlanShift(qp_input);
@@ -297,6 +290,29 @@ bool QPLocomotionPlan::isSupportingBody(int body_index, const RigidBodySupportSt
   }
   return false;
 }
+
+void QPLocomotionPlan::updatePlanShift(double t_plan, const std::vector<bool>& contact_force_detected, const RigidBodySupportState& next_support) {
+  // determine loading foot
+  for (auto support_it = next_support.begin(); support_it != next_support.end(); ++support_it) {
+    int support_body_id = support_it->body;
+    bool is_loading = contact_force_detected[support_body_id];
+    bool is_foot = foot_body_id_to_side.find(support_body_id) != foot_body_id_to_side.end();
+    if (is_loading && is_foot) {
+      // find corresponding body_motion
+      for (auto body_motion_it = body_motions.begin(); body_motion_it != body_motions.end(); ++body_motion_it) {
+        int body_motion_body_id = robot->parseBodyOrFrameID(body_motion_it->getBodyOrFrameId());
+        if (body_motion_body_id == support_body_id) {
+          int world = 0;
+          int rotation_type = 0;
+          Vector3d foot_frame_origin_actual = robot->forwardKinNew(Vector3d::Zero().eval(), body_motion_it->getBodyOrFrameId(), world, rotation_type, 0).value();
+          Vector3d foot_frame_origin_planned = body_motion_it->getTrajectory().value(t_plan).topRows<3>();
+          plan_shift.translation() = foot_frame_origin_planned - foot_frame_origin_actual;
+        }
+      }
+    }
+  }
+}
+
 
 const std::map<SupportLogicType, std::vector<bool> > QPLocomotionPlan::createSupportLogicMaps()
 {

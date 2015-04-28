@@ -53,6 +53,8 @@ private:
   std::map<Side, bool> toe_off_active;
 
   const KneeSettings knee_settings;
+  const std::map<int, Side> foot_body_id_to_side;
+  const std::map<Side, int> knee_indices;
 
   const static std::map<SupportLogicType, std::vector<bool> > support_logic_maps;
 
@@ -81,6 +83,8 @@ private:
   bool isSupportingBody(int body_index, const RigidBodySupportState& support_state);
 
   void updateSwingTrajectory(double t_plan, BodyMotionData& body_motion_data, int body_motion_segment_index, const Eigen::VectorXd& qd);
+
+  void updatePlanShift(double t_global, const std::vector<bool>& contact_force_detected, const RigidBodySupportState& next_support);
 
   static const std::map<SupportLogicType, std::vector<bool> > createSupportLogicMaps();
 };
