@@ -45,7 +45,7 @@ if (MATLAB_FOUND)
       pods_use_pkg_config_packages(instantaneousQPControllermex gurobi)
 
       add_mex(constructQPDataPointerMex constructQPDataPointerMex.cpp)
-      target_link_libraries(constructQPDataPointerMex drakeQP drakeControlUtil)
+      target_link_libraries(constructQPDataPointerMex drakeQP drakeControlUtil drakeQPCommon)
       pods_use_pkg_config_packages(constructQPDataPointerMex gurobi)
 
       include_directories (${CMAKE_BINARY_DIR}/lcmgen/lcmtypes )

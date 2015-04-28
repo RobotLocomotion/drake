@@ -113,8 +113,8 @@ void QPLocomotionPlan::publishQPControllerInput(
   foot_body_id_to_side[robot_property_cache.body_ids.r_foot] = Side::RIGHT;
 
   std::map<Side, int> knee_indices;
-  knee_indices[Side::LEFT] = robot_property_cache.position_indices.l_leg_kny[0];
-  knee_indices[Side::RIGHT] = robot_property_cache.position_indices.r_leg_kny[0];
+  knee_indices[Side::LEFT] = robot_property_cache.position_indices.at("l_leg_kny")[0];
+  knee_indices[Side::RIGHT] = robot_property_cache.position_indices.at("r_leg_kny")[0];
 
   RigidBodySupportState& support_state = supports[support_index];
   bool is_last_support = support_index == supports.size() - 1;
