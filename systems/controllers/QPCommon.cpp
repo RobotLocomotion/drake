@@ -3,7 +3,6 @@
 #include "controlUtil.h"
 #include <Eigen/StdVector>
 #include <map>
-#include "mat.h"
 
 #define LEG_INTEGRATOR_DEACTIVATION_MARGIN 0.05
 
@@ -481,15 +480,6 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     evaluateXYZExpmapCubicSplineSegment(t_spline - qp_input->body_motion_data[i].ts[0], coefs, body_pose_des, body_v_des, body_vdot_des);
 
     desired_body_accelerations[i].body_vdot = bodySpatialMotionPD(pdata->r, robot_state, body_or_frame_id0, body_pose_des, body_v_des, body_vdot_des, body_Kp, body_Kd,desired_body_accelerations[i].T_task_to_world);
-    if(desired_body_accelerations[i].body_or_frame_id0 == 30)
-    {
-      mexPrintf("body %d vdot ",desired_body_accelerations[i].body_or_frame_id0);
-      for(int k = 0;k<6;k++)
-      {
-        mexPrintf("%6.4f ",desired_body_accelerations[i].body_vdot(k));
-      }
-      mexPrintf("\n weight %6.4f\n",weight);
-    }
     
     desired_body_accelerations[i].weight = weight;
     desired_body_accelerations[i].accel_bounds = params->body_motion[true_body_id0].accel_bounds;
@@ -855,15 +845,6 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
           if (qp_input->body_motion_data[i].in_floating_base_nullspace) {
             Jb.block(0,0,6,6) = MatrixXd::Zero(6,6);
             // Jbdot.block(0,0,6,6) = MatrixXd::Zero(6,6);
-          }
-          if(desired_body_accelerations[i].body_or_frame_id0 == 30)
-          {
-            mexPrintf("\nbody weight ");
-            for(int j = 0;j<6;j++)
-            {
-              mexPrintf("%6.4f ",desired_body_accelerations[i].weight*desired_body_accelerations[i].weight_multiplier(j));
-            }
-            mexPrintf("\n");
           }
           for (int j=0; j<6; j++) {
             if (!std::isnan(desired_body_accelerations[i].body_vdot[j])) {
