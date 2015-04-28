@@ -45,6 +45,9 @@ steps.left = footsteps_with_quat([footsteps_with_quat.frame_id] == biped.foot_fr
 
 [zmp0, supp0] = getZMPBetweenFeet(biped, struct('right', steps.right(1), 'left', steps.left(1)));
 
+% set zmp0 to current com, temporary hack for polaris step down
+zmp0 = com0(1:2);
+
 zmp_knots = struct('t', options.t0, 'zmp', zmp0, 'supp', supp0);
 
 frame_knots = struct('t', options.t0, ...
