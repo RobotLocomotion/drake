@@ -173,6 +173,13 @@ void PiecewisePolynomial<CoefficientType>::shiftRight(double offset) {
   }
 }
 
+template<typename CoefficientType>
+void PiecewisePolynomial<CoefficientType>::setPolynomialMatrixBlock(const PiecewisePolynomial<CoefficientType>::PolynomialMatrix& replacement, int segment_number, Eigen::DenseIndex row_start, Eigen::DenseIndex col_start)
+{
+  segmentNumberRangeCheck(segment_number);
+  polynomials[segment_number].block(row_start, col_start, replacement.rows(), replacement.cols()) = replacement;
+}
+
 template <typename CoefficientType>
 double PiecewisePolynomial<CoefficientType>::segmentValueAtGlobalAbscissa(int segment_index, double t, Eigen::DenseIndex row, Eigen::DenseIndex col) const {
   return polynomials[segment_index](row, col).value(t - getStartTime(segment_index));

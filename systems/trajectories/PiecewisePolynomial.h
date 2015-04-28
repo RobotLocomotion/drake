@@ -70,6 +70,8 @@ public:
 
   void shiftRight(double offset);
 
+  void setPolynomialMatrixBlock(const PolynomialMatrix& replacement, int segment_number, Eigen::DenseIndex row_start = 0, Eigen::DenseIndex col_start = 0);
+
 protected:
   PiecewisePolynomial();
 
