@@ -44,7 +44,6 @@ private:
   ExponentialPlusPiecewisePolynomial<double> com_traj;
   double mu;
   Eigen::Isometry3d plan_shift;
-  PlanShiftMode plan_shift_mode;
   double g;
   bool is_quasistatic;
   std::vector<int> constrained_position_indices;

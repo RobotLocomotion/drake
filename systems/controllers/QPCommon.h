@@ -252,7 +252,7 @@ struct PIDOutput {
   VectorXd qddot_des;
 };
 
-enum PlanShiftMode {NONE, XYZ, Z_ONLY, Z_AND_ZMP};
+//enum PlanShiftMode {NONE, XYZ, Z_ONLY, Z_AND_ZMP};
 
 struct QuadraticLyapunovFunction {
   // TODO: turn this into a class with more functionality

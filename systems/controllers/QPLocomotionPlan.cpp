@@ -340,13 +340,14 @@ void QPLocomotionPlan::updatePlanShift(double t_plan, const std::vector<bool>& c
             Vector3d foot_frame_origin_actual = robot->forwardKinNew(Vector3d::Zero().eval(), body_motion_it->getBodyOrFrameId(), world, rotation_type, 0).value();
             Vector3d foot_frame_origin_planned = body_motion_it->getTrajectory().value(t_plan).topRows<3>();
             plan_shift.translation() = foot_frame_origin_planned - foot_frame_origin_actual;
+
+            /*
+             * If more than one supporting foot came into contact at the same time (e.g. when jumping and landing with two feet at the same time)
+             * just use the foot that appears first in support_foot_indices
+             */
+            return;
           }
         }
-        /*
-         * If more than one supporting foot came into contact at the same time (e.g. when jumping and landing with two feet at the same time)
-         * just use the foot that appears first in support_foot_indices
-         */
-        return;
       }
     }
   }
@@ -354,6 +355,24 @@ void QPLocomotionPlan::updatePlanShift(double t_plan, const std::vector<bool>& c
 
 void QPLocomotionPlan::applyPlanShift(drake::lcmt_qp_controller_input& qp_input)
 {
+  // TODO
+//      if obj.plan_shift_mode == QPLocomotionPlan.PLAN_SHIFT_XYZ ||...
+//          obj.plan_shift_mode == QPLocomotionPlan.PLAN_SHIFT_Z_AND_ZMP
+//        qp_input.zmp_data.x0(1:2) = qp_input.zmp_data.x0(1:2) - obj.plan_shift(1:2);
+//        qp_input.zmp_data.y0 = qp_input.zmp_data.y0 - obj.plan_shift(1:2);
+//      end
+//      if obj.plan_shift_mode == QPLocomotionPlan.PLAN_SHIFT_XYZ
+//        inds = 1:3;
+//      elseif obj.plan_shift_mode == QPLocomotionPlan.PLAN_SHIFT_Z_ONLY ||...
+//          obj.plan_shift_mode == QPLocomotionPlan.PLAN_SHIFT_Z_AND_ZMP
+//        inds = 3;
+//      else
+//        inds = [];
+//      end
+//      for j = 1:length(qp_input.body_motion_data)
+//        qp_input.body_motion_data(j).coefs(inds,:,end) = qp_input.body_motion_data(j).coefs(inds,:,end) - obj.plan_shift(inds);
+//      end
+//      qp_input.whole_body_data.q_des(inds) = qp_input.whole_body_data.q_des(inds) - obj.plan_shift(inds);
 
 }
 
