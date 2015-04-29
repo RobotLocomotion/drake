@@ -60,11 +60,23 @@ public:
 
   PiecewisePolynomial& operator+=(const PiecewisePolynomial& other);
 
+  PiecewisePolynomial& operator-=(const PiecewisePolynomial& other);
+
   PiecewisePolynomial& operator*=(const PiecewisePolynomial& other);
 
-  const PiecewisePolynomial operator+(const PiecewisePolynomial &other) const;
+  PiecewisePolynomial& operator+=(const CoefficientMatrix& offset);
 
-  const PiecewisePolynomial operator*(const PiecewisePolynomial &other) const;
+  PiecewisePolynomial& operator-=(const CoefficientMatrix& offset);
+
+  const PiecewisePolynomial operator+(const PiecewisePolynomial& other) const;
+
+  const PiecewisePolynomial operator-(const PiecewisePolynomial& other) const;
+
+  const PiecewisePolynomial operator*(const PiecewisePolynomial& other) const;
+
+  const PiecewisePolynomial operator+(const CoefficientMatrix& offset) const;
+
+  const PiecewisePolynomial operator-(const CoefficientMatrix& offset) const;
 
   bool isApprox(const PiecewisePolynomial& other, double tol) const;
 

@@ -35,6 +35,11 @@ double BodyMotionData::getExponentialMapProportionalGainMultiplier() const
   return exponential_map_proportional_gain_multiplier;
 }
 
+const PiecewisePolynomial<double>& BodyMotionData::getTrajectory() const
+{
+  return trajectory;
+}
+
 PiecewisePolynomial<double>& BodyMotionData::getTrajectory()
 {
   return trajectory;

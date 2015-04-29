@@ -12,6 +12,7 @@
 #include "QPCommon.h"
 #include "BodyMotionData.h"
 #include "Side.h"
+#include <lcm/lcm-cpp.hpp>
 
 enum SupportLogicType {
   REQUIRE_SUPPORT, ONLY_IF_FORCE_SENSED, ONLY_IF_KINEMATIC, KINEMATIC_OR_SENSED, PREVENT_SUPPORT
@@ -43,7 +44,9 @@ private:
   PiecewisePolynomial<double> q_traj;
   ExponentialPlusPiecewisePolynomial<double> com_traj;
   double mu;
-  Eigen::Isometry3d plan_shift;
+  Eigen::Vector3d plan_shift;
+  std::vector<Eigen::DenseIndex> plan_shift_zmp_indices;
+  std::vector<Eigen::DenseIndex> plan_shift_body_motion_indices;
   double g;
   bool is_quasistatic;
   std::vector<int> constrained_position_indices;
@@ -54,6 +57,9 @@ private:
   const KneeSettings knee_settings;
   const std::map<int, Side> foot_body_id_to_side;
   const std::map<Side, int> knee_indices;
+
+  lcm::LCM lcm;
+  std::string lcm_channel;
 
   const static std::map<SupportLogicType, std::vector<bool> > support_logic_maps;
 
@@ -79,13 +85,11 @@ public:
       const RobotPropertyCache& robot_property_cache, const std::vector<bool>& contact_force_detected);
 
 private:
-  bool isSupportingBody(int body_index, const RigidBodySupportState& support_state);
+  bool isSupportingBody(int body_index, const RigidBodySupportState& support_state) const;
 
   void updateSwingTrajectory(double t_plan, BodyMotionData& body_motion_data, int body_motion_segment_index, const Eigen::VectorXd& qd);
 
-  void updatePlanShift(double t_global, const std::vector<bool>& contact_force_detected, const RigidBodySupportState& next_support);
-
-  void applyPlanShift(drake::lcmt_qp_controller_input& qp_input);
+  Eigen::Vector3d computePlanShift(double t_global, const std::vector<bool>& contact_force_detected, const RigidBodySupportState& next_support) const;
 
   static const std::map<SupportLogicType, std::vector<bool> > createSupportLogicMaps();
 };
