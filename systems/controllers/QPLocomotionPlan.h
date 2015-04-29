@@ -46,8 +46,11 @@ struct KneeSettings {
 
 struct QPLocomotionPlanSettings {
   double duration;
-  std::vector<double> support_times;
   std::vector<RigidBodySupportState> supports;
+  std::vector<double> support_times; // length: supports.size() + 1
+  typedef std::map<std::string, Eigen::Matrix3Xd> ContactGroupNameToContactPointsMap;
+  std::vector<ContactGroupNameToContactPointsMap> contact_groups; // one for each support
+
   std::vector<BodyMotionData> body_motions;
   PiecewisePolynomial<double> zmp_trajectory;
   Eigen::Vector2d zmp_final;
@@ -56,8 +59,6 @@ struct QPLocomotionPlanSettings {
   PiecewisePolynomial<double> q_traj;
   ExponentialPlusPiecewisePolynomial<double> com_traj;
   drake::lcmt_qp_controller_input default_qp_input;
-  typedef std::map<std::string, Eigen::Matrix3Xd> ContactGroupNameToContactPointsMap;
-  std::vector<ContactGroupNameToContactPointsMap> contact_groups; // one for each support
 
   std::string gain_set = "standing";
   double mu = 0.5;
@@ -69,6 +70,14 @@ struct QPLocomotionPlanSettings {
   std::string pelvis_name = "pelvis";
   std::map<Side, std::string> foot_names = createDefaultFootNames();
   std::vector<std::string> constrained_joint_name_parts = createDefaultConstrainedJointNameParts();
+
+  void addSupport(const RigidBodySupportState& support_state, const ContactGroupNameToContactPointsMap& contact_group_name_to_contact_points, double duration) {
+    supports.push_back(support_state);
+    contact_groups.push_back(contact_group_name_to_contact_points);
+    if (support_times.empty())
+      support_times.push_back(0.0);
+    support_times.push_back(support_times[support_times.size() - 1] + duration);
+  }
 
   static KneeSettings createDefaultKneeSettings() {
     KneeSettings knee_settings;

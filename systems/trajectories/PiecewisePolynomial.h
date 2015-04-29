@@ -89,6 +89,10 @@ public:
 
   PiecewisePolynomial slice(int start_segment_index, int num_segments);
 
+  static PiecewisePolynomial random(
+    Eigen::DenseIndex rows, Eigen::DenseIndex cols, Eigen::DenseIndex num_coefficients_per_polynomial,
+    const std::vector<double>& segment_times);
+
 protected:
   double segmentValueAtGlobalAbscissa(int segment_index, double t, Eigen::DenseIndex row, Eigen::DenseIndex col) const;
 };

@@ -262,5 +262,18 @@ Eigen::DenseIndex PiecewisePolynomial<CoefficientType>::cols() const
     throw std::runtime_error("PiecewisePolynomial has no segments. Number of columns is undefined.");
 }
 
+template<typename CoefficientType>
+PiecewisePolynomial<CoefficientType> PiecewisePolynomial<CoefficientType>::random(
+    Eigen::DenseIndex rows, Eigen::DenseIndex cols, Eigen::DenseIndex num_coefficients_per_polynomial,
+    const std::vector<double>& segment_times)
+{
+  size_t num_segments = segment_times.size() - 1;
+  std::vector<PolynomialMatrix> polynomials;
+  for (Eigen::DenseIndex segment_index = 0; segment_index < num_segments; ++segment_index) {
+    polynomials.push_back(PolynomialType::randomPolynomialMatrix(num_coefficients_per_polynomial, rows, cols));
+  }
+  return PiecewisePolynomial<CoefficientType>(polynomials, segment_times);
+}
+
 template class DLLEXPORT PiecewisePolynomial<double>;
 //template class DLLEXPORT PiecewisePolynomial<std::complex<double>>; // doesn't work yet
