@@ -254,23 +254,6 @@ struct PIDOutput {
 
 //enum PlanShiftMode {NONE, XYZ, Z_ONLY, Z_AND_ZMP};
 
-struct QuadraticLyapunovFunction {
-  // TODO: turn this into a class with more functionality
-  MatrixXd S;
-  ExponentialPlusPiecewisePolynomial<double> s1;
-};
-
-struct RigidBodySupportStateElement {
-  // TODO: turn this into a class with more functionality
-  // TODO: consolidate with SupportStateElement?
-  int body; // TODO: should probably be a RigidBody smart pointer
-  Matrix3Xd contact_points;
-  std::vector<std::string> contact_groups; // TODO: should probably have an enum or class instead of the string
-  int contact_surface; // TODO: should probably be a different type
-};
-
-typedef std::vector<RigidBodySupportStateElement> RigidBodySupportState;
-
 std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray *qp_input);
 
 PIDOutput wholeBodyPID(NewQPControllerData *pdata, double t, const Ref<const VectorXd> &q, const Ref<const VectorXd> &qd, const Ref<const VectorXd> &q_des, WholeBodyParams *params);

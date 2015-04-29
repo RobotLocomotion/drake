@@ -7,12 +7,31 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include "drake/PiecewisePolynomial.h"
+#include "drake/ExponentialPlusPiecewisePolynomial.h"
 #include "drake/RigidBodyManipulator.h"
 #include "drake/lcmt_qp_controller_input.hpp"
-#include "QPCommon.h"
+//#include "QPCommon.h"
 #include "BodyMotionData.h"
 #include "Side.h"
 #include <lcm/lcm-cpp.hpp>
+
+struct QuadraticLyapunovFunction {
+  // TODO: turn this into a class with more functionality
+  Eigen::MatrixXd S;
+  ExponentialPlusPiecewisePolynomial<double> s1;
+};
+
+struct RigidBodySupportStateElement {
+  // TODO: turn this into a class with more functionality
+  // TODO: consolidate with SupportStateElement?
+  int body; // TODO: should probably be a RigidBody smart pointer
+  Eigen::Matrix3Xd contact_points;
+  std::vector<std::string> contact_groups; // TODO: should probably have an enum or class instead of the string
+  int contact_surface; // TODO: should probably be a different type
+};
+
+typedef std::vector<RigidBodySupportStateElement> RigidBodySupportState;
+
 
 enum SupportLogicType {
   REQUIRE_SUPPORT, ONLY_IF_FORCE_SENSED, ONLY_IF_KINEMATIC, KINEMATIC_OR_SENSED, PREVENT_SUPPORT
@@ -37,6 +56,8 @@ struct QPLocomotionPlanSettings {
   PiecewisePolynomial<double> q_traj;
   ExponentialPlusPiecewisePolynomial<double> com_traj;
   drake::lcmt_qp_controller_input default_qp_input;
+  typedef std::map<std::string, Eigen::Matrix3Xd> ContactGroupNameToContactPointsMap;
+  std::vector<ContactGroupNameToContactPointsMap> contact_groups; // one for each support
 
   std::string gain_set = "standing";
   double mu = 0.5;
@@ -45,6 +66,7 @@ struct QPLocomotionPlanSettings {
   double g = 9.81;
   bool is_quasistatic = false;
   const KneeSettings knee_settings = createDefaultKneeSettings();
+  std::string pelvis_name = "pelvis";
   std::map<Side, std::string> foot_names = createDefaultFootNames();
   std::vector<std::string> constrained_joint_name_parts = createDefaultConstrainedJointNameParts();
 
@@ -81,6 +103,7 @@ private:
   QPLocomotionPlanSettings settings;
   const std::map<Side, int> foot_body_ids;
   const std::map<Side, int> knee_indices;
+  const int pelvis_id;
 
   lcm::LCM lcm;
   std::string lcm_channel;
@@ -112,8 +135,7 @@ QPLocomotionPlan(RigidBodyManipulator& robot, const QPLocomotionPlanSettings& se
    * the robot which would be expensive to compute (such as terrain contact points)
    */
   void publishQPControllerInput(
-      double t_global, const Eigen::VectorXd& q, const Eigen::VectorXd& v,
-      const RobotPropertyCache& robot_property_cache, const std::vector<bool>& contact_force_detected);
+      double t_global, const Eigen::VectorXd& q, const Eigen::VectorXd& v, const std::vector<bool>& contact_force_detected);
 
 private:
   bool isSupportingBody(int body_index, const RigidBodySupportState& support_state) const;

@@ -6,6 +6,7 @@
 #include <limits>
 #include "drakeGeometryUtil.h"
 #include "splineGeneration.h"
+#include "drakeUtil.h"
 #include "lcmUtil.h"
 #include <string>
 
@@ -22,7 +23,8 @@ QPLocomotionPlan::QPLocomotionPlan(RigidBodyManipulator& robot, const QPLocomoti
     robot(robot),
     settings(settings),
     start_time(std::numeric_limits<double>::quiet_NaN()),
-    foot_body_ids(createFootBodyIdMap(robot, this->settings.foot_names)),
+    pelvis_id(robot.findLinkId(settings.pelvis_name)),
+    foot_body_ids(createFootBodyIdMap(robot, settings.foot_names)),
     knee_indices(createKneeIndicesMap(robot, foot_body_ids)),
     plan_shift(Eigen::Vector3d::Zero())
 {
@@ -80,8 +82,7 @@ void polynomialVectorCoefficientsToCArrayOfArraysMatlabOrdering(const Eigen::Mat
 const std::map<SupportLogicType, std::vector<bool> > QPLocomotionPlan::support_logic_maps = QPLocomotionPlan::createSupportLogicMaps();
 
 void QPLocomotionPlan::publishQPControllerInput(
-    double t_global, const Eigen::VectorXd& q, const VectorXd& v,
-    const RobotPropertyCache& robot_property_cache, const std::vector<bool>& contact_force_detected)
+    double t_global, const Eigen::VectorXd& q, const VectorXd& v, const std::vector<bool>& contact_force_detected)
 {
 
   if (isNaN(start_time))
@@ -194,7 +195,7 @@ void QPLocomotionPlan::publishQPControllerInput(
         for (int i = 0; i < support_state.size(); ++i) {
           RigidBodySupportStateElement& support_state_element = support_state[i];
           if (support_state_element.body == body_id)
-            support_state_element.contact_points = robot_property_cache.contact_groups[body_id].at("toe");
+            support_state_element.contact_points = settings.contact_groups[body_id].at("toe");
         }
         drake::lcmt_joint_pd_override joint_pd_override_for_support;
         joint_pd_override_for_support.position_ind = static_cast<int32_t>(knee_index);
@@ -246,7 +247,7 @@ void QPLocomotionPlan::publishQPControllerInput(
     qp_input.body_motion_data.push_back(body_motion_data_for_support_lcm);
     qp_input.num_tracked_bodies++;
 
-    if (body_id == robot_property_cache.body_ids.pelvis)
+    if (body_id == pelvis_id)
       pelvis_has_tracking = true;
   }
 
@@ -277,6 +278,7 @@ void QPLocomotionPlan::publishQPControllerInput(
 void QPLocomotionPlan::updateSwingTrajectory(double t_plan, BodyMotionData& body_motion_data, int body_motion_segment_index, const Eigen::VectorXd& qd) {
   int takeoff_segment_index = body_motion_segment_index + 1; // this function is called before takeoff
   int num_swing_segments = 3;
+  int landing_segment_index = takeoff_segment_index + num_swing_segments - 1;
 
   // last three knot points from spline
   PiecewisePolynomial<double>& trajectory = body_motion_data.getTrajectory();
@@ -293,6 +295,7 @@ void QPLocomotionPlan::updateSwingTrajectory(double t_plan, BodyMotionData& body
   Vector3d xd0_expmap = x0_expmap.gradient().value() * xd0_xyzquat.tail<4>();
 
   auto x0_expmap_unwrapped = unwrapExpmap(x1.tail<3>(), x0_expmap.value(), 1);
+  typedef Matrix<double, 6, 1> Vector6d;
   Vector6d x0;
   x0.head<3>() = x0_xyzquat.value().head<3>();
   x0.tail<3>() = x0_expmap_unwrapped.value().tail<3>();
