@@ -14,6 +14,8 @@ function [ytraj,xtraj,lcmlog] = simulate(obj,tspan,x0,options)
 % @option gui_control_interface set to true to bring up a figure with play/stop buttons @default false
 % @option lcm_control_interface channel on which to listen for lcmt_simulation_control messages.  @default '' -- which means no lcm
 %            interface
+% @option MaxDataPoints integer N to limit output to the last N data
+%            points.  useful for running very long simulations. 
 
 checkDependency('simulink');
 if ~exist('DCSFunction','file')
@@ -84,7 +86,13 @@ end
 pstruct.StateSaveName = 'xout';
 pstruct.SaveOutput = 'on';
 pstruct.OutputSaveName = 'yout';
-pstruct.LimitDataPoints = 'off';
+if isfield(options,'MaxDataPoints') && ~isinf(options.MaxDataPoints)
+  pstruct.LimitDataPoints = 'on';
+  pstruct.MaxDataPoints = num2str(options.MaxDataPoints);
+else
+  pstruct.LimitDataPoints = 'off'
+end
+  
 %pstruct.SaveOnModelUpdate = 'false';
 %pstruct.AutoSaveOptions.SaveModelOnUpdate = 'false';
 %pstruct.AutoSaveOptions.SaveBackupOnVersionUpgrade = 'false';
