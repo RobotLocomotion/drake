@@ -18,7 +18,7 @@ int main(int argc, char **argv) {
   support_state_element.contact_surface = 0;
   support_state.push_back(support_state_element);
   QPLocomotionPlanSettings::ContactGroupNameToContactPointsMap contact_group;
-  contact_group["toe"] = Matrix3Xd::Random();
+  contact_group["toe"] = Matrix3Xd::Random(3, 2);
   settings.addSupport(support_state, contact_group, 1.0);
   settings.duration = settings.support_times[settings.support_times.size() - 1];
 
