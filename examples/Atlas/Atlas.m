@@ -46,9 +46,9 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
         hand_orientation_right = [0; -pi/2; pi];
         hand_orientation_left = [0; pi/2; pi];
       elseif options.atlas_version == 5
-        hand_position_right = [0; -0.195; -0.01];
+        hand_position_right = [0; -0.195; 0.0];
         hand_orientation_right = [0; -pi/2; pi];
-        hand_position_left = [0; -0.195; -0.01];
+        hand_position_left = [0; -0.195; 0.0];
         hand_orientation_left = [0; -pi/2; pi];
       end
 
