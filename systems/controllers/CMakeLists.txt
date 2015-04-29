@@ -21,7 +21,7 @@ if (MATLAB_FOUND)
     VERSION 0.0.1)
 
   if (gurobi_FOUND)
-    add_mex(drakeQPCommon SHARED QPCommon.cpp Side.cpp BodyMotionData.cpp)
+    add_mex(drakeQPCommon SHARED QPCommon.cpp Side.cpp)
     target_link_libraries(drakeQPCommon drakeControlUtil drakeQP drakeTrajectories drakeLCMUtil)
     pods_install_libraries(drakeQPCommon)
     pods_install_headers(QPCommon.h DESTINATION drake)
@@ -51,14 +51,14 @@ if (MATLAB_FOUND)
       add_mex(encodeQPInputLCMMex encodeQPInputLCMMex.cpp)
       target_link_libraries(encodeQPInputLCMMex lcm drakeControlUtil drakeQPCommon)
 
-      add_mex(drakeQPLocomotionPlan SHARED QPLocomotionPlan.cpp)
-      target_link_libraries(drakeQPLocomotionPlan drakeQPCommon drakeSplineGeneration lcm)
+      add_library(drakeQPLocomotionPlan SHARED QPLocomotionPlan.cpp Side.cpp BodyMotionData.cpp) # TODO: put Side in a some library
+      target_link_libraries(drakeQPLocomotionPlan drakeSplineGeneration drakeRBM lcm drakeLCMUtil)
       pods_install_libraries(drakeQPLocomotionPlan)
       pods_install_headers(QPLocomotionPlan.h DESTINATION drake)
       pods_install_pkg_config_file(drake-qp-locomotion-plan
       LIBS -ldrakeQPLocomotionPlan
       CFLAGS -I\${prefix}/include/lcmtypes
-      REQUIRES drake-qp-common
+      REQUIRES
       VERSION 0.0.1)
 
 

@@ -32,6 +32,9 @@ private:
 public:
   virtual ~PiecewisePolynomial() { };
 
+  // default constructor; just leaves segment_times and polynomials empty
+  PiecewisePolynomial();
+
   // Matrix constructor
   PiecewisePolynomial(std::vector<PolynomialMatrix> const& polynomials, std::vector<double> const& segment_times);
 
@@ -87,8 +90,6 @@ public:
   PiecewisePolynomial slice(int start_segment_index, int num_segments);
 
 protected:
-  PiecewisePolynomial();
-
   double segmentValueAtGlobalAbscissa(int segment_index, double t, Eigen::DenseIndex row, Eigen::DenseIndex col) const;
 };
 
