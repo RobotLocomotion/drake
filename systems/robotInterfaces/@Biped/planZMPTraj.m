@@ -43,20 +43,6 @@ end
 steps.right = footsteps_with_quat([footsteps_with_quat.frame_id] == biped.foot_frame_id.right);
 steps.left = footsteps_with_quat([footsteps_with_quat.frame_id] == biped.foot_frame_id.left);
 
-com0 = getCOM(biped, kinsol);
-sole_to_com = rotmat(-footsteps(1).pos(6)) * (com0(1:2) - footsteps(1).pos(1:2));
-if sole_to_com(1) < 0.01 
-  % CoM is behind sole, so we have to use the heel support to get moving
-  for f = {'left', 'right'}
-    foot = f{1};
-    for j = 1:length(steps.(foot)(1).walking_params.support_contact_groups)
-      if strcmp(steps.(foot)(1).walking_params.support_contact_groups{j}, 'midfoot')
-        steps.(foot)(1).walking_params.support_contact_groups{j} = 'heel';
-      end
-    end
-  end
-end
-
 [zmp0, supp0] = getZMPBetweenFeet(biped, struct('right', steps.right(1), 'left', steps.left(1)));
 
 zmp_knots = struct('t', options.t0, 'zmp', zmp0, 'supp', supp0);

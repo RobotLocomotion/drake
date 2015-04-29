@@ -70,7 +70,7 @@ void testRoots() {
     VectorXd coeffs = VectorXd::Random(int_distribution(generator));
     Polynomial<CoefficientType> poly(coeffs);
     auto roots = poly.roots();
-    valuecheck(roots.rows(), poly.getDegree(), 1e-8);
+    valuecheck(roots.rows(), poly.getDegree());
     for (int i = 0; i < roots.size(); i++) {
       auto value = poly.value(roots[i]);
       valuecheck(std::abs(value), 0.0, 1e-8);

@@ -1,15 +1,28 @@
-function ok = checkDependency(dep,minimum_version)
+function ok = checkDependency(dep,command)
 % Drake code which depends on an external library or program should
 % check that dependency by calling this function.
 %   example:
 %     checkDependency('snopt')
 % or
 %     if (~checkDependency('snopt')) error('my error'); end
+%
+% @param dep the name of the dependency to check
+% @param command can be 'disable', 'enable'
+%  % todo: consider supporting a minimum_version
 
 persistent conf;
 
 ldep = lower(dep);
 conf_var = [ldep,'_enabled'];
+
+if (nargin>1)
+  if strcmp(command,'disable')
+    conf.(conf_var) = false;
+    return;
+  elseif strcmp(command,'enable')
+    conf.(conf_var) = [];
+  end
+end
 
 already_checked = isfield(conf,conf_var) && ~isempty(conf.(conf_var));
 if already_checked

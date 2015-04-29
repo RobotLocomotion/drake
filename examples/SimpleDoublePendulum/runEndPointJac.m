@@ -1,23 +1,15 @@
 function runEndPointJac
 
-r = PlanarRigidBodyManipulator('SimpleDoublePendulum.urdf',struct('terrain',[]));
+r = PlanarRigidBodyManipulator('SimpleDoublePendulum.urdf');
 v = r.constructVisualizer();
 v.axis = [-2 2 -2 2];
 
-kp = diag([100 100]);
-kd = diag([10 10]);
+kp = diag([20 20]);
+kd = diag([4 4]);
 sys = pdcontrol(r,kp,kd);
 
 c = EndPointControl(sys,r);
 
-%endpoint_d = FunctionHandleTrajectory(@(t)[1;1-.5*sin(t/2)],2,[0 5]);
-%endpoint_d = setOutputFrame(endpoint_d,sys.getInputFrame);
-
-%tf = 15;
-%xtraj = simulate(feedback(sys,c),[0 tf]);
-%v.playback(xtraj);
-
-w = warning('off','Drake:DrakeSystem:UnsupportedSampleTime');
-simulate(cascade(feedback(sys,c),v),[0 5])
-warning(w);
+xtraj = simulate(feedback(sys,c),[0 3]);
+v.playback(xtraj);
 
