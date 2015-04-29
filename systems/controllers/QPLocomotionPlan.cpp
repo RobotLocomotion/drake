@@ -11,7 +11,6 @@
 // TODO: check times (global vs. plan)
 // TODO: default start_time to nan
 // TODO: set default qp input
-// TODO: com traj 2x1, differentiate
 // TODO: check that support_times are in order
 // TODO: don't forget about foot_body_ids
 // TODO: be_silent: false
@@ -29,11 +28,13 @@
 // TODO: constructor:
 // plan_shift_zmp_inds = 1:2;
 // plan_shift_body_motion_inds = 3;
+// TODO: undo plan shift?
 
 using namespace std;
 using namespace Eigen;
 
 
+// TODO: delete?
 template <size_t Rows, size_t Cols, typename Derived>
 void polynomialVectorCoefficientsToCArrayOfArraysMatlabOrdering(const Eigen::MatrixBase<Derived>& source, typename Derived::Scalar::CoefficientType (&destination)[Rows][Cols]) {
   assert(source.cols() == 1);
@@ -244,7 +245,7 @@ void QPLocomotionPlan::publishQPControllerInput(
   qp_input.joint_pd_override = joint_pd_override_data;
   last_qp_input = qp_input;
 
-  // TODO: publish LCM message
+  lcm.publish(lcm_channel, &qp_input);
 }
 
 void QPLocomotionPlan::updateSwingTrajectory(double t_plan, BodyMotionData& body_motion_data, int body_motion_segment_index, const Eigen::VectorXd& qd) {

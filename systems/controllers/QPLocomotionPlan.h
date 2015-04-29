@@ -12,6 +12,7 @@
 #include "QPCommon.h"
 #include "BodyMotionData.h"
 #include "Side.h"
+#include <lcm/lcm-cpp.hpp>
 
 enum SupportLogicType {
   REQUIRE_SUPPORT, ONLY_IF_FORCE_SENSED, ONLY_IF_KINEMATIC, KINEMATIC_OR_SENSED, PREVENT_SUPPORT
@@ -56,6 +57,9 @@ private:
   const KneeSettings knee_settings;
   const std::map<int, Side> foot_body_id_to_side;
   const std::map<Side, int> knee_indices;
+
+  lcm::LCM lcm;
+  std::string lcm_channel;
 
   const static std::map<SupportLogicType, std::vector<bool> > support_logic_maps;
 
