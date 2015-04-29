@@ -36,6 +36,8 @@ private:
   PiecewisePolynomial<CoefficientType> piecewise_polynomial_part;
 
 public:
+  ExponentialPlusPiecewisePolynomial();
+
   ExponentialPlusPiecewisePolynomial(
       const MatrixX& K, const MatrixX& A, const std::vector<VectorX>& alpha,
       const PiecewisePolynomial<CoefficientType>& piecewise_polynomial_part);
