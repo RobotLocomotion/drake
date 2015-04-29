@@ -68,7 +68,7 @@ const std::vector<double>& PiecewiseFunction::getSegmentTimes() const {
 void PiecewiseFunction::segmentNumberRangeCheck(int segment_number) const {
   if (segment_number < 0 || segment_number >= getNumberOfSegments()) {
     std::stringstream msg;
-    msg << "Segment number " << segment_number << " out of range [" << 0 << ", " << getNumberOfSegments() - 1 << "]" << std::endl;
+    msg << "Segment number " << segment_number << " out of range [" << 0 << ", " << getNumberOfSegments() << ")" << std::endl;
     throw std::runtime_error(msg.str().c_str());
   }
 }

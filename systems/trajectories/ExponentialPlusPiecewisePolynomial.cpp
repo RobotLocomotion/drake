@@ -27,7 +27,7 @@ ExponentialPlusPiecewisePolynomial<CoefficientType>::ExponentialPlusPiecewisePol
 }
 
 template<typename CoefficientType>
-typename ExponentialPlusPiecewisePolynomial<CoefficientType>::ValueType ExponentialPlusPiecewisePolynomial<CoefficientType>::value(double t)
+typename ExponentialPlusPiecewisePolynomial<CoefficientType>::ValueType ExponentialPlusPiecewisePolynomial<CoefficientType>::value(double t) const
 {
   int segment_index = getSegmentIndex(t);
 
