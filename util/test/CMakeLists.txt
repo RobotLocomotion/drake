@@ -38,4 +38,4 @@ endif(MATLAB_FOUND)
 
 add_executable(testLCMUtil testLCMUtil.cpp)
 include_directories( .. )
-target_link_libraries(testLCMUtil drakeLCMUtil drakeTrajectoryTestUtil)
+target_link_libraries(testLCMUtil drakeLCMUtil)
