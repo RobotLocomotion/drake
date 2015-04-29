@@ -2,10 +2,12 @@
 #define UTIL_LCMUTIL_H_
 
 #include <Eigen/Core>
+#include <iostream>
 #include "PiecewisePolynomial.h"
 #include "drake/lcmt_polynomial.hpp"
 #include "drake/lcmt_polynomial_matrix.hpp"
 #include "drake/lcmt_piecewise_polynomial.hpp"
+#include "drake/lcmt_qp_controller_input.hpp"
 
 #undef DLLEXPORT
 #if defined(WIN32) || defined(WIN64)
@@ -53,5 +55,8 @@ Eigen::Matrix<Polynomial<double>, RowsAtCompileTime, ColsAtCompileTime> decodePo
 DLLEXPORT void encodePiecewisePolynomial(const PiecewisePolynomial<double>& piecewise_polynomial, drake::lcmt_piecewise_polynomial& msg);
 
 DLLEXPORT PiecewisePolynomial<double> decodePiecewisePolynomial(const drake::lcmt_piecewise_polynomial& msg);
+
+DLLEXPORT void verifySubtypeSizes(drake::lcmt_support_data &support_data);
+DLLEXPORT void verifySubtypeSizes(drake::lcmt_qp_controller_input &qp_input);
 
 #endif /* UTIL_LCMUTIL_H_ */
