@@ -6,8 +6,8 @@
 PiecewiseFunction::PiecewiseFunction(std::vector<double> const & segment_times) :
   segment_times(segment_times)
 {
-  for (int i = 0; i < getNumberOfSegments(); i++) {
-    if (segment_times[i + 1] < segment_times[i])
+  for (int i = 1; i < getNumberOfSegments() + 1; i++) {
+    if (segment_times[i] < segment_times[i - 1])
       throw std::runtime_error("times must be increasing");
   }
 }

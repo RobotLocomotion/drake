@@ -28,8 +28,8 @@ QPLocomotionPlan::QPLocomotionPlan(RigidBodyManipulator& robot, const QPLocomoti
     knee_indices(createKneeIndicesMap(robot, foot_body_ids)),
     plan_shift(Eigen::Vector3d::Zero())
 {
-  for (int i = 0; i < settings.support_times.size() - 1; i++) {
-    if (settings.support_times[i + 1] < settings.support_times[i])
+  for (int i = 1; i < settings.support_times.size(); i++) {
+    if (settings.support_times[i] < settings.support_times[i + 1])
       throw std::runtime_error("support times must be increasing");
   }
 
