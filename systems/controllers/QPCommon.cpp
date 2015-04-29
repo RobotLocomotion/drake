@@ -84,7 +84,16 @@ std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray 
         msg->support_data[i].support_logic_map[j] = (double_logic_map[j][0] != 0);
       }
       msg->support_data[i].mu = mxGetScalar(myGetField(support_data, i, "mu"));
-      msg->support_data[i].contact_surfaces = (int32_t) mxGetScalar(myGetField(support_data, i, "contact_surfaces"));
+      
+      double use_support_surface_dbl = mxGetScalar(myGetField(support_data, i, "use_support_surface"));
+      msg->support_data[i].use_support_surface = (use_support_surface_dbl != 0);
+
+      const mxArray *support_surface = myGetField(support_data, i, "support_surface");
+      if (!support_surface) mexErrMsgTxt("couldn't get support surface");
+      Map<Vector4d>support_surface_vec(mxGetPrSafe(support_surface));
+      for (int j=0; j < 4; j++) {
+        msg->support_data[i].support_surface[j] = support_surface_vec(j);
+      }
     }
   }
 
@@ -311,9 +320,10 @@ std::vector<SupportStateElement> loadAvailableSupports(std::shared_ptr<drake::lc
   available_supports.resize(qp_input->num_support_data);
   for (int i=0; i < qp_input->num_support_data; i++) {
     available_supports[i].body_idx = qp_input->support_data[i].body_id - 1;
-    available_supports[i].contact_surface = qp_input->support_data[i].contact_surfaces;
+    available_supports[i].use_support_surface = qp_input->support_data[i].use_support_surface;
     for (int j=0; j < 4; j++) {
       available_supports[i].support_logic_map[j] = qp_input->support_data[i].support_logic_map[j];
+      available_supports[i].support_surface[j] = qp_input->support_data[i].support_surface[j];
     }
     available_supports[i].contact_pts.resize(qp_input->support_data[i].num_contact_pts);
     for (int j=0; j < qp_input->support_data[i].num_contact_pts; j++) {
@@ -962,4 +972,3 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
 
   return info;
 }
-
