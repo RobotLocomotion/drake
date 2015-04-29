@@ -147,8 +147,8 @@ void QPLocomotionPlan::publishQPControllerInput(
   }
 
   // zmp data: Lyapunov function
-  eigenToCArrayOfArrays(settings.V.S, qp_input.zmp_data.S);
-  auto s1_current = settings.V.s1.value(t_plan);
+  eigenToCArrayOfArrays(settings.V.getS(), qp_input.zmp_data.S);
+  auto s1_current = settings.V.getS1().value(t_plan);
   eigenToCArrayOfArrays(s1_current, qp_input.zmp_data.s1);
 
   VectorXd v_dummy(0, 1);

@@ -15,10 +15,30 @@
 #include "Side.h"
 #include <lcm/lcm-cpp.hpp>
 
-struct QuadraticLyapunovFunction {
-  // TODO: turn this into a class with more functionality
+class QuadraticLyapunovFunction {
+  // TODO: move into its own file
+  // TODO: make part of a Lyapunov function class hierarchy
+  // TODO: more functionality
+private:
   Eigen::MatrixXd S;
   ExponentialPlusPiecewisePolynomial<double> s1;
+
+public:
+  QuadraticLyapunovFunction() { }
+
+  template<typename DerivedS>
+  QuadraticLyapunovFunction(const MatrixBase<DerivedS>& S, const ExponentialPlusPiecewisePolynomial<double>& s1) :
+      S(S), s1(s1) { }
+
+  const Eigen::MatrixXd& getS() const
+  {
+    return S;
+  }
+
+  const ExponentialPlusPiecewisePolynomial<double>& getS1() const
+  {
+    return s1;
+  }
 };
 
 struct RigidBodySupportStateElement {
