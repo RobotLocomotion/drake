@@ -126,8 +126,8 @@ classdef QPLocomotionPlan < QPControllerPlan
 
       if t_plan < obj.support_times(1)
         supp_idx = 1;
-      elseif t_plan > obj.support_times(end)
-        supp_idx = length(obj.support_times);
+      elseif t_plan >= obj.support_times(end)
+        supp_idx = length(obj.supports);
       else
         supp_idx = find(obj.support_times<=t_plan,1,'last');
       end
@@ -475,7 +475,7 @@ classdef QPLocomotionPlan < QPControllerPlan
       obj.x0 = x0;
       obj.support_times = [0, inf];
       obj.duration = inf;
-      obj.supports = [support_state, support_state];
+      obj.supports = support_state;
       obj.is_quasistatic = true;
 
       nq = obj.robot.getNumPositions();
@@ -736,6 +736,7 @@ classdef QPLocomotionPlan < QPControllerPlan
     function [supports, support_times] = getSupports(zmp_knots)
       supports = [zmp_knots.supp];
       support_times = [zmp_knots.t];
+      supports = supports(1:(numel(support_times)-1));
     end
 
     function zmptraj = getZMPTraj(zmp_knots)
