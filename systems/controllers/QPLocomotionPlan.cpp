@@ -29,7 +29,7 @@ QPLocomotionPlan::QPLocomotionPlan(RigidBodyManipulator& robot, const QPLocomoti
     plan_shift(Eigen::Vector3d::Zero())
 {
   for (int i = 1; i < settings.support_times.size(); i++) {
-    if (settings.support_times[i] < settings.support_times[i + 1])
+    if (settings.support_times[i] < settings.support_times[i - 1])
       throw std::runtime_error("support times must be increasing");
   }
 
