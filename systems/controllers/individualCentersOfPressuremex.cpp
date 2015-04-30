@@ -19,7 +19,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   contact_pt(3) = 1.0;
 
   int desired_support_argid = 1;
-  vector<SupportStateElement> active_supports;
+  vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> active_supports;
   int num_active_contact_pts = 0;
   if (!mxIsEmpty(prhs[desired_support_argid])) {
     mxArray* mxBodies = myGetField(prhs[desired_support_argid], "bodies");
@@ -30,11 +30,6 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     mxArray* mxContactPts = myGetField(prhs[desired_support_argid], "contact_pts");
     if (!mxContactPts)
       mexErrMsgTxt("couldn't get contact points");
-
-    mxArray* mxContactSurfaces = myGetField(prhs[desired_support_argid], "contact_surfaces");
-    if (!mxContactSurfaces)
-      mexErrMsgTxt("couldn't get contact surfaces");
-    double* pContactSurfaces = mxGetPrSafe(mxContactSurfaces);
 
     for (int i = 0; i < mxGetNumberOfElements(mxBodies); i++) {
       mxArray* mxBodyContactPts = mxGetCell(mxContactPts,i);
@@ -50,7 +45,6 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
         contact_pt.head(3) = all_body_contact_pts.col(j);
         se.contact_pts.push_back(contact_pt);
       }
-      se.contact_surface = (int) pContactSurfaces[i] - 1;
 
       active_supports.push_back(se);
       num_active_contact_pts += nc;
