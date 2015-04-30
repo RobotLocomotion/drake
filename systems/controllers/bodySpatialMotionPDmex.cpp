@@ -8,6 +8,19 @@ using namespace std;
 
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
+  /*
+   * robot   RigidBodyManipulator
+   * t    time
+   * q    configuration
+   * qd   configuration derivative
+   * body_index   the index of the body
+   * body_xyzquat_desire    desired xyz position and quaternion of the body, specified in task frame
+   * body_v_desire       desired xyz_dot and exponential map dot of the body, specified in task frame
+   * body_vdot_desire    desired xyz_ddot and exponential map ddot of the body, specified in task frame
+   * Kp                  The P gain on error, specified in task frame
+   * Kd                  The D gain on error, specified in task frame
+   * xyzquat_task_to_world    The transformation xyz, quaternion from task frame to the world frame
+   */
   if(nrhs != 11)
   {
     mexErrMsgTxt("Drake:bodySpatialMotionPD:IncorrectInputs: body_twist_dot = bodySpatialMotionPD(robot,t,q,qd,body_index,body_xyzquat_desire,body_v_desire,body_vdot_desire,Kp,Kd,xyzquat_task_to_world");
