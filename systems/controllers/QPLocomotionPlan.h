@@ -82,8 +82,8 @@ struct QPLocomotionPlanSettings {
 
   std::string gain_set = "standing";
   double mu = 0.5;
-  std::vector<int> plan_shift_zmp_indices = { { 1, 2 } };
-  std::vector<int> plan_shift_body_motion_indices  = { 3 };
+  std::vector<Eigen::DenseIndex> plan_shift_zmp_indices = { { 1, 2 } };
+  std::vector<Eigen::DenseIndex> plan_shift_body_motion_indices  = { 3 };
   double g = 9.81;
   bool is_quasistatic = false;
   KneeSettings knee_settings = createDefaultKneeSettings();

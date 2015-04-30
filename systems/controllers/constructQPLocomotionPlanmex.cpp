@@ -37,14 +37,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   settings.duration = mxGetScalar(mxGetPropertySafe(mex_settings, "duration"));
 //  std::vector<RigidBodySupportState> supports;
-//  std::vector<double> support_times; // length: supports.size() + 1
+  settings.support_times = matlabToStdVector<double>(mxGetPropertySafe(mex_settings, "support_times"));
 //  typedef std::map<std::string, Eigen::Matrix3Xd> ContactGroupNameToContactPointsMap;
 //  std::vector<ContactGroupNameToContactPointsMap> contact_groups; // one for each support
 
 //  std::vector<BodyMotionData> body_motions;
 //  PiecewisePolynomial<double> zmp_trajectory;
   settings.zmp_final = matlabToEigen<2, 1>(mxGetPropertySafe(mex_settings, "zmp_final"));
-  settings.lipm_height = mxGetScalar(mxGetPropertySafe(mex_settings, "lipm_height"));
+  settings.lipm_height = mxGetScalar(mxGetPropertySafe(mex_settings, "LIP_height"));
 //  QuadraticLyapunovFunction V;
 //  PiecewisePolynomial<double> q_traj;
 //  ExponentialPlusPiecewisePolynomial<double> com_traj;
@@ -52,8 +52,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   settings.gain_set = mxGetStdString(mxGetPropertySafe(mex_settings, "gain_set"));
   settings.mu = mxGetScalar(mxGetPropertySafe(mex_settings, "mu"));
-//  settings.plan_shift_zmp_indices = matlabToStdVector(mxGetPropertySafe(mex_settings, "plan_shift_zmp_indices")); // TODO enable after making QPLocomotionPlan changes
-//  settings.plan_shift_body_motion_indices = matlabToStdVector(mxGetPropertySafe(mex_settings, "plan_shift_body_motion_indices"));  // TODO enable after making QPLocomotionPlan changes
+  settings.plan_shift_zmp_indices = matlabToStdVector<Eigen::DenseIndex>(mxGetPropertySafe(mex_settings, "plan_shift_zmp_inds")); // TODO enable after making QPLocomotionPlan changes
+  settings.plan_shift_body_motion_indices = matlabToStdVector<Eigen::DenseIndex>(mxGetPropertySafe(mex_settings, "plan_shift_body_motion_inds"));  // TODO enable after making QPLocomotionPlan changes
   settings.g = mxGetScalar(mxGetPropertySafe(mex_settings, "g"));
   settings.is_quasistatic = mxGetLogicals(mxGetPropertySafe(mex_settings, "is_quasistatic"))[0];
   settings.knee_settings.min_knee_angle = mxGetScalar(mxGetPropertySafe(mex_settings, "min_knee_angle"));
