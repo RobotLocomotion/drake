@@ -127,9 +127,9 @@ classdef QPLocomotionPlan < QPControllerPlan
       if t_plan < obj.support_times(1)
         supp_idx = 1;
       elseif t_plan > obj.support_times(end)
-        supp_idx = length(obj.support_times);
+        supp_idx = length(obj.supports);
       else
-        supp_idx = find(obj.support_times<=t_plan,1,'last');
+        supp_idx = find(obj.support_times<t_plan,1,'last');
       end
 
       pelvis_has_tracking = false;
