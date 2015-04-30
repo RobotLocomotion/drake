@@ -191,6 +191,22 @@ std::pair<Eigen::Vector3d, double> resolveCenterOfPressure(Eigen::Vector3d torqu
   return std::pair<Vector3d, double>(cop, normal_torque_at_cop);
 }
 
+std::string mxGetStdString(const mxArray* array) {
+  mwSize buffer_length = mxGetNumberOfElements(array) + 1;
+  char* buffer = new char[buffer_length];
+  int status = mxGetString(array, buffer, buffer_length);
+
+  if (status != 0) {
+    delete[] buffer;
+    throw runtime_error("mxGetStdString failed. Possible cause: mxArray is not a string array.");
+  }
+  else {
+    string ret(buffer);
+    delete[] buffer;
+    return ret;
+  }
+}
+
 double * mxGetPrSafe(const mxArray *pobj) {
   if (!mxIsDouble(pobj)) mexErrMsgIdAndTxt("Drake:mxGetPrSafe:BadInputs", "mxGetPr can only be called on arguments which correspond to Matlab doubles");
   return mxGetPr(pobj);

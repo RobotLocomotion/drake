@@ -75,6 +75,8 @@ Eigen::Matrix<double, RowsAtCompileTime, ColsAtCompileTime> matlabToEigen(const 
   return ret;
 }
 
+DLLEXPORT std::string mxGetStdString(const mxArray* array);
+
 template <typename Scalar>
 mxArray* stdVectorToMatlab(const std::vector<Scalar>& vec) {
   mxArray* pm = mxCreateDoubleMatrix(static_cast<int>(vec.size()), 1, mxREAL);
