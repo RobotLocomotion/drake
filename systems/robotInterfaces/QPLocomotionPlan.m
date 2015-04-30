@@ -736,7 +736,6 @@ classdef QPLocomotionPlan < QPControllerPlan
     function [supports, support_times] = getSupports(zmp_knots)
       supports = [zmp_knots.supp];
       support_times = [zmp_knots.t];
-      supports = supports(1:(numel(support_times)-1));
     end
 
     function zmptraj = getZMPTraj(zmp_knots)
