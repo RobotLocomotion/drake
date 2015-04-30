@@ -1,12 +1,12 @@
 classdef QPLocomotionPlanSettings
-  properties(Access=private)
+  properties
     robot;
     support_times
     supports;
     body_motions;
     zmptraj = [];
     zmp_final = [];
-    LIP_height;
+    lipm_height;
     V;
     qtraj;
     comtraj = [];
@@ -16,23 +16,25 @@ classdef QPLocomotionPlanSettings
     g = 9.81; % gravity m/s^2
     is_quasistatic = false;
     constrained_dofs = [];
+    pelvis_name = 'pelvis';
+    l_foot_name = 'l_foot';
+    r_foot_name = 'r_foot';
     
     planned_support_command = QPControllerPlan.support_logic_maps.require_support; % when the plan says a given body is in support, require the controller to use that support. To allow the controller to use that support only if it thinks the body is in contact with the terrain, try QPControllerPlan.support_logic_maps.kinematic_or_sensed;
     
-    duration_ = inf;
-    start_time_ = 0;
-    default_qp_input_ = atlasControllers.QPInputConstantHeight;
-    gain_set_ = 'standing';
+    duration = inf;
+    default_qp_input = atlasControllers.QPInputConstantHeight;
+    gain_set = 'standing';
+    
+    min_knee_angle = 0.7;
+    knee_kp = 40;
+    knee_kd = 4;
+    knee_weight = 1;
     
     % TODO: get stuff from QPControllerPlan
   end
   
-  properties(Access=private, Constant)
-    MIN_KNEE_ANGLE = 0.7;
-    KNEE_KP = 40;
-    KNEE_KD = 4;
-    KNEE_WEIGHT = 1;
-    
+  properties(Constant)
     % turn into enum:
     PLAN_SHIFT_NONE = 0;
     PLAN_SHIFT_XYZ = 1;
@@ -45,8 +47,8 @@ classdef QPLocomotionPlanSettings
       obj.robot = robot;
       S = load(obj.robot.fixed_point_file);
       obj.qtraj = S.xstar(1:obj.robot.getNumPositions());
-      obj.default_qp_input_ = atlasControllers.QPInputConstantHeight();
-      obj.default_qp_input_.whole_body_data.q_des = zeros(obj.robot.getNumPositions(), 1);
+      obj.default_qp_input = atlasControllers.QPInputConstantHeight();
+      obj.default_qp_input.whole_body_data.q_des = zeros(obj.robot.getNumPositions(), 1);
       obj.constrained_dofs = [findPositionIndices(obj.robot,'arm');findPositionIndices(obj.robot,'neck');findPositionIndices(obj.robot,'back_bkz');findPositionIndices(obj.robot,'back_bky')];
     end
   end
@@ -63,7 +65,7 @@ classdef QPLocomotionPlanSettings
       
       obj = QPLocomotionPlanSettings(biped);
       obj.support_times = [0, inf];
-      obj.duration_ = inf;
+      obj.duration = inf;
       obj.supports = [support_state, support_state];
       obj.is_quasistatic = true;
       
@@ -86,7 +88,7 @@ classdef QPLocomotionPlanSettings
       end
       
       obj.zmptraj = comgoal;
-      [~, obj.V, obj.comtraj, obj.LIP_height] = obj.robot.planZMPController(comgoal, q0);
+      [~, obj.V, obj.comtraj, obj.lipm_height] = obj.robot.planZMPController(comgoal, q0);
       
       obj.body_motions = [BodyMotionData(obj.robot.foot_body_id.right, [0, inf]),...
         BodyMotionData(obj.robot.foot_body_id.left, [0, inf]),...
@@ -108,7 +110,7 @@ classdef QPLocomotionPlanSettings
       obj.zmp_final = comgoal;
       obj.qtraj = x0(1:nq);
       obj.comtraj = comgoal;
-      obj.gain_set_ = 'standing';
+      obj.gain_set = 'standing';
     end
     
     function obj = fromBipedFootstepPlan(footstep_plan, biped, x0, zmp_options)
@@ -146,13 +148,13 @@ classdef QPLocomotionPlanSettings
       pelvis_motion_data = biped.getPelvisMotionForWalking(foot_motion_data, obj.supports, obj.support_times, options);
       obj.body_motions = [foot_motion_data, pelvis_motion_data];
       
-      obj.duration_ = obj.support_times(end)-obj.support_times(1)-0.001;
+      obj.duration = obj.support_times(end)-obj.support_times(1)-0.001;
       obj.zmp_final = obj.zmptraj.eval(obj.zmptraj.tspan(end));
       if isa(obj.V.S, 'ConstantTrajectory')
         obj.V.S = fasteval(obj.V.S, 0);
       end
-      obj.LIP_height = biped.default_walking_params.nominal_LIP_COM_height;
-      obj.gain_set_ = 'walking';
+      obj.lipm_height = biped.default_walking_params.nominal_LIP_COM_height;
+      obj.gain_set = 'walking';
     end
     
     function obj = fromQuasistaticQTraj(biped, qtraj, options)
@@ -193,7 +195,7 @@ classdef QPLocomotionPlanSettings
       x0 = [q0; zeros(biped.getNumVelocities(), 1)];
       obj = QPLocomotionPlanSettings.fromStandingState(x0, biped);
       obj.qtraj = qtraj;
-      obj.duration_ = obj.qtraj.tspan(end) - obj.qtraj.tspan(1);
+      obj.duration = obj.qtraj.tspan(end) - obj.qtraj.tspan(1);
       obj.support_times = [obj.qtraj.tspan(1); inf];
       
       if isfield(options,'supports') && isfield(options,'support_times')
@@ -250,7 +252,7 @@ classdef QPLocomotionPlanSettings
         end
       end
       
-      obj.gain_set_ = 'manip';
+      obj.gain_set = 'manip';
       obj = obj.setCOMTraj();
       obj = obj.setLQR_for_COM();
     end

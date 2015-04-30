@@ -38,7 +38,7 @@ QPLocomotionPlan::QPLocomotionPlan(RigidBodyManipulator& robot, const QPLocomoti
     RigidBody& body = **body_it;
     if (body.hasParent()) {
       const DrakeJoint& joint = body.getJoint();
-      for (auto joint_name_it = settings.constrained_joint_name_parts.begin(); joint_name_it != settings.constrained_joint_name_parts.end(); ++joint_name_it) {
+      for (auto joint_name_it = settings.constrained_joint_name_substrings.begin(); joint_name_it != settings.constrained_joint_name_substrings.end(); ++joint_name_it) {
         if (joint.getName().find(*joint_name_it) != string::npos) {
           for (int i = 0; i < joint.getNumPositions(); i++) {
             constrained_position_indices.push_back(body.position_num_start + i);

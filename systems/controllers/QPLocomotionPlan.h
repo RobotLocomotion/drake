@@ -82,14 +82,14 @@ struct QPLocomotionPlanSettings {
 
   std::string gain_set = "standing";
   double mu = 0.5;
-  std::vector<Eigen::DenseIndex> plan_shift_zmp_indices = { { 1, 2 } };
-  std::vector<Eigen::DenseIndex> plan_shift_body_motion_indices  = { 3 };
+  std::vector<int> plan_shift_zmp_indices = { { 1, 2 } };
+  std::vector<int> plan_shift_body_motion_indices  = { 3 };
   double g = 9.81;
   bool is_quasistatic = false;
-  const KneeSettings knee_settings = createDefaultKneeSettings();
+  KneeSettings knee_settings = createDefaultKneeSettings();
   std::string pelvis_name = "pelvis";
   std::map<Side, std::string> foot_names = createDefaultFootNames();
-  std::vector<std::string> constrained_joint_name_parts = createDefaultConstrainedJointNameParts();
+  std::vector<std::string> constrained_joint_name_substrings = createDefaultConstrainedJointNameSubstrings();
 
   void addSupport(const RigidBodySupportState& support_state, const ContactGroupNameToContactPointsMap& contact_group_name_to_contact_points, double duration) {
     supports.push_back(support_state);
@@ -115,7 +115,7 @@ struct QPLocomotionPlanSettings {
     return ret;
   }
 
-  static std::vector<std::string> createDefaultConstrainedJointNameParts() {
+  static std::vector<std::string> createDefaultConstrainedJointNameSubstrings() {
     std::vector<std::string> ret;
     ret.push_back("arm");
     ret.push_back("neck");
