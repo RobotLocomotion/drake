@@ -102,12 +102,15 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
     const Map<Matrix3xd> xB(mxGetPrSafe(prhs[5]), 3, numContactPairs); //contact point in body B space
     const int nq = model->num_positions;
     
+    VectorXi idxA_zero_indexed = idxA.array() - 1;
+    VectorXi idxB_zero_indexed = idxB.array() - 1;
+
     if (nlhs > 1) {
       MatrixXd J; 
       MatrixXd dJ;
       vector<int> bodyInds;
       SparseMatrix<double> sparseNormals;
-      model->computeContactJacobians(idxA, idxB, xA, xB, compute_second_derivatives, J, dJ);      
+      model->computeContactJacobians(idxA_zero_indexed, idxB_zero_indexed, xA, xB, compute_second_derivatives, J, dJ);      
       buildSparseMatrix(normals, sparseNormals);
       plhs[1] = mxCreateDoubleMatrix(numContactPairs, nq, mxREAL);
       Map<MatrixXd> n(mxGetPrSafe(plhs[1]), numContactPairs, nq);
