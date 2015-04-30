@@ -243,7 +243,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   Vector4d contact_pt = Vector4d::Zero();
   contact_pt(3) = 1.0;
 
-  vector<SupportStateElement> active_supports;
+  vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> active_supports;
   set<int> contact_bodies; // redundant, clean up later
   int num_active_contact_pts=0;
   if (!mxIsEmpty(prhs[desired_support_argid])) {
@@ -648,7 +648,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       plhs[3] = mxCreateDoubleMatrix(1,active_supports.size(),mxREAL);
       pr = mxGetPrSafe(plhs[3]);
       int i=0;
-      for (vector<SupportStateElement>::iterator iter = active_supports.begin(); iter!=active_supports.end(); iter++) {
+      for (vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>>::iterator iter = active_supports.begin(); iter!=active_supports.end(); iter++) {
           pr[i++] = (double) (iter->body_idx + 1);
       }
   }
