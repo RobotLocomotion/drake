@@ -549,14 +549,21 @@ classdef QPLocomotionPlan < QPControllerPlan
       if nargin < 5
         options = struct();
       end
-      options = applyDefaults(options, struct('pelvis_height_above_sole', biped.default_walking_params.pelvis_height_above_foot_sole));
-      if isempty(options.pelvis_height_above_sole)
-        kinsol = doKinematics(biped, x0(1:biped.getNumPositions()));
-        pelvis_pos = forwardKin(biped, kinsol, biped.findLinkId('pelvis'), [0;0;0]);
-        feetPosition = biped.feetPosition(x0(1:biped.getNumPositions()));
-        options.pelvis_height_above_sole = pelvis_pos(3) - mean([feetPosition.right(3), feetPosition.left(3)]);
+      
+      kinsol = doKinematics(biped, x0(1:biped.getNumPositions()));
+      pelvis_pos = forwardKin(biped, kinsol, biped.findLinkId('pelvis'), [0;0;0]);
+      feetPosition = biped.feetPosition(x0(1:biped.getNumPositions()));
+      pelvis_height_above_sole = pelvis_pos(3) - min([feetPosition.right(3), feetPosition.left(3)]);
+
+      % this is special for getting down from the polaris, comment this out for normal use
+      if ~isfield(options,'pelvis_height_transition_knot') || isempty(options.pelvis_height_transition_knot)
+        options.pelvis_height_transition_knot = 2;
       end
 
+      options = applyDefaults(options, struct('pelvis_height_above_sole', pelvis_height_above_sole,...
+        'pelvis_height_transition_knot',1));
+
+      
       obj = QPLocomotionPlan(biped);
       obj.x0 = x0;
       arm_inds = biped.findPositionIndices('arm');
