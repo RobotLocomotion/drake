@@ -4,10 +4,11 @@ typecheck(foot_motion_data, 'BodyMotionData');
 typecheck(supports, 'RigidBodySupportState');
 assert(isnumeric(support_times));
 
-if nargin < 6
+if nargin < 5
   options = struct();
 end
-options = applyDefaults(options, struct('pelvis_height_above_sole', obj.default_walking_params.pelvis_height_above_foot_sole, 'debug', false));
+options = applyDefaults(options, struct('pelvis_height_above_sole', obj.default_walking_params.pelvis_height_above_foot_sole, 'debug', false,...
+  'pelvis_height_transition_knot', 1));
 
 if options.debug
   figure(321)
@@ -193,9 +194,13 @@ for j = 1:numel(pelvis_ts)
 end
 pelvis_yaw = unwrap(pelvis_yaw);
 
+% Smooth commanded pelvis height between current and default
+pelvis_height = pelvis_reference_height + obj.default_walking_params.pelvis_height_above_foot_sole;
+knot_idx = options.pelvis_height_transition_knot;
+pelvis_height(1:knot_idx) = pelvis_reference_height(1:knot_idx) + options.pelvis_height_above_sole;
 
 pelvis_poses_rpy = [zeros(2, size(rpos, 2));
-                pelvis_reference_height + options.pelvis_height_above_sole;
+                pelvis_height;
                 zeros(2, numel(pelvis_ts));
                 pelvis_yaw];
 pelvis_xyz_expmap = zeros(6,size(pelvis_poses_rpy,2));
