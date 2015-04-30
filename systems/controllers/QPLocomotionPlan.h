@@ -89,7 +89,7 @@ struct QPLocomotionPlanSettings {
   KneeSettings knee_settings = createDefaultKneeSettings();
   std::string pelvis_name = "pelvis";
   std::map<Side, std::string> foot_names = createDefaultFootNames();
-  std::vector<std::string> constrained_joint_name_substrings = createDefaultConstrainedJointNameSubstrings();
+  std::vector<int> constrained_position_indices;
 
   void addSupport(const RigidBodySupportState& support_state, const ContactGroupNameToContactPointsMap& contact_group_name_to_contact_points, double duration) {
     supports.push_back(support_state);
@@ -115,14 +115,27 @@ struct QPLocomotionPlanSettings {
     return ret;
   }
 
-  static std::vector<std::string> createDefaultConstrainedJointNameSubstrings() {
-    std::vector<std::string> ret;
-    ret.push_back("arm");
-    ret.push_back("neck");
-    ret.push_back("back_bkz");
-    ret.push_back("back_bky");
+  // may be useful later in setting up constrained_position_indices
+  static std::vector<int> findPositionIndices(RigidBodyManipulator& robot, const std::vector<std::string>& joint_name_substrings)
+  {
+    std::vector<int> ret;
+    for (auto body_it = robot.bodies.begin(); body_it != robot.bodies.end(); ++body_it) {
+      RigidBody& body = **body_it;
+      if (body.hasParent()) {
+        const DrakeJoint& joint = body.getJoint();
+        for (auto joint_name_it = joint_name_substrings.begin(); joint_name_it != joint_name_substrings.end(); ++joint_name_it) {
+          if (joint.getName().find(*joint_name_it) != std::string::npos) {
+            for (int i = 0; i < joint.getNumPositions(); i++) {
+              ret.push_back(body.position_num_start + i);
+            }
+            break;
+          }
+        }
+      }
+    }
     return ret;
   }
+
 };
 
 class QPLocomotionPlan
@@ -139,7 +152,6 @@ private:
 
   double start_time;
   Eigen::Vector3d plan_shift;
-  std::vector<int> constrained_position_indices;
   drake::lcmt_qp_controller_input last_qp_input;
   std::vector<drake::lcmt_joint_pd_override> joint_pd_override_data;
   std::map<Side, bool> toe_off_active;

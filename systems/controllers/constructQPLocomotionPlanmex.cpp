@@ -63,13 +63,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   settings.pelvis_name = mxGetStdString(mxGetPropertySafe(mex_settings, "pelvis_name"));
   settings.foot_names[Side::LEFT] = mxGetStdString(mxGetPropertySafe(mex_settings, "l_foot_name"));
   settings.foot_names[Side::LEFT] = mxGetStdString(mxGetPropertySafe(mex_settings, "r_foot_name"));
-//  std::vector<std::string> constrained_joint_name_parts = createDefaultConstrainedJointNameParts();
-
-
-
-
-
-
+  settings.constrained_position_indices = matlabToStdVector<int>(mxGetPropertySafe(mex_settings, "constrained_dofs"));
 
   // lcm
   string lcm_channel = mxGetStdString(mex_lcm_channel);

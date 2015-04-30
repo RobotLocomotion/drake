@@ -33,22 +33,6 @@ QPLocomotionPlan::QPLocomotionPlan(RigidBodyManipulator& robot, const QPLocomoti
       throw std::runtime_error("support times must be increasing");
   }
 
-  // set up constrained_position_indices
-  for (auto body_it = robot.bodies.begin(); body_it != robot.bodies.end(); ++body_it) {
-    RigidBody& body = **body_it;
-    if (body.hasParent()) {
-      const DrakeJoint& joint = body.getJoint();
-      for (auto joint_name_it = settings.constrained_joint_name_substrings.begin(); joint_name_it != settings.constrained_joint_name_substrings.end(); ++joint_name_it) {
-        if (joint.getName().find(*joint_name_it) != string::npos) {
-          for (int i = 0; i < joint.getNumPositions(); i++) {
-            constrained_position_indices.push_back(body.position_num_start + i);
-          }
-          break;
-        }
-      }
-    }
-  }
-
   for (auto it = Side::values.begin(); it != Side::values.end(); ++it) {
     toe_off_active[*it] = false;
   }
@@ -112,7 +96,7 @@ void QPLocomotionPlan::publishQPControllerInput(
   // whole body data
   auto q_des = settings.q_traj.value(t_plan);
   eigenVectorToStdVector(q_des, qp_input.whole_body_data.q_des);
-  qp_input.whole_body_data.constrained_dofs = constrained_position_indices;
+  qp_input.whole_body_data.constrained_dofs = settings.constrained_position_indices;
 
   // zmp data: x0, y0
   if (settings.is_quasistatic) {
