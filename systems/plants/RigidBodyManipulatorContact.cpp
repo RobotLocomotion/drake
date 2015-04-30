@@ -55,7 +55,7 @@ void getUniqueBodiesSorted(VectorXi const & idxA, VectorXi const & idxB, std::ve
   bodyIndsSorted.clear();
 
   for (std::set<int>::const_iterator citer = bodyInds.begin() ; citer != bodyInds.end() ; citer++) {
-    if ( *citer > 1 ) {
+    if ( *citer > 0 ) {
       bodyIndsSorted.push_back(*citer);
     }
   }
