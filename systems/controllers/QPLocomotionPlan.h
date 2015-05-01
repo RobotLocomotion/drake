@@ -65,6 +65,7 @@ struct KneeSettings {
 struct QPLocomotionPlanSettings {
   double duration;
   std::vector<RigidBodySupportState> supports;
+  Eigen::VectorXd x0;
   std::vector<double> support_times; // length: supports.size() + 1
   typedef std::map<std::string, Eigen::Matrix3Xd> ContactNameToContactPointsMap;
   std::vector<ContactNameToContactPointsMap> contact_groups; // one for each RigidBody
@@ -87,6 +88,7 @@ struct QPLocomotionPlanSettings {
   std::string pelvis_name = "pelvis";
   std::map<Side, std::string> foot_names = createDefaultFootNames();
   std::vector<int> constrained_position_indices;
+  std::vector<int> untracked_position_indices;
 
   void addSupport(const RigidBodySupportState& support_state, const ContactNameToContactPointsMap& contact_group_name_to_contact_points, double duration) {
     supports.push_back(support_state);
@@ -150,7 +152,6 @@ private:
   double start_time;
   Eigen::Vector3d plan_shift;
   drake::lcmt_qp_controller_input last_qp_input;
-  std::vector<drake::lcmt_joint_pd_override> joint_pd_override_data;
   std::map<Side, bool> toe_off_active;
 
   /*

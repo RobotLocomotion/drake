@@ -218,6 +218,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   // settings
   QPLocomotionPlanSettings settings;
   settings.duration = mxGetScalar(mxGetPropertySafe(mex_settings, "duration"));
+  settings.x0 = matlabToEigenMap<Dynamic, 1>(mxGetPropertySafe(mex_settings, "x0"));
   settings.supports = setUpSupports(mxGetPropertySafe(mex_settings, "supports"));
   settings.support_times = matlabToStdVector<double>(mxGetPropertySafe(mex_settings, "support_times"));
   settings.contact_groups = setUpContactGroups(robot, mxGetPropertySafe(mex_settings, "contact_groups"));
@@ -245,6 +246,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   settings.foot_names[Side::RIGHT] = mxGetStdString(mxGetPropertySafe(mex_settings, "r_foot_name"));
   settings.constrained_position_indices = matlabToStdVector<int>(mxGetPropertySafe(mex_settings, "constrained_dofs"));
   addOffset(settings.constrained_position_indices, -1); // base 1 to base 0
+  settings.untracked_position_indices = matlabToStdVector<int>(mxGetPropertySafe(mex_settings, "untracked_joint_inds"));
+  addOffset(settings.untracked_position_indices, -1);
 
   // lcm
   string lcm_channel = mxGetStdString(mex_lcm_channel);

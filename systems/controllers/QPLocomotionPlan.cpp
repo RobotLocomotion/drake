@@ -10,10 +10,12 @@
 #include "lcmUtil.h"
 #include <string>
 
-// TODO: go through everything and make it match the updated Matlab code
+// TODO: use_contact_surface / support_surface
+// TODO: untracked_joint_inds
+// TODO: updateSwingTrajectory: undo plan shift?
 // TODO: discuss possibility of chatter in knee control
 // TODO: make body_motions a map from RigidBody* to BodyMotionData, remove body_id from BodyMotionData?
-// TODO: undo plan shift?
+
 
 using namespace std;
 using namespace Eigen;
@@ -260,7 +262,6 @@ void QPLocomotionPlan::publishQPControllerInput(
 
   qp_input.param_set_name = settings.gain_set;
 
-  qp_input.joint_pd_override = joint_pd_override_data;
   last_qp_input = qp_input;
 
   verifySubtypeSizes(qp_input);
