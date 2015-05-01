@@ -304,9 +304,9 @@ classdef QPLocomotionPlan < QPControllerPlan
 
     function obj = updatePlanShift(obj, t_global, kinsol, qp_input, contact_force_detected, next_support)
       active_support_bodies = next_support.bodies;
-      if any(active_support_bodies == obj.robot.foot_body_id.left) && contact_force_detected(obj.robot.foot_body_id.left)
+      if any(active_support_bodies == obj.robot.foot_body_id.right) && contact_force_detected(obj.robot.foot_body_id.right)
         loading_foot = obj.robot.foot_body_id.right;
-      elseif any(active_support_bodies == obj.robot.foot_body_id.right) && contact_force_detected(obj.robot.foot_body_id.right)
+      elseif any(active_support_bodies == obj.robot.foot_body_id.left) && contact_force_detected(obj.robot.foot_body_id.left)
         loading_foot = obj.robot.foot_body_id.left;
       else
         return;
