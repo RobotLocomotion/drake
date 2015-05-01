@@ -41,7 +41,7 @@ public:
   PiecewisePolynomial(const Eigen::MatrixBase<Derived>& value) :
     PiecewisePolynomialBase(std::vector<double>({ { -std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity() } }))
   {
-    polynomials.push_back(value.template cast<PolynomialMatrix>());
+    polynomials.push_back(value.template cast<PolynomialType>());
   }
 
   // Matrix constructor
