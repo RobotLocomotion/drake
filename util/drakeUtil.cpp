@@ -11,6 +11,8 @@
 #include <limits>
 #include <Eigen/Dense>
 #include <stdexcept>
+#include <algorithm>
+#include <functional>
 
 using namespace std;
 using namespace Eigen;

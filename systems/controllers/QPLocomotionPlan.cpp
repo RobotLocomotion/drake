@@ -12,7 +12,6 @@
 
 // TODO: go through everything and make it match the updated Matlab code
 // TODO: discuss possibility of chatter in knee control
-// TODO: drakePiecewisePolynomial_EXPORTS
 // TODO: make body_motions a map from RigidBody* to BodyMotionData, remove body_id from BodyMotionData?
 // TODO: undo plan shift?
 
@@ -90,6 +89,10 @@ void QPLocomotionPlan::publishQPControllerInput(
   drake::lcmt_qp_controller_input qp_input;
   qp_input.be_silent = false;
   qp_input.timestamp = 0;
+  qp_input.num_support_data = 0;
+  qp_input.num_tracked_bodies = 0;
+  qp_input.num_external_wrenches = 0;
+  qp_input.num_joint_pd_overrides = 0;
 
   // zmp data: D
   Matrix2d D = -settings.lipm_height * Matrix2d::Identity();
@@ -243,12 +246,14 @@ void QPLocomotionPlan::publishQPControllerInput(
   // set support data
   for (auto it = support_state.begin(); it != support_state.end(); ++it) {
     drake::lcmt_support_data support_data_element_lcm;
+    support_data_element_lcm.timestamp = 0;
     support_data_element_lcm.body_id = static_cast<int32_t>(it->body);
+    support_data_element_lcm.num_contact_pts = it->contact_points.cols();
     eigenToStdVectorOfStdVectors(it->contact_points, support_data_element_lcm.contact_pts);
     for (int i = 0; i < planned_support_command.size(); i++)
       support_data_element_lcm.support_logic_map[i] = planned_support_command[i];
     support_data_element_lcm.mu = settings.mu;
-    support_data_element_lcm.contact_surfaces = 0;
+    support_data_element_lcm.contact_surfaces = it->contact_surface;
     qp_input.support_data.push_back(support_data_element_lcm);
     qp_input.num_support_data++;
   }
@@ -302,14 +307,11 @@ void QPLocomotionPlan::updateSwingTrajectory(double t_plan, BodyMotionData& body
   }
 
   // FIXME: way too expensive
-  MatrixXd xdf = trajectory.derivative().value(trajectory.getEndTime(takeoff_segment_index + 2));
+  MatrixXd xdf = trajectory.derivative().value(trajectory.getEndTime(landing_segment_index));
 
   auto start_it = trajectory.getSegmentTimes().begin() + takeoff_segment_index;
   int num_breaks = num_swing_segments + 1;
-  auto end_it = start_it + num_breaks + 1; // + 1 because this iterator should point past the end of the subvector
-  std::vector<double> breaks(start_it, end_it);
-  assert(std::abs(trajectory.getStartTime(takeoff_segment_index) - breaks[0]) < 1e-10); // TODO: get rid of this once we know this is right.
-  assert(std::abs(trajectory.getStartTime(landing_segment_index) - breaks[num_swing_segments]) < 1e-10); // TODO: get rid of this once we know this is right.
+  std::vector<double> breaks(start_it, start_it + num_breaks);
 
   for (int dof_num = 0; dof_num < x0.rows(); ++dof_num) {
     PiecewisePolynomial<double> updated_spline_for_dof = twoWaypointCubicSpline(breaks, x0(dof_num), xd0(dof_num), xf(dof_num), xdf(dof_num), x1(dof_num), x2(dof_num));
