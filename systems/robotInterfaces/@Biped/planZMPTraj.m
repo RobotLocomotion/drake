@@ -20,6 +20,7 @@ sizecheck(q0,[biped.getNumPositions,1]);
 is_right_foot = footsteps(1).frame_id == biped.foot_frame_id.right;
 
 kinsol = doKinematics(biped, q0);
+com0 = biped.getCOM(kinsol);
 foot0 = struct('right', forwardKin(biped, kinsol, biped.foot_frame_id.right, [0;0;0], 2),...
                'left', forwardKin(biped, kinsol, biped.foot_frame_id.left, [0;0;0], 2));
 

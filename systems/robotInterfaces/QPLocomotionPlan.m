@@ -549,18 +549,13 @@ classdef QPLocomotionPlan < QPControllerPlan
       if nargin < 5
         options = struct();
       end
-      
-      kinsol = doKinematics(biped, x0(1:biped.getNumPositions()));
-      pelvis_pos = forwardKin(biped, kinsol, biped.findLinkId('pelvis'), [0;0;0]);
-      feetPosition = biped.feetPosition(x0(1:biped.getNumPositions()));
-      pelvis_height_above_sole = pelvis_pos(3) - min([feetPosition.right(3), feetPosition.left(3)]);
 
-      % this is special for getting down from the polaris, comment this out for normal use
+      % this is special for getting down from the polaris, normally want this to be set to 1
       if ~isfield(options,'pelvis_height_transition_knot') || isempty(options.pelvis_height_transition_knot)
         options.pelvis_height_transition_knot = 2;
       end
 
-      options = applyDefaults(options, struct('pelvis_height_above_sole', pelvis_height_above_sole,...
+      options = applyDefaults(options, struct('pelvis_height_above_sole', biped.default_walking_params.pelvis_height_above_foot_sole,...
         'pelvis_height_transition_knot',1));
 
       
@@ -573,7 +568,7 @@ classdef QPLocomotionPlan < QPControllerPlan
       [obj.supports, obj.support_times] = QPLocomotionPlan.getSupports(zmp_knots);
       obj.zmptraj = QPLocomotionPlan.getZMPTraj(zmp_knots);
       [~, obj.V, obj.comtraj, ~] = biped.planZMPController(obj.zmptraj, obj.x0, options);
-      pelvis_motion_data = biped.getPelvisMotionForWalking(foot_motion_data, obj.supports, obj.support_times, options);
+      pelvis_motion_data = biped.getPelvisMotionForWalking(x0, foot_motion_data, obj.supports, obj.support_times, options);
       obj.body_motions = [foot_motion_data, pelvis_motion_data];
 
       obj.duration = obj.support_times(end)-obj.support_times(1)-0.001;
