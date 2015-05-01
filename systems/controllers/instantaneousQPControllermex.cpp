@@ -94,7 +94,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       plhs[narg] = mxCreateDoubleMatrix(1,debug->active_supports.size(),mxREAL);
       pr = mxGetPrSafe(plhs[narg]);
       int i=0;
-      for (vector<SupportStateElement>::iterator iter = debug->active_supports.begin(); iter!=debug->active_supports.end(); iter++) {
+      for (vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>>::iterator iter = debug->active_supports.begin(); iter!=debug->active_supports.end(); iter++) {
           pr[i++] = (double) (iter->body_idx + 1);
       }
   }

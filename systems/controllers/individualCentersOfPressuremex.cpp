@@ -19,7 +19,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   contact_pt(3) = 1.0;
 
   int desired_support_argid = 1;
-  vector<SupportStateElement> active_supports;
+  vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> active_supports;
   int num_active_contact_pts = 0;
   if (!mxIsEmpty(prhs[desired_support_argid])) {
     mxArray* mxBodies = myGetField(prhs[desired_support_argid], "bodies");
