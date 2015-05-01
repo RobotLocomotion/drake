@@ -6,6 +6,7 @@
 #include "Polynomial.h"
 #include <vector>
 #include <random>
+#include <limits>
 
 #undef DLLEXPORT
 #if defined(WIN32) || defined(WIN64)
@@ -34,6 +35,14 @@ public:
 
   // default constructor; just leaves segment_times and polynomials empty
   PiecewisePolynomial();
+
+  // single segment and/or constant value constructor
+  template <typename Derived>
+  PiecewisePolynomial(const Eigen::MatrixBase<Derived>& value) :
+    PiecewisePolynomialBase(std::vector<double>({ { -std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity() } }))
+  {
+    polynomials.push_back(value.template cast<PolynomialMatrix>());
+  }
 
   // Matrix constructor
   PiecewisePolynomial(std::vector<PolynomialMatrix> const& polynomials, std::vector<double> const& segment_times);
