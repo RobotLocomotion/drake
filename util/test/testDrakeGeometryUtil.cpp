@@ -66,6 +66,12 @@ void testRotationConversionFunctions()
     Vector4d quat = uniformlyRandomQuat(generator);
     testExpmap2quat(quat);
   }
+  // quat2eigenQuaternion
+  Vector4d quat = uniformlyRandomQuat(generator);
+  Quaterniond eigenQuat = quat2eigenQuaternion(quat);
+  Matrix3d R_expected = quat2rotmat(quat);
+  Matrix3d R_eigen = eigenQuat.matrix();
+  valuecheck(R_expected, R_eigen, 1e-6);
 }
 
 void testDHomogTrans(int ntests) {
