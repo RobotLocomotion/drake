@@ -79,7 +79,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   Vector4d contact_pt = Vector4d::Zero();
   contact_pt(3) = 1.0;
 
-  vector<SupportStateElement> active_supports;
+  vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> active_supports;
   set<int> contact_bodies; // redundant, clean up later
   int num_active_contact_pts=0;
   if (!mxIsEmpty(prhs[desired_support_argid])) {
@@ -96,11 +96,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     // ...or a struct array, in which case we need mxGetField
     if (!mxContactPts) mxContactPts = mxGetField(prhs[desired_support_argid],0,"contact_pts");
     if (!mxContactPts) mexErrMsgTxt("couldn't get contact points");
-    mxArray* mxContactSurfaces;
-    mxContactSurfaces = mxGetProperty(prhs[desired_support_argid],0,"contact_surfaces");
-    if (!mxContactSurfaces) mxContactSurfaces = mxGetField(prhs[desired_support_argid],0,"contact_surfaces");
-    if (!mxContactSurfaces) mexErrMsgTxt("couldn't get contact surfaces");
-    double* pContactSurfaces = mxGetPr(mxContactSurfaces);
     
     for (i=0; i<mxGetNumberOfElements(mxBodies);i++) {
       mxArray* mxBodyContactPts = mxGetCell(mxContactPts,i);
@@ -116,7 +111,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         contact_pt.head(3) = all_body_contact_pts.col(j);
         se.contact_pts.push_back(contact_pt);
       }
-      se.contact_surface = (int) pContactSurfaces[i]-1;
       
       if (contact_threshold == -1) { // ignore terrain
         if (contact_sensor(i)!=0) { // no sensor info, or sensor says yes contact
@@ -146,7 +140,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     plhs[0] = mxCreateDoubleMatrix(1,static_cast<int>(active_supports.size()),mxREAL);
     pr = mxGetPr(plhs[0]);
     int i=0;
-    for (vector<SupportStateElement>::iterator iter = active_supports.begin(); iter!=active_supports.end(); iter++) {
+    for (vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>>::iterator iter = active_supports.begin(); iter!=active_supports.end(); iter++) {
       pr[i++] = (double) (iter->body_idx + 1);
     }
   }

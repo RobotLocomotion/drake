@@ -46,10 +46,10 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
         hand_orientation_right = [0; -pi/2; pi];
         hand_orientation_left = [0; pi/2; pi];
       elseif options.atlas_version == 5
-        hand_position_right = [0; -0.1245; 0];
-        hand_orientation_right = [0; 0; pi];
-        hand_position_left = [0; -0.1245; 0];
-        hand_orientation_left = [0; 0; pi];
+        hand_position_right = [0; -0.195; 0.0];
+        hand_orientation_right = [0; -pi/2; pi];
+        hand_position_left = [0; -0.195; 0.0];
+        hand_orientation_left = [0; -pi/2; pi];
       end
 
       hand=options.hand_right;
@@ -111,12 +111,12 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       end
 
       obj.left_full_support = RigidBodySupportState(obj,obj.foot_body_id.left);
-      obj.left_toe_support = RigidBodySupportState(obj,obj.foot_body_id.left,{{'toe'}});
+      obj.left_toe_support = RigidBodySupportState(obj,obj.foot_body_id.left,struct('contact_groups',{{'toe'}}));
       obj.right_full_support = RigidBodySupportState(obj,obj.foot_body_id.right);
-      obj.right_toe_support = RigidBodySupportState(obj,obj.foot_body_id.right,{{'toe'}});
+      obj.right_toe_support = RigidBodySupportState(obj,obj.foot_body_id.right,struct('contact_groups',{{'toe'}}));
       obj.left_full_right_full_support = RigidBodySupportState(obj,[obj.foot_body_id.left,obj.foot_body_id.right]);
-      obj.left_toe_right_full_support = RigidBodySupportState(obj,[obj.foot_body_id.left,obj.foot_body_id.right],{{'toe'},{'heel','toe'}});
-      obj.left_full_right_toe_support = RigidBodySupportState(obj,[obj.foot_body_id.left,obj.foot_body_id.right],{{'heel','toe'},{'toe'}});
+      obj.left_toe_right_full_support = RigidBodySupportState(obj,[obj.foot_body_id.left,obj.foot_body_id.right],struct('contact_groups',{{{'toe'},{'heel','toe'}}}));
+      obj.left_full_right_toe_support = RigidBodySupportState(obj,[obj.foot_body_id.left,obj.foot_body_id.right],struct('contact_groups',{{{'heel','toe'},{'toe'}}}));
     end
 
     function obj = compile(obj)
