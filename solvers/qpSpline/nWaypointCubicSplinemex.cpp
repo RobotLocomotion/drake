@@ -27,7 +27,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
   plhs[0] = mxCreateNumericArray(3, dims, mxDOUBLE_CLASS, mxREAL);
   double objective_value = 0.0;
   for (mwSize dof = 0; dof < ndof; dof++) {
-    VectorXd xi = xs.block(dof, 1, 1, num_knots);
+    VectorXd xi = xs.block(dof, 1, 1, num_knots).transpose();
 
     PiecewisePolynomial<double> spline = nWaypointCubicSpline(segment_times, xs(dof, 0), xd0[dof], xs(dof, num_segments), xdf[dof], xi);
 
