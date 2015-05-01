@@ -191,6 +191,22 @@ std::pair<Eigen::Vector3d, double> resolveCenterOfPressure(Eigen::Vector3d torqu
   return std::pair<Vector3d, double>(cop, normal_torque_at_cop);
 }
 
+std::string mxGetStdString(const mxArray* array) {
+  mwSize buffer_length = mxGetNumberOfElements(array) + 1;
+  char* buffer = new char[buffer_length];
+  int status = mxGetString(array, buffer, buffer_length);
+
+  if (status != 0) {
+    delete[] buffer;
+    throw runtime_error("mxGetStdString failed. Possible cause: mxArray is not a string array.");
+  }
+  else {
+    string ret(buffer);
+    delete[] buffer;
+    return ret;
+  }
+}
+
 double * mxGetPrSafe(const mxArray *pobj) {
   if (!mxIsDouble(pobj)) mexErrMsgIdAndTxt("Drake:mxGetPrSafe:BadInputs", "mxGetPr can only be called on arguments which correspond to Matlab doubles");
   return mxGetPr(pobj);
@@ -234,10 +250,24 @@ void mxSetFieldSafe(mxArray* array, size_t index, std::string const & fieldname,
   mxSetFieldByNumber(array, index, fieldnum, data);
 }
 
-const std::vector<double> matlabToStdVector(const mxArray* in) {
+template <typename T>
+const std::vector<T> matlabToStdVector(const mxArray* in) {
   // works for both row vectors and column vectors
   if (mxGetM(in) != 1 && mxGetN(in) != 1)
-    throw runtime_error("Not a vector");
+    throw std::runtime_error("Not a vector");
+  double* data = mxGetPrSafe(in);
+  std::vector<T> ret;
+  for (int i = 0; i < mxGetNumberOfElements(in); i++) {
+    ret.push_back(static_cast<T>(data[i]));
+  }
+  return ret;
+}
+
+template <>
+const std::vector<double> matlabToStdVector<double>(const mxArray* in) {
+  // works for both row vectors and column vectors
+  if (mxGetM(in) != 1 && mxGetN(in) != 1)
+    throw std::runtime_error("Not a vector");
   double* data = mxGetPrSafe(in);
   return std::vector<double>(data, data + mxGetNumberOfElements(in));
 }
@@ -302,3 +332,6 @@ mxArray* eigenToMatlabSparse(MatrixBase<Derived> const & M, int & num_non_zero)
 
 template DLLEXPORT mxArray* eigenToMatlabSparse(MatrixBase< MatrixXd > const &, int &) ;
 template DLLEXPORT mxArray* eigenToMatlabSparse(MatrixBase< Map< MatrixXd> > const &, int &) ;
+template DLLEXPORT const std::vector<double> matlabToStdVector<double>(const mxArray* in);
+template DLLEXPORT const std::vector<int> matlabToStdVector<int>(const mxArray* in);
+template DLLEXPORT const std::vector<Eigen::DenseIndex> matlabToStdVector<Eigen::DenseIndex>(const mxArray* in);

@@ -3,6 +3,7 @@
 
 #include <Eigen/Core>
 #include <vector>
+#include <random>
 
 #undef DLLEXPORT
 #if defined(WIN32) || defined(WIN64)
@@ -46,6 +47,8 @@ public:
   const std::vector<double>& getSegmentTimes() const;
 
   void segmentNumberRangeCheck(int segment_number) const;
+
+  static std::vector<double> randomSegmentTimes(int num_segments, std::default_random_engine& generator);
 
 protected:
   bool segmentTimesEqual(const PiecewiseFunction& b, double tol) const;

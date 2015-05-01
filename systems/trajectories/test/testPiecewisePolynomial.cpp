@@ -3,7 +3,6 @@
 #include <random>
 #include <vector>
 #include "testUtil.h"
-#include "trajectoryTestUtil.h"
 #include <iostream>
 
 using namespace std;
@@ -22,8 +21,8 @@ void testIntegralAndDerivative() {
   typedef PiecewisePolynomial<CoefficientType> PiecewisePolynomialType;
   typedef typename PiecewisePolynomialType::CoefficientMatrix CoefficientMatrix;
 
-  vector<double> segment_times = generateRandomSegmentTimes(num_segments, generator);
-  PiecewisePolynomialType piecewise = generateRandomPiecewisePolynomial<CoefficientType>(rows, cols, num_coefficients, segment_times);
+  vector<double> segment_times = PiecewiseFunction::randomSegmentTimes(num_segments, generator);
+  PiecewisePolynomialType piecewise = PiecewisePolynomial<CoefficientType>::random(rows, cols, num_coefficients, segment_times);
 
   // differentiate integral, get original back
   PiecewisePolynomialType piecewise_back = piecewise.integral().derivative();
@@ -58,9 +57,9 @@ void testBasicFunctionality() {
     int rows = int_distribution(generator);
     int cols = int_distribution(generator);
 
-    vector<double> segment_times = generateRandomSegmentTimes(num_segments, generator);
-    PiecewisePolynomialType piecewise1 = generateRandomPiecewisePolynomial<CoefficientType>(rows, cols, num_coefficients, segment_times);
-    PiecewisePolynomialType piecewise2 = generateRandomPiecewisePolynomial<CoefficientType>(rows, cols, num_coefficients, segment_times);
+    vector<double> segment_times = PiecewiseFunction::randomSegmentTimes(num_segments, generator);
+    PiecewisePolynomialType piecewise1 = PiecewisePolynomial<CoefficientType>::random(rows, cols, num_coefficients, segment_times);
+    PiecewisePolynomialType piecewise2 = PiecewisePolynomial<CoefficientType>::random(rows, cols, num_coefficients, segment_times);
 
     normal_distribution<double> normal;
     double shift = normal(generator);
@@ -89,8 +88,8 @@ void testValueOutsideOfRange() {
   typedef PiecewisePolynomial<CoefficientType> PiecewisePolynomialType;
 
   default_random_engine generator;
-  vector<double> segment_times = generateRandomSegmentTimes(6, generator);
-  PiecewisePolynomialType piecewise = generateRandomPiecewisePolynomial<CoefficientType>(3, 4, 5, segment_times);
+  vector<double> segment_times = PiecewiseFunction::randomSegmentTimes(6, generator);
+  PiecewisePolynomialType piecewise = PiecewisePolynomial<CoefficientType>::random(3, 4, 5, segment_times);
   valuecheck(piecewise.value(piecewise.getStartTime()), piecewise.value(piecewise.getStartTime() - 1.0), 1e-10);
   valuecheck(piecewise.value(piecewise.getEndTime()), piecewise.value(piecewise.getEndTime() + 1.0), 1e-10);
 }

@@ -75,6 +75,8 @@ Eigen::Matrix<double, RowsAtCompileTime, ColsAtCompileTime> matlabToEigen(const 
   return ret;
 }
 
+DLLEXPORT std::string mxGetStdString(const mxArray* array);
+
 template <typename Scalar>
 mxArray* stdVectorToMatlab(const std::vector<Scalar>& vec) {
   mxArray* pm = mxCreateDoubleMatrix(static_cast<int>(vec.size()), 1, mxREAL);
@@ -148,7 +150,6 @@ void eigenToStdVectorOfStdVectors(const Eigen::MatrixBase<Derived>& source, std:
   }
 }
 
-DLLEXPORT const std::vector<double> matlabToStdVector(const mxArray* in);
 
 DLLEXPORT int sub2ind(mwSize ndims, const mwSize* dims, const mwSize* sub);
 
@@ -157,6 +158,8 @@ DLLEXPORT void baseZeroToBaseOne(std::vector<int>& vec);
 DLLEXPORT double angleAverage(double theta1, double theta2);
 
 DLLEXPORT std::pair<Eigen::Vector3d, double> resolveCenterOfPressure(Eigen::Vector3d torque, Eigen::Vector3d force, Eigen::Vector3d normal, Eigen::Vector3d point_on_contact_plane);
+template <typename T>
+const std::vector<T> matlabToStdVector(const mxArray* in);
 
 DLLEXPORT double *mxGetPrSafe(const mxArray *pobj);
 

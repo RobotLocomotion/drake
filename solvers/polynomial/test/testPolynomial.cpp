@@ -99,7 +99,7 @@ void testEvalType() {
 template <typename CoefficientType>
 void testPolynomialMatrix() {
   int max_matrix_rows_cols = 7;
-  int max_num_coefficients = 6;
+  int num_coefficients = 6;
   default_random_engine generator;
 
   uniform_int_distribution<> matrix_size_distribution(1, max_matrix_rows_cols);
@@ -108,9 +108,9 @@ void testPolynomialMatrix() {
   int rows_B = cols_A;
   int cols_B = matrix_size_distribution(generator);
 
-  auto A = Polynomial<CoefficientType>::createRandomPolynomialMatrix(generator, max_num_coefficients, rows_A, cols_A);
-  auto B = Polynomial<CoefficientType>::createRandomPolynomialMatrix(generator, max_num_coefficients, rows_B, cols_B);
-  auto C = Polynomial<CoefficientType>::createRandomPolynomialMatrix(generator, max_num_coefficients, rows_A, cols_A);
+  auto A = Polynomial<CoefficientType>::randomPolynomialMatrix(num_coefficients, rows_A, cols_A);
+  auto B = Polynomial<CoefficientType>::randomPolynomialMatrix(num_coefficients, rows_B, cols_B);
+  auto C = Polynomial<CoefficientType>::randomPolynomialMatrix(num_coefficients, rows_A, cols_A);
   auto product = A * B; // just verify that this is possible without crashing
   auto sum = A + C;
 

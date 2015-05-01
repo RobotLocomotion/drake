@@ -21,7 +21,7 @@ double logisticSigmoid(double L, double k, double x, double x0) {
 }
 
 PiecewisePolynomial<double> matlabToPiecewisePolynomial(const mxArray* pobj, int index) {
-  std::vector<double> ts = matlabToStdVector(mxGetField(pobj, index, "ts"));
+  std::vector<double> ts = matlabToStdVector<double>(mxGetField(pobj, index, "ts"));
   const int num_segments = ts.size() - 1;
   const mxArray *coefs = mxGetFieldSafe(pobj, index, "coefs");
   if (mxGetNumberOfDimensions(coefs) != 3) mexErrMsgTxt("coefs should be a dimension-3 array");

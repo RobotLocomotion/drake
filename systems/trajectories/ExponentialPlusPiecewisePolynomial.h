@@ -42,7 +42,7 @@ public:
       const MatrixX& K, const MatrixX& A, const std::vector<VectorX>& alpha,
       const PiecewisePolynomial<CoefficientType>& piecewise_polynomial_part);
 
-  ValueType value(double t); // return type should not be VectorX because the scalar type of the output should be the same as the type of t
+  ValueType value(double t) const; // TODO: fix return type (handle complex etc.)
 
   ExponentialPlusPiecewisePolynomial derivative(int derivative_order = 1) const;
 

@@ -2,7 +2,6 @@
 #include <random>
 #include <iostream>
 #include "testUtil.h"
-#include "test/trajectoryTestUtil.h"
 
 using namespace std;
 using namespace Eigen;
@@ -24,7 +23,7 @@ void testPolynomial()
 
 void testPolynomialMatrix()
 {
-  auto poly_matrix = Polynomial<double>::createRandomPolynomialMatrix(generator, 6, 5, 8);
+  auto poly_matrix = Polynomial<double>::randomPolynomialMatrix(6, 5, 8);
   drake::lcmt_polynomial_matrix msg;
   encodePolynomialMatrix(poly_matrix, msg);
   valuecheck(static_cast<int>(msg.rows), static_cast<int>(poly_matrix.rows()));
@@ -45,8 +44,8 @@ void testPiecewisePolynomial()
   int rows = 4;
   int cols = 7;
   int num_coefficients = 3;
-  std::vector<double> segment_times = generateRandomSegmentTimes(num_segments, generator);
-  PiecewisePolynomial<double> piecewise_polynomial = generateRandomPiecewisePolynomial<double>(rows, cols, num_coefficients, segment_times);
+  std::vector<double> segment_times = PiecewiseFunction::randomSegmentTimes(num_segments, generator);
+  PiecewisePolynomial<double> piecewise_polynomial = PiecewisePolynomial<double>::random(rows, cols, num_coefficients, segment_times);
   drake::lcmt_piecewise_polynomial msg;
   encodePiecewisePolynomial(piecewise_polynomial, msg);
   auto piecewise_polynomial_back = decodePiecewisePolynomial(msg);

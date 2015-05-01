@@ -29,24 +29,8 @@ QPLocomotionPlan::QPLocomotionPlan(RigidBodyManipulator& robot, const QPLocomoti
     plan_shift(Eigen::Vector3d::Zero())
 {
   for (int i = 1; i < settings.support_times.size(); i++) {
-    if (settings.support_times[i] < settings.support_times[i + 1])
+    if (settings.support_times[i] < settings.support_times[i - 1])
       throw std::runtime_error("support times must be increasing");
-  }
-
-  // set up constrained_position_indices
-  for (auto body_it = robot.bodies.begin(); body_it != robot.bodies.end(); ++body_it) {
-    RigidBody& body = **body_it;
-    if (body.hasParent()) {
-      const DrakeJoint& joint = body.getJoint();
-      for (auto joint_name_it = settings.constrained_joint_name_parts.begin(); joint_name_it != settings.constrained_joint_name_parts.end(); ++joint_name_it) {
-        if (joint.getName().find(*joint_name_it) != string::npos) {
-          for (int i = 0; i < joint.getNumPositions(); i++) {
-            constrained_position_indices.push_back(body.position_num_start + i);
-          }
-          break;
-        }
-      }
-    }
   }
 
   for (auto it = Side::values.begin(); it != Side::values.end(); ++it) {
@@ -112,7 +96,7 @@ void QPLocomotionPlan::publishQPControllerInput(
   // whole body data
   auto q_des = settings.q_traj.value(t_plan);
   eigenVectorToStdVector(q_des, qp_input.whole_body_data.q_des);
-  qp_input.whole_body_data.constrained_dofs = constrained_position_indices;
+  qp_input.whole_body_data.constrained_dofs = settings.constrained_position_indices;
 
   // zmp data: x0, y0
   if (settings.is_quasistatic) {
@@ -147,8 +131,8 @@ void QPLocomotionPlan::publishQPControllerInput(
   }
 
   // zmp data: Lyapunov function
-  eigenToCArrayOfArrays(settings.V.S, qp_input.zmp_data.S);
-  auto s1_current = settings.V.s1.value(t_plan);
+  eigenToCArrayOfArrays(settings.V.getS(), qp_input.zmp_data.S);
+  auto s1_current = settings.V.getS1().value(t_plan);
   eigenToCArrayOfArrays(s1_current, qp_input.zmp_data.s1);
 
   VectorXd v_dummy(0, 1);

@@ -29,7 +29,7 @@ if (MATLAB_FOUND)
 
   add_mex(testGeometryGradientsmex testGeometryGradientsmex.cpp)
   include_directories( .. )
-  target_link_libraries(testGeometryGradientsmex drakeGeometryUtil)
+  target_link_libraries(testGeometryGradientsmex drakeGeometryUtil drakeUtil)
 
   add_mex(testGeometryConversionFunctionsmex testGeometryConversionFunctionsmex.cpp)
   include_directories( .. )
@@ -38,4 +38,4 @@ endif(MATLAB_FOUND)
 
 add_executable(testLCMUtil testLCMUtil.cpp)
 include_directories( .. )
-target_link_libraries(testLCMUtil drakeLCMUtil drakeTrajectoryTestUtil)
+target_link_libraries(testLCMUtil drakeLCMUtil)

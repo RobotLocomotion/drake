@@ -14,7 +14,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
   if (nlhs > 2)
     mexErrMsgIdAndTxt("Drake:nWaypointCubicSplinemex:WrongNumberOfOutputs", usage.c_str());
 
-  const std::vector<double> segment_times = matlabToStdVector(prhs[0]);
+  const std::vector<double> segment_times = matlabToStdVector<double>(prhs[0]);
   MatrixXd xs = matlabToEigen<Dynamic, Dynamic>(prhs[1]);
   auto xd0 = matlabToEigen<Dynamic, 1>(prhs[2]);
   auto xdf = matlabToEigen<Dynamic, 1>(prhs[3]);

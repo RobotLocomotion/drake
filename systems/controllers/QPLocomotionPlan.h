@@ -15,10 +15,30 @@
 #include "Side.h"
 #include <lcm/lcm-cpp.hpp>
 
-struct QuadraticLyapunovFunction {
-  // TODO: turn this into a class with more functionality
+class QuadraticLyapunovFunction {
+  // TODO: move into its own file
+  // TODO: make part of a Lyapunov function class hierarchy
+  // TODO: more functionality
+private:
   Eigen::MatrixXd S;
   ExponentialPlusPiecewisePolynomial<double> s1;
+
+public:
+  QuadraticLyapunovFunction() { }
+
+  template<typename DerivedS>
+  QuadraticLyapunovFunction(const MatrixBase<DerivedS>& S, const ExponentialPlusPiecewisePolynomial<double>& s1) :
+      S(S), s1(s1) { }
+
+  const Eigen::MatrixXd& getS() const
+  {
+    return S;
+  }
+
+  const ExponentialPlusPiecewisePolynomial<double>& getS1() const
+  {
+    return s1;
+  }
 };
 
 struct RigidBodySupportStateElement {
@@ -46,8 +66,11 @@ struct KneeSettings {
 
 struct QPLocomotionPlanSettings {
   double duration;
-  std::vector<double> support_times;
   std::vector<RigidBodySupportState> supports;
+  std::vector<double> support_times; // length: supports.size() + 1
+  typedef std::map<std::string, Eigen::Matrix3Xd> ContactGroupNameToContactPointsMap;
+  std::vector<ContactGroupNameToContactPointsMap> contact_groups; // one for each support
+
   std::vector<BodyMotionData> body_motions;
   PiecewisePolynomial<double> zmp_trajectory;
   Eigen::Vector2d zmp_final;
@@ -56,8 +79,6 @@ struct QPLocomotionPlanSettings {
   PiecewisePolynomial<double> q_traj;
   ExponentialPlusPiecewisePolynomial<double> com_traj;
   drake::lcmt_qp_controller_input default_qp_input;
-  typedef std::map<std::string, Eigen::Matrix3Xd> ContactGroupNameToContactPointsMap;
-  std::vector<ContactGroupNameToContactPointsMap> contact_groups; // one for each support
 
   std::string gain_set = "standing";
   double mu = 0.5;
@@ -65,10 +86,18 @@ struct QPLocomotionPlanSettings {
   std::vector<Eigen::DenseIndex> plan_shift_body_motion_indices  = { 3 };
   double g = 9.81;
   bool is_quasistatic = false;
-  const KneeSettings knee_settings = createDefaultKneeSettings();
+  KneeSettings knee_settings = createDefaultKneeSettings();
   std::string pelvis_name = "pelvis";
   std::map<Side, std::string> foot_names = createDefaultFootNames();
-  std::vector<std::string> constrained_joint_name_parts = createDefaultConstrainedJointNameParts();
+  std::vector<int> constrained_position_indices;
+
+  void addSupport(const RigidBodySupportState& support_state, const ContactGroupNameToContactPointsMap& contact_group_name_to_contact_points, double duration) {
+    supports.push_back(support_state);
+    contact_groups.push_back(contact_group_name_to_contact_points);
+    if (support_times.empty())
+      support_times.push_back(0.0);
+    support_times.push_back(support_times[support_times.size() - 1] + duration);
+  }
 
   static KneeSettings createDefaultKneeSettings() {
     KneeSettings knee_settings;
@@ -86,14 +115,27 @@ struct QPLocomotionPlanSettings {
     return ret;
   }
 
-  static std::vector<std::string> createDefaultConstrainedJointNameParts() {
-    std::vector<std::string> ret;
-    ret.push_back("arm");
-    ret.push_back("neck");
-    ret.push_back("back_bkz");
-    ret.push_back("back_bky");
+  // may be useful later in setting up constrained_position_indices
+  static std::vector<int> findPositionIndices(RigidBodyManipulator& robot, const std::vector<std::string>& joint_name_substrings)
+  {
+    std::vector<int> ret;
+    for (auto body_it = robot.bodies.begin(); body_it != robot.bodies.end(); ++body_it) {
+      RigidBody& body = **body_it;
+      if (body.hasParent()) {
+        const DrakeJoint& joint = body.getJoint();
+        for (auto joint_name_it = joint_name_substrings.begin(); joint_name_it != joint_name_substrings.end(); ++joint_name_it) {
+          if (joint.getName().find(*joint_name_it) != std::string::npos) {
+            for (int i = 0; i < joint.getNumPositions(); i++) {
+              ret.push_back(body.position_num_start + i);
+            }
+            break;
+          }
+        }
+      }
+    }
     return ret;
   }
+
 };
 
 class QPLocomotionPlan
@@ -110,7 +152,6 @@ private:
 
   double start_time;
   Eigen::Vector3d plan_shift;
-  std::vector<int> constrained_position_indices;
   drake::lcmt_qp_controller_input last_qp_input;
   std::vector<drake::lcmt_joint_pd_override> joint_pd_override_data;
   std::map<Side, bool> toe_off_active;
