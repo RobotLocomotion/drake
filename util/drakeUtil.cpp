@@ -6,7 +6,6 @@
  */
 
 #include "drakeUtil.h"
-#include <string.h>
 #include <string>
 #include <math.h>
 #include <limits>
@@ -221,7 +220,7 @@ mxArray* mxGetPropertySafe(const mxArray* array, size_t index, std::string const
   mxArray* ret = mxGetProperty(array, index, field_name.c_str());
   if (!ret)
   {
-    mexErrMsgIdAndTxt("Drake:mxGetPropertySafe", ("Field not found: " + field_name).c_str());
+    mexErrMsgIdAndTxt("Drake:mxGetPropertySafe", ("Property not found: " + field_name).c_str());
   }
   return ret;
 }
@@ -250,15 +249,35 @@ void mxSetFieldSafe(mxArray* array, size_t index, std::string const & fieldname,
   mxSetFieldByNumber(array, index, fieldnum, data);
 }
 
+mxArray* mxGetFieldOrPropertySafe(const mxArray* array, std::string const& field_name) {
+  return mxGetFieldOrPropertySafe(array, 0, field_name);
+}
+
+mxArray* mxGetFieldOrPropertySafe(const mxArray* array, size_t index, std::string const& field_name) {
+  mxArray* field_or_property = mxGetField(array, index, field_name.c_str());
+  if (field_or_property == nullptr) {
+    field_or_property = mxGetPropertySafe(array, index, field_name);
+  }
+  return field_or_property;
+}
+
 template <typename T>
 const std::vector<T> matlabToStdVector(const mxArray* in) {
   // works for both row vectors and column vectors
   if (mxGetM(in) != 1 && mxGetN(in) != 1)
     throw std::runtime_error("Not a vector");
-  double* data = mxGetPrSafe(in);
   std::vector<T> ret;
-  for (int i = 0; i < mxGetNumberOfElements(in); i++) {
-    ret.push_back(static_cast<T>(data[i]));
+  if (mxIsLogical(in)) {
+    mxLogical* data = mxGetLogicals(in);
+    for (int i = 0; i < mxGetNumberOfElements(in); i++) {
+      ret.push_back(static_cast<T>(data[i]));
+    }
+  }
+  else {
+    double* data = mxGetPrSafe(in);
+    for (int i = 0; i < mxGetNumberOfElements(in); i++) {
+      ret.push_back(static_cast<T>(data[i]));
+    }
   }
   return ret;
 }
@@ -335,3 +354,4 @@ template DLLEXPORT mxArray* eigenToMatlabSparse(MatrixBase< Map< MatrixXd> > con
 template DLLEXPORT const std::vector<double> matlabToStdVector<double>(const mxArray* in);
 template DLLEXPORT const std::vector<int> matlabToStdVector<int>(const mxArray* in);
 template DLLEXPORT const std::vector<Eigen::DenseIndex> matlabToStdVector<Eigen::DenseIndex>(const mxArray* in);
+template DLLEXPORT const std::vector<bool> matlabToStdVector<bool>(const mxArray* in);

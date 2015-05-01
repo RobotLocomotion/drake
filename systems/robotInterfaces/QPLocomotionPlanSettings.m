@@ -2,6 +2,7 @@ classdef QPLocomotionPlanSettings
   properties
     robot;
     x0;
+    contact_groups;
     support_times
     supports;
     body_motions;
@@ -40,6 +41,8 @@ classdef QPLocomotionPlanSettings
     function obj = QPLocomotionPlanSettings(robot)
       obj.robot = robot;
       S = load(obj.robot.fixed_point_file);
+      rpc = atlasUtil.propertyCache(obj.robot);
+      obj.contact_groups = rpc.contact_groups;
       obj.qtraj = S.xstar(1:obj.robot.getNumPositions());
       obj.default_qp_input = atlasControllers.QPInputConstantHeight();
       obj.default_qp_input.whole_body_data.q_des = zeros(obj.robot.getNumPositions(), 1);

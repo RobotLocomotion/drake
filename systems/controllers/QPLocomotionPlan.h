@@ -46,7 +46,6 @@ struct RigidBodySupportStateElement {
   // TODO: consolidate with SupportStateElement?
   int body; // TODO: should probably be a RigidBody smart pointer
   Eigen::Matrix3Xd contact_points;
-  std::vector<std::string> contact_groups; // TODO: should probably have an enum or class instead of the string
   int contact_surface; // TODO: should probably be a different type
 };
 
@@ -68,8 +67,8 @@ struct QPLocomotionPlanSettings {
   double duration;
   std::vector<RigidBodySupportState> supports;
   std::vector<double> support_times; // length: supports.size() + 1
-  typedef std::map<std::string, Eigen::Matrix3Xd> ContactGroupNameToContactPointsMap;
-  std::vector<ContactGroupNameToContactPointsMap> contact_groups; // one for each support
+  typedef std::map<std::string, Eigen::Matrix3Xd> ContactNameToContactPointsMap;
+  std::vector<ContactNameToContactPointsMap> contact_groups; // one for each RigidBody
 
   std::vector<BodyMotionData> body_motions;
   PiecewisePolynomial<double> zmp_trajectory;
@@ -78,7 +77,6 @@ struct QPLocomotionPlanSettings {
   QuadraticLyapunovFunction V;
   PiecewisePolynomial<double> q_traj;
   ExponentialPlusPiecewisePolynomial<double> com_traj;
-  drake::lcmt_qp_controller_input default_qp_input;
 
   std::string gain_set = "standing";
   double mu = 0.5;
@@ -91,7 +89,7 @@ struct QPLocomotionPlanSettings {
   std::map<Side, std::string> foot_names = createDefaultFootNames();
   std::vector<int> constrained_position_indices;
 
-  void addSupport(const RigidBodySupportState& support_state, const ContactGroupNameToContactPointsMap& contact_group_name_to_contact_points, double duration) {
+  void addSupport(const RigidBodySupportState& support_state, const ContactNameToContactPointsMap& contact_group_name_to_contact_points, double duration) {
     supports.push_back(support_state);
     contact_groups.push_back(contact_group_name_to_contact_points);
     if (support_times.empty())
@@ -164,19 +162,17 @@ private:
   const std::vector<bool>& planned_support_command = support_logic_maps.at(REQUIRE_SUPPORT);
 
 public:
-QPLocomotionPlan(RigidBodyManipulator& robot, const QPLocomotionPlanSettings& settings, const std::string& lcm_channel);
+  QPLocomotionPlan(RigidBodyManipulator& robot, const QPLocomotionPlanSettings& settings, const std::string& lcm_channel);
 
   /*
    * Get the input structure which can be passed to the stateless QP control loop
    * @param t the current time
-   * @param x the current robot state
-   * @param rpc the robot property cache, which lets us quickly look up info about
+   * @param q the current robot configuration
+   * @param v the current robot velocity
    * @param contact_force_detected num_bodies vector indicating whether contact force
-   * was detected on that body. Default: zeros(num_bodies,1)
-   * the robot which would be expensive to compute (such as terrain contact points)
    */
-  void publishQPControllerInput(
-      double t_global, const Eigen::VectorXd& q, const Eigen::VectorXd& v, const std::vector<bool>& contact_force_detected);
+  template <typename DerivedQ, typename DerivedV>
+  void publishQPControllerInput(double t_global, const Eigen::MatrixBase<DerivedQ>& q, const Eigen::MatrixBase<DerivedV>& v, const std::vector<bool>& contact_force_detected);
 
 private:
   bool isSupportingBody(int body_index, const RigidBodySupportState& support_state) const;

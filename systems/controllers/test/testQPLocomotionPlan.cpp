@@ -17,11 +17,10 @@ int main(int argc, char **argv) {
   RigidBodySupportState support_state;
   RigidBodySupportStateElement support_state_element;
   support_state_element.body = robot.findLinkId("r_foot");
-  support_state_element.contact_groups.push_back("toe");
   support_state_element.contact_points = Matrix3Xd::Random(3, 4);
   support_state_element.contact_surface = 0;
   support_state.push_back(support_state_element);
-  QPLocomotionPlanSettings::ContactGroupNameToContactPointsMap contact_group;
+  QPLocomotionPlanSettings::ContactNameToContactPointsMap contact_group;
   contact_group["toe"] = Matrix3Xd::Random(3, 2);
   settings.addSupport(support_state, contact_group, 1.0);
   settings.duration = settings.support_times[settings.support_times.size() - 1];
@@ -37,17 +36,13 @@ int main(int argc, char **argv) {
   S = S * S.transpose();
   MatrixXd K = MatrixXd::Random(4, 4);
   MatrixXd A = MatrixXd::Random(4, 4);
-  std::vector<VectorXd> alpha;
-  for (int i = 0; i < num_segments; ++i) {
-    alpha.push_back(VectorXd::Random(4));
-  }
+  MatrixXd alpha = MatrixXd::Random(4, 1);
   PiecewisePolynomial<double> polynomial_part = PiecewisePolynomial<double>::random(4, 1, 5, PiecewiseFunction::randomSegmentTimes(num_segments, generator));
   ExponentialPlusPiecewisePolynomial<double> s1(K, A, alpha, polynomial_part);
   settings.V = QuadraticLyapunovFunction(S, s1);
   settings.q_traj = PiecewisePolynomial<double>::random(robot.num_positions, 1, 3, PiecewiseFunction::randomSegmentTimes(4, generator));
 
 //  settings.com_traj;   // TODO
-  settings.default_qp_input.be_silent = false;
 
   QPLocomotionPlan plan(robot, settings, "qp_controller_input");
   VectorXd q = VectorXd::Random(robot.num_positions);

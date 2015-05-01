@@ -20,9 +20,7 @@ void testSimpleCase() {
 
   MatrixX K = MatrixX::Random(1, 1);
   MatrixX A = MatrixX::Random(1, 1);
-  vector<VectorX> alpha;
-  VectorX alpha0 = VectorX::Random(1);
-  alpha.push_back(alpha0);
+  MatrixX alpha = MatrixX::Random(1, 1);
 
   auto segment_times = PiecewiseFunction::randomSegmentTimes(num_segments, generator);
   auto polynomial_part = PiecewisePolynomial<CoefficientType>::random(1, 1, num_coefficients, segment_times);
@@ -32,8 +30,8 @@ void testSimpleCase() {
 
   uniform_real_distribution<CoefficientType> uniform(expPlusPp.getStartTime(), expPlusPp.getEndTime());
   double t = uniform(generator);
-  auto check = K(0) * std::exp(A(0) * (t - expPlusPp.getStartTime())) * alpha0(0) + polynomial_part.scalarValue(t);
-  auto derivative_check = K(0) * A(0) * std::exp(A(0) * (t - expPlusPp.getStartTime())) * alpha0(0) + polynomial_part.derivative().scalarValue(t);
+  auto check = K(0) * std::exp(A(0) * (t - expPlusPp.getStartTime())) * alpha(0) + polynomial_part.scalarValue(t);
+  auto derivative_check = K(0) * A(0) * std::exp(A(0) * (t - expPlusPp.getStartTime())) * alpha(0) + polynomial_part.derivative().scalarValue(t);
 
   valuecheck(check, expPlusPp.value(t)(0), 1e-8);
   valuecheck(derivative_check, derivative.value(t)(0), 1e-8);

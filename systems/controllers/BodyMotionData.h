@@ -8,7 +8,7 @@
 
 class BodyMotionData
 {
-private:
+public: // TODO: would be better to make this private
   int body_or_frame_id;
   PiecewisePolynomial<double> trajectory;
   std::vector<bool> toe_off_allowed;
@@ -22,8 +22,6 @@ private:
   Eigen::Matrix<double, 6, 1> weight_multiplier;
 
 public:
-  BodyMotionData(int body_or_frame_id, const std::vector<double>& segment_times);
-
   int findSegmentIndex(double t) const;
 
   int getBodyOrFrameId() const;

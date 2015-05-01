@@ -18,7 +18,7 @@
 
 
 /**
- * y(t) = K * exp(A * (t - t_j)) * alpha_j + piecewise_polynomial_part(t)
+ * y(t) = K * exp(A * (t - t_j)) * alpha.col(j) + piecewise_polynomial_part(t)
  */
 
 template<typename CoefficientType = double>
@@ -32,15 +32,29 @@ public:
 private:
   MatrixX K;
   MatrixX A;
-  std::vector<VectorX> alpha;
+  MatrixX alpha;
   PiecewisePolynomial<CoefficientType> piecewise_polynomial_part;
 
 public:
   ExponentialPlusPiecewisePolynomial();
 
+  template <typename DerivedK, typename DerivedA, typename DerivedAlpha>
   ExponentialPlusPiecewisePolynomial(
-      const MatrixX& K, const MatrixX& A, const std::vector<VectorX>& alpha,
-      const PiecewisePolynomial<CoefficientType>& piecewise_polynomial_part);
+      const Eigen::MatrixBase<DerivedK>& K, const Eigen::MatrixBase<DerivedA>& A, const Eigen::MatrixBase<DerivedAlpha>& alpha,
+      const PiecewisePolynomial<CoefficientType>& piecewise_polynomial_part) :
+        PiecewiseFunction(piecewise_polynomial_part), K(K), A(A), alpha(alpha), piecewise_polynomial_part(piecewise_polynomial_part)
+  {
+    assert(K.rows() == rows());
+    assert(K.cols() == A.rows());
+    assert(A.rows() == A.cols());
+    assert(alpha.rows() == A.cols());
+    assert(alpha.cols() == piecewise_polynomial_part.getNumberOfSegments());
+    assert(piecewise_polynomial_part.rows() == rows());
+    assert(piecewise_polynomial_part.cols() == 1);
+  }
+
+  // from PiecewisePolynomial
+  ExponentialPlusPiecewisePolynomial(const PiecewisePolynomial<CoefficientType>& piecewise_polynomial_part);
 
   ValueType value(double t) const; // TODO: fix return type (handle complex etc.)
 

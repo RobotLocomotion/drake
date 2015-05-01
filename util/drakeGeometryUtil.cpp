@@ -1387,6 +1387,7 @@ template DLLEXPORT void normalizeVec(
 template DLLEXPORT Vector4d quat2axis(const MatrixBase<Vector4d>&);
 template DLLEXPORT Matrix3d quat2rotmat(const MatrixBase<Vector4d>& q);
 template DLLEXPORT Matrix3d quat2rotmat(const MatrixBase<Eigen::Block<Eigen::Ref<Eigen::Matrix<double, -1, 1, 0, -1, 1> const, 0, Eigen::InnerStride<1> > const, 4, 1, false> >& q);
+template DLLEXPORT Matrix<Map<Matrix<double, 4, 1, 0, 4, 1> const, 0, Stride<0, 0> >::Scalar, 3, 3, 0, 3, 3> quat2rotmat<Map<Matrix<double, 4, 1, 0, 4, 1> const, 0, Stride<0, 0> > >(MatrixBase<Map<Matrix<double, 4, 1, 0, 4, 1> const, 0, Stride<0, 0> > > const&);
 template DLLEXPORT Vector3d quat2rpy(const MatrixBase<Vector4d>&);
 
 template DLLEXPORT Vector4d axis2quat(const MatrixBase<Vector4d>&);

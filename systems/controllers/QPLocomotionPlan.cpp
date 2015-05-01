@@ -65,10 +65,10 @@ void polynomialVectorCoefficientsToCArrayOfArraysMatlabOrdering(const Eigen::Mat
 
 const std::map<SupportLogicType, std::vector<bool> > QPLocomotionPlan::support_logic_maps = QPLocomotionPlan::createSupportLogicMaps();
 
+template <typename DerivedQ, typename DerivedV>
 void QPLocomotionPlan::publishQPControllerInput(
-    double t_global, const Eigen::VectorXd& q, const VectorXd& v, const std::vector<bool>& contact_force_detected)
+    double t_global, const Eigen::MatrixBase<DerivedQ>& q, const Eigen::MatrixBase<DerivedV>& v, const std::vector<bool>& contact_force_detected)
 {
-
   if (isNaN(start_time))
     start_time = t_global;
 
@@ -87,7 +87,9 @@ void QPLocomotionPlan::publishQPControllerInput(
   const RigidBodySupportState& next_support = is_last_support ? settings.supports[support_index] : settings.supports[support_index + 1];
   updatePlanShift(t_plan, contact_force_detected, next_support);
 
-  drake::lcmt_qp_controller_input qp_input = settings.default_qp_input;
+  drake::lcmt_qp_controller_input qp_input;
+  qp_input.be_silent = false;
+  qp_input.timestamp = 0;
 
   // zmp data: D
   Matrix2d D = -settings.lipm_height * Matrix2d::Identity();
@@ -416,3 +418,6 @@ const std::map<Side, int> QPLocomotionPlan::createKneeIndicesMap(RigidBodyManipu
   }
   return knee_indices;
 }
+
+template void QPLocomotionPlan::publishQPControllerInput<Eigen::Matrix<double, -1, 1, 0, -1, 1>, Eigen::Matrix<double, -1, 1, 0, -1, 1> >(double, Eigen::MatrixBase<Eigen::Matrix<double, -1, 1, 0, -1, 1> > const&, Eigen::MatrixBase<Eigen::Matrix<double, -1, 1, 0, -1, 1> > const&, std::__1::vector<bool, std::__1::allocator<bool> > const&);
+template void QPLocomotionPlan::publishQPControllerInput<Map<Matrix<double, -1, 1, 0, -1, 1> const, 0, Stride<0, 0> >, Map<Matrix<double, -1, 1, 0, -1, 1> const, 0, Stride<0, 0> > >(double, MatrixBase<Map<Matrix<double, -1, 1, 0, -1, 1> const, 0, Stride<0, 0> > > const&, MatrixBase<Map<Matrix<double, -1, 1, 0, -1, 1> const, 0, Stride<0, 0> > > const&, vector<bool, allocator<bool> > const&);

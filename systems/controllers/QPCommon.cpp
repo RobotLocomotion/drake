@@ -7,14 +7,6 @@
 
 #define LEG_INTEGRATOR_DEACTIVATION_MARGIN 0.05
 
-const mxArray* getFieldOrPropertySafe(const mxArray* array, size_t index, std::string const& field_name) {
-  const mxArray* field_or_property = mxGetField(array, index, field_name.c_str());
-  if (field_or_property == nullptr) {
-    field_or_property = mxGetPropertySafe(array, index, field_name);
-  }
-  return field_or_property;
-}
-
 double logisticSigmoid(double L, double k, double x, double x0) {
   // Compute the value of the logistic sigmoid f(x) = L / (1 + exp(-k(x - x0)))
   return L / (1.0 + exp(-k * (x - x0)));
@@ -55,18 +47,18 @@ std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray 
 
   const mxArray* zmp_data = myGetProperty(qp_input, "zmp_data");
 
-  matlabToCArrayOfArrays(getFieldOrPropertySafe(zmp_data, 0, "A"), msg->zmp_data.A);
-  matlabToCArrayOfArrays(getFieldOrPropertySafe(zmp_data, 0, "B"), msg->zmp_data.B);
-  matlabToCArrayOfArrays(getFieldOrPropertySafe(zmp_data, 0, "C"), msg->zmp_data.C);
-  matlabToCArrayOfArrays(getFieldOrPropertySafe(zmp_data, 0, "D"), msg->zmp_data.D);
-  matlabToCArrayOfArrays(getFieldOrPropertySafe(zmp_data, 0, "x0"), msg->zmp_data.x0);
-  matlabToCArrayOfArrays(getFieldOrPropertySafe(zmp_data, 0, "y0"), msg->zmp_data.y0);
-  matlabToCArrayOfArrays(getFieldOrPropertySafe(zmp_data, 0, "u0"), msg->zmp_data.u0);
-  matlabToCArrayOfArrays(getFieldOrPropertySafe(zmp_data, 0, "R"), msg->zmp_data.R);
-  matlabToCArrayOfArrays(getFieldOrPropertySafe(zmp_data, 0, "Qy"), msg->zmp_data.Qy);
-  matlabToCArrayOfArrays(getFieldOrPropertySafe(zmp_data, 0, "S"), msg->zmp_data.S);
-  matlabToCArrayOfArrays(getFieldOrPropertySafe(zmp_data, 0, "s1"), msg->zmp_data.s1);
-  matlabToCArrayOfArrays(getFieldOrPropertySafe(zmp_data, 0, "s1dot"), msg->zmp_data.s1dot);
+  matlabToCArrayOfArrays(mxGetFieldOrPropertySafe(zmp_data, 0, "A"), msg->zmp_data.A);
+  matlabToCArrayOfArrays(mxGetFieldOrPropertySafe(zmp_data, 0, "B"), msg->zmp_data.B);
+  matlabToCArrayOfArrays(mxGetFieldOrPropertySafe(zmp_data, 0, "C"), msg->zmp_data.C);
+  matlabToCArrayOfArrays(mxGetFieldOrPropertySafe(zmp_data, 0, "D"), msg->zmp_data.D);
+  matlabToCArrayOfArrays(mxGetFieldOrPropertySafe(zmp_data, 0, "x0"), msg->zmp_data.x0);
+  matlabToCArrayOfArrays(mxGetFieldOrPropertySafe(zmp_data, 0, "y0"), msg->zmp_data.y0);
+  matlabToCArrayOfArrays(mxGetFieldOrPropertySafe(zmp_data, 0, "u0"), msg->zmp_data.u0);
+  matlabToCArrayOfArrays(mxGetFieldOrPropertySafe(zmp_data, 0, "R"), msg->zmp_data.R);
+  matlabToCArrayOfArrays(mxGetFieldOrPropertySafe(zmp_data, 0, "Qy"), msg->zmp_data.Qy);
+  matlabToCArrayOfArrays(mxGetFieldOrPropertySafe(zmp_data, 0, "S"), msg->zmp_data.S);
+  matlabToCArrayOfArrays(mxGetFieldOrPropertySafe(zmp_data, 0, "s1"), msg->zmp_data.s1);
+  matlabToCArrayOfArrays(mxGetFieldOrPropertySafe(zmp_data, 0, "s1dot"), msg->zmp_data.s1dot);
   msg->zmp_data.s2 = mxGetScalar(mxGetFieldSafe(zmp_data, "s2"));
   msg->zmp_data.s2dot = mxGetScalar(mxGetFieldSafe(zmp_data, "s2dot"));
   msg->zmp_data.timestamp = msg->timestamp;
@@ -97,7 +89,7 @@ std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray 
         }
       }
 
-      matlabToCArrayOfArrays(getFieldOrPropertySafe(support_data, i, "support_logic_map"), double_logic_map);
+      matlabToCArrayOfArrays(mxGetFieldOrPropertySafe(support_data, i, "support_logic_map"), double_logic_map);
       for (int j=0; j < 4; j++) {
         msg->support_data[i].support_logic_map[j] = (double_logic_map[j][0] != 0);
       }

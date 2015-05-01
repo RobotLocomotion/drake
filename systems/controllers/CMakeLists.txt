@@ -35,6 +35,9 @@ if (MATLAB_FOUND)
   if (LCM_FOUND)
     add_mex(constructQPLocomotionPlanmex constructQPLocomotionPlanmex.cpp)
     target_link_libraries(constructQPLocomotionPlanmex drakeQPLocomotionPlan drakeUtil)
+    
+    add_mex(qpLocomotionPlanPublishQPControllerInputmex qpLocomotionPlanPublishQPControllerInputmex.cpp)
+    target_link_libraries(qpLocomotionPlanPublishQPControllerInputmex drakeQPLocomotionPlan drakeUtil)
   endif()
 
   if (gurobi_FOUND)
@@ -80,7 +83,6 @@ if (MATLAB_FOUND)
   target_link_libraries(supportDetectmex drakeRBM drakeControlUtil)
 
   add_mex(individualCentersOfPressuremex individualCentersOfPressuremex.cpp)
-  include_directories (${CMAKE_SOURCE_DIR}/util )
   target_link_libraries(individualCentersOfPressuremex drakeRBM drakeUtil drakeControlUtil)
 
 
