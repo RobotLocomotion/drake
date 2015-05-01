@@ -81,7 +81,6 @@ if (MATLAB_FOUND)
   target_link_libraries(supportDetectmex drakeRBM drakeControlUtil)
 
   add_mex(individualCentersOfPressuremex individualCentersOfPressuremex.cpp)
-  include_directories (${CMAKE_SOURCE_DIR}/util )
   target_link_libraries(individualCentersOfPressuremex drakeRBM drakeUtil drakeControlUtil)
 
 

@@ -6,7 +6,6 @@
  */
 
 #include "drakeUtil.h"
-#include <string.h>
 #include <string>
 #include <math.h>
 #include <limits>
@@ -267,10 +266,18 @@ const std::vector<T> matlabToStdVector(const mxArray* in) {
   // works for both row vectors and column vectors
   if (mxGetM(in) != 1 && mxGetN(in) != 1)
     throw std::runtime_error("Not a vector");
-  double* data = mxGetPrSafe(in);
   std::vector<T> ret;
-  for (int i = 0; i < mxGetNumberOfElements(in); i++) {
-    ret.push_back(static_cast<T>(data[i]));
+  if (mxIsLogical(in)) {
+    mxLogical* data = mxGetLogicals(in);
+    for (int i = 0; i < mxGetNumberOfElements(in); i++) {
+      ret.push_back(static_cast<T>(data[i]));
+    }
+  }
+  else {
+    double* data = mxGetPrSafe(in);
+    for (int i = 0; i < mxGetNumberOfElements(in); i++) {
+      ret.push_back(static_cast<T>(data[i]));
+    }
   }
   return ret;
 }
@@ -347,3 +354,4 @@ template DLLEXPORT mxArray* eigenToMatlabSparse(MatrixBase< Map< MatrixXd> > con
 template DLLEXPORT const std::vector<double> matlabToStdVector<double>(const mxArray* in);
 template DLLEXPORT const std::vector<int> matlabToStdVector<int>(const mxArray* in);
 template DLLEXPORT const std::vector<Eigen::DenseIndex> matlabToStdVector<Eigen::DenseIndex>(const mxArray* in);
+template DLLEXPORT const std::vector<bool> matlabToStdVector<bool>(const mxArray* in);

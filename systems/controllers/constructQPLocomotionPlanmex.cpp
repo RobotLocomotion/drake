@@ -1,6 +1,5 @@
 #include "drakeUtil.h"
 #include "QPLocomotionPlan.h"
-#include <sstream>
 
 using namespace std;
 using namespace Eigen;
@@ -67,42 +66,45 @@ PiecewisePolynomial<double> matlabPPTrajectoryOrMatrixToPiecewisePolynomial(cons
   }
 }
 
-ExponentialPlusPiecewisePolynomial<double> matlabExpPlusPPToExponentialPlusPiecewisePolynomial(const mxArray* array)
+PiecewisePolynomial<double> matlabCoefsAndBreaksToPiecewisePolynomial(const mxArray* mex_coefs, const mxArray* mex_breaks)
 {
-  vector<double> breaks = matlabToStdVector<double>(mxGetFieldOrPropertySafe(array, "breaks"));
-
-  auto K = matlabToEigenMap<Dynamic, Dynamic>(mxGetFieldOrPropertySafe(array, "K"));
-  auto A = matlabToEigenMap<Dynamic, Dynamic>(mxGetFieldOrPropertySafe(array, "A"));
-  auto alpha = matlabToEigenMap<Dynamic, Dynamic>(mxGetFieldOrPropertySafe(array, "alpha"));
-  
-  const mxArray* gamma_mex = mxGetFieldOrPropertySafe(array, "gamma");
   int num_dims = 3;
   mwSize dims[num_dims];
-  size_t num_dims_mex = mxGetNumberOfDimensions(gamma_mex);
+  size_t num_dims_mex = mxGetNumberOfDimensions(mex_coefs);
   for (int i = 0; i < num_dims_mex; i++) {
-    dims[i] = mxGetDimensions(gamma_mex)[i];
+    dims[i] = mxGetDimensions(mex_coefs)[i];
   }
   for (int i = num_dims_mex; i < num_dims; i++) {
     dims[i] = 1;
   }
-
+  vector<double> breaks = matlabToStdVector<double>(mex_breaks);
   std::vector<PiecewisePolynomial<double>::PolynomialMatrix> polynomial_matrices;
   polynomial_matrices.reserve(dims[1]);
-
   for (mwSize segment_index = 0; segment_index < dims[1]; segment_index++) {
     PiecewisePolynomial<double>::PolynomialMatrix polynomial_matrix(dims[0], 1);
     for (mwSize row = 0; row < dims[0]; row++) {
       VectorXd coefficients(dims[2]);
       for (mwSize coefficient_index = 0; coefficient_index < dims[2]; coefficient_index++) {
         mwSize sub[] = { row, segment_index, coefficient_index };
-        coefficients[coefficient_index] = *(mxGetPr(gamma_mex) + sub2ind(num_dims, dims, sub));
+        coefficients[coefficient_index] = *(mxGetPr(mex_coefs) + sub2ind(num_dims, dims, sub));
       }
       polynomial_matrix(row) = Polynomial<double>(coefficients);
     }
     polynomial_matrices.push_back(polynomial_matrix);
   }
   PiecewisePolynomial<double> piecewise_polynomial_part = PiecewisePolynomial<double>(polynomial_matrices, breaks);
+  return piecewise_polynomial_part;
+}
 
+ExponentialPlusPiecewisePolynomial<double> matlabExpPlusPPToExponentialPlusPiecewisePolynomial(const mxArray* array)
+{
+  auto K = matlabToEigenMap<Dynamic, Dynamic>(mxGetFieldOrPropertySafe(array, "K"));
+  auto A = matlabToEigenMap<Dynamic, Dynamic>(mxGetFieldOrPropertySafe(array, "A"));
+  auto alpha = matlabToEigenMap<Dynamic, Dynamic>(mxGetFieldOrPropertySafe(array, "alpha"));
+  
+  const mxArray* mex_breaks = mxGetFieldOrPropertySafe(array, "breaks");
+  const mxArray* mex_coefs = mxGetFieldOrPropertySafe(array, "gamma");
+  PiecewisePolynomial<double> piecewise_polynomial_part = matlabCoefsAndBreaksToPiecewisePolynomial(mex_coefs, mex_breaks);
   return ExponentialPlusPiecewisePolynomial<double>(K, A, alpha, piecewise_polynomial_part);
 }
 
@@ -141,6 +143,7 @@ std::vector<QPLocomotionPlanSettings::ContactNameToContactPointsMap> setUpContac
 {
   assert(mxGetNumberOfElements(mex_contact_groups) == robot->num_bodies);
   std::vector<QPLocomotionPlanSettings::ContactNameToContactPointsMap> contact_groups;
+  contact_groups.reserve(robot->num_bodies);
   for (int body_id = 0; body_id < robot->num_bodies; body_id++) {
     const mxArray* mex_contact_group = mxGetCell(mex_contact_groups, body_id);
     QPLocomotionPlanSettings::ContactNameToContactPointsMap contact_group;
@@ -150,6 +153,31 @@ std::vector<QPLocomotionPlanSettings::ContactNameToContactPointsMap> setUpContac
     contact_groups.push_back(contact_group);
   }
   return contact_groups;
+}
+
+std::vector<BodyMotionData> setupBodyMotions(const mxArray* mex_body_motions)
+{
+  vector<BodyMotionData> ret;
+  int num_body_motions = mxGetNumberOfElements(mex_body_motions);
+  ret.resize(num_body_motions);
+  for (int i = 0; i < num_body_motions; ++i) {
+    BodyMotionData& body_motion_data = ret[i];
+    body_motion_data.body_or_frame_id = static_cast<int>(mxGetPr(mxGetPropertySafe(mex_body_motions, i, "body_id"))[0]);
+    body_motion_data.trajectory = matlabCoefsAndBreaksToPiecewisePolynomial(mxGetPropertySafe(mex_body_motions, i, "coefs"), mxGetPropertySafe(mex_body_motions, i, "ts"));
+    body_motion_data.toe_off_allowed = matlabToStdVector<bool>(mxGetPropertySafe(mex_body_motions, i, "toe_off_allowed"));
+    body_motion_data.in_floating_base_nullspace = matlabToStdVector<bool>(mxGetPropertySafe(mex_body_motions, i, "in_floating_base_nullspace"));
+    body_motion_data.control_pose_when_in_contact = matlabToStdVector<bool>(mxGetPropertySafe(mex_body_motions, i, "control_pose_when_in_contact"));
+    auto quat_task_to_world = matlabToEigenMap<4, 1>(mxGetPropertySafe(mex_body_motions, i, "quat_task_to_world"));
+    body_motion_data.transform_task_to_world.linear() = quat2rotmat(quat_task_to_world);
+    body_motion_data.transform_task_to_world.translation() = matlabToEigenMap<3, 1>(mxGetPropertySafe(mex_body_motions, i, "translation_task_to_world"));
+    body_motion_data.xyz_proportional_gain_multiplier = matlabToEigenMap<3, 1>(mxGetPropertySafe(mex_body_motions, i, "xyz_kp_multiplier"));
+    body_motion_data.xyz_damping_ratio_multiplier = matlabToEigenMap<3, 1>(mxGetPropertySafe(mex_body_motions, i, "xyz_damping_ratio_multiplier"));
+    body_motion_data.exponential_map_proportional_gain_multiplier = mxGetPr(mxGetPropertySafe(mex_body_motions, i, "expmap_kp_multiplier"))[0];
+    body_motion_data.exponential_map_damping_ratio_multiplier = mxGetPr(mxGetPropertySafe(mex_body_motions, i, "expmap_damping_ratio_multiplier"))[0];
+    body_motion_data.weight_multiplier = matlabToEigenMap<6, 1>(mxGetPropertySafe(mex_body_motions, i, "weight_multiplier"));
+    ret.push_back(body_motion_data);
+  }
+  return ret;
 }
 
 QuadraticLyapunovFunction setUpLyapunovFunction(const mxArray* mex_V)
@@ -188,17 +216,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   RigidBodyManipulator *robot = (RigidBodyManipulator*) getDrakeMexPointer(mex_model);
 
   // settings
-  // TODO:
-  // * supports
-  // * body motions
-
   QPLocomotionPlanSettings settings;
   settings.duration = mxGetScalar(mxGetPropertySafe(mex_settings, "duration"));
   settings.supports = setUpSupports(mxGetPropertySafe(mex_settings, "supports"));
   settings.support_times = matlabToStdVector<double>(mxGetPropertySafe(mex_settings, "support_times"));
   settings.contact_groups = setUpContactGroups(robot, mxGetPropertySafe(mex_settings, "contact_groups"));
-
-//  std::vector<BodyMotionData> body_motions;
+  settings.body_motions = setupBodyMotions(mxGetPropertySafe(mex_settings, "body_motions"));
   settings.zmp_trajectory = matlabPPTrajectoryOrMatrixToPiecewisePolynomial(mxGetPropertySafe(mex_settings, "zmptraj"));
   settings.zmp_final = matlabToEigen<2, 1>(mxGetPropertySafe(mex_settings, "zmp_final"));
   settings.lipm_height = mxGetScalar(mxGetPropertySafe(mex_settings, "LIP_height"));
