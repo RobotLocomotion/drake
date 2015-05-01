@@ -162,19 +162,17 @@ private:
   const std::vector<bool>& planned_support_command = support_logic_maps.at(REQUIRE_SUPPORT);
 
 public:
-QPLocomotionPlan(RigidBodyManipulator& robot, const QPLocomotionPlanSettings& settings, const std::string& lcm_channel);
+  QPLocomotionPlan(RigidBodyManipulator& robot, const QPLocomotionPlanSettings& settings, const std::string& lcm_channel);
 
   /*
    * Get the input structure which can be passed to the stateless QP control loop
    * @param t the current time
-   * @param x the current robot state
-   * @param rpc the robot property cache, which lets us quickly look up info about
+   * @param q the current robot configuration
+   * @param v the current robot velocity
    * @param contact_force_detected num_bodies vector indicating whether contact force
-   * was detected on that body. Default: zeros(num_bodies,1)
-   * the robot which would be expensive to compute (such as terrain contact points)
    */
-  void publishQPControllerInput(
-      double t_global, const Eigen::VectorXd& q, const Eigen::VectorXd& v, const std::vector<bool>& contact_force_detected);
+  template <typename DerivedQ, typename DerivedV>
+  void publishQPControllerInput(double t_global, const Eigen::MatrixBase<DerivedQ>& q, const Eigen::MatrixBase<DerivedV>& v, const std::vector<bool>& contact_force_detected);
 
 private:
   bool isSupportingBody(int body_index, const RigidBodySupportState& support_state) const;
