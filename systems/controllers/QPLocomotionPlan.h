@@ -46,7 +46,6 @@ struct RigidBodySupportStateElement {
   // TODO: consolidate with SupportStateElement?
   int body; // TODO: should probably be a RigidBody smart pointer
   Eigen::Matrix3Xd contact_points;
-  std::vector<std::string> contact_groups; // TODO: should probably have an enum or class instead of the string
   int contact_surface; // TODO: should probably be a different type
 };
 
@@ -68,8 +67,8 @@ struct QPLocomotionPlanSettings {
   double duration;
   std::vector<RigidBodySupportState> supports;
   std::vector<double> support_times; // length: supports.size() + 1
-  typedef std::map<std::string, Eigen::Matrix3Xd> ContactGroupNameToContactPointsMap;
-  std::vector<ContactGroupNameToContactPointsMap> contact_groups; // one for each support
+  typedef std::map<std::string, Eigen::Matrix3Xd> ContactNameToContactPointsMap;
+  std::vector<ContactNameToContactPointsMap> contact_groups; // one for each RigidBody
 
   std::vector<BodyMotionData> body_motions;
   PiecewisePolynomial<double> zmp_trajectory;
@@ -90,7 +89,7 @@ struct QPLocomotionPlanSettings {
   std::map<Side, std::string> foot_names = createDefaultFootNames();
   std::vector<int> constrained_position_indices;
 
-  void addSupport(const RigidBodySupportState& support_state, const ContactGroupNameToContactPointsMap& contact_group_name_to_contact_points, double duration) {
+  void addSupport(const RigidBodySupportState& support_state, const ContactNameToContactPointsMap& contact_group_name_to_contact_points, double duration) {
     supports.push_back(support_state);
     contact_groups.push_back(contact_group_name_to_contact_points);
     if (support_times.empty())

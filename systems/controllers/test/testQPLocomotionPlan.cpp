@@ -17,11 +17,10 @@ int main(int argc, char **argv) {
   RigidBodySupportState support_state;
   RigidBodySupportStateElement support_state_element;
   support_state_element.body = robot.findLinkId("r_foot");
-  support_state_element.contact_groups.push_back("toe");
   support_state_element.contact_points = Matrix3Xd::Random(3, 4);
   support_state_element.contact_surface = 0;
   support_state.push_back(support_state_element);
-  QPLocomotionPlanSettings::ContactGroupNameToContactPointsMap contact_group;
+  QPLocomotionPlanSettings::ContactNameToContactPointsMap contact_group;
   contact_group["toe"] = Matrix3Xd::Random(3, 2);
   settings.addSupport(support_state, contact_group, 1.0);
   settings.duration = settings.support_times[settings.support_times.size() - 1];

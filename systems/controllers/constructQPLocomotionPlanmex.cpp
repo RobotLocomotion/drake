@@ -116,6 +116,22 @@ ExponentialPlusPiecewisePolynomial<double> matlabExpPlusPPOrVectorToExponentialP
   }
 }
 
+std::vector<QPLocomotionPlanSettings::ContactNameToContactPointsMap> setUpContactGroups(RigidBodyManipulator* robot, const mxArray* mex_settings)
+{
+  const mxArray* mex_contact_groups = mxGetPropertySafe(mex_settings, "contact_groups");
+  assert(mxGetNumberOfElements(mex_contact_groups) == robot->num_bodies);
+  std::vector<QPLocomotionPlanSettings::ContactNameToContactPointsMap> contact_groups;
+  for (int body_id = 0; body_id < robot->num_bodies; body_id++) {
+    const mxArray* mex_contact_group = mxGetCell(mex_contact_groups, body_id);
+    QPLocomotionPlanSettings::ContactNameToContactPointsMap contact_group;
+    for (int field_number = 0; field_number < mxGetNumberOfFields(mex_contact_group); field_number++) {
+      contact_group[mxGetFieldNameByNumber(mex_contact_group, field_number)] = matlabToEigenMap<3, Dynamic>(mxGetFieldByNumber(mex_contact_group, 0, field_number));
+    }
+    contact_groups.push_back(contact_group);
+  }
+  return contact_groups;
+}
+
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
   string usage = "usage: ptr = constructQPLocomotionPlanmex(mex_model_ptr, qp_locomotion_settings, lcm_channel);";
@@ -145,7 +161,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   // settings
   // TODO:
-  // * contact groups
   // * supports
   // * body motions
 
@@ -153,8 +168,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   settings.duration = mxGetScalar(mxGetPropertySafe(mex_settings, "duration"));
 //  std::vector<RigidBodySupportState> supports;
   settings.support_times = matlabToStdVector<double>(mxGetPropertySafe(mex_settings, "support_times"));
-//  typedef std::map<std::string, Eigen::Matrix3Xd> ContactGroupNameToContactPointsMap;
-//  std::vector<ContactGroupNameToContactPointsMap> contact_groups; // one for each support
+  settings.contact_groups = setUpContactGroups(robot, mex_settings);
 
 //  std::vector<BodyMotionData> body_motions;
   settings.zmp_trajectory = matlabPPTrajectoryOrMatrixToPiecewisePolynomial(mxGetPropertySafe(mex_settings, "zmptraj"));
