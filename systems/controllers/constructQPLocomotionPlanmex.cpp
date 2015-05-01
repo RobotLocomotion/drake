@@ -60,11 +60,59 @@ PiecewisePolynomial<double> matlabPPFormToPiecewisePolynomial(const mxArray* pp)
 PiecewisePolynomial<double> matlabPPTrajectoryOrMatrixToPiecewisePolynomial(const mxArray* array)
 {
   if (mxIsNumeric(array)) {
-    Map<MatrixXd> value(mxGetPr(array), mxGetM(array), mxGetN(array));
-    return PiecewisePolynomial<double>(value);
+    return PiecewisePolynomial<double>(matlabToEigenMap<Dynamic, Dynamic>(array));
   }
   else {
     return matlabPPFormToPiecewisePolynomial(mxGetPropertySafe(array, "pp"));
+  }
+}
+
+ExponentialPlusPiecewisePolynomial<double> matlabExpPlusPPToExponentialPlusPiecewisePolynomial(const mxArray* array)
+{
+  vector<double> breaks = matlabToStdVector<double>(mxGetFieldOrPropertySafe(array, "breaks"));
+
+  auto K = matlabToEigenMap<Dynamic, Dynamic>(mxGetFieldOrPropertySafe(array, "K"));
+  auto A = matlabToEigenMap<Dynamic, Dynamic>(mxGetFieldOrPropertySafe(array, "A"));
+  auto alpha = matlabToEigenMap<Dynamic, Dynamic>(mxGetFieldOrPropertySafe(array, "alpha"));
+  
+  const mxArray* gamma_mex = mxGetFieldOrPropertySafe(array, "gamma");
+  int num_dims = 3;
+  mwSize dims[num_dims];
+  size_t num_dims_mex = mxGetNumberOfDimensions(gamma_mex);
+  for (int i = 0; i < num_dims_mex; i++) {
+    dims[i] = mxGetDimensions(gamma_mex)[i];
+  }
+  for (int i = num_dims_mex; i < num_dims; i++) {
+    dims[i] = 1;
+  }
+
+  std::vector<PiecewisePolynomial<double>::PolynomialMatrix> polynomial_matrices;
+  polynomial_matrices.reserve(dims[1]);
+
+  for (mwSize segment_index = 0; segment_index < dims[1]; segment_index++) {
+    PiecewisePolynomial<double>::PolynomialMatrix polynomial_matrix(dims[0], 1);
+    for (mwSize row = 0; row < dims[0]; row++) {
+      VectorXd coefficients(dims[2]);
+      for (mwSize coefficient_index = 0; coefficient_index < dims[2]; coefficient_index++) {
+        mwSize sub[] = { row, segment_index, coefficient_index };
+        coefficients[coefficient_index] = *(mxGetPr(gamma_mex) + sub2ind(num_dims, dims, sub));
+      }
+      polynomial_matrix(row) = Polynomial<double>(coefficients);
+    }
+    polynomial_matrices.push_back(polynomial_matrix);
+  }
+  PiecewisePolynomial<double> piecewise_polynomial_part = PiecewisePolynomial<double>(polynomial_matrices, breaks);
+
+  return ExponentialPlusPiecewisePolynomial<double>(K, A, alpha, piecewise_polynomial_part);
+}
+
+ExponentialPlusPiecewisePolynomial<double> matlabExpPlusPPOrVectorToExponentialPlusPiecewisePolynomial(const mxArray* array)
+{
+  if (mxIsNumeric(array)) {
+    return ExponentialPlusPiecewisePolynomial<double>(matlabToEigenMap<Dynamic, Dynamic>(array));
+  }
+  else {
+    return matlabExpPlusPPToExponentialPlusPiecewisePolynomial(array);
   }
 }
 
@@ -111,10 +159,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   settings.zmp_final = matlabToEigen<2, 1>(mxGetPropertySafe(mex_settings, "zmp_final"));
   settings.lipm_height = mxGetScalar(mxGetPropertySafe(mex_settings, "LIP_height"));
 
-//  QuadraticLyapunovFunction V;
+  const mxArray* mex_V = mxGetPropertySafe(mex_settings, "V");
+  auto S = matlabToEigenMap<Dynamic, Dynamic>(mxGetFieldSafe(mex_V, "S"));
+  auto s1 = matlabExpPlusPPOrVectorToExponentialPlusPiecewisePolynomial(mxGetFieldSafe(mex_V, "s1"));
+  settings.V = QuadraticLyapunovFunction(S, s1);
 
   settings.q_traj = matlabPPTrajectoryOrMatrixToPiecewisePolynomial(mxGetPropertySafe(mex_settings, "qtraj"));
-//  settings.com_traj = matlabPPFormToPiecewisePolynomial(mxGetProperty(mex_settings, "comtraj");
+  settings.com_traj = matlabExpPlusPPOrVectorToExponentialPlusPiecewisePolynomial(mxGetPropertySafe(mex_settings, "comtraj"));
 //  drake::lcmt_qp_controller_input default_qp_input;
 
   settings.gain_set = mxGetStdString(mxGetPropertySafe(mex_settings, "gain_set"));

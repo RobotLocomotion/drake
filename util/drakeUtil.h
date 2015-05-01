@@ -75,6 +75,13 @@ Eigen::Matrix<double, RowsAtCompileTime, ColsAtCompileTime> matlabToEigen(const 
   return ret;
 }
 
+template<int RowsAtCompileTime, int ColsAtCompileTime>
+Eigen::Map<const Eigen::Matrix<double, RowsAtCompileTime, ColsAtCompileTime>> matlabToEigenMap(const mxArray* matlab_array)
+{
+  Eigen::Map<const Eigen::Matrix<double, RowsAtCompileTime, ColsAtCompileTime>> ret(mxGetPr(matlab_array), mxGetM(matlab_array), mxGetN(matlab_array));
+  return ret;
+}
+
 DLLEXPORT std::string mxGetStdString(const mxArray* array);
 
 template <typename Scalar>
@@ -167,8 +174,9 @@ DLLEXPORT mxArray* mxGetPropertySafe(const mxArray* array, std::string const& fi
 DLLEXPORT mxArray* mxGetFieldSafe(const mxArray* array, std::string const& field_name);
 DLLEXPORT mxArray* mxGetPropertySafe(const mxArray* array, size_t index, std::string const& field_name);
 DLLEXPORT mxArray* mxGetFieldSafe(const mxArray* array, size_t index, std::string const& field_name);
-
 DLLEXPORT void mxSetFieldSafe(mxArray* array, size_t index, std::string const & fieldname, mxArray* data);
+DLLEXPORT mxArray* mxGetFieldOrPropertySafe(const mxArray* array, std::string const& field_name);
+DLLEXPORT mxArray* mxGetFieldOrPropertySafe(const mxArray* array, size_t index, std::string const& field_name);
 
 
 #endif /* DRAKE_UTIL_H_ */

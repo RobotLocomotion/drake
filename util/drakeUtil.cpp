@@ -221,7 +221,7 @@ mxArray* mxGetPropertySafe(const mxArray* array, size_t index, std::string const
   mxArray* ret = mxGetProperty(array, index, field_name.c_str());
   if (!ret)
   {
-    mexErrMsgIdAndTxt("Drake:mxGetPropertySafe", ("Field not found: " + field_name).c_str());
+    mexErrMsgIdAndTxt("Drake:mxGetPropertySafe", ("Property not found: " + field_name).c_str());
   }
   return ret;
 }
@@ -248,6 +248,18 @@ void mxSetFieldSafe(mxArray* array, size_t index, std::string const & fieldname,
     fieldnum = mxAddField(array, fieldname.c_str());
   }
   mxSetFieldByNumber(array, index, fieldnum, data);
+}
+
+mxArray* mxGetFieldOrPropertySafe(const mxArray* array, std::string const& field_name) {
+  return mxGetFieldOrPropertySafe(array, 0, field_name);
+}
+
+mxArray* mxGetFieldOrPropertySafe(const mxArray* array, size_t index, std::string const& field_name) {
+  mxArray* field_or_property = mxGetField(array, index, field_name.c_str());
+  if (field_or_property == nullptr) {
+    field_or_property = mxGetPropertySafe(array, index, field_name);
+  }
+  return field_or_property;
 }
 
 template <typename T>

@@ -37,10 +37,7 @@ int main(int argc, char **argv) {
   S = S * S.transpose();
   MatrixXd K = MatrixXd::Random(4, 4);
   MatrixXd A = MatrixXd::Random(4, 4);
-  std::vector<VectorXd> alpha;
-  for (int i = 0; i < num_segments; ++i) {
-    alpha.push_back(VectorXd::Random(4));
-  }
+  MatrixXd alpha = MatrixXd::Random(4, 1);
   PiecewisePolynomial<double> polynomial_part = PiecewisePolynomial<double>::random(4, 1, 5, PiecewiseFunction::randomSegmentTimes(num_segments, generator));
   ExponentialPlusPiecewisePolynomial<double> s1(K, A, alpha, polynomial_part);
   settings.V = QuadraticLyapunovFunction(S, s1);
