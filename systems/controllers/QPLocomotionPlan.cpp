@@ -87,7 +87,9 @@ void QPLocomotionPlan::publishQPControllerInput(
   const RigidBodySupportState& next_support = is_last_support ? settings.supports[support_index] : settings.supports[support_index + 1];
   updatePlanShift(t_plan, contact_force_detected, next_support);
 
-  drake::lcmt_qp_controller_input qp_input = settings.default_qp_input;
+  drake::lcmt_qp_controller_input qp_input;
+  qp_input.be_silent = false;
+  qp_input.timestamp = 0;
 
   // zmp data: D
   Matrix2d D = -settings.lipm_height * Matrix2d::Identity();

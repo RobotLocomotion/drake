@@ -144,10 +144,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   RigidBodyManipulator *robot = (RigidBodyManipulator*) getDrakeMexPointer(mex_model);
 
   // settings
+  // TODO:
+  // * contact groups
+  // * supports
+  // * body motions
+
   QPLocomotionPlanSettings settings;
-
-  mxGetFieldByNumber(mex_settings, 0, 0);
-
   settings.duration = mxGetScalar(mxGetPropertySafe(mex_settings, "duration"));
 //  std::vector<RigidBodySupportState> supports;
   settings.support_times = matlabToStdVector<double>(mxGetPropertySafe(mex_settings, "support_times"));
@@ -158,16 +160,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   settings.zmp_trajectory = matlabPPTrajectoryOrMatrixToPiecewisePolynomial(mxGetPropertySafe(mex_settings, "zmptraj"));
   settings.zmp_final = matlabToEigen<2, 1>(mxGetPropertySafe(mex_settings, "zmp_final"));
   settings.lipm_height = mxGetScalar(mxGetPropertySafe(mex_settings, "LIP_height"));
-
   const mxArray* mex_V = mxGetPropertySafe(mex_settings, "V");
   auto S = matlabToEigenMap<Dynamic, Dynamic>(mxGetFieldSafe(mex_V, "S"));
   auto s1 = matlabExpPlusPPOrVectorToExponentialPlusPiecewisePolynomial(mxGetFieldSafe(mex_V, "s1"));
   settings.V = QuadraticLyapunovFunction(S, s1);
-
   settings.q_traj = matlabPPTrajectoryOrMatrixToPiecewisePolynomial(mxGetPropertySafe(mex_settings, "qtraj"));
   settings.com_traj = matlabExpPlusPPOrVectorToExponentialPlusPiecewisePolynomial(mxGetPropertySafe(mex_settings, "comtraj"));
-//  drake::lcmt_qp_controller_input default_qp_input;
-
   settings.gain_set = mxGetStdString(mxGetPropertySafe(mex_settings, "gain_set"));
   settings.mu = mxGetScalar(mxGetPropertySafe(mex_settings, "mu"));
   settings.plan_shift_zmp_indices = matlabToStdVector<Eigen::DenseIndex>(mxGetPropertySafe(mex_settings, "plan_shift_zmp_inds")); // TODO enable after making QPLocomotionPlan changes

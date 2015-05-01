@@ -78,7 +78,6 @@ struct QPLocomotionPlanSettings {
   QuadraticLyapunovFunction V;
   PiecewisePolynomial<double> q_traj;
   ExponentialPlusPiecewisePolynomial<double> com_traj;
-  drake::lcmt_qp_controller_input default_qp_input;
 
   std::string gain_set = "standing";
   double mu = 0.5;

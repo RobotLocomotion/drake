@@ -44,7 +44,6 @@ int main(int argc, char **argv) {
   settings.q_traj = PiecewisePolynomial<double>::random(robot.num_positions, 1, 3, PiecewiseFunction::randomSegmentTimes(4, generator));
 
 //  settings.com_traj;   // TODO
-  settings.default_qp_input.be_silent = false;
 
   QPLocomotionPlan plan(robot, settings, "qp_controller_input");
   VectorXd q = VectorXd::Random(robot.num_positions);
