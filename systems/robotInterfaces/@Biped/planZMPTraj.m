@@ -45,6 +45,7 @@ steps.left = footsteps_with_quat([footsteps_with_quat.frame_id] == biped.foot_fr
 
 [steps.right(1), steps.left(1)] = getSafeInitialSupports(biped, kinsol, struct('right', steps.right(1), 'left', steps.left(1)));
 [zmp0, supp0] = getZMPBetweenFeet(biped, struct('right', steps.right(1), 'left', steps.left(1)));
+
 zmp_knots = struct('t', options.t0, 'zmp', zmp0, 'supp', supp0);
 
 frame_knots = struct('t', options.t0, ...
@@ -147,6 +148,7 @@ function [zmp, supp] = getZMPBetweenFeet(biped, steps)
   zmp = zeros(2,0);
   initial_supports = [];
   initial_support_groups = {};
+  initial_support_surfaces = {};
   for f = {'left', 'right'}
     foot = f{1};
     if steps.(foot).is_in_contact
@@ -159,10 +161,16 @@ function [zmp, supp] = getZMPBetweenFeet(biped, steps)
       supp_pts_in_world = T_foot_to_world * [supp_pts.pts; ones(1, size(supp_pts.pts, 2))];
       zmp(:,end+1) = mean(supp_pts_in_world(1:2,:), 2);
       initial_supports(end+1) = biped.foot_body_id.(foot);
+      v = quat2rotmat(steps.(foot).pos(4:7)) * [0;0;1];
+      b = -v' * steps.(foot).pos(1:3);
+      initial_support_surfaces{end+1} = [v;b];
     end
   end
   zmp = mean(zmp, 2);
-  supp = RigidBodySupportState(biped, initial_supports, initial_support_groups);
+  support_options.use_support_surface = ones(length(initial_supports),1);
+  support_options.support_surface = initial_support_surfaces;
+  support_options.contact_groups = initial_support_groups;
+  supp = RigidBodySupportState(biped, initial_supports, support_options);
 end
 
 function [rstep, lstep] = getSafeInitialSupports(biped, kinsol, steps, options)

@@ -228,7 +228,7 @@ struct QPControllerOutput {
 };
 
 struct QPControllerDebugData {
-  std::vector<SupportStateElement> active_supports;
+  std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> active_supports;
   int nc;
   MatrixXd normals;
   MatrixXd B;
@@ -263,7 +263,7 @@ PIDOutput wholeBodyPID(NewQPControllerData *pdata, double t, const Ref<const Vec
 
 VectorXd velocityReference(NewQPControllerData *pdata, double t, const Ref<VectorXd> &q, const Ref<VectorXd> &qd, const Ref<VectorXd> &qdd, bool foot_contact[2], VRefIntegratorParams *params, RobotPropertyCache *rpc);
 
-std::vector<SupportStateElement> loadAvailableSupports(std::shared_ptr<drake::lcmt_qp_controller_input> qp_input);
+std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> loadAvailableSupports(std::shared_ptr<drake::lcmt_qp_controller_input> qp_input);
 
 int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_controller_input> qp_input, DrakeRobotState &robot_state, const Ref<Matrix<bool, Dynamic, 1>> &b_contact_force, QPControllerOutput *qp_output, std::shared_ptr<QPControllerDebugData> debug);
 
