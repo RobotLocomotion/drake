@@ -33,8 +33,7 @@ ts=ts(:);
 if (~isCT(sys)) error('not implemented yet'); end
 
 checkDependency('sedumi');
-% for old versions of parallel computing toolbox, startup a matlabpool if necessary:
-if (exist('matlabpool','file') && matlabpool('size')==0) matlabpool; end
+ok=checkDependency('distcomp');  % initialize toolbox if it exists
 
 num_x = sys.getNumStates();
 num_xd = sys.getNumDiscStates();

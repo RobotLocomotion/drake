@@ -41,8 +41,7 @@ classdef LinearGaussianExample < StochasticDrakeSystem
    function prob=monteCarlo(obj,S,tspan,x0)
      N=200;
 
-     % for old versions of parallel computing toolbox, startup a matlabpool if necessary:
-     if (exist('matlabpool','file') && matlabpool('size')==0) matlabpool; end
+     ok=checkDependency('distcomp');  % initialize toolbox if it exists
      
      parfor i=1:N
        xtraj = simulate(obj,tspan,x0);
