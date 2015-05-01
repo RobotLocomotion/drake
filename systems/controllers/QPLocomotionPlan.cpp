@@ -258,6 +258,7 @@ void QPLocomotionPlan::publishQPControllerInput(
   qp_input.joint_pd_override = joint_pd_override_data;
   last_qp_input = qp_input;
 
+  verifySubtypeSizes(qp_input);
   lcm.publish(lcm_channel, &qp_input);
 }
 
