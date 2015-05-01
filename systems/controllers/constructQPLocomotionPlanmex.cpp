@@ -1,5 +1,6 @@
 #include "drakeUtil.h"
 #include "QPLocomotionPlan.h"
+#include <sstream>
 
 using namespace std;
 using namespace Eigen;
@@ -56,6 +57,17 @@ PiecewisePolynomial<double> matlabPPFormToPiecewisePolynomial(const mxArray* pp)
   return PiecewisePolynomial<double>(polynomial_matrices, breaks);
 }
 
+PiecewisePolynomial<double> matlabPPTrajectoryOrMatrixToPiecewisePolynomial(const mxArray* array)
+{
+  if (mxIsNumeric(array)) {
+    Map<MatrixXd> value(mxGetPr(array), mxGetM(array), mxGetN(array));
+    return PiecewisePolynomial<double>(value);
+  }
+  else {
+    return matlabPPFormToPiecewisePolynomial(mxGetPropertySafe(array, "pp"));
+  }
+}
+
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
   string usage = "usage: ptr = constructQPLocomotionPlanmex(mex_model_ptr, qp_locomotion_settings, lcm_channel);";
@@ -95,12 +107,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 //  std::vector<ContactGroupNameToContactPointsMap> contact_groups; // one for each support
 
 //  std::vector<BodyMotionData> body_motions;
-  settings.zmp_trajectory = matlabPPFormToPiecewisePolynomial(mxGetPropertySafe(mxGetPropertySafe(mex_settings, "zmptraj"), "pp"));
+  settings.zmp_trajectory = matlabPPTrajectoryOrMatrixToPiecewisePolynomial(mxGetPropertySafe(mex_settings, "zmptraj"));
   settings.zmp_final = matlabToEigen<2, 1>(mxGetPropertySafe(mex_settings, "zmp_final"));
   settings.lipm_height = mxGetScalar(mxGetPropertySafe(mex_settings, "LIP_height"));
 
 //  QuadraticLyapunovFunction V;
-//  PiecewisePolynomial<double> q_traj;
+
+  settings.q_traj = matlabPPTrajectoryOrMatrixToPiecewisePolynomial(mxGetPropertySafe(mex_settings, "qtraj"));
 //  settings.com_traj = matlabPPFormToPiecewisePolynomial(mxGetProperty(mex_settings, "comtraj");
 //  drake::lcmt_qp_controller_input default_qp_input;
 
