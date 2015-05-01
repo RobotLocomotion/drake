@@ -19,18 +19,19 @@ classdef QPLocomotionPlanSettings
     g = 9.81; % gravity m/s^2
     is_quasistatic = false;
     constrained_dofs = [];
+    untracked_joint_inds;
 
     planned_support_command = QPControllerPlan.support_logic_maps.require_support; % when the plan says a given body is in support, require the controller to use that support. To allow the controller to use that support only if it thinks the body is in contact with the terrain, try QPControllerPlan.support_logic_maps.kinematic_or_sensed; 
-    
+
     min_knee_angle = 0.7;
     knee_kp = 40;
     knee_kd = 4;
     knee_weight = 1;
-    
+
     pelvis_name = 'pelvis';
     r_foot_name = 'r_foot';
     l_foot_name = 'l_foot';
-    
+
     duration = inf;
     start_time = 0;
     default_qp_input = atlasControllers.QPInputConstantHeight;
@@ -47,13 +48,29 @@ classdef QPLocomotionPlanSettings
       obj.default_qp_input = atlasControllers.QPInputConstantHeight();
       obj.default_qp_input.whole_body_data.q_des = zeros(obj.robot.getNumPositions(), 1);
       obj.constrained_dofs = [findPositionIndices(obj.robot,'arm');findPositionIndices(obj.robot,'neck');findPositionIndices(obj.robot,'back_bkz');findPositionIndices(obj.robot,'back_bky')];
-    end   
+      obj.untracked_joint_inds = [];
+    end
+
+    function obj = setLQRForCoM(obj)
+      Q = diag([10 10 1 1]);
+      R = 0.0001*eye(2);
+      A = [zeros(2),eye(2); zeros(2,4)];
+      B = [zeros(2); eye(2)];
+      [~,S,~] = lqr(A,B,Q,R);
+      % set the Qy to zero since we only want to stabilize COM
+      obj.default_qp_input.zmp_data.Qy = 0*obj.default_qp_input.zmp_data.Qy;
+      obj.default_qp_input.zmp_data.A = A;
+      obj.default_qp_input.zmp_data.B = B;
+      obj.default_qp_input.zmp_data.R = R;
+      obj.default_qp_input.zmp_data.S = S;
+    end
+    
   end
 
   methods(Static)
     function obj = fromStandingState(x0, biped, support_state, options)
 
-      if nargin < 3
+      if nargin < 3 || isempty(support_state)
         support_state = RigidBodySupportState(biped, [biped.foot_body_id.right, biped.foot_body_id.left]);
       end
       if nargin < 4
@@ -166,7 +183,8 @@ classdef QPLocomotionPlanSettings
                                                                   biped.foot_body_id.left],...
                                               'quat_task_to_world',repmat([1;0;0;0],1,3),...
                                               'translation_task_to_world',zeros(3,3),...
-                                              'bodies_to_control_when_in_contact', biped.findLinkId('pelvis')));
+                                              'bodies_to_control_when_in_contact', biped.findLinkId('pelvis'),...
+                                              'track_com_traj',false));
 
       num_bodies_to_track = length(options.bodies_to_track);
       sizecheck(options.quat_task_to_world,[4,num_bodies_to_track]);
@@ -253,8 +271,10 @@ classdef QPLocomotionPlanSettings
       end
 
       obj.gain_set = 'manip';
-      obj = obj.setCOMTraj();
-      obj = obj.setLQR_for_COM();
+      if(options.track_com_traj)
+        obj = obj.setCOMTraj();
+        obj = obj.setLQRForCoM();
+      end
     end
 
     function [supports, support_times] = getSupports(zmp_knots)
