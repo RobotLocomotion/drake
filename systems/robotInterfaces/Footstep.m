@@ -18,8 +18,8 @@ classdef Footstep
     SUPPORT_GROUPS_HEEL_TOE = 0;
     SUPPORT_GROUPS_MIDFOOT_TOE = 1;
     SUPPORT_GROUPS_HEEL_MIDFOOT = 2;
-    support_contact_groups_enum_to_cell = containers.Map([Footstep.SUPPORT_GROUPS_HEEL_TOE, Footstep.SUPPORT_GROUPS_MIDFOOT_TOE, Footstep.SUPPORT_GROUPS_HEEL_MIDFOOT], {{'heel', 'toe'}, {'midfoot', 'toe'}, {'heel', 'midfoot'}})
-    support_contact_groups_str_to_enum = containers.Map({'heel+toe', 'toe+heel', 'midfoot+toe', 'toe+midfoot', 'heel+midfoot', 'midfoot+heel'}, [Footstep.SUPPORT_GROUPS_HEEL_TOE, Footstep.SUPPORT_GROUPS_HEEL_TOE, Footstep.SUPPORT_GROUPS_MIDFOOT_TOE, Footstep.SUPPORT_GROUPS_MIDFOOT_TOE, Footstep.SUPPORT_GROUPS_HEEL_MIDFOOT, Footstep.SUPPORT_GROUPS_HEEL_MIDFOOT]); % can't have a cell array as the key for a Map, so we join the cell elements with '+' before lookup
+    support_contact_groups_enum_to_cell = containers.Map([Footstep.SUPPORT_GROUPS_HEEL_TOE, Footstep.SUPPORT_GROUPS_MIDFOOT_TOE, Footstep.SUPPORT_GROUPS_HEEL_MIDFOOT], {{'heel', 'toe'}, {'midfoot_rear', 'toe'}, {'heel', 'midfoot_front'}})
+    support_contact_groups_str_to_enum = containers.Map({'heel+toe', 'toe+heel', 'midfoot_rear+toe', 'toe+midfoot_rear', 'heel+midfoot_front', 'midfoot_front+heel'}, [Footstep.SUPPORT_GROUPS_HEEL_TOE, Footstep.SUPPORT_GROUPS_HEEL_TOE, Footstep.SUPPORT_GROUPS_MIDFOOT_TOE, Footstep.SUPPORT_GROUPS_MIDFOOT_TOE, Footstep.SUPPORT_GROUPS_HEEL_MIDFOOT, Footstep.SUPPORT_GROUPS_HEEL_MIDFOOT]); % can't have a cell array as the key for a Map, so we join the cell elements with '+' before lookup
   end
 
   methods
