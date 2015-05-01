@@ -43,6 +43,7 @@ end
 steps.right = footsteps_with_quat([footsteps_with_quat.frame_id] == biped.foot_frame_id.right);
 steps.left = footsteps_with_quat([footsteps_with_quat.frame_id] == biped.foot_frame_id.left);
 
+[steps.right(1), steps.left(1)] = getSafeInitialSupports(biped, kinsol, struct('right', steps.right(1), 'left', steps.left(1)));
 [zmp0, supp0] = getZMPBetweenFeet(biped, struct('right', steps.right(1), 'left', steps.left(1)));
 
 zmp_knots = struct('t', options.t0, 'zmp', zmp0, 'supp', supp0);
@@ -170,4 +171,32 @@ function [zmp, supp] = getZMPBetweenFeet(biped, steps)
   support_options.support_surface = initial_support_surfaces;
   support_options.contact_groups = initial_support_groups;
   supp = RigidBodySupportState(biped, initial_supports, support_options);
+end
+
+function [rstep, lstep] = getSafeInitialSupports(biped, kinsol, steps, options)
+  % Make sure that our center of mass is within our initial available contact points by modifying the contact groups on the first two steps if necessary. 
+  if nargin < 4
+    options = struct('support_shrink_factor', 0.8);
+  end
+  com = getCOM(biped, kinsol);
+  all_supp_pts_in_world = zeros(3, 0);
+  for f = {'left', 'right'}
+    foot = f{1};
+    supp_groups = steps.(foot).walking_params.support_contact_groups;
+    supp_pts = biped.getTerrainContactPoints(biped.foot_body_id.(foot), {supp_groups});
+    supp_pts = supp_pts.pts;
+    supp_pts = bsxfun(@plus, mean(supp_pts, 2), options.support_shrink_factor * bsxfun(@minus, supp_pts, mean(supp_pts, 2)));
+    supp_pts_in_world = biped.forwardKin(kinsol, biped.foot_body_id.(foot), supp_pts, 0);
+    all_supp_pts_in_world = [all_supp_pts_in_world, supp_pts_in_world(1:3,:)];
+  end
+  if ~inpolygon(com(1), com(2), all_supp_pts_in_world(1,:), all_supp_pts_in_world(2,:))
+    warning('Drake:CommandedSupportsDoNotIncludeCoM', 'Commanded support groups do not include the initial center of mass pose. Expanding the initial supports to prevent a fall at the start of walking');
+    % CoM is outside the initial commanded support. This is almost certain to cause the robot to fall. So, for the first supports (the ones corresponding to the robot's current foot positions), we will allow the controller to use the entire heel-to-toe surface of the foot.
+    for f = {'left', 'right'}
+      foot = f{1};
+      steps.(foot).walking_params.support_contact_groups = {'heel', 'toe'};
+    end
+  end
+  rstep = steps.right;
+  lstep = steps.left;
 end
