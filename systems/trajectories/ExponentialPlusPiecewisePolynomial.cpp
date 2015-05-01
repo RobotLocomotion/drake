@@ -5,6 +5,12 @@
 using namespace Eigen;
 
 template<typename CoefficientType>
+ExponentialPlusPiecewisePolynomial<CoefficientType>::ExponentialPlusPiecewisePolynomial()
+{
+  // empty
+}
+
+template<typename CoefficientType>
 ExponentialPlusPiecewisePolynomial<CoefficientType>::ExponentialPlusPiecewisePolynomial(
     const MatrixX& K, const MatrixX& A, const std::vector<VectorX>& alpha,
     const PiecewisePolynomial<CoefficientType>& piecewise_polynomial_part) :
@@ -21,7 +27,7 @@ ExponentialPlusPiecewisePolynomial<CoefficientType>::ExponentialPlusPiecewisePol
 }
 
 template<typename CoefficientType>
-typename ExponentialPlusPiecewisePolynomial<CoefficientType>::ValueType ExponentialPlusPiecewisePolynomial<CoefficientType>::value(double t)
+typename ExponentialPlusPiecewisePolynomial<CoefficientType>::ValueType ExponentialPlusPiecewisePolynomial<CoefficientType>::value(double t) const
 {
   int segment_index = getSegmentIndex(t);
 

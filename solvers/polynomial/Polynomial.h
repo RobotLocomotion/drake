@@ -99,13 +99,12 @@ public:
 
 
   template<Eigen::DenseIndex RowsAtCompileTime = Eigen::Dynamic, Eigen::DenseIndex ColsAtCompileTime = Eigen::Dynamic>
-  static Eigen::Matrix<Polynomial<CoefficientType>, Eigen::Dynamic, Eigen::Dynamic> createRandomPolynomialMatrix(std::default_random_engine generator, int max_num_coefficients, int rows = RowsAtCompileTime, int cols = ColsAtCompileTime)
+  static Eigen::Matrix<Polynomial<CoefficientType>, Eigen::Dynamic, Eigen::Dynamic> randomPolynomialMatrix(int num_coefficients_per_polynomial, int rows = RowsAtCompileTime, int cols = ColsAtCompileTime)
   {
-    std::uniform_int_distribution<> num_coefficients_distribution(1, max_num_coefficients);
     Eigen::Matrix<Polynomial<CoefficientType>, RowsAtCompileTime, ColsAtCompileTime> mat(rows, cols);
     for (int row = 0; row < mat.rows(); ++row) {
       for (int col = 0; col < mat.cols(); ++col) {
-        auto coeffs = (Eigen::Matrix<CoefficientType, Eigen::Dynamic, 1>::Random(num_coefficients_distribution(generator))).eval();
+        auto coeffs = (Eigen::Matrix<CoefficientType, Eigen::Dynamic, 1>::Random(num_coefficients_per_polynomial)).eval();
         mat(row, col) = Polynomial<CoefficientType>(coeffs);
       }
     }

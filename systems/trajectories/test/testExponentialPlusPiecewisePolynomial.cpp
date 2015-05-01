@@ -4,7 +4,6 @@
 #include <iostream>
 #include <cmath>
 #include "testUtil.h"
-#include "trajectoryTestUtil.h"
 
 using namespace std;
 using namespace Eigen;
@@ -25,8 +24,8 @@ void testSimpleCase() {
   VectorX alpha0 = VectorX::Random(1);
   alpha.push_back(alpha0);
 
-  auto segment_times = generateRandomSegmentTimes(num_segments, generator);
-  auto polynomial_part = generateRandomPiecewisePolynomial<CoefficientType>(1, 1, num_coefficients, segment_times);
+  auto segment_times = PiecewiseFunction::randomSegmentTimes(num_segments, generator);
+  auto polynomial_part = PiecewisePolynomial<CoefficientType>::random(1, 1, num_coefficients, segment_times);
 
   ExponentialPlusPiecewisePolynomial<CoefficientType> expPlusPp(K, A, alpha, polynomial_part);
   ExponentialPlusPiecewisePolynomial<CoefficientType> derivative = expPlusPp.derivative();

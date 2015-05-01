@@ -3,11 +3,13 @@
 #include <sstream>
 #include <cmath>
 
+using namespace std;
+
 PiecewiseFunction::PiecewiseFunction(std::vector<double> const & segment_times) :
   segment_times(segment_times)
 {
-  for (int i = 0; i < getNumberOfSegments(); i++) {
-    if (segment_times[i + 1] < segment_times[i])
+  for (int i = 1; i < getNumberOfSegments() + 1; i++) {
+    if (segment_times[i] < segment_times[i - 1])
       throw std::runtime_error("times must be increasing");
   }
 }
@@ -66,9 +68,21 @@ const std::vector<double>& PiecewiseFunction::getSegmentTimes() const {
 void PiecewiseFunction::segmentNumberRangeCheck(int segment_number) const {
   if (segment_number < 0 || segment_number >= getNumberOfSegments()) {
     std::stringstream msg;
-    msg << "Segment number " << segment_number << " out of range [" << 0 << ", " << getNumberOfSegments() - 1 << "]" << std::endl;
+    msg << "Segment number " << segment_number << " out of range [" << 0 << ", " << getNumberOfSegments() << ")" << std::endl;
     throw std::runtime_error(msg.str().c_str());
   }
+}
+
+std::vector<double> PiecewiseFunction::randomSegmentTimes(int num_segments, std::default_random_engine& generator) {
+  vector<double> segment_times;
+  uniform_real_distribution<double> uniform;
+  double t0 = uniform(generator);
+  segment_times.push_back(t0);
+  for (int i = 0; i < num_segments; ++i) {
+    double duration = uniform(generator);
+    segment_times.push_back(segment_times[i] + duration);
+  }
+  return segment_times;
 }
 
 bool PiecewiseFunction::segmentTimesEqual(const PiecewiseFunction& other, double tol) const {

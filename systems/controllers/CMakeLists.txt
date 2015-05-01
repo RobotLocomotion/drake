@@ -1,3 +1,15 @@
+if (LCM_FOUND)
+  add_library(drakeQPLocomotionPlan SHARED QPLocomotionPlan.cpp Side.cpp BodyMotionData.cpp) # TODO: put Side in a some library
+  target_link_libraries(drakeQPLocomotionPlan drakeSplineGeneration drakeRBM lcm drakeLCMUtil)
+  pods_install_libraries(drakeQPLocomotionPlan)
+  pods_install_headers(QPLocomotionPlan.h DESTINATION drake)
+  pods_install_pkg_config_file(drake-qp-locomotion-plan
+  LIBS -ldrakeQPLocomotionPlan
+  CFLAGS -I\${prefix}/include/lcmtypes
+  REQUIRES
+  VERSION 0.0.1)
+endif()
+
 if (MATLAB_FOUND)
   include_directories (${PROJECT_SOURCE_DIR}/util )
   include_directories (${PROJECT_SOURCE_DIR}/systems/trajectories )
@@ -20,9 +32,14 @@ if (MATLAB_FOUND)
     LIBS -ldrakeControlUtil
     REQUIRES
     VERSION 0.0.1)
+    
+  if (LCM_FOUND)
+    add_mex(constructQPLocomotionPlanmex constructQPLocomotionPlanmex.cpp)
+    target_link_libraries(constructQPLocomotionPlanmex drakeQPLocomotionPlan drakeUtil)
+  endif()
 
   if (gurobi_FOUND)
-    add_mex(drakeQPCommon SHARED QPCommon.cpp Side.cpp BodyMotionData.cpp)
+    add_mex(drakeQPCommon SHARED QPCommon.cpp Side.cpp)
     target_link_libraries(drakeQPCommon drakeControlUtil drakeQP drakeTrajectories drakeLCMUtil)
     pods_install_libraries(drakeQPCommon)
     pods_install_headers(QPCommon.h DESTINATION drake)
@@ -51,18 +68,6 @@ if (MATLAB_FOUND)
       include_directories (${CMAKE_BINARY_DIR}/lcmgen/lcmtypes )
       add_mex(encodeQPInputLCMMex encodeQPInputLCMMex.cpp)
       target_link_libraries(encodeQPInputLCMMex lcm drakeControlUtil drakeQPCommon)
-
-      add_mex(drakeQPLocomotionPlan SHARED QPLocomotionPlan.cpp)
-      target_link_libraries(drakeQPLocomotionPlan drakeQPCommon drakeSplineGeneration lcm)
-      pods_install_libraries(drakeQPLocomotionPlan)
-      pods_install_headers(QPLocomotionPlan.h DESTINATION drake)
-      pods_install_pkg_config_file(drake-qp-locomotion-plan
-      LIBS -ldrakeQPLocomotionPlan
-      CFLAGS -I\${prefix}/include/lcmtypes
-      REQUIRES drake-qp-common
-      VERSION 0.0.1)
-
-
     endif()
   endif()
 

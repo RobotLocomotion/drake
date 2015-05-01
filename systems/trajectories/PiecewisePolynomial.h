@@ -6,6 +6,7 @@
 #include "Polynomial.h"
 #include <vector>
 #include <random>
+#include <limits>
 
 #undef DLLEXPORT
 #if defined(WIN32) || defined(WIN64)
@@ -31,6 +32,17 @@ private:
 
 public:
   virtual ~PiecewisePolynomial() { };
+
+  // default constructor; just leaves segment_times and polynomials empty
+  PiecewisePolynomial();
+
+  // single segment and/or constant value constructor
+  template <typename Derived>
+  PiecewisePolynomial(const Eigen::MatrixBase<Derived>& value) :
+    PiecewisePolynomialBase(std::vector<double>({ { -std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity() } }))
+  {
+    polynomials.push_back(value.template cast<PolynomialMatrix>());
+  }
 
   // Matrix constructor
   PiecewisePolynomial(std::vector<PolynomialMatrix> const& polynomials, std::vector<double> const& segment_times);
@@ -86,9 +98,11 @@ public:
 
   PiecewisePolynomial slice(int start_segment_index, int num_segments);
 
-protected:
-  PiecewisePolynomial();
+  static PiecewisePolynomial random(
+    Eigen::DenseIndex rows, Eigen::DenseIndex cols, Eigen::DenseIndex num_coefficients_per_polynomial,
+    const std::vector<double>& segment_times);
 
+protected:
   double segmentValueAtGlobalAbscissa(int segment_index, double t, Eigen::DenseIndex row, Eigen::DenseIndex col) const;
 };
 
