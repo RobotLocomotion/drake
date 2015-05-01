@@ -186,10 +186,7 @@ function [rstep, lstep] = getSafeInitialSupports(biped, kinsol, steps, options)
     supp_pts = biped.getTerrainContactPoints(biped.foot_body_id.(foot), {supp_groups});
     supp_pts = supp_pts.pts;
     supp_pts = bsxfun(@plus, mean(supp_pts, 2), options.support_shrink_factor * bsxfun(@minus, supp_pts, mean(supp_pts, 2)));
-    T_sole_to_world = poseQuat2tform(steps.(foot).pos);
-    T_sole_to_foot = biped.getFrame(steps.(foot).frame_id).T;
-    T_foot_to_world = T_sole_to_world / T_sole_to_foot;
-    supp_pts_in_world = T_foot_to_world * [supp_pts; ones(1, size(supp_pts, 2))];
+    supp_pts_in_world = biped.forwardKin(kinsol, biped.foot_body_id.(foot), supp_pts, 0);
     all_supp_pts_in_world = [all_supp_pts_in_world, supp_pts_in_world(1:3,:)];
   end
   if ~inpolygon(com(1), com(2), all_supp_pts_in_world(1,:), all_supp_pts_in_world(2,:))
