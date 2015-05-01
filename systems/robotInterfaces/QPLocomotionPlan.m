@@ -124,9 +124,9 @@ classdef QPLocomotionPlan < QPControllerPlan
 
       kinsol = doKinematics(obj.robot, q);
 
-      if t_plan < obj.support_times(1)
+      if t_plan <= obj.support_times(1)
         supp_idx = 1;
-      elseif t_plan > obj.support_times(end)
+      elseif t_plan >= obj.support_times(end)
         supp_idx = length(obj.supports);
       else
         supp_idx = find(obj.support_times<t_plan,1,'last');
@@ -465,7 +465,7 @@ classdef QPLocomotionPlan < QPControllerPlan
   methods(Static)
     function obj = from_standing_state(x0, biped, support_state, options)
 
-      if nargin < 3
+      if nargin < 3 || isempty(support_state)
         support_state = RigidBodySupportState(biped, [biped.foot_body_id.right, biped.foot_body_id.left]);
       end
       if nargin < 4
