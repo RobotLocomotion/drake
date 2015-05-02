@@ -1,6 +1,7 @@
 #include "lcmUtil.h"
 #include <Eigen/Core>
 #include "drakeUtil.h"
+#include <sstream>
 
 using namespace Eigen;
 
@@ -44,7 +45,10 @@ void verifySubtypeSizes(drake::lcmt_support_data &support_data) {
   }
   for (int j=0; j < 3; ++j) {
     if (support_data.contact_pts[j].size() != support_data.num_contact_pts) {
-      throw std::runtime_error("num_contact_pts must match the size of each row of contact_pts");
+      std::stringstream msg;
+      msg << "num_contact_pts must match the size of each row of contact_pts." << std::endl;
+      msg << "num_contact_pts: " << support_data.num_contact_pts << ", support_data.contact_pts[" << j << "].size(): " << support_data.contact_pts[j].size() << std::endl;
+      throw std::runtime_error(msg.str().c_str());
     }
   }
 }

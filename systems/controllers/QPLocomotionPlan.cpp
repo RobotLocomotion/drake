@@ -9,12 +9,13 @@
 #include "drakeUtil.h"
 #include "lcmUtil.h"
 #include <string>
+#include <iostream>
 
-// TODO: go through everything and make it match the updated Matlab code
+// TODO: untracked_joint_inds
+// TODO: updateSwingTrajectory: undo plan shift?
 // TODO: discuss possibility of chatter in knee control
-// TODO: drakePiecewisePolynomial_EXPORTS
 // TODO: make body_motions a map from RigidBody* to BodyMotionData, remove body_id from BodyMotionData?
-// TODO: undo plan shift?
+
 
 using namespace std;
 using namespace Eigen;
@@ -35,6 +36,11 @@ QPLocomotionPlan::QPLocomotionPlan(RigidBodyManipulator& robot, const QPLocomoti
 
   for (auto it = Side::values.begin(); it != Side::values.end(); ++it) {
     toe_off_active[*it] = false;
+  }
+
+  if (!lcm.good())
+  {
+    cerr << "ERROR: lcm is not good()" << endl;
   }
 }
 
@@ -90,15 +96,39 @@ void QPLocomotionPlan::publishQPControllerInput(
   drake::lcmt_qp_controller_input qp_input;
   qp_input.be_silent = false;
   qp_input.timestamp = 0;
+  qp_input.num_support_data = 0;
+  qp_input.num_tracked_bodies = 0;
+  qp_input.num_external_wrenches = 0;
+  qp_input.num_joint_pd_overrides = 0;
+
+  // whole body data
+  auto q_des = settings.q_traj.value(t_plan);
+  qp_input.whole_body_data.timestamp = 0;
+  qp_input.whole_body_data.num_positions = robot.num_positions;
+  eigenVectorToStdVector(q_des, qp_input.whole_body_data.q_des);
+  qp_input.whole_body_data.constrained_dofs = settings.constrained_position_indices;
+  qp_input.whole_body_data.num_constrained_dofs = qp_input.whole_body_data.constrained_dofs.size();
+
+  // zmp data:
+  qp_input.zmp_data.timestamp = 0;
+  eigenToCArrayOfArrays(settings.zmp_data.A, qp_input.zmp_data.A);
+  eigenToCArrayOfArrays(settings.zmp_data.B, qp_input.zmp_data.B);
+  eigenToCArrayOfArrays(settings.zmp_data.C, qp_input.zmp_data.C);
+//  eigenToCArrayOfArrays(settings.zmp_data.D, qp_input.zmp_data.D); // set later
+//  eigenToCArrayOfArrays(settings.zmp_data.x0, qp_input.zmp_data.x0); // set later
+//  eigenToCArrayOfArrays(settings.zmp_data.y0, qp_input.zmp_data.y0); // set later
+  eigenToCArrayOfArrays(settings.zmp_data.u0, qp_input.zmp_data.u0);
+  eigenToCArrayOfArrays(settings.zmp_data.R, qp_input.zmp_data.R);
+  eigenToCArrayOfArrays(settings.zmp_data.Qy, qp_input.zmp_data.Qy);
+//  eigenToCArrayOfArrays(settings.zmp_data.S, qp_input.zmp_data.S); // set later
+//  eigenToCArrayOfArrays(settings.zmp_data.s1, qp_input.zmp_data.s1); // set later
+//  eigenToCArrayOfArrays(settings.zmp_data.s1dot, qp_input.zmp_data.s1dot); // set later
+  qp_input.zmp_data.s2 = settings.zmp_data.s2;
+  qp_input.zmp_data.s2dot = settings.zmp_data.s2dot;
 
   // zmp data: D
   Matrix2d D = -settings.lipm_height * Matrix2d::Identity();
   eigenToCArrayOfArrays(D, qp_input.zmp_data.D);
-
-  // whole body data
-  auto q_des = settings.q_traj.value(t_plan);
-  eigenVectorToStdVector(q_des, qp_input.whole_body_data.q_des);
-  qp_input.whole_body_data.constrained_dofs = settings.constrained_position_indices;
 
   // zmp data: x0, y0
   if (settings.is_quasistatic) {
@@ -136,6 +166,8 @@ void QPLocomotionPlan::publishQPControllerInput(
   eigenToCArrayOfArrays(settings.V.getS(), qp_input.zmp_data.S);
   auto s1_current = settings.V.getS1().value(t_plan);
   eigenToCArrayOfArrays(s1_current, qp_input.zmp_data.s1);
+  auto s1dot_current = settings.V.getS1().derivative().value(t_plan);
+  eigenToCArrayOfArrays(s1dot_current, qp_input.zmp_data.s1dot); // NOTE: this was just set to the default (zeros) before
 
   VectorXd v_dummy(0, 1);
   robot.doKinematicsNew(q, v_dummy);
@@ -184,6 +216,7 @@ void QPLocomotionPlan::publishQPControllerInput(
             support_state_element.contact_points = settings.contact_groups[body_id].at("toe");
         }
         drake::lcmt_joint_pd_override joint_pd_override_for_support;
+        joint_pd_override_for_support.timestamp = 0;
         joint_pd_override_for_support.position_ind = static_cast<int32_t>(knee_index);
         joint_pd_override_for_support.qi_des = settings.knee_settings.min_knee_angle;
         joint_pd_override_for_support.qdi_des = 0.0;
@@ -214,6 +247,7 @@ void QPLocomotionPlan::publishQPControllerInput(
     body_motion_trajectory_slice -= trajectory_shift;
 
     drake::lcmt_body_motion_data body_motion_data_for_support_lcm;
+    body_motion_data_for_support_lcm.timestamp = 0;
     body_motion_data_for_support_lcm.body_id = body_id;
 
     encodePiecewisePolynomial(body_motion_trajectory_slice, body_motion_data_for_support_lcm.spline);
@@ -243,21 +277,43 @@ void QPLocomotionPlan::publishQPControllerInput(
   // set support data
   for (auto it = support_state.begin(); it != support_state.end(); ++it) {
     drake::lcmt_support_data support_data_element_lcm;
+    support_data_element_lcm.timestamp = 0;
     support_data_element_lcm.body_id = static_cast<int32_t>(it->body);
+    support_data_element_lcm.num_contact_pts = it->contact_points.cols();
     eigenToStdVectorOfStdVectors(it->contact_points, support_data_element_lcm.contact_pts);
     for (int i = 0; i < planned_support_command.size(); i++)
       support_data_element_lcm.support_logic_map[i] = planned_support_command[i];
     support_data_element_lcm.mu = settings.mu;
-    support_data_element_lcm.contact_surfaces = 0;
+    support_data_element_lcm.use_support_surface = it->use_contact_surface;
+    Vector4f support_surface_float = it->support_surface.cast<float>();
+    memcpy(support_data_element_lcm.support_surface, support_surface_float.data(), sizeof(float) * 4);
     qp_input.support_data.push_back(support_data_element_lcm);
     qp_input.num_support_data++;
   }
 
   qp_input.param_set_name = settings.gain_set;
 
-  qp_input.joint_pd_override = joint_pd_override_data;
-  last_qp_input = qp_input;
+  for (auto it = settings.untracked_position_indices.begin(); it != settings.untracked_position_indices.end(); ++it) {
+    drake::lcmt_joint_pd_override joint_pd_override;
+    joint_pd_override.timestamp = 0;
+    joint_pd_override.position_ind = *it;
+    joint_pd_override.qi_des = q[*it];
+    joint_pd_override.qdi_des = v[*it];
+    joint_pd_override.kp = 0.0;
+    joint_pd_override.kd = 0.0;
+    joint_pd_override.weight = 0.0;
+    qp_input.joint_pd_override.push_back(joint_pd_override);
+    qp_input.num_joint_pd_overrides++;
 
+    qp_input.whole_body_data.q_des[*it] = q[*it];
+    auto constrained_dofs_it = std::find(qp_input.whole_body_data.constrained_dofs.begin(), qp_input.whole_body_data.constrained_dofs.end(), *it);
+    if (constrained_dofs_it != qp_input.whole_body_data.constrained_dofs.end()) {
+      qp_input.whole_body_data.constrained_dofs.erase(constrained_dofs_it);
+      qp_input.whole_body_data.num_constrained_dofs = qp_input.whole_body_data.constrained_dofs.size();
+    }
+  }
+
+  last_qp_input = qp_input;
   verifySubtypeSizes(qp_input);
   lcm.publish(lcm_channel, &qp_input);
 }
@@ -302,14 +358,11 @@ void QPLocomotionPlan::updateSwingTrajectory(double t_plan, BodyMotionData& body
   }
 
   // FIXME: way too expensive
-  MatrixXd xdf = trajectory.derivative().value(trajectory.getEndTime(takeoff_segment_index + 2));
+  MatrixXd xdf = trajectory.derivative().value(trajectory.getEndTime(landing_segment_index));
 
   auto start_it = trajectory.getSegmentTimes().begin() + takeoff_segment_index;
   int num_breaks = num_swing_segments + 1;
-  auto end_it = start_it + num_breaks + 1; // + 1 because this iterator should point past the end of the subvector
-  std::vector<double> breaks(start_it, end_it);
-  assert(std::abs(trajectory.getStartTime(takeoff_segment_index) - breaks[0]) < 1e-10); // TODO: get rid of this once we know this is right.
-  assert(std::abs(trajectory.getStartTime(landing_segment_index) - breaks[num_swing_segments]) < 1e-10); // TODO: get rid of this once we know this is right.
+  std::vector<double> breaks(start_it, start_it + num_breaks);
 
   for (int dof_num = 0; dof_num < x0.rows(); ++dof_num) {
     PiecewisePolynomial<double> updated_spline_for_dof = nWaypointCubicSpline(breaks, x0(dof_num), xd0(dof_num), xf(dof_num), xdf(dof_num), Vector2d(x1(dof_num), x2(dof_num)));

@@ -11,6 +11,8 @@
 #include <limits>
 #include <Eigen/Dense>
 #include <stdexcept>
+#include <algorithm>
+#include <functional>
 
 using namespace std;
 using namespace Eigen;
@@ -264,6 +266,10 @@ mxArray* mxGetFieldOrPropertySafe(const mxArray* array, size_t index, std::strin
 template <typename T>
 const std::vector<T> matlabToStdVector(const mxArray* in) {
   // works for both row vectors and column vectors
+
+  if (mxGetNumberOfElements(in) == 0) // if input is empty, output is an empty vector
+    return std::vector<T>();
+
   if (mxGetM(in) != 1 && mxGetN(in) != 1)
     throw std::runtime_error("Not a vector");
   std::vector<T> ret;

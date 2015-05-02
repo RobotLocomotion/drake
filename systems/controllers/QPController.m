@@ -313,7 +313,6 @@ classdef QPController < MIMODrakeSystem
     supp.contact_pts = contact_pts;
     supp.contact_groups = contact_groups;
     supp.num_contact_pts = n_contact_pts;
-    supp.contact_surfaces = 0*support_bodies;
     
     qdd_lb =-500*ones(1,nq);
     qdd_ub = 500*ones(1,nq);

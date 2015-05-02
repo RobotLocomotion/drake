@@ -8,27 +8,32 @@ classdef RigidBodySupportState
     contact_groups; % cell array of cell arrays of contact group strings, 1 for each body
     num_contact_pts;  % convenience array containing the desired number of
                       %             contact points for each support body
-    contact_surfaces; % int IDs either: 0 (terrain), -1 (any body in bullet collision world)
-                      %             or (1:num_bodies) collision object ID
-  end
+    use_support_surface; % logical vector with the same length as bodies
+    support_surface; % 4-vector describing a support surface: [v; b] such that v' * [x;y;z] + b == 0
+   end
 
   methods
-    function obj = RigidBodySupportState(r,bodies,contact_groups,contact_surfaces)
+    function obj = RigidBodySupportState(r,bodies,options)
       typecheck(r,'Biped');
       typecheck(bodies,'double');
+      if nargin < 3
+        options = struct();
+      end
+      
       obj.bodies = bodies(bodies~=0);
-
-      obj.num_contact_pts=zeros(length(obj.bodies),1);
-      obj.contact_pts = cell(1,length(obj.bodies));
+      nbod = length(obj.bodies);
+      obj.num_contact_pts = zeros(nbod,1);
+      obj.contact_pts = cell(1,nbod);
       obj.contact_groups = {};
-      if nargin>2
-        typecheck(contact_groups,'cell');
-        sizecheck(contact_groups,length(obj.bodies));
-        for i=1:length(obj.bodies)
+      
+      if isfield(options,'contact_groups')
+        typecheck(options.contact_groups,'cell');
+        sizecheck(options.contact_groups,nbod);
+        for i=1:nbod
           body = r.getBody(obj.bodies(i));
-          body_groups = contact_groups{i};
+          body_groups = options.contact_groups{i};
           obj.contact_pts{i} = body.getTerrainContactPoints(body_groups);
-          obj.contact_groups{i} = contact_groups{i};
+          obj.contact_groups{i} = options.contact_groups{i};
           obj.num_contact_pts(i)=size(obj.contact_pts{i},2);
         end
       else
@@ -40,18 +45,24 @@ classdef RigidBodySupportState
           obj.num_contact_pts(i)=size(obj.contact_pts{i},2);
         end
       end
-
-      if nargin>3
-        obj = setContactSurfaces(obj,contact_surfaces);
+      
+      if isfield(options,'use_support_surface')
+        sizecheck(options.use_support_surface,nbod);
+        obj.use_support_surface = options.use_support_surface;
       else
-        obj.contact_surfaces = zeros(length(obj.bodies),1);
+        obj.use_support_surface = zeros(nbod,1);
       end
-    end
 
-    function obj = setContactSurfaces(obj,contact_surfaces)
-      typecheck(contact_surfaces,'double');
-      sizecheck(contact_surfaces,length(obj.bodies));
-      obj.contact_surfaces = contact_surfaces;
+      if isfield(options,'support_surface')
+        typecheck(options.support_surface,'cell');
+        sizecheck(options.support_surface,nbod);
+        obj.support_surface = options.support_surface;
+      else
+        obj.support_surface = cell(1,nbod);
+        for i=1:nbod
+          obj.support_surface{i} = [0;0;1;0];
+        end
+      end
     end
 
     function obj = setContactPts(obj, ind, contact_pts, contact_groups)
@@ -62,4 +73,3 @@ classdef RigidBodySupportState
   end
 
 end
-

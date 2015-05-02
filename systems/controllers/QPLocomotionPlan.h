@@ -10,10 +10,28 @@
 #include "drake/ExponentialPlusPiecewisePolynomial.h"
 #include "drake/RigidBodyManipulator.h"
 #include "drake/lcmt_qp_controller_input.hpp"
-//#include "QPCommon.h"
 #include "BodyMotionData.h"
 #include "Side.h"
 #include <lcm/lcm-cpp.hpp>
+
+struct TVLQRData {
+  // TODO: move into its own file
+  // TODO: turn into class, private members
+  Eigen::MatrixXd A;
+  Eigen::MatrixXd B;
+  Eigen::MatrixXd C;
+  Eigen::MatrixXd D;
+  Eigen::VectorXd x0;
+  Eigen::VectorXd y0;
+  Eigen::VectorXd u0;
+  Eigen::MatrixXd R;
+  Eigen::MatrixXd Qy;
+  Eigen::MatrixXd S;
+  Eigen::VectorXd s1;
+  Eigen::VectorXd s1dot;
+  double s2;
+  double s2dot;
+};
 
 class QuadraticLyapunovFunction {
   // TODO: move into its own file
@@ -46,7 +64,8 @@ struct RigidBodySupportStateElement {
   // TODO: consolidate with SupportStateElement?
   int body; // TODO: should probably be a RigidBody smart pointer
   Eigen::Matrix3Xd contact_points;
-  int contact_surface; // TODO: should probably be a different type
+  bool use_contact_surface;
+  Eigen::Vector4d support_surface; // TODO: should probably be a different type
 };
 
 typedef std::vector<RigidBodySupportStateElement> RigidBodySupportState;
@@ -73,6 +92,7 @@ struct QPLocomotionPlanSettings {
   std::vector<BodyMotionData> body_motions;
   PiecewisePolynomial<double> zmp_trajectory;
   Eigen::Vector2d zmp_final;
+  TVLQRData zmp_data;
   double lipm_height;
   QuadraticLyapunovFunction V;
   PiecewisePolynomial<double> q_traj;
@@ -88,6 +108,7 @@ struct QPLocomotionPlanSettings {
   std::string pelvis_name = "pelvis";
   std::map<Side, std::string> foot_names = createDefaultFootNames();
   std::vector<int> constrained_position_indices;
+  std::vector<int> untracked_position_indices;
 
   void addSupport(const RigidBodySupportState& support_state, const ContactNameToContactPointsMap& contact_group_name_to_contact_points, double duration) {
     supports.push_back(support_state);
@@ -151,7 +172,6 @@ private:
   double start_time;
   Eigen::Vector3d plan_shift;
   drake::lcmt_qp_controller_input last_qp_input;
-  std::vector<drake::lcmt_joint_pd_override> joint_pd_override_data;
   std::map<Side, bool> toe_off_active;
 
   /*

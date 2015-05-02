@@ -147,10 +147,10 @@ void eigenVectorToStdVector(const Eigen::MatrixBase<Derived>& source, std::vecto
 // note for if/when we split off all Matlab related stuff into a different file: this function is not Matlab related
 template <typename Derived>
 void eigenToStdVectorOfStdVectors(const Eigen::MatrixBase<Derived>& source, std::vector< std::vector<typename Derived::Scalar> >& destination) {
-  destination.reserve(source.rows());
+  destination.resize(source.rows());
   for (Eigen::DenseIndex row = 0; row < source.rows(); ++row) {
     auto& destination_row = destination[row];
-    destination_row.reserve(source.cols());
+    destination_row.resize(source.cols());
     for (Eigen::DenseIndex col = 0; col < source.cols(); ++col) {
       destination_row[col] = source(row, col);
     }
@@ -159,6 +159,12 @@ void eigenToStdVectorOfStdVectors(const Eigen::MatrixBase<Derived>& source, std:
 
 
 DLLEXPORT int sub2ind(mwSize ndims, const mwSize* dims, const mwSize* sub);
+
+template <typename T>
+void addOffset(std::vector<T>& v, const T& offset)
+{
+  std::transform(v.begin(), v.end(), v.begin(), std::bind2nd(std::plus<double>(), offset));
+}
 
 DLLEXPORT void baseZeroToBaseOne(std::vector<int>& vec);
 
@@ -178,6 +184,5 @@ DLLEXPORT void mxSetFieldSafe(mxArray* array, size_t index, std::string const & 
 DLLEXPORT mxArray* mxGetFieldOrPropertySafe(const mxArray* array, std::string const& field_name);
 DLLEXPORT mxArray* mxGetFieldOrPropertySafe(const mxArray* array, size_t index, std::string const& field_name);
 
-DLLEXPORT void sizecheck(const mxArray* mat, int M, int N);
 
 #endif /* DRAKE_UTIL_H_ */
