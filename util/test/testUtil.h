@@ -78,6 +78,15 @@ void valuecheck(double a, double b, double tolerance)
   }
 }
 
+void valuecheck(int a, int b)
+{
+  if (a != b) {
+    std::ostringstream stream;
+    stream << "Expected:\n" << a << "\nbut got:" << b << "\n";
+    throw std::runtime_error(stream.str());
+  }
+}
+
 template <typename T>
 void valuecheck(T const & a, T const & b)
 {

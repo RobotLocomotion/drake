@@ -255,7 +255,8 @@ void QPLocomotionPlan::publishQPControllerInput(
     for (int i = 0; i < planned_support_command.size(); i++)
       support_data_element_lcm.support_logic_map[i] = planned_support_command[i];
     support_data_element_lcm.mu = settings.mu;
-    support_data_element_lcm.contact_surfaces = it->contact_surface;
+    // FIXME: contact surface stuff
+//    support_data_element_lcm.contact_surfaces = it->contact_surface;
     qp_input.support_data.push_back(support_data_element_lcm);
     qp_input.num_support_data++;
   }

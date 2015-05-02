@@ -100,9 +100,15 @@ instep_shift = [0.0;stance.walking_params.drake_instep_shift;0];
 zmp1 = shift_step_inward(biped, stance, instep_shift);
 
 hold_time = params.drake_min_hold_time;
+
+support_options.use_support_surface = 1;
+v = quat2rotmat(stance.pos(4:7)) * [0;0;1];
+b = -v' * stance.pos(1:3);
+support_options.support_surface = {[v;b]};
+support_options.contact_groups =  {stance.walking_params.support_contact_groups};
 zmp_knots = struct('t', initial_hold_time + (hold_time / 2),...
  'zmp', zmp1, ...
- 'supp', RigidBodySupportState(biped, stance_body_index));
+ 'supp', RigidBodySupportState(biped, stance_body_index, support_options));
 
 swing1_frame_pose = tform2poseQuat(T_swing1_frame_to_world);
 swing2_frame_pose = tform2poseQuat(T_swing2_frame_to_world);
@@ -169,7 +175,16 @@ end
 
 zmp_knots(end+1).t = frame_knots(end).t;
 zmp_knots(end).zmp = zmp1;
-zmp_knots(end).supp = RigidBodySupportState(biped, [stance_body_index, swing_body_index]);
+
+support_options.use_support_surface = ones(2,1);
+v_stance = quat2rotmat(stance.pos(4:7)) * [0;0;1];
+b_stance = -v_stance' * stance.pos(1:3);
+v_swing = quat2rotmat(swing2.pos(4:7)) * [0;0;1];
+b_swing = -v_swing' * swing2.pos(1:3);
+support_options.support_surface = {[v_stance;b_stance], [v_swing;b_swing]};
+
+support_options.contact_groups = {stance.walking_params.support_contact_groups,swing2.walking_params.support_contact_groups};
+zmp_knots(end).supp = RigidBodySupportState(biped, [stance_body_index, swing_body_index], support_options);
 
 % Final knot
 frame_knots(end+1) = frame_knots(end);
@@ -205,9 +220,23 @@ function pos = shift_step_inward(biped, step, instep_shift)
   if step.frame_id == biped.foot_frame_id.left
     instep_shift = [1;-1;1].*instep_shift;
   end
-  pos_center = step.pos;
-  R = quat2rotmat(pos_center(4:7));
-  shift = R*instep_shift;
-  pos = pos_center(1:2) + shift(1:2);
-end
+  if step.frame_id == biped.foot_frame_id.right
+    foot = 'right';
+  elseif step.frame_id == biped.foot_frame_id.left
+    foot = 'left';
+  else
+    error('unknown frame ID: %d\n', step.frame_id);
+  end
+  T_sole_to_world = poseQuat2tform(step.pos);
+  T_sole_to_foot = biped.getFrame(step.frame_id).T;
 
+  T_foot_to_world = T_sole_to_world / T_sole_to_foot;
+
+  supp_pts = biped.getTerrainContactPoints(biped.foot_body_id.(foot), {step.walking_params.support_contact_groups});
+  supp_pts_in_world = T_foot_to_world * [supp_pts.pts; ones(1, size(supp_pts.pts, 2))];
+  pose_center = [mean(supp_pts_in_world(1:3,:), 2); step.pos(4:7)];
+
+  R = quat2rotmat(pose_center(4:7));
+  shift = R*instep_shift;
+  pos = pose_center(1:2) + shift(1:2);
+end

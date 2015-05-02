@@ -262,21 +262,25 @@ std::ostream& operator<<(std::ostream& os, const RigidBodyLoop& obj)
   return os;
 }
 
-RigidBodyManipulator::RigidBodyManipulator(int ndof, int num_featherstone_bodies, int num_rigid_body_objects, int num_rigid_body_frames)
-  :  collision_model(DrakeCollision::newModel())
+RigidBodyManipulator::RigidBodyManipulator(int ndof, int num_rigid_body_objects, int num_rigid_body_frames) :
+    collision_model(DrakeCollision::newModel())
 {
   use_new_kinsol = false;
-  num_positions=0; NB=0; num_bodies=0; num_frames=0;
-  a_grav << 0,0,0,0,0,-9.81;
-  resize(ndof,num_featherstone_bodies,num_rigid_body_objects,num_rigid_body_frames);
+  num_positions = 0;
+  num_bodies = 0;
+  num_frames = 0;
+  a_grav << 0, 0, 0, 0, 0, -9.81;
+  resize(ndof, num_rigid_body_objects, num_rigid_body_frames);
 }
 
 RigidBodyManipulator::RigidBodyManipulator(const std::string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type)
   :  collision_model(DrakeCollision::newModel())
 {
-  num_positions=0; NB=0; num_bodies=0; num_frames=0;
-  a_grav << 0,0,0,0,0,-9.81;
-  resize(num_positions,NB,1,num_frames);
+  num_positions = 0;
+  num_bodies = 0;
+  num_frames = 0;
+  a_grav << 0, 0, 0, 0, 0, -9.81;
+  resize(num_positions, 1, num_frames);
   bodies[0]->linkname = "world";
   bodies[0]->robotnum = 0;
   bodies[0]->body_index = 0;
@@ -285,12 +289,14 @@ RigidBodyManipulator::RigidBodyManipulator(const std::string &urdf_filename, con
   addRobotFromURDF(urdf_filename,floating_base_type);
 }
 
-RigidBodyManipulator::RigidBodyManipulator(void)
-  :  collision_model(DrakeCollision::newModel())
+RigidBodyManipulator::RigidBodyManipulator(void) :
+    collision_model(DrakeCollision::newModel())
 {
-  num_positions=0; NB=0; num_bodies=0; num_frames=0;
-  a_grav << 0,0,0,0,0,-9.81;
-  resize(num_positions,NB,1,num_frames);
+  num_positions = 0;
+  num_bodies = 0;
+  num_frames = 0;
+  a_grav << 0, 0, 0, 0, 0, -9.81;
+  resize(num_positions, 1, num_frames);
   bodies[0]->linkname = "world";
   bodies[0]->robotnum = 0;
   bodies[0]->body_index = 0;
@@ -303,49 +309,15 @@ RigidBodyManipulator::~RigidBodyManipulator(void)
 
 
 // Note:  this method is gross and should be scheduled for deletion upon switching to the new kinsol
-void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num_rigid_body_objects, int num_rigid_body_frames)
+void RigidBodyManipulator::resize(int ndof, int num_rigid_body_objects, int num_rigid_body_frames)
 {
-  int last_NB = NB, last_num_bodies = num_bodies;
+  int last_num_bodies = num_bodies;
 
   num_positions = ndof;
 
-  if (num_featherstone_bodies<0)
-    NB = ndof;
-  else
-    NB = num_featherstone_bodies;
-
-  pitch.conservativeResize(NB);
-  parent.conservativeResize(NB);
-  dofnum.conservativeResize(NB);
-  damping.conservativeResize(NB);
-  coulomb_friction.conservativeResize(NB);
-  static_friction.conservativeResize(NB);
-  coulomb_window.conservativeResize(NB);
-
-  // note: these are std:vectors (and the above are eigen vectors)
-  Xtree.resize(NB);
-  I.resize(NB);
-  S.resize(NB);
-  Xup.resize(NB);
-  v.resize(NB);
-  avp.resize(NB);
-  fvp.resize(NB);
-  IC.resize(NB);
-  for(int i=last_NB; i < NB; i++) {
-    Xtree[i] = MatrixXd::Zero(6,6);
-    I[i] = MatrixXd::Zero(6,6);
-    S[i] = VectorXd::Zero(6);
-    Xup[i] = MatrixXd::Zero(6,6);
-    v[i] = VectorXd::Zero(6);
-    avp[i] = VectorXd::Zero(6);
-    fvp[i] = VectorXd::Zero(6);
-    IC[i] = MatrixXd::Zero(6,6);
-  }
-
-  if (num_rigid_body_objects<0)
-    num_bodies = NB+1;  // this was my old assumption, so leave it here as the default behavior
-  else
-    num_bodies = num_rigid_body_objects;
+  if (num_rigid_body_objects < 0)
+    throw runtime_error("number of rigid body objects must be positive");
+  num_bodies = num_rigid_body_objects;
 
   I_world.resize(num_bodies);
   Ic_new.resize(num_bodies);
@@ -357,25 +329,10 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
   bodies.reserve(num_bodies);
   for (int i = last_num_bodies; i < num_bodies; i++) {
     bodies.push_back(std::shared_ptr<RigidBody>(new RigidBody()));
-//    bodies[i]->dofnum = i - 1;
-  } // setup default dofnums
-
-//  for (int i = 0; i < num_bodies; i++) {
-//    bodies[i]->setN(num_dof);
-//  }
+  }
 
   num_frames = num_rigid_body_frames;
   frames.resize(num_frames);
-
-  //Variable allocation for gradient calculations
-  dXupdq.resize(NB);
-  dIC.resize(NB);
-  for(int i=0; i < NB; i++) {
-    dIC[i].resize(NB);
-    for(int j=0; j < NB; j++) {
-      dIC[i][j] = MatrixXd::Zero(6,6);
-    }
-  }
 
   dI_world.resize(num_bodies);
   dIc_new.resize(num_bodies);
@@ -384,54 +341,11 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
     dIc_new[i] = MatrixXd::Zero(Ic_new[i].size(), num_positions);
   }
 
-  // don't need to resize dcross (it gets resized in dcrm)
-
-  dvdq.resize(NB);
-  dvdqd.resize(NB);
-  davpdq.resize(NB);
-  davpdqd.resize(NB);
-  dfvpdq.resize(NB);
-  dfvpdqd.resize(NB);
-
-  dvJdqd_mat = MatrixXd::Zero(6,num_positions);
-  for(int i=0; i < NB; i++) {
-    dvdq[i] = MatrixXd::Zero(6,num_positions);
-    dvdqd[i] = MatrixXd::Zero(6,num_positions);
-    davpdq[i] = MatrixXd::Zero(6,num_positions);
-    davpdqd[i] = MatrixXd::Zero(6,num_positions);
-    dfvpdq[i] = MatrixXd::Zero(6,num_positions);
-    dfvpdqd[i] = MatrixXd::Zero(6,num_positions);
-  }
-
   // preallocate for COM functions
   bc = Vector3d::Zero();
   bJ = MatrixXd::Zero(3,num_positions);
   bdJ = MatrixXd::Zero(3,num_positions*num_positions);
   dTdTmult = MatrixXd::Zero(3*num_positions,4);
-
-  // preallocate for CMM function
-  Ic.resize(NB); // composite rigid body inertias
-  dIc.resize(NB); // derivative of composite rigid body inertias
-  phi.resize(NB); // joint axis vectors
-  Xworld.resize(NB); // spatial transforms from world to each body
-  dXworld.resize(NB); // dXworld_dq * qd
-  dXup.resize(NB); // dXup_dq * qd
-  for(int i=0; i < NB; i++) {
-    Ic[i] = MatrixXd::Zero(6,6);
-    dIc[i] = MatrixXd::Zero(6,6);
-    phi[i] = VectorXd::Zero(6);
-    Xworld[i] = MatrixXd::Zero(6,6);
-    dXworld[i] = MatrixXd::Zero(6,6);
-    dXup[i] = MatrixXd::Zero(6,6);
-  }
-
-  Xg = MatrixXd::Zero(6,6); // spatial centroidal projection matrix for a single body
-  dXg = MatrixXd::Zero(6,6);  // dXg_dq * qd
-  Xcom = MatrixXd::Zero(6,6); // spatial transform from centroid to world
-  Jcom = MatrixXd::Zero(3,num_positions);
-  dXcom = MatrixXd::Zero(6,6);
-  Xi = MatrixXd::Zero(6,6);
-  dXidq = MatrixXd::Zero(6,6);
 
   initialized = false;
   kinematicsInit = false;
@@ -447,18 +361,14 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
 
 void RigidBodyManipulator::compile(void)
 {
-  /* todo:
-   - set joint limits (from drakejoint to rbm)
-   */
-
   // reorder body list to make sure that parents before children in the list
 	size_t i=0;
-  while (i<bodies.size()) {
+  while (i<bodies.size()-1) {
     if (bodies[i]->hasParent()) {
       auto iter = find(bodies.begin()+i+1,bodies.end(),bodies[i]->parent);
       if (iter!=bodies.end()) {
+	bodies.erase(iter);
       	bodies.insert(bodies.begin()+i,bodies[i]->parent);
-      	bodies.erase(iter+1);
       	i--;
       }
     }
@@ -500,14 +410,9 @@ void RigidBodyManipulator::compile(void)
     }
   }
 
-  int featherstone_body_index = 0;
   for (int i=0; i<num_bodies; i++) {
     bodies[i]->body_index = i;
     bodies[i]->setN(_num_positions, num_velocities);
-    if (bodies[i]->hasParent()) {
-      bodies_vector_index_to_featherstone_body_index[i] = featherstone_body_index + bodies[i]->getJoint().getNumPositions() - 1;
-      featherstone_body_index += bodies[i]->getJoint().getNumPositions();
-    }
   }
 
   B.resize(num_velocities,actuators.size());
@@ -516,7 +421,7 @@ void RigidBodyManipulator::compile(void)
     for (int i=0; i<actuators[ia].body->getJoint().getNumVelocities(); i++)
       B(actuators[ia].body->velocity_num_start+i,ia) = actuators[ia].reduction;
 
-  resize(_num_positions, NB, num_bodies, num_frames); // TODO: change _num_positions to num_positions above after removing this
+  resize(_num_positions, num_bodies, num_frames); // TODO: change _num_positions to num_positions above after removing this
 
   joint_limit_min = VectorXd::Constant(num_positions,-std::numeric_limits<double>::infinity());
   joint_limit_max = VectorXd::Constant(num_positions,std::numeric_limits<double>::infinity());
@@ -586,6 +491,20 @@ string RigidBodyManipulator::getStateName(int state_num) const
 		return getPositionName(state_num);
 	else
 		return getVelocityName(state_num);
+}
+
+map<string, int> RigidBodyManipulator::computePositionNameToIndexMap() const
+{
+  const RigidBodyManipulator* const model = this;
+
+  const std::shared_ptr<RigidBody> worldBody = model->bodies[0];
+
+  map<string, int> name_to_index_map;
+
+  for (int i = 0; i < this->num_positions; ++i) {
+      name_to_index_map[getPositionName(i)] = i;
+  }
+  return name_to_index_map;
 }
 
 DrakeCollision::ElementId RigidBodyManipulator::addCollisionElement(const RigidBody::CollisionElement& element, const shared_ptr<RigidBody>& body, string group_name)
@@ -802,6 +721,13 @@ void RigidBodyManipulator::potentialCollisions(VectorXd& phi,
     bodyA_idx.push_back(elementA->getBody()->body_index);
     bodyB_idx.push_back(elementB->getBody()->body_index);
   }
+}
+
+vector<size_t> RigidBodyManipulator::collidingPoints(
+    const vector<Vector3d>& points, 
+    double collision_threshold)
+{
+  return collision_model->collidingPoints(points, collision_threshold);
 }
 
 bool RigidBodyManipulator::allCollisions(vector<int>& bodyA_idx,
@@ -2601,7 +2527,7 @@ GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::massMa
  * additionally calling doKinematics with a zero joint velocity vector.
  * To compute only the Coriolis term, pass in nullptr for vd and set gravity to zero.
  *
- * Note that f_ext is currently expressed in Featherstone 'joint' frame. This is soon to be changed to body frame.
+ * Note that the wrenches in f_ext are expressed in body frame.
  */
 template <typename Scalar>
 GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(
@@ -2685,19 +2611,16 @@ GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(
       }
 
       if (f_ext[i] != nullptr) {
-        Isometry3d T_joint_to_body = Isometry3d(body.T_body_to_joint).inverse();
-        Isometry3d T_joint_to_world = body.T_new * T_joint_to_body; // external wrenches are expressed in 'joint' frame.
-        net_wrenches.value().col(i) -= transformSpatialForce(T_joint_to_world, f_ext[i]->value());
+        net_wrenches.value().col(i) -= transformSpatialForce(body.T_new, f_ext[i]->value());
 
         if (gradient_order > 0) {
-          auto dT_joint_to_worlddq = matGradMult(body.dTdq_new, T_joint_to_body.matrix());
           auto net_wrenches_q_gradient_block = net_wrenches.gradient().value().template block<TWIST_SIZE, Eigen::Dynamic>(TWIST_SIZE * i, 0, TWIST_SIZE, nq);
           auto df_extdq = f_ext[i]->gradient().value().middleCols(0, nq);
-          net_wrenches_q_gradient_block -= dTransformSpatialForce(T_joint_to_world, f_ext[i]->value(), dT_joint_to_worlddq, df_extdq);
+          net_wrenches_q_gradient_block -= dTransformSpatialForce(body.T_new, f_ext[i]->value(), body.dTdq_new, df_extdq);
 
           auto net_wrenches_v_gradient_block = net_wrenches.gradient().value().template block<TWIST_SIZE, Eigen::Dynamic>(TWIST_SIZE * i, nq, TWIST_SIZE, nv);
           auto df_extdv = f_ext[i]->gradient().value().middleCols(nq, nv);
-          net_wrenches_v_gradient_block -= transformSpatialForce(T_joint_to_world, df_extdv);
+          net_wrenches_v_gradient_block -= transformSpatialForce(body.T_new, df_extdv);
         }
       }
     }
@@ -3229,6 +3152,8 @@ GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::positionConstraints
 template <typename DerivedA, typename DerivedB, typename DerivedC>
 void RigidBodyManipulator::jointLimitConstraints(MatrixBase<DerivedA> const & q, MatrixBase<DerivedB> &phi, MatrixBase<DerivedC> &J) const
 {
+  // FIXME: iterate of fixedAxisOneDoFJoints
+
   std::vector<int> finite_min_index;
   std::vector<int> finite_max_index;
 

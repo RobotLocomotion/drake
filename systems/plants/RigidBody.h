@@ -46,7 +46,7 @@ public:
 
   const DrakeShapes::VectorOfVisualElements& getVisualElements() const;
 
-  virtual void setCollisionFilter(const DrakeCollision::bitmask& group, 
+  void setCollisionFilter(const DrakeCollision::bitmask& group,
                                   const DrakeCollision::bitmask& ignores);
 
   const DrakeCollision::bitmask& getCollisionFilterGroup() const { return collision_filter_group; };

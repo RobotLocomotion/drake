@@ -1,5 +1,5 @@
-function runAtlasWalkingStairs()
-% Climb a set of stairs modeled after the DRC finals task
+function runAtlasWalkingNarrowStairs()
+% Climb a set of stairs which are intentionally shorter than the robot's feet. This forces the controller to explicitly plan for and control only partial foot contact. 
 
 checkDependency('iris');
 checkDependency('lcmgl');
@@ -22,12 +22,14 @@ warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits')
 
 % construct robot model
 r = Atlas(fullfile(getDrakePath,'examples','Atlas','urdf','atlas_minimal_contact.urdf'),robot_options);
-r = r.removeCollisionGroupsExcept({'heel','toe'});
+r = r.removeCollisionGroupsExcept({'heel','toe','midfoot_front', 'midfoot_rear'});
 r = compile(r);
 
 % set initial state to fixed point
 load(fullfile(getDrakePath,'examples','Atlas','data','atlas_fp.mat'));
 
+% Move the robot's arms out in front to bring the CoM forward
+xstar(6) = pi/2;
 xstar(r.findPositionIndices('r_arm_shz')) = 1.3;
 xstar(r.findPositionIndices('r_arm_shx')) = 0;
 xstar(r.findPositionIndices('r_arm_elx')) = -0.5;
@@ -42,36 +44,44 @@ r = r.setInitialState(xstar);
 x0 = xstar;
 nq = r.getNumPositions();
 
-box_size = [0.28, 39*0.0254, 0.22];
+% Generate boxes and IRIS safe terrain regions
+l = 0.26;
+box_size = [39*0.0254, l, 0.22];
 
-box_tops = [0.2, 0, 0;
-            0.2+0.28, 0, 0.22;
-            0.2+2*0.28, 0, 0.22*2;
-            0.2+3*0.28, 0, 0.22*3;
-            0.2+4*0.28, 0, 0.22*4]';
+box_tops = [0, 0.2, 0;
+            0, 0.2+l, 0.22;
+            0, 0.2+2*l, 0.22*2;
+            0, 0.2+3*l, 0.22*3;
+            0, 0.2+4*l, 0.22*4]';
 
 safe_regions = iris.TerrainRegion.empty();
 
 for j = 1:size(box_tops, 2)
   b = RigidBodyBox(box_size, box_tops(:,j) + [0;0;-box_size(3)/2], [0;0;0]);
   r = r.addGeometryToBody('world', b);
-  [A, b] = poly2lincon(box_tops(1,j) + [-0.01, 0, 0, -0.01],...
-                       box_tops(2,j) + [-0.25, -0.25, 0.25, 0.25]);
+  [A, b] = poly2lincon(box_tops(1,j) + [-0.25, -0.25, 0.25, 0.25],...
+                       box_tops(2,j) + [-0.065, -0.06, -0.06, -0.065]);
   [A, b] = convertToCspace(A, b);
   safe_regions(end+1) = iris.TerrainRegion(A, b, [], [], box_tops(1:3,j), [0;0;1]);
 end
 r = r.compile();
-height_map = RigidBodyHeightMapTerrain.constructHeightMapFromRaycast(r,x0(1:nq),-1:.015:3,-1:.015:1,10);
+x0_scan = x0;
+x0_scan(1) = x0_scan(1) - 10; % move the robot away so we don't scan it into the terrain
+height_map = RigidBodyHeightMapTerrain.constructHeightMapFromRaycast(r,x0_scan(1:nq),-1:.015:1,-1:.015:1.5,10);
 r = r.setTerrain(height_map).compile();
+
+% Only use the front half of the foot for support
+r.default_walking_params.support_contact_groups = {'toe', 'midfoot_rear'};
 
 v = r.constructVisualizer();
 v.display_dt = 0.01;
 
-footstep_plan = r.planFootsteps(x0(1:nq), struct('right',[1.65;-0.13;0;0;0;0],...
-                                                 'left', [1.65;0.13;0;0;0;0]),...
+% Plan footsteps
+footstep_plan = r.planFootsteps(x0(1:nq), struct('right',[0.13;1.25;0;0;0;0],...
+                                                 'left', [-0.13;1.25;0;0;0;0]),...
                                 safe_regions,...
                                 struct('step_params', struct('max_forward_step', 0.4,...
-                                                             'nom_forward_step', 0.05,...
+                                                             'nom_forward_step', 0.025,...
                                                              'max_num_steps', 10)));
 lcmgl = LCMGLClient('footsteps');
 footstep_plan.draw_lcmgl(lcmgl);
@@ -85,7 +95,10 @@ for j = 3:length(footstep_plan.footsteps)
   footstep_plan.footsteps(j).terrain_pts = sampleSwingTerrain(r, footstep_plan.footsteps(j-2), footstep_plan.footsteps(j), contact_width/2, struct());
 end
 
+lcmgl = LCMGLClient('walking plan');
 walking_plan = r.planWalkingZMP(x0(1:nq), footstep_plan);
+walking_plan.draw_lcmgl(lcmgl);
+lcmgl.switchBuffers();
 
 [ytraj, com, rms_com] = atlasUtil.simulateWalking(r, walking_plan);
 
@@ -102,7 +115,7 @@ function [A, b] = convertToCspace(A, b)
        zeros(2, size(A, 2) + 1)];
   A(end-1,3) = 1;
   A(end,3) = -1;
-  b = [b; 0; 0];
+  b = [b; pi/2; -pi/2];
 end
 
 % TIMEOUT 1500

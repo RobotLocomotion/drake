@@ -9,10 +9,6 @@ function root = getDrakePath()
 persistent myroot;
 
 if (isempty(myroot))
-  known_file = which('LinearSystem');
-  if isempty(known_file)
-    error('Can''t find drake root.  Did you call addpath_drake?');
-  end
-  myroot = fileparts(fileparts(known_file));
+  myroot = fileparts(fileparts(which('getDrakePath')));
 end
 root = myroot;

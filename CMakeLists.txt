@@ -56,6 +56,12 @@ endif()
 include(cmake/mex.cmake)
 mex_setup()
 
+# frustratingly, this didn't seem to work, so instead I've added a -C argument to both the Makefile and the drake-admin/runUnitTests scripts
+#if (NOT CTEST_CONFIGURATION_TYPE)
+#   set(CTEST_CONFIGURATION_TYPE ${CMAKE_BUILD_TYPE})
+#   message("Setting CTEST Configuration Type to ${CTEST_CONFIGURATION_TYPE}")
+#endif()
+
 enable_testing()
 include(CTest)
 
@@ -177,5 +183,5 @@ endif()
 add_test(NAME "RigidBodyManipulatorMemoryTest"
 	WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/examples/Acrobot"
 	COMMAND "matlab" #"${CMAKE_SOURCE_DIR}/cmake/matlab_clean.pl"
-	"-nosplash" "-nodisplay" "-r" "addpath('${CMAKE_INSTALL_PREFIX}/matlab'); addpath_${POD_NAME}; try, r = RigidBodyManipulator('Acrobot.urdf'); megaclear; catch ex, disp(getReport(ex,'extended')); disp(''); force_close_system; exit(1); end; force_close_system; exit(0)")
-set_tests_properties(RigidBodyManipulatorMemoryTest PROPERTIES TIMEOUT 60)
+	"-nosplash" "-nodisplay" "-wait" "-r" "addpath('${CMAKE_INSTALL_PREFIX}/matlab'); addpath_${POD_NAME}; try, r = RigidBodyManipulator('Acrobot.urdf'); megaclear; catch ex, disp(getReport(ex,'extended')); disp(''); force_close_system; exit(1); end; force_close_system; exit(0)")
+set_tests_properties(RigidBodyManipulatorMemoryTest PROPERTIES TIMEOUT 300)

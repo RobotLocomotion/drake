@@ -19,7 +19,6 @@ if (MATLAB_FOUND)
 
   pods_find_pkg_config(terrain-map)
 
-
   add_mex(drakeControlUtil SHARED controlUtil.cpp)
   if (terrain-map_FOUND)
     pods_use_pkg_config_packages(drakeControlUtil terrain-map)

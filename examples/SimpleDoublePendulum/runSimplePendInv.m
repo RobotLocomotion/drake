@@ -1,4 +1,4 @@
-function runDPSimplePend
+function runSimplePendInv
 % Simulate the passive acrobot
 
 d = DoublePendPlant;
