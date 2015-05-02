@@ -579,15 +579,11 @@ classdef QPLocomotionPlan < QPControllerPlanMatlabImplementation
         end
       end
 
-      obj.gain_set = 'manip';
+      obj.gain_set_ = 'manip';
       if(options.track_com_traj)
         obj = obj.setCOMTraj();
         obj = obj.setLQR_for_COM();
       end
-      
-      obj.gain_set_ = 'manip';
-      obj = obj.setCOMTraj();
-      obj = obj.setLQR_for_COM();
     end
   end
   
