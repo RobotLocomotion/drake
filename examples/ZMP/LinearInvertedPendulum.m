@@ -321,15 +321,7 @@ classdef LinearInvertedPendulum < LinearSystem
           b(1:2,j,1) = b(1:2,j,1)+zmp_tf;  % back in world coordinates
         end
         
-        if options.build_control_objects
-          comtraj = ExpPlusPPTrajectory(breaks,[eye(2),zeros(2,6)],Ay,[a;alpha],b(1:2,:,:));
-        else
-          comtraj = struct('breaks', breaks,...
-                           'K', [eye(2),zeros(2,6)],...
-                           'A', Ay,...
-                           'alpha', [a;alpha],...
-                           'gamma', b(1:2,:,:));
-        end
+        comtraj = ExpPlusPPTrajectory(breaks,[eye(2),zeros(2,6)],Ay,[a;alpha],b(1:2,:,:));
       end
       
       function s2dot = s2dynamics(t,s2)

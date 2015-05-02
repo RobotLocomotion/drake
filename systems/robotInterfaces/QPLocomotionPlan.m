@@ -1,5 +1,5 @@
 classdef QPLocomotionPlan < QPControllerPlanMatlabImplementation
-  properties(GetAccess=private, SetAccess=private)
+  properties(GetAccess=protected, SetAccess=protected)
     robot;
     support_times
     supports;
@@ -33,14 +33,8 @@ classdef QPLocomotionPlan < QPControllerPlanMatlabImplementation
     KNEE_KP = 40;
     KNEE_KD = 4;
     KNEE_WEIGHT = 1;
-    
-    % turn into enum:
-    PLAN_SHIFT_NONE = 0;
-    PLAN_SHIFT_XYZ = 1;
-    PLAN_SHIFT_Z_ONLY = 2;
-    PLAN_SHIFT_Z_AND_ZMP = 3;
   end
-  
+
   methods
     function obj = QPLocomotionPlan(robot)
       obj.robot = robot;
@@ -338,8 +332,9 @@ classdef QPLocomotionPlan < QPControllerPlanMatlabImplementation
         end
         if body_id == loading_foot;
           foot_actual = obj.robot.forwardKin(kinsol, qp_input.body_motion_data(j).body_id, [0;0;0], 0);
-          foot_des = evalCubicSplineSegment(t_global - qp_input.body_motion_data(j).ts(1), qp_input.body_motion_data(j).coefs);
-          obj.plan_shift(1:3) = foot_des(1:3) - foot_actual(1:3);
+          % apply plan shift based on nearest-in-time coefs
+          foot_des = evalCubicSplineSegment(t_global - qp_input.body_motion_data(j).ts(1), qp_input.body_motion_data(j).coefs(:, 1, :));
+          obj.plan_shift(1:3, :) = foot_des(1:3) - foot_actual(1:3);
           break
         end
       end
@@ -351,7 +346,7 @@ classdef QPLocomotionPlan < QPControllerPlanMatlabImplementation
 
       inds = obj.plan_shift_body_motion_inds;
       for j = 1:length(qp_input.body_motion_data)
-        qp_input.body_motion_data(j).coefs(inds,:,end) = qp_input.body_motion_data(j).coefs(inds,:,end) - obj.plan_shift(inds);
+        qp_input.body_motion_data(j).coefs(inds,:,end) = qp_input.body_motion_data(j).coefs(inds,:,end) - repmat(obj.plan_shift(inds), [1, size(qp_input.body_motion_data(j).coefs, 2)]);
       end
       qp_input.whole_body_data.q_des(inds) = qp_input.whole_body_data.q_des(inds) - obj.plan_shift(inds);
     end
@@ -584,15 +579,11 @@ classdef QPLocomotionPlan < QPControllerPlanMatlabImplementation
         end
       end
 
-      obj.gain_set = 'manip';
+      obj.gain_set_ = 'manip';
       if(options.track_com_traj)
         obj = obj.setCOMTraj();
         obj = obj.setLQR_for_COM();
       end
-      
-      obj.gain_set_ = 'manip';
-      obj = obj.setCOMTraj();
-      obj = obj.setLQR_for_COM();
     end
   end
   
