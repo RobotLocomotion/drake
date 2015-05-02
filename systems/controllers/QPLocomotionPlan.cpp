@@ -263,8 +263,24 @@ void QPLocomotionPlan::publishQPControllerInput(
 
   qp_input.param_set_name = settings.gain_set;
 
-  last_qp_input = qp_input;
+  for (auto it = settings.untracked_position_indices.begin(); it != settings.untracked_position_indices.end(); ++it) {
+    drake::lcmt_joint_pd_override joint_pd_override_for_support;
+    joint_pd_override_for_support.position_ind = *it;
+    joint_pd_override_for_support.qi_des = q[*it];
+    joint_pd_override_for_support.qdi_des = v[*it];
+    joint_pd_override_for_support.kp = 0.0;
+    joint_pd_override_for_support.kd = 0.0;
+    joint_pd_override_for_support.weight = 0.0;
+    qp_input.joint_pd_override.push_back(joint_pd_override_for_support);
+    qp_input.num_joint_pd_overrides++;
 
+    qp_input.whole_body_data.q_des[*it] = q[*it];
+    auto constrained_dofs_it = std::find(qp_input.whole_body_data.constrained_dofs.begin(), qp_input.whole_body_data.constrained_dofs.end(), *it);
+    if (constrained_dofs_it != qp_input.whole_body_data.constrained_dofs.end())
+      qp_input.whole_body_data.constrained_dofs.erase(constrained_dofs_it);
+  }
+
+  last_qp_input = qp_input;
   verifySubtypeSizes(qp_input);
   lcm.publish(lcm_channel, &qp_input);
 }
