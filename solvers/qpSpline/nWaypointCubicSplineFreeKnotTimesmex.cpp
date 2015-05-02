@@ -63,7 +63,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
     double objective_value = 0.0;
     for (int dof = 0; dof < ndof && valid_solution; dof++) {
       try {
-        PiecewisePolynomial<double> spline = nWaypointCubicSpline(segment_times, xs(dof, 0), xd0[dof], xs(dof, num_segments), xdf[dof], xi.row(dof));
+        PiecewisePolynomial<double> spline = nWaypointCubicSpline(segment_times, xs(dof, 0), xd0[dof], xs(dof, num_segments), xdf[dof], xi.row(dof).transpose());
         PiecewisePolynomial<double> acceleration_squared = spline.derivative(2);
         acceleration_squared *= acceleration_squared;
         PiecewisePolynomial<double> acceleration_squared_integral = acceleration_squared.integral();
@@ -95,7 +95,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
   }
 
   for (mwSize dof = 0; dof < ndof; dof++) {
-    PiecewisePolynomial<double> spline = nWaypointCubicSpline(best_segment_times, xs(dof, 0), xd0[dof], xs(dof, num_segments), xdf[dof], xi.row(dof));
+    PiecewisePolynomial<double> spline = nWaypointCubicSpline(best_segment_times, xs(dof, 0), xd0[dof], xs(dof, num_segments), xdf[dof], xi.row(dof).transpose());
     for (mwSize segment_index = 0; segment_index < spline.getNumberOfSegments(); segment_index++) {
       for (mwSize coefficient_index = 0; coefficient_index < num_coeffs_per_segment; coefficient_index++) {
         mwSize sub[] = {dof, segment_index, num_coeffs_per_segment - coefficient_index - 1}; // Matlab's reverse coefficient indexing...
