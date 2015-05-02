@@ -35,5 +35,9 @@ classdef QPControllerPlanMatlabImplementation < QPControllerPlan
     function ret = gain_set(obj)
       ret = obj.gain_set_;
     end
+
+    function obj = setStartTime(obj, t)
+      obj.start_time_ = t;
+    end
   end
 end

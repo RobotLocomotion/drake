@@ -24,10 +24,10 @@ assert(all(size(xd0) == [6,1]));
 assert(all(size(xdf) == [6,1]));
 
 if settings.optimize_knot_times
-  [coefs, ts, objval] = twoWaypointCubicSplineFreeKnotTimesmex(ts(1), ts(end), xs, xd0, xdf);
+  [coefs, ts, objval] = nWaypointCubicSplineFreeKnotTimesmex(ts(1), ts(end), xs, xd0, xdf);
 else
   if settings.use_mex
-    [coefs, objval] = twoWaypointCubicSplinemex(ts, xs, xd0, xdf);
+    [coefs, objval] = nWaypointCubicSplinemex(ts, xs, xd0, xdf);
   else
     objval = 0;
     for j = 1:6
