@@ -9,6 +9,7 @@
 #include "drakeUtil.h"
 #include "lcmUtil.h"
 #include <string>
+#include <iostream>
 
 // TODO: untracked_joint_inds
 // TODO: updateSwingTrajectory: undo plan shift?
@@ -35,6 +36,11 @@ QPLocomotionPlan::QPLocomotionPlan(RigidBodyManipulator& robot, const QPLocomoti
 
   for (auto it = Side::values.begin(); it != Side::values.end(); ++it) {
     toe_off_active[*it] = false;
+  }
+
+  if (!lcm.good())
+  {
+    cerr << "ERROR: lcm is not good()" << endl;
   }
 }
 
@@ -101,8 +107,12 @@ void QPLocomotionPlan::publishQPControllerInput(
 
   // whole body data
   auto q_des = settings.q_traj.value(t_plan);
+
+  qp_input.whole_body_data.timestamp = 0;
+  qp_input.whole_body_data.num_positions = robot.num_positions;
   eigenVectorToStdVector(q_des, qp_input.whole_body_data.q_des);
   qp_input.whole_body_data.constrained_dofs = settings.constrained_position_indices;
+  qp_input.whole_body_data.num_constrained_dofs = qp_input.whole_body_data.constrained_dofs.size();
 
   // zmp data: x0, y0
   if (settings.is_quasistatic) {
@@ -276,8 +286,10 @@ void QPLocomotionPlan::publishQPControllerInput(
 
     qp_input.whole_body_data.q_des[*it] = q[*it];
     auto constrained_dofs_it = std::find(qp_input.whole_body_data.constrained_dofs.begin(), qp_input.whole_body_data.constrained_dofs.end(), *it);
-    if (constrained_dofs_it != qp_input.whole_body_data.constrained_dofs.end())
+    if (constrained_dofs_it != qp_input.whole_body_data.constrained_dofs.end()) {
       qp_input.whole_body_data.constrained_dofs.erase(constrained_dofs_it);
+      qp_input.whole_body_data.num_constrained_dofs = qp_input.whole_body_data.constrained_dofs.size();
+    }
   }
 
   last_qp_input = qp_input;
