@@ -45,7 +45,8 @@ struct RigidBodySupportStateElement {
   // TODO: consolidate with SupportStateElement?
   int body; // TODO: should probably be a RigidBody smart pointer
   Eigen::Matrix3Xd contact_points;
-  int contact_surface; // TODO: should probably be a different type
+  bool use_contact_surface;
+  Eigen::Vector4d support_surface; // TODO: should probably be a different type
 };
 
 typedef std::vector<RigidBodySupportStateElement> RigidBodySupportState;
@@ -65,7 +66,6 @@ struct KneeSettings {
 struct QPLocomotionPlanSettings {
   double duration;
   std::vector<RigidBodySupportState> supports;
-  Eigen::VectorXd x0;
   std::vector<double> support_times; // length: supports.size() + 1
   typedef std::map<std::string, Eigen::Matrix3Xd> ContactNameToContactPointsMap;
   std::vector<ContactNameToContactPointsMap> contact_groups; // one for each RigidBody

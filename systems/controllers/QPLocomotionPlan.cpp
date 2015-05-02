@@ -10,7 +10,6 @@
 #include "lcmUtil.h"
 #include <string>
 
-// TODO: use_contact_surface / support_surface
 // TODO: untracked_joint_inds
 // TODO: updateSwingTrajectory: undo plan shift?
 // TODO: discuss possibility of chatter in knee control
@@ -255,8 +254,9 @@ void QPLocomotionPlan::publishQPControllerInput(
     for (int i = 0; i < planned_support_command.size(); i++)
       support_data_element_lcm.support_logic_map[i] = planned_support_command[i];
     support_data_element_lcm.mu = settings.mu;
-    // FIXME: contact surface stuff
-//    support_data_element_lcm.contact_surfaces = it->contact_surface;
+    support_data_element_lcm.use_support_surface = it->use_contact_surface;
+    Vector4f support_surface_float = it->support_surface.cast<float>();
+    memcpy(support_data_element_lcm.support_surface, support_surface_float.data(), sizeof(float) * 4);
     qp_input.support_data.push_back(support_data_element_lcm);
     qp_input.num_support_data++;
   }

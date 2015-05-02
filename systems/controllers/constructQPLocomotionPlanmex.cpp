@@ -131,7 +131,8 @@ std::vector<RigidBodySupportState> setUpSupports(const mxArray* mex_supports)
       RigidBodySupportStateElement support_state_element;
       support_state_element.body = body_ids[i] - 1; // base 1 to base zero
       support_state_element.contact_points = matlabToEigenMap<3, Dynamic>(mxGetCell(mxGetPropertySafe(mex_supports, support_num, "contact_pts"), i));
-      support_state_element.contact_surface = static_cast<int>(mxGetPr(mxGetPropertySafe(mex_supports, support_num, "contact_surfaces"))[i]);
+      support_state_element.use_contact_surface = mxGetLogicals(mxGetPropertySafe(mex_supports, support_num, "use_support_surface"))[i];
+      support_state_element.support_surface = matlabToEigenMap<4, 1>(mxGetCell(mxGetPropertySafe(mex_supports, support_num, "support_surface"), i));
       support_state.push_back(support_state_element);
     }
     ret.push_back(support_state);
@@ -218,7 +219,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   // settings
   QPLocomotionPlanSettings settings;
   settings.duration = mxGetScalar(mxGetPropertySafe(mex_settings, "duration"));
-  settings.x0 = matlabToEigenMap<Dynamic, 1>(mxGetPropertySafe(mex_settings, "x0"));
   settings.supports = setUpSupports(mxGetPropertySafe(mex_settings, "supports"));
   settings.support_times = matlabToStdVector<double>(mxGetPropertySafe(mex_settings, "support_times"));
   settings.contact_groups = setUpContactGroups(robot, mxGetPropertySafe(mex_settings, "contact_groups"));

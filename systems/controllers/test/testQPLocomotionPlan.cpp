@@ -18,7 +18,7 @@ int main(int argc, char **argv) {
   RigidBodySupportStateElement support_state_element;
   support_state_element.body = robot.findLinkId("r_foot");
   support_state_element.contact_points = Matrix3Xd::Random(3, 4);
-  support_state_element.contact_surface = 0;
+
   support_state.push_back(support_state_element);
   QPLocomotionPlanSettings::ContactNameToContactPointsMap contact_group;
   contact_group["toe"] = Matrix3Xd::Random(3, 2);
