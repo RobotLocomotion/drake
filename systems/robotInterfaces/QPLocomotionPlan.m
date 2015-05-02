@@ -1,5 +1,5 @@
 classdef QPLocomotionPlan < QPControllerPlanMatlabImplementation
-  properties(GetAccess=private, SetAccess=private)
+  properties(GetAccess=protected, SetAccess=protected)
     robot;
     support_times
     supports;
