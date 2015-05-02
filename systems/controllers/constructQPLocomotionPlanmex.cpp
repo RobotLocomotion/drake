@@ -156,7 +156,7 @@ std::vector<QPLocomotionPlanSettings::ContactNameToContactPointsMap> setUpContac
   return contact_groups;
 }
 
-std::vector<BodyMotionData> setupBodyMotions(const mxArray* mex_body_motions)
+std::vector<BodyMotionData> setUpBodyMotions(const mxArray* mex_body_motions)
 {
   vector<BodyMotionData> ret;
   int num_body_motions = mxGetNumberOfElements(mex_body_motions);
@@ -178,6 +178,30 @@ std::vector<BodyMotionData> setupBodyMotions(const mxArray* mex_body_motions)
     body_motion_data.weight_multiplier = matlabToEigenMap<6, 1>(mxGetPropertySafe(mex_body_motions, i, "weight_multiplier"));
     ret.push_back(body_motion_data);
   }
+  return ret;
+}
+
+TVLQRData setUpZMPData(const mxArray* mex_zmp_data)
+{
+  const int NUM_STATES = 4;
+  const int NUM_INPUTS = 2;
+  const int NUM_OUTPUTS = 2;
+
+  TVLQRData ret;
+  ret.A = matlabToEigenMap<NUM_STATES, NUM_STATES>(mxGetFieldSafe(mex_zmp_data, "A"));
+  ret.B = matlabToEigenMap<NUM_STATES, NUM_INPUTS>(mxGetFieldSafe(mex_zmp_data, "B"));
+  ret.C = matlabToEigenMap<NUM_OUTPUTS, NUM_STATES>(mxGetFieldSafe(mex_zmp_data, "C"));
+  ret.D = matlabToEigenMap<NUM_OUTPUTS, NUM_INPUTS>(mxGetFieldSafe(mex_zmp_data, "D"));
+  ret.x0 = matlabToEigenMap<NUM_STATES, 1>(mxGetFieldSafe(mex_zmp_data, "x0"));
+  ret.y0 = matlabToEigenMap<NUM_OUTPUTS, 1>(mxGetFieldSafe(mex_zmp_data, "y0"));
+  ret.u0 = matlabToEigenMap<NUM_INPUTS, 1>(mxGetFieldSafe(mex_zmp_data, "u0"));
+  ret.R = matlabToEigenMap<NUM_INPUTS, NUM_INPUTS>(mxGetFieldSafe(mex_zmp_data, "R"));
+  ret.Qy = matlabToEigenMap<NUM_OUTPUTS, NUM_OUTPUTS>(mxGetFieldSafe(mex_zmp_data, "Qy"));
+  ret.S = matlabToEigenMap<NUM_STATES, NUM_STATES>(mxGetFieldSafe(mex_zmp_data, "S"));
+  ret.s1 = matlabToEigenMap<NUM_STATES, 1>(mxGetFieldSafe(mex_zmp_data, "s1"));
+  ret.s1dot = matlabToEigenMap<NUM_STATES, 1>(mxGetFieldSafe(mex_zmp_data, "s1dot"));
+  ret.s2 = mxGetScalar(mxGetFieldSafe(mex_zmp_data, "s2"));
+  ret.s2dot = mxGetScalar(mxGetFieldSafe(mex_zmp_data, "s2dot"));
   return ret;
 }
 
@@ -222,9 +246,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   settings.supports = setUpSupports(mxGetPropertySafe(mex_settings, "supports"));
   settings.support_times = matlabToStdVector<double>(mxGetPropertySafe(mex_settings, "support_times"));
   settings.contact_groups = setUpContactGroups(robot, mxGetPropertySafe(mex_settings, "contact_groups"));
-  settings.body_motions = setupBodyMotions(mxGetPropertySafe(mex_settings, "body_motions"));
+  settings.body_motions = setUpBodyMotions(mxGetPropertySafe(mex_settings, "body_motions"));
   settings.zmp_trajectory = matlabPPTrajectoryOrMatrixToPiecewisePolynomial(mxGetPropertySafe(mex_settings, "zmptraj"));
   settings.zmp_final = matlabToEigen<2, 1>(mxGetPropertySafe(mex_settings, "zmp_final"));
+  settings.zmp_data = setUpZMPData(mxGetPropertySafe(mex_settings, "zmp_data"));
   settings.lipm_height = mxGetScalar(mxGetPropertySafe(mex_settings, "LIP_height"));
   settings.V = setUpLyapunovFunction(mxGetPropertySafe(mex_settings, "V"));
   settings.q_traj = matlabPPTrajectoryOrMatrixToPiecewisePolynomial(mxGetPropertySafe(mex_settings, "qtraj"));

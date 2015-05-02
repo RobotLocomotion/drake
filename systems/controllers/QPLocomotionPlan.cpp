@@ -101,18 +101,34 @@ void QPLocomotionPlan::publishQPControllerInput(
   qp_input.num_external_wrenches = 0;
   qp_input.num_joint_pd_overrides = 0;
 
-  // zmp data: D
-  Matrix2d D = -settings.lipm_height * Matrix2d::Identity();
-  eigenToCArrayOfArrays(D, qp_input.zmp_data.D);
-
   // whole body data
   auto q_des = settings.q_traj.value(t_plan);
-
   qp_input.whole_body_data.timestamp = 0;
   qp_input.whole_body_data.num_positions = robot.num_positions;
   eigenVectorToStdVector(q_des, qp_input.whole_body_data.q_des);
   qp_input.whole_body_data.constrained_dofs = settings.constrained_position_indices;
   qp_input.whole_body_data.num_constrained_dofs = qp_input.whole_body_data.constrained_dofs.size();
+
+  // zmp data:
+  qp_input.zmp_data.timestamp = 0;
+  eigenToCArrayOfArrays(settings.zmp_data.A, qp_input.zmp_data.A);
+  eigenToCArrayOfArrays(settings.zmp_data.B, qp_input.zmp_data.B);
+  eigenToCArrayOfArrays(settings.zmp_data.C, qp_input.zmp_data.C);
+//  eigenToCArrayOfArrays(settings.zmp_data.D, qp_input.zmp_data.D); // set later
+//  eigenToCArrayOfArrays(settings.zmp_data.x0, qp_input.zmp_data.x0); // set later
+//  eigenToCArrayOfArrays(settings.zmp_data.y0, qp_input.zmp_data.y0); // set later
+  eigenToCArrayOfArrays(settings.zmp_data.u0, qp_input.zmp_data.u0);
+  eigenToCArrayOfArrays(settings.zmp_data.R, qp_input.zmp_data.R);
+  eigenToCArrayOfArrays(settings.zmp_data.Qy, qp_input.zmp_data.Qy);
+//  eigenToCArrayOfArrays(settings.zmp_data.S, qp_input.zmp_data.S); // set later
+//  eigenToCArrayOfArrays(settings.zmp_data.s1, qp_input.zmp_data.s1); // set later
+//  eigenToCArrayOfArrays(settings.zmp_data.s1dot, qp_input.zmp_data.s1dot); // set later
+  qp_input.zmp_data.s2 = settings.zmp_data.s2;
+  qp_input.zmp_data.s2dot = settings.zmp_data.s2dot;
+
+  // zmp data: D
+  Matrix2d D = -settings.lipm_height * Matrix2d::Identity();
+  eigenToCArrayOfArrays(D, qp_input.zmp_data.D);
 
   // zmp data: x0, y0
   if (settings.is_quasistatic) {
@@ -150,6 +166,8 @@ void QPLocomotionPlan::publishQPControllerInput(
   eigenToCArrayOfArrays(settings.V.getS(), qp_input.zmp_data.S);
   auto s1_current = settings.V.getS1().value(t_plan);
   eigenToCArrayOfArrays(s1_current, qp_input.zmp_data.s1);
+  auto s1dot_current = settings.V.getS1().derivative().value(t_plan);
+  eigenToCArrayOfArrays(s1dot_current, qp_input.zmp_data.s1dot); // NOTE: this was just set to the default (zeros) before
 
   VectorXd v_dummy(0, 1);
   robot.doKinematicsNew(q, v_dummy);
@@ -198,6 +216,7 @@ void QPLocomotionPlan::publishQPControllerInput(
             support_state_element.contact_points = settings.contact_groups[body_id].at("toe");
         }
         drake::lcmt_joint_pd_override joint_pd_override_for_support;
+        joint_pd_override_for_support.timestamp = 0;
         joint_pd_override_for_support.position_ind = static_cast<int32_t>(knee_index);
         joint_pd_override_for_support.qi_des = settings.knee_settings.min_knee_angle;
         joint_pd_override_for_support.qdi_des = 0.0;
@@ -228,6 +247,7 @@ void QPLocomotionPlan::publishQPControllerInput(
     body_motion_trajectory_slice -= trajectory_shift;
 
     drake::lcmt_body_motion_data body_motion_data_for_support_lcm;
+    body_motion_data_for_support_lcm.timestamp = 0;
     body_motion_data_for_support_lcm.body_id = body_id;
 
     encodePiecewisePolynomial(body_motion_trajectory_slice, body_motion_data_for_support_lcm.spline);
@@ -274,14 +294,15 @@ void QPLocomotionPlan::publishQPControllerInput(
   qp_input.param_set_name = settings.gain_set;
 
   for (auto it = settings.untracked_position_indices.begin(); it != settings.untracked_position_indices.end(); ++it) {
-    drake::lcmt_joint_pd_override joint_pd_override_for_support;
-    joint_pd_override_for_support.position_ind = *it;
-    joint_pd_override_for_support.qi_des = q[*it];
-    joint_pd_override_for_support.qdi_des = v[*it];
-    joint_pd_override_for_support.kp = 0.0;
-    joint_pd_override_for_support.kd = 0.0;
-    joint_pd_override_for_support.weight = 0.0;
-    qp_input.joint_pd_override.push_back(joint_pd_override_for_support);
+    drake::lcmt_joint_pd_override joint_pd_override;
+    joint_pd_override.timestamp = 0;
+    joint_pd_override.position_ind = *it;
+    joint_pd_override.qi_des = q[*it];
+    joint_pd_override.qdi_des = v[*it];
+    joint_pd_override.kp = 0.0;
+    joint_pd_override.kd = 0.0;
+    joint_pd_override.weight = 0.0;
+    qp_input.joint_pd_override.push_back(joint_pd_override);
     qp_input.num_joint_pd_overrides++;
 
     qp_input.whole_body_data.q_des[*it] = q[*it];

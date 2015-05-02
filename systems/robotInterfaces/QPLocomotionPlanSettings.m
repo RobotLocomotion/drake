@@ -5,6 +5,7 @@ classdef QPLocomotionPlanSettings
     support_times
     supports;
     body_motions;
+    zmp_data;
     zmptraj = [];
     zmp_final = [];
     LIP_height;
@@ -48,6 +49,7 @@ classdef QPLocomotionPlanSettings
       obj.default_qp_input.whole_body_data.q_des = zeros(obj.robot.getNumPositions(), 1);
       obj.constrained_dofs = [findPositionIndices(obj.robot,'arm');findPositionIndices(obj.robot,'neck');findPositionIndices(obj.robot,'back_bkz');findPositionIndices(obj.robot,'back_bky')];
       obj.untracked_joint_inds = [];
+      obj.zmp_data = QPLocomotionPlanSettings.defaultZMPData();
     end
 
     function obj = setLQRForCoM(obj)
@@ -57,11 +59,11 @@ classdef QPLocomotionPlanSettings
       B = [zeros(2); eye(2)];
       [~,S,~] = lqr(A,B,Q,R);
       % set the Qy to zero since we only want to stabilize COM
-      obj.default_qp_input.zmp_data.Qy = 0*obj.default_qp_input.zmp_data.Qy;
-      obj.default_qp_input.zmp_data.A = A;
-      obj.default_qp_input.zmp_data.B = B;
-      obj.default_qp_input.zmp_data.R = R;
-      obj.default_qp_input.zmp_data.S = S;
+      obj.zmp_data.Qy = 0*obj.default_qp_input.zmp_data.Qy;
+      obj.zmp_data.A = A;
+      obj.zmp_data.B = B;
+      obj.zmp_data.R = R;
+      obj.zmp_data.S = S;
     end
     
   end
@@ -282,6 +284,25 @@ classdef QPLocomotionPlanSettings
     function zmptraj = getZMPTraj(zmp_knots)
       zmptraj = PPTrajectory(foh([zmp_knots.t], [zmp_knots.zmp]));
       zmptraj = setOutputFrame(zmptraj, SingletonCoordinateFrame('desiredZMP',2,'z',{'x_zmp','y_zmp'}));
+    end
+  end
+  
+  methods (Static, Access=private)
+    function zmp_data = defaultZMPData()
+      zmp_data = struct('A',  [zeros(2),eye(2); zeros(2,4)],... % COM state map 4x4
+        'B', [zeros(2); eye(2)],... % COM input map 4x2
+        'C', [eye(2),zeros(2)],... % ZMP state-output map 2x4
+        'D', -0.89/9.81*eye(2),... % ZMP input-output map 2x2
+        'x0', zeros(4,1),... % nominal state 4x1
+        'y0', zeros(2,1),... % nominal output 2x1
+        'u0', zeros(2,1),... % nominal input 2x1
+        'R', zeros(2),... % input LQR cost 2x2
+        'Qy', 0.8*eye(2),... % output LQR cost 2x2
+        'S', zeros(4),... % cost-to-go terms: x'Sx + x's1 + s2 [4x4]
+        's1', zeros(4,1),... % 4x1
+        's1dot', zeros(4,1),... % 4x1
+        's2', 0,... % 1x1
+        's2dot', 0); % 1x1
     end
   end
 end

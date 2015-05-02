@@ -14,6 +14,25 @@
 #include "Side.h"
 #include <lcm/lcm-cpp.hpp>
 
+struct TVLQRData {
+  // TODO: move into its own file
+  // TODO: turn into class, private members
+  Eigen::MatrixXd A;
+  Eigen::MatrixXd B;
+  Eigen::MatrixXd C;
+  Eigen::MatrixXd D;
+  Eigen::VectorXd x0;
+  Eigen::VectorXd y0;
+  Eigen::VectorXd u0;
+  Eigen::MatrixXd R;
+  Eigen::MatrixXd Qy;
+  Eigen::MatrixXd S;
+  Eigen::VectorXd s1;
+  Eigen::VectorXd s1dot;
+  double s2;
+  double s2dot;
+};
+
 class QuadraticLyapunovFunction {
   // TODO: move into its own file
   // TODO: make part of a Lyapunov function class hierarchy
@@ -73,6 +92,7 @@ struct QPLocomotionPlanSettings {
   std::vector<BodyMotionData> body_motions;
   PiecewisePolynomial<double> zmp_trajectory;
   Eigen::Vector2d zmp_final;
+  TVLQRData zmp_data;
   double lipm_height;
   QuadraticLyapunovFunction V;
   PiecewisePolynomial<double> q_traj;
