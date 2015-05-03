@@ -198,6 +198,10 @@ public:
 
   double getStartTime() const;
 
+  double getDuration() const;
+
+  const RigidBodyManipulator& getRobot() const;
+
 private:
   bool isSupportingBody(int body_index, const RigidBodySupportState& support_state) const;
 

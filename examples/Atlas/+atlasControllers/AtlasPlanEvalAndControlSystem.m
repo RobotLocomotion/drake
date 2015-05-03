@@ -71,7 +71,11 @@ classdef AtlasPlanEvalAndControlSystem < DrakeSystem
           t0 = tic();
         end
         qp_input_struct = obj.plan_eval.getQPControllerInput(t, x);
-        qp_input_msg_data = encodeQPInputLCMMex(qp_input_struct, false);
+        if ischar(qp_input_struct)
+          qp_input_msg_data = qp_input_struct;
+        else
+          qp_input_msg_data = encodeQPInputLCMMex(qp_input_struct, false);
+        end
         qp_input_msg = drake.lcmt_qp_controller_input(qp_input_msg_data);
         if ~obj.quiet
           ptime = toc(t0);

@@ -7,6 +7,9 @@ if (MATLAB_FOUND)
     
     add_mex(start_time start_time.cpp)
     target_link_libraries(start_time drakeQPLocomotionPlan drakeUtil)
+    
+    add_mex(duration duration.cpp)
+    target_link_libraries(duration drakeQPLocomotionPlan drakeUtil)
   endif()
 endif()
 

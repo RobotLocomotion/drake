@@ -27,7 +27,7 @@ QPLocomotionPlan::QPLocomotionPlan(RigidBodyManipulator& robot, const QPLocomoti
     pelvis_id(robot.findLinkId(settings.pelvis_name)),
     foot_body_ids(createFootBodyIdMap(robot, settings.foot_names)),
     knee_indices(createKneeIndicesMap(robot, foot_body_ids)),
-    plan_shift(Eigen::Vector3d::Zero())
+    plan_shift(Vector3d::Zero())
 {
   for (int i = 1; i < settings.support_times.size(); i++) {
     if (settings.support_times[i] < settings.support_times[i - 1])
@@ -47,7 +47,7 @@ QPLocomotionPlan::QPLocomotionPlan(RigidBodyManipulator& robot, const QPLocomoti
 
 // TODO: delete?
 template <size_t Rows, size_t Cols, typename Derived>
-void polynomialVectorCoefficientsToCArrayOfArraysMatlabOrdering(const Eigen::MatrixBase<Derived>& source, typename Derived::Scalar::CoefficientType (&destination)[Rows][Cols]) {
+void polynomialVectorCoefficientsToCArrayOfArraysMatlabOrdering(const MatrixBase<Derived>& source, typename Derived::Scalar::CoefficientType (&destination)[Rows][Cols]) {
   assert(source.cols() == 1);
   if (Rows != source.rows())
     throw std::runtime_error("Number of rows of source doesn't match destination");
@@ -73,7 +73,7 @@ const std::map<SupportLogicType, std::vector<bool> > QPLocomotionPlan::support_l
 
 template <typename DerivedQ, typename DerivedV>
 drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
-    double t_global, const Eigen::MatrixBase<DerivedQ>& q, const Eigen::MatrixBase<DerivedV>& v, const std::vector<bool>& contact_force_detected)
+    double t_global, const MatrixBase<DerivedQ>& q, const MatrixBase<DerivedV>& v, const std::vector<bool>& contact_force_detected)
 {
   if (isNaN(start_time))
     start_time = t_global;
@@ -328,7 +328,17 @@ double QPLocomotionPlan::getStartTime() const
   return start_time;
 }
 
-void QPLocomotionPlan::updateSwingTrajectory(double t_plan, BodyMotionData& body_motion_data, int body_motion_segment_index, const Eigen::VectorXd& qd) {
+double QPLocomotionPlan::getDuration() const
+{
+  return settings.duration;
+}
+
+const RigidBodyManipulator& QPLocomotionPlan::getRobot() const
+{
+  return robot;
+}
+
+void QPLocomotionPlan::updateSwingTrajectory(double t_plan, BodyMotionData& body_motion_data, int body_motion_segment_index, const VectorXd& qd) {
   int takeoff_segment_index = body_motion_segment_index + 1; // this function is called before takeoff
   int num_swing_segments = 3;
   int landing_segment_index = takeoff_segment_index + num_swing_segments - 1;
@@ -482,5 +492,5 @@ const std::map<Side, int> QPLocomotionPlan::createKneeIndicesMap(RigidBodyManipu
   return knee_indices;
 }
 
-template drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput<Eigen::Matrix<double, -1, 1, 0, -1, 1>, Eigen::Matrix<double, -1, 1, 0, -1, 1> >(double, Eigen::MatrixBase<Eigen::Matrix<double, -1, 1, 0, -1, 1> > const&, Eigen::MatrixBase<Eigen::Matrix<double, -1, 1, 0, -1, 1> > const&, std::vector<bool, std::allocator<bool> > const&);
+template drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput<Matrix<double, -1, 1, 0, -1, 1>, Matrix<double, -1, 1, 0, -1, 1> >(double, MatrixBase<Matrix<double, -1, 1, 0, -1, 1> > const&, MatrixBase<Matrix<double, -1, 1, 0, -1, 1> > const&, std::vector<bool, std::allocator<bool> > const&);
 template drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput<Map<Matrix<double, -1, 1, 0, -1, 1> const, 0, Stride<0, 0> >, Map<Matrix<double, -1, 1, 0, -1, 1> const, 0, Stride<0, 0> > >(double, MatrixBase<Map<Matrix<double, -1, 1, 0, -1, 1> const, 0, Stride<0, 0> > > const&, MatrixBase<Map<Matrix<double, -1, 1, 0, -1, 1> const, 0, Stride<0, 0> > > const&, vector<bool, allocator<bool> > const&);

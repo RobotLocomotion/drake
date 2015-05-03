@@ -6,15 +6,17 @@ using namespace Eigen;
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
-  if (nrhs != 5 || nlhs != 1) {
-    mexErrMsgTxt("usage: lcm_msg_data = getQPControllerInput(obj, t_global, q, v, contact_force_detected);");
+  if (nrhs != 4 || nlhs != 1) {
+    mexErrMsgTxt("usage: lcm_msg_data = getQPControllerInput(obj, t_global, x, contact_force_detected);");
   }
 
   QPLocomotionPlan* plan = (QPLocomotionPlan*) getDrakeMexPointer(mxGetPropertySafe(prhs[0], "qp_locomotion_plan_ptr"));
   double t_global = mxGetScalar(prhs[1]);
-  auto q = matlabToEigenMap<Dynamic, 1>(prhs[2]);
-  auto v = matlabToEigenMap<Dynamic, 1>(prhs[3]);
-  auto contact_force_detected = matlabToStdVector<bool>(prhs[4]);
+  int nq = plan->getRobot().num_positions;
+  int nv = plan->getRobot().num_positions;
+  auto q = Map<const VectorXd>(mxGetPr(prhs[2]), nq);
+  auto v = Map<const VectorXd>(mxGetPr(prhs[2]) + nq, nv);
+  auto contact_force_detected = matlabToStdVector<bool>(prhs[3]);
   drake::lcmt_qp_controller_input qp_controller_input = plan->createQPControllerInput(t_global, q, v, contact_force_detected);
   const size_t size = qp_controller_input.getEncodedSize();
   plhs[0] = mxCreateCharArray(1, &size);
