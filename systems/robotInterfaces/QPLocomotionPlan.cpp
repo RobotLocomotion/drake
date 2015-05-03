@@ -72,7 +72,7 @@ void polynomialVectorCoefficientsToCArrayOfArraysMatlabOrdering(const Eigen::Mat
 const std::map<SupportLogicType, std::vector<bool> > QPLocomotionPlan::support_logic_maps = QPLocomotionPlan::createSupportLogicMaps();
 
 template <typename DerivedQ, typename DerivedV>
-void QPLocomotionPlan::publishQPControllerInput(
+drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
     double t_global, const Eigen::MatrixBase<DerivedQ>& q, const Eigen::MatrixBase<DerivedV>& v, const std::vector<bool>& contact_force_detected)
 {
   if (isNaN(start_time))
@@ -95,7 +95,7 @@ void QPLocomotionPlan::publishQPControllerInput(
 
   drake::lcmt_qp_controller_input qp_input;
   qp_input.be_silent = false;
-  qp_input.timestamp = 0;
+  qp_input.timestamp = static_cast<int64_t>(t_global * 1e6);
   qp_input.num_support_data = 0;
   qp_input.num_tracked_bodies = 0;
   qp_input.num_external_wrenches = 0;
@@ -315,7 +315,17 @@ void QPLocomotionPlan::publishQPControllerInput(
 
   last_qp_input = qp_input;
   verifySubtypeSizes(qp_input);
-  lcm.publish(lcm_channel, &qp_input);
+  return qp_input;
+}
+
+void QPLocomotionPlan::setDuration(double duration)
+{
+  settings.duration = duration;
+}
+
+double QPLocomotionPlan::getStartTime() const
+{
+  return start_time;
 }
 
 void QPLocomotionPlan::updateSwingTrajectory(double t_plan, BodyMotionData& body_motion_data, int body_motion_segment_index, const Eigen::VectorXd& qd) {
@@ -472,5 +482,5 @@ const std::map<Side, int> QPLocomotionPlan::createKneeIndicesMap(RigidBodyManipu
   return knee_indices;
 }
 
-template void QPLocomotionPlan::publishQPControllerInput<Eigen::Matrix<double, -1, 1, 0, -1, 1>, Eigen::Matrix<double, -1, 1, 0, -1, 1> >(double, Eigen::MatrixBase<Eigen::Matrix<double, -1, 1, 0, -1, 1> > const&, Eigen::MatrixBase<Eigen::Matrix<double, -1, 1, 0, -1, 1> > const&, std::vector<bool, std::allocator<bool> > const&);
-template void QPLocomotionPlan::publishQPControllerInput<Map<Matrix<double, -1, 1, 0, -1, 1> const, 0, Stride<0, 0> >, Map<Matrix<double, -1, 1, 0, -1, 1> const, 0, Stride<0, 0> > >(double, MatrixBase<Map<Matrix<double, -1, 1, 0, -1, 1> const, 0, Stride<0, 0> > > const&, MatrixBase<Map<Matrix<double, -1, 1, 0, -1, 1> const, 0, Stride<0, 0> > > const&, vector<bool, allocator<bool> > const&);
+template drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput<Eigen::Matrix<double, -1, 1, 0, -1, 1>, Eigen::Matrix<double, -1, 1, 0, -1, 1> >(double, Eigen::MatrixBase<Eigen::Matrix<double, -1, 1, 0, -1, 1> > const&, Eigen::MatrixBase<Eigen::Matrix<double, -1, 1, 0, -1, 1> > const&, std::vector<bool, std::allocator<bool> > const&);
+template drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput<Map<Matrix<double, -1, 1, 0, -1, 1> const, 0, Stride<0, 0> >, Map<Matrix<double, -1, 1, 0, -1, 1> const, 0, Stride<0, 0> > >(double, MatrixBase<Map<Matrix<double, -1, 1, 0, -1, 1> const, 0, Stride<0, 0> > > const&, MatrixBase<Map<Matrix<double, -1, 1, 0, -1, 1> const, 0, Stride<0, 0> > > const&, vector<bool, allocator<bool> > const&);

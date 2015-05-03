@@ -13,7 +13,5 @@ classdef QPControllerPlan < handle
     is_finished = isFinished(obj, t, x)
     ret = duration(obj)
     ret = start_time(obj)
-    default_qp_input(obj)
-    gain_set(obj)
   end
 end

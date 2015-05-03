@@ -192,7 +192,11 @@ public:
    * @param contact_force_detected num_bodies vector indicating whether contact force
    */
   template <typename DerivedQ, typename DerivedV>
-  void publishQPControllerInput(double t_global, const Eigen::MatrixBase<DerivedQ>& q, const Eigen::MatrixBase<DerivedV>& v, const std::vector<bool>& contact_force_detected);
+  drake::lcmt_qp_controller_input createQPControllerInput(double t_global, const Eigen::MatrixBase<DerivedQ>& q, const Eigen::MatrixBase<DerivedV>& v, const std::vector<bool>& contact_force_detected);
+
+  void setDuration(double duration);
+
+  double getStartTime() const;
 
 private:
   bool isSupportingBody(int body_index, const RigidBodySupportState& support_state) const;
