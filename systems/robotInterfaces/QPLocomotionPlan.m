@@ -204,7 +204,8 @@ classdef QPLocomotionPlan < QPControllerPlan
               qp_input.support_data(end).contact_pts = obj.supports(supp_idx+1).contact_pts{k};
               qp_input.support_data(end).support_logic_map = obj.support_logic_maps.only_if_force_sensed;
               qp_input.support_data(end).mu = obj.mu;
-              qp_input.support_data(end).contact_surfaces = 0;
+              qp_input.support_data(end).use_support_surface = obj.supports(supp_idx+1).use_support_surface(k);
+              qp_input.support_data(end).support_surface = obj.supports(supp_idx+1).support_surface{k};
             end
           end
         end
@@ -217,7 +218,8 @@ classdef QPLocomotionPlan < QPControllerPlan
         qp_input.support_data(end).contact_pts = supp.contact_pts{j};
         qp_input.support_data(end).support_logic_map = obj.planned_support_command;
         qp_input.support_data(end).mu = obj.mu;
-        qp_input.support_data(end).contact_surfaces = 0;
+        qp_input.support_data(end).use_support_surface = supp.use_support_surface(j);
+        qp_input.support_data(end).support_surface = supp.support_surface{j};
       end
 
       qp_input.param_set_name = obj.gain_set;
