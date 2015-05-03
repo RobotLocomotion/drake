@@ -89,9 +89,7 @@ walking_plan = r.planWalkingZMP(x0(1:nq), footstep_plan);
 walking_plan.draw_lcmgl(lcmgl);
 lcmgl.switchBuffers();
 
-profile on
 [ytraj, com, rms_com] = atlasUtil.simulateWalking(r, walking_plan);
-profile viewer
 
 v.playback(ytraj, struct('slider', true));
 
