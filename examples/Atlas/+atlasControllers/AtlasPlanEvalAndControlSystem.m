@@ -70,7 +70,9 @@ classdef AtlasPlanEvalAndControlSystem < DrakeSystem
         if ~obj.quiet
           t0 = tic();
         end
-        qp_input = obj.plan_eval.getQPControllerInput(t, x);
+        qp_input_struct = obj.plan_eval.getQPControllerInput(t, x);
+        qp_input_msg_data = encodeQPInputLCMMex(qp_input_struct, false);
+        qp_input_msg = drake.lcmt_qp_controller_input(qp_input_msg_data);
         if ~obj.quiet
           ptime = toc(t0);
           fprintf(1, 'plan eval: %f, ', ptime);
@@ -79,11 +81,11 @@ classdef AtlasPlanEvalAndControlSystem < DrakeSystem
         if ~obj.quiet
           t0 = tic();
         end
-        qp_input = [];
-        while isempty(qp_input)
-          qp_input = obj.monitor.getMessage();
+        qp_input_msg_data = [];
+        while isempty(qp_input_msg_data)
+          qp_input_msg_data = obj.monitor.getMessage();
         end
-        qp_input = drake.lcmt_qp_controller_input(qp_input);
+        qp_input_msg = drake.lcmt_qp_controller_input(qp_input_msg_data);
         if ~obj.quiet 
           lcm_time = toc(t0);
           fprintf(1, 'lcm receive: %f, ', lcm_time);
@@ -94,7 +96,7 @@ classdef AtlasPlanEvalAndControlSystem < DrakeSystem
         if ~obj.quiet
           t0 = tic();
         end
-        [y, v_ref] = obj.control.updateAndOutput(t, x, qp_input, [-1;-1]);
+        [y, v_ref] = obj.control.updateAndOutput(t, x, qp_input_msg, [-1;-1]);
         if ~obj.quiet
           ctime = toc(t0);
           fprintf(1, 'control: %f\n', ctime);
@@ -103,7 +105,7 @@ classdef AtlasPlanEvalAndControlSystem < DrakeSystem
         if ~obj.quiet
           t0 = tic();
         end
-        encodeQPInputLCMMex(qp_input);
+        obj.lc.publish('QP_CONTROLLER_INPUT', qp_input_msg);
         if ~obj.quiet
           lcm_time = toc(t0);
           fprintf(1, 'lcm_serialize: %f, ', lcm_time);

@@ -42,7 +42,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   narg++;
 
   // qp_input
-  shared_ptr<drake::lcmt_qp_controller_input> qp_input = encodeQPInputLCM(prhs[narg]);
+  shared_ptr<drake::lcmt_qp_controller_input> qp_input(new drake::lcmt_qp_controller_input());
+  qp_input->decode(mxGetData(prhs[narg]), 0, mxGetNumberOfElements(prhs[narg]));
   narg++;
 
   // contact_sensor
