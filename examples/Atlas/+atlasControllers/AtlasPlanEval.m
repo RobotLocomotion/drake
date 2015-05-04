@@ -19,7 +19,7 @@ classdef AtlasPlanEval < PlanEval
         contact_force_detected = zeros(obj.robot_property_cache.num_bodies, 1);
       end
       plan = obj.getCurrentPlan(t, x);
-      qp_input = plan.getQPControllerInput(t, x, obj.robot_property_cache, contact_force_detected);
+      qp_input = plan.getQPControllerInput(t, x, contact_force_detected, obj.robot_property_cache);
     end
   end
 end

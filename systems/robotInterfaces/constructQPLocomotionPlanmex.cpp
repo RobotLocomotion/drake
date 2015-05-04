@@ -272,7 +272,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   settings.constrained_position_indices = matlabToStdVector<int>(mxGetPropertySafe(mex_settings, "constrained_dofs"));
   addOffset(settings.constrained_position_indices, -1); // base 1 to base 0
   settings.untracked_position_indices = matlabToStdVector<int>(mxGetPropertySafe(mex_settings, "untracked_joint_inds"));
-  addOffset(settings.untracked_position_indices, -1);
+  addOffset(settings.untracked_position_indices, -1); // base 1 to base 0
 
   // lcm
   string lcm_channel = mxGetStdString(mex_lcm_channel);

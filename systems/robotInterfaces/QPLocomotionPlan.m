@@ -53,7 +53,7 @@ classdef QPLocomotionPlan < QPControllerPlanMatlabImplementation
       next_plan = FrozenPlan(obj.last_qp_input);
     end
     
-    function qp_input = getQPControllerInput(obj, t_global, x, rpc, contact_force_detected)
+    function qp_input = getQPControllerInput(obj, t_global, x, contact_force_detected, rpc)
       % Get the input structure which can be passed to the stateless QP control loop
       % @param t the current time
       % @param x the current robot state

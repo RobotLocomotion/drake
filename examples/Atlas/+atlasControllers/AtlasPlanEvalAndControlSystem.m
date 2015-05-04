@@ -71,7 +71,7 @@ classdef AtlasPlanEvalAndControlSystem < DrakeSystem
           t0 = tic();
         end
         qp_input_struct = obj.plan_eval.getQPControllerInput(t, x);
-        if ischar(qp_input_struct)
+        if isnumeric(qp_input_struct)
           qp_input_msg_data = qp_input_struct;
         else
           qp_input_msg_data = encodeQPInputLCMMex(qp_input_struct, false);
