@@ -71,12 +71,16 @@ classdef AtlasPlanEvalAndControlSystem < DrakeSystem
           t0 = tic();
         end
         qp_input_struct = obj.plan_eval.getQPControllerInput(t, x);
-        if isnumeric(qp_input_struct)
-          qp_input_msg_data = qp_input_struct;
-        else
+        if isstruct(qp_input_struct)
           qp_input_msg_data = encodeQPInputLCMMex(qp_input_struct, false);
+          qp_input_msg = drake.lcmt_qp_controller_input(qp_input_msg_data);
+        elseif isnumeric(qp_input_struct)
+          qp_input_msg = drake.lcmt_qp_controller_input(qp_input_struct);
+        elseif isa(qp_input_struct, 'drake.lcmt_qp_controller_input')
+          qp_input_msg = qp_input_struct;
+        else
+          error('unrecognized message format');
         end
-        qp_input_msg = drake.lcmt_qp_controller_input(qp_input_msg_data);
         if ~obj.quiet
           ptime = toc(t0);
           fprintf(1, 'plan eval: %f, ', ptime);
