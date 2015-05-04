@@ -1,7 +1,7 @@
 function [com, rms_com] = plotWalkingTraj(r, traj, walking_plan_data)
 %NOTEST
 
-comtraj = walking_plan_data.getCenterOfMassTrajectory();
+comtraj = walking_plan_data.settings.comtraj;
 if ~isa(comtraj, 'Trajectory')
   comtraj = ExpPlusPPTrajectory(comtraj.breaks,...
                                                   comtraj.K,...
@@ -9,7 +9,7 @@ if ~isa(comtraj, 'Trajectory')
                                                   comtraj.alpha,...
                                                   comtraj.gamma);
 end
-zmptraj = walking_plan_data.getZMPTrajectory();
+zmptraj = walking_plan_data.settings.zmptraj;
 
 nq = r.getNumPositions();
 tts = traj.getBreaks();
@@ -25,7 +25,7 @@ end
 dtraj = fnder(PPTrajectory(spline(tts,x_smooth)));
 qddtraj = dtraj(nq+(1:nq));
 
-walking_plan_body_motions = walking_plan_data.getBodyMotions();
+walking_plan_body_motions = walking_plan_data.settings.body_motions();
 
 body_motions = struct('right', [], 'left', []);
 for j = 1:length(walking_plan_body_motions)
