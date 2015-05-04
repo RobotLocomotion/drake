@@ -88,6 +88,7 @@ struct QPLocomotionPlanSettings {
   std::vector<double> support_times; // length: supports.size() + 1
   typedef std::map<std::string, Eigen::Matrix3Xd> ContactNameToContactPointsMap;
   std::vector<ContactNameToContactPointsMap> contact_groups; // one for each RigidBody
+  std::vector<bool> planned_support_command;
 
   std::vector<BodyMotionData> body_motions;
   PiecewisePolynomial<double> zmp_trajectory;
@@ -173,7 +174,6 @@ private:
    * To allow the controller to use that support only if it thinks the body is in contact with the terrain, try KINEMATIC_OR_SENSED
    */
   const static std::map<SupportLogicType, std::vector<bool> > support_logic_maps;
-  const std::vector<bool>& planned_support_command = support_logic_maps.at(REQUIRE_SUPPORT);
 
 public:
   QPLocomotionPlan(RigidBodyManipulator& robot, const QPLocomotionPlanSettings& settings, const std::string& lcm_channel);

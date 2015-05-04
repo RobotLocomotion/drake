@@ -284,8 +284,8 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
     support_data_element_lcm.body_id = static_cast<int32_t>(it->body) + 1; // use 1-indexing in LCM
     support_data_element_lcm.num_contact_pts = it->contact_points.cols();
     eigenToStdVectorOfStdVectors(it->contact_points, support_data_element_lcm.contact_pts);
-    for (int i = 0; i < planned_support_command.size(); i++)
-      support_data_element_lcm.support_logic_map[i] = planned_support_command[i];
+    for (int i = 0; i < settings.planned_support_command.size(); i++)
+      support_data_element_lcm.support_logic_map[i] = settings.planned_support_command[i];
     support_data_element_lcm.mu = settings.mu;
     support_data_element_lcm.use_support_surface = it->use_contact_surface;
     Vector4f support_surface_float = it->support_surface.cast<float>();

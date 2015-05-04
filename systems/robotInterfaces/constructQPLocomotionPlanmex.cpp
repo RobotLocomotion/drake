@@ -246,6 +246,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   settings.supports = setUpSupports(mxGetPropertySafe(mex_settings, "supports"));
   settings.support_times = matlabToStdVector<double>(mxGetPropertySafe(mex_settings, "support_times"));
   settings.contact_groups = setUpContactGroups(robot, mxGetPropertySafe(mex_settings, "contact_groups"));
+  settings.planned_support_command = matlabToStdVector<bool>(mxGetPropertySafe(mex_settings, "planned_support_command"));
   settings.body_motions = setUpBodyMotions(mxGetPropertySafe(mex_settings, "body_motions"));
   settings.zmp_trajectory = matlabPPTrajectoryOrMatrixToPiecewisePolynomial(mxGetPropertySafe(mex_settings, "zmptraj"));
   settings.zmp_final = matlabToEigen<2, 1>(mxGetPropertySafe(mex_settings, "zmp_final"));
