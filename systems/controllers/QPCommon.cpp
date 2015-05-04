@@ -640,7 +640,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     } 
   }
   f.tail(nf+neps) = VectorXd::Zero(nf+neps);
-  
+
   int neq = 6+neps+6*n_body_accel_eq_constraints+qp_input->whole_body_data.num_constrained_dofs;
   MatrixXd Aeq = MatrixXd::Zero(neq,nparams);
   VectorXd beq = VectorXd::Zero(neq);
