@@ -1,19 +1,10 @@
 #include "QPCommon.h"
 #include "drakeFloatingPointUtil.h"
 #include "controlUtil.h"
-#include <Eigen/StdVector>
 #include <map>
 #include "lcmUtil.h"
 
 #define LEG_INTEGRATOR_DEACTIVATION_MARGIN 0.05
-
-const mxArray* getFieldOrPropertySafe(const mxArray* array, size_t index, std::string const& field_name) {
-  const mxArray* field_or_property = mxGetField(array, index, field_name.c_str());
-  if (field_or_property == nullptr) {
-    field_or_property = mxGetPropertySafe(array, index, field_name);
-  }
-  return field_or_property;
-}
 
 double logisticSigmoid(double L, double k, double x, double x0) {
   // Compute the value of the logistic sigmoid f(x) = L / (1 + exp(-k(x - x0)))
@@ -55,18 +46,18 @@ std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray 
 
   const mxArray* zmp_data = myGetProperty(qp_input, "zmp_data");
 
-  matlabToCArrayOfArrays(getFieldOrPropertySafe(zmp_data, 0, "A"), msg->zmp_data.A);
-  matlabToCArrayOfArrays(getFieldOrPropertySafe(zmp_data, 0, "B"), msg->zmp_data.B);
-  matlabToCArrayOfArrays(getFieldOrPropertySafe(zmp_data, 0, "C"), msg->zmp_data.C);
-  matlabToCArrayOfArrays(getFieldOrPropertySafe(zmp_data, 0, "D"), msg->zmp_data.D);
-  matlabToCArrayOfArrays(getFieldOrPropertySafe(zmp_data, 0, "x0"), msg->zmp_data.x0);
-  matlabToCArrayOfArrays(getFieldOrPropertySafe(zmp_data, 0, "y0"), msg->zmp_data.y0);
-  matlabToCArrayOfArrays(getFieldOrPropertySafe(zmp_data, 0, "u0"), msg->zmp_data.u0);
-  matlabToCArrayOfArrays(getFieldOrPropertySafe(zmp_data, 0, "R"), msg->zmp_data.R);
-  matlabToCArrayOfArrays(getFieldOrPropertySafe(zmp_data, 0, "Qy"), msg->zmp_data.Qy);
-  matlabToCArrayOfArrays(getFieldOrPropertySafe(zmp_data, 0, "S"), msg->zmp_data.S);
-  matlabToCArrayOfArrays(getFieldOrPropertySafe(zmp_data, 0, "s1"), msg->zmp_data.s1);
-  matlabToCArrayOfArrays(getFieldOrPropertySafe(zmp_data, 0, "s1dot"), msg->zmp_data.s1dot);
+  matlabToCArrayOfArrays(mxGetFieldOrPropertySafe(zmp_data, 0, "A"), msg->zmp_data.A);
+  matlabToCArrayOfArrays(mxGetFieldOrPropertySafe(zmp_data, 0, "B"), msg->zmp_data.B);
+  matlabToCArrayOfArrays(mxGetFieldOrPropertySafe(zmp_data, 0, "C"), msg->zmp_data.C);
+  matlabToCArrayOfArrays(mxGetFieldOrPropertySafe(zmp_data, 0, "D"), msg->zmp_data.D);
+  matlabToCArrayOfArrays(mxGetFieldOrPropertySafe(zmp_data, 0, "x0"), msg->zmp_data.x0);
+  matlabToCArrayOfArrays(mxGetFieldOrPropertySafe(zmp_data, 0, "y0"), msg->zmp_data.y0);
+  matlabToCArrayOfArrays(mxGetFieldOrPropertySafe(zmp_data, 0, "u0"), msg->zmp_data.u0);
+  matlabToCArrayOfArrays(mxGetFieldOrPropertySafe(zmp_data, 0, "R"), msg->zmp_data.R);
+  matlabToCArrayOfArrays(mxGetFieldOrPropertySafe(zmp_data, 0, "Qy"), msg->zmp_data.Qy);
+  matlabToCArrayOfArrays(mxGetFieldOrPropertySafe(zmp_data, 0, "S"), msg->zmp_data.S);
+  matlabToCArrayOfArrays(mxGetFieldOrPropertySafe(zmp_data, 0, "s1"), msg->zmp_data.s1);
+  matlabToCArrayOfArrays(mxGetFieldOrPropertySafe(zmp_data, 0, "s1dot"), msg->zmp_data.s1dot);
   msg->zmp_data.s2 = mxGetScalar(mxGetFieldSafe(zmp_data, "s2"));
   msg->zmp_data.s2dot = mxGetScalar(mxGetFieldSafe(zmp_data, "s2dot"));
   msg->zmp_data.timestamp = msg->timestamp;
@@ -97,12 +88,21 @@ std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray 
         }
       }
 
-      matlabToCArrayOfArrays(getFieldOrPropertySafe(support_data, i, "support_logic_map"), double_logic_map);
+      matlabToCArrayOfArrays(mxGetFieldOrPropertySafe(support_data, i, "support_logic_map"), double_logic_map);
       for (int j=0; j < 4; j++) {
         msg->support_data[i].support_logic_map[j] = (double_logic_map[j][0] != 0);
       }
       msg->support_data[i].mu = mxGetScalar(myGetField(support_data, i, "mu"));
-      msg->support_data[i].contact_surfaces = (int32_t) mxGetScalar(myGetField(support_data, i, "contact_surfaces"));
+      
+      double use_support_surface_dbl = mxGetScalar(myGetField(support_data, i, "use_support_surface"));
+      msg->support_data[i].use_support_surface = (use_support_surface_dbl != 0);
+
+      const mxArray *support_surface = myGetField(support_data, i, "support_surface");
+      if (!support_surface) mexErrMsgTxt("couldn't get support surface");
+      Map<Vector4d>support_surface_vec(mxGetPrSafe(support_surface));
+      for (int j=0; j < 4; j++) {
+        msg->support_data[i].support_surface[j] = support_surface_vec(j);
+      }
     }
   }
 
@@ -322,15 +322,16 @@ VectorXd velocityReference(NewQPControllerData *pdata, double t, const Ref<Vecto
   return qd_ref;
 }
 
-std::vector<SupportStateElement> loadAvailableSupports(std::shared_ptr<drake::lcmt_qp_controller_input> qp_input) {
+std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> loadAvailableSupports(std::shared_ptr<drake::lcmt_qp_controller_input> qp_input) {
   // Parse a qp_input LCM message to extract its available supports as a vector of SupportStateElements
-  std::vector<SupportStateElement> available_supports;
+  std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> available_supports;
   available_supports.resize(qp_input->num_support_data);
   for (int i=0; i < qp_input->num_support_data; i++) {
     available_supports[i].body_idx = qp_input->support_data[i].body_id - 1;
-    available_supports[i].contact_surface = qp_input->support_data[i].contact_surfaces;
+    available_supports[i].use_support_surface = qp_input->support_data[i].use_support_surface;
     for (int j=0; j < 4; j++) {
       available_supports[i].support_logic_map[j] = qp_input->support_data[i].support_logic_map[j];
+      available_supports[i].support_surface[j] = qp_input->support_data[i].support_surface[j];
     }
     available_supports[i].contact_pts.resize(qp_input->support_data[i].num_contact_pts);
     for (int j=0; j < qp_input->support_data[i].num_contact_pts; j++) {
@@ -343,7 +344,7 @@ std::vector<SupportStateElement> loadAvailableSupports(std::shared_ptr<drake::lc
   return available_supports;
 }
 
-void addJointSoftLimits(const JointSoftLimitParams &params, const DrakeRobotState &robot_state, const VectorXd &q_des, std::vector<SupportStateElement> &supports, std::vector<drake::lcmt_joint_pd_override> &joint_pd_override) {
+void addJointSoftLimits(const JointSoftLimitParams &params, const DrakeRobotState &robot_state, const VectorXd &q_des, std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> &supports, std::vector<drake::lcmt_joint_pd_override> &joint_pd_override) {
   Matrix<bool, Dynamic, 1> has_joint_override = Matrix<bool, Dynamic, 1>::Zero(q_des.size());
   for (std::vector<drake::lcmt_joint_pd_override>::iterator it = joint_pd_override.begin(); it != joint_pd_override.end(); ++it) {
     has_joint_override(it->position_ind - 1) = true;
@@ -421,8 +422,8 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   Map<Matrix<double, 4, 1>> s1dot(&qp_input->zmp_data.s1dot[0][0]);
 
   // Active supports
-  std::vector<SupportStateElement> available_supports = loadAvailableSupports(qp_input);
-  std::vector<SupportStateElement> active_supports = getActiveSupports(pdata->r, pdata->map_ptr, robot_state.q, robot_state.qd, available_supports, b_contact_force, params->contact_threshold, pdata->default_terrain_height);
+  std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> available_supports = loadAvailableSupports(qp_input);
+  std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> active_supports = getActiveSupports(pdata->r, pdata->map_ptr, robot_state.q, robot_state.qd, available_supports, b_contact_force, params->contact_threshold, pdata->default_terrain_height);
 
 
   // // whole_body_data
@@ -515,7 +516,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   //---------------------------------------------------------------------
 
   int num_active_contact_pts=0;
-  for (std::vector<SupportStateElement>::iterator iter = active_supports.begin(); iter!=active_supports.end(); iter++) {
+  for (std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>>::iterator iter = active_supports.begin(); iter!=active_supports.end(); iter++) {
     num_active_contact_pts += iter->contact_pts.size();
   }
 
@@ -526,9 +527,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     const drake::lcmt_body_wrench_data& body_wrench_data = *it;
     int body_id = body_wrench_data.body_id - 1;
     f_ext[body_id] = std::unique_ptr<WrenchGradientVarType>(new WrenchGradientVarType(TWIST_SIZE, 1, nq, 0));
-    Map<const Matrix<double, TWIST_SIZE, 1> > wrench_in_body_frame(body_wrench_data.wrench);
-    auto wrench_in_joint_frame = transformSpatialForce(Isometry3d(pdata->r->bodies[body_id]->T_body_to_joint), wrench_in_body_frame);
-    f_ext[body_id]->value() = wrench_in_joint_frame;
+    f_ext[body_id]->value() = Map<const Matrix<double, TWIST_SIZE, 1> >(body_wrench_data.wrench);
   }
 
   pdata->H = pdata->r->massMatrix<double>().value();
@@ -649,7 +648,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     } 
   }
   f.tail(nf+neps) = VectorXd::Zero(nf+neps);
-  
+
   int neq = 6+neps+6*n_body_accel_eq_constraints+qp_input->whole_body_data.num_constrained_dofs;
   MatrixXd Aeq = MatrixXd::Zero(neq,nparams);
   VectorXd beq = VectorXd::Zero(neq);
@@ -673,9 +672,6 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   
   // add in body spatial equality constraints
   // VectorXd body_vdot;
-  Vector4d orig1 = Vector4d::Zero();
-  orig1(3) = 1.0;
-  Vector3d orig = Vector3d::Zero();
   int equality_ind = 6+neps;
   MatrixXd Jb(6,nq);
   Vector6d Jbdotv;	
@@ -1035,4 +1031,3 @@ void parseRobotPropertyCache(const mxArray *rpc_obj, RobotPropertyCache *rpc) {
 
   return;
 }
-

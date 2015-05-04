@@ -50,6 +50,10 @@ add_library(drakeGeometryUtil SHARED drakeGeometryUtil.cpp expmap2quat.cpp)
 target_link_libraries(drakeGeometryUtil drakeGradientUtil)
 pods_install_libraries(drakeGeometryUtil)
 pods_install_headers(drakeGeometryUtil.h DESTINATION drake)
+pods_install_pkg_config_file(drake-geometry-util
+  LIBS -ldrakeGeometryUtil
+  REQUIRES
+  VERSION 0.0.1)
 
 pods_install_headers(drakeFloatingPointUtil.h DESTINATION drake)
 

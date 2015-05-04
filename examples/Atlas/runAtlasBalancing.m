@@ -35,7 +35,8 @@ kinsol = doKinematics(r,q0);
 com = getCOM(r,kinsol);
 
 % Construct plan
-standing_plan = QPLocomotionPlan.from_standing_state(x0, r);
+standing_plan = QPLocomotionPlanCPPWrapper(QPLocomotionPlanSettings.fromStandingState(x0, r));
+% standing_plan = QPLocomotionPlan.from_standing_state(x0, r);
 
 % Only use supports when in contact
 standing_plan.planned_support_command = standing_plan.support_logic_maps.kinematic_or_sensed;

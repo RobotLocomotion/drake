@@ -75,6 +75,13 @@ Eigen::Matrix<double, RowsAtCompileTime, ColsAtCompileTime> matlabToEigen(const 
   return ret;
 }
 
+template<int RowsAtCompileTime, int ColsAtCompileTime>
+Eigen::Map<const Eigen::Matrix<double, RowsAtCompileTime, ColsAtCompileTime>> matlabToEigenMap(const mxArray* matlab_array)
+{
+  Eigen::Map<const Eigen::Matrix<double, RowsAtCompileTime, ColsAtCompileTime>> ret(mxGetPr(matlab_array), mxGetM(matlab_array), mxGetN(matlab_array));
+  return ret;
+}
+
 DLLEXPORT std::string mxGetStdString(const mxArray* array);
 
 template <typename Scalar>
@@ -140,10 +147,10 @@ void eigenVectorToStdVector(const Eigen::MatrixBase<Derived>& source, std::vecto
 // note for if/when we split off all Matlab related stuff into a different file: this function is not Matlab related
 template <typename Derived>
 void eigenToStdVectorOfStdVectors(const Eigen::MatrixBase<Derived>& source, std::vector< std::vector<typename Derived::Scalar> >& destination) {
-  destination.reserve(source.rows());
+  destination.resize(source.rows());
   for (Eigen::DenseIndex row = 0; row < source.rows(); ++row) {
     auto& destination_row = destination[row];
-    destination_row.reserve(source.cols());
+    destination_row.resize(source.cols());
     for (Eigen::DenseIndex col = 0; col < source.cols(); ++col) {
       destination_row[col] = source(row, col);
     }
@@ -152,6 +159,12 @@ void eigenToStdVectorOfStdVectors(const Eigen::MatrixBase<Derived>& source, std:
 
 
 DLLEXPORT int sub2ind(mwSize ndims, const mwSize* dims, const mwSize* sub);
+
+template <typename T>
+void addOffset(std::vector<T>& v, const T& offset)
+{
+  std::transform(v.begin(), v.end(), v.begin(), std::bind2nd(std::plus<double>(), offset));
+}
 
 DLLEXPORT void baseZeroToBaseOne(std::vector<int>& vec);
 
@@ -167,8 +180,9 @@ DLLEXPORT mxArray* mxGetPropertySafe(const mxArray* array, std::string const& fi
 DLLEXPORT mxArray* mxGetFieldSafe(const mxArray* array, std::string const& field_name);
 DLLEXPORT mxArray* mxGetPropertySafe(const mxArray* array, size_t index, std::string const& field_name);
 DLLEXPORT mxArray* mxGetFieldSafe(const mxArray* array, size_t index, std::string const& field_name);
-
 DLLEXPORT void mxSetFieldSafe(mxArray* array, size_t index, std::string const & fieldname, mxArray* data);
+DLLEXPORT mxArray* mxGetFieldOrPropertySafe(const mxArray* array, std::string const& field_name);
+DLLEXPORT mxArray* mxGetFieldOrPropertySafe(const mxArray* array, size_t index, std::string const& field_name);
 
 
 #endif /* DRAKE_UTIL_H_ */

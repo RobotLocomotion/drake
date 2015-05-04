@@ -10,10 +10,28 @@
 #include "drake/ExponentialPlusPiecewisePolynomial.h"
 #include "drake/RigidBodyManipulator.h"
 #include "drake/lcmt_qp_controller_input.hpp"
-//#include "QPCommon.h"
 #include "BodyMotionData.h"
 #include "Side.h"
 #include <lcm/lcm-cpp.hpp>
+
+struct TVLQRData {
+  // TODO: move into its own file
+  // TODO: turn into class, private members
+  Eigen::MatrixXd A;
+  Eigen::MatrixXd B;
+  Eigen::MatrixXd C;
+  Eigen::MatrixXd D;
+  Eigen::VectorXd x0;
+  Eigen::VectorXd y0;
+  Eigen::VectorXd u0;
+  Eigen::MatrixXd R;
+  Eigen::MatrixXd Qy;
+  Eigen::MatrixXd S;
+  Eigen::VectorXd s1;
+  Eigen::VectorXd s1dot;
+  double s2;
+  double s2dot;
+};
 
 class QuadraticLyapunovFunction {
   // TODO: move into its own file
@@ -46,8 +64,8 @@ struct RigidBodySupportStateElement {
   // TODO: consolidate with SupportStateElement?
   int body; // TODO: should probably be a RigidBody smart pointer
   Eigen::Matrix3Xd contact_points;
-  std::vector<std::string> contact_groups; // TODO: should probably have an enum or class instead of the string
-  int contact_surface; // TODO: should probably be a different type
+  bool use_contact_surface;
+  Eigen::Vector4d support_surface; // TODO: should probably be a different type
 };
 
 typedef std::vector<RigidBodySupportStateElement> RigidBodySupportState;
@@ -68,17 +86,17 @@ struct QPLocomotionPlanSettings {
   double duration;
   std::vector<RigidBodySupportState> supports;
   std::vector<double> support_times; // length: supports.size() + 1
-  typedef std::map<std::string, Eigen::Matrix3Xd> ContactGroupNameToContactPointsMap;
-  std::vector<ContactGroupNameToContactPointsMap> contact_groups; // one for each support
+  typedef std::map<std::string, Eigen::Matrix3Xd> ContactNameToContactPointsMap;
+  std::vector<ContactNameToContactPointsMap> contact_groups; // one for each RigidBody
 
   std::vector<BodyMotionData> body_motions;
   PiecewisePolynomial<double> zmp_trajectory;
   Eigen::Vector2d zmp_final;
+  TVLQRData zmp_data;
   double lipm_height;
   QuadraticLyapunovFunction V;
   PiecewisePolynomial<double> q_traj;
   ExponentialPlusPiecewisePolynomial<double> com_traj;
-  drake::lcmt_qp_controller_input default_qp_input;
 
   std::string gain_set = "standing";
   double mu = 0.5;
@@ -88,10 +106,12 @@ struct QPLocomotionPlanSettings {
   bool is_quasistatic = false;
   KneeSettings knee_settings = createDefaultKneeSettings();
   std::string pelvis_name = "pelvis";
-  std::map<Side, std::string> foot_names = createDefaultFootNames();
+  std::map<Side, std::string> foot_names;
+  std::map<Side, std::string> knee_names;
   std::vector<int> constrained_position_indices;
+  std::vector<int> untracked_position_indices;
 
-  void addSupport(const RigidBodySupportState& support_state, const ContactGroupNameToContactPointsMap& contact_group_name_to_contact_points, double duration) {
+  void addSupport(const RigidBodySupportState& support_state, const ContactNameToContactPointsMap& contact_group_name_to_contact_points, double duration) {
     supports.push_back(support_state);
     contact_groups.push_back(contact_group_name_to_contact_points);
     if (support_times.empty())
@@ -106,13 +126,6 @@ struct QPLocomotionPlanSettings {
     knee_settings.knee_kd = 4.0;
     knee_settings.knee_weight = 1.0;
     return knee_settings;
-  }
-
-  static std::map<Side, std::string> createDefaultFootNames() {
-    std::map<Side, std::string> ret;
-    ret[Side::LEFT] = "l_foot";
-    ret[Side::RIGHT] = "r_foot";
-    return ret;
   }
 
   // may be useful later in setting up constrained_position_indices
@@ -153,7 +166,6 @@ private:
   double start_time;
   Eigen::Vector3d plan_shift;
   drake::lcmt_qp_controller_input last_qp_input;
-  std::vector<drake::lcmt_joint_pd_override> joint_pd_override_data;
   std::map<Side, bool> toe_off_active;
 
   /*
@@ -164,19 +176,25 @@ private:
   const std::vector<bool>& planned_support_command = support_logic_maps.at(REQUIRE_SUPPORT);
 
 public:
-QPLocomotionPlan(RigidBodyManipulator& robot, const QPLocomotionPlanSettings& settings, const std::string& lcm_channel);
+  QPLocomotionPlan(RigidBodyManipulator& robot, const QPLocomotionPlanSettings& settings, const std::string& lcm_channel);
 
   /*
    * Get the input structure which can be passed to the stateless QP control loop
    * @param t the current time
-   * @param x the current robot state
-   * @param rpc the robot property cache, which lets us quickly look up info about
+   * @param q the current robot configuration
+   * @param v the current robot velocity
    * @param contact_force_detected num_bodies vector indicating whether contact force
-   * was detected on that body. Default: zeros(num_bodies,1)
-   * the robot which would be expensive to compute (such as terrain contact points)
    */
-  void publishQPControllerInput(
-      double t_global, const Eigen::VectorXd& q, const Eigen::VectorXd& v, const std::vector<bool>& contact_force_detected);
+  template <typename DerivedQ, typename DerivedV>
+  drake::lcmt_qp_controller_input createQPControllerInput(double t_global, const Eigen::MatrixBase<DerivedQ>& q, const Eigen::MatrixBase<DerivedV>& v, const std::vector<bool>& contact_force_detected);
+
+  void setDuration(double duration);
+
+  double getStartTime() const;
+
+  double getDuration() const;
+
+  const RigidBodyManipulator& getRobot() const;
 
 private:
   bool isSupportingBody(int body_index, const RigidBodySupportState& support_state) const;
@@ -189,7 +207,7 @@ private:
 
   static const std::map<Side, int> createFootBodyIdMap(RigidBodyManipulator& robot, const std::map<Side, std::string>& foot_names);
 
-  static const std::map<Side, int> createKneeIndicesMap(RigidBodyManipulator& robot, const std::map<Side, int>& foot_body_ids);
+  static const std::map<Side, int> createKneeIndicesMap(RigidBodyManipulator& robot, const std::map<Side, std::string>& foot_body_ids);
 };
 
 #endif /* SYSTEMS_ROBOTINTERFACES_QPLOCOMOTIONPLAN_H_ */

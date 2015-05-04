@@ -102,8 +102,8 @@ PiecewisePolynomial<double> generateSpline(const SplineInformation& spline_infor
   return PiecewisePolynomial<double>(polynomials, spline_information.getSegmentTimes());
 }
 
-PiecewisePolynomial<double> twoWaypointCubicSpline(const vector<double>& segment_times, double x0, double xd0, double xf, double xdf, double x1, double x2) {
-  const int num_segments = 3;
+PiecewisePolynomial<double> nWaypointCubicSpline(const vector<double>& segment_times, double x0, double xd0, double xf, double xdf, const Ref<const VectorXd> &xi) {
+  const int num_segments = xi.size()+1;
   assert(segment_times.size() == num_segments + 1);
 
   int polynomial_order = 3;
@@ -117,10 +117,12 @@ PiecewisePolynomial<double> twoWaypointCubicSpline(const vector<double>& segment
   spline_information.addValueConstraint(0, ValueConstraint(1, spline_information.getStartTime(0), xd0));
   spline_information.addValueConstraint(num_segments - 1, ValueConstraint(0, spline_information.getEndTime(num_segments - 1), xf));
   spline_information.addValueConstraint(num_segments - 1, ValueConstraint(1, spline_information.getEndTime(num_segments - 1), xdf));
-  spline_information.addValueConstraint(1, ValueConstraint(0, spline_information.getStartTime(1), x1));
-  spline_information.addValueConstraint(2, ValueConstraint(0, spline_information.getStartTime(2), x2));
 
   int num_knots = num_segments - 1;
+  for (int i = 0; i < num_knots; i++) {
+    spline_information.addValueConstraint(i+1, ValueConstraint(0, spline_information.getStartTime(i+1), xi(i)));
+  }
+
   for (int i = 0; i < num_knots; i++) {
     for (int derivative_order = 0; derivative_order < 3; derivative_order++) {
       spline_information.addContinuityConstraint(ContinuityConstraint(derivative_order, i, i + 1));

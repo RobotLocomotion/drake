@@ -2,6 +2,10 @@
 #include "drakeUtil.h"
 #include "mex.h"
 
+#ifdef USE_MAPS
+#include "terrain-map/TerrainMap.hpp"
+#endif
+
 template <typename DerivedA, typename DerivedB>
 void getRows(std::set<int> &rows, MatrixBase<DerivedA> const &M, MatrixBase<DerivedB> &Msub)
 {
@@ -62,9 +66,9 @@ mxArray* myGetField(const mxArray* pobj, const char* propname)
   return pm;
 }
 
-bool inSupport(std::vector<SupportStateElement> &supports, int body_idx) {
+bool inSupport(std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> &supports, int body_idx) {
   // HANDLE IF BODY_IDX IS A FRAME ID?
-  for (int i=0; i<supports.size(); i++) {
+  for (size_t i=0; i<supports.size(); i++) {
     if (supports[i].body_idx == body_idx)
       return true;
   }
@@ -86,6 +90,8 @@ void collisionDetect(void* map_ptr, Vector3d const &contact_pos, Vector3d &pos, 
         return;
       }
     }
+#else
+    throw std::runtime_error("map_ptr is not NULL, but controlUtil was built without USE_MAPS support");
 #endif      
   } else {
 //    mexPrintf("Warning: using 0,0,1 as normal\n");
@@ -123,15 +129,14 @@ int contactPhi(RigidBodyManipulator* r, SupportStateElement& supp, void *map_ptr
 
   if (nc<1) return nc;
 
-  Vector3d contact_pos,pos,posB,normal;
+  Vector3d contact_pos,pos,normal;
 
   int i=0;
   for (std::vector<Vector4d,aligned_allocator<Vector4d>>::iterator pt_iter=supp.contact_pts.begin(); pt_iter!=supp.contact_pts.end(); pt_iter++) {
-    
     r->forwardKin(supp.body_idx,*pt_iter,0,contact_pos);
-    collisionDetect(map_ptr,contact_pos,pos,NULL,terrain_height);
+    collisionDetect(map_ptr,contact_pos,pos,&normal,terrain_height);
     pos -= contact_pos;  // now -rel_pos in matlab version
-    
+//    std::cout << "contact pos: " << contact_pos.transpose() << std::endl;
     phi(i) = pos.norm();
     if (pos.dot(normal)>0)
       phi(i)=-phi(i);
@@ -140,7 +145,7 @@ int contactPhi(RigidBodyManipulator* r, SupportStateElement& supp, void *map_ptr
   return nc;
 }
 
-int contactConstraints(RigidBodyManipulator *r, int nc, std::vector<SupportStateElement>& supp, void *map_ptr, MatrixXd &n, MatrixXd &D, MatrixXd &Jp, MatrixXd &Jpdot,double terrain_height)
+int contactConstraints(RigidBodyManipulator *r, int nc, std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>>& supp, void *map_ptr, MatrixXd &n, MatrixXd &D, MatrixXd &Jp, MatrixXd &Jpdot,double terrain_height)
 {
   int j, k=0, nq = r->num_positions;
 
@@ -149,11 +154,11 @@ int contactConstraints(RigidBodyManipulator *r, int nc, std::vector<SupportState
   Jp.resize(3*nc,nq);
   Jpdot.resize(3*nc,nq);
   
-  Vector3d contact_pos,pos,posB,normal;
+  Vector3d contact_pos,pos,normal;
   MatrixXd J(3,nq);
   Matrix<double,3,m_surface_tangents> d;
   
-  for (std::vector<SupportStateElement>::iterator iter = supp.begin(); iter!=supp.end(); iter++) {
+  for (std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>>::iterator iter = supp.begin(); iter!=supp.end(); iter++) {
     if (nc>0) {
       for (std::vector<Vector4d,aligned_allocator<Vector4d>>::iterator pt_iter=iter->contact_pts.begin(); pt_iter!=iter->contact_pts.end(); pt_iter++) {
         r->forwardKin(iter->body_idx,*pt_iter,0,contact_pos);
@@ -183,7 +188,7 @@ int contactConstraints(RigidBodyManipulator *r, int nc, std::vector<SupportState
 }
 
 
-int contactConstraintsBV(RigidBodyManipulator *r, int nc, double mu, std::vector<SupportStateElement>& supp, void *map_ptr, MatrixXd &B, MatrixXd &JB, MatrixXd &Jp, VectorXd &Jpdotv, MatrixXd &normals, double terrain_height)
+int contactConstraintsBV(RigidBodyManipulator *r, int nc, double mu, std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>>& supp, void *map_ptr, MatrixXd &B, MatrixXd &JB, MatrixXd &Jp, VectorXd &Jpdotv, MatrixXd &normals, double terrain_height)
 {
   int j, k=0, nq = r->num_positions;
 
@@ -193,18 +198,23 @@ int contactConstraintsBV(RigidBodyManipulator *r, int nc, double mu, std::vector
   Jpdotv.resize(3*nc);
   normals.resize(3, nc);
   
-  Vector3d contact_pos,pos,posB,normal; 
+  Vector3d contact_pos,pos,normal; 
   MatrixXd J(3,nq);
   Matrix<double,3,m_surface_tangents> d;
   double norm = sqrt(1+mu*mu); // because normals and ds are orthogonal, the norm has a simple form
   
-  for (std::vector<SupportStateElement>::iterator iter = supp.begin(); iter!=supp.end(); iter++) {
+  for (std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>>::iterator iter = supp.begin(); iter!=supp.end(); iter++) {
     if (nc>0) {
       for (std::vector<Vector4d,aligned_allocator<Vector4d>>::iterator pt_iter=iter->contact_pts.begin(); pt_iter!=iter->contact_pts.end(); pt_iter++) {
         r->forwardKin(iter->body_idx,*pt_iter,0,contact_pos);
         r->forwardJac(iter->body_idx,*pt_iter,0,J);
 
-        collisionDetect(map_ptr,contact_pos,pos,&normal,terrain_height);
+        if (iter->use_support_surface) {
+          normal = iter->support_surface.head(3);
+        }
+        else {
+          collisionDetect(map_ptr,contact_pos,pos,&normal,terrain_height);
+        }
         surfaceTangents(normal,d);
         for (j=0; j<m_surface_tangents; j++) {
           B.col(2*k*m_surface_tangents+j) = (normal + mu*d.col(j)) / norm; 
@@ -230,7 +240,7 @@ int contactConstraintsBV(RigidBodyManipulator *r, int nc, double mu, std::vector
   return k;
 }
 
-MatrixXd individualSupportCOPs(RigidBodyManipulator* r, const std::vector<SupportStateElement>& active_supports,
+MatrixXd individualSupportCOPs(RigidBodyManipulator* r, const std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>>& active_supports,
     const MatrixXd& normals, const MatrixXd& B, const VectorXd& beta)
 {
   const int n_basis_vectors_per_contact = static_cast<int>(B.cols() / normals.cols());
@@ -242,7 +252,7 @@ MatrixXd individualSupportCOPs(RigidBodyManipulator* r, const std::vector<Suppor
   MatrixXd individual_cops(3, n);
   individual_cops.fill(std::numeric_limits<double>::quiet_NaN());
 
-  for (int j = 0; j < active_supports.size(); j++) {
+  for (size_t j = 0; j < active_supports.size(); j++) {
     auto active_support = active_supports[j];
     auto contact_pts = active_support.contact_pts;
 
@@ -260,7 +270,7 @@ MatrixXd individualSupportCOPs(RigidBodyManipulator* r, const std::vector<Suppor
       Vector3d force = Vector3d::Zero();
       Vector3d torque = Vector3d::Zero();
 
-      for (int k = 0; k < contact_pts.size(); k++) {
+      for (size_t k = 0; k < contact_pts.size(); k++) {
       // for (auto k = contact_pts.begin(); k!= contact_pts.end(); k++) { 
         const auto& Bblock = Bj.middleCols(k * n_basis_vectors_per_contact, n_basis_vectors_per_contact);
         const auto& betablock = betaj.segment(k * n_basis_vectors_per_contact, n_basis_vectors_per_contact);
@@ -286,7 +296,7 @@ MatrixXd individualSupportCOPs(RigidBodyManipulator* r, const std::vector<Suppor
   return individual_cops;
 }
 
-std::vector<SupportStateElement> parseSupportData(const mxArray* supp_data) {
+std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> parseSupportData(const mxArray* supp_data) {
   double *logic_map_double;
   int nsupp = mxGetN(supp_data);
   if (mxGetM(supp_data) != 1) {
@@ -297,7 +307,7 @@ std::vector<SupportStateElement> parseSupportData(const mxArray* supp_data) {
   Vector4d contact_pt = Vector4d::Zero();
   contact_pt(3) = 1.0;
   int num_pts;
-  std::vector<SupportStateElement> supports;
+  std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> supports;
   const mxArray* pm;
 
   for (i = 0; i < nsupp; i++) {
@@ -309,6 +319,7 @@ std::vector<SupportStateElement> parseSupportData(const mxArray* supp_data) {
     pm = mxGetField(supp_data, i, "support_logic_map");
     if (mxIsDouble(pm)) {
       logic_map_double = mxGetPrSafe(pm);
+      assert(mxGetM(pm)==4);
       for (j = 0; j < 4; j++) {
         se.support_logic_map[j] = logic_map_double[j] != 0;
       }
@@ -323,7 +334,6 @@ std::vector<SupportStateElement> parseSupportData(const mxArray* supp_data) {
       contact_pt.head(3) = contact_pts.col(j);
       se.contact_pts.push_back(contact_pt);
     }
-    se.contact_surface = ((int) mxGetScalar(mxGetField(supp_data, i, "contact_surfaces"))) - 1;
     supports.push_back(se);
   }
   return supports;
@@ -331,7 +341,7 @@ std::vector<SupportStateElement> parseSupportData(const mxArray* supp_data) {
 
 bool isSupportElementActive(SupportStateElement* se, bool contact_force_detected, bool kinematic_contact_detected) {
   bool is_active;
-
+//  std::cout << "checking element with body: " << se->body_idx << " force: " << contact_force_detected << " kin: " << kinematic_contact_detected << std::endl;
   // Implement the logic described in QPInputConstantHeight.m
   if (!contact_force_detected && !kinematic_contact_detected) {
     is_active = se->support_logic_map[0]; 
@@ -345,7 +355,7 @@ bool isSupportElementActive(SupportStateElement* se, bool contact_force_detected
   return is_active;
 }
 
-Matrix<bool, Dynamic, 1> getActiveSupportMask(RigidBodyManipulator* r, void* map_ptr, VectorXd q, VectorXd qd, std::vector<SupportStateElement> &available_supports, const Ref<const Matrix<bool, Dynamic, 1>> &contact_force_detected, double contact_threshold, double terrain_height) {
+Matrix<bool, Dynamic, 1> getActiveSupportMask(RigidBodyManipulator* r, void* map_ptr, VectorXd q, VectorXd qd, std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> &available_supports, const Ref<const Matrix<bool, Dynamic, 1>> &contact_force_detected, double contact_threshold, double terrain_height) {
   r->doKinematics(q, false, qd);
 
   int nsupp = available_supports.size();
@@ -386,13 +396,13 @@ Matrix<bool, Dynamic, 1> getActiveSupportMask(RigidBodyManipulator* r, void* map
   return active_supp_mask;
 }
 
-std::vector<SupportStateElement> getActiveSupports(RigidBodyManipulator* r, void* map_ptr, VectorXd q, VectorXd qd, std::vector<SupportStateElement> &available_supports, const Ref<const Matrix<bool, Dynamic, 1>> &contact_force_detected, double contact_threshold, double terrain_height) {
+std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> getActiveSupports(RigidBodyManipulator* r, void* map_ptr, VectorXd q, VectorXd qd, std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> &available_supports, const Ref<const Matrix<bool, Dynamic, 1>> &contact_force_detected, double contact_threshold, double terrain_height) {
 
   Matrix<bool, Dynamic, 1> active_supp_mask = getActiveSupportMask(r, map_ptr, q, qd, available_supports, contact_force_detected, contact_threshold, terrain_height);
 
-  std::vector<SupportStateElement> active_supports;
+  std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> active_supports;
 
-  for (int i=0; i < available_supports.size(); i++) {
+  for (size_t i=0; i < available_supports.size(); i++) {
     if (active_supp_mask(i)) {
       active_supports.push_back(available_supports[i]);
     }
@@ -425,7 +435,7 @@ Vector6d bodySpatialMotionPD(RigidBodyManipulator *r, DrakeRobotState &robot_sta
   std::vector<int> v_indices;
   auto J_geometric = r->geometricJacobian<double>(0,body_index,body_index,0,true,&v_indices);
   VectorXd v_compact(v_indices.size());
-  for(int i = 0;i<v_indices.size();i++)
+  for(size_t i = 0;i<v_indices.size();i++)
   {
     v_compact(i) = robot_state.qd(v_indices[i]);
   }

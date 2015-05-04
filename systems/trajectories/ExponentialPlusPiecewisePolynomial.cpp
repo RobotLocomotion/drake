@@ -11,18 +11,13 @@ ExponentialPlusPiecewisePolynomial<CoefficientType>::ExponentialPlusPiecewisePol
 }
 
 template<typename CoefficientType>
-ExponentialPlusPiecewisePolynomial<CoefficientType>::ExponentialPlusPiecewisePolynomial(
-    const MatrixX& K, const MatrixX& A, const std::vector<VectorX>& alpha,
-    const PiecewisePolynomial<CoefficientType>& piecewise_polynomial_part) :
-    PiecewiseFunction(piecewise_polynomial_part), K(K), A(A), alpha(alpha), piecewise_polynomial_part(piecewise_polynomial_part)
+ExponentialPlusPiecewisePolynomial<CoefficientType>::ExponentialPlusPiecewisePolynomial(const PiecewisePolynomial<CoefficientType>& piecewise_polynomial_part) :
+    PiecewiseFunction(piecewise_polynomial_part),
+    K(Matrix<CoefficientType, Dynamic, Dynamic>::Zero(piecewise_polynomial_part.rows(), 1)),
+    A(Matrix<CoefficientType, Dynamic, Dynamic>::Zero(1, 1)),
+    alpha(Matrix<CoefficientType, Dynamic, Dynamic>::Zero(1, piecewise_polynomial_part.getNumberOfSegments())),
+    piecewise_polynomial_part(piecewise_polynomial_part)
 {
-  int num_segments = piecewise_polynomial_part.getNumberOfSegments();
-  assert(A.rows() == rows());
-  assert(A.cols() == rows());
-  assert(alpha.size() == num_segments);
-  for (int i = 0; i < num_segments; i++)
-    assert(alpha[i].rows() == rows());
-  assert(piecewise_polynomial_part.rows() == rows());
   assert(piecewise_polynomial_part.cols() == 1);
 }
 
@@ -34,7 +29,7 @@ typename ExponentialPlusPiecewisePolynomial<CoefficientType>::ValueType Exponent
   Eigen::Matrix<double, Eigen::Dynamic, 1> ret = piecewise_polynomial_part.value(t);
   double tj = getStartTime(segment_index);
   auto exponential = (A * (t - tj)).eval().exp().eval();
-  ret.noalias() += K * exponential * alpha[segment_index];
+  ret.noalias() += K * exponential * alpha.col(segment_index);
   return ret;
 }
 
@@ -47,7 +42,7 @@ ExponentialPlusPiecewisePolynomial<CoefficientType> ExponentialPlusPiecewisePoly
   for (int i = 0; i < derivative_order; i++) {
     K_new = K_new * A;
   }
-  return ExponentialPlusPiecewisePolynomial(K_new, A, alpha, piecewise_polynomial_part.derivative(derivative_order));
+  return ExponentialPlusPiecewisePolynomial<CoefficientType>(K_new, A, alpha, piecewise_polynomial_part.derivative(derivative_order));
 }
 
 

@@ -1,4 +1,4 @@
-function runAtlasBalancingSplitPerturb(example_options) 
+function runAtlasBalancingPerturb(example_options) 
 % Run the new split QP controller, which consists of separate PlanEval
 % and InstantaneousQPController objects. Perturbs a supplied amount at
 % a specified time.
@@ -57,7 +57,8 @@ x0 = xstar;
 
 
 %walking_plan_data = r.planWalkingZMP(x0(1:r.getNumPositions()), footstep_plan);
-standing_plan = QPLocomotionPlan.from_standing_state(x0, r);
+standing_plan = QPLocomotionPlanCPPWrapper(QPLocomotionPlanSettings.fromStandingState(x0, r));
+% standing_plan = QPLocomotionPlan.from_standing_state(x0, r);
 standing_plan.planned_support_command = QPControllerPlan.support_logic_maps.kinematic_or_sensed;
 
 control = atlasControllers.InstantaneousQPController(r, [], struct());

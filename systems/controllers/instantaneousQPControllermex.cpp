@@ -42,7 +42,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   narg++;
 
   // qp_input
-  shared_ptr<drake::lcmt_qp_controller_input> qp_input = encodeQPInputLCM(prhs[narg]);
+  shared_ptr<drake::lcmt_qp_controller_input> qp_input(new drake::lcmt_qp_controller_input());
+  qp_input->decode(mxGetData(prhs[narg]), 0, mxGetNumberOfElements(prhs[narg]));
   narg++;
 
   // contact_sensor
@@ -94,7 +95,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       plhs[narg] = mxCreateDoubleMatrix(1,debug->active_supports.size(),mxREAL);
       pr = mxGetPrSafe(plhs[narg]);
       int i=0;
-      for (vector<SupportStateElement>::iterator iter = debug->active_supports.begin(); iter!=debug->active_supports.end(); iter++) {
+      for (vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>>::iterator iter = debug->active_supports.begin(); iter!=debug->active_supports.end(); iter++) {
           pr[i++] = (double) (iter->body_idx + 1);
       }
   }

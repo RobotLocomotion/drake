@@ -10,7 +10,7 @@
 
 #undef DLLEXPORT
 #if defined(WIN32) || defined(WIN64)
-#if defined(drakePiecewisePolynomial_EXPORTS)
+#if defined(drakeTrajectories_EXPORTS)
 #define DLLEXPORT __declspec( dllexport )
 #else
 #define DLLEXPORT __declspec( dllimport )
@@ -41,7 +41,7 @@ public:
   PiecewisePolynomial(const Eigen::MatrixBase<Derived>& value) :
     PiecewisePolynomialBase(std::vector<double>({ { -std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity() } }))
   {
-    polynomials.push_back(value.template cast<PolynomialMatrix>());
+    polynomials.push_back(value.template cast<PolynomialType>());
   }
 
   // Matrix constructor

@@ -139,8 +139,8 @@ plot(zmpact(1,:),zmpact(2,:),'r.-','LineWidth',1);
 %plot(comdes(1,:),comdes(2,:),'g','LineWidth',3);
 %plot(com(1,:),com(2,:),'m.-','LineWidth',1);
 
-tc = struct('left', getTerrainContactPoints(r,foot_bodies.left),...
-            'right', getTerrainContactPoints(r,foot_bodies.right));
+tc = struct('left', getTerrainContactPoints(r,foot_bodies.left, {{'heel', 'toe'}}),...
+            'right', getTerrainContactPoints(r,foot_bodies.right, {{'heel', 'toe'}}));
 
 for f = {'left', 'right'}
   foot = f{1};

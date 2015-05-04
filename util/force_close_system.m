@@ -8,6 +8,7 @@ if iscell(sys)
   end
 elseif ischar(sys)
   if (strcmpi(sys,'all'))
+    if isempty(license('inuse','simulink')), return; end  % don't load simulink if it's not loaded already
     force_close_system(find_system('SearchDepth',0));
   else
     try 

@@ -38,7 +38,7 @@ RigidBody::RigidBody(void) :
 	body_index = 0;
 	mass = 0.0;
 	floating = 0;
-	pitch = 0.0;
+	pitch = 0;
 	com << Vector3d::Zero(), 1;
 	I << Matrix<double, TWIST_SIZE, TWIST_SIZE>::Zero();
 	T = Matrix4d::Identity();
@@ -113,32 +113,32 @@ void RigidBody::computeAncestorDOFs(RigidBodyManipulator* model)
     if (floating==1) {
     	for (j=0; j<6; j++) {
     		ancestor_dofs.insert(position_num_start+j);
-    		for (i=0; i<3*model->NB; i++) {
-    			ddTdqdq_nonzero_rows.insert(i*model->NB + position_num_start + j);
-    			ddTdqdq_nonzero_rows.insert(3*model->NB*position_num_start + i + j);
+    		for (i=0; i<3*model->num_positions; i++) {
+    			ddTdqdq_nonzero_rows.insert(i*model->num_positions + position_num_start + j);
+    			ddTdqdq_nonzero_rows.insert(3*model->num_positions*position_num_start + i + j);
     		}
     	}
     } else if (floating==2) {
     	for (j=0; j<7; j++) {
     		ancestor_dofs.insert(position_num_start+j);
-    		for (i=0; i<3*model->NB; i++) {
-    			ddTdqdq_nonzero_rows.insert(i*model->NB + position_num_start + j);
-    			ddTdqdq_nonzero_rows.insert(3*model->NB*position_num_start + i + j);
+    		for (i=0; i<3*model->num_positions; i++) {
+    			ddTdqdq_nonzero_rows.insert(i*model->num_positions + position_num_start + j);
+    			ddTdqdq_nonzero_rows.insert(3*model->num_positions*position_num_start + i + j);
     		}
     	}
     }
     else {
     	ancestor_dofs.insert(position_num_start);
-    	for (i=0; i<3*model->NB; i++) {
-    		ddTdqdq_nonzero_rows.insert(i*model->NB + position_num_start);
-    		ddTdqdq_nonzero_rows.insert(3*model->NB*position_num_start + i);
+    	for (i=0; i<3*model->num_positions; i++) {
+    		ddTdqdq_nonzero_rows.insert(i*model->num_positions + position_num_start);
+    		ddTdqdq_nonzero_rows.insert(3*model->num_positions*position_num_start + i);
     	}
     }
 
 
     // compute matrix blocks
     IndexRange ind;  ind.start=-1; ind.length=0;
-    for (i=0; i<3*model->NB*model->NB; i++) {
+    for (i=0; i<3*model->num_positions*model->num_positions; i++) {
       if (ddTdqdq_nonzero_rows.find(i)!=ddTdqdq_nonzero_rows.end()) {
         if (ind.start<0) ind.start=i;
       } else {

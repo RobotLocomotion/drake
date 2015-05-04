@@ -105,4 +105,4 @@ function [A, b] = convertToCspace(A, b)
   b = [b; 0; 0];
 end
 
-% TIMEOUT 1000
+% TIMEOUT 1500

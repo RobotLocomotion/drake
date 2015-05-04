@@ -477,7 +477,7 @@ bool parseLink(RigidBodyManipulator* model, TiXmlElement* node, const map< strin
   }
 
   model->bodies.push_back(body);
-  body->body_index = model->bodies.size() - 1;
+  body->body_index = static_cast<int>(model->bodies.size()) - 1;
 
   return true;
 }
@@ -567,7 +567,6 @@ bool parseJoint(RigidBodyManipulator* model, TiXmlElement* node)
     fjoint = new RevoluteJoint(name, Ttree, axis);
     joint = fjoint;
   } else if (type.compare("fixed") == 0) {
-    // FIXME: implement a fixed joint class
     joint = new FixedJoint(name, Ttree);
   } else if (type.compare("prismatic") == 0) {
     fjoint = new PrismaticJoint(name, Ttree, axis);

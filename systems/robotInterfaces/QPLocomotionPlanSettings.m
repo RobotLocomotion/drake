@@ -1,10 +1,11 @@
 classdef QPLocomotionPlanSettings
   properties
     robot;
-    x0;
+    contact_groups;
     support_times
     supports;
     body_motions;
+    zmp_data;
     zmptraj = [];
     zmp_final = [];
     LIP_height;
@@ -18,18 +19,21 @@ classdef QPLocomotionPlanSettings
     g = 9.81; % gravity m/s^2
     is_quasistatic = false;
     constrained_dofs = [];
+    untracked_joint_inds;
 
     planned_support_command = QPControllerPlan.support_logic_maps.require_support; % when the plan says a given body is in support, require the controller to use that support. To allow the controller to use that support only if it thinks the body is in contact with the terrain, try QPControllerPlan.support_logic_maps.kinematic_or_sensed; 
-    
+
     min_knee_angle = 0.7;
     knee_kp = 40;
     knee_kd = 4;
     knee_weight = 1;
-    
+
     pelvis_name = 'pelvis';
     r_foot_name = 'r_foot';
     l_foot_name = 'l_foot';
-    
+    r_knee_name = 'r_leg_kny';
+    l_knee_name = 'l_leg_kny';
+
     duration = inf;
     start_time = 0;
     default_qp_input = atlasControllers.QPInputConstantHeight;
@@ -40,17 +44,36 @@ classdef QPLocomotionPlanSettings
     function obj = QPLocomotionPlanSettings(robot)
       obj.robot = robot;
       S = load(obj.robot.fixed_point_file);
+      rpc = atlasUtil.propertyCache(obj.robot);
+      obj.contact_groups = rpc.contact_groups;
       obj.qtraj = S.xstar(1:obj.robot.getNumPositions());
       obj.default_qp_input = atlasControllers.QPInputConstantHeight();
       obj.default_qp_input.whole_body_data.q_des = zeros(obj.robot.getNumPositions(), 1);
       obj.constrained_dofs = [findPositionIndices(obj.robot,'arm');findPositionIndices(obj.robot,'neck');findPositionIndices(obj.robot,'back_bkz');findPositionIndices(obj.robot,'back_bky')];
-    end   
+      obj.untracked_joint_inds = [];
+      obj.zmp_data = QPLocomotionPlanSettings.defaultZMPData();
+    end
+
+    function obj = setLQRForCoM(obj)
+      Q = diag([10 10 1 1]);
+      R = 0.0001*eye(2);
+      A = [zeros(2),eye(2); zeros(2,4)];
+      B = [zeros(2); eye(2)];
+      [~,S,~] = lqr(A,B,Q,R);
+      % set the Qy to zero since we only want to stabilize COM
+      obj.zmp_data.Qy = 0*obj.default_qp_input.zmp_data.Qy;
+      obj.zmp_data.A = A;
+      obj.zmp_data.B = B;
+      obj.zmp_data.R = R;
+      obj.zmp_data.S = S;
+    end
+    
   end
 
   methods(Static)
     function obj = fromStandingState(x0, biped, support_state, options)
 
-      if nargin < 3
+      if nargin < 3 || isempty(support_state)
         support_state = RigidBodySupportState(biped, [biped.foot_body_id.right, biped.foot_body_id.left]);
       end
       if nargin < 4
@@ -59,7 +82,6 @@ classdef QPLocomotionPlanSettings
       options = applyDefaults(options, struct('center_pelvis', true));
 
       obj = QPLocomotionPlanSettings(biped);
-      obj.x0 = x0;
       obj.support_times = [0, inf];
       obj.duration = inf;
       obj.supports = [support_state, support_state];
@@ -134,14 +156,13 @@ classdef QPLocomotionPlanSettings
       end
 
       obj = QPLocomotionPlanSettings(biped);
-      obj.x0 = x0;
       arm_inds = biped.findPositionIndices('arm');
       obj.qtraj(arm_inds) = x0(arm_inds);
       % obj.qtraj = x0(1:biped.getNumPositions());
 
       [obj.supports, obj.support_times] = QPLocomotionPlanSettings.getSupports(zmp_knots);
       obj.zmptraj = QPLocomotionPlanSettings.getZMPTraj(zmp_knots);
-      [~, obj.V, obj.comtraj, ~] = biped.planZMPController(obj.zmptraj, obj.x0, options);
+      [~, obj.V, obj.comtraj, ~] = biped.planZMPController(obj.zmptraj, x0, options);
       pelvis_motion_data = biped.getPelvisMotionForWalking(foot_motion_data, obj.supports, obj.support_times, options);
       obj.body_motions = [foot_motion_data, pelvis_motion_data];
 
@@ -163,7 +184,8 @@ classdef QPLocomotionPlanSettings
                                                                   biped.foot_body_id.left],...
                                               'quat_task_to_world',repmat([1;0;0;0],1,3),...
                                               'translation_task_to_world',zeros(3,3),...
-                                              'bodies_to_control_when_in_contact', biped.findLinkId('pelvis')));
+                                              'bodies_to_control_when_in_contact', biped.findLinkId('pelvis'),...
+                                              'track_com_traj',false));
 
       num_bodies_to_track = length(options.bodies_to_track);
       sizecheck(options.quat_task_to_world,[4,num_bodies_to_track]);
@@ -250,8 +272,10 @@ classdef QPLocomotionPlanSettings
       end
 
       obj.gain_set = 'manip';
-      obj = obj.setCOMTraj();
-      obj = obj.setLQR_for_COM();
+      if(options.track_com_traj)
+        obj = obj.setCOMTraj();
+        obj = obj.setLQRForCoM();
+      end
     end
 
     function [supports, support_times] = getSupports(zmp_knots)
@@ -262,6 +286,25 @@ classdef QPLocomotionPlanSettings
     function zmptraj = getZMPTraj(zmp_knots)
       zmptraj = PPTrajectory(foh([zmp_knots.t], [zmp_knots.zmp]));
       zmptraj = setOutputFrame(zmptraj, SingletonCoordinateFrame('desiredZMP',2,'z',{'x_zmp','y_zmp'}));
+    end
+  end
+  
+  methods (Static, Access=private)
+    function zmp_data = defaultZMPData()
+      zmp_data = struct('A',  [zeros(2),eye(2); zeros(2,4)],... % COM state map 4x4
+        'B', [zeros(2); eye(2)],... % COM input map 4x2
+        'C', [eye(2),zeros(2)],... % ZMP state-output map 2x4
+        'D', -0.89/9.81*eye(2),... % ZMP input-output map 2x2
+        'x0', zeros(4,1),... % nominal state 4x1
+        'y0', zeros(2,1),... % nominal output 2x1
+        'u0', zeros(2,1),... % nominal input 2x1
+        'R', zeros(2),... % input LQR cost 2x2
+        'Qy', 0.8*eye(2),... % output LQR cost 2x2
+        'S', zeros(4),... % cost-to-go terms: x'Sx + x's1 + s2 [4x4]
+        's1', zeros(4,1),... % 4x1
+        's1dot', zeros(4,1),... % 4x1
+        's2', 0,... % 1x1
+        's2dot', 0); % 1x1
     end
   end
 end

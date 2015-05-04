@@ -14,6 +14,8 @@ function [ytraj,xtraj,lcmlog] = simulate(obj,tspan,x0,options)
 % @option gui_control_interface set to true to bring up a figure with play/stop buttons @default false
 % @option lcm_control_interface channel on which to listen for lcmt_simulation_control messages.  @default '' -- which means no lcm
 %            interface
+% @option MaxDataPoints integer N to limit output to the last N data
+%            points.  useful for running very long simulations. 
 
 checkDependency('simulink');
 if ~exist('DCSFunction','file')
@@ -42,10 +44,9 @@ if ~isfield(options,'gui_control_interface'), options.gui_control_interface = fa
 if ~isfield(options,'lcm_control_interface'), options.lcm_control_interface = ''; end
 
 if options.gui_control_interface || ~isempty(options.lcm_control_interface)
-  assignin('base',[mdl,'_control'],SimulationControlBlock(options.gui_control_interface,options.lcm_control_interface));
   add_block('simulink/User-Defined Functions/S-Function',[mdl,'/simulation_control'], ...
     'FunctionName','DCSFunction', ...
-    'parameters',[mdl,'_control']);
+    'parameters',registerParameter(mdl,SimulationControlBlock(mdl,options.gui_control_interface,options.lcm_control_interface),'control'));
 end
 
 pstruct = obj.simulink_params;
@@ -66,8 +67,7 @@ if (nargin>2 && ~isempty(x0)) % handle initial conditions
     sizecheck(x0,[obj.getStateFrame.dim,1]);
   end
   x0 = stateVectorToStructure(obj,x0,mdl);
-  assignin('base',[mdl,'_x0'],x0);
-  pstruct.InitialState = [mdl,'_x0'];
+  pstruct.InitialState = registerParameter(mdl,x0,'x0');
   pstruct.LoadInitialState = 'on';
 
   if (~isempty(find_system(mdl,'ClassName','InitialCondition')))
@@ -86,7 +86,13 @@ end
 pstruct.StateSaveName = 'xout';
 pstruct.SaveOutput = 'on';
 pstruct.OutputSaveName = 'yout';
-pstruct.LimitDataPoints = 'off';
+if isfield(options,'MaxDataPoints') && ~isinf(options.MaxDataPoints)
+  pstruct.LimitDataPoints = 'on';
+  pstruct.MaxDataPoints = num2str(options.MaxDataPoints);
+else
+  pstruct.LimitDataPoints = 'off'
+end
+  
 %pstruct.SaveOnModelUpdate = 'false';
 %pstruct.AutoSaveOptions.SaveModelOnUpdate = 'false';
 %pstruct.AutoSaveOptions.SaveBackupOnVersionUpgrade = 'false';

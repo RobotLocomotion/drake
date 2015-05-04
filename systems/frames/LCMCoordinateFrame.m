@@ -127,7 +127,7 @@ classdef LCMCoordinateFrame < CoordinateFrame & LCMSubscriber & LCMPublisher
     function setupLCMInputs(obj,mdl,subsys,subsys_portnum,options)
       if nargin<5, options=struct(); end
       if ~isfield(options,'input_sample_time') options.input_sample_time = [.005,0]; end
-      typecheck(mdl,'char');
+      typecheck(mdl,{'char','SimulinkModelHandle'});
       typecheck(subsys,'char');
       uid = datestr(now,'MMSSFFF');
       if (nargin<4) subsys_portnum=1; end
@@ -140,7 +140,7 @@ classdef LCMCoordinateFrame < CoordinateFrame & LCMSubscriber & LCMPublisher
     function setupLCMOutputs(obj,mdl,subsys,subsys_portnum,options)
       if nargin<5, options=struct(); end
       if ~isfield(options,'output_sample_time') options.output_sample_time = [.005,0]; end
-      typecheck(mdl,'char');
+      typecheck(mdl,{'char','SimulinkModelHandle'});
       typecheck(subsys,'char');
       uid = datestr(now,'MMSSFFF');
       if (nargin<4) subsys_portnum=1; end
