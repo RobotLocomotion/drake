@@ -71,6 +71,50 @@ classdef QPLocomotionPlanSettings
       obj.zmp_data.S = S;
     end
     
+   function draw_lcmgl(obj, lcmgl)    
+      function plot_traj_foh(traj, color)    
+        ts = traj.getBreaks();   
+        pts = traj.eval(ts);   
+        if size(pts,1) == 2    
+          pts = [pts; zeros(1,size(pts,2))];   
+        end    
+        lcmgl.glColor3f(color(1), color(2), color(3));   
+        lcmgl.glBegin(lcmgl.LCMGL_LINES);    
+        for j = 1:length(ts)-1   
+          lcmgl.glVertex3f(pts(1,j), pts(2,j),pts(3,j));   
+          lcmgl.glVertex3f(pts(1,j+1), pts(2,j+1), pts(3,j+1));    
+        end    
+        lcmgl.glEnd();   
+      end    
+   
+      link_trajectories = obj.getLinkTrajectories();   
+      for j = 1:length(link_trajectories)    
+        if ~isempty(link_trajectories(j).traj)   
+          plot_traj_foh(link_trajectories(j).traj, [0.8, 0.8, 0.2]);   
+        else   
+          plot_traj_foh(link_trajectories(j).traj_min, [0.8, 0.8, 0.2]);   
+          plot_traj_foh(link_trajectories(j).traj_max, [0.2, 0.8, 0.8]);   
+        end    
+      end    
+      if ~isa(obj.comtraj, 'Trajectory')   
+        obj.comtraj = ExpPlusPPTrajectory(obj.comtraj.breaks,...   
+                                          obj.comtraj.K,...    
+                                          obj.comtraj.A,...    
+                                          obj.comtraj.alpha,...    
+                                          obj.comtraj.gamma);    
+      end    
+      plot_traj_foh(obj.comtraj, [0,1,0]);   
+      plot_traj_foh(obj.zmptraj, [0,0,1]);   
+    end    
+   
+    function link_trajectories = getLinkTrajectories(obj)    
+      link_trajectories = struct('link_ndx', {}, 'traj', {}, 'min_traj', {}, 'max_traj', {});    
+      for j = 1:length(obj.body_motions)   
+        link_trajectories(j).link_ndx = obj.body_motions(j).body_id;   
+        link_trajectories(j).traj = PPTrajectory(mkpp(obj.body_motions(j).ts, obj.body_motions(j).coefs, size(obj.body_motions(j).coefs, 1)));   
+      end    
+    end
+    
   end
 
   methods(Static)
