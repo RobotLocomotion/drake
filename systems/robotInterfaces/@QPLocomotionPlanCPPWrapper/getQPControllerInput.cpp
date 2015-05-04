@@ -6,7 +6,7 @@ using namespace Eigen;
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
-  if (nrhs < 4 || nlhs != 1) {
+  if (nrhs != 4 || nlhs != 1) {
     mexErrMsgTxt("usage: lcm_msg_data = getQPControllerInput(obj, t_global, x, contact_force_detected);");
   }
 
