@@ -85,7 +85,7 @@ PiecewisePolynomial<double> matlabCoefsAndBreaksToPiecewisePolynomial(const mxAr
     for (mwSize row = 0; row < dims[0]; row++) {
       VectorXd coefficients(dims[2]);
       for (mwSize coefficient_index = 0; coefficient_index < dims[2]; coefficient_index++) {
-        mwSize sub[] = { row, segment_index, coefficient_index };
+        mwSize sub[] = { row, segment_index, dims[2] - coefficient_index - 1 };  // Matlab's reverse coefficient indexing...
         coefficients[coefficient_index] = *(mxGetPr(mex_coefs) + sub2ind(num_dims, dims, sub));
       }
       polynomial_matrix(row) = Polynomial<double>(coefficients);

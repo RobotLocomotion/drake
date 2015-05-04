@@ -88,6 +88,9 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
   while (support_index < settings.support_times.size() - 1 && t_plan >= settings.support_times[support_index + 1])
     support_index++;
 
+  VectorXd v_dummy(0, 1);
+  robot.doKinematicsNew(q, v_dummy);
+
   RigidBodySupportState& support_state = settings.supports[support_index];
   bool is_last_support = support_index == settings.supports.size() - 1;
   const RigidBodySupportState& next_support = is_last_support ? settings.supports[support_index] : settings.supports[support_index + 1];
@@ -95,7 +98,7 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
 
   drake::lcmt_qp_controller_input qp_input;
   qp_input.be_silent = false;
-  qp_input.timestamp = static_cast<int64_t>(t_global * 1e6);
+  qp_input.timestamp = 0; // static_cast<int64_t>(t_global * 1e6); // FIXME
   qp_input.num_support_data = 0;
   qp_input.num_tracked_bodies = 0;
   qp_input.num_external_wrenches = 0;
@@ -128,7 +131,7 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
   qp_input.zmp_data.s2dot = settings.zmp_data.s2dot;
 
   // zmp data: D
-  Matrix2d D = -settings.lipm_height * Matrix2d::Identity();
+  Matrix2d D = -settings.lipm_height / settings.g * Matrix2d::Identity();
   eigenToCArrayOfArrays(D, qp_input.zmp_data.D);
 
   // zmp data: x0, y0
@@ -168,10 +171,8 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
   auto s1_current = settings.V.getS1().value(t_plan);
   eigenToCArrayOfArrays(s1_current, qp_input.zmp_data.s1);
   auto s1dot_current = settings.V.getS1().derivative().value(t_plan);
+  s1dot_current.setZero(); // FIXME: remove
   eigenToCArrayOfArrays(s1dot_current, qp_input.zmp_data.s1dot); // NOTE: this was just set to the default (zeros) before
-
-  VectorXd v_dummy(0, 1);
-  robot.doKinematicsNew(q, v_dummy);
 
   bool pelvis_has_tracking = false;
   for (int j = 0; j < settings.body_motions.size(); ++j) {
@@ -435,30 +436,39 @@ void QPLocomotionPlan::updatePlanShift(double t_plan, const std::vector<bool>& c
   // find where the next support is in our planned list of supports
   vector<RigidBodySupportState>::const_iterator next_support_it = std::find_if(settings.supports.begin(), settings.supports.end(), AddressEqual<const RigidBodySupportState&>(next_support));
 
-  // reverse iterate to find which one came into contact last
+  /*
+   * Reverse iterate to find which one came into contact last
+   * If more than one supporting foot came into contact at the same time (e.g. when jumping and landing with two feet at the same time) or if both feet have always been in contact
+   * just use the foot that appears first in support_foot_indices
+   */
+  int support_foot_to_use_for_plan_shift = -1;
   reverse_iterator<vector<RigidBodySupportState>::const_iterator> supports_reverse_it(next_support_it);
   for (; supports_reverse_it != settings.supports.rend(); ++supports_reverse_it) {
+    if (support_foot_to_use_for_plan_shift > 0)
+      break;
+
     const RigidBodySupportState& support = *supports_reverse_it;
     for (auto support_foot_it = support_foot_indices.begin(); support_foot_it != support_foot_indices.end(); ++support_foot_it) {
       if (!isSupportingBody(*support_foot_it, support)) {
-        int support_foot_that_came_into_contact_last = *support_foot_it;
+        support_foot_to_use_for_plan_shift = *support_foot_it;
+        break;
+      }
+    }
+  }
+  if (support_foot_to_use_for_plan_shift == -1 && support_foot_indices.size() > 0)
+    support_foot_to_use_for_plan_shift = support_foot_indices[0];
 
-        // find corresponding body_motion and compute new plan shift
-        for (auto body_motion_it = settings.body_motions.begin(); body_motion_it != settings.body_motions.end(); ++body_motion_it) {
-          int body_motion_body_id = robot.parseBodyOrFrameID(body_motion_it->getBodyOrFrameId());
-          if (body_motion_body_id == support_foot_that_came_into_contact_last) {
-            int world = 0;
-            int rotation_type = 0;
-            Vector3d foot_frame_origin_actual = robot.forwardKinNew(Vector3d::Zero().eval(), body_motion_it->getBodyOrFrameId(), world, rotation_type, 0).value();
-            Vector3d foot_frame_origin_planned = body_motion_it->getTrajectory().value(t_plan).topRows<3>();
-
-            /*
-             * If more than one supporting foot came into contact at the same time (e.g. when jumping and landing with two feet at the same time)
-             * just use the foot that appears first in support_foot_indices
-             */
-            plan_shift = foot_frame_origin_planned - foot_frame_origin_actual;
-          }
-        }
+  if (support_foot_to_use_for_plan_shift != -1) {
+    // find corresponding body_motion and compute new plan shift
+    for (auto body_motion_it = settings.body_motions.begin(); body_motion_it != settings.body_motions.end(); ++body_motion_it) {
+      int body_motion_body_id = robot.parseBodyOrFrameID(body_motion_it->getBodyOrFrameId());
+      if (body_motion_body_id == support_foot_to_use_for_plan_shift) {
+        int world = 0;
+        int rotation_type = 0;
+        Vector3d foot_frame_origin_actual = robot.forwardKinNew(Vector3d::Zero().eval(), body_motion_it->getBodyOrFrameId(), world, rotation_type, 0).value();
+        Vector3d foot_frame_origin_planned = body_motion_it->getTrajectory().value(t_plan).topRows<3>();
+        plan_shift = foot_frame_origin_planned - foot_frame_origin_actual;
+        return;
       }
     }
   }
