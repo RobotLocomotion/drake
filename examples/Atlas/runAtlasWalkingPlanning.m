@@ -66,7 +66,7 @@ end
 
 % Show the result
 walking_plan_data = r.planWalkingZMP(x0, footstep_plan);
-[xtraj, htraj, ts] = r.planWalkingStateTraj(walking_plan_data);
+[xtraj, htraj, ts] = r.planWalkingStateTraj(walking_plan_data.settings);
 
 if isa(v, 'BotVisualizer')
   lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(), 'footstep_plan');

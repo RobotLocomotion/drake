@@ -20,6 +20,7 @@ classdef QPLocomotionPlanSettings
     is_quasistatic = false;
     constrained_dofs = [];
     untracked_joint_inds;
+    x0;
 
     planned_support_command = QPControllerPlan.support_logic_maps.require_support; % when the plan says a given body is in support, require the controller to use that support. To allow the controller to use that support only if it thinks the body is in contact with the terrain, try QPControllerPlan.support_logic_maps.kinematic_or_sensed; 
 
@@ -84,6 +85,7 @@ classdef QPLocomotionPlanSettings
       options = applyDefaults(options, struct('center_pelvis', true));
 
       obj = QPLocomotionPlanSettings(biped);
+      obj.x0 = x0;
       obj.support_times = [0, inf];
       obj.duration = inf;
       obj.supports = [support_state, support_state];
@@ -158,13 +160,14 @@ classdef QPLocomotionPlanSettings
       end
 
       obj = QPLocomotionPlanSettings(biped);
+      obj.x0 = x0;
       arm_inds = biped.findPositionIndices('arm');
       obj.qtraj(arm_inds) = x0(arm_inds);
       % obj.qtraj = x0(1:biped.getNumPositions());
 
       [obj.supports, obj.support_times] = QPLocomotionPlanSettings.getSupports(zmp_knots);
       obj.zmptraj = QPLocomotionPlanSettings.getZMPTraj(zmp_knots);
-      [~, obj.V, obj.comtraj, ~] = biped.planZMPController(obj.zmptraj, x0, options);
+      [~, obj.V, obj.comtraj, ~] = biped.planZMPController(obj.zmptraj, obj.x0, options);
       pelvis_motion_data = biped.getPelvisMotionForWalking(foot_motion_data, obj.supports, obj.support_times, options);
       obj.body_motions = [foot_motion_data, pelvis_motion_data];
 
