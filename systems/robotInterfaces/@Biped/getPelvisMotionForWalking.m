@@ -4,7 +4,7 @@ typecheck(foot_motion_data, 'BodyMotionData');
 typecheck(supports, 'RigidBodySupportState');
 assert(isnumeric(support_times));
 
-if nargin < 5
+if nargin < 6
   options = struct();
 end
 options = applyDefaults(options, struct('pelvis_height_above_sole', obj.default_walking_params.pelvis_height_above_foot_sole, 'debug', false,...
