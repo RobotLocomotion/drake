@@ -3,28 +3,27 @@ classdef QPLocomotionPlanCPPWrapper < QPControllerPlan
     qp_locomotion_plan_ptr
   end
 
+  properties (SetAccess = private, GetAccess = public)
+    settings % store the settings that were used to construct the c++ object for later inspection
+  end
+
   methods
     function obj = QPLocomotionPlanCPPWrapper(settings)
       model_ptr = settings.robot.getManipulator().mex_model_ptr;
       channel = 'qp_controller_input';
       obj.qp_locomotion_plan_ptr = constructQPLocomotionPlanmex(model_ptr, settings, channel);
+      obj.settings = settings;
     end
 
     function next_plan = getSuccessor(obj, t, x)
-      next_plan = obj;
-      next_plan.setDuration(inf);
+      next_plan = FrozenPlan(drake.lcmt_qp_controller_input(obj.getLastQPInput()));
     end
 
-    function is_finished = isFinished(obj, t, x)
-      if isempty(obj.start_time)
-        is_finished = false;
-      else
-        is_finished = t - obj.start_time >= obj.duration;
-      end
-    end
-    
+    ret = isFinished(obj, t, x);
     qp_input = getQPControllerInput(obj, t_global, x, contact_force_detected, rpc_dummy)
     ret = duration(obj)
     ret = start_time(obj)
+    setStartTime(obj, t)
+    qp_input = getLastQPInput(obj)
   end
 end

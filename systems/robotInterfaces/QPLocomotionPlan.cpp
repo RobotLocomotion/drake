@@ -236,7 +236,7 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
     }
 
     // extract out current and next polynomial segments
-    PiecewisePolynomial<double> body_motion_trajectory_slice = body_motion.getTrajectory().slice(body_motion_segment_index, std::min(2, body_motion.getTrajectory().getNumberOfSegments()));
+    PiecewisePolynomial<double> body_motion_trajectory_slice = body_motion.getTrajectory().slice(body_motion_segment_index, std::min(2, body_motion.getTrajectory().getNumberOfSegments() - body_motion_segment_index));
 
     // convert to global time
     body_motion_trajectory_slice.shiftRight(start_time);
@@ -326,6 +326,11 @@ void QPLocomotionPlan::setDuration(double duration)
   settings.duration = duration;
 }
 
+void QPLocomotionPlan::setStartTime(double start_time)
+{
+  this->start_time = start_time;
+}
+
 double QPLocomotionPlan::getStartTime() const
 {
   return start_time;
@@ -334,6 +339,20 @@ double QPLocomotionPlan::getStartTime() const
 double QPLocomotionPlan::getDuration() const
 {
   return settings.duration;
+}
+
+drake::lcmt_qp_controller_input QPLocomotionPlan::getLastQPInput() const
+{
+  return this->last_qp_input;
+}
+
+bool QPLocomotionPlan::isFinished(double t) const
+{
+  if (isNaN(start_time)) {
+    return false;
+  } else {
+    return (t - start_time) >= settings.duration;
+  }
 }
 
 const RigidBodyManipulator& QPLocomotionPlan::getRobot() const
@@ -434,28 +453,29 @@ void QPLocomotionPlan::updatePlanShift(double t_plan, const std::vector<bool>& c
     }
   }
 
-  // find where the next support is in our planned list of supports
-  vector<RigidBodySupportState>::const_iterator next_support_it = std::find_if(settings.supports.begin(), settings.supports.end(), AddressEqual<const RigidBodySupportState&>(next_support));
-
-  /*
-   * Reverse iterate to find which one came into contact last
-   * If more than one supporting foot came into contact at the same time (e.g. when jumping and landing with two feet at the same time) or if both feet have always been in contact
-   * just use the foot that appears first in support_foot_indices
-   */
   int support_foot_to_use_for_plan_shift = -1;
-  reverse_iterator<vector<RigidBodySupportState>::const_iterator> supports_reverse_it(next_support_it);
-  for (; supports_reverse_it != settings.supports.rend(); ++supports_reverse_it) {
-    if (support_foot_to_use_for_plan_shift > 0)
-      break;
 
-    const RigidBodySupportState& support = *supports_reverse_it;
-    for (auto support_foot_it = support_foot_indices.begin(); support_foot_it != support_foot_indices.end(); ++support_foot_it) {
-      if (!isSupportingBody(*support_foot_it, support)) {
-        support_foot_to_use_for_plan_shift = *support_foot_it;
-        break;
-      }
-    }
-  }
+  // // find where the next support is in our planned list of supports
+  // vector<RigidBodySupportState>::const_iterator next_support_it = std::find_if(settings.supports.begin(), settings.supports.end(), AddressEqual<const RigidBodySupportState&>(next_support));
+
+  // /*
+  //  * Reverse iterate to find which one came into contact last
+  //  * If more than one supporting foot came into contact at the same time (e.g. when jumping and landing with two feet at the same time) or if both feet have always been in contact
+  //  * just use the foot that appears first in support_foot_indices
+  //  */
+  // reverse_iterator<vector<RigidBodySupportState>::const_iterator> supports_reverse_it(next_support_it);
+  // for (; supports_reverse_it != settings.supports.rend(); ++supports_reverse_it) {
+  //   if (support_foot_to_use_for_plan_shift > 0)
+  //     break;
+
+  //   const RigidBodySupportState& support = *supports_reverse_it;
+  //   for (auto support_foot_it = support_foot_indices.begin(); support_foot_it != support_foot_indices.end(); ++support_foot_it) {
+  //     if (!isSupportingBody(*support_foot_it, support)) {
+  //       support_foot_to_use_for_plan_shift = *support_foot_it;
+  //       break;
+  //     }
+  //   }
+  // }
   if (support_foot_to_use_for_plan_shift == -1 && support_foot_indices.size() > 0)
     support_foot_to_use_for_plan_shift = support_foot_indices[0];
 

@@ -190,9 +190,15 @@ public:
 
   void setDuration(double duration);
 
+  void setStartTime(double start_time);
+
   double getStartTime() const;
 
   double getDuration() const;
+
+  bool isFinished(double t) const;
+
+  drake::lcmt_qp_controller_input getLastQPInput() const;
 
   const RigidBodyManipulator& getRobot() const;
 
