@@ -106,7 +106,8 @@ struct QPLocomotionPlanSettings {
   bool is_quasistatic = false;
   KneeSettings knee_settings = createDefaultKneeSettings();
   std::string pelvis_name = "pelvis";
-  std::map<Side, std::string> foot_names = createDefaultFootNames();
+  std::map<Side, std::string> foot_names;
+  std::map<Side, std::string> knee_names;
   std::vector<int> constrained_position_indices;
   std::vector<int> untracked_position_indices;
 
@@ -125,13 +126,6 @@ struct QPLocomotionPlanSettings {
     knee_settings.knee_kd = 4.0;
     knee_settings.knee_weight = 1.0;
     return knee_settings;
-  }
-
-  static std::map<Side, std::string> createDefaultFootNames() {
-    std::map<Side, std::string> ret;
-    ret[Side::LEFT] = "l_foot";
-    ret[Side::RIGHT] = "r_foot";
-    return ret;
   }
 
   // may be useful later in setting up constrained_position_indices
@@ -213,7 +207,7 @@ private:
 
   static const std::map<Side, int> createFootBodyIdMap(RigidBodyManipulator& robot, const std::map<Side, std::string>& foot_names);
 
-  static const std::map<Side, int> createKneeIndicesMap(RigidBodyManipulator& robot, const std::map<Side, int>& foot_body_ids);
+  static const std::map<Side, int> createKneeIndicesMap(RigidBodyManipulator& robot, const std::map<Side, std::string>& foot_body_ids);
 };
 
 #endif /* SYSTEMS_ROBOTINTERFACES_QPLOCOMOTIONPLAN_H_ */

@@ -66,7 +66,7 @@ PiecewisePolynomial<double> matlabPPTrajectoryOrMatrixToPiecewisePolynomial(cons
   }
 }
 
-PiecewisePolynomial<double> matlabCoefsAndBreaksToPiecewisePolynomial(const mxArray* mex_coefs, const mxArray* mex_breaks)
+PiecewisePolynomial<double> matlabCoefsAndBreaksToPiecewisePolynomial(const mxArray* mex_coefs, const mxArray* mex_breaks, bool flip_last_dimension)
 {
   int num_dims = 3;
   mwSize dims[num_dims];
@@ -85,7 +85,8 @@ PiecewisePolynomial<double> matlabCoefsAndBreaksToPiecewisePolynomial(const mxAr
     for (mwSize row = 0; row < dims[0]; row++) {
       VectorXd coefficients(dims[2]);
       for (mwSize coefficient_index = 0; coefficient_index < dims[2]; coefficient_index++) {
-        mwSize sub[] = { row, segment_index, dims[2] - coefficient_index - 1 };  // Matlab's reverse coefficient indexing...
+        mwSize third_dimension_index = flip_last_dimension ? dims[2] - coefficient_index - 1 : coefficient_index;
+        mwSize sub[] = { row, segment_index, third_dimension_index };
         coefficients[coefficient_index] = *(mxGetPr(mex_coefs) + sub2ind(num_dims, dims, sub));
       }
       polynomial_matrix(row) = Polynomial<double>(coefficients);
@@ -104,7 +105,7 @@ ExponentialPlusPiecewisePolynomial<double> matlabExpPlusPPToExponentialPlusPiece
   
   const mxArray* mex_breaks = mxGetFieldOrPropertySafe(array, "breaks");
   const mxArray* mex_coefs = mxGetFieldOrPropertySafe(array, "gamma");
-  PiecewisePolynomial<double> piecewise_polynomial_part = matlabCoefsAndBreaksToPiecewisePolynomial(mex_coefs, mex_breaks);
+  PiecewisePolynomial<double> piecewise_polynomial_part = matlabCoefsAndBreaksToPiecewisePolynomial(mex_coefs, mex_breaks, false);
   return ExponentialPlusPiecewisePolynomial<double>(K, A, alpha, piecewise_polynomial_part);
 }
 
@@ -164,7 +165,7 @@ std::vector<BodyMotionData> setUpBodyMotions(const mxArray* mex_body_motions)
   for (int i = 0; i < num_body_motions; ++i) {
     BodyMotionData& body_motion_data = ret[i];
     body_motion_data.body_or_frame_id = static_cast<int>(mxGetPr(mxGetPropertySafe(mex_body_motions, i, "body_id"))[0]) - 1; // base 1 to base 0
-    body_motion_data.trajectory = matlabCoefsAndBreaksToPiecewisePolynomial(mxGetPropertySafe(mex_body_motions, i, "coefs"), mxGetPropertySafe(mex_body_motions, i, "ts"));
+    body_motion_data.trajectory = matlabCoefsAndBreaksToPiecewisePolynomial(mxGetPropertySafe(mex_body_motions, i, "coefs"), mxGetPropertySafe(mex_body_motions, i, "ts"), true);
     body_motion_data.toe_off_allowed = matlabToStdVector<bool>(mxGetPropertySafe(mex_body_motions, i, "toe_off_allowed"));
     body_motion_data.in_floating_base_nullspace = matlabToStdVector<bool>(mxGetPropertySafe(mex_body_motions, i, "in_floating_base_nullspace"));
     body_motion_data.control_pose_when_in_contact = matlabToStdVector<bool>(mxGetPropertySafe(mex_body_motions, i, "control_pose_when_in_contact"));
@@ -176,7 +177,6 @@ std::vector<BodyMotionData> setUpBodyMotions(const mxArray* mex_body_motions)
     body_motion_data.exponential_map_proportional_gain_multiplier = mxGetPr(mxGetPropertySafe(mex_body_motions, i, "expmap_kp_multiplier"))[0];
     body_motion_data.exponential_map_damping_ratio_multiplier = mxGetPr(mxGetPropertySafe(mex_body_motions, i, "expmap_damping_ratio_multiplier"))[0];
     body_motion_data.weight_multiplier = matlabToEigenMap<6, 1>(mxGetPropertySafe(mex_body_motions, i, "weight_multiplier"));
-    ret.push_back(body_motion_data);
   }
   return ret;
 }
@@ -269,6 +269,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   settings.pelvis_name = mxGetStdString(mxGetPropertySafe(mex_settings, "pelvis_name"));
   settings.foot_names[Side::LEFT] = mxGetStdString(mxGetPropertySafe(mex_settings, "l_foot_name"));
   settings.foot_names[Side::RIGHT] = mxGetStdString(mxGetPropertySafe(mex_settings, "r_foot_name"));
+  settings.knee_names[Side::LEFT] = mxGetStdString(mxGetPropertySafe(mex_settings, "l_knee_name"));
+  settings.knee_names[Side::RIGHT] = mxGetStdString(mxGetPropertySafe(mex_settings, "r_knee_name"));
   settings.constrained_position_indices = matlabToStdVector<int>(mxGetPropertySafe(mex_settings, "constrained_dofs"));
   addOffset(settings.constrained_position_indices, -1); // base 1 to base 0
   settings.untracked_position_indices = matlabToStdVector<int>(mxGetPropertySafe(mex_settings, "untracked_joint_inds"));

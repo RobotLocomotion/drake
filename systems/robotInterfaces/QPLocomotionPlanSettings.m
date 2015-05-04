@@ -31,6 +31,8 @@ classdef QPLocomotionPlanSettings
     pelvis_name = 'pelvis';
     r_foot_name = 'r_foot';
     l_foot_name = 'l_foot';
+    r_knee_name = 'r_leg_kny';
+    l_knee_name = 'l_leg_kny';
 
     duration = inf;
     start_time = 0;

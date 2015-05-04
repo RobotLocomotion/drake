@@ -9,10 +9,7 @@
 #include "drakeUtil.h"
 #include "lcmUtil.h"
 #include <string>
-#include <iostream>
 
-// TODO: untracked_joint_inds
-// TODO: updateSwingTrajectory: undo plan shift?
 // TODO: discuss possibility of chatter in knee control
 // TODO: make body_motions a map from RigidBody* to BodyMotionData, remove body_id from BodyMotionData?
 
@@ -26,7 +23,7 @@ QPLocomotionPlan::QPLocomotionPlan(RigidBodyManipulator& robot, const QPLocomoti
     start_time(std::numeric_limits<double>::quiet_NaN()),
     pelvis_id(robot.findLinkId(settings.pelvis_name)),
     foot_body_ids(createFootBodyIdMap(robot, settings.foot_names)),
-    knee_indices(createKneeIndicesMap(robot, foot_body_ids)),
+    knee_indices(createKneeIndicesMap(robot, settings.knee_names)),
     plan_shift(Vector3d::Zero())
 {
   for (int i = 1; i < settings.support_times.size(); i++) {
@@ -112,6 +109,10 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
   qp_input.whole_body_data.constrained_dofs = settings.constrained_position_indices;
   addOffset(qp_input.whole_body_data.constrained_dofs, 1); // use 1-indexing in LCM
   qp_input.whole_body_data.num_constrained_dofs = qp_input.whole_body_data.constrained_dofs.size();
+  // apply plan shift
+  for (auto direction_it = settings.plan_shift_body_motion_indices.begin(); direction_it != settings.plan_shift_body_motion_indices.end(); ++direction_it) {
+    qp_input.whole_body_data.q_des[*direction_it] -= plan_shift[*direction_it];
+  }
 
   // zmp data:
   qp_input.zmp_data.timestamp = 0;
@@ -493,12 +494,12 @@ const std::map<Side, int> QPLocomotionPlan::createFootBodyIdMap(RigidBodyManipul
   return foot_body_ids;
 }
 
-const std::map<Side, int> QPLocomotionPlan::createKneeIndicesMap(RigidBodyManipulator& robot, const std::map<Side, int>& foot_body_ids)
+const std::map<Side, int> QPLocomotionPlan::createKneeIndicesMap(RigidBodyManipulator& robot, const std::map<Side, std::string>& knee_names)
 {
   std::map<Side, int> knee_indices;
   for (auto it = Side::values.begin(); it != Side::values.end(); ++it) {
-    int foot_body_id = foot_body_ids.at(*it);
-    knee_indices[*it] = robot.bodies[foot_body_id]->position_num_start;
+    int joint_id = robot.findJointId(knee_names.at(*it));
+    knee_indices[*it] = robot.bodies[joint_id]->position_num_start;
   }
   return knee_indices;
 }
