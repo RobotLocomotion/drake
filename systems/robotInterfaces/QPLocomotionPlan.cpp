@@ -251,7 +251,7 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
 
     drake::lcmt_body_motion_data body_motion_data_for_support_lcm;
     body_motion_data_for_support_lcm.timestamp = 0;
-    body_motion_data_for_support_lcm.body_id = body_id + 1; // use 1-indexing in LCM
+    body_motion_data_for_support_lcm.body_id = body_or_frame_id + 1; // use 1-indexing in LCM
 
     encodePiecewisePolynomial(body_motion_trajectory_slice, body_motion_data_for_support_lcm.spline);
     body_motion_data_for_support_lcm.in_floating_base_nullspace = body_motion.isInFloatingBaseNullSpace(body_motion_segment_index);
