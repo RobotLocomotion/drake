@@ -188,7 +188,7 @@ pelvis_ts = support_times;
 q0 = x0(1:obj.getNumPositions());
 kinsol = obj.doKinematics(q0);
 pelvis_pos0 = obj.forwardKin(kinsol,pelvis_body,[0;0;0],1);
-pelvis_height_above_sol0 = pelvis_pos0(3) - pelvis_reference_height(1);
+pelvis_height_above_sole0 = pelvis_pos0(3) - pelvis_reference_height(1);
 
 rpos = ppval(rfoot_body_motion.getPP(), pelvis_ts);
 lpos = ppval(lfoot_body_motion.getPP(), pelvis_ts);
@@ -205,7 +205,7 @@ pelvis_yaw = unwrap(pelvis_yaw);
 % Smooth commanded pelvis height between current and default
 pelvis_height = pelvis_reference_height + options.pelvis_height_above_sole;
 knot_idx = options.pelvis_height_transition_knot;
-pelvis_height(1:knot_idx) = pelvis_reference_height(1:knot_idx) + pelvis_height_above_sol0;
+pelvis_height(1:knot_idx) = pelvis_reference_height(1:knot_idx) + pelvis_height_above_sole0;
 
 pelvis_poses_rpy = [zeros(2, size(rpos, 2));
                 pelvis_height;

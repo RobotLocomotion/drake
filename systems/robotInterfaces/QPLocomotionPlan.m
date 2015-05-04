@@ -549,12 +549,6 @@ classdef QPLocomotionPlan < QPControllerPlan
       if nargin < 5
         options = struct();
       end
-
-      % this is special for getting down from the polaris, normally want this to be set to 1
-      if ~isfield(options,'pelvis_height_transition_knot') || isempty(options.pelvis_height_transition_knot)
-        options.pelvis_height_transition_knot = 2;
-      end
-
       options = applyDefaults(options, struct('pelvis_height_above_sole', biped.default_walking_params.pelvis_height_above_foot_sole,...
         'pelvis_height_transition_knot',1));
 
