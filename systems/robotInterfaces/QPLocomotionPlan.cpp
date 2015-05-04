@@ -416,6 +416,9 @@ void QPLocomotionPlan::updateSwingTrajectory(double t_plan, BodyMotionData& body
   typedef Matrix<double, 6, 1> Vector6d;
   Vector6d x0;
   x0.head<3>() = x0_xyzquat.value().head<3>();
+  for (auto it = settings.plan_shift_body_motion_indices.begin(); it != settings.plan_shift_body_motion_indices.end(); ++it) {
+    x0(*it) += plan_shift(*it);
+  }
   x0.tail<3>() = x0_expmap_unwrapped.value().tail<3>();
 
   Vector6d xd0;
