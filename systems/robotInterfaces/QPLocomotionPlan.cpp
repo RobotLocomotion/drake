@@ -272,6 +272,39 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
 
     if (body_id == pelvis_id)
       pelvis_has_tracking = true;
+
+    // If this body is not currently in support, but will be soon (within
+    // early_contact_allowed_time), then generate a new support data for that
+    // body which will only be active if that body senses force.
+    bool last_support = support_index == settings.supports.size() - 1;
+    if (!last_support) {
+      if (settings.support_times[support_index + 1] - t_plan < settings.early_contact_allowed_time) {
+        if (!isSupportingBody(body_id, support_state)) {
+          for (auto it = next_support.begin(); it != next_support.end(); ++it) {
+            if (it->body == body_id) {
+              drake::lcmt_support_data early_support_data_lcm;
+              early_support_data_lcm.timestamp = 0;
+              early_support_data_lcm.body_id = static_cast<int32_t>(it->body) + 1; // use 1-indexing in LCM
+              early_support_data_lcm.num_contact_pts = it->contact_points.cols();
+              eigenToStdVectorOfStdVectors(it->contact_points, early_support_data_lcm.contact_pts);
+              std::vector<bool> support_logic = support_logic_maps.at(ONLY_IF_FORCE_SENSED);
+              for (int i = 0; i < settings.planned_support_command.size(); i++)
+                early_support_data_lcm.support_logic_map[i] = support_logic[i];
+              early_support_data_lcm.mu = settings.mu;
+              early_support_data_lcm.use_support_surface = it->use_contact_surface;
+              Vector4f support_surface_float = it->support_surface.cast<float>();
+              memcpy(early_support_data_lcm.support_surface, support_surface_float.data(), sizeof(float) * 4);
+              qp_input.support_data.push_back(early_support_data_lcm);
+              qp_input.num_support_data++;
+              break;
+            }
+          }
+        }
+      }
+    }
+
+
+
   }
 
   if (!pelvis_has_tracking)

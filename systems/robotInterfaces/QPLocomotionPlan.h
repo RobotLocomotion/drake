@@ -89,6 +89,7 @@ struct QPLocomotionPlanSettings {
   typedef std::map<std::string, Eigen::Matrix3Xd> ContactNameToContactPointsMap;
   std::vector<ContactNameToContactPointsMap> contact_groups; // one for each RigidBody
   std::vector<bool> planned_support_command;
+  double early_contact_allowed_time;
 
   std::vector<BodyMotionData> body_motions;
   PiecewisePolynomial<double> zmp_trajectory;
