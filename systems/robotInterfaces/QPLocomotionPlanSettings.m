@@ -15,7 +15,7 @@ classdef QPLocomotionPlanSettings
     mu = 0.5;
     plan_shift = zeros(6,1);
     plan_shift_zmp_inds = 1:2;
-    plan_shift_body_motion_inds = 3;
+    plan_shift_body_motion_inds = 1:3;
     g = 9.81; % gravity m/s^2
     is_quasistatic = false;
     constrained_dofs = [];
@@ -27,6 +27,8 @@ classdef QPLocomotionPlanSettings
     knee_kp = 40;
     knee_kd = 4;
     knee_weight = 1;
+
+    early_contact_allowed_time = 0.4; % If a body is about to come into contact within the next [early_contact_allowed_time] seconds, then add an optional support that the controller can use if it senses force on that body
 
     pelvis_name = 'pelvis';
     r_foot_name = 'r_foot';

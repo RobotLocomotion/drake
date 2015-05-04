@@ -65,6 +65,9 @@ if (MATLAB_FOUND)
   add_mex(individualCentersOfPressuremex individualCentersOfPressuremex.cpp)
   target_link_libraries(individualCentersOfPressuremex drakeRBM drakeUtil drakeControlUtil)
 
+  add_mex(bodySpatialMotionPDmex bodySpatialMotionPDmex.cpp)
+  target_link_libraries(bodySpatialMotionPDmex drakeRBM drakeGeometryUtil drakeUtil drakeControlUtil)
+
 
 endif(MATLAB_FOUND)
 

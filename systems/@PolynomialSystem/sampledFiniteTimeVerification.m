@@ -36,9 +36,7 @@ function V = sampledFiniteTimeVerification(sys,ts,G,varargin)
 % Implements the algorithm described in http://arxiv.org/pdf/1010.3013v1
 
 checkDependency('sedumi');
-
-% for old versions of parallel computing toolbox, startup a matlabpool if necessary:
-if (exist('matlabpool','file') && matlabpool('size')==0) matlabpool; end
+ok=checkDependency('distcomp');  % initialize toolbox if it exists
 
 t=msspoly('t',1);
 ts=ts(:);
