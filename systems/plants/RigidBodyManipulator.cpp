@@ -477,7 +477,7 @@ string RigidBodyManipulator::getPositionName(int position_num) const
 string RigidBodyManipulator::getVelocityName(int velocity_num) const
 {
 	if (velocity_num<0 || velocity_num>=num_velocities)
-		throw std::runtime_error("position_num is out of range");
+		throw std::runtime_error("velocity_num is out of range");
 
 	size_t body_index = 0;
 	while (body_index+1<num_bodies && bodies[body_index+1]->velocity_num_start<=velocity_num) body_index++;
@@ -490,7 +490,7 @@ string RigidBodyManipulator::getStateName(int state_num) const
 	if (state_num<num_positions)
 		return getPositionName(state_num);
 	else
-		return getVelocityName(state_num);
+		return getVelocityName(state_num-num_positions);
 }
 
 map<string, int> RigidBodyManipulator::computePositionNameToIndexMap() const
