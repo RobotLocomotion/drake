@@ -39,7 +39,7 @@ public:
   // single segment and/or constant value constructor
   template <typename Derived>
   PiecewisePolynomial(const Eigen::MatrixBase<Derived>& value) :
-    PiecewisePolynomialBase(std::vector<double>({ { -std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity() } }))
+    PiecewisePolynomialBase(std::vector<double>({ { 0.0, std::numeric_limits<double>::infinity() } }))
   {
     polynomials.push_back(value.template cast<PolynomialType>());
   }
