@@ -236,7 +236,7 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
     }
 
     // extract out current and next polynomial segments
-    PiecewisePolynomial<double> body_motion_trajectory_slice = body_motion.getTrajectory().slice(body_motion_segment_index, 2);
+    PiecewisePolynomial<double> body_motion_trajectory_slice = body_motion.getTrajectory().slice(body_motion_segment_index, std::min(2, body_motion.getTrajectory().getNumberOfSegments()));
 
     // convert to global time
     body_motion_trajectory_slice.shiftRight(start_time);
