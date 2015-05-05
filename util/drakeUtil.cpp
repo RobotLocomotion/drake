@@ -289,7 +289,7 @@ const std::vector<T> matlabToStdVector(const mxArray* in) {
 }
 
 template <>
-const std::vector<double> matlabToStdVector<double>(const mxArray* in) {
+DLLEXPORT const std::vector<double> matlabToStdVector<double>(const mxArray* in) {
   // works for both row vectors and column vectors
   if (mxGetM(in) != 1 && mxGetN(in) != 1)
     throw std::runtime_error("Not a vector");
@@ -297,9 +297,9 @@ const std::vector<double> matlabToStdVector<double>(const mxArray* in) {
   return std::vector<double>(data, data + mxGetNumberOfElements(in));
 }
 
-int sub2ind(mwSize ndims, const mwSize* dims, const mwSize* sub) {
-  int stride = 1;
-  int ret = 0;
+mwSize sub2ind(mwSize ndims, const mwSize* dims, const mwSize* sub) {
+  mwSize stride = 1;
+  mwSize ret = 0;
   for (int i = 0; i < ndims; i++) {
     ret += sub[i] * stride;
     stride *= dims[i];
@@ -357,7 +357,7 @@ mxArray* eigenToMatlabSparse(MatrixBase<Derived> const & M, int & num_non_zero)
 
 template DLLEXPORT mxArray* eigenToMatlabSparse(MatrixBase< MatrixXd > const &, int &) ;
 template DLLEXPORT mxArray* eigenToMatlabSparse(MatrixBase< Map< MatrixXd> > const &, int &) ;
-template DLLEXPORT const std::vector<double> matlabToStdVector<double>(const mxArray* in);
+// template DLLEXPORT const std::vector<double> matlabToStdVector<double>(const mxArray* in); already explicitly specialized
 template DLLEXPORT const std::vector<int> matlabToStdVector<int>(const mxArray* in);
 template DLLEXPORT const std::vector<Eigen::DenseIndex> matlabToStdVector<Eigen::DenseIndex>(const mxArray* in);
 template DLLEXPORT const std::vector<bool> matlabToStdVector<bool>(const mxArray* in);

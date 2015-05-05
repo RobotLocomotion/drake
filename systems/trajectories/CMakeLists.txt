@@ -4,7 +4,7 @@ if (MATLAB_FOUND)
 endif()
 
 add_library(drakeTrajectories PiecewiseFunction.cpp PiecewisePolynomialBase.cpp PiecewisePolynomial.cpp ExponentialPlusPiecewisePolynomial.cpp)
-include_directories(${CMAKE_SOURCE_DIR}/solvers/polynomial)
+include_directories(${PROJECT_SOURCE_DIR}/solvers/polynomial)
 target_link_libraries(drakeTrajectories drakePolynomial)
 pods_install_libraries(drakeTrajectories)
 pods_install_headers(PiecewiseFunction.h PiecewisePolynomial.h PiecewisePolynomialBase.h ExponentialPlusPiecewisePolynomial.h DESTINATION drake)

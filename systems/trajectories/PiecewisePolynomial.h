@@ -26,6 +26,7 @@ public:
   typedef Polynomial<CoefficientType> PolynomialType;
   typedef Eigen::Matrix<PolynomialType, Eigen::Dynamic, Eigen::Dynamic> PolynomialMatrix;
   typedef Eigen::Matrix<CoefficientType, Eigen::Dynamic, Eigen::Dynamic> CoefficientMatrix;
+  typedef Eigen::Ref<CoefficientMatrix> CoefficientMatrixRef;
 
 private:
   std::vector<PolynomialMatrix> polynomials; // a PolynomialMatrix for each piece
@@ -54,7 +55,7 @@ public:
 
   PiecewisePolynomial integral(double value_at_start_time = 0.0) const;
 
-  PiecewisePolynomial integral(const Eigen::Ref<CoefficientMatrix>& value_at_start_time) const;
+  PiecewisePolynomial integral(const CoefficientMatrixRef& value_at_start_time) const;
 
   double scalarValue(double t, Eigen::DenseIndex row = 0, Eigen::DenseIndex col = 0);
 

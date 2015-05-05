@@ -44,8 +44,8 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
   if (f_ext_matlab != nullptr) {
     if (!mxIsEmpty(f_ext_matlab)) {
       if (mxIsCell(f_ext_matlab)) {
-        int rows = mxGetM(f_ext_matlab);
-        int cols = mxGetN(f_ext_matlab);
+        mwSize rows = mxGetM(f_ext_matlab);
+        mwSize cols = mxGetN(f_ext_matlab);
         if (rows != 1)
           throw runtime_error("f_ext cell array has number of rows not equal to 1");
         if (cols != model->num_bodies)
@@ -65,8 +65,8 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
         }
       }
       else if (mxIsNumeric(f_ext_matlab)) {
-        int rows = mxGetM(f_ext_matlab);
-        int cols = mxGetN(f_ext_matlab);
+        mwSize rows = mxGetM(f_ext_matlab);
+        mwSize cols = mxGetN(f_ext_matlab);
 
         if (rows != TWIST_SIZE)
           throw runtime_error("f_ext matrix has number of rows not equal to 6");
