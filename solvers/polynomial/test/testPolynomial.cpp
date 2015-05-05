@@ -14,14 +14,14 @@ void testIntegralAndDerivative() {
   Polynomial<CoefficientType> poly(coefficients);
   Polynomial<CoefficientType> third_derivative = poly.derivative(3);
   Polynomial<CoefficientType> third_derivative_check = poly.derivative().derivative().derivative();
-  valuecheck(third_derivative.getCoefficients(), third_derivative_check.getCoefficients(), 1e-14);
+  valuecheckMatrix(third_derivative.getCoefficients(), third_derivative_check.getCoefficients(), 1e-14);
 
   Polynomial<CoefficientType> tenth_derivative = poly.derivative(10);
-  valuecheck(tenth_derivative.getCoefficients(), VectorXd::Zero(1), 1e-14);
+  valuecheckMatrix(tenth_derivative.getCoefficients(), VectorXd::Zero(1), 1e-14);
 
   Polynomial<CoefficientType> integral = poly.integral(0.0);
   Polynomial<CoefficientType> poly_back = integral.derivative();
-  valuecheck(poly_back.getCoefficients(), poly.getCoefficients(), 1e-14);
+  valuecheckMatrix(poly_back.getCoefficients(), poly.getCoefficients(), 1e-14);
 }
 
 template <typename CoefficientType>
@@ -129,7 +129,7 @@ int main(int argc, char **argv) {
 
   testIntegralAndDerivative<double>();
   testOperators<double>();
-//  testRoots<double>();
+  testRoots<double>();
   testEvalType();
   testPolynomialMatrix<double>();
   cout << "test passed" << endl;
