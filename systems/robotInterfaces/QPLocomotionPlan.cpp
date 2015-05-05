@@ -17,6 +17,8 @@
 using namespace std;
 using namespace Eigen;
 
+const std::map<SupportLogicType, std::vector<bool> > QPLocomotionPlan::support_logic_maps = QPLocomotionPlan::createSupportLogicMaps();
+
 QPLocomotionPlan::QPLocomotionPlan(RigidBodyManipulator& robot, const QPLocomotionPlanSettings& settings, const std::string& lcm_channel) :
     robot(robot),
     settings(settings),
@@ -41,33 +43,6 @@ QPLocomotionPlan::QPLocomotionPlan(RigidBodyManipulator& robot, const QPLocomoti
   }
 }
 
-
-// TODO: delete?
-template <size_t Rows, size_t Cols, typename Derived>
-void polynomialVectorCoefficientsToCArrayOfArraysMatlabOrdering(const MatrixBase<Derived>& source, typename Derived::Scalar::CoefficientType (&destination)[Rows][Cols]) {
-  assert(source.cols() == 1);
-  if (Rows != source.rows())
-    throw std::runtime_error("Number of rows of source doesn't match destination");
-
-  typedef typename Derived::Scalar PolynomialType;
-  typedef typename PolynomialType::CoefficientType CoefficientType;
-  typedef typename PolynomialType::CoefficientsType CoefficientsType;
-
-  for (size_t row = 0; row < Rows; ++row) {
-    const PolynomialType& polynomial = source(row);
-    const CoefficientsType& coefficients = polynomial.getCoefficients();
-    for (size_t col = 0; col < Cols; ++col) {
-      size_t coefficient_index = Cols - col - 1;
-      if (coefficient_index < coefficients.size())
-        destination[row][col] = coefficients[coefficient_index];
-      else
-        destination[row][col] = (CoefficientType) 0;
-    }
-  }
-}
-
-const std::map<SupportLogicType, std::vector<bool> > QPLocomotionPlan::support_logic_maps = QPLocomotionPlan::createSupportLogicMaps();
-
 template <typename DerivedQ, typename DerivedV>
 drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
     double t_global, const MatrixBase<DerivedQ>& q, const MatrixBase<DerivedV>& v, const std::vector<bool>& contact_force_detected)
@@ -85,6 +60,7 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
   while (support_index < settings.support_times.size() - 1 && t_plan >= settings.support_times[support_index + 1])
     support_index++;
 
+  // do kinematics
   VectorXd v_dummy(0, 1);
   robot.doKinematicsNew(q, v_dummy);
 
@@ -115,64 +91,7 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
   }
 
   // zmp data:
-  qp_input.zmp_data.timestamp = 0;
-  eigenToCArrayOfArrays(settings.zmp_data.A, qp_input.zmp_data.A);
-  eigenToCArrayOfArrays(settings.zmp_data.B, qp_input.zmp_data.B);
-  eigenToCArrayOfArrays(settings.zmp_data.C, qp_input.zmp_data.C);
-//  eigenToCArrayOfArrays(settings.zmp_data.D, qp_input.zmp_data.D); // set later
-//  eigenToCArrayOfArrays(settings.zmp_data.x0, qp_input.zmp_data.x0); // set later
-//  eigenToCArrayOfArrays(settings.zmp_data.y0, qp_input.zmp_data.y0); // set later
-  eigenToCArrayOfArrays(settings.zmp_data.u0, qp_input.zmp_data.u0);
-  eigenToCArrayOfArrays(settings.zmp_data.R, qp_input.zmp_data.R);
-  eigenToCArrayOfArrays(settings.zmp_data.Qy, qp_input.zmp_data.Qy);
-//  eigenToCArrayOfArrays(settings.zmp_data.S, qp_input.zmp_data.S); // set later
-//  eigenToCArrayOfArrays(settings.zmp_data.s1, qp_input.zmp_data.s1); // set later
-//  eigenToCArrayOfArrays(settings.zmp_data.s1dot, qp_input.zmp_data.s1dot); // set later
-  qp_input.zmp_data.s2 = settings.zmp_data.s2;
-  qp_input.zmp_data.s2dot = settings.zmp_data.s2dot;
-
-  // zmp data: D
-  Matrix2d D = -settings.lipm_height / settings.g * Matrix2d::Identity();
-  eigenToCArrayOfArrays(D, qp_input.zmp_data.D);
-
-  // zmp data: x0, y0
-  if (settings.is_quasistatic) {
-    auto com_des = settings.com_traj.value(t_plan);
-    auto comdot_des = settings.com_traj.derivative().value(t_plan);
-
-    size_t x0_row = 0;
-    for (DenseIndex i = 0; i < com_des.size(); ++i) {
-      qp_input.zmp_data.x0[x0_row++][0] = com_des(i);
-    }
-    for (DenseIndex i = 0; i < comdot_des.size(); ++i) {
-      qp_input.zmp_data.x0[x0_row++][0] = comdot_des(i);
-    }
-    eigenToCArrayOfArrays(com_des, qp_input.zmp_data.y0);
-  }
-  else {
-    size_t x0_row = 0;
-    for (DenseIndex i = 0; i < settings.zmp_final.size(); ++i) {
-      qp_input.zmp_data.x0[x0_row++][0] = settings.zmp_final(i);
-    }
-    for (DenseIndex i = 0; i < settings.zmp_final.size(); ++i) {
-      qp_input.zmp_data.x0[x0_row++][0] = 0.0;
-    }
-    auto zmp_des = settings.zmp_trajectory.value(t_plan);
-    eigenToCArrayOfArrays(zmp_des, qp_input.zmp_data.y0);
-  }
-
-  // apply zmp plan shift
-  for (auto it = settings.plan_shift_zmp_indices.begin(); it != settings.plan_shift_zmp_indices.end(); ++it) {
-    qp_input.zmp_data.x0[*it][0] -= plan_shift[*it];
-    qp_input.zmp_data.y0[*it][0] -= plan_shift[*it];
-  }
-
-  // zmp data: Lyapunov function
-  eigenToCArrayOfArrays(settings.V.getS(), qp_input.zmp_data.S);
-  auto s1_current = settings.V.getS1().value(t_plan);
-  eigenToCArrayOfArrays(s1_current, qp_input.zmp_data.s1);
-  Vector4d s1dot_current = Vector4d::Zero();
-  eigenToCArrayOfArrays(s1dot_current, qp_input.zmp_data.s1dot); // NOTE: this was just set to the default (zeros) before
+  qp_input.zmp_data = createZMPData(t_plan);
 
   bool pelvis_has_tracking = false;
   for (int j = 0; j < settings.body_motions.size(); ++j) {
@@ -280,19 +199,7 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
         if (!isSupportingBody(body_id, support_state)) {
           for (auto it = next_support.begin(); it != next_support.end(); ++it) {
             if (it->body == body_id) {
-              drake::lcmt_support_data early_support_data_lcm;
-              early_support_data_lcm.timestamp = 0;
-              early_support_data_lcm.body_id = static_cast<int32_t>(it->body) + 1; // use 1-indexing in LCM
-              early_support_data_lcm.num_contact_pts = it->contact_points.cols();
-              eigenToStdVectorOfStdVectors(it->contact_points, early_support_data_lcm.contact_pts);
-              std::vector<bool> support_logic = support_logic_maps.at(ONLY_IF_FORCE_SENSED);
-              for (int i = 0; i < settings.planned_support_command.size(); i++)
-                early_support_data_lcm.support_logic_map[i] = support_logic[i];
-              early_support_data_lcm.mu = settings.mu;
-              early_support_data_lcm.use_support_surface = it->use_contact_surface;
-              Vector4f support_surface_float = it->support_surface.cast<float>();
-              memcpy(early_support_data_lcm.support_surface, support_surface_float.data(), sizeof(float) * 4);
-              qp_input.support_data.push_back(early_support_data_lcm);
+              qp_input.support_data.push_back(createSupportDataElement(*it, support_logic_maps.at(ONLY_IF_FORCE_SENSED)));
               qp_input.num_support_data++;
               break;
             }
@@ -300,9 +207,6 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
         }
       }
     }
-
-
-
   }
 
   if (!pelvis_has_tracking)
@@ -310,18 +214,7 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
 
   // set support data
   for (auto it = support_state.begin(); it != support_state.end(); ++it) {
-    drake::lcmt_support_data support_data_element_lcm;
-    support_data_element_lcm.timestamp = 0;
-    support_data_element_lcm.body_id = static_cast<int32_t>(it->body) + 1; // use 1-indexing in LCM
-    support_data_element_lcm.num_contact_pts = it->contact_points.cols();
-    eigenToStdVectorOfStdVectors(it->contact_points, support_data_element_lcm.contact_pts);
-    for (int i = 0; i < settings.planned_support_command.size(); i++)
-      support_data_element_lcm.support_logic_map[i] = settings.planned_support_command[i];
-    support_data_element_lcm.mu = settings.mu;
-    support_data_element_lcm.use_support_surface = it->use_contact_surface;
-    Vector4f support_surface_float = it->support_surface.cast<float>();
-    memcpy(support_data_element_lcm.support_surface, support_surface_float.data(), sizeof(float) * 4);
-    qp_input.support_data.push_back(support_data_element_lcm);
+    qp_input.support_data.push_back(createSupportDataElement(*it, settings.planned_support_command));
     qp_input.num_support_data++;
   }
 
@@ -389,6 +282,86 @@ bool QPLocomotionPlan::isFinished(double t) const
 const RigidBodyManipulator& QPLocomotionPlan::getRobot() const
 {
   return robot;
+}
+
+drake::lcmt_zmp_data QPLocomotionPlan::createZMPData(double t_plan) const
+{
+  drake::lcmt_zmp_data zmp_data_lcm;
+  zmp_data_lcm.timestamp = 0;
+  eigenToCArrayOfArrays(settings.zmp_data.A, zmp_data_lcm.A);
+  eigenToCArrayOfArrays(settings.zmp_data.B, zmp_data_lcm.B);
+  eigenToCArrayOfArrays(settings.zmp_data.C, zmp_data_lcm.C);
+//  eigenToCArrayOfArrays(settings.zmp_data.D, zmp_data_lcm.D); // set later
+//  eigenToCArrayOfArrays(settings.zmp_data.x0, zmp_data_lcm.x0); // set later
+//  eigenToCArrayOfArrays(settings.zmp_data.y0, zmp_data_lcm.y0); // set later
+  eigenToCArrayOfArrays(settings.zmp_data.u0, zmp_data_lcm.u0);
+  eigenToCArrayOfArrays(settings.zmp_data.R, zmp_data_lcm.R);
+  eigenToCArrayOfArrays(settings.zmp_data.Qy, zmp_data_lcm.Qy);
+//  eigenToCArrayOfArrays(settings.zmp_data.S, zmp_data_lcm.S); // set later
+//  eigenToCArrayOfArrays(settings.zmp_data.s1, zmp_data_lcm.s1); // set later
+//  eigenToCArrayOfArrays(settings.zmp_data.s1dot, zmp_data_lcm.s1dot); // set later
+  zmp_data_lcm.s2 = settings.zmp_data.s2;
+  zmp_data_lcm.s2dot = settings.zmp_data.s2dot;
+
+  // D
+  Matrix2d D = -settings.lipm_height / settings.g * Matrix2d::Identity();
+  eigenToCArrayOfArrays(D, zmp_data_lcm.D);
+
+  // x0, y0
+  if (settings.is_quasistatic) {
+    auto com_des = settings.com_traj.value(t_plan);
+    auto comdot_des = settings.com_traj.derivative().value(t_plan);
+
+    size_t x0_row = 0;
+    for (DenseIndex i = 0; i < com_des.size(); ++i) {
+      zmp_data_lcm.x0[x0_row++][0] = com_des(i);
+    }
+    for (DenseIndex i = 0; i < comdot_des.size(); ++i) {
+      zmp_data_lcm.x0[x0_row++][0] = comdot_des(i);
+    }
+    eigenToCArrayOfArrays(com_des, zmp_data_lcm.y0);
+  } else {
+    size_t x0_row = 0;
+    for (DenseIndex i = 0; i < settings.zmp_final.size(); ++i) {
+      zmp_data_lcm.x0[x0_row++][0] = settings.zmp_final(i);
+    }
+    for (DenseIndex i = 0; i < settings.zmp_final.size(); ++i) {
+      zmp_data_lcm.x0[x0_row++][0] = 0.0;
+    }
+    auto zmp_des = settings.zmp_trajectory.value(t_plan);
+    eigenToCArrayOfArrays(zmp_des, zmp_data_lcm.y0);
+  }
+
+  // apply zmp plan shift
+  for (auto it = settings.plan_shift_zmp_indices.begin(); it != settings.plan_shift_zmp_indices.end(); ++it) {
+    zmp_data_lcm.x0[*it][0] -= plan_shift[*it];
+    zmp_data_lcm.y0[*it][0] -= plan_shift[*it];
+  }
+
+  // Lyapunov function
+  eigenToCArrayOfArrays(settings.V.getS(), zmp_data_lcm.S);
+  auto s1_current = settings.V.getS1().value(t_plan);
+  eigenToCArrayOfArrays(s1_current, zmp_data_lcm.s1);
+  Vector4d s1dot_current = Vector4d::Zero(); // NOTE: not using this; setting to zeros as was being done in the Matlab implementation
+  eigenToCArrayOfArrays(s1dot_current, zmp_data_lcm.s1dot);
+
+  return zmp_data_lcm;
+}
+
+drake::lcmt_support_data QPLocomotionPlan::createSupportDataElement(const RigidBodySupportStateElement& element, const std::vector<bool>& support_logic)
+{
+  drake::lcmt_support_data support_data_element_lcm;
+  support_data_element_lcm.timestamp = 0;
+  support_data_element_lcm.body_id = static_cast<int32_t>(element.body) + 1; // use 1-indexing in LCM
+  support_data_element_lcm.num_contact_pts = element.contact_points.cols();
+  eigenToStdVectorOfStdVectors(element.contact_points, support_data_element_lcm.contact_pts);
+  for (int i = 0; i < support_logic.size(); i++)
+    support_data_element_lcm.support_logic_map[i] = support_logic[i];
+  support_data_element_lcm.mu = settings.mu;
+  support_data_element_lcm.use_support_surface = element.use_contact_surface;
+  Vector4f support_surface_float = element.support_surface.cast<float>();
+  memcpy(support_data_element_lcm.support_surface, support_surface_float.data(), sizeof(float) * 4);
+  return support_data_element_lcm;
 }
 
 void QPLocomotionPlan::updateSwingTrajectory(double t_plan, BodyMotionData& body_motion_data, int body_motion_segment_index, const VectorXd& qd) {

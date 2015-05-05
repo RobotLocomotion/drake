@@ -204,6 +204,10 @@ public:
   const RigidBodyManipulator& getRobot() const;
 
 private:
+  drake::lcmt_zmp_data createZMPData(double t_plan) const;
+
+  drake::lcmt_support_data createSupportDataElement(const RigidBodySupportStateElement& element, const std::vector<bool>& support_logic);
+
   bool isSupportingBody(int body_index, const RigidBodySupportState& support_state) const;
 
   void updateSwingTrajectory(double t_plan, BodyMotionData& body_motion_data, int body_motion_segment_index, const Eigen::VectorXd& qd);
