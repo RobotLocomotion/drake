@@ -58,9 +58,9 @@ public:
   {
     // adapted from Eigen/unsupported
     typedef typename Product<CoefficientType, T>::type ProductType;
-    typedef typename NumTraits<T>::Real Real;
+    typedef typename Eigen::NumTraits<T>::Real Real;
     
-    if (numext::abs2(t) <= Real(1) ){
+    if (Eigen::numext::abs2(t) <= Real(1) ){
       // horner
       ProductType val = coefficients[coefficients.size() - 1];
       for (Eigen::DenseIndex i = coefficients.size() - 2; i >= 0; --i) {
@@ -120,7 +120,8 @@ public:
 
 
   template<Eigen::DenseIndex RowsAtCompileTime, Eigen::DenseIndex ColsAtCompileTime>
-  static Eigen::Matrix<Polynomial<CoefficientType>, Eigen::Dynamic, Eigen::Dynamic> randomPolynomialMatrix(Eigen::DenseIndex num_coefficients_per_polynomial, Eigen::DenseIndex rows = RowsAtCompileTime, Eigen::DenseIndex cols = ColsAtCompileTime)
+  static Eigen::Matrix<Polynomial<CoefficientType>, Eigen::Dynamic, Eigen::Dynamic> randomPolynomialMatrix(
+      Eigen::DenseIndex num_coefficients_per_polynomial, Eigen::DenseIndex rows = RowsAtCompileTime, Eigen::DenseIndex cols = ColsAtCompileTime)
   {
     Eigen::Matrix<Polynomial<CoefficientType>, RowsAtCompileTime, ColsAtCompileTime> mat(rows, cols);
     for (Eigen::DenseIndex row = 0; row < mat.rows(); ++row) {
