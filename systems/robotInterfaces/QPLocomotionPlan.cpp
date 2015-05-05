@@ -227,10 +227,9 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
         joint_pd_override_for_support.weight = settings.knee_settings.knee_weight;
         qp_input.joint_pd_override.push_back(joint_pd_override_for_support);
         qp_input.num_joint_pd_overrides++;
-
-        if (body_motion.isToeOffAllowed(body_motion_segment_index)) {
-          updateSwingTrajectory(t_plan, body_motion, body_motion_segment_index, v);
-        }
+      }
+      if (body_motion.isToeOffAllowed(body_motion_segment_index)) {
+        updateSwingTrajectory(t_plan, body_motion, body_motion_segment_index, v);
       }
     }
 

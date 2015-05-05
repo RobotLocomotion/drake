@@ -175,9 +175,9 @@ classdef QPLocomotionPlan < QPControllerPlanMatlabImplementation
               'kp', obj.KNEE_KP,...
               'kd', obj.KNEE_KD,...
               'weight', obj.KNEE_WEIGHT);
-            if obj.body_motions(j).toe_off_allowed(body_t_ind)
-              obj = obj.updateSwingTrajectory(t_plan, j, body_t_ind, kinsol, qd);
-            end
+          end
+          if obj.body_motions(j).toe_off_allowed(body_t_ind)
+            obj = obj.updateSwingTrajectory(t_plan, j, body_t_ind, kinsol, qd);
           end
         end
 
