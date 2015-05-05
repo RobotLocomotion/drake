@@ -6,9 +6,9 @@
 #include <string>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
-#include "drake/PiecewisePolynomial.h"
-#include "drake/ExponentialPlusPiecewisePolynomial.h"
-#include "drake/RigidBodyManipulator.h"
+#include "PiecewisePolynomial.h"
+#include "ExponentialPlusPiecewisePolynomial.h"
+#include "RigidBodyManipulator.h"
 #include "drake/lcmt_qp_controller_input.hpp"
 #include "BodyMotionData.h"
 #include "Side.h"

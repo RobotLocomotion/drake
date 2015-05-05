@@ -4,7 +4,7 @@
 #include "MexWrapper.h"
 #include "RigidBodyManipulator.h"
 #include "math.h"
-#include "drake/fastQP.h"
+#include "fastQP.h"
 #include <sstream>
 
 using namespace Eigen;
