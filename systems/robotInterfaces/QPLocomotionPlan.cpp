@@ -95,7 +95,7 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
 
   drake::lcmt_qp_controller_input qp_input;
   qp_input.be_silent = false;
-  qp_input.timestamp = 0; // static_cast<int64_t>(t_global * 1e6); // FIXME
+  qp_input.timestamp = static_cast<int64_t>(t_global * 1e6);
   qp_input.num_support_data = 0;
   qp_input.num_tracked_bodies = 0;
   qp_input.num_external_wrenches = 0;
@@ -171,8 +171,7 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
   eigenToCArrayOfArrays(settings.V.getS(), qp_input.zmp_data.S);
   auto s1_current = settings.V.getS1().value(t_plan);
   eigenToCArrayOfArrays(s1_current, qp_input.zmp_data.s1);
-  auto s1dot_current = settings.V.getS1().derivative().value(t_plan);
-  s1dot_current.setZero(); // FIXME: remove
+  Vector4d s1dot_current = Vector4d::Zero();
   eigenToCArrayOfArrays(s1dot_current, qp_input.zmp_data.s1dot); // NOTE: this was just set to the default (zeros) before
 
   bool pelvis_has_tracking = false;
@@ -435,7 +434,7 @@ void QPLocomotionPlan::updateSwingTrajectory(double t_plan, BodyMotionData& body
     x1.tail<3>() = quat2expmap(slerp(x0_quat, quat2_gradientvar.value(), 0.1), 0).value();
   }
 
-  // FIXME: way too expensive
+  // TODO: find a less expensive way of doing this
   MatrixXd xdf = trajectory.derivative().value(trajectory.getEndTime(landing_segment_index));
 
   auto start_it = trajectory.getSegmentTimes().begin() + takeoff_segment_index;
