@@ -385,7 +385,7 @@ classdef QPLocomotionPlan < QPControllerPlanMatlabImplementation
     function obj = from_standing_state(x0, biped, support_state, options)
 
       if nargin < 3 || isempty(support_state)
-        support_state = RigidBodySupportState(biped, [biped.foot_body_id.right, biped.foot_body_id.left]);
+        support_state = RigidBodySupportState(biped, [biped.foot_body_id.right, biped.foot_body_id.left], struct('contact_groups', {{{'heel', 'toe'}, {'heel', 'toe'}}}));
       end
       if nargin < 4
         options = struct();
