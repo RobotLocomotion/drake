@@ -479,8 +479,9 @@ Vector6d bodySpatialMotionPD(RigidBodyManipulator *r, DrakeRobotState &robot_sta
 
 void evaluateXYZExpmapCubicSpline(double t, const PiecewisePolynomial<double> &spline, Isometry3d &body_pose_des, Vector6d &xyzdot_angular_vel, Vector6d &xyzddot_angular_accel) {
   Vector6d xyzexp = spline.value(t);
-  Vector6d xyzexpdot = spline.derivative().value(t);
-  Vector6d xyzexpddot = spline.derivative().derivative().value(t);
+  auto derivative = spline.derivative();
+  Vector6d xyzexpdot = derivative.value(t);
+  Vector6d xyzexpddot = derivative.derivative().value(t);
   xyzdot_angular_vel.head<3>() = xyzexpdot.head<3>();
   xyzddot_angular_accel.head<3>() = xyzexpddot.head<3>();
   Vector3d expmap = xyzexp.tail<3>();
