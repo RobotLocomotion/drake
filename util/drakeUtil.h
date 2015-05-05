@@ -158,7 +158,7 @@ void eigenToStdVectorOfStdVectors(const Eigen::MatrixBase<Derived>& source, std:
 }
 
 
-DLLEXPORT int sub2ind(mwSize ndims, const mwSize* dims, const mwSize* sub);
+DLLEXPORT mwSize sub2ind(mwSize ndims, const mwSize* dims, const mwSize* sub);
 
 template <typename T>
 void addOffset(std::vector<T>& v, const T& offset)

@@ -74,7 +74,7 @@ void testRoots() {
     VectorXd coeffs = VectorXd::Random(int_distribution(generator));
     Polynomial<CoefficientType> poly(coeffs);
     auto roots = poly.roots();
-    valuecheck(roots.rows(), poly.getDegree(), 1e-8);
+    valuecheck<DenseIndex>(roots.rows(), poly.getDegree());
     for (int i = 0; i < roots.size(); i++) {
       auto value = poly.value(roots[i]);
       valuecheck(std::abs(value), 0.0, 1e-8);
@@ -108,9 +108,9 @@ void testPolynomialMatrix() {
   int rows_B = cols_A;
   int cols_B = matrix_size_distribution(generator);
 
-  auto A = Polynomial<CoefficientType>::randomPolynomialMatrix(num_coefficients, rows_A, cols_A);
-  auto B = Polynomial<CoefficientType>::randomPolynomialMatrix(num_coefficients, rows_B, cols_B);
-  auto C = Polynomial<CoefficientType>::randomPolynomialMatrix(num_coefficients, rows_A, cols_A);
+  auto A = Polynomial<CoefficientType>::randomPolynomialMatrix<Dynamic, Dynamic>(num_coefficients, rows_A, cols_A);
+  auto B = Polynomial<CoefficientType>::randomPolynomialMatrix<Dynamic, Dynamic>(num_coefficients, rows_B, cols_B);
+  auto C = Polynomial<CoefficientType>::randomPolynomialMatrix<Dynamic, Dynamic>(num_coefficients, rows_A, cols_A);
   auto product = A * B; // just verify that this is possible without crashing
   auto sum = A + C;
 

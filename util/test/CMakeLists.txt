@@ -3,39 +3,38 @@
 # debugMexTester.m and debugMexTest.cpp were moved to dev
 # add_mex(debugMexTest debugMexTest.cpp)
 
+include_directories(..)
+
+
 if (NOT WIN32)
   # doesn't work because the timing tests require the <chrono> include
   add_executable(testDrakeGeometryUtil testDrakeGeometryUtil.cpp)
   target_link_libraries(testDrakeGeometryUtil drakeGeometryUtil drakeGradientUtil)
-  include_directories( .. )
   add_test(NAME testDrakeGeometryUtil COMMAND testDrakeGeometryUtil)
 
   add_executable(testGradientVar testGradientVar.cpp)
   target_link_libraries(testGradientVar drakeGradientUtil)
-  include_directories( .. )
   #set_target_properties(testGradientVar PROPERTIES COMPILE_FLAGS "-g -O0")
   #add_test(NAME testGradientVar COMMAND testGradientVar)
 
   add_executable(testDrakeGradientUtil testDrakeGradientUtil.cpp)
   target_link_libraries(testDrakeGradientUtil drakeGeometryUtil drakeGradientUtil)
-  include_directories( .. )
   add_test(NAME testDrakeGradientUtil COMMAND testDrakeGradientUtil)
 endif (NOT WIN32)
 
 if (MATLAB_FOUND)
   add_mex(testQuatmex testQuatmex.cpp)
-  include_directories( .. )
   target_link_libraries(testQuatmex drakeGeometryUtil)
 
   add_mex(testGeometryGradientsmex testGeometryGradientsmex.cpp)
-  include_directories( .. )
   target_link_libraries(testGeometryGradientsmex drakeGeometryUtil drakeUtil)
 
   add_mex(testGeometryConversionFunctionsmex testGeometryConversionFunctionsmex.cpp)
-  include_directories( .. )
   target_link_libraries(testGeometryConversionFunctionsmex drakeGeometryUtil)
 endif(MATLAB_FOUND)
 
+if (LCM_FOUND)
 add_executable(testLCMUtil testLCMUtil.cpp)
-include_directories( .. )
 target_link_libraries(testLCMUtil drakeLCMUtil)
+target_include_directories(testLCMUtil PUBLIC ${PROJECT_SOURCE_DIR}/systems/trajectories ${PROJECT_SOURCE_DIR}/solvers/polynomial ${PROJECT_BINARY_DIR}/lcmgen/lcmtypes)
+endif()

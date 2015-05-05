@@ -45,15 +45,16 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
   // assemble the knot point locations for input to nWaypointCubicSpline
   MatrixXd xi = xs.block(0, 1, ndof, num_knots);
 
-  int t_indices[num_knots];
   if (GRID_STEPS <= num_knots){
     // If we have have too few grid steps, then by pigeonhole it's
     // impossible to give each a unique time in our grid search.
     mexErrMsgIdAndTxt("Drake:nWaypointCubicSplineFreeKnotTimesmex.cpp:TooManyKnotsForNumGridSteps", usage.c_str());
   }
-  for (int i=0; i<num_knots; i++)
-    t_indices[i] = i+1; // assume knot point won't be the same time as the
-          // initial state, or previous knot point
+  std::vector<int> t_indices;
+  t_indices.reserve(num_knots);
+  for (int i = 0; i < num_knots; i++) {
+    t_indices.push_back(i + 1); // assume knot point won't be the same time as the initial state, or previous knot point
+  }
  
   while (t_indices[0] < GRID_STEPS-num_knots+1){
     for (int i=0; i<num_knots; i++)
@@ -86,7 +87,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
     t_indices[num_knots-1]++;
     // carry, except for the lowest place, which we 
     // use to detect doneness.
-    for (int i=num_knots-1; i>0; i--){
+    for (size_t i = num_knots - 1; i > 0; i--){
       if ((i==num_knots-1 && t_indices[i] >= GRID_STEPS) || (i<num_knots-1 && t_indices[i] >= t_indices[i+1])){
         t_indices[i-1]++;
         t_indices[i] = t_indices[i-1]+1;
@@ -96,7 +97,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
 
   for (mwSize dof = 0; dof < ndof; dof++) {
     PiecewisePolynomial<double> spline = nWaypointCubicSpline(best_segment_times, xs(dof, 0), xd0[dof], xs(dof, num_segments), xdf[dof], xi.row(dof).transpose());
-    for (mwSize segment_index = 0; segment_index < spline.getNumberOfSegments(); segment_index++) {
+    for (int segment_index = 0; segment_index < spline.getNumberOfSegments(); segment_index++) {
       for (mwSize coefficient_index = 0; coefficient_index < num_coeffs_per_segment; coefficient_index++) {
         mwSize sub[] = {dof, segment_index, num_coeffs_per_segment - coefficient_index - 1}; // Matlab's reverse coefficient indexing...
         *(mxGetPr(plhs[0]) + sub2ind(3, dims, sub)) = spline.getPolynomial(segment_index).getCoefficients()[coefficient_index];

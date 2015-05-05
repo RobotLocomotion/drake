@@ -26,11 +26,11 @@ public:
   typedef typename Eigen::NumTraits<CoefficientType>::Real RealScalar;
   typedef std::complex<RealScalar> RootType;
   typedef Eigen::Matrix<RootType, Eigen::Dynamic, 1> RootsType;
-  template <typename Rhs, typename Lhs>
-  using ProductType = decltype((Rhs) 0 * (Lhs) 0);
-  //  using ProductType = decltype(::std::declval<Rhs>() * ::std::declval<Lhs>()); // declval not available in MSVC2010
-
-
+  
+  template<typename Rhs, typename Lhs>
+  struct Product {
+    typedef decltype((Rhs) 0 * (Lhs) 0) type;
+  };
 
 private:
   CoefficientsType coefficients;
@@ -54,9 +54,30 @@ public:
   CoefficientsType const& getCoefficients() const;
 
   template<typename T> // can be different from both CoefficientsType and RealScalar
-  ProductType<CoefficientType, T> value(const T& t) const
+  typename Product<CoefficientType, T>::type value(const T& t) const
   {
-    return poly_eval(coefficients, t);
+    // adapted from Eigen/unsupported
+    typedef typename Product<CoefficientType, T>::type ProductType;
+    typedef typename NumTraits<T>::Real Real;
+    
+    if (numext::abs2(t) <= Real(1) ){
+      // horner
+      ProductType val = coefficients[coefficients.size() - 1];
+      for (Eigen::DenseIndex i = coefficients.size() - 2; i >= 0; --i) {
+        val = val * t + coefficients[i];
+      }
+      return val;
+    }
+    else
+    {
+      // stabilized horner
+      ProductType val = coefficients[0];
+      ProductType inv_x = T(1) / t;
+      for (Eigen::DenseIndex i = 1; i < coefficients.size(); ++i) {
+        val = val * inv_x + coefficients[i];
+      }
+      return std::pow(t, (ProductType) (static_cast<int>(coefficients.size() - 1))) * val;
+    }    
   }
 
   Polynomial derivative(int derivative_order = 1) const;
@@ -98,12 +119,12 @@ public:
   static Polynomial zero();
 
 
-  template<Eigen::DenseIndex RowsAtCompileTime = Eigen::Dynamic, Eigen::DenseIndex ColsAtCompileTime = Eigen::Dynamic>
-  static Eigen::Matrix<Polynomial<CoefficientType>, Eigen::Dynamic, Eigen::Dynamic> randomPolynomialMatrix(int num_coefficients_per_polynomial, int rows = RowsAtCompileTime, int cols = ColsAtCompileTime)
+  template<Eigen::DenseIndex RowsAtCompileTime, Eigen::DenseIndex ColsAtCompileTime>
+  static Eigen::Matrix<Polynomial<CoefficientType>, Eigen::Dynamic, Eigen::Dynamic> randomPolynomialMatrix(Eigen::DenseIndex num_coefficients_per_polynomial, Eigen::DenseIndex rows = RowsAtCompileTime, Eigen::DenseIndex cols = ColsAtCompileTime)
   {
     Eigen::Matrix<Polynomial<CoefficientType>, RowsAtCompileTime, ColsAtCompileTime> mat(rows, cols);
-    for (int row = 0; row < mat.rows(); ++row) {
-      for (int col = 0; col < mat.cols(); ++col) {
+    for (Eigen::DenseIndex row = 0; row < mat.rows(); ++row) {
+      for (Eigen::DenseIndex col = 0; col < mat.cols(); ++col) {
         auto coeffs = (Eigen::Matrix<CoefficientType, Eigen::Dynamic, 1>::Random(num_coefficients_per_polynomial)).eval();
         mat(row, col) = Polynomial<CoefficientType>(coeffs);
       }

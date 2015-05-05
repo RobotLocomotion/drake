@@ -1338,7 +1338,7 @@ DLLEXPORT GradientVar<double, 3,1> unwrapExpmap(const Ref<const Vector3d> & expm
 
 void quat2expmapSequence(const Ref<const Matrix<double,4,Dynamic>> &quat, const Ref<const Matrix<double,4,Dynamic>> &quat_dot, Ref<Matrix<double,3,Dynamic>> expmap, Ref<Matrix<double,3,Dynamic>> expmap_dot)
 {
-  int N = quat.cols();
+  DenseIndex N = quat.cols();
   if(quat_dot.cols() != N)
   {
     throw std::runtime_error("quat_dot must have the same number of columns as quat in quat2expmapSequence");
