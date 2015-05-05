@@ -108,28 +108,28 @@ void testPolynomialMatrix() {
   int rows_B = cols_A;
   int cols_B = matrix_size_distribution(generator);
 
-//  auto A = Polynomial<CoefficientType>::randomPolynomialMatrix<Dynamic, Dynamic>(num_coefficients, rows_A, cols_A);
-//  auto B = Polynomial<CoefficientType>::randomPolynomialMatrix<Dynamic, Dynamic>(num_coefficients, rows_B, cols_B);
-//  auto C = Polynomial<CoefficientType>::randomPolynomialMatrix<Dynamic, Dynamic>(num_coefficients, rows_A, cols_A);
-//  auto product = A * B; // just verify that this is possible without crashing
-//  auto sum = A + C;
-//
-//  uniform_real_distribution<double> uniform;
-//  for (int row = 0; row < A.rows(); ++row) {
-//    for (int col = 0; col < A.cols(); ++col) {
-//      double t = uniform(generator);
-//      valuecheck(sum(row, col).value(t), A(row, col).value(t) + C(row, col).value(t), 1e-8);
-//    }
-//  }
-//
-//  C.setZero(); // this was a problem before
+  auto A = Polynomial<CoefficientType>::template randomPolynomialMatrix<Dynamic, Dynamic>(num_coefficients, rows_A, cols_A);
+  auto B = Polynomial<CoefficientType>::template randomPolynomialMatrix<Dynamic, Dynamic>(num_coefficients, rows_B, cols_B);
+  auto C = Polynomial<CoefficientType>::template randomPolynomialMatrix<Dynamic, Dynamic>(num_coefficients, rows_A, cols_A);
+  auto product = A * B; // just verify that this is possible without crashing
+  auto sum = A + C;
+
+  uniform_real_distribution<double> uniform;
+  for (int row = 0; row < A.rows(); ++row) {
+    for (int col = 0; col < A.cols(); ++col) {
+      double t = uniform(generator);
+      valuecheck(sum(row, col).value(t), A(row, col).value(t) + C(row, col).value(t), 1e-8);
+    }
+  }
+
+  C.setZero(); // this was a problem before
 }
 
 int main(int argc, char **argv) {
 
   testIntegralAndDerivative<double>();
   testOperators<double>();
-  testRoots<double>();
+//  testRoots<double>();
   testEvalType();
   testPolynomialMatrix<double>();
   cout << "test passed" << endl;
