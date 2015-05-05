@@ -8,7 +8,7 @@ include_directories (${PROJECT_SOURCE_DIR}/solvers/polynomial)
 
 macro(add_constraint_mex)
   add_mex(${ARGV} ${ARGV}.cpp)
-  target_link_libraries(${ARGV} drakeRBM drakeUtil drakeRigidBodyConstraint drakeConstructRigidBodyConstraint)
+  target_link_libraries(${ARGV} drakeRBM drakeMexUtil drakeRigidBodyConstraint drakeConstructRigidBodyConstraint)
 endmacro()
 
 add_library(drakeRigidBodyConstraint SHARED RigidBodyConstraint.cpp)
@@ -22,7 +22,7 @@ pods_install_headers(RigidBodyConstraint.h DESTINATION drake)
 
 if (MATLAB_FOUND)
   add_mex(drakeConstructRigidBodyConstraint SHARED constructPtrRigidBodyConstraint.cpp)
-  target_link_libraries(drakeConstructRigidBodyConstraint drakeRigidBodyConstraint drakeRBM drakeUtil drakeGeometryUtil)
+  target_link_libraries(drakeConstructRigidBodyConstraint drakeRigidBodyConstraint drakeRBM drakeMexUtil drakeGeometryUtil)
   add_constraint_mex(testSingleTimeKinCnstmex)
   add_constraint_mex(testMultipleTimeKinCnstmex)
   add_constraint_mex(testQuasiStaticConstraintmex)

@@ -47,7 +47,6 @@ struct DrakeRobotState {
   VectorXd qd;
 };
 
-drakeControlUtilEXPORT std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> parseSupportData(const mxArray* supp_data);
 
 drakeControlUtilEXPORT bool isSupportElementActive(SupportStateElement* se, bool contact_force_detected, bool kinematic_contact_detected);
 

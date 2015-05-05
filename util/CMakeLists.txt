@@ -16,16 +16,23 @@ if (LCM_FOUND AND MATLAB_FOUND)
 endif()
 
 
-if (MATLAB_FOUND)
-  add_mex(drakeUtil SHARED drakeUtil.cpp MexWrapper.cpp)
+add_library(drakeUtil SHARED drakeUtil.cpp)
+pods_install_headers(drakeUtil.h  DESTINATION drake)
+pods_install_libraries(drakeUtil)
+pods_install_pkg_config_file(drake-util
+  LIBS -ldrakeUtil
+  REQUIRES
+  VERSION 0.0.1)
 
+if (MATLAB_FOUND)
+  add_mex(drakeMexUtil SHARED drakeMexUtil.cpp MexWrapper.cpp)
   # todo: use this again once I can assume everyone has CMAKE version >= 2.8.8
   #add_mex(drakeUtil OBJECT drakeUtil.cpp)
 
-  pods_install_headers(drakeUtil.h MexWrapper.h DESTINATION drake)
-  pods_install_libraries(drakeUtil)
-  pods_install_pkg_config_file(drake-util
-    LIBS -ldrakeUtil
+  pods_install_headers(drakeMexUtil.h MexWrapper.h DESTINATION drake)
+  pods_install_libraries(drakeMexUtil)
+  pods_install_pkg_config_file(drake-mex-util
+    LIBS -ldrakeMexUtil
     REQUIRES
     VERSION 0.0.1)
 endif()
@@ -66,19 +73,19 @@ if (MATLAB_FOUND)
   target_link_libraries(cartesian2cylindricalmex drakeGeometryUtil drakeGradientUtil)
 
   add_mex(quat2expmapmex quat2expmapmex.cpp)
-  target_link_libraries(quat2expmapmex drakeUtil drakeGeometryUtil drakeGradientUtil)
+  target_link_libraries(quat2expmapmex drakeMexUtil drakeGeometryUtil drakeGradientUtil)
 
   add_mex(expmap2quatImplmex expmap2quatImplmex.cpp)
-  target_link_libraries(expmap2quatImplmex drakeUtil drakeGeometryUtil drakeGradientUtil)
+  target_link_libraries(expmap2quatImplmex drakeMexUtil drakeGeometryUtil drakeGradientUtil)
 
   add_mex(flipExpmapmex flipExpmapmex.cpp)
-  target_link_libraries(flipExpmapmex drakeUtil drakeGeometryUtil drakeGradientUtil)
+  target_link_libraries(flipExpmapmex drakeMexUtil drakeGeometryUtil drakeGradientUtil)
 
   add_mex(unwrapExpmapmex unwrapExpmapmex.cpp)
-  target_link_libraries(unwrapExpmapmex drakeUtil drakeGeometryUtil drakeGradientUtil)
+  target_link_libraries(unwrapExpmapmex drakeMexUtil drakeGeometryUtil drakeGradientUtil)
 
   add_mex(quat2expmapSequencemex quat2expmapSequencemex.cpp)
-  target_link_libraries(quat2expmapSequencemex drakeUtil drakeGeometryUtil drakeGradientUtil)
+  target_link_libraries(quat2expmapSequencemex drakeMexUtil drakeGeometryUtil drakeGradientUtil)
 endif()
 
 add_subdirectory(test)

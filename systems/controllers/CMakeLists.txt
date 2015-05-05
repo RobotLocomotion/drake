@@ -1,3 +1,16 @@
+add_library(drakeControlUtil SHARED controlUtil.cpp)
+if (terrain-map_FOUND)
+  pods_use_pkg_config_packages(drakeControlUtil terrain-map)
+  set_target_properties(drakeControlUtil PROPERTIES COMPILE_FLAGS "-DUSE_MAPS")
+endif()
+target_link_libraries(drakeControlUtil drakeRBM drakeUtil drakeTrajectories)
+pods_install_libraries(drakeControlUtil)
+pods_install_headers(controlUtil.h DESTINATION drake)
+pods_install_pkg_config_file(drake-control-util
+  LIBS -ldrakeControlUtil
+  REQUIRES
+  VERSION 0.0.1)
+
 if (MATLAB_FOUND)
   include_directories (${PROJECT_SOURCE_DIR}/util )
   include_directories (${PROJECT_SOURCE_DIR}/systems/trajectories )
@@ -10,16 +23,17 @@ if (MATLAB_FOUND)
 
   pods_find_pkg_config(terrain-map)
 
-  add_mex(drakeControlUtil SHARED controlUtil.cpp)
+
+  add_mex(drakeControlMexUtil SHARED controlMexUtil.cpp)
   if (terrain-map_FOUND)
-    pods_use_pkg_config_packages(drakeControlUtil terrain-map)
-    set_target_properties(drakeControlUtil PROPERTIES COMPILE_FLAGS "-DUSE_MAPS")
+    pods_use_pkg_config_packages(drakeControlMexUtil terrain-map)
+    set_target_properties(drakeControlMexUtil PROPERTIES COMPILE_FLAGS "-DUSE_MAPS")
   endif()
-  target_link_libraries(drakeControlUtil drakeRBM drakeUtil drakeTrajectories)
-  pods_install_libraries(drakeControlUtil)
-  pods_install_headers(controlUtil.h DESTINATION drake)
-  pods_install_pkg_config_file(drake-control-util
-    LIBS -ldrakeControlUtil
+  target_link_libraries(drakeControlMexUtil drakeRBM drakeMexUtil drakeTrajectories drakeControlUtil)
+  pods_install_libraries(drakeControlMexUtil)
+  pods_install_headers(controlMexUtil.h DESTINATION drake)
+  pods_install_pkg_config_file(drake-control-mex-util
+    LIBS -ldrakeControlMexUtil
     REQUIRES
     VERSION 0.0.1)
 
@@ -35,7 +49,7 @@ if (MATLAB_FOUND)
       VERSION 0.0.1)
 
     add_mex(QPControllermex QPControllermex.cpp)
-    target_link_libraries(QPControllermex drakeQP drakeControlUtil)
+    target_link_libraries(QPControllermex drakeQP drakeControlUtil drakeMexUtil)
     pods_use_pkg_config_packages(QPControllermex gurobi)
 
     add_mex(getActiveSupportsmex getActiveSupportsmex.cpp)
@@ -57,8 +71,12 @@ if (MATLAB_FOUND)
     endif()
   endif()
 
-  add_mex(bodyMotionControlmex bodyMotionControlmex.cpp)
-  target_link_libraries(bodyMotionControlmex drakeRBM drakeControlUtil)
+  macro(add_control_mex)
+    add_mex(${ARGV} ${ARGV}.cpp)
+    target_link_libraries(${ARGV} drakeControlUtil drakeMexUtil drakeRBM)
+  endmacro()
+
+  add_control_mex(bodyMotionControlmex)
 
   add_mex(pelvisMotionControlmex pelvisMotionControlmex.cpp)
   target_link_libraries(pelvisMotionControlmex drakeRBM drakeUtil drakeControlUtil)
@@ -69,8 +87,8 @@ if (MATLAB_FOUND)
   add_mex(individualCentersOfPressuremex individualCentersOfPressuremex.cpp)
   target_link_libraries(individualCentersOfPressuremex drakeRBM drakeUtil drakeControlUtil)
 
-  add_mex(bodySpatialMotionPDmex bodySpatialMotionPDmex.cpp)
-  target_link_libraries(bodySpatialMotionPDmex drakeRBM drakeGeometryUtil drakeUtil drakeControlUtil)
+  add_control_mex(bodySpatialMotionPDmex)
+  target_link_libraries(bodySpatialMotionPDmex drakeGeometryUtil)
 
   add_library(drakeZMPUtil zmpUtil.cpp)
   target_link_libraries(drakeZMPUtil drakeTrajectories)

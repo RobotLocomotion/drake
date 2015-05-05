@@ -1,7 +1,7 @@
 #include <mex.h>
 #include <Eigen/Core>
 #include "splineGeneration.h"
-#include "drakeUtil.h"
+#include "drakeMexUtil.h"
 #include <iostream>
 #include <limits>
 

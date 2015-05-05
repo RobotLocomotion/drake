@@ -29,10 +29,10 @@ if (MATLAB_FOUND)
   target_link_libraries(testQuatmex drakeGeometryUtil)
 
   add_mex(testGeometryGradientsmex testGeometryGradientsmex.cpp)
-  target_link_libraries(testGeometryGradientsmex drakeGeometryUtil drakeUtil)
+  target_link_libraries(testGeometryGradientsmex drakeGeometryUtil drakeMexUtil)
 
   add_mex(testGeometryConversionFunctionsmex testGeometryConversionFunctionsmex.cpp)
-  target_link_libraries(testGeometryConversionFunctionsmex drakeGeometryUtil)
+  target_link_libraries(testGeometryConversionFunctionsmex drakeGeometryUtil drakeMexUtil)
 endif(MATLAB_FOUND)
 
 if (LCM_FOUND)
