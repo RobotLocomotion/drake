@@ -42,11 +42,10 @@ else % then try to evaluate the dependency now...
       conf.distcomp_enabled = ~isempty(v);
       if ~conf.distcomp_enabled
         disp(' MATLAB Parallel Computing Toolbox was not found');
-      else
-        % go ahead and start up a pool if necessary
-        if (exist('matlabpool','file') && matlabpool('size')==0) 
-          matlabpool; 
-        end
+      elseif verLessThan('distcomp','6.3') && matlabpool('size')==0
+        % start a matlab pool (if none exists).  this approximates the
+        % now default behavior in newer versions of distcomp.
+        matlabpool; 
       end
 
     case 'spotless'

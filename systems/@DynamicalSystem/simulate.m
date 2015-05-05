@@ -90,7 +90,7 @@ if isfield(options,'MaxDataPoints') && ~isinf(options.MaxDataPoints)
   pstruct.LimitDataPoints = 'on';
   pstruct.MaxDataPoints = num2str(options.MaxDataPoints);
 else
-  pstruct.LimitDataPoints = 'off'
+  pstruct.LimitDataPoints = 'off';
 end
   
 %pstruct.SaveOnModelUpdate = 'false';
