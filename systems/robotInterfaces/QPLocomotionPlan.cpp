@@ -35,6 +35,7 @@ QPLocomotionPlan::QPLocomotionPlan(RigidBodyManipulator& robot, const QPLocomoti
 
   for (auto it = Side::values.begin(); it != Side::values.end(); ++it) {
     toe_off_active[*it] = false;
+    foot_shifts[*it] = Vector3d::Zero();
   }
 
   if (!lcm.good())
@@ -67,7 +68,7 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
   RigidBodySupportState& support_state = settings.supports[support_index];
   bool is_last_support = support_index == settings.supports.size() - 1;
   const RigidBodySupportState& next_support = is_last_support ? settings.supports[support_index] : settings.supports[support_index + 1];
-  updatePlanShift(t_plan, contact_force_detected, next_support);
+  updatePlanShift(t_plan, contact_force_detected, support_index);
 
   drake::lcmt_qp_controller_input qp_input;
   qp_input.be_silent = false;
@@ -441,65 +442,93 @@ public:
   bool operator()(const T& other) const { return &t == &other; }
 };
 
-void QPLocomotionPlan::updatePlanShift(double t_plan, const std::vector<bool>& contact_force_detected, const RigidBodySupportState& next_support) {
-  // determine indices corresponding to support feet in next support
-  std::vector<int> support_foot_indices;
-  for (auto it = next_support.begin(); it != next_support.end(); ++it) {
-    RigidBodySupportStateElement support_state_element = *it;
-    int support_body_id = support_state_element.body;
-    bool is_foot = false;
-    for (auto side_it = foot_body_ids.begin(); side_it != foot_body_ids.end(); side_it++) {
-      if (side_it->second == support_body_id) {
-        is_foot = true;
-      }
-    }
-
-    bool is_loading = contact_force_detected[support_body_id];
-    if (is_foot && is_loading) {
-      support_foot_indices.push_back(support_body_id);
-    }
-  }
-
-  int support_foot_to_use_for_plan_shift = -1;
-
-  // // find where the next support is in our planned list of supports
-  // vector<RigidBodySupportState>::const_iterator next_support_it = std::find_if(settings.supports.begin(), settings.supports.end(), AddressEqual<const RigidBodySupportState&>(next_support));
-
-  // /*
-  //  * Reverse iterate to find which one came into contact last
-  //  * If more than one supporting foot came into contact at the same time (e.g. when jumping and landing with two feet at the same time) or if both feet have always been in contact
-  //  * just use the foot that appears first in support_foot_indices
-  //  */
-  // reverse_iterator<vector<RigidBodySupportState>::const_iterator> supports_reverse_it(next_support_it);
-  // for (; supports_reverse_it != settings.supports.rend(); ++supports_reverse_it) {
-  //   if (support_foot_to_use_for_plan_shift > 0)
-  //     break;
-
-  //   const RigidBodySupportState& support = *supports_reverse_it;
-  //   for (auto support_foot_it = support_foot_indices.begin(); support_foot_it != support_foot_indices.end(); ++support_foot_it) {
-  //     if (!isSupportingBody(*support_foot_it, support)) {
-  //       support_foot_to_use_for_plan_shift = *support_foot_it;
-  //       break;
-  //     }
-  //   }
-  // }
-  if (support_foot_to_use_for_plan_shift == -1 && support_foot_indices.size() > 0)
-    support_foot_to_use_for_plan_shift = support_foot_indices[0];
-
-  if (support_foot_to_use_for_plan_shift != -1) {
-    // find corresponding body_motion and compute new plan shift
-    for (auto body_motion_it = settings.body_motions.begin(); body_motion_it != settings.body_motions.end(); ++body_motion_it) {
-      int body_motion_body_id = robot.parseBodyOrFrameID(body_motion_it->getBodyOrFrameId());
-      if (body_motion_body_id == support_foot_to_use_for_plan_shift) {
-        int world = 0;
-        int rotation_type = 0;
-        Vector3d foot_frame_origin_actual = robot.forwardKinNew(Vector3d::Zero().eval(), body_motion_it->getBodyOrFrameId(), world, rotation_type, 0).value();
-        Vector3d foot_frame_origin_planned = body_motion_it->getTrajectory().value(t_plan).topRows<3>();
-        plan_shift = foot_frame_origin_planned - foot_frame_origin_actual;
-        return;
+std::vector<Side> QPLocomotionPlan::getSupportSides(const RigidBodySupportState &support_state) const {
+  std::vector<Side> support_sides;
+  for (auto side_it = foot_body_ids.begin(); side_it != foot_body_ids.end(); ++side_it) {
+    for (auto it = support_state.begin(); it != support_state.end(); ++it) {
+      if (it->body == side_it->second) {
+        support_sides.push_back(side_it->first);
       }
     }
   }
+  return support_sides;
+}
+
+void QPLocomotionPlan::updatePlanShift(double t_plan, const std::vector<bool>& contact_force_detected, int support_index) {
+  const bool is_last_support = support_index == settings.supports.size() - 1;
+  const RigidBodySupportState& next_support = is_last_support ? settings.supports[support_index] : settings.supports[support_index + 1];
+
+  // First, figure out the relative shifts for each of the feet which are in support and in contact
+  for (auto side_it = foot_body_ids.begin(); side_it != foot_body_ids.end(); side_it++) {
+    if (QPLocomotionPlan::isSupportingBody(side_it->second, next_support)) {
+      if (contact_force_detected[side_it->second]) {
+        for (auto body_motion_it = settings.body_motions.begin(); body_motion_it != settings.body_motions.end(); ++body_motion_it) {
+          int body_motion_body_id = robot.parseBodyOrFrameID(body_motion_it->getBodyOrFrameId());
+          if (body_motion_body_id == side_it->second) {
+            int world = 0;
+            int rotation_type = 0;
+            Vector3d foot_frame_origin_actual = robot.forwardKinNew(Vector3d::Zero().eval(), body_motion_it->getBodyOrFrameId(), world, rotation_type, 0).value();
+            Vector3d foot_frame_origin_planned = body_motion_it->getTrajectory().value(t_plan).topRows<3>();
+            foot_shifts[side_it->first] = foot_frame_origin_planned - foot_frame_origin_actual;
+            break;
+          }
+        }
+      }
+      break;
+    }
+  }
+
+  // Now figure out how to combine the foot shifts into a single plan shift. The logic is:
+  // If we're in single support, then use the shift for the support foot
+  // If we're in double support, then interpolate linearly between the two shifts based on the time since one foot was single support and the time when the other foot will be single support
+  std::vector<Side> support_sides = this->getSupportSides(settings.supports[support_index]);
+  if (support_sides.size() == 1) {
+    // single support
+    plan_shift = foot_shifts[support_sides[0]];
+  } else {
+    // First, look backwards until we find the most recent single support
+    bool found_past_single_support = false;
+    double t_last_single_support_end;
+    Vector3d past_shift;
+    for (int i = support_index - 1; i >= 0; --i) {
+      support_sides = this->getSupportSides(settings.supports[i]);
+      if (support_sides.size() == 1) {
+        found_past_single_support = true;
+        t_last_single_support_end = settings.support_times[i+1];
+        past_shift = foot_shifts[support_sides[0]];
+        break;
+      }
+    }
+    if (!found_past_single_support) {
+      past_shift = 0.5 * (foot_shifts.at(Side(Side::LEFT)) + foot_shifts.at(Side(Side::RIGHT)));
+      t_last_single_support_end = settings.support_times[0];
+    }
+
+    // Now look forwards until we find the next single support
+    bool found_future_single_support = false;
+    double t_next_single_support_begin;
+    Vector3d future_shift;
+    for (int i = support_index + 1; i < settings.supports.size(); ++i) {
+      support_sides = this->getSupportSides(settings.supports[i]);
+      if (support_sides.size() == 1) {
+        found_future_single_support = true;
+        t_next_single_support_begin = settings.support_times[i];
+        future_shift = foot_shifts[support_sides[0]];
+        break;
+      }
+    }
+    if (!found_future_single_support) {
+      future_shift = 0.5 * (foot_shifts[Side(Side::LEFT)] + foot_shifts[Side(Side::RIGHT)]);
+      t_next_single_support_begin = settings.support_times[settings.support_times.size() - 1];
+    }
+
+    // Now interpolate between the past and future shift vectors using the current plan time
+    // std::cout << "t_plan: " << t_plan << " t_last_single_support_end: " << t_last_single_support_end << " t_next_single_support_begin: " << t_next_single_support_begin << std::endl;
+    const double fraction = (t_plan - t_last_single_support_end) / (t_next_single_support_begin - t_last_single_support_end);
+    plan_shift = fraction * future_shift + (1 - fraction) * past_shift;
+    // std::cout << "fraction: " << fraction << " past: " << past_shift.transpose() << " future: " << future_shift.transpose() << std::endl;
+  }
+  // std::cout << "plan shift: " << plan_shift.transpose() << std::endl;
 }
 
 const std::map<SupportLogicType, std::vector<bool> > QPLocomotionPlan::createSupportLogicMaps()

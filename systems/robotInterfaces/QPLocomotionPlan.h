@@ -167,7 +167,8 @@ private:
   std::string lcm_channel;
 
   double start_time;
-  Eigen::Vector3d plan_shift;
+  Vector3d plan_shift;
+  std::map<Side,Vector3d> foot_shifts;
   drake::lcmt_qp_controller_input last_qp_input;
   std::map<Side, bool> toe_off_active;
 
@@ -211,9 +212,11 @@ private:
 
   bool isSupportingBody(int body_index, const RigidBodySupportState& support_state) const;
 
+  std::vector<Side> getSupportSides(const RigidBodySupportState &support_state) const;
+
   void updateSwingTrajectory(double t_plan, BodyMotionData& body_motion_data, int body_motion_segment_index, const Eigen::VectorXd& qd);
 
-  void updatePlanShift(double t_global, const std::vector<bool>& contact_force_detected, const RigidBodySupportState& next_support);
+  void updatePlanShift(double t_plan, const std::vector<bool>& contact_force_detected, int support_index);
 
   static const std::map<SupportLogicType, std::vector<bool> > createSupportLogicMaps();
 
