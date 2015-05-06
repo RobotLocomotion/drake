@@ -81,6 +81,10 @@ if (LCM_FOUND)
 	util/MessageMonitor.java
 	util/CoordinateFrameData.java
 	util/LCMCoder.java
+	util/BlockingMessageMonitor.java
+	util/Builder.java
+	util/ConcurrentCopier.java
+	util/LockFreeMessageMonitor.java
 	)
   list(APPEND drake_jar_requires lcm-java lcmtypes_drake-java)
 
