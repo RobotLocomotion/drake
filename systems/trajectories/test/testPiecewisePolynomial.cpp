@@ -33,7 +33,7 @@ void testIntegralAndDerivative() {
   CoefficientMatrix desired_value_at_t0 = PiecewisePolynomialType::CoefficientMatrix::Random(piecewise.rows(), piecewise.cols());
   PiecewisePolynomialType integral = piecewise.integral(desired_value_at_t0);
   auto value_at_t0 = integral.value(piecewise.getStartTime());
-  valuecheck(desired_value_at_t0, value_at_t0, 1e-10);
+  valuecheckMatrix(desired_value_at_t0, value_at_t0, 1e-10);
 
   // check continuity at knot points
   for (int i = 0; i < piecewise.getNumberOfSegments() - 1; ++i) {
@@ -75,11 +75,11 @@ void testBasicFunctionality() {
     uniform_real_distribution<double> uniform(piecewise1.getStartTime(), piecewise1.getEndTime());
     double t = uniform(generator);
 
-    valuecheck(sum.value(t), piecewise1.value(t) + piecewise2.value(t), 1e-8);
-    valuecheck(difference.value(t), piecewise2.value(t) - piecewise1.value(t), 1e-8);
-    valuecheck(piecewise1_plus_offset.value(t), piecewise1.value(t) + offset, 1e-8);
-    valuecheck(piecewise1_minus_offset.value(t), piecewise1.value(t) - offset, 1e-8);
-    valuecheck(piecewise1_shifted.value(t), piecewise1.value(t - shift), 1e-8);
+    valuecheckMatrix(sum.value(t), piecewise1.value(t) + piecewise2.value(t), 1e-8);
+    valuecheckMatrix(difference.value(t), piecewise2.value(t) - piecewise1.value(t), 1e-8);
+    valuecheckMatrix(piecewise1_plus_offset.value(t), piecewise1.value(t) + offset, 1e-8);
+    valuecheckMatrix(piecewise1_minus_offset.value(t), piecewise1.value(t) - offset, 1e-8);
+    valuecheckMatrix(piecewise1_shifted.value(t), piecewise1.value(t - shift), 1e-8);
   }
 }
 
@@ -90,8 +90,8 @@ void testValueOutsideOfRange() {
   default_random_engine generator;
   vector<double> segment_times = PiecewiseFunction::randomSegmentTimes(6, generator);
   PiecewisePolynomialType piecewise = PiecewisePolynomial<CoefficientType>::random(3, 4, 5, segment_times);
-  valuecheck(piecewise.value(piecewise.getStartTime()), piecewise.value(piecewise.getStartTime() - 1.0), 1e-10);
-  valuecheck(piecewise.value(piecewise.getEndTime()), piecewise.value(piecewise.getEndTime() + 1.0), 1e-10);
+  valuecheckMatrix(piecewise.value(piecewise.getStartTime()), piecewise.value(piecewise.getStartTime() - 1.0), 1e-10);
+  valuecheckMatrix(piecewise.value(piecewise.getEndTime()), piecewise.value(piecewise.getEndTime() + 1.0), 1e-10);
 }
 
 int main(int argc, char **argv) {
