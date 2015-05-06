@@ -11,6 +11,18 @@ pods_install_pkg_config_file(drake-control-util
   REQUIRES
   VERSION 0.0.1)
 
+if (gurobi_FOUND)
+  add_library(drakeQPCommon SHARED QPCommon.cpp)
+  target_link_libraries(drakeQPCommon drakeControlUtil drakeQP drakeTrajectories drakeLCMUtil)
+  pods_install_libraries(drakeQPCommon)
+  pods_install_headers(QPCommon.h DESTINATION drake)
+  pods_install_pkg_config_file(drake-qp-common
+    LIBS -ldrakeQPCommon
+    CFLAGS -I\${prefix}/include/lcmtypes
+    REQUIRES drake-control-util
+    VERSION 0.0.1)
+endif()
+
 if (MATLAB_FOUND)
   include_directories (${PROJECT_SOURCE_DIR}/util )
   include_directories (${PROJECT_SOURCE_DIR}/systems/trajectories )
@@ -38,15 +50,6 @@ if (MATLAB_FOUND)
     VERSION 0.0.1)
 
   if (gurobi_FOUND)
-    add_mex(drakeQPCommon SHARED QPCommon.cpp)
-    target_link_libraries(drakeQPCommon drakeControlUtil drakeQP drakeTrajectories drakeLCMUtil)
-    pods_install_libraries(drakeQPCommon)
-    pods_install_headers(QPCommon.h DESTINATION drake)
-    pods_install_pkg_config_file(drake-qp-common
-      LIBS -ldrakeQPCommon
-      CFLAGS -I\${prefix}/include/lcmtypes
-      REQUIRES drake-control-util
-      VERSION 0.0.1)
 
     add_mex(QPControllermex QPControllermex.cpp)
     target_link_libraries(QPControllermex drakeQP drakeControlUtil drakeMexUtil)
