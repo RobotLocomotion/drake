@@ -11,8 +11,6 @@ double logisticSigmoid(double L, double k, double x, double x0) {
   return L / (1.0 + exp(-k * (x - x0)));
 }
 
-
-
 PIDOutput wholeBodyPID(NewQPControllerData *pdata, double t, const Ref<const VectorXd> &q, const Ref<const VectorXd> &qd, const Ref<const VectorXd> &q_des, WholeBodyParams *params) {
   // Run a PID controller on the whole-body state to produce desired accelerations and reference posture
   PIDOutput out;
@@ -22,7 +20,7 @@ PIDOutput wholeBodyPID(NewQPControllerData *pdata, double t, const Ref<const Vec
   assert(qd.size() == pdata->r->num_velocities);
   assert(q_des.size() == params->integrator.gains.size());
   if (nq != pdata->r->num_velocities) {
-    mexErrMsgTxt("this function will need to be rewritten when num_pos != num_vel");
+    throw std::runtime_error("this function will need to be rewritten when num_pos != num_vel");
   }
   if (pdata->state.t_prev != 0) {
     dt = t - pdata->state.t_prev;
@@ -197,10 +195,10 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   std::map<string,AtlasParams>::iterator it;
   it = pdata->param_sets.find(qp_input->param_set_name);
   if (it == pdata->param_sets.end()) {
-    mexWarnMsgTxt("Got a param set I don't recognize! Using standing params instead");
+    std::cout<<"Got a param set I don't recognize! Using standing params instead";
     it = pdata->param_sets.find("standing");
     if (it == pdata->param_sets.end()) {
-      mexErrMsgTxt("Could not fall back to standing parameters either. I have to give up here.");
+      throw std::runtime_error("Could not fall back to standing parameters either. I have to give up here.");
     }
   }
   // cout << "using params set: " + it->first + ", ";
@@ -230,10 +228,10 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
 
 
   // // whole_body_data
-  if (qp_input->whole_body_data.num_positions != nq) mexErrMsgTxt("number of positions doesn't match num_dof for this robot");
+  if (qp_input->whole_body_data.num_positions != nq) throw std::runtime_error("number of positions doesn't match num_dof for this robot");
   Map<VectorXd> q_des(qp_input->whole_body_data.q_des.data(), nq);
   if (qp_input->whole_body_data.constrained_dofs.size() != qp_input->whole_body_data.num_constrained_dofs) {
-    mexErrMsgTxt("size of constrained dofs does not match num_constrained_dofs");
+    throw std::runtime_error("size of constrained dofs does not match num_constrained_dofs");
   }
   Map<VectorXi> condof(qp_input->whole_body_data.constrained_dofs.data(), qp_input->whole_body_data.num_constrained_dofs);
 
@@ -255,7 +253,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     mu = qp_input->support_data[0].mu;
     for (int i=1; i < qp_input->num_support_data; i++) {
       if (qp_input->support_data[i].mu != mu) {
-        mexWarnMsgTxt("Currently, we assume that all supports have the same value of mu");
+        std::cout<<"Currently, we assume that all supports have the same value of mu";
       }
     }
   }
@@ -273,7 +271,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
 
   for (int i=0; i < qp_input->num_tracked_bodies; i++) {
     if (qp_input->body_motion_data[i].body_id == 0)
-      mexErrMsgTxt("Body motion data with body id 0\n");
+      throw std::runtime_error("Body motion data with body id 0\n");
     int body_or_frame_id0 = qp_input->body_motion_data[i].body_id - 1;
     int true_body_id0 = pdata->r->parseBodyOrFrameID(body_or_frame_id0, NULL);
     double weight = params->body_motion[true_body_id0].weight;
@@ -606,7 +604,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
         MatrixXd W = w.asDiagonal();
         Hqp_test = (Jcom.transpose()*R_DQyD_ls*Jcom + W).inverse();
         if (((Hqp_test-pdata->Hqp).array().abs()).maxCoeff() > 1e-6) {
-          mexErrMsgTxt("Q submatrix inverse from matrix inversion lemma does not match direct Q inverse.");
+          throw std::runtime_error("Q submatrix inverse from matrix inversion lemma does not match direct Q inverse.");
         }
       }
     #endif

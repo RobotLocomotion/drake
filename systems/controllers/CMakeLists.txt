@@ -11,6 +11,7 @@ pods_install_pkg_config_file(drake-control-util
   REQUIRES
   VERSION 0.0.1)
 
+pods_find_pkg_config(gurobi)
 if (gurobi_FOUND)
   add_library(drakeQPCommon SHARED QPCommon.cpp)
   target_link_libraries(drakeQPCommon drakeControlUtil drakeQP drakeTrajectories drakeLCMUtil)
