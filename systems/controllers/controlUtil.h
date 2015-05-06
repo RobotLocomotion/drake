@@ -1,7 +1,6 @@
 #ifndef _CONTROL_UTIL_H_
 #define _CONTROL_UTIL_H_
 
-#include <mex.h>
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <set>
@@ -63,9 +62,6 @@ drakeControlUtilEXPORT void getCols(std::set<int> &cols, MatrixBase<DerivedA> co
 template <typename DerivedPhi1, typename DerivedPhi2, typename DerivedD>
 drakeControlUtilEXPORT void angleDiff(MatrixBase<DerivedPhi1> const &phi1, MatrixBase<DerivedPhi2> const &phi2, MatrixBase<DerivedD> &d);
 
-drakeControlUtilEXPORT mxArray* myGetProperty(const mxArray* pobj, const char* propname);
-drakeControlUtilEXPORT mxArray* myGetField(const mxArray* pobj, const char* propname);
-drakeControlUtilEXPORT mxArray* myGetField(const mxArray* pobj, const int idx, const char* propname);
 drakeControlUtilEXPORT bool inSupport(std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> &supports, int body_idx);
 drakeControlUtilEXPORT void collisionDetect(void* map_ptr, Vector3d const & contact_pos, Vector3d &pos, Vector3d *normal, double terrain_height);
 drakeControlUtilEXPORT void surfaceTangents(const Vector3d & normal, Matrix<double,3,m_surface_tangents> & d);
@@ -88,8 +84,5 @@ struct JointNames {
 };
 
 drakeControlUtilEXPORT void getRobotJointIndexMap(JointNames *joint_names, RobotJointIndexMap *joint_map);
-
-// convert Matlab cell array of strings into a C++ vector of strings
-drakeControlUtilEXPORT std::vector<std::string> get_strings(const mxArray *rhs);
 
 #endif

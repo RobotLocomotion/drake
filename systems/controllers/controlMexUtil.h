@@ -7,5 +7,10 @@ std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray 
 
 PiecewisePolynomial<double> matlabToPiecewisePolynomial(const mxArray* pobj, int index); 
 
-
 void parseRobotPropertyCache(const mxArray *rpc_obj, RobotPropertyCache *rpc);
+
+DLLEXPORT mxArray* myGetProperty(const mxArray* pobj, const char* propname);
+DLLEXPORT mxArray* myGetField(const mxArray* pobj, const char* propname);
+DLLEXPORT mxArray* myGetField(const mxArray* pobj, const int idx, const char* propname);
+// convert Matlab cell array of strings into a C++ vector of strings
+DLLEXPORT std::vector<std::string> get_strings(const mxArray *rhs);

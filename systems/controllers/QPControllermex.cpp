@@ -14,6 +14,7 @@
 #include <limits>
 #include <cmath>
 #include "drakeMexUtil.h"
+#include "controlMexUtil.h"
 
 //#define TEST_FAST_QP
 //#define USE_MATRIX_INVERSION_LEMMA

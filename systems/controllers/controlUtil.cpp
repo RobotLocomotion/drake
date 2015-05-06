@@ -1,6 +1,5 @@
 #include "controlUtil.h"
 #include "drakeUtil.h"
-#include "mex.h"
 
 #ifdef USE_MAPS
 #include "terrain-map/TerrainMap.hpp"
@@ -44,26 +43,6 @@ void angleDiff(MatrixBase<DerivedPhi1> const &phi1, MatrixBase<DerivedPhi2> cons
       }
     }
   }
-}
-
-mxArray* myGetProperty(const mxArray* pobj, const char* propname)
-{
-  mxArray* pm = mxGetProperty(pobj,0,propname);
-  if (!pm) mexErrMsgIdAndTxt("DRC:ControlUtil:BadInput","ControlUtil is trying to load object property '%s', but failed.", propname);
-  return pm;
-}
-
-mxArray* myGetField(const mxArray* pobj, const int idx, const char* propname)
-{
-  mxArray* pm = mxGetField(pobj,idx,propname);
-  if (!pm) mexErrMsgIdAndTxt("DRC:ControlUtil:BadInput","ControlUtil is trying to load object field '%s', but failed.", propname);
-  return pm;
-}
-
-mxArray* myGetField(const mxArray* pobj, const char* propname)
-{
-  mxArray* pm = myGetField(pobj, 0, propname);
-  return pm;
 }
 
 bool inSupport(std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> &supports, int body_idx) {
@@ -463,25 +442,9 @@ void evaluateXYZExpmapCubicSpline(double t, const PiecewisePolynomial<double> &s
   xyzddot_angular_accel.tail<3>() = M*quat_ddot + matGradMult(dM,quat_dot)*quat_dot;
 }
 
-// convert Matlab cell array of strings into a C++ vector of strings
-std::vector<std::string> get_strings(const mxArray *rhs) {
-  int num = mxGetNumberOfElements(rhs);
-  std::vector<std::string> strings(num);
-  for (int i=0; i<num; i++) {
-    // const mxArray *ptr = mxGetCell(rhs,i);
-    strings[i] = std::string(mxArrayToString(mxGetCell(rhs, i)));
-    // int buflen = mxGetN(ptr)*sizeof(mxChar)+1;
-    // char* str = (char*)mxMalloc(buflen);
-    // mxGetString(ptr, str, buflen);
-    // strings[i] = string(str);
-    // mxFree(str);
-  }
-  return strings;
-}
-
 void getRobotJointIndexMap(JointNames *joint_names, RobotJointIndexMap *joint_map) {
   if (joint_names->drake.size() != joint_names->robot.size()) {
-    mexErrMsgTxt("Cannot create joint name map: joint_names->drake and joint_names->robot must have the same length");
+    throw std::runtime_error("Cannot create joint name map: joint_names->drake and joint_names->robot must have the same length");
   }
   int njoints = joint_names->drake.size();
   joint_map->drake_to_robot.resize(njoints);
@@ -499,7 +462,7 @@ void getRobotJointIndexMap(JointNames *joint_names, RobotJointIndexMap *joint_ma
     }
     if (!has_match) {
       std::cout << "Could not match joint: " << joint_names->drake[i] << std::endl;
-      mexErrMsgTxt("Could not find a match for drake joint name");
+      throw std::runtime_error("Could not find a match for drake joint name");
     }
   }
   return;

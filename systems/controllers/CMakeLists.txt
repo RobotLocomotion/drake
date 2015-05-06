@@ -52,7 +52,7 @@ if (MATLAB_FOUND)
   if (gurobi_FOUND)
 
     add_mex(QPControllermex QPControllermex.cpp)
-    target_link_libraries(QPControllermex drakeQP drakeControlUtil drakeMexUtil)
+    target_link_libraries(QPControllermex drakeQP drakeControlUtil drakeMexUtil drakeControlMexUtil)
     pods_use_pkg_config_packages(QPControllermex gurobi)
 
     add_mex(getActiveSupportsmex getActiveSupportsmex.cpp)
@@ -76,7 +76,7 @@ if (MATLAB_FOUND)
 
   macro(add_control_mex)
     add_mex(${ARGV} ${ARGV}.cpp)
-    target_link_libraries(${ARGV} drakeControlUtil drakeMexUtil drakeRBM)
+    target_link_libraries(${ARGV} drakeControlUtil drakeMexUtil drakeRBM drakeControlMexUtil)
   endmacro()
 
   add_control_mex(bodyMotionControlmex) 

@@ -297,3 +297,39 @@ void parseRobotPropertyCache(const mxArray *rpc_obj, RobotPropertyCache *rpc) {
 
   return;
 }
+
+mxArray* myGetProperty(const mxArray* pobj, const char* propname)
+{
+  mxArray* pm = mxGetProperty(pobj,0,propname);
+  if (!pm) mexErrMsgIdAndTxt("DRC:ControlUtil:BadInput","ControlUtil is trying to load object property '%s', but failed.", propname);
+  return pm;
+}
+
+mxArray* myGetField(const mxArray* pobj, const int idx, const char* propname)
+{
+  mxArray* pm = mxGetField(pobj,idx,propname);
+  if (!pm) mexErrMsgIdAndTxt("DRC:ControlUtil:BadInput","ControlUtil is trying to load object field '%s', but failed.", propname);
+  return pm;
+}
+
+mxArray* myGetField(const mxArray* pobj, const char* propname)
+{
+  mxArray* pm = myGetField(pobj, 0, propname);
+  return pm;
+}
+
+// convert Matlab cell array of strings into a C++ vector of strings
+std::vector<std::string> get_strings(const mxArray *rhs) {
+  int num = mxGetNumberOfElements(rhs);
+  std::vector<std::string> strings(num);
+  for (int i=0; i<num; i++) {
+    // const mxArray *ptr = mxGetCell(rhs,i);
+    strings[i] = std::string(mxArrayToString(mxGetCell(rhs, i)));
+    // int buflen = mxGetN(ptr)*sizeof(mxChar)+1;
+    // char* str = (char*)mxMalloc(buflen);
+    // mxGetString(ptr, str, buflen);
+    // strings[i] = string(str);
+    // mxFree(str);
+  }
+  return strings;
+}
