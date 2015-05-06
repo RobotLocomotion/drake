@@ -57,6 +57,18 @@ classdef QPLocomotionPlanSettings
       obj.zmp_data = QPLocomotionPlanSettings.defaultZMPData();
     end
 
+    function obj = setCOMTraj(obj)
+      ts = obj.qtraj.getBreaks();
+      % this deals with the case of a constant trajectory
+      com_poses = zeros(2,length(ts));
+      for j = 1:numel(ts)
+        kinsol = obj.robot.doKinematics(obj.qtraj.eval(ts(j)));
+        com_position = obj.robot.getCOM(kinsol);
+        com_poses(:,j) = com_position(1:2);
+      end
+      obj.comtraj = PPTrajectory(pchip(ts,com_poses));
+    end
+
     function obj = setLQRForCoM(obj)
       Q = diag([10 10 1 1]);
       R = 0.0001*eye(2);
@@ -64,7 +76,7 @@ classdef QPLocomotionPlanSettings
       B = [zeros(2); eye(2)];
       [~,S,~] = lqr(A,B,Q,R);
       % set the Qy to zero since we only want to stabilize COM
-      obj.zmp_data.Qy = 0*obj.default_qp_input.zmp_data.Qy;
+      obj.zmp_data.Qy = 0*obj.zmp_data.Qy;
       obj.zmp_data.A = A;
       obj.zmp_data.B = B;
       obj.zmp_data.R = R;

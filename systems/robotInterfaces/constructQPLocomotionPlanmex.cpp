@@ -109,13 +109,14 @@ ExponentialPlusPiecewisePolynomial<double> matlabExpPlusPPToExponentialPlusPiece
   return ExponentialPlusPiecewisePolynomial<double>(K, A, alpha, piecewise_polynomial_part);
 }
 
-ExponentialPlusPiecewisePolynomial<double> matlabExpPlusPPOrVectorToExponentialPlusPiecewisePolynomial(const mxArray* array)
+ExponentialPlusPiecewisePolynomial<double> matlabExpPlusPPOrPPTrajectoryOrVectorToExponentialPlusPiecewisePolynomial(const mxArray* array)
 {
-  if (mxIsNumeric(array)) {
-    return ExponentialPlusPiecewisePolynomial<double>(matlabToEigenMap<Dynamic, Dynamic>(array));
+  bool is_exp_plus_pp = mxGetProperty(array, 0, "K") != nullptr;
+  if (is_exp_plus_pp) {
+    return matlabExpPlusPPToExponentialPlusPiecewisePolynomial(array);
   }
   else {
-    return matlabExpPlusPPToExponentialPlusPiecewisePolynomial(array);
+    return matlabPPTrajectoryOrMatrixToPiecewisePolynomial(array);
   }
 }
 
@@ -208,7 +209,7 @@ TVLQRData setUpZMPData(const mxArray* mex_zmp_data)
 QuadraticLyapunovFunction setUpLyapunovFunction(const mxArray* mex_V)
 {
   auto S = matlabToEigenMap<Dynamic, Dynamic>(mxGetFieldSafe(mex_V, "S"));
-  auto s1 = matlabExpPlusPPOrVectorToExponentialPlusPiecewisePolynomial(mxGetFieldSafe(mex_V, "s1"));
+  auto s1 = matlabExpPlusPPOrPPTrajectoryOrVectorToExponentialPlusPiecewisePolynomial(mxGetFieldSafe(mex_V, "s1"));
   QuadraticLyapunovFunction V(S, s1);
   return V;
 }
@@ -255,7 +256,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   settings.lipm_height = mxGetScalar(mxGetPropertySafe(mex_settings, "LIP_height"));
   settings.V = setUpLyapunovFunction(mxGetPropertySafe(mex_settings, "V"));
   settings.q_traj = matlabPPTrajectoryOrMatrixToPiecewisePolynomial(mxGetPropertySafe(mex_settings, "qtraj"));
-  settings.com_traj = matlabExpPlusPPOrVectorToExponentialPlusPiecewisePolynomial(mxGetPropertySafe(mex_settings, "comtraj"));
+  settings.com_traj = matlabExpPlusPPOrPPTrajectoryOrVectorToExponentialPlusPiecewisePolynomial(mxGetPropertySafe(mex_settings, "comtraj"));
   settings.gain_set = mxGetStdString(mxGetPropertySafe(mex_settings, "gain_set"));
   settings.mu = mxGetScalar(mxGetPropertySafe(mex_settings, "mu"));
   settings.plan_shift_zmp_indices = matlabToStdVector<Eigen::DenseIndex>(mxGetPropertySafe(mex_settings, "plan_shift_zmp_inds"));
