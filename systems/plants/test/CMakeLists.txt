@@ -38,7 +38,7 @@ if (gurobi_FOUND AND Boost_FOUND)
   add_ik_cpp(testApproximateIK)
 endif()
 
-if (snopt_cpp_FOUND AND Boost_FOUND)
+if (snopt_c_FOUND AND Boost_FOUND)
   add_ik_cpp(testIK)
   add_ik_cpp(testIKpointwise)
   add_ik_cpp(testIKtraj)
