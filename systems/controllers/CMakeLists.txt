@@ -30,7 +30,6 @@ if (MATLAB_FOUND)
     pods_install_headers(QPCommon.h DESTINATION drake)
     pods_install_pkg_config_file(drake-qp-common
       LIBS -ldrakeQPCommon
-      CFLAGS -I\${prefix}/include/lcmtypes
       REQUIRES drake-control-util
       VERSION 0.0.1)
 
