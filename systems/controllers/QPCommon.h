@@ -254,7 +254,6 @@ struct PIDOutput {
 
 //enum PlanShiftMode {NONE, XYZ, Z_ONLY, Z_AND_ZMP};
 
-std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray *qp_input);
 
 PIDOutput wholeBodyPID(NewQPControllerData *pdata, double t, const Ref<const VectorXd> &q, const Ref<const VectorXd> &qd, const Ref<const VectorXd> &q_des, WholeBodyParams *params);
 
@@ -264,6 +263,5 @@ std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> l
 
 int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_controller_input> qp_input, DrakeRobotState &robot_state, const Ref<Matrix<bool, Dynamic, 1>> &b_contact_force, QPControllerOutput *qp_output, std::shared_ptr<QPControllerDebugData> debug);
 
-void parseRobotPropertyCache(const mxArray *rpc_obj, RobotPropertyCache *rpc);
 
 #endif

@@ -29,7 +29,7 @@ if (MATLAB_FOUND)
     pods_use_pkg_config_packages(drakeControlMexUtil terrain-map)
     set_target_properties(drakeControlMexUtil PROPERTIES COMPILE_FLAGS "-DUSE_MAPS")
   endif()
-  target_link_libraries(drakeControlMexUtil drakeRBM drakeMexUtil drakeTrajectories drakeControlUtil)
+  target_link_libraries(drakeControlMexUtil drakeRBM drakeMexUtil drakeTrajectories drakeControlUtil drakeLCMUtil)
   pods_install_libraries(drakeControlMexUtil)
   pods_install_headers(controlMexUtil.h DESTINATION drake)
   pods_install_pkg_config_file(drake-control-mex-util
@@ -53,20 +53,20 @@ if (MATLAB_FOUND)
     pods_use_pkg_config_packages(QPControllermex gurobi)
 
     add_mex(getActiveSupportsmex getActiveSupportsmex.cpp)
-    target_link_libraries(getActiveSupportsmex drakeQP drakeControlUtil)
+    target_link_libraries(getActiveSupportsmex drakeQP drakeMexUtil drakeControlMexUtil)
 
     if (LCM_FOUND)
       add_mex(instantaneousQPControllermex instantaneousQPControllermex.cpp)
-      target_link_libraries(instantaneousQPControllermex drakeQP drakeControlUtil drakeQPCommon)
+      target_link_libraries(instantaneousQPControllermex drakeQP drakeControlUtil drakeQPCommon drakeMexUtil)
       pods_use_pkg_config_packages(instantaneousQPControllermex gurobi)
 
       add_mex(constructQPDataPointerMex constructQPDataPointerMex.cpp)
-      target_link_libraries(constructQPDataPointerMex drakeQP drakeControlUtil drakeQPCommon)
-      pods_use_pkg_config_packages(constructQPDataPointerMex gurobi)
+      target_link_libraries(constructQPDataPointerMex drakeQP drakeControlUtil drakeQPCommon drakeMexUtil drakeControlMexUtil)
+      pods_use_pkg_config_packages(constructQPDataPointerMex gurobi drake-qp-common)
 
       include_directories (${CMAKE_BINARY_DIR}/lcmgen/lcmtypes )
       add_mex(encodeQPInputLCMMex encodeQPInputLCMMex.cpp)
-      target_link_libraries(encodeQPInputLCMMex drakeControlUtil drakeQPCommon)
+      target_link_libraries(encodeQPInputLCMMex drakeControlUtil drakeQPCommon drakeMexUtil drakeControlMexUtil)
       pods_use_pkg_config_packages(encodeQPInputLCMMex lcm)
     endif()
   endif()
@@ -76,17 +76,11 @@ if (MATLAB_FOUND)
     target_link_libraries(${ARGV} drakeControlUtil drakeMexUtil drakeRBM)
   endmacro()
 
-  add_control_mex(bodyMotionControlmex)
-
-  add_mex(pelvisMotionControlmex pelvisMotionControlmex.cpp)
-  target_link_libraries(pelvisMotionControlmex drakeRBM drakeUtil drakeControlUtil)
-
+  add_control_mex(bodyMotionControlmex) 
+  add_control_mex(pelvisMotionControlmex) 
   add_mex(supportDetectmex supportDetectmex.cpp)
-  target_link_libraries(supportDetectmex drakeRBM drakeControlUtil)
-
-  add_mex(individualCentersOfPressuremex individualCentersOfPressuremex.cpp)
-  target_link_libraries(individualCentersOfPressuremex drakeRBM drakeUtil drakeControlUtil)
-
+  target_link_libraries(supportDetectmex drakeRBM drakeControlUtil) 
+  add_control_mex(individualCentersOfPressuremex) 
   add_control_mex(bodySpatialMotionPDmex)
   target_link_libraries(bodySpatialMotionPDmex drakeGeometryUtil)
 

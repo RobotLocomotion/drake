@@ -1,4 +1,5 @@
 #include "drakeUtil.h"
+#include "drakeMexUtil.h"
 #include "QPLocomotionPlan.h"
 
 using namespace std;

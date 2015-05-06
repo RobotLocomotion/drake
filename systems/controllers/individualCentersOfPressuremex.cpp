@@ -1,6 +1,6 @@
 #include "mex.h"
 #include "controlUtil.h"
-#include "drakeUtil.h"
+#include "drakeMexUtil.h"
 #include <iostream>
 
 using namespace std;
