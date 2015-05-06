@@ -4,7 +4,9 @@
 # add_mex(debugMexTest debugMexTest.cpp)
 
 include_directories(..)
-
+include_directories(${PROJECT_SOURCE_DIR}/systems/trajectories)
+include_directories(${PROJECT_SOURCE_DIR}/solvers/polynomial)
+include_directories(${PROJECT_BINARY_DIR}/lcmgen/lcmtypes)
 
 if (NOT WIN32)
   # doesn't work because the timing tests require the <chrono> include
@@ -36,5 +38,4 @@ endif(MATLAB_FOUND)
 if (LCM_FOUND)
 add_executable(testLCMUtil testLCMUtil.cpp)
 target_link_libraries(testLCMUtil drakeLCMUtil)
-target_include_directories(testLCMUtil PUBLIC ${PROJECT_SOURCE_DIR}/systems/trajectories ${PROJECT_SOURCE_DIR}/solvers/polynomial ${PROJECT_BINARY_DIR}/lcmgen/lcmtypes)
 endif()
