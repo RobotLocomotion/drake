@@ -1,4 +1,5 @@
 add_library(drakeControlUtil SHARED controlUtil.cpp)
+pods_find_pkg_config(terrain-map)
 if (terrain-map_FOUND)
   pods_use_pkg_config_packages(drakeControlUtil terrain-map)
   set_target_properties(drakeControlUtil PROPERTIES COMPILE_FLAGS "-DUSE_MAPS")
