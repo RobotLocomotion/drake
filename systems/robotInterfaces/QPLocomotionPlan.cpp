@@ -458,24 +458,28 @@ void QPLocomotionPlan::updatePlanShift(double t_plan, const std::vector<bool>& c
   const bool is_last_support = support_index == settings.supports.size() - 1;
   const RigidBodySupportState& next_support = is_last_support ? settings.supports[support_index] : settings.supports[support_index + 1];
 
-  // First, figure out the relative shifts for each of the feet which are in support and in contact
-  for (auto side_it = foot_body_ids.begin(); side_it != foot_body_ids.end(); side_it++) {
-    if (QPLocomotionPlan::isSupportingBody(side_it->second, next_support)) {
-      if (contact_force_detected[side_it->second]) {
-        for (auto body_motion_it = settings.body_motions.begin(); body_motion_it != settings.body_motions.end(); ++body_motion_it) {
-          int body_motion_body_id = robot.parseBodyOrFrameID(body_motion_it->getBodyOrFrameId());
-          if (body_motion_body_id == side_it->second) {
-            int world = 0;
-            int rotation_type = 0;
-            Vector3d foot_frame_origin_actual = robot.forwardKinNew(Vector3d::Zero().eval(), body_motion_it->getBodyOrFrameId(), world, rotation_type, 0).value();
-            Vector3d foot_frame_origin_planned = body_motion_it->getTrajectory().value(t_plan).topRows<3>();
-            foot_shifts[side_it->first] = foot_frame_origin_planned - foot_frame_origin_actual;
-            break;
+
+  if (t_plan - last_foot_shift_time > settings.min_foot_shift_delay) {
+    // First, figure out the relative shifts for each of the feet which are in support and in contact
+    for (auto side_it = foot_body_ids.begin(); side_it != foot_body_ids.end(); side_it++) {
+      if (QPLocomotionPlan::isSupportingBody(side_it->second, next_support)) {
+        if (contact_force_detected[side_it->second]) {
+          for (auto body_motion_it = settings.body_motions.begin(); body_motion_it != settings.body_motions.end(); ++body_motion_it) {
+            int body_motion_body_id = robot.parseBodyOrFrameID(body_motion_it->getBodyOrFrameId());
+            if (body_motion_body_id == side_it->second) {
+              int world = 0;
+              int rotation_type = 0;
+              Vector3d foot_frame_origin_actual = robot.forwardKinNew(Vector3d::Zero().eval(), body_motion_it->getBodyOrFrameId(), world, rotation_type, 0).value();
+              Vector3d foot_frame_origin_planned = body_motion_it->getTrajectory().value(t_plan).topRows<3>();
+              foot_shifts[side_it->first] = foot_frame_origin_planned - foot_frame_origin_actual;
+              break;
+            }
           }
         }
+        break;
       }
-      break;
     }
+    last_foot_shift_time = t_plan;
   }
 
   // Now figure out how to combine the foot shifts into a single plan shift. The logic is:
