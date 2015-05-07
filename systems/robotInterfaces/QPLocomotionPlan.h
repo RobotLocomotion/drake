@@ -100,14 +100,14 @@ struct QPLocomotionPlanSettings {
   PiecewisePolynomial<double> q_traj;
   ExponentialPlusPiecewisePolynomial<double> com_traj;
 
-  std::string gain_set = "standing";
-  double mu = 0.5;
-  std::vector<Eigen::DenseIndex> plan_shift_zmp_indices = { { 1, 2 } };
-  std::vector<Eigen::DenseIndex> plan_shift_body_motion_indices  = { 3 };
-  double g = 9.81;
-  bool is_quasistatic = false;
-  KneeSettings knee_settings = createDefaultKneeSettings();
-  std::string pelvis_name = "pelvis";
+  std::string gain_set;
+  double mu;
+  std::vector<Eigen::DenseIndex> plan_shift_zmp_indices;
+  std::vector<Eigen::DenseIndex> plan_shift_body_motion_indices;
+  double g;
+  bool is_quasistatic;
+  KneeSettings knee_settings;
+  std::string pelvis_name;
   std::map<Side, std::string> foot_names;
   std::map<Side, std::string> knee_names;
   std::vector<int> constrained_position_indices;
@@ -121,6 +121,7 @@ struct QPLocomotionPlanSettings {
     support_times.push_back(support_times[support_times.size() - 1] + duration);
   }
 
+  // may be useful later
   static KneeSettings createDefaultKneeSettings() {
     KneeSettings knee_settings;
     knee_settings.min_knee_angle = 0.7;
