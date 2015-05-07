@@ -67,6 +67,8 @@ if (MATLAB_FOUND)
   add_rbm_mex(surfaceTangentsmex)
   add_rbm_mex(jointLimitConstraintsmex)
   add_rbm_mex(positionConstraintsmex)
+  add_mex(computeS1Trajmex computeS1Trajmex.cpp)
+  target_link_libraries(computeS1Trajmex drakeRBM drakeUtil drakeTrajectories)
 
   if(gurobi_FOUND)
     add_definitions(-DPATHLCP_MEXFILE=\"${CMAKE_SOURCE_DIR}/thirdParty/path/lcppath.${MEX_EXT}\")
