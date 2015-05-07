@@ -17,38 +17,102 @@ MatrixXd expm(const MatrixXd& A) {
   return F;
 }
 
+PiecewisePolynomial<double> matlabPPFormToPiecewisePolynomial(const mxArray* pp)
+{
+  vector<double> breaks = matlabToStdVector<double>(mxGetFieldSafe(pp, "breaks"));
+  size_t num_segments = breaks.size() - 1; // l
+
+  const mxArray* coefs_mex = mxGetFieldSafe(pp, "coefs"); // a d*l x k matrix
+  const size_t* coefs_mex_dims = mxGetDimensions(coefs_mex);
+  int num_coefs_mex_dims = mxGetNumberOfDimensions(coefs_mex);
+
+  size_t number_of_elements = mxGetNumberOfElements(coefs_mex);
+
+  const mxArray* dim_mex = mxGetFieldSafe(pp, "dim");
+  int num_dims_mex = mxGetNumberOfElements(dim_mex);
+  if (num_dims_mex == 0 | num_dims_mex > 2)
+    throw runtime_error("case not handled"); // because PiecewisePolynomial can't currently handle it
+  const int num_dims = 2;
+  mwSize dims[num_dims];
+  for (int i = 0; i < num_dims_mex; i++) {
+    dims[i] = static_cast<mwSize>(mxGetPr(dim_mex)[i]);
+  }
+  for (int i = num_dims_mex; i < num_dims; i++)
+    dims[i] = 1;
+
+  size_t product_of_dimensions = dims[0]; // d
+  for (int i = 1; i < num_dims; ++i) {
+    product_of_dimensions *= dims[i];
+  }
+
+  size_t num_coefficients = number_of_elements / (num_segments * product_of_dimensions); // k
+
+  vector<PiecewisePolynomial<double>::PolynomialMatrix> polynomial_matrices;
+  polynomial_matrices.reserve(num_segments);
+  for (mwSize segment_index = 0; segment_index < num_segments; segment_index++) {
+    PiecewisePolynomial<double>::PolynomialMatrix polynomial_matrix(dims[0], dims[1]);
+    for (mwSize i = 0; i < product_of_dimensions; i++) {
+      VectorXd coefficients(num_coefficients);
+      mwSize row = segment_index * product_of_dimensions + i;
+      for (mwSize coefficient_index = 0; coefficient_index < num_coefficients; coefficient_index++) {
+        mwSize sub[] = {row, num_coefficients - coefficient_index - 1}; // Matlab's reverse coefficient indexing...
+        coefficients[coefficient_index] = *(mxGetPr(coefs_mex) + sub2ind(num_coefs_mex_dims, coefs_mex_dims, sub));
+      }
+      polynomial_matrix(i) = Polynomial<double>(coefficients);
+    }
+    polynomial_matrices.push_back(polynomial_matrix);
+  }
+
+  return PiecewisePolynomial<double>(polynomial_matrices, breaks);
+}
+
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) 
 {
+
   PiecewisePolynomial<double> pp; //this needs to come in as input
-  double h_over_g;
-  size_t n;
-  size_t k;
-  MatrixXd zmp_tf;
-  PiecewisePolynomial<double> zbar_pp = pp - zmp_tf;
+  pp = matlabPPFormToPiecewisePolynomial(prhs[0]);
+  Map<Matrix4d> A(mxGetPrSafe(prhs[1]));
+  Map<MatrixXd> B(mxGetPrSafe(prhs[2]), 4, 2);
+  Map<MatrixXd> C(mxGetPrSafe(prhs[3]), 2, 4);
+  Map<Matrix2d> D(mxGetPrSafe(prhs[4]));
+  Map<Matrix2d> Q(mxGetPrSafe(prhs[5]));
+  Map<Matrix2d> R(mxGetPrSafe(prhs[6]));
+  Map<Matrix4d> Q1(mxGetPrSafe(prhs[7]));
+  Map<Matrix2d> R1(mxGetPrSafe(prhs[8]));
+  Map<MatrixXd> N(mxGetPrSafe(prhs[9]), 4, 2);
+  Map<Matrix4d> S(mxGetPrSafe(prhs[10]));
+
+  size_t n = static_cast<size_t>(pp.getNumberOfSegments());
   
-  Matrix4d A;
-  MatrixXd B(4, 2);
-  MatrixXd C(2, 4);
-  Matrix4d S;
-  Matrix2d D = -h_over_g * MatrixXd::Identity(2, 2);
-  Matrix2d Q = MatrixXd::Identity(2, 2);
-  Matrix4d Q1 = C.transpose() * Q * C;
-  Matrix2d R = MatrixXd::Zero(2, 2);
+  int d = pp.getSegmentPolynomialDegree(0);
 
-  Matrix2d R1 = R + D.transpose() * Q * D;
-  MatrixXd N = C.transpose() * Q * D; //4 x 2
+  for (size_t i = 1; i < n; i++) {
+    assert(pp.getSegmentPolynomialDegree(i) == d);
+  }
 
-  A << MatrixXd::Zero(2, 2), MatrixXd::Identity(2, 2), MatrixXd::Zero(2, 4);
-  B << MatrixXd::Zero(2, 2), MatrixXd::Identity(2, 2);
-  C << MatrixXd::Identity(2, 2), MatrixXd::Zero(2, 2);
+  VectorXd dt(n);
 
-  Matrix2d R1i = R.inverse();
+  std::vector<double> breaks = pp.getSegmentTimes();
+
+  for(size_t i = 0; i < n; i++) {
+    dt(i) = breaks[i + 1] - breaks[i];
+  }
+
+  size_t k = d + 1;
+  
+  MatrixXd zmp_tf = pp.value(pp.getEndTime());
+
+  
+  PiecewisePolynomial<double> zbar_pp = pp - zmp_tf;
+
+  Matrix2d R1i = R1.inverse();
 
   MatrixXd NB = N.transpose() + B.transpose() * S; //2 x 4
   Matrix4d A2 = NB.transpose() * R1i * B.transpose() - A.transpose();
   MatrixXd B2 = 2 * (C.transpose() - NB.transpose() * R1i * D) * Q; //4 x 2
 
   Matrix4d A2i = A2.inverse();
+
 
   MatrixXd alpha = MatrixXd::Zero(4, n);
 
@@ -59,34 +123,46 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   }
 
   VectorXd s1dt;
-  VectorXd dt(n);
-
-  for (size_t j = n - 1; j >= 0; j--) { 
-    auto poly_mat = pp.getPolynomialMatrix(j);
+  for (int j = n - 1; j >= 0; j--) { 
+    
+    auto poly_mat = zbar_pp.getPolynomialMatrix(j);
     size_t nq = poly_mat.rows();
-    MatrixXd poly_coeffs(nq, k);
+    MatrixXd poly_coeffs = MatrixXd::Zero(nq, k);
+
     for (size_t x = 0; x < nq; x++) {
       poly_coeffs.row(x) = poly_mat(x).getCoefficients().transpose();
     }    
-    beta[j].col(k - 1) = -A2i * B2 * poly_coeffs.col(k - 1);
-
-    for (size_t i = k - 2; k >= 0; k--) {
-      beta[j].col(i) = A2i * (i * beta[j].col(i + 1) - B2 * poly_coeffs.col(i));
+    
+    beta[j].col(k - 1) = -A2i * B2 * poly_coeffs.col(k - 1); //correct
+    
+    for (int i = k - 2; i >= 0; i--) {
+      beta[j].col(i) = A2i * ((i+1) * beta[j].col(i + 1) - B2 * poly_coeffs.col(i)); //correct
     }
-
+    
     if(j == n - 1) {
       s1dt = VectorXd::Zero(4);
     } else {
       s1dt = alpha.col(j+1) + beta[j + 1].col(0);
     }
-    //alpha(:,j) = expm(A2*dt(j)) \ (s1dt - squeeze(beta(:,j,:))*(dt(j).^(0:k-1)'));
+
     VectorXd dtpow(k - 1);
     for(size_t p = 0; p < k; p++) { 
       dtpow(p) = pow(dt(j), p);
     }
+
     alpha.col(j) = expm(A2*dt(j)).inverse() * (s1dt - beta[j]*dtpow);
   }
 
+  cout << alpha << endl;
+
+  return;
+
+  //matlabPPFormToPiecewisePolynomial
+
+  //const mxArray* mex_breaks = mxGetFieldOrPropertySafe(array, "breaks");
+  //const mxArray* mex_coefs = mxGetFieldOrPropertySafe(array, "gamma");
+  //PiecewisePolynomial<double> piecewise_polynomial_part = matlabCoefsAndBreaksToPiecewisePolynomial(mex_coefs, mex_breaks, false);
+  
   //ExpPlusPPTrajectory(breaks,K,A,alpha,gamma)
   //ExponentialPlusPiecewisePolynomial(Matrix4d::Identity)
   //ExponentialPlusPiecewisePolynomial(const Eigen::MatrixBase<DerivedK>& K, const Eigen::MatrixBase<DerivedA>& A, const Eigen::MatrixBase<DerivedAlpha>& alpha, const PiecewisePolynomial<CoefficientType>& piecewise_polynomial_part)
