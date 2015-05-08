@@ -102,7 +102,6 @@ struct QPLocomotionPlanSettings {
 
   std::string gain_set;
   double mu;
-  std::vector<Eigen::DenseIndex> plan_shift_zmp_indices;
   std::vector<Eigen::DenseIndex> plan_shift_body_motion_indices;
   double g;
   double min_foot_shift_delay = 0.2; // seconds to wait before updating foot-specific plan shifts

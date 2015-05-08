@@ -482,58 +482,58 @@ void QPLocomotionPlan::updatePlanShift(double t_plan, const std::vector<bool>& c
     last_foot_shift_time = t_plan;
   }
 
-  // Now figure out how to combine the foot shifts into a single plan shift. The logic is:
-  // If we're in single support, then use the shift for the support foot
-  // If we're in double support, then interpolate linearly between the two shifts based on the time since one foot was single support and the time when the other foot will be single support
-  std::vector<Side> support_sides = this->getSupportSides(settings.supports[support_index]);
-  if (support_sides.size() == 1) {
-    // single support
-    plan_shift = foot_shifts[support_sides[0]];
-  } else {
-    // First, look backwards until we find the most recent single support
-    bool found_past_single_support = false;
-    double t_last_single_support_end;
-    Vector3d past_shift;
-    for (int i = support_index - 1; i >= 0; --i) {
-      support_sides = this->getSupportSides(settings.supports[i]);
-      if (support_sides.size() == 1) {
-        found_past_single_support = true;
-        t_last_single_support_end = settings.support_times[i+1];
-        past_shift = foot_shifts[support_sides[0]];
-        break;
-      }
-    }
-    if (!found_past_single_support) {
-      past_shift = 0.5 * (foot_shifts.at(Side(Side::LEFT)) + foot_shifts.at(Side(Side::RIGHT)));
-      t_last_single_support_end = settings.support_times[0];
-    }
+//   // Now figure out how to combine the foot shifts into a single plan shift. The logic is:
+//   // If we're in single support, then use the shift for the support foot
+//   // If we're in double support, then interpolate linearly between the two shifts based on the time since one foot was single support and the time when the other foot will be single support
+//   std::vector<Side> support_sides = this->getSupportSides(settings.supports[support_index]);
+//   if (support_sides.size() == 1) {
+//     // single support
+//     plan_shift = foot_shifts[support_sides[0]];
+//   } else {
+//     // First, look backwards until we find the most recent single support
+//     bool found_past_single_support = false;
+//     double t_last_single_support_end;
+//     Vector3d past_shift;
+//     for (int i = support_index - 1; i >= 0; --i) {
+//       support_sides = this->getSupportSides(settings.supports[i]);
+//       if (support_sides.size() == 1) {
+//         found_past_single_support = true;
+//         t_last_single_support_end = settings.support_times[i+1];
+//         past_shift = foot_shifts[support_sides[0]];
+//         break;
+//       }
+//     }
+//     if (!found_past_single_support) {
+//       past_shift = 0.5 * (foot_shifts.at(Side(Side::LEFT)) + foot_shifts.at(Side(Side::RIGHT)));
+//       t_last_single_support_end = settings.support_times[0];
+//     }
 
-    // Now look forwards until we find the next single support
-    bool found_future_single_support = false;
-    double t_next_single_support_begin;
-    Vector3d future_shift;
-    for (int i = support_index + 1; i < settings.supports.size(); ++i) {
-      support_sides = this->getSupportSides(settings.supports[i]);
-      if (support_sides.size() == 1) {
-        found_future_single_support = true;
-        t_next_single_support_begin = settings.support_times[i];
-        future_shift = foot_shifts[support_sides[0]];
-        break;
-      }
-    }
-    if (!found_future_single_support) {
-      future_shift = 0.5 * (foot_shifts[Side(Side::LEFT)] + foot_shifts[Side(Side::RIGHT)]);
-      t_next_single_support_begin = settings.support_times[settings.support_times.size() - 1];
-    }
+//     // Now look forwards until we find the next single support
+//     bool found_future_single_support = false;
+//     double t_next_single_support_begin;
+//     Vector3d future_shift;
+//     for (int i = support_index + 1; i < settings.supports.size(); ++i) {
+//       support_sides = this->getSupportSides(settings.supports[i]);
+//       if (support_sides.size() == 1) {
+//         found_future_single_support = true;
+//         t_next_single_support_begin = settings.support_times[i];
+//         future_shift = foot_shifts[support_sides[0]];
+//         break;
+//       }
+//     }
+//     if (!found_future_single_support) {
+//       future_shift = 0.5 * (foot_shifts[Side(Side::LEFT)] + foot_shifts[Side(Side::RIGHT)]);
+//       t_next_single_support_begin = settings.support_times[settings.support_times.size() - 1];
+//     }
 
-    // Now interpolate between the past and future shift vectors using the current plan time
-    // std::cout << "t_plan: " << t_plan << " t_last_single_support_end: " << t_last_single_support_end << " t_next_single_support_begin: " << t_next_single_support_begin << std::endl;
-    const double fraction = (t_plan - t_last_single_support_end) / (t_next_single_support_begin - t_last_single_support_end);
-    plan_shift = fraction * future_shift + (1 - fraction) * past_shift;
-    // std::cout << "fraction: " << fraction << " past: " << past_shift.transpose() << " future: " << future_shift.transpose() << std::endl;
-  }
-  // std::cout << "plan shift: " << plan_shift.transpose() << std::endl;
-}
+//     // Now interpolate between the past and future shift vectors using the current plan time
+//     // std::cout << "t_plan: " << t_plan << " t_last_single_support_end: " << t_last_single_support_end << " t_next_single_support_begin: " << t_next_single_support_begin << std::endl;
+//     const double fraction = (t_plan - t_last_single_support_end) / (t_next_single_support_begin - t_last_single_support_end);
+//     plan_shift = fraction * future_shift + (1 - fraction) * past_shift;
+//     // std::cout << "fraction: " << fraction << " past: " << past_shift.transpose() << " future: " << future_shift.transpose() << std::endl;
+//   }
+//   // std::cout << "plan shift: " << plan_shift.transpose() << std::endl;
+// }
 
 const std::map<SupportLogicType, std::vector<bool> > QPLocomotionPlan::createSupportLogicMaps()
 {
