@@ -137,20 +137,21 @@ double quatNorm(const Eigen::Vector4d& q)
 
 Eigen::Vector4d slerp(const Eigen::Vector4d& q1, const Eigen::Vector4d& q2, double interpolation_parameter)
 {
-  /* Q = slerp(q1, q2, f) Spherical linear interpolation between two quaternions
-  *   This function uses the implementation given in Algorithm 8 of [1].
-  *
-  * @param q1   Initial quaternion (w, x, y, z)
-  * @param q2   Final quaternion (w, x, y, z)
-  * @param f    Interpolation parameter between 0 and 1 (inclusive)
-  * @retval Q   Interpolated quaternion(s). 4-by-1 vector.
-  *
-  * [1] Kuffner, J.J., "Effective sampling and distance metrics for 3D rigid
-  * body path planning," Robotics and Automation, 2004. Proceedings. ICRA '04.
-  * 2004 IEEE International Conference on , vol.4, no., pp.3993,3998 Vol.4,
-  * April 26-May 1, 2004
-  * doi: 10.1109/ROBOT.2004.1308895
-  */
+  /*
+   * Q = slerp(q1, q2, f) Spherical linear interpolation between two quaternions
+   *   This function uses the implementation given in Algorithm 8 of [1].
+   *
+   * @param q1   Initial quaternion (w, x, y, z)
+   * @param q2   Final quaternion (w, x, y, z)
+   * @param f    Interpolation parameter between 0 and 1 (inclusive)
+   * @retval Q   Interpolated quaternion(s). 4-by-1 vector.
+   *
+   * [1] Kuffner, J.J., "Effective sampling and distance metrics for 3D rigid
+   * body path planning," Robotics and Automation, 2004. Proceedings. ICRA '04.
+   * 2004 IEEE International Conference on , vol.4, no., pp.3993,3998 Vol.4,
+   * April 26-May 1, 2004
+   * doi: 10.1109/ROBOT.2004.1308895
+   */
 
   // Compute the quaternion inner product
   double lambda = (q1.transpose() * q2).value();
@@ -180,7 +181,7 @@ Eigen::Vector4d slerp(const Eigen::Vector4d& q1, const Eigen::Vector4d& q2, doub
   }
 
   Vector4d ret = q1 * r;
-  ret.noalias() += q2_sign * q2 * s;
+  ret += q2_sign * q2 * s;
   return ret;
 }
 
