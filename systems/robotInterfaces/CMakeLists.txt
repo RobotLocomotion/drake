@@ -38,7 +38,7 @@ if (MATLAB_FOUND)
   if (LCM_FOUND)
     add_mex(constructQPLocomotionPlanmex constructQPLocomotionPlanmex.cpp)
     target_link_libraries(constructQPLocomotionPlanmex drakeQPLocomotionPlan drakeUtil)
+    
+    add_subdirectory(@QPLocomotionPlanCPPWrapper)
   endif()
 endif()
-
-add_subdirectory(@QPLocomotionPlanCPPWrapper)
