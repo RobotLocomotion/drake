@@ -456,6 +456,7 @@ classdef QPLocomotionPlan < QPControllerPlan
     end
 
     function obj = setLQR_for_COM(obj)
+      error('this has never been properly tuned on the robot and should not be used yet')
       Q = diag([10 10 1 1]);
       R = 0.0001*eye(2);
       A = [zeros(2),eye(2); zeros(2,4)];
