@@ -52,7 +52,8 @@ if (MATLAB_FOUND)
 
       include_directories (${CMAKE_BINARY_DIR}/lcmgen/lcmtypes )
       add_mex(encodeQPInputLCMMex encodeQPInputLCMMex.cpp)
-      target_link_libraries(encodeQPInputLCMMex lcm drakeControlUtil drakeQPCommon)
+      target_link_libraries(encodeQPInputLCMMex drakeControlUtil drakeQPCommon)
+      pods_use_pkg_config_packages(encodeQPInputLCMMex lcm)
     endif()
   endif()
 
