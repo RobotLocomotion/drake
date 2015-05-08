@@ -25,7 +25,7 @@ PiecewisePolynomial<double> matlabPPFormToPiecewisePolynomial(const mxArray* pp)
   const int num_dims = 2;
   mwSize dims[num_dims];
   for (int i = 0; i < num_dims_mex; i++) {
-    dims[i] = static_cast<mwSize>(mxGetPr(dim_mex)[i]);
+    dims[i] = static_cast<mwSize>(mxGetPrSafe(dim_mex)[i]);
   }
   for (int i = num_dims_mex; i < num_dims; i++)
     dims[i] = 1;
