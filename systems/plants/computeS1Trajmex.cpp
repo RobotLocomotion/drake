@@ -139,11 +139,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       s1dt = alpha.col(j+1) + beta[j + 1].col(0);
     }
 
-    VectorXd dtpow(k - 1);
+    VectorXd dtpow(k);
     for (size_t p = 0; p < k; p++) { 
-      dtpow(p) = pow(dt(j), p);
+      dtpow(p) = static_cast<double>(pow(dt(j), p));
     }
-
+    
     alpha.col(j) = expm(A2*dt(j)).inverse() * (s1dt - beta[j]*dtpow);
   }
   
@@ -158,6 +158,5 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   PiecewisePolynomial<double> pp_part = PiecewisePolynomial<double>(polynomial_matrices, breaks);
   auto s1traj = ExponentialPlusPiecewisePolynomial<double>(Matrix4d::Identity(), A2, alpha, pp_part);
-  cout << s1traj.value(0) << endl;
   //do stuff with s1traj
 }
