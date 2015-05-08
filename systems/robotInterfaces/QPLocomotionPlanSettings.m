@@ -69,7 +69,7 @@ classdef QPLocomotionPlanSettings
       obj.comtraj = PPTrajectory(pchip(ts,com_poses));      
     end
 
-    function obj = setLQRForCoM(obj
+    function obj = setLQRForCoM(obj)
       error('this has never been properly tuned on the robot and should not be used yet')
       Q = diag([10 10 1 1]);
       R = 0.0001*eye(2);
