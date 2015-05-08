@@ -9,7 +9,8 @@
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
 
-#include "drake/RigidBodyManipulator.h"
+#include "RigidBodyManipulator.h"
+#include "PiecewisePolynomial.h"
 
 #if defined(WIN32) || defined(WIN64)
   #if defined(drakeControlUtil_EXPORTS)
@@ -75,9 +76,7 @@ drakeControlUtilEXPORT int contactConstraintsBV(RigidBodyManipulator *r, int nc,
 drakeControlUtilEXPORT MatrixXd individualSupportCOPs(RigidBodyManipulator* r, const std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>>& active_supports, const MatrixXd& normals, const MatrixXd& B, const VectorXd& beta);
 drakeControlUtilEXPORT Vector6d bodySpatialMotionPD(RigidBodyManipulator *r, DrakeRobotState &robot_state, const int body_index, const Isometry3d &body_pose_des, const Ref<const Vector6d> &body_v_des, const Ref<const Vector6d> &body_vdot_des, const Ref<const Vector6d> &Kp, const Ref<const Vector6d> &Kd, const Isometry3d &T_task_to_world=Isometry3d::Identity());
 
-drakeControlUtilEXPORT void evaluateCubicSplineSegment(double t, const Ref<const Matrix<double, 6, 4>> &coefs, Vector6d &y, Vector6d &ydot, Vector6d &yddot);
-
-drakeControlUtilEXPORT void evaluateXYZExpmapCubicSplineSegment(double t, const Matrix<double,6,4> &coefs, Isometry3d &body_pose_des, Vector6d &xyzdot_angular_vel, Vector6d &xyzddot_angular_accel);
+drakeControlUtilEXPORT void evaluateXYZExpmapCubicSpline(double t, const PiecewisePolynomial<double> &spline, Isometry3d &body_pose_des, Vector6d &xyzdot_angular_vel, Vector6d &xyzddot_angular_accel);
 
 struct RobotJointIndexMap {
   VectorXi drake_to_robot;

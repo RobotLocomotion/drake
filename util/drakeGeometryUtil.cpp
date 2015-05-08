@@ -135,6 +135,56 @@ double quatNorm(const Eigen::Vector4d& q)
   return std::acos(q(0));
 }
 
+Eigen::Vector4d slerp(const Eigen::Vector4d& q1, const Eigen::Vector4d& q2, double interpolation_parameter)
+{
+  /*
+   * Q = slerp(q1, q2, f) Spherical linear interpolation between two quaternions
+   *   This function uses the implementation given in Algorithm 8 of [1].
+   *
+   * @param q1   Initial quaternion (w, x, y, z)
+   * @param q2   Final quaternion (w, x, y, z)
+   * @param f    Interpolation parameter between 0 and 1 (inclusive)
+   * @retval Q   Interpolated quaternion(s). 4-by-1 vector.
+   *
+   * [1] Kuffner, J.J., "Effective sampling and distance metrics for 3D rigid
+   * body path planning," Robotics and Automation, 2004. Proceedings. ICRA '04.
+   * 2004 IEEE International Conference on , vol.4, no., pp.3993,3998 Vol.4,
+   * April 26-May 1, 2004
+   * doi: 10.1109/ROBOT.2004.1308895
+   */
+
+  // Compute the quaternion inner product
+  double lambda = (q1.transpose() * q2).value();
+  int q2_sign;
+  if (lambda < 0.0) {
+    // The quaternions are pointing in opposite directions, so use the equivalent alternative representation for q2
+    lambda = -lambda;
+    q2_sign = -1;
+  }
+  else {
+    q2_sign = 1;
+  }
+
+  // Calculate interpolation factors
+  // TODO: do we really want an epsilon so small?
+  double r, s;
+  if (std::abs(1.0 - lambda) < std::numeric_limits<double>::epsilon()) {
+    // The quaternions are nearly parallel, so use linear interpolation
+    r = 1.0 - interpolation_parameter;
+    s = interpolation_parameter;
+  }
+  else {
+    double alpha = std::acos(lambda);
+    double gamma = 1.0 / std::sin(alpha);
+    r = std::sin((1.0 - interpolation_parameter) * alpha) * gamma;
+    s = std::sin(interpolation_parameter * alpha) * gamma;
+  }
+
+  Vector4d ret = q1 * r;
+  ret += q2_sign * q2 * s;
+  return ret;
+}
+
 Vector4d uniformlyRandomAxisAngle(std::default_random_engine& generator)
 {
   std::normal_distribution<double> normal;
@@ -1289,7 +1339,7 @@ DLLEXPORT GradientVar<double, 3,1> unwrapExpmap(const Ref<const Vector3d> & expm
 
 void quat2expmapSequence(const Ref<const Matrix<double,4,Dynamic>> &quat, const Ref<const Matrix<double,4,Dynamic>> &quat_dot, Ref<Matrix<double,3,Dynamic>> expmap, Ref<Matrix<double,3,Dynamic>> expmap_dot)
 {
-  int N = quat.cols();
+  DenseIndex N = quat.cols();
   if(quat_dot.cols() != N)
   {
     throw std::runtime_error("quat_dot must have the same number of columns as quat in quat2expmapSequence");
@@ -1338,6 +1388,7 @@ template DLLEXPORT void normalizeVec(
 template DLLEXPORT Vector4d quat2axis(const MatrixBase<Vector4d>&);
 template DLLEXPORT Matrix3d quat2rotmat(const MatrixBase<Vector4d>& q);
 template DLLEXPORT Matrix3d quat2rotmat(const MatrixBase<Eigen::Block<Eigen::Ref<Eigen::Matrix<double, -1, 1, 0, -1, 1> const, 0, Eigen::InnerStride<1> > const, 4, 1, false> >& q);
+template DLLEXPORT Matrix<Map<Matrix<double, 4, 1, 0, 4, 1> const, 0, Stride<0, 0> >::Scalar, 3, 3, 0, 3, 3> quat2rotmat<Map<Matrix<double, 4, 1, 0, 4, 1> const, 0, Stride<0, 0> > >(MatrixBase<Map<Matrix<double, 4, 1, 0, 4, 1> const, 0, Stride<0, 0> > > const&);
 template DLLEXPORT Vector3d quat2rpy(const MatrixBase<Vector4d>&);
 
 template DLLEXPORT Vector4d axis2quat(const MatrixBase<Vector4d>&);
@@ -1353,6 +1404,7 @@ template DLLEXPORT GradientVar<double, Eigen::Dynamic, 1> rotmat2Representation(
 
 template DLLEXPORT GradientVar<double, QUAT_SIZE, 1> expmap2quat(const MatrixBase<Vector3d>& v, const int gradient_order);
 template DLLEXPORT GradientVar<double, QUAT_SIZE, 1> expmap2quat(const MatrixBase<Map<Vector3d>>& v, const int gradient_order);
+template DLLEXPORT GradientVar<Eigen::Block<Eigen::Matrix<double, -1, 1, 0, -1, 1>, 3, 1, false>::Scalar, 4, 1> expmap2quat<Eigen::Block<Eigen::Matrix<double, -1, 1, 0, -1, 1>, 3, 1, false> >(Eigen::MatrixBase<Eigen::Block<Eigen::Matrix<double, -1, 1, 0, -1, 1>, 3, 1, false> > const&, int);
 
 template DLLEXPORT Vector4d rpy2axis(const Eigen::MatrixBase<Vector3d>&);
 template DLLEXPORT Vector4d rpy2quat(const Eigen::MatrixBase<Vector3d>&);
@@ -1378,6 +1430,8 @@ template DLLEXPORT Vector4d rpy2axis(const Eigen::MatrixBase< Map<Vector3d> >&);
 template DLLEXPORT Vector4d rpy2quat(const Eigen::MatrixBase< Map<Vector3d> >&);
 template DLLEXPORT Matrix3d rpy2rotmat(const Eigen::MatrixBase< Map<Vector3d> >&);
 template DLLEXPORT Matrix<double,9,3> drpy2rotmat(const Eigen::MatrixBase< Map<Vector3d> >&);
+
+template DLLEXPORT Matrix<Block<Matrix4d const, 3, 3, false>::Scalar, 4, 1, 0, 4, 1> rotmat2quat<Block<Matrix4d const, 3, 3, false> >(MatrixBase<Block<Matrix4d const, 3, 3, false> > const&);
 
 
 template DLLEXPORT Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic> transformSpatialMotion(

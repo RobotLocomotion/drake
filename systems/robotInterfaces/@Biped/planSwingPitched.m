@@ -20,7 +20,7 @@ APEX_FRACTIONS = [0.15, 0.85]; % We plan only two poses of the foot during the a
                                % fraction of the distance from its initial location to its final location.
 
 FOOT_YAW_RATE = 0.375; % rad/s
-MIN_STEP_TIME = 0.5; %s
+MIN_STEP_TIME = 0.75; %s
 
 MIN_DIST_FOR_PITCHED_SWING = 0.4;
 
@@ -143,7 +143,7 @@ end
 % Apex knot 1
 toe_apex1_in_world = (1-APEX_FRACTIONS(1))*toe1(1:3) + APEX_FRACTIONS(1)*toe2(1:3);
 
-if max_terrain_ht_in_world > toe_apex1_in_world(3) + params.step_height
+if max_terrain_ht_in_world > toe_apex1_in_world(3) + params.step_height/4
   toe_apex1_in_world = [toe1(1:2); max_terrain_ht_in_world + params.step_height];
 else
   toe_apex1_in_world(3) = max([toe_apex1_in_world(3) + params.step_height,...
@@ -155,7 +155,7 @@ add_frame_knot(tform2poseQuat(T_apex1_frame_to_world));
 
 % Apex knot 2
 toe_apex2_in_world = (1-APEX_FRACTIONS(2))*toe1(1:3) + APEX_FRACTIONS(2)*toe2(1:3);
-if max_terrain_ht_in_world > toe_apex2_in_world(3) + params.step_height/2
+if max_terrain_ht_in_world > toe_apex2_in_world(3) + params.step_height/4
   toe_apex2_in_world = [toe2(1:2); max_terrain_ht_in_world + params.step_height];
 else
   toe_apex2_in_world(3) = max([toe_apex2_in_world(3) + params.step_height,...

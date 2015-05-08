@@ -15,6 +15,7 @@ if (LCM_FOUND AND MATLAB_FOUND)
   pods_use_pkg_config_packages(publishLCMLog lcm)
 endif()
 
+
 if (MATLAB_FOUND)
   add_mex(drakeUtil SHARED drakeUtil.cpp MexWrapper.cpp)
 
@@ -27,6 +28,18 @@ if (MATLAB_FOUND)
     LIBS -ldrakeUtil
     REQUIRES
     VERSION 0.0.1)
+endif()
+
+if (LCM_FOUND)
+  # note: requires drakeUtil header file, but not linking against it because
+  # we only need methods that are templated and defined in the header
+  include_directories (${PROJECT_SOURCE_DIR}/systems/trajectories )
+  include_directories (${PROJECT_SOURCE_DIR}/solvers/polynomial )
+  include_directories (${PROJECT_BINARY_DIR}/lcmgen/lcmtypes )
+  add_library(drakeLCMUtil SHARED lcmUtil.cpp)
+  target_link_libraries(drakeLCMUtil drakeTrajectories)
+  pods_install_headers(lcmUtil.h DESTINATION drake)
+  pods_install_libraries(drakeLCMUtil)
 endif()
 
 add_library(drakeGradientUtil SHARED drakeGradientUtil.cpp)

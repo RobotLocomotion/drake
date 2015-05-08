@@ -233,7 +233,7 @@ classdef Biped < LeggedRobot
       % @param q a robot configuration vector
       % @retval fc a logical vector of length 2. If fc(1) is true, then the right
       %            foot is in contact. If fc(2) is true, then the left foot is in
-      %            contact. 
+      %            contact.
       [phiC,~,~,~,idxA,idxB] = obj.collisionDetect(q,false);
       within_thresh = phiC < 0.002;
       contact_pairs = [idxA(within_thresh); idxB(within_thresh)];
@@ -298,7 +298,7 @@ classdef Biped < LeggedRobot
                                                               % slice upward (in m) to prevent false 
                                                               % positive obstacle detections from small 
                                                               % terrain height variations. 
-      p.addParamValue('padding_margin', [0, 0.05, 0.05, 0.05], @isnumeric) % padding for each slice in all directions
+      p.addParamValue('padding_margin', [0, 0.01, 0.01, 0.01], @isnumeric) % padding for each slice in all directions
       p.addParamValue('debug', false, @isnumeric);
       p.parse(varargin{:});
       q = p.Results.q;
@@ -358,4 +358,3 @@ classdef Biped < LeggedRobot
     end
   end
 end
-

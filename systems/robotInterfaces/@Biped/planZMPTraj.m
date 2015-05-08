@@ -20,6 +20,7 @@ sizecheck(q0,[biped.getNumPositions,1]);
 is_right_foot = footsteps(1).frame_id == biped.foot_frame_id.right;
 
 kinsol = doKinematics(biped, q0);
+com0 = biped.getCOM(kinsol);
 foot0 = struct('right', forwardKin(biped, kinsol, biped.foot_frame_id.right, [0;0;0], 2),...
                'left', forwardKin(biped, kinsol, biped.foot_frame_id.left, [0;0;0], 2));
 
@@ -45,6 +46,9 @@ steps.left = footsteps_with_quat([footsteps_with_quat.frame_id] == biped.foot_fr
 
 [steps.right(1), steps.left(1)] = getSafeInitialSupports(biped, kinsol, struct('right', steps.right(1), 'left', steps.left(1)));
 [zmp0, supp0] = getZMPBetweenFeet(biped, struct('right', steps.right(1), 'left', steps.left(1)));
+
+% start zmp at current COM position
+zmp0 = com0(1:2);
 
 zmp_knots = struct('t', options.t0, 'zmp', zmp0, 'supp', supp0);
 
