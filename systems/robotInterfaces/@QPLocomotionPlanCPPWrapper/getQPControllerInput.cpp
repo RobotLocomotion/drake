@@ -14,8 +14,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   double t_global = mxGetScalar(prhs[1]);
   int nq = plan->getRobot().num_positions;
   int nv = plan->getRobot().num_velocities;
-  auto q = Map<const VectorXd>(mxGetPr(prhs[2]), nq);
-  auto v = Map<const VectorXd>(mxGetPr(prhs[2]) + nq, nv);
+  auto q = Map<const VectorXd>(mxGetPrSafe(prhs[2]), nq);
+  auto v = Map<const VectorXd>(mxGetPrSafe(prhs[2]) + nq, nv);
   auto contact_force_detected = matlabToStdVector<bool>(prhs[3]);
   drake::lcmt_qp_controller_input qp_controller_input = plan->createQPControllerInput(t_global, q, v, contact_force_detected);
   const size_t size = qp_controller_input.getEncodedSize();

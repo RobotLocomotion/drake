@@ -17,6 +17,8 @@ PiecewisePolynomial<double> matlabPPFormToPiecewisePolynomial(const mxArray* pp)
   int num_coefs_mex_dims = mxGetNumberOfDimensions(coefs_mex);
 
   size_t number_of_elements = mxGetNumberOfElements(coefs_mex);
+  if (!mxIsDouble(coefs_mex))
+    mexErrMsgIdAndTxt("Drake:matlabPPFormToPiecewisePolynomial:BadInputs", "coefs should have type double");
 
   const mxArray* dim_mex = mxGetFieldSafe(pp, "dim");
   int num_dims_mex = mxGetNumberOfElements(dim_mex);
@@ -24,8 +26,10 @@ PiecewisePolynomial<double> matlabPPFormToPiecewisePolynomial(const mxArray* pp)
     throw runtime_error("case not handled"); // because PiecewisePolynomial can't currently handle it
   const int num_dims = 2;
   mwSize dims[num_dims];
+  if (!mxIsDouble(dim_mex))
+    mexErrMsgIdAndTxt("Drake:matlabPPFormToPiecewisePolynomial:BadInputs", "dim should have type double");
   for (int i = 0; i < num_dims_mex; i++) {
-    dims[i] = static_cast<mwSize>(mxGetPrSafe(dim_mex)[i]);
+    dims[i] = static_cast<mwSize>(mxGetPr(dim_mex)[i]);
   }
   for (int i = num_dims_mex; i < num_dims; i++)
     dims[i] = 1;
@@ -68,6 +72,9 @@ PiecewisePolynomial<double> matlabPPTrajectoryOrMatrixToPiecewisePolynomial(cons
 
 PiecewisePolynomial<double> matlabCoefsAndBreaksToPiecewisePolynomial(const mxArray* mex_coefs, const mxArray* mex_breaks, bool flip_last_dimension)
 {
+  if (!mxIsDouble(mex_coefs))
+    mexErrMsgIdAndTxt("Drake:matlabPPFormToPiecewisePolynomial:BadInputs", "coefs should have type double");
+
   int num_dims = 3;
   mwSize dims[num_dims];
   size_t num_dims_mex = mxGetNumberOfDimensions(mex_coefs);
@@ -165,7 +172,7 @@ std::vector<BodyMotionData> setUpBodyMotions(const mxArray* mex_body_motions)
   ret.resize(num_body_motions);
   for (int i = 0; i < num_body_motions; ++i) {
     BodyMotionData& body_motion_data = ret[i];
-    body_motion_data.body_or_frame_id = static_cast<int>(mxGetPr(mxGetPropertySafe(mex_body_motions, i, "body_id"))[0]) - 1; // base 1 to base 0
+    body_motion_data.body_or_frame_id = static_cast<int>(mxGetPrSafe(mxGetPropertySafe(mex_body_motions, i, "body_id"))[0]) - 1; // base 1 to base 0
     body_motion_data.trajectory = matlabCoefsAndBreaksToPiecewisePolynomial(mxGetPropertySafe(mex_body_motions, i, "coefs"), mxGetPropertySafe(mex_body_motions, i, "ts"), true);
     body_motion_data.toe_off_allowed = matlabToStdVector<bool>(mxGetPropertySafe(mex_body_motions, i, "toe_off_allowed"));
     body_motion_data.in_floating_base_nullspace = matlabToStdVector<bool>(mxGetPropertySafe(mex_body_motions, i, "in_floating_base_nullspace"));
@@ -175,8 +182,8 @@ std::vector<BodyMotionData> setUpBodyMotions(const mxArray* mex_body_motions)
     body_motion_data.transform_task_to_world.translation() = matlabToEigenMap<3, 1>(mxGetPropertySafe(mex_body_motions, i, "translation_task_to_world"));
     body_motion_data.xyz_proportional_gain_multiplier = matlabToEigenMap<3, 1>(mxGetPropertySafe(mex_body_motions, i, "xyz_kp_multiplier"));
     body_motion_data.xyz_damping_ratio_multiplier = matlabToEigenMap<3, 1>(mxGetPropertySafe(mex_body_motions, i, "xyz_damping_ratio_multiplier"));
-    body_motion_data.exponential_map_proportional_gain_multiplier = mxGetPr(mxGetPropertySafe(mex_body_motions, i, "expmap_kp_multiplier"))[0];
-    body_motion_data.exponential_map_damping_ratio_multiplier = mxGetPr(mxGetPropertySafe(mex_body_motions, i, "expmap_damping_ratio_multiplier"))[0];
+    body_motion_data.exponential_map_proportional_gain_multiplier = mxGetPrSafe(mxGetPropertySafe(mex_body_motions, i, "expmap_kp_multiplier"))[0];
+    body_motion_data.exponential_map_damping_ratio_multiplier = mxGetPrSafe(mxGetPropertySafe(mex_body_motions, i, "expmap_damping_ratio_multiplier"))[0];
     body_motion_data.weight_multiplier = matlabToEigenMap<6, 1>(mxGetPropertySafe(mex_body_motions, i, "weight_multiplier"));
   }
   return ret;
