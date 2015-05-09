@@ -114,6 +114,8 @@ sys = mimoFeedback(plancontroller,r_hands,[],[],ins,outs);
 clear ins;
 clear outs;
 
+ins(1).system = 1;
+ins(1).input = 2;
 outs(1).system = 1;
 outs(1).output = 1;
 outs(2).system = 1;
@@ -122,7 +124,7 @@ outs(3).system = 1;
 outs(3).output = 3;
 
 rh = RobotiqControlBlock(r_hands, 2, 'right_');
-sys = mimoFeedback(sys, rh, [], [], [], outs);
+sys = mimoFeedback(sys, rh, [], [], ins, outs);
 
 lh = RobotiqControlBlock(r_hands, 3, 'left_');
 sys = mimoFeedback(sys, lh, [], [], [], outs);
