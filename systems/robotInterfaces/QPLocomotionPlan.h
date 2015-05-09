@@ -82,6 +82,7 @@ struct QPLocomotionPlanSettings {
   std::vector<BodyMotionData> body_motions;
   PiecewisePolynomial<double> zmp_trajectory;
   TVLQRData zmp_data;
+  Eigen::MatrixXd D_control;
   QuadraticLyapunovFunction V;
   PiecewisePolynomial<double> q_traj;
   ExponentialPlusPiecewisePolynomial<double> com_traj;

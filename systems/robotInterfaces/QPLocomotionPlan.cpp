@@ -299,7 +299,7 @@ drake::lcmt_zmp_data QPLocomotionPlan::createZMPData(double t_plan) const
   eigenToCArrayOfArrays(settings.zmp_data.A, zmp_data_lcm.A);
   eigenToCArrayOfArrays(settings.zmp_data.B, zmp_data_lcm.B);
   eigenToCArrayOfArrays(settings.zmp_data.C, zmp_data_lcm.C);
-  eigenToCArrayOfArrays(settings.zmp_data.D, zmp_data_lcm.D);
+  eigenToCArrayOfArrays(settings.D_control, zmp_data_lcm.D);
   eigenToCArrayOfArrays(settings.zmp_data.u0, zmp_data_lcm.u0);
   eigenToCArrayOfArrays(settings.zmp_data.R, zmp_data_lcm.R);
   eigenToCArrayOfArrays(settings.zmp_data.Qy, zmp_data_lcm.Qy);

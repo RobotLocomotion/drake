@@ -11,6 +11,7 @@ classdef QPLocomotionPlanSettings
     qtraj;
     comtraj = [];
     mu = 0.5;
+    D_control;
     use_plan_shift = false;
     plan_shift_body_motion_inds = 3;
     g = 9.81; % gravity m/s^2
@@ -168,6 +169,7 @@ classdef QPLocomotionPlanSettings
       obj.zmptraj = comgoal;
       [~, obj.V, ~, LIP_height] = obj.robot.planZMPController(comgoal, q0);
       obj.zmp_data.D = -LIP_height / obj.g * eye(2);
+      obj.D_control = obj.zmp_data.D;
 
       obj.body_motions = [BodyMotionData(obj.robot.foot_body_id.right, [0, inf]),...
                           BodyMotionData(obj.robot.foot_body_id.left, [0, inf]),...
@@ -219,7 +221,7 @@ classdef QPLocomotionPlanSettings
       [obj.supports, obj.support_times] = QPLocomotionPlanSettings.getSupports(zmp_knots);
       obj.zmptraj = QPLocomotionPlanSettings.getZMPTraj(zmp_knots);
       [~, obj.V, obj.comtraj, LIP_height] = biped.planZMPController(obj.zmptraj, obj.x0, options);
-%       obj.LIP_height = biped.default_walking_params.nominal_LIP_COM_height;
+      obj.D_control = -biped.default_walking_params.nominal_LIP_COM_height / obj.g * eye(2);
       obj.zmp_data.D = -LIP_height / obj.g * eye(2);
       pelvis_motion_data = biped.getPelvisMotionForWalking(x0, foot_motion_data, obj.supports, obj.support_times, options);
       obj.body_motions = [foot_motion_data, pelvis_motion_data];
@@ -298,6 +300,7 @@ classdef QPLocomotionPlanSettings
         obj.zmptraj = comgoal;
         [~, obj.V, ~, LIP_height] = obj.robot.planZMPController(comgoal, x0(1:obj.robot.getNumPositions()));
         obj.zmp_data.D = -LIP_height / obj.g * eye(2);
+        obj.D_control = obj.zmp_data.D;
       end
 
       for j = 1:num_bodies_to_track
