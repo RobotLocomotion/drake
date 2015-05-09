@@ -25,7 +25,7 @@
 
   	<visual>
       <origin xyz="0 0 1" rpy="0 0 0" />
-      <geometry>
+      <try>
         <box size="10 .1 2." />
       </geometry>
       <material name="Brown"/>

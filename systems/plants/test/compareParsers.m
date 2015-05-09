@@ -9,11 +9,6 @@ end
 for urdf=urdfs'
   urdffile = GetFullPath(urdf{1});
   
-  if ~isempty(strfind(urdffile,'office.urdf'))
-    % drake/examples/Quadrotor/office.urdf is horribly malformed
-    continue;
-  end
-  
   fprintf(1,'testing %s\n', urdffile);
   w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
   warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
