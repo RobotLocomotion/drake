@@ -134,14 +134,14 @@ std::vector<RigidBodySupportState> setUpSupports(const mxArray* mex_supports)
   ret.reserve(num_supports);
   for (int support_num = 0; support_num < num_supports; support_num++) {
     RigidBodySupportState support_state;
-    auto body_ids = matlabToStdVector<int>(mxGetPropertySafe(mex_supports, support_num, "bodies"));
+    auto body_ids = matlabToStdVector<int>(mxGetFieldOrPropertySafe(mex_supports, support_num, "bodies"));
     support_state.reserve(body_ids.size());
     for (int i = 0; i < body_ids.size(); ++i) {
       RigidBodySupportStateElement support_state_element;
       support_state_element.body = body_ids[i] - 1; // base 1 to base zero
-      support_state_element.contact_points = matlabToEigenMap<3, Dynamic>(mxGetCell(mxGetPropertySafe(mex_supports, support_num, "contact_pts"), i));
-      support_state_element.use_contact_surface = mxGetLogicals(mxGetPropertySafe(mex_supports, support_num, "use_support_surface"))[i];
-      support_state_element.support_surface = matlabToEigenMap<4, 1>(mxGetCell(mxGetPropertySafe(mex_supports, support_num, "support_surface"), i));
+      support_state_element.contact_points = matlabToEigenMap<3, Dynamic>(mxGetCell(mxGetFieldOrPropertySafe(mex_supports, support_num, "contact_pts"), i));
+      support_state_element.use_contact_surface = mxGetLogicals(mxGetFieldOrPropertySafe(mex_supports, support_num, "use_support_surface"))[i];
+      support_state_element.support_surface = matlabToEigenMap<4, 1>(mxGetCell(mxGetFieldOrPropertySafe(mex_supports, support_num, "support_surface"), i));
       support_state.push_back(support_state_element);
     }
     ret.push_back(support_state);

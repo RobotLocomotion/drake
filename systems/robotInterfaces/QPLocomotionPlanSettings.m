@@ -282,8 +282,9 @@ classdef QPLocomotionPlanSettings
       obj.supports = options.supports;
       obj.is_quasistatic = options.is_quasistatic;
       obj.gain_set = options.gain_set;
-
+      
       obj = obj.setCOMTraj();
+
       if ~obj.is_quasistatic
         support_state = obj.supports(1);
         for j = 1:length(obj.supports)
@@ -300,6 +301,11 @@ classdef QPLocomotionPlanSettings
         obj.zmptraj = comgoal;
         obj.zmp_final = obj.zmptraj;
         [~, obj.V, ~, obj.LIP_height] = obj.robot.planZMPController(comgoal, x0(1:obj.robot.getNumPositions()));
+      else
+        % We can just use a comgoal of [0;0] here because for the quasistatic solution, it has no effect on V
+        [~, obj.V, ~, obj.LIP_height] = obj.robot.planZMPController([0;0], x0(1:obj.robot.getNumPositions()));
+        obj.zmptraj = obj.comtraj;
+        obj.zmp_final = obj.zmptraj.eval(obj.zmptraj.tspan(end));
       end
 
       for j = 1:num_bodies_to_track
