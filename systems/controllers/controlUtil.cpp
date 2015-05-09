@@ -87,6 +87,9 @@ void collisionDetect(void* map_ptr, Vector3d const &contact_pos, Vector3d &pos, 
       pos << contact_pos.topRows(2), height;
       if (normal) {
         *normal = oNormal.cast<double>();
+        if ((*normal)(3) < 0) {
+          *normal = -1 * (*normal);
+        }
         return;
       }
     }
