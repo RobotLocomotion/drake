@@ -13,25 +13,8 @@
 #include "BodyMotionData.h"
 #include "Side.h"
 #include <lcm/lcm-cpp.hpp>
+#include "zmpUtil.h"
 
-struct TVLQRData {
-  // TODO: move into its own file
-  // TODO: turn into class, private members
-  Eigen::MatrixXd A;
-  Eigen::MatrixXd B;
-  Eigen::MatrixXd C;
-  Eigen::MatrixXd D;
-  Eigen::VectorXd x0;
-  Eigen::VectorXd y0;
-  Eigen::VectorXd u0;
-  Eigen::MatrixXd R;
-  Eigen::MatrixXd Qy;
-  Eigen::MatrixXd S;
-  Eigen::VectorXd s1;
-  Eigen::VectorXd s1dot;
-  double s2;
-  double s2dot;
-};
 
 class QuadraticLyapunovFunction {
   // TODO: move into its own file
@@ -57,6 +40,11 @@ public:
   {
     return s1;
   }
+  void setS1(ExponentialPlusPiecewisePolynomial<double>& new_s1)
+  {
+    s1 = new_s1;
+  }
+
 };
 
 struct RigidBodySupportStateElement {
@@ -93,18 +81,17 @@ struct QPLocomotionPlanSettings {
 
   std::vector<BodyMotionData> body_motions;
   PiecewisePolynomial<double> zmp_trajectory;
-  Eigen::Vector2d zmp_final;
   TVLQRData zmp_data;
-  double lipm_height;
   QuadraticLyapunovFunction V;
   PiecewisePolynomial<double> q_traj;
   ExponentialPlusPiecewisePolynomial<double> com_traj;
 
   std::string gain_set;
   double mu;
+  bool use_plan_shift;
   std::vector<Eigen::DenseIndex> plan_shift_body_motion_indices;
   double g;
-  double min_foot_shift_delay = 0.2; // seconds to wait before updating foot-specific plan shifts
+  double min_foot_shift_delay = 0.01; // seconds to wait before updating foot-specific plan shifts
   bool is_quasistatic;
   KneeSettings knee_settings;
   std::string pelvis_name;
@@ -172,6 +159,7 @@ private:
   double last_foot_shift_time = 0;
   drake::lcmt_qp_controller_input last_qp_input;
   std::map<Side, bool> toe_off_active;
+  PiecewisePolynomial<double> shifted_zmp_trajectory;
 
   /*
    * when the plan says a given body is in support, require the controller to use that support.
@@ -218,6 +206,14 @@ private:
   void updateSwingTrajectory(double t_plan, BodyMotionData& body_motion_data, int body_motion_segment_index, const Eigen::VectorXd& qd);
 
   void updatePlanShift(double t_plan, const std::vector<bool>& contact_force_detected, int support_index);
+
+  void findPlannedSupportFraction(double t_plan, int support_index, double &last_support_fraction, double &next_support_fraction, double &transition_fraction) const;
+
+  void updateZMPController(const double t_plan, const double last_support_fraction, const double next_support_fraction, const double transition_fraction);
+
+  void updateZMPTrajectory(const double t_plan, const double last_support_fraction, const double next_support_fraction, const double transition_fraction);
+
+  void updateS1Trajectory();
 
   static const std::map<SupportLogicType, std::vector<bool> > createSupportLogicMaps();
 

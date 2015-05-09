@@ -1,21 +1,12 @@
 #include "mex.h"
 #include <iostream>
 #include "drakeUtil.h"
-#include "RigidBodyManipulator.h"
-#include <Eigen/Dense>
-#include <unsupported/Eigen/MatrixFunctions>
-#include "drake/ExponentialPlusPiecewisePolynomial.h"
 #include "math.h"
 #include <vector>
+#include "drake/zmpUtil.h"
 
 using namespace Eigen;
 using namespace std;
-
-MatrixXd expm(const MatrixXd& A) {
-  MatrixXd F;
-  MatrixExponential<MatrixXd>(A).compute(F);
-  return F;
-}
 
 PiecewisePolynomial<double> matlabPPFormToPiecewisePolynomial(const mxArray* pp)
 {
@@ -83,81 +74,18 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   Map<MatrixXd> N(mxGetPrSafe(prhs[9]), 4, 2);
   Map<Matrix4d> S(mxGetPrSafe(prhs[10]));
 
-  size_t n = static_cast<size_t>(pp.getNumberOfSegments());
-  int d = pp.getSegmentPolynomialDegree(0);
-  size_t k = d + 1;
+  TVLQRData sys;
+  sys.A = A;
+  sys.B = B;
+  sys.C = C;
+  sys.D = D;
+  sys.Qy = Q;
+  sys.R = R;
+  sys.u0 = Vector2d(0, 0);
+  sys.Q1 = Q1;
+  sys.R1 = R1;
+  sys.N = N;
 
-  for (size_t i = 1; i < n; i++) {
-    assert(pp.getSegmentPolynomialDegree(i) == d);
-  }
-
-  VectorXd dt(n);
-  std::vector<double> breaks = pp.getSegmentTimes();
-
-  for (size_t i = 0; i < n; i++) {
-    dt(i) = breaks[i + 1] - breaks[i];
-  }  
-  
-  MatrixXd zmp_tf = pp.value(pp.getEndTime());
-  PiecewisePolynomial<double> zbar_pp = pp - zmp_tf;
-
-  Matrix2d R1i = R1.inverse();
-  MatrixXd NB = N.transpose() + B.transpose() * S; //2 x 4
-  Matrix4d A2 = NB.transpose() * R1i * B.transpose() - A.transpose();
-  MatrixXd B2 = 2 * (C.transpose() - NB.transpose() * R1i * D) * Q; //4 x 2
-  Matrix4d A2i = A2.inverse();
-
-
-  MatrixXd alpha = MatrixXd::Zero(4, n);
-
-  vector<MatrixXd> beta;
-  VectorXd s1dt;
-  
-  for (size_t i = 0; i < n ; i++) {
-    beta.push_back(MatrixXd::Zero(4, k));
-  }
-
-  for (int j = n - 1; j >= 0; j--) { 
-
-    auto poly_mat = zbar_pp.getPolynomialMatrix(j);
-    size_t nq = poly_mat.rows();
-    MatrixXd poly_coeffs = MatrixXd::Zero(nq, k);
-
-    for (size_t x = 0; x < nq; x++) {
-      poly_coeffs.row(x) = poly_mat(x).getCoefficients().transpose();
-    }    
-    
-    beta[j].col(k - 1) = -A2i * B2 * poly_coeffs.col(k - 1);
-    
-    for (int i = k - 2; i >= 0; i--) {
-      beta[j].col(i) = A2i * ((i+1) * beta[j].col(i + 1) - B2 * poly_coeffs.col(i));
-    }
-    
-    if (j == n - 1) {
-      s1dt = VectorXd::Zero(4);
-    } else {
-      s1dt = alpha.col(j+1) + beta[j + 1].col(0);
-    }
-
-    VectorXd dtpow(k - 1);
-    for (size_t p = 0; p < k; p++) { 
-      dtpow(p) = pow(dt(j), p);
-    }
-
-    alpha.col(j) = expm(A2*dt(j)).inverse() * (s1dt - beta[j]*dtpow);
-  }
-  
-  vector<PiecewisePolynomial<double>::PolynomialMatrix> polynomial_matrices;
-  for (int segment = 0; segment < n ; segment++) {
-    PiecewisePolynomial<double>::PolynomialMatrix polynomial_matrix(4, 1);
-    for(int row = 0; row < 4; row++) {
-      polynomial_matrix(row) = Polynomial<double>(beta[segment].row(row));
-    }
-    polynomial_matrices.push_back(polynomial_matrix);
-  }
-
-  PiecewisePolynomial<double> pp_part = PiecewisePolynomial<double>(polynomial_matrices, breaks);
-  auto s1traj = ExponentialPlusPiecewisePolynomial<double>(Matrix4d::Identity(), A2, alpha, pp_part);
-  cout << s1traj.value(0) << endl;
+  auto s1traj = s1Trajectory(sys, pp, S);
   //do stuff with s1traj
 }
