@@ -87,6 +87,7 @@ DLLEXPORT void baseZeroToBaseOne(std::vector<int>& vec);
 
 DLLEXPORT double angleAverage(double theta1, double theta2);
 
-DLLEXPORT std::pair<Eigen::Vector3d, double> resolveCenterOfPressure(Eigen::Vector3d torque, Eigen::Vector3d force, Eigen::Vector3d normal, Eigen::Vector3d point_on_contact_plane);
+template <typename DerivedTorque, typename DerivedForce, typename DerivedNormal, typename DerivedPoint>
+DLLEXPORT std::pair<Eigen::Vector3d, double> resolveCenterOfPressure(const Eigen::MatrixBase<DerivedTorque> & torque, const Eigen::MatrixBase<DerivedForce> & force, const Eigen::MatrixBase<DerivedNormal> & normal, const Eigen::MatrixBase<DerivedPoint> & point_on_contact_plane);
 
 #endif /* DRAKE_UTIL_H_ */
