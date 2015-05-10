@@ -558,27 +558,6 @@ void QPLocomotionPlan::updateZMPTrajectory(const double t_plan, const double las
     }
   }
 
-
-
-  // std::vector<double> segment_times = settings.zmp_trajectory.getSegmentTimes();
-
-  // std::vector<double> remaining_segment_times(segment_times.begin() + segment_index, segment_times.end());
-  // remaining_segment_times[0] = t_plan;
-
-  // std::vector<MatrixXd> remaining_zmp_knots;
-  // remaining_zmp_knots.reserve(remaining_segment_times.size());
-  // for (int i=0; i < remaining_segment_times.size(); ++i) {
-  //   remaining_zmp_knots.push_back(settings.zmp_trajectory.value(remaining_segment_times[i]));
-  // }
-
-
-  // double current_support_fraction = transition_fraction * next_support_fraction + (1 - transition_fraction) * last_support_fraction;
-  // remaining_zmp_knots[0] += current_support_fraction * foot_shifts.at(Side(Side::RIGHT)) + (1 - current_support_fraction) * foot_shifts.at(Side(Side::LEFT));
-  // remaining_zmp_knots[1] += next_support_fraction * foot_shifts.at(Side(Side::RIGHT)) + (1 - next_support_fraction) * foot_shifts.at(Side(Side::LEFT));
-  // if (transition_fraction >= 0.05 && transition_fraction <= 0.95) {
-  //   // If we're in double support, then we need to update the next TWO zmp knots 
-  //   remaining_zmp_knots[2] += next_support_fraction * foot_shifts.at(Side(Side::RIGHT)) + (1 - next_support_fraction) * foot_shifts.at(Side(Side::LEFT));
-  // }
   shifted_zmp_trajectory = firstOrderHold(segment_times, zmp_knots);
 }
 
