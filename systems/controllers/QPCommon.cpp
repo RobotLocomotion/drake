@@ -2,29 +2,39 @@
 #include "drakeFloatingPointUtil.h"
 #include "controlUtil.h"
 #include <map>
+#include "lcmUtil.h"
 
 #define LEG_INTEGRATOR_DEACTIVATION_MARGIN 0.05
-
-template<int M, int N>
-void matlabToCArrayOfArrays(const mxArray *source, const int idx, const char *fieldname, double *destination)  {
-  // Matlab arrays come in as column-major data. To represent a matrix in C++, as we do in our LCM messages, we need an array of arrays. But that convention results in a row-major storage, so we have to be careful about how we copy data in. 
-  const mxArray *field = mxGetField(source, idx, fieldname);
-  if (!field) {
-    field = mxGetPropertySafe(source, idx, fieldname);
-  }
-  sizecheck(field, M, N);
-  Map<Matrix<double, M, N>>A(mxGetPrSafe(field));
-  // C is row-major, matlab is column-major
-  Matrix<double, N, M> A_t = A.transpose();
-  memcpy(destination, A_t.data(), sizeof(double)*M*N);
-  return;
-}
 
 double logisticSigmoid(double L, double k, double x, double x0) {
   // Compute the value of the logistic sigmoid f(x) = L / (1 + exp(-k(x - x0)))
   return L / (1.0 + exp(-k * (x - x0)));
 }
 
+PiecewisePolynomial<double> matlabToPiecewisePolynomial(const mxArray* pobj, int index) {
+  std::vector<double> ts = matlabToStdVector<double>(mxGetField(pobj, index, "ts"));
+  const int num_segments = ts.size() - 1;
+  const mxArray *coefs = mxGetFieldSafe(pobj, index, "coefs");
+  if (mxGetNumberOfDimensions(coefs) != 3) mexErrMsgTxt("coefs should be a dimension-3 array");
+  const mwSize* dim = mxGetDimensions(coefs);
+  if (dim[0] != 6 || dim[1] != num_segments || dim[2] != 4) mexErrMsgTxt("coefs should be size 6xNx4, where N is the number of spline segments");
+
+  Map<VectorXd> coefs_flat(mxGetPrSafe(coefs), dim[0] * dim[1] * dim[2]);
+  // coefs_flat[i + j * dim[0] + k * dim[0] * dim[1]] = coefs(i, j, k);
+  std::vector<Matrix<Polynomial<double>, Dynamic, Dynamic>> poly_matrices;
+  poly_matrices.reserve(num_segments);
+  for (int j=0; j < num_segments; ++j) {
+    Matrix<Polynomial<double>, Dynamic, Dynamic> poly_matrix(6, 1);
+    for (int i=0; i < 6; ++i) {
+      poly_matrix(i) = Polynomial<double>(Vector4d(coefs_flat(i + j * 6 + 3 * 6 * num_segments),
+                                                   coefs_flat(i + j * 6 + 2 * 6 * num_segments),
+                                                   coefs_flat(i + j * 6 + 1 * 6 * num_segments),
+                                                   coefs_flat(i + j * 6 + 0 * 6 * num_segments)));
+    }
+    poly_matrices.push_back(poly_matrix);
+  }
+  return PiecewisePolynomial<double>(poly_matrices, ts);
+}
 
 std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray *qp_input) {
   // Take a matlab data structure corresponding to a QPInputConstantHeight object and parse it down to its representation as an equivalent LCM message. 
@@ -36,20 +46,20 @@ std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray 
 
   const mxArray* zmp_data = myGetProperty(qp_input, "zmp_data");
 
-  matlabToCArrayOfArrays<4, 4>(zmp_data, 0, "A", &msg->zmp_data.A[0][0]);
-  matlabToCArrayOfArrays<4, 2>(zmp_data, 0, "B", &msg->zmp_data.B[0][0]);
-  matlabToCArrayOfArrays<2, 4>(zmp_data, 0, "C", &msg->zmp_data.C[0][0]);
-  matlabToCArrayOfArrays<2, 2>(zmp_data, 0, "D", &msg->zmp_data.D[0][0]);
-  matlabToCArrayOfArrays<4, 1>(zmp_data, 0, "x0", &msg->zmp_data.x0[0][0]);
-  matlabToCArrayOfArrays<2, 1>(zmp_data, 0, "y0", &msg->zmp_data.y0[0][0]);
-  matlabToCArrayOfArrays<2, 1>(zmp_data, 0, "u0", &msg->zmp_data.u0[0][0]);
-  matlabToCArrayOfArrays<2, 2>(zmp_data, 0, "R", &msg->zmp_data.R[0][0]);
-  matlabToCArrayOfArrays<2, 2>(zmp_data, 0, "Qy", &msg->zmp_data.Qy[0][0]);
-  matlabToCArrayOfArrays<4, 4>(zmp_data, 0, "S", &msg->zmp_data.S[0][0]);
-  matlabToCArrayOfArrays<4, 1>(zmp_data, 0, "s1", &msg->zmp_data.s1[0][0]);
-  matlabToCArrayOfArrays<4, 1>(zmp_data, 0, "s1dot", &msg->zmp_data.s1dot[0][0]);
-  msg->zmp_data.s2 = mxGetScalar(myGetField(zmp_data, "s2"));
-  msg->zmp_data.s2dot = mxGetScalar(myGetField(zmp_data, "s2dot"));
+  matlabToCArrayOfArrays(mxGetFieldOrPropertySafe(zmp_data, 0, "A"), msg->zmp_data.A);
+  matlabToCArrayOfArrays(mxGetFieldOrPropertySafe(zmp_data, 0, "B"), msg->zmp_data.B);
+  matlabToCArrayOfArrays(mxGetFieldOrPropertySafe(zmp_data, 0, "C"), msg->zmp_data.C);
+  matlabToCArrayOfArrays(mxGetFieldOrPropertySafe(zmp_data, 0, "D"), msg->zmp_data.D);
+  matlabToCArrayOfArrays(mxGetFieldOrPropertySafe(zmp_data, 0, "x0"), msg->zmp_data.x0);
+  matlabToCArrayOfArrays(mxGetFieldOrPropertySafe(zmp_data, 0, "y0"), msg->zmp_data.y0);
+  matlabToCArrayOfArrays(mxGetFieldOrPropertySafe(zmp_data, 0, "u0"), msg->zmp_data.u0);
+  matlabToCArrayOfArrays(mxGetFieldOrPropertySafe(zmp_data, 0, "R"), msg->zmp_data.R);
+  matlabToCArrayOfArrays(mxGetFieldOrPropertySafe(zmp_data, 0, "Qy"), msg->zmp_data.Qy);
+  matlabToCArrayOfArrays(mxGetFieldOrPropertySafe(zmp_data, 0, "S"), msg->zmp_data.S);
+  matlabToCArrayOfArrays(mxGetFieldOrPropertySafe(zmp_data, 0, "s1"), msg->zmp_data.s1);
+  matlabToCArrayOfArrays(mxGetFieldOrPropertySafe(zmp_data, 0, "s1dot"), msg->zmp_data.s1dot);
+  msg->zmp_data.s2 = mxGetScalar(mxGetFieldSafe(zmp_data, "s2"));
+  msg->zmp_data.s2dot = mxGetScalar(mxGetFieldSafe(zmp_data, "s2dot"));
   msg->zmp_data.timestamp = msg->timestamp;
 
 
@@ -78,7 +88,7 @@ std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray 
         }
       }
 
-      matlabToCArrayOfArrays<4, 1>(support_data, i, "support_logic_map", &double_logic_map[0][0]);
+      matlabToCArrayOfArrays(mxGetFieldOrPropertySafe(support_data, i, "support_logic_map"), double_logic_map);
       for (int j=0; j < 4; j++) {
         msg->support_data[i].support_logic_map[j] = (double_logic_map[j][0] != 0);
       }
@@ -107,12 +117,10 @@ std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray 
     for (int i=0; i < nbod; i++) {
       msg->body_motion_data[i].timestamp = msg->timestamp;
       msg->body_motion_data[i].body_id = (int32_t) mxGetScalar(mxGetFieldSafe(body_motion_data, i, "body_id"));
-      memcpy(msg->body_motion_data[i].ts, mxGetPrSafe(mxGetFieldSafe(body_motion_data, i, "ts")), 2*sizeof(double));
-      const mxArray* coefs = mxGetFieldSafe(body_motion_data, i, "coefs");
-      if (mxGetNumberOfDimensions(coefs) != 3) mexErrMsgTxt("coefs should be a dimension-3 array");
-      const mwSize* dim = mxGetDimensions(coefs);
-      if (dim[0] != 6 || dim[1] != 1 || dim[2] != 4) mexErrMsgTxt("coefs should be size 6x1x4");
-      matlabToCArrayOfArrays<6, 4>(body_motion_data, i, "coefs", &msg->body_motion_data[i].coefs[0][0]);
+
+      PiecewisePolynomial<double> spline = matlabToPiecewisePolynomial(body_motion_data, i);
+      encodePiecewisePolynomial(spline, msg->body_motion_data[i].spline);
+
       msg->body_motion_data[i].in_floating_base_nullspace = static_cast<bool>(mxGetScalar(mxGetFieldSafe(body_motion_data, i, "in_floating_base_nullspace")));
       msg->body_motion_data[i].control_pose_when_in_contact = static_cast<bool>(mxGetScalar(mxGetFieldSafe(body_motion_data, i, "control_pose_when_in_contact")));
       const mxArray* quat_task_to_world = mxGetFieldSafe(body_motion_data, i, "quat_task_to_world"); 
@@ -201,6 +209,7 @@ std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray 
   return msg;
 }
 
+
 PIDOutput wholeBodyPID(NewQPControllerData *pdata, double t, const Ref<const VectorXd> &q, const Ref<const VectorXd> &qd, const Ref<const VectorXd> &q_des, WholeBodyParams *params) {
   // Run a PID controller on the whole-body state to produce desired accelerations and reference posture
   PIDOutput out;
@@ -249,16 +258,16 @@ VectorXd velocityReference(NewQPControllerData *pdata, double t, const Ref<Vecto
 
   VectorXd qdd_limited = qdd;
   // Do not wind the vref integrator up against the joint limits for the legs
-  for (i=0; i < rpc->position_indices.r_leg.size(); i++) {
-    int pos_ind = rpc->position_indices.r_leg(i);
+  for (i=0; i < rpc->position_indices.at("r_leg").size(); i++) {
+    int pos_ind = rpc->position_indices.at("r_leg")(i);
     if (q(pos_ind) <= pdata->r->joint_limit_min(pos_ind) + LEG_INTEGRATOR_DEACTIVATION_MARGIN) {
       qdd_limited(pos_ind) = std::max(qdd(pos_ind), 0.0);
     } else if (q(pos_ind) >= pdata->r->joint_limit_max(pos_ind) - LEG_INTEGRATOR_DEACTIVATION_MARGIN) {
       qdd_limited(pos_ind) = std::min(qdd(pos_ind), 0.0);
     }
   }
-  for (i=0; i < rpc->position_indices.l_leg.size(); i++) {
-    int pos_ind = rpc->position_indices.l_leg(i);
+  for (i=0; i < rpc->position_indices.at("l_leg").size(); i++) {
+    int pos_ind = rpc->position_indices.at("l_leg")(i);
     if (q(pos_ind) <= pdata->r->joint_limit_min(pos_ind) + LEG_INTEGRATOR_DEACTIVATION_MARGIN) {
       qdd_limited(pos_ind) = std::max(qdd(pos_ind), 0.0);
     } else if (q(pos_ind) >= pdata->r->joint_limit_max(pos_ind) - LEG_INTEGRATOR_DEACTIVATION_MARGIN) {
@@ -269,25 +278,25 @@ VectorXd velocityReference(NewQPControllerData *pdata, double t, const Ref<Vecto
   pdata->state.vref_integrator_state = (1-params->eta)*pdata->state.vref_integrator_state + params->eta*qd + qdd_limited*dt;
 
   if (params->zero_ankles_on_contact && foot_contact[0] == 1) {
-    for (i=0; i < rpc->position_indices.l_leg_ak.size(); i++) {
-      pdata->state.vref_integrator_state(rpc->position_indices.l_leg_ak(i)) = 0;
+    for (i=0; i < rpc->position_indices.at("l_leg_ak").size(); i++) {
+      pdata->state.vref_integrator_state(rpc->position_indices.at("l_leg_ak")(i)) = 0;
     }
   }
   if (params->zero_ankles_on_contact && foot_contact[1] == 1) {
-    for (i=0; i < rpc->position_indices.r_leg_ak.size(); i++) {
-      pdata->state.vref_integrator_state(rpc->position_indices.r_leg_ak(i)) = 0;
+    for (i=0; i < rpc->position_indices.at("r_leg_ak").size(); i++) {
+      pdata->state.vref_integrator_state(rpc->position_indices.at("r_leg_ak")(i)) = 0;
     }
   }
   if (pdata->state.foot_contact_prev[0] != foot_contact[0]) {
     // contact state changed, reset integrated velocities
-    for (i=0; i < rpc->position_indices.l_leg.size(); i++) {
-      pdata->state.vref_integrator_state(rpc->position_indices.l_leg(i)) = qd(rpc->position_indices.l_leg(i));
+    for (i=0; i < rpc->position_indices.at("l_leg").size(); i++) {
+      pdata->state.vref_integrator_state(rpc->position_indices.at("l_leg")(i)) = qd(rpc->position_indices.at("l_leg")(i));
     }
   }
   if (pdata->state.foot_contact_prev[1] != foot_contact[1]) {
     // contact state changed, reset integrated velocities
-    for (i=0; i < rpc->position_indices.r_leg.size(); i++) {
-      pdata->state.vref_integrator_state(rpc->position_indices.r_leg(i)) = qd(rpc->position_indices.r_leg(i));
+    for (i=0; i < rpc->position_indices.at("r_leg").size(); i++) {
+      pdata->state.vref_integrator_state(rpc->position_indices.at("r_leg")(i)) = qd(rpc->position_indices.at("r_leg")(i));
     }
   }
 
@@ -298,13 +307,13 @@ VectorXd velocityReference(NewQPControllerData *pdata, double t, const Ref<Vecto
 
   // do not velocity control ankles when in contact
   if (params->zero_ankles_on_contact && foot_contact[0] == 1) {
-    for (i=0; i < rpc->position_indices.l_leg_ak.size(); i++) {
-      qd_err(rpc->position_indices.l_leg_ak(i)) = 0;
+    for (i=0; i < rpc->position_indices.at("l_leg_ak").size(); i++) {
+      qd_err(rpc->position_indices.at("l_leg_ak")(i)) = 0;
     }
   }
   if (params->zero_ankles_on_contact && foot_contact[1] == 1) {
-    for (i=0; i < rpc->position_indices.r_leg_ak.size(); i++) {
-      qd_err(rpc->position_indices.r_leg_ak(i)) = 0;
+    for (i=0; i < rpc->position_indices.at("r_leg_ak").size(); i++) {
+      qd_err(rpc->position_indices.at("r_leg_ak")(i)) = 0;
     }
   }
 
@@ -476,9 +485,9 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     double expmap_damping_ratio_multiplier = qp_input->body_motion_data[i].expmap_damping_ratio_multiplier;
     memcpy(desired_body_accelerations[i].weight_multiplier.data(),qp_input->body_motion_data[i].weight_multiplier,sizeof(double)*6);
     pdata->r->findKinematicPath(desired_body_accelerations[i].body_path,0,desired_body_accelerations[i].body_or_frame_id0);
-    Map<Matrix<double, 6, 4,RowMajor>>coefs_rowmaj(&qp_input->body_motion_data[i].coefs[0][0]);
-    Matrix<double, 6, 4> coefs = coefs_rowmaj;
-    double t_spline = std::max(qp_input->body_motion_data[i].ts[0], std::min(qp_input->body_motion_data[i].ts[1], robot_state.t));
+
+    auto spline = decodePiecewisePolynomial(qp_input->body_motion_data[i].spline);
+    evaluateXYZExpmapCubicSpline(robot_state.t, spline, body_pose_des, body_v_des, body_vdot_des);
 
     Vector6d body_Kp;
     body_Kp.head<3>() = (params->body_motion[true_body_id0].Kp.head<3>().array()*xyz_kp_multiplier.array()).matrix();
@@ -486,7 +495,6 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     Vector6d body_Kd;
     body_Kd.head<3>() = (params->body_motion[true_body_id0].Kd.head<3>().array()*xyz_damping_ratio_multiplier.array()*xyz_kp_multiplier.array().sqrt()).matrix();
     body_Kd.tail<3>() = params->body_motion[true_body_id0].Kd.tail<3>()*sqrt(expmap_kp_multiplier)*expmap_damping_ratio_multiplier;
-    evaluateXYZExpmapCubicSplineSegment(t_spline - qp_input->body_motion_data[i].ts[0], coefs, body_pose_des, body_v_des, body_vdot_des);
 
     desired_body_accelerations[i].body_vdot = bodySpatialMotionPD(pdata->r, robot_state, body_or_frame_id0, body_pose_des, body_v_des, body_vdot_des, body_Kp, body_Kd,desired_body_accelerations[i].T_task_to_world);
     
@@ -970,4 +978,56 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   //  GRBfreeenv(env);
 
   return info;
+}
+
+void parsePositionIndices(const mxArray *pobj, std::map<std::string, VectorXi> &position_indices) {
+  int num_fields = mxGetNumberOfFields(pobj);
+  for (int i=0; i < num_fields; ++i) {
+    const mxArray* pfield = mxGetFieldByNumber(pobj, 0, i);
+    Map<VectorXd> indices_double(mxGetPrSafe(pfield), mxGetNumberOfElements(pfield));
+    VectorXi indices = indices_double.cast<int> ();
+    position_indices[std::string(mxGetFieldNameByNumber(pobj, i))] = indices;
+  }
+  return;
+}
+
+void parseContactGroups(const mxArray* pobj, std::vector<RobotPropertyCache::ContactGroupNameToContactPointsMap> &contact_groups) {
+  const int num_groups = mxGetNumberOfElements(pobj);
+  contact_groups.reserve(num_groups);
+
+  for (int i=0; i < num_groups; ++i) {
+    RobotPropertyCache::ContactGroupNameToContactPointsMap groups;
+    const mxArray* cell_obj = mxGetCell(pobj, i);
+    int num_fields = mxGetNumberOfFields(cell_obj);
+    for (int j=0; j < num_fields; ++j) {
+      const mxArray* pfield = mxGetFieldByNumber(cell_obj, 0, j);
+      if (mxGetM(pfield) != 3) {
+        mexErrMsgTxt("expected contact points of size 3xN");
+      }
+      Map<Matrix<double, 3, Dynamic>> pts(mxGetPrSafe(pfield), 3, mxGetN(pfield));
+      groups[std::string(mxGetFieldNameByNumber(cell_obj, j))] = pts;
+    }
+    contact_groups.push_back(groups);
+  }
+  return;
+}
+
+void parseRobotPropertyCache(const mxArray *rpc_obj, RobotPropertyCache *rpc) {
+  const mxArray *pobj;
+
+  parsePositionIndices(mxGetFieldSafe(rpc_obj, "position_indices"), rpc->position_indices);
+  parseContactGroups(mxGetFieldSafe(rpc_obj, "contact_groups"), rpc->contact_groups);
+
+  rpc->body_ids.r_foot = (int) mxGetScalar(myGetField(myGetField(rpc_obj, "body_ids"), "r_foot")) - 1;
+  rpc->body_ids.l_foot = (int) mxGetScalar(myGetField(myGetField(rpc_obj, "body_ids"), "l_foot")) - 1;
+  rpc->body_ids.pelvis = (int) mxGetScalar(myGetField(myGetField(rpc_obj, "body_ids"), "pelvis")) - 1;
+
+  pobj = myGetField(rpc_obj, "actuated_indices");
+  Map<VectorXd>actuated_indices(mxGetPrSafe(pobj), mxGetNumberOfElements(pobj));
+  rpc->actuated_indices = actuated_indices.cast<int>().array() - 1;
+
+  pobj = myGetField(rpc_obj, "num_bodies");
+  rpc->num_bodies = (int) mxGetScalar(pobj);
+
+  return;
 }

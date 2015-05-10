@@ -1,5 +1,11 @@
 if (MATLAB_FOUND)
-  include_directories (${CMAKE_SOURCE_DIR}/util )
+  include_directories (${PROJECT_SOURCE_DIR}/util )
+  include_directories (${PROJECT_SOURCE_DIR}/systems/trajectories )
+  include_directories (${PROJECT_SOURCE_DIR}/systems/plants )
+  include_directories (${PROJECT_SOURCE_DIR}/systems/plants/joints )
+  include_directories (${PROJECT_SOURCE_DIR}/solvers )
+  include_directories (${PROJECT_SOURCE_DIR}/solvers/polynomial )
+  include_directories (${PROJECT_SOURCE_DIR}/solvers/qpSpline )
   pods_find_pkg_config(gurobi)
 
   pods_find_pkg_config(terrain-map)
@@ -9,7 +15,7 @@ if (MATLAB_FOUND)
     pods_use_pkg_config_packages(drakeControlUtil terrain-map)
     set_target_properties(drakeControlUtil PROPERTIES COMPILE_FLAGS "-DUSE_MAPS")
   endif()
-  target_link_libraries(drakeControlUtil drakeRBM drakeUtil)
+  target_link_libraries(drakeControlUtil drakeRBM drakeUtil drakeTrajectories)
   pods_install_libraries(drakeControlUtil)
   pods_install_headers(controlUtil.h DESTINATION drake)
   pods_install_pkg_config_file(drake-control-util
@@ -19,7 +25,7 @@ if (MATLAB_FOUND)
 
   if (gurobi_FOUND)
     add_mex(drakeQPCommon SHARED QPCommon.cpp)
-    target_link_libraries(drakeQPCommon drakeControlUtil drakeQP)
+    target_link_libraries(drakeQPCommon drakeControlUtil drakeQP drakeTrajectories drakeLCMUtil)
     pods_install_libraries(drakeQPCommon)
     pods_install_headers(QPCommon.h DESTINATION drake)
     pods_install_pkg_config_file(drake-qp-common
@@ -41,13 +47,13 @@ if (MATLAB_FOUND)
       pods_use_pkg_config_packages(instantaneousQPControllermex gurobi)
 
       add_mex(constructQPDataPointerMex constructQPDataPointerMex.cpp)
-      target_link_libraries(constructQPDataPointerMex drakeQP drakeControlUtil)
+      target_link_libraries(constructQPDataPointerMex drakeQP drakeControlUtil drakeQPCommon)
       pods_use_pkg_config_packages(constructQPDataPointerMex gurobi)
 
       include_directories (${CMAKE_BINARY_DIR}/lcmgen/lcmtypes )
       add_mex(encodeQPInputLCMMex encodeQPInputLCMMex.cpp)
-      target_link_libraries(encodeQPInputLCMMex lcm drakeControlUtil drakeQPCommon)
-
+      target_link_libraries(encodeQPInputLCMMex drakeControlUtil drakeQPCommon)
+      pods_use_pkg_config_packages(encodeQPInputLCMMex lcm)
     endif()
   endif()
 
@@ -61,7 +67,6 @@ if (MATLAB_FOUND)
   target_link_libraries(supportDetectmex drakeRBM drakeControlUtil)
 
   add_mex(individualCentersOfPressuremex individualCentersOfPressuremex.cpp)
-  include_directories (${CMAKE_SOURCE_DIR}/util )
   target_link_libraries(individualCentersOfPressuremex drakeRBM drakeUtil drakeControlUtil)
 
   add_mex(bodySpatialMotionPDmex bodySpatialMotionPDmex.cpp)
@@ -69,3 +74,5 @@ if (MATLAB_FOUND)
 
 
 endif(MATLAB_FOUND)
+
+add_subdirectory(test)

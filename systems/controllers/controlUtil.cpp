@@ -477,20 +477,11 @@ Vector6d bodySpatialMotionPD(RigidBodyManipulator *r, DrakeRobotState &robot_sta
   return twist_dot;
 }
 
-void evaluateCubicSplineSegment(double t, const Ref<const Matrix<double, 6, 4>> &coefs, Vector6d &y, Vector6d &ydot, Vector6d &yddot) {
-  // evaluate a cubic spline with coefficients coef and starting time 0 at time t
-  y = coefs.col(0) * pow(t, 3) + coefs.col(1) * pow(t, 2) + coefs.col(2) * t + coefs.col(3);
-  ydot = 3*coefs.col(0) * pow(t,2) + 2*coefs.col(1)*t + coefs.col(2);
-  yddot = 6*coefs.col(0)*t + 2*coefs.col(1);
-}
-
-void evaluateXYZExpmapCubicSplineSegment(double t, const Matrix<double,6,4> &coefs, Isometry3d &body_pose_des, Vector6d &xyzdot_angular_vel, Vector6d &xyzddot_angular_accel)
-{
-  double t2 = t*t;
-  double t3 = pow(t,3);
-  Vector6d xyzexp = coefs.col(0)*t3 + coefs.col(1)*t2 + coefs.col(2)*t + coefs.col(3);
-  Vector6d xyzexpdot = coefs.col(0)*3.0*t2 + coefs.col(1)*2.0*t + coefs.col(2);
-  Vector6d xyzexpddot = coefs.col(0)*6.0*t + coefs.col(1)*2.0;
+void evaluateXYZExpmapCubicSpline(double t, const PiecewisePolynomial<double> &spline, Isometry3d &body_pose_des, Vector6d &xyzdot_angular_vel, Vector6d &xyzddot_angular_accel) {
+  Vector6d xyzexp = spline.value(t);
+  auto derivative = spline.derivative();
+  Vector6d xyzexpdot = derivative.value(t);
+  Vector6d xyzexpddot = derivative.derivative().value(t);
   xyzdot_angular_vel.head<3>() = xyzexpdot.head<3>();
   xyzddot_angular_accel.head<3>() = xyzexpddot.head<3>();
   Vector3d expmap = xyzexp.tail<3>();

@@ -1,4 +1,4 @@
-include_directories (${CMAKE_SOURCE_DIR}/util tinyxml)
+include_directories (${PROJECT_SOURCE_DIR}/util tinyxml)
 # IMPORTANT NOTE!!
 # matlab has it's own boost libraries.  DO NOT let any mex file depend
 # on the system boost (directly nor indirectly), or you're asking for trouble.
@@ -9,9 +9,11 @@ if (Boost_FOUND)
   link_directories( ${Boost_LIBRARY_DIRS} )
 endif()
 
+include_directories(joints)
+include_directories(${PROJECT_SOURCE_DIR}/solvers)
+
 add_library(drakeRBM SHARED RigidBodyManipulator.cpp RigidBody.cpp RigidBodyManipulatorURDF.cpp RigidBodyManipulatorContact.cpp tinyxml/tinyxml.cpp tinyxml/tinyxmlparser.cpp tinyxml/tinyxmlerror.cpp)
 target_link_libraries(drakeRBM drakeCollision)
-include_directories( joints )
 target_link_libraries(drakeRBM drakeJoints)
 target_link_libraries(drakeRBM spruce)
 pods_install_libraries(drakeRBM)

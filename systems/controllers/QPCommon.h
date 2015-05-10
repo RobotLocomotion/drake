@@ -3,9 +3,11 @@
 
 #include "controlUtil.h"
 #include "drakeUtil.h"
-#include "drake/fastQP.h"
-#include "drake/gurobiQP.h"
+#include "fastQP.h"
+#include "gurobiQP.h"
 #include "drake/lcmt_qp_controller_input.hpp"
+#include "ExponentialPlusPiecewisePolynomial.h"
+#include <vector>
 
 const double REG = 1e-8;
 
@@ -71,15 +73,6 @@ struct QPControllerState {
   int cbasis_len;
 };
 
-struct PositionIndicesCache {
-  VectorXi r_leg_kny;
-  VectorXi l_leg_kny;
-  VectorXi r_leg;
-  VectorXi l_leg;
-  VectorXi r_leg_ak;
-  VectorXi l_leg_ak;
-};
-
 struct BodyIdsCache {
   int r_foot;
   int l_foot;
@@ -87,7 +80,9 @@ struct BodyIdsCache {
 };
    
 struct RobotPropertyCache {
-  PositionIndicesCache position_indices;
+  typedef std::map<std::string, Eigen::Matrix3Xd> ContactGroupNameToContactPointsMap;
+  std::vector<ContactGroupNameToContactPointsMap> contact_groups; // one for each support
+  std::map<std::string, Eigen::VectorXi> position_indices;
   BodyIdsCache body_ids;
   VectorXi actuated_indices;
   int num_bodies;
@@ -257,6 +252,8 @@ struct PIDOutput {
   VectorXd qddot_des;
 };
 
+//enum PlanShiftMode {NONE, XYZ, Z_ONLY, Z_AND_ZMP};
+
 std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray *qp_input);
 
 PIDOutput wholeBodyPID(NewQPControllerData *pdata, double t, const Ref<const VectorXd> &q, const Ref<const VectorXd> &qd, const Ref<const VectorXd> &q_des, WholeBodyParams *params);
@@ -266,5 +263,7 @@ VectorXd velocityReference(NewQPControllerData *pdata, double t, const Ref<Vecto
 std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> loadAvailableSupports(std::shared_ptr<drake::lcmt_qp_controller_input> qp_input);
 
 int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_controller_input> qp_input, DrakeRobotState &robot_state, const Ref<Matrix<bool, Dynamic, 1>> &b_contact_force, QPControllerOutput *qp_output, std::shared_ptr<QPControllerDebugData> debug);
+
+void parseRobotPropertyCache(const mxArray *rpc_obj, RobotPropertyCache *rpc);
 
 #endif

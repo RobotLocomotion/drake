@@ -106,12 +106,12 @@ classdef InstantaneousQPController
                                        coordinate_names);
     end
 
-    function [y, v_ref] = updateAndOutput(obj, t, x, qp_input, foot_contact_sensor)
+    function [y, v_ref] = updateAndOutput(obj, t, x, qp_input_msg, foot_contact_sensor)
       % Parse inputs from the robot and the planEval, set up the QP, solve it,
       % and return the torques and feed-forward velocity.
       % @param t time (s)
       % @param x robot state vector
-      % @param qp_input a QPInputConstantHeight object
+      % @param qp_input_msg a drake.lcmt_qp_controller_input object
       % @param foot_contact_sensor a 2x1 vector indicating whether contact force was
       %                            detected by the [left; right] foot
 
@@ -131,11 +131,15 @@ classdef InstantaneousQPController
       if ~obj.quiet
         t0 = tic();
       end
+      stream = java.io.ByteArrayOutputStream();
+      data_output = java.io.DataOutputStream(stream);
+      qp_input_msg.encode(data_output);
+      byte_array = stream.toByteArray();
       [y,qdd,qd_ref,info_fqp] = ...
                   instantaneousQPControllermex(obj.data_mex_ptr,...
                   t,...
                   x,...
-                  qp_input,...
+                  byte_array,...
                   contact_sensor);
       if ~obj.quiet
         fprintf(1, 'mex: %f, ', toc(t0));

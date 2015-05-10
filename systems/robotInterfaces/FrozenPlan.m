@@ -1,4 +1,4 @@
-classdef FrozenPlan < QPControllerPlan
+classdef FrozenPlan < QPControllerPlanMatlabImplementation
   properties
     frozen_qp_input;
   end
@@ -6,7 +6,7 @@ classdef FrozenPlan < QPControllerPlan
   methods
     function obj = FrozenPlan(qp_input)
       obj.frozen_qp_input = qp_input;
-      obj.duration = inf;
+      obj.duration_ = inf;
     end
 
     function qp_input = getQPControllerInput(obj, varargin)

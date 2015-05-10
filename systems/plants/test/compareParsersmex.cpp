@@ -89,18 +89,18 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 
 		  auto matlab_H = matlab_model->massMatrix<double>();
 		  auto cpp_H = cpp_model->massMatrix<double>();
-		  valuecheck(matlab_H.value(),cpp_H.value(),1e-8,"H doesn't match");
+		  valuecheckMatrix(matlab_H.value(),cpp_H.value(),1e-8,"H doesn't match");
 
 		  auto matlab_C = matlab_model->inverseDynamics(f_ext);
 		  auto cpp_C = cpp_model->inverseDynamics(f_ext);
-		  valuecheck(matlab_C.value(),cpp_C.value(),1e-8,"C doesn't match");
+		  valuecheckMatrix(matlab_C.value(),cpp_C.value(),1e-8,"C doesn't match");
 
-		  valuecheck(matlab_model->B,cpp_model->B,1e-8,"B doesn't match");
+		  valuecheckMatrix(matlab_model->B,cpp_model->B,1e-8,"B doesn't match");
 		}
 
 		{ // compare joint limits
-			valuecheck(matlab_model->joint_limit_min,cpp_model->joint_limit_min,1e-8,"joint_limit_min doesn't match");
-			valuecheck(matlab_model->joint_limit_max,cpp_model->joint_limit_max,1e-8,"joint_limit_max doesn't match");
+			valuecheckMatrix(matlab_model->joint_limit_min,cpp_model->joint_limit_min,1e-8,"joint_limit_min doesn't match");
+			valuecheckMatrix(matlab_model->joint_limit_max,cpp_model->joint_limit_max,1e-8,"joint_limit_max doesn't match");
 		}
 
 		{ // compare position constraints
