@@ -168,6 +168,7 @@ struct AtlasParams {
   double Kp_accel;
   double contact_threshold;
   double min_knee_angle;
+  bool use_center_of_mass_observer;
   Matrix4d center_of_mass_observer_gain;
 };
 

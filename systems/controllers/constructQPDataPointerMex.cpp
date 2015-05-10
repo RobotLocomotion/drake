@@ -241,9 +241,13 @@ void parseAtlasParams(const mxArray *params_obj, RigidBodyManipulator *r, AtlasP
   params->min_knee_angle = mxGetScalar(pobj);
 
   pobj = myGetProperty(params_obj, "center_of_mass_observer_gain");
-  sizecheck(pobj,4,4);
+  sizecheck(pobj,1,1);
   Map<Matrix4d> center_of_mass_observer_gain(mxGetPrSafe(pobj));
   params->center_of_mass_observer_gain = center_of_mass_observer_gain;
+
+  pobj = myGetProperty(params_obj, "use_center_of_mass_observer");
+  sizecheck(pobj,1,1);
+  params->use_center_of_mass_observer = static_cast<bool> (mxGetScalar(pobj));
 
   parseWholeBodyParams(myGetProperty(params_obj, "whole_body"), r, &(params->whole_body));
   parseVRefIntegratorParams(myGetProperty(params_obj, "vref_integrator"), &(params->vref_integrator));
@@ -419,6 +423,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   pdata->state.foot_contact_prev[0] = false;
   pdata->state.foot_contact_prev[1] = false;
   pdata->state.num_active_contact_pts = 0;
+
+  pdata->state.center_of_mass_observer_state = Vector4d::Zero();
+  pdata->state.last_xy_com_ddot = Vector2d::Zero();
 
   plhs[0] = createDrakeMexPointer((void*) pdata, "NewQPControllerData");
 

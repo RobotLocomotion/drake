@@ -415,25 +415,27 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   }
   xcomdot = Jcom*robot_state.qd;
 
-  Vector2d zmp_from_force_sensors = Vector2d::Zero();
-
-  centerOfMassObserver(zmp_from_force_sensors,      // zmp_from_force_sensors  // TODO: ask Robin
-      xcomdot.topRows(2),                               // comdot_from_robot_state
-      xcom(2),// - ground,                             // com_height              // TODO: ask Robin
-      pdata->r->a_grav(2),                          // gravity (magnitude)
-      robot_state.t - pdata->state.t_prev,          // dt
-      pdata->state.last_xy_com_ddot,                // last_commanded_comddot
-      params->center_of_mass_observer_gain,         // observer gain
-      pdata->state.center_of_mass_observer_state);  // observer state
-
-  // overwrite the com position and velocity with the observer's estimates:
-  xcom.topRows(2) = pdata->state.center_of_mass_observer_state.topRows(2);
-  xcomdot.topRows(2) = pdata->state.center_of_mass_observer_state.bottomRows(2);
-  
   MatrixXd B,JB,Jp,normals;
   VectorXd Jpdotv;
   int nc = contactConstraintsBV(pdata->r,num_active_contact_pts,mu,active_supports,pdata->map_ptr,B,JB,Jp,Jpdotv,normals,pdata->default_terrain_height);
   int neps = nc*dim;
+
+  if (params->use_center_of_mass_observer) {
+    Vector2d zmp_from_force_sensors = Vector2d::Zero();  // TODO: fill this in with help from Twan/Robin
+
+    centerOfMassObserver(zmp_from_force_sensors,      // zmp_from_force_sensors  // TODO: ask Robin
+        xcomdot.topRows(2),                               // comdot_from_robot_state
+        xcom(2),// - ground,                             // com_height              // TODO: Robin says use min of the active contact points for the ground height
+        pdata->r->a_grav(2),                          // gravity (magnitude)
+        robot_state.t - pdata->state.t_prev,          // dt
+        pdata->state.last_xy_com_ddot,                // last_commanded_comddot
+        params->center_of_mass_observer_gain,         // observer gain
+        pdata->state.center_of_mass_observer_state);  // observer state
+
+    // overwrite the com position and velocity with the observer's estimates:
+    xcom.topRows(2) = pdata->state.center_of_mass_observer_state.topRows(2);
+    xcomdot.topRows(2) = pdata->state.center_of_mass_observer_state.bottomRows(2);
+  }
 
   VectorXd x_bar,xlimp;
   MatrixXd D_float(6,JB.cols()), D_act(nu,JB.cols());
