@@ -1,6 +1,10 @@
 include_directories ( .. )
 include_directories (../constraint)
 include_directories (../../controllers)
+include_directories (${PROJECT_SOURCE_DIR}/systems/plants)
+include_directories (${PROJECT_SOURCE_DIR}/systems/plants/joints)
+include_directories (${PROJECT_SOURCE_DIR}/systems/trajectories)
+include_directories (${PROJECT_SOURCE_DIR}/solvers/polynomial)
 
 macro(add_constraint_mex)
   add_mex(${ARGV} ${ARGV}.cpp)

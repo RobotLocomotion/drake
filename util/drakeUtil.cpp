@@ -6,12 +6,13 @@
  */
 
 #include "drakeUtil.h"
-#include <string.h>
 #include <string>
 #include <math.h>
 #include <limits>
 #include <Eigen/Dense>
 #include <stdexcept>
+#include <algorithm>
+#include <functional>
 
 using namespace std;
 using namespace Eigen;
@@ -140,6 +141,12 @@ void* getDrakeMexPointer(const mxArray* mx)
   return ptr;
 }
 
+void baseZeroToBaseOne(std::vector<int>& vec)
+{
+  for (std::vector<int>::iterator iter=vec.begin(); iter!=vec.end(); iter++)
+    (*iter)++;
+}
+
 double angleAverage(double theta1, double theta2) {
   // Computes the average between two angles by averaging points on the unit
   // circle and taking the arctan of the result.
@@ -185,6 +192,22 @@ std::pair<Eigen::Vector3d, double> resolveCenterOfPressure(Eigen::Vector3d torqu
   return std::pair<Vector3d, double>(cop, normal_torque_at_cop);
 }
 
+std::string mxGetStdString(const mxArray* array) {
+  mwSize buffer_length = mxGetNumberOfElements(array) + 1;
+  char* buffer = new char[buffer_length];
+  int status = mxGetString(array, buffer, buffer_length);
+
+  if (status != 0) {
+    delete[] buffer;
+    throw runtime_error("mxGetStdString failed. Possible cause: mxArray is not a string array.");
+  }
+  else {
+    string ret(buffer);
+    delete[] buffer;
+    return ret;
+  }
+}
+
 double * mxGetPrSafe(const mxArray *pobj) {
   if (!mxIsDouble(pobj)) mexErrMsgIdAndTxt("Drake:mxGetPrSafe:BadInputs", "mxGetPr can only be called on arguments which correspond to Matlab doubles");
   return mxGetPr(pobj);
@@ -199,7 +222,7 @@ mxArray* mxGetPropertySafe(const mxArray* array, size_t index, std::string const
   mxArray* ret = mxGetProperty(array, index, field_name.c_str());
   if (!ret)
   {
-    mexErrMsgIdAndTxt("Drake:mxGetPropertySafe", ("Field not found: " + field_name).c_str());
+    mexErrMsgIdAndTxt("Drake:mxGetPropertySafe", ("Property not found: " + field_name).c_str());
   }
   return ret;
 }
@@ -228,17 +251,55 @@ void mxSetFieldSafe(mxArray* array, size_t index, std::string const & fieldname,
   mxSetFieldByNumber(array, index, fieldnum, data);
 }
 
-const std::vector<double> matlabToStdVector(const mxArray* in) {
+mxArray* mxGetFieldOrPropertySafe(const mxArray* array, std::string const& field_name) {
+  return mxGetFieldOrPropertySafe(array, 0, field_name);
+}
+
+mxArray* mxGetFieldOrPropertySafe(const mxArray* array, size_t index, std::string const& field_name) {
+  mxArray* field_or_property = mxGetField(array, index, field_name.c_str());
+  if (field_or_property == nullptr) {
+    field_or_property = mxGetPropertySafe(array, index, field_name);
+  }
+  return field_or_property;
+}
+
+template <typename T>
+const std::vector<T> matlabToStdVector(const mxArray* in) {
+  // works for both row vectors and column vectors
+
+  if (mxGetNumberOfElements(in) == 0) // if input is empty, output is an empty vector
+    return std::vector<T>();
+
+  if (mxGetM(in) != 1 && mxGetN(in) != 1)
+    throw std::runtime_error("Not a vector");
+  std::vector<T> ret;
+  if (mxIsLogical(in)) {
+    mxLogical* data = mxGetLogicals(in);
+    for (int i = 0; i < mxGetNumberOfElements(in); i++) {
+      ret.push_back(static_cast<T>(data[i]));
+    }
+  }
+  else {
+    double* data = mxGetPrSafe(in);
+    for (int i = 0; i < mxGetNumberOfElements(in); i++) {
+      ret.push_back(static_cast<T>(data[i]));
+    }
+  }
+  return ret;
+}
+
+template <>
+DLLEXPORT const std::vector<double> matlabToStdVector<double>(const mxArray* in) {
   // works for both row vectors and column vectors
   if (mxGetM(in) != 1 && mxGetN(in) != 1)
-    throw runtime_error("Not a vector");
+    throw std::runtime_error("Not a vector");
   double* data = mxGetPrSafe(in);
   return std::vector<double>(data, data + mxGetNumberOfElements(in));
 }
 
-int sub2ind(mwSize ndims, const mwSize* dims, const mwSize* sub) {
-  int stride = 1;
-  int ret = 0;
+mwSize sub2ind(mwSize ndims, const mwSize* dims, const mwSize* sub) {
+  mwSize stride = 1;
+  mwSize ret = 0;
   for (int i = 0; i < ndims; i++) {
     ret += sub[i] * stride;
     stride *= dims[i];
@@ -296,3 +357,7 @@ mxArray* eigenToMatlabSparse(MatrixBase<Derived> const & M, int & num_non_zero)
 
 template DLLEXPORT mxArray* eigenToMatlabSparse(MatrixBase< MatrixXd > const &, int &) ;
 template DLLEXPORT mxArray* eigenToMatlabSparse(MatrixBase< Map< MatrixXd> > const &, int &) ;
+// template DLLEXPORT const std::vector<double> matlabToStdVector<double>(const mxArray* in); already explicitly specialized
+template DLLEXPORT const std::vector<int> matlabToStdVector<int>(const mxArray* in);
+template DLLEXPORT const std::vector<Eigen::DenseIndex> matlabToStdVector<Eigen::DenseIndex>(const mxArray* in);
+template DLLEXPORT const std::vector<bool> matlabToStdVector<bool>(const mxArray* in);

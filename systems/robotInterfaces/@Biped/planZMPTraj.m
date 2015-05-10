@@ -50,6 +50,9 @@ steps.left = footsteps_with_quat([footsteps_with_quat.frame_id] == biped.foot_fr
 % start zmp at current COM position
 zmp0 = com0(1:2);
 
+% start zmp at current COM position
+zmp0 = com0(1:2);
+
 zmp_knots = struct('t', options.t0, 'zmp', zmp0, 'supp', supp0);
 
 frame_knots = struct('t', options.t0, ...

@@ -16,6 +16,9 @@ lcmtypes_build(LCM_TYPES
 			 lcmt_body_motion_data.lcm
 			 lcmt_body_wrench_data.lcm
 			 lcmt_force_torque.lcm
+			 lcmt_polynomial.lcm
+			 lcmt_polynomial_matrix.lcm
+			 lcmt_piecewise_polynomial.lcm
 			 )
 
 #add_lcmtype(lcmt_drake_signal.lcm)

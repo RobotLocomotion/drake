@@ -23,7 +23,6 @@ public:
 
 DLLEXPORT PiecewisePolynomial<double> generateSpline(const SplineInformation& spline_information);
 
-DLLEXPORT PiecewisePolynomial<double> twoWaypointCubicSpline(const std::vector<double>& segment_times, double x0, double xd0, double xf, double xdf, double x1, double x2);
-
+DLLEXPORT PiecewisePolynomial<double> nWaypointCubicSpline(const std::vector<double>& segment_times, double x0, double xd0, double xf, double xdf, const Eigen::Ref<const Eigen::VectorXd> &xi);
 
 #endif /* DRAKE_SOLVERS_QPSPLINE_SPLINEGENERATION_H_ */
