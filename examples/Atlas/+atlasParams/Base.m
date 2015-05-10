@@ -17,6 +17,7 @@ classdef Base
     Kp_accel = 1.0;
     contact_threshold = 0.002;
     min_knee_angle = 0.7;
+    center_of_mass_observer_gain = diag([1 1 2 2]); % lower-right elements should be ~ 2 sqrt( upper-left elements) for critically damped response
   end
 
   methods 

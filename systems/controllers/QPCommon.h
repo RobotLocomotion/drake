@@ -66,6 +66,10 @@ struct QPControllerState {
   std::set<int> active;
   int num_active_contact_pts;
 
+  // center of mass observer
+  Vector4d center_of_mass_observer_state;
+  Vector2d last_xy_com_ddot;
+
   // gurobi active set params
   int *vbasis;
   int *cbasis;
@@ -164,6 +168,7 @@ struct AtlasParams {
   double Kp_accel;
   double contact_threshold;
   double min_knee_angle;
+  Matrix4d center_of_mass_observer_gain;
 };
 
 struct NewQPControllerData {
@@ -220,6 +225,7 @@ struct QPControllerOutput {
   VectorXd qd_ref;
   VectorXd qdd;
   VectorXd u;
+  Vector2d xy_com_ddot;
 };
 
 struct QPControllerDebugData {

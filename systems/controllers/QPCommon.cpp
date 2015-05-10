@@ -186,6 +186,37 @@ void applyJointPDOverride(const std::vector<drake::lcmt_joint_pd_override> &join
   }
 }
 
+void centerOfMassObserver(const Vector2d& zmp_from_force_sensors, const Vector2d& comdot_from_robot_state, const double com_height, const double grav, const double dt, const Vector2d& last_commanded_comddot, const Matrix4d& L,  Vector4d& xhat)
+{
+/* Derivation:
+  We have two sources of information for estimating the COM, one via the robot state (IMU+leg odomentry$\rightarrow$ full dynamic model) and the other via the instantaneous ground reaction forces (ZMP).  The ZMP informs us about the instantaneous position of the COM, but not it's velocity.  The IMU is better for high-frequency components, so we will only use the observation of COM velocity from the robot state, and end up with the following model:
+  $$x = \begin{bmatrix} x_{com} \\ y_{com} \\ \dot{x}_{com} \\ \dot{y}_{com} \end{bmatrix}, \quad u = \begin{bmatrix} \ddot{x}_{com} \\ \ddot{y}_{com} \end{bmatrix},\quad y = \begin{bmatrix} x_{zmp} \\ y_{zmp} \\ \dot{x}_{comFRS} \\ \dot{y}_{comFRS} \end{bmatrix},$$
+  where $FRS$ stands for ``from robot state".
+  \begin{gather*}
+  \dot{x} = Ax + Bu, \quad y = Cx + Du \\
+  A = \begin{bmatrix} 0_{2 \times 2} & I_{2 \times 2} \\ 0_{2 \times 2} & 0_{2 \times 2} \end{bmatrix}, \quad B = \begin{bmatrix} 0_{2 \times 2} \\ I_{2 \times 2} \end{bmatrix} \\
+  C = I_{4 \times 4} \quad D = \begin{bmatrix} -\frac{z_{comFRS}}{g} I_{2 \times 2} \\ 0_{2 \times 2} \end{bmatrix}
+  \\
+  \dot{\hat{x}} = A\hat{x} + Bu + L(y - C\hat{x} - Du)
+  \end{gather*}
+  where $L$ is the observer gain matrix.  This will give a BIBO stable observer so long as all eigenvalues of $(A-LC)$ are in the left-half plane.
+
+  If we parameterize $L$ as a diagonal matrix then the eigenvalues of $(A-LC)$ are simply the negative of those diagonal entries.  I recommend trying diagonal entries $\begin{bmatrix} l_{zmp}, l_{zmp}, l_{com dot}, l_{com dot} \end{bmatrix}$, with $l_{comdot} \approx 2\sqrt{l_{zmp}}$ to get a critically-damped response.
+ */
+
+  // y_err = (y - C*xhat - D*u)
+  Vector4d y_err;
+  y_err << zmp_from_force_sensors - xhat.topRows(2) + com_height/grav * last_commanded_comddot,
+      comdot_from_robot_state - xhat.bottomRows(2);
+
+  // xhatdot = Axhat + Bu + L*y_err)
+  Vector4d xhatdot = L*y_err;
+  xhatdot.topRows(2) += xhat.bottomRows(2);
+  xhatdot.bottomRows(2) += last_commanded_comddot;
+
+  xhat.noalias() = xhat + dt*xhatdot;
+}
+
 int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_controller_input> qp_input, DrakeRobotState &robot_state, const Ref<Matrix<bool, Dynamic, 1>> &b_contact_force, QPControllerOutput *qp_output, std::shared_ptr<QPControllerDebugData> debug) {
   // The primary solve loop for our controller. This constructs and solves a Quadratic Program and produces the instantaneous desired torques, along with reference positions, velocities, and accelerations. It mirrors the Matlab implementation in atlasControllers.InstantaneousQPController.setupAndSolveQP(), and more documentation can be found there. 
   // Note: argument `debug` MAY be set to NULL, which signals that no debug information is requested.
@@ -240,7 +271,6 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
 
   addJointSoftLimits(params->joint_soft_limits, robot_state, q_des, active_supports, qp_input->joint_pd_override);
   applyJointPDOverride(qp_input->joint_pd_override, robot_state, pid_out, w_qdd);
-
 
   qp_output->q_ref = pid_out.q_ref;
 
@@ -347,7 +377,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     pdata->Ak = pdata->Ag.topRows<3>();
     pdata->Akdot_times_v = pdata->Agdot_times_v.topRows<3>();
   }
-  Vector3d xcom;
+  Vector3d xcom, xcomdot;
   // consider making all J's into row-major
   
 
@@ -383,6 +413,22 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     Jcom = pdata->J_xy;
     Jcomdotv = pdata->Jdotv_xy;
   }
+  xcomdot = Jcom*robot_state.qd;
+
+  Vector2d zmp_from_force_sensors = Vector2d::Zero();
+
+  centerOfMassObserver(zmp_from_force_sensors,      // zmp_from_force_sensors  // TODO: ask Robin
+      xcomdot.topRows(2),                               // comdot_from_robot_state
+      xcom(2),// - ground,                             // com_height              // TODO: ask Robin
+      pdata->r->a_grav(2),                          // gravity (magnitude)
+      robot_state.t - pdata->state.t_prev,          // dt
+      pdata->state.last_xy_com_ddot,                // last_commanded_comddot
+      params->center_of_mass_observer_gain,         // observer gain
+      pdata->state.center_of_mass_observer_state);  // observer state
+
+  // overwrite the com position and velocity with the observer's estimates:
+  xcom.topRows(2) = pdata->state.center_of_mass_observer_state.topRows(2);
+  xcomdot.topRows(2) = pdata->state.center_of_mass_observer_state.bottomRows(2);
   
   MatrixXd B,JB,Jp,normals;
   VectorXd Jpdotv;
@@ -396,12 +442,12 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
       // x,y,z com 
       xlimp.resize(6); 
       xlimp.topRows(3) = xcom;
-      xlimp.bottomRows(3) = Jcom*robot_state.qd;
+      xlimp.bottomRows(3) = xcomdot;
     }
     else {
       xlimp.resize(4); 
       xlimp.topRows(2) = xcom.topRows(2);
-      xlimp.bottomRows(2) = Jcom*robot_state.qd;
+      xlimp.bottomRows(2) = xcomdot.topRows(2);
     }
     x_bar = xlimp-x0;
 

@@ -36,6 +36,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   int nq = pdata->r->num_positions;
   int nv = pdata->r->num_velocities;
   if (mxGetNumberOfElements(prhs[narg]) != (nq + nv)) mexErrMsgTxt("size of x should be nq + nv\n");
+  if (nq!=nv) mexErrMsgTxt("still assume nv==nq");
   double *q_ptr = mxGetPrSafe(prhs[narg]);
   double *qd_ptr = &q_ptr[nq];
   Map<VectorXd> q(q_ptr, nq);
