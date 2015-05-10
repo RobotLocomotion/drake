@@ -1,4 +1,4 @@
-function runAtlasBalancingWithContactSensor(use_mex)
+function runAtlasBalancingWithContactSensor(example_options)
 if ~checkDependency('gurobi')
   warning('Must have gurobi installed to run this example');
   return;
@@ -8,17 +8,24 @@ path_handle = addpathTemporary(fullfile(getDrakePath(), 'examples', 'ZMP'));
 import atlasControllers.*;
 
 % put robot in a random x,y,yaw position and balance for 2 seconds
-visualize = true;
-
-if (nargin<1); use_mex = true; end
-if (nargin<2); use_angular_momentum = false; end
+if nargin<1, example_options=struct(); end
+example_options = applyDefaults(example_options, struct('use_mex', true, ...
+                                                        'use_bullet', false,...
+                                                        'visualize', true,...
+                                                        'terrain', RigidBodyFlatTerrain));
 
 % silence some warnings
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints')
 warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits')
 
 options.floating = true;
-options.dt = 0.002;
+options.ignore_self_collisions = true;
+options.ignore_friction = true;
+options.dt = 0.001;
+options.use_new_kinsol = true;
+options.terrain = example_options.terrain;
+options.use_bullet = example_options.use_bullet;
+options.use_mex = example_options.use_mex;
 r = Atlas('urdf/atlas_minimal_contact.urdf',options);
 r = r.removeCollisionGroupsExcept({'heel','toe'});
 r = compile(r);
@@ -53,88 +60,24 @@ x0 = xstar;
 q0 = x0(1:nq);
 kinsol = doKinematics(r,q0);
 
-com = getCOM(r,kinsol);
+standing_plan = QPLocomotionPlan.from_standing_state(x0, r);
+standing_plan.planned_support_command = QPControllerPlan.support_logic_maps.kinematic_or_sensed;
 
-% build TI-ZMP controller
-footidx = [findLinkId(r,'r_foot'), findLinkId(r,'l_foot')];
-foot_pos = terrainContactPositions(r,kinsol,footidx);
-comgoal = mean([mean(foot_pos(1:2,1:4)');mean(foot_pos(1:2,5:8)')])';
-limp = LinearInvertedPendulum(com(3));
-[~,V] = lqr(limp,comgoal);
+control = atlasControllers.InstantaneousQPController(r_pure, [], struct());
+planeval = atlasControllers.AtlasPlanEval(r_pure, standing_plan);
 
-foot_support = RigidBodySupportState(r,find(~cellfun(@isempty,strfind(r.getLinkNames(),'foot'))));
+plancontroller = atlasControllers.AtlasPlanEvalAndControlSystem(r_pure, control, planeval);
 
-
-ctrl_data = QPControllerData(false,struct(...
-  'acceleration_input_frame',atlasFrames.AtlasCoordinates(r),...
-  'D',-com(3)/9.81*eye(2),...
-  'Qy',eye(2),...
-  'S',V.S,...
-  's1',zeros(4,1),...
-  's2',0,...
-  'x0',[comgoal;0;0],...
-  'u0',zeros(2,1),...
-  'y0',comgoal,...
-  'qtraj',x0(1:nq),...
-  'support_times',0,...
-  'supports',foot_support,...
-  'mu',1.0,...
-  'ignore_terrain',false,...
-  'constrained_dofs',[]));
-
-% instantiate QP controller
-options.slack_limit = 30.0;
-options.w_qdd = 0.001*ones(nq,1);
-options.w_grf = 0;
-options.w_slack = 0.001;
-options.debug = false;
-options.use_mex = use_mex;
-
-if use_angular_momentum
-  options.Kp_ang = 1.0; % angular momentum proportunal feedback gain
-  options.W_kdot = 1e-5*eye(3); % angular momentum weight
-else
-  options.W_kdot = zeros(3);
-end
-
-qp = QPController(r,{},ctrl_data,options);
-clear options;
-
-% feedback QP controller with atlas
-ins(1).system = 1;
-ins(1).input = 2;
-ins(2).system = 1;
-ins(2).input = 3;
-outs(1).system = 2;
+% Pass through outputs from robot
+outs(1).system = 1;
 outs(1).output = 1;
-outs(2).system = 2;
+outs(2).system = 1;
 outs(2).output = 2;
-outs(3).system = 2;
+outs(3).system = 1;
 outs(3).output = 3;
-sys = mimoFeedback(qp,r,[],[],ins,outs);
-clear ins;
+sys = mimoFeedback(r, plancontroller, [], [], [], outs);
 
-% feedback foot contact detector with QP/atlas
-options.use_lcm=false;
-options.contact_threshold = 0.002;
-fc = FootContactBlock(r_pure,ctrl_data,options);
-ins(1).system = 2;
-ins(1).input = 1;
-sys = mimoFeedback(fc,sys,[],[],ins,outs);
-clear ins; 
-
-% feedback PD trajectory controller
-options.use_ik = false;
-pd = IKPDBlock(r_pure,ctrl_data,options);
-ins(1).system = 1;
-ins(1).input = 1;
-sys = mimoFeedback(pd,sys,[],[],ins,outs);
-clear ins;
-
-qt = QTrajEvalBlock(r_pure,ctrl_data);
-sys = mimoFeedback(qt,sys,[],[],[],outs);
-
-if visualize
+if example_options.visualize
   v = r.constructVisualizer;
   v.display_dt = 0.01;
   S=warning('off','Drake:DrakeSystem:UnsupportedSampleTime');
@@ -151,7 +94,7 @@ x0 = initstate;
 x0(3) = 1.0; % drop it a bit
 
 traj = simulate(sys,[0 2.0],x0);
-if visualize
+if example_options.visualize
   playback(v,traj,struct('slider',true));
 end
 
