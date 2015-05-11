@@ -301,6 +301,12 @@ classdef QPLocomotionPlanSettings
         [~, obj.V, ~, LIP_height] = obj.robot.planZMPController(comgoal, x0(1:obj.robot.getNumPositions()));
         obj.zmp_data.D = -LIP_height / obj.g * eye(2);
         obj.D_control = obj.zmp_data.D;
+      else
+        % We can just use a comgoal of [0;0] here because, for the quasistatic solution, it has no effect on V
+        [~, obj.V, ~, LIP_height] = obj.robot.planZMPController([0;0], x0(1:obj.robot.getNumPositions()));
+        obj.zmptraj = obj.comtraj;
+        obj.zmp_data.D = -LIP_height / obj.g * eye(2);
+        obj.D_control = obj.zmp_data.D;
       end
 
       for j = 1:num_bodies_to_track
