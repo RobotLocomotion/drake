@@ -586,14 +586,15 @@ void QPLocomotionPlan::updatePlanShift(double t_plan, const std::vector<bool>& c
               int rotation_type = 0;
               Vector3d foot_frame_origin_actual = robot.forwardKinNew(Vector3d::Zero().eval(), body_motion_it->getBodyOrFrameId(), world, rotation_type, 0).value();
               Vector3d foot_frame_origin_planned = body_motion_it->getTrajectory().value(t_plan).topRows<3>();
+              // std::cout << "actual: " << foot_frame_origin_actual.transpose() << " planned: " << foot_frame_origin_planned.transpose() << std::endl;
               foot_shifts[side_it->first] = foot_frame_origin_planned - foot_frame_origin_actual;
               break;
             }
           }
         }
-        break;
       }
     }
+    std::cout << "right: " << foot_shifts.at(Side::RIGHT).transpose() << "left: " << foot_shifts.at(Side::LEFT).transpose() << std::endl;
     last_foot_shift_time = t_plan;
     this->updateZMPController(t_plan, last_support_fraction, next_support_fraction, transition_fraction);
   }
