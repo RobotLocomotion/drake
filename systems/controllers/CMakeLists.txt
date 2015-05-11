@@ -72,6 +72,10 @@ if (MATLAB_FOUND)
   add_mex(bodySpatialMotionPDmex bodySpatialMotionPDmex.cpp)
   target_link_libraries(bodySpatialMotionPDmex drakeRBM drakeGeometryUtil drakeUtil drakeControlUtil)
 
+  add_library(drakeZMPUtil zmpUtil.cpp)
+  target_link_libraries(drakeZMPUtil drakeTrajectories)
+  pods_install_headers(zmpUtil.h DESTINATION drake)
+
 
 endif(MATLAB_FOUND)
 

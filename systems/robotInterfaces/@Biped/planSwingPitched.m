@@ -142,8 +142,8 @@ else
 end
 % Apex knot 1
 toe_apex1_in_world = (1-APEX_FRACTIONS(1))*toe1(1:3) + APEX_FRACTIONS(1)*toe2(1:3);
-
-if max_terrain_ht_in_world > toe_apex1_in_world(3) + params.step_height/4
+initial_pose_not_flat = norm(cross(T_swing1_sole_to_world(1:3,1:3) * [0;0;1], [0;0;1])) >= sin(7.5*pi/180);
+if initial_pose_not_flat || max_terrain_ht_in_world > toe_apex1_in_world(3) + params.step_height/4
   toe_apex1_in_world = [toe1(1:2); max_terrain_ht_in_world + params.step_height];
 else
   toe_apex1_in_world(3) = max([toe_apex1_in_world(3) + params.step_height,...
@@ -155,7 +155,8 @@ add_frame_knot(tform2poseQuat(T_apex1_frame_to_world));
 
 % Apex knot 2
 toe_apex2_in_world = (1-APEX_FRACTIONS(2))*toe1(1:3) + APEX_FRACTIONS(2)*toe2(1:3);
-if max_terrain_ht_in_world > toe_apex2_in_world(3) + params.step_height/4
+final_pose_not_flat = norm(cross(T_swing2_sole_to_world(1:3,1:3) * [0;0;1], [0;0;1])) >= sin(7.5*pi/180);
+if final_pose_not_flat || max_terrain_ht_in_world > toe_apex2_in_world(3) + params.step_height/4
   toe_apex2_in_world = [toe2(1:2); max_terrain_ht_in_world + params.step_height];
 else
   toe_apex2_in_world(3) = max([toe_apex2_in_world(3) + params.step_height,...

@@ -7,15 +7,13 @@ classdef QPLocomotionPlanSettings
     body_motions;
     zmp_data;
     zmptraj = [];
-    zmp_final = [];
-    LIP_height;
     V;
     qtraj;
     comtraj = [];
     mu = 0.5;
-    plan_shift = zeros(6,1);
-    plan_shift_zmp_inds = 1:2;
-    plan_shift_body_motion_inds = 1:3;
+    D_control;
+    use_plan_shift = false;
+    plan_shift_body_motion_inds = 3;
     g = 9.81; % gravity m/s^2
     is_quasistatic = false;
     constrained_dofs = [];
@@ -169,7 +167,9 @@ classdef QPLocomotionPlanSettings
       end
 
       obj.zmptraj = comgoal;
-      [~, obj.V, ~, obj.LIP_height] = obj.robot.planZMPController(comgoal, q0);
+      [~, obj.V, ~, LIP_height] = obj.robot.planZMPController(comgoal, q0);
+      obj.zmp_data.D = -LIP_height / obj.g * eye(2);
+      obj.D_control = obj.zmp_data.D;
 
       obj.body_motions = [BodyMotionData(obj.robot.foot_body_id.right, [0, inf]),...
                           BodyMotionData(obj.robot.foot_body_id.left, [0, inf]),...
@@ -188,7 +188,6 @@ classdef QPLocomotionPlanSettings
       obj.body_motions(3).coefs = cat(3, zeros(6,1,3),reshape(pelvis_target_xyzexpmap,[6,1,1,]));
       obj.body_motions(3).in_floating_base_nullspace = false(1, 2);
 
-      obj.zmp_final = comgoal;
       obj.qtraj = x0(1:nq);
       obj.comtraj = comgoal;
       obj.gain_set = 'standing';
@@ -221,17 +220,18 @@ classdef QPLocomotionPlanSettings
 
       [obj.supports, obj.support_times] = QPLocomotionPlanSettings.getSupports(zmp_knots);
       obj.zmptraj = QPLocomotionPlanSettings.getZMPTraj(zmp_knots);
-      [~, obj.V, obj.comtraj, ~] = biped.planZMPController(obj.zmptraj, obj.x0, options);
+      [~, obj.V, obj.comtraj, LIP_height] = biped.planZMPController(obj.zmptraj, obj.x0, options);
+      obj.D_control = -biped.default_walking_params.nominal_LIP_COM_height / obj.g * eye(2);
+      obj.zmp_data.D = -LIP_height / obj.g * eye(2);
       pelvis_motion_data = biped.getPelvisMotionForWalking(x0, foot_motion_data, obj.supports, obj.support_times, options);
       obj.body_motions = [foot_motion_data, pelvis_motion_data];
 
       obj.duration = obj.support_times(end)-obj.support_times(1)-0.001;
-      obj.zmp_final = obj.zmptraj.eval(obj.zmptraj.tspan(end));
       if isa(obj.V.S, 'ConstantTrajectory')
         obj.V.S = fasteval(obj.V.S, 0);
       end
-      obj.LIP_height = biped.default_walking_params.nominal_LIP_COM_height;
       obj.gain_set = 'walking';
+      obj.use_plan_shift = true;
     end
 
     function obj = fromQuasistaticQTraj(biped, qtraj, options)
@@ -298,13 +298,15 @@ classdef QPLocomotionPlanSettings
         end
         comgoal = mean(active_contact_pts(1:2,:), 2);
         obj.zmptraj = comgoal;
-        obj.zmp_final = obj.zmptraj;
-        [~, obj.V, ~, obj.LIP_height] = obj.robot.planZMPController(comgoal, x0(1:obj.robot.getNumPositions()));
+        [~, obj.V, ~, LIP_height] = obj.robot.planZMPController(comgoal, x0(1:obj.robot.getNumPositions()));
+        obj.zmp_data.D = -LIP_height / obj.g * eye(2);
+        obj.D_control = obj.zmp_data.D;
       else
-        % We can just use a comgoal of [0;0] here because for the quasistatic solution, it has no effect on V
-        [~, obj.V, ~, obj.LIP_height] = obj.robot.planZMPController([0;0], x0(1:obj.robot.getNumPositions()));
+        % We can just use a comgoal of [0;0] here because, for the quasistatic solution, it has no effect on V
+        [~, obj.V, ~, LIP_height] = obj.robot.planZMPController([0;0], x0(1:obj.robot.getNumPositions()));
         obj.zmptraj = obj.comtraj;
-        obj.zmp_final = obj.zmptraj.eval(obj.zmptraj.tspan(end));
+        obj.zmp_data.D = -LIP_height / obj.g * eye(2);
+        obj.D_control = obj.zmp_data.D;
       end
 
       for j = 1:num_bodies_to_track
@@ -373,17 +375,9 @@ classdef QPLocomotionPlanSettings
       zmp_data = struct('A',  [zeros(2),eye(2); zeros(2,4)],... % COM state map 4x4
         'B', [zeros(2); eye(2)],... % COM input map 4x2
         'C', [eye(2),zeros(2)],... % ZMP state-output map 2x4
-        'D', -0.89/9.81*eye(2),... % ZMP input-output map 2x2
-        'x0', zeros(4,1),... % nominal state 4x1
-        'y0', zeros(2,1),... % nominal output 2x1
         'u0', zeros(2,1),... % nominal input 2x1
         'R', zeros(2),... % input LQR cost 2x2
-        'Qy', 0.8*eye(2),... % output LQR cost 2x2
-        'S', zeros(4),... % cost-to-go terms: x'Sx + x's1 + s2 [4x4]
-        's1', zeros(4,1),... % 4x1
-        's1dot', zeros(4,1),... % 4x1
-        's2', 0,... % 1x1
-        's2dot', 0); % 1x1
+        'Qy', eye(2));
     end
   end
 end

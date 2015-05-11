@@ -200,16 +200,12 @@ TVLQRData setUpZMPData(const mxArray* mex_zmp_data)
   ret.B = matlabToEigenMap<NUM_STATES, NUM_INPUTS>(mxGetFieldSafe(mex_zmp_data, "B"));
   ret.C = matlabToEigenMap<NUM_OUTPUTS, NUM_STATES>(mxGetFieldSafe(mex_zmp_data, "C"));
   ret.D = matlabToEigenMap<NUM_OUTPUTS, NUM_INPUTS>(mxGetFieldSafe(mex_zmp_data, "D"));
-  ret.x0 = matlabToEigenMap<NUM_STATES, 1>(mxGetFieldSafe(mex_zmp_data, "x0"));
-  ret.y0 = matlabToEigenMap<NUM_OUTPUTS, 1>(mxGetFieldSafe(mex_zmp_data, "y0"));
   ret.u0 = matlabToEigenMap<NUM_INPUTS, 1>(mxGetFieldSafe(mex_zmp_data, "u0"));
   ret.R = matlabToEigenMap<NUM_INPUTS, NUM_INPUTS>(mxGetFieldSafe(mex_zmp_data, "R"));
   ret.Qy = matlabToEigenMap<NUM_OUTPUTS, NUM_OUTPUTS>(mxGetFieldSafe(mex_zmp_data, "Qy"));
-  ret.S = matlabToEigenMap<NUM_STATES, NUM_STATES>(mxGetFieldSafe(mex_zmp_data, "S"));
-  ret.s1 = matlabToEigenMap<NUM_STATES, 1>(mxGetFieldSafe(mex_zmp_data, "s1"));
-  ret.s1dot = matlabToEigenMap<NUM_STATES, 1>(mxGetFieldSafe(mex_zmp_data, "s1dot"));
-  ret.s2 = mxGetScalar(mxGetFieldSafe(mex_zmp_data, "s2"));
-  ret.s2dot = mxGetScalar(mxGetFieldSafe(mex_zmp_data, "s2dot"));
+  ret.Q1 = ret.C.transpose() * ret.Qy * ret.C;
+  ret.R1 = ret.R + ret.D.transpose() * ret.Qy * ret.D;
+  ret.N = ret.C.transpose() * ret.Qy * ret.D;
   return ret;
 }
 
@@ -258,16 +254,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   settings.early_contact_allowed_time = mxGetScalar(mxGetPropertySafe(mex_settings, "early_contact_allowed_time"));
   settings.body_motions = setUpBodyMotions(mxGetPropertySafe(mex_settings, "body_motions"));
   settings.zmp_trajectory = matlabPPTrajectoryOrMatrixToPiecewisePolynomial(mxGetPropertySafe(mex_settings, "zmptraj"));
-  settings.zmp_final = matlabToEigen<2, 1>(mxGetPropertySafe(mex_settings, "zmp_final"));
   settings.zmp_data = setUpZMPData(mxGetPropertySafe(mex_settings, "zmp_data"));
-  settings.lipm_height = mxGetScalar(mxGetPropertySafe(mex_settings, "LIP_height"));
+  settings.D_control = matlabToEigenMap<2, 2>(mxGetPropertySafe(mex_settings, "D_control"));
   settings.V = setUpLyapunovFunction(mxGetPropertySafe(mex_settings, "V"));
   settings.q_traj = matlabPPTrajectoryOrMatrixToPiecewisePolynomial(mxGetPropertySafe(mex_settings, "qtraj"));
   settings.com_traj = matlabExpPlusPPOrPPTrajectoryOrVectorToExponentialPlusPiecewisePolynomial(mxGetPropertySafe(mex_settings, "comtraj"));
   settings.gain_set = mxGetStdString(mxGetPropertySafe(mex_settings, "gain_set"));
   settings.mu = mxGetScalar(mxGetPropertySafe(mex_settings, "mu"));
-  settings.plan_shift_zmp_indices = matlabToStdVector<Eigen::DenseIndex>(mxGetPropertySafe(mex_settings, "plan_shift_zmp_inds"));
-  addOffset(settings.plan_shift_zmp_indices, (Eigen::DenseIndex) -1); // base 1 to base 0
+  settings.use_plan_shift = static_cast<bool>(mxGetScalar(mxGetPropertySafe(mex_settings, "use_plan_shift")));
   settings.plan_shift_body_motion_indices = matlabToStdVector<Eigen::DenseIndex>(mxGetPropertySafe(mex_settings, "plan_shift_body_motion_inds"));
   addOffset(settings.plan_shift_body_motion_indices, (Eigen::DenseIndex) -1); // base 1 to base 0
   settings.g = mxGetScalar(mxGetPropertySafe(mex_settings, "g"));

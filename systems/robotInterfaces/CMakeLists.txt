@@ -2,7 +2,7 @@ include_directories (${PROJECT_SOURCE_DIR}/util )
 include_directories (${PROJECT_SOURCE_DIR}/systems/trajectories )
 include_directories (${PROJECT_SOURCE_DIR}/systems/controllers )
 include_directories (${PROJECT_SOURCE_DIR}/systems/plants )
-include_directories (${PROJECT_SOURCE_DIR}/systems/plants/joints ) 
+include_directories (${PROJECT_SOURCE_DIR}/systems/plants/joints )
 include_directories (${PROJECT_SOURCE_DIR}/solvers/polynomial )
 include_directories (${PROJECT_SOURCE_DIR}/solvers/qpSpline )
 include_directories (${PROJECT_BINARY_DIR}/lcmgen/lcmtypes )
@@ -34,11 +34,11 @@ if (MATLAB_FOUND)
     pods_use_pkg_config_packages(octomapWrapper octomap)
 
   endif()
-  
+
   if (LCM_FOUND)
     add_mex(constructQPLocomotionPlanmex constructQPLocomotionPlanmex.cpp)
-    target_link_libraries(constructQPLocomotionPlanmex drakeQPLocomotionPlan drakeUtil)
-    
+    target_link_libraries(constructQPLocomotionPlanmex drakeQPLocomotionPlan drakeUtil drakeZMPUtil)
+
     add_subdirectory(@QPLocomotionPlanCPPWrapper)
   endif()
 endif()

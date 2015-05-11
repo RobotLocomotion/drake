@@ -26,7 +26,8 @@ QPLocomotionPlan::QPLocomotionPlan(RigidBodyManipulator& robot, const QPLocomoti
     pelvis_id(robot.findLinkId(settings.pelvis_name)),
     foot_body_ids(createFootBodyIdMap(robot, settings.foot_names)),
     knee_indices(createKneeIndicesMap(robot, settings.knee_names)),
-    plan_shift(Vector3d::Zero())
+    plan_shift(Vector3d::Zero()),
+    shifted_zmp_trajectory(settings.zmp_trajectory)
 {
   for (int i = 1; i < settings.support_times.size(); i++) {
     if (settings.support_times[i] < settings.support_times[i - 1])
@@ -35,6 +36,7 @@ QPLocomotionPlan::QPLocomotionPlan(RigidBodyManipulator& robot, const QPLocomoti
 
   for (auto it = Side::values.begin(); it != Side::values.end(); ++it) {
     toe_off_active[*it] = false;
+    foot_shifts[*it] = Vector3d::Zero();
   }
 
   if (!lcm.good())
@@ -67,7 +69,9 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
   RigidBodySupportState& support_state = settings.supports[support_index];
   bool is_last_support = support_index == settings.supports.size() - 1;
   const RigidBodySupportState& next_support = is_last_support ? settings.supports[support_index] : settings.supports[support_index + 1];
-  updatePlanShift(t_plan, contact_force_detected, next_support);
+  if (settings.use_plan_shift) {
+    updatePlanShift(t_plan, contact_force_detected, support_index);
+  }
 
   drake::lcmt_qp_controller_input qp_input;
   qp_input.be_silent = false;
@@ -86,8 +90,10 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
   addOffset(qp_input.whole_body_data.constrained_dofs, 1); // use 1-indexing in LCM
   qp_input.whole_body_data.num_constrained_dofs = qp_input.whole_body_data.constrained_dofs.size();
   // apply plan shift
-  for (auto direction_it = settings.plan_shift_body_motion_indices.begin(); direction_it != settings.plan_shift_body_motion_indices.end(); ++direction_it) {
-    qp_input.whole_body_data.q_des[*direction_it] -= plan_shift[*direction_it];
+  if (settings.use_plan_shift) {
+    for (auto direction_it = settings.plan_shift_body_motion_indices.begin(); direction_it != settings.plan_shift_body_motion_indices.end(); ++direction_it) {
+      qp_input.whole_body_data.q_des[*direction_it] -= plan_shift[*direction_it];
+    }
   }
 
   // zmp data:
@@ -161,10 +167,12 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
     // apply plan shift
     PiecewisePolynomial<double>::CoefficientMatrix trajectory_shift(body_motion_trajectory_slice.rows(), body_motion_trajectory_slice.cols());
     trajectory_shift.setZero();
-    for (auto direction_it = settings.plan_shift_body_motion_indices.begin(); direction_it != settings.plan_shift_body_motion_indices.end(); ++direction_it) {
-      trajectory_shift(*direction_it) = plan_shift(*direction_it);
+    if (settings.use_plan_shift) {
+      for (auto direction_it = settings.plan_shift_body_motion_indices.begin(); direction_it != settings.plan_shift_body_motion_indices.end(); ++direction_it) {
+        trajectory_shift(*direction_it) = plan_shift(*direction_it);
+      }
+      body_motion_trajectory_slice -= trajectory_shift;
     }
-    body_motion_trajectory_slice -= trajectory_shift;
 
     drake::lcmt_body_motion_data body_motion_data_for_support_lcm;
     body_motion_data_for_support_lcm.timestamp = 0;
@@ -291,21 +299,12 @@ drake::lcmt_zmp_data QPLocomotionPlan::createZMPData(double t_plan) const
   eigenToCArrayOfArrays(settings.zmp_data.A, zmp_data_lcm.A);
   eigenToCArrayOfArrays(settings.zmp_data.B, zmp_data_lcm.B);
   eigenToCArrayOfArrays(settings.zmp_data.C, zmp_data_lcm.C);
-//  eigenToCArrayOfArrays(settings.zmp_data.D, zmp_data_lcm.D); // set later
-//  eigenToCArrayOfArrays(settings.zmp_data.x0, zmp_data_lcm.x0); // set later
-//  eigenToCArrayOfArrays(settings.zmp_data.y0, zmp_data_lcm.y0); // set later
+  eigenToCArrayOfArrays(settings.D_control, zmp_data_lcm.D);
   eigenToCArrayOfArrays(settings.zmp_data.u0, zmp_data_lcm.u0);
   eigenToCArrayOfArrays(settings.zmp_data.R, zmp_data_lcm.R);
   eigenToCArrayOfArrays(settings.zmp_data.Qy, zmp_data_lcm.Qy);
-//  eigenToCArrayOfArrays(settings.zmp_data.S, zmp_data_lcm.S); // set later
-//  eigenToCArrayOfArrays(settings.zmp_data.s1, zmp_data_lcm.s1); // set later
-//  eigenToCArrayOfArrays(settings.zmp_data.s1dot, zmp_data_lcm.s1dot); // set later
-  zmp_data_lcm.s2 = settings.zmp_data.s2;
-  zmp_data_lcm.s2dot = settings.zmp_data.s2dot;
-
-  // D
-  Matrix2d D = -settings.lipm_height / settings.g * Matrix2d::Identity();
-  eigenToCArrayOfArrays(D, zmp_data_lcm.D);
+  zmp_data_lcm.s2 = 0; // never used by the controller
+  zmp_data_lcm.s2dot = 0;
 
   // x0, y0
   if (settings.is_quasistatic) {
@@ -322,20 +321,15 @@ drake::lcmt_zmp_data QPLocomotionPlan::createZMPData(double t_plan) const
     eigenToCArrayOfArrays(com_des, zmp_data_lcm.y0);
   } else {
     size_t x0_row = 0;
-    for (DenseIndex i = 0; i < settings.zmp_final.size(); ++i) {
-      zmp_data_lcm.x0[x0_row++][0] = settings.zmp_final(i);
+    Vector2d shifted_zmp_final = shifted_zmp_trajectory.value(shifted_zmp_trajectory.getEndTime());
+    for (DenseIndex i = 0; i < shifted_zmp_final.size(); ++i) {
+      zmp_data_lcm.x0[x0_row++][0] = shifted_zmp_final(i);
     }
-    for (DenseIndex i = 0; i < settings.zmp_final.size(); ++i) {
+    for (DenseIndex i = 0; i < shifted_zmp_final.size(); ++i) {
       zmp_data_lcm.x0[x0_row++][0] = 0.0;
     }
-    auto zmp_des = settings.zmp_trajectory.value(t_plan);
+    auto zmp_des = shifted_zmp_trajectory.value(t_plan);
     eigenToCArrayOfArrays(zmp_des, zmp_data_lcm.y0);
-  }
-
-  // apply zmp plan shift
-  for (auto it = settings.plan_shift_zmp_indices.begin(); it != settings.plan_shift_zmp_indices.end(); ++it) {
-    zmp_data_lcm.x0[*it][0] -= plan_shift[*it];
-    zmp_data_lcm.y0[*it][0] -= plan_shift[*it];
   }
 
   // Lyapunov function
@@ -387,8 +381,10 @@ void QPLocomotionPlan::updateSwingTrajectory(double t_plan, BodyMotionData& body
   typedef Matrix<double, 6, 1> Vector6d;
   Vector6d x0;
   x0.head<3>() = x0_xyzquat.value().head<3>();
-  for (auto it = settings.plan_shift_body_motion_indices.begin(); it != settings.plan_shift_body_motion_indices.end(); ++it) {
-    x0(*it) += plan_shift(*it);
+  if (settings.use_plan_shift) {
+    for (auto it = settings.plan_shift_body_motion_indices.begin(); it != settings.plan_shift_body_motion_indices.end(); ++it) {
+      x0(*it) += plan_shift(*it);
+    }
   }
   x0.tail<3>() = x0_expmap_unwrapped.value().tail<3>();
 
@@ -441,65 +437,173 @@ public:
   bool operator()(const T& other) const { return &t == &other; }
 };
 
-void QPLocomotionPlan::updatePlanShift(double t_plan, const std::vector<bool>& contact_force_detected, const RigidBodySupportState& next_support) {
-  // determine indices corresponding to support feet in next support
-  std::vector<int> support_foot_indices;
-  for (auto it = next_support.begin(); it != next_support.end(); ++it) {
-    RigidBodySupportStateElement support_state_element = *it;
-    int support_body_id = support_state_element.body;
-    bool is_foot = false;
+std::vector<Side> QPLocomotionPlan::getSupportSides(const RigidBodySupportState &support_state) const {
+  std::vector<Side> support_sides;
+  for (auto side_it = foot_body_ids.begin(); side_it != foot_body_ids.end(); ++side_it) {
+    for (auto it = support_state.begin(); it != support_state.end(); ++it) {
+      if (it->body == side_it->second) {
+        support_sides.push_back(side_it->first);
+      }
+    }
+  }
+  return support_sides;
+}
+
+double sideToFraction(Side side) {
+  if (side == Side(Side::LEFT)) {
+    return 0;
+  } else if (side == Side(Side::RIGHT)) {
+    return 1;
+  } else {
+    throw std::runtime_error("side should be LEFT or RIGHT");
+  }
+}
+
+void QPLocomotionPlan::findPlannedSupportFraction(double t_plan, int support_index, double &last_support_fraction, double &next_support_fraction, double &transition_fraction) const {
+  std::vector<Side> support_sides = this->getSupportSides(settings.supports[support_index]);
+  if (support_sides.size() == 1) {
+    // single support
+    double frac = sideToFraction(support_sides[0]);
+    last_support_fraction = frac;
+    next_support_fraction = frac;
+    transition_fraction = 1;
+  } else {
+    // First, look backwards until we find the most recent single support
+    bool found_past_single_support = false;
+    double t_last_single_support_end;
+    for (int i = support_index - 1; i >= 0; --i) {
+      support_sides = this->getSupportSides(settings.supports[i]);
+      if (support_sides.size() == 1) {
+        found_past_single_support = true;
+        t_last_single_support_end = settings.support_times[i+1];
+        last_support_fraction = sideToFraction(support_sides[0]);
+        // std::cout << "found a past single supp" << std::endl;
+        break;
+      }
+    }
+    if (!found_past_single_support) {
+      // std::cout << "no past single supp" << std::endl;
+      last_support_fraction = 0.5;
+      t_last_single_support_end = settings.support_times[0];
+    }
+
+    // Now look forwards until we find the next single support
+    bool found_future_single_support = false;
+    double t_next_single_support_begin;
+    for (int i = support_index + 1; i < settings.supports.size(); ++i) {
+      support_sides = this->getSupportSides(settings.supports[i]);
+      if (support_sides.size() == 1) {
+        found_future_single_support = true;
+        t_next_single_support_begin = settings.support_times[i];
+        next_support_fraction = sideToFraction(support_sides[0]);
+        break;
+      }
+    }
+    if (!found_future_single_support) {
+      next_support_fraction = 0.5;
+      t_next_single_support_begin = settings.support_times[settings.support_times.size() - 1];
+    }
+
+    transition_fraction = (t_plan - t_last_single_support_end) / (t_next_single_support_begin - t_last_single_support_end);
+  }
+
+
+  // std::cout << "last: " << last_support_fraction << " next: " << next_support_fraction << " transition: " << transition_fraction << std::endl;
+}
+
+PiecewisePolynomial<double> firstOrderHold(const std::vector<double> &segment_times, const std::vector<Matrix<double, Dynamic, Dynamic>> &knots) {
+  std::vector<PiecewisePolynomial<double>::PolynomialMatrix> polys;
+  polys.reserve(segment_times.size() - 1);
+  for (int i=0; i < segment_times.size() - 1; ++i) {
+    Matrix<Polynomial<double>, Dynamic, Dynamic> poly_matrix(knots[0].rows(), knots[0].cols());
+    for (int j=0; j < knots[i].rows(); ++j) {
+      for (int k=0; k < knots[i].cols(); ++k) {
+        poly_matrix(j, k) = Polynomial<double>(Vector2d(knots[i](j,k), (knots[i+1](j,k) - knots[i](j,k)) / (segment_times[i+1] - segment_times[i])));
+      }
+    }
+    polys.push_back(poly_matrix);
+  }
+  return PiecewisePolynomial<double>(polys, segment_times);
+}
+
+void QPLocomotionPlan::updateS1Trajectory() {
+  ExponentialPlusPiecewisePolynomial<double> s1 = s1Trajectory(settings.zmp_data, shifted_zmp_trajectory, settings.V.getS());
+  settings.V.setS1(s1);
+
+}
+
+void QPLocomotionPlan::updateZMPTrajectory(const double t_plan, const double last_support_fraction, const double next_support_fraction, const double transition_fraction) {
+
+  int segment_index = settings.zmp_trajectory.getSegmentIndex(t_plan);
+  const std::vector<double> &segment_times = settings.zmp_trajectory.getSegmentTimes();
+  std::vector<MatrixXd> zmp_knots;
+  zmp_knots.reserve(segment_times.size());
+  for (int i=0; i < segment_times.size(); ++i) {
+    zmp_knots.push_back(settings.zmp_trajectory.value(segment_times[i]));
+  }
+  // std::cout << "right: " << foot_shifts.at(Side::RIGHT).transpose() << " left: " << foot_shifts.at(Side::LEFT).transpose() << std::endl;
+
+  // std::cout << "zmp before: " << zmp_knots[segment_index] << std::endl;
+  zmp_knots[segment_index] -= last_support_fraction * foot_shifts.at(Side::RIGHT).head<2>() + (1.0 - last_support_fraction) * foot_shifts.at(Side::LEFT).head<2>();
+  // std::cout << "zmp after: " << zmp_knots[segment_index] << std::endl;
+  // std::cout << "last frac: " << last_support_fraction << " next frac: " << next_support_fraction << " transition_fraction: " << transition_fraction << std::endl;
+
+  if (segment_index + 1 < zmp_knots.size()) {
+    zmp_knots[segment_index+1] -= next_support_fraction * foot_shifts.at(Side(Side::RIGHT)).head<2>() + (1.0 - next_support_fraction) * foot_shifts.at(Side(Side::LEFT)).head<2>();
+  }
+  if (segment_index + 2 < zmp_knots.size()) {
+    if (transition_fraction >= 0.05 && transition_fraction <= 0.95) {
+      // If we're in double support, then we need to update the next TWO zmp knots 
+      zmp_knots[segment_index + 2] -= next_support_fraction * foot_shifts.at(Side(Side::RIGHT)).head<2>() + (1.0 - next_support_fraction) * foot_shifts.at(Side(Side::LEFT)).head<2>();
+    }
+  }
+
+  shifted_zmp_trajectory = firstOrderHold(segment_times, zmp_knots);
+}
+
+void QPLocomotionPlan::updateZMPController(const double t_plan, const double last_support_fraction, const double next_support_fraction, const double transition_fraction) {
+
+  this->updateZMPTrajectory(t_plan, last_support_fraction, next_support_fraction, transition_fraction);
+  this->updateS1Trajectory();
+}
+
+void QPLocomotionPlan::updatePlanShift(double t_plan, const std::vector<bool>& contact_force_detected, int support_index) {
+  const bool is_last_support = support_index == settings.supports.size() - 1;
+  const RigidBodySupportState& next_support = is_last_support ? settings.supports[support_index] : settings.supports[support_index + 1];
+
+  double last_support_fraction, next_support_fraction, transition_fraction;
+  this->findPlannedSupportFraction(t_plan, support_index, last_support_fraction, next_support_fraction, transition_fraction);
+
+  if (t_plan - last_foot_shift_time > settings.min_foot_shift_delay) {
+    // First, figure out the relative shifts for each of the feet which are in support and in contact
     for (auto side_it = foot_body_ids.begin(); side_it != foot_body_ids.end(); side_it++) {
-      if (side_it->second == support_body_id) {
-        is_foot = true;
+      if (QPLocomotionPlan::isSupportingBody(side_it->second, next_support)) {
+        if (contact_force_detected[side_it->second]) {
+          for (auto body_motion_it = settings.body_motions.begin(); body_motion_it != settings.body_motions.end(); ++body_motion_it) {
+            int body_motion_body_id = robot.parseBodyOrFrameID(body_motion_it->getBodyOrFrameId());
+            if (body_motion_body_id == side_it->second) {
+              int world = 0;
+              int rotation_type = 0;
+              Vector3d foot_frame_origin_actual = robot.forwardKinNew(Vector3d::Zero().eval(), body_motion_it->getBodyOrFrameId(), world, rotation_type, 0).value();
+              Vector3d foot_frame_origin_planned = body_motion_it->getTrajectory().value(t_plan).topRows<3>();
+              // std::cout << "actual: " << foot_frame_origin_actual.transpose() << " planned: " << foot_frame_origin_planned.transpose() << std::endl;
+              foot_shifts[side_it->first] = foot_frame_origin_planned - foot_frame_origin_actual;
+              break;
+            }
+          }
+        }
       }
     }
-
-    bool is_loading = contact_force_detected[support_body_id];
-    if (is_foot && is_loading) {
-      support_foot_indices.push_back(support_body_id);
-    }
+    // std::cout << "right: " << foot_shifts.at(Side::RIGHT).transpose() << "left: " << foot_shifts.at(Side::LEFT).transpose() << std::endl;
+    last_foot_shift_time = t_plan;
+    this->updateZMPController(t_plan, last_support_fraction, next_support_fraction, transition_fraction);
   }
 
-  int support_foot_to_use_for_plan_shift = -1;
-
-  // // find where the next support is in our planned list of supports
-  // vector<RigidBodySupportState>::const_iterator next_support_it = std::find_if(settings.supports.begin(), settings.supports.end(), AddressEqual<const RigidBodySupportState&>(next_support));
-
-  // /*
-  //  * Reverse iterate to find which one came into contact last
-  //  * If more than one supporting foot came into contact at the same time (e.g. when jumping and landing with two feet at the same time) or if both feet have always been in contact
-  //  * just use the foot that appears first in support_foot_indices
-  //  */
-  // reverse_iterator<vector<RigidBodySupportState>::const_iterator> supports_reverse_it(next_support_it);
-  // for (; supports_reverse_it != settings.supports.rend(); ++supports_reverse_it) {
-  //   if (support_foot_to_use_for_plan_shift > 0)
-  //     break;
-
-  //   const RigidBodySupportState& support = *supports_reverse_it;
-  //   for (auto support_foot_it = support_foot_indices.begin(); support_foot_it != support_foot_indices.end(); ++support_foot_it) {
-  //     if (!isSupportingBody(*support_foot_it, support)) {
-  //       support_foot_to_use_for_plan_shift = *support_foot_it;
-  //       break;
-  //     }
-  //   }
-  // }
-  if (support_foot_to_use_for_plan_shift == -1 && support_foot_indices.size() > 0)
-    support_foot_to_use_for_plan_shift = support_foot_indices[0];
-
-  if (support_foot_to_use_for_plan_shift != -1) {
-    // find corresponding body_motion and compute new plan shift
-    for (auto body_motion_it = settings.body_motions.begin(); body_motion_it != settings.body_motions.end(); ++body_motion_it) {
-      int body_motion_body_id = robot.parseBodyOrFrameID(body_motion_it->getBodyOrFrameId());
-      if (body_motion_body_id == support_foot_to_use_for_plan_shift) {
-        int world = 0;
-        int rotation_type = 0;
-        Vector3d foot_frame_origin_actual = robot.forwardKinNew(Vector3d::Zero().eval(), body_motion_it->getBodyOrFrameId(), world, rotation_type, 0).value();
-        Vector3d foot_frame_origin_planned = body_motion_it->getTrajectory().value(t_plan).topRows<3>();
-        plan_shift = foot_frame_origin_planned - foot_frame_origin_actual;
-        return;
-      }
-    }
-  }
+  // Now figure out how to combine the foot shifts into a single plan shift. The logic is:
+  // If we're in single support, then use the shift for the support foot
+  // If we're in double support, then interpolate linearly between the two shifts based on the time since one foot was single support and the time when the other foot will be single support
+  double current_support_fraction = transition_fraction * next_support_fraction + (1.0- transition_fraction) * last_support_fraction;
+  plan_shift = current_support_fraction * foot_shifts.at(Side(Side::RIGHT)) + (1.0 - current_support_fraction) * foot_shifts.at(Side(Side::LEFT));
 }
 
 const std::map<SupportLogicType, std::vector<bool> > QPLocomotionPlan::createSupportLogicMaps()
