@@ -17,8 +17,8 @@ classdef RobotiqControlBlock < MIMODrakeSystem
         options = struct();
       end
       
-      input_frame = atlasFrames.HandState(r, ind, [name, 'atlasFrames.HandState']);
-      output_frame = atlasFrames.HandInput(r, ind, [name, 'atlasFrames.HandInput']);
+      input_frame = r.getOutputFrame.getFrameByName([name, 'atlasFrames.HandState']);
+      output_frame = r.getInputFrame.getFrameByName([name, 'atlasFrames.HandInput']);
       
       obj = obj@MIMODrakeSystem(0,0,input_frame,output_frame,true,true);
       obj = setInputFrame(obj,input_frame);
