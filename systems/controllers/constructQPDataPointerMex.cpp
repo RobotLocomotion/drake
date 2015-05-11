@@ -240,14 +240,11 @@ void parseAtlasParams(const mxArray *params_obj, RigidBodyManipulator *r, AtlasP
   sizecheck(pobj, 1, 1);
   params->min_knee_angle = mxGetScalar(pobj);
 
-  pobj = myGetProperty(params_obj, "center_of_mass_observer_gain");
-  sizecheck(pobj,1,1);
-  Map<Matrix4d> center_of_mass_observer_gain(mxGetPrSafe(pobj));
-  params->center_of_mass_observer_gain = center_of_mass_observer_gain;
+  params->center_of_mass_observer_gain = matlabToEigenMap<4, 4>(mxGetPropertySafe(params_obj, "center_of_mass_observer_gain"));
 
-  pobj = myGetProperty(params_obj, "use_center_of_mass_observer");
+  pobj = mxGetPropertySafe(params_obj, "use_center_of_mass_observer");
   sizecheck(pobj,1,1);
-  params->use_center_of_mass_observer = static_cast<bool> (mxGetScalar(pobj));
+  params->use_center_of_mass_observer = mxIsLogicalScalarTrue(pobj);
 
   parseWholeBodyParams(myGetProperty(params_obj, "whole_body"), r, &(params->whole_body));
   parseVRefIntegratorParams(myGetProperty(params_obj, "vref_integrator"), &(params->vref_integrator));
