@@ -774,6 +774,10 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   // Solve for inputs ----------------------------------------------------
   qp_output->qdd = alpha.head(nq);
 
+  if (params->use_center_of_mass_observer) {
+    qp_output->xy_com_ddot = pdata->Jdotv_xy + pdata->J_xy*qp_output->qdd;
+  }
+
   VectorXd beta = alpha.segment(nq,nc*nd);
 
   // use transpose because B_act is orthogonal
