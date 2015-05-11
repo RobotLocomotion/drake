@@ -92,7 +92,7 @@ struct QPLocomotionPlanSettings {
   bool use_plan_shift;
   std::vector<Eigen::DenseIndex> plan_shift_body_motion_indices;
   double g;
-  double min_foot_shift_delay = 0.01; // seconds to wait before updating foot-specific plan shifts
+  double min_foot_shift_delay = 0.1; // seconds to wait before updating foot-specific plan shifts
   bool is_quasistatic;
   KneeSettings knee_settings;
   std::string pelvis_name;
