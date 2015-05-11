@@ -301,14 +301,14 @@ void parseRobotPropertyCache(const mxArray *rpc_obj, RobotPropertyCache *rpc) {
 mxArray* myGetProperty(const mxArray* pobj, const char* propname)
 {
   mxArray* pm = mxGetProperty(pobj,0,propname);
-  if (!pm) mexErrMsgIdAndTxt("DRC:ControlUtil:BadInput","ControlUtil is trying to load object property '%s', but failed.", propname);
+  if (!pm) mexErrMsgIdAndTxt("Drake:controlMexUtil:BadInput","ControlUtil is trying to load object property '%s', but failed.", propname);
   return pm;
 }
 
 mxArray* myGetField(const mxArray* pobj, const int idx, const char* propname)
 {
   mxArray* pm = mxGetField(pobj,idx,propname);
-  if (!pm) mexErrMsgIdAndTxt("DRC:ControlUtil:BadInput","ControlUtil is trying to load object field '%s', but failed.", propname);
+  if (!pm) mexErrMsgIdAndTxt("Drake:controlMexUtil:BadInput","ControlUtil is trying to load object field '%s', but failed.", propname);
   return pm;
 }
 
