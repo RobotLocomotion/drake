@@ -1,3 +1,5 @@
+include_directories(${PROJECT_SOURCE_DIR}/systems/robotInterfaces)
+
 add_library(drakeControlUtil SHARED controlUtil.cpp)
 pods_find_pkg_config(terrain-map)
 if (terrain-map_FOUND)
@@ -62,7 +64,7 @@ if (MATLAB_FOUND)
 
     if (LCM_FOUND)
       add_mex(instantaneousQPControllermex instantaneousQPControllermex.cpp)
-      target_link_libraries(instantaneousQPControllermex drakeQP drakeControlUtil drakeQPCommon drakeMexUtil)
+      target_link_libraries(instantaneousQPControllermex drakeQP drakeControlUtil drakeQPCommon drakeMexUtil drakeSide)
       pods_use_pkg_config_packages(instantaneousQPControllermex gurobi)
 
       add_mex(constructQPDataPointerMex constructQPDataPointerMex.cpp)

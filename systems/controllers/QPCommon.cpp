@@ -206,18 +206,21 @@ void centerOfMassObserver(const Vector2d& zmp_from_force_sensors, const Vector2d
 
   // y_err = (y - C*xhat - D*u)
   Vector4d y_err;
-  y_err << zmp_from_force_sensors - xhat.topRows(2) + com_height/grav * last_commanded_comddot,
-      comdot_from_robot_state - xhat.bottomRows(2);
+  y_err << zmp_from_force_sensors - xhat.topRows<2>() + com_height/grav * last_commanded_comddot,
+      comdot_from_robot_state - xhat.bottomRows<2>();
 
   // xhatdot = Axhat + Bu + L*y_err)
   Vector4d xhatdot = L*y_err;
-  xhatdot.topRows(2) += xhat.bottomRows(2);
-  xhatdot.bottomRows(2) += last_commanded_comddot;
+  xhatdot.topRows<2>() += xhat.bottomRows<2>();
+  xhatdot.bottomRows<2>() += last_commanded_comddot;
 
   xhat.noalias() = xhat + dt*xhatdot;
 }
 
-int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_controller_input> qp_input, DrakeRobotState &robot_state, const Ref<Matrix<bool, Dynamic, 1>> &b_contact_force, QPControllerOutput *qp_output, std::shared_ptr<QPControllerDebugData> debug) {
+int setupAndSolveQP(
+		NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_controller_input> qp_input, DrakeRobotState &robot_state,
+		const Ref<Matrix<bool, Dynamic, 1>> &b_contact_force, const std::map<Side, ForceTorqueMeasurement>& foot_force_torque_measurements,
+		QPControllerOutput *qp_output, std::shared_ptr<QPControllerDebugData> debug) {
   // The primary solve loop for our controller. This constructs and solves a Quadratic Program and produces the instantaneous desired torques, along with reference positions, velocities, and accelerations. It mirrors the Matlab implementation in atlasControllers.InstantaneousQPController.setupAndSolveQP(), and more documentation can be found there. 
   // Note: argument `debug` MAY be set to NULL, which signals that no debug information is requested.
 
@@ -426,15 +429,15 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     centerOfMassObserver(zmp_from_force_sensors,      // zmp_from_force_sensors  // TODO: ask Robin
         xcomdot.topRows(2),                               // comdot_from_robot_state
         xcom(2),// - ground,                             // com_height              // TODO: Robin says use min of the active contact points for the ground height
-        pdata->r->a_grav(2),                          // gravity (magnitude)
+        -pdata->r->a_grav(5),                          // gravity (magnitude)
         robot_state.t - pdata->state.t_prev,          // dt
         pdata->state.last_xy_com_ddot,                // last_commanded_comddot
         params->center_of_mass_observer_gain,         // observer gain
         pdata->state.center_of_mass_observer_state);  // observer state
 
     // overwrite the com position and velocity with the observer's estimates:
-    xcom.topRows(2) = pdata->state.center_of_mass_observer_state.topRows(2);
-    xcomdot.topRows(2) = pdata->state.center_of_mass_observer_state.bottomRows(2);
+    xcom.topRows(2) = pdata->state.center_of_mass_observer_state.topRows<2>();
+    xcomdot.topRows(2) = pdata->state.center_of_mass_observer_state.bottomRows<2>();
   }
 
   VectorXd x_bar,xlimp;

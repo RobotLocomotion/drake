@@ -8,6 +8,8 @@
 #include "drake/lcmt_qp_controller_input.hpp"
 #include "ExponentialPlusPiecewisePolynomial.h"
 #include <vector>
+#include "ForceTorqueMeasurement.h"
+#include "Side.h"
 
 const double REG = 1e-8;
 
@@ -268,7 +270,10 @@ VectorXd velocityReference(NewQPControllerData *pdata, double t, const Ref<Vecto
 
 std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> loadAvailableSupports(std::shared_ptr<drake::lcmt_qp_controller_input> qp_input);
 
-int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_controller_input> qp_input, DrakeRobotState &robot_state, const Ref<Matrix<bool, Dynamic, 1>> &b_contact_force, QPControllerOutput *qp_output, std::shared_ptr<QPControllerDebugData> debug);
+int setupAndSolveQP(
+		NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_controller_input> qp_input, DrakeRobotState &robot_state,
+		const Ref<Matrix<bool, Dynamic, 1>> &b_contact_force, const std::map<Side, ForceTorqueMeasurement>& foot_force_torque_measurements,
+		QPControllerOutput *qp_output, std::shared_ptr<QPControllerDebugData> debug);
 
 
 #endif
