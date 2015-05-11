@@ -456,6 +456,7 @@ classdef QPLocomotionPlan < QPControllerPlan
     end
 
     function obj = setLQR_for_COM(obj)
+      error('this has never been properly tuned on the robot and should not be used yet')
       Q = diag([10 10 1 1]);
       R = 0.0001*eye(2);
       A = [zeros(2),eye(2); zeros(2,4)];
@@ -497,10 +498,12 @@ classdef QPLocomotionPlan < QPControllerPlan
       pelvis_id = obj.robot.findLinkId('pelvis');
       pelvis_current_xyzquat = forwardKin(obj.robot,kinsol,pelvis_id,[0;0;0],2);
       if options.center_pelvis
-        foot_pos = [obj.robot.forwardKin(kinsol, obj.robot.foot_frame_id.right, [0;0;0]),...
-                    obj.robot.forwardKin(kinsol, obj.robot.foot_frame_id.left, [0;0;0])];
-        comgoal = mean(foot_pos(1:2,:), 2);
-        pelvis_target_xyzquat = [mean(foot_pos(1:2,:), 2); pelvis_current_xyzquat(3:end)];
+        active_contact_pts = zeros(3,0);
+        for j = 1:length(support_state.bodies)
+          active_contact_pts = [active_contact_pts, obj.robot.forwardKin(kinsol, support_state.bodies(j), support_state.contact_pts{j}, 0)];
+        end
+        comgoal = mean(active_contact_pts(1:2,:), 2);
+        pelvis_target_xyzquat = [comgoal; pelvis_current_xyzquat(3:end)];
       else
         comgoal = obj.robot.getCOM(kinsol);
         comgoal = comgoal(1:2);
@@ -508,7 +511,7 @@ classdef QPLocomotionPlan < QPControllerPlan
       end
 
       obj.zmptraj = comgoal;
-      [~, obj.V, obj.comtraj, obj.LIP_height] = obj.robot.planZMPController(comgoal, q0);
+      [~, obj.V, ~, obj.LIP_height] = obj.robot.planZMPController(comgoal, q0);
 
       obj.body_motions = [BodyMotionData(obj.robot.foot_body_id.right, [0, inf]),...
                           BodyMotionData(obj.robot.foot_body_id.left, [0, inf]),...
@@ -532,7 +535,7 @@ classdef QPLocomotionPlan < QPControllerPlan
       obj.comtraj = comgoal;
       obj.gain_set = 'standing';
     end
-
+    
     function obj = from_biped_footstep_plan(footstep_plan, biped, x0, zmp_options)
       if nargin < 4
         zmp_options = struct();
@@ -647,7 +650,10 @@ classdef QPLocomotionPlan < QPControllerPlan
                                               'quat_task_to_world',repmat([1;0;0;0],1,3),...
                                               'translation_task_to_world',zeros(3,3),...
                                               'bodies_to_control_when_in_contact', biped.findLinkId('pelvis'),...
-                                              'track_com_traj',false));
+                                              'is_quasistatic',false,...
+                                              'supports', RigidBodySupportState(biped, [biped.foot_body_id.right, biped.foot_body_id.left]),...
+                                              'support_times',[0, inf],...
+                                              'gain_set', 'manip'));
 
       num_bodies_to_track = length(options.bodies_to_track);
       sizecheck(options.quat_task_to_world,[4,num_bodies_to_track]);
@@ -674,14 +680,32 @@ classdef QPLocomotionPlan < QPControllerPlan
       end
       q0 = qtraj.eval(qtraj.tspan(1));
       x0 = [q0; zeros(biped.getNumVelocities(), 1)];
-      obj = QPLocomotionPlan.from_standing_state(x0, biped);
+      obj = QPLocomotionPlan(biped);
+      obj.x0 = x0;
       obj.qtraj = qtraj;
       obj.duration = obj.qtraj.tspan(end) - obj.qtraj.tspan(1);
-      obj.support_times = [obj.qtraj.tspan(1); inf];
+      obj.support_times = options.support_times;
+      obj.supports = options.supports;
+      obj.is_quasistatic = options.is_quasistatic;
+      obj.gain_set = options.gain_set;
 
-      if isfield(options,'supports') && isfield(options,'support_times')
-        obj.supports = options.supports;
-        obj.support_times = options.support_times;
+      obj = obj.setCOMTraj();
+      if ~obj.is_quasistatic
+        support_state = obj.supports(1);
+        for j = 1:length(obj.supports)
+          if any(obj.supports(j).bodies ~= support_state.bodies)
+            error('We don''t know how to construct non-quasistatic manipulation plans in which the active supports change. Try going slowly and setting options.is_quasistatic to true, or just make a walking plan.')
+          end
+        end
+        active_contact_pts = zeros(3,0);
+        kinsol = obj.robot.doKinematics(q0);
+        for j = 1:length(support_state.bodies)
+          active_contact_pts = [active_contact_pts, obj.robot.forwardKin(kinsol, support_state.bodies(j), support_state.contact_pts{j}, 0)];
+        end
+        comgoal = mean(active_contact_pts(1:2,:), 2);
+        obj.zmptraj = comgoal;
+        obj.zmp_final = obj.zmptraj;
+        [~, obj.V, ~, obj.LIP_height] = obj.robot.planZMPController(comgoal, x0(1:obj.robot.getNumPositions()));
       end
 
       for j = 1:num_bodies_to_track
@@ -691,7 +715,6 @@ classdef QPLocomotionPlan < QPControllerPlan
           obj.constrained_dofs = setdiff(obj.constrained_dofs, findPositionIndices(obj.robot,'l_arm'));
         end
       end
-
       
       body_poses = zeros([7, length(ts), num_bodies_to_track]);
       body_velocity = zeros([7,length(ts), num_bodies_to_track]);
@@ -733,11 +756,6 @@ classdef QPLocomotionPlan < QPControllerPlan
         end
       end
 
-      obj.gain_set = 'manip';
-      if(options.track_com_traj)
-        obj = obj.setCOMTraj();
-        obj = obj.setLQR_for_COM();
-      end
     end
 
     function [supports, support_times] = getSupports(zmp_knots)
