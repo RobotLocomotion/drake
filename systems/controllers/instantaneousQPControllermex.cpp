@@ -18,8 +18,10 @@ using namespace std;
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
-  if (nrhs<7) mexErrMsgTxt("usage: alpha=QPControllermex(ptr,t,x,qp_input,contact_sensor,use_fastqp,foot_force_torque_measurements)");
-  if (nlhs<1) mexErrMsgTxt("take at least one output... please.");
+  if (nrhs < 5)
+    mexErrMsgTxt("usage: alpha=QPControllermex(ptr,t,x,qp_input,contact_sensor,foot_force_torque_measurements)");
+  if (nlhs < 1)
+    mexErrMsgTxt("take at least one output... please.");
 
   double* pr;
 
@@ -60,9 +62,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   }
   narg++;
 
-  // use_fastqp; not used
-  narg++;
-
   QPControllerOutput qp_output;
   shared_ptr<QPControllerDebugData> debug;
 
@@ -76,12 +75,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   }
 
   std::map<Side, ForceTorqueMeasurement> foot_force_torque_measurements;
-  const mxArray* mex_foot_force_torque_measurements = prhs[narg++];
-  if (!mxIsEmpty(mex_foot_force_torque_measurements)) {
-    foot_force_torque_measurements[Side::LEFT].frame_idx = pdata->r->findLinkId("l_foot");
-    foot_force_torque_measurements[Side::LEFT].wrench = matlabToEigenMap<TWIST_SIZE, 1>(mxGetFieldSafe(mex_foot_force_torque_measurements, "left"));
-    foot_force_torque_measurements[Side::RIGHT].frame_idx = pdata->r->findLinkId("r_foot");
-    foot_force_torque_measurements[Side::RIGHT].wrench = matlabToEigenMap<TWIST_SIZE, 1>(mxGetFieldSafe(mex_foot_force_torque_measurements, "right"));
+  if (nrhs > 5) {
+    const mxArray* mex_foot_force_torque_measurements = prhs[narg++];
+    if (!mxIsEmpty(mex_foot_force_torque_measurements)) {
+      foot_force_torque_measurements[Side::LEFT].frame_idx = pdata->r->findLinkId("l_foot");
+      foot_force_torque_measurements[Side::LEFT].wrench = matlabToEigenMap<TWIST_SIZE, 1>(mxGetFieldSafe(mex_foot_force_torque_measurements, "left"));
+      foot_force_torque_measurements[Side::RIGHT].frame_idx = pdata->r->findLinkId("r_foot");
+      foot_force_torque_measurements[Side::RIGHT].wrench = matlabToEigenMap<TWIST_SIZE, 1>(mxGetFieldSafe(mex_foot_force_torque_measurements, "right"));
+    }
   }
   int info = setupAndSolveQP(pdata, qp_input, robot_state, b_contact_force, foot_force_torque_measurements, &qp_output, debug);
 
