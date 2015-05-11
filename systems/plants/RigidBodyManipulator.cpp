@@ -1700,6 +1700,14 @@ void RigidBodyManipulator::getCOMdJac(MatrixBase<Derived> &dJcom, const std::set
   }
 }
 
+
+template <typename DerivedNormal, typename DerivedPoint>
+std::pair<Eigen::Vector3d, double> resolveCenterOfPressure( const std::set< ForceTorqueMeasurement > & force_torque_measurements, const Eigen::MatrixBase<DerivedNormal> & normal, const Eigen::MatrixBase<DerivedPoint> & point_on_contact_plane);
+{
+
+}
+
+
 int RigidBodyManipulator::getNumContacts(const set<int> &body_idx)
 {
   size_t n=0,nb=body_idx.size(),bi;

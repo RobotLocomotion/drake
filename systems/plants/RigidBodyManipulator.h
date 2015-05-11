@@ -156,6 +156,15 @@ public:
   template <typename Derived>
   void getContactPositionsJacDot(MatrixBase<Derived> &Jdot, const std::set<int> &body_idx);// = emptyIntSet);
 
+  typedef struct {
+    int frame_idx;
+    Vector3d force;
+    Vector3d torque;
+  } ForceTorqueMeasurement;
+
+  template <typename DerivedNormal, typename DerivedPoint>
+  std::pair<Eigen::Vector3d, double> resolveCenterOfPressure( const std::set< ForceTorqueMeasurement > & force_torque_measurements, const Eigen::MatrixBase<DerivedNormal> & normal, const Eigen::MatrixBase<DerivedPoint> & point_on_contact_plane);
+
   void findAncestorBodies(std::vector<int>& ancestor_bodies, int body);
 
   void findKinematicPath(KinematicPath& path, int start_body_or_frame_idx, int end_body_or_frame_idx);
