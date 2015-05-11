@@ -67,7 +67,7 @@ if (MATLAB_FOUND)
 
       add_mex(constructQPDataPointerMex constructQPDataPointerMex.cpp)
       target_link_libraries(constructQPDataPointerMex drakeQP drakeControlUtil drakeQPCommon drakeMexUtil drakeControlMexUtil)
-      pods_use_pkg_config_packages(constructQPDataPointerMex gurobi drake-qp-common)
+      pods_use_pkg_config_packages(constructQPDataPointerMex gurobi)
 
       include_directories (${CMAKE_BINARY_DIR}/lcmgen/lcmtypes )
       add_mex(encodeQPInputLCMMex encodeQPInputLCMMex.cpp)
