@@ -422,7 +422,7 @@ int setupAndSolveQP(
   int nc = contactConstraintsBV(pdata->r,num_active_contact_pts,mu,active_supports,pdata->map_ptr,B,JB,Jp,Jpdotv,normals,pdata->default_terrain_height);
   int neps = nc*dim;
 
-  if (params->use_center_of_mass_observer) {
+  if (params->use_center_of_mass_observer && foot_force_torque_measurements.size() > 0) {
     std::vector<ForceTorqueMeasurement> force_torque_measurements;
     for (auto it = foot_force_torque_measurements.begin(); it != foot_force_torque_measurements.end(); ++it) {
       force_torque_measurements.push_back(it->second);
@@ -436,7 +436,7 @@ int setupAndSolveQP(
     for (auto support_it = active_supports.begin(); support_it != active_supports.end(); ++support_it) {
       const SupportStateElement& support = *support_it;
       for (auto contact_position_it = support.contact_pts.begin(); contact_position_it != support.contact_pts.end(); ++it) {
-        auto contact_point = contact_position_it->head<3>();
+        Vector3d contact_point = contact_position_it->head<3>(); // copy, ah well
         contact_positions_world.col(col++) = pdata->r->forwardKinNew(contact_point, support.body_idx, 0, 0, 0).value();
       }
     }
