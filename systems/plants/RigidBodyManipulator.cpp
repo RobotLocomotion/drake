@@ -1700,13 +1700,18 @@ void RigidBodyManipulator::getCOMdJac(MatrixBase<Derived> &dJcom, const std::set
   }
 }
 
-
 template <typename DerivedNormal, typename DerivedPoint>
-std::pair<Eigen::Vector3d, double> resolveCenterOfPressure( const std::set< ForceTorqueMeasurement > & force_torque_measurements, const Eigen::MatrixBase<DerivedNormal> & normal, const Eigen::MatrixBase<DerivedPoint> & point_on_contact_plane);
+std::pair<Eigen::Vector3d, double> RigidBodyManipulator::resolveCenterOfPressure(const std::set<ForceTorqueMeasurement> & force_torque_measurements, const Eigen::MatrixBase<DerivedNormal> & normal, const Eigen::MatrixBase<DerivedPoint> & point_on_contact_plane)
 {
-
+  typedef typename DerivedNormal::Scalar Scalar;
+  typedef Matrix<Scalar, 6, 1> Vector6;
+  Vector6 total_wrench = Vector6::Zero();
+  for (auto it = force_torque_measurements.begin(); it != force_torque_measurements.end(); ++it) {
+    Isometry3d transform_to_world(relativeTransform<Scalar>(0, it->frame_idx, 0));
+    total_wrench += transformSpatialForce(transform_to_world, it->wrench);
+  }
+  return resolveCenterOfPressure(total_wrench.template head<3>(), total_wrench.template tail<3>(), normal, point_on_contact_plane);
 }
-
 
 int RigidBodyManipulator::getNumContacts(const set<int> &body_idx)
 {

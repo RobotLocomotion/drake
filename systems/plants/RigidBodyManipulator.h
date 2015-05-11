@@ -10,6 +10,7 @@
 #include "collision/DrakeCollision.h"
 #include "shapes/DrakeShapes.h"
 #include "KinematicPath.h"
+#include "ForceTorqueMeasurement.h"
 #include "GradientVar.h"
 
 #undef DLLEXPORT_RBM
@@ -156,12 +157,10 @@ public:
   template <typename Derived>
   void getContactPositionsJacDot(MatrixBase<Derived> &Jdot, const std::set<int> &body_idx);// = emptyIntSet);
 
-  typedef struct {
-    int frame_idx;
-    Vector3d force;
-    Vector3d torque;
-  } ForceTorqueMeasurement;
 
+  /**
+   * Computes CoP in world frame. Normal and point on contact plane should be in world frame too.
+   */
   template <typename DerivedNormal, typename DerivedPoint>
   std::pair<Eigen::Vector3d, double> resolveCenterOfPressure( const std::set< ForceTorqueMeasurement > & force_torque_measurements, const Eigen::MatrixBase<DerivedNormal> & normal, const Eigen::MatrixBase<DerivedPoint> & point_on_contact_plane);
 
