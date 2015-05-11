@@ -986,7 +986,7 @@ void parsePositionIndices(const mxArray *pobj, std::map<std::string, VectorXi> &
     const mxArray* pfield = mxGetFieldByNumber(pobj, 0, i);
     Map<VectorXd> indices_double(mxGetPrSafe(pfield), mxGetNumberOfElements(pfield));
     VectorXi indices = indices_double.cast<int> ();
-    position_indices[std::string(mxGetFieldNameByNumber(pobj, i))] = indices;
+    position_indices[std::string(mxGetFieldNameByNumber(pobj, i))] = indices.array() - 1;
   }
   return;
 }
