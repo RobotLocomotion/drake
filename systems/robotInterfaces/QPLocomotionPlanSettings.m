@@ -282,9 +282,8 @@ classdef QPLocomotionPlanSettings
       obj.supports = options.supports;
       obj.is_quasistatic = options.is_quasistatic;
       obj.gain_set = options.gain_set;
-      
-      obj = obj.setCOMTraj();
 
+      obj = obj.setCOMTraj();
       if ~obj.is_quasistatic
         support_state = obj.supports(1);
         for j = 1:length(obj.supports)
