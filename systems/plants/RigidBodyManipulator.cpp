@@ -1701,7 +1701,7 @@ void RigidBodyManipulator::getCOMdJac(MatrixBase<Derived> &dJcom, const std::set
 }
 
 template <typename DerivedNormal, typename DerivedPoint>
-std::pair<Eigen::Vector3d, double> RigidBodyManipulator::resolveCenterOfPressure(const std::set<ForceTorqueMeasurement> & force_torque_measurements, const Eigen::MatrixBase<DerivedNormal> & normal, const Eigen::MatrixBase<DerivedPoint> & point_on_contact_plane)
+std::pair<Eigen::Vector3d, double> RigidBodyManipulator::resolveCenterOfPressure(const std::vector<ForceTorqueMeasurement> & force_torque_measurements, const Eigen::MatrixBase<DerivedNormal> & normal, const Eigen::MatrixBase<DerivedPoint> & point_on_contact_plane)
 {
   typedef typename DerivedNormal::Scalar Scalar;
   typedef Matrix<Scalar, 6, 1> Vector6;

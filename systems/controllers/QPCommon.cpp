@@ -186,7 +186,7 @@ void applyJointPDOverride(const std::vector<drake::lcmt_joint_pd_override> &join
   }
 }
 
-void centerOfMassObserver(const Vector2d& zmp_from_force_sensors, const Vector2d& comdot_from_robot_state, const double com_height, const double grav, const double dt, const Vector2d& last_commanded_comddot, const Matrix4d& L,  Vector4d& xhat)
+void updateEstimatedCenterOfMassState(const Vector2d& zmp_from_force_sensors, const Vector2d& comdot_from_robot_state, const double com_height, const double grav, const double dt, const Vector2d& last_commanded_comddot, const Matrix4d& L, Vector4d& xhat)
 {
 /* Derivation:
   We have two sources of information for estimating the COM, one via the robot state (IMU+leg odomentry$\rightarrow$ full dynamic model) and the other via the instantaneous ground reaction forces (ZMP).  The ZMP informs us about the instantaneous position of the COM, but not it's velocity.  The IMU is better for high-frequency components, so we will only use the observation of COM velocity from the robot state, and end up with the following model:
@@ -206,15 +206,14 @@ void centerOfMassObserver(const Vector2d& zmp_from_force_sensors, const Vector2d
 
   // y_err = (y - C*xhat - D*u)
   Vector4d y_err;
-  y_err << zmp_from_force_sensors - xhat.topRows<2>() + com_height/grav * last_commanded_comddot,
-      comdot_from_robot_state - xhat.bottomRows<2>();
+  y_err << zmp_from_force_sensors - xhat.topRows<2>() + com_height / grav * last_commanded_comddot, comdot_from_robot_state - xhat.bottomRows<2>();
 
   // xhatdot = Axhat + Bu + L*y_err)
-  Vector4d xhatdot = L*y_err;
+  Vector4d xhatdot = L * y_err;
   xhatdot.topRows<2>() += xhat.bottomRows<2>();
   xhatdot.bottomRows<2>() += last_commanded_comddot;
 
-  xhat.noalias() = xhat + dt*xhatdot;
+  xhat.noalias() += dt * xhatdot;
 }
 
 int setupAndSolveQP(
@@ -424,16 +423,39 @@ int setupAndSolveQP(
   int neps = nc*dim;
 
   if (params->use_center_of_mass_observer) {
-    Vector2d zmp_from_force_sensors = Vector2d::Zero();  // TODO: fill this in with help from Twan/Robin
+    std::vector<ForceTorqueMeasurement> force_torque_measurements;
+    for (auto it = foot_force_torque_measurements.begin(); it != foot_force_torque_measurements.end(); ++it) {
+      force_torque_measurements.push_back(it->second);
+    }
 
-    centerOfMassObserver(zmp_from_force_sensors,      // zmp_from_force_sensors  // TODO: ask Robin
-        xcomdot.topRows(2),                               // comdot_from_robot_state
-        xcom(2),// - ground,                             // com_height              // TODO: Robin says use min of the active contact points for the ground height
-        -pdata->r->a_grav(5),                          // gravity (magnitude)
-        robot_state.t - pdata->state.t_prev,          // dt
-        pdata->state.last_xy_com_ddot,                // last_commanded_comddot
-        params->center_of_mass_observer_gain,         // observer gain
-        pdata->state.center_of_mass_observer_state);  // observer state
+    // assume flat ground at average of contact points
+    // TODO: figure out what works best
+    Eigen::Vector3d normal = Vector3d::UnitZ();
+    Eigen::Matrix3Xd contact_positions_world(3, nc);
+    int col = 0;
+    for (auto support_it = active_supports.begin(); support_it != active_supports.end(); ++support_it) {
+      const SupportStateElement& support = *support_it;
+      for (auto contact_position_it = support.contact_pts.begin(); contact_position_it != support.contact_pts.end(); ++it) {
+        auto contact_point = contact_position_it->head<3>();
+        contact_positions_world.col(col++) = pdata->r->forwardKinNew(contact_point, support.body_idx, 0, 0, 0).value();
+      }
+    }
+    double average_height = contact_positions_world.row(2).mean();
+    Vector3d point_on_contact_plane;
+    point_on_contact_plane << 0.0, 0.0, average_height;
+
+    std::pair<Eigen::Vector3d, double> cop_and_normal_torque = pdata->r->resolveCenterOfPressure(force_torque_measurements, normal, point_on_contact_plane);
+    Vector2d zmp_from_force_sensors = cop_and_normal_torque.first.head<2>();
+
+    updateEstimatedCenterOfMassState(
+        zmp_from_force_sensors,
+        xcomdot.topRows<2>(),
+        xcom(2) - average_height,
+        -pdata->r->a_grav(5),
+        robot_state.t - pdata->state.t_prev,
+        pdata->state.last_xy_com_ddot,
+        params->center_of_mass_observer_gain,
+        pdata->state.center_of_mass_observer_state);
 
     // overwrite the com position and velocity with the observer's estimates:
     xcom.topRows(2) = pdata->state.center_of_mass_observer_state.topRows<2>();

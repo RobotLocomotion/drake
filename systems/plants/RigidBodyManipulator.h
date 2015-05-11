@@ -162,7 +162,7 @@ public:
    * Computes CoP in world frame. Normal and point on contact plane should be in world frame too.
    */
   template <typename DerivedNormal, typename DerivedPoint>
-  std::pair<Eigen::Vector3d, double> resolveCenterOfPressure( const std::set< ForceTorqueMeasurement > & force_torque_measurements, const Eigen::MatrixBase<DerivedNormal> & normal, const Eigen::MatrixBase<DerivedPoint> & point_on_contact_plane);
+  std::pair<Eigen::Vector3d, double> resolveCenterOfPressure( const std::vector< ForceTorqueMeasurement > & force_torque_measurements, const Eigen::MatrixBase<DerivedNormal> & normal, const Eigen::MatrixBase<DerivedPoint> & point_on_contact_plane);
 
   void findAncestorBodies(std::vector<int>& ancestor_bodies, int body);
 
