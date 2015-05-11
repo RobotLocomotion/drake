@@ -594,7 +594,7 @@ void QPLocomotionPlan::updatePlanShift(double t_plan, const std::vector<bool>& c
         }
       }
     }
-    std::cout << "right: " << foot_shifts.at(Side::RIGHT).transpose() << "left: " << foot_shifts.at(Side::LEFT).transpose() << std::endl;
+    // std::cout << "right: " << foot_shifts.at(Side::RIGHT).transpose() << "left: " << foot_shifts.at(Side::LEFT).transpose() << std::endl;
     last_foot_shift_time = t_plan;
     this->updateZMPController(t_plan, last_support_fraction, next_support_fraction, transition_fraction);
   }
