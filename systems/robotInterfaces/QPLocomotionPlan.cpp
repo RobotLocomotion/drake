@@ -477,12 +477,12 @@ void QPLocomotionPlan::findPlannedSupportFraction(double t_plan, int support_ind
         found_past_single_support = true;
         t_last_single_support_end = settings.support_times[i+1];
         last_support_fraction = sideToFraction(support_sides[0]);
-        std::cout << "found a past single supp" << std::endl;
+        // std::cout << "found a past single supp" << std::endl;
         break;
       }
     }
     if (!found_past_single_support) {
-      std::cout << "no past single supp" << std::endl;
+      // std::cout << "no past single supp" << std::endl;
       last_support_fraction = 0.5;
       t_last_single_support_end = settings.support_times[0];
     }
@@ -508,7 +508,7 @@ void QPLocomotionPlan::findPlannedSupportFraction(double t_plan, int support_ind
   }
 
 
-  std::cout << "last: " << last_support_fraction << " next: " << next_support_fraction << " transition: " << transition_fraction << std::endl;
+  // std::cout << "last: " << last_support_fraction << " next: " << next_support_fraction << " transition: " << transition_fraction << std::endl;
 }
 
 PiecewisePolynomial<double> firstOrderHold(const std::vector<double> &segment_times, const std::vector<Matrix<double, Dynamic, Dynamic>> &knots) {
@@ -541,12 +541,12 @@ void QPLocomotionPlan::updateZMPTrajectory(const double t_plan, const double las
   for (int i=0; i < segment_times.size(); ++i) {
     zmp_knots.push_back(settings.zmp_trajectory.value(segment_times[i]));
   }
-  std::cout << "right: " << foot_shifts.at(Side::RIGHT).transpose() << " left: " << foot_shifts.at(Side::LEFT).transpose() << std::endl;
+  // std::cout << "right: " << foot_shifts.at(Side::RIGHT).transpose() << " left: " << foot_shifts.at(Side::LEFT).transpose() << std::endl;
 
-  std::cout << "zmp before: " << zmp_knots[segment_index] << std::endl;
+  // std::cout << "zmp before: " << zmp_knots[segment_index] << std::endl;
   zmp_knots[segment_index] -= last_support_fraction * foot_shifts.at(Side::RIGHT).head<2>() + (1.0 - last_support_fraction) * foot_shifts.at(Side::LEFT).head<2>();
-  std::cout << "zmp after: " << zmp_knots[segment_index] << std::endl;
-  std::cout << "last frac: " << last_support_fraction << " next frac: " << next_support_fraction << " transition_fraction: " << transition_fraction << std::endl;
+  // std::cout << "zmp after: " << zmp_knots[segment_index] << std::endl;
+  // std::cout << "last frac: " << last_support_fraction << " next frac: " << next_support_fraction << " transition_fraction: " << transition_fraction << std::endl;
 
   if (segment_index + 1 < zmp_knots.size()) {
     zmp_knots[segment_index+1] -= next_support_fraction * foot_shifts.at(Side(Side::RIGHT)).head<2>() + (1.0 - next_support_fraction) * foot_shifts.at(Side(Side::LEFT)).head<2>();
