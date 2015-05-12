@@ -10,6 +10,7 @@
 #include <lcm/lcm.h>
 #include "drc/zmp_com_observer_state_t.hpp"
 #include <memory>
+#include "testUtil.h"
 
 
 #define LEG_INTEGRATOR_DEACTIVATION_MARGIN 0.05
@@ -231,6 +232,7 @@ int setupAndSolveQP(
   // The primary solve loop for our controller. This constructs and solves a Quadratic Program and produces the instantaneous desired torques, along with reference positions, velocities, and accelerations. It mirrors the Matlab implementation in atlasControllers.InstantaneousQPController.setupAndSolveQP(), and more documentation can be found there. 
   // Note: argument `debug` MAY be set to NULL, which signals that no debug information is requested.
 
+
   // look up the param set by name
   AtlasParams *params; 
   std::map<string,AtlasParams>::iterator it;
@@ -387,7 +389,7 @@ int setupAndSolveQP(
     pdata->Ak = pdata->Ag.topRows<3>();
     pdata->Akdot_times_v = pdata->Agdot_times_v.topRows<3>();
   }
-  Vector3d xcom, xcomdot;
+  Vector3d xcom;
   // consider making all J's into row-major
   
 
@@ -415,6 +417,8 @@ int setupAndSolveQP(
   MatrixXd Jcom;
   VectorXd Jcomdotv;
 
+  std::cout << "x0.size(): " << x0.size() << std::endl;
+
   if (x0.size()==6) {
     Jcom = pdata->J;
     Jcomdotv = pdata->Jdotv;
@@ -423,7 +427,8 @@ int setupAndSolveQP(
     Jcom = pdata->J_xy;
     Jcomdotv = pdata->Jdotv_xy;
   }
-  xcomdot = Jcom*robot_state.qd;
+  std::cout << 1 << std::endl;
+  Vector3d xcomdot = pdata->J * robot_state.qd;
 
   MatrixXd B,JB,Jp,normals;
   VectorXd Jpdotv;
@@ -466,7 +471,7 @@ int setupAndSolveQP(
         pdata->state.center_of_mass_observer_state);
 
     // publish zmp/com observer state
-    bool debug_zmp_com_observer = false;
+    bool debug_zmp_com_observer = true;
     if (params->use_center_of_mass_observer && debug_zmp_com_observer) {
       std::unique_ptr<lcm::LCM> lcm_cpp(new lcm::LCM);
       if (!lcm_cpp->good()) {
@@ -498,8 +503,8 @@ int setupAndSolveQP(
     }
 
     // overwrite the com position and velocity with the observer's estimates:
-    xcom.topRows<2>() = pdata->state.center_of_mass_observer_state.topRows<2>();
-    xcomdot.topRows<2>() = pdata->state.center_of_mass_observer_state.bottomRows<2>();
+//    xcom.topRows<2>() = pdata->state.center_of_mass_observer_state.topRows<2>();
+//    xcomdot.topRows<2>() = pdata->state.center_of_mass_observer_state.bottomRows<2>();
   }
 
   VectorXd x_bar,xlimp;
@@ -839,11 +844,89 @@ int setupAndSolveQP(
   // Solve for inputs ----------------------------------------------------
   qp_output->qdd = alpha.head(nq);
 
+  VectorXd beta = alpha.segment(nq,nc*nd);
+
+
   if (params->use_center_of_mass_observer) {
-    pdata->state.last_xy_com_ddot = pdata->Jdotv_xy + pdata->J_xy*qp_output->qdd;
+    // using qdd
+//    pdata->state.last_xy_com_ddot = pdata->Jdotv_xy + pdata->J_xy*qp_output->qdd;
+
+    // using forces
+
+
+    std::map<int, Side> foot_body_index_to_side;
+    foot_body_index_to_side[pdata->r->findLinkId("l_foot")] = Side::LEFT;
+    foot_body_index_to_side[pdata->r->findLinkId("r_foot")] = Side::RIGHT;
+
+    // compute sum of wrenches, compare to rate of change of momentum from vd
+    Vector6d total_wrench_in_world = Vector6d::Zero();
+    Vector6d floating_base_external_force_in_joint_coordinates = Vector6d::Zero();
+    const int n_basis_vectors_per_contact = 2 * m_surface_tangents;
+    int beta_start = 0;
+    for (size_t j = 0; j < active_supports.size(); j++) {
+      const auto& active_support = active_supports[j];
+      const auto& contact_pts = active_support.contact_pts;
+
+      int ncj = static_cast<int>(contact_pts.size());
+      int active_support_length = n_basis_vectors_per_contact * ncj;
+
+      const auto& Bj = B.middleCols(beta_start, active_support_length);
+      const auto& betaj = beta.segment(beta_start, active_support_length);
+
+      Vector6d wrench_for_body_in_body_frame = Vector6d::Zero();
+
+      for (size_t k = 0; k < contact_pts.size(); k++) {
+        // for (auto k = contact_pts.begin(); k!= contact_pts.end(); k++) {
+        const auto& Bblock = Bj.middleCols(k * n_basis_vectors_per_contact, n_basis_vectors_per_contact);
+        const auto& betablock = betaj.segment(k * n_basis_vectors_per_contact, n_basis_vectors_per_contact);
+        Vector3d point_force = Bblock * betablock;
+
+        Vector3d contact_pt = contact_pts[k].head(3);
+        auto torquejk = contact_pt.cross(point_force);
+        wrench_for_body_in_body_frame.head<3>() += torquejk;
+        wrench_for_body_in_body_frame.tail<3>() += point_force;
+
+        auto J_point = pdata->r->forwardKinNew(contact_pt, active_support.body_idx, 0, 0, 1).gradient().value();
+        floating_base_external_force_in_joint_coordinates += J_point.transpose().middleRows<6>(0) * point_force;
+      }
+
+//      Side side = foot_body_index_to_side.at(active_support.body_idx);
+//      if (foot_force_torque_measurements.find(side) != foot_force_torque_measurements.end()) {
+//        std::cout << "commanded force: " << wrench_for_body_in_body_frame.transpose() << std::endl;
+//        std::cout << "measured force: " << foot_force_torque_measurements.at(side).wrench.transpose() << std::endl << std::endl;
+//      }
+
+      Isometry3d transform_to_world(pdata->r->relativeTransform<double>(0, active_support.body_idx, 0).value());
+      total_wrench_in_world += transformSpatialForce(transform_to_world, wrench_for_body_in_body_frame);
+      beta_start += active_support_length;
+    }
+
+    double mass = pdata->r->getMass();
+    Vector6d gravitational_wrench_in_com = pdata->r->a_grav * mass;
+    Isometry3d com_to_world = Isometry3d::Identity();
+    com_to_world.translation() = pdata->r->centerOfMass<double>(0).value();
+    Vector6d gravitational_wrench_in_world = transformSpatialForce(com_to_world, gravitational_wrench_in_com);
+
+    total_wrench_in_world += gravitational_wrench_in_world;
+
+    auto world_momentum_matrix = pdata->r->worldMomentumMatrix<double>(0).value();
+    auto world_momentum_matrix_dot_times_v = pdata->r->worldMomentumMatrixDotTimesV<double>(0).value();
+    Vector6d momentum_rate_of_change = world_momentum_matrix * qp_output->qdd + world_momentum_matrix_dot_times_v;
+    pdata->state.last_xy_com_ddot = momentum_rate_of_change.segment<2>(3) / mass;
+
+    std::cout << "total wrench:            " << total_wrench_in_world.transpose() << std::endl;
+    std::cout << "momentum rate of change: " << momentum_rate_of_change.transpose() << std::endl;
+
+
+//    valuecheckMatrix(momentum_rate_of_change, total_wrench_in_world, 1e-8);
+//    Vector6d floating_base_dynamics_check = pdata->H_float * qp_output->qdd + pdata->C_float - D_float * beta; // TODO: could be that D_float * beta doesn't match J^T * lambda
+//    std::cout << "floating base dynamics check: " << floating_base_dynamics_check.transpose() << std::endl;
+//    std::cout << "D_float check: " << (D_float * beta - floating_base_external_force_in_joint_coordinates).transpose() << std::endl;
+
+
+    std::cout << std::endl;
   }
 
-  VectorXd beta = alpha.segment(nq,nc*nd);
 
   // use transpose because B_act is orthogonal
   qp_output->u = pdata->B_act.transpose()*(pdata->H_act*qp_output->qdd + pdata->C_act - D_act*beta);

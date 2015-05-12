@@ -1,4 +1,5 @@
 include_directories(${PROJECT_SOURCE_DIR}/systems/robotInterfaces)
+include_directories(${PROJECT_SOURCE_DIR}/util/test)
 
 add_library(drakeControlUtil SHARED controlUtil.cpp)
 pods_find_pkg_config(terrain-map)
