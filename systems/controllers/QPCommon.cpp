@@ -435,7 +435,7 @@ int setupAndSolveQP(
     int col = 0;
     for (auto support_it = active_supports.begin(); support_it != active_supports.end(); ++support_it) {
       const SupportStateElement& support = *support_it;
-      for (auto contact_position_it = support.contact_pts.begin(); contact_position_it != support.contact_pts.end(); ++it) {
+      for (auto contact_position_it = support.contact_pts.begin(); contact_position_it != support.contact_pts.end(); ++contact_position_it) {
         Vector3d contact_point = contact_position_it->head<3>(); // copy, ah well
         contact_positions_world.col(col++) = pdata->r->forwardKinNew(contact_point, support.body_idx, 0, 0, 0).value();
       }
