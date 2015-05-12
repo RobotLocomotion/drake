@@ -4,6 +4,14 @@
 #include <map>
 #include "lcmUtil.h"
 
+// debug
+#include <bot_lcmgl_client/lcmgl.h>
+#include <lcm/lcm-cpp.hpp>
+#include <lcm/lcm.h>
+#include "drc/zmp_com_observer_state_t.hpp"
+#include <memory>
+
+
 #define LEG_INTEGRATOR_DEACTIVATION_MARGIN 0.05
 
 double logisticSigmoid(double L, double k, double x, double x0) {
@@ -457,9 +465,41 @@ int setupAndSolveQP(
         params->center_of_mass_observer_gain,
         pdata->state.center_of_mass_observer_state);
 
+    // publish zmp/com observer state
+    bool debug_zmp_com_observer = false;
+    if (params->use_center_of_mass_observer && debug_zmp_com_observer) {
+      std::unique_ptr<lcm::LCM> lcm_cpp(new lcm::LCM);
+      if (!lcm_cpp->good()) {
+        std::cout << "ERROR: lcm is not good()" << std::endl;
+      }
+
+      drc::zmp_com_observer_state_t zmp_com_observer_state_msg;
+      eigenVectorToCArray(pdata->state.center_of_mass_observer_state.head<2>(), zmp_com_observer_state_msg.com);
+      eigenVectorToCArray(pdata->state.center_of_mass_observer_state.tail<2>(), zmp_com_observer_state_msg.comd);
+      lcm_cpp->publish("ZMP_COM_OBSERVER_STATE", &zmp_com_observer_state_msg);
+
+      lcm_t * lcm;
+      lcm = lcm_create(NULL);
+      if (!lcm)
+        throw std::runtime_error("LCM not good");
+
+      bot_lcmgl_t* lcmgl = bot_lcmgl_init(lcm, "zmp_com_observer");
+      bot_lcmgl_color3f(lcmgl, 1.0, 0.0, 0.0);
+      double observer_com_xyz[] = { zmp_com_observer_state_msg.com[0], zmp_com_observer_state_msg.com[1], 0.0 };
+      bot_lcmgl_sphere(lcmgl, observer_com_xyz, .01, 36, 36);
+
+      bot_lcmgl_color3f(lcmgl, 1.0, 0.0, 1.0);
+      double kinematics_com_xyz[] = {xcom[0], xcom[1], 0.0};
+      bot_lcmgl_sphere(lcmgl, kinematics_com_xyz, .01, 36, 36);
+
+      bot_lcmgl_switch_buffer(lcmgl);
+      bot_lcmgl_destroy(lcmgl);
+      lcm_destroy(lcm);
+    }
+
     // overwrite the com position and velocity with the observer's estimates:
-    xcom.topRows(2) = pdata->state.center_of_mass_observer_state.topRows<2>();
-    xcomdot.topRows(2) = pdata->state.center_of_mass_observer_state.bottomRows<2>();
+    xcom.topRows<2>() = pdata->state.center_of_mass_observer_state.topRows<2>();
+    xcomdot.topRows<2>() = pdata->state.center_of_mass_observer_state.bottomRows<2>();
   }
 
   VectorXd x_bar,xlimp;
@@ -800,7 +840,7 @@ int setupAndSolveQP(
   qp_output->qdd = alpha.head(nq);
 
   if (params->use_center_of_mass_observer) {
-    qp_output->xy_com_ddot = pdata->Jdotv_xy + pdata->J_xy*qp_output->qdd;
+    pdata->state.last_xy_com_ddot = pdata->Jdotv_xy + pdata->J_xy*qp_output->qdd;
   }
 
   VectorXd beta = alpha.segment(nq,nc*nd);

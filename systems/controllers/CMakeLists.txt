@@ -18,6 +18,7 @@ pods_find_pkg_config(gurobi)
 if (gurobi_FOUND)
   add_library(drakeQPCommon SHARED QPCommon.cpp)
   target_link_libraries(drakeQPCommon drakeControlUtil drakeQP drakeTrajectories drakeLCMUtil)
+  pods_use_pkg_config_packages(drakeQPCommon bot2-lcmgl-client lcm) # debug
   pods_install_libraries(drakeQPCommon)
   pods_install_headers(QPCommon.h DESTINATION drake)
   pods_install_pkg_config_file(drake-qp-common

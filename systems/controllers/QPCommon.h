@@ -228,7 +228,6 @@ struct QPControllerOutput {
   VectorXd qd_ref;
   VectorXd qdd;
   VectorXd u;
-  Vector2d xy_com_ddot;
 };
 
 struct QPControllerDebugData {
