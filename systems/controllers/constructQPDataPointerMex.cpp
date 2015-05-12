@@ -1,5 +1,7 @@
 #include "QPCommon.h"
 #include <Eigen/StdVector>
+#include "drakeMexUtil.h"
+#include "controlMexUtil.h"
 // #include <limits>
 // #include <cmath>
 // #include "drakeUtil.h"

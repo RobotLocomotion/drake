@@ -3,7 +3,7 @@
 #include <map>
 #include <memory>
 #include <stdexcept>
-#include "drakeUtil.h"
+#include "drakeMexUtil.h"
 #include "RigidBodyManipulator.h"
 #include "math.h"
 

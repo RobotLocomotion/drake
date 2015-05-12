@@ -12,6 +12,7 @@
 #include "QPCommon.h"
 #include <limits>
 #include <cmath>
+#include "drakeMexUtil.h"
 
 using namespace std;
 
