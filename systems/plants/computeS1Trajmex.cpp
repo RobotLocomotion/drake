@@ -1,6 +1,6 @@
 #include "mex.h"
 #include <iostream>
-#include "drakeUtil.h"
+#include "drakeMexUtil.h"
 #include "math.h"
 #include <vector>
 #include "drake/zmpUtil.h"
