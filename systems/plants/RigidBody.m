@@ -310,7 +310,11 @@ classdef RigidBody < RigidBodyElement
       % class. (maybe I should move it up to there?)
       fn = fieldnames(body.param_bindings);
       for i=1:length(fn)
-        body.(fn{i}) = double(subs(body.param_bindings.(fn{i}),poly,pval));
+        if isnumeric(pval)
+          body.(fn{i}) = double(subs(body.param_bindings.(fn{i}),poly,pval));
+        else
+          body.(fn{i}) = subs(body.param_bindings.(fn{i}),poly,pval);
+        end
       end
     end
     
