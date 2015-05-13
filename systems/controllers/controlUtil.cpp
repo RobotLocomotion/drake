@@ -118,7 +118,6 @@ int contactPhi(RigidBodyManipulator* r, SupportStateElement& supp, void *map_ptr
     r->forwardKin(supp.body_idx,*pt_iter,0,contact_pos);
     collisionDetect(map_ptr,contact_pos,pos,&normal,terrain_height);
     pos -= contact_pos;  // now -rel_pos in matlab version
-//    std::cout << "contact pos: " << contact_pos.transpose() << std::endl;
     phi(i) = pos.norm();
     if (pos.dot(normal)>0)
       phi(i)=-phi(i);
@@ -202,8 +201,8 @@ int contactConstraintsBV(RigidBodyManipulator *r, int nc, double mu, std::vector
           B.col(2*k*m_surface_tangents+j) = (normal + mu*d.col(j)) / norm; 
           B.col((2*k+1)*m_surface_tangents+j) = (normal - mu*d.col(j)) / norm; 
     
-          JB.col(2*k*m_surface_tangents+j) = J.transpose()*B.col(2*k*m_surface_tangents+j);
-          JB.col((2*k+1)*m_surface_tangents+j) = J.transpose()*B.col((2*k+1)*m_surface_tangents+j);
+          JB.col(2 * k * m_surface_tangents + j) = J.transpose() * B.col(2 * k * m_surface_tangents + j);
+          JB.col((2 * k + 1) * m_surface_tangents + j) = J.transpose() * B.col((2*k+1)*m_surface_tangents+j);
         }
 
         // store away kin sols into Jp and Jpdotv
@@ -218,7 +217,7 @@ int contactConstraintsBV(RigidBodyManipulator *r, int nc, double mu, std::vector
       }
     }
   }
-  
+
   return k;
 }
 
