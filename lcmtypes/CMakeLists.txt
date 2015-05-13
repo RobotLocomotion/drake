@@ -19,6 +19,7 @@ lcmtypes_build(LCM_TYPES
 			 lcmt_polynomial.lcm
 			 lcmt_polynomial_matrix.lcm
 			 lcmt_piecewise_polynomial.lcm
+                         lcmt_zmp_com_observer_state.lcm
 			 )
 
 #add_lcmtype(lcmt_drake_signal.lcm)

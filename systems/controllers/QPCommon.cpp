@@ -8,7 +8,7 @@
 #include <bot_lcmgl_client/lcmgl.h>
 #include <lcm/lcm-cpp.hpp>
 #include <lcm/lcm.h>
-#include "drc/zmp_com_observer_state_t.hpp"
+#include "drake/lcmt_zmp_com_observer_state.hpp"
 #include <memory>
 #include "testUtil.h"
 bool DEBUG_ZMP_COM_OBSERVER = false;
@@ -483,7 +483,7 @@ int setupAndSolveQP(
         std::cout << "ERROR: lcm is not good()" << std::endl;
       }
 
-      drc::zmp_com_observer_state_t zmp_com_observer_state_msg;
+      drake::lcmt_zmp_com_observer_state zmp_com_observer_state_msg;
       eigenVectorToCArray(pdata->state.center_of_mass_observer_state.head<2>(), zmp_com_observer_state_msg.com);
       eigenVectorToCArray(pdata->state.center_of_mass_observer_state.tail<2>(), zmp_com_observer_state_msg.comd);
       lcm_cpp->publish("ZMP_COM_OBSERVER_STATE", &zmp_com_observer_state_msg);
