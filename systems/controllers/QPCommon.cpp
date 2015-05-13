@@ -480,7 +480,7 @@ int setupAndSolveQP(
 
     // publish zmp/com observer state
     if (DEBUG_ZMP_COM_OBSERVER) {
-      std::cout << "dt: " << dt << std::endl;
+//      std::cout << "dt: " << dt << std::endl;
       std::unique_ptr<lcm::LCM> lcm_cpp(new lcm::LCM);
       if (!lcm_cpp->good()) {
         std::cout << "ERROR: lcm is not good()" << std::endl;
@@ -498,7 +498,7 @@ int setupAndSolveQP(
 
       double com_estimates_draw_height = average_contact_point_height + 0.01; // a little above the ground to make sure it doesn't get occluded by the ground plane.
 
-      bot_lcmgl_t* lcmgl = bot_lcmgl_init(lcm, "zmp_com_observer_integrated");
+      bot_lcmgl_t* lcmgl = bot_lcmgl_init(lcm, "zmp com observer (zmp-based red, kinematic grey)");
       bot_lcmgl_color3f(lcmgl, 1.0, 0.0, 0.0); // red
       double observer_com_xyz[] = { zmp_com_observer_state_msg.com[0], zmp_com_observer_state_msg.com[1], com_estimates_draw_height };
       bot_lcmgl_sphere(lcmgl, observer_com_xyz, .01, 36, 36);

@@ -17,7 +17,7 @@ classdef Base
     Kp_accel = 1.0;
     contact_threshold = 0.002;
     min_knee_angle = 0.7;
-    use_center_of_mass_observer = true;
+    use_center_of_mass_observer = false;
     center_of_mass_observer_gain;
   end
 
