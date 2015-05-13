@@ -220,7 +220,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
   const double h = static_cast<double>(mxGetScalar(h_array));
   const Map<VectorXd> q(mxGetPrSafe(q_array), nq);
   const Map<VectorXd> v(mxGetPrSafe(v_array), nv);
-  const Map<VectorXd> u(mxGetPrSafe(u_array), model->B.cols());
+  const Map<VectorXd> u(mxGetPrSafe(u_array), mxGetNumberOfElements(u_array));
   const Map<VectorXd> phiC(mxGetPrSafe(phiC_array), num_contact_pairs);
   const Map<MatrixXd> n(mxGetPrSafe(n_array), num_contact_pairs, nq);
   const Map<VectorXd> z_cached(mxGetPrSafe(z_cached_array), num_z_cached);
