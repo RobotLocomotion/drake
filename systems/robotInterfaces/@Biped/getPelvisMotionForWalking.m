@@ -1,4 +1,4 @@
-function pelvis_motion_data = getPelvisMotionForWalking(obj, foot_motion_data, supports, support_times, options)
+function pelvis_motion_data = getPelvisMotionForWalking(obj, x0, foot_motion_data, supports, support_times, options)
 % Get the BodyMotionData for the robot's pelvis, given the BodyMotionData for its feet, plus its planned support sequence. 
 typecheck(foot_motion_data, 'BodyMotionData');
 typecheck(supports, 'RigidBodySupportState');
@@ -7,7 +7,8 @@ assert(isnumeric(support_times));
 if nargin < 6
   options = struct();
 end
-options = applyDefaults(options, struct('pelvis_height_above_sole', obj.default_walking_params.pelvis_height_above_foot_sole, 'debug', false));
+options = applyDefaults(options, struct('pelvis_height_above_sole', obj.default_walking_params.pelvis_height_above_foot_sole, 'debug', false,...
+  'pelvis_height_transition_knot', 1));
 
 if options.debug
   figure(321)
@@ -161,14 +162,14 @@ for i=1:length(support_times)-1
       pelvis_reference_height(i+1) = rsole_des_next(3);
     end
   elseif isLeftSupport && nextIsDoubleSupport 
-    if rsole_des_next(3) < lsole_des(3) - step_height_delta_threshold
+    if rsole_des_next(3) < lsole_des(3)
       % stepping down with right foot
       pelvis_reference_height(i+1) = rsole_des_next(3);
     else
       pelvis_reference_height(i+1) = lsole_des(3);
     end
   elseif isRightSupport && nextIsDoubleSupport 
-    if lsole_des_next(3) < rsole_des(3) - step_height_delta_threshold
+    if lsole_des_next(3) < rsole_des(3) 
       % stepping down with left foot
       pelvis_reference_height(i+1) = lsole_des_next(3);
     else
@@ -177,9 +178,17 @@ for i=1:length(support_times)-1
   end
 end
 
+
+
 % Now set the pelvis reference
 pelvis_body = obj.findLinkId('pelvis');
 pelvis_ts = support_times;
+
+% smooth commanded pelvis height and rpy with current position
+q0 = x0(1:obj.getNumPositions());
+kinsol = obj.doKinematics(q0);
+pelvis_pos0 = obj.forwardKin(kinsol,pelvis_body,[0;0;0],1);
+pelvis_height_above_sole0 = pelvis_pos0(3) - pelvis_reference_height(1);
 
 rpos = ppval(rfoot_body_motion.getPP(), pelvis_ts);
 lpos = ppval(lfoot_body_motion.getPP(), pelvis_ts);
@@ -193,11 +202,23 @@ for j = 1:numel(pelvis_ts)
 end
 pelvis_yaw = unwrap(pelvis_yaw);
 
+% Smooth commanded pelvis height between current and default
+pelvis_height = pelvis_reference_height + options.pelvis_height_above_sole;
+knot_idx = options.pelvis_height_transition_knot;
+pelvis_height(1:knot_idx) = pelvis_reference_height(1:knot_idx) + pelvis_height_above_sole0;
 
 pelvis_poses_rpy = [zeros(2, size(rpos, 2));
-                pelvis_reference_height + options.pelvis_height_above_sole;
+                pelvis_height;
                 zeros(2, numel(pelvis_ts));
                 pelvis_yaw];
+
+% smooth desired pelvis rpy with current rpy for the first pelvis_ts time
+% need to be careful to do an unwrap
+pelvis_poses_rpy(4:6,1) = pelvis_pos0(4:6);
+for j =4:6
+  pelvis_poses_rpy(j,:) = unwrap(pelvis_poses_rpy(j,:));
+end
+
 pelvis_xyz_expmap = zeros(6,size(pelvis_poses_rpy,2));
 pelvis_xyz_expmap(1:3,:) = pelvis_poses_rpy(1:3,:);
 pelvis_quat = zeros(4,size(pelvis_poses_rpy,2));

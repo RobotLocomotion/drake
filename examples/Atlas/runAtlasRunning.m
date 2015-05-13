@@ -92,9 +92,9 @@ r_foot = r.findLinkId('r_foot');
 
 flight = RigidBodySupportState(r,[]);
 l_foot_support = RigidBodySupportState(r,l_foot);
-l_toe_support = RigidBodySupportState(r,l_foot,{{'toe'}});
+l_toe_support = RigidBodySupportState(r,l_foot,struct('contact_groups',{{'toe'}}));
 r_foot_support = RigidBodySupportState(r,r_foot);
-r_toe_support = RigidBodySupportState(r,r_foot,{{'toe'}});
+r_toe_support = RigidBodySupportState(r,r_foot,struct('contact_groups',{{'toe'}}));
 
 left_phase = [flight;flight;flight;flight;l_foot_support;l_foot_support;l_foot_support; ...
   l_foot_support;l_foot_support;l_foot_support;l_toe_support; ...

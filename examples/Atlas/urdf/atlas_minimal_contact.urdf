@@ -75,26 +75,50 @@
         <sphere radius="0.01"/>
       </geometry>
     </visual>
-    <collision group="midfoot">
-      <origin rpy="0 0 0" xyz="0.0426 0.066 -0.07645"/>
+    <collision group="midfoot_front">
+      <origin rpy="0 0 0" xyz="0.086 0.066 -0.07645"/>
       <geometry>
         <sphere radius="0.0"/>
       </geometry>
     </collision>
-    <visual group="midfoot">
-      <origin rpy="0 0 0" xyz="0.0426 0.066 -0.07645"/>
+    <visual group="midfoot_front">
+      <origin rpy="0 0 0" xyz="0.086 0.066 -0.07645"/>
       <geometry>
         <sphere radius="0.01"/>
       </geometry>
     </visual>
-    <collision group="midfoot">
-      <origin rpy="0 0 0" xyz="0.0426 -0.0626 -0.07645"/>
+    <collision group="midfoot_front">
+      <origin rpy="0 0 0" xyz="0.086 -0.0626 -0.07645"/>
       <geometry>
         <sphere radius="0.0"/>
       </geometry>
     </collision>
-    <visual group="midfoot">
-      <origin rpy="0 0 0" xyz="0.0426 -0.0626 -0.07645"/>
+    <visual group="midfoot_front">
+      <origin rpy="0 0 0" xyz="0.086 -0.0626 -0.07645"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+    </visual>
+    <collision group="midfoot_rear">
+      <origin rpy="0 0 0" xyz="-0.0008 0.066 -0.07645"/>
+      <geometry>
+        <sphere radius="0.0"/>
+      </geometry>
+    </collision>
+    <visual group="midfoot_rear">
+      <origin rpy="0 0 0" xyz="-0.0008 0.066 -0.07645"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+    </visual>
+    <collision group="midfoot_rear">
+      <origin rpy="0 0 0" xyz="-0.0008 -0.0626 -0.07645"/>
+      <geometry>
+        <sphere radius="0.0"/>
+      </geometry>
+    </collision>
+    <visual group="midfoot_rear">
+      <origin rpy="0 0 0" xyz="-0.0008 -0.0626 -0.07645"/>
       <geometry>
         <sphere radius="0.01"/>
       </geometry>
@@ -337,26 +361,50 @@
         <sphere radius="0.01"/>
       </geometry>
     </visual>
-    <collision group="midfoot">
-      <origin rpy="0 0 0" xyz="0.0426 0.0626 -0.07645"/>
+    <collision group="midfoot_front">
+      <origin rpy="0 0 0" xyz="0.086 0.0626 -0.07645"/>
       <geometry>
         <sphere radius="0.0"/>
       </geometry>
     </collision>
-    <visual group="midfoot">
-      <origin rpy="0 0 0" xyz="0.0426 0.0626 -0.07645"/>
+    <visual group="midfoot_front">
+      <origin rpy="0 0 0" xyz="0.086 0.0626 -0.07645"/>
       <geometry>
         <sphere radius="0.01"/>
       </geometry>
     </visual>
-    <collision group="midfoot">
-      <origin rpy="0 0 0" xyz="0.0426 -0.066 -0.07645"/>
+    <collision group="midfoot_front">
+      <origin rpy="0 0 0" xyz="0.086 -0.066 -0.07645"/>
       <geometry>
         <sphere radius="0.0"/>
       </geometry>
     </collision>
-    <visual group="midfoot">
-      <origin rpy="0 0 0" xyz="0.0426 -0.066 -0.07645"/>
+    <visual group="midfoot_front">
+      <origin rpy="0 0 0" xyz="0.086 -0.066 -0.07645"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+    </visual>
+    <collision group="midfoot_rear">
+      <origin rpy="0 0 0" xyz="-0.0008 0.0626 -0.07645"/>
+      <geometry>
+        <sphere radius="0.0"/>
+      </geometry>
+    </collision>
+    <visual group="midfoot_rear">
+      <origin rpy="0 0 0" xyz="-0.0008 0.0626 -0.07645"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+    </visual>
+    <collision group="midfoot_rear">
+      <origin rpy="0 0 0" xyz="-0.0008 -0.066 -0.07645"/>
+      <geometry>
+        <sphere radius="0.0"/>
+      </geometry>
+    </collision>
+    <visual group="midfoot_rear">
+      <origin rpy="0 0 0" xyz="-0.0008 -0.066 -0.07645"/>
       <geometry>
         <sphere radius="0.01"/>
       </geometry>

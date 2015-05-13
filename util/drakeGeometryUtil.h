@@ -61,6 +61,21 @@ DLLEXPORT Eigen::Matrix<typename Derived::Scalar, 3, 3> quat2rotmat(const Eigen:
 template <typename Derived>
 DLLEXPORT Eigen::Matrix<typename Derived::Scalar, 3, 1> quat2rpy(const Eigen::MatrixBase<Derived>& q);
 
+template <typename Derived>
+Eigen::Quaternion<typename Derived::Scalar> quat2eigenQuaternion(const Eigen::MatrixBase<Derived> &q) 
+{
+  // The Eigen Quaterniond constructor when used with 4 arguments, uses the (w, x, y, z) ordering, just as we do. 
+  // HOWEVER: when the constructor is called on a 4-element Vector, the elements must be in (x, y, z, w) order.
+  // So, the following two calls will give you the SAME quaternion:
+  // Quaternion<double>(q(0), q(1), q(2), q(3));
+  // Quaternion<double>(Vector4d(q(3), q(0), q(1), q(2)))
+  // which is gross and will cause you much pain.
+  // see: http://eigen.tuxfamily.org/dox/classEigen_1_1Quaternion.html#a91b6ea2cac13ab2d33b6e74818ee1490
+  //
+  // This method takes a nice, normal (w, x, y, z) order vector and gives you the Quaternion you expect. 
+  return Eigen::Quaternion<typename Derived::Scalar>(q(0), q(1), q(2), q(3));
+}
+
 /*
  * axis2x
  */
@@ -272,4 +287,6 @@ DLLEXPORT GradientVar<double,3,1> flipExpmap(const Eigen::Ref<const Eigen::Vecto
 DLLEXPORT GradientVar<double,3,1> unwrapExpmap(const Eigen::Ref<const Eigen::Vector3d> &expmap1, const Eigen::Ref<const Eigen::Vector3d> &expmap2, int gradient_order);
 
 DLLEXPORT void quat2expmapSequence(const Eigen::Ref<const Eigen::Matrix<double,4,Eigen::Dynamic>> &quat, const Eigen::Ref<const Eigen::Matrix<double,4,Eigen::Dynamic>> &quat_dot, Eigen::Ref<Eigen::Matrix<double,3,Eigen::Dynamic>> expmap, Eigen::Ref<Eigen::Matrix<double,3,Eigen::Dynamic>> expmap_dot);
+
+
 #endif

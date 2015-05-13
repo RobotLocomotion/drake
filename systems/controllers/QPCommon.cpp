@@ -1,7 +1,6 @@
 #include "QPCommon.h"
 #include "drakeFloatingPointUtil.h"
 #include "controlUtil.h"
-#include <Eigen/StdVector>
 #include <map>
 
 #define LEG_INTEGRATOR_DEACTIVATION_MARGIN 0.05
@@ -84,7 +83,16 @@ std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray 
         msg->support_data[i].support_logic_map[j] = (double_logic_map[j][0] != 0);
       }
       msg->support_data[i].mu = mxGetScalar(myGetField(support_data, i, "mu"));
-      msg->support_data[i].contact_surfaces = (int32_t) mxGetScalar(myGetField(support_data, i, "contact_surfaces"));
+      
+      double use_support_surface_dbl = mxGetScalar(myGetField(support_data, i, "use_support_surface"));
+      msg->support_data[i].use_support_surface = (use_support_surface_dbl != 0);
+
+      const mxArray *support_surface = myGetField(support_data, i, "support_surface");
+      if (!support_surface) mexErrMsgTxt("couldn't get support surface");
+      Map<Vector4d>support_surface_vec(mxGetPrSafe(support_surface));
+      for (int j=0; j < 4; j++) {
+        msg->support_data[i].support_surface[j] = support_surface_vec(j);
+      }
     }
   }
 
@@ -305,15 +313,16 @@ VectorXd velocityReference(NewQPControllerData *pdata, double t, const Ref<Vecto
   return qd_ref;
 }
 
-std::vector<SupportStateElement> loadAvailableSupports(std::shared_ptr<drake::lcmt_qp_controller_input> qp_input) {
+std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> loadAvailableSupports(std::shared_ptr<drake::lcmt_qp_controller_input> qp_input) {
   // Parse a qp_input LCM message to extract its available supports as a vector of SupportStateElements
-  std::vector<SupportStateElement> available_supports;
+  std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> available_supports;
   available_supports.resize(qp_input->num_support_data);
   for (int i=0; i < qp_input->num_support_data; i++) {
     available_supports[i].body_idx = qp_input->support_data[i].body_id - 1;
-    available_supports[i].contact_surface = qp_input->support_data[i].contact_surfaces;
+    available_supports[i].use_support_surface = qp_input->support_data[i].use_support_surface;
     for (int j=0; j < 4; j++) {
       available_supports[i].support_logic_map[j] = qp_input->support_data[i].support_logic_map[j];
+      available_supports[i].support_surface[j] = qp_input->support_data[i].support_surface[j];
     }
     available_supports[i].contact_pts.resize(qp_input->support_data[i].num_contact_pts);
     for (int j=0; j < qp_input->support_data[i].num_contact_pts; j++) {
@@ -326,7 +335,7 @@ std::vector<SupportStateElement> loadAvailableSupports(std::shared_ptr<drake::lc
   return available_supports;
 }
 
-void addJointSoftLimits(const JointSoftLimitParams &params, const DrakeRobotState &robot_state, const VectorXd &q_des, std::vector<SupportStateElement> &supports, std::vector<drake::lcmt_joint_pd_override> &joint_pd_override) {
+void addJointSoftLimits(const JointSoftLimitParams &params, const DrakeRobotState &robot_state, const VectorXd &q_des, std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> &supports, std::vector<drake::lcmt_joint_pd_override> &joint_pd_override) {
   Matrix<bool, Dynamic, 1> has_joint_override = Matrix<bool, Dynamic, 1>::Zero(q_des.size());
   for (std::vector<drake::lcmt_joint_pd_override>::iterator it = joint_pd_override.begin(); it != joint_pd_override.end(); ++it) {
     has_joint_override(it->position_ind - 1) = true;
@@ -404,8 +413,8 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   Map<Matrix<double, 4, 1>> s1dot(&qp_input->zmp_data.s1dot[0][0]);
 
   // Active supports
-  std::vector<SupportStateElement> available_supports = loadAvailableSupports(qp_input);
-  std::vector<SupportStateElement> active_supports = getActiveSupports(pdata->r, pdata->map_ptr, robot_state.q, robot_state.qd, available_supports, b_contact_force, params->contact_threshold, pdata->default_terrain_height);
+  std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> available_supports = loadAvailableSupports(qp_input);
+  std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> active_supports = getActiveSupports(pdata->r, pdata->map_ptr, robot_state.q, robot_state.qd, available_supports, b_contact_force, params->contact_threshold, pdata->default_terrain_height);
 
 
   // // whole_body_data
@@ -499,7 +508,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   //---------------------------------------------------------------------
 
   int num_active_contact_pts=0;
-  for (std::vector<SupportStateElement>::iterator iter = active_supports.begin(); iter!=active_supports.end(); iter++) {
+  for (std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>>::iterator iter = active_supports.begin(); iter!=active_supports.end(); iter++) {
     num_active_contact_pts += iter->contact_pts.size();
   }
 
@@ -631,7 +640,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     } 
   }
   f.tail(nf+neps) = VectorXd::Zero(nf+neps);
-  
+
   int neq = 6+neps+6*n_body_accel_eq_constraints+qp_input->whole_body_data.num_constrained_dofs;
   MatrixXd Aeq = MatrixXd::Zero(neq,nparams);
   VectorXd beq = VectorXd::Zero(neq);
@@ -962,4 +971,3 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
 
   return info;
 }
-
