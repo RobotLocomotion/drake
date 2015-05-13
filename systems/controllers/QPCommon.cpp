@@ -462,6 +462,8 @@ int setupAndSolveQP(
 
     double dt;
     if (pdata->state.t_prev == 0) {
+      pdata->state.center_of_mass_observer_state.topRows<2>() = xcom.topRows<2>();
+      pdata->state.center_of_mass_observer_state.bottomRows<2>() = xcomdot.topRows<2>();
       dt = 0;
     } else {
       dt = robot_state.t - pdata->state.t_prev;
@@ -478,6 +480,7 @@ int setupAndSolveQP(
 
     // publish zmp/com observer state
     if (DEBUG_ZMP_COM_OBSERVER) {
+      std::cout << "dt: " << dt << std::endl;
       std::unique_ptr<lcm::LCM> lcm_cpp(new lcm::LCM);
       if (!lcm_cpp->good()) {
         std::cout << "ERROR: lcm is not good()" << std::endl;
@@ -493,19 +496,19 @@ int setupAndSolveQP(
       if (!lcm)
         throw std::runtime_error("LCM not good");
 
-      bot_lcmgl_t* lcmgl_integrated = bot_lcmgl_init(lcm, "zmp_com_observer_integrated");
-      bot_lcmgl_color3f(lcmgl_integrated, 1.0, 0.0, 0.0);
-      double observer_com_xyz[] = { zmp_com_observer_state_msg.com[0], zmp_com_observer_state_msg.com[1], 0.0 };
-      bot_lcmgl_sphere(lcmgl_integrated, observer_com_xyz, .01, 36, 36);
-      bot_lcmgl_switch_buffer(lcmgl_integrated);
-      bot_lcmgl_destroy(lcmgl_integrated);
+      double com_estimates_draw_height = average_contact_point_height + 0.01; // a little above the ground to make sure it doesn't get occluded by the ground plane.
 
-      bot_lcmgl_t* lcmgl_kinematic = bot_lcmgl_init(lcm, "zmp_com_observer_kinematic");
-      bot_lcmgl_color3f(lcmgl_kinematic, 1.0, 0.0, 1.0);
-      double kinematics_com_xyz[] = {xcom[0], xcom[1], 0.0};
-      bot_lcmgl_sphere(lcmgl_kinematic, kinematics_com_xyz, .01, 36, 36);
-      bot_lcmgl_switch_buffer(lcmgl_kinematic);
-      bot_lcmgl_destroy(lcmgl_kinematic);
+      bot_lcmgl_t* lcmgl = bot_lcmgl_init(lcm, "zmp_com_observer_integrated");
+      bot_lcmgl_color3f(lcmgl, 1.0, 0.0, 0.0); // red
+      double observer_com_xyz[] = { zmp_com_observer_state_msg.com[0], zmp_com_observer_state_msg.com[1], com_estimates_draw_height };
+      bot_lcmgl_sphere(lcmgl, observer_com_xyz, .01, 36, 36);
+
+      bot_lcmgl_color3f(lcmgl, 0.65, 0.65, 0.65); // grey
+      double kinematics_com_xyz[] = {xcom[0], xcom[1], com_estimates_draw_height};
+      bot_lcmgl_sphere(lcmgl, kinematics_com_xyz, .01, 36, 36);
+
+      bot_lcmgl_switch_buffer(lcmgl);
+      bot_lcmgl_destroy(lcmgl);
       lcm_destroy(lcm);
     }
 
