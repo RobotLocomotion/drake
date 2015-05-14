@@ -70,7 +70,7 @@ struct QPControllerState {
 
   // center of mass observer
   Vector4d center_of_mass_observer_state;
-  Vector2d last_xy_com_ddot;
+  Vector3d last_com_ddot;
 
   // gurobi active set params
   int *vbasis;

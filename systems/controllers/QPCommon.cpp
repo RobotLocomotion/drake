@@ -11,8 +11,8 @@
 #include "drake/lcmt_zmp_com_observer_state.hpp"
 #include <memory>
 #include "testUtil.h"
-bool DEBUG_ZMP_COM_OBSERVER = false;
-bool CHECK_CENTROIDAL_MOMENTUM_RATE_MATCHES_TOTAL_WRENCHES = false;
+const bool DEBUG_ZMP_COM_OBSERVER = false;
+const bool CHECK_CENTROIDAL_MOMENTUM_RATE_MATCHES_TOTAL_WRENCHES = false;
 
 
 #define LEG_INTEGRATOR_DEACTIVATION_MARGIN 0.05
@@ -197,7 +197,7 @@ void applyJointPDOverride(const std::vector<drake::lcmt_joint_pd_override> &join
   }
 }
 
-void updateEstimatedCenterOfMassState(const Vector2d& zmp_from_force_sensors, const Vector2d& comdot_from_robot_state, const double com_height, const double grav, const double dt, const Vector2d& last_commanded_comddot, const Matrix4d& L, Vector4d& xhat)
+void updateEstimatedCenterOfMassState(const Vector2d& zmp_from_force_sensors, const Vector2d& comdot_from_robot_state, const double com_height, const double grav, const double dt, const Vector3d& last_commanded_comddot, const Matrix4d& L, Vector4d& xhat)
 {
 /* Derivation:
   We have two sources of information for estimating the COM, one via the robot state (IMU+leg odomentry$\rightarrow$ full dynamic model) and the other via the instantaneous ground reaction forces (ZMP).  The ZMP informs us about the instantaneous position of the COM, but not it's velocity.  The IMU is better for high-frequency components, so we will only use the observation of COM velocity from the robot state, and end up with the following model:
@@ -217,12 +217,12 @@ void updateEstimatedCenterOfMassState(const Vector2d& zmp_from_force_sensors, co
 
   // y_err = (y - C*xhat - D*u)
   Vector4d y_err;
-  y_err << zmp_from_force_sensors - xhat.topRows<2>() + com_height / grav * last_commanded_comddot, comdot_from_robot_state - xhat.bottomRows<2>();
+  y_err << zmp_from_force_sensors - xhat.topRows<2>() + com_height * last_commanded_comddot.topRows(2) / (last_commanded_comddot(2) + grav), comdot_from_robot_state - xhat.bottomRows<2>();
 
   // xhatdot = Axhat + Bu + L*y_err)
   Vector4d xhatdot = L * y_err;
-  xhatdot.topRows<2>() += xhat.bottomRows<2>();
-  xhatdot.bottomRows<2>() += last_commanded_comddot;
+  xhatdot.topRows<2>() += comdot_from_robot_state; //xhat.bottomRows<2>();
+  xhatdot.bottomRows<2>() += last_commanded_comddot.topRows(2);
 
   xhat.noalias() += dt * xhatdot;
 }
@@ -474,18 +474,15 @@ int setupAndSolveQP(
         xcom(2) - average_contact_point_height,
         -pdata->r->a_grav(5),
         dt,
-        pdata->state.last_xy_com_ddot,
+        pdata->state.last_com_ddot,
         params->center_of_mass_observer_gain,
         pdata->state.center_of_mass_observer_state);
 
-    // publish zmp/com observer state
     if (DEBUG_ZMP_COM_OBSERVER) {
+    // publish zmp/com observer state
 //      std::cout << "dt: " << dt << std::endl;
       std::unique_ptr<lcm::LCM> lcm_cpp(new lcm::LCM);
-      if (!lcm_cpp->good()) {
-        std::cout << "ERROR: lcm is not good()" << std::endl;
-      }
-
+     
       drake::lcmt_zmp_com_observer_state zmp_com_observer_state_msg;
       eigenVectorToCArray(pdata->state.center_of_mass_observer_state.head<2>(), zmp_com_observer_state_msg.com);
       eigenVectorToCArray(pdata->state.center_of_mass_observer_state.tail<2>(), zmp_com_observer_state_msg.comd);
@@ -507,6 +504,11 @@ int setupAndSolveQP(
       double kinematics_com_xyz[] = {xcom[0], xcom[1], com_estimates_draw_height};
       bot_lcmgl_sphere(lcmgl, kinematics_com_xyz, .01, 36, 36);
 
+      // zmp_from_force_sensors
+      bot_lcmgl_color3f(lcmgl, 0.0, 1.0, 0.0); // green
+      double zmp_from_force_sensors_xyz[] = {zmp_from_force_sensors[0], zmp_from_force_sensors[1], zmp_from_force_sensors[2]};
+      bot_lcmgl_sphere(lcmgl, zmp_from_force_sensors_xyz, .01, 36, 36);
+
       bot_lcmgl_switch_buffer(lcmgl);
       bot_lcmgl_destroy(lcmgl);
       lcm_destroy(lcm);
@@ -514,7 +516,7 @@ int setupAndSolveQP(
 
     // overwrite the com position and velocity with the observer's estimates:
     xcom.topRows<2>() = pdata->state.center_of_mass_observer_state.topRows<2>();
-    xcomdot.topRows<2>() = pdata->state.center_of_mass_observer_state.bottomRows<2>();
+    // xcomdot.topRows<2>() = pdata->state.center_of_mass_observer_state.bottomRows<2>();
   }
 
   VectorXd x_bar,xlimp;
@@ -858,7 +860,7 @@ int setupAndSolveQP(
 
 
   if (params->use_center_of_mass_observer) {
-    pdata->state.last_xy_com_ddot = pdata->Jdotv_xy + pdata->J_xy*qp_output->qdd;
+    pdata->state.last_com_ddot = pdata->Jdotv + pdata->J*qp_output->qdd;
   }
 
   if (CHECK_CENTROIDAL_MOMENTUM_RATE_MATCHES_TOTAL_WRENCHES) {
