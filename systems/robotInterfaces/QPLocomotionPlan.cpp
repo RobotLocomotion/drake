@@ -48,6 +48,28 @@ QPLocomotionPlan::QPLocomotionPlan(RigidBodyManipulator& robot, const QPLocomoti
   }
 }
 
+Matrix3Xd getFrontTwoContactPoints(const Ref<const Matrix3Xd>& contact_points) {
+  // gets the two frontmost contact points (expressed in body frame with x forward)
+  if (contact_points.cols() <= 2) {
+    return contact_points;
+  }
+  Vector2d best_x(-std::numeric_limits<double>::infinity(), -std::numeric_limits<double>::infinity());
+  Matrix<DenseIndex, 2, 1> best_idx;
+  for (int j=0; j < contact_points.cols(); ++j) {
+    for (int i=0; i < 2; ++i) {
+      if (contact_points(i, j) > best_x(i)) {
+        best_x(i) = contact_points(i, j);
+        best_idx(i) = j;
+        break;
+      }
+    }
+  }
+  Matrix<double, 3, 2> front_contacts;
+  front_contacts.col(0) = contact_points.col(best_idx(0));
+  front_contacts.col(1) = contact_points.col(best_idx(1));
+  return front_contacts;
+}
+
 template <typename DerivedQ, typename DerivedV>
 drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
     double t_global, const MatrixBase<DerivedQ>& q, const MatrixBase<DerivedV>& v, const std::vector<bool>& contact_force_detected)
@@ -131,7 +153,8 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
           RigidBodySupportStateElement& support_state_element = support_state[i];
           Matrix3Xd pts;
           if (support_state_element.body == body_id) {
-            pts = settings.contact_groups[body_id].at("toe");
+            // pts = settings.contact_groups[body_id].at("toe");
+            pts = getFrontTwoContactPoints(support_state_element.contact_points);
           } else {
             pts = support_state_element.contact_points;
           }
@@ -164,7 +187,8 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
         for (int i = 0; i < support_state.size(); ++i) {
           RigidBodySupportStateElement& support_state_element = support_state[i];
           if (support_state_element.body == body_id)
-            support_state_element.contact_points = settings.contact_groups[body_id].at("toe");
+            support_state_element.contact_points = getFrontTwoContactPoints(support_state_element.contact_points);
+            // support_state_element.contact_points = settings.contact_groups[body_id].at("toe");
         }
       }
       knee_pd_active[side] = knee_pd_active.at(side) || knee_close_to_singularity && toe_off_active.at(side);
