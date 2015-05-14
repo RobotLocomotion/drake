@@ -46,6 +46,7 @@ ikoptions = ikoptions.setQ(diag(cost(1:obj.getNumPositions)));
 q = zeros(obj.getNumPositions(), length(ts));
 htraj = [];
 full_IK_calls = 0;
+ankle_joint_cnstr = AtlasAnkleXYJointLimitConstraint(obj);
 for i=1:length(ts)
   t = ts(i);
   if (i>1)
@@ -62,7 +63,7 @@ for i=1:length(ts)
           constructRigidBodyConstraint(RigidBodyConstraint.WorldQuatConstraintType,true,obj,body_ind,quat,0.01)}];
     end
     kc_com = constructRigidBodyConstraint(RigidBodyConstraint.WorldCoMConstraintType,true,obj.getMexModelPtr,[walking_plan_data.comtraj.eval(t);nan],[walking_plan_data.comtraj.eval(t);nan]);
-    q(:,i) = inverseKin(obj,q(:,i-1),qstar,kc_com,ik_args{:},ikoptions);
+    q(:,i) = inverseKin(obj,q(:,i-1),qstar,ankle_joint_cnstr,kc_com,ik_args{:},ikoptions);
 
   else
     q = q0;
