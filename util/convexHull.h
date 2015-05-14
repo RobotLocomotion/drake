@@ -17,7 +17,7 @@ bool inConvexHull(const Eigen::Ref<const Eigen::Matrix<double, 2, Eigen::Dynamic
 
 // Returns the perpendicular distance from point q to the convex hull of pts. 
 // Specifically, if pts form a polytope defined by a_i'x <= b_i where each a_i is a unit vector, then this returns:
-// ai'x + d = b_i
+// 
 // d* = min [b_i - a_i'q]
 //       i 
 // 
