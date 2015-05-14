@@ -169,7 +169,7 @@ classdef QPLocomotionPlanSettings
       obj.zmptraj = comgoal;
       [~, obj.V, ~, LIP_height] = obj.robot.planZMPController(comgoal, q0);
       obj.zmp_data.D = -LIP_height / obj.g * eye(2);
-      obj.D_control = obj.zmp_data.D;
+      obj.D_control = -obj.robot.default_walking_params.nominal_LIP_COM_height / obj.g * eye(2);
 
       obj.body_motions = [BodyMotionData(obj.robot.foot_body_id.right, [0, inf]),...
                           BodyMotionData(obj.robot.foot_body_id.left, [0, inf]),...
@@ -300,13 +300,13 @@ classdef QPLocomotionPlanSettings
         obj.zmptraj = comgoal;
         [~, obj.V, ~, LIP_height] = obj.robot.planZMPController(comgoal, x0(1:obj.robot.getNumPositions()));
         obj.zmp_data.D = -LIP_height / obj.g * eye(2);
-        obj.D_control = obj.zmp_data.D;
+        obj.D_control = -obj.robot.default_walking_params.nominal_LIP_COM_height / obj.g * eye(2);
       else
         % We can just use a comgoal of [0;0] here because, for the quasistatic solution, it has no effect on V
         [~, obj.V, ~, LIP_height] = obj.robot.planZMPController([0;0], x0(1:obj.robot.getNumPositions()));
         obj.zmptraj = obj.comtraj;
         obj.zmp_data.D = -LIP_height / obj.g * eye(2);
-        obj.D_control = obj.zmp_data.D;
+        obj.D_control = -obj.robot.default_walking_params.nominal_LIP_COM_height / obj.g * eye(2);
       end
 
       for j = 1:num_bodies_to_track
