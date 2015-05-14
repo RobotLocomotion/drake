@@ -221,6 +221,8 @@ private:
 
   void updateS1Trajectory();
 
+  void applyKneePD(int knee_index, drake::lcmt_qp_controller_input &qp_input);
+
   static const std::map<SupportLogicType, std::vector<bool> > createSupportLogicMaps();
 
   static const std::map<Side, int> createFootBodyIdMap(RigidBodyManipulator& robot, const std::map<Side, std::string>& foot_names);
