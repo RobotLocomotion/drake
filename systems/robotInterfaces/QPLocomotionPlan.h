@@ -95,9 +95,12 @@ struct QPLocomotionPlanSettings {
   double min_foot_shift_delay = 0.1; // seconds to wait before updating foot-specific plan shifts
   bool is_quasistatic;
   KneeSettings knee_settings;
+  double min_aky_angle;
   std::string pelvis_name;
   std::map<Side, std::string> foot_names;
   std::map<Side, std::string> knee_names;
+  std::map<Side, std::string> aky_names;
+  double zmp_safety_margin;
   std::vector<int> constrained_position_indices;
   std::vector<int> untracked_position_indices;
 
@@ -149,6 +152,7 @@ private:
   QPLocomotionPlanSettings settings;
   const std::map<Side, int> foot_body_ids;
   const std::map<Side, int> knee_indices;
+  const std::map<Side, int> aky_indices;
   const int pelvis_id;
 
   lcm::LCM lcm;
@@ -160,6 +164,7 @@ private:
   double last_foot_shift_time = 0;
   drake::lcmt_qp_controller_input last_qp_input;
   std::map<Side, bool> toe_off_active;
+  std::map<Side, bool> knee_pd_active;
   PiecewisePolynomial<double> shifted_zmp_trajectory;
 
   /*
@@ -220,7 +225,7 @@ private:
 
   static const std::map<Side, int> createFootBodyIdMap(RigidBodyManipulator& robot, const std::map<Side, std::string>& foot_names);
 
-  static const std::map<Side, int> createKneeIndicesMap(RigidBodyManipulator& robot, const std::map<Side, std::string>& foot_body_ids);
+  static const std::map<Side, int> createJointIndicesMap(RigidBodyManipulator& robot, const std::map<Side, std::string>& foot_body_ids);
 };
 
 #endif /* SYSTEMS_ROBOTINTERFACES_QPLOCOMOTIONPLAN_H_ */

@@ -39,3 +39,8 @@ if (LCM_FOUND)
 add_executable(testLCMUtil testLCMUtil.cpp)
 target_link_libraries(testLCMUtil drakeLCMUtil)
 endif()
+
+add_executable(testConvexHull testConvexHull.cpp)
+target_link_libraries(testConvexHull drakeConvexHull)
+pods_install_executables(testConvexHull)
+add_test(NAME testConvexHull COMMAND testConvexHull)
