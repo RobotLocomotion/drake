@@ -17,6 +17,7 @@ classdef QPLocomotionPlanCPPWrapper < QPControllerPlan
 
     function next_plan = getSuccessor(obj, t, x)
       next_plan = FrozenPlan(drake.lcmt_qp_controller_input(obj.getLastQPInput()));
+      next_plan.setStartTime(t);
     end
 
     ret = isFinished(obj, t, x);
