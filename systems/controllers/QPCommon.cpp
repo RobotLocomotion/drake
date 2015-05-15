@@ -2,17 +2,12 @@
 #include "drakeFloatingPointUtil.h"
 #include "controlUtil.h"
 #include <map>
-#include "lcmUtil.h"
-
-// for debugging
-#include <bot_lcmgl_client/lcmgl.h>
-#include <lcm/lcm-cpp.hpp>
-#include <lcm/lcm.h>
-#include "drake/lcmt_zmp_com_observer_state.hpp"
 #include <memory>
+#include "lcmUtil.h"
 #include "testUtil.h"
-bool DEBUG_ZMP_COM_OBSERVER = false;
-bool CHECK_CENTROIDAL_MOMENTUM_RATE_MATCHES_TOTAL_WRENCHES = false;
+#include "drake/lcmt_zmp_com_observer_state.hpp"
+
+const bool CHECK_CENTROIDAL_MOMENTUM_RATE_MATCHES_TOTAL_WRENCH = false;
 
 
 #define LEG_INTEGRATOR_DEACTIVATION_MARGIN 0.05
@@ -197,23 +192,68 @@ void applyJointPDOverride(const std::vector<drake::lcmt_joint_pd_override> &join
   }
 }
 
-void updateEstimatedCenterOfMassState(const Vector2d& zmp_from_force_sensors, const Vector2d& comdot_from_robot_state, const double com_height, const double grav, const double dt, const Vector2d& last_commanded_comddot, const Matrix4d& L, Vector4d& xhat)
+double averageContactPointHeight(RigidBodyManipulator* r, std::vector<SupportStateElement, Eigen::aligned_allocator<SupportStateElement> >& active_supports, int nc)
 {
-/* Derivation:
-  We have two sources of information for estimating the COM, one via the robot state (IMU+leg odomentry$\rightarrow$ full dynamic model) and the other via the instantaneous ground reaction forces (ZMP).  The ZMP informs us about the instantaneous position of the COM, but not it's velocity.  The IMU is better for high-frequency components, so we will only use the observation of COM velocity from the robot state, and end up with the following model:
-  $$x = \begin{bmatrix} x_{com} \\ y_{com} \\ \dot{x}_{com} \\ \dot{y}_{com} \end{bmatrix}, \quad u = \begin{bmatrix} \ddot{x}_{com} \\ \ddot{y}_{com} \end{bmatrix},\quad y = \begin{bmatrix} x_{zmp} \\ y_{zmp} \\ \dot{x}_{comFRS} \\ \dot{y}_{comFRS} \end{bmatrix},$$
-  where $FRS$ stands for ``from robot state".
-  \begin{gather*}
-  \dot{x} = Ax + Bu, \quad y = Cx + Du \\
-  A = \begin{bmatrix} 0_{2 \times 2} & I_{2 \times 2} \\ 0_{2 \times 2} & 0_{2 \times 2} \end{bmatrix}, \quad B = \begin{bmatrix} 0_{2 \times 2} \\ I_{2 \times 2} \end{bmatrix} \\
-  C = I_{4 \times 4} \quad D = \begin{bmatrix} -\frac{z_{comFRS}}{g} I_{2 \times 2} \\ 0_{2 \times 2} \end{bmatrix}
-  \\
-  \dot{\hat{x}} = A\hat{x} + Bu + L(y - C\hat{x} - Du)
-  \end{gather*}
-  where $L$ is the observer gain matrix.  This will give a BIBO stable observer so long as all eigenvalues of $(A-LC)$ are in the left-half plane.
+  Eigen::Matrix3Xd contact_positions_world(3, nc);
+  int col = 0;
+  for (auto support_it = active_supports.begin(); support_it != active_supports.end(); ++support_it) {
+    const SupportStateElement& support = *support_it;
+    for (auto contact_position_it = support.contact_pts.begin(); contact_position_it != support.contact_pts.end(); ++contact_position_it) {
+      Vector3d contact_point = contact_position_it->head<3>(); // copy, ah well
+      contact_positions_world.col(col++) = r->forwardKinNew(contact_point, support.body_idx, 0, 0, 0).value();
+    }
+  }
+  double average_contact_point_height = contact_positions_world.row(2).mean();
+  return average_contact_point_height;
+}
 
-  If we parameterize $L$ as a diagonal matrix then the eigenvalues of $(A-LC)$ are simply the negative of those diagonal entries.  I recommend trying diagonal entries $\begin{bmatrix} l_{zmp}, l_{zmp}, l_{com dot}, l_{com dot} \end{bmatrix}$, with $l_{comdot} \approx 2\sqrt{l_{zmp}}$ to get a critically-damped response.
- */
+Vector2d computeCoP(RigidBodyManipulator* r, const std::map<Side, ForceTorqueMeasurement>& foot_force_torque_measurements, Vector3d point_on_contact_plane, Eigen::Vector3d normal)
+{
+  std::vector<ForceTorqueMeasurement> force_torque_measurements;
+  for (auto it = foot_force_torque_measurements.begin(); it != foot_force_torque_measurements.end(); ++it) {
+    force_torque_measurements.push_back(it->second);
+  }
+  std::pair<Eigen::Vector3d, double> cop_and_normal_torque = r->resolveCenterOfPressure(force_torque_measurements, normal, point_on_contact_plane);
+  Vector2d zmp_from_force_sensors = cop_and_normal_torque.first.head<2>();
+  return zmp_from_force_sensors;
+}
+
+void estimateCoMBasedOnMeasuredZMP(NewQPControllerData* pdata, AtlasParams* params, std::vector<SupportStateElement, Eigen::aligned_allocator<SupportStateElement> >& active_supports, int num_contact_points, const std::map<Side, ForceTorqueMeasurement>& foot_force_torque_measurements, double dt,
+    Vector3d& xcom, Vector3d& xcomdot)
+{
+  /*
+   * Derivation:
+   * We have two sources of information for estimating the COM, one via the robot state (IMU+leg odomentry$\rightarrow$ full dynamic model) and the other via the instantaneous ground reaction forces (ZMP).  The ZMP informs us about the instantaneous position of the COM, but not it's velocity.  The IMU is better for high-frequency components, so we will only use the observation of COM velocity from the robot state, and end up with the following model:
+   * $$x = \begin{bmatrix} x_{com} \\ y_{com} \\ \dot{x}_{com} \\ \dot{y}_{com} \end{bmatrix}, \quad u = \begin{bmatrix} \ddot{x}_{com} \\ \ddot{y}_{com} \end{bmatrix},\quad y = \begin{bmatrix} x_{zmp} \\ y_{zmp} \\ \dot{x}_{comFRS} \\ \dot{y}_{comFRS} \end{bmatrix},$$
+   * where $FRS$ stands for ``from robot state".
+   * \begin{gather*}
+   * \dot{x} = Ax + Bu, \quad y = Cx + Du \\
+   * A = \begin{bmatrix} 0_{2 \times 2} & I_{2 \times 2} \\ 0_{2 \times 2} & 0_{2 \times 2} \end{bmatrix}, \quad B = \begin{bmatrix} 0_{2 \times 2} \\ I_{2 \times 2} \end{bmatrix} \\
+   * C = I_{4 \times 4} \quad D = \begin{bmatrix} -\frac{z_{comFRS}}{g} I_{2 \times 2} \\ 0_{2 \times 2} \end{bmatrix}
+   * \\
+   * \dot{\hat{x}} = A\hat{x} + Bu + L(y - C\hat{x} - Du)
+   * \end{gather*}
+   * where $L$ is the observer gain matrix.  This will give a BIBO stable observer so long as all eigenvalues of $(A-LC)$ are in the left-half plane.
+   *
+   * If we parameterize $L$ as a diagonal matrix then the eigenvalues of $(A-LC)$ are simply the negative of those diagonal entries.  I recommend trying diagonal entries $\begin{bmatrix} l_{zmp}, l_{zmp}, l_{com dot}, l_{com dot} \end{bmatrix}$, with $l_{comdot} \approx 2\sqrt{l_{zmp}}$ to get a critically-damped response.
+   */
+
+  // assume flat ground at average of contact points for ZMP computation. TODO: figure out what works best
+  double average_contact_point_height = averageContactPointHeight(pdata->r, active_supports, num_contact_points);
+  Vector3d point_on_contact_plane;
+  point_on_contact_plane << 0.0, 0.0, average_contact_point_height;
+  Vector2d zmp_from_force_sensors = computeCoP(pdata->r, foot_force_torque_measurements, point_on_contact_plane, Vector3d::UnitZ().eval());
+  if (pdata->state.t_prev == 0) {
+    pdata->state.center_of_mass_observer_state.topRows<2>() = xcom.topRows<2>();
+    pdata->state.center_of_mass_observer_state.bottomRows<2>() = xcomdot.topRows<2>();
+  }
+
+  const auto& comdot_from_robot_state = xcomdot.topRows<2>();
+  double com_height = xcom(2) - average_contact_point_height;
+  double grav = -pdata->r->a_grav(5);
+  const auto& last_commanded_comddot = pdata->state.last_xy_com_ddot;
+  const Matrix4d& L = params->center_of_mass_observer_gain;
+  Vector4d& xhat = pdata->state.center_of_mass_observer_state;
 
   // y_err = (y - C*xhat - D*u)
   Vector4d y_err;
@@ -225,6 +265,10 @@ void updateEstimatedCenterOfMassState(const Vector2d& zmp_from_force_sensors, co
   xhatdot.bottomRows<2>() += last_commanded_comddot;
 
   xhat.noalias() += dt * xhatdot;
+
+  // overwrite the com position and velocity with the observer's estimates:
+  xcom.topRows<2>() = pdata->state.center_of_mass_observer_state.topRows<2>();
+  xcomdot.topRows<2>() = pdata->state.center_of_mass_observer_state.bottomRows<2>();
 }
 
 void checkCentroidalMomentumMatchesTotalWrench(RigidBodyManipulator* r, const VectorXd& qdd, const std::vector<SupportStateElement, Eigen::aligned_allocator<SupportStateElement> >& active_supports, const MatrixXd& B, const VectorXd& beta)
@@ -236,6 +280,7 @@ void checkCentroidalMomentumMatchesTotalWrench(RigidBodyManipulator* r, const Ve
   Vector6d total_wrench_in_world = Vector6d::Zero();
   Vector6d floating_base_external_force_in_joint_coordinates = Vector6d::Zero();
   const int n_basis_vectors_per_contact = 2 * m_surface_tangents;
+
   int beta_start = 0;
   for (size_t j = 0; j < active_supports.size(); j++) {
     const auto& active_support = active_supports[j];
@@ -247,6 +292,7 @@ void checkCentroidalMomentumMatchesTotalWrench(RigidBodyManipulator* r, const Ve
     Vector6d wrench_for_body_in_body_frame = Vector6d::Zero();
     auto body_xyzquat = r->forwardKinNew(Vector3d::Zero().eval(), 0, active_support.body_idx, 2, 0).value();
     Matrix3d R_world_to_body = quat2rotmat(body_xyzquat.tail<4>().eval());
+
     for (size_t k = 0; k < contact_pts.size(); k++) {
       // for (auto k = contact_pts.begin(); k!= contact_pts.end(); k++) {
       const auto& Bblock = Bj.middleCols(k * n_basis_vectors_per_contact, n_basis_vectors_per_contact);
@@ -257,19 +303,23 @@ void checkCentroidalMomentumMatchesTotalWrench(RigidBodyManipulator* r, const Ve
       wrench_for_body_in_body_frame.head<3>() += torquejk;
       wrench_for_body_in_body_frame.tail<3>() += point_force;
     }
+
     Isometry3d transform_to_world(r->relativeTransform<double>(0, active_support.body_idx, 0).value());
     total_wrench_in_world += transformSpatialForce(transform_to_world, wrench_for_body_in_body_frame);
     beta_start += active_support_length;
   }
+
   double mass = r->getMass();
   Vector6d gravitational_wrench_in_com = r->a_grav * mass;
   Isometry3d com_to_world = Isometry3d::Identity();
   com_to_world.translation() = r->centerOfMass<double>(0).value();
   Vector6d gravitational_wrench_in_world = transformSpatialForce(com_to_world, gravitational_wrench_in_com);
   total_wrench_in_world += gravitational_wrench_in_world;
+
   auto world_momentum_matrix = r->worldMomentumMatrix<double>(0).value();
   auto world_momentum_matrix_dot_times_v = r->worldMomentumMatrixDotTimesV<double>(0).value();
   Vector6d momentum_rate_of_change = world_momentum_matrix * qdd + world_momentum_matrix_dot_times_v;
+
   valuecheckMatrix(total_wrench_in_world, momentum_rate_of_change, 1e-6);
 }
 
@@ -280,6 +330,10 @@ int setupAndSolveQP(
   // The primary solve loop for our controller. This constructs and solves a Quadratic Program and produces the instantaneous desired torques, along with reference positions, velocities, and accelerations. It mirrors the Matlab implementation in atlasControllers.InstantaneousQPController.setupAndSolveQP(), and more documentation can be found there. 
   // Note: argument `debug` MAY be set to NULL, which signals that no debug information is requested.
 
+  double dt = 0.0;
+  if (pdata->state.t_prev != 0.0) {
+    dt = robot_state.t - pdata->state.t_prev;
+  }
 
   // look up the param set by name
   AtlasParams *params; 
@@ -482,85 +536,9 @@ int setupAndSolveQP(
   int neps = nc*dim;
 
   if (params->use_center_of_mass_observer && foot_force_torque_measurements.size() > 0) {
-    std::vector<ForceTorqueMeasurement> force_torque_measurements;
-    for (auto it = foot_force_torque_measurements.begin(); it != foot_force_torque_measurements.end(); ++it) {
-      force_torque_measurements.push_back(it->second);
-    }
-
     // assume flat ground at average of contact points
     // TODO: figure out what works best
-    Eigen::Vector3d normal = Vector3d::UnitZ();
-    Eigen::Matrix3Xd contact_positions_world(3, nc);
-    int col = 0;
-    for (auto support_it = active_supports.begin(); support_it != active_supports.end(); ++support_it) {
-      const SupportStateElement& support = *support_it;
-      for (auto contact_position_it = support.contact_pts.begin(); contact_position_it != support.contact_pts.end(); ++contact_position_it) {
-        Vector3d contact_point = contact_position_it->head<3>(); // copy, ah well
-        contact_positions_world.col(col++) = pdata->r->forwardKinNew(contact_point, support.body_idx, 0, 0, 0).value();
-      }
-    }
-    double average_contact_point_height = contact_positions_world.row(2).mean();
-    Vector3d point_on_contact_plane;
-    point_on_contact_plane << 0.0, 0.0, average_contact_point_height;
-
-    std::pair<Eigen::Vector3d, double> cop_and_normal_torque = pdata->r->resolveCenterOfPressure(force_torque_measurements, normal, point_on_contact_plane);
-    Vector2d zmp_from_force_sensors = cop_and_normal_torque.first.head<2>();
-
-    double dt;
-    if (pdata->state.t_prev == 0) {
-      pdata->state.center_of_mass_observer_state.topRows<2>() = xcom.topRows<2>();
-      pdata->state.center_of_mass_observer_state.bottomRows<2>() = xcomdot.topRows<2>();
-      dt = 0;
-    } else {
-      dt = robot_state.t - pdata->state.t_prev;
-    }
-    updateEstimatedCenterOfMassState(
-        zmp_from_force_sensors,
-        xcomdot.topRows<2>(),
-        xcom(2) - average_contact_point_height,
-        -pdata->r->a_grav(5),
-        dt,
-        pdata->state.last_xy_com_ddot,
-        params->center_of_mass_observer_gain,
-        pdata->state.center_of_mass_observer_state);
-
-    // publish zmp/com observer state
-    if (DEBUG_ZMP_COM_OBSERVER) {
-//      std::cout << "dt: " << dt << std::endl;
-      std::unique_ptr<lcm::LCM> lcm_cpp(new lcm::LCM);
-      if (!lcm_cpp->good()) {
-        std::cout << "ERROR: lcm is not good()" << std::endl;
-      }
-
-      drake::lcmt_zmp_com_observer_state zmp_com_observer_state_msg;
-      eigenVectorToCArray(pdata->state.center_of_mass_observer_state.head<2>(), zmp_com_observer_state_msg.com);
-      eigenVectorToCArray(pdata->state.center_of_mass_observer_state.tail<2>(), zmp_com_observer_state_msg.comd);
-      lcm_cpp->publish("ZMP_COM_OBSERVER_STATE", &zmp_com_observer_state_msg);
-
-      lcm_t * lcm;
-      lcm = lcm_create(NULL);
-      if (!lcm)
-        throw std::runtime_error("LCM not good");
-
-      double com_estimates_draw_height = average_contact_point_height + 0.01; // a little above the ground to make sure it doesn't get occluded by the ground plane.
-
-      bot_lcmgl_t* lcmgl = bot_lcmgl_init(lcm, "zmp com observer (zmp-based red, kinematic grey)");
-      bot_lcmgl_color3f(lcmgl, 1.0, 0.0, 0.0); // red
-      double observer_com_xyz[] = { zmp_com_observer_state_msg.com[0], zmp_com_observer_state_msg.com[1], com_estimates_draw_height };
-      bot_lcmgl_sphere(lcmgl, observer_com_xyz, .01, 36, 36);
-
-      bot_lcmgl_color3f(lcmgl, 0.65, 0.65, 0.65); // grey
-      double kinematics_com_xyz[] = {xcom[0], xcom[1], com_estimates_draw_height};
-      bot_lcmgl_sphere(lcmgl, kinematics_com_xyz, .01, 36, 36);
-
-      bot_lcmgl_switch_buffer(lcmgl);
-      bot_lcmgl_destroy(lcmgl);
-      lcm_destroy(lcm);
-    }
-
-    // overwrite the com position and velocity with the observer's estimates:
-    xcom.topRows<2>() = pdata->state.center_of_mass_observer_state.topRows<2>();
-    xcomdot.topRows<2>() = pdata->state.center_of_mass_observer_state.bottomRows<2>();
+    estimateCoMBasedOnMeasuredZMP(pdata, params, active_supports, nc, foot_force_torque_measurements, dt, xcom, xcomdot);
   }
 
   VectorXd x_bar,xlimp;
@@ -899,19 +877,14 @@ int setupAndSolveQP(
   //----------------------------------------------------------------------
   // Solve for inputs ----------------------------------------------------
   qp_output->qdd = alpha.head(nq);
-
   VectorXd beta = alpha.segment(nq,nc*nd);
-
 
   if (params->use_center_of_mass_observer) {
     pdata->state.last_xy_com_ddot = pdata->Jdotv_xy + pdata->J_xy*qp_output->qdd;
   }
 
-  const VectorXd& qdd = qp_output->qdd;
-  RigidBodyManipulator* r = pdata->r;
-
-  if (CHECK_CENTROIDAL_MOMENTUM_RATE_MATCHES_TOTAL_WRENCHES) {
-    checkCentroidalMomentumMatchesTotalWrench(r, qdd, active_supports, B, beta);
+  if (CHECK_CENTROIDAL_MOMENTUM_RATE_MATCHES_TOTAL_WRENCH) {
+    checkCentroidalMomentumMatchesTotalWrench(pdata->r, qp_output->qdd, active_supports, B, beta);
   }
 
   // use transpose because B_act is orthogonal
