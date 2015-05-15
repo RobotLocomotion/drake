@@ -24,6 +24,7 @@ classdef QPLocomotionPlanSettings
 
     min_knee_angle = 0.7;
     min_aky_angle = -0.8;
+    ankle_limits_tolerance = 0.05;
     knee_kp = 40;
     knee_kd = 4;
     knee_weight = 1;
@@ -36,6 +37,8 @@ classdef QPLocomotionPlanSettings
     l_foot_name = 'l_foot';
     r_knee_name = 'r_leg_kny';
     l_knee_name = 'l_leg_kny';
+    l_akx_name = 'l_leg_akx';
+    r_akx_name = 'r_leg_akx';
     r_aky_name = 'r_leg_aky';
     l_aky_name = 'l_leg_aky';
 
