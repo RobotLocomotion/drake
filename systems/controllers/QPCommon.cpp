@@ -227,6 +227,52 @@ void updateEstimatedCenterOfMassState(const Vector2d& zmp_from_force_sensors, co
   xhat.noalias() += dt * xhatdot;
 }
 
+void checkCentroidalMomentumMatchesTotalWrench(RigidBodyManipulator* r, const VectorXd& qdd, const std::vector<SupportStateElement, Eigen::aligned_allocator<SupportStateElement> >& active_supports, const MatrixXd& B, const VectorXd& beta)
+{
+  std::map<int, Side> foot_body_index_to_side;
+  foot_body_index_to_side[r->findLinkId("l_foot")] = Side::LEFT;
+  foot_body_index_to_side[r->findLinkId("r_foot")] = Side::RIGHT;
+  // compute sum of wrenches, compare to rate of change of momentum from vd
+  Vector6d total_wrench_in_world = Vector6d::Zero();
+  Vector6d floating_base_external_force_in_joint_coordinates = Vector6d::Zero();
+  const int n_basis_vectors_per_contact = 2 * m_surface_tangents;
+  int beta_start = 0;
+  for (size_t j = 0; j < active_supports.size(); j++) {
+    const auto& active_support = active_supports[j];
+    const auto& contact_pts = active_support.contact_pts;
+    int ncj = static_cast<int>(contact_pts.size());
+    int active_support_length = n_basis_vectors_per_contact * ncj;
+    const auto& Bj = B.middleCols(beta_start, active_support_length);
+    const auto& betaj = beta.segment(beta_start, active_support_length);
+    Vector6d wrench_for_body_in_body_frame = Vector6d::Zero();
+    auto body_xyzquat = r->forwardKinNew(Vector3d::Zero().eval(), 0, active_support.body_idx, 2, 0).value();
+    Matrix3d R_world_to_body = quat2rotmat(body_xyzquat.tail<4>().eval());
+    for (size_t k = 0; k < contact_pts.size(); k++) {
+      // for (auto k = contact_pts.begin(); k!= contact_pts.end(); k++) {
+      const auto& Bblock = Bj.middleCols(k * n_basis_vectors_per_contact, n_basis_vectors_per_contact);
+      const auto& betablock = betaj.segment(k * n_basis_vectors_per_contact, n_basis_vectors_per_contact);
+      Vector3d point_force = R_world_to_body * Bblock * betablock;
+      Vector3d contact_pt = contact_pts[k].head(3);
+      auto torquejk = contact_pt.cross(point_force);
+      wrench_for_body_in_body_frame.head<3>() += torquejk;
+      wrench_for_body_in_body_frame.tail<3>() += point_force;
+    }
+    Isometry3d transform_to_world(r->relativeTransform<double>(0, active_support.body_idx, 0).value());
+    total_wrench_in_world += transformSpatialForce(transform_to_world, wrench_for_body_in_body_frame);
+    beta_start += active_support_length;
+  }
+  double mass = r->getMass();
+  Vector6d gravitational_wrench_in_com = r->a_grav * mass;
+  Isometry3d com_to_world = Isometry3d::Identity();
+  com_to_world.translation() = r->centerOfMass<double>(0).value();
+  Vector6d gravitational_wrench_in_world = transformSpatialForce(com_to_world, gravitational_wrench_in_com);
+  total_wrench_in_world += gravitational_wrench_in_world;
+  auto world_momentum_matrix = r->worldMomentumMatrix<double>(0).value();
+  auto world_momentum_matrix_dot_times_v = r->worldMomentumMatrixDotTimesV<double>(0).value();
+  Vector6d momentum_rate_of_change = world_momentum_matrix * qdd + world_momentum_matrix_dot_times_v;
+  valuecheckMatrix(total_wrench_in_world, momentum_rate_of_change, 1e-6);
+}
+
 int setupAndSolveQP(
 		NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_controller_input> qp_input, DrakeRobotState &robot_state,
 		const Ref<Matrix<bool, Dynamic, 1>> &b_contact_force, const std::map<Side, ForceTorqueMeasurement>& foot_force_torque_measurements,
@@ -861,60 +907,11 @@ int setupAndSolveQP(
     pdata->state.last_xy_com_ddot = pdata->Jdotv_xy + pdata->J_xy*qp_output->qdd;
   }
 
+  const VectorXd& qdd = qp_output->qdd;
+  RigidBodyManipulator* r = pdata->r;
+
   if (CHECK_CENTROIDAL_MOMENTUM_RATE_MATCHES_TOTAL_WRENCHES) {
-    std::map<int, Side> foot_body_index_to_side;
-    foot_body_index_to_side[pdata->r->findLinkId("l_foot")] = Side::LEFT;
-    foot_body_index_to_side[pdata->r->findLinkId("r_foot")] = Side::RIGHT;
-
-    // compute sum of wrenches, compare to rate of change of momentum from vd
-    Vector6d total_wrench_in_world = Vector6d::Zero();
-    Vector6d floating_base_external_force_in_joint_coordinates = Vector6d::Zero();
-    const int n_basis_vectors_per_contact = 2 * m_surface_tangents;
-    int beta_start = 0;
-    for (size_t j = 0; j < active_supports.size(); j++) {
-      const auto& active_support = active_supports[j];
-      const auto& contact_pts = active_support.contact_pts;
-
-      int ncj = static_cast<int>(contact_pts.size());
-      int active_support_length = n_basis_vectors_per_contact * ncj;
-
-      const auto& Bj = B.middleCols(beta_start, active_support_length);
-      const auto& betaj = beta.segment(beta_start, active_support_length);
-
-      Vector6d wrench_for_body_in_body_frame = Vector6d::Zero();
-
-      auto body_xyzquat = pdata->r->forwardKinNew(Vector3d::Zero().eval(), 0, active_support.body_idx, 2, 0).value();
-      Matrix3d R_world_to_body = quat2rotmat(body_xyzquat.tail<4>().eval());
-      for (size_t k = 0; k < contact_pts.size(); k++) {
-        // for (auto k = contact_pts.begin(); k!= contact_pts.end(); k++) {
-        const auto& Bblock = Bj.middleCols(k * n_basis_vectors_per_contact, n_basis_vectors_per_contact);
-        const auto& betablock = betaj.segment(k * n_basis_vectors_per_contact, n_basis_vectors_per_contact);
-        Vector3d point_force = R_world_to_body * Bblock * betablock;
-
-        Vector3d contact_pt = contact_pts[k].head(3);
-        auto torquejk = contact_pt.cross(point_force);
-        wrench_for_body_in_body_frame.head<3>() += torquejk;
-        wrench_for_body_in_body_frame.tail<3>() += point_force;
-      }
-
-      Isometry3d transform_to_world(pdata->r->relativeTransform<double>(0, active_support.body_idx, 0).value());
-      total_wrench_in_world += transformSpatialForce(transform_to_world, wrench_for_body_in_body_frame);
-      beta_start += active_support_length;
-    }
-
-    double mass = pdata->r->getMass();
-    Vector6d gravitational_wrench_in_com = pdata->r->a_grav * mass;
-    Isometry3d com_to_world = Isometry3d::Identity();
-    com_to_world.translation() = pdata->r->centerOfMass<double>(0).value();
-    Vector6d gravitational_wrench_in_world = transformSpatialForce(com_to_world, gravitational_wrench_in_com);
-
-    total_wrench_in_world += gravitational_wrench_in_world;
-
-    auto world_momentum_matrix = pdata->r->worldMomentumMatrix<double>(0).value();
-    auto world_momentum_matrix_dot_times_v = pdata->r->worldMomentumMatrixDotTimesV<double>(0).value();
-    Vector6d momentum_rate_of_change = world_momentum_matrix * qp_output->qdd + world_momentum_matrix_dot_times_v;
-
-    valuecheckMatrix(total_wrench_in_world, momentum_rate_of_change, 1e-6);
+    checkCentroidalMomentumMatchesTotalWrench(r, qdd, active_supports, B, beta);
   }
 
   // use transpose because B_act is orthogonal
