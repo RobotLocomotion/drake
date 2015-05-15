@@ -20,13 +20,18 @@ options.view = 'right';
 options.floating = true;
 options.ignore_self_collisions = true;
 options.terrain = RigidBodyFlatTerrain();
+options.enable_fastqp = false;
 if passive_ankle
   s = '../urdf/atlas_simple_spring_ankle_planar_contact.urdf';
   traj_file = 'data/atlas_passiveankle_traj_lqr_zoh.mat';
   %traj_file = 'data/atlas_passiveankle_traj_lqr_090314_zoh.mat';
 else  
   s = '../urdf/atlas_simple_planar_contact.urdf';
-  traj_file = 'data/atlas_lqr_fm2_cost10.mat';
+%   traj_file = 'data/atlas_lqr_fm2_cost10.mat';
+
+traj_file = 'data/atlas_lqr_fm2_periodic.mat';
+% traj_file = 'data/atlas_lqr_fm2_periodic_100.mat';
+
 %   traj_file = 'data/atlas_lqr_01.mat';
 end
 w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
@@ -44,6 +49,17 @@ v.display_dt = 0.01;
 
 
 load(traj_file);
+
+if true %foh on u and qd
+  t_t = xtraj.pp.breaks;
+  x = xtraj.eval(t_t);
+  u = utraj.eval(t_t);
+  qtraj = PPTrajectory(foh(t_t,x(1:r.getNumPositions,:)));
+  qdtraj = PPTrajectory(zoh(t_t,[x(1+r.getNumPositions:end,2:end) zeros(r.getNumVelocities,1)]));
+  xtraj = [qtraj;qdtraj];
+  utraj = PPTrajectory(zoh(t_t,u));
+end
+
 
 repeat_n = 1;
 
@@ -127,6 +143,8 @@ ctrl_data = FullStateQPControllerData(true,struct(...
   'supports',supports));
 
 % instantiate QP controller
+options.timestep = .001;
+options.dt = .001;
 options.cpos_slack_limit = inf;
 options.w_cpos_slack = 1.0;
 options.phi_slack_limit = inf;

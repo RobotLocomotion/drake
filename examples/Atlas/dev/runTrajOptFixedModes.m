@@ -3,7 +3,8 @@
 % traj_file = 'data/atlas_passive_ankle_traj.mat';
 % traj_file = 'data/atlas_passive_ankle_traj_fm2.mat';
 passive_ankle = false;
-traj_file = 'data/atlas_traj_fm';
+% traj_file = 'data/atlas_traj_fm';
+traj_file = 'data/atlas_traj_fm_ref';
 load(traj_file);
 
 %% get mode sequence
@@ -29,7 +30,7 @@ mode_seq_vec
 
 %% expand
 N_vec_pre= N_vec;
-N_vec = floor(2*N_vec);
+N_vec = floor(1.5*N_vec);
 t_pre = xtraj.pp.breaks;
 t_init = t_pre(1);
 sum(N_vec)

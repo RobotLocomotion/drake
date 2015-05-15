@@ -223,233 +223,380 @@ classdef FullStateQPControllerDT < DrakeSystem
     Vcur = (x-x0t)'*S0t*(x-x0t);
     display(sprintf('t=%f, V=%.3f, Vp=%.3f, dV=%.3f',t,Vcur,Vpred,Vpred - Vcur));
     
-    return;
+  end
+  
+    function y=output_miqp(obj,t,~,x)
+%     y = obj.output_nlp(t,[],x);
+%     return;
+    doProj = false;
+    
+    
+    ctrl_data = obj.controller_data;
+      
+    r = obj.robot;
+    nq = obj.numq; 
+    q = x(1:nq); 
+    qd = x(nq+(1:nq)); 
+    h=obj.timestep;
+            
+    supp_idx = find(ctrl_data.support_times<=(t+h),1,'last');
+    support = ctrl_data.supports(supp_idx);
+    if support.bodies(1) == 7,
+      if length(support.bodies) > 1
+        supp_ind = [support.contact_pts{1} support.contact_pts{2}+2];
+      else
+        supp_ind = support.contact_pts{1};
+      end
+    else
+      supp_ind = support.contact_pts{1} + 2;
+    end
+    
+    
 
-%     % get phi for planned contact groups
-%     % if phi < threshold, then add to active contacts
-%     % else, add to desired contacts
+    R = 0*ctrl_data.R;
+    if (ctrl_data.lqr_is_time_varying)
+      if isa(ctrl_data.S,'Trajectory')
+        S = fasteval(ctrl_data.S,t+h);
+        S0t = ctrl_data.S.eval(t);
+      else
+        S = fasteval(ctrl_data.S{supp_idx},t+h);
+        S0t = ctrl_data.S{supp_idx}.eval(t);
+      end
+      x0t = fasteval(ctrl_data.x0,t);
+      x0 = fasteval(ctrl_data.x0,t+h);
+      u0 = fasteval(ctrl_data.u0,t);
+    else
+      S = ctrl_data.S;
+      x0 = ctrl_data.x0;
+      u0 = ctrl_data.u0;
+      x0t = x0;
+    end
+    
+    % automatic offset for x position
+    x_offset = [1;zeros(2*nq-1,1)]'*S0t*(x-x0t)/S0t(1,1);
+    x0t(1) = x0t(1) + x_offset;
+    x0(1) = x0(1) + x_offset;
+    
+    q0 = x0(1:nq);
+
+    % get phi for planned contact groups
+    % if phi < threshold, then add to active contacts
+    % else, add to desired contacts
+
+    kinsol = doKinematics(r,q,true,true,qd);
+
+    dim = 2; % 2D or 3D
+    
+    [phi,~,~,~,~,~,~,~,n,D] = contactConstraints(r,kinsol,false,struct('terrain_only',1));   
+    nc = length(phi);
+    nd = length(D);
+    D_mat = [D{1};D{2}];
+    
+    [H,C,B] = manipulatorDynamics(r,q,qd);
+    
+    %----------------------------------------------------------------------
+    % Build handy index matrices ------------------------------------------
+
+    nu = getNumInputs(r);
+    nlambda = nc;
+    nlambdaf = nc*nd;
+    ngamma = nc;
+    
+    
+    nf = nlambda+nlambdaf+ngamma;
+    nbool = nf;
+    
+    nparams = nu+2*nq+nlambda+nlambdaf+ngamma+nbool;
+    Iu = zeros(nu,nparams); Iu(:,1:nu) = eye(nu);
+    Iq = zeros(nq,nparams); Iq(:,nu+(1:nq)) = eye(nq);
+    Iqd = zeros(nq,nparams); Iqd(:,nu+nq+(1:nq)) = eye(nq);
+    Ix = zeros(2*nq,nparams); Ix(:,nu+(1:2*nq)) = eye(2*nq);
+    Ilambda = zeros(nlambda,nparams); %Lambda impulse slack vars for projection
+    Ilambda(:,nu+2*nq+(1:nlambda)) = eye(nlambda);
+    Ilambdaf = zeros(nlambdaf,nparams); %Lambda impulse slack vars for projection
+    Ilambdaf(:,nu+2*nq+nlambda+(1:nlambdaf)) = eye(nlambdaf);
+    Igamma = zeros(ngamma,nparams);
+    Igamma(:,nu+2*nq+nlambda+nlambdaf+(1:ngamma)) = eye(ngamma);
+    Ibool = zeros(nbool,nparams);
+    Ibool(:,nu+2*nq+nlambda+nlambdaf+ngamma+(1:nbool)) = eye(nbool);
+    
+
+    %----------------------------------------------------------------------
+    % Set up problem constraints ------------------------------------------
+
+    lb = [(r.umin-00)' obj.jlmin' -inf*ones(1,nq) zeros(1,nf) zeros(1,nbool)]'; % qddot/contact forces/slack vars
+    ub = [(r.umax+00)' obj.jlmax' inf*ones(1,nq) inf*ones(1,nf) 1.5*ones(1,nbool)]';
+
+    Aeq_ = cell(1,4);
+    beq_ = cell(1,3);
+
+    % dynamics constraints
+
+    Hinv = inv(H);
+    h_Hinv = h*Hinv;
+    Aeq_{1} = Iqd - h_Hinv*B*Iu - Hinv*n'*Ilambda - Hinv*D_mat'*Ilambdaf;
+    beq_{1} = qd - h_Hinv*C;
+
+    Aeq_{2} = Iq - h*Iqd;
+    beq_{2} = q;%+h*qd;    
+    
+    % inequality constraints on phi
+    Aineq = -n*Iqd*h;
+    bineq = phi;
+    
+    % LCP constraints
+    % z \perp Wz + Mx + w
+    % z = [lambda;lambdaf;gamma]
+    % x = [q;qd]
+    W = zeros(nf,2*nq);
+    M = zeros(nf);
+    w = zeros(nf,1);
+    
+    % phi0 + h*phidot \perp lambda
+    W(1:nc,nq+1:end) = h*n;
+    w(1:nc) = phi;
+    
+    % gamma + D*qdot \perp lambdaf 
+    W(nc+1:2*nc,nq+1:end) = D{1};
+    M(nc+1:2*nc,3*nc+1:end) = eye(nc);
+    
+    W(2*nc+1:3*nc,nq+1:end) = D{2};
+    M(2*nc+1:3*nc,3*nc+1:end) = eye(nc);
+    
+    % mu*lambda - lambdaf \perp gamma
+    mu = 1;
+    M(3*nc+1:end,:) = [mu*eye(nc) -eye(nc) -eye(nc) zeros(nc)];
+    
+    
+    % linear equality constraints: Aeq*alpha = beq
+    Aeq = sparse(vertcat(Aeq_{:}));
+    beq = vertcat(beq_{:});
+    
+    Iz_lc = [Ilambda;Ilambdaf;Igamma];
+    
+    BIG = 1000;
+    
+    Aineq = [Aineq;-Iz_lc;Iz_lc - BIG*Ibool;-M*Iz_lc - W*Ix;M*Iz_lc + W*Ix + BIG*Ibool];
+    bineq = [bineq;zeros(2*nf,1);w;-w + BIG];
+    
+    
+    % Generate state guess
+    
+    Asub = Aeq(:,nu+1:nu+2*nq);
+    % x_guess = Ax*z + bx
+    bx = Asub\(beq - Aeq(:,1:nu)*u0);
+    Ax = -Asub\Aeq(:,nu+2*nq+1:nu+2*nq+nbool);
+    assert(any(any(Aeq(:,2*nq+nu+nbool+1:end))) == 0); % making sure we're not missing anything
+    
+    zguess = pathlcp(M + W*Ax,w+W*bx);
+    xguess = Ax*zguess + bx;
+    
+    if 0
+      ind_z_active = [1;1;0;0;1;1;0;0;1;1;0;0;0;0;1;1];
+      
+%       Aeq = [Aeq;M(ind_z_active == 1,:)*Iz_lc + W(ind_z_active == 1,:)*Ix];
+%       beq = [beq;-w(ind_z_active == 1)];
+      lb(end-nbool + find(ind_z_active == 1)) = .5;
+      ub(end-nbool + find(ind_z_active == 0)) = 0;
+      ub(end-nbool-nf+find(ind_z_active == 0)) = 0;
+    end
+    
+    %----------------------------------------------------------------------
+    % QP cost function ----------------------------------------------------
+    
+    %     Hqp = Iu'*h*R*Iu + Ix'*S*Ix;
+    %     fqp = -x0'*S*Ix - u0'*h*R*Iu;
+    
+    % was this!
+    %     Hqp = h*Iu'*R*Iu + Ix'*S*Ix;
+    %     fqp = -x0'*S*Ix - h*u0'*R*Iu;
+%     R = 0;
+    %after adding projection
+    Hqp = h*Iu'*R*Iu + Ix'*S*Ix;
+    fqp = (- x0)'*S*Ix - h*u0'*R*Iu;
+    
+    % add cost off of the surface
+    K = 000*ones(1,length(supp_ind));
+    fq_add = K*n(supp_ind,:);
+    fqp = fqp + fq_add*Iq;
+    
+    %cost on boolean
+    Kbool = 0*ones(1,length(supp_ind));
+    fqp = fqp -Kbool*Ibool(supp_ind,:);
+
+%     if any(n_err)
+%     J = [n_err];
+% %     K = 10000;
+% %     Hqp = Hqp + K*Iq'*(J'*J)*Iq;
+% %     fqp = fqp - K*q0'*(J'*J)*Iq;
 % 
-%     kinsol = doKinematics(r,q,true,true,qd);
-%     rigid_body_support_state = ctrl_data.supports(supp_idx);
-%     
-%     planned_supports = rigid_body_support_state.bodies;
-%     planned_contact_groups = rigid_body_support_state.contact_groups;
-%     %planned_num_contacts = rigid_body_support_state.num_contact_pts;      
 % 
-%     dim = 2; % 2D or 3D
+%       K = 10000;
+%       fq_add = K*J;
+%       Hq_add = 0;
+%       fqp = fqp + fq_add*Iq;
 % 
-% 
-%     [phi_all,~,~,~,~,~,~,~,n_all,D_all] = contactConstraints(r,kinsol,false,struct('terrain_only',1));
-%     
-% 
-%     [H,C,B] = manipulatorDynamics(r,q,qd);
-%     
-%     if obj.offset_x
-%       xoffset = obj.controller_data.xoffset;
-%       if norm(xoffset) > .001
-%         display(sprintf('offset=%.3f',xoffset));
-%       end
-%       x0(1) = x0(1) + obj.controller_data.xoffset;
-%       q0(1) = q0(1) + obj.controller_data.xoffset;
-%     end
-%     %----------------------------------------------------------------------
-%     % Build handy index matrices ------------------------------------------
-%     
-%     nC = length(phi_all,1);
-%     nD = length(D_all);
-% 
-%     
-%     nLambda = nC;
-%     nLambdaf = nC*nD;
-%     nparams = nu+2*nq+nLambda+nLambdaf;
-%     Iu = zeros(nu,nparams); Iu(:,1:nu) = eye(nu);
-%     Iq = zeros(nq,nparams); Iq(:,nu+(1:nq)) = eye(nq);
-%     Iqd = zeros(nq,nparams); Iqd(:,nu+nq+(1:nq)) = eye(nq);
-%     Ix = zeros(2*nq,nparams); Ix(:,nu+(1:2*nq)) = eye(2*nq);
-%     ILambda = zeros(nLambda,nparams); %Lambda impulse slack vars for projection
-%     ILambda(:,nu+2*nq+nf+(1:nLambda)) = eye(nLambda);
-%     ILambdaf = zeros(nLambdaf,nparams); %Lambda impulse slack vars for projection
-%     ILambdaf(:,nu+2*nq+nf+nLambda+(1:nLambdaf)) = eye(nLambdaf);
-%     
-%     u_inds = 1:nu;
-%     q_inds = u_inds(end) + (1:nq);
-%     qd_inds = q_inds(end)+(1:nq);
-%     Lambda_inds = qd_inds(end) + (1+nLambda);
-%     Lambdaf_inds = cell(nD,1);
-%     i0 = Lambda_inds(end);
-%     for i=1:nD,
-%       Lambdaf_inds{i} = i0 + (1:nC);
-%       i0 = i0 + nC;
-%     end
-%     %TODO: ilambdaf a cell vector
-% 
-%             
-%     
-%     %----------------------------------------------------------------------
-%     % Set up problem constraints ------------------------------------------
-% 
-%     lb = [r.umin' obj.jlmin' -inf*ones(1,nq), zeros(1,nLambda+nLambdaf)]'; % qddot/contact forces/slack vars
-%     ub = [r.umax' obj.jlmax' inf*ones(1,nq), inf(1,nLambda+nLambdaf)]';
-% 
-%     Aeq_ = cell(1,4);
-%     beq_ = cell(1,3);
-% 
-%     % dynamics constraints
-% 
-%     Hinv = inv(H);
-%     h_Hinv = h*Hinv;    
-%     Aeq_{1} = Iqd - h_Hinv*B*Iu - Hinv*n_all*ILambda;
-%     for i=1:nD,
-%       Aeq_{1} = Aeq_{1} - Hinv*D_all{i}*ILambdaf{i};
-%     end    
-%     beq_{1} = qd - h_Hinv*C;
-% 
-%     Aeq_{2} = Iq - h*Iqd;
-%     beq_{2} = q;%+h*qd;
-%     
-%     
-%     % linear equality constraints: Aeq*alpha = beq
-%     Aeq = sparse(vertcat(Aeq_{:}));
-%     beq = vertcat(beq_{:});
-%     
-%     %----------------------------------------------------------------------
-%     % QP cost function ----------------------------------------------------
-%     
-%     %     Hqp = Iu'*h*R*Iu + Ix'*S*Ix;
-%     %     fqp = -x0'*S*Ix - u0'*h*R*Iu;
-%     
-%     % was this!
-%     %     Hqp = h*Iu'*R*Iu + Ix'*S*Ix;
-%     %     fqp = -x0'*S*Ix - h*u0'*R*Iu;
-%     
-%     %after adding projection
-%     Hqp = h*Iu'*R*Iu + S;
-%     fqp = -x0'*S - h*u0'*R*Iu;
-%     
-%     % add cost off of the surface
-% %     if any(n_err)
-% %     J = [n_err];
-% % %     K = 10000;
-% % %     Hqp = Hqp + K*Iq'*(J'*J)*Iq;
-% % %     fqp = fqp - K*q0'*(J'*J)*Iq;
-% % 
-% % 
-% %       K = 10000;
-% %       fq_add = K*J;
-% %       Hq_add = 0;
-% %       fqp = fqp + fq_add*Iq;
-% % 
-% %     else
-% %       Hq_add = 0;
-% %       fq_add = zeros(1,nq);
-% %     end
-%   
-%     prog = NonlinearProgram(nparams);
-%     prog = prog.addConstraint(LinearConstraint(beq,beq,Aeq),1:nparams);
-%     prog = prog.addConstraint(BoundingBoxConstraint(lb,ub),1:nparams);
-%     
-%     % add LCP constraints
-%     lcp_mode = 1;
-%     lcp_slack = 0;
-%     phi_cnstr = LinearComplementarityConstraint(zeros(nC),h*n_all,phi_all,lcp_mode,lcp_slack);
-%     prog = prog.addCompositeConstraints(phi_cnstr,[qd_inds;Lambda_inds]);
-%     
-% %     for i=1:nD,
-% %       slip_cnstr = LinearComplementarityConstraint(zeros(nC),
-%     
-%     
-% 
-%     if true || info_fqp<0
-%       % then call gurobi
-% %       disp('QPController: failed over to gurobi');
-%       model.Q = sparse(Hqp + REG*eye(nparams));
-%       model.A = [Aeq;Aineq];
-%       model.rhs = [beq;bineq];
-%       model.sense = [obj.eq_array(1:length(beq));obj.ineq_array(1:length(bineq))];
-%       model.lb = lb;
-%       model.ub = ub;
-% 
-%       model.obj = fqp;
-%       if obj.gurobi_options.method==2
-%         % see drake/algorithms/QuadraticProgram.m solveWGUROBI
-%         model.Q = .5*model.Q;
-%       end
-% 
-%       if (any(any(isnan(model.Q))) || any(isnan(model.obj)) || any(any(isnan(model.A))) || any(isnan(model.rhs)) || any(isnan(model.lb)) || any(isnan(model.ub)))
-%         keyboard;
-%       end
-% 
-%       result = gurobi(model,obj.gurobi_options);
-%       alpha = result.x;
-%       
-%       if ~strcmp(result.status,'OPTIMAL')
-%         keyboard
-%       end
-% 
-%       qp_active_set = find(abs(Ain_fqp*alpha - bin_fqp)<1e-6);
-%       obj.controller_data.qp_active_set = qp_active_set;
-%     end
-% %     beta=Ibeta*alpha
-%     y = Iu*alpha;    
-%     
-%     % predicted normal impulse
-% %     impulse_pred = Dbar*Ibeta*alpha
-% %     qd_pred = Iqd*alpha
-%     
-%     if supp_idx > 1 && false
-%       [y_prev,cost_prev] = obj.output_prevsup(t,[],x);
-%       cost = .5*alpha'*Hqp*alpha + fqp*alpha;
-%       
-%       if cost_prev < cost
-%         y = y_prev;
-%       end
-%     end
-%     
-%       cost = .5*alpha'*Hqp*alpha + fqp*alpha;
-%       orig_cost = cost;
-%     
-%     if any(n_err)% | true% & false
-%       % check other permutations here
-%       % consider adding phi >= 0 for all other contacts
-% %       keyboard
-%       I = find(phi_all < 1e-3);
-%       for i=1:2^length(I),
-%         ind_i = I(de2bi(i-1,length(I)) == true);
-%         [y2,cost2,data]=output_byind(obj,t,[],x,ind_i,Hq_add,fq_add,proj_data);
-%         if cost2 < cost          
-%           cost = cost2;
-%           y = y2;
-%         end
-%       end
+%     else
+%       Hq_add = 0;
+%       fq_add = zeros(1,nq);
 %     end
 %     
-%     xpred = Ix*alpha;
-%     x0t = fasteval(ctrl_data.x0,t);
-%     if obj.offset_x
-%       x0t(1) = x0t(1) + obj.controller_data.xoffset;
+    %----------------------------------------------------------------------
+    % Solve QP ------------------------------------------------------------
+
+    REG = 1e-8;
+    obj.gurobi_options.method = 1;
+    obj.gurobi_options.outputflag = 1;
+    obj.gurobi_options.mipgap = 1e-9;
+    obj.gurobi_options.mipfocus = 1;
+    obj.gurobi_options.intfeastol = 1e-9;
+    
+
+    IR = eye(nparams);  
+    lbind = lb>-999;  ubind = ub<999;  % 1e3 was used like inf above... right?
+    Ain_fqp = full([-IR(lbind,:); IR(ubind,:)]);
+    bin_fqp = [-lb(lbind); ub(ubind)];
+    
+    % then call gurobi
+    %       disp('QPController: failed over to gurobi');
+    model.Q = sparse(Hqp + REG*eye(nparams));
+    model.A = [Aeq;Aineq];
+    model.rhs = [beq;bineq];
+    model.sense = [obj.eq_array(1:length(beq));obj.ineq_array(1:length(bineq))];
+    model.lb = lb;
+    model.ub = ub;
+    model.vtype = [repmat('C',nparams-nbool,1);repmat('I',nbool,1)];
+    
+    model.obj = fqp;
+    if obj.gurobi_options.method==2
+      % see drake/algorithms/QuadraticProgram.m solveWGUROBI
+      model.Q = .5*model.Q;
+    end
+    
+    if (any(any(isnan(model.Q))) || any(isnan(model.obj)) || any(any(isnan(model.A))) || any(isnan(model.rhs)) || any(isnan(model.lb)) || any(isnan(model.ub)))
+      keyboard;
+    end
+    
+%     result = gurobi(model,obj.gurobi_options);
+%     
+%     if ~strcmp(result.status,'OPTIMAL')
+%       keyboard
+%       y = obj.output_nlp(t,[],x);
+%       return
 %     end
-%     S0t = ctrl_data.S{supp_idx}.eval(t);
-%     Vpred = (xpred-x0)'*S*(xpred-x0);
-%     Vcur = (x-x0t)'*S0t*(x-x0t);
+% 
+%     alpha = result.x;
+%     beta=Ibeta*alpha
+
+% model.Q = Ix'*S*Ix + REG*eye(nparams);
+% fqp = -x0'*S*Ix;
+
+
+    % for mosek
+    prob.c = fqp;
+    [i,j,Qij] = find(model.Q);
+    Qinds = find(i >= j);
+    prob.qosubi = i(Qinds);
+    prob.qosubj = j(Qinds);
+    prob.qoval = Qij(Qinds);
+    prob.a = [Aeq;Aineq];
+    prob.blc = [beq;-inf(length(bineq),1)];
+    prob.buc = [beq;bineq];
+    prob.blx = lb;
+    prob.bux = ub;
+    prob.ints.sub = nparams-nbool+1:nparams;
+    prob.sol.int.xx = [u0;xguess;zguess;zguess > 1e-6];
+%     [r,res]=mosekopt('param');
+%     param = res.param;
+%     param.MSK_DPAR_MIO_TOL_ABS_RELAX_INT = 1e-3;
+%     param.MSK_DPAR_MIO_TOL_REL_RELAX_INT = 1e-4;
+%     param.MSK_DPAR_MIO_TOL_ABS_GAP = 0;
+%     param.MSK_DPAR_MIO_TOL_REL_GAP = 1e-2;
+%     param.MSK_DPAR_MIO_NEAR_TOL_ABS_GAP = 0;
+%     param.MSK_DPAR_MIO_NEAR_TOL_REL_GAP = 1e-1;
+
+if false
+    
+%     [~,res] = mosekopt('minimize',prob); 
+    [info.console,msk_r,res] = evalc('mosekopt(''minimize'', prob);');
+    
+    alpha = res.sol.int.xx;
+    
+elseif true
+  [x_opt,f_opt] = solveQPCC({Ix*model.Q*Ix'},{Iu*model.Q*Iu'},{prob.c*Ix'},{prob.c*Iu'},{H},{C},{B},{n},D(1),{phi},{n},{0*D{1}*qd},{[D{1}*0 D{1}]},mu,r.umin,r.umax,q,qd,h);
+  alpha = [x_opt(2*nq+1:2*nq+nu);x_opt(1:2*nq);x_opt(2*nq+nu+1:end);zeros(16,1)];  
+else
+  [info.console,msk_r,res] = evalc('mosekopt(''minimize'', prob);');
+  
+  alpha = res.sol.int.xx;
+  [x_opt,f_opt] = solveQPCC({Ix*model.Q*Ix'},{Iu*model.Q*Iu'},{prob.c*Ix'},{prob.c*Iu'},{H},{C},{B},{n},D(1),{phi},{n},{0*D{1}*qd},{[D{1}*0 D{1}]},mu,r.umin,r.umax,q,qd,h);
+  
+  if f_opt < res.sol.int.pobjval
+    alpha = [x_opt(2*nq+1:2*nq+nu);x_opt(1:2*nq);x_opt(2*nq+nu+1:end);zeros(16,1)];
+  end
+end
+
+    y = Iu*alpha;    
+    Ibool*alpha;
+    % predicted normal impulse
+%     impulse_pred = Dbar*Ibeta*alpha
+%     qd_pred = Iqd*alpha
+    
+    if supp_idx > 1 && false
+      [y_prev,cost_prev] = obj.output_prevsup(t,[],x);
+      cost = .5*alpha'*Hqp*alpha + fqp*alpha;
+      
+      if cost_prev < cost
+        y = y_prev;
+      end
+    end
+    
+      cost = .5*alpha'*Hqp*alpha + fqp*alpha;
+      orig_cost = cost;
+    
+    if false && any(n_err)% | true% & false
+      % check other permutations here
+      % consider adding phi >= 0 for all other contacts
+%       keyboard
+      I = find(phi_all < 1e-3);
+      for i=1:2^length(I),
+        ind_i = I(de2bi(i-1,length(I)) == true);
+        [y2,cost2,data]=output_byind(obj,t,[],x,ind_i,Hq_add,fq_add,proj_data);
+        if cost2 < cost          
+          cost = cost2;
+          y = y2;
+        end
+      end
+    end
+    
+    xpred = Ix*alpha;
+    
+    if obj.offset_x
+      x0t(1) = x0t(1) + obj.controller_data.xoffset;
+    end
+    
+    Vpred = (xpred-x0)'*S*(xpred-x0);
+    Vcur = (x-x0t)'*S0t*(x-x0t);
 %     x_proj = A_proj*alpha - b_proj;
 %     Vproj = (x_proj - x0)'*S*(x_proj - x0);
-%     display(sprintf('t=%f, V=%.3f, Vp=%.3f, dV=%.3f, dcost=%.3f',t,Vcur,Vpred,Vpred - Vcur, orig_cost - cost));
-% %     if Vpred > 20
-% %       keyboard
-% %     end
-% %     if any(phi_err)
-% %       keyboard
-% %     end
-% 
-% % kinsol_pred = doKinematics(r,Iq*alpha);
-% % phi_pred = contactConstraints(r,kinsol_pred,false,struct('terrain_only',1));
-% % [phi_all phi_pred]
-% ILambda*alpha;
+    display(sprintf('t=%f, V=%.3f, Vp=%.3f, dV=%.3f, dcost=%.3f',t,Vcur,Vpred,Vpred - Vcur, orig_cost - cost));
+%     if Vpred > 20
+%       keyboard
+%     end
+%     if any(phi_err)
+%       keyboard
+%     end
+
+% kinsol_pred = doKinematics(r,Iq*alpha);
+% phi_pred = contactConstraints(r,kinsol_pred,false,struct('terrain_only',1));
+% [phi_all phi_pred]
+Ilambda*alpha;
   end
     
   function y=output(obj,t,~,x)
-    y = obj.output_nlp(t,[],x);
+    y = obj.output_miqp(t,[],x);
     return;
+
     doProj = false;
     
     

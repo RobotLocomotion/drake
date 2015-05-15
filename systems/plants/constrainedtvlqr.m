@@ -269,7 +269,7 @@ function Pdot = Pdynamics(obj,t,xtraj,utraj,P,constraint_ind,alpha_1,alpha_2,opt
   P = reshape(P,2*obj.getNumPositions(),[]);
   Pdot = getPdot(obj,t,x,u,P,constraint_ind,alpha_1,alpha_2,options);
   Pdot = Pdot(:);
-  % t
+%   t
 end
 
 function Sdot = Sdynamics(t,S,p,dynamicsfn,xtraj,utraj,Ptraj,Q,R,constraint_ind,alpha_1,alpha_2,options)

@@ -164,7 +164,7 @@ if options.periodic
   for j = 1:3
     for i = length(mode_data):-1:1,
       ts = mode_data{i}.tspan;
-      [c{i},Ktraj{i},Straj{i},Ptraj{i},Btraj{i}] = constrainedtvlqr(obj,xtraj,utraj,Q,R,Qfi,mode_data{i}.constraint_ind,struct('tspan',ts));
+      [c{i},Ktraj{i},Straj{i},Ptraj{i},Btraj{i},Ftraj{i},Straj_full{i}] = constrainedtvlqr(obj,xtraj,utraj,Q,R,Qfi,mode_data{i}.constraint_ind,struct('tspan',ts));
       P0 = Ptraj{i}.eval(ts(1));
       S0 = Straj{i}.eval(ts(1));
       Qfi = pinv(P0*P0')*P0*S0*P0'*pinv(P0*P0')';  %extract least squares full rank solution
@@ -174,13 +174,16 @@ if options.periodic
       else
         Qfi = options.periodic_jump'*Qfi*options.periodic_jump;
       end
+      Qfi = Qfi + 1e-6*eye(size(Qfi,1));
+      min(eig(Qfi))
     end
     
-    c_bkp{j} = c;
-    K_bkp{j} = Ktraj;
-    S_bkp{j} = Straj;
-    P_bkp{j} = Ptraj;
-    B_bkp{j} = Btraj;
+%     c_bkp{j} = c;
+%     K_bkp{j} = Ktraj;
+%     S_bkp{j} = Straj;
+%     P_bkp{j} = Ptraj;
+%     B_bkp{j} = Btraj;
+% keyboard
   end
 else
   Qfi = Qf;
@@ -199,6 +202,7 @@ else
     Qfi = Qfi + 1e-6*eye(size(Qfi,1));
   end
 end
+keyboard
 end
 
 
