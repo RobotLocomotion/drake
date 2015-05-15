@@ -11,8 +11,8 @@ classdef AtlasAnkleXYJointLimitConstraint < SingleTimeLinearPostureConstraint
       l_leg_aky = robot.findPositionIndices('l_leg_aky');
       r_leg_akx = robot.findPositionIndices('r_leg_akx');
       r_leg_aky = robot.findPositionIndices('r_leg_aky');
-      ankle_limits_A = [0.0694   -0.9976;   -0.0694   -0.9976;    0.5183   -0.8552;   -0.5183   -0.8552;    1.0000   -0.0000;   -1.0000   -0.0000;    0.7107    0.7035;    0.5090    0.8608;   -0.7107    0.7035;   -0.5090    0.8608];
-      ankle_limits_b = [0.9976;    0.9976;    0.9871;    0.9871;    0.4360;    0.4360;    0.5913;    0.6198;    0.5913;    0.6198];
+      ankle_limits_A = [0.5044   -0.8635;    0.1059   -0.9944;    1.0000    0.0000;   -0.1083   -0.9941;   -0.5044   -0.8635;    0.4510    0.8925;   -1.0000   -0.0000;   -0.4555    0.8902];
+      ankle_limits_b = [1.0253;    1.0137;    0.6411;    1.0143;    1.0253;    0.6163;    0.6411;    0.6183];
       num_lin_ineq = length(ankle_limits_b);
       iAfun = [(1:num_lin_ineq)';(1:num_lin_ineq)';num_lin_ineq+(1:num_lin_ineq)';num_lin_ineq+(1:num_lin_ineq)'];
       jAvar = reshape(bsxfun(@times,ones(num_lin_ineq,1),[l_leg_akx l_leg_aky r_leg_akx r_leg_aky]),[],1);
