@@ -13,11 +13,9 @@ include_directories(joints)
 include_directories(${PROJECT_SOURCE_DIR}/solvers)
 
 add_library(drakeRBM SHARED RigidBodyManipulator.cpp RigidBody.cpp RigidBodyManipulatorURDF.cpp RigidBodyManipulatorContact.cpp tinyxml/tinyxml.cpp tinyxml/tinyxmlparser.cpp tinyxml/tinyxmlerror.cpp)
-target_link_libraries(drakeRBM drakeCollision)
-target_link_libraries(drakeRBM drakeJoints)
-target_link_libraries(drakeRBM spruce)
+target_link_libraries(drakeRBM drakeCollision drakeJoints spruce drakeUtil)
 pods_install_libraries(drakeRBM)
-pods_install_headers(RigidBodyManipulator.h RigidBody.h RigidBodyFrame.h KinematicPath.h DESTINATION drake)
+pods_install_headers(RigidBodyManipulator.h RigidBody.h RigidBodyFrame.h KinematicPath.h ForceTorqueMeasurement.h DESTINATION drake)
 pods_install_pkg_config_file(drake-rbm
   LIBS -ldrakeRBM
   REQUIRES
