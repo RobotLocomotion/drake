@@ -68,8 +68,8 @@ void testDuplicates() {
 }
 
 void testRandomConvexCombinations() {
-  for (int i=2; i < 10; ++i) {
-    for (int j=0; j < 100; ++j) {
+  for (int i=2; i < 50; ++i) {
+    for (int j=0; j < 500; ++j) {
       MatrixXd pts = MatrixXd::Random(2, i);
       VectorXd weights = VectorXd::Random(i);
       if (weights.minCoeff() < 0) {
