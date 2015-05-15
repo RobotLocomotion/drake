@@ -165,7 +165,7 @@ private:
   drake::lcmt_qp_controller_input last_qp_input;
   std::map<Side, bool> toe_off_active;
   std::map<Side, bool> knee_pd_active;
-  std::map<Side, double> knee_pd_qi_des;
+  std::map<Side, KneeSettings> knee_pd_settings;
   PiecewisePolynomial<double> shifted_zmp_trajectory;
 
   /*
@@ -222,7 +222,7 @@ private:
 
   void updateS1Trajectory();
 
-  void applyKneePD(int knee_index, drake::lcmt_qp_controller_input &qp_input);
+  void applyKneePD(Side side, drake::lcmt_qp_controller_input &qp_input);
 
   static const std::map<SupportLogicType, std::vector<bool> > createSupportLogicMaps();
 

@@ -39,7 +39,7 @@ QPLocomotionPlan::QPLocomotionPlan(RigidBodyManipulator& robot, const QPLocomoti
   for (auto it = Side::values.begin(); it != Side::values.end(); ++it) {
     toe_off_active[*it] = false;
     knee_pd_active[*it] = false;
-    knee_pd_qi_des[*it] = 0.0;
+    knee_pd_settings[*it] = QPLocomotionPlanSettings::createDefaultKneeSettings();
     foot_shifts[*it] = Vector3d::Zero();
   }
 
@@ -196,13 +196,15 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
         }
         knee_pd_active[side] = true;
         if (knee_close_to_singularity) {
-          knee_pd_qi_des[side] = settings.knee_settings.min_knee_angle;
+          knee_pd_settings[side] = settings.knee_settings;
         } else {
-          knee_pd_qi_des[side] = q[knee_index];
+          knee_pd_settings[side] = settings.knee_settings;
+          knee_pd_settings[side].knee_kp = 0;
+          knee_pd_settings[side].knee_kd = 0;
         }
       }
       if (knee_pd_active.at(side)) {
-        this->applyKneePD(knee_index, qp_input);
+        this->applyKneePD(side, qp_input);
       }
       if (body_motion.isToeOffAllowed(body_motion_segment_index)) {
         updateSwingTrajectory(t_plan, body_motion, body_motion_segment_index, v);
@@ -304,16 +306,17 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
   return qp_input;
 }
 
-void QPLocomotionPlan::applyKneePD(int knee_index, drake::lcmt_qp_controller_input &qp_input)
+void QPLocomotionPlan::applyKneePD(Side side, drake::lcmt_qp_controller_input &qp_input)
 {
+  int knee_index = knee_indices.at(side);
   drake::lcmt_joint_pd_override joint_pd_override_for_support;
   joint_pd_override_for_support.timestamp = 0;
   joint_pd_override_for_support.position_ind = static_cast<int32_t>(knee_index) + 1; // use 1-indexing in LCM
-  joint_pd_override_for_support.qi_des = settings.knee_settings.min_knee_angle;
+  joint_pd_override_for_support.qi_des = knee_pd_settings.at(side).min_knee_angle;
   joint_pd_override_for_support.qdi_des = 0.0;
-  joint_pd_override_for_support.kp = settings.knee_settings.knee_kp;
-  joint_pd_override_for_support.kd = settings.knee_settings.knee_kd;
-  joint_pd_override_for_support.weight = settings.knee_settings.knee_weight;
+  joint_pd_override_for_support.kp = knee_pd_settings.at(side).knee_kp;
+  joint_pd_override_for_support.kd = knee_pd_settings.at(side).knee_kd;
+  joint_pd_override_for_support.weight = knee_pd_settings.at(side).knee_weight;
   qp_input.joint_pd_override.push_back(joint_pd_override_for_support);
   qp_input.num_joint_pd_overrides++;
 }
