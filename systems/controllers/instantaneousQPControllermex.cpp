@@ -18,8 +18,10 @@ using namespace std;
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
-  if (nrhs<1) mexErrMsgTxt("usage: alpha=QPControllermex(ptr,t,x,qp_input,contact_sensor,use_fastqp)");
-  if (nlhs<1) mexErrMsgTxt("take at least one output... please.");
+  if (nrhs < 5)
+    mexErrMsgTxt("usage: alpha=QPControllermex(ptr,t,x,qp_input,contact_sensor,foot_force_torque_measurements)");
+  if (nlhs < 1)
+    mexErrMsgTxt("take at least one output... please.");
 
   double* pr;
 
@@ -36,6 +38,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   int nq = pdata->r->num_positions;
   int nv = pdata->r->num_velocities;
   if (mxGetNumberOfElements(prhs[narg]) != (nq + nv)) mexErrMsgTxt("size of x should be nq + nv\n");
+  if (nq!=nv) mexErrMsgTxt("still assume nv==nq");
   double *q_ptr = mxGetPrSafe(prhs[narg]);
   double *qd_ptr = &q_ptr[nq];
   Map<VectorXd> q(q_ptr, nq);
@@ -70,7 +73,18 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   if (nlhs>3) {
     debug.reset(new QPControllerDebugData());
   }
-  int info = setupAndSolveQP(pdata, qp_input, robot_state, b_contact_force, &qp_output, debug);
+
+  std::map<Side, ForceTorqueMeasurement> foot_force_torque_measurements;
+  if (nrhs > 5) {
+    const mxArray* mex_foot_force_torque_measurements = prhs[narg++];
+    if (!mxIsEmpty(mex_foot_force_torque_measurements)) {
+      foot_force_torque_measurements[Side::LEFT].frame_idx = pdata->r->findLinkId("l_foot");
+      foot_force_torque_measurements[Side::LEFT].wrench = matlabToEigenMap<TWIST_SIZE, 1>(mxGetFieldSafe(mex_foot_force_torque_measurements, "left"));
+      foot_force_torque_measurements[Side::RIGHT].frame_idx = pdata->r->findLinkId("r_foot");
+      foot_force_torque_measurements[Side::RIGHT].wrench = matlabToEigenMap<TWIST_SIZE, 1>(mxGetFieldSafe(mex_foot_force_torque_measurements, "right"));
+    }
+  }
+  int info = setupAndSolveQP(pdata, qp_input, robot_state, b_contact_force, foot_force_torque_measurements, &qp_output, debug);
 
   // return to matlab
   narg = 0;

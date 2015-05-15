@@ -5,6 +5,7 @@
 #include "RigidBodyManipulator.h"
 #include "DrakeJoint.h"
 #include "FixedJoint.h"
+#include "drakeUtil.h"
 
 #include <algorithm>
 #include <string>
@@ -1700,6 +1701,19 @@ void RigidBodyManipulator::getCOMdJac(MatrixBase<Derived> &dJcom, const std::set
   }
 }
 
+template <typename DerivedNormal, typename DerivedPoint>
+std::pair<Eigen::Vector3d, double> RigidBodyManipulator::resolveCenterOfPressure(const std::vector<ForceTorqueMeasurement> & force_torque_measurements, const Eigen::MatrixBase<DerivedNormal> & normal, const Eigen::MatrixBase<DerivedPoint> & point_on_contact_plane)
+{
+  typedef typename DerivedNormal::Scalar Scalar;
+  typedef Matrix<Scalar, 6, 1> Vector6;
+  Vector6 total_wrench = Vector6::Zero();
+  for (auto it = force_torque_measurements.begin(); it != force_torque_measurements.end(); ++it) {
+    Isometry3d transform_to_world(relativeTransform<Scalar>(0, it->frame_idx, 0).value());
+    total_wrench += transformSpatialForce(transform_to_world, it->wrench);
+  }
+  return ::resolveCenterOfPressure(total_wrench.template head<3>(), total_wrench.template tail<3>(), normal, point_on_contact_plane);
+}
+
 int RigidBodyManipulator::getNumContacts(const set<int> &body_idx)
 {
   size_t n=0,nb=body_idx.size(),bi;
@@ -3371,3 +3385,4 @@ template DLLEXPORT_RBM void RigidBodyManipulator::jointLimitConstraints(MatrixBa
 template DLLEXPORT_RBM void RigidBodyManipulator::jointLimitConstraints(MatrixBase< Map<VectorXd> > const &, MatrixBase<VectorXd> &, MatrixBase<MatrixXd> &) const ;
 template DLLEXPORT_RBM void RigidBodyManipulator::jointLimitConstraints(MatrixBase< Map<VectorXd> > const &, MatrixBase< Map<VectorXd> > &, MatrixBase< Map<MatrixXd> > &) const ;
 
+template DLLEXPORT_RBM std::pair<Eigen::Vector3d, double> RigidBodyManipulator::resolveCenterOfPressure(const std::vector<ForceTorqueMeasurement> &, const Eigen::MatrixBase<Eigen::Vector3d> &, const Eigen::MatrixBase<Eigen::Vector3d> &);

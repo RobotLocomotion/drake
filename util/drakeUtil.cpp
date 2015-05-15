@@ -1,5 +1,5 @@
 /*
- * drakeUtil.cpp
+* drakeUtil.cpp
  *
  *  Created on: Jun 19, 2013
  *      Author: russt
@@ -38,7 +38,8 @@ double angleAverage(double theta1, double theta2) {
   return angle_mean;
 }
 
-std::pair<Eigen::Vector3d, double> resolveCenterOfPressure(Eigen::Vector3d torque, Eigen::Vector3d force, Eigen::Vector3d normal, Eigen::Vector3d point_on_contact_plane)
+template <typename DerivedTorque, typename DerivedForce, typename DerivedNormal, typename DerivedPoint>
+std::pair<Eigen::Vector3d, double> resolveCenterOfPressure(const Eigen::MatrixBase<DerivedTorque> & torque, const Eigen::MatrixBase<DerivedForce> & force, const Eigen::MatrixBase<DerivedNormal> & normal, const Eigen::MatrixBase<DerivedPoint> & point_on_contact_plane)
 {
   // TODO: implement multi-column version
   using namespace Eigen;
@@ -68,3 +69,6 @@ std::pair<Eigen::Vector3d, double> resolveCenterOfPressure(Eigen::Vector3d torqu
   return std::pair<Vector3d, double>(cop, normal_torque_at_cop);
 }
 
+template DLLEXPORT std::pair<Eigen::Matrix<double, 3, 1, 0, 3, 1>, double> resolveCenterOfPressure<Eigen::Map<Eigen::Matrix<double, 3, 1, 0, 3, 1> const, 0, Eigen::Stride<0, 0> >, Eigen::Map<Eigen::Matrix<double, 3, 1, 0, 3, 1> const, 0, Eigen::Stride<0, 0> >, Eigen::Map<Eigen::Matrix<double, 3, 1, 0, 3, 1> const, 0, Eigen::Stride<0, 0> >, Eigen::Map<Eigen::Matrix<double, 3, 1, 0, 3, 1> const, 0, Eigen::Stride<0, 0> > >(Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, 3, 1, 0, 3, 1> const, 0, Eigen::Stride<0, 0> > > const&, Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, 3, 1, 0, 3, 1> const, 0, Eigen::Stride<0, 0> > > const&, Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, 3, 1, 0, 3, 1> const, 0, Eigen::Stride<0, 0> > > const&, Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, 3, 1, 0, 3, 1> const, 0, Eigen::Stride<0, 0> > > const&);
+template DLLEXPORT std::pair<Eigen::Matrix<double, 3, 1, 0, 3, 1>, double> resolveCenterOfPressure<Eigen::Matrix<double, 3, 1, 0, 3, 1>, Eigen::Matrix<double, 3, 1, 0, 3, 1>, Eigen::Matrix<double, 3, 1, 0, 3, 1>, Eigen::Matrix<double, 3, 1, 0, 3, 1> >(Eigen::MatrixBase<Eigen::Matrix<double, 3, 1, 0, 3, 1> > const&, Eigen::MatrixBase<Eigen::Matrix<double, 3, 1, 0, 3, 1> > const&, Eigen::MatrixBase<Eigen::Matrix<double, 3, 1, 0, 3, 1> > const&, Eigen::MatrixBase<Eigen::Matrix<double, 3, 1, 0, 3, 1> > const&);
+template DLLEXPORT std::pair<Eigen::Matrix<double, 3, 1, 0, 3, 1>, double> resolveCenterOfPressure<Eigen::Block<Eigen::Matrix<double, 6, 1, 0, 6, 1>, 3, 1, false>, Eigen::Block<Eigen::Matrix<double, 6, 1, 0, 6, 1>, 3, 1, false>, Eigen::Matrix<double, 3, 1, 0, 3, 1>, Eigen::Matrix<double, 3, 1, 0, 3, 1> >(Eigen::MatrixBase<Eigen::Block<Eigen::Matrix<double, 6, 1, 0, 6, 1>, 3, 1, false> > const&, Eigen::MatrixBase<Eigen::Block<Eigen::Matrix<double, 6, 1, 0, 6, 1>, 3, 1, false> > const&, Eigen::MatrixBase<Eigen::Matrix<double, 3, 1, 0, 3, 1> > const&, Eigen::MatrixBase<Eigen::Matrix<double, 3, 1, 0, 3, 1> > const&);
