@@ -165,6 +165,7 @@ private:
   drake::lcmt_qp_controller_input last_qp_input;
   std::map<Side, bool> toe_off_active;
   std::map<Side, bool> knee_pd_active;
+  std::map<Side, double> knee_pd_qi_des;
   PiecewisePolynomial<double> shifted_zmp_trajectory;
 
   /*

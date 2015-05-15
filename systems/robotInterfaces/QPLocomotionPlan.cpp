@@ -39,6 +39,7 @@ QPLocomotionPlan::QPLocomotionPlan(RigidBodyManipulator& robot, const QPLocomoti
   for (auto it = Side::values.begin(); it != Side::values.end(); ++it) {
     toe_off_active[*it] = false;
     knee_pd_active[*it] = false;
+    knee_pd_qi_des[*it] = 0.0;
     foot_shifts[*it] = Vector3d::Zero();
   }
 
@@ -193,8 +194,13 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
             support_state_element.contact_points = getFrontTwoContactPoints(support_state_element.contact_points);
             // support_state_element.contact_points = settings.contact_groups[body_id].at("toe");
         }
+        knee_pd_active[side] = true;
+        if (knee_close_to_singularity) {
+          knee_pd_qi_des[side] = settings.knee_settings.min_knee_angle;
+        } else {
+          knee_pd_qi_des[side] = q[knee_index];
+        }
       }
-      knee_pd_active[side] = knee_pd_active.at(side) || knee_close_to_singularity && toe_off_active.at(side);
       if (knee_pd_active.at(side)) {
         this->applyKneePD(knee_index, qp_input);
       }
