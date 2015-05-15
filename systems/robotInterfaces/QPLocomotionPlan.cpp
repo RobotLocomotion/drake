@@ -10,6 +10,7 @@
 #include "lcmUtil.h"
 #include <string>
 #include "convexHull.h"
+#include "atlasUtil.h"
 
 // TODO: discuss possibility of chatter in knee control
 // TODO: make body_motions a map from RigidBody* to BodyMotionData, remove body_id from BodyMotionData?
@@ -27,6 +28,7 @@ QPLocomotionPlan::QPLocomotionPlan(RigidBodyManipulator& robot, const QPLocomoti
     pelvis_id(robot.findLinkId(settings.pelvis_name)),
     foot_body_ids(createFootBodyIdMap(robot, settings.foot_names)),
     knee_indices(createJointIndicesMap(robot, settings.knee_names)),
+    akx_indices(createJointIndicesMap(robot, settings.akx_names)),
     aky_indices(createJointIndicesMap(robot, settings.aky_names)),
     plan_shift(Vector3d::Zero()),
     shifted_zmp_trajectory(settings.zmp_trajectory)
@@ -144,11 +146,12 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
       // toe off active switching logic
       Side side = side_it->first;
       int knee_index = knee_indices.at(side);
+      int akx_index = akx_indices.at(side);
       int aky_index = aky_indices.at(side);
       bool knee_close_to_singularity = q[knee_index] < settings.knee_settings.min_knee_angle;
       if (!toe_off_active[side]) {
         bool is_support_foot = isSupportingBody(body_id, support_state);
-        bool ankle_close_to_limit = q[aky_index] < settings.min_aky_angle;
+        bool ankle_close_to_limit = ankleCloseToLimits(q[akx_index],q[aky_index], settings.ankle_limits_tolerance);
         Matrix<double, 2, Dynamic> reduced_support_pts(2, 0);
         for (int i=0; i < support_state.size(); ++i) {
           RigidBodySupportStateElement& support_state_element = support_state[i];
