@@ -68,7 +68,7 @@ void testRealData() {
   Vector2d q(0.196956, 0.0487772);
 
   double d = signedDistanceInsideConvexHull(pts, q);
-  valuecheck(d, 0.136017)
+  valuecheck(d, 0.136017, 1e-6);
 }
 
 
