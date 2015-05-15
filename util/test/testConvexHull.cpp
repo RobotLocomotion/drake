@@ -61,6 +61,15 @@ void testDistanceFromHull() {
   valuecheck(d, -0.5, 1e-8);
 }
 
+void testRealData() {
+  Matrix<double, 2, Dynamic> pts(2, 16);
+  pts << 0.237506,    0.330077,    0.297687,    0.390258,    0.177325,    0.269896,    0.357868,    0.450439,  0.00257912,    0.116144,   0.0466612,    0.160226,    -0.03475,   0.0788149,   0.0873669,    0.200932,
+        -0.00459488,   -0.093748,   0.0579462,  -0.0312069,   -0.067136,   -0.156289,    0.120487,   0.0313342,    0.102483,   0.0421703,    0.185504,    0.125191,   0.0321808,  -0.0281323,    0.262166,    0.201853;
+  Vector2d q(0.196956, 0.0487772);
+
+  double d = signedDistanceInsideConvexHull(pts, q);
+  valuecheck(d, 0.136017)
+}
 
 
 int main() {
@@ -77,6 +86,9 @@ int main() {
 
   testDistanceFromHull();
   std::cout << "testDistanceFromHull passed" << std::endl;
+
+  testRealData();
+  std::cout << "testRealData passed" << std::endl;
 
   if (!failed) {
     std::cout << "convexHull tests passed" << std::endl;

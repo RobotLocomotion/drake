@@ -79,7 +79,7 @@ double signedDistanceInsideConvexHull(const Ref<const Matrix<double, 2, Dynamic>
   R << 0, 1, 
        -1, 0;
 
-  for (int i=0; i < hull_pts.size(); ++i) {
+  for (int i=0; i < hull_pts.size() - 1; ++i) {
     Vector2d ai = R * Vector2d(hull_pts[i+1].x - hull_pts[i].x, hull_pts[i+1].y - hull_pts[i].y);
     double b = ai.transpose() * Vector2d(hull_pts[i].x, hull_pts[i].y);
     double n = ai.norm();
