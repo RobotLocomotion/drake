@@ -252,24 +252,24 @@ void estimateCoMBasedOnMeasuredZMP(NewQPControllerData* pdata, AtlasParams* para
   const auto& comdot_from_robot_state = xcomdot.topRows<2>();
   double com_height = xcom(2) - average_contact_point_height;
   double grav = -pdata->r->a_grav(5);
-  const auto& last_commanded_comddot = pdata->state.last_xy_com_ddot;
+  const auto& last_commanded_comddot = pdata->state.last_com_ddot;
   const Matrix4d& L = params->center_of_mass_observer_gain;
   Vector4d& xhat = pdata->state.center_of_mass_observer_state;
 
   // y_err = (y - C*xhat - D*u)
   Vector4d y_err;
-  y_err << zmp_from_force_sensors - xhat.topRows<2>() + com_height / grav * last_commanded_comddot, comdot_from_robot_state - xhat.bottomRows<2>();
+  y_err << zmp_from_force_sensors - xhat.topRows<2>() + com_height * last_commanded_comddot.topRows(2) / (last_commanded_comddot(2) + grav), comdot_from_robot_state - xhat.bottomRows<2>();
 
   // xhatdot = Axhat + Bu + L*y_err)
   Vector4d xhatdot = L * y_err;
-  xhatdot.topRows<2>() += xhat.bottomRows<2>();
-  xhatdot.bottomRows<2>() += last_commanded_comddot;
+  xhatdot.topRows<2>() += comdot_from_robot_state; //xhat.bottomRows<2>();
+  xhatdot.bottomRows<2>() += last_commanded_comddot.topRows(2);
 
   xhat.noalias() += dt * xhatdot;
 
   // overwrite the com position and velocity with the observer's estimates:
   xcom.topRows<2>() = pdata->state.center_of_mass_observer_state.topRows<2>();
-  xcomdot.topRows<2>() = pdata->state.center_of_mass_observer_state.bottomRows<2>();
+  // xcomdot.topRows<2>() = pdata->state.center_of_mass_observer_state.bottomRows<2>();
 
   if (PUBLISH_ZMP_COM_OBSERVER_STATE) {
     std::unique_ptr<lcm::LCM> lcm(new lcm::LCM);
@@ -890,7 +890,7 @@ int setupAndSolveQP(
   VectorXd beta = alpha.segment(nq,nc*nd);
 
   if (params->use_center_of_mass_observer) {
-    pdata->state.last_xy_com_ddot = pdata->Jdotv_xy + pdata->J_xy*qp_output->qdd;
+    pdata->state.last_com_ddot = pdata->Jdotv + pdata->J*qp_output->qdd;
   }
 
   if (CHECK_CENTROIDAL_MOMENTUM_RATE_MATCHES_TOTAL_WRENCH) {

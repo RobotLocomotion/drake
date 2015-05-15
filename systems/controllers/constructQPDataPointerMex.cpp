@@ -422,7 +422,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   pdata->state.num_active_contact_pts = 0;
 
   pdata->state.center_of_mass_observer_state = Vector4d::Zero();
-  pdata->state.last_xy_com_ddot = Vector2d::Zero();
+  pdata->state.last_com_ddot = Vector3d::Zero();
 
   plhs[0] = createDrakeMexPointer((void*) pdata, "NewQPControllerData");
 
