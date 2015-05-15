@@ -95,11 +95,12 @@ struct QPLocomotionPlanSettings {
   double min_foot_shift_delay = 0.1; // seconds to wait before updating foot-specific plan shifts
   bool is_quasistatic;
   KneeSettings knee_settings;
-  double min_aky_angle;
+  double ankle_limits_tolerance;
   std::string pelvis_name;
   std::map<Side, std::string> foot_names;
   std::map<Side, std::string> knee_names;
   std::map<Side, std::string> aky_names;
+  std::map<Side, std::string> akx_names;
   double zmp_safety_margin;
   std::vector<int> constrained_position_indices;
   std::vector<int> untracked_position_indices;
@@ -153,6 +154,7 @@ private:
   const std::map<Side, int> foot_body_ids;
   const std::map<Side, int> knee_indices;
   const std::map<Side, int> aky_indices;
+  const std::map<Side, int> akx_indices;
   const int pelvis_id;
 
   lcm::LCM lcm;
