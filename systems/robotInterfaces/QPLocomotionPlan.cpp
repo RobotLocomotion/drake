@@ -163,8 +163,10 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
           reduced_support_pts.block(0, reduced_support_pts.cols() - pts_in_world.cols(), 2, pts_in_world.cols()) = pts_in_world.topRows<2>();
         }
         bool zmp_is_safely_within_reduced_support_polygon = signedDistanceInsideConvexHull(reduced_support_pts, shifted_zmp_trajectory.value(t_plan)) > settings.zmp_safety_margin;
-        if (is_support_foot && zmp_is_safely_within_reduced_support_polygon && (knee_close_to_singularity || ankle_close_to_limit)) {
+        bool toe_off_allowed = body_motion.isToeOffAllowed(body_motion_segment_index);
+        if (toe_off_allowed && is_support_foot && zmp_is_safely_within_reduced_support_polygon && (knee_close_to_singularity || ankle_close_to_limit)) {
           std::cout << "body: " << body_id << std::endl;
+          std::cout << "knee q: " << q[knee_index] << " aky q: " << q[aky_index] << std::endl;
           std::cout << "reduced support pts: " << std::endl << reduced_support_pts << std::endl;
           std::cout << "zmp: " << shifted_zmp_trajectory.value(t_plan).transpose() << std::endl;
           std::cout << "is_support: " << is_support_foot << " zmp in margin: " << zmp_is_safely_within_reduced_support_polygon << " knee: " << knee_close_to_singularity << " ankle: " << ankle_close_to_limit << std::endl;
@@ -173,6 +175,7 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
           else {
             toe_off_active[side] = !isSupportingBody(body_id, next_support);
           }
+          std::cout << "toe off active: " << toe_off_active[side] << std::endl;
         }
       }
       else {
