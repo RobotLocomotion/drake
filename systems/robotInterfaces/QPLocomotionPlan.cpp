@@ -57,8 +57,8 @@ Matrix3Xd getFrontTwoContactPoints(const Ref<const Matrix3Xd>& contact_points) {
   Matrix<DenseIndex, 2, 1> best_idx;
   for (int j=0; j < contact_points.cols(); ++j) {
     for (int i=0; i < 2; ++i) {
-      if (contact_points(i, j) > best_x(i)) {
-        best_x(i) = contact_points(i, j);
+      if (contact_points(0, j) > best_x(i)) {
+        best_x(i) = contact_points(0, j);
         best_idx(i) = j;
         break;
       }
