@@ -44,6 +44,7 @@ void testDistanceFromHull() {
 }
 
 void testRealData() {
+  // A real example that we once got wrong (due to an indexing bug in signedDistanceInsideConvexHull)
   Matrix<double, 2, Dynamic> pts(2, 16);
   pts << 0.237506,    0.330077,    0.297687,    0.390258,    0.177325,    0.269896,    0.357868,    0.450439,  0.00257912,    0.116144,   0.0466612,    0.160226,    -0.03475,   0.0788149,   0.0873669,    0.200932,
         -0.00459488,   -0.093748,   0.0579462,  -0.0312069,   -0.067136,   -0.156289,    0.120487,   0.0313342,    0.102483,   0.0421703,    0.185504,    0.125191,   0.0321808,  -0.0281323,    0.262166,    0.201853;
@@ -68,6 +69,9 @@ void testDuplicates() {
 }
 
 void testRandomConvexCombinations() {
+  // Generate a set of points, then find a random convex combination of those
+  // points, and verify that it's correctly reported as being inside the
+  // convex hull
   for (int i=2; i < 50; ++i) {
     for (int j=0; j < 500; ++j) {
       MatrixXd pts = MatrixXd::Random(2, i);
@@ -78,6 +82,16 @@ void testRandomConvexCombinations() {
       weights = weights.array() / weights.sum();
       Vector2d q = pts * weights;
       valuecheck(inConvexHull(pts, q, 1e-8), true);
+    }
+  }
+}
+
+void testRandomTriangles() {
+  // signed distance to convex hull should always be 0 for any vertex of a triangle
+  for (int j=0; j < 500; ++j) {
+    MatrixXd pts = MatrixXd::Random(2, 3);
+    for (int i=0; i < 3; ++i) {
+      valuecheck(signedDistanceInsideConvexHull(pts, pts.col(i)), 0, 1e-8);
     }
   }
 }
@@ -93,4 +107,8 @@ int main() {
   std::cout << "testDuplicates passed" << std::endl;
   testRandomConvexCombinations();
   std::cout << "testRandomConvexCombinations passed" << std::endl;
+  testRandomTriangles();
+  std::cout << "testRandomTriangles passed" << std::endl;
+
+  std::cout << "convex hull tests passed" << std::endl;
 }
