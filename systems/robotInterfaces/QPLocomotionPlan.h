@@ -95,7 +95,6 @@ struct QPLocomotionPlanSettings {
   double min_foot_shift_delay = 0.1; // seconds to wait before updating foot-specific plan shifts
   bool is_quasistatic;
   KneeSettings knee_settings;
-  double min_aky_angle;
   double ankle_limits_tolerance;
   std::string pelvis_name;
   std::map<Side, std::string> foot_names;

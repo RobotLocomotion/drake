@@ -268,7 +268,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   settings.g = mxGetScalar(mxGetPropertySafe(mex_settings, "g"));
   settings.is_quasistatic = mxGetLogicals(mxGetPropertySafe(mex_settings, "is_quasistatic"))[0];
   settings.knee_settings.min_knee_angle = mxGetScalar(mxGetPropertySafe(mex_settings, "min_knee_angle"));
-  settings.min_aky_angle = mxGetScalar(mxGetPropertySafe(mex_settings, "min_aky_angle"));
   settings.ankle_limits_tolerance = mxGetScalar(mxGetPropertySafe(mex_settings, "ankle_limits_tolerance"));
   settings.knee_settings.knee_kp = mxGetScalar(mxGetPropertySafe(mex_settings, "knee_kp"));
   settings.knee_settings.knee_kd = mxGetScalar(mxGetPropertySafe(mex_settings, "knee_kd"));
