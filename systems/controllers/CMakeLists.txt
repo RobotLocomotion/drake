@@ -1,6 +1,10 @@
 include_directories(${PROJECT_SOURCE_DIR}/systems/robotInterfaces)
 include_directories(${PROJECT_SOURCE_DIR}/util/test)
 
+if (LCM_FOUND)
+  include_directories (${CMAKE_BINARY_DIR}/lcmgen/lcmtypes )
+endif()
+
 add_library(drakeControlUtil SHARED controlUtil.cpp)
 pods_find_pkg_config(terrain-map)
 if (terrain-map_FOUND)
@@ -19,6 +23,7 @@ pods_find_pkg_config(gurobi)
 if (gurobi_FOUND)
   add_library(drakeQPCommon SHARED QPCommon.cpp)
   target_link_libraries(drakeQPCommon drakeControlUtil drakeQP drakeTrajectories drakeLCMUtil)
+  pods_use_pkg_config_packages(drakeQPCommon lcm)
   pods_install_libraries(drakeQPCommon)
   pods_install_headers(QPCommon.h DESTINATION drake)
   pods_install_pkg_config_file(drake-qp-common
@@ -26,6 +31,12 @@ if (gurobi_FOUND)
     CFLAGS -I\${prefix}/include/lcmtypes
     REQUIRES drake-control-util
     VERSION 0.0.1)
+    
+  if (LCM_FOUND)
+    add_executable(zmpCoMObserverStateVisualizer zmpCoMObserverStateVisualizer.cpp)
+    pods_use_pkg_config_packages(zmpCoMObserverStateVisualizer lcm bot2-lcmgl-client)
+    target_link_libraries(zmpCoMObserverStateVisualizer drake_lcmtypes)
+  endif()
 endif()
 
 if (MATLAB_FOUND)
@@ -72,7 +83,6 @@ if (MATLAB_FOUND)
       target_link_libraries(constructQPDataPointerMex drakeQP drakeControlUtil drakeQPCommon drakeMexUtil drakeControlMexUtil)
       pods_use_pkg_config_packages(constructQPDataPointerMex gurobi)
 
-      include_directories (${CMAKE_BINARY_DIR}/lcmgen/lcmtypes )
       add_mex(encodeQPInputLCMMex encodeQPInputLCMMex.cpp)
       target_link_libraries(encodeQPInputLCMMex drakeControlUtil drakeQPCommon drakeMexUtil drakeControlMexUtil)
       pods_use_pkg_config_packages(encodeQPInputLCMMex lcm)

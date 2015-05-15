@@ -3,12 +3,13 @@
 #include "controlUtil.h"
 #include <map>
 #include <memory>
+#include <lcm/lcm-cpp.hpp>
 #include "lcmUtil.h"
 #include "testUtil.h"
 #include "drake/lcmt_zmp_com_observer_state.hpp"
 
 const bool CHECK_CENTROIDAL_MOMENTUM_RATE_MATCHES_TOTAL_WRENCH = false;
-
+const bool PUBLISH_ZMP_COM_OBSERVER_STATE = true;
 
 #define LEG_INTEGRATOR_DEACTIVATION_MARGIN 0.05
 
@@ -269,6 +270,17 @@ void estimateCoMBasedOnMeasuredZMP(NewQPControllerData* pdata, AtlasParams* para
   // overwrite the com position and velocity with the observer's estimates:
   xcom.topRows<2>() = pdata->state.center_of_mass_observer_state.topRows<2>();
   xcomdot.topRows<2>() = pdata->state.center_of_mass_observer_state.bottomRows<2>();
+
+  if (PUBLISH_ZMP_COM_OBSERVER_STATE) {
+    std::unique_ptr<lcm::LCM> lcm(new lcm::LCM);
+    if (lcm->good()) {
+      drake::lcmt_zmp_com_observer_state zmp_com_observer_state_msg;
+      eigenVectorToCArray(pdata->state.center_of_mass_observer_state.head<2>(), zmp_com_observer_state_msg.com);
+      eigenVectorToCArray(pdata->state.center_of_mass_observer_state.tail<2>(), zmp_com_observer_state_msg.comd);
+      zmp_com_observer_state_msg.ground_plane_height = point_on_contact_plane(2);
+      lcm->publish("ZMP_COM_OBSERVER_STATE", &zmp_com_observer_state_msg);
+    }
+  }
 }
 
 void checkCentroidalMomentumMatchesTotalWrench(RigidBodyManipulator* r, const VectorXd& qdd, const std::vector<SupportStateElement, Eigen::aligned_allocator<SupportStateElement> >& active_supports, const MatrixXd& B, const VectorXd& beta)
@@ -536,8 +548,6 @@ int setupAndSolveQP(
   int neps = nc*dim;
 
   if (params->use_center_of_mass_observer && foot_force_torque_measurements.size() > 0) {
-    // assume flat ground at average of contact points
-    // TODO: figure out what works best
     estimateCoMBasedOnMeasuredZMP(pdata, params, active_supports, nc, foot_force_torque_measurements, dt, xcom, xcomdot);
   }
 
