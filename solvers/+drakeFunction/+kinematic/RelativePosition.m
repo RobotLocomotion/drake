@@ -1,10 +1,12 @@
 classdef RelativePosition < drakeFunction.kinematic.Kinematic
   % Position of points in frame A relative to frame B
+  % Class should work with planar systems, where the relavent dimension is
+  % 2 instead of 3
   properties (SetAccess = private)
     frameA    % Frame id or body index of frame A
     frameB    % Frame id or body index of frame B
     n_pts     % Number of points
-    % pts_in_A - [3 x n_pts] array. 
+    % pts_in_A - [3 x n_pts] array.
     % pts_in_A(:,i) gives the coordinates % of the i-th point in frame A
     pts_in_A  
   end
@@ -30,16 +32,16 @@ classdef RelativePosition < drakeFunction.kinematic.Kinematic
       % @retval obj       -- RelativePosition object
 
       if nargin < 4
-        pts_in_A = zeros(3,1);
+        pts_in_A = zeros(rbm.dim,1);
       end
-      sizecheck(pts_in_A,[3,NaN]);
+      sizecheck(pts_in_A,[rbm.dim,NaN]);
       n_pts_tmp = size(pts_in_A,2);
       output_frame = MultiCoordinateFrame.constructFrame( ...
-        repmat({drakeFunction.frames.realCoordinateSpace(3)},1,n_pts_tmp));
+        repmat({drakeFunction.frames.realCoordinateSpace(rbm.dim)},1,n_pts_tmp));
       obj = obj@drakeFunction.kinematic.Kinematic(rbm,output_frame);
       obj.frameA = obj.rbm.parseBodyOrFrameID(frameA);
       if obj.frameA == 0
-        valuecheck(pts_in_A,zeros(3,1));
+        valuecheck(pts_in_A,zeros(rbm.dim,1));
       end
       obj.frameB = obj.rbm.parseBodyOrFrameID(frameB);
       obj.pts_in_A = pts_in_A;
@@ -65,13 +67,28 @@ classdef RelativePosition < drakeFunction.kinematic.Kinematic
       %                q in geval format
       compute_second_derivatives = (nargout > 2);
       if compute_second_derivatives
-        kinsol = obj.rbm.doKinematics(q,true,false);
+        if obj.frameB == 1
+          kinsol = obj.rbm.doKinematics(q,true,true);
+        else
+          kinsol = obj.rbm.doKinematics(q,true,false);
+        end
         if obj.frameA == 0
           [pts_in_world,JA,dJA] = getCOM(obj.rbm,kinsol);
         else
           [pts_in_world,JA,dJA] = forwardKin(obj.rbm,kinsol,obj.frameA,obj.pts_in_A,0);
         end
-        [pts_in_B,P,JB,dP,dJB] = obj.rbm.bodyKin(kinsol,obj.frameB,pts_in_world);
+        
+        if obj.frameB == 1
+          nq = length(q);
+          pts_in_B = pts_in_world;
+          numelpts = numel(pts_in_B);
+          P = eye(numelpts);
+          JB = zeros(numelpts,nq);
+          dP = zeros(numelpts^2,nq);
+          dJB = zeros(numelpts,nq^2);
+        else
+          [pts_in_B,P,JB,dP,dJB] = obj.rbm.bodyKin(kinsol,obj.frameB,pts_in_world);
+        end
         dJ = dJB + reshape(matGradMultMat(P,JA,dP,reshape(dJA,numel(JA),[])),size(dJB));
       else
         kinsol = obj.rbm.doKinematics(q);
@@ -80,7 +97,16 @@ classdef RelativePosition < drakeFunction.kinematic.Kinematic
         else
           [pts_in_world,JA] = forwardKin(obj.rbm,kinsol,obj.frameA,obj.pts_in_A,0);
         end
-        [pts_in_B,P,JB] = obj.rbm.bodyKin(kinsol,obj.frameB,pts_in_world);
+        
+        if obj.frameB == 1
+          nq = length(q);
+          pts_in_B = pts_in_world;
+          numelpts = numel(pts_in_B);
+          P = eye(numelpts);
+          JB = zeros(numelpts,nq);          
+        else
+          [pts_in_B,P,JB] = obj.rbm.bodyKin(kinsol,obj.frameB,pts_in_world);
+        end
       end
       J = JB + P*JA;
       pos = reshape(pts_in_B,[],1);

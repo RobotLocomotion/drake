@@ -7,7 +7,10 @@ function [x,P,J,dP,dJ] = bodyKin(obj,kinsol,body_ind,pts)
 % returned).  
 
 [n,m] = size(pts); 
-if (n==2), pts = obj.T_2D_to_3D * pts; end
+if (n==2), 
+  T = kron(obj.T_2D_to_3D,eye(size(pts,2)));
+  pts = obj.T_2D_to_3D * pts; 
+end
 
 if (nargout>4)
   [x,P,J,dP,dJ] = bodyKin@RigidBodyManipulator(obj,kinsol,body_ind,pts);
@@ -21,4 +24,21 @@ else
   x = bodyKin@RigidBodyManipulator(obj,kinsol,body_ind,pts);
 end
 
-if (n==2), x = obj.T_2D_to_3D'*x; end
+if (n==2), 
+  x = obj.T_2D_to_3D'*x; 
+  if nargout > 1
+    P = T'*P*T; 
+  end
+  if nargout > 2
+    J = T'*J; 
+  end
+  if nargout > 3
+    keyboard('dP planar case not implemented yet')
+    % transformation for the gradient
+    T_dP = [reshape(T(:,1)*T(:,1)',1,[]);reshape(T(:,2)*T(:,1)',1,[]);reshape(T(:,1)*T(:,2)',1,[]);reshape(T(:,2)*T(:,2)',1,[])];
+    dP = T_dP*dP; 
+  end
+  if nargout > 4
+    dJ = T'*dJ; 
+  end
+end
