@@ -4,34 +4,16 @@
 
 using namespace Eigen;
 
-int testConvexHull() {
+void testConvexHull() {
   Matrix<double, 2, Dynamic> pts(2, 4);
   pts << 1.0, 2.0, 3.0, 2.0,
          2.0, 1.0, 2.0, 3.0;
 
-  if (!inConvexHull(pts, Vector2d(2.0, 2.0))) {
-    fprintf(stderr, "2.0,2.0 should be in hull\n");
-    return 1;
-  }
-
-  if (!inConvexHull(pts, Vector2d(1.0001, 2.0))) {
-    fprintf(stderr, "1.0001, 2.0 should be in hull\n");
-    return 1;
-  }
-  if (inConvexHull(pts, Vector2d(0.9999, 2.0))) {
-    fprintf(stderr, "0.9999, 2.0 should not be in hull\n");
-    return 1;
-  }
-  if (!inConvexHull(pts, Vector2d(2.49, 2.49))) {
-    fprintf(stderr, "2.49,2.49 should be in hull\n");
-    return 1;
-  }
-  if (inConvexHull(pts, Vector2d(2.51, 2.51))) {
-    fprintf(stderr, "2.51,2.51 should not be in hull\n");
-    return 1;
-  }
-
-  return 0;
+  valuecheck(inConvexHull(pts, Vector2d(2.0, 2.0)), true);
+  valuecheck(inConvexHull(pts, Vector2d(1.0001, 2.0)), true);
+  valuecheck(inConvexHull(pts, Vector2d(0.9999, 2.0)), false);
+  valuecheck(inConvexHull(pts, Vector2d(2.49, 2.49)), true);
+  valuecheck(inConvexHull(pts, Vector2d(2.51, 2.51)), false);
 }
 
 void testDistanceFromHull() {
@@ -85,29 +67,30 @@ void testDuplicates() {
   valuecheck(d, -0.5, 1e-8);
 }
 
-int main() {
-  bool failed = false;
-  int error;
-
-  error = testConvexHull();
-  if (error) {
-    std::cout << "testConvexHull FAILED" << std::endl;
-    failed = true;
-  } else {
-    std::cout << "testConvexHull passed" << std::endl;
+void testRandomConvexCombinations() {
+  for (int i=2; i < 10; ++i) {
+    for (int j=0; j < 100; ++j) {
+      MatrixXd pts = MatrixXd::Random(2, i);
+      VectorXd weights = VectorXd::Random(i);
+      if (weights.minCoeff() < 0) {
+        weights = weights.array() - weights.minCoeff(); // make sure they're all nonnegative
+      }
+      weights = weights.array() / weights.sum();
+      Vector2d q = pts * weights;
+      valuecheck(inConvexHull(pts, q, 1e-8), true);
+    }
   }
+}
 
+int main() {
+  testConvexHull();
+  std::cout << "testConvexHull passed" << std::endl;
   testDistanceFromHull();
   std::cout << "testDistanceFromHull passed" << std::endl;
   testRealData();
   std::cout << "testRealData passed" << std::endl;
   testDuplicates();
   std::cout << "testDuplicates passed" << std::endl;
-
-  if (!failed) {
-    std::cout << "convexHull tests passed" << std::endl;
-  } else {
-    std::cout << "convexHull tests FAILED" << std::endl;
-    exit(1);
-  }
+  testRandomConvexCombinations();
+  std::cout << "testRandomConvexCombinations passed" << std::endl;
 }

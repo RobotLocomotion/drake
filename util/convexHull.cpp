@@ -28,10 +28,10 @@ vector<Point> convexHull(vector<Point> P)
   vector<Point> H(2*n);
 
   if (n == 2) {
-    H.reserve(3);
-    H.push_back(P[0]); 
-    H.push_back(P[1]); 
-    H.push_back(P[0]); 
+    H.resize(3);
+    H[0] = P[0]; 
+    H[1] = P[1]; 
+    H[2] = P[0]; 
     return H;
   }
  
@@ -67,8 +67,8 @@ vector<Point> eigenToPoints(const Ref<const Matrix<double, 2, Dynamic>> &P) {
   return points;
 }
 
-bool inConvexHull(const Ref<const Matrix<double, 2, Dynamic>> &P, const Ref<const Vector2d> &q) {
-  return signedDistanceInsideConvexHull(P, q) >= 0;
+bool inConvexHull(const Ref<const Matrix<double, 2, Dynamic>> &P, const Ref<const Vector2d> &q, double tolerance) {
+  return signedDistanceInsideConvexHull(P, q) >= -tolerance;
 }
 
 double signedDistanceInsideConvexHull(const Ref<const Matrix<double, 2, Dynamic>> &pts, const Ref<const Vector2d> &q) {
@@ -83,11 +83,18 @@ double signedDistanceInsideConvexHull(const Ref<const Matrix<double, 2, Dynamic>
     Vector2d ai = R * Vector2d(hull_pts[i+1].x - hull_pts[i].x, hull_pts[i+1].y - hull_pts[i].y);
     double b = ai.transpose() * Vector2d(hull_pts[i].x, hull_pts[i].y);
     double n = ai.norm();
-    ai = ai.array() / n;
-    b = b / n;
-    double d = b - ai.transpose() * q;
-    if (d < d_star) {
-      d_star = d;
+    if (std::isnormal(n)) {
+      ai = ai.array() / n;
+      b = b / n;
+      double d = b - ai.transpose() * q;
+      // std::cout << "pt0: " << hull_pts[i].x << " " << hull_pts[i].y << std::endl;
+      // std::cout << "pt1: " << hull_pts[i+1].x << " " << hull_pts[i+1].y << std::endl;
+      // std::cout << "ai: " << ai.transpose() << std::endl;
+      // std::cout << "b: " << b << std::endl;
+      // std::cout << "d: " << d << std::endl;
+      if (d < d_star) {
+        d_star = d;
+      }
     }
   }
   return d_star;

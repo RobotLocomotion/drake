@@ -13,7 +13,7 @@ struct Point {
 };
 
 std::vector<Point> convexHull(std::vector<Point> P);
-bool inConvexHull(const Eigen::Ref<const Eigen::Matrix<double, 2, Eigen::Dynamic>> &P, const Eigen::Ref<const Eigen::Vector2d> &q);
+bool inConvexHull(const Eigen::Ref<const Eigen::Matrix<double, 2, Eigen::Dynamic>> &P, const Eigen::Ref<const Eigen::Vector2d> &q, double tolerance=1e-16);
 
 // Returns the perpendicular distance from point q to the convex hull of pts. 
 // Specifically, if pts form a polytope defined by a_i'x <= b_i where each a_i is a unit vector, then this returns:
