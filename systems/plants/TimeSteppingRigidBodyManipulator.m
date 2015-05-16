@@ -192,11 +192,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       if (nargout>1)
         [obj,z,Mqdn,wqdn,dz,dMqdn,dwqdn] = solveLCP(obj,t,x,u);
       else
-        if (obj.gurobi_present && obj.manip.only_loops && obj.manip.mex_model_ptr~=0 && ~obj.position_control)
-           [obj,z,Mqdn,wqdn] = solveMexLCP(obj,t,x,u);
-        else
-          [obj,z,Mqdn,wqdn] = solveLCP(obj,t,x,u);
-        end
+        [obj,z,Mqdn,wqdn] = solveLCP(obj,t,x,u);
       end
 
       num_q = obj.manip.num_positions;
@@ -252,6 +248,10 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     end
 
     function [obj,z,Mqdn,wqdn,dz,dMqdn,dwqdn] = solveLCP(obj,t,x,u)
+      if (nargout<5 && obj.gurobi_present && obj.manip.only_loops && obj.manip.mex_model_ptr~=0 && ~obj.position_control)
+        [obj,z,Mqdn,wqdn] = solveMexLCP(obj,t,x,u);
+      end
+      
 %       global active_set_fail_count
       % do LCP time-stepping
       % todo: implement some basic caching here
