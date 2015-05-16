@@ -9,6 +9,8 @@
 #include "drakeUtil.h"
 #include "lcmUtil.h"
 #include <string>
+#include "convexHull.h"
+#include "atlasUtil.h"
 
 // TODO: discuss possibility of chatter in knee control
 // TODO: make body_motions a map from RigidBody* to BodyMotionData, remove body_id from BodyMotionData?
@@ -25,7 +27,9 @@ QPLocomotionPlan::QPLocomotionPlan(RigidBodyManipulator& robot, const QPLocomoti
     start_time(std::numeric_limits<double>::quiet_NaN()),
     pelvis_id(robot.findLinkId(settings.pelvis_name)),
     foot_body_ids(createFootBodyIdMap(robot, settings.foot_names)),
-    knee_indices(createKneeIndicesMap(robot, settings.knee_names)),
+    knee_indices(createJointIndicesMap(robot, settings.knee_names)),
+    akx_indices(createJointIndicesMap(robot, settings.akx_names)),
+    aky_indices(createJointIndicesMap(robot, settings.aky_names)),
     plan_shift(Vector3d::Zero()),
     shifted_zmp_trajectory(settings.zmp_trajectory)
 {
@@ -36,6 +40,8 @@ QPLocomotionPlan::QPLocomotionPlan(RigidBodyManipulator& robot, const QPLocomoti
 
   for (auto it = Side::values.begin(); it != Side::values.end(); ++it) {
     toe_off_active[*it] = false;
+    knee_pd_active[*it] = false;
+    knee_pd_settings[*it] = QPLocomotionPlanSettings::createDefaultKneeSettings();
     foot_shifts[*it] = Vector3d::Zero();
   }
 
@@ -43,6 +49,28 @@ QPLocomotionPlan::QPLocomotionPlan(RigidBodyManipulator& robot, const QPLocomoti
   {
     cerr << "ERROR: lcm is not good()" << endl;
   }
+}
+
+Matrix3Xd getFrontTwoContactPoints(const Ref<const Matrix3Xd>& contact_points) {
+  // gets the two frontmost contact points (expressed in body frame with x forward)
+  if (contact_points.cols() <= 2) {
+    return contact_points;
+  }
+  Vector2d best_x(-std::numeric_limits<double>::infinity(), -std::numeric_limits<double>::infinity());
+  Matrix<DenseIndex, 2, 1> best_idx;
+  for (int j=0; j < contact_points.cols(); ++j) {
+    for (int i=0; i < 2; ++i) {
+      if (contact_points(0, j) > best_x(i)) {
+        best_x(i) = contact_points(0, j);
+        best_idx(i) = j;
+        break;
+      }
+    }
+  }
+  Matrix<double, 3, 2> front_contacts;
+  front_contacts.col(0) = contact_points.col(best_idx(0));
+  front_contacts.col(1) = contact_points.col(best_idx(1));
+  return front_contacts;
 }
 
 template <typename DerivedQ, typename DerivedV>
@@ -118,20 +146,46 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
       // toe off active switching logic
       Side side = side_it->first;
       int knee_index = knee_indices.at(side);
+      int akx_index = akx_indices.at(side);
+      int aky_index = aky_indices.at(side);
+      bool knee_close_to_singularity = q[knee_index] < settings.knee_settings.min_knee_angle;
       if (!toe_off_active[side]) {
         bool is_support_foot = isSupportingBody(body_id, support_state);
-        bool knee_close_to_singularity = q[knee_index] < settings.knee_settings.min_knee_angle;
-        if (is_support_foot && knee_close_to_singularity) {
+        bool ankle_close_to_limit = ankleCloseToLimits(q[akx_index],q[aky_index], settings.ankle_limits_tolerance);
+        Matrix<double, 2, Dynamic> reduced_support_pts(2, 0);
+        for (int i=0; i < support_state.size(); ++i) {
+          RigidBodySupportStateElement& support_state_element = support_state[i];
+          Matrix3Xd pts;
+          if (support_state_element.body == body_id) {
+            // pts = settings.contact_groups[body_id].at("toe");
+            pts = getFrontTwoContactPoints(support_state_element.contact_points);
+          } else {
+            pts = support_state_element.contact_points;
+          }
+          Matrix3Xd pts_in_world = robot.forwardKinNew(pts, support_state_element.body, 0, 0, 0).value();
+          reduced_support_pts.conservativeResize(2, reduced_support_pts.cols() + pts.cols());
+          reduced_support_pts.block(0, reduced_support_pts.cols() - pts_in_world.cols(), 2, pts_in_world.cols()) = pts_in_world.topRows<2>();
+        }
+        bool zmp_is_safely_within_reduced_support_polygon = signedDistanceInsideConvexHull(reduced_support_pts, shifted_zmp_trajectory.value(t_plan)) > settings.zmp_safety_margin;
+        bool toe_off_allowed = body_motion.isToeOffAllowed(body_motion_segment_index);
+        if (toe_off_allowed && is_support_foot && zmp_is_safely_within_reduced_support_polygon && (knee_close_to_singularity || ankle_close_to_limit)) {
+          std::cout << "body: " << body_id << std::endl;
+          std::cout << "knee q: " << q[knee_index] << " aky q: " << q[aky_index] << std::endl;
+          std::cout << "reduced support pts: " << std::endl << reduced_support_pts << std::endl;
+          std::cout << "zmp: " << shifted_zmp_trajectory.value(t_plan).transpose() << std::endl;
+          std::cout << "is_support: " << is_support_foot << " zmp in margin: " << zmp_is_safely_within_reduced_support_polygon << " knee: " << knee_close_to_singularity << " ankle: " << ankle_close_to_limit << std::endl;
           if (is_last_support)
             toe_off_active[side] = false;
           else {
             toe_off_active[side] = !isSupportingBody(body_id, next_support);
           }
+          std::cout << "toe off active: " << toe_off_active[side] << std::endl;
         }
       }
       else {
         if (!isSupportingBody(body_id, support_state)) {
           toe_off_active[side] = false;
+          knee_pd_active[side] = false;
           updateSwingTrajectory(t_plan, body_motion, body_motion_segment_index - 1, v);
         }
       }
@@ -140,18 +194,20 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
         for (int i = 0; i < support_state.size(); ++i) {
           RigidBodySupportStateElement& support_state_element = support_state[i];
           if (support_state_element.body == body_id)
-            support_state_element.contact_points = settings.contact_groups[body_id].at("toe");
+            support_state_element.contact_points = getFrontTwoContactPoints(support_state_element.contact_points);
+            // support_state_element.contact_points = settings.contact_groups[body_id].at("toe");
         }
-        drake::lcmt_joint_pd_override joint_pd_override_for_support;
-        joint_pd_override_for_support.timestamp = 0;
-        joint_pd_override_for_support.position_ind = static_cast<int32_t>(knee_index) + 1; // use 1-indexing in LCM
-        joint_pd_override_for_support.qi_des = settings.knee_settings.min_knee_angle;
-        joint_pd_override_for_support.qdi_des = 0.0;
-        joint_pd_override_for_support.kp = settings.knee_settings.knee_kp;
-        joint_pd_override_for_support.kd = settings.knee_settings.knee_kd;
-        joint_pd_override_for_support.weight = settings.knee_settings.knee_weight;
-        qp_input.joint_pd_override.push_back(joint_pd_override_for_support);
-        qp_input.num_joint_pd_overrides++;
+        knee_pd_active[side] = true;
+        if (knee_close_to_singularity) {
+          knee_pd_settings[side] = settings.knee_settings;
+        } else {
+          knee_pd_settings[side] = settings.knee_settings;
+          knee_pd_settings[side].knee_kp = 0;
+          knee_pd_settings[side].knee_kd = 0;
+        }
+      }
+      if (knee_pd_active.at(side)) {
+        this->applyKneePD(side, qp_input);
       }
       if (body_motion.isToeOffAllowed(body_motion_segment_index)) {
         updateSwingTrajectory(t_plan, body_motion, body_motion_segment_index, v);
@@ -199,11 +255,12 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
       pelvis_has_tracking = true;
 
     // If this body is not currently in support, but will be soon (within
-    // early_contact_allowed_time), then generate a new support data for that
-    // body which will only be active if that body senses force.
+    // early_contact_allowed_fraction of the duration of the current support),
+    // then generate a new support data for that body which will only be
+    // active if that body senses force.
     bool last_support = support_index == settings.supports.size() - 1;
     if (!last_support) {
-      if (settings.support_times[support_index + 1] - t_plan < settings.early_contact_allowed_time) {
+      if (t_plan >= settings.early_contact_allowed_fraction * (settings.support_times[support_index + 1] - settings.support_times[support_index]) + settings.support_times[support_index]) {
         if (!isSupportingBody(body_id, support_state)) {
           for (auto it = next_support.begin(); it != next_support.end(); ++it) {
             if (it->body == body_id) {
@@ -251,6 +308,21 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
   last_qp_input = qp_input;
   verifySubtypeSizes(qp_input);
   return qp_input;
+}
+
+void QPLocomotionPlan::applyKneePD(Side side, drake::lcmt_qp_controller_input &qp_input)
+{
+  int knee_index = knee_indices.at(side);
+  drake::lcmt_joint_pd_override joint_pd_override_for_support;
+  joint_pd_override_for_support.timestamp = 0;
+  joint_pd_override_for_support.position_ind = static_cast<int32_t>(knee_index) + 1; // use 1-indexing in LCM
+  joint_pd_override_for_support.qi_des = knee_pd_settings.at(side).min_knee_angle;
+  joint_pd_override_for_support.qdi_des = 0.0;
+  joint_pd_override_for_support.kp = knee_pd_settings.at(side).knee_kp;
+  joint_pd_override_for_support.kd = knee_pd_settings.at(side).knee_kd;
+  joint_pd_override_for_support.weight = knee_pd_settings.at(side).knee_weight;
+  qp_input.joint_pd_override.push_back(joint_pd_override_for_support);
+  qp_input.num_joint_pd_overrides++;
 }
 
 void QPLocomotionPlan::setDuration(double duration)
@@ -625,14 +697,14 @@ const std::map<Side, int> QPLocomotionPlan::createFootBodyIdMap(RigidBodyManipul
   return foot_body_ids;
 }
 
-const std::map<Side, int> QPLocomotionPlan::createKneeIndicesMap(RigidBodyManipulator& robot, const std::map<Side, std::string>& knee_names)
+const std::map<Side, int> QPLocomotionPlan::createJointIndicesMap(RigidBodyManipulator& robot, const std::map<Side, std::string>& joint_names)
 {
-  std::map<Side, int> knee_indices;
+  std::map<Side, int> joint_indices;
   for (auto it = Side::values.begin(); it != Side::values.end(); ++it) {
-    int joint_id = robot.findJointId(knee_names.at(*it));
-    knee_indices[*it] = robot.bodies[joint_id]->position_num_start;
+    int joint_id = robot.findJointId(joint_names.at(*it));
+    joint_indices[*it] = robot.bodies[joint_id]->position_num_start;
   }
-  return knee_indices;
+  return joint_indices;
 }
 
 template drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput<Matrix<double, -1, 1, 0, -1, 1>, Matrix<double, -1, 1, 0, -1, 1> >(double, MatrixBase<Matrix<double, -1, 1, 0, -1, 1> > const&, MatrixBase<Matrix<double, -1, 1, 0, -1, 1> > const&, std::vector<bool, std::allocator<bool> > const&);

@@ -6,6 +6,7 @@ include_directories (${PROJECT_SOURCE_DIR}/systems/plants/joints )
 include_directories (${PROJECT_SOURCE_DIR}/solvers/polynomial )
 include_directories (${PROJECT_SOURCE_DIR}/solvers/qpSpline )
 include_directories (${PROJECT_BINARY_DIR}/lcmgen/lcmtypes )
+include_directories (${PROJECT_SOURCE_DIR}/examples/Atlas)
 
 add_library(drakeSide SHARED Side.cpp)
 pods_install_headers(Side.h DESTINATION drake)
@@ -18,7 +19,7 @@ pods_install_pkg_config_file(drake-side
 
 if (LCM_FOUND)
   add_library(drakeQPLocomotionPlan SHARED QPLocomotionPlan.cpp BodyMotionData.cpp) # TODO: move BodyMotionData to a better place
-  target_link_libraries(drakeQPLocomotionPlan drakeSplineGeneration drakeRBM drakeLCMUtil drakeSide)
+  target_link_libraries(drakeQPLocomotionPlan drakeSplineGeneration drakeRBM drakeLCMUtil drakeSide drakeConvexHull drakeAtlasUtil)
   pods_use_pkg_config_packages(drakeQPLocomotionPlan lcm)
   pods_install_libraries(drakeQPLocomotionPlan)
   pods_install_headers(QPLocomotionPlan.h DESTINATION drake)

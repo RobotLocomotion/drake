@@ -62,6 +62,14 @@ pods_install_pkg_config_file(drake-geometry-util
   REQUIRES
   VERSION 0.0.1)
 
+add_library(drakeConvexHull SHARED convexHull.cpp)
+pods_install_libraries(drakeConvexHull)
+pods_install_headers(convexHull.h DESTINATION drake)
+pods_install_pkg_config_file(drake-convex-hull
+  LIBS -ldrakeConvexHull
+  REQUIRES
+  VERSION 0.0.1)
+
 pods_install_headers(drakeFloatingPointUtil.h DESTINATION drake)
 
 pods_install_headers(GradientVar.h DESTINATION drake)

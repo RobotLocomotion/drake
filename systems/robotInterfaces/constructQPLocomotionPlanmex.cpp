@@ -252,7 +252,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   settings.support_times = matlabToStdVector<double>(mxGetPropertySafe(mex_settings, "support_times"));
   settings.contact_groups = setUpContactGroups(robot, mxGetPropertySafe(mex_settings, "contact_groups"));
   settings.planned_support_command = matlabToStdVector<bool>(mxGetPropertySafe(mex_settings, "planned_support_command"));
-  settings.early_contact_allowed_time = mxGetScalar(mxGetPropertySafe(mex_settings, "early_contact_allowed_time"));
+  settings.early_contact_allowed_fraction = mxGetScalar(mxGetPropertySafe(mex_settings, "early_contact_allowed_fraction"));
   settings.body_motions = setUpBodyMotions(mxGetPropertySafe(mex_settings, "body_motions"));
   settings.zmp_trajectory = matlabPPTrajectoryOrMatrixToPiecewisePolynomial(mxGetPropertySafe(mex_settings, "zmptraj"));
   settings.zmp_data = setUpZMPData(mxGetPropertySafe(mex_settings, "zmp_data"));
@@ -268,14 +268,20 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   settings.g = mxGetScalar(mxGetPropertySafe(mex_settings, "g"));
   settings.is_quasistatic = mxGetLogicals(mxGetPropertySafe(mex_settings, "is_quasistatic"))[0];
   settings.knee_settings.min_knee_angle = mxGetScalar(mxGetPropertySafe(mex_settings, "min_knee_angle"));
+  settings.ankle_limits_tolerance = mxGetScalar(mxGetPropertySafe(mex_settings, "ankle_limits_tolerance"));
   settings.knee_settings.knee_kp = mxGetScalar(mxGetPropertySafe(mex_settings, "knee_kp"));
   settings.knee_settings.knee_kd = mxGetScalar(mxGetPropertySafe(mex_settings, "knee_kd"));
   settings.knee_settings.knee_weight = mxGetScalar(mxGetPropertySafe(mex_settings, "knee_weight"));
+  settings.zmp_safety_margin = mxGetScalar(mxGetPropertySafe(mex_settings, "zmp_safety_margin"));
   settings.pelvis_name = mxGetStdString(mxGetPropertySafe(mex_settings, "pelvis_name"));
   settings.foot_names[Side::LEFT] = mxGetStdString(mxGetPropertySafe(mex_settings, "l_foot_name"));
   settings.foot_names[Side::RIGHT] = mxGetStdString(mxGetPropertySafe(mex_settings, "r_foot_name"));
   settings.knee_names[Side::LEFT] = mxGetStdString(mxGetPropertySafe(mex_settings, "l_knee_name"));
   settings.knee_names[Side::RIGHT] = mxGetStdString(mxGetPropertySafe(mex_settings, "r_knee_name"));
+  settings.akx_names[Side::LEFT] = mxGetStdString(mxGetPropertySafe(mex_settings, "l_akx_name"));
+  settings.akx_names[Side::RIGHT] = mxGetStdString(mxGetPropertySafe(mex_settings, "r_akx_name"));
+  settings.aky_names[Side::LEFT] = mxGetStdString(mxGetPropertySafe(mex_settings, "l_aky_name"));
+  settings.aky_names[Side::RIGHT] = mxGetStdString(mxGetPropertySafe(mex_settings, "r_aky_name"));
   settings.constrained_position_indices = matlabToStdVector<int>(mxGetPropertySafe(mex_settings, "constrained_dofs"));
   addOffset(settings.constrained_position_indices, -1); // base 1 to base 0
   settings.untracked_position_indices = matlabToStdVector<int>(mxGetPropertySafe(mex_settings, "untracked_joint_inds"));
