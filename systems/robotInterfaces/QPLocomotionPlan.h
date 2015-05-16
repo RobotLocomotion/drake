@@ -14,7 +14,7 @@
 #include "Side.h"
 #include <lcm/lcm-cpp.hpp>
 #include "zmpUtil.h"
-
+ 
 
 class QuadraticLyapunovFunction {
   // TODO: move into its own file
