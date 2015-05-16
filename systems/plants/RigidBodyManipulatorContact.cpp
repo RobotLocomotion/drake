@@ -55,7 +55,7 @@ void getUniqueBodiesSorted(VectorXi const & idxA, VectorXi const & idxB, std::ve
   bodyIndsSorted.clear();
 
   for (std::set<int>::const_iterator citer = bodyInds.begin() ; citer != bodyInds.end() ; citer++) {
-    if ( *citer > 1 ) {
+    if ( *citer > 0 ) {
       bodyIndsSorted.push_back(*citer);
     }
   }
@@ -136,7 +136,7 @@ void RigidBodyManipulator::accumulateContactJacobian(const int bodyInd, MatrixXd
   const size_t offset = 3*numCA;
 
   MatrixXd J_tmp(3*numPts, nq);
-  forwardJac(bodyInd - 1, bodyPoints, 0, J_tmp);
+  forwardJac(bodyInd, bodyPoints, 0, J_tmp);
 
   //add contributions from points in xA
   for (int x = 0 ; x < numCA ; x++) {
@@ -160,7 +160,7 @@ void RigidBodyManipulator::accumulateSecondOrderContactJacobian(const int bodyIn
   const size_t numCB = cindB.size();
   const size_t offset = 3*numCA;
   MatrixXd dJ_tmp(3*numPts, dJCols);
-  forwarddJac(bodyInd - 1, bodyPoints, dJ_tmp); //dJac instead of Jac
+  forwarddJac(bodyInd, bodyPoints, dJ_tmp); //dJac instead of Jac
 
   //add contributions from points in xA
   for (size_t x = 0 ; x < numCA ; x++) {
@@ -187,7 +187,7 @@ void RigidBodyManipulator::accumulateSecondOrderContactJacobian(const int bodyIn
 //  (optional outputs if compute_second_derivatives is true)
 //  dJ: (3m x nq^2) Second order contact Jacobian
 
-void RigidBodyManipulator::computeContactJacobians(Map<VectorXi> const & idxA, Map<VectorXi> const & idxB, Map<Matrix3xd> const & xA, Map<Matrix3xd> const & xB, const bool compute_second_derivatives, MatrixXd & J, MatrixXd & dJ)
+void RigidBodyManipulator::computeContactJacobians(VectorXi const & idxA, VectorXi const & idxB, Map<Matrix3xd> const & xA, Map<Matrix3xd> const & xB, const bool compute_second_derivatives, MatrixXd & J, MatrixXd & dJ)
 {
   std::vector<int> bodyInds;
   const size_t nq = num_positions;
