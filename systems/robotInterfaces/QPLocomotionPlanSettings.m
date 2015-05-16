@@ -29,7 +29,10 @@ classdef QPLocomotionPlanSettings
     knee_weight = 1;
     zmp_safety_margin = 0.005;
 
-    early_contact_allowed_time = 0.4; % If a body is about to come into contact within the next [early_contact_allowed_time] seconds, then add an optional support that the controller can use if it senses force on that body
+    % If a body is about to come into contact within this fraction of the
+    % duration of the current support, then add an optional support that the
+    % controller can use if it senses force on that body
+    early_contact_allowed_fraction = 0.5; 
 
     pelvis_name = 'pelvis';
     r_foot_name = 'r_foot';

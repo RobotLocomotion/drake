@@ -252,7 +252,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   settings.support_times = matlabToStdVector<double>(mxGetPropertySafe(mex_settings, "support_times"));
   settings.contact_groups = setUpContactGroups(robot, mxGetPropertySafe(mex_settings, "contact_groups"));
   settings.planned_support_command = matlabToStdVector<bool>(mxGetPropertySafe(mex_settings, "planned_support_command"));
-  settings.early_contact_allowed_time = mxGetScalar(mxGetPropertySafe(mex_settings, "early_contact_allowed_time"));
+  settings.early_contact_allowed_fraction = mxGetScalar(mxGetPropertySafe(mex_settings, "early_contact_allowed_fraction"));
   settings.body_motions = setUpBodyMotions(mxGetPropertySafe(mex_settings, "body_motions"));
   settings.zmp_trajectory = matlabPPTrajectoryOrMatrixToPiecewisePolynomial(mxGetPropertySafe(mex_settings, "zmptraj"));
   settings.zmp_data = setUpZMPData(mxGetPropertySafe(mex_settings, "zmp_data"));

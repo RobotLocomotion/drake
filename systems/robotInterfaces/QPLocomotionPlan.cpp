@@ -255,11 +255,12 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
       pelvis_has_tracking = true;
 
     // If this body is not currently in support, but will be soon (within
-    // early_contact_allowed_time), then generate a new support data for that
-    // body which will only be active if that body senses force.
+    // early_contact_allowed_fraction of the duration of the current support),
+    // then generate a new support data for that body which will only be
+    // active if that body senses force.
     bool last_support = support_index == settings.supports.size() - 1;
     if (!last_support) {
-      if (settings.support_times[support_index + 1] - t_plan < settings.early_contact_allowed_time) {
+      if (t_plan >= settings.early_contact_allowed_fraction * (settings.support_times[support_index + 1] - settings.support_times[support_index]) + settings.support_times[support_index]) {
         if (!isSupportingBody(body_id, support_state)) {
           for (auto it = next_support.begin(); it != next_support.end(); ++it) {
             if (it->body == body_id) {
