@@ -449,6 +449,9 @@ void QPLocomotionPlan::updateSwingTrajectory(double t_plan, BodyMotionData& body
   auto x0_expmap = quat2expmap(x0_quat, 1);
   Vector3d xd0_expmap = x0_expmap.gradient().value() * xd0_xyzquat.tail<4>();
 
+  // x1, x2, and xf come from our original, unwrapped body motion trajectory.
+  // x0 is derived from the current state, and may therefore have an arbitrary
+  // +- 2pi wraparound. To fix this, we unwrap x0 and xd0 to match x1.
   auto x0_expmap_unwrapped = unwrapExpmap(x1.tail<3>(), x0_expmap.value(), 1);
   typedef Matrix<double, 6, 1> Vector6d;
   Vector6d x0;
@@ -459,12 +462,15 @@ void QPLocomotionPlan::updateSwingTrajectory(double t_plan, BodyMotionData& body
     }
   }
   x0.tail<3>() = x0_expmap_unwrapped.value().tail<3>();
-
   Vector6d xd0;
+  // We set the xyz components of xd0 to zero intentionally because, if it
+  // happens that the foot is moving while in support, we don't want to
+  // continue that motion through the swing trajectory.
   xd0.head<3>().setZero();
   xd0.tail<3>() = x0_expmap_unwrapped.gradient().value() * xd0_expmap;
 
-  // If the current pose is pitched down more than the first aerial knot point, adjust the knot point to match the current pose
+  // If the current pose is pitched down more than the first aerial knot
+  // point, adjust the knot point to match the current pose
   Vector3d unit_x = Vector3d::UnitX();
   auto quat1_gradientvar = expmap2quat(x1.tail<3>(), 0);
   Vector3d unit_x_rotated_0 = quatRotateVec(x0_quat, unit_x);
@@ -472,6 +478,8 @@ void QPLocomotionPlan::updateSwingTrajectory(double t_plan, BodyMotionData& body
   if (unit_x_rotated_0(2) < unit_x_rotated_1(2)) {
     auto quat2_gradientvar = expmap2quat(x2.tail<3>(), 0);
     x1.tail<3>() = quat2expmap(slerp(x0_quat, quat2_gradientvar.value(), 0.1), 0).value();
+    // Since we've modified x1, we need to unwrap it relative to x0
+    x1.tail<3>() = unwrapExpmap(x0.tail<3>(), x1.tail<3>(), 0).value();
   }
 
   // TODO: find a less expensive way of doing this
