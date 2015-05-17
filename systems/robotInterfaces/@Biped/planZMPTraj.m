@@ -5,6 +5,8 @@ function [zmp_knots, body_motions] = planZMPTraj(biped, q0, footsteps, options)
 % @option t0 the initial time offset of the trajectories to be generated (default: 0)
 % @option first_step_hold_s the number of seconds to wait before lifting the first foot (default: 1)
 
+MAX_FINAL_SWING_SPEED = 1.0;
+
 if nargin < 4; options = struct(); end
 
 options = applyDefaults(options, struct('t0', 0,...
@@ -96,7 +98,7 @@ while 1
   end
   if istep.left == length(steps.left) || istep.right == length(steps.right)
     % this is the last swing, so slow down
-    sw1.walking_params.step_speed = sw1.walking_params.step_speed / 2;
+    sw1.walking_params.step_speed = min(sw1.walking_params.step_speed, MAX_FINAL_SWING_SPEED);
   end
 
   [new_foot_knots, new_zmp_knots] = planSwingPitched(biped, st, sw0, sw1, initial_hold, target_frame_id);
