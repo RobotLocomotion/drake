@@ -94,6 +94,9 @@ if (MATLAB_FOUND)
 
   add_mex(quat2expmapSequencemex quat2expmapSequencemex.cpp)
   target_link_libraries(quat2expmapSequencemex drakeMexUtil drakeGeometryUtil drakeGradientUtil)
+
+  add_mex(closestExpmapmex closestExpmapmex.cpp)
+  target_link_libraries(closestExpmapmex drakeMexUtil drakeGeometryUtil drakeGradientUtil)
   
   add_mex(resolveCenterOfPressuremex resolveCenterOfPressuremex.cpp)
   target_link_libraries(resolveCenterOfPressuremex drakeMexUtil drakeUtil)
