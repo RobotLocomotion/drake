@@ -1360,6 +1360,63 @@ void quat2expmapSequence(const Ref<const Matrix<double,4,Dynamic>> &quat, const 
   }
 }
 
+DLLEXPORT GradientVar<double, 3,1> closestExpmap(const Ref<const Vector3d> & expmap1, const Ref<const Vector3d> &expmap2, int gradient_order)
+{
+  if (gradient_order>1) {
+    throw std::runtime_error("closestExpmap only supports first order gradient");
+  }
+  double expmap1_norm = expmap1.norm();
+  double expmap2_norm = expmap2.norm();
+  GradientVar<double, 3, 1> ret(3,1,3,gradient_order);
+  if (expmap2_norm < std::numeric_limits<double>::epsilon()) {
+    if (expmap1_norm > std::numeric_limits<double>::epsilon()) {
+      Vector3d expmap1_axis = expmap1/expmap1_norm;
+      int expmap1_round = static_cast<int>(expmap1_norm/(2*M_PI) + 0.5);
+      ret.value() = expmap1_axis*expmap1_round*2*M_PI;
+      if(ret.hasGradient()) {
+        ret.gradient().value() = Matrix3d::Zero();
+      }
+      return ret;
+    }
+    else {
+      ret.value() = expmap2;
+      if (ret.hasGradient()) {
+        ret.gradient().value() = Matrix3d::Identity();
+      }
+    }
+  }
+  else {
+    Vector3d expmap2_axis = expmap2/expmap2_norm;
+    Matrix3d dexpmap2_axis_dexpmap2 = (expmap2_norm*Matrix3d::Identity() - expmap2*expmap2.transpose()/expmap2_norm)/pow(expmap2_norm,2);
+    double expmap2_closest_k = (expmap2_axis.transpose()*expmap1 - expmap2_norm)/(2*M_PI);
+    int expmap2_closest_k1;
+    int expmap2_closest_k2;
+    if (expmap2_closest_k>0) {
+      expmap2_closest_k1 = (int) expmap2_closest_k;
+    }
+    else {
+      expmap2_closest_k1 = (int) expmap2_closest_k - 1;
+    }
+    expmap2_closest_k2 = expmap2_closest_k1 + 1;
+    Vector3d expmap2_closest1 = expmap2 + 2*expmap2_closest_k1*M_PI*expmap2_axis;
+    Vector3d expmap2_closest2 = expmap2 + 2*expmap2_closest_k2*M_PI*expmap2_axis;
+    if ((expmap2_closest1 - expmap1).norm() < (expmap2_closest2 - expmap1).norm()) {
+      ret.value() = expmap2_closest1;
+      if (ret.hasGradient()) {
+        ret.gradient().value() = Matrix3d::Identity() + 2*dexpmap2_axis_dexpmap2*(double)expmap2_closest_k1*M_PI;
+      }
+      return ret;
+    }
+    else {
+      ret.value() = expmap2_closest2;
+      if (ret.hasGradient()) {
+        ret.gradient().value() = Matrix3d::Identity() + 2*dexpmap2_axis_dexpmap2*(double)expmap2_closest_k2*M_PI;
+      }
+      return ret;
+    }
+  }
+  return ret;
+}
 // explicit instantiations
 template DLLEXPORT void normalizeVec(
     const MatrixBase< Vector3d >& x,
