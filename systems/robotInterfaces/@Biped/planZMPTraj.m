@@ -195,7 +195,8 @@ function [rstep, lstep] = getSafeInitialSupports(biped, kinsol, steps, options)
     supp_pts_in_world = biped.forwardKin(kinsol, biped.foot_body_id.(foot), supp_pts, 0);
     all_supp_pts_in_world = [all_supp_pts_in_world, supp_pts_in_world(1:3,:)];
   end
-  if ~inpolygon(com(1), com(2), all_supp_pts_in_world(1,:), all_supp_pts_in_world(2,:))
+  k = convhull(all_supp_pts_in_world(1,:), all_supp_pts_in_world(2,:));
+  if ~inpolygon(com(1), com(2), all_supp_pts_in_world(1,k), all_supp_pts_in_world(2,k))
     warning('Drake:CommandedSupportsDoNotIncludeCoM', 'Commanded support groups do not include the initial center of mass pose. Expanding the initial supports to prevent a fall at the start of walking');
     % CoM is outside the initial commanded support. This is almost certain to cause the robot to fall. So, for the first supports (the ones corresponding to the robot's current foot positions), we will allow the controller to use the entire heel-to-toe surface of the foot.
     for f = {'left', 'right'}
