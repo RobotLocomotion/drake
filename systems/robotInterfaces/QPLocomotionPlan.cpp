@@ -481,9 +481,9 @@ void QPLocomotionPlan::updateSwingTrajectory(double t_plan, BodyMotionData& body
   VectorXd xdf = trajectory.derivative().value(trajectory.getEndTime(landing_segment_index));
 
   // Unwrap all of the knots in the trajectory to ensure we don't create a wraparound
-  x1.tail<3>() = unwrapExpmap(x0.tail<3>(), x1.tail<3>(), 0).value();
-  x2.tail<3>() = unwrapExpmap(x1.tail<3>(), x2.tail<3>(), 0).value();
-  auto xf_unwrap_gradvar = unwrapExpmap(x2.tail<3>(), xf.tail<3>(), 1);
+  x1.tail<3>() = closestExpmap(x0.tail<3>(), x1.tail<3>(), 0).value();
+  x2.tail<3>() = closestExpmap(x1.tail<3>(), x2.tail<3>(), 0).value();
+  auto xf_unwrap_gradvar = closestExpmap(x2.tail<3>(), xf.tail<3>(), 1);
   xf.tail<3>() = xf_unwrap_gradvar.value();
   xdf.tail<3>() = xf_unwrap_gradvar.gradient().value() * xdf.tail<3>();
 
