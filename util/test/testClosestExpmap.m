@@ -36,6 +36,11 @@ w2_closest_k2 = ceil(w2_closest_k);
 w2_closest1 = w2 + 2*pi*w2_closest_k1*w2_axis;
 w2_closest2 = w2 + 2*pi*w2_closest_k2*w2_axis;
 [w2_closest,dw2_closest_dw2] = closestExpmap(w1,w2);
+w2_closest_mex = closestExpmapmex(w1,w2);
+valuecheck(w2_closest_mex,w2_closest,1e-4);
+[w2_closest_mex,dw2_closest_dw2_mex] = closestExpmapmex(w1,w2);
+valuecheck(w2_closest_mex,w2_closest,1e-4);
+valuecheck(dw2_closest_dw2_mex,dw2_closest_dw2,1e-4);
 if(norm(w2_closest1-w1)<norm(w2_closest2-w1))
   valuecheck(w2_closest1,w2_closest,1e-3);
 else
