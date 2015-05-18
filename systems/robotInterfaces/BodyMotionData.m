@@ -138,6 +138,10 @@ classdef BodyMotionData
 
     function obj = from_body_xyzexp(body_id, ts, poses_exp)
       % [xyz; exp]
+      for j = 2:size(poses_exp, 2)
+        w2 = closestExpmap(poses_exp(4:6,j-1), poses_exp(4:6,j));
+        poses_exp(4:6,j) = w2;
+      end
       obj = BodyMotionData(body_id, ts);
       pp = pchip(ts, poses_exp);
       [~, obj.coefs, l, k, d] = unmkpp(pp);
@@ -145,6 +149,11 @@ classdef BodyMotionData
     end
 
     function obj = from_body_xyzexp_and_xyzexpdot(body_id, ts, poses_exp, dposes_exp)
+      for j = 2:size(poses_exp, 2)
+        [w2, dw2] = closestExpmap(poses_exp(4:6,j-1), poses_exp(4:6,j));
+        poses_exp(4:6,j) = w2;
+        dposes_exp(4:6,j) = dw2 * dposes_exp(4:6,j);
+      end
       obj = BodyMotionData(body_id, ts);
       pp = pchipDeriv(ts, poses_exp, dposes_exp);
       [~, obj.coefs, l, k, d] = unmkpp(pp);

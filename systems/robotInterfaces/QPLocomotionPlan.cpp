@@ -448,8 +448,8 @@ void QPLocomotionPlan::updateSwingTrajectory(double t_plan, BodyMotionData& body
   Vector4d x0_quat = x0_xyzquat.value().tail<4>(); // copying to Vector4d for quatRotateVec later on.
   auto x0_expmap = quat2expmap(x0_quat, 1);
   Vector3d xd0_expmap = x0_expmap.gradient().value() * xd0_xyzquat.tail<4>();
+  // std::cout << "x0: " << x0_expmap.value()(2) << " x1: " << x1(5) << " x2: " << x2(5) << " xf: " << xf(5) << std::endl;
 
-  auto x0_expmap_unwrapped = unwrapExpmap(x1.tail<3>(), x0_expmap.value(), 1);
   typedef Matrix<double, 6, 1> Vector6d;
   Vector6d x0;
   x0.head<3>() = x0_xyzquat.value().head<3>();
@@ -458,13 +458,16 @@ void QPLocomotionPlan::updateSwingTrajectory(double t_plan, BodyMotionData& body
       x0(*it) += plan_shift(*it);
     }
   }
-  x0.tail<3>() = x0_expmap_unwrapped.value().tail<3>();
-
+  x0.tail<3>() = x0_expmap.value().tail<3>();
   Vector6d xd0;
+  // We set the xyz components of xd0 to zero intentionally because, if it
+  // happens that the foot is moving while in support, we don't want to
+  // continue that motion through the swing trajectory.
   xd0.head<3>().setZero();
-  xd0.tail<3>() = x0_expmap_unwrapped.gradient().value() * xd0_expmap;
+  xd0.tail<3>() = xd0_expmap;
 
-  // If the current pose is pitched down more than the first aerial knot point, adjust the knot point to match the current pose
+  // If the current pose is pitched down more than the first aerial knot
+  // point, adjust the knot point to match the current pose
   Vector3d unit_x = Vector3d::UnitX();
   auto quat1_gradientvar = expmap2quat(x1.tail<3>(), 0);
   Vector3d unit_x_rotated_0 = quatRotateVec(x0_quat, unit_x);
@@ -475,7 +478,18 @@ void QPLocomotionPlan::updateSwingTrajectory(double t_plan, BodyMotionData& body
   }
 
   // TODO: find a less expensive way of doing this
-  MatrixXd xdf = trajectory.derivative().value(trajectory.getEndTime(landing_segment_index));
+  VectorXd xdf = trajectory.derivative().value(trajectory.getEndTime(landing_segment_index));
+
+  // Unwrap all of the knots in the trajectory to ensure we don't create a wraparound
+  x1.tail<3>() = closestExpmap(x0.tail<3>(), x1.tail<3>(), 0).value();
+  x2.tail<3>() = closestExpmap(x1.tail<3>(), x2.tail<3>(), 0).value();
+  auto xf_unwrap_gradvar = closestExpmap(x2.tail<3>(), xf.tail<3>(), 1);
+  xf.tail<3>() = xf_unwrap_gradvar.value();
+  xdf.tail<3>() = xf_unwrap_gradvar.gradient().value() * xdf.tail<3>();
+
+  // std::cout << "after all modifications:" << std::endl;
+  // std::cout << "x0: " << x0(5) << " x1: " << x1(5) << " x2: " << x2(5) << " xf: " << xf(5) << std::endl;
+  // std::cout << "xd0: " << xd0.transpose() << " xdf: " << xdf.transpose();
 
   auto start_it = trajectory.getSegmentTimes().begin() + takeoff_segment_index;
   int num_breaks = num_swing_segments + 1;
