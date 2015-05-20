@@ -242,9 +242,22 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         v=x(num_q+(1:obj.manip.num_velocities));
         kinsol = doKinematics(obj,q);
         [H,C,B] = manipulatorDynamics(obj.manip, q, v);
-        [phiC,~,~,~,~,~,~,mu,n,D] = obj.manip.contactConstraints(kinsol, obj.multiple_contacts);
-        [z, Mqdn, wqdn] = solveLCPmex(obj.manip.mex_model_ptr, q, v, u, phiC, n, D, obj.timestep, obj.z_inactive_guess_tol, obj.LCP_cache.data.z, H, C, B, obj.enable_fastqp);
+        [phiC,normal,d,xA,xB,idxA,idxB,mu,n,D] = obj.manip.contactConstraints(kinsol, obj.multiple_contacts);
+        [z, Mqdn, wqdn, possible_contact_indices, possible_jointlimit_indices] = solveLCPmex(obj.manip.mex_model_ptr, q, v, u, phiC, n, D, obj.timestep, obj.z_inactive_guess_tol, obj.LCP_cache.data.z, H, C, B, obj.enable_fastqp);
+        possible_contact_indices = logical(possible_contact_indices);
+        contact_data.normal = normal(:,possible_contact_indices);
+        
+        for i=1:length(d)
+            contact_data.d{i} = d{i}(:,possible_contact_indices);
+        end
+        
+        contact_data.xA = xA(:,possible_contact_indices);
+        contact_data.xB = xB(:,possible_contact_indices);
+        contact_data.idxA = idxA(possible_contact_indices);
+        contact_data.idxB = idxB(possible_contact_indices);
+        obj.LCP_cache.data.contact_data = contact_data;
         obj.LCP_cache.data.z = z;
+        obj.LCP_cache.data.possible_limit_indices = logical(possible_jointlimit_indices);
     end
 
     function [obj,z,Mqdn,wqdn,dz,dMqdn,dwqdn] = solveLCP(obj,t,x,u)
