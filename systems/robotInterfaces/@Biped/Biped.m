@@ -108,7 +108,10 @@ classdef Biped < LeggedRobot
            0 0 0 0 0 -1;
            0 0 0 0 0 1;
            0, 1/(params.max_step_width-params.nom_step_width), 0, 0, 0, 1/params.max_outward_angle;
-           0, 1/(params.min_step_width-params.nom_step_width), 0, 0, 0, 1/params.max_outward_angle];
+           0, 1/(params.min_step_width-params.nom_step_width), 0, 0, 0, 1/params.max_outward_angle;
+           params.max_outward_angle / (params.nom_forward_step/20), 0, 0, 0, 0, 1;
+           -params.max_outward_angle / (params.nom_forward_step/20), 0, 0, 0, 0, 1;
+           ];
 
       if bodies(1) == obj.foot_frame_id.left
         A(:,2) = -A(:,2);
@@ -120,6 +123,8 @@ classdef Biped < LeggedRobot
            params.max_outward_angle;
            1 + params.nom_step_width/(params.max_step_width-params.nom_step_width);
            1 + params.nom_step_width/(params.min_step_width-params.nom_step_width)
+           params.max_outward_angle;
+           params.max_outward_angle;
            ];
     end
 
