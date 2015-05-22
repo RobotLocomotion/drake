@@ -10,7 +10,7 @@ classdef QPLocomotionPlanSettings
     V;
     qtraj;
     comtraj = [];
-    mu = 0.75;
+    mu = 0.5;
     D_control;
     use_plan_shift = false;
     plan_shift_body_motion_inds = 3;
