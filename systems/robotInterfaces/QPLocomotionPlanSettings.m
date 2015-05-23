@@ -23,7 +23,7 @@ classdef QPLocomotionPlanSettings
     planned_support_command = QPControllerPlan.support_logic_maps.require_support; % when the plan says a given body is in support, require the controller to use that support. To allow the controller to use that support only if it thinks the body is in contact with the terrain, try QPControllerPlan.support_logic_maps.kinematic_or_sensed; 
 
     min_knee_angle = 0.7;
-    ankle_limits_tolerance = 0.15;
+    ankle_limits_tolerance = 0.3;
     knee_kp = 40;
     knee_kd = 4;
     knee_weight = 1;
