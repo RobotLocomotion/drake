@@ -92,7 +92,7 @@ while 1
     initial_hold = options.first_step_hold_s;
 %     sw1.walking_params.drake_min_hold_time = options.first_step_hold_s;
     is_first_step = false;
-    sw1.walking_params.step_speed = sw1.walking_params.step_speed / 2;
+    % sw1.walking_params.step_speed = sw1.walking_params.step_speed / 2;
   else
     initial_hold = 0;
   end
