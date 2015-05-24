@@ -13,6 +13,8 @@ const bool PUBLISH_ZMP_COM_OBSERVER_STATE = true;
 
 #define LEG_INTEGRATOR_DEACTIVATION_MARGIN 0.05
 
+#define MU_VERY_SMALL 0.001
+
 double logisticSigmoid(double L, double k, double x, double x0) {
   // Compute the value of the logistic sigmoid f(x) = L / (1 + exp(-k(x - x0)))
   return L / (1.0 + exp(-k * (x - x0)));
@@ -544,7 +546,20 @@ int setupAndSolveQP(
 
   MatrixXd B,JB,Jp,normals;
   VectorXd Jpdotv;
-  int nc = contactConstraintsBV(pdata->r,num_active_contact_pts,mu,active_supports,pdata->map_ptr,B,JB,Jp,Jpdotv,normals,pdata->default_terrain_height);
+  std::vector<double> adjusted_mus(active_supports.size());
+  // std::cout << "contact force: " << b_contact_force.transpose() << std::endl;
+  // std::cout << "adjusted mu: ";
+  for (int i=0; i < active_supports.size(); ++i) {
+    int body_id = active_supports[i].body_idx;
+    if ((body_id == pdata->rpc.body_ids.l_foot || body_id == pdata->rpc.body_ids.r_foot) && !b_contact_force(active_supports[i].body_idx)) {
+      adjusted_mus[i] = MU_VERY_SMALL;
+    } else {
+      adjusted_mus[i] = mu;
+    }
+    // std::cout << adjusted_mus[i] << " ";
+  }
+  // std::cout << std::endl;
+  int nc = contactConstraintsBV(pdata->r,num_active_contact_pts,adjusted_mus,active_supports,pdata->map_ptr,B,JB,Jp,Jpdotv,normals,pdata->default_terrain_height);
   int neps = nc*dim;
 
   if (params->use_center_of_mass_observer && foot_force_torque_measurements.size() > 0) {
