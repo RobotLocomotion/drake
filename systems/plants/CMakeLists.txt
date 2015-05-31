@@ -22,6 +22,7 @@ pods_install_pkg_config_file(drake-rbm
   VERSION 0.0.1)
 
 pods_find_pkg_config(gurobi)
+pods_find_pkg_config(snopt_c)
 add_subdirectory(shapes)
 add_subdirectory(collision)
 add_subdirectory(constraint)
@@ -85,9 +86,6 @@ if (MATLAB_FOUND)
   add_ikoptions_mex(IKoptionsmex)
   add_ikoptions_mex(testIKoptionsmex)
 
-  pods_find_pkg_config(gurobi)
-  pods_find_pkg_config(snopt_c)
-
   macro(add_constraint_mex)
     add_mex(${ARGV} ${ARGV}.cpp)
     target_link_libraries(${ARGV} drakeRBM drakeUtil drakeRigidBodyConstraint)
@@ -108,8 +106,12 @@ add_library(drakeIK SHARED ${drakeIK_SRC_FILES})
 pods_use_pkg_config_packages(drakeIK ${drakeIK_PODS_PKG})
 target_link_libraries(drakeIK drakeRBM drakeRigidBodyConstraint drakeIKoptions)
 set_target_properties(drakeIK PROPERTIES COMPILE_FLAGS -fPIC)
-pods_install_libraries(drakeIK drakeIKoptions)
+pods_install_libraries(drakeIK)
 pods_install_headers(RigidBodyIK.h IKoptions.h DESTINATION drake)
+pods_install_pkg_config_file(drake-ik
+  LIBS -ldrakeIK -ldrakeRigidBodyConstraint -ldrakeIKoptions
+  REQUIRES drake-rbm
+  VERSION 0.0.1)
 
 if (MATLAB_FOUND)
   if (gurobi_FOUND)
@@ -121,7 +123,7 @@ if (MATLAB_FOUND)
   macro(add_IK_mex)
     add_mex(${ARGV} ${ARGV}.cpp)
     target_link_libraries(${ARGV} drakeIK drakeRBM drakeUtil drakeRigidBodyConstraint)
-    pods_use_pkg_config_packages(${ARGV} snopt_c)
+#    pods_use_pkg_config_packages(${ARGV} snopt_c)
   endmacro()
 
   if (snopt_c_FOUND)
