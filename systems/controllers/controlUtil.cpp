@@ -169,7 +169,7 @@ int contactConstraints(RigidBodyManipulator *r, int nc, std::vector<SupportState
 }
 
 
-int contactConstraintsBV(RigidBodyManipulator *r, int nc, double mu, std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>>& supp, void *map_ptr, MatrixXd &B, MatrixXd &JB, MatrixXd &Jp, VectorXd &Jpdotv, MatrixXd &normals, double terrain_height)
+int contactConstraintsBV(RigidBodyManipulator *r, int nc, std::vector<double> support_mus, std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>>& supp, void *map_ptr, MatrixXd &B, MatrixXd &JB, MatrixXd &Jp, VectorXd &Jpdotv, MatrixXd &normals, double terrain_height)
 {
   int j, k=0, nq = r->num_positions;
 
@@ -182,9 +182,10 @@ int contactConstraintsBV(RigidBodyManipulator *r, int nc, double mu, std::vector
   Vector3d contact_pos,pos,normal; 
   MatrixXd J(3,nq);
   Matrix<double,3,m_surface_tangents> d;
-  double norm = sqrt(1+mu*mu); // because normals and ds are orthogonal, the norm has a simple form
   
   for (std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>>::iterator iter = supp.begin(); iter!=supp.end(); iter++) {
+    double mu = support_mus[iter - supp.begin()];
+    double norm = sqrt(1+mu*mu); // because normals and ds are orthogonal, the norm has a simple form
     if (nc>0) {
       for (std::vector<Vector4d,aligned_allocator<Vector4d>>::iterator pt_iter=iter->contact_pts.begin(); pt_iter!=iter->contact_pts.end(); pt_iter++) {
         r->forwardKin(iter->body_idx,*pt_iter,0,contact_pos);

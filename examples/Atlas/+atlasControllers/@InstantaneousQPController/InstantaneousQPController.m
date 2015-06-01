@@ -120,10 +120,15 @@ classdef InstantaneousQPController
 
       contact_sensor = zeros(obj.robot_property_cache.num_bodies, 1);
       if foot_contact_sensor(1) > 0.5
-        contact_sensor(obj.foot_body_id.left) = 1;
+        contact_sensor(obj.robot.foot_body_id.left) = 1;
       end
       if foot_contact_sensor(2) > 0.5
-        contact_sensor(obj.foot_body_id.right) = 1;
+        contact_sensor(obj.robot.foot_body_id.right) = 1;
+      end
+      for j = 1:length(qp_input_msg.support_data)
+        if all(qp_input_msg.support_data(j).support_logic_map)
+          contact_sensor(qp_input_msg.support_data(j).body_id) = 1;
+        end
       end
       ctrl_data = obj.controller_data;
 
