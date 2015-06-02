@@ -98,4 +98,4 @@ kinsol = doKinematics(r, xf(1:nq));
 comf = getCOM(r, kinsol);
 
 % Make sure we're still standing
-rangecheck(comf, [-0.01; -0.01; 0.9], [0.01; 0.01; inf]);
+rangecheck(comf, [-0.02; -0.02; 0.9], [0.02; 0.02; inf]);
