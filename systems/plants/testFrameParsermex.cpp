@@ -2,7 +2,6 @@
 #include <iostream>
 #include "drakeUtil.h"
 #include "RigidBodyManipulator.h"
-#include <unistd.h>
 #include <Eigen/Dense>
 
 using namespace std;
