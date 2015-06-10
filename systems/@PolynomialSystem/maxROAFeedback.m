@@ -81,7 +81,7 @@ if ~all(isinf([sys.umax;sys.umin]))
   end
   f_umax = subs(f,u,sys.umax);
   f_umin = subs(f,u,sys.umin);
-  saturations = true
+  saturations = true;
 else
   saturations = false;
 end
