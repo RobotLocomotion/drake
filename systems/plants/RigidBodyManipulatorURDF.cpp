@@ -682,6 +682,49 @@ bool parseLoop(RigidBodyManipulator* model, TiXmlElement* node)
   return true;
 }
 
+bool parseFrame(RigidBodyManipulator* model, TiXmlElement* node)
+{
+  Vector3d xyz, rpy;
+
+  if (!parseVectorAttribute(node, "xyz", xyz)) {
+    cerr << "ERROR parsing Drake frame xyz" << endl;
+    return false;
+  }
+
+  if (!parseVectorAttribute(node, "rpy", rpy)) {
+    cerr << "ERROR parsing Drake frame rpy" << endl;
+    return false;
+  }
+  
+  RigidBodyFrame frame;
+  Map<Matrix4d> T(frame.Ttree.data());
+  
+  const char* frame_link = node->Attribute("link");
+
+  if (!frame_link) {
+    cerr << "ERROR parsing Drake frame linkname" << endl;
+    return false;
+  }
+
+  const char* frame_name = node->Attribute("name");
+
+  if (!frame_name) {
+    cerr << "ERROR parsing Drake frame name" << endl;
+    return false;
+  }
+
+  frame.name = frame_name;
+  frame.body_ind = findLinkIndex(model, frame_link);
+
+  T = Matrix4d::Identity();
+  T.block(0, 0, 3, 3) = rpy2rotmat(rpy);
+  T.block(0, 3, 3, 1) = xyz;
+
+  model->addFrame(frame);
+
+  return true;
+}
+
 bool parseRobot(RigidBodyManipulator* model, TiXmlElement* node, const map<string,string> package_map, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type)
 {
   string robotname = node->Attribute("name");
@@ -723,6 +766,10 @@ bool parseRobot(RigidBodyManipulator* model, TiXmlElement* node, const map<strin
     if (!parseLoop(model, loop_node))
       return false;
 
+  // parse Drake frames
+  for (TiXmlElement* frame_node = node->FirstChildElement("frame"); frame_node; frame_node = frame_node->NextSiblingElement("frame"))
+    if (!parseFrame(model, frame_node))
+      return false;
 
   for (unsigned int i = 1; i < model->bodies.size(); i++) {
     if (model->bodies[i]->parent == nullptr) {  // attach the root nodes to the world with a floating base joint
