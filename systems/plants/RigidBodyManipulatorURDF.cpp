@@ -248,7 +248,7 @@ bool parseMaterial(TiXmlElement* node, map<string, Vector4d>& materials)
   const char* attr;
   attr = node->Attribute("name");
   if (!attr || strlen(attr) == 0) {
-    cerr << "WARNING: material tag is missing name attribute" << endl;
+    cerr << "WARNING: material tag is missing a name" << endl;
     return false;
   }
   string name(attr);
@@ -396,10 +396,12 @@ bool parseVisual(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyManipu
       if (color_node) {
         Vector4d rgba;
         if (!parseVectorAttribute(color_node, "rgba", rgba)) {
-          cerr << "ERROR: Failed to parse color element rgba in visual" << endl;
+          cerr << "WARNING: Failed to parse color element rgba in visual" << endl;
         } else {
           element.setMaterial(rgba);
         }
+      } else {
+        cerr << "WARNING: visual element had a material with neither a name nor a nested color element" << endl;
       }
     }
   }
