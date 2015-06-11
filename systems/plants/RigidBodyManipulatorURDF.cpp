@@ -389,7 +389,7 @@ bool parseVisual(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyManipu
   if (material_node) {
     const char* attr;
     attr = material_node->Attribute("name");
-    if (attr && strlen(attr) > 0) {
+    if (attr && strlen(attr) > 0 && materials.find(attr) != materials.end()) {
       element.setMaterial(materials.at(attr));
     } else { 
       TiXmlElement* color_node = material_node->FirstChildElement("color");
