@@ -65,23 +65,23 @@ inline mxArray* getTangentsArray(RigidBodyManipulator* const model, Map<Matrix3x
 
 void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   
-  if (nrhs < 6) {
-    mexErrMsgIdAndTxt("Drake:contactConstraintsmex:NotEnoughInputs","Usage: \n[d, n, D] = contactConstraintsmex(normal, model_ptr, idxA, idxB, xA, xB)\n[d, n, D, dn, dD] = contactConstraintsmex(normal, model_ptr, idxA, idxB, xA, xB)");
+  if (nrhs < 7) {
+    mexErrMsgIdAndTxt("Drake:contactConstraintsmex:NotEnoughInputs","Usage: \n[n, D] = contactConstraintsmex(model_ptr, normal, idxA, idxB, xA, xB, d)\n[n, D, dn, dD] = contactConstraintsmex(model_ptr, normal, idxA, idxB, xA, xB, d)");
   }
 
-  if (nrhs >= 4 && mxGetN(prhs[2]) != mxGetN(prhs[3])) {
+  if (nrhs >= 5 && mxGetN(prhs[2]) != mxGetN(prhs[3])) {
     mexErrMsgIdAndTxt("Drake:contactConstraintsmex:InvalidBodyIndexes", "idxA and idxB must be the same size");
   }
 
-  if (nrhs >= 6 && mxGetN(prhs[4]) != mxGetN(prhs[5])) {
+  if (nrhs >= 7 && mxGetN(prhs[4]) != mxGetN(prhs[5])) {
     mexErrMsgIdAndTxt("Drake:contactConstraintsmex:InvalidBodyPoints", "xA and xB must be the same size");
   } 
 
-  if (nrhs >= 6 && (mxGetM(prhs[4]) != 3 || mxGetM(prhs[5]) != 3)) {
+  if (nrhs >= 7 && (mxGetM(prhs[4]) != 3 || mxGetM(prhs[5]) != 3)) {
     mexErrMsgIdAndTxt("Drake:contactConstraintsmex:InvalidBodyPointsDimension", "body points xA and xB must be 3 dimensional");
   }
 
-  if (nrhs >= 5 && mxGetN(prhs[1]) != mxGetN(prhs[4])) {
+  if (nrhs >= 6 && mxGetN(prhs[1]) != mxGetN(prhs[4])) {
     mexErrMsgIdAndTxt("Drake:contactConstraintsmex:InvalidBodyPointsDimension", "normals must match the number of contact points");
   }
 
@@ -92,9 +92,6 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   RigidBodyManipulator *model= (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
 
   if (model != NULL) {
-    if (nlhs > 0) {
-      plhs[0] = getTangentsArray(model, normals);
-    }
 
     const Map<VectorXi> idxA((int*)mxGetData(prhs[2]), numContactPairs); //collision pairs index of body A
     const Map<VectorXi> idxB((int*)mxGetData(prhs[3]), numContactPairs); //collision pairs index of body B
@@ -105,24 +102,24 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
     VectorXi idxA_zero_indexed = idxA.array() - 1;
     VectorXi idxB_zero_indexed = idxB.array() - 1;
 
-    if (nlhs > 1) {
+    if (nlhs > 0) {
       MatrixXd J; 
       MatrixXd dJ;
       vector<int> bodyInds;
       SparseMatrix<double> sparseNormals;
       model->computeContactJacobians(idxA_zero_indexed, idxB_zero_indexed, xA, xB, compute_second_derivatives, J, dJ);      
       buildSparseMatrix(normals, sparseNormals);
-      plhs[1] = mxCreateDoubleMatrix(numContactPairs, nq, mxREAL);
-      Map<MatrixXd> n(mxGetPrSafe(plhs[1]), numContactPairs, nq);
+      plhs[0] = mxCreateDoubleMatrix(numContactPairs, nq, mxREAL);
+      Map<MatrixXd> n(mxGetPrSafe(plhs[0]), numContactPairs, nq);
       n = sparseNormals * J; //dphi/dq
-      if (nlhs > 2) {
+      if (nlhs > 1) {
         const mwSize cellDims[] = {1, 2*BASIS_VECTOR_HALF_COUNT};
-        plhs[2] = mxCreateCellArray(2, cellDims);
-        if (nlhs > 4) {
-          plhs[4] = mxCreateCellArray(2, cellDims);
+        plhs[1] = mxCreateCellArray(2, cellDims);
+        if (nlhs > 3) {
+          plhs[3] = mxCreateCellArray(2, cellDims);
         }
         for (int k = 0 ; k < BASIS_VECTOR_HALF_COUNT ; k++) { //for each friction cone basis vector
-          Map<Matrix3xd> dk(mxGetPrSafe(mxGetCell(plhs[0], k)), 3, numContactPairs);
+          Map<Matrix3xd> dk(mxGetPrSafe(mxGetCell(prhs[6], k)), 3, numContactPairs);
           SparseMatrix<double> sparseTangents;
           buildSparseMatrix(dk, sparseTangents);
           mxArray *D_cell = mxCreateDoubleMatrix(numContactPairs, nq, mxREAL);
@@ -131,26 +128,26 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
           Map<MatrixXd> Dk_reflected(mxGetPrSafe(D_cell_reflected), numContactPairs, nq);
           Dk = sparseTangents * J; //dd/dq
           Dk_reflected = -Dk;
-          mxSetCell(plhs[2], k, D_cell);
-          mxSetCell(plhs[2], k + BASIS_VECTOR_HALF_COUNT, D_cell_reflected);
+          mxSetCell(plhs[1], k, D_cell);
+          mxSetCell(plhs[1], k + BASIS_VECTOR_HALF_COUNT, D_cell_reflected);
           if (compute_second_derivatives) {
-            if (nlhs > 4) {
+            if (nlhs > 3) {
               mxArray *dD_cell = mxCreateDoubleMatrix(numContactPairs * nq, nq, mxREAL);
               Map<MatrixXd> dD(mxGetPrSafe(dD_cell), numContactPairs , nq * nq);
               dD = sparseTangents * dJ;
-              mxSetCell(plhs[4], k, dD_cell);
+              mxSetCell(plhs[3], k, dD_cell);
               mxArray *dD_cell_reflected = mxCreateDoubleMatrix(numContactPairs * nq, nq, mxREAL);
               Map<MatrixXd> dD_reflected(mxGetPrSafe(dD_cell_reflected), numContactPairs, nq*nq);
               dD_reflected = -dD;
-              mxSetCell(plhs[4], k + BASIS_VECTOR_HALF_COUNT, dD_cell_reflected);
+              mxSetCell(plhs[3], k + BASIS_VECTOR_HALF_COUNT, dD_cell_reflected);
             }
           }
         }
       }
       
-      if (nlhs > 3) {
-       plhs[3] = mxCreateDoubleMatrix(numContactPairs * nq, nq, mxREAL);
-       Map<MatrixXd> dn(mxGetPrSafe(plhs[3]), numContactPairs, nq*nq);
+      if (nlhs > 2) {
+       plhs[2] = mxCreateDoubleMatrix(numContactPairs * nq, nq, mxREAL);
+       Map<MatrixXd> dn(mxGetPrSafe(plhs[2]), numContactPairs, nq*nq);
        dn = sparseNormals * dJ;
      }
    }
