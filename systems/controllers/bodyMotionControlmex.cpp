@@ -75,8 +75,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   // TODO: this must be updated to use quaternions/spatial velocity
   Vector6d body_pose;
   MatrixXd J = MatrixXd::Zero(6,pdata->r->num_positions);
-  Vector4d zero = Vector4d::Zero();
-  zero(3) = 1.0;
+  Vector3d zero = Vector3d::Zero();
   pdata->r->forwardKin(pdata->body_index,zero,1,body_pose);
   pdata->r->forwardJac(pdata->body_index,zero,1,J);
   

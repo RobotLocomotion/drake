@@ -81,7 +81,7 @@ smoothDistancePenalty(double& c, MatrixXd& dc,
     {
       continue;
     }
-    MatrixXd x_k(3, numA + numB);
+    Matrix3Xd x_k(3, numA + numB);
     for (; l < numA; ++l) {
       //DEBUG
       //std::cout << "MinDistanceConstraint::eval: Third loop: " << l << std::endl;
@@ -94,10 +94,8 @@ smoothDistancePenalty(double& c, MatrixXd& dc,
       //END_DEBUG
       x_k.col(l) = xB.col(orig_idx_of_pt_on_bodyB.at(k).at(l-numA));
     }
-    MatrixXd x_k_1(4,x_k.cols());
     MatrixXd J_k(3*x_k.cols(),robot->num_positions);
-    x_k_1 << x_k, MatrixXd::Ones(1,x_k.cols());
-    robot->forwardJac(k,x_k_1,0,J_k);
+    robot->forwardJac(k,x_k,0,J_k);
     l = 0;
     for (; l < numA; ++l) {
       //DEBUG
@@ -201,7 +199,8 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 
   double penalty;
   vector<int> bodyA_idx, bodyB_idx;
-  MatrixXd ptsA, ptsB, normals, JA, JB, Jd, dpenalty;
+  Matrix3Xd ptsA, ptsB, normals;
+  MatrixXd JA, JB, Jd, dpenalty;
   VectorXd dist;
   if (active_bodies_idx.size() > 0) {
     if (active_group_names.size() > 0) {

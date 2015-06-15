@@ -344,13 +344,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         assert(mxIsNumeric(prhs[4]));
         assert(mxGetM(prhs[4]) == 3 &&mxGetN(prhs[4]) == 1);
         memcpy(target.data(),mxGetPrSafe(prhs[4]),sizeof(double)*3);
-        Vector4d gaze_origin;
+        Vector3d gaze_origin;
         Vector3d gaze_origin_tmp;
         assert(mxIsNumeric(prhs[5]));
         assert(mxGetM(prhs[5]) == 3 && mxGetN(prhs[5]) == 1);
         memcpy(gaze_origin_tmp.data(),mxGetPrSafe(prhs[5]),sizeof(double)*3);
-        gaze_origin.head(3) = gaze_origin_tmp;
-        gaze_origin(3) = 1.0;
+        gaze_origin = gaze_origin_tmp;
         double conethreshold = rigidBodyConstraintParseGazeConethreshold(prhs[6]);
         cnst = new WorldGazeTargetConstraint(model,body,axis,target,gaze_origin,conethreshold,tspan);
         plhs[0] = createDrakeConstraintMexPointer((void*)cnst, "WorldGazeTargetConstraint");
@@ -403,9 +402,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         {
           mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","gaze_origin should be 3x1 vector");
         }
-        Vector4d gaze_origin;
+        Vector3d gaze_origin;
         memcpy(gaze_origin.data(),mxGetPrSafe(prhs[6]),sizeof(double)*3);
-        gaze_origin(3) = 1.0;
         double conethreshold;
         if(nrhs<8)
         {
@@ -789,9 +787,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         {
           mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","pt should be a 3x1 vector");
         }
-        Vector4d pt;
+        Vector3d pt;
         memcpy(pt.data(),mxGetPrSafe(prhs[3]),sizeof(double)*3);
-        pt(3) = 1.0;
         if(!mxIsNumeric(prhs[4])||mxGetNumberOfElements(prhs[4]) != 1)
         {
           mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","line_body should be a numeric scalar");
@@ -805,11 +802,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         {
           mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","line_ends should be a 3x2 vector");
         }
-        Matrix<double,4,2> line_ends;
-        Matrix<double,3,2> line_ends_tmp;
-        memcpy(line_ends_tmp.data(),mxGetPrSafe(prhs[5]),sizeof(double)*6);
-        line_ends.block(0,0,3,2) = line_ends_tmp;
-        line_ends.row(3) = MatrixXd::Ones(1,2);
+        Matrix<double,3,2> line_ends;
+        memcpy(line_ends.data(),mxGetPrSafe(prhs[5]),sizeof(double)*6);
         if(!mxIsNumeric(prhs[6]) || !mxIsNumeric(prhs[7]) || mxGetNumberOfElements(prhs[6]) != 1 || mxGetNumberOfElements(prhs[7]) != 1)
         {
           mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","dist_lb, dist_ub should be scalars");

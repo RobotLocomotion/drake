@@ -75,7 +75,8 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
   }
 
   vector<int> bodyA_idx, bodyB_idx;
-  MatrixXd ptsA, ptsB, normals, JA, JB, Jd;
+  Matrix3Xd ptsA, ptsB, normals;
+  MatrixXd JA, JB, Jd;
   VectorXd dist;
 
   if (active_bodies_idx.size() > 0) {
