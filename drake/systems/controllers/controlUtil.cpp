@@ -114,7 +114,7 @@ int contactPhi(RigidBodyManipulator* r, SupportStateElement& supp, void *map_ptr
   Vector3d contact_pos,pos,normal;
 
   int i=0;
-  for (std::vector<Vector4d,aligned_allocator<Vector4d>>::iterator pt_iter=supp.contact_pts.begin(); pt_iter!=supp.contact_pts.end(); pt_iter++) {
+  for (std::vector<Vector3d,aligned_allocator<Vector3d>>::iterator pt_iter=supp.contact_pts.begin(); pt_iter!=supp.contact_pts.end(); pt_iter++) {
     r->forwardKin(supp.body_idx,*pt_iter,0,contact_pos);
     collisionDetect(map_ptr,contact_pos,pos,&normal,terrain_height);
     pos -= contact_pos;  // now -rel_pos in matlab version
@@ -141,7 +141,7 @@ int contactConstraints(RigidBodyManipulator *r, int nc, std::vector<SupportState
   
   for (std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>>::iterator iter = supp.begin(); iter!=supp.end(); iter++) {
     if (nc>0) {
-      for (std::vector<Vector4d,aligned_allocator<Vector4d>>::iterator pt_iter=iter->contact_pts.begin(); pt_iter!=iter->contact_pts.end(); pt_iter++) {
+      for (std::vector<Vector3d,aligned_allocator<Vector3d>>::iterator pt_iter=iter->contact_pts.begin(); pt_iter!=iter->contact_pts.end(); pt_iter++) {
         r->forwardKin(iter->body_idx,*pt_iter,0,contact_pos);
         r->forwardJac(iter->body_idx,*pt_iter,0,J);
 
@@ -157,7 +157,9 @@ int contactConstraints(RigidBodyManipulator *r, int nc, std::vector<SupportState
         // store away kin sols into Jp and Jpdot
         // NOTE: I'm cheating and using a slightly different ordering of J and Jdot here
         Jp.block(3*k,0,3,nq) = J;
-        r->forwardJacDot(iter->body_idx,*pt_iter,0,J);
+        Vector4d pt;
+        pt << *pt_iter, 1.0;
+        r->forwardJacDot(iter->body_idx,pt,0,J);
         Jpdot.block(3*k,0,3,nq) = J;
         
         k++;
@@ -187,7 +189,7 @@ int contactConstraintsBV(RigidBodyManipulator *r, int nc, std::vector<double> su
     double mu = support_mus[iter - supp.begin()];
     double norm = sqrt(1+mu*mu); // because normals and ds are orthogonal, the norm has a simple form
     if (nc>0) {
-      for (std::vector<Vector4d,aligned_allocator<Vector4d>>::iterator pt_iter=iter->contact_pts.begin(); pt_iter!=iter->contact_pts.end(); pt_iter++) {
+      for (std::vector<Vector3d,aligned_allocator<Vector3d>>::iterator pt_iter=iter->contact_pts.begin(); pt_iter!=iter->contact_pts.end(); pt_iter++) {
         r->forwardKin(iter->body_idx,*pt_iter,0,contact_pos);
         r->forwardJac(iter->body_idx,*pt_iter,0,J);
 
@@ -265,8 +267,8 @@ MatrixXd individualSupportCOPs(RigidBodyManipulator* r, const std::vector<Suppor
 
       Vector3d point_on_contact_plane = contact_positions.col(0);
       std::pair<Vector3d, double> cop_and_normal_torque = resolveCenterOfPressure(torque, force, normal, point_on_contact_plane);
-      Vector4d cop_body;
-      cop_body << cop_and_normal_torque.first, 1.0;
+      Vector3d cop_body;
+      cop_body << cop_and_normal_torque.first;
       Vector3d cop_world;
       r->forwardKin(active_support.body_idx, cop_body, 0, cop_world);
       individual_cops.col(j) = cop_world;

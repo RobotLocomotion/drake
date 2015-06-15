@@ -559,9 +559,9 @@ bool RigidBodyManipulator::collisionRaycast(const Matrix3Xd &origins,
 
 
 bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
-                                            MatrixXd& normal,
-                                            MatrixXd& xA,
-                                            MatrixXd& xB,
+                                            Matrix3Xd& normal,
+                                            Matrix3Xd& xA,
+                                            Matrix3Xd& xB,
                                             vector<int>& bodyA_idx,
                                             vector<int>& bodyB_idx,
                                             const vector<DrakeCollision::ElementId>& ids_to_check,
@@ -604,9 +604,9 @@ bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
 }
 
 bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
-                                            MatrixXd& normal,
-                                            MatrixXd& xA,
-                                            MatrixXd& xB,
+                                            Matrix3Xd& normal,
+                                            Matrix3Xd& xA,
+                                            Matrix3Xd& xB,
                                             vector<int>& bodyA_idx,
                                             vector<int>& bodyB_idx,
                                             const vector<int>& bodies_idx,
@@ -629,9 +629,9 @@ bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
 }
 
 bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
-                                            MatrixXd& normal,
-                                            MatrixXd& xA,
-                                            MatrixXd& xB,
+                                            Matrix3Xd& normal,
+                                            Matrix3Xd& xA,
+                                            Matrix3Xd& xB,
                                             vector<int>& bodyA_idx,
                                             vector<int>& bodyB_idx,
                                             const vector<int>& bodies_idx,
@@ -649,9 +649,9 @@ bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
 }
 
 bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
-                                            MatrixXd& normal,
-                                            MatrixXd& xA,
-                                            MatrixXd& xB,
+                                            Matrix3Xd& normal,
+                                            Matrix3Xd& xA,
+                                            Matrix3Xd& xB,
                                             vector<int>& bodyA_idx,
                                             vector<int>& bodyB_idx,
                                             const set<string>& active_element_groups,
@@ -671,9 +671,9 @@ bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
 }
 
 bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
-                                            MatrixXd& normal,
-                                            MatrixXd& xA,
-                                            MatrixXd& xB,
+                                            Matrix3Xd& normal,
+                                            Matrix3Xd& xA,
+                                            Matrix3Xd& xB,
                                             vector<int>& bodyA_idx,
                                             vector<int>& bodyB_idx,
                                             bool use_margins)
@@ -688,9 +688,9 @@ bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
 }
 
 void RigidBodyManipulator::potentialCollisions(VectorXd& phi,
-                                            MatrixXd& normal,
-                                            MatrixXd& xA,
-                                            MatrixXd& xB,
+                                            Matrix3Xd& normal,
+                                            Matrix3Xd& xA,
+                                            Matrix3Xd& xB,
                                             vector<int>& bodyA_idx,
                                             vector<int>& bodyB_idx,
                                             bool use_margins)
@@ -702,8 +702,8 @@ void RigidBodyManipulator::potentialCollisions(VectorXd& phi,
 
   phi = VectorXd::Zero(num_potential_collisions);
   normal = MatrixXd::Zero(3, num_potential_collisions);
-  xA = MatrixXd(3, num_potential_collisions);
-  xB = MatrixXd(3, num_potential_collisions);
+  xA = Matrix3Xd(3, num_potential_collisions);
+  xB = Matrix3Xd(3, num_potential_collisions);
 
   bodyA_idx.clear();
   bodyB_idx.clear();
@@ -733,14 +733,14 @@ vector<size_t> RigidBodyManipulator::collidingPoints(
 
 bool RigidBodyManipulator::allCollisions(vector<int>& bodyA_idx,
                                          vector<int>& bodyB_idx,
-                                         MatrixXd& xA_in_world, MatrixXd& xB_in_world,
+                                         Matrix3Xd& xA_in_world, Matrix3Xd& xB_in_world,
                                          bool use_margins)
 {
   vector<DrakeCollision::PointPair> points;
   bool points_found = collision_model->collisionPointsAllToAll(use_margins, points);
 
-  xA_in_world = MatrixXd::Zero(3,points.size());
-  xB_in_world = MatrixXd::Zero(3,points.size());
+  xA_in_world = Matrix3Xd::Zero(3,points.size());
+  xB_in_world = Matrix3Xd::Zero(3,points.size());
 
   Vector3d ptA, ptB, n;
   double distance;
@@ -3227,14 +3227,14 @@ void RigidBodyManipulator::positionConstraints(MatrixBase<DerivedA> & phi, Matri
   Matrix<double, 7, 1> bpTb, wTb;
 
   Vector3d bodyA_pos;
-  Vector4d ptA, origin_pt;
+  Vector3d ptA, origin_pt;
   MatrixXd JA(3,nq), dbTw_transdq(3,nq), dwTb(7,nq);
-  origin_pt << 0.0, 0.0, 0.0, 1.0;
+  origin_pt << 0.0, 0.0, 0.0;
   Matrix4d dbTw_quat = dquatConjugate();
 
   for (size_t i = 0; i < numLoops; i++) {
     bpTb << -loops[i].ptB, 1.0, 0.0, 0.0, 0.0;
-    ptA << loops[i].ptA, 1.0;
+    ptA << loops[i].ptA;
     forwardKin(loops[i].bodyA->body_index,ptA,0,bodyA_pos);
     forwardJac(loops[i].bodyA->body_index,ptA,0,JA);
     forwardKin(loops[i].bodyB->body_index,origin_pt,2,wTb);
@@ -3313,18 +3313,20 @@ template DLLEXPORT_RBM void RigidBodyManipulator::getContactPositions(MatrixBase
 template DLLEXPORT_RBM void RigidBodyManipulator::getContactPositionsJac(MatrixBase <MatrixXd > &,const set<int> &);
 template DLLEXPORT_RBM void RigidBodyManipulator::getContactPositionsJacDot(MatrixBase <MatrixXd > &,const set<int> &);
 
-template DLLEXPORT_RBM void RigidBodyManipulator::forwardKin(const int, const MatrixBase< MatrixXd >&, const int, MatrixBase< Map<MatrixXd> > &);
-template DLLEXPORT_RBM void RigidBodyManipulator::forwardKin(const int, const MatrixBase< MatrixXd >&, const int, MatrixBase< MatrixXd > &);
-template DLLEXPORT_RBM void RigidBodyManipulator::forwardKin(const int, MatrixBase< Vector4d > const&, const int, MatrixBase< Vector3d > &);
-template DLLEXPORT_RBM void RigidBodyManipulator::forwardKin(const int, MatrixBase< Vector4d > const&, const int, MatrixBase< Matrix<double,6,1> > &);
-template DLLEXPORT_RBM void RigidBodyManipulator::forwardKin(const int, MatrixBase< Vector4d > const&, const int, MatrixBase< Matrix<double,7,1> > &);
-template DLLEXPORT_RBM void RigidBodyManipulator::forwardKin(const int, MatrixBase< Map<MatrixXd> > const&, const int, MatrixBase< MatrixXd > &);
+template DLLEXPORT_RBM void RigidBodyManipulator::forwardKin(const int, const MatrixBase< Matrix3Xd >&, const int, MatrixBase< Map<MatrixXd> > &);
+template DLLEXPORT_RBM void RigidBodyManipulator::forwardKin(const int, const MatrixBase< Matrix3Xd >&, const int, MatrixBase< MatrixXd > &);
+template DLLEXPORT_RBM void RigidBodyManipulator::forwardKin(const int, MatrixBase< Vector3d > const&, const int, MatrixBase< Vector3d > &);
+template DLLEXPORT_RBM void RigidBodyManipulator::forwardKin(const int, MatrixBase< Vector3d > const&, const int, MatrixBase< Matrix<double,6,1> > &);
+template DLLEXPORT_RBM void RigidBodyManipulator::forwardKin(const int, MatrixBase< Vector3d > const&, const int, MatrixBase< Matrix<double,7,1> > &);
+template DLLEXPORT_RBM void RigidBodyManipulator::forwardKin(const int, MatrixBase< Map<Matrix3Xd> > const&, const int, MatrixBase< MatrixXd > &);
+template DLLEXPORT_RBM void RigidBodyManipulator::forwardKin(const int, const MatrixBase< Map<Matrix3Xd> >&, const int, MatrixBase< Map<MatrixXd> > &);
 
-template DLLEXPORT_RBM void RigidBodyManipulator::forwardJac(const int, const MatrixBase< MatrixXd > &, const int, MatrixBase< Map<MatrixXd> > &);
+template DLLEXPORT_RBM void RigidBodyManipulator::forwardJac(const int, const MatrixBase< Matrix3Xd > &, const int, MatrixBase< Map<MatrixXd> > &);
+template DLLEXPORT_RBM void RigidBodyManipulator::forwardJac(const int, const MatrixBase< Map<Matrix3Xd> > &, const int, MatrixBase< Map<MatrixXd> > &);
 //template DLLEXPORT_RBM void RigidBodyManipulator::forwardJac(const int, MatrixBase< Map<MatrixXd> > const&, const int, MatrixBase< MatrixXd > &);
 //template DLLEXPORT_RBM void RigidBodyManipulator::forwardJac(const int, MatrixBase< MatrixXd > const&, const int, MatrixBase< MatrixXd > &);
-template DLLEXPORT_RBM void RigidBodyManipulator::forwardJac(const int, const MatrixBase< MatrixXd > &, const int, MatrixBase< MatrixXd > &);
-template DLLEXPORT_RBM void RigidBodyManipulator::forwardJac(const int, const MatrixBase< Vector4d > &, const int, MatrixBase< MatrixXd > &);
+template DLLEXPORT_RBM void RigidBodyManipulator::forwardJac(const int, const MatrixBase< Matrix3Xd > &, const int, MatrixBase< MatrixXd > &);
+template DLLEXPORT_RBM void RigidBodyManipulator::forwardJac(const int, const MatrixBase< Vector3d > &, const int, MatrixBase< MatrixXd > &);
 template DLLEXPORT_RBM void RigidBodyManipulator::forwarddJac(const int, const MatrixBase< MatrixXd > &, MatrixBase< Map<MatrixXd> >&);
 template DLLEXPORT_RBM void RigidBodyManipulator::forwarddJac(const int, const MatrixBase< MatrixXd > &, MatrixBase< MatrixXd >&);
 //template DLLEXPORT_RBM void RigidBodyManipulator::forwarddJac(const int, const MatrixBase< Vector4d > &, MatrixBase< MatrixXd >&);

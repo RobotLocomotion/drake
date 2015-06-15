@@ -77,8 +77,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   //---------------------------------------------------------------------
   // Compute active support from desired supports -----------------------
 
-  Vector4d contact_pt = Vector4d::Zero();
-  contact_pt(3) = 1.0;
+  Vector3d contact_pt = Vector3d::Zero();
 
   vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> active_supports;
   set<int> contact_bodies; // redundant, clean up later

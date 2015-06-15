@@ -49,10 +49,10 @@ int main()
   model->doKinematics(qstar);
   Vector3d com0;
   model->getCOM(com0);
-  Vector4d l_hand_pt;
-  l_hand_pt<<0.0,0.0,0.0,1.0;
-  Vector4d r_hand_pt;
-  r_hand_pt<<0.0,0.0,0.0,1.0;
+  Vector3d l_hand_pt;
+  l_hand_pt << 0.0, 0.0, 0.0;
+  Vector3d r_hand_pt;
+  r_hand_pt << 0.0, 0.0, 0.0;
   Vector3d lhand_pos0;
   model->forwardKin(l_hand,l_hand_pt,0,lhand_pos0);
   Vector3d rhand_pos0;

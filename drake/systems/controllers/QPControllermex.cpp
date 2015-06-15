@@ -241,8 +241,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   //---------------------------------------------------------------------
   // Compute active support from desired supports -----------------------
   MatrixXd all_body_contact_pts;
-  Vector4d contact_pt = Vector4d::Zero();
-  contact_pt(3) = 1.0;
+  Vector3d contact_pt = Vector3d::Zero();
 
   vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> active_supports;
   set<int> contact_bodies; // redundant, clean up later
@@ -408,8 +407,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   
   // add in body spatial equality constraints
   VectorXd body_vdot;
-  MatrixXd orig = MatrixXd::Zero(4,1);
-  orig(3,0) = 1;
+  Vector3d orig(0.0, 0.0, 0.0);
+  Vector4d orig_1;
+  orig_1 << orig , 1.0;
   int body_idx;
   int equality_ind = 6+neps;
   MatrixXd Jb(6,nq);
@@ -422,7 +422,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
       if (!inSupport(active_supports,body_idx)) {
         pdata->r->forwardJac(body_idx,orig,1,Jb);
-        pdata->r->forwardJacDot(body_idx,orig,1,Jbdot);
+        pdata->r->forwardJacDot(body_idx,orig_1,1,Jbdot);
 
         for (int j=0; j<6; j++) {
           if (!std::isnan(body_vdot[j])) {
@@ -461,7 +461,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   for (int i=0; i<pdata->n_body_accel_bounds; i++) {
     body_index = pdata->accel_bound_body_idx[i];
     pdata->r->forwardJac(body_index,orig,1,Jb);
-    pdata->r->forwardJacDot(body_index,orig,1,Jbdot);
+    pdata->r->forwardJacDot(body_index,orig_1,1,Jbdot);
     Ain.block(constraint_start_index,0,6,pdata->r->num_positions) = Jb;
     bin.segment(constraint_start_index,6) = -Jbdot*qd + pdata->max_body_acceleration[i];
     constraint_start_index += 6;
@@ -570,7 +570,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         
         if (!inSupport(active_supports,body_idx)) {
           pdata->r->forwardJac(body_idx,orig,1,Jb);
-          pdata->r->forwardJacDot(body_idx,orig,1,Jbdot);
+          pdata->r->forwardJacDot(body_idx,orig_1,1,Jbdot);
 
           for (int j=0; j<6; j++) {
             if (!std::isnan(body_vdot[j])) {
