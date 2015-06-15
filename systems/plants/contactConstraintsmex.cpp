@@ -9,7 +9,7 @@ using namespace Eigen;
 using namespace std;
 
 /*
- * MATLAB signature: [d, n, D, dn, dD] = contactConstraintsmex(model_ptr, normals, idxA, idxB, xA, xB)
+ * MATLAB signature: [n, D, dn, dD] = contactConstraintsmex(model_ptr, normals, idxA, idxB, xA, xB, d)
  * 
  * Inputs:
  *  model_ptr = mex_model_ptr to the RBM
@@ -18,9 +18,9 @@ using namespace std;
  *  idxB = 1-based body indexes of body B for m possible contacts
  *  xA = (3xm) matrix of contact positions in body A space
  *  xB = (3xm) matrix of contact positions in body B space 
- * Outputs:
  *  d = {k}(3xm) surface tangent basis vectors for the friction cone approximation in world space
  *     **NOTE** k represents the half-count for basis vectors. (e.g. k = 2 means 4 basis vectors)
+ * Outputs:
  *   n = m x (num_dof) dphi/dq normal vectors in joint coordinates
  *   D = {2k} m x (num_dof) dD/dq surface tangent basis vectors in joint coordinates
  *   dn = m*num_dof x num_dof dn/dq second derivative of contact distances with respect to state
@@ -42,25 +42,6 @@ inline void buildSparseMatrix(Matrix3xd const & pts, SparseMatrix<double> & spar
      j++;
    }
  }
-}
-
-//forms a mex cell array and computes the surface tangents in-place using maps
-inline mxArray* getTangentsArray(RigidBodyManipulator* const model, Map<Matrix3xd> const & normals)
-{
-  const int numContactPairs = normals.cols();
-  const mwSize cellDims[] = {1, BASIS_VECTOR_HALF_COUNT};
-  mxArray* tangentCells = mxCreateCellArray(2, cellDims);
-  
-  vector< Map<Matrix3xd> > tangents;
-  for (int k = 0 ; k < BASIS_VECTOR_HALF_COUNT ; k++) {
-    mxArray *cell = mxCreateDoubleMatrix(3, numContactPairs, mxREAL );    
-    tangents.push_back(Map<Matrix3xd>(mxGetPrSafe(cell), 3, numContactPairs));
-    mxSetCell(tangentCells, k, cell);
-  }
-
-  model->surfaceTangents(normals, tangents);
-
-  return tangentCells;
 }
 
 void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
@@ -112,13 +93,16 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
       plhs[0] = mxCreateDoubleMatrix(numContactPairs, nq, mxREAL);
       Map<MatrixXd> n(mxGetPrSafe(plhs[0]), numContactPairs, nq);
       n = sparseNormals * J; //dphi/dq
+      const size_t* dims = mxGetDimensions(prhs[6]);
+      const mwSize num_tangent_vectors = dims[1];
+
       if (nlhs > 1) {
-        const mwSize cellDims[] = {1, 2*BASIS_VECTOR_HALF_COUNT};
+        const mwSize cellDims[] = {1, 2*num_tangent_vectors};
         plhs[1] = mxCreateCellArray(2, cellDims);
         if (nlhs > 3) {
           plhs[3] = mxCreateCellArray(2, cellDims);
         }
-        for (int k = 0 ; k < BASIS_VECTOR_HALF_COUNT ; k++) { //for each friction cone basis vector
+        for (int k = 0 ; k < num_tangent_vectors ; k++) { //for each friction cone basis vector
           Map<Matrix3xd> dk(mxGetPrSafe(mxGetCell(prhs[6], k)), 3, numContactPairs);
           SparseMatrix<double> sparseTangents;
           buildSparseMatrix(dk, sparseTangents);
@@ -129,7 +113,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
           Dk = sparseTangents * J; //dd/dq
           Dk_reflected = -Dk;
           mxSetCell(plhs[1], k, D_cell);
-          mxSetCell(plhs[1], k + BASIS_VECTOR_HALF_COUNT, D_cell_reflected);
+          mxSetCell(plhs[1], k + num_tangent_vectors, D_cell_reflected);
           if (compute_second_derivatives) {
             if (nlhs > 3) {
               mxArray *dD_cell = mxCreateDoubleMatrix(numContactPairs * nq, nq, mxREAL);
@@ -139,7 +123,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
               mxArray *dD_cell_reflected = mxCreateDoubleMatrix(numContactPairs * nq, nq, mxREAL);
               Map<MatrixXd> dD_reflected(mxGetPrSafe(dD_cell_reflected), numContactPairs, nq*nq);
               dD_reflected = -dD;
-              mxSetCell(plhs[3], k + BASIS_VECTOR_HALF_COUNT, dD_cell_reflected);
+              mxSetCell(plhs[3], k + num_tangent_vectors, dD_cell_reflected);
             }
           }
         }
