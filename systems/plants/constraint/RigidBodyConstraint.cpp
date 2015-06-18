@@ -1618,12 +1618,17 @@ void RelativeGazeTargetConstraint::eval(const double* t, VectorXd &c, MatrixXd &
     MatrixXd dorigin_pos(3,nq);
     this->robot->forwardKin(this->bodyA_idx,this->gaze_origin,0,origin_pos);
     this->robot->forwardJac(this->bodyA_idx,this->gaze_origin,0,dorigin_pos);
-    Vector3d axis_pos;
-    Vector3d axis_pt;
-    axis_pt << this->axis;
+    Vector3d axis_pos, axis_origin_pos;
+    Vector3d axis_origin = Vector3d::Zero();
     MatrixXd daxis_pos(3,nq);
-    this->robot->forwardKin(this->bodyA_idx,axis_pt,0,axis_pos);
-    this->robot->forwardJac(this->bodyA_idx,axis_pt,0,daxis_pos);
+    MatrixXd daxis_origin_pos(3, nq);
+    this->robot->forwardKin(this->bodyA_idx,axis_origin,0,axis_origin_pos);
+    this->robot->forwardKin(this->bodyA_idx,this->axis,0,axis_pos);
+    axis_pos -= axis_origin_pos;
+    this->robot->forwardJac(this->bodyA_idx,axis_origin,0,daxis_origin_pos);
+    this->robot->forwardJac(this->bodyA_idx,this->axis,0,daxis_pos);
+    daxis_pos -= daxis_origin_pos;
+
     Vector3d origin_to_target = target_pos-origin_pos;
     MatrixXd dorigin_to_target = dtarget_pos-dorigin_pos;
     double origin_to_target_norm = origin_to_target.norm();
