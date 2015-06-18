@@ -59,16 +59,15 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
           // addContact(qsc_ptr,body1, body1_pts, body2, body2_pts,...)
           int num_new_bodies = (nrhs-2)/2;
           int* new_bodies = new int[num_new_bodies];
-          MatrixXd* new_body_pts = new MatrixXd[num_new_bodies];
+          Matrix3Xd* new_body_pts = new Matrix3Xd[num_new_bodies];
           for(int idx = 0;idx<num_new_bodies;idx++)
           {
             new_bodies[idx] = (int) mxGetScalar(prhs[2+idx*2])-1;
             size_t npts = mxGetN(prhs[3+idx*2]);
-            MatrixXd new_body_pts_tmp(3,npts);
+            Matrix3Xd new_body_pts_tmp(3,npts);
             memcpy(new_body_pts_tmp.data(),mxGetPrSafe(prhs[3+idx*2]),sizeof(double)*3*npts);
-            new_body_pts[idx].resize(4,npts);
+            new_body_pts[idx].resize(3,npts);
             new_body_pts[idx].block(0,0,3,npts) = new_body_pts_tmp;
-            new_body_pts[idx].row(3) = MatrixXd::Ones(1,npts);
           }
           QuasiStaticConstraint* cnst_new = new QuasiStaticConstraint(*cnst);
           cnst_new->addContact(num_new_bodies,new_bodies,new_body_pts);
