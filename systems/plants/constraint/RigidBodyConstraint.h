@@ -294,7 +294,7 @@ class DLLEXPORT PositionConstraint : public SingleTimeKinematicConstraint
     std::vector<bool> null_constraint_rows;
     Eigen::Matrix3Xd pts;
     int n_pts;
-    virtual void evalPositions(Eigen::MatrixXd &pos,Eigen::MatrixXd &J) const = 0;
+    virtual void evalPositions(Eigen::Matrix3Xd &pos,Eigen::MatrixXd &J) const = 0;
     virtual void evalNames(const double* t,std::vector<std::string> &cnst_names) const = 0;
   public:
     PositionConstraint(RigidBodyManipulator *model, const Eigen::Matrix3Xd &pts,Eigen::MatrixXd lb, Eigen::MatrixXd ub, const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan);
@@ -310,10 +310,10 @@ class DLLEXPORT WorldPositionConstraint: public PositionConstraint
   protected:
     int body;
     std::string body_name;
-    virtual void evalPositions(Eigen::MatrixXd &pos, Eigen::MatrixXd &J) const;
+    virtual void evalPositions(Eigen::Matrix3Xd &pos, Eigen::MatrixXd &J) const;
     virtual void evalNames(const double* t,std::vector<std::string> &cnst_names) const;
   public:
-    WorldPositionConstraint(RigidBodyManipulator *model, int body, const Eigen::MatrixXd &pts, Eigen::MatrixXd lb, Eigen::MatrixXd ub, const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan);
+    WorldPositionConstraint(RigidBodyManipulator *model, int body, const Eigen::Matrix3Xd &pts, Eigen::MatrixXd lb, Eigen::MatrixXd ub, const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan);
     virtual ~WorldPositionConstraint();
 };
 
@@ -323,7 +323,7 @@ class DLLEXPORT WorldCoMConstraint: public PositionConstraint
     std::set<int> m_robotnum;
     int body;
     std::string body_name;
-    virtual void evalPositions(Eigen::MatrixXd &pos, Eigen::MatrixXd &J) const;
+    virtual void evalPositions(Eigen::Matrix3Xd &pos, Eigen::MatrixXd &J) const;
     virtual void evalNames(const double* t,std::vector<std::string> &cnst_names) const;
     static const std::set<int> defaultRobotNumSet;
   public:
@@ -341,7 +341,7 @@ class DLLEXPORT RelativePositionConstraint: public PositionConstraint
     std::string bodyB_name;
     Eigen::Matrix<double,7,1> bpTb;
     Eigen::Matrix<double,7,1> bTbp;
-    virtual void evalPositions(Eigen::MatrixXd &pos, Eigen::MatrixXd &J) const;
+    virtual void evalPositions(Eigen::Matrix3Xd &pos, Eigen::MatrixXd &J) const;
     virtual void evalNames(const double* t,std::vector<std::string> &cnst_names) const;
   public:
     RelativePositionConstraint(RigidBodyManipulator *model, const Eigen::Matrix3Xd &pts, const Eigen::MatrixXd &lb, const Eigen::MatrixXd &ub, int bodyA_idx, int bodyB_idx, const Eigen::Matrix<double,7,1> &bTbp, const Eigen::Vector2d &tspan);
@@ -664,7 +664,7 @@ class DLLEXPORT WorldPositionInFrameConstraint: public WorldPositionConstraint
   protected:
     Eigen::Matrix4d T_world_to_frame;
     Eigen::Matrix4d T_frame_to_world;
-    virtual void evalPositions(Eigen::MatrixXd &pos, Eigen::MatrixXd &J) const;
+    virtual void evalPositions(Eigen::Matrix3Xd &pos, Eigen::MatrixXd &J) const;
     virtual void evalNames(const double* t,std::vector<std::string> &cnst_names) const;
   public:
     WorldPositionInFrameConstraint(RigidBodyManipulator *model, int body,

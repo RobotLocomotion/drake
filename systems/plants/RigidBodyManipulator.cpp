@@ -3306,14 +3306,17 @@ template DLLEXPORT_RBM void RigidBodyManipulator::doKinematics(MatrixBase<Vector
 template DLLEXPORT_RBM void RigidBodyManipulator::doKinematics(MatrixBase< Map<VectorXd> >  &, bool, MatrixBase< Map<VectorXd> >  &);
 
 template DLLEXPORT_RBM void RigidBodyManipulator::getCOM(MatrixBase< Map<Vector3d> > &,const set<int> &);
-template DLLEXPORT_RBM void RigidBodyManipulator::getCOM(MatrixBase< Map<MatrixXd> > &,const set<int> &);
-template DLLEXPORT_RBM void RigidBodyManipulator::getCOMJac(MatrixBase< Map<MatrixXd> > &,const set<int> &);
-template DLLEXPORT_RBM void RigidBodyManipulator::getCOMdJac(MatrixBase< Map<MatrixXd> > &,const set<int> &);
-template DLLEXPORT_RBM void RigidBodyManipulator::getCOMJacDot(MatrixBase< Map<MatrixXd> > &,const set<int> &);
+template DLLEXPORT_RBM void RigidBodyManipulator::getCOM(MatrixBase< Map<Matrix3Xd> > &,const set<int> &);
 template DLLEXPORT_RBM void RigidBodyManipulator::getCOM(MatrixBase< Vector3d > &,const set<int> &);
-template DLLEXPORT_RBM void RigidBodyManipulator::getCOM(MatrixBase< MatrixXd > &,const set<int> &);
+template DLLEXPORT_RBM void RigidBodyManipulator::getCOM(MatrixBase< Matrix3Xd > &,const set<int> &);
+
+template DLLEXPORT_RBM void RigidBodyManipulator::getCOMJac(MatrixBase< Map<MatrixXd> > &,const set<int> &);
 template DLLEXPORT_RBM void RigidBodyManipulator::getCOMJac(MatrixBase< MatrixXd > &,const set<int> &);
+
+template DLLEXPORT_RBM void RigidBodyManipulator::getCOMdJac(MatrixBase< Map<MatrixXd> > &,const set<int> &);
 template DLLEXPORT_RBM void RigidBodyManipulator::getCOMdJac(MatrixBase< MatrixXd > &,const set<int> &);
+
+template DLLEXPORT_RBM void RigidBodyManipulator::getCOMJacDot(MatrixBase< Map<MatrixXd> > &,const set<int> &);
 template DLLEXPORT_RBM void RigidBodyManipulator::getCOMJacDot(MatrixBase< MatrixXd > &,const set<int> &);
 
 template DLLEXPORT_RBM void RigidBodyManipulator::getContactPositions(MatrixBase <MatrixXd > &, const set<int> &);
@@ -3322,6 +3325,7 @@ template DLLEXPORT_RBM void RigidBodyManipulator::getContactPositionsJacDot(Matr
 
 template DLLEXPORT_RBM void RigidBodyManipulator::forwardKin(const int, const MatrixBase< Matrix3Xd >&, const int, MatrixBase< Map<MatrixXd> > &);
 template DLLEXPORT_RBM void RigidBodyManipulator::forwardKin(const int, const MatrixBase< Matrix3Xd >&, const int, MatrixBase< MatrixXd > &);
+template DLLEXPORT_RBM void RigidBodyManipulator::forwardKin(const int, const MatrixBase< Matrix3Xd >&, const int, MatrixBase< Matrix3Xd > &);
 template DLLEXPORT_RBM void RigidBodyManipulator::forwardKin(const int, MatrixBase< Vector3d > const&, const int, MatrixBase< Vector3d > &);
 template DLLEXPORT_RBM void RigidBodyManipulator::forwardKin(const int, MatrixBase< Vector3d > const&, const int, MatrixBase< Matrix<double,6,1> > &);
 template DLLEXPORT_RBM void RigidBodyManipulator::forwardKin(const int, MatrixBase< Vector3d > const&, const int, MatrixBase< Matrix<double,7,1> > &);

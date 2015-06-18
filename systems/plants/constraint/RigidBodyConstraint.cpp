@@ -750,7 +750,7 @@ void PositionConstraint::eval(const double* t, VectorXd &c, MatrixXd &dc) const
 {
   if(this->isTimeValid(t))
   {
-    MatrixXd pos(3,this->n_pts);
+    Matrix3Xd pos(3,this->n_pts);
     MatrixXd J(3*this->n_pts,this->robot->num_positions);
     this->evalPositions(pos,J);
     c.resize(this->getNumConstraint(t),1);
@@ -804,14 +804,14 @@ void PositionConstraint::name(const double* t, std::vector<std::string> &name_st
   }
 }
 
-WorldPositionConstraint::WorldPositionConstraint(RigidBodyManipulator *robot, int body, const MatrixXd &pts, MatrixXd lb, MatrixXd ub, const Vector2d &tspan):PositionConstraint(robot,pts,lb,ub,tspan)
+WorldPositionConstraint::WorldPositionConstraint(RigidBodyManipulator *robot, int body, const Matrix3Xd &pts, MatrixXd lb, MatrixXd ub, const Vector2d &tspan):PositionConstraint(robot,pts,lb,ub,tspan)
 {
   this->body = body;
   this->body_name = robot->getBodyOrFrameName(body);
   this->type = RigidBodyConstraint::WorldPositionConstraintType;
 }
 
-void WorldPositionConstraint::evalPositions(MatrixXd &pos, MatrixXd &J) const
+void WorldPositionConstraint::evalPositions(Matrix3Xd &pos, MatrixXd &J) const
 {
   this->robot->forwardKin(this->body, this->pts,0,pos);
   this->robot->forwardJac(this->body, this->pts,0,J);
@@ -855,7 +855,7 @@ WorldCoMConstraint::WorldCoMConstraint(RigidBodyManipulator *robot, Vector3d lb,
   this->type = RigidBodyConstraint::WorldCoMConstraintType;
 }
 
-void WorldCoMConstraint::evalPositions(MatrixXd &pos, MatrixXd &J) const
+void WorldCoMConstraint::evalPositions(Matrix3Xd &pos, MatrixXd &J) const
 {
   this->robot->getCOM(pos,this->m_robotnum);
   this->robot->getCOMJac(J,this->m_robotnum);
@@ -903,7 +903,7 @@ RelativePositionConstraint::RelativePositionConstraint(RigidBodyManipulator* rob
   this->type = RigidBodyConstraint::RelativePositionConstraintType;
 }
 
-void RelativePositionConstraint::evalPositions(MatrixXd &pos, MatrixXd &J) const
+void RelativePositionConstraint::evalPositions(Matrix3Xd &pos, MatrixXd &J) const
 {
   int nq = this->robot->num_positions;
   MatrixXd bodyA_pos(3,this->n_pts);
@@ -2515,12 +2515,10 @@ WorldPositionInFrameConstraint::WorldPositionInFrameConstraint(
   this->type = RigidBodyConstraint::WorldPositionInFrameConstraintType;
 }
 
-void WorldPositionInFrameConstraint::evalPositions(MatrixXd &pos, MatrixXd &J) const
+void WorldPositionInFrameConstraint::evalPositions(Matrix3Xd &pos, MatrixXd &J) const
 {
   WorldPositionConstraint::evalPositions(pos, J);
-  MatrixXd pos_1(4,n_pts);
-  pos_1 << pos, MatrixXd::Ones(1,n_pts);
-  pos = (this->T_world_to_frame*pos_1).topRows(3);
+  pos = (this->T_world_to_frame*pos.colwise().homogeneous()).topRows(3);
   auto J_reshaped = Map<MatrixXd>(J.data(),3,n_pts*J.cols());
   J_reshaped = T_world_to_frame.topLeftCorner<3,3>()*J_reshaped;
 }
