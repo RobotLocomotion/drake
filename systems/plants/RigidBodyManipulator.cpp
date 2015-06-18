@@ -355,7 +355,7 @@ void RigidBodyManipulator::resize(int ndof, int num_rigid_body_objects, int num_
   gradients_cached = false;
   velocity_kinematics_cached = false;
   jdotV_cached = false;
-  cached_inertia_gradients_order = -1;
+  cached_inertia_gradients_order = -1;  
 }
 
 
@@ -435,7 +435,7 @@ void RigidBodyManipulator::compile(void)
     // update the body's contact points
     Matrix3Xd contact_pts;
     getTerrainContactPoints(*bodies[i], contact_pts);
-    bodies[i]->contact_pts = contact_pts.colwise().homogeneous();
+    bodies[i]->contact_pts = contact_pts;
 
     // precompute sparsity pattern for each rigid body
     bodies[i]->computeAncestorDOFs(this); // TODO floating base : remove this
@@ -1892,14 +1892,14 @@ void RigidBodyManipulator::forwardKin(const int body_or_frame_id, const MatrixBa
   MatrixXd T = bodies[body_ind]->T.topLeftCorner(3,4)*Tframe;
 
   if (rotation_type == 0) {
-    x = T*pts;
+    x = T*pts.colwise().homogeneous();
   } else if (rotation_type == 1) {
     Vector3d rpy;
     rpy << atan2(T(2,1),T(2,2)), atan2(-T(2,0),sqrt(T(2,1)*T(2,1) + T(2,2)*T(2,2))), atan2(T(1,0),T(0,0));
     // NOTE: we're assuming an X-Y-Z convention was used to construct T
 
     x = MatrixXd::Zero(6,n_pts);
-    x.block(0,0,3,n_pts) = T*pts;
+    x.block(0,0,3,n_pts) = T*pts.colwise().homogeneous();
     x.block(3,0,3,n_pts) = rpy.replicate(1,n_pts);
   }
   else if(rotation_type == 2)
@@ -1941,7 +1941,7 @@ void RigidBodyManipulator::forwardKin(const int body_or_frame_id, const MatrixBa
     }
 
     x = MatrixXd::Zero(7,n_pts);
-    x.block(0,0,3,n_pts) = T*pts;
+    x.block(0,0,3,n_pts) = T*pts.colwise().homogeneous();
     x.block(3,0,4,n_pts) = quat.replicate(1,n_pts);
   }
 }
@@ -2270,7 +2270,7 @@ void RigidBodyManipulator::forwardJac(const int body_or_frame_id, const MatrixBa
   int body_ind = parseBodyOrFrameID(body_or_frame_id, &Tframe);
 
   MatrixXd dTdq =  bodies[body_ind]->dTdq.topLeftCorner(3*num_positions,4)*Tframe;
-  MatrixXd tmp =dTdq*pts;
+  MatrixXd tmp =dTdq*pts.colwise().homogeneous();
   MatrixXd Jt = Map<MatrixXd>(tmp.data(),num_positions,3*n_pts);
   J.topLeftCorner(3*n_pts,num_positions) = Jt.transpose();
 
@@ -2388,7 +2388,7 @@ void RigidBodyManipulator::forwardJacDot(const int body_or_frame_id, const Matri
   int n_pts = static_cast<int>(pts.cols()); Matrix4d Tframe;
   int body_ind = parseBodyOrFrameID(body_or_frame_id, &Tframe);
 
-	MatrixXd tmp = bodies[body_ind]->dTdqdot*Tframe*pts;
+	MatrixXd tmp = bodies[body_ind]->dTdqdot*Tframe*pts.colwise().homogeneous();
 	MatrixXd Jdott = Map<MatrixXd>(tmp.data(),num_positions,3*n_pts);
 	Jdot.block(0,0,3*n_pts,num_positions) = Jdott.transpose();
 
@@ -2445,7 +2445,9 @@ void RigidBodyManipulator::forwarddJac(const int body_or_frame_id, const MatrixB
   MatrixXd dJ_reshaped = MatrixXd(num_positions, 3*n_pts*num_positions);
   MatrixXd tmp = MatrixXd(3*num_positions,n_pts);
   for (i = 0; i < num_positions; i++) {
-    tmp = bodies[body_ind]->ddTdqdq.block(i*num_positions*3,0,3*num_positions,4)*Tframe*pts;  //dim*num_dof x n_pts
+    auto tpts = Tframe * pts.colwise().homogeneous();
+
+    tmp = bodies[body_ind]->ddTdqdq.block(i*num_positions*3,0,3*num_positions,4)*tpts;  //dim*num_dof x n_pts
     for (j = 0; j < n_pts; j++) {
       dJ_reshaped.block(i,j*3*num_positions,1,3*num_positions) = tmp.col(j).transpose();
     }
@@ -2908,7 +2910,7 @@ GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, 1> RigidBodyManipula
     if (gradient_order > 0)
       throw std::runtime_error("no gradients available with old kinsol format.");
     MatrixXd Jdot(points.cols() * SPACE_DIMENSION + rotationRepresentationSize(rotation_type), num_positions);
-    forwardJacDot(body_or_frame_ind, points.colwise().homogeneous(), rotation_type, Jdot);
+    forwardJacDot(body_or_frame_ind, points, rotation_type, Jdot);
     typedef typename DerivedPoints::Scalar Scalar;
     GradientVar<Scalar, Dynamic, 1> ret(Jdot.rows(), 1, num_positions, 0);
     ret.value() = Jdot * cached_v_old;
@@ -3328,17 +3330,15 @@ template DLLEXPORT_RBM void RigidBodyManipulator::forwardKin(const int, const Ma
 
 template DLLEXPORT_RBM void RigidBodyManipulator::forwardJac(const int, const MatrixBase< Matrix3Xd > &, const int, MatrixBase< Map<MatrixXd> > &);
 template DLLEXPORT_RBM void RigidBodyManipulator::forwardJac(const int, const MatrixBase< Map<Matrix3Xd> > &, const int, MatrixBase< Map<MatrixXd> > &);
-//template DLLEXPORT_RBM void RigidBodyManipulator::forwardJac(const int, MatrixBase< Map<MatrixXd> > const&, const int, MatrixBase< MatrixXd > &);
-//template DLLEXPORT_RBM void RigidBodyManipulator::forwardJac(const int, MatrixBase< MatrixXd > const&, const int, MatrixBase< MatrixXd > &);
 template DLLEXPORT_RBM void RigidBodyManipulator::forwardJac(const int, const MatrixBase< Matrix3Xd > &, const int, MatrixBase< MatrixXd > &);
 template DLLEXPORT_RBM void RigidBodyManipulator::forwardJac(const int, const MatrixBase< Vector3d > &, const int, MatrixBase< MatrixXd > &);
-template DLLEXPORT_RBM void RigidBodyManipulator::forwarddJac(const int, const MatrixBase< MatrixXd > &, MatrixBase< Map<MatrixXd> >&);
-template DLLEXPORT_RBM void RigidBodyManipulator::forwarddJac(const int, const MatrixBase< MatrixXd > &, MatrixBase< MatrixXd >&);
-//template DLLEXPORT_RBM void RigidBodyManipulator::forwarddJac(const int, const MatrixBase< Vector4d > &, MatrixBase< MatrixXd >&);
-template DLLEXPORT_RBM void RigidBodyManipulator::forwardJacDot(const int, const MatrixBase< MatrixXd > &, const int, MatrixBase< Map<MatrixXd> >&);
-template DLLEXPORT_RBM void RigidBodyManipulator::forwardJacDot(const int, const MatrixBase< MatrixXd > &, const int, MatrixBase< MatrixXd >&);
-template DLLEXPORT_RBM void RigidBodyManipulator::forwardJacDot(const int, const MatrixBase< Vector4d > &, const int, MatrixBase< MatrixXd >&);
-//template DLLEXPORT_RBM void RigidBodyManipulator::forwardJacDot(const int, const MatrixBase< Vector4d > &, MatrixBase< MatrixXd >&);
+
+template DLLEXPORT_RBM void RigidBodyManipulator::forwarddJac(const int, const MatrixBase< Matrix3Xd > &, MatrixBase< Map<MatrixXd> >&);
+template DLLEXPORT_RBM void RigidBodyManipulator::forwarddJac(const int, const MatrixBase< Matrix3Xd > &, MatrixBase< MatrixXd >&);
+
+template DLLEXPORT_RBM void RigidBodyManipulator::forwardJacDot(const int, const MatrixBase< Matrix3Xd > &, const int, MatrixBase< Map<MatrixXd> >&);
+template DLLEXPORT_RBM void RigidBodyManipulator::forwardJacDot(const int, const MatrixBase< Matrix3Xd > &, const int, MatrixBase< MatrixXd >&);
+template DLLEXPORT_RBM void RigidBodyManipulator::forwardJacDot(const int, const MatrixBase< Vector3d > &, const int, MatrixBase< MatrixXd >&);
 template DLLEXPORT_RBM void RigidBodyManipulator::bodyKin(const int, const MatrixBase< MatrixXd >&, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > *);
 template DLLEXPORT_RBM void RigidBodyManipulator::bodyKin(const int, const MatrixBase< MatrixXd >&, MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > *);
 

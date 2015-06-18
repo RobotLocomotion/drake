@@ -152,7 +152,7 @@ void RigidBodyManipulator::accumulateContactJacobian(const int bodyInd, Matrix3X
 // Same as above but computes the second order contact Jacobian
 // OUTPUTS:
 //  dJ: (3m x nq^2) Second order contact Jacobian
-void RigidBodyManipulator::accumulateSecondOrderContactJacobian(const int bodyInd, MatrixXd const & bodyPoints, std::vector<size_t> const & cindA, std::vector<size_t> const & cindB, MatrixXd & dJ)
+void RigidBodyManipulator::accumulateSecondOrderContactJacobian(const int bodyInd, Matrix3Xd const & bodyPoints, std::vector<size_t> const & cindA, std::vector<size_t> const & cindB, MatrixXd & dJ)
 {
   const size_t dJCols = dJ.cols(); //nq^2 instead of nq
   const size_t numPts = bodyPoints.cols();

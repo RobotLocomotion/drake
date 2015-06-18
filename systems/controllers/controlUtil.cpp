@@ -176,8 +176,7 @@ int contactConstraints(RigidBodyManipulator *r, int nc, std::vector<SupportState
         // store away kin sols into Jp and Jpdot
         // NOTE: I'm cheating and using a slightly different ordering of J and Jdot here
         Jp.block(3*k,0,3,nq) = J;
-        Vector4d pt;
-        pt << *pt_iter, 1.0;
+        Vector3d pt;
         r->forwardJacDot(iter->body_idx,pt,0,J);
         Jpdot.block(3*k,0,3,nq) = J;
         

@@ -93,8 +93,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   else if (rotation_type==2) dim_with_rot += 4;
 
   Map<Matrix3Xd> pts_tmp(mxGetPrSafe(prhs[3]), 3, n_pts);
-  MatrixXd pts(dim+1,n_pts);
-  pts << pts_tmp, MatrixXd::Ones(1,n_pts);
+  Matrix3Xd pts(3,n_pts);
 
   if (b_jacdot) {
     if (rotation_type>1) mexErrMsgIdAndTxt("Drake:forwardKinmex:NotImplemented","Jacobian dot of quaternions are not implemented yet");
