@@ -121,6 +121,7 @@ void QuasiStaticConstraint::eval(const double* t, const double* weights, VectorX
       MatrixXd dbody_contact_pos(3*this->num_body_pts[i],nq);
       this->robot->forwardKin(this->bodies[i],this->body_pts[i],0,body_contact_pos);
       this->robot->forwardJac(this->bodies[i],this->body_pts[i],0,dbody_contact_pos);
+
       contact_pos.block(0,num_accum_pts,3,this->num_body_pts[i]) = body_contact_pos;
       dcontact_pos.block(3*num_accum_pts,0,3*this->num_body_pts[i],nq) = dbody_contact_pos;
       for(int j = 0;j<this->num_body_pts[i];j++)
@@ -138,7 +139,7 @@ void QuasiStaticConstraint::eval(const double* t, const double* weights, VectorX
     dc.block(0,0,2,nq) = dcom.block(0,0,2,nq);
     for(int i = 0;i<this->num_pts;i++)
     {
-      //support_pos.col(i) = center_pos.head(2)*(1.0-this->shrinkFactor)+contact_pos.block(0,i,2,1)*this->shrinkFactor;
+      support_pos.col(i) = center_pos.head(2)*(1.0-this->shrinkFactor)+contact_pos.block(0,i,2,1)*this->shrinkFactor;
       dsupport_pos.block(2*i,0,2,nq) = dcenter_pos.block(0,0,2,nq)*(1.0-this->shrinkFactor)+dcontact_pos.block(3*i,0,2,nq)*this->shrinkFactor;
       c = c-weights[i]*support_pos.col(i);
       dc.block(0,0,2,nq) = dc.block(0,0,2,nq)-weights[i]*dsupport_pos.block(2*i,0,2,nq);
