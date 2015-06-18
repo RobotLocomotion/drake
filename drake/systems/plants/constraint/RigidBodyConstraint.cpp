@@ -201,14 +201,14 @@ static bool compare3Dvector(const Vector3d& a, const Vector3d& b)
   if(a(2)<b(2)) return true;
   return false;
 }
-void QuasiStaticConstraint::addContact(int num_new_bodies,const int* new_bodies, const MatrixXd* new_body_pts)
+void QuasiStaticConstraint::addContact(int num_new_bodies,const int* new_bodies, const Matrix3Xd* new_body_pts)
 {
   for(int i = 0;i<num_new_bodies;i++)
   {
     bool findDuplicateBody = false;
-    if(new_body_pts[i].rows() != 4)
+    if(new_body_pts[i].rows() != 3)
     {
-      std::cerr<<"new_body_pts must all have 4 rows"<<std::endl;
+      std::cerr<<"new_body_pts must all have 3 rows"<<std::endl;
     }
     for(int j = 0;j<this->num_bodies;j++)
     {
@@ -228,14 +228,13 @@ void QuasiStaticConstraint::addContact(int num_new_bodies,const int* new_bodies,
         this->num_pts -= this->num_body_pts[j];
         this->num_body_pts[j] = static_cast<int>(unique_body_pts.size());
         this->num_pts += this->num_body_pts[j];
-        this->body_pts[j].resize(4,this->num_body_pts[j]);
+        this->body_pts[j].resize(3,this->num_body_pts[j]);
         int col_idx = 0;
         for(auto it = unique_body_pts.begin();it!=unique_body_pts.end();it++)
         {
           this->body_pts[j].block(0, col_idx,3,1) = *it;
           col_idx++;
         }
-        this->body_pts[j].row(3) = MatrixXd::Ones(1,this->num_body_pts[j]);
       }
     }
     if(!findDuplicateBody)
