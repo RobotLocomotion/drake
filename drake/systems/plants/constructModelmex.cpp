@@ -51,7 +51,6 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   pm = mxGetProperty(pRBM, 0, "num_positions");
   if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","model should have a num_positions field");
   int num_positions = static_cast<int>(*mxGetPrSafe(pm));
-
   model = new RigidBodyManipulator(num_positions, num_bodies, num_frames);
 
   for (int i=0; i<model->num_bodies; i++) {
@@ -318,9 +317,8 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
       //cout << "constructModelmex: Got number of points: " << n_pts << endl;
       //cout << "constructModelmex: Set contact_pts of body" << endl;
       //END_DEBUG
-      Map<MatrixXd> pts(mxGetPrSafe(pPts),3,n_pts);
-      model->bodies[body_idx]->contact_pts.resize(4,n_pts);
-      model->bodies[body_idx]->contact_pts << pts, MatrixXd::Ones(1,n_pts);
+      Map<Matrix3Xd> pts(mxGetPrSafe(pPts),3,n_pts);
+      model->bodies[body_idx]->contact_pts = pts;
       //DEBUG
       //cout << "constructModelmex: Contact_pts of body: " << endl;
       //cout << model->bodies[body_idx]->contact_pts << endl;
