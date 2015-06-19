@@ -2387,7 +2387,7 @@ void RigidBodyManipulator::forwardJac(const int body_or_frame_id, const MatrixBa
 
 template <typename DerivedA, typename DerivedB>
 void RigidBodyManipulator::forwardJacDot(const int body_or_frame_id, const MatrixBase<DerivedA> &pts, const int rotation_type, MatrixBase<DerivedB>& Jdot)
-{
+{  
   if (use_new_kinsol) {
     warnOnce("new_kinsol_old_method_forwardJacDot", "Warning: called old forwardJacDot with use_new_kinsol set to true.");
     Matrix3Xd pts_block = pts.block(0, 0, 3, pts.cols());
@@ -2402,43 +2402,43 @@ void RigidBodyManipulator::forwardJacDot(const int body_or_frame_id, const Matri
   int n_pts = static_cast<int>(pts.cols()); Matrix4d Tframe;
   int body_ind = parseBodyOrFrameID(body_or_frame_id, &Tframe);
 
-	MatrixXd tmp = bodies[body_ind]->dTdqdot*Tframe*pts.colwise().homogeneous();
-	MatrixXd Jdott = Map<MatrixXd>(tmp.data(),num_positions,3*n_pts);
-	Jdot.block(0,0,3*n_pts,num_positions) = Jdott.transpose();
+  MatrixXd tmp = bodies[body_ind]->dTdqdot*Tframe*pts.colwise().homogeneous();
+  MatrixXd Jdott = Map<MatrixXd>(tmp.data(),num_positions,3*n_pts);
+  Jdot.block(0,0,3*n_pts,num_positions) = Jdott.transpose();
 
-	if (rotation_type==1) {
+  if (rotation_type==1) {
 
-		MatrixXd dTdqdot =  bodies[body_ind]->dTdqdot*Tframe;
-		Matrix3d R = (bodies[body_ind]->T*Tframe).topLeftCorner(3,3);
-		/*
-		 * note the unusual format of dTdq(chosen for efficiently calculating jacobians from many pts)
-		 * dTdq = [dT(1,:)dq1; dT(1,:)dq2; ...; dT(1,:)dqN; dT(2,dq1) ...]
-		 */
+    MatrixXd dTdqdot =  bodies[body_ind]->dTdqdot*Tframe;
+    Matrix3d R = (bodies[body_ind]->T*Tframe).topLeftCorner(3,3);
+    /*
+     * note the unusual format of dTdq(chosen for efficiently calculating jacobians from many pts)
+     * dTdq = [dT(1,:)dq1; dT(1,:)dq2; ...; dT(1,:)dqN; dT(2,dq1) ...]
+     */
 
-		VectorXd dR21_dq(num_positions),dR22_dq(num_positions),dR20_dq(num_positions),dR00_dq(num_positions),dR10_dq(num_positions);
-		for (int i=0; i<num_positions; i++) {
-			dR21_dq(i) = dTdqdot(2*num_positions+i,1);
-			dR22_dq(i) = dTdqdot(2*num_positions+i,2);
-			dR20_dq(i) = dTdqdot(2*num_positions+i,0);
-			dR00_dq(i) = dTdqdot(i,0);
-			dR10_dq(i) = dTdqdot(num_positions+i,0);
-		}
-		double sqterm1 = R(2,1)*R(2,1) + R(2,2)*R(2,2);
-		double sqterm2 = R(0,0)*R(0,0) + R(1,0)*R(1,0);
+    VectorXd dR21_dq(num_positions),dR22_dq(num_positions),dR20_dq(num_positions),dR00_dq(num_positions),dR10_dq(num_positions);
+    for (int i=0; i<num_positions; i++) {
+      dR21_dq(i) = dTdqdot(2*num_positions+i,1);
+      dR22_dq(i) = dTdqdot(2*num_positions+i,2);
+      dR20_dq(i) = dTdqdot(2*num_positions+i,0);
+      dR00_dq(i) = dTdqdot(i,0);
+      dR10_dq(i) = dTdqdot(num_positions+i,0);
+    }
+    double sqterm1 = R(2,1)*R(2,1) + R(2,2)*R(2,2);
+    double sqterm2 = R(0,0)*R(0,0) + R(1,0)*R(1,0);
 
-		MatrixXd Jr = MatrixXd::Zero(3,num_positions);
+    MatrixXd Jr = MatrixXd::Zero(3,num_positions);
 
-		Jr.block(0,0,1,num_positions) = ((R(2,2)*dR21_dq - R(2,1)*dR22_dq)/sqterm1).transpose();
-		Jr.block(1,0,1,num_positions) = ((-sqrt(sqterm1)*dR20_dq + R(2,0)/sqrt(sqterm1)*(R(2,1)*dR21_dq + R(2,2)*dR22_dq) )/(R(2,0)*R(2,0) + R(2,1)*R(2,1) + R(2,2)*R(2,2))).transpose();
-		Jr.block(2,0,1,num_positions)= ((R(0,0)*dR10_dq - R(1,0)*dR00_dq)/sqterm2).transpose();
+    Jr.block(0,0,1,num_positions) = ((R(2,2)*dR21_dq - R(2,1)*dR22_dq)/sqterm1).transpose();
+    Jr.block(1,0,1,num_positions) = ((-sqrt(sqterm1)*dR20_dq + R(2,0)/sqrt(sqterm1)*(R(2,1)*dR21_dq + R(2,2)*dR22_dq) )/(R(2,0)*R(2,0) + R(2,1)*R(2,1) + R(2,2)*R(2,2))).transpose();
+    Jr.block(2,0,1,num_positions)= ((R(0,0)*dR10_dq - R(1,0)*dR00_dq)/sqterm2).transpose();
 
-		MatrixXd Jfull = MatrixXd::Zero(2*3*n_pts,num_positions);
-		for (int i=0; i<n_pts; i++) {
-			Jfull.block(i*6,0,3,num_positions) = Jdot.block(i*3,0,3,num_positions);
-			Jfull.block(i*6+3,0,3,num_positions) = Jr;
-		}
-		Jdot=Jfull;
-	}
+    MatrixXd Jfull = MatrixXd::Zero(2*3*n_pts,num_positions);
+    for (int i=0; i<n_pts; i++) {
+      Jfull.block(i*6,0,3,num_positions) = Jdot.block(i*3,0,3,num_positions);
+      Jfull.block(i*6+3,0,3,num_positions) = Jr;
+    }
+    Jdot=Jfull;
+  }
 }
 
 template <typename DerivedA, typename DerivedB>

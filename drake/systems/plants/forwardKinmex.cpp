@@ -92,8 +92,9 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   if (rotation_type==1) dim_with_rot += 3;
   else if (rotation_type==2) dim_with_rot += 4;
 
-  Map<Matrix3Xd> pts_tmp(mxGetPrSafe(prhs[3]), 3, n_pts);
-  Matrix3Xd pts(3,n_pts);
+  Map<MatrixXd> pts_tmp(mxGetPrSafe(prhs[3]),dim,n_pts);
+  Matrix3Xd pts(dim, n_pts);
+  pts = pts_tmp;
 
   if (b_jacdot) {
     if (rotation_type>1) mexErrMsgIdAndTxt("Drake:forwardKinmex:NotImplemented","Jacobian dot of quaternions are not implemented yet");
@@ -106,12 +107,12 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
     if (nlhs>0) {
       plhs[0] = mxCreateDoubleMatrix(dim_with_rot,n_pts,mxREAL);
       Map<MatrixXd> x(mxGetPrSafe(plhs[0]),dim_with_rot,n_pts);
-      model->forwardKin(body_ind,pts_tmp,rotation_type,x);
+      model->forwardKin(body_ind,pts,rotation_type,x);
     }
     if (nlhs>1) {
       plhs[1] = mxCreateDoubleMatrix(dim_with_rot*n_pts,model->num_positions,mxREAL);
       Map<MatrixXd> J(mxGetPrSafe(plhs[1]),dim_with_rot*n_pts,model->num_positions);
-      model->forwardJac(body_ind,pts_tmp,rotation_type,J);
+      model->forwardJac(body_ind,pts,rotation_type,J);
     }
     
     if (nlhs>2) {
