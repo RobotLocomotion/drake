@@ -2292,8 +2292,8 @@ AllBodiesClosestDistanceConstraint::eval(const double* t, VectorXd& c, MatrixXd&
     MatrixXd JA = MatrixXd::Zero(3,robot->num_positions);
     MatrixXd JB = MatrixXd::Zero(3,robot->num_positions);
     for (int i = 0; i < num_pts; ++i) {
-      robot->forwardJac(idxA.at(i),xA,0,JA);
-      robot->forwardJac(idxB.at(i),xB,0,JB);
+      robot->forwardJac(idxA.at(i),xA.col(i).eval(),0,JA);
+      robot->forwardJac(idxB.at(i),xB.col(i).eval(),0,JB);
       dc.row(i) = normal.col(i).transpose()*(JA-JB);
     }
   } else {
