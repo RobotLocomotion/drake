@@ -3292,6 +3292,12 @@ void RigidBodyManipulator::checkCachedKinematicsSettings(bool kinematics_gradien
   }
 }
 
+void RigidBodyManipulator::addFrame(const RigidBodyFrame frame)
+{
+  frames.push_back(frame);
+  num_frames = frames.size();
+}
+
 // explicit instantiations (required for linking):
 template DLLEXPORT_RBM void RigidBodyManipulator::doKinematics(MatrixBase<VectorXd>  &, bool);
 template DLLEXPORT_RBM void RigidBodyManipulator::doKinematics(MatrixBase< Map<VectorXd> >  &, bool);
