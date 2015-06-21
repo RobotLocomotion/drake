@@ -107,6 +107,7 @@ pods_use_pkg_config_packages(drakeIK ${drakeIK_PODS_PKG})
 target_link_libraries(drakeIK drakeRBM drakeRigidBodyConstraint drakeIKoptions)
 set_target_properties(drakeIK PROPERTIES COMPILE_FLAGS -fPIC)
 pods_install_libraries(drakeIK)
+pods_install_libraries(drakeIKoptions)
 pods_install_headers(RigidBodyIK.h IKoptions.h DESTINATION drake)
 pods_install_pkg_config_file(drake-ik
   LIBS -ldrakeIK -ldrakeRigidBodyConstraint -ldrakeIKoptions
