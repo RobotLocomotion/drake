@@ -1,7 +1,6 @@
-function [d, n, D, dn, dD] = contactConstraintDerivatives(obj, normal, kinsol, idxA, idxB, xA, xB)
+function [n, D, dn, dD] = contactConstraintDerivatives(obj, normal, kinsol, idxA, idxB, xA, xB, d)
 
 compute_second_derivative = nargout > 3;
-d = obj.surfaceTangents(normal);
 
 nq = obj.getNumPositions;  
 nk = size(d,2);

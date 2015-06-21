@@ -1976,6 +1976,11 @@ classdef RigidBodyManipulator < Manipulator
         'Drake:RigidBodyManipulator:surfaceTangents:emptyNormals', ...
         '''normal'' must be a non-empty array')
 
+      if obj.mex_model_ptr ~= 0
+        d = surfaceTangentsmex(obj.mex_model_ptr, normal);
+        return
+      end
+
       t1=normal; % initialize size
 
       % handle the normal = [0;0;1] case

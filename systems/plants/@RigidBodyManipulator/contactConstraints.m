@@ -57,26 +57,24 @@ end
 % For now, all coefficients of friction are 1
 mu = ones(nC,1);
 
+d = obj.surfaceTangents(normal);
+
 if obj.mex_model_ptr ~= 0
   if compute_first_derivative
     if ~compute_second_derivative
-      [d, n, D] = contactConstraintsmex(obj.mex_model_ptr, normal, int32(idxA), int32(idxB), xA, xB);
+      [n, D] = contactConstraintsmex(obj.mex_model_ptr, normal, int32(idxA), int32(idxB), xA, xB, d);
     else
-      [d, n, D, dn, dD] = contactConstraintsmex(obj.mex_model_ptr, normal, int32(idxA), int32(idxB), xA, xB);
+      [n, D, dn, dD] = contactConstraintsmex(obj.mex_model_ptr, normal, int32(idxA), int32(idxB), xA, xB, d);
     end
-  else
-    d = surfaceTangentsmex(obj.mex_model_ptr, normal);     
   end
+
 else %MATLAB implementation
   if compute_first_derivative
     if ~compute_second_derivative
-      [d, n, D] = contactConstraintDerivatives(obj, normal, kinsol, idxA, idxB, xA, xB);
+      [n, D] = contactConstraintDerivatives(obj, normal, kinsol, idxA, idxB, xA, xB, d);
     else
-      [d, n, D, dn, dD] = contactConstraintDerivatives(obj, normal, kinsol, idxA, idxB, xA, xB);
+      [n, D, dn, dD] = contactConstraintDerivatives(obj, normal, kinsol, idxA, idxB, xA, xB, d);
     end
-  else
-    d = obj.surfaceTangents(normal);
-  end
 end
 
 end
