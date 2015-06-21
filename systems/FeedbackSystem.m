@@ -75,8 +75,16 @@ classdef FeedbackSystem < DrakeSystem
       if (obj.sys2.getNumContStates()) xcdot=[xcdot;dynamics(obj.sys2,t,x2,sat2(obj,y1))]; end
     end
     function y = output(obj,t,x,u)
-      [y1,y2] = getOutputs(obj,t,x,u);
-      y=y1;
+      [x1,x2]=decodeX(obj,x);
+      if (~obj.sys1.isDirectFeedthrough()) % do sys1 first
+        % note: subsystems of sys1 could still be direct feedthrough.  but
+        % their outputs will not effect the final y1.  I'll just put in
+        % something random that's the right size for u here.
+        y=output(obj.sys1,t,x1,u);  % output shouldn't depend on u
+      else % do sys2 first
+        y2=output(obj.sys2,t,x2,zeros(obj.sys2.num_u,1));  % output shouldn't depend on this u
+        y=output(obj.sys1,t,x1,sat1(obj,y2+u));
+      end
     end
 
     function x0=getInitialState(obj)
