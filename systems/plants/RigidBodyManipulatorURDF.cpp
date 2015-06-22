@@ -243,7 +243,7 @@ bool parseInertial(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyMani
   return true;
 }
 
-bool parseMaterial(TiXmlElement* node, map<string, Vector4d>& materials)
+bool parseMaterial(TiXmlElement* node, map<string, Vector4d, less<string>, aligned_allocator<pair<string, Vector4d> > > & materials)
 {
   const char* attr;
   attr = node->Attribute("name");
@@ -361,7 +361,7 @@ bool parseGeometry(TiXmlElement* node, const map<string,string>& package_map, co
   return true;
 }
 
-bool parseVisual(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyManipulator* model, const map<string, Vector4d>& materials, const map<string,string>& package_map, const string& root_dir)
+bool parseVisual(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyManipulator* model, const map<string, Vector4d, less<string>, aligned_allocator<pair<string, Vector4d> > >& materials, const map<string,string>& package_map, const string& root_dir)
 {
   // DEBUG
   //cout << "parseVisual: START" << endl;
@@ -391,7 +391,7 @@ bool parseVisual(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyManipu
     attr = material_node->Attribute("name");
     if (attr && strlen(attr) > 0 && materials.find(attr) != materials.end()) {
       element.setMaterial(materials.at(attr));
-    } else { 
+    } else {
       TiXmlElement* color_node = material_node->FirstChildElement("color");
       if (color_node) {
         Vector4d rgba;
@@ -455,7 +455,7 @@ bool parseCollision(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyMan
   return true;
 }
 
-bool parseLink(RigidBodyManipulator* model, TiXmlElement* node, const map< string, Vector4d >& materials, const map<string,string>& package_map, const string& root_dir)
+bool parseLink(RigidBodyManipulator* model, TiXmlElement* node, const map<string, Vector4d, less<string>, aligned_allocator<pair<string, Vector4d> > >& materials, const map<string,string>& package_map, const string& root_dir)
 {
   const char* attr = node->Attribute("drake_ignore");
   if (attr && strcmp(attr, "true") == 0)
@@ -749,7 +749,7 @@ bool parseRobot(RigidBodyManipulator* model, TiXmlElement* node, const map<strin
   string robotname = node->Attribute("name");
 
   // parse material elements
-  map< string, Vector4d> materials;
+  map<string, Vector4d, less<string>, aligned_allocator<pair<string, Vector4d> > > materials;
   for (TiXmlElement* link_node = node->FirstChildElement("material"); link_node; link_node = link_node->NextSiblingElement("material")) {
     parseMaterial(link_node, materials);  // accept failed material parsing
   }
