@@ -2,8 +2,8 @@ function runMaxROA
 
 p = AcrobotPlant;
 
-% Set input unbounded
-%p = setInputLimits(p,-Inf,Inf);
+% Set input limits
+p = setInputLimits(p,-4,4);
 
 % Do lqr
 Q = diag([10 10 1 1]);
