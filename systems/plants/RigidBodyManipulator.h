@@ -5,7 +5,7 @@
 #include <Eigen/LU>
 #include <set>
 #include <map>
-#include <Eigen/StdVector> 
+#include <Eigen/StdVector>
 
 #include "collision/DrakeCollision.h"
 #include "shapes/DrakeShapes.h"
@@ -78,13 +78,13 @@ public:
   bool addRobotFromURDFString(const std::string &xml_string, std::map<std::string,std::string>& package_map, const std::string &root_dir = ".", const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
   bool addRobotFromURDF(const std::string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
   bool addRobotFromURDF(const std::string &urdf_filename, std::map<std::string,std::string>& package_map, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
-  
-  void addFrame(const RigidBodyFrame frame);
+
+  void addFrame(const RigidBodyFrame& frame);
 
   std::map<std::string, int> computePositionNameToIndexMap() const;
 
   void surfaceTangents(Eigen::Map<Matrix3xd> const & normals, std::vector< Map<Matrix3xd> > & tangents);
-  
+
   void resize(int num_dof, int num_rigid_body_objects=-1, int num_rigid_body_frames=0);
 
   void compile(void);  // call me after the model is loaded
@@ -95,7 +95,7 @@ public:
   std::string getPositionName(int position_num) const;
   std::string getVelocityName(int velocity_num) const;
   std::string getStateName(int state_num) const;
-  
+
   template <typename Derived>
   void doKinematics(MatrixBase<Derived> & q, bool b_compute_second_derivatives = false);
 
@@ -269,12 +269,12 @@ public:
                            Eigen::MatrixXd& xA,
                            Eigen::MatrixXd& xB,
                            std::vector<int>& bodyA_idx,
-                           std::vector<int>& bodyB_idx, 
+                           std::vector<int>& bodyB_idx,
                            bool use_margins = true);
   //bool closestDistanceAllBodies(VectorXd& distance, MatrixXd& Jd);
- 
+
   virtual std::vector<size_t> collidingPoints(
-        const std::vector<Eigen::Vector3d>& points, 
+        const std::vector<Eigen::Vector3d>& points,
         double collision_threshold);
 
   void warnOnce(const std::string& id, const std::string& msg);
@@ -289,7 +289,7 @@ public:
   //@param body_or_frame_id   the index of the body or the id of the frame.
 
   int parseBodyOrFrameID(const int body_or_frame_id, Matrix4d* Tframe = nullptr);
-  
+
   template <typename Scalar>
   GradientVar<Scalar, Eigen::Dynamic, 1> positionConstraintsNew(int gradient_order);
 
@@ -306,7 +306,7 @@ template <typename Derived>
 Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> compactToFull(
     const Eigen::MatrixBase<Derived>& compact, const std::vector<int>& joint_path, bool in_terms_of_qdot) {
   /*
-   * This method is used after calling geometric Jacobian, where compact is the Jacobian on the joints that are on the kinematic path; if we want to reconstruct the full Jacobian on all joints, then we should call this method. 
+   * This method is used after calling geometric Jacobian, where compact is the Jacobian on the joints that are on the kinematic path; if we want to reconstruct the full Jacobian on all joints, then we should call this method.
    */
   int ncols = in_terms_of_qdot ? num_positions : num_velocities;
   Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> full(compact.rows(), ncols);
@@ -363,7 +363,7 @@ private:
   bool use_new_kinsol;
 
   void doKinematics(double* q, bool b_compute_second_derivatives=false, double* qd=NULL);
-  
+
   //helper functions for contactConstraints
   void accumulateContactJacobian(const int bodyInd, MatrixXd const & bodyPoints, std::vector<size_t> const & cindA, std::vector<size_t> const & cindB, MatrixXd & J);
   void accumulateSecondOrderContactJacobian(const int bodyInd, MatrixXd const & bodyPoints, std::vector<size_t> const & cindA, std::vector<size_t> const & cindB, MatrixXd & dJ);

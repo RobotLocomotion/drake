@@ -530,16 +530,16 @@ void RigidBodyManipulator::updateCollisionElements(const shared_ptr<RigidBody>& 
   }
 };
 
-void RigidBodyManipulator::getTerrainContactPoints(const RigidBody& body, Eigen::Matrix3Xd &terrain_points) const 
+void RigidBodyManipulator::getTerrainContactPoints(const RigidBody& body, Eigen::Matrix3Xd &terrain_points) const
 {
   // clear matrix before filling it again
   size_t num_points = 0;
   terrain_points.resize(Eigen::NoChange,0);
 
-  for (auto id_iter = body.collision_element_ids.begin(); 
-       id_iter != body.collision_element_ids.end(); 
+  for (auto id_iter = body.collision_element_ids.begin();
+       id_iter != body.collision_element_ids.end();
        ++id_iter) {
-    
+
     Matrix3Xd element_points;
     collision_model->getTerrainContactPoints(*id_iter, element_points);
     terrain_points.conservativeResize(Eigen::NoChange, terrain_points.cols() + element_points.cols());
@@ -724,7 +724,7 @@ void RigidBodyManipulator::potentialCollisions(VectorXd& phi,
 }
 
 vector<size_t> RigidBodyManipulator::collidingPoints(
-    const vector<Vector3d>& points, 
+    const vector<Vector3d>& points,
     double collision_threshold)
 {
   return collision_model->collidingPoints(points, collision_threshold);
@@ -3292,7 +3292,7 @@ void RigidBodyManipulator::checkCachedKinematicsSettings(bool kinematics_gradien
   }
 }
 
-void RigidBodyManipulator::addFrame(const RigidBodyFrame frame)
+void RigidBodyManipulator::addFrame(const RigidBodyFrame& frame)
 {
   frames.push_back(frame);
   num_frames = frames.size();
@@ -3375,4 +3375,3 @@ template DLLEXPORT_RBM void RigidBodyManipulator::positionConstraints(MatrixBase
 template DLLEXPORT_RBM void RigidBodyManipulator::jointLimitConstraints(MatrixBase<VectorXd> const &, MatrixBase<VectorXd> &, MatrixBase<MatrixXd> &) const ;
 template DLLEXPORT_RBM void RigidBodyManipulator::jointLimitConstraints(MatrixBase< Map<VectorXd> > const &, MatrixBase<VectorXd> &, MatrixBase<MatrixXd> &) const ;
 template DLLEXPORT_RBM void RigidBodyManipulator::jointLimitConstraints(MatrixBase< Map<VectorXd> > const &, MatrixBase< Map<VectorXd> > &, MatrixBase< Map<MatrixXd> > &) const ;
-
