@@ -255,7 +255,7 @@ if cond(A) > 1e3  %results from F*P != 0
   display(sprintf('%f %e',t, cond(A)));
 %   keyboard
 end
-% t
+display(sprintf('P:%f',t))
 Pdot = reshape(pinv(A)*b,n,n-d);
 
   if any(abs(Pdot) > 1e2)
@@ -292,7 +292,7 @@ function Sdot = Sdynamics(t,S,p,dynamicsfn,xtraj,utraj,Ptraj,Q,R,constraint_ind,
   Sdot = -A_t'*S - S*A_t + S*B_t*inv(R)*B_t'*S - P_t'*Q*P_t;
 
   Sdot = Sdot(:);
-  % t
+  display(sprintf('S: %f',t))
 end
 
 function sqrtSdot = sqrtSdynamics(t,sqrtS,p,dynamicsfn,xtraj,utraj,Ptraj,Q,R,constraint_ind,alpha_1,alpha_2,options)
@@ -315,6 +315,6 @@ sqrtS = reshape(sqrtS,size(A_t,1),[]);
 sqrtSdot = -A_t'*sqrtS + .5*sqrtS*sqrtS'*B_t*inv(R)*B_t'*sqrtS - .5*P_t'*Q*P_t*inv(sqrtS)';
 
 sqrtSdot = sqrtSdot(:);
-% t
+display(sprintf('S: %f',t))
 end
 

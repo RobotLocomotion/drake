@@ -13,7 +13,7 @@ classdef ContactConstrainedDircolTrajectoryOptimization < ConstrainedDircolTraje
       
       
       [phi,normal,d,xA,xB,idxA,idxB,mu] = plant.contactConstraints(options.contact_q0,false,struct('terrain_only',true));
-      
+      mu = mu(1);
       for i=1:length(indices),
         xA_i = xA(:,indices(i));
         xB_i = xB(:,indices(i));
@@ -45,8 +45,9 @@ classdef ContactConstrainedDircolTrajectoryOptimization < ConstrainedDircolTraje
       
       nq = plant.getNumPositions;
       
+      nonpen_inds = setdiff((1:length(phi))',indices);
       for i=1:N,
-        nonPenetrationConstraint = FunctionHandleConstraint(zeros(length(phi),1),zeros(length(phi),1),nq,@obj.nonPenetration);
+        nonPenetrationConstraint = FunctionHandleConstraint(zeros(length(nonpen_inds),1),inf(length(nonpen_inds),1),nq,@(q) obj.nonPenetration(q,nonpen_inds));
         obj = obj.addConstraint(nonPenetrationConstraint,obj.x_inds(1:nq,i));
       end
       
@@ -75,10 +76,10 @@ classdef ContactConstrainedDircolTrajectoryOptimization < ConstrainedDircolTraje
       end
     end
     
-    function [f,df] = nonPenetration(obj,q)
+    function [f,df] = nonPenetration(obj,q,inds)
       [phi,normal,d,xA,xB,idxA,idxB,mu,n] = obj.plant.contactConstraints(q,false,struct('terrain_only',true));
-      f = phi;
-      df = n;
+      f = phi(inds);
+      df = n(inds,:);
     end
 
   end

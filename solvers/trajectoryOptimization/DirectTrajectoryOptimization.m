@@ -193,6 +193,12 @@ classdef DirectTrajectoryOptimization < NonlinearProgram
       xtraj = reconstructStateTrajectory(obj,z);
       if nargout>1, utraj = reconstructInputTrajectory(obj,z); end
     end
+    
+    function [xtraj,utraj,z,F,info,infeasible_constraint_name] = solveTrajFromZ(obj,z0)
+      [z,F,info,infeasible_constraint_name] = obj.solve(z0);
+      xtraj = reconstructStateTrajectory(obj,z);
+      if nargout>1, utraj = reconstructInputTrajectory(obj,z); end
+    end
 
     function z0 = getInitialVars(obj,t_init,traj_init)
     % evaluates the initial trajectories at the sampled times and

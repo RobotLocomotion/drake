@@ -7,7 +7,8 @@ if nargin < 5
 
 %was 100,10,.01 changed 4/24/15
   
-  R = 0.01*eye(getNumInputs(p));
+% 6/3 changed R from .01 to 1 to speed up calculations
+  R = 1*eye(getNumInputs(p));
   Qf = 1*Q;
 end
 

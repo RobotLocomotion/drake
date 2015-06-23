@@ -38,23 +38,67 @@ classdef ConstrainedDircolTrajectoryOptimization < DircolTrajectoryOptimization
         options.lambda_bound = 100;
       end
       
-      obj = obj@DircolTrajectoryOptimization(plant,N,duration,options);
-      
-      % add constraints on lambda
-      for i=1:nC,
-        A_ub = [.5*eye(N-1) zeros(N-1,1) -eye(N-1) options.lambda_bound*eye(N-1)];
-        A_ub(:,2:N) = A_ub(:,2:N) + .5*eye(N-1);
-        obj = obj.addConstraint(LinearConstraint(zeros(N-1,1),inf(N-1,1),A_ub),[obj.l_inds(i,:)';obj.lc_inds(i,:)';obj.h_inds]);
-        
-        
-        A_lb = [.5*eye(N-1) zeros(N-1,1) -eye(N-1) -options.lambda_bound*eye(N-1)];
-        A_lb(:,2:N) = A_lb(:,2:N) + .5*eye(N-1);
-        obj = obj.addConstraint(LinearConstraint(-inf(N-1,1),zeros(N-1,1),A_lb),[obj.l_inds(i,:)';obj.lc_inds(i,:)';obj.h_inds]);
+      if ~isfield(options,'constrain_start')
+        options.constrain_start = true;
       end
+      
+      if ~isfield(options,'constrain_end')
+        options.constrain_end = true;
+      end
+      
+      if ~isfield(options,'constrain_phi_start')
+        options.constrain_phi_start = true;
+      end
+      
+      if ~isfield(options,'constrain_phi_end')
+        options.constrain_phi_end = true;
+      end
+      
+      obj = obj@DircolTrajectoryOptimization(plant,N,duration,options);
+    end
+    
+    function [f,df] = phidotConstraint(obj,h,x0,x1,u0,u1,lambda0,lambda1,data0,data1)
+      nX = obj.plant.getNumStates();
+      nU = obj.plant.getNumInputs();
+      nC = obj.nC;
+      nq = obj.plant.getNumPositions; 
+      
+      % use the shared data objects for the dynamics at the knot points
+      xdot0 = data0.xdot;
+      dxdot0 = data0.dxdot;
+      xdot1 = data1.xdot;
+      dxdot1 = data1.dxdot;
+      
+      % get state at t=h/4
+      % x(h/4) = 27/32*x0 + 5/32*x1 + 9/64*h*xd0 - 3/64*h*xd1
+      % xd(h/4) = 3/16*xd0 - 5/16*xd1 + 9/(8h)*(x1 - x0)
+      xc = 27/32*x0 + 5/32*x1 + 9/64*h*xdot0 - 3/64*h*xdot1;
+      dxc = [9/64*xdot0-3/64*xdot1, 27/32*eye(nX)+9/64*h*dxdot0(:,2:1+nX), 5/32*eye(nX)-3/64*h*dxdot1(:,2:1+nX), ...
+        9/64*h*dxdot0(:,2+nX:1+nX+nU), -3/64*h*dxdot1(:,2+nX:1+nX+nU), 9/64*h*dxdot0(:,nX+nU+2:1+nX+nU+nC),...
+        -3/64*h*dxdot1(:,nX+nU+2:1+nX+nU+nC)];
+      
+      qc = xc(1:nq);
+      vc = xc(nq+1:end);
+      [phi,J,dJ] = obj.plant.positionConstraints(qc);
+      dJ = reshape(dJ,[],nq);
+      Jdot = matGradMult(dJ,vc);
+      phidot = J*vc;
+      dphidot = [Jdot J];
+      
+      C = obj.options.lambda_bound;
+      f = [phidot + C*h^3;-phidot + C*h^3]*(obj.N^3/C);
+      df = [dphidot*dxc;-dphidot*dxc];
+      df(:,1) = df(:,1)+3*C*h^2*ones(2*nC,1);
+      df = df*(obj.N^3/C);
+      
+%       f = [phidot;phidot];
+%       df = [dphidot*dxc;dphidot*dxc];
     end
     
     function obj = addDynamicConstraints(obj)
       N = obj.N;
+      nq = obj.plant.getNumPositions();
+      nv = obj.plant.getNumVelocities();
       nX = obj.plant.getNumStates();
       nU = obj.plant.getNumInputs();
       nC = obj.nC;
@@ -79,11 +123,39 @@ classdef ConstrainedDircolTrajectoryOptimization < DircolTrajectoryOptimization
         dyn_constraints{i} = cnstr;
         
         obj = obj.addConstraint(dyn_constraints{i}, dyn_inds{i},[shared_data_index+i;shared_data_index+i+1]);
+        
+        if obj.nC > 0
+          phidotcon = FunctionHandleConstraint(zeros(2*nC,1),inf(2*nC,1),n_vars-nC,@obj.phidotConstraint);
+          obj = obj.addConstraint(phidotcon, dyn_inds{i}(1:end-1),[shared_data_index+i;shared_data_index+i+1]);
+        end
       end
 
-      pos_cnstr = FunctionHandleConstraint(zeros(2*nC,1),zeros(2*nC,1),nX+length(obj.cstrval_inds),@obj.position_constraint_fun);
-      for i=1:obj.N,
-        obj = obj.addConstraint(pos_cnstr, {obj.x_inds(:,i),obj.cstrval_inds},shared_data_index+i);
+      if obj.nC > 0
+        noffset = length(obj.cstrval_inds);
+        pos_cnstr = FunctionHandleConstraint(zeros(2*nC,1),zeros(2*nC,1),nX+noffset,@(x,offset,data) obj.position_constraint_fun(x,offset,false,data));
+        cnstr_sparsity = [ones(nC,nq) zeros(nC,nv) ones(nC,noffset); ones(nC,nX) zeros(nC,noffset)];
+        [cnstr_i, cnstr_j] = ind2sub([2*nC, nX+noffset],find(cnstr_sparsity));
+        pos_cnstr = pos_cnstr.setSparseStructure(cnstr_i,cnstr_j);
+        
+        phidot_cnstr = FunctionHandleConstraint(zeros(nC,1),zeros(nC,1),nX,@(x,data) obj.position_constraint_fun(x,[],true,data));
+        
+        if obj.options.constrain_start,
+          if obj.options.constrain_phi_start
+            obj = obj.addConstraint(pos_cnstr, {obj.x_inds(:,1),obj.cstrval_inds},shared_data_index+1);
+          else
+            obj = obj.addConstraint(phidot_cnstr, {obj.x_inds(:,1)},shared_data_index+1);
+          end
+        end
+        for i=2:obj.N-1,
+          obj = obj.addConstraint(pos_cnstr, {obj.x_inds(:,i),obj.cstrval_inds},shared_data_index+i);
+        end
+        if obj.options.constrain_end,
+          if obj.options.constrain_phi_end
+            obj = obj.addConstraint(pos_cnstr, {obj.x_inds(:,N),obj.cstrval_inds},shared_data_index+N);
+          else
+            obj = obj.addConstraint(phidot_cnstr, {obj.x_inds(:,N)},shared_data_index+N);
+          end
+        end
       end
     end
     
@@ -119,13 +191,17 @@ classdef ConstrainedDircolTrajectoryOptimization < DircolTrajectoryOptimization
       dgdxcol = datac.dxdot;
       dg = dgdxcol(:,2:1+nX)*dxcol + [zeros(nX,1+2*nX) .5*dgdxcol(:,2+nX:1+nX+nU) .5*dgdxcol(:,2+nX:1+nX+nU) zeros(nX,2*nC) dgdxcol(:,nX+nU+2:1+nX+nU+nC)];
       
-      % constrait is the difference between the two
+      % constraint is the difference between the two
       f = xdotcol - g;
       df = dxdotcol - dg;
+      
+      
+      df = [df(:,1)*h + f, df(:,2:end)*h];
+      f = f*h;
     end
     
-    function [f,df] = position_constraint_fun(obj,x,offset,data)
-      nq = obj.plant.getNumPositions; 
+    function [f,df] = position_constraint_fun(obj,x,offset,phidot_only,data)
+      nq = obj.plant.getNumPositions;
       
       q = x(1:nq);
       qd = x(nq+1:end);
@@ -134,17 +210,16 @@ classdef ConstrainedDircolTrajectoryOptimization < DircolTrajectoryOptimization
       J = data.J;
       Jdot = data.Jdot;
       
-      if nargin > 3 || true
-        noffset = length(offset);
+      noffset = length(offset);
+      if ~phidot_only
         f = [phi;J*qd];
         f(obj.cstr_to_val_map) = f(obj.cstr_to_val_map) - offset;
-          df = [J zeros(obj.nC,nq+noffset);
-                Jdot J zeros(obj.nC,noffset)];
-          df(obj.cstr_to_val_map,end-noffset+1:end) = -eye(noffset);
-        else
-          f = [phi;J*qd];
-          df = [J zeros(obj.nC,nq);
-                Jdot J];
+        df = [J zeros(obj.nC,nq+noffset);
+          Jdot J zeros(obj.nC,noffset)];
+        df(obj.cstr_to_val_map,end-noffset+1:end) = -eye(noffset);
+      else
+        f = J*qd;
+        df = [Jdot J zeros(obj.nC,noffset)];
       end
     end
     
@@ -157,34 +232,50 @@ classdef ConstrainedDircolTrajectoryOptimization < DircolTrajectoryOptimization
       v = x(nq+1:end);
       
       [H,C,B,dH,dC,dB] = obj.plant.manipulatorDynamics(q,v);
-      
-      n_con = obj.nC/2;
-      [phi,J,dJ] = obj.plant.positionConstraints(q);     
-      dJ = reshape(dJ,[],nq);
-      
-     
-      Jdot = matGradMult(dJ,v);      
-      
       Hinv = inv(H);
-      
-      vdot = Hinv*(B*u - C + J'*lambda);
-      dtau = matGradMult(dB,u) - dC + [matGradMult(dJ,lambda,true), zeros(nq,nq)];
-      
-      dvdot = [zeros(nq,1),...
-        -Hinv*matGradMult(dH(:,1:nq),vdot) + Hinv*dtau(:,1:nq),...
-        +Hinv*dtau(:,1+nq:end), Hinv*B, Hinv*J'];
-      
-      [VqInv,dVqInv] = obj.plant.vToqdot(q);
-      xdot = [VqInv*v;vdot];
-      dxdot = [...
-        zeros(nq,1), matGradMult(dVqInv, v), VqInv, zeros(nq,nU+nC);
-        dvdot];   
+      if nC > 0      
+        [phi,J,dJ] = obj.plant.positionConstraints(q);
+        dJ = reshape(dJ,[],nq);
+        Jdot = matGradMult(dJ,v);      
+        vdot = Hinv*(B*u - C + J'*lambda);
+        dtau = matGradMult(dB,u) - dC + [matGradMult(dJ,lambda,true), zeros(nq,nq)];
 
-      data.xdot = xdot;
-      data.dxdot = dxdot;
-      data.phi = phi;
-      data.J = J;
-      data.Jdot = Jdot;
+        dvdot = [zeros(nq,1),...
+          -Hinv*matGradMult(dH(:,1:nq),vdot) + Hinv*dtau(:,1:nq),...
+          +Hinv*dtau(:,1+nq:end), Hinv*B, Hinv*J'];
+
+        [VqInv,dVqInv] = obj.plant.vToqdot(q);
+        xdot = [VqInv*v;vdot];
+        dxdot = [...
+          zeros(nq,1), matGradMult(dVqInv, v), VqInv, zeros(nq,nU+nC);
+          dvdot];   
+
+        data.xdot = xdot;
+        data.dxdot = dxdot;
+        data.phi = phi;
+        data.J = J;
+        data.Jdot = Jdot;      
+      else
+        vdot = Hinv*(B*u - C);
+        dtau = matGradMult(dB,u) - dC;
+        
+        dvdot = [zeros(nq,1),...
+          -Hinv*matGradMult(dH(:,1:nq),vdot) + Hinv*dtau(:,1:nq),...
+          +Hinv*dtau(:,1+nq:end), Hinv*B];
+        
+        [VqInv,dVqInv] = obj.plant.vToqdot(q);
+        xdot = [VqInv*v;vdot];
+        dxdot = [...
+          zeros(nq,1), matGradMult(dVqInv, v), VqInv, zeros(nq,nU+nC);
+          dvdot];
+        
+        data.xdot = xdot;
+        data.dxdot = dxdot;
+        data.phi = [];
+        data.J = zeros(0,nq);
+        data.Jdot = zeros(0,nq);
+        
+      end
     end
     
     function obj = setupVariables(obj,N)
@@ -209,6 +300,37 @@ classdef ConstrainedDircolTrajectoryOptimization < DircolTrajectoryOptimization
       obj.cstrval_inds = (1:num_rel_constraints)' + obj.num_vars;
       
       obj = obj.addDecisionVariable(num_rel_constraints);
+    end
+    
+    function [xtraj,utraj,ltraj,z,F,info,infeasible_constraint_name] = solveTrajFromZ(obj,z0)
+      [xtraj,utraj,z,F,info,infeasible_constraint_name] = solveTrajFromZ@DircolTrajectoryOptimization(obj,z0);
+      t_l = zeros(obj.N*2-1,1);
+      lambda = zeros(size(obj.l_inds,1),obj.N*2 -1);
+      
+      lambda(:,1:2:end) = z(obj.l_inds);
+      lambda(:,2:2:end) = z(obj.lc_inds);
+      ltraj = PPTrajectory(foh(t_l,lambda));
+    end
+    
+    function [xtraj,utraj,ltraj,z,F,info,infeasible_constraint_name] = solveTraj(obj,varargin)
+      [xtraj,utraj,z,F,info,infeasible_constraint_name] = solveTraj@DircolTrajectoryOptimization(obj,varargin{:});      
+      
+      ltraj = obj.reconstructForceTrajectory(z);
+    end
+    
+    function ltraj = reconstructForceTrajectory(obj,z)
+      t_l = zeros(obj.N*2-1,1);
+      lambda = zeros(size(obj.l_inds,1),obj.N*2 -1);
+      lambda(:,1:2:end) = z(obj.l_inds);
+      lambda(:,2:2:end) = z(obj.lc_inds);
+      t_x = [0; cumsum(z(obj.h_inds))];
+      t_l(1:2:end) = t_x;
+      t_l(2:2:end) = (t_x(1:end-1) + t_x(2:end))/2;
+      if obj.nC > 0
+        ltraj = PPTrajectory(foh(t_l,lambda));
+      else
+        ltraj = [];
+      end
     end
     
     
@@ -239,9 +361,13 @@ classdef ConstrainedDircolTrajectoryOptimization < DircolTrajectoryOptimization
       [H,C,B] = obj.plant.manipulatorDynamics(q,v);
       [phi,J] = obj.plant.positionConstraints(q);     
       
-      vdot = H\(B*u - C + J'*lambda);
+      if ~isempty(lambda)
+        vdot = H\(B*u - C + J'*lambda);
+      else
+        vdot = H\(B*u - C);
+      end
       xdot = [v;vdot];
-    end
+    end    
     
     function z0 = getInitialVars(obj,t_init,traj_init)
       % evaluates the initial trajectories at the sampled times and

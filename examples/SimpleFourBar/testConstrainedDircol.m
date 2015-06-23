@@ -1,4 +1,4 @@
-function [p,v,xtraj,utraj,z,F,info,traj_opt] = testConstrainedDircol
+function [p,v,xtraj,utraj,z,ltraj,F,info,traj_opt] = testConstrainedDircol
 
 p = PlanarRigidBodyManipulator('FourBar.urdf');
 v = p.constructVisualizer();
@@ -30,7 +30,7 @@ traj_opt = traj_opt.setSolverOptions('snopt','IterationsLimit',500000);
 traj_opt = traj_opt.addRunningCost(@running_cost_fun);
 % traj_opt = traj_opt.addFinalCost(@final_cost_fun);
 
-[xtraj,utraj,z,F,info] = traj_opt.solveTraj(t_init,traj_init);
+[xtraj,utraj,ltraj,z,F,info] = traj_opt.solveTraj(t_init,traj_init);
 
 
 

@@ -10,7 +10,7 @@ p = PlanarRigidBodyManipulator('../KneedCompassGait.urdf',options);
 %todo: add joint limits, periodicity constraint
 
 N = 15;
-T = 3;
+T = 2;
 T0 = 3;
 
 % periodic constraint
@@ -61,8 +61,10 @@ end
 T_span = [1 T];
 
 
-x0_min = [x0(1:5);-inf; -inf; 0; -inf(4,1)];
-x0_max = [x0(1:5);inf;  inf; 0; inf(4,1)];
+% x0_min = [x0(1:5);-inf; -inf; 0; -inf(4,1)];
+% x0_max = [x0(1:5);inf;  inf; 0; inf(4,1)];
+x0_min = [x0(1);-inf(5,1); -inf; 0; -inf(4,1)];
+x0_max = [x0(1);inf(5,1);  inf; 0; inf(4,1)];
 xf_min = [.4;-inf(11,1)];
 xf_max = inf(12,1);
 
@@ -93,7 +95,7 @@ l2 = traj_opt.l_inds(1:4,end-4:end);
 traj_opt = traj_opt.addConstraint(ConstantConstraint(0*l1(:)),l1);
 traj_opt = traj_opt.addConstraint(ConstantConstraint(0*l2(:)),l2);
 % traj_opt = traj_opt.setCheckGrad(true);
-snprint('snopt.out');
+traj_opt = traj_opt.setSolverOptions('snopt','print','snopt.out');
 traj_opt = traj_opt.setSolverOptions('snopt','MajorIterationsLimit',200);
 traj_opt = traj_opt.setSolverOptions('snopt','MinorIterationsLimit',200000);
 traj_opt = traj_opt.setSolverOptions('snopt','IterationsLimit',200000);
@@ -106,7 +108,7 @@ end
 
 function [f,df] = foot_height_fun(h,x,u)
   q = x(1:6);
-  K = 1000;
+  K = 100;
   [phi,~,~,~,~,~,~,~,n] = p.contactConstraints(q,false,struct('terrain_only',false));
   phi0 = [.1;.1];
   f = K*(phi - phi0)'*(phi - phi0);
@@ -116,7 +118,7 @@ function [f,df] = foot_height_fun(h,x,u)
 end
 
 function [f,df] = final_cost_fun(T,x)
-  K = 100;
+  K = 10;
   f = K*T;
   df = [K zeros(1,12)];
 end

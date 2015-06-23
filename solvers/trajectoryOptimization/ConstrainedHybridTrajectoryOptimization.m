@@ -1,4 +1,6 @@
 classdef ConstrainedHybridTrajectoryOptimization < NonlinearProgram
+  % TODO: all the documentation here is for the basic hybrid class, needs
+  % updating.
   % ConstrainedHybridTrajectoryOptimization
   % 
   % Trajectory optimization class for hybrid models
@@ -49,7 +51,7 @@ classdef ConstrainedHybridTrajectoryOptimization < NonlinearProgram
       %    equals the last state/control of the last mode
       %    u_const_across_transitions - control input must be constant at
       %    transition times
-      if nargin < 6
+      if nargin < 5
         options = struct();
       end
       if ~isfield(options,'periodic')
@@ -68,8 +70,15 @@ classdef ConstrainedHybridTrajectoryOptimization < NonlinearProgram
       
       % generate a sequence of trajectory optimization problems
       obj.mode_opt = cell(obj.M,1);
-      for i=1:obj.M,        
-        obj.mode_opt{i} = ContactConstrainedDircolTrajectoryOptimization(p,N(i),duration{i},mode_indices{i});
+      for i=1:obj.M,
+        mode_options = options;
+        if i ~= 1,
+%           mode_options.constrain_phi_start = false;
+        end
+        if i ~= obj.M,
+%           mode_options.constrain_phi_end = false;
+        end
+        obj.mode_opt{i} = ContactConstrainedDircolTrajectoryOptimization(plant,N(i),duration{i},mode_indices{i},mode_options);
       end
       
       nvars = 0;
@@ -87,9 +96,22 @@ classdef ConstrainedHybridTrajectoryOptimization < NonlinearProgram
       obj.nD = 2*length(d);
       
       for i=1:obj.M-1,
-        nvars = length(mode_indices{i+1})*(obj.nD+1);
-        obj.Lambda_inds{i} = nvars + (1:nvars)';
-        obj = obj.addDecisionVariable(nvars);
+        nLambda = length(mode_indices{i+1})*(obj.nD+1);
+        obj.Lambda_inds{i} = nvars + (1:nLambda)';
+        obj = obj.addDecisionVariable(nLambda);
+        nvars = nvars + nLambda;
+        
+        % todo: get the real mu here
+        mu = 1;
+        obj = obj.addConstraint(BoundingBoxConstraint(zeros(nLambda,1),inf(nLambda,1)),obj.Lambda_inds{i});
+        
+        A_fric = zeros(length(mode_indices{i+1})*obj.nD,nLambda);
+        for j=1:length(mode_indices{i+1}),
+          A_fric((j-1)*obj.nD + (1:obj.nD),(j-1)*(obj.nD+1) + 1) = mu*ones(obj.nD,1);
+          A_fric((j-1)*obj.nD + (1:obj.nD),(j-1)*(obj.nD+1) + (2:obj.nD+1)) = -eye(obj.nD);
+        end
+        
+        obj = obj.addConstraint(LinearConstraint(zeros(size(A_fric,1),1),inf(size(A_fric,1),1),A_fric),obj.Lambda_inds{i});
       end
       
       obj = obj.addJumpConstraints();    
@@ -217,52 +239,99 @@ classdef ConstrainedHybridTrajectoryOptimization < NonlinearProgram
       for i=2:obj.M,
         % linear constraint for positions
         lin_con = LinearConstraint(zeros(nq,1),zeros(nq,1),[eye(nq) -eye(nq)]);
-        obj = obj.addConstraint(lin_con,[obj.mode_opt{i-1}.x_inds(1:nq,end);obj.mode_opt{i}.x_inds(1:nq,end)]);
+        obj = obj.addConstraint(lin_con,[obj.mode_opt{i-1}.x_inds(1:nq,end) + obj.var_offset(i-1);...
+          obj.mode_opt{i}.x_inds(1:nq,1) + obj.var_offset(i)]);
         
         % nonlinear constraint for velocities
-        jump_fun = @(q,vm,vp,Lambda) obj.impulse_jump_fun(obj.contact_sequence{i},q,vm,vp,Lambda);
-        jump_con = FunctionHandleConstraint(zeros(nv,1),zeros(nv,1),nq+nv*2+length(obj.Lambda_inds{i-1}),jump_fun);
-        jump_vars = {obj.mode_opt{i-1}.x_inds(1:nq,end),obj.mode_opt{i-1}.x_inds(nq+1:end,end),
-          obj.mode_opt{i}.x_inds(nq+1:end,1),obj.Lambda_inds{i-1}};
+        all_contact_inds = unique([obj.contact_sequence{i-1};obj.contact_sequence{i}]);
+        all_contact_inds = [];
+        jump_fun = @(q,vm,vp,Lambda) obj.impulse_jump_fun(obj.contact_sequence{i},all_contact_inds,q,vm,vp,Lambda);
+        jump_con = FunctionHandleConstraint(zeros(nv+length(all_contact_inds),1),zeros(nv+length(all_contact_inds),1),nq+nv*2+length(obj.Lambda_inds{i-1}),jump_fun);
+        jump_vars = {obj.mode_opt{i-1}.x_inds(1:nq,end) + obj.var_offset(i-1),...
+          obj.mode_opt{i-1}.x_inds(nq+1:end,end) + obj.var_offset(i-1),...
+          obj.mode_opt{i}.x_inds(nq+1:end,1) + obj.var_offset(i),obj.Lambda_inds{i-1}};
         
         obj = obj.addConstraint(jump_con,jump_vars);
-      end      
-    end
-    
-    function [f,df] = impulse_jump_fun(obj,contact_inds,q,vm,vp,Lambda)
-      nq = obj.plant.getNumPositions;
-      nl = length(Lambda);
-            
-      [H,C,B,dH] = obj.plant.manipulatorDynamics(q,v);
-      [phi,normal,d,xA,xB,idxA,idxB,mu,n,D,dn,dD] = obj.plant.contactConstraints(q,false,struct('terrain_only',true));
-      
-      grad_inds = kron(ones(nq,1),contact_inds) + kron(0:nq-1,length(contact_inds));
-
-      J = zeros(nl,nq);
-      J(1:2+obj.nD:end,:) = n(contact_inds,:);
-      dJ = zeros(nl*nq,nq);
-      dJ(1:2+obj.nD:end,:) = dn(grad_inds,:);
-      
-      for j=1:length(D),
-        J(1+j:2+obj.nD:end,:) = D{j}(contact_inds,:);
-        dJ(1+j:2+obj.nD:end,:) = dD{j}(grad_inds,:);
       end
+    end       
+    
+    function [f,df] = impulse_jump_fun(obj,new_contact_inds,all_contact_inds,q,vm,vp,Lambda)
+      %also includes position constraints using all_contact_inds
+      nq = obj.plant.getNumPositions;
+      nv = obj.plant.getNumVelocities;
+      nl = length(Lambda);
       
-      vp = vm + H\(J'*Lambda);
-      
-      f = H*(vp - vm) - J'*Lambda;
-      df = [matGradMult(dH,vp-vm)-matGradMult(dJ,Lambda,true), -H, H, -J'];
+      [phi,normal,d,xA,xB,idxA,idxB,mu,n,D,dn,dD] = obj.plant.contactConstraints(q,false,struct('terrain_only',true));
+      if nl > 0
+        [H,C,B,dH] = obj.plant.manipulatorDynamics(q,vm);
+        
+        grad_inds = kron(ones(nq,1),new_contact_inds) + kron((0:nq-1)',length(phi)*ones(length(new_contact_inds),1));
+        
+        J = zeros(nl,nq);
+        J(1:1+obj.nD:end,:) = n(new_contact_inds,:);
+        dJ = zeros(nl*nq,nq);
+        dJ(1:1+obj.nD:end,:) = dn(grad_inds,:);
+        
+        for j=1:length(D),
+          J(1+j:1+obj.nD:end,:) = D{j}(new_contact_inds,:);
+          dJ(1+j:1+obj.nD:end,:) = dD{j}(grad_inds,:);
+        end
+        
+        f = [phi(all_contact_inds); H*(vp - vm) - J'*Lambda];
+        df = [n(all_contact_inds,:), zeros(length(all_contact_inds), 2*nv + nl);
+          [matGradMult(dH,vp-vm)-[matGradMult(dJ,Lambda,true) H], H, -J']];
+      else
+        f = [phi(all_contact_inds); vp - vm];
+        df = [n(all_contact_inds,:), zeros(length(all_contact_inds), 2*nv + nl);...
+          zeros(nq) -eye(nq) eye(nq)];
+      end
     end
     
     function z0 = getInitialVars(obj,t_init,traj_init)
       z0 = cell(obj.M,1);
       for i=1:obj.M,
-        z0{i} = obj.mode_opt{i}.getInitialVars(t_init{i},traj_init{i});
+        z0{i} = obj.mode_opt{i}.getInitialVars(t_init{i},traj_init.mode{i});
+      end
+      if isfield(traj_init,'L')
+        for i=1:obj.M-1,
+          sizecheck(traj_init.L{i},obj.Lambda_inds{i});
+          z0{end+1} = traj_init.L{i};
+        end
+      else
+        for i=1:obj.M-1,
+          z0{end+1} = zeros(size(obj.Lambda_inds{i}));
+        end
       end
       z0 = cell2mat(z0);
     end
     
-    function [xtraj,utraj,z,F,info] = solveTraj(obj,t_init,traj_init)
+    
+    function [xtraj,utraj,ltraj,z,F,info] = solveTrajFromZ(obj,z0)
+      if ~obj.is_compiled
+        warning('HybridTrajectoryOptimization is not compiled, doing so now, but previous references not reflect the compilation. Consider running compile() first.');
+        obj = obj.compile();
+      end
+
+      [z,F,info] = obj.solve(z0);
+      
+      for i=1:obj.M,
+        utraj{i} = obj.mode_opt{i}.reconstructInputTrajectory(z(obj.var_offset(i)+1:obj.var_offset(i)+obj.mode_opt{i}.num_vars));
+        xtraj{i} = obj.mode_opt{i}.reconstructStateTrajectory(z(obj.var_offset(i)+1:obj.var_offset(i)+obj.mode_opt{i}.num_vars));
+        ltraj{i} = obj.mode_opt{i}.reconstructForceTrajectory(z(obj.var_offset(i)+1:obj.var_offset(i)+obj.mode_opt{i}.num_vars));
+        
+%         xtraj{i} = MixedTrajectory({PPTrajectory(foh(xtraj{i}.tspan,[obj.mode_sequence(i) obj.mode_sequence(i)])),xtraj{i}},{1,2:1+xtraj{i}.dim});
+        if i > 1
+          xtraj{i} = xtraj{i}.shiftTime(xtraj{i-1}.tspan(2));
+          utraj{i} = utraj{i}.shiftTime(utraj{i-1}.tspan(2));
+          ltraj{i} = ltraj{i}.shiftTime(ltraj{i-1}.tspan(2));
+        end
+        
+        xtraj{i} = xtraj{i}.setOutputFrame(obj.plant.getStateFrame);
+      end
+    end
+    
+    
+    function [xtraj,utraj,ltraj,z,F,info] = solveTraj(obj,t_init,traj_init)
       % Solve the nonlinear program and return resulting trajectory
       % @param t_init initial timespan for solution.  can be a vector of
       % length obj.N specifying the times of each segment, or a scalar
@@ -284,17 +353,21 @@ classdef ConstrainedHybridTrajectoryOptimization < NonlinearProgram
       for i=1:obj.M,
         utraj{i} = obj.mode_opt{i}.reconstructInputTrajectory(z(obj.var_offset(i)+1:obj.var_offset(i)+obj.mode_opt{i}.num_vars));
         xtraj{i} = obj.mode_opt{i}.reconstructStateTrajectory(z(obj.var_offset(i)+1:obj.var_offset(i)+obj.mode_opt{i}.num_vars));
+        ltraj{i} = obj.mode_opt{i}.reconstructForceTrajectory(z(obj.var_offset(i)+1:obj.var_offset(i)+obj.mode_opt{i}.num_vars));
         
-        xtraj{i} = MixedTrajectory({PPTrajectory(foh(xtraj{i}.tspan,[obj.mode_sequence(i) obj.mode_sequence(i)])),xtraj{i}},{1,2:1+xtraj{i}.dim});
+%         xtraj{i} = MixedTrajectory({PPTrajectory(foh(xtraj{i}.tspan,[obj.mode_sequence(i) obj.mode_sequence(i)])),xtraj{i}},{1,2:1+xtraj{i}.dim});
         if i > 1
           xtraj{i} = xtraj{i}.shiftTime(xtraj{i-1}.tspan(2));
           utraj{i} = utraj{i}.shiftTime(utraj{i-1}.tspan(2));
+          if ~isempty(ltraj{i})
+            ltraj{i} = ltraj{i}.shiftTime(ltraj{i-1}.tspan(2));
+          end
         end
         
         xtraj{i} = xtraj{i}.setOutputFrame(obj.plant.getStateFrame);
       end
-      xtraj = HybridTrajectory(xtraj);
-      utraj = HybridTrajectory(utraj);
+%       xtraj = HybridTrajectory(xtraj);
+%       utraj = HybridTrajectory(utraj);
     end
   end  
 end

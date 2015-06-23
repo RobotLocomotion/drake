@@ -1,12 +1,13 @@
 data = [];
 do_plots = true;
 p = ConstrainedPlant;
-bnd_array = [1e2;1e4;1e6];
+% bnd_array = [1e2;1e4;1e6];
+bnd_array = 100;
 for i=1:length(bnd_array),
   bnd = bnd_array(i);
   for N=4:2:40,
-    % N = 20;
-    T = .2;
+%     N = 20;
+    T = .5;
     
     options.lambda_bound = bnd;
     traj_opt = ConstrainedDircolTrajectoryOptimization(p,N,[T T],options);
@@ -29,7 +30,7 @@ for i=1:length(bnd_array),
     traj_opt = traj_opt.setSolverOptions('snopt','MajorIterationsLimit',100);
     traj_opt = traj_opt.addCost(QuadraticConstraint(0,0,eye(N),100*ones(N,1)),traj_opt.l_inds);
     
-    [xtraj,utraj,z,F,info] = traj_opt.solveTraj(t_init,traj_init);
+    [xtraj,utraj,ltraj,z,F,info] = traj_opt.solveTraj(t_init,traj_init);
     
     %%
     tt = xtraj.pp.breaks;
@@ -60,6 +61,9 @@ for i=1:length(bnd_array),
       plot(tt,x_pt-xsim_pt,'*')
       ylabel('Error')
       xlim([0 T])
+      
+      figure(3)
+      plot(tt,z(traj_opt.l_inds),'*',(tt(1:end-1)+tt(2:end))/2,z(traj_opt.lc_inds),'*')
     end
     
     %%

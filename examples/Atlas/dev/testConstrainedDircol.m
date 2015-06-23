@@ -1,18 +1,20 @@
-function [p,v,xtraj,utraj,z,F,info,traj_opt] = testConstrainedDircol
-
+function [p,v,xtraj,utraj,ltraj,z,F,info,traj_opt] = testConstrainedDircol(xtraj,utraj,ltraj)
+rng(0)
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
 warning('off','Drake:RigidBodyManipulator:WeldedLinkInd');
 warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
 options.terrain = RigidBodyFlatTerrain();
 options.floating = true;
 options.ignore_self_collisions = true;
+options.use_new_kinsol = true;
 
 p = PlanarRigidBodyManipulator('../urdf/atlas_simple_planar_contact.urdf',options);
 
 
 
 v = p.constructVisualizer();
-N = 20;
+% v = [];
+N = 10;
 T = .4;
 
 
@@ -81,8 +83,9 @@ x0 = [      0
 % to_options.relative_constraints = [true;false;true;false];
 % 
 % traj_opt = ConstrainedDircolTrajectoryOptimization(p,N,[0 T],to_options);
-
-traj_opt = ContactConstrainedDircolTrajectoryOptimization(p,N,[0 T],[1;2]);
+to_options.contact_q0 = x0(1:10);
+to_options.lambda_bound = 1e3;
+traj_opt = ContactConstrainedDircolTrajectoryOptimization(p,N,[0 T],[1;2],to_options);
 
 % l0 = [0;0;178/(178+82);0;0;82/(178+82)]*p.getMass*-p.gravity(3);
 l0 = [0;897.3515;0;179.1489];
@@ -97,13 +100,20 @@ traj_opt = traj_opt.addStateConstraint(BoundingBoxConstraint(x0 - [zeros(10,1);.
 traj_opt = traj_opt.addStateConstraint(BoundingBoxConstraint(xf(2:10),xf(2:10)),N,2:10);
 
 t_init = linspace(0,T,N);
+if nargin < 3
 traj_init.x = PPTrajectory(foh(t_init,repmat(x0,1,N)));
 traj_init.u = PPTrajectory(foh(t_init,randn(7,N)));
 traj_init.l = PPTrajectory(foh(t_init,repmat(l0,1,N)));
+else
+  traj_init.x = xtraj;
+  traj_init.u= utraj;
+  traj_init.l = ltraj;
+% traj_init.l = PPTrajectory(foh(t_init,repmat(l0,1,N)));
+end
 
 traj_opt = traj_opt.setSolverOptions('snopt','print','snopt.out');
-traj_opt = traj_opt.setSolverOptions('snopt','MajorIterationsLimit',500);
-traj_opt = traj_opt.setSolverOptions('snopt','MinorIterationsLimit',500000);
+traj_opt = traj_opt.setSolverOptions('snopt','MajorIterationsLimit',200);
+traj_opt = traj_opt.setSolverOptions('snopt','MinorIterationsLimit',50000);
 traj_opt = traj_opt.setSolverOptions('snopt','IterationsLimit',500000);
 
 
@@ -120,7 +130,7 @@ traj_opt = traj_opt.addConstraint(LinearConstraint(zeros(2*nlz,1),inf(2*nlz,1),A
 traj_opt = traj_opt.addRunningCost(@running_cost_fun);
 % traj_opt = traj_opt.addFinalCost(@final_cost_fun);
 
-[xtraj,utraj,z,F,info] = traj_opt.solveTraj(t_init,traj_init);
+[xtraj,utraj,ltraj,z,F,info] = traj_opt.solveTraj(t_init,traj_init);
 
 
 

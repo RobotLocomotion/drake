@@ -1,4 +1,5 @@
 
+
 %%
 [p,xtraj,utraj,ltraj,ljltraj,z,F,info,traj_opt] = testNewTrajOpt();
 v = p.constructVisualizer; v.playback(xtraj);

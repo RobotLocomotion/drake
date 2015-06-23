@@ -29,8 +29,9 @@ else
   s = '../urdf/atlas_simple_planar_contact.urdf';
 %   traj_file = 'data/atlas_lqr_fm2_cost10.mat';
 
-traj_file = 'data/atlas_lqr_fm2_periodic.mat';
+% traj_file = 'data/atlas_lqr_fm2_periodic.mat';
 % traj_file = 'data/atlas_lqr_fm2_periodic_100.mat';
+traj_file = 'data/atlas_hybrid_lqr';
 
 %   traj_file = 'data/atlas_lqr_01.mat';
 end

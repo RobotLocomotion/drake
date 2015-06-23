@@ -173,6 +173,7 @@ classdef NonlinearProgram
       obj.solver_options.snopt.OldBasisFile = 0;
       obj.solver_options.snopt.BackupBasisFile = 0;
       obj.solver_options.snopt.LinesearchTolerance = 0.9;
+      obj.solver_options.snopt.LUSingularityTolerance = 3.2e-11;
       obj.solver_options.fmincon.GradConstr = 'on';
       obj.solver_options.fmincon.GradObj = 'on';
       obj.solver_options.snopt.sense = 'Minimize';
@@ -577,6 +578,12 @@ classdef NonlinearProgram
       if(nargout>1)
         G = [G(1,:);G(1+obj.nlcon_ineq_idx,:);G(1+obj.nlcon_eq_idx,:)];
       end
+      
+      if any(isnan(f)) || any(isnan(G(:)))
+        keyboard
+      end
+      
+%       max(abs(G(:)))      
     end
     
     function obj = addDecisionVariable(obj,num_new_vars,var_name)
@@ -838,10 +845,18 @@ classdef NonlinearProgram
             error('Drake:NonlinearProgram:setSolverOptions:OptionVal', 'LinesearchTolerance should be between 0 and 1');
           end
           obj.solver_options.snopt.LinesearchTolerance = optionval;
+        elseif(strcmpi(optionname(~isspace(optionname)),'lusingularitytolerance'))
+          if(~isnumeric(optionval) || numel(optionval) ~= 1)
+            error('Drake:NonlinearProgram:setSolverOptions:LUSingularityTolerance should be a scalar');
+          end
+          if(optionval <= 0 || optionval > 1)
+            error('Drake:NonlinearProgram:setSolverOptions:OptionVal', 'LUSingularityTolerance should be positive');
+          end
+          obj.solver_options.snopt.LUSingularityTolerance = optionval;
         elseif(strcmpi(optionname(~isspace(optionname)),'sense'))
           if(~ischar(optionval))
             error('Drake:NonlinearProgram:setSolverOptions:OptionVal', 'sense should be a string');
-        end
+          end
           if(~any(strcmp(optionval,{'Minimize','Maximize','Feasible point'})))
             error('Drake:NonlinearProgram:setSolverOptions:Sense', ...
               'sense must be one of the following: ''Minimize'', ''Maximize'', ''Feasible point''');
@@ -1368,6 +1383,7 @@ classdef NonlinearProgram
         snseti('Old Basis File',obj.solver_options.snopt.OldBasisFile);
         snseti('Backup Basis File',obj.solver_options.snopt.BackupBasisFile);
         snsetr('Linesearch tolerance',obj.solver_options.snopt.LinesearchTolerance);
+        snsetr('LU Singularity Tolerance',obj.solver_options.snopt.LUSingularityTolerance);
         if(~isempty(obj.solver_options.snopt.print))
           snprint(obj.solver_options.snopt.print);
         end
@@ -1391,18 +1407,18 @@ classdef NonlinearProgram
       objval = objval(1);
       [exitflag,infeasible_constraint_name] = obj.mapSolverInfo(exitflag,x);
       if(exitflag == 11)
-        if(~isempty(empty_grad_cin))
-          display(sprintf('The decision variables in nonlinear inequality constraint %d are all fixed (due to equality bounding box constraints on the decision variables). Consider either removing this constraint, or relaxing the bounds on the decision variables.\n',empty_grad_cin));
-        end
-        if(~isempty(empty_grad_ceq))
-          display(sprintf('The decision variables in nonlinear equality constraint %d are all fixed (due to equality bounding box constraints on the decision variables). Consider either removing this constraint, or relaxing the bounds on the decision variables.\n',empty_grad_ceq));
-        end
-        if(~isempty(empty_grad_Ain))
-          display(sprintf('The decision variables in linear inequality constraint %d are all fixed (due to equality bounding box constraints on the decision variables). Consider either removing this constraint, or relaxing the bounds on the decision variables.\n',empty_grad_Ain));
-        end
-        if(~isempty(empty_grad_Aeq))
-          display(sprintf('The decision variables in linear equality constraint %d are all fixed (due to equality bounding box constraints on the decision variables). Consider either removing this constraint, or relaxing the bounds on the decision variables.\n',empty_grad_Aeq));
-        end
+%         if(~isempty(empty_grad_cin))
+%           display(sprintf('The decision variables in nonlinear inequality constraint %d are all fixed (due to equality bounding box constraints on the decision variables). Consider either removing this constraint, or relaxing the bounds on the decision variables.\n',empty_grad_cin));
+%         end
+%         if(~isempty(empty_grad_ceq))
+%           display(sprintf('The decision variables in nonlinear equality constraint %d are all fixed (due to equality bounding box constraints on the decision variables). Consider either removing this constraint, or relaxing the bounds on the decision variables.\n',empty_grad_ceq));
+%         end
+%         if(~isempty(empty_grad_Ain))
+%           display(sprintf('The decision variables in linear inequality constraint %d are all fixed (due to equality bounding box constraints on the decision variables). Consider either removing this constraint, or relaxing the bounds on the decision variables.\n',empty_grad_Ain));
+%         end
+%         if(~isempty(empty_grad_Aeq))
+%           display(sprintf('The decision variables in linear equality constraint %d are all fixed (due to equality bounding box constraints on the decision variables). Consider either removing this constraint, or relaxing the bounds on the decision variables.\n',empty_grad_Aeq));
+%         end
       end
     end
     
