@@ -314,9 +314,10 @@ Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynam
   int compact_col_start = 0;
   for (std::vector<int>::const_iterator it = joint_path.begin(); it != joint_path.end(); ++it) {
     RigidBody& body = *bodies[*it];
-    int nv_joint = body.getJoint().getNumVelocities();
-    full.middleCols(body.velocity_num_start, nv_joint) = compact.middleCols(compact_col_start, nv_joint);
-    compact_col_start += nv_joint;
+    int ncols_joint = in_terms_of_qdot ? body.getJoint().getNumPositions() : body.getJoint().getNumVelocities();
+    int col_start = in_terms_of_qdot ? body.position_num_start : body.velocity_num_start;
+    full.middleCols(col_start, ncols_joint) = compact.middleCols(compact_col_start, ncols_joint);
+    compact_col_start += ncols_joint;
   }
   return full;
 };
