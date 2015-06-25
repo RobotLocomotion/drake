@@ -38,12 +38,14 @@ classdef WaypointTrajectoryLibraryGenerator < TrajectoryLibraryGenerator
         
         function [xtrajs, utrajs] = generateTrajectories(obj)
             [xtraj, utraj, info] = obj.solveTrajectoryOptimization()
-            
-            for i = obj.getTrajectoryKnots()
-                %todo: split trajectory into segments
-            end
+            segments = obj.getTrajectoryKnots();
             xtrajs = {};
             utrajs = {};
+            for i = 1:numel(segments)
+                segment = segments{i}
+                xtrajs{end+1} = xtraj.eval(xtraj.pp.breaks(segment(1):segment(2)))
+                utrajs{end+1} = utraj.eval(utraj.pp.breaks(segment(1):segment(2)))
+            end
         end
         
     end
