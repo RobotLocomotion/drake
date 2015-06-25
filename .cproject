@@ -6,6 +6,8 @@
 				<externalSettings/>
 				<extensions>
 					<extension id="org.eclipse.cdt.core.MachO64" point="org.eclipse.cdt.core.BinaryParser"/>
+					<extension id="org.eclipse.cdt.core.ELF" point="org.eclipse.cdt.core.BinaryParser"/>
+					<extension id="org.eclipse.cdt.core.GNU_ELF" point="org.eclipse.cdt.core.BinaryParser"/>
 					<extension id="org.eclipse.cdt.core.GmakeErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.CWDLocator" point="org.eclipse.cdt.core.ErrorParser"/>
 				</extensions>
@@ -14,7 +16,7 @@
 				<configuration artifactName="${ProjName}" buildProperties="" description="" id="cdt.managedbuild.toolchain.llvm.clang.macosx.base.970840552" name="Default" parent="org.eclipse.cdt.build.core.emptycfg">
 					<folderInfo id="cdt.managedbuild.toolchain.llvm.clang.macosx.base.970840552.1874677557" name="/" resourcePath="">
 						<toolChain id="cdt.managedbuild.toolchain.llvm.clang.macosx.base.942632489" name="LLVM with Clang (MacOSX)">
-							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.MachO64" id="cdt.managedbuild.target.llvm.macosx.platform.base.1590331119" isAbstract="true" name="Debug Platform" osList="macosx"/>
+							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.MachO64;org.eclipse.cdt.core.ELF;org.eclipse.cdt.core.GNU_ELF" id="cdt.managedbuild.target.llvm.macosx.platform.base.1590331119" isAbstract="true" name="Debug Platform" osList="macosx"/>
 							<builder id="cdt.managedbuild.toolchain.llvm.clang.macosx.base.970840552.1588693744" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" superClass="org.eclipse.cdt.build.core.settings.default.builder"/>
 						</toolChain>
 					</folderInfo>
@@ -27,6 +29,8 @@
 				<externalSettings/>
 				<extensions>
 					<extension id="org.eclipse.cdt.core.MachO64" point="org.eclipse.cdt.core.BinaryParser"/>
+					<extension id="org.eclipse.cdt.core.ELF" point="org.eclipse.cdt.core.BinaryParser"/>
+					<extension id="org.eclipse.cdt.core.GNU_ELF" point="org.eclipse.cdt.core.BinaryParser"/>
 					<extension id="org.eclipse.cdt.core.GmakeErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.CWDLocator" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.GCCErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
@@ -38,7 +42,7 @@
 				<configuration artifactName="${ProjName}" buildProperties="" description="" id="cdt.managedbuild.toolchain.llvm.clang.macosx.base.970840552.1256585170" name="drake-OSX" parent="org.eclipse.cdt.build.core.emptycfg">
 					<folderInfo id="cdt.managedbuild.toolchain.llvm.clang.macosx.base.970840552.1256585170." name="/" resourcePath="">
 						<toolChain id="cdt.managedbuild.toolchain.llvm.clang.macosx.base.1127728130" name="LLVM with Clang (MacOSX)" superClass="cdt.managedbuild.toolchain.llvm.clang.macosx.base">
-							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.MachO64" id="cdt.managedbuild.target.llvm.macosx.platform.base.394491126" isAbstract="true" name="Debug Platform" osList="macosx" superClass="cdt.managedbuild.target.llvm.macosx.platform.base"/>
+							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.MachO64;org.eclipse.cdt.core.ELF;org.eclipse.cdt.core.GNU_ELF" id="cdt.managedbuild.target.llvm.macosx.platform.base.394491126" isAbstract="true" name="Debug Platform" osList="macosx" superClass="cdt.managedbuild.target.llvm.macosx.platform.base"/>
 							<builder arguments="BUILD_TYPE=Release" command="make" id="org.eclipse.cdt.build.core.settings.default.builder.216261103" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" parallelBuildOn="true" parallelizationNumber="optimal" superClass="org.eclipse.cdt.build.core.settings.default.builder">
 								<outputEntries>
 									<entry excluding="include" flags="VALUE_WORKSPACE_PATH" kind="outputPath" name="build"/>
@@ -73,7 +77,17 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="build|**/pod-build/**" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name=""/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="avl/src"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="bertini/src"/>
+						<entry excluding="**/test/**|**/Demos/**|**/Extras/**|**/UnitTests/**" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="bullet"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="director/src"/>
+						<entry excluding="pod-build/include/**" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="drake"/>
+						<entry excluding="bench/|debug/|demos/|doc/|failtest/|test/" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="eigen/eigen-eigen-10219c95fe65"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="lcm/lcm-1.2.1"/>
+						<entry excluding="**/pod-build/**" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="libbot"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="octomap/octomap"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="snopt/cppsrc"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="snopt/csrc"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -84,6 +98,8 @@
 				<externalSettings/>
 				<extensions>
 					<extension id="org.eclipse.cdt.core.MachO64" point="org.eclipse.cdt.core.BinaryParser"/>
+					<extension id="org.eclipse.cdt.core.ELF" point="org.eclipse.cdt.core.BinaryParser"/>
+					<extension id="org.eclipse.cdt.core.GNU_ELF" point="org.eclipse.cdt.core.BinaryParser"/>
 					<extension id="org.eclipse.cdt.core.GmakeErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.CWDLocator" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.GCCErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
@@ -95,8 +111,8 @@
 				<configuration artifactName="${ProjName}" buildProperties="" description="" id="cdt.managedbuild.toolchain.llvm.clang.macosx.base.970840552.1256585170.47481641" name="drake-linux" parent="org.eclipse.cdt.build.core.emptycfg">
 					<folderInfo id="cdt.managedbuild.toolchain.llvm.clang.macosx.base.970840552.1256585170.47481641." name="/" resourcePath="">
 						<toolChain id="cdt.managedbuild.toolchain.gnu.base.1781940837" name="Linux GCC" superClass="cdt.managedbuild.toolchain.gnu.base">
-							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.MachO64" id="cdt.managedbuild.target.gnu.platform.base.537295438" name="Debug Platform" osList="linux,hpux,aix,qnx" superClass="cdt.managedbuild.target.gnu.platform.base"/>
-							<builder id="cdt.managedbuild.target.gnu.builder.base.1207896501" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" parallelBuildOn="true" parallelizationNumber="optimal" superClass="cdt.managedbuild.target.gnu.builder.base">
+							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.MachO64;org.eclipse.cdt.core.ELF;org.eclipse.cdt.core.GNU_ELF" id="cdt.managedbuild.target.gnu.platform.base.537295438" name="Debug Platform" osList="linux,hpux,aix,qnx" superClass="cdt.managedbuild.target.gnu.platform.base"/>
+							<builder arguments="BUILD_TYPE=Release" command="make" id="cdt.managedbuild.target.gnu.builder.base.1207896501" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" parallelBuildOn="true" parallelizationNumber="optimal" superClass="cdt.managedbuild.target.gnu.builder.base">
 								<outputEntries>
 									<entry flags="VALUE_WORKSPACE_PATH" kind="outputPath" name="build"/>
 									<entry excluding="include" flags="VALUE_WORKSPACE_PATH" kind="outputPath" name="drake/pod-build"/>
@@ -132,7 +148,17 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="build|**/pod-build" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name=""/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="avl/src"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="bertini/src"/>
+						<entry excluding="**/test/**|**/Demos/**|**/Extras/**|**/UnitTests/**" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="bullet"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="director/src"/>
+						<entry excluding="pod-build/include/**" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="drake"/>
+						<entry excluding="bench/|debug/|demos/|doc/|failtest/|test/" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="eigen/eigen-eigen-10219c95fe65"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="lcm/lcm-1.2.1"/>
+						<entry excluding="**/pod-build/**" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="libbot"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="octomap/octomap"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="snopt/cppsrc"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="snopt/csrc"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -143,6 +169,8 @@
 				<externalSettings/>
 				<extensions>
 					<extension id="org.eclipse.cdt.core.MachO64" point="org.eclipse.cdt.core.BinaryParser"/>
+					<extension id="org.eclipse.cdt.core.ELF" point="org.eclipse.cdt.core.BinaryParser"/>
+					<extension id="org.eclipse.cdt.core.GNU_ELF" point="org.eclipse.cdt.core.BinaryParser"/>
 					<extension id="org.eclipse.cdt.core.GmakeErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.CWDLocator" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.GCCErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
@@ -154,7 +182,7 @@
 				<configuration artifactName="${ProjName}" buildProperties="" description="" id="cdt.managedbuild.toolchain.llvm.clang.macosx.base.970840552.1256585170.1240922641" name="drake-OSX-debug" parent="org.eclipse.cdt.build.core.emptycfg">
 					<folderInfo id="cdt.managedbuild.toolchain.llvm.clang.macosx.base.970840552.1256585170.1240922641." name="/" resourcePath="">
 						<toolChain id="cdt.managedbuild.toolchain.llvm.clang.macosx.base.374006190" name="LLVM with Clang (MacOSX)" superClass="cdt.managedbuild.toolchain.llvm.clang.macosx.base">
-							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.MachO64" id="cdt.managedbuild.target.llvm.macosx.platform.base.1852329643" isAbstract="true" name="Debug Platform" osList="macosx" superClass="cdt.managedbuild.target.llvm.macosx.platform.base"/>
+							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.MachO64;org.eclipse.cdt.core.ELF;org.eclipse.cdt.core.GNU_ELF" id="cdt.managedbuild.target.llvm.macosx.platform.base.1852329643" isAbstract="true" name="Debug Platform" osList="macosx" superClass="cdt.managedbuild.target.llvm.macosx.platform.base"/>
 							<builder arguments="BUILD_TYPE=Debug" command="make" id="org.eclipse.cdt.build.core.settings.default.builder.1958059128" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" parallelBuildOn="true" parallelizationNumber="optimal" superClass="org.eclipse.cdt.build.core.settings.default.builder">
 								<outputEntries>
 									<entry excluding="include" flags="VALUE_WORKSPACE_PATH" kind="outputPath" name="build"/>
@@ -189,7 +217,88 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="build|**/pod-build/include/**" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name=""/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="avl/src"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="bertini/src"/>
+						<entry excluding="**/test/**|**/Demos/**|**/Extras/**|**/UnitTests/**" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="bullet"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="director/src"/>
+						<entry excluding="pod-build/include/**" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="drake"/>
+						<entry excluding="bench/|debug/|demos/|doc/|failtest/|test/" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="eigen/eigen-eigen-10219c95fe65"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="lcm/lcm-1.2.1"/>
+						<entry excluding="**/pod-build/**" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="libbot"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="octomap/octomap"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="snopt/cppsrc"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="snopt/csrc"/>
+					</sourceEntries>
+				</configuration>
+			</storageModule>
+			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
+		</cconfiguration>
+		<cconfiguration id="cdt.managedbuild.toolchain.llvm.clang.macosx.base.970840552.1256585170.47481641.297288669">
+			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="cdt.managedbuild.toolchain.llvm.clang.macosx.base.970840552.1256585170.47481641.297288669" moduleId="org.eclipse.cdt.core.settings" name="drake-linux-debug">
+				<externalSettings/>
+				<extensions>
+					<extension id="org.eclipse.cdt.core.MachO64" point="org.eclipse.cdt.core.BinaryParser"/>
+					<extension id="org.eclipse.cdt.core.ELF" point="org.eclipse.cdt.core.BinaryParser"/>
+					<extension id="org.eclipse.cdt.core.GNU_ELF" point="org.eclipse.cdt.core.BinaryParser"/>
+					<extension id="org.eclipse.cdt.core.GmakeErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.CWDLocator" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.GCCErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.GASErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.GLDErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+				</extensions>
+			</storageModule>
+			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
+				<configuration artifactName="${ProjName}" buildProperties="" description="" id="cdt.managedbuild.toolchain.llvm.clang.macosx.base.970840552.1256585170.47481641.297288669" name="drake-linux-debug" parent="org.eclipse.cdt.build.core.emptycfg">
+					<folderInfo id="cdt.managedbuild.toolchain.llvm.clang.macosx.base.970840552.1256585170.47481641.297288669." name="/" resourcePath="">
+						<toolChain id="cdt.managedbuild.toolchain.gnu.base.614451832" name="Linux GCC" superClass="cdt.managedbuild.toolchain.gnu.base">
+							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.MachO64;org.eclipse.cdt.core.ELF;org.eclipse.cdt.core.GNU_ELF" id="cdt.managedbuild.target.gnu.platform.base.1507285224" name="Debug Platform" osList="linux,hpux,aix,qnx" superClass="cdt.managedbuild.target.gnu.platform.base"/>
+							<builder arguments="BUILD_TYPE=Debug" command="make" id="cdt.managedbuild.target.gnu.builder.base.318599341" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" parallelBuildOn="true" parallelizationNumber="optimal" superClass="cdt.managedbuild.target.gnu.builder.base">
+								<outputEntries>
+									<entry flags="VALUE_WORKSPACE_PATH" kind="outputPath" name="build"/>
+									<entry excluding="include" flags="VALUE_WORKSPACE_PATH" kind="outputPath" name="drake/pod-build"/>
+								</outputEntries>
+							</builder>
+							<tool id="cdt.managedbuild.tool.gnu.archiver.base.1820740130" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base"/>
+							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.base.1865467957" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.base">
+								<option id="gnu.cpp.compiler.option.include.paths.266726905" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${MATLAB_ROOT}/extern/include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${MATLAB_ROOT}/simulink/include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${GTK_INCLUDE_PATH}&quot;"/>
+								</option>
+								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1887357783" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
+							</tool>
+							<tool id="cdt.managedbuild.tool.gnu.c.compiler.base.428081048" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.base">
+								<option id="gnu.c.compiler.option.include.paths.1013140089" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${MATLAB_ROOT}/extern/include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${MATLAB_ROOT}/simulink/include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${GTK_INCLUDE_PATH}&quot;"/>
+								</option>
+								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.138741730" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
+							</tool>
+							<tool id="cdt.managedbuild.tool.gnu.c.linker.base.1270408410" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.base"/>
+							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.base.121493259" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.base">
+								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.1507038324" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
+									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
+									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
+								</inputType>
+							</tool>
+							<tool id="cdt.managedbuild.tool.gnu.assembler.base.1153793700" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.base">
+								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.825815128" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
+							</tool>
+						</toolChain>
+					</folderInfo>
+					<sourceEntries>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="avl/src"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="bertini/src"/>
+						<entry excluding="**/test/**|**/Demos/**|**/Extras/**|**/UnitTests/**" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="bullet"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="director/src"/>
+						<entry excluding="pod-build/include/**" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="drake"/>
+						<entry excluding="bench/|debug/|demos/|doc/|failtest/|test/" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="eigen/eigen-eigen-10219c95fe65"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="lcm/lcm-1.2.1"/>
+						<entry excluding="**/pod-build/**" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="libbot"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="octomap/octomap"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="snopt/cppsrc"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="snopt/csrc"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -202,17 +311,17 @@
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
 	<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
 	<storageModule moduleId="refreshScope" versionNumber="2">
-		<configuration configurationName="Default">
-			<resource resourceType="PROJECT" workspacePath="/drake-distro"/>
-		</configuration>
 		<configuration configurationName="drake-eclipse">
 			<resource resourceType="PROJECT" workspacePath="/drake-distro"/>
 		</configuration>
-		<configuration configurationName="drake-OSX">
+		<configuration configurationName="drake-OSX-debug">
 			<resource resourceType="PROJECT" workspacePath="/drake-distro"/>
 		</configuration>
 		<configuration configurationName="drake-linux"/>
-		<configuration configurationName="drake-OSX-debug">
+		<configuration configurationName="Default">
+			<resource resourceType="PROJECT" workspacePath="/drake-distro"/>
+		</configuration>
+		<configuration configurationName="drake-OSX">
 			<resource resourceType="PROJECT" workspacePath="/drake-distro"/>
 		</configuration>
 	</storageModule>
