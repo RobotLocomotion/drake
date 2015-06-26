@@ -127,13 +127,8 @@ if (MATLAB_FOUND)
 
   macro(add_IK_mex)
     add_mex(${ARGV} ${ARGV}.cpp)
-<<<<<<< HEAD
-    target_link_libraries(${ARGV} drakeIK drakeRBM drakeUtil drakeRigidBodyConstraint)
-#    pods_use_pkg_config_packages(${ARGV} snopt_c)
-=======
     target_link_libraries(${ARGV} drakeIK drakeRBM drakeMexUtil drakeRigidBodyConstraint)
-    pods_use_pkg_config_packages(${ARGV} snopt_c)
->>>>>>> origin/master
+#    pods_use_pkg_config_packages(${ARGV} snopt_c)
   endmacro()
 
   if (snopt_c_FOUND)
