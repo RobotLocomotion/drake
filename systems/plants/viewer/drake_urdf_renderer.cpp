@@ -1,19 +1,20 @@
 #include <iostream>
 #include <map>
 #include <list>
+#include <memory>
+#include <string>
 
 #include <lcm/lcm.h>
 
 #include <bot_core/bot_core.h>
 #include <bot_vis/bot_vis.h>
 
-#include <boost/shared_ptr.hpp>
-#include <boost/pointer_cast.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/algorithm/string.hpp>
+#include "spruce.hh"
 
 #include "lcmtypes/drake.h"
 #include "drake_urdf_renderer.h"
+
+#include <algorithm>
 
 #define UNUSED(x) (void)(x);
 
@@ -94,18 +95,18 @@ public:
     else if ( scale && num_scale_factors == 1 ) {
       scale_x = scale_y = scale_z = scale[0];
     }
-
-    boost::filesystem::path mypath(fname);
-    string ext = mypath.extension().native();
-    boost::to_lower(ext);
-
+    spruce::path path(fname);
+    std::string ext = path.extension();
+    
+    std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+    
     if (ext.compare(".obj")==0) {
-      // cout << "Loading mesh from " << fname << " (scale = " << scale << ")" << endl;
       pmesh = bot_wavefront_model_create(fname.c_str());
-    } else if ( boost::filesystem::exists( mypath.replace_extension(".obj") ) ) {
+    } else  {
+      path.setExtension(".obj");
+      if (path.exists())
       // try changing the extension to obj and loading
-      //      cout << "Loading mesh from " << mypath.replace_extension(".obj").native() << endl;
-      pmesh = bot_wavefront_model_create(mypath.replace_extension(".obj").native().c_str());
+      pmesh = bot_wavefront_model_create(path.getStr().c_str());
     }
 
     if (!pmesh) {
@@ -156,7 +157,7 @@ public:
 class LinkGeometry {
  public:
 
-  boost::shared_ptr<Geometry> pGeometry;
+  shared_ptr<Geometry> pGeometry;
   double pos[3], theta, axis[3];
   float color[4];
 
@@ -169,32 +170,32 @@ class LinkGeometry {
     switch (geometry_data->type) {
     case DRAKE_LCMT_VIEWER_GEOMETRY_DATA_SPHERE:
       {
-	boost::shared_ptr<Geometry> g(boost::static_pointer_cast<Geometry>(new Sphere(geometry_data->float_data[0])));
-	pGeometry = g;
+	      shared_ptr<Geometry> g(new Sphere(geometry_data->float_data[0]));
+	      pGeometry = g;
       }
       break;
     case DRAKE_LCMT_VIEWER_GEOMETRY_DATA_BOX:
       {
-	boost::shared_ptr<Geometry> g(boost::static_pointer_cast<Geometry>(new Box(geometry_data->float_data[0], geometry_data->float_data[1], geometry_data->float_data[2])));
-	pGeometry = g;
+	      shared_ptr<Geometry> g(new Box(geometry_data->float_data[0], geometry_data->float_data[1], geometry_data->float_data[2]));
+	      pGeometry = g;
       }
       break;
     case DRAKE_LCMT_VIEWER_GEOMETRY_DATA_CYLINDER:
       {
-	boost::shared_ptr<Geometry> g(boost::static_pointer_cast<Geometry>(new Cylinder(geometry_data->float_data[0], geometry_data->float_data[1])));
-	pGeometry = g;
+	      shared_ptr<Geometry> g(new Cylinder(geometry_data->float_data[0], geometry_data->float_data[1]));
+	      pGeometry = g;
       }
       break;
     case DRAKE_LCMT_VIEWER_GEOMETRY_DATA_MESH:
       {
-	boost::shared_ptr<Geometry> g(boost::static_pointer_cast<Geometry>(new Mesh(geometry_data->string_data, geometry_data->num_float_data, geometry_data->float_data)));
-	pGeometry = g;
+	      shared_ptr<Geometry> g(new Mesh(geometry_data->string_data, geometry_data->num_float_data, geometry_data->float_data));
+	      pGeometry = g;
       }
       break;
     case DRAKE_LCMT_VIEWER_GEOMETRY_DATA_CAPSULE:
       {
-	boost::shared_ptr<Geometry> g(boost::static_pointer_cast<Geometry>(new Capsule(geometry_data->float_data[0], geometry_data->float_data[1])));
-	pGeometry = g;
+	      shared_ptr<Geometry> g(new Capsule(geometry_data->float_data[0], geometry_data->float_data[1]));
+	      pGeometry = g;
       }
       break;
     default:
@@ -229,14 +230,14 @@ class LinkGeometry {
 class Link {
 public:
   double pos[3], theta, axis[3];
-  list<boost::shared_ptr<LinkGeometry>> geometry;
+  list<shared_ptr<LinkGeometry>> geometry;
 
   Link(const drake_lcmt_viewer_link_data* link_data) : theta(0.0)
   {
     pos[0] = pos[1] = pos[2] = 0.0;
     axis[0] = axis[1] = axis[2] = 0.0;
     for (int i=0; i<link_data->num_geom; i++) {
-      boost::shared_ptr<LinkGeometry> g(new LinkGeometry(&(link_data->geom[i])));
+      shared_ptr<LinkGeometry> g(new LinkGeometry(&(link_data->geom[i])));
       geometry.push_back(g);
     }
   }
@@ -246,7 +247,7 @@ public:
     glTranslatef(pos[0],pos[1],pos[2]);
     glRotatef(theta * 180/3.141592654, axis[0], axis[1], axis[2]);
 
-    for (list<boost::shared_ptr<LinkGeometry>>::iterator g=geometry.begin(); g!=geometry.end(); ++g) {
+    for (list<shared_ptr<LinkGeometry>>::iterator g=geometry.begin(); g!=geometry.end(); ++g) {
       (*g)->draw();
     }
 
@@ -269,7 +270,7 @@ typedef struct _RendererData {
   BotViewer   *viewer;
   lcm_t       *lcm;
   //  map<string, BotWavefrontModel*> meshes;
-  map<link_index, boost::shared_ptr<Link> > links;
+  map<link_index, shared_ptr<Link> > links;
   string  movie_path;
 } RendererData;
 
@@ -314,7 +315,7 @@ static void my_draw( BotViewer *viewer, BotRenderer *renderer )
   glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
   glEnable (GL_COLOR_MATERIAL);
 
-  for (map<link_index,boost::shared_ptr<Link>>::iterator l=self->links.begin(); l!=self->links.end(); ++l) {
+  for (map<link_index,shared_ptr<Link>>::iterator l=self->links.begin(); l!=self->links.end(); ++l) {
     l->second->draw();
   }
 }
@@ -333,7 +334,7 @@ static void handle_lcm_viewer_load_robot(const lcm_recv_buf_t *rbuf, const char 
       cerr << "illegal robot_num" << endl;
       continue;
     }
-    boost::shared_ptr<Link> l(new Link(&(msg->link[i])));
+    shared_ptr<Link> l(new Link(&(msg->link[i])));
     self->links.insert(make_pair(make_pair(msg->link[i].robot_num,msg->link[i].name),l));
   }
 
@@ -398,7 +399,7 @@ static void handle_lcm_viewer_draw(const lcm_recv_buf_t *rbuf, const char * chan
   if (self->links.size()<1) return;
 
   for (int i=0; i<msg->num_links; i++) {
-    map<link_index,boost::shared_ptr<Link>>::iterator iter = self->links.find(make_pair(msg->robot_num[i],msg->link_name[i]));
+    map<link_index,shared_ptr<Link>>::iterator iter = self->links.find(make_pair(msg->robot_num[i],msg->link_name[i]));
     if (iter == self->links.end())
       cerr << "failed to find link: " << msg->link_name[i] << endl;
     else {
