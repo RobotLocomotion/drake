@@ -37,18 +37,20 @@ classdef WaypointTrajectoryLibraryGenerator < TrajectoryLibraryGenerator
         end
         
         function [xtrajs, utrajs] = generateTrajectories(obj)
-            [xtraj, utraj, info] = obj.solveTrajectoryOptimization()
+            [xtraj, utraj, info] = obj.solveTrajectoryOptimization();
             segments = obj.getTrajectoryKnots();
-            xtrajs = {};
-            utrajs = {};
+            numSegments = numel(segments);
+            xtrajs = cell(1, numSegments);
+            utrajs = cell(1, numSegments);
             numStates = numel(obj.robot.getStateFrame.coordinates);
             tmp = zeros(numStates, 1);
-            for i = 1:numel(segments)
+            for i = 1:numSegments
                 segmentKnots = segments{i};
-                trajSegment = xtraj.eval(xtraj.pp.breaks(segmentKnots(1):segmentKnots(2)));
+                segmentBreaks = xtraj.pp.breaks(segmentKnots(1):segmentKnots(2));
+                trajSegment = xtraj.eval(segmentBreaks);
                 tmp(obj.cyclicIdx) = trajSegment(obj.cyclicIdx, 1);
-                xtrajs{end+1} = trajSegment - repmat(tmp, 1, numStates);
-                utrajs{end+1} = utraj.eval(utraj.pp.breaks(segmentKnots(1):segmentKnots(2)))
+                xtrajs{i} = PPTrajectory(spline(segmentBreaks - segmentBreaks(1), trajSegment - repmat(tmp, 1, numStates)));
+                utrajs{i} = PPTrajectory(spline(segmentBreaks - segmentBreaks(1), utraj.eval(segmentBreaks)));
             end
         end
         

@@ -19,15 +19,15 @@ prog = prog.addStateConstraint(ConstantConstraint(double(x0)),1);
 prog = prog.addInputConstraint(ConstantConstraint(u0),1);
 
 prog = addWaypoint(prog, [1, 0], 0, 12);
-prog = addWaypoint(prog, [2, 0.5], 0, 23);
-prog = addWaypoint(prog, [3, -0.5], 0, 34);
-prog = addWaypoint(prog, [4, 1], 0, 45);
-prog = addWaypoint(prog, [5, -1], 0, 56);
-prog = addWaypoint(prog, [6, 0], 0, 67);
+prog = addWaypoint(prog, [1.5, -0.866], -2*pi/6, 23);
+prog = addWaypoint(prog, [2.366, -1.366], -pi/6, 34);
+prog = addWaypoint(prog, [3.366, -1.366], 0, 45);
+prog = addWaypoint(prog, [4.2321, -0.866], pi/6, 56);
+prog = addWaypoint(prog, [4.7321, 0], 2*pi/6, 67);
 
 
 xf = x0;
-xf.base_x = 7;
+xf.base_x = 5.7321;
 xf.base_y = 0;
 xf.base_yaw = 0;
 
