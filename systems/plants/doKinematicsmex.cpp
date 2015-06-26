@@ -1,5 +1,5 @@
 #include "mex.h"
-#include "drakeUtil.h"
+#include "drakeMexUtil.h"
 #include "RigidBodyManipulator.h"
 
 

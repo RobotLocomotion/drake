@@ -226,7 +226,7 @@ for i = 1:size(pelvis_poses_rpy,2)
   pelvis_quat(:,i) = rpy2quat(pelvis_poses_rpy(4:6,i));
   pelvis_xyz_expmap(4:6,i) = quat2expmap(pelvis_quat(:,i));
   if(i>1)
-    pelvis_xyz_expmap(4:6,i) = unwrapExpmap(pelvis_xyz_expmap(4:6,i-1),pelvis_xyz_expmap(4:6,i));
+    pelvis_xyz_expmap(4:6,i) = closestExpmap(pelvis_xyz_expmap(4:6,i-1),pelvis_xyz_expmap(4:6,i));
   end
 end
 

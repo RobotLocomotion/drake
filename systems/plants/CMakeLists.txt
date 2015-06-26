@@ -1,4 +1,4 @@
-include_directories (${CMAKE_SOURCE_DIR}/util tinyxml)
+include_directories (${PROJECT_SOURCE_DIR}/util tinyxml)
 # IMPORTANT NOTE!!
 # matlab has it's own boost libraries.  DO NOT let any mex file depend
 # on the system boost (directly nor indirectly), or you're asking for trouble.
@@ -9,13 +9,13 @@ if (Boost_FOUND)
   link_directories( ${Boost_LIBRARY_DIRS} )
 endif()
 
+include_directories(joints)
+include_directories(${PROJECT_SOURCE_DIR}/solvers)
+
 add_library(drakeRBM SHARED RigidBodyManipulator.cpp RigidBody.cpp RigidBodyManipulatorURDF.cpp RigidBodyManipulatorContact.cpp tinyxml/tinyxml.cpp tinyxml/tinyxmlparser.cpp tinyxml/tinyxmlerror.cpp)
-target_link_libraries(drakeRBM drakeCollision)
-include_directories( joints )
-target_link_libraries(drakeRBM drakeJoints)
-target_link_libraries(drakeRBM spruce)
+target_link_libraries(drakeRBM drakeCollision drakeJoints spruce drakeUtil)
 pods_install_libraries(drakeRBM)
-pods_install_headers(RigidBodyManipulator.h RigidBody.h RigidBodyFrame.h KinematicPath.h DESTINATION drake)
+pods_install_headers(RigidBodyManipulator.h RigidBody.h RigidBodyFrame.h KinematicPath.h ForceTorqueMeasurement.h DESTINATION drake)
 pods_install_pkg_config_file(drake-rbm
   LIBS -ldrakeRBM
   REQUIRES
@@ -38,7 +38,7 @@ if (MATLAB_FOUND)
 #    add_mex(${ARGV} ${ARGV}.cpp $<TARGET_OBJECTS:drakeUtil>)
 #    target_link_libraries(${ARGV} drakeRBM)
     add_mex(${ARGV} ${ARGV}.cpp)
-    target_link_libraries(${ARGV} drakeRBM drakeUtil)
+    target_link_libraries(${ARGV} drakeRBM drakeMexUtil)
   endmacro()
 
   add_rbm_mex(constructModelmex)
@@ -50,7 +50,9 @@ if (MATLAB_FOUND)
   add_rbm_mex(collisionRaycastmex)
   add_rbm_mex(allCollisionsmex)
   add_rbm_mex(findKinematicPathmex)
+  target_link_libraries(findKinematicPathmex drakeUtil)
   add_rbm_mex(geometricJacobianmex)
+  target_link_libraries(geometricJacobianmex drakeUtil)
   add_rbm_mex(doKinematicsNewmex)
   add_rbm_mex(forwardKinVmex)
   add_rbm_mex(forwardKinPositionGradientmex)
@@ -67,11 +69,13 @@ if (MATLAB_FOUND)
   add_rbm_mex(jointLimitConstraintsmex)
   add_rbm_mex(positionConstraintsmex)
   add_rbm_mex(testFrameParsermex)
+  add_rbm_mex(computeS1Trajmex)
+  target_link_libraries(computeS1Trajmex drakeZMPUtil)
 
   if(gurobi_FOUND)
     add_definitions(-DPATHLCP_MEXFILE=\"${CMAKE_SOURCE_DIR}/thirdParty/path/lcppath.${MEX_EXT}\")
     add_mex(solveLCPmex solveLCPmex.cpp)
-    target_link_libraries(solveLCPmex drakeRBM drakeUtil drakeQP)
+    target_link_libraries(solveLCPmex drakeRBM drakeMexUtil drakeQP)
   endif()
 endif(MATLAB_FOUND)
 
@@ -82,10 +86,9 @@ target_link_libraries(drakeIKoptions drakeRBM)
 if (MATLAB_FOUND)
   macro(add_ikoptions_mex)
     add_mex(${ARGV} ${ARGV}.cpp)
-    target_link_libraries(${ARGV} drakeRBM drakeUtil drakeIKoptions)
+    target_link_libraries(${ARGV} drakeRBM drakeMexUtil drakeIKoptions)
   endmacro()
   add_ikoptions_mex(IKoptionsmex)
-  add_ikoptions_mex(testIKoptionsmex)
 
   macro(add_constraint_mex)
     add_mex(${ARGV} ${ARGV}.cpp)
@@ -118,14 +121,19 @@ pods_install_pkg_config_file(drake-ik
 if (MATLAB_FOUND)
   if (gurobi_FOUND)
     add_mex(approximateIKmex approximateIKmex.cpp)
-    target_link_libraries(approximateIKmex drakeIK drakeRBM drakeUtil drakeRigidBodyConstraint)
+    target_link_libraries(approximateIKmex drakeIK drakeRBM drakeMexUtil drakeRigidBodyConstraint)
     pods_use_pkg_config_packages(approximateIKmex gurobi)
   endif()
 
   macro(add_IK_mex)
     add_mex(${ARGV} ${ARGV}.cpp)
+<<<<<<< HEAD
     target_link_libraries(${ARGV} drakeIK drakeRBM drakeUtil drakeRigidBodyConstraint)
 #    pods_use_pkg_config_packages(${ARGV} snopt_c)
+=======
+    target_link_libraries(${ARGV} drakeIK drakeRBM drakeMexUtil drakeRigidBodyConstraint)
+    pods_use_pkg_config_packages(${ARGV} snopt_c)
+>>>>>>> origin/master
   endmacro()
 
   if (snopt_c_FOUND)

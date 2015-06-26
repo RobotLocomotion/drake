@@ -1,5 +1,7 @@
 #include "QPCommon.h"
 #include <Eigen/StdVector>
+#include "drakeMexUtil.h"
+#include "controlMexUtil.h"
 // #include <limits>
 // #include <cmath>
 // #include "drakeUtil.h"
@@ -238,6 +240,12 @@ void parseAtlasParams(const mxArray *params_obj, RigidBodyManipulator *r, AtlasP
   sizecheck(pobj, 1, 1);
   params->min_knee_angle = mxGetScalar(pobj);
 
+  params->center_of_mass_observer_gain = matlabToEigenMap<4, 4>(mxGetPropertySafe(params_obj, "center_of_mass_observer_gain"));
+
+  pobj = mxGetPropertySafe(params_obj, "use_center_of_mass_observer");
+  sizecheck(pobj,1,1);
+  params->use_center_of_mass_observer = mxIsLogicalScalarTrue(pobj);
+
   parseWholeBodyParams(myGetProperty(params_obj, "whole_body"), r, &(params->whole_body));
   parseVRefIntegratorParams(myGetProperty(params_obj, "vref_integrator"), &(params->vref_integrator));
   parseJointSoftLimits(myGetProperty(params_obj, "joint_soft_limits"), r, &(params->joint_soft_limits));
@@ -266,47 +274,6 @@ void parseAtlasParamSets(const mxArray *pobj, RigidBodyManipulator *r, map<strin
     parseAtlasParams(myGetField(pobj, fieldname), r, &params);
     param_sets->insert(pair<string,AtlasParams>(string(fieldname), params));
   }
-
-  return;
-}
-
-void parseRobotPropertyCache(const mxArray *rpc_obj, RobotPropertyCache *rpc) {
-  const mxArray *pobj;
-
-  pobj = myGetField(myGetField(rpc_obj, "position_indices"), "r_leg_kny");
-  Map<VectorXd>r_leg_kny(mxGetPrSafe(pobj), mxGetNumberOfElements(pobj));
-  rpc->position_indices.r_leg_kny = r_leg_kny.cast<int>().array() - 1;
-
-  pobj = myGetField(myGetField(rpc_obj, "position_indices"), "l_leg_kny");
-  Map<VectorXd>l_leg_kny(mxGetPrSafe(pobj), mxGetNumberOfElements(pobj));
-  rpc->position_indices.l_leg_kny = l_leg_kny.cast<int>().array() - 1;
-
-  pobj = myGetField(myGetField(rpc_obj, "position_indices"), "r_leg");
-  Map<VectorXd>r_leg(mxGetPrSafe(pobj), mxGetNumberOfElements(pobj));
-  rpc->position_indices.r_leg = r_leg.cast<int>().array() - 1;
-
-  pobj = myGetField(myGetField(rpc_obj, "position_indices"), "l_leg");
-  Map<VectorXd>l_leg(mxGetPrSafe(pobj), mxGetNumberOfElements(pobj));
-  rpc->position_indices.l_leg = l_leg.cast<int>().array() - 1;
-
-  pobj = myGetField(myGetField(rpc_obj, "position_indices"), "r_leg_ak");
-  Map<VectorXd>r_leg_ak(mxGetPrSafe(pobj), mxGetNumberOfElements(pobj));
-  rpc->position_indices.r_leg_ak = r_leg_ak.cast<int>().array() - 1;
-
-  pobj = myGetField(myGetField(rpc_obj, "position_indices"), "l_leg_ak");
-  Map<VectorXd>l_leg_ak(mxGetPrSafe(pobj), mxGetNumberOfElements(pobj));
-  rpc->position_indices.l_leg_ak = l_leg_ak.cast<int>().array() - 1;
-
-  rpc->body_ids.r_foot = (int) mxGetScalar(myGetField(myGetField(rpc_obj, "body_ids"), "r_foot")) - 1;
-  rpc->body_ids.l_foot = (int) mxGetScalar(myGetField(myGetField(rpc_obj, "body_ids"), "l_foot")) - 1;
-  rpc->body_ids.pelvis = (int) mxGetScalar(myGetField(myGetField(rpc_obj, "body_ids"), "pelvis")) - 1;
-
-  pobj = myGetField(rpc_obj, "actuated_indices");
-  Map<VectorXd>actuated_indices(mxGetPrSafe(pobj), mxGetNumberOfElements(pobj));
-  rpc->actuated_indices = actuated_indices.cast<int>().array() - 1;
-
-  pobj = myGetField(rpc_obj, "num_bodies");
-  rpc->num_bodies = (int) mxGetScalar(pobj);
 
   return;
 }
@@ -453,6 +420,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   pdata->state.foot_contact_prev[0] = false;
   pdata->state.foot_contact_prev[1] = false;
   pdata->state.num_active_contact_pts = 0;
+
+  pdata->state.center_of_mass_observer_state = Vector4d::Zero();
+  pdata->state.last_com_ddot = Vector3d::Zero();
 
   plhs[0] = createDrakeMexPointer((void*) pdata, "NewQPControllerData");
 
