@@ -49,8 +49,10 @@ classdef WaypointTrajectoryLibraryGenerator < TrajectoryLibraryGenerator
                 segmentBreaks = xtraj.pp.breaks(segmentKnots(1):segmentKnots(2));
                 trajSegment = xtraj.eval(segmentBreaks);
                 tmp(obj.cyclicIdx) = trajSegment(obj.cyclicIdx, 1);
-                xtrajs{i} = PPTrajectory(spline(segmentBreaks - segmentBreaks(1), trajSegment - repmat(tmp, 1, numStates)));
-                utrajs{i} = PPTrajectory(spline(segmentBreaks - segmentBreaks(1), utraj.eval(segmentBreaks)));
+                xtrajpp = PPTrajectory(spline(segmentBreaks - segmentBreaks(1), trajSegment - repmat(tmp, 1, numStates)));
+                utrajpp = PPTrajectory(spline(segmentBreaks - segmentBreaks(1), utraj.eval(segmentBreaks)));
+                xtrajs{i} = xtrajpp.setOutputFrame(obj.robot.getStateFrame);
+                utrajs{i} = utrajpp.setOutputFrame(obj.robot.getInputFrame);
             end
         end
         
