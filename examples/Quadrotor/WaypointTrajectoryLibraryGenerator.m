@@ -41,10 +41,14 @@ classdef WaypointTrajectoryLibraryGenerator < TrajectoryLibraryGenerator
             segments = obj.getTrajectoryKnots();
             xtrajs = {};
             utrajs = {};
+            numStates = numel(obj.robot.getStateFrame.coordinates);
+            tmp = zeros(numStates, 1);
             for i = 1:numel(segments)
-                segment = segments{i}
-                xtrajs{end+1} = xtraj.eval(xtraj.pp.breaks(segment(1):segment(2)))
-                utrajs{end+1} = utraj.eval(utraj.pp.breaks(segment(1):segment(2)))
+                segmentKnots = segments{i};
+                trajSegment = xtraj.eval(xtraj.pp.breaks(segmentKnots(1):segmentKnots(2)));
+                tmp(obj.cyclicIdx) = trajSegment(obj.cyclicIdx, 1);
+                xtrajs{end+1} = trajSegment - repmat(tmp, 1, numStates);
+                utrajs{end+1} = utraj.eval(utraj.pp.breaks(segmentKnots(1):segmentKnots(2)))
             end
         end
         

@@ -23,4 +23,12 @@ tgen = tgen.addWaypoint([5; -2; 0.5; 0]);
 tgen = tgen.addWaypoint([6; 0; 0.5; 0])
 
 tgen = tgen.setTrajectoryLength(11);
-tgen.generateTrajectories;
+[xtrajs, utrajs] = tgen.generateTrajectories;
+
+for i = 1:numel(xtrajs)
+  plot(xtrajs{i}(1,:),xtrajs{i}(2,:))
+  hold on;
+end
+
+disp('done')
+
