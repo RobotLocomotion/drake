@@ -21,7 +21,7 @@ classdef Kinematic < drakeFunction.RigidBodyManipulatorFunction
       if isempty(obj.rbm)
         obj = setSparsityPattern@drakeFunction.RigidBodyManipulatorFunction(obj);
       else
-        joint_idx = obj.kinematicsPathJoints();
+        joint_idx = reshape(obj.kinematicsPathJoints(),1,[]);
         obj.iCfun = reshape(bsxfun(@times,(1:obj.getNumOutputs())',ones(1,length(joint_idx))),[],1);
         obj.jCvar = reshape(bsxfun(@times,ones(obj.getNumOutputs(),1),joint_idx),[],1);
       end
