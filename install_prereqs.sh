@@ -9,11 +9,11 @@ fi  # test for javac >= 1.6
 
 case $1 in
   ("homebrew")
-    brew install boost graphviz ;;
+    brew install graphviz ;;
   ("macports")
     port install graphviz ;;
   ("ubuntu")
-    apt-get install graphviz libboost-dev libboost-filesystem-dev libboost-system-dev libboost-regex-dev ;;
+    apt-get install graphviz ;;
   ("cygwin")
     ;;
   (*)
