@@ -34,11 +34,11 @@ macro(add_ik_cpp)
   add_test( NAME ${ARGV} WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}" COMMAND ${ARGV})
 endmacro()
 
-if (gurobi_FOUND AND Boost_FOUND)
+if (gurobi_FOUND)
   add_ik_cpp(testApproximateIK)
 endif()
 
-if (snopt_c_FOUND AND Boost_FOUND)
+if (snopt_c_FOUND)
   add_ik_cpp(testIK)
   add_ik_cpp(testIKpointwise)
   add_ik_cpp(testIKtraj)
