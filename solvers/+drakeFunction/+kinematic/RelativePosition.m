@@ -110,9 +110,9 @@ classdef RelativePosition < drakeFunction.kinematic.Kinematic
         joint_idx = kinematicsPathJoints@drakeFunction.kinematic.Kinematic(obj);
       else
         [~,joint_path] = obj.rbm.findKinematicPath(obj.frameA,obj.frameB);
-        joint_idx = zeros(size(joint_path));
+        joint_idx = [];
         for i = 1:numel(joint_path)
-          joint_idx(i) = obj.rbm.getBody(joint_path(i)).position_num;
+          joint_idx = vertcat(joint_idx,obj.rbm.getBody(joint_path(i)).position_num);
         end
       end
     end
