@@ -292,7 +292,6 @@ void checkCentroidalMomentumMatchesTotalWrench(RigidBodyManipulator* r, const Ve
   foot_body_index_to_side[r->findLinkId("r_foot")] = Side::RIGHT;
   // compute sum of wrenches, compare to rate of change of momentum from vd
   Vector6d total_wrench_in_world = Vector6d::Zero();
-  Vector6d floating_base_external_force_in_joint_coordinates = Vector6d::Zero();
   const int n_basis_vectors_per_contact = 2 * m_surface_tangents;
 
   int beta_start = 0;

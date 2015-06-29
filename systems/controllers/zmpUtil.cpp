@@ -1,6 +1,5 @@
 #include "zmpUtil.h"
 #include <Eigen/Dense>
-#include <iostream>
 #include <unsupported/Eigen/MatrixFunctions>
 
 using namespace Eigen;
