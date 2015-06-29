@@ -50,9 +50,22 @@ end
 xtraj = xtrajs{1};
 utraj = utrajs{1};
 
+
 disp('building tvlqr controller...')
 %compute stabilizing controller for the first trajectory in library
-[tv,Vtv] = tvlqr(r, xtraj, utraj, eye(12), eye(4), eye(12), struct());
+Q = diag([10*ones(6,1);ones(6,1)]);
+R = 0.1*eye(4);
+Qf = diag([100*ones(6,1);ones(6,1)]);
+[tv,Vtv] = tvlqr(r, xtraj, utraj, Q, R, Qf, struct());
+
+V = Vtv*10;
+Vxframe = V.inFrame(r.getStateFrame());
+options.plotdims = [1 2];
+options.x0 = xtraj;
+options.ts = xtraj.getBreaks;
+options.inclusion = 'projection';
+plotFunnel(Vxframe,options);
+fnplt(xtraj,[1 2]); 
 
 %assemble closed loop system
 sys_closed_loop = feedback(r, tv);
@@ -64,19 +77,29 @@ disp('taylor approximating system dynamics...')
 sys_poly_closed_loop = taylorApprox(sys_closed_loop, xtraj, [], 3);
 sys_poly_open_loop = taylorApprox(r, xtraj, utraj, 3);
 
-ts = Vtv.S.getBreaks(); tsend = ts(end);
-ts = linspace(ts(1),ts(end),12);
-ts = ts(1:end-1);
+%ts = Vtv.S.getBreaks(); tsend = ts(end);
+%ts = linspace(ts(1),ts(end),12);
+%ts = ts(1:end-1);
+ts = xtraj.getBreaks();
 
-
-G0 = eye(12);
 disp('computing funnels...')
 options = struct();
 options.saturations = false;
 options.rho0 = 1;
 options.degL1 = 2;
 options.max_iterations = 10;
-[V,rho,Phi]=sampledFiniteTimeReach(sys_poly_closed_loop,sys_poly_open_loop,Vtv/10,G0,tv,ts,xtraj,utraj,options);
+
+Phi = {}
+
+for i = 1:numel(ts)
+    Phi{i} = Vtv.S.eval(ts(i));
+end
+
+[V,rho,Phi]=sampledFiniteTimeReach(sys_poly_closed_loop,sys_poly_open_loop,Vtv*10,0,tv,ts,xtraj,utraj,options, Phi, exp(ts(1:end-1)));
 
 disp('done');
+
+
+
+
 
