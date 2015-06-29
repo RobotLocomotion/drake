@@ -1,4 +1,5 @@
 #include "drakeMexUtil.h"
+#include <stdexcept>
 
 using namespace std;
 using namespace Eigen;
