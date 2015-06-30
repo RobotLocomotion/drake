@@ -14,7 +14,7 @@ MatrixXd expm(const MatrixXd& A) {
 ExponentialPlusPiecewisePolynomial<double> s1Trajectory(const TVLQRData &sys, const PiecewisePolynomial<double> &zmp_trajectory,const Ref<const MatrixXd> &S) {
   size_t n = static_cast<size_t>(zmp_trajectory.getNumberOfSegments());
   int d = zmp_trajectory.getSegmentPolynomialDegree(0);
-  size_t k = d + 1;
+  int k = d + 1;
 
   for (size_t i = 1; i < n; i++) {
     assert(zmp_trajectory.getSegmentPolynomialDegree(i) == d);
@@ -45,7 +45,7 @@ ExponentialPlusPiecewisePolynomial<double> s1Trajectory(const TVLQRData &sys, co
     beta.push_back(MatrixXd::Zero(4, k));
   }
 
-  for (int j = n - 1; j >= 0; j--) { 
+  for (int j = static_cast<int>(n) - 1; j >= 0; j--) { 
 
     auto poly_mat = zbar_pp.getPolynomialMatrix(j);
     size_t nq = poly_mat.rows();
@@ -69,7 +69,7 @@ ExponentialPlusPiecewisePolynomial<double> s1Trajectory(const TVLQRData &sys, co
 
     VectorXd dtpow(k);
     for (size_t p = 0; p < k; p++) { 
-      dtpow(p) = pow(dt(j), p);
+      dtpow(p) = pow(dt(j), static_cast<int>(p));
     }
     
     alpha.col(j) = expm(A2*dt(j)).inverse() * (s1dt - beta[j]*dtpow);
