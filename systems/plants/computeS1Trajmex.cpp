@@ -15,13 +15,13 @@ PiecewisePolynomial<double> matlabPPFormToPiecewisePolynomial(const mxArray* pp)
 
   const mxArray* coefs_mex = mxGetFieldSafe(pp, "coefs"); // a d*l x k matrix
   const size_t* coefs_mex_dims = mxGetDimensions(coefs_mex);
-  int num_coefs_mex_dims = mxGetNumberOfDimensions(coefs_mex);
+  int num_coefs_mex_dims = static_cast<int>(mxGetNumberOfDimensions(coefs_mex));
 
   size_t number_of_elements = mxGetNumberOfElements(coefs_mex);
 
   const mxArray* dim_mex = mxGetFieldSafe(pp, "dim");
-  int num_dims_mex = mxGetNumberOfElements(dim_mex);
-  if (num_dims_mex == 0 | num_dims_mex > 2)
+  int num_dims_mex = static_cast<int>(mxGetNumberOfElements(dim_mex));
+  if (num_dims_mex == 0 || num_dims_mex > 2)
     throw runtime_error("case not handled"); // because PiecewisePolynomial can't currently handle it
   const int num_dims = 2;
   mwSize dims[num_dims];
