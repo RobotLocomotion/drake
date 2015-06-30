@@ -2,6 +2,7 @@
 #define DRAKEFLOATINGPOINTUTIL_H_
 
 #include <limits>
+#include "float.h"
 
 /*
  * substitute for std::isfinite from <limits> in C++11, which is not available on MSVC2010
@@ -27,6 +28,22 @@ inline bool isNaN(double x) {
   return _isnan(x) != 0;
 #else
   return std::isnan(x);
+#endif
+}
+
+inline bool isNormal(double x) {
+  /*
+   * substitute for std::isnormal, which is not available on MSVC2010
+   * from http://en.cppreference.com/w/cpp/numeric/math/isnormal
+   * Determines if the given floating point number arg is normal, i.e. is neither zero, subnormal, infinite, nor NaN.
+   *
+   * from http://stackoverflow.com/questions/6982217/how-do-i-check-and-handle-numbers-very-close-to-zero
+   * subnormality can be checked by comparing to DBL_MIN for doubles
+   */
+#ifdef WIN32
+  return !isNaN(x) && isFinite(x) && std::abs(x) < DBL_MIN;
+#else
+  return std::isnormal(x)
 #endif
 }
 
