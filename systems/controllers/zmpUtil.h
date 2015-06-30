@@ -1,7 +1,18 @@
 #include <Eigen/Core>
 #include "ExponentialPlusPiecewisePolynomial.h"
 
-struct TVLQRData {
+#undef DLLEXPORT
+#if defined(WIN32) || defined(WIN64)
+  #if defined(drakeZMPUtil_EXPORTS)
+    #define DLLEXPORT __declspec( dllexport )
+  #else
+    #define DLLEXPORT __declspec( dllimport )
+  #endif
+#else
+    #define DLLEXPORT
+#endif
+
+struct DLLEXPORT TVLQRData {
   // TODO: move into its own file
   // TODO: turn into class, private members
   Eigen::MatrixXd A;
@@ -16,4 +27,4 @@ struct TVLQRData {
   Eigen::MatrixXd N;
 };
 
-ExponentialPlusPiecewisePolynomial<double> s1Trajectory(const TVLQRData &sys, const PiecewisePolynomial<double> &zmp_trajectory,const Eigen::Ref<const Eigen::MatrixXd> &S);
+DLLEXPORT ExponentialPlusPiecewisePolynomial<double> s1Trajectory(const TVLQRData &sys, const PiecewisePolynomial<double> &zmp_trajectory,const Eigen::Ref<const Eigen::MatrixXd> &S);

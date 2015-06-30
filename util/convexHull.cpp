@@ -8,6 +8,8 @@
 #include <iostream>
 #include <limits>
 #include "convexHull.h"
+#include "drakeFloatingPointUtil.h"
+
 using namespace std;
 using namespace Eigen;
  
@@ -24,7 +26,7 @@ coord2_t cross(const Point &O, const Point &A, const Point &B)
 vector<Point> convexHull(vector<Point> P)
 {
 
-  int n = P.size(), k = 0;
+  size_t n = P.size(), k = 0;
   vector<Point> H(2*n);
 
   if (n == 2) {
@@ -45,7 +47,7 @@ vector<Point> convexHull(vector<Point> P)
   }
  
   // Build upper hull
-  for (int i = n-2, t = k+1; i >= 0; i--) {
+  for (size_t i = n-2, t = k+1; i >= 0; i--) {
     while (k >= t && cross(H[k-2], H[k-1], P[i]) <= 0) k--;
     H[k++] = P[i];
   }
@@ -83,7 +85,7 @@ double signedDistanceInsideConvexHull(const Ref<const Matrix<double, 2, Dynamic>
     Vector2d ai = R * Vector2d(hull_pts[i+1].x - hull_pts[i].x, hull_pts[i+1].y - hull_pts[i].y);
     double b = ai.transpose() * Vector2d(hull_pts[i].x, hull_pts[i].y);
     double n = ai.norm();
-    if (std::isnormal(n)) {
+    if (isNormal(n)) {
       ai = ai.array() / n;
       b = b / n;
       double d = b - ai.transpose() * q;

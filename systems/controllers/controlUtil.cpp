@@ -298,7 +298,7 @@ bool isSupportElementActive(SupportStateElement* se, bool contact_force_detected
 Matrix<bool, Dynamic, 1> getActiveSupportMask(RigidBodyManipulator* r, void* map_ptr, VectorXd q, VectorXd qd, std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> &available_supports, const Ref<const Matrix<bool, Dynamic, 1>> &contact_force_detected, double contact_threshold, double terrain_height) {
   r->doKinematics(q, false, qd);
 
-  int nsupp = available_supports.size();
+  size_t nsupp = available_supports.size();
   Matrix<bool, Dynamic, 1> active_supp_mask = Matrix<bool, Dynamic, 1>::Zero(nsupp);
   VectorXd phi;
   SupportStateElement se;
@@ -306,7 +306,7 @@ Matrix<bool, Dynamic, 1> getActiveSupportMask(RigidBodyManipulator* r, void* map
   bool kin_contact;
   bool force_contact;
 
-  for (int i = 0; i < nsupp; i++) {
+  for (size_t i = 0; i < nsupp; i++) {
     // mexPrintf("evaluating support: %d\n", i);
     se = available_supports[i];
 
@@ -446,7 +446,7 @@ void getRobotJointIndexMap(JointNames *joint_names, RobotJointIndexMap *joint_ma
   if (joint_names->drake.size() != joint_names->robot.size()) {
     throw std::runtime_error("Cannot create joint name map: joint_names->drake and joint_names->robot must have the same length");
   }
-  int njoints = joint_names->drake.size();
+  int njoints = static_cast<int>(joint_names->drake.size());
   joint_map->drake_to_robot.resize(njoints);
   joint_map->robot_to_drake.resize(njoints);
 

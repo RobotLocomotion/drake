@@ -263,7 +263,7 @@ mxArray* eigenToMatlabSparse(MatrixBase<Derived> const & M, int & num_non_zero)
   vector<mwIndex> jc;
   vector<double> pr;
 
-  mwSize cumulative_nonzero = 0;
+  int cumulative_nonzero = 0;
   jc.push_back(cumulative_nonzero);
   double eps = std::numeric_limits<double>::epsilon();
   for (mwIndex j = 0; j < cols; j++) {
