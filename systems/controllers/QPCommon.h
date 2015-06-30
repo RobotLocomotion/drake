@@ -4,7 +4,6 @@
 #include "controlUtil.h"
 #include "drakeUtil.h"
 #include "fastQP.h"
-#include "gurobiQP.h"
 #include "drake/lcmt_qp_controller_input.hpp"
 #include "ExponentialPlusPiecewisePolynomial.h"
 #include <vector>

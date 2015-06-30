@@ -51,21 +51,23 @@ if (MATLAB_FOUND)
 
   pods_find_pkg_config(terrain-map)
 
+  if (gurobi_FOUND AND LCM_FOUND)
+    # NOTE: controlMexUtil.h currently includes QPCommon.h, which includes a gurobi header.
+    # drakeControlMexUtil also has LCM as a dependency.
+    # Lots of things depend on drakeControlMexUtil. We should consider reducing dependencies
 
-  add_mex(drakeControlMexUtil SHARED controlMexUtil.cpp)
-  if (terrain-map_FOUND)
-    pods_use_pkg_config_packages(drakeControlMexUtil terrain-map)
-    set_target_properties(drakeControlMexUtil PROPERTIES COMPILE_FLAGS "-DUSE_MAPS")
-  endif()
-  target_link_libraries(drakeControlMexUtil drakeRBM drakeMexUtil drakeTrajectories drakeControlUtil drakeLCMUtil)
-  pods_install_libraries(drakeControlMexUtil)
-  pods_install_headers(controlMexUtil.h DESTINATION drake)
-  pods_install_pkg_config_file(drake-control-mex-util
-    LIBS -ldrakeControlMexUtil
-    REQUIRES
-    VERSION 0.0.1)
-
-  if (gurobi_FOUND)
+    add_mex(drakeControlMexUtil SHARED controlMexUtil.cpp)
+    if (terrain-map_FOUND)
+      pods_use_pkg_config_packages(drakeControlMexUtil terrain-map)
+      set_target_properties(drakeControlMexUtil PROPERTIES COMPILE_FLAGS "-DUSE_MAPS")
+    endif()
+    target_link_libraries(drakeControlMexUtil drakeRBM drakeMexUtil drakeTrajectories drakeControlUtil drakeLCMUtil)
+    pods_install_libraries(drakeControlMexUtil)
+    pods_install_headers(controlMexUtil.h DESTINATION drake)
+    pods_install_pkg_config_file(drake-control-mex-util
+      LIBS -ldrakeControlMexUtil
+      REQUIRES
+      VERSION 0.0.1)
 
     add_mex(QPControllermex QPControllermex.cpp)
     target_link_libraries(QPControllermex drakeQP drakeControlUtil drakeMexUtil drakeControlMexUtil)
@@ -74,33 +76,34 @@ if (MATLAB_FOUND)
     add_mex(getActiveSupportsmex getActiveSupportsmex.cpp)
     target_link_libraries(getActiveSupportsmex drakeQP drakeMexUtil drakeControlMexUtil)
 
-    if (LCM_FOUND)
-      add_mex(instantaneousQPControllermex instantaneousQPControllermex.cpp)
-      target_link_libraries(instantaneousQPControllermex drakeQP drakeControlUtil drakeQPCommon drakeMexUtil drakeSide)
-      pods_use_pkg_config_packages(instantaneousQPControllermex gurobi)
+    add_mex(instantaneousQPControllermex instantaneousQPControllermex.cpp)
+    target_link_libraries(instantaneousQPControllermex drakeQP drakeControlUtil drakeQPCommon drakeMexUtil drakeSide)
+    pods_use_pkg_config_packages(instantaneousQPControllermex gurobi)
 
-      add_mex(constructQPDataPointerMex constructQPDataPointerMex.cpp)
-      target_link_libraries(constructQPDataPointerMex drakeQP drakeControlUtil drakeQPCommon drakeMexUtil drakeControlMexUtil)
-      pods_use_pkg_config_packages(constructQPDataPointerMex gurobi)
+    add_mex(constructQPDataPointerMex constructQPDataPointerMex.cpp)
+    target_link_libraries(constructQPDataPointerMex drakeQP drakeControlUtil drakeQPCommon drakeMexUtil drakeControlMexUtil)
+    pods_use_pkg_config_packages(constructQPDataPointerMex gurobi)
 
-      add_mex(encodeQPInputLCMMex encodeQPInputLCMMex.cpp)
-      target_link_libraries(encodeQPInputLCMMex drakeControlUtil drakeQPCommon drakeMexUtil drakeControlMexUtil)
-      pods_use_pkg_config_packages(encodeQPInputLCMMex lcm)
-    endif()
+    add_mex(encodeQPInputLCMMex encodeQPInputLCMMex.cpp)
+    target_link_libraries(encodeQPInputLCMMex drakeControlUtil drakeQPCommon drakeMexUtil drakeControlMexUtil)
+    pods_use_pkg_config_packages(encodeQPInputLCMMex lcm)
+    
+    macro(add_control_mex)
+      add_mex(${ARGV} ${ARGV}.cpp)
+      target_link_libraries(${ARGV} drakeControlUtil drakeMexUtil drakeRBM drakeControlMexUtil)
+    endmacro()
+    
+    add_control_mex(bodyMotionControlmex)
+    add_control_mex(pelvisMotionControlmex)
+    
+    add_control_mex(individualCentersOfPressuremex) 
+    add_control_mex(bodySpatialMotionPDmex)
+    target_link_libraries(bodySpatialMotionPDmex drakeGeometryUtil)
   endif()
 
-  macro(add_control_mex)
-    add_mex(${ARGV} ${ARGV}.cpp)
-    target_link_libraries(${ARGV} drakeControlUtil drakeMexUtil drakeRBM drakeControlMexUtil)
-  endmacro()
-
-  add_control_mex(bodyMotionControlmex) 
-  add_control_mex(pelvisMotionControlmex) 
   add_mex(supportDetectmex supportDetectmex.cpp)
   target_link_libraries(supportDetectmex drakeRBM drakeControlUtil) 
-  add_control_mex(individualCentersOfPressuremex) 
-  add_control_mex(bodySpatialMotionPDmex)
-  target_link_libraries(bodySpatialMotionPDmex drakeGeometryUtil)
+
 
   add_library(drakeZMPUtil zmpUtil.cpp)
   target_link_libraries(drakeZMPUtil drakeTrajectories)
