@@ -7,7 +7,6 @@
 #include "lcmUtil.h"
 #include "testUtil.h"
 #include "drake/lcmt_zmp_com_observer_state.hpp"
-#include "gurobiQP.h"
 
 const bool CHECK_CENTROIDAL_MOMENTUM_RATE_MATCHES_TOTAL_WRENCH = false;
 const bool PUBLISH_ZMP_COM_OBSERVER_STATE = true;

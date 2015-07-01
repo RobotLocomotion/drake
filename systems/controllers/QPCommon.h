@@ -9,6 +9,7 @@
 #include <vector>
 #include "ForceTorqueMeasurement.h"
 #include "Side.h"
+#include "gurobiQP.h"
 
 const double REG = 1e-8;
 

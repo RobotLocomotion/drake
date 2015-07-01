@@ -2,6 +2,7 @@
 #define DRAKEFLOATINGPOINTUTIL_H_
 
 #include <limits>
+#include <cmath>
 #include "float.h"
 
 /*
@@ -43,7 +44,7 @@ inline bool isNormal(double x) {
 #ifdef WIN32
   return !isNaN(x) && isFinite(x) && std::abs(x) < DBL_MIN;
 #else
-  return std::isnormal(x)
+  return std::isnormal(x);
 #endif
 }
 
