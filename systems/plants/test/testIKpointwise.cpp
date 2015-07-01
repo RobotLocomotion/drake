@@ -4,6 +4,7 @@
 #include "../IKoptions.h"
 #include <iostream>
 #include <cstdlib>
+#include <limits>
 
 using namespace std;
 using namespace Eigen;
@@ -25,7 +26,7 @@ int main()
     q0(3,i) = 0.8;
   }
   Vector3d com_des = Vector3d::Zero();
-  com_des(2) = nan("");
+  com_des(2) = std::numeric_limits<double>::quiet_NaN();
   WorldCoMConstraint* com_kc = new WorldCoMConstraint(model,com_des,com_des);
   int num_constraints = 1;
   RigidBodyConstraint** constraint_array = new RigidBodyConstraint*[num_constraints];
