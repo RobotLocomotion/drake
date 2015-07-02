@@ -51,14 +51,45 @@ classdef WaypointTrajectoryLibraryGenerator < TrajectoryLibraryGenerator
                 tmp(obj.cyclicIdx) = trajSegment(obj.cyclicIdx, 1);
                 xtrajpp = PPTrajectory(spline(segmentBreaks - segmentBreaks(1), trajSegment - repmat(tmp, 1, numStates)));
                 utrajpp = PPTrajectory(spline(segmentBreaks - segmentBreaks(1), utraj.eval(segmentBreaks)));
-                xtrajs{i} = xtrajpp.setOutputFrame(obj.robot.getStateFrame);
-                utrajs{i} = utrajpp.setOutputFrame(obj.robot.getInputFrame);
+                
+                [xtrajResampled, utrajResampled] = obj.resampleTrajectory(xtrajpp, utrajpp, 50); %TODO: make this configurable
+                
+                xtrajs{i} = xtrajResampled.setOutputFrame(obj.robot.getStateFrame);
+                utrajs{i} = utrajResampled.setOutputFrame(obj.robot.getInputFrame);
             end
         end
         
     end
     
     methods (Access = private)
+        function [xtraj, utraj] = resampleTrajectory(obj, xtraj, utraj, knots)
+            minimum_duration = .1;
+            maximum_duration = xtraj.pp.breaks(end);
+            
+            prog = DircolTrajectoryOptimization(obj.robot, knots, [minimum_duration maximum_duration]);
+            
+            x0 = xtraj.eval(xtraj.pp.breaks(1));
+            u0 = utraj.eval(utraj.pp.breaks(1));
+            
+            xf = xtraj.eval(xtraj.pp.breaks(end));
+            uf = utraj.eval(utraj.pp.breaks(end));
+            
+            prog = prog.addStateConstraint(ConstantConstraint(x0), 1);
+            prog = prog.addInputConstraint(ConstantConstraint(u0), 1);
+            
+            prog = prog.addStateConstraint(ConstantConstraint(xf), knots);
+            prog = prog.addInputConstraint(ConstantConstraint(uf), knots);
+            
+            prog = prog.addRunningCost(@(dt, x, u) obj.cost(dt, x, u));
+            prog = prog.addFinalCost(@(t, x) obj.finalCost(t, x));
+            
+            traj_init.x = PPTrajectory(foh([0, maximum_duration],[x0, xf]));
+            traj_init.u = ConstantTrajectory(u0);
+            
+            [xtraj,utraj,~,~,~] = prog.solveTraj(maximum_duration,traj_init);
+            
+        end
+        
         function [xtraj, utraj, info] = solveTrajectoryOptimization(obj)
             N = (obj.trajLength + 1) * (numel(obj.waypoints) + 2) - 1;
                         

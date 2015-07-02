@@ -40,16 +40,21 @@ else
     end
 end
 
+V_funnel = {};
+rho_funnel = {};
+Phi_funnel = {};
 %plot trajectory library
 for i = 1:numel(xtrajs)
-  evalTraj = xtrajs{i}.eval(xtrajs{i}.getBreaks);
-  plot(evalTraj(1,:), evalTraj(2,:))
+  fnplt(xtrajs{i}, [1,2]);
   hold on;
-end
 
-xtraj = xtrajs{1};
-utraj = utrajs{1};
 
+  xtraj = xtrajs{i};
+  utraj = utrajs{i};
+  
+%load traj_test.mat
+%xtraj = xtraj_test.setOutputFrame(r.getStateFrame)
+%utraj = utraj_test.setOutputFrame(r.getInputFrame)
 
 disp('building tvlqr controller...')
 %compute stabilizing controller for the first trajectory in library
@@ -58,14 +63,8 @@ R = 0.1*eye(4);
 Qf = diag([100*ones(6,1);ones(6,1)]);
 [tv,Vtv] = tvlqr(r, xtraj, utraj, Q, R, Qf, struct());
 
-V = Vtv*10;
-Vxframe = V.inFrame(r.getStateFrame());
-options.plotdims = [1 2];
-options.x0 = xtraj;
-options.ts = xtraj.getBreaks;
-options.inclusion = 'projection';
-plotFunnel(Vxframe,options);
-fnplt(xtraj,[1 2]); 
+scale_factor = 1;
+V = Vtv*85;
 
 %assemble closed loop system
 sys_closed_loop = feedback(r, tv);
@@ -77,29 +76,44 @@ disp('taylor approximating system dynamics...')
 sys_poly_closed_loop = taylorApprox(sys_closed_loop, xtraj, [], 3);
 sys_poly_open_loop = taylorApprox(r, xtraj, utraj, 3);
 
-%ts = Vtv.S.getBreaks(); tsend = ts(end);
-%ts = linspace(ts(1),ts(end),12);
-%ts = ts(1:end-1);
-ts = xtraj.getBreaks();
+ts = Vtv.S.getBreaks(); tsend = ts(end);
+ts = linspace(ts(1),ts(end),12);
+%ts = xtraj.getBreaks();
+ts = ts(1:end-1);
 
 disp('computing funnels...')
 options = struct();
 options.saturations = false;
-options.rho0 = 1;
+options.rho0 = 1*scale_factor;
 options.degL1 = 2;
 options.max_iterations = 10;
+G0 = V.S.eval(0) / options.rho0 * 1.01;
+options.backoff_percent = 5;
+%Phi = {}
+%for i = 1:numel(ts)
+%    Phi{i} = V.S.eval(ts(i));
+%end
 
-Phi = {}
+%[V,rho,Phi]=sampledFiniteTimeReach(sys_poly_closed_loop,sys_poly_open_loop,V,0,tv,ts,xtraj,utraj,options, Phi, exp(100*ts)');
+%function [V,rho,Phi] =
+%sampledFiniteTimeReach_B0(sys,polyOrig,Vtraj0,G,R0,tv,ts,xtraj0,utraj,options,Phi,rho)
+[V,rho,Phi]=sampledFiniteTimeReach_B0(sys_poly_closed_loop,sys_poly_open_loop,V,G0,0,tv,ts,xtraj,utraj,options);
 
-for i = 1:numel(ts)
-    Phi{i} = Vtv.S.eval(ts(i));
+
+Vxframe = V.inFrame(r.getStateFrame());
+options.plotdims = [1 2];
+options.x0 = xtraj;
+options.ts = ts;
+options.inclusion = 'slice';
+plotFunnel(Vxframe,options);
+fnplt(xtraj,[1 2]); 
+
+V_funnel{i} = V;
+rho_funnel{i} = rho;
+Phi_funnel{i} = Phi;
+
+
+
 end
 
-[V,rho,Phi]=sampledFiniteTimeReach(sys_poly_closed_loop,sys_poly_open_loop,Vtv*10,0,tv,ts,xtraj,utraj,options, Phi, exp(ts(1:end-1)));
-
 disp('done');
-
-
-
-
-
