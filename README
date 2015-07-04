@@ -1,4 +1,3 @@
-
 Name:         drake
 Maintainers:  Russ Tedrake <russt@mit.edu>
 Summary:      A planning, control, and analysis toolbox for nonlinear dynamical systems
@@ -60,4 +59,33 @@ This software is constructed according to the Pods software policies and
 templates.  The policies and templates can be found at:
 
   http://sourceforge.net/projects/pods
+
+=======
+This directory contains a collection of PODs which should make it easy
+to locally install all of the required dependencies for work in the
+Robot Locomotion Group.
+
+This directory also contains a function addpath_pods.m which might be
+useful for you to include in your startup.m with 
+
+  run('[drake-distro-directory]/addpath_pods.m');
+
+This will search the current directory and up to 4 directories up for
+a build/matlab directory, and if found will add it to your matlab path.
+
+Once the build/matlab directory is in your path, you can prepare
+yourself to use any of the other pods using the addpath_<podname> and
+rmpath_<podname> commands.  
+
+If you would like for this particular installation of any one of the
+pods to always be set up in your startup.m, then please make sure that
+you always protect it with a try/catch block.  E.g.
+
+  try, addpath_drake; catch, end;
+
+This is because the addpath is not guaranteed to succeed - for
+instance if it gets called before it's mandatory prerequisites are
+built.
+
+- Russ
 
