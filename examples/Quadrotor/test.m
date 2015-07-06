@@ -45,9 +45,6 @@ rho_funnel = {};
 Phi_funnel = {};
 %plot trajectory library
 for i = 1:numel(xtrajs)
-  fnplt(xtrajs{i}, [1,2]);
-  hold on;
-
 
   xtraj = xtrajs{i};
   utraj = utrajs{i};
@@ -57,14 +54,13 @@ for i = 1:numel(xtrajs)
 %utraj = utraj_test.setOutputFrame(r.getInputFrame)
 
 disp('building tvlqr controller...')
-%compute stabilizing controller for the first trajectory in library
 Q = diag([10*ones(6,1);ones(6,1)]);
 R = 0.1*eye(4);
 Qf = diag([100*ones(6,1);ones(6,1)]);
 [tv,Vtv] = tvlqr(r, xtraj, utraj, Q, R, Qf, struct());
 
 scale_factor = 1;
-V = Vtv*85;
+V = Vtv*95;max_iterations
 
 %assemble closed loop system
 sys_closed_loop = feedback(r, tv);
@@ -100,14 +96,6 @@ options.backoff_percent = 5;
 [V,rho,Phi]=sampledFiniteTimeReach_B0(sys_poly_closed_loop,sys_poly_open_loop,V,G0,0,tv,ts,xtraj,utraj,options);
 
 
-Vxframe = V.inFrame(r.getStateFrame());
-options.plotdims = [1 2];
-options.x0 = xtraj;
-options.ts = ts;
-options.inclusion = 'slice';
-plotFunnel(Vxframe,options);
-fnplt(xtraj,[1 2]); 
-
 V_funnel{i} = V;
 rho_funnel{i} = rho;
 Phi_funnel{i} = Phi;
@@ -115,5 +103,19 @@ Phi_funnel{i} = Phi;
 
 
 end
+
+for i = 1:numel(xtrajs)
+
+Vxframe = V_funnel{i}.inFrame(r.getStateFrame());
+options.plotdims = [1 2];
+options.x0 = xtraj;
+options.ts = ts;
+options.inclusion = 'projection';
+plotFunnel(Vxframe,options);
+hold on;
+fnplt(xtrajs{i},[1 2]); 
+
+end
+
 
 disp('done');
