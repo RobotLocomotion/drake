@@ -72,6 +72,12 @@ classdef ConstrainedHybridTrajectoryOptimization < NonlinearProgram
       obj.mode_opt = cell(obj.M,1);
       for i=1:obj.M,
         mode_options = options;
+        if isfield(options,'mode_options')
+          fields = fieldnames(options.mode_options{i});
+          for j=1:numel(fields),
+            mode_options.(fields{j}) = options.mode_options{i}.(fields{j});
+          end
+        end
         if i ~= 1,
 %           mode_options.constrain_phi_start = false;
         end
@@ -284,7 +290,7 @@ classdef ConstrainedHybridTrajectoryOptimization < NonlinearProgram
         f = [phi(all_contact_inds); vp - vm];
         df = [n(all_contact_inds,:), zeros(length(all_contact_inds), 2*nv + nl);...
           zeros(nq) -eye(nq) eye(nq)];
-      end
+      end      
     end
     
     function z0 = getInitialVars(obj,t_init,traj_init)
@@ -312,6 +318,7 @@ classdef ConstrainedHybridTrajectoryOptimization < NonlinearProgram
         obj = obj.compile();
       end
 
+%       obj = obj.setScalesFromX(z0);
       [z,F,info] = obj.solve(z0);
       
       for i=1:obj.M,
@@ -347,7 +354,7 @@ classdef ConstrainedHybridTrajectoryOptimization < NonlinearProgram
       end
 
       z0 = obj.getInitialVars(t_init,traj_init);
-      
+%       obj = obj.setScalesFromX(z0);
       [z,F,info] = obj.solve(z0);
       
       for i=1:obj.M,

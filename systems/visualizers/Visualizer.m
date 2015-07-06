@@ -76,7 +76,7 @@ classdef Visualizer < DrakeSystem
 
       typecheck(xtraj,'Trajectory');
       if (xtraj.getOutputFrame()~=obj.getInputFrame)
-        xtraj = xtraj.inFrame(obj.getInputFrame);  % try to convert it
+%         xtraj = xtraj.inFrame(obj.getInputFrame);  % try to convert it
       end
 
       if nargin < 3, options = struct(); end

@@ -18,6 +18,7 @@ classdef ConstrainedDircolTrajectoryOptimization < DircolTrajectoryOptimization
     cstrval_inds
     cstr_to_val_map  % maps relative constraint indices to their respective variables above
     nC
+    active_inds
   end
   
   methods
@@ -26,12 +27,17 @@ classdef ConstrainedDircolTrajectoryOptimization < DircolTrajectoryOptimization
         options = struct();
       end
       
-      nC = plant.num_position_constraints;
+            
+      if ~isfield(options,'active_inds')
+        options.active_inds = 1:plant.num_position_constraints;
+      end
+      
+      nActive = length(options.active_inds);
       
       if ~isfield(options,'relative_constraints')
-        options.relative_constraints = false(nC,1);
+        options.relative_constraints = false(nActive,1);
       elseif length(options.relative_constraints) == 1
-        options.relative_constraints = repmat(options.relative_constraints,nC,1);
+        options.relative_constraints = repmat(options.relative_constraints,nActive,1);
       end
       
       if ~isfield(options,'lambda_bound')
@@ -52,7 +58,10 @@ classdef ConstrainedDircolTrajectoryOptimization < DircolTrajectoryOptimization
       
       if ~isfield(options,'constrain_phi_end')
         options.constrain_phi_end = true;
-      end
+      end      
+%       if ~isfield(options,'start_active_inds')
+%         options.start_active_inds = options.active_inds;
+%       end
       
       obj = obj@DircolTrajectoryOptimization(plant,N,duration,options);
     end
@@ -79,7 +88,9 @@ classdef ConstrainedDircolTrajectoryOptimization < DircolTrajectoryOptimization
       
       qc = xc(1:nq);
       vc = xc(nq+1:end);
-      [phi,J,dJ] = obj.plant.positionConstraints(qc);
+      [~,J,dJ] = obj.plant.positionConstraints(qc);
+      J = J(obj.active_inds,:);      
+      dJ = dJ(obj.active_inds,:);
       dJ = reshape(dJ,[],nq);
       Jdot = matGradMult(dJ,vc);
       phidot = J*vc;
@@ -88,11 +99,85 @@ classdef ConstrainedDircolTrajectoryOptimization < DircolTrajectoryOptimization
       C = obj.options.lambda_bound;
       f = [phidot + C*h^3;-phidot + C*h^3]*(obj.N^3/C);
       df = [dphidot*dxc;-dphidot*dxc];
-      df(:,1) = df(:,1)+3*C*h^2*ones(2*nC,1);
-      df = df*(obj.N^3/C);
+      df(:,1) = df(:,1)+3*C*h^2*ones(length(f),1);
+      df = df*(obj.N^3/C);      
       
+      % should this be h^4? try adding as a cost insteads
 %       f = [phidot;phidot];
 %       df = [dphidot*dxc;dphidot*dxc];
+    end   
+    
+    function [f,df] = phidotBounded(obj,h,x0,x1,u0,u1,lambda0,lambda1,bound,data0,data1)
+      nX = obj.plant.getNumStates();
+      nU = obj.plant.getNumInputs();
+      nC = obj.nC;
+      nq = obj.plant.getNumPositions;
+      
+      % use the shared data objects for the dynamics at the knot points
+      xdot0 = data0.xdot;
+      dxdot0 = data0.dxdot;
+      xdot1 = data1.xdot;
+      dxdot1 = data1.dxdot;
+      
+      % get state at t=h/4
+      % x(h/4) = 27/32*x0 + 5/32*x1 + 9/64*h*xd0 - 3/64*h*xd1
+      % xd(h/4) = 3/16*xd0 - 5/16*xd1 + 9/(8h)*(x1 - x0)
+      xc = 27/32*x0 + 5/32*x1 + 9/64*h*xdot0 - 3/64*h*xdot1;
+      dxc = [9/64*xdot0-3/64*xdot1, 27/32*eye(nX)+9/64*h*dxdot0(:,2:1+nX), 5/32*eye(nX)-3/64*h*dxdot1(:,2:1+nX), ...
+        9/64*h*dxdot0(:,2+nX:1+nX+nU), -3/64*h*dxdot1(:,2+nX:1+nX+nU), 9/64*h*dxdot0(:,nX+nU+2:1+nX+nU+nC),...
+        -3/64*h*dxdot1(:,nX+nU+2:1+nX+nU+nC)];
+      
+      qc = xc(1:nq);
+      vc = xc(nq+1:end);
+      [~,J,dJ] = obj.plant.positionConstraints(qc);
+      J = J(obj.active_inds,:);
+      dJ = dJ(obj.active_inds,:);
+      dJ = reshape(dJ,[],nq);
+      Jdot = matGradMult(dJ,vc);
+      phidot = J*vc;
+      dphidot = [Jdot J];
+      
+      C = obj.options.lambda_bound;
+      f = [phidot + bound;-phidot + bound];
+      df = [[dphidot*dxc;-dphidot*dxc] ones(length(f),1)];
+      
+      % should this be h^4? try adding as a cost insteads
+      %       f = [phidot;phidot];
+      %       df = [dphidot*dxc;dphidot*dxc];
+    end
+    
+    function [f,df] = phidotSquared(obj,h,x0,x1,u0,u1,lambda0,lambda1,data0,data1)
+      nX = obj.plant.getNumStates();
+      nU = obj.plant.getNumInputs();
+      nC = obj.nC;
+      nq = obj.plant.getNumPositions; 
+      
+      % use the shared data objects for the dynamics at the knot points
+      xdot0 = data0.xdot;
+      dxdot0 = data0.dxdot;
+      xdot1 = data1.xdot;
+      dxdot1 = data1.dxdot;
+      
+      % get state at t=h/4
+      % x(h/4) = 27/32*x0 + 5/32*x1 + 9/64*h*xd0 - 3/64*h*xd1
+      % xd(h/4) = 3/16*xd0 - 5/16*xd1 + 9/(8h)*(x1 - x0)
+      xc = 27/32*x0 + 5/32*x1 + 9/64*h*xdot0 - 3/64*h*xdot1;
+      dxc = [9/64*xdot0-3/64*xdot1, 27/32*eye(nX)+9/64*h*dxdot0(:,2:1+nX), 5/32*eye(nX)-3/64*h*dxdot1(:,2:1+nX), ...
+        9/64*h*dxdot0(:,2+nX:1+nX+nU), -3/64*h*dxdot1(:,2+nX:1+nX+nU), 9/64*h*dxdot0(:,nX+nU+2:1+nX+nU+nC),...
+        -3/64*h*dxdot1(:,nX+nU+2:1+nX+nU+nC)];
+      
+      qc = xc(1:nq);
+      vc = xc(nq+1:end);
+      [~,J,dJ] = obj.plant.positionConstraints(qc);
+      J = J(obj.active_inds,:);      
+      dJ = dJ(obj.active_inds,:);
+      dJ = reshape(dJ,[],nq);
+      Jdot = matGradMult(dJ,vc);
+      phidot = J*vc;
+      dphidot = [Jdot J];
+      
+      f = phidot'*phidot*1e4;
+      df = [2*phidot'*dphidot*dxc]*1e4;
     end
     
     function obj = addDynamicConstraints(obj)
@@ -102,6 +187,7 @@ classdef ConstrainedDircolTrajectoryOptimization < DircolTrajectoryOptimization
       nX = obj.plant.getNumStates();
       nU = obj.plant.getNumInputs();
       nC = obj.nC;
+      nActive = length(obj.active_inds);
       dyn_constraints = cell(N-1,1);
       dyn_inds = cell(N-1,1);
       
@@ -117,6 +203,10 @@ classdef ConstrainedDircolTrajectoryOptimization < DircolTrajectoryOptimization
         obj = obj.addSharedDataFunction(@obj.dynamics_data,{obj.x_inds(:,i);obj.u_inds(:,i);obj.l_inds(:,i)});
       end
       
+%       obj = obj.addDecisionVariable(1);
+%       bound_ind = obj.num_vars;
+%       obj = obj.addCost(LinearConstraint(0,0,1),bound_ind);
+                
       for i=1:obj.N-1,
         dyn_inds{i} = {obj.h_inds(i);obj.x_inds(:,i);obj.x_inds(:,i+1);obj.u_inds(:,i);obj.u_inds(:,i+1);
           obj.l_inds(:,i); obj.l_inds(:,i+1); obj.lc_inds(:,i)};
@@ -125,19 +215,27 @@ classdef ConstrainedDircolTrajectoryOptimization < DircolTrajectoryOptimization
         obj = obj.addConstraint(dyn_constraints{i}, dyn_inds{i},[shared_data_index+i;shared_data_index+i+1]);
         
         if obj.nC > 0
-          phidotcon = FunctionHandleConstraint(zeros(2*nC,1),inf(2*nC,1),n_vars-nC,@obj.phidotConstraint);
+          phidotcon = FunctionHandleConstraint(zeros(2*nActive,1),inf(2*nActive,1),n_vars-nC,@obj.phidotConstraint);
           obj = obj.addConstraint(phidotcon, dyn_inds{i}(1:end-1),[shared_data_index+i;shared_data_index+i+1]);
+
+%           phidotcon = FunctionHandleConstraint(zeros(2*nActive,1),inf(2*nActive,1),n_vars-nC+1,@obj.phidotBounded);
+%           obj = obj.addConstraint(phidotcon, [dyn_inds{i}(1:end-1);bound_ind],[shared_data_index+i;shared_data_index+i+1]);
+          
+%           phidotcost = FunctionHandleConstraint(0,0,n_vars-nC,@obj.phidotSquared);
+%           obj = obj.addCost(phidotcost, dyn_inds{i}(1:end-1),[shared_data_index+i;shared_data_index+i+1]);
+
+
         end
       end
 
-      if obj.nC > 0
+      if obj.nC > 0        
         noffset = length(obj.cstrval_inds);
-        pos_cnstr = FunctionHandleConstraint(zeros(2*nC,1),zeros(2*nC,1),nX+noffset,@(x,offset,data) obj.position_constraint_fun(x,offset,false,data));
-        cnstr_sparsity = [ones(nC,nq) zeros(nC,nv) ones(nC,noffset); ones(nC,nX) zeros(nC,noffset)];
-        [cnstr_i, cnstr_j] = ind2sub([2*nC, nX+noffset],find(cnstr_sparsity));
+        pos_cnstr = FunctionHandleConstraint(zeros(2*nActive,1),zeros(2*nActive,1),nX+noffset,@(x,offset,data) obj.position_constraint_fun(x,offset,false,data));
+        cnstr_sparsity = [ones(nActive,nq) zeros(nActive,nv) ones(nActive,noffset); ones(nActive,nX) zeros(nActive,noffset)];
+        [cnstr_i, cnstr_j] = ind2sub([2*nActive, nX+noffset],find(cnstr_sparsity));
         pos_cnstr = pos_cnstr.setSparseStructure(cnstr_i,cnstr_j);
         
-        phidot_cnstr = FunctionHandleConstraint(zeros(nC,1),zeros(nC,1),nX,@(x,data) obj.position_constraint_fun(x,[],true,data));
+        phidot_cnstr = FunctionHandleConstraint(zeros(nActive,1),zeros(nActive,1),nX,@(x,data) obj.position_constraint_fun(x,[],true,data));
         
         if obj.options.constrain_start,
           if obj.options.constrain_phi_start
@@ -202,25 +300,25 @@ classdef ConstrainedDircolTrajectoryOptimization < DircolTrajectoryOptimization
     
     function [f,df] = position_constraint_fun(obj,x,offset,phidot_only,data)
       nq = obj.plant.getNumPositions;
-      
+      nActive = length(obj.active_inds);
       q = x(1:nq);
       qd = x(nq+1:end);
       
-      phi = data.phi;
-      J = data.J;
-      Jdot = data.Jdot;
+      phi = data.phi(obj.active_inds,:);
+      J = data.J(obj.active_inds,:);
+      Jdot = data.Jdot(obj.active_inds,:);
       
       noffset = length(offset);
       if ~phidot_only
         f = [phi;J*qd];
         f(obj.cstr_to_val_map) = f(obj.cstr_to_val_map) - offset;
-        df = [J zeros(obj.nC,nq+noffset);
-          Jdot J zeros(obj.nC,noffset)];
+        df = [J zeros(nActive,nq+noffset);
+          Jdot J zeros(nActive,noffset)];
         df(obj.cstr_to_val_map,end-noffset+1:end) = -eye(noffset);
       else
         f = J*qd;
-        df = [Jdot J zeros(obj.nC,noffset)];
-      end
+        df = [Jdot J zeros(nActive,noffset)];
+      end     
     end
     
     function data = dynamics_data(obj,x,u,lambda)
@@ -235,6 +333,9 @@ classdef ConstrainedDircolTrajectoryOptimization < DircolTrajectoryOptimization
       Hinv = inv(H);
       if nC > 0      
         [phi,J,dJ] = obj.plant.positionConstraints(q);
+%         phi = phi(obj.active_inds,:);  
+%         J = J(obj.active_inds,:);      
+%         dJ = dJ(obj.active_inds,:);
         dJ = reshape(dJ,[],nq);
         Jdot = matGradMult(dJ,v);      
         vdot = Hinv*(B*u - C + J'*lambda);
@@ -282,8 +383,10 @@ classdef ConstrainedDircolTrajectoryOptimization < DircolTrajectoryOptimization
       obj = setupVariables@DircolTrajectoryOptimization(obj,N);
       
       
+      nActive = length(obj.active_inds);
       nC = obj.plant.num_position_constraints;
       obj.nC = nC;
+      obj.active_inds = obj.options.active_inds;
       num_vars = N*nC + (N-1)*nC;
 
       obj.l_inds = reshape(obj.num_vars + (1:nC*N),nC,N);
@@ -292,7 +395,7 @@ classdef ConstrainedDircolTrajectoryOptimization < DircolTrajectoryOptimization
       obj = obj.addDecisionVariable(num_vars);
       
       if any(obj.options.relative_constraints)
-        obj.cstr_to_val_map = find(obj.options.relative_constraints);
+        obj.cstr_to_val_map = find(obj.options.relative_constraints(obj.active_inds));
       else
         obj.cstr_to_val_map = zeros(0,1);
       end
@@ -359,7 +462,8 @@ classdef ConstrainedDircolTrajectoryOptimization < DircolTrajectoryOptimization
       v = x(nq+1:end);
       
       [H,C,B] = obj.plant.manipulatorDynamics(q,v);
-      [phi,J] = obj.plant.positionConstraints(q);     
+      [~,J] = obj.plant.positionConstraints(q);     
+%       J = J(obj.active_inds,:);  
       
       if ~isempty(lambda)
         vdot = H\(B*u - C + J'*lambda);

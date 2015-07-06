@@ -12,8 +12,9 @@ if nargin < 5
   Qf = 1*Q;
 end
 
-options.use_zoh_qd = true;
-options.use_zoh_u = true;
+% commented out for dircol
+% options.use_zoh_qd = true;
+% options.use_zoh_u = true;
 options.periodic = true;
 
 R_periodic = zeros(p.getNumStates);

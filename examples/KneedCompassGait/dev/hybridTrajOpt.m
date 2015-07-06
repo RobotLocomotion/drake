@@ -1,4 +1,4 @@
-function [p,v,xtraj,utraj,ltraj,z,F,info,traj_opt] = hybridTrajOpt
+function [p,v,xtraj,utraj,ltraj,z,F,info,traj_opt] = hybridTrajOpt(z)
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
 warning('off','Drake:RigidBodyManipulator:WeldedLinkInd');
 options.terrain = RigidBodyFlatTerrain();
@@ -10,7 +10,15 @@ v = p.constructVisualizer();
 
 %todo: add joint limits, periodicity constraint
 
-N = [15, 15];
+% 5/5,.1 S
+% 5/5,.01 F
+% 10/10,1 Success
+% 15/15,1 and 10 Fail
+% 15/15,20 S
+% 20/20,50 F
+% 20/20,70 S
+
+N = [10, 10];
 T = {[.2 1], [.2 1]};
 mode_seq = {1, 2};
 
@@ -69,7 +77,7 @@ x0_max = [x0(1:5);inf;  inf; 0; inf(4,1)];
 xf_min = [.4;-inf(11,1)];
 xf_max = inf(12,1);
 
-to_options.lambda_bound = 10;
+to_options.lambda_bound = 1;
 
 traj_opt=ConstrainedHybridTrajectoryOptimization(p,mode_seq,N,T,to_options);
 
@@ -96,9 +104,14 @@ traj_opt = traj_opt.setSolverOptions('snopt','ScaleOption',1);
 traj_opt = traj_opt.setSolverOptions('snopt','print','snopt.out');
 traj_opt = traj_opt.setSolverOptions('snopt','MajorIterationsLimit',400);
 traj_opt = traj_opt.setSolverOptions('snopt','MinorIterationsLimit',400000);
-traj_opt = traj_opt.setSolverOptions('snopt','IterationsLimit',200000);
+traj_opt = traj_opt.setSolverOptions('snopt','IterationsLimit',300000);
 traj_opt = traj_opt.compile();
-[xtraj,utraj,ltraj,z,F,info] = traj_opt.solveTraj(t_init,traj_init);
+
+if nargin == 1
+  [xtraj,utraj,ltraj,z,F,info] = traj_opt.solveTrajFromZ(z);
+else
+  [xtraj,utraj,ltraj,z,F,info] = traj_opt.solveTraj(t_init,traj_init);
+end
 
 function [f,df] = running_cost_fun(h,x,u)
   f = u'*u;
