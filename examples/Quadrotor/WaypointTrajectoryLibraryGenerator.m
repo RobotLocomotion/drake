@@ -36,7 +36,7 @@ classdef WaypointTrajectoryLibraryGenerator < TrajectoryLibraryGenerator
             obj.waypoints{end+1} = qCyclic;
         end
         
-        function [xtrajs, utrajs] = generateTrajectories(obj)
+        function trajLib = generateTrajectories(obj)
             [xtraj, utraj, info] = obj.solveTrajectoryOptimization();
             segments = obj.getTrajectoryKnots();
             numSegments = numel(segments);
@@ -53,10 +53,10 @@ classdef WaypointTrajectoryLibraryGenerator < TrajectoryLibraryGenerator
                 utrajpp = PPTrajectory(spline(segmentBreaks - segmentBreaks(1), utraj.eval(segmentBreaks)));
                 
                 [xtrajResampled, utrajResampled] = obj.resampleTrajectory(xtrajpp, utrajpp, 50); %TODO: make this configurable
-                
                 xtrajs{i} = xtrajResampled.setOutputFrame(obj.robot.getStateFrame);
                 utrajs{i} = utrajResampled.setOutputFrame(obj.robot.getInputFrame);
             end
+            trajLib = TrajectoryLibrary(xtrajs, utrajs);
         end
         
     end

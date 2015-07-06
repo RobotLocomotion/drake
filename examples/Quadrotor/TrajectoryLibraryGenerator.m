@@ -8,7 +8,7 @@ classdef TrajectoryLibraryGenerator
     end
     
     methods (Abstract)
-        [xtrajs, utrajs] = generateTrajectories(obj);
+        trajLib = generateTrajectories(obj);
     end
     
     methods
