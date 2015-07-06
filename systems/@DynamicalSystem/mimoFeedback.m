@@ -140,26 +140,17 @@ end
 mdl = ['MIMOFeedback_',datestr(now,'MMSSFFF')];  % use the class name + uid as the model name
 new_system(mdl,'Model');
 set_param(mdl,'SolverPrmCheckMsg','none');  % disables warning for automatic selection of default timestep
-
-load_system('simulink3');
+mdl = SimulinkModelHandle(mdl);
 
 % construct subsystem (including mux/demux if necessary) and output
 % number for sys1
-add_block('simulink3/Subsystems/Subsystem',[mdl,'/system1']);
-%m = Simulink.Mask.create([mdl,'/system1']);
-%m.set('Display',['fprintf(''',class(sys1),''')']);
-Simulink.SubSystem.deleteContents([mdl,'/system1']);
-Simulink.BlockDiagram.copyContentsToSubSystem(sys1.getModel(),[mdl,'/system1']);
+mdl.addSubsystem('system1',getModel(sys1));
 in{1} = setupMultiInput(sys1.getInputFrame,mdl,'system1');
 out{1} = setupMultiOutput(sys1.getOutputFrame,mdl,'system1');
 
 % construct subsystem (including mux/demux if necessary) and input number
 % for sys2
-add_block('simulink3/Subsystems/Subsystem',[mdl,'/system2']);
-%m = Simulink.Mask.create([mdl,'/system2']);
-%m.set('Display',['fprintf(''',class(sys2),''')']);
-Simulink.SubSystem.deleteContents([mdl,'/system2']);
-Simulink.BlockDiagram.copyContentsToSubSystem(sys2.getModel(),[mdl,'/system2']);
+mdl.addSubsystem('system2',getModel(sys2));
 in{2} = setupMultiInput(sys2.getInputFrame,mdl,'system2');
 out{2} = setupMultiOutput(sys2.getOutputFrame,mdl,'system2');
 
@@ -173,10 +164,7 @@ for i=1:length(connection)
     add_line(mdl,[out{connection(i).from_system},'/',num2str(connection(i).from_output)],[in{connection(i).to_system},'/',num2str(connection(i).to_input)]);
   else
     tf = findTransform(fr1,fr2,struct('throw_error_if_fail',true));
-    add_block('simulink3/Subsystems/Subsystem',[mdl,'/tf',num2str(i)]);
-    Simulink.SubSystem.deleteContents([mdl,'/tf',num2str(i)]);
-    Simulink.BlockDiagram.copyContentsToSubSystem(tf.getModel(),[mdl,'/tf',num2str(i)]);
-    
+    mdl.addSubsystem(['tf',num2str(i)],getModel(tf));
     add_line(mdl,[out{connection(i).from_system},'/',num2str(connection(i).from_output)],['tf',num2str(i),'/1']);
     add_line(mdl,['tf',num2str(i),'/1'],[in{connection(i).to_system},'/',num2str(connection(i).to_input)]);
   end

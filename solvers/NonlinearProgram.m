@@ -323,6 +323,13 @@ classdef NonlinearProgram
       cnstr_id = obj.next_nlcon_id;
       obj.next_nlcon_id = obj.next_nlcon_id-3;
       obj.nlcon_id = [obj.nlcon_id cnstr_id];
+      
+      if(strcmpi(obj.solver,'studentsnopt'))
+        if(~(obj.num_cin+obj.num_ceq+size(obj.Ain,1)+size(obj.Aeq,1)<=300))
+          warning('Number of constraints exceeded studentSNOPT support: obj.num_cin+obj.num_ceq+size(obj.Ain,1)+size(obj.Aeq,1)>300.  Switching to default solver.');
+          obj = obj.setSolver('default');
+        end
+      end      
     end
     
     function [obj,cnstr_id] = addLinearConstraint(obj,cnstr,xind)
@@ -376,7 +383,13 @@ classdef NonlinearProgram
         obj.next_lcon_id = obj.next_lcon_id-3;
         obj.lcon_id = [obj.lcon_id cnstr_id];
 %       end
-      
+
+      if(strcmpi(obj.solver,'studentsnopt'))
+        if(~(obj.num_cin+obj.num_ceq+size(obj.Ain,1)+size(obj.Aeq,1)<=300))
+          warning('Number of constraints exceeds studentSNOPT support: obj.num_cin+obj.num_ceq+size(obj.Ain,1)+size(obj.Aeq,1)>300. Switching to default solver.');
+          obj = obj.setSolver('default');
+        end
+      end
     end   
 
     function [obj,cnstr_id] = addBoundingBoxConstraint(obj,cnstr,xind)
@@ -610,6 +623,13 @@ classdef NonlinearProgram
         obj.bbcon_lb(end+(1:num_new_vars),:) = -inf(num_new_vars,size(obj.bbcon_lb,2));
         obj.bbcon_ub(end+(1:num_new_vars),:) = inf(num_new_vars,size(obj.bbcon_ub,2));
       end
+      
+      if(strcmpi(obj.solver,'studentsnopt'))
+        if(~(obj.num_vars<=300))
+          warning('Number of variables exceeds studentSNOPT support: obj.num_vars>300. Switching to default solver.');
+          obj = obj.setSolver('default');
+        end
+      end
     end
     
     function obj = replaceCost(obj,cost,cost_idx,xind)
@@ -724,9 +744,10 @@ classdef NonlinearProgram
         obj.solver = 'snopt';
       elseif(strcmp(solver,'studentSnopt'))
         if(~checkDependency('studentSnopt'))
-          error('Drake:NonlinearProgram:UnsupportedSOlver',' SNOPT not found.  SNOPT support will be disabled.');
+          error('Drake:NonlinearProgram:UnsupportedSolver',' studentSNOPT not found.  studentSNOPT support will be disabled.');
         end
         obj.solver = 'snopt';
+        obj.which_snopt = 2;
       elseif(strcmp(solver,'fmincon'))
         if(~checkDependency('fmincon'))
           error('Drake:NonlinearProgram:UnsupportedSolver',' fmincon support is disabled. To enable it, install MATLAB Optimization toolbox');
@@ -738,7 +759,7 @@ classdef NonlinearProgram
         end
         obj.solver = solver;
       elseif(strcmp(solver,'default'))
-        if(checkDependency('snopt'))
+        if(checkDependency('snopt') || checkDependency('NonlinearProgramSnoptmex'))
           obj = obj.setSolver('snopt');
         elseif(checkDependency('studentSnopt')&&obj.num_vars<=300 && obj.num_cin+obj.num_ceq+size(obj.Ain,1)+size(obj.Aeq,1)<=300)
           obj = obj.setSolver('studentSnopt');
@@ -956,15 +977,22 @@ classdef NonlinearProgram
       % When using fmincon, if the algorithm is not specified through
       % setSolverOptions('fmincon','Algorithm',ALGORITHM), then it will
       % iterate all possible algorithms in fmincon to search for a solution.
-      switch lower(obj.solver)
-        case 'snopt'
-          [x,objval,exitflag,infeasible_constraint_name] = snopt(obj,x0);
-        case 'fmincon'
-          [x,objval,exitflag,infeasible_constraint_name] = fmincon(obj,x0);
-        case 'ipopt'
-          [x,objval,exitflag,infeasible_constraint_name] = ipopt(obj,x0);
-        otherwise
-          error('Drake:NonlinearProgram:UnknownSolver',['The requested solver, ',obj.solver,' is not known, or not currently supported']);
+      if(obj.num_vars == 0)
+        x = [];
+        objval = 0;
+        exitflag = 1;
+        infeasible_constraint_name = {};
+      else
+        switch lower(obj.solver)
+          case 'snopt'
+            [x,objval,exitflag,infeasible_constraint_name] = snopt(obj,x0);
+          case 'fmincon'
+            [x,objval,exitflag,infeasible_constraint_name] = fmincon(obj,x0);
+          case 'ipopt'
+            [x,objval,exitflag,infeasible_constraint_name] = ipopt(obj,x0);
+          otherwise
+            error('Drake:NonlinearProgram:UnknownSolver',['The requested solver, ',obj.solver,' is not known, or not currently supported']);
+        end
       end
     end
     
@@ -1628,10 +1656,10 @@ classdef NonlinearProgram
         ub = ub(2:end);
         ub_err = fval-ub;
         max_ub_err = max(ub_err);
-        max_ub_err = max_ub_err*(max_ub_err>0);
+        if (max_ub_err<0), max_ub_err=0; end
         lb_err = lb-fval;
         max_lb_err = max(lb_err);
-        max_lb_err = max_lb_err*(max_lb_err>0);
+        if (max_lb_err<0), max_lb_err=0; end
         if(max_ub_err+max_lb_err>2*obj.constraint_err_tol)
           infeasible_constraint_idx = (ub_err>obj.constraint_err_tol) | (lb_err>obj.constraint_err_tol);
           cnstr_name = [obj.cin_name;obj.ceq_name;obj.Ain_name;obj.Aeq_name];

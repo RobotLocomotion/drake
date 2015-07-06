@@ -1,7 +1,6 @@
 #include "RigidBodyIK.h"
 #include "RigidBodyManipulator.h"
 #include "../constraint/RigidBodyConstraint.h"
-#include "URDFRigidBodyManipulator.h"
 #include "../IKoptions.h"
 #include <iostream>
 #include <cstdlib>
@@ -10,7 +9,8 @@ using namespace std;
 using namespace Eigen;
 int main()
 {
-  URDFRigidBodyManipulator* model = loadURDFfromFile("examples/Atlas/urdf/atlas_minimal_contact.urdf");
+  RigidBodyManipulator rbm("examples/Atlas/urdf/atlas_minimal_contact.urdf");
+  RigidBodyManipulator* model = &rbm;
   if(!model)
   {
     cerr<<"ERROR: Failed to load model"<<endl;
@@ -19,7 +19,7 @@ int main()
   tspan<<0,1;
   int nT = 3;
   double t[3]={0.0,0.5,1.0};
-  MatrixXd q0 = MatrixXd::Zero(model->num_dof,nT);
+  MatrixXd q0 = MatrixXd::Zero(model->num_positions,nT);
   for(int i = 0;i<nT;i++)
   {
     q0(3,i) = 0.8;
@@ -31,7 +31,7 @@ int main()
   RigidBodyConstraint** constraint_array = new RigidBodyConstraint*[num_constraints];
   constraint_array[0] = com_kc;
   IKoptions ikoptions(model);
-  MatrixXd q_sol(model->num_dof,nT);
+  MatrixXd q_sol(model->num_positions,nT);
   int* info = new int[nT];
   vector<string> infeasible_constraint;
   inverseKinPointwise(model,nT,t,q0,q0,num_constraints,constraint_array,q_sol,info,infeasible_constraint,ikoptions);

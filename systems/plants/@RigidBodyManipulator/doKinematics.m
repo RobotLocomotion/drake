@@ -1,35 +1,90 @@
-function kinsol=doKinematics(model,q,b_compute_second_derivatives,use_mex,qd)
-% kinsol=doKinematics(model,q,b_compute_second_derivatives,use_mex,qd)
-% Computes the (forward) kinematics of the manipulator.
+function kinsol = doKinematics(model, q, v, options, qd_old)
+% kinsol=doKinematics(model, q, v, options, qd_old)
+% Precomputes information necessary to compute kinematic and dynamic
+% quantities such as Jacobians (@see forwardKin, @see geometricJacobian),
+% mass matrix and dynamics bias (@see manipulatorDynamics), and other
+% biases, e.g. Jdot * v (@see geometricJacobianDotTimesV).
+% 
+% @param q joint position vector. Must be model.getNumPositions() x 1
+% @param v joint velocity vector. Must be model.getNumVelocities() x 1 or
+% empty
+% @param options options struct. Fields:
+% use_mex: whether or not to use the mex implementation. @default true
+% compute_gradients: boolean, if true: additionally precompute
+%   gradients of all quantities in doKinematics that are precomputed when
+%   compute_gradients is false. Set options.compute_gradients to true if
+%   gradients of Jacobians or dynamics are required. If only Jacobians
+%   (geometric or from forwardKin) are required, setting compute_gradients
+%   to true is *not* required. @default false
+% compute_JdotV: whether or not to precompute quantities necessary to
+% compute biases such as Jdot * v and the C term in manipulatorDynamics
+% @default true if v is passed in and not empty.
 %
-% @retval kinsol a certificate containing the solution (or information
-% about the solution) that must be passed to model.forwardKin() in order to
-% be evaluated.  Note: the contents of kinsol may change with
-% implementation details - do not attempt to use kinsol directly (our
-% contract is simply that it can always be passed to forwardKin to retrieve
-% the answer).
+% @retval kinsol a structure containing the precomputed information
+% (non-mex case) or a certificate of having precomputed this information
+% (mex case)
 %
+% Note: the contents of kinsol may change with implementation details - do
+% not attempt to use kinsol directly (our contract is simply that it can
+% always be used by other kinematics and dynamics methods in Drake.
+%
+% Note: old method signature: 
+% kinsol = doKinematics(model,q,b_compute_second_derivatives,use_mex,qd)
+% This method signature is deprecated, please transition to using the
+% options struct. Using the old signature is supported for now.
 
-if model.use_new_kinsol
-  checkDirty(model);
-  if nargin<5, qd=[]; end
-  if nargin<4, use_mex = true; end
-  
-  compute_gradients = true;
-  v = qd;
-  compute_JdotV = true;
-  kinsol = doKinematicsNew(model, q, compute_gradients, use_mex, v, compute_JdotV);
+checkDirty(model);
+
+% method signature transition
+if nargin > 3
+  options_copy = options;
+end
+warn_signature_changed = false;
+if nargin == 5
+  warn_signature_changed = true;
+  options = struct();
+  options.compute_gradients = v;
+  options.use_mex = options_copy;
+  v = qd_old;
+elseif nargin == 4
+  if islogical(options)
+    warn_signature_changed = true;
+    options = struct();
+    options.compute_gradients = v;
+    options.use_mex = options_copy;
+    v = [];
+  end
+elseif nargin == 3
+  options = struct();
+  if islogical(v)
+    warn_signature_changed = true;
+    options.compute_gradients = v;
+    v = [];
+  end
 else
-  checkDirty(model);
-  if nargin<5, qd=[]; end
-  if nargin<4, use_mex = true; end
-  if nargin<3, b_compute_second_derivatives=false; end
-  
+  options = struct();
+  v = [];
+end
+
+if ~isfield(options, 'use_mex'), options.use_mex = true; end
+if ~isfield(options, 'compute_gradients'), options.compute_gradients = false; end
+if ~isfield(options, 'compute_JdotV'), options.compute_JdotV = ~isempty(v); end
+if ~isfield(options, 'force_new_kinsol'), options.force_new_kinsol = false; end
+
+if warn_signature_changed
+  % TODO: turn on warning
+%   model.warning_manager.warnOnce('Drake:RigidBodyManipulator:doKinematics:method_signature_changed', ...
+%     'Called doKinematics using arguments corresponding to the old method signature. This will be phased out; please update your call to match the new signature.');
+end
+
+if model.use_new_kinsol || options.force_new_kinsol
+  kinsol = doKinematicsNew(model, q, v, options);
+else  
   kinsol.q = q;
-  kinsol.qd = qd;
+  kinsol.qd = v;
   
-  if (use_mex && model.mex_model_ptr~=0 && isnumeric(q))
-    doKinematicsmex(model.mex_model_ptr,q,b_compute_second_derivatives,qd);
+  if (options.use_mex && model.mex_model_ptr~=0 && isnumeric(q))
+    doKinematicsmex(model.mex_model_ptr,q,options.compute_gradients,v);
     kinsol.mex = true;
   else
     kinsol.mex = false;
@@ -46,11 +101,11 @@ else
       if body.parent<1
         kinsol.T{i} = body.Ttree;
         kinsol.dTdq{i} = sparse(3*nq,4);
-        if ~isempty(qd)
+        if ~isempty(v)
           kinsol.Tdot{i} = zeros(4);
           kinsol.dTdqdot{i} = sparse(3*nq,4);
         end
-        if (b_compute_second_derivatives)
+        if (options.compute_gradients)
           kinsol.ddTdqdq{i} = sparse(3*nq*nq,4);
         end
       elseif body.floating==1
@@ -75,7 +130,7 @@ else
           kinsol.dTdq{i}(this_dof_ind,:) = kinsol.dTdq{i}(this_dof_ind,:) + kinsol.T{body.parent}(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*dTJ{j}*body.T_body_to_joint;
         end
         
-        if (b_compute_second_derivatives)
+        if (options.compute_gradients)
           ddTJ = cell(6,6);
           % if j<=3 or k<=3, then ddTJ{j,k} = zeros(4); so I've left them out
           ddTJ{4,4} = [rz*ry*ddrx,zeros(3,1); zeros(1,4)];
@@ -109,11 +164,11 @@ else
           kinsol.ddTdqdq{i} = [];
         end
         
-        if isempty(qd)
+        if isempty(v)
           kinsol.Tdot{i} = [];
           kinsol.dTdqdot{i} = [];
         else
-          qdi = qd(body.position_num);
+          qdi = v(body.position_num);
           TJdot = zeros(4);
           dTJdot{1} = zeros(4);
           dTJdot{2} = zeros(4);
@@ -151,7 +206,7 @@ else
         this_dof_ind = body.position_num+0:nq:3*nq;
         kinsol.dTdq{i}(this_dof_ind,:) = kinsol.dTdq{i}(this_dof_ind,:) + kinsol.T{body.parent}(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*dTJ*body.T_body_to_joint;
         
-        if (b_compute_second_derivatives)
+        if (options.compute_gradients)
           % ddTdqdq = [d(dTdq)dq1; d(dTdq)dq2; ...]
           kinsol.ddTdqdq{i} = kinsol.ddTdqdq{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint;
           
@@ -166,8 +221,8 @@ else
           kinsol.ddTdqdq{i}(ind,:) = kinsol.ddTdqdq{i}(ind,:) + kinsol.T{body.parent}(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*ddTJ*body.T_body_to_joint;  % body.jsign^2 is there, but unnecessary (since it's always 1)
         end
         
-        if ~isempty(qd)
-          qdi = qd(body.position_num);
+        if ~isempty(v)
+          qdi = v(body.position_num);
           TJdot = dTJ*qdi;
           dTJdot = ddTjcalc(body.pitch,qi)*qdi;
           kinsol.Tdot{i} = kinsol.Tdot{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint + kinsol.T{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJdot*body.T_body_to_joint;
@@ -181,68 +236,54 @@ end
 
 end
 
-function kinsol = doKinematicsNew(model, q, compute_gradients, use_mex, v, compute_JdotV)
-% kinsol=doKinematics(model, q, compute_gradients, use_mex, v, compute_JdotV)
-% Computes the (forward) kinematics of the manipulator.
-%
-% @retval kinsol a certificate containing the solution (or information
-% about the solution) that must be passed to model.forwardKin() in order to
-% be evaluated.  Note: the contents of kinsol may change with
-% implementation details - do not attempt to use kinsol directly (our
-% contract is simply that it can always be passed to forwardKin to retrieve
-% the answer).
-%
-
+function kinsol = doKinematicsNew(model, q, v, options)
 % TODO: currently lots of branch-induced sparsity unexploited in
 % gradient computations.
-
-checkDirty(model);
-if nargin<5, v=[]; end
-if nargin<6 && ~isempty(v), compute_JdotV=false; end
-if nargin<4, use_mex = true; end
-if nargin<3, compute_gradients = false; end
 
 kinsol.q = q;
 kinsol.v = v;
 
-if (use_mex && model.mex_model_ptr~=0 && isnumeric(q))
-  doKinematicsmex(model.mex_model_ptr,q,compute_gradients,v);
+if (options.use_mex && model.mex_model_ptr~=0 && isnumeric(q))
+  doKinematicsNewmex(model.mex_model_ptr,q,options.compute_gradients,v,options.compute_JdotV);
   kinsol.mex = true;
 else
   kinsol.mex = false;
   
   bodies = model.body;
   kinsol.T = computeTransforms(bodies, q);
-  if compute_gradients
-    [S, dSdq] = computeMotionSubspaces(bodies, q);
+  if options.compute_gradients
+    [kinsol.S, kinsol.dSdq] = computeMotionSubspaces(bodies, q);
   else
-    S = computeMotionSubspaces(bodies, q);
+    kinsol.S = computeMotionSubspaces(bodies, q);
   end
-  kinsol.J = computeJ(kinsol.T, S);
+  kinsol.J = computeJ(kinsol.T, kinsol.S);
   
-  if compute_gradients
-    [kinsol.qdotToV, kinsol.dqdotToVdq] = qdotToV(model, q);
-    [kinsol.vToqdot, kinsol.dvToqdotdq] = vToqdot(model, q);
+  if options.compute_gradients
+    [kinsol.qdotToV, kinsol.dqdotToVdqi, kinsol.dqdotToVdq] = computeQdotToV(bodies, q);
+    [kinsol.vToqdot, kinsol.dvToqdotdqi, kinsol.dvToqdotdq] = computeVToqdot(bodies, q);
   else
-    kinsol.qdotToV = qdotToV(model, q);
-    kinsol.vToqdot = vToqdot(model, q);
+    kinsol.qdotToV = computeQdotToV(bodies, q);
+    kinsol.vToqdot = computeVToqdot(bodies, q);
+  end
+  if ~isempty(v)
+    kinsol.qd = computeQdot(bodies, kinsol.vToqdot, v, length(q));
   end
   
-  if compute_gradients
-    kinsol.dTdq = computeTransformGradients(bodies, kinsol.T, S, kinsol.qdotToV);
-    kinsol.dJdq = computedJdq(bodies, kinsol.T, S, kinsol.dTdq, dSdq);
+  if options.compute_gradients
+    kinsol.dTdq = computeTransformGradients(bodies, kinsol.T, kinsol.S, kinsol.qdotToV, length(q));
+    kinsol.dJdq = computedJdq(bodies, kinsol.T, kinsol.S, kinsol.dTdq, kinsol.dSdq);
   end
   
   if ~isempty(v)
-    if compute_gradients
+    if options.compute_gradients
       [kinsol.twists, kinsol.dtwistsdq] = computeTwistsInBaseFrame(bodies, kinsol.J, v, kinsol.dJdq);
-      if compute_JdotV
+      if options.compute_JdotV
         [SdotV, dSdotVdq, dSdotVdv] = computeMotionSubspacesDotV(bodies, q, v);
         [kinsol.JdotV, kinsol.dJdotVdq, kinsol.dJdotVidv] = computeJacobianDotV(model, kinsol, SdotV, dSdotVdq, dSdotVdv);
       end
     else
       kinsol.twists = computeTwistsInBaseFrame(bodies, kinsol.J, v);
-      if compute_JdotV
+      if options.compute_JdotV
         SdotV = computeMotionSubspacesDotV(bodies, q, v);
         kinsol.JdotV = computeJacobianDotV(model, kinsol, SdotV);
       end
@@ -285,22 +326,20 @@ for i = 2 : nb
 end
 end
 
-function ret = computeTransformGradients(bodies, T, S, qdotToV)
+function ret = computeTransformGradients(bodies, T, S, qdotToV, nq)
 % computes the gradients of T{i} with respect to q
 % makes use of the fact that the gradients of the joint transforms are
 % dT/dq = dTdot/dqdot, where Tdot depends on v through the joint motion
 % subspace S and qdot depends on v via the qdotToV mapping.
 
 nb = length(bodies);
-nq = size(qdotToV, 2);
 ret = cell(1, nb);
 ret{1} = zeros(16, nq);
 for i = 2 : nb
   body = bodies(i);
   T_body_to_parent = T{body.parent} \ T{i};
-  qdotToVi = qdotToV(body.velocity_num, body.position_num);
   
-  dT_body_to_parentdqi = dHomogTrans(T_body_to_parent, S{i}, qdotToVi);
+  dT_body_to_parentdqi = dHomogTrans(T_body_to_parent, S{i}, qdotToV{i});
   dT_body_to_parentdq = zeros(numel(T{i}), nq) * dT_body_to_parentdqi(1); % to make TaylorVar work better
   dT_body_to_parentdq(:, body.position_num) = dT_body_to_parentdqi;
   ret{i} = matGradMultMat(...
@@ -332,8 +371,71 @@ for i = 2 : nb
   Si = S{i};
   dSidq = zeros(numel(Si), nq) * dTdq{i}(1); % to make TaylorVar work better
   dSidq(:, body.position_num) = dSdq{i};
-  ret{i} = dTransformAdjoint(T{i}, Si, dTdq{i}, dSidq);
+  ret{i} = dTransformSpatialMotion(T{i}, Si, dTdq{i}, dSidq);
 end
+end
+
+function [Vq, dVqdqi, dVqdq] = computeQdotToV(bodies, q)
+compute_gradient = nargout > 1;
+nb = length(bodies);
+Vq = cell(1, nb);
+if compute_gradient
+  dVqdqi = cell(1, nb);
+  dVqdq = cell(1, nb);
+end
+nq = length(q);
+
+for i = 2 : nb
+  body = bodies(i);
+  q_body = q(body.position_num);
+  if compute_gradient
+    [Vq{i}, dVqdqi{i}] = jointQdot2v(body, q_body);
+    dVqdq{i} = zeros(numel(Vq{i}), nq);
+    dVqdq{i}(:, body.position_num) = dVqdqi{i};
+  else
+    Vq{i} = jointQdot2v(body, q_body);
+  end
+end
+end
+
+function [VqInv, dVqInvdqi, dVqInvdq] = computeVToqdot(bodies, q)
+compute_gradient = nargout > 1;
+nb = length(bodies);
+VqInv = cell(1, nb);
+if compute_gradient
+  dVqInvdqi = cell(1, nb);
+  dVqInvdq = cell(1, nb);
+end
+nq = length(q);
+
+for i = 2 : nb
+  body = bodies(i);
+  q_body = q(body.position_num);
+  if compute_gradient
+    [VqInv{i}, dVqInvdqi{i}] = jointV2qdot(body, q_body);
+    dVqInvdq{i} = zeros(numel(VqInv{i}), nq);
+    dVqInvdq{i}(:, body.position_num) = dVqInvdqi{i};
+  else
+    VqInv{i} = jointV2qdot(body, q_body);
+  end
+end
+end
+
+function qd = computeQdot(bodies, vToqdot, v, nq)
+% see http://undocumentedmatlab.com/blog/trapping-warnings-efficiently
+% this turns a warning with the specified ID into an error.
+original_warning_state = warning('error', 'Drake:TaylorVar:DoubleConversion');
+qd = zeros(nq, 1);
+try
+  for i = 2 : length(bodies)
+    body = bodies(i);
+    qd(body.position_num) = vToqdot{i} * v(body.velocity_num);
+  end
+catch
+  % do it the inefficient but TaylorVar-proof way
+  qd = blkdiag(vToqdot{:}) * v;
+end
+warning(original_warning_state);
 end
 
 function [twists, dtwistsdq] = computeTwistsInBaseFrame(bodies, J, v, dJdq)
@@ -433,7 +535,7 @@ for i = 2 : nb
     dSdotVidq = zeros(numel(SdotVi{i}), nq);
     dSdotVidq(:, body.position_num) = dSidotVidqi{i};
     djoint_acceldq = dcrm(twist, joint_twist, dtwistdq, djoint_twistdq)...
-      + dTransformAdjoint(kinsol.T{i}, SdotVi{i}, kinsol.dTdq{i}, dSdotVidq);
+      + dTransformSpatialMotion(kinsol.T{i}, SdotVi{i}, kinsol.dTdq{i}, dSdotVidq);
     dJdotVdq{i} = dJdotVdq{parent} + djoint_acceldq;
     
     % v gradient: dJdot_times_vi/dv

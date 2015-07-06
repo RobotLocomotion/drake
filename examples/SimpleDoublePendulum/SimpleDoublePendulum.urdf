@@ -13,7 +13,7 @@
     <color rgba="0 0 1 1" />
   </material>
 
-  <link name="world">
+  <link name="base">
     <inertial> <!-- drc-viewer needs this to have inertia to parse properly.  remove it when that bug is fixed -->
       <origin xyz="0 0 0" />
       <mass value="0.01" />
@@ -35,7 +35,7 @@
     </visual> 
   </link>
   <joint name="shoulder" type="continuous">
-    <parent link="world"/>
+    <parent link="base"/>
     <child link="upper_arm" />
     <axis xyz="0 1 0" />
     <dynamics damping="0.1" />

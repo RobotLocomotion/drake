@@ -1,15 +1,28 @@
-function ok = checkDependency(dep,minimum_version)
+function ok = checkDependency(dep,command)
 % Drake code which depends on an external library or program should
 % check that dependency by calling this function.
 %   example:
 %     checkDependency('snopt')
 % or
 %     if (~checkDependency('snopt')) error('my error'); end
+%
+% @param dep the name of the dependency to check
+% @param command can be 'disable', 'enable'
+%  % todo: consider supporting a minimum_version
 
 persistent conf;
 
 ldep = lower(dep);
 conf_var = [ldep,'_enabled'];
+
+if (nargin>1)
+  if strcmp(command,'disable')
+    conf.(conf_var) = false;
+    return;
+  elseif strcmp(command,'enable')
+    conf.(conf_var) = [];
+  end
+end
 
 already_checked = isfield(conf,conf_var) && ~isempty(conf.(conf_var));
 if already_checked
@@ -23,9 +36,19 @@ else % then try to evaluate the dependency now...
         warning('Drake:SimulinkVersion','Most features of Drake require SIMULINK version 7.3 or above.');
         % haven't actually tested with lower versions
       end
+      
+    case 'distcomp'
+      v=ver('distcomp');
+      conf.distcomp_enabled = ~isempty(v);
+      if ~conf.distcomp_enabled
+        disp(' MATLAB Parallel Computing Toolbox was not found');
+      elseif verLessThan('distcomp','6.3') && matlabpool('size')==0
+        % start a matlab pool (if none exists).  this approximates the
+        % now default behavior in newer versions of distcomp.
+        matlabpool; 
+      end
 
     case 'spotless'
-      % require spotless
       conf.spotless_enabled = logical(exist('msspoly','class'));
       if ~conf.spotless_enabled
         if ~pod_pkg_config('spotless')

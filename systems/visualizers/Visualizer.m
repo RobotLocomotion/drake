@@ -49,10 +49,16 @@ classdef Visualizer < DrakeSystem
 
     function drawWrapper(obj,t,y)
       sfigure(obj.fignum);
+      if (obj.preserve_view)
+        [az,el]=view;
+      end
       clf; hold on;
       draw(obj,t,y);
       if (obj.display_time)
         title(['t = ', num2str(t,'%.2f') ' sec']);
+      end
+      if (obj.preserve_view)
+        view(az,el);
       end
       drawnow;
     end
@@ -257,8 +263,12 @@ classdef Visualizer < DrakeSystem
 
       set(f, 'Position', [560 400 560 20 + 30*rows]);
       resize_gui();
-      update_display(slider{1});
-
+      if isempty(state_dims), 
+        obj.drawWrapper(0,[]); 
+      else 
+        update_display(slider{1});
+      end
+      
       function resize_gui(source, eventdata)
         p = get(gcf,'Position');
         width = p(3);
@@ -484,6 +494,7 @@ classdef Visualizer < DrakeSystem
     playback_speed=1;  % 1=realtime
     draw_axes=false;  % when making movies true=gcf,false=gca
     display_time=true; % when true, time is written to figure title
+    preserve_view=false; % when true, drawWrapper gets the view, calls draw, then restores the view
     axis;  % set this to non-empty for a fixed view (must be implemented by the draw method)
     fignum = 25;
   end

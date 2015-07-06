@@ -1,19 +1,20 @@
+#include <iostream>
 #include <map>
 #include <list>
+#include <memory>
+#include <string>
 
 #include <lcm/lcm.h>
 
 #include <bot_core/bot_core.h>
 #include <bot_vis/bot_vis.h>
 
-#include <boost/shared_ptr.hpp>
-#include <boost/pointer_cast.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/algorithm/string.hpp>
+#include "spruce.hh"
 
-#include "URDFRigidBodyManipulator.h"
 #include "lcmtypes/drake.h"
 #include "drake_urdf_renderer.h"
+
+#include <algorithm>
 
 #define UNUSED(x) (void)(x);
 
@@ -62,7 +63,7 @@ public:
 
     // transform from center of cylinder
     glTranslatef(0.0,0.0,-length/2.0);
-    
+
     // first end cap
     gluDisk(quadric, 0.0, radius, 24, 1);
 
@@ -73,11 +74,11 @@ public:
 		length,
 		36,
 		1);
-    
+
     // second end cap
     glTranslatef(0.0,0.0,length);
     gluDisk(quadric, 0.0, radius, 24, 1);
-    
+
     gluDeleteQuadric(quadric);
   }
 
@@ -85,21 +86,28 @@ public:
 
 class Mesh : public Geometry {
 public:
-  Mesh(string fname, float scale=1.0) {
-    scale_x = scale_y = scale_z = scale;
-
-    boost::filesystem::path mypath(fname);
-    string ext = mypath.extension().native();
-    boost::to_lower(ext);
-	      
+  Mesh(string fname, int num_scale_factors, float *scale=NULL) {
+    if ( scale && num_scale_factors == 3 ) {
+      scale_x = scale[0];
+      scale_y = scale[1];
+      scale_z = scale[2];
+    }
+    else if ( scale && num_scale_factors == 1 ) {
+      scale_x = scale_y = scale_z = scale[0];
+    }
+    spruce::path path(fname);
+    std::string ext = path.extension();
+    
+    std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+    
     if (ext.compare(".obj")==0) {
-      // cout << "Loading mesh from " << fname << " (scale = " << scale << ")" << endl;
       pmesh = bot_wavefront_model_create(fname.c_str());
-    } else if ( boost::filesystem::exists( mypath.replace_extension(".obj") ) ) {
+    } else  {
+      path.setExtension(".obj");
+      if (path.exists())
       // try changing the extension to obj and loading
-      //      cout << "Loading mesh from " << mypath.replace_extension(".obj").native() << endl;
-      pmesh = bot_wavefront_model_create(mypath.replace_extension(".obj").native().c_str());
-    }      
+      pmesh = bot_wavefront_model_create(path.getStr().c_str());
+    }
 
     if (!pmesh) {
       cerr << "Warning: Mesh " << fname << " ignored because it does not have extension .obj (nor can I find a juxtaposed file with a .obj extension)" << endl;
@@ -112,9 +120,9 @@ public:
   virtual void draw(void) {
     glScalef(scale_x,scale_y,scale_z);
     bot_wavefront_model_gl_draw(pmesh);
-  }  
+  }
 
-  float scale_x, scale_y, scale_z; 
+  float scale_x, scale_y, scale_z;
   BotWavefrontModel* pmesh;
 };
 
@@ -128,7 +136,7 @@ public:
     // transform to center of capsule
     glTranslatef(0.0,0.0,-length/2.0);
     glutSolidSphere(radius,36,36);
-    
+
     GLUquadricObj* quadric = gluNewQuadric();
     gluQuadricDrawStyle(quadric, GLU_FILL);
     gluQuadricNormals(quadric, GLU_SMOOTH);
@@ -149,7 +157,7 @@ public:
 class LinkGeometry {
  public:
 
-  boost::shared_ptr<Geometry> pGeometry;
+  shared_ptr<Geometry> pGeometry;
   double pos[3], theta, axis[3];
   float color[4];
 
@@ -162,32 +170,32 @@ class LinkGeometry {
     switch (geometry_data->type) {
     case DRAKE_LCMT_VIEWER_GEOMETRY_DATA_SPHERE:
       {
-	boost::shared_ptr<Geometry> g(boost::static_pointer_cast<Geometry>(new Sphere(geometry_data->float_data[0])));
-	pGeometry = g;
+	      shared_ptr<Geometry> g(new Sphere(geometry_data->float_data[0]));
+	      pGeometry = g;
       }
       break;
     case DRAKE_LCMT_VIEWER_GEOMETRY_DATA_BOX:
       {
-	boost::shared_ptr<Geometry> g(boost::static_pointer_cast<Geometry>(new Box(geometry_data->float_data[0], geometry_data->float_data[1], geometry_data->float_data[2])));
-	pGeometry = g;
+	      shared_ptr<Geometry> g(new Box(geometry_data->float_data[0], geometry_data->float_data[1], geometry_data->float_data[2]));
+	      pGeometry = g;
       }
       break;
     case DRAKE_LCMT_VIEWER_GEOMETRY_DATA_CYLINDER:
       {
-	boost::shared_ptr<Geometry> g(boost::static_pointer_cast<Geometry>(new Cylinder(geometry_data->float_data[0], geometry_data->float_data[1])));
-	pGeometry = g;
+	      shared_ptr<Geometry> g(new Cylinder(geometry_data->float_data[0], geometry_data->float_data[1]));
+	      pGeometry = g;
       }
       break;
     case DRAKE_LCMT_VIEWER_GEOMETRY_DATA_MESH:
       {
-	boost::shared_ptr<Geometry> g(boost::static_pointer_cast<Geometry>(new Mesh(geometry_data->string_data, geometry_data->float_data[0])));
-	pGeometry = g;
+	      shared_ptr<Geometry> g(new Mesh(geometry_data->string_data, geometry_data->num_float_data, geometry_data->float_data));
+	      pGeometry = g;
       }
       break;
     case DRAKE_LCMT_VIEWER_GEOMETRY_DATA_CAPSULE:
       {
-	boost::shared_ptr<Geometry> g(boost::static_pointer_cast<Geometry>(new Capsule(geometry_data->float_data[0], geometry_data->float_data[1])));
-	pGeometry = g;
+	      shared_ptr<Geometry> g(new Capsule(geometry_data->float_data[0], geometry_data->float_data[1]));
+	      pGeometry = g;
       }
       break;
     default:
@@ -199,14 +207,14 @@ class LinkGeometry {
       cerr << "failed to construct link geometry" << endl;
       return;
     }
-    
+
     for (int i=0; i<3; i++) pos[i] = geometry_data->position[i];
     double q[4];
     for (int i=0; i<4; i++) q[i] = geometry_data->quaternion[i];
     bot_quat_to_angle_axis(q, &theta, axis);
     for (int i=0; i<4; i++) color[i] = geometry_data->color[i];
   }
-  
+
   void draw(void) {
     glPushMatrix();
     glTranslatef(pos[0],pos[1],pos[2]);
@@ -222,14 +230,14 @@ class LinkGeometry {
 class Link {
 public:
   double pos[3], theta, axis[3];
-  list<boost::shared_ptr<LinkGeometry>> geometry;
+  list<shared_ptr<LinkGeometry>> geometry;
 
   Link(const drake_lcmt_viewer_link_data* link_data) : theta(0.0)
   {
     pos[0] = pos[1] = pos[2] = 0.0;
     axis[0] = axis[1] = axis[2] = 0.0;
     for (int i=0; i<link_data->num_geom; i++) {
-      boost::shared_ptr<LinkGeometry> g(new LinkGeometry(&(link_data->geom[i])));
+      shared_ptr<LinkGeometry> g(new LinkGeometry(&(link_data->geom[i])));
       geometry.push_back(g);
     }
   }
@@ -239,7 +247,7 @@ public:
     glTranslatef(pos[0],pos[1],pos[2]);
     glRotatef(theta * 180/3.141592654, axis[0], axis[1], axis[2]);
 
-    for (list<boost::shared_ptr<LinkGeometry>>::iterator g=geometry.begin(); g!=geometry.end(); ++g) {
+    for (list<shared_ptr<LinkGeometry>>::iterator g=geometry.begin(); g!=geometry.end(); ++g) {
       (*g)->draw();
     }
 
@@ -262,14 +270,14 @@ typedef struct _RendererData {
   BotViewer   *viewer;
   lcm_t       *lcm;
   //  map<string, BotWavefrontModel*> meshes;
-  map<link_index, boost::shared_ptr<Link> > links; 
+  map<link_index, shared_ptr<Link> > links;
   string  movie_path;
 } RendererData;
 
 static void my_free( BotRenderer *renderer )
 {
   RendererData *self = (RendererData*) renderer->user;
-  
+
   free( self );
 }
 
@@ -277,7 +285,7 @@ static void my_draw( BotViewer *viewer, BotRenderer *renderer )
 {
   UNUSED(viewer);
   RendererData *self = (RendererData*) renderer->user;
-  if (self->links.size() < 1) return;  
+  if (self->links.size() < 1) return;
 
   // todo: move these to setup?
   glDisable (GL_BLEND);
@@ -289,9 +297,9 @@ static void my_draw( BotViewer *viewer, BotRenderer *renderer )
   //  glFrontFace (GL_CCW);
   //  glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   //  glShadeModel (GL_SMOOTH);
-  
+
   glMatrixMode (GL_MODELVIEW);
-  
+
   /* give the ambient light a blue tint to match the blue sky */
   float light0_amb[] = { 0.4, 0.4, .5, 1 };
   float light0_dif[] = { 1, 1, 1, 1 };
@@ -302,17 +310,17 @@ static void my_draw( BotViewer *viewer, BotRenderer *renderer )
   glLightfv (GL_LIGHT0, GL_SPECULAR, light0_spe);
   glLightfv (GL_LIGHT0, GL_POSITION, light0_pos);
   glEnable (GL_LIGHT0);
-  
+
   glEnable (GL_LIGHTING);
   glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
   glEnable (GL_COLOR_MATERIAL);
 
-  for (map<link_index,boost::shared_ptr<Link>>::iterator l=self->links.begin(); l!=self->links.end(); ++l) {
+  for (map<link_index,shared_ptr<Link>>::iterator l=self->links.begin(); l!=self->links.end(); ++l) {
     l->second->draw();
   }
 }
 
-static void handle_lcm_viewer_load_robot(const lcm_recv_buf_t *rbuf, const char * channel, 
+static void handle_lcm_viewer_load_robot(const lcm_recv_buf_t *rbuf, const char * channel,
         const drake_lcmt_viewer_load_robot * msg, void * user)
 {
   RendererData *self = (RendererData*) user;
@@ -326,7 +334,7 @@ static void handle_lcm_viewer_load_robot(const lcm_recv_buf_t *rbuf, const char 
       cerr << "illegal robot_num" << endl;
       continue;
     }
-    boost::shared_ptr<Link> l(new Link(&(msg->link[i])));
+    shared_ptr<Link> l(new Link(&(msg->link[i])));
     self->links.insert(make_pair(make_pair(msg->link[i].robot_num,msg->link[i].name),l));
   }
 
@@ -340,11 +348,11 @@ static void handle_lcm_viewer_load_robot(const lcm_recv_buf_t *rbuf, const char 
   bot_viewer_request_redraw(self->viewer);
 }
 
-static void handle_lcm_viewer_command(const lcm_recv_buf_t *rbuf, const char * channel, 
+static void handle_lcm_viewer_command(const lcm_recv_buf_t *rbuf, const char * channel,
         const drake_lcmt_viewer_command * msg, void * user)
 {
   RendererData *self = (RendererData*) user;
-  
+
   switch(msg->command_type) {
   case DRAKE_LCMT_VIEWER_COMMAND_START_RECORDING:
     {
@@ -368,13 +376,13 @@ static void handle_lcm_viewer_command(const lcm_recv_buf_t *rbuf, const char * c
       cerr << "Terrain loading from file not implemented yet" << endl;
     }
     break;
-    
+
   case DRAKE_LCMT_VIEWER_COMMAND_SET_TERRAIN_TRANSFORM:
     {
       cerr << "Setting the terrain transform is not implemented yet" << endl;
     }
     break;
-    
+
   default:
     cerr << "viewer command " << msg->command_type << " not implemented yet" << endl;
     break;
@@ -383,15 +391,15 @@ static void handle_lcm_viewer_command(const lcm_recv_buf_t *rbuf, const char * c
   bot_viewer_request_redraw(self->viewer);
 }
 
-static void handle_lcm_viewer_draw(const lcm_recv_buf_t *rbuf, const char * channel, 
+static void handle_lcm_viewer_draw(const lcm_recv_buf_t *rbuf, const char * channel,
         const drake_lcmt_viewer_draw * msg, void * user)
 {
   RendererData *self = (RendererData*) user;
-  
+
   if (self->links.size()<1) return;
-  
+
   for (int i=0; i<msg->num_links; i++) {
-    map<link_index,boost::shared_ptr<Link>>::iterator iter = self->links.find(make_pair(msg->robot_num[i],msg->link_name[i]));
+    map<link_index,shared_ptr<Link>>::iterator iter = self->links.find(make_pair(msg->robot_num[i],msg->link_name[i]));
     if (iter == self->links.end())
       cerr << "failed to find link: " << msg->link_name[i] << endl;
     else {
@@ -403,30 +411,30 @@ static void handle_lcm_viewer_draw(const lcm_recv_buf_t *rbuf, const char * chan
 }
 
 
-void 
+void
 drake_urdf_add_renderer_to_viewer(BotViewer* viewer, lcm_t* lcm, int priority)
 {
   RendererData *self =
           (RendererData*) calloc(1, sizeof(RendererData));
-  
+
   BotRenderer *renderer = &self->renderer;
   const char* name = "Drake URDF";
-    
+
   self->lcm = lcm;
   self->viewer = viewer;
-  
+
   renderer->draw = my_draw;
   renderer->destroy = my_free;
   renderer->name = new char[strlen(name)+1];
   strcpy(renderer->name,name);
   renderer->enabled = 1;
   renderer->user = self;
-  
+
   drake_lcmt_viewer_command_subscribe(lcm,"DRAKE_VIEWER_COMMAND",&handle_lcm_viewer_command,self);
   //  drake_lcmt_robot_state_subscribe(lcm,"DRAKE_VIEWER_STATE",&handle_lcm_robot_state,self);
   drake_lcmt_viewer_load_robot_subscribe(lcm,"DRAKE_VIEWER_LOAD_ROBOT",&handle_lcm_viewer_load_robot,self);
   drake_lcmt_viewer_draw_subscribe(lcm,"DRAKE_VIEWER_DRAW",&handle_lcm_viewer_draw,self);
-  
+
   bot_viewer_add_renderer(viewer, renderer, priority);
 
   drake_lcmt_viewer_command status_message;

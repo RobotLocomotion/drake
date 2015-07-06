@@ -46,6 +46,7 @@ classdef QPController < MIMODrakeSystem
 
     obj.robot = r;
     obj.numq = getNumPositions(r);
+    obj.numv = getNumVelocities(r);
     obj.controller_data = controller_data;
     obj.n_body_accel_inputs = length(body_accel_input_frames);
 
@@ -312,7 +313,6 @@ classdef QPController < MIMODrakeSystem
     supp.contact_pts = contact_pts;
     supp.contact_groups = contact_groups;
     supp.num_contact_pts = n_contact_pts;
-    supp.contact_surfaces = 0*support_bodies;
     
     qdd_lb =-500*ones(1,nq);
     qdd_ub = 500*ones(1,nq);
@@ -345,7 +345,8 @@ classdef QPController < MIMODrakeSystem
       include_angular_momentum = any(any(obj.W_kdot));
 
       if include_angular_momentum
-        [A,Adot] = getCMM(r,kinsol,qd);
+        A = centroidalMomentumMatrix(r, kinsol);
+        Adot_times_v = centroidalMomentumMatrixDotTimesVmex(r, kinsol);
       end
 
       Jcomdot = forwardJacDot(r,kinsol,0);
@@ -484,7 +485,7 @@ classdef QPController < MIMODrakeSystem
 
       if include_angular_momentum
         Ak = A(1:3,:);
-        Akdot = Adot(1:3,:);
+        Akdot_times_v = Adot_times_v(1:3,:);
         k=Ak*qd;
         kdot_des = -obj.Kp_ang*k;
       end
@@ -509,7 +510,7 @@ classdef QPController < MIMODrakeSystem
         fqp = fqp - y0'*Qy*D_ls*Jcom*Iqdd;
         fqp = fqp - (w_qdd.*qddot_des)'*Iqdd;
         if include_angular_momentum
-          fqp = fqp + qd'*Akdot'*obj.W_kdot*Ak*Iqdd;
+          fqp = fqp + Akdot_times_v'*obj.W_kdot*Ak*Iqdd;
           fqp = fqp - kdot_des'*obj.W_kdot*Ak*Iqdd;
         end
 
@@ -691,6 +692,7 @@ classdef QPController < MIMODrakeSystem
   properties (SetAccess=private)
     robot; % to be controlled
     numq;
+    numv;
     controller_data; % shared data handle that holds S, h, foot trajectories, etc.
     W_kdot; % angular momentum cost term weight matrix
     w_qdd; % qdd objective function weight vector

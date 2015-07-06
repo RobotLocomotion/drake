@@ -454,17 +454,16 @@ classdef RigidBodyWing < RigidBodyForceElement
         wingvel_rel = RigidBodyWing.computeWingVelocityRelative(obj.kinframe, manip, kinsol, wingvel_struct);
       end
 
-      
       airspeed = norm(wingvel_world_xz);
       if (nargout>1)
-        dairspeeddq = (wingvel_world_xz'*dwingvel_worlddq)/norm(wingvel_world_xz);
-        dairspeeddqd = (wingvel_world_xz'*dwingvel_worlddqd)/norm(wingvel_world_xz);
+        dairspeeddq = (wingvel_world_xz'*dwingvel_worlddq)/(norm(wingvel_world_xz)+eps);
+        dairspeeddqd = (wingvel_world_xz'*dwingvel_worlddqd)/(norm(wingvel_world_xz)+eps);
       end
 
       aoa = -(180/pi)*atan2(wingvel_rel(3),wingvel_rel(1));
       if (nargout>1)
-        daoadq = -(180/pi)*(wingvel_rel(1)*dwingvel_reldq(3,:)-wingvel_rel(3)*dwingvel_reldq(1,:))/(wingvel_rel(1)^2+wingvel_rel(3)^2);
-        daoadqd = -(180/pi)*(wingvel_rel(1)*dwingvel_reldqd(3,:)-wingvel_rel(3)*dwingvel_reldqd(1,:))/(wingvel_rel(1)^2+wingvel_rel(3)^2);
+        daoadq = -(180/pi)*(wingvel_rel(1)*dwingvel_reldq(3,:)-wingvel_rel(3)*dwingvel_reldq(1,:))/(wingvel_rel(1)^2+wingvel_rel(3)^2+eps);
+        daoadqd = -(180/pi)*(wingvel_rel(1)*dwingvel_reldqd(3,:)-wingvel_rel(3)*dwingvel_reldqd(1,:))/(wingvel_rel(1)^2+wingvel_rel(3)^2+eps);
       end
 
       %lift and drag are the forces on the body in the world frame.
@@ -498,7 +497,6 @@ classdef RigidBodyWing < RigidBodyForceElement
         dtorque_worlddqd = -airspeed*airspeed*wingYunit*dCMdqd + -CM*2*airspeed*(wingYunit*dairspeeddqd);
       end
 
-      % convert torque to joint frame (featherstone dynamics algorithm never reasons in body coordinates)
       if (nargout>1)
         [torque_body, torque_bodyP, torque_bodyJ] = bodyKin(manip,kinsol,frame.body_ind,[torque_world,zeros(3,1)]);
         torque_body = torque_body(:,1)-torque_body(:,2);
@@ -509,12 +507,6 @@ classdef RigidBodyWing < RigidBodyForceElement
       else
         torque_body = bodyKin(manip,kinsol,frame.body_ind,[torque_world,zeros(3,1)]);
         torque_body = torque_body(:,1)-torque_body(:,2);
-      end
-
-      torque_joint = manip.body(frame.body_ind).X_joint_to_body'*[torque_body;0;0;0];
-      if (nargout>1)
-        dtorque_jointdq = manip.body(frame.body_ind).X_joint_to_body'*[dtorque_bodydq;zeros(3,nq)];
-        dtorque_jointdqd = manip.body(frame.body_ind).X_joint_to_body'*[dtorque_bodydqd;zeros(3,nq)];
       end
 
       %inputs of point (body coordinates), and force (world coordinates)
@@ -529,10 +521,10 @@ classdef RigidBodyWing < RigidBodyForceElement
         f = cartesianForceToSpatialForce(manip, kinsol, frame.body_ind, frame.T(1:3,4),lift_world+drag_world);
       end
 
-      body_force = torque_joint + f;
+      body_force = [torque_body;0;0;0] + f;
       if (nargout>1)
-        dbody_forcedq = dtorque_jointdq + dfdq;
-        dbody_forcedqd = dtorque_jointdqd + dfdqd;
+        dbody_forcedq = [dtorque_bodydq;zeros(3,nq)] + dfdq;
+        dbody_forcedqd = [dtorque_bodydqd;zeros(3,nq)] + dfdqd;
       end
 
       force = sparse(6,getNumBodies(manip))*q(1); % q(1) is for taylorvar
@@ -757,7 +749,7 @@ classdef RigidBodyWing < RigidBodyForceElement
       
     end
 
-    function [model, obj] = parseURDFNode(model,robotnum,node,options)
+    function [model, obj] = parseURDFNode(model,name,robotnum,node,options)
       % Build a RigidBodyWing from a URDF.
       %
       % @param model model we are adding to
@@ -767,9 +759,6 @@ classdef RigidBodyWing < RigidBodyForceElement
       % @retval model updated model
       % @retval obj constructed RigidBodyWing
       
-      name = char(node.getAttribute('name'));
-      name = regexprep(name, '\.', '_', 'preservecase');
-
       elNode = node.getElementsByTagName('parent').item(0);
       parent = findLinkId(model,char(elNode.getAttribute('link')),robotnum);
 

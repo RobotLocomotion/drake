@@ -48,7 +48,7 @@ classdef IKoptions
     qd0_ub
     qdf_ub
     qdf_lb
-    mex_ptr = 0;
+    mex_ptr = nullPointer();
   end
 
   methods(Access = protected)

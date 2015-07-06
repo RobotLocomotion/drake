@@ -18,7 +18,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
     destroyDrakeMexPointer<RigidBodyConstraint*>(prhs[0]);
     return;
   }
-  mwSize strlen = mxGetNumberOfElements(prhs[1])+1;
+  mwSize strlen = static_cast<mwSize>(mxGetNumberOfElements(prhs[1]) + 1);
   char* field = new char[strlen];
   mxGetString(prhs[1],field,strlen);
   string field_str(field);
@@ -63,9 +63,9 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
           for(int idx = 0;idx<num_new_bodies;idx++)
           {
             new_bodies[idx] = (int) mxGetScalar(prhs[2+idx*2])-1;
-            int npts = mxGetN(prhs[3+idx*2]);
+            size_t npts = mxGetN(prhs[3+idx*2]);
             MatrixXd new_body_pts_tmp(3,npts);
-            memcpy(new_body_pts_tmp.data(),mxGetPr(prhs[3+idx*2]),sizeof(double)*3*npts);
+            memcpy(new_body_pts_tmp.data(),mxGetPrSafe(prhs[3+idx*2]),sizeof(double)*3*npts);
             new_body_pts[idx].resize(4,npts);
             new_body_pts[idx].block(0,0,3,npts) = new_body_pts_tmp;
             new_body_pts[idx].row(3) = MatrixXd::Ones(1,npts);
@@ -85,10 +85,10 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
         }
         else if(field_str=="robotnum")
         {
-          int num_robot = mxGetNumberOfElements(prhs[2]);
+          size_t num_robot = mxGetNumberOfElements(prhs[2]);
           double* robotnum_tmp = new double[num_robot];
           int* robotnum = new int[num_robot];
-          memcpy(robotnum_tmp,mxGetPr(prhs[2]),sizeof(double)*num_robot);
+          memcpy(robotnum_tmp,mxGetPrSafe(prhs[2]),sizeof(double)*num_robot);
           for(int i = 0;i<num_robot;i++)
           {
             robotnum[i] = (int) robotnum_tmp[i]-1;
@@ -111,7 +111,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
         PostureConstraint* pc = (PostureConstraint*) constraint;
         if(field_str=="bounds")
         { // setJointLimits(pc,joint_idx,lb,ub)
-          int num_idx = mxGetM(prhs[2]);
+          size_t num_idx = mxGetM(prhs[2]);
           if(!mxIsNumeric(prhs[2]) || mxGetN(prhs[2]) != 1 || !mxIsNumeric(prhs[3]) || mxGetM(prhs[3]) != num_idx || mxGetN(prhs[3]) != 1 || !mxIsNumeric(prhs[4]) || mxGetM(prhs[4]) != num_idx || mxGetN(prhs[4]) != 1)
           {
             mexErrMsgIdAndTxt("Drake:updatePtrRigidBodyConstraintmex:BadInputs","PostureConstraint:joint_idx, lb and ub must be of the same length numerical vector");
@@ -119,13 +119,13 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
           int* joint_idx = new int[num_idx];
           for(int i = 0;i<num_idx;i++)
           {
-            joint_idx[i] = (int) *(mxGetPr(prhs[2])+i)-1;
+            joint_idx[i] = (int) *(mxGetPrSafe(prhs[2])+i)-1;
           }
           VectorXd lb(num_idx),ub(num_idx);
-          memcpy(lb.data(),mxGetPr(prhs[3]),sizeof(double)*num_idx);
-          memcpy(ub.data(),mxGetPr(prhs[4]),sizeof(double)*num_idx);
+          memcpy(lb.data(),mxGetPrSafe(prhs[3]),sizeof(double)*num_idx);
+          memcpy(ub.data(),mxGetPrSafe(prhs[4]),sizeof(double)*num_idx);
           PostureConstraint* pc_new = new PostureConstraint(*pc);
-          pc_new->setJointLimits(num_idx,joint_idx,lb,ub);
+          pc_new->setJointLimits(static_cast<int>(num_idx), joint_idx, lb, ub);
           delete[] joint_idx;
           plhs[0] = createDrakeConstraintMexPointer((void*)pc_new,"PostureConstraint");
         }
@@ -259,10 +259,10 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
         }
         else if(field_str=="robotnum")
         {
-          int num_robot = mxGetNumberOfElements(prhs[2]);
+          size_t num_robot = mxGetNumberOfElements(prhs[2]);
           double* robotnum_tmp = new double[num_robot];
           int* robotnum = new int[num_robot];
-          memcpy(robotnum_tmp,mxGetPr(prhs[2]),sizeof(double)*num_robot);
+          memcpy(robotnum_tmp,mxGetPrSafe(prhs[2]),sizeof(double)*num_robot);
           for(int i = 0;i<num_robot;i++)
           {
             robotnum[i] = (int) robotnum_tmp[i]-1;
@@ -453,6 +453,22 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
         else
         {
           mexErrMsgIdAndTxt("Drake:updatePtrRigidBodyConstraintmex:BadInputs","MinDistanceConstraint:argument 2 is not accepted");
+        }
+      }
+      break;
+    case RigidBodyConstraint::GravityCompensationTorqueConstraintType:
+      {
+        GravityCompensationTorqueConstraint* cnst = (GravityCompensationTorqueConstraint*) constraint;
+        if(field_str=="robot")
+        {
+          RigidBodyManipulator* robot = (RigidBodyManipulator*) getDrakeMexPointer(prhs[2]);
+          GravityCompensationTorqueConstraint* cnst_new = new GravityCompensationTorqueConstraint(*cnst);
+          cnst_new->updateRobot(robot);
+          plhs[0] = createDrakeConstraintMexPointer((void*) cnst_new,"GravityCompensationTorqueConstraint");
+        }
+        else
+        {
+          mexErrMsgIdAndTxt("Drake:updatePtrRigidBodyConstraintmex:BadInputs","GravityCompensationTorqueConstraint:argument 2 is not accepted");
         }
       }
       break;

@@ -38,7 +38,7 @@ smoothDistancePenalty(double& c, MatrixXd& dc,
   MatrixXd ddist_dq, dscaled_dist_ddist, dpairwise_costs_dscaled_dist;
 
   int num_pts = static_cast<int>(xA.cols());
-  ddist_dq = MatrixXd::Zero(num_pts,robot->num_dof);
+  ddist_dq = MatrixXd::Zero(num_pts,robot->num_positions);
 
   // Scale distance
   int nd = static_cast<int>(dist.size());
@@ -95,7 +95,7 @@ smoothDistancePenalty(double& c, MatrixXd& dc,
       x_k.col(l) = xB.col(orig_idx_of_pt_on_bodyB.at(k).at(l-numA));
     }
     MatrixXd x_k_1(4,x_k.cols());
-    MatrixXd J_k(3*x_k.cols(),robot->num_dof);
+    MatrixXd J_k(3*x_k.cols(),robot->num_positions);
     x_k_1 << x_k, MatrixXd::Ones(1,x_k.cols());
     robot->forwardJac(k,x_k_1,0,J_k);
     l = 0;
@@ -103,13 +103,13 @@ smoothDistancePenalty(double& c, MatrixXd& dc,
       //DEBUG
       //std::cout << "MinDistanceConstraint::eval: Fifth loop: " << l << std::endl;
       //END_DEBUG
-      ddist_dq.row(orig_idx_of_pt_on_bodyA.at(k).at(l)) += normal.col(orig_idx_of_pt_on_bodyA.at(k).at(l)).transpose() * J_k.block(3*l,0,3,robot->num_dof);
+      ddist_dq.row(orig_idx_of_pt_on_bodyA.at(k).at(l)) += normal.col(orig_idx_of_pt_on_bodyA.at(k).at(l)).transpose() * J_k.block(3*l,0,3,robot->num_positions);
     }
     for (; l < numA+numB; ++l) {
       //DEBUG
       //std::cout << "MinDistanceConstraint::eval: Sixth loop: " << l << std::endl;
       //END_DEBUG
-      ddist_dq.row(orig_idx_of_pt_on_bodyB.at(k).at(l-numA)) += -normal.col(orig_idx_of_pt_on_bodyB.at(k).at(l-numA)).transpose() * J_k.block(3*l,0,3,robot->num_dof);
+      ddist_dq.row(orig_idx_of_pt_on_bodyB.at(k).at(l-numA)) += -normal.col(orig_idx_of_pt_on_bodyB.at(k).at(l-numA)).transpose() * J_k.block(3*l,0,3,robot->num_positions);
     }
   }
   MatrixXd dcost_dscaled_dist(dpairwise_costs_dscaled_dist.colwise().sum());
@@ -173,7 +173,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
       memcpy(active_bodies_idx.data(),(int*) mxGetData(body_idx),
           sizeof(int)*n_active_bodies);
     } else if(mxGetClassID(body_idx) == mxDOUBLE_CLASS) {
-	  double* ptr = mxGetPr(body_idx);
+	  double* ptr = mxGetPrSafe(body_idx);
 	  for (int i=0; i<n_active_bodies; i++)
 		active_bodies_idx[i] = static_cast<int>(ptr[i]);
     } else {
@@ -234,6 +234,6 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   }
   if (nlhs>1) {
     plhs[1] = mxCreateDoubleMatrix(static_cast<int>(dpenalty.rows()),static_cast<int>(dpenalty.cols()),mxREAL);
-    memcpy(mxGetPr(plhs[1]),dpenalty.data(),sizeof(double)*dpenalty.size());
+    memcpy(mxGetPrSafe(plhs[1]),dpenalty.data(),sizeof(double)*dpenalty.size());
   }
 }

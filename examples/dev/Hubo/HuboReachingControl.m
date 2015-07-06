@@ -30,7 +30,7 @@ classdef HuboReachingControl < DrakeSystem
       % Controller implementation.  
       % See derivation in HuboReachingControl.pdf
       
-      n = obj.model.featherstone.NB;
+      n = obj.model.num_positions;
       q = x(1:n); qd=x(n+(1:n));
       
       eta = [.01;1;.01];  

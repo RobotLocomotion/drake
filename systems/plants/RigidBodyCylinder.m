@@ -49,7 +49,7 @@ classdef RigidBodyCylinder < RigidBodyGeometry
         % just draw a circle in the viewing plane
         Tview = [x_axis, y_axis, view_axis]';
         valuecheck(svd(Tview),[1;1;1]);  % assert that it's orthonormal
-        theta = 0:0.1:2*pi;
+        theta = 0:0.3:2*pi;
         pts = Tview'*obj.radius*[cos(theta); sin(theta); 0*theta+obj.len/2] + repmat(obj.T(1:3,4),1,length(theta));
         x = pts(1,:)';
         y = pts(2,:)';
@@ -102,6 +102,19 @@ classdef RigidBodyCylinder < RigidBodyGeometry
       % @retvval capsule - RigidBodyCapsule object
       
       capsule = RigidBodyCapsule(obj.radius,obj.len,obj.T);
+    end
+    
+    function h = draw(obj,model,kinsol,body_ind)
+      persistent cylinder_pts; % for all cylinders
+      if isempty(cylinder_pts)
+        [x,y,z] = cylinder;
+        cylinder_pts = [x(:)'; y(:)'; z(:)'-.5; 1+0*x(:)'];
+      end
+      
+      pts = forwardKin(model,kinsol,body_ind,obj.T(1:3,:)*diag([obj.radius,obj.radius,obj.len,1])*cylinder_pts);
+      N = size(pts,2)/2;
+      % todo: specify the color
+      h = surf([pts(1,1:N);pts(1,N+1:end)],[pts(2,1:N);pts(2,N+1:end)],[pts(3,1:N);pts(3,N+1:end)]);
     end
   end
   

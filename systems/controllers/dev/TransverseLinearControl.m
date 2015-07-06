@@ -22,16 +22,19 @@ methods
       t0 = obj.x0.tspan(1);
       tf = obj.x0.tspan(end);
       obj.tspan = [t0 tf];
-      obj.time_samples = linspace(t0,tf,1e3);
-      obj.X = obj.x0.eval(obj.time_samples);
-      obj.zs = obj.TransSurf.z.eval(obj.time_samples);
+      obj.breaks = linspace(t0,tf,1e3);
+      obj.X = obj.x0.eval(obj.breaks);
+      obj.zs = obj.TransSurf.z.eval(obj.breaks);
       
       %These should be added back in when running on the real robot since
       %evaluating K takes a long time
       
       obj.K_preEval = flipToPP(obj.K);
-%      obj.K_preEval = DTTrajectory(obj.K.eval(obj.time_samples), obj.time_samples(2)-obj.time_samples(1));
+%      obj.K_preEval = DTTrajectory(obj.K.eval(obj.breaks), obj.breaks(2)-obj.breaks(1));
 %      obj.K_preEval = obj.K_preEval.shiftTime(t0);
+
+      obj = setInputFrame(obj,getStateFrame(plant));
+      obj = setOutputFrame(obj,getInputFrame(plant));
     end
     
     function tau0 = getInitialState(obj)
@@ -127,7 +130,7 @@ methods
 
       % Find index of xtraj with Euclidean distance closest to x as starting
       % guess
-      [~,index_euclid] = min(sqrt(sum((obj.X-repmat(x,1,size(obj.X,2))).^2,1)));
+      [r index_euclid] = min(sqrt(sum((obj.X-repmat(x,1,size(obj.X,2))).^2,1)));
       
       % find tau with z(tau)'x = 0
       
@@ -142,10 +145,10 @@ methods
           return; 
       end
       
-      [~, subindex] = min(abs(index_euclid-indices_z));
+      [r, subindex] = min(abs(index_euclid-indices_z));
       i = indices_z(subindex);
       
-      tau = obj.time_samples(i);
+      tau = obj.breaks(i);
 %       
 %       f = @(t) ztraj.eval(t)'*(x-x0traj.eval(t));
 %       
@@ -155,12 +158,9 @@ methods
     end      
 
   function plotData(obj,x, tau, u,t)
-    x0 = obj.x0.eval(tau); 
-    u0 = obj.u0.eval(tau);
-    Q = obj.Qtraj.eval(tau); 
-    Ri = inv(obj.Rtraj.eval(tau));
-    nX = length(x0); 
-    nU = length(u0);
+    x0 = obj.x0.eval(tau); u0 = obj.u0.eval(tau);
+    Q = obj.Qtraj.eval(tau); Ri = inv(obj.Rtraj.eval(tau));
+    nX = length(x0); nU = length(u0);
     tmp=obj.plant;
     [ft,df] = geval(@tmp.dynamics,tau, x0, u0);
     A = df(:,1+(1:nX));
@@ -205,12 +205,12 @@ methods
     TransSurf = [];
     tspan = [];
     x0s = [];
-    time_samples = [];
+    breaks = [];
     zs = [];
     X = [];
     K_preEval = [];
     plant;
-  end
+end
 
 
 

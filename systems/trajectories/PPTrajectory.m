@@ -3,7 +3,7 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
   properties
     pp
 %    javapp
-    mex_ptr = 0
+    mex_ptr = nullPointer();
   end
   
   methods

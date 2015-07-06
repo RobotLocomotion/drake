@@ -1,7 +1,8 @@
 function c=runTransverseCycle
 
-p=CompassGaitPlant();
-[utraj,xtraj] = runDircolCycle;
+tmp = addpathTemporary({fullfile(pwd,'..'),fullfile(getDrakePath(),'systems','controllers','dev')});
+
+[p,utraj,xtraj] = runDircolCycle;
 
 p=setInputLimits(p,-inf,inf);
 
@@ -36,18 +37,21 @@ for i=1:length(ctrans)
 
   if (m>0)
     xtraji2 = MixedTrajectory({xtraji, PPTrajectory(foh(xtraji.tspan,xtraji.tspan))},{1:N,N+(1:m)}); % add controller state
+    xtraji2 = setOutputFrame(xtraji2,sys.getStateFrame);
   end
   utraji = FunctionHandleTrajectory(@(t)zeros(0),[0 0],xtraji.tspan);  % utraj is now empty
 
   Pi = getPi(transSurf{i},xtraji.tspan(end));
   Vf = Pi*Q*Pi';
 
-  disp('Estimating funnel..');
-  psys = taylorApprox(sys,xtraji2,[],3,5);  %ignore var 5 (tau)
-  options=struct();
-  options.rho0_tau=8;
-  V{i}=sampledTransverseVerification(psys,V{i}.eval(V{i}.tspan(end)),V{i},V{i}.getBreaks(),xtraji,utraji,transSurf{i},options);
-
-  transSurf{i}.plotFunnel(V{i},xtraji,[1 3]);
+  if (0) % need to finish nursing this one back into working order
+    disp('Estimating funnel..');
+    psys = taylorApprox(sys,xtraji2,[],3,5);  %ignore var 5 (tau)
+    options=struct();
+    options.rho0_tau=8;
+    V{i}=sampledTransverseVerification(psys,V{i}.eval(V{i}.tspan(end)),V{i},V{i}.getBreaks(),xtraji,utraji,transSurf{i},options);
+    
+    transSurf{i}.plotFunnel(V{i},xtraji,[1 3]);
+  end
 end
 

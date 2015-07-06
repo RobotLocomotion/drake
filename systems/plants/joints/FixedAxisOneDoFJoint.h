@@ -14,6 +14,9 @@ private:
   Eigen::Matrix<double, TWIST_SIZE, 1> joint_axis;
   double joint_limit_min;
   double joint_limit_max;
+  double damping;
+  double coulomb_friction;
+  double coulomb_window;
 
 protected:
   FixedAxisOneDoFJoint(const std::string& name, const Eigen::Isometry3d& transform_to_parent_body, const Eigen::Matrix<double, TWIST_SIZE, 1>& joint_axis);
@@ -22,18 +25,28 @@ public:
   virtual ~FixedAxisOneDoFJoint();
 
   void setJointLimits(double joint_limit_min, double joint_limit_max);
+  double getJointLimitMin(void) const { return joint_limit_min; }
+  double getJointLimitMax(void) const { return joint_limit_max; }
 
-  virtual void motionSubspace(double* const q, MotionSubspaceType& motion_subspace, Eigen::MatrixXd* dmotion_subspace) const; //override;
+  virtual std::string getPositionName(int index) const { if (index!=0) throw std::runtime_error("bad index"); return name; }
 
-  virtual void motionSubspaceDotTimesV(double* const q, double* const v, Vector6d& motion_subspace_dot_times_v,
+  virtual void motionSubspace(const Eigen::Ref<const Eigen::VectorXd>& q, MotionSubspaceType& motion_subspace, Eigen::MatrixXd* dmotion_subspace) const; //override;
+
+  virtual void motionSubspaceDotTimesV(const Eigen::Ref<const Eigen::VectorXd>& q, const Eigen::Ref<const Eigen::VectorXd>& v, Vector6d& motion_subspace_dot_times_v,
       Gradient<Vector6d, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdq = nullptr,
       Gradient<Vector6d, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdv = nullptr) const; //override;
 
-  virtual void randomConfiguration(double* q, std::default_random_engine& generator) const; //override;
+  virtual Eigen::VectorXd randomConfiguration(std::default_random_engine& generator) const; //override;
 
-  virtual void qdot2v(double* q, Eigen::MatrixXd& qdot_to_v, Eigen::MatrixXd* dqdot_to_v) const; //override;
+  virtual void qdot2v(const Eigen::Ref<const Eigen::VectorXd>& q, Eigen::MatrixXd& qdot_to_v, Eigen::MatrixXd* dqdot_to_v) const; //override;
 
-  virtual void v2qdot(double* q, Eigen::MatrixXd& v_to_qdot, Eigen::MatrixXd* dv_to_qdot) const; //override;
+  virtual void v2qdot(const Eigen::Ref<const Eigen::VectorXd>& q, Eigen::MatrixXd& v_to_qdot, Eigen::MatrixXd* dv_to_qdot) const; //override;
+
+  void setDynamics(double damping, double coulomb_friction, double coulomb_window);
+
+  virtual GradientVar<double, Eigen::Dynamic, 1> frictionTorque(const Eigen::Ref<const Eigen::VectorXd>& v, int gradient_order) const; // override;
+
+  virtual void setupOldKinematicTree(RigidBodyManipulator* model, int body_ind, int position_num_start, int velocity_num_start) const;
 };
 
 #endif /* ONEDOFJOINT_H_ */

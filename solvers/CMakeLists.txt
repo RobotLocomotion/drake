@@ -3,17 +3,18 @@
 
 pods_find_pkg_config(gurobi)
 
-if (gurobi_FOUND AND eigen3_FOUND)
+if (gurobi_FOUND)
 
 	add_library(drakeQP QP.cpp)
 	set_target_properties(drakeQP PROPERTIES COMPILE_FLAGS -fPIC)
 	pods_use_pkg_config_packages(drakeQP gurobi)
 
-	add_mex(fastQPmex fastQPmex.cpp)
-	target_link_libraries(fastQPmex drakeQP)
-
-	add_mex(gurobiQPmex gurobiQPmex.cpp)
-	target_link_libraries(gurobiQPmex drakeQP)
+	if (MATLAB_FOUND)
+		add_mex(fastQPmex fastQPmex.cpp)
+		target_link_libraries(fastQPmex drakeQP)
+		add_mex(gurobiQPmex gurobiQPmex.cpp)
+		target_link_libraries(gurobiQPmex drakeQP)
+	endif()
 
 	pods_install_libraries(drakeQP)
 	pods_install_headers(fastQP.h gurobiQP.h DESTINATION drake)
@@ -27,7 +28,7 @@ endif()
 pods_find_pkg_config(snopt_c)
 
 
-if(snopt_c_FOUND)
+if(snopt_c_FOUND AND MATLAB_FOUND)
 	add_mex(NonlinearProgramSnoptmex NonlinearProgramSnoptmex.cpp)
   pods_use_pkg_config_packages(NonlinearProgramSnoptmex snopt_c)
   set_target_properties(NonlinearProgramSnoptmex PROPERTIES COMPILE_FLAGS -fPIC)
@@ -45,8 +46,11 @@ if(snopt_c_FOUND)
 			PATHS "${MATLAB_ROOT}/sys/os/"
 			PATH_SUFFIXES glnxa64/ maci64/ NO_DEFAULT_PATH)
 	endif()
-	
+
 	if (GFORTRAN_LIBRARY)
 	  target_link_libraries(NonlinearProgramSnoptmex ${GFORTRAN_LIBRARY})
 	endif()
 endif()
+
+add_subdirectory(polynomial)
+add_subdirectory(qpSpline)

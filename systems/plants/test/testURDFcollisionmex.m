@@ -1,13 +1,18 @@
 function testURDFcollisionmex
-  checkDependency('bullet');
+%NOTEST
+%pending fix from @avalenzu
+checkDependency('bullet');
 
-  urdf_collision_test = '../../../pod-build/bin/urdf_collision_test';
+  old_ros_package_path = getenv('ROS_PACKAGE_PATH');
+  setenv('ROS_PACKAGE_PATH', [old_ros_package_path, ':', ....
+                              fullfile(getDrakePath(), 'examples')]);
+  urdf_collision_test = '../../../pod-build/bin/urdfCollisionTest';
   if ispc
     urdf_collision_test = [urdf_collision_test,'.exe'];
   end
 
   if (~exist(urdf_collision_test,'file'))
-    error('Drake:MissingDependency','testURDFmex requires that urdf_collision_test is built (from the command line).  skipping this test');
+    error('Drake:MissingDependency','testURDFmex requires that urdfCollisionTest is built (from the command line).  skipping this test');
   end
 
   tol = 1e-4; % low tolerance because i'm writing finite precision strings to and from the ascii terminal
@@ -31,14 +36,12 @@ function testURDFcollisionmex
     q = 0*rand(getNumPositions(r),1);
     kinsol = doKinematics(r,q);
 
-    if (~exist(urdf_collision_test,'file'))
-      error('testURDFmex requires that urdf_collision_test is built (from the command line).  skipping this test');
-    end
     [phi,normal,xA,xB,idxA,idxB] = collisionDetect(r,kinsol);
     [retval,outstr] = systemWCMakeEnv([urdf_collision_test,' ',urdffile,sprintf(' %f',q),' 2> /dev/null']);
     valuecheck(retval,0);
     if ~isempty(outstr)
-      out = textscan(outstr, [repmat('%f ',1,1+3*3) ' %s %s']);
+      outstr_cell = regexp(outstr, '=======', 'split');
+      out = textscan(outstr_cell{2}, [repmat('%f ',1,1+3*3) ' %s %s']);
       sizecheck(out{1},size(phi));
       normal_cpp = cell2mat(out(2:4))';
       xA_cpp = cell2mat(out(5:7))';

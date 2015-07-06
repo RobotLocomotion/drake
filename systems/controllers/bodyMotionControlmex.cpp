@@ -1,7 +1,8 @@
 /* 
  * A simple PD control block for regulating a body pose given a desired position, velocity, and acceleration.   
  */
- #include "controlUtil.h"
+#include "controlUtil.h"
+#include "drakeUtil.h"
 
 struct BodyMotionControlData {
   RigidBodyManipulator* r;
@@ -27,11 +28,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         
     if (!mxIsNumeric(prhs[2]) || mxGetM(prhs[2])!=6 || mxGetN(prhs[2])!=1)
     mexErrMsgIdAndTxt("DRC:bodyMotionControlmex:BadInputs","the third argument should be Kp");
-    memcpy(&(pdata->Kp),mxGetPr(prhs[2]),sizeof(pdata->Kp));
+    memcpy(&(pdata->Kp),mxGetPrSafe(prhs[2]),sizeof(pdata->Kp));
 
     if (!mxIsNumeric(prhs[3]) || mxGetM(prhs[3])!=6 || mxGetN(prhs[3])!=1)
     mexErrMsgIdAndTxt("DRC:bodyMotionControlmex:BadInputs","the fourth argument should be Kd");
-    memcpy(&(pdata->Kd),mxGetPr(prhs[3]),sizeof(pdata->Kd));
+    memcpy(&(pdata->Kd),mxGetPrSafe(prhs[3]),sizeof(pdata->Kd));
 
     pdata->body_index = (int) mxGetScalar(prhs[4]) -1;
 
@@ -52,27 +53,28 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   memcpy(&pdata,mxGetData(prhs[0]),sizeof(pdata));
 
-  int nq = pdata->r->num_dof;
+  int nq = pdata->r->num_positions;
+  int nv = pdata->r->num_velocities;
 
   int narg = 1;
-  double *q = mxGetPr(prhs[narg++]);
-  double *qd = &q[nq];
-  Map< VectorXd > qdvec(qd,nq);
+  
+  Map<VectorXd> q(mxGetPrSafe(prhs[narg]), nq);
+  Map<VectorXd> qd(mxGetPrSafe(prhs[narg++]) + nq, nv);
 
   assert(mxGetM(prhs[narg])==6); assert(mxGetN(prhs[narg])==1);
-  Map< Vector6d > body_pose_des(mxGetPr(prhs[narg++]));
+  Map< Vector6d > body_pose_des(mxGetPrSafe(prhs[narg++]));
 
   assert(mxGetM(prhs[narg])==6); assert(mxGetN(prhs[narg])==1);
-  Map< Vector6d > body_v_des(mxGetPr(prhs[narg++]));
+  Map< Vector6d > body_v_des(mxGetPrSafe(prhs[narg++]));
 
   assert(mxGetM(prhs[narg])==6); assert(mxGetN(prhs[narg])==1);
-  Map< Vector6d > body_vdot_des(mxGetPr(prhs[narg++]));
+  Map< Vector6d > body_vdot_des(mxGetPrSafe(prhs[narg++]));
 
   pdata->r->doKinematics(q,false,qd);
 
   // TODO: this must be updated to use quaternions/spatial velocity
   Vector6d body_pose;
-  MatrixXd J = MatrixXd::Zero(6,pdata->r->num_dof);
+  MatrixXd J = MatrixXd::Zero(6,pdata->r->num_positions);
   Vector4d zero = Vector4d::Zero();
   zero(3) = 1.0;
   pdata->r->forwardKin(pdata->body_index,zero,1,body_pose);
@@ -87,7 +89,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   angleDiff(pose_rpy,des_rpy,error_rpy);
   body_error.tail(3) = error_rpy;
 
-  Vector6d body_vdot = (pdata->Kp.array()*body_error.array()).matrix() + (pdata->Kd.array()*(body_v_des-J*qdvec).array()).matrix() + body_vdot_des;
+  Vector6d body_vdot = (pdata->Kp.array()*body_error.array()).matrix() + (pdata->Kd.array()*(body_v_des-J*qd).array()).matrix() + body_vdot_des;
   
   plhs[0] = eigenToMatlab(body_vdot);
 }

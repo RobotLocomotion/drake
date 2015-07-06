@@ -66,6 +66,8 @@ classdef RelativePosition < drakeFunction.kinematic.Kinematic
       % @retval dJ  -- [3*n_pts x nq^2] second-derivatives of pos w.r.t.
       %                q in geval format
       compute_second_derivatives = (nargout > 2);
+      options.base_or_frame_id = obj.frameB;
+      options.in_terms_of_qdot = true;
       if compute_second_derivatives
         if obj.frameB == 1
           kinsol = obj.rbm.doKinematics(q,true,true);
@@ -74,8 +76,18 @@ classdef RelativePosition < drakeFunction.kinematic.Kinematic
         end
         if obj.frameA == 0
           [pts_in_world,JA,dJA] = getCOM(obj.rbm,kinsol);
+          [pts_in_B,P,JB,dP,dJB] = obj.rbm.bodyKin(kinsol,obj.frameB,pts_in_world);
+          J = JB + P*JA;
+          dJ = dJB + reshape(matGradMultMat(P,JA,dP,reshape(dJA,numel(JA),[])),size(dJB));
         else
-          [pts_in_world,JA,dJA] = forwardKin(obj.rbm,kinsol,obj.frameA,obj.pts_in_A,0);
+          if obj.rbm.use_new_kinsol
+            [pts_in_B,J,dJ] = forwardKin(obj.rbm,kinsol,obj.frameA,obj.pts_in_A,options);
+          else
+            [pts_in_world,JA,dJA] = forwardKin(obj.rbm,kinsol,obj.frameA,obj.pts_in_A,0);
+            [pts_in_B,P,JB,dP,dJB] = obj.rbm.bodyKin(kinsol,obj.frameB,pts_in_world);
+            J = JB + P*JA;
+            dJ = dJB + reshape(matGradMultMat(P,JA,dP,reshape(dJA,numel(JA),[])),size(dJB));
+          end
         end
         
         if obj.frameB == 1
@@ -94,9 +106,16 @@ classdef RelativePosition < drakeFunction.kinematic.Kinematic
         kinsol = obj.rbm.doKinematics(q);
         if obj.frameA == 0
           [pts_in_world,JA] = getCOM(obj.rbm,kinsol);
+          [pts_in_B,P,JB] = obj.rbm.bodyKin(kinsol,obj.frameB,pts_in_world);
+          J = JB + P*JA;
         else
-          [pts_in_world,JA] = forwardKin(obj.rbm,kinsol,obj.frameA,obj.pts_in_A,0);
-        end
+          if obj.rbm.use_new_kinsol
+            [pts_in_B,J] = forwardKin(obj.rbm,kinsol,obj.frameA,obj.pts_in_A,options);
+          else
+            [pts_in_world,JA] = forwardKin(obj.rbm,kinsol,obj.frameA,obj.pts_in_A,0);
+            [pts_in_B,P,JB] = obj.rbm.bodyKin(kinsol,obj.frameB,pts_in_world);
+            J = JB + P*JA;
+          end
         
         if obj.frameB == 1
           nq = length(q);

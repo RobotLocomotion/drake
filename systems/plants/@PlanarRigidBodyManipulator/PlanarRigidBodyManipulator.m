@@ -141,7 +141,6 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
       % Follows surfaceTangents in RigidBodyManipulator, but produces only
       % a single tangent for each normal (instead of m), and restricts this
       % to the x-y plane.
-      
       normal = obj.T_2D_to_3D'*normal;
 
       % if the normal is [0;0] (because it was aligned with the viewing

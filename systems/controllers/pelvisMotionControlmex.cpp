@@ -37,19 +37,19 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
     if (!mxIsNumeric(prhs[2]) || mxGetNumberOfElements(prhs[2])!=1)
     mexErrMsgIdAndTxt("DRC:pelvisMotionControlmex:BadInputs","the third argument should be alpha");
-    memcpy(&(pdata->alpha),mxGetPr(prhs[2]),sizeof(pdata->alpha));
+    memcpy(&(pdata->alpha),mxGetPrSafe(prhs[2]),sizeof(pdata->alpha));
 
     if (!mxIsNumeric(prhs[3]) || mxGetNumberOfElements(prhs[3])!=1)
     mexErrMsgIdAndTxt("DRC:pelvisMotionControlmex:BadInputs","the fourth argument should be nominal_pelvis_height");
-    memcpy(&(pdata->nominal_pelvis_height),mxGetPr(prhs[3]),sizeof(pdata->nominal_pelvis_height));
+    memcpy(&(pdata->nominal_pelvis_height),mxGetPrSafe(prhs[3]),sizeof(pdata->nominal_pelvis_height));
 
     if (!mxIsNumeric(prhs[4]) || mxGetM(prhs[4])!=6 || mxGetN(prhs[4])!=1)
     mexErrMsgIdAndTxt("DRC:pelvisMotionControlmex:BadInputs","the fifth argument should be Kp");
-    memcpy(&(pdata->Kp),mxGetPr(prhs[4]),sizeof(pdata->Kp));
+    memcpy(&(pdata->Kp),mxGetPrSafe(prhs[4]),sizeof(pdata->Kp));
 
     if (!mxIsNumeric(prhs[5]) || mxGetM(prhs[5])!=6 || mxGetN(prhs[5])!=1)
     mexErrMsgIdAndTxt("DRC:pelvisMotionControlmex:BadInputs","the sixth argument should be Kd");
-    memcpy(&(pdata->Kd),mxGetPr(prhs[5]),sizeof(pdata->Kd));
+    memcpy(&(pdata->Kd),mxGetPrSafe(prhs[5]),sizeof(pdata->Kd));
 
 
     mxClassID cid;
@@ -74,11 +74,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     mexErrMsgIdAndTxt("DRC:pelvisMotionControlmex:BadInputs","the first argument should be the ptr");
   memcpy(&pdata,mxGetData(prhs[0]),sizeof(pdata));
 
-  int nq = pdata->r->num_dof;
+  int nq = pdata->r->num_positions;
+  int nv = pdata->r->num_velocities;
+
   int narg = 1;
-  double *q = mxGetPr(prhs[narg++]);
-  double *qd = &q[nq];
-  Map<VectorXd> qdvec(qd,nq);
+  Map<VectorXd> q(mxGetPrSafe(prhs[narg]), nq);
+  Map<VectorXd> qd(mxGetPrSafe(prhs[narg++]) + nq, nv);
   double lfoot_yaw = mxGetScalar(prhs[narg++]);
   double rfoot_yaw = mxGetScalar(prhs[narg++]);
   double foot_z = mxGetScalar(prhs[narg++]);
@@ -87,7 +88,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   // TODO: this must be updated to use quaternions/spatial velocity
   Vector6d pelvis_pose;
-  MatrixXd Jpelvis = MatrixXd::Zero(6,pdata->r->num_dof);
+  MatrixXd Jpelvis = MatrixXd::Zero(6,pdata->r->num_positions);
   Vector4d zero = Vector4d::Zero();
   zero(3) = 1.0;
   pdata->r->forwardKin(pdata->pelvis_body_index,zero,1,pelvis_pose);
@@ -114,7 +115,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   angleDiff(pose_rpy,des_rpy,error_rpy);
   error.tail(3) = error_rpy;
 
-  Vector6d body_vdot = (pdata->Kp.array()*error.array()).matrix() - (pdata->Kd.array()*(Jpelvis*qdvec).array()).matrix();
+  Vector6d body_vdot = (pdata->Kp.array()*error.array()).matrix() - (pdata->Kd.array()*(Jpelvis*qd).array()).matrix();
 
   plhs[0] = eigenToMatlab(body_vdot);
 }

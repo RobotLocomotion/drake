@@ -5,7 +5,7 @@ if (simulink_FOUND)
 
 add_mex(barycentricInterpolation barycentricInterpolation.cpp)
 
-if (LCM_FOUND)
+if (LCM_FOUND AND MATLAB_FOUND)
   if (simulink_FOUND)
     add_mex(lcmLogger lcmLogger.cpp)
     pods_use_pkg_config_packages(lcmLogger lcm)
@@ -15,24 +15,57 @@ if (LCM_FOUND)
   pods_use_pkg_config_packages(publishLCMLog lcm)
 endif()
 
-if (eigen3_FOUND)
-  add_mex(drakeUtil SHARED drakeUtil.cpp)
+if (MATLAB_FOUND)
+  add_mex(drakeUtil SHARED drakeUtil.cpp MexWrapper.cpp)
 
   # todo: use this again once I can assume everyone has CMAKE version >= 2.8.8
   #add_mex(drakeUtil OBJECT drakeUtil.cpp)
 
+  pods_install_headers(drakeUtil.h MexWrapper.h DESTINATION drake)
   pods_install_libraries(drakeUtil)
+  pods_install_pkg_config_file(drake-util
+    LIBS -ldrakeUtil
+    REQUIRES
+    VERSION 0.0.1)
+endif()
 
-  add_library(drakeGradientUtil SHARED drakeGradientUtil.cpp)
-  pods_install_libraries(drakeGradientUtil)
-  pods_install_headers(drakeGradientUtil.h DESTINATION drake)
+add_library(drakeGradientUtil SHARED drakeGradientUtil.cpp)
+pods_install_libraries(drakeGradientUtil)
+pods_install_headers(drakeGradientUtil.h DESTINATION drake)
 
-  add_library(drakeGeometryUtil SHARED drakeGeometryUtil.cpp)
-  target_link_libraries(drakeGeometryUtil drakeGradientUtil)
-  pods_install_libraries(drakeGeometryUtil)
-  pods_install_headers(drakeGeometryUtil.h DESTINATION drake)
+add_library(drakeGeometryUtil SHARED drakeGeometryUtil.cpp expmap2quat.cpp)
+target_link_libraries(drakeGeometryUtil drakeGradientUtil)
+pods_install_libraries(drakeGeometryUtil)
+pods_install_headers(drakeGeometryUtil.h DESTINATION drake)
+pods_install_pkg_config_file(drake-geometry-util
+  LIBS -ldrakeGeometryUtil
+  REQUIRES
+  VERSION 0.0.1)
 
-  pods_install_headers(drakeFloatingPointUtil.h DESTINATION drake)
+pods_install_headers(drakeFloatingPointUtil.h DESTINATION drake)
+
+pods_install_headers(GradientVar.h DESTINATION drake)
+
+if (MATLAB_FOUND)
+  add_mex(cylindrical2cartesianmex cylindrical2cartesianmex.cpp)
+  target_link_libraries(cylindrical2cartesianmex drakeGeometryUtil drakeGradientUtil)
+  add_mex(cartesian2cylindricalmex cartesian2cylindricalmex.cpp)
+  target_link_libraries(cartesian2cylindricalmex drakeGeometryUtil drakeGradientUtil)
+
+  add_mex(quat2expmapmex quat2expmapmex.cpp)
+  target_link_libraries(quat2expmapmex drakeUtil drakeGeometryUtil drakeGradientUtil)
+
+  add_mex(expmap2quatImplmex expmap2quatImplmex.cpp)
+  target_link_libraries(expmap2quatImplmex drakeUtil drakeGeometryUtil drakeGradientUtil)
+
+  add_mex(flipExpmapmex flipExpmapmex.cpp)
+  target_link_libraries(flipExpmapmex drakeUtil drakeGeometryUtil drakeGradientUtil)
+
+  add_mex(unwrapExpmapmex unwrapExpmapmex.cpp)
+  target_link_libraries(unwrapExpmapmex drakeUtil drakeGeometryUtil drakeGradientUtil)
+
+  add_mex(quat2expmapSequencemex quat2expmapSequencemex.cpp)
+  target_link_libraries(quat2expmapSequencemex drakeUtil drakeGeometryUtil drakeGradientUtil)
 endif()
 
 add_subdirectory(test)
@@ -44,7 +77,7 @@ add_mex(debugMex SHARED debugMexLib.cpp)
 target_link_libraries(debugMex -ldl)
 #set_property( SOURCE debugMexLib.cpp PROPERTY COMPILE_FLAGS -DMX_COMPAT_32 )
 add_mex(drake_debug_mex EXECUTABLE drakeDebugMex.cpp)
-target_link_libraries(drake_debug_mex -ldl)
+target_link_libraries(drake_debug_mex drakeUtil -ldl)
 
 message(STATUS "Writing drake_debug_mex.sh")
 file(WRITE ${CMAKE_BINARY_DIR}/bin/drake_debug_mex.sh
@@ -89,4 +122,4 @@ file(APPEND ${CMAKE_BINARY_DIR}/bin/drake_debug_mex.sh
 install(FILES ${CMAKE_BINARY_DIR}/bin/drake_debug_mex.sh
         DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
         PERMISSIONS OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-endif(NOT WIN32)
+endif(0) #NOT WIN32)

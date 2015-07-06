@@ -1,6 +1,5 @@
 function tension
 
-% note that the masses are constrained to move only vertically
 %r = PlanarRigidBodyManipulator('tension.urdf');
 r = TimeSteppingRigidBodyManipulator('tension.urdf',.01,struct('twoD',true));
 
@@ -16,8 +15,11 @@ x0.load_z = 4;
 
 v.drawWrapper(0,x0(1:3));
 
-%[l,dl]=r.position_constraints{1}.eval(x0(1:3))
-%r.position_constraints{1}.checkGradient(.001,x0(1:3));
+%manip = r.getManipulator();
+%[l,dl]=manip.position_constraints{1}.eval(x0(1:3));
+%gradTest(@eval,manip.position_constraints{1}.fcn,x0(1:3));
+%%manip.position_constraints{1}.checkGradient(.001,x0(1:3));
+%return;
 
 x0 = resolveConstraints(r,x0,v);
 v.drawWrapper(0,x0(1:3));

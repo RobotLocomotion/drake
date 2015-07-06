@@ -60,6 +60,8 @@ else
       obj = RelativeQuatConstraint(varargin{:});
     case RigidBodyConstraint.MinDistanceConstraintType
       obj = MinDistanceConstraint(varargin{:});
+    case RigidBodyConstraint.GravityCompensationTorqueConstraintType
+      obj = GravityCompensationTorqueConstraint(varargin{:});
     otherwise
       error('Drake:constructRigidBodyConstraint:UnsupportedConstraintType','The constraint type is not supported yet');
   end

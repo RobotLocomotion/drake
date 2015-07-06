@@ -435,6 +435,12 @@ public class BotLCMGLClient {
     double body_width = 0.0025;
     double head_width = 0.01;
     double head_length = 0.01;
+    drawVector(origin,vector,body_width,head_width,head_length); 
+  }
+
+  public synchronized void scaleToViewerAr() { add0(LCMGL_SCALE_TO_VIEWER_AR); }
+
+  public synchronized void drawVector(double[] origin, double[] vector,double body_width,double head_width,double head_length) {
     int slices = 20;
     int stacks = 20;
 
@@ -467,5 +473,26 @@ public class BotLCMGLClient {
 
   }
 
-  public synchronized void scaleToViewerAr() { add0(LCMGL_SCALE_TO_VIEWER_AR); }
+  public synchronized void polygon(double[] x, double[] y, double[] z){
+    glBegin(LCMGL_POLYGON);
+    for(int i = 0;i<x.length;i++){
+      glVertex3d(x[i],y[i],z[i]);
+    }
+    glEnd();
+  }
+
+  public synchronized void polyhedron(double[] x, double[] y, double[] z){
+    for(int i =0;i<x.length;i++){
+      for(int j=i;j<y.length;j++){
+        for(int k = j;k<z.length;k++){
+          glBegin(LCMGL_POLYGON);
+          glVertex3d(x[i],y[i],z[i]);
+          glVertex3d(x[j],y[j],z[j]);
+          glVertex3d(x[k],y[k],z[k]);
+          glEnd();
+        }
+      }
+    }
+
+  }
 }

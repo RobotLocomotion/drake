@@ -188,10 +188,10 @@ classdef RigidBodyHeightMapTerrain < RigidBodyTerrain & RigidBodyGeometry
       
       [X,Y] = meshgrid(x,y);
       origin = [reshape(X,1,[]); reshape(Y,1,[]); repmat(scanner_height,1,numel(X))];
-      pts = [origin(1:2,:); zeros(1,numel(X))];
+      pts = [origin(1:2,:); scanner_height - RigidBodyHeightMapTerrain.MAX_RAYCAST_DISTANCE + zeros(1,numel(X))];
       
       kinsol = doKinematics(manip,q);
-      distance = collisionRaycast(manip,kinsol,origin,pts);
+      distance = collisionRaycast(manip,kinsol,origin,pts,false);
       distance(distance<0) = inf;
       Z = scanner_height - reshape(distance,size(X));
       
@@ -203,5 +203,9 @@ classdef RigidBodyHeightMapTerrain < RigidBodyTerrain & RigidBodyGeometry
   properties (SetAccess=protected)
     x,y,Z;  % heightmap data
     T_world_to_terrain;
+  end
+
+  properties (Constant)
+    MAX_RAYCAST_DISTANCE = 100; % max distance from scanner height to terrain when doing raycast
   end
 end

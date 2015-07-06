@@ -118,7 +118,7 @@ classdef Manipulator < DrakeSystem
       % Helper function to compute the internal forces required to enforce
       % equality constraints
 
-      alpha = 10;  % 1/time constant of position constraint satisfaction (see my latex rigid body notes)
+      alpha = 5;  % 1/time constant of position constraint satisfaction (see my latex rigid body notes)
       beta = 0;    % 1/time constant of velocity constraint satisfaction
 
       phi=[]; psi=[];
@@ -134,14 +134,16 @@ classdef Manipulator < DrakeSystem
         term1=Hinv*[J;dpsidqd]';
         term2=Hinv*tau;
 
-        constraint_force = -[J;dpsidqd]'*pinv([J*term1;dpsidqd*term1])*[J*term2 + Jdotqd + alpha*J*qd; dpsidqd*term2 + dpsidq*qd + beta*psi];
+        constraint_force = -[J;dpsidqd]'*pinv([J*term1;dpsidqd*term1])*[J*term2 + Jdotqd + 2*alpha*J*qd + alpha^2*phi; dpsidqd*term2 + dpsidq*qd + beta*psi];
       elseif ~isempty(obj.position_constraints)  % note: it didn't work to just have dpsidq,etc=[], so it seems like the best solution is to handle each case...
         [phi,J,dJ] = obj.positionConstraints(q);
         % todo: find a way to use Jdot*qd directly (ala Twan's code)
         % instead of computing dJ
         Jdotqd = dJ*reshape(qd*qd',obj.num_positions^2,1);
 
-        constraint_force = -J'*pinv(J*Hinv*J')*(J*Hinv*tau + Jdotqd + alpha*J*qd);
+        constraint_force = -J'*pinv(J*Hinv*J')*(J*Hinv*tau + Jdotqd + 2*alpha*J*qd + alpha^2*phi);
+        % useful for debugging:
+        % phi, phidot = J*qd, phiddot = J*Hinv*(tau+constraint_force)+Jdotqd
       elseif ~isempty(obj.velocity_constraints)
         [psi,J] = obj.velocityConstraints(q,qd);
         dpsidq = J(:,1:obj.num_positions);
@@ -160,10 +162,11 @@ classdef Manipulator < DrakeSystem
       % which can be enforced directly in the manipulator dynamics.
       % This method will also register phi (and it's time derivative)
       % as state constraints for the dynamical system.
-      
+      if( isa(con, 'DrakeFunctionConstraint') && ~isa(con.fcn, 'drakeFunction.kinematic.RelativePosition'))
+        obj.only_loops = false;
+      end
       id = numel(obj.position_constraints)+1;
       obj = updatePositionEqualityConstraint(obj,id,con);
-      
     end
     
     function obj = updatePositionEqualityConstraint(obj,id,con)
@@ -272,7 +275,7 @@ classdef Manipulator < DrakeSystem
       
       varargout = cell(1,nargout);
       for i=1:length(obj.position_constraints)
-        v = cell(1,nargout);
+        v = cell(1,max(nargout,1));
         [v{:}] = obj.position_constraints{i}.eval(q);
         v{1} = v{1} - obj.position_constraints{i}.lb;  % center it around 0
         for j=1:nargout
@@ -494,9 +497,13 @@ classdef Manipulator < DrakeSystem
       con = BoundingBoxConstraint(jl_min,jl_max);
       con = setName(con,cellfun(@(a) [a,'_limit'],obj.getPositionFrame.coordinates,'UniformOutput',false));
       if isempty(obj.joint_limit_constraint_id)
-        [obj,id] = addStateConstraint(obj,con,1:obj.getNumPositions);
-        obj.joint_limit_constraint_id = id;
+        if any(jl_min~=-inf) || any(jl_max~=inf)
+          [obj,id] = addStateConstraint(obj,con,1:obj.getNumPositions);
+          obj.joint_limit_constraint_id = id;
+        end
       else
+        % todo: delete the constraint if [-inf,inf] (but don't have a good
+        % mechanism for removing state constraints yet)
         obj = updateStateConstraint(obj,obj.joint_limit_constraint_id,con,1:obj.getNumPositions);
       end
     end
@@ -515,5 +522,6 @@ classdef Manipulator < DrakeSystem
     joint_limit_min = -inf;       % vector of length num_q with lower limits
     joint_limit_max = inf;        % vector of length num_q with upper limits
     joint_limit_constraint_id = [];
+    only_loops = true; %set to false when the manipulator gets non-loop constraints
   end
 end

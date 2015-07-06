@@ -29,6 +29,7 @@ end
 if (~isfield(options,'inertial')), options.inertial = true; end
 if (~isfield(options,'visual')), options.visual = true; end
 if (~isfield(options,'collision')), options.collision = true; end
+if (~isfield(options,'collision_meshes')), options.collision_meshes = true; end
 if (~isfield(options,'sensors')), options.sensors = true; end
 if (~isfield(options,'visual_geometry')), options.visual_geometry = false; end
 if (~isfield(options,'namesuffix')), options.namesuffix = ''; end
@@ -148,7 +149,7 @@ for i=1:length(rootlink)
   if (~isempty(options.floating))
     model = addFloatingBase(model,weldLink,rootlink(i),xyz,rpy,options.floating);
   else
-    model = addJoint(model,'','fixed',weldLink,rootlink(i),xyz,rpy);
+    model = addJoint(model,'weld','fixed',weldLink,rootlink(i),xyz,rpy);
   end
 end
 
@@ -159,7 +160,7 @@ end
 
 function model=parseLink(model,robotnum,node,options)
 
-ignore = char(node.getAttribute('drakeIgnore'));
+ignore = char(node.getAttribute('drake_ignore'));
 if strcmp(lower(ignore),'true')
   return;
 end
@@ -214,7 +215,7 @@ end
 
 function model = parseCollisionFilterGroup(model,robotnum,node,options)
 
-ignore = char(node.getAttribute('drakeIgnore'));
+ignore = char(node.getAttribute('drake_ignore'));
 if strcmpi(ignore,'true')
   return;
 end
@@ -249,7 +250,7 @@ end
 
 function model=parseJoint(model,robotnum,node,options)
 
-ignore = char(node.getAttribute('drakeIgnore'));
+ignore = char(node.getAttribute('drake_ignore'));
 if strcmp(lower(ignore),'true')
   return;
 end
@@ -374,51 +375,55 @@ end
 
 
 function model = parseForceElement(model,robotnum,node,options)
+
+name = char(node.getAttribute('name'));
+name = regexprep(name, '\.', '_', 'preservecase');
+
 fe = [];
 childNodes = node.getChildNodes();
 elnode = node.getElementsByTagName('linear_spring_damper').item(0);
 if ~isempty(elnode)
-  [model,fe] = RigidBodySpringDamper.parseURDFNode(model,robotnum,elnode,options);
+  [model,fe] = RigidBodySpringDamper.parseURDFNode(model,name,robotnum,elnode,options);
 end
 
 elnode = node.getElementsByTagName('torsional_spring').item(0);
 if ~isempty(elnode)
-  [model,fe] = RigidBodyTorsionalSpring.parseURDFNode(model,robotnum,elnode,options);
+  [model,fe] = RigidBodyTorsionalSpring.parseURDFNode(model,name,robotnum,elnode,options);
 end
 
 elnode = node.getElementsByTagName('wing').item(0);
 if ~isempty(elnode)
-  [model,fe] = RigidBodyWing.parseURDFNode(model,robotnum,elnode,options);
+  [model,fe] = RigidBodyWing.parseURDFNode(model,name,robotnum,elnode,options);
 end
 
 elnode = node.getElementsByTagName('wing_with_control_surface').item(0);
 if ~isempty(elnode)
-  [model,fe] = RigidBodyWingWithControlSurface.parseURDFNode(model,robotnum,elnode,options);
+  [model,fe] = RigidBodyWingWithControlSurface.parseURDFNode(model,name,robotnum,elnode,options);
 end
 
 elnode = node.getElementsByTagName('bluff_body').item(0);
 if ~isempty(elnode)
-  [model,fe] = RigidBodyBluffBody.parseURDFNode(model,robotnum,elnode,options);
+  [model,fe] = RigidBodyBluffBody.parseURDFNode(model,name,robotnum,elnode,options);
 end
 
 elnode = node.getElementsByTagName('thrust').item(0);
 if ~isempty(elnode)
-  [model,fe] = RigidBodyThrust.parseURDFNode(model,robotnum,elnode,options);
+  [model,fe] = RigidBodyThrust.parseURDFNode(model,name,robotnum,elnode,options);
 end
 
 elnode = node.getElementsByTagName('added_mass').item(0);
 if ~isempty(elnode)
-  [model,fe] = RigidBodyAddedMass.parseURDFNode(model,robotnum,elnode,options);
+  [model,fe] = RigidBodyAddedMass.parseURDFNode(model,name,robotnum,elnode,options);
 end
 
 elnode = node.getElementsByTagName('buoyancy').item(0);
 if ~isempty(elnode)
-  [model,fe] = RigidBodyBuoyant.parseURDFNode(model,robotnum,elnode,options);
+  [model,fe] = RigidBodyBuoyant.parseURDFNode(model,name,robotnum,elnode,options);
 end
 
 elnode = node.getElementsByTagName('propellor').item(0);
 if ~isempty(elnode)
-  [model,fe] = RigidBodyPropellor.parseURDFNode(model,robotnum,elnode,options);
+  [model,fe] = RigidBodyPropellor.parseURDFNode(model,name,robotnum,elnode,options);
 end
 
 
@@ -484,20 +489,20 @@ function model = parseFrame(model,robotnum,node,options)
 end
 
 function model = parseCable(model,robotnum,node,options)
-  name = char(node.getAttribute('name'));   
+  name = char(node.getAttribute('name'));
   if isempty(name), name='cable'; end
   min_length = parseParamString(model,robotnum,char(node.getAttribute('min_length')));
   max_length = parseParamString(model,robotnum,char(node.getAttribute('max_length')));
 
   cable_length_function = drakeFunction.kinematic.CableLength(model,name);
-  
+
   children = node.getChildNodes;
   for i=0:(children.getLength()-1)
     this_node = children.item(i);
     switch(char(getNodeName(this_node)))
       case {'terminator','pulley'}
         link = findLinkId(model,char(this_node.getAttribute('link')),robotnum);
-        xyz=zeros(3,1); 
+        xyz=zeros(3,1);
         axis=[1;0;0];
         radius=0;
         num_wraps=0;
@@ -517,17 +522,21 @@ function model = parseCable(model,robotnum,node,options)
         cable_length_function = addPulley(cable_length_function,link,xyz,axis,radius,num_wraps);
     end
   end
-  
+
   if (min_length~=max_length)
     error('only implemented cables with min_length = max_length so far');
   end
-  
-  model = addPositionEqualityConstraint(model,DrakeFunctionConstraint(min_length,max_length,cable_length_function));
+
+  constraint = DrakeFunctionConstraint(min_length,max_length,cable_length_function);
+  constraint = setName(constraint,cable_length_function.getOutputFrame.name);
+  model = addPositionEqualityConstraint(model,constraint);
 end
 
 function model=parseTransmission(model,robotnum,node,options)
 
-if isempty(strfind(char(node.getAttribute('type')),'SimpleTransmission'))
+% old type as attribute kept for convenience
+typeAttribute = char(node.getAttribute('type'));
+if ~isempty(typeAttribute) && isempty(strfind(typeAttribute,'SimpleTransmission'))
   return; % only parse SimpleTransmissions so far');
 end
 
@@ -537,6 +546,10 @@ childNodes = node.getChildNodes();
 for i=1:childNodes.getLength()
   thisNode = childNodes.item(i-1);
   switch (lower(char(thisNode.getNodeName())))
+    case 'type'
+      if ( isempty(strfind(char(thisNode.getFirstChild().getNodeValue()),'SimpleTransmission')))
+          return;  % only parse SimpleTransmissions so far
+      end
     case 'actuator'
       actuator.name = char(thisNode.getAttribute('name'));
       actuator.name=regexprep(actuator.name, '\.', '_', 'preservecase');
@@ -586,13 +599,13 @@ end
         if inode.hasAttribute('izz'), izz = parseParamString(model,body.robotnum,char(inode.getAttribute('izz'))); else izz=0; end
         inertia = [ixx, ixy, ixz; ixy, iyy, iyz; ixz, iyz, izz];
       end
-      
+
       % randomly scale inertia
       % keep scale factor positive to ensure positive definiteness
       % x'*I*x > 0 && eta > 0 ==> x'*(eta*I)*x > 0
       eta = 1 + min(1,max(-0.9999,options.inertia_error*randn()));
-      inertia = eta*inertia;  
-      
+      inertia = eta*inertia;
+
       if any(rpy)
         % transform inertia back into body coordinates
         R = rpy2rotmat(rpy);
@@ -600,10 +613,10 @@ end
       end
       body = setInertial(body,mass,xyz,inertia);
     end
-    
+
     function body = parseVisual(body,node,model,options)
       c = .7*[1 1 1];
-      
+
       xyz=zeros(3,1); rpy=zeros(3,1);
       origin = node.getElementsByTagName('origin').item(0);  % seems to be ok, even if origin tag doesn't exist
       if ~isempty(origin)
@@ -614,22 +627,24 @@ end
           rpy = reshape(parseParamString(model,body.robotnum,char(origin.getAttribute('rpy'))),3,1);
         end
       end
-        
+
       matnode = node.getElementsByTagName('material').item(0);
       if ~isempty(matnode)
         c = RigidBodyManipulator.parseMaterial(matnode,options);
       end
-      
+
       geomnode = node.getElementsByTagName('geometry').item(0);
       if ~isempty(geomnode)
         if (options.visual || options.visual_geometry)
          geometry = RigidBodyGeometry.parseURDFNode(geomnode,xyz,rpy,model,body.robotnum,options);
-          geometry.c = c;
-          body.visual_geometry = {body.visual_geometry{:},geometry};
+         if ~isempty(geometry)
+           geometry.c = c;
+           body.visual_geometry = {body.visual_geometry{:},geometry};
+         end
         end
-      end        
+      end
     end
-    
+
     function body = parseCollision(body,node,model,options)
       xyz=zeros(3,1); rpy=zeros(3,1);
       origin = node.getElementsByTagName('origin').item(0);  % seems to be ok, even if origin tag doesn't exist
@@ -641,15 +656,17 @@ end
           rpy = reshape(parseParamString(model,body.robotnum,char(origin.getAttribute('rpy'))),3,1);
         end
       end
-      
+
       geomnode = node.getElementsByTagName('geometry').item(0);
       if ~isempty(geomnode)
         geometry = RigidBodyGeometry.parseURDFNode(geomnode,xyz,rpy,model,body.robotnum,options);
-        if (node.hasAttribute('group'))
-          name=char(node.getAttribute('group'));
-        else
-          name='default';
+        if ~isempty(geometry)
+          if (node.hasAttribute('group'))
+            name=char(node.getAttribute('group'));
+          else
+            name='default';
+          end
+          body = addCollisionGeometry(body,geometry,name);
         end
-        body = addCollisionGeometry(body,geometry,name);
       end
-    end    
+    end

@@ -1,15 +1,29 @@
 # Default pod makefile distributed with pods version: 12.11.14
 
+BUILD_SYSTEM:=$(OS)
+ifeq ($(BUILD_SYSTEM),Windows_NT)
+BUILD_SYSTEM:=$(shell uname -o 2> NULL || echo Windows_NT) # set to Cygwin if appropriate
+else
+BUILD_SYSTEM:=$(shell uname -s)
+endif
+
 # Figure out where to build the software.
 #   Use BUILD_PREFIX if it was passed in.
 #   If not, search up to four parent directories for a 'build' directory.
 #   Otherwise, use ./build.
+ifeq ($(BUILD_SYSTEM), Windows_NT)
+ifeq "$(BUILD_PREFIX)" ""
+BUILD_PREFIX:=$(shell (for %%x in (. .. ..\.. ..\..\.. ..\..\..\..) do ( if exist %cd%\%%x\build ( echo %cd%\%%x\build & exit ) )) & echo %cd%\build )
+endif
+# don't clean up and create build dir as I do in linux.  instead create it during configure.
+else
 ifeq "$(BUILD_PREFIX)" ""
 BUILD_PREFIX:=$(shell for pfx in ./ .. ../.. ../../.. ../../../..; do d=`pwd`/$$pfx/build;\
-               if [ -d "$$d" ]; then echo $$d; exit 0; fi; done; echo `pwd`/build)
+               if [ -d $$d ]; then echo $$d; exit 0; fi; done; echo `pwd`/build)
 endif
 # create the build directory if needed, and normalize its path name
-BUILD_PREFIX := $(shell mkdir -p "$(BUILD_PREFIX)" && cd "$(BUILD_PREFIX)" && echo `pwd`)
+BUILD_PREFIX:=$(shell mkdir -p $(BUILD_PREFIX) && cd $(BUILD_PREFIX) && echo `pwd`)
+endif
 
 # Default to a release build.  If you want to enable debugging flags, run
 # "make BUILD_TYPE=Debug"
@@ -32,18 +46,23 @@ pod-build/Makefile:
 
 .PHONY: configure
 configure:
-	@echo "\nBUILD_PREFIX: $(BUILD_PREFIX)\n\n"
+	@echo "BUILD_PREFIX: $(BUILD_PREFIX)"
 
-	# create the temporary build directory if needed
+# create the temporary build directory if needed
+ifeq ($(BUILD_SYSTEM), Windows_NT)
+	@if not exist $(BUILD_PREFIX) ( mkdir $(BUILD_PREFIX) )
+	@if not exist pod-build ( mkdir pod-build )
+else
 	@mkdir -p pod-build
-ifeq ($(shell uname -o),Cygwin)
-	@echo "set(CTEST_CUSTOM_PRE_TEST \"`which bash | cygpath -f - -w | sed -e 's/\\\\/\\\\\\\\/g'` -l -c \\\"`pwd`/cmake/add_matlab_unit_tests.pl `pwd`\\\"\")" > pod-build/CTestCustom.cmake 
+ifeq ($(BUILD_SYSTEM),Cygwin)
+	@echo "set(CTEST_CUSTOM_PRE_TEST \"`which bash | cygpath -f - -w | sed -e 's/\\\\/\\\\\\\\/g'` -l -c \\\"`pwd`/cmake/add_matlab_unit_tests.pl `pwd`\\\"\")" > pod-build/CTestCustom.cmake
 	@which python | cygpath -f - -w > .python
 else
 	@echo "set(CTEST_CUSTOM_PRE_TEST \"../cmake/add_matlab_unit_tests.pl ..\")" > pod-build/CTestCustom.cmake # actually has to live in the build path
 endif
+endif
 
-	# run CMake to generate and configure the build scripts
+# run CMake to generate and configure the build scripts
 	@cd pod-build && cmake $(CMAKE_FLAGS) -DCMAKE_INSTALL_PREFIX="$(BUILD_PREFIX)" \
 		   -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) ..
 
@@ -54,11 +73,11 @@ doxygen :
 	doxygen doc/Doxyfile
 
 doc/drake.pdf :
-	# apologies for hard-coding this for my mac for now... - Russ
 	cd doc && make -f ~/code/latex/makefile_tex drake.pdf
+# apologies for hard-coding this for my mac for now... - Russ
 
 doc/urdf/drakeURDF.html : doc/drakeURDF.xsd
-ifeq ($(shell uname -s),Darwin)
+ifeq ($(BUILD_SYSTEM),Darwin)
 	cd doc && /Applications/oxygen/schemaDocumentationMac.sh drakeURDF.xsd -cfg:oxygen_export_settings_html.xml
 else ifeq ($(OXYGEN_DIR),)
 	echo "You must set the OXYGEN_DIR environment variable"
@@ -71,7 +90,7 @@ mlint	:
 	matlab -nodisplay -r "addpath(fullfile(pwd,'thirdParty','runmlint')); runmlint('.mlintopts'); exit"
 
 test	:  configure
-	-@cd pod-build && ctest -D Experimental --output-on-failure --timeout 300 
+	-@cd pod-build && ctest -D Experimental -C $(BUILD_TYPE) --output-on-failure --timeout 300
 
 test_continuous : configure
 	while true; do $(MAKE) Continuous; sleep 300; done

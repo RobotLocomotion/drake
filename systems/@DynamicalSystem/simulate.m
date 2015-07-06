@@ -11,6 +11,11 @@ function [ytraj,xtraj,lcmlog] = simulate(obj,tspan,x0,options)
 % @option capture_lcm_channels a string containing the regular expression of the
 %           channels to subscribe to (e.g. '.*' for all).
 %           @default '' -> don't record lcm
+% @option gui_control_interface set to true to bring up a figure with play/stop buttons @default false
+% @option lcm_control_interface channel on which to listen for lcmt_simulation_control messages.  @default '' -- which means no lcm
+%            interface
+% @option MaxDataPoints integer N to limit output to the last N data
+%            points.  useful for running very long simulations. 
 
 checkDependency('simulink');
 if ~exist('DCSFunction','file')
@@ -19,19 +24,29 @@ end
 
 typecheck(tspan,'double');
 if (length(tspan)<2) error('length(tspan) must be > 1'); end
-if (nargin<4) options=struct([]); end
+if (nargin<4) options=struct(); end
 mdl = getModel(obj);
 
 if (strcmp(get_param(mdl,'SimulationStatus'),'paused'))
   feval(mdl,[],[],[],'term');  % terminate model, in case it was still running before
 end
 
-% add realtime block
+% add lcm logger block
 lcmlog = []; log_name=[];
 if isfield(options,'capture_lcm_channels') && ~isempty(options.capture_lcm_channels) && nargout>2
   log_name = [mdl,'_lcm_log'];
   add_block('drake/lcmLogger',[mdl,'/lcmLogger'],'channel_regex',['''',options.capture_lcm_channels,''''],'log_to_workspace_variable',['''',log_name,'''']);
   fprintf(1,'Logging LCM channels ''%s''\n', options.capture_lcm_channels);
+end
+
+% add control interface block
+if ~isfield(options,'gui_control_interface'), options.gui_control_interface = false; end
+if ~isfield(options,'lcm_control_interface'), options.lcm_control_interface = ''; end
+
+if options.gui_control_interface || ~isempty(options.lcm_control_interface)
+  add_block('simulink/User-Defined Functions/S-Function',[mdl,'/simulation_control'], ...
+    'FunctionName','DCSFunction', ...
+    'parameters',registerParameter(mdl,SimulationControlBlock(mdl,options.gui_control_interface,options.lcm_control_interface),'control'));
 end
 
 pstruct = obj.simulink_params;
@@ -52,8 +67,7 @@ if (nargin>2 && ~isempty(x0)) % handle initial conditions
     sizecheck(x0,[obj.getStateFrame.dim,1]);
   end
   x0 = stateVectorToStructure(obj,x0,mdl);
-  assignin('base',[mdl,'_x0'],x0);
-  pstruct.InitialState = [mdl,'_x0'];
+  pstruct.InitialState = registerParameter(mdl,x0,'x0');
   pstruct.LoadInitialState = 'on';
 
   if (~isempty(find_system(mdl,'ClassName','InitialCondition')))
@@ -72,7 +86,13 @@ end
 pstruct.StateSaveName = 'xout';
 pstruct.SaveOutput = 'on';
 pstruct.OutputSaveName = 'yout';
-pstruct.LimitDataPoints = 'off';
+if isfield(options,'MaxDataPoints') && ~isinf(options.MaxDataPoints)
+  pstruct.LimitDataPoints = 'on';
+  pstruct.MaxDataPoints = num2str(options.MaxDataPoints);
+else
+  pstruct.LimitDataPoints = 'off';
+end
+  
 %pstruct.SaveOnModelUpdate = 'false';
 %pstruct.AutoSaveOptions.SaveModelOnUpdate = 'false';
 %pstruct.AutoSaveOptions.SaveBackupOnVersionUpgrade = 'false';

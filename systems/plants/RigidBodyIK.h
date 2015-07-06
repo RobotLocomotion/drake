@@ -3,9 +3,10 @@
 #include <string>
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
+#include "RigidBodyConstraint.h"
+#include "IKoptions.h"
+
 class RigidBodyManipulator;
-class RigidBodyConstraint;
-class IKoptions;
 
 #if defined(WIN32) || defined(WIN64)
   #if defined(drakeIK_EXPORTS)

@@ -18,7 +18,7 @@ start_pos = struct('right', forwardKin(r, kinsol, r.foot_frame_id.right, [0;0;0]
                    'left', forwardKin(r, kinsol, r.foot_frame_id.left, [0;0;0], 1));
 
 % Plan footsteps to the goal
-goal_pos = struct('right', [1;0;0;0;0;0], 'left', [1;0.26;0;0;0;0]);
+goal_pos = struct('right', [1;-0.13;0;0;0;0], 'left', [1;0.13;0;0;0;0]);
 plan = r.planFootsteps(start_pos, goal_pos);
 
 % Show the result

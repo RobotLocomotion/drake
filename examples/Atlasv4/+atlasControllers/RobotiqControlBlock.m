@@ -17,8 +17,8 @@ classdef RobotiqControlBlock < MIMODrakeSystem
         options = struct();
       end
       
-      input_frame = atlasFrames.HandState(r, ind, [name, 'atlasFrames.HandState']);
-      output_frame = atlasFrames.HandInput(r, ind, [name, 'atlasFrames.HandInput']);
+      input_frame = r.getOutputFrame.getFrameByName([name, 'atlasFrames.HandState']);
+      output_frame = r.getInputFrame.getFrameByName([name, 'atlasFrames.HandInput']);
       
       obj = obj@MIMODrakeSystem(0,0,input_frame,output_frame,true,true);
       obj = setInputFrame(obj,input_frame);
@@ -38,7 +38,8 @@ classdef RobotiqControlBlock < MIMODrakeSystem
     function y=mimoOutput(obj,t,~,x)      
       % Input is hand state, output is hand inputs
       % For now just issue time-varying force
-      y = 0.5*[cos(6*t); cos(6*t); cos(6*t)];
+      outFrame = getOutputFrame(obj);
+      y = 0.5*cos(6*t)*ones(outFrame.dim, 1);
 		end
   end
   

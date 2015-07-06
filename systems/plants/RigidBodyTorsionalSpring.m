@@ -22,17 +22,22 @@ classdef RigidBodyTorsionalSpring < RigidBodyForceElement
          df_ext = sparse(6*getNumBodies(manip),size(q,1)+size(qd,1));
       end
 
-      % note, because featherstone coordinates do everything about the
-      % z-axis, the below is actually equivalent to
-      % f_ext(:,obj.child_body) = manip.body(obj.child_body).X_joint_to_body'*[zeros(3,1);torque*manip.body(obj.child_body).joint_axis];
-      f_ext(:,obj.child_body) = [zeros(2,1);torque;zeros(3,1)]; 
+      wrench_on_child_in_child_joint_frame = [zeros(2,1);torque;zeros(3,1)];
+
+      % transform from body frame to joint frame
+      AdT_body_to_joint = transformAdjoint(manip.body(obj.child_body).T_body_to_joint);
+      f_ext(:,obj.child_body) = AdT_body_to_joint' * wrench_on_child_in_child_joint_frame;
+
       if obj.parent_body ~= 0 % don't apply force to world body
-        f_ext(:,obj.parent_body) = -[zeros(2,1);torque;zeros(3,1)]; 
+        T_parent_body_to_child_joint = homogTransInv(manip.body(obj.child_body).Ttree);
+        AdT_parent_body_to_child_joint = transformAdjoint(T_parent_body_to_child_joint);
+        f_ext(:,obj.parent_body) = -AdT_parent_body_to_child_joint' * wrench_on_child_in_child_joint_frame; 
       end
       if (nargout>1)
-         df_ext((obj.child_body-1)*6+1:obj.child_body*6,1:size(q,1)) = [zeros(2,size(q,1));dtorquedq;zeros(3,size(q,1))];
+        dwrench_on_child_in_child_joint_frame = [zeros(2,size(q,1)); dtorquedq; zeros(3,size(q,1))];
+        df_ext((obj.child_body-1)*6+1:obj.child_body*6,1:size(q,1)) = AdT_body_to_joint' * dwrench_on_child_in_child_joint_frame;
          if obj.parent_body ~= 0
-           df_ext((obj.parent_body-1)*6+1:obj.parent_body*6,1:size(q,1)) = -[zeros(2,size(q,1));dtorquedq;zeros(3,size(q,1))];
+           df_ext((obj.parent_body-1)*6+1:obj.parent_body*6,1:size(q,1)) = -AdT_parent_body_to_child_joint' * dwrench_on_child_in_child_joint_frame;
          end
          df_ext = reshape(df_ext,6,[]);
       end
@@ -48,14 +53,16 @@ classdef RigidBodyTorsionalSpring < RigidBodyForceElement
         error('removed joint with a torsional spring.  need to handle this case');
       end
     end
+    function [T,U] = energy(obj,manip,q,qd)
+      T=0;
+      theta = q(manip.body(obj.child_body).position_num);
+      U = .5*obj.k*(obj.rest_angle - theta)'*(obj.rest_angle - theta);
+    end
   end
   
   methods (Static)
-    function [model,obj] = parseURDFNode(model,robotnum,node,options)
+    function [model,obj] = parseURDFNode(model,name,robotnum,node,options)
       obj = RigidBodyTorsionalSpring();
-      
-      name = char(node.getAttribute('name'));
-      name = regexprep(name, '\.', '_', 'preservecase');
       obj.name = name;
       
       if node.hasAttribute('rest_angle')
