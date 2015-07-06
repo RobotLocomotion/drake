@@ -9,16 +9,27 @@ classdef PlanarRigidBodyVisualizer < RigidBodyVisualizer
   
   methods
     function obj = PlanarRigidBodyVisualizer(manip,options)
-      typecheck(manip,'PlanarRigidBodyManipulator');
-      obj=obj@RigidBodyVisualizer(manip);
+      if (nargin<2) options = struct(); end
       
-      Tview = [manip.x_axis, manip.y_axis, manip.view_axis]';
+      if ~isfield(options,'Tview')
+        typecheck(manip,'PlanarRigidBodyManipulator');
+        Tview = [manip.x_axis, manip.y_axis, manip.view_axis]';
+      else
+        Tview = options.Tview;
+        typecheck(manip,'RigidBodyManipulator');
+      end
+      obj=obj@RigidBodyVisualizer(manip);
+
+      if isa(manip,'PlanarRigidBodyManipulator')
+        obj.x_axis_label = manip.x_axis_label;
+        obj.x_axis_label = manip.y_axis_label;
+      end
       
       w = warning('off','Drake:RigidBodyGeometry:SimplifiedCollisionGeometry');
       for i=1:length(obj.model.body)
         b = obj.model.body(i);
         for j=1:length(b.visual_geometry)
-          [obj.body(i).x{j},obj.body(i).y{j},obj.body(i).z{j},obj.body(i).c{j}] = getPatchData(b.visual_geometry{j},manip.x_axis,manip.y_axis, manip.view_axis);
+          [obj.body(i).x{j},obj.body(i).y{j},obj.body(i).z{j},obj.body(i).c{j}] = getPatchData(b.visual_geometry{j},Tview(:,1),Tview(:,2), Tview(:,3));
         end
       end
       warning(w);
@@ -98,8 +109,8 @@ classdef PlanarRigidBodyVisualizer < RigidBodyVisualizer
         axis(obj.axis);
       end
       
-      xlabel(obj.model.x_axis_label);
-      ylabel(obj.model.y_axis_label);
+      xlabel(obj.x_axis_label);
+      ylabel(obj.y_axis_label);
       
       if isa(obj.model.terrain,'RigidBodyFlatTerrain')
         v=axis;
@@ -113,6 +124,8 @@ classdef PlanarRigidBodyVisualizer < RigidBodyVisualizer
   properties (Access=protected)
     Tview;
     body;  % body(i).x{j} and body(i).c{j} describe the jth geometry on body i
+    x_axis_label = 'x';
+    y_axis_label = 'y';
   end
   
   properties
