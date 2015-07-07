@@ -42,5 +42,35 @@ hand = forwardKin(r1,kinsol,3,zeros(3,1));
 valuecheck(hand(3),-p1.l1);
 
 
+% test planar visualizer
+r = PlanarRigidBodyManipulator('AcrobotWParams.urdf');
+p = getParams(r);
+v = r.constructVisualizer();
+v.xlim = [-4;4];
+v.ylim = [-4;4];
+
+for l1=.8:.05:1.5
+  p.l1 = l1;
+  r = setParams(r,p);
+  v = updateManipulator(v,r);
+  drawWrapper(v,0,[.3;.5]);
+end
+
+
+% test 3d visualizer
+r = RigidBodyManipulator('AcrobotWParams.urdf');
+p = getParams(r);
+v = r.constructVisualizer();
+v.xlim = [-4;4];
+v.ylim = [-4;4];
+
+for l1=.8:.05:1.5
+  p.l1 = l1;
+  r = setParams(r,p);
+  v = updateManipulator(v,r);
+  drawWrapper(v,0,[.3;.5]);
+end
+
+
 path(oldpath);
 
