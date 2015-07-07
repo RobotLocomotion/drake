@@ -31,5 +31,16 @@ for i=1:20
 end
 
 
+% confirm that Ttree gets updated
+kinsol = doKinematics(r1,zeros(2,1),zeros(2,1));
+hand = forwardKin(r1,kinsol,3,zeros(3,1));
+valuecheck(hand(3),-p1.l1);
+p1.l1 = .8;
+r1 = setParams(r1,p1);
+kinsol = doKinematics(r1,zeros(2,1),zeros(2,1));
+hand = forwardKin(r1,kinsol,3,zeros(3,1));
+valuecheck(hand(3),-p1.l1);
+
+
 path(oldpath);
 

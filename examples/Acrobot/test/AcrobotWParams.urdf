@@ -6,6 +6,7 @@
 
   <parameter name="b1" value=".1" lb="0" />
   <parameter name="b2" value=".1" lb="0" />
+  <parameter name="l1" value="1" lb="0" />
   <parameter name="lc1" value=".5" lb="0" />
   <parameter name="lc2" value="1" lb="0" />
   <parameter name="Ic1" value=".083" lb="0" />
@@ -67,7 +68,7 @@
   <joint name="elbow" type="continuous">
     <parent link="upper_link" />
     <child link="lower_link" />
-    <origin xyz="0 .1 -1" />
+    <origin xyz="0 .1 -$l1" />
     <axis xyz="0 1 0" />
     <dynamics damping="$b2" />
   </joint>
