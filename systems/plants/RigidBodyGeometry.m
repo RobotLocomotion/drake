@@ -1,4 +1,4 @@
-classdef RigidBodyGeometry
+classdef RigidBodyGeometry < RigidBodyElement
 
   methods % to be implemented in derived classes
     pts = getPoints(obj);             % returned in body coordinates
@@ -237,7 +237,8 @@ classdef RigidBodyGeometry
       if ~isempty(obj)
         obj.T = T;
       end
-    end    
+    end  
+
   end
   
   properties  % note: constructModelmex currently depends on these being public
