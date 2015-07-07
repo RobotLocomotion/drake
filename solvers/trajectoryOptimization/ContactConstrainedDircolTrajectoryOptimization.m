@@ -19,6 +19,14 @@ classdef ContactConstrainedDircolTrajectoryOptimization < ConstrainedDircolTraje
         options.non_penetration = true;
       end
       
+      if ~isfield(options,'relative_constraints')
+        options.relative_constraints = true; %defaults to true, unlike subclass
+      end
+      
+      if length(options.relative_constraints) > 1
+        error('ContactConstrainedDircolTrajectoryOptimization only supports a single value for options.relative_constraints');
+      end
+      
       
       [phi,normal,d,xA,xB,idxA,idxB,mu] = plant.contactConstraints(options.contact_q0,false,struct('terrain_only',true));
       mu = mu(1);
@@ -44,9 +52,9 @@ classdef ContactConstrainedDircolTrajectoryOptimization < ConstrainedDircolTraje
       end
       
       if plant.dim == 2
-        options.relative_constraints = repmat([true;false],length(indices),1);
+        options.relative_constraints = repmat([options.relative_constraints;false],length(indices),1);
       else
-        options.relative_constraints = repmat([true;true;false],length(indices),1);
+        options.relative_constraints = repmat([options.relative_constraints;options.relative_constraints;false],length(indices),1);
       end
 
       obj = obj@ConstrainedDircolTrajectoryOptimization(plant,N,duration,options);

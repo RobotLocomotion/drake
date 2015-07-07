@@ -26,6 +26,7 @@ x0_max = x0;
 to_options.test_bound = true;
 to_options.friction_limits = false;
 to_options.non_penetration = false;
+to_options.relative_constraints = false;
 
 traj_opt=ContactConstrainedDircolTrajectoryOptimization(p,N,[T T],mode,to_options);
 
