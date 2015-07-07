@@ -40,6 +40,8 @@ else
     trajLib = trajLib.setupFrames(r);
 end
 
+trajLib.plotTrajectories([1,2]);
+
 disp('stabilizing trajectories...');
 Q = diag([10*ones(6,1);ones(6,1)]);
 R = 0.1*eye(4);

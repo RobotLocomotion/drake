@@ -21,6 +21,14 @@ classdef TrajectoryLibrary
             end
         end
         
+        function obj = plotTrajectories(obj, slice)
+          numTrajs = numel(obj.trajectories);
+          for i = 1:numTrajs
+              fnplt(obj.trajectories{i}.xtraj, slice);
+              hold on;
+          end
+        end
+        
         function obj = setupFrames(obj, robot)
             numTrajs = numel(obj.trajectories);
             for i = 1:numTrajs
