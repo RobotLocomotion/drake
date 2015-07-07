@@ -46,49 +46,8 @@ R = 0.1*eye(4);
 Qf = diag([100*ones(6,1);ones(6,1)]);    
 trajLib = trajLib.stabilizeTrajectories(r, Q, R, Qf);
 
-V_funnel = {};
-rho_funnel = {};
-Phi_funnel = {};
-for i = 1:numel(trajLib.trajectories)
-
-  xtraj = trajLib.trajectories{i}.xtraj;
-  utraj = trajLib.trajectories{i}.utraj;
-  Vtv = trajLib.trajectories{i}.Vtv;
-  tv = trajLib.trajectories{i}.tv;
-  
-disp('computing funnels...')
-
-V = Vtv*95;
-
-%assemble closed loop system
-sys_closed_loop = feedback(r, tv);
-
-%form polynomial approximations to the system dynamics for both closed loop
-%and open loop systems.  A 3rd order Taylor series expansion is used here.
-disp('taylor approximating system dynamics...')
-
-sys_poly_closed_loop = taylorApprox(sys_closed_loop, xtraj, [], 3);
-sys_poly_open_loop = taylorApprox(r, xtraj, utraj, 3);
-
-ts = Vtv.S.getBreaks(); tsend = ts(end);
-ts = linspace(ts(1),ts(end),12);
-%ts = xtraj.getBreaks();
-ts = ts(1:end-1);
-
-options = struct();
-options.saturations = false;
-options.rho0 = 1;
-options.degL1 = 2;
-options.max_iterations = 1;
-G0 = V.S.eval(0) / options.rho0 * 1.01;
-options.backoff_percent = 5;
-
-[V,rho,Phi]=sampledFiniteTimeReach_B0(sys_poly_closed_loop,sys_poly_open_loop,V,G0,0,tv,ts,xtraj,utraj,options);
-
-V_funnel{i} = V;
-rho_funnel{i} = rho;
-Phi_funnel{i} = Phi;
-end
+funLib = FunnelLibrary(trajLib);
+funLib.computeFunnels(r, 95, 12);
 
 for i = 1:numel(xtrajs)
 

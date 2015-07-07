@@ -25,6 +25,7 @@ classdef FunnelLibrary
         function obj = computeFunnels(obj, robot, scaleFactor, funnelLength)
             numTrajs = numel(obj.trajLib.trajectories);
             for i = 1:numTrajs
+                disp('building funnel')
                 xtraj = obj.trajLib.trajectories{i}.xtraj;
                 utraj = obj.trajLib.trajectories{i}.utraj;
                 Vtv = obj.trajLib.trajectories{i}.Vtv;
@@ -32,7 +33,7 @@ classdef FunnelLibrary
                 V = Vtv*scaleFactor;
                 
                 sysCl = feedback(robot, tv);
-                
+                disp('taylor approximating dynamics')
                 sysClPoly = taylorApprox(sysCl, xtraj, [], 3);
                 sysPoly = taylorApprox(robot, xtraj, utraj, 3);
                 
@@ -42,7 +43,7 @@ classdef FunnelLibrary
                 
                 G0 = V.S.eval(0) / obj.options.rho0 * 1.01;
                 
-
+                disp('computing reachable set')
                 [V,rho,Phi]=sampledFiniteTimeReach_B0(sysClPoly,sysPoly,V,G0,0,tv,ts,xtraj,utraj, obj.options);
                 
                 obj.funnels{i} = struct();
