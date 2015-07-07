@@ -1,0 +1,301 @@
+<?xml version="1.0" ?>
+<sdf version="1.4">
+  <world name="trials_task_2">
+    <physics type="ode">
+      <gravity>0 0 -9.81</gravity>
+      <ode>
+        <solver>
+          <use_dynamic_moi_rescaling>true</use_dynamic_moi_rescaling>
+          <type>quick</type>
+          <iters>50</iters>
+          <sor>1.4</sor>
+        </solver>
+        <constraints>
+          <cfm>0.0</cfm>
+          <erp>0.2</erp>
+          <contact_max_correcting_vel>100.0</contact_max_correcting_vel>
+          <contact_surface_layer>0.0</contact_surface_layer>
+        </constraints>
+      </ode>
+      <real_time_update_rate>1000</real_time_update_rate>
+      <max_step_size>0.001</max_step_size>
+    </physics>
+
+    <!--A global light source -->
+    <include>
+      <uri>model://sun</uri>
+    </include>
+
+    <!-- A ground plane -->
+    <include>
+      <uri>model://ground_plane</uri>
+      <pose>0 0 0 0 0 0</pose>
+    </include>
+
+    <model name="green_tape">
+      <static>true</static>
+      <pose>-2.7 0 0 0 0 0</pose>
+      <link name="link">
+      <visual name="visual">
+        <geometry>
+          <box>
+            <size>0.13 2.41 0.01</size>
+          </box>
+        </geometry>
+        <material>
+          <script><name>Gazebo/Green</name></script>
+        </material>
+      </visual>
+      </link>
+    </model>
+
+    <model name="ramp_0">
+      <pose>-2 0 0 0 0 0</pose>
+      <static>true</static>
+      <link name="link">
+        <collision name="incline_collision">
+          <pose>0.29175 0 0.0335 0 0.261799364 0</pose>
+          <geometry>
+            <box>
+              <size>.631104356 2.43839619 .1</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="incline_visual">
+          <pose>0.29175 0 0.0335 0 0.261799364 0</pose>
+          <geometry>
+            <box>
+              <size>.631104356 2.43839619 .1</size>
+            </box>
+          </geometry>
+          <material>
+            <script><name>Gazebo/WoodFloor</name></script>
+          </material>
+        </visual>
+
+        <collision name="decline_collision">
+          <pose>-0.29175 0 0.0335 0 -0.261799364 0</pose>
+          <geometry>
+            <box>
+              <size>.631104356 2.43839619 .1</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="decline_visual">
+          <pose>-0.29175 0 0.0335 0 -0.261799364 0</pose>
+          <geometry>
+            <box>
+              <size>.631104356 2.43839619 .1</size>
+            </box>
+          </geometry>
+          <material>
+            <script><name>Gazebo/WoodFloor</name></script>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Chevron cinder block wall. -->
+    <model name="wall_2">
+      <static>true</static>
+      <pose>-4.7 -1.247388158 0 0 0 0</pose>
+      <include>
+        <name>block_0</name>
+        <uri>model://cinder_block_2</uri>
+        <pose>4.058409714 0.265174984 0.073 0 0 0.785398163</pose>
+      </include>
+      <!-- <include>
+        <name>block_2</name>
+        <uri>model://cinder_block_2</uri>
+        <pose>4.19535737 0.545809424 0.142875 0 0 -0.785398163</pose>
+      </include> -->
+      <include>
+        <name>block_3</name>
+        <uri>model://cinder_block_2</uri>
+        <pose>4.19535737 0.545809424 0.073 0 0 -0.785398163</pose>
+      </include>
+      <!-- <include>
+        <name>block_4</name>
+        <uri>model://cinder_block_2</uri>
+        <pose>4.058409714 0.826440054 0.142875 0 0 0.785398163</pose>
+      </include> -->
+      <include>
+        <name>block_5</name>
+        <uri>model://cinder_block_2</uri>
+        <pose>4.058409714 0.826440054 0.073 0 0 0.785398163</pose>
+      </include>
+      <!-- <include>
+        <name>block_6</name>
+        <uri>model://cinder_block_2</uri>
+        <pose>4.19535737 1.107073224 0.142875 0 0 -0.785398163</pose>
+      </include> -->
+      <include>
+        <name>block_7</name>
+        <uri>model://cinder_block_2</uri>
+        <pose>4.19535737 1.107073224 0.073 0 0 -0.785398163</pose>
+      </include>
+      <!-- <include>
+        <name>block_8</name>
+        <uri>model://cinder_block_2</uri>
+        <pose>4.058409714 1.387705886 0.142875 0 0 0.785398163</pose>
+      </include> -->
+      <include>
+        <name>block_9</name>
+        <uri>model://cinder_block_2</uri>
+        <pose>4.058409714 1.387705886 0.073 0 0 0.785398163</pose>
+      </include>
+      <!-- <include>
+        <name>block_10</name>
+        <uri>model://cinder_block_2</uri>
+        <pose>4.19535737 1.668339056 0.142875 0 0 -0.785398163</pose>
+      </include> -->
+      <include>
+        <name>block_11</name>
+        <uri>model://cinder_block_2</uri>
+        <pose>4.19535737 1.668339056 0.073 0 0 -0.785398163</pose>
+      </include>
+      <!-- <include>
+        <name>block_12</name>
+        <uri>model://cinder_block_2</uri>
+        <pose>4.058409714 1.948972226 0.142875 0 0 0.785398163</pose>
+      </include> -->
+      <include>
+        <name>block_13</name>
+        <uri>model://cinder_block_2</uri>
+        <pose>4.058409714 1.948972226 0.073 0 0 0.785398163</pose>
+      </include>
+      <!-- <include>
+        <name>block_14</name>
+        <uri>model://cinder_block_2</uri>
+        <pose>4.19535737 2.229604888 0.142875 0 0 -0.785398163</pose>
+      </include> -->
+      <include>
+        <name>block_15</name>
+        <uri>model://cinder_block_2</uri>
+        <pose>4.19535737 2.229604888 0.073 0 0 -0.785398163</pose>
+      </include>
+    </model> <!-- wall_2 (chevron wall)-->
+
+    <model name="yellow_tape">
+      <static>true</static>
+      <pose>-0.087 0 0 0 0 0</pose>
+      <link name="link">
+      <visual name="visual">
+        <geometry>
+          <box>
+            <size>0.13 2.41 0.01</size>
+          </box>
+        </geometry>
+        <material>
+          <script><name>Gazebo/Yellow</name></script>
+        </material>
+      </visual>
+      </link>
+    </model>
+
+   <include>
+     <static>true</static>
+    <name>level_block_1</name>
+    <uri>model://block_level_steps_1</uri>
+    <pose>0.351 -0.949 -0.073 0 0 0</pose>
+   </include>
+
+   <include>
+     <static>true</static>
+    <name>level_block_2</name>
+    <uri>model://block_level_steps_2</uri>
+    <pose>4.62 0.98 -0.073 0 0 3.14159</pose>
+   </include>
+
+   <model name="orange_tape">
+     <static>true</static>
+     <pose>4.6 0 0 0 0 -0.785397</pose>
+    <link name="link">
+     <visual name="visual">
+       <geometry>
+         <box>
+           <size>0.13 3.89146 0.01</size>
+         </box>
+       </geometry>
+       <material>
+         <script><name>Gazebo/Orange</name></script>
+       </material>
+     </visual>
+     </link>
+   </model>
+
+   <include>
+     <static>true</static>
+    <name>angle_block_2</name>
+    <uri>model://block_angle_steps_1</uri>
+    <pose>4.55974 -1.012 -0.0365 0 0 0</pose>
+   </include>
+
+   <include>
+     <static>true</static>
+    <name>angle_block_2</name>
+    <uri>model://block_angle_steps_2</uri>
+    <pose>9.56106065 0.917 -0.0365 0 0 3.14159</pose>
+   </include>
+
+    <model name="red_tape">
+      <static>true</static>
+      <pose>9.947 0 0 0 0 0</pose>
+      <link name="link">
+      <visual name="visual">
+        <geometry>
+          <box>
+            <size>0.13 2.41 0.01</size>
+          </box>
+        </geometry>
+        <material>
+          <script><name>Gazebo/Red</name></script>
+        </material>
+      </visual>
+      </link>
+    </model>
+
+    <plugin filename="libVRCPlugin.so" name="vrc_plugin">
+      <atlas>
+        <model_name>atlas</model_name>
+        <pin_link>utorso</pin_link>
+      </atlas>
+      <drc_vehicle>
+        <model_name>drc_vehicle_xp900</model_name>
+        <seat_link>polaris_ranger_xp900::chassis</seat_link>
+      </drc_vehicle>
+      <drc_fire_hose>
+        <fire_hose_model>fire_hose</fire_hose_model>
+        <coupling_link>coupling</coupling_link>
+        <standpipe_model>standpipe</standpipe_model>
+        <spout_link>standpipe</spout_link>
+        <thread_pitch>-1000</thread_pitch>
+        <coupling_relative_pose>1.17038e-05 -0.125623 0.35 -0.0412152 -1.57078 1.61199</coupling_relative_pose>
+      </drc_fire_hose>
+    </plugin>
+
+  </world>
+</sdf>
+
+<!--
+     Rubble Terrain
+
+This model shows a representative configuration for the Rubble challenge.  A rubble terrain will be designed to show the robot's capability to traverse through a difficult terrain and reach a final destination.
+
+NOTES:
+  - material/collision properties have been left at their default values
+
+  - Terrain:
+      * collision and visual geometries use the same mesh data
+          - it is possible for other parts to become "embedded" within this model, which is incorrect.
+
+  - Options
+    Three options have been provided due to slow load and run time speeds with a fully textured .dae file.
+  * Trials_Task2_Terrain_simple.world - loads a white .STL mesh (load time on order of 2s)
+  * Trials_Task2_Terrain_dae_color.world - loads a partially colored .dae file (load time on order of 30s)
+  * Trials_Task2_Terrain_dae_texture.world - loads a fully textured .dae file (load time on order of 2 min)
+
+DISCLAIMER:
+The models are intended to represent the type of obstacles to be encountered during the DRC trials, but may not match the exact configurations used in the trial events.  DARPA reserves the right to change any elements of these tasks without updating these model files.
+
+-->
