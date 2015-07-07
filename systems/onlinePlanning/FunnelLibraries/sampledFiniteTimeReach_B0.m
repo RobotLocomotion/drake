@@ -29,6 +29,8 @@ function [V,rho,Phi] = sampledFiniteTimeReach_B0(sys,polyOrig,Vtraj0,G,R0,tv,ts,
 % @option Lup Multiplier degree
 % @option Lum Multiplier degree
 
+addpath_mosek;
+
 % Get the necessary variables
 t=msspoly('t',1);
 x=Vtraj0.getFrame.getPoly;
