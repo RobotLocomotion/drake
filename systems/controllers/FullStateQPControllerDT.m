@@ -253,7 +253,7 @@ classdef FullStateQPControllerDT < DrakeSystem
     
     
 
-    R = ctrl_data.R;
+    R = 0*ctrl_data.R;
     if (ctrl_data.lqr_is_time_varying)
       if isa(ctrl_data.S,'Trajectory')
         S = fasteval(ctrl_data.S,t+h);
