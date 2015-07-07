@@ -1047,7 +1047,7 @@ classdef NonlinearProgram
       % ID=cnstr_id. Otherwise, cnstr_idx = [];
       if(~(numel(cnstr_id) == 1 && isnumeric(cnstr_id)))
         error('Drake:NonlinearProgram:isNonlinearConstraintID:InvalidInput','cnstr_id should be a scalar');
-  end
+      end
       cnstr_idx = find(obj.nlcon_id==cnstr_id);
       flag = ~isempty(cnstr_idx);
     end
@@ -1266,6 +1266,40 @@ classdef NonlinearProgram
       cnstr_id = varargin{1};
       obj = deleteBoundingBoxConstraint(obj,cnstr_id);
       [obj,new_cnstr_id] = addBoundingBoxConstraint(obj,varargin{2:end});
+    end
+    
+    function obj = eliminateFixedConstraints(obj,tol)
+      % Check nonlinear constraints to see if any have all variables fixed
+      % Removes them if they do. Throws an error if they violate
+      % constraints by more than tol
+      if nargin < 2
+        tol = 1e-6;
+      end
+      x = min(max(zeros(obj.num_vars,1),obj.x_lb),obj.x_ub);
+      shared_data = obj.evaluateSharedDataFunctions(x);      
+      
+      i = 1;
+      while i < length(obj.nlcon)
+        x_args = getArgumentArray(obj,x,obj.nlcon_xind{i});
+        is_fixed = true;
+        for j=1:length(x_args)
+          inds = obj.nlcon_xind{i}{j};
+          if ~isequal(obj.x_lb(inds),obj.x_ub(inds))
+            is_fixed = false;
+            break;
+          end
+        end
+        if is_fixed
+          args = [x_args;shared_data(obj.nlcon_dataind{i})];
+          f = obj.nlcon{i}.eval(args{:});
+          if any(f < obj.nlcon{i}.lb - tol) || any(f > obj.nlcon{i}.ub + tol)
+            error('All arguments to constraint are fixed but violates bounds');
+          end
+          obj = obj.deleteConstraint(obj.nlcon_id(i));
+        else
+          i = i+1;
+        end
+      end
     end
   end
   
