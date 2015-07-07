@@ -1,0 +1,11 @@
+pods_find_pkg_config(snopt_c)
+pods_find_pkg_config(bullet)
+find_library(BLAS_LIBRARY NAMES blas libblas)
+if(BLAS_LIBRARY AND snopt_c_FOUND AND bullet_FOUND)
+  add_mex(replanFunnels_mex replanFunnels_mex.cpp)
+  add_mex(isCollisionFree_mex isCollisionFree_mex.cpp)
+  pods_use_pkg_config_packages(isCollisionFree_mex bullet)
+  pods_use_pkg_config_packages(replanFunnels_mex snopt_c bullet)
+  target_link_libraries(replanFunnels_mex -lblas)
+endif()
+
