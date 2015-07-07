@@ -95,18 +95,21 @@ public:
     else if ( scale && num_scale_factors == 1 ) {
       scale_x = scale_y = scale_z = scale[0];
     }
+    cout << "Loading mesh: " << fname << endl;
     spruce::path path(fname);
     std::string ext = path.extension();
-    
+    cout << "Converting extension '" << ext << "'' to lowercase." << endl;
     std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
     
     if (ext.compare(".obj")==0) {
-      pmesh = bot_wavefront_model_create(fname.c_str());
+      if (path.exists())
+        pmesh = bot_wavefront_model_create(path.getStr().c_str());
     } else  {
+      cerr << "Warning: Extension '" << ext << " was not expected.  Changing it to '.obj' and trying again." << endl;
+      // try changing the extension to obj and loading
       path.setExtension(".obj");
       if (path.exists())
-      // try changing the extension to obj and loading
-      pmesh = bot_wavefront_model_create(path.getStr().c_str());
+        pmesh = bot_wavefront_model_create(path.getStr().c_str());
     }
 
     if (!pmesh) {
