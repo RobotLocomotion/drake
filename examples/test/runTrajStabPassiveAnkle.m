@@ -32,7 +32,7 @@ v = r.constructVisualizer;
 v.display_dt = 0.01;
 
 % load('data/hopper_traj_lqr_081414.mat');
-load('data/hopper_passiveankle_traj_lqr_081414.mat');
+load('data/hopper_traj_lqr_40_knots.mat');
 xtraj = xtraj.setOutputFrame(getStateFrame(r));
 v.playback(xtraj);
 

@@ -14,7 +14,7 @@ classdef RigidBodySupportState
 
   methods
     function obj = RigidBodySupportState(r,bodies,options)
-      typecheck(r,'Biped');
+      typecheck(r,'TimeSteppingRigidBodyManipulator'); 
       typecheck(bodies,'double');
       if nargin < 3
         options = struct();
