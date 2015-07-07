@@ -103,7 +103,8 @@ for testnr = 1 : ntests
   supp.contact_pts = {1:ncontact_points_per_foot, 1:ncontact_points_per_foot};
   supp.contact_groups = {{'heel', 'toe'}, {'heel', 'toe'}};
   supp.num_contact_pts = [ncontact_points_per_foot ncontact_points_per_foot];
-  
+  supp.contact_surfaces = 0*active_supports;
+
   B = [B{:}];
 
   cops_mex = individualCentersOfPressuremex(r.getMexModelPtr, supp, normals, nd, B, beta);

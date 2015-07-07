@@ -14,7 +14,7 @@ warning(w);
 % to the position vector of the first atlas
 options.throw_error_if_fail = true;
 tf = findTransform(getStateFrame(r),getPositionFrame(r,2),options);
-valuecheck(tf.output(0,[],(1:getNumStates(r))'),(15:28)');
+valuecheck(tf.output(0,[],(1:getNumStates(r))'),(13:24)');
 
 % now simulate and playback
 xtraj = simulate(r,[0 3]);

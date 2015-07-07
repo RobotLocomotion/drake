@@ -40,7 +40,7 @@ else
     x0.l_arm_elx = 1.200000;
     x0.l_arm_ely = 1.870000;
     x0.l_arm_shx = -1.300000;
-    x0.l_arm_shz = 0.450000;
+    x0.l_arm_usy = 0.450000;
     x0.l_leg_hpy = 0.100000;
     x0.l_leg_kny = 0.400000;
     x0.l_leg_hpy = -0.150000;
@@ -51,7 +51,7 @@ else
     x0.r_arm_elx = -1.200000;
     x0.r_arm_ely = 1.870000;
     x0.r_arm_shx = 1.300000;
-    x0.r_arm_shz = 0.450000;
+    x0.r_arm_usy = 0.450000;
     x0.r_leg_hpy = 0.100000;
     x0.r_leg_kny = 0.400000;
     x0.r_leg_hpy = -0.150000;

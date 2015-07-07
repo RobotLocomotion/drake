@@ -5,7 +5,7 @@ if ~checkDependency('gurobi')
   return;
 end
 
-path_handle = addpathTemporary(fullfile(getDrakePath,'examples','Atlasv4'));
+path_handle = addpathTemporary(fullfile(getDrakePath,'examples','Atlas'));
 
 if nargin < 1
   segment_number = -1; % do full traj
@@ -30,8 +30,8 @@ else
 %   traj_file = 'data/atlas_lqr_fm2_cost10.mat';
 
 % traj_file = 'data/atlas_lqr_fm2_periodic.mat';
-traj_file = 'data/atlas_lqr_fm2_periodic_100.mat';
-% traj_file = 'data/atlas_hybrid_lqr';
+% traj_file = 'data/atlas_lqr_fm2_periodic_100.mat';
+traj_file = 'data/atlas_hybrid_lqr';
 
 %   traj_file = 'data/atlas_lqr_01.mat';
 end

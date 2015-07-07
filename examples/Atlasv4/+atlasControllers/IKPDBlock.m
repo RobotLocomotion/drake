@@ -124,8 +124,8 @@ classdef IKPDBlock < MIMODrakeSystem
         cdata = obj.controller_data;
         approx_args = {};
         for j = 1:length(cdata.link_constraints)
-          if cdata.lqr_is_time_varying && ~isempty(cdata.link_constraints(j).coefs)
-            pos = evaluateSplineInLinkConstraints(t,cdata.link_constraints, j);
+          if cdata.lqr_is_time_varying && ~isempty(cdata.link_constraints(j).traj)
+            pos = fasteval(cdata.link_constraints(j).traj,t);
             pos(1:3) = pos(1:3) - cdata.plan_shift;
             approx_args(end+1:end+3) = {cdata.link_constraints(j).link_ndx, cdata.link_constraints(j).pt, pos};
           elseif ~isempty(cdata.link_constraints(j).pos)

@@ -111,11 +111,6 @@ classdef AtlasQPController < QPController
     x0 = x0 - [ctrl_data.plan_shift(1:2);0;0];
     y0 = y0 - ctrl_data.plan_shift(1:2);
 
-    % lcmgl = LCMGLClient('desired zmp');
-    % lcmgl.glColor3f(0, 0.7, 1.0);
-    % lcmgl.sphere([y0; 0], 0.02, 20, 20);
-    % lcmgl.switchBuffers();
-    
     mu = ctrl_data.mu;
     R_DQyD_ls = R_ls + D_ls'*Qy*D_ls;
 
@@ -172,6 +167,7 @@ classdef AtlasQPController < QPController
     supp.contact_pts = contact_pts;
     supp.contact_groups = contact_groups;
     supp.num_contact_pts = n_contact_pts;
+    supp.contact_surfaces = 0*support_bodies;
     
     qdd_lb =-500*ones(1,nq);
     qdd_ub = 500*ones(1,nq);
@@ -216,17 +212,11 @@ classdef AtlasQPController < QPController
       B_act = B(act_idx,:);
 
       [xcom,Jcom] = getCOM(r,kinsol);
-      % lcmgl = LCMGLClient('actual com');
-      % lcmgl.glColor3f(0.8, 1, 0);
-      % lcmgl.sphere([xcom(1:2); 0], 0.02, 20, 20);
-      % lcmgl.switchBuffers();
-
 
       include_angular_momentum = any(any(obj.W_kdot));
 
       if include_angular_momentum
-        A = centroidalMomentumMatrix(r, kinsol);
-        Adot_times_v = centroidalMomentumMatrixDotTimesVmex(r, kinsol);
+        [A,Adot] = getCMM(r,kinsol,qd);
       end
 
       Jcomdot = forwardJacDot(r,kinsol,0);
@@ -237,11 +227,13 @@ classdef AtlasQPController < QPController
 
       if ~isempty(active_supports)
         nc = sum(num_active_contacts);
+        c_pre = 0;
         Dbar = [];
         for j=1:length(active_supports)
           [~,~,JB] = contactConstraintsBV(r,kinsol,false,struct('terrain_only',~obj.use_bullet,...
             'body_idx',[1,active_supports(j)],'collision_groups',active_contact_groups(j)));
           Dbar = [Dbar, vertcat(JB{:})']; % because contact constraints seems to ignore the collision_groups option
+          c_pre = c_pre + length(active_contact_pts{j});
         end
 
         Dbar_float = Dbar(float_idx,:);
@@ -363,7 +355,7 @@ classdef AtlasQPController < QPController
 
       if include_angular_momentum
         Ak = A(1:3,:);
-        Akdot_times_v = Adot_times_v(1:3,:);
+        Akdot = Adot(1:3,:);
         k=Ak*qd;
         kdot_des = -obj.Kp_ang*k;
       end
@@ -388,7 +380,7 @@ classdef AtlasQPController < QPController
         fqp = fqp - y0'*Qy*D_ls*Jcom*Iqdd;
         fqp = fqp - (w_qdd.*qddot_des)'*Iqdd;
         if include_angular_momentum
-          fqp = fqp + Akdot_times_v'*obj.W_kdot*Ak*Iqdd;
+          fqp = fqp + qd'*Akdot'*obj.W_kdot*Ak*Iqdd;
           fqp = fqp - kdot_des'*obj.W_kdot*Ak*Iqdd;
         end
 
@@ -647,9 +639,6 @@ classdef AtlasQPController < QPController
     else
       varargout = {y};
     end
-    % % for profiling the entire atlas controller system (see QTrajEvalBlock.m)
-    % global qtraj_eval_start_time;
-    % toc(qtraj_eval_start_time)
   end
   end
 

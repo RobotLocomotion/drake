@@ -26,7 +26,7 @@ v = r.constructVisualizer;
 v.display_dt = 0.005;
 
 % load in running trajectory
-sol = load([getDrakePath,'/solvers/trajectoryOptimization/dev/test_jump_v5.mat'],'xtraj_sol','com_sol','comdot_sol','comddot_sol','t_sol');
+sol = load([getDrakePath,'/solvers/trajectoryOptimization/dev/test_jump3.mat'],'xtraj_sol','com_sol','comdot_sol','comddot_sol','t_sol');
 
 ts = unique(sol.xtraj_sol.getBreaks);
 xtraj = sol.xtraj_sol;
@@ -84,7 +84,7 @@ nT = 17;
 
 flight = RigidBodySupportState(r,[]);
 foot_support = RigidBodySupportState(r,[l_foot,r_foot]);
-toe_support = RigidBodySupportState(r,[l_foot,r_foot],struct('contact_groups',{{{'toe'},{'toe'}}}));
+toe_support = RigidBodySupportState(r,[l_foot,r_foot],{{'toe'},{'toe'}});
 
 supports = [foot_support;foot_support;foot_support;foot_support;foot_support;...
   toe_support;toe_support;...
