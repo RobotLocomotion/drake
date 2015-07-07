@@ -1,6 +1,6 @@
 function paramExtractFromURDF
 
-oldpath = addpath(fullfile(pwd,'..'));
+tmp = addpathTemporary(fullfile(pwd,'..'));
 
 r1 = RigidBodyManipulator('AcrobotWParams.urdf');
 r2 = AcrobotPlant;
@@ -60,9 +60,16 @@ end
 % test 3d visualizer
 r = RigidBodyManipulator('AcrobotWParams.urdf');
 p = getParams(r);
-v = r.constructVisualizer();
-v.xlim = [-4;4];
-v.ylim = [-4;4];
+try 
+  v = BotVisualizer(r);
+catch ex
+  if strcmp(ex.identifier,'Drake:MissingDependency:BotVisualizerDisabled')
+    warning(ex.identifier,ex.message);
+    return;  % ok to skip this part of the test test
+  else
+    rethrow(ex);
+  end
+end
 
 for l1=.8:.05:1.5
   p.l1 = l1;
@@ -70,7 +77,4 @@ for l1=.8:.05:1.5
   v = updateManipulator(v,r);
   drawWrapper(v,0,[.3;.5]);
 end
-
-
-path(oldpath);
 
