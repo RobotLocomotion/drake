@@ -44,17 +44,17 @@ std::string QuaternionFloatingJoint::getVelocityName(int index) const
 {
 	switch (index) {
 	case 0:
-		return name+"_xdot";
-	case 1:
-		return name+"_ydot";
-	case 2:
-		return name+"_zdot";
-	case 3:
 		return name+"_wx";
-	case 4:
+	case 1:
 		return name+"_wy";
-	case 5:
+	case 2:
 		return name+"_wz";
+	case 3:
+		return name+"_vx";
+	case 4:
+		return name+"_vy";
+	case 5:
+		return name+"_vz";
 	default:
 		throw std::runtime_error("bad index");
 	}
