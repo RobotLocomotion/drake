@@ -45,22 +45,10 @@ Q = diag([10*ones(6,1);ones(6,1)]);
 R = 0.1*eye(4);
 Qf = diag([100*ones(6,1);ones(6,1)]);    
 trajLib = trajLib.stabilizeTrajectories(r, Q, R, Qf);
-
+huhuasdfsdfsdf
 funLib = FunnelLibrary(trajLib);
-funLib.computeFunnels(r, 95, 12);
+funLib = funLib.computeFunnels(r, 95, 12, 0.15);
 
-for i = 1:numel(xtrajs)
-
-Vxframe = V_funnel{i}.inFrame(r.getStateFrame());
-options.plotdims = [1 2];
-options.x0 = xtraj;
-options.ts = ts;
-options.inclusion = 'projection';
-plotFunnel(Vxframe,options);
-hold on;
-fnplt(xtrajs{i},[1 2]); 
-
-end
-
+funLib.plotFunnels(r);
 
 disp('done');
