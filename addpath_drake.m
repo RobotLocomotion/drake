@@ -49,6 +49,7 @@ addpath(fullfile(root,'thirdParty','path'));
 addpath(fullfile(root,'thirdParty','spatial'));
 addpath(fullfile(root,'thirdParty','cprintf'));
 addpath(fullfile(root,'thirdParty','GetFullPath'));
+addpath(fullfile(root,'mposatest'));
 
 javaaddpath(fullfile(pods_get_base_path,'share','java','drake.jar'));
 
