@@ -416,13 +416,13 @@ classdef FullStateQPControllerDT < DrakeSystem
     fqp = (- x0)'*S*Ix - h*u0'*R*Iu;
     
     % add cost off of the surface
-    K = 000*ones(1,length(supp_ind));
-    fq_add = K*n(supp_ind,:);
+    K = 000*ones(1,length(supp_idx));
+    fq_add = K*n(supp_idx,:);
     fqp = fqp + fq_add*Iq;
     
     %cost on boolean
-    Kbool = 0*ones(1,length(supp_ind));
-    fqp = fqp -Kbool*Ibool(supp_ind,:);
+    Kbool = 0*ones(1,length(supp_idx));
+    fqp = fqp -Kbool*Ibool(supp_idx,:);
 
 %     if any(n_err)
 %     J = [n_err];
