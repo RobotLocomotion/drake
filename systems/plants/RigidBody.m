@@ -25,7 +25,6 @@ classdef RigidBody < RigidBodyElement
     Xtree=eye(6);   % velocity space coordinate transform *from parent to this node*
     Ttree=eye(4);   % position space coordinate transform *from this node to parent*
     T_body_to_joint=eye(4);
-    wrljoint='';  % tranformation to joint coordinates in wrl syntax
     damping=0; % viscous friction term
     coulomb_friction=0; 
     static_friction=0; % currently not used for simulation
