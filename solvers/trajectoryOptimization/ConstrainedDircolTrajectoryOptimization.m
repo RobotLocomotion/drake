@@ -59,6 +59,10 @@ classdef ConstrainedDircolTrajectoryOptimization < DircolTrajectoryOptimization
       if ~isfield(options,'constrain_phi_end')
         options.constrain_phi_end = true;
       end      
+      
+      if ~isfield(options,'test_bound')
+        options.test_bound = false;
+      end
 %       if ~isfield(options,'start_active_inds')
 %         options.start_active_inds = options.active_inds;
 %       end
@@ -203,10 +207,12 @@ classdef ConstrainedDircolTrajectoryOptimization < DircolTrajectoryOptimization
         obj = obj.addSharedDataFunction(@obj.dynamics_data,{obj.x_inds(:,i);obj.u_inds(:,i);obj.l_inds(:,i)});
       end
       
-%       obj = obj.addDecisionVariable(1);
-%       bound_ind = obj.num_vars;
-%       obj = obj.addCost(LinearConstraint(0,0,1),bound_ind);
-                
+      if obj.options.test_bound
+        obj = obj.addDecisionVariable(1);
+        bound_ind = obj.num_vars;
+        obj = obj.addCost(LinearConstraint(0,0,1),bound_ind);
+      end                
+
       for i=1:obj.N-1,
         dyn_inds{i} = {obj.h_inds(i);obj.x_inds(:,i);obj.x_inds(:,i+1);obj.u_inds(:,i);obj.u_inds(:,i+1);
           obj.l_inds(:,i); obj.l_inds(:,i+1); obj.lc_inds(:,i)};
@@ -215,12 +221,15 @@ classdef ConstrainedDircolTrajectoryOptimization < DircolTrajectoryOptimization
         obj = obj.addConstraint(dyn_constraints{i}, dyn_inds{i},[shared_data_index+i;shared_data_index+i+1]);
         
         if obj.nC > 0
-          phidotcon = FunctionHandleConstraint(zeros(2*nActive,1),inf(2*nActive,1),n_vars-nC,@obj.phidotConstraint);
-          obj = obj.addConstraint(phidotcon, dyn_inds{i}(1:end-1),[shared_data_index+i;shared_data_index+i+1]);
-
-%           phidotcon = FunctionHandleConstraint(zeros(2*nActive,1),inf(2*nActive,1),n_vars-nC+1,@obj.phidotBounded);
-%           obj = obj.addConstraint(phidotcon, [dyn_inds{i}(1:end-1);bound_ind],[shared_data_index+i;shared_data_index+i+1]);
           
+          if ~obj.options.test_bound 
+            phidotcon = FunctionHandleConstraint(zeros(2*nActive,1),inf(2*nActive,1),n_vars-nC,@obj.phidotConstraint);
+            obj = obj.addConstraint(phidotcon, dyn_inds{i}(1:end-1),[shared_data_index+i;shared_data_index+i+1]);
+          else
+            phidotcon = FunctionHandleConstraint(zeros(2*nActive,1),inf(2*nActive,1),n_vars-nC+1,@obj.phidotBounded);
+            obj = obj.addConstraint(phidotcon, [dyn_inds{i}(1:end-1);bound_ind],[shared_data_index+i;shared_data_index+i+1]);
+          end
+                
 %           phidotcost = FunctionHandleConstraint(0,0,n_vars-nC,@obj.phidotSquared);
 %           obj = obj.addCost(phidotcost, dyn_inds{i}(1:end-1),[shared_data_index+i;shared_data_index+i+1]);
 
