@@ -5,7 +5,7 @@ if ~checkDependency('gurobi')
   return;
 end
 
-path_handle = addpathTemporary(fullfile(getDrakePath,'examples','Atlas'));
+path_handle = addpathTemporary(fullfile(getDrakePath,'examples','Atlasv4'));
 
 if nargin < 1
   segment_number = -1; % do full traj
