@@ -29,7 +29,6 @@
 #if !defined(_WIN32)
 #define dgemm dgemm_
 #endif
-
 #include <mex.h>
 #include <blas.h>
 #include <math.h>
@@ -935,10 +934,11 @@ void setupQuadraticConstraint(double *ql, double *qr)
     char *chn = "N";
     dgemm(chn, chn, &dimv, &ione, &dimv, &one, S22, &dimv, v_d, &dimv, &zero, dS22v, &dimv);
     
-
+// Now do qr = 1 - v'*S22v. Note: we're doing this entire operation using dgemm
     double minus_one = -1.0;
     *qr = 1.0;
-    char *chnT = "T"; // since we want xrel transpose    
+    char *chnT = "T"; // since we want xrel transpose
+    // dgemm(chnT, chn, &ione, &ione, &dimv, &one, v_d, &dimv, dS22v, &dimv, &zero, &C, &ione);
     dgemm(chnT, chn, &ione, &ione, &dimv, &minus_one, v_d, &dimv, dS22v, &dimv, &one, qr, &ione);
     
     // Now compute ql = 2*S12*v;
