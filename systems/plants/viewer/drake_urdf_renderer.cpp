@@ -345,7 +345,7 @@ static void handle_lcm_viewer_load_robot(const lcm_recv_buf_t *rbuf, const char 
   drake_lcmt_viewer_command_publish(self->lcm, "DRAKE_VIEWER_STATUS", &status_message);
   cout << "successfully loaded model" << endl;
 
-  bot_viewer_request_redraw(self->viewer);
+  // bot_viewer_request_redraw(self->viewer);
 }
 
 static void handle_lcm_viewer_command(const lcm_recv_buf_t *rbuf, const char * channel,

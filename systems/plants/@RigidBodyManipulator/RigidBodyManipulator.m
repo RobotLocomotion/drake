@@ -447,17 +447,6 @@ classdef RigidBodyManipulator < Manipulator
 
 %      axis = quat2rotmat(rpy2quat(rpy))*axis;  % axis is specified in joint frame
 
-      wrl_joint_origin='';
-      if any(xyz)
-        wrl_joint_origin=[wrl_joint_origin,sprintf('\ttranslation %f %f %f\n',xyz(1),xyz(2),xyz(3))];
-      end
-      if (any(rpy))
-        wrl_joint_origin=[wrl_joint_origin,sprintf('\trotation %f %f %f %f\n',rpy2axis(rpy))];
-      end
-      if ~isempty(wrl_joint_origin)
-        child.wrljoint = wrl_joint_origin;
-      end
-
       child.Ttree = [rpy2rotmat(rpy), xyz; 0,0,0,1];
       child.Xtree = transformAdjoint(homogTransInv(child.Ttree)); % +++TK: should really be named XtreeInv...
 
@@ -2268,9 +2257,6 @@ classdef RigidBodyManipulator < Manipulator
             model.body(j).parent = body.parent;
             model.body(j).Ttree = body.Ttree*model.body(j).Ttree;
             model.body(j).Xtree = model.body(j).Xtree*body.Xtree;
-            if (body.wrljoint)
-              model.body(j).wrljoint = [ body.wrljoint, sprintf('\n\tchildren [ Transform {\n'),model.body(j).wrljoint, sprintf('\n')];
-            end
           end
         end
         model.body(body.parent) = parent;
