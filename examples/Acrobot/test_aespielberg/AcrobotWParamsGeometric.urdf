@@ -67,7 +67,7 @@
   <joint name="elbow" type="continuous">
     <parent link="upper_link" />
     <child link="lower_link" />
-    <origin xyz="0 .1 -$length1" />
+    <origin xyz="0 .1 -1" />
     <axis xyz="0 1 0" />
     <dynamics damping="$b2" />
   </joint>
@@ -77,4 +77,6 @@
     <joint name="elbow" />
     <mechanicalReduction>1</mechanicalReduction>
   </transmission>
+
+<frame name="hand" link="lower_link" xyz="0 0 -2.1" rpy="0 0 0" />
 </robot>
