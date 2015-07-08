@@ -38,6 +38,7 @@ classdef FunnelLibrary
         
         function obj = computeFunnels(obj, robot, scaleFactor, funnelLength, radius)
             numTrajs = numel(obj.trajLib.trajectories);
+            %numTrajs = 1; %DEBUGGING
             for i = 1:numTrajs
                 disp('building funnel')
                 xtraj = obj.trajLib.trajectories{i}.xtraj;

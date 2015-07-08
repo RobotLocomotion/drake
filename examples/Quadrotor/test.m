@@ -46,9 +46,13 @@ disp('stabilizing trajectories...');
 Q = diag([10*ones(6,1);ones(6,1)]);
 R = 0.1*eye(4);
 Qf = diag([100*ones(6,1);ones(6,1)]);    
+tic
 trajLib = trajLib.stabilizeTrajectories(r, Q, R, Qf);
+toc
 funLib = FunnelLibrary(trajLib);
+tic
 funLib = funLib.computeFunnels(r, 95, 12, 0.15);
+toc
 
 funLib.plotFunnels(r);
 
