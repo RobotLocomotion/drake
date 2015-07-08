@@ -447,17 +447,6 @@ classdef RigidBodyManipulator < Manipulator
 
 %      axis = quat2rotmat(rpy2quat(rpy))*axis;  % axis is specified in joint frame
 
-      wrl_joint_origin='';
-      if any(xyz)
-        wrl_joint_origin=[wrl_joint_origin,sprintf('\ttranslation %f %f %f\n',xyz(1),xyz(2),xyz(3))];
-      end
-      if (any(rpy))
-        wrl_joint_origin=[wrl_joint_origin,sprintf('\trotation %f %f %f %f\n',rpy2axis(rpy))];
-      end
-      if ~isempty(wrl_joint_origin)
-        child.wrljoint = wrl_joint_origin;
-      end
-
       child.Ttree = [rpy2rotmat(rpy), xyz; 0,0,0,1];
       child.Xtree = transformAdjoint(homogTransInv(child.Ttree)); % +++TK: should really be named XtreeInv...
 
@@ -2102,7 +2091,7 @@ classdef RigidBodyManipulator < Manipulator
               velocities = vertcat(velocities,cellfun(@(a) [a,'dot'],newpos,'UniformOutput',false));
             elseif (b.floating==2)
               positions = vertcat(positions,{[b.jointname,'_x'];[b.jointname,'_y'];[b.jointname,'_z'];[b.jointname,'_qw'];[b.jointname,'_qx'];[b.jointname,'_qy'];[b.jointname,'_qz']});
-              velocities = vertcat(velocities,{[b.jointname,'_xdot'];[b.jointname,'_ydot'];[b.jointname,'_zdot'];[b.jointname,'_wx'];[b.jointname,'_wy'];[b.jointname,'_wz']});
+              velocities = vertcat(velocities,{[b.jointname,'_wx'];[b.jointname,'_wy'];[b.jointname,'_wz'];[b.jointname,'_vx'];[b.jointname,'_vy'];[b.jointname,'_vz']});
             else
               positions = vertcat(positions,{b.jointname});
               velocities = vertcat(velocities,{[b.jointname,'dot']});
@@ -2268,9 +2257,6 @@ classdef RigidBodyManipulator < Manipulator
             model.body(j).parent = body.parent;
             model.body(j).Ttree = body.Ttree*model.body(j).Ttree;
             model.body(j).Xtree = model.body(j).Xtree*body.Xtree;
-            if (body.wrljoint)
-              model.body(j).wrljoint = [ body.wrljoint, sprintf('\n\tchildren [ Transform {\n'),model.body(j).wrljoint, sprintf('\n')];
-            end
           end
         end
         model.body(body.parent) = parent;
