@@ -2091,7 +2091,7 @@ classdef RigidBodyManipulator < Manipulator
               velocities = vertcat(velocities,cellfun(@(a) [a,'dot'],newpos,'UniformOutput',false));
             elseif (b.floating==2)
               positions = vertcat(positions,{[b.jointname,'_x'];[b.jointname,'_y'];[b.jointname,'_z'];[b.jointname,'_qw'];[b.jointname,'_qx'];[b.jointname,'_qy'];[b.jointname,'_qz']});
-              velocities = vertcat(velocities,{[b.jointname,'_xdot'];[b.jointname,'_ydot'];[b.jointname,'_zdot'];[b.jointname,'_wx'];[b.jointname,'_wy'];[b.jointname,'_wz']});
+              velocities = vertcat(velocities,{[b.jointname,'_wx'];[b.jointname,'_wy'];[b.jointname,'_wz'];[b.jointname,'_vx'];[b.jointname,'_vy'];[b.jointname,'_vz']});
             else
               positions = vertcat(positions,{b.jointname});
               velocities = vertcat(velocities,{[b.jointname,'dot']});
