@@ -212,6 +212,11 @@ classdef RigidBodyWingWithControlSurface < RigidBodyWing
          
     end
     
+    function fr = constructFrame(obj,manip)
+      fr = CoordinateFrame(obj.name,1,'u',{'input'});
+    end
+
+    
     function [ fCl_interp, fCd_interp, fCm_interp ] = flateplateControlSurfaceInterp(obj)
       % Builds a smooth interpolation of values for lift, drag, and moment
       % coefficients for a flatplate control surface
