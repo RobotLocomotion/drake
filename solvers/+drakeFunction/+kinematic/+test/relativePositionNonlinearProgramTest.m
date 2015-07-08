@@ -77,7 +77,7 @@ function relativePositionNonlinearProgramTest(visualize)
   weights_frame = frames.realCoordinateSpace(foot_pts_fcn.n_pts);
 
   % Create a DrakeFunction that computes the COM position
-  com_fcn = RelativePosition(rbm,0,'world');
+  com_fcn = RelativePosition(rbm,0,'world');  % warning: this is not supported... findKinematicPathmex will (quietly) complain and get the sparsity pattern wrong
   % Add unused inputs for the weights
   com_fcn = addInputFrame(com_fcn,weights_frame);
 
