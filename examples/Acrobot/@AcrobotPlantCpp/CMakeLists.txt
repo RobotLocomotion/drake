@@ -1,0 +1,3 @@
+
+add_mex(manipulatorDynamics manipulatorDynamics.cpp)
+target_link_libraries(manipulatorDynamics drakeUtil)
