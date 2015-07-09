@@ -5,6 +5,12 @@ tmp = addpathTemporary(fullfile(pwd,'..'));
 r_matlab = AcrobotPlant;
 r_cpp = AcrobotPlantCpp;
 
+checkDependency('spotless');
+q = msspoly('q',2);
+v = msspoly('v',2);
+% fails until i support polynomials in c++ 
+[H,C,B] = manipulatorDynamics(r_cpp,q,v);
+
 % currently fails because taylorvars get passed into the C++ from the geval 
 % in Manipulator/linearize. 
 balanceLQR(r_cpp);  
