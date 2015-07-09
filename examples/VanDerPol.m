@@ -4,11 +4,11 @@ classdef VanDerPol < PolynomialSystem
     function obj = VanDerPol()
       obj = obj@PolynomialSystem(2,0,0,2,false,true,false);
     end
-    function [xdot,df] = dynamicsRHS(obj,t,x,~)
+    function [xdot,df] = dynamicsRHS(~,~,x,~)
       xdot = [x(2); -x(1)-x(2)*(x(1)^2-1)];
       df = [zeros(2,1),[0 1; -1-2*x(1)*x(2), -(x(1)^2-1)]];
     end
-    function [y,dy]=output(obj,t,x,~)
+    function [y,dy]=output(~,~,x,~)
       y=x;
       dy=[zeros(2,1),eye(2)];
     end
