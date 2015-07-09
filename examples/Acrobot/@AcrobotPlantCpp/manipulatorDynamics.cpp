@@ -2,6 +2,7 @@
 #include <Eigen/Dense>
 #include <cmath>
 #include <iostream>
+#include "drakeUtil.h"
 
 using namespace Eigen;
 using namespace std;
@@ -13,8 +14,8 @@ using namespace std;
 void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) 
 {
   const mxArray* pobj = prhs[0];
-  Map<VectorXd> q(mxGetPr(prhs[1]), mxGetNumberOfElements(prhs[1]));
-  Map<VectorXd> qd(mxGetPr(prhs[2]), mxGetNumberOfElements(prhs[2]));
+  Map<VectorXd> q(mxGetPrSafe(prhs[1]), mxGetNumberOfElements(prhs[1]));
+  Map<VectorXd> qd(mxGetPrSafe(prhs[2]), mxGetNumberOfElements(prhs[2]));
   
   // keep it readable:
   double m1  = mxGetScalar(mxGetProperty(pobj,0,"m1"));

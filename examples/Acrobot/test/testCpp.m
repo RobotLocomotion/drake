@@ -5,6 +5,12 @@ tmp = addpathTemporary(fullfile(pwd,'..'));
 r_matlab = AcrobotPlant;
 r_cpp = AcrobotPlantCpp;
 
+% currently fails because taylorvars get passed into the C++ from the geval 
+% in linearize.  they come back out as doubles, then (unfortunately) get
+% turned back into taylorvars that are incorrect... yielding a bad
+% linearization
+balanceLQR(r_cpp);  
+
 for i=1:20
   t = randn();
   x = randn(4,1);
@@ -19,3 +25,4 @@ for i=1:20
   
   valuecheck(dynamics(r_matlab,t,x,u),dynamics(r_cpp,t,x,u));
 end
+
