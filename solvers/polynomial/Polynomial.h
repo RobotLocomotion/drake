@@ -16,17 +16,23 @@
 #define DLLEXPORT
 #endif
 
+// represents a scalar multi-variate polynomial
+// modeled after the msspoly in spotless 
+
 template <typename CoefficientType = double>
 class DLLEXPORT Polynomial
 {
 public:
-  typedef typename Eigen::Matrix<CoefficientType, Eigen::Dynamic, 1> CoefficientsType;
+  typedef typename Eigen::Matrix<CoefficientType, Eigen::Dynamic, Eigen::Dynamic> CoefficientsType;
+  typedef typename  PowersType;
   typedef typename Eigen::NumTraits<CoefficientType>::Real RealScalar;
   typedef std::complex<RealScalar> RootType;
   typedef Eigen::Matrix<RootType, Eigen::Dynamic, 1> RootsType;
 
 private:
-  CoefficientsType coefficients;
+  std::vector< unsigned int > var;  // list of variable IDs with length N
+  CoefficientsType coefficients;    // list of M monomial coefficients
+  Eigen::Matrix<unsigned int, Eigen::Dynamic, Eigen::Dynamic> powers; // M by N list of powers: powers(i,j) is the exponent of variable(j) in monomial i
 
 public:
   Polynomial(Eigen::Ref<CoefficientsType> const& coefficients);
