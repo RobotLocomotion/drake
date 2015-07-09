@@ -1,4 +1,4 @@
-function testCpp
+function testVDPCpp
 
 tmp = addpathTemporary(fullfile(pwd,'..'));
 
