@@ -75,11 +75,11 @@ classdef Quadrotor < RigidBodyManipulator
       treeTrunk = RigidBodyBox([.2+.8*width_param height],...
           [xy;height/2],[0;0;yaw]);
       treeTrunk.c = [83,53,10]/255;  % brown
-      obj = addGeometryToBody(obj,'world',treeTrunk);
+      obj = addGeometryToBody(obj,'world',treeTrunk, 'treeTrunk');
       treeLeaves = RigidBodyBox(1.5*[.2+.8*width_param height/4],...
           [xy;height + height/8],[0;0;yaw]);
       treeLeaves.c = [0,0.7,0];  % green
-      obj = addGeometryToBody(obj,'world',treeLeaves);
+      obj = addGeometryToBody(obj,'world',treeLeaves, 'treeLeaves');
       obj = compile(obj);
     end    
     
@@ -113,13 +113,13 @@ classdef Quadrotor < RigidBodyManipulator
   methods (Static)
     
     function runOpenLoop
-      r = Quadrotor('lidar');
+      r = Quadrotor();
       r = addTrees(r); 
       sys = TimeSteppingRigidBodyManipulator(r,.01);
       
       v = sys.constructVisualizer();
 
-      x0 = [0;0;.5;zeros(9,1)];
+      x0 = [0;0;1;zeros(9,1)];
       u0 = nominalThrust(r);
       
       sys = cascade(ConstantTrajectory(u0),sys);
@@ -128,7 +128,7 @@ classdef Quadrotor < RigidBodyManipulator
 %      simulate(sys,[0 2],double(x0)+.1*randn(12,1));
       
       options.capture_lcm_channels = 'LCMGL';
-      [ytraj,xtraj,lcmlog] = simulate(sys,[0 2],double(x0)+.1*randn(12,1),options);
+      [ytraj,xtraj,lcmlog] = simulate(sys,[0 10],double(x0)+.1*randn(12,1),options);
       lcmlog
       v.playback(xtraj,struct('lcmlog',lcmlog));
 %      figure(1); clf; fnplt(ytraj);

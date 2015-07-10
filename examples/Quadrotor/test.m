@@ -55,5 +55,5 @@ funLib = funLib.computeFunnels(r, 95, 12, 0.15);
 toc
 
 funLib.plotFunnels(r);
-
+save 'funLib.mat' funLib
 disp('done');

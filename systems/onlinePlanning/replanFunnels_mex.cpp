@@ -42,6 +42,7 @@ namespace snopt {
 }
 
 #include <string.h>
+#include <iostream>
 
 
 // Timer functions
@@ -1148,21 +1149,21 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         
         // Check if penetration_thresh field exists. If not, leave it at default.
         mxArray *penetration_thresh_mx = mxGetField(options, 0, "penetration_thresh");
-        if (penetration_thresh_mx != NULL){
+        if (penetration_thresh_mx != NULL) {
             penetration_thresh_ptr = mxGetPr(penetration_thresh_mx);
             penetration_thresh = *penetration_thresh_ptr;
         }
         
         // Check if failsafe_penetration field exists. If not, leave it at default.
         mxArray *failsafe_penetration_mx = mxGetField(options, 0, "failsafe_penetration");
-        if (failsafe_penetration_mx != NULL){
+        if (failsafe_penetration_mx != NULL) {
             failsafe_penetration_ptr = mxGetPr(failsafe_penetration_mx);
             failsafe_penetration = *failsafe_penetration_ptr;
         }
         
         // Check if shift_later field exists. If not, leave it at default.
         mxArray *shift_later_mx = mxGetField(options, 0, "shift_later");
-        if (shift_later_mx != NULL){
+        if (shift_later_mx != NULL) {
             // shift_later_ptr = mxGetPr(shift_later_mx);
             // shift_later = *shift_later_mx;
             shift_later = mxGetLogicals(shift_later_mx);
@@ -1232,7 +1233,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     for(int ii=0;ii<numFunnels;ii++)
     // for(int funnelIdx=0;funnelIdx<numFunnels;funnelIdx++)
     {
-        
+        cout << "checking funnel " << ii << endl;
         funnelIdx = ii; // Funnel idx is global so we have access to it in some other functions
         
         // First, check that we're inside the inlet of funnel
@@ -1240,6 +1241,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         
         // If we're not inside the funnel, continue (don't do collision checking)
         if(inside != true){
+            cout << "not inside inlet" << endl;
             continue;
         }
         
