@@ -2,23 +2,31 @@
 #include <cassert>
 #include <algorithm>
 #include <cmath>
+#include <string.h>
+
+#include <iostream> // just for debugging
 
 using namespace std;
 using namespace Eigen;
 
+const string name_chars = "@#_.abcdefghijklmnopqrstuvwxyz";
+
 template <typename CoefficientType>
 Polynomial<CoefficientType>::Polynomial(Eigen::Ref<CoefficientsType> const& coefficients) :
-  coefficients(coefficients)
+  coefficients(coefficients), powers(coefficients.size(),1), vars(1)
 {
   assert(coefficients.rows() > 0);
+  powers = Matrix<PowerType,Eigen::Dynamic,1>::LinSpaced(coefficients.size(),0,coefficients.size()-1);
+  vars(0) = variableNameToId("t"); // default variable name is "t"
 }
 
 template <typename CoefficientType>
 Polynomial<CoefficientType>::Polynomial(int num_coefficients) :
-  coefficients(num_coefficients)
+  coefficients(num_coefficients), powers(num_coefficients,1), vars(1)
 {
   assert(coefficients.rows() > 0);
-  // empty;
+  powers = Matrix<PowerType,Eigen::Dynamic,1>::LinSpaced(coefficients.size(),0,coefficients.size()-1);
+  vars(0) = variableNameToId("t"); // default variable name is "t"
 }
 
 template <typename CoefficientType>
@@ -28,7 +36,13 @@ int Polynomial<CoefficientType>::getNumberOfCoefficients() const {
 
 template <typename CoefficientType>
 int Polynomial<CoefficientType>::getDegree() const {
-  return getNumberOfCoefficients() - 1;
+  int max_degree = 0;
+  for (int i=0; i<powers.rows(); i++) {
+    int monomial_degree = powers.row(i).prod();
+    if (monomial_degree > max_degree) max_degree = monomial_degree; 
+  }
+    
+  return max_degree;
 }
 
 template <typename CoefficientType>
@@ -38,76 +52,137 @@ typename Polynomial<CoefficientType>::CoefficientsType const& Polynomial<Coeffic
 
 template <typename CoefficientType>
 Polynomial<CoefficientType> Polynomial<CoefficientType>::derivative(int derivative_order) const {
+  assert(vars.size()==1); // only defined for univariate polynomials
   assert(derivative_order >= 0);
-  int derivative_num_coefficients = getNumberOfCoefficients() - derivative_order;
+  int derivative_num_coefficients = 0;
+  for (int i=0; i < powers.rows(); i++) 
+    if (powers(i,0)>=derivative_order) 
+      derivative_num_coefficients++;
+  
   if (derivative_num_coefficients <= 0)
     return Polynomial<CoefficientType>::zero();
 
   Polynomial<CoefficientType> ret(derivative_num_coefficients);
-  for (int i = 0; i < ret.getNumberOfCoefficients(); i++) {
-    RealScalar factorial = 1.0;
-    for (int j = 0; j < derivative_order; j++)
-    {
-      factorial *= i + derivative_order - j;
+  ret.vars(0) = vars(0);
+          
+  int j=0;
+  for (int i = 0; i < powers.rows(); i++) {
+    if (powers(i,0)>=derivative_order) {
+      ret.coefficients(j) = coefficients(i)*powers(i,0);
+      ret.powers(j,0) = powers(i,0)-1;
+      for (int k=1; k<derivative_order; k++) { // take the remaining derivatives
+        ret.coefficients(j) = ret.coefficients(j)*ret.powers(j,0);
+        ret.powers(j,0) -= 1;
+      }
+      j++;
     }
-    ret.coefficients(i) = factorial * coefficients(i + derivative_order);
   }
   return ret;
 }
 
 template <typename CoefficientType>
 Polynomial<CoefficientType> Polynomial<CoefficientType>::integral(const CoefficientType& integration_constant) const {
+  assert(vars.size()==1); // only defined for univariate polynomials
   Polynomial<CoefficientType> ret(getNumberOfCoefficients() + 1);
+  ret.vars(0) = vars(0);
   ret.coefficients(0) = integration_constant;
-  for (int i = 1; i < ret.getNumberOfCoefficients(); i++) {
-    ret.coefficients(i) = coefficients(i - 1) / (RealScalar) i;
+  ret.powers(0,0) = 0;
+  for (int i = 0; i < getNumberOfCoefficients(); i++) {
+    ret.coefficients(i+1) = coefficients(i) / (RealScalar) (powers(i,0)+1);
+    ret.powers(i+1,0) = powers(i,0)+1;
   }
   return ret;
 }
 
 template <typename CoefficientType>
 Polynomial<CoefficientType>& Polynomial<CoefficientType>::operator+=(const Polynomial<CoefficientType>& other) {
-  int old_num_coefficients = getNumberOfCoefficients();
-  int new_num_coefficients = std::max(old_num_coefficients, other.getNumberOfCoefficients());
-  coefficients.conservativeResize(new_num_coefficients);
-  coefficients.tail(new_num_coefficients - old_num_coefficients).setZero();
-  coefficients.head(other.getNumberOfCoefficients()) += other.coefficients;
+  auto P = mergeVars(other);
+  
+  coefficients.conservativeResize(coefficients.size()+other.getNumberOfCoefficients());
+  coefficients.tail(other.getNumberOfCoefficients()) = other.coefficients;
+  
+  int M=powers.rows(), N=powers.cols();
+  powers.conservativeResize(coefficients.size(),vars.size());
+  powers.leftCols(vars.size()-N).setZero();
+  powers.bottomRows(powers.rows()-M) = other.powers*P.transpose();
+  
+  makeMonomialsUnique();
   return *this;
 }
 
 template <typename CoefficientType>
 Polynomial<CoefficientType>& Polynomial<CoefficientType>::operator-=(const Polynomial<CoefficientType>& other) {
-  int old_num_coefficients = getNumberOfCoefficients();
-  int new_num_coefficients = std::max(old_num_coefficients, other.getNumberOfCoefficients());
-  coefficients.conservativeResize(new_num_coefficients);
-  coefficients.tail(new_num_coefficients - old_num_coefficients).setZero();
-  coefficients.head(other.getNumberOfCoefficients()) -= other.coefficients;
+  auto P = mergeVars(other);
+  
+  coefficients.conservativeResize(coefficients.size()+other.getNumberOfCoefficients());
+  coefficients.tail(other.getNumberOfCoefficients()) = -other.coefficients;
+  
+  int M=powers.rows(), N=powers.cols();
+  powers.conservativeResize(coefficients.size(),vars.size());
+  powers.leftCols(vars.size()-N).setZero();
+  powers.bottomRows(powers.rows()-M) = other.powers*P.transpose();
+  
+  makeMonomialsUnique();
   return *this;
 }
 
 template <typename CoefficientType>
 Polynomial<CoefficientType>& Polynomial<CoefficientType>::operator*=(const Polynomial<CoefficientType>& other) {
-  // TODO: more efficient implementation
-  auto outer_product = (coefficients * other.coefficients.transpose()).eval();
-  coefficients.setZero(outer_product.rows() + outer_product.cols() - 1);
-  for (DenseIndex i = 0; i < getNumberOfCoefficients(); i++) {
-    for (DenseIndex row = max(i - outer_product.cols() + 1, (DenseIndex) 0); row < min(i + 1, outer_product.rows()); row++) {
-      DenseIndex col = i - row;
-      coefficients(i) += outer_product(row, col);
+  auto original_coefficients = coefficients;
+  auto original_powers = powers;
+  
+  auto P = mergeVars(other);
+  coefficients.resize(original_coefficients.size()*other.getNumberOfCoefficients());
+  powers.resize(original_coefficients.size()*other.getNumberOfCoefficients(),P.rows());
+  
+  P.transposeInPlace();
+  int k=0;
+  for (int i=0; i<original_coefficients.size(); i++) {
+    for (int j=0; j<other.getNumberOfCoefficients(); j++) {
+      coefficients(k) = original_coefficients(i)*other.coefficients(j);
+      powers.row(k) = other.powers.row(j)*P;
+      powers.row(k).head(original_powers.cols()) += original_powers.row(i);
+      k++;
     }
   }
+  
+  makeMonomialsUnique();
   return *this;
 }
 
 template <typename CoefficientType>
 Polynomial<CoefficientType>& Polynomial<CoefficientType>::operator+=(const CoefficientType& scalar) {
-  coefficients[0] += scalar;
+  // add to the constant monomial if I have one
+  for (int i=0; i<powers.rows(); i++) {
+    if (powers.row(i).isZero()) {
+      coefficients(i) += scalar;
+      return *this;
+    }
+  }
+
+  // otherwise create the constant monomial
+  coefficients.conservativeResize(coefficients.size()+1);
+  coefficients(coefficients.size()-1)=scalar;
+  powers.conservativeResize(coefficients.size(),powers.cols());
+  powers.bottomRows(1).setZero();
   return *this;
 }
 
 template <typename CoefficientType>
 Polynomial<CoefficientType>& Polynomial<CoefficientType>::operator-=(const CoefficientType& scalar) {
-  coefficients[0] -= scalar;
+  // add to the constant monomial if I have one
+  for (int i=0; i<powers.rows(); i++) {
+    if (powers.row(i).isZero()) {
+      coefficients(i) -= scalar;
+      return *this;
+    }
+  }
+
+  // otherwise create the constant monomial
+  coefficients.conservativeResize(coefficients.size()+1);
+  coefficients(coefficients.size()-1)=-scalar;
+  powers.conservativeResize(coefficients.size(),powers.cols());
+  powers.bottomRows(1).setZero();
   return *this;
 }
 
@@ -175,6 +250,7 @@ const Polynomial<CoefficientType> Polynomial<CoefficientType>::operator/(const C
 template <typename CoefficientType>
 typename Polynomial<CoefficientType>::RootsType Polynomial<CoefficientType>::roots() const {
   // need to handle degree 0 and 1 explicitly because Eigen's polynomial solver doesn't work for these
+  assert(vars.size()==1);  // only works for univariate polynomials
   int degree = getDegree();
   switch (degree) {
   case 0:
@@ -205,5 +281,84 @@ Polynomial<CoefficientType> Polynomial<CoefficientType>::zero() {
   return ret;
 }
 
+template <typename CoefficientType>
+bool Polynomial<CoefficientType>::isValidVariableName(const string name) const {
+  int len = name.length();
+  if (len<1) return false;
+  for (int i=0; i<len; i++)
+    if (name_chars.find(name[i]) == string::npos)
+      return false;
+  return true;
+}
+
+template <typename CoefficientType>
+typename Polynomial<CoefficientType>::VarType Polynomial<CoefficientType>::variableNameToId(const string name) const {
+  // todo: implement this
+  return 10;
+}
+
+template <typename CoefficientType>
+string Polynomial<CoefficientType>::idToVariableName(const VarType id) const {
+  // todo: implement this
+  return string("t");
+}
+
+template <typename CoefficientType>
+Eigen::Matrix<typename Polynomial<CoefficientType>::VarType, Eigen::Dynamic, Eigen::Dynamic> Polynomial<CoefficientType>::mergeVars(const Polynomial& other) {
+  Matrix<typename Polynomial<CoefficientType>::VarType, Dynamic, Dynamic> var_projection_matrix = Matrix<VarType, Dynamic, Dynamic>::Zero(vars.size()+other.vars.size(),other.vars.size());        
+  unsigned int num_unique_vars = vars.size();
+  vars.conservativeResize(vars.size()+other.vars.size(),1);
+  for (int i=0; i<other.vars.size(); i++) {
+    bool is_unique = true;
+    for (int j=0; j<powers.cols(); j++) {
+      if (other.vars(i) == vars(j)) {      
+        var_projection_matrix(j,i) = 1;
+        is_unique = false;
+        break;
+      }
+    }
+    if (is_unique) {
+      vars(num_unique_vars) = other.vars(i);
+      var_projection_matrix(num_unique_vars,i) = 1;
+      num_unique_vars++;
+    }
+  }
+  // trim the fat
+  var_projection_matrix.conservativeResize(num_unique_vars,var_projection_matrix.cols());
+  vars.conservativeResize(num_unique_vars);
+  return var_projection_matrix;
+}
+
+template <typename CoefficientType>
+void Polynomial<CoefficientType>::makeMonomialsUnique(void)
+{
+  // build projection matrix as we iterate through the list
+  Matrix<CoefficientType, Dynamic,Dynamic> cP = Matrix<CoefficientType, Dynamic,Dynamic>::Zero(powers.rows(),powers.rows());
+  Matrix<PowerType, Dynamic,Dynamic> pP = Matrix<PowerType, Dynamic,Dynamic>::Zero(powers.rows(),powers.rows());
+  int unique_monomials=0;
+  for (unsigned int i=0; i<powers.rows(); i++) {
+    bool is_unique = true;
+    for (unsigned int j=i+1; j<powers.rows(); j++) {
+      if ((powers.row(i)-powers.row(j)).isZero()) {
+        // i is a duplicate, add it into element j and do not include it in the projection matrix
+        coefficients(j)+=coefficients(i);
+        is_unique = false;
+        break;
+      } 
+    }
+    if (is_unique) {
+      cP(unique_monomials,i) = (CoefficientType) 1;
+      pP(unique_monomials,i) = (PowerType) 1;
+      unique_monomials++;
+    }
+  }
+  cP.conservativeResize(unique_monomials,cP.cols());  // trim excess rows
+  pP.conservativeResize(unique_monomials,pP.cols());
+  coefficients = cP*coefficients;
+  powers = pP*powers;
+}
+
+
 template class DLLEXPORT Polynomial<double>;
+
 //template class DLLEXPORT Polynomial<std::complex<double>>; // doesn't work yet because the roots solver can't handle it

@@ -11,7 +11,14 @@ template <typename CoefficientType>
 void testIntegralAndDerivative() {
   VectorXd coefficients = VectorXd::Random(5);
   Polynomial<CoefficientType> poly(coefficients);
+  
+  cout << poly << endl;
+
+  cout << "derivative: " << poly.derivative(1) << endl;
+  
   Polynomial<CoefficientType> third_derivative = poly.derivative(3);
+  
+  cout << "third derivative: " << third_derivative << endl;
   Polynomial<CoefficientType> third_derivative_check = poly.derivative().derivative().derivative();
   valuecheck(third_derivative.getCoefficients(), third_derivative_check.getCoefficients(), 1e-14);
 
@@ -40,14 +47,26 @@ void testOperators() {
 
     double scalar = uniform(generator);
 
+    cout << "-------" << endl;
+    cout << "p1 = " << poly1 << endl;
+    cout << "p2 = " << poly2 << endl;
+    cout << "c = " << scalar << endl;
+    
     Polynomial<CoefficientType> sum = poly1 + poly2;
+    cout << "p1+p2: " << sum << endl;
     Polynomial<CoefficientType> difference = poly2 - poly1;
+    cout << "p2-p1: " << difference << endl;
     Polynomial<CoefficientType> product = poly1 * poly2;
+    cout << "p1*p2: " << product << endl;
     Polynomial<CoefficientType> poly1_plus_scalar = poly1 + scalar;
+    cout << "p1+c: " << poly1_plus_scalar << endl;
     Polynomial<CoefficientType> poly1_minus_scalar = poly1 - scalar;
+    cout << "p1-c: " << poly1_minus_scalar << endl;
     Polynomial<CoefficientType> poly1_scaled = poly1 * scalar;
+    cout << "p1*c: " << poly1_scaled << endl;
     Polynomial<CoefficientType> poly1_div = poly1 / scalar;
-
+    cout << "p1/c: " << poly1_div << endl;
+    
     double t = uniform(generator);
     valuecheck(sum.value(t), poly1.value(t) + poly2.value(t), 1e-8);
     valuecheck(difference.value(t), poly2.value(t) - poly1.value(t), 1e-8);
@@ -83,6 +102,5 @@ int main(int argc, char **argv) {
   testIntegralAndDerivative<double>();
   testOperators<double>();
   testRoots<double>();
-  cout << "test passed" << endl;
   return 0;
 }
