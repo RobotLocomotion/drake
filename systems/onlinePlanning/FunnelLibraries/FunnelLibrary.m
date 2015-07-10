@@ -70,7 +70,10 @@ classdef FunnelLibrary
 
                 obj.funnels{i}.xtraj = xtraj;
                 obj.funnels{i}.utraj = utraj;
+                V = V.inFrame(robot.getStateFrame());
                 obj.funnels{i}.V = V;
+                tv = tv.inInputFrame(robot.getStateFrame);
+                tv = tv.inOutputFrame(robot.getInputFrame);
                 obj.funnels{i}.controller = tv;
                 obj.funnels{i}.ts = ts;
 
@@ -85,7 +88,7 @@ classdef FunnelLibrary
                 end
 
                 x0 = xtraj.eval(ts);
-                obj.funnels{i}.x0 = x0;    
+                obj.funnels{i}.x0 = x0;
                 
                 for j = 1:length(ts)
                     Sp = obj.funnels{i}.Sp{j};

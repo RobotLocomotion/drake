@@ -99,6 +99,7 @@ classdef OnlinePlannerMex < DrakeSystem
                     end
                     
                 else % If not inside current funnel anymore, replan
+                    disp('not inside current funnel')
                     replan = true;
                 end
             end
@@ -120,7 +121,7 @@ classdef OnlinePlannerMex < DrakeSystem
                 x_current(obj.cyclicIdx) = zeros(length(obj.cyclicIdx),1);
                 t
                 nextFunnel
-                x
+                %x
                 % Compute correct control input
                 y = obj.funnelLibrary{nextFunnel}.controller.output(t_current,[],x_current);
             else % If no replanning necessary, follow current plan
