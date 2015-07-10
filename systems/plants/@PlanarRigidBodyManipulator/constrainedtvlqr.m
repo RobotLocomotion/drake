@@ -225,7 +225,10 @@ function PandSqrtSdotydot = PandSqrtSdynamics(t,PandSqrtS,p,dynamicsfn,xtraj,utr
 
   PandSqrtSdotydot = [Pdot_t(:);sqrtSdot(:)];
   % display(sprintf('S: %f',t))  
-display(sprintf('%f: %e',t,max(eig(sqrtS))))
+%   if t < .4759
+%   keyboard
+% end
+% display(sprintf('%f: %e',t,max(eig(sqrtS))))
 end
 
 function Pdot = Pdynamics(obj,t,xtraj,utraj,P,alpha_1,alpha_2)
