@@ -100,17 +100,17 @@ public:
   friend std::ostream& operator<<(std::ostream& os, const Polynomial<CoefficientType>& poly)
   {
     for (int i=0; i<poly.getNumberOfCoefficients(); i++) {
-      os << poly.coefficients(i);
+      os << '(' << poly.coefficients(i) << ')';
       for (int j=0; j<poly.vars.size(); j++) {
         if (poly.powers(i,j)>0) {
-          os << poly.idToVariableName(poly.vars(j));
+          os << '*' << poly.idToVariableName(poly.vars(j));
           if (poly.powers(i,j)>1) {
             os << "^" << poly.powers(i,j);
           }
         }
       }
       if (i<poly.getNumberOfCoefficients()-1)
-        os << " + ";
+        os << '+';
     }
     return os;
   };
@@ -119,7 +119,7 @@ public:
 private:
   bool isValidVariableName(const std::string name) const;
   
-  VarType variableNameToId(const std::string name) const;
+  VarType variableNameToId(const std::string name, const unsigned int m = 1) const;
   
   std::string idToVariableName(const VarType id) const;
   
@@ -130,9 +130,6 @@ private:
   
   // sorts through monomial list and merges any that have the same powers
   void makeMonomialsUnique(void);
-  
-  static const unsigned int max_name_part = 4;
-  
 };
 
 typedef Polynomial<double> Polynomiald;

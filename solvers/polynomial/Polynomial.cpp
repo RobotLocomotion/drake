@@ -9,8 +9,6 @@
 using namespace std;
 using namespace Eigen;
 
-const string name_chars = "@#_.abcdefghijklmnopqrstuvwxyz";
-
 template <typename CoefficientType>
 Polynomial<CoefficientType>::Polynomial(Eigen::Ref<CoefficientsType> const& coefficients) :
   coefficients(coefficients), powers(coefficients.size(),1), vars(1)
@@ -281,6 +279,11 @@ Polynomial<CoefficientType> Polynomial<CoefficientType>::zero() {
   return ret;
 }
 
+const string name_chars = "@#_.abcdefghijklmnopqrstuvwxyz";
+const unsigned int num_name_chars = 30; // length of the string above
+const unsigned int name_length = 4;
+const unsigned int max_name_part = 923521; // (num_name_chars+1)^name_length;
+
 template <typename CoefficientType>
 bool Polynomial<CoefficientType>::isValidVariableName(const string name) const {
   int len = name.length();
@@ -292,15 +295,35 @@ bool Polynomial<CoefficientType>::isValidVariableName(const string name) const {
 }
 
 template <typename CoefficientType>
-typename Polynomial<CoefficientType>::VarType Polynomial<CoefficientType>::variableNameToId(const string name) const {
-  // todo: implement this
-  return 10;
+typename Polynomial<CoefficientType>::VarType Polynomial<CoefficientType>::variableNameToId(const string name, const unsigned int m) const {
+  unsigned int exponent = 1;
+  VarType name_part = 0;
+  for (int i=name.size()-1; i>=0; i--) {
+    exponent *= num_name_chars+1;
+    name_part += (name_chars.find(name[i])+1)*exponent;
+  }
+  const unsigned int maxId = (1 << 50) / max_name_part;
+  assert(m<=maxId);
+  assert(m>0);
+  return 2*(name_part + max_name_part*(m-1));
 }
 
 template <typename CoefficientType>
 string Polynomial<CoefficientType>::idToVariableName(const VarType id) const {
-  // todo: implement this
-  return string("t");
+  VarType name_part = (id/2) % max_name_part;  // id/2 to be compatible w/ msspoly, even though I'm not doing the trig support here
+
+  unsigned int m = std::round(id/2/max_name_part);
+  unsigned int exponent = pow(num_name_chars+1,name_length-1);
+  char name[name_length+1];
+  int j=0;
+  for (int i=0; i<name_length; i++) {
+    unsigned int name_ind = (name_part/exponent) % (num_name_chars+1);
+    if (name_ind>0) name[j++] = name_chars[name_ind-1];
+    exponent /= num_name_chars+1;
+  }
+  if (j==0) name[j++] = name_chars[0];
+  name[j] = '\0';
+  return string(name) + to_string(m+1);
 }
 
 template <typename CoefficientType>
