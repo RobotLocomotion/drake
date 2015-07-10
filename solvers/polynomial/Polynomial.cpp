@@ -28,6 +28,32 @@ Polynomial<CoefficientType>::Polynomial(int num_coefficients) :
 }
 
 template <typename CoefficientType>
+Polynomial<CoefficientType>::Polynomial(const VarsType& _vars, const CoefficientsType& _coefficients, const PowersType& _powers) :
+  vars(_vars), coefficients(_coefficients), powers(_powers)
+{
+  assert(vars.size()==coefficients.cols());
+  assert(vars.size()==powers.cols());
+  assert(coefficients.rows()==powers.rows());
+} 
+  
+template <typename CoefficientType>
+Polynomial<CoefficientType>::Polynomial(const vector<VarType>& _vars, const CoefficientsType& _coefficients, const vector<PowerType>& _powers) :
+  coefficients(_coefficients)
+{
+  assert(_vars.size()==coefficients.cols());
+  assert(_vars.size()==_powers.size());
+  assert(coefficients.rows()==1);
+  
+  vars.resize(_vars.size());
+  powers.resize(1,_powers.size());
+
+  for (int i=0; i<vars.size(); i++)
+    vars(i) = _vars[i];
+  for (int i=0; i<_powers.size(); i++)
+    powers(1,i) = _powers[i];
+} 
+
+template <typename CoefficientType>
 int Polynomial<CoefficientType>::getNumberOfCoefficients() const {
   return static_cast<int>(coefficients.size());
 }

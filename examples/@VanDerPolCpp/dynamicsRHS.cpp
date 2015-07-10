@@ -12,9 +12,32 @@ using namespace std;
  *     function xdot = dynamicsRHS(~,~,x,~)
  */
 
-template< int Rows, int Cols >
-void msspolyToEigen(const mxArray* msspoly, Matrix<Polynomiald, Rows, Cols> & poly)
-{}
+Matrix<Polynomiald, Dynamic, Dynamic> msspolyToEigen(const mxArray* msspoly)
+{
+  auto dim = matlabToEigenMap(mxGetPropertySafe(msspoly,0,"dim"));
+  auto sub = matlabToEigenMap(mxGetPropertySafe(msspoly,0,"sub"));
+  auto var = matlabToEigenMap(mxGetPropertySafe(msspoly,0,"var"));
+  auto pow = matlabToEigenMap(mxGetPropertySafe(msspoly,0,"pow"));
+  auto coeff = matlabToEigenMap(mxGetPropertySafe(msspoly,0,"coeff"));
+  
+/*
+  Matrix<Polynomiald, Dynamic, Dynamic> poly((int)dim(0),(int)dim(1));
+
+  for (int i=0; i<sub.rows(); i++) {
+    vector<VarType> vars;    
+    vector<PowerType> powers;
+ * for (int j=0; j<var.cols(); j++) {
+      (var.cols()) = var.row(i);
+     = pow.row(i);
+    Polynomiald p(vars,coeff.row(i),powers);
+    poly(sub(i,0),sub(i,1)) += p;
+  }
+
+  cout << poly << endl;
+ */
+  
+  return poly;
+}
 
 template< int Rows, int Cols >
 mxArray* eigenToMSSPoly(Matrix<Polynomiald,Rows,Cols> & poly)
@@ -40,13 +63,11 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
     plhs[0] = mxCreateDoubleMatrix(2,1,mxREAL);
     Map<Vector2d> xdot(mxGetPr(plhs[0]));
     dynamicsRHS(x,xdot);
-/*    
   } else if (isa(prhs[2],"msspoly")) {
-    Matrix < Polynomiald, 2, 1 > x, xdot;
-    msspolyToEigen(prhs[2],x);
-    dynamicsRHS(x,xdot);
-    plhs[0] = eigenToMSSPoly(xdot);
- */
+    auto x = msspolyToEigen(prhs[2]);
+//    dynamicsRHS(x,xdot);
+//    plhs[0] = eigenToMSSPoly(xdot);
+    plhs[0] = mxCreateDoubleMatrix(2,1,mxREAL);
   } else {
     mexErrMsgIdAndTxt("Drake:VanDerPolCpp:UnknownType","don't know how to handle the datatype passed in for x (yet)");
   }

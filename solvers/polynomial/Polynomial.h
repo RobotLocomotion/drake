@@ -5,6 +5,7 @@
 #include <complex>
 #include <unsupported/Eigen/Polynomials>
 #include <string>
+#include <vector>
 
 #undef DLLEXPORT
 #if defined(WIN32) || defined(WIN64)
@@ -24,25 +25,30 @@ template <typename CoefficientType = double>
 class DLLEXPORT Polynomial
 {
 public:
-  typedef typename Eigen::Matrix<CoefficientType, Eigen::Dynamic, 1> CoefficientsType;
   typedef unsigned int VarType;
-  typedef typename Eigen::Matrix<VarType, Eigen::Dynamic, 1> VarsType;
   typedef unsigned int PowerType;
-  typedef typename Eigen::Matrix<PowerType, Eigen::Dynamic, Eigen::Dynamic> PowersType;
   typedef typename Eigen::NumTraits<CoefficientType>::Real RealScalar;
   typedef std::complex<RealScalar> RootType;
   typedef Eigen::Matrix<RootType, Eigen::Dynamic, 1> RootsType;
+  
+  typedef struct _Monomial {
+    CoefficientType coeff;
+    std::vector<VarType> vars;  // a list of N variable ids
+    std::vector<PowerType> powers; // a list of N exponents
+  } Monomial;
 
 private:
-  VarsType vars;  // list of variable IDs with length N
-  CoefficientsType coefficients;    // list of M monomial coefficients
-  PowersType powers; // M by N list of powers: powers(i,j) is the exponent of variable(j) in monomial i
+  std::vector<Monomial> monomials;
  
 public:
-  Polynomial(Eigen::Ref<CoefficientsType> const& coefficients);
-
+  // continue to support the old interface
+  Polynomial(Eigen::Ref<Matrix<CoefficientType,Eigen::Dynamic,Eigen::Dynamic> const& coefficients);
   Polynomial(int num_coefficients);
-
+  
+  Polynomial(void) {}; 
+  Polynomial(const VarsType& _vars, const CoefficientsType& _coefficients, const PowersType& _powers);
+  Polynomial(const std::vector<VarType>& _vars, const CoefficientsType& _coefficients, const std::vector<PowerType>& _powers);
+  
   int getNumberOfCoefficients() const;
 
   int getDegree() const;
@@ -130,6 +136,9 @@ private:
   
   // sorts through monomial list and merges any that have the same powers
   void makeMonomialsUnique(void);
+  
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 typedef Polynomial<double> Polynomiald;
