@@ -102,6 +102,7 @@ end
 else
   Pf = null(Ff);
   Sf = Pf'*Qf*Pf;
+  Sf = Sf^(1/2);
   display(sprintf('Solving for P and S backwards, from %f to %f',tspan(end),tspan(1)));
   PandSfun = @(t,PandSqrtS) PandSqrtSdynamics(t,PandSqrtS,obj,dynamicsFun,xtraj,utraj,Q,R,-alpha_1,-alpha_2,numel(Pf));
   [tout,yout] = ode45(PandSfun,tspan(end:-1:1),[Pf(:);Sf(:)]);
@@ -224,7 +225,7 @@ function PandSqrtSdotydot = PandSqrtSdynamics(t,PandSqrtS,p,dynamicsfn,xtraj,utr
 
   PandSqrtSdotydot = [Pdot_t(:);sqrtSdot(:)];
   % display(sprintf('S: %f',t))  
-
+display(sprintf('%f: %e',t,max(eig(sqrtS))))
 end
 
 function Pdot = Pdynamics(obj,t,xtraj,utraj,P,alpha_1,alpha_2)
