@@ -39,21 +39,21 @@ void testRotationConversionFunctions()
     Matrix3d R = uniformlyRandomRotmat(generator);
     Vector4d a = rotmat2axis(R);
     Matrix3d R_back = axis2rotmat(a);
-    valuecheck(R, R_back, 1e-6);
+    valuecheckMatrix(R, R_back, 1e-6);
   }
   // rotmat2rpy, rpy2rotmat
   for (int i = 0; i < ntests; i++) {
     Matrix3d R = uniformlyRandomRotmat(generator);
     Vector3d rpy = rotmat2rpy(R);
     Matrix3d R_back = rpy2rotmat(rpy);
-    valuecheck(R, R_back, 1e-6);
+    valuecheckMatrix(R, R_back, 1e-6);
   }
   // rpy2axis, axis2rpy
   for (int i = 0; i < ntests; i++) {
     Vector3d rpy = uniformlyRandomRPY(generator);
     Vector4d axis = rpy2axis(rpy);
     Vector3d rpy_back = axis2rpy(axis);
-    valuecheck(rpy, rpy_back, 1e-6);
+    valuecheckMatrix(rpy, rpy_back, 1e-6);
   }
   // expmap2quat, quat2expmap
   Vector4d quat_degenerate = Vector4d::Zero();
@@ -71,7 +71,7 @@ void testRotationConversionFunctions()
   Quaterniond eigenQuat = quat2eigenQuaternion(quat);
   Matrix3d R_expected = quat2rotmat(quat);
   Matrix3d R_eigen = eigenQuat.matrix();
-  valuecheck(R_expected, R_eigen, 1e-6);
+  valuecheckMatrix(R_expected, R_eigen, 1e-6);
 }
 
 void testDHomogTrans(int ntests) {
@@ -206,7 +206,7 @@ void testSpatialCrossProduct()
   auto b = (Matrix<double, TWIST_SIZE, TWIST_SIZE>::Identity()).eval();
   auto a_crm_b = crossSpatialMotion(a, b);
   auto a_crf_b = crossSpatialForce(a, b);
-  valuecheck(a_crf_b, -a_crm_b.transpose(), 1e-8);
+  valuecheckMatrix(a_crf_b, -a_crm_b.transpose(), 1e-8);
 }
 
 void testdrpy2rotmat()
@@ -238,7 +238,7 @@ void testExpmap2quat(const Vector4d &quat)
   valuecheck(std::abs(quat.transpose() * quat_back.value()), 1.0, 1e-8);
   Matrix3d expmap_back = expmap.gradient().value()*quat_back.gradient().value();
   Matrix3d identity = Matrix3d::Identity();
-  valuecheck(expmap_back,identity,1E-10);
+  valuecheckMatrix(expmap_back,identity,1E-10);
 }
 
 int main(int argc, char **argv)

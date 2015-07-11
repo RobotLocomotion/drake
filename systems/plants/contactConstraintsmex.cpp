@@ -1,6 +1,6 @@
 #include "mex.h"
 #include <iostream>
-#include "drakeUtil.h"
+#include "drakeMexUtil.h"
 #include "RigidBodyManipulator.h"
 #include "math.h"
 #include <Eigen/Sparse>
@@ -29,15 +29,15 @@ using namespace std;
 
 inline void buildSparseMatrix(Matrix3xd const & pts, SparseMatrix<double> & sparse)
 {
-  const int m = pts.cols();
-  const int numNonZero = 3*m;
+  const size_t m = pts.cols();
+  const size_t numNonZero = 3*m;
 
   sparse.resize(m, numNonZero);
   sparse.reserve(VectorXi::Constant(numNonZero, 1));
 
-  int j = 0;
-  for (int i = 0 ; i < m ; i++) {
-    for (int k = 0 ; k < 3 ; k++) {
+  size_t j = 0;
+  for (size_t i = 0 ; i < m ; i++) {
+    for (size_t k = 0 ; k < 3 ; k++) {
      sparse.insert(i, j) =  pts(j);
      j++;
    }
@@ -66,7 +66,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
     mexErrMsgIdAndTxt("Drake:contactConstraintsmex:InvalidBodyPointsDimension", "normals must match the number of contact points");
   }
 
-  const int numContactPairs = mxGetN(prhs[1]);
+  const size_t numContactPairs = mxGetN(prhs[1]);
   const Map<Matrix3xd> normals(mxGetPrSafe(prhs[1]), 3, numContactPairs); //contact normals in world space
   const bool compute_second_derivatives = nlhs > 3;
 
@@ -78,7 +78,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
     const Map<VectorXi> idxB((int*)mxGetData(prhs[3]), numContactPairs); //collision pairs index of body B
     const Map<Matrix3xd> xA(mxGetPrSafe(prhs[4]), 3, numContactPairs); //contact point in body A space
     const Map<Matrix3xd> xB(mxGetPrSafe(prhs[5]), 3, numContactPairs); //contact point in body B space
-    const int nq = model->num_positions;
+    const size_t nq = model->num_positions;
     
     VectorXi idxA_zero_indexed = idxA.array() - 1;
     VectorXi idxB_zero_indexed = idxB.array() - 1;

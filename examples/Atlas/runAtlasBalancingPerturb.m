@@ -56,9 +56,10 @@ nq = getNumPositions(r);
 x0 = xstar;
 
 
-%walking_plan_data = r.planWalkingZMP(x0(1:r.getNumPositions()), footstep_plan);
-standing_plan = QPLocomotionPlan.from_standing_state(x0, r);
-standing_plan.planned_support_command = QPControllerPlan.support_logic_maps.kinematic_or_sensed;
+% Construct plan
+settings = QPLocomotionPlanSettings.fromStandingState(x0, r);
+% settings.planned_support_command = QPControllerPlan.support_logic_maps.kinematic_or_sensed; % Only use supports when in contact
+standing_plan = QPLocomotionPlanCPPWrapper(settings);
 
 control = atlasControllers.InstantaneousQPController(r, [], struct());
 planeval = atlasControllers.AtlasPlanEval(r, standing_plan);
@@ -97,4 +98,4 @@ kinsol = doKinematics(r, xf(1:nq));
 comf = getCOM(r, kinsol);
 
 % Make sure we're still standing
-rangecheck(comf, [-0.01; -0.01; 0.9], [0.01; 0.01; inf]);
+rangecheck(comf, [-0.02; -0.02; 0.9], [0.02; 0.02; inf]);

@@ -4,6 +4,7 @@ testNoNormalForce();
 testBackAndForth();
 testRepInvariants();
 testMultipleCoPs();
+testMex();
 
 end
 
@@ -62,4 +63,15 @@ for i = 1 : n
   valuecheck(normal_torquei, normal_torque(:, i));
 end
 
+end
+
+function testMex()
+torque = randn(3, 1);
+force = randn(3, 1);
+normal = randn(3, 1);
+normal = normal / norm(normal);
+point_on_contact_plane = randn(3, 1);
+cop = resolveCenterOfPressure(torque, force, normal, point_on_contact_plane);
+cop_mex = resolveCenterOfPressuremex(torque, force, normal, point_on_contact_plane);
+valuecheck(cop, cop_mex);
 end

@@ -1,6 +1,6 @@
 #include "drakeGeometryUtil.h"
 #include "mex.h"
-#include "drakeUtil.h"
+#include "drakeMexUtil.h"
 using namespace Eigen;
 
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
