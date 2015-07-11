@@ -27,15 +27,16 @@ Matrix<Polynomiald, Dynamic, Dynamic> msspolyToEigen(const mxArray* msspoly)
 
   Matrix<Polynomiald, Dynamic, Dynamic> poly((int)dim(0),(int)dim(1));
   for (int i=0; i<sub.rows(); i++) {
-    vector<Polynomiald::VarType> vars;    
-    vector<Polynomiald::PowerType> powers;
+    vector<Polynomiald::Term> terms;
     int j=0;
     while (j<var.cols() && var(i,j)>0) {
-      vars.push_back(var(i,j));
-      powers.push_back(pow(i,j));
+      Polynomiald::Term t;
+      t.var = var(i,j);
+      t.power = pow(i,j);
+      terms.push_back(t);
       j++;
     }
-    Polynomiald p(coeff(i),vars,powers);
+    Polynomiald p(coeff(i),terms);
     poly(sub(i,0)-1,sub(i,1)-1) += p;
   }
 
@@ -47,20 +48,20 @@ Matrix<Polynomiald, Dynamic, Dynamic> msspolyToEigen(const mxArray* msspoly)
 template< int Rows, int Cols >
 mxArray* eigenToMSSPoly(const Matrix<Polynomiald,Rows,Cols> & poly)
 {
-  int num_monomials = 0, max_vars = 0;
+  int num_monomials = 0, max_terms = 0;
   for (int i=0; i<poly.size(); i++) {
     auto monomials = poly(i).getMonomials();
     num_monomials += monomials.size();
     for (vector<Polynomiald::Monomial>::const_iterator iter=monomials.begin(); iter!=monomials.end(); iter++) {
-      if (iter->vars.size() > max_vars)
-        max_vars = iter->vars.size();
+      if (iter->terms.size() > max_terms)
+        max_terms = iter->terms.size();
     }
   }
   
   Matrix<double,1,2> dim; dim << poly.rows(), poly.cols();
   MatrixXd sub(num_monomials,2);
-  MatrixXd var = MatrixXd::Zero(num_monomials,max_vars);
-  MatrixXd pow = MatrixXd::Zero(num_monomials,max_vars);
+  MatrixXd var = MatrixXd::Zero(num_monomials,max_terms);
+  MatrixXd pow = MatrixXd::Zero(num_monomials,max_terms);
   VectorXd coeff(num_monomials);
 
   int index=0;
@@ -70,9 +71,9 @@ mxArray* eigenToMSSPoly(const Matrix<Polynomiald,Rows,Cols> & poly)
       for (vector<Polynomiald::Monomial>::const_iterator iter=monomials.begin(); iter!=monomials.end(); iter++) {
         sub(index,0) = i+1;
         sub(index,1) = j+1;
-        for (int k=0; k<iter->vars.size(); k++) {
-          var(index,k)=(double)iter->vars[k];
-          pow(index,k)=(double)iter->powers[k];
+        for (int k=0; k<iter->terms.size(); k++) {
+          var(index,k)=(double)iter->terms[k].var;
+          pow(index,k)=(double)iter->terms[k].power;
         }
         coeff(index) = iter->coefficient;
         index++;

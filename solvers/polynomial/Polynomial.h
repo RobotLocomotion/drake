@@ -31,12 +31,24 @@ public:
   typedef std::complex<RealScalar> RootType;
   typedef Eigen::Matrix<RootType, Eigen::Dynamic, 1> RootsType;
   
+  class Term {
+  public:
+    VarType var;
+    PowerType power;
+
+    bool operator==(const Term& other) const
+    {
+      return (var == other.var) && (power == other.power);
+    }
+
+  };
+
   class Monomial {
   public:
     CoefficientType coefficient;
-    std::vector<VarType> vars;  // a list of N variable ids
-    std::vector<PowerType> powers; // a list of N exponents
+    std::vector<Term> terms;  // a list of N variable ids
     
+    int getDegree() const;
     bool hasSameExponents(const Monomial& other);
   };
 
@@ -46,7 +58,7 @@ private:
  
 public:
   Polynomial(void) {}; 
-  Polynomial(CoefficientType coeff, const std::vector<VarType>& _vars, const std::vector<PowerType>& _powers);
+  Polynomial(CoefficientType coeff, const std::vector<Term>& terms);
 
   // continue to support the old (univariate) constructor
   Polynomial(Eigen::Ref<Eigen::Matrix<CoefficientType,Eigen::Dynamic,1> > const& coefficients);
@@ -65,10 +77,10 @@ public:
     assert(is_univariate);  // this method can only be used for univariate polynomials
     T value = (T) 0;
     for (typename std::vector<Monomial>::const_iterator iter=monomials.begin(); iter!=monomials.end(); iter++) {
-      if (iter->powers.empty())
+      if (iter->terms.empty())
         value += iter->coefficient;
       else
-        value += iter->coefficient*pow(x,iter->powers[0]);
+        value += iter->coefficient*pow(x,iter->terms[0].power);
     }
     return value;
   }
@@ -113,21 +125,18 @@ public:
 
   friend std::ostream& operator<<(std::ostream& os, const Monomial& m)
   {
-    assert(m.powers.size()==m.vars.size());
-    if (m.coefficient == 0) return os;
-
-    if (m.coefficient == -1) { os << "-"; }
-    else if (m.coefficient != 1) os << '(' << m.coefficient << ")*";
+//    if (m.coefficient == 0) return os;
 
     bool print_star = false;
-    for (int j=0; j<m.vars.size(); j++) {
-      if (m.powers[j]>0) {
-        if (print_star) os << '*';
-        else print_star = true;
-        os << idToVariableName(m.vars[j]);
-        if (m.powers[j]>1) {
-          os << "^" << m.powers[j];
-        }
+    if (m.coefficient == -1) { os << "-"; }
+    else if (m.coefficient != 1) { os << '(' << m.coefficient << ")"; print_star=true; }
+
+    for (typename std::vector<Term>::const_iterator iter=m.terms.begin(); iter!=m.terms.end(); iter++) {
+      if (print_star) os << '*';
+      else print_star = true;
+      os << idToVariableName(iter->var);
+      if (iter->power!=1) {
+        os << "^" << iter->power;
       }
     }
     return os;
@@ -162,6 +171,7 @@ private:
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
+
 
 template <typename CoefficientType, int Rows, int Cols>
 std::ostream& operator<<(std::ostream& os, const Eigen::Matrix< Polynomial<CoefficientType> , Rows, Cols > & poly_mat) {

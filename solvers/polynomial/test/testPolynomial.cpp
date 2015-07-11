@@ -30,7 +30,9 @@ void testIntegralAndDerivative() {
   valuecheck(tenth_derivative.value(t), 0.0, 1e-14);
 
   Polynomial<CoefficientType> integral = poly.integral(0.0);
+  cout << "integral: " << integral << endl;
   Polynomial<CoefficientType> poly_back = integral.derivative();
+  cout << "and back: " << poly_back << endl;
   valuecheck(poly_back.value(t), poly.value(t), 1e-14);
 }
 
