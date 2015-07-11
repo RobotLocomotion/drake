@@ -514,7 +514,7 @@ Eigen::Matrix<typename Derived::Scalar,9,3> drpy2rotmat(const Eigen::MatrixBase<
 	dR.row(5) << c(1)*c(0), -s(1)*s(0),0;
 	dR.row(6) << c(2)*s(1)*-s(0)+s(2)*c(0), c(2)*c(1)*c(0), -s(2)*s(1)*c(0)+c(2)*s(0);
 	dR.row(7) << s(2)*s(1)*-s(0)-c(2)*c(0), s(2)*c(1)*c(0), c(2)*s(1)*c(0)+s(2)*s(0);
-	dR.row(8) << c(1)*-s(0), -s(1)*c(0), 0; 
+	dR.row(8) << c(1)*-s(0), -s(1)*c(0), 0;
 
 	return dR;
 }
@@ -1306,7 +1306,7 @@ DLLEXPORT GradientVar<double, 3,1> unwrapExpmap(const Ref<const Vector3d> & expm
 
 void quat2expmapSequence(const Ref<const Matrix<double,4,Dynamic>> &quat, const Ref<const Matrix<double,4,Dynamic>> &quat_dot, Ref<Matrix<double,3,Dynamic>> expmap, Ref<Matrix<double,3,Dynamic>> expmap_dot)
 {
-  int N = quat.cols();
+  int N = static_cast<int>(quat.cols());
   if(quat_dot.cols() != N)
   {
     throw std::runtime_error("quat_dot must have the same number of columns as quat in quat2expmapSequence");
@@ -1667,5 +1667,3 @@ template DLLEXPORT void quatdot2angularvelMatrix(const Eigen::MatrixBase<Map<Vec
 template DLLEXPORT void quatdot2angularvelMatrix(const Eigen::MatrixBase< Eigen::Block<Eigen::Ref<Eigen::Matrix<double, -1, 1, 0, -1, 1> const, 0, Eigen::InnerStride<1> > const, 4, 1, false> >& q,
     Eigen::MatrixBase< Matrix<double, SPACE_DIMENSION, QUAT_SIZE> >& M,
     Gradient<Matrix<double, SPACE_DIMENSION, QUAT_SIZE>, QUAT_SIZE, 1>::type* dM);
-
-
