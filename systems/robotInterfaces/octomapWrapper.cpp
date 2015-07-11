@@ -3,7 +3,8 @@
 #include <octomap/octomap.h>
 #include <octomap/OcTree.h>
 
-#include "drakeUtil.h"
+//#include "drakeUtil.h"
+#include "drakeMexUtil.h"
 
 using namespace std;
 using namespace octomap;

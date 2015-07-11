@@ -86,7 +86,7 @@ end
 
 lcmgl = LCMGLClient('walking plan');
 walking_plan = r.planWalkingZMP(x0(1:nq), footstep_plan);
-walking_plan.draw_lcmgl(lcmgl);
+walking_plan.settings.draw_lcmgl(lcmgl);
 lcmgl.switchBuffers();
 
 [ytraj, com, rms_com] = atlasUtil.simulateWalking(r, walking_plan);

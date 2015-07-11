@@ -20,7 +20,7 @@ APEX_FRACTIONS = [0.15, 0.85]; % We plan only two poses of the foot during the a
                                % fraction of the distance from its initial location to its final location.
 
 FOOT_YAW_RATE = 0.375; % rad/s
-MIN_STEP_TIME = 0.5; %s
+MIN_STEP_TIME = 0.75; %s
 
 MIN_DIST_FOR_PITCHED_SWING = 0.4;
 
@@ -123,7 +123,7 @@ function add_frame_knot(swing_pose, speed)
     speed = params.step_speed/2;
   end
   frame_knots(end+1).(swing_foot_name) = [swing_pose(1:3); quat2expmap(swing_pose(4:7)); zeros(6,1)];
-  frame_knots(end).(swing_foot_name)(4:6) = unwrapExpmap(frame_knots(end-1).(swing_foot_name)(4:6), frame_knots(end).(swing_foot_name)(4:6));
+  frame_knots(end).(swing_foot_name)(4:6) = closestExpmap(frame_knots(end-1).(swing_foot_name)(4:6), frame_knots(end).(swing_foot_name)(4:6));
   frame_knots(end).(stance_foot_name) = [stance_frame_pose(1:3); quat2expmap(stance_frame_pose(4:7)); zeros(6,1)];
   cartesian_distance = norm(frame_knots(end).(swing_foot_name)(1:3) - frame_knots(end-1).(swing_foot_name)(1:3));
   yaw_distance = abs((frame_knots(end).(swing_foot_name)(4:6) - frame_knots(end-1).(swing_foot_name)(4:6))' * [0;0;1]);
@@ -142,8 +142,8 @@ else
 end
 % Apex knot 1
 toe_apex1_in_world = (1-APEX_FRACTIONS(1))*toe1(1:3) + APEX_FRACTIONS(1)*toe2(1:3);
-
-if max_terrain_ht_in_world > toe_apex1_in_world(3) + params.step_height
+initial_pose_not_flat = norm(cross(T_swing1_sole_to_world(1:3,1:3) * [0;0;1], [0;0;1])) >= sin(7.5*pi/180);
+if (initial_pose_not_flat || max_terrain_ht_in_world > toe_apex1_in_world(3) + params.step_height/4) && (~params.prevent_swing_undershoot)
   toe_apex1_in_world = [toe1(1:2); max_terrain_ht_in_world + params.step_height];
 else
   toe_apex1_in_world(3) = max([toe_apex1_in_world(3) + params.step_height,...
@@ -155,7 +155,8 @@ add_frame_knot(tform2poseQuat(T_apex1_frame_to_world));
 
 % Apex knot 2
 toe_apex2_in_world = (1-APEX_FRACTIONS(2))*toe1(1:3) + APEX_FRACTIONS(2)*toe2(1:3);
-if max_terrain_ht_in_world > toe_apex2_in_world(3) + params.step_height/2
+final_pose_not_flat = norm(cross(T_swing2_sole_to_world(1:3,1:3) * [0;0;1], [0;0;1])) >= sin(7.5*pi/180);
+if (final_pose_not_flat || max_terrain_ht_in_world > toe_apex2_in_world(3) + params.step_height/4) && (~params.prevent_swing_overshoot)
   toe_apex2_in_world = [toe2(1:2); max_terrain_ht_in_world + params.step_height];
 else
   toe_apex2_in_world(3) = max([toe_apex2_in_world(3) + params.step_height,...
@@ -196,7 +197,7 @@ states = [frame_knots(1:4).(foot)];
 for j = 2:size(states, 2)
   w1 = states(4:6,j-1);
   w2 = states(4:6,j);
-  [w2, dw2] = unwrapExpmap(w1, w2);
+  [w2, dw2] = closestExpmap(w1, w2);
   states(4:6,j) = w2;
   states(10:12,j) = dw2 * states(10:12,j);
 end

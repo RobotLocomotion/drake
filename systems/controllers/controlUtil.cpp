@@ -1,6 +1,5 @@
 #include "controlUtil.h"
 #include "drakeUtil.h"
-#include "mex.h"
 
 #ifdef USE_MAPS
 #include "terrain-map/TerrainMap.hpp"
@@ -46,26 +45,6 @@ void angleDiff(MatrixBase<DerivedPhi1> const &phi1, MatrixBase<DerivedPhi2> cons
   }
 }
 
-mxArray* myGetProperty(const mxArray* pobj, const char* propname)
-{
-  mxArray* pm = mxGetProperty(pobj,0,propname);
-  if (!pm) mexErrMsgIdAndTxt("DRC:ControlUtil:BadInput","ControlUtil is trying to load object property '%s', but failed.", propname);
-  return pm;
-}
-
-mxArray* myGetField(const mxArray* pobj, const int idx, const char* propname)
-{
-  mxArray* pm = mxGetField(pobj,idx,propname);
-  if (!pm) mexErrMsgIdAndTxt("DRC:ControlUtil:BadInput","ControlUtil is trying to load object field '%s', but failed.", propname);
-  return pm;
-}
-
-mxArray* myGetField(const mxArray* pobj, const char* propname)
-{
-  mxArray* pm = myGetField(pobj, 0, propname);
-  return pm;
-}
-
 bool inSupport(std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> &supports, int body_idx) {
   // HANDLE IF BODY_IDX IS A FRAME ID?
   for (size_t i=0; i<supports.size(); i++) {
@@ -87,6 +66,9 @@ void collisionDetect(void* map_ptr, Vector3d const &contact_pos, Vector3d &pos, 
       pos << contact_pos.topRows(2), height;
       if (normal) {
         *normal = oNormal.cast<double>();
+        if ((*normal)(2) < 0) {
+          *normal = -(*normal);
+        }
         return;
       }
     }
@@ -136,7 +118,6 @@ int contactPhi(RigidBodyManipulator* r, SupportStateElement& supp, void *map_ptr
     r->forwardKin(supp.body_idx,*pt_iter,0,contact_pos);
     collisionDetect(map_ptr,contact_pos,pos,&normal,terrain_height);
     pos -= contact_pos;  // now -rel_pos in matlab version
-//    std::cout << "contact pos: " << contact_pos.transpose() << std::endl;
     phi(i) = pos.norm();
     if (pos.dot(normal)>0)
       phi(i)=-phi(i);
@@ -188,7 +169,7 @@ int contactConstraints(RigidBodyManipulator *r, int nc, std::vector<SupportState
 }
 
 
-int contactConstraintsBV(RigidBodyManipulator *r, int nc, double mu, std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>>& supp, void *map_ptr, MatrixXd &B, MatrixXd &JB, MatrixXd &Jp, VectorXd &Jpdotv, MatrixXd &normals, double terrain_height)
+int contactConstraintsBV(RigidBodyManipulator *r, int nc, std::vector<double> support_mus, std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>>& supp, void *map_ptr, MatrixXd &B, MatrixXd &JB, MatrixXd &Jp, VectorXd &Jpdotv, MatrixXd &normals, double terrain_height)
 {
   int j, k=0, nq = r->num_positions;
 
@@ -201,9 +182,10 @@ int contactConstraintsBV(RigidBodyManipulator *r, int nc, double mu, std::vector
   Vector3d contact_pos,pos,normal; 
   MatrixXd J(3,nq);
   Matrix<double,3,m_surface_tangents> d;
-  double norm = sqrt(1+mu*mu); // because normals and ds are orthogonal, the norm has a simple form
   
   for (std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>>::iterator iter = supp.begin(); iter!=supp.end(); iter++) {
+    double mu = support_mus[iter - supp.begin()];
+    double norm = sqrt(1+mu*mu); // because normals and ds are orthogonal, the norm has a simple form
     if (nc>0) {
       for (std::vector<Vector4d,aligned_allocator<Vector4d>>::iterator pt_iter=iter->contact_pts.begin(); pt_iter!=iter->contact_pts.end(); pt_iter++) {
         r->forwardKin(iter->body_idx,*pt_iter,0,contact_pos);
@@ -220,8 +202,8 @@ int contactConstraintsBV(RigidBodyManipulator *r, int nc, double mu, std::vector
           B.col(2*k*m_surface_tangents+j) = (normal + mu*d.col(j)) / norm; 
           B.col((2*k+1)*m_surface_tangents+j) = (normal - mu*d.col(j)) / norm; 
     
-          JB.col(2*k*m_surface_tangents+j) = J.transpose()*B.col(2*k*m_surface_tangents+j);
-          JB.col((2*k+1)*m_surface_tangents+j) = J.transpose()*B.col((2*k+1)*m_surface_tangents+j);
+          JB.col(2 * k * m_surface_tangents + j) = J.transpose() * B.col(2 * k * m_surface_tangents + j);
+          JB.col((2 * k + 1) * m_surface_tangents + j) = J.transpose() * B.col((2*k+1)*m_surface_tangents+j);
         }
 
         // store away kin sols into Jp and Jpdotv
@@ -236,7 +218,7 @@ int contactConstraintsBV(RigidBodyManipulator *r, int nc, double mu, std::vector
       }
     }
   }
-  
+
   return k;
 }
 
@@ -296,48 +278,6 @@ MatrixXd individualSupportCOPs(RigidBodyManipulator* r, const std::vector<Suppor
   return individual_cops;
 }
 
-std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> parseSupportData(const mxArray* supp_data) {
-  double *logic_map_double;
-  int nsupp = mxGetN(supp_data);
-  if (mxGetM(supp_data) != 1) {
-    mexErrMsgIdAndTxt("Drake:parseSupportData:BadInputs", "the support data should be a 1xN struct array");
-  }
-  int i, j;
-  MatrixXd contact_pts;
-  Vector4d contact_pt = Vector4d::Zero();
-  contact_pt(3) = 1.0;
-  int num_pts;
-  std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> supports;
-  const mxArray* pm;
-
-  for (i = 0; i < nsupp; i++) {
-    SupportStateElement se;
-
-    se.body_idx = ((int) mxGetScalar(mxGetField(supp_data, i, "body_id"))) - 1;
-
-    num_pts = mxGetN(mxGetField(supp_data, i, "contact_pts"));
-    pm = mxGetField(supp_data, i, "support_logic_map");
-    if (mxIsDouble(pm)) {
-      logic_map_double = mxGetPrSafe(pm);
-      assert(mxGetM(pm)==4);
-      for (j = 0; j < 4; j++) {
-        se.support_logic_map[j] = logic_map_double[j] != 0;
-      }
-    } else {
-      mexErrMsgTxt("Please convert support_logic_map to double");
-    }
-    pm = mxGetField(supp_data, i, "contact_pts");
-    contact_pts.resize(mxGetM(pm), mxGetN(pm));
-    memcpy(contact_pts.data(), mxGetPrSafe(pm), sizeof(double)*mxGetNumberOfElements(pm));
-
-    for (j = 0; j < num_pts; j++) {
-      contact_pt.head(3) = contact_pts.col(j);
-      se.contact_pts.push_back(contact_pt);
-    }
-    supports.push_back(se);
-  }
-  return supports;
-}
 
 bool isSupportElementActive(SupportStateElement* se, bool contact_force_detected, bool kinematic_contact_detected) {
   bool is_active;
@@ -358,7 +298,7 @@ bool isSupportElementActive(SupportStateElement* se, bool contact_force_detected
 Matrix<bool, Dynamic, 1> getActiveSupportMask(RigidBodyManipulator* r, void* map_ptr, VectorXd q, VectorXd qd, std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> &available_supports, const Ref<const Matrix<bool, Dynamic, 1>> &contact_force_detected, double contact_threshold, double terrain_height) {
   r->doKinematics(q, false, qd);
 
-  int nsupp = available_supports.size();
+  size_t nsupp = available_supports.size();
   Matrix<bool, Dynamic, 1> active_supp_mask = Matrix<bool, Dynamic, 1>::Zero(nsupp);
   VectorXd phi;
   SupportStateElement se;
@@ -366,7 +306,7 @@ Matrix<bool, Dynamic, 1> getActiveSupportMask(RigidBodyManipulator* r, void* map
   bool kin_contact;
   bool force_contact;
 
-  for (int i = 0; i < nsupp; i++) {
+  for (size_t i = 0; i < nsupp; i++) {
     // mexPrintf("evaluating support: %d\n", i);
     se = available_supports[i];
 
@@ -477,20 +417,11 @@ Vector6d bodySpatialMotionPD(RigidBodyManipulator *r, DrakeRobotState &robot_sta
   return twist_dot;
 }
 
-void evaluateCubicSplineSegment(double t, const Ref<const Matrix<double, 6, 4>> &coefs, Vector6d &y, Vector6d &ydot, Vector6d &yddot) {
-  // evaluate a cubic spline with coefficients coef and starting time 0 at time t
-  y = coefs.col(0) * pow(t, 3) + coefs.col(1) * pow(t, 2) + coefs.col(2) * t + coefs.col(3);
-  ydot = 3*coefs.col(0) * pow(t,2) + 2*coefs.col(1)*t + coefs.col(2);
-  yddot = 6*coefs.col(0)*t + 2*coefs.col(1);
-}
-
-void evaluateXYZExpmapCubicSplineSegment(double t, const Matrix<double,6,4> &coefs, Isometry3d &body_pose_des, Vector6d &xyzdot_angular_vel, Vector6d &xyzddot_angular_accel)
-{
-  double t2 = t*t;
-  double t3 = pow(t,3);
-  Vector6d xyzexp = coefs.col(0)*t3 + coefs.col(1)*t2 + coefs.col(2)*t + coefs.col(3);
-  Vector6d xyzexpdot = coefs.col(0)*3.0*t2 + coefs.col(1)*2.0*t + coefs.col(2);
-  Vector6d xyzexpddot = coefs.col(0)*6.0*t + coefs.col(1)*2.0;
+void evaluateXYZExpmapCubicSpline(double t, const PiecewisePolynomial<double> &spline, Isometry3d &body_pose_des, Vector6d &xyzdot_angular_vel, Vector6d &xyzddot_angular_accel) {
+  Vector6d xyzexp = spline.value(t);
+  auto derivative = spline.derivative();
+  Vector6d xyzexpdot = derivative.value(t);
+  Vector6d xyzexpddot = derivative.derivative().value(t);
   xyzdot_angular_vel.head<3>() = xyzexpdot.head<3>();
   xyzddot_angular_accel.head<3>() = xyzexpddot.head<3>();
   Vector3d expmap = xyzexp.tail<3>();
@@ -511,27 +442,11 @@ void evaluateXYZExpmapCubicSplineSegment(double t, const Matrix<double,6,4> &coe
   xyzddot_angular_accel.tail<3>() = M*quat_ddot + matGradMult(dM,quat_dot)*quat_dot;
 }
 
-// convert Matlab cell array of strings into a C++ vector of strings
-std::vector<std::string> get_strings(const mxArray *rhs) {
-  int num = mxGetNumberOfElements(rhs);
-  std::vector<std::string> strings(num);
-  for (int i=0; i<num; i++) {
-    // const mxArray *ptr = mxGetCell(rhs,i);
-    strings[i] = std::string(mxArrayToString(mxGetCell(rhs, i)));
-    // int buflen = mxGetN(ptr)*sizeof(mxChar)+1;
-    // char* str = (char*)mxMalloc(buflen);
-    // mxGetString(ptr, str, buflen);
-    // strings[i] = string(str);
-    // mxFree(str);
-  }
-  return strings;
-}
-
 void getRobotJointIndexMap(JointNames *joint_names, RobotJointIndexMap *joint_map) {
   if (joint_names->drake.size() != joint_names->robot.size()) {
-    mexErrMsgTxt("Cannot create joint name map: joint_names->drake and joint_names->robot must have the same length");
+    throw std::runtime_error("Cannot create joint name map: joint_names->drake and joint_names->robot must have the same length");
   }
-  int njoints = joint_names->drake.size();
+  int njoints = static_cast<int>(joint_names->drake.size());
   joint_map->drake_to_robot.resize(njoints);
   joint_map->robot_to_drake.resize(njoints);
 
@@ -547,7 +462,7 @@ void getRobotJointIndexMap(JointNames *joint_names, RobotJointIndexMap *joint_ma
     }
     if (!has_match) {
       std::cout << "Could not match joint: " << joint_names->drake[i] << std::endl;
-      mexErrMsgTxt("Could not find a match for drake joint name");
+      throw std::runtime_error("Could not find a match for drake joint name");
     }
   }
   return;
@@ -557,7 +472,3 @@ template drakeControlUtilEXPORT void getRows(std::set<int> &, const MatrixBase< 
 template drakeControlUtilEXPORT void getCols(std::set<int> &, const MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > &);
 template drakeControlUtilEXPORT void angleDiff(const MatrixBase<MatrixXd> &, const MatrixBase<MatrixXd> &, MatrixBase<MatrixXd> &);
 template drakeControlUtilEXPORT void angleDiff(const MatrixBase<Vector3d> &, const MatrixBase<Vector3d> &, MatrixBase<Vector3d> &);
-template drakeControlUtilEXPORT mxArray* eigenToMatlab(const MatrixXd &);
-template drakeControlUtilEXPORT mxArray* eigenToMatlab(const VectorXd &);
-template drakeControlUtilEXPORT mxArray* eigenToMatlab(const Vector6d &);
-template drakeControlUtilEXPORT mxArray* eigenToMatlab(const Vector3d &);

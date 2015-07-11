@@ -1,13 +1,15 @@
 function [com, rms_com] = plotWalkingTraj(r, traj, walking_plan_data)
 %NOTEST
 
-if ~isa(walking_plan_data.comtraj, 'Trajectory')
-  walking_plan_data.comtraj = ExpPlusPPTrajectory(walking_plan_data.comtraj.breaks,...
-                                                  walking_plan_data.comtraj.K,...
-                                                  walking_plan_data.comtraj.A,...
-                                                  walking_plan_data.comtraj.alpha,...
-                                                  walking_plan_data.comtraj.gamma);
+comtraj = walking_plan_data.settings.comtraj;
+if ~isa(comtraj, 'Trajectory')
+  comtraj = ExpPlusPPTrajectory(comtraj.breaks,...
+                                                  comtraj.K,...
+                                                  comtraj.A,...
+                                                  comtraj.alpha,...
+                                                  comtraj.gamma);
 end
+zmptraj = walking_plan_data.settings.zmptraj;
 
 nq = r.getNumPositions();
 tts = traj.getBreaks();
@@ -23,14 +25,16 @@ end
 dtraj = fnder(PPTrajectory(spline(tts,x_smooth)));
 qddtraj = dtraj(nq+(1:nq));
 
+walking_plan_body_motions = walking_plan_data.settings.body_motions();
+
 body_motions = struct('right', [], 'left', []);
-for j = 1:length(walking_plan_data.body_motions)
-  if walking_plan_data.body_motions(j).body_id == r.foot_body_id.right || ...
-     (walking_plan_data.body_motions(j).body_id < 0 && r.getFrame(walking_plan_data.body_motions(j).body_id).body_ind == r.foot_body_id.right)
-     body_motions.right = walking_plan_data.body_motions(j);
-  elseif  walking_plan_data.body_motions(j).body_id == r.foot_body_id.left || ...
-     (walking_plan_data.body_motions(j).body_id < 0 && r.getFrame(walking_plan_data.body_motions(j).body_id).body_ind == r.foot_body_id.left)
-     body_motions.left = walking_plan_data.body_motions(j);
+for j = 1:length(walking_plan_body_motions)
+  if walking_plan_body_motions(j).body_id == r.foot_body_id.right || ...
+     (walking_plan_body_motions(j).body_id < 0 && r.getFrame(walking_plan_body_motions(j).body_id).body_ind == r.foot_body_id.right)
+     body_motions.right = walking_plan_body_motions(j);
+  elseif  walking_plan_body_motions(j).body_id == r.foot_body_id.left || ...
+     (walking_plan_body_motions(j).body_id < 0 && r.getFrame(walking_plan_body_motions(j).body_id).body_ind == r.foot_body_id.left)
+     body_motions.left = walking_plan_body_motions(j);
   end
 end
 
@@ -79,8 +83,8 @@ for i=1:length(ts)
 
   [com(:,i),J]=getCOM(r,kinsol);
   Jdotv = centerOfMassJacobianDotTimesV(r,kinsol,0);
-  comdes(:,i)=walking_plan_data.comtraj.eval(t);
-  zmpdes(:,i)=walking_plan_data.zmptraj.eval(t);
+  comdes(:,i)=comtraj.eval(t);
+  zmpdes(:,i)=zmptraj.eval(t);
   zmpact(:,i)=com(1:2,i) - com(3,i)/9.81 * (J(1:2,:)*qdd + Jdotv(1:2));
 
   for f = {'left', 'right'}

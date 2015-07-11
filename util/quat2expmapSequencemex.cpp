@@ -1,5 +1,5 @@
 #include "mex.h"
-#include "drakeUtil.h"
+#include "drakeMexUtil.h"
 #include "drakeGeometryUtil.h"
 #include "drakeGradientUtil.h"
 
@@ -16,7 +16,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   {
     mexErrMsgTxt("Drake:quat2expmapSequencemex:Invalid input, quat and quat_dot must have 4 rows");
   }
-  int N = mxGetN(prhs[0]);
+  mwSize N = mxGetN(prhs[0]);
   if(mxGetN(prhs[1]) != N)
   {
     mexErrMsgTxt("Drake:quat2expmapSequencemex:Invalid input, quat and quat_dot must have the same number of columns");

@@ -393,7 +393,9 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
                                     'constrain_full_foot_pose', true,... % whether to constrain the swing foot roll and pitch
                                     'pelvis_height_above_foot_sole', 0.83,... % default pelvis height when walking
                                     'support_contact_groups', {{'heel', 'toe'}},... % which contact groups are available for support when walking
-                                    'nominal_LIP_COM_height', 0.89); % nominal height used to construct D_ls for our linear inverted pendulum model
+                                    'prevent_swing_undershoot', false,... % prevent the first phase of the swing from going backwards while moving to the first knot point
+                                    'prevent_swing_overshoot', false,... % prevent the final phase of the swing from moving forward of the last knot point
+                                    'nominal_LIP_COM_height', 0.80); % nominal height used to construct D_ls for our linear inverted pendulum model
   end
 
 end

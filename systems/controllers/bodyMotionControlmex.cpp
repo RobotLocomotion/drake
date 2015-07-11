@@ -2,7 +2,7 @@
  * A simple PD control block for regulating a body pose given a desired position, velocity, and acceleration.   
  */
 #include "controlUtil.h"
-#include "drakeUtil.h"
+#include "drakeMexUtil.h"
 
 struct BodyMotionControlData {
   RigidBodyManipulator* r;

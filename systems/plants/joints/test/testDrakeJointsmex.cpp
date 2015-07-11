@@ -11,7 +11,7 @@
 #include <Eigen/Core>
 #include "mex.h"
 #include "matrix.h"
-#include "drakeUtil.h"
+#include "drakeMexUtil.h"
 
 using namespace Eigen;
 using namespace std;

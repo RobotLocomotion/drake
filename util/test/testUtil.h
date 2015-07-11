@@ -41,8 +41,48 @@ std::string to_string(const Eigen::MatrixBase<Derived> & a)
   return ss.str();
 }
 
+template <typename T>
+void valuecheck(const T& a, const T& b)
+{
+  if (a != b) {
+    std::ostringstream stream;
+    stream << "Expected:\n" << a << "\nbut got:" << b << "\n";
+    throw std::runtime_error(stream.str());
+  }
+}
+
+/*
+ * +++tk:
+ * Note: can't call this function 'valuecheck' because it conflicts with our valuecheck template for general types above on GCC.
+ * (yes, even though the number of template arguments and the number of function arguments is different!)
+ * It does compile on MSVC 2010 and Clang.
+ * What I believe happens is that during argument-dependent name lookup, GCC instantiates Eigen::MatrixBase<int>, which causes errors deep in Eigen::internal code
+ * Possibly related to this discussion:
+ * https://stackoverflow.com/questions/25925551/gcc-and-clang-implicitly-instantiate-template-arguments-during-operator-overload
+ *
+ * Fairly minimal failure example (still involving Eigen):
+ * #include <Eigen/Core>
+ * #include <iostream>
+ *
+ * template <typename Derived>
+ * void foo(const Eigen::MatrixBase<Derived>& m, double bla) {
+ *   std::cout << m << ", " << bla << std::endl;
+ * }
+ *
+ * template <typename T>
+ * void foo(const T& t) {
+ *   std::cout << t << std::endl;
+ * }
+ *
+ * int main() {
+ *   int i = 1;
+ *   foo<int>(i); // doesn't compile
+ *   foo(i); // compiles
+ *   return 0;
+ * }
+ */
 template<typename DerivedA, typename DerivedB>
-void valuecheck(const Eigen::MatrixBase<DerivedA>& a, const Eigen::MatrixBase<DerivedB>& b, double tol, std::string error_msg = "")
+void valuecheckMatrix(const Eigen::MatrixBase<DerivedA>& a, const Eigen::MatrixBase<DerivedB>& b, double tol, std::string error_msg = "")
 {
   // note: isApprox uses the L2 norm, so is bad for comparing against zero
   if (a.rows() != b.rows() || a.cols() != b.cols()) {
@@ -72,25 +112,6 @@ void valuecheck(const Eigen::MatrixBase<DerivedA>& a, const Eigen::MatrixBase<De
 void valuecheck(double a, double b, double tolerance)
 {
   if (std::abs(a - b) > tolerance) {
-    std::ostringstream stream;
-    stream << "Expected:\n" << a << "\nbut got:" << b << "\n";
-    throw std::runtime_error(stream.str());
-  }
-}
-
-void valuecheck(int a, int b)
-{
-  if (a != b) {
-    std::ostringstream stream;
-    stream << "Expected:\n" << a << "\nbut got:" << b << "\n";
-    throw std::runtime_error(stream.str());
-  }
-}
-
-template <typename T>
-void valuecheck(T const & a, T const & b)
-{
-  if (a != b) {
     std::ostringstream stream;
     stream << "Expected:\n" << a << "\nbut got:" << b << "\n";
     throw std::runtime_error(stream.str());

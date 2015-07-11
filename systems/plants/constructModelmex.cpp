@@ -1,7 +1,7 @@
 #include "mex.h"
 #include <iostream>
 #include <cmath>
-#include "drakeUtil.h"
+#include "drakeMexUtil.h"
 #include "RigidBodyManipulator.h"
 #include <stdexcept>
 

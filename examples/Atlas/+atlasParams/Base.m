@@ -17,6 +17,8 @@ classdef Base
     Kp_accel = 1.0;
     contact_threshold = 0.002;
     min_knee_angle = 0.7;
+    use_center_of_mass_observer = false;
+    center_of_mass_observer_gain;
   end
 
   methods 
@@ -91,6 +93,10 @@ classdef Base
                             'joint_is_position_controlled', zeros(r.getNumInputs(), 1));
 
       obj = obj.updateKd();
+      
+      l_zmp = 10;
+      l_com = 2 * sqrt(l_zmp); % lower-right elements should be ~ 2 sqrt( upper-left elements) for critically damped response
+      obj.center_of_mass_observer_gain = diag([l_zmp l_zmp l_com l_com]);
     end
 
     function obj = updateKd(obj)

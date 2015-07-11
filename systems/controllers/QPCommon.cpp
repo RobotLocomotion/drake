@@ -2,203 +2,22 @@
 #include "drakeFloatingPointUtil.h"
 #include "controlUtil.h"
 #include <map>
+#include <memory>
+#include <lcm/lcm-cpp.hpp>
+#include "lcmUtil.h"
+#include "testUtil.h"
+#include "drake/lcmt_zmp_com_observer_state.hpp"
 
-#define LEG_INTEGRATOR_DEACTIVATION_MARGIN 0.05
+const bool CHECK_CENTROIDAL_MOMENTUM_RATE_MATCHES_TOTAL_WRENCH = false;
+const bool PUBLISH_ZMP_COM_OBSERVER_STATE = true;
 
-template<int M, int N>
-void matlabToCArrayOfArrays(const mxArray *source, const int idx, const char *fieldname, double *destination)  {
-  // Matlab arrays come in as column-major data. To represent a matrix in C++, as we do in our LCM messages, we need an array of arrays. But that convention results in a row-major storage, so we have to be careful about how we copy data in. 
-  const mxArray *field = mxGetField(source, idx, fieldname);
-  if (!field) {
-    field = mxGetPropertySafe(source, idx, fieldname);
-  }
-  sizecheck(field, M, N);
-  Map<Matrix<double, M, N>>A(mxGetPrSafe(field));
-  // C is row-major, matlab is column-major
-  Matrix<double, N, M> A_t = A.transpose();
-  memcpy(destination, A_t.data(), sizeof(double)*M*N);
-  return;
-}
+#define LEG_INTEGRATOR_DEACTIVATION_MARGIN 0.07
+
+#define MU_VERY_SMALL 0.001
 
 double logisticSigmoid(double L, double k, double x, double x0) {
   // Compute the value of the logistic sigmoid f(x) = L / (1 + exp(-k(x - x0)))
   return L / (1.0 + exp(-k * (x - x0)));
-}
-
-
-std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray *qp_input) {
-  // Take a matlab data structure corresponding to a QPInputConstantHeight object and parse it down to its representation as an equivalent LCM message. 
-  std::shared_ptr<drake::lcmt_qp_controller_input> msg (new drake::lcmt_qp_controller_input());
-
-  msg->be_silent = mxGetScalar(myGetProperty(qp_input, "be_silent")) > 0.5;
-
-  msg->timestamp = (int64_t) (mxGetScalar(myGetProperty(qp_input, "timestamp")) * 1000000);
-
-  const mxArray* zmp_data = myGetProperty(qp_input, "zmp_data");
-
-  matlabToCArrayOfArrays<4, 4>(zmp_data, 0, "A", &msg->zmp_data.A[0][0]);
-  matlabToCArrayOfArrays<4, 2>(zmp_data, 0, "B", &msg->zmp_data.B[0][0]);
-  matlabToCArrayOfArrays<2, 4>(zmp_data, 0, "C", &msg->zmp_data.C[0][0]);
-  matlabToCArrayOfArrays<2, 2>(zmp_data, 0, "D", &msg->zmp_data.D[0][0]);
-  matlabToCArrayOfArrays<4, 1>(zmp_data, 0, "x0", &msg->zmp_data.x0[0][0]);
-  matlabToCArrayOfArrays<2, 1>(zmp_data, 0, "y0", &msg->zmp_data.y0[0][0]);
-  matlabToCArrayOfArrays<2, 1>(zmp_data, 0, "u0", &msg->zmp_data.u0[0][0]);
-  matlabToCArrayOfArrays<2, 2>(zmp_data, 0, "R", &msg->zmp_data.R[0][0]);
-  matlabToCArrayOfArrays<2, 2>(zmp_data, 0, "Qy", &msg->zmp_data.Qy[0][0]);
-  matlabToCArrayOfArrays<4, 4>(zmp_data, 0, "S", &msg->zmp_data.S[0][0]);
-  matlabToCArrayOfArrays<4, 1>(zmp_data, 0, "s1", &msg->zmp_data.s1[0][0]);
-  matlabToCArrayOfArrays<4, 1>(zmp_data, 0, "s1dot", &msg->zmp_data.s1dot[0][0]);
-  msg->zmp_data.s2 = mxGetScalar(myGetField(zmp_data, "s2"));
-  msg->zmp_data.s2dot = mxGetScalar(myGetField(zmp_data, "s2dot"));
-  msg->zmp_data.timestamp = msg->timestamp;
-
-
-  const mxArray* support_data = myGetProperty(qp_input, "support_data");
-  int nsupp = mxGetN(support_data);
-  msg->num_support_data = (int32_t) nsupp;
-  double double_logic_map[4][1];
-  msg->support_data.resize(nsupp);
-  if (nsupp > 0) {
-    if (mxGetM(support_data) != 1) {
-      mexErrMsgTxt("support data should be a struct array with M=1");
-    }
-    for (int i=0; i < nsupp; i++) {
-      msg->support_data[i].timestamp = msg->timestamp;
-      msg->support_data[i].body_id = (int32_t) mxGetScalar(myGetField(support_data, i, "body_id"));
-
-      const mxArray *contact_pts = myGetField(support_data, i, "contact_pts");
-      if (!contact_pts) mexErrMsgTxt("couldn't get points");
-      Map<MatrixXd>contact_pts_mat(mxGetPrSafe(contact_pts), mxGetM(contact_pts), mxGetN(contact_pts));
-      msg->support_data[i].num_contact_pts = (int32_t) mxGetN(contact_pts);
-      msg->support_data[i].contact_pts.resize(3);
-      for (int j=0; j < 3; j++) {
-        msg->support_data[i].contact_pts[j].resize(msg->support_data[i].num_contact_pts);
-        for (int k=0; k < msg->support_data[i].num_contact_pts; k++) {
-          msg->support_data[i].contact_pts[j][k] = contact_pts_mat(j, k);
-        }
-      }
-
-      matlabToCArrayOfArrays<4, 1>(support_data, i, "support_logic_map", &double_logic_map[0][0]);
-      for (int j=0; j < 4; j++) {
-        msg->support_data[i].support_logic_map[j] = (double_logic_map[j][0] != 0);
-      }
-      msg->support_data[i].mu = mxGetScalar(myGetField(support_data, i, "mu"));
-      
-      double use_support_surface_dbl = mxGetScalar(myGetField(support_data, i, "use_support_surface"));
-      msg->support_data[i].use_support_surface = (use_support_surface_dbl != 0);
-
-      const mxArray *support_surface = myGetField(support_data, i, "support_surface");
-      if (!support_surface) mexErrMsgTxt("couldn't get support surface");
-      Map<Vector4d>support_surface_vec(mxGetPrSafe(support_surface));
-      for (int j=0; j < 4; j++) {
-        msg->support_data[i].support_surface[j] = support_surface_vec(j);
-      }
-    }
-  }
-
-  const mxArray* body_motion_data = myGetProperty(qp_input, "body_motion_data");
-  const int nbod = mxGetN(body_motion_data);
-  msg->num_tracked_bodies = nbod;
-  msg->body_motion_data.resize(nbod);
-  if (nbod > 0) {
-    if (mxGetM(body_motion_data) != 1) {
-      mexErrMsgTxt("body motion data should be a 1xN struct array");
-    }
-    for (int i=0; i < nbod; i++) {
-      msg->body_motion_data[i].timestamp = msg->timestamp;
-      msg->body_motion_data[i].body_id = (int32_t) mxGetScalar(mxGetFieldSafe(body_motion_data, i, "body_id"));
-      memcpy(msg->body_motion_data[i].ts, mxGetPrSafe(mxGetFieldSafe(body_motion_data, i, "ts")), 2*sizeof(double));
-      const mxArray* coefs = mxGetFieldSafe(body_motion_data, i, "coefs");
-      if (mxGetNumberOfDimensions(coefs) != 3) mexErrMsgTxt("coefs should be a dimension-3 array");
-      const mwSize* dim = mxGetDimensions(coefs);
-      if (dim[0] != 6 || dim[1] != 1 || dim[2] != 4) mexErrMsgTxt("coefs should be size 6x1x4");
-      matlabToCArrayOfArrays<6, 4>(body_motion_data, i, "coefs", &msg->body_motion_data[i].coefs[0][0]);
-      msg->body_motion_data[i].in_floating_base_nullspace = static_cast<bool>(mxGetScalar(mxGetFieldSafe(body_motion_data, i, "in_floating_base_nullspace")));
-      msg->body_motion_data[i].control_pose_when_in_contact = static_cast<bool>(mxGetScalar(mxGetFieldSafe(body_motion_data, i, "control_pose_when_in_contact")));
-      const mxArray* quat_task_to_world = mxGetFieldSafe(body_motion_data, i, "quat_task_to_world"); 
-      sizecheck(quat_task_to_world,4,1);
-      memcpy(msg->body_motion_data[i].quat_task_to_world,mxGetPrSafe(quat_task_to_world),sizeof(double)*4);
-      const mxArray* translation_task_to_world = mxGetFieldSafe(body_motion_data, i, "translation_task_to_world");
-      sizecheck(translation_task_to_world,3,1);
-      memcpy(msg->body_motion_data[i].translation_task_to_world, mxGetPrSafe(translation_task_to_world),sizeof(double)*3);
-      const mxArray* xyz_kp_multiplier = mxGetFieldSafe(body_motion_data, i, "xyz_kp_multiplier");
-      sizecheck(xyz_kp_multiplier,3,1);
-      memcpy(msg->body_motion_data[i].xyz_kp_multiplier, mxGetPrSafe(xyz_kp_multiplier), sizeof(double)*3);
-      const mxArray* xyz_damping_ratio_multiplier = mxGetFieldSafe(body_motion_data, i, "xyz_damping_ratio_multiplier");
-      sizecheck(xyz_damping_ratio_multiplier,3,1);
-      memcpy(msg->body_motion_data[i].xyz_damping_ratio_multiplier, mxGetPrSafe(xyz_damping_ratio_multiplier), sizeof(double)*3);
-      const mxArray* expmap_kp_multiplier = mxGetFieldSafe(body_motion_data, i, "expmap_kp_multiplier");
-      sizecheck(expmap_kp_multiplier,1,1);
-      msg->body_motion_data[i].expmap_kp_multiplier = mxGetScalar(expmap_kp_multiplier);
-      const mxArray* expmap_damping_ratio_multiplier = mxGetFieldSafe(body_motion_data, i, "expmap_damping_ratio_multiplier");
-      sizecheck(expmap_damping_ratio_multiplier,1,1);
-      msg->body_motion_data[i].expmap_damping_ratio_multiplier = mxGetScalar(expmap_damping_ratio_multiplier);
-      const mxArray* weight_multiplier = mxGetFieldSafe(body_motion_data, i, "weight_multiplier");
-      sizecheck(weight_multiplier,6,1);
-      memcpy(msg->body_motion_data[i].weight_multiplier, mxGetPrSafe(weight_multiplier), sizeof(double)*6);
-    }
-  }
-
-  const mxArray* body_wrench_data = myGetProperty(qp_input, "body_wrench_data");
-  const int num_external_wrenches = mxGetN(body_wrench_data);
-  msg->num_external_wrenches = num_external_wrenches;
-  msg->body_wrench_data.resize(num_external_wrenches);
-  const int wrench_size = 6;
-  if (num_external_wrenches > 0) {
-    if (mxGetM(body_wrench_data) != 1) {
-      mexErrMsgTxt("body wrench data should be a 1xN struct array");
-    }
-    for (int i = 0; i < num_external_wrenches; i++) {
-      msg->body_wrench_data[i].timestamp = msg->timestamp;
-      msg->body_wrench_data[i].body_id = (int32_t) mxGetScalar(myGetField(body_wrench_data, i, "body_id"));
-      const mxArray* wrench = myGetField(body_wrench_data, i, "wrench");
-      sizecheck(wrench, wrench_size, 1);
-      memcpy(msg->body_wrench_data[i].wrench, mxGetPrSafe(wrench), wrench_size * sizeof(double));
-    }
-  }
-
-  const mxArray* whole_body_data = myGetProperty(qp_input, "whole_body_data");
-  if (mxGetN(whole_body_data) != 1 || mxGetM(whole_body_data) != 1) mexErrMsgTxt("whole_body_data should be a 1x1 struct");
-  const mxArray* q_des = myGetField(whole_body_data, "q_des");
-  if (mxGetN(q_des) != 1) mexErrMsgTxt("q_des should be a column vector");
-  const int npos = mxGetM(q_des);
-  msg->whole_body_data.timestamp = msg->timestamp;
-  msg->whole_body_data.num_positions = npos;
-  Map<VectorXd>q_des_vec(mxGetPrSafe(q_des), npos);
-  msg->whole_body_data.q_des.resize(npos);
-
-  for (int i=0; i < npos; i++) {
-    msg->whole_body_data.q_des[i] = q_des_vec(i);
-  }
-
-  const mxArray* condof = myGetField(whole_body_data, "constrained_dofs");
-  const int ncons = mxGetNumberOfElements(condof);
-  msg->whole_body_data.num_constrained_dofs = ncons;
-  msg->whole_body_data.constrained_dofs.resize(ncons);
-  if (ncons > 0) {
-    if (mxGetN(condof) != 1) mexErrMsgTxt("constrained dofs should be a column vector");
-    Map<VectorXd>condof_vec(mxGetPrSafe(condof), ncons);
-
-    for (int i=0; i < ncons; i++) {
-      msg->whole_body_data.constrained_dofs[i] = static_cast<int32_t>(condof_vec(i));
-    }
-  }
-
-  const mxArray* joint_override = myGetProperty(qp_input, "joint_pd_override");
-  int num_joint_pd_overrides = mxGetNumberOfElements(joint_override);
-  msg->num_joint_pd_overrides = num_joint_pd_overrides;
-  msg->joint_pd_override.resize(num_joint_pd_overrides);
-  for (int i=0; i < num_joint_pd_overrides; i++) {
-    msg->joint_pd_override[i].position_ind = (int32_t) mxGetScalar(myGetField(joint_override, i, "position_ind"));
-    msg->joint_pd_override[i].qi_des = mxGetScalar(myGetField(joint_override, i, "qi_des"));
-    msg->joint_pd_override[i].qdi_des = mxGetScalar(myGetField(joint_override, i, "qdi_des"));
-    msg->joint_pd_override[i].kp = mxGetScalar(myGetField(joint_override, i, "kp"));
-    msg->joint_pd_override[i].kd = mxGetScalar(myGetField(joint_override, i, "kd"));
-    msg->joint_pd_override[i].weight = mxGetScalar(myGetField(joint_override, i, "weight"));
-  }
-
-  msg->param_set_name = mxArrayToString(myGetProperty(qp_input, "param_set_name"));
-  return msg;
 }
 
 PIDOutput wholeBodyPID(NewQPControllerData *pdata, double t, const Ref<const VectorXd> &q, const Ref<const VectorXd> &qd, const Ref<const VectorXd> &q_des, WholeBodyParams *params) {
@@ -210,7 +29,7 @@ PIDOutput wholeBodyPID(NewQPControllerData *pdata, double t, const Ref<const Vec
   assert(qd.size() == pdata->r->num_velocities);
   assert(q_des.size() == params->integrator.gains.size());
   if (nq != pdata->r->num_velocities) {
-    mexErrMsgTxt("this function will need to be rewritten when num_pos != num_vel");
+    throw std::runtime_error("this function will need to be rewritten when num_pos != num_vel");
   }
   if (pdata->state.t_prev != 0) {
     dt = t - pdata->state.t_prev;
@@ -249,16 +68,16 @@ VectorXd velocityReference(NewQPControllerData *pdata, double t, const Ref<Vecto
 
   VectorXd qdd_limited = qdd;
   // Do not wind the vref integrator up against the joint limits for the legs
-  for (i=0; i < rpc->position_indices.r_leg.size(); i++) {
-    int pos_ind = rpc->position_indices.r_leg(i);
+  for (i=0; i < rpc->position_indices.at("r_leg").size(); i++) {
+    int pos_ind = rpc->position_indices.at("r_leg")(i);
     if (q(pos_ind) <= pdata->r->joint_limit_min(pos_ind) + LEG_INTEGRATOR_DEACTIVATION_MARGIN) {
       qdd_limited(pos_ind) = std::max(qdd(pos_ind), 0.0);
     } else if (q(pos_ind) >= pdata->r->joint_limit_max(pos_ind) - LEG_INTEGRATOR_DEACTIVATION_MARGIN) {
       qdd_limited(pos_ind) = std::min(qdd(pos_ind), 0.0);
     }
   }
-  for (i=0; i < rpc->position_indices.l_leg.size(); i++) {
-    int pos_ind = rpc->position_indices.l_leg(i);
+  for (i=0; i < rpc->position_indices.at("l_leg").size(); i++) {
+    int pos_ind = rpc->position_indices.at("l_leg")(i);
     if (q(pos_ind) <= pdata->r->joint_limit_min(pos_ind) + LEG_INTEGRATOR_DEACTIVATION_MARGIN) {
       qdd_limited(pos_ind) = std::max(qdd(pos_ind), 0.0);
     } else if (q(pos_ind) >= pdata->r->joint_limit_max(pos_ind) - LEG_INTEGRATOR_DEACTIVATION_MARGIN) {
@@ -269,25 +88,25 @@ VectorXd velocityReference(NewQPControllerData *pdata, double t, const Ref<Vecto
   pdata->state.vref_integrator_state = (1-params->eta)*pdata->state.vref_integrator_state + params->eta*qd + qdd_limited*dt;
 
   if (params->zero_ankles_on_contact && foot_contact[0] == 1) {
-    for (i=0; i < rpc->position_indices.l_leg_ak.size(); i++) {
-      pdata->state.vref_integrator_state(rpc->position_indices.l_leg_ak(i)) = 0;
+    for (i=0; i < rpc->position_indices.at("l_leg_ak").size(); i++) {
+      pdata->state.vref_integrator_state(rpc->position_indices.at("l_leg_ak")(i)) = 0;
     }
   }
   if (params->zero_ankles_on_contact && foot_contact[1] == 1) {
-    for (i=0; i < rpc->position_indices.r_leg_ak.size(); i++) {
-      pdata->state.vref_integrator_state(rpc->position_indices.r_leg_ak(i)) = 0;
+    for (i=0; i < rpc->position_indices.at("r_leg_ak").size(); i++) {
+      pdata->state.vref_integrator_state(rpc->position_indices.at("r_leg_ak")(i)) = 0;
     }
   }
   if (pdata->state.foot_contact_prev[0] != foot_contact[0]) {
     // contact state changed, reset integrated velocities
-    for (i=0; i < rpc->position_indices.l_leg.size(); i++) {
-      pdata->state.vref_integrator_state(rpc->position_indices.l_leg(i)) = qd(rpc->position_indices.l_leg(i));
+    for (i=0; i < rpc->position_indices.at("l_leg").size(); i++) {
+      pdata->state.vref_integrator_state(rpc->position_indices.at("l_leg")(i)) = qd(rpc->position_indices.at("l_leg")(i));
     }
   }
   if (pdata->state.foot_contact_prev[1] != foot_contact[1]) {
     // contact state changed, reset integrated velocities
-    for (i=0; i < rpc->position_indices.r_leg.size(); i++) {
-      pdata->state.vref_integrator_state(rpc->position_indices.r_leg(i)) = qd(rpc->position_indices.r_leg(i));
+    for (i=0; i < rpc->position_indices.at("r_leg").size(); i++) {
+      pdata->state.vref_integrator_state(rpc->position_indices.at("r_leg")(i)) = qd(rpc->position_indices.at("r_leg")(i));
     }
   }
 
@@ -298,13 +117,13 @@ VectorXd velocityReference(NewQPControllerData *pdata, double t, const Ref<Vecto
 
   // do not velocity control ankles when in contact
   if (params->zero_ankles_on_contact && foot_contact[0] == 1) {
-    for (i=0; i < rpc->position_indices.l_leg_ak.size(); i++) {
-      qd_err(rpc->position_indices.l_leg_ak(i)) = 0;
+    for (i=0; i < rpc->position_indices.at("l_leg_ak").size(); i++) {
+      qd_err(rpc->position_indices.at("l_leg_ak")(i)) = 0;
     }
   }
   if (params->zero_ankles_on_contact && foot_contact[1] == 1) {
-    for (i=0; i < rpc->position_indices.r_leg_ak.size(); i++) {
-      qd_err(rpc->position_indices.r_leg_ak(i)) = 0;
+    for (i=0; i < rpc->position_indices.at("r_leg_ak").size(); i++) {
+      qd_err(rpc->position_indices.at("r_leg_ak")(i)) = 0;
     }
   }
 
@@ -376,19 +195,168 @@ void applyJointPDOverride(const std::vector<drake::lcmt_joint_pd_override> &join
   }
 }
 
-int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_controller_input> qp_input, DrakeRobotState &robot_state, const Ref<Matrix<bool, Dynamic, 1>> &b_contact_force, QPControllerOutput *qp_output, std::shared_ptr<QPControllerDebugData> debug) {
+double averageContactPointHeight(RigidBodyManipulator* r, std::vector<SupportStateElement, Eigen::aligned_allocator<SupportStateElement> >& active_supports, int nc)
+{
+  Eigen::Matrix3Xd contact_positions_world(3, nc);
+  int col = 0;
+  for (auto support_it = active_supports.begin(); support_it != active_supports.end(); ++support_it) {
+    const SupportStateElement& support = *support_it;
+    for (auto contact_position_it = support.contact_pts.begin(); contact_position_it != support.contact_pts.end(); ++contact_position_it) {
+      Vector3d contact_point = contact_position_it->head<3>(); // copy, ah well
+      contact_positions_world.col(col++) = r->forwardKinNew(contact_point, support.body_idx, 0, 0, 0).value();
+    }
+  }
+  double average_contact_point_height = contact_positions_world.row(2).mean();
+  return average_contact_point_height;
+}
+
+Vector2d computeCoP(RigidBodyManipulator* r, const std::map<Side, ForceTorqueMeasurement>& foot_force_torque_measurements, Vector3d point_on_contact_plane, Eigen::Vector3d normal)
+{
+  std::vector<ForceTorqueMeasurement> force_torque_measurements;
+  for (auto it = foot_force_torque_measurements.begin(); it != foot_force_torque_measurements.end(); ++it) {
+    force_torque_measurements.push_back(it->second);
+  }
+  std::pair<Eigen::Vector3d, double> cop_and_normal_torque = r->resolveCenterOfPressure(force_torque_measurements, normal, point_on_contact_plane);
+  Vector2d zmp_from_force_sensors = cop_and_normal_torque.first.head<2>();
+  return zmp_from_force_sensors;
+}
+
+void estimateCoMBasedOnMeasuredZMP(NewQPControllerData* pdata, AtlasParams* params, std::vector<SupportStateElement, Eigen::aligned_allocator<SupportStateElement> >& active_supports, int num_contact_points, const std::map<Side, ForceTorqueMeasurement>& foot_force_torque_measurements, double dt,
+    Vector3d& xcom, Vector3d& xcomdot)
+{
+  /*
+   * Derivation:
+   * We have two sources of information for estimating the COM, one via the robot state (IMU+leg odomentry$\rightarrow$ full dynamic model) and the other via the instantaneous ground reaction forces (ZMP).  The ZMP informs us about the instantaneous position of the COM, but not it's velocity.  The IMU is better for high-frequency components, so we will only use the observation of COM velocity from the robot state, and end up with the following model:
+   * $$x = \begin{bmatrix} x_{com} \\ y_{com} \\ \dot{x}_{com} \\ \dot{y}_{com} \end{bmatrix}, \quad u = \begin{bmatrix} \ddot{x}_{com} \\ \ddot{y}_{com} \end{bmatrix},\quad y = \begin{bmatrix} x_{zmp} \\ y_{zmp} \\ \dot{x}_{comFRS} \\ \dot{y}_{comFRS} \end{bmatrix},$$
+   * where $FRS$ stands for ``from robot state".
+   * \begin{gather*}
+   * \dot{x} = Ax + Bu, \quad y = Cx + Du \\
+   * A = \begin{bmatrix} 0_{2 \times 2} & I_{2 \times 2} \\ 0_{2 \times 2} & 0_{2 \times 2} \end{bmatrix}, \quad B = \begin{bmatrix} 0_{2 \times 2} \\ I_{2 \times 2} \end{bmatrix} \\
+   * C = I_{4 \times 4} \quad D = \begin{bmatrix} -\frac{z_{comFRS}}{g} I_{2 \times 2} \\ 0_{2 \times 2} \end{bmatrix}
+   * \\
+   * \dot{\hat{x}} = A\hat{x} + Bu + L(y - C\hat{x} - Du)
+   * \end{gather*}
+   * where $L$ is the observer gain matrix.  This will give a BIBO stable observer so long as all eigenvalues of $(A-LC)$ are in the left-half plane.
+   *
+   * If we parameterize $L$ as a diagonal matrix then the eigenvalues of $(A-LC)$ are simply the negative of those diagonal entries.  I recommend trying diagonal entries $\begin{bmatrix} l_{zmp}, l_{zmp}, l_{com dot}, l_{com dot} \end{bmatrix}$, with $l_{comdot} \approx 2\sqrt{l_{zmp}}$ to get a critically-damped response.
+   */
+
+  // assume flat ground at average of contact points for ZMP computation. TODO: figure out what works best
+  double average_contact_point_height = averageContactPointHeight(pdata->r, active_supports, num_contact_points);
+  Vector3d point_on_contact_plane;
+  point_on_contact_plane << 0.0, 0.0, average_contact_point_height;
+  Vector2d zmp_from_force_sensors = computeCoP(pdata->r, foot_force_torque_measurements, point_on_contact_plane, Vector3d::UnitZ().eval());
+  if (pdata->state.t_prev == 0) {
+    pdata->state.center_of_mass_observer_state.topRows<2>() = xcom.topRows<2>();
+    pdata->state.center_of_mass_observer_state.bottomRows<2>() = xcomdot.topRows<2>();
+  }
+
+  const auto& comdot_from_robot_state = xcomdot.topRows<2>();
+  double com_height = xcom(2) - average_contact_point_height;
+  double grav = -pdata->r->a_grav(5);
+  const auto& last_commanded_comddot = pdata->state.last_com_ddot;
+  const Matrix4d& L = params->center_of_mass_observer_gain;
+  Vector4d& xhat = pdata->state.center_of_mass_observer_state;
+
+  // y_err = (y - C*xhat - D*u)
+  Vector4d y_err;
+  y_err << zmp_from_force_sensors - xhat.topRows<2>() + com_height * last_commanded_comddot.topRows(2) / (last_commanded_comddot(2) + grav), comdot_from_robot_state - xhat.bottomRows<2>();
+
+  // xhatdot = Axhat + Bu + L*y_err)
+  Vector4d xhatdot = L * y_err;
+  xhatdot.topRows<2>() += comdot_from_robot_state; //xhat.bottomRows<2>();
+  xhatdot.bottomRows<2>() += last_commanded_comddot.topRows(2);
+
+  xhat.noalias() += dt * xhatdot;
+
+  // overwrite the com position and velocity with the observer's estimates:
+  xcom.topRows<2>() = pdata->state.center_of_mass_observer_state.topRows<2>();
+  // xcomdot.topRows<2>() = pdata->state.center_of_mass_observer_state.bottomRows<2>();
+
+  if (PUBLISH_ZMP_COM_OBSERVER_STATE) {
+    std::unique_ptr<lcm::LCM> lcm(new lcm::LCM);
+    if (lcm->good()) {
+      drake::lcmt_zmp_com_observer_state zmp_com_observer_state_msg;
+      eigenVectorToCArray(pdata->state.center_of_mass_observer_state.head<2>(), zmp_com_observer_state_msg.com);
+      eigenVectorToCArray(pdata->state.center_of_mass_observer_state.tail<2>(), zmp_com_observer_state_msg.comd);
+      zmp_com_observer_state_msg.ground_plane_height = point_on_contact_plane(2);
+      lcm->publish("ZMP_COM_OBSERVER_STATE", &zmp_com_observer_state_msg);
+    }
+  }
+}
+
+void checkCentroidalMomentumMatchesTotalWrench(RigidBodyManipulator* r, const VectorXd& qdd, const std::vector<SupportStateElement, Eigen::aligned_allocator<SupportStateElement> >& active_supports, const MatrixXd& B, const VectorXd& beta)
+{
+  std::map<int, Side> foot_body_index_to_side;
+  foot_body_index_to_side[r->findLinkId("l_foot")] = Side::LEFT;
+  foot_body_index_to_side[r->findLinkId("r_foot")] = Side::RIGHT;
+  // compute sum of wrenches, compare to rate of change of momentum from vd
+  Vector6d total_wrench_in_world = Vector6d::Zero();
+  const int n_basis_vectors_per_contact = 2 * m_surface_tangents;
+
+  int beta_start = 0;
+  for (size_t j = 0; j < active_supports.size(); j++) {
+    const auto& active_support = active_supports[j];
+    const auto& contact_pts = active_support.contact_pts;
+    int ncj = static_cast<int>(contact_pts.size());
+    int active_support_length = n_basis_vectors_per_contact * ncj;
+    const auto& Bj = B.middleCols(beta_start, active_support_length);
+    const auto& betaj = beta.segment(beta_start, active_support_length);
+    Vector6d wrench_for_body_in_body_frame = Vector6d::Zero();
+    auto body_xyzquat = r->forwardKinNew(Vector3d::Zero().eval(), 0, active_support.body_idx, 2, 0).value();
+    Matrix3d R_world_to_body = quat2rotmat(body_xyzquat.tail<4>().eval());
+
+    for (size_t k = 0; k < contact_pts.size(); k++) {
+      // for (auto k = contact_pts.begin(); k!= contact_pts.end(); k++) {
+      const auto& Bblock = Bj.middleCols(k * n_basis_vectors_per_contact, n_basis_vectors_per_contact);
+      const auto& betablock = betaj.segment(k * n_basis_vectors_per_contact, n_basis_vectors_per_contact);
+      Vector3d point_force = R_world_to_body * Bblock * betablock;
+      Vector3d contact_pt = contact_pts[k].head(3);
+      auto torquejk = contact_pt.cross(point_force);
+      wrench_for_body_in_body_frame.head<3>() += torquejk;
+      wrench_for_body_in_body_frame.tail<3>() += point_force;
+    }
+
+    Isometry3d transform_to_world(r->relativeTransform<double>(0, active_support.body_idx, 0).value());
+    total_wrench_in_world += transformSpatialForce(transform_to_world, wrench_for_body_in_body_frame);
+    beta_start += active_support_length;
+  }
+
+  double mass = r->getMass();
+  Vector6d gravitational_wrench_in_com = r->a_grav * mass;
+  Isometry3d com_to_world = Isometry3d::Identity();
+  com_to_world.translation() = r->centerOfMass<double>(0).value();
+  Vector6d gravitational_wrench_in_world = transformSpatialForce(com_to_world, gravitational_wrench_in_com);
+  total_wrench_in_world += gravitational_wrench_in_world;
+
+  auto world_momentum_matrix = r->worldMomentumMatrix<double>(0).value();
+  auto world_momentum_matrix_dot_times_v = r->worldMomentumMatrixDotTimesV<double>(0).value();
+  Vector6d momentum_rate_of_change = world_momentum_matrix * qdd + world_momentum_matrix_dot_times_v;
+
+  valuecheckMatrix(total_wrench_in_world, momentum_rate_of_change, 1e-6);
+}
+
+int setupAndSolveQP(
+		NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_controller_input> qp_input, DrakeRobotState &robot_state,
+		const Ref<Matrix<bool, Dynamic, 1>> &b_contact_force, const std::map<Side, ForceTorqueMeasurement>& foot_force_torque_measurements,
+		QPControllerOutput *qp_output, std::shared_ptr<QPControllerDebugData> debug) {
   // The primary solve loop for our controller. This constructs and solves a Quadratic Program and produces the instantaneous desired torques, along with reference positions, velocities, and accelerations. It mirrors the Matlab implementation in atlasControllers.InstantaneousQPController.setupAndSolveQP(), and more documentation can be found there. 
   // Note: argument `debug` MAY be set to NULL, which signals that no debug information is requested.
+
+  double dt = 0.0;
+  if (pdata->state.t_prev != 0.0) {
+    dt = robot_state.t - pdata->state.t_prev;
+  }
 
   // look up the param set by name
   AtlasParams *params; 
   std::map<string,AtlasParams>::iterator it;
   it = pdata->param_sets.find(qp_input->param_set_name);
   if (it == pdata->param_sets.end()) {
-    mexWarnMsgTxt("Got a param set I don't recognize! Using standing params instead");
+    std::cout<<"Got a param set I don't recognize! Using standing params instead";
     it = pdata->param_sets.find("standing");
     if (it == pdata->param_sets.end()) {
-      mexErrMsgTxt("Could not fall back to standing parameters either. I have to give up here.");
+      throw std::runtime_error("Could not fall back to standing parameters either. I have to give up here.");
     }
   }
   // cout << "using params set: " + it->first + ", ";
@@ -418,10 +386,10 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
 
 
   // // whole_body_data
-  if (qp_input->whole_body_data.num_positions != nq) mexErrMsgTxt("number of positions doesn't match num_dof for this robot");
+  if (qp_input->whole_body_data.num_positions != nq) throw std::runtime_error("number of positions doesn't match num_dof for this robot");
   Map<VectorXd> q_des(qp_input->whole_body_data.q_des.data(), nq);
   if (qp_input->whole_body_data.constrained_dofs.size() != qp_input->whole_body_data.num_constrained_dofs) {
-    mexErrMsgTxt("size of constrained dofs does not match num_constrained_dofs");
+    throw std::runtime_error("size of constrained dofs does not match num_constrained_dofs");
   }
   Map<VectorXi> condof(qp_input->whole_body_data.constrained_dofs.data(), qp_input->whole_body_data.num_constrained_dofs);
 
@@ -430,7 +398,6 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
 
   addJointSoftLimits(params->joint_soft_limits, robot_state, q_des, active_supports, qp_input->joint_pd_override);
   applyJointPDOverride(qp_input->joint_pd_override, robot_state, pid_out, w_qdd);
-
 
   qp_output->q_ref = pid_out.q_ref;
 
@@ -443,7 +410,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     mu = qp_input->support_data[0].mu;
     for (int i=1; i < qp_input->num_support_data; i++) {
       if (qp_input->support_data[i].mu != mu) {
-        mexWarnMsgTxt("Currently, we assume that all supports have the same value of mu");
+        std::cout<<"Currently, we assume that all supports have the same value of mu";
       }
     }
   }
@@ -461,7 +428,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
 
   for (int i=0; i < qp_input->num_tracked_bodies; i++) {
     if (qp_input->body_motion_data[i].body_id == 0)
-      mexErrMsgTxt("Body motion data with body id 0\n");
+      throw std::runtime_error("Body motion data with body id 0\n");
     int body_or_frame_id0 = qp_input->body_motion_data[i].body_id - 1;
     int true_body_id0 = pdata->r->parseBodyOrFrameID(body_or_frame_id0, NULL);
     double weight = params->body_motion[true_body_id0].weight;
@@ -476,9 +443,9 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     double expmap_damping_ratio_multiplier = qp_input->body_motion_data[i].expmap_damping_ratio_multiplier;
     memcpy(desired_body_accelerations[i].weight_multiplier.data(),qp_input->body_motion_data[i].weight_multiplier,sizeof(double)*6);
     pdata->r->findKinematicPath(desired_body_accelerations[i].body_path,0,desired_body_accelerations[i].body_or_frame_id0);
-    Map<Matrix<double, 6, 4,RowMajor>>coefs_rowmaj(&qp_input->body_motion_data[i].coefs[0][0]);
-    Matrix<double, 6, 4> coefs = coefs_rowmaj;
-    double t_spline = std::max(qp_input->body_motion_data[i].ts[0], std::min(qp_input->body_motion_data[i].ts[1], robot_state.t));
+
+    auto spline = decodePiecewisePolynomial(qp_input->body_motion_data[i].spline);
+    evaluateXYZExpmapCubicSpline(robot_state.t, spline, body_pose_des, body_v_des, body_vdot_des);
 
     Vector6d body_Kp;
     body_Kp.head<3>() = (params->body_motion[true_body_id0].Kp.head<3>().array()*xyz_kp_multiplier.array()).matrix();
@@ -486,7 +453,6 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     Vector6d body_Kd;
     body_Kd.head<3>() = (params->body_motion[true_body_id0].Kd.head<3>().array()*xyz_damping_ratio_multiplier.array()*xyz_kp_multiplier.array().sqrt()).matrix();
     body_Kd.tail<3>() = params->body_motion[true_body_id0].Kd.tail<3>()*sqrt(expmap_kp_multiplier)*expmap_damping_ratio_multiplier;
-    evaluateXYZExpmapCubicSplineSegment(t_spline - qp_input->body_motion_data[i].ts[0], coefs, body_pose_des, body_v_des, body_vdot_des);
 
     desired_body_accelerations[i].body_vdot = bodySpatialMotionPD(pdata->r, robot_state, body_or_frame_id0, body_pose_des, body_v_des, body_vdot_des, body_Kp, body_Kd,desired_body_accelerations[i].T_task_to_world);
     
@@ -574,11 +540,30 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
     Jcom = pdata->J_xy;
     Jcomdotv = pdata->Jdotv_xy;
   }
-  
+
+  Vector3d xcomdot = pdata->J * robot_state.qd;
+
   MatrixXd B,JB,Jp,normals;
   VectorXd Jpdotv;
-  int nc = contactConstraintsBV(pdata->r,num_active_contact_pts,mu,active_supports,pdata->map_ptr,B,JB,Jp,Jpdotv,normals,pdata->default_terrain_height);
+  std::vector<double> adjusted_mus(active_supports.size());
+  // std::cout << "contact force: " << b_contact_force.transpose() << std::endl;
+  // std::cout << "adjusted mu: ";
+  for (int i=0; i < active_supports.size(); ++i) {
+    int body_id = active_supports[i].body_idx;
+    if ((body_id == pdata->rpc.body_ids.l_foot || body_id == pdata->rpc.body_ids.r_foot) && !b_contact_force(active_supports[i].body_idx)) {
+      adjusted_mus[i] = MU_VERY_SMALL;
+    } else {
+      adjusted_mus[i] = mu;
+    }
+    // std::cout << adjusted_mus[i] << " ";
+  }
+  // std::cout << std::endl;
+  int nc = contactConstraintsBV(pdata->r,num_active_contact_pts,adjusted_mus,active_supports,pdata->map_ptr,B,JB,Jp,Jpdotv,normals,pdata->default_terrain_height);
   int neps = nc*dim;
+
+  if (params->use_center_of_mass_observer && foot_force_torque_measurements.size() > 0) {
+    estimateCoMBasedOnMeasuredZMP(pdata, params, active_supports, nc, foot_force_torque_measurements, dt, xcom, xcomdot);
+  }
 
   VectorXd x_bar,xlimp;
   MatrixXd D_float(6,JB.cols()), D_act(nu,JB.cols());
@@ -587,12 +572,12 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
       // x,y,z com 
       xlimp.resize(6); 
       xlimp.topRows(3) = xcom;
-      xlimp.bottomRows(3) = Jcom*robot_state.qd;
+      xlimp.bottomRows(3) = xcomdot;
     }
     else {
       xlimp.resize(4); 
       xlimp.topRows(2) = xcom.topRows(2);
-      xlimp.bottomRows(2) = Jcom*robot_state.qd;
+      xlimp.bottomRows(2) = xcomdot.topRows(2);
     }
     x_bar = xlimp-x0;
 
@@ -795,7 +780,7 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
         MatrixXd W = w.asDiagonal();
         Hqp_test = (Jcom.transpose()*R_DQyD_ls*Jcom + W).inverse();
         if (((Hqp_test-pdata->Hqp).array().abs()).maxCoeff() > 1e-6) {
-          mexErrMsgTxt("Q submatrix inverse from matrix inversion lemma does not match direct Q inverse.");
+          throw std::runtime_error("Q submatrix inverse from matrix inversion lemma does not match direct Q inverse.");
         }
       }
     #endif
@@ -916,8 +901,15 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
   //----------------------------------------------------------------------
   // Solve for inputs ----------------------------------------------------
   qp_output->qdd = alpha.head(nq);
-
   VectorXd beta = alpha.segment(nq,nc*nd);
+
+  if (params->use_center_of_mass_observer) {
+    pdata->state.last_com_ddot = pdata->Jdotv + pdata->J*qp_output->qdd;
+  }
+
+  if (CHECK_CENTROIDAL_MOMENTUM_RATE_MATCHES_TOTAL_WRENCH) {
+    checkCentroidalMomentumMatchesTotalWrench(pdata->r, qp_output->qdd, active_supports, B, beta);
+  }
 
   // use transpose because B_act is orthogonal
   qp_output->u = pdata->B_act.transpose()*(pdata->H_act*qp_output->qdd + pdata->C_act - D_act*beta);
@@ -971,3 +963,4 @@ int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_c
 
   return info;
 }
+
