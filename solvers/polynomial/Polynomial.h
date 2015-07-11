@@ -114,10 +114,17 @@ public:
   friend std::ostream& operator<<(std::ostream& os, const Monomial& m)
   {
     assert(m.powers.size()==m.vars.size());
-    os << '(' << m.coefficient << ')';
+    if (m.coefficient == 0) return os;
+
+    if (m.coefficient == -1) { os << "-"; }
+    else if (m.coefficient != 1) os << '(' << m.coefficient << ")*";
+
+    bool print_star = false;
     for (int j=0; j<m.vars.size(); j++) {
       if (m.powers[j]>0) {
-        os << '*' << idToVariableName(m.vars[j]);
+        if (print_star) os << '*';
+        else print_star = true;
+        os << idToVariableName(m.vars[j]);
         if (m.powers[j]>1) {
           os << "^" << m.powers[j];
         }
@@ -135,7 +142,7 @@ public:
     
     for (typename std::vector<Monomial>::const_iterator iter=poly.monomials.begin(); iter!=poly.monomials.end(); iter++) {
       os << *iter;
-      if (iter+1 != poly.monomials.end())
+      if (iter+1 != poly.monomials.end() && (iter+1)->coefficient!=-1)
         os << '+';
     }
     return os;
