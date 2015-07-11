@@ -39,7 +39,7 @@ Matrix<Polynomiald, Dynamic, Dynamic> msspolyToEigen(const mxArray* msspoly)
     poly(sub(i,0)-1,sub(i,1)-1) += p;
   }
 
-  cout << poly << endl;
+//  cout << poly << endl;
   
   return poly;
 }
@@ -108,7 +108,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
     auto x = msspolyToEigen(prhs[2]);
     Matrix< Polynomiald, 2, 1> xdot;
     dynamicsRHS(x,xdot);
-    cout << xdot << endl;
+//    cout << xdot << endl;
     plhs[0] = eigenToMSSPoly(xdot);
 //    plhs[0] = mxCreateDoubleMatrix(2,1,mxREAL);
   } else {
