@@ -20,9 +20,8 @@ Matrix<Polynomiald, Dynamic, Dynamic> msspolyToEigen(const mxArray* msspoly)
   auto pow = matlabToEigenMap(mxGetPropertySafe(msspoly,0,"pow"));
   auto coeff = matlabToEigenMap(mxGetPropertySafe(msspoly,0,"coeff"));
   
-/*
   Matrix<Polynomiald, Dynamic, Dynamic> poly((int)dim(0),(int)dim(1));
-
+/*
   for (int i=0; i<sub.rows(); i++) {
     vector<VarType> vars;    
     vector<PowerType> powers;

@@ -11,6 +11,10 @@ template <typename CoefficientType>
 void testIntegralAndDerivative() {
   VectorXd coefficients = VectorXd::Random(5);
   Polynomial<CoefficientType> poly(coefficients);
+
+  default_random_engine generator;
+  uniform_real_distribution<double> uniform;
+  double t = uniform(generator);
   
   cout << poly << endl;
 
@@ -20,14 +24,14 @@ void testIntegralAndDerivative() {
   
   cout << "third derivative: " << third_derivative << endl;
   Polynomial<CoefficientType> third_derivative_check = poly.derivative().derivative().derivative();
-  valuecheck(third_derivative.getCoefficients(), third_derivative_check.getCoefficients(), 1e-14);
+  valuecheck(third_derivative.value(t), third_derivative_check.value(t), 1e-14);
 
   Polynomial<CoefficientType> tenth_derivative = poly.derivative(10);
-  valuecheck(tenth_derivative.getCoefficients(), VectorXd::Zero(1), 1e-14);
+  valuecheck(tenth_derivative.value(t), 0.0, 1e-14);
 
   Polynomial<CoefficientType> integral = poly.integral(0.0);
   Polynomial<CoefficientType> poly_back = integral.derivative();
-  valuecheck(poly_back.getCoefficients(), poly.getCoefficients(), 1e-14);
+  valuecheck(poly_back.value(t), poly.value(t), 1e-14);
 }
 
 template <typename CoefficientType>
@@ -98,7 +102,6 @@ void testRoots() {
 }
 
 int main(int argc, char **argv) {
-
   testIntegralAndDerivative<double>();
   testOperators<double>();
   testRoots<double>();

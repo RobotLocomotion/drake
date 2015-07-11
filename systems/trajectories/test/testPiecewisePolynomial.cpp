@@ -27,7 +27,7 @@ void testIntegralAndDerivative() {
   vector<Polynomial<CoefficientType>> polynomials;
   int num_coefficients = 5;
   int num_segments = 3;
-  typedef typename Polynomial<CoefficientType>::CoefficientsType CoefficientsType;
+  typedef Matrix<CoefficientType,Dynamic,1> CoefficientsType;
   for (int i = 0; i < num_segments; ++i) {
     CoefficientsType coefficients = CoefficientsType::Random(num_coefficients);
     polynomials.push_back(Polynomial<CoefficientType>(coefficients));

@@ -31,37 +31,43 @@ public:
   typedef std::complex<RealScalar> RootType;
   typedef Eigen::Matrix<RootType, Eigen::Dynamic, 1> RootsType;
   
-  typedef struct _Monomial {
-    CoefficientType coeff;
+  class Monomial {
+  public:
+    CoefficientType coefficient;
     std::vector<VarType> vars;  // a list of N variable ids
     std::vector<PowerType> powers; // a list of N exponents
-  } Monomial;
+    
+    bool hasSameExponents(const Monomial& other);
+  };
 
 private:
   std::vector<Monomial> monomials;
+  bool is_univariate = true;
  
 public:
-  // continue to support the old interface
-  Polynomial(Eigen::Ref<Matrix<CoefficientType,Eigen::Dynamic,Eigen::Dynamic> const& coefficients);
-  Polynomial(int num_coefficients);
-  
   Polynomial(void) {}; 
-  Polynomial(const VarsType& _vars, const CoefficientsType& _coefficients, const PowersType& _powers);
-  Polynomial(const std::vector<VarType>& _vars, const CoefficientsType& _coefficients, const std::vector<PowerType>& _powers);
+  Polynomial(CoefficientType coeff, const std::vector<VarType>& _vars, const std::vector<PowerType>& _powers);
+
+  // continue to support the old (univariate) constructor
+  Polynomial(Eigen::Ref<Eigen::Matrix<CoefficientType,Eigen::Dynamic,1> > const& coefficients);
   
   int getNumberOfCoefficients() const;
 
   int getDegree() const;
 
-  CoefficientsType const& getCoefficients() const;
+  Eigen::Matrix<CoefficientType,Eigen::Dynamic,1> getCoefficients() const;
 
   template<typename T> // can be different from both CoefficientsType and RealScalar
-  T value(const T& t) const
+  T value(const T& x) const
   {
-    assert(vars.size()==1);  // this method can only be used for univariate polynomials
-    T value = coefficients(0)*pow(t,powers(0,0));
-    for (int i=1; i<coefficients.size(); i++) 
-      value += coefficients(i)*pow(t,powers(i,0));
+    assert(is_univariate);  // this method can only be used for univariate polynomials
+    T value = (T) 0;
+    for (typename std::vector<Monomial>::const_iterator iter=monomials.begin(); iter!=monomials.end(); iter++) {
+      if (iter->powers.empty())
+        value += iter->coefficient;
+      else
+        value += iter->coefficient*pow(x,iter->powers[0]);
+    }
     return value;
   }
 
@@ -101,21 +107,31 @@ public:
 
   bool isApprox(const Polynomial& other, const RealScalar& tol) const;
 
-  static Polynomial zero();
+  friend std::ostream& operator<<(std::ostream& os, const Monomial& m)
+  {
+    assert(m.powers.size()==m.vars.size());
+    os << '(' << m.coefficient << ')';
+    for (int j=0; j<m.vars.size(); j++) {
+      if (m.powers[j]>0) {
+        os << '*' << idToVariableName(m.vars[j]);
+        if (m.powers[j]>1) {
+          os << "^" << m.powers[j];
+        }
+      }
+    }
+    return os;
+  };
   
   friend std::ostream& operator<<(std::ostream& os, const Polynomial<CoefficientType>& poly)
   {
-    for (int i=0; i<poly.getNumberOfCoefficients(); i++) {
-      os << '(' << poly.coefficients(i) << ')';
-      for (int j=0; j<poly.vars.size(); j++) {
-        if (poly.powers(i,j)>0) {
-          os << '*' << poly.idToVariableName(poly.vars(j));
-          if (poly.powers(i,j)>1) {
-            os << "^" << poly.powers(i,j);
-          }
-        }
-      }
-      if (i<poly.getNumberOfCoefficients()-1)
+    if (poly.monomials.empty()) {
+      os << "0";
+      return os;
+    }
+    
+    for (typename std::vector<Monomial>::const_iterator iter=poly.monomials.begin(); iter!=poly.monomials.end(); iter++) {
+      os << *iter;
+      if (iter+1 != poly.monomials.end())
         os << '+';
     }
     return os;
@@ -123,16 +139,11 @@ public:
   
 
 private:
-  bool isValidVariableName(const std::string name) const;
+  static bool isValidVariableName(const std::string name);
   
-  VarType variableNameToId(const std::string name, const unsigned int m = 1) const;
+  static VarType variableNameToId(const std::string name, const unsigned int m = 1);
   
-  std::string idToVariableName(const VarType id) const;
-  
-  // updates the vars element in this
-  // this.vars are first N elements
-  // the returned matrix is a projection matrix mapping from the indices of other.vars to the new vars
-  Eigen::Matrix<VarType, Eigen::Dynamic, Eigen::Dynamic> mergeVars(const Polynomial& other);
+  static std::string idToVariableName(const VarType id);
   
   // sorts through monomial list and merges any that have the same powers
   void makeMonomialsUnique(void);
