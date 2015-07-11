@@ -20,20 +20,26 @@ Matrix<Polynomiald, Dynamic, Dynamic> msspolyToEigen(const mxArray* msspoly)
   auto pow = matlabToEigenMap(mxGetPropertySafe(msspoly,0,"pow"));
   auto coeff = matlabToEigenMap(mxGetPropertySafe(msspoly,0,"coeff"));
   
+  assert(sub.rows()==var.rows());
+  assert(sub.rows()==pow.rows());
+  assert(sub.rows()==coeff.rows());
+  assert(var.cols()==pow.cols());
+
   Matrix<Polynomiald, Dynamic, Dynamic> poly((int)dim(0),(int)dim(1));
-/*
   for (int i=0; i<sub.rows(); i++) {
-    vector<VarType> vars;    
-    vector<PowerType> powers;
- * for (int j=0; j<var.cols(); j++) {
-      (var.cols()) = var.row(i);
-     = pow.row(i);
-    Polynomiald p(vars,coeff.row(i),powers);
-    poly(sub(i,0),sub(i,1)) += p;
+    vector<Polynomiald::VarType> vars;    
+    vector<Polynomiald::PowerType> powers;
+    int j=0;
+    while (j<var.cols() && var(i,j)>0) {
+      vars.push_back(var(i,j));
+      powers.push_back(pow(i,j));
+      j++;
+    }
+    Polynomiald p(coeff(i),vars,powers);
+    poly(sub(i,0)-1,sub(i,1)-1) += p;
   }
 
   cout << poly << endl;
- */
   
   return poly;
 }
@@ -64,7 +70,9 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
     dynamicsRHS(x,xdot);
   } else if (isa(prhs[2],"msspoly")) {
     auto x = msspolyToEigen(prhs[2]);
-//    dynamicsRHS(x,xdot);
+    Matrix< Polynomiald, 2, 1> xdot;
+    dynamicsRHS(x,xdot);
+    cout << xdot << endl;
 //    plhs[0] = eigenToMSSPoly(xdot);
     plhs[0] = mxCreateDoubleMatrix(2,1,mxREAL);
   } else {

@@ -10,6 +10,7 @@ using namespace std;
 using namespace Eigen;
 
 // todo: change most asserts to runtime errors
+// todo: set univariate flag throughout
 
 template <typename CoefficientType>
 bool Polynomial<CoefficientType>::Monomial::hasSameExponents(const Monomial& other)
@@ -136,6 +137,15 @@ Polynomial<CoefficientType> Polynomial<CoefficientType>::integral(const Coeffici
   Monomial m;
   m.coefficient = integration_constant;
   ret.monomials.push_back(m);
+  return ret;
+}
+
+template <typename CoefficientType>
+Polynomial<CoefficientType> Polynomial<CoefficientType>::operator-() const {
+  Polynomial<CoefficientType> ret = *this;
+  for (typename vector<Monomial>::iterator iter=ret.monomials.begin(); iter!=ret.monomials.end(); iter++) {
+    iter->coefficient = -iter->coefficient;
+  }
   return ret;
 }
 

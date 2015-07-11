@@ -75,6 +75,8 @@ public:
 
   Polynomial integral(const CoefficientType& integration_constant = 0.0) const;
 
+  Polynomial operator-() const;
+
   Polynomial& operator+=(const Polynomial& other);
 
   Polynomial& operator-=(const Polynomial& other);
@@ -151,6 +153,20 @@ private:
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
+
+template <typename CoefficientType, int Rows, int Cols>
+std::ostream& operator<<(std::ostream& os, const Eigen::Matrix< Polynomial<CoefficientType> , Rows, Cols > & poly_mat) {
+  for (int i=0; i<poly_mat.rows(); i++) {
+    os << "[ ";
+    for (int j=0; j<poly_mat.cols(); j++) {
+      os << poly_mat(i,j);
+      if (j<(poly_mat.cols()-1))
+        os << " , ";
+    }
+    os << " ]" << std::endl;
+  }
+  return os;
+}
 
 typedef Polynomial<double> Polynomiald;
 
