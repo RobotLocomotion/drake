@@ -94,6 +94,11 @@ int Polynomial<CoefficientType>::getDegree() const {
 }
 
 template <typename CoefficientType>
+const std::vector<typename Polynomial<CoefficientType>::Monomial>& Polynomial<CoefficientType>::getMonomials() const {
+ return monomials;
+}
+
+template <typename CoefficientType>
 Matrix<CoefficientType,Dynamic,1> Polynomial<CoefficientType>::getCoefficients() const {
   assert(is_univariate);
   int deg = getDegree();

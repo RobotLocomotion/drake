@@ -55,6 +55,8 @@ public:
 
   int getDegree() const;
 
+  const std::vector<Monomial>& getMonomials() const;
+
   Eigen::Matrix<CoefficientType,Eigen::Dynamic,1> getCoefficients() const;
 
   template<typename T> // can be different from both CoefficientsType and RealScalar

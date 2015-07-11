@@ -6,7 +6,7 @@ r_matlab = VanDerPol;
 r_cpp = VanDerPolCpp;
 
 getPolyDynamics(r_matlab);
-getPolyDynamics(r_cpp);  % fails until msspoly's are handled in c++
+getPolyDynamics(r_cpp)
 
 for i=1:20
   t = randn();

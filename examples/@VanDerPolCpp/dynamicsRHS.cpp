@@ -45,14 +45,50 @@ Matrix<Polynomiald, Dynamic, Dynamic> msspolyToEigen(const mxArray* msspoly)
 }
 
 template< int Rows, int Cols >
-mxArray* eigenToMSSPoly(Matrix<Polynomiald,Rows,Cols> & poly)
+mxArray* eigenToMSSPoly(const Matrix<Polynomiald,Rows,Cols> & poly)
 {
-  /*
-  int nrhs = 3 + num_additional_inputs;
-  mxArray *plhs[1];
-  mxArray **prhs;  
-  prhs = new mxArray*[nrhs];  mexCallMATLABSafe(
-   */
+  int num_monomials = 0, max_vars = 0;
+  for (int i=0; i<poly.size(); i++) {
+    auto monomials = poly(i).getMonomials();
+    num_monomials += monomials.size();
+    for (vector<Polynomiald::Monomial>::const_iterator iter=monomials.begin(); iter!=monomials.end(); iter++) {
+      if (iter->vars.size() > max_vars)
+        max_vars = iter->vars.size();
+    }
+  }
+  
+  Matrix<double,1,2> dim; dim << poly.rows(), poly.cols();
+  MatrixXd sub(num_monomials,2);
+  MatrixXd var = MatrixXd::Zero(num_monomials,max_vars);
+  MatrixXd pow = MatrixXd::Zero(num_monomials,max_vars);
+  VectorXd coeff(num_monomials);
+
+  int index=0;
+  for (int i=0; i<poly.rows(); i++) {
+    for (int j=0; j<poly.cols(); j++) {
+      auto monomials = poly(i,j).getMonomials();
+      for (vector<Polynomiald::Monomial>::const_iterator iter=monomials.begin(); iter!=monomials.end(); iter++) {
+        sub(index,0) = i+1;
+        sub(index,1) = j+1;
+        for (int k=0; k<iter->vars.size(); k++) {
+          var(index,k)=(double)iter->vars[k];
+          pow(index,k)=(double)iter->powers[k];
+        }
+        coeff(index) = iter->coefficient;
+        index++;
+      }
+    }
+  }
+
+  mxArray* plhs[1];
+  mxArray* prhs[5];
+  prhs[0] = eigenToMatlab(dim);
+  prhs[1] = eigenToMatlab(sub);
+  prhs[2] = eigenToMatlab(var);
+  prhs[3] = eigenToMatlab(pow);
+  prhs[4] = eigenToMatlab(coeff);
+  mexCallMATLABsafe(1,plhs,5,prhs,"msspoly");
+  return plhs[0];
 }
 
 template <typename DerivedA, typename DerivedB>
@@ -73,8 +109,8 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
     Matrix< Polynomiald, 2, 1> xdot;
     dynamicsRHS(x,xdot);
     cout << xdot << endl;
-//    plhs[0] = eigenToMSSPoly(xdot);
-    plhs[0] = mxCreateDoubleMatrix(2,1,mxREAL);
+    plhs[0] = eigenToMSSPoly(xdot);
+//    plhs[0] = mxCreateDoubleMatrix(2,1,mxREAL);
   } else {
     mexErrMsgIdAndTxt("Drake:VanDerPolCpp:UnknownType","don't know how to handle the datatype passed in for x (yet)");
   }
