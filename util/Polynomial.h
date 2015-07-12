@@ -68,6 +68,7 @@ public:
   Polynomial(void) {}; 
   Polynomial(const CoefficientType& scalar); // this is required for some Eigen operations when used in a polynomial matrix
   Polynomial(CoefficientType coeff, const std::vector<Term>& terms);
+  Polynomial(const std::string varname, const unsigned int num = 1);
 
   // continue to support the old (univariate) constructor
   template <typename Derived>
@@ -92,6 +93,11 @@ public:
 
   int getDegree() const;
 
+  // getSimpleVariable()
+  // if the polynomial is "simple" -- e.g. just a single term with
+  // coefficient 1 -- then return that variable.  otherwise return 0
+  VarType getSimpleVariable() const;
+
   const std::vector<Monomial>& getMonomials() const;
 
   Eigen::Matrix<CoefficientType,Eigen::Dynamic,1> getCoefficients() const;
@@ -112,11 +118,11 @@ public:
     return value;
   }
 
+  void subs(const VarType& orig, const VarType& replacement);
+
   Polynomial derivative(int derivative_order = 1) const;
 
   Polynomial integral(const CoefficientType& integration_constant = 0.0) const;
-
-  Polynomial operator-() const;
 
   Polynomial& operator+=(const Polynomial& other);
 
@@ -135,6 +141,8 @@ public:
   const Polynomial operator+(const Polynomial& other) const;
 
   const Polynomial operator-(const Polynomial& other) const;
+
+  const Polynomial operator-() const;
 
   const Polynomial operator*(const Polynomial& other) const;
 
@@ -206,9 +214,6 @@ private:
   
   // sorts through monomial list and merges any that have the same powers
   void makeMonomialsUnique(void);
-  
-public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 

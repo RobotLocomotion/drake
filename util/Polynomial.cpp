@@ -54,7 +54,22 @@ Polynomial<CoefficientType>::Polynomial(const CoefficientType coefficient, const
 
   monomials.push_back(m);
 } 
-  
+
+template <typename CoefficientType>
+Polynomial<CoefficientType>::Polynomial(const string varname, const unsigned int num)
+{
+  Monomial m;
+  m.coefficient = 1;
+  Term t;
+  t.var = variableNameToId(varname,num);
+  t.power = 1;
+  m.terms.push_back(t);
+  monomials.push_back(m);
+  is_univariate = true;
+}
+
+
+
 template <typename CoefficientType>
 int Polynomial<CoefficientType>::getNumberOfCoefficients() const {
   return static_cast<int>(monomials.size());
@@ -81,6 +96,14 @@ int Polynomial<CoefficientType>::getDegree() const {
 }
 
 template <typename CoefficientType>
+typename Polynomial<CoefficientType>::VarType Polynomial<CoefficientType>::getSimpleVariable() const {
+  if (monomials.size()!=1) return 0;
+  if (monomials[0].terms.size()!=1) return 0;
+  if (monomials[0].terms[0].power!=1) return 0;
+  return monomials[0].terms[0].var;
+}
+
+template <typename CoefficientType>
 const std::vector<typename Polynomial<CoefficientType>::Monomial>& Polynomial<CoefficientType>::getMonomials() const {
  return monomials;
 }
@@ -100,6 +123,15 @@ Matrix<CoefficientType,Dynamic,1> Polynomial<CoefficientType>::getCoefficients()
       coefficients[iter->terms[0].power] = iter->coefficient;
   }  
   return coefficients;
+}
+
+template <typename CoefficientType>
+void Polynomial<CoefficientType>::subs(const VarType& orig, const VarType& replacement) {
+  for (typename vector<Monomial>::iterator iter=monomials.begin(); iter!=monomials.end(); iter++) {
+    for (typename vector<Term>::iterator t=iter->terms.begin(); t!=iter->terms.end(); t++) {
+      if (t->var == orig) t->var = replacement;
+    }
+  }
 }
 
 template <typename CoefficientType>
@@ -154,15 +186,6 @@ Polynomial<CoefficientType> Polynomial<CoefficientType>::integral(const Coeffici
   m.coefficient = integration_constant;
   ret.is_univariate = true;
   ret.monomials.push_back(m);
-  return ret;
-}
-
-template <typename CoefficientType>
-Polynomial<CoefficientType> Polynomial<CoefficientType>::operator-() const {
-  Polynomial<CoefficientType> ret = *this;
-  for (typename vector<Monomial>::iterator iter=ret.monomials.begin(); iter!=ret.monomials.end(); iter++) {
-    iter->coefficient = -iter->coefficient;
-  }
   return ret;
 }
 
@@ -277,6 +300,15 @@ template <typename CoefficientType>
 const Polynomial<CoefficientType> Polynomial<CoefficientType>::operator-(const Polynomial& other) const {
   Polynomial<CoefficientType> ret = *this;
   ret -= other;
+  return ret;
+}
+
+template <typename CoefficientType>
+const Polynomial<CoefficientType> Polynomial<CoefficientType>::operator-() const {
+  Polynomial<CoefficientType> ret = *this;
+  for (typename vector<Monomial>::iterator iter=ret.monomials.begin(); iter!=ret.monomials.end(); iter++) {
+    iter->coefficient = -iter->coefficient;
+  }
   return ret;
 }
 

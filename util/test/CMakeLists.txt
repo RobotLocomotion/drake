@@ -47,3 +47,6 @@ add_executable(testPolynomial testPolynomial.cpp)
 target_link_libraries(testPolynomial drakePolynomial)
 add_test(NAME testPolynomial COMMAND testPolynomial)
 
+add_executable(testTrigPoly testTrigPoly.cpp)
+target_link_libraries(testTrigPoly drakePolynomial)
+add_test(NAME testTrigPoly COMMAND testTrigPoly)
