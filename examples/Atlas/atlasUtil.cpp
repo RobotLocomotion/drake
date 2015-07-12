@@ -1,5 +1,6 @@
 #include "atlasUtil.h"
 #include <Eigen/Core>
+#include <stdexcept>
 
 using namespace std;
 using namespace Eigen;

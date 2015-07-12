@@ -31,7 +31,8 @@ QPLocomotionPlan::QPLocomotionPlan(RigidBodyManipulator& robot, const QPLocomoti
     akx_indices(createJointIndicesMap(robot, settings.akx_names)),
     aky_indices(createJointIndicesMap(robot, settings.aky_names)),
     plan_shift(Vector3d::Zero()),
-    shifted_zmp_trajectory(settings.zmp_trajectory)
+    shifted_zmp_trajectory(settings.zmp_trajectory),
+    last_foot_shift_time(0.0)
 {
   for (int i = 1; i < settings.support_times.size(); i++) {
     if (settings.support_times[i] < settings.support_times[i - 1])
