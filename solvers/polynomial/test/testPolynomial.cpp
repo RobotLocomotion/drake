@@ -3,6 +3,7 @@
 #include <random>
 #include "testUtil.h"
 #include <iostream>
+#include <typeinfo>
 
 using namespace Eigen;
 using namespace std;
@@ -24,16 +25,15 @@ void testIntegralAndDerivative() {
   
   cout << "third derivative: " << third_derivative << endl;
   Polynomial<CoefficientType> third_derivative_check = poly.derivative().derivative().derivative();
-  valuecheck(third_derivative.value(t), third_derivative_check.value(t), 1e-14);
+  valuecheckMatrix(third_derivative.getCoefficients(), third_derivative_check.getCoefficients(), 1e-14);
 
   Polynomial<CoefficientType> tenth_derivative = poly.derivative(10);
-  valuecheck(tenth_derivative.value(t), 0.0, 1e-14);
+  valuecheckMatrix(tenth_derivative.getCoefficients(), VectorXd::Zero(1), 1e-14);
 
   Polynomial<CoefficientType> integral = poly.integral(0.0);
   cout << "integral: " << integral << endl;
   Polynomial<CoefficientType> poly_back = integral.derivative();
-  cout << "and back: " << poly_back << endl;
-  valuecheck(poly_back.value(t), poly.value(t), 1e-14);
+  valuecheckMatrix(poly_back.getCoefficients(), poly.getCoefficients(), 1e-14);
 }
 
 template <typename CoefficientType>
@@ -72,7 +72,9 @@ void testOperators() {
     cout << "p1*c: " << poly1_scaled << endl;
     Polynomial<CoefficientType> poly1_div = poly1 / scalar;
     cout << "p1/c: " << poly1_div << endl;
-    
+    Polynomial<CoefficientType> poly1_times_poly1 = poly1;
+    poly1_times_poly1 *= poly1_times_poly1;
+
     double t = uniform(generator);
     valuecheck(sum.value(t), poly1.value(t) + poly2.value(t), 1e-8);
     valuecheck(difference.value(t), poly2.value(t) - poly1.value(t), 1e-8);
@@ -81,21 +83,22 @@ void testOperators() {
     valuecheck(poly1_minus_scalar.value(t), poly1.value(t) - scalar, 1e-8);
     valuecheck(poly1_scaled.value(t), poly1.value(t) * scalar, 1e-8);
     valuecheck(poly1_div.value(t), poly1.value(t) / scalar, 1e-8);
+    valuecheck(poly1_times_poly1.value(t), poly1.value(t) * poly1.value(t), 1e-8);
   }
 }
 
 template <typename CoefficientType>
 void testRoots() {
   int max_num_coefficients = 6;
-  int num_tests = 50;
   default_random_engine generator;
   std::uniform_int_distribution<> int_distribution(1, max_num_coefficients);
 
+  int num_tests = 50;
   for (int i = 0; i < num_tests; ++i) {
     VectorXd coeffs = VectorXd::Random(int_distribution(generator));
     Polynomial<CoefficientType> poly(coeffs);
     auto roots = poly.roots();
-    valuecheck(roots.rows(), poly.getDegree());
+    valuecheck<DenseIndex>(roots.rows(), poly.getDegree());
     for (int i = 0; i < roots.size(); i++) {
       auto value = poly.value(roots[i]);
       valuecheck(std::abs(value), 0.0, 1e-8);

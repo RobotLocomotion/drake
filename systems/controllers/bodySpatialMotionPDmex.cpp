@@ -1,5 +1,5 @@
 #include "controlUtil.h"
-#include "drakeUtil.h"
+#include "drakeMexUtil.h"
 #include "drakeGeometryUtil.h"
 #include "mex.h"
 

@@ -13,7 +13,8 @@
 #include <Eigen/StdVector>
 #include <limits>
 #include <cmath>
-#include "drakeUtil.h"
+#include "drakeMexUtil.h"
+#include "controlMexUtil.h"
 
 //#define TEST_FAST_QP
 //#define USE_MATRIX_INVERSION_LEMMA
@@ -320,7 +321,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   MatrixXd B,JB,Jp,normals;
   VectorXd Jpdotv;
-  int nc = contactConstraintsBV(pdata->r,num_active_contact_pts,mu,active_supports,pdata->map_ptr,B,JB,Jp,Jpdotv,normals,terrain_height);
+  std::vector<double> support_mus(active_supports.size(), mu);
+  int nc = contactConstraintsBV(pdata->r,num_active_contact_pts,support_mus,active_supports,pdata->map_ptr,B,JB,Jp,Jpdotv,normals,terrain_height);
   int neps = nc*dim;
 
   VectorXd x_bar,xlimp;

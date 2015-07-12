@@ -60,11 +60,11 @@ x0 = xstar;
 q0 = x0(1:nq);
 kinsol = doKinematics(r,q0);
 
-standing_plan = QPLocomotionPlan.from_standing_state(x0, r);
-standing_plan.planned_support_command = QPControllerPlan.support_logic_maps.kinematic_or_sensed;
+standing_plan = QPLocomotionPlanSettings.fromStandingState(x0, r);
+% standing_plan.planned_support_command = QPControllerPlan.support_logic_maps.kinematic_or_sensed;
 
 control = atlasControllers.InstantaneousQPController(r_pure, [], struct());
-planeval = atlasControllers.AtlasPlanEval(r_pure, standing_plan);
+planeval = atlasControllers.AtlasPlanEval(r_pure, QPLocomotionPlanCPPWrapper(standing_plan));
 
 plancontroller = atlasControllers.AtlasPlanEvalAndControlSystem(r_pure, control, planeval);
 
@@ -91,7 +91,7 @@ if example_options.visualize
   warning(S);
 end
 x0 = initstate;
-x0(3) = 1.0; % drop it a bit
+% x0(3) = 1.0; % drop it a bit
 
 traj = simulate(sys,[0 2.0],x0);
 if example_options.visualize
