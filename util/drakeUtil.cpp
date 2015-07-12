@@ -23,12 +23,6 @@ void baseZeroToBaseOne(std::vector<int>& vec)
     (*iter)++;
 }
 
-const Eigen::Map< Eigen::MatrixXd > matlabToEigenMap(const mxArray* matlab_array)
-{
-  const Eigen::Map<Eigen::MatrixXd> ret(mxGetPrSafe(matlab_array),mxGetM(matlab_array),mxGetN(matlab_array));
-  return ret;
-}
-
 double angleAverage(double theta1, double theta2) {
   // Computes the average between two angles by averaging points on the unit
   // circle and taking the arctan of the result.

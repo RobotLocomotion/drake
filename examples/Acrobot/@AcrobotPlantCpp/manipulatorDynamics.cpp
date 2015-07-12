@@ -2,7 +2,7 @@
 #include <Eigen/Dense>
 #include <cmath>
 #include <iostream>
-#include "drakeUtil.h"
+#include "drakeMexUtil.h"
 
 using namespace Eigen;
 using namespace std;

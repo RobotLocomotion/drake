@@ -15,7 +15,6 @@ void testIntegralAndDerivative() {
 
   default_random_engine generator;
   uniform_real_distribution<double> uniform;
-  double t = uniform(generator);
   
   cout << poly << endl;
 

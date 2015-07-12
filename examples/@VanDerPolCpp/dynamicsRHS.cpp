@@ -2,7 +2,7 @@
 #include <Eigen/Dense>
 #include <cmath>
 #include <iostream>
-#include "drakeUtil.h"
+#include "drakeMexUtil.h"
 #include "Polynomial.h"
 
 using namespace Eigen;
