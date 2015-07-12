@@ -4,6 +4,7 @@
 #include "math.h"
 #include <vector>
 #include "drake/zmpUtil.h"
+#include <stdexcept>
 
 using namespace Eigen;
 using namespace std;
