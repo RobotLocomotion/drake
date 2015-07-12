@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 #include <random>
+#include <stdexcept>
 
 #undef DLLEXPORT
 #if defined(WIN32) || defined(WIN64)
@@ -33,8 +34,10 @@ public:
   typedef std::complex<RealScalar> RootType;
   typedef Eigen::Matrix<RootType, Eigen::Dynamic, 1> RootsType;
   
-  template <typename Rhs, typename Lhs>
-  using ProductType = decltype((Rhs) 0 * (Lhs) 0);
+  template<typename Rhs, typename Lhs>
+  struct Product {
+    typedef decltype((Rhs) 0 * (Lhs) 0) type;
+  };
 
   class Term {
   public:
@@ -94,10 +97,12 @@ public:
   Eigen::Matrix<CoefficientType,Eigen::Dynamic,1> getCoefficients() const;
 
   template<typename T> // can be different from both CoefficientsType and RealScalar
-  ProductType<CoefficientType, T> value(const T& x) const
+  typename Product<CoefficientType, T>::type value(const T& x) const
   {
-    assert(is_univariate);  // this method can only be used for univariate polynomials
-    T value = (T) 0;
+    typedef typename Product<CoefficientType, T>::type ProductType;
+
+    if (!is_univariate) throw std::runtime_error("this method can only be used for univariate polynomials");
+    ProductType value = (ProductType) 0;
     for (typename std::vector<Monomial>::const_iterator iter=monomials.begin(); iter!=monomials.end(); iter++) {
       if (iter->terms.empty())
         value += iter->coefficient;
@@ -180,11 +185,11 @@ public:
   }
   
   template<Eigen::DenseIndex RowsAtCompileTime = Eigen::Dynamic, Eigen::DenseIndex ColsAtCompileTime = Eigen::Dynamic>
-  static Eigen::Matrix<Polynomial<CoefficientType>, Eigen::Dynamic, Eigen::Dynamic> randomPolynomialMatrix(int num_coefficients_per_polynomial, int rows = RowsAtCompileTime, int cols = ColsAtCompileTime)
+  static Eigen::Matrix<Polynomial<CoefficientType>, Eigen::Dynamic, Eigen::Dynamic> randomPolynomialMatrix(Eigen::DenseIndex num_coefficients_per_polynomial, Eigen::DenseIndex rows = RowsAtCompileTime, int cols = ColsAtCompileTime)
   {
     Eigen::Matrix<Polynomial<CoefficientType>, RowsAtCompileTime, ColsAtCompileTime> mat(rows, cols);
-    for (int row = 0; row < mat.rows(); ++row) {
-      for (int col = 0; col < mat.cols(); ++col) {
+    for (Eigen::DenseIndex row = 0; row < mat.rows(); ++row) {
+      for (Eigen::DenseIndex col = 0; col < mat.cols(); ++col) {
         auto coeffs = (Eigen::Matrix<CoefficientType, Eigen::Dynamic, 1>::Random(num_coefficients_per_polynomial)).eval();
         mat(row, col) = Polynomial<CoefficientType>(coeffs);
       }
