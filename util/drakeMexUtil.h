@@ -1,6 +1,7 @@
 #include "mex.h"
 #include <vector>
 #include <Eigen/Core>
+#include "Polynomial.h"
 
 #ifndef DRAKE_MEX_UTIL_H_
 #define DRAKE_MEX_UTIL_H_
@@ -100,6 +101,11 @@ DLLEXPORT mwSize sub2ind(mwSize ndims, const mwSize* dims, const mwSize* sub);
 
 template <typename T>
 const std::vector<T> matlabToStdVector(const mxArray* in);
+
+DLLEXPORT Eigen::Matrix<Polynomiald, Eigen::Dynamic, Eigen::Dynamic> msspolyToEigen(const mxArray* msspoly);
+template< int Rows, int Cols >
+DLLEXPORT mxArray* eigenToMSSPoly(const Eigen::Matrix<Polynomiald,Rows,Cols> & poly);
+
 
 DLLEXPORT double *mxGetPrSafe(const mxArray *pobj);
 
