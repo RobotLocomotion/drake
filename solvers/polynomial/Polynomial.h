@@ -6,6 +6,7 @@
 #include <unsupported/Eigen/Polynomials>
 #include <string>
 #include <vector>
+#include <random>
 
 #undef DLLEXPORT
 #if defined(WIN32) || defined(WIN64)
@@ -21,16 +22,20 @@
 // represents a scalar multi-variate polynomial
 // modeled after the msspoly in spotless 
 
-template <typename CoefficientType = double>
+template <typename _CoefficientType = double>
 class DLLEXPORT Polynomial
 {
 public:
+  typedef _CoefficientType CoefficientType;
   typedef unsigned int VarType;
   typedef unsigned int PowerType;
   typedef typename Eigen::NumTraits<CoefficientType>::Real RealScalar;
   typedef std::complex<RealScalar> RootType;
   typedef Eigen::Matrix<RootType, Eigen::Dynamic, 1> RootsType;
   
+  template <typename Rhs, typename Lhs>
+  using ProductType = decltype((Rhs) 0 * (Lhs) 0);
+
   class Term {
   public:
     VarType var;
@@ -58,10 +63,27 @@ private:
  
 public:
   Polynomial(void) {}; 
+  Polynomial(const CoefficientType& scalar); // this is required for some Eigen operations when used in a polynomial matrix
   Polynomial(CoefficientType coeff, const std::vector<Term>& terms);
 
   // continue to support the old (univariate) constructor
-  Polynomial(Eigen::Ref<Eigen::Matrix<CoefficientType,Eigen::Dynamic,1> > const& coefficients);
+  template <typename Derived>
+  Polynomial(Eigen::MatrixBase<Derived> const& coefficients)
+  {
+    VarType v = variableNameToId("t");
+    for (int i=0; i<coefficients.size(); i++) {
+      Monomial m;
+      m.coefficient = coefficients(i);
+      if (i>0) {
+        Term t;
+        t.var = v;
+        t.power = i;
+        m.terms.push_back(t);
+      }
+      monomials.push_back(m);
+    }
+    is_univariate = true;
+  }
   
   int getNumberOfCoefficients() const;
 
@@ -72,7 +94,7 @@ public:
   Eigen::Matrix<CoefficientType,Eigen::Dynamic,1> getCoefficients() const;
 
   template<typename T> // can be different from both CoefficientsType and RealScalar
-  T value(const T& x) const
+  ProductType<CoefficientType, T> value(const T& x) const
   {
     assert(is_univariate);  // this method can only be used for univariate polynomials
     T value = (T) 0;
@@ -140,7 +162,7 @@ public:
       }
     }
     return os;
-  };
+  }
   
   friend std::ostream& operator<<(std::ostream& os, const Polynomial<CoefficientType>& poly)
   {
@@ -155,8 +177,20 @@ public:
         os << '+';
     }
     return os;
-  };
+  }
   
+  template<Eigen::DenseIndex RowsAtCompileTime = Eigen::Dynamic, Eigen::DenseIndex ColsAtCompileTime = Eigen::Dynamic>
+  static Eigen::Matrix<Polynomial<CoefficientType>, Eigen::Dynamic, Eigen::Dynamic> randomPolynomialMatrix(int num_coefficients_per_polynomial, int rows = RowsAtCompileTime, int cols = ColsAtCompileTime)
+  {
+    Eigen::Matrix<Polynomial<CoefficientType>, RowsAtCompileTime, ColsAtCompileTime> mat(rows, cols);
+    for (int row = 0; row < mat.rows(); ++row) {
+      for (int col = 0; col < mat.cols(); ++col) {
+        auto coeffs = (Eigen::Matrix<CoefficientType, Eigen::Dynamic, 1>::Random(num_coefficients_per_polynomial)).eval();
+        mat(row, col) = Polynomial<CoefficientType>(coeffs);
+      }
+    }
+    return mat;
+  }
 
 private:
   static bool isValidVariableName(const std::string name);

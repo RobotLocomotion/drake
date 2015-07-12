@@ -22,6 +22,14 @@ bool Polynomial<CoefficientType>::Monomial::hasSameExponents(const Monomial& oth
   return true;
 }
         
+template <typename CoefficientType>
+Polynomial<CoefficientType>::Polynomial(const CoefficientType& scalar)
+{
+  Monomial m;
+  m.coefficient = scalar;
+  monomials.push_back(m);
+  is_univariate=true;
+}
 
 template <typename CoefficientType>
 Polynomial<CoefficientType>::Polynomial(const CoefficientType coefficient, const vector<Term>& terms)
@@ -46,24 +54,6 @@ Polynomial<CoefficientType>::Polynomial(const CoefficientType coefficient, const
 
   monomials.push_back(m);
 } 
-
-template <typename CoefficientType>
-Polynomial<CoefficientType>::Polynomial(Eigen::Ref< Matrix<CoefficientType,Dynamic,1> > const& coefficients) 
-{
-  VarType v = variableNameToId("t");
-  for (int i=0; i<coefficients.size(); i++) {
-    Monomial m;
-    m.coefficient = coefficients(i);
-    if (i>0) {
-      Term t;
-      t.var = v;
-      t.power = i;
-      m.terms.push_back(t);
-    }
-    monomials.push_back(m);
-  }
-  is_univariate = true;
-}
   
 template <typename CoefficientType>
 int Polynomial<CoefficientType>::getNumberOfCoefficients() const {
