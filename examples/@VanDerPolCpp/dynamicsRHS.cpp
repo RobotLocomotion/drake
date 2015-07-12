@@ -27,7 +27,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
     dynamicsRHS(x,xdot);
   } else if (isa(prhs[2],"msspoly")) {
     auto x = msspolyToEigen(prhs[2]);
-    Matrix< Polynomiald, Dynamic, Dynamic> xdot;
+    Matrix< Polynomiald, 2, 1> xdot;
     dynamicsRHS(x,xdot);
 //    cout << xdot << endl;
     plhs[0] = eigenToMSSPoly(xdot);

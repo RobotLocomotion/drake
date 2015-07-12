@@ -265,53 +265,6 @@ DLLEXPORT Matrix<Polynomiald, Dynamic, Dynamic> msspolyToEigen(const mxArray* ms
   return poly;
 }
 
-template< int Rows, int Cols >
-DLLEXPORT mxArray* eigenToMSSPoly(const Matrix<Polynomiald,Rows,Cols> & poly)
-{
-  int num_monomials = 0, max_terms = 0;
-  for (int i=0; i<poly.size(); i++) {
-    auto monomials = poly(i).getMonomials();
-    num_monomials += monomials.size();
-    for (vector<Polynomiald::Monomial>::const_iterator iter=monomials.begin(); iter!=monomials.end(); iter++) {
-      if (iter->terms.size() > max_terms)
-        max_terms = iter->terms.size();
-    }
-  }
-
-  Matrix<double,1,2> dim; dim << poly.rows(), poly.cols();
-  MatrixXd sub(num_monomials,2);
-  MatrixXd var = MatrixXd::Zero(num_monomials,max_terms);
-  MatrixXd pow = MatrixXd::Zero(num_monomials,max_terms);
-  VectorXd coeff(num_monomials);
-
-  int index=0;
-  for (int i=0; i<poly.rows(); i++) {
-    for (int j=0; j<poly.cols(); j++) {
-      auto monomials = poly(i,j).getMonomials();
-      for (vector<Polynomiald::Monomial>::const_iterator iter=monomials.begin(); iter!=monomials.end(); iter++) {
-        sub(index,0) = i+1;
-        sub(index,1) = j+1;
-        for (int k=0; k<iter->terms.size(); k++) {
-          var(index,k)=(double)iter->terms[k].var;
-          pow(index,k)=(double)iter->terms[k].power;
-        }
-        coeff(index) = iter->coefficient;
-        index++;
-      }
-    }
-  }
-
-  mxArray* plhs[1];
-  mxArray* prhs[5];
-  prhs[0] = eigenToMatlab(dim);
-  prhs[1] = eigenToMatlab(sub);
-  prhs[2] = eigenToMatlab(var);
-  prhs[3] = eigenToMatlab(pow);
-  prhs[4] = eigenToMatlab(coeff);
-  mexCallMATLABsafe(1,plhs,5,prhs,"msspoly");
-  return plhs[0];
-}
-
 
 mwSize sub2ind(mwSize ndims, const mwSize* dims, const mwSize* sub) {
   mwSize stride = 1;

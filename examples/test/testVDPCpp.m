@@ -5,8 +5,9 @@ tmp = addpathTemporary(fullfile(pwd,'..'));
 r_matlab = VanDerPol;
 r_cpp = VanDerPolCpp;
 
-getPolyDynamics(r_matlab);
-getPolyDynamics(r_cpp)
+xdot_matlab=getPolyDynamics(r_matlab);
+xdot_cpp=getPolyDynamics(r_cpp);
+assert(isequal(xdot_matlab,xdot_cpp))
 
 for i=1:20
   t = randn();
