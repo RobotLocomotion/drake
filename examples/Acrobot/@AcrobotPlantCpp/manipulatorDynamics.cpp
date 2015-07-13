@@ -73,10 +73,6 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
 
     manipulatorDynamics(pobj,q,qd,H,C,B);
 
-    cout << "H: " << endl << H << endl;
-    cout << "C: " << endl << C << endl;
-    cout << "B: " << endl << B << endl;
-
     plhs[0] = eigenToTrigPoly(H);
     plhs[1] = eigenToTrigPoly(C);
     plhs[2] = eigenToTrigPoly(B);
