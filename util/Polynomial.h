@@ -62,10 +62,10 @@ public:
 
 private:
   std::vector<Monomial> monomials;
-  bool is_univariate = true;
+  bool is_univariate;
  
 public:
-  Polynomial(void) {}; 
+  Polynomial(void) : is_univariate(true) {};
   Polynomial(const CoefficientType& scalar); // this is required for some Eigen operations when used in a polynomial matrix
   Polynomial(const CoefficientType coeff, const std::vector<Term>& terms);
   Polynomial(typename std::vector<Monomial>::const_iterator start, typename std::vector<Monomial>::const_iterator finish);

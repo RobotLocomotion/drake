@@ -58,8 +58,10 @@ Polynomial<CoefficientType>::Polynomial(const CoefficientType coefficient, const
 template <typename CoefficientType>
 Polynomial<CoefficientType>::Polynomial(typename vector< typename Polynomial<CoefficientType>::Monomial >::const_iterator start, typename vector< typename Polynomial<CoefficientType>::Monomial >::const_iterator finish)
 {
+  is_univariate = true;
   for (typename vector< typename Polynomial<CoefficientType>::Monomial >::const_iterator iter=start; iter!=finish; iter++)
     monomials.push_back(*iter);
+  makeMonomialsUnique();
 }
 
 template <typename CoefficientType>
