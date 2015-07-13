@@ -182,7 +182,7 @@ else()
 endif()
 
 add_test(NAME "RigidBodyManipulatorMemoryTest"
-	WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/examples/Acrobot"
-	COMMAND "matlab" #"${CMAKE_SOURCE_DIR}/cmake/matlab_clean.pl"
+	WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/examples/Acrobot"
+	COMMAND "matlab" #"${PROJECT_SOURCE_DIR}/cmake/matlab_clean.pl"
 	"-nosplash" "-nodisplay" "-wait" "-r" "addpath('${CMAKE_INSTALL_PREFIX}/matlab'); addpath_${POD_NAME}; try, r = RigidBodyManipulator('Acrobot.urdf'); megaclear; catch ex, disp(getReport(ex,'extended')); disp(''); force_close_system; exit(1); end; force_close_system; exit(0)")
 set_tests_properties(RigidBodyManipulatorMemoryTest PROPERTIES TIMEOUT 300)

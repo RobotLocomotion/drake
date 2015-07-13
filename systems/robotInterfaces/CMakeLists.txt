@@ -37,7 +37,7 @@ if (MATLAB_FOUND)
   pods_find_pkg_config(octomap 1.6.3)
 
   if (octomap_FOUND)
-    include_directories (${CMAKE_SOURCE_DIR}/util )
+    include_directories (${PROJECT_SOURCE_DIR}/util )
 
     add_mex(octomapWrapper octomapWrapper.cpp)
     target_link_libraries(octomapWrapper drakeUtil drakeMexUtil)  # note: drakeUtil depends on eigen
