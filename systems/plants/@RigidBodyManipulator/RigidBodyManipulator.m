@@ -632,61 +632,93 @@ classdef RigidBodyManipulator < Manipulator
           error('unknown floating base type');
       end
     end
-
-    function xdot = constrainedDynamics(obj,t,x,u,constraint_ind,options)
-      if nargin<6
-        options = struct();
+    
+    function [xdot,dxdot] = constrainedDynamics(obj,t,x,u)
+      nq = obj.getNumPositions;
+      nv = obj.getNumVelocities;
+      assert(nq == nv) % not ready yet if it isn't true
+      nu = obj.getNumInputs;
+      q=x(1:nq);
+      qd=x((nq+1):end);
+      
+      nargout = 2;
+      
+            
+      if nargout > 1
+        [H,C,B,dH,dC,dB] = manipulatorDynamics(obj,q,qd);
+        Hinv = inv(H);
+        dHinv = invMatGrad(H,dH);
+      else
+        [H,C,B] = manipulatorDynamics(obj,q,qd);
+        Hinv = inv(H);
       end
-      q=x(1:obj.getNumPositions()); 
-      qd=x((obj.getNumPositions()+1):end);
-      [H,C,B] = manipulatorDynamics(obj,q,qd);
-      Hinv = inv(H);
-      if (size(constraint_ind) > 0)  
-        if isfield(options,'use_joint_limits') && options.use_joint_limits
-          [~,J_limit,dJ_limit] = obj.jointLimitConstraints(q);
+      
+      
+      if nargout > 1
+        [phi,J,dJ,Jdotqd,dJdotqd] = obj.positionConstraintslWithJdot(q,qd);
+      else
+        [phi,J,dJ,Jdotqd] = obj.positionConstraintslWithJdot(q,qd);
+      end
+      
+      dJ = [reshape(dJ,prod(size(J)),[]) zeros(prod(size(J)),nv)];
+      dJ_transpose = transposeGrad(dJ,size(J));
+
+      if ~isempty(phi)
+        if isempty(u)
+          constraint_force = -J'*(pinv(J*Hinv*J')*(J*Hinv*(-C) + Jdotqd));
         else
-          J_limit = zeros(0,length(q));
-          dJ_limit = zeros(0,length(q)^2);
+          constraint_force = -J'*(pinv(J*Hinv*J')*(J*Hinv*(B*u-C) + Jdotqd));
         end
 
-        [phi_n,normal,d,xA,xB,idxA,idxB,mu,n,D,dn,dD] = obj.contactConstraints(q);
+        if nargout > 1
+          % Compute gradient of Y=-J^T*inv(J'inv(H)J)
+          % first, R=J*inv(H)*J'
+          R = J*Hinv*J';
+          dR = matGradMultMat(J*Hinv,J',matGradMultMat(J,Hinv,dJ,dHinv),dJ_transpose);
+          
+          Y = -J'*pinv(R);
+          dY = matGradMultMat(-J',pinv(R),-dJ_transpose,invMatGrad(R,dR));
 
-        phi = zeros(2*length(phi_n),1);
-      %   phi(1:2:end) = phi_f;
-        phi(2:2:end) = phi_n;
-
-        J = zeros(length(phi), obj.getNumPositions());
-        J(1:2:end,:) = D{1};
-        J(2:2:end,:) = n;
-
-        dJ = zeros(length(phi), obj.getNumPositions()^2);
-        dJ(2:2:end,:) = reshape(dn,length(phi_n),[]);
-        dJ(1:2:end,:) = reshape(dD{1},length(phi_n),[]);
-
-        J_full = [J_limit;J];
-        dJ_full = [dJ_limit;dJ];
-      %   phi_full = [phi; phi_limit];
-
-      %   phi_sub = phi_full(constraint_ind);
-        Jdotqd = dJ_full(constraint_ind,:)*reshape(qd*qd',obj.getNumPositions()^2,1);
-        J_sub = J_full(constraint_ind,:);
-
-        if isempty(u)
-          constraint_force = -J_sub'*(pinv(J_sub*Hinv*J_sub')*(J_sub*Hinv*(-C) + Jdotqd));
-        else
-          constraint_force = -J_sub'*(pinv(J_sub*Hinv*J_sub')*(J_sub*Hinv*(B*u-C) + Jdotqd));
+          % gradient of Z = J*inv(H)*(Bu - C) + Jdotqd
+          ZZ = J*Hinv;
+          dZZ = matGradMultMat(J,Hinv,dJ,dHinv);
+          if isempty(u)
+            Z = -ZZ*C;
+            dZ = -matGradMultMat(ZZ,C,dZZ,dC);
+          else
+            Z = ZZ*(B*u - C) + Jdotqd;
+            dZ = [matGradMultMat(ZZ,B*u-C,dZZ,matGradMult(dB,u)-dC) + dJdotqd, ZZ*B];
+          end
+          dconstraint_force = matGradMultMat(Y,Z,[dY zeros(size(dY,1),nu)],dZ);
         end
       else
         constraint_force = 0;
+        dconstraint_force = zeros(nv,nq+nv+nu);
       end
-      % constraint_force = 0;
+      
       if isempty(u)
         qdd = Hinv*(constraint_force - C);
       else
         qdd = Hinv*(B*u + constraint_force - C);
       end
       xdot = [qd;qdd];
+
+      if nargout > 1
+        if isempty(u)
+          tau = constraint_force - C;
+          dtau = dconstraint_force - [dC zeros(nq,nu)];
+          
+        else
+          tau = B*u + constraint_force - C;
+          dtau = dconstraint_force + [-dC+matGradMult(dB,u), B];          
+        end
+        dqdd = matGradMultMat(Hinv,tau,[dHinv zeros(nq^2,nu)],dtau);
+        dxdot = [zeros(nq) eye(nq) zeros(nq,nu);dqdd];
+        dxdot = [zeros(nq+nv,1) dxdot];
+      end      
     end
+
+
     function model = addSensor(model,sensor)
       % Adds a sensor to the RigidBodyManipulator.  This modifies the
       % model.sensor parameter and marks the model as dirty.

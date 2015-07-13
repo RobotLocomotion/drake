@@ -9,10 +9,11 @@ classdef RelativePosition < drakeFunction.kinematic.Kinematic
     % pts_in_A - [3 x n_pts] array.
     % pts_in_A(:,i) gives the coordinates % of the i-th point in frame A
     pts_in_A  
+    ind % a subset of indices to use
   end
 
   methods
-    function obj = RelativePosition(rbm,frameA,frameB,pts_in_A)
+    function obj = RelativePosition(rbm,frameA,frameB,pts_in_A,indices)
       % obj = drakeFunction.kinematic.RelativePosition(rbm,frameA, ...
       %                                                frameB,pts_in_A)
       %   returns a RelativePosition object that computes the position
@@ -34,10 +35,15 @@ classdef RelativePosition < drakeFunction.kinematic.Kinematic
       if nargin < 4
         pts_in_A = zeros(rbm.dim,1);
       end
+      if nargin < 5
+        indices = 1:rbm.dim;        
+      end
+      nC = length(indices);
+      
       sizecheck(pts_in_A,[rbm.dim,NaN]);
       n_pts_tmp = size(pts_in_A,2);
       output_frame = MultiCoordinateFrame.constructFrame( ...
-        repmat({drakeFunction.frames.realCoordinateSpace(rbm.dim)},1,n_pts_tmp));
+        repmat({drakeFunction.frames.realCoordinateSpace(nC)},1,n_pts_tmp));
       obj = obj@drakeFunction.kinematic.Kinematic(rbm,output_frame);
       obj.frameA = obj.rbm.parseBodyOrFrameID(frameA);
       if obj.frameA == 0
@@ -46,6 +52,7 @@ classdef RelativePosition < drakeFunction.kinematic.Kinematic
       obj.frameB = obj.rbm.parseBodyOrFrameID(frameB);
       obj.pts_in_A = pts_in_A;
       obj.n_pts = n_pts_tmp;
+      obj.ind = indices;
     end
     
     function [pos,J,dJ] = eval(obj,q)
@@ -117,6 +124,48 @@ classdef RelativePosition < drakeFunction.kinematic.Kinematic
         end
       end
       pos = reshape(pts_in_B,[],1);
+      pos = pos(obj.ind);
+      J = J(obj.ind,:);
+      if compute_second_derivatives
+        dJ = dJ(obj.ind,:);
+      end
+    end
+    
+    function [pos,J,dJ,Jdotv,dJdotv] = evalWithJdot(obj,q,v)
+      options.base_or_frame_id = obj.frameB;
+      options.in_terms_of_qdot = true;
+      
+      kinsol = obj.rbm.doKinematics(q,v,struct('compute_gradients',true,'compute_JdotV',true));
+      
+      
+      if obj.frameA == 0
+        error('COM version of evalWithJdot is not implemented yet')
+      end
+      if ~obj.rbm.use_new_kinsol
+        error('Requires new kinsol')
+      end
+      
+      [pts_in_B,J,dJ] = forwardKin(obj.rbm,kinsol,obj.frameA,obj.pts_in_A,options);      
+      pos = reshape(pts_in_B,[],1);
+      
+      if obj.rbm.dim == 2
+        [Jdotv,dJdotvdq] = forwardJacDotTimesV(obj.rbm,kinsol,obj.frameA,obj.rbm.T_2D_to_3D*obj.pts_in_A,0,obj.frameB);
+        Jdotv = obj.rbm.T_2D_to_3D'*Jdotv;
+        dJdotvdq = obj.rbm.T_2D_to_3D'*dJdotvdq;
+      else
+        [Jdotv,dJdotvdq] = forwardJacDotTimesV(obj.rbm,kinsol,obj.frameA,obj.pts_in_A,0,obj.frameB);
+      end
+      
+      Jdot = reshape(reshape(dJ, numel(J), []) * kinsol.v, size(J));
+
+%       Jdot = reshape(reshape(dJ',length(q),[])'*v,length(q),[])';
+      dJdotvdv = 2*Jdot;
+      dJdotv = [dJdotvdq dJdotvdv];
+      pos = pos(obj.ind);
+      J = J(obj.ind,:);
+      dJ = dJ(obj.ind,:);
+      Jdotv = Jdotv(obj.ind);
+      dJdotv = dJdotv(obj.ind,:);
     end
   end
 

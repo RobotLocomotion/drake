@@ -346,7 +346,7 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
         %           end
         %         end
         % replaced the loop above with a one line solution
-        c=reshape(a*reshape(coefs,size(a,1),size(coefs,2)*l*k),size(a,1),size(coefs,2),l,k);
+        c=reshape(a*reshape(coefs,size(a,2),size(coefs,2)*l*k),size(a,1),size(coefs,2),l,k);
         c=PPTrajectory(mkpp(breaks,c,cd));
         return;
       elseif isnumeric(b) % then only a is a PPTrajectory
