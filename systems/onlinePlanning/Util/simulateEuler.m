@@ -13,7 +13,6 @@ xs(:,1) = x0;
 
 for k = 1:(length(ts)-1)
     xnow = xs(:,k);
-    
     if strcmp(sys_type, 'msspoly')
        xdot = subs(sysCl.p_dynamics_traj.eval(ts(k)),[xp;up],[xnow;zeros(4,1)]);
     else

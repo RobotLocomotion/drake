@@ -38,9 +38,9 @@ classdef FunnelLibrary
         
         function obj = computeFunnels(obj, robot, scaleFactor, funnelLength, radius)
             numTrajs = numel(obj.trajLib.trajectories);
-            %numTrajs = 1; %DEBUGGING
             for i = 1:numTrajs
                 disp('building funnel')
+                i
                 xtraj = obj.trajLib.trajectories{i}.xtraj;
                 utraj = obj.trajLib.trajectories{i}.utraj;
                 Vtv = obj.trajLib.trajectories{i}.Vtv;
@@ -54,7 +54,6 @@ classdef FunnelLibrary
                 
                 ts = Vtv.S.getBreaks();
                 ts = linspace(ts(1),ts(end),funnelLength);
-                ts = ts(1:end-1);
                 
                 G0 = V.S.eval(0) / obj.options.rho0 * 1.01;
                 

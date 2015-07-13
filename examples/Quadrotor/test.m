@@ -4,7 +4,7 @@ if(~exist('trajectoryLibrary.mat'))
     %generate trajectory library
     disp('building trajectory library...')
     tgen = WaypointTrajectoryLibraryGenerator(r);
-    tgen = tgen.setCyclicCoordinateIndexes([1, 2, 3]);
+    tgen = tgen.setCyclicCoordinateIndexes([1, 2, 3, 6]);
 
     x0 = Point(r.getStateFrame);
     x0.base_z = .5;
@@ -15,12 +15,11 @@ if(~exist('trajectoryLibrary.mat'))
 
     relativePositions = [cos(pi/6*(-2:2));sin(pi/6*(-2:2))];
     start = [1;0];
-
-    tgen = tgen.addWaypoint([start;0.5]);
+    tgen = tgen.addWaypoint([start;0.5;0]);
     
     for i = 1:size(relativePositions,2)
         start = start + relativePositions(:, i);
-        tgen = tgen.addWaypoint([start;0.5]);
+        tgen = tgen.addWaypoint([start;0.5;0]);
     end
 
     xf = x0;
@@ -30,6 +29,7 @@ if(~exist('trajectoryLibrary.mat'))
     tgen = tgen.setFinalInput(u0);
 
     tgen = tgen.setTrajectoryLength(11);
+    tgen = tgen.setSortOrder([3,4,2,5,1]);
     trajLib = tgen.generateTrajectories();
     
 

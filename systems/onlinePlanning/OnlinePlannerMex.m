@@ -149,10 +149,8 @@ classdef OnlinePlannerMex < DrakeSystem
 	% Checks if a given funnel is collision free if executed beginning
         % at x (assuming polytopic obstacles) with bullet collision checking
         function [collisionFree,min_dist] = isCollisionFree(obj,funnelIdx,x)
-            
             % Get latest reported obstacle positions
             forest = obj.forestAhead.getData();
-            
             [collisionFree,min_dist] = isCollisionFree_mex(x,forest,obj.funnelLibraryReduced, funnelIdx);    
 
 	end	

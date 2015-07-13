@@ -1286,14 +1286,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             dx_execute_next[2] = (*(dx_current+2));
             break;
         }
-        
+         
         // Optimal shift using QCQP
         mxArray *x_opt = mxCreateDoubleMatrix(3,1,mxREAL);
         double *x_opt_d = mxGetPr(x_opt);
         
         if ((shift_using_qcqp) && (penetration > penetration_thresh) && !shift_later)
         {
-            
+            cout << "shifting funnel" << endl;
             // If the funnel is not collision free, but there is only little penetration, then let's try to shift the funnel
             collFree = shiftFunnelQCQP(A_ineq_mx, b_ineq_mx, x_opt_d);
             
@@ -1536,10 +1536,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         }
     }
     
-// Return next funnel index (add 1 since this will be used in Matlab)
+    // Return next funnel index (add 1 since this will be used in Matlab)
     plhs[0] = mxCreateDoubleScalar(nextFunnel+1);
     
-// Return x_execute if asked for
+    // Return x_execute if asked for
     if (nlhs > 1){
         plhs[1] =  x_execute_next;
     }

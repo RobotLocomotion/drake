@@ -6,6 +6,7 @@ classdef WaypointTrajectoryLibraryGenerator < TrajectoryLibraryGenerator
         xf
         uf
         waypoints
+        sortorder
     end   
     
     methods
@@ -27,6 +28,10 @@ classdef WaypointTrajectoryLibraryGenerator < TrajectoryLibraryGenerator
         
         function obj = setFinalInput(obj, uf)
             obj.uf = uf;
+        end
+        
+        function obj = setSortOrder(obj, sortOrder)
+            obj.sortorder = sortOrder;
         end
         
         function obj = addWaypoint(obj, qCyclic)
@@ -53,8 +58,8 @@ classdef WaypointTrajectoryLibraryGenerator < TrajectoryLibraryGenerator
                 utrajpp = PPTrajectory(spline(segmentBreaks - segmentBreaks(1), utraj.eval(segmentBreaks)));
                 
                 [xtrajResampled, utrajResampled] = obj.resampleTrajectory(xtrajpp, utrajpp, 50); %TODO: make this configurable
-                xtrajs{i} = xtrajResampled.setOutputFrame(obj.robot.getStateFrame);
-                utrajs{i} = utrajResampled.setOutputFrame(obj.robot.getInputFrame);
+                xtrajs{obj.sortorder(i)} = xtrajResampled.setOutputFrame(obj.robot.getStateFrame);
+                utrajs{obj.sortorder(i)} = utrajResampled.setOutputFrame(obj.robot.getInputFrame);
             end
             trajLib = TrajectoryLibrary(xtrajs, utrajs);
         end
