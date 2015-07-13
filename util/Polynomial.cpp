@@ -3,6 +3,7 @@
 #include <cmath>
 #include <string.h>
 #include <stdexcept>
+#include <limits>
 
 #include <iostream> // just for debugging
 
@@ -402,10 +403,10 @@ typename Polynomial<CoefficientType>::VarType Polynomial<CoefficientType>::varia
     exponent *= num_name_chars+1;
     name_part += (name_chars.find(name[i])+1)*exponent;
   }
-  const unsigned int maxId = (1 << 50) / max_name_part;
+  const VarType maxId = std::numeric_limits<VarType>::max() / 2 / max_name_part;
   if (m>maxId) throw runtime_error("name exceeds max ID");
   if (m<1) throw runtime_error("m must be >0");
-  return 2*(name_part + max_name_part*(m-1));
+  return (VarType) 2*(name_part + max_name_part*(m-1));
 }
 
 template <typename CoefficientType>
