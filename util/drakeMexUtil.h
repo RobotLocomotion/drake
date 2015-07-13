@@ -1,7 +1,7 @@
 #include "mex.h"
 #include <vector>
 #include <Eigen/Core>
-#include "Polynomial.h"
+#include "TrigPoly.h"
 
 #ifndef DRAKE_MEX_UTIL_H_
 #define DRAKE_MEX_UTIL_H_
@@ -149,6 +149,15 @@ DLLEXPORT mxArray* eigenToMSSPoly(const Eigen::Matrix<Polynomiald,Rows,Cols> & p
   prhs[4] = eigenToMatlab(coeff);
   mexCallMATLABsafe(1,plhs,5,prhs,"msspoly");
   return plhs[0];
+}
+
+DLLEXPORT Eigen::Matrix<TrigPolyd, Eigen::Dynamic, Eigen::Dynamic> trigPolyToEigen(const mxArray* trigpoly);
+
+template< int Rows, int Cols >
+DLLEXPORT mxArray* eigenToTrigPoly(const Eigen::Matrix<TrigPolyd,Rows,Cols> & trigpoly_mat)
+{
+  // todo: implement this
+  return NULL;
 }
 
 

@@ -319,26 +319,6 @@ const Polynomial<CoefficientType> Polynomial<CoefficientType>::operator*(const P
   return ret;
 }
 
-template <typename CoefficientType>
-const Polynomial<CoefficientType> Polynomial<CoefficientType>::operator+(const CoefficientType& scalar) const {
-  Polynomial<CoefficientType> ret = *this;
-  ret += scalar;
-  return ret;
-}
-
-template <typename CoefficientType>
-const Polynomial<CoefficientType> Polynomial<CoefficientType>::operator-(const CoefficientType& scalar) const {
-  Polynomial<CoefficientType> ret = *this;
-  ret -= scalar;
-  return ret;
-}
-
-template <typename CoefficientType>
-const Polynomial<CoefficientType> Polynomial<CoefficientType>::operator*(const CoefficientType& scalar) const {
-  Polynomial<CoefficientType> ret = *this;
-  ret *= scalar;
-  return ret;
-}
 
 template <typename CoefficientType>
 const Polynomial<CoefficientType> Polynomial<CoefficientType>::operator/(const CoefficientType& scalar) const {

@@ -265,6 +265,29 @@ DLLEXPORT Matrix<Polynomiald, Dynamic, Dynamic> msspolyToEigen(const mxArray* ms
   return poly;
 }
 
+DLLEXPORT Eigen::Matrix<TrigPolyd, Eigen::Dynamic, Eigen::Dynamic> trigPolyToEigen(const mxArray* trigpoly)
+{
+  auto q = msspolyToEigen(mxGetPropertySafe(trigpoly,0,"q"));
+  auto s = msspolyToEigen(mxGetPropertySafe(trigpoly,0,"s"));
+  auto c = msspolyToEigen(mxGetPropertySafe(trigpoly,0,"c"));
+  auto p = msspolyToEigen(mxGetPropertySafe(trigpoly,0,"p"));
+
+  TrigPolyd::SinCosMap m;
+  for (int i=0; i<q.size(); i++) {
+    TrigPolyd::SinCosVars sc;
+    sc.s = s(i).getSimpleVariable();
+    sc.c = c(i).getSimpleVariable();
+    m[q(i).getSimpleVariable()] = sc;
+  }
+
+  Matrix<TrigPolyd, Dynamic, Dynamic> tp(p.rows(),p.cols());
+  for (int i=0; i<p.size(); i++) {
+    tp(i) = TrigPolyd(p(i),m);
+  }
+
+  return tp;
+}
+
 
 mwSize sub2ind(mwSize ndims, const mwSize* dims, const mwSize* sub) {
   mwSize stride = 1;

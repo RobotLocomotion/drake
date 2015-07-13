@@ -9,7 +9,7 @@ options.replace_output_w_new_state = true;
 r_matlab_tp = extractTrigPolySystem(r_matlab,options);
 
 % fails until TrigPoly variables are supported
-%r_cpp_tp = extractTrigPolySystem(r_cpp,options);
+r_cpp_tp = extractTrigPolySystem(r_cpp,options)
 
 % currently fails because taylorvars get passed into the C++ from the geval 
 % in Manipulator/linearize. 

@@ -146,11 +146,40 @@ public:
 
   const Polynomial operator*(const Polynomial& other) const;
 
-  const Polynomial operator+(const CoefficientType& scalar) const;
+  friend const Polynomial operator+(const Polynomial& p, const CoefficientType& scalar) {
+    Polynomial ret = p;
+    ret += scalar;
+    return ret;
+  }
 
-  const Polynomial operator-(const CoefficientType& scalar) const;
+  friend const Polynomial operator+(const CoefficientType& scalar,const Polynomial& p) {
+    Polynomial ret = p;
+    ret += scalar;
+    return ret;
+  }
 
-  const Polynomial operator*(const CoefficientType& scalar) const;
+  friend const Polynomial operator-(const Polynomial& p, const CoefficientType& scalar) {
+    Polynomial ret = p;
+    ret -= scalar;
+    return ret;
+  }
+
+  friend const Polynomial operator-(const CoefficientType& scalar,const Polynomial& p) {
+    Polynomial ret = -p;
+    ret += scalar;
+    return ret;
+  }
+
+  friend const Polynomial operator*(const Polynomial& p, const CoefficientType& scalar) {
+    Polynomial ret = p;
+    ret *= scalar;
+    return ret;
+  }
+  friend const Polynomial operator*(const CoefficientType& scalar,const Polynomial& p) {
+    Polynomial ret = p;
+    ret *= scalar;
+    return ret;
+  }
 
   const Polynomial operator/(const CoefficientType& scalar) const;
 
@@ -164,7 +193,7 @@ public:
 
     bool print_star = false;
     if (m.coefficient == -1) { os << "-"; }
-    else if (m.coefficient != 1) { os << '(' << m.coefficient << ")"; print_star=true; }
+    else if (m.coefficient != 1 || m.terms.empty()) { os << '(' << m.coefficient << ")"; print_star=true; }
 
     for (typename std::vector<Term>::const_iterator iter=m.terms.begin(); iter!=m.terms.end(); iter++) {
       if (print_star) os << '*';
@@ -177,7 +206,7 @@ public:
     return os;
   }
   
-  friend std::ostream& operator<<(std::ostream& os, const Polynomial<CoefficientType>& poly)
+  friend std::ostream& operator<<(std::ostream& os, const Polynomial& poly)
   {
     if (poly.monomials.empty()) {
       os << "0";
@@ -193,13 +222,13 @@ public:
   }
   
   template<Eigen::DenseIndex RowsAtCompileTime = Eigen::Dynamic, Eigen::DenseIndex ColsAtCompileTime = Eigen::Dynamic>
-  static Eigen::Matrix<Polynomial<CoefficientType>, Eigen::Dynamic, Eigen::Dynamic> randomPolynomialMatrix(Eigen::DenseIndex num_coefficients_per_polynomial, Eigen::DenseIndex rows = RowsAtCompileTime, int cols = ColsAtCompileTime)
+  static Eigen::Matrix<Polynomial, Eigen::Dynamic, Eigen::Dynamic> randomPolynomialMatrix(Eigen::DenseIndex num_coefficients_per_polynomial, Eigen::DenseIndex rows = RowsAtCompileTime, int cols = ColsAtCompileTime)
   {
-    Eigen::Matrix<Polynomial<CoefficientType>, RowsAtCompileTime, ColsAtCompileTime> mat(rows, cols);
+    Eigen::Matrix<Polynomial, RowsAtCompileTime, ColsAtCompileTime> mat(rows, cols);
     for (Eigen::DenseIndex row = 0; row < mat.rows(); ++row) {
       for (Eigen::DenseIndex col = 0; col < mat.cols(); ++col) {
         auto coeffs = (Eigen::Matrix<CoefficientType, Eigen::Dynamic, 1>::Random(num_coefficients_per_polynomial)).eval();
-        mat(row, col) = Polynomial<CoefficientType>(coeffs);
+        mat(row, col) = Polynomial(coeffs);
       }
     }
     return mat;
