@@ -71,6 +71,9 @@ struct KneeSettings {
 };
 
 struct QPLocomotionPlanSettings {
+
+  QPLocomotionPlanSettings() : min_foot_shift_delay(0.1) {};
+
   double duration;
   std::vector<RigidBodySupportState> supports;
   std::vector<double> support_times; // length: supports.size() + 1
@@ -92,7 +95,7 @@ struct QPLocomotionPlanSettings {
   bool use_plan_shift;
   std::vector<Eigen::DenseIndex> plan_shift_body_motion_indices;
   double g;
-  double min_foot_shift_delay = 0.1; // seconds to wait before updating foot-specific plan shifts
+  double min_foot_shift_delay; // seconds to wait before updating foot-specific plan shifts (default value set in the constructor above)
   bool is_quasistatic;
   KneeSettings knee_settings;
   double ankle_limits_tolerance;
@@ -163,7 +166,7 @@ private:
   double start_time;
   Vector3d plan_shift;
   std::map<Side,Vector3d> foot_shifts;
-  double last_foot_shift_time = 0;
+  double last_foot_shift_time;
   drake::lcmt_qp_controller_input last_qp_input;
   std::map<Side, bool> toe_off_active;
   std::map<Side, bool> knee_pd_active;
