@@ -13,9 +13,6 @@ void testIntegralAndDerivative() {
   VectorXd coefficients = VectorXd::Random(5);
   Polynomial<CoefficientType> poly(coefficients);
 
-  default_random_engine generator;
-  uniform_real_distribution<double> uniform;
-  
   cout << poly << endl;
 
   cout << "derivative: " << poly.derivative(1) << endl;
