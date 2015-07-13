@@ -217,11 +217,14 @@ double containmentConstraint(snopt::doublereal x_shift[], double *containment_gr
     
     // Now do xrel'*S0xrel
     mxArray *val = mxCreateDoubleScalar(mxREAL);
-    double *dval = mxGetPr(val);
+    double dval = *(mxGetPr(val));
     char *chnT = "T"; // since we want xrel transpose
-    dgemm(chnT, chn, &ione, &ione, &dim, &one, dxrel, &dim, dS0xrel, &dim, &zero, dval, &ione);
+    dgemm(chnT, chn, &ione, &ione, &dim, &one, dxrel, &dim, dS0xrel, &dim, &zero, &dval, &ione);
     
-    return *dval;
+    mxDestroyArray(xrel);
+    mxDestroyArray(S0xrel);
+    mxDestroyArray(val);
+    return dval;
     
 }
 
@@ -254,8 +257,7 @@ bool penetrationCost(snopt::doublereal x[], double *min_dist, double *normal_vec
     size_t nCols;
     size_t nRows;
     double distance;
-    mxArray *normal_vec;
-    normal_vec = mxCreateDoubleMatrix(1,3,mxREAL);
+    mxArray *normal_vec = mxCreateDoubleMatrix(1,3,mxREAL);
     
     
     // Get number of time samples
@@ -289,7 +291,8 @@ bool penetrationCost(snopt::doublereal x[], double *min_dist, double *normal_vec
             nCols = mxGetN(obstacle);
             nRows = mxGetM(obstacle);
             
-            double *vertsT = mxGetPr(mxCreateDoubleMatrix(nRows, nCols, mxREAL));
+            mxArray* vertsA = mxCreateDoubleMatrix(nRows, nCols, mxREAL);
+            double *vertsT = mxGetPr(vertsA);
             
             // Shift vertices so that point on trajectory is at origin and transform by cholesky of S
             vertsT = shiftAndTransform(verts, vertsT, x_shifted, x0, k, cSk, nRows, nCols);
@@ -298,7 +301,7 @@ bool penetrationCost(snopt::doublereal x[], double *min_dist, double *normal_vec
             distance = ptToPolyBullet(vertsT, nRows, nCols, normal_vec);
             
             // Update min_dist
-            if(distance < *min_dist){
+            if(distance < *min_dist) {
                 *min_dist = distance;
                 
                 // Multiply normal_vec by cSk to get it back in the correct coordinate frame (i.e., normal_vec'*cSk)
@@ -310,7 +313,7 @@ bool penetrationCost(snopt::doublereal x[], double *min_dist, double *normal_vec
                 dgemm(chn, chn, &ione, &dim, &dim, &one, mxGetPr(normal_vec), &ione, mxGetPr(cSk), &dim, &zero, normal_vec_transformed, &ione);
                 
             }
-            
+            mxDestroyArray(vertsA);
             
         }
     }
@@ -318,6 +321,10 @@ bool penetrationCost(snopt::doublereal x[], double *min_dist, double *normal_vec
     if(*min_dist < 1){
         collFree = false;
     }
+
+    mxDestroyArray(x_shifted);
+    mxDestroyArray(normal_vec);
+
     
     return collFree;
     
@@ -388,6 +395,9 @@ int snopt_userfun( snopt::integer    *Status, snopt::integer *n,    snopt::doubl
         G[5] = containment_grad_d[2];
     }
     
+    mxDestroyArray(normal_vec);
+    mxDestroyArray(containment_grad);
+
     return 0;
 }
 
@@ -641,7 +651,8 @@ bool isCollisionFree(int funnelIdx, const mxArray *x, const mxArray *funnelLibra
             nCols = mxGetN(obstacle);
             nRows = mxGetM(obstacle);
             
-            double *vertsT = mxGetPr(mxCreateDoubleMatrix(nRows, nCols, mxREAL));
+            mxArray* vertsA = mxCreateDoubleMatrix(nRows, nCols, mxREAL);
+            double *vertsT = mxGetPr(vertsA);
             
             // Shift vertices so that point on trajectory is at origin and transform by cholesky of S
             vertsT = shiftAndTransform(verts, vertsT, x, x0, k, cSk, nRows, nCols);
@@ -682,8 +693,7 @@ bool isCollisionFree(int funnelIdx, const mxArray *x, const mxArray *funnelLibra
                 rowNum = rowNum + 1;
             }
             /*************************************************************/
-            
-            
+            mxDestroyArray(vertsA);
         }
     }
     
@@ -709,10 +719,7 @@ bool isCollisionFree(int funnelIdx, const mxArray *x, const mxArray *funnelLibra
             A_ineq[1*numRows_A+(rowNum+k)] = 0.0;
             A_ineq[2*numRows_A+(rowNum+k)] = 0.0;
             A_ineq[3*numRows_A+(rowNum+k)] = 0.0;
-            
             b_ineq[rowNum+k] = 0.0;
-            
-            
         }
     }
     
@@ -720,6 +727,9 @@ bool isCollisionFree(int funnelIdx, const mxArray *x, const mxArray *funnelLibra
         collFree = false;
     }
     
+    mxDestroyArray(normal_vec);
+    mxDestroyArray(normal_vec_transformed_mx);
+
     return collFree;
     
 }
@@ -794,6 +804,9 @@ bool isInsideInlet(int funnelIdx, const mxArray *x, const mxArray *funnelLibrary
     {
         inside = false;
     }
+    mxDestroyArray(xrel);
+    mxDestroyArray(S0xrel);
+    mxDestroyArray(val);
     
     return inside;
     
@@ -886,8 +899,10 @@ void setupQuadraticConstraint(double *ql, double *qr)
     long int ithree = 3;
     dgemm(chn, chn, &ithree, &ione, &dimv, &two, S12, &ithree, v_d, &dimv, &zero, ql, &ithree);
     
-    
-    
+    mxDestroyArray(S22_mx);
+    mxDestroyArray(S12_mx);
+    mxDestroyArray(v);
+    mxDestroyArray(S22v);
 }
 
 
@@ -926,7 +941,7 @@ bool shiftFunnelQCQP(mxArray *A_ineq_mx, mxArray *b_ineq_mx, double *x_opt)
     double *ql_d = mxGetPr(ql);
     double qr;
     setupQuadraticConstraint(ql_d,&qr);
-    
+    mxArray *qr_array = mxCreateDoubleScalar(qr);
     // Now create problem struct to pass to forces solver mex code.
     const char *field_names[] = {"A", "b", "ql", "qr"};
     mwSize ndim = 1;
@@ -935,7 +950,7 @@ bool shiftFunnelQCQP(mxArray *A_ineq_mx, mxArray *b_ineq_mx, double *x_opt)
     mxSetField(problem, 0, "A", A_ineq_mx);
     mxSetField(problem, 0, "b", b_ineq_mx);
     mxSetField(problem, 0, "ql", ql);
-    mxSetField(problem, 0, "qr", mxCreateDoubleScalar(qr));
+    mxSetField(problem, 0, "qr", qr_array);
     
     // Initialize result struct
     mxArray *lhs_forces[2];
@@ -1004,9 +1019,13 @@ bool shiftFunnelQCQP(mxArray *A_ineq_mx, mxArray *b_ineq_mx, double *x_opt)
         {
             collFree = true;
         }
+        mxDestroyArray(x_opt_forces);
+        mxDestroyArray(tau_forces);
     }
     
     // Destroy struct and other stuff we don't need
+    mxDestroyArray(ql);
+    mxDestroyArray(qr_array);
     mxDestroyArray(*lhs_forces);
     mxDestroyArray(*forces_rhs);   
 
@@ -1272,8 +1291,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             
         }
         
-        
-        
+        mxDestroyArray(x_opt);
+        mxDestroyArray(A_ineq_mx);
+        mxDestroyArray(b_ineq_mx);
     }
     
     /* for(int ii=0;ii<numFunnels;ii++)
@@ -1297,13 +1317,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         In[2] = mxCreateString("descend");
         
         mexCallMATLAB(2, Out, 3, In, "sort");
+        mxDestroyArray(In[1]);
+        mxDestroyArray(In[2]);
         
         mxArray *sorted_inds_mx = mxCreateDoubleMatrix(numFunnels,1,mxREAL);
         sorted_inds_mx = Out[1];
         double *sorted_inds_d = mxGetPr(sorted_inds_mx);
         
-        mxArray *penetrations_sorted_mx = mxCreateDoubleMatrix(numFunnels,1,mxREAL);
-        penetrations_sorted_mx = Out[0];
+        mxArray* penetrations_sorted_mx = Out[0];
         double *penetrations_sorted_d = mxGetPr(penetrations_sorted_mx);
         
         /*int ind_ii;
@@ -1421,12 +1442,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                 
             }
             
-            
-            
+            mxDestroyArray(x_opt);
+            mxDestroyArray(A_ineq_mx);
+            mxDestroyArray(b_ineq_mx);
         }
         
     }
     
+    mxDestroyArray(penetrations_array_mx);
     
     
 // If we've reached this point with collFree = true, then we've found a collision
@@ -1451,6 +1474,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     // Return x_execute if asked for
     if (nlhs > 1){
         plhs[1] =  x_execute_next;
+    } else {
+        mxDestroyArray(x_execute_next);
     }
     
     // Return whether we were able to find a collision free funnel
