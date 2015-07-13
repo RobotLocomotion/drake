@@ -4,7 +4,7 @@
 #include "IKoptions.h"
 #include "RigidBodyIK.h"
 #include <Eigen/Dense>
-#include "drakeUtil.h"
+#include "drakeMexUtil.h"
 
 using namespace std;
 using namespace Eigen;

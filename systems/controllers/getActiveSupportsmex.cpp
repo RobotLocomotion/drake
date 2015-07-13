@@ -1,7 +1,7 @@
 #include "QPCommon.h"
 #include <Eigen/StdVector>
-#include "drakeUtil.h"
-#include "controlUtil.h"
+#include "drakeMexUtil.h"
+#include "controlMexUtil.h"
 
 using namespace std;
 
