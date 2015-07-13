@@ -67,8 +67,10 @@ private:
 public:
   Polynomial(void) {}; 
   Polynomial(const CoefficientType& scalar); // this is required for some Eigen operations when used in a polynomial matrix
-  Polynomial(CoefficientType coeff, const std::vector<Term>& terms);
+  Polynomial(const CoefficientType coeff, const std::vector<Term>& terms);
+  Polynomial(typename std::vector<Monomial>::const_iterator start, typename std::vector<Monomial>::const_iterator finish);
   Polynomial(const std::string varname, const unsigned int num = 1);
+  Polynomial(const CoefficientType& coeff, const VarType& v);
 
   // continue to support the old (univariate) constructor
   template <typename Derived>

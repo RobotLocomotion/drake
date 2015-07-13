@@ -153,11 +153,42 @@ DLLEXPORT mxArray* eigenToMSSPoly(const Eigen::Matrix<Polynomiald,Rows,Cols> & p
 
 DLLEXPORT Eigen::Matrix<TrigPolyd, Eigen::Dynamic, Eigen::Dynamic> trigPolyToEigen(const mxArray* trigpoly);
 
+#include <iostream> // for debugging
 template< int Rows, int Cols >
 DLLEXPORT mxArray* eigenToTrigPoly(const Eigen::Matrix<TrigPolyd,Rows,Cols> & trigpoly_mat)
 {
-  // todo: implement this
-  return NULL;
+  Eigen::Matrix<Polynomiald,Eigen::Dynamic,Eigen::Dynamic> poly_mat(trigpoly_mat.rows(),trigpoly_mat.cols());
+  TrigPolyd::SinCosMap sin_cos_map;
+  for (int i=0; i<trigpoly_mat.size(); i++) {
+    const TrigPolyd::SinCosMap& sc = trigpoly_mat(i).getSinCosMap();
+    sin_cos_map.insert(sc.begin(),sc.end());
+    poly_mat(i) = trigpoly_mat(i).getPolynomial();
+  }
+
+  if (sin_cos_map.empty()) // then just return the msspoly.  what else can i do?
+    return eigenToMSSPoly(poly_mat);
+
+  // construct the equivalent of the sin/cos map
+  // (do I need to worry about them possibly being out of order?)
+  Eigen::Matrix<Polynomiald,Eigen::Dynamic,1> q(sin_cos_map.size()), s(sin_cos_map.size()), c(sin_cos_map.size());
+  int i=0;
+  for (TrigPolyd::SinCosMap::iterator iter=sin_cos_map.begin(); iter!=sin_cos_map.end(); iter++) {
+    q(i) = Polynomiald(1.0,iter->first);
+    s(i) = Polynomiald(1.0,iter->second.s);
+    c(i) = Polynomiald(1.0,iter->second.c);
+    i++;
+  }
+
+  mxArray* plhs[1];
+  mxArray* prhs[3];
+  prhs[0] = eigenToMSSPoly(q);
+  prhs[1] = eigenToMSSPoly(s);
+  prhs[2] = eigenToMSSPoly(c);
+  mexCallMATLABsafe(1,plhs,3,prhs,"TrigPoly");
+
+  mxSetProperty(plhs[0],0,"p",eigenToMSSPoly(poly_mat));
+
+  return plhs[0];
 }
 
 

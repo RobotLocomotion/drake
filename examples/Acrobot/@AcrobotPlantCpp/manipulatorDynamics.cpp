@@ -77,9 +77,9 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
     cout << "C: " << endl << C << endl;
     cout << "B: " << endl << B << endl;
 
-    plhs[0] = mxCreateDoubleMatrix(2,2,mxREAL);
-    plhs[1] = mxCreateDoubleMatrix(2,1,mxREAL);
-    plhs[2] = mxCreateDoubleMatrix(2,1,mxREAL);
+    plhs[0] = eigenToTrigPoly(H);
+    plhs[1] = eigenToTrigPoly(C);
+    plhs[2] = eigenToTrigPoly(B);
   } else {
     mexErrMsgIdAndTxt("Drake:AcrobotPLantCpp:UnknownType","don't know how to handle the datatypes passed in for q and/or qd (yet)");
   }

@@ -56,10 +56,17 @@ Polynomial<CoefficientType>::Polynomial(const CoefficientType coefficient, const
 } 
 
 template <typename CoefficientType>
+Polynomial<CoefficientType>::Polynomial(typename vector< typename Polynomial<CoefficientType>::Monomial >::const_iterator start, typename vector< typename Polynomial<CoefficientType>::Monomial >::const_iterator finish)
+{
+  for (typename vector< typename Polynomial<CoefficientType>::Monomial >::const_iterator iter=start; iter!=finish; iter++)
+    monomials.push_back(*iter);
+}
+
+template <typename CoefficientType>
 Polynomial<CoefficientType>::Polynomial(const string varname, const unsigned int num)
 {
   Monomial m;
-  m.coefficient = 1;
+  m.coefficient = (CoefficientType) 1;
   Term t;
   t.var = variableNameToId(varname,num);
   t.power = 1;
@@ -68,6 +75,18 @@ Polynomial<CoefficientType>::Polynomial(const string varname, const unsigned int
   is_univariate = true;
 }
 
+template <typename CoefficientType>
+Polynomial<CoefficientType>::Polynomial(const CoefficientType& coeff, const VarType& v)
+{
+  Monomial m;
+  m.coefficient = coeff;
+  Term t;
+  t.var = v;
+  t.power = 1;
+  m.terms.push_back(t);
+  monomials.push_back(m);
+  is_univariate = true;
+}
 
 
 template <typename CoefficientType>

@@ -24,7 +24,7 @@ public:
     : poly(scalar)
   {}
 
-  TrigPoly(const PolyType& p, SinCosMap _sin_cos_map)
+  TrigPoly(const PolyType& p, const SinCosMap& _sin_cos_map)
     : poly(p), sin_cos_map(_sin_cos_map)
   {}
 
@@ -44,19 +44,39 @@ public:
     return poly;
   }
 
+  const SinCosMap& getSinCosMap(void) const {
+    return sin_cos_map;
+  }
+
   friend TrigPoly sin(const TrigPoly& p)
   {
     if (p.poly.getDegree() > 1)
       throw std::runtime_error("sin of polynomials with degree > 1 is not supported");
 
-    if (p.poly.getMonomials().size()>1)
-      throw std::runtime_error("have to handle this case (with the chain rule, etc)");
+    const std::vector<typename PolyType::Monomial>& m = p.poly.getMonomials();
 
-    TrigPoly ret = p;
-    for (typename SinCosMap::iterator iter=ret.sin_cos_map.begin(); iter!=ret.sin_cos_map.end(); iter++) {
-      ret.poly.subs(iter->first,iter->second.s);
+    if (m.size()==1) {
+      TrigPoly ret = p;
+      if (m[0].terms.size()==0) {  // then it's a constant
+        ret.poly = Polynomial<CoefficientType>(sin(m[0].coefficient));
+      } else {
+        typename SinCosMap::iterator iter = ret.sin_cos_map.find(m[0].terms[0].var);
+        if (iter==ret.sin_cos_map.end())
+          throw std::runtime_error("tried taking the sin of a variable that does not exist in my sin_cos_map");
+
+        if (std::abs(m[0].coefficient) != (CoefficientType) 1)
+          throw std::runtime_error("Drake:TrigPoly:PleaseImplementMe.  need to handle this case (like I do in the matlab version");
+
+        ret.poly.subs(m[0].terms[0].var,iter->second.s);
+      }
+      return ret;
     }
-    return ret;
+
+    // otherwise handle the multi-monomial case recursively
+    // sin(a+b+...) = sin(a)cos(b+...) + cos(a)sin(b+...)
+    Polynomial<CoefficientType> pa(m[0].coefficient,m[0].terms), pb(m.begin()+1,m.end());
+    TrigPoly a(pa,p.sin_cos_map), b(pb,p.sin_cos_map);
+    return sin(a)*cos(b) + cos(a)*sin(b);
   }
 
   friend TrigPoly cos(const TrigPoly& p)
@@ -64,13 +84,31 @@ public:
     if (p.poly.getDegree() > 1)
       throw std::runtime_error("cos of polynomials with degree > 1 is not supported");
 
-    if (p.poly.getMonomials().size()>1)
-      throw std::runtime_error("have to handle this case (with the chain rule, etc)");
+    const std::vector<typename PolyType::Monomial>& m = p.poly.getMonomials();
 
-    TrigPoly ret = p;
-    for (typename SinCosMap::iterator iter=ret.sin_cos_map.begin(); iter!=ret.sin_cos_map.end(); iter++)
-      ret.poly.subs(iter->first,iter->second.c);
-    return ret;
+    if (m.size()==1) {
+      TrigPoly ret = p;
+      if (m[0].terms.size()==0) {  // then it's a constant
+        ret.poly = Polynomial<CoefficientType>(cos(m[0].coefficient));
+      } else {
+        typename SinCosMap::iterator iter = ret.sin_cos_map.find(m[0].terms[0].var);
+        if (iter==ret.sin_cos_map.end())
+          throw std::runtime_error("tried taking the sin of a variable that does not exist in my sin_cos_map");
+
+        if (std::abs(m[0].coefficient) != (CoefficientType) 1)
+          throw std::runtime_error("Drake:TrigPoly:PleaseImplementMe.  need to handle this case (like I do in the matlab version");
+
+        ret.poly.subs(m[0].terms[0].var,iter->second.c);
+        if (m[0].coefficient == (CoefficientType) -1) { ret *= -1; }  // cos(-q) => cos(q) => c (instead of -c)
+      }
+      return ret;
+    }
+
+    // otherwise handle the multi-monomial case recursively
+    // cos(a+b+...) = cos(a)cos(b+...) - sin(a)sin(b+...)
+    Polynomial<CoefficientType> pa(m[0].coefficient,m[0].terms), pb(m.begin()+1,m.end());
+    TrigPoly a(pa,p.sin_cos_map), b(pb,p.sin_cos_map);
+    return cos(a)*cos(b) - sin(a)*sin(b);
   }
 
   TrigPoly& operator+=(const TrigPoly& other)

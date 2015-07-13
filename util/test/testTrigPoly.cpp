@@ -16,4 +16,6 @@ int main(int argc, char **argv) {
   cout << sin(p) << endl;
   cout << cos(p) << endl;
   cout << (sin(p)*p*p + cos(p)) << endl;
+
+  cout << "sin(p + p) = " << sin(p+p) << endl;
 }

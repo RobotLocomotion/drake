@@ -7,9 +7,12 @@ r_cpp = AcrobotPlantCpp;
 
 options.replace_output_w_new_state = true;
 r_matlab_tp = extractTrigPolySystem(r_matlab,options);
+r_cpp_tp = extractTrigPolySystem(r_cpp,options);
+[am,bm] = getPolyDynamics(r_matlab_tp);
+[ac,bc] = getPolyDynamics(r_cpp_tp);
+assert(isequal(am,ac));
+assert(isequal(bm,bm));
 
-% fails until TrigPoly variables are supported
-r_cpp_tp = extractTrigPolySystem(r_cpp,options)
 
 % currently fails because taylorvars get passed into the C++ from the geval 
 % in Manipulator/linearize. 
