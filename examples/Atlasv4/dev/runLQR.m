@@ -8,7 +8,7 @@ if ~checkDependency('gurobi')
   return;
 end
 
-path_handle = addpathTemporary(fullfile(getDrakePath,'examples','Atlas'));
+path_handle = addpathTemporary(fullfile(getDrakePath,'examples','Atlasv4'));
 
 if nargin < 1
   segment_number = -1; % do full traj
@@ -19,7 +19,7 @@ options.view = 'right';
 options.floating = true;
 options.ignore_self_collisions = true;
 options.terrain = RigidBodyFlatTerrain();
-s = '../urdf/atlas_simple_spring_ankle_planar_contact.urdf';
+s = '../urdf/atlas_simple_planar_contact.urdf';
 w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
 r = Atlas(s,options);
 r = r.setOutputFrame(AtlasXZState(r));
@@ -34,7 +34,7 @@ v = r.constructVisualizer;
 v.display_dt = 0.01;
 
 %traj_file = 'data/atlas_passiveankle_traj_lqr_090314_zoh.mat';
-traj_file = 'data/atlas_passive_ankle_lqr.mat';
+traj_file = 'data/atlas_lqr_fm2_periodic_100.mat';
 
 load(traj_file);
 xtraj = xtraj.setOutputFrame(getStateFrame(r));
@@ -81,12 +81,19 @@ playback(v,traj,struct('slider',true));
 
 if 1
   % plot position tracking
-  pptraj = PPTrajectory(foh(traj.getBreaks,traj.eval(traj.getBreaks)));
+  
+  xtraj_ts = xtraj.getBreaks();
+  xtraj_pts = xtraj.eval(xtraj_ts);
+  
+  traj_ts = traj.getBreaks();
+  traj_pts = traj.eval(traj_ts);
+  
   for i=1:10
     figure(100+i);
     hold on;
-    fnplt(xtraj(i));
-    fnplt(pptraj(i));
+    title(r.getStateFrame.coordinates{i});
+    plot(xtraj_ts,xtraj_pts(i,:),'g.-');
+    plot(traj_ts,traj_pts(i,:),'r.-');
     hold off;
   end
 end

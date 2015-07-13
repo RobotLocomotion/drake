@@ -1,8 +1,8 @@
 function solveLQR(p,xtraj,utraj,ltraj,Q,R,Qf)
 
 if nargin < 5
-  Q = diag([10*ones(p.getNumPositions,1);.1*ones(p.getNumVelocities,1)]);
-  R = 0.01*eye(getNumInputs(p));
+  Q = diag([10*ones(p.getNumPositions,1);1*ones(p.getNumVelocities,1)]);
+  R = 0.001*eye(getNumInputs(p));
   Qf = 2*Q;
 end
 
