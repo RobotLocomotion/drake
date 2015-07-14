@@ -26,7 +26,7 @@
 #include <blas.h>
 #include <math.h>
 #include <matrix.h>
-// #include <iostream>
+
 
 
 // Snopt stuff
@@ -35,11 +35,6 @@ namespace snopt {
 #include "snfilewrapper.hh"
 //#include "snoptProblem.hh"
 }
-
-// Timer functions
-// #include <chrono>
-// #include <ctime>
-// #include <time.h>
 
 
 // Internal access to bullet
@@ -87,12 +82,11 @@ double containmentConstraint(snopt::doublereal x_shift[], double *containment_gr
     mxArray *x0 = mxGetField(funnelLibrary, funnelIdx, "x0"); // all points on trajectory
     
     double *dx0 = mxGetPr(x0);
-    // double *dx_current = mxGetPr(x_current);
     
-    long int dim = 12; // mxGetM(x_current); // Dimension of state
+    long int dim = 12; 
     long int dimx0 = mxGetM(x0);
     
-// Check that we got the right dimensions
+    // Check that we got the right dimensions
     if(dim > 1){
         if (dim != dimx0){
             mexErrMsgTxt("x and x0 have different dimensions!");
@@ -102,32 +96,30 @@ double containmentConstraint(snopt::doublereal x_shift[], double *containment_gr
         mexErrMsgTxt("State seems to have the wrong dimension");
     }
     
-// Get S matrix at time 0
+    // Get S matrix at time 0
     mxArray *pS0 = mxGetField(funnelLibrary, funnelIdx, "S0");
     double *S0 = mxGetPr(pS0);
     
     
-// Get x - x0(:,1) (but zero out x,y,z)
+    // Get x - x0(:,1) (but zero out x,y,z)
     mxArray *xrel = mxCreateDoubleMatrix(dim,1,mxREAL);
     double *dxrel = mxGetPr(xrel);
-    /*dxrel[0] = 0.0;
-     * dxrel[1] = 0.0;
-     * dxrel[2] = 0.0;*/
+
     
-// Set the non-cyclic dimensions to be the difference of x0 and x_current
+    // Set the non-cyclic dimensions to be the difference of x0 and x_current
     for(int k=3;k<dim;k++)
     {
         dxrel[k] = dx0[k] - dx_current[k];
     }
     
-// Set the cyclic dimensions to be those of x_shift
+    // Set the cyclic dimensions to be those of x_shift
     for(int k=0;k<3;k++)
     {
         dxrel[k] = x_shift[k];
     }
     
-// Now compute xrel'*S0*xrel using lapack
-// First do S0*xrel
+    // Now compute xrel'*S0*xrel using lapack
+    // First do S0*xrel
     double one = 1.0, zero = 0.0; // Seriously?
     long int ione = 1;
     mxArray *S0xrel = mxCreateDoubleMatrix(dim,1,mxREAL);
@@ -142,17 +134,13 @@ double containmentConstraint(snopt::doublereal x_shift[], double *containment_gr
     
     
     
-// Now do xrel'*S0xrel
+    // Now do xrel'*S0xrel
     mxArray *val = mxCreateDoubleScalar(mxREAL);
     double *dval = mxGetPr(val);
     char *chnT = "T"; // since we want xrel transpose
     dgemm(chnT, chn, &ione, &ione, &dim, &one, dxrel, &dim, dS0xrel, &dim, &zero, dval, &ione);
     
-    /*mexPrintf("\nval: %f\n", dx_current[0]);
-     * mexPrintf("val: %f\n", dx_current[1]);
-     * mexPrintf("val: %f\n", dx_current[2]);*/
-    
-// Return dval
+    // Return dval
     return *dval;
     
 }
@@ -181,11 +169,6 @@ double ptToPolyBullet(double *vertsPr, size_t nRows, size_t nCols, mxArray *norm
     btPointCollector gjkOutput;
     
     convexConvex.getClosestPoints(input, gjkOutput, 0);
-    
-    // mexPrintf("1: %f\n", gjkOutput.m_normalOnBInWorld[0]);
-    // mexPrintf("2: %f\n", gjkOutput.m_normalOnBInWorld[1]);
-    // mexPrintf("3: %f\n", gjkOutput.m_normalOnBInWorld[2]);
-    
     double *normal_vec_d = mxGetPr(normal_vec);
     
     normal_vec_d[0] = gjkOutput.m_normalOnBInWorld[0];
@@ -209,8 +192,6 @@ double *shiftAndTransform(double *verts, double *vertsT, const mxArray *x, mxArr
     for(int i=0;i<nRows;i++){
         for(int j=0;j<nCols;j++){
             vertsT[j*nRows+i] = dcSk[i]*(verts[j*nRows+0]-dx0[k*nRows+0]-dx[0]) + dcSk[nRows+i]*(verts[j*nRows+1]-dx0[k*nRows+1]-dx[1]) + dcSk[2*nRows+i]*(verts[j*nRows+2]-dx0[k*nRows+2]-dx[2]);
-            // mexPrintf("i: %d, j: %d, val: %f\n", i, j, vertsT[j*nRows+i]);
-            // mexPrintf("i: %d, j: %d, val: %f\n", i, j, dx0[k*nRows]);
         }
     }
     
@@ -235,11 +216,11 @@ bool penetrationCost(snopt::doublereal x[], double *min_dist, double *normal_vec
     dx_shifted[2] = x[2] + dx_current[2];
     
     
-// Get number of obstacles
+    // Get number of obstacles
     mwSize numObs = mxGetNumberOfElements(forest); // Number of obstacles
     
     
-// Initialize some variables
+    // Initialize some variables
     double *verts; // cell element (i.e. vertices)
     mxArray *x0 = mxGetField(funnelLibrary, funnelIdx, "xyz"); // all points on trajectory
     mxArray *obstacle;
@@ -252,22 +233,22 @@ bool penetrationCost(snopt::doublereal x[], double *min_dist, double *normal_vec
     normal_vec = mxCreateDoubleMatrix(1,3,mxREAL);
     
     
-// Get number of time samples
+    // Get number of time samples
     mwSize N = mxGetNumberOfElements(mxGetField(funnelLibrary, funnelIdx, "cS"));
     
-// Check size compatibilities
+    // Check size compatibilities
     const mwSize *N_x0 = mxGetDimensions(x0);
     if (N_x0[1] != N) {
         mexErrMsgTxt("Sizes of x0 and cS do not match!");
     }
     
     
-// Initialize collFree to true
+    // Initialize collFree to true
     bool collFree = true;
     
     
-// For each time sample, we need to check if we are collision free
-// mxArray *collisions = mxCreateLogicalMatrix(numObs,N);
+    // For each time sample, we need to check if we are collision free
+    // mxArray *collisions = mxCreateLogicalMatrix(numObs,N);
     
     for(int k=0;k<N;k++)
     {
@@ -299,7 +280,6 @@ bool penetrationCost(snopt::doublereal x[], double *min_dist, double *normal_vec
                 double one = 1.0, zero = 0.0; // Seriously?
                 long int ione = 1;
                 long int dim = 3;
-                
                 char *chn = "N";
                 dgemm(chn, chn, &ione, &dim, &dim, &one, mxGetPr(normal_vec), &ione, mxGetPr(cSk), &dim, &zero, normal_vec_transformed, &ione);
                 
@@ -347,12 +327,6 @@ int snopt_userfun( snopt::integer    *Status, snopt::integer *n,    snopt::doubl
     //==================================================================
     
     
-    
-    /*mexPrintf("\nx[0]: %f \n", x[0]);
-    mexPrintf("x[1]: %f \n", x[1]);
-    mexPrintf("x[2]: %f \n", x[2]);*/
-    
-    
     // Penetration cost and gradient
     double min_dist = 1000000.0;
     mxArray *normal_vec = mxCreateDoubleMatrix(1,3,mxREAL);
@@ -386,20 +360,7 @@ int snopt_userfun( snopt::integer    *Status, snopt::integer *n,    snopt::doubl
         G[3] = containment_grad_d[0];
         G[4] = containment_grad_d[1];
         G[5] = containment_grad_d[2];
-    }
-    
-    
-    /*mexPrintf("F[0]: %f \n", F[0]);
-    mexPrintf("F[1]: %f \n", F[1]);
-    
-    mexPrintf("G[0]: %f \n", G[0]);
-    mexPrintf("G[1]: %f \n", G[1]);
-    mexPrintf("G[2]: %f \n", G[2]);
-    mexPrintf("G[3]: %f \n", G[3]);
-    mexPrintf("G[4]: %f \n", G[4]);
-    mexPrintf("G[5]: %f \n", G[5]);*/
-    
-    
+    }    
     
     return 0;
 }
@@ -408,30 +369,30 @@ int snopt_userfun( snopt::integer    *Status, snopt::integer *n,    snopt::doubl
 bool shiftFunnel(int funnelIdx, const mxArray *funnelLibrary, const mxArray *forest, mwSize numObs, double *min_dist, double *x_opt)
 {
     
-// Number of decision variables (3 in our case: we're searching for shifted x,y,z)
+    // Number of decision variables (3 in our case: we're searching for shifted x,y,z)
     snopt::integer nx = 3;
     
-// Number of rows of user constraint function (2 in our case).
-// The first row is the collision "constraint" (really it's a cost)
-// The second row is the containment constraint
+    // Number of rows of user constraint function (2 in our case).
+    // The first row is the collision "constraint" (really it's a cost)
+    // The second row is the containment constraint
     snopt::integer nF = 2;
     
-// Cold start
+    // Cold start
     snopt::integer Cold = 0;
     
-// Some silly stuff
+    // Some silly stuff
     snopt::integer nxname = 1, nFname = 1, npname = 0;
     
-// What to add to objective: 0 in our case
+    // What to add to objective: 0 in our case
     snopt::doublereal ObjAdd = 0.0;
     
-// Row in user function that corresponds to objective
+    // Row in user function that corresponds to objective
     snopt::integer ObjRow = 1;
     
-// Name of problem (used to print stuff)
+    // Name of problem (used to print stuff)
     char Prob[200]="";
     
-// iGfun, jGvar
+    // iGfun, jGvar
     snopt::integer lenG = 6;
     
     snopt::integer*    iGfun = new snopt::integer[lenG];
@@ -450,13 +411,13 @@ bool shiftFunnel(int funnelIdx, const mxArray *funnelLibrary, const mxArray *for
     jGvar[4] = 2;
     jGvar[5] = 3;
     
-// Linear part of gradient (we don't have a linear part, so it's all zeros)
+    // Linear part of gradient (we don't have a linear part, so it's all zeros)
     snopt::integer lenA = 0;
     snopt::doublereal* A     = new snopt::doublereal[0];
     snopt::integer* iAfun = new snopt::integer[0];
     snopt::integer* jAvar = new snopt::integer[0];
     
-// xlow, xupp, Flow, Fupp
+    // xlow, xupp, Flow, Fupp
     snopt::doublereal* xlow = new snopt::doublereal[nx];
     xlow[0] = -1.0/0.0;
     xlow[1] = -1.0/0.0;
@@ -475,28 +436,28 @@ bool shiftFunnel(int funnelIdx, const mxArray *funnelLibrary, const mxArray *for
     Fupp[0] = 1.0/0.0;
     Fupp[1] = 1.0;
     
-// xnames, Fnames
+    // xnames, Fnames
     snopt::integer INFO_snopt;
     char xnames[8*1];  // should match nxname
     char Fnames[8*1];  // should match nFname
     
-// Initial guess for x_shift is 0.
+    // Initial guess for x_shift is 0.
     snopt::doublereal* x_guess    = new snopt::doublereal[nx];
     x_guess[0] = 0.0; // (*dx_current);
     x_guess[1] = 0.0; // (*(dx_current+1));
     x_guess[2] = 0.0; // (*(dx_current+2));
     
-// xstate
+    // xstate
     snopt::integer *xstate = new snopt::integer[nx];
     for(snopt::integer i = 0;i<nx;i++)
     {
         xstate[i] = 0;
     }
     
-// xmul
+    // xmul
     snopt::doublereal *xmul = new snopt::doublereal[nx];
     
-// F, Fmul, Fstate
+    // F, Fmul, Fstate
     snopt::doublereal *F      = new snopt::doublereal[nF];
     snopt::doublereal *Fmul   = new snopt::doublereal[nF];
     snopt::integer    *Fstate = new snopt::integer[nF];
@@ -505,21 +466,21 @@ bool shiftFunnel(int funnelIdx, const mxArray *funnelLibrary, const mxArray *for
         Fstate[i] = 0;
     }
     
-// mincw, miniw, minrw
+    // mincw, miniw, minrw
     snopt::integer minrw,miniw,mincw;
     
-// nS, nInf, sInf
+    // nS, nInf, sInf
     snopt::integer nS,nInf;
     snopt::doublereal sInf;
     
-// lenrw, leniw, lencw
+    // lenrw, leniw, lencw
     const int DEFAULT_LENRW = 500000;
     const int DEFAULT_LENIW = 500000;
     const int DEFAULT_LENCW = 500;
     
     snopt::integer lenrw = DEFAULT_LENRW, leniw = DEFAULT_LENIW, lencw = DEFAULT_LENCW;
     
-// cw, iw, rw
+    // cw, iw, rw
     snopt::doublereal rw_static[DEFAULT_LENRW];
     snopt::integer iw_static[DEFAULT_LENIW];
     char cw_static[8*DEFAULT_LENCW];
@@ -527,30 +488,24 @@ bool shiftFunnel(int funnelIdx, const mxArray *funnelLibrary, const mxArray *for
     snopt::integer *iw = iw_static;
     char* cw = cw_static;
     
-// Memory allocation
+    // Memory allocation
     snopt::integer iSumm = -1; // 1
     snopt::integer iPrint = -1; // 9
     
     snopt::sninit_(&iPrint,&iSumm,cw,&lencw,iw,&leniw,rw,&lenrw,8*lencw);
     snopt::snmema_(&INFO_snopt,&nF,&nx,&nxname,&nFname,&lenA,&lenG,&mincw,&miniw,&minrw,cw,&lencw,iw,&leniw,rw,&lenrw,8*lencw);
     if (minrw>lenrw) {
-        //mexPrintf("reallocation rw with size %d\n",minrw);
         lenrw = minrw;
         rw = new snopt::doublereal[lenrw];
     }
     if (miniw>leniw) {
-        //mexPrintf("reallocation iw with size %d\n",miniw);
         leniw = miniw;
         iw = new snopt::integer[leniw];
     }
     if (mincw>lencw) {
-        //mexPrintf("reallocation cw with size %d\n",mincw);
         lencw = mincw;
         cw = new char[8*lencw];
     }
-    
-    // snopt::snopenappend_(&iPrint,"ani",&INFO_snopt,3);
-    
     
     snopt::sninit_(&iPrint,&iSumm,cw,&lencw,iw,&leniw,rw,&lenrw,8*lencw);
     
@@ -572,8 +527,6 @@ bool shiftFunnel(int funnelIdx, const mxArray *funnelLibrary, const mxArray *for
     
     mexPrintf("Info: %d \n", INFO_snopt);
     
-    // mexPrintf("F[0] %f \n", F[0]);
-    
     // Optimized value
     x_opt[0] = x_guess[0];
     x_opt[1] = x_guess[1];
@@ -592,7 +545,6 @@ bool shiftFunnel(int funnelIdx, const mxArray *funnelLibrary, const mxArray *for
     delete[] jGvar;
     delete[] xmul;
     delete[] xstate;
-    // delete[] F;
     delete[] Fmul;
     delete[] Fstate;
     
@@ -613,8 +565,6 @@ bool shiftFunnel(int funnelIdx, const mxArray *funnelLibrary, const mxArray *for
         delete[] F;
         return false;
     }
-        
-    
     
 }
 
@@ -623,24 +573,24 @@ bool shiftFunnel(int funnelIdx, const mxArray *funnelLibrary, const mxArray *for
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
     
-// Get current state (from which nominal/unshifted funnel would be executed)
+    // Get current state (from which nominal/unshifted funnel would be executed)
     // const mxArray *x_current;
     x_current = prhs[0];
     dx_current = mxGetPr(x_current);
     
     
-// Deal with forest cell (second input)    
+    // Deal with forest cell (second input)    
     forest = prhs[1]; // Get forest cell (second input)
     mwSize numObs = mxGetNumberOfElements(forest); // Number of obstacles
     
     funnelLibrary = prhs[2]; // Get funnel library (third input)
     
-// Get funnelIdx (subtract 1 since index is coming from matlab)
+    // Get funnelIdx (subtract 1 since index is coming from matlab)
     // int funnelIdx;
     funnelIdx = (int )mxGetScalar(prhs[3]);
     funnelIdx = funnelIdx-1;
     
-// Initialize penetration (after shifting)
+    // Initialize penetration (after shifting)
     double min_dist = 1000000.0;
     
     // Optimal shift from snopt
@@ -648,7 +598,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     double *x_opt_d = mxGetPr(x_opt);
     
     
-// Initialize next funnel (output of this function)
+    // Initialize next funnel (output of this function)
     bool collFree = shiftFunnel(funnelIdx, funnelLibrary, forest, numObs, &min_dist, x_opt_d);
     
     // Add in x_current to get SHIFTED position of funnel
@@ -656,10 +606,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     x_opt_d[1] = x_opt_d[1] + dx_current[1];
     x_opt_d[2] = x_opt_d[2] + dx_current[2];
     
-// Return collFree
+    // Return collFree
     plhs[0] = mxCreateLogicalScalar(collFree);
     
-// Return x_opt if asked for
+    // Return x_opt if asked for
     if (nlhs > 1){
         plhs[1] = x_opt;
     }

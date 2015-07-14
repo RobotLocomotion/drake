@@ -26,15 +26,7 @@
 #include <blas.h>
 #include <math.h>
 #include <matrix.h>
-// #include <iostream>
-// #include <stdio.h>
 #include <string.h>
-
-// Timer functions
-// #include <chrono>
-// #include <ctime>
-// #include <time.h>
-
 
 // Internal access to bullet
 #include "LinearMath/btTransform.h"
@@ -94,11 +86,7 @@ double ptToPolyBullet(double *vertsPr, size_t nRows, size_t nCols, mxArray *norm
     btPointCollector gjkOutput;
     
     convexConvex.getClosestPoints(input, gjkOutput, 0);
-    
-    // mexPrintf("1: %f\n", gjkOutput.m_normalOnBInWorld[0]);
-    // mexPrintf("2: %f\n", gjkOutput.m_normalOnBInWorld[1]);
-    // mexPrintf("3: %f\n", gjkOutput.m_normalOnBInWorld[2]);
-    
+
     double *normal_vec_d = mxGetPr(normal_vec);
     
     normal_vec_d[0] = gjkOutput.m_normalOnBInWorld[0];
@@ -122,8 +110,6 @@ double *shiftAndTransform(double *verts, double *vertsT, const mxArray *x, mxArr
     for(int i=0;i<nRows;i++){
         for(int j=0;j<nCols;j++){
             vertsT[j*nRows+i] = dcSk[i]*(verts[j*nRows+0]-dx0[k*nRows+0]-dx[0]) + dcSk[nRows+i]*(verts[j*nRows+1]-dx0[k*nRows+1]-dx[1]) + dcSk[2*nRows+i]*(verts[j*nRows+2]-dx0[k*nRows+2]-dx[2]);
-            // mexPrintf("i: %d, j: %d, val: %f\n", i, j, vertsT[j*nRows+i]);
-            // mexPrintf("i: %d, j: %d, val: %f\n", i, j, dx0[k*nRows]);
         }
     }
     
@@ -137,11 +123,11 @@ double *shiftAndTransform(double *verts, double *vertsT, const mxArray *x, mxArr
 void setupLinearConstraints(double *A_ineq, double *b_ineq, int numRows_A, int maxObs)
 {
     
-// Get number of obstacles
+    // Get number of obstacles
     mwSize numObs = mxGetNumberOfElements(forest); // Number of obstacles
     
     
-// Initialize some variables
+    // Initialize some variables
     double *verts; // cell element (i.e. vertices)
     mxArray *x0 = mxGetField(funnelLibrary, funnelIdx, "xyz"); // all points on trajectory
     mxArray *obstacle;
@@ -158,10 +144,10 @@ void setupLinearConstraints(double *A_ineq, double *b_ineq, int numRows_A, int m
     int rowNum = 0;
     
     
-// Get number of time samples
+    // Get number of time samples
     mwSize N = mxGetNumberOfElements(mxGetField(funnelLibrary, funnelIdx, "cS"));
     
-// Check size compatibilities
+    // Check size compatibilities
     const mwSize *N_x0 = mxGetDimensions(x0);
     if (N_x0[1] != N) {
         mexErrMsgTxt("Sizes of x0 and cS do not match!");
@@ -202,8 +188,6 @@ void setupLinearConstraints(double *A_ineq, double *b_ineq, int numRows_A, int m
             dgemm(chn, chn, &ione, &dim, &dim, &one, mxGetPr(normal_vec), &ione, mxGetPr(cSk), &dim, &zero, normal_vec_transformed, &ione);
             
             // Update A_ineq and b_ineq
-            // A_ineq = [A_ineq;[-normal_vec_transformed,-1]];
-            // b_ineq = [b_ineq;distance];
             A_ineq[0*numRows_A+rowNum] = -normal_vec_transformed[0];
             A_ineq[1*numRows_A+rowNum] = -normal_vec_transformed[1];
             A_ineq[2*numRows_A+rowNum] = -normal_vec_transformed[2];
@@ -211,7 +195,6 @@ void setupLinearConstraints(double *A_ineq, double *b_ineq, int numRows_A, int m
             
             b_ineq[rowNum] = distance - g_radius; // Note the subtraction of g_radius
 
-                    
             // Update row number        
             rowNum = rowNum + 1;
             
@@ -257,10 +240,10 @@ void setupQuadraticConstraint(double *ql, double *qr)
     double *dx0 = mxGetPr(x0);
     // double *dx_current = mxGetPr(x_current);
     
-    long int dim = 12; // mxGetM(x_current); // Dimension of state
+    long int dim = 12;
     long int dimx0 = mxGetM(x0);
     
-// Check that we got the right dimensions
+    // Check that we got the right dimensions
     if(dim > 1){
         if (dim != dimx0){
             mexErrMsgTxt("x and x0 have different dimensions!");
@@ -270,7 +253,7 @@ void setupQuadraticConstraint(double *ql, double *qr)
         mexErrMsgTxt("State seems to have the wrong dimension");
     }
     
-// Get S matrix at time 0
+    // Get S matrix at time 0
     mxArray *pS0 = mxGetField(funnelLibrary, funnelIdx, "S0");
     double *S0 = mxGetPr(pS0);
     
@@ -294,8 +277,7 @@ void setupQuadraticConstraint(double *ql, double *qr)
     {
         for(int j=3;j<dim;j++)
         {
-            S12[(j-3)*(3)+(i)] = S0[j*dim+i];  
-            // mexPrintf("S12: %f \n", S12[(j-3)*(3)+(i)]);
+            S12[(j-3)*(3)+(i)] = S0[j*dim+i];
         }
     }
     
@@ -305,11 +287,10 @@ void setupQuadraticConstraint(double *ql, double *qr)
     for(int k=0;k<(dim-3);k++)
     {
      v_d[k] = dx0[k+3] - dx_current[k+3]; 
-     // mexPrintf("v_d: %f \n", v_d[k]);
     }
     
-// Now compute qr = 1 - v'*S22*v using lapack
-// First do S22*v
+    // Now compute qr = 1 - v'*S22*v using lapack
+    // First do S22*v
     double one = 1.0, zero = 0.0; // Seriously?
     long int ione = 1;
     long int dimv = dim-3;
@@ -318,7 +299,7 @@ void setupQuadraticConstraint(double *ql, double *qr)
     char *chn = "N";
     dgemm(chn, chn, &dimv, &ione, &dimv, &one, S22, &dimv, v_d, &dimv, &zero, dS22v, &dimv);    
     
-// Now do qr = 1 - v'*S22v. Note: we're doing this entire operation using dgemm
+    // Now do qr = 1 - v'*S22v. Note: we're doing this entire operation using dgemm
     double minus_one = -1.0;
     *qr = 1.0;
     char *chnT = "T"; // since we want xrel transpose
@@ -441,9 +422,6 @@ bool shiftFunnelQCQP(int funnelIdx, const mxArray *funnelLibrary, const mxArray 
         
     double *x_opt_forces_d = mxGetPr(x_opt_forces);
     double *tau_d = mxGetPr(tau_forces);
-    // mexPrintf("x_opt[0]: %f \n", x_opt_forces_d[0]);
-    // mexPrintf("x_opt[1]: %f \n", x_opt_forces_d[1]);
-    // mexPrintf("x_opt[2]: %f \n", x_opt_forces_d[2]);
     
     // Assign to x_opt
     x_opt[0] = *x_opt_forces_d;
@@ -475,19 +453,19 @@ bool shiftFunnelQCQP(int funnelIdx, const mxArray *funnelLibrary, const mxArray 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
     
-// Get current state (from which nominal/unshifted funnel would be executed)
+    // Get current state (from which nominal/unshifted funnel would be executed)
     // const mxArray *x_current;
     x_current = prhs[0];
     dx_current = mxGetPr(x_current);
        
     
-// Deal with forest cell (second input)
+    // Deal with forest cell (second input)
     forest = prhs[1]; // Get forest cell (second input)
     mwSize numObs = mxGetNumberOfElements(forest); // Number of obstacles
     
     funnelLibrary = prhs[2]; // Get funnel library (third input)
     
-// Get funnelIdx (subtract 1 since index is coming from matlab)
+    // Get funnelIdx (subtract 1 since index is coming from matlab)
     // int funnelIdx;
     funnelIdx = (int )mxGetScalar(prhs[3]);
     funnelIdx = funnelIdx-1;
@@ -497,7 +475,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     double *x_opt_d = mxGetPr(x_opt);
     
     
-// Initialize next funnel (output of this function)
+    // Initialize next funnel (output of this function)
     bool collFree = shiftFunnelQCQP(funnelIdx, funnelLibrary, forest, numObs, x_opt_d);
     
     // Add in x_current to get SHIFTED position of funnel
@@ -505,31 +483,15 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     x_opt_d[1] = x_opt_d[1] + dx_current[1];
     x_opt_d[2] = x_opt_d[2] + dx_current[2];
     
-// Return collFree
+    // Return collFree
     if (nlhs > 0){
          plhs[0] = mxCreateLogicalScalar(collFree);
     }
     
-// Return x_opt if asked for
+    // Return x_opt if asked for
     if (nlhs > 1){
         plhs[1] = x_opt;
     }
     
     return;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
