@@ -2434,7 +2434,7 @@ void RigidBodyManipulator::forwarddJac(const int body_or_frame_id, const MatrixB
     warnOnce("new_kinsol_old_method_forwarddJac", "Warning: called old forwarddJac with use_new_kinsol set to true.");
     Matrix3Xd newPts = pts.block(0, 0, 3, pts.cols());
     auto ret = forwardKinNew(newPts, body_or_frame_id, 0, 0, 2);
-    dJ = ret.gradient().gradient().value();
+    dJ = Map<MatrixXd>(ret.gradient().gradient().value().data(), 3 * pts.cols(), num_positions * num_positions);
     return;
   }
 
