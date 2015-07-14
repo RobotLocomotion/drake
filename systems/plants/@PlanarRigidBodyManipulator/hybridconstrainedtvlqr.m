@@ -180,33 +180,48 @@ if options.periodic
       idxA = idxB;
       idxB = tmp;
       while k <= length(mode_data{i}.constraint_ind)
-        if ~even(mode_data{i}.constraint_ind(k))
-          ind = (mode_data{i}.constraint_ind(k)+1)/2;
-          if k < length(mode_data{i}.constraint_ind) && (mode_data{i}.constraint_ind(k+1) - mode_data{i}.constraint_ind(k)) == 1            
-            % Use both first and second (relative position)
-            position_fun = drakeFunction.kinematic.RelativePosition(constrained_plant,idxB(ind),idxA(ind),obj.T_2D_to_3D'*xB(:,ind));
-            position_constraint = DrakeFunctionConstraint(obj.T_2D_to_3D'*xA(:,ind),obj.T_2D_to_3D'*xA(:,ind),position_fun);
-            position_constraint.grad_level = 2;
-            constrained_plant = constrained_plant.addPositionEqualityConstraint(position_constraint);
-            k = k+2;
+        if true
+          if ~even(mode_data{i}.constraint_ind(k))
+            ind = (mode_data{i}.constraint_ind(k)+1)/2;
           else
-            % Odd -> only use first element
-            posA = obj.T_2D_to_3D(:,1)'*xA(:,ind);
-            position_fun = drakeFunction.kinematic.RelativePosition(constrained_plant,idxB(ind),idxA(ind),obj.T_2D_to_3D'*xB(:,ind),1);
+            ind = (mode_data{i}.constraint_ind(k))/2;            
+          end
+          % Use both first and second (relative position)
+          position_fun = drakeFunction.kinematic.RelativePosition(constrained_plant,idxB(ind),idxA(ind),obj.T_2D_to_3D'*xB(:,ind));
+          position_constraint = DrakeFunctionConstraint(obj.T_2D_to_3D'*xA(:,ind),obj.T_2D_to_3D'*xA(:,ind),position_fun);
+          position_constraint.grad_level = 2;
+          constrained_plant = constrained_plant.addPositionEqualityConstraint(position_constraint);
+          k = k+2;          
+        else
+        
+          if ~even(mode_data{i}.constraint_ind(k))
+            ind = (mode_data{i}.constraint_ind(k)+1)/2;
+            if k < length(mode_data{i}.constraint_ind) && (mode_data{i}.constraint_ind(k+1) - mode_data{i}.constraint_ind(k)) == 1
+              % Use both first and second (relative position)
+              position_fun = drakeFunction.kinematic.RelativePosition(constrained_plant,idxB(ind),idxA(ind),obj.T_2D_to_3D'*xB(:,ind));
+              position_constraint = DrakeFunctionConstraint(obj.T_2D_to_3D'*xA(:,ind),obj.T_2D_to_3D'*xA(:,ind),position_fun);
+              position_constraint.grad_level = 2;
+              constrained_plant = constrained_plant.addPositionEqualityConstraint(position_constraint);
+              k = k+2;
+            else
+              % Odd -> only use first element
+              posA = obj.T_2D_to_3D(:,1)'*xA(:,ind);
+              position_fun = drakeFunction.kinematic.RelativePosition(constrained_plant,idxB(ind),idxA(ind),obj.T_2D_to_3D'*xB(:,ind),1);
+              position_constraint = DrakeFunctionConstraint(posA,posA,position_fun);
+              position_constraint.grad_level = 2;
+              constrained_plant = constrained_plant.addPositionEqualityConstraint(position_constraint);
+              k = k+1;
+            end
+          else
+            ind = (mode_data{i}.constraint_ind(k))/2;
+            % Even -> only use second element
+            posA = obj.T_2D_to_3D(:,2)'*xA(:,ind);
+            position_fun = drakeFunction.kinematic.RelativePosition(constrained_plant,idxB(ind),idxA(ind),obj.T_2D_to_3D'*xB(:,ind),2);
             position_constraint = DrakeFunctionConstraint(posA,posA,position_fun);
             position_constraint.grad_level = 2;
             constrained_plant = constrained_plant.addPositionEqualityConstraint(position_constraint);
             k = k+1;
           end
-        else
-          ind = (mode_data{i}.constraint_ind(k))/2;
-          % Even -> only use second element
-          posA = obj.T_2D_to_3D(:,2)'*xA(:,ind);
-          position_fun = drakeFunction.kinematic.RelativePosition(constrained_plant,idxB(ind),idxA(ind),obj.T_2D_to_3D'*xB(:,ind),2);
-          position_constraint = DrakeFunctionConstraint(posA,posA,position_fun);
-          position_constraint.grad_level = 2;
-          constrained_plant = constrained_plant.addPositionEqualityConstraint(position_constraint);
-          k = k+1;
         end
       end
       mode_data{i}.constraint_ind;

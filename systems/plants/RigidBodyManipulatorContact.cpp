@@ -18,6 +18,9 @@ void surfaceTangentsSingle(Vector3d const & normal, Matrix3kd & d)
   Vector3d t1,t2;
   double theta;
   
+  double len = norm(normal);
+  normal = normal / len;
+  
   if (1.0 - normal(2) < EPSILON) { // handle the unit-normal case (since it's unit length, just check z)
     t1 << 1.0, 0.0, 0.0;
   } else if (1 + normal(2) < EPSILON) {
@@ -26,6 +29,8 @@ void surfaceTangentsSingle(Vector3d const & normal, Matrix3kd & d)
     t1 << normal(1), -normal(0), 0.0;
     t1 /= sqrt(normal(1)*normal(1) + normal(0)*normal(0));
   }
+  
+  t1 = t1 * len;
   
   t2 = t1.cross(normal);
 

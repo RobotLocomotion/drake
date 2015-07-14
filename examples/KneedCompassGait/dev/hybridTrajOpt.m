@@ -4,7 +4,10 @@ warning('off','Drake:RigidBodyManipulator:WeldedLinkInd');
 options.terrain = RigidBodyFlatTerrain();
 options.floating = true;
 options.ignore_self_collisions = true;
+% options.use_new_kinsol = true;
 p = PlanarRigidBodyManipulator('../KneedCompassGait.urdf',options);
+p = p.setJointLimits(-inf(6,1),inf(6,1));
+p = p.compile();
 v = p.constructVisualizer();
 % trajopt = ContactImplicitTrajectoryOptimization(p,[],[],[],10,[1 1]);
 
@@ -18,7 +21,7 @@ v = p.constructVisualizer();
 % 20/20,50 F
 % 20/20,70 S
 
-N = [10, 10];
+N = [14, 15];
 T = {[.2 1], [.2 1]};
 mode_seq = {1, 2};
 
@@ -77,7 +80,7 @@ x0_max = [x0(1:5);inf;  inf; 0; inf(4,1)];
 xf_min = [.4;-inf(11,1)];
 xf_max = inf(12,1);
 
-to_options.lambda_bound = 1;
+to_options.lambda_bound = 20;
 
 traj_opt=ConstrainedHybridTrajectoryOptimization(p,mode_seq,N,T,to_options);
 
@@ -120,7 +123,7 @@ end
 
 function [f,df] = foot_height_fun(h,x,u)
   q = x(1:6);
-  K = 10;
+  K = 50;
   [phi,~,~,~,~,~,~,~,n] = p.contactConstraints(q,false,struct('terrain_only',false));
   phi0 = [.1;.1];
   f = K*(phi - phi0)'*(phi - phi0);
