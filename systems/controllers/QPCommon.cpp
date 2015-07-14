@@ -3,7 +3,6 @@
 #include "controlUtil.h"
 #include <map>
 #include <memory>
-#include <cmath>
 #include <lcm/lcm-cpp.hpp>
 #include "lcmUtil.h"
 #include "testUtil.h"
@@ -668,7 +667,7 @@ int setupAndSolveQP(
           // Jbdot.block(0,0,6,6) = MatrixXd::Zero(6,6);
         }
         for (int j=0; j<6; j++) {
-          if (!std::isnan(desired_body_accelerations[i].body_vdot(j))) {
+          if (!isNaN(desired_body_accelerations[i].body_vdot(j))) {
             Aeq.block(equality_ind,0,1,nq) = Jb.row(j);
             beq[equality_ind++] = -Jbdotv(j) + desired_body_accelerations[i].body_vdot(j);
           }
@@ -803,7 +802,7 @@ int setupAndSolveQP(
     bin_lb_ub << bin, -lb, ub;
 
     for (std::set<int>::iterator it = pdata->state.active.begin(); it != pdata->state.active.end(); it++) {
-      if (std::isnan(bin_lb_ub(*it)) || std::isinf(bin_lb_ub(*it))) {
+      if (isNaN(bin_lb_ub(*it)) || std::isinf(bin_lb_ub(*it))) {
         pdata->state.active.clear();
         break;
       }
@@ -843,7 +842,7 @@ int setupAndSolveQP(
             // Jbdot.block(0,0,6,6) = MatrixXd::Zero(6,6);
           }
           for (int j=0; j<6; j++) {
-            if (!std::isnan(desired_body_accelerations[i].body_vdot[j])) {
+            if (!isNaN(desired_body_accelerations[i].body_vdot[j])) {
               pdata->Hqp += desired_body_accelerations[i].weight*desired_body_accelerations[i].weight_multiplier(j)*(Jb.row(j)).transpose()*Jb.row(j);
               f.head(nq).noalias() += desired_body_accelerations[i].weight*desired_body_accelerations[i].weight_multiplier(j)*(Jbdotv(j) - desired_body_accelerations[i].body_vdot[j])*Jb.row(j).transpose();
             }
@@ -870,7 +869,7 @@ int setupAndSolveQP(
     bin_lb_ub << bin, -lb, ub;
 
     for (std::set<int>::iterator it = pdata->state.active.begin(); it != pdata->state.active.end(); it++) {
-      if (std::isnan(bin_lb_ub(*it)) || std::isinf(bin_lb_ub(*it))) {
+      if (isNaN(bin_lb_ub(*it)) || std::isinf(bin_lb_ub(*it))) {
         pdata->state.active.clear();
         break;
       }
@@ -915,7 +914,7 @@ int setupAndSolveQP(
   // use transpose because B_act is orthogonal
   qp_output->u = pdata->B_act.transpose()*(pdata->H_act*qp_output->qdd + pdata->C_act - D_act*beta);
   for (int i=0; i < qp_output->u.size(); i++) {
-      if (std::isnan(qp_output->u(i))) qp_output->u(i) = 0;
+      if (isNaN(qp_output->u(i))) qp_output->u(i) = 0;
   }
   //y = pdata->B_act.jacobiSvd(ComputeThinU|ComputeThinV).solve(pdata->H_act*qdd + pdata->C_act - Jz_act.transpose()*lambda - D_act*beta);
 
