@@ -22,10 +22,6 @@ Date: Nov 12 2013
 #include <math.h>
 #include <matrix.h>
 
-// Timer functions
-// #include <chrono>
-// #include <ctime>
-// #include <time.h>
 
 // Internal access to bullet
 #include "LinearMath/btTransform.h"
@@ -96,144 +92,105 @@ double *shiftAndTransform(double *verts, double *vertsT, const mxArray *x, mxArr
     for(int i=0;i<nRows;i++){
         for(int j=0;j<nCols;j++){
             vertsT[j*nRows+i] = dcSk[i]*(verts[j*nRows+0]-dx0[k*nRows+0]-dx[0]) + dcSk[nRows+i]*(verts[j*nRows+1]-dx0[k*nRows+1]-dx[1]) + dcSk[2*nRows+i]*(verts[j*nRows+2]-dx0[k*nRows+2]-dx[2]);
-            // mexPrintf("i: %d, j: %d, val: %f\n", i, j, vertsT[j*nRows+i]);
         }
     }
-
     
     return vertsT;
   
 }
-
-
 
 /* Checks if a given funnel number funnelIdx is collision free if executed beginning at state x. Returns a boolean (true if collision free, false if not).
 */
 bool isCollisionFree(int funnelIdx, const mxArray *x, const mxArray *funnelLibrary, const mxArray *forest, mwSize numObs, double *min_dist)
 {
 
-// Initialize some variables
-double *verts; // cell element (i.e. vertices)
-mxArray *x0 = mxGetField(funnelLibrary, funnelIdx, "xyz"); // all points on trajectory
-mxArray *obstacle;
-mxArray *cS = mxGetField(funnelLibrary, funnelIdx, "cS");
-mxArray *cSk;
-size_t nCols;
-size_t nRows;
-double distance;
+    // Initialize some variables
+    double *verts; // cell element (i.e. vertices)
+    mxArray *x0 = mxGetField(funnelLibrary, funnelIdx, "xyz"); // all points on trajectory
+    mxArray *obstacle;
+    mxArray *cS = mxGetField(funnelLibrary, funnelIdx, "cS");
+    mxArray *cSk;
+    size_t nCols;
+    size_t nRows;
+    double distance;
 
-// Get number of time samples
-mwSize N = mxGetNumberOfElements(mxGetField(funnelLibrary, funnelIdx, "cS"));
+    // Get number of time samples
+    mwSize N = mxGetNumberOfElements(mxGetField(funnelLibrary, funnelIdx, "cS"));
 
-// Initialize collFree to true
-bool collFree = true;
+    // Initialize collFree to true
+    bool collFree = true;
 
+    // For each time sample, we need to check if we are collision free
+    for(int k=0;k<N;k++)
+    {    
+        // Get pointer to cholesky factorization of S at this time
+        cSk = mxGetCell(cS,k);
+        for(mwIndex jForest=0;jForest<numObs;jForest++)
+        {
+            // Get vertices of this obstacle
+            obstacle = mxGetCell(forest, jForest);
+            verts = mxGetPr(mxGetCell(forest, jForest)); // Get vertices
+            nCols = mxGetN(obstacle);
+            nRows = mxGetM(obstacle);
+            
+            double *vertsT = mxGetPr(mxCreateDoubleMatrix(nRows, nCols, mxREAL));
+                
+            // Shift vertices so that point on trajectory is at origin and transform by cholesky of S
+            vertsT = shiftAndTransform(verts, vertsT, x, x0, k, cSk, nRows, nCols);
 
-// For each time sample, we need to check if we are collision free
-// mxArray *collisions = mxCreateLogicalMatrix(numObs,N);
-
-for(int k=0;k<N;k++)
-{
-    
-    // Get pointer to cholesky factorization of S at this time
-    cSk = mxGetCell(cS,k);
-
-    for(mwIndex jForest=0;jForest<numObs;jForest++)
-    {
-
-    // Get vertices of this obstacle
-    obstacle = mxGetCell(forest, jForest);
-    verts = mxGetPr(mxGetCell(forest, jForest)); // Get vertices
-    nCols = mxGetN(obstacle);
-    nRows = mxGetM(obstacle);
-    
-    double *vertsT = mxGetPr(mxCreateDoubleMatrix(nRows, nCols, mxREAL));
-        
-    // Shift vertices so that point on trajectory is at origin and transform by cholesky of S
-    vertsT = shiftAndTransform(verts, vertsT, x, x0, k, cSk, nRows, nCols);
-
-    // Call bullet to do point to polytope distance computation
-    distance = ptToPolyBullet(vertsT, nRows, nCols); 
-    
-    // Update min_dist
-    if(distance < *min_dist){
-        *min_dist = distance;
+            // Call bullet to do point to polytope distance computation
+            distance = ptToPolyBullet(vertsT, nRows, nCols); 
+            
+            // Update min_dist
+            if(distance < *min_dist){
+                *min_dist = distance;
+            }
+        }
     }
-    
-    // mexPrintf("distance: %f\n", distance);
 
-    // Check if distance is less than 1 (i.e. not collision free). If so, return
-     //if(distance < 1){
-       //collFree = false;
-      // return collFree;
-    //} 
-        
+    if(*min_dist < 1){
+        collFree = false;
     }
-}
 
-if(*min_dist < 1){
-    collFree = false;
-}
-
-return collFree;
-
+    return collFree;
 }
 
 /* Main mex funtion*/
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
 
-// Get x (state) from which funnel is to be executed
-const mxArray *x;
-x = prhs[0];
-// x = mxGetPr(prhs[0]);
+    // Get x (state) from which funnel is to be executed
+    const mxArray *x;
+    x = prhs[0];
 
+    // Deal with forest cell (second input)
+    const mxArray *forest; // Cell array containing forest (pointer)
 
-// Deal with forest cell (second input)
-const mxArray *forest; // Cell array containing forest (pointer)
+    forest = prhs[1]; // Get forest cell (second input)
+    mwSize numObs = mxGetNumberOfElements(forest); // Number of obstacles
 
-forest = prhs[1]; // Get forest cell (second input)
-mwSize numObs = mxGetNumberOfElements(forest); // Number of obstacles
+    // Now deal with funnel library object (third input)
+    const mxArray *funnelLibrary; // Funnel library (pointer)
 
+    funnelLibrary = prhs[2]; // Get funnel library (third input)
 
-// Now deal with funnel library object (third input)
-const mxArray *funnelLibrary; // Funnel library (pointer)
+    // Get funnelIdx (subtract 1 since index is coming from matlab)
+    int funnelIdx;
+    funnelIdx = (int )mxGetScalar(prhs[3]);
+    funnelIdx = funnelIdx-1;
 
-funnelLibrary = prhs[2]; // Get funnel library (third input)
+    // Initialize min_dist
+    double min_dist = 1000000.0;
 
-// Get funnelIdx (subtract 1 since index is coming from matlab)
-int funnelIdx;
-funnelIdx = (int )mxGetScalar(prhs[3]);
-funnelIdx = funnelIdx-1;
+    // Initialize next funnel (output of this function)
+    bool collFree = isCollisionFree(funnelIdx, x, funnelLibrary, forest, numObs, &min_dist);
 
-// Initialize min_dist
-// double min_dist_init = 1000000.0;
-double min_dist = 1000000.0;
-/*// Return min_dist if asked for
-if (nlhs > 1){
-        plhs[1] = mxCreateDoubleMatrix(1,1,mxREAL);
-        min_dist = mxGetPr(plhs[1]);
-}*/
-// &min_dist = &min_dist_init;
+    plhs[0] = mxCreateLogicalScalar(collFree);
 
-// mexPrintf("min_dist: %f", min_dist); 
-
-
-// Initialize next funnel (output of this function)
-bool collFree = isCollisionFree(funnelIdx, x, funnelLibrary, forest, numObs, &min_dist);
-
-
-// Return collFree
-plhs[0] = mxCreateLogicalScalar(collFree);
-
-// mexPrintf("min_dist: %f", min_dist); 
-
-// Return min_dist if asked for
-if (nlhs > 1){
+    // Return min_dist if asked for
+    if (nlhs > 1) {
         plhs[1] = mxCreateDoubleScalar(min_dist);
-}
-
-
+    }
 
 return;
 }
