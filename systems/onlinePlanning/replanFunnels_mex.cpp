@@ -38,17 +38,11 @@
 namespace snopt {
 #include "snopt.hh"
 #include "snfilewrapper.hh"
-//#include "snoptProblem.hh"
 }
 
 #include <string.h>
 #include <iostream>
 
-
-// Timer functions
-// #include <chrono>
-// #include <ctime>
-// #include <time.h>
 
 // Internal access to bullet
 #include "LinearMath/btTransform.h"
@@ -213,8 +207,6 @@ double containmentConstraint(snopt::doublereal x_shift[], double *containment_gr
     containment_grad[1] = 2*dS0xrel[1];
     containment_grad[2] = 2*dS0xrel[2];
     
-    
-    
     // Now do xrel'*S0xrel
     mxArray *val = mxCreateDoubleScalar(mxREAL);
     double dval = *(mxGetPr(val));
@@ -275,8 +267,6 @@ bool penetrationCost(snopt::doublereal x[], double *min_dist, double *normal_vec
     
     
     // For each time sample, we need to check if we are collision free
-    // mxArray *collisions = mxCreateLogicalMatrix(numObs,N);
-    
     for(int k=0;k<N;k++)
     {
         // Get pointer to cholesky factorization of S at this time
@@ -1164,7 +1154,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     // Now, try and find collision free funnel
     for(int ii=0;ii<numFunnels;ii++)
     {
-        cout << "checking funnel " << ii << endl;
         funnelIdx = ii; // Funnel idx is global so we have access to it in some other functions
         
         // First, check that we're inside the inlet of funnel
@@ -1172,7 +1161,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         
         // If we're not inside the funnel, continue (don't do collision checking)
         if(inside != true){
-            cout << "not inside inlet" << endl;
             continue;
         }
         
@@ -1294,14 +1282,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         mxDestroyArray(x_opt);
         mxDestroyArray(A_ineq_mx);
         mxDestroyArray(b_ineq_mx);
-    }
-    
-    /* for(int ii=0;ii<numFunnels;ii++)
-    {
-        mexPrintf("penetrations before sorting %d: %f \n", ii, penetrations_array_d[ii]);
-    }*/
-    
-    
+    }    
     
     // If we've reached this point with collFree = true, then we've found a collision
     // free funnel and we pass through. If however, we have shift_later = true, then
@@ -1326,13 +1307,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         
         mxArray* penetrations_sorted_mx = Out[0];
         double *penetrations_sorted_d = mxGetPr(penetrations_sorted_mx);
-        
-        /*int ind_ii;
-        for(int ii=0;ii<numFunnels;ii++)
-        {
-         ind_ii = sorted_inds_d[ii]-1; // Subtract 1 since we got this from matlab
-         // mexPrintf("penetrations %d: %f \n", ind_ii, penetrations_sorted_d[ind_ii]);
-        }*/
+
         
         for(int ii=0;ii<numFunnels;ii++)
         {
@@ -1446,7 +1421,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             mxDestroyArray(A_ineq_mx);
             mxDestroyArray(b_ineq_mx);
         }
-        
+
     }
     
     mxDestroyArray(penetrations_array_mx);

@@ -109,9 +109,6 @@ classdef OnlinePlannerMex < DrakeSystem
                 % Get x_current
                 x_current = x;
                 x_current(obj.cyclicIdx) = zeros(length(obj.cyclicIdx),1);
-                t
-                nextFunnel
-                %x
                 % Compute correct control input
                 y = obj.funnelLibrary{nextFunnel}.controller.output(t_current,[],x_current);
             else % If no replanning necessary, follow current plan
