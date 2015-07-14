@@ -266,10 +266,8 @@ MatrixXd individualSupportCOPs(RigidBodyManipulator* r, const std::vector<Suppor
 
       Vector3d point_on_contact_plane = contact_positions.col(0);
       std::pair<Vector3d, double> cop_and_normal_torque = resolveCenterOfPressure(torque, force, normal, point_on_contact_plane);
-      Vector3d cop_body;
-      cop_body << cop_and_normal_torque.first;
       Vector3d cop_world;
-      r->forwardKin(active_support.body_idx, cop_body, 0, cop_world);
+      r->forwardKin(active_support.body_idx, cop_and_normal_torque.first, 0, cop_world);
       individual_cops.col(j) = cop_world;
     }
 
