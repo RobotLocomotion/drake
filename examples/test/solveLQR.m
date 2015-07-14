@@ -9,6 +9,7 @@ if nargin <1
   options.floating = true;
   options.ignore_self_collisions = true;
   options.use_bullet = false;
+  options.use_new_kinsol = true;
   p = PlanarRigidBodyManipulator('OneLegHopper.urdf',options);
 end
 

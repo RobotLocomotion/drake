@@ -160,77 +160,83 @@ for i=1:length(mode_data),
 end
 
 if options.periodic
-  Qfi = Qf;
-  for j = 1:3
-    for i = length(mode_data):-1:1,
-      ts = mode_data{i}.tspan;
-      
-      % construct constrained plant
-      if ~isempty(jl_indices)
-        error('Joint limits not implemented yet')
-      end
-      k = 1;
-      constrained_plant = obj;
-      [phi,normal,d,xA,xB,idxA,idxB,mu] = obj.contactConstraints(x(1:obj.getNumPositions,1),false,struct('terrain_only',true));
-      % swap A and B
-      tmp = xA;
-      xA = xB;
-      xB = tmp;
-      tmp = idxA;
-      idxA = idxB;
-      idxB = tmp;
-      while k <= length(mode_data{i}.constraint_ind)
-        if true
-          if ~even(mode_data{i}.constraint_ind(k))
-            ind = (mode_data{i}.constraint_ind(k)+1)/2;
-          else
-            ind = (mode_data{i}.constraint_ind(k))/2;            
-          end
-          % Use both first and second (relative position)
-          position_fun = drakeFunction.kinematic.RelativePosition(constrained_plant,idxB(ind),idxA(ind),obj.T_2D_to_3D'*xB(:,ind));
-          position_constraint = DrakeFunctionConstraint(obj.T_2D_to_3D'*xA(:,ind),obj.T_2D_to_3D'*xA(:,ind),position_fun);
-          position_constraint.grad_level = 2;
-          constrained_plant = constrained_plant.addPositionEqualityConstraint(position_constraint);
-          k = k+2;          
+  jmax = 3;
+else
+  jmax = 1;
+end
+  
+Qfi = Qf;
+for j = 1:jmax;
+  for i = length(mode_data):-1:1,
+    ts = mode_data{i}.tspan;
+    
+    % construct constrained plant
+    if ~isempty(jl_indices)
+      error('Joint limits not implemented yet')
+    end
+    k = 1;
+    constrained_plant = obj;
+    [phi,normal,d,xA,xB,idxA,idxB,mu] = obj.contactConstraints(x(1:obj.getNumPositions,1),false,struct('terrain_only',true));
+    % swap A and B
+    tmp = xA;
+    xA = xB;
+    xB = tmp;
+    tmp = idxA;
+    idxA = idxB;
+    idxB = tmp;
+    while k <= length(mode_data{i}.constraint_ind)
+      if false
+        if ~even(mode_data{i}.constraint_ind(k))
+          ind = (mode_data{i}.constraint_ind(k)+1)/2;
         else
+          ind = (mode_data{i}.constraint_ind(k))/2;
+        end
+        % Use both first and second (relative position)
+        position_fun = drakeFunction.kinematic.RelativePosition(constrained_plant,idxB(ind),idxA(ind),obj.T_2D_to_3D'*xB(:,ind));
+        position_constraint = DrakeFunctionConstraint(obj.T_2D_to_3D'*xA(:,ind),obj.T_2D_to_3D'*xA(:,ind),position_fun);
+        position_constraint.grad_level = 2;
+        constrained_plant = constrained_plant.addPositionEqualityConstraint(position_constraint);
+        k = k+2;
+      else
         
-          if ~even(mode_data{i}.constraint_ind(k))
-            ind = (mode_data{i}.constraint_ind(k)+1)/2;
-            if k < length(mode_data{i}.constraint_ind) && (mode_data{i}.constraint_ind(k+1) - mode_data{i}.constraint_ind(k)) == 1
-              % Use both first and second (relative position)
-              position_fun = drakeFunction.kinematic.RelativePosition(constrained_plant,idxB(ind),idxA(ind),obj.T_2D_to_3D'*xB(:,ind));
-              position_constraint = DrakeFunctionConstraint(obj.T_2D_to_3D'*xA(:,ind),obj.T_2D_to_3D'*xA(:,ind),position_fun);
-              position_constraint.grad_level = 2;
-              constrained_plant = constrained_plant.addPositionEqualityConstraint(position_constraint);
-              k = k+2;
-            else
-              % Odd -> only use first element
-              posA = obj.T_2D_to_3D(:,1)'*xA(:,ind);
-              position_fun = drakeFunction.kinematic.RelativePosition(constrained_plant,idxB(ind),idxA(ind),obj.T_2D_to_3D'*xB(:,ind),1);
-              position_constraint = DrakeFunctionConstraint(posA,posA,position_fun);
-              position_constraint.grad_level = 2;
-              constrained_plant = constrained_plant.addPositionEqualityConstraint(position_constraint);
-              k = k+1;
-            end
+        if ~even(mode_data{i}.constraint_ind(k))
+          ind = (mode_data{i}.constraint_ind(k)+1)/2;
+          if k < length(mode_data{i}.constraint_ind) && (mode_data{i}.constraint_ind(k+1) - mode_data{i}.constraint_ind(k)) == 1
+            % Use both first and second (relative position)
+            position_fun = drakeFunction.kinematic.RelativePosition(constrained_plant,idxB(ind),idxA(ind),obj.T_2D_to_3D'*xB(:,ind));
+            position_constraint = DrakeFunctionConstraint(obj.T_2D_to_3D'*xA(:,ind),obj.T_2D_to_3D'*xA(:,ind),position_fun);
+            position_constraint.grad_level = 2;
+            constrained_plant = constrained_plant.addPositionEqualityConstraint(position_constraint);
+            k = k+2;
           else
-            ind = (mode_data{i}.constraint_ind(k))/2;
-            % Even -> only use second element
-            posA = obj.T_2D_to_3D(:,2)'*xA(:,ind);
-            position_fun = drakeFunction.kinematic.RelativePosition(constrained_plant,idxB(ind),idxA(ind),obj.T_2D_to_3D'*xB(:,ind),2);
+            % Odd -> only use first element
+            posA = obj.T_2D_to_3D(:,1)'*xA(:,ind);
+            position_fun = drakeFunction.kinematic.RelativePosition(constrained_plant,idxB(ind),idxA(ind),obj.T_2D_to_3D'*xB(:,ind),1);
             position_constraint = DrakeFunctionConstraint(posA,posA,position_fun);
             position_constraint.grad_level = 2;
             constrained_plant = constrained_plant.addPositionEqualityConstraint(position_constraint);
             k = k+1;
           end
+        else
+          ind = (mode_data{i}.constraint_ind(k))/2;
+          % Even -> only use second element
+          posA = obj.T_2D_to_3D(:,2)'*xA(:,ind);
+          position_fun = drakeFunction.kinematic.RelativePosition(constrained_plant,idxB(ind),idxA(ind),obj.T_2D_to_3D'*xB(:,ind),2);
+          position_constraint = DrakeFunctionConstraint(posA,posA,position_fun);
+          position_constraint.grad_level = 2;
+          constrained_plant = constrained_plant.addPositionEqualityConstraint(position_constraint);
+          k = k+1;
         end
       end
-      mode_data{i}.constraint_ind;
-      
-      [c{i},Ktraj{i},Straj{i},Ptraj{i},Btraj{i},Ftraj{i},Straj_full{i}] = constrainedtvlqr(constrained_plant,xtraj,utraj,Q,R,Qfi,struct('tspan',ts));
-      P0 = Ptraj{i}.eval(ts(1));
-      S0 = Straj{i}.eval(ts(1));
-      Qfi = pinv(P0*P0')*P0*S0*P0'*pinv(P0*P0')';  %extract least squares full rank solution
-      
+    end
+    mode_data{i}.constraint_ind;
+    
+    [c{i},Ktraj{i},Straj{i},Ptraj{i},Btraj{i},Ftraj{i},Straj_full{i}] = constrainedtvlqr(constrained_plant,xtraj,utraj,Q,R,Qfi,struct('tspan',ts));
+    P0 = Ptraj{i}.eval(ts(1));
+    S0 = Straj{i}.eval(ts(1));
+    Qfi = pinv(P0*P0')*P0*S0*P0'*pinv(P0*P0')';  %extract least squares full rank solution
+    
+    if i > 1 || options.periodic
       if i~=1
         Qfi = mode_data{i-1}.F'*Qfi*mode_data{i-1}.F;
       else
@@ -239,34 +245,9 @@ if options.periodic
       Qfi = (Qfi+Qfi')/2 + 1e-2*eye(size(Qfi,1));
       min(eig(Qfi))
     end
-    
-    %     c_bkp{j} = c;
-    %     K_bkp{j} = Ktraj;
-    %     S_bkp{j} = Straj;
-    %     P_bkp{j} = Ptraj;
-    %     B_bkp{j} = Btraj;
-    % keyboard
-  end
-else
-  Qfi = Qf;
-  for i = length(mode_data):-1:1,
-    ts = mode_data{i}.tspan;
-    sub_options = options;
-    sub_options.tspan = ts;
-    [c{i},Ktraj{i},Straj{i},Ptraj{i},Btraj{i},Ftraj{i},Straj_full{i}] = constrainedtvlqr(obj,xtraj,utraj,Q,R,Qfi,mode_data{i}.constraint_ind,sub_options);
-    P0 = Ptraj{i}.eval(ts(1));
-    S0 = Straj{i}.eval(ts(1));
-    Qfi = pinv(P0*P0')*P0*S0*P0'*pinv(P0*P0')';  %extract least squares full rank solution
-    
-    if i~=1
-      Qfi = mode_data{i-1}.F'*Qfi*mode_data{i-1}.F;
-    end
-    Qfi = (Qfi+Qfi')/2 + 1e-6*eye(size(Qfi,1));
   end
 end
-keyboard
 end
-
 
 function xp = jump(obj,xm,constraint_ind,options)
 %Computes xp, the post impact state of jumping to this mode
