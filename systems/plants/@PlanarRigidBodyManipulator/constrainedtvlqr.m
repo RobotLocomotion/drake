@@ -152,11 +152,17 @@ function B = getBTrajectory(p,ts,xtraj,utraj)
 end
 
   function [F,Fdot]=getFandFdot(obj,t,x,u)
+  
     q = x(1:obj.getNumPositions());
     qd = x(obj.getNumPositions()+1:end);
     
     % check if this doesn't calculate the gradient
     [~,J,dJ] = obj.positionConstraints(q);
+    if isempty(J)
+      F = zeros(0,length(x));
+      Fdot = F;
+      return;
+    end
     Jdot = reshape(reshape(dJ, numel(J), []) * qd, size(J));
     
     F = full([J zeros(size(J));Jdot J]);
