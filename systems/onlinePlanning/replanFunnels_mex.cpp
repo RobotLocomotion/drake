@@ -600,7 +600,7 @@ bool shiftFunnel_snopt(int funnelIdx, const mxArray *funnelLibrary, const mxArra
 
 /* Checks if a given funnel number funnelIdx is collision free if executed beginning at state x. Returns a boolean (true if collision free, false if not).
  */
-bool isCollisionFree(int funnelIdx, const mxArray *x, const mxArray *funnelLibrary, const mxArray *forest, mwSize numObs, double *min_dist, bool setupQCQP_cons, double *A_ineq, double *b_ineq, int numRows_A, int maxObs)
+bool isCollisionFree(int funnelIdx, const mxArray *x, const mxArray *funnelLibrary, const mxArray *forest, mwSize numObs, double *min_dist)
 {
     
     // Initialize some variables
@@ -654,62 +654,7 @@ bool isCollisionFree(int funnelIdx, const mxArray *x, const mxArray *funnelLibra
             if(distance < *min_dist){
                 *min_dist = distance;
             }
-                        
-            /*************************************************************/
-            // Setup linear constraints of QP while we're at it
-            // (since we've already computed almost everything we need).
-            
-            if (setupQCQP_cons)
-            {
-                // Multiply normal_vec by cSk to get it back in the correct coordinate frame (i.e., normal_vec'*cSk)
-                double one = 1.0, zero = 0.0; // Seriously?
-                long int ione = 1;
-                long int dim = 3;
-                
-                char *chn = "N";
-                dgemm(chn, chn, &ione, &dim, &dim, &one, mxGetPr(normal_vec), &ione, mxGetPr(cSk), &dim, &zero, normal_vec_transformed, &ione);
-                
-                // Update A_ineq and b_ineq
-                // A_ineq = [A_ineq;[-normal_vec_transformed,-1]];
-                // b_ineq = [b_ineq;distance];
-                A_ineq[0*numRows_A+rowNum] = -normal_vec_transformed[0];
-                A_ineq[1*numRows_A+rowNum] = -normal_vec_transformed[1];
-                A_ineq[2*numRows_A+rowNum] = -normal_vec_transformed[2];
-                A_ineq[3*numRows_A+rowNum] = -1.0;
-                
-                b_ineq[rowNum] = distance - g_radius; // Note the subtraction of g_radius
-                
-                // Update row number
-                rowNum = rowNum + 1;
-            }
-            /*************************************************************/
             mxDestroyArray(vertsA);
-        }
-    }
-    
-    if (setupQCQP_cons)
-    {
-        // Add constraint to make sure tau >= 0
-        // A_ineq = [A_ineq;0,0,0,-1];
-        // b_ineq = [b_ineq;0];
-        A_ineq[0*numRows_A+rowNum] = 0.0;
-        A_ineq[1*numRows_A+rowNum] = 0.0;
-        A_ineq[2*numRows_A+rowNum] = 0.0;
-        A_ineq[3*numRows_A+rowNum] = -1.0;
-        rowNum = rowNum + 1;
-        
-        // Now pad A_ineq and b_ineq
-        // pad_length = N*(maxObs - numObs);
-        // A_ineq = [A_ineq;zeros(pad_length,4)];
-        // b_ineq = [b_ineq;zeros(pad_length,1)];
-        int pad_length = N*(maxObs - numObs);
-        for(int k=0;k<pad_length;k++)
-        {
-            A_ineq[0*numRows_A+(rowNum+k)] = 0.0;
-            A_ineq[1*numRows_A+(rowNum+k)] = 0.0;
-            A_ineq[2*numRows_A+(rowNum+k)] = 0.0;
-            A_ineq[3*numRows_A+(rowNum+k)] = 0.0;
-            b_ineq[rowNum+k] = 0.0;
         }
     }
     
@@ -806,235 +751,13 @@ bool isInsideInlet(int funnelIdx, const mxArray *x, const mxArray *funnelLibrary
 
 
 
-
-/********** Functions for shifting funnels with QCQP ***************************************************/
-
-/* Sets up quadratic part of constraint in QCQP
- */
-void setupQuadraticConstraint(double *ql, double *qr)
-{
-    
-    // Initialize some variables
-    mxArray *x0 = mxGetField(funnelLibrary, funnelIdx, "x0"); // all points on trajectory
-    
-    double *dx0 = mxGetPr(x0);
-    
-    long int dim = mxGetM(x_current); // Dimension of state
-    long int dimx0 = mxGetM(x0);
-    
-    // Check that we got the right dimensions
-    if(dim > 1){
-        if (dim != dimx0){
-            mexErrMsgTxt("x and x0 have different dimensions!");
-        }
-    }
-    else{
-        mexErrMsgTxt("State seems to have the wrong dimension");
-    }
-    
-    // Get S matrix at time 0
-    mxArray *pS0 = mxGetField(funnelLibrary, funnelIdx, "S0");
-    double *S0 = mxGetPr(pS0);
-    
-    // Get S22 = S0(4:end,4:end)
-    mxArray *S22_mx = mxCreateDoubleMatrix(dim-3,dim-3,mxREAL);
-    double *S22 = mxGetPr(S22_mx);
-    for(int i=3;i<dim;i++)
-    {
-        for(int j=3;j<dim;j++)
-        {
-            S22[(j-3)*(dim-3)+(i-3)] = S0[j*dim+i];
-            
-        }
-        
-    }
-    
-    // Now get S12 = S0(1:3,4:end);
-    mxArray *S12_mx = mxCreateDoubleMatrix(3,dim-3,mxREAL);
-    double *S12 = mxGetPr(S12_mx);
-    for(int i=0;i<3;i++)
-    {
-        for(int j=3;j<dim;j++)
-        {
-            S12[(j-3)*(3)+(i)] = S0[j*dim+i];
-        }
-    }
-    
-    // Get v = x0(4:end) - x_current(4:end); % Difference in non-cyclic dimensions
-    mxArray *v = mxCreateDoubleMatrix(dim-3,1,mxREAL);
-    double *v_d = mxGetPr(v);
-    for(int k=0;k<(dim-3);k++)
-    {
-        v_d[k] = dx0[k+3] - dx_current[k+3];
-    }
-    
-    // Now compute qr = 1 - v'*S22*v using lapack
-    // First do S22*v
-    double one = 1.0, zero = 0.0; // Seriously?
-    long int ione = 1;
-    long int dimv = dim-3;
-    mxArray *S22v = mxCreateDoubleMatrix(dimv,1,mxREAL);
-    double *dS22v = mxGetPr(S22v);
-    char *chn = "N";
-    dgemm(chn, chn, &dimv, &ione, &dimv, &one, S22, &dimv, v_d, &dimv, &zero, dS22v, &dimv);
-    
-    // Now do qr = 1 - v'*S22v. Note: we're doing this entire operation using dgemm
-    double minus_one = -1.0;
-    *qr = 1.0;
-    char *chnT = "T"; // since we want xrel transpose
-    dgemm(chnT, chn, &ione, &ione, &dimv, &minus_one, v_d, &dimv, dS22v, &dimv, &one, qr, &ione);
-    
-    // Now compute ql = 2*S12*v;
-    double two = 2.0;
-    long int ithree = 3;
-    dgemm(chn, chn, &ithree, &ione, &dimv, &two, S12, &ithree, v_d, &dimv, &zero, ql, &ithree);
-    
-    mxDestroyArray(S22_mx);
-    mxDestroyArray(S12_mx);
-    mxDestroyArray(v);
-    mxDestroyArray(S22v);
-}
-
-
-// Shift funnel using qcqp
-bool shiftFunnelQCQP(mxArray *A_ineq_mx, mxArray *b_ineq_mx, double *x_opt)
-{
-    
-    /*%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-     *  Calls Forces Pro solver mex function.
-     *
-     *  Uses a QCQP to try to shift a funnel out of collision while keeping the
-     *  current state in the inlet of the (shifted) funnel.
-     *
-     *  Sets up and solves the following optimization problem:
-     *  min   max(0,tau)
-     *
-     *  s.t.  (x_current-x_shifted_full)^T S0 (x_current-x_shifted_full) <= 1
-     *        tau + ns_jk*x_shiftl(1:3) + ds_jk >= 0, for all j,k
-     *
-     *  Here, the decision variables are x_shift. x_shifted_full is:
-     *  [x_shift+x_current(1:3);x0(4:end)] (x0 is funnel.x0(:,1)).
-     *
-     *  ns_jk and ds_jk are the collision normal and penetration distance
-     *  respectively. The indices j and k iterate over obstacles and time-steps
-     *  in the funnel respectively.
-     *
-     *  Returns the shiftted position of funnel.
-     * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%*/
-    
-    double *A_ineq = mxGetPr(A_ineq_mx);
-    double *b_ineq = mxGetPr(b_ineq_mx);
-    
-    // Linear constraints have already been set up. So, we just need to
-    // setup the quadratic constraints
-    mxArray *ql = mxCreateDoubleMatrix(3,1,mxREAL);
-    double *ql_d = mxGetPr(ql);
-    double qr;
-    setupQuadraticConstraint(ql_d,&qr);
-    mxArray *qr_array = mxCreateDoubleScalar(qr);
-    // Now create problem struct to pass to forces solver mex code.
-    const char *field_names[] = {"A", "b", "ql", "qr"};
-    mwSize ndim = 1;
-    const mwSize ndims = 1;
-    mxArray *problem = mxCreateStructArray(ndim,&ndims,4,field_names);
-    mxSetField(problem, 0, "A", A_ineq_mx);
-    mxSetField(problem, 0, "b", b_ineq_mx);
-    mxSetField(problem, 0, "ql", ql);
-    mxSetField(problem, 0, "qr", qr_array);
-    
-    // Initialize result struct
-    mxArray *lhs_forces[2];
-    mxArray *result;
-    lhs_forces[0] = result;
-    lhs_forces[1] = mxCreateDoubleScalar(0.0); // exitflag of solver
-    mxArray *forces_rhs[1];
-    forces_rhs[0] = problem;
-    
-    // Call funnel shifting forces pro mex code
-    // The Mex file to call depends on the funnelIdx. So, for example, if
-    // we want to shift the third funnel, the mex file is "funnel3_shift".
-    if (funnelIdx+1 > 9)
-    {
-        char function_name[15];
-        snprintf(function_name, sizeof function_name, "%s%d%s", "funnel", funnelIdx+1, "_shift");
-        const char *function_name_char = &function_name[0];
-        mexCallMATLAB(2, lhs_forces, 1, forces_rhs, function_name_char);
-    }
-    else
-    {
-        char function_name[14];
-        snprintf(function_name, sizeof function_name, "%s%d%s", "funnel", funnelIdx+1, "_shift");
-        const char *function_name_char = &function_name[0];
-        mexCallMATLAB(2, lhs_forces, 1, forces_rhs, function_name_char);
-    }
-    
-    // Get exit flag
-    double *exitflag;
-    exitflag = mxGetPr(lhs_forces[1]);
-    bool collFree = false;
-    
-    if (*exitflag != 1.0)
-    {
-        mexPrintf("Forces Pro exitflag was not 1. \n");
-        
-        // If exitflag is not 1, we don't trust the answer
-        collFree = false;
-        
-        // Assign to x_current
-        x_opt[0] = dx_current[0];
-        x_opt[1] = dx_current[1];
-        x_opt[2] = dx_current[2];
-        
-    }
-    else
-    {
-        // Get x_opt and tau from result structure
-        mxArray *x_opt_forces = mxCreateDoubleMatrix(3,1,mxREAL);
-        mxArray *tau_forces = mxCreateDoubleScalar(mxREAL);
-        
-        x_opt_forces = mxGetField(lhs_forces[0], 0, "x_shift");
-        tau_forces = mxGetField(lhs_forces[0], 0, "tau");
-        
-        double *x_opt_forces_d = mxGetPr(x_opt_forces);
-        double *tau_d = mxGetPr(tau_forces);
-        
-        // Assign to x_opt (position of shifted funnel)
-        x_opt[0] = *x_opt_forces_d + dx_current[0];
-        x_opt[1] = *(x_opt_forces_d+1) + dx_current[1];
-        x_opt[2] = *(x_opt_forces_d+2) + dx_current[2];
-        
-        // Check if we are collision free (tau <= 1e-4. well, really tau == 0,
-        // but there will be numerical crap from the solver.)
-        if (*tau_d < 1e-4)
-        {
-            collFree = true;
-        }
-        mxDestroyArray(x_opt_forces);
-        mxDestroyArray(tau_forces);
-    }
-    
-    // Destroy struct and other stuff we don't need
-    mxDestroyArray(ql);
-    mxDestroyArray(qr_array);
-    mxDestroyArray(*lhs_forces);
-    mxDestroyArray(*forces_rhs);   
-
-    // Return collFree
-    return collFree;
-    
-}
-/*******************************************************************************************************/
-
-
-
 /************************ Main mex function ***************************************************************/
 /* Main mex funtion*/
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
     
-    // Choose whether to use snopt or QCQP for shifting. Default is no shift;
+    //Default is no shift;
     const char *shift_method;
-    bool shift_using_qcqp = false;
     bool shift_using_snopt = false;
     
     // Shift later. If this is set to true, we go through all the funnels without
@@ -1065,11 +788,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         mxArray *shift_method_mx = mxGetField(options, 0, "shift_method");
         if (shift_method_mx != NULL){
             shift_method = mxArrayToString(shift_method_mx);
-            
-            if (strcmp(shift_method, "qcqp") == 0) // if qcqp
-            {
-                shift_using_qcqp = true;
-            }
             
             if (strcmp(shift_method, "snopt") == 0) // if snopt
             {
@@ -1121,15 +839,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     // Deal with forest cell (second input)
     forest = prhs[1]; // Get forest cell (second input)
     mwSize numObs = mxGetNumberOfElements(forest); // Number of obstacles
-    
-    // Maximum number of obstacles we can handle (for QCQP)
-    int maxObs = 30;
-    if (numObs > maxObs)
-    {
-        // Error
-        mexErrMsgTxt("Number of obstacles is greater than maximum obstacles we can handle (30). If you want more obstacles, regenerate forces code and change maxObs above");
-    }
-    
+        
     
     // Now deal with funnel library object (third input)
     funnelLibrary = prhs[2]; // Get funnel library (third input)
@@ -1142,9 +852,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     
     // Initialize best penetration. Bigger is better.
     double best_penetration = -1000000.0;
-    
-    // Whether to setup QCQP constraints or not in isCollisionFree
-    bool setupQCQP_cons = true;
     
     // Initialize array to keep track of penetrations
     mxArray *penetrations_array_mx = mxCreateDoubleMatrix(numFunnels,1,mxREAL);
@@ -1172,14 +879,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         // If penetration is less than one, than funnel is not collision free
         // Initialize linear constraints of QCQP
         // Get number of time samples
-        mwSize N = mxGetNumberOfElements(mxGetField(funnelLibrary, funnelIdx, "cS"));
-        int numRows_A = maxObs*N+1;
-        mxArray *A_ineq_mx = mxCreateDoubleMatrix(numRows_A,4,mxREAL);
-        double *A_ineq = mxGetPr(A_ineq_mx);
-        mxArray *b_ineq_mx = mxCreateDoubleMatrix(numRows_A,1,mxREAL);
-        double *b_ineq = mxGetPr(b_ineq_mx);
-        setupQCQP_cons = true;
-        collFree = isCollisionFree(funnelIdx, x, funnelLibrary, forest, numObs, &penetration, setupQCQP_cons, A_ineq, b_ineq, numRows_A, maxObs);
+        collFree = isCollisionFree(funnelIdx, x, funnelLibrary, forest, numObs, &penetration);
         
         // Save penetration in array
         penetrations_array_d[funnelIdx] = penetration;
@@ -1207,45 +907,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
          
         // Optimal shift using QCQP
         mxArray *x_opt = mxCreateDoubleMatrix(3,1,mxREAL);
-        double *x_opt_d = mxGetPr(x_opt);
-        
-        if ((shift_using_qcqp) && (penetration > penetration_thresh) && !shift_later)
-        {
-            cout << "shifting funnel" << endl;
-            // If the funnel is not collision free, but there is only little penetration, then let's try to shift the funnel
-            collFree = shiftFunnelQCQP(A_ineq_mx, b_ineq_mx, x_opt_d);
-            
-            // See how much penetration we have with the shifted funnel
-            penetration = 1000000.0;
-            setupQCQP_cons = false;
-            
-            // Sometimes the collFree flag returned by QCQP is not correct (since it is only checking a sufficient condition).
-            // This is why we do this check again. Is it worth it? ***TIME***
-            collFree = isCollisionFree(funnelIdx, x_opt, funnelLibrary, forest, numObs, &penetration, setupQCQP_cons, A_ineq, b_ineq, numRows_A, maxObs);
-            
-            // If we were able to successfully shift the funnel out of collision, then return with this funnel
-            if (collFree){
-                nextFunnel = funnelIdx;
-                best_penetration = penetration;
-                dx_execute_next[0] = (*x_opt_d);
-                dx_execute_next[1] = (*(x_opt_d+1));
-                dx_execute_next[2] = (*(x_opt_d+2));
-                break;
-            }
-            
-            // If we didn't succeed in shifting it out of collision, check if we at least
-            // have less penetration than previous funnels. If so, make this the next funnel,
-            // but don't return yet (in the hope that we can find an even better funnel).
-            if (penetration > best_penetration)
-            {
-                best_penetration = penetration;
-                nextFunnel = funnelIdx;
-                dx_execute_next[0] = (*x_opt_d);
-                dx_execute_next[1] = (*(x_opt_d+1));
-                dx_execute_next[2] = (*(x_opt_d+2));
-            }
-        }
-        
+        double *x_opt_d = mxGetPr(x_opt);        
         
         if ((shift_using_snopt) && (penetration > penetration_thresh) && !shift_later)
         {
@@ -1280,8 +942,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         }
         
         mxDestroyArray(x_opt);
-        mxDestroyArray(A_ineq_mx);
-        mxDestroyArray(b_ineq_mx);
     }    
     
     // If we've reached this point with collFree = true, then we've found a collision
@@ -1329,61 +989,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             // If we are inside this funnel, do collision checking
             // Also returns (updates) penetration variable. If this is greater than 1, then the funnel is collision free
             // If penetration is less than one, than funnel is not collision free
-            // Initialize linear constraints of QCQP
             // Get number of time samples
-            mwSize N = mxGetNumberOfElements(mxGetField(funnelLibrary, funnelIdx, "cS"));
-            int numRows_A = maxObs*N+1;
-            mxArray *A_ineq_mx = mxCreateDoubleMatrix(numRows_A,4,mxREAL);
-            double *A_ineq = mxGetPr(A_ineq_mx);
-            mxArray *b_ineq_mx = mxCreateDoubleMatrix(numRows_A,1,mxREAL);
-            double *b_ineq = mxGetPr(b_ineq_mx);
-            setupQCQP_cons = true;
-            collFree = isCollisionFree(funnelIdx, x, funnelLibrary, forest, numObs, &penetration, setupQCQP_cons, A_ineq, b_ineq, numRows_A, maxObs);
+            collFree = isCollisionFree(funnelIdx, x, funnelLibrary, forest, numObs, &penetration);
             
             
-            // Optimal shift using QCQP
             mxArray *x_opt = mxCreateDoubleMatrix(3,1,mxREAL);
             double *x_opt_d = mxGetPr(x_opt);
-            
-            if ((shift_using_qcqp) && (penetration > penetration_thresh))
-            {
-               
-                // If the funnel is not collision free, but there is only little penetration, then let's try to shift the funnel
-                collFree = shiftFunnelQCQP(A_ineq_mx, b_ineq_mx, x_opt_d);
-                
-                // See how much penetration we have with the shifted funnel
-                penetration = 1000000.0;
-                setupQCQP_cons = false;
-                
-                // Sometimes the collFree flag returned by QCQP is not correct (since it is only checking a sufficient condition).
-                // This is why we do this check again. Is it worth it? ***TIME***
-                collFree = isCollisionFree(funnelIdx, x_opt, funnelLibrary, forest, numObs, &penetration, setupQCQP_cons, A_ineq, b_ineq, numRows_A, maxObs);
-                
-                // If we were able to successfully shift the funnel out of collision, then return with this funnel
-                if (collFree){
-                    nextFunnel = funnelIdx;
-                    best_penetration = penetration;
-                    dx_execute_next[0] = (*x_opt_d);
-                    dx_execute_next[1] = (*(x_opt_d+1));
-                    dx_execute_next[2] = (*(x_opt_d+2));
-                    break;
-                }
-                
-                // If we didn't succeed in shifting it out of collision, check if we at least
-                // have less penetration than previous funnels. If so, make this the next funnel,
-                // but don't return yet (in the hope that we can find an even better funnel).
-                if (penetration > best_penetration)
-                {
-                    best_penetration = penetration;
-                    nextFunnel = funnelIdx;
-                    dx_execute_next[0] = (*x_opt_d);
-                    dx_execute_next[1] = (*(x_opt_d+1));
-                    dx_execute_next[2] = (*(x_opt_d+2));
-                }
-                
-                
-            }
-            
             
             if ((shift_using_snopt) && (penetration > penetration_thresh))
             {
@@ -1418,8 +1029,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
             }
             
             mxDestroyArray(x_opt);
-            mxDestroyArray(A_ineq_mx);
-            mxDestroyArray(b_ineq_mx);
         }
 
     }
