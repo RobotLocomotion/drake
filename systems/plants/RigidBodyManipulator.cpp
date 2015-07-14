@@ -434,8 +434,7 @@ void RigidBodyManipulator::compile(void)
 
     // update the body's contact points
     Matrix3Xd contact_pts;
-    getTerrainContactPoints(*bodies[i], contact_pts);
-    bodies[i]->contact_pts = contact_pts;
+    getTerrainContactPoints(*bodies[i], bodies[i]->contact_pts);
 
     // precompute sparsity pattern for each rigid body
     bodies[i]->computeAncestorDOFs(this); // TODO floating base : remove this
