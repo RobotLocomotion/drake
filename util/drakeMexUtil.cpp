@@ -234,11 +234,11 @@ DLLEXPORT const std::vector<double> matlabToStdVector<double>(const mxArray* in)
 
 DLLEXPORT Matrix<Polynomiald, Dynamic, Dynamic> msspolyToEigen(const mxArray* msspoly)
 {
-  auto dim = matlabToEigenMap(mxGetPropertySafe(msspoly,0,"dim"));
-  auto sub = matlabToEigenMap(mxGetPropertySafe(msspoly,0,"sub"));
-  auto var = matlabToEigenMap(mxGetPropertySafe(msspoly,0,"var"));
-  auto pow = matlabToEigenMap(mxGetPropertySafe(msspoly,0,"pow"));
-  auto coeff = matlabToEigenMap(mxGetPropertySafe(msspoly,0,"coeff"));
+  auto dim = matlabToEigenMap<1,2>(mxGetPropertySafe(msspoly,0,"dim"));
+  auto sub = matlabToEigenMap<Dynamic,2>(mxGetPropertySafe(msspoly,0,"sub"));
+  auto var = matlabToEigenMap<Dynamic,Dynamic>(mxGetPropertySafe(msspoly,0,"var"));
+  auto pow = matlabToEigenMap<Dynamic,Dynamic>(mxGetPropertySafe(msspoly,0,"pow"));
+  auto coeff = matlabToEigenMap<Dynamic,1>(mxGetPropertySafe(msspoly,0,"coeff"));
 
   assert(sub.rows()==var.rows());
   assert(sub.rows()==pow.rows());
