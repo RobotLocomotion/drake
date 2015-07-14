@@ -475,7 +475,7 @@ classdef NonlinearProgram
       % @param x_desired column vector of desired values
       % @param xind optional subset of x to apply cost to
       
-      if nargin<3, xind = 1:obj.num_vars; end
+      if nargin<4, xind = 1:obj.num_vars; end
 
       obj = obj.addCost(QuadraticSumConstraint(0,inf,Q,x_desired),xind);
     end

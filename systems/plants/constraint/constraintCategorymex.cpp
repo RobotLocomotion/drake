@@ -5,7 +5,7 @@
 
 #include "mex.h"
 #include <iostream>
-#include "drakeUtil.h"
+#include "drakeMexUtil.h"
 #include <Eigen/Dense>
 #include "RigidBodyConstraint.h"
 #include "RigidBodyManipulator.h"

@@ -5,6 +5,7 @@
 #include "../IKoptions.h"
 #include <iostream>
 #include <cstdlib>
+#include <limits>
 
 using namespace std;
 using namespace Eigen;
@@ -66,11 +67,11 @@ int main()
   MatrixXd q0 = qstar.replicate(1,nT);
   VectorXd qdot0 = VectorXd::Zero(model->num_velocities);
   Vector3d com_lb = com0;
-  com_lb(0) = nan("");;
-  com_lb(1) = nan("");
+  com_lb(0) = std::numeric_limits<double>::quiet_NaN();
+  com_lb(1) = std::numeric_limits<double>::quiet_NaN();
   Vector3d com_ub = com0;
-  com_ub(0) = nan("");
-  com_ub(1) = nan("");
+  com_ub(0) = std::numeric_limits<double>::quiet_NaN();
+  com_ub(1) = std::numeric_limits<double>::quiet_NaN();
   com_ub(2) = com0(2)+0.5;
   WorldCoMConstraint* com_kc = new WorldCoMConstraint(model,com_lb,com_ub);
   Vector3d rhand_pos_lb = rhand_pos0;

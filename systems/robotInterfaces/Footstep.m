@@ -94,7 +94,9 @@ classdef Footstep
                      reshape(msg.terrain_height, 1, []);];
       infeasibility = msg.infeasibility;
       walking_params = struct(msg.params);
-      walking_params.support_contact_groups = Footstep.support_contact_groups_enum_to_cell(walking_params.support_contact_groups);
+      if ~isempty(walking_params)
+        walking_params.support_contact_groups = Footstep.support_contact_groups_enum_to_cell(walking_params.support_contact_groups);
+      end
       footstep = Footstep(pos, id, frame_id, is_in_contact, pos_fixed, terrain_pts, infeasibility, walking_params);
     end
   end

@@ -243,12 +243,12 @@ bool parseInertial(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyMani
   return true;
 }
 
-bool parseMaterial(TiXmlElement* node, map<string, Vector4d>& materials)
+bool parseMaterial(TiXmlElement* node, map<string, Vector4d, less<string>, aligned_allocator<pair<string, Vector4d> > > & materials)
 {
   const char* attr;
   attr = node->Attribute("name");
-  if (!attr) {
-    cerr << "WARNING: material tag is missing name attribute" << endl;
+  if (!attr || strlen(attr) == 0) {
+    cerr << "WARNING: material tag is missing a name" << endl;
     return false;
   }
   string name(attr);
@@ -351,7 +351,7 @@ bool parseGeometry(TiXmlElement* node, const map<string,string>& package_map, co
     string filename(attr);
     string resolved_filename = resolveFilename(filename, package_map, root_dir);
     element.setGeometry(DrakeShapes::Mesh(filename, resolved_filename));
-                                          
+
   } else {
     cerr << "Warning: geometry element has an unknown type and will be ignored." << endl;
   }
@@ -361,7 +361,7 @@ bool parseGeometry(TiXmlElement* node, const map<string,string>& package_map, co
   return true;
 }
 
-bool parseVisual(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyManipulator* model, const map<string, Vector4d>& materials, const map<string,string>& package_map, const string& root_dir)
+bool parseVisual(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyManipulator* model, const map<string, Vector4d, less<string>, aligned_allocator<pair<string, Vector4d> > >& materials, const map<string,string>& package_map, const string& root_dir)
 {
   // DEBUG
   //cout << "parseVisual: START" << endl;
@@ -388,9 +388,21 @@ bool parseVisual(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyManipu
   TiXmlElement* material_node = node->FirstChildElement("material");
   if (material_node) {
     const char* attr;
-    attr = node->Attribute("name");
-    if (attr) {
+    attr = material_node->Attribute("name");
+    if (attr && strlen(attr) > 0 && materials.find(attr) != materials.end()) {
       element.setMaterial(materials.at(attr));
+    } else {
+      TiXmlElement* color_node = material_node->FirstChildElement("color");
+      if (color_node) {
+        Vector4d rgba;
+        if (!parseVectorAttribute(color_node, "rgba", rgba)) {
+          cerr << "WARNING: Failed to parse color element rgba in visual" << endl;
+        } else {
+          element.setMaterial(rgba);
+        }
+      } else {
+        cerr << "WARNING: visual element had a material with neither a name nor a nested color element" << endl;
+      }
     }
   }
 
@@ -443,7 +455,7 @@ bool parseCollision(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyMan
   return true;
 }
 
-bool parseLink(RigidBodyManipulator* model, TiXmlElement* node, const map< string, Vector4d >& materials, const map<string,string>& package_map, const string& root_dir)
+bool parseLink(RigidBodyManipulator* model, TiXmlElement* node, const map<string, Vector4d, less<string>, aligned_allocator<pair<string, Vector4d> > >& materials, const map<string,string>& package_map, const string& root_dir)
 {
   const char* attr = node->Attribute("drake_ignore");
   if (attr && strcmp(attr, "true") == 0)
@@ -604,7 +616,7 @@ bool parseJoint(RigidBodyManipulator* model, TiXmlElement* node)
 }
 
 bool parseTransmission(RigidBodyManipulator* model, TiXmlElement* node)
-{  
+{
   const char* attr = nullptr;
   TiXmlElement* type_node = node->FirstChildElement("type");
   if ( type_node ) {
@@ -613,8 +625,8 @@ bool parseTransmission(RigidBodyManipulator* model, TiXmlElement* node)
 
   if (!attr) {
     attr = node->Attribute("type"); // old URDF format, kept for convenience
-    
-    if (!attr) {    
+
+    if (!attr) {
       cerr << "ERROR: transmission element is missing the type child" << endl;
       return false;
     }
@@ -625,12 +637,19 @@ bool parseTransmission(RigidBodyManipulator* model, TiXmlElement* node)
     return true;
   }
 
+  TiXmlElement* actuator_node = node->FirstChildElement("actuator");
+  if (!actuator_node || !actuator_node->Attribute("name"))  {
+    cerr << "ERROR: transmission is missing an actuator element" << endl;
+    return false;
+  }
+  string actuator_name(actuator_node->Attribute("name"));
+
+
   TiXmlElement* joint_node = node->FirstChildElement("joint");
   if (!joint_node || !joint_node->Attribute("name"))  {
     cerr << "ERROR: transmission is missing a joint element" << endl;
     return false;
   }
-  
   string joint_name(joint_node->Attribute("name"));
 
   int body_index = findLinkIndexByJointName(model,joint_name);
@@ -644,7 +663,7 @@ bool parseTransmission(RigidBodyManipulator* model, TiXmlElement* node)
   double gain = 1.0;
   if (reduction_node) parseScalarValue(reduction_node, gain);
 
-  RigidBodyActuator a(joint_name,model->bodies[body_index],gain);
+  RigidBodyActuator a(actuator_name,model->bodies[body_index],gain);
   model->actuators.push_back(a);
   return true;
 }
@@ -682,12 +701,55 @@ bool parseLoop(RigidBodyManipulator* model, TiXmlElement* node)
   return true;
 }
 
+bool parseFrame(RigidBodyManipulator* model, TiXmlElement* node)
+{
+  Vector3d xyz, rpy;
+
+  if (!parseVectorAttribute(node, "xyz", xyz)) {
+    cerr << "ERROR parsing Drake frame xyz" << endl;
+    return false;
+  }
+
+  if (!parseVectorAttribute(node, "rpy", rpy)) {
+    cerr << "ERROR parsing Drake frame rpy" << endl;
+    return false;
+  }
+
+  RigidBodyFrame frame;
+  Map<Matrix4d> T(frame.Ttree.data());
+
+  const char* frame_link = node->Attribute("link");
+
+  if (!frame_link) {
+    cerr << "ERROR parsing Drake frame linkname" << endl;
+    return false;
+  }
+
+  const char* frame_name = node->Attribute("name");
+
+  if (!frame_name) {
+    cerr << "ERROR parsing Drake frame name" << endl;
+    return false;
+  }
+
+  frame.name = frame_name;
+  frame.body_ind = findLinkIndex(model, frame_link);
+
+  T = Matrix4d::Identity();
+  T.block(0, 0, 3, 3) = rpy2rotmat(rpy);
+  T.block(0, 3, 3, 1) = xyz;
+
+  model->addFrame(frame);
+
+  return true;
+}
+
 bool parseRobot(RigidBodyManipulator* model, TiXmlElement* node, const map<string,string> package_map, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type)
 {
   string robotname = node->Attribute("name");
 
   // parse material elements
-  map< string, Vector4d> materials;
+  map<string, Vector4d, less<string>, aligned_allocator<pair<string, Vector4d> > > materials;
   for (TiXmlElement* link_node = node->FirstChildElement("material"); link_node; link_node = link_node->NextSiblingElement("material")) {
     parseMaterial(link_node, materials);  // accept failed material parsing
   }
@@ -695,7 +757,7 @@ bool parseRobot(RigidBodyManipulator* model, TiXmlElement* node, const map<strin
   for (TiXmlElement* link_node = node->FirstChildElement("link"); link_node; link_node = link_node->NextSiblingElement("link"))
     if (!parseLink(model, link_node, materials, package_map, root_dir)) {
       return false;
-    } 
+    }
   //DEBUG
     //else {
       //cout << "Parsed link" << endl;
@@ -723,6 +785,10 @@ bool parseRobot(RigidBodyManipulator* model, TiXmlElement* node, const map<strin
     if (!parseLoop(model, loop_node))
       return false;
 
+  // parse Drake frames
+  for (TiXmlElement* frame_node = node->FirstChildElement("frame"); frame_node; frame_node = frame_node->NextSiblingElement("frame"))
+    if (!parseFrame(model, frame_node))
+      return false;
 
   for (unsigned int i = 1; i < model->bodies.size(); i++) {
     if (model->bodies[i]->parent == nullptr) {  // attach the root nodes to the world with a floating base joint

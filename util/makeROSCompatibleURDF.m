@@ -58,7 +58,7 @@ function default_value = parseParamString(param_db,str)
     % intentionally fall through
   end
   if isnumeric(default_value)
-    default_value = num2str(default_value);
+    default_value = num2str(default_value,8);
   else
     default_value = pstr2;
   end

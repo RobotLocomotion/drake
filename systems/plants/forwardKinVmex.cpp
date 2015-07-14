@@ -1,7 +1,7 @@
 #include <mex.h>
 #include <iostream>
 #include <memory>
-#include "drakeUtil.h"
+#include "drakeMexUtil.h"
 #include "RigidBodyManipulator.h"
 #include "drakeGeometryUtil.h"
 #include "math.h"
@@ -45,7 +45,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
     auto x = model->forwardKinNew(points, body_or_frame_ind, base_or_frame_ind, rotation_type, gradient_order);
     plhs[0] = eigenToMatlab(x.value());
     if (nlhs > 1) {
-      auto J = model->forwardJacV(x, body_or_frame_ind, base_or_frame_ind, rotation_type, compute_analytic_jacobian, gradient_order);
+      auto J = model->forwardJacV(points, body_or_frame_ind, base_or_frame_ind, rotation_type, compute_analytic_jacobian, gradient_order);
       plhs[1] = eigenToMatlab(J.value());
       if (nlhs > 2) {
         plhs[2] = eigenToMatlab(J.gradient().value());

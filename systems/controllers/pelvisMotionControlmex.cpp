@@ -6,6 +6,7 @@
 
 #include "controlUtil.h"
 #include "drakeUtil.h"
+#include "drakeMexUtil.h"
 
 struct PelvisMotionControlData {
   RigidBodyManipulator* r;

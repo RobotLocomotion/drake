@@ -197,6 +197,7 @@ MAKE_MATGRADMULT_BLOCK_B_EXPLICIT_INSTANTIATION(double, Eigen::Dynamic, Eigen::D
 
 template DLLEXPORT MatGradMult<Eigen::Matrix<double, -1, -1, 0, -1, -1>, Eigen::Block<Eigen::Map<Eigen::Matrix<double, -1, 1, 0, -1, 1>, 0, Eigen::Stride<0, 0> > const, -1, 1, false> >::type matGradMult(Eigen::MatrixBase<Eigen::Matrix<double, -1, -1, 0, -1, -1> > const&, Eigen::MatrixBase<Eigen::Block<Eigen::Map<Eigen::Matrix<double, -1, 1, 0, -1, 1>, 0, Eigen::Stride<0, 0> > const, -1, 1, false> > const&);
 template DLLEXPORT MatGradMult<Eigen::Matrix<double, -1, -1, 0, -1, -1>, Eigen::Block<Eigen::Block<Eigen::Matrix<double, -1, -1, 0, -1, -1>, -1, 1, true> const, -1, 1, false> >::type matGradMult(Eigen::MatrixBase<Eigen::Matrix<double, -1, -1, 0, -1, -1> > const&, Eigen::MatrixBase<Eigen::Block<Eigen::Block<Eigen::Matrix<double, -1, -1, 0, -1, -1>, -1, 1, true> const, -1, 1, false> > const&);
+template DLLEXPORT MatGradMult<Eigen::Matrix<double, -1, -1, 0, -1, -1>, Eigen::Block<Eigen::Map<Eigen::Matrix<double, -1, 1, 0, -1, 1> const, 0, Eigen::Stride<0, 0> > const, -1, 1, false> >::type matGradMult<Eigen::Matrix<double, -1, -1, 0, -1, -1>, Eigen::Block<Eigen::Map<Eigen::Matrix<double, -1, 1, 0, -1, 1> const, 0, Eigen::Stride<0, 0> > const, -1, 1, false> >(Eigen::MatrixBase<Eigen::Matrix<double, -1, -1, 0, -1, -1> > const&, Eigen::MatrixBase<Eigen::Block<Eigen::Map<Eigen::Matrix<double, -1, 1, 0, -1, 1> const, 0, Eigen::Stride<0, 0> > const, -1, 1, false> > const&);
 
 
 #define MAKE_MATGRADMULT_TRANSPOSE_BLOCK_B_EXPLICIT_INSTANTIATION(Type, DARows, DACols, BRows, BCols, BBlockRows, BBlockCols, InnerPanel) \
@@ -244,6 +245,10 @@ MAKE_MATGRADMULTMAT_TRANSPOSE_A_EXPLICIT_INSTANTIATION(double, Eigen::Dynamic, 6
 MAKE_MATGRADMULTMAT_TRANSPOSE_B_EXPLICIT_INSTANTIATION(double, 3, 1, 3, 3, 3, 3)
 MAKE_MATGRADMULTMAT_TRANSPOSE_B_EXPLICIT_INSTANTIATION(double, 4, 1, 4, 4, 4, 4)
 #undef MAKE_MATGRADMULTMAT_TRANSPOSE_B_EXPLICIT_INSTANTIATION
+
+template DLLEXPORT MatGradMultMat<Eigen::Matrix<double, -1, 3, 0, -1, 3>, Eigen::Block<Eigen::Matrix<double, 6, -1, 0, 6, -1>, 3, -1, false>, Eigen::Matrix<double, -1, -1, 0, -1, -1> >::type matGradMultMat<Eigen::Matrix<double, -1, 3, 0, -1, 3>,
+    Eigen::Block<Eigen::Matrix<double, 6, -1, 0, 6, -1>, 3, -1, false>, Eigen::Matrix<double, -1, -1, 0, -1, -1>, Eigen::Matrix<double, -1, -1, 0, -1, -1> >(Eigen::MatrixBase<Eigen::Matrix<double, -1, 3, 0, -1, 3> > const&,
+    Eigen::MatrixBase<Eigen::Block<Eigen::Matrix<double, 6, -1, 0, 6, -1>, 3, -1, false> > const&, Eigen::MatrixBase<Eigen::Matrix<double, -1, -1, 0, -1, -1> > const&, Eigen::MatrixBase<Eigen::Matrix<double, -1, -1, 0, -1, -1> > const&);
 
 #define MAKE_SETSUBMATRIXGRADIENT_EXPLICIT_INSTANTIATION(Type, QSubvectorSize, DMRows, DMCols, DMSubRows, DMSubCols, NRows, NCols) \
 		template DLLEXPORT void setSubMatrixGradient<QSubvectorSize,Eigen::Matrix<Type, DMRows, DMCols>, Eigen::Matrix<Type, DMSubRows, DMSubCols>, NRows, NCols>(Eigen::MatrixBase< Eigen::Matrix<Type, DMRows, DMCols> >&, const Eigen::MatrixBase< Eigen::Matrix<Type, DMSubRows, DMSubCols> >&, const std::array<int, NRows>&, const std::array<int, NCols>&, Eigen::Matrix<Type, DMSubRows, DMSubCols>::Index, Eigen::Matrix<Type, DMSubRows, DMSubCols>::Index, Eigen::Matrix<Type, DMSubRows, DMSubCols>::Index);

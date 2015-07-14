@@ -1,10 +1,10 @@
 #include "mex.h"
 #include <iostream>
-#include "drakeUtil.h"
+#include "drakeMexUtil.h"
 #include "MexWrapper.h"
 #include "RigidBodyManipulator.h"
 #include "math.h"
-#include "drake/fastQP.h"
+#include "fastQP.h"
 #include <sstream>
 
 using namespace Eigen;
@@ -189,7 +189,7 @@ bool callFastQP(MatrixBase<DerivedM> const & M, MatrixBase<Derivedw> const & w, 
 //[z, Mqdn, wqdn] = setupLCPmex(mex_model_ptr, q, qd, u, phiC, n, D, h, z_inactive_guess_tol)
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) { 
   
-  if (nlhs != 3 || nrhs != 14) {
+  if (nlhs != 5 || nrhs != 14) {
     mexErrMsgIdAndTxt("Drake:setupLCPmex:InvalidUsage","Usage: [z, Mqdn, wqdn, zqp] = setupLCPmex(mex_model_ptr, q, qd, u, phiC, n, D, h, z_inactive_guess_tol, z_cached, H, C, B)");
   }
   static unique_ptr<MexWrapper> lcp_mex = unique_ptr<MexWrapper>(new MexWrapper(PATHLCP_MEXFILE));
@@ -267,6 +267,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
     Map<MatrixXd> Mqdn(mxGetPrSafe(plhs[1]), nq, lcp_size);
 
     if (lcp_size == 0) {
+      plhs[3] = mxCreateDoubleMatrix(1, possible_contact.size(), mxREAL);
+      plhs[4] = mxCreateDoubleMatrix(1, possible_jointlimit.size(), mxREAL);
       return;
     } 
     z = VectorXd::Zero(lcp_size);
@@ -407,6 +409,20 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
     }
     //our initial guess was correct. we're done
     break;
+  }
+
+  plhs[3] = mxCreateDoubleMatrix(1, possible_contact.size(), mxREAL);
+  plhs[4] = mxCreateDoubleMatrix(1, possible_jointlimit.size(), mxREAL);
+
+  Map<VectorXd> possible_contact_map(mxGetPrSafe(plhs[3]), possible_contact.size());
+  Map<VectorXd> possible_jointlimit_map(mxGetPrSafe(plhs[4]), possible_jointlimit.size());
+
+  for (size_t i = 0; i < possible_contact.size(); i++) {
+    possible_contact_map[i] = static_cast<double>(possible_contact[i]);
+  }
+
+  for (size_t i = 0; i < possible_jointlimit.size(); i++) {
+    possible_jointlimit_map[i] = static_cast<double>(possible_jointlimit[i]);
   }
 
 }

@@ -30,7 +30,7 @@ typecheck(c0,'PolynomialSystem');
 typecheck(V,'QuadraticLyapunovFunction'); 
 
 % Default options
-if (nargin<5) options = struct(); end
+if (nargin<4) options = struct(); end
 if (~isfield(options,'controller_deg')) options.controller_deg = 1; end % Degree of polynomial controller to search for
 if (~isfield(options,'max_iterations')) options.max_iterations = 10; end % Maximum number of iterations (3 steps per iteration)
 if (~isfield(options,'converged_tol')) options.converged_tol = 1e-3; end % Tolerance for checking convergence
@@ -45,11 +45,12 @@ if (~isfield(options,'degLup')) options.degLup = 2; end
 if (~isfield(options,'degLum')) options.degLum = 2; end
 
 % Get original state frame
-OrigFrame = sys.getStateFrame;
 OrigUFrame = sys.getInputFrame;
 Vframe = V.getFrame;
 
 % Convert system to V frame
+umin = sys.umin;
+umax = sys.umax;
 sys = sys.inStateFrame(Vframe);
 
 % Convert controller to V frame
@@ -60,8 +61,6 @@ if ~isTI(c0), error('c0 must be time invariant'); end
 
 % Get x and other stuff
 x = V.getFrame.getPoly;
-num_x = sys.getNumStates();
-num_u = sys.getNumInputs();
 u = sys.getInputFrame.getPoly;
 
 % Get V 
@@ -71,6 +70,7 @@ V = V.getPoly;
 % Get dynamics in V frame
 f = sys.getPolyDynamics;
 
+sys = sys.setInputLimits(umin, umax)
 % Compute fmax and fmin if saturations
 if ~all(isinf([sys.umax;sys.umin]))
   if getNumInputs(sys)>1

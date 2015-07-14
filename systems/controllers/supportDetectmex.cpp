@@ -1,4 +1,5 @@
 #include "controlUtil.h"
+#include "drakeMexUtil.h"
 
 using namespace std;
 

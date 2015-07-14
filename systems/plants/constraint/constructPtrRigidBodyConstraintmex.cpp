@@ -1,7 +1,7 @@
 #include "constructPtrRigidBodyConstraint.h"
 #include "RigidBodyManipulator.h"
 #include "RigidBodyConstraint.h"
-#include "drakeUtil.h"
+#include "drakeMexUtil.h"
 #include "controlUtil.h"
 using namespace Eigen;
 using namespace std;

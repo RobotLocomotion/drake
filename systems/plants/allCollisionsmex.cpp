@@ -1,6 +1,6 @@
 #include "mex.h"
 #include <iostream>
-#include "drakeUtil.h"
+#include "drakeMexUtil.h"
 #include "RigidBodyManipulator.h"
 #include "math.h"
 
@@ -37,7 +37,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
     //DEBUG
     //cout << "collisionDetectmex: Received body_idx" << endl;
     //END_DEBUG
-    int n_active_bodies = mxGetNumberOfElements(body_idx);
+    size_t n_active_bodies = mxGetNumberOfElements(body_idx);
     //DEBUG
     //cout << "collisionDetectmex: n_active_bodies = " << n_active_bodies << endl;
     //END_DEBUG
