@@ -46,17 +46,14 @@ int main()
   int nq = model->num_positions;
   VectorXd qstar = VectorXd::Zero(nq);
   qstar(3) = 0.8;
-  model->doKinematics(qstar);
-  Vector3d com0;
-  model->getCOM(com0);
-  Vector3d l_hand_pt;
+  VectorXd v = VectorXd::Zero(0);
+  model->doKinematicsNew(qstar, v);
+  Vector3d com0 = model->centerOfMass<double>(0).value();
+
   l_hand_pt << 0.0, 0.0, 0.0;
-  Vector3d r_hand_pt;
-  r_hand_pt << 0.0, 0.0, 0.0;
-  Vector3d lhand_pos0;
-  model->forwardKin(l_hand,l_hand_pt,0,lhand_pos0);
-  Vector3d rhand_pos0;
-  model->forwardKin(r_hand,r_hand_pt,0,rhand_pos0);
+  Vector3d r_hand_pt = Vector3d::Zero();
+  Vector3d rhand_pos0 = model->forwardKinNew(r_hand_pt, r_hand, 0, 0, 0).value();
+
   int nT = 4;
   double* t = new double[nT];
   double dt = 1.0/(nT-1);

@@ -348,9 +348,6 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     mexErrMsgIdAndTxt("Drake:constructModelmex:BadGravity","Couldn't find a 3 element gravity vector in the object.");
   }
 
-  mxLogical* use_new_kinsol = mxGetLogicals(mxGetProperty(pRBM,0,"use_new_kinsol"));
-  model->setUseNewKinsol((bool)use_new_kinsol[0]);
-
   //  LOOP CONSTRAINTS
   const mxArray* pLoops = mxGetProperty(pRBM,0,"loop");
   int num_loops = static_cast<int>(mxGetNumberOfElements(pLoops));

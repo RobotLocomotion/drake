@@ -70,18 +70,9 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 		for (int i=0; i<matlab_model->num_velocities; i++) matlab_v[i] = distribution(generator);
 		cpp_v.noalias() = P*matlab_v;
 
-		{ // run new and old kinematics
-			matlab_model->setUseNewKinsol(false);
-			cpp_model->setUseNewKinsol(false);
-
-			matlab_model->doKinematics(matlab_q,true,matlab_v);
-			cpp_model->doKinematics(cpp_q,true,cpp_v);
-
-			matlab_model->setUseNewKinsol(true);
-			cpp_model->setUseNewKinsol(true);
-
-			matlab_model->doKinematicsNew(matlab_q,matlab_v,true,true);
-			cpp_model->doKinematicsNew(cpp_q,cpp_v,true,true);
+		{ // run kinematics
+			matlab_model->doKinematicsNew(matlab_q, matlab_v, true, true);
+			cpp_model->doKinematicsNew(cpp_q, cpp_v, true, true);
 		}
 
 		{ // compare H, C, and B
@@ -124,30 +115,6 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 						mexErrMsgTxt("ERROR: phi doesn't match (see terminal output)");
 					}
 				}
-			}
-
-			matlab_model->setUseNewKinsol(false);
-			cpp_model->setUseNewKinsol(false);
-
-			VectorXd matlab_phi_old(matlab_model->loops.size()*3), cpp_phi_old(cpp_model->loops.size()*3);
-			MatrixXd matlab_dphi_old(matlab_model->loops.size()*3,matlab_model->num_positions), cpp_dphi_old(cpp_model->loops.size()*3,cpp_model->num_positions);
-			matlab_model->positionConstraints(matlab_phi_old,matlab_dphi_old);
-			cpp_model->positionConstraints(cpp_phi_old,cpp_dphi_old);
-
-			if (!matlab_phi.value().isApprox(matlab_phi_old,1e-8)) {
-				cout << "matlab phi new:" << matlab_phi.value().transpose() << endl;
-				cout << "matlab phi old:" << matlab_phi_old.transpose() << endl;
-				mexErrMsgTxt("ERROR: matlab phi old doesn't match new");
-			}
-			if (!cpp_phi.value().isApprox(cpp_phi_old,1e-8)) {
-				mexErrMsgTxt("ERROR: cpp phi old doesn't match new");
-			}
-
-			if (!matlab_phi.gradient().value().isApprox(matlab_dphi_old,1e-8)) {
-				mexErrMsgTxt("ERROR: matlab phi old gradient doesn't match new");
-			}
-			if (!cpp_phi.gradient().value().isApprox(cpp_dphi_old,1e-8)) {
-				mexErrMsgTxt("ERROR: cpp phi old gradient doesn't match new");
 			}
 		}
   }

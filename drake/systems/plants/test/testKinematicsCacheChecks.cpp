@@ -83,7 +83,6 @@ int main()
   {
     cerr<<"ERROR: Failed to load model"<<endl;
   }
-  model->setUseNewKinsol(true);
   CheckSettings settings;
   int max_gradient_order = 2;
 

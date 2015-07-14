@@ -39,9 +39,9 @@ int main()
   {
     return 1;
   }
-  model->doKinematics(q_sol);
-  Vector3d com;
-  model->getCOM(com);
+  VectorXd v = VectorXd::Zero(0);
+  model->doKinematicsNew(q_sol, v);
+  Vector3d com = model->centerOfMass<double>(0).value();
   printf("%5.2f\n%5.2f\n%5.2f\n",com(0),com(1),com(2));
   /*MATFile *presultmat;
   presultmat = matOpen("q_sol.mat","w");

@@ -94,8 +94,7 @@ smoothDistancePenalty(double& c, MatrixXd& dc,
       //END_DEBUG
       x_k.col(l) = xB.col(orig_idx_of_pt_on_bodyB.at(k).at(l-numA));
     }
-    MatrixXd J_k(3*x_k.cols(),robot->num_positions);
-    robot->forwardJac(k,x_k,0,J_k);
+    auto J_k = robot->forwardJacV(x_k, k, 0, 0, true, 0).value();
     l = 0;
     for (; l < numA; ++l) {
       //DEBUG
