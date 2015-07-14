@@ -1452,12 +1452,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     mxDestroyArray(penetrations_array_mx);
     
     
-// If we've reached this point with collFree = true, then we've found a collision
-// free funnel (possibly after shifting) and we pass through.
-// If collFree = false, then we haven't been able to do so. We need to
-// decide if the best funnel we've found has little enough penetration
-// that it is worth risking executing it. If the best funnel has too much penetration,
-// then the situation is hopeless and we revert to our failsafe (funnelIdx = -1, or 0 in Matlab).
+    // If we've reached this point with collFree = true, then we've found a collision
+    // free funnel (possibly after shifting) and we pass through.
+    // If collFree = false, then we haven't been able to do so. We need to
+    // decide if the best funnel we've found has little enough penetration
+    // that it is worth risking executing it. If the best funnel has too much penetration,
+    // then the situation is hopeless and we revert to our failsafe (funnelIdx = -1, or 0 in Matlab).
     if (!collFree)
     {
         // If best penetration is too low, we revert to failsafe

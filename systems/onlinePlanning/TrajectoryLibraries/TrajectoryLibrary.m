@@ -1,9 +1,7 @@
 classdef TrajectoryLibrary    
-    properties (SetAccess = private)
-        trajectories
-    end
     
     properties(SetAccess = public)
+        trajectories
         options
     end
     
